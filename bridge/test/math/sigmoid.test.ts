@@ -54,19 +54,19 @@ describe("Sigmoid unit tests", async () => {
       expect(retSqrt).to.be.equal(trueSqrt);
     });
     it("Integer Square Root 7:   3*2**16  + 5", async function () {
-      const x = 3*(2 ** 16) + 5;
+      const x = 3 * 2 ** 16 + 5;
       const trueSqrt = 443;
       const retSqrt = await sigmoid.sqrt(x);
       expect(retSqrt).to.be.equal(trueSqrt);
     });
     it("Integer Square Root 8:   5*2**31  - 27", async function () {
-      const x = 5*(2 ** 31) - 27;
+      const x = 5 * 2 ** 31 - 27;
       const trueSqrt = 103621;
       const retSqrt = await sigmoid.sqrt(x);
       expect(retSqrt).to.be.equal(trueSqrt);
     });
     it("Integer Square Root 9:   7*2**32  + 9", async function () {
-      const x = 7*(2 ** 32) + 9;
+      const x = 7 * 2 ** 32 + 9;
       const trueSqrt = 173391;
       const retSqrt = await sigmoid.sqrt(x);
       expect(retSqrt).to.be.equal(trueSqrt);
@@ -212,13 +212,17 @@ describe("Sigmoid unit tests", async () => {
       expect(retA).to.be.equal(trueA);
     });
     it("P Constant B", async function () {
-      const trueB = BigNumber.from(2500).mul(BigNumber.from("1000000000000000000")); // 2500 * 10**18
+      const trueB = BigNumber.from(2500).mul(
+        BigNumber.from("1000000000000000000")
+      ); // 2500 * 10**18
       const retB = await sigmoid.p_b();
       expect(retB).to.be.equal(trueB);
     });
     it("P Constant C", async function () {
       const trueC = BigNumber.from("5611050234958650739260304").add(
-        BigNumber.from(125).mul(BigNumber.from("1000000000000000000000000000000000000000")) // 125 * 10**39
+        BigNumber.from(125).mul(
+          BigNumber.from("1000000000000000000000000000000000000000")
+        ) // 125 * 10**39
       );
       const retC = await sigmoid.p_c();
       expect(retC).to.be.equal(trueC);
@@ -231,7 +235,7 @@ describe("Sigmoid unit tests", async () => {
     it("P Constant B and C constraints", async function () {
       const b = await sigmoid.p_b();
       const c = await sigmoid.p_c();
-      const retS = await sigmoid.p_inv_s();
+      const retS = await sigmoid.p_s();
       const trueSSquared = c.add(b.mul(b));
       const trueS = await sigmoid.sqrt(trueSSquared);
       expect(retS).to.be.equal(trueS);
@@ -246,7 +250,7 @@ describe("Sigmoid unit tests", async () => {
       const trueA = await sigmoid.p_a();
       const trueB = await sigmoid.p_b();
       const trueD = await sigmoid.p_d();
-      const trueS = await sigmoid.p_inv_s();
+      const trueS = await sigmoid.p_s();
       const tmp1 = trueA.add(trueD);
       const tmp2 = trueA.mul(trueB);
       const tmp3 = tmp1.mul(trueS);
@@ -280,7 +284,7 @@ describe("Sigmoid unit tests", async () => {
       const trueA = await sigmoid.p_a();
       const trueB = await sigmoid.p_b();
       const trueD = await sigmoid.p_d();
-      const trueS = await sigmoid.p_inv_s();
+      const trueS = await sigmoid.p_s();
       const tmp1 = trueA.add(trueD);
       const tmp2 = trueA.mul(trueB);
       const tmp3 = tmp1.mul(trueS);
@@ -296,7 +300,7 @@ describe("Sigmoid unit tests", async () => {
       const trueA = await sigmoid.p_a();
       const trueB = await sigmoid.p_b();
       const trueD = await sigmoid.p_d();
-      const trueS = await sigmoid.p_inv_s();
+      const trueS = await sigmoid.p_s();
       const tmp1 = trueA.add(trueD);
       const tmp2 = trueA.mul(trueS);
       const tmp3 = tmp1.mul(trueB);

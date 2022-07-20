@@ -43,8 +43,8 @@ contract MockSigmoid is Sigmoid {
         return Sigmoid._P_D;
     }
 
-    function p_inv_s() public pure returns (uint256) {
-        return Sigmoid._P_INV_S;
+    function p_s() public pure returns (uint256) {
+        return Sigmoid._P_S;
     }
 
     function p_inv_c1() public pure returns (uint256) {
