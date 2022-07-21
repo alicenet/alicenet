@@ -118,7 +118,8 @@ jobs:
         run: go build ./...
       - uses: actions/upload-artifact@v3
         with:
-          path: bridge/artifacts
+          name: hardhat-files
+          path: bridge/artifacts/
       - id: set-matrix
         working-directory: layer1/executor/
         run: |
@@ -155,9 +156,12 @@ jobs:
         run: go install github.com/haveyoudebuggedit/gotestfmt/v2/cmd/gotestfmt@latest
       - uses: actions/download-artifact@v3
         with:
-           path: bridge
+          name: hardhat-files
+          path: bridge/artifacts/
       - name: check artifacts
-        run: ls -la bridge/artifacts
+        run: |
+            ls -la bridge
+            ls -la bridge/artifacts
       - name: Run tests ${{ matrix.test-groups }}
         run: |
             go test -race -tags=integration -json -timeout=30m github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run ${{ matrix.test-groups }} 2>&1 | tee /tmp/gotest.log | gotestfmt
