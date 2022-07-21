@@ -60,8 +60,7 @@ func setupEthereum(t *testing.T, n int) *tests.ClientFixture {
 	assert.Equal(t, n, len(eth.GetKnownAccounts()))
 
 	t.Cleanup(func() {
-		//fixture.Close()
-		//ethereum.CleanGlobalVariables(t)
+		fixture.Close()
 	})
 
 	return fixture

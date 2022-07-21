@@ -7,10 +7,6 @@ on:
   pull_request:
     branches: [ main ]
 
-env:
-  NODE_VERSION: 16.x
-  DKG_TESTS_PATH: github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests
-
 concurrency:
   group: ${{ github.ref }}
   cancel-in-progress: true
@@ -98,7 +94,7 @@ jobs:
         timeout-minutes: 20
         run: |
           set -euo pipefail
-          go test -json -timeout=20m -covermode=atomic -coverprofile=coverage.out `go list ./... | grep -v $DKG_TESTS_PATH` 2>&1 | tee /tmp/gotest.log | gotestfmt
+          go test -race -json -timeout=20m -covermode=atomic -coverprofile=coverage.out ./... 2>&1 | tee /tmp/gotest.log | gotestfmt
       - uses: codecov/codecov-action@v3
         with:
           files: ./coverage.out
@@ -112,18 +108,18 @@ jobs:
       matrix:
         os: [ ubuntu-20.04 ]
         test-groups: [
-            TestDisputeMissingRegistrationTask,
             TestShareDistribution,
             TestRegisterTask,
-#            TestMPKSubmission,
-#            TestKeyShareSubmission,
-#            TestGPKjSubmission,
-#            TestDisputeShareDistributionTask,
-#            TestDisputeMissingShareDistributionTask,
-#            TestDisputeMissingKeySharesTask,
-#            TestDisputeMissingGPKjTask,
-#            TestGPKjDispute,
-#            TestCompletion,
+            TestMPKSubmission,
+            TestKeyShareSubmission,
+            TestGPKjSubmission,
+            TestDisputeShareDistributionTask,
+            TestDisputeMissingShareDistributionTask,
+            TestDisputeMissingRegistrationTask,
+            TestDisputeMissingKeySharesTask,
+            TestDisputeMissingGPKjTask,
+            TestGPKjDispute,
+            TestCompletion,
           ]
     steps:
       - uses: actions/checkout@v3
@@ -131,6 +127,6 @@ jobs:
       - name: Set up gotestfmt
         run: go install github.com/haveyoudebuggedit/gotestfmt/v2/cmd/gotestfmt@latest
       - name: Run tests ${{ matrix.test-groups }}
-        timeout-minutes: 20
+        timeout-minutes: 30
         run: |
-            go test -race -tags=integration -json -timeout=20m $DKG_TESTS_PATH -run ${{ matrix.test-groups }} 2>&1 | tee /tmp/gotest.log | gotestfmt
+            go test -race -tags=integration -json -timeout=30m github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run ${{ matrix.test-groups }} 2>&1 | tee /tmp/gotest.log | gotestfmt

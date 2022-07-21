@@ -13,7 +13,6 @@ import (
 
 // We test to ensure that everything behaves correctly.
 func TestKeyShareSubmission_GoodAllValid(t *testing.T) {
-	t.Parallel()
 	n := 5
 	fixture := setupEthereum(t, n)
 	suite := StartFromKeyShareSubmissionPhase(t, fixture, 0, 100)
@@ -49,7 +48,6 @@ func TestKeyShareSubmission_GoodAllValid(t *testing.T) {
 // This comes from invalid SecretValue in state.
 // In practice, this should never arise, though.
 func TestKeyShareSubmission_Bad3(t *testing.T) {
-	t.Parallel()
 	n := 5
 	var phaseLength uint16 = 100
 	fixture := setupEthereum(t, n)
@@ -77,7 +75,6 @@ func TestKeyShareSubmission_Bad3(t *testing.T) {
 // Here, we mess up KeyShare information before submission
 // so that we raise an error on submission.
 func TestKeyShareSubmission_Bad4(t *testing.T) {
-	t.Parallel()
 	n := 5
 	var phaseLength uint16 = 100
 	fixture := setupEthereum(t, n)

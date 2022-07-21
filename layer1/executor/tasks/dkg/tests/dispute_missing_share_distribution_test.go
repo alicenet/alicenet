@@ -13,7 +13,6 @@ import (
 )
 
 func TestDisputeMissingShareDistributionTask_ShouldAccuseOneValidatorWhoDidNotDistributeShares(t *testing.T) {
-	t.Parallel()
 	n := 5
 	u := []int{4}
 	fixture := setupEthereum(t, n)
@@ -64,7 +63,6 @@ func TestDisputeMissingShareDistributionTask_ShouldAccuseOneValidatorWhoDidNotDi
 }
 
 func TestDisputeMissingShareDistributionTask_ShouldAccuseAllValidatorsWhoDidNotDistributeShares(t *testing.T) {
-	t.Parallel()
 	n := 5
 	u := []int{0, 1, 2, 3, 4}
 	fixture := setupEthereum(t, n)
@@ -115,7 +113,6 @@ func TestDisputeMissingShareDistributionTask_ShouldAccuseAllValidatorsWhoDidNotD
 }
 
 func TestDisputeMissingShareDistributionTask_ShouldNotAccuseValidatorsWhoDidDistributeShares(t *testing.T) {
-	t.Parallel()
 	n := 5
 	u := []int{}
 	fixture := setupEthereum(t, n)

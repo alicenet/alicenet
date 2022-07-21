@@ -13,7 +13,6 @@ import (
 )
 
 func TestDisputeMissingRegistrationTask_DoTaskSuccessOneParticipantAccused(t *testing.T) {
-	t.Parallel()
 	n := 4
 	d := 1
 	fixture := setupEthereum(t, n)
@@ -60,7 +59,6 @@ func TestDisputeMissingRegistrationTask_DoTaskSuccessOneParticipantAccused(t *te
 }
 
 func TestDisputeMissingRegistrationTask_DoTaskSuccessThreeParticipantAccused(t *testing.T) {
-	t.Parallel()
 	n := 5
 	d := 3
 	fixture := setupEthereum(t, n)
@@ -107,7 +105,6 @@ func TestDisputeMissingRegistrationTask_DoTaskSuccessThreeParticipantAccused(t *
 }
 
 func TestDisputeMissingRegistrationTask_DoTaskSuccessAllParticipantsAreBad(t *testing.T) {
-	t.Parallel()
 	n := 5
 	d := 5
 	fixture := setupEthereum(t, n)

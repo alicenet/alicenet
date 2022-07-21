@@ -198,7 +198,7 @@ func NewClientFixture(hardhat *Hardhat, finalityDelay uint64, numAccounts int, l
 		panic(fmt.Errorf("failed to create ethereum client: %v", err))
 	}
 
-	//ResetHardhatConfigs(hardhat.url)
+	ResetHardhatConfigs(hardhat.url)
 
 	MonitorDb := mocks.NewTestDB()
 
