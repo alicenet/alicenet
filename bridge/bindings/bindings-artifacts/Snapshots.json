@@ -53,6 +53,49 @@
         "internalType": "bytes",
         "name": "signatureRaw",
         "type": "bytes"
+      },
+      {
+        "components": [
+          {
+            "internalType": "uint32",
+            "name": "chainId",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint32",
+            "name": "height",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint32",
+            "name": "txCount",
+            "type": "uint32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "prevBlock",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "txRoot",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "stateRoot",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "headerRoot",
+            "type": "bytes32"
+          }
+        ],
+        "indexed": false,
+        "internalType": "struct BClaimsParserLibrary.BClaims",
+        "name": "BClaims",
+        "type": "tuple"
       }
     ],
     "name": "SnapshotTaken",

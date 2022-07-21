@@ -255,6 +255,7 @@ var FunctionMapping = map[[4]byte]string{
 	{152, 84, 189, 197}:  "SnapshotsErrorCodes.SNAPSHOT_MIGRATION_INPUT_DATA_MISMATCH()",
 	{79, 42, 218, 238}:   "SnapshotsErrorCodes.SNAPSHOT_MIGRATION_NOT_ALLOWED()",
 	{74, 30, 194, 238}:   "SnapshotsErrorCodes.SNAPSHOT_MIN_BLOCKS_INTERVAL_NOT_PASSED()",
+	{19, 112, 35, 8}:     "SnapshotsErrorCodes.SNAPSHOT_NOT_IN_BUFFER()",
 	{131, 217, 149, 250}: "SnapshotsErrorCodes.SNAPSHOT_ONLY_VALIDATORS_ALLOWED()",
 	{29, 68, 158, 209}:   "SnapshotsErrorCodes.SNAPSHOT_SIGNATURE_VERIFICATION_FAILED()",
 	{133, 201, 219, 161}: "SnapshotsErrorCodes.SNAPSHOT_WRONG_MASTER_PUBLIC_KEY()",

@@ -149,7 +149,8 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
             blockClaims.height,
             msg.sender,
             isSafeToProceedConsensus,
-            groupSignature_
+            groupSignature_,
+            blockClaims
         );
         return isSafeToProceedConsensus;
     }
@@ -192,7 +193,8 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
                 blockClaims.height,
                 msg.sender,
                 true,
-                groupSignature_[i]
+                groupSignature_[i],
+                blockClaims
             );
         }
         epochReg.set(uint32(epoch));
