@@ -155,6 +155,27 @@ describe("Sigmoid unit tests", async () => {
       const retValue = await sigmoid.safeAbsSub(a, b);
       expect(retValue).to.be.equal(trueValue);
     });
+    it("safeAbsSub Test 5", async function () {
+      const a = BigNumber.from("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
+      const b = BigNumber.from("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
+      const trueValue = BigNumber.from(0);
+      const retValue = await sigmoid.safeAbsSub(a, b);
+      expect(retValue).to.be.equal(trueValue);
+    });
+    it("safeAbsSub Test 6", async function () {
+      const a = BigNumber.from("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
+      const b = BigNumber.from(0);
+      const trueValue = a;
+      const retValue = await sigmoid.safeAbsSub(a, b);
+      expect(retValue).to.be.equal(trueValue);
+    });
+    it("safeAbsSub Test 7", async function () {
+      const a = BigNumber.from(0);
+      const b = BigNumber.from("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
+      const trueValue = b;
+      const retValue = await sigmoid.safeAbsSub(a, b);
+      expect(retValue).to.be.equal(trueValue);
+    });
   });
 
   describe("max Tests", async () => {
@@ -179,6 +200,20 @@ describe("Sigmoid unit tests", async () => {
       const retValue = await sigmoid.max(a, b);
       expect(retValue).to.be.equal(trueValue);
     });
+    it("max Test 3", async function () {
+      const a = BigNumber.from("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
+      const b = 0;
+      const trueValue = a;
+      const retValue = await sigmoid.max(a, b);
+      expect(retValue).to.be.equal(trueValue);
+    });
+    it("max Test 4", async function () {
+      const a = 0;
+      const b = BigNumber.from("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
+      const trueValue = b;
+      const retValue = await sigmoid.max(a, b);
+      expect(retValue).to.be.equal(trueValue);
+    });
   });
 
   describe("min Tests", async () => {
@@ -199,6 +234,20 @@ describe("Sigmoid unit tests", async () => {
     it("min Test 2", async function () {
       const a = 0;
       const b = 255;
+      const trueValue = a;
+      const retValue = await sigmoid.min(a, b);
+      expect(retValue).to.be.equal(trueValue);
+    });
+    it("min Test 3", async function () {
+      const a = BigNumber.from("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
+      const b = 0;
+      const trueValue = b;
+      const retValue = await sigmoid.min(a, b);
+      expect(retValue).to.be.equal(trueValue);
+    });
+    it("min Test 4", async function () {
+      const a = 0;
+      const b = BigNumber.from("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
       const trueValue = a;
       const retValue = await sigmoid.min(a, b);
       expect(retValue).to.be.equal(trueValue);
@@ -368,6 +417,24 @@ describe("Sigmoid unit tests", async () => {
         expect(compDiff).to.be.equal(trueDiff);
       }
     });
+    it("Evaluate P; passes", async function () {
+      // Confirm valid input for 2**120 - 1
+      const value = BigNumber.from("0xffffffffffffffffffffffffffffff");
+      const retValue = await sigmoid.p(value);
+      await expect(retValue).to.not.equal(0);
+    });
+    it("Evaluate P; overflow 1", async function () {
+      // Confirm overflow: 2**256 - 1
+      const value = BigNumber.from("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")
+      const tx = sigmoid.p(value);
+      await expect(tx).to.be.reverted;
+    });
+    it("Evaluate P; overflow 2", async function () {
+      // Confirm overflow: 2**128 - 1
+      const value = BigNumber.from("0xffffffffffffffffffffffffffffffff");
+      const tx = sigmoid.p(value);
+      await expect(tx).to.be.reverted;
+    });
   });
 
   describe("P Inverse Function Tests", async () => {
@@ -417,6 +484,24 @@ describe("Sigmoid unit tests", async () => {
       const value = await sigmoid.p(initialValue);
       const retValue = await sigmoid.p_inverse(value);
       expect(retValue).to.be.equal(initialValue);
+    });
+    it("Evaluate P_inv; passes", async function () {
+      // Confirm valid input for 2**120 - 1
+      const value = BigNumber.from("0xffffffffffffffffffffffffffffff");
+      const retValue = await sigmoid.p_inverse(value);
+      await expect(retValue).to.not.equal(0);
+    });
+    it("Evaluate P_inv; overflow 1", async function () {
+      // Confirm overflow: 2**256 - 1
+      const value = BigNumber.from("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")
+      const tx = sigmoid.p_inverse(value);
+      await expect(tx).to.be.reverted;
+    });
+    it("Evaluate P_inv; overflow 2", async function () {
+      // Confirm overflow: 2**128 - 1
+      const value = BigNumber.from("0xffffffffffffffffffffffffffffffff");
+      const tx = sigmoid.p_inverse(value);
+      await expect(tx).to.be.reverted;
     });
   });
 });
