@@ -120,7 +120,7 @@ jobs:
     strategy:
         fail-fast: false
         matrix:
-            test-groups: ${{needs.job1.outputs.matrix | tr -d "\'"}}
+            test-groups: ${{echo needs.job1.outputs.matrix | tr -d "\'"}}
     steps:
       - uses: actions/checkout@v3
       - name: Gab
