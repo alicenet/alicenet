@@ -111,7 +111,9 @@ jobs:
         working-directory: layer1/executor/
         run: |
             targets=($(grep -R 'Test' ./ | awk -F 'func' '{ print $2 }' | awk -F '(' '{ print $1 }'))
-            echo "::set-output name=matrix::$targets"
+            printf -v joined '%s,' "${targets[@]}"
+            tests=$(echo "${joined%,}")
+            echo "::set-output name=matrix::$tests"
 
   go-dkg-tests:
     needs: job1
@@ -119,9 +121,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Gab
-        run: |
-            printf -v joined '%s,' "${{needs.job1.outputs.matrix[@]}}"
-            echo "${joined%,}"
+        run: echo ${{needs.job1.outputs.matrix}}
 
 #
 #  go-dkg-tests:
