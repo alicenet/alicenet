@@ -27,43 +27,43 @@ contract MockSigmoid is Sigmoid {
         return Sigmoid._sqrt(x);
     }
 
-    function p_a() public pure returns (uint256) {
+    function pConstA() public pure returns (uint256) {
         return Sigmoid._P_A;
     }
 
-    function p_b() public pure returns (uint256) {
+    function pConstB() public pure returns (uint256) {
         return Sigmoid._P_B;
     }
 
-    function p_c() public pure returns (uint256) {
+    function pConstC() public pure returns (uint256) {
         return Sigmoid._P_C;
     }
 
-    function p_d() public pure returns (uint256) {
+    function pConstD() public pure returns (uint256) {
         return Sigmoid._P_D;
     }
 
-    function p_s() public pure returns (uint256) {
+    function pConstS() public pure returns (uint256) {
         return Sigmoid._P_S;
     }
 
-    function p_inv_c1() public pure returns (uint256) {
+    function pInverseConstC1() public pure returns (uint256) {
         return Sigmoid._P_INV_C_1;
     }
 
-    function p_inv_c2() public pure returns (uint256) {
+    function pInverseConstC2() public pure returns (uint256) {
         return Sigmoid._P_INV_C_2;
     }
 
-    function p_inv_c3() public pure returns (uint256) {
+    function pInverseConstC3() public pure returns (uint256) {
         return Sigmoid._P_INV_C_3;
     }
 
-    function p_inv_d0() public pure returns (uint256) {
+    function pInverseConstD0() public pure returns (uint256) {
         return Sigmoid._P_INV_D_0;
     }
 
-    function p_inv_d1() public pure returns (uint256) {
+    function pInverseConstD1() public pure returns (uint256) {
         return Sigmoid._P_INV_D_1;
     }
 }

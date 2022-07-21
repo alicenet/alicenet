@@ -273,14 +273,14 @@ describe("Sigmoid unit tests", async () => {
   describe("P Constant Tests", async () => {
     it("P Constant A", async function () {
       const trueA = BigNumber.from(200);
-      const retA = await sigmoid.p_a();
+      const retA = await sigmoid.pConstA();
       expect(retA).to.be.equal(trueA);
     });
     it("P Constant B", async function () {
       const trueB = BigNumber.from(2500).mul(
         BigNumber.from("1000000000000000000")
       ); // 2500 * 10**18
-      const retB = await sigmoid.p_b();
+      const retB = await sigmoid.pConstB();
       expect(retB).to.be.equal(trueB);
     });
     it("P Constant C", async function () {
@@ -289,18 +289,18 @@ describe("Sigmoid unit tests", async () => {
           BigNumber.from("1000000000000000000000000000000000000000")
         ) // 125 * 10**39
       );
-      const retC = await sigmoid.p_c();
+      const retC = await sigmoid.pConstC();
       expect(retC).to.be.equal(trueC);
     });
     it("P Constant D", async function () {
       const trueD = 1;
-      const retD = await sigmoid.p_d();
+      const retD = await sigmoid.pConstD();
       expect(retD).to.be.equal(trueD);
     });
-    it("P Constant B and C constraints", async function () {
-      const b = await sigmoid.p_b();
-      const c = await sigmoid.p_c();
-      const retS = await sigmoid.p_s();
+    it("P Constant S", async function () {
+      const b = await sigmoid.pConstB();
+      const c = await sigmoid.pConstC();
+      const retS = await sigmoid.pConstS();
       const trueSSquared = c.add(b.mul(b));
       const trueS = await sigmoid.sqrt(trueSSquared);
       expect(retS).to.be.equal(trueS);
@@ -312,66 +312,66 @@ describe("Sigmoid unit tests", async () => {
     it("P Inverse Constant C1", async function () {
       // Ensure
       //    c1 == a[(a+d)*sqrt(c+b**2) + a*b]
-      const trueA = await sigmoid.p_a();
-      const trueB = await sigmoid.p_b();
-      const trueD = await sigmoid.p_d();
-      const trueS = await sigmoid.p_s();
+      const trueA = await sigmoid.pConstA();
+      const trueB = await sigmoid.pConstB();
+      const trueD = await sigmoid.pConstD();
+      const trueS = await sigmoid.pConstS();
       const tmp1 = trueA.add(trueD);
       const tmp2 = trueA.mul(trueB);
       const tmp3 = tmp1.mul(trueS);
       const tmp4 = tmp3.add(tmp2);
       const trueC1 = trueA.mul(tmp4);
-      const retC1 = await sigmoid.p_inv_c1();
+      const retC1 = await sigmoid.pInverseConstC1();
       expect(retC1).to.be.equal(trueC1);
     });
     it("P Inverse Constant C2", async function () {
       // Ensure
       //    c2 == a + d
-      const trueA = await sigmoid.p_a();
-      const trueD = await sigmoid.p_d();
+      const trueA = await sigmoid.pConstA();
+      const trueD = await sigmoid.pConstD();
       const trueC2 = trueA.add(trueD);
-      const retC2 = await sigmoid.p_inv_c2();
+      const retC2 = await sigmoid.pInverseConstC2();
       expect(retC2).to.be.equal(trueC2);
     });
     it("P Inverse Constant C3", async function () {
       // Ensure
       //    c3 == d*(2a + d)
       const big2 = BigNumber.from(2);
-      const trueA = await sigmoid.p_a();
-      const trueD = await sigmoid.p_d();
+      const trueA = await sigmoid.pConstA();
+      const trueD = await sigmoid.pConstD();
       const trueC3 = trueD.mul(trueD.add(big2.mul(trueA)));
-      const retC3 = await sigmoid.p_inv_c3();
+      const retC3 = await sigmoid.pInverseConstC3();
       expect(retC3).to.be.equal(trueC3);
     });
     it("P Inverse Constant D0", async function () {
       // Ensure
       //    d0 == [(a+d)*sqrt(c+b**2) + a*b]**2
-      const trueA = await sigmoid.p_a();
-      const trueB = await sigmoid.p_b();
-      const trueD = await sigmoid.p_d();
-      const trueS = await sigmoid.p_s();
+      const trueA = await sigmoid.pConstA();
+      const trueB = await sigmoid.pConstB();
+      const trueD = await sigmoid.pConstD();
+      const trueS = await sigmoid.pConstS();
       const tmp1 = trueA.add(trueD);
       const tmp2 = trueA.mul(trueB);
       const tmp3 = tmp1.mul(trueS);
       const tmp4 = tmp3.add(tmp2);
       const trueD0 = tmp4.mul(tmp4);
-      const retD0 = await sigmoid.p_inv_d0();
+      const retD0 = await sigmoid.pInverseConstD0();
       expect(retD0).to.be.equal(trueD0);
     });
     it("P Inverse Constant D1", async function () {
       // Ensure
       //    d1 == 2[a*sqrt(c+b**2) + (a+d)*b]
       const big2 = BigNumber.from(2);
-      const trueA = await sigmoid.p_a();
-      const trueB = await sigmoid.p_b();
-      const trueD = await sigmoid.p_d();
-      const trueS = await sigmoid.p_s();
+      const trueA = await sigmoid.pConstA();
+      const trueB = await sigmoid.pConstB();
+      const trueD = await sigmoid.pConstD();
+      const trueS = await sigmoid.pConstS();
       const tmp1 = trueA.add(trueD);
       const tmp2 = trueA.mul(trueS);
       const tmp3 = tmp1.mul(trueB);
       const tmp4 = tmp2.add(tmp3);
       const trueD1 = big2.mul(tmp4);
-      const retD1 = await sigmoid.p_inv_d1();
+      const retD1 = await sigmoid.pInverseConstD1();
       expect(retD1).to.be.equal(trueD1);
     });
   });
@@ -388,11 +388,11 @@ describe("Sigmoid unit tests", async () => {
     it("Evaluate P(b)", async function () {
       // Confirm
       //      P(b) == a*sqrt(c+b^2) - sqrt(a**2 * c) + (a+d)*b
-      const trueA = await sigmoid.p_a();
-      const trueB = await sigmoid.p_b();
-      const trueC = await sigmoid.p_c();
-      const trueD = await sigmoid.p_d();
-      const trueS = await sigmoid.p_s();
+      const trueA = await sigmoid.pConstA();
+      const trueB = await sigmoid.pConstB();
+      const trueC = await sigmoid.pConstC();
+      const trueD = await sigmoid.pConstD();
+      const trueS = await sigmoid.pConstS();
       const value = trueB;
       const tmp1 = trueA.mul(trueS);
       const tmp2P = trueA.mul(trueA.mul(trueC));
@@ -406,9 +406,9 @@ describe("Sigmoid unit tests", async () => {
       // Confirm
       //      P(2b) == 2b*(a+d)
       const big2 = BigNumber.from(2);
-      const trueA = await sigmoid.p_a();
-      const trueB = await sigmoid.p_b();
-      const trueD = await sigmoid.p_d();
+      const trueA = await sigmoid.pConstA();
+      const trueB = await sigmoid.pConstB();
+      const trueD = await sigmoid.pConstD();
       const value = trueB.add(trueB);
       const trueValue = big2.mul(trueB.mul(trueA.add(trueD)));
       const retValue = await sigmoid.p(value);
@@ -421,9 +421,9 @@ describe("Sigmoid unit tests", async () => {
       for (let i = 0; i < iterations; i++) {
         const K = BigNumber.from(10 ** (i + 1));
         const big2 = BigNumber.from(2);
-        const trueA = await sigmoid.p_a();
-        const trueB = await sigmoid.p_b();
-        const trueD = await sigmoid.p_d();
+        const trueA = await sigmoid.pConstA();
+        const trueB = await sigmoid.pConstB();
+        const trueD = await sigmoid.pConstD();
         const value1 = trueB.add(K);
         const value2 = trueB.sub(K);
         const trueDiff = big2.mul(K.mul(trueA.add(trueD)));
@@ -467,7 +467,7 @@ describe("Sigmoid unit tests", async () => {
     it("Evaluate P_inv(P(b))", async function () {
       // Confirm
       //      P_inv(P(b)) == b
-      const trueB = await sigmoid.p_b();
+      const trueB = await sigmoid.pConstB();
       const initialValue = trueB;
       const value = await sigmoid.p(initialValue);
       const retValue = await sigmoid.pInverse(value);
@@ -477,7 +477,7 @@ describe("Sigmoid unit tests", async () => {
       // Confirm
       //      P_inv(P(2b)) == 2b
       const big2 = BigNumber.from(2);
-      const trueB = await sigmoid.p_b();
+      const trueB = await sigmoid.pConstB();
       const initialValue = big2.mul(trueB);
       const value = await sigmoid.p(initialValue);
       const retValue = await sigmoid.pInverse(value);
@@ -487,7 +487,7 @@ describe("Sigmoid unit tests", async () => {
       // Confirm
       //      P_inv(P(3b)) == 3b
       const big3 = BigNumber.from(3);
-      const trueB = await sigmoid.p_b();
+      const trueB = await sigmoid.pConstB();
       const initialValue = big3.mul(trueB);
       const value = await sigmoid.p(initialValue);
       const retValue = await sigmoid.pInverse(value);
@@ -497,7 +497,7 @@ describe("Sigmoid unit tests", async () => {
       // Confirm
       //      P_inv(P(4b)) == 4b
       const big4 = BigNumber.from(4);
-      const trueB = await sigmoid.p_b();
+      const trueB = await sigmoid.pConstB();
       const initialValue = big4.mul(trueB);
       const value = await sigmoid.p(initialValue);
       const retValue = await sigmoid.pInverse(value);
