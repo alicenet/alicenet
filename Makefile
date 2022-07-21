@@ -25,6 +25,7 @@ lint:
 format:
 	buf format -w
 	go mod tidy
+	cd bridge && npm run format
 
 .PHONY: generate
 generate: generate-bridge generate-go
@@ -55,4 +56,4 @@ clean:
 setup:
 	go mod download
 	cat tools.go | grep _ | awk -F'"' '{print $$2}' | xargs -tI % go install %
-	cd bridge && npm install
+	cd bridge && npm ci

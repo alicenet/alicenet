@@ -71,13 +71,13 @@ async function writeFactoryState(
   usrPath?: string
 ) {
   if (process.env.silencer === undefined || process.env.silencer === "false") {
-    const path =
+    const filePath =
       usrPath === undefined
         ? FACTORY_STATE_PATH
         : usrPath.replace(/\/+$/, "") + "/factoryState";
     let factoryStateConfig;
-    if (fs.existsSync(path)) {
-      factoryStateConfig = await readFactoryState(path);
+    if (fs.existsSync(filePath)) {
+      factoryStateConfig = await readFactoryState(usrPath);
       factoryStateConfig[network] =
         factoryStateConfig[network] === undefined
           ? {}
@@ -91,7 +91,7 @@ async function writeFactoryState(
       };
     }
     const data = toml.stringify(factoryStateConfig);
-    fs.writeFileSync(path, data);
+    fs.writeFileSync(filePath, data);
   }
 }
 
