@@ -156,14 +156,20 @@ describe("Sigmoid unit tests", async () => {
       expect(retValue).to.be.equal(trueValue);
     });
     it("safeAbsSub Test 5", async function () {
-      const a = BigNumber.from("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
-      const b = BigNumber.from("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
+      const a = BigNumber.from(
+        "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+      );
+      const b = BigNumber.from(
+        "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+      );
       const trueValue = BigNumber.from(0);
       const retValue = await sigmoid.safeAbsSub(a, b);
       expect(retValue).to.be.equal(trueValue);
     });
     it("safeAbsSub Test 6", async function () {
-      const a = BigNumber.from("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
+      const a = BigNumber.from(
+        "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+      );
       const b = BigNumber.from(0);
       const trueValue = a;
       const retValue = await sigmoid.safeAbsSub(a, b);
@@ -171,7 +177,9 @@ describe("Sigmoid unit tests", async () => {
     });
     it("safeAbsSub Test 7", async function () {
       const a = BigNumber.from(0);
-      const b = BigNumber.from("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
+      const b = BigNumber.from(
+        "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+      );
       const trueValue = b;
       const retValue = await sigmoid.safeAbsSub(a, b);
       expect(retValue).to.be.equal(trueValue);
@@ -201,7 +209,9 @@ describe("Sigmoid unit tests", async () => {
       expect(retValue).to.be.equal(trueValue);
     });
     it("max Test 3", async function () {
-      const a = BigNumber.from("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
+      const a = BigNumber.from(
+        "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+      );
       const b = 0;
       const trueValue = a;
       const retValue = await sigmoid.max(a, b);
@@ -209,7 +219,9 @@ describe("Sigmoid unit tests", async () => {
     });
     it("max Test 4", async function () {
       const a = 0;
-      const b = BigNumber.from("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
+      const b = BigNumber.from(
+        "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+      );
       const trueValue = b;
       const retValue = await sigmoid.max(a, b);
       expect(retValue).to.be.equal(trueValue);
@@ -239,7 +251,9 @@ describe("Sigmoid unit tests", async () => {
       expect(retValue).to.be.equal(trueValue);
     });
     it("min Test 3", async function () {
-      const a = BigNumber.from("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
+      const a = BigNumber.from(
+        "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+      );
       const b = 0;
       const trueValue = b;
       const retValue = await sigmoid.min(a, b);
@@ -247,7 +261,9 @@ describe("Sigmoid unit tests", async () => {
     });
     it("min Test 4", async function () {
       const a = 0;
-      const b = BigNumber.from("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
+      const b = BigNumber.from(
+        "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+      );
       const trueValue = a;
       const retValue = await sigmoid.min(a, b);
       expect(retValue).to.be.equal(trueValue);
@@ -403,7 +419,7 @@ describe("Sigmoid unit tests", async () => {
       //      P(b) == a*sqrt(c+b^2) - sqrt(a**2 * c) + (a+d)*b
       const iterations = 10;
       for (let i = 0; i < iterations; i++) {
-        const K = BigNumber.from(10**(i+1));
+        const K = BigNumber.from(10 ** (i + 1));
         const big2 = BigNumber.from(2);
         const trueA = await sigmoid.p_a();
         const trueB = await sigmoid.p_b();
@@ -425,7 +441,9 @@ describe("Sigmoid unit tests", async () => {
     });
     it("Evaluate P; overflow 1", async function () {
       // Confirm overflow: 2**256 - 1
-      const value = BigNumber.from("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")
+      const value = BigNumber.from(
+        "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+      );
       const tx = sigmoid.p(value);
       await expect(tx).to.be.reverted;
     });
@@ -493,7 +511,9 @@ describe("Sigmoid unit tests", async () => {
     });
     it("Evaluate P_inv; overflow 1", async function () {
       // Confirm overflow: 2**256 - 1
-      const value = BigNumber.from("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")
+      const value = BigNumber.from(
+        "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+      );
       const tx = sigmoid.p_inverse(value);
       await expect(tx).to.be.reverted;
     });
