@@ -147,8 +147,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ ubuntu-20.04 ]
-#        test-groups: ${{fromJson(needs.job1.outputs.matrix)}}
-        test-groups: [1]
+        test-groups: ${{fromJson(needs.job1.outputs.matrix)}}
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/alicenet-config
@@ -158,10 +157,6 @@ jobs:
         with:
           name: hardhat-files
           path: bridge/artifacts/
-      - name: check artifacts
-        run: |
-            ls -la bridge
-            ls -la bridge/artifacts
       - name: Run tests ${{ matrix.test-groups }}
         run: |
             go test -race -tags=integration -json -timeout=30m github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestCompletion_AllGood 2>&1 | tee /tmp/gotest.log | gotestfmt
