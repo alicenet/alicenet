@@ -111,9 +111,8 @@ jobs:
         working-directory: layer1/executor/
         run: |
             targets=($(grep -R 'Test' ./ | awk -F 'func' '{ print $2 }' | awk -F '(' '{ print $1 }'))
-            printf -v joined '%s,' "${targets[@]}"
+            printf -v joined '"%s",' "${targets[@]}"
             echo "::set-output name=matrix::[${joined%,}]"
-            echo "[${joined%,}]"
 
   go-dkg-tests:
     needs: job1
@@ -121,11 +120,11 @@ jobs:
     strategy:
         fail-fast: false
         matrix:
-            test-groups: ${{needs.job1.outputs.matrix}}
+            test-groups: ${{fromJson(needs.job1.outputs.matrix)}}
     steps:
       - uses: actions/checkout@v3
       - name: Gab
-        run: echo ${{needs.job1.outputs.matrix}}
+        run: echo ${{ matrix }}
 
 
 #  go-dkg-tests:
