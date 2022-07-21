@@ -29,7 +29,7 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
         _snapshotDesperationFactor = desperationFactor_;
     }
 
-    // todo: dynamically compute the desperation delay based on EMA of the snapshots interval?
+    // todo: compute this value using the dynamic system and the alicenet block times.
     function setSnapshotDesperationDelay(uint32 desperationDelay_) public onlyFactory {
         _snapshotDesperationDelay = desperationDelay_;
     }
