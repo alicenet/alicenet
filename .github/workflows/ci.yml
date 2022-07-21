@@ -147,8 +147,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ ubuntu-20.04 ]
-#        test-groups: ${{fromJson(needs.job1.outputs.matrix)}}
-        test-groups: [1]
+        test-groups: ${{fromJson(needs.job1.outputs.matrix)}}
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/alicenet-config
