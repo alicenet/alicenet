@@ -114,7 +114,9 @@ jobs:
       - name: npm Compile
         working-directory: ./bridge
         shell: bash
-        run: npm run compile
+        run: | 
+          npm ci
+          npm run compile
       - uses: actions/upload-artifact@v3
         with:
           name: hardhat-files
