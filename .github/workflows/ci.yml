@@ -110,7 +110,7 @@ jobs:
       - id: set-matrix
         working-directory: layer1/executor/
         run: |
-            targets=($(ack 'func Test[^(]+' | grep func | awk -F 'func' '{ print $2 }' | awk -F '(' '{ print $1 }'))
+            targets=($(grep -R 'Test' ./ | awk -F 'func' '{ print $2 }' | awk -F '(' '{ print $1 }'))
             echo "::set-output name=matrix::$targets"
 
   go-dkg-tests:
