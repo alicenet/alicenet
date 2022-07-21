@@ -106,10 +106,10 @@ jobs:
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - id: set-matrix
         working-directory: layer1/executor/
-        run: echo "::set-output name=matrix::$(ack 'func Test[^(]+' | grep func | awk -F 'func' '{ print $2 }' | awk -F '(' '{ print $1 }')
+        run: echo "::set-output name=matrix::$(grep -R "Test" ./ | awk -F 'func' '{ print $2 }' | awk -F '(' '{ print $1 }'
 
   go-dkg-tests:
     needs: job1
