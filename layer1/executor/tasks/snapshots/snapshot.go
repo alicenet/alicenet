@@ -125,7 +125,7 @@ func (t *SnapshotTask) Execute(ctx context.Context) (*types.Transaction, *tasks.
 		return nil, tasks.NewTaskErr("error getting eth height for leader election", true)
 	}
 	if !isLeading {
-		return nil, tasks.NewTaskErr("not leading MPK submission yet", true)
+		return nil, tasks.NewTaskErr("not the chosen one for snapshots yet", true)
 	}
 
 	txnOpts, err := client.GetTransactionOpts(ctx, snapshotState.Account)
