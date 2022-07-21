@@ -114,32 +114,32 @@ jobs:
             printf -v joined '"%s",' "${targets[@]}"
             echo "::set-output name=matrix::[${joined%,}]"
 
-  go-dkg-tests:
-    needs: job1
-    runs-on: ubuntu-latest
-    strategy:
-        fail-fast: false
-        matrix:
-            test-groups: ${{fromJson(needs.job1.outputs.matrix)}}
-    steps:
-      - uses: actions/checkout@v3
-      - name: Gab
-        run: echo ${{ matrix }}
-
-
 #  go-dkg-tests:
 #    needs: job1
-#    runs-on: ${{ matrix.os }}
+#    runs-on: ubuntu-latest
 #    strategy:
-#      fail-fast: false
-#      matrix:
-#        os: [ ubuntu-20.04 ]
-#        test-groups: [ "$${{needs.job1.outputs.matrix }}"]
+#        fail-fast: false
+#        matrix:
+#            test-groups: ${{fromJson(needs.job1.outputs.matrix)}}
 #    steps:
 #      - uses: actions/checkout@v3
-#      - uses: ./.github/actions/alicenet-config
-#      - name: Set up gotestfmt
-#        run: go install github.com/haveyoudebuggedit/gotestfmt/v2/cmd/gotestfmt@latest
-#      - name: Run tests ${{ matrix.test-groups }}
-#        run: |
-#            go test -race -tags=integration -json -timeout=30m github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run ${{ matrix.test-groups }} 2>&1 | tee /tmp/gotest.log | gotestfmt
+#      - name: Gab
+#        run: echo ${{ matrix }}
+
+
+  go-dkg-tests:
+    needs: job1
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-20.04 ]
+        test-groups: ${{fromJson(needs.job1.outputs.matrix)}}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/alicenet-config
+      - name: Set up gotestfmt
+        run: go install github.com/haveyoudebuggedit/gotestfmt/v2/cmd/gotestfmt@latest
+      - name: Run tests ${{ matrix.test-groups }}
+        run: |
+            go test -race -tags=integration -json -timeout=30m github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run ${{ matrix.test-groups }} 2>&1 | tee /tmp/gotest.log | gotestfmt
