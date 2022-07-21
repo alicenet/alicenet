@@ -113,6 +113,7 @@ jobs:
             targets=($(grep -R 'Test' ./ | awk -F 'func' '{ print $2 }' | awk -F '(' '{ print $1 }'))
             printf -v joined '%s,' "${targets[@]}"
             echo "::set-output name=matrix::[${joined%,}]"
+            echo "[${joined%,}]"
 
   go-dkg-tests:
     needs: job1
@@ -120,11 +121,11 @@ jobs:
     strategy:
         fail-fast: false
         matrix:
-            test-groups: ${{echo needs.job1.outputs.matrix | tr -d "\'"}}
+            test-groups: ${{echo needs.job1.outputs.matrix}}
     steps:
       - uses: actions/checkout@v3
       - name: Gab
-        run: echo ${{needs.job1.outputs.matrix | tr -d '\''}}
+        run: echo ${{needs.job1.outputs.matrix}}
 
 
 #  go-dkg-tests:
