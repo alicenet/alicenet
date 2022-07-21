@@ -44,13 +44,13 @@ describe("Testing Merkle Proof Library", async () => {
       await expect(
         MerkleProofLibrary.verifyNonInclusion(
           {
-            included: included,
+            included,
             keyHeight: height,
-            key: key,
+            key,
             proofKey: proofKeyZero,
             proofValue: proofValueZero,
             bitmap: bitset,
-            auditPath: auditPath,
+            auditPath,
           },
           root
         )
@@ -71,13 +71,13 @@ describe("Testing Merkle Proof Library", async () => {
       await expect(
         MerkleProofLibrary.verifyNonInclusion(
           {
-            included: included,
+            included,
             keyHeight: height,
-            key: key,
-            proofKey: proofKey,
-            proofValue: proofValue,
+            key,
+            proofKey,
+            proofValue,
             bitmap: bitset,
-            auditPath: auditPath,
+            auditPath,
           },
           root
         )
@@ -97,13 +97,13 @@ describe("Testing Merkle Proof Library", async () => {
       await expect(
         MerkleProofLibrary.verifyNonInclusion(
           {
-            included: included,
+            included,
             keyHeight: height,
-            key: key,
-            proofKey: proofKey,
+            key,
+            proofKey,
             proofValue: proofValueZero,
             bitmap: bitset,
-            auditPath: auditPath,
+            auditPath,
           },
           root
         )
@@ -128,13 +128,13 @@ describe("Testing Merkle Proof Library", async () => {
       await expect(
         MerkleProofLibrary.verifyNonInclusion(
           {
-            included: included,
+            included,
             keyHeight: height,
-            key: key,
-            proofKey: proofKey,
-            proofValue: proofValue,
+            key,
+            proofKey,
+            proofValue,
             bitmap: bitset,
-            auditPath: auditPath,
+            auditPath,
           },
           root
         )
@@ -159,13 +159,13 @@ describe("Testing Merkle Proof Library", async () => {
       await expect(
         MerkleProofLibrary.verifyNonInclusion(
           {
-            included: included,
+            included,
             keyHeight: height,
-            key: key,
-            proofKey: proofKey,
-            proofValue: proofValue,
+            key,
+            proofKey,
+            proofValue,
             bitmap: bitset,
-            auditPath: auditPath,
+            auditPath,
           },
           root
         )
@@ -187,13 +187,13 @@ describe("Testing Merkle Proof Library", async () => {
       await expect(
         MerkleProofLibrary.verifyNonInclusion(
           {
-            included: included,
+            included,
             keyHeight: height,
-            key: key,
+            key,
             proofKey: proofKeyZero,
-            proofValue: proofValue,
+            proofValue,
             bitmap: bitset,
-            auditPath: auditPath,
+            auditPath,
           },
           root
         )
@@ -217,13 +217,13 @@ describe("Testing Merkle Proof Library", async () => {
       await expect(
         MerkleProofLibrary.verifyInclusion(
           {
-            included: included,
+            included,
             keyHeight: height,
-            key: key,
+            key,
             proofKey: proofKeyZero,
-            proofValue: proofValue,
+            proofValue,
             bitmap: bitset,
-            auditPath: auditPath,
+            auditPath,
           },
           root
         )
@@ -244,13 +244,13 @@ describe("Testing Merkle Proof Library", async () => {
       await expect(
         MerkleProofLibrary.verifyInclusion(
           {
-            included: included,
+            included,
             keyHeight: height,
-            key: key,
+            key,
             proofKey: proofKeyZero,
-            proofValue: proofValue,
+            proofValue,
             bitmap: bitset,
-            auditPath: auditPath,
+            auditPath,
           },
           root
         )
@@ -272,13 +272,13 @@ describe("Testing Merkle Proof Library", async () => {
       await expect(
         MerkleProofLibrary.verifyInclusion(
           {
-            included: included,
+            included,
             keyHeight: height,
-            key: key,
+            key,
             proofKey: proofKeyZero,
             proofValue: proofValueZero,
             bitmap: bitset,
-            auditPath: auditPath,
+            auditPath,
           },
           root
         )
