@@ -24,7 +24,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-var _ tasks.TaskResponse = &HandlerResponse{}
+var _ TaskResponse = &HandlerResponse{}
 
 type TaskManager struct {
 	Schedule       map[string]ManagerRequestInfo  `json:"schedule"`
@@ -56,9 +56,11 @@ func newTaskManager(mainCtx context.Context, eth layer1.Client, database *db.Dat
 	taskManager.logger = logger.WithField("Component", "schedule")
 
 	err := taskManager.loadState()
-	taskManager.logger.Warnf("could not find previous State: %v", err)
-	if err != badger.ErrKeyNotFound {
-		return nil, err
+	if err != nil {
+		taskManager.logger.Warnf("could not find previous State: %v", err)
+		if err != badger.ErrKeyNotFound {
+			return nil, err
+		}
 	}
 
 	tasksExecutor, err := newTaskExecutor(txWatcher, database, logger.WithField("Component", "executor"))

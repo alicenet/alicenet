@@ -3,7 +3,6 @@ package tasks
 import (
 	"context"
 	"errors"
-	"github.com/alicenet/alicenet/layer1/executor"
 	"sync"
 
 	"github.com/alicenet/alicenet/consensus/db"
@@ -161,6 +160,6 @@ func (bt *BaseTask) Finish(err error) {
 		bt.logger.Info("task is done")
 	}
 	if bt.taskResponseChan != nil {
-		bt.taskResponseChan.Add(executor.ExecutorResponse{Id: bt.Id, Err: err})
+		bt.taskResponseChan.Add(bt.Id, err)
 	}
 }

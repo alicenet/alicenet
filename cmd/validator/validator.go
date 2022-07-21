@@ -28,7 +28,6 @@ import (
 	"github.com/alicenet/alicenet/layer1"
 	"github.com/alicenet/alicenet/layer1/ethereum"
 	"github.com/alicenet/alicenet/layer1/executor"
-	"github.com/alicenet/alicenet/layer1/executor/tasks"
 	"github.com/alicenet/alicenet/layer1/monitor"
 	"github.com/alicenet/alicenet/layer1/transaction"
 	"github.com/alicenet/alicenet/localrpc"
@@ -280,16 +279,13 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	defer txWatcher.Close()
 
 	// Setup tasks scheduler
-	taskRequestChan := make(chan tasks.TaskRequest, constants.TaskSchedulerBufferSize)
-	defer close(taskRequestChan)
-
-	tasksScheduler, err := executor.NewTaskHandler(monDB, eth, consAdminHandlers, taskRequestChan, txWatcher)
+	tasksHandler, err := executor.NewTaskHandler(monDB, eth, consAdminHandlers, txWatcher)
 	if err != nil {
 		panic(err)
 	}
 
 	monitorInterval := config.Configuration.Monitor.Interval
-	mon, err := monitor.NewMonitor(consDB, monDB, consAdminHandlers, appDepositHandler, eth, ethereum.GetContracts(), monitorInterval, uint64(batchSize), taskRequestChan)
+	mon, err := monitor.NewMonitor(consDB, monDB, consAdminHandlers, appDepositHandler, eth, ethereum.GetContracts(), monitorInterval, uint64(batchSize), tasksHandler)
 	if err != nil {
 		panic(err)
 	}
@@ -316,11 +312,8 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	go statusLogger.Run()
 	defer statusLogger.Close()
 
-	err = tasksScheduler.Start()
-	if err != nil {
-		panic(err)
-	}
-	defer tasksScheduler.Close()
+	tasksHandler.Start()
+	defer tasksHandler.Close()
 
 	err = mon.Start()
 	if err != nil {

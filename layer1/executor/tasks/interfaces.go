@@ -2,8 +2,6 @@ package tasks
 
 import (
 	"context"
-	"github.com/alicenet/alicenet/layer1/executor"
-
 	"github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/layer1"
 	"github.com/alicenet/alicenet/layer1/transaction"
@@ -32,26 +30,13 @@ type Task interface {
 	GetLogger() *logrus.Entry
 }
 
-type TaskHandler interface {
-	ScheduleTask(ctx context.Context, task Task, id string) (*executor.HandlerResponse, error)
-	KillTaskByType(ctx context.Context, task Task) (*executor.HandlerResponse, error)
-	KillTaskById(ctx context.Context, id string) (*executor.HandlerResponse, error)
-	Start()
-	Close()
-}
-
 // TaskState the interface requirements of a task state
 type TaskState interface {
 	PersistState(txn *badger.Txn) error
 	LoadState(txn *badger.Txn) error
 }
 
-// InternalTaskResponseChan the interface requirements of a task response chan
+// InternalTaskResponseChan interface requirements
 type InternalTaskResponseChan interface {
-	Add(executor.ExecutorResponse)
-}
-
-type TaskResponse interface {
-	IsReady() bool
-	GetResponseBlocking(ctx context.Context) error
+	Add(id string, err error)
 }

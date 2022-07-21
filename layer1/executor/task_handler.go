@@ -12,7 +12,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-var _ tasks.TaskHandler = &Handler{}
+var _ TaskHandler = &Handler{}
 
 type Handler struct {
 	manager          *TaskManager
@@ -21,7 +21,7 @@ type Handler struct {
 	requestChannel   chan managerRequest
 }
 
-func NewTaskHandler(database *db.Database, eth layer1.Client, adminHandler monitorInterfaces.AdminHandler, txWatcher *transaction.FrontWatcher) (tasks.TaskHandler, error) {
+func NewTaskHandler(database *db.Database, eth layer1.Client, adminHandler monitorInterfaces.AdminHandler, txWatcher *transaction.FrontWatcher) (TaskHandler, error) {
 	// main context that will cancel all workers and go routines
 	mainCtx, cf := context.WithCancel(context.Background())
 

@@ -200,9 +200,9 @@ func (tr *executorResponseChan) close() {
 }
 
 // Add ExecutorResponse to internal erChan
-func (tr *executorResponseChan) Add(taskResponse ExecutorResponse) {
+func (tr *executorResponseChan) Add(id string, err error) {
 	if !tr.isClosed {
-		tr.erChan <- taskResponse
+		tr.erChan <- ExecutorResponse{Id: id, Err: err}
 	}
 }
 
