@@ -3,15 +3,5 @@ description: 'Configure the environment for alicenet'
 runs:
   using: "composite"
   steps:
-    - uses: ./.github/actions/npm-cache
     - uses: ./.github/actions/geth-eth-cache
     - uses: ./.github/actions/golang-cache
-#    - name: npm Compile
-#      working-directory: ./bridge
-#      shell: bash
-#      run: npm run compile
-#    - name: go build
-#      working-directory: ./bridge
-#      shell: bash
-#      run: go build ./...
-#

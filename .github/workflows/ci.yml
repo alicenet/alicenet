@@ -16,138 +16,124 @@ defaults:
     shell: bash
 
 jobs:
-#  node-unit-tests:
-#    runs-on: ubuntu-20.04
-#    timeout-minutes: 15
-#    strategy:
-#      matrix:
-#        include:
-#          - test-group: "[0-9a-dA-D]"
-#          - test-group: "[eE]"
-#            sub-filter-exclude: "ethdkg/phases"
-#          - test-group: "ethdkg"
-#            sub-filter-include: "phases"
-#            sub-filter-exclude: "accusations"
-#          - test-group: "ethdkg"
-#            sub-filter-include: "phases/accusations"
-#          - test-group: "[f-qF-Q]"
-#          - test-group: "[r-sR-S]"
-#          - test-group: "[t-zT-Z]"
-#    defaults:
-#      run:
-#        working-directory: ./bridge
-#    steps:
-#      - uses: actions/checkout@v3
-#      - uses: actions/setup-node@v3
-#        with:
-#          node-version-file: 'bridge/.nvmrc'
-#          cache: 'npm'
-#          cache-dependency-path: bridge/package-lock.json
-#      - run: npm ci
-#      - run: npm run clean
-#      - run: npm run compile
-#      - uses: ./.github/actions/solidity-tests
-#        with:
-#          test-group: ${{ matrix.test-group }}
-#          sub-filter-include: ${{ matrix.sub-filter-include }}
-#          sub-filter-exclude: ${{ matrix.sub-filter-exclude }}
-#
-#  node-lint:
-#    runs-on: ubuntu-20.04
-#    timeout-minutes: 10
-#    defaults:
-#      run:
-#        working-directory: ./bridge
-#    steps:
-#      - uses: actions/checkout@v3
-#      - uses: actions/setup-node@v3
-#        with:
-#          node-version-file: 'bridge/.nvmrc'
-#          cache: 'npm'
-#          cache-dependency-path: bridge/package-lock.json
-#      - run: npm ci
-#      - run: npm run clean
-#      - run: npm run compile
-#      - run: npm run typechain
-#      - run: npm run lint-solidity
-#      - run: npm run lint
-#
-#  go-lint:
-#    runs-on: ubuntu-20.04
-#    timeout-minutes: 10
-#    continue-on-error: true
-#    steps:
-#      - uses: actions/checkout@v3
-#      - uses: golangci/golangci-lint-action@v3
-#
-#  go-unit-tests:
-#    runs-on: ${{ matrix.os }}
-#    strategy:
-#      matrix:
-#        os: [ ubuntu-20.04 ]
-#    steps:
-#      - uses: actions/checkout@v3
-#      - uses: ./.github/actions/alicenet-config
-#      - name: Set up gotestfmt
-#        run: go install github.com/haveyoudebuggedit/gotestfmt/v2/cmd/gotestfmt@latest
-##      - name: gabtest
-##        run: cd layer1/executor/ & targets=($(ack 'func Test[^(]+' | grep func | awk -F 'func' '{ print $2 }' | awk -F '(' '{ print $1 }')) && echo "${#targets[@]}"
-#      - name: Run unit tests
-#        run: |
-#          set -euo pipefail
-#          go test -race -json -timeout=20m -covermode=atomic -coverprofile=coverage.out ./... 2>&1 | tee /tmp/gotest.log | gotestfmt
-#      - uses: codecov/codecov-action@v3
-#        with:
-#          files: ./coverage.out
-#          verbose: true
+  node-unit-tests:
+    runs-on: ubuntu-20.04
+    timeout-minutes: 15
+    strategy:
+      matrix:
+        include:
+          - test-group: "[0-9a-dA-D]"
+          - test-group: "[eE]"
+            sub-filter-exclude: "ethdkg/phases"
+          - test-group: "ethdkg"
+            sub-filter-include: "phases"
+            sub-filter-exclude: "accusations"
+          - test-group: "ethdkg"
+            sub-filter-include: "phases/accusations"
+          - test-group: "[f-qF-Q]"
+          - test-group: "[r-sR-S]"
+          - test-group: "[t-zT-Z]"
+    defaults:
+      run:
+        working-directory: ./bridge
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version-file: 'bridge/.nvmrc'
+          cache: 'npm'
+          cache-dependency-path: bridge/package-lock.json
+      - run: npm ci
+      - run: npm run clean
+      - run: npm run compile
+      - uses: ./.github/actions/solidity-tests
+        with:
+          test-group: ${{ matrix.test-group }}
+          sub-filter-include: ${{ matrix.sub-filter-include }}
+          sub-filter-exclude: ${{ matrix.sub-filter-exclude }}
 
-  job1:
+  node-lint:
+    runs-on: ubuntu-20.04
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: ./bridge
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version-file: 'bridge/.nvmrc'
+          cache: 'npm'
+          cache-dependency-path: bridge/package-lock.json
+      - run: npm ci
+      - run: npm run clean
+      - run: npm run compile
+      - run: npm run typechain
+      - run: npm run lint-solidity
+      - run: npm run lint
+
+  go-lint:
+    runs-on: ubuntu-20.04
+    timeout-minutes: 10
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v3
+      - uses: golangci/golangci-lint-action@v3
+
+  go-unit-tests:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ ubuntu-20.04 ]
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/alicenet-config
+      - name: Set up gotestfmt
+        run: go install github.com/haveyoudebuggedit/gotestfmt/v2/cmd/gotestfmt@latest
+      - name: Run unit tests
+        run: |
+          set -euo pipefail
+          go test -race -json -timeout=20m -covermode=atomic -coverprofile=coverage.out ./... 2>&1 | tee /tmp/gotest.log | gotestfmt
+      - uses: codecov/codecov-action@v3
+        with:
+          files: ./coverage.out
+          verbose: true
+
+  go-integration-setup:
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
       - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version-file: 'bridge/.nvmrc'
+          cache: 'npm'
+          cache-dependency-path: bridge/package-lock.json
       - uses: ./.github/actions/alicenet-config
       - name: npm Compile
         working-directory: ./bridge
         shell: bash
         run: npm run compile
-      - name: go build
-        working-directory: ./bridge
-        shell: bash
-        run: go build ./...
       - uses: actions/upload-artifact@v3
         with:
           name: hardhat-files
           path: bridge/artifacts/
       - id: set-matrix
-        working-directory: layer1/executor/
+        working-directory: layer1/
         run: |
             targets=($(grep -R 'Test' ./ | awk -F 'func' '{ print $2 }' | awk -F '(' '{ print $1 }'))
             printf -v joined '"%s",' "${targets[@]}"
             echo "::set-output name=matrix::[${joined%,}]"
 
-#  go-dkg-tests:
-#    needs: job1
-#    runs-on: ubuntu-latest
-#    strategy:
-#        fail-fast: false
-#        matrix:
-#            test-groups: ${{fromJson(needs.job1.outputs.matrix)}}
-#    steps:
-#      - uses: actions/checkout@v3
-#      - name: Gab
-#        run: echo ${{ matrix }}
-
-
   go-dkg-tests:
-    needs: job1
+    needs: go-integration-setup
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         os: [ ubuntu-20.04 ]
-        test-groups: ${{fromJson(needs.job1.outputs.matrix)}}
+        test-groups: ${{fromJson(needs.go-integration-setup.outputs.matrix)}}
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/alicenet-config
