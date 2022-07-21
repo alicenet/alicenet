@@ -121,7 +121,7 @@ jobs:
     strategy:
         fail-fast: false
         matrix:
-            test-groups: ${{echo needs.job1.outputs.matrix}}
+            test-groups: ${{needs.job1.outputs.matrix}}
     steps:
       - uses: actions/checkout@v3
       - name: Gab
