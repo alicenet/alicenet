@@ -20,7 +20,11 @@
       "mode": "debug",
       "program": "${workspaceFolder}/cmd",
       "cwd": "${workspaceFolder}",
-      "args": ["--config", "./scripts/generated/config/validator1.toml", "validator"]
+      "args": [
+        "--config",
+        "./scripts/generated/config/validator1.toml",
+        "validator"
+      ]
     },
     {
       "name": "val2",
@@ -29,7 +33,11 @@
       "mode": "debug",
       "program": "${workspaceFolder}/cmd",
       "cwd": "${workspaceFolder}",
-      "args": ["--config", "./scripts/generated/config/validator2.toml", "validator"]
+      "args": [
+        "--config",
+        "./scripts/generated/config/validator2.toml",
+        "validator"
+      ]
     },
     {
       "name": "val3",
@@ -38,7 +46,11 @@
       "mode": "debug",
       "program": "${workspaceFolder}/cmd",
       "cwd": "${workspaceFolder}",
-      "args": ["--config", "./scripts/generated/config/validator3.toml", "validator"]
+      "args": [
+        "--config",
+        "./scripts/generated/config/validator3.toml",
+        "validator"
+      ]
     },
     {
       "name": "val4",
@@ -47,7 +59,11 @@
       "mode": "debug",
       "program": "${workspaceFolder}/cmd",
       "cwd": "${workspaceFolder}",
-      "args": ["--config", "./scripts/generated/config/validator4.toml", "validator"]
-    },
+      "args": [
+        "--config",
+        "./scripts/generated/config/validator4.toml",
+        "validator"
+      ]
+    }
   ]
 }
