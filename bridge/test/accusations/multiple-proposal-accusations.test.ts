@@ -21,7 +21,7 @@ describe("MultipleProposalAccusation: Tests MultipleProposalAccusation methods",
     accusation = fixture.multipleProposalAccusation;
   });
 
-  describe("AccuseMultipleProposal:", async () => {
+  describe("accuseMultipleProposal:", async () => {
     it("returns signer when valid", async function () {
       const { sig: sig0, pClaims: pClaims0 } = generateSigAndPClaims0();
       const { sig: sig1, pClaims: pClaims1 } = generateSigAndPClaims1();
@@ -30,7 +30,7 @@ describe("MultipleProposalAccusation: Tests MultipleProposalAccusation methods",
 
       await addValidators(fixture.validatorPool, [signerAccount0]);
 
-      const signer = await accusation.AccuseMultipleProposal(
+      const signer = await accusation.accuseMultipleProposal(
         sig0,
         pClaims0,
         sig1,
@@ -45,7 +45,7 @@ describe("MultipleProposalAccusation: Tests MultipleProposalAccusation methods",
       const { sig: sig1, pClaims: pClaims1 } = generateSigAndPClaims1();
 
       await expect(
-        accusation.AccuseMultipleProposal(sig0, pClaims0, sig1, pClaims1)
+        accusation.accuseMultipleProposal(sig0, pClaims0, sig1, pClaims1)
       ).to.be.revertedWith(
         "Accusations: the signer of these proposals is not a valid validator!"
       );
@@ -55,7 +55,7 @@ describe("MultipleProposalAccusation: Tests MultipleProposalAccusation methods",
       const { sig: sig0, pClaims: pClaims0 } = generateSigAndPClaims0();
 
       await expect(
-        accusation.AccuseMultipleProposal(sig0, pClaims0, sig0, pClaims0)
+        accusation.accuseMultipleProposal(sig0, pClaims0, sig0, pClaims0)
       ).to.be.revertedWith("Accusations: the PClaims are equal!");
     });
 
@@ -64,7 +64,7 @@ describe("MultipleProposalAccusation: Tests MultipleProposalAccusation methods",
       const { sig: sig1 } = generateSigAndPClaims1();
 
       await expect(
-        accusation.AccuseMultipleProposal(sig0, pClaims0, sig1, pClaims0)
+        accusation.accuseMultipleProposal(sig0, pClaims0, sig1, pClaims0)
       ).to.be.revertedWith(
         "Accusations: the signers of the proposals should be the same"
       );
@@ -76,7 +76,7 @@ describe("MultipleProposalAccusation: Tests MultipleProposalAccusation methods",
         generateSigAndPClaimsDifferentHeight();
 
       await expect(
-        accusation.AccuseMultipleProposal(sig0, pClaims0, sig1, pClaims1)
+        accusation.accuseMultipleProposal(sig0, pClaims0, sig1, pClaims1)
       ).to.be.revertedWith(
         "Accusations: the block heights between the proposals are different!"
       );
@@ -88,7 +88,7 @@ describe("MultipleProposalAccusation: Tests MultipleProposalAccusation methods",
         generateSigAndPClaimsDifferentRound();
 
       await expect(
-        accusation.AccuseMultipleProposal(sig0, pClaims0, sig1, pClaims1)
+        accusation.accuseMultipleProposal(sig0, pClaims0, sig1, pClaims1)
       ).to.be.revertedWith(
         "Accusations: the round between the proposals are different!"
       );
@@ -100,7 +100,7 @@ describe("MultipleProposalAccusation: Tests MultipleProposalAccusation methods",
         generateSigAndPClaimsDifferentChainId();
 
       await expect(
-        accusation.AccuseMultipleProposal(sig0, pClaims0, sig1, pClaims1)
+        accusation.accuseMultipleProposal(sig0, pClaims0, sig1, pClaims1)
       ).to.be.revertedWith(
         "Accusations: the chainId between the proposals are different!"
       );
