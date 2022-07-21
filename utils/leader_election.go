@@ -17,22 +17,24 @@ func AmILeading(client layer1.Client, ctx context.Context, logger *logrus.Entry,
 	}
 
 	blocksSinceDesperation := int(currentHeight) - start - desperationDelay
-	amILeading := LeaderElection(numOfValidators, validatorIndex, blocksSinceDesperation, desperationFactor, randHash)
+	amILeading := LeaderElection(numOfValidators, validatorIndex, blocksSinceDesperation, desperationFactor, randHash, logger)
 
 	logger.WithFields(logrus.Fields{
 		"currentHeight":          currentHeight,
 		"startBlock":             start,
 		"desperationDelay":       desperationDelay,
+		"desperationFactor":      desperationFactor,
 		"blocksSinceDesperation": blocksSinceDesperation,
+		"myIndex":                validatorIndex,
 		"amILeading":             amILeading,
 		"randomHash":             fmt.Sprintf("0x%x", randHash),
-	}).Info("Checking if I'm leading this action")
+	}).Debug("Checking if I'm leading this action")
 
 	return amILeading, nil
 }
 
 // LeaderElection runs the leader election algorithm to check if an index is a leader or not.
-func LeaderElection(numValidators int, myIdx int, blocksSinceDesperation int, desperationFactor int, seedHash []byte) bool {
+func LeaderElection(numValidators int, myIdx int, blocksSinceDesperation int, desperationFactor int, seedHash []byte, logger *logrus.Entry) bool {
 	var numValidatorsAllowed int = 1
 	for i := int(blocksSinceDesperation); i > 0; {
 		i -= desperationFactor / numValidatorsAllowed
@@ -48,6 +50,13 @@ func LeaderElection(numValidators int, myIdx int, blocksSinceDesperation int, de
 	rand := (&big.Int{}).SetBytes(seedHash)
 	start := int((&big.Int{}).Mod(rand, big.NewInt(int64(numValidators))).Int64())
 	end := (start + numValidatorsAllowed) % numValidators
+
+	logger.WithFields(logrus.Fields{
+		"randInt":              rand.String(),
+		"indexStart":           start,
+		"indexEnd":             end,
+		"numValidatorsAllowed": numValidatorsAllowed,
+	}).Trace("results leader election")
 
 	if end > start {
 		return myIdx >= start && myIdx < end
