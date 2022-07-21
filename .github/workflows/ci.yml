@@ -90,8 +90,9 @@ jobs:
       - uses: ./.github/actions/alicenet-config
       - name: Set up gotestfmt
         run: go install github.com/haveyoudebuggedit/gotestfmt/v2/cmd/gotestfmt@latest
+      - name: gabtest
+        run: targets=($(ack 'func Test[^(]+' | grep func | awk -F 'func' '{ print $2 }' | awk -F '(' '{ print $1 }')) && echo "${#targets[@]}"
       - name: Run unit tests
-        timeout-minutes: 20
         run: |
           set -euo pipefail
           go test -race -json -timeout=20m -covermode=atomic -coverprofile=coverage.out ./... 2>&1 | tee /tmp/gotest.log | gotestfmt
@@ -102,14 +103,18 @@ jobs:
 
   go-dkg-tests:
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
         os: [ ubuntu-20.04 ]
         test-groups: [
-            TestShareDistribution,
-            TestRegisterTask,
+            TestShareDistribution_Group1,
+            TestShareDistribution_Group2,
+            TestShareDistribution_Group3,
+            TestShareDistribution_Group4,
+            TestRegisterTask_Group1,
+            TestRegisterTask_Group2,
+            TestRegisterTask_Group3,
             TestMPKSubmission,
             TestKeyShareSubmission,
             TestGPKjSubmission,
@@ -118,7 +123,9 @@ jobs:
             TestDisputeMissingRegistrationTask,
             TestDisputeMissingKeySharesTask,
             TestDisputeMissingGPKjTask,
-            TestGPKjDispute,
+            TestGPKjDispute_Group1,
+            TestGPKjDispute_Group2,
+            TestGPKjDispute_Group3,
             TestCompletion,
           ]
     steps:
@@ -127,6 +134,5 @@ jobs:
       - name: Set up gotestfmt
         run: go install github.com/haveyoudebuggedit/gotestfmt/v2/cmd/gotestfmt@latest
       - name: Run tests ${{ matrix.test-groups }}
-        timeout-minutes: 30
         run: |
             go test -race -tags=integration -json -timeout=30m github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run ${{ matrix.test-groups }} 2>&1 | tee /tmp/gotest.log | gotestfmt

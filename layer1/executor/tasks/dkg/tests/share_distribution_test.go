@@ -16,7 +16,7 @@ import (
 )
 
 //Here we test the happy path.
-func TestShareDistribution_Good(t *testing.T) {
+func TestShareDistribution_Group1_Good(t *testing.T) {
 	n := 5
 	fixture := setupEthereum(t, n)
 	suite := StartFromRegistrationOpenPhase(t, fixture, 0, 100)
@@ -41,7 +41,7 @@ func TestShareDistribution_Good(t *testing.T) {
 // Here we test for invalid share distribution.
 // One validator attempts to submit invalid commitments (invalid elliptic curve point).
 // This should result in a failed submission.
-func TestShareDistribution_Bad1(t *testing.T) {
+func TestShareDistribution_Group2_Bad1(t *testing.T) {
 	n := 5
 	fixture := setupEthereum(t, n)
 	suite := StartFromRegistrationOpenPhase(t, fixture, 0, 100)
@@ -96,7 +96,7 @@ func TestShareDistribution_Bad1(t *testing.T) {
 // Here we test for invalid share distribution.
 // One validator attempts to submit invalid commitments (identity element).
 // This should result in a failed submission.
-func TestShareDistribution_Bad2(t *testing.T) {
+func TestShareDistribution_Group3_Bad2(t *testing.T) {
 	n := 4
 	fixture := setupEthereum(t, n)
 	suite := StartFromRegistrationOpenPhase(t, fixture, 0, 100)
@@ -153,7 +153,7 @@ func TestShareDistribution_Bad2(t *testing.T) {
 // Here we test for invalid share distribution.
 // One validator attempts to submit invalid commitments (incorrect commitment length)
 // This should result in a failed submission.
-func TestShareDistribution_Bad4(t *testing.T) {
+func TestShareDistribution_Group4_Bad4(t *testing.T) {
 	n := 5
 	fixture := setupEthereum(t, n)
 	suite := StartFromRegistrationOpenPhase(t, fixture, 0, 100)
@@ -211,7 +211,7 @@ func TestShareDistribution_Bad4(t *testing.T) {
 // Here we test for invalid share distribution.
 // One validator attempts to submit invalid commitments (incorrect encrypted shares length)
 // This should result in a failed submission.
-func TestShareDistribution_Bad5(t *testing.T) {
+func TestShareDistribution_Group1_Bad5(t *testing.T) {
 	n := 6
 	fixture := setupEthereum(t, n)
 	suite := StartFromRegistrationOpenPhase(t, fixture, 0, 100)
@@ -250,7 +250,7 @@ func TestShareDistribution_Bad5(t *testing.T) {
 
 // We begin by submitting invalid information;
 // we submit nil state information
-func TestShareDistribution_Bad6(t *testing.T) {
+func TestShareDistribution_Group1_Bad6(t *testing.T) {
 	n := 5
 	fixture := setupEthereum(t, n)
 	eth := fixture.Client
@@ -271,7 +271,7 @@ func TestShareDistribution_Bad6(t *testing.T) {
 	assert.NotNil(t, err)
 }
 
-func TestShareDistribution_ShouldRetryTrue(t *testing.T) {
+func TestShareDistribution_Group1_ShouldRetryTrue(t *testing.T) {
 	n := 5
 	fixture := setupEthereum(t, n)
 	suite := StartFromRegistrationOpenPhase(t, fixture, 0, 100)
@@ -291,7 +291,7 @@ func TestShareDistribution_ShouldRetryTrue(t *testing.T) {
 	}
 }
 
-func TestShareDistribution_ShouldRetryFalse(t *testing.T) {
+func TestShareDistribution_Group1_ShouldRetryFalse(t *testing.T) {
 	n := 5
 	fixture := setupEthereum(t, n)
 	suite := StartFromRegistrationOpenPhase(t, fixture, 0, 100)

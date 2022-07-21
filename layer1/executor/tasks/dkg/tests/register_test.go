@@ -19,7 +19,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestRegisterTask_Task(t *testing.T) {
+func TestRegisterTask_Group1_Task(t *testing.T) {
 	n := 5
 	fixture := setupEthereum(t, n)
 	eth := fixture.Client
@@ -98,7 +98,7 @@ func TestRegisterTask_Task(t *testing.T) {
 
 // We attempt valid registration. Everything should succeed.
 // This test calls Initialize and Execute.
-func TestRegisterTask_Good2(t *testing.T) {
+func TestRegisterTask_Group1_Good2(t *testing.T) {
 	n := 6
 	fixture := setupEthereum(t, n)
 	eth := fixture.Client
@@ -186,7 +186,7 @@ func TestRegisterTask_Good2(t *testing.T) {
 
 // We attempt to submit an invalid transport public key (a point not on the curve).
 // This should raise an error and not allow that participant to proceed.
-func TestRegisterTask_Bad1(t *testing.T) {
+func TestRegisterTask_Group2_Bad1(t *testing.T) {
 	n := 5
 	fixture := setupEthereum(t, n)
 	eth := fixture.Client
@@ -246,7 +246,7 @@ func TestRegisterTask_Bad1(t *testing.T) {
 
 // We attempt to submit an invalid transport public key (submit identity element).
 // This should raise an error and not allow that participant to proceed.
-func TestRegisterTask_Bad2(t *testing.T) {
+func TestRegisterTask_Group2_Bad2(t *testing.T) {
 	n := 7
 	fixture := setupEthereum(t, n)
 	eth := fixture.Client
@@ -305,7 +305,7 @@ func TestRegisterTask_Bad2(t *testing.T) {
 }
 
 // The initialization should fail because we dont allow less than 4 validators
-func TestRegisterTask_Bad4(t *testing.T) {
+func TestRegisterTask_Group2_Bad4(t *testing.T) {
 	n := 3
 	fixture := setupEthereum(t, n)
 	eth := fixture.Client
@@ -329,7 +329,7 @@ func TestRegisterTask_Bad4(t *testing.T) {
 // We attempt invalid registration.
 // Here, we try to register after registration has closed.
 // This should raise an error.
-func TestRegisterTask_Bad5(t *testing.T) {
+func TestRegisterTask_Group3_Bad5(t *testing.T) {
 	n := 5
 	fixture := setupEthereum(t, n)
 	eth := fixture.Client
@@ -388,7 +388,7 @@ func TestRegisterTask_Bad5(t *testing.T) {
 }
 
 // ShouldExecute() return false because the registration was successful
-func TestRegisterTask_ShouldRetryFalse(t *testing.T) {
+func TestRegisterTask_Group3_ShouldRetryFalse(t *testing.T) {
 	n := 5
 	fixture := setupEthereum(t, n)
 	eth := fixture.Client
@@ -470,7 +470,7 @@ func TestRegisterTask_ShouldRetryFalse(t *testing.T) {
 }
 
 // ShouldExecute() return true because we din't wait for receipt or the registration failed
-func TestRegisterTask_ShouldRetryTrue(t *testing.T) {
+func TestRegisterTask_Group3_ShouldRetryTrue(t *testing.T) {
 	n := 5
 	fixture := setupEthereum(t, n)
 	eth := fixture.Client
