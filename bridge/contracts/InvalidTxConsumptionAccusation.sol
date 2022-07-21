@@ -30,29 +30,6 @@ contract InvalidTxConsumptionAccusation is
         ImmutableValidatorPool()
     {}
 
-    /// @notice This function verifies the signature group of a BClaims.
-    /// @param _bClaims the BClaims of the accusation
-    /// @param _bClaimsSigGroup the signature group of Pclaims
-    function _verifySignatureGroup(bytes memory _bClaims, bytes memory _bClaimsSigGroup)
-        internal
-        view
-    {
-        uint256[4] memory publicKey;
-        uint256[2] memory signature;
-        (publicKey, signature) = RCertParserLibrary.extractSigGroup(_bClaimsSigGroup, 0);
-
-        // todo: check if the signature is equals to any of the previous master public key?
-
-        require(
-            CryptoLibrary.verifySignatureASM(
-                abi.encodePacked(keccak256(_bClaims)),
-                signature,
-                publicKey
-            ),
-            "Accusations: Signature verification failed"
-        );
-    }
-
     /// @notice This function validates an accusation of non-existent utxo consumption, as well as invalid deposit consumption.
     /// @param _pClaims the PClaims of the accusation
     /// @param _pClaimsSig the signature of PClaims
@@ -64,7 +41,7 @@ contract InvalidTxConsumptionAccusation is
     /// proof of inclusion in TXRoot: Proof of inclusion of the transaction that included the invalid input in the txRoot trie.
     /// proof of inclusion in TXHash: Proof of inclusion of the invalid input (txIn) in the txHash trie (transaction tested against the TxRoot).
     /// @return the address of the signer
-    function AccuseInvalidTransactionConsumption(
+    function accuseInvalidTransactionConsumption(
         bytes memory _pClaims,
         bytes memory _pClaimsSig,
         bytes memory _bClaims,
@@ -146,5 +123,28 @@ contract InvalidTxConsumptionAccusation is
 
         //todo burn the validator's tokens
         return signerAccount;
+    }
+
+    /// @notice This function verifies the signature group of a BClaims.
+    /// @param _bClaims the BClaims of the accusation
+    /// @param _bClaimsSigGroup the signature group of Pclaims
+    function _verifySignatureGroup(bytes memory _bClaims, bytes memory _bClaimsSigGroup)
+        internal
+        view
+    {
+        uint256[4] memory publicKey;
+        uint256[2] memory signature;
+        (publicKey, signature) = RCertParserLibrary.extractSigGroup(_bClaimsSigGroup, 0);
+
+        // todo: check if the signature is equals to any of the previous master public key?
+
+        require(
+            CryptoLibrary.verifySignatureASM(
+                abi.encodePacked(keccak256(_bClaims)),
+                signature,
+                publicKey
+            ),
+            "Accusations: Signature verification failed"
+        );
     }
 }
