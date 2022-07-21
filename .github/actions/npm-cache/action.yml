@@ -1,0 +1,10 @@
+name: "Setup golang and its cache"
+description: "Setup golang and its cache"
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/setup-node@v3
+      with:
+        node-version-file: "bridge/.nvmrc"
+        cache: "npm"
+        cache-dependency-path: bridge/package-lock.json

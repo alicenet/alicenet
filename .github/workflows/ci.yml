@@ -38,11 +38,7 @@ jobs:
         working-directory: ./bridge
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
-        with:
-          node-version-file: "bridge/.nvmrc"
-          cache: "npm"
-          cache-dependency-path: bridge/package-lock.json
+      - uses: ./.github/actions/npm-cache
       - run: npm ci
       - run: npm run clean
       - run: npm run compile
@@ -60,11 +56,7 @@ jobs:
         working-directory: ./bridge
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
-        with:
-          node-version-file: "bridge/.nvmrc"
-          cache: "npm"
-          cache-dependency-path: bridge/package-lock.json
+      - uses: ./.github/actions/npm-cache
       - run: npm ci
       - run: npm run clean
       - run: npm run compile
@@ -105,11 +97,7 @@ jobs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
-        with:
-          node-version-file: 'bridge/.nvmrc'
-          cache: 'npm'
-          cache-dependency-path: bridge/package-lock.json
+      - uses: ./.github/actions/npm-cache
       - uses: ./.github/actions/alicenet-config
       - name: npm Compile
         working-directory: ./bridge
