@@ -1,5 +1,5 @@
-name: 'Setup golang and its cache'
-description: 'Setup golang and its cache'
+name: "Setup golang and its cache"
+description: "Setup golang and its cache"
 runs:
   using: "composite"
   steps:

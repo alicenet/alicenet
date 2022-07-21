@@ -1,5 +1,5 @@
-name: 'Configure the environment for alicenet'
-description: 'Configure the environment for alicenet'
+name: "Configure the environment for alicenet"
+description: "Configure the environment for alicenet"
 runs:
   using: "composite"
   steps:
