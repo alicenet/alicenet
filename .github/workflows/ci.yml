@@ -112,8 +112,7 @@ jobs:
         run: |
             targets=($(grep -R 'Test' ./ | awk -F 'func' '{ print $2 }' | awk -F '(' '{ print $1 }'))
             printf -v joined '%s,' "${targets[@]}"
-            tests=$(echo "${joined%,}")
-            echo "::set-output name=matrix::[$tests]"
+            echo "::set-output name=matrix::[${joined%,}]"
 
   go-dkg-tests:
     needs: job1
