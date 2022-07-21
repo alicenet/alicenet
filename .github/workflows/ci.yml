@@ -91,7 +91,7 @@ jobs:
       - name: Set up gotestfmt
         run: go install github.com/haveyoudebuggedit/gotestfmt/v2/cmd/gotestfmt@latest
       - name: gabtest
-        run: apt-get install -y ack-grep && targets=($(ack 'func Test[^(]+' | grep func | awk -F 'func' '{ print $2 }' | awk -F '(' '{ print $1 }')) && echo "${#targets[@]}"
+        run: sudo apt-get install -y ack-grep && cd layer1/executor/ & targets=($(ack 'func Test[^(]+' | grep func | awk -F 'func' '{ print $2 }' | awk -F '(' '{ print $1 }')) && echo "${#targets[@]}"
       - name: Run unit tests
         run: |
           set -euo pipefail
