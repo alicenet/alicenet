@@ -117,14 +117,14 @@ jobs:
   go-dkg-tests:
     needs: job1
     runs-on: ubuntu-latest
-    strategy:
-        fail-fast: false
-        matrix:
-            test-groups: ${{needs.job1.outputs.matrix }}
+#    strategy:
+#        fail-fast: false
+#        matrix:
+#            test-groups: ${{needs.job1.outputs.matrix.value }}
     steps:
       - uses: actions/checkout@v3
       - name: Gab
-        run: echo ${{ matrix.test-groups }}
+        run: echo ${{needs.job1.outputs.matrix.value }}
 
 
 #  go-dkg-tests:
