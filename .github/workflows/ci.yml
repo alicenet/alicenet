@@ -119,7 +119,9 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Gab
-        run: echo ${{needs.job1.outputs.matrix}}
+        run: |
+            printf -v joined '%s,' "${{needs.job1.outputs.matrix[@]}}"
+            echo "${joined%,}"
 
 #
 #  go-dkg-tests:
