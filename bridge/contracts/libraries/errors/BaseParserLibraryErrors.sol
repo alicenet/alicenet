@@ -2,7 +2,6 @@
 pragma solidity ^0.8.11;
 
 library BaseParserLibraryErrors {
-    // BaseParserLibrary errors
     error OffsetParameterOverflow(uint256 offset);
     error OffsetOutOfBounds(uint256 offset, uint256 srcLength);
     error LEUint16OffsetParameterOverflow(uint256 offset);

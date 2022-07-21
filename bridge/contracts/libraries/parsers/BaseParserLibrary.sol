@@ -322,7 +322,7 @@ library BaseParserLibrary {
     /// @return out the bytes32 state extracted from `src`
     /// @dev ~439 gas
     function extractBytes32(bytes memory src, uint256 offset) internal pure returns (bytes32 out) {
-        if (offset + 32 < offset) {
+        if (offset + 32 <= offset) {
             revert BaseParserLibraryErrors.Bytes32OffsetParameterOverflow(offset);
         }
 
