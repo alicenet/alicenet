@@ -107,6 +107,17 @@ jobs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
       - uses: actions/checkout@v3
+      - name: npm Compile
+        working-directory: ./bridge
+        shell: bash
+        run: npm run compile
+      - name: go build
+        working-directory: ./bridge
+        shell: bash
+        run: go build ./...
+      - uses: actions/upload-artifact@v3
+        with:
+            path: bridge/bindings
       - id: set-matrix
         working-directory: layer1/executor/
         run: |
@@ -140,6 +151,9 @@ jobs:
       - uses: ./.github/actions/alicenet-config
       - name: Set up gotestfmt
         run: go install github.com/haveyoudebuggedit/gotestfmt/v2/cmd/gotestfmt@latest
+      - uses: actions/download-artifact@v3
+        with:
+          path: bridge/bindings
       - name: Run tests ${{ matrix.test-groups }}
         run: |
             go test -race -tags=integration -json -timeout=30m github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run ${{ matrix.test-groups }} 2>&1 | tee /tmp/gotest.log | gotestfmt
