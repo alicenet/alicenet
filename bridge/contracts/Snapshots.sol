@@ -70,30 +70,6 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
         uint32 epoch = _epoch + 1;
 
         {
-            // Check if sender is the elected validator allowed to make the snapshot
-            (bool success, uint256 validatorIndex) = IETHDKG(_ethdkgAddress())
-                .tryGetParticipantIndex(msg.sender);
-            require(success, "Snapshots: Caller didn't participate in the last ethdkg round!");
-
-            uint256 ethBlocksSinceLastSnapshot = block.number - _snapshots[epoch - 1].committedAt;
-
-            uint256 blocksSinceDesperation = ethBlocksSinceLastSnapshot >= _snapshotDesperationDelay
-                ? ethBlocksSinceLastSnapshot - _snapshotDesperationDelay
-                : 0;
-
-            require(
-                _mayValidatorSnapshot(
-                    IValidatorPool(_validatorPoolAddress()).getValidatorsCount(),
-                    validatorIndex - 1,
-                    blocksSinceDesperation,
-                    keccak256(groupSignature_),
-                    uint256(_snapshotDesperationFactor)
-                ),
-                "Snapshots: Validator not elected to do snapshot!"
-            );
-        }
-
-        {
             (uint256[4] memory masterPublicKey, uint256[2] memory signature) = RCertParserLibrary
                 .extractSigGroup(groupSignature_, 0);
 
@@ -126,6 +102,30 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
             blockClaims.chainId == _chainId,
             string(abi.encodePacked(SnapshotsErrorCodes.SNAPSHOT_INCORRECT_CHAIN_ID))
         );
+
+        {
+            // Check if sender is the elected validator allowed to make the snapshot
+            (bool success, uint256 validatorIndex) = IETHDKG(_ethdkgAddress())
+                .tryGetParticipantIndex(msg.sender);
+            require(success, "Snapshots: Caller didn't participate in the last ethdkg round!");
+
+            uint256 ethBlocksSinceLastSnapshot = block.number - _snapshots[epoch - 1].committedAt;
+
+            uint256 blocksSinceDesperation = ethBlocksSinceLastSnapshot >= _snapshotDesperationDelay
+                ? ethBlocksSinceLastSnapshot - _snapshotDesperationDelay
+                : 0;
+
+            require(
+                _mayValidatorSnapshot(
+                    IValidatorPool(_validatorPoolAddress()).getValidatorsCount(),
+                    validatorIndex - 1,
+                    blocksSinceDesperation,
+                    keccak256(groupSignature_),
+                    uint256(_snapshotDesperationFactor)
+                ),
+                "Snapshots: Validator not elected to do snapshot!"
+            );
+        }
 
         bool isSafeToProceedConsensus = true;
         if (IValidatorPool(_validatorPoolAddress()).isMaintenanceScheduled()) {
@@ -300,7 +300,7 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
         uint256 numValidatorsAllowed = 1;
 
         uint256 desperation = 0;
-        while (desperation < blocksSinceDesperation && numValidatorsAllowed <= numValidators) {
+        while (desperation < blocksSinceDesperation && numValidatorsAllowed < numValidators) {
             desperation += desperationFactor / numValidatorsAllowed;
             numValidatorsAllowed++;
         }
