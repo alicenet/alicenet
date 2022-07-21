@@ -86,6 +86,62 @@ contract MockStakingNFT is StakingNFT {
         StakingNFT.depositToken(magic, amount);
     }
 
+    function tripCBMock() public {
+        StakingNFT.tripCB();
+    }
+
+    function tripCBLowMock() public {
+        StakingNFT._tripCB();
+    }
+
+    function resetCBLowMock() public {
+        StakingNFT._resetCB();
+    }
+
+    function skimExcessEthMock(address to_) public returns (uint256) {
+        return StakingNFT.skimExcessEth(to_);
+    }
+
+    function skimExcessTokenMock(address to_) public returns (uint256) {
+        return StakingNFT.skimExcessToken(to_);
+    }
+
+    function incrementMock() public returns (uint256) {
+        return StakingNFT._increment();
+    }
+
+    function collectMock(
+        uint256 shares_,
+        Accumulator memory state_,
+        Position memory p_,
+        uint256 positionAccumulatorValue_
+    )
+        public
+        returns (
+            Accumulator memory,
+            Position memory,
+            uint256,
+            uint256
+        )
+    {
+        return StakingNFT._collect(shares_, state_, p_, positionAccumulatorValue_);
+    }
+
+    function depositMock(uint256 delta_, Accumulator memory state_)
+        public
+        returns (Accumulator memory)
+    {
+        return StakingNFT._deposit(delta_, state_);
+    }
+
+    function slushSkimMock(
+        uint256 shares_,
+        uint256 accumulator_,
+        uint256 slush_
+    ) public returns (uint256, uint256) {
+        return StakingNFT._slushSkim(shares_, accumulator_, slush_);
+    }
+
     function getTotalSharesMock() public view returns (uint256) {
         return StakingNFT.getTotalShares();
     }
@@ -136,24 +192,8 @@ contract MockStakingNFT is StakingNFT {
         return StakingNFT.circuitBreakerState();
     }
 
-    function tripCBMock() public {
-        StakingNFT.tripCB();
-    }
-
-    function tripCBLowMock() public {
-        StakingNFT._tripCB();
-    }
-
-    function resetCBLowMock() public {
-        StakingNFT._resetCB();
-    }
-
-    function skimExcessEthMock(address to_) public returns (uint256) {
-        return StakingNFT.skimExcessEth(to_);
-    }
-
-    function skimExcessTokenMock(address to_) public returns (uint256) {
-        return StakingNFT.skimExcessToken(to_);
+    function getCountMock() public view returns (uint256) {
+        return StakingNFT._getCount();
     }
 
     function getAccumulatorScaleFactorMock() public pure returns (uint256) {
@@ -162,31 +202,6 @@ contract MockStakingNFT is StakingNFT {
 
     function getMaxMintLockMock() public pure returns (uint256) {
         return StakingNFT.getMaxMintLock();
-    }
-
-    function getCountMock() public view returns (uint256) {
-        return StakingNFT._getCount();
-    }
-
-    function incrementMock() public returns (uint256) {
-        return StakingNFT._increment();
-    }
-
-    function collectMock(
-        uint256 shares_,
-        Accumulator memory state_,
-        Position memory p_,
-        uint256 positionAccumulatorValue_
-    )
-        public
-        returns (
-            Accumulator memory,
-            Position memory,
-            uint256,
-            uint256
-        )
-    {
-        return StakingNFT._collect(shares_, state_, p_, positionAccumulatorValue_);
     }
 
     function collectPure(
@@ -207,27 +222,12 @@ contract MockStakingNFT is StakingNFT {
         return StakingNFT._collect(shares_, state_, p_, positionAccumulatorValue_);
     }
 
-    function depositMock(uint256 delta_, Accumulator memory state_)
-        public
-        returns (Accumulator memory)
-    {
-        return StakingNFT._deposit(delta_, state_);
-    }
-
     function depositPure(uint256 delta_, Accumulator memory state_)
         public
         pure
         returns (Accumulator memory)
     {
         return StakingNFT._deposit(delta_, state_);
-    }
-
-    function slushSkimMock(
-        uint256 shares_,
-        uint256 accumulator_,
-        uint256 slush_
-    ) public returns (uint256, uint256) {
-        return StakingNFT._slushSkim(shares_, accumulator_, slush_);
     }
 
     function slushSkimPure(
