@@ -312,7 +312,7 @@ describe("Sigmoid unit tests", async () => {
   });
 
   describe("P Function Tests", async () => {
-    it("P Test Eval P(0)", async function () {
+    it("Evaluate P(0)", async function () {
       // Confirm
       //      P(0) == 0
       const value = BigNumber.from(0);
@@ -320,7 +320,7 @@ describe("Sigmoid unit tests", async () => {
       const retValue = await sigmoid.p(value);
       expect(retValue).to.be.equal(trueValue);
     });
-    it("P Test Eval P(b)", async function () {
+    it("Evaluate P(b)", async function () {
       // Confirm
       //      P(b) == a*sqrt(c+b^2) - sqrt(a**2 * c) + (a+d)*b
       const trueA = await sigmoid.p_a();
@@ -337,7 +337,7 @@ describe("Sigmoid unit tests", async () => {
       const retValue = await sigmoid.p(value);
       expect(retValue).to.be.equal(trueValue);
     });
-    it("P Test Eval P(2b)", async function () {
+    it("Evaluate P(2b)", async function () {
       // Confirm
       //      P(2b) == 2b*(a+d)
       const big2 = BigNumber.from(2);
@@ -348,6 +348,75 @@ describe("Sigmoid unit tests", async () => {
       const trueValue = big2.mul(trueB.mul(trueA.add(trueD)));
       const retValue = await sigmoid.p(value);
       expect(retValue).to.be.equal(trueValue);
+    });
+    it("Evaluate P(b+k) - P(b-k); ", async function () {
+      // Confirm
+      //      P(b) == a*sqrt(c+b^2) - sqrt(a**2 * c) + (a+d)*b
+      const iterations = 10;
+      for (let i = 0; i < iterations; i++) {
+        const K = BigNumber.from(10**(i+1));
+        const big2 = BigNumber.from(2);
+        const trueA = await sigmoid.p_a();
+        const trueB = await sigmoid.p_b();
+        const trueD = await sigmoid.p_d();
+        const value1 = trueB.add(K);
+        const value2 = trueB.sub(K);
+        const trueDiff = big2.mul(K.mul(trueA.add(trueD)));
+        const retValue1 = await sigmoid.p(value1);
+        const retValue2 = await sigmoid.p(value2);
+        const compDiff = retValue1.sub(retValue2);
+        expect(compDiff).to.be.equal(trueDiff);
+      }
+    });
+  });
+
+  describe("P Inverse Function Tests", async () => {
+    it("Evaluate P_inv(0)", async function () {
+      // Confirm
+      //      P_inv(0) == 0
+      const value = BigNumber.from(0);
+      const trueValue = BigNumber.from(0);
+      const retValue = await sigmoid.p_inverse(value);
+      expect(retValue).to.be.equal(trueValue);
+    });
+    it("Evaluate P_inv(P(b))", async function () {
+      // Confirm
+      //      P_inv(P(b)) == b
+      const trueB = await sigmoid.p_b();
+      const initialValue = trueB;
+      const value = await sigmoid.p(initialValue);
+      const retValue = await sigmoid.p_inverse(value);
+      expect(retValue).to.be.equal(initialValue);
+    });
+    it("Evaluate P_inv(P(2b))", async function () {
+      // Confirm
+      //      P_inv(P(2b)) == 2b
+      const big2 = BigNumber.from(2);
+      const trueB = await sigmoid.p_b();
+      const initialValue = big2.mul(trueB);
+      const value = await sigmoid.p(initialValue);
+      const retValue = await sigmoid.p_inverse(value);
+      expect(retValue).to.be.equal(initialValue);
+    });
+    it("Evaluate P_inv(P(3b))", async function () {
+      // Confirm
+      //      P_inv(P(3b)) == 3b
+      const big3 = BigNumber.from(3);
+      const trueB = await sigmoid.p_b();
+      const initialValue = big3.mul(trueB);
+      const value = await sigmoid.p(initialValue);
+      const retValue = await sigmoid.p_inverse(value);
+      expect(retValue).to.be.equal(initialValue);
+    });
+    it("Evaluate P_inv(P(4b))", async function () {
+      // Confirm
+      //      P_inv(P(4b)) == 4b
+      const big4 = BigNumber.from(4);
+      const trueB = await sigmoid.p_b();
+      const initialValue = big4.mul(trueB);
+      const value = await sigmoid.p(initialValue);
+      const retValue = await sigmoid.p_inverse(value);
+      expect(retValue).to.be.equal(initialValue);
     });
   });
 });
