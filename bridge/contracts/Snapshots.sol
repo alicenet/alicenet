@@ -29,7 +29,7 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
         _snapshotDesperationFactor = desperationFactor_;
     }
 
-    // todo: ask Hunter dynamic Desperation delay?
+    // todo: dynamically compute the desperation delay based on EMA of the snapshots interval?
     function setSnapshotDesperationDelay(uint32 desperationDelay_) public onlyFactory {
         _snapshotDesperationDelay = desperationDelay_;
     }
