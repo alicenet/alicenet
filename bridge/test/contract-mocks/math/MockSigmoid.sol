@@ -7,8 +7,8 @@ contract MockSigmoid is Sigmoid {
         return Sigmoid._p(x);
     }
 
-    function p_inverse(uint256 x) public pure returns (uint256) {
-        return Sigmoid._p_inverse(x);
+    function pInverse(uint256 x) public pure returns (uint256) {
+        return Sigmoid._pInverse(x);
     }
 
     function safeAbsSub(uint256 a, uint256 b) public pure returns (uint256) {

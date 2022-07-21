@@ -461,7 +461,7 @@ describe("Sigmoid unit tests", async () => {
       //      P_inv(0) == 0
       const value = BigNumber.from(0);
       const trueValue = BigNumber.from(0);
-      const retValue = await sigmoid.p_inverse(value);
+      const retValue = await sigmoid.pInverse(value);
       expect(retValue).to.be.equal(trueValue);
     });
     it("Evaluate P_inv(P(b))", async function () {
@@ -470,7 +470,7 @@ describe("Sigmoid unit tests", async () => {
       const trueB = await sigmoid.p_b();
       const initialValue = trueB;
       const value = await sigmoid.p(initialValue);
-      const retValue = await sigmoid.p_inverse(value);
+      const retValue = await sigmoid.pInverse(value);
       expect(retValue).to.be.equal(initialValue);
     });
     it("Evaluate P_inv(P(2b))", async function () {
@@ -480,7 +480,7 @@ describe("Sigmoid unit tests", async () => {
       const trueB = await sigmoid.p_b();
       const initialValue = big2.mul(trueB);
       const value = await sigmoid.p(initialValue);
-      const retValue = await sigmoid.p_inverse(value);
+      const retValue = await sigmoid.pInverse(value);
       expect(retValue).to.be.equal(initialValue);
     });
     it("Evaluate P_inv(P(3b))", async function () {
@@ -490,7 +490,7 @@ describe("Sigmoid unit tests", async () => {
       const trueB = await sigmoid.p_b();
       const initialValue = big3.mul(trueB);
       const value = await sigmoid.p(initialValue);
-      const retValue = await sigmoid.p_inverse(value);
+      const retValue = await sigmoid.pInverse(value);
       expect(retValue).to.be.equal(initialValue);
     });
     it("Evaluate P_inv(P(4b))", async function () {
@@ -500,13 +500,13 @@ describe("Sigmoid unit tests", async () => {
       const trueB = await sigmoid.p_b();
       const initialValue = big4.mul(trueB);
       const value = await sigmoid.p(initialValue);
-      const retValue = await sigmoid.p_inverse(value);
+      const retValue = await sigmoid.pInverse(value);
       expect(retValue).to.be.equal(initialValue);
     });
     it("Evaluate P_inv; passes", async function () {
       // Confirm valid input for 2**120 - 1
       const value = BigNumber.from("0xffffffffffffffffffffffffffffff");
-      const retValue = await sigmoid.p_inverse(value);
+      const retValue = await sigmoid.pInverse(value);
       await expect(retValue).to.not.equal(0);
     });
     it("Evaluate P_inv; overflow 1", async function () {
@@ -514,13 +514,13 @@ describe("Sigmoid unit tests", async () => {
       const value = BigNumber.from(
         "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
       );
-      const tx = sigmoid.p_inverse(value);
+      const tx = sigmoid.pInverse(value);
       await expect(tx).to.be.reverted;
     });
     it("Evaluate P_inv; overflow 2", async function () {
       // Confirm overflow: 2**128 - 1
       const value = BigNumber.from("0xffffffffffffffffffffffffffffffff");
-      const tx = sigmoid.p_inverse(value);
+      const tx = sigmoid.pInverse(value);
       await expect(tx).to.be.reverted;
     });
   });

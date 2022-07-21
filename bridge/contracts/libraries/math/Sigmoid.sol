@@ -21,7 +21,7 @@ abstract contract Sigmoid {
             (_P_A + _P_D) * t + (_P_A * _P_S) - _sqrt(_P_A**2 * ((_safeAbsSub(_P_B, t))**2 + _P_C));
     }
 
-    function _p_inverse(uint256 m) internal pure returns (uint256) {
+    function _pInverse(uint256 m) internal pure returns (uint256) {
         return
             (_P_INV_C_2 * m + _sqrt(_P_A**2 * (m**2 + _P_INV_D_0 - _P_INV_D_1 * m)) - _P_INV_C_1) /
             _P_INV_C_3;

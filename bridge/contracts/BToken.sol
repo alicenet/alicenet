@@ -495,7 +495,7 @@ contract BToken is
             totalSupply_ >= numBTK_,
             string(abi.encodePacked(BTokenErrorCodes.BTOKEN_BURN_AMOUNT_EXCEEDS_SUPPLY))
         );
-        return _min(poolBalance_, _p_inverse(totalSupply_) - _p_inverse(totalSupply_ - numBTK_));
+        return _min(poolBalance_, _pInverse(totalSupply_) - _pInverse(totalSupply_ - numBTK_));
     }
 
     function _newDeposit(
