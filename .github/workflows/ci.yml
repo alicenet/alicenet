@@ -90,8 +90,8 @@ jobs:
       - uses: ./.github/actions/alicenet-config
       - name: Set up gotestfmt
         run: go install github.com/haveyoudebuggedit/gotestfmt/v2/cmd/gotestfmt@latest
-      - name: gabtest
-        run: sudo apt-get install -y ack-grep && cd layer1/executor/ & targets=($(ack 'func Test[^(]+' | grep func | awk -F 'func' '{ print $2 }' | awk -F '(' '{ print $1 }')) && echo "${#targets[@]}"
+#      - name: gabtest
+#        run: cd layer1/executor/ & targets=($(ack 'func Test[^(]+' | grep func | awk -F 'func' '{ print $2 }' | awk -F '(' '{ print $1 }')) && echo "${#targets[@]}"
       - name: Run unit tests
         run: |
           set -euo pipefail
@@ -101,33 +101,24 @@ jobs:
           files: ./coverage.out
           verbose: true
 
+  job1:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v2
+      - id: set-matrix
+        working-directory: layer1/executor/
+        run: echo "::set-output name=matrix::$(ack 'func Test[^(]+' | grep func | awk -F 'func' '{ print $2 }' | awk -F '(' '{ print $1 }')
+
   go-dkg-tests:
+    needs: job1
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         os: [ ubuntu-20.04 ]
-        test-groups: [
-            TestShareDistribution_Group1,
-            TestShareDistribution_Group2,
-            TestShareDistribution_Group3,
-            TestShareDistribution_Group4,
-            TestRegisterTask_Group1,
-            TestRegisterTask_Group2,
-            TestRegisterTask_Group3,
-            TestMPKSubmission,
-            TestKeyShareSubmission,
-            TestGPKjSubmission,
-            TestDisputeShareDistributionTask,
-            TestDisputeMissingShareDistributionTask,
-            TestDisputeMissingRegistrationTask,
-            TestDisputeMissingKeySharesTask,
-            TestDisputeMissingGPKjTask,
-            TestGPKjDispute_Group1,
-            TestGPKjDispute_Group2,
-            TestGPKjDispute_Group3,
-            TestCompletion,
-          ]
+        stack: ${{fromJSON(needs.job1.outputs.matrix)}}
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/alicenet-config
