@@ -127,6 +127,7 @@ jobs:
     needs: go-integration-setup
     runs-on: ${{ matrix.os }}
     strategy:
+      max-parallel: 40
       fail-fast: false
       matrix:
         os: [ ubuntu-20.04 ]
