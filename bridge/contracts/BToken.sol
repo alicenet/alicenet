@@ -481,7 +481,7 @@ contract BToken is
     // Internal function that converts an ether amount into BToken tokens
     // following the bounding price curve.
     function _ethToBTokens(uint256 poolBalance_, uint256 numEth_) internal pure returns (uint256) {
-        return _fx(poolBalance_ + numEth_) - _fx(poolBalance_);
+        return _p(poolBalance_ + numEth_) - _p(poolBalance_);
     }
 
     // Internal function that converts a BToken amount into ether following the
@@ -495,7 +495,7 @@ contract BToken is
             totalSupply_ >= numBTK_,
             string(abi.encodePacked(BTokenErrorCodes.BTOKEN_BURN_AMOUNT_EXCEEDS_SUPPLY))
         );
-        return _min(poolBalance_, _fp(totalSupply_) - _fp(totalSupply_ - numBTK_));
+        return _min(poolBalance_, _pInverse(totalSupply_) - _pInverse(totalSupply_ - numBTK_));
     }
 
     function _newDeposit(
