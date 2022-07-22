@@ -73,7 +73,7 @@ jobs:
           NODE_OPTIONS: "--max_old_space_size=4096"
       - uses: codecov/codecov-action@v3
         with:
-          files: ./coverage.json
+          files: ./bridge/coverage.json
           verbose: true
 
   node-lint:
