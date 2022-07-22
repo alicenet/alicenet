@@ -5,7 +5,6 @@ import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "./utils/Admin.sol";
 import "./utils/ImmutableAuth.sol";
-import "hardhat/console.sol";
 import "contracts/interfaces/IAToken.sol";
 
 /// @custom:salt AToken
