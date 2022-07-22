@@ -9,13 +9,11 @@ let user2: SignerWithAddress;
 
 export interface state {
   Balances: {
-    bToken: {
+    erc721: {
       address: string;
       admin: bigint;
       user: bigint;
       user2: bigint;
-      totalSupply: bigint;
-      poolBalance: bigint;
     };
     eth: {
       address: string;
@@ -32,13 +30,11 @@ export async function getState(fixture: Fixture | BaseTokensFixture) {
   [admin, user, user2] = await ethers.getSigners();
   const state: state = {
     Balances: {
-      bToken: {
-        address: fixture.bToken.address.slice(-4),
-        admin: (await fixture.bToken.balanceOf(admin.address)).toBigInt(),
-        user: (await fixture.bToken.balanceOf(user.address)).toBigInt(),
-        user2: (await fixture.bToken.balanceOf(user2.address)).toBigInt(),
-        totalSupply: (await fixture.bToken.totalSupply()).toBigInt(),
-        poolBalance: (await fixture.bToken.getPoolBalance()).toBigInt(),
+      erc721: {
+        address: fixture.erc721Mock.address.slice(-4),
+        admin: (await fixture.erc721Mock.balanceOf(admin.address)).toBigInt(),
+        user: (await fixture.erc721Mock.balanceOf(user.address)).toBigInt(),
+        user2: (await fixture.erc721Mock.balanceOf(user2.address)).toBigInt(),
       },
       eth: {
         address: "0000",
