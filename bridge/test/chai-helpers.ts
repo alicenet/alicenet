@@ -1,8 +1,7 @@
 import { expect } from "chai";
-import { ContractTransaction } from "ethers";
 
 export async function assertErrorMessage(
-  p: Promise<ContractTransaction>,
+  p: Promise<any>,
   message: string
 ): Promise<void> {
   return p.then(
