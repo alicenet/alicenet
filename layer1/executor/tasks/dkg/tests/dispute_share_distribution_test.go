@@ -19,7 +19,7 @@ import (
 )
 
 // We test to ensure that everything behaves correctly.
-func TestDisputeShareDistributionTask_Group_1_OneValidatorSubmittingInvalidCredentials(t *testing.T) {
+func TestDisputeShareDistributionTask_OneValidatorSubmittingInvalidCredentials(t *testing.T) {
 	n := 5
 	badId := 4
 	b := []int{badId}
@@ -99,7 +99,7 @@ func TestDisputeShareDistributionTask_Group_1_OneValidatorSubmittingInvalidCrede
 
 // We force an error.
 // This is caused by submitting invalid state information (state is nil).
-func TestDisputeShareDistributionTask_Group_1_Bad2(t *testing.T) {
+func TestDisputeShareDistributionTask_Bad2(t *testing.T) {
 	task := dkg.NewDisputeShareDistributionTask(1, 100, common.Address{})
 	db := mocks.NewTestDB()
 	log := logging.GetLogger("test").WithField("test", "test")
@@ -115,7 +115,7 @@ func TestDisputeShareDistributionTask_Group_1_Bad2(t *testing.T) {
 	assert.False(t, taskErr.IsRecoverable())
 }
 
-func TestDisputeShareDistributionTask_Group_1_TwoValidatorSubmittingInvalidCredentials(t *testing.T) {
+func TestDisputeShareDistributionTask_TwoValidatorSubmittingInvalidCredentials(t *testing.T) {
 	n := 5
 	b := []int{2, 4}
 	fixture := setupEthereum(t, n)
@@ -192,7 +192,7 @@ func TestDisputeShareDistributionTask_Group_1_TwoValidatorSubmittingInvalidCrede
 	CheckBadValidators(t, b, suite, fixture.Contracts)
 }
 
-func TestDisputeShareDistributionTask_Group_1_AllValidatorSubmittingInvalidCredentials(t *testing.T) {
+func TestDisputeShareDistributionTask_AllValidatorSubmittingInvalidCredentials(t *testing.T) {
 	n := 5
 	b := []int{0, 1, 2, 3, 4}
 	fixture := setupEthereum(t, n)

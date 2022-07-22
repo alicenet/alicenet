@@ -18,7 +18,7 @@ import (
 )
 
 //We test to ensure that everything behaves correctly.
-func TestMPKSubmission_Group_1_GoodAllValid(t *testing.T) {
+func TestMPKSubmission_GoodAllValid(t *testing.T) {
 	n := 4
 	fixture := setupEthereum(t, n)
 	suite := StartFromKeyShareSubmissionPhase(t, fixture, 0, 100)
@@ -80,7 +80,7 @@ func TestMPKSubmission_Group_1_GoodAllValid(t *testing.T) {
 // In this test, *no* validator should submit an mpk.
 // After ending the MPK submission phase, validators should attempt
 // to submit the mpk; this should raise an error.
-func TestMPKSubmission_Group_1_Bad1(t *testing.T) {
+func TestMPKSubmission_Bad1(t *testing.T) {
 	// Perform correct registration setup.
 
 	// Perform correct share submission
@@ -117,7 +117,7 @@ func TestMPKSubmission_Group_1_Bad1(t *testing.T) {
 
 // We force an error.
 // This is caused by submitting invalid state information (state is nil).
-func TestMPKSubmission_Group_1_Bad2(t *testing.T) {
+func TestMPKSubmission_Bad2(t *testing.T) {
 	task := dkg.NewMPKSubmissionTask(1, 100)
 	db := mocks.NewTestDB()
 	log := logging.GetLogger("test").WithField("test", "test")
@@ -134,7 +134,7 @@ func TestMPKSubmission_Group_1_Bad2(t *testing.T) {
 // We force an error.
 // This is caused by submitting invalid state information by not successfully
 // completing KeyShareSubmission phase.
-func TestMPKSubmission_Group_2_Bad4(t *testing.T) {
+func TestMPKSubmission_Bad4(t *testing.T) {
 	n := 4
 	fixture := setupEthereum(t, n)
 	suite := StartFromKeyShareSubmissionPhase(t, fixture, 0, 100)
@@ -154,7 +154,7 @@ func TestMPKSubmission_Group_2_Bad4(t *testing.T) {
 	assert.False(t, taskErr.IsRecoverable())
 }
 
-func TestMPKSubmission_Group_2_LeaderElection(t *testing.T) {
+func TestMPKSubmission_LeaderElection(t *testing.T) {
 	n := 4
 	fixture := setupEthereum(t, n)
 	suite := StartFromKeyShareSubmissionPhase(t, fixture, 0, 100)

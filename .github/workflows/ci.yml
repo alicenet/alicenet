@@ -125,44 +125,46 @@ jobs:
           files: ./coverage.out
           verbose: true
 
+  go-integration-setup:
+    runs-on: ubuntu-20.04
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/alicenet-config
+      - name: npm Compile
+        working-directory: ./bridge
+        shell: bash
+        run: npm run compile
+      - uses: actions/upload-artifact@v3
+        with:
+          name: hardhat-files
+          path: bridge/artifacts/
+      - id: set-matrix
+        working-directory: layer1/executor/
+        run: |
+          targets=($(grep -R 'Test' ./ | awk -F 'func' '{ print $2 }' | awk -F '(' '{ print $1 }'))
+          printf -v joined '"%s",' "${targets[@]}"
+          echo "::set-output name=matrix::[${joined%,}]"
+
   go-integration-tests:
+    needs: go-integration-setup
     runs-on: ${{ matrix.os }}
-    needs: go-unit-tests
-    timeout-minutes: 60
     strategy:
+      max-parallel: 40
       fail-fast: false
       matrix:
-        os: [ubuntu-20.04]
-        test-cmd: [
-            # github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestShareDistribution_Group_1,
-            # github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestShareDistribution_Group_2,
-            # github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestShareDistribution_Group_3,
-            # github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestRegisterTask_Group_1,
-            # github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestRegisterTask_Group_2,
-            # github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestRegisterTask_Group_3,
-            # github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestMPKSubmission_Group_1,
-            # github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestMPKSubmission_Group_2,
-            # github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestKeyShareSubmission,
-            # github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestGPKjSubmission_Group_1,
-            # github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestGPKjSubmission_Group_2,
-            # github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestDisputeShareDistributionTask_Group_1,
-            # github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestDisputeMissingShareDistributionTask_Group_1,
-            # github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestDisputeMissingRegistrationTask_Group_1,
-            # github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestDisputeMissingKeySharesTask,
-            # github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestDisputeMissingGPKjTask_Group_1,
-            # github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestGPKjDispute,
-            # github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestCompletion_Group_1,
-            github.com/alicenet/alicenet/layer1/ethereum/tests,
-            github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state,
-          ]
+        os: [ ubuntu-20.04 ]
+        test-list: ${{fromJson(needs.go-integration-setup.outputs.matrix)}}
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/alicenet-config
       - name: Set up gotestfmt
         run: go install github.com/haveyoudebuggedit/gotestfmt/v2/cmd/gotestfmt@latest
-      - name: Run tests ${{ matrix.test-cmd }}
-        timeout-minutes: 45
+      - uses: actions/download-artifact@v3
+        with:
+          name: hardhat-files
+          path: bridge/artifacts/
+      - name: Run test ${{ matrix.test-list }}
         run: |
-          set -euo pipefail
-          ./scripts/main.sh init 5
-          go test -tags=integration -race -json -timeout=30m ${{ matrix.test-cmd }} 2>&1 | tee /tmp/gotest.log | gotestfmt
+          go test -race -tags=integration -json -timeout=15m github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run ${{ matrix.test-list }} 2>&1 | tee /tmp/gotest.log | gotestfmt
