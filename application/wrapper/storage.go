@@ -20,8 +20,14 @@ func NewStorage(storageInter dynamics.StorageGetter) *Storage {
 }
 
 // GetMaxBytes returns MaxBytes
-func (s *Storage) GetMaxBytes() uint32 {
-	return s.storage.GetMaxBytes()
+func (s *Storage) GetMaxBytes() (uint32, error) {
+	if s == nil {
+		return 0, errorz.ErrInvalid{}.New("storage.GetAtomicSwapFee; struct not initialized")
+	}
+	if s.storage == nil {
+		return 0, errorz.ErrInvalid{}.New("storage.GetAtomicSwapFee; storage not initialized")
+	}
+	return s.storage.GetMaxBytes(), nil
 }
 
 // GetAtomicSwapFee returns the fee for AtomicSwap
