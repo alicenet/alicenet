@@ -144,4 +144,4 @@ jobs:
           path: bridge/artifacts/
       - name: Run test ${{ matrix.test-list }}
         run: |
-          go test -race -tags=integration -json -timeout=30m github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run ${{ matrix.test-list }} 2>&1 | tee /tmp/gotest.log | gotestfmt
+          go test -tags=integration -json -timeout=30m github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run ${{ matrix.test-list }} 2>&1 | tee /tmp/gotest.log | gotestfmt
