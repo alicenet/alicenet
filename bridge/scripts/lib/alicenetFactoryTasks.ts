@@ -2,7 +2,6 @@ import toml from "@iarna/toml";
 import {
   BigNumber,
   BytesLike,
-  ContractFactory,
   ContractReceipt,
   ContractTransaction,
 } from "ethers";
@@ -309,7 +308,7 @@ task(
     };
     const factoryBase = await hre.ethers.getContractFactory(ALICENET_FACTORY);
     const factory = factoryBase.attach(taskArgs.factoryAddress);
-    const logicFactory:any = await hre.ethers.getContractFactory(
+    const logicFactory: any = await hre.ethers.getContractFactory(
       taskArgs.contractName
     );
 
@@ -494,7 +493,7 @@ task("multiCallDeployMetamorphic")
       taskArgs.constructorArgs === undefined ? [] : taskArgs.constructorArgs;
     const deployTxReq = logicContract.getDeployTransaction(...constructorArgs);
 
-    const logicFactory:any = await hre.ethers.getContractFactory(
+    const logicFactory: any = await hre.ethers.getContractFactory(
       taskArgs.contractName
     );
     const initArgs =
@@ -681,7 +680,7 @@ task(
   .setAction(async (taskArgs, hre) => {
     const network = hre.network.name;
     const factoryBase = await hre.ethers.getContractFactory(ALICENET_FACTORY);
-    const logicFactory:any = await hre.ethers.getContractFactory(
+    const logicFactory: any = await hre.ethers.getContractFactory(
       taskArgs.contractName
     );
     const initArgs =
