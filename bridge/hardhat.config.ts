@@ -234,7 +234,7 @@ const config: HardhatUserConfig = {
     excludeContracts: ["*.t.sol"],
   },
   mocha: {
-    timeout: 120000,
+    timeout: 240000,
     jobs: os.cpus().length / 2 > 1 ? os.cpus().length / 2 : 1,
   },
 
