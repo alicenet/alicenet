@@ -121,10 +121,11 @@ type ManagerRequestInfo struct {
 	killedAt uint64
 }
 
+// ManagerResponseInfo used to cache the responses
 type ManagerResponseInfo struct {
-	ExecutorResponse ExecutorResponse
-	HandlerResponse  *HandlerResponse
-	ReceivedOnBlock  uint64 `json:"received_on_block"`
+	ExecutorResponse ExecutorResponse `json:"executor_response"`
+	HandlerResponse  *HandlerResponse `json:"-"`
+	ReceivedOnBlock  uint64           `json:"received_on_block"`
 }
 
 // requestStored with an internal wrapper for the task interface
