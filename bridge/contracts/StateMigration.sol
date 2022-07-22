@@ -12,8 +12,6 @@ import "contracts/utils/ImmutableAuth.sol";
 import "contracts/libraries/parsers/BClaimsParserLibrary.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
-import "hardhat/console.sol";
-
 contract ExternalStore is ImmutableFactory {
     uint256[4] internal _tokenIDs;
     uint256 internal _counter;

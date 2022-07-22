@@ -13,6 +13,7 @@ import "./scripts/generateImmutableAuth";
 import "./scripts/lib/alicenetFactoryTasks";
 import "./scripts/lib/alicenetTasks";
 import "./scripts/lib/gogogen";
+import "hardhat-log-remover";
 require("dotenv").config();
 
 /**
