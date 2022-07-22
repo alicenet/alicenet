@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/alicenet/alicenet/errorz"
+	"github.com/stretchr/testify/assert"
 
 	"github.com/alicenet/alicenet/crypto"
 )
@@ -1445,4 +1446,17 @@ func TestProgress(t *testing.T) {
 		}
 		rsEqual(t, rsMap[0], rs2)
 	}
+}
+
+func TestRSHash(t *testing.T) {
+	_, _, _, _, rsMap := setup(t)
+	hash, err := rsMap[0].Hash()
+	assert.Nil(t, err)
+	assert.NotEmpty(t, hash)
+}
+
+func TestNilRSHash(t *testing.T) {
+	var rs *RoundState
+	_, err := rs.Hash()
+	assert.NotNil(t, err)
 }

@@ -153,3 +153,7 @@ func PrefixCommittedBlockHeaderCount() []byte {
 func PrefixValidatorSetPostApplication() []byte {
 	return []byte("ZZ")
 }
+
+func PrefixAccusation() []byte {
+	return []byte("a6")
+}

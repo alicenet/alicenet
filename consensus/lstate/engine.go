@@ -95,7 +95,7 @@ func (ce *Engine) Status(status map[string]interface{}) (map[string]interface{},
 		return nil, err
 	}
 	if rs.OwnState.MaxBHSeen.BClaims.Height-rs.OwnState.SyncToBH.BClaims.Height < 2 {
-		status[constants.StatusBlkRnd] = fmt.Sprintf("%d/%d", rs.OwnState.SyncToBH.BClaims.Height, rs.OwnRoundState().RCert.RClaims.Round)
+		status[constants.StatusBlkRnd] = fmt.Sprintf("%d/%d", rs.OwnRoundState().RCert.RClaims.Height, rs.OwnRoundState().RCert.RClaims.Round)
 		status[constants.StatusBlkHsh] = fmt.Sprintf("%x..%x", bhsh[0:2], bhsh[len(bhsh)-2:])
 		status[constants.StatusTxCt] = rs.OwnState.SyncToBH.BClaims.TxCount
 		return status, nil

@@ -1,7 +1,9 @@
 package db
 
 import (
+	"bytes"
 	"context"
+	"encoding/gob"
 	"sync"
 	"time"
 
@@ -590,4 +592,40 @@ func (db *rawDataBase) getCounter(txn *badger.Txn, k []byte) (int, error) {
 		v = 0
 	}
 	return int(v), nil
+}
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+func (db *rawDataBase) SetAccusation(txn *badger.Txn, key []byte, a objs.Accusation) error {
+	buf := &bytes.Buffer{}
+	enc := gob.NewEncoder(buf)
+	err := enc.Encode(&a)
+	if err != nil {
+		return err
+	}
+	vv := buf.Bytes()
+	return utils.SetValue(txn, key, vv)
+}
+
+func (db *rawDataBase) GetAccusation(txn *badger.Txn, key []byte) (objs.Accusation, error) {
+	v, err := db.getValue(txn, key)
+	if err != nil {
+		return nil, err
+	}
+	if v == nil {
+		return nil, nil
+	}
+
+	buf := &bytes.Buffer{}
+	buf.Write(v)
+	dec := gob.NewDecoder(buf)
+	var acc objs.Accusation
+	err = dec.Decode(&acc) // decode concrete implementation into an interface var without knowing which implementation it is (gob is awesome)
+	if err != nil {
+		return nil, err
+	}
+
+	return acc, nil
 }
