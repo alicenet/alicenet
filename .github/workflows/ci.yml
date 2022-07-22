@@ -131,8 +131,8 @@ jobs:
       fail-fast: false
       matrix:
         os: [ ubuntu-20.04 ]
-        #        test-list: ${{fromJson(needs.go-integration-setup.outputs.matrix)}}
-        test-list: [TestCompletion_AllGood]
+        test-list: ${{fromJson(needs.go-integration-setup.outputs.matrix)}}
+#        test-list: [TestCompletion_AllGood]
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/alicenet-config
