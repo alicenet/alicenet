@@ -216,7 +216,7 @@ func (te *TaskExecutor) checkCompletion(ctx context.Context, task tasks.Task, tx
 		select {
 		case <-ctx.Done():
 			return true, ctx.Err()
-		case <-time.After(constants.TaskManagerPoolingTime):
+		case <-time.After(constants.TaskExecutorPoolingTime):
 		}
 
 		if receiptResponse.IsReady() {

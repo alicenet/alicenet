@@ -34,7 +34,7 @@ func (registry *TypeRegistry) RegisterInstanceType(t interface{}) {
 		registry.b = make(map[string]reflect.Type)
 	})
 
-	name, tipe, _ := registry.GetNameType(t)
+	name, tipe := GetNameType(t)
 
 	registry.a[tipe] = name
 	registry.b[name] = tipe
@@ -94,13 +94,19 @@ func (registry *TypeRegistry) UnwrapInstance(wrapper *InstanceWrapper) (interfac
 	return val.Interface(), nil
 }
 
-func (registry *TypeRegistry) GetNameType(t interface{}) (string, reflect.Type, bool) {
+func GetNameType(t interface{}) (string, reflect.Type) {
 	tipe := reflect.TypeOf(t)
 	if tipe.Kind() == reflect.Ptr {
 		tipe = tipe.Elem()
 	}
 
-	name, present := registry.lookupName(tipe)
+	return tipe.String(), tipe
+}
+
+func (registry *TypeRegistry) GetNameTypeIsPresent(t interface{}) (string, reflect.Type, bool) {
+	name, tipe := GetNameType(t)
+
+	_, present := registry.lookupName(tipe)
 
 	return name, tipe, present
 }

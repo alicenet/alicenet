@@ -8,6 +8,7 @@ import (
 	"github.com/alicenet/alicenet/layer1/executor/tasks"
 	monitorInterfaces "github.com/alicenet/alicenet/layer1/monitor/interfaces"
 	"github.com/alicenet/alicenet/layer1/transaction"
+	"github.com/alicenet/alicenet/logging"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
@@ -26,9 +27,10 @@ func NewTaskHandler(database *db.Database, eth layer1.Client, adminHandler monit
 	mainCtx, cf := context.WithCancel(context.Background())
 
 	// Setup tasks scheduler
-	requestChan := make(chan managerRequest, constants.TaskSchedulerBufferSize)
+	requestChan := make(chan managerRequest, constants.TaskManagerBufferSize)
+	logger := logging.GetLogger("tasks")
 
-	taskManager, err := newTaskManager(mainCtx, eth, database, adminHandler, requestChan, txWatcher)
+	taskManager, err := newTaskManager(mainCtx, eth, database, logger.WithField("Component", "TaskManager"), adminHandler, requestChan, txWatcher)
 	if err != nil {
 		cf()
 		return nil, err
@@ -36,6 +38,7 @@ func NewTaskHandler(database *db.Database, eth layer1.Client, adminHandler monit
 
 	handler := &Handler{
 		manager:          taskManager,
+		logger:           logger.WithField("Component", "TaskHandler"),
 		closeMainContext: cf,
 		requestChannel:   requestChan,
 	}
@@ -49,9 +52,11 @@ func (i *Handler) Start() {
 }
 
 func (i *Handler) Close() {
+	//TODO: rollback the closing function
 	i.logger.Warn("Closing task handler")
-	close(i.requestChannel)
+	i.manager.close()
 	i.closeMainContext()
+	close(i.requestChannel)
 }
 
 // ScheduleTask sends the task to the backend

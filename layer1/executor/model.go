@@ -117,16 +117,19 @@ type BaseRequest struct {
 // the data is used in order to manage the task and the response from the TaskExecutor.
 type ManagerRequestInfo struct {
 	BaseRequest
-	Task             tasks.Task
-	HandlerResponse  *HandlerResponse
+	Task     tasks.Task
+	killedAt uint64
+}
+
+type ManagerResponseInfo struct {
 	ExecutorResponse ExecutorResponse
-	killedAt         uint64
+	HandlerResponse  *HandlerResponse
+	ReceivedOnBlock  uint64 `json:"received_on_block"`
 }
 
 // requestStored with an internal wrapper for the task interface
 type requestStored struct {
 	BaseRequest
-	ExecutorResponse
 	WrappedTask *marshaller.InstanceWrapper `json:"wrappedTask"`
 }
 
@@ -179,8 +182,8 @@ func (rc *ManagerResponseChannel) listen(ctx context.Context) (*HandlerResponse,
 
 // ExecutorResponse used inside executorResponseChan to store the task execution result
 type ExecutorResponse struct {
-	Id  string `json:"-"`
-	Err error  `json:"response_error"`
+	Id  string `json:"id"`
+	Err error  `json:"error"`
 }
 
 // executorResponseChan is used to communicate the task execution result from TaskExecutor to

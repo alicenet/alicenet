@@ -28,32 +28,34 @@ var _ TaskResponse = &HandlerResponse{}
 
 type TaskManager struct {
 	Schedule       map[string]ManagerRequestInfo  `json:"schedule"`
+	Responses      map[string]ManagerResponseInfo `json:"responses"`
 	LastHeightSeen uint64                         `json:"lastHeightSeen"`
 	mainCtx        context.Context                `json:"-"`
 	eth            layer1.Client                  `json:"-"`
 	database       *db.Database                   `json:"-"`
 	adminHandler   monitorInterfaces.AdminHandler `json:"-"`
 	marshaller     *marshaller.TypeRegistry       `json:"-"`
+	cancelChan     chan bool                      `json:"-"`
 	requestChan    <-chan managerRequest          `json:"-"`
 	responseChan   *executorResponseChan          `json:"-"`
 	logger         *logrus.Entry                  `json:"-"`
 	taskExecutor   *TaskExecutor                  `json:"-"`
 }
 
-func newTaskManager(mainCtx context.Context, eth layer1.Client, database *db.Database, adminHandler monitorInterfaces.AdminHandler, requestChan <-chan managerRequest, txWatcher *transaction.FrontWatcher) (*TaskManager, error) {
+func newTaskManager(mainCtx context.Context, eth layer1.Client, database *db.Database, logger *logrus.Entry, adminHandler monitorInterfaces.AdminHandler, requestChan <-chan managerRequest, txWatcher *transaction.FrontWatcher) (*TaskManager, error) {
 	taskManager := &TaskManager{
 		Schedule:     make(map[string]ManagerRequestInfo),
+		Responses:    make(map[string]ManagerResponseInfo),
 		mainCtx:      mainCtx,
 		database:     database,
 		eth:          eth,
 		adminHandler: adminHandler,
 		marshaller:   getTaskRegistry(),
+		cancelChan:   make(chan bool, 1),
 		requestChan:  requestChan,
 		responseChan: &executorResponseChan{erChan: make(chan ExecutorResponse, 100)},
+		logger:       logger,
 	}
-
-	logger := logging.GetLogger("tasks")
-	taskManager.logger = logger.WithField("Component", "schedule")
 
 	err := taskManager.loadState()
 	if err != nil {
@@ -63,7 +65,7 @@ func newTaskManager(mainCtx context.Context, eth layer1.Client, database *db.Dat
 		}
 	}
 
-	tasksExecutor, err := newTaskExecutor(txWatcher, database, logger.WithField("Component", "executor"))
+	tasksExecutor, err := newTaskExecutor(txWatcher, database, logger.WithField("Component", "TaskExecutor"))
 	if err != nil {
 		return nil, err
 	}
@@ -84,17 +86,32 @@ func (tm *TaskManager) start() {
 	go tm.eventLoop()
 }
 
+func (tm *TaskManager) close() {
+	tm.logger.Warn("Closing task manager")
+	tm.cancelChan <- true
+}
+
 func (tm *TaskManager) eventLoop() {
-	processingTime := time.After(constants.TaskSchedulerProcessingTime)
+	processingTime := time.After(constants.TaskManagerProcessingTime)
 
 	for {
 		select {
 		case <-tm.mainCtx.Done():
 			tm.logger.Warn("Received closing context request")
+			close(tm.cancelChan)
 			tm.responseChan.close()
 			return
 
-		case taskRequest := <-tm.requestChan:
+		case taskRequest, ok := <-tm.requestChan:
+			if !ok {
+				tm.logger.Warnf("Received a request on a closed channel %v", taskRequest)
+				return
+			}
+			if taskRequest.response == nil {
+				tm.logger.Warn("Received a request with nil response channel")
+				return
+			}
+
 			response := &managerResponse{Err: nil}
 			switch taskRequest.action {
 			case KillByType:
@@ -143,12 +160,12 @@ func (tm *TaskManager) eventLoop() {
 			}
 		case <-processingTime:
 			tm.logger.Trace("processing latest height")
-			networkCtx, networkCf := context.WithTimeout(tm.mainCtx, constants.TaskSchedulerNetworkTimeout)
+			networkCtx, networkCf := context.WithTimeout(tm.mainCtx, constants.TaskManagerNetworkTimeout)
 			height, err := tm.eth.GetFinalizedHeight(networkCtx)
 			networkCf()
 			if err != nil {
 				tm.logger.WithError(err).Debug("Failed to retrieve the latest height from eth node")
-				processingTime = time.After(constants.TaskSchedulerProcessingTime)
+				processingTime = time.After(constants.TaskManagerProcessingTime)
 				continue
 			}
 			tm.LastHeightSeen = height
@@ -171,7 +188,13 @@ func (tm *TaskManager) eventLoop() {
 			if err != nil {
 				tm.logger.WithError(err).Errorf("Failed to persist after kill tasks state %d", tm.LastHeightSeen)
 			}
-			processingTime = time.After(constants.TaskSchedulerProcessingTime)
+
+			tm.cleanResponses()
+			err = tm.persistState()
+			if err != nil {
+				tm.logger.WithError(err).Errorf("Failed to persist after kill tasks state %d", tm.LastHeightSeen)
+			}
+			processingTime = time.After(constants.TaskManagerProcessingTime)
 		}
 	}
 }
@@ -189,7 +212,11 @@ func (tm *TaskManager) schedule(ctx context.Context, task tasks.Task, id string)
 			return ErrTaskIdEmpty, nil
 		}
 
-		taskName, _, present := tm.marshaller.GetNameType(task)
+		if resp, exists := tm.Responses[id]; exists {
+			return nil, resp.HandlerResponse
+		}
+
+		taskName, _, present := tm.marshaller.GetNameTypeIsPresent(task)
 		if !present {
 			return ErrTaskTypeNotInRegistry, nil
 		}
@@ -205,15 +232,10 @@ func (tm *TaskManager) schedule(ctx context.Context, task tasks.Task, id string)
 			return ErrTaskExpired, nil
 		}
 
-		if scheduledTask, exists := tm.Schedule[id]; exists {
-			return nil, scheduledTask.HandlerResponse
-		}
-
 		if !task.GetAllowMultiExecution() && len(tm.findTasksByName(taskName)) > 0 {
 			return ErrTaskNotAllowMultipleExecutions, nil
 		}
 
-		taskResp := newHandlerResponse()
 		taskReq := ManagerRequestInfo{
 			BaseRequest: BaseRequest{
 				Id:            id,
@@ -222,13 +244,17 @@ func (tm *TaskManager) schedule(ctx context.Context, task tasks.Task, id string)
 				End:           end,
 				InternalState: NotStarted,
 			},
-			Task:            task,
-			HandlerResponse: taskResp,
+			Task: task,
 		}
 		tm.Schedule[id] = taskReq
+
+		taskResp := ManagerResponseInfo{
+			HandlerResponse: newHandlerResponse(),
+		}
+		tm.Responses[id] = taskResp
 		getTaskLoggerComplete(taskReq).Debug("Received task request")
 
-		return nil, taskResp
+		return nil, taskResp.HandlerResponse
 	}
 }
 
@@ -244,8 +270,17 @@ func (tm *TaskManager) processTaskResponse(ctx context.Context, executorResponse
 			return nil
 		}
 
-		task.HandlerResponse.writeResponse(executorResponse.Err)
-		task.ExecutorResponse = executorResponse
+		taskResp, present := tm.Responses[executorResponse.Id]
+		if !present {
+			tm.logger.Warnf("response structure doesn't exist for a received response with id %s", executorResponse.Id)
+			return nil
+		}
+
+		taskResp.ReceivedOnBlock = tm.LastHeightSeen
+		taskResp.ExecutorResponse = executorResponse
+		taskResp.HandlerResponse.writeResponse(executorResponse.Err)
+		tm.Responses[executorResponse.Id] = taskResp
+
 		logger = getTaskLoggerComplete(task)
 		if executorResponse.Err != nil {
 			if !errors.Is(executorResponse.Err, context.Canceled) {
@@ -296,7 +331,7 @@ func (tm *TaskManager) killTaskByType(ctx context.Context, task tasks.Task) erro
 			return ErrTaskIsNil
 		}
 
-		taskName, _, present := tm.marshaller.GetNameType(task)
+		taskName, _, present := tm.marshaller.GetNameTypeIsPresent(task)
 		if !present {
 			return ErrTaskTypeNotInRegistry
 		}
@@ -347,13 +382,21 @@ func (tm *TaskManager) killTasks(ctx context.Context, tasks []ManagerRequestInfo
 	return nil
 }
 
+func (tm *TaskManager) cleanResponses() {
+	for id, resp := range tm.Responses {
+		if resp.ReceivedOnBlock+constants.TaskManagerResponseToleranceBeforeRemoving <= tm.LastHeightSeen {
+			delete(tm.Responses, id)
+		}
+	}
+}
+
 func (tm *TaskManager) findTasks() ([]ManagerRequestInfo, []ManagerRequestInfo) {
 	toStart := make([]ManagerRequestInfo, 0)
 	expired := make([]ManagerRequestInfo, 0)
 	unresponsive := make([]ManagerRequestInfo, 0)
 
 	for _, taskRequest := range tm.Schedule {
-		if taskRequest.InternalState == Killed && taskRequest.killedAt+constants.TaskSchedulerHeightToleranceBeforeRemoving <= tm.LastHeightSeen {
+		if taskRequest.InternalState == Killed && taskRequest.killedAt+constants.TaskManagerHeightToleranceBeforeRemoving <= tm.LastHeightSeen {
 			tm.logger.Errorf("marking task as unresponsive %s", taskRequest.Task.GetId())
 			unresponsive = append(unresponsive, taskRequest)
 			continue
@@ -479,6 +522,14 @@ func (tm *TaskManager) loadState() error {
 		}
 	}
 
+	for id, resp := range tm.Responses {
+		resp.HandlerResponse = newHandlerResponse()
+		if resp.ReceivedOnBlock != 0 {
+			resp.HandlerResponse.writeResponse(resp.ExecutorResponse.Err)
+		}
+		tm.Responses[id] = resp
+	}
+
 	// synchronizing db state to disk
 	if err := tm.database.Sync(); err != nil {
 		logger.Error("Failed to set sync")
@@ -533,15 +584,9 @@ func (tm *TaskManager) UnmarshalJSON(raw []byte) error {
 			adminClient.SetAdminHandler(tm.adminHandler)
 		}
 
-		handlerResponse := newHandlerResponse()
-		if v.ExecutorResponse.Err != nil {
-			handlerResponse.writeResponse(v.ExecutorResponse.Err)
-		}
 		tm.Schedule[k] = ManagerRequestInfo{
-			BaseRequest:      v.BaseRequest,
-			ExecutorResponse: v.ExecutorResponse,
-			HandlerResponse:  handlerResponse,
-			Task:             t.(tasks.Task),
+			BaseRequest: v.BaseRequest,
+			Task:        t.(tasks.Task),
 		}
 	}
 
