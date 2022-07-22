@@ -71,6 +71,10 @@ jobs:
       - run: npx hardhat coverage --solcoverjs ./.solcover.ts
         env:
           NODE_OPTIONS: "--max_old_space_size=4096"
+      - uses: codecov/codecov-action@v3
+        with:
+          files: ./coverage.json
+          verbose: true
 
   node-lint:
     runs-on: ubuntu-20.04
