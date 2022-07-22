@@ -51,7 +51,7 @@ jobs:
           test-group: ${{ matrix.test-group }}
           sub-filter-include: ${{ matrix.sub-filter-include }}
           sub-filter-exclude: ${{ matrix.sub-filter-exclude }}
-          
+
   node-coverage:
     runs-on: ubuntu-20.04
     timeout-minutes: 60
@@ -62,13 +62,15 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
         with:
-          node-version-file: 'bridge/.nvmrc'
-          cache: 'npm'
+          node-version-file: "bridge/.nvmrc"
+          cache: "npm"
           cache-dependency-path: bridge/package-lock.json
       - run: npm ci
       - run: npm run clean
       - run: npm run compile
       - run: npx hardhat coverage --solcoverjs ./.solcover.ts
+        env:
+          NODE_OPTIONS: "--max_old_space_size=4096"
 
   node-lint:
     runs-on: ubuntu-20.04
