@@ -12,4 +12,5 @@ library StakingNFTErrorCodes {
     bytes32 public constant STAKENFT_FREE_AFTER_TIME_NOT_REACHED = "606"; //  "PublicStaking: The position is not ready to be burned!"
     bytes32 public constant STAKENFT_BALANCE_LESS_THAN_RESERVE = "607"; //  "PublicStaking: The balance of the contract is less then the tracked reserve!"
     bytes32 public constant STAKENFT_SLUSH_TOO_LARGE = "608"; // "PublicStaking: slush too large"
+    bytes32 public constant STAKENFT_STAKED_AMOUNT_IS_ZERO = "609"; // "PublicStaking: The staked amount must be positive!"
 }
