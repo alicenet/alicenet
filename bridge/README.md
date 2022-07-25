@@ -4,7 +4,7 @@ This repository contains all solidity smart contracts used by the AliceNet.
 
 ## Requirements
 
-* HardHat (following)
+- HardHat (following)
 
 To install hardhat and all requirements to compile and test the smart contracts in this repository, run the following
 command at the root of this repository. It might require sudo permission
@@ -22,8 +22,8 @@ Install all the necessary dependencies, and compile.
 
 ```bash
 $ npm ci
-$ npm run compile 
-$ npm run generate 
+$ npm run compile
+$ npm run generate
 ```
 
 ### Running unit tests
@@ -34,13 +34,13 @@ the gas reporter when the tests are finished
 The two commands are respectivetely
 
 ```bash
-$ npm run test 
+$ npm run test
 ```
 
 and
 
 ```bash
-$ npm run test-parallel 
+$ npm run test-parallel
 ```
 
 ## HARDHAT
@@ -48,7 +48,7 @@ $ npm run test-parallel
 There is a suite of hardhat scripts and tasks you can run from the bridge folder. To list them simply
 run `npx hardhat --help`.
 
- * `generate-immutable-auth-contract` Generates authorization for contracts deployed at deterministic address via factory
+- `generate-immutable-auth-contract` Generates authorization for contracts deployed at deterministic address via factory
 
 ```bash
 
@@ -66,9 +66,6 @@ If you are linking a custom Deployment list file it must follow the following fo
     ...
  ]
 ```
-
-
-
 
 ### Contract Factory CLI
 
@@ -112,10 +109,10 @@ file `prettier.json`
 
 **Visual Studio Code Plugin** - Group of pluing to make your life easier if you are using Visual studio
 
-* Solidity Visual Auditor
-    - [plugin link](https://marketplace.visualstudio.com/items?itemName=tintinweb.solidity-visual-auditor)
-* Solidity - [plugin link](https://marketplace.visualstudio.com/items?itemName=JuanBlanco.solidity)
-* Remix - [plugin link](https://marketplace.visualstudio.com/items?itemName=RemixProject.ethereum-remix)
+- Solidity Visual Auditor
+  - [plugin link](https://marketplace.visualstudio.com/items?itemName=tintinweb.solidity-visual-auditor)
+- Solidity - [plugin link](https://marketplace.visualstudio.com/items?itemName=JuanBlanco.solidity)
+- Remix - [plugin link](https://marketplace.visualstudio.com/items?itemName=RemixProject.ethereum-remix)
 
 ## Solidity Style guide
 

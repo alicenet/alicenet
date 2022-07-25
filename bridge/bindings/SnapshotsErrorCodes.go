@@ -30,7 +30,7 @@ var (
 
 // SnapshotsErrorCodesMetaData contains all meta data concerning the SnapshotsErrorCodes contract.
 var SnapshotsErrorCodesMetaData = &bind.MetaData{
-	ABI: "[{\"inputs\":[],\"name\":\"SNAPSHOT_CALLER_NOT_ETHDKG_PARTICIPANT\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"SNAPSHOT_CONSENSUS_RUNNING\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"SNAPSHOT_INCORRECT_BLOCK_HEIGHT\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"SNAPSHOT_INCORRECT_CHAIN_ID\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"SNAPSHOT_MIGRATION_INPUT_DATA_MISMATCH\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"SNAPSHOT_MIGRATION_NOT_ALLOWED\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"SNAPSHOT_MIN_BLOCKS_INTERVAL_NOT_PASSED\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"SNAPSHOT_ONLY_VALIDATORS_ALLOWED\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"SNAPSHOT_SIGNATURE_VERIFICATION_FAILED\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"SNAPSHOT_WRONG_MASTER_PUBLIC_KEY\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"}]",
+	ABI: "[{\"inputs\":[],\"name\":\"SNAPSHOT_CALLER_NOT_ETHDKG_PARTICIPANT\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"SNAPSHOT_CONSENSUS_RUNNING\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"SNAPSHOT_INCORRECT_BLOCK_HEIGHT\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"SNAPSHOT_INCORRECT_CHAIN_ID\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"SNAPSHOT_MIGRATION_INPUT_DATA_MISMATCH\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"SNAPSHOT_MIGRATION_NOT_ALLOWED\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"SNAPSHOT_MIN_BLOCKS_INTERVAL_NOT_PASSED\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"SNAPSHOT_NOT_IN_BUFFER\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"SNAPSHOT_ONLY_VALIDATORS_ALLOWED\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"SNAPSHOT_SIGNATURE_VERIFICATION_FAILED\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"SNAPSHOT_WRONG_MASTER_PUBLIC_KEY\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"}]",
 }
 
 // SnapshotsErrorCodesABI is the input ABI used to generate the binding from.
@@ -394,6 +394,37 @@ func (_SnapshotsErrorCodes *SnapshotsErrorCodesSession) SNAPSHOTMINBLOCKSINTERVA
 // Solidity: function SNAPSHOT_MIN_BLOCKS_INTERVAL_NOT_PASSED() view returns(bytes32)
 func (_SnapshotsErrorCodes *SnapshotsErrorCodesCallerSession) SNAPSHOTMINBLOCKSINTERVALNOTPASSED() ([32]byte, error) {
 	return _SnapshotsErrorCodes.Contract.SNAPSHOTMINBLOCKSINTERVALNOTPASSED(&_SnapshotsErrorCodes.CallOpts)
+}
+
+// SNAPSHOTNOTINBUFFER is a free data retrieval call binding the contract method 0x13702308.
+//
+// Solidity: function SNAPSHOT_NOT_IN_BUFFER() view returns(bytes32)
+func (_SnapshotsErrorCodes *SnapshotsErrorCodesCaller) SNAPSHOTNOTINBUFFER(opts *bind.CallOpts) ([32]byte, error) {
+	var out []interface{}
+	err := _SnapshotsErrorCodes.contract.Call(opts, &out, "SNAPSHOT_NOT_IN_BUFFER")
+
+	if err != nil {
+		return *new([32]byte), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new([32]byte)).(*[32]byte)
+
+	return out0, err
+
+}
+
+// SNAPSHOTNOTINBUFFER is a free data retrieval call binding the contract method 0x13702308.
+//
+// Solidity: function SNAPSHOT_NOT_IN_BUFFER() view returns(bytes32)
+func (_SnapshotsErrorCodes *SnapshotsErrorCodesSession) SNAPSHOTNOTINBUFFER() ([32]byte, error) {
+	return _SnapshotsErrorCodes.Contract.SNAPSHOTNOTINBUFFER(&_SnapshotsErrorCodes.CallOpts)
+}
+
+// SNAPSHOTNOTINBUFFER is a free data retrieval call binding the contract method 0x13702308.
+//
+// Solidity: function SNAPSHOT_NOT_IN_BUFFER() view returns(bytes32)
+func (_SnapshotsErrorCodes *SnapshotsErrorCodesCallerSession) SNAPSHOTNOTINBUFFER() ([32]byte, error) {
+	return _SnapshotsErrorCodes.Contract.SNAPSHOTNOTINBUFFER(&_SnapshotsErrorCodes.CallOpts)
 }
 
 // SNAPSHOTONLYVALIDATORSALLOWED is a free data retrieval call binding the contract method 0x83d995fa.
