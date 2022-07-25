@@ -4,11 +4,10 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/alicenet/alicenet/layer1/executor"
-
 	"github.com/alicenet/alicenet/bridge/bindings"
 	"github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/layer1"
+	"github.com/alicenet/alicenet/layer1/executor/tasks"
 	monInterfaces "github.com/alicenet/alicenet/layer1/monitor/interfaces"
 	"github.com/alicenet/alicenet/layer1/monitor/objects"
 	"github.com/ethereum/go-ethereum/accounts/abi"
@@ -70,39 +69,39 @@ func GetPublicStakingEvents() map[string]abi.Event {
 	return publicStakingABI.Events
 }
 
-func RegisterETHDKGEvents(em *objects.EventMap, monDB *db.Database, adminHandler monInterfaces.AdminHandler, taskHandler executor.TaskHandler) {
+func RegisterETHDKGEvents(em *objects.EventMap, monDB *db.Database, adminHandler monInterfaces.AdminHandler, taskRequestChan chan<- tasks.TaskRequest) {
 	ethDkgEvents := GetETHDKGEvents()
 
 	eventProcessorMap := make(map[string]objects.EventProcessor)
-	eventProcessorMap["RegistrationOpened"] = func(eth layer1.Client, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
-		return ProcessRegistrationOpened(eth, logger, log, state, monDB, taskHandler)
+	eventProcessorMap["RegistrationOpened"] = func(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+		return ProcessRegistrationOpened(eth, contracts, logger, log, state, monDB, taskRequestChan)
 	}
-	eventProcessorMap["AddressRegistered"] = func(eth layer1.Client, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
-		return ProcessAddressRegistered(logger, log, monDB)
+	eventProcessorMap["AddressRegistered"] = func(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+		return ProcessAddressRegistered(eth, contracts, logger, log, monDB)
 	}
-	eventProcessorMap["RegistrationComplete"] = func(eth layer1.Client, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
-		return ProcessRegistrationComplete(logger, log, monDB, taskHandler)
+	eventProcessorMap["RegistrationComplete"] = func(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+		return ProcessRegistrationComplete(eth, contracts, logger, log, monDB, taskRequestChan)
 	}
 	eventProcessorMap["SharesDistributed"] = func(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
 		return ProcessShareDistribution(eth, contracts, logger, log, monDB)
 	}
-	eventProcessorMap["ShareDistributionComplete"] = func(eth layer1.Client, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
-		return ProcessShareDistributionComplete(logger, log, monDB, taskHandler)
+	eventProcessorMap["ShareDistributionComplete"] = func(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+		return ProcessShareDistributionComplete(eth, contracts, logger, log, monDB, taskRequestChan)
 	}
-	eventProcessorMap["KeyShareSubmitted"] = func(eth layer1.Client, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
-		return ProcessKeyShareSubmitted(logger, log, monDB)
+	eventProcessorMap["KeyShareSubmitted"] = func(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+		return ProcessKeyShareSubmitted(eth, contracts, logger, log, monDB)
 	}
-	eventProcessorMap["KeyShareSubmissionComplete"] = func(eth layer1.Client, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
-		return ProcessKeyShareSubmissionComplete(logger, log, monDB, taskHandler)
+	eventProcessorMap["KeyShareSubmissionComplete"] = func(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+		return ProcessKeyShareSubmissionComplete(eth, contracts, logger, log, monDB, taskRequestChan)
 	}
-	eventProcessorMap["MPKSet"] = func(eth layer1.Client, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
-		return ProcessMPKSet(logger, log, adminHandler, monDB, taskHandler)
+	eventProcessorMap["MPKSet"] = func(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+		return ProcessMPKSet(eth, contracts, logger, log, adminHandler, monDB, taskRequestChan)
 	}
 	eventProcessorMap["ValidatorMemberAdded"] = func(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
 		return ProcessValidatorMemberAdded(eth, contracts, logger, state, log, monDB)
 	}
-	eventProcessorMap["GPKJSubmissionComplete"] = func(eth layer1.Client, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
-		return ProcessGPKJSubmissionComplete(logger, log, monDB, taskHandler)
+	eventProcessorMap["GPKJSubmissionComplete"] = func(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+		return ProcessGPKJSubmissionComplete(eth, contracts, logger, log, monDB, taskRequestChan)
 	}
 	eventProcessorMap["ValidatorSetCompleted"] = func(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
 		return ProcessValidatorSetCompleted(eth, contracts, logger, state, log, monDB, adminHandler)
@@ -122,9 +121,9 @@ func RegisterETHDKGEvents(em *objects.EventMap, monDB *db.Database, adminHandler
 	}
 }
 
-func SetupEventMap(em *objects.EventMap, cdb *db.Database, monDB *db.Database, adminHandler monInterfaces.AdminHandler, depositHandler monInterfaces.DepositHandler, taskHandler executor.TaskHandler) error {
+func SetupEventMap(em *objects.EventMap, cdb *db.Database, monDB *db.Database, adminHandler monInterfaces.AdminHandler, depositHandler monInterfaces.DepositHandler, taskRequestChan chan<- tasks.TaskRequest) error {
 
-	RegisterETHDKGEvents(em, monDB, adminHandler, taskHandler)
+	RegisterETHDKGEvents(em, monDB, adminHandler, taskRequestChan)
 
 	// MadByte.DepositReceived
 	mbEvents := GetBTokenEvents()
@@ -148,8 +147,8 @@ func SetupEventMap(em *objects.EventMap, cdb *db.Database, monDB *db.Database, a
 	}
 
 	if err := em.Register(snapshotTakenEvent.ID.String(), snapshotTakenEvent.Name,
-		func(eth layer1.Client, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
-			return ProcessSnapshotTaken(eth, logger, log, adminHandler, taskHandler)
+		func(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+			return ProcessSnapshotTaken(eth, contracts, logger, log, adminHandler, taskRequestChan)
 		}); err != nil {
 		return err
 	}

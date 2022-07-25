@@ -1,11 +1,9 @@
 package events
 
 import (
-	"context"
-
 	"github.com/alicenet/alicenet/consensus/objs"
 	"github.com/alicenet/alicenet/layer1"
-	"github.com/alicenet/alicenet/layer1/executor"
+	"github.com/alicenet/alicenet/layer1/executor/tasks"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/snapshots"
 	monInterfaces "github.com/alicenet/alicenet/layer1/monitor/interfaces"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -13,7 +11,7 @@ import (
 )
 
 // ProcessSnapshotTaken handles receiving snapshots
-func ProcessSnapshotTaken(eth layer1.Client, logger *logrus.Entry, log types.Log, adminHandler monInterfaces.AdminHandler, taskHandler executor.TaskHandler) error {
+func ProcessSnapshotTaken(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, log types.Log, adminHandler monInterfaces.AdminHandler, taskRequestChan chan<- tasks.TaskRequest) error {
 
 	logger.Info("ProcessSnapshotTaken() ...")
 
@@ -72,7 +70,7 @@ func ProcessSnapshotTaken(eth layer1.Client, logger *logrus.Entry, log types.Log
 	}
 
 	// kill any task that might still be trying to do this snapshot
-	_, err = taskHandler.KillTaskByType(context.Background(), &snapshots.SnapshotTask{})
+	taskRequestChan <- tasks.NewKillTaskRequest(&snapshots.SnapshotTask{})
 
-	return err
+	return nil
 }

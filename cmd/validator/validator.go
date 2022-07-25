@@ -29,6 +29,8 @@ import (
 	"github.com/alicenet/alicenet/layer1"
 	"github.com/alicenet/alicenet/layer1/ethereum"
 	"github.com/alicenet/alicenet/layer1/executor"
+	"github.com/alicenet/alicenet/layer1/executor/tasks"
+	"github.com/alicenet/alicenet/layer1/handlers"
 	"github.com/alicenet/alicenet/layer1/monitor"
 	"github.com/alicenet/alicenet/layer1/transaction"
 	"github.com/alicenet/alicenet/localrpc"
@@ -280,13 +282,16 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	defer txWatcher.Close()
 
 	// Setup tasks scheduler
-	tasksHandler, err := executor.NewTaskHandler(monDB, eth, consAdminHandlers, txWatcher)
+	taskRequestChan := make(chan tasks.TaskRequest, constants.TaskSchedulerBufferSize)
+	defer close(taskRequestChan)
+
+	tasksScheduler, err := executor.NewTasksScheduler(monDB, eth, contractsHandler, consAdminHandlers, taskRequestChan, txWatcher)
 	if err != nil {
 		panic(err)
 	}
 
 	monitorInterval := config.Configuration.Monitor.Interval
-	mon, err := monitor.NewMonitor(consDB, monDB, consAdminHandlers, appDepositHandler, eth, ethereum.GetContracts(), monitorInterval, uint64(batchSize), tasksHandler)
+	mon, err := monitor.NewMonitor(consDB, monDB, consAdminHandlers, appDepositHandler, eth, contractsHandler, contractsHandler.EthereumContracts().GetAllAddresses(), monitorInterval, uint64(batchSize), taskRequestChan)
 	if err != nil {
 		panic(err)
 	}
@@ -318,8 +323,11 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	go statusLogger.Run()
 	defer statusLogger.Close()
 
-	tasksHandler.Start()
-	defer tasksHandler.Close()
+	err = tasksScheduler.Start()
+	if err != nil {
+		panic(err)
+	}
+	defer tasksScheduler.Close()
 
 	err = mon.Start()
 	if err != nil {

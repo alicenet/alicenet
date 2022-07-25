@@ -49,7 +49,7 @@ func (registry *TypeRegistry) lookupName(tipe reflect.Type) (string, bool) {
 	return name, present
 }
 
-func (registry *TypeRegistry) LookupType(name string) (reflect.Type, bool) {
+func (registry *TypeRegistry) lookupType(name string) (reflect.Type, bool) {
 	registry.RLock()
 	defer registry.RUnlock()
 
@@ -80,7 +80,7 @@ func (registry *TypeRegistry) WrapInstance(t interface{}) (*InstanceWrapper, err
 
 func (registry *TypeRegistry) UnwrapInstance(wrapper *InstanceWrapper) (interface{}, error) {
 
-	tipe, present := registry.LookupType(wrapper.NameType)
+	tipe, present := registry.lookupType(wrapper.NameType)
 	if !present {
 		return nil, ErrUnknownName
 	}
@@ -101,12 +101,4 @@ func GetNameType(t interface{}) (string, reflect.Type) {
 	}
 
 	return tipe.String(), tipe
-}
-
-func (registry *TypeRegistry) GetNameTypeIsPresent(t interface{}) (string, reflect.Type, bool) {
-	name, tipe := GetNameType(t)
-
-	_, present := registry.lookupName(tipe)
-
-	return name, tipe, present
 }

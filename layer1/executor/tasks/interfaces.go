@@ -13,7 +13,7 @@ import (
 
 // Task the interface requirements of a task
 type Task interface {
-	Initialize(ctx context.Context, cancelFunc context.CancelFunc, database *db.Database, logger *logrus.Entry, eth layer1.Client, name string, id string, taskResponseChan InternalTaskResponseChan) error
+	Initialize(ctx context.Context, cancelFunc context.CancelFunc, database *db.Database, logger *logrus.Entry, eth layer1.Client, contracts layer1.AllSmartContracts, name string, id string, taskResponseChan TaskResponseChan) error
 	Prepare(ctx context.Context) *TaskErr
 	Execute(ctx context.Context) (*types.Transaction, *TaskErr)
 	ShouldExecute(ctx context.Context) (bool, *TaskErr)
@@ -38,7 +38,7 @@ type TaskState interface {
 	LoadState(txn *badger.Txn) error
 }
 
-// InternalTaskResponseChan interface requirements
-type InternalTaskResponseChan interface {
-	Add(id string, err error)
+// TaskResponseChan the interface requirements of a task response chan
+type TaskResponseChan interface {
+	Add(TaskResponse)
 }
