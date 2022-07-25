@@ -60,7 +60,7 @@ func populateMonitor(monitorState *objects.MonitorState, EPOCH uint32) {
 
 }
 
-func getMonitor(t *testing.T) (*monitor, *executor.TasksScheduler, chan tasks.TaskRequest, *mocks.MockClient) {
+func getMonitor(t *testing.T) (*monitor, *executor.TaskManager, chan tasks.TaskRequest, *mocks.MockClient) {
 	monDB := mocks.NewTestDB()
 	adminHandler := mocks.NewMockAdminHandler()
 	depositHandler := mocks.NewMockDepositHandler()
@@ -68,7 +68,7 @@ func getMonitor(t *testing.T) (*monitor, *executor.TasksScheduler, chan tasks.Ta
 	contracts := mocks.NewMockAllSmartContracts()
 	tasksReqChan := make(chan tasks.TaskRequest, 10)
 	txWatcher := transaction.NewWatcher(eth, 12, monDB, false, constants.TxPollingTime)
-	tasksScheduler, err := executor.NewTasksScheduler(monDB, eth, contracts, adminHandler, tasksReqChan, txWatcher)
+	tasksScheduler, err := executor.NewTaskHandler(monDB, eth, adminHandler, tasksReqChan, txWatcher)
 
 	mon, err := NewMonitor(monDB, monDB, adminHandler, depositHandler, eth, contracts, contracts.EthereumContracts().GetAllAddresses(), 2*time.Second, 100, tasksReqChan)
 	assert.Nil(t, err)
@@ -123,7 +123,7 @@ func TestProcessEvents(t *testing.T) {
 	eth.GetEventsFunc.SetDefaultReturn(logs, nil)
 
 	defer close(tasksReqChan)
-	err := tasksScheduler.Start()
+	err := tasksScheduler.start()
 	assert.Nil(t, err)
 	defer tasksScheduler.Close()
 
