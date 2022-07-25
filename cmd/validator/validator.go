@@ -3,6 +3,7 @@ package validator
 import (
 	"context"
 	"fmt"
+	"github.com/alicenet/alicenet/layer1/handlers"
 	"os"
 	"os/signal"
 	"syscall"
@@ -49,7 +50,7 @@ var Command = cobra.Command{
 	Long:  "Runs a AliceNet node in mining or non-mining mode",
 	Run:   validatorNode}
 
-func initEthereumConnection(logger *logrus.Logger) (layer1.Client, *mncrypto.Secp256k1Signer, []byte) {
+func initEthereumConnection(logger *logrus.Logger) (layer1.Client, layer1.AllSmartContracts, *mncrypto.Secp256k1Signer, []byte) {
 	// Ethereum connection setup
 	logger.Infof("Connecting to Ethereum...")
 	eth, err := ethereum.NewClient(
@@ -71,11 +72,11 @@ func initEthereumConnection(logger *logrus.Logger) (layer1.Client, *mncrypto.Sec
 		logger.Fatal("Ethereum endpoint not accessible...")
 		panic(err)
 	}
-	logger.Infof("Looking up smart contracts on Ethereum...")
-	// Initialize and find all the contracts
-	ethereum.NewContracts(eth, common.HexToAddress(config.Configuration.Ethereum.FactoryAddress))
 
-	utils.LogStatus(logger.WithField("Component", "validator"), eth)
+	// Initialize and find all the contracts
+	contractsHandler := handlers.NewAllSmartContractsHandle(eth, common.HexToAddress(config.Configuration.Ethereum.FactoryAddress))
+
+	utils.LogStatus(logger.WithField("Component", "validator"), eth, contractsHandler)
 
 	secp256k1, err := eth.CreateSecp256k1Signer()
 	if err != nil {
@@ -87,7 +88,7 @@ func initEthereumConnection(logger *logrus.Logger) (layer1.Client, *mncrypto.Sec
 	}
 	logger.Infof("Account: %v Public Key: 0x%x", eth.GetDefaultAccount().Address.Hex(), pubKey)
 
-	return eth, secp256k1, pubKey
+	return eth, contractsHandler, secp256k1, pubKey
 }
 
 // Setup the peer manager:
@@ -184,7 +185,7 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	chainID := uint32(config.Configuration.Chain.ID)
 	batchSize := config.Configuration.Monitor.BatchSize
 
-	eth, secp256k1Signer, publicKey := initEthereumConnection(logger)
+	eth, contractsHandler, secp256k1Signer, publicKey := initEthereumConnection(logger)
 	defer eth.Close()
 
 	// Initialize consensus db: stores all state the consensus mechanism requires to work
@@ -279,13 +280,13 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	defer txWatcher.Close()
 
 	// Setup tasks scheduler
-	tasksHandler, err := executor.NewTaskHandler(monDB, eth, consAdminHandlers, txWatcher)
+	tasksHandler, err := executor.NewTaskHandler(monDB, eth, contractsHandler, consAdminHandlers, txWatcher)
 	if err != nil {
 		panic(err)
 	}
 
 	monitorInterval := config.Configuration.Monitor.Interval
-	mon, err := monitor.NewMonitor(consDB, monDB, consAdminHandlers, appDepositHandler, eth, ethereum.GetContracts(), monitorInterval, uint64(batchSize), tasksHandler)
+	mon, err := monitor.NewMonitor(consDB, monDB, consAdminHandlers, appDepositHandler, eth, contractsHandler, contractsHandler.EthereumContracts().GetAllAddresses(), monitorInterval, uint64(batchSize), tasksHandler)
 	if err != nil {
 		panic(err)
 	}

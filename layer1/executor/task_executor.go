@@ -74,9 +74,9 @@ func (te *TaskExecutor) getTxBackup(uuid string) (*types.Transaction, bool) {
 
 // manageTask is the main function to manage a task.
 // It is basically an abstraction to handle the task execution in a separate process.
-func (te *TaskExecutor) manageTask(mainCtx context.Context, task tasks.Task, name string, taskId string, database *db.Database, logger *logrus.Entry, eth layer1.Client, taskResponseChan tasks.InternalTaskResponseChan) {
+func (te *TaskExecutor) manageTask(mainCtx context.Context, task tasks.Task, name string, taskId string, database *db.Database, logger *logrus.Entry, eth layer1.Client, contracts layer1.AllSmartContracts, taskResponseChan tasks.InternalTaskResponseChan) {
 	defer task.Close()
-	err := te.processTask(mainCtx, task, name, taskId, database, logger, eth, taskResponseChan)
+	err := te.processTask(mainCtx, task, name, taskId, database, logger, eth, contracts, taskResponseChan)
 	// Clean up in case the task was killed
 	if task.WasKilled() {
 		task.GetLogger().Trace("task was externally killed, removing tx backup")
@@ -89,10 +89,10 @@ func (te *TaskExecutor) manageTask(mainCtx context.Context, task tasks.Task, nam
 }
 
 // processTask processes all the stages of the task execution
-func (te *TaskExecutor) processTask(mainCtx context.Context, task tasks.Task, name string, taskId string, database *db.Database, logger *logrus.Entry, eth layer1.Client, taskResponseChan tasks.InternalTaskResponseChan) error {
+func (te *TaskExecutor) processTask(mainCtx context.Context, task tasks.Task, name string, taskId string, database *db.Database, logger *logrus.Entry, eth layer1.Client, contracts layer1.AllSmartContracts, taskResponseChan tasks.InternalTaskResponseChan) error {
 	taskCtx, cf := context.WithCancel(mainCtx)
 	defer cf()
-	err := task.Initialize(taskCtx, cf, database, logger, eth, name, taskId, taskResponseChan)
+	err := task.Initialize(taskCtx, cf, database, logger, eth, contracts, name, taskId, taskResponseChan)
 	if err != nil {
 		return err
 	}
