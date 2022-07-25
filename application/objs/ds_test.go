@@ -1060,6 +1060,37 @@ func TestDSSign(t *testing.T) {
 	}
 }
 
+func TestDSSignBad(t *testing.T) {
+	ds := &DataStore{}
+	err := ds.Sign(nil, nil)
+	if err == nil {
+		t.Fatal("Should have raised an error (1)")
+	}
+
+	txIn := &TXIn{}
+	err = ds.Sign(txIn, nil)
+	if err == nil {
+		t.Fatal("Should have raised an error (2)")
+	}
+
+	s := &crypto.Secp256k1Signer{}
+	privk := crypto.Hasher([]byte("privk"))
+	err = s.SetPrivk(privk)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ds = makeDataStoreGood(privk)
+	txIn, err = ds.MakeTxIn()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = ds.Sign(txIn, nil)
+	if err == nil {
+		t.Fatal("Should have raised an error (3)")
+	}
+}
+
 func TestDSValidateSignature(t *testing.T) {
 	currentHeight := uint32(0)
 	txIn := &TXIn{}
@@ -1073,6 +1104,15 @@ func TestDSValidateSignature(t *testing.T) {
 	err = ds.ValidateSignature(currentHeight, txIn)
 	if err == nil {
 		t.Fatal("Should have raised an error (2)")
+	}
+}
+
+func TestDSValidateSignatureBad(t *testing.T) {
+	currentHeight := uint32(0)
+	ds := &DataStore{}
+	err := ds.ValidateSignature(currentHeight, nil)
+	if err == nil {
+		t.Fatal("Should have raised an error (1)")
 	}
 }
 
@@ -1178,5 +1218,32 @@ func TestDSValidateFee(t *testing.T) {
 	err = ds.ValidateFee(storage)
 	if err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestDSValidateFeeBad(t *testing.T) {
+	msg := MakeMockStorageGetter()
+	storage := MakeStorage(msg)
+
+	ds := &DataStore{}
+	err := ds.ValidateFee(storage)
+	if err == nil {
+		t.Fatal("Should have raised an error (1)")
+	}
+
+	ds.DSLinker = &DSLinker{}
+	err = ds.ValidateFee(storage)
+	if err == nil {
+		t.Fatal("Should have raised an error (2)")
+	}
+	ds.DSLinker.DSPreImage = &DSPreImage{}
+	err = ds.ValidateFee(storage)
+	if err == nil {
+		t.Fatal("Should have raised an error (3)")
+	}
+	ds.DSLinker.DSPreImage.RawData = make([]byte, 0)
+	err = ds.ValidateFee(storage)
+	if err == nil {
+		t.Fatal("Should have raised an error (4)")
 	}
 }

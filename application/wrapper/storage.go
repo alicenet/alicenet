@@ -76,7 +76,7 @@ func (s *Storage) GetValueStoreFee() (*uint256.Uint256, error) {
 }
 
 // GetMinTxFee returns the minimum TxFee
-func (s *Storage) GetMinTxFee() (*uint256.Uint256, error) {
+func (s *Storage) GetMinTxFeeCostRatio() (*uint256.Uint256, error) {
 	if s == nil {
 		return nil, errorz.ErrInvalid{}.New("storage.GetMinTxFee; struct not initialized")
 	}

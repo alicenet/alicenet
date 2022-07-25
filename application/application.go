@@ -2,7 +2,9 @@ package application
 
 import (
 	"bytes"
+	"context"
 	"errors"
+	"time"
 
 	"github.com/alicenet/alicenet/dynamics"
 	"github.com/alicenet/alicenet/errorz"
@@ -37,11 +39,14 @@ type Application struct {
 }
 
 // Init initializes Application ...
-func (a *Application) Init(conDB *consensusdb.Database, memDB *badger.DB, dph *deposit.Handler, storageInterface dynamics.StorageGetter) error {
+func (a *Application) Init(conDB *consensusdb.Database, memDB *badger.DB, dph *deposit.Handler, storageInterface dynamics.StorageGetter, txQueueSize int) error {
 	a.logger = logging.GetLogger(constants.LoggerApp)
 	storage := wrapper.NewStorage(storageInterface)
 	uHdlr := utxohandler.NewUTXOHandler(conDB.DB())
-	pHdlr := pendingtx.NewPendingTxHandler(memDB)
+	pHdlr, err := pendingtx.NewPendingTxHandler(memDB, txQueueSize)
+	if err != nil {
+		return err
+	}
 	pHdlr.UTXOHandler = uHdlr
 	pHdlr.DepositHandler = dph
 	a.txHandler = &txHandler{
@@ -342,6 +347,44 @@ func (a *Application) GetHeightForTx(txn *badger.Txn, txHash []byte) (uint32, er
 // Cleanup does nothing at this time
 func (a *Application) Cleanup() error {
 	return nil
+}
+
+// AddTxsToQueue attempts to add additional txs to queue
+func (a *Application) AddTxsToQueue(txn *badger.Txn, currentHeight uint32) error {
+	if a.txHandler.pTxHdlr.TxQueueAddFinished() {
+		// We exit if we have already finished tx queue iteration
+		return nil
+	}
+	ctx := context.Background()
+	subCtx, cf := context.WithTimeout(ctx, 500*time.Millisecond)
+	defer cf()
+	return a.txHandler.pTxHdlr.AddTxsToQueue(txn, subCtx, currentHeight)
+}
+
+// TxQueueAddStart starts the process of adding txs to queue
+func (a *Application) TxQueueAddStart() {
+	a.txHandler.pTxHdlr.TxQueueAddStart()
+}
+
+// TxQueueAddStop stops the process of adding txs to queue
+func (a *Application) TxQueueAddStop() {
+	a.txHandler.pTxHdlr.TxQueueAddStop()
+}
+
+// TxQueueAddStatus returns true if we are currently adding adding txs to queue
+func (a *Application) TxQueueAddStatus() bool {
+	return a.txHandler.pTxHdlr.TxQueueAddStatus()
+}
+
+// SetQueueSize sets the size of the TxQueue;
+// this determines how many txs we store in memory to quickly form a proposal.
+func (a *Application) SetQueueSize(queueSize int) error {
+	return a.txHandler.pTxHdlr.SetQueueSize(queueSize)
+}
+
+// QueueSize returns the size of the TxQueue.
+func (a *Application) QueueSize() int {
+	return a.txHandler.pTxHdlr.QueueSize()
 }
 
 // StoreSnapShotNode will store a node of the state trie during fast sync

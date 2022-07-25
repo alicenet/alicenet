@@ -33,7 +33,19 @@ type Tx struct {
 // Tx object
 func (b *Tx) UnmarshalBinary(data []byte) error {
 	if b == nil {
-		return errorz.ErrInvalid{}.New("tx.unmarshalBinary: tx not initialized")
+		return errorz.ErrInvalid{}.New("tx.UnmarshalBinary: tx not initialized")
+	}
+	if len(data) == 0 {
+		return errorz.ErrInvalid{}.New("tx.UnmarshalBinary: len(data) == 0")
+	}
+	if len(data) > constants.MaxTxSize {
+		return errorz.ErrInvalid{}.New("tx.UnmarshalBinary: len(data) > MaxTxSize")
+	}
+	if len(data) == 0 {
+		return errorz.ErrInvalid{}.New("tx.unmarshalBinary: len(data) == 0")
+	}
+	if len(data) > constants.MaxTxSize {
+		return errorz.ErrInvalid{}.New("tx.unmarshalBinary: len(data) > MaxTxSize")
 	}
 	bc, err := tx.Unmarshal(data)
 	if err != nil {
@@ -46,28 +58,38 @@ func (b *Tx) UnmarshalBinary(data []byte) error {
 // byte slice
 func (b *Tx) MarshalBinary() ([]byte, error) {
 	if b == nil {
-		return nil, errorz.ErrInvalid{}.New("tx.marshalBinary: tx not initialized")
+		return nil, errorz.ErrInvalid{}.New("tx.MarshalBinary: tx not initialized")
 	}
 	if b.Fee == nil {
-		return nil, errorz.ErrInvalid{}.New("tx.marshalBinary: tx.fee not initialized")
+		return nil, errorz.ErrInvalid{}.New("tx.MarshalBinary: tx.fee not initialized")
 	}
 	if len(b.Vin) > constants.MaxTxVectorLength {
-		return nil, errorz.ErrInvalid{}.New("tx.marshalBinary: len(tx.vin) > MaxTxVectorLength")
+		return nil, errorz.ErrInvalid{}.New("tx.MarshalBinary: len(tx.vin) > MaxTxVectorLength")
 	}
 	if len(b.Vout) > constants.MaxTxVectorLength {
-		return nil, errorz.ErrInvalid{}.New("tx.marshalBinary: len(tx.vout) > MaxTxVectorLength")
+		return nil, errorz.ErrInvalid{}.New("tx.MarshalBinary: len(tx.vout) > MaxTxVectorLength")
 	}
 	bc, err := b.MarshalCapn(nil)
 	if err != nil {
 		return nil, err
 	}
-	return tx.Marshal(bc)
+	txBytes, err := tx.Marshal(bc)
+	if err != nil {
+		return nil, err
+	}
+	if len(txBytes) == 0 {
+		return nil, errorz.ErrInvalid{}.New("tx.MarshalBinary: len(txBytes) == 0")
+	}
+	if len(txBytes) > constants.MaxTxSize {
+		return nil, errorz.ErrInvalid{}.New("tx.MarshalBinary: len(txBytes) > MaxTxSize")
+	}
+	return txBytes, nil
 }
 
 // UnmarshalCapn unmarshals the capnproto definition of the object
 func (b *Tx) UnmarshalCapn(bc mdefs.Tx) error {
 	if b == nil {
-		return errorz.ErrInvalid{}.New("tx.unmarshalCapn: tx not initialized")
+		return errorz.ErrInvalid{}.New("tx.UnmarshalCapn: tx not initialized")
 	}
 	if err := tx.Validate(bc); err != nil {
 		return err
@@ -122,7 +144,7 @@ func (b *Tx) UnmarshalCapn(bc mdefs.Tx) error {
 // MarshalCapn marshals the object into its capnproto definition
 func (b *Tx) MarshalCapn(seg *capnp.Segment) (mdefs.Tx, error) {
 	if b == nil {
-		return mdefs.Tx{}, errorz.ErrInvalid{}.New("tx.marshalCapn: tx not initialized")
+		return mdefs.Tx{}, errorz.ErrInvalid{}.New("tx.MarshalCapn: tx not initialized")
 	}
 	var bc mdefs.Tx
 	if seg == nil {
@@ -195,7 +217,7 @@ func (b *Tx) MarshalCapn(seg *capnp.Segment) (mdefs.Tx, error) {
 // ValidateUnique checks that all inputs and outputs are unique
 func (b *Tx) ValidateUnique(opset map[string]bool) (map[string]bool, error) {
 	if b == nil {
-		return nil, errorz.ErrInvalid{}.New("tx.validateUnique: tx not initialized")
+		return nil, errorz.ErrInvalid{}.New("tx.ValidateUnique: tx not initialized")
 	}
 	if opset == nil {
 		opset = make(map[string]bool)
@@ -209,7 +231,7 @@ func (b *Tx) ValidateUnique(opset map[string]bool) (map[string]bool, error) {
 			opset[string(hsh)] = true
 			continue
 		}
-		return nil, errorz.ErrInvalid{}.New("tx.validateUnique: duplicate input")
+		return nil, errorz.ErrInvalid{}.New("tx.ValidateUnique: duplicate input")
 	}
 	for i := 0; i < len(b.Vout); i++ {
 		hsh, err := b.Vout[i].UTXOID()
@@ -220,7 +242,7 @@ func (b *Tx) ValidateUnique(opset map[string]bool) (map[string]bool, error) {
 			opset[string(hsh)] = true
 			continue
 		}
-		return nil, errorz.ErrInvalid{}.New("tx.validateUnique: duplicate output")
+		return nil, errorz.ErrInvalid{}.New("tx.ValidateUnique: duplicate output")
 	}
 	return opset, nil
 }
@@ -229,7 +251,7 @@ func (b *Tx) ValidateUnique(opset map[string]bool) (map[string]bool, error) {
 // for DataStore objects
 func (b *Tx) ValidateDataStoreIndexes(opset map[string]bool) (map[string]bool, error) {
 	if b == nil {
-		return nil, errorz.ErrInvalid{}.New("tx.validateDataStoreIndexes: tx not initialized")
+		return nil, errorz.ErrInvalid{}.New("tx.ValidateDataStoreIndexes: tx not initialized")
 	}
 	if opset == nil {
 		opset = make(map[string]bool)
@@ -260,7 +282,7 @@ func (b *Tx) ValidateDataStoreIndexes(opset map[string]bool) (map[string]bool, e
 				opset[string(hsh)] = true
 				continue
 			}
-			return nil, errorz.ErrInvalid{}.New("tx.validateDataStoreIndexes: duplicate output index for datastore")
+			return nil, errorz.ErrInvalid{}.New("tx.ValidateDataStoreIndexes: duplicate output index for datastore")
 		}
 	}
 	return opset, nil
@@ -269,7 +291,7 @@ func (b *Tx) ValidateDataStoreIndexes(opset map[string]bool) (map[string]bool, e
 // ValidateTxHash validates the txHash is correct on all objects
 func (b *Tx) ValidateTxHash() error {
 	if b == nil {
-		return errorz.ErrInvalid{}.New("tx.validateTxHash: tx not initialized")
+		return errorz.ErrInvalid{}.New("tx.ValidateTxHash: tx not initialized")
 	}
 	if b.txHash != nil {
 		return nil
@@ -284,7 +306,7 @@ func (b *Tx) ValidateTxHash() error {
 			return err
 		}
 		if !bytes.Equal(txInTxHash, txHash) {
-			return errorz.ErrInvalid{}.New("validateTxHash: wrong txHash (vin)")
+			return errorz.ErrInvalid{}.New("tx.ValidateTxHash: wrong txHash (vin)")
 		}
 	}
 	for _, txOut := range b.Vout {
@@ -293,7 +315,7 @@ func (b *Tx) ValidateTxHash() error {
 			return err
 		}
 		if !bytes.Equal(hsh, txHash) {
-			return errorz.ErrInvalid{}.New("validateTxHash: wrong txHash (vout)")
+			return errorz.ErrInvalid{}.New("tx.ValidateTxHash: wrong txHash (vout)")
 		}
 	}
 	return nil
@@ -302,10 +324,10 @@ func (b *Tx) ValidateTxHash() error {
 // TxHash calculates the TxHash of the transaction
 func (b *Tx) TxHash() ([]byte, error) {
 	if b == nil {
-		return nil, errorz.ErrInvalid{}.New("tx.txHash: tx not initialized")
+		return nil, errorz.ErrInvalid{}.New("tx.TxHash: tx not initialized")
 	}
 	if b.Fee == nil {
-		return nil, errorz.ErrInvalid{}.New("tx.txHash: tx.fee not initialized")
+		return nil, errorz.ErrInvalid{}.New("tx.TxHash: tx.fee not initialized")
 	}
 	if b.txHash != nil {
 		return utils.CopySlice(b.txHash), nil
@@ -359,10 +381,10 @@ func (b *Tx) TxHash() ([]byte, error) {
 // SetTxHash calculates the TxHash and sets it on all UTXOs and TXIns
 func (b *Tx) SetTxHash() error {
 	if b == nil {
-		return errorz.ErrInvalid{}.New("tx.setTxHash: tx not initialized")
+		return errorz.ErrInvalid{}.New("tx.SetTxHash: tx not initialized")
 	}
 	if b.Fee == nil {
-		return errorz.ErrInvalid{}.New("tx.setTxHash: tx.fee not initialized")
+		return errorz.ErrInvalid{}.New("tx.SetTxHash: tx.fee not initialized")
 	}
 	txHash, err := b.TxHash()
 	if err != nil {
@@ -384,10 +406,10 @@ func (b *Tx) SetTxHash() error {
 // ConsumedPreHash returns the list of PreHashs from Vin
 func (b *Tx) ConsumedPreHash() ([][]byte, error) {
 	if b == nil {
-		return nil, errorz.ErrInvalid{}.New("tx.consumedPreHash: tx not initialized")
+		return nil, errorz.ErrInvalid{}.New("tx.ConsumedPreHash: tx not initialized")
 	}
 	if len(b.Vin) == 0 {
-		return nil, errorz.ErrInvalid{}.New("tx.consumedPreHash: tx.vin not initialized")
+		return nil, errorz.ErrInvalid{}.New("tx.ConsumedPreHash: tx.vin not initialized")
 	}
 	return b.Vin.PreHash()
 }
@@ -395,10 +417,10 @@ func (b *Tx) ConsumedPreHash() ([][]byte, error) {
 // ConsumedUTXOID returns the list of UTXOIDs from Vin
 func (b *Tx) ConsumedUTXOID() ([][]byte, error) {
 	if b == nil {
-		return nil, errorz.ErrInvalid{}.New("tx.consumedUTXOID: tx not initialized")
+		return nil, errorz.ErrInvalid{}.New("tx.ConsumedUTXOID: tx not initialized")
 	}
 	if len(b.Vin) == 0 {
-		return nil, errorz.ErrInvalid{}.New("tx.consumedUTXOID: tx.vin not initialized")
+		return nil, errorz.ErrInvalid{}.New("tx.ConsumedUTXOID: tx.vin not initialized")
 	}
 	return b.Vin.UTXOID()
 }
@@ -411,10 +433,10 @@ func (b *Tx) ConsumedIsDeposit() []bool {
 // GeneratedUTXOID returns the list of UTXOIDs from Vout
 func (b *Tx) GeneratedUTXOID() ([][]byte, error) {
 	if b == nil {
-		return nil, errorz.ErrInvalid{}.New("tx.generatedUTXOID: tx not initialized")
+		return nil, errorz.ErrInvalid{}.New("tx.GeneratedUTXOID: tx not initialized")
 	}
 	if len(b.Vout) == 0 {
-		return nil, errorz.ErrInvalid{}.New("tx.generatedUTXOID: tx.vout not initialized")
+		return nil, errorz.ErrInvalid{}.New("tx.GeneratedUTXOID: tx.vout not initialized")
 	}
 	return b.Vout.UTXOID()
 }
@@ -422,10 +444,10 @@ func (b *Tx) GeneratedUTXOID() ([][]byte, error) {
 // GeneratedPreHash returns the list of PreHashs from Vout
 func (b *Tx) GeneratedPreHash() ([][]byte, error) {
 	if b == nil {
-		return nil, errorz.ErrInvalid{}.New("tx.generatedPreHash: tx not initialized")
+		return nil, errorz.ErrInvalid{}.New("tx.GeneratedPreHash: tx not initialized")
 	}
 	if len(b.Vout) == 0 {
-		return nil, errorz.ErrInvalid{}.New("tx.generatedPreHash: tx.vout not initialized")
+		return nil, errorz.ErrInvalid{}.New("tx.GeneratedPreHash: tx.vout not initialized")
 	}
 	return b.Vout.PreHash()
 }
@@ -433,10 +455,10 @@ func (b *Tx) GeneratedPreHash() ([][]byte, error) {
 // ValidateSignature validates the signatures of the objects
 func (b *Tx) ValidateSignature(currentHeight uint32, refUTXOs Vout) error {
 	if b == nil {
-		return errorz.ErrInvalid{}.New("tx.validateSignature: tx not initialized")
+		return errorz.ErrInvalid{}.New("tx.ValidateSignature: tx not initialized")
 	}
 	if len(b.Vin) == 0 {
-		return errorz.ErrInvalid{}.New("tx.validateSignature: tx.vin not initialized")
+		return errorz.ErrInvalid{}.New("tx.ValidateSignature: tx.vin not initialized")
 	}
 	return refUTXOs.ValidateSignature(currentHeight, b.Vin)
 }
@@ -444,10 +466,10 @@ func (b *Tx) ValidateSignature(currentHeight uint32, refUTXOs Vout) error {
 // ValidatePreSignature validates the presignatures of the objects
 func (b *Tx) ValidatePreSignature() error {
 	if b == nil {
-		return errorz.ErrInvalid{}.New("tx.validatePreSignature: tx not initialized")
+		return errorz.ErrInvalid{}.New("tx.ValidatePreSignature: tx not initialized")
 	}
 	if len(b.Vout) == 0 {
-		return errorz.ErrInvalid{}.New("tx.validatePreSignature: tx.vout not initialized")
+		return errorz.ErrInvalid{}.New("tx.ValidatePreSignature: tx.vout not initialized")
 	}
 	return b.Vout.ValidatePreSignature()
 }
@@ -456,50 +478,153 @@ func (b *Tx) ValidatePreSignature() error {
 // currentHeight and refUTXOs are needed to verify if we have a cleanup tx.
 func (b *Tx) ValidateFees(currentHeight uint32, refUTXOs Vout, storage *wrapper.Storage) error {
 	if b == nil {
-		return errorz.ErrInvalid{}.New("tx.validateFees: tx not initialized")
+		return errorz.ErrInvalid{}.New("tx.ValidateFees: tx not initialized")
 	}
 	if len(b.Vin) == 0 {
-		return errorz.ErrInvalid{}.New("tx.validateFees: tx.vin not initialized")
+		return errorz.ErrInvalid{}.New("tx.ValidateFees: tx.vin not initialized")
 	}
 	if len(b.Vout) == 0 {
-		return errorz.ErrInvalid{}.New("tx.validateFees: tx.vout not initialized")
+		return errorz.ErrInvalid{}.New("tx.ValidateFees: tx.vout not initialized")
 	}
 	if b.Fee == nil {
-		return errorz.ErrInvalid{}.New("tx.validateFees: tx.fee not initialized")
+		return errorz.ErrInvalid{}.New("tx.ValidateFees: tx.fee not initialized")
 	}
 	if b.IsCleanupTx(currentHeight, refUTXOs) {
-		// Tx is a valid Cleanup Tx, so we do not worry about fees.
+		// Tx is a valid Cleanup Tx, so we do not worry about fees;
+		// the specific cleanup tx fees are already performed in this call.
 		return nil
 	}
 	if err := b.Vout.ValidateFees(storage); err != nil {
 		return err
 	}
-	// Ensure Fee is above minimum
-	minTxFee, err := storage.GetMinTxFee()
+	// Ensure FeeCostRatio is above minimum
+	minTxFeeCostRatio, err := storage.GetMinTxFeeCostRatio()
 	if err != nil {
 		return err
 	}
-	if b.Fee.Lt(minTxFee) {
-		return errorz.ErrInvalid{}.New("tx.validateFees; tx.fee below minTxFee")
+	// isCleanup is false because it is not a cleanup tx
+	feeCostRatio, err := b.ScaledFeeCostRatio(false)
+	if err != nil {
+		return err
+	}
+	if feeCostRatio.Lt(minTxFeeCostRatio) {
+		return errorz.ErrInvalid{}.New("tx.ValidateFees; feeCostRatio below minimum")
 	}
 	return nil
 }
 
-// ValidateEqualVinVout checks the following
-// calc sum on inputs from utxos and currentHeight
-// sum inputs must equal sum outputs plus fee
-func (b *Tx) ValidateEqualVinVout(currentHeight uint32, refUTXOs Vout) error {
+// Cost computes the total transaction complexity
+func (b *Tx) cost() (*uint256.Uint256, error) {
 	if b == nil {
-		return errorz.ErrInvalid{}.New("tx.validateEqualVinVout: tx not initialized")
+		return nil, errorz.ErrInvalid{}.New("tx.cost: tx not initialized")
 	}
 	if len(b.Vin) == 0 {
-		return errorz.ErrInvalid{}.New("tx.validateEqualVinVout: tx.vin not initialized")
+		return nil, errorz.ErrInvalid{}.New("tx.cost: tx.vin not initialized")
 	}
 	if len(b.Vout) == 0 {
-		return errorz.ErrInvalid{}.New("tx.validateEqualVinVout: tx.vout not initialized")
+		return nil, errorz.ErrInvalid{}.New("tx.cost: tx.vout not initialized")
+	}
+	costSize, err := b.costSize()
+	if err != nil {
+		return nil, err
+	}
+	costComputation, err := b.costComputation()
+	if err != nil {
+		return nil, err
+	}
+	costTotal, err := new(uint256.Uint256).Add(costSize, costComputation)
+	if err != nil {
+		return nil, err
+	}
+	if costTotal.IsZero() {
+		return nil, errorz.ErrInvalid{}.New("tx.cost: cost is zero")
+	}
+	return costTotal, nil
+}
+
+// costSize computes the total transaction complexity due to size (bytes)
+func (b *Tx) costSize() (*uint256.Uint256, error) {
+	if b == nil {
+		return nil, errorz.ErrInvalid{}.New("tx.costSize: tx not initialized")
+	}
+	txBytes, err := b.MarshalBinary()
+	if err != nil {
+		return nil, err
+	}
+	size := len(txBytes)
+	costSize := &uint256.Uint256{}
+	costSize.FromUint64(uint64(size))
+	return costSize, nil
+}
+
+// costComputation computes the total transaction complexity due to computation.
+// TODO: update this appropriately.
+func (b *Tx) costComputation() (*uint256.Uint256, error) {
+	if b == nil {
+		return nil, errorz.ErrInvalid{}.New("tx.costComputation: tx not initialized")
+	}
+	costComputation := uint256.Zero()
+	return costComputation, nil
+}
+
+// ScaledFeeCostRatio returns the fee cost ratio as a uint256
+func (b *Tx) ScaledFeeCostRatio(isCleanup bool) (*uint256.Uint256, error) {
+	if b == nil {
+		return nil, errorz.ErrInvalid{}.New("tx.ScaledFeeCostRatio: tx not initialized")
 	}
 	if b.Fee == nil {
-		return errorz.ErrInvalid{}.New("tx.validateEqualVinVout: tx.fee not initialized")
+		return nil, errorz.ErrInvalid{}.New("tx.ScaledFeeCostRatio: tx.Fee not initialized")
+	}
+	cost, err := b.cost()
+	if err != nil {
+		return nil, err
+	}
+	if isCleanup {
+		if !b.Fee.IsZero() {
+			return nil, errorz.ErrInvalid{}.New("tx.ScaledFeeCostRatio: is cleanup tx but tx.Fee is nonzero")
+		}
+		feeCostRatio := uint256.Max()
+		return feeCostRatio, nil
+	}
+	scaleFactor := uint256.TwoPower64()
+	maxFee := uint256.TwoPower128()
+	feeCopy := b.Fee.Clone()
+	// Ensure the fee is not too large
+	if feeCopy.Gt(maxFee) {
+		err := feeCopy.Set(maxFee)
+		if err != nil {
+			return nil, err
+		}
+	}
+	scaledFee, err := new(uint256.Uint256).Mul(feeCopy, scaleFactor)
+	if err != nil {
+		return nil, err
+	}
+	feeCostRatio, err := new(uint256.Uint256).Div(scaledFee, cost)
+	if err != nil {
+		return nil, err
+	}
+	return feeCostRatio, nil
+}
+
+// ValidateEqualVinVout checks the following
+// calc sum on inputs from utxos and currentHeight
+// sum inputs must equal sum outputs plus fee.
+// Note well: This function call checks the values concerning MadBytes.
+// It also validates logic related the ERCToken object
+// by calling ValidateERCTokens.
+func (b *Tx) ValidateEqualVinVout(currentHeight uint32, refUTXOs Vout) error {
+	if b == nil {
+		return errorz.ErrInvalid{}.New("tx.ValidateEqualVinVout: tx not initialized")
+	}
+	if len(b.Vin) == 0 {
+		return errorz.ErrInvalid{}.New("tx.ValidateEqualVinVout: tx.vin not initialized")
+	}
+	if len(b.Vout) == 0 {
+		return errorz.ErrInvalid{}.New("tx.ValidateEqualVinVout: tx.vout not initialized")
+	}
+	if b.Fee == nil {
+		return errorz.ErrInvalid{}.New("tx.ValidateEqualVinVout: tx.fee not initialized")
 	}
 	minBH, err := b.CannotBeMinedUntil()
 	if err != nil {
@@ -523,25 +648,25 @@ func (b *Tx) ValidateEqualVinVout(currentHeight uint32, refUTXOs Vout) error {
 	if err != nil {
 		return err
 	}
-	if valueOutPlusFee.Cmp(valueIn) == 0 {
-		return nil
+	if !valueOutPlusFee.Eq(valueIn) {
+		return errorz.ErrInvalid{}.New(fmt.Sprintf("tx.ValidateEqualVinVout: input value does not match output value: IN:%v  vs  OUT+FEE:%v", valueIn, valueOutPlusFee))
 	}
-	return errorz.ErrInvalid{}.New(fmt.Sprintf("tx.validateEqualVinVout: input value does not match output value: IN:%v  vs  OUT+FEE:%v", valueIn, valueOutPlusFee))
+	return nil
 }
 
 // ValidateChainID validates that all elements have the correct ChainID
 func (b *Tx) ValidateChainID(chainID uint32) error {
 	if b == nil {
-		return errorz.ErrInvalid{}.New("tx.validateChainID: tx not initialized")
+		return errorz.ErrInvalid{}.New("tx.ValidateChainID: tx not initialized")
 	}
 	if len(b.Vin) == 0 {
-		return errorz.ErrInvalid{}.New("tx.validateChainID: tx.vin not initialized")
+		return errorz.ErrInvalid{}.New("tx.ValidateChainID: tx.vin not initialized")
 	}
 	if len(b.Vout) == 0 {
-		return errorz.ErrInvalid{}.New("tx.validateChainID: tx.vout not initialized")
+		return errorz.ErrInvalid{}.New("tx.ValidateChainID: tx.vout not initialized")
 	}
 	if chainID == 0 {
-		return errorz.ErrInvalid{}.New("tx.validateChainID: chainID invalid; cannot be 0")
+		return errorz.ErrInvalid{}.New("tx.ValidateChainID: chainID invalid; cannot be 0")
 	}
 	for _, inp := range b.Vin {
 		inpCid, err := inp.ChainID()
@@ -549,7 +674,7 @@ func (b *Tx) ValidateChainID(chainID uint32) error {
 			return err
 		}
 		if inpCid != chainID {
-			return errorz.ErrInvalid{}.New("tx.validateChainID: invalid chainID; bad chain ID (vin)")
+			return errorz.ErrInvalid{}.New("tx.ValidateChainID: invalid chainID; bad chain ID (vin)")
 		}
 	}
 	for _, outp := range b.Vout {
@@ -558,7 +683,7 @@ func (b *Tx) ValidateChainID(chainID uint32) error {
 			return err
 		}
 		if outpCid != chainID {
-			return errorz.ErrInvalid{}.New("tx.validateChainID: invalid chainID; bad chain ID (vout)")
+			return errorz.ErrInvalid{}.New("tx.ValidateChainID: invalid chainID; bad chain ID (vout)")
 		}
 	}
 	return nil
@@ -567,10 +692,10 @@ func (b *Tx) ValidateChainID(chainID uint32) error {
 // CannotBeMinedUntil ...
 func (b *Tx) CannotBeMinedUntil() (uint32, error) {
 	if b == nil {
-		return 0, errorz.ErrInvalid{}.New("tx.cannotBeMinedUntil: tx not initialized")
+		return 0, errorz.ErrInvalid{}.New("tx.CannotBeMinedUntil: tx not initialized")
 	}
 	if len(b.Vout) == 0 {
-		return 0, errorz.ErrInvalid{}.New("tx.cannotBeMinedUntil: tx.vout not initialized")
+		return 0, errorz.ErrInvalid{}.New("tx.CannotBeMinedUntil: tx.vout not initialized")
 	}
 	maxBH := uint32(1)
 	for _, utxo := range b.Vout {
@@ -588,10 +713,10 @@ func (b *Tx) CannotBeMinedUntil() (uint32, error) {
 // ValidateIssuedAtForMining ...
 func (b *Tx) ValidateIssuedAtForMining(currentHeight uint32) error {
 	if b == nil {
-		return errorz.ErrInvalid{}.New("tx.validateIssuedAtForMining: tx not initialized")
+		return errorz.ErrInvalid{}.New("tx.ValidateIssuedAtForMining: tx not initialized")
 	}
 	if len(b.Vout) == 0 {
-		return errorz.ErrInvalid{}.New("tx.validateIssuedAtForMining: tx.vout not initialized")
+		return errorz.ErrInvalid{}.New("tx.ValidateIssuedAtForMining: tx.vout not initialized")
 	}
 	hmap := make(map[uint32]bool)
 	for _, utxo := range b.Vout {
@@ -607,7 +732,7 @@ func (b *Tx) ValidateIssuedAtForMining(currentHeight uint32) error {
 		return nil
 	}
 	if len(hmap) > 1 {
-		return errorz.ErrInvalid{}.New("tx.validateIssuedAtForMining: conflicting IssuedAt")
+		return errorz.ErrInvalid{}.New("tx.ValidateIssuedAtForMining: conflicting IssuedAt")
 	}
 	mbh := uint32(0)
 	for k := range hmap {
@@ -615,7 +740,7 @@ func (b *Tx) ValidateIssuedAtForMining(currentHeight uint32) error {
 		break
 	}
 	if utils.Epoch(mbh) != utils.Epoch(currentHeight) {
-		return errorz.ErrInvalid{}.New("tx.validateIssuedAtForMining: mining out of epoch")
+		return errorz.ErrInvalid{}.New("tx.ValidateIssuedAtForMining: mining out of epoch")
 	}
 	return nil
 }
@@ -623,10 +748,10 @@ func (b *Tx) ValidateIssuedAtForMining(currentHeight uint32) error {
 // EpochOfExpirationForMining ...
 func (b *Tx) EpochOfExpirationForMining() (uint32, error) {
 	if b == nil {
-		return 0, errorz.ErrInvalid{}.New("tx.epochOfExpirationForMining: tx not initialized")
+		return 0, errorz.ErrInvalid{}.New("tx.EpochOfExpirationForMining: tx not initialized")
 	}
 	if len(b.Vout) == 0 {
-		return 0, errorz.ErrInvalid{}.New("tx.epochOfExpirationForMining: tx.vout not initialized")
+		return 0, errorz.ErrInvalid{}.New("tx.EpochOfExpirationForMining: tx.vout not initialized")
 	}
 	hmap := make(map[uint32]bool)
 	for _, utxo := range b.Vout {
@@ -642,7 +767,7 @@ func (b *Tx) EpochOfExpirationForMining() (uint32, error) {
 		return constants.MaxUint32, nil
 	}
 	if len(hmap) > 1 {
-		return 0, errorz.ErrInvalid{}.New("tx.epochOfExpirationForMining: conflicting IssuedAt")
+		return 0, errorz.ErrInvalid{}.New("tx.EpochOfExpirationForMining: conflicting IssuedAt")
 	}
 	mbh := uint32(0)
 	for k := range hmap {
@@ -655,16 +780,16 @@ func (b *Tx) EpochOfExpirationForMining() (uint32, error) {
 // Validate ...
 func (b *Tx) Validate(set map[string]bool, currentHeight uint32, consumedUTXOs Vout, storage *wrapper.Storage) (map[string]bool, error) {
 	if b == nil {
-		return nil, errorz.ErrInvalid{}.New("tx.validate: tx not initialized")
+		return nil, errorz.ErrInvalid{}.New("tx.Validate: tx not initialized")
 	}
 	if len(b.Vin) == 0 {
-		return nil, errorz.ErrInvalid{}.New("tx.validate: tx.vin not initialized")
+		return nil, errorz.ErrInvalid{}.New("tx.Validate: tx.vin not initialized")
 	}
 	if len(b.Vout) == 0 {
-		return nil, errorz.ErrInvalid{}.New("tx.validate: tx.vout not initialized")
+		return nil, errorz.ErrInvalid{}.New("tx.Validate: tx.vout not initialized")
 	}
 	if b.Fee == nil {
-		return nil, errorz.ErrInvalid{}.New("tx.validate: tx.fee not initialized")
+		return nil, errorz.ErrInvalid{}.New("tx.Validate: tx.fee not initialized")
 	}
 	if err := b.Vout.ValidateTxOutIdx(); err != nil {
 		return nil, err
@@ -699,16 +824,16 @@ func (b *Tx) Validate(set map[string]bool, currentHeight uint32, consumedUTXOs V
 // Other important validation logic is included in PostValidatePending.
 func (b *Tx) PreValidatePending(chainID uint32) error {
 	if b == nil {
-		return errorz.ErrInvalid{}.New("tx.preValidatePending: tx not initialized")
+		return errorz.ErrInvalid{}.New("tx.PreValidatePending: tx not initialized")
 	}
 	if len(b.Vin) == 0 {
-		return errorz.ErrInvalid{}.New("tx.preValidatePending: tx.vin not initialized")
+		return errorz.ErrInvalid{}.New("tx.PreValidatePending: tx.vin not initialized")
 	}
 	if len(b.Vout) == 0 {
-		return errorz.ErrInvalid{}.New("tx.preValidatePending: tx.vout not initialized")
+		return errorz.ErrInvalid{}.New("tx.PreValidatePending: tx.vout not initialized")
 	}
 	if b.Fee == nil {
-		return errorz.ErrInvalid{}.New("tx.preValidatePending: tx.fee not initialized")
+		return errorz.ErrInvalid{}.New("tx.PreValidatePending: tx.fee not initialized")
 	}
 	err := b.ValidateChainID(chainID)
 	if err != nil {
@@ -733,16 +858,16 @@ func (b *Tx) PreValidatePending(chainID uint32) error {
 // adding the transaction to the pending transaction pool.
 func (b *Tx) PostValidatePending(currentHeight uint32, consumedUTXOs Vout, storage *wrapper.Storage) error {
 	if b == nil {
-		return errorz.ErrInvalid{}.New("tx.postValidatePending: tx not initialized")
+		return errorz.ErrInvalid{}.New("tx.PostValidatePending: tx not initialized")
 	}
 	if len(b.Vin) == 0 {
-		return errorz.ErrInvalid{}.New("tx.postValidatePending: tx.vin not initialized")
+		return errorz.ErrInvalid{}.New("tx.PostValidatePending: tx.vin not initialized")
 	}
 	if len(b.Vout) == 0 {
-		return errorz.ErrInvalid{}.New("tx.postValidatePending: tx.vout not initialized")
+		return errorz.ErrInvalid{}.New("tx.PostValidatePending: tx.vout not initialized")
 	}
 	if b.Fee == nil {
-		return errorz.ErrInvalid{}.New("tx.postValidatePending: tx.fee not initialized")
+		return errorz.ErrInvalid{}.New("tx.PostValidatePending: tx.fee not initialized")
 	}
 	err := b.ValidateEqualVinVout(currentHeight, consumedUTXOs)
 	if err != nil {
@@ -759,26 +884,35 @@ func (b *Tx) PostValidatePending(currentHeight uint32, consumedUTXOs Vout, stora
 	return nil
 }
 
+// IsPotentialCleanupTx checks if the tx meets the minimal requriements
+// of a cleanup transaction. This potentially reduces total work by
+// not requiring currentHeight or referenced utxos.
+// There are no false negatives, only potential false positives.
+func (b *Tx) IsPotentialCleanupTx() bool {
+	if b == nil || b.Fee == nil {
+		return false
+	}
+	// Confirm Fee is zero
+	if !b.Fee.IsZero() {
+		return false
+	}
+	// Confirm Vout
+	cleanupVout := b.Vout.IsCleanupVout()
+	return cleanupVout
+}
+
 // IsCleanupTx checks if Tx is a cleanup transaction.
 // Cleanup transactions are unique in that there is no associated TxFee
 // or ValueStoreFee. The CleaupTx must consist of *expired* DataStores
 // with value equal to that in the only ValueStore in Vout.
 func (b *Tx) IsCleanupTx(currentHeight uint32, refUTXOs Vout) bool {
-	if b == nil || b.Fee == nil {
+	// Confirm Fee is zero and Vout
+	if !b.IsPotentialCleanupTx() {
 		return false
 	}
 	// Confirm Vin
 	cleanupVin := b.Vin.IsCleanupVin(currentHeight, refUTXOs)
 	if !cleanupVin {
-		return false
-	}
-	// Confirm Vout
-	cleanupVout := b.Vout.IsCleanupVout()
-	if !cleanupVout {
-		return false
-	}
-	// Confirm Fee is zero
-	if !b.Fee.IsZero() {
 		return false
 	}
 	// Confirm inputs equal outputs

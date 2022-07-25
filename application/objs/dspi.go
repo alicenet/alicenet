@@ -37,7 +37,7 @@ func (b *DSPreImage) UnmarshalBinary(data []byte) error {
 // byte slice
 func (b *DSPreImage) MarshalBinary() ([]byte, error) {
 	if b == nil {
-		return nil, errorz.ErrInvalid{}.New("dspi.marshalBinary; dspi not initialized")
+		return nil, errorz.ErrInvalid{}.New("dspi.MarshalBinary; dspi not initialized")
 	}
 	bc, err := b.MarshalCapn(nil)
 	if err != nil {
@@ -97,7 +97,7 @@ func (b *DSPreImage) UnmarshalCapn(bc mdefs.DSPreImage) error {
 // MarshalCapn marshals the object into its capnproto definition
 func (b *DSPreImage) MarshalCapn(seg *capnp.Segment) (mdefs.DSPreImage, error) {
 	if b == nil {
-		return mdefs.DSPreImage{}, errorz.ErrInvalid{}.New("dspi.marshalCapn; dspi not initialized")
+		return mdefs.DSPreImage{}, errorz.ErrInvalid{}.New("dspi.MarshalCapn; dspi not initialized")
 	}
 	var bc mdefs.DSPreImage
 	if err := b.ValidateDeposit(); err != nil {
@@ -166,7 +166,7 @@ func (b *DSPreImage) MarshalCapn(seg *capnp.Segment) (mdefs.DSPreImage, error) {
 // PreHash returns the PreHash of the object
 func (b *DSPreImage) PreHash() ([]byte, error) {
 	if b == nil {
-		return nil, errorz.ErrInvalid{}.New("dspi.preHash; dspi not initialized")
+		return nil, errorz.ErrInvalid{}.New("dspi.PreHash; dspi not initialized")
 	}
 	msg, err := b.MarshalBinary()
 	if err != nil {
@@ -179,16 +179,19 @@ func (b *DSPreImage) PreHash() ([]byte, error) {
 // RemainingValue returns remaining value at the time of consumption
 func (b *DSPreImage) RemainingValue(currentHeight uint32) (*uint256.Uint256, error) {
 	if b == nil {
-		return nil, errorz.ErrInvalid{}.New("dspi.remainingValue; dspi not initialized")
+		return nil, errorz.ErrInvalid{}.New("dspi.RemainingValue; dspi not initialized")
 	}
 	if b.IssuedAt == 0 {
-		return nil, errorz.ErrInvalid{}.New("dspi.remainingValue; dspi.issuedAt is zero")
+		return nil, errorz.ErrInvalid{}.New("dspi.RemainingValue; dspi.issuedAt is zero")
 	}
 	if b.Deposit == nil {
-		return nil, errorz.ErrInvalid{}.New("dspi.remainingValue; dspi.deposit not initialized")
+		return nil, errorz.ErrInvalid{}.New("dspi.RemainingValue; dspi.deposit not initialized")
+	}
+	if b.Deposit.IsZero() {
+		return nil, errorz.ErrInvalid{}.New("dspi.RemainingValue; dspi.deposit is zero")
 	}
 	if len(b.RawData) == 0 {
-		return nil, errorz.ErrInvalid{}.New("dspi.remainingValue; dspi.rawData has length zero")
+		return nil, errorz.ErrInvalid{}.New("dspi.RemainingValue; dspi.rawData has length zero")
 	}
 	epochFinal := utils.Epoch(currentHeight)
 	epochInitial := b.IssuedAt
@@ -207,13 +210,13 @@ func (b *DSPreImage) RemainingValue(currentHeight uint32) (*uint256.Uint256, err
 // Value returns the value stored in the object at the time of creation
 func (b *DSPreImage) Value() (*uint256.Uint256, error) {
 	if b == nil {
-		return nil, errorz.ErrInvalid{}.New("dspi.value; dspi not initialized")
+		return nil, errorz.ErrInvalid{}.New("dspi.Value; dspi not initialized")
 	}
 	if b.Deposit == nil {
-		return nil, errorz.ErrInvalid{}.New("dspi.value; dspi.deposit not initialized")
+		return nil, errorz.ErrInvalid{}.New("dspi.Value; dspi.deposit not initialized")
 	}
 	if b.Deposit.IsZero() {
-		return nil, errorz.ErrInvalid{}.New("dspi.value; dspi.deposit is zero")
+		return nil, errorz.ErrInvalid{}.New("dspi.Value; dspi.deposit is zero")
 	}
 	return b.Deposit.Clone(), nil
 }
@@ -222,7 +225,7 @@ func (b *DSPreImage) Value() (*uint256.Uint256, error) {
 // creation
 func (b *DSPreImage) ValidatePreSignature(msg []byte, sig *DataStoreSignature) error {
 	if b == nil {
-		return errorz.ErrInvalid{}.New("dspi.validatePreSignature; dspi not initialized")
+		return errorz.ErrInvalid{}.New("dspi.ValidatePreSignature; dspi not initialized")
 	}
 	return b.Owner.ValidateSignature(msg, sig, false)
 }
@@ -231,7 +234,7 @@ func (b *DSPreImage) ValidatePreSignature(msg []byte, sig *DataStoreSignature) e
 // consumption
 func (b *DSPreImage) ValidateSignature(currentHeight uint32, msg []byte, sig *DataStoreSignature) error {
 	if b == nil {
-		return errorz.ErrInvalid{}.New("dspi.validateSignature; dspi not initialized")
+		return errorz.ErrInvalid{}.New("dspi.ValidateSignature; dspi not initialized")
 	}
 	isExpired, err := b.IsExpired(currentHeight)
 	if err != nil {
@@ -243,7 +246,7 @@ func (b *DSPreImage) ValidateSignature(currentHeight uint32, msg []byte, sig *Da
 // IsExpired returns true if the datastore is free for garbage collection
 func (b *DSPreImage) IsExpired(currentHeight uint32) (bool, error) {
 	if b == nil {
-		return true, errorz.ErrInvalid{}.New("dspi.isExpired; dspi not initialized")
+		return true, errorz.ErrInvalid{}.New("dspi.IsExpired; dspi not initialized")
 	}
 	eoe, err := b.EpochOfExpiration()
 	if err != nil {
@@ -259,16 +262,16 @@ func (b *DSPreImage) IsExpired(currentHeight uint32) (bool, error) {
 // collected
 func (b *DSPreImage) EpochOfExpiration() (uint32, error) {
 	if b == nil {
-		return 0, errorz.ErrInvalid{}.New("dspi.epochOfExpiration; dspi not initialized")
+		return 0, errorz.ErrInvalid{}.New("dspi.EpochOfExpiration; dspi not initialized")
 	}
 	if b.Deposit == nil {
-		return 0, errorz.ErrInvalid{}.New("dspi.epochOfExpiration; dspi.deposit not initialized")
+		return 0, errorz.ErrInvalid{}.New("dspi.EpochOfExpiration; dspi.deposit not initialized")
 	}
 	if b.Deposit.IsZero() {
-		return 0, errorz.ErrInvalid{}.New("dspi.epochOfExpiration; dspi.deposit is zero")
+		return 0, errorz.ErrInvalid{}.New("dspi.EpochOfExpiration; dspi.deposit is zero")
 	}
 	if len(b.RawData) == 0 {
-		return 0, errorz.ErrInvalid{}.New("dspi.epochOfExpiration; dspi.rawData has length zero")
+		return 0, errorz.ErrInvalid{}.New("dspi.EpochOfExpiration; dspi.rawData has length zero")
 	}
 	dataSize := uint32(len(b.RawData))
 	numEpochs, err := NumEpochsEquation(dataSize, b.Deposit)
@@ -285,46 +288,46 @@ func (b *DSPreImage) EpochOfExpiration() (uint32, error) {
 // Furthermore, the Fee is validated elsewhere.
 func (b *DSPreImage) ValidateDeposit() error {
 	if b == nil {
-		return errorz.ErrInvalid{}.New("dspi.validateDeposit; dspi not initialized")
+		return errorz.ErrInvalid{}.New("dspi.ValidateDeposit; dspi not initialized")
 	}
 	if b.Deposit == nil {
-		return errorz.ErrInvalid{}.New("dspi.validateDeposit; dspi.deposit not initialized")
+		return errorz.ErrInvalid{}.New("dspi.ValidateDeposit; dspi.deposit not initialized")
 	}
 	if b.Deposit.IsZero() {
-		return errorz.ErrInvalid{}.New("dspi.validateDeposit; dspi.deposit is zero")
+		return errorz.ErrInvalid{}.New("dspi.ValidateDeposit; dspi.deposit is zero")
 	}
 	if b.Fee == nil {
-		return errorz.ErrInvalid{}.New("dspi.validateDeposit; dspi.fee not initialized")
+		return errorz.ErrInvalid{}.New("dspi.ValidateDeposit; dspi.fee not initialized")
 	}
 	if b.ChainID == 0 {
-		return errorz.ErrInvalid{}.New("dspi.validateDeposit; dspi.chainID is zero")
+		return errorz.ErrInvalid{}.New("dspi.ValidateDeposit; dspi.chainID is zero")
 	}
 	if len(b.Index) != constants.HashLen {
-		return errorz.ErrInvalid{}.New("dspi.validateDeposit; dspi.index has invalid length")
+		return errorz.ErrInvalid{}.New("dspi.ValidateDeposit; dspi.index has invalid length")
 	}
 	if b.IssuedAt == 0 {
-		return errorz.ErrInvalid{}.New("dspi.validateDeposit; dspi.issuedAt is zero")
+		return errorz.ErrInvalid{}.New("dspi.ValidateDeposit; dspi.issuedAt is zero")
 	}
 	dataSize := uint32(len(b.RawData))
 	if dataSize == 0 {
-		return errorz.ErrInvalid{}.New("dspi.validateDeposit; dspi.rawData has length zero")
+		return errorz.ErrInvalid{}.New("dspi.ValidateDeposit; dspi.rawData has length zero")
 	}
 	if dataSize > constants.MaxDataStoreSize {
-		return errorz.ErrInvalid{}.New("dspi.validateDeposit; dspi.rawData is too large")
+		return errorz.ErrInvalid{}.New("dspi.ValidateDeposit; dspi.rawData is too large")
 	}
 	numEpochs, err := NumEpochsEquation(dataSize, b.Deposit)
 	if err != nil {
 		return err
 	}
 	if numEpochs == 0 {
-		return errorz.ErrInvalid{}.New("dspi.validateDeposit; invalid deposit: storing for zero epochs")
+		return errorz.ErrInvalid{}.New("dspi.ValidateDeposit; invalid deposit: storing for zero epochs")
 	}
 	deposit, err := BaseDepositEquation(dataSize, numEpochs)
 	if err != nil {
 		return err
 	}
 	if !deposit.Eq(b.Deposit) {
-		return errorz.ErrInvalid{}.New("dspi.validateDeposit; invalid deposit: does not match computed value")
+		return errorz.ErrInvalid{}.New("dspi.ValidateDeposit; invalid deposit: does not match computed value")
 	}
 	err = b.Owner.Validate()
 	if err != nil {
@@ -337,12 +340,12 @@ func (b *DSPreImage) ValidateDeposit() error {
 // DataStore.
 func RewardDepositEquation(deposit *uint256.Uint256, dataSize32 uint32, epochInitial uint32, epochFinal uint32) (*uint256.Uint256, error) {
 	if deposit == nil {
-		return nil, errorz.ErrInvalid{}.New("rewardDepositEquation: deposit is nil")
+		return nil, errorz.ErrInvalid{}.New("RewardDepositEquation: deposit is nil")
 	}
 	// These calculations will only be performed after a DataStore is validated,
 	// so deposit and dataSize are correct.
 	if epochFinal < epochInitial {
-		return nil, errorz.ErrInvalid{}.New("rewardDepositEquation: epochFinal < epochInitial")
+		return nil, errorz.ErrInvalid{}.New("RewardDepositEquation: epochFinal < epochInitial")
 	}
 	// This ensures
 	//					epochDiff == epochFinal - epochInitial >= 0
@@ -382,7 +385,7 @@ func RewardDepositEquation(deposit *uint256.Uint256, dataSize32 uint32, epochIni
 func BaseDepositEquation(dataSize32 uint32, numEpochs32 uint32) (*uint256.Uint256, error) {
 	if dataSize32 > constants.MaxDataStoreSize {
 		// dataSize is too large so we do not perform any checks
-		return nil, errorz.ErrInvalid{}.New("baseDepositEquation: dataSize is too large")
+		return nil, errorz.ErrInvalid{}.New("BaseDepositEquation: dataSize is too large")
 	}
 	dataSize, _ := new(uint256.Uint256).FromUint64(uint64(dataSize32))
 	epochCost, _ := new(uint256.Uint256).Add(dataSize, uint256.BaseDatasizeConst())
@@ -401,10 +404,10 @@ func BaseDepositEquation(dataSize32 uint32, numEpochs32 uint32) (*uint256.Uint25
 // We have additional checks to ensure there is no integer overflow.
 func NumEpochsEquation(dataSize32 uint32, deposit *uint256.Uint256) (uint32, error) {
 	if deposit == nil {
-		return 0, errorz.ErrInvalid{}.New("numEpochsEquation: deposit is nil")
+		return 0, errorz.ErrInvalid{}.New("NumEpochsEquation: deposit is nil")
 	}
 	if dataSize32 > constants.MaxDataStoreSize {
-		return 0, errorz.ErrInvalid{}.New("numEpochsEquation: dataSize is too large")
+		return 0, errorz.ErrInvalid{}.New("NumEpochsEquation: dataSize is too large")
 	}
 	dataSize, _ := new(uint256.Uint256).FromUint64(uint64(dataSize32))
 	totalDataSize, _ := new(uint256.Uint256).Add(dataSize, uint256.BaseDatasizeConst())
@@ -413,7 +416,7 @@ func NumEpochsEquation(dataSize32 uint32, deposit *uint256.Uint256) (uint32, err
 		return 0, err
 	}
 	if tmp.Lt(uint256.Two()) {
-		return 0, errorz.ErrInvalid{}.New("numEpochsEquation: invalid dataSize and deposit causing integer overflow")
+		return 0, errorz.ErrInvalid{}.New("NumEpochsEquation: invalid dataSize and deposit causing integer overflow")
 	}
 	// The above check ensures there is no integer overflow in this subtraction
 	numEpochs, _ := new(uint256.Uint256).Sub(tmp, uint256.Two())

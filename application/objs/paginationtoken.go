@@ -24,20 +24,17 @@ const (
 // PaginationToken object
 func (pt *PaginationToken) UnmarshalBinary(data []byte) error {
 	if pt == nil {
-		return errorz.ErrInvalid{}.New("pt.unmarshalBinary; pt not initialized")
+		return errorz.ErrInvalid{}.New("pt.UnmarshalBinary; pt not initialized")
 	}
 
 	if data == nil || len(data) < 65 || data[0] > 1 {
-		return errorz.ErrInvalid{}.New("pt.unmarshalBinary; bytes invalid")
+		return errorz.ErrInvalid{}.New("pt.UnmarshalBinary; bytes invalid")
 	}
 
 	pt.LastPaginatedType = LastPaginatedType(data[0])
 
 	TotalValue := &uint256.Uint256{}
-	err := TotalValue.UnmarshalBinary(data[1:33])
-	if err != nil {
-		return err
-	}
+	TotalValue.UnmarshalBinary(data[1:33])
 	pt.TotalValue = TotalValue
 
 	pt.LastKey = make([]byte, 0, 96)
@@ -50,7 +47,7 @@ func (pt *PaginationToken) UnmarshalBinary(data []byte) error {
 // byte slice
 func (pt *PaginationToken) MarshalBinary() ([]byte, error) {
 	if pt == nil {
-		return nil, errorz.ErrInvalid{}.New("pt.marshalBinary; pt not initialized")
+		return nil, errorz.ErrInvalid{}.New("pt.MarshalBinary; pt not initialized")
 	}
 
 	bTotalValue, err := pt.TotalValue.MarshalBinary()

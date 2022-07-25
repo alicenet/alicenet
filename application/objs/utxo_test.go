@@ -221,6 +221,7 @@ func TestUTXOValueStoreGood(t *testing.T) {
 	}
 }
 
+/*
 func TestUTXOAtomicSwapGood(t *testing.T) {
 	cid := uint32(2)
 	val, err := new(uint256.Uint256).FromUint64(65537)
@@ -295,6 +296,7 @@ func TestUTXOAtomicSwapGood(t *testing.T) {
 	}
 	asEqual(t, as, asCopy)
 }
+*/
 
 func TestUTXOMarshalBinary(t *testing.T) {
 	utxo := &TXOut{}
@@ -972,14 +974,18 @@ func TestUTXOMustBeMinedBeforeHeight(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = utxo.MustBeMinedBeforeHeight()
+	heightVS, err := utxo.MustBeMinedBeforeHeight()
 	if err != nil {
 		t.Fatal(err)
+	}
+	if heightVS != constants.MaxUint32 {
+		t.Fatal("Incorrect MinedBefore (4)")
 	}
 }
 
 func TestUTXOAccount(t *testing.T) {
 	acct := make([]byte, constants.OwnerLen)
+	acct[0] = 127
 	curveSpec := constants.CurveSecp256k1
 	o := &Owner{}
 	err := o.New(acct, curveSpec)
@@ -987,7 +993,9 @@ func TestUTXOAccount(t *testing.T) {
 		t.Fatal(err)
 	}
 	altOwner := &Owner{}
-	err = altOwner.New(acct, curveSpec)
+	acctAlt := make([]byte, constants.OwnerLen)
+	acctAlt[0] = 123
+	err = altOwner.New(acctAlt, curveSpec)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1019,9 +1027,12 @@ func TestUTXOAccount(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = utxo.Account()
+	acctAS, err := utxo.Account()
 	if err != nil {
 		t.Fatal(err)
+	}
+	if !bytes.Equal(acctAS, acct) {
+		t.Fatal("Invalid AtomicSwap account")
 	}
 
 	ds := &DataStore{}
@@ -1044,9 +1055,12 @@ func TestUTXOAccount(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = utxo.Account()
+	acctDS, err := utxo.Account()
 	if err != nil {
 		t.Fatal(err)
+	}
+	if !bytes.Equal(acctDS, acct) {
+		t.Fatal("Invalid DataStore account")
 	}
 
 	vs := &ValueStore{}
@@ -1069,9 +1083,12 @@ func TestUTXOAccount(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = utxo.Account()
+	acctVS, err := utxo.Account()
 	if err != nil {
 		t.Fatal(err)
+	}
+	if !bytes.Equal(acctVS, acct) {
+		t.Fatal("Invalid ValueStore account")
 	}
 }
 
@@ -1267,6 +1284,19 @@ func TestUTXOIsDeposit(t *testing.T) {
 	if val {
 		t.Fatal("Should be false (4)")
 	}
+
+	// Now positive values
+
+	vs.VSPreImage = &VSPreImage{}
+	vs.VSPreImage.TXOutIdx = constants.MaxUint32
+	err = utxo.NewValueStore(vs)
+	if err != nil {
+		t.Fatal(err)
+	}
+	val = utxo.IsDeposit()
+	if !val {
+		t.Fatal("Should be true (1)")
+	}
 }
 
 func TestUTXOCannotBeMinedBeforeHeight(t *testing.T) {
@@ -1339,14 +1369,5 @@ func TestUTXOCannotBeMinedBeforeHeight(t *testing.T) {
 	}
 	if height != heightVSTrue {
 		t.Fatal("Incorrect height for ValueStore in CannotBeMinedBeforeHeight")
-	}
-}
-
-func asEqual(t *testing.T, as1, as2 *AtomicSwap) {
-	aspi1 := as1.ASPreImage
-	aspi2 := as2.ASPreImage
-	aspiEqual(t, aspi1, aspi2)
-	if !bytes.Equal(as1.TxHash, as2.TxHash) {
-		t.Fatal("Do not agree on TxHash!")
 	}
 }

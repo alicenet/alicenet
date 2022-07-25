@@ -37,7 +37,7 @@ func (b *ASPreImage) UnmarshalBinary(data []byte) error {
 // byte slice
 func (b *ASPreImage) MarshalBinary() ([]byte, error) {
 	if b == nil {
-		return nil, errorz.ErrInvalid{}.New("aspi.marshalBinary; aspi not initialized")
+		return nil, errorz.ErrInvalid{}.New("aspi.MarshalBinary; aspi not initialized")
 	}
 	bc, err := b.MarshalCapn(nil)
 	if err != nil {
@@ -96,7 +96,7 @@ func (b *ASPreImage) UnmarshalCapn(bc mdefs.ASPreImage) error {
 // MarshalCapn marshals the object into its capnproto definition
 func (b *ASPreImage) MarshalCapn(seg *capnp.Segment) (mdefs.ASPreImage, error) {
 	if b == nil {
-		return mdefs.ASPreImage{}, errorz.ErrInvalid{}.New("aspi.marshalCapn; aspi not initialized")
+		return mdefs.ASPreImage{}, errorz.ErrInvalid{}.New("aspi.MarshalCapn; aspi not initialized")
 	}
 	var bc mdefs.ASPreImage
 	if seg == nil {
@@ -157,7 +157,7 @@ func (b *ASPreImage) MarshalCapn(seg *capnp.Segment) (mdefs.ASPreImage, error) {
 // PreHash returns the PreHash of the object
 func (b *ASPreImage) PreHash() ([]byte, error) {
 	if b == nil {
-		return nil, errorz.ErrInvalid{}.New("aspi.preHash; aspi not initialized")
+		return nil, errorz.ErrInvalid{}.New("aspi.PreHash; aspi not initialized")
 	}
 	if b.preHash != nil {
 		return utils.CopySlice(b.preHash), nil
@@ -174,7 +174,7 @@ func (b *ASPreImage) PreHash() ([]byte, error) {
 // IsExpired returns true if the current epoch is greater than exp
 func (b *ASPreImage) IsExpired(currentHeight uint32) (bool, error) {
 	if b == nil {
-		return true, errorz.ErrInvalid{}.New("aspi.isExpired; aspi not initialized")
+		return true, errorz.ErrInvalid{}.New("aspi.IsExpired; aspi not initialized")
 	}
 	currentEpoch := utils.Epoch(currentHeight)
 	if currentEpoch >= b.Exp {
@@ -195,7 +195,7 @@ func (b *ASPreImage) ValidateSignature(currentHeight uint32, msg []byte, sig *At
 // SignAsPrimary signs the ASPreImage as the primary account owner
 func (b *ASPreImage) SignAsPrimary(msg []byte, signer *crypto.Secp256k1Signer, hashKey []byte) (*AtomicSwapSignature, error) {
 	if b == nil {
-		return nil, errorz.ErrInvalid{}.New("aspi.signAsPrimary; aspi not initialized")
+		return nil, errorz.ErrInvalid{}.New("aspi.SignAsPrimary; aspi not initialized")
 	}
 	return b.Owner.SignAsPrimary(msg, signer, hashKey)
 }
@@ -203,7 +203,7 @@ func (b *ASPreImage) SignAsPrimary(msg []byte, signer *crypto.Secp256k1Signer, h
 // SignAsAlternate signs the ASPreImage as the alternate account owner
 func (b *ASPreImage) SignAsAlternate(msg []byte, signer *crypto.Secp256k1Signer, hashKey []byte) (*AtomicSwapSignature, error) {
 	if b == nil {
-		return nil, errorz.ErrInvalid{}.New("aspi.signAsAlternate; aspi not initialized")
+		return nil, errorz.ErrInvalid{}.New("aspi.SignAsAlternate; aspi not initialized")
 	}
 	return b.Owner.SignAsAlternate(msg, signer, hashKey)
 }

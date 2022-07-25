@@ -31,13 +31,13 @@ func (b *TXInPreImage) UnmarshalBinary(data []byte) error {
 // byte slice
 func (b *TXInPreImage) MarshalBinary() ([]byte, error) {
 	if b == nil {
-		return nil, errorz.ErrInvalid{}.New("txinpi.marshalBinary; txinpi not initialized")
+		return nil, errorz.ErrInvalid{}.New("txinpi.MarshalBinary; txinpi not initialized")
 	}
 	if b.ChainID == 0 {
-		return nil, errorz.ErrInvalid{}.New("txinpi.marshalBinary; txinpi.chainID is zero")
+		return nil, errorz.ErrInvalid{}.New("txinpi.MarshalBinary; txinpi.chainID is zero")
 	}
 	if len(b.ConsumedTxHash) != constants.HashLen {
-		return nil, errorz.ErrInvalid{}.New("txinpi.marshalBinary; txinpi.consumedTxHash has incorrect length")
+		return nil, errorz.ErrInvalid{}.New("txinpi.MarshalBinary; txinpi.consumedTxHash has incorrect length")
 	}
 	bc, err := b.MarshalCapn(nil)
 	if err != nil {
@@ -60,7 +60,7 @@ func (b *TXInPreImage) UnmarshalCapn(bc mdefs.TXInPreImage) error {
 // MarshalCapn marshals the object into its capnproto definition
 func (b *TXInPreImage) MarshalCapn(seg *capnp.Segment) (mdefs.TXInPreImage, error) {
 	if b == nil {
-		return mdefs.TXInPreImage{}, errorz.ErrInvalid{}.New("txinpi.marshalCapn; txinpi not initialized")
+		return mdefs.TXInPreImage{}, errorz.ErrInvalid{}.New("txinpi.MarshalCapn; txinpi not initialized")
 	}
 	var bc mdefs.TXInPreImage
 	if seg == nil {

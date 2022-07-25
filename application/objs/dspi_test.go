@@ -484,6 +484,30 @@ func TestDSPreImageRemainingValue(t *testing.T) {
 	}
 }
 
+func TestDSPreImageRemainingValueBad(t *testing.T) {
+	dsp := &DSPreImage{}
+	currentHeight := uint32(1)
+	_, err := dsp.RemainingValue(currentHeight)
+	if err == nil {
+		t.Fatal("Should have raised error (1)")
+	}
+	dsp.IssuedAt = 1
+	_, err = dsp.RemainingValue(currentHeight)
+	if err == nil {
+		t.Fatal("Should have raised error (2)")
+	}
+	dsp.Deposit = uint256.Zero()
+	_, err = dsp.RemainingValue(currentHeight)
+	if err == nil {
+		t.Fatal("Should have raised error (3)")
+	}
+	dsp.Deposit = uint256.One()
+	_, err = dsp.RemainingValue(currentHeight)
+	if err == nil {
+		t.Fatal("Should have raised error (4)")
+	}
+}
+
 func TestDSPreImageValue(t *testing.T) {
 	dsl := &DSLinker{}
 	_, err := dsl.DSPreImage.Value()
@@ -508,6 +532,19 @@ func TestDSPreImageValue(t *testing.T) {
 	}
 	if !depositTrue.Eq(deposit) {
 		t.Fatal("Should not happen!")
+	}
+}
+
+func TestDSPreImageValueBad(t *testing.T) {
+	dsp := &DSPreImage{}
+	_, err := dsp.Value()
+	if err == nil {
+		t.Fatal("Should have raised error (1)")
+	}
+	dsp.Deposit = uint256.Zero()
+	_, err = dsp.Value()
+	if err == nil {
+		t.Fatal("Should have raised error (2)")
 	}
 }
 
@@ -708,6 +745,24 @@ func TestDSPreImageEpochOfExpiration(t *testing.T) {
 	}
 }
 
+func TestDSPreImageEpochOfExpirationBad(t *testing.T) {
+	dsp := &DSPreImage{}
+	_, err := dsp.EpochOfExpiration()
+	if err == nil {
+		t.Fatal("Should have raised error (1)")
+	}
+	dsp.Deposit = uint256.Zero()
+	_, err = dsp.EpochOfExpiration()
+	if err == nil {
+		t.Fatal("Should have raised error (2)")
+	}
+	dsp.Deposit = uint256.One()
+	_, err = dsp.EpochOfExpiration()
+	if err == nil {
+		t.Fatal("Should have raised error (3)")
+	}
+}
+
 func TestDSPreImageValidateDeposit(t *testing.T) {
 	dsl := &DSLinker{}
 	err := dsl.DSPreImage.ValidateDeposit()
@@ -815,6 +870,50 @@ func TestDSPreImageValidateDeposit(t *testing.T) {
 	if err != nil {
 		// Should succeed
 		t.Fatal(err)
+	}
+}
+
+func TestDSPreImageValidateDepositBad(t *testing.T) {
+	dsp := &DSPreImage{}
+	err := dsp.ValidateDeposit()
+	if err == nil {
+		t.Fatal("Should raise an error (1)")
+	}
+	dsp.Deposit = uint256.Zero()
+	err = dsp.ValidateDeposit()
+	if err == nil {
+		t.Fatal("Should raise an error (2)")
+	}
+	dsp.Deposit = uint256.One()
+	err = dsp.ValidateDeposit()
+	if err == nil {
+		t.Fatal("Should raise an error (3)")
+	}
+	dsp.Fee = uint256.Zero()
+	err = dsp.ValidateDeposit()
+	if err == nil {
+		t.Fatal("Should raise an error (4)")
+	}
+	dsp.ChainID = 1
+	err = dsp.ValidateDeposit()
+	if err == nil {
+		t.Fatal("Should raise an error (5)")
+	}
+	dsp.Index = make([]byte, constants.HashLen)
+	err = dsp.ValidateDeposit()
+	if err == nil {
+		t.Fatal("Should raise an error (6)")
+	}
+	dsp.IssuedAt = 1
+	err = dsp.ValidateDeposit()
+	if err == nil {
+		t.Fatal("Should raise an error (7)")
+	}
+	largeData := make([]byte, constants.MaxDataStoreSize+1)
+	dsp.RawData = largeData
+	err = dsp.ValidateDeposit()
+	if err == nil {
+		t.Fatal("Should raise an error (8)")
 	}
 }
 
