@@ -58,10 +58,16 @@ func (dp *Handler) IsValid(txn *badger.Txn, txs objs.TxVec) ([]*objs.TXOut, erro
 
 // Add will add a deposit to the handler
 func (dp *Handler) Add(txn *badger.Txn, chainID uint32, utxoID []byte, biValue *big.Int, owner *objs.Owner) error {
+	if chainID == 0 {
+		return errorz.ErrInvalid{}.New("depositHandler.Add; chainID is zero")
+	}
 	value, err := new(uint256.Uint256).FromBigInt(biValue)
 	if err != nil {
 		utils.DebugTrace(dp.logger, err)
 		return err
+	}
+	if value.IsZero() {
+		return errorz.ErrInvalid{}.New("depositHandler.Add; deposit value is zero")
 	}
 	utxoID = utils.CopySlice(utxoID)
 	utxoID = utils.ForceSliceToLength(utxoID, constants.HashLen)
@@ -86,7 +92,7 @@ func (dp *Handler) Add(txn *badger.Txn, chainID uint32, utxoID []byte, biValue *
 			Value:    value,
 			ChainID:  chainID,
 			Owner:    vso,
-			Fee:      new(uint256.Uint256).SetZero(),
+			Fee:      uint256.Zero(),
 		},
 		TxHash: n2,
 	}
@@ -127,8 +133,8 @@ func (dp *Handler) Remove(txn *badger.Txn, utxoID []byte) error {
 	return nil
 }
 
-// GetValueForOwner allows a list of utxoIDs to be returned that are equal or
-// greater than the value passed as minValue, and are owned by owner.
+// GetValueForOwner allows a list of utxoIDs to be returned that are
+// greater than or equal to the value passed as minValue, and are owned by owner.
 func (dp *Handler) GetValueForOwner(txn *badger.Txn, owner *objs.Owner, minValue *uint256.Uint256, maxCount int, lastKey []byte) ([][]byte, *uint256.Uint256, []byte, error) {
 	excludeSpent := func(utxoID []byte) (bool, error) {
 		return dp.IsSpent(txn, utils.CopySlice(utxoID))
