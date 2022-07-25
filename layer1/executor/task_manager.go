@@ -386,7 +386,7 @@ func (tm *TaskManager) killTasks(ctx context.Context, tasks []ManagerRequestInfo
 
 func (tm *TaskManager) cleanResponses() {
 	for id, resp := range tm.Responses {
-		if resp.ReceivedOnBlock+constants.TaskManagerResponseToleranceBeforeRemoving <= tm.LastHeightSeen {
+		if resp.ReceivedOnBlock != 0 && resp.ReceivedOnBlock+constants.TaskManagerResponseToleranceBeforeRemoving <= tm.LastHeightSeen {
 			delete(tm.Responses, id)
 		}
 	}
