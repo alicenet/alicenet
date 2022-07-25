@@ -36,6 +36,10 @@ type ISnapshotsErrorCodesCaller interface {
 	//
 	// Solidity: function SNAPSHOT_MIN_BLOCKS_INTERVAL_NOT_PASSED() view returns(bytes32)
 	SNAPSHOTMINBLOCKSINTERVALNOTPASSED(opts *bind.CallOpts) ([32]byte, error)
+	// SNAPSHOTNOTINBUFFER is a free data retrieval call binding the contract method 0x13702308.
+	//
+	// Solidity: function SNAPSHOT_NOT_IN_BUFFER() view returns(bytes32)
+	SNAPSHOTNOTINBUFFER(opts *bind.CallOpts) ([32]byte, error)
 	// SNAPSHOTONLYVALIDATORSALLOWED is a free data retrieval call binding the contract method 0x83d995fa.
 	//
 	// Solidity: function SNAPSHOT_ONLY_VALIDATORS_ALLOWED() view returns(bytes32)

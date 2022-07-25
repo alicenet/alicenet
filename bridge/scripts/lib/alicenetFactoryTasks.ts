@@ -1006,7 +1006,7 @@ task(
       nonce: txCount,
     });
     const upgradeProxy = factoryBase.interface.encodeFunctionData(
-      DEPLOY_CREATE,
+      UPGRADE_PROXY,
       [salt, implAddress, initCallData]
     );
     const PROXY_FACTORY = await hre.ethers.getContractFactory(PROXY);
@@ -1027,7 +1027,7 @@ task(
       logicName: taskArgs.contractName,
       logicAddress: taskArgs.logicAddress,
       salt,
-      proxyAddress: getEventVar(receipt, DEPLOYED_PROXY, CONTRACT_ADDR),
+      proxyAddress,
       gas: receipt.gasUsed.toNumber(),
       receipt,
       initCallData,

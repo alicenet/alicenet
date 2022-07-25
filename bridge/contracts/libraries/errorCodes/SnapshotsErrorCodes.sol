@@ -13,4 +13,5 @@ library SnapshotsErrorCodes {
     bytes32 public constant SNAPSHOT_INCORRECT_CHAIN_ID = "407"; //"Snapshots: Incorrect chainID for snapshot!"
     bytes32 public constant SNAPSHOT_MIGRATION_NOT_ALLOWED = "408"; //Snapshots: Migration only allowed at epoch 0!
     bytes32 public constant SNAPSHOT_MIGRATION_INPUT_DATA_MISMATCH = "409"; //Snapshots: Mismatch calldata length!
+    bytes32 public constant SNAPSHOT_NOT_IN_BUFFER = "410"; //Snapshots: Snapshot no longer in buffer
 }

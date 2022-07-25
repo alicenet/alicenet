@@ -92,6 +92,19 @@
   },
   {
     "inputs": [],
+    "name": "SNAPSHOT_NOT_IN_BUFFER",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "SNAPSHOT_ONLY_VALIDATORS_ALLOWED",
     "outputs": [
       {
