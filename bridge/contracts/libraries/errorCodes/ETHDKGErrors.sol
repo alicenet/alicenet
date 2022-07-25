@@ -54,15 +54,17 @@ library ETHDKGErrors {
     error ParticipantSubmittedKeysharesInRound(address participant); // "ETHDKG: Participant already submitted key shares this ETHDKG round!"
     error InvalidKeyshareG1(); //"ETHDKG: Key share submission failed - invalid key share G1!"
     error InvalidKeyshareG2(); //"ETHDKG: Key share submission failed - invalid key share G1!"
-
-    bytes32 public constant ETHDKG_NOT_IN_MASTER_PUBLIC_KEY_SUBMISSION_PHASE = "143"; // "ETHDKG: cannot participate on master public key submission phase"
-    bytes32 public constant ETHDKG_MASTER_PUBLIC_KEY_PAIRING_CHECK_FAILURE = "144"; // "ETHDKG: Master key submission pairing check failed!"
-    bytes32 public constant ETHDKG_NOT_IN_GPKJ_SUBMISSION_PHASE = "145"; // "ETHDKG: Not in GPKJ submission phase"
-    bytes32 public constant ETHDKG_PARTICIPANT_SUBMITTED_GPKJ_IN_ROUND = "146"; // "ETHDKG: Participant already submitted GPKj this ETHDKG round!"
-    bytes32 public constant ETHDKG_GPKJ_ZERO = "147"; // "ETHDKG: GPKj cannot be all zeros!"
-    bytes32 public constant ETHDKG_NOT_IN_POST_GPKJ_DISPUTE_PHASE = "148"; // "ETHDKG: should be in post-GPKJDispute phase!"
-    bytes32 public constant ETHDKG_REQUISITES_INCOMPLETE = "149"; //  "ETHDKG: Not all requisites to complete this ETHDKG round were completed!"
-    bytes32 public constant ETHDKG_KEYSHARE_PHASE_INVALID_NONCE = "150"; // "ETHDKG: Key share submission failed, participant with invalid nonce!"
-    bytes32 public constant ETHDKG_MIGRATION_INVALID_NONCE = "151"; // "ETHDKG: Only can execute this with nonce 0!"
-    bytes32 public constant ETHDKG_MIGRATION_INPUT_DATA_MISMATCH = "152"; // "ETHDKG: All input data length should match!"
+    error ETHDKGNotInMasterPublicKeySubmissionPhase(Phase currentPhase); // "ETHDKG: cannot participate on master public key submission phase"
+    error MasterPublicKeyPairingCheckFailure(); // "ETHDKG: Master key submission pairing check failed!"
+    error ETHDKGNotInGPKJSubmissionPhase(Phase currentPhase); // "ETHDKG: Not in GPKJ submission phase"
+    error ParticipantSubmittedGPKJInRound(address participant); // "ETHDKG: Participant already submitted GPKj this ETHDKG round!"
+    error GPKJZero(); // "ETHDKG: GPKj cannot be all zeros!"
+    error ETHDKGNotInPostGPKJDisputePhase(Phase currentPhase); // "ETHDKG: should be in post-GPKJDispute phase!"
+    error ETHDKGRequisitesIncomplete(); //  "ETHDKG: Not all requisites to complete this ETHDKG round were completed!"
+    error MigrationRequiresZeroNonce(uint256 nonce); // "ETHDKG: Only can execute this with nonce 0!"
+    error MigrationInputDataMismatch(
+        uint256 validatorsAccountsLength,
+        uint256 validatorIndexesLength,
+        uint256 validatorSharesLength
+    ); // "ETHDKG: Only can execute this with nonce 0!"
 }

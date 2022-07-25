@@ -152,10 +152,9 @@ contract ETHDKGPhases is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
             _setPhase(Phase.KeyShareSubmission);
         }
         Participant memory participant = _participants[msg.sender];
-        require(
-            participant.nonce == _nonce,
-            string(abi.encodePacked(ETHDKGErrors.ETHDKG_KEYSHARE_PHASE_INVALID_NONCE))
-        );
+        if (participant.nonce != _nonce) {
+            revert ETHDKGErrors.InvalidNonce(participant.nonce, _nonce);
+        }
         if (participant.phase != Phase.ShareDistribution) {
             revert ETHDKGErrors.ParticipantSubmittedKeysharesInRound(msg.sender);
         }
@@ -227,15 +226,16 @@ contract ETHDKGPhases is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
     }
 
     function submitMasterPublicKey(uint256[4] memory masterPublicKey_) external {
-        require(
-            _ethdkgPhase == Phase.MPKSubmission &&
+        if (
+            !(_ethdkgPhase == Phase.MPKSubmission &&
                 block.number >= _phaseStartBlock &&
-                block.number < _phaseStartBlock + _phaseLength,
-            string(abi.encodePacked(ETHDKGErrors.ETHDKG_NOT_IN_MASTER_PUBLIC_KEY_SUBMISSION_PHASE))
-        );
+                block.number < _phaseStartBlock + _phaseLength)
+        ) {
+            revert ETHDKGErrors.ETHDKGNotInMasterPublicKeySubmissionPhase(_ethdkgPhase);
+        }
         uint256[2] memory mpkG1 = _mpkG1;
-        require(
-            CryptoLibrary.bn128CheckPairing(
+        if (
+            !CryptoLibrary.bn128CheckPairing(
                 [
                     mpkG1[0],
                     mpkG1[1],
@@ -250,9 +250,10 @@ contract ETHDKGPhases is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
                     masterPublicKey_[2],
                     masterPublicKey_[3]
                 ]
-            ),
-            string(abi.encodePacked(ETHDKGErrors.ETHDKG_MASTER_PUBLIC_KEY_PAIRING_CHECK_FAILURE))
-        );
+            )
+        ) {
+            revert ETHDKGErrors.MasterPublicKeyPairingCheckFailure();
+        }
 
         _masterPublicKey = masterPublicKey_;
         _masterPublicKeyHash = keccak256(abi.encodePacked(masterPublicKey_));
@@ -263,28 +264,26 @@ contract ETHDKGPhases is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
 
     function submitGPKJ(uint256[4] memory gpkj) external {
         //todo: should we evict all validators if no one sent the master public key in time?
-        require(
-            _ethdkgPhase == Phase.GPKJSubmission &&
+        if (
+            !(_ethdkgPhase == Phase.GPKJSubmission &&
                 block.number >= _phaseStartBlock &&
-                block.number < _phaseStartBlock + _phaseLength,
-            string(abi.encodePacked(ETHDKGErrors.ETHDKG_NOT_IN_GPKJ_SUBMISSION_PHASE))
-        );
+                block.number < _phaseStartBlock + _phaseLength)
+        ) {
+            revert ETHDKGErrors.ETHDKGNotInGPKJSubmissionPhase(_ethdkgPhase);
+        }
 
         Participant memory participant = _participants[msg.sender];
 
-        require(
-            participant.nonce == _nonce,
-            string(abi.encodePacked(ETHDKGErrors.ETHDKG_KEYSHARE_PHASE_INVALID_NONCE))
-        );
-        require(
-            participant.phase == Phase.KeyShareSubmission,
-            string(abi.encodePacked(ETHDKGErrors.ETHDKG_PARTICIPANT_SUBMITTED_GPKJ_IN_ROUND))
-        );
+        if (participant.nonce != _nonce) {
+            revert ETHDKGErrors.InvalidNonce(participant.nonce, _nonce);
+        }
+        if (participant.phase != Phase.KeyShareSubmission) {
+            revert ETHDKGErrors.ParticipantSubmittedGPKJInRound(msg.sender);
+        }
 
-        require(
-            gpkj[0] != 0 || gpkj[1] != 0 || gpkj[2] != 0 || gpkj[3] != 0,
-            string(abi.encodePacked(ETHDKGErrors.ETHDKG_GPKJ_ZERO))
-        );
+        if (gpkj[0] == 0 && gpkj[1] == 0 && gpkj[2] == 0 && gpkj[3] == 0) {
+            revert ETHDKGErrors.GPKJZero();
+        }
 
         participant.gpkj = gpkj;
         participant.phase = Phase.GPKJSubmission;
@@ -315,16 +314,16 @@ contract ETHDKGPhases is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
 
     function complete() external {
         //todo: should we reward ppl here?
-        require(
-            (_ethdkgPhase == Phase.DisputeGPKJSubmission &&
+        if (
+            !((_ethdkgPhase == Phase.DisputeGPKJSubmission &&
                 block.number >= _phaseStartBlock + _phaseLength) &&
-                block.number < _phaseStartBlock + 2 * _phaseLength,
-            string(abi.encodePacked(ETHDKGErrors.ETHDKG_NOT_IN_POST_GPKJ_DISPUTE_PHASE))
-        );
-        require(
-            _badParticipants == 0,
-            string(abi.encodePacked(ETHDKGErrors.ETHDKG_REQUISITES_INCOMPLETE))
-        );
+                block.number < _phaseStartBlock + 2 * _phaseLength)
+        ) {
+            revert ETHDKGErrors.ETHDKGNotInPostGPKJDisputePhase(_ethdkgPhase);
+        }
+        if (_badParticipants != 0) {
+            revert ETHDKGErrors.ETHDKGRequisitesIncomplete();
+        }
 
         // Since we had a dispute stage prior this state we need to set global state in here
         _setPhase(Phase.Completion);
