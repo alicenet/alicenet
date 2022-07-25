@@ -32,7 +32,7 @@ contract MultipleProposalAccusation is
     /// @param _signature1 The signature of pclaims1
     /// @param _pClaims1 The PClaims of the accusation
     /// @return the address of the signer
-    function AccuseMultipleProposal(
+    function accuseMultipleProposal(
         bytes calldata _signature0,
         bytes calldata _pClaims0,
         bytes calldata _signature1,

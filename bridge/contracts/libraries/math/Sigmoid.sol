@@ -2,30 +2,29 @@
 pragma solidity ^0.8.0;
 
 abstract contract Sigmoid {
-    function _fx(uint256 x) internal pure returns (uint256) {
+    // Constants for P function
+    uint256 internal constant _P_A = 200;
+    uint256 internal constant _P_B = 2500 * 10**18;
+    uint256 internal constant _P_C = 5611050234958650739260304 + 125 * 10**39;
+    uint256 internal constant _P_D = 1;
+    uint256 internal constant _P_S = 2524876234590519489452;
+
+    // Constants for P Inverse function
+    uint256 internal constant _P_INV_C_1 = _P_A * ((_P_A + _P_D) * _P_S + _P_A * _P_B);
+    uint256 internal constant _P_INV_C_2 = _P_A + _P_D;
+    uint256 internal constant _P_INV_C_3 = _P_D * (2 * _P_A + _P_D);
+    uint256 internal constant _P_INV_D_0 = ((_P_A + _P_D) * _P_S + _P_A * _P_B)**2;
+    uint256 internal constant _P_INV_D_1 = 2 * (_P_A * _P_S + (_P_A + _P_D) * _P_B);
+
+    function _p(uint256 t) internal pure returns (uint256) {
         return
-            201 *
-            x +
-            504975246918103897890400 -
-            _sqrt(
-                200**2 *
-                    ((_safeAbsSub(2500000000000000000000, x))**2 +
-                        125000000000000005611050234958650739260304)
-            );
+            (_P_A + _P_D) * t + (_P_A * _P_S) - _sqrt(_P_A**2 * ((_safeAbsSub(_P_B, t))**2 + _P_C));
     }
 
-    function _fp(uint256 p) internal pure returns (uint256) {
+    function _pInverse(uint256 m) internal pure returns (uint256) {
         return
-            (201 *
-                p +
-                _sqrt(
-                    200**2 *
-                        (p**2 +
-                            1015056498152694417606544040542564448516855541904 -
-                            2014950493836207795780800 *
-                            p)
-                ) -
-                201500024630538883475970400) / 401;
+            (_P_INV_C_2 * m + _sqrt(_P_A**2 * (m**2 + _P_INV_D_0 - _P_INV_D_1 * m)) - _P_INV_C_1) /
+            _P_INV_C_3;
     }
 
     function _safeAbsSub(uint256 a, uint256 b) internal pure returns (uint256) {
