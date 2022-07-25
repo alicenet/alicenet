@@ -62,14 +62,14 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
             IValidatorPool(_validatorPoolAddress()).isConsensusRunning(),
             string(abi.encodePacked(SnapshotsErrorCodes.SNAPSHOT_CONSENSUS_RUNNING))
         );
-        //get the last snapshot
+
         Snapshot memory lastSnapshot = getLatestSnapshot();
         require(
             block.number >= lastSnapshot.committedAt + _minimumIntervalBetweenSnapshots,
             string(abi.encodePacked(SnapshotsErrorCodes.SNAPSHOT_MIN_BLOCKS_INTERVAL_NOT_PASSED))
         );
         Epoch storage epochReg = _epochReg();
-        uint32 epoch = _epoch._value + 1;
+        uint32 epoch;
         if (epochReg.isZero()) {
             epoch = epochReg.get();
         } else {

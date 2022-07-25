@@ -55,7 +55,6 @@ library RingBuffer {
         view
         returns (uint256)
     {
-        //TODO determine if this is necessary
         require(epoch_ > 0);
         return epoch_ % self_._array.length;
     }
