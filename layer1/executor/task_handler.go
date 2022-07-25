@@ -22,7 +22,7 @@ type Handler struct {
 	requestChannel   chan managerRequest
 }
 
-func NewTaskHandler(database *db.Database, eth layer1.Client, contracts layer1.AllSmartContracts, adminHandler monitorInterfaces.AdminHandler, txWatcher *transaction.FrontWatcher) (TaskHandler, error) {
+func NewTaskHandler(database *db.Database, eth layer1.Client, contracts layer1.AllSmartContracts, adminHandler monitorInterfaces.AdminHandler, txWatcher transaction.Watcher) (TaskHandler, error) {
 	// main context that will cancel all workers and go routines
 	mainCtx, cf := context.WithCancel(context.Background())
 
