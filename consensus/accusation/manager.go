@@ -5,17 +5,18 @@ import (
 	"fmt"
 	"runtime"
 	"sync"
-	"time"
 
 	"github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/consensus/lstate"
 	"github.com/alicenet/alicenet/consensus/objs"
+	"github.com/alicenet/alicenet/layer1/executor/marshaller"
+	"github.com/alicenet/alicenet/layer1/executor/tasks"
 	"github.com/dgraph-io/badger/v2"
 	"github.com/sirupsen/logrus"
 )
 
 // a function that returns an Accusation interface object when found, and a bool indicating if an accusation has been found (true) or not (false)
-type detector = func(rs *objs.RoundState, lrs *lstate.RoundStates) (objs.Accusation, bool)
+type detector = func(rs *objs.RoundState, lrs *lstate.RoundStates) (tasks.Task, bool)
 
 // rsCacheStruct caches a validator's roundState height, round and hash to avoid checking accusations unless anything changes
 type rsCacheStruct struct {
@@ -52,15 +53,17 @@ type Manager struct {
 	logger                          *logrus.Logger
 	rsCache                         map[string]*rsCacheStruct // cache of validator's roundState height, round and hash to avoid checking accusations unless anything changes
 	workQ                           chan *lstate.RoundStates  // queue where new roundStates are pushed to be checked for malicious behavior by workers
-	accusationQ                     chan objs.Accusation      // queue where identified accusations are pushed by workers to be further processed
-	unpersistedCreatedAccusations   []objs.Accusation         // newly found accusations that where not persisted into DB
-	unpersistedScheduledAccusations []objs.Accusation         // accusations that scheduled for execution and not yet persisted as such
+	accusationQ                     chan tasks.Task           // queue where identified accusations are pushed by workers to be further processed
+	unpersistedCreatedAccusations   []tasks.Task              // newly found accusations that where not persisted into DB
+	unpersistedScheduledAccusations []tasks.Task              // accusations that scheduled for execution and not yet persisted as such
 	closeChan                       chan struct{}             // channel to signal to workers to stop
 	wg                              *sync.WaitGroup           // wait group to wait for workers to stop
+	// scheduler                       *executor.TasksScheduler  // todo: use interface instead of concrete type
+	scheduler chan tasks.TaskRequest
 }
 
 // NewManager creates a new *Manager
-func NewManager(database *db.Database, sstore *lstate.Store, logger *logrus.Logger) *Manager {
+func NewManager(database *db.Database, sstore *lstate.Store, scheduler chan tasks.TaskRequest, logger *logrus.Logger) *Manager {
 	detectors := make([]detector, 0)
 
 	m := &Manager{}
@@ -70,11 +73,12 @@ func NewManager(database *db.Database, sstore *lstate.Store, logger *logrus.Logg
 	m.sstore = sstore
 	m.rsCache = make(map[string]*rsCacheStruct)
 	m.workQ = make(chan *lstate.RoundStates, 1)
-	m.accusationQ = make(chan objs.Accusation, 1)
+	m.accusationQ = make(chan tasks.Task, 1)
 	m.closeChan = make(chan struct{}, 1)
-	m.unpersistedCreatedAccusations = make([]objs.Accusation, 0)
-	m.unpersistedScheduledAccusations = make([]objs.Accusation, 0)
+	m.unpersistedCreatedAccusations = make([]tasks.Task, 0)
+	m.unpersistedScheduledAccusations = make([]tasks.Task, 0)
 	m.wg = &sync.WaitGroup{}
+	m.scheduler = scheduler
 
 	return m
 }
@@ -163,10 +167,17 @@ func (m *Manager) persistCreatedAccusations() {
 		persistedIdx := make([]int, 0)
 		for i, acc := range m.unpersistedCreatedAccusations {
 			// persist the accusation into the database
-			acc.SetState(objs.Persisted)
-			acc.SetPersistenceTimestamp(uint64(time.Now().Unix()))
+			//acc.SetState(objs.Persisted)
+			//acc.SetPersistenceTimestamp(uint64(time.Now().Unix()))
 			err := m.database.Update(func(txn *badger.Txn) error {
-				return m.database.SetAccusation(txn, acc)
+				// todo: put this marshalling into a separate function
+				var id [32]byte
+				copy(id[:], []byte(acc.GetId()))
+				data, err := marshaller.GobMarshalBinary(acc)
+				if err != nil {
+					return err
+				}
+				return m.database.SetAccusationRaw(txn, id, data)
 			})
 			if err != nil {
 				m.logger.Errorf("AccusationManager failed to save accusation into DB: %v", err)
@@ -187,16 +198,16 @@ func (m *Manager) persistCreatedAccusations() {
 // scheduleAccusations schedules the accusations that are not yet scheduled in the Task Manager.
 func (m *Manager) scheduleAccusations() error {
 	// schedule Persisted but not ScheduledForExecution accusations
-	var unscheduledAccusations []objs.Accusation
-	var err error
+	var unscheduledAccusations []tasks.Task
+	//var err error
 
-	err = m.database.View(func(txn *badger.Txn) error {
-		unscheduledAccusations, err = m.database.GetPersistedButUnscheduledAccusations(txn)
-		return err
-	})
-	if err != nil {
-		return err
-	}
+	// err = m.database.View(func(txn *badger.Txn) error {
+	// 	unscheduledAccusations, err = m.database.GetPersistedButUnscheduledAccusations(txn)
+	// 	return err
+	// })
+	// if err != nil {
+	// 	return err
+	// }
 
 	for _, acc := range unscheduledAccusations {
 		m.logger.Debugf("Scheduling accusation %#v", acc)
@@ -216,8 +227,12 @@ func (m *Manager) scheduleAccusations() error {
 			}
 		*/
 
+		//acc.Wait()
+		req := tasks.NewScheduleTaskRequest(acc)
+		m.scheduler <- req
+
 		// todo: delete this placeholder code down here after the real scheduler is implemented
-		acc.SetState(objs.ScheduledForExecution)
+		//acc.SetState(objs.ScheduledForExecution)
 		m.unpersistedScheduledAccusations = append(m.unpersistedScheduledAccusations, acc)
 	}
 
@@ -226,7 +241,13 @@ func (m *Manager) scheduleAccusations() error {
 		persistedIdx := make([]int, 0)
 		for i, acc := range m.unpersistedScheduledAccusations {
 			err := m.database.Update(func(txn *badger.Txn) error {
-				return m.database.SetAccusation(txn, acc)
+				data, err := marshaller.GobMarshalBinary(acc)
+				if err != nil {
+					return err
+				}
+				var id [32]byte
+				copy(id[:], []byte(acc.GetId()))
+				return m.database.SetAccusationRaw(txn, id, data)
 			})
 
 			if err != nil {
