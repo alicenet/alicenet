@@ -11,43 +11,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// TaskAction is an enumeration indicating the actions that the scheduler
-// can do with a task during a request:
-type TaskAction int
-
-// The possible actions that the scheduler can do with a task during a request:
-// * Kill          - To kill/prune a task type immediately
-// * Schedule      - To schedule a new task
-const (
-	Kill TaskAction = iota
-	Schedule
-)
-
-func (action TaskAction) String() string {
-	return [...]string{
-		"Kill",
-		"Schedule",
-	}[action]
-}
-
-type TaskResponse struct {
-	Id  string
-	Err error
-}
-
-type TaskRequest struct {
-	Action TaskAction
-	Task   Task
-}
-
-func NewScheduleTaskRequest(task Task) TaskRequest {
-	return TaskRequest{Action: Schedule, Task: task}
-}
-
-func NewKillTaskRequest(task Task) TaskRequest {
-	return TaskRequest{Action: Kill, Task: task}
-}
-
 type BaseTask struct {
 	sync.RWMutex
 	// Task name/type
@@ -73,7 +36,7 @@ type BaseTask struct {
 	logger           *logrus.Entry            `json:"-"`
 	client           layer1.Client            `json:"-"`
 	contracts        layer1.AllSmartContracts `json:"-"`
-	taskResponseChan TaskResponseChan         `json:"-"`
+	taskResponseChan InternalTaskResponseChan `json:"-"`
 }
 
 // NewBaseTask creates a new Base task. BaseTask should be the base of any task.
@@ -95,7 +58,7 @@ func NewBaseTask(start uint64, end uint64, allowMultiExecution bool, subscribeOp
 // Initialize initializes the task after its creation. It should be only called
 // by the task scheduler during task spawn as separated go routine. This
 // function all the parameters for task execution and control by the scheduler.
-func (bt *BaseTask) Initialize(ctx context.Context, cancelFunc context.CancelFunc, database *db.Database, logger *logrus.Entry, eth layer1.Client, contracts layer1.AllSmartContracts, name string, id string, taskResponseChan TaskResponseChan) error {
+func (bt *BaseTask) Initialize(ctx context.Context, cancelFunc context.CancelFunc, database *db.Database, logger *logrus.Entry, eth layer1.Client, contracts layer1.AllSmartContracts, name string, id string, taskResponseChan InternalTaskResponseChan) error {
 	bt.Lock()
 	defer bt.Unlock()
 	if bt.isInitialized {
@@ -217,6 +180,8 @@ func (bt *BaseTask) Close() {
 
 // Finish executes the clean up logic once a task finishes.
 func (bt *BaseTask) Finish(err error) {
+	bt.Lock()
+	defer bt.Unlock()
 	if err != nil {
 		if bt.wasKilled {
 			bt.logger.WithError(err).Debug("cancelling task execution, task was killed")
@@ -227,6 +192,6 @@ func (bt *BaseTask) Finish(err error) {
 		bt.logger.Info("task is done")
 	}
 	if bt.taskResponseChan != nil {
-		bt.taskResponseChan.Add(TaskResponse{Id: bt.Id, Err: err})
+		bt.taskResponseChan.Add(bt.Id, err)
 	}
 }
