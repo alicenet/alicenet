@@ -227,12 +227,20 @@ contract ETHDKG is
         uint256[4] memory masterPublicKey_
     ) public onlyFactory {
         uint256 nonce = _nonce;
-        require(nonce == 0, string(abi.encodePacked(ETHDKGErrors.ETHDKG_MIGRATION_INVALID_NONCE)));
-        require(
-            validatorsAccounts_.length == validatorIndexes_.length &&
-                validatorsAccounts_.length == validatorShares_.length,
-            string(abi.encodePacked(ETHDKGErrors.ETHDKG_MIGRATION_INPUT_DATA_MISMATCH))
-        );
+        if (nonce != 0) {
+            revert ETHDKGErrors.MigrationRequiresZeroNonce(nonce);
+        }
+
+        if (
+            !(validatorsAccounts_.length == validatorIndexes_.length &&
+                validatorsAccounts_.length == validatorShares_.length)
+        ) {
+            revert ETHDKGErrors.MigrationInputDataMismatch(
+                validatorsAccounts_.length,
+                validatorIndexes_.length,
+                validatorShares_.length
+            );
+        }
 
         nonce++;
 
