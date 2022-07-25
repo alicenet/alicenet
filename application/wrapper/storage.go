@@ -83,7 +83,7 @@ func (s *Storage) GetMinTxFee() (*uint256.Uint256, error) {
 	if s.storage == nil {
 		return nil, errorz.ErrInvalid{}.New("storage.GetMinTxFee; storage not initialized")
 	}
-	fee := s.storage.GetMinTxFee()
+	fee := s.storage.GetMinTxFeeCostRatio()
 	feeUint256 := &uint256.Uint256{}
 	_, err := feeUint256.FromBigInt(fee)
 	if err != nil {

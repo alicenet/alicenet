@@ -21,8 +21,8 @@ type RawStorage struct {
 	SrvrMsgTimeout                 time.Duration `json:"srvrMsgTimeout,omitempty"`
 	MsgTimeout                     time.Duration `json:"msgTimeout,omitempty"`
 
-	MinTxFee       *big.Int `json:"minTxFee,omitempty"`
-	TxValidVersion uint32   `json:"txValidVersion,omitempty"`
+	MinTxFeeCostRatio *big.Int `json:"minTxFeeCostRatio,omitempty"`
+	TxValidVersion    uint32   `json:"txValidVersion,omitempty"`
 
 	ValueStoreFee          *big.Int `json:"valueStoreFee,omitempty"`
 	ValueStoreValidVersion uint32   `json:"valueStoreValidVersion,omitempty"`
@@ -70,7 +70,10 @@ func (rs *RawStorage) Copy() (*RawStorage, error) {
 // IsValid returns true if we can successfully make a copy
 func (rs *RawStorage) IsValid() bool {
 	_, err := rs.Copy()
-	return err == nil
+	if err != nil {
+		return false
+	}
+	return true
 }
 
 // UpdateValue updates the field with the appropriate value.
@@ -112,13 +115,13 @@ func (rs *RawStorage) UpdateValue(update Updater) error {
 			return err
 		}
 		rs.SetMsgTimeout(v)
-	case MinTxFeeType:
+	case MinTxFeeCostRatioType:
 		// *big.Int
 		v, err := stringToBigInt(value)
 		if err != nil {
 			return err
 		}
-		err = rs.SetMinTxFee(v)
+		err = rs.SetMinTxFeeCostRatio(v)
 		if err != nil {
 			return err
 		}
@@ -204,7 +207,7 @@ func (rs *RawStorage) standardParameters() {
 	rs.AtomicSwapFee = new(big.Int).Set(atomicSwapFee)
 	rs.DataStoreEpochFee = new(big.Int).Set(dataStoreEpochFee)
 	rs.ValueStoreFee = new(big.Int).Set(valueStoreFee)
-	rs.MinTxFee = new(big.Int).Set(minTxFee)
+	rs.MinTxFeeCostRatio = new(big.Int).Set(minTxFeeCostRatio)
 }
 
 // GetMaxBytes returns the maximum allowed bytes
@@ -289,26 +292,26 @@ func (rs *RawStorage) GetDownloadTimeout() time.Duration {
 	return rs.DownloadTimeout
 }
 
-// GetMinTxFee returns the minimun tx burned fee
-func (rs *RawStorage) GetMinTxFee() *big.Int {
-	if rs.MinTxFee == nil {
-		rs.MinTxFee = new(big.Int)
+// GetMinTxFeeCostRatio returns the minimun tx fee-cost ratio
+func (rs *RawStorage) GetMinTxFeeCostRatio() *big.Int {
+	if rs.MinTxFeeCostRatio == nil {
+		rs.MinTxFeeCostRatio = new(big.Int)
 	}
-	return rs.MinTxFee
+	return rs.MinTxFeeCostRatio
 }
 
-// SetMinTxFee sets the minimun tx burned fee
-func (rs *RawStorage) SetMinTxFee(value *big.Int) error {
+// SetMinTxFeeCostRatio sets the minimun tx burned fee
+func (rs *RawStorage) SetMinTxFeeCostRatio(value *big.Int) error {
 	if value == nil {
 		return ErrInvalidValue
 	}
-	if rs.MinTxFee == nil {
-		rs.MinTxFee = new(big.Int)
+	if rs.MinTxFeeCostRatio == nil {
+		rs.MinTxFeeCostRatio = new(big.Int)
 	}
 	if value.Sign() < 0 {
 		return ErrInvalidValue
 	}
-	rs.MinTxFee.Set(value)
+	rs.MinTxFeeCostRatio.Set(value)
 	return nil
 }
 

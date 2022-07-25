@@ -27,7 +27,7 @@ p2pListeningAddress = ""
 discoveryListeningAddress = ""
 localStateListeningAddress = ""
 peerLimitMax = 24
-peerLimitMin = 3
+peerLimitMin = 2
 
 [monitor]
 batchSize = 1_000

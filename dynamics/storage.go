@@ -57,7 +57,7 @@ type StorageGetter interface {
 	GetAtomicSwapFee() *big.Int
 	GetAtomicSwapValidStopEpoch() uint32
 
-	GetMinTxFee() *big.Int
+	GetMinTxFeeCostRatio() *big.Int
 	GetTxValidVersion() uint32
 }
 
@@ -100,8 +100,6 @@ func (s *Storage) Init(rawDB rawDataBase, logger *logrus.Logger) error {
 // Start allows normal operations to begin. This MUST be called after Init
 // and can only be called once.
 func (s *Storage) Start() {
-	s.Lock()
-	defer s.Unlock()
 	s.startOnce.Do(func() {
 		close(s.startChan)
 	})
@@ -112,8 +110,9 @@ func (s *Storage) Start() {
 // UpdateStorage updates the database to include changes that must be made
 // to the database
 func (s *Storage) UpdateStorage(txn *badger.Txn, update Updater) error {
-	<-s.startChan
-
+	select {
+	case <-s.startChan:
+	}
 	s.Lock()
 	defer s.Unlock()
 
@@ -164,8 +163,9 @@ func (s *Storage) UpdateStorage(txn *badger.Txn, update Updater) error {
 // at which we need to update nodes.
 // Once we find the beginning, we iterate forward and update all forward nodes.
 func (s *Storage) updateStorageValue(txn *badger.Txn, update Updater) error {
-	<-s.startChan
-
+	select {
+	case <-s.startChan:
+	}
 	epoch := update.Epoch()
 	ll, err := s.database.GetLinkedList(txn)
 	if err != nil {
@@ -351,8 +351,9 @@ func (s *Storage) updateStorageValue(txn *badger.Txn, update Updater) error {
 // We use Lock and Unlock rather than RLock and RUnlock because
 // we modify Storage.
 func (s *Storage) LoadStorage(txn *badger.Txn, epoch uint32) error {
-	<-s.startChan
-
+	select {
+	case <-s.startChan:
+	}
 	s.Lock()
 	defer s.Unlock()
 	rs, err := s.loadStorage(txn, epoch)
@@ -439,7 +440,9 @@ func (s *Storage) loadRawStorage(txn *badger.Txn, epoch uint32) (*RawStorage, er
 // If the node is added at the head, then LinkedList must be updated
 // to reflect this change.
 func (s *Storage) addNode(txn *badger.Txn, node *Node) error {
-	<-s.startChan
+	select {
+	case <-s.startChan:
+	}
 
 	// Ensure node.rawStorage and node.thisEpoch are valid;
 	// other parameters should not be set.
@@ -482,12 +485,12 @@ func (s *Storage) addNode(txn *badger.Txn, node *Node) error {
 		return ErrInvalid
 	}
 
-	// prevNode := &Node{}
+	prevNode := &Node{}
 
 	// Loop backwards through the LinkedList
 	for {
 		// Get previous node
-		prevNode, err := s.database.GetNode(txn, currentNode.prevEpoch)
+		prevNode, err = s.database.GetNode(txn, currentNode.prevEpoch)
 		if err != nil {
 			utils.DebugTrace(s.logger, err)
 			return err
@@ -596,8 +599,9 @@ func (s *Storage) addNodeSplit(txn *badger.Txn, node, prevNode, nextNode *Node) 
 
 // GetMaxBytes returns the maximum allowed bytes
 func (s *Storage) GetMaxBytes() uint32 {
-	<-s.startChan
-
+	select {
+	case <-s.startChan:
+	}
 	s.RLock()
 	defer s.RUnlock()
 	return s.rawStorage.GetMaxBytes()
@@ -605,8 +609,9 @@ func (s *Storage) GetMaxBytes() uint32 {
 
 // GetMaxProposalSize returns the maximum size of bytes allowed in a proposal
 func (s *Storage) GetMaxProposalSize() uint32 {
-	<-s.startChan
-
+	select {
+	case <-s.startChan:
+	}
 	s.RLock()
 	defer s.RUnlock()
 	return s.rawStorage.GetMaxProposalSize()
@@ -614,8 +619,9 @@ func (s *Storage) GetMaxProposalSize() uint32 {
 
 // GetSrvrMsgTimeout returns the time before timeout of server message
 func (s *Storage) GetSrvrMsgTimeout() time.Duration {
-	<-s.startChan
-
+	select {
+	case <-s.startChan:
+	}
 	s.RLock()
 	defer s.RUnlock()
 	return s.rawStorage.GetSrvrMsgTimeout()
@@ -623,8 +629,9 @@ func (s *Storage) GetSrvrMsgTimeout() time.Duration {
 
 // GetMsgTimeout returns the timeout to receive a message
 func (s *Storage) GetMsgTimeout() time.Duration {
-	<-s.startChan
-
+	select {
+	case <-s.startChan:
+	}
 	s.RLock()
 	defer s.RUnlock()
 	return s.rawStorage.GetMsgTimeout()
@@ -632,8 +639,9 @@ func (s *Storage) GetMsgTimeout() time.Duration {
 
 // GetProposalStepTimeout returns the proposal step timeout
 func (s *Storage) GetProposalStepTimeout() time.Duration {
-	<-s.startChan
-
+	select {
+	case <-s.startChan:
+	}
 	s.RLock()
 	defer s.RUnlock()
 	return s.rawStorage.GetProposalStepTimeout()
@@ -641,8 +649,9 @@ func (s *Storage) GetProposalStepTimeout() time.Duration {
 
 // GetPreVoteStepTimeout returns the prevote step timeout
 func (s *Storage) GetPreVoteStepTimeout() time.Duration {
-	<-s.startChan
-
+	select {
+	case <-s.startChan:
+	}
 	s.RLock()
 	defer s.RUnlock()
 	return s.rawStorage.GetPreVoteStepTimeout()
@@ -650,8 +659,9 @@ func (s *Storage) GetPreVoteStepTimeout() time.Duration {
 
 // GetPreCommitStepTimeout returns the precommit step timeout
 func (s *Storage) GetPreCommitStepTimeout() time.Duration {
-	<-s.startChan
-
+	select {
+	case <-s.startChan:
+	}
 	s.RLock()
 	defer s.RUnlock()
 	return s.rawStorage.GetPreCommitStepTimeout()
@@ -660,8 +670,9 @@ func (s *Storage) GetPreCommitStepTimeout() time.Duration {
 // GetDeadBlockRoundNextRoundTimeout returns the timeout required before
 // moving into the DeadBlockRound
 func (s *Storage) GetDeadBlockRoundNextRoundTimeout() time.Duration {
-	<-s.startChan
-
+	select {
+	case <-s.startChan:
+	}
 	s.RLock()
 	defer s.RUnlock()
 	return s.rawStorage.GetDeadBlockRoundNextRoundTimeout()
@@ -669,26 +680,29 @@ func (s *Storage) GetDeadBlockRoundNextRoundTimeout() time.Duration {
 
 // GetDownloadTimeout returns the timeout for downloads
 func (s *Storage) GetDownloadTimeout() time.Duration {
-	<-s.startChan
-
+	select {
+	case <-s.startChan:
+	}
 	s.RLock()
 	defer s.RUnlock()
 	return s.rawStorage.GetDownloadTimeout()
 }
 
-// GetMinTxFee returns the minimum transaction fee.
-func (s *Storage) GetMinTxFee() *big.Int {
-	<-s.startChan
-
+// GetMinTxFeeCostRatio returns the minimum transaction fee.
+func (s *Storage) GetMinTxFeeCostRatio() *big.Int {
+	select {
+	case <-s.startChan:
+	}
 	s.RLock()
 	defer s.RUnlock()
-	return s.rawStorage.GetMinTxFee()
+	return s.rawStorage.GetMinTxFeeCostRatio()
 }
 
 // GetTxValidVersion returns the transaction valid version
 func (s *Storage) GetTxValidVersion() uint32 {
-	<-s.startChan
-
+	select {
+	case <-s.startChan:
+	}
 	s.RLock()
 	defer s.RUnlock()
 	return s.rawStorage.GetTxValidVersion()
@@ -696,8 +710,9 @@ func (s *Storage) GetTxValidVersion() uint32 {
 
 // GetValueStoreFee returns the transaction fee for ValueStore
 func (s *Storage) GetValueStoreFee() *big.Int {
-	<-s.startChan
-
+	select {
+	case <-s.startChan:
+	}
 	s.RLock()
 	defer s.RUnlock()
 	return s.rawStorage.GetValueStoreFee()
@@ -705,8 +720,9 @@ func (s *Storage) GetValueStoreFee() *big.Int {
 
 // GetValueStoreValidVersion returns the ValueStore valid version
 func (s *Storage) GetValueStoreValidVersion() uint32 {
-	<-s.startChan
-
+	select {
+	case <-s.startChan:
+	}
 	s.RLock()
 	defer s.RUnlock()
 	return s.rawStorage.GetValueStoreValidVersion()
@@ -714,8 +730,9 @@ func (s *Storage) GetValueStoreValidVersion() uint32 {
 
 // GetAtomicSwapFee returns the transaction fee for AtomicSwap
 func (s *Storage) GetAtomicSwapFee() *big.Int {
-	<-s.startChan
-
+	select {
+	case <-s.startChan:
+	}
 	s.RLock()
 	defer s.RUnlock()
 	return s.rawStorage.GetAtomicSwapFee()
@@ -723,8 +740,9 @@ func (s *Storage) GetAtomicSwapFee() *big.Int {
 
 // GetAtomicSwapValidStopEpoch returns the last epoch at which AtomicSwap is valid
 func (s *Storage) GetAtomicSwapValidStopEpoch() uint32 {
-	<-s.startChan
-
+	select {
+	case <-s.startChan:
+	}
 	s.RLock()
 	defer s.RUnlock()
 	return s.rawStorage.GetAtomicSwapValidStopEpoch()
@@ -732,8 +750,9 @@ func (s *Storage) GetAtomicSwapValidStopEpoch() uint32 {
 
 // GetDataStoreEpochFee returns the DataStore fee per epoch
 func (s *Storage) GetDataStoreEpochFee() *big.Int {
-	<-s.startChan
-
+	select {
+	case <-s.startChan:
+	}
 	s.RLock()
 	defer s.RUnlock()
 	return s.rawStorage.GetDataStoreEpochFee()
@@ -741,8 +760,9 @@ func (s *Storage) GetDataStoreEpochFee() *big.Int {
 
 // GetDataStoreValidVersion returns the DataStore valid version
 func (s *Storage) GetDataStoreValidVersion() uint32 {
-	<-s.startChan
-
+	select {
+	case <-s.startChan:
+	}
 	s.RLock()
 	defer s.RUnlock()
 	return s.rawStorage.GetDataStoreValidVersion()

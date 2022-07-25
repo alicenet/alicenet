@@ -17,5 +17,5 @@ var dataStoreEpochFee = bigFromBase10("3")
 // valueStoreFee is the initial fee for the ValueStore object.
 var valueStoreFee = bigFromBase10("1")
 
-// minTxFee is the initial minimum transaction fee for a Tx object.
-var minTxFee = bigFromBase10("4")
+// minTxFeeCostRatio is the initial minimum transaction fee-cost ratio for a Tx object.
+var minTxFeeCostRatio = bigFromBase10("4")
