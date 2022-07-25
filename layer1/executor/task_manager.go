@@ -313,7 +313,7 @@ func (tm *TaskManager) startTasks(ctx context.Context, tasks []ManagerRequestInf
 			logEntry = logEntry.WithField("taskId", task.Id).WithField("taskName", task.Name)
 			getTaskLoggerComplete(task).Info("task is about to start")
 
-			go tm.taskExecutor.manageTask(ctx, task.Task, task.Name, task.Id, tm.database, logEntry, tm.eth, tm.contracts, tm.responseChan)
+			go tm.taskExecutor.handleTaskExecution(ctx, task.Task, task.Name, task.Id, tm.database, logEntry, tm.eth, tm.contracts, tm.responseChan)
 
 			task.InternalState = Running
 			tm.Schedule[task.Id] = task

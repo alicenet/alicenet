@@ -72,9 +72,9 @@ func (te *TaskExecutor) getTxBackup(uuid string) (*types.Transaction, bool) {
 	return txn, present
 }
 
-// manageTask is the main function to manage a task.
+// handleTaskExecution is the main function to manage a task.
 // It is basically an abstraction to handle the task execution in a separate process.
-func (te *TaskExecutor) manageTask(mainCtx context.Context, task tasks.Task, name string, taskId string, database *db.Database, logger *logrus.Entry, eth layer1.Client, contracts layer1.AllSmartContracts, taskResponseChan tasks.InternalTaskResponseChan) {
+func (te *TaskExecutor) handleTaskExecution(mainCtx context.Context, task tasks.Task, name string, taskId string, database *db.Database, logger *logrus.Entry, eth layer1.Client, contracts layer1.AllSmartContracts, taskResponseChan tasks.InternalTaskResponseChan) {
 	defer task.Close()
 	err := te.processTask(mainCtx, task, name, taskId, database, logger, eth, contracts, taskResponseChan)
 	// Clean up in case the task was killed

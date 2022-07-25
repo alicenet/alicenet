@@ -310,7 +310,7 @@ package executor
 //	return taskManager, client, db, taskRespChan, txWatcher, contracts
 //}
 //
-//func Test_TaskManager_HappyPath(t *testing.T) {
+//func Test_TaskExecutor_HappyPath(t *testing.T) {
 //	manager, client, db, taskRespChan, txWatcher, contracts := getTaskManager(t)
 //	defer taskRespChan.close()
 //
