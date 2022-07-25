@@ -18,7 +18,7 @@ import (
 )
 
 const (
-	timeToStop              = 3 * time.Second
+	timeToStop              = 1 * time.Second
 	timeToFail              = timeToStop + 1*time.Second
 	initialDelay            = 500 * time.Millisecond
 	freq                    = 200 * time.Millisecond
@@ -26,11 +26,7 @@ const (
 )
 
 func TestSynchronizer_InitAndStart(t *testing.T) {
-	defer func() {
-		if r := recover(); r != nil {
-			t.Errorf("Shouldn't panic")
-		}
-	}()
+	t.Parallel()
 
 	rawDb, err := utils.OpenBadger(context.Background().Done(), "", true)
 	assert.Nil(t, err)
@@ -56,11 +52,7 @@ func TestSynchronizer_InitAndStart(t *testing.T) {
 }
 
 func TestSynchronizer_loopWithFn(t *testing.T) {
-	defer func() {
-		if r := recover(); r != nil {
-			t.Errorf("Shouldn't panic")
-		}
-	}()
+	t.Parallel()
 
 	rawDb, err := utils.OpenBadger(context.Background().Done(), "", true)
 	assert.Nil(t, err)
@@ -102,11 +94,7 @@ func TestSynchronizer_loopWithFn(t *testing.T) {
 }
 
 func TestSynchronizer_loopWithFn2(t *testing.T) {
-	defer func() {
-		if r := recover(); r != nil {
-			t.Errorf("Shouldn't panic")
-		}
-	}()
+	t.Parallel()
 
 	rawDb, err := utils.OpenBadger(context.Background().Done(), "", true)
 	assert.Nil(t, err)
@@ -148,11 +136,7 @@ func TestSynchronizer_loopWithFn2(t *testing.T) {
 }
 
 func TestSynchronizer_loopWithLockedCondition(t *testing.T) {
-	defer func() {
-		if r := recover(); r != nil {
-			t.Errorf("Shouldn't panic")
-		}
-	}()
+	t.Parallel()
 
 	rawDb, err := utils.OpenBadger(context.Background().Done(), "", true)
 	assert.Nil(t, err)
@@ -192,11 +176,7 @@ func TestSynchronizer_loopWithLockedCondition(t *testing.T) {
 }
 
 func TestSynchronizer_SafeOk(t *testing.T) {
-	defer func() {
-		if r := recover(); r != nil {
-			t.Errorf("Shouldn't panic")
-		}
-	}()
+	t.Parallel()
 
 	rawDb, err := utils.OpenBadger(context.Background().Done(), "", true)
 	assert.Nil(t, err)

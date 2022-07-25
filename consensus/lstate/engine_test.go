@@ -26,6 +26,8 @@ import (
 )
 
 func TestEngine_Status_Ok(t *testing.T) {
+	t.Parallel()
+
 	st := make(map[string]interface{})
 	engine := initEngine(t, nil)
 
@@ -57,6 +59,8 @@ func TestEngine_Status_Ok(t *testing.T) {
 }
 
 func TestEngine_Status_Error(t *testing.T) {
+	t.Parallel()
+
 	st := make(map[string]interface{})
 	engine := initEngine(t, nil)
 
@@ -66,6 +70,8 @@ func TestEngine_Status_Error(t *testing.T) {
 
 //ce.ethAcct != ownState.VAddr
 func TestEngine_UpdateLocalState1(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -94,6 +100,8 @@ func TestEngine_UpdateLocalState1(t *testing.T) {
 //ce.ethAcct == ownState.VAddr
 //os val GetPrivK not found
 func TestEngine_UpdateLocalState2(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -123,6 +131,8 @@ func TestEngine_UpdateLocalState2(t *testing.T) {
 //ce.ethAcct == ownState.VAddr
 //os val GetPrivK found but pubk mismatch
 func TestEngine_UpdateLocalState3(t *testing.T) {
+	t.Parallel()
+
 	defer func() {
 		if r := recover(); r == nil {
 			t.Fatal("Should have raised panic: pubkey mismatch!")
@@ -172,6 +182,8 @@ func TestEngine_UpdateLocalState3(t *testing.T) {
 //os val GetPrivK not found
 //new validators set
 func TestEngine_UpdateLocalState4(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -215,6 +227,8 @@ func TestEngine_UpdateLocalState4(t *testing.T) {
 //updateLoadedObjects = OK
 //updateLocalStateInternal = OK
 func TestEngine_UpdateLocalState5(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -269,6 +283,8 @@ func TestEngine_UpdateLocalState5(t *testing.T) {
 //updateLocalStateInternal = OK
 //bHeight = 1024 and not safe to proceed
 func TestEngine_UpdateLocalState6(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1024)
 	rs := createRoundState(t, os)
@@ -323,6 +339,8 @@ func TestEngine_UpdateLocalState6(t *testing.T) {
 //updateLocalStateInternal = OK
 //bHeight = 1024 and safe to proceed
 func TestEngine_UpdateLocalState7(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1024)
 	rs := createRoundState(t, os)
@@ -380,6 +398,8 @@ func TestEngine_UpdateLocalState7(t *testing.T) {
 
 //MaxBHSeen and SyncToBH same height
 func TestEngine_Sync1(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -410,6 +430,8 @@ func TestEngine_Sync1(t *testing.T) {
 //MaxBHSeen and SyncToBH diff height
 //fastSync not done
 func TestEngine_Sync2(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 5800)
 	rs := createRoundState(t, os)
@@ -460,6 +482,8 @@ func TestEngine_Sync2(t *testing.T) {
 
 //MaxBHSeen and SyncToBH diff height
 func TestEngine_Sync3(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -501,6 +525,8 @@ func TestEngine_Sync3(t *testing.T) {
 //Not current validator
 //No future heights
 func TestEngine_updateLocalStateInternal1(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 
 	os := createOwnState(t, 2)
@@ -520,6 +546,8 @@ func TestEngine_updateLocalStateInternal1(t *testing.T) {
 //round jump
 //dead block round
 func TestEngine_updateLocalStateInternal2(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 
 	os := createOwnState(t, 2)
@@ -550,6 +578,8 @@ func TestEngine_updateLocalStateInternal2(t *testing.T) {
 
 //peer with future height
 func TestEngine_updateLocalStateInternal3(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 
 	os := createOwnState(t, 2)
@@ -635,6 +665,8 @@ func TestEngine_updateLocalStateInternal3(t *testing.T) {
 //next round in round preceding the dead block round
 //invalid proposal
 func TestEngine_updateLocalStateInternal4(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 
 	os := createOwnState(t, 2)
@@ -675,6 +707,8 @@ func TestEngine_updateLocalStateInternal4(t *testing.T) {
 //NHCurrent
 //invalid validators shares
 func TestEngine_updateLocalStateInternal5(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 
 	os := createOwnState(t, 2)
@@ -711,6 +745,8 @@ func TestEngine_updateLocalStateInternal5(t *testing.T) {
 
 //round jump
 func TestEngine_updateLocalStateInternal6(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 
 	os := createOwnState(t, 2)
@@ -741,6 +777,8 @@ func TestEngine_updateLocalStateInternal6(t *testing.T) {
 
 //NRCurrent
 func TestEngine_updateLocalStateInternal7(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 
 	os := createOwnState(t, 2)
@@ -784,6 +822,8 @@ func TestEngine_updateLocalStateInternal7(t *testing.T) {
 //PCCurrent
 //PCTOExpired
 func TestEngine_updateLocalStateInternal8(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 
 	os := createOwnState(t, 2)
@@ -827,6 +867,8 @@ func TestEngine_updateLocalStateInternal8(t *testing.T) {
 //PCCurrent
 //NOT PCTOExpired
 func TestEngine_updateLocalStateInternal9(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 
 	os := createOwnState(t, 2)
@@ -870,6 +912,8 @@ func TestEngine_updateLocalStateInternal9(t *testing.T) {
 //PCNCurrent
 //PCTOExpired
 func TestEngine_updateLocalStateInternal10(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 
 	os := createOwnState(t, 2)
@@ -913,6 +957,8 @@ func TestEngine_updateLocalStateInternal10(t *testing.T) {
 //PCNCurrent
 //NOT PCTOExpired
 func TestEngine_updateLocalStateInternal11(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 
 	os := createOwnState(t, 2)
@@ -956,6 +1002,8 @@ func TestEngine_updateLocalStateInternal11(t *testing.T) {
 //PVCurrent
 //PVTOExpired
 func TestEngine_updateLocalStateInternal12(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 
 	os := createOwnState(t, 2)
@@ -999,6 +1047,8 @@ func TestEngine_updateLocalStateInternal12(t *testing.T) {
 //PVCurrent
 //NOT PVTOExpired
 func TestEngine_updateLocalStateInternal13(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 
 	os := createOwnState(t, 2)
@@ -1042,6 +1092,8 @@ func TestEngine_updateLocalStateInternal13(t *testing.T) {
 //PVNCurrent
 //PVTOExpired
 func TestEngine_updateLocalStateInternal14(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 
 	os := createOwnState(t, 2)
@@ -1085,6 +1137,8 @@ func TestEngine_updateLocalStateInternal14(t *testing.T) {
 //PVNCurrent
 //NOT PVTOExpired
 func TestEngine_updateLocalStateInternal15(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 
 	os := createOwnState(t, 2)
@@ -1129,6 +1183,8 @@ func TestEngine_updateLocalStateInternal15(t *testing.T) {
 //ISProposer
 //NOT PCurrent
 func TestEngine_updateLocalStateInternal16(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 
 	os := createOwnState(t, 2)
@@ -1169,6 +1225,8 @@ func TestEngine_updateLocalStateInternal16(t *testing.T) {
 
 //Nothing to update
 func TestEngine_updateLocalStateInternal17(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 
 	os := createOwnState(t, 2)

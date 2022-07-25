@@ -2,6 +2,9 @@ package lstate
 
 import (
 	"errors"
+	"strconv"
+	"testing"
+
 	appObjs "github.com/alicenet/alicenet/application/objs"
 	"github.com/alicenet/alicenet/application/objs/uint256"
 	"github.com/alicenet/alicenet/consensus/objs"
@@ -11,11 +14,11 @@ import (
 	"github.com/alicenet/alicenet/interfaces"
 	"github.com/dgraph-io/badger/v2"
 	"github.com/stretchr/testify/assert"
-	"strconv"
-	"testing"
 )
 
 func TestAppMan_AddPendingTx_Error1(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 
 	_ = engine.sstore.database.Update(func(txn *badger.Txn) error {
@@ -29,6 +32,8 @@ func TestAppMan_AddPendingTx_Error1(t *testing.T) {
 }
 
 func TestAppMan_AddPendingTx_Error2(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	os.SyncToBH.BClaims.ChainID = 7777
@@ -52,6 +57,8 @@ func TestAppMan_AddPendingTx_Error2(t *testing.T) {
 }
 
 func TestAppMan_AddPendingTx_Ok(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -74,6 +81,8 @@ func TestAppMan_AddPendingTx_Ok(t *testing.T) {
 }
 
 func TestAppMan_getValidValue_Error1(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -92,6 +101,8 @@ func TestAppMan_getValidValue_Error1(t *testing.T) {
 }
 
 func TestAppMan_getValidValue_Error2(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -110,6 +121,8 @@ func TestAppMan_getValidValue_Error2(t *testing.T) {
 }
 
 func TestAppMan_getValidValue_Ok(t *testing.T) {
+	t.Parallel()
+
 	txs := []*appObjs.Tx{makeTx(t)}
 
 	engine := initEngine(t, txs)
@@ -129,6 +142,8 @@ func TestAppMan_getValidValue_Ok(t *testing.T) {
 }
 
 func TestAppMan_isValid_False1(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -162,6 +177,8 @@ func TestAppMan_isValid_False1(t *testing.T) {
 }
 
 func TestAppMan_isValid_False2(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -204,6 +221,8 @@ func TestAppMan_isValid_False2(t *testing.T) {
 }
 
 func TestAppMan_isValid_False3(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -244,6 +263,8 @@ func TestAppMan_isValid_False3(t *testing.T) {
 }
 
 func TestAppMan_isValid_False4(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -284,6 +305,8 @@ func TestAppMan_isValid_False4(t *testing.T) {
 }
 
 func TestAppMan_isValid_False5(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -324,6 +347,8 @@ func TestAppMan_isValid_False5(t *testing.T) {
 }
 
 func TestAppMan_isValid_True(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -364,6 +389,8 @@ func TestAppMan_isValid_True(t *testing.T) {
 }
 
 func TestAppMan_applyState_Error1(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)
@@ -381,6 +408,8 @@ func TestAppMan_applyState_Error1(t *testing.T) {
 }
 
 func TestAppMan_applyState_Error2(t *testing.T) {
+	t.Parallel()
+
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
 	rs := createRoundState(t, os)

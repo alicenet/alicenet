@@ -15,9 +15,11 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-var testWaitForClose = time.Second * 6
+var testWaitForClose = time.Second * 2
 
 func TestMux(t *testing.T) {
+	t.Parallel()
+
 	logger := logrus.New()
 	logger.SetLevel(logrus.DebugLevel)
 	nodePrivKey1, err := newTransportPrivateKey()
@@ -193,6 +195,8 @@ func TestMux(t *testing.T) {
 }
 
 func TestMux2(t *testing.T) {
+	t.Parallel()
+
 	logger := logrus.New()
 	logger.SetLevel(logrus.DebugLevel)
 	nodePrivKey1, err := newTransportPrivateKey()
@@ -301,6 +305,8 @@ func TestMux2(t *testing.T) {
 }
 
 func TestMux3(t *testing.T) {
+	t.Parallel()
+
 	logger := logrus.New()
 	logger.SetLevel(logrus.DebugLevel)
 	nodePrivKey1, err := newTransportPrivateKey()

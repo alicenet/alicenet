@@ -2,6 +2,9 @@ package lstate
 
 import (
 	"context"
+	"strconv"
+	"testing"
+
 	"github.com/alicenet/alicenet/consensus/appmock"
 	"github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/consensus/dman"
@@ -10,11 +13,11 @@ import (
 	"github.com/alicenet/alicenet/utils"
 	"github.com/dgraph-io/badger/v2"
 	"github.com/stretchr/testify/assert"
-	"strconv"
-	"testing"
 )
 
 func TestHandlers_AddProposal_Ok(t *testing.T) {
+	t.Parallel()
+
 	hdlr := initHandlers(t)
 
 	_, bnSigners, bnShares, secpSigners, secpPubks := makeSigners(t)
@@ -80,6 +83,8 @@ func TestHandlers_AddProposal_Ok(t *testing.T) {
 }
 
 func TestHandlers_AddProposal_Error(t *testing.T) {
+	t.Parallel()
+
 	hdlr := initHandlers(t)
 
 	_, bnSigners, bnShares, secpSigners, secpPubks := makeSigners(t)
@@ -120,6 +125,8 @@ func TestHandlers_AddProposal_Error(t *testing.T) {
 }
 
 func TestHandlers_AddPreVote_Ok(t *testing.T) {
+	t.Parallel()
+
 	hdlr := initHandlers(t)
 
 	_, bnSigners, bnShares, secpSigners, secpPubks := makeSigners(t)
@@ -188,6 +195,8 @@ func TestHandlers_AddPreVote_Ok(t *testing.T) {
 }
 
 func TestHandlers_AddPreVote_Error(t *testing.T) {
+	t.Parallel()
+
 	hdlr := initHandlers(t)
 
 	_, bnSigners, bnShares, secpSigners, secpPubks := makeSigners(t)
@@ -231,6 +240,8 @@ func TestHandlers_AddPreVote_Error(t *testing.T) {
 }
 
 func TestHandlers_AddPreVoteNil(t *testing.T) {
+	t.Parallel()
+
 	hdlr := initHandlers(t)
 
 	_, bnSigners, bnShares, secpSigners, secpPubks := makeSigners(t)
@@ -296,6 +307,8 @@ func TestHandlers_AddPreVoteNil(t *testing.T) {
 }
 
 func TestHandlers_AddPreCommit_Ok(t *testing.T) {
+	t.Parallel()
+
 	hdlr := initHandlers(t)
 
 	_, bnSigners, bnShares, secpSigners, secpPubks := makeSigners(t)
@@ -378,6 +391,8 @@ func TestHandlers_AddPreCommit_Ok(t *testing.T) {
 }
 
 func TestHandlers_AddPreCommit_Error(t *testing.T) {
+	t.Parallel()
+
 	hdlr := initHandlers(t)
 
 	_, bnSigners, bnShares, secpSigners, secpPubks := makeSigners(t)
@@ -421,6 +436,8 @@ func TestHandlers_AddPreCommit_Error(t *testing.T) {
 }
 
 func TestHandlers_AddPreCommitNil_Ok(t *testing.T) {
+	t.Parallel()
+
 	hdlr := initHandlers(t)
 
 	_, bnSigners, bnShares, secpSigners, secpPubks := makeSigners(t)
@@ -484,6 +501,8 @@ func TestHandlers_AddPreCommitNil_Ok(t *testing.T) {
 }
 
 func TestHandlers_AddPreCommitNil_Error(t *testing.T) {
+	t.Parallel()
+
 	hdlr := initHandlers(t)
 
 	_, bnSigners, bnShares, secpSigners, secpPubks := makeSigners(t)
@@ -522,6 +541,8 @@ func TestHandlers_AddPreCommitNil_Error(t *testing.T) {
 }
 
 func TestHandlers_AddNextRound_Ok(t *testing.T) {
+	t.Parallel()
+
 	hdlr := initHandlers(t)
 
 	_, bnSigners, bnShares, secpSigners, secpPubks := makeSigners(t)
@@ -585,6 +606,8 @@ func TestHandlers_AddNextRound_Ok(t *testing.T) {
 }
 
 func TestHandlers_AddNextRound_Error(t *testing.T) {
+	t.Parallel()
+
 	hdlr := initHandlers(t)
 
 	_, bnSigners, bnShares, secpSigners, secpPubks := makeSigners(t)
@@ -623,6 +646,8 @@ func TestHandlers_AddNextRound_Error(t *testing.T) {
 }
 
 func TestHandlers_AddNextHeight_Ok(t *testing.T) {
+	t.Parallel()
+
 	hdlr := initHandlers(t)
 
 	_, bnSigners, bnShares, secpSigners, secpPubks := makeSigners(t)
@@ -704,6 +729,8 @@ func TestHandlers_AddNextHeight_Ok(t *testing.T) {
 }
 
 func TestHandlers_AddNextHeight_Error(t *testing.T) {
+	t.Parallel()
+
 	hdlr := initHandlers(t)
 
 	_, bnSigners, bnShares, secpSigners, secpPubks := makeSigners(t)
@@ -743,6 +770,8 @@ func TestHandlers_AddNextHeight_Error(t *testing.T) {
 }
 
 func TestHandlers_AddBlockHeader_Error1(t *testing.T) {
+	t.Parallel()
+
 	hdlr := initHandlers(t)
 
 	_, bnSigners, bnShares, secpSigners, secpPubks := makeSigners(t)
@@ -779,6 +808,8 @@ func TestHandlers_AddBlockHeader_Error1(t *testing.T) {
 }
 
 func TestHandlers_AddBlockHeader_Error2(t *testing.T) {
+	t.Parallel()
+
 	hdlr := initHandlers(t)
 
 	_, bnSigners, bnShares, secpSigners, secpPubks := makeSigners(t)
@@ -815,6 +846,8 @@ func TestHandlers_AddBlockHeader_Error2(t *testing.T) {
 }
 
 func TestHandlers_AddBlockHeader_Ok(t *testing.T) {
+	t.Parallel()
+
 	hdlr := initHandlers(t)
 
 	_, bnSigners, bnShares, secpSigners, secpPubks := makeSigners(t)
