@@ -59,7 +59,7 @@ func newTaskManager(mainCtx context.Context, eth layer1.Client, contracts layer1
 		logger:       logger,
 	}
 
-	err := taskManager.loadState()
+	err := taskManager.recoverState()
 	if err != nil {
 		taskManager.logger.Warnf("could not find previous State: %v", err)
 		if err != badger.ErrKeyNotFound {
@@ -352,8 +352,13 @@ func (tm *TaskManager) killTaskById(ctx context.Context, id string) error {
 			return ErrTaskIdEmpty
 		}
 
+		task, present := tm.Schedule[id]
+		if !present {
+			return ErrNotScheduled
+		}
+
 		tm.logger.Tracef("received request to kill task with id: %s", id)
-		return tm.remove(id)
+		return tm.killTask(task)
 	}
 }
 
@@ -364,23 +369,33 @@ func (tm *TaskManager) killTasks(ctx context.Context, tasks []ManagerRequestInfo
 	default:
 		for i := 0; i < len(tasks); i++ {
 			task := tasks[i]
-			getTaskLoggerComplete(task).Info("Task is about to be killed")
-			if task.InternalState == Running {
-				task.Task.Close()
-				task.InternalState = Killed
-				task.killedAt = tm.LastHeightSeen
-			} else if task.InternalState == Killed {
-				getTaskLoggerComplete(task).Error("Task already killed")
-			} else {
-				getTaskLoggerComplete(task).Trace("Task is not running yet, pruning directly")
-				err := tm.remove(task.Id)
-				if err != nil {
-					tm.logger.WithError(err).Errorf("Failed to kill task id: %s", task.Id)
-				}
+			err := tm.killTask(task)
+			if err != nil {
+				return err
 			}
 		}
 	}
 
+	return nil
+}
+
+func (tm *TaskManager) killTask(task ManagerRequestInfo) error {
+	getTaskLoggerComplete(task).Info("Task is about to be killed")
+	if task.InternalState == Running {
+		task.Task.Close()
+		task.InternalState = Killed
+		task.killedAt = tm.LastHeightSeen
+		tm.Schedule[task.Id] = task
+	} else if task.InternalState == Killed {
+		getTaskLoggerComplete(task).Error("Task already killed")
+	} else {
+		getTaskLoggerComplete(task).Trace("Task is not running yet, pruning directly")
+		err := tm.remove(task.Id)
+		if err != nil {
+			tm.logger.WithError(err).Errorf("Failed to kill task id: %s", task.Id)
+			return err
+		}
+	}
 	return nil
 }
 
@@ -434,19 +449,6 @@ func (tm *TaskManager) findTasksByName(taskName string) []ManagerRequestInfo {
 		}
 	}
 	tm.logger.Tracef("found %v tasks with name %s", len(tasks), taskName)
-	return tasks
-}
-
-func (tm *TaskManager) findRunningTasksByName(taskName string) []ManagerRequestInfo {
-	tm.logger.Tracef("finding running tasks by name %s", taskName)
-	tasks := make([]ManagerRequestInfo, 0)
-
-	for _, taskRequest := range tm.Schedule {
-		if taskRequest.Name == taskName && taskRequest.InternalState == Running {
-			tasks = append(tasks, taskRequest)
-		}
-	}
-	tm.logger.Tracef("found %v running tasks with name %s", len(tasks), taskName)
 	return tasks
 }
 
@@ -510,6 +512,21 @@ func (tm *TaskManager) loadState() error {
 		return err
 	}
 
+	// synchronizing db state to disk
+	if err := tm.database.Sync(); err != nil {
+		logger.Error("Failed to set sync")
+		return err
+	}
+
+	return nil
+}
+
+func (tm *TaskManager) recoverState() error {
+	err := tm.loadState()
+	if err != nil {
+		return err
+	}
+
 	// If the tasks were running, we mark them as not started so the scheduled can
 	// start them again
 	for _, task := range tm.Schedule {
@@ -532,14 +549,7 @@ func (tm *TaskManager) loadState() error {
 		tm.Responses[id] = resp
 	}
 
-	// synchronizing db state to disk
-	if err := tm.database.Sync(); err != nil {
-		logger.Error("Failed to set sync")
-		return err
-	}
-
 	return nil
-
 }
 
 func (tm *TaskManager) MarshalJSON() ([]byte, error) {

@@ -80,10 +80,7 @@ func (te *TaskExecutor) handleTaskExecution(mainCtx context.Context, task tasks.
 	// Clean up in case the task was killed
 	if task.WasKilled() {
 		task.GetLogger().Trace("task was externally killed, removing tx backup")
-		err = te.removeTxBackup(task.GetId())
-		if err != nil {
-			task.GetLogger().Errorf("error during state persistance: %v", err)
-		}
+		te.removeTxBackup(task.GetId())
 	}
 	task.Finish(err)
 }

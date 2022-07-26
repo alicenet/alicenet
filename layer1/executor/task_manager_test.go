@@ -36,7 +36,7 @@ package executor
 // // Auxiliary function to get how many tasks we have inside the scheduler. This
 // // function creates a copy of the scheduler to get the len without race
 // // conditions.
-// func getSchedulerLen(t *testing.T, scheduler *TaskManager) int {
+// func getScheduleLen(t *testing.T, scheduler *TaskManager) int {
 // 	newScheduler := &TaskManager{Schedule: make(map[string]ManagerRequestInfo), marshaller: getTaskRegistry(), database: scheduler.database}
 // 	err := scheduler.persistState()
 // 	assert.Nil(t, err)
@@ -70,7 +70,7 @@ package executor
 // 	scheduler.Close()
 // 	<-time.After(constants.TaskSchedulerProcessingTime + 10*time.Millisecond)
 
-// 	assert.Equalf(t, 0, getSchedulerLen(t, scheduler), "Expected zero tasks scheduled")
+// 	assert.Equalf(t, 0, getScheduleLen(t, scheduler), "Expected zero tasks scheduled")
 // }
 
 // func TestTasksScheduler_Schedule_WrongEndDate(t *testing.T) {
@@ -85,7 +85,7 @@ package executor
 // 	tasksChan <- request
 
 // 	time.After(20 * time.Millisecond)
-// 	assert.Equalf(t, 0, getSchedulerLen(t, scheduler), "Expected zero tasks scheduled")
+// 	assert.Equalf(t, 0, getScheduleLen(t, scheduler), "Expected zero tasks scheduled")
 // }
 
 // func TestTasksScheduler_ScheduleAndKillTasks_Success(t *testing.T) {
@@ -107,24 +107,24 @@ package executor
 // 	tasksChan <- request
 
 // 	<-time.After(10 * time.Millisecond)
-// 	assert.Equalf(t, 3, getSchedulerLen(t, scheduler), "Expected 3 task scheduled")
+// 	assert.Equalf(t, 3, getScheduleLen(t, scheduler), "Expected 3 task scheduled")
 
 // 	request = tasks.NewKillTaskRequest(&dkg.CompletionTask{})
 // 	tasksChan <- request
 // 	time.After(10 * time.Millisecond)
-// 	assert.Equalf(t, 1, getSchedulerLen(t, scheduler), "Expected 1 task after Completion tasks have been killed")
+// 	assert.Equalf(t, 1, getScheduleLen(t, scheduler), "Expected 1 task after Completion tasks have been killed")
 
 // 	request = tasks.NewKillTaskRequest(&dkg.DisputeMissingGPKjTask{})
 // 	tasksChan <- request
 
 // 	<-time.After(10 * time.Millisecond)
-// 	assert.Equalf(t, 1, getSchedulerLen(t, scheduler), "There should be 1 tasks left still, due there were no DisputeMissing task scheduled")
+// 	assert.Equalf(t, 1, getScheduleLen(t, scheduler), "There should be 1 tasks left still, due there were no DisputeMissing task scheduled")
 
 // 	request = tasks.NewKillTaskRequest(&dkg.RegisterTask{})
 // 	tasksChan <- request
 
 // 	<-time.After(10 * time.Millisecond)
-// 	assert.Equalf(t, 0, getSchedulerLen(t, scheduler), "All the tasks should have been removed")
+// 	assert.Equalf(t, 0, getScheduleLen(t, scheduler), "All the tasks should have been removed")
 // }
 
 // func TestTasksScheduler_ScheduleRunAndKillTask_Success(t *testing.T) {
@@ -145,7 +145,7 @@ package executor
 // 	err = scheduler.start()
 // 	<-time.After(constants.TaskSchedulerProcessingTime + 10*time.Millisecond)
 
-// 	assert.Equalf(t, 0, getSchedulerLen(t, scheduler), "All the tasks should have been removed")
+// 	assert.Equalf(t, 0, getScheduleLen(t, scheduler), "All the tasks should have been removed")
 // }
 
 // func TestTasksScheduler_ScheduleDuplicatedTask_Success(t *testing.T) {
@@ -170,7 +170,7 @@ package executor
 // 	err = scheduler.start()
 // 	<-time.After(constants.TaskSchedulerProcessingTime + 10*time.Millisecond)
 
-// 	assert.Equalf(t, 1, getSchedulerLen(t, scheduler), "Expected to have 1 task")
+// 	assert.Equalf(t, 1, getScheduleLen(t, scheduler), "Expected to have 1 task")
 // 	for _, task := range scheduler.Schedule {
 // 		assert.NotEqualf(t, task.InternalState, Running, "this task shouldn't be running due to duplication")
 // 	}
@@ -201,7 +201,7 @@ package executor
 // 	err = scheduler.start()
 // 	<-time.After(constants.TaskSchedulerProcessingTime + 10*time.Millisecond)
 
-// 	assert.Equalf(t, 1, getSchedulerLen(t, scheduler), "Expected to have 1 task")
+// 	assert.Equalf(t, 1, getScheduleLen(t, scheduler), "Expected to have 1 task")
 // }
 
 // func TestTasksScheduler_Recovery_Success(t *testing.T) {
@@ -244,7 +244,7 @@ package executor
 
 // 	<-time.After(10 * time.Millisecond)
 
-// 	assert.Equalf(t, 3, getSchedulerLen(t, scheduler), "Expected to have 3 tasks")
+// 	assert.Equalf(t, 3, getScheduleLen(t, scheduler), "Expected to have 3 tasks")
 
 // 	scheduler.Close()
 // 	close(tasksChan)
@@ -254,7 +254,7 @@ package executor
 // 	assert.Nil(t, err)
 // 	err = scheduler.start()
 // 	assert.Nil(t, err)
-// 	assert.Equalf(t, 3, getSchedulerLen(t, scheduler), "Expected to have 3 tasks")
+// 	assert.Equalf(t, 3, getScheduleLen(t, scheduler), "Expected to have 3 tasks")
 
 // 	scheduler.Close()
 
