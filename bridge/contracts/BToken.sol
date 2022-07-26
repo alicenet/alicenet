@@ -274,10 +274,19 @@ contract BToken is
     function payAndDeposit(
         uint256 maxEth,
         uint256 maxTokens,
+        uint16 bridgeVersion,
         bytes calldata data
     ) public payable {
-        //forward call to btoken
-        uint256 bTokenFee = BridgeRouter(_bridgeRouterAddress()).routeDeposit(
+        //calculate router address
+        bytes32 bridgeRouterSalt = keccak256(
+                bytes.concat(
+                    keccak256(abi.encodePacked("BridgeRouter")),
+                    keccak256(abi.encodePacked(bridgeVersion))
+                )
+            );
+        address bridgeRouterAddress = getMetamorphicContractAddress();
+        //forward call to router
+        uint256 bTokenFee = BridgeRouter(bridgeRouterAddress).routeDeposit(
             msg.sender,
             maxTokens,
             data
@@ -313,11 +322,11 @@ contract BToken is
         uint256 excess = address(this).balance - poolBalance;
 
         // take out protocolFee from excess and decrement excess
-        foundationAmount = (excess * _protocolFee) / _PERCENTAGE_SCALE;
+        foundationAmount = (excess * _splits.protocolFee) / _PERCENTAGE_SCALE;
 
         // split remaining between miners, stakers and lp stakers
-        stakingAmount = (excess * _publicStakingSplit) / _PERCENTAGE_SCALE;
-        lpStakingAmount = (excess * _liquidityProviderStakingSplit) / _PERCENTAGE_SCALE;
+        stakingAmount = (excess * _splits.publicStakingSplit) / _PERCENTAGE_SCALE;
+        lpStakingAmount = (excess * _splits.liquidityProviderStakingSplit) / _PERCENTAGE_SCALE;
         // then give miners the difference of the original and the sum of the
         // stakingAmount
         minerAmount = excess - (stakingAmount + lpStakingAmount + foundationAmount);
@@ -513,10 +522,10 @@ contract BToken is
                 _PERCENTAGE_SCALE,
             string(abi.encodePacked(BTokenErrorCodes.BTOKEN_SPLIT_VALUE_SUM_ERROR))
         );
-        _validatorStakingSplit = validatorStakingSplit_;
-        _publicStakingSplit = publicStakingSplit_;
-        _liquidityProviderStakingSplit = liquidityProviderStakingSplit_;
-        _protocolFee = protocolFee_;
+        _splits.validatorStakingSplit = validatorStakingSplit_;
+        _splits.publicStakingSplit = publicStakingSplit_;
+        _splits.liquidityProviderStakingSplit = liquidityProviderStakingSplit_;
+        _splits.protocolFee = protocolFee_;
     }
 
     // Check if addr_ is EOA (Externally Owned Account) or a contract.
