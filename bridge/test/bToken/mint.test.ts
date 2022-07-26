@@ -181,12 +181,12 @@ describe("Testing BToken Minting methods", async () => {
   it("Should fail to mint with big min BToken quantity", async () => {
     const oneBToken = ethers.utils.parseUnits("1", 18).toBigInt();
     const minBTokens = 900n * oneBToken;
-
+    const expectedBTokensMintedForEthValue = "399028731704364116575";
     await assertErrorMessage(
       fixture.bToken.connect(admin).mint(minBTokens, {
         value: ethers.utils.parseEther(eth.toString()),
       }),
-      `MinimumMintNotMet(${"399028731704364116575"}, ${minBTokens})`
+      `MinimumMintNotMet(${expectedBTokensMintedForEthValue}, ${minBTokens})`
     );
   });
 });
