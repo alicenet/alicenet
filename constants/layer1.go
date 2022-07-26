@@ -4,19 +4,21 @@ import "time"
 
 const (
 	// How much time we are going to poll to check if the task is completed
-	TaskManagerPoolingTime time.Duration = 7 * time.Second
+	TaskExecutorPoolingTime time.Duration = 7 * time.Second
 )
 
 const (
-	// The size of the buffered channels used by the task scheduler
-	TaskSchedulerBufferSize uint64 = 1024
+	// The size of the buffered channels used by the TaskManager
+	TaskManagerBufferSize uint64 = 1024
 	// Timeout in seconds for the network interactions
-	TaskSchedulerNetworkTimeout time.Duration = 1 * time.Second
+	TaskManagerNetworkTimeout time.Duration = 1 * time.Second
 	// Time in which the scheduler it's going to enter in the main loop to spawn tasks
-	TaskSchedulerProcessingTime time.Duration = 3 * time.Second
+	TaskManagerProcessingTime time.Duration = 3 * time.Second
 	// how many blocks after we sent a kill sign to a task to consider it
 	// unresponsive and removing from the scheduler mapping
-	TaskSchedulerHeightToleranceBeforeRemoving uint64 = 50
+	TaskManagerHeightToleranceBeforeRemoving uint64 = 50
+	// how many block we wait before removing a response from the TaskManager
+	TaskManagerResponseToleranceBeforeRemoving uint64 = 50
 )
 
 // Monitor constants

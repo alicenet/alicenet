@@ -1,9 +1,11 @@
 package events
 
 import (
+	"context"
+
 	"github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/layer1"
-	"github.com/alicenet/alicenet/layer1/executor/tasks"
+	"github.com/alicenet/alicenet/layer1/executor"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg"
 	dkgtasks "github.com/alicenet/alicenet/layer1/executor/tasks/dkg"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
@@ -21,7 +23,7 @@ func isValidator(acct accounts.Account, state *objects.MonitorState) bool {
 	return present
 }
 
-func ProcessRegistrationOpened(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, log types.Log, monState *objects.MonitorState, monDB *db.Database, taskRequestChan chan<- tasks.TaskRequest) error {
+func ProcessRegistrationOpened(eth layer1.Client, logger *logrus.Entry, log types.Log, monState *objects.MonitorState, monDB *db.Database, taskHandler executor.TaskHandler) error {
 	logEntry := logger.WithField("eventProcessor", "ProcessRegistrationOpened")
 	logEntry.Info("processing registration")
 	event, err := contracts.EthereumContracts().Ethdkg().ParseRegistrationOpened(log)
@@ -70,7 +72,11 @@ func ProcessRegistrationOpened(eth layer1.Client, contracts layer1.AllSmartContr
 		"TaskEnd":   registrationTask.GetEnd(),
 	}).Info("Scheduling NewRegisterTask")
 
-	taskRequestChan <- tasks.NewScheduleTaskRequest(registrationTask)
+	ctx := context.Background()
+	_, err = taskHandler.ScheduleTask(ctx, registrationTask, "")
+	if err != nil {
+		return err
+	}
 
 	// schedule DisputeRegistration
 	logEntry.WithFields(logrus.Fields{
@@ -78,9 +84,9 @@ func ProcessRegistrationOpened(eth layer1.Client, contracts layer1.AllSmartContr
 		"TaskEnd":   disputeMissingRegistrationTask.GetEnd(),
 	}).Info("Scheduling NewDisputeRegistrationTask")
 
-	taskRequestChan <- tasks.NewScheduleTaskRequest(disputeMissingRegistrationTask)
+	_, err = taskHandler.ScheduleTask(ctx, disputeMissingRegistrationTask, "")
 
-	return nil
+	return err
 }
 
 func UpdateStateOnRegistrationOpened(account accounts.Account, startBlock, phaseLength, confirmationLength, nonce uint64, amIValidator bool, validatorAddresses []common.Address) (*state.DkgState, *dkgtasks.RegisterTask, *dkgtasks.DisputeMissingRegistrationTask) {
@@ -103,7 +109,7 @@ func UpdateStateOnRegistrationOpened(account accounts.Account, startBlock, phase
 	return dkgState, registrationTask, disputeMissingRegistrationTask
 }
 
-func ProcessAddressRegistered(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, log types.Log, monDB *db.Database) error {
+func ProcessAddressRegistered(logger *logrus.Entry, log types.Log, monDB *db.Database) error {
 	logEntry := logger.WithField("eventProcessor", "ProcessAddressRegistered")
 	logEntry.Info("processing address registered")
 
@@ -137,7 +143,7 @@ func ProcessAddressRegistered(eth layer1.Client, contracts layer1.AllSmartContra
 	return nil
 }
 
-func ProcessRegistrationComplete(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, log types.Log, monDB *db.Database, taskRequestChan chan<- tasks.TaskRequest) error {
+func ProcessRegistrationComplete(logger *logrus.Entry, log types.Log, monDB *db.Database, taskHandler executor.TaskHandler) error {
 	logEntry := logger.WithField("eventProcessor", "ProcessRegistrationComplete")
 	logEntry.Info("processing registration complete")
 
@@ -171,8 +177,15 @@ func ProcessRegistrationComplete(eth layer1.Client, contracts layer1.AllSmartCon
 	}
 
 	//Killing previous tasks
-	taskRequestChan <- tasks.NewKillTaskRequest(&dkg.RegisterTask{})
-	taskRequestChan <- tasks.NewKillTaskRequest(&dkg.DisputeMissingRegistrationTask{})
+	ctx := context.Background()
+	_, err = taskHandler.KillTaskByType(ctx, &dkg.RegisterTask{})
+	if err != nil {
+		return err
+	}
+	_, err = taskHandler.KillTaskByType(ctx, &dkg.DisputeMissingRegistrationTask{})
+	if err != nil {
+		return err
+	}
 
 	// schedule ShareDistribution phase
 	logEntry.WithFields(logrus.Fields{
@@ -180,7 +193,10 @@ func ProcessRegistrationComplete(eth layer1.Client, contracts layer1.AllSmartCon
 		"TaskEnd":   shareDistributionTask.GetEnd(),
 	}).Info("Scheduling NewShareDistributionTask")
 
-	taskRequestChan <- tasks.NewScheduleTaskRequest(shareDistributionTask)
+	_, err = taskHandler.ScheduleTask(ctx, shareDistributionTask, "")
+	if err != nil {
+		return err
+	}
 
 	// schedule DisputeParticipantDidNotDistributeSharesTask
 	logEntry.WithFields(logrus.Fields{
@@ -188,7 +204,10 @@ func ProcessRegistrationComplete(eth layer1.Client, contracts layer1.AllSmartCon
 		"TaskEnd":   disputeMissingShareDistributionTask.GetEnd(),
 	}).Info("Scheduling NewDisputeParticipantDidNotDistributeSharesTask")
 
-	taskRequestChan <- tasks.NewScheduleTaskRequest(disputeMissingShareDistributionTask)
+	_, err = taskHandler.ScheduleTask(ctx, disputeMissingShareDistributionTask, "")
+	if err != nil {
+		return err
+	}
 
 	for _, disputeBadSharesTask := range disputeBadSharesTasks {
 		// schedule DisputeDistributeSharesTask
@@ -197,7 +216,10 @@ func ProcessRegistrationComplete(eth layer1.Client, contracts layer1.AllSmartCon
 			"TaskEnd":   disputeBadSharesTask.GetEnd(),
 			"Address":   disputeBadSharesTask.Address,
 		}).Info("Scheduling NewDisputeDistributeSharesTask")
-		taskRequestChan <- tasks.NewScheduleTaskRequest(disputeBadSharesTask)
+		_, err = taskHandler.ScheduleTask(ctx, disputeBadSharesTask, "")
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -252,7 +274,7 @@ func ProcessShareDistribution(eth layer1.Client, contracts layer1.AllSmartContra
 	return nil
 }
 
-func ProcessShareDistributionComplete(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, log types.Log, monDB *db.Database, taskRequestChan chan<- tasks.TaskRequest) error {
+func ProcessShareDistributionComplete(logger *logrus.Entry, log types.Log, monDB *db.Database, taskHandler executor.TaskHandler) error {
 	logEntry := logger.WithField("eventProcessor", "ProcessShareDistributionComplete")
 	logEntry.Info("processing share distribution complete")
 
@@ -285,9 +307,19 @@ func ProcessShareDistributionComplete(eth layer1.Client, contracts layer1.AllSma
 	}
 
 	//Killing previous tasks
-	taskRequestChan <- tasks.NewKillTaskRequest(&dkg.ShareDistributionTask{})
-	taskRequestChan <- tasks.NewKillTaskRequest(&dkg.DisputeMissingShareDistributionTask{})
-	taskRequestChan <- tasks.NewKillTaskRequest(&dkg.DisputeShareDistributionTask{})
+	ctx := context.Background()
+	_, err = taskHandler.KillTaskByType(ctx, &dkg.ShareDistributionTask{})
+	if err != nil {
+		return err
+	}
+	_, err = taskHandler.KillTaskByType(ctx, &dkg.DisputeMissingShareDistributionTask{})
+	if err != nil {
+		return err
+	}
+	_, err = taskHandler.KillTaskByType(ctx, &dkg.DisputeShareDistributionTask{})
+	if err != nil {
+		return err
+	}
 
 	for _, disputeShareDistributionTask := range disputeShareDistributionTasks {
 		// schedule DisputeShareDistributionTask
@@ -296,7 +328,10 @@ func ProcessShareDistributionComplete(eth layer1.Client, contracts layer1.AllSma
 			"TaskEnd":   disputeShareDistributionTask.GetEnd(),
 			"Address":   disputeShareDistributionTask.Address,
 		}).Info("Scheduling NewDisputeShareDistributionTask")
-		taskRequestChan <- tasks.NewScheduleTaskRequest(disputeShareDistributionTask)
+		_, err = taskHandler.ScheduleTask(ctx, disputeShareDistributionTask, "")
+		if err != nil {
+			return err
+		}
 	}
 
 	// schedule SubmitKeySharesPhase
@@ -304,16 +339,19 @@ func ProcessShareDistributionComplete(eth layer1.Client, contracts layer1.AllSma
 		"TaskStart": keyShareSubmissionTask.GetStart(),
 		"TaskEnd":   keyShareSubmissionTask.GetEnd(),
 	}).Info("Scheduling NewKeyShareSubmissionTask")
-	taskRequestChan <- tasks.NewScheduleTaskRequest(keyShareSubmissionTask)
+	_, err = taskHandler.ScheduleTask(ctx, keyShareSubmissionTask, "")
+	if err != nil {
+		return err
+	}
 
 	// schedule DisputeMissingKeySharesPhase
 	logEntry.WithFields(logrus.Fields{
 		"TaskStart": disputeMissingKeySharesTask.GetStart(),
 		"TaskEnd":   disputeMissingKeySharesTask.GetEnd(),
 	}).Info("Scheduling NewDisputeMissingKeySharesTask")
-	taskRequestChan <- tasks.NewScheduleTaskRequest(disputeMissingKeySharesTask)
+	_, err = taskHandler.ScheduleTask(ctx, disputeMissingKeySharesTask, "")
 
-	return nil
+	return err
 }
 
 func UpdateStateOnShareDistributionComplete(dkgState *state.DkgState, disputeShareDistributionStartBlock uint64) ([]*dkgtasks.DisputeShareDistributionTask, *dkgtasks.KeyShareSubmissionTask, *dkgtasks.DisputeMissingKeySharesTask) {
@@ -335,7 +373,7 @@ func UpdateStateOnShareDistributionComplete(dkgState *state.DkgState, disputeSha
 	return disputeShareDistributionTasks, keyshareSubmissionTask, disputeMissingKeySharesTask
 }
 
-func ProcessKeyShareSubmitted(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, log types.Log, monDB *db.Database) error {
+func ProcessKeyShareSubmitted(logger *logrus.Entry, log types.Log, monDB *db.Database) error {
 	logEntry := logger.WithField("eventProcessor", "ProcessKeyShareSubmitted")
 	logEntry.Info("processing key share submission")
 
@@ -365,7 +403,7 @@ func ProcessKeyShareSubmitted(eth layer1.Client, contracts layer1.AllSmartContra
 	return nil
 }
 
-func ProcessKeyShareSubmissionComplete(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, log types.Log, monDB *db.Database, taskRequestChan chan<- tasks.TaskRequest) error {
+func ProcessKeyShareSubmissionComplete(logger *logrus.Entry, log types.Log, monDB *db.Database, taskHandler executor.TaskHandler) error {
 	logEntry := logger.WithField("eventProcessor", "ProcessKeyShareSubmissionComplete")
 	logEntry.Info("processing key share submission complete")
 
@@ -398,19 +436,25 @@ func ProcessKeyShareSubmissionComplete(eth layer1.Client, contracts layer1.AllSm
 	}
 
 	//Killing previous tasks
-	taskRequestChan <- tasks.NewKillTaskRequest(&dkg.KeyShareSubmissionTask{})
-	taskRequestChan <- tasks.NewKillTaskRequest(&dkg.DisputeMissingKeySharesTask{})
+	ctx := context.Background()
+	_, err = taskHandler.KillTaskByType(ctx, &dkg.KeyShareSubmissionTask{})
+	if err != nil {
+		return err
+	}
+	_, err = taskHandler.KillTaskByType(ctx, &dkg.DisputeMissingKeySharesTask{})
+	if err != nil {
+		return err
+	}
 
 	// schedule MPKSubmissionTask
-	taskRequestChan <- tasks.NewScheduleTaskRequest(mpkSubmissionTask)
-
 	logEntry.WithFields(logrus.Fields{
 		"BlockNumber": event.BlockNumber,
 		"TaskStart":   mpkSubmissionTask.GetStart(),
 		"TaskEnd":     mpkSubmissionTask.GetEnd(),
 	}).Info("Scheduling MPKSubmissionTask")
+	_, err = taskHandler.ScheduleTask(ctx, mpkSubmissionTask, "")
 
-	return nil
+	return err
 }
 
 func UpdateStateOnKeyShareSubmissionComplete(dkgState *state.DkgState, mpkSubmissionStartBlock uint64) *dkgtasks.MPKSubmissionTask {
@@ -422,7 +466,7 @@ func UpdateStateOnKeyShareSubmissionComplete(dkgState *state.DkgState, mpkSubmis
 	return mpkSubmissionTask
 }
 
-func ProcessMPKSet(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, log types.Log, adminHandler monitorInterfaces.AdminHandler, monDB *db.Database, taskRequestChan chan<- tasks.TaskRequest) error {
+func ProcessMPKSet(logger *logrus.Entry, log types.Log, adminHandler monitorInterfaces.AdminHandler, monDB *db.Database, taskHandler executor.TaskHandler) error {
 	logEntry := logger.WithField("eventProcessor", "ProcessMPKSet")
 	logEntry.Info("processing master public key set")
 
@@ -442,7 +486,7 @@ func ProcessMPKSet(eth layer1.Client, contracts layer1.AllSmartContracts, logger
 
 	dkgState, err := state.GetDkgState(monDB)
 	if err != nil {
-		utils.LogReturnErrorf(logEntry, "Failed to load dkgState on ProcessMPKSet: %v", err)
+		return utils.LogReturnErrorf(logEntry, "Failed to load dkgState on ProcessMPKSet: %v", err)
 	}
 
 	if !dkgState.IsValidator {
@@ -458,7 +502,11 @@ func ProcessMPKSet(eth layer1.Client, contracts layer1.AllSmartContracts, logger
 	}
 
 	//Killing previous tasks
-	taskRequestChan <- tasks.NewKillTaskRequest(&dkg.MPKSubmissionTask{})
+	ctx := context.Background()
+	_, err = taskHandler.KillTaskByType(ctx, &dkg.MPKSubmissionTask{})
+	if err != nil {
+		return err
+	}
 
 	// schedule GPKJSubmissionTask
 	logEntry.WithFields(logrus.Fields{
@@ -466,8 +514,10 @@ func ProcessMPKSet(eth layer1.Client, contracts layer1.AllSmartContracts, logger
 		"TaskStart":   gpkjSubmissionTask.GetStart(),
 		"TaskEnd":     gpkjSubmissionTask.GetEnd(),
 	}).Info("Scheduling GPKJSubmissionTask")
-
-	taskRequestChan <- tasks.NewScheduleTaskRequest(gpkjSubmissionTask)
+	_, err = taskHandler.ScheduleTask(ctx, gpkjSubmissionTask, "")
+	if err != nil {
+		return err
+	}
 
 	// schedule DisputeMissingGPKjTask
 	logEntry.WithFields(logrus.Fields{
@@ -475,8 +525,10 @@ func ProcessMPKSet(eth layer1.Client, contracts layer1.AllSmartContracts, logger
 		"TaskStart":   gpkjSubmissionTask.GetStart(),
 		"TaskEnd":     gpkjSubmissionTask.GetEnd(),
 	}).Info("Scheduling DisputeMissingGPKjTask")
-
-	taskRequestChan <- tasks.NewScheduleTaskRequest(disputeMissingGPKjTask)
+	_, err = taskHandler.ScheduleTask(ctx, disputeMissingGPKjTask, "")
+	if err != nil {
+		return err
+	}
 
 	// schedule DisputeGPKjTask
 	for _, disputeGPKjTask := range disputeGPKjTasks {
@@ -485,7 +537,10 @@ func ProcessMPKSet(eth layer1.Client, contracts layer1.AllSmartContracts, logger
 			"TaskStart":   disputeGPKjTask.GetStart(),
 			"TaskEnd":     disputeGPKjTask.GetEnd(),
 		}).Info("Scheduling DisputeGPKjTask")
-		taskRequestChan <- tasks.NewScheduleTaskRequest(disputeGPKjTask)
+		_, err = taskHandler.ScheduleTask(ctx, disputeGPKjTask, "")
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -504,7 +559,7 @@ func UpdateStateOnMPKSet(dkgState *state.DkgState, gpkjSubmissionStartBlock uint
 	return gpkjSubmissionTask, disputeMissingGPKjTask, disputeGPKjTasks
 }
 
-func ProcessGPKJSubmissionComplete(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, log types.Log, monDB *db.Database, taskRequestChan chan<- tasks.TaskRequest) error {
+func ProcessGPKJSubmissionComplete(logger *logrus.Entry, log types.Log, monDB *db.Database, taskHandler executor.TaskHandler) error {
 	logEntry := logger.WithField("eventProcessor", "ProcessGPKJSubmissionComplete")
 	logEntry.Info("processing gpkj submission complete")
 	event, err := contracts.EthereumContracts().Ethdkg().ParseGPKJSubmissionComplete(log)
@@ -535,9 +590,19 @@ func ProcessGPKJSubmissionComplete(eth layer1.Client, contracts layer1.AllSmartC
 	}
 
 	//Killing previous tasks
-	taskRequestChan <- tasks.NewKillTaskRequest(&dkg.GPKjSubmissionTask{})
-	taskRequestChan <- tasks.NewKillTaskRequest(&dkg.DisputeMissingGPKjTask{})
-	taskRequestChan <- tasks.NewKillTaskRequest(&dkg.DisputeGPKjTask{})
+	ctx := context.Background()
+	_, err = taskHandler.KillTaskByType(ctx, &dkg.GPKjSubmissionTask{})
+	if err != nil {
+		return err
+	}
+	_, err = taskHandler.KillTaskByType(ctx, &dkg.DisputeMissingGPKjTask{})
+	if err != nil {
+		return err
+	}
+	_, err = taskHandler.KillTaskByType(ctx, &dkg.DisputeGPKjTask{})
+	if err != nil {
+		return err
+	}
 
 	for _, disputeGPKjTask := range disputeGPKjTasks {
 		// schedule DisputeGPKJSubmissionTask
@@ -547,7 +612,10 @@ func ProcessGPKJSubmissionComplete(eth layer1.Client, contracts layer1.AllSmartC
 			"TaskEnd":     disputeGPKjTask.GetEnd(),
 			"Address":     disputeGPKjTask.Address,
 		}).Info("Scheduling NewGPKJDisputeTask")
-		taskRequestChan <- tasks.NewScheduleTaskRequest(disputeGPKjTask)
+		_, err = taskHandler.ScheduleTask(ctx, disputeGPKjTask, "")
+		if err != nil {
+			return err
+		}
 	}
 
 	// schedule Completion
@@ -556,10 +624,9 @@ func ProcessGPKJSubmissionComplete(eth layer1.Client, contracts layer1.AllSmartC
 		"TaskStart":   completionTask.GetStart(),
 		"TaskEnd":     completionTask.GetEnd(),
 	}).Info("Scheduling NewCompletionTask")
+	_, err = taskHandler.ScheduleTask(ctx, completionTask, "")
 
-	taskRequestChan <- tasks.NewScheduleTaskRequest(completionTask)
-
-	return nil
+	return err
 }
 
 func UpdateStateOnGPKJSubmissionComplete(dkgState *state.DkgState, disputeGPKjStartBlock uint64) ([]*dkgtasks.DisputeGPKjTask, *dkgtasks.CompletionTask) {
