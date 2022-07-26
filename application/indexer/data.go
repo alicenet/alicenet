@@ -71,17 +71,15 @@ func (di *DataIndex) AddFastSync(txn *badger.Txn, utxoID []byte, owner *objs.Own
 }
 
 func (di *DataIndex) addInternal(txn *badger.Txn, utxoID []byte, owner *objs.Owner, dataIndex []byte, allowOverwrites bool) error {
-	utxoIDCopy := utils.CopySlice(utxoID)
-	dataIndexCopy := utils.CopySlice(dataIndex)
-	diKey, err := di.makeKey(owner, dataIndexCopy)
+	diKey, err := di.makeKey(owner, dataIndex)
 	if err != nil {
 		return err
 	}
 	key := diKey.MarshalBinary()
 	if allowOverwrites {
-		return di.addInternalOverwrite(txn, key, utxoIDCopy)
+		return di.addInternalOverwrite(txn, key, utxoID)
 	}
-	return di.addInternalNoOverwrite(txn, key, utxoIDCopy)
+	return di.addInternalNoOverwrite(txn, key, utxoID)
 }
 
 func (di *DataIndex) addInternalNoOverwrite(txn *badger.Txn, dik []byte, utxoID []byte) error {
@@ -90,9 +88,9 @@ func (di *DataIndex) addInternalNoOverwrite(txn *badger.Txn, dik []byte, utxoID 
 		return errorz.ErrInvalid{}.New("dataIndex.addInternalNoOverwrite; index conflict")
 	}
 	if err == badger.ErrKeyNotFound {
-		diRefKey := di.makeRefKey(utils.CopySlice(utxoID))
+		diRefKey := di.makeRefKey(utxoID)
 		refKey := diRefKey.MarshalBinary()
-		err = utils.SetValue(txn, utils.CopySlice(refKey), utils.CopySlice(dik))
+		err = utils.SetValue(txn, refKey, utils.CopySlice(dik))
 		if err != nil {
 			return err
 		}
@@ -117,7 +115,7 @@ func (di *DataIndex) addInternalOverwrite(txn *badger.Txn, dik []byte, utxoID []
 			return err
 		}
 	}
-	refKey := di.makeRefKey(utils.CopySlice(utxoID))
+	refKey := di.makeRefKey(utxoID)
 	refKeyBytes := refKey.MarshalBinary()
 	err = utils.SetValue(txn, refKeyBytes, utils.CopySlice(dik))
 	if err != nil {
@@ -128,8 +126,7 @@ func (di *DataIndex) addInternalOverwrite(txn *badger.Txn, dik []byte, utxoID []
 
 // Contains determines whether or not the value at dataIndex is present
 func (di *DataIndex) Contains(txn *badger.Txn, owner *objs.Owner, dataIndex []byte) (bool, error) {
-	dataIndexCopy := utils.CopySlice(dataIndex)
-	diKey, err := di.makeKey(owner, dataIndexCopy)
+	diKey, err := di.makeKey(owner, dataIndex)
 	if err != nil {
 		return false, err
 	}
@@ -146,8 +143,7 @@ func (di *DataIndex) Contains(txn *badger.Txn, owner *objs.Owner, dataIndex []by
 
 // Drop removes a utxoID from the index
 func (di *DataIndex) Drop(txn *badger.Txn, utxoID []byte) error {
-	utxoIDCopy := utils.CopySlice(utxoID)
-	diRefKey := di.makeRefKey(utxoIDCopy)
+	diRefKey := di.makeRefKey(utxoID)
 	refKey := diRefKey.MarshalBinary()
 	totalDataIndex, err := utils.GetValue(txn, refKey)
 	if err != nil {
@@ -161,8 +157,7 @@ func (di *DataIndex) Drop(txn *badger.Txn, utxoID []byte) error {
 
 // GetUTXOID returns the UTXOID of a datastore based on owner and index
 func (di *DataIndex) GetUTXOID(txn *badger.Txn, owner *objs.Owner, dataIndex []byte) ([]byte, error) {
-	dataIndexCopy := utils.CopySlice(dataIndex)
-	diKey, err := di.makeKey(owner, dataIndexCopy)
+	diKey, err := di.makeKey(owner, dataIndex)
 	if err != nil {
 		return nil, err
 	}
@@ -241,9 +236,9 @@ func (di *DataIndex) makeKey(owner *objs.Owner, dataIndex []byte) (*DataIndexKey
 		return nil, err
 	}
 	diKey := &DataIndexKey{
-		prefix: utils.CopySlice(di.prefix()),
+		prefix: di.prefix(),
 		owner:  ownerBytes,
-		index:  dataIndex,
+		index:  utils.CopySlice(dataIndex),
 	}
 	return diKey, nil
 }
@@ -251,7 +246,7 @@ func (di *DataIndex) makeKey(owner *objs.Owner, dataIndex []byte) (*DataIndexKey
 func (di *DataIndex) makeRefKey(utxoID []byte) *DataIndexRefKey {
 	key := []byte{}
 	key = append(key, di.refPrefix()...)
-	key = append(key, utxoID...)
+	key = append(key, utils.CopySlice(utxoID)...)
 	diRefKey := &DataIndexRefKey{}
 	diRefKey.UnmarshalBinary(key)
 	return diRefKey

@@ -16,6 +16,7 @@ import (
 	"github.com/dgraph-io/badger/v2"
 )
 
+// NewHeightIdxIndex makes a new HeightIdxIndex object
 func NewHeightIdxIndex(p, pp prefixFunc) *HeightIdxIndex {
 	return &HeightIdxIndex{p, pp}
 }
@@ -59,7 +60,8 @@ func (hii *HeightIdxIndex) Add(txn *badger.Txn, txHash []byte, height uint32, id
 	hiiRefKey := hii.makeRefKey(height, idx)
 	refKey := hiiRefKey.MarshalBinary()
 	heightIdx := hii.makeHeightIdx(height, idx)
-	err := utils.SetValue(txn, refKey, utils.CopySlice(txHash))
+	refValue := utils.CopySlice(txHash)
+	err := utils.SetValue(txn, refKey, refValue)
 	if err != nil {
 		return err
 	}

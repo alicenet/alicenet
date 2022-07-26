@@ -5,6 +5,7 @@ import (
 	"github.com/dgraph-io/badger/v2"
 )
 
+// NewEpochConstrainedIndex makes a new EpochConstrainedList object
 func NewEpochConstrainedIndex(p, pp prefixFunc) *EpochConstrainedList {
 	return &EpochConstrainedList{p, pp}
 }
@@ -46,10 +47,9 @@ func (eclrk *EpochConstrainedListRefKey) UnmarshalBinary(data []byte) {
 
 // Append adds an item to the list
 func (ecl *EpochConstrainedList) Append(txn *badger.Txn, epoch uint32, txHash []byte) error {
-	txHashCopy := utils.CopySlice(txHash)
-	eclKey := ecl.makeKey(epoch, txHashCopy)
+	eclKey := ecl.makeKey(epoch, txHash)
 	key := eclKey.MarshalBinary()
-	eclRefKey := ecl.makeRefKey(txHashCopy)
+	eclRefKey := ecl.makeRefKey(txHash)
 	refKey := eclRefKey.MarshalBinary()
 	epochBytes := utils.MarshalUint32(epoch)
 	err := utils.SetValue(txn, refKey, epochBytes)
@@ -70,8 +70,8 @@ func (ecl *EpochConstrainedList) DropBefore(txn *badger.Txn, epoch uint32) ([][]
 	defer it.Close()
 	for it.Seek(prefix); it.ValidForPrefix(prefix); it.Next() {
 		item := it.Item()
-		k := item.KeyCopy(nil)
-		keyNoPrefix := k[len(ecl.prefix()):]
+		dropKey := item.KeyCopy(nil)
+		keyNoPrefix := dropKey[len(ecl.prefix()):]
 		keyEpochBytes := keyNoPrefix[0:4]
 		txHash := keyNoPrefix[4:]
 		keyEpoch, err := utils.UnmarshalUint32(keyEpochBytes)
@@ -79,13 +79,13 @@ func (ecl *EpochConstrainedList) DropBefore(txn *badger.Txn, epoch uint32) ([][]
 			return nil, err
 		}
 		if keyEpoch < epoch {
-			dropKeys = append(dropKeys, k)
+			dropKeys = append(dropKeys, dropKey)
 			dropHashes = append(dropHashes, txHash)
 		}
 	}
 	for j := 0; j < len(dropKeys); j++ {
-		k := utils.CopySlice(dropKeys[j])
-		err := utils.DeleteValue(txn, utils.CopySlice(k))
+		dropKey := utils.CopySlice(dropKeys[j])
+		err := utils.DeleteValue(txn, dropKey)
 		if err != nil {
 			return nil, err
 		}
@@ -93,9 +93,9 @@ func (ecl *EpochConstrainedList) DropBefore(txn *badger.Txn, epoch uint32) ([][]
 	return dropHashes, nil
 }
 
+// Drop deletes references to a transaction corresponding to the txHash
 func (ecl *EpochConstrainedList) Drop(txn *badger.Txn, txHash []byte) error {
-	txHashCopy := utils.CopySlice(txHash)
-	eclRefKey := ecl.makeRefKey(txHashCopy)
+	eclRefKey := ecl.makeRefKey(txHash)
 	refKey := eclRefKey.MarshalBinary()
 	epochBytes, err := utils.GetValue(txn, refKey)
 	if err != nil {
@@ -105,14 +105,14 @@ func (ecl *EpochConstrainedList) Drop(txn *badger.Txn, txHash []byte) error {
 	if err != nil {
 		return err
 	}
-	eclKey := ecl.makeKey(epoch, txHashCopy)
+	eclKey := ecl.makeKey(epoch, txHash)
 	key := eclKey.MarshalBinary()
 	return utils.DeleteValue(txn, key)
 }
 
+// GetEpoch returns the epoch corresponding to the txHash
 func (ecl *EpochConstrainedList) GetEpoch(txn *badger.Txn, txHash []byte) (uint32, error) {
-	txHashCopy := utils.CopySlice(txHash)
-	eclRefKey := ecl.makeRefKey(txHashCopy)
+	eclRefKey := ecl.makeRefKey(txHash)
 	refKey := eclRefKey.MarshalBinary()
 	epochBytes, err := utils.GetValue(txn, refKey)
 	if err != nil {
@@ -126,22 +126,20 @@ func (ecl *EpochConstrainedList) GetEpoch(txn *badger.Txn, txHash []byte) (uint3
 }
 
 func (ecl *EpochConstrainedList) makeKey(epoch uint32, txHash []byte) *EpochConstrainedListKey {
-	txHashCopy := utils.CopySlice(txHash)
 	key := []byte{}
 	key = append(key, ecl.prefix()...)
 	epochBytes := utils.MarshalUint32(epoch)
 	key = append(key, epochBytes...)
-	key = append(key, txHashCopy...)
+	key = append(key, utils.CopySlice(txHash)...)
 	eclKey := &EpochConstrainedListKey{}
 	eclKey.UnmarshalBinary(key)
 	return eclKey
 }
 
 func (ecl *EpochConstrainedList) makeRefKey(txHash []byte) *EpochConstrainedListRefKey {
-	txHashCopy := utils.CopySlice(txHash)
 	key := []byte{}
 	key = append(key, ecl.refPrefix()...)
-	key = append(key, txHashCopy...)
+	key = append(key, utils.CopySlice(txHash)...)
 	eclRefKey := &EpochConstrainedListRefKey{}
 	eclRefKey.UnmarshalBinary(key)
 	return eclRefKey
