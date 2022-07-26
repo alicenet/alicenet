@@ -17,22 +17,22 @@ import (
 )
 
 // MonitorWorkRequest is an internal struct used to send work requests to the
-// workers that will retrieve the receipts
+// workers that will retrieve the receipts.
 type MonitorWorkRequest struct {
-	txn    info   // Info object that contains the state that will be used to retrieve the receipt from the blockchain
-	height uint64 // Current height of the blockchain head
+	txn    monitored // monitored txn that contains the state that will be used to retrieve the receipt from the blockchain
+	height uint64    // Current height of the blockchain head
 }
 
 // MonitorWorkResponse is an internal struct used by the workers to communicate the result
-// from the receipt retrieval work
+// from the receipt retrieval work.
 type MonitorWorkResponse struct {
 	txnHash    common.Hash         // hash of transaction
-	retriedTxn *retriedTransaction // transaction info object from the analyzed transaction
+	retriedTxn *retriedTransaction // transaction monitored object from the analyzed transaction
 	err        error               // any error found during the receipt retrieve (can be NonRecoverable, Recoverable or TransactionStale errors)
-	receipt    *types.Receipt      // receipt retrieved (can be nil) if a receipt was not found or it's not ready yet
+	receipt    *types.Receipt      // receipt retrieved (can be nil) if a receipt was not found, or it's not ready yet
 }
 
-// retriedTransaction is an internal struct to keep track of retried transaction by the workers
+// retriedTransaction is an internal struct to keep track of retried transaction by the workers.
 type retriedTransaction struct {
 	txn *types.Transaction // new transaction after the retry attempt
 	err error              // error that happened during the transaction retry
@@ -52,7 +52,7 @@ type WorkerPool struct {
 	responseWorkChannel chan<- MonitorWorkResponse // Channel where the work response will be sent
 }
 
-// NewWorkerPool creates a new WorkerPool service
+// NewWorkerPool creates a new WorkerPool service.
 func NewWorkerPool(ctx context.Context, client layer1.Client, baseFee *big.Int, tipCap *big.Int, logger *logrus.Entry, requestWorkChannel <-chan MonitorWorkRequest, responseWorkChannel chan<- MonitorWorkResponse) *WorkerPool {
 	return &WorkerPool{new(sync.WaitGroup), ctx, client, baseFee, tipCap, logger, requestWorkChannel, responseWorkChannel}
 }
@@ -70,7 +70,7 @@ func (w *WorkerPool) ExecuteWork(numWorkers uint64) {
 // worker is a unit of work. A worker is spawned as go routine. A worker check and retrieve
 // receipts for multiple transactions. The worker will be executing while
 // there's transactions to be checked or there's a timeout (set by
-// constants.TxWorkerTimeout)
+// constants.TxWorkerTimeout).
 func (w *WorkerPool) worker() {
 	ctx, cf := context.WithTimeout(w.ctx, constants.TxWorkerTimeout)
 	defer cf()
@@ -106,8 +106,8 @@ func (w *WorkerPool) worker() {
 	}
 }
 
-// handleResponse handles the receipt for the txn and decides how to proceed based on it information
-func (w *WorkerPool) handleResponse(ctx context.Context, monitoredTx info, txnHash common.Hash, rcpt *types.Receipt, err error, iteration uint64) (MonitorWorkResponse, bool) {
+// handleResponse handles the receipt for the txn and decides how to proceed based on it information.
+func (w *WorkerPool) handleResponse(ctx context.Context, monitoredTxn monitored, txnHash common.Hash, rcpt *types.Receipt, err error, iteration uint64) (MonitorWorkResponse, bool) {
 	if err != nil {
 		switch err.(type) {
 		case *ErrRecoverable:
@@ -117,10 +117,10 @@ func (w *WorkerPool) handleResponse(ctx context.Context, monitoredTx info, txnHa
 			}
 		case *ErrTransactionStale:
 			// try to replace a transaction if the conditions are met
-			if monitoredTx.EnableAutoRetry {
+			if monitoredTxn.EnableAutoRetry {
 				defaultAccount := w.client.GetDefaultAccount()
-				if bytes.Equal(monitoredTx.FromAddress[:], defaultAccount.Address[:]) {
-					newTxn, retryTxErr := w.client.RetryTransaction(ctx, monitoredTx.Txn, w.baseFee, w.tipCap)
+				if bytes.Equal(monitoredTxn.FromAddress[:], defaultAccount.Address[:]) {
+					newTxn, retryTxErr := w.client.RetryTransaction(ctx, monitoredTxn.Txn, w.baseFee, w.tipCap)
 					return MonitorWorkResponse{txnHash: txnHash, retriedTxn: &retriedTransaction{txn: newTxn, err: retryTxErr}}, false
 				}
 			}
@@ -135,8 +135,8 @@ func (w *WorkerPool) handleResponse(ctx context.Context, monitoredTx info, txnHa
 	}
 }
 
-// getReceipt is an internal function used by the workers to check/retrieve the receipts for a given transaction
-func (w *WorkerPool) getReceipt(ctx context.Context, monitoredTx info, currentHeight uint64, txnHash common.Hash) (*types.Receipt, error) {
+// getReceipt is an internal function used by the workers to check/retrieve the receipts for a given transaction.
+func (w *WorkerPool) getReceipt(ctx context.Context, monitoredTx monitored, currentHeight uint64, txnHash common.Hash) (*types.Receipt, error) {
 	txnHex := txnHash.Hex()
 	blockTimeSpan := currentHeight - monitoredTx.MonitoringHeight
 	_, isPending, err := w.client.GetTransactionByHash(ctx, txnHash)

@@ -8,6 +8,7 @@ import (
 	"github.com/alicenet/alicenet/layer1/tests"
 	"github.com/alicenet/alicenet/test/mocks"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/stretchr/testify/require"
 	"math/big"
 	"testing"
 	"time"
@@ -43,7 +44,7 @@ func TestSubscribeAndWaitForValidTx(t *testing.T) {
 
 	receipt, err := watcher.SubscribeAndWait(ctx, txn, nil)
 	assert.Nil(t, err)
-	assert.NotNil(t, receipt)
+	require.NotNil(t, receipt)
 	assert.Equal(t, txn.Hash(), receipt.TxHash)
 
 	currentHeight, err := eth.GetCurrentHeight(ctx)
@@ -57,38 +58,16 @@ func TestSubscribeAndWaitForValidTx(t *testing.T) {
 	mintTxnOpts, err := eth.GetTransactionOpts(ctx, user)
 	assert.Nil(t, err)
 	mintTxnOpts.NoSend = false
-	//mintTxnOpts.GasFeeCap = big.NewInt(1_000_000_000)
 	mintTxnOpts.Value = amount
 
 	mintTxn, err := fixture.Contracts.EthereumContracts().BToken().MintTo(mintTxnOpts, owner.Address, big.NewInt(1))
 	assert.Nil(t, err)
 	assert.NotNil(t, mintTxn)
 
-	txnRough := &types.DynamicFeeTx{}
-	txnRough.ChainID = txn.ChainId()
-	txnRough.To = txn.To()
-	txnRough.GasFeeCap = new(big.Int).Mul(new(big.Int).SetInt64(2), txn.GasFeeCap())
-	txnRough.GasTipCap = new(big.Int).Mul(new(big.Int).SetInt64(2), txn.GasTipCap())
-	txnRough.Gas = txn.Gas()
-	txnRough.Nonce = txn.Nonce() + 1
-	txnRough.Value = txn.Value()
-	txnRough.Data = txn.Data()
-
-	<-time.After(2 * time.Second)
-	fixture.Logger.Infof("New Gasfee: %v", txnRough.GasFeeCap.String())
-
-	signer := types.NewLondonSigner(txnRough.ChainID)
-
-	_, adminPk := tests.GetAdminAccount()
-	signedTx, err := types.SignNewTx(adminPk, signer, txnRough)
-	if err != nil {
-		fixture.Logger.Errorf("signing error:%v", err)
-	}
-	err = eth.SendTransaction(ctx, signedTx)
-	if err != nil {
-		fixture.Logger.Errorf("sending error:%v", err)
-	}
-
+	receipt, err = watcher.SubscribeAndWait(ctx, mintTxn, nil)
+	assert.Nil(t, err)
+	require.NotNil(t, receipt)
+	assert.Equal(t, mintTxn.Hash(), receipt.TxHash)
 }
 
 func TestSubscribeAndWaitForInvalidTxNotSigned(t *testing.T) {
@@ -259,6 +238,6 @@ func TestSubscribeAndWaitForStaleTxWithAutoRetry(t *testing.T) {
 	receipt, err := watcher.SubscribeAndWait(ctx, txn, subscribeOpts)
 
 	assert.Nil(t, err)
-	assert.NotNil(t, receipt)
+	require.NotNil(t, receipt)
 	assert.Equal(t, types.ReceiptStatusSuccessful, receipt.Status)
 }
