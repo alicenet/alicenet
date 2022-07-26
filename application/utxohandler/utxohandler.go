@@ -234,7 +234,7 @@ func (ut *UTXOHandler) IsValid(txn *badger.Txn, txs objs.TxVec, currentHeight ui
 	}
 
 	// the trie must not contain any of the new UTXOIDs being created already
-	// as this would cause a conflict with those UTXOIDs
+	// as this would cause a conflict with those UTXOIDs.
 	generatedUTXOIDs, err := txs.GeneratedUTXOID()
 	if err != nil {
 		utils.DebugTrace(ut.logger, err)
@@ -306,6 +306,7 @@ func (ut *UTXOHandler) ApplyState(txn *badger.Txn, txs objs.TxVec, height uint32
 			return nil, err
 		}
 	}
+	// We add all newly generated utxos to trie
 	newUTXOs, err := txs.GeneratedUTXOs()
 	if err != nil {
 		utils.DebugTrace(ut.logger, err)
@@ -706,9 +707,8 @@ func (ut *UTXOHandler) dropFromIndexes(txn *badger.Txn, utxoID []byte) error {
 }
 
 func (ut *UTXOHandler) makeUTXOKey(utxoID []byte) []byte {
-	utxoIDCopy := utils.CopySlice(utxoID)
 	key := dbprefix.PrefixMinedUTXO()
-	key = append(key, utxoIDCopy...)
+	key = append(key, utils.CopySlice(utxoID)...)
 	return key
 }
 
