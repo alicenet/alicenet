@@ -9,7 +9,9 @@ import (
 
 	"github.com/alicenet/alicenet/application/db"
 	"github.com/alicenet/alicenet/application/objs"
+	"github.com/alicenet/alicenet/application/objs/uint256"
 	index "github.com/alicenet/alicenet/application/pendingtx/pendingindex"
+	"github.com/alicenet/alicenet/application/txqueue"
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/logging"
 	"github.com/alicenet/alicenet/utils"
@@ -26,13 +28,41 @@ type depositHandler interface {
 	Get(txn *badger.Txn, utxoIDs [][]byte) ([]*objs.TXOut, [][]byte, []*objs.TXOut, error)
 }
 
+// iterationInfo stores information related to the process of iterating
+// through PendingTxHandler to add txs to the TxQueue.
+// Because this process is time consuming, we do not run this continually;
+// we periodically check to see if we should begin.
+// Once we begin, we iterate from the fee-dense txs below.
+// If we run out of time, we store the currentKey and pick up the next iteration.
+// Once making it through the entire list or we have a full TxQueue
+// and we reach a tx which is below the minimum value, we stop;
+// at this point, we have finished our iteration.
+type iterationInfo struct {
+	// iterationStarted is true when we are ready to start AddTxsToQueue process;
+	// it is false otherwise.
+	iterationStarted bool
+	// iterationComplete is true when we have finished iterating the
+	// PendingTxHandler; it is false otherwise.
+	iterationComplete bool
+	// currentKey is either nil (to signify no stored key) or holds
+	// the key where we need to continue iteration through PendingTxHandler.
+	currentKey []byte
+}
+
 // NewPendingTxHandler creates a new Handler object
-func NewPendingTxHandler(db *badger.DB) *Handler {
-	return &Handler{
-		indexer: index.NewPendingTxIndexer(),
-		db:      db,
-		logger:  logging.GetLogger(constants.LoggerApp),
+func NewPendingTxHandler(db *badger.DB, queueSize int) (*Handler, error) {
+	txqueue := &txqueue.TxQueue{}
+	err := txqueue.Init(queueSize)
+	if err != nil {
+		return nil, err
 	}
+	return &Handler{
+		indexer:  index.NewPendingTxIndexer(),
+		db:       db,
+		logger:   logging.GetLogger(constants.LoggerApp),
+		txqueue:  txqueue,
+		iterInfo: &iterationInfo{},
+	}, nil
 }
 
 // Handler is the object that acts as the pending tx pool
@@ -42,6 +72,8 @@ type Handler struct {
 	UTXOHandler    utxoHandler
 	logger         *logrus.Logger
 	DepositHandler depositHandler
+	txqueue        *txqueue.TxQueue
+	iterInfo       *iterationInfo
 }
 
 // Add stores a tx in the tx pool and possibly evicts other txs if the ref
@@ -54,10 +86,24 @@ func (pt *Handler) Add(txnState *badger.Txn, txs []*objs.Tx, currentHeight uint3
 	return pt.db.Update(func(txn *badger.Txn) error {
 		for i := 0; i < len(txs); i++ {
 			tx := txs[i]
-			utxoIds, err := tx.ConsumedUTXOID()
+			utxoIDs, err := tx.ConsumedUTXOID()
 			if err != nil {
 				utils.DebugTrace(pt.logger, err)
 				return err
+			}
+			var isCleanup bool
+			if tx.IsPotentialCleanupTx() {
+				deposits, _, _, err := pt.DepositHandler.Get(txn, utxoIDs)
+				if err != nil {
+					utils.DebugTrace(pt.logger, err)
+					return err
+				}
+				consumedUTXOs, err := pt.UTXOHandler.IsValid(txn, []*objs.Tx{tx}, currentHeight, deposits)
+				if err != nil {
+					utils.DebugTrace(pt.logger, err)
+					return err
+				}
+				isCleanup = tx.IsCleanupTx(currentHeight, consumedUTXOs)
 			}
 			txHash, err := tx.TxHash()
 			if err != nil {
@@ -73,7 +119,17 @@ func (pt *Handler) Add(txnState *badger.Txn, txs []*objs.Tx, currentHeight uint3
 			_, err = utils.GetValue(txn, cooldownKey)
 			if err != nil {
 				if err == badger.ErrKeyNotFound {
-					err := pt.addOneInternal(txn, tx, eoe, txHash, utxoIds)
+					feeCostRatio, err := tx.ScaledFeeCostRatio(isCleanup)
+					if err != nil {
+						utils.DebugTrace(pt.logger, err)
+						return err
+					}
+					err = pt.addOneInternal(txn, tx, eoe, txHash, utxoIDs, feeCostRatio)
+					if err != nil {
+						utils.DebugTrace(pt.logger, err)
+						return err
+					}
+					_, err = pt.txqueue.Add(txHash, feeCostRatio, utxoIDs, isCleanup)
 					if err != nil {
 						utils.DebugTrace(pt.logger, err)
 						return err
@@ -148,12 +204,13 @@ func (pt *Handler) Contains(txnState *badger.Txn, currentHeight uint32, txHashes
 // DeleteMined removes all specified transactions from the pool as well as any
 // other transactions that reference a consumed UTXO from the set of passed in
 // transactions
-func (pt *Handler) DeleteMined(txnState *badger.Txn, currentHeight uint32, txHashes [][]byte) error {
+func (pt *Handler) DeleteMined(txnState *badger.Txn, currentHeight uint32, txHashes [][]byte, consumedUTXOIDs [][]byte) error {
+	pt.txqueue.DeleteMined(consumedUTXOIDs)
 	var txHash []byte
 	return pt.db.Update(func(txn *badger.Txn) error {
 		for i := 0; i < len(txHashes); i++ {
 			txHash = utils.CopySlice(txHashes[i])
-			cooldownKey := pt.makePendingTxCooldownKey(utils.CopySlice(txHash))
+			cooldownKey := pt.makePendingTxCooldownKey(txHash)
 			e := badger.NewEntry(cooldownKey, []byte{uint8(1)}).WithTTL(time.Second * 20)
 			err := txn.SetEntry(e)
 			if err != nil {
@@ -174,7 +231,7 @@ func (pt *Handler) DeleteMined(txnState *badger.Txn, currentHeight uint32, txHas
 		}
 		for i := 0; i < len(dropHashes); i++ {
 			txHash = utils.CopySlice(dropHashes[i])
-			cooldownKey := pt.makePendingTxCooldownKey(utils.CopySlice(txHash))
+			cooldownKey := pt.makePendingTxCooldownKey(txHash)
 			e := badger.NewEntry(cooldownKey, []byte{uint8(1)}).WithTTL(time.Second * 20)
 			err := txn.SetEntry(e)
 			if err != nil {
@@ -192,11 +249,27 @@ func (pt *Handler) DeleteMined(txnState *badger.Txn, currentHeight uint32, txHas
 }
 
 // GetTxsForProposal returns an set of txs that are mutually exclusive with
-// respect to the consumed UTXOs. This is used to genrete new proposals.
+// respect to the consumed UTXOs. This is used to generate new proposals.
+// It starts by attempting to get txs from the TxQueue.
+// If there is still time, it then attempts
 func (pt *Handler) GetTxsForProposal(txnState *badger.Txn, ctx context.Context, currentHeight uint32, maxBytes uint32, tx *objs.Tx) (objs.TxVec, uint32, error) {
 	var utxos objs.TxVec
 	var err error
-	utxos, maxBytes, err = pt.getTxsInternal(txnState, ctx, currentHeight, maxBytes, tx, false)
+	if tx != nil {
+		utxos = append(utxos, tx)
+	}
+	utxos, maxBytes, err = pt.getTxsFromQueue(txnState, ctx, currentHeight, maxBytes, utxos)
+	if err != nil {
+		utils.DebugTrace(pt.logger, err)
+		return nil, 0, err
+	}
+	// Jump if we ran out of time but keep utxos for new block
+	select {
+	case <-ctx.Done():
+		return utxos, maxBytes, nil
+	default:
+	}
+	utxos, maxBytes, err = pt.getTxsInternal(txnState, ctx, currentHeight, maxBytes, utxos, false)
 	if err != nil {
 		utils.DebugTrace(pt.logger, err)
 		return nil, 0, err
@@ -215,26 +288,257 @@ func (pt *Handler) GetTxsForGossip(txnState *badger.Txn, ctx context.Context, cu
 	return utxos, nil
 }
 
+// AddTxsToQueue adds additional txs to the TxQueue
+func (pt *Handler) AddTxsToQueue(txnState *badger.Txn, ctx context.Context, currentHeight uint32) error {
+	if pt.iterInfo.iterationComplete {
+		// We exit because iteration is complete
+		return nil
+	}
+	iterationFinished := true
+	err := pt.db.View(func(txn *badger.Txn) error {
+		it, prefix := pt.indexer.GetOrderedIter(txn)
+		var startKey []byte
+		if pt.iterInfo.currentKey == nil {
+			// Start iterating at the largest value
+			startKey = append(utils.CopySlice(prefix), []byte{255, 255, 255, 255, 255}...)
+		} else {
+			// Start iterating with current key
+			startKey = utils.CopySlice(pt.iterInfo.currentKey)
+		}
+		err := func() error {
+			defer it.Close()
+			timedOut := false
+			for it.Seek(startKey); it.ValidForPrefix(prefix); it.Next() {
+				itm := it.Item()
+				select {
+				case <-ctx.Done():
+					timedOut = true
+				default:
+				}
+				if timedOut {
+					// We ran out of time; store currentKey for next iteration
+					pt.iterInfo.currentKey = itm.KeyCopy(nil)
+					iterationFinished = false
+					break
+				}
+				vBytes, err := itm.ValueCopy(nil)
+				if err != nil {
+					utils.DebugTrace(pt.logger, err)
+					return err
+				}
+				txHash := vBytes[len(prefix):]
+				if pt.txqueue.Contains(txHash) {
+					// txHash is already included in TxQueue; skip
+					continue
+				}
+				tx, err := pt.getOneInternal(txn, utils.Epoch(currentHeight), txHash)
+				if err != nil {
+					utils.DebugTrace(pt.logger, err)
+					continue
+				}
+				consumedUTXOIDs, err := tx.ConsumedUTXOID()
+				if err != nil {
+					utils.DebugTrace(pt.logger, err)
+					return err
+				}
+
+				var isCleanup bool
+				if tx.IsPotentialCleanupTx() {
+					deposits, _, _, err := pt.DepositHandler.Get(txn, consumedUTXOIDs)
+					if err != nil {
+						utils.DebugTrace(pt.logger, err)
+						continue
+					}
+					consumedUTXOs, err := pt.UTXOHandler.IsValid(txn, []*objs.Tx{tx}, currentHeight, deposits)
+					if err != nil {
+						utils.DebugTrace(pt.logger, err)
+						continue
+					}
+					isCleanup = tx.IsCleanupTx(currentHeight, consumedUTXOs)
+				}
+
+				feeCostRatio, err := tx.ScaledFeeCostRatio(isCleanup)
+				if err != nil {
+					utils.DebugTrace(pt.logger, err)
+					continue
+				}
+				if pt.txqueue.IsFull() {
+					// TxQueue is full; we need to make sure the tx we are
+					// attempting to add is more valuable than the
+					// minimum-value element already present
+					txqMinValue, err := pt.txqueue.MinValue()
+					if err != nil {
+						utils.DebugTrace(pt.logger, err)
+						return err
+					}
+					if feeCostRatio.Lte(txqMinValue) {
+						// The TxQueue is full and our current feeCostRatio
+						// is less than or equal to the minimum value of the queue.
+						// There is no point to continue, as all additional txs
+						// will be less valuable than what we have currently.
+						break
+					}
+				}
+				_, err = pt.txqueue.Add(txHash, feeCostRatio, consumedUTXOIDs, isCleanup)
+				if err != nil {
+					utils.DebugTrace(pt.logger, err)
+					return err
+				}
+			}
+			if iterationFinished {
+				pt.iterInfo.iterationComplete = true
+				pt.iterInfo.currentKey = nil
+			}
+			return nil
+		}()
+		return err
+	})
+	return err
+}
+
+// SetQueueSize sets the queue size for TxQueue
+func (pt *Handler) SetQueueSize(queueSize int) error {
+	return pt.txqueue.SetQueueSize(queueSize)
+}
+
+// QueueSize returns the queue size for TxQueue
+func (pt *Handler) QueueSize() int {
+	return pt.txqueue.QueueSize()
+}
+
+// TxQueueAddStatus returns true if
+func (pt *Handler) TxQueueAddStatus() bool {
+	return pt.iterInfo.iterationStarted
+}
+
+// TxQueueAddStart sets the iteration to begin adding txs to queue
+func (pt *Handler) TxQueueAddStart() {
+	pt.iterInfo.iterationStarted = true
+}
+
+// TxQueueAddFinished returns true if iteration is complete
+func (pt *Handler) TxQueueAddFinished() bool {
+	return pt.iterInfo.iterationComplete
+}
+
+// TxQueueAddStop stops iteration and resets iteration information
+func (pt *Handler) TxQueueAddStop() {
+	pt.iterInfo.iterationStarted = false
+	pt.iterInfo.iterationComplete = false
+	pt.iterInfo.currentKey = nil
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 /////////PRIVATE METHODS////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-func (pt *Handler) getTxsInternal(txnState *badger.Txn, ctx context.Context, currentHeight uint32, maxBytes uint32, tx *objs.Tx, allowConflict bool) ([]*objs.Tx, uint32, error) {
+// getTxsFromQueue returns a list of txs from TxQueue
+func (pt *Handler) getTxsFromQueue(txnState *badger.Txn, ctx context.Context, currentHeight uint32, maxBytes uint32, utxos []*objs.Tx) ([]*objs.Tx, uint32, error) {
 	txs := objs.TxVec{}
-	if tx != nil {
+	byteCount := uint32(0)
+	var consumedUTXOs objs.Vout
+	var err error
+	if len(utxos) != 0 {
+		txs = append(txs, utxos...)
+		// Note: we are not including any deposits in this check because we are
+		// 		 assuming the included tx is a cleanup transaction so it has
+		//		 no deposits. If we implement validator-specific txs, this logic
+		//		 will need to change to accomidate it.
+		consumedUTXOs, err = pt.UTXOHandler.IsValid(txnState, txs, currentHeight, nil)
+		if err != nil {
+			utils.DebugTrace(pt.logger, err)
+			return nil, 0, err
+		}
+		byteCount += constants.HashLen * uint32(len(txs))
+	}
+	var conflictHashMap map[string]bool
+	consumedUTXOIDs := [][]byte{}
+	for k := 0; k < len(consumedUTXOs); k++ {
+		consumedUTXOID, err := consumedUTXOs[k].UTXOID()
+		if err != nil {
+			utils.DebugTrace(pt.logger, err)
+			return nil, 0, err
+		}
+		consumedUTXOIDs = append(consumedUTXOIDs, consumedUTXOID)
+	}
+	conflictingTxHashes, conflict := pt.txqueue.ConflictingUTXOIDs(consumedUTXOIDs)
+	if conflict {
+		// We initialize map with consumedUTXOID to check to see if there
+		// are any overlapping in new txs.
+		conflictHashMap = make(map[string]bool, len(conflictingTxHashes))
+		for k := 0; k < len(conflictingTxHashes); k++ {
+			conflictHashMap[string(conflictingTxHashes[k])] = true
+		}
+	}
+
+	timedOut := false
+	for !pt.txqueue.IsEmpty() {
+		select {
+		case <-ctx.Done():
+			timedOut = true
+		default:
+		}
+		if timedOut {
+			break
+		}
+		if ok := pt.checkSize(maxBytes, byteCount); !ok {
+			break
+		}
+		item, err := pt.txqueue.PopMax()
+		if err != nil {
+			utils.DebugTrace(pt.logger, err)
+			return nil, 0, err
+		}
+		txhash := item.TxHash()
+		if conflict && conflictHashMap[string(txhash)] {
+			// There is a conflict in the consumed utxo set;
+			// jump to next potential tx.
+			continue
+		}
+
+		tx, err := pt.getOneInternal(txnState, utils.Epoch(currentHeight), txhash)
+		if err != nil {
+			utils.DebugTrace(pt.logger, err)
+			continue
+		}
+		ok, err := pt.checkTx(txnState, tx, currentHeight)
+		if err != nil {
+			utils.DebugTrace(pt.logger, err)
+			continue
+		}
+		if !ok {
+			continue
+		}
+		err = tx.ValidateIssuedAtForMining(currentHeight)
+		if err != nil {
+			utils.DebugTrace(pt.logger, err)
+			continue
+		}
 		txs = append(txs, tx)
+		byteCount += constants.HashLen
+	}
+
+	remainingBytes := maxBytes - byteCount
+	return txs, remainingBytes, nil
+}
+
+func (pt *Handler) getTxsInternal(txnState *badger.Txn, ctx context.Context, currentHeight uint32, maxBytes uint32, utxos []*objs.Tx, allowConflict bool) ([]*objs.Tx, uint32, error) {
+	txs := objs.TxVec{}
+	if len(utxos) != 0 {
+		txs = append(txs, utxos...)
 	}
 	byteCount := uint32(0)
 	if len(txs) > 0 {
-		byteCount += constants.HashLen
+		byteCount += constants.HashLen * uint32(len(txs))
 	}
 	dropKeys := [][]byte{}
 	err := pt.db.View(func(txn *badger.Txn) error {
 		it, prefix := pt.indexer.GetOrderedIter(txn)
 		err := func() error {
 			defer it.Close()
-			for it.Seek(prefix); it.ValidForPrefix(prefix); it.Next() {
+			startKey := append(utils.CopySlice(prefix), []byte{255, 255, 255, 255, 255}...)
+			for it.Seek(startKey); it.ValidForPrefix(prefix); it.Next() {
 				itm := it.Item()
 				vBytes, err := itm.ValueCopy(nil)
 				if err != nil {
@@ -242,17 +546,18 @@ func (pt *Handler) getTxsInternal(txnState *badger.Txn, ctx context.Context, cur
 					return err
 				}
 				txHash := vBytes[len(prefix):]
+				timedOut := false
 				select {
 				case <-ctx.Done():
-					break
+					timedOut = true
 				default:
+				}
+				if timedOut {
+					break
 				}
 				tx, err := pt.getOneInternal(txn, utils.Epoch(currentHeight), txHash)
 				if err != nil {
 					utils.DebugTrace(pt.logger, err)
-					continue
-				}
-				if tx == nil {
 					continue
 				}
 				if ok := pt.checkSize(maxBytes, byteCount); !ok {
@@ -274,22 +579,41 @@ func (pt *Handler) getTxsInternal(txnState *badger.Txn, ctx context.Context, cur
 					continue
 				}
 				txs = append(txs, tx)
-				if !allowConflict && len(txs) > 1 {
+				if !allowConflict {
 					if _, err := txs.ValidateUnique(nil); err != nil {
 						txs = txs[0 : len(txs)-1]
 						continue
 					}
+				}
+				if !allowConflict {
 					if _, err := txs.ValidateDataStoreIndexes(nil); err != nil {
 						txs = txs[0 : len(txs)-1]
 						continue
 					}
-					if err := pt.checkIsValid(txnState, txs, currentHeight); err != nil {
-						txs = txs[0 : len(txs)-1]
-						continue
-					}
-
 				}
 				byteCount += constants.HashLen
+			}
+			if !allowConflict {
+				for {
+					if len(txs) == 0 {
+						break
+					}
+					if len(txs) == 1 {
+						break
+					}
+					if err := pt.checkIsValid(txnState, txs, currentHeight); err != nil {
+						if len(txs) == 2 {
+							txs = objs.TxVec{txs[0]}
+							break
+						}
+						if len(txs) >= 3 {
+							txs = objs.TxVec{txs[0]}
+							txs = append(txs, txs[2:]...)
+						}
+						continue
+					}
+					break
+				}
 			}
 			return nil
 		}()
@@ -372,7 +696,7 @@ func (pt *Handler) checkGenerated(txnState *badger.Txn, tx *objs.Tx) (bool, erro
 		return false, err
 	}
 	for k := 0; k < len(generatedUTXOIDs); k++ {
-		trieContains, err := pt.UTXOHandler.TrieContains(txnState, generatedUTXOIDs[k])
+		trieContains, err := pt.UTXOHandler.TrieContains(txnState, utils.CopySlice(generatedUTXOIDs[k]))
 		if err != nil {
 			utils.DebugTrace(pt.logger, err)
 			return false, err
@@ -478,7 +802,7 @@ func (pt *Handler) getOneInternal(txn *badger.Txn, epoch uint32, txHash []byte) 
 	return tx, nil
 }
 
-func (pt *Handler) addOneInternal(txn *badger.Txn, tx *objs.Tx, expEpoch uint32, txHash []byte, utxoIDs [][]byte) error {
+func (pt *Handler) addOneInternal(txn *badger.Txn, tx *objs.Tx, expEpoch uint32, txHash []byte, utxoIDs [][]byte, feeCostRatio *uint256.Uint256) error {
 	contains, err := pt.containsOneInternal(txn, expEpoch, txHash)
 	if err != nil {
 		utils.DebugTrace(pt.logger, err)
@@ -487,7 +811,7 @@ func (pt *Handler) addOneInternal(txn *badger.Txn, tx *objs.Tx, expEpoch uint32,
 	if contains {
 		return nil
 	}
-	evicted, err := pt.indexer.Add(txn, expEpoch, txHash, utxoIDs)
+	evicted, err := pt.indexer.Add(txn, expEpoch, txHash, feeCostRatio, utxoIDs)
 	if err != nil {
 		utils.DebugTrace(pt.logger, err)
 		return err
@@ -516,7 +840,7 @@ func (pt *Handler) deleteOneInternal(txn *badger.Txn, txHash []byte, minedDelete
 		}
 		for j := 0; j < len(txHashes); j++ {
 			txH := utils.CopySlice(txHashes[j])
-			key := pt.makePendingTxKey(utils.CopySlice(txH))
+			key := pt.makePendingTxKey(txH)
 			err := utils.DeleteValue(txn, key)
 			if err != nil {
 				if err != badger.ErrKeyNotFound {
@@ -559,14 +883,13 @@ func (pt *Handler) containsOneInternal(txn *badger.Txn, epoch uint32, txHash []b
 
 func (pt *Handler) makePendingTxKey(txHash []byte) []byte {
 	key := dbprefix.PrefixPendingTx()
-	key = append(key, txHash...)
+	key = append(key, utils.CopySlice(txHash)...)
 	return key
 }
 
 func (pt *Handler) makePendingTxCooldownKey(txHash []byte) []byte {
-	txHashCopy := utils.CopySlice(txHash)
 	key := dbprefix.PrefixPendingTxCooldownKey()
-	key = append(key, txHashCopy...)
+	key = append(key, utils.CopySlice(txHash)...)
 	return key
 }
 

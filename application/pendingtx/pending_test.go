@@ -4,33 +4,23 @@ import (
 	"bytes"
 	"context"
 	"crypto/rand"
-	"errors"
 	"io/ioutil"
 	"os"
-	"strconv"
-	"strings"
 	"testing"
-
-	"github.com/alicenet/alicenet/errorz"
-	"github.com/alicenet/alicenet/utils"
-	"github.com/stretchr/testify/mock"
 
 	"github.com/alicenet/alicenet/application/objs"
 	"github.com/alicenet/alicenet/application/objs/uint256"
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/crypto"
 	"github.com/dgraph-io/badger/v2"
-	"github.com/stretchr/testify/assert"
 )
 
 type mockTrie struct {
 	m map[string]bool
-	mock.Mock
 }
 
 func (mt *mockTrie) IsValid(txn *badger.Txn, txs objs.TxVec, currentHeight uint32, deposits objs.Vout) (objs.Vout, error) {
-	args := mt.Called(txn, txs, currentHeight, deposits)
-	return args.Get(0).(objs.Vout), args.Error(1)
+	return nil, nil
 }
 
 func (mt *mockTrie) TrieContains(txn *badger.Txn, utxo []byte) (bool, error) {
@@ -46,8 +36,7 @@ func (mt *mockTrie) Remove(utxo []byte) {
 }
 
 func (mt *mockTrie) Get(txn *badger.Txn, utxoIDs [][]byte) ([]*objs.TXOut, [][]byte, []*objs.TXOut, error) {
-	args := mt.Called(txn, utxoIDs)
-	return args.Get(0).([]*objs.TXOut), args.Get(1).([][]byte), args.Get(2).([]*objs.TXOut), args.Error(3)
+	return nil, nil, nil, nil
 }
 
 func testingOwner() objs.Signer {
@@ -67,7 +56,7 @@ func accountFromSigner(s objs.Signer) []byte {
 	return crypto.GetAccount(pubk)
 }
 
-func makeVS(ownerSigner objs.Signer) *objs.TXOut {
+func makeVS(ownerSigner objs.Signer, fee *uint256.Uint256) *objs.TXOut {
 	cid := uint32(2)
 	val := uint256.One()
 
@@ -75,7 +64,6 @@ func makeVS(ownerSigner objs.Signer) *objs.TXOut {
 	owner := &objs.ValueStoreOwner{}
 	owner.New(ownerAcct, constants.CurveSecp256k1)
 
-	fee := uint256.One()
 	vsp := &objs.VSPreImage{
 		ChainID: cid,
 		Value:   val,
@@ -95,7 +83,7 @@ func makeVS(ownerSigner objs.Signer) *objs.TXOut {
 }
 
 func makeVSTXIn(ownerSigner objs.Signer, txHash []byte) (*objs.TXOut, *objs.TXIn) {
-	vs := makeVS(ownerSigner)
+	vs := makeVS(ownerSigner, uint256.One())
 	vss, err := vs.ValueStore()
 	if err != nil {
 		panic(err)
@@ -115,6 +103,105 @@ func makeVSTXIn(ownerSigner objs.Signer, txHash []byte) (*objs.TXOut, *objs.TXIn
 	return vs, txin
 }
 
+func makeVSwithFees(ownerSigner objs.Signer, value, vsfee *uint256.Uint256) *objs.TXOut {
+	cid := uint32(2)
+
+	ownerAcct := accountFromSigner(ownerSigner)
+	owner := &objs.ValueStoreOwner{}
+	owner.New(ownerAcct, constants.CurveSecp256k1)
+
+	vsp := &objs.VSPreImage{
+		ChainID: cid,
+		Value:   value.Clone(),
+		Owner:   owner,
+		Fee:     vsfee.Clone(),
+	}
+	vs := &objs.ValueStore{
+		VSPreImage: vsp,
+		TxHash:     make([]byte, constants.HashLen),
+	}
+	utxInputs := &objs.TXOut{}
+	err := utxInputs.NewValueStore(vs)
+	if err != nil {
+		panic(err)
+	}
+	return utxInputs
+}
+
+func makeVSTXInwithFees(ownerSigner objs.Signer, txHash []byte, value, vsfee *uint256.Uint256) (*objs.TXOut, *objs.TXIn) {
+	vs := makeVSwithFees(ownerSigner, value, vsfee)
+	vss, err := vs.ValueStore()
+	if err != nil {
+		panic(err)
+	}
+	if txHash == nil {
+		txHash = make([]byte, constants.HashLen)
+		_, err := rand.Read(txHash)
+		if err != nil {
+			panic(err)
+		}
+	}
+	vss.TxHash = txHash
+	txin, err := vss.MakeTxIn()
+	if err != nil {
+		panic(err)
+	}
+	return vs, txin
+}
+
+func makeTxInitialwithFees(value, txfee, vsfee *uint256.Uint256) (objs.Vout, *objs.Tx) {
+	ownerSigner := testingOwner()
+	consumedUTXOs := objs.Vout{}
+	txInputs := []*objs.TXIn{}
+	utxo, txin := makeVSTXInwithFees(ownerSigner, nil, value, vsfee)
+	consumedUTXOs = append(consumedUTXOs, utxo)
+	txInputs = append(txInputs, txin)
+
+	generatedUTXOs := objs.Vout{}
+	valueMinusFees := new(uint256.Uint256)
+	err := valueMinusFees.Set(value)
+	if err != nil {
+		panic(err)
+	}
+	_, err = valueMinusFees.Sub(valueMinusFees, vsfee)
+	if err != nil {
+		panic(err)
+	}
+	_, err = valueMinusFees.Sub(valueMinusFees, txfee)
+	if err != nil {
+		panic(err)
+	}
+	generatedUTXOs = append(generatedUTXOs, makeVSwithFees(ownerSigner, valueMinusFees, vsfee))
+	err = generatedUTXOs.SetTxOutIdx()
+	if err != nil {
+		panic(err)
+	}
+	tx := &objs.Tx{
+		Vin:  txInputs,
+		Vout: generatedUTXOs,
+		Fee:  txfee.Clone(),
+	}
+	err = tx.SetTxHash()
+	if err != nil {
+		panic(err)
+	}
+	for i := 0; i < 1; i++ {
+		vs, err := consumedUTXOs[i].ValueStore()
+		if err != nil {
+			panic(err)
+		}
+		err = vs.Sign(tx.Vin[i], ownerSigner)
+		if err != nil {
+			panic(err)
+		}
+	}
+	err = tx.ValidateEqualVinVout(1, consumedUTXOs)
+	if err != nil {
+		panic(err)
+	}
+	return consumedUTXOs, tx
+}
+
 func makeTxInitial() (objs.Vout, *objs.Tx) {
 	ownerSigner := testingOwner()
 	consumedUTXOs := objs.Vout{}
@@ -126,7 +213,7 @@ func makeTxInitial() (objs.Vout, *objs.Tx) {
 	}
 	generatedUTXOs := objs.Vout{}
 	for i := 0; i < 2; i++ {
-		generatedUTXOs = append(generatedUTXOs, makeVS(ownerSigner))
+		generatedUTXOs = append(generatedUTXOs, makeVS(ownerSigner, uint256.One()))
 	}
 	err := generatedUTXOs.SetTxOutIdx()
 	if err != nil {
@@ -167,7 +254,7 @@ func makeTxConsuming(consumedUTXOs objs.Vout) *objs.Tx {
 	}
 	generatedUTXOs := objs.Vout{}
 	for i := 0; i < 2; i++ {
-		generatedUTXOs = append(generatedUTXOs, makeVS(ownerSigner))
+		generatedUTXOs = append(generatedUTXOs, makeVS(ownerSigner, uint256.One()))
 	}
 	err := generatedUTXOs.SetTxOutIdx()
 	if err != nil {
@@ -205,8 +292,7 @@ func mustAddTx(t *testing.T, hndlr *Handler, tx *objs.Tx, currentHeight uint32) 
 }
 
 func mustNotAdd(t *testing.T, hndlr *Handler, tx *objs.Tx, currentHeight uint32) {
-	err := hndlr.Add(nil, []*objs.Tx{tx}, currentHeight)
-	assert.NotNil(t, err)
+	hndlr.Add(nil, []*objs.Tx{tx}, currentHeight)
 	mustNotContain(t, hndlr, tx)
 }
 
@@ -285,10 +371,12 @@ func setup(t *testing.T) (*Handler, *mockTrie, func()) {
 	}
 	////////////////////////////////////////
 	mt := &mockTrie{}
-	mt.On("IsValid", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(objs.Vout{}, nil)
-	mt.On("Get", mock.Anything, mock.Anything).Return([]*objs.TXOut{}, [][]byte{}, []*objs.TXOut{}, nil)
 	mt.m = make(map[string]bool)
-	hndlr := NewPendingTxHandler(db)
+	queueSize := 1024
+	hndlr, err := NewPendingTxHandler(db, queueSize)
+	if err != nil {
+		t.Fatal(err)
+	}
 	hndlr.UTXOHandler = mt
 	hndlr.DepositHandler = mt
 	return hndlr, mt, fn
@@ -349,7 +437,11 @@ func TestDeleteMined(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = hndlr.DeleteMined(nil, 1, [][]byte{txHash})
+	consumedUTXOIDs, err := tx.ConsumedUTXOID()
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = hndlr.DeleteMined(nil, 1, [][]byte{txHash}, consumedUTXOIDs)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -378,10 +470,12 @@ func TestGetProposal(t *testing.T) {
 	tx4 := makeTxConsuming(c2)
 	mustAddTx(t, hndlr, tx4, 1)
 	maxBytes := constants.MaxUint32
-	txs, _, err := hndlr.GetTxsForProposal(nil, context.TODO(), 1, maxBytes, nil)
+	hndlr.txqueue.ClearTxQueue()
+	txs, _, err := hndlr.GetTxsForProposal(hndlr.db.NewTransaction(false), context.TODO(), 1, maxBytes, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
+	t.Logf("Length: %v\n", len(txs))
 	txHashes, err := objs.TxVec(txs).TxHash()
 	if err != nil {
 		t.Fatal(err)
@@ -411,637 +505,313 @@ func TestGetProposal(t *testing.T) {
 	}
 }
 
-func TestGetProposal_2Txs(t *testing.T) {
-	dir, err := ioutil.TempDir("", "badger-test")
-	if err != nil {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}
-	opts := badger.DefaultOptions(dir)
-	db, err := badger.Open(opts)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	defer os.RemoveAll(dir)
-	defer db.Close()
-	////////////////////////////////////////
-	signer := &crypto.Secp256k1Signer{}
-	err = signer.SetPrivk(crypto.Hasher([]byte("secret")))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	d1 := makeDeposit(t, signer, 1, 1, uint256.One())
-	utxoDep1 := &objs.TXOut{}
-	err = utxoDep1.NewValueStore(d1)
-	if err != nil {
-		t.Fatal(err)
-	}
-	tx1 := makeTxs(t, signer, d1)
-
-	d2 := makeDeposit(t, signer, 1, 2, uint256.One())
-	utxoDep2 := &objs.TXOut{}
-	err = utxoDep2.NewValueStore(d2)
-	if err != nil {
-		t.Fatal(err)
-	}
-	tx2 := makeTxs(t, signer, d2)
-
-	mt := &mockTrie{}
-	mt.On("Get", mock.Anything, mock.Anything).Return([]*objs.TXOut{utxoDep1, utxoDep2}, [][]byte{}, []*objs.TXOut{}, nil)
-	mt.On("IsValid", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(objs.Vout{utxoDep1, utxoDep2}, nil).Times(4)
-	mt.On("IsValid", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(objs.Vout{}, errors.New("error"))
-	mt.m = make(map[string]bool)
-	hndlr := NewPendingTxHandler(db)
-	hndlr.UTXOHandler = mt
-	hndlr.DepositHandler = mt
-
-	mustAddTx(t, hndlr, tx1, 1)
-	mustAddTx(t, hndlr, tx2, 1)
-
-	maxBytes := constants.MaxUint32
-	result, _, err := hndlr.GetTxsForProposal(nil, context.TODO(), 1, maxBytes, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	assert.Equal(t, 1, len(result))
-}
-
-func TestGetProposal_WithNonUniqueTxs(t *testing.T) {
-	dir, err := ioutil.TempDir("", "badger-test")
-	if err != nil {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}
-	opts := badger.DefaultOptions(dir)
-	db, err := badger.Open(opts)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	defer os.RemoveAll(dir)
-	defer db.Close()
-	////////////////////////////////////////
-	signer := &crypto.Secp256k1Signer{}
-	err = signer.SetPrivk(crypto.Hasher([]byte("secret")))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	d1 := makeDeposit(t, signer, 1, 1, uint256.One())
-	utxoDep1 := &objs.TXOut{}
-	err = utxoDep1.NewValueStore(d1)
-	if err != nil {
-		t.Fatal(err)
-	}
-	tx1 := makeTxs(t, signer, d1)
-
-	d2 := makeDeposit(t, signer, 1, 2, uint256.One())
-	utxoDep2 := &objs.TXOut{}
-	err = utxoDep2.NewValueStore(d2)
-	if err != nil {
-		t.Fatal(err)
-	}
-	tx2 := makeTxs(t, signer, d2)
-
-	mt := &mockTrie{}
-	mt.On("Get", mock.Anything, mock.Anything).Return([]*objs.TXOut{utxoDep1, utxoDep2}, [][]byte{}, []*objs.TXOut{}, nil)
-	mt.On("IsValid", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(objs.Vout{utxoDep1, utxoDep2}, nil)
-	mt.m = make(map[string]bool)
-	hndlr := NewPendingTxHandler(db)
-	hndlr.UTXOHandler = mt
-	hndlr.DepositHandler = mt
-
-	mustAddTx(t, hndlr, tx1, 1)
-	mustAddTx(t, hndlr, tx2, 1)
-
-	maxBytes := constants.MaxUint32
-	result, _, err := hndlr.GetTxsForProposal(nil, context.TODO(), 1, maxBytes, tx1)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	assert.Equal(t, 2, len(result))
-}
-
-func TestGetProposal_With1InvalidTx(t *testing.T) {
-	dir, err := ioutil.TempDir("", "badger-test")
-	if err != nil {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}
-	opts := badger.DefaultOptions(dir)
-	db, err := badger.Open(opts)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	defer os.RemoveAll(dir)
-	defer db.Close()
-	////////////////////////////////////////
-	signer := &crypto.Secp256k1Signer{}
-	err = signer.SetPrivk(crypto.Hasher([]byte("secret")))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	d1 := makeDeposit(t, signer, 1, 1, uint256.One())
-	utxoDep1 := &objs.TXOut{}
-	err = utxoDep1.NewValueStore(d1)
-	if err != nil {
-		t.Fatal(err)
-	}
-	tx1 := makeTxs(t, signer, d1)
-
-	d2 := makeDeposit(t, signer, 1, 2, uint256.One())
-	utxoDep2 := &objs.TXOut{}
-	err = utxoDep2.NewValueStore(d2)
-	if err != nil {
-		t.Fatal(err)
-	}
-	tx2 := makeTxs(t, signer, d2)
-
-	mt := &mockTrie{}
-	mt.On("Get", mock.Anything, mock.Anything).Return([]*objs.TXOut{utxoDep1, utxoDep2}, [][]byte{}, []*objs.TXOut{}, nil)
-	mt.On("IsValid", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(objs.Vout{utxoDep1, utxoDep2}, nil).Times(3)
-	mt.On("IsValid", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(objs.Vout{}, errors.New("invalid tx"))
-	mt.m = make(map[string]bool)
-	hndlr := NewPendingTxHandler(db)
-	hndlr.UTXOHandler = mt
-	hndlr.DepositHandler = mt
-	defer func() {
-		err := hndlr.Drop()
-		if err != nil {
-			t.Fatal(err)
-		}
-	}()
-
-	mustAddTx(t, hndlr, tx1, 1)
-	mustAddTx(t, hndlr, tx2, 1)
-
-	maxBytes := constants.MaxUint32
-	result, _, err := hndlr.GetTxsForProposal(nil, context.TODO(), 1, maxBytes, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	assert.Equal(t, 1, len(result))
-}
-
-func TestCheckIsValid_Valid(t *testing.T) {
-	dir, err := ioutil.TempDir("", "badger-test")
-	if err != nil {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}
-	opts := badger.DefaultOptions(dir)
-	db, err := badger.Open(opts)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	defer os.RemoveAll(dir)
-	defer db.Close()
-	////////////////////////////////////////
-	signer := &crypto.Secp256k1Signer{}
-	err = signer.SetPrivk(crypto.Hasher([]byte("secret")))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	d1 := makeDeposit(t, signer, 1, 1, uint256.One())
-	utxoDep1 := &objs.TXOut{}
-	err = utxoDep1.NewValueStore(d1)
-	if err != nil {
-		t.Fatal(err)
-	}
-	tx1 := makeTxs(t, signer, d1)
-
-	d2 := makeDeposit(t, signer, 1, 1, uint256.One())
-	utxoDep2 := &objs.TXOut{}
-	err = utxoDep2.NewValueStore(d2)
-	if err != nil {
-		t.Fatal(err)
-	}
-	tx2 := makeTxs(t, signer, d2)
-
-	d3 := makeDeposit(t, signer, 1, 1, uint256.One())
-	utxoDep3 := &objs.TXOut{}
-	err = utxoDep3.NewValueStore(d3)
-	if err != nil {
-		t.Fatal(err)
-	}
-	tx3 := makeTxs(t, signer, d3)
-
-	mt := &mockTrie{}
-	mt.On("Get", mock.Anything, mock.Anything).Return([]*objs.TXOut{utxoDep1, utxoDep2, utxoDep3}, [][]byte{}, []*objs.TXOut{}, nil)
-	mt.On("IsValid", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(objs.Vout{utxoDep1, utxoDep2, utxoDep3}, nil)
-	mt.m = make(map[string]bool)
-	hndlr := NewPendingTxHandler(db)
-	hndlr.UTXOHandler = mt
-	hndlr.DepositHandler = mt
-
-	txVec := objs.TxVec{tx1, tx2, tx3}
-	err = hndlr.checkIsValid(nil, txVec, 1)
-	if err != nil {
-		t.Fatal(err)
-	}
-}
-
-func TestCheckIsValid_UTXOInvalid(t *testing.T) {
-	dir, err := ioutil.TempDir("", "badger-test")
-	if err != nil {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}
-	opts := badger.DefaultOptions(dir)
-	db, err := badger.Open(opts)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	defer os.RemoveAll(dir)
-	defer db.Close()
-	////////////////////////////////////////
-	signer := &crypto.Secp256k1Signer{}
-	err = signer.SetPrivk(crypto.Hasher([]byte("secret")))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	d1 := makeDeposit(t, signer, 1, 1, uint256.One())
-	utxoDep1 := &objs.TXOut{}
-	err = utxoDep1.NewValueStore(d1)
-	if err != nil {
-		t.Fatal(err)
-	}
-	tx1 := makeTxs(t, signer, d1)
-
-	d2 := makeDeposit(t, signer, 1, 1, uint256.One())
-	utxoDep2 := &objs.TXOut{}
-	err = utxoDep2.NewValueStore(d2)
-	if err != nil {
-		t.Fatal(err)
-	}
-	tx2 := makeTxs(t, signer, d2)
-
-	d3 := makeDeposit(t, signer, 1, 1, uint256.One())
-	utxoDep3 := &objs.TXOut{}
-	err = utxoDep3.NewValueStore(d3)
-	if err != nil {
-		t.Fatal(err)
-	}
-	tx3 := makeTxs(t, signer, d3)
-
-	mt := &mockTrie{}
-	mt.On("Get", mock.Anything, mock.Anything).Return([]*objs.TXOut{utxoDep1, utxoDep2, utxoDep3}, [][]byte{}, []*objs.TXOut{}, nil)
-	mt.On("IsValid", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(objs.Vout{}, errors.New("invalid UTXO"))
-	mt.m = make(map[string]bool)
-	hndlr := NewPendingTxHandler(db)
-	hndlr.UTXOHandler = mt
-	hndlr.DepositHandler = mt
-
-	txVec := objs.TxVec{tx1, tx2, tx3}
-	err = hndlr.checkIsValid(nil, txVec, 1)
-	if err == nil {
-		t.Fatal(err)
-	}
-}
-
-func TestCheckIsValid_Missing_Invalid(t *testing.T) {
-	dir, err := ioutil.TempDir("", "badger-test")
-	if err != nil {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}
-	opts := badger.DefaultOptions(dir)
-	db, err := badger.Open(opts)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	defer os.RemoveAll(dir)
-	defer db.Close()
-	////////////////////////////////////////
-	signer := &crypto.Secp256k1Signer{}
-	err = signer.SetPrivk(crypto.Hasher([]byte("secret")))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	d1 := makeDeposit(t, signer, 1, 1, uint256.One())
-	utxoDep1 := &objs.TXOut{}
-	err = utxoDep1.NewValueStore(d1)
-	if err != nil {
-		t.Fatal(err)
-	}
-	tx1 := makeTxs(t, signer, d1)
-
-	d2 := makeDeposit(t, signer, 1, 1, uint256.One())
-	utxoDep2 := &objs.TXOut{}
-	err = utxoDep2.NewValueStore(d2)
-	if err != nil {
-		t.Fatal(err)
-	}
-	tx2 := makeTxs(t, signer, d2)
-
-	d3 := makeDeposit(t, signer, 1, 1, uint256.One())
-	utxoDep3 := &objs.TXOut{}
-	err = utxoDep3.NewValueStore(d3)
-	if err != nil {
-		t.Fatal(err)
-	}
-	tx3 := makeTxs(t, signer, d3)
-
-	mt := &mockTrie{}
-	missingTxId, err := tx3.TxHash()
-	if err != nil {
-		t.Fatal(err)
-	}
-	mt.On("Get", mock.Anything, mock.Anything).Return([]*objs.TXOut{utxoDep1, utxoDep2}, [][]byte{missingTxId}, []*objs.TXOut{}, nil)
-	mt.On("IsValid", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(objs.Vout{}, nil)
-	mt.m = make(map[string]bool)
-	hndlr := NewPendingTxHandler(db)
-	hndlr.UTXOHandler = mt
-	hndlr.DepositHandler = mt
-
-	txVec := objs.TxVec{tx1, tx2, tx3}
-	err = hndlr.checkIsValid(nil, txVec, 1)
-	if err == nil {
-		t.Fatal("Should raise an error")
-	}
-
-	if !errors.Is(err, errorz.ErrMissingTransactions) {
-		t.Fatal("Should raise errorz.ErrMissingTransactions error")
-	}
-}
-
-func TestCheckIsValid_Spent_Invalid(t *testing.T) {
-	dir, err := ioutil.TempDir("", "badger-test")
-	if err != nil {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}
-	opts := badger.DefaultOptions(dir)
-	db, err := badger.Open(opts)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	defer os.RemoveAll(dir)
-	defer db.Close()
-	////////////////////////////////////////
-	signer := &crypto.Secp256k1Signer{}
-	err = signer.SetPrivk(crypto.Hasher([]byte("secret")))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	d1 := makeDeposit(t, signer, 1, 1, uint256.One())
-	utxoDep1 := &objs.TXOut{}
-	err = utxoDep1.NewValueStore(d1)
-	if err != nil {
-		t.Fatal(err)
-	}
-	tx1 := makeTxs(t, signer, d1)
-
-	d2 := makeDeposit(t, signer, 1, 1, uint256.One())
-	utxoDep2 := &objs.TXOut{}
-	err = utxoDep2.NewValueStore(d2)
-	if err != nil {
-		t.Fatal(err)
-	}
-	tx2 := makeTxs(t, signer, d2)
-
-	d3 := makeDeposit(t, signer, 1, 1, uint256.One())
-	utxoDep3 := &objs.TXOut{}
-	err = utxoDep3.NewValueStore(d3)
-	if err != nil {
-		t.Fatal(err)
-	}
-	tx3 := makeTxs(t, signer, d3)
-
-	mt := &mockTrie{}
-	mt.On("Get", mock.Anything, mock.Anything).Return([]*objs.TXOut{utxoDep1, utxoDep2}, [][]byte{}, []*objs.TXOut{utxoDep3}, nil)
-	mt.On("IsValid", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(objs.Vout{}, nil)
-	mt.m = make(map[string]bool)
-	hndlr := NewPendingTxHandler(db)
-	hndlr.UTXOHandler = mt
-	hndlr.DepositHandler = mt
-
-	txVec := objs.TxVec{tx1, tx2, tx3}
-	err = hndlr.checkIsValid(nil, txVec, 1)
-	if err == nil {
-		t.Fatal("Should raise an error")
-	}
-
-	if !strings.Contains(err.Error(), "spent") {
-		t.Fatal("Should raise ptHandler.checkIsValid; spent error")
-	}
-}
-
-func TestCheckIsValid_Error_Invalid(t *testing.T) {
-	dir, err := ioutil.TempDir("", "badger-test")
-	if err != nil {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}
-	opts := badger.DefaultOptions(dir)
-	db, err := badger.Open(opts)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	defer os.RemoveAll(dir)
-	defer db.Close()
-	////////////////////////////////////////
-	signer := &crypto.Secp256k1Signer{}
-	err = signer.SetPrivk(crypto.Hasher([]byte("secret")))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	d1 := makeDeposit(t, signer, 1, 1, uint256.One())
-	utxoDep1 := &objs.TXOut{}
-	err = utxoDep1.NewValueStore(d1)
-	if err != nil {
-		t.Fatal(err)
-	}
-	tx1 := makeTxs(t, signer, d1)
-
-	d2 := makeDeposit(t, signer, 1, 1, uint256.One())
-	utxoDep2 := &objs.TXOut{}
-	err = utxoDep2.NewValueStore(d2)
-	if err != nil {
-		t.Fatal(err)
-	}
-	tx2 := makeTxs(t, signer, d2)
-
-	d3 := makeDeposit(t, signer, 1, 1, uint256.One())
-	utxoDep3 := &objs.TXOut{}
-	err = utxoDep3.NewValueStore(d3)
-	if err != nil {
-		t.Fatal(err)
-	}
-	tx3 := makeTxs(t, signer, d3)
-
-	mt := &mockTrie{}
-	mt.On("Get", mock.Anything, mock.Anything).Return([]*objs.TXOut{}, [][]byte{}, []*objs.TXOut{}, errors.New(" internal error"))
-	mt.On("IsValid", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(objs.Vout{}, nil)
-	mt.m = make(map[string]bool)
-	hndlr := NewPendingTxHandler(db)
-	hndlr.UTXOHandler = mt
-	hndlr.DepositHandler = mt
-
-	txVec := objs.TxVec{tx1, tx2, tx3}
-	err = hndlr.checkIsValid(nil, txVec, 1)
-	if err == nil {
-		t.Fatal("Should raise an error")
-	}
-}
-
-func TestCheckConsumedDeposits(t *testing.T) {
+func TestGetTxsForProposal1(t *testing.T) {
 	hndlr, trie, cleanup := setup(t)
 	defer cleanup()
-	////////////////////////////////////////
-	signer := &crypto.Secp256k1Signer{}
-	err := signer.SetPrivk(crypto.Hasher([]byte("secret")))
+	value1, err := new(uint256.Uint256).FromUint64(123)
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	d1 := makeDeposit(t, signer, 1, 1, uint256.One())
-	utxoDep1 := &objs.TXOut{}
-	err = utxoDep1.NewValueStore(d1)
+	txfee1, err := new(uint256.Uint256).FromUint64(1)
 	if err != nil {
 		t.Fatal(err)
 	}
-	tx1 := makeTxs(t, signer, d1)
-	utxoId, err := tx1.Vin[0].UTXOID()
+	vsfee, err := new(uint256.Uint256).FromUint64(1)
 	if err != nil {
 		t.Fatal(err)
 	}
-	trie.Add(utxoId)
-
-	consumed, err := hndlr.checkConsumedDeposits(nil, tx1)
-
-	assert.False(t, consumed)
-	assert.Nil(t, err)
-
-	trie.Remove(utxoId)
-
-	consumed, err = hndlr.checkConsumedDeposits(nil, tx1)
-
-	assert.True(t, consumed)
-	assert.Nil(t, err)
+	_, tx1 := makeTxInitialwithFees(value1, txfee1, vsfee)
+	txhash1, err := tx1.TxHash()
+	if err != nil {
+		t.Fatal(err)
+	}
+	mustAddTx(t, hndlr, tx1, 1)
+	value2, err := new(uint256.Uint256).FromUint64(1234567)
+	if err != nil {
+		t.Fatal(err)
+	}
+	txfee2, err := new(uint256.Uint256).FromUint64(100)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, tx2 := makeTxInitialwithFees(value2, txfee2, vsfee)
+	txhash2, err := tx2.TxHash()
+	if err != nil {
+		t.Fatal(err)
+	}
+	mustAddTx(t, hndlr, tx2, 1)
+	value3, err := new(uint256.Uint256).FromUint64(1234)
+	if err != nil {
+		t.Fatal(err)
+	}
+	txfee3, err := new(uint256.Uint256).FromUint64(1000)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, tx3 := makeTxInitialwithFees(value3, txfee3, vsfee)
+	txhash3, err := tx3.TxHash()
+	if err != nil {
+		t.Fatal(err)
+	}
+	mustAddTx(t, hndlr, tx3, 1)
+	value4, err := new(uint256.Uint256).FromUint64(12341235235232)
+	if err != nil {
+		t.Fatal(err)
+	}
+	txfee4, err := new(uint256.Uint256).FromUint64(10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, tx4 := makeTxInitialwithFees(value4, txfee4, vsfee)
+	txhash4, err := tx4.TxHash()
+	if err != nil {
+		t.Fatal(err)
+	}
+	mustAddTx(t, hndlr, tx4, 1)
+	// trie must contain utxos getting spent but must not contain
+	// utxos being generated
+	utxoIDs, err := objs.TxVec{tx1, tx2, tx3, tx4}.ConsumedUTXOID()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, ut := range utxoIDs {
+		trie.Add(ut)
+	}
+	maxBytes := constants.MaxUint32
+	txs, _, err := hndlr.GetTxsForProposal(hndlr.db.NewTransaction(false), context.TODO(), 1+3*constants.EpochLength, maxBytes, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("Length: %v\n", len(txs))
+	if len(txs) != 4 {
+		t.Fatal("invalid number of txs")
+	}
+	txHashes, err := objs.TxVec(txs).TxHash()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(txHashes[0], txhash3) {
+		t.Fatal("invalid first hash")
+	}
+	if !bytes.Equal(txHashes[1], txhash2) {
+		t.Fatal("invalid second hash")
+	}
+	if !bytes.Equal(txHashes[2], txhash4) {
+		t.Fatal("invalid third hash")
+	}
+	if !bytes.Equal(txHashes[3], txhash1) {
+		t.Fatal("invalid fourth hash")
+	}
 }
 
-func TestCheckGenerated(t *testing.T) {
+func TestGetTxsForProposal2(t *testing.T) {
 	hndlr, trie, cleanup := setup(t)
 	defer cleanup()
-	////////////////////////////////////////
-	signer := &crypto.Secp256k1Signer{}
-	err := signer.SetPrivk(crypto.Hasher([]byte("secret")))
+	value1, err := new(uint256.Uint256).FromUint64(123)
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	d1 := makeDeposit(t, signer, 1, 1, uint256.One())
-	utxoDep1 := &objs.TXOut{}
-	err = utxoDep1.NewValueStore(d1)
+	txfee1, err := new(uint256.Uint256).FromUint64(1)
 	if err != nil {
 		t.Fatal(err)
 	}
-	tx1 := makeTxs(t, signer, d1)
-	utxoId, err := tx1.Vout[0].UTXOID()
+	vsfee, err := new(uint256.Uint256).FromUint64(1)
 	if err != nil {
 		t.Fatal(err)
 	}
-	trie.Add(utxoId)
+	_, tx1 := makeTxInitialwithFees(value1, txfee1, vsfee)
+	mustAddTx(t, hndlr, tx1, 1)
+	value2, err := new(uint256.Uint256).FromUint64(1234567)
+	if err != nil {
+		t.Fatal(err)
+	}
+	txfee2, err := new(uint256.Uint256).FromUint64(100)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, tx2 := makeTxInitialwithFees(value2, txfee2, vsfee)
+	mustAddTx(t, hndlr, tx2, 1)
+	value3, err := new(uint256.Uint256).FromUint64(1234)
+	if err != nil {
+		t.Fatal(err)
+	}
+	txfee3, err := new(uint256.Uint256).FromUint64(1000)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, tx3 := makeTxInitialwithFees(value3, txfee3, vsfee)
+	mustAddTx(t, hndlr, tx3, 1)
+	value4, err := new(uint256.Uint256).FromUint64(12341235235232)
+	if err != nil {
+		t.Fatal(err)
+	}
+	txfee4, err := new(uint256.Uint256).FromUint64(10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, tx4 := makeTxInitialwithFees(value4, txfee4, vsfee)
+	mustAddTx(t, hndlr, tx4, 1)
+	// trie must contain utxos getting spent but must not contain
+	// utxos being generated
+	utxoIDs, err := objs.TxVec{tx1, tx2, tx3, tx4}.ConsumedUTXOID()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, ut := range utxoIDs {
+		trie.Add(ut)
+	}
+	maxBytes := constants.MaxUint32
 
-	generated, err := hndlr.checkGenerated(nil, tx1)
-
-	assert.False(t, generated)
-	assert.Nil(t, err)
-
-	trie.Remove(utxoId)
-
-	generated, err = hndlr.checkGenerated(nil, tx1)
-
-	assert.True(t, generated)
-	assert.Nil(t, err)
+	ctx, cancel := context.WithTimeout(context.Background(), 0)
+	defer cancel()
+	txs, retMaxBytes, err := hndlr.GetTxsForProposal(hndlr.db.NewTransaction(false), ctx, 1, maxBytes, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(txs) != 0 {
+		t.Fatal("invalid number of txs")
+	}
+	if retMaxBytes != maxBytes {
+		t.Fatal("invalid retMaxBytes")
+	}
 }
 
-func makeDeposit(t *testing.T, s objs.Signer, chainID uint32, i int, value *uint256.Uint256) *objs.ValueStore {
-	pubkey, err := s.Pubkey()
+func TestAddTxsToQueueFullQueue(t *testing.T) {
+	hndlr, _, cleanup := setup(t)
+	defer cleanup()
+
+	_, tx := makeTxInitial()
+	mustAddTx(t, hndlr, tx, 1)
+
+	_, tx2 := makeTxInitial()
+	mustAddTx(t, hndlr, tx2, 1)
+
+	hndlr.SetQueueSize(1)
+	err := hndlr.AddTxsToQueue(nil, context.TODO(), 1)
 	if err != nil {
 		t.Fatal(err)
 	}
-	vs := &objs.ValueStore{
-		VSPreImage: &objs.VSPreImage{
-			TXOutIdx: constants.MaxUint32,
-			Value:    value,
-			ChainID:  chainID,
-			Owner:    &objs.ValueStoreOwner{SVA: objs.ValueStoreSVA, CurveSpec: constants.CurveSecp256k1, Account: crypto.GetAccount(pubkey)},
-		},
-		TxHash: utils.ForceSliceToLength([]byte(strconv.Itoa(i)), constants.HashLen),
-	}
-	return vs
 }
 
-func makeTxs(t *testing.T, s objs.Signer, v *objs.ValueStore) *objs.Tx {
-	txIn, err := v.MakeTxIn()
+func TestAddTxsToQueueStatusChecks(t *testing.T) {
+	hndlr, _, cleanup := setup(t)
+	defer cleanup()
+
+	_, tx := makeTxInitial()
+	mustAddTx(t, hndlr, tx, 1)
+
+	_, tx2 := makeTxInitial()
+	mustAddTx(t, hndlr, tx2, 1)
+
+	hndlr.SetQueueSize(1)
+	if hndlr.TxQueueAddStatus() {
+		t.Fatal("Status should be false")
+	}
+	hndlr.TxQueueAddStart()
+	if !hndlr.TxQueueAddStatus() {
+		t.Fatal("Status should be true")
+	}
+	hndlr.TxQueueAddStart()
+	if !hndlr.TxQueueAddStatus() {
+		t.Fatal("Status should be true")
+	}
+	hndlr.TxQueueAddStop()
+	if hndlr.TxQueueAddStatus() {
+		t.Fatal("Status should be false")
+	}
+
+	if hndlr.TxQueueAddFinished() {
+		t.Fatal("StatusFinished should be false")
+	}
+	err := hndlr.AddTxsToQueue(hndlr.db.NewTransaction(false), context.TODO(), 1)
 	if err != nil {
 		t.Fatal(err)
 	}
-	value, err := v.Value()
+	if !hndlr.TxQueueAddFinished() {
+		t.Fatal("StatusFinished should be true")
+	}
+	err = hndlr.AddTxsToQueue(hndlr.db.NewTransaction(false), context.TODO(), 1)
 	if err != nil {
 		t.Fatal(err)
 	}
-	chainID, err := txIn.ChainID()
+	if !hndlr.TxQueueAddFinished() {
+		t.Fatal("StatusFinished should still be true")
+	}
+}
+
+func TestAddTxsToQueueStartStop(t *testing.T) {
+	hndlr, trie, cleanup := setup(t)
+	defer cleanup()
+
+	value1, err := new(uint256.Uint256).FromUint64(123)
 	if err != nil {
 		t.Fatal(err)
 	}
-	pubkey, err := s.Pubkey()
+	txfee1, err := new(uint256.Uint256).FromUint64(1)
 	if err != nil {
 		t.Fatal(err)
 	}
-	tx := &objs.Tx{}
-	tx.Vin = []*objs.TXIn{txIn}
-	newValueStore := &objs.ValueStore{
-		VSPreImage: &objs.VSPreImage{
-			ChainID:  chainID,
-			Value:    value,
-			Owner:    &objs.ValueStoreOwner{SVA: objs.ValueStoreSVA, CurveSpec: constants.CurveSecp256k1, Account: crypto.GetAccount(pubkey)},
-			TXOutIdx: 0,
-			Fee:      new(uint256.Uint256).SetZero(),
-		},
-		TxHash: make([]byte, constants.HashLen),
-	}
-	newUTXO := &objs.TXOut{}
-	err = newUTXO.NewValueStore(newValueStore)
+	vsfee, err := new(uint256.Uint256).FromUint64(1)
 	if err != nil {
 		t.Fatal(err)
 	}
-	tx.Vout = append(tx.Vout, newUTXO)
-	tx.Fee = uint256.Zero()
-	err = tx.SetTxHash()
+	_, tx1 := makeTxInitialwithFees(value1, txfee1, vsfee)
+	txhash1, err := tx1.TxHash()
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = v.Sign(tx.Vin[0], s)
+	mustAddTx(t, hndlr, tx1, 1)
+	value2, err := new(uint256.Uint256).FromUint64(1234567)
 	if err != nil {
 		t.Fatal(err)
 	}
-	return tx
+	txfee2, err := new(uint256.Uint256).FromUint64(100)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, tx2 := makeTxInitialwithFees(value2, txfee2, vsfee)
+	txhash2, err := tx2.TxHash()
+	if err != nil {
+		t.Fatal(err)
+	}
+	mustAddTx(t, hndlr, tx2, 1)
+	// trie must contain utxos getting spent but must not contain
+	// utxos being generated
+	utxoIDs, err := objs.TxVec{tx1, tx2}.ConsumedUTXOID()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, ut := range utxoIDs {
+		trie.Add(ut)
+	}
+	hndlr.txqueue.ClearTxQueue()
+	hndlr.txqueue.SetQueueSize(1)
+
+	// Attempt to add but force a timeout
+	ctx, cancel := context.WithTimeout(context.Background(), 0)
+	defer cancel()
+	err = hndlr.AddTxsToQueue(hndlr.db.NewTransaction(false), ctx, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if hndlr.TxQueueAddFinished() {
+		t.Fatal("StatusFinished should be false")
+	}
+	if hndlr.iterInfo.currentKey == nil {
+		t.Fatal("currentKey should not be nil")
+	}
+	// Attempt to add more txs
+	err = hndlr.AddTxsToQueue(hndlr.db.NewTransaction(false), context.TODO(), 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !hndlr.TxQueueAddFinished() {
+		t.Fatal("StatusFinished should still be true")
+	}
+	if hndlr.txqueue.Contains(txhash1) {
+		t.Fatal("TxQueue should not contain tx1")
+	}
+	if !hndlr.txqueue.Contains(txhash2) {
+		t.Fatal("TxQueue should contain tx2")
+	}
 }
