@@ -3,6 +3,7 @@ package appmock
 import (
 	"bytes"
 	"errors"
+
 	appObjs "github.com/alicenet/alicenet/application/objs"
 	trie "github.com/alicenet/alicenet/badgerTrie"
 	"github.com/alicenet/alicenet/consensus/objs"
@@ -126,6 +127,35 @@ func (m *MockApplication) PendingTxContains(txn *badger.Txn, height uint32, txHa
 // UnmarshalTx is defined on the interface object
 func (m *MockApplication) UnmarshalTx(v []byte) (interfaces.Transaction, error) {
 	return &MockTransaction{v}, nil
+}
+
+// AddTxsToQueue attempts to add additional txs to queue
+func (m *MockApplication) AddTxsToQueue(txn *badger.Txn, currentHeight uint32) error {
+	return nil
+}
+
+// QueueSize returns the size of the TxQueue.
+func (m *MockApplication) QueueSize() int {
+	return 0
+}
+
+// SetQueueSize sets the size of the TxQueue;
+// this determines how many txs we store in memory to quickly form a proposal.
+func (m *MockApplication) SetQueueSize(queueSize int) error {
+	return nil
+}
+
+// TxQueueAddStart starts the process of adding txs to TxQueue
+func (m *MockApplication) TxQueueAddStart() {
+}
+
+// TxQueueAddStop stops the process of adding txs to TxQueue
+func (m *MockApplication) TxQueueAddStop() {
+}
+
+// TxQueueAddStatus returns if we are currently adding txs to queue
+func (m *MockApplication) TxQueueAddStatus() bool {
+	return false
 }
 
 // StoreSnapShotNode is defined on the interface object

@@ -208,10 +208,11 @@ type Synchronizer struct {
 	adminHandler    *admin.Handlers
 	peerMan         *peering.PeerManager
 
-	initialized   *setOnceVar
-	peerMinThresh *remoteVar
-	ethSyncDone   *remoteVar
-	madSyncDone   *resetVar
+	initialized       *setOnceVar
+	peerMinThresh     *remoteVar
+	ethSyncDone       *remoteVar
+	madSyncDone       *resetVar
+	addTxsQueueStatus *remoteVar
 
 	storage dynamics.StorageGetter
 }
@@ -237,6 +238,7 @@ func (s *Synchronizer) Init(cdb *db.Database, mdb *badger.DB, tdb *badger.DB, gc
 	s.ethSyncDone = newRemoteVar(s.adminHandler.IsSynchronized)
 	s.peerMinThresh = newRemoteVar(s.peerMan.PeeringComplete)
 	s.madSyncDone = newResetVar()
+	s.addTxsQueueStatus = newRemoteVar(s.appHandler.TxQueueAddStatus)
 	s.storage = storage
 }
 
@@ -448,6 +450,23 @@ func (s *Synchronizer) setupLoops() {
 		withLockedCondition(s.madSyncDone.isNotSet)
 	s.wg.Add(1)
 	go s.loop(stateLoopNoSyncConfig)
+
+	// TODO: The timing information may need to be updated
+	txqueueLoopSyncConfig := newLoopConfig().
+		withName("AddTxsQueueLoop").
+		withFn(s.stateHandler.AddTxsToQueue).
+		withFreq(1 * time.Second).
+		withDelayOnConditionFailure(1 * time.Second).
+		withLockFreeCondition(s.isNotClosing).
+		withLockFreeCondition(s.initialized.isSet).
+		withLockFreeCondition(s.ethSyncDone.isSet).
+		withLockFreeCondition(s.madSyncDone.isSet).
+		withLockFreeCondition(s.addTxsQueueStatus.isSet).
+		withLock().
+		withLockedCondition(s.isNotClosing).
+		withLockedCondition(s.madSyncDone.isSet)
+	s.wg.Add(1)
+	go s.loop(txqueueLoopSyncConfig)
 
 	appLoopConfig := newLoopConfig().
 		withName("AppLoop").

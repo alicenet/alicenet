@@ -76,6 +76,10 @@ func (ce *Engine) isValid(txn *badger.Txn, rs *RoundStates, chainID uint32, stat
 		utils.DebugTrace(ce.logger, err)
 		return false, nil
 	}
+	if err := ce.dm.AddTxs(txn, rs.OwnState.SyncToBH.BClaims.Height+1, txs); err != nil {
+		utils.DebugTrace(ce.logger, err)
+		return false, err
+	}
 	ok, err := ce.appHandler.IsValid(txn, chainID, rs.OwnState.SyncToBH.BClaims.Height+1, stateHash, txs)
 	if err != nil {
 		e := errorz.ErrInvalid{}.New("")
@@ -113,4 +117,58 @@ func (ce *Engine) applyState(txn *badger.Txn, rs *RoundStates, chainID uint32, t
 		return err
 	}
 	return nil
+}
+
+// AddTxsToQueue adds transactions to the tx queue in Application
+func (ce *Engine) AddTxsToQueue() error {
+	err := ce.database.View(func(txn *badger.Txn) error {
+		rs, err := ce.sstore.LoadLocalState(txn)
+		if err != nil {
+			utils.DebugTrace(ce.logger, err)
+			return err
+		}
+		currentHeight := rs.OwnState.SyncToBH.BClaims.Height
+		err = ce.appHandler.AddTxsToQueue(txn, currentHeight+1)
+		if err != nil {
+			utils.DebugTrace(ce.logger, err)
+			return err
+		}
+		return nil
+	})
+	return err
+}
+
+// SetQueueSize sets the tx queue size
+func (ce *Engine) SetQueueSize(queueSize int) error {
+	err := ce.appHandler.SetQueueSize(queueSize)
+	if err != nil {
+		utils.DebugTrace(ce.logger, err)
+		return err
+	}
+	return nil
+}
+
+// AddTxsToQueueStart starts the process of adding txs to queue
+func (ce *Engine) AddTxsToQueueStart() {
+	ce.appHandler.TxQueueAddStart()
+}
+
+// AddTxsToQueueStop stops the process of adding txs to queue
+func (ce *Engine) AddTxsToQueueStop() {
+	ce.appHandler.TxQueueAddStop()
+}
+
+// AddTxsToQueueStatus returns true if we are in the process of adding txs to queue
+func (ce *Engine) AddTxsToQueueStatus() bool {
+	return ce.appHandler.TxQueueAddStatus()
+}
+
+// InitializeAddTxsToQueue returns true if we should start adding txs to queue
+func (ce *Engine) InitializeAddTxsToQueue(rs *RoundStates) bool {
+	return rs.TxQueueAddInitialize()
+}
+
+// FinalizeAddTxsToQueue returns true if we should stop adding txs to queue
+func (ce *Engine) FinalizeAddTxsToQueue(rs *RoundStates) bool {
+	return rs.TxQueueAddFinalize()
 }

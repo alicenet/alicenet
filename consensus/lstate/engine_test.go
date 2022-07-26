@@ -52,7 +52,7 @@ func TestEngine_Status_Ok(t *testing.T) {
 		return nil
 	})
 
-	st, err := engine.Status(st)
+	_, err := engine.Status(st)
 	assert.Nil(t, err)
 }
 

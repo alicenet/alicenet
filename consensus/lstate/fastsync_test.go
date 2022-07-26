@@ -2,6 +2,8 @@ package lstate
 
 import (
 	"context"
+	"testing"
+
 	appObjs "github.com/alicenet/alicenet/application/objs"
 	trie "github.com/alicenet/alicenet/badgerTrie"
 	"github.com/alicenet/alicenet/consensus/appmock"
@@ -15,7 +17,6 @@ import (
 	"github.com/dgraph-io/badger/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"testing"
 )
 
 func TestSnapShotManager_startFastSync_Ok(t *testing.T) {
@@ -370,7 +371,7 @@ func TestSnapShotManager_syncStateNodes_Ok1(t *testing.T) {
 }
 
 func TestSnapShotManager_syncStateNodes_Error2(t *testing.T) {
-	leafs := []trie.LeafNode{trie.LeafNode{Key: make([]byte, constants.HashLen), Value: make([]byte, constants.HashLen)}}
+	leafs := []trie.LeafNode{{Key: make([]byte, constants.HashLen), Value: make([]byte, constants.HashLen)}}
 	ssm := initSnapShotManager(t, false, leafs)
 
 	nr := &nodeResponse{
@@ -393,7 +394,7 @@ func TestSnapShotManager_syncStateNodes_Error2(t *testing.T) {
 }
 
 func TestSnapShotManager_syncStateNodes_Error3(t *testing.T) {
-	leafs := []trie.LeafNode{trie.LeafNode{Key: []byte{123}, Value: make([]byte, constants.HashLen)}}
+	leafs := []trie.LeafNode{{Key: []byte{123}, Value: make([]byte, constants.HashLen)}}
 	ssm := initSnapShotManager(t, false, leafs)
 
 	nr := &nodeResponse{
@@ -416,7 +417,7 @@ func TestSnapShotManager_syncStateNodes_Error3(t *testing.T) {
 }
 
 func TestSnapShotManager_syncStateNodes_Error4(t *testing.T) {
-	leafs := []trie.LeafNode{trie.LeafNode{Key: []byte{31}, Value: make([]byte, constants.HashLen)}}
+	leafs := []trie.LeafNode{{Key: []byte{31}, Value: make([]byte, constants.HashLen)}}
 	ssm := initSnapShotManager(t, false, leafs)
 
 	nr := &nodeResponse{
