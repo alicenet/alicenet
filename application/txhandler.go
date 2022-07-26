@@ -102,7 +102,12 @@ func (tm *txHandler) ApplyState(txn *badger.Txn, chainID uint32, height uint32, 
 		utils.DebugTrace(tm.logger, err)
 		return nil, err
 	}
-	if err := tm.pTxHdlr.DeleteMined(txn, height, txHashes); err != nil {
+	consumedUTXOIDs, err := txs.ConsumedUTXOID()
+	if err != nil {
+		utils.DebugTrace(tm.logger, err)
+		return nil, err
+	}
+	if err := tm.pTxHdlr.DeleteMined(txn, height, txHashes, consumedUTXOIDs); err != nil {
 		utils.DebugTrace(tm.logger, err)
 		return nil, err
 	}
