@@ -298,7 +298,7 @@ func TestHandlers_HandleLocalStateGetPendingTransaction(t *testing.T) {
 			want: &pb.PendingTransactionResponse{
 				Tx: &pb.Tx{
 					Vin: []*pb.TXIn{
-						&pb.TXIn{
+						{
 							TXInLinker: &pb.TXInLinker{
 								TXInPreImage: &pb.TXInPreImage{
 									ChainID:        chainID,
@@ -311,7 +311,7 @@ func TestHandlers_HandleLocalStateGetPendingTransaction(t *testing.T) {
 						},
 					},
 					Vout: []*pb.TXOut{
-						&pb.TXOut{
+						{
 							Utxo: &pb.TXOut_ValueStore{
 								ValueStore: &pb.ValueStore{
 									VSPreImage: &pb.VSPreImage{
@@ -445,7 +445,7 @@ func TestHandlers_HandleLocalStateGetUTXO(t *testing.T) {
 			},
 			want: &pb.UTXOResponse{
 				UTXOs: []*pb.TXOut{
-					&pb.TXOut{
+					{
 						Utxo: &pb.TXOut_ValueStore{
 							ValueStore: &pb.ValueStore{
 								VSPreImage: &pb.VSPreImage{
@@ -640,7 +640,7 @@ func TestHandlers_HandleLocalStateGetTransactionStatus(t *testing.T) {
 			want: &pb.TransactionStatusResponse{IsMined: false,
 				Tx: &pb.Tx{
 					Vin: []*pb.TXIn{
-						&pb.TXIn{
+						{
 							TXInLinker: &pb.TXInLinker{
 								TXInPreImage: &pb.TXInPreImage{
 									ChainID:        chainID,
@@ -653,7 +653,7 @@ func TestHandlers_HandleLocalStateGetTransactionStatus(t *testing.T) {
 						},
 					},
 					Vout: []*pb.TXOut{
-						&pb.TXOut{
+						{
 							Utxo: &pb.TXOut_ValueStore{
 								ValueStore: &pb.ValueStore{
 									VSPreImage: &pb.VSPreImage{

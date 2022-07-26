@@ -28,15 +28,12 @@ import (
 	"github.com/alicenet/alicenet/consensus/request"
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/crypto"
-	mncrypto "github.com/alicenet/alicenet/crypto"
 	"github.com/alicenet/alicenet/dynamics"
 	"github.com/alicenet/alicenet/logging"
 	"github.com/alicenet/alicenet/peering"
-	"github.com/alicenet/alicenet/proto"
 	pb "github.com/alicenet/alicenet/proto"
 	"github.com/alicenet/alicenet/status"
 	"github.com/alicenet/alicenet/utils"
-	mnutils "github.com/alicenet/alicenet/utils"
 	"github.com/dgraph-io/badger/v2"
 	"github.com/spf13/viper"
 )
@@ -140,9 +137,9 @@ func TestMain(m *testing.M) {
 	utxoTx2IDs, account, consumedTx2Hash = insertTestUTXO(tx2Value)
 	utxoTx3IDs, account, consumedTx3Hash = insertTestUTXO(tx3Value)
 
-	tx1, tx1Hash, tx1Signature = getTransactionRequest(consumedTx1Hash, mncrypto.GetAccount(pubKey), tx1Value)
-	tx2, tx2Hash, tx2Signature = getTransactionRequest(consumedTx2Hash, mncrypto.GetAccount(pubKey), tx2Value)
-	tx3, tx3Hash, tx3Signature = getTransactionRequest(consumedTx3Hash, mncrypto.GetAccount(pubKey), tx3Value)
+	tx1, tx1Hash, tx1Signature = getTransactionRequest(consumedTx1Hash, crypto.GetAccount(pubKey), tx1Value)
+	tx2, tx2Hash, tx2Signature = getTransactionRequest(consumedTx2Hash, crypto.GetAccount(pubKey), tx2Value)
+	tx3, tx3Hash, tx3Signature = getTransactionRequest(consumedTx3Hash, crypto.GetAccount(pubKey), tx3Value)
 
 	//Start tests after validator is running
 	exitVal := m.Run()
@@ -234,8 +231,9 @@ func validatorNode() {
 	// consTxPool takes old state from consensusDB, used as evidence for what was done (new blocks, consensus, voting)
 	consTxPool := evidence.NewPool(consDB)
 
+	initialTxQueueSize := constants.MinQueueSize
 	appDepositHandler.Init()
-	if err := app.Init(consDB, rawTxPoolDb, appDepositHandler, storage); err != nil {
+	if err := app.Init(consDB, rawTxPoolDb, appDepositHandler, storage, initialTxQueueSize); err != nil {
 		panic(err)
 	}
 
@@ -414,7 +412,7 @@ func loadSettings(configFile string) {
 }
 
 func initDatabase(ctx context.Context, path string, inMemory bool) *badger.DB {
-	db, err := mnutils.OpenBadger(ctx.Done(), path, inMemory)
+	db, err := utils.OpenBadger(ctx.Done(), path, inMemory)
 	if err != nil {
 		panic(err)
 	}
@@ -422,10 +420,10 @@ func initDatabase(ctx context.Context, path string, inMemory bool) *badger.DB {
 }
 
 func initPeerManager(consGossipHandlers *gossip.Handlers, consReqHandler *request.Handler) *peering.PeerManager {
-	p2pDispatch := proto.NewP2PDispatch()
+	p2pDispatch := pb.NewP2PDispatch()
 
 	peerManager, err := peering.NewPeerManager(
-		proto.NewGeneratedP2PServer(p2pDispatch),
+		pb.NewGeneratedP2PServer(p2pDispatch),
 		uint32(config.Configuration.Chain.ID),
 		config.Configuration.Transport.PeerLimitMin,
 		config.Configuration.Transport.PeerLimitMax,
@@ -458,11 +456,11 @@ func initPeerManager(consGossipHandlers *gossip.Handlers, consReqHandler *reques
 }
 
 func initLocalStateServer(localStateHandler *Handlers) *Handler {
-	localStateDispatch := proto.NewLocalStateDispatch()
+	localStateDispatch := pb.NewLocalStateDispatch()
 	localStateServer, err := NewStateServerHandler(
 		logging.GetLogger(constants.LoggerTransport),
 		config.Configuration.Transport.LocalStateListeningAddress,
-		proto.NewGeneratedLocalStateServer(localStateDispatch),
+		pb.NewGeneratedLocalStateServer(localStateDispatch),
 	)
 	if err != nil {
 		panic(err)
