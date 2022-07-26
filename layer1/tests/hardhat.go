@@ -214,7 +214,7 @@ func StartHardHatNode(hostname string, port string) (*Hardhat, error) {
 	defer cf()
 	err = hardhat.WaitForHardHatNode(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("could wait for hardhat node: %s", err)
+		return nil, fmt.Errorf("could not wait for hardhat node: %w", err)
 	}
 	return hardhat, nil
 }
