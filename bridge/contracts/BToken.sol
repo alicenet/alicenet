@@ -284,7 +284,7 @@ contract BToken is
                     keccak256(abi.encodePacked(bridgeVersion))
                 )
             );
-        address bridgeRouterAddress = getMetamorphicContractAddress();
+        address bridgeRouterAddress = getMetamorphicContractAddress(bridgeRouterSalt, _factoryAddress());
         //forward call to router
         uint256 bTokenFee = BridgeRouter(bridgeRouterAddress).routeDeposit(
             msg.sender,
@@ -297,6 +297,7 @@ contract BToken is
             require(maxEth <= ethFee && msg.value >= ethFee, "BToken: ERROR insufficient funds");
             uint256 refund = msg.value - ethFee;
             if (refund > 0) {
+
                 payable(msg.sender).transfer(refund);
             }
         } else {
