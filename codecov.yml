@@ -1,0 +1,10 @@
+ignore:
+  - "bridge/bindings/**"
+  - "cmd/**"
+  - "proto/**"
+  - "**/*.mockgen.go"
+coverage:
+  status:
+    patch:
+      default:
+        target: 75%

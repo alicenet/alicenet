@@ -23,7 +23,7 @@ func isValidator(acct accounts.Account, state *objects.MonitorState) bool {
 	return present
 }
 
-func ProcessRegistrationOpened(eth layer1.Client, logger *logrus.Entry, log types.Log, monState *objects.MonitorState, monDB *db.Database, taskHandler executor.TaskHandler) error {
+func ProcessRegistrationOpened(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, log types.Log, monState *objects.MonitorState, monDB *db.Database, taskHandler executor.TaskHandler) error {
 	logEntry := logger.WithField("eventProcessor", "ProcessRegistrationOpened")
 	logEntry.Info("processing registration")
 	event, err := contracts.EthereumContracts().Ethdkg().ParseRegistrationOpened(log)
@@ -109,7 +109,7 @@ func UpdateStateOnRegistrationOpened(account accounts.Account, startBlock, phase
 	return dkgState, registrationTask, disputeMissingRegistrationTask
 }
 
-func ProcessAddressRegistered(logger *logrus.Entry, log types.Log, monDB *db.Database) error {
+func ProcessAddressRegistered(contracts layer1.AllSmartContracts, logger *logrus.Entry, log types.Log, monDB *db.Database) error {
 	logEntry := logger.WithField("eventProcessor", "ProcessAddressRegistered")
 	logEntry.Info("processing address registered")
 
@@ -143,7 +143,7 @@ func ProcessAddressRegistered(logger *logrus.Entry, log types.Log, monDB *db.Dat
 	return nil
 }
 
-func ProcessRegistrationComplete(logger *logrus.Entry, log types.Log, monDB *db.Database, taskHandler executor.TaskHandler) error {
+func ProcessRegistrationComplete(contracts layer1.AllSmartContracts, logger *logrus.Entry, log types.Log, monDB *db.Database, taskHandler executor.TaskHandler) error {
 	logEntry := logger.WithField("eventProcessor", "ProcessRegistrationComplete")
 	logEntry.Info("processing registration complete")
 
@@ -240,7 +240,7 @@ func UpdateStateOnRegistrationComplete(dkgState *state.DkgState, shareDistributi
 	return shareDistributionTask, disputeMissingShareDistributionTask, disputeBadSharesTasks
 }
 
-func ProcessShareDistribution(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, log types.Log, monDB *db.Database) error {
+func ProcessShareDistribution(contracts layer1.AllSmartContracts, logger *logrus.Entry, log types.Log, monDB *db.Database) error {
 	logEntry := logger.WithField("eventProcessor", "ProcessShareDistribution")
 	logEntry.Info("processing share distribution")
 
@@ -274,7 +274,7 @@ func ProcessShareDistribution(eth layer1.Client, contracts layer1.AllSmartContra
 	return nil
 }
 
-func ProcessShareDistributionComplete(logger *logrus.Entry, log types.Log, monDB *db.Database, taskHandler executor.TaskHandler) error {
+func ProcessShareDistributionComplete(contracts layer1.AllSmartContracts, logger *logrus.Entry, log types.Log, monDB *db.Database, taskHandler executor.TaskHandler) error {
 	logEntry := logger.WithField("eventProcessor", "ProcessShareDistributionComplete")
 	logEntry.Info("processing share distribution complete")
 
@@ -373,7 +373,7 @@ func UpdateStateOnShareDistributionComplete(dkgState *state.DkgState, disputeSha
 	return disputeShareDistributionTasks, keyshareSubmissionTask, disputeMissingKeySharesTask
 }
 
-func ProcessKeyShareSubmitted(logger *logrus.Entry, log types.Log, monDB *db.Database) error {
+func ProcessKeyShareSubmitted(contracts layer1.AllSmartContracts, logger *logrus.Entry, log types.Log, monDB *db.Database) error {
 	logEntry := logger.WithField("eventProcessor", "ProcessKeyShareSubmitted")
 	logEntry.Info("processing key share submission")
 
@@ -403,7 +403,7 @@ func ProcessKeyShareSubmitted(logger *logrus.Entry, log types.Log, monDB *db.Dat
 	return nil
 }
 
-func ProcessKeyShareSubmissionComplete(logger *logrus.Entry, log types.Log, monDB *db.Database, taskHandler executor.TaskHandler) error {
+func ProcessKeyShareSubmissionComplete(contracts layer1.AllSmartContracts, logger *logrus.Entry, log types.Log, monDB *db.Database, taskHandler executor.TaskHandler) error {
 	logEntry := logger.WithField("eventProcessor", "ProcessKeyShareSubmissionComplete")
 	logEntry.Info("processing key share submission complete")
 
@@ -466,7 +466,7 @@ func UpdateStateOnKeyShareSubmissionComplete(dkgState *state.DkgState, mpkSubmis
 	return mpkSubmissionTask
 }
 
-func ProcessMPKSet(logger *logrus.Entry, log types.Log, adminHandler monitorInterfaces.AdminHandler, monDB *db.Database, taskHandler executor.TaskHandler) error {
+func ProcessMPKSet(contracts layer1.AllSmartContracts, logger *logrus.Entry, log types.Log, adminHandler monitorInterfaces.AdminHandler, monDB *db.Database, taskHandler executor.TaskHandler) error {
 	logEntry := logger.WithField("eventProcessor", "ProcessMPKSet")
 	logEntry.Info("processing master public key set")
 
@@ -559,7 +559,7 @@ func UpdateStateOnMPKSet(dkgState *state.DkgState, gpkjSubmissionStartBlock uint
 	return gpkjSubmissionTask, disputeMissingGPKjTask, disputeGPKjTasks
 }
 
-func ProcessGPKJSubmissionComplete(logger *logrus.Entry, log types.Log, monDB *db.Database, taskHandler executor.TaskHandler) error {
+func ProcessGPKJSubmissionComplete(contracts layer1.AllSmartContracts, logger *logrus.Entry, log types.Log, monDB *db.Database, taskHandler executor.TaskHandler) error {
 	logEntry := logger.WithField("eventProcessor", "ProcessGPKJSubmissionComplete")
 	logEntry.Info("processing gpkj submission complete")
 	event, err := contracts.EthereumContracts().Ethdkg().ParseGPKJSubmissionComplete(log)

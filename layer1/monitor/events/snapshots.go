@@ -13,7 +13,7 @@ import (
 )
 
 // ProcessSnapshotTaken handles receiving snapshots
-func ProcessSnapshotTaken(eth layer1.Client, logger *logrus.Entry, log types.Log, adminHandler monInterfaces.AdminHandler, taskHandler executor.TaskHandler) error {
+func ProcessSnapshotTaken(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, log types.Log, adminHandler monInterfaces.AdminHandler, taskHandler executor.TaskHandler) error {
 
 	logger.Info("ProcessSnapshotTaken() ...")
 

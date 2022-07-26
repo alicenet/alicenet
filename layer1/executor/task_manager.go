@@ -33,6 +33,7 @@ type TaskManager struct {
 	LastHeightSeen uint64                         `json:"lastHeightSeen"`
 	mainCtx        context.Context                `json:"-"`
 	eth            layer1.Client                  `json:"-"`
+	contracts      layer1.AllSmartContracts       `json:"-"`
 	database       *db.Database                   `json:"-"`
 	adminHandler   monitorInterfaces.AdminHandler `json:"-"`
 	marshaller     *marshaller.TypeRegistry       `json:"-"`
@@ -43,13 +44,14 @@ type TaskManager struct {
 	taskExecutor   *TaskExecutor                  `json:"-"`
 }
 
-func newTaskManager(mainCtx context.Context, eth layer1.Client, database *db.Database, logger *logrus.Entry, adminHandler monitorInterfaces.AdminHandler, requestChan <-chan managerRequest, txWatcher *transaction.FrontWatcher) (*TaskManager, error) {
+func newTaskManager(mainCtx context.Context, eth layer1.Client, contracts layer1.AllSmartContracts, database *db.Database, logger *logrus.Entry, adminHandler monitorInterfaces.AdminHandler, requestChan <-chan managerRequest, txWatcher transaction.Watcher) (*TaskManager, error) {
 	taskManager := &TaskManager{
 		Schedule:     make(map[string]ManagerRequestInfo),
 		Responses:    make(map[string]ManagerResponseInfo),
 		mainCtx:      mainCtx,
 		database:     database,
 		eth:          eth,
+		contracts:    contracts,
 		adminHandler: adminHandler,
 		marshaller:   getTaskRegistry(),
 		cancelChan:   make(chan bool, 1),
@@ -312,7 +314,7 @@ func (tm *TaskManager) startTasks(ctx context.Context, tasks []ManagerRequestInf
 			logEntry = logEntry.WithField("taskId", task.Id).WithField("taskName", task.Name)
 			getTaskLoggerComplete(task).Info("task is about to start")
 
-			go tm.taskExecutor.manageTask(ctx, task.Task, task.Name, task.Id, tm.database, logEntry, tm.eth, tm.responseChan)
+			go tm.taskExecutor.handleTaskExecution(ctx, task.Task, task.Name, task.Id, tm.database, logEntry, tm.eth, tm.contracts, tm.responseChan)
 
 			task.InternalState = Running
 			tm.Schedule[task.Id] = task
@@ -385,7 +387,7 @@ func (tm *TaskManager) killTasks(ctx context.Context, tasks []ManagerRequestInfo
 
 func (tm *TaskManager) cleanResponses() {
 	for id, resp := range tm.Responses {
-		if resp.ReceivedOnBlock+constants.TaskManagerResponseToleranceBeforeRemoving <= tm.LastHeightSeen {
+		if resp.ReceivedOnBlock != 0 && resp.ReceivedOnBlock+constants.TaskManagerResponseToleranceBeforeRemoving <= tm.LastHeightSeen {
 			delete(tm.Responses, id)
 		}
 	}

@@ -10,6 +10,7 @@ import (
 
 	"github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/layer1/executor/tasks"
+	taskMocks "github.com/alicenet/alicenet/layer1/executor/tasks/mocks"
 	"github.com/alicenet/alicenet/layer1/transaction"
 	"github.com/alicenet/alicenet/logging"
 	"github.com/alicenet/alicenet/test/mocks"
@@ -21,7 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func getTaskManager(t *testing.T) (*TaskExecutor, *mocks.MockClient, *db.Database, *executorResponseChan, *mocks.MockWatcher) {
+func getTaskExecutor(t *testing.T) (*TaskExecutor, *mocks.MockClient, *db.Database, *executorResponseChan, *mocks.MockWatcher) {
 	db := mocks.NewTestDB()
 	client := mocks.NewMockClient()
 	client.ExtractTransactionSenderFunc.SetDefaultReturn(common.Address{}, nil)
@@ -38,15 +39,15 @@ func getTaskManager(t *testing.T) (*TaskExecutor, *mocks.MockClient, *db.Databas
 	logger := logging.GetLogger("test")
 
 	txWatcher := mocks.NewMockWatcher()
-	taskManager, err := newTaskExecutor(txWatcher, db, logger.WithField("Component", "schedule"))
+	taskExecutor, err := newTaskExecutor(txWatcher, db, logger.WithField("Component", "schedule"))
 	assert.Nil(t, err)
 
 	taskRespChan := &executorResponseChan{erChan: make(chan ExecutorResponse, 100)}
-	return taskManager, client, db, taskRespChan, txWatcher
+	return taskExecutor, client, db, taskRespChan, txWatcher
 }
 
-func Test_TaskManager_HappyPath(t *testing.T) {
-	manager, client, db, taskRespChan, txWatcher := getTaskManager(t)
+func Test_TaskExecutor_HappyPath(t *testing.T) {
+	executor, client, db, taskRespChan, txWatcher := getTaskExecutor(t)
 	defer taskRespChan.close()
 
 	receipt := &types.Receipt{
@@ -62,7 +63,7 @@ func Test_TaskManager_HappyPath(t *testing.T) {
 
 	client.GetTransactionReceiptFunc.SetDefaultReturn(receipt, nil)
 
-	task := mocks.NewMockTask()
+	task := taskMocks.NewMockTask()
 	task.PrepareFunc.SetDefaultReturn(nil)
 	txn := types.NewTx(&types.LegacyTx{
 		Nonce:    1,
@@ -73,19 +74,19 @@ func Test_TaskManager_HappyPath(t *testing.T) {
 	})
 	task.ExecuteFunc.SetDefaultReturn(txn, nil)
 	task.ShouldExecuteFunc.SetDefaultReturn(true, nil)
-	task.GetLoggerFunc.SetDefaultReturn(manager.logger)
+	task.GetLoggerFunc.SetDefaultReturn(executor.logger)
 
 	mainCtx := context.Background()
-	manager.manageTask(mainCtx, task, "", "123", db, manager.logger, client, taskRespChan)
+	executor.handleTaskExecution(mainCtx, task, "", "123", db, executor.logger, client, mocks.NewMockAllSmartContracts(), taskRespChan)
 
 	mockrequire.CalledOnce(t, task.PrepareFunc)
 	mockrequire.CalledOnce(t, task.ExecuteFunc)
 	mockrequire.CalledOnceWith(t, task.FinishFunc, mockrequire.Values(nil))
-	assert.Emptyf(t, manager.TxsBackup, "Expected transactions to be empty")
+	assert.Emptyf(t, executor.TxsBackup, "Expected transactions to be empty")
 }
 
-func Test_TaskManager_TaskErrorRecoverable(t *testing.T) {
-	manager, client, db, taskRespChan, txWatcher := getTaskManager(t)
+func Test_TaskExecutor_TaskErrorRecoverable(t *testing.T) {
+	executor, client, db, taskRespChan, txWatcher := getTaskExecutor(t)
 	defer taskRespChan.close()
 
 	receipt := &types.Receipt{
@@ -102,7 +103,7 @@ func Test_TaskManager_TaskErrorRecoverable(t *testing.T) {
 	client.GetTransactionReceiptFunc.SetDefaultReturn(receipt, nil)
 
 	taskErr := tasks.NewTaskErr("Recoverable error", true)
-	task := mocks.NewMockTask()
+	task := taskMocks.NewMockTask()
 	task.PrepareFunc.PushReturn(taskErr)
 	task.PrepareFunc.PushReturn(nil)
 	txn := types.NewTx(&types.LegacyTx{
@@ -114,19 +115,19 @@ func Test_TaskManager_TaskErrorRecoverable(t *testing.T) {
 	})
 	task.ExecuteFunc.SetDefaultReturn(txn, nil)
 	task.ShouldExecuteFunc.SetDefaultReturn(true, nil)
-	task.GetLoggerFunc.SetDefaultReturn(manager.logger)
+	task.GetLoggerFunc.SetDefaultReturn(executor.logger)
 
 	mainCtx := context.Background()
-	manager.manageTask(mainCtx, task, "", "123", db, manager.logger, client, taskRespChan)
+	executor.handleTaskExecution(mainCtx, task, "", "123", db, executor.logger, client, mocks.NewMockAllSmartContracts(), taskRespChan)
 
 	mockrequire.CalledN(t, task.PrepareFunc, 2)
 	mockrequire.CalledOnce(t, task.ExecuteFunc)
 	mockrequire.CalledOnceWith(t, task.FinishFunc, mockrequire.Values(nil))
-	assert.Emptyf(t, manager.TxsBackup, "Expected transactions to be empty")
+	assert.Emptyf(t, executor.TxsBackup, "Expected transactions to be empty")
 }
 
-func Test_TaskManager_UnrecoverableError(t *testing.T) {
-	manager, client, db, taskRespChan, txWatcher := getTaskManager(t)
+func Test_TaskExecutor_UnrecoverableError(t *testing.T) {
+	executor, client, db, taskRespChan, txWatcher := getTaskExecutor(t)
 	defer taskRespChan.close()
 
 	receipt := &types.Receipt{
@@ -142,21 +143,21 @@ func Test_TaskManager_UnrecoverableError(t *testing.T) {
 
 	client.GetTransactionReceiptFunc.SetDefaultReturn(receipt, nil)
 
-	task := mocks.NewMockTask()
+	task := taskMocks.NewMockTask()
 	taskErr := tasks.NewTaskErr("Unrecoverable error", false)
 
 	task.PrepareFunc.SetDefaultReturn(taskErr)
 	mainCtx := context.Background()
-	manager.manageTask(mainCtx, task, "", "123", db, manager.logger, client, taskRespChan)
+	executor.handleTaskExecution(mainCtx, task, "", "123", db, executor.logger, client, mocks.NewMockAllSmartContracts(), taskRespChan)
 
 	mockrequire.CalledOnce(t, task.PrepareFunc)
 	mockrequire.NotCalled(t, task.ExecuteFunc)
 	mockrequire.CalledOnceWith(t, task.FinishFunc, mockrequire.Values(taskErr))
-	assert.Emptyf(t, manager.TxsBackup, "Expected transactions to be empty")
+	assert.Emptyf(t, executor.TxsBackup, "Expected transactions to be empty")
 }
 
-func Test_TaskManager_TaskInTasksManagerTransactions(t *testing.T) {
-	manager, client, db, taskRespChan, txWatcher := getTaskManager(t)
+func Test_TaskExecutor_TaskInTasksExecutorTransactions(t *testing.T) {
+	executor, client, db, taskRespChan, txWatcher := getTaskExecutor(t)
 	defer taskRespChan.close()
 
 	receipt := &types.Receipt{
@@ -172,7 +173,7 @@ func Test_TaskManager_TaskInTasksManagerTransactions(t *testing.T) {
 
 	client.GetTransactionReceiptFunc.SetDefaultReturn(receipt, nil)
 
-	task := mocks.NewMockTask()
+	task := taskMocks.NewMockTask()
 	task.PrepareFunc.SetDefaultReturn(nil)
 	txn := types.NewTx(&types.LegacyTx{
 		Nonce:    1,
@@ -182,21 +183,21 @@ func Test_TaskManager_TaskInTasksManagerTransactions(t *testing.T) {
 		Data:     []byte{52, 66, 175, 92},
 	})
 	task.ShouldExecuteFunc.SetDefaultReturn(true, nil)
-	task.GetLoggerFunc.SetDefaultReturn(manager.logger)
+	task.GetLoggerFunc.SetDefaultReturn(executor.logger)
 	taskId := "123"
 	task.GetIdFunc.SetDefaultReturn(taskId)
 
 	mainCtx := context.Background()
-	manager.TxsBackup[task.GetId()] = txn
-	manager.manageTask(mainCtx, task, "", taskId, db, manager.logger, client, taskRespChan)
+	executor.TxsBackup[task.GetId()] = txn
+	executor.handleTaskExecution(mainCtx, task, "", taskId, db, executor.logger, client, mocks.NewMockAllSmartContracts(), taskRespChan)
 
 	mockrequire.NotCalled(t, task.PrepareFunc)
 	mockrequire.NotCalled(t, task.ExecuteFunc)
-	assert.Emptyf(t, manager.TxsBackup, "Expected transactions to be empty")
+	assert.Emptyf(t, executor.TxsBackup, "Expected transactions to be empty")
 }
 
-func Test_TaskManager_ExecuteWithErrors(t *testing.T) {
-	manager, client, db, taskRespChan, txWatcher := getTaskManager(t)
+func Test_TaskExecutor_ExecuteWithErrors(t *testing.T) {
+	executor, client, db, taskRespChan, txWatcher := getTaskExecutor(t)
 	defer taskRespChan.close()
 
 	receipt := &types.Receipt{
@@ -212,25 +213,25 @@ func Test_TaskManager_ExecuteWithErrors(t *testing.T) {
 
 	client.GetTransactionReceiptFunc.SetDefaultReturn(receipt, nil)
 
-	task := mocks.NewMockTask()
+	task := taskMocks.NewMockTask()
 	task.PrepareFunc.SetDefaultReturn(nil)
 	task.ExecuteFunc.PushReturn(nil, tasks.NewTaskErr("Recoverable error", true))
 	unrecoverableError := tasks.NewTaskErr("Unrecoverable error", false)
 	task.ExecuteFunc.PushReturn(nil, unrecoverableError)
 	task.ShouldExecuteFunc.SetDefaultReturn(true, nil)
-	task.GetLoggerFunc.SetDefaultReturn(manager.logger)
+	task.GetLoggerFunc.SetDefaultReturn(executor.logger)
 
 	mainCtx := context.Background()
-	manager.manageTask(mainCtx, task, "", "123", db, manager.logger, client, taskRespChan)
+	executor.handleTaskExecution(mainCtx, task, "", "123", db, executor.logger, client, mocks.NewMockAllSmartContracts(), taskRespChan)
 
 	mockrequire.CalledOnce(t, task.PrepareFunc)
 	mockrequire.CalledN(t, task.ExecuteFunc, 2)
 	mockrequire.CalledOnceWith(t, task.FinishFunc, mockrequire.Values(unrecoverableError))
-	assert.Emptyf(t, manager.TxsBackup, "Expected transactions to be empty")
+	assert.Emptyf(t, executor.TxsBackup, "Expected transactions to be empty")
 }
 
-func Test_TaskManager_ReceiptWithErrorAndFailure(t *testing.T) {
-	manager, client, db, taskRespChan, txWatcher := getTaskManager(t)
+func Test_TaskExecutor_ReceiptWithErrorAndFailure(t *testing.T) {
+	executor, client, db, taskRespChan, txWatcher := getTaskExecutor(t)
 	defer taskRespChan.close()
 
 	receipt := &types.Receipt{
@@ -240,7 +241,7 @@ func Test_TaskManager_ReceiptWithErrorAndFailure(t *testing.T) {
 
 	receiptResponse := mocks.NewMockReceiptResponse()
 
-	task := mocks.NewMockTask()
+	task := taskMocks.NewMockTask()
 	task.PrepareFunc.SetDefaultReturn(nil)
 	txn := types.NewTx(&types.LegacyTx{
 		Nonce:    1,
@@ -251,7 +252,7 @@ func Test_TaskManager_ReceiptWithErrorAndFailure(t *testing.T) {
 	})
 	task.ShouldExecuteFunc.PushReturn(true, nil)
 	task.ExecuteFunc.SetDefaultReturn(txn, nil)
-	task.GetLoggerFunc.SetDefaultReturn(manager.logger)
+	task.GetLoggerFunc.SetDefaultReturn(executor.logger)
 
 	receiptResponse.IsReadyFunc.PushReturn(false)
 	task.ShouldExecuteFunc.PushReturn(true, nil)
@@ -271,7 +272,7 @@ func Test_TaskManager_ReceiptWithErrorAndFailure(t *testing.T) {
 	task.ShouldExecuteFunc.PushReturn(false, nil)
 
 	mainCtx := context.Background()
-	manager.manageTask(mainCtx, task, "", "123", db, manager.logger, client, taskRespChan)
+	executor.handleTaskExecution(mainCtx, task, "", "123", db, executor.logger, client, mocks.NewMockAllSmartContracts(), taskRespChan)
 
 	mockrequire.CalledOnce(t, task.PrepareFunc)
 	mockrequire.CalledN(t, task.ExecuteFunc, 3)
@@ -280,10 +281,10 @@ func Test_TaskManager_ReceiptWithErrorAndFailure(t *testing.T) {
 	mockrequire.CalledN(t, task.ShouldExecuteFunc, 5)
 
 	mockrequire.CalledOnceWith(t, task.FinishFunc, mockrequire.Values(nil))
-	assert.Emptyf(t, manager.TxsBackup, "Expected transactions to be empty")
+	assert.Emptyf(t, executor.TxsBackup, "Expected transactions to be empty")
 }
 
-func Test_TaskManager_RecoveringTaskManager(t *testing.T) {
+func Test_TaskExecutor_Recovering(t *testing.T) {
 	dir, err := ioutil.TempDir("", "db-test")
 	if err != nil {
 		t.Fatal(err)
@@ -318,7 +319,7 @@ func Test_TaskManager_RecoveringTaskManager(t *testing.T) {
 	logger := logging.GetLogger("test")
 
 	txWatcher := mocks.NewMockWatcher()
-	manager, err := newTaskExecutor(txWatcher, db, logger.WithField("Component", "schedule"))
+	executor, err := newTaskExecutor(txWatcher, db, logger.WithField("Component", "schedule"))
 	assert.Nil(t, err)
 
 	taskRespChan := &executorResponseChan{erChan: make(chan ExecutorResponse, 100)}
@@ -338,7 +339,7 @@ func Test_TaskManager_RecoveringTaskManager(t *testing.T) {
 
 	client.GetTransactionReceiptFunc.SetDefaultReturn(receipt, nil)
 
-	task := mocks.NewMockTask()
+	task := taskMocks.NewMockTask()
 	task.PrepareFunc.SetDefaultReturn(nil)
 	txn := types.NewTx(&types.LegacyTx{
 		Nonce:    1,
@@ -349,19 +350,19 @@ func Test_TaskManager_RecoveringTaskManager(t *testing.T) {
 	})
 	task.ExecuteFunc.SetDefaultReturn(txn, nil)
 	task.ShouldExecuteFunc.SetDefaultReturn(true, nil)
-	task.GetLoggerFunc.SetDefaultReturn(manager.logger)
+	task.GetLoggerFunc.SetDefaultReturn(executor.logger)
 
 	mainCtx := context.Background()
-	manager.manageTask(mainCtx, task, "", "123", db, manager.logger, client, taskRespChan)
+	executor.handleTaskExecution(mainCtx, task, "", "123", db, executor.logger, client, mocks.NewMockAllSmartContracts(), taskRespChan)
 
-	assert.Equalf(t, 1, len(manager.TxsBackup), "Expected one transaction (stale status)")
-	manager, err = newTaskExecutor(txWatcher, db, logger.WithField("Component", "schedule"))
+	assert.Equalf(t, 1, len(executor.TxsBackup), "Expected one transaction (stale status)")
+	executor, err = newTaskExecutor(txWatcher, db, logger.WithField("Component", "schedule"))
 	assert.Nil(t, err)
-	manager.manageTask(mainCtx, task, "", "123", db, manager.logger, client, taskRespChan)
+	executor.handleTaskExecution(mainCtx, task, "", "123", db, executor.logger, client, mocks.NewMockAllSmartContracts(), taskRespChan)
 
 	mockrequire.CalledOnce(t, task.PrepareFunc)
 	mockrequire.CalledOnce(t, task.ExecuteFunc)
 	mockrequire.CalledOnceWith(t, task.FinishFunc, mockrequire.Values(nil))
-	assert.Emptyf(t, manager.TxsBackup, "Expected transactions to be empty")
+	assert.Emptyf(t, executor.TxsBackup, "Expected transactions to be empty")
 
 }

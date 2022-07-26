@@ -74,35 +74,36 @@ func RegisterETHDKGEvents(em *objects.EventMap, monDB *db.Database, adminHandler
 	ethDkgEvents := GetETHDKGEvents()
 
 	eventProcessorMap := make(map[string]objects.EventProcessor)
-	eventProcessorMap["RegistrationOpened"] = func(eth layer1.Client, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
-		return ProcessRegistrationOpened(eth, logger, log, state, monDB, taskHandler)
+
+	eventProcessorMap["RegistrationOpened"] = func(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+		return ProcessRegistrationOpened(eth, contracts, logger, log, state, monDB, taskHandler)
 	}
-	eventProcessorMap["AddressRegistered"] = func(eth layer1.Client, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
-		return ProcessAddressRegistered(logger, log, monDB)
+	eventProcessorMap["AddressRegistered"] = func(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+		return ProcessAddressRegistered(contracts, logger, log, monDB)
 	}
-	eventProcessorMap["RegistrationComplete"] = func(eth layer1.Client, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
-		return ProcessRegistrationComplete(logger, log, monDB, taskHandler)
+	eventProcessorMap["RegistrationComplete"] = func(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+		return ProcessRegistrationComplete(contracts, logger, log, monDB, taskHandler)
 	}
 	eventProcessorMap["SharesDistributed"] = func(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
-		return ProcessShareDistribution(eth, contracts, logger, log, monDB)
+		return ProcessShareDistribution(contracts, logger, log, monDB)
 	}
-	eventProcessorMap["ShareDistributionComplete"] = func(eth layer1.Client, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
-		return ProcessShareDistributionComplete(logger, log, monDB, taskHandler)
+	eventProcessorMap["ShareDistributionComplete"] = func(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+		return ProcessShareDistributionComplete(contracts, logger, log, monDB, taskHandler)
 	}
-	eventProcessorMap["KeyShareSubmitted"] = func(eth layer1.Client, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
-		return ProcessKeyShareSubmitted(logger, log, monDB)
+	eventProcessorMap["KeyShareSubmitted"] = func(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+		return ProcessKeyShareSubmitted(contracts, logger, log, monDB)
 	}
-	eventProcessorMap["KeyShareSubmissionComplete"] = func(eth layer1.Client, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
-		return ProcessKeyShareSubmissionComplete(logger, log, monDB, taskHandler)
+	eventProcessorMap["KeyShareSubmissionComplete"] = func(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+		return ProcessKeyShareSubmissionComplete(contracts, logger, log, monDB, taskHandler)
 	}
-	eventProcessorMap["MPKSet"] = func(eth layer1.Client, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
-		return ProcessMPKSet(logger, log, adminHandler, monDB, taskHandler)
+	eventProcessorMap["MPKSet"] = func(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+		return ProcessMPKSet(contracts, logger, log, adminHandler, monDB, taskHandler)
 	}
 	eventProcessorMap["ValidatorMemberAdded"] = func(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
 		return ProcessValidatorMemberAdded(eth, contracts, logger, state, log, monDB)
 	}
-	eventProcessorMap["GPKJSubmissionComplete"] = func(eth layer1.Client, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
-		return ProcessGPKJSubmissionComplete(logger, log, monDB, taskHandler)
+	eventProcessorMap["GPKJSubmissionComplete"] = func(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+		return ProcessGPKJSubmissionComplete(contracts, logger, log, monDB, taskHandler)
 	}
 	eventProcessorMap["ValidatorSetCompleted"] = func(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
 		return ProcessValidatorSetCompleted(eth, contracts, logger, state, log, monDB, adminHandler)
@@ -148,8 +149,8 @@ func SetupEventMap(em *objects.EventMap, cdb *db.Database, monDB *db.Database, a
 	}
 
 	if err := em.Register(snapshotTakenEvent.ID.String(), snapshotTakenEvent.Name,
-		func(eth layer1.Client, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
-			return ProcessSnapshotTaken(eth, logger, log, adminHandler, taskHandler)
+		func(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+			return ProcessSnapshotTaken(eth, contracts, logger, log, adminHandler, taskHandler)
 		}); err != nil {
 		return err
 	}

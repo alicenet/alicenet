@@ -8,6 +8,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/alicenet/alicenet/layer1/handlers"
+
 	_ "net/http/pprof"
 
 	"github.com/alicenet/alicenet/application"
@@ -280,13 +282,13 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	defer txWatcher.Close()
 
 	// Setup tasks scheduler
-	tasksHandler, err := executor.NewTaskHandler(monDB, eth, consAdminHandlers, txWatcher)
+	tasksHandler, err := executor.NewTaskHandler(monDB, eth, contractsHandler, consAdminHandlers, txWatcher)
 	if err != nil {
 		panic(err)
 	}
 
 	monitorInterval := config.Configuration.Monitor.Interval
-	mon, err := monitor.NewMonitor(consDB, monDB, consAdminHandlers, appDepositHandler, eth, ethereum.GetContracts(), monitorInterval, uint64(batchSize), tasksHandler)
+	mon, err := monitor.NewMonitor(consDB, monDB, consAdminHandlers, appDepositHandler, eth, contractsHandler, contractsHandler.EthereumContracts().GetAllAddresses(), monitorInterval, uint64(batchSize), tasksHandler)
 	if err != nil {
 		panic(err)
 	}
