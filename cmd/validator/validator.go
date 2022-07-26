@@ -250,8 +250,9 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	// consTxPool takes old state from consensusDB, used as evidence for what was done (new blocks, consensus, voting)
 	consTxPool := evidence.NewPool(consDB)
 
+	initialTxQueueSize := constants.MinQueueSize
 	appDepositHandler.Init()
-	if err := app.Init(consDB, rawTxPoolDb, appDepositHandler, storage); err != nil {
+	if err := app.Init(consDB, rawTxPoolDb, appDepositHandler, storage, initialTxQueueSize); err != nil {
 		panic(err)
 	}
 
