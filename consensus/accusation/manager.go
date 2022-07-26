@@ -2,6 +2,7 @@ package accusation
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"runtime"
 	"sync"
@@ -9,6 +10,7 @@ import (
 	"github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/consensus/lstate"
 	"github.com/alicenet/alicenet/consensus/objs"
+	"github.com/alicenet/alicenet/layer1/executor"
 	"github.com/alicenet/alicenet/layer1/executor/marshaller"
 	"github.com/alicenet/alicenet/layer1/executor/tasks"
 	"github.com/dgraph-io/badger/v2"
@@ -56,14 +58,14 @@ type Manager struct {
 	accusationQ                     chan tasks.Task           // queue where identified accusations are pushed by workers to be further processed
 	unpersistedCreatedAccusations   []tasks.Task              // newly found accusations that where not persisted into DB
 	unpersistedScheduledAccusations []tasks.Task              // accusations that scheduled for execution and not yet persisted as such
-	closeChan                       chan struct{}             // channel to signal to workers to stop
 	wg                              *sync.WaitGroup           // wait group to wait for workers to stop
-	// scheduler                       *executor.TasksScheduler  // todo: use interface instead of concrete type
-	scheduler chan tasks.TaskRequest
+	ctx                             context.Context           // the context to use for the task handler and go routines
+	cancelCtx                       context.CancelFunc        // the cancel function to cancel the context
+	taskHandler                     executor.TaskHandler
 }
 
 // NewManager creates a new *Manager
-func NewManager(database *db.Database, sstore *lstate.Store, scheduler chan tasks.TaskRequest, logger *logrus.Logger) *Manager {
+func NewManager(database *db.Database, sstore *lstate.Store, taskHandler executor.TaskHandler, logger *logrus.Logger) *Manager {
 	detectors := make([]detector, 0)
 
 	m := &Manager{}
@@ -74,11 +76,11 @@ func NewManager(database *db.Database, sstore *lstate.Store, scheduler chan task
 	m.rsCache = make(map[string]*rsCacheStruct)
 	m.workQ = make(chan *lstate.RoundStates, 1)
 	m.accusationQ = make(chan tasks.Task, 1)
-	m.closeChan = make(chan struct{}, 1)
 	m.unpersistedCreatedAccusations = make([]tasks.Task, 0)
 	m.unpersistedScheduledAccusations = make([]tasks.Task, 0)
 	m.wg = &sync.WaitGroup{}
-	m.scheduler = scheduler
+	m.taskHandler = taskHandler
+	m.ctx, m.cancelCtx = context.WithCancel(context.Background())
 
 	return m
 }
@@ -97,7 +99,7 @@ func (m *Manager) StartWorkers() {
 
 // StopWorkers stops the workers that process the work queue
 func (m *Manager) StopWorkers() {
-	close(m.closeChan)
+	m.cancelCtx()
 	m.wg.Wait()
 	m.logger.Warn("Accusation manager stopped")
 }
@@ -106,7 +108,7 @@ func (m *Manager) StopWorkers() {
 func (m *Manager) runWorker() {
 	for {
 		select {
-		case <-m.closeChan:
+		case <-m.ctx.Done():
 			return
 		case lrs := <-m.workQ:
 			_, err := m.processLRS(lrs)
@@ -145,7 +147,7 @@ func (m *Manager) Poll() error {
 	// receive accusations from workers and send them to the Scheduler/TaskManager to be processed further.
 	// this could be done in a separate goroutine
 	select {
-	case <-m.closeChan:
+	case <-m.ctx.Done():
 		m.logger.Debug("AccusationManager is now closing")
 		return nil
 	case acc := <-m.accusationQ:
@@ -228,8 +230,11 @@ func (m *Manager) scheduleAccusations() error {
 		*/
 
 		//acc.Wait()
-		req := tasks.NewScheduleTaskRequest(acc)
-		m.scheduler <- req
+		_, err := m.taskHandler.ScheduleTask(m.ctx, acc, acc.GetId())
+		if err != nil {
+			m.logger.Warnf("AccusationManager failed to schedule accusation: %v", err)
+			continue
+		}
 
 		// todo: delete this placeholder code down here after the real scheduler is implemented
 		//acc.SetState(objs.ScheduledForExecution)
