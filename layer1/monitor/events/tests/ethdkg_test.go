@@ -28,8 +28,11 @@ func TestRegisteringETHDKGEvents(t *testing.T) {
 	}
 
 	for name, event := range ethDkgABI.Events {
-		eventInfo, ok := em.Lookup(event.ID.String())
-		assert.True(t, ok)
-		assert.Equal(t, name, eventInfo.Name)
+		// the Initialized event is not used by the golang code
+		if name != "Initialized" {
+			eventInfo, ok := em.Lookup(event.ID.String())
+			assert.True(t, ok)
+			assert.Equal(t, name, eventInfo.Name)
+		}
 	}
 }

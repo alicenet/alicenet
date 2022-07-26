@@ -123,7 +123,7 @@ describe("ValidatorPool: Registration logic", async () => {
         validators,
         stakingTokenIds,
       ])
-    ).to.be.revertedWith("ERC721: transfer caller is not owner nor approved");
+    ).to.be.revertedWith("ERC721: caller is not token owner nor approved");
   });
 
   it("Should not allow registering an address that is already a validator", async function () {

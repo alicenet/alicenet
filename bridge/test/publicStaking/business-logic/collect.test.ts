@@ -80,10 +80,10 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
 
   it("Shouldn't allow to collect funds for non-existing position", async function () {
     await expect(fixture.publicStaking.collectEth(100)).to.revertedWith(
-      "ERC721: owner query for nonexistent token"
+      "ERC721: invalid token ID"
     );
     await expect(fixture.publicStaking.collectToken(100)).to.revertedWith(
-      "ERC721: owner query for nonexistent token"
+      "ERC721: invalid token ID"
     );
   });
 
