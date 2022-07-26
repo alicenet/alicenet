@@ -43,13 +43,18 @@ contract BToken is
     // Value of the percentages that will send to each staking contract. Divide
     // this value by _PERCENTAGE_SCALE = 1000 to get the corresponding percentages.
     // These values must sum to 1000.
-    uint256 internal _validatorStakingSplit;
-    uint256 internal _publicStakingSplit;
-    uint256 internal _liquidityProviderStakingSplit;
-    uint256 internal _protocolFee;
+    struct Splits {
+        uint32 validatorStaking;
+        uint32 publicStaking;
+        uint32 liquidityProviderStaking;
+        uint32 protocolFee;
+    }
+
+    // Internal struct to keep track of the
+    Splits internal _splits;
 
     // Monotonically increasing variable to track the BTokens deposits.
-    uint256 internal _depositID;
+    uint256 public depositID;
 
     // Total amount of BTokens that were deposited in the AliceNet chain. The
     // BTokens deposited in the AliceNet are burned by this contract.
@@ -96,6 +101,10 @@ contract BToken is
             liquidityProviderStakingSplit_,
             protocolFee_
         );
+    }
+
+    function getSplits() public view returns (Splits memory) {
+        return _splits;
     }
 
     /// Distributes the yields of the BToken sale to all stakeholders
@@ -228,9 +237,9 @@ contract BToken is
     }
 
     /// Gets the deposited amount given a depositID.
-    /// @param depositID The Id of the deposit
-    function getDeposit(uint256 depositID) public view returns (Deposit memory) {
-        Deposit memory d = _deposits[depositID];
+    /// @param depositID_ The Id of the deposit
+    function getDeposit(uint256 depositID_) public view returns (Deposit memory) {
+        Deposit memory d = _deposits[depositID_];
         require(
             d.account != address(uint160(0x00)),
             string(abi.encodePacked(BTokenErrorCodes.BTOKEN_INVALID_DEPOSIT_ID))
@@ -260,6 +269,30 @@ contract BToken is
     /// @param numEth_ Amount of ether that we want to convert in BTokens
     function ethToBTokens(uint256 poolBalance_, uint256 numEth_) public pure returns (uint256) {
         return _ethToBTokens(poolBalance_, numEth_);
+    }
+
+    function payAndDeposit(
+        uint256 maxEth,
+        uint256 maxTokens,
+        bytes calldata data
+    ) public payable {
+        //forward call to btoken
+        uint256 bTokenFee = BridgeRouter(_bridgeRouterAddress()).routeDeposit(
+            msg.sender,
+            maxTokens,
+            data
+        );
+        //if the message has value require the value of eth equal btokenAmount, else destroy btoken amount specified
+        if (msg.value > 0) {
+            uint256 ethFee = bTokensToEth(_poolBalance, totalSupply(), bTokenFee);
+            require(maxEth <= ethFee && msg.value >= ethFee, "BToken: ERROR insufficient funds");
+            uint256 refund = msg.value - ethFee;
+            if (refund > 0) {
+                payable(msg.sender).transfer(refund);
+            }
+        } else {
+            _destroyTokens(bTokenFee);
+        }
     }
 
     /// Distributes the yields from the BToken minting to all stake holders.
@@ -316,13 +349,30 @@ contract BToken is
     // Burn the tokens during deposits without sending ether back to user as the
     // normal burn function. The ether will be distributed in the distribute
     // method.
-    function _destroyTokens(uint256 numBTK_) internal returns (bool) {
+    function destroyTokens(uint256 numBTK_) public returns (bool) {
+        _destroyTokens(msg.sender, numBTK_);
+        return true;
+    }
+
+    // Burn the tokens during deposits without sending ether back to user as the
+    // normal burn function. The ether will be distributed in the distribute
+    // method.
+    function destroyPreApprovedTokens(address account, uint256 numBTK_) public returns (bool) {
+        ERC20Upgradeable._spendAllowance(account, msg.sender, numBTK_);
+        _destroyTokens(msg.sender, numBTK_);
+        return true;
+    }
+
+    // Burn the tokens during deposits without sending ether back to user as the
+    // normal burn function. The ether will be distributed in the distribute
+    // method.
+    function _destroyTokens(address account, uint256 numBTK_) internal returns (bool) {
         require(
             numBTK_ != 0,
             string(abi.encodePacked(BTokenErrorCodes.BTOKEN_INVALID_BURN_AMOUNT))
         );
         _poolBalance -= _bTokensToEth(_poolBalance, totalSupply(), numBTK_);
-        ERC20Upgradeable._burn(msg.sender, numBTK_);
+        ERC20Upgradeable._burn(account, numBTK_);
         return true;
     }
 
@@ -392,11 +442,11 @@ contract BToken is
         address to_,
         uint256 amount_
     ) internal returns (uint256) {
-        uint256 depositID = _depositID + 1;
-        _deposits[depositID] = _newDeposit(accountType_, to_, amount_);
+        uint256 depositID_ = depositID + 1;
+        _deposits[depositID_] = _newDeposit(accountType_, to_, amount_);
         _totalDeposited += amount_;
-        _depositID = depositID;
-        emit DepositReceived(depositID, accountType_, to_, amount_);
+        depositID = depositID_;
+        emit DepositReceived(depositID_, accountType_, to_, amount_);
         return depositID;
     }
 
