@@ -58,6 +58,9 @@ func (b *ValueStore) New(chainID uint32, value *uint256.Uint256, fee *uint256.Ui
 
 // NewFromDeposit creates a new ValueStore from a deposit event
 func (b *ValueStore) NewFromDeposit(chainID uint32, value *uint256.Uint256, acct []byte, nonce []byte) error {
+	if b == nil {
+		return errorz.ErrInvalid{}.New("vs.NewFromDeposit: vs not initialized")
+	}
 	vsowner := &ValueStoreOwner{}
 	vsowner.New(acct, constants.CurveSecp256k1)
 	if err := vsowner.Validate(); err != nil {

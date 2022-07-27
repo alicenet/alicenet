@@ -372,8 +372,6 @@ func TestRefLinkerEvict1(t *testing.T) {
 			t.Fatal("txHash2 not at index two")
 		}
 		return nil
-
-		return nil
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -634,6 +632,42 @@ func TestRefLinkerEvict3(t *testing.T) {
 		t.Logf("evicted[0]: %x\n", evicted[0])
 		if !bytes.Equal(evicted[0], txHash2) {
 			t.Fatal("txHash2 should be evicted")
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestRefLinkerError(t *testing.T) {
+	t.Parallel()
+	db := environment.SetupBadgerDatabase(t)
+
+	prefix1 := func() []byte {
+		return []byte("za")
+	}
+
+	prefix2 := func() []byte {
+		return []byte("zb")
+	}
+
+	prefix3 := func() []byte {
+		return []byte("zk")
+	}
+
+	// object to delete
+	txHash1 := trie.Hasher([]byte("foo"))
+	utxoIDs1 := [][]byte{}
+	utxoIDs1 = append(utxoIDs1, trie.Hasher([]byte("a")))
+	utxoIDs1 = append(utxoIDs1, trie.Hasher([]byte("b")))
+	utxoIDs1 = append(utxoIDs1, trie.Hasher([]byte("c")))
+
+	rl := NewRefLinkerIndex(prefix1, prefix2, prefix3)
+	err := db.Update(func(txn *badger.Txn) error {
+		_, _, err := rl.Add(txn, txHash1, utxoIDs1, nil)
+		if err == nil {
+			t.Fatal("Should have raised error")
 		}
 		return nil
 	})
@@ -915,6 +949,16 @@ func TestValueIndex(t *testing.T) {
 		err = index.Add(txn, utxoido25, owner2, value5)
 		if err != nil {
 			t.Fatal(err)
+		}
+
+		_, _, _, err = index.GetValueForOwner(txn, nil, uint256.One(), nil, 256, nil)
+		if err == nil {
+			t.Fatal("Should have raised error for invalid owner")
+		}
+
+		_, _, _, err = index.GetValueForOwner(txn, owner1, nil, nil, 256, nil)
+		if err == nil {
+			t.Fatal("Should have raised error for invalid minValue")
 		}
 
 		utxoIDs, value, _, err := index.GetValueForOwner(txn, owner1, uint256.One(), nil, 256, nil)

@@ -581,6 +581,10 @@ func TestDSMarshalBinary(t *testing.T) {
 	if err == nil {
 		t.Fatal("Should have raised an error (2)")
 	}
+	_, err = utxo.dataStore.MarshalCapn(nil)
+	if err == nil {
+		t.Fatal("Should have raised an error (3)")
+	}
 }
 
 func TestDSUnmarshalBinary(t *testing.T) {
@@ -943,6 +947,14 @@ func TestDSValuePlusFeeCallBad1(t *testing.T) {
 	_, err = ds.ValuePlusFee()
 	if err == nil {
 		t.Fatal("Should have raised an error (2)")
+	}
+	_, err = utxo.dataStore.Fee()
+	if err == nil {
+		t.Fatal("Should have raised an error (3)")
+	}
+	_, err = ds.Fee()
+	if err == nil {
+		t.Fatal("Should have raised an error (4)")
 	}
 }
 

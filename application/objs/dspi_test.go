@@ -1009,6 +1009,17 @@ func TestNumEpochsEquation(t *testing.T) {
 	if err == nil {
 		t.Fatal("Should raise an error for integer overflow")
 	}
+
+	_, err = NumEpochsEquation(dataSize, nil)
+	if err == nil {
+		t.Fatal("Should raise an error for invalid deposit")
+	}
+
+	depositMax := uint256.Max()
+	_, err = NumEpochsEquation(dataSize, depositMax)
+	if err == nil {
+		t.Fatal("Should raise an error for integer conversion")
+	}
 }
 
 func TestRewardDepositEquationGood1(t *testing.T) {
@@ -1220,6 +1231,7 @@ func TestRewardDepositEquationGood2(t *testing.T) {
 		t.Fatal("Invalid remainder for epoch =", epochFinal)
 	}
 }
+
 func TestRewardDepositEquationBad(t *testing.T) {
 	dataSize := uint32(1)
 	numEpochs := uint32(3)
@@ -1240,5 +1252,10 @@ func TestRewardDepositEquationBad(t *testing.T) {
 	_, err = RewardDepositEquation(depositBad, dataSize, epochInitial, epochFinal)
 	if err == nil {
 		t.Fatal("Should raise an error (2)")
+	}
+
+	_, err = RewardDepositEquation(nil, dataSize, epochInitial, epochFinal)
+	if err == nil {
+		t.Fatal("Should raise an error (3)")
 	}
 }

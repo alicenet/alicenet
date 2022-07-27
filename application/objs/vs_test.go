@@ -223,20 +223,35 @@ func TestValueStoreNewFromDeposit(t *testing.T) {
 		t.Fatal("Should raise an error (1)")
 	}
 
-	acct = make([]byte, constants.OwnerLen)
 	vs := &ValueStore{}
 	err = vs.NewFromDeposit(chainID, value, acct, nonce)
 	if err == nil {
 		t.Fatal("Should raise an error (2)")
 	}
 
-	chainID = 1
+	acct = make([]byte, constants.OwnerLen)
 	err = vs.NewFromDeposit(chainID, value, acct, nonce)
 	if err == nil {
 		t.Fatal("Should raise an error (3)")
 	}
 
+	chainID = 1
+	err = vs.NewFromDeposit(chainID, value, acct, nonce)
+	if err == nil {
+		t.Fatal("Should raise an error (4)")
+	}
+
 	nonce = make([]byte, constants.HashLen)
+	err = vs.NewFromDeposit(chainID, nil, acct, nonce)
+	if err == nil {
+		t.Fatal("Should raise an error (5)")
+	}
+
+	err = vs.NewFromDeposit(chainID, uint256.Zero(), acct, nonce)
+	if err == nil {
+		t.Fatal("Should raise an error (6)")
+	}
+
 	err = vs.NewFromDeposit(chainID, value, acct, nonce)
 	if err != nil {
 		t.Fatal(err)
