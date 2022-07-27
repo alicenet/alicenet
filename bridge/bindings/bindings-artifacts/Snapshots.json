@@ -561,7 +561,7 @@
       },
       {
         "internalType": "bytes32",
-        "name": "blsig",
+        "name": "randomSeed",
         "type": "bytes32"
       },
       {

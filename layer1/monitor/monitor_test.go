@@ -5,6 +5,10 @@ package monitor
 import (
 	"encoding/json"
 	"errors"
+	"math/big"
+	"testing"
+	"time"
+
 	"github.com/alicenet/alicenet/bridge/bindings"
 	"github.com/alicenet/alicenet/consensus/objs"
 	"github.com/alicenet/alicenet/constants"
@@ -18,9 +22,6 @@ import (
 	"github.com/dgraph-io/badger/v2"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/core/types"
-	"math/big"
-	"testing"
-	"time"
 
 	"github.com/alicenet/alicenet/layer1/monitor/objects"
 
@@ -207,7 +208,7 @@ func TestPersistSnapshot(t *testing.T) {
 		TxHshLst: [][]byte{},
 		SigGroup: make([]byte, 192),
 	}
-	err = PersistSnapshot(eth, bh, tasksReqChan, mon.db)
+	err = PersistSnapshot(eth, bh, 10, 1, tasksReqChan, mon.db)
 
 	state, err := snapshotState.GetSnapshotState(mon.db)
 	assert.Nil(t, err)

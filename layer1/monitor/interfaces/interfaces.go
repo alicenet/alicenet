@@ -13,7 +13,7 @@ type AdminHandler interface {
 	AddPrivateKey([]byte, constants.CurveSpec) error
 	AddSnapshot(header *objs.BlockHeader, safeToProceedConsensus bool) error
 	AddValidatorSet(*objs.ValidatorSet) error
-	RegisterSnapshotCallback(func(*objs.BlockHeader) error)
+	RegisterSnapshotCallback(func(*objs.BlockHeader, int, int) error)
 	SetSynchronized(v bool)
 	IsSynchronized() bool
 }
