@@ -296,6 +296,11 @@ func TestTx(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	tx.txHash = nil
+	err = tx.ValidateTxHash()
+	if err != nil {
+		t.Fatal(err)
+	}
 	err = tx2.ValidatePreSignature()
 	if err != nil {
 		t.Fatal(err)
@@ -573,7 +578,11 @@ func TestTxMarshalBad1(t *testing.T) {
 	tx := &Tx{}
 	_, err := tx.MarshalBinary()
 	if err == nil {
-		t.Fatal("Should have raised error")
+		t.Fatal("Should have raised error (1)")
+	}
+	_, err = tx.MarshalCapn(nil)
+	if err == nil {
+		t.Fatal("Should have raised error (2)")
 	}
 }
 
@@ -1143,7 +1152,23 @@ func TestTxCallTxHash(t *testing.T) {
 		t.Fatal(err)
 	}
 	if !bytes.Equal(hash, hashTrue) {
-		t.Fatal("txhashes do not match")
+		t.Fatal("txhashes do not match (1)")
+	}
+	err = tx.ValidateTxHash()
+	if err != nil {
+		t.Fatal(err)
+	}
+	tx.txHash = nil
+	err = tx.ValidateTxHash()
+	if err != nil {
+		t.Fatal(err)
+	}
+	hash2, err := tx.TxHash()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(hash2, hashTrue) {
+		t.Fatal("txhashes do not match (2)")
 	}
 }
 

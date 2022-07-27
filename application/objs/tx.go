@@ -41,12 +41,6 @@ func (b *Tx) UnmarshalBinary(data []byte) error {
 	if len(data) > constants.MaxTxSize {
 		return errorz.ErrInvalid{}.New("tx.UnmarshalBinary: len(data) > MaxTxSize")
 	}
-	if len(data) == 0 {
-		return errorz.ErrInvalid{}.New("tx.unmarshalBinary: len(data) == 0")
-	}
-	if len(data) > constants.MaxTxSize {
-		return errorz.ErrInvalid{}.New("tx.unmarshalBinary: len(data) > MaxTxSize")
-	}
 	bc, err := tx.Unmarshal(data)
 	if err != nil {
 		return err
