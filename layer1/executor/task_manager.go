@@ -390,6 +390,21 @@ func (tm *TaskManager) killTask(task ManagerRequestInfo) error {
 		getTaskLoggerComplete(task).Error("Task already killed")
 	} else {
 		getTaskLoggerComplete(task).Trace("Task is not running yet, pruning directly")
+
+		taskResp, present := tm.Responses[task.Id]
+		if !present {
+			tm.logger.Warnf("response structure doesn't exist for a received killing request with id %s", task.Id)
+		}
+
+		taskResp.ReceivedOnBlock = tm.LastHeightSeen
+		executorResponse := ExecutorResponse{
+			Id:  task.Id,
+			Err: ErrTaskKilledBeforeExecution,
+		}
+		taskResp.ExecutorResponse = executorResponse
+		taskResp.HandlerResponse.writeResponse(executorResponse.Err)
+		tm.Responses[executorResponse.Id] = taskResp
+
 		err := tm.remove(task.Id)
 		if err != nil {
 			tm.logger.WithError(err).Errorf("Failed to kill task id: %s", task.Id)
@@ -542,7 +557,6 @@ func (tm *TaskManager) recoverState() error {
 	}
 
 	for id, resp := range tm.Responses {
-		resp.HandlerResponse = newHandlerResponse()
 		if resp.ReceivedOnBlock != 0 {
 			resp.HandlerResponse.writeResponse(resp.ExecutorResponse.Err)
 		}
@@ -554,14 +568,25 @@ func (tm *TaskManager) recoverState() error {
 
 func (tm *TaskManager) MarshalJSON() ([]byte, error) {
 
-	ws := &innerSequentialSchedule{Schedule: make(map[string]*requestStored)}
+	ws := &taskManagerBackup{Schedule: make(map[string]requestStored), Responses: make(map[string]responseStored), LastHeightSeen: tm.LastHeightSeen}
 
 	for k, v := range tm.Schedule {
 		wt, err := tm.marshaller.WrapInstance(v.Task)
 		if err != nil {
 			return []byte{}, err
 		}
-		ws.Schedule[k] = &requestStored{BaseRequest: v.BaseRequest, WrappedTask: wt}
+		ws.Schedule[k] = requestStored{BaseRequest: v.BaseRequest, WrappedTask: wt}
+	}
+
+	for k, v := range tm.Responses {
+		responseStored := responseStored{
+			ReceivedOnBlock: v.ReceivedOnBlock,
+		}
+
+		if v.Err != nil {
+			responseStored.ErrMsg = v.Err.Error()
+		}
+		ws.Responses[k] = responseStored
 	}
 
 	raw, err := json.Marshal(&ws)
@@ -573,7 +598,7 @@ func (tm *TaskManager) MarshalJSON() ([]byte, error) {
 }
 
 func (tm *TaskManager) UnmarshalJSON(raw []byte) error {
-	aa := &innerSequentialSchedule{}
+	aa := &taskManagerBackup{}
 
 	err := json.Unmarshal(raw, aa)
 	if err != nil {
@@ -583,6 +608,8 @@ func (tm *TaskManager) UnmarshalJSON(raw []byte) error {
 	adminInterface := reflect.TypeOf((*monitorInterfaces.AdminClient)(nil)).Elem()
 
 	tm.Schedule = make(map[string]ManagerRequestInfo)
+	tm.Responses = make(map[string]ManagerResponseInfo)
+	tm.LastHeightSeen = aa.LastHeightSeen
 	for k, v := range aa.Schedule {
 		t, err := tm.marshaller.UnwrapInstance(v.WrappedTask)
 		if err != nil {
@@ -600,6 +627,22 @@ func (tm *TaskManager) UnmarshalJSON(raw []byte) error {
 			BaseRequest: v.BaseRequest,
 			Task:        t.(tasks.Task),
 		}
+	}
+
+	for k, v := range aa.Responses {
+		resp := ManagerResponseInfo{
+			ReceivedOnBlock: v.ReceivedOnBlock,
+			HandlerResponse: newHandlerResponse(),
+		}
+
+		if v.ReceivedOnBlock != 0 {
+			resp.ExecutorResponse = ExecutorResponse{
+				Id:  k,
+				Err: errors.New(v.ErrMsg),
+			}
+			resp.HandlerResponse.writeResponse(resp.ExecutorResponse.Err)
+		}
+		tm.Responses[k] = resp
 	}
 
 	return nil

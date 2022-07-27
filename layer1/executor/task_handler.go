@@ -52,7 +52,6 @@ func (i *Handler) Start() {
 }
 
 func (i *Handler) Close() {
-	//TODO: rollback the closing function
 	i.logger.Warn("Closing task handler")
 	i.manager.close()
 	i.closeMainContext()

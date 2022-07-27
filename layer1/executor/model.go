@@ -36,8 +36,8 @@ func (action TaskAction) String() string {
 
 // HandlerResponse returned from the Handler to the external clients
 type HandlerResponse struct {
-	doneChan chan struct{}
-	err      error // error in case the task failed
+	doneChan chan struct{} `json:"-"`
+	err      error         `json:"-"`
 }
 
 // newHandlerResponse creates HandlerResponse
@@ -124,19 +124,28 @@ type ManagerRequestInfo struct {
 // ManagerResponseInfo used to cache the responses
 type ManagerResponseInfo struct {
 	ExecutorResponse
-	HandlerResponse *HandlerResponse
-	ReceivedOnBlock uint64 `json:"receiveOnBlock"`
+	HandlerResponse *HandlerResponse `json:"-"`
+	ReceivedOnBlock uint64           `json:"receivedOnBlock"`
 }
 
 // requestStored with an internal wrapper for the task interface
 type requestStored struct {
 	BaseRequest
 	WrappedTask *marshaller.InstanceWrapper `json:"wrappedTask"`
+	killedAt    uint64                      `json:"killedAt"`
 }
 
-// innerSequentialSchedule used to store requestStored for recovery
-type innerSequentialSchedule struct {
-	Schedule map[string]*requestStored
+// responseStored with an internal wrapper for the task interface
+type responseStored struct {
+	ErrMsg          string `json:"errMsg"`
+	ReceivedOnBlock uint64 `json:"receivedOnBlock"`
+}
+
+// taskManagerBackup used to store requestStored  for recovery
+type taskManagerBackup struct {
+	Schedule       map[string]requestStored
+	Responses      map[string]responseStored
+	LastHeightSeen uint64 `json:"lastHeightSeen"`
 }
 
 // managerResponse is used to communicate the task response from TaskManager to Handler
@@ -184,7 +193,7 @@ func (rc *ManagerResponseChannel) listen(ctx context.Context) (*HandlerResponse,
 // ExecutorResponse used inside executorResponseChan to store the task execution result
 type ExecutorResponse struct {
 	Id  string `json:"id"`
-	Err error  `json:"error"`
+	Err error  `json:"err"`
 }
 
 // executorResponseChan is used to communicate the task execution result from TaskExecutor to
@@ -220,4 +229,5 @@ var (
 	ErrTaskIsNil                      = errors.New("the task in the request is nil")
 	ErrTaskTypeNotInRegistry          = errors.New("the task type is not in registry")
 	ErrTaskIdEmpty                    = errors.New("the task id is empty")
+	ErrTaskKilledBeforeExecution      = errors.New("the task killed by request before execution")
 )
