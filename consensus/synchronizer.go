@@ -506,8 +506,14 @@ func (s *Synchronizer) setupLoops() {
 			withName("TDB-GCLoop").
 			withFn(
 				func() error {
-					s.tdb.RunValueLogGC(constants.BadgerDiscardRatio)
-					s.tdb.RunValueLogGC(constants.BadgerDiscardRatio)
+					err := s.tdb.RunValueLogGC(constants.BadgerDiscardRatio)
+					if err != badger.ErrNoRewrite {
+						return err
+					}
+					err = s.tdb.RunValueLogGC(constants.BadgerDiscardRatio)
+					if err != badger.ErrNoRewrite {
+						return err
+					}
 					return nil
 				}).
 			withFreq(600 * time.Second).
