@@ -9,58 +9,45 @@ import "hardhat/console.sol";
 /// @custom:salt DutchAuction
 /// @custom:deploy-type deployUpgradeable
 contract DutchAuction is Initializable, ImmutableFactory {
-    uint256 private constant DURATION = 10 seconds;
-
-    IERC721 public nft;
-    uint256 public nftId;
+    uint256 private constant BLOCKS_DURATION = 10;
 
     address payable public seller;
-    uint256 public startingPrice;
-    uint256 public startAt;
-    uint256 public expiresAt;
-    uint256 public discountRate;
+    uint256 private _startingPrice;
+    uint256 private _discountPerBlockRate;
+    uint256 private _startAt;
 
     constructor() ImmutableFactory(msg.sender) {}
-
-    function initialize(
-        uint256 _startingPrice,
-        uint256 _discountRate,
-        address _seller,
-        address _nft,
-        uint256 _nftId
-    ) public initializer onlyFactory {
-        seller = payable(_seller);
-        startingPrice = _startingPrice;
-        startAt = block.timestamp;
-        expiresAt = block.timestamp + DURATION;
-        discountRate = _discountRate;
-        require(_startingPrice >= _discountRate * DURATION, "starting price < min");
-        nft = IERC721(_nft);
-        nftId = _nftId;
+    /// @dev Initializes and starts auction defining starting price and discount per block rate
+    /// @param startingPrice_ the start price of the auction
+    /// @param discountPerBlockRate_ the rate that the price is decreasing per block
+    function initialize(uint256 startingPrice_, uint256 discountPerBlockRate_)
+        public
+        initializer
+        onlyFactory
+    {
+        _startingPrice = startingPrice_;
+        _discountPerBlockRate = discountPerBlockRate_;
+        _resetAuction();
     }
 
     function getPrice() public view returns (uint256) {
-        uint256 timeElapsed = block.timestamp - startAt;
-        uint256 discount = discountRate * timeElapsed;
-        return startingPrice - discount;
+        return _getPrice();
     }
 
-    function getRemainingTime() public view returns (uint256) {
-        uint256 timeElapsed = block.timestamp - startAt;
-        uint256 timeRemaining = DURATION - timeElapsed;
-        if (timeRemaining < 0) timeRemaining = 0;
-        return timeRemaining;
+    /// @dev Returns the current offered price depending in the blocks mined since auction start block
+        function _getPrice() internal view returns (uint256) {
+        uint256 blocksElapsed = block.number - _startAt;
+        uint256 discount = _discountPerBlockRate * blocksElapsed;
+        return _startingPrice - discount;
     }
 
-    function buy() external payable {
-        require(block.timestamp < expiresAt, "auction expired");
-        uint256 price = getPrice();
-        require(msg.value >= price, "ETH < price");
-        nft.transferFrom(seller, msg.sender, nftId);
-        uint256 refund = msg.value - price;
-        if (refund > 0) {
-            payable(msg.sender).transfer(refund);
-        }
-        selfdestruct(seller);
+    function resetAuction() public {
+        _resetAuction();
+    }
+
+    /// @dev Starts over the auction setting auction start block to the current block
+    function _resetAuction() internal {
+        _startAt = block.number;
+        require(_startingPrice >= _discountPerBlockRate * BLOCKS_DURATION, "starting price < min");
     }
 }
