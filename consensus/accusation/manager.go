@@ -16,7 +16,7 @@ import (
 )
 
 // a function that returns an Accusation interface object when found, and a bool indicating if an accusation has been found (true) or not (false)
-type detector = func(rs *objs.RoundState, lrs *lstate.RoundStates) (tasks.Task, bool)
+type detector = func(rs *objs.RoundState, lrs *lstate.RoundStates, db *db.Database) (tasks.Task, bool)
 
 // rsCacheStruct caches a validator's roundState height, round and hash to avoid checking accusations unless anything changes
 type rsCacheStruct struct {
@@ -354,7 +354,7 @@ func (m *Manager) processLRS(lrs *lstate.RoundStates) (bool, error) {
 // findAccusation checks if there is an accusation for a certain roundState and if so, sends it for further processing.
 func (m *Manager) findAccusation(rs *objs.RoundState, lrs *lstate.RoundStates) {
 	for _, detector := range m.detectionPipeline {
-		accusation, found := detector(rs, lrs)
+		accusation, found := detector(rs, lrs, m.database)
 		if found {
 			m.accusationQ <- accusation
 			break
