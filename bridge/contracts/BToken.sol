@@ -226,6 +226,7 @@ contract BToken is
             bridgeRouterSalt,
             _factoryAddress()
         );
+        require(_isContract(address bridgeRouterAddress), "router contract doesn't exist yet");
         //forward call to router
         uint256 bTokenFee = IBridgeRouter(bridgeRouterAddress).routeDeposit(
             msg.sender,
@@ -518,7 +519,7 @@ contract BToken is
         _totalDeposited += amount_;
         _depositID = depositID;
         emit DepositReceived(depositID, accountType_, to_, amount_);
-        return _depositID;
+        return depositID;
     }
 
     // Internal function that mints the BToken tokens following the bounding
