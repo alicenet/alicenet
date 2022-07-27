@@ -122,7 +122,7 @@ func (t *SnapshotTask) Execute(ctx context.Context) (*types.Transaction, *tasks.
 		snapshotState.DesperationDelay,
 	)
 	if err != nil {
-		return nil, tasks.NewTaskErr("error getting eth height for leader election", true)
+		return nil, tasks.NewTaskErr(fmt.Sprintf("error getting eth height for leader election: %v", err), true)
 	}
 	if !isLeading {
 		return nil, tasks.NewTaskErr("not the chosen one for snapshots yet", true)

@@ -14,33 +14,32 @@ import (
 	"github.com/alicenet/alicenet/layer1/transaction"
 	"github.com/alicenet/alicenet/logging"
 	"github.com/alicenet/alicenet/test/mocks"
-	gUtils "github.com/alicenet/alicenet/utils"
-
+	"github.com/alicenet/alicenet/utils"
 	"github.com/stretchr/testify/assert"
 )
 
 // We complete everything correctly, happy path
 func TestCompletion_Group_1_AllGood(t *testing.T) {
-	n := 4
-	fixture := setupEthereum(t, n)
+	numValidators := 4
+	fixture := setupEthereum(t, numValidators)
 	suite := StartFromGPKjPhase(t, fixture, []int{}, []int{}, 100)
 	ctx := context.Background()
 
 	monState := objects.NewMonitorState()
 	accounts := suite.Eth.GetKnownAccounts()
-	for idx := 0; idx < n; idx++ {
+	for idx := 0; idx < numValidators; idx++ {
 		monState.PotentialValidators[accounts[idx].Address] = objects.PotentialValidator{
 			Account: accounts[idx].Address,
 		}
 	}
 
-	for idx := 0; idx < n; idx++ {
+	for idx := 0; idx < numValidators; idx++ {
 		err := monState.PersistState(suite.DKGStatesDbs[idx])
 		assert.Nil(t, err)
 	}
 
-	for idx := 0; idx < n; idx++ {
-		for j := 0; j < n; j++ {
+	for idx := 0; idx < numValidators; idx++ {
+		for j := 0; j < numValidators; j++ {
 			disputeGPKjTask := suite.DisputeGPKjTasks[idx][j]
 
 			err := disputeGPKjTask.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "disputeGPKjTask", "task-id", nil)
@@ -62,7 +61,7 @@ func TestCompletion_Group_1_AllGood(t *testing.T) {
 	assert.Nil(t, err)
 	tests.AdvanceTo(suite.Eth, dkgState.PhaseStart+dkgState.PhaseLength)
 
-	for idx := 0; idx < n; idx++ {
+	for idx := 0; idx < numValidators; idx++ {
 		completionTask := suite.CompletionTasks[idx]
 
 		err := completionTask.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "CompletionTask", "task-id", nil)
@@ -77,13 +76,14 @@ func TestCompletion_Group_1_AllGood(t *testing.T) {
 		assert.Nil(t, err)
 		if shouldExecute {
 			txn, taskError := completionTask.Execute(ctx)
-			amILeading, err := gUtils.AmILeading(
+			amILeading, err := utils.AmILeading(
 				suite.Eth,
 				ctx,
 				fixture.Logger,
 				int(completionTask.GetStart()),
 				completionTask.StartBlockHash[:],
-				n,
+				numValidators,
+				// we need -1 since ethdkg indexes start at 1 while leader election expect index starting at 0.
 				dkgState.Index-1,
 				constants.ETHDKGDesperationFactor,
 				constants.ETHDKGDesperationDelay,
@@ -106,8 +106,8 @@ func TestCompletion_Group_1_AllGood(t *testing.T) {
 
 // We complete everything correctly, but we do not complete in time
 func TestCompletion_Group_1_Bad1(t *testing.T) {
-	n := 6
-	fixture := setupEthereum(t, n)
+	numValidators := 6
+	fixture := setupEthereum(t, numValidators)
 	suite := StartFromGPKjPhase(t, fixture, []int{}, []int{}, 100)
 	ctx := context.Background()
 

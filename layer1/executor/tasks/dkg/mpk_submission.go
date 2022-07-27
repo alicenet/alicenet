@@ -133,12 +133,13 @@ func (t *MPKSubmissionTask) Execute(ctx context.Context) (*types.Transaction, *t
 		int(t.GetStart()),
 		t.StartBlockHash.Bytes(),
 		dkgState.NumberOfValidators,
+		// we need -1 since ethdkg indexes start at 1 while leader election expect index starting at 0.
 		dkgState.Index-1,
 		constants.ETHDKGDesperationFactor,
 		constants.ETHDKGDesperationDelay,
 	)
 	if err != nil {
-		return nil, tasks.NewTaskErr("error getting eth height for leader election", true)
+		return nil, tasks.NewTaskErr(fmt.Sprintf("error getting eth height for leader election: %v", err), true)
 	}
 
 	if !isLeading {
