@@ -3,6 +3,7 @@ package accusation
 import (
 	"bytes"
 	"context"
+	"encoding/hex"
 	"fmt"
 	"runtime"
 	"sync"
@@ -178,7 +179,11 @@ func (m *Manager) persistCreatedAccusations() {
 			err := m.database.Update(func(txn *badger.Txn) error {
 				// todo: put this marshalling into a separate function
 				var id [32]byte
-				copy(id[:], []byte(acc.GetId()))
+				idBin, err := hex.DecodeString(acc.GetId())
+				if err != nil {
+					return err
+				}
+				copy(id[:], idBin)
 				data, err := marshaller.GobMarshalBinary(acc)
 				if err != nil {
 					return err
