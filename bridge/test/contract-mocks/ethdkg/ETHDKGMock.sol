@@ -10,7 +10,7 @@ import "contracts/interfaces/IProxy.sol";
 import "contracts/libraries/ethdkg/ETHDKGStorage.sol";
 import "contracts/utils/ETHDKGUtils.sol";
 import "contracts/utils/ImmutableAuth.sol";
-import {ETHDKGErrors} from "contracts/libraries/errorCodes/ETHDKGErrors.sol";
+import {ETHDKGErrors} from "contracts/libraries/errors/ETHDKGErrors.sol";
 
 contract ETHDKGMock is
     ETHDKGStorage,

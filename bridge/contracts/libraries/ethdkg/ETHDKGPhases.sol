@@ -6,7 +6,7 @@ import "contracts/interfaces/IETHDKG.sol";
 import "contracts/interfaces/IETHDKGEvents.sol";
 import "contracts/libraries/ethdkg/ETHDKGStorage.sol";
 import "contracts/utils/ETHDKGUtils.sol";
-import {ETHDKGErrors} from "contracts/libraries/errorCodes/ETHDKGErrors.sol";
+import {ETHDKGErrors} from "contracts/libraries/errors/ETHDKGErrors.sol";
 
 /// @custom:salt ETHDKGPhases
 /// @custom:deploy-type deployUpgradeable
