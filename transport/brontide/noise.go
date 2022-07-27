@@ -177,12 +177,8 @@ func (c *cipherState) rotateKey() {
 	// | \
 	// |  \
 	// ck  k'
-	if _, err := h.Read(c.salt[:]); err != nil {
-		panic(err)
-	}
-	if _, err := h.Read(nextKey[:]); err != nil {
-		panic(err)
-	}
+	h.Read(c.salt[:])
+	h.Read(nextKey[:])
 
 	c.InitializeKey(nextKey)
 }
@@ -229,12 +225,8 @@ func (s *symmetricState) mixKey(input []byte) {
 	// | \
 	// |  \
 	// ck  k
-	if _, err := h.Read(s.chainingKey[:]); err != nil {
-		panic(err)
-	}
-	if _, err := h.Read(s.tempKey[:]); err != nil {
-		panic(err)
-	}
+	h.Read(s.chainingKey[:])
+	h.Read(s.tempKey[:])
 
 	// cipher.k = temp_key
 	s.InitializeKey(s.tempKey)
@@ -689,27 +681,19 @@ func (b *Machine) split() {
 	// messages and the second 32-bytes to decrypt their messages. For the
 	// responder the opposite is true.
 	if b.initiator {
-		if _, err := h.Read(sendKey[:]); err != nil {
-			panic(err)
-		}
+		h.Read(sendKey[:])
 		b.sendCipher = cipherState{}
 		b.sendCipher.InitializeKeyWithSalt(b.chainingKey, sendKey)
 
-		if _, err := h.Read(recvKey[:]); err != nil {
-			panic(err)
-		}
+		h.Read(recvKey[:])
 		b.recvCipher = cipherState{}
 		b.recvCipher.InitializeKeyWithSalt(b.chainingKey, recvKey)
 	} else {
-		if _, err := h.Read(recvKey[:]); err != nil {
-			panic(err)
-		}
+		h.Read(recvKey[:])
 		b.recvCipher = cipherState{}
 		b.recvCipher.InitializeKeyWithSalt(b.chainingKey, recvKey)
 
-		if _, err := h.Read(sendKey[:]); err != nil {
-			panic(err)
-		}
+		h.Read(sendKey[:])
 		b.sendCipher = cipherState{}
 		b.sendCipher.InitializeKeyWithSalt(b.chainingKey, sendKey)
 	}
