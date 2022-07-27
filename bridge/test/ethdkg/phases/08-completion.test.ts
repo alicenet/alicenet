@@ -1,4 +1,4 @@
-import { assertErrorMessage } from "../../chai-helpers";
+import { ethers } from "hardhat";
 import { getValidatorEthAccount } from "../../setup";
 import { validators4 } from "../assets/4-validators-successful-case";
 import {
@@ -27,11 +27,21 @@ describe("ETHDKG: ETHDKG Completion", () => {
       0
     );
 
+    const ethDKGPhases = await ethers.getContractAt(
+      "ETHDKGPhases",
+      ethdkg.address
+    );
+
     await expect(
       ethdkg
         .connect(await getValidatorEthAccount(validators4[0].address))
         .complete()
-    ).to.be.revertedWith("148");
+    )
+      .to.be.revertedWithCustomError(
+        ethDKGPhases,
+        `ETHDKGNotInPostGPKJDisputePhase`
+      )
+      .withArgs(Phase.DisputeGPKJSubmission);
 
     await assertETHDKGPhase(ethdkg, Phase.DisputeGPKJSubmission);
     await endCurrentPhase(ethdkg);
@@ -56,6 +66,10 @@ describe("ETHDKG: ETHDKG Completion", () => {
     const [ethdkg, validatorPool, expectedNonce] = await startAtGPKJ(
       validators4
     );
+    const ethDKGPhases = await ethers.getContractAt(
+      "ETHDKGPhases",
+      ethdkg.address
+    );
 
     await assertETHDKGPhase(ethdkg, Phase.GPKJSubmission);
     await submitValidatorsGPKJ(
@@ -70,7 +84,12 @@ describe("ETHDKG: ETHDKG Completion", () => {
       ethdkg
         .connect(await getValidatorEthAccount(validators4[0].address))
         .complete()
-    ).to.be.revertedWith("148");
+    )
+      .to.be.revertedWithCustomError(
+        ethDKGPhases,
+        `ETHDKGNotInPostGPKJDisputePhase`
+      )
+      .withArgs(Phase.DisputeGPKJSubmission);
 
     await assertETHDKGPhase(ethdkg, Phase.DisputeGPKJSubmission);
     await endCurrentPhase(ethdkg);
@@ -78,10 +97,11 @@ describe("ETHDKG: ETHDKG Completion", () => {
 
     const validatorAddress = "0x26D3D8Ab74D62C26f1ACc220dA1646411c9880Ac";
     // non-validator tries to complete ethdkg
-    await assertErrorMessage(
-      ethdkg.connect(await getValidatorEthAccount(validatorAddress)).complete(),
-      `OnlyValidatorsAllowed("${validatorAddress}")`
-    );
+    await expect(
+      ethdkg.connect(await getValidatorEthAccount(validatorAddress)).complete()
+    )
+      .to.be.revertedWithCustomError(ethdkg, `OnlyValidatorsAllowed`)
+      .withArgs(validatorAddress);
   });
 
   it("should not allow double completion of ETHDKG", async () => {
@@ -98,11 +118,21 @@ describe("ETHDKG: ETHDKG Completion", () => {
       0
     );
 
+    const ethDKGPhases = await ethers.getContractAt(
+      "ETHDKGPhases",
+      ethdkg.address
+    );
+
     await expect(
       ethdkg
         .connect(await getValidatorEthAccount(validators4[0].address))
         .complete()
-    ).to.be.revertedWith("148");
+    )
+      .to.be.revertedWithCustomError(
+        ethDKGPhases,
+        `ETHDKGNotInPostGPKJDisputePhase`
+      )
+      .withArgs(Phase.DisputeGPKJSubmission);
 
     await assertETHDKGPhase(ethdkg, Phase.DisputeGPKJSubmission);
     await endCurrentPhase(ethdkg);
@@ -127,12 +157,25 @@ describe("ETHDKG: ETHDKG Completion", () => {
       ethdkg
         .connect(await getValidatorEthAccount(validators4[0].address))
         .complete()
-    ).to.be.revertedWith("148");
+    )
+      .to.be.revertedWithCustomError(
+        ethDKGPhases,
+        `ETHDKGNotInPostGPKJDisputePhase`
+      )
+      .withArgs(Phase.Completion);
   });
 
   it("should not allow validators to participate in previous phases", async () => {
     const [ethdkg, validatorPool, expectedNonce] = await startAtGPKJ(
       validators4
+    );
+    const ethDKGPhases = await ethers.getContractAt(
+      "ETHDKGPhases",
+      ethdkg.address
+    );
+    const ETHDKGAccusations = await ethers.getContractAt(
+      "ETHDKGAccusations",
+      ethdkg.address
     );
 
     await assertETHDKGPhase(ethdkg, Phase.GPKJSubmission);
@@ -148,7 +191,12 @@ describe("ETHDKG: ETHDKG Completion", () => {
       ethdkg
         .connect(await getValidatorEthAccount(validators4[0].address))
         .complete()
-    ).to.be.revertedWith("148");
+    )
+      .to.be.revertedWithCustomError(
+        ethDKGPhases,
+        `ETHDKGNotInPostGPKJDisputePhase`
+      )
+      .withArgs(Phase.DisputeGPKJSubmission);
 
     await assertETHDKGPhase(ethdkg, Phase.DisputeGPKJSubmission);
     await endCurrentPhase(ethdkg);
@@ -169,38 +217,54 @@ describe("ETHDKG: ETHDKG Completion", () => {
     );
 
     // try participating in previous phases
-    await assertErrorMessage(
+    await expect(
       ethdkg
         .connect(await getValidatorEthAccount(validators4[0].address))
-        .register(validators4[0].aliceNetPublicKey),
-      `ETHDKGNotInRegistrationPhase(7)`
-    );
+        .register(validators4[0].aliceNetPublicKey)
+    )
+      .to.be.revertedWithCustomError(
+        ethDKGPhases,
+        `ETHDKGNotInRegistrationPhase`
+      )
+      .withArgs(Phase.Completion);
 
-    await assertErrorMessage(
+    await expect(
       ethdkg
         .connect(await getValidatorEthAccount(validators4[0].address))
-        .accuseParticipantNotRegistered([]),
-      `ETHDKGNotInPostRegistrationAccusationPhase(7)`
-    );
+        .accuseParticipantNotRegistered([])
+    )
+      .to.be.revertedWithCustomError(
+        ETHDKGAccusations,
+        `ETHDKGNotInPostRegistrationAccusationPhase`
+      )
+      .withArgs(Phase.Completion);
 
-    await assertErrorMessage(
+    await expect(
       ethdkg
         .connect(await getValidatorEthAccount(validators4[0].address))
         .distributeShares(
           validators4[0].encryptedShares,
           validators4[0].commitments
-        ),
-      `ETHDKGNotInSharedDistributionPhase(7)`
-    );
+        )
+    )
+      .to.be.revertedWithCustomError(
+        ethDKGPhases,
+        `ETHDKGNotInSharedDistributionPhase`
+      )
+      .withArgs(Phase.Completion);
 
-    await assertErrorMessage(
+    await expect(
       ethdkg
         .connect(await getValidatorEthAccount(validators4[0].address))
-        .accuseParticipantDidNotDistributeShares([]),
-      `NotInPostSharedDistributionPhase(7)`
-    );
+        .accuseParticipantDidNotDistributeShares([])
+    )
+      .to.be.revertedWithCustomError(
+        ETHDKGAccusations,
+        `NotInPostSharedDistributionPhase`
+      )
+      .withArgs(Phase.Completion);
 
-    await assertErrorMessage(
+    await expect(
       ethdkg
         .connect(await getValidatorEthAccount(validators4[0].address))
         .accuseParticipantDistributedBadShares(
@@ -212,48 +276,74 @@ describe("ETHDKG: ETHDKG Completion", () => {
           ],
           [0, 0],
           [0, 0]
-        ),
-      `ETHDKGNotInDisputePhase(7)`
-    );
+        )
+    )
+      .to.be.revertedWithCustomError(
+        ETHDKGAccusations,
+        `ETHDKGNotInDisputePhase`
+      )
+      .withArgs(Phase.Completion);
 
-    await assertErrorMessage(
+    await expect(
       ethdkg
         .connect(await getValidatorEthAccount(validators4[0].address))
         .submitKeyShare(
           validators4[0].keyShareG1,
           validators4[0].keyShareG1CorrectnessProof,
           validators4[0].keyShareG2
-        ),
-      `ETHDKGNotInKeyshareSubmissionPhase(7)`
-    );
+        )
+    )
+      .to.be.revertedWithCustomError(
+        ethDKGPhases,
+        `ETHDKGNotInKeyshareSubmissionPhase`
+      )
+      .withArgs(Phase.Completion);
 
-    await assertErrorMessage(
+    await expect(
       ethdkg
         .connect(await getValidatorEthAccount(validators4[0].address))
-        .accuseParticipantDidNotSubmitKeyShares([]),
-      `ETHDKGNotInPostKeyshareSubmissionPhase(7)`
-    );
+        .accuseParticipantDidNotSubmitKeyShares([])
+    )
+      .to.be.revertedWithCustomError(
+        ETHDKGAccusations,
+        `ETHDKGNotInPostKeyshareSubmissionPhase`
+      )
+      .withArgs(Phase.Completion);
 
     await expect(
       ethdkg
         .connect(await getValidatorEthAccount(validators4[0].address))
         .submitMasterPublicKey([0, 0, 0, 0])
-    ).to.be.revertedWith("143");
+    )
+      .to.be.revertedWithCustomError(
+        ethDKGPhases,
+        `ETHDKGNotInMasterPublicKeySubmissionPhase`
+      )
+      .withArgs(Phase.Completion);
 
     await expect(
       ethdkg
         .connect(await getValidatorEthAccount(validators4[0].address))
         .submitGPKJ([0, 0, 0, 0])
-    ).to.be.revertedWith("145");
+    )
+      .to.be.revertedWithCustomError(
+        ethDKGPhases,
+        `ETHDKGNotInGPKJSubmissionPhase`
+      )
+      .withArgs(Phase.Completion);
 
-    await assertErrorMessage(
+    await expect(
       ethdkg
         .connect(await getValidatorEthAccount(validators4[0].address))
-        .accuseParticipantDidNotSubmitGPKJ([]),
-      `ETHDKGNotInPostGPKJSubmissionPhase(7)`
-    );
+        .accuseParticipantDidNotSubmitGPKJ([])
+    )
+      .to.be.revertedWithCustomError(
+        ETHDKGAccusations,
+        `ETHDKGNotInPostGPKJSubmissionPhase`
+      )
+      .withArgs(Phase.Completion);
 
-    await assertErrorMessage(
+    await expect(
       ethdkg
         .connect(await getValidatorEthAccount(validators4[0].address))
         .accuseParticipantSubmittedBadGPKJ(
@@ -261,14 +351,23 @@ describe("ETHDKG: ETHDKG Completion", () => {
           [],
           [[[0, 0]]],
           PLACEHOLDER_ADDRESS
-        ),
-      `ETHDKGNotInPostGPKJSubmissionPhase(7)`
-    );
+        )
+    )
+      .to.be.revertedWithCustomError(
+        ETHDKGAccusations,
+        `ETHDKGNotInPostGPKJSubmissionPhase`
+      )
+      .withArgs(Phase.Completion);
 
     await expect(
       ethdkg
         .connect(await getValidatorEthAccount(validators4[0].address))
         .complete()
-    ).to.be.revertedWith("148");
+    )
+      .to.be.revertedWithCustomError(
+        ethDKGPhases,
+        `ETHDKGNotInPostGPKJDisputePhase`
+      )
+      .withArgs(Phase.Completion);
   });
 });

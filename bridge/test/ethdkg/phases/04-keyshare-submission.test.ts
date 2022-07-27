@@ -1,9 +1,10 @@
-import { BigNumberish, ethers } from "ethers";
-import { assertErrorMessage } from "../../chai-helpers";
+import { BigNumberish } from "ethers";
+import { ethers, expect } from "hardhat";
 import { getValidatorEthAccount } from "../../setup";
 import { validators4 } from "../assets/4-validators-successful-case";
 import {
   distributeValidatorsShares,
+  Phase,
   startAtDistributeShares,
   startAtSubmitKeyShares,
   submitValidatorsKeyShares,
@@ -22,15 +23,24 @@ describe("ETHDKG: Submit Key share", () => {
       expectedNonce
     );
 
-    await assertErrorMessage(
+    const ethDKGPhases = await ethers.getContractAt(
+      "ETHDKGPhases",
+      ethdkg.address
+    );
+
+    await expect(
       submitValidatorsKeyShares(
         ethdkg,
         validatorPool,
         validators4,
         expectedNonce
-      ),
-      `ETHDKGNotInKeyshareSubmissionPhase(2)`
-    );
+      )
+    )
+      .to.be.revertedWithCustomError(
+        ethDKGPhases,
+        `ETHDKGNotInKeyshareSubmissionPhase`
+      )
+      .withArgs(Phase.DisputeShareDistribution);
   });
 
   it("should allow submission of key shares", async function () {
@@ -72,16 +82,18 @@ describe("ETHDKG: Submit Key share", () => {
       "8743598319810782186450993867080805497457018022200839730580834926549940363993",
       "19522351501097379178289251110843345007238019509263663307388430690023301219325",
     ];
-    await assertErrorMessage(
+
+    await expect(
       ethdkg
         .connect(await getValidatorEthAccount(validator11))
         .submitKeyShare(
           val11KeyShareG1,
           val11KeyShareG1CorrectnessProof,
           val11KeyShareG2
-        ),
-      `OnlyValidatorsAllowed("${validator11}")`
-    );
+        )
+    )
+      .to.be.revertedWithCustomError(ethdkg, `OnlyValidatorsAllowed`)
+      .withArgs(validator11);
   });
 
   it("should not allow multiple submission of key shares by the same validator", async function () {
@@ -96,50 +108,59 @@ describe("ETHDKG: Submit Key share", () => {
       expectedNonce
     );
 
-    await assertErrorMessage(
+    const ethDKGPhases = await ethers.getContractAt(
+      "ETHDKGPhases",
+      ethdkg.address
+    );
+
+    await expect(
       submitValidatorsKeyShares(
         ethdkg,
         validatorPool,
         validators4.slice(0, 1),
         expectedNonce
-      ),
-      `ParticipantSubmittedKeysharesInRound("${ethers.utils.getAddress(
-        validators4[0].address
-      )}")`
-    );
+      )
+    )
+      .to.be.revertedWithCustomError(
+        ethDKGPhases,
+        `ParticipantSubmittedKeysharesInRound`
+      )
+      .withArgs(ethers.utils.getAddress(validators4[0].address));
   });
 
   it("should not allow submission of key shares with empty input state", async function () {
     const [ethdkg, ,] = await startAtSubmitKeyShares(validators4);
 
-    // Submit empty Key shares for all validators
-    await assertErrorMessage(
-      ethdkg
-        .connect(await getValidatorEthAccount(validators4[0].address))
-        .submitKeyShare(["0", "0"], ["0", "0"], ["0", "0", "0", "0"]),
-      `InvalidKeyshareG1()`
+    const ethDKGPhases = await ethers.getContractAt(
+      "ETHDKGPhases",
+      ethdkg.address
     );
 
-    await assertErrorMessage(
+    // Submit empty Key shares for all validators
+    await expect(
+      ethdkg
+        .connect(await getValidatorEthAccount(validators4[0].address))
+        .submitKeyShare(["0", "0"], ["0", "0"], ["0", "0", "0", "0"])
+    ).to.be.revertedWithCustomError(ethDKGPhases, `InvalidKeyshareG1`);
+
+    await expect(
       ethdkg
         .connect(await getValidatorEthAccount(validators4[0].address))
         .submitKeyShare(
           validators4[0].keyShareG1,
           ["0", "0"],
           ["0", "0", "0", "0"]
-        ),
-      `InvalidKeyshareG1()`
-    );
+        )
+    ).to.be.revertedWithCustomError(ethDKGPhases, `InvalidKeyshareG1`);
 
-    await assertErrorMessage(
+    await expect(
       ethdkg
         .connect(await getValidatorEthAccount(validators4[0].address))
         .submitKeyShare(
           validators4[0].keyShareG1,
           validators4[0].keyShareG1CorrectnessProof,
           ["0", "0", "0", "0"]
-        ),
-      `InvalidKeyshareG2()`
-    );
+        )
+    ).to.be.revertedWithCustomError(ethDKGPhases, `InvalidKeyshareG2`);
   });
 });
