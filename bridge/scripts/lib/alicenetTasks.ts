@@ -347,7 +347,7 @@ task("virtualMintDeposit", "Virtually creates a deposit on the side chain")
     "depositAmount",
     "Amount of BTokens to be deposited",
     undefined,
-    types.string
+    types.int
   )
   .addParam(
     "accountType",
@@ -363,7 +363,7 @@ task("virtualMintDeposit", "Virtually creates a deposit on the side chain")
     const input = iface.encodeFunctionData("virtualMintDeposit", [
       taskArgs.accountType,
       taskArgs.depositOwnerAddress,
-      BigNumber.from(taskArgs.depositAmount),
+      taskArgs.depositAmount,
     ]);
     const [admin] = await ethers.getSigners();
     const adminSigner = await ethers.getSigner(admin.address);
