@@ -2,7 +2,6 @@ package db
 
 import (
 	"context"
-	"encoding/gob"
 	"sync"
 
 	trie "github.com/alicenet/alicenet/badgerTrie"
@@ -31,9 +30,6 @@ func (db *Database) Init(DB *badger.DB) {
 	hdrTrie := &headerTrie{}
 	hdrTrie.init()
 	db.trie = hdrTrie
-
-	// register BaseAccusation as a known implementation of Accusation into gob
-	gob.Register(&objs.BaseAccusation{})
 }
 
 func (db *Database) DB() *badger.DB {
@@ -1906,9 +1902,6 @@ func (db *Database) makeAccusationIterKey() ([]byte, error) {
 }
 
 func (db *Database) SetAccusationRaw(txn *badger.Txn, id [32]byte, data []byte) error {
-	// idBytes := []byte(a.GetId())
-	// var id [32]byte
-	// copy(id[:], idBytes)
 	key, err := db.makeAccusationKey(id)
 	if err != nil {
 		return err
@@ -1952,15 +1945,6 @@ func (db *Database) GetAccusations(txn *badger.Txn, filter *func([]byte) bool) (
 			return nil, err
 		}
 
-		// buf := &bytes.Buffer{}
-		// buf.Write(accBytes)
-		// dec := gob.NewDecoder(buf)
-		// var acc objs.Accusation
-		// err = dec.Decode(&acc) // decode concrete implementation into an interface var without knowing which implementation it is (gob is awesome)
-		// if err != nil {
-		// 	return nil, err
-		// }
-
 		// filter if there's a filter
 		if filter == nil || (*filter)(accBytes) {
 			accusations = append(accusations, accBytes)
@@ -1970,29 +1954,26 @@ func (db *Database) GetAccusations(txn *badger.Txn, filter *func([]byte) bool) (
 	return accusations, nil
 }
 
-// // GetPersistedButUnscheduledAccusations retrieves accusations that are persisted but not yet scheduled in the Task manager
-// func (db *Database) GetPersistedButUnscheduledAccusations(txn *badger.Txn) ([]objs.Accusation, error) {
-// 	filter := func(acc objs.Accusation) bool {
-// 		return acc.GetState() == objs.Persisted
-// 	}
-// 	return db.GetAccusations(txn, &filter)
-// }
-
-// // GetScheduledButIncompleteAccusations retrieves accusations that are scheduled in the Task manager but not yet completed
-// func (db *Database) GetScheduledButIncompleteAccusations(txn *badger.Txn) ([]objs.Accusation, error) {
-// 	filter := func(acc objs.Accusation) bool {
-// 		return acc.GetState() == objs.ScheduledForExecution
-// 	}
-// 	return db.GetAccusations(txn, &filter)
-// }
-
-// // GetCompletedAccusations retrieves accusations that are completed
-// func (db *Database) GetCompletedAccusations(txn *badger.Txn) ([]objs.Accusation, error) {
-// 	filter := func(acc objs.Accusation) bool {
-// 		return acc.GetState() == objs.Completed
-// 	}
-// 	return db.GetAccusations(txn, &filter)
-// }
+func (db *Database) DeleteAccusation(txn *badger.Txn, id [32]byte) error {
+	prefix, err := db.makeAccusationKey(id)
+	if err != nil {
+		return err
+	}
+	exist := true
+	_, err = utils.GetValue(txn, prefix)
+	if err != nil {
+		if err != badger.ErrKeyNotFound {
+			return err
+		}
+		exist = false
+	}
+	if exist {
+		if err := utils.DeleteValue(txn, prefix); err != nil {
+			return err
+		}
+	}
+	return nil
+}
 
 // PendingHdrLeafIter
 type PendingHdrLeafIter struct {
