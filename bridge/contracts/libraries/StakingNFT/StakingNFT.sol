@@ -16,7 +16,6 @@ import {StakingNFTErrorCodes} from "contracts/libraries/errorCodes/StakingNFTErr
 import {
     CircuitBreakerErrorCodes
 } from "contracts/libraries/errorCodes/CircuitBreakerErrorCodes.sol";
-import "hardhat/console.sol";
 
 abstract contract StakingNFT is
     Initializable,
