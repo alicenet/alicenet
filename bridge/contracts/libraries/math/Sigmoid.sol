@@ -54,43 +54,43 @@ abstract contract Sigmoid {
     /// @param x The uint256 number for which to calculate the square root.
     /// @return result The result as an uint256.
     function _sqrt(uint256 x) internal pure returns (uint256 result) {
-        if (x == 0) {
-            return 0;
-        }
+        unchecked {
+            if (x <= 1) {
+                return x;
+            }
 
-        // Set the initial guess to the closest power of two that is higher than x.
-        uint256 xAux = uint256(x);
-        result = 1;
-        if (xAux >= 0x100000000000000000000000000000000) {
-            xAux >>= 128;
-            result <<= 64;
-        }
-        if (xAux >= 0x10000000000000000) {
-            xAux >>= 64;
-            result <<= 32;
-        }
-        if (xAux >= 0x100000000) {
-            xAux >>= 32;
-            result <<= 16;
-        }
-        if (xAux >= 0x10000) {
-            xAux >>= 16;
-            result <<= 8;
-        }
-        if (xAux >= 0x100) {
-            xAux >>= 8;
-            result <<= 4;
-        }
-        if (xAux >= 0x10) {
-            xAux >>= 4;
-            result <<= 2;
-        }
-        if (xAux >= 0x8) {
-            result <<= 1;
-        }
+            // Set the initial guess to the closest power of two that is higher than x.
+            uint256 xAux = uint256(x);
+            result = 1;
+            if (xAux >= 0x100000000000000000000000000000000) {
+                xAux >>= 128;
+                result <<= 64;
+            }
+            if (xAux >= 0x10000000000000000) {
+                xAux >>= 64;
+                result <<= 32;
+            }
+            if (xAux >= 0x100000000) {
+                xAux >>= 32;
+                result <<= 16;
+            }
+            if (xAux >= 0x10000) {
+                xAux >>= 16;
+                result <<= 8;
+            }
+            if (xAux >= 0x100) {
+                xAux >>= 8;
+                result <<= 4;
+            }
+            if (xAux >= 0x10) {
+                xAux >>= 4;
+                result <<= 2;
+            }
+            if (xAux >= 0x8) {
+                result <<= 1;
+            }
 
         // The operations can never overflow because the result is max 2^127 when it enters this block.
-        unchecked {
             result = (result + x / result) >> 1;
             result = (result + x / result) >> 1;
             result = (result + x / result) >> 1;
@@ -100,6 +100,107 @@ abstract contract Sigmoid {
             result = (result + x / result) >> 1; // Seven iterations should be enough
             uint256 roundedDownResult = x / result;
             return result >= roundedDownResult ? roundedDownResult : result;
+        }
+    }
+
+    /*
+    function _bitlength(uint256 x) internal pure returns (uint256) {
+        uint256 bitlength = 1;
+        uint256 xAux = uint256(x);
+        if (xAux >= 0x100000000000000000000000000000000) {
+            xAux >>= 128;
+            bitlength += 128;
+        }
+        if (xAux >= 0x10000000000000000) {
+            xAux >>= 64;
+            bitlength += 64;
+        }
+        if (xAux >= 0x100000000) {
+            xAux >>= 32;
+            bitlength += 32;
+        }
+        if (xAux >= 0x10000) {
+            xAux >>= 16;
+            bitlength += 16;
+        }
+        if (xAux >= 0x100) {
+            xAux >>= 8;
+            bitlength += 8;
+        }
+        if (xAux >= 0x10) {
+            xAux >>= 4;
+            bitlength += 4;
+        }
+        if (xAux >= 0x4) {
+            xAux >>= 2;
+            bitlength += 2;
+        }
+        if (xAux >= 0x2) {
+            bitlength += 1;
+        }
+        return bitlength;
+    }
+    */
+
+    function _sqrtNew(uint256 x) internal pure returns (uint256) {
+        unchecked {
+            if (x <= 1) {
+                return x;
+            }
+            if (x >= 0xfffffffffffffffffffffffffffffffe00000000000000000000000000000001) {
+                return (1 << 128) - 1;
+            }
+            // Here, e represents the bit length
+            uint256 e = 1;
+            // Here, result is a copy of x
+            uint256 result = x;
+            if (result >= 0x100000000000000000000000000000000) {
+                result >>= 128;
+                e += 128;
+            }
+            if (result >= 0x10000000000000000) {
+                result >>= 64;
+                e += 64;
+            }
+            if (result >= 0x100000000) {
+                result >>= 32;
+                e += 32;
+            }
+            if (result >= 0x10000) {
+                result >>= 16;
+                e += 16;
+            }
+            if (result >= 0x100) {
+                result >>= 8;
+                e += 8;
+            }
+            if (result >= 0x10) {
+                result >>= 4;
+                e += 4;
+            }
+            if (result >= 0x4) {
+                result >>= 2;
+                e += 2;
+            }
+            if (result >= 0x2) {
+                e += 1;
+            }
+
+            // e is currently bit length; we overwrite it now
+            e = (256 - e) >> 1;
+            uint256 m = x << (2*e);
+            // result now stores the result
+            result = 1 + (m >> 254);
+
+            // The operations can never overflow because the result is max 2^127 when it enters this block.
+            result = (result << 1)  + (m >> 251) / result;
+            result = (result << 3)  + (m >> 245) / result;
+            result = (result << 7)  + (m >> 233) / result;
+            result = (result << 15) + (m >> 209) / result;
+            result = (result << 31) + (m >> 161) / result;
+            result = (result << 63) + (m >>  65) / result;
+            result >>= e;
+            return result*result <= x ? result : (result-1);
         }
     }
 }

@@ -6,7 +6,11 @@ contract MockSigmoid is Sigmoid {
     function sqrtPublic(uint256 x) public returns (uint256) {
         return Sigmoid._sqrt(x);
     }
-    
+
+    function sqrtNewPublic(uint256 x) public returns (uint256) {
+        return Sigmoid._sqrtNew(x);
+    }
+
     function p(uint256 x) public pure returns (uint256) {
         return Sigmoid._p(x);
     }
@@ -30,6 +34,16 @@ contract MockSigmoid is Sigmoid {
     function sqrt(uint256 x) public pure returns (uint256) {
         return Sigmoid._sqrt(x);
     }
+
+    function sqrtNew(uint256 x) public pure returns (uint256) {
+        return Sigmoid._sqrtNew(x);
+    }
+
+    /*
+    function bitlength(uint256 x) public pure returns (uint256) {
+        return Sigmoid._bitlength(x);
+    }
+    */
 
     function pConstA() public pure returns (uint256) {
         return Sigmoid._P_A;
