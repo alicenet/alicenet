@@ -213,13 +213,14 @@ func (r *RoundStates) SetPreCommitNil(pcn *objs.PreCommitNil) error {
 }
 
 func (r *RoundStates) SetNextHeight(pc *objs.NextHeight) error {
-	r.SetProposal(pc.NHClaims.Proposal)
+	if err := r.SetProposal(pc.NHClaims.Proposal); err != nil {
+		return err
+	}
 	rs := r.GetRoundState(pc.Voter)
 	if rs == nil {
 		return errorz.ErrInvalid{}.New("rs nil in nh")
 	}
-	_, err := rs.SetNextHeight(pc)
-	if err != nil {
+	if _, err := rs.SetNextHeight(pc); err != nil {
 		return err
 	}
 	return nil

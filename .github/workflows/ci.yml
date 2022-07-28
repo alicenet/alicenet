@@ -99,7 +99,6 @@ jobs:
   go-lint:
     runs-on: ubuntu-20.04
     timeout-minutes: 10
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v3
       - uses: golangci/golangci-lint-action@v3
