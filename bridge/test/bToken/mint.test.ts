@@ -38,9 +38,13 @@ describe("Testing BToken Minting methods", async () => {
       ethIn
     );
     // Eths
-    const eths = await fixture.bToken.bTokensToEth(
+/*     const eths = await fixture.bToken.bTokensToEth(
       await fixture.bToken.getPoolBalance(),
       await fixture.bToken.totalSupply(),
+      bTokens
+    );
+ */
+    const eths = await fixture.bToken.getCurrentEthToMintBTokens(
       bTokens
     );
     // Round eths to avoid consumed gas on state comparison
@@ -63,10 +67,14 @@ describe("Testing BToken Minting methods", async () => {
       ethIn
     );
     // Eths
-    const eths2 = await fixture.bToken.bTokensToEth(
+/*     const eths2 = await fixture.bToken.bTokensToEth(
       await fixture.bToken.getPoolBalance(),
       await fixture.bToken.totalSupply(),
       bTokens2
+    );
+ */
+    const eths2 = await fixture.bToken.getCurrentEthToMintBTokens(
+      bTokens
     );
     expectedState.Balances.eth.user2 -= eth;
     expectedState.Balances.bToken.user2 += bTokens2.toBigInt();
@@ -107,9 +115,13 @@ describe("Testing BToken Minting methods", async () => {
       [user.address, minBTokens],
       ethIn
     );
-    let eths = await fixture.bToken.bTokensToEth(
+/*     let eths = await fixture.bToken.bTokensToEth(
       await fixture.bToken.getPoolBalance(),
       await fixture.bToken.totalSupply(),
+      bTokens
+    );
+ */ 
+    const eths = await fixture.bToken.getCurrentEthToMintBTokens(
       bTokens
     );
     expect(bTokens).to.be.equal(BigInt("399028731704364116575"));
@@ -127,9 +139,12 @@ describe("Testing BToken Minting methods", async () => {
       [user.address, minBTokens],
       ethIn
     );
-    eths = await fixture.bToken.bTokensToEth(
+/*     eths = await fixture.bToken.bTokensToEth(
       await fixture.bToken.getPoolBalance(),
       await fixture.bToken.totalSupply(),
+      bTokens2
+    );
+ */    const eths2 = await fixture.bToken.getCurrentEthToMintBTokens(
       bTokens2
     );
     expectedState.Balances.eth.admin -= eth;
@@ -153,9 +168,13 @@ describe("Testing BToken Minting methods", async () => {
       [user.address, minBTokens],
       ethIn
     );
-    eths = await fixture.bToken.bTokensToEth(
+/*     eths = await fixture.bToken.bTokensToEth(
       await fixture.bToken.getPoolBalance(),
       await fixture.bToken.totalSupply(),
+      bTokens
+    );
+ */ 
+    const eths = await fixture.bToken.getCurrentEthToMintBTokens(
       bTokens
     );
     expect(bTokens).to.be.equal(BigInt("17501004975246203818081563855"));

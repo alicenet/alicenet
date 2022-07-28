@@ -32,10 +32,10 @@ type IBToken interface {
 	IBTokenFilterer
 }
 
-type IBTokenErrorCodes interface {
-	IBTokenErrorCodesCaller
-	IBTokenErrorCodesTransactor
-	IBTokenErrorCodesFilterer
+type IBTokenErrors interface {
+	IBTokenErrorsCaller
+	IBTokenErrorsTransactor
+	IBTokenErrorsFilterer
 }
 
 type IETHDKG interface {

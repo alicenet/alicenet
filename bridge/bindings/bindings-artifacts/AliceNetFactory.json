@@ -11,6 +11,16 @@
     "type": "constructor"
   },
   {
+    "inputs": [],
+    "name": "CodeSizeZero",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "Unauthorized",
+    "type": "error"
+  },
+  {
     "anonymous": false,
     "inputs": [
       {
