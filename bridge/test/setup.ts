@@ -15,9 +15,12 @@ import {
   AToken,
   ATokenBurner,
   ATokenMinter,
+  BridgePoolDepositNotifier,
+  BridgeRouter,
   BToken,
   ETHDKG,
   Foundation,
+  IBridgePool,
   InvalidTxConsumptionAccusation,
   LegacyToken,
   LiquidityProviderStaking,
@@ -154,7 +157,7 @@ export const createUsers = async (
   return users;
 };
 
-async function getContractAddressFromDeployedStaticEvent(
+export async function getContractAddressFromDeployedStaticEvent(
   tx: ContractTransaction
 ): Promise<string> {
   const eventSignature = "event DeployedStatic(address contractAddr)";
@@ -162,7 +165,7 @@ async function getContractAddressFromDeployedStaticEvent(
   return await getContractAddressFromEventLog(tx, eventSignature, eventName);
 }
 
-async function getContractAddressFromDeployedProxyEvent(
+export async function getContractAddressFromDeployedProxyEvent(
   tx: ContractTransaction
 ): Promise<string> {
   const eventSignature = "event DeployedProxy(address contractAddr)";
@@ -170,7 +173,7 @@ async function getContractAddressFromDeployedProxyEvent(
   return await getContractAddressFromEventLog(tx, eventSignature, eventName);
 }
 
-async function getContractAddressFromDeployedRawEvent(
+export async function getContractAddressFromDeployedRawEvent(
   tx: ContractTransaction
 ): Promise<string> {
   const eventSignature = "event DeployedRaw(address contractAddr)";
@@ -178,7 +181,7 @@ async function getContractAddressFromDeployedRawEvent(
   return await getContractAddressFromEventLog(tx, eventSignature, eventName);
 }
 
-async function getContractAddressFromEventLog(
+export async function getContractAddressFromEventLog(
   tx: ContractTransaction,
   eventSignature: string,
   eventName: string
@@ -230,27 +233,40 @@ export const deployStaticWithFactory = async (
     );
   }
 
-  let initCallDataBin;
-  try {
-    initCallDataBin = _Contract.interface.encodeFunctionData(
-      "initialize",
-      initCallData
-    );
-  } catch (error) {
-    console.log(
-      `Warning couldnt get init call data for contract: ${contractName}`
-    );
-    console.log(error);
-    initCallDataBin = "0x";
-  }
   let saltBytes;
   if (salt === undefined) {
     saltBytes = getBytes32Salt(contractName);
   } else {
-    saltBytes = getBytes32Salt(salt);
+    if (ethers.utils.isHexString(salt) && salt.length == 66) {
+      //check if it is a salt already
+      saltBytes = salt;
+    } else saltBytes = getBytes32Salt(salt);
   }
-  const tx = await factory.deployStatic(saltBytes, initCallDataBin);
+
+  let tx;
+  if (
+    contractName.indexOf("BridgePool") == -1 // TODO gus: Add a better way to avoid BridgePool initializers
+  ) {
+    let initCallDataBin;
+    try {
+      initCallDataBin = _Contract.interface.encodeFunctionData(
+        "initialize",
+        initCallData
+      );
+    } catch (error) {
+      console.log(
+        `Warning couldnt get init call data for contract: ${contractName}`
+      );
+      console.log(error);
+      initCallDataBin = "0x";
+    }
+    tx = await factory.deployStatic(saltBytes, initCallDataBin);
+  } else {
+    tx = await factory.deployStatic(saltBytes, []);
+  }
+
   receipt = await ethers.provider.getTransactionReceipt(tx.hash);
+
   if (
     receipt.gasUsed.gt(10_000_000) &&
     hre.__SOLIDITY_COVERAGE_RUNNING !== true
@@ -321,7 +337,6 @@ export const deployUpgradeableWithFactory = async (
       saltBytes = getBytes32Salt(salt);
     }
   }
-
   const transaction2 = await factory.deployProxy(saltBytes);
   receipt = await ethers.provider.getTransactionReceipt(transaction2.hash);
   if (
@@ -355,7 +370,6 @@ export const deployFactoryAndBaseTokens = async (
   admin: SignerWithAddress
 ): Promise<BaseTokensFixture> => {
   const factory = await deployAliceNetFactory(admin);
-
   // LegacyToken
   const legacyToken = (await deployStaticWithFactory(
     factory,
@@ -397,7 +411,6 @@ export const deployAliceNetFactory = async (
     from: admin.address,
     nonce: txCount,
   });
-
   const Factory = await ethers.getContractFactory("AliceNetFactory");
   const factory = await Factory.deploy(futureFactoryAddress);
   await factory.deployed();
@@ -593,6 +606,64 @@ export const getFixture = async (
     "ATokenBurner"
   )) as ATokenBurner;
 
+  // BridgePoolV1
+  const localERC20BridgePoolV1 = (await deployStaticWithFactory(
+    factory,
+    "LocalERC20BridgePoolV1",
+    getLocalERC20BridgePoolSalt(1),
+    [1337]
+  )) as IBridgePool;
+
+  const localERC721BridgePoolV1 = (await deployStaticWithFactory(
+    factory,
+    "LocalERC721BridgePoolV1",
+    getLocalERC721BridgePoolSalt(1),
+    [1337]
+  )) as IBridgePool;
+
+  // BridgePoolFactory
+  const bridgeRouter = (await deployUpgradeableWithFactory(
+    factory,
+    "BridgeRouter",
+    "BridgeRouter",
+    undefined,
+    [1337]
+  )) as BridgeRouter;
+
+  //BridgePoolDepositNotifier
+  const bridgePoolDepositNotifier = (await deployUpgradeableWithFactory(
+    factory,
+    "BridgePoolDepositNotifier",
+    "BridgePoolDepositNotifier",
+    undefined,
+    [1337]
+  )) as BridgePoolDepositNotifier;
+
+  const erc721Mock = await (
+    await (await ethers.getContractFactory("ERC721Mock")).deploy()
+  ).deployed();
+
+  const erc20Mock = await (
+    await (await ethers.getContractFactory("ERC20Mock")).deploy()
+  ).deployed();
+
+  const immutableAuthErrorCodesContract = await (
+    await (await ethers.getContractFactory("ImmutableAuthErrorCodes")).deploy()
+  ).deployed();
+
+  const bridgePoolErrorCodesContract = await (
+    await (await ethers.getContractFactory("BridgePoolErrorCodes")).deploy()
+  ).deployed();
+
+  const bridgeRouterErrorCodesContract = await (
+    await (await ethers.getContractFactory("BridgeRouterErrorCodes")).deploy()
+  ).deployed();
+
+  const aliceNetFactoryBaseErrorCodesContract = await (
+    await (
+      await ethers.getContractFactory("AliceNetFactoryBaseErrorCodes")
+    ).deploy()
+  ).deployed();
   const invalidTxConsumptionAccusation = (await deployUpgradeableWithFactory(
     factory,
     "InvalidTxConsumptionAccusation",
@@ -628,12 +699,22 @@ export const getFixture = async (
     snapshots,
     ethdkg,
     factory,
+    localERC721BridgePoolV1,
+    localERC20BridgePoolV1,
+    erc721Mock,
+    erc20Mock,
+    bridgeRouter,
+    bridgePoolDepositNotifier,
     namedSigners,
     aTokenMinter,
     aTokenBurner,
     liquidityProviderStaking,
     foundation,
     stakingPositionDescriptor,
+    bridgePoolErrorCodesContract,
+    immutableAuthErrorCodesContract,
+    aliceNetFactoryBaseErrorCodesContract,
+    bridgeRouterErrorCodesContract,
     invalidTxConsumptionAccusation,
     multipleProposalAccusation,
   };
@@ -737,5 +818,29 @@ export const getMetamorphicAddress = (
     factoryAddress,
     ethers.utils.formatBytes32String(salt),
     ethers.utils.keccak256(initCode)
+  );
+};
+
+export const getLocalERC20BridgePoolSalt = (version: number): string => {
+  return ethers.utils.keccak256(
+    ethers.utils.solidityPack(
+      ["bytes32", "bytes32"],
+      [
+        ethers.utils.solidityKeccak256(["string"], ["LocalERC20"]),
+        ethers.utils.solidityKeccak256(["uint16"], [version]),
+      ]
+    )
+  );
+};
+
+export const getLocalERC721BridgePoolSalt = (version: number): string => {
+  return ethers.utils.keccak256(
+    ethers.utils.solidityPack(
+      ["bytes32", "bytes32"],
+      [
+        ethers.utils.solidityKeccak256(["string"], ["LocalERC721"]),
+        ethers.utils.solidityKeccak256(["uint16"], [version]),
+      ]
+    )
   );
 };

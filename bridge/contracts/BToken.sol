@@ -8,7 +8,8 @@ import "contracts/utils/MagicEthTransfer.sol";
 import "contracts/utils/EthSafeTransfer.sol";
 import "contracts/libraries/math/Sigmoid.sol";
 import "contracts/utils/ImmutableAuth.sol";
-import {BTokenErrors} from "contracts/libraries/errors/BTokenErrors.sol";
+import "contracts/BridgeRouter.sol";
+import "contracts/libraries/errorCodes/BTokenErrorCodes.sol";
 
 /// @custom:salt BToken
 /// @custom:deploy-type deployStatic
@@ -23,7 +24,8 @@ contract BToken is
     ImmutablePublicStaking,
     ImmutableValidatorStaking,
     ImmutableLiquidityProviderStaking,
-    ImmutableFoundation
+    ImmutableFoundation,
+    ImmutableBridgeRouter
 {
     struct Deposit {
         uint8 accountType;
@@ -80,6 +82,35 @@ contract BToken is
     function initialize() public onlyFactory initializer {
         __ERC20_init("BToken", "BOB");
         _setSplitsInternal(332, 332, 332, 4);
+    }
+
+    /// @dev
+    ///
+    function payAndDeposit(
+        uint256 maxEth,
+        uint256 maxTokens,
+        bytes calldata data
+    ) public payable {
+        //forward call to btoken
+        uint256 bTokenFee = BridgeRouter(_bridgeRouterAddress()).routeDeposit(
+            msg.sender,
+            maxTokens,
+            data
+        );
+        //if the message has value (eth payment) require the value of eth equal btokenAmount, else destroy btoken amount specified
+        if (msg.value > 0) {
+            uint256 ethFee = _bTokensToEthMint(totalSupply(), bTokenFee);
+            require(
+                maxEth <= ethFee && msg.value >= ethFee,
+                string(abi.encodePacked(BTokenErrorCodes.BTOKEN_ERC_MINT_INSUFFICIENT_ETH))
+            );
+            uint256 refund = msg.value - ethFee;
+            if (refund > 0) {
+                payable(msg.sender).transfer(refund);
+            }
+        } else {
+            _destroyTokens(bTokenFee);
+        }
     }
 
     /// @dev sets the percentage that will be divided between all the staking
@@ -502,6 +533,15 @@ contract BToken is
             revert BTokenErrors.BurnAmountExceedsSupply(numBTK_, totalSupply_);
         }
         return _min(poolBalance_, _pInverse(totalSupply_) - _pInverse(totalSupply_ - numBTK_));
+    }
+
+    // Internal function that calculates the number of eth required to deposit (mint) ERC tokens in our chain
+    function _bTokensToEthMint(uint256 totalSupply_, uint256 numBTK_)
+        internal
+        view
+        returns (uint256 numEth)
+    {
+        return _fp(totalSupply_ + numBTK_) - _fp(totalSupply_);
     }
 
     function _newDeposit(

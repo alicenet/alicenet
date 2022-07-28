@@ -22,4 +22,10 @@ library ImmutableAuthErrorCodes {
     bytes32 public constant IMMUTEABLEAUTH_ONLY_ETHDKG = "2016"; // "onlyETHDKG"
     bytes32 public constant IMMUTEABLEAUTH_ONLY_INVALIDTXCONSUMPTIONACCUSATION = "2017"; // "onlyInvalidTxConsumptionAccusation"
     bytes32 public constant IMMUTEABLEAUTH_ONLY_MULTIPLEPROPOSALACCUSATION = "2018"; // "onlyMultipleProposalAccusation"
+    bytes32 public constant IMMUTEABLEAUTH_ONLY_CALLANY = "2019"; //onlyCallAny
+    bytes32 public constant IMMUTEABLEAUTH_ONLY_BRIDGEROUTER = "2020"; //onlyBridgeRouter
+    bytes32 public constant IMMUTEABLEAUTH_ONLY_BRIDGEPOOL = "2021"; //onlyBridgePool
+    bytes32 public constant IMMUTEABLEAUTH_ONLY_LOCALERC20BRIDGEPOOLV1 = "2022";
+    bytes32 public constant IMMUTEABLEAUTH_ONLY_LOCALERC721BRIDGEPOOLV1 = "2023";
+    bytes32 public constant IMMUTEABLEAUTH_ONLY_BRIDGEPOOLDEPOSITNOTIFIER = "2024";
 }

@@ -133,6 +133,64 @@ abstract contract ImmutableBToken is ImmutableFactory {
     }
 }
 
+abstract contract ImmutableBridgePoolDepositNotifier is ImmutableFactory {
+    address private immutable _bridgePoolDepositNotifier;
+
+    modifier onlyBridgePoolDepositNotifier() {
+        require(
+            msg.sender == _bridgePoolDepositNotifier,
+            string(
+                abi.encodePacked(
+                    ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_BRIDGEPOOLDEPOSITNOTIFIER
+                )
+            )
+        );
+        _;
+    }
+
+    constructor() {
+        _bridgePoolDepositNotifier = getMetamorphicContractAddress(
+            0x427269646765506f6f6c4465706f7369744e6f74696669657200000000000000,
+            _factoryAddress()
+        );
+    }
+
+    function _bridgePoolDepositNotifierAddress() internal view returns (address) {
+        return _bridgePoolDepositNotifier;
+    }
+
+    function _saltForBridgePoolDepositNotifier() internal pure returns (bytes32) {
+        return 0x427269646765506f6f6c4465706f7369744e6f74696669657200000000000000;
+    }
+}
+
+abstract contract ImmutableBridgeRouter is ImmutableFactory {
+    address private immutable _bridgeRouter;
+
+    modifier onlyBridgeRouter() {
+        require(
+            msg.sender == _bridgeRouter,
+            string(abi.encodePacked(ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_BRIDGEROUTER))
+        );
+        _;
+    }
+
+    constructor() {
+        _bridgeRouter = getMetamorphicContractAddress(
+            0x427269646765526f757465720000000000000000000000000000000000000000,
+            _factoryAddress()
+        );
+    }
+
+    function _bridgeRouterAddress() internal view returns (address) {
+        return _bridgeRouter;
+    }
+
+    function _saltForBridgeRouter() internal pure returns (bytes32) {
+        return 0x427269646765526f757465720000000000000000000000000000000000000000;
+    }
+}
+
 abstract contract ImmutableFoundation is ImmutableFactory {
     address private immutable _foundation;
 
@@ -187,37 +245,6 @@ abstract contract ImmutableGovernance is ImmutableFactory {
     }
 }
 
-abstract contract ImmutableInvalidTxConsumptionAccusation is ImmutableFactory {
-    address private immutable _invalidTxConsumptionAccusation;
-
-    modifier onlyInvalidTxConsumptionAccusation() {
-        require(
-            msg.sender == _invalidTxConsumptionAccusation,
-            string(
-                abi.encodePacked(
-                    ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_INVALIDTXCONSUMPTIONACCUSATION
-                )
-            )
-        );
-        _;
-    }
-
-    constructor() {
-        _invalidTxConsumptionAccusation = getMetamorphicContractAddress(
-            0x92a73f2b6573522d63c8fc84b5d8e5d615fbb685c1b3d7fad2155fe227daf848,
-            _factoryAddress()
-        );
-    }
-
-    function _invalidTxConsumptionAccusationAddress() internal view returns (address) {
-        return _invalidTxConsumptionAccusation;
-    }
-
-    function _saltForInvalidTxConsumptionAccusation() internal pure returns (bytes32) {
-        return 0x92a73f2b6573522d63c8fc84b5d8e5d615fbb685c1b3d7fad2155fe227daf848;
-    }
-}
-
 abstract contract ImmutableLiquidityProviderStaking is ImmutableFactory {
     address private immutable _liquidityProviderStaking;
 
@@ -249,15 +276,44 @@ abstract contract ImmutableLiquidityProviderStaking is ImmutableFactory {
     }
 }
 
-abstract contract ImmutableMultipleProposalAccusation is ImmutableFactory {
-    address private immutable _multipleProposalAccusation;
+abstract contract ImmutableLocalERC20BridgePoolV1 is ImmutableFactory {
+    address private immutable _localERC20BridgePoolV1;
 
-    modifier onlyMultipleProposalAccusation() {
+    modifier onlyLocalERC20BridgePoolV1() {
         require(
-            msg.sender == _multipleProposalAccusation,
+            msg.sender == _localERC20BridgePoolV1,
+            string(
+                abi.encodePacked(ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_LOCALERC20BRIDGEPOOLV1)
+            )
+        );
+        _;
+    }
+
+    constructor() {
+        _localERC20BridgePoolV1 = getMetamorphicContractAddress(
+            0x4c6f63616c4552433230427269646765506f6f6c563100000000000000000000,
+            _factoryAddress()
+        );
+    }
+
+    function _localERC20BridgePoolV1Address() internal view returns (address) {
+        return _localERC20BridgePoolV1;
+    }
+
+    function _saltForLocalERC20BridgePoolV1() internal pure returns (bytes32) {
+        return 0x4c6f63616c4552433230427269646765506f6f6c563100000000000000000000;
+    }
+}
+
+abstract contract ImmutableLocalERC721BridgePoolV1 is ImmutableFactory {
+    address private immutable _localERC721BridgePoolV1;
+
+    modifier onlyLocalERC721BridgePoolV1() {
+        require(
+            msg.sender == _localERC721BridgePoolV1,
             string(
                 abi.encodePacked(
-                    ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_MULTIPLEPROPOSALACCUSATION
+                    ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_LOCALERC721BRIDGEPOOLV1
                 )
             )
         );
@@ -265,18 +321,18 @@ abstract contract ImmutableMultipleProposalAccusation is ImmutableFactory {
     }
 
     constructor() {
-        _multipleProposalAccusation = getMetamorphicContractAddress(
-            0xcfdffd500b4a956e03976b2afd69712237ffa06e35093df1e05e533688959fdc,
+        _localERC721BridgePoolV1 = getMetamorphicContractAddress(
+            0x4c6f63616c455243373231427269646765506f6f6c5631000000000000000000,
             _factoryAddress()
         );
     }
 
-    function _multipleProposalAccusationAddress() internal view returns (address) {
-        return _multipleProposalAccusation;
+    function _localERC721BridgePoolV1Address() internal view returns (address) {
+        return _localERC721BridgePoolV1;
     }
 
-    function _saltForMultipleProposalAccusation() internal pure returns (bytes32) {
-        return 0xcfdffd500b4a956e03976b2afd69712237ffa06e35093df1e05e533688959fdc;
+    function _saltForLocalERC721BridgePoolV1() internal pure returns (bytes32) {
+        return 0x4c6f63616c455243373231427269646765506f6f6c5631000000000000000000;
     }
 }
 
@@ -416,6 +472,33 @@ abstract contract ImmutableValidatorStaking is ImmutableFactory {
 
     function _saltForValidatorStaking() internal pure returns (bytes32) {
         return 0x56616c696461746f725374616b696e6700000000000000000000000000000000;
+    }
+}
+
+abstract contract ImmutableCallAny is ImmutableFactory {
+    address private immutable _callAny;
+
+    modifier onlyCallAny() {
+        require(
+            msg.sender == _callAny,
+            string(abi.encodePacked(ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_CALLANY))
+        );
+        _;
+    }
+
+    constructor() {
+        _callAny = getMetamorphicContractAddress(
+            0x43616c6c416e7900000000000000000000000000000000000000000000000000,
+            _factoryAddress()
+        );
+    }
+
+    function _callAnyAddress() internal view returns (address) {
+        return _callAny;
+    }
+
+    function _saltForCallAny() internal pure returns (bytes32) {
+        return 0x43616c6c416e7900000000000000000000000000000000000000000000000000;
     }
 }
 
