@@ -226,7 +226,7 @@ contract BToken is
             bridgeRouterSalt,
             _factoryAddress()
         );
-        require(_isContract(address bridgeRouterAddress), "router contract doesn't exist yet");
+        require(_isContract(bridgeRouterAddress), "router contract doesn't exist yet");
         //forward call to router
         uint256 bTokenFee = IBridgeRouter(bridgeRouterAddress).routeDeposit(
             msg.sender,

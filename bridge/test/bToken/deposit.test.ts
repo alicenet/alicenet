@@ -88,9 +88,8 @@ describe("Testing BToken Deposit methods", async () => {
 
   it("Should deposit funds on side-chain without burning main-chain tokens then not affecting balances", async () => {
     expectedState = await getState(fixture);
-    // Calculate the amount of bytes per eth value sent
-    const bTokens = await fixture.bToken.ethToBTokens(
-      await fixture.bToken.getPoolBalance(),
+    // Calculate the amount of bTokens per eth value sent
+    const bTokens = await fixture.bToken.getCurrentMintedBTokensFromEth(
       ethIn.div(marketSpread)
     );
     await expect(
@@ -155,8 +154,7 @@ describe("Testing BToken Deposit methods", async () => {
   });
 
   it("Should distribute after mint deposit", async () => {
-    const bTokens = await fixture.bToken.ethToBTokens(
-      await fixture.bToken.getPoolBalance(),
+    const bTokens = await fixture.bToken.getCurrentMintedBTokensFromEth(
       ethIn.div(marketSpread)
     );
     expectedState = await getState(fixture);
