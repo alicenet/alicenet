@@ -225,7 +225,7 @@ contract BToken is
             bridgeRouterSalt,
             _factoryAddress()
         );
-        if (!_isContract(bridgeRouterAddress)){
+        if (!_isContract(bridgeRouterAddress)) {
             revert BTokenErrors.InexistentRouterContract(bridgeRouterAddress);
         }
         //forward call to router
