@@ -1,9 +1,7 @@
 package db
 
 import (
-	"bytes"
 	"context"
-	"encoding/gob"
 	"sync"
 	"time"
 
@@ -598,18 +596,18 @@ func (db *rawDataBase) getCounter(txn *badger.Txn, k []byte) (int, error) {
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-func (db *rawDataBase) SetAccusation(txn *badger.Txn, key []byte, a objs.Accusation) error {
-	buf := &bytes.Buffer{}
-	enc := gob.NewEncoder(buf)
-	err := enc.Encode(&a)
-	if err != nil {
-		return err
-	}
-	vv := buf.Bytes()
-	return utils.SetValue(txn, key, vv)
+func (db *rawDataBase) SetAccusationRaw(txn *badger.Txn, key []byte, data []byte) error {
+	// buf := &bytes.Buffer{}
+	// enc := gob.NewEncoder(buf)
+	// err := enc.Encode(&a)
+	// if err != nil {
+	// 	return err
+	// }
+	// vv := buf.Bytes()
+	return utils.SetValue(txn, key, data)
 }
 
-func (db *rawDataBase) GetAccusation(txn *badger.Txn, key []byte) (objs.Accusation, error) {
+func (db *rawDataBase) GetAccusationRaw(txn *badger.Txn, key []byte) ([]byte, error) {
 	v, err := db.getValue(txn, key)
 	if err != nil {
 		return nil, err
@@ -618,14 +616,14 @@ func (db *rawDataBase) GetAccusation(txn *badger.Txn, key []byte) (objs.Accusati
 		return nil, nil
 	}
 
-	buf := &bytes.Buffer{}
-	buf.Write(v)
-	dec := gob.NewDecoder(buf)
-	var acc objs.Accusation
-	err = dec.Decode(&acc) // decode concrete implementation into an interface var without knowing which implementation it is (gob is awesome)
-	if err != nil {
-		return nil, err
-	}
+	// buf := &bytes.Buffer{}
+	// buf.Write(v)
+	// dec := gob.NewDecoder(buf)
+	// var acc tasks.Task
+	// err = dec.Decode(&acc) // decode concrete implementation into an interface var without knowing which implementation it is (gob is awesome)
+	// if err != nil {
+	// 	return nil, err
+	// }
 
-	return acc, nil
+	return v, nil
 }

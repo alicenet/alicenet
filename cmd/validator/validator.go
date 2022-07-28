@@ -8,6 +8,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/alicenet/alicenet/layer1/handlers"
+
 	_ "net/http/pprof"
 
 	"github.com/alicenet/alicenet/application"
@@ -29,8 +31,6 @@ import (
 	"github.com/alicenet/alicenet/layer1"
 	"github.com/alicenet/alicenet/layer1/ethereum"
 	"github.com/alicenet/alicenet/layer1/executor"
-	"github.com/alicenet/alicenet/layer1/executor/tasks"
-	"github.com/alicenet/alicenet/layer1/handlers"
 	"github.com/alicenet/alicenet/layer1/monitor"
 	"github.com/alicenet/alicenet/layer1/transaction"
 	"github.com/alicenet/alicenet/localrpc"
@@ -282,16 +282,13 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	defer txWatcher.Close()
 
 	// Setup tasks scheduler
-	taskRequestChan := make(chan tasks.TaskRequest, constants.TaskSchedulerBufferSize)
-	defer close(taskRequestChan)
-
-	tasksScheduler, err := executor.NewTasksScheduler(monDB, eth, contractsHandler, consAdminHandlers, taskRequestChan, txWatcher)
+	tasksHandler, err := executor.NewTaskHandler(monDB, eth, contractsHandler, consAdminHandlers, txWatcher)
 	if err != nil {
 		panic(err)
 	}
 
 	monitorInterval := config.Configuration.Monitor.Interval
-	mon, err := monitor.NewMonitor(consDB, monDB, consAdminHandlers, appDepositHandler, eth, contractsHandler, contractsHandler.EthereumContracts().GetAllAddresses(), monitorInterval, uint64(batchSize), taskRequestChan)
+	mon, err := monitor.NewMonitor(consDB, monDB, consAdminHandlers, appDepositHandler, eth, contractsHandler, contractsHandler.EthereumContracts().GetAllAddresses(), monitorInterval, uint64(batchSize), tasksHandler)
 	if err != nil {
 		panic(err)
 	}
@@ -308,7 +305,7 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	// setup Accusation Manager
 	sstore := &lstate.Store{}
 	sstore.Init(consDB)
-	accusationManager := accusation.NewManager(consDB, sstore, logging.GetLogger("accusations"))
+	accusationManager := accusation.NewManager(consDB, sstore, tasksHandler, logging.GetLogger("accusations"))
 
 	consSync.Init(consDB, mDB, tDB, consGossipClient, consGossipHandlers, consTxPool, consLSEngine, app, consAdminHandlers, peerManager, accusationManager, storage)
 	localStateHandler.Init(consDB, app, consGossipHandlers, publicKey, consSync.Safe, storage)
@@ -323,11 +320,8 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	go statusLogger.Run()
 	defer statusLogger.Close()
 
-	err = tasksScheduler.Start()
-	if err != nil {
-		panic(err)
-	}
-	defer tasksScheduler.Close()
+	tasksHandler.Start()
+	defer tasksHandler.Close()
 
 	err = mon.Start()
 	if err != nil {
