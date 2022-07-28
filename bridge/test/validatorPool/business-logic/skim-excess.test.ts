@@ -1,3 +1,4 @@
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { Signer } from "ethers";
 import { ethers } from "hardhat";
 import { ValidatorPool } from "../../../typechain-types";
@@ -14,10 +15,10 @@ import { burnStakeTo } from "../setup";
 describe("ValidatorPool: Skim excess of ETH and Tokens", async () => {
   let fixture: Fixture;
   let adminSigner: Signer;
-
+  let admin: SignerWithAddress;
   beforeEach(async () => {
     fixture = await getFixture(false, true, true);
-    const [admin, , ,] = fixture.namedSigners;
+    [admin, , ,] = fixture.namedSigners;
     adminSigner = await getValidatorEthAccount(admin.address);
   });
 
@@ -68,11 +69,11 @@ describe("ValidatorPool: Skim excess of ETH and Tokens", async () => {
 
   it("Non authorized user should not be able to skim excess of tokens eth sent to contract", async function () {
     const validatorPool = fixture.validatorPool as ValidatorPool;
-    await expect(
-      validatorPool.skimExcessEth(validatorsSnapshots[0].address)
-    ).to.be.rejectedWith("2000");
-    await expect(
-      validatorPool.skimExcessToken(validatorsSnapshots[0].address)
-    ).to.be.rejectedWith("2000");
+    await expect(validatorPool.skimExcessEth(validatorsSnapshots[0].address))
+      .to.be.revertedWithCustomError(fixture.bToken, `OnlyFactory`)
+      .withArgs(admin.address);
+    await expect(validatorPool.skimExcessToken(validatorsSnapshots[0].address))
+      .to.be.revertedWithCustomError(fixture.bToken, `OnlyFactory`)
+      .withArgs(admin.address);
   });
 });

@@ -1,3 +1,4 @@
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { ethers } from "hardhat";
 import { completeETHDKGRound } from "../ethdkg/setup";
 import {
@@ -22,9 +23,11 @@ import {
 describe("Snapshots: Migrate state", () => {
   let fixture: Fixture;
   let expectedBlockNumber: bigint;
+  let admin: SignerWithAddress;
 
   beforeEach(async function () {
     fixture = await getFixture();
+    [admin] = fixture.namedSigners;
   });
 
   it("Should not be to do a migration of snapshots if not factory", async function () {
@@ -33,7 +36,9 @@ describe("Snapshots: Migrate state", () => {
         [validSnapshot1024.GroupSignature],
         [validSnapshot1024.BClaims]
       )
-    ).to.be.revertedWith("2000");
+    )
+      .to.be.revertedWithCustomError(fixture.bToken, `OnlyFactory`)
+      .withArgs(admin.address);
   });
 
   it("Should not be to do a migration with mismatch state length", async function () {
