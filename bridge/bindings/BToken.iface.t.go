@@ -32,10 +32,10 @@ type IBTokenTransactor interface {
 	//
 	// Solidity: function deposit(uint8 accountType_, address to_, uint256 amount_) returns(uint256)
 	Deposit(opts *bind.TransactOpts, accountType_ uint8, to_ common.Address, amount_ *big.Int) (*types.Transaction, error)
-	// DepositTokensOnBridges is a paid mutator transaction binding the contract method 0x1a116e27.
+	// DepositTokensOnBridges is a paid mutator transaction binding the contract method 0xc4412f67.
 	//
-	// Solidity: function depositTokensOnBridges(uint256 maxEth, uint256 maxTokens, uint16 bridgeVersion, bytes data) payable returns()
-	DepositTokensOnBridges(opts *bind.TransactOpts, maxEth *big.Int, maxTokens *big.Int, bridgeVersion uint16, data []byte) (*types.Transaction, error)
+	// Solidity: function depositTokensOnBridges(uint256 maxTokens, uint16 bridgeVersion, bytes data) payable returns()
+	DepositTokensOnBridges(opts *bind.TransactOpts, maxTokens *big.Int, bridgeVersion uint16, data []byte) (*types.Transaction, error)
 	// DestroyBTokens is a paid mutator transaction binding the contract method 0x2dc6b024.
 	//
 	// Solidity: function destroyBTokens(uint256 numBTK_) returns(bool)

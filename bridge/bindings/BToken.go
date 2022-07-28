@@ -45,7 +45,7 @@ type BTokenSplits struct {
 
 // BTokenMetaData contains all meta data concerning the BToken contract.
 var BTokenMetaData = &bind.MetaData{
-	ABI: "[{\"inputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"}],\"name\":\"SenderNotAdmin\",\"type\":\"error\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"owner\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"spender\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"value\",\"type\":\"uint256\"}],\"name\":\"Approval\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"uint256\",\"name\":\"depositID\",\"type\":\"uint256\"},{\"indexed\":true,\"internalType\":\"uint8\",\"name\":\"accountType\",\"type\":\"uint8\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"depositor\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"DepositReceived\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint8\",\"name\":\"version\",\"type\":\"uint8\"}],\"name\":\"Initialized\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"from\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"value\",\"type\":\"uint256\"}],\"name\":\"Transfer\",\"type\":\"event\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"owner\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"spender\",\"type\":\"address\"}],\"name\":\"allowance\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"spender\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"approve\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"balanceOf\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"amount_\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"minEth_\",\"type\":\"uint256\"}],\"name\":\"burn\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"numEth\",\"type\":\"uint256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"to_\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"amount_\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"minEth_\",\"type\":\"uint256\"}],\"name\":\"burnTo\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"numEth\",\"type\":\"uint256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"decimals\",\"outputs\":[{\"internalType\":\"uint8\",\"name\":\"\",\"type\":\"uint8\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"spender\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"subtractedValue\",\"type\":\"uint256\"}],\"name\":\"decreaseAllowance\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint8\",\"name\":\"accountType_\",\"type\":\"uint8\"},{\"internalType\":\"address\",\"name\":\"to_\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"amount_\",\"type\":\"uint256\"}],\"name\":\"deposit\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"maxEth\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"maxTokens\",\"type\":\"uint256\"},{\"internalType\":\"uint16\",\"name\":\"bridgeVersion\",\"type\":\"uint16\"},{\"internalType\":\"bytes\",\"name\":\"data\",\"type\":\"bytes\"}],\"name\":\"depositTokensOnBridges\",\"outputs\":[],\"stateMutability\":\"payable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"numBTK_\",\"type\":\"uint256\"}],\"name\":\"destroyBTokens\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"numBTK_\",\"type\":\"uint256\"}],\"name\":\"destroyPreApprovedBTokens\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"distribute\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"minerAmount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"stakingAmount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"lpStakingAmount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"foundationAmount\",\"type\":\"uint256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getAdmin\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"numBTK_\",\"type\":\"uint256\"}],\"name\":\"getCurrentEthFromBTokensBurn\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"numEth\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"numBTK_\",\"type\":\"uint256\"}],\"name\":\"getCurrentEthToMintBTokens\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"numEth\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"numEth_\",\"type\":\"uint256\"}],\"name\":\"getCurrentMintedBTokensFromEth\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"depositID\",\"type\":\"uint256\"}],\"name\":\"getDeposit\",\"outputs\":[{\"components\":[{\"internalType\":\"uint8\",\"name\":\"accountType\",\"type\":\"uint8\"},{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"value\",\"type\":\"uint256\"}],\"internalType\":\"structBToken.Deposit\",\"name\":\"\",\"type\":\"tuple\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getDepositID\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"poolBalance_\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"totalSupply_\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"numBTK_\",\"type\":\"uint256\"}],\"name\":\"getEthFromBTokensBurn\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"numEth\",\"type\":\"uint256\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"totalSupply_\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"numBTK_\",\"type\":\"uint256\"}],\"name\":\"getEthToMintBTokens\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"numEth\",\"type\":\"uint256\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getMarketSpread\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"_salt\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"_factory\",\"type\":\"address\"}],\"name\":\"getMetamorphicContractAddress\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"poolBalance_\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"numEth_\",\"type\":\"uint256\"}],\"name\":\"getMintedBTokensFromEth\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getPoolBalance\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getSplits\",\"outputs\":[{\"components\":[{\"internalType\":\"uint32\",\"name\":\"validatorStaking\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"publicStaking\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"liquidityProviderStaking\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"protocolFee\",\"type\":\"uint32\"}],\"internalType\":\"structBToken.Splits\",\"name\":\"\",\"type\":\"tuple\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getTotalBTokensDeposited\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"spender\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"addedValue\",\"type\":\"uint256\"}],\"name\":\"increaseAllowance\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"initialize\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"minBTK_\",\"type\":\"uint256\"}],\"name\":\"mint\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"numBTK\",\"type\":\"uint256\"}],\"stateMutability\":\"payable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint8\",\"name\":\"accountType_\",\"type\":\"uint8\"},{\"internalType\":\"address\",\"name\":\"to_\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"minBTK_\",\"type\":\"uint256\"}],\"name\":\"mintDeposit\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"payable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"to_\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"minBTK_\",\"type\":\"uint256\"}],\"name\":\"mintTo\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"numBTK\",\"type\":\"uint256\"}],\"stateMutability\":\"payable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"name\",\"outputs\":[{\"internalType\":\"string\",\"name\":\"\",\"type\":\"string\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"admin_\",\"type\":\"address\"}],\"name\":\"setAdmin\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"validatorStakingSplit_\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"publicStakingSplit_\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"liquidityProviderStakingSplit_\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"protocolFee_\",\"type\":\"uint256\"}],\"name\":\"setSplits\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"symbol\",\"outputs\":[{\"internalType\":\"string\",\"name\":\"\",\"type\":\"string\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"totalSupply\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"transfer\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"from\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"transferFrom\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint8\",\"name\":\"accountType_\",\"type\":\"uint8\"},{\"internalType\":\"address\",\"name\":\"to_\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"amount_\",\"type\":\"uint256\"}],\"name\":\"virtualMintDeposit\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]",
+	ABI: "[{\"inputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"supply\",\"type\":\"uint256\"}],\"name\":\"BurnAmountExceedsSupply\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"toAddress\",\"type\":\"address\"}],\"name\":\"ContractsDisallowedDeposits\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"DepositAmountZero\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"DepositBurnFail\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"contractAddr\",\"type\":\"address\"}],\"name\":\"InexistentRouterContract\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"minimum\",\"type\":\"uint256\"}],\"name\":\"InsufficientEth\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"fee\",\"type\":\"uint256\"}],\"name\":\"InsufficientFee\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"contractBalance\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"poolBalance\",\"type\":\"uint256\"}],\"name\":\"InvalidBalance\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"InvalidBurnAmount\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"depositID\",\"type\":\"uint256\"}],\"name\":\"InvalidDepositId\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"minimum\",\"type\":\"uint256\"}],\"name\":\"MinimumBurnNotMet\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"minimum\",\"type\":\"uint256\"}],\"name\":\"MinimumMintNotMet\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"minimumValue\",\"type\":\"uint256\"}],\"name\":\"MinimumValueNotMet\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"}],\"name\":\"SenderNotAdmin\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"SplitValueSumError\",\"type\":\"error\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"owner\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"spender\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"value\",\"type\":\"uint256\"}],\"name\":\"Approval\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"uint256\",\"name\":\"depositID\",\"type\":\"uint256\"},{\"indexed\":true,\"internalType\":\"uint8\",\"name\":\"accountType\",\"type\":\"uint8\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"depositor\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"DepositReceived\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint8\",\"name\":\"version\",\"type\":\"uint8\"}],\"name\":\"Initialized\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"from\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"value\",\"type\":\"uint256\"}],\"name\":\"Transfer\",\"type\":\"event\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"owner\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"spender\",\"type\":\"address\"}],\"name\":\"allowance\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"spender\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"approve\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"balanceOf\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"amount_\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"minEth_\",\"type\":\"uint256\"}],\"name\":\"burn\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"numEth\",\"type\":\"uint256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"to_\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"amount_\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"minEth_\",\"type\":\"uint256\"}],\"name\":\"burnTo\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"numEth\",\"type\":\"uint256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"decimals\",\"outputs\":[{\"internalType\":\"uint8\",\"name\":\"\",\"type\":\"uint8\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"spender\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"subtractedValue\",\"type\":\"uint256\"}],\"name\":\"decreaseAllowance\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint8\",\"name\":\"accountType_\",\"type\":\"uint8\"},{\"internalType\":\"address\",\"name\":\"to_\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"amount_\",\"type\":\"uint256\"}],\"name\":\"deposit\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"maxTokens\",\"type\":\"uint256\"},{\"internalType\":\"uint16\",\"name\":\"bridgeVersion\",\"type\":\"uint16\"},{\"internalType\":\"bytes\",\"name\":\"data\",\"type\":\"bytes\"}],\"name\":\"depositTokensOnBridges\",\"outputs\":[],\"stateMutability\":\"payable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"numBTK_\",\"type\":\"uint256\"}],\"name\":\"destroyBTokens\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"numBTK_\",\"type\":\"uint256\"}],\"name\":\"destroyPreApprovedBTokens\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"distribute\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"minerAmount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"stakingAmount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"lpStakingAmount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"foundationAmount\",\"type\":\"uint256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getAdmin\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"depositID\",\"type\":\"uint256\"}],\"name\":\"getDeposit\",\"outputs\":[{\"components\":[{\"internalType\":\"uint8\",\"name\":\"accountType\",\"type\":\"uint8\"},{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"value\",\"type\":\"uint256\"}],\"internalType\":\"structBToken.Deposit\",\"name\":\"\",\"type\":\"tuple\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getDepositID\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"poolBalance_\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"totalSupply_\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"numBTK_\",\"type\":\"uint256\"}],\"name\":\"getEthFromBTokensBurn\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"numEth\",\"type\":\"uint256\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"totalSupply_\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"numBTK_\",\"type\":\"uint256\"}],\"name\":\"getEthToMintBTokens\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"numEth\",\"type\":\"uint256\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"numBTK_\",\"type\":\"uint256\"}],\"name\":\"getLatestEthFromBTokensBurn\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"numEth\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"numBTK_\",\"type\":\"uint256\"}],\"name\":\"getLatestEthToMintBTokens\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"numEth\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"numEth_\",\"type\":\"uint256\"}],\"name\":\"getLatestMintedBTokensFromEth\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getMarketSpread\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"_salt\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"_factory\",\"type\":\"address\"}],\"name\":\"getMetamorphicContractAddress\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"poolBalance_\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"numEth_\",\"type\":\"uint256\"}],\"name\":\"getMintedBTokensFromEth\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getPoolBalance\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getSplits\",\"outputs\":[{\"components\":[{\"internalType\":\"uint32\",\"name\":\"validatorStaking\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"publicStaking\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"liquidityProviderStaking\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"protocolFee\",\"type\":\"uint32\"}],\"internalType\":\"structBToken.Splits\",\"name\":\"\",\"type\":\"tuple\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getTotalBTokensDeposited\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"spender\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"addedValue\",\"type\":\"uint256\"}],\"name\":\"increaseAllowance\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"initialize\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"minBTK_\",\"type\":\"uint256\"}],\"name\":\"mint\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"numBTK\",\"type\":\"uint256\"}],\"stateMutability\":\"payable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint8\",\"name\":\"accountType_\",\"type\":\"uint8\"},{\"internalType\":\"address\",\"name\":\"to_\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"minBTK_\",\"type\":\"uint256\"}],\"name\":\"mintDeposit\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"payable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"to_\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"minBTK_\",\"type\":\"uint256\"}],\"name\":\"mintTo\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"numBTK\",\"type\":\"uint256\"}],\"stateMutability\":\"payable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"name\",\"outputs\":[{\"internalType\":\"string\",\"name\":\"\",\"type\":\"string\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"admin_\",\"type\":\"address\"}],\"name\":\"setAdmin\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"validatorStakingSplit_\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"publicStakingSplit_\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"liquidityProviderStakingSplit_\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"protocolFee_\",\"type\":\"uint256\"}],\"name\":\"setSplits\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"symbol\",\"outputs\":[{\"internalType\":\"string\",\"name\":\"\",\"type\":\"string\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"totalSupply\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"transfer\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"from\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"transferFrom\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint8\",\"name\":\"accountType_\",\"type\":\"uint8\"},{\"internalType\":\"address\",\"name\":\"to_\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"amount_\",\"type\":\"uint256\"}],\"name\":\"virtualMintDeposit\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]",
 }
 
 // BTokenABI is the input ABI used to generate the binding from.
@@ -318,99 +318,6 @@ func (_BToken *BTokenCallerSession) GetAdmin() (common.Address, error) {
 	return _BToken.Contract.GetAdmin(&_BToken.CallOpts)
 }
 
-// GetCurrentEthFromBTokensBurn is a free data retrieval call binding the contract method 0x75d03811.
-//
-// Solidity: function getCurrentEthFromBTokensBurn(uint256 numBTK_) view returns(uint256 numEth)
-func (_BToken *BTokenCaller) GetCurrentEthFromBTokensBurn(opts *bind.CallOpts, numBTK_ *big.Int) (*big.Int, error) {
-	var out []interface{}
-	err := _BToken.contract.Call(opts, &out, "getCurrentEthFromBTokensBurn", numBTK_)
-
-	if err != nil {
-		return *new(*big.Int), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
-
-	return out0, err
-
-}
-
-// GetCurrentEthFromBTokensBurn is a free data retrieval call binding the contract method 0x75d03811.
-//
-// Solidity: function getCurrentEthFromBTokensBurn(uint256 numBTK_) view returns(uint256 numEth)
-func (_BToken *BTokenSession) GetCurrentEthFromBTokensBurn(numBTK_ *big.Int) (*big.Int, error) {
-	return _BToken.Contract.GetCurrentEthFromBTokensBurn(&_BToken.CallOpts, numBTK_)
-}
-
-// GetCurrentEthFromBTokensBurn is a free data retrieval call binding the contract method 0x75d03811.
-//
-// Solidity: function getCurrentEthFromBTokensBurn(uint256 numBTK_) view returns(uint256 numEth)
-func (_BToken *BTokenCallerSession) GetCurrentEthFromBTokensBurn(numBTK_ *big.Int) (*big.Int, error) {
-	return _BToken.Contract.GetCurrentEthFromBTokensBurn(&_BToken.CallOpts, numBTK_)
-}
-
-// GetCurrentEthToMintBTokens is a free data retrieval call binding the contract method 0x1d389936.
-//
-// Solidity: function getCurrentEthToMintBTokens(uint256 numBTK_) view returns(uint256 numEth)
-func (_BToken *BTokenCaller) GetCurrentEthToMintBTokens(opts *bind.CallOpts, numBTK_ *big.Int) (*big.Int, error) {
-	var out []interface{}
-	err := _BToken.contract.Call(opts, &out, "getCurrentEthToMintBTokens", numBTK_)
-
-	if err != nil {
-		return *new(*big.Int), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
-
-	return out0, err
-
-}
-
-// GetCurrentEthToMintBTokens is a free data retrieval call binding the contract method 0x1d389936.
-//
-// Solidity: function getCurrentEthToMintBTokens(uint256 numBTK_) view returns(uint256 numEth)
-func (_BToken *BTokenSession) GetCurrentEthToMintBTokens(numBTK_ *big.Int) (*big.Int, error) {
-	return _BToken.Contract.GetCurrentEthToMintBTokens(&_BToken.CallOpts, numBTK_)
-}
-
-// GetCurrentEthToMintBTokens is a free data retrieval call binding the contract method 0x1d389936.
-//
-// Solidity: function getCurrentEthToMintBTokens(uint256 numBTK_) view returns(uint256 numEth)
-func (_BToken *BTokenCallerSession) GetCurrentEthToMintBTokens(numBTK_ *big.Int) (*big.Int, error) {
-	return _BToken.Contract.GetCurrentEthToMintBTokens(&_BToken.CallOpts, numBTK_)
-}
-
-// GetCurrentMintedBTokensFromEth is a free data retrieval call binding the contract method 0x94b12ec8.
-//
-// Solidity: function getCurrentMintedBTokensFromEth(uint256 numEth_) view returns(uint256)
-func (_BToken *BTokenCaller) GetCurrentMintedBTokensFromEth(opts *bind.CallOpts, numEth_ *big.Int) (*big.Int, error) {
-	var out []interface{}
-	err := _BToken.contract.Call(opts, &out, "getCurrentMintedBTokensFromEth", numEth_)
-
-	if err != nil {
-		return *new(*big.Int), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
-
-	return out0, err
-
-}
-
-// GetCurrentMintedBTokensFromEth is a free data retrieval call binding the contract method 0x94b12ec8.
-//
-// Solidity: function getCurrentMintedBTokensFromEth(uint256 numEth_) view returns(uint256)
-func (_BToken *BTokenSession) GetCurrentMintedBTokensFromEth(numEth_ *big.Int) (*big.Int, error) {
-	return _BToken.Contract.GetCurrentMintedBTokensFromEth(&_BToken.CallOpts, numEth_)
-}
-
-// GetCurrentMintedBTokensFromEth is a free data retrieval call binding the contract method 0x94b12ec8.
-//
-// Solidity: function getCurrentMintedBTokensFromEth(uint256 numEth_) view returns(uint256)
-func (_BToken *BTokenCallerSession) GetCurrentMintedBTokensFromEth(numEth_ *big.Int) (*big.Int, error) {
-	return _BToken.Contract.GetCurrentMintedBTokensFromEth(&_BToken.CallOpts, numEth_)
-}
-
 // GetDeposit is a free data retrieval call binding the contract method 0x9f9fb968.
 //
 // Solidity: function getDeposit(uint256 depositID) view returns((uint8,address,uint256))
@@ -533,6 +440,99 @@ func (_BToken *BTokenSession) GetEthToMintBTokens(totalSupply_ *big.Int, numBTK_
 // Solidity: function getEthToMintBTokens(uint256 totalSupply_, uint256 numBTK_) pure returns(uint256 numEth)
 func (_BToken *BTokenCallerSession) GetEthToMintBTokens(totalSupply_ *big.Int, numBTK_ *big.Int) (*big.Int, error) {
 	return _BToken.Contract.GetEthToMintBTokens(&_BToken.CallOpts, totalSupply_, numBTK_)
+}
+
+// GetLatestEthFromBTokensBurn is a free data retrieval call binding the contract method 0xc425d3a0.
+//
+// Solidity: function getLatestEthFromBTokensBurn(uint256 numBTK_) view returns(uint256 numEth)
+func (_BToken *BTokenCaller) GetLatestEthFromBTokensBurn(opts *bind.CallOpts, numBTK_ *big.Int) (*big.Int, error) {
+	var out []interface{}
+	err := _BToken.contract.Call(opts, &out, "getLatestEthFromBTokensBurn", numBTK_)
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
+}
+
+// GetLatestEthFromBTokensBurn is a free data retrieval call binding the contract method 0xc425d3a0.
+//
+// Solidity: function getLatestEthFromBTokensBurn(uint256 numBTK_) view returns(uint256 numEth)
+func (_BToken *BTokenSession) GetLatestEthFromBTokensBurn(numBTK_ *big.Int) (*big.Int, error) {
+	return _BToken.Contract.GetLatestEthFromBTokensBurn(&_BToken.CallOpts, numBTK_)
+}
+
+// GetLatestEthFromBTokensBurn is a free data retrieval call binding the contract method 0xc425d3a0.
+//
+// Solidity: function getLatestEthFromBTokensBurn(uint256 numBTK_) view returns(uint256 numEth)
+func (_BToken *BTokenCallerSession) GetLatestEthFromBTokensBurn(numBTK_ *big.Int) (*big.Int, error) {
+	return _BToken.Contract.GetLatestEthFromBTokensBurn(&_BToken.CallOpts, numBTK_)
+}
+
+// GetLatestEthToMintBTokens is a free data retrieval call binding the contract method 0xbcd6abb4.
+//
+// Solidity: function getLatestEthToMintBTokens(uint256 numBTK_) view returns(uint256 numEth)
+func (_BToken *BTokenCaller) GetLatestEthToMintBTokens(opts *bind.CallOpts, numBTK_ *big.Int) (*big.Int, error) {
+	var out []interface{}
+	err := _BToken.contract.Call(opts, &out, "getLatestEthToMintBTokens", numBTK_)
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
+}
+
+// GetLatestEthToMintBTokens is a free data retrieval call binding the contract method 0xbcd6abb4.
+//
+// Solidity: function getLatestEthToMintBTokens(uint256 numBTK_) view returns(uint256 numEth)
+func (_BToken *BTokenSession) GetLatestEthToMintBTokens(numBTK_ *big.Int) (*big.Int, error) {
+	return _BToken.Contract.GetLatestEthToMintBTokens(&_BToken.CallOpts, numBTK_)
+}
+
+// GetLatestEthToMintBTokens is a free data retrieval call binding the contract method 0xbcd6abb4.
+//
+// Solidity: function getLatestEthToMintBTokens(uint256 numBTK_) view returns(uint256 numEth)
+func (_BToken *BTokenCallerSession) GetLatestEthToMintBTokens(numBTK_ *big.Int) (*big.Int, error) {
+	return _BToken.Contract.GetLatestEthToMintBTokens(&_BToken.CallOpts, numBTK_)
+}
+
+// GetLatestMintedBTokensFromEth is a free data retrieval call binding the contract method 0x5878677c.
+//
+// Solidity: function getLatestMintedBTokensFromEth(uint256 numEth_) view returns(uint256)
+func (_BToken *BTokenCaller) GetLatestMintedBTokensFromEth(opts *bind.CallOpts, numEth_ *big.Int) (*big.Int, error) {
+	var out []interface{}
+	err := _BToken.contract.Call(opts, &out, "getLatestMintedBTokensFromEth", numEth_)
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
+}
+
+// GetLatestMintedBTokensFromEth is a free data retrieval call binding the contract method 0x5878677c.
+//
+// Solidity: function getLatestMintedBTokensFromEth(uint256 numEth_) view returns(uint256)
+func (_BToken *BTokenSession) GetLatestMintedBTokensFromEth(numEth_ *big.Int) (*big.Int, error) {
+	return _BToken.Contract.GetLatestMintedBTokensFromEth(&_BToken.CallOpts, numEth_)
+}
+
+// GetLatestMintedBTokensFromEth is a free data retrieval call binding the contract method 0x5878677c.
+//
+// Solidity: function getLatestMintedBTokensFromEth(uint256 numEth_) view returns(uint256)
+func (_BToken *BTokenCallerSession) GetLatestMintedBTokensFromEth(numEth_ *big.Int) (*big.Int, error) {
+	return _BToken.Contract.GetLatestMintedBTokensFromEth(&_BToken.CallOpts, numEth_)
 }
 
 // GetMarketSpread is a free data retrieval call binding the contract method 0x086cfefd.
@@ -919,25 +919,25 @@ func (_BToken *BTokenTransactorSession) Deposit(accountType_ uint8, to_ common.A
 	return _BToken.Contract.Deposit(&_BToken.TransactOpts, accountType_, to_, amount_)
 }
 
-// DepositTokensOnBridges is a paid mutator transaction binding the contract method 0x1a116e27.
+// DepositTokensOnBridges is a paid mutator transaction binding the contract method 0xc4412f67.
 //
-// Solidity: function depositTokensOnBridges(uint256 maxEth, uint256 maxTokens, uint16 bridgeVersion, bytes data) payable returns()
-func (_BToken *BTokenTransactor) DepositTokensOnBridges(opts *bind.TransactOpts, maxEth *big.Int, maxTokens *big.Int, bridgeVersion uint16, data []byte) (*types.Transaction, error) {
-	return _BToken.contract.Transact(opts, "depositTokensOnBridges", maxEth, maxTokens, bridgeVersion, data)
+// Solidity: function depositTokensOnBridges(uint256 maxTokens, uint16 bridgeVersion, bytes data) payable returns()
+func (_BToken *BTokenTransactor) DepositTokensOnBridges(opts *bind.TransactOpts, maxTokens *big.Int, bridgeVersion uint16, data []byte) (*types.Transaction, error) {
+	return _BToken.contract.Transact(opts, "depositTokensOnBridges", maxTokens, bridgeVersion, data)
 }
 
-// DepositTokensOnBridges is a paid mutator transaction binding the contract method 0x1a116e27.
+// DepositTokensOnBridges is a paid mutator transaction binding the contract method 0xc4412f67.
 //
-// Solidity: function depositTokensOnBridges(uint256 maxEth, uint256 maxTokens, uint16 bridgeVersion, bytes data) payable returns()
-func (_BToken *BTokenSession) DepositTokensOnBridges(maxEth *big.Int, maxTokens *big.Int, bridgeVersion uint16, data []byte) (*types.Transaction, error) {
-	return _BToken.Contract.DepositTokensOnBridges(&_BToken.TransactOpts, maxEth, maxTokens, bridgeVersion, data)
+// Solidity: function depositTokensOnBridges(uint256 maxTokens, uint16 bridgeVersion, bytes data) payable returns()
+func (_BToken *BTokenSession) DepositTokensOnBridges(maxTokens *big.Int, bridgeVersion uint16, data []byte) (*types.Transaction, error) {
+	return _BToken.Contract.DepositTokensOnBridges(&_BToken.TransactOpts, maxTokens, bridgeVersion, data)
 }
 
-// DepositTokensOnBridges is a paid mutator transaction binding the contract method 0x1a116e27.
+// DepositTokensOnBridges is a paid mutator transaction binding the contract method 0xc4412f67.
 //
-// Solidity: function depositTokensOnBridges(uint256 maxEth, uint256 maxTokens, uint16 bridgeVersion, bytes data) payable returns()
-func (_BToken *BTokenTransactorSession) DepositTokensOnBridges(maxEth *big.Int, maxTokens *big.Int, bridgeVersion uint16, data []byte) (*types.Transaction, error) {
-	return _BToken.Contract.DepositTokensOnBridges(&_BToken.TransactOpts, maxEth, maxTokens, bridgeVersion, data)
+// Solidity: function depositTokensOnBridges(uint256 maxTokens, uint16 bridgeVersion, bytes data) payable returns()
+func (_BToken *BTokenTransactorSession) DepositTokensOnBridges(maxTokens *big.Int, bridgeVersion uint16, data []byte) (*types.Transaction, error) {
+	return _BToken.Contract.DepositTokensOnBridges(&_BToken.TransactOpts, maxTokens, bridgeVersion, data)
 }
 
 // DestroyBTokens is a paid mutator transaction binding the contract method 0x2dc6b024.

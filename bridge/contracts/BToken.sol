@@ -210,7 +210,6 @@ contract BToken is
     }
 
     function depositTokensOnBridges(
-        uint256 maxEth,
         uint256 maxTokens,
         uint16 bridgeVersion,
         bytes calldata data
@@ -226,20 +225,23 @@ contract BToken is
             bridgeRouterSalt,
             _factoryAddress()
         );
-        require(_isContract(address bridgeRouterAddress), "router contract doesn't exist yet");
+        if (!_isContract(bridgeRouterAddress)){
+            revert BTokenErrors.InexistentRouterContract(bridgeRouterAddress);
+        }
         //forward call to router
         uint256 bTokenFee = IBridgeRouter(bridgeRouterAddress).routeDeposit(
             msg.sender,
             maxTokens,
             data
         );
-        //if the message has value require the value of eth equal btokenAmount, else destroy btoken amount specified
         if (msg.value > 0) {
             uint256 ethFee = _getEthToMintBTokens(totalSupply(), bTokenFee);
-            require(maxEth <= ethFee && msg.value >= ethFee, "BToken: ERROR insufficient funds");
+            if (ethFee > msg.value) {
+                revert BTokenErrors.InsufficientFee(msg.value, ethFee);
+            }
             uint256 refund = msg.value - ethFee;
             if (refund > 0) {
-                payable(msg.sender).transfer(refund);
+                _safeTransferEth(msg.sender, refund);
             }
         } else {
             _destroyTokens(msg.sender, bTokenFee);
@@ -304,7 +306,7 @@ contract BToken is
     /// @param depositID The Id of the deposit
     function getDeposit(uint256 depositID) public view returns (Deposit memory) {
         Deposit memory d = _deposits[depositID];
-        if (d.account == address(uint160(0x00))) {
+        if (d.account == address(0)) {
             revert BTokenErrors.InvalidDepositId(depositID);
         }
 
@@ -316,7 +318,7 @@ contract BToken is
     /// outside an smart contract transaction, as the bonding curve state can change
     /// before a future transaction is sent.
     /// @param numBTK_ Amount of BTokens that we want to convert in ether
-    function getCurrentEthToMintBTokens(uint256 numBTK_) public view returns (uint256 numEth) {
+    function getLatestEthToMintBTokens(uint256 numBTK_) public view returns (uint256 numEth) {
         return _getEthToMintBTokens(totalSupply(), numBTK_);
     }
 
@@ -325,7 +327,7 @@ contract BToken is
     /// smart contract transaction, as the bonding curve state can change before a
     /// future transaction is sent.
     /// @param numBTK_ Amount of BTokens to convert in ether
-    function getCurrentEthFromBTokensBurn(uint256 numBTK_) public view returns (uint256 numEth) {
+    function getLatestEthFromBTokensBurn(uint256 numBTK_) public view returns (uint256 numEth) {
         return _bTokensToEth(_poolBalance, totalSupply(), numBTK_);
     }
 
@@ -334,7 +336,7 @@ contract BToken is
     /// contract transaction, as the bonding curve state can change before a future
     /// transaction is sent.
     /// @param numEth_ Amount of ether to convert in BTokens
-    function getCurrentMintedBTokensFromEth(uint256 numEth_) public view returns (uint256) {
+    function getLatestMintedBTokensFromEth(uint256 numEth_) public view returns (uint256) {
         return _ethToBTokens(_poolBalance, numEth_);
     }
 
@@ -500,7 +502,7 @@ contract BToken is
             revert BTokenErrors.ContractsDisallowedDeposits(to_);
         }
         if (numEth_ < _MARKET_SPREAD) {
-            revert BTokenErrors.MarketSpreadTooLow(numEth_);
+            revert BTokenErrors.MinimumValueNotMet(numEth_, _MARKET_SPREAD);
         }
 
         numEth_ = numEth_ / _MARKET_SPREAD;
@@ -533,7 +535,7 @@ contract BToken is
         uint256 minBTK_
     ) internal returns (uint256 numBTK) {
         if (numEth_ < _MARKET_SPREAD) {
-            revert BTokenErrors.MarketSpreadTooLow(numEth_);
+            revert BTokenErrors.MinimumValueNotMet(numEth_, _MARKET_SPREAD);
         }
 
         numEth_ = numEth_ / _MARKET_SPREAD;
