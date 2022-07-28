@@ -20,26 +20,28 @@ var _ layer1.EthereumContracts = &Contracts{}
 
 // Contracts contains bindings to smart contract system
 type Contracts struct {
-	allAddresses            map[common.Address]bool
-	eth                     *Client
-	ethdkg                  bindings.IETHDKG
-	ethdkgAddress           common.Address
-	aToken                  bindings.IAToken
-	aTokenAddress           common.Address
-	bToken                  bindings.IBToken
-	bTokenAddress           common.Address
-	publicStaking           bindings.IPublicStaking
-	publicStakingAddress    common.Address
-	validatorStaking        bindings.IValidatorStaking
-	validatorStakingAddress common.Address
-	contractFactory         bindings.IAliceNetFactory
-	contractFactoryAddress  common.Address
-	snapshots               bindings.ISnapshots
-	snapshotsAddress        common.Address
-	validatorPool           bindings.IValidatorPool
-	validatorPoolAddress    common.Address
-	governance              bindings.IGovernance
-	governanceAddress       common.Address
+	allAddresses                      map[common.Address]bool
+	eth                               *Client
+	ethdkg                            bindings.IETHDKG
+	ethdkgAddress                     common.Address
+	aToken                            bindings.IAToken
+	aTokenAddress                     common.Address
+	bToken                            bindings.IBToken
+	bTokenAddress                     common.Address
+	publicStaking                     bindings.IPublicStaking
+	publicStakingAddress              common.Address
+	validatorStaking                  bindings.IValidatorStaking
+	validatorStakingAddress           common.Address
+	contractFactory                   bindings.IAliceNetFactory
+	contractFactoryAddress            common.Address
+	snapshots                         bindings.ISnapshots
+	snapshotsAddress                  common.Address
+	validatorPool                     bindings.IValidatorPool
+	validatorPoolAddress              common.Address
+	governance                        bindings.IGovernance
+	governanceAddress                 common.Address
+	multipleProposalAccusation        bindings.IMultipleProposalAccusation
+	multipleProposalAccusationAddress common.Address
 }
 
 /// Set the contractFactoryAddress and looks up for all the contracts that we
@@ -268,6 +270,14 @@ func (c *Contracts) Governance() bindings.IGovernance {
 
 func (c *Contracts) GovernanceAddress() common.Address {
 	return c.governanceAddress
+}
+
+func (c *Contracts) MultipleProposalAccusation() bindings.IMultipleProposalAccusation {
+	return c.multipleProposalAccusation
+}
+
+func (c *Contracts) MultipleProposalAccusationAddress() common.Address {
+	return c.multipleProposalAccusationAddress
 }
 
 // utils function to log an error

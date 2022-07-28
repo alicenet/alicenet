@@ -1,17 +1,43 @@
 package accusation
 
 import (
+	"context"
 	"strconv"
 	"testing"
 
+	"github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/consensus/lstate"
 	"github.com/alicenet/alicenet/consensus/objs"
 	"github.com/alicenet/alicenet/crypto"
+	"github.com/alicenet/alicenet/utils"
 	"github.com/stretchr/testify/assert"
 )
 
+func setupMultiProposalAccusationTest(t *testing.T) *db.Database {
+	ctx := context.Background()
+	nodeCtx, cf := context.WithCancel(ctx)
+	t.Cleanup(cf)
+
+	// Initialize consensus db: stores all state the consensus mechanism requires to work
+	rawConsensusDb, err := utils.OpenBadger(nodeCtx.Done(), "", true)
+	assert.Nil(t, err)
+	var closeDB func() = func() {
+		err := rawConsensusDb.Close()
+		if err != nil {
+			t.Errorf("error closing rawConsensusDb: %v", err)
+		}
+	}
+	t.Cleanup(closeDB)
+
+	db := &db.Database{}
+	db.Init(rawConsensusDb)
+
+	return db
+}
+
 // TestNoMultipleProposalBehavior tests no bad behavior detected
 func TestNoMultipleProposalBehavior(t *testing.T) {
+	db := setupMultiProposalAccusationTest(t)
 	lrs := &lstate.RoundStates{}
 	lrs.OwnState = &objs.OwnState{
 		MaxBHSeen: &objs.BlockHeader{},
@@ -71,13 +97,14 @@ func TestNoMultipleProposalBehavior(t *testing.T) {
 	rs.Proposal = proposal0
 	rs.ConflictingProposal = proposal1
 
-	acc, found := detectMultipleProposal(rs, lrs)
+	acc, found := detectMultipleProposal(rs, lrs, db)
 	assert.False(t, found)
 	assert.Nil(t, acc)
 }
 
 // TestDetectMultipleProposalBehavior tests malicious behavior detection
 func TestDetectMultipleProposalBehavior(t *testing.T) {
+	db := setupMultiProposalAccusationTest(t)
 	bnVal := &crypto.BNGroupValidator{}
 	secpVal := &crypto.Secp256k1Validator{}
 	bclaimsList, txHashListList, err := generateChain(2)
@@ -185,7 +212,7 @@ func TestDetectMultipleProposalBehavior(t *testing.T) {
 		ValidatorVAddrSet: vSetMap,
 	}
 
-	acc, found := detectMultipleProposal(rs, lrs)
+	acc, found := detectMultipleProposal(rs, lrs, db)
 	assert.True(t, found)
 	assert.NotNil(t, acc)
 }

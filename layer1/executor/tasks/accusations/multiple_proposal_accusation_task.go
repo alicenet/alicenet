@@ -2,6 +2,7 @@ package accusations
 
 import (
 	"context"
+	"encoding/hex"
 	"fmt"
 
 	"github.com/alicenet/alicenet/consensus/objs"
@@ -16,17 +17,23 @@ type MultipleProposalAccusationTask struct {
 	// everything from here onwards are fields that are unique for this task. If
 	// a field is exposed it will be serialized, persisted and restored during
 	// eventual crashes.
-	Accusation *objs.MultipleProposalAccusation
+	Signature0 []byte
+	Proposal0  *objs.PClaims
+	Signature1 []byte
+	Proposal1  *objs.PClaims
 }
 
 // asserting that MultipleProposalTask struct implements interface tasks.Task, all
 // tasks should conform to this interface
 var _ tasks.Task = &MultipleProposalAccusationTask{}
 
-func NewMultipleProposalAccusationTask(accusation *objs.MultipleProposalAccusation) *MultipleProposalAccusationTask {
+func NewMultipleProposalAccusationTask(signature0 []byte, proposal0 *objs.PClaims, signature1 []byte, proposal1 *objs.PClaims) *MultipleProposalAccusationTask {
 	multipleProposalTask := &MultipleProposalAccusationTask{
-		BaseTask:   tasks.NewBaseTask(0, 0, false, nil),
-		Accusation: accusation,
+		BaseTask:   tasks.NewBaseTask(0, 0, true, nil),
+		Signature0: signature0,
+		Proposal0:  proposal0,
+		Signature1: signature1,
+		Proposal1:  proposal1,
 	}
 	return multipleProposalTask
 }
@@ -86,26 +93,26 @@ func (t *MultipleProposalAccusationTask) Execute(ctx context.Context) (*types.Tr
 		return nil, tasks.NewTaskErr(fmt.Sprintf(tasks.FailedGettingTxnOpts, err), true)
 	}
 
-	prop0, err := t.Accusation.Proposal0.MarshalBinary()
+	prop0, err := t.Proposal0.MarshalBinary()
 	if err != nil {
-		return nil, tasks.NewTaskErr(fmt.Sprintf("failed to marshal proposal0: %v", err), false)
+		return nil, tasks.NewTaskErr(fmt.Sprintf("MultipleProposalAccusationTask: failed to marshal proposal0: %v", err), false)
 	}
 
-	prop1, err := t.Accusation.Proposal1.MarshalBinary()
+	prop1, err := t.Proposal1.MarshalBinary()
 	if err != nil {
-		return nil, tasks.NewTaskErr(fmt.Sprintf("failed to marshal proposal1: %v", err), false)
+		return nil, tasks.NewTaskErr(fmt.Sprintf("MultipleProposalAccusationTask: failed to marshal proposal1: %v", err), false)
 	}
 
-	t.GetLogger().Info("trying to call smart contract to accuse of multiple proposals")
+	t.GetLogger().Info("MultipleProposalAccusationTask: trying to call smart contract to accuse of multiple proposals")
 	txn, err := t.GetContractsHandler().EthereumContracts().MultipleProposalAccusation().AccuseMultipleProposal(
 		txnOpts,
-		t.Accusation.Signature0,
+		t.Signature0,
 		prop0,
-		t.Accusation.Signature1,
+		t.Signature1,
 		prop1,
 	)
 	if err != nil {
-		return nil, tasks.NewTaskErr(fmt.Sprintf("failed to accuse: %v", err), true)
+		return nil, tasks.NewTaskErr(fmt.Sprintf("MultipleProposalAccusationTask: failed to accuse: %v", err), true)
 	}
 	return txn, nil
 }
@@ -133,9 +140,15 @@ func (t *MultipleProposalAccusationTask) ShouldExecute(ctx context.Context) (boo
 	if err != nil {
 		return false, tasks.NewTaskErr(fmt.Sprintf(tasks.FailedGettingCallOpts, err), true)
 	}
-	isAccused, err := t.GetContractsHandler().EthereumContracts().MultipleProposalAccusation().IsAccused(callOpts, t.Accusation.GetID())
+	var id [32]byte
+	idBin, err := hex.DecodeString(t.GetId())
 	if err != nil {
-		return false, tasks.NewTaskErr(fmt.Sprintf("error getting foo in the example task: %v", err), true)
+		return false, tasks.NewTaskErr(fmt.Sprintf("MultipleProposalAccusationTask: failed to decode id: %v", err), true)
+	}
+	copy(id[:], idBin)
+	isAccused, err := t.GetContractsHandler().EthereumContracts().MultipleProposalAccusation().IsAccused(callOpts, id)
+	if err != nil {
+		return false, tasks.NewTaskErr(fmt.Sprintf("MultipleProposalAccusationTask: error getting foo in the example task: %v", err), true)
 	}
 
 	return !isAccused, nil

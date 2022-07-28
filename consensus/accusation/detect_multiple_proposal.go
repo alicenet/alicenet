@@ -6,14 +6,17 @@ import (
 	"fmt"
 
 	"github.com/alicenet/alicenet/application/objs/uint256"
+	"github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/consensus/lstate"
 	"github.com/alicenet/alicenet/consensus/objs"
 	"github.com/alicenet/alicenet/crypto"
+	"github.com/alicenet/alicenet/layer1/executor/tasks"
+	"github.com/alicenet/alicenet/layer1/executor/tasks/accusations"
 	"github.com/alicenet/alicenet/logging"
 	"github.com/sirupsen/logrus"
 )
 
-func detectMultipleProposal(rs *objs.RoundState, lrs *lstate.RoundStates) (objs.Accusation, bool) {
+func detectMultipleProposal(rs *objs.RoundState, lrs *lstate.RoundStates, db *db.Database) (tasks.Task, bool) {
 
 	// rs.Proposal and rs.ConflictingProposal should both not be nil
 	if rs.Proposal == nil || rs.ConflictingProposal == nil {
@@ -119,36 +122,31 @@ func detectMultipleProposal(rs *objs.RoundState, lrs *lstate.RoundStates) (objs.
 	}).Warn("sigs")
 
 	// submit both proposals and already validated that both RClaims are valid and sigs are different
-	acc := &objs.MultipleProposalAccusation{
-		Signature0: rs.Proposal.Signature,
-		Proposal0:  rs.Proposal.PClaims,
-		Signature1: rs.ConflictingProposal.Signature,
-		Proposal1:  rs.ConflictingProposal.PClaims,
-	}
+	acc := accusations.NewMultipleProposalAccusationTask(
+		rs.Proposal.Signature,
+		rs.Proposal.PClaims,
+		rs.ConflictingProposal.Signature,
+		rs.ConflictingProposal.PClaims,
+	)
 
+	// deterministic ID
 	if sig0Big.Cmp(sig1Big) <= 0 {
-		copy(
-			acc.ID[:],
-			crypto.Hasher(
-				rs.Proposal.Signature,
-				proposalPClaimsBin,
-				rs.ConflictingProposal.Signature,
-				conflictingProposalPClaimsBin,
-			),
+		idBin := crypto.Hasher(
+			rs.Proposal.Signature,
+			proposalPClaimsBin,
+			rs.ConflictingProposal.Signature,
+			conflictingProposalPClaimsBin,
 		)
+		acc.Id = hex.EncodeToString(idBin)
 	} else {
-		copy(
-			acc.ID[:],
-			crypto.Hasher(
-				rs.ConflictingProposal.Signature,
-				conflictingProposalPClaimsBin,
-				rs.Proposal.Signature,
-				proposalPClaimsBin,
-			),
+		idBin := crypto.Hasher(
+			rs.ConflictingProposal.Signature,
+			conflictingProposalPClaimsBin,
+			rs.Proposal.Signature,
+			proposalPClaimsBin,
 		)
+		acc.Id = hex.EncodeToString(idBin)
 	}
-
-	// todo: form Accusation task here
 
 	return acc, true
 }

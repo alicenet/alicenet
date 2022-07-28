@@ -179,7 +179,7 @@ var FunctionMapping = map[[4]byte]string{
 	{121, 236, 130, 150}: "ETHDKGErrorCodes.ETHDKG_VARIABLE_CANNOT_BE_SET_WHILE_RUNNING()",
 	{70, 81, 36, 134}:    "Governance.updateValue(uint256,uint256,bytes32)",
 	{76, 233, 22, 77}:    "GovernanceErrorCodes.GOVERNANCE_ONLY_FACTORY_ALLOWED()",
-	{127, 50, 27, 45}:    "MultipleProposalAccusation.AccuseMultipleProposal(bytes,bytes,bytes,bytes)",
+	{223, 217, 76, 249}:  "MultipleProposalAccusation.accuseMultipleProposal(bytes,bytes,bytes,bytes)",
 	{134, 83, 164, 101}:  "MultipleProposalAccusation.getMetamorphicContractAddress(bytes32,address)",
 	{94, 119, 57, 103}:   "MultipleProposalAccusation.isAccused(bytes32)",
 	{9, 94, 167, 179}:    "PublicStaking.approve(address,uint256)",

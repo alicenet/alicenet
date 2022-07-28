@@ -30,7 +30,7 @@ var (
 
 // MultipleProposalAccusationMetaData contains all meta data concerning the MultipleProposalAccusation contract.
 var MultipleProposalAccusationMetaData = &bind.MetaData{
-	ABI: "[{\"inputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"inputs\":[{\"internalType\":\"bytes\",\"name\":\"signature0_\",\"type\":\"bytes\"},{\"internalType\":\"bytes\",\"name\":\"pClaims0_\",\"type\":\"bytes\"},{\"internalType\":\"bytes\",\"name\":\"signature1_\",\"type\":\"bytes\"},{\"internalType\":\"bytes\",\"name\":\"pClaims1_\",\"type\":\"bytes\"}],\"name\":\"AccuseMultipleProposal\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"_salt\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"_factory\",\"type\":\"address\"}],\"name\":\"getMetamorphicContractAddress\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"id_\",\"type\":\"bytes32\"}],\"name\":\"isAccused\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"}]",
+	ABI: "[{\"inputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"inputs\":[{\"internalType\":\"bytes\",\"name\":\"signature0_\",\"type\":\"bytes\"},{\"internalType\":\"bytes\",\"name\":\"pClaims0_\",\"type\":\"bytes\"},{\"internalType\":\"bytes\",\"name\":\"signature1_\",\"type\":\"bytes\"},{\"internalType\":\"bytes\",\"name\":\"pClaims1_\",\"type\":\"bytes\"}],\"name\":\"accuseMultipleProposal\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"_salt\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"_factory\",\"type\":\"address\"}],\"name\":\"getMetamorphicContractAddress\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"id_\",\"type\":\"bytes32\"}],\"name\":\"isAccused\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"}]",
 }
 
 // MultipleProposalAccusationABI is the input ABI used to generate the binding from.
@@ -241,23 +241,23 @@ func (_MultipleProposalAccusation *MultipleProposalAccusationCallerSession) IsAc
 	return _MultipleProposalAccusation.Contract.IsAccused(&_MultipleProposalAccusation.CallOpts, id_)
 }
 
-// AccuseMultipleProposal is a paid mutator transaction binding the contract method 0x7f321b2d.
+// AccuseMultipleProposal is a paid mutator transaction binding the contract method 0xdfd94cf9.
 //
-// Solidity: function AccuseMultipleProposal(bytes signature0_, bytes pClaims0_, bytes signature1_, bytes pClaims1_) returns(address)
+// Solidity: function accuseMultipleProposal(bytes signature0_, bytes pClaims0_, bytes signature1_, bytes pClaims1_) returns(address)
 func (_MultipleProposalAccusation *MultipleProposalAccusationTransactor) AccuseMultipleProposal(opts *bind.TransactOpts, signature0_ []byte, pClaims0_ []byte, signature1_ []byte, pClaims1_ []byte) (*types.Transaction, error) {
-	return _MultipleProposalAccusation.contract.Transact(opts, "AccuseMultipleProposal", signature0_, pClaims0_, signature1_, pClaims1_)
+	return _MultipleProposalAccusation.contract.Transact(opts, "accuseMultipleProposal", signature0_, pClaims0_, signature1_, pClaims1_)
 }
 
-// AccuseMultipleProposal is a paid mutator transaction binding the contract method 0x7f321b2d.
+// AccuseMultipleProposal is a paid mutator transaction binding the contract method 0xdfd94cf9.
 //
-// Solidity: function AccuseMultipleProposal(bytes signature0_, bytes pClaims0_, bytes signature1_, bytes pClaims1_) returns(address)
+// Solidity: function accuseMultipleProposal(bytes signature0_, bytes pClaims0_, bytes signature1_, bytes pClaims1_) returns(address)
 func (_MultipleProposalAccusation *MultipleProposalAccusationSession) AccuseMultipleProposal(signature0_ []byte, pClaims0_ []byte, signature1_ []byte, pClaims1_ []byte) (*types.Transaction, error) {
 	return _MultipleProposalAccusation.Contract.AccuseMultipleProposal(&_MultipleProposalAccusation.TransactOpts, signature0_, pClaims0_, signature1_, pClaims1_)
 }
 
-// AccuseMultipleProposal is a paid mutator transaction binding the contract method 0x7f321b2d.
+// AccuseMultipleProposal is a paid mutator transaction binding the contract method 0xdfd94cf9.
 //
-// Solidity: function AccuseMultipleProposal(bytes signature0_, bytes pClaims0_, bytes signature1_, bytes pClaims1_) returns(address)
+// Solidity: function accuseMultipleProposal(bytes signature0_, bytes pClaims0_, bytes signature1_, bytes pClaims1_) returns(address)
 func (_MultipleProposalAccusation *MultipleProposalAccusationTransactorSession) AccuseMultipleProposal(signature0_ []byte, pClaims0_ []byte, signature1_ []byte, pClaims1_ []byte) (*types.Transaction, error) {
 	return _MultipleProposalAccusation.Contract.AccuseMultipleProposal(&_MultipleProposalAccusation.TransactOpts, signature0_, pClaims0_, signature1_, pClaims1_)
 }

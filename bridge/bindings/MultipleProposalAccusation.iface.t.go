@@ -9,8 +9,8 @@ import (
 
 // IMultipleProposalAccusationTransactor ...
 type IMultipleProposalAccusationTransactor interface {
-	// AccuseMultipleProposal is a paid mutator transaction binding the contract method 0x7f321b2d.
+	// AccuseMultipleProposal is a paid mutator transaction binding the contract method 0xdfd94cf9.
 	//
-	// Solidity: function AccuseMultipleProposal(bytes signature0_, bytes pClaims0_, bytes signature1_, bytes pClaims1_) returns(address)
+	// Solidity: function accuseMultipleProposal(bytes signature0_, bytes pClaims0_, bytes signature1_, bytes pClaims1_) returns(address)
 	AccuseMultipleProposal(opts *bind.TransactOpts, signature0_ []byte, pClaims0_ []byte, signature1_ []byte, pClaims1_ []byte) (*types.Transaction, error)
 }

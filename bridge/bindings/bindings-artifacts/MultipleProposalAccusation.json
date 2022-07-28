@@ -27,7 +27,7 @@
         "type": "bytes"
       }
     ],
-    "name": "AccuseMultipleProposal",
+    "name": "accuseMultipleProposal",
     "outputs": [
       {
         "internalType": "address",
