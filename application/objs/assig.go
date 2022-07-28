@@ -19,7 +19,7 @@ type AtomicSwapSignature struct {
 // AtomicSwapSignature object
 func (assig *AtomicSwapSignature) UnmarshalBinary(signature []byte) error {
 	if assig == nil {
-		return errorz.ErrInvalid{}.New("assig.unmarshalBinary; assig not initialized")
+		return errorz.ErrInvalid{}.New("assig.UnmarshalBinary; assig not initialized")
 	}
 	sva, signature, err := extractSVA(signature)
 	if err != nil {
@@ -76,7 +76,7 @@ func (assig *AtomicSwapSignature) MarshalBinary() ([]byte, error) {
 // Validate validates the AtomicSwapSignature
 func (assig *AtomicSwapSignature) Validate() error {
 	if assig == nil {
-		return errorz.ErrInvalid{}.New("assig.validate; assig not initialized")
+		return errorz.ErrInvalid{}.New("assig.Validate; assig not initialized")
 	}
 	if err := assig.validateSVA(); err != nil {
 		return err

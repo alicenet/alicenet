@@ -70,38 +70,9 @@ func TestUint256UnmarshalBinary(t *testing.T) {
 	}
 
 	data := make([]byte, 32)
-	data[0] = 0
-	data[1] = 1
-	data[2] = 2
-	data[3] = 3
-	data[4] = 4
-	data[5] = 5
-	data[6] = 6
-	data[7] = 7
-	data[8] = 8
-	data[9] = 9
-	data[10] = 10
-	data[11] = 11
-	data[12] = 12
-	data[13] = 13
-	data[14] = 14
-	data[15] = 15
-	data[16] = 16
-	data[17] = 17
-	data[18] = 18
-	data[19] = 19
-	data[20] = 20
-	data[21] = 21
-	data[22] = 22
-	data[23] = 23
-	data[24] = 24
-	data[25] = 25
-	data[26] = 26
-	data[27] = 27
-	data[28] = 28
-	data[29] = 29
-	data[30] = 30
-	data[31] = 31
+	for k := 0; k < len(data); k++ {
+		data[k] = byte(k)
+	}
 	err = u.UnmarshalBinary(data)
 	if err != nil {
 		t.Fatal(err)
@@ -242,6 +213,58 @@ func TestUint256String(t *testing.T) {
 	str = u.String()
 	if str != string25519 {
 		t.Fatal("Error in String (2)")
+	}
+}
+
+func TestUint256Set(t *testing.T) {
+	data1 := make([]byte, 32)
+	u1 := &Uint256{}
+	err := u1.UnmarshalBinary(data1)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	data2 := make([]byte, 32)
+	for k := 0; k < len(data2); k++ {
+		data2[k] = byte(k)
+	}
+	u2 := &Uint256{}
+	err = u2.UnmarshalBinary(data2)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Initial checks
+	if !u1.IsZero() {
+		t.Fatal("Should be zero")
+	}
+	if u1.Eq(u2) {
+		t.Fatal("Should not be equal")
+	}
+	if !u1.Eq(u1) {
+		t.Fatal("Should be equal (1)")
+	}
+	if !u2.Eq(u2) {
+		t.Fatal("Should be equal (2)")
+	}
+
+	err = u1.Set(u2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !u1.Eq(u2) {
+		t.Fatal("Should be equal (3)")
+	}
+	if !u1.Eq(u1) {
+		t.Fatal("Should be equal (4)")
+	}
+	if !u2.Eq(u2) {
+		t.Fatal("Should be equal (5)")
+	}
+
+	err = u1.Set(nil)
+	if err == nil {
+		t.Fatal("Should have raised error")
 	}
 }
 
@@ -866,10 +889,7 @@ func TestUint256AddModNils(t *testing.T) {
 	if err == nil {
 		t.Fatal("Should have raised error (5)")
 	}
-	_, err = m.FromUint64(5)
-	if err != nil {
-		t.Fatal(err)
-	}
+	m.FromUint64(5)
 
 	two := Two()
 	res, err := u.AddMod(a, b, m)
@@ -2563,5 +2583,58 @@ func TestUint256Two(t *testing.T) {
 	}
 	if !u.Eq(uTrue) {
 		t.Fatal("Two() fails")
+	}
+}
+
+func TestUint256TwoPower64(t *testing.T) {
+	u := TwoPower64()
+	uTrue := &Uint256{}
+	data := make([]byte, 32)
+	data[23] = 1
+	err := uTrue.UnmarshalBinary(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !u.Eq(uTrue) {
+		t.Logf("%x\n", data)
+		t.Logf("%v\n", u.String())
+		t.Logf("%v\n", uTrue.String())
+		t.Fatal("TwoPower64() fails")
+	}
+}
+
+func TestUint256TwoPower128(t *testing.T) {
+	u := TwoPower128()
+	uTrue := &Uint256{}
+	data := make([]byte, 32)
+	data[15] = 1
+	err := uTrue.UnmarshalBinary(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !u.Eq(uTrue) {
+		t.Logf("%x\n", data)
+		t.Logf("%v\n", u.String())
+		t.Logf("%v\n", uTrue.String())
+		t.Fatal("TwoPower128() fails")
+	}
+}
+
+func TestUint256Max(t *testing.T) {
+	u := Max()
+	data := make([]byte, 32)
+	for k := 0; k < len(data); k++ {
+		data[k] = 255
+	}
+	uTrue := &Uint256{}
+	err := uTrue.UnmarshalBinary(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !u.Eq(uTrue) {
+		t.Logf("%x\n", data)
+		t.Logf("%v\n", u.String())
+		t.Logf("%v\n", uTrue.String())
+		t.Fatal("Max() fails")
 	}
 }

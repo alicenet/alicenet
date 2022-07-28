@@ -484,6 +484,30 @@ func TestDSPreImageRemainingValue(t *testing.T) {
 	}
 }
 
+func TestDSPreImageRemainingValueBad(t *testing.T) {
+	dsp := &DSPreImage{}
+	currentHeight := uint32(1)
+	_, err := dsp.RemainingValue(currentHeight)
+	if err == nil {
+		t.Fatal("Should have raised error (1)")
+	}
+	dsp.IssuedAt = 1
+	_, err = dsp.RemainingValue(currentHeight)
+	if err == nil {
+		t.Fatal("Should have raised error (2)")
+	}
+	dsp.Deposit = uint256.Zero()
+	_, err = dsp.RemainingValue(currentHeight)
+	if err == nil {
+		t.Fatal("Should have raised error (3)")
+	}
+	dsp.Deposit = uint256.One()
+	_, err = dsp.RemainingValue(currentHeight)
+	if err == nil {
+		t.Fatal("Should have raised error (4)")
+	}
+}
+
 func TestDSPreImageValue(t *testing.T) {
 	dsl := &DSLinker{}
 	_, err := dsl.DSPreImage.Value()
@@ -508,6 +532,19 @@ func TestDSPreImageValue(t *testing.T) {
 	}
 	if !depositTrue.Eq(deposit) {
 		t.Fatal("Should not happen!")
+	}
+}
+
+func TestDSPreImageValueBad(t *testing.T) {
+	dsp := &DSPreImage{}
+	_, err := dsp.Value()
+	if err == nil {
+		t.Fatal("Should have raised error (1)")
+	}
+	dsp.Deposit = uint256.Zero()
+	_, err = dsp.Value()
+	if err == nil {
+		t.Fatal("Should have raised error (2)")
 	}
 }
 
@@ -708,6 +745,24 @@ func TestDSPreImageEpochOfExpiration(t *testing.T) {
 	}
 }
 
+func TestDSPreImageEpochOfExpirationBad(t *testing.T) {
+	dsp := &DSPreImage{}
+	_, err := dsp.EpochOfExpiration()
+	if err == nil {
+		t.Fatal("Should have raised error (1)")
+	}
+	dsp.Deposit = uint256.Zero()
+	_, err = dsp.EpochOfExpiration()
+	if err == nil {
+		t.Fatal("Should have raised error (2)")
+	}
+	dsp.Deposit = uint256.One()
+	_, err = dsp.EpochOfExpiration()
+	if err == nil {
+		t.Fatal("Should have raised error (3)")
+	}
+}
+
 func TestDSPreImageValidateDeposit(t *testing.T) {
 	dsl := &DSLinker{}
 	err := dsl.DSPreImage.ValidateDeposit()
@@ -818,6 +873,50 @@ func TestDSPreImageValidateDeposit(t *testing.T) {
 	}
 }
 
+func TestDSPreImageValidateDepositBad(t *testing.T) {
+	dsp := &DSPreImage{}
+	err := dsp.ValidateDeposit()
+	if err == nil {
+		t.Fatal("Should raise an error (1)")
+	}
+	dsp.Deposit = uint256.Zero()
+	err = dsp.ValidateDeposit()
+	if err == nil {
+		t.Fatal("Should raise an error (2)")
+	}
+	dsp.Deposit = uint256.One()
+	err = dsp.ValidateDeposit()
+	if err == nil {
+		t.Fatal("Should raise an error (3)")
+	}
+	dsp.Fee = uint256.Zero()
+	err = dsp.ValidateDeposit()
+	if err == nil {
+		t.Fatal("Should raise an error (4)")
+	}
+	dsp.ChainID = 1
+	err = dsp.ValidateDeposit()
+	if err == nil {
+		t.Fatal("Should raise an error (5)")
+	}
+	dsp.Index = make([]byte, constants.HashLen)
+	err = dsp.ValidateDeposit()
+	if err == nil {
+		t.Fatal("Should raise an error (6)")
+	}
+	dsp.IssuedAt = 1
+	err = dsp.ValidateDeposit()
+	if err == nil {
+		t.Fatal("Should raise an error (7)")
+	}
+	largeData := make([]byte, constants.MaxDataStoreSize+1)
+	dsp.RawData = largeData
+	err = dsp.ValidateDeposit()
+	if err == nil {
+		t.Fatal("Should raise an error (8)")
+	}
+}
+
 func TestBaseDepositEquation(t *testing.T) {
 	dataSize := uint32(0)
 	numEpochs := uint32(0)
@@ -909,6 +1008,17 @@ func TestNumEpochsEquation(t *testing.T) {
 	_, err = NumEpochsEquation(dataSize, depositFalse)
 	if err == nil {
 		t.Fatal("Should raise an error for integer overflow")
+	}
+
+	_, err = NumEpochsEquation(dataSize, nil)
+	if err == nil {
+		t.Fatal("Should raise an error for invalid deposit")
+	}
+
+	depositMax := uint256.Max()
+	_, err = NumEpochsEquation(dataSize, depositMax)
+	if err == nil {
+		t.Fatal("Should raise an error for integer conversion")
 	}
 }
 
@@ -1121,6 +1231,7 @@ func TestRewardDepositEquationGood2(t *testing.T) {
 		t.Fatal("Invalid remainder for epoch =", epochFinal)
 	}
 }
+
 func TestRewardDepositEquationBad(t *testing.T) {
 	dataSize := uint32(1)
 	numEpochs := uint32(3)
@@ -1141,5 +1252,10 @@ func TestRewardDepositEquationBad(t *testing.T) {
 	_, err = RewardDepositEquation(depositBad, dataSize, epochInitial, epochFinal)
 	if err == nil {
 		t.Fatal("Should raise an error (2)")
+	}
+
+	_, err = RewardDepositEquation(nil, dataSize, epochInitial, epochFinal)
+	if err == nil {
+		t.Fatal("Should raise an error (3)")
 	}
 }

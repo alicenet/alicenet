@@ -32,8 +32,8 @@ const (
 	// this also parameterizes SrvrMsgTimeout
 	MsgTimeoutType
 
-	// MinTxFeeType is the UpdateType for updating MinTxFee
-	MinTxFeeType
+	// MinTxFeeCostRatioType is the UpdateType for updating MinTxFee
+	MinTxFeeCostRatioType
 
 	// TxValidVersionType is the UpdateType for updating TxValidVersion
 	TxValidVersionType
@@ -170,8 +170,8 @@ func convertFieldToType(field string) (UpdateType, error) {
 		return PreCommitStepTimeoutType, nil
 	case "msgTimeout":
 		return MsgTimeoutType, nil
-	case "minTxFee":
-		return MinTxFeeType, nil
+	case "minTxFeeCostRatio":
+		return MinTxFeeCostRatioType, nil
 	case "txValidVersion":
 		return TxValidVersionType, nil
 	case "valueStoreFee":

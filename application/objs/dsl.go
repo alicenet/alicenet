@@ -30,7 +30,7 @@ func (b *DSLinker) UnmarshalBinary(data []byte) error {
 // byte slice
 func (b *DSLinker) MarshalBinary() ([]byte, error) {
 	if b == nil {
-		return nil, errorz.ErrInvalid{}.New("dsl.marshalBinary: dsl not initialized")
+		return nil, errorz.ErrInvalid{}.New("dsl.MarshalBinary: dsl not initialized")
 	}
 	bc, err := b.MarshalCapn(nil)
 	if err != nil {
@@ -56,7 +56,7 @@ func (b *DSLinker) UnmarshalCapn(bc mdefs.DSLinker) error {
 // MarshalCapn marshals the object into its capnproto definition
 func (b *DSLinker) MarshalCapn(seg *capnp.Segment) (mdefs.DSLinker, error) {
 	if b == nil {
-		return mdefs.DSLinker{}, errorz.ErrInvalid{}.New("dsl.marshalCapn: dsl not initialized")
+		return mdefs.DSLinker{}, errorz.ErrInvalid{}.New("dsl.MarshalCapn: dsl not initialized")
 	}
 	var bc mdefs.DSLinker
 	if seg == nil {
@@ -93,7 +93,7 @@ func (b *DSLinker) MarshalCapn(seg *capnp.Segment) (mdefs.DSLinker, error) {
 // PreHash returns the PreHash of the object
 func (b *DSLinker) PreHash() ([]byte, error) {
 	if b == nil {
-		return nil, errorz.ErrInvalid{}.New("dsl.preHash: dsl not initialized")
+		return nil, errorz.ErrInvalid{}.New("dsl.PreHash: dsl not initialized")
 	}
 	return b.DSPreImage.PreHash()
 }
@@ -101,13 +101,13 @@ func (b *DSLinker) PreHash() ([]byte, error) {
 // IssuedAt returns the IssuedAt of the object
 func (b *DSLinker) IssuedAt() (uint32, error) {
 	if b == nil {
-		return 0, errorz.ErrInvalid{}.New("dsl.issuedAt: dsl not initialized")
+		return 0, errorz.ErrInvalid{}.New("dsl.IssuedAt: dsl not initialized")
 	}
 	if b.DSPreImage == nil {
-		return 0, errorz.ErrInvalid{}.New("dsl.issuedAt: dspi not initialized")
+		return 0, errorz.ErrInvalid{}.New("dsl.IssuedAt: dspi not initialized")
 	}
 	if b.DSPreImage.IssuedAt == 0 {
-		return 0, errorz.ErrInvalid{}.New("dsl.issuedAt: dspi.issuedAt is zero")
+		return 0, errorz.ErrInvalid{}.New("dsl.IssuedAt: dspi.issuedAt is zero")
 	}
 	return b.DSPreImage.IssuedAt, nil
 }
@@ -115,13 +115,13 @@ func (b *DSLinker) IssuedAt() (uint32, error) {
 // ChainID returns the ChainID of the object
 func (b *DSLinker) ChainID() (uint32, error) {
 	if b == nil {
-		return 0, errorz.ErrInvalid{}.New("dsl.chainID: dsl not initialized")
+		return 0, errorz.ErrInvalid{}.New("dsl.ChainID: dsl not initialized")
 	}
 	if b.DSPreImage == nil {
-		return 0, errorz.ErrInvalid{}.New("dsl.chainID: dspi not initialized")
+		return 0, errorz.ErrInvalid{}.New("dsl.ChainID: dspi not initialized")
 	}
 	if b.DSPreImage.ChainID == 0 {
-		return 0, errorz.ErrInvalid{}.New("dsl.chainID: dspi.chainID is zero")
+		return 0, errorz.ErrInvalid{}.New("dsl.ChainID: dspi.chainID is zero")
 	}
 	return b.DSPreImage.ChainID, nil
 }
@@ -129,13 +129,13 @@ func (b *DSLinker) ChainID() (uint32, error) {
 // Index returns the Index of the object
 func (b *DSLinker) Index() ([]byte, error) {
 	if b == nil {
-		return nil, errorz.ErrInvalid{}.New("dsl.index; dsl not initialized")
+		return nil, errorz.ErrInvalid{}.New("dsl.Index; dsl not initialized")
 	}
 	if b.DSPreImage == nil {
-		return nil, errorz.ErrInvalid{}.New("dsl.index; dspi not initialized")
+		return nil, errorz.ErrInvalid{}.New("dsl.Index; dspi not initialized")
 	}
 	if len(b.DSPreImage.Index) != constants.HashLen {
-		return nil, errorz.ErrInvalid{}.New("dsl.index; dspi.index has incorrect length")
+		return nil, errorz.ErrInvalid{}.New("dsl.Index; dspi.index has incorrect length")
 	}
 	return utils.CopySlice(b.DSPreImage.Index), nil
 }
@@ -143,13 +143,13 @@ func (b *DSLinker) Index() ([]byte, error) {
 // Owner returns the Owner field of the sub object
 func (b *DSLinker) Owner() (*DataStoreOwner, error) {
 	if b == nil {
-		return nil, errorz.ErrInvalid{}.New("dsl.owner; dsl not initialized")
+		return nil, errorz.ErrInvalid{}.New("dsl.Owner; dsl not initialized")
 	}
 	if b.DSPreImage == nil {
-		return nil, errorz.ErrInvalid{}.New("dsl.owner; dspi not initialized")
+		return nil, errorz.ErrInvalid{}.New("dsl.Owner; dspi not initialized")
 	}
 	if err := b.DSPreImage.Owner.Validate(); err != nil {
-		return nil, errorz.ErrInvalid{}.New("dsl.owner; dspi.dso is invalid")
+		return nil, errorz.ErrInvalid{}.New("dsl.Owner; dspi.dso is invalid")
 	}
 	return b.DSPreImage.Owner, nil
 }
@@ -157,13 +157,13 @@ func (b *DSLinker) Owner() (*DataStoreOwner, error) {
 // RawData returns the RawData field of the sub object
 func (b *DSLinker) RawData() ([]byte, error) {
 	if b == nil {
-		return nil, errorz.ErrInvalid{}.New("dsl.rawData; dsl not initialized")
+		return nil, errorz.ErrInvalid{}.New("dsl.RawData; dsl not initialized")
 	}
 	if b.DSPreImage == nil {
-		return nil, errorz.ErrInvalid{}.New("dsl.rawData; dspi not initialized")
+		return nil, errorz.ErrInvalid{}.New("dsl.RawData; dspi not initialized")
 	}
 	if len(b.DSPreImage.RawData) == 0 {
-		return nil, errorz.ErrInvalid{}.New("dsl.rawData; dspi.rawData has length zero")
+		return nil, errorz.ErrInvalid{}.New("dsl.RawData; dspi.rawData has length zero")
 	}
 	return utils.CopySlice(b.DSPreImage.RawData), nil
 }
@@ -185,10 +185,10 @@ func (b *DSLinker) UTXOID() ([]byte, error) {
 // TxOutIdx returns the TxOutIdx of the object
 func (b *DSLinker) TxOutIdx() (uint32, error) {
 	if b == nil {
-		return 0, errorz.ErrInvalid{}.New("dsl.txOutIdx; dsl not initialized")
+		return 0, errorz.ErrInvalid{}.New("dsl.TxOutIdx; dsl not initialized")
 	}
 	if b.DSPreImage == nil {
-		return 0, errorz.ErrInvalid{}.New("dsl.txOutIdx; dspi not initialized")
+		return 0, errorz.ErrInvalid{}.New("dsl.TxOutIdx; dspi not initialized")
 	}
 	return b.DSPreImage.TXOutIdx, nil
 }
@@ -196,10 +196,10 @@ func (b *DSLinker) TxOutIdx() (uint32, error) {
 // SetTxOutIdx sets the TxOutIdx of the object
 func (b *DSLinker) SetTxOutIdx(idx uint32) error {
 	if b == nil {
-		return errorz.ErrInvalid{}.New("dsl.setTxOutIdx; dsl not initialized")
+		return errorz.ErrInvalid{}.New("dsl.SetTxOutIdx; dsl not initialized")
 	}
 	if b.DSPreImage == nil {
-		return errorz.ErrInvalid{}.New("dsl.setTxOutIdx; dspi not initialized")
+		return errorz.ErrInvalid{}.New("dsl.SetTxOutIdx; dspi not initialized")
 	}
 	b.DSPreImage.TXOutIdx = idx
 	return nil
@@ -208,7 +208,7 @@ func (b *DSLinker) SetTxOutIdx(idx uint32) error {
 // IsExpired returns true if the datastore is free for garbage collection
 func (b *DSLinker) IsExpired(currentHeight uint32) (bool, error) {
 	if b == nil {
-		return false, errorz.ErrInvalid{}.New("dsl.isExpired; dsl not initialized")
+		return false, errorz.ErrInvalid{}.New("dsl.IsExpired; dsl not initialized")
 	}
 	return b.DSPreImage.IsExpired(currentHeight)
 }
@@ -217,7 +217,7 @@ func (b *DSLinker) IsExpired(currentHeight uint32) (bool, error) {
 // collected
 func (b *DSLinker) EpochOfExpiration() (uint32, error) {
 	if b == nil {
-		return 0, errorz.ErrInvalid{}.New("dsl.epochOfExpiration; dsl not initialized")
+		return 0, errorz.ErrInvalid{}.New("dsl.EpochOfExpiration; dsl not initialized")
 	}
 	return b.DSPreImage.EpochOfExpiration()
 }
@@ -225,7 +225,7 @@ func (b *DSLinker) EpochOfExpiration() (uint32, error) {
 // RemainingValue returns remaining value at the time of consumption
 func (b *DSLinker) RemainingValue(currentHeight uint32) (*uint256.Uint256, error) {
 	if b == nil {
-		return nil, errorz.ErrInvalid{}.New("dsl.remainingValue; dsl not initialized")
+		return nil, errorz.ErrInvalid{}.New("dsl.RemainingValue; dsl not initialized")
 	}
 	return b.DSPreImage.RemainingValue(currentHeight)
 }
@@ -233,7 +233,7 @@ func (b *DSLinker) RemainingValue(currentHeight uint32) (*uint256.Uint256, error
 // Value returns the value stored in the object at the time of creation
 func (b *DSLinker) Value() (*uint256.Uint256, error) {
 	if b == nil {
-		return nil, errorz.ErrInvalid{}.New("dsl.value; dsl not initialized")
+		return nil, errorz.ErrInvalid{}.New("dsl.Value; dsl not initialized")
 	}
 	return b.DSPreImage.Value()
 }
@@ -241,13 +241,13 @@ func (b *DSLinker) Value() (*uint256.Uint256, error) {
 // Fee returns the fee stored in the object at the time of creation
 func (b *DSLinker) Fee() (*uint256.Uint256, error) {
 	if b == nil {
-		return nil, errorz.ErrInvalid{}.New("dsl.fee; dsl not initialized")
+		return nil, errorz.ErrInvalid{}.New("dsl.Fee; dsl not initialized")
 	}
 	if b.DSPreImage == nil {
-		return nil, errorz.ErrInvalid{}.New("dsl.fee; dspi not initialized")
+		return nil, errorz.ErrInvalid{}.New("dsl.Fee; dspi not initialized")
 	}
 	if b.DSPreImage.Fee == nil {
-		return nil, errorz.ErrInvalid{}.New("dsl.fee; dspi.fee not initialized")
+		return nil, errorz.ErrInvalid{}.New("dsl.Fee; dspi.fee not initialized")
 	}
 	return b.DSPreImage.Fee.Clone(), nil
 }
@@ -256,7 +256,7 @@ func (b *DSLinker) Fee() (*uint256.Uint256, error) {
 // consumption
 func (b *DSLinker) ValidateSignature(currentHeight uint32, msg []byte, sig *DataStoreSignature) error {
 	if b == nil {
-		return errorz.ErrInvalid{}.New("dsl.validateSignature; dsl not initialized")
+		return errorz.ErrInvalid{}.New("dsl.ValidateSignature; dsl not initialized")
 	}
 	return b.DSPreImage.ValidateSignature(currentHeight, msg, sig)
 }
@@ -265,7 +265,7 @@ func (b *DSLinker) ValidateSignature(currentHeight uint32, msg []byte, sig *Data
 // creation
 func (b *DSLinker) ValidatePreSignature(msg []byte, sig *DataStoreSignature) error {
 	if b == nil {
-		return errorz.ErrInvalid{}.New("dsl.validatePreSignature; dsl not initialized")
+		return errorz.ErrInvalid{}.New("dsl.ValidatePreSignature; dsl not initialized")
 	}
 	return b.DSPreImage.ValidatePreSignature(msg, sig)
 }

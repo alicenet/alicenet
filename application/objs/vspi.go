@@ -25,7 +25,7 @@ type VSPreImage struct {
 // VSPreImage object
 func (b *VSPreImage) UnmarshalBinary(data []byte) error {
 	if b == nil {
-		return errorz.ErrInvalid{}.New("vspi.unmarshalBinary: vspi not initialized")
+		return errorz.ErrInvalid{}.New("vspi.UnmarshalBinary: vspi not initialized")
 	}
 	bc, err := vspreimage.Unmarshal(data)
 	if err != nil {
@@ -38,7 +38,7 @@ func (b *VSPreImage) UnmarshalBinary(data []byte) error {
 // byte slice
 func (b *VSPreImage) MarshalBinary() ([]byte, error) {
 	if b == nil {
-		return nil, errorz.ErrInvalid{}.New("vspi.marshalBinary: vspi not initialized")
+		return nil, errorz.ErrInvalid{}.New("vspi.MarshalBinary: vspi not initialized")
 	}
 	bc, err := b.MarshalCapn(nil)
 	if err != nil {
@@ -95,7 +95,7 @@ func (b *VSPreImage) UnmarshalCapn(bc mdefs.VSPreImage) error {
 // MarshalCapn marshals the object into its capnproto definition
 func (b *VSPreImage) MarshalCapn(seg *capnp.Segment) (mdefs.VSPreImage, error) {
 	if b == nil {
-		return mdefs.VSPreImage{}, errorz.ErrInvalid{}.New("vspi.marshalCapn: vspi not initialized")
+		return mdefs.VSPreImage{}, errorz.ErrInvalid{}.New("vspi.MarshalCapn: vspi not initialized")
 	}
 	var bc mdefs.VSPreImage
 	if seg == nil {
@@ -154,7 +154,7 @@ func (b *VSPreImage) MarshalCapn(seg *capnp.Segment) (mdefs.VSPreImage, error) {
 // PreHash calculates the PreHash of the object
 func (b *VSPreImage) PreHash() ([]byte, error) {
 	if b == nil {
-		return nil, errorz.ErrInvalid{}.New("vspi.preHash: vspi not initialized")
+		return nil, errorz.ErrInvalid{}.New("vspi.PreHash: vspi not initialized")
 	}
 	if b.preHash != nil {
 		return utils.CopySlice(b.preHash), nil
@@ -171,7 +171,7 @@ func (b *VSPreImage) PreHash() ([]byte, error) {
 // ValidateSignature validates the signature for VSPreImage
 func (b *VSPreImage) ValidateSignature(msg []byte, sig *ValueStoreSignature) error {
 	if b == nil {
-		return errorz.ErrInvalid{}.New("vspi.validateSignature: vspi not initialized")
+		return errorz.ErrInvalid{}.New("vspi.ValidateSignature: vspi not initialized")
 	}
 	return b.Owner.ValidateSignature(msg, sig)
 }

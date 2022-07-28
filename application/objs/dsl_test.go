@@ -321,6 +321,10 @@ func TestDSLinkerRawData(t *testing.T) {
 		t.Fatal("Should have raised error (2)")
 	}
 	dsl.DSPreImage = &DSPreImage{}
+	_, err = dsl.RawData()
+	if err == nil {
+		t.Fatal("Should have raised error (3)")
+	}
 	rawDataTrue := make([]byte, constants.HashLen)
 	dsl.DSPreImage.RawData = utils.CopySlice(rawDataTrue)
 	rd, err := dsl.RawData()
@@ -343,8 +347,12 @@ func TestDSLinkerUTXOID(t *testing.T) {
 	if err == nil {
 		t.Fatal("Should have raised error (2)")
 	}
-	dsl.TxHash = make([]byte, constants.HashLen)
 	dsl.DSPreImage = &DSPreImage{}
+	_, err = dsl.UTXOID()
+	if err == nil {
+		t.Fatal("Should have raised error (3)")
+	}
+	dsl.TxHash = make([]byte, constants.HashLen)
 	dsl.DSPreImage.TXOutIdx = 0
 
 	preUtxoID := make([]byte, constants.HashLen+4)
@@ -465,6 +473,19 @@ func TestDSLinkerValidatePreSignature(t *testing.T) {
 	}
 	dsl := &DSLinker{}
 	err = dsl.ValidatePreSignature(msg, sig)
+	if err == nil {
+		t.Fatal("Should have raised error (2)")
+	}
+}
+
+func TestDSLinkerFee(t *testing.T) {
+	ds := &DataStore{}
+	_, err := ds.DSLinker.Fee()
+	if err == nil {
+		t.Fatal("Should have raised error (1)")
+	}
+	dsl := &DSLinker{}
+	_, err = dsl.Fee()
 	if err == nil {
 		t.Fatal("Should have raised error (2)")
 	}

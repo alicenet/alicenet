@@ -304,12 +304,12 @@ func TestConvertFieldToType(t *testing.T) {
 		t.Fatal("Incorrect UpdateType (5)")
 	}
 
-	field = "minTxFee"
+	field = "minTxFeeCostRatio"
 	uType, err = convertFieldToType(field)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if uType != MinTxFeeType {
+	if uType != MinTxFeeCostRatioType {
 		t.Fatal("Incorrect UpdateType (6)")
 	}
 

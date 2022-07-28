@@ -2,11 +2,12 @@ package lstate
 
 import (
 	"errors"
+	"testing"
+
 	"github.com/alicenet/alicenet/consensus/objs"
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/crypto"
 	"github.com/alicenet/alicenet/errorz"
-	"testing"
 )
 
 func TestLocalState_setMostRecentProposal_Error1(t *testing.T) {
@@ -486,17 +487,12 @@ func TestLocalState_setMostRecentBlockHeaderFastSync_Error1(t *testing.T) {
 	rs := createRoundState(t, os)
 	vs := createValidatorsSet(t, os, rs)
 	rss := createRoundStates(os, rs, vs, &objs.OwnValidatingState{})
-	_, bnSigners, bnShares, secpSigners, secpPubks := makeSigners(t)
+	_, _, bnShares, _, secpPubks := makeSigners(t)
 	if len(secpPubks) != len(bnShares) {
 		t.Fatal("key length mismatch")
 	}
 
-	height := uint32(2)
-	round := uint32(4)
-	prevBlock := crypto.Hasher([]byte("0"))
-	_, _, _, _, _, _, _, _, bh := buildRound(t, bnSigners, bnShares, secpSigners, height, round, prevBlock)
-	bh = nil
-
+	var bh *objs.BlockHeader
 	err := engine.setMostRecentBlockHeaderFastSync(nil, rss, bh)
 	if err == nil {
 		t.Fatal("Should have raised error")

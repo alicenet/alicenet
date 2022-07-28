@@ -467,7 +467,7 @@ func TestMinedGetOneInternal(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		err = hndlr.addOneInternal(txn, tx, txHash, height)
+		err = hndlr.addOneInternal(txn, tx, height)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -510,11 +510,10 @@ func TestMinedAddOneInternal(t *testing.T) {
 	}
 
 	txBad := &objs.Tx{}
-	txHashBad := make([]byte, constants.HashLen)
 	height := uint32(1)
 
 	err = db.Update(func(txn *badger.Txn) error {
-		err := hndlr.addOneInternal(txn, txBad, txHashBad, height)
+		err := hndlr.addOneInternal(txn, txBad, height)
 		if err == nil {
 			t.Fatal("Should have raised error")
 		}
@@ -529,7 +528,7 @@ func TestMinedAddOneInternal(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		err = hndlr.addOneInternal(txn, tx, txHash, height)
+		err = hndlr.addOneInternal(txn, tx, height)
 		if err != nil {
 			t.Fatal(err)
 		}

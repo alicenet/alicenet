@@ -4,15 +4,24 @@ const (
 	// MaxTxVectorLength is the maximum size of input output vectors.
 	// This prevents uint32 overflow.
 	MaxTxVectorLength int = 128
+
+	// MaxTxSize is the maximum size in bytes of a marshaled transaction: 3 MB
+	MaxTxSize int = 3000000
+)
+
+const (
+	// MinQueueSize is the minimum allowed size for TxQueue
+	// TODO: think about a better number to use
+	MinQueueSize int = 10000
 )
 
 const (
 	// DSPIMinDeposit is the minimum amount of deposit. This is calculated
-	// assuming that no state is stored (datasize == 0) as well as storing
-	// the state for 1 epoch.
+	// assuming that no data is stored (datasize == 0) as well as storing
+	// the data for 1 epoch.
 	DSPIMinDeposit uint32 = BaseDatasizeConst
 
-	// BaseDatasizeConst is the bytes added to the size of state (in bytes)
+	// BaseDatasizeConst is the bytes added to the size of data (in bytes)
 	// for the minimum cost.
 	BaseDatasizeConst = 376
 	// We discuss the rational now.

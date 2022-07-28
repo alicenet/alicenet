@@ -364,6 +364,24 @@ func TestDepositAdd(t *testing.T) {
 			t.Fatal("Should have raised error for invalid owner")
 		}
 
+		// Raise error for invalid bigInt
+		err = hndlr.Add(txn, testingChainID, utxoID, nil, testingOwner(t))
+		if err == nil {
+			t.Fatal("Should have raised error for invalid bigInt")
+		}
+
+		// Raise error for zero bigInt
+		err = hndlr.Add(txn, testingChainID, utxoID, big.NewInt(0), testingOwner(t))
+		if err == nil {
+			t.Fatal("Should have raised error for zero bigInt")
+		}
+
+		// Raise error for invalid chainID
+		err = hndlr.Add(txn, 0, utxoID, one, testingOwner(t))
+		if err == nil {
+			t.Fatal("Should have raised error for invalid chainID")
+		}
+
 		// Add valid UTXO and then confirm it is present
 		err = hndlr.Add(txn, testingChainID, utxoID, one, testingOwner(t))
 		if err != nil {

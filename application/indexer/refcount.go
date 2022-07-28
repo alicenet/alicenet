@@ -5,14 +5,18 @@ import (
 	"github.com/dgraph-io/badger/v2"
 )
 
+// NewRefCounter makes a new RefCounter struct
 func NewRefCounter(p prefixFunc) *RefCounter {
 	return &RefCounter{p}
 }
 
+// RefCounter enables the ability to count multiple references
+// to specific utxos.
 type RefCounter struct {
 	prefix prefixFunc
 }
 
+// RefCounterKey is a key for the RefCounter
 type RefCounterKey struct {
 	key []byte
 }
@@ -27,8 +31,9 @@ func (rck *RefCounterKey) UnmarshalBinary(data []byte) {
 	rck.key = utils.CopySlice(data)
 }
 
-func (rc *RefCounter) Increment(txn *badger.Txn, txHash []byte) (int64, error) {
-	rcKey := rc.makeKey(txHash)
+// Increment increases the number of references to a specific utxoID.
+func (rc *RefCounter) Increment(txn *badger.Txn, utxoID []byte) (int64, error) {
+	rcKey := rc.makeKey(utxoID)
 	key := rcKey.MarshalBinary()
 	v, err := utils.GetInt64(txn, key)
 	if err != nil {
@@ -41,8 +46,9 @@ func (rc *RefCounter) Increment(txn *badger.Txn, txHash []byte) (int64, error) {
 	return v, utils.SetInt64(txn, key, v)
 }
 
-func (rc *RefCounter) Decrement(txn *badger.Txn, txHash []byte) (int64, error) {
-	rcKey := rc.makeKey(txHash)
+// Decrement decreases the number of references to a specific utxoID.
+func (rc *RefCounter) Decrement(txn *badger.Txn, utxoID []byte) (int64, error) {
+	rcKey := rc.makeKey(utxoID)
 	key := rcKey.MarshalBinary()
 	v, err := utils.GetInt64(txn, key)
 	if err != nil {
@@ -58,10 +64,11 @@ func (rc *RefCounter) Decrement(txn *badger.Txn, txHash []byte) (int64, error) {
 	return 0, utils.DeleteValue(txn, key)
 }
 
-func (rc *RefCounter) makeKey(txHash []byte) *RefCounterKey {
+// makeKey makes a RefCounterKey for a utxo.
+func (rc *RefCounter) makeKey(utxoID []byte) *RefCounterKey {
 	key := []byte{}
 	key = append(key, rc.prefix()...)
-	key = append(key, utils.CopySlice(txHash)...)
+	key = append(key, utils.CopySlice(utxoID)...)
 	rck := &RefCounterKey{}
 	rck.UnmarshalBinary(key)
 	return rck

@@ -1,6 +1,6 @@
 package dbprefix
 
-// All functions in this file are prefix designators for database state types.
+// All functions in this file are prefix designators for database data types.
 // These functions name the resource being referenced in the function name.
 // All prefixes should use two character length identifiers and should start
 // at `n` as the first character allowed at index zero of an identifier.
@@ -112,4 +112,20 @@ func PrefixDepositValueKey() []byte {
 
 func PrefixPendingTxCooldownKey() []byte {
 	return []byte("n7")
+}
+
+func PrefixPendingTxTxFeeIndex() []byte {
+	return []byte("n8")
+}
+
+func PrefixPendingTxTxFeeIndexRef() []byte {
+	return []byte("n9")
+}
+
+func PrefixPendingTxTxSizeIndex() []byte {
+	return []byte("oa")
+}
+
+func PrefixPendingTxTxSizeIndexRef() []byte {
+	return []byte("ob")
 }

@@ -82,16 +82,16 @@ func (vout Vout) ValidateTxOutIdx() error {
 			}
 			txOutIdx = asTxOutIdx
 		default:
-			return errorz.ErrInvalid{}.New("vout.validateTxOutIdx; bad txOutIdx: Invalid Type")
+			return errorz.ErrInvalid{}.New("vout.ValidateTxOutIdx; bad txOutIdx: Invalid Type")
 		}
 		if idxMap[txOutIdx] {
-			return errorz.ErrInvalid{}.New("vout.validateTxOutIdx; duplicate txOutIdx")
+			return errorz.ErrInvalid{}.New("vout.ValidateTxOutIdx; duplicate txOutIdx")
 		}
 		idxMap[txOutIdx] = true
 	}
 	for i := uint32(0); i < uint32(len(idxMap)); i++ {
 		if !idxMap[i] {
-			return errorz.ErrInvalid{}.New("vout.validateTxOutIdx; missing tx out index")
+			return errorz.ErrInvalid{}.New("vout.ValidateTxOutIdx; missing tx out index")
 		}
 	}
 	return nil
@@ -148,7 +148,7 @@ func (vout Vout) ValidatePreSignature() error {
 // ValidateSignature validates the Signature from each TXOut in Vout
 func (vout Vout) ValidateSignature(currentHeight uint32, txIn []*TXIn) error {
 	if len(txIn) != len(vout) {
-		return errorz.ErrInvalid{}.New("vout.validateSignature; mismatched vector lengths")
+		return errorz.ErrInvalid{}.New("vout.ValidateSignature; mismatched vector lengths")
 	}
 	for i := 0; i < len(vout); i++ {
 		err := vout[i].ValidateSignature(currentHeight, txIn[i])

@@ -84,6 +84,22 @@ func (u *Uint256) String() string {
 	return strings.TrimPrefix(s, prefix)
 }
 
+// Set overwrites current value
+func (u *Uint256) Set(v *Uint256) error {
+	if u == nil {
+		return errorz.ErrInvalid{}.New("Error in Uint256.Set: nil object")
+	}
+	data, err := v.MarshalBinary()
+	if err != nil {
+		return err
+	}
+	err = u.UnmarshalBinary(data)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // ToUint32Array converts Uint256 into an array of uint32 objects;
 // note that the order is reversed, so that the lower-order uint32 objects
 // have smaller indices.
@@ -192,8 +208,11 @@ func (u *Uint256) ToUint32() (uint32, error) {
 		u.val = &uint256.Int{}
 	}
 	u64, overflowed := u.val.Uint64WithOverflow()
-	if overflowed || u64 > uint64(constants.MaxUint32) {
-		return uint32(0), errorz.ErrInvalid{}.New("Error in Uint256.ToUint32: overflow")
+	if overflowed {
+		return uint32(0), errorz.ErrInvalid{}.New("Error in Uint256.ToUint32: overflow; failed conversion to uint64")
+	}
+	if u64 > uint64(constants.MaxUint32) {
+		return uint32(0), errorz.ErrInvalid{}.New("Error in Uint256.ToUint32: overflow; failed conversion to uint32")
 	}
 	return uint32(u64), nil
 }
@@ -206,8 +225,11 @@ func (u *Uint256) Add(a, b *Uint256) (*Uint256, error) {
 	if u.val == nil {
 		u.val = &uint256.Int{}
 	}
-	if a == nil || a.val == nil || b == nil || b.val == nil {
-		return nil, errorz.ErrInvalid{}.New("Error in Uint256.Add: nil args")
+	if a == nil || a.val == nil {
+		return nil, errorz.ErrInvalid{}.New("Error in Uint256.Add: arg a not initialized")
+	}
+	if b == nil || b.val == nil {
+		return nil, errorz.ErrInvalid{}.New("Error in Uint256.Add: arg b not initialized")
 	}
 	z := u.Clone()
 	_, overflowed := z.val.AddOverflow(a.val, b.val)
@@ -226,8 +248,14 @@ func (u *Uint256) AddMod(a, b, m *Uint256) (*Uint256, error) {
 	if u.val == nil {
 		u.val = &uint256.Int{}
 	}
-	if a == nil || a.val == nil || b == nil || b.val == nil || m == nil || m.val == nil {
-		return nil, errorz.ErrInvalid{}.New("Error in Uint256.AddMod: nil args")
+	if a == nil || a.val == nil {
+		return nil, errorz.ErrInvalid{}.New("Error in Uint256.AddMod: arg a not initialized")
+	}
+	if b == nil || b.val == nil {
+		return nil, errorz.ErrInvalid{}.New("Error in Uint256.AddMod: arg b not initialized")
+	}
+	if m == nil || m.val == nil {
+		return nil, errorz.ErrInvalid{}.New("Error in Uint256.AddMod: arg m not initialized")
 	}
 	if m.Eq(Zero()) {
 		return nil, errorz.ErrInvalid{}.New("Error in Uint256.AddMod: Cannot mod by 0")
@@ -244,8 +272,11 @@ func (u *Uint256) Sub(a, b *Uint256) (*Uint256, error) {
 	if u.val == nil {
 		u.val = &uint256.Int{}
 	}
-	if a == nil || a.val == nil || b == nil || b.val == nil {
-		return nil, errorz.ErrInvalid{}.New("Error in Uint256.Sub: nil args")
+	if a == nil || a.val == nil {
+		return nil, errorz.ErrInvalid{}.New("Error in Uint256.Sub: arg a not initialized")
+	}
+	if b == nil || b.val == nil {
+		return nil, errorz.ErrInvalid{}.New("Error in Uint256.Sub: arg b not initialized")
 	}
 	z := u.Clone()
 	_, overflowed := z.val.SubOverflow(a.val, b.val)
@@ -264,8 +295,11 @@ func (u *Uint256) Mul(a, b *Uint256) (*Uint256, error) {
 	if u.val == nil {
 		u.val = &uint256.Int{}
 	}
-	if a == nil || a.val == nil || b == nil || b.val == nil {
-		return nil, errorz.ErrInvalid{}.New("Error in Uint256.Mul: nil args")
+	if a == nil || a.val == nil {
+		return nil, errorz.ErrInvalid{}.New("Error in Uint256.Mul: arg a not initialized")
+	}
+	if b == nil || b.val == nil {
+		return nil, errorz.ErrInvalid{}.New("Error in Uint256.Mul: arg b not initialized")
 	}
 	z := u.Clone()
 	_, overflowed := z.val.MulOverflow(a.val, b.val)
@@ -284,8 +318,14 @@ func (u *Uint256) MulMod(a, b, m *Uint256) (*Uint256, error) {
 	if u.val == nil {
 		u.val = &uint256.Int{}
 	}
-	if a == nil || a.val == nil || b == nil || b.val == nil || m == nil || m.val == nil {
-		return nil, errorz.ErrInvalid{}.New("Error in Uint256.MulMod: nil args")
+	if a == nil || a.val == nil {
+		return nil, errorz.ErrInvalid{}.New("Error in Uint256.MulMod: arg a not initialized")
+	}
+	if b == nil || b.val == nil {
+		return nil, errorz.ErrInvalid{}.New("Error in Uint256.MulMod: arg b not initialized")
+	}
+	if m == nil || m.val == nil {
+		return nil, errorz.ErrInvalid{}.New("Error in Uint256.MulMod: arg m not initialized")
 	}
 	if m.Eq(Zero()) {
 		return nil, errorz.ErrInvalid{}.New("Error in Uint256.MulMod: Cannot mod by 0")
@@ -302,8 +342,11 @@ func (u *Uint256) Div(a, b *Uint256) (*Uint256, error) {
 	if u.val == nil {
 		u.val = &uint256.Int{}
 	}
-	if a == nil || a.val == nil || b == nil || b.val == nil {
-		return nil, errorz.ErrInvalid{}.New("Error in Uint256.Div: nil args")
+	if a == nil || a.val == nil {
+		return nil, errorz.ErrInvalid{}.New("Error in Uint256.Div: arg a not initialized")
+	}
+	if b == nil || b.val == nil {
+		return nil, errorz.ErrInvalid{}.New("Error in Uint256.Div: arg b not initialized")
 	}
 	if b.Eq(Zero()) {
 		return nil, errorz.ErrInvalid{}.New("Error in Uint256.Mod: Cannot divide by 0")
@@ -320,8 +363,11 @@ func (u *Uint256) Mod(a, m *Uint256) (*Uint256, error) {
 	if u.val == nil {
 		u.val = &uint256.Int{}
 	}
-	if a == nil || a.val == nil || m == nil || m.val == nil {
-		return nil, errorz.ErrInvalid{}.New("Error in Uint256.Mod: nil args")
+	if a == nil || a.val == nil {
+		return nil, errorz.ErrInvalid{}.New("Error in Uint256.Mod: arg a not initialized")
+	}
+	if m == nil || m.val == nil {
+		return nil, errorz.ErrInvalid{}.New("Error in Uint256.Mod: arg m not initialized")
 	}
 	if m.Eq(Zero()) {
 		return nil, errorz.ErrInvalid{}.New("Error in Uint256.Mod: Cannot mod by 0")
@@ -401,7 +447,8 @@ func (u *Uint256) IsZero() bool {
 	if u.val == nil {
 		u.val = &uint256.Int{}
 	}
-	return u.val.IsZero()
+	z := new(Uint256).SetZero()
+	return u.Eq(z)
 }
 
 // DSPIMinDeposit returns constants.DSPIMinDeposit as Uint256
@@ -433,7 +480,24 @@ func Two() *Uint256 {
 	return u
 }
 
-// Max returns the maximum value
+// TwoPower64 returns 2^64
+func TwoPower64() *Uint256 {
+	u := &Uint256{}
+	_, _ = u.FromUint64(constants.MaxUint64)
+	_, _ = u.Add(u, One())
+	return u
+}
+
+// TwoPower128 returns 2^128
+func TwoPower128() *Uint256 {
+	u := &Uint256{}
+	u1 := TwoPower64()
+	u2 := TwoPower64()
+	_, _ = u.Mul(u1, u2)
+	return u
+}
+
+// Max returns the maximum value of Uint256: 2^256 - 1
 func Max() *Uint256 {
 	const uint64max uint64 = 1<<64 - 1
 	return &Uint256{val: &uint256.Int{uint64max, uint64max, uint64max, uint64max}}

@@ -38,6 +38,18 @@ type Application interface {
 	PendingTxContains(txn *badger.Txn, height uint32, txHashes [][]byte) ([][]byte, error)
 	// StoreSnapShotNodes stores a snapshot node into the state trie of the application
 	StoreSnapShotNode(txn *badger.Txn, batch []byte, root []byte, layer int) ([][]byte, int, []trie.LeafNode, error)
+	// AddTxsToQueue attempts to add additional txs to txqueue
+	AddTxsToQueue(txn *badger.Txn, currentHeight uint32) error
+	// QueueSize returns the size of the TxFeeQueue
+	QueueSize() int
+	// SetQueueSize sets the size of the TxFeeQueue
+	SetQueueSize(queueSize int) error
+	// TxQueueAddStart sets the parameter to start adding txs to queue
+	TxQueueAddStart()
+	// TxQueueAddStop sets the parameter to stop adding txs to queue
+	TxQueueAddStop()
+	// TxQueueAddStatus returns if we are currently adding txs to queue
+	TxQueueAddStatus() bool
 	// GetSnapShotNode returns a snapshot node from the state trie to a peer
 	GetSnapShotNode(txn *badger.Txn, height uint32, key []byte) ([]byte, error)
 	// StoreSnapShotStateData stores a snapshot state element to the database

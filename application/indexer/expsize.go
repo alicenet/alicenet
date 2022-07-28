@@ -17,6 +17,7 @@ Second index is the size of the object
 iterate in fwd direction
 */
 
+// NewExpSizeIndex makes a new ExpSizeIndex object
 func NewExpSizeIndex(p, pp prefixFunc) *ExpSizeIndex {
 	return &ExpSizeIndex{p, pp}
 }
@@ -129,7 +130,6 @@ func (esi *ExpSizeIndex) GetExpiredObjects(txn *badger.Txn, epoch uint32, maxByt
 }
 
 func (esi *ExpSizeIndex) makeKey(epoch uint32, size uint32, utxoID []byte) *ExpSizeIndexKey {
-	utxoIDCopy := utils.CopySlice(utxoID)
 	key := []byte{}
 	key = append(key, esi.prefix()...)
 	epochBytes := utils.MarshalUint32(epoch)
@@ -137,17 +137,16 @@ func (esi *ExpSizeIndex) makeKey(epoch uint32, size uint32, utxoID []byte) *ExpS
 	sizeInv := constants.MaxUint32 - size
 	sizeInvBytes := utils.MarshalUint32(sizeInv)
 	key = append(key, sizeInvBytes...)
-	key = append(key, utxoIDCopy...)
+	key = append(key, utils.CopySlice(utxoID)...)
 	esiKey := &ExpSizeIndexKey{}
 	esiKey.UnmarshalBinary(key)
 	return esiKey
 }
 
 func (esi *ExpSizeIndex) makeRefKey(utxoID []byte) *ExpSizeIndexRefKey {
-	utxoIDCopy := utils.CopySlice(utxoID)
 	key := []byte{}
 	key = append(key, esi.refPrefix()...)
-	key = append(key, utxoIDCopy...)
+	key = append(key, utils.CopySlice(utxoID)...)
 	esiRefKey := &ExpSizeIndexRefKey{}
 	esiRefKey.UnmarshalBinary(key)
 	return esiRefKey

@@ -332,20 +332,20 @@ func TestRawStorageConsensusTimeouts(t *testing.T) {
 func TestRawStorageMinTxFee(t *testing.T) {
 	rs1 := &RawStorage{}
 
-	v1 := rs1.GetMinTxFee()
+	v1 := rs1.GetMinTxFeeCostRatio()
 	if v1.Sign() != 0 {
-		t.Fatal("minTxBurnedFee should be 0")
+		t.Fatal("minTxFeeCostRatio should be 0")
 	}
 
 	rs2 := &RawStorage{}
-	err := rs2.SetMinTxFee(nil)
+	err := rs2.SetMinTxFeeCostRatio(nil)
 	if !errors.Is(err, ErrInvalidValue) {
 		t.Fatal("Should have raised ErrInvalidValue")
 	}
 
 	rs3 := &RawStorage{}
 	value := new(big.Int).SetInt64(-1)
-	err = rs3.SetMinTxFee(value)
+	err = rs3.SetMinTxFeeCostRatio(value)
 	if !errors.Is(err, ErrInvalidValue) {
 		t.Fatal("Should have raised ErrInvalidValue")
 	}
@@ -353,13 +353,13 @@ func TestRawStorageMinTxFee(t *testing.T) {
 	rs4 := &RawStorage{}
 	value4int := int64(1234567890)
 	value4 := new(big.Int).SetInt64(value4int)
-	err = rs4.SetMinTxFee(value4)
+	err = rs4.SetMinTxFeeCostRatio(value4)
 	if err != nil {
 		t.Fatal(err)
 	}
-	v4 := rs4.GetMinTxFee()
+	v4 := rs4.GetMinTxFeeCostRatio()
 	if v4.Cmp(big.NewInt(value4int)) != 0 {
-		t.Fatal("incorrect minTxBurnedFee value")
+		t.Fatal("incorrect minTxFeeCostRatio value")
 	}
 }
 
@@ -814,12 +814,12 @@ func TestRawStorageUpdateValueMsgTimeout(t *testing.T) {
 func TestRawStorageUpdateMinTxBurnedFee(t *testing.T) {
 	rs := &RawStorage{}
 
-	retMinTxFee := rs.GetMinTxFee()
+	retMinTxFee := rs.GetMinTxFeeCostRatio()
 	if retMinTxFee.Sign() != 0 {
 		t.Fatal("Incorrect MinTxFee (1)")
 	}
 
-	field := "minTxFee"
+	field := "minTxFeeCostRatio"
 	valueBad1 := ""
 	epoch := uint32(1)
 	update, err := NewUpdate(field, valueBad1, epoch)
@@ -855,7 +855,7 @@ func TestRawStorageUpdateMinTxBurnedFee(t *testing.T) {
 	if !ok {
 		t.Fatal("SetString failed")
 	}
-	retMinTxFee = rs.GetMinTxFee()
+	retMinTxFee = rs.GetMinTxFeeCostRatio()
 	if retMinTxFee.Cmp(valueTrue) != 0 {
 		t.Fatal("Incorrect MinTxBurnedFee (2)")
 	}
