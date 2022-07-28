@@ -18,10 +18,14 @@ import (
 var _ tasks.TaskState = &SnapshotState{}
 
 type SnapshotState struct {
-	Account     accounts.Account
-	RawBClaims  []byte
-	RawSigGroup []byte
-	BlockHeader *objs.BlockHeader
+	Account            accounts.Account
+	RawBClaims         []byte
+	RawSigGroup        []byte
+	BlockHeader        *objs.BlockHeader
+	LastSnapshotHeight int
+	DesperationDelay   int
+	DesperationFactor  int
+	RandomSeedHash     []byte
 }
 
 func (state *SnapshotState) PersistState(txn *badger.Txn) error {

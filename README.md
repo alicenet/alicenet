@@ -1,5 +1,7 @@
 # AliceNet
 
+[![codecov](https://codecov.io/gh/alicenet/alicenet/branch/main/graph/badge.svg?token=B5RGO1P416)](https://codecov.io/gh/alicenet/alicenet)
+
 ## Requirements
 
 - [Docker v20 with docker-compose](https://docs.docker.com/get-docker)
