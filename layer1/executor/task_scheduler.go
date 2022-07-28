@@ -75,6 +75,7 @@ type TasksScheduler struct {
 	mainCtx          context.Context                `json:"-"`
 	mainCtxCf        context.CancelFunc             `json:"-"`
 	eth              layer1.Client                  `json:"-"`
+	contracts        layer1.AllSmartContracts       `json:"-"`
 	database         *db.Database                   `json:"-"`
 	adminHandler     monitorInterfaces.AdminHandler `json:"-"`
 	marshaller       *marshaller.TypeRegistry       `json:"-"`
@@ -153,7 +154,7 @@ func GetTaskRegistry() *marshaller.TypeRegistry {
 	return tr
 }
 
-func NewTasksScheduler(database *db.Database, eth layer1.Client, adminHandler monitorInterfaces.AdminHandler, taskRequestChan <-chan tasks.TaskRequest, txWatcher *transaction.FrontWatcher) (*TasksScheduler, error) {
+func NewTasksScheduler(database *db.Database, eth layer1.Client, contracts layer1.AllSmartContracts, adminHandler monitorInterfaces.AdminHandler, taskRequestChan <-chan tasks.TaskRequest, txWatcher *transaction.FrontWatcher) (*TasksScheduler, error) {
 	tr := GetTaskRegistry()
 
 	// main context that will cancel all workers and go routine
@@ -165,6 +166,7 @@ func NewTasksScheduler(database *db.Database, eth layer1.Client, adminHandler mo
 		mainCtxCf:        cf,
 		database:         database,
 		eth:              eth,
+		contracts:        contracts,
 		adminHandler:     adminHandler,
 		marshaller:       tr,
 		cancelChan:       make(chan bool, 1),
@@ -331,12 +333,14 @@ func (s *TasksScheduler) processTaskResponse(ctx context.Context, taskResponse t
 		task, present := s.Schedule[taskResponse.Id]
 		if present {
 			logger = GetTaskLoggerComplete(task)
+			logger = logger.WithField("killedAt", task.killedAt)
 		}
 		if taskResponse.Err != nil {
-			if !errors.Is(taskResponse.Err, context.Canceled) {
-				logger.Errorf("Task executed with error: %v", taskResponse.Err)
+			// todo: forward the error to whatever is listen to the task after adding subscription to scheduler
+			if present && task.InternalState == Killed {
+				logger.WithError(taskResponse.Err).Debug("Task got killed")
 			} else {
-				logger.Debug("Task got killed")
+				logger.WithError(taskResponse.Err).Error("Task executed with error")
 			}
 		} else {
 			logger.Info("Task successfully executed")
@@ -361,7 +365,7 @@ func (s *TasksScheduler) startTasks(ctx context.Context, tasks []TaskRequestInfo
 			logEntry = logEntry.WithField("taskId", task.Id).WithField("taskName", task.Name)
 			GetTaskLoggerComplete(task).Info("task is about to start")
 
-			go s.tasksManager.ManageTask(ctx, task.Task, task.Name, task.Id, s.database, logEntry, s.eth, s.taskResponseChan)
+			go s.tasksManager.ManageTask(ctx, task.Task, task.Name, task.Id, s.database, logEntry, s.eth, s.contracts, s.taskResponseChan)
 
 			task.InternalState = Running
 			s.Schedule[task.Id] = task
@@ -391,16 +395,20 @@ func (s *TasksScheduler) killTasks(ctx context.Context, tasks []TaskRequestInfo)
 			task := tasks[i]
 			GetTaskLoggerComplete(task).Info("Task is about to be killed")
 			if task.InternalState == Running {
-				task.Task.Close()
 				task.InternalState = Killed
 				task.killedAt = s.LastHeightSeen
+				task.Task.Close()
+				err := s.updateTask(task)
+				if err != nil {
+					s.logger.WithError(err).Errorf("Failed to kill task id: %s", task.Id)
+				}
 			} else if task.InternalState == Killed {
 				GetTaskLoggerComplete(task).Error("Task already killed")
 			} else {
 				GetTaskLoggerComplete(task).Trace("Task is not running yet, pruning directly")
 				err := s.remove(task.Id)
 				if err != nil {
-					s.logger.WithError(err).Errorf("Failed to kill task id: %s", task.Id)
+					s.logger.WithError(err).Errorf("Failed to prune task id: %s", task.Id)
 				}
 			}
 		}
@@ -486,6 +494,18 @@ func (s *TasksScheduler) remove(id string) error {
 	}
 
 	delete(s.Schedule, id)
+
+	return nil
+}
+
+func (s *TasksScheduler) updateTask(task TaskRequestInfo) error {
+	s.logger.Tracef("updating task with id %s", task.Id)
+	_, present := s.Schedule[task.Id]
+	if !present {
+		return ErrNotScheduled
+	}
+
+	s.Schedule[task.Id] = task
 
 	return nil
 }

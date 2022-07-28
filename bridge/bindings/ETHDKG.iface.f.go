@@ -34,6 +34,18 @@ type IETHDKGFilterer interface {
 	//
 	// Solidity: event GPKJSubmissionComplete(uint256 blockNumber)
 	ParseGPKJSubmissionComplete(log types.Log) (*ETHDKGGPKJSubmissionComplete, error)
+	// FilterInitialized is a free log retrieval operation binding the contract event 0x7f26b83ff96e1f2b6a682f133852f6798a09c465da95921460cefb3847402498.
+	//
+	// Solidity: event Initialized(uint8 version)
+	FilterInitialized(opts *bind.FilterOpts) (*ETHDKGInitializedIterator, error)
+	// WatchInitialized is a free log subscription operation binding the contract event 0x7f26b83ff96e1f2b6a682f133852f6798a09c465da95921460cefb3847402498.
+	//
+	// Solidity: event Initialized(uint8 version)
+	WatchInitialized(opts *bind.WatchOpts, sink chan<- *ETHDKGInitialized) (event.Subscription, error)
+	// ParseInitialized is a log parse operation binding the contract event 0x7f26b83ff96e1f2b6a682f133852f6798a09c465da95921460cefb3847402498.
+	//
+	// Solidity: event Initialized(uint8 version)
+	ParseInitialized(log types.Log) (*ETHDKGInitialized, error)
 	// FilterKeyShareSubmissionComplete is a free log retrieval operation binding the contract event 0x522cec98f6caa194456c44afa9e8cef9ac63eecb0be60e20d180ce19cfb0ef59.
 	//
 	// Solidity: event KeyShareSubmissionComplete(uint256 blockNumber)

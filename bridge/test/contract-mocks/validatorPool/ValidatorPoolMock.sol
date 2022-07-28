@@ -193,6 +193,11 @@ contract ValidatorPoolMock is
         return _validators.at(index);
     }
 
+    function isAccusable(address participant) public view returns (bool) {
+        participant;
+        return _isValidator(participant);
+    }
+
     function getMaxNumValidators() public pure returns (uint256) {
         return 5;
     }
@@ -228,11 +233,6 @@ contract ValidatorPoolMock is
     }
 
     function isInExitingQueue(address participant) public pure returns (bool) {
-        participant;
-        return false;
-    }
-
-    function isAccusable(address participant) public pure returns (bool) {
         participant;
         return false;
     }

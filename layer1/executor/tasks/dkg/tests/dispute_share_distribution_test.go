@@ -7,7 +7,6 @@ import (
 	"context"
 	"testing"
 
-	"github.com/alicenet/alicenet/layer1/ethereum"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/utils"
@@ -36,7 +35,7 @@ func TestDisputeShareDistributionTask_Group_1_OneValidatorSubmittingInvalidCrede
 		for j := 0; j < n; j++ {
 			task := suite.DisputeShareDistTasks[idx][j]
 
-			err := task.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, "DisputeShareDistributionTask", "task-id", nil)
+			err := task.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "DisputeShareDistributionTask", "task-id", nil)
 			assert.Nil(t, err)
 
 			err = task.Prepare(ctx)
@@ -91,11 +90,11 @@ func TestDisputeShareDistributionTask_Group_1_OneValidatorSubmittingInvalidCrede
 	callOptions, err := suite.Eth.GetCallOpts(ctx, accounts[0])
 	assert.Nil(t, err)
 	// assert no bad participants on the ETHDKG contract
-	badParticipants, err := ethereum.GetContracts().Ethdkg().GetBadParticipants(callOptions)
+	badParticipants, err := fixture.Contracts.EthereumContracts().Ethdkg().GetBadParticipants(callOptions)
 	assert.Nil(t, err)
 	assert.Equal(t, len(b), int(badParticipants.Uint64()))
 
-	CheckBadValidators(t, b, suite)
+	CheckBadValidators(t, b, suite, fixture.Contracts)
 }
 
 // We force an error.
@@ -105,7 +104,7 @@ func TestDisputeShareDistributionTask_Group_1_Bad2(t *testing.T) {
 	db := mocks.NewTestDB()
 	log := logging.GetLogger("test").WithField("test", "test")
 
-	err := task.Initialize(context.Background(), nil, db, log, nil, "", "", nil)
+	err := task.Initialize(context.Background(), nil, db, log, nil, nil, "", "", nil)
 	assert.Nil(t, err)
 
 	taskErr := task.Prepare(context.Background())
@@ -131,7 +130,7 @@ func TestDisputeShareDistributionTask_Group_1_TwoValidatorSubmittingInvalidCrede
 		for j := 0; j < n; j++ {
 			task := suite.DisputeShareDistTasks[idx][j]
 
-			err := task.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, "DisputeShareDistributionTask", "task-id", nil)
+			err := task.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "DisputeShareDistributionTask", "task-id", nil)
 			assert.Nil(t, err)
 
 			err = task.Prepare(ctx)
@@ -186,11 +185,11 @@ func TestDisputeShareDistributionTask_Group_1_TwoValidatorSubmittingInvalidCrede
 	callOptions, err := suite.Eth.GetCallOpts(ctx, accounts[0])
 	assert.Nil(t, err)
 	// assert no bad participants on the ETHDKG contract
-	badParticipants, err := ethereum.GetContracts().Ethdkg().GetBadParticipants(callOptions)
+	badParticipants, err := fixture.Contracts.EthereumContracts().Ethdkg().GetBadParticipants(callOptions)
 	assert.Nil(t, err)
 	assert.Equal(t, len(b), int(badParticipants.Uint64()))
 
-	CheckBadValidators(t, b, suite)
+	CheckBadValidators(t, b, suite, fixture.Contracts)
 }
 
 func TestDisputeShareDistributionTask_Group_1_AllValidatorSubmittingInvalidCredentials(t *testing.T) {
@@ -208,7 +207,7 @@ func TestDisputeShareDistributionTask_Group_1_AllValidatorSubmittingInvalidCrede
 		for j := 0; j < n; j++ {
 			task := suite.DisputeShareDistTasks[idx][j]
 
-			err := task.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, "DisputeShareDistributionTask", "task-id", nil)
+			err := task.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "DisputeShareDistributionTask", "task-id", nil)
 			assert.Nil(t, err)
 
 			err = task.Prepare(ctx)
@@ -264,7 +263,7 @@ func TestDisputeShareDistributionTask_Group_1_AllValidatorSubmittingInvalidCrede
 	callOptions, err := suite.Eth.GetCallOpts(ctx, accounts[0])
 	assert.Nil(t, err)
 	// assert no bad participants on the ETHDKG contract
-	badParticipants, err := ethereum.GetContracts().Ethdkg().GetBadParticipants(callOptions)
+	badParticipants, err := fixture.Contracts.EthereumContracts().Ethdkg().GetBadParticipants(callOptions)
 	assert.Nil(t, err)
 	// The -1 is because during the first run the validator will accuse all the participants but himself
 	// the second the rest of participants are not longer validators so they cannot accuse the first one

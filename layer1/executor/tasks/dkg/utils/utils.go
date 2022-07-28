@@ -2,15 +2,12 @@ package utils
 
 import (
 	"bytes"
-	"context"
 	"errors"
 	"fmt"
 	"math/big"
 
 	"github.com/alicenet/alicenet/consensus/db"
-	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/layer1"
-	"github.com/alicenet/alicenet/layer1/ethereum"
 	"github.com/alicenet/alicenet/layer1/monitor/objects"
 	"github.com/alicenet/alicenet/utils"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -19,11 +16,11 @@ import (
 )
 
 // RetrieveGroupPublicKey retrieves participant's group public key (gpkj) from ETHDKG contract
-func RetrieveGroupPublicKey(callOpts *bind.CallOpts, eth layer1.Client, addr common.Address) ([4]*big.Int, error) {
+func RetrieveGroupPublicKey(callOpts *bind.CallOpts, eth layer1.Client, contracts layer1.AllSmartContracts, addr common.Address) ([4]*big.Int, error) {
 	var err error
 	var gpkjBig [4]*big.Int
 
-	ethdkg := ethereum.GetContracts().Ethdkg()
+	ethdkg := contracts.EthereumContracts().Ethdkg()
 
 	participantState, err := ethdkg.GetParticipantInternalState(callOpts, addr)
 	if err != nil {
@@ -103,25 +100,4 @@ func IsValidator(monitorDB *db.Database, logger *logrus.Entry, address common.Ad
 	}
 	_, present := monState.PotentialValidators[address]
 	return present, nil
-}
-
-// check if I'm a leader for this task
-func AmILeading(client layer1.Client, ctx context.Context, logger *logrus.Entry, start int, startBlockHash []byte, numOfValidators int, dkgIndex int) bool {
-	currentHeight, err := client.GetCurrentHeight(ctx)
-	if err != nil {
-		return false
-	}
-
-	blocksSinceDesperation := int(currentHeight) - start - constants.ETHDKGDesperationDelay
-	amILeading := utils.AmILeading(numOfValidators, dkgIndex-1, blocksSinceDesperation, startBlockHash, logger)
-
-	logger.WithFields(logrus.Fields{
-		"currentHeight":                    currentHeight,
-		"t.Start":                          start,
-		"constants.ETHDKGDesperationDelay": constants.ETHDKGDesperationDelay,
-		"blocksSinceDesperation":           blocksSinceDesperation,
-		"amILeading":                       amILeading,
-	}).Infof("dkg.AmILeading")
-
-	return amILeading
 }

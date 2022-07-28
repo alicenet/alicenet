@@ -73,38 +73,38 @@ func RegisterETHDKGEvents(em *objects.EventMap, monDB *db.Database, adminHandler
 	ethDkgEvents := GetETHDKGEvents()
 
 	eventProcessorMap := make(map[string]objects.EventProcessor)
-	eventProcessorMap["RegistrationOpened"] = func(eth layer1.Client, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
-		return ProcessRegistrationOpened(eth, logger, log, state, monDB, taskRequestChan)
+	eventProcessorMap["RegistrationOpened"] = func(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+		return ProcessRegistrationOpened(eth, contracts, logger, log, state, monDB, taskRequestChan)
 	}
-	eventProcessorMap["AddressRegistered"] = func(eth layer1.Client, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
-		return ProcessAddressRegistered(eth, logger, log, monDB)
+	eventProcessorMap["AddressRegistered"] = func(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+		return ProcessAddressRegistered(eth, contracts, logger, log, monDB)
 	}
-	eventProcessorMap["RegistrationComplete"] = func(eth layer1.Client, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
-		return ProcessRegistrationComplete(eth, logger, log, monDB, taskRequestChan)
+	eventProcessorMap["RegistrationComplete"] = func(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+		return ProcessRegistrationComplete(eth, contracts, logger, log, monDB, taskRequestChan)
 	}
-	eventProcessorMap["SharesDistributed"] = func(eth layer1.Client, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
-		return ProcessShareDistribution(eth, logger, log, monDB)
+	eventProcessorMap["SharesDistributed"] = func(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+		return ProcessShareDistribution(eth, contracts, logger, log, monDB)
 	}
-	eventProcessorMap["ShareDistributionComplete"] = func(eth layer1.Client, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
-		return ProcessShareDistributionComplete(eth, logger, log, monDB, taskRequestChan)
+	eventProcessorMap["ShareDistributionComplete"] = func(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+		return ProcessShareDistributionComplete(eth, contracts, logger, log, monDB, taskRequestChan)
 	}
-	eventProcessorMap["KeyShareSubmitted"] = func(eth layer1.Client, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
-		return ProcessKeyShareSubmitted(eth, logger, log, monDB)
+	eventProcessorMap["KeyShareSubmitted"] = func(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+		return ProcessKeyShareSubmitted(eth, contracts, logger, log, monDB)
 	}
-	eventProcessorMap["KeyShareSubmissionComplete"] = func(eth layer1.Client, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
-		return ProcessKeyShareSubmissionComplete(eth, logger, log, monDB, taskRequestChan)
+	eventProcessorMap["KeyShareSubmissionComplete"] = func(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+		return ProcessKeyShareSubmissionComplete(eth, contracts, logger, log, monDB, taskRequestChan)
 	}
-	eventProcessorMap["MPKSet"] = func(eth layer1.Client, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
-		return ProcessMPKSet(eth, logger, log, adminHandler, monDB, taskRequestChan)
+	eventProcessorMap["MPKSet"] = func(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+		return ProcessMPKSet(eth, contracts, logger, log, adminHandler, monDB, taskRequestChan)
 	}
-	eventProcessorMap["ValidatorMemberAdded"] = func(eth layer1.Client, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
-		return ProcessValidatorMemberAdded(eth, logger, state, log, monDB)
+	eventProcessorMap["ValidatorMemberAdded"] = func(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+		return ProcessValidatorMemberAdded(eth, contracts, logger, state, log, monDB)
 	}
-	eventProcessorMap["GPKJSubmissionComplete"] = func(eth layer1.Client, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
-		return ProcessGPKJSubmissionComplete(eth, logger, log, monDB, taskRequestChan)
+	eventProcessorMap["GPKJSubmissionComplete"] = func(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+		return ProcessGPKJSubmissionComplete(eth, contracts, logger, log, monDB, taskRequestChan)
 	}
-	eventProcessorMap["ValidatorSetCompleted"] = func(eth layer1.Client, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
-		return ProcessValidatorSetCompleted(eth, logger, state, log, monDB, adminHandler)
+	eventProcessorMap["ValidatorSetCompleted"] = func(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+		return ProcessValidatorSetCompleted(eth, contracts, logger, state, log, monDB, adminHandler)
 	}
 
 	// actually register the events
@@ -133,8 +133,8 @@ func SetupEventMap(em *objects.EventMap, cdb *db.Database, monDB *db.Database, a
 	}
 
 	if err := em.Register(depositReceived.ID.String(), depositReceived.Name,
-		func(eth layer1.Client, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
-			return ProcessDepositReceived(eth, logger, log, cdb, monDB, depositHandler)
+		func(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+			return ProcessDepositReceived(eth, contracts, logger, log, cdb, monDB, depositHandler)
 		}); err != nil {
 		return err
 	}
@@ -147,8 +147,8 @@ func SetupEventMap(em *objects.EventMap, cdb *db.Database, monDB *db.Database, a
 	}
 
 	if err := em.Register(snapshotTakenEvent.ID.String(), snapshotTakenEvent.Name,
-		func(eth layer1.Client, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
-			return ProcessSnapshotTaken(eth, logger, log, adminHandler, taskRequestChan)
+		func(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+			return ProcessSnapshotTaken(eth, contracts, logger, log, adminHandler, taskRequestChan)
 		}); err != nil {
 		return err
 	}
@@ -161,8 +161,8 @@ func SetupEventMap(em *objects.EventMap, cdb *db.Database, monDB *db.Database, a
 	}
 
 	if err := em.Register(valueUpdatedEvent.ID.String(), valueUpdatedEvent.Name,
-		func(eth layer1.Client, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
-			return ProcessValueUpdated(eth, logger, log, monDB)
+		func(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+			return ProcessValueUpdated(eth, contracts, logger, log, monDB)
 		}); err != nil {
 		return err
 	}
@@ -176,8 +176,8 @@ func SetupEventMap(em *objects.EventMap, cdb *db.Database, monDB *db.Database, a
 		panic("could not find event ValidatorPool.ValidatorJoined")
 	}
 
-	processValidatorJoinedFunc := func(eth layer1.Client, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
-		return ProcessValidatorJoined(eth, logger, state, log)
+	processValidatorJoinedFunc := func(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+		return ProcessValidatorJoined(eth, contracts, logger, state, log)
 	}
 	if err := em.Register(validatorJoinedEvent.ID.String(), validatorJoinedEvent.Name, processValidatorJoinedFunc); err != nil {
 		panic(fmt.Sprintf("couldn't register validator joined event:%v", err))
@@ -189,8 +189,8 @@ func SetupEventMap(em *objects.EventMap, cdb *db.Database, monDB *db.Database, a
 		panic("could not find event ValidatorPool.ValidatorLeft")
 	}
 
-	processValidatorLeftFunc := func(eth layer1.Client, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
-		return ProcessValidatorLeft(eth, logger, state, log)
+	processValidatorLeftFunc := func(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+		return ProcessValidatorLeft(eth, contracts, logger, state, log)
 	}
 	if err := em.Register(validatorLeftEvent.ID.String(), validatorLeftEvent.Name, processValidatorLeftFunc); err != nil {
 		panic(fmt.Sprintf("couldn't register validator left event:%v", err))
@@ -201,8 +201,8 @@ func SetupEventMap(em *objects.EventMap, cdb *db.Database, monDB *db.Database, a
 		panic("could not find event ValidatorPool.ValidatorMinorSlashed")
 	}
 
-	processValidatorMinorSlashedFunc := func(eth layer1.Client, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
-		return ProcessValidatorMinorSlashed(eth, logger, state, log)
+	processValidatorMinorSlashedFunc := func(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+		return ProcessValidatorMinorSlashed(eth, contracts, logger, state, log)
 	}
 	if err := em.Register(validatorMinorSlashedEvent.ID.String(), validatorMinorSlashedEvent.Name, processValidatorMinorSlashedFunc); err != nil {
 		panic(fmt.Sprintf("couldn't register validator minor slashed event:%v", err))
@@ -214,8 +214,8 @@ func SetupEventMap(em *objects.EventMap, cdb *db.Database, monDB *db.Database, a
 		panic("could not find event ValidatorPool.ValidatorMajorSlashed")
 	}
 
-	processValidatorMajorSlashedFunc := func(eth layer1.Client, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
-		return ProcessValidatorMajorSlashed(eth, logger, state, log)
+	processValidatorMajorSlashedFunc := func(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+		return ProcessValidatorMajorSlashed(eth, contracts, logger, state, log)
 	}
 	if err := em.Register(validatorMajorSlashedEvent.ID.String(), validatorMajorSlashedEvent.Name, processValidatorMajorSlashedFunc); err != nil {
 		panic(err)

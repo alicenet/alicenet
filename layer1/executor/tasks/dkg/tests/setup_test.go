@@ -13,20 +13,20 @@ import (
 
 	"github.com/alicenet/alicenet/bridge/bindings"
 	"github.com/alicenet/alicenet/consensus/db"
+	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/crypto/bn256"
 	"github.com/alicenet/alicenet/crypto/bn256/cloudflare"
 	"github.com/alicenet/alicenet/layer1"
-	"github.com/alicenet/alicenet/layer1/ethereum"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
-	testUtils "github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests/utils"
-	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/utils"
+	testutils "github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests/utils"
 	"github.com/alicenet/alicenet/layer1/monitor/events"
 	"github.com/alicenet/alicenet/layer1/monitor/objects"
 	"github.com/alicenet/alicenet/layer1/tests"
 	"github.com/alicenet/alicenet/layer1/transaction"
 	"github.com/alicenet/alicenet/logging"
 	"github.com/alicenet/alicenet/test/mocks"
+	gUtils "github.com/alicenet/alicenet/utils"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -62,7 +62,6 @@ func setupEthereum(t *testing.T, n int) *tests.ClientFixture {
 
 	t.Cleanup(func() {
 		fixture.Close()
-		ethereum.CleanGlobalVariables(t)
 	})
 
 	return fixture
@@ -125,7 +124,7 @@ func SetETHDKGPhaseLength(length uint16, fixture *tests.ClientFixture, callOpts 
 		return nil, nil, err
 	}
 
-	txn, err := ethereum.GetContracts().ContractFactory().CallAny(callOpts, ethereum.GetContracts().EthdkgAddress(), big.NewInt(0), input)
+	txn, err := fixture.Contracts.EthereumContracts().ContractFactory().CallAny(callOpts, fixture.Contracts.EthereumContracts().EthdkgAddress(), big.NewInt(0), input)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -152,7 +151,7 @@ func InitializeETHDKG(fixture *tests.ClientFixture, callOpts *bind.TransactOpts,
 		return nil, nil, err
 	}
 
-	txn, err := ethereum.GetContracts().ContractFactory().CallAny(callOpts, ethereum.GetContracts().ValidatorPoolAddress(), big.NewInt(0), input)
+	txn, err := fixture.Contracts.EthereumContracts().ContractFactory().CallAny(callOpts, fixture.Contracts.EthereumContracts().ValidatorPoolAddress(), big.NewInt(0), input)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -186,7 +185,7 @@ func StartFromRegistrationOpenPhase(t *testing.T, fixture *tests.ClientFixture, 
 	_, rcpt, err := InitializeETHDKG(fixture, ownerOpts, ctx)
 	assert.Nil(t, err)
 
-	event, err := testUtils.GetETHDKGRegistrationOpened(rcpt.Logs, eth)
+	event, err := testutils.GetETHDKGRegistrationOpened(rcpt.Logs, eth, fixture.Contracts)
 	assert.Nil(t, err)
 	assert.NotNil(t, event)
 
@@ -198,12 +197,12 @@ func StartFromRegistrationOpenPhase(t *testing.T, fixture *tests.ClientFixture, 
 		validatorAddresses = append(validatorAddresses, acc.Address)
 	}
 
-	phase, err := ethereum.GetContracts().Ethdkg().GetETHDKGPhase(callOpts)
+	phase, err := fixture.Contracts.EthereumContracts().Ethdkg().GetETHDKGPhase(callOpts)
 	assert.Nil(t, err)
 	assert.Equal(t, uint8(state.RegistrationOpen), phase)
 
 	n := len(validatorAddresses)
-	valCount, err := ethereum.GetContracts().ValidatorPool().GetValidatorsCount(callOpts)
+	valCount, err := fixture.Contracts.EthereumContracts().ValidatorPool().GetValidatorsCount(callOpts)
 	assert.Nil(t, err)
 	assert.Equal(t, uint64(n), valCount.Uint64())
 
@@ -234,7 +233,7 @@ func StartFromRegistrationOpenPhase(t *testing.T, fixture *tests.ClientFixture, 
 		regTasks[idx] = regTask
 		dispMissingRegTasks[idx] = dispMissingRegTask
 
-		err = regTasks[idx].Initialize(ctx, nil, dkgDb, logger, eth, "RegistrationTask", fmt.Sprintf("%v", idx), nil)
+		err = regTasks[idx].Initialize(ctx, nil, dkgDb, logger, eth, fixture.Contracts, "RegistrationTask", fmt.Sprintf("%v", idx), nil)
 		assert.Nil(t, err)
 		err = regTasks[idx].Prepare(ctx)
 		assert.Nil(t, err)
@@ -318,7 +317,7 @@ func StartFromShareDistributionPhase(t *testing.T, fixture *tests.ClientFixture,
 
 	callOpts, err := suite.Eth.GetCallOpts(ctx, suite.Eth.GetDefaultAccount())
 	assert.Nil(t, err)
-	phase, err := ethereum.GetContracts().Ethdkg().GetETHDKGPhase(callOpts)
+	phase, err := fixture.Contracts.EthereumContracts().Ethdkg().GetETHDKGPhase(callOpts)
 	assert.Nil(t, err)
 	assert.Equal(t, phase, uint8(state.ShareDistribution))
 
@@ -342,7 +341,7 @@ func StartFromShareDistributionPhase(t *testing.T, fixture *tests.ClientFixture,
 
 		shareDistTask := suite.ShareDistTasks[idx]
 
-		err = shareDistTask.Initialize(ctx, nil, suite.DKGStatesDbs[idx], logger, suite.Eth, "ShareDistributionTask", fmt.Sprintf("%v", idx), nil)
+		err = shareDistTask.Initialize(ctx, nil, suite.DKGStatesDbs[idx], logger, suite.Eth, fixture.Contracts, "ShareDistributionTask", fmt.Sprintf("%v", idx), nil)
 		assert.Nil(t, err)
 		err = shareDistTask.Prepare(ctx)
 		assert.Nil(t, err)
@@ -450,7 +449,7 @@ func StartFromKeyShareSubmissionPhase(t *testing.T, fixture *tests.ClientFixture
 
 		keyshareSubmissionTask := suite.KeyshareSubmissionTasks[idx]
 
-		err := keyshareSubmissionTask.Initialize(ctx, nil, suite.DKGStatesDbs[idx], logger, suite.Eth, "KeyShareSubmissionTask", fmt.Sprintf("%v", idx), nil)
+		err := keyshareSubmissionTask.Initialize(ctx, nil, suite.DKGStatesDbs[idx], logger, suite.Eth, fixture.Contracts, "KeyShareSubmissionTask", fmt.Sprintf("%v", idx), nil)
 		assert.Nil(t, err)
 		err = keyshareSubmissionTask.Prepare(ctx)
 		assert.Nil(t, err)
@@ -520,20 +519,33 @@ func StartFromMPKSubmissionPhase(t *testing.T, fixture *tests.ClientFixture, pha
 	suite := StartFromKeyShareSubmissionPhase(t, fixture, 0, phaseLength)
 	ctx := context.Background()
 	logger := logging.GetLogger("test").WithField("Validator", "")
-	n := len(suite.Eth.GetKnownAccounts())
+	numValidators := len(suite.Eth.GetKnownAccounts())
 
 	// Do MPK Submission task (once is enough)
 	var receiptResponses []transaction.ReceiptResponse
-	for idx := 0; idx < n; idx++ {
+	for idx := 0; idx < numValidators; idx++ {
 		task := suite.MpkSubmissionTasks[idx]
-		err := task.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, "MPKSubmissionTask", fmt.Sprintf("%v", idx), nil)
+		err := task.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "MPKSubmissionTask", fmt.Sprintf("%v", idx), nil)
 		assert.Nil(t, err)
 		err = task.Prepare(ctx)
 		assert.Nil(t, err)
 
 		dkgState, err := state.GetDkgState(suite.DKGStatesDbs[idx])
 		assert.Nil(t, err)
-		if utils.AmILeading(suite.Eth, ctx, logger, int(task.GetStart()), task.StartBlockHash[:], n, dkgState.Index) {
+		amILeading, err := gUtils.AmILeading(
+			suite.Eth,
+			ctx,
+			logger,
+			int(task.GetStart()),
+			task.StartBlockHash[:],
+			numValidators,
+			// we need -1 since ethdkg indexes start at 1 while leader election expect index starting at 0.
+			dkgState.Index-1,
+			constants.ETHDKGDesperationFactor,
+			constants.ETHDKGDesperationDelay,
+		)
+		assert.Nil(t, err)
+		if amILeading {
 			txn, err := task.Execute(ctx)
 			assert.Nil(t, err)
 
@@ -548,11 +560,11 @@ func StartFromMPKSubmissionPhase(t *testing.T, fixture *tests.ClientFixture, pha
 	height, err := suite.Eth.GetCurrentHeight(ctx)
 	assert.Nil(t, err)
 
-	gpkjSubmissionTasks := make([]*dkg.GPKjSubmissionTask, n)
-	disputeMissingGPKjTasks := make([]*dkg.DisputeMissingGPKjTask, n)
-	disputeGPKjTasks := make([][]*dkg.DisputeGPKjTask, n)
+	gpkjSubmissionTasks := make([]*dkg.GPKjSubmissionTask, numValidators)
+	disputeMissingGPKjTasks := make([]*dkg.DisputeMissingGPKjTask, numValidators)
+	disputeGPKjTasks := make([][]*dkg.DisputeGPKjTask, numValidators)
 
-	for idx := 0; idx < n; idx++ {
+	for idx := 0; idx < numValidators; idx++ {
 		dkgState, err := state.GetDkgState(suite.DKGStatesDbs[idx])
 		assert.Nil(t, err)
 		gpkjSubmissionTask, disputeMissingGPKjTask, disputeGPKjTask := events.UpdateStateOnMPKSet(dkgState, height, mocks.NewMockAdminHandler())
@@ -594,7 +606,7 @@ func StartFromGPKjPhase(t *testing.T, fixture *tests.ClientFixture, undistribute
 
 		gpkjSubTask := suite.GpkjSubmissionTasks[idx]
 
-		err := gpkjSubTask.Initialize(ctx, nil, suite.DKGStatesDbs[idx], logger, suite.Eth, "GPKjSubmissionTask", fmt.Sprintf("%v", idx), nil)
+		err := gpkjSubTask.Initialize(ctx, nil, suite.DKGStatesDbs[idx], logger, suite.Eth, fixture.Contracts, "GPKjSubmissionTask", fmt.Sprintf("%v", idx), nil)
 		assert.Nil(t, err)
 		err = gpkjSubTask.Prepare(ctx)
 		assert.Nil(t, err)
@@ -703,7 +715,7 @@ func RegisterPotentialValidatorOnMonitor(t *testing.T, suite *TestSuite, account
 	}
 }
 
-func CheckBadValidators(t *testing.T, badValidators []int, suite *TestSuite) {
+func CheckBadValidators(t *testing.T, badValidators []int, suite *TestSuite, contracts layer1.AllSmartContracts) {
 	for _, badId := range badValidators {
 		dkgState, err := state.GetDkgState(suite.DKGStatesDbs[badId])
 		assert.Nil(t, err)
@@ -711,7 +723,7 @@ func CheckBadValidators(t *testing.T, badValidators []int, suite *TestSuite) {
 		callOpts, err := suite.Eth.GetCallOpts(context.Background(), dkgState.Account)
 		assert.Nil(t, err)
 
-		isValidator, err := ethereum.GetContracts().ValidatorPool().IsValidator(callOpts, dkgState.Account.Address)
+		isValidator, err := contracts.EthereumContracts().ValidatorPool().IsValidator(callOpts, dkgState.Account.Address)
 		assert.Nil(t, err)
 		assert.Equal(t, false, isValidator)
 	}
