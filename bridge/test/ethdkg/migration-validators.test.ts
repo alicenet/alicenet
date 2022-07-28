@@ -1,4 +1,6 @@
-import { BigNumberish, ethers } from "ethers";
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
+import { BigNumberish } from "ethers";
+import { ethers } from "hardhat";
 import {
   signedData,
   validatorsSnapshots,
@@ -22,6 +24,7 @@ import { completeETHDKGRound } from "./setup";
 
 describe("Ethdkg: Migrate state", () => {
   let fixture: Fixture;
+  let admin: SignerWithAddress;
   let validatorsAddress: string[];
   let validatorsShares: [
     BigNumberish,
@@ -32,6 +35,7 @@ describe("Ethdkg: Migrate state", () => {
 
   beforeEach(async function () {
     fixture = await getFixture();
+    [admin] = await ethers.getSigners();
     validatorsAddress = [];
     validatorsShares = [];
     for (let i = 0; i < validatorsSnapshots.length; i++) {
@@ -52,7 +56,9 @@ describe("Ethdkg: Migrate state", () => {
         100,
         validatorsSnapshots[0].mpk
       )
-    ).to.be.revertedWith("2000");
+    )
+      .to.be.revertedWithCustomError(fixture.bToken, `OnlyFactory`)
+      .withArgs(admin.address);
   });
 
   it("Should not be to do a migration with mismatch state length", async function () {
