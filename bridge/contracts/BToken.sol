@@ -9,7 +9,7 @@ import "contracts/utils/EthSafeTransfer.sol";
 import "contracts/libraries/math/Sigmoid.sol";
 import "contracts/utils/ImmutableAuth.sol";
 import "contracts/BridgeRouter.sol";
-import "contracts/libraries/errorCodes/BTokenErrorCodes.sol";
+import "contracts/libraries/errors/BTokenErrors.sol";
 
 /// @custom:salt BToken
 /// @custom:deploy-type deployStatic
@@ -100,10 +100,9 @@ contract BToken is
         //if the message has value (eth payment) require the value of eth equal btokenAmount, else destroy btoken amount specified
         if (msg.value > 0) {
             uint256 ethFee = _bTokensToEthMint(totalSupply(), bTokenFee);
-            require(
-                maxEth <= ethFee && msg.value >= ethFee,
-                string(abi.encodePacked(BTokenErrorCodes.BTOKEN_ERC_MINT_INSUFFICIENT_ETH))
-            );
+            if (maxEth > ethFee || msg.value < ethFee) {
+                revert BTokenErrors.InsufficientEth(msg.value, ethFee);
+            }
             uint256 refund = msg.value - ethFee;
             if (refund > 0) {
                 payable(msg.sender).transfer(refund);
@@ -541,7 +540,7 @@ contract BToken is
         view
         returns (uint256 numEth)
     {
-        return _fp(totalSupply_ + numBTK_) - _fp(totalSupply_);
+        return _p(totalSupply_ + numBTK_) - _p(totalSupply_);
     }
 
     function _newDeposit(

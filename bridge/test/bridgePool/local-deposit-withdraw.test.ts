@@ -1,7 +1,8 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
 import { expect } from "../chai-setup";
+import { BigNumber } from "ethers";
+
 import {
   callFunctionAndGetReturnValues,
   factoryCallAnyFixture,
@@ -31,7 +32,8 @@ let bridgePool: any;
 let depositCallData: any;
 let encodedDepositCallData: string;
 
-const bTokenFeeInETH = 1000;
+const bTokenFeeInWEI = 1000;
+const ethIn = BigNumber.from(10000);
 
 // The following merkle proof and stateRoot values can be obtained from accusation_builder_test.go execution
 const merkleProof =
@@ -63,7 +65,8 @@ tokenTypes.forEach(function (run) {
       beforeEach(async () => {
         [firstOwner, user, user2] = await ethers.getSigners();
         fixture = await getFixture(true, true, false);
-        const ethIn = ethers.utils.parseEther(bTokenFeeInETH.toString());
+        console.log(await ethers.provider.getBalance(fixture.bToken.address));
+        // const ethIn = ethers.utils.parseEther(bTokenFeeInWEI.toString());
         // Deploy a new pool
         await factoryCallAnyFixture(
           fixture,
@@ -92,14 +95,18 @@ tokenTypes.forEach(function (run) {
         fixture[run.options.ercContractName]
           .connect(user)
           .approve(bridgePool.address, valueOrId);
-        // Mint and approve some bTokens to deposit as fee
-        await callFunctionAndGetReturnValues(
-          fixture.bToken,
-          "mintTo",
-          firstOwner,
-          [user.address, 0],
-          ethIn
-        );
+          console.log(await ethers.provider.getBalance(fixture.bToken.address));
+
+        // // Mint and approve some bTokens to deposit as fee
+        // await callFunctionAndGetReturnValues(
+        //   fixture.bToken,
+        //   "mintTo",
+        //   firstOwner,
+        //   [user.address, 0],
+        //   ethIn
+        // );
+        console.log(await ethers.provider.getBalance(fixture.bToken.address));
+
         const encodedMockBlockClaims =
           getMockBlockClaimsForStateRoot(stateRoot);
         // Take a mock snapshot
@@ -123,16 +130,13 @@ tokenTypes.forEach(function (run) {
         showState("Initial", await getState(fixture, bridgePool));
       });
 
-      it("Should make a deposit", async () => {
+      it.only("Should make a deposit", async () => {
         expectedState = await getState(fixture, bridgePool);
         const erc = run.it as keyof typeof expectedState.Balances;
-        expectedState.Balances[erc].user -= BigNumber.from(
-          run.options.quantity
-        ).toBigInt();
-        expectedState.Balances[erc].bridgePool += BigNumber.from(
-          run.options.quantity
-        ).toBigInt();
-        expectedState.Balances.eth.bToken += BigNumber.from(ethFee).toBigInt();
+        expectedState.Balances[erc].user -= BigInt(run.options.quantity);
+        expectedState.Balances[erc].bridgePool += BigInt(run.options.quantity);
+        console.log(ethFee, bTokenFeeInWEI, valueSent, refund);
+        expectedState.Balances.eth.bToken += BigInt(bTokenFeeInWEI);
         expectedState.Balances.eth.user -= formatBigInt(valueSent);
         expectedState.Balances.eth.user += formatBigInt(refund);
         await fixture.bToken
@@ -156,12 +160,8 @@ tokenTypes.forEach(function (run) {
         showState("After Deposit", await getState(fixture, bridgePool));
         expectedState = await getState(fixture, bridgePool);
         const erc = run.it as keyof typeof expectedState.Balances;
-        expectedState.Balances[erc].user += BigNumber.from(
-          run.options.quantity
-        ).toBigInt();
-        expectedState.Balances[erc].bridgePool -= BigNumber.from(
-          run.options.quantity
-        ).toBigInt();
+        expectedState.Balances[erc].user += BigInt(run.options.quantity);
+        expectedState.Balances[erc].bridgePool -= BigInt(run.options.quantity);
         await bridgePool.connect(user).withdraw(merkleProof, encodedBurnedUTXO);
         showState("After withdraw", await getState(fixture, bridgePool));
         expect(await getState(fixture, bridgePool)).to.be.deep.equal(
@@ -240,12 +240,12 @@ tokenTypes.forEach(function (run) {
         )
           .to.emit(fixture.bridgePoolDepositNotifier, "Deposited")
           .withArgs(
-            BigNumber.from(nonce),
+            BigInt(nonce),
             fixture[run.options.ercContractName].address,
             user.address,
-            BigNumber.from(run.options.poolType),
-            BigNumber.from(valueOrId),
-            BigNumber.from(chainId)
+            BigInt(run.options.poolType),
+            BigInt(valueOrId),
+            BigInt(chainId)
           );
       });
 

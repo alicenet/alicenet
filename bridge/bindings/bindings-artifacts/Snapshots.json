@@ -16,6 +16,162 @@
     "type": "constructor"
   },
   {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "offset",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "srcLength",
+        "type": "uint256"
+      }
+    ],
+    "name": "Bytes32OffsetOutOfBounds",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "offset",
+        "type": "uint256"
+      }
+    ],
+    "name": "Bytes32OffsetParameterOverflow",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "ChainIdZero",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "dataOffset",
+        "type": "uint256"
+      }
+    ],
+    "name": "DataOffsetOverflow",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "HeightZero",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "offset",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "srcLength",
+        "type": "uint256"
+      }
+    ],
+    "name": "LEUint16OffsetOutOfBounds",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "offset",
+        "type": "uint256"
+      }
+    ],
+    "name": "LEUint16OffsetParameterOverflow",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "offset",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "srcLength",
+        "type": "uint256"
+      }
+    ],
+    "name": "LEUint256OffsetOutOfBounds",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "offset",
+        "type": "uint256"
+      }
+    ],
+    "name": "LEUint256OffsetParameterOverflow",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "dataOffset",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "srcLength",
+        "type": "uint256"
+      }
+    ],
+    "name": "NotEnoughBytes",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "offset",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "srcLength",
+        "type": "uint256"
+      }
+    ],
+    "name": "OffsetOutOfBounds",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "offset",
+        "type": "uint256"
+      }
+    ],
+    "name": "OffsetParameterOverflow",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint16",
+        "name": "dataSectionSize",
+        "type": "uint16"
+      }
+    ],
+    "name": "SizeThresholdExceeded",
+    "type": "error"
+  },
+  {
     "anonymous": false,
     "inputs": [
       {
@@ -585,7 +741,7 @@
       },
       {
         "internalType": "bytes32",
-        "name": "blsig",
+        "name": "randomSeed",
         "type": "bytes32"
       },
       {

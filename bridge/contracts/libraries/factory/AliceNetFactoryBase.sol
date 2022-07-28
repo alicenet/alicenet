@@ -4,7 +4,7 @@ import "contracts/Proxy.sol";
 import "contracts/utils/DeterministicAddress.sol";
 import "contracts/libraries/proxy/ProxyUpgrader.sol";
 import "contracts/interfaces/IProxy.sol";
-import "contracts/libraries/errorCodes/AliceNetFactoryBaseErrorCodes.sol";
+import "contracts/libraries/errors/AliceNetFactoryBaseErrors.sol";
 
 abstract contract AliceNetFactoryBase is DeterministicAddress, ProxyUpgrader {
     /**

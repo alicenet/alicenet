@@ -661,7 +661,7 @@ export const getFixture = async (
 
   const aliceNetFactoryBaseErrorCodesContract = await (
     await (
-      await ethers.getContractFactory("AliceNetFactoryBaseErrorCodes")
+      await ethers.getContractFactory("AliceNetFactoryBaseErrors")
     ).deploy()
   ).deployed();
   const invalidTxConsumptionAccusation = (await deployUpgradeableWithFactory(

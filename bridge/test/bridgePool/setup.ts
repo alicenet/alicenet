@@ -114,7 +114,7 @@ export function getMockBlockClaimsForStateRoot(stateRoot: string) {
     ]
   );
 }
-export const valueOrId = 100; // value if ERC20 , tokenId otherwise
+export const valueOrId = 100; // value if ERC20 , tokenId if ERC721
 export const maxEth = 1;
 export const maxTokens = 1010; // has to be > bTokenFee => 10
 export const valueSent = ethers.utils.parseEther("1.0");
@@ -137,7 +137,7 @@ export const tokenTypes = [
       poolType: 2,
       bridgeImpl: "LocalERC721BridgePoolV1",
       quantity: 1,
-      errorReason: "ERC721: operator query for nonexistent token",
+      errorReason: "ERC721: invalid token ID",
     },
   },
 ];

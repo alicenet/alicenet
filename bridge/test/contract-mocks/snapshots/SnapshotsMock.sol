@@ -6,7 +6,6 @@ import "contracts/interfaces/IValidatorPool.sol";
 import "contracts/utils/ImmutableAuth.sol";
 import "contracts/libraries/parsers/BClaimsParserLibrary.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "hardhat/console.sol";
 
 contract SnapshotsMock is Initializable, ImmutableValidatorPool, ISnapshots {
     uint32 internal _epoch;

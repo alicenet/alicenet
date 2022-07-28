@@ -6,7 +6,6 @@ import "contracts/interfaces/IBridgePool.sol";
 import "contracts/libraries/errorCodes/BridgeRouterErrorCodes.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "contracts/libraries/errorCodes/CircuitBreakerErrorCodes.sol";
-import "hardhat/console.sol";
 
 /// @custom:salt BridgeRouter
 /// @custom:deploy-type deployUpgradeable
