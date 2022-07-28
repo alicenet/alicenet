@@ -103,45 +103,6 @@ abstract contract Sigmoid {
         }
     }
 
-    /*
-    function _bitlength(uint256 x) internal pure returns (uint256) {
-        uint256 bitlength = 1;
-        uint256 xAux = uint256(x);
-        if (xAux >= 0x100000000000000000000000000000000) {
-            xAux >>= 128;
-            bitlength += 128;
-        }
-        if (xAux >= 0x10000000000000000) {
-            xAux >>= 64;
-            bitlength += 64;
-        }
-        if (xAux >= 0x100000000) {
-            xAux >>= 32;
-            bitlength += 32;
-        }
-        if (xAux >= 0x10000) {
-            xAux >>= 16;
-            bitlength += 16;
-        }
-        if (xAux >= 0x100) {
-            xAux >>= 8;
-            bitlength += 8;
-        }
-        if (xAux >= 0x10) {
-            xAux >>= 4;
-            bitlength += 4;
-        }
-        if (xAux >= 0x4) {
-            xAux >>= 2;
-            bitlength += 2;
-        }
-        if (xAux >= 0x2) {
-            bitlength += 1;
-        }
-        return bitlength;
-    }
-    */
-
     function _sqrtNew(uint256 x) internal pure returns (uint256) {
         unchecked {
             if (x <= 1) {

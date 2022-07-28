@@ -117,6 +117,22 @@ describe("Sigmoid unit tests", async () => {
       const retSqrt = await sigmoid.sqrt(x);
       expect(retSqrt).to.be.equal(trueSqrt);
     });
+    it("Integer Square Root 17:    (2**128 - 1)**2", async function () {
+      const x = BigNumber.from(
+        "0xfffffffffffffffffffffffffffffffe00000000000000000000000000000001"
+      );
+      const trueSqrt = BigNumber.from("0xffffffffffffffffffffffffffffffff");
+      const retSqrt = await sigmoid.sqrt(x);
+      expect(retSqrt).to.be.equal(trueSqrt);
+    });
+    it("Integer Square Root 18:    (2**128 - 1)**2 - 1", async function () {
+      const x = BigNumber.from(
+        "0xfffffffffffffffffffffffffffffffe00000000000000000000000000000000"
+      );
+      const trueSqrt = BigNumber.from("0xfffffffffffffffffffffffffffffffe");
+      const retSqrt = await sigmoid.sqrt(x);
+      expect(retSqrt).to.be.equal(trueSqrt);
+    });
   });
 
   describe("Integer Square Root Tests: Gas", async () => {
@@ -226,118 +242,23 @@ describe("Sigmoid unit tests", async () => {
       const receipt = await tx.wait();
       expect(receipt.status).to.eq(1);
     });
-  });
-
-  /*
-  describe("Bit Length Tests", async () => {
-    it("Bit Length of 0", async function () {
-      const x = 0;
-      const truebl = 1;
-      const retbl = await sigmoid.bitlength(x);
-      expect(retbl).to.be.equal(truebl);
-    });
-    it("Bit Length of 1", async function () {
-      const x = 1;
-      const truebl = 1;
-      const retbl = await sigmoid.bitlength(x);
-      expect(retbl).to.be.equal(truebl);
-    });
-    it("Bit Length of 4", async function () {
-      const x = 4;
-      const truebl = 3;
-      const retbl = await sigmoid.bitlength(x);
-      expect(retbl).to.be.equal(truebl);
-    });
-    it("Bit Length of 5", async function () {
-      const x = 5;
-      const truebl = 3;
-      const retbl = await sigmoid.bitlength(x);
-      expect(retbl).to.be.equal(truebl);
-    });
-    it("Bit Length of 10", async function () {
-      const x = 10;
-      const truebl = 4;
-      const retbl = await sigmoid.bitlength(x);
-      expect(retbl).to.be.equal(truebl);
-    });
-    it("Bit Length of 257", async function () {
-      const x = 257;
-      const truebl = 9;
-      const retbl = await sigmoid.bitlength(x);
-      expect(retbl).to.be.equal(truebl);
-    });
-    it("Bit Length of 2**15  - 19", async function () {
-      const x = 2 ** 15 - 19;
-      const truebl = 15;
-      const retbl = await sigmoid.bitlength(x);
-      expect(retbl).to.be.equal(truebl);
-    });
-    it("Bit Length of 3*2**16  + 5", async function () {
-      const x = 3 * 2 ** 16 + 5;
-      const truebl = 18;
-      const retbl = await sigmoid.bitlength(x);
-      expect(retbl).to.be.equal(truebl);
-    });
-    it("Integer Square Root 8:   5*2**31  - 27", async function () {
-      const x = 5 * 2 ** 31 - 27;
-      const truebl = 34;
-      const retbl = await sigmoid.bitlength(x);
-      expect(retbl).to.be.equal(truebl);
-    });
-    it("Integer Square Root 9:   7*2**32  + 9", async function () {
-      const x = 7 * 2 ** 32 + 9;
-      const truebl = 35;
-      const retbl = await sigmoid.bitlength(x);
-      expect(retbl).to.be.equal(truebl);
-    });
-    it("Integer Square Root 10: 11*2**63  - 9", async function () {
-      const x = BigNumber.from("0x57ffffffffffffff7");
-      const truebl = 67;
-      const retbl = await sigmoid.bitlength(x);
-      expect(retbl).to.be.equal(truebl);
-    });
-    it("Integer Square Root 11: 13*2**64  + 43", async function () {
-      const x = BigNumber.from("0xd000000000000002b");
-      const truebl = 68;
-      const retbl = await sigmoid.bitlength(x);
-      expect(retbl).to.be.equal(truebl);
-    });
-    it("Integer Square Root 12: 17*2**127 - 23", async function () {
-      const x = BigNumber.from("0x87fffffffffffffffffffffffffffffe9");
-      const truebl = 132;
-      const retbl = await sigmoid.bitlength(x);
-      expect(retbl).to.be.equal(truebl);
-    });
-    it("Integer Square Root 13: 19*2**128 + 109", async function () {
-      const x = BigNumber.from("0x130000000000000000000000000000006d");
-      const truebl = 133;
-      const retbl = await sigmoid.bitlength(x);
-      expect(retbl).to.be.equal(truebl);
-    });
-    it("Integer Square Root 14:    2**130 - 5", async function () {
-      const x = BigNumber.from("0x3fffffffffffffffffffffffffffffffb");
-      const truebl = 130;
-      const retbl = await sigmoid.bitlength(x);
-      expect(retbl).to.be.equal(truebl);
-    });
-    it("Integer Square Root 15:    2**255 - 19", async function () {
+    it("Integer Square Root 17:    (2**128 - 1**2", async function () {
       const x = BigNumber.from(
-        "0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffed"
+        "0xfffffffffffffffffffffffffffffffe00000000000000000000000000000001"
       );
-      const truebl = 255;
-      const retbl = await sigmoid.bitlength(x);
-      expect(retbl).to.be.equal(truebl);
+      const tx = await sigmoid.sqrtPublic(x);
+      const receipt = await tx.wait();
+      expect(receipt.status).to.eq(1);
     });
-    it("Integer Square Root 16:    2**256 - 1", async function () {
+    it("Integer Square Root 18:    (2**128 - 1**2 - 1", async function () {
       const x = BigNumber.from(
-        "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+        "0xfffffffffffffffffffffffffffffffe00000000000000000000000000000000"
       );
-      const truebl = 256;
-      const retbl = await sigmoid.bitlength(x);
-      expect(retbl).to.be.equal(truebl);
+      const tx = await sigmoid.sqrtPublic(x);
+      const receipt = await tx.wait();
+      expect(receipt.status).to.eq(1);
     });
   });
-  */
 
   describe("New Integer Square Root Tests", async () => {
     it("Integer Square Root 0:  0", async function () {
@@ -446,6 +367,22 @@ describe("Sigmoid unit tests", async () => {
       const retSqrt = await sigmoid.sqrtNew(x);
       expect(retSqrt).to.be.equal(trueSqrt);
     });
+    it("Integer Square Root 17:    (2**128 - 1)**2", async function () {
+      const x = BigNumber.from(
+        "0xfffffffffffffffffffffffffffffffe00000000000000000000000000000001"
+      );
+      const trueSqrt = BigNumber.from("0xffffffffffffffffffffffffffffffff");
+      const retSqrt = await sigmoid.sqrtNew(x);
+      expect(retSqrt).to.be.equal(trueSqrt);
+    });
+    it("Integer Square Root 18:    (2**128 - 1)**2 - 1", async function () {
+      const x = BigNumber.from(
+        "0xfffffffffffffffffffffffffffffffe00000000000000000000000000000000"
+      );
+      const trueSqrt = BigNumber.from("0xfffffffffffffffffffffffffffffffe");
+      const retSqrt = await sigmoid.sqrtNew(x);
+      expect(retSqrt).to.be.equal(trueSqrt);
+    });
   });
 
   describe("New Integer Square Root Tests: Gas", async () => {
@@ -550,6 +487,22 @@ describe("Sigmoid unit tests", async () => {
     it("Integer Square Root 16:    2**256 - 1", async function () {
       const x = BigNumber.from(
         "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+      );
+      const tx = await sigmoid.sqrtNewPublic(x);
+      const receipt = await tx.wait();
+      expect(receipt.status).to.eq(1);
+    });
+    it("Integer Square Root 17:    2**256 - 1", async function () {
+      const x = BigNumber.from(
+        "0xfffffffffffffffffffffffffffffffe00000000000000000000000000000001"
+      );
+      const tx = await sigmoid.sqrtNewPublic(x);
+      const receipt = await tx.wait();
+      expect(receipt.status).to.eq(1);
+    });
+    it("Integer Square Root 18:    2**256 - 1", async function () {
+      const x = BigNumber.from(
+        "0xfffffffffffffffffffffffffffffffe00000000000000000000000000000000"
       );
       const tx = await sigmoid.sqrtNewPublic(x);
       const receipt = await tx.wait();

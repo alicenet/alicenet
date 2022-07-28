@@ -39,12 +39,6 @@ contract MockSigmoid is Sigmoid {
         return Sigmoid._sqrtNew(x);
     }
 
-    /*
-    function bitlength(uint256 x) public pure returns (uint256) {
-        return Sigmoid._bitlength(x);
-    }
-    */
-
     function pConstA() public pure returns (uint256) {
         return Sigmoid._P_A;
     }
