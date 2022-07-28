@@ -1,17 +1,46 @@
 // SPDX-License-Identifier: MIT-open-group
 pragma solidity ^0.8.0;
 
+import {DoublyLinkedListErrors} from "contracts/libraries/errors/DoublyLinkedListErrors.sol";
+
 struct Node {
-    uint64 id;
-    uint64 next;
-    uint64 prev;
+    uint32 epoch;
+    uint32 next;
+    uint32 prev;
     address data;
+}
+
+library NodeUpdate {
+    function update(
+        Node memory node,
+        uint32 nextEpoch,
+        uint32 prevEpoch
+    ) internal pure returns (Node memory) {
+        node.prev = prevEpoch;
+        node.next = nextEpoch;
+        return node;
+    }
+
+    function updatePrevious(
+        Node memory node,
+        uint32 prevEpoch
+    ) internal pure returns (Node memory) {
+        node.prev = prevEpoch;
+        return node;
+    }
+
+    function updateNext(
+        Node memory node,
+        uint32 nextEpoch
+    ) internal pure returns (Node memory) {
+        node.next = nextEpoch;
+        return node;
+    }
 }
 
 struct DoublyLinkedList {
     uint256 head;
     uint256 tail;
-    uint64 id;
     mapping(uint256 => Node) nodes;
 }
 
@@ -20,6 +49,8 @@ contract DynamicValues {
 }
 
 library DoublyLinkedLists {
+
+    using NodeUpdate for Node;
     /**
      * @dev Retrieves the Object denoted by `_id`.
      */
@@ -35,119 +66,81 @@ library DoublyLinkedLists {
     }
 
     /**
-     * @dev Insert a new Node as the new Head with `data` address in the data field.
+     * @dev Insert a new Node in the `id` position with `data` address in the data field.
+            This function fails if id is smaller or equal than the current head.
      */
-    function addHead(DoublyLinkedList storage list, address data) public {
-        uint256 nodeId = _createNode(list, data);
-        _link(list, nodeId, list.head);
-        _setHead(list, nodeId);
-        if (list.tail == 0) {
-            _setTail(list, nodeId);
-        }
-    }
-
-    /**
-     * @dev Insert a new Node as the new Tail with `data` address in the data field.
-     */
-    function addTail(DoublyLinkedList storage list, address data) public {
-        if (list.head == 0) {
-            addHead(list, data);
-        } else {
-            uint256 nodeId = _createNode(list, data);
-            _link(list, list.tail, nodeId);
-            _setTail(list, nodeId);
-        }
-    }
-
-    /**
-     * @dev Remove the Node denoted by `_id` from the List.
-     */
-    function remove(DoublyLinkedList storage list, uint256 id) public {
-        // todo: raise error in case it doesn't exist
-        Node memory removeObject = get(list, id);
-        if (list.head == id && list.tail == id) {
-            _setHead(list, 0);
-            _setTail(list, 0);
-        } else if (list.head == id) {
-            _setHead(list, removeObject.next);
-            list.nodes[removeObject.next].prev = 0;
-        } else if (list.tail == id) {
-            _setTail(list, removeObject.prev);
-            list.nodes[removeObject.prev].next = 0;
-        } else {
-            _link(list, removeObject.prev, removeObject.next);
-        }
-        delete list.nodes[removeObject.id];
-    }
-
-    /**
-     * @dev Insert a new Node after the Node denoted by `_id` with `_data` in the data field.
-     */
-    function insertAfter(
+    function addNode(
         DoublyLinkedList storage list,
-        uint256 prevId,
+        uint32 epoch,
         address data
     ) public {
-        if (prevId == list.tail) {
-            addTail(list, data);
-        } else {
-            Node memory prevObject = get(list, prevId);
-            Node memory nextObject = get(list, prevObject.next);
-            uint256 newObjectId = _createNode(list, data);
-            _link(list, newObjectId, nextObject.id);
-            _link(list, prevObject.id, newObjectId);
+        uint32 head = uint32(list.head);
+        uint32 tail = uint32(list.tail);
+        if (epoch <= head) {
+            revert DoublyLinkedListErrors.InvalidNodeId(head, tail, epoch);
         }
-    }
+        Node memory node = _createNode(epoch, data);
+        if (head == 0) {
+            list.nodes[epoch] = node;
+            _setHead(list, node.epoch);
+            if (tail == 0) {
+                _setTail(list, node.epoch);
+            }
+            return;
+        }
+        if (node.epoch >= tail) {
+            list.nodes[epoch] = node.updatePrevious(tail);
+            _linkNext(list, tail, node.epoch);
+            _setTail(list, node.epoch);
+            return;
+        }
+        uint32 currentPosition = tail;
+        while (currentPosition != head) {
+            Node memory currentNode = list.nodes[currentPosition];
+            if (node.epoch >= currentNode.prev) {
+                list.nodes[epoch] = node.update(currentNode.epoch, currentNode.prev);
+               _linkNext(list, currentNode.prev, node.epoch);
+               _linkPrevious(list, currentNode.epoch, node.epoch);
+            }
+            currentPosition = currentNode.prev;
+        }
 
-    /**
-     * @dev Insert a new Node before the Node denoted by `_id` with `_data` in the data field.
-     */
-    function insertBefore(
-        DoublyLinkedList storage list,
-        uint256 nextId,
-        address data
-    ) public {
-        if (nextId == list.head) {
-            addHead(list, data);
-        } else {
-            insertAfter(list, list.nodes[nextId].prev, data);
-        }
     }
 
     /**
      * @dev Internal function to update the Head pointer.
      */
-    function _setHead(DoublyLinkedList storage list, uint256 _id) internal {
-        list.head = _id;
+    function _setHead(DoublyLinkedList storage list, uint256 id) internal {
+        list.head = id;
     }
 
     /**
      * @dev Internal function to update the Tail pointer.
      */
-    function _setTail(DoublyLinkedList storage list, uint256 _id) internal {
-        list.tail = _id;
+    function _setTail(DoublyLinkedList storage list, uint256 id) internal {
+        list.tail = id;
     }
 
-    /**
-     * @dev Internal function to create an unlinked Node.
-     */
-    function _createNode(DoublyLinkedList storage list, address data) internal returns (uint256) {
-        list.id++;
-        uint256 newId = list.id;
-        Node memory object = Node(uint64(newId), 0, 0, data);
-        list.nodes[object.id] = object;
-        return object.id;
+    function _createNode(uint32 epoch, address data) internal pure returns (Node memory) {
+        return Node(epoch, 0, 0, data);
     }
 
     /**
      * @dev Internal function to link an Node to another.
      */
-    function _link(
+    function _linkNext(
         DoublyLinkedList storage list,
-        uint256 prevId,
-        uint256 nextId
+        uint32 prevEpoch,
+        uint32 nextEpoch
     ) internal {
-        list.nodes[prevId].next = uint64(nextId);
-        list.nodes[nextId].prev = uint64(prevId);
+        list.nodes[prevEpoch].next = nextEpoch;
+    }
+
+    function _linkPrevious(
+        DoublyLinkedList storage list,
+        uint32 nextEpoch,
+        uint32 prevEpoch
+    ) internal {
+        list.nodes[nextEpoch].prev = prevEpoch;
     }
 }
