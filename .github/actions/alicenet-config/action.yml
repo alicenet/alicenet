@@ -9,4 +9,4 @@ runs:
     - name: npm Compile
       working-directory: ./bridge
       shell: bash
-      run: npm run compile
+      run: npm ci && npm run compile
