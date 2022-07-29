@@ -5,7 +5,6 @@ import { Fixture, getFixture } from "../setup";
 
 describe("ValidatorPool Access Control: An user without admin role should not be able to:", async function () {
   let fixture: Fixture;
-  let admin: SignerWithAddress;
   let notAdmin1: SignerWithAddress;
   let notAdmin1Signer: SignerWithAddress;
   const maxNumValidators = 5;
@@ -15,7 +14,7 @@ describe("ValidatorPool Access Control: An user without admin role should not be
 
   beforeEach(async function () {
     fixture = await getFixture();
-    [admin, notAdmin1, , ,] = fixture.namedSigners;
+    [, notAdmin1, , ,] = fixture.namedSigners;
     notAdmin1Signer = await ethers.getSigner(notAdmin1.address);
   });
 
