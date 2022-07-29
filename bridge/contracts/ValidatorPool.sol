@@ -17,7 +17,7 @@ import "contracts/interfaces/IERC20Transferable.sol";
 import "contracts/interfaces/IStakingNFT.sol";
 import "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import {ValidatorPoolErrorCodes} from "contracts/libraries/errorCodes/ValidatorPoolErrorCodes.sol";
+import {ValidatorPoolErrors} from "contracts/libraries/errors/ValidatorPoolErrors.sol";
 
 /// @custom:salt ValidatorPool
 /// @custom:deploy-type deployUpgradeable
@@ -33,36 +33,32 @@ contract ValidatorPool is
     using CustomEnumerableMaps for ValidatorDataMap;
 
     modifier onlyValidator() {
-        require(
-            _isValidator(msg.sender),
-            string(abi.encodePacked(ValidatorPoolErrorCodes.VALIDATORPOOL_CALLER_NOT_VALIDATOR))
-        );
+        if (!_isValidator(msg.sender)) {
+            revert ValidatorPoolErrors.CallerNotValidator(msg.sender);
+        }
         _;
     }
 
     modifier assertNotConsensusRunning() {
-        require(
-            !_isConsensusRunning,
-            string(abi.encodePacked(ValidatorPoolErrorCodes.VALIDATORPOOL_CONSENSUS_RUNNING))
-        );
+        if (_isConsensusRunning) {
+            revert ValidatorPoolErrors.ConsensusRunning();
+        }
         _;
     }
 
     modifier assertNotETHDKGRunning() {
-        require(
-            !IETHDKG(_ethdkgAddress()).isETHDKGRunning(),
-            string(abi.encodePacked(ValidatorPoolErrorCodes.VALIDATORPOOL_ETHDKG_ROUND_RUNNING))
-        );
+        if (IETHDKG(_ethdkgAddress()).isETHDKGRunning()) {
+            revert ValidatorPoolErrors.ETHDKGRoundRunning();
+        }
         _;
     }
 
     constructor() ValidatorPoolStorage() {}
 
     receive() external payable {
-        require(
-            msg.sender == _validatorStakingAddress() || msg.sender == _publicStakingAddress(),
-            string(abi.encodePacked(ValidatorPoolErrorCodes.VALIDATORPOOL_ONLY_CONTRACTS_ALLOWED))
-        );
+        if (msg.sender != _validatorStakingAddress() && msg.sender != _publicStakingAddress()) {
+            revert ValidatorPoolErrors.OnlyNFTContractsAllowed();
+        }
     }
 
     function initialize(
@@ -116,14 +112,13 @@ contract ValidatorPool is
     }
 
     function pauseConsensusOnArbitraryHeight(uint256 aliceNetHeight_) public onlyFactory {
-        require(
-            block.number >
-                ISnapshots(_snapshotsAddress()).getCommittedHeightFromLatestSnapshot() +
-                    MAX_INTERVAL_WITHOUT_SNAPSHOTS,
-            string(
-                abi.encodePacked(ValidatorPoolErrorCodes.VALIDATORPOOL_MIN_BLOCK_INTERVAL_NOT_MET)
-            )
-        );
+        if (
+            block.number <=
+            ISnapshots(_snapshotsAddress()).getCommittedHeightFromLatestSnapshot() +
+                MAX_INTERVAL_WITHOUT_SNAPSHOTS
+        ) {
+            revert ValidatorPoolErrors.MinimumBlockIntervalNotMet();
+        }
         _isConsensusRunning = false;
         IETHDKG(_ethdkgAddress()).setCustomAliceNetHeight(aliceNetHeight_);
     }
@@ -134,28 +129,23 @@ contract ValidatorPool is
         assertNotETHDKGRunning
         assertNotConsensusRunning
     {
-        require(
-            validators_.length + _validators.length() <= _maxNumValidators,
-            string(abi.encodePacked(ValidatorPoolErrorCodes.VALIDATORPOOL_MAX_VALIDATORS_MET))
-        );
-        require(
-            validators_.length == stakerTokenIDs_.length,
-            string(
-                abi.encodePacked(
-                    ValidatorPoolErrorCodes.VALIDATORPOOL_REGISTRATION_PARAMETER_LENGTH_MISMATCH
-                )
-            )
-        );
+        if (validators_.length + _validators.length() > _maxNumValidators) {
+            revert ValidatorPoolErrors.NotEnoughValidatorSlotsAvailable(
+                validators_.length,
+                _maxNumValidators - _validators.length()
+            );
+        }
+        if (validators_.length != stakerTokenIDs_.length) {
+            revert ValidatorPoolErrors.RegistrationParameterLengthMismatch(
+                validators_.length,
+                stakerTokenIDs_.length
+            );
+        }
 
         for (uint256 i = 0; i < validators_.length; i++) {
-            require(
-                msg.sender == IERC721(_publicStakingAddress()).ownerOf(stakerTokenIDs_[i]),
-                string(
-                    abi.encodePacked(
-                        ValidatorPoolErrorCodes.VALIDATORPOOL_FACTORY_SHOULD_OWN_POSITION
-                    )
-                )
-            );
+            if (msg.sender != IERC721(_publicStakingAddress()).ownerOf(stakerTokenIDs_[i])) {
+                revert ValidatorPoolErrors.FactoryShouldOwnPosition(stakerTokenIDs_[i]);
+            }
             _registerValidator(validators_[i], stakerTokenIDs_[i]);
         }
     }
@@ -166,14 +156,12 @@ contract ValidatorPool is
         assertNotETHDKGRunning
         assertNotConsensusRunning
     {
-        require(
-            validators_.length <= _validators.length(),
-            string(
-                abi.encodePacked(
-                    ValidatorPoolErrorCodes.VALIDATORPOOL_VALIDATORS_GREATER_THAN_AVAILABLE
-                )
-            )
-        );
+        if (validators_.length > _validators.length()) {
+            revert ValidatorPoolErrors.LengthGreaterThanAvailableValidators(
+                validators_.length,
+                _validators.length()
+            );
+        }
         for (uint256 i = 0; i < validators_.length; i++) {
             _unregisterValidator(validators_[i]);
         }
@@ -196,14 +184,9 @@ contract ValidatorPool is
         onlyValidator
         returns (uint256 payoutEth, uint256 payoutToken)
     {
-        require(
-            _isConsensusRunning,
-            string(
-                abi.encodePacked(
-                    ValidatorPoolErrorCodes.VALIDATORPOOL_PROFITS_ONLY_CLAIMABLE_DURING_CONSENSUS
-                )
-            )
-        );
+        if (!_isConsensusRunning) {
+            revert ValidatorPoolErrors.ProfitsNotClaimableWhileConsensusNotRunning();
+        }
 
         uint256 balanceBeforeToken = IERC20Transferable(_aTokenAddress()).balanceOf(address(this));
         uint256 balanceBeforeEth = address(this).balance;
@@ -218,30 +201,24 @@ contract ValidatorPool is
             validatorTokenID
         );
 
-        require(
-            balanceBeforeToken == IERC20Transferable(_aTokenAddress()).balanceOf(address(this)),
-            string(abi.encodePacked(ValidatorPoolErrorCodes.VALIDATORPOOL_TOKEN_BALANCE_CHANGED))
-        );
-        require(
-            balanceBeforeEth == address(this).balance,
-            string(abi.encodePacked(ValidatorPoolErrorCodes.VALIDATORPOOL_ETH_BALANCE_CHANGED))
-        );
+        if (balanceBeforeToken != IERC20Transferable(_aTokenAddress()).balanceOf(address(this))) {
+            revert ValidatorPoolErrors.TokenBalanceChangedDuringOperation();
+        }
+        if (balanceBeforeEth != address(this).balance) {
+            revert ValidatorPoolErrors.EthBalanceChangedDuringOperation();
+        }
 
         return (payoutEth, payoutToken);
     }
 
     function claimExitingNFTPosition() public returns (uint256) {
         ExitingValidatorData memory data = _exitingValidatorsData[msg.sender];
-        require(
-            data._freeAfter > 0,
-            string(
-                abi.encodePacked(ValidatorPoolErrorCodes.VALIDATORPOOL_SENDER_NOT_IN_EXITING_QUEUE)
-            )
-        );
-        require(
-            ISnapshots(_snapshotsAddress()).getEpoch() > data._freeAfter,
-            string(abi.encodePacked(ValidatorPoolErrorCodes.VALIDATORPOOL_WAITING_PERIOD_NOT_MET))
-        );
+        if (data._freeAfter == 0) {
+            revert ValidatorPoolErrors.SenderNotInExitingQueue(msg.sender);
+        }
+        if (ISnapshots(_snapshotsAddress()).getEpoch() <= data._freeAfter) {
+            revert ValidatorPoolErrors.WaitingPeriodNotMet();
+        }
 
         _removeExitingQueueData(msg.sender);
 
@@ -257,14 +234,9 @@ contract ValidatorPool is
     }
 
     function majorSlash(address dishonestValidator_, address disputer_) public onlyETHDKG {
-        require(
-            _isAccusable(dishonestValidator_),
-            string(
-                abi.encodePacked(
-                    ValidatorPoolErrorCodes.VALIDATORPOOL_DISHONEST_VALIDATOR_NOT_ACCUSABLE
-                )
-            )
-        );
+        if (!_isAccusable(dishonestValidator_)) {
+            revert ValidatorPoolErrors.DishonestValidatorNotAccusable(dishonestValidator_);
+        }
         uint256 balanceBeforeToken = IERC20Transferable(_aTokenAddress()).balanceOf(address(this));
         uint256 balanceBeforeEth = address(this).balance;
 
@@ -284,27 +256,20 @@ contract ValidatorPool is
         // position was burned + the disputerReward
         _transferEthAndTokens(disputer_, payoutEth, payoutToken);
 
-        require(
-            balanceBeforeToken == IERC20Transferable(_aTokenAddress()).balanceOf(address(this)),
-            string(abi.encodePacked(ValidatorPoolErrorCodes.VALIDATORPOOL_TOKEN_BALANCE_CHANGED))
-        );
-        require(
-            balanceBeforeEth == address(this).balance,
-            string(abi.encodePacked(ValidatorPoolErrorCodes.VALIDATORPOOL_ETH_BALANCE_CHANGED))
-        );
+        if (balanceBeforeToken != IERC20Transferable(_aTokenAddress()).balanceOf(address(this))) {
+            revert ValidatorPoolErrors.TokenBalanceChangedDuringOperation();
+        }
+        if (balanceBeforeEth != address(this).balance) {
+            revert ValidatorPoolErrors.EthBalanceChangedDuringOperation();
+        }
 
         emit ValidatorMajorSlashed(dishonestValidator_);
     }
 
     function minorSlash(address dishonestValidator_, address disputer_) public onlyETHDKG {
-        require(
-            _isAccusable(dishonestValidator_),
-            string(
-                abi.encodePacked(
-                    ValidatorPoolErrorCodes.VALIDATORPOOL_DISHONEST_VALIDATOR_NOT_ACCUSABLE
-                )
-            )
-        );
+        if (!_isAccusable(dishonestValidator_)) {
+            revert ValidatorPoolErrors.DishonestValidatorNotAccusable(dishonestValidator_);
+        }
         uint256 balanceBeforeToken = IERC20Transferable(_aTokenAddress()).balanceOf(address(this));
         uint256 balanceBeforeEth = address(this).balance;
 
@@ -324,14 +289,12 @@ contract ValidatorPool is
         }
         _transferEthAndTokens(disputer_, payoutEth, payoutToken);
 
-        require(
-            balanceBeforeToken == IERC20Transferable(_aTokenAddress()).balanceOf(address(this)),
-            string(abi.encodePacked(ValidatorPoolErrorCodes.VALIDATORPOOL_TOKEN_BALANCE_CHANGED))
-        );
-        require(
-            balanceBeforeEth == address(this).balance,
-            string(abi.encodePacked(ValidatorPoolErrorCodes.VALIDATORPOOL_ETH_BALANCE_CHANGED))
-        );
+        if (balanceBeforeToken != IERC20Transferable(_aTokenAddress()).balanceOf(address(this))) {
+            revert ValidatorPoolErrors.TokenBalanceChangedDuringOperation();
+        }
+        if (balanceBeforeEth != address(this).balance) {
+            revert ValidatorPoolErrors.EthBalanceChangedDuringOperation();
+        }
 
         emit ValidatorMinorSlashed(dishonestValidator_, stakeTokenID);
     }
@@ -379,18 +342,16 @@ contract ValidatorPool is
     }
 
     function getValidator(uint256 index_) public view returns (address) {
-        require(
-            index_ < _validators.length(),
-            string(abi.encodePacked(ValidatorPoolErrorCodes.VALIDATORPOOL_INVALID_INDEX))
-        );
+        if (index_ >= _validators.length()) {
+            revert ValidatorPoolErrors.InvalidIndex(index_);
+        }
         return _validators.at(index_)._address;
     }
 
     function getValidatorData(uint256 index_) public view returns (ValidatorData memory) {
-        require(
-            index_ < _validators.length(),
-            string(abi.encodePacked(ValidatorPoolErrorCodes.VALIDATORPOOL_INVALID_INDEX))
-        );
+        if (index_ >= _validators.length()) {
+            revert ValidatorPoolErrors.InvalidIndex(index_);
+        }
         return _validators.at(index_);
     }
 
@@ -466,16 +427,12 @@ contract ValidatorPool is
             uint256 payoutToken
         )
     {
-        require(
-            _validators.length() <= _maxNumValidators,
-            string(abi.encodePacked(ValidatorPoolErrorCodes.VALIDATORPOOL_MAX_VALIDATORS_MET))
-        );
-        require(
-            !_isAccusable(validator_),
-            string(
-                abi.encodePacked(ValidatorPoolErrorCodes.VALIDATORPOOL_ADDRESS_ALREADY_VALIDATOR)
-            )
-        );
+        if (_validators.length() > _maxNumValidators) {
+            revert ValidatorPoolErrors.NotEnoughValidatorSlotsAvailable(_validators.length(), 0);
+        }
+        if (_isAccusable(validator_)) {
+            revert ValidatorPoolErrors.AddressAlreadyValidator(validator_);
+        }
 
         uint256 balanceBeforeToken = IERC20Transferable(_aTokenAddress()).balanceOf(address(this));
         uint256 balanceBeforeEth = address(this).balance;
@@ -488,14 +445,12 @@ contract ValidatorPool is
         // transfer back any profit that was available for the PublicStaking position by the time that we
         // burned it
         _transferEthAndTokens(validator_, payoutEth, payoutToken);
-        require(
-            balanceBeforeToken == IERC20Transferable(_aTokenAddress()).balanceOf(address(this)),
-            string(abi.encodePacked(ValidatorPoolErrorCodes.VALIDATORPOOL_TOKEN_BALANCE_CHANGED))
-        );
-        require(
-            balanceBeforeEth == address(this).balance,
-            string(abi.encodePacked(ValidatorPoolErrorCodes.VALIDATORPOOL_ETH_BALANCE_CHANGED))
-        );
+        if (balanceBeforeToken != IERC20Transferable(_aTokenAddress()).balanceOf(address(this))) {
+            revert ValidatorPoolErrors.TokenBalanceChangedDuringOperation();
+        }
+        if (balanceBeforeEth != address(this).balance) {
+            revert ValidatorPoolErrors.EthBalanceChangedDuringOperation();
+        }
 
         emit ValidatorJoined(validator_, validatorTokenID);
     }
@@ -508,10 +463,9 @@ contract ValidatorPool is
             uint256 payoutToken
         )
     {
-        require(
-            _isValidator(validator_),
-            string(abi.encodePacked(ValidatorPoolErrorCodes.VALIDATORPOOL_ADDRESS_NOT_VALIDATOR))
-        );
+        if (!_isValidator(validator_)) {
+            revert ValidatorPoolErrors.AddressNotValidator(validator_);
+        }
 
         uint256 balanceBeforeToken = IERC20Transferable(_aTokenAddress()).balanceOf(address(this));
         uint256 balanceBeforeEth = address(this).balance;
@@ -522,14 +476,12 @@ contract ValidatorPool is
         // transfer back any profit that was available for the PublicStaking position by the time that we
         // burned it
         _transferEthAndTokens(validator_, payoutEth, payoutToken);
-        require(
-            balanceBeforeToken == IERC20Transferable(_aTokenAddress()).balanceOf(address(this)),
-            string(abi.encodePacked(ValidatorPoolErrorCodes.VALIDATORPOOL_TOKEN_BALANCE_CHANGED))
-        );
-        require(
-            balanceBeforeEth == address(this).balance,
-            string(abi.encodePacked(ValidatorPoolErrorCodes.VALIDATORPOOL_ETH_BALANCE_CHANGED))
-        );
+        if (balanceBeforeToken != IERC20Transferable(_aTokenAddress()).balanceOf(address(this))) {
+            revert ValidatorPoolErrors.TokenBalanceChangedDuringOperation();
+        }
+        if (balanceBeforeEth != address(this).balance) {
+            revert ValidatorPoolErrors.EthBalanceChangedDuringOperation();
+        }
 
         emit ValidatorLeft(validator_, stakeTokenID);
     }
@@ -546,14 +498,9 @@ contract ValidatorPool is
             stakerTokenID_
         );
         uint256 stakeAmount = _stakeAmount;
-        require(
-            stakeShares >= stakeAmount,
-            string(
-                abi.encodePacked(
-                    ValidatorPoolErrorCodes.VALIDATORPOOL_INSUFFICIENT_FUNDS_IN_STAKE_POSITION
-                )
-            )
-        );
+        if (stakeShares < stakeAmount) {
+            revert ValidatorPoolErrors.InsufficientFundsInStakePosition(stakeShares, _stakeAmount);
+        }
         IERC721Transferable(_publicStakingAddress()).safeTransferFrom(
             to_,
             address(this),
@@ -564,10 +511,9 @@ contract ValidatorPool is
         // Subtracting the shares from PublicStaking profit. The shares will be used to mint the new
         // ValidatorPosition
         //payoutToken should always have the minerShares in it!
-        require(
-            payoutToken >= stakeShares,
-            string(abi.encodePacked(ValidatorPoolErrorCodes.VALIDATORPOOL_PAYOUT_TOO_LOW))
-        );
+        if (payoutToken < stakeShares) {
+            revert ValidatorPoolErrors.PayoutTooLow();
+        }
         payoutToken -= stakeAmount;
 
         validatorTokenID = _mintValidatorStakingPosition(stakeAmount);
@@ -589,10 +535,9 @@ contract ValidatorPool is
             uint256 payoutToken
         ) = _burnValidatorStakingPosition(validator_);
         //payoutToken should always have the minerShares in it!
-        require(
-            payoutToken >= minerShares,
-            string(abi.encodePacked(ValidatorPoolErrorCodes.VALIDATORPOOL_PAYOUT_TOO_LOW))
-        );
+        if (payoutToken < minerShares) {
+            revert ValidatorPoolErrors.PayoutTooLow();
+        }
         payoutToken -= minerShares;
 
         uint256 stakeTokenID = _mintPublicStakingPosition(minerShares);
@@ -669,10 +614,9 @@ contract ValidatorPool is
             uint256 payoutToken
         )
     {
-        require(
-            _isAccusable(dishonestValidator_),
-            string(abi.encodePacked(ValidatorPoolErrorCodes.VALIDATORPOOL_ADDRESS_NOT_ACCUSABLE))
-        );
+        if (!_isAccusable(dishonestValidator_)) {
+            revert ValidatorPoolErrors.DishonestValidatorNotAccusable(dishonestValidator_);
+        }
         // If the user accused is a valid validator, we should burn is validatorStaking position,
         // otherwise we burn the user's PublicStaking in the exiting line
         if (_isValidator(dishonestValidator_)) {
@@ -693,10 +637,9 @@ contract ValidatorPool is
             minerShares = 0;
         }
         //payoutToken should always have the minerShares in it!
-        require(
-            payoutToken >= minerShares,
-            string(abi.encodePacked(ValidatorPoolErrorCodes.VALIDATORPOOL_PAYOUT_TOO_LOW))
-        );
+        if (payoutToken < minerShares) {
+            revert ValidatorPoolErrors.PayoutTooLow();
+        }
         payoutToken -= minerShares;
     }
 

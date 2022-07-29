@@ -4,9 +4,7 @@ pragma solidity ^0.8.0;
 import "contracts/utils/MagicValue.sol";
 import "contracts/interfaces/IERC20Transferable.sol";
 import "contracts/interfaces/IMagicTokenTransfer.sol";
-import {
-    MagicTokenTransferErrorCodes
-} from "contracts/libraries/errorCodes/MagicTokenTransferErrorCodes.sol";
+import {MagicTokenTransferErrors} from "contracts/libraries/errors/MagicTokenTransferErrors.sol";
 
 abstract contract MagicTokenTransfer is MagicValue {
     function _safeTransferTokenWithMagic(
@@ -15,12 +13,9 @@ abstract contract MagicTokenTransfer is MagicValue {
         uint256 amount_
     ) internal {
         bool success = token_.approve(address(to_), amount_);
-        require(
-            success,
-            string(
-                abi.encodePacked(MagicTokenTransferErrorCodes.MAGICTOKENTRANSFER_TRANSFER_FAILED)
-            )
-        );
+        if (!success) {
+            revert MagicTokenTransferErrors.TransferFailed(address(token_), address(to_), amount_);
+        }
         to_.depositToken(_getMagic(), amount_);
         token_.approve(address(to_), 0);
     }

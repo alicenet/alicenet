@@ -87,7 +87,10 @@ describe("PublicStaking: Only Mint", async () => {
   it("Should not be able to mint NFT position with more tokens than will ever exist", async function () {
     await expect(
       fixture.publicStaking.connect(adminSigner).mint(2n ** 224n)
-    ).to.revertedWith("605");
+    ).to.be.revertedWithCustomError(
+      fixture.publicStaking,
+      "MintAmountExceedsMaximumSupply"
+    );
   });
 
   it("Should not be able to mintTo a NFT position with more tokens than will ever exist", async function () {
@@ -95,7 +98,10 @@ describe("PublicStaking: Only Mint", async () => {
       fixture.publicStaking
         .connect(adminSigner)
         .mintTo(notAdminSigner.address, 2n ** 224n, 1)
-    ).to.revertedWith("605");
+    ).to.be.revertedWithCustomError(
+      fixture.publicStaking,
+      "MintAmountExceedsMaximumSupply"
+    );
   });
 
   it("MintTo a NFT position to another user without lock", async function () {
@@ -151,6 +157,9 @@ describe("PublicStaking: Only Mint", async () => {
           1000,
           (await fixture.publicStaking.getMaxMintLock()).toBigInt() + 1n
         )
-    ).to.revertedWith("602");
+    ).to.be.revertedWithCustomError(
+      fixture.publicStaking,
+      "LockDurationGreaterThanMintLock"
+    );
   });
 });

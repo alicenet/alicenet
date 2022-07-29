@@ -48,6 +48,11 @@
     "type": "error"
   },
   {
+    "inputs": [],
+    "name": "ConsensusNotRunning",
+    "type": "error"
+  },
+  {
     "inputs": [
       {
         "internalType": "uint256",
@@ -60,7 +65,55 @@
   },
   {
     "inputs": [],
+    "name": "DataOffsetOverflow",
+    "type": "error"
+  },
+  {
+    "inputs": [],
     "name": "HeightZero",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "bytesLength",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "requiredBytesLength",
+        "type": "uint256"
+      }
+    ],
+    "name": "InsufficientBytes",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "blockHeight",
+        "type": "uint256"
+      }
+    ],
+    "name": "InvalidBlockHeight",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "chainId",
+        "type": "uint256"
+      }
+    ],
+    "name": "InvalidChainId",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidMasterPublicKey",
     "type": "error"
   },
   {
@@ -121,6 +174,43 @@
     "inputs": [
       {
         "internalType": "uint256",
+        "name": "groupSignatureLength",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "bClaimsLength",
+        "type": "uint256"
+      }
+    ],
+    "name": "MigrationInputDataMismatch",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "MigrationNotAllowedAtCurrentEpoch",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "currentBlocksInterval",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "minimumBlocksInterval",
+        "type": "uint256"
+      }
+    ],
+    "name": "MinimumBlocksIntervalNotPassed",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
         "name": "dataOffset",
         "type": "uint256"
       },
@@ -158,6 +248,55 @@
       }
     ],
     "name": "OffsetParameterOverflow",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "sender",
+        "type": "address"
+      }
+    ],
+    "name": "OnlyETHDKG",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "sender",
+        "type": "address"
+      }
+    ],
+    "name": "OnlyFactory",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "sender",
+        "type": "address"
+      }
+    ],
+    "name": "OnlyValidatorPool",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "caller",
+        "type": "address"
+      }
+    ],
+    "name": "OnlyValidatorsAllowed",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "SignatureVerificationFailed",
     "type": "error"
   },
   {
