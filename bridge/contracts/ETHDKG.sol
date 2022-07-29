@@ -413,10 +413,7 @@ contract ETHDKG is
     function _initializeETHDKG() internal {
         //todo: should we reward ppl here?
         uint256 numberValidators = IValidatorPool(_validatorPoolAddress()).getValidatorsCount();
-        // require(
-        //     numberValidators >= _MIN_VALIDATORS,
-        //     string(abi.encodePacked(ETHDKGErrors.ETHDKG_MIN_VALIDATORS_NOT_MET))
-        // );
+
         if (numberValidators < _MIN_VALIDATORS) {
             revert ETHDKGErrors.MinimumValidatorsNotMet(numberValidators);
         }
