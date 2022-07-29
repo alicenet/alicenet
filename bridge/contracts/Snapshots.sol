@@ -10,7 +10,7 @@ import "contracts/libraries/math/CryptoLibrary.sol";
 import "contracts/libraries/snapshots/SnapshotsStorage.sol";
 import "contracts/utils/DeterministicAddress.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import {SnapshotsErrorCodes} from "contracts/libraries/errorCodes/SnapshotsErrorCodes.sol";
+import {SnapshotsErrors} from "contracts/libraries/errors/SnapshotsErrors.sol";
 
 /// @custom:salt Snapshots
 /// @custom:deploy-type deployUpgradeable
@@ -53,19 +53,19 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
         public
         returns (bool)
     {
-        require(
-            IValidatorPool(_validatorPoolAddress()).isValidator(msg.sender),
-            string(abi.encodePacked(SnapshotsErrorCodes.SNAPSHOT_ONLY_VALIDATORS_ALLOWED))
-        );
-        require(
-            IValidatorPool(_validatorPoolAddress()).isConsensusRunning(),
-            string(abi.encodePacked(SnapshotsErrorCodes.SNAPSHOT_CONSENSUS_RUNNING))
-        );
+        if (!IValidatorPool(_validatorPoolAddress()).isValidator(msg.sender)) {
+            revert SnapshotsErrors.OnlyValidatorsAllowed(msg.sender);
+        }
+        if (!IValidatorPool(_validatorPoolAddress()).isConsensusRunning()) {
+            revert SnapshotsErrors.ConsensusNotRunning();
+        }
 
-        require(
-            block.number >= _snapshots[_epoch].committedAt + _minimumIntervalBetweenSnapshots,
-            string(abi.encodePacked(SnapshotsErrorCodes.SNAPSHOT_MIN_BLOCKS_INTERVAL_NOT_PASSED))
-        );
+        if (block.number < _snapshots[_epoch].committedAt + _minimumIntervalBetweenSnapshots) {
+            revert SnapshotsErrors.MinimumBlocksIntervalNotPassed(
+                block.number,
+                _snapshots[_epoch].committedAt + _minimumIntervalBetweenSnapshots
+            );
+        }
 
         uint32 epoch = _epoch + 1;
 
@@ -73,35 +73,35 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
             (uint256[4] memory masterPublicKey, uint256[2] memory signature) = RCertParserLibrary
                 .extractSigGroup(groupSignature_, 0);
 
-            require(
-                keccak256(abi.encodePacked(masterPublicKey)) ==
-                    IETHDKG(_ethdkgAddress()).getMasterPublicKeyHash(),
-                string(abi.encodePacked(SnapshotsErrorCodes.SNAPSHOT_WRONG_MASTER_PUBLIC_KEY))
-            );
+            if (
+                keccak256(abi.encodePacked(masterPublicKey)) !=
+                IETHDKG(_ethdkgAddress()).getMasterPublicKeyHash()
+            ) {
+                revert SnapshotsErrors.InvalidMasterPublicKey();
+            }
 
-            require(
-                CryptoLibrary.verifySignatureASM(
+            if (
+                !CryptoLibrary.verifySignatureASM(
                     abi.encodePacked(keccak256(bClaims_)),
                     signature,
                     masterPublicKey
-                ),
-                string(abi.encodePacked(SnapshotsErrorCodes.SNAPSHOT_SIGNATURE_VERIFICATION_FAILED))
-            );
+                )
+            ) {
+                revert SnapshotsErrors.SignatureVerificationFailed();
+            }
         }
 
         BClaimsParserLibrary.BClaims memory blockClaims = BClaimsParserLibrary.extractBClaims(
             bClaims_
         );
 
-        require(
-            epoch * _epochLength == blockClaims.height,
-            string(abi.encodePacked(SnapshotsErrorCodes.SNAPSHOT_INCORRECT_BLOCK_HEIGHT))
-        );
+        if (epoch * _epochLength != blockClaims.height) {
+            revert SnapshotsErrors.InvalidBlockHeight(blockClaims.height);
+        }
 
-        require(
-            blockClaims.chainId == _chainId,
-            string(abi.encodePacked(SnapshotsErrorCodes.SNAPSHOT_INCORRECT_CHAIN_ID))
-        );
+        if (blockClaims.chainId != _chainId) {
+            revert SnapshotsErrors.InvalidChainId(blockClaims.chainId);
+        }
 
         {
             // Check if sender is the elected validator allowed to make the snapshot
@@ -157,14 +157,15 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
         returns (bool)
     {
         {
-            require(
-                _epoch == 0,
-                string(abi.encodePacked(SnapshotsErrorCodes.SNAPSHOT_MIGRATION_NOT_ALLOWED))
-            );
-            require(
-                groupSignature_.length == bClaims_.length && groupSignature_.length >= 1,
-                string(abi.encodePacked(SnapshotsErrorCodes.SNAPSHOT_MIGRATION_INPUT_DATA_MISMATCH))
-            );
+            if (_epoch != 0) {
+                revert SnapshotsErrors.MigrationNotAllowedAtCurrentEpoch();
+            }
+            if (!(groupSignature_.length == bClaims_.length && groupSignature_.length >= 1)) {
+                revert SnapshotsErrors.MigrationInputDataMismatch(
+                    groupSignature_.length,
+                    bClaims_.length
+                );
+            }
         }
 
         uint256 epoch;
@@ -172,10 +173,9 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
             BClaimsParserLibrary.BClaims memory blockClaims = BClaimsParserLibrary.extractBClaims(
                 bClaims_[i]
             );
-            require(
-                blockClaims.height % _epochLength == 0,
-                string(abi.encodePacked(SnapshotsErrorCodes.SNAPSHOT_INCORRECT_BLOCK_HEIGHT))
-            );
+            if (blockClaims.height % _epochLength != 0) {
+                revert SnapshotsErrors.InvalidBlockHeight(blockClaims.height);
+            }
             epoch = getEpochFromHeight(blockClaims.height);
             _snapshots[epoch] = Snapshot(block.number, blockClaims);
             emit SnapshotTaken(

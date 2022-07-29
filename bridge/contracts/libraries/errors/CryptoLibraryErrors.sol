@@ -2,7 +2,6 @@
 pragma solidity ^0.8.11;
 
 library CryptoLibraryErrors {
-    // CryptoLibrary errors
     error EllipticCurveAdditionFailed();
     error HashPointNotOnCurve();
     error HashPointUnsafeForSigning();
