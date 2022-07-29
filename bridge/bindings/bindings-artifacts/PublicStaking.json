@@ -5,6 +5,151 @@
     "type": "constructor"
   },
   {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "magic",
+        "type": "uint256"
+      }
+    ],
+    "name": "BadMagic",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "balance",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "reserve",
+        "type": "uint256"
+      }
+    ],
+    "name": "BalanceLessThanReserve",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "caller",
+        "type": "address"
+      }
+    ],
+    "name": "CallerNotTokenOwner",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "CircuitBreakerOpened",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "FreeAfterTimeNotReached",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "tokenId",
+        "type": "uint256"
+      }
+    ],
+    "name": "InvalidTokenId",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "LockDurationGreaterThanGovernanceLock",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "LockDurationGreaterThanMintLock",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "LockDurationWithdrawTimeNotReached",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "MintAmountExceedsMaximumSupply",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "sender",
+        "type": "address"
+      }
+    ],
+    "name": "OnlyAToken",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "sender",
+        "type": "address"
+      }
+    ],
+    "name": "OnlyFactory",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "sender",
+        "type": "address"
+      }
+    ],
+    "name": "OnlyGovernance",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "sender",
+        "type": "address"
+      }
+    ],
+    "name": "OnlyStakingPositionDescriptor",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "sender",
+        "type": "address"
+      }
+    ],
+    "name": "OnlyValidatorPool",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "slush",
+        "type": "uint256"
+      }
+    ],
+    "name": "SlushTooLarge",
+    "type": "error"
+  },
+  {
     "anonymous": false,
     "inputs": [
       {
