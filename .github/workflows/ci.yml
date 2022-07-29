@@ -147,12 +147,12 @@ jobs:
         ]
     steps:
       - uses: actions/checkout@v3
+      - uses: ./.github/actions/alicenet-config
       - uses: actions/setup-node@v3
         with:
           node-version-file: "bridge/.nvmrc"
           cache: "npm"
           cache-dependency-path: bridge/package-lock.json
-      - uses: ./.github/actions/alicenet-config
       - name: Set up gotestfmt
         run: go install github.com/haveyoudebuggedit/gotestfmt/v2/cmd/gotestfmt@latest
       - uses: actions/download-artifact@v3
