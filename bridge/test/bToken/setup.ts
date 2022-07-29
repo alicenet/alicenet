@@ -90,3 +90,15 @@ export async function getResultsFromTx(tx: any) {
   const log = iface.parseLog(logs);
   return log.args[2];
 }
+
+export const getBridgeRouterSalt = (version: number): string => {
+  return ethers.utils.keccak256(
+    ethers.utils.solidityPack(
+      ["bytes32", "bytes32"],
+      [
+        ethers.utils.solidityKeccak256(["string"], ["BridgeRouter"]),
+        ethers.utils.solidityKeccak256(["uint16"], [version]),
+      ]
+    )
+  );
+};

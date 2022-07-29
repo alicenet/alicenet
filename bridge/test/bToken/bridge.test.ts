@@ -1,9 +1,15 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
+import { IBridgeRouter } from "../../typechain-types";
 import { expect } from "../chai-setup";
-import { callFunctionAndGetReturnValues, Fixture, getFixture } from "../setup";
-import { getState, showState, state } from "./setup";
+import {
+  callFunctionAndGetReturnValues,
+  deployUpgradeableWithFactory,
+  Fixture,
+  getFixture,
+} from "../setup";
+import { getBridgeRouterSalt, getState, showState, state } from "./setup";
 
 describe("Testing BToken bridge methods", async () => {
   let admin: SignerWithAddress;
@@ -56,6 +62,11 @@ describe("Testing BToken bridge methods", async () => {
     ethsFromBurning = await fixture.bToken.getLatestEthFromBTokensBurn(
       bTokenFee
     );
+    const bridgeRouter = (await deployUpgradeableWithFactory(
+      fixture.factory,
+      "BridgeRouterMock",
+      getBridgeRouterSalt(1)
+    )) as IBridgeRouter;
     showState("Initial", await getState(fixture));
   });
 
@@ -109,13 +120,15 @@ describe("Testing BToken bridge methods", async () => {
   it("Should deposit tokens into the bridge and receive a refund when greater than sufficient eth fee is sent", async () => {
     expectedState = await getState(fixture);
     const refund = 1;
-    const ethFeeForDeposit = minEthFeeForDeposit + refund
+    const ethFeeForDeposit = minEthFeeForDeposit + refund;
     expectedState.Balances.eth.user -= ethFeeForDeposit;
     expectedState.Balances.eth.user += refund;
     expectedState.Balances.eth.bToken += BigInt(minEthFeeForDeposit);
     await fixture.bToken
       .connect(user)
-      .depositTokensOnBridges(maxTokens, poolVersion, encodedDepositCallData, { value: ethFeeForDeposit });
+      .depositTokensOnBridges(maxTokens, poolVersion, encodedDepositCallData, {
+        value: ethFeeForDeposit,
+      });
     expect(await getState(fixture)).to.be.deep.equal(expectedState);
- });
+  });
 });

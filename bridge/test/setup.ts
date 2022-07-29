@@ -18,7 +18,6 @@ import {
   BToken,
   ETHDKG,
   Foundation,
-  IBridgeRouter,
   InvalidTxConsumptionAccusation,
   LegacyToken,
   LiquidityProviderStaking,
@@ -612,12 +611,6 @@ export const getFixture = async (
     "Accusation"
   )) as MultipleProposalAccusation;
 
-  const bridgeRouter = (await deployUpgradeableWithFactory(
-    factory,
-    "BridgeRouterMock",
-    getBridgeRouterSalt(1)
-  )) as IBridgeRouter;
-
   await posFixtureSetup(factory, aToken, legacyToken);
   const blockNumber = BigInt(await ethers.provider.getBlockNumber());
   const phaseLength = (await ethdkg.getPhaseLength()).toBigInt();
@@ -643,7 +636,6 @@ export const getFixture = async (
     stakingPositionDescriptor,
     invalidTxConsumptionAccusation,
     multipleProposalAccusation,
-    bridgeRouter,
   };
 };
 
@@ -745,17 +737,5 @@ export const getMetamorphicAddress = (
     factoryAddress,
     ethers.utils.formatBytes32String(salt),
     ethers.utils.keccak256(initCode)
-  );
-};
-
-export const getBridgeRouterSalt = (version: number): string => {
-  return ethers.utils.keccak256(
-    ethers.utils.solidityPack(
-      ["bytes32", "bytes32"],
-      [
-        ethers.utils.solidityKeccak256(["string"], ["BridgeRouter"]),
-        ethers.utils.solidityKeccak256(["uint16"], [version]),
-      ]
-    )
   );
 };

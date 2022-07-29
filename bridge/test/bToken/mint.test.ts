@@ -42,7 +42,9 @@ describe("Testing BToken Minting methods", async () => {
     expectedState.Balances.eth.user -= eth;
     expectedState.Balances.bToken.user += bTokens.toBigInt();
     expectedState.Balances.bToken.totalSupply += bTokens.toBigInt();
-    expectedState.Balances.bToken.poolBalance += ethInWeis.div(marketSpread).toBigInt();
+    expectedState.Balances.bToken.poolBalance += ethInWeis
+      .div(marketSpread)
+      .toBigInt();
     expectedState.Balances.eth.bToken += ethInWeis.toBigInt();
     expect(await getState(fixture)).to.be.deep.equal(
       expectedState,
@@ -100,7 +102,9 @@ describe("Testing BToken Minting methods", async () => {
     expectedState.Balances.eth.admin -= eth;
     expectedState.Balances.bToken.user += bTokens.toBigInt();
     expectedState.Balances.bToken.totalSupply += bTokens.toBigInt();
-    expectedState.Balances.bToken.poolBalance += ethInWeis.div(marketSpread).toBigInt();
+    expectedState.Balances.bToken.poolBalance += ethInWeis
+      .div(marketSpread)
+      .toBigInt();
     expectedState.Balances.eth.bToken += ethInWeis.toBigInt();
     expect(await getState(fixture)).to.be.deep.equal(expectedState);
     expectedState = await getState(fixture);
@@ -115,7 +119,9 @@ describe("Testing BToken Minting methods", async () => {
     expectedState.Balances.eth.admin -= eth;
     expectedState.Balances.bToken.user += bTokens2.toBigInt();
     expectedState.Balances.bToken.totalSupply += bTokens2.toBigInt();
-    expectedState.Balances.bToken.poolBalance += ethInWeis.div(marketSpread).toBigInt();
+    expectedState.Balances.bToken.poolBalance += ethInWeis
+      .div(marketSpread)
+      .toBigInt();
     expectedState.Balances.eth.bToken += ethInWeis.toBigInt();
     expect(bTokens2).to.be.equal(BigInt("399027176702820751481"));
     expect(await getState(fixture)).to.be.deep.equal(expectedState);
@@ -140,7 +146,9 @@ describe("Testing BToken Minting methods", async () => {
     expectedState.Balances.eth.admin -= eth;
     expectedState.Balances.bToken.user += bTokens.toBigInt();
     expectedState.Balances.bToken.totalSupply += bTokens.toBigInt();
-    expectedState.Balances.bToken.poolBalance += ethInWeis.div(marketSpread).toBigInt();
+    expectedState.Balances.bToken.poolBalance += ethInWeis
+      .div(marketSpread)
+      .toBigInt();
     expectedState.Balances.eth.bToken += ethInWeis.toBigInt();
     expect(await getState(fixture)).to.be.deep.equal(expectedState);
   });
@@ -158,11 +166,11 @@ describe("Testing BToken Minting methods", async () => {
     const minBTokens = 900n * oneBToken;
     const expectedBTokensMintedForEthValue = "399028731704364116575";
 
-   await assertErrorMessage(
+    await assertErrorMessage(
       fixture.bToken.connect(admin).mint(minBTokens, {
         value: ethers.utils.parseEther(eth.toString()),
       }),
       `MinimumMintNotMet(${expectedBTokensMintedForEthValue}, ${minBTokens})`
-    ); 
+    );
   });
 });
