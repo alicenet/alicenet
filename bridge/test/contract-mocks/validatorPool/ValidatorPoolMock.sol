@@ -9,7 +9,7 @@ import "contracts/interfaces/IStakingNFT.sol";
 import "contracts/utils/CustomEnumerableMaps.sol";
 import "contracts/utils/DeterministicAddress.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import {ValidatorPoolErrorCodes} from "contracts/libraries/errorCodes/ValidatorPoolErrorCodes.sol";
+import {ValidatorPoolErrors} from "contracts/libraries/errors/ValidatorPoolErrors.sol";
 
 contract ValidatorPoolMock is
     Initializable,
@@ -65,14 +65,13 @@ contract ValidatorPoolMock is
     function setDisputerReward(uint256 disputerReward_) public {}
 
     function pauseConsensusOnArbitraryHeight(uint256 aliceNetHeight_) public onlyFactory {
-        require(
-            block.number >
-                ISnapshots(_snapshotsAddress()).getCommittedHeightFromLatestSnapshot() +
-                    MAX_INTERVAL_WITHOUT_SNAPSHOTS,
-            string(
-                abi.encodePacked(ValidatorPoolErrorCodes.VALIDATORPOOL_MIN_BLOCK_INTERVAL_NOT_MET)
-            )
-        );
+        if (
+            block.number <=
+            ISnapshots(_snapshotsAddress()).getCommittedHeightFromLatestSnapshot() +
+                MAX_INTERVAL_WITHOUT_SNAPSHOTS
+        ) {
+            revert ValidatorPoolErrors.MinimumBlockIntervalNotMet();
+        }
         _isConsensusRunning = false;
         IETHDKG(_ethdkgAddress()).setCustomAliceNetHeight(aliceNetHeight_);
     }
@@ -170,10 +169,9 @@ contract ValidatorPoolMock is
     }
 
     function getValidator(uint256 index_) public view returns (address) {
-        require(
-            index_ < _validators.length(),
-            string(abi.encodePacked(ValidatorPoolErrorCodes.VALIDATORPOOL_INVALID_INDEX))
-        );
+        if (index_ >= _validators.length()) {
+            revert ValidatorPoolErrors.InvalidIndex(index_);
+        }
         return _validators.at(index_)._address;
     }
 
