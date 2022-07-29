@@ -159,6 +159,6 @@ jobs:
         with:
           name: hardhat-files
           path: bridge/artifacts/
-      - name: Run test ${{ matrix.test-list }}
+      - name: Run test with race checks ${{ matrix.test-list }}
         run: |
           go test -race -tags=integration -json -timeout=15m github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run ${{ matrix.test-list }} 2>&1 | tee /tmp/gotest.log | gotestfmt
