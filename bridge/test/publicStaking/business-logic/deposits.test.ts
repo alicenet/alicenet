@@ -33,11 +33,11 @@ describe("PublicStaking: Deposit Tokens and ETH", async () => {
   it("Should not allow deposits with wrong magic number", async function () {
     const ethAmount = ethers.utils.parseEther("10").toBigInt();
     const tokenAmount = BigInt(100000);
-    await expect(
-      fixture.publicStaking.depositToken(41, tokenAmount)
-    ).to.be.revertedWith("2200");
-    await expect(
-      fixture.publicStaking.depositEth(41, { value: ethAmount })
-    ).to.be.revertedWith("2200");
+    await expect(fixture.publicStaking.depositToken(41, tokenAmount))
+      .to.be.revertedWithCustomError(fixture.publicStaking, "BadMagic")
+      .withArgs(41);
+    await expect(fixture.publicStaking.depositEth(41, { value: ethAmount }))
+      .to.be.revertedWithCustomError(fixture.publicStaking, "BadMagic")
+      .withArgs(41);
   });
 });

@@ -173,7 +173,7 @@ describe("Ethdkg: Migrate state", () => {
         0,
         fixture.validatorPool.interface.encodeFunctionData("initializeETHDKG")
       )
-    ).to.be.revertedWith("801");
+    ).to.be.revertedWithCustomError(fixture.validatorPool, "ConsensusRunning");
   });
 
   it("Should not be able to run more than 1 migration", async function () {

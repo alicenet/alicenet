@@ -100,7 +100,7 @@ describe("ETHDKG: ETHDKG Completion", () => {
     await expect(
       ethdkg.connect(await getValidatorEthAccount(validatorAddress)).complete()
     )
-      .to.be.revertedWithCustomError(ethdkg, `OnlyValidatorsAllowed`)
+      .to.be.revertedWithCustomError(ethdkg, "OnlyValidatorsAllowed")
       .withArgs(validatorAddress);
   });
 

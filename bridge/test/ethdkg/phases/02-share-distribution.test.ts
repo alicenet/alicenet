@@ -63,7 +63,7 @@ describe("ETHDKG: Distribute Shares", () => {
           [[BigNumber.from("0"), BigNumber.from("0")]]
         )
     )
-      .to.be.revertedWithCustomError(ethdkg, `OnlyValidatorsAllowed`)
+      .to.be.revertedWithCustomError(ethdkg, "OnlyValidatorsAllowed")
       .withArgs(validatorAddress);
   });
 

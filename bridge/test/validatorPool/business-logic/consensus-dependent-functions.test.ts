@@ -59,7 +59,10 @@ describe("ValidatorPool: Consensus dependent logic ", async () => {
         "pauseConsensusOnArbitraryHeight",
         [1]
       )
-    ).to.be.revertedWith("804");
+    ).to.be.revertedWithCustomError(
+      fixture.validatorPool,
+      "MinimumBlockIntervalNotMet"
+    );
   });
 
   it("Pause consensus after 1.5 days without snapshot", async function () {
@@ -226,14 +229,17 @@ describe("ValidatorPool: Consensus dependent logic ", async () => {
     await factoryCallAnyFixture(fixture, "validatorPool", "initializeETHDKG");
     await expect(
       factoryCallAnyFixture(fixture, "validatorPool", "initializeETHDKG")
-    ).to.be.revertedWith("802");
+    ).to.be.revertedWithCustomError(
+      fixture.validatorPool,
+      "ETHDKGRoundRunning"
+    );
     await completeETHDKGRound(validatorsSnapshots, {
       ethdkg: fixture.ethdkg,
       validatorPool: fixture.validatorPool,
     });
     await expect(
       factoryCallAnyFixture(fixture, "validatorPool", "initializeETHDKG")
-    ).to.be.revertedWith("801");
+    ).to.be.revertedWithCustomError(fixture.validatorPool, "ConsensusRunning");
   });
 
   it("Register validators, run ethdkg, schedule maintenance, do a snapshot, replace some validators, and rerun ethdkg", async function () {
@@ -311,6 +317,9 @@ describe("ValidatorPool: Consensus dependent logic ", async () => {
         to: fixture.validatorPool.address,
         value: 1000,
       })
-    ).to.be.revertedWith("803");
+    ).to.be.revertedWithCustomError(
+      fixture.validatorPool,
+      "OnlyNFTContractsAllowed"
+    );
   });
 });

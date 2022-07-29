@@ -92,7 +92,7 @@ describe("ETHDKG: Submit Key share", () => {
           val11KeyShareG2
         )
     )
-      .to.be.revertedWithCustomError(ethdkg, `OnlyValidatorsAllowed`)
+      .to.be.revertedWithCustomError(ethdkg, "OnlyValidatorsAllowed")
       .withArgs(validator11);
   });
 
