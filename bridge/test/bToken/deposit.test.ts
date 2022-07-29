@@ -53,7 +53,7 @@ describe("Testing BToken Deposit methods", async () => {
       fixture.bToken.mintDeposit(1, user.address, 0, {
         value: 0,
       }),
-      `MarketSpreadTooLow(0)`
+      `MinimumValueNotMet(0, ${marketSpread})`
     );
   });
 
