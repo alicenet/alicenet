@@ -57,11 +57,11 @@ func (db *rawDataBase) Sync() error {
 
 func (db *rawDataBase) GarbageCollect() error {
 	err := db.db.RunValueLogGC(constants.BadgerDiscardRatio)
-	if err != badger.ErrNoRewrite {
+	if utils.HandleBadgerErrors(err) != nil {
 		return err
 	}
 	err = db.db.RunValueLogGC(constants.BadgerDiscardRatio)
-	if err != badger.ErrNoRewrite {
+	if utils.HandleBadgerErrors(err) != nil {
 		return err
 	}
 	return nil
