@@ -2,6 +2,7 @@
 pragma solidity ^0.8.11;
 
 import "contracts/libraries/parsers/MerkleProofParserLibrary.sol";
+import {MerkleProofLibraryErrors} from "contracts/libraries/errors/MerkleProofLibraryErrors.sol";
 
 library MerkleProofLibrary {
     /// @notice Check if the bit at the given `index` in `self` is set. Function
@@ -36,17 +37,17 @@ library MerkleProofLibrary {
     /// @notice Computes the leaf hash.
     /// @param key the key/UTXOID
     /// @param value the value
-    /// @param proofHeight the proof height (number of elements in the uncompressed merkle proof)
+    /// @param proofHeight the proof height (number of elements in the uncompressed merkle proof) from 0 - 256
     /// @return the leaf hash
     function computeLeafHash(
         bytes32 key,
         bytes32 value,
         uint16 proofHeight
     ) internal pure returns (bytes32) {
-        require(
-            proofHeight <= 256 && proofHeight >= 0,
-            "MerkleProofLibrary: Invalid proofHeight, should be [0, 256]"
-        );
+        if (!(proofHeight <= 256 && proofHeight >= 0)) {
+            revert MerkleProofLibraryErrors.InvalidProofHeight(proofHeight);
+        }
+
         return keccak256(abi.encodePacked(key, value, uint8(256 - proofHeight)));
     }
 
@@ -57,7 +58,9 @@ library MerkleProofLibrary {
         internal
         pure
     {
-        require(_proof.proofValue != 0, "MerkleProofLibrary: Invalid Inclusion Merkle proof!");
+        if (_proof.proofValue == 0) {
+            revert MerkleProofLibraryErrors.InclusionZero();
+        }
         bytes32 _keyHash = computeLeafHash(_proof.key, _proof.proofValue, _proof.keyHeight);
         bool result = checkProof(
             _proof.auditPath,
@@ -67,7 +70,9 @@ library MerkleProofLibrary {
             _proof.bitmap,
             _proof.keyHeight
         );
-        require(result, "MerkleProofLibrary: The proof doesn't match the root of the trie!");
+        if (!result) {
+            revert MerkleProofLibraryErrors.ProofDoesNotMatchTrieRoot();
+        }
     }
 
     /// @notice Checks if `proof` is a valid non-inclusion proof.
@@ -90,7 +95,9 @@ library MerkleProofLibrary {
                 _proof.bitmap,
                 _proof.keyHeight
             );
-            require(result, "MerkleProofLibrary: Default leaf not found in the key's path!");
+            if (!result) {
+                revert MerkleProofLibraryErrors.DefaultLeafNotFoundInKeyPath();
+            }
         } else if (_proof.proofKey != 0 && _proof.proofValue != 0) {
             // Non-inclusion leaf node
             bytes32 _keyHash = computeLeafHash(
@@ -106,13 +113,12 @@ library MerkleProofLibrary {
                 _proof.bitmap,
                 _proof.keyHeight
             );
-            require(
-                result,
-                "MerkleProofLibrary: The Leaf node provided was not found in the key's path!"
-            );
+            if (!result) {
+                revert MerkleProofLibraryErrors.ProvidedLeafNotFoundInKeyPath();
+            }
         } else {
             // _proof.proofKey != 0 && _proof.proofValue == 0 or _proof.proofKey == 0 && _proof.proofValue != 0
-            revert("MerkleProofLibrary: Invalid Non Inclusion Merkle proof!");
+            revert MerkleProofLibraryErrors.InvalidNonInclusionMerkleProof();
         }
     }
 
@@ -140,10 +146,9 @@ library MerkleProofLibrary {
         );
 
         uint16 proofIdx = 0;
-        require(
-            proofHeight >= 0 && proofHeight <= 256,
-            "MerkleProofLibrary: proofHeight should be in the range [0, 256]"
-        );
+        if (!(proofHeight <= 256 && proofHeight >= 0)) {
+            revert MerkleProofLibraryErrors.InvalidProofHeight(proofHeight);
+        }
         for (uint256 i = 0; i < proofHeight; i++) {
             if (bitSet(bitmap, uint16(i))) {
                 proofIdx += 32;
