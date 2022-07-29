@@ -8,7 +8,6 @@ import { Fixture, getFixture, mineBlocks } from "../setup";
 describe("ValidatorStaking: Testing ValidatorStaking Access Control", async () => {
   let fixture: Fixture;
   let notAdminSigner: SignerWithAddress;
-  let admin: SignerWithAddress;
   let notAdmin: SignerWithAddress;
   const lockTime = 1;
   let amount: BigNumberish;
@@ -16,7 +15,7 @@ describe("ValidatorStaking: Testing ValidatorStaking Access Control", async () =
 
   beforeEach(async function () {
     fixture = await getFixture(true, true);
-    [admin, notAdmin] = fixture.namedSigners;
+    [, notAdmin] = fixture.namedSigners;
     notAdminSigner = await ethers.getSigner(notAdmin.address);
     validatorPool = fixture.validatorPool as ValidatorPoolMock;
     amount = await validatorPool.getStakeAmount();
