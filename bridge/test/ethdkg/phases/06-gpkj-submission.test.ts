@@ -39,7 +39,7 @@ describe("ETHDKG: GPKj submission", () => {
         .connect(await getValidatorEthAccount(validator11))
         .submitGPKJ(validators4[0].gpkj)
     )
-      .to.be.revertedWithCustomError(ethdkg, `OnlyValidatorsAllowed`)
+      .to.be.revertedWithCustomError(ethdkg, "OnlyValidatorsAllowed")
       .withArgs(validator11);
   });
 

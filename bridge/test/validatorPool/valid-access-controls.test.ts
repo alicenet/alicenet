@@ -62,7 +62,12 @@ describe("ValidatorPool Access Control: An user with admin role should be able t
       factoryCallAnyFixture(fixture, "validatorPool", "unregisterValidators", [
         ["0x000000000000000000000000000000000000dEaD"],
       ])
-    ).to.be.revertedWith("808");
+    )
+      .to.be.revertedWithCustomError(
+        fixture.validatorPool,
+        "LengthGreaterThanAvailableValidators"
+      )
+      .withArgs(1, 0);
   });
 
   it("Pause consensus", async function () {
@@ -74,6 +79,9 @@ describe("ValidatorPool Access Control: An user with admin role should be able t
         "pauseConsensusOnArbitraryHeight",
         [1]
       )
-    ).to.be.revertedWith("804");
+    ).to.be.revertedWithCustomError(
+      fixture.validatorPool,
+      "MinimumBlockIntervalNotMet"
+    );
   });
 });

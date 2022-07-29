@@ -112,7 +112,7 @@ describe("ETHDKG: Registration Open", () => {
         .connect(await getValidatorEthAccount(validatorAddress))
         .register([BigNumber.from("0"), BigNumber.from("0")])
     )
-      .to.be.revertedWithCustomError(ethdkg, `OnlyValidatorsAllowed`)
+      .to.be.revertedWithCustomError(ethdkg, "OnlyValidatorsAllowed")
       .withArgs(validatorAddress);
   });
 });

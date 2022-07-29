@@ -126,13 +126,23 @@ describe("ValidatorPool Access Control: An user without admin role should not be
   it("Set location", async function () {
     await expect(
       fixture.validatorPool.connect(notAdmin1Signer).setLocation("0.0.0.1")
-    ).to.be.revertedWith("800");
+    )
+      .to.be.revertedWithCustomError(
+        fixture.validatorPool,
+        "CallerNotValidator"
+      )
+      .withArgs(notAdmin1.address);
   });
 
   it("Collect profit", async function () {
     await expect(
       fixture.validatorPool.connect(notAdmin1Signer).collectProfits()
-    ).to.be.revertedWith("800");
+    )
+      .to.be.revertedWithCustomError(
+        fixture.validatorPool,
+        "CallerNotValidator"
+      )
+      .withArgs(notAdmin1.address);
   });
 
   it("Major slash a validator", async function () {
