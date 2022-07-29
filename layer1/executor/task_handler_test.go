@@ -8,6 +8,7 @@ import (
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
 	taskMocks "github.com/alicenet/alicenet/layer1/executor/tasks/mocks"
+	"github.com/alicenet/alicenet/layer1/transaction"
 	"github.com/alicenet/alicenet/test/mocks"
 	"github.com/dgraph-io/badger/v2"
 	"github.com/ethereum/go-ethereum/accounts"
@@ -68,7 +69,7 @@ func getScheduleLen(t *testing.T, manager *TaskManager) int {
 	return len(newManager.Schedule)
 }
 
-func TestTasksScheduler_Schedule_NilTask(t *testing.T) {
+func TestTasksHandlerAndManager_Schedule_NilTask(t *testing.T) {
 	handler, _, _, _, _ := getTaskHandler(t, true)
 	ctx := context.Background()
 
@@ -77,7 +78,7 @@ func TestTasksScheduler_Schedule_NilTask(t *testing.T) {
 	require.Equal(t, 0, getScheduleLen(t, handler.manager))
 }
 
-func TestTasksScheduler_Schedule_NotRegistredTask(t *testing.T) {
+func TestTasksHandlerAndManager_Schedule_NotRegisteredTask(t *testing.T) {
 	handler, _, _, _, _ := getTaskHandler(t, true)
 	ctx := context.Background()
 
@@ -86,7 +87,7 @@ func TestTasksScheduler_Schedule_NotRegistredTask(t *testing.T) {
 	require.Equal(t, 0, getScheduleLen(t, handler.manager))
 }
 
-func TestTasksScheduler_Schedule_WrongStartDate(t *testing.T) {
+func TestTasksHandlerAndManager_Schedule_WrongStartDate(t *testing.T) {
 	handler, _, _, _, _ := getTaskHandler(t, true)
 	ctx := context.Background()
 
@@ -96,7 +97,7 @@ func TestTasksScheduler_Schedule_WrongStartDate(t *testing.T) {
 	require.Equal(t, 0, getScheduleLen(t, handler.manager))
 }
 
-func TestTasksScheduler_Schedule_WrongEndDate(t *testing.T) {
+func TestTasksHandlerAndManager_Schedule_WrongEndDate(t *testing.T) {
 	handler, client, _, _, _ := getTaskHandler(t, true)
 	ctx := context.Background()
 	client.GetFinalizedHeightFunc.SetDefaultReturn(12, nil)
@@ -108,7 +109,7 @@ func TestTasksScheduler_Schedule_WrongEndDate(t *testing.T) {
 	require.Equal(t, 0, getScheduleLen(t, handler.manager))
 }
 
-func TestTasksScheduler_Schedule_MultiExecutionNotAllowed(t *testing.T) {
+func TestTasksHandlerAndManager_Schedule_MultiExecutionNotAllowed(t *testing.T) {
 	handler, _, _, _, _ := getTaskHandler(t, true)
 	ctx := context.Background()
 
@@ -122,7 +123,7 @@ func TestTasksScheduler_Schedule_MultiExecutionNotAllowed(t *testing.T) {
 	require.Equal(t, 1, getScheduleLen(t, handler.manager))
 }
 
-func TestTasksScheduler_KillById_EmptyId(t *testing.T) {
+func TestTasksHandlerAndManager_KillById_EmptyId(t *testing.T) {
 	handler, _, _, _, _ := getTaskHandler(t, true)
 	ctx := context.Background()
 
@@ -130,7 +131,7 @@ func TestTasksScheduler_KillById_EmptyId(t *testing.T) {
 	require.Equal(t, ErrTaskIdEmpty, err)
 }
 
-func TestTasksScheduler_KillById_NotFound(t *testing.T) {
+func TestTasksHandlerAndManager_KillById_NotFound(t *testing.T) {
 	handler, _, _, _, _ := getTaskHandler(t, true)
 	ctx := context.Background()
 
@@ -138,7 +139,7 @@ func TestTasksScheduler_KillById_NotFound(t *testing.T) {
 	require.Equal(t, ErrNotScheduled, err)
 }
 
-func TestTasksScheduler_ScheduleAndKillById(t *testing.T) {
+func TestTasksHandlerAndManager_ScheduleAndKillById(t *testing.T) {
 	handler, _, _, _, _ := getTaskHandler(t, true)
 	ctx := context.Background()
 
@@ -154,7 +155,7 @@ func TestTasksScheduler_ScheduleAndKillById(t *testing.T) {
 	require.Equal(t, 0, getScheduleLen(t, handler.manager))
 }
 
-func TestTasksScheduler_ScheduleAndKillById_RunningTask(t *testing.T) {
+func TestTasksHandlerAndManager_ScheduleAndKillById_RunningTask(t *testing.T) {
 	handler, client, contracts, _, acc := getTaskHandler(t, true)
 	client.GetFinalizedHeightFunc.SetDefaultReturn(12, nil)
 	ctx := context.Background()
@@ -223,7 +224,7 @@ func TestTasksScheduler_ScheduleAndKillById_RunningTask(t *testing.T) {
 	require.Equal(t, 0, getScheduleLen(t, handler.manager))
 }
 
-func TestTasksScheduler_KillByType_Nil(t *testing.T) {
+func TestTasksHandlerAndManager_KillByType_Nil(t *testing.T) {
 	handler, _, _, _, _ := getTaskHandler(t, true)
 	ctx := context.Background()
 
@@ -231,7 +232,7 @@ func TestTasksScheduler_KillByType_Nil(t *testing.T) {
 	require.Equal(t, ErrTaskIsNil, err)
 }
 
-func TestTasksScheduler_KillByType_NotInRegistry(t *testing.T) {
+func TestTasksHandlerAndManager_KillByType_NotInRegistry(t *testing.T) {
 	handler, _, _, _, _ := getTaskHandler(t, true)
 	ctx := context.Background()
 
@@ -239,7 +240,7 @@ func TestTasksScheduler_KillByType_NotInRegistry(t *testing.T) {
 	require.Equal(t, ErrTaskTypeNotInRegistry, err)
 }
 
-func TestTasksScheduler_ScheduleAndKillByType(t *testing.T) {
+func TestTasksHandlerAndManager_ScheduleAndKillByType(t *testing.T) {
 	handler, _, _, _, _ := getTaskHandler(t, true)
 	ctx := context.Background()
 
@@ -262,7 +263,7 @@ func TestTasksScheduler_ScheduleAndKillByType(t *testing.T) {
 	require.Equal(t, 0, getScheduleLen(t, handler.manager))
 }
 
-func TestTasksScheduler_ScheduleKillCloseAndRecover(t *testing.T) {
+func TestTasksHandlerAndManager_ScheduleKillCloseAndRecover(t *testing.T) {
 	handler, client, contracts, _, acc := getTaskHandler(t, false)
 	client.GetFinalizedHeightFunc.SetDefaultReturn(12, nil)
 	ctx := context.Background()
@@ -294,6 +295,11 @@ func TestTasksScheduler_ScheduleKillCloseAndRecover(t *testing.T) {
 	contracts.EthereumContractsFunc.SetDefaultReturn(ethereumContracts)
 
 	task := dkg.NewRegisterTask(10, 40)
+	task.AllowMultiExecution = true
+	task.SubscribeOptions = &transaction.SubscribeOptions{
+		EnableAutoRetry: true,
+		MaxStaleBlocks:  14,
+	}
 	taskId := uuid.New().String()
 	resp, err := handler.ScheduleTask(ctx, task, taskId)
 	require.Nil(t, err)
@@ -315,6 +321,14 @@ func TestTasksScheduler_ScheduleKillCloseAndRecover(t *testing.T) {
 
 	handler.Close()
 	newHandler, err := NewTaskHandler(handler.manager.database, handler.manager.eth, handler.manager.contracts, handler.manager.adminHandler, handler.manager.taskExecutor.txWatcher)
+	recoveredTask := newHandler.(*Handler).manager.Schedule[taskId]
+	require.Equal(t, task.Id, recoveredTask.Id)
+	require.Equal(t, task.Name, recoveredTask.Name)
+	require.Equal(t, task.Start, recoveredTask.Start)
+	require.Equal(t, task.End, recoveredTask.End)
+	require.Equal(t, task.AllowMultiExecution, recoveredTask.AllowMultiExecution)
+	require.Equal(t, task.SubscribeOptions.MaxStaleBlocks, recoveredTask.SubscribeOptions.MaxStaleBlocks)
+	require.Equal(t, task.SubscribeOptions.EnableAutoRetry, recoveredTask.SubscribeOptions.EnableAutoRetry)
 	require.Nil(t, err)
 	newHandler.Start()
 

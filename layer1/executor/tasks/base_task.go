@@ -13,19 +13,19 @@ import (
 
 type BaseTask struct {
 	sync.RWMutex
+	// Unique Id of the task
+	Id string `json:"id"`
 	// Task name/type
 	Name string `json:"name"`
 	// If this task can be executed in parallel with other tasks of the same type/name
 	AllowMultiExecution bool `json:"allowMultiExecution"`
 	// Subscription options (if the task should be retried, finality delay, etc)
-	SubscribeOptions *transaction.SubscribeOptions `json:"subscribeOptions,omitempty"`
-	// Unique Id of the task
-	Id string `json:"id"`
+	SubscribeOptions *transaction.SubscribeOptions `json:"subscribeOptions"`
 	// Which block the task should be started. In case the start is 0 the task is
 	// started immediately.
 	Start uint64 `json:"start"`
 	// Which block the task should be ended. In case the end is 0 the task runs
-	// forever (until the task succeeds or it's killed, be careful when using this).
+	// forever (until the task succeeds, or it's killed, be careful when using this).
 	// Otherwise, the task will end at the specified block.
 	End              uint64                   `json:"end"`
 	isInitialized    bool                     `json:"-"`
@@ -43,30 +43,36 @@ type BaseTask struct {
 // This function is called outside the scheduler to create the object to be
 // scheduled.
 func NewBaseTask(start uint64, end uint64, allowMultiExecution bool, subscribeOptions *transaction.SubscribeOptions) *BaseTask {
-	ctx, cf := context.WithCancel(context.Background())
-
 	return &BaseTask{
 		Start:               start,
 		End:                 end,
 		AllowMultiExecution: allowMultiExecution,
 		SubscribeOptions:    subscribeOptions,
-		ctx:                 ctx,
-		cancelFunc:          cf,
 	}
 }
 
 // Initialize initializes the task after its creation. It should be only called
 // by the task scheduler during task spawn as separated go routine. This
 // function all the parameters for task execution and control by the scheduler.
-func (bt *BaseTask) Initialize(ctx context.Context, cancelFunc context.CancelFunc, database *db.Database, logger *logrus.Entry, eth layer1.Client, contracts layer1.AllSmartContracts, name string, id string, taskResponseChan InternalTaskResponseChan) error {
+func (bt *BaseTask) Initialize(ctx context.Context, cancelFunc context.CancelFunc, database *db.Database, logger *logrus.Entry, eth layer1.Client, contracts layer1.AllSmartContracts, name string, id string, start uint64, end uint64, allowMultiExecution bool, subscribeOptions *transaction.SubscribeOptions, taskResponseChan InternalTaskResponseChan) error {
 	bt.Lock()
 	defer bt.Unlock()
 	if bt.isInitialized {
-		return errors.New("trying to initialize task twice!")
+		return errors.New("trying to initialize task twice")
 	}
 
-	bt.Name = name
 	bt.Id = id
+	bt.Name = name
+	bt.Start = start
+	bt.End = end
+	bt.AllowMultiExecution = allowMultiExecution
+
+	if subscribeOptions == nil {
+		bt.SubscribeOptions = subscribeOptions
+	} else {
+		subscribeOptionsClone := *subscribeOptions
+		bt.SubscribeOptions = &subscribeOptionsClone
+	}
 	bt.ctx = ctx
 	bt.cancelFunc = cancelFunc
 	bt.database = database
@@ -86,7 +92,7 @@ func (bt *BaseTask) GetId() string {
 	return bt.Id
 }
 
-// GetStart gets the start date of a task. Returns 0 if a task does not has a
+// GetStart gets the start date of a task. Returns 0 if a task does not have a
 // start date (started immediately).
 func (bt *BaseTask) GetStart() uint64 {
 	bt.RLock()
@@ -95,7 +101,7 @@ func (bt *BaseTask) GetStart() uint64 {
 }
 
 // GetEnd gets the end date in blocks of a task. In case 0, the task does not
-// has a end block.
+// have an end block.
 func (bt *BaseTask) GetEnd() uint64 {
 	bt.RLock()
 	defer bt.RUnlock()
@@ -121,7 +127,12 @@ func (bt *BaseTask) GetAllowMultiExecution() bool {
 func (bt *BaseTask) GetSubscribeOptions() *transaction.SubscribeOptions {
 	bt.RLock()
 	defer bt.RUnlock()
-	return bt.SubscribeOptions
+
+	if bt.SubscribeOptions == nil {
+		return nil
+	}
+	subscribeOptionsClone := *bt.SubscribeOptions
+	return &subscribeOptionsClone
 }
 
 // GetCtx get the context to be used by a task.
@@ -168,7 +179,7 @@ func (bt *BaseTask) GetDB() *db.Database {
 }
 
 // Close closes a running task. It set a bool flag and call the cancelFunc in
-// case its different from nil.
+// case it's different from nil.
 func (bt *BaseTask) Close() {
 	bt.Lock()
 	defer bt.Unlock()
@@ -178,7 +189,7 @@ func (bt *BaseTask) Close() {
 	bt.wasKilled = true
 }
 
-// Finish executes the clean up logic once a task finishes.
+// Finish executes the cleanup logic once a task finishes.
 func (bt *BaseTask) Finish(err error) {
 	bt.Lock()
 	defer bt.Unlock()

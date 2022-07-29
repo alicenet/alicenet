@@ -43,6 +43,7 @@ type TaskManager struct {
 	taskExecutor   *TaskExecutor                  `json:"-"`
 }
 
+// newTaskManager creates a new TaskManager instance and recover the previous state from DB.
 func newTaskManager(mainCtx context.Context, eth layer1.Client, contracts layer1.AllSmartContracts, database *db.Database, logger *logrus.Entry, adminHandler monitorInterfaces.AdminHandler, requestChan <-chan managerRequest, txWatcher transaction.Watcher) (*TaskManager, error) {
 	taskManager := &TaskManager{
 		Schedule:     make(map[string]ManagerRequestInfo),
@@ -76,6 +77,7 @@ func newTaskManager(mainCtx context.Context, eth layer1.Client, contracts layer1
 	return taskManager, nil
 }
 
+// start the infinite loop TaskManager execution.
 func (tm *TaskManager) start() {
 	tm.logger.Info("Starting task manager")
 	tm.logger.Info(strings.Repeat("-", 80))
@@ -88,11 +90,13 @@ func (tm *TaskManager) start() {
 	go tm.eventLoop()
 }
 
+// close the TaskManager execution.
 func (tm *TaskManager) close() {
 	tm.logger.Warn("Closing task manager")
 	tm.cancelChan <- true
 }
 
+// eventLoop where the interaction with all the pieces is developed.
 func (tm *TaskManager) eventLoop() {
 	processingTime := time.After(constants.TaskManagerProcessingTime)
 
@@ -201,6 +205,7 @@ func (tm *TaskManager) eventLoop() {
 	}
 }
 
+// schedule the task after its validation.
 func (tm *TaskManager) schedule(ctx context.Context, task tasks.Task, id string) (error, *HandlerResponse) {
 	select {
 	case <-ctx.Done():
@@ -240,11 +245,13 @@ func (tm *TaskManager) schedule(ctx context.Context, task tasks.Task, id string)
 
 		taskReq := ManagerRequestInfo{
 			BaseRequest: BaseRequest{
-				Id:            id,
-				Name:          taskName,
-				Start:         start,
-				End:           end,
-				InternalState: NotStarted,
+				Id:                  id,
+				Name:                taskName,
+				Start:               start,
+				End:                 end,
+				AllowMultiExecution: task.GetAllowMultiExecution(),
+				SubscribeOptions:    task.GetSubscribeOptions(),
+				InternalState:       NotStarted,
 			},
 			Task: task,
 		}
@@ -260,6 +267,7 @@ func (tm *TaskManager) schedule(ctx context.Context, task tasks.Task, id string)
 	}
 }
 
+// processTaskResponse from the TaskExecutor and writes it to the HandlerResponse.
 func (tm *TaskManager) processTaskResponse(ctx context.Context, executorResponse ExecutorResponse) error {
 	select {
 	case <-ctx.Done():
@@ -301,6 +309,7 @@ func (tm *TaskManager) processTaskResponse(ctx context.Context, executorResponse
 	return nil
 }
 
+// startTasks spawning a go routine to handle Task execution using the TaskExecutor.
 func (tm *TaskManager) startTasks(ctx context.Context, tasks []ManagerRequestInfo) error {
 	select {
 	case <-ctx.Done():
@@ -313,7 +322,7 @@ func (tm *TaskManager) startTasks(ctx context.Context, tasks []ManagerRequestInf
 			logEntry = logEntry.WithField("taskId", task.Id).WithField("taskName", task.Name)
 			getTaskLoggerComplete(task).Info("task is about to start")
 
-			go tm.taskExecutor.handleTaskExecution(ctx, task.Task, task.Name, task.Id, tm.database, logEntry, tm.eth, tm.contracts, tm.responseChan)
+			go tm.taskExecutor.handleTaskExecution(ctx, task.Task, task.Name, task.Id, task.Start, task.End, task.AllowMultiExecution, task.SubscribeOptions, tm.database, logEntry, tm.eth, tm.contracts, tm.responseChan)
 
 			task.InternalState = Running
 			tm.Schedule[task.Id] = task
@@ -324,6 +333,7 @@ func (tm *TaskManager) startTasks(ctx context.Context, tasks []ManagerRequestInf
 	return nil
 }
 
+// killTaskByType sends task to kill after the request validation.
 func (tm *TaskManager) killTaskByType(ctx context.Context, task tasks.Task) error {
 	select {
 	case <-ctx.Done():
@@ -343,6 +353,7 @@ func (tm *TaskManager) killTaskByType(ctx context.Context, task tasks.Task) erro
 	}
 }
 
+// killTaskById sends task to kill after the request validation.
 func (tm *TaskManager) killTaskById(ctx context.Context, id string) error {
 	select {
 	case <-ctx.Done():
@@ -362,6 +373,7 @@ func (tm *TaskManager) killTaskById(ctx context.Context, id string) error {
 	}
 }
 
+// iterates a list of Task to killTasks
 func (tm *TaskManager) killTasks(ctx context.Context, tasks []ManagerRequestInfo) error {
 	select {
 	case <-ctx.Done():
@@ -379,6 +391,7 @@ func (tm *TaskManager) killTasks(ctx context.Context, tasks []ManagerRequestInfo
 	return nil
 }
 
+// killTask in a way depending on its state.
 func (tm *TaskManager) killTask(task ManagerRequestInfo) error {
 	getTaskLoggerComplete(task).Info("Task is about to be killed")
 	if task.InternalState == Running {
@@ -414,6 +427,7 @@ func (tm *TaskManager) killTask(task ManagerRequestInfo) error {
 	return nil
 }
 
+// cleanResponses after constants.TaskManagerResponseToleranceBeforeRemoving amount of blocks.
 func (tm *TaskManager) cleanResponses() {
 	for id, resp := range tm.Responses {
 		if resp.ReceivedOnBlock != 0 && resp.ReceivedOnBlock+constants.TaskManagerResponseToleranceBeforeRemoving <= tm.LastHeightSeen {
@@ -422,6 +436,7 @@ func (tm *TaskManager) cleanResponses() {
 	}
 }
 
+// findTasks for killing and starting.
 func (tm *TaskManager) findTasks() ([]ManagerRequestInfo, []ManagerRequestInfo) {
 	toStart := make([]ManagerRequestInfo, 0)
 	expired := make([]ManagerRequestInfo, 0)
@@ -429,13 +444,13 @@ func (tm *TaskManager) findTasks() ([]ManagerRequestInfo, []ManagerRequestInfo) 
 
 	for _, taskRequest := range tm.Schedule {
 		if taskRequest.InternalState == Killed && taskRequest.killedAt+constants.TaskManagerHeightToleranceBeforeRemoving <= tm.LastHeightSeen {
-			tm.logger.Errorf("marking task as unresponsive %s", taskRequest.Task.GetId())
+			tm.logger.Errorf("marking task as unresponsive %s", taskRequest.Id)
 			unresponsive = append(unresponsive, taskRequest)
 			continue
 		}
 
 		if taskRequest.End != 0 && taskRequest.End <= tm.LastHeightSeen {
-			tm.logger.Tracef("marking task as expired %s", taskRequest.Task.GetId())
+			tm.logger.Tracef("marking task as expired %s", taskRequest.Id)
 			expired = append(expired, taskRequest)
 			continue
 		}
@@ -454,6 +469,7 @@ func (tm *TaskManager) findTasks() ([]ManagerRequestInfo, []ManagerRequestInfo) 
 	return toStart, expired
 }
 
+// findTasksByName in the Schedule.
 func (tm *TaskManager) findTasksByName(taskName string) []ManagerRequestInfo {
 	tm.logger.Tracef("trying to find tasks by name %s", taskName)
 	tasks := make([]ManagerRequestInfo, 0)
@@ -467,6 +483,7 @@ func (tm *TaskManager) findTasksByName(taskName string) []ManagerRequestInfo {
 	return tasks
 }
 
+// remove Task from Schedule.
 func (tm *TaskManager) remove(id string) error {
 	tm.logger.Tracef("removing task with id %s", id)
 	_, present := tm.Schedule[id]
@@ -479,6 +496,7 @@ func (tm *TaskManager) remove(id string) error {
 	return nil
 }
 
+// persistState TaskManager to database.
 func (tm *TaskManager) persistState() error {
 	logger := logging.GetLogger("staterecover").WithField("State", "manager")
 	rawData, err := json.Marshal(tm)
@@ -487,7 +505,7 @@ func (tm *TaskManager) persistState() error {
 	}
 
 	err = tm.database.Update(func(txn *badger.Txn) error {
-		key := dbprefix.PrefixTaskSchedulerState()
+		key := dbprefix.PrefixTaskManagerState()
 		logger.WithField("Key", string(key)).Debug("Saving state in the database")
 		if err := utils.SetValue(txn, key, rawData); err != nil {
 			logger.Error("Failed to set Value")
@@ -507,10 +525,11 @@ func (tm *TaskManager) persistState() error {
 	return nil
 }
 
+// loadState TaskManager from database.
 func (tm *TaskManager) loadState() error {
 	logger := logging.GetLogger("staterecover").WithField("State", "manager")
 	if err := tm.database.View(func(txn *badger.Txn) error {
-		key := dbprefix.PrefixTaskSchedulerState()
+		key := dbprefix.PrefixTaskManagerState()
 		logger.WithField("Key", string(key)).Debug("Loading state from database")
 		rawData, err := utils.GetValue(txn, key)
 		if err != nil {
@@ -536,6 +555,7 @@ func (tm *TaskManager) loadState() error {
 	return nil
 }
 
+// recoverState TaskManager modifying the Schedule and Responses in order to operate properly.
 func (tm *TaskManager) recoverState() error {
 	err := tm.loadState()
 	if err != nil {
@@ -556,6 +576,7 @@ func (tm *TaskManager) recoverState() error {
 		}
 	}
 
+	// If we already received a response from TaskExecutor sends it to the Handler.
 	for id, resp := range tm.Responses {
 		if resp.ReceivedOnBlock != 0 {
 			resp.HandlerResponse.writeResponse(resp.ExecutorResponse.Err)
@@ -566,6 +587,7 @@ func (tm *TaskManager) recoverState() error {
 	return nil
 }
 
+// MarshalJSON implements the json.Marshaler interface.
 func (tm *TaskManager) MarshalJSON() ([]byte, error) {
 
 	ws := &taskManagerBackup{Schedule: make(map[string]requestStored), Responses: make(map[string]responseStored), LastHeightSeen: tm.LastHeightSeen}
@@ -597,6 +619,7 @@ func (tm *TaskManager) MarshalJSON() ([]byte, error) {
 	return raw, nil
 }
 
+// UnmarshalJSON implements the json.Unmarshaler interface.
 func (tm *TaskManager) UnmarshalJSON(raw []byte) error {
 	aa := &taskManagerBackup{}
 
@@ -648,6 +671,7 @@ func (tm *TaskManager) UnmarshalJSON(raw []byte) error {
 	return nil
 }
 
+// getTaskLogger with essential fields.
 func getTaskLogger(task tasks.Task) *logrus.Entry {
 	logger := logging.GetLogger("tasks")
 	logEntry := logger.WithFields(logrus.Fields{
@@ -658,21 +682,23 @@ func getTaskLogger(task tasks.Task) *logrus.Entry {
 	return logEntry
 }
 
+// getTaskLoggerComplete with all the fields.
 func getTaskLoggerComplete(taskReq ManagerRequestInfo) *logrus.Entry {
 	logger := logging.GetLogger("tasks")
 	logEntry := logger.WithFields(logrus.Fields{
 		"Component": "task",
 		"taskName":  taskReq.Name,
-		"taskStart": taskReq.Task.GetStart(),
-		"taskEnd":   taskReq.Task.GetEnd(),
+		"taskStart": taskReq.Start,
+		"taskEnd":   taskReq.End,
 		"taskId":    taskReq.Id,
 		"state":     taskReq.InternalState,
 	})
 	return logEntry
 }
 
+// getTaskRegistry all the Tasks we can handle in the request.
+// If you want to create a new task register its instance type here.
 func getTaskRegistry() *marshaller.TypeRegistry {
-	// registry the task type here
 	tr := &marshaller.TypeRegistry{}
 	tr.RegisterInstanceType(&dkg.CompletionTask{})
 	tr.RegisterInstanceType(&dkg.DisputeShareDistributionTask{})
