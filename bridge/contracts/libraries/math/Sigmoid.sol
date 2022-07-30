@@ -86,7 +86,7 @@ abstract contract Sigmoid {
                 xAux >>= 4;
                 result <<= 2;
             }
-            if (xAux >= 0x8) {
+            if (xAux >= 0x4) {
                 result <<= 1;
             }
 
@@ -111,7 +111,8 @@ abstract contract Sigmoid {
             if (x >= 0xfffffffffffffffffffffffffffffffe00000000000000000000000000000001) {
                 return (1 << 128) - 1;
             }
-            // Here, e represents the bit length
+            // Here, e represents the bit length;
+            // its value is at most 256, so it could fit in a uint16.
             uint256 e = 1;
             // Here, result is a copy of x
             uint256 result = x;
@@ -149,11 +150,10 @@ abstract contract Sigmoid {
 
             // e is currently bit length; we overwrite it now
             e = (256 - e) >> 1;
+            // m now satisfies 2**254 <= m < 2**256
             uint256 m = x << (2*e);
             // result now stores the result
             result = 1 + (m >> 254);
-
-            // The operations can never overflow because the result is max 2^127 when it enters this block.
             result = (result << 1)  + (m >> 251) / result;
             result = (result << 3)  + (m >> 245) / result;
             result = (result << 7)  + (m >> 233) / result;
