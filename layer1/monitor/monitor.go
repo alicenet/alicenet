@@ -83,9 +83,9 @@ func NewMonitor(cdb *db.Database,
 
 	State := objects.NewMonitorState()
 
-	adminHandler.RegisterSnapshotCallback(func(bh *objs.BlockHeader) error {
+	adminHandler.RegisterSnapshotCallback(func(bh *objs.BlockHeader, numOfValidators int, validatorIndex int) error {
 		logger.Info("Entering snapshot callback")
-		return PersistSnapshot(eth, bh, taskRequestChan, monDB)
+		return PersistSnapshot(eth, bh, numOfValidators, validatorIndex, taskRequestChan, monDB)
 	})
 
 	return &monitor{
@@ -365,7 +365,7 @@ func ProcessEvents(eth layer1.Client, contracts layer1.AllSmartContracts, monito
 }
 
 // PersistSnapshot should be registered as a callback and be kicked off automatically by badger when appropriate
-func PersistSnapshot(eth layer1.Client, bh *objs.BlockHeader, taskRequestChan chan<- tasks.TaskRequest, monDB *db.Database) error {
+func PersistSnapshot(eth layer1.Client, bh *objs.BlockHeader, numOfValidators int, validatorIndex int, taskRequestChan chan<- tasks.TaskRequest, monDB *db.Database) error {
 	if bh == nil {
 		return errors.New("invalid blockHeader for snapshot")
 	}
@@ -383,7 +383,7 @@ func PersistSnapshot(eth layer1.Client, bh *objs.BlockHeader, taskRequestChan ch
 	// kill any snapshot task that might be running
 	taskRequestChan <- tasks.NewKillTaskRequest(&snapshots.SnapshotTask{})
 
-	taskRequestChan <- tasks.NewScheduleTaskRequest(snapshots.NewSnapshotTask(0, 0, uint64(bh.BClaims.Height)))
+	taskRequestChan <- tasks.NewScheduleTaskRequest(snapshots.NewSnapshotTask(uint64(bh.BClaims.Height), numOfValidators, validatorIndex))
 
 	return nil
 }

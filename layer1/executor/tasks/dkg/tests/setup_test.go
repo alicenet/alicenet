@@ -13,19 +13,20 @@ import (
 
 	"github.com/alicenet/alicenet/bridge/bindings"
 	"github.com/alicenet/alicenet/consensus/db"
+	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/crypto/bn256"
 	"github.com/alicenet/alicenet/crypto/bn256/cloudflare"
 	"github.com/alicenet/alicenet/layer1"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
 	testutils "github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests/utils"
-	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/utils"
 	"github.com/alicenet/alicenet/layer1/monitor/events"
 	"github.com/alicenet/alicenet/layer1/monitor/objects"
 	"github.com/alicenet/alicenet/layer1/tests"
 	"github.com/alicenet/alicenet/layer1/transaction"
 	"github.com/alicenet/alicenet/logging"
 	"github.com/alicenet/alicenet/test/mocks"
+	gUtils "github.com/alicenet/alicenet/utils"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -518,11 +519,11 @@ func StartFromMPKSubmissionPhase(t *testing.T, fixture *tests.ClientFixture, pha
 	suite := StartFromKeyShareSubmissionPhase(t, fixture, 0, phaseLength)
 	ctx := context.Background()
 	logger := logging.GetLogger("test").WithField("Validator", "")
-	n := len(suite.Eth.GetKnownAccounts())
+	numValidators := len(suite.Eth.GetKnownAccounts())
 
 	// Do MPK Submission task (once is enough)
 	var receiptResponses []transaction.ReceiptResponse
-	for idx := 0; idx < n; idx++ {
+	for idx := 0; idx < numValidators; idx++ {
 		task := suite.MpkSubmissionTasks[idx]
 		err := task.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "MPKSubmissionTask", fmt.Sprintf("%v", idx), nil)
 		assert.Nil(t, err)
@@ -531,7 +532,20 @@ func StartFromMPKSubmissionPhase(t *testing.T, fixture *tests.ClientFixture, pha
 
 		dkgState, err := state.GetDkgState(suite.DKGStatesDbs[idx])
 		assert.Nil(t, err)
-		if utils.AmILeading(suite.Eth, ctx, logger, int(task.GetStart()), task.StartBlockHash[:], n, dkgState.Index) {
+		amILeading, err := gUtils.AmILeading(
+			suite.Eth,
+			ctx,
+			logger,
+			int(task.GetStart()),
+			task.StartBlockHash[:],
+			numValidators,
+			// we need -1 since ethdkg indexes start at 1 while leader election expect index starting at 0.
+			dkgState.Index-1,
+			constants.ETHDKGDesperationFactor,
+			constants.ETHDKGDesperationDelay,
+		)
+		assert.Nil(t, err)
+		if amILeading {
 			txn, err := task.Execute(ctx)
 			assert.Nil(t, err)
 
@@ -546,11 +560,11 @@ func StartFromMPKSubmissionPhase(t *testing.T, fixture *tests.ClientFixture, pha
 	height, err := suite.Eth.GetCurrentHeight(ctx)
 	assert.Nil(t, err)
 
-	gpkjSubmissionTasks := make([]*dkg.GPKjSubmissionTask, n)
-	disputeMissingGPKjTasks := make([]*dkg.DisputeMissingGPKjTask, n)
-	disputeGPKjTasks := make([][]*dkg.DisputeGPKjTask, n)
+	gpkjSubmissionTasks := make([]*dkg.GPKjSubmissionTask, numValidators)
+	disputeMissingGPKjTasks := make([]*dkg.DisputeMissingGPKjTask, numValidators)
+	disputeGPKjTasks := make([][]*dkg.DisputeGPKjTask, numValidators)
 
-	for idx := 0; idx < n; idx++ {
+	for idx := 0; idx < numValidators; idx++ {
 		dkgState, err := state.GetDkgState(suite.DKGStatesDbs[idx])
 		assert.Nil(t, err)
 		gpkjSubmissionTask, disputeMissingGPKjTask, disputeGPKjTask := events.UpdateStateOnMPKSet(dkgState, height, mocks.NewMockAdminHandler())
