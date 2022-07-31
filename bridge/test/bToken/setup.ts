@@ -1,5 +1,5 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { BigNumber } from "ethers/lib/ethers";
+import { BigNumber, ContractReceipt } from "ethers/lib/ethers";
 import { ethers } from "hardhat";
 import { BaseTokensFixture, Fixture } from "../setup";
 
@@ -20,9 +20,9 @@ export interface state {
     eth: {
       address: string;
       // We leave user balance as number to round and avoid comparing of gas consumed
-      admin: number;
-      user: number;
-      user2: number;
+      admin: bigint;
+      user: bigint;
+      user2: bigint;
       bToken: bigint;
     };
   };
@@ -42,9 +42,9 @@ export async function getState(fixture: Fixture | BaseTokensFixture) {
       },
       eth: {
         address: "0000",
-        admin: format(await ethers.provider.getBalance(admin.address)),
-        user: format(await ethers.provider.getBalance(user.address)),
-        user2: format(await ethers.provider.getBalance(user2.address)),
+        admin: (await ethers.provider.getBalance(admin.address)).toBigInt(),
+        user: (await ethers.provider.getBalance(user.address)).toBigInt(),
+        user2: (await ethers.provider.getBalance(user2.address)).toBigInt(),
         bToken: (
           await ethers.provider.getBalance(fixture.bToken.address)
         ).toBigInt(),
@@ -67,15 +67,6 @@ export function format(number: BigNumber) {
 
 export function formatBigInt(number: BigNumber) {
   return BigInt(parseFloat((+ethers.utils.formatEther(number)).toFixed(0)));
-}
-
-export function getUserNotInRoleReason(address: string, role: string) {
-  const reason =
-    "AccessControl: account " +
-    address.toLowerCase() +
-    " is missing role " +
-    role;
-  return reason;
 }
 
 export async function getResultsFromTx(tx: any) {
@@ -101,4 +92,8 @@ export const getBridgeRouterSalt = (version: number): string => {
       ]
     )
   );
+};
+
+export const getEthConsumedAsGas = (receipt: ContractReceipt): bigint => {
+  return receipt.cumulativeGasUsed.mul(receipt.effectiveGasPrice).toBigInt();
 };

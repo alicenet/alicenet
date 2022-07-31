@@ -3,19 +3,17 @@ import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
 import { expect } from "../chai-setup";
 import { callFunctionAndGetReturnValues, Fixture, getFixture } from "../setup";
-import { getState, showState, state } from "./setup";
+import { getEthConsumedAsGas, getState, showState, state } from "./setup";
 
 describe("Testing BToken Destroy methods", async () => {
   let admin: SignerWithAddress;
   let user: SignerWithAddress;
   let expectedState: state;
-  let eths: BigNumber;
   let fixture: Fixture;
   const eth = 40;
   let ethForMinting: BigNumber;
   let bTokens: BigNumber;
   const minBTokens = 0;
-  const marketSpread = 4;
   let ethsFromBurning: BigNumber;
 
   beforeEach(async function () {
@@ -36,22 +34,28 @@ describe("Testing BToken Destroy methods", async () => {
 
   it("Should burn btokens from sender and keep resulting eth on contract", async () => {
     expectedState = await getState(fixture);
-    await fixture.bToken.connect(user).destroyBTokens(bTokens);
+    const tx = await fixture.bToken.connect(user).destroyBTokens(bTokens);
     expect(bTokens).to.be.equal(BigInt("3990217121585928137263"));
     expectedState.Balances.bToken.user -= bTokens.toBigInt();
     expectedState.Balances.bToken.totalSupply -= bTokens.toBigInt();
     expectedState.Balances.bToken.poolBalance -= ethsFromBurning.toBigInt();
+    expectedState.Balances.eth.user -= getEthConsumedAsGas(await tx.wait());
     expect(await getState(fixture)).to.be.deep.equal(expectedState);
   });
 
   it("Should burn btokens from address and keep resulting eth on contract", async () => {
     await fixture.bToken.connect(user).approve(admin.address, bTokens);
     expectedState = await getState(fixture);
-    await fixture.bToken.destroyPreApprovedBTokens(user.address, bTokens);
+    const tx = await fixture.bToken.destroyPreApprovedBTokens(
+      user.address,
+      bTokens
+    );
     expect(bTokens).to.be.equal(BigInt("3990217121585928137263"));
     expectedState.Balances.bToken.user -= bTokens.toBigInt();
     expectedState.Balances.bToken.totalSupply -= bTokens.toBigInt();
     expectedState.Balances.bToken.poolBalance -= ethsFromBurning.toBigInt();
+    expectedState.Balances.eth.admin -= getEthConsumedAsGas(await tx.wait());
+
     expect(await getState(fixture)).to.be.deep.equal(expectedState);
   });
 
