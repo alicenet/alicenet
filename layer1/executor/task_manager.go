@@ -593,7 +593,8 @@ func (tm *TaskManager) MarshalJSON() ([]byte, error) {
 	ws := &taskManagerBackup{Schedule: make(map[string]requestStored), Responses: make(map[string]responseStored), LastHeightSeen: tm.LastHeightSeen}
 
 	for k, v := range tm.Schedule {
-		wt, err := tm.marshaller.WrapInstance(v.Task)
+		clonedTask := reflect.New(reflect.ValueOf(v.Task).Elem().Type()).Interface().(tasks.Task)
+		wt, err := tm.marshaller.WrapInstance(clonedTask)
 		if err != nil {
 			return []byte{}, err
 		}
