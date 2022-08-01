@@ -403,12 +403,13 @@ contract BToken is
         // find all value in excess of what is needed in pool
         uint256 excess = address(this).balance - poolBalance;
 
+        Splits memory splits = _splits;
         // take out protocolFee from excess and decrement excess
-        foundationAmount = (excess * _splits.protocolFee) / _PERCENTAGE_SCALE;
+        foundationAmount = (excess * splits.protocolFee) / _PERCENTAGE_SCALE;
 
         // split remaining between miners, stakers and lp stakers
-        stakingAmount = (excess * _splits.publicStaking) / _PERCENTAGE_SCALE;
-        lpStakingAmount = (excess * _splits.liquidityProviderStaking) / _PERCENTAGE_SCALE;
+        stakingAmount = (excess * splits.publicStaking) / _PERCENTAGE_SCALE;
+        lpStakingAmount = (excess * splits.liquidityProviderStaking) / _PERCENTAGE_SCALE;
         // then give miners the difference of the original and the sum of the
         // stakingAmount
         minerAmount = excess - (stakingAmount + lpStakingAmount + foundationAmount);
