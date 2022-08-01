@@ -17,9 +17,9 @@ contract ETHDKGPhases is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
 
     function register(uint256[2] memory publicKey) external {
         if (
-            !(_ethdkgPhase == Phase.RegistrationOpen &&
-                block.number >= _phaseStartBlock &&
-                block.number < _phaseStartBlock + _phaseLength)
+            _ethdkgPhase != Phase.RegistrationOpen ||
+            block.number < _phaseStartBlock ||
+            block.number >= _phaseStartBlock + _phaseLength
         ) {
             revert ETHDKGErrors.ETHDKGNotInRegistrationPhase(_ethdkgPhase);
         }
@@ -64,9 +64,9 @@ contract ETHDKGPhases is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
         external
     {
         if (
-            !(_ethdkgPhase == Phase.ShareDistribution &&
-                block.number >= _phaseStartBlock &&
-                block.number < _phaseStartBlock + _phaseLength)
+            _ethdkgPhase != Phase.ShareDistribution ||
+            block.number < _phaseStartBlock ||
+            block.number >= _phaseStartBlock + _phaseLength
         ) {
             revert ETHDKGErrors.ETHDKGNotInSharedDistributionPhase(_ethdkgPhase);
         }
@@ -136,13 +136,13 @@ contract ETHDKGPhases is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
         // Only progress if all participants distributed their shares
         // and no bad participant was found
         if (
-            !((_ethdkgPhase == Phase.KeyShareSubmission &&
+            !(_ethdkgPhase == Phase.KeyShareSubmission &&
                 block.number >= _phaseStartBlock &&
-                block.number < _phaseStartBlock + _phaseLength) ||
-                (_ethdkgPhase == Phase.DisputeShareDistribution &&
-                    block.number >= _phaseStartBlock + _phaseLength &&
-                    block.number < _phaseStartBlock + 2 * _phaseLength &&
-                    _badParticipants == 0))
+                block.number < _phaseStartBlock + _phaseLength) &&
+            !(_ethdkgPhase == Phase.DisputeShareDistribution &&
+                block.number >= _phaseStartBlock + _phaseLength &&
+                block.number < _phaseStartBlock + 2 * _phaseLength &&
+                _badParticipants == 0)
         ) {
             revert ETHDKGErrors.ETHDKGNotInKeyshareSubmissionPhase(_ethdkgPhase);
         }
@@ -227,9 +227,9 @@ contract ETHDKGPhases is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
 
     function submitMasterPublicKey(uint256[4] memory masterPublicKey_) external {
         if (
-            !(_ethdkgPhase == Phase.MPKSubmission &&
-                block.number >= _phaseStartBlock &&
-                block.number < _phaseStartBlock + _phaseLength)
+            _ethdkgPhase != Phase.MPKSubmission ||
+            block.number < _phaseStartBlock ||
+            block.number >= _phaseStartBlock + _phaseLength
         ) {
             revert ETHDKGErrors.ETHDKGNotInMasterPublicKeySubmissionPhase(_ethdkgPhase);
         }
@@ -265,9 +265,9 @@ contract ETHDKGPhases is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
     function submitGPKJ(uint256[4] memory gpkj) external {
         //todo: should we evict all validators if no one sent the master public key in time?
         if (
-            !(_ethdkgPhase == Phase.GPKJSubmission &&
-                block.number >= _phaseStartBlock &&
-                block.number < _phaseStartBlock + _phaseLength)
+            _ethdkgPhase != Phase.GPKJSubmission ||
+            block.number < _phaseStartBlock ||
+            block.number >= _phaseStartBlock + _phaseLength
         ) {
             revert ETHDKGErrors.ETHDKGNotInGPKJSubmissionPhase(_ethdkgPhase);
         }
@@ -315,9 +315,9 @@ contract ETHDKGPhases is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
     function complete() external {
         //todo: should we reward ppl here?
         if (
-            !((_ethdkgPhase == Phase.DisputeGPKJSubmission &&
-                block.number >= _phaseStartBlock + _phaseLength) &&
-                block.number < _phaseStartBlock + 2 * _phaseLength)
+            _ethdkgPhase != Phase.DisputeGPKJSubmission ||
+            block.number < _phaseStartBlock + _phaseLength ||
+            block.number >= _phaseStartBlock + 2 * _phaseLength
         ) {
             revert ETHDKGErrors.ETHDKGNotInPostGPKJDisputePhase(_ethdkgPhase);
         }

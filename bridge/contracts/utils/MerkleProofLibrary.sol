@@ -44,7 +44,7 @@ library MerkleProofLibrary {
         bytes32 value,
         uint16 proofHeight
     ) internal pure returns (bytes32) {
-        if (!(proofHeight <= 256 && proofHeight >= 0)) {
+        if (proofHeight > 256) {
             revert MerkleProofLibraryErrors.InvalidProofHeight(proofHeight);
         }
 
@@ -146,7 +146,7 @@ library MerkleProofLibrary {
         );
 
         uint16 proofIdx = 0;
-        if (!(proofHeight <= 256 && proofHeight >= 0)) {
+        if (proofHeight > 256) {
             revert MerkleProofLibraryErrors.InvalidProofHeight(proofHeight);
         }
         for (uint256 i = 0; i < proofHeight; i++) {

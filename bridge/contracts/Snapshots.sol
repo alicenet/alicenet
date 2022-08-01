@@ -160,7 +160,7 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
             if (_epoch != 0) {
                 revert SnapshotsErrors.MigrationNotAllowedAtCurrentEpoch();
             }
-            if (!(groupSignature_.length == bClaims_.length && groupSignature_.length >= 1)) {
+            if (groupSignature_.length != bClaims_.length || groupSignature_.length == 0) {
                 revert SnapshotsErrors.MigrationInputDataMismatch(
                     groupSignature_.length,
                     bClaims_.length

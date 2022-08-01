@@ -17,9 +17,9 @@ contract ETHDKGAccusations is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
 
     function accuseParticipantNotRegistered(address[] memory dishonestAddresses) external {
         if (
-            !(_ethdkgPhase == Phase.RegistrationOpen &&
-                ((block.number >= _phaseStartBlock + _phaseLength) &&
-                    (block.number < _phaseStartBlock + 2 * _phaseLength)))
+            _ethdkgPhase != Phase.RegistrationOpen ||
+            block.number < _phaseStartBlock + _phaseLength ||
+            block.number >= _phaseStartBlock + 2 * _phaseLength
         ) {
             revert ETHDKGErrors.ETHDKGNotInPostRegistrationAccusationPhase(_ethdkgPhase);
         }
@@ -47,9 +47,9 @@ contract ETHDKGAccusations is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
 
     function accuseParticipantDidNotDistributeShares(address[] memory dishonestAddresses) external {
         if (
-            !(_ethdkgPhase == Phase.ShareDistribution &&
-                ((block.number >= _phaseStartBlock + _phaseLength) &&
-                    (block.number < _phaseStartBlock + 2 * _phaseLength)))
+            _ethdkgPhase != Phase.ShareDistribution ||
+            block.number < _phaseStartBlock + _phaseLength ||
+            block.number >= _phaseStartBlock + 2 * _phaseLength
         ) {
             revert ETHDKGErrors.NotInPostSharedDistributionPhase(_ethdkgPhase);
         }
@@ -74,8 +74,8 @@ contract ETHDKGAccusations is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
                 revert ETHDKGErrors.AccusedDistributedSharesInRound(dishonestAddresses[i]);
             }
             if (
-                !(dishonestParticipant.commitmentsFirstCoefficient[0] == 0 &&
-                    dishonestParticipant.commitmentsFirstCoefficient[1] == 0)
+                dishonestParticipant.commitmentsFirstCoefficient[0] != 0 ||
+                dishonestParticipant.commitmentsFirstCoefficient[1] != 0
             ) {
                 revert ETHDKGErrors.AccusedHasCommitments(dishonestAddresses[i]);
             }
@@ -96,12 +96,12 @@ contract ETHDKGAccusations is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
     ) external {
         // We should allow accusation, even if some of the participants didn't participate
         if (
-            !((_ethdkgPhase == Phase.DisputeShareDistribution &&
+            !(_ethdkgPhase == Phase.DisputeShareDistribution &&
                 block.number >= _phaseStartBlock &&
-                block.number < _phaseStartBlock + _phaseLength) ||
-                (_ethdkgPhase == Phase.ShareDistribution &&
-                    (block.number >= _phaseStartBlock + _phaseLength) &&
-                    (block.number < _phaseStartBlock + 2 * _phaseLength)))
+                block.number < _phaseStartBlock + _phaseLength) &&
+            !(_ethdkgPhase == Phase.ShareDistribution &&
+                block.number >= _phaseStartBlock + _phaseLength &&
+                block.number < _phaseStartBlock + 2 * _phaseLength)
         ) {
             revert ETHDKGErrors.ETHDKGNotInDisputePhase(_ethdkgPhase);
         }
@@ -200,9 +200,9 @@ contract ETHDKGAccusations is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
 
     function accuseParticipantDidNotSubmitKeyShares(address[] memory dishonestAddresses) external {
         if (
-            !(_ethdkgPhase == Phase.KeyShareSubmission &&
-                (block.number >= _phaseStartBlock + _phaseLength &&
-                    block.number < _phaseStartBlock + 2 * _phaseLength))
+            _ethdkgPhase != Phase.KeyShareSubmission ||
+            block.number < _phaseStartBlock + _phaseLength ||
+            block.number >= _phaseStartBlock + 2 * _phaseLength
         ) {
             revert ETHDKGErrors.ETHDKGNotInPostKeyshareSubmissionPhase(_ethdkgPhase);
         }
@@ -237,9 +237,9 @@ contract ETHDKGAccusations is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
 
     function accuseParticipantDidNotSubmitGPKJ(address[] memory dishonestAddresses) external {
         if (
-            !(_ethdkgPhase == Phase.GPKJSubmission &&
-                (block.number >= _phaseStartBlock + _phaseLength &&
-                    block.number < _phaseStartBlock + 2 * _phaseLength))
+            _ethdkgPhase != Phase.GPKJSubmission ||
+            block.number < _phaseStartBlock + _phaseLength ||
+            block.number >= _phaseStartBlock + 2 * _phaseLength
         ) {
             revert ETHDKGErrors.ETHDKGNotInPostGPKJSubmissionPhase(_ethdkgPhase);
         }
@@ -262,10 +262,10 @@ contract ETHDKGAccusations is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
 
             // todo: being paranoic, check if we need this or if it's expensive
             if (
-                !(dishonestParticipant.gpkj[0] == 0 &&
-                    dishonestParticipant.gpkj[1] == 0 &&
-                    dishonestParticipant.gpkj[2] == 0 &&
-                    dishonestParticipant.gpkj[3] == 0)
+                dishonestParticipant.gpkj[0] != 0 ||
+                dishonestParticipant.gpkj[1] != 0 ||
+                dishonestParticipant.gpkj[2] != 0 ||
+                dishonestParticipant.gpkj[3] != 0
             ) {
                 revert ETHDKGErrors.AccusedDistributedGPKJ(dishonestAddresses[i]);
             }
@@ -285,12 +285,12 @@ contract ETHDKGAccusations is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
     ) external {
         // We should allow accusation, even if some of the participants didn't participate
         if (
-            !((_ethdkgPhase == Phase.DisputeGPKJSubmission &&
+            !(_ethdkgPhase == Phase.DisputeGPKJSubmission &&
                 block.number >= _phaseStartBlock &&
-                block.number < _phaseStartBlock + _phaseLength) ||
-                (_ethdkgPhase == Phase.GPKJSubmission &&
-                    (block.number >= _phaseStartBlock + _phaseLength) &&
-                    (block.number < _phaseStartBlock + 2 * _phaseLength)))
+                block.number < _phaseStartBlock + _phaseLength) &&
+            !(_ethdkgPhase == Phase.GPKJSubmission &&
+                block.number >= _phaseStartBlock + _phaseLength &&
+                block.number < _phaseStartBlock + 2 * _phaseLength)
         ) {
             revert ETHDKGErrors.ETHDKGNotInPostGPKJSubmissionPhase(_ethdkgPhase);
         }
@@ -303,13 +303,13 @@ contract ETHDKGAccusations is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
         Participant memory disputer = _participants[msg.sender];
 
         if (
-            !(dishonestParticipant.nonce == _nonce &&
-                dishonestParticipant.phase == Phase.GPKJSubmission)
+            dishonestParticipant.nonce != _nonce ||
+            dishonestParticipant.phase != Phase.GPKJSubmission
         ) {
             revert ETHDKGErrors.AccusedDidNotSubmitGPKJInRound(dishonestAddress);
         }
 
-        if (!(disputer.nonce == _nonce && disputer.phase == Phase.GPKJSubmission)) {
+        if (disputer.nonce != _nonce || disputer.phase != Phase.GPKJSubmission) {
             revert ETHDKGErrors.DisputerDidNotSubmitGPKJInRound(msg.sender);
         }
 
@@ -347,9 +347,9 @@ contract ETHDKGAccusations is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
                 bytes32 commitmentsHash = keccak256(abi.encodePacked(commitments[k]));
                 Participant memory participant = _participants[validators[k]];
                 if (
-                    !(participant.nonce == nonce &&
-                        participant.index <= type(uint8).max &&
-                        !_isBitSet(bitMap, uint8(participant.index)))
+                    participant.nonce != nonce ||
+                    participant.index > type(uint8).max ||
+                    _isBitSet(bitMap, uint8(participant.index))
                 ) {
                     revert ETHDKGErrors.InvalidOrDuplicatedParticipant(validators[k]);
                 }

@@ -44,7 +44,7 @@ library MerkleProofParserLibrary {
         }
         mProof.included = BaseParserLibrary.extractBool(src, 0);
         mProof.keyHeight = BaseParserLibrary.extractUInt16FromBigEndian(src, 1);
-        if (!(mProof.keyHeight >= 0 && mProof.keyHeight <= 256)) {
+        if (mProof.keyHeight > 256) {
             revert MerkleProofParserLibraryErrors.InvalidKeyHeight(mProof.keyHeight);
         }
         mProof.key = BaseParserLibrary.extractBytes32(src, 3);

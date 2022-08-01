@@ -232,8 +232,8 @@ contract ETHDKG is
         }
 
         if (
-            !(validatorsAccounts_.length == validatorIndexes_.length &&
-                validatorsAccounts_.length == validatorShares_.length)
+            validatorsAccounts_.length != validatorIndexes_.length ||
+            validatorsAccounts_.length != validatorShares_.length
         ) {
             revert ETHDKGErrors.MigrationInputDataMismatch(
                 validatorsAccounts_.length,

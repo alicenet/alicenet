@@ -488,7 +488,7 @@ abstract contract StakingNFT is
         // collect state
         Position memory p = _positions[tokenID_];
         // enforce freeAfter to prevent burn during lock
-        if (!(p.freeAfter < block.number && p.withdrawFreeAfter < block.number)) {
+        if (p.freeAfter >= block.number || p.withdrawFreeAfter >= block.number) {
             revert StakingNFTErrors.FreeAfterTimeNotReached();
         }
 
