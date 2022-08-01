@@ -29,7 +29,7 @@ func TestGPKjSubmission_Group_1_GoodAllValid(t *testing.T) {
 	var receiptResponses []transaction.ReceiptResponse
 	for idx := 0; idx < n; idx++ {
 		gpkjSubmissionTask := suite.GpkjSubmissionTasks[idx]
-		err := gpkjSubmissionTask.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "GpkjSubmissionTask", "tak-id", nil)
+		err := gpkjSubmissionTask.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "GpkjSubmissionTask", "tak-id", gpkjSubmissionTask.Start, gpkjSubmissionTask.End, false, nil, nil)
 		assert.Nil(t, err)
 		err = gpkjSubmissionTask.Prepare(ctx)
 		assert.Nil(t, err)
@@ -76,7 +76,7 @@ func TestGPKjSubmission_Group_1_Bad1(t *testing.T) {
 	dkgState, err := state.GetDkgState(suite.DKGStatesDbs[0])
 	assert.Nil(t, err)
 	task := suite.GpkjSubmissionTasks[0]
-	err = task.Initialize(ctx, nil, suite.DKGStatesDbs[0], fixture.Logger, suite.Eth, fixture.Contracts, "GpkjSubmissionTask", "task-id", nil)
+	err = task.Initialize(ctx, nil, suite.DKGStatesDbs[0], fixture.Logger, suite.Eth, fixture.Contracts, "GpkjSubmissionTask", "task-id", task.Start, task.End, false, nil, nil)
 	assert.Nil(t, err)
 
 	err = task.Prepare(ctx)
@@ -99,7 +99,7 @@ func TestGPKjSubmission_Group_1_Bad2(t *testing.T) {
 	db := mocks.NewTestDB()
 	log := logging.GetLogger("test").WithField("test", "test")
 
-	err := task.Initialize(context.Background(), nil, db, log, nil, nil, "", "", nil)
+	err := task.Initialize(context.Background(), nil, db, log, nil, nil, "", "", task.Start, task.End, false, nil, nil)
 	assert.Nil(t, err)
 
 	taskErr := task.Prepare(context.Background())
@@ -122,7 +122,7 @@ func TestGPKjSubmission_Group_1_Bad3(t *testing.T) {
 	assert.Nil(t, err)
 
 	task := suite.GpkjSubmissionTasks[0]
-	err = task.Initialize(ctx, nil, suite.DKGStatesDbs[0], fixture.Logger, suite.Eth, fixture.Contracts, "GpkjSubmissionTask", "task-id", nil)
+	err = task.Initialize(ctx, nil, suite.DKGStatesDbs[0], fixture.Logger, suite.Eth, fixture.Contracts, "GpkjSubmissionTask", "task-id", task.Start, task.End, false, nil, nil)
 	assert.Nil(t, err)
 
 	taskErr := task.Prepare(ctx)
@@ -156,7 +156,7 @@ func TestGPKjSubmission_Group_2_Bad4(t *testing.T) {
 	tasksVec := suite.GpkjSubmissionTasks
 	for idx := 0; idx < n; idx++ {
 		gpkjSubmissionTask := suite.GpkjSubmissionTasks[idx]
-		err := gpkjSubmissionTask.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "GpkjSubmissionTask", "tak-id", nil)
+		err := gpkjSubmissionTask.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "GpkjSubmissionTask", "tak-id", gpkjSubmissionTask.Start, gpkjSubmissionTask.End, false, nil, nil)
 		assert.Nil(t, err)
 		err = gpkjSubmissionTask.Prepare(ctx)
 		assert.Nil(t, err)

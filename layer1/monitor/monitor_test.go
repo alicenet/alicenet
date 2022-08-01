@@ -109,6 +109,7 @@ func getMonitor(t *testing.T) (*monitor, executor.TaskHandler, *mocks.MockClient
 	t.Cleanup(func() {
 		mon.Close()
 		tasksHandler.Close()
+		monDB.DB().Close()
 	})
 
 	return mon, tasksHandler, eth, account
@@ -175,7 +176,6 @@ func TestProcessEvents(t *testing.T) {
 			assert.Equal(t, ethdkgState.RegistrationOpen, dkgState.Phase)
 			break
 		}
-
 		<-time.After(100 * time.Millisecond)
 	}
 }
@@ -185,7 +185,6 @@ func TestPersistSnapshot(t *testing.T) {
 	eth.GetFinalizedHeightFunc.SetDefaultReturn(1, nil)
 
 	taskHandler.Start()
-
 	height := 10
 	bh := &objs.BlockHeader{
 		BClaims: &objs.BClaims{
@@ -200,7 +199,7 @@ func TestPersistSnapshot(t *testing.T) {
 		TxHshLst: [][]byte{},
 		SigGroup: make([]byte, 192),
 	}
-	err := PersistSnapshot(eth, bh, taskHandler, mon.db)
+	err := PersistSnapshot(eth, bh, 10, 1, taskHandler, mon.db)
 
 	state, err := snapshotState.GetSnapshotState(mon.db)
 	assert.Nil(t, err)

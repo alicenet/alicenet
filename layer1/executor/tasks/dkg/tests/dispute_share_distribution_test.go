@@ -35,7 +35,7 @@ func TestDisputeShareDistributionTask_Group_1_OneValidatorSubmittingInvalidCrede
 		for j := 0; j < n; j++ {
 			task := suite.DisputeShareDistTasks[idx][j]
 
-			err := task.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "DisputeShareDistributionTask", "task-id", nil)
+			err := task.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "DisputeShareDistributionTask", "task-id", task.Start, task.End, false, nil, nil)
 			assert.Nil(t, err)
 
 			err = task.Prepare(ctx)
@@ -104,7 +104,7 @@ func TestDisputeShareDistributionTask_Group_1_Bad2(t *testing.T) {
 	db := mocks.NewTestDB()
 	log := logging.GetLogger("test").WithField("test", "test")
 
-	err := task.Initialize(context.Background(), nil, db, log, nil, nil, "", "", nil)
+	err := task.Initialize(context.Background(), nil, db, log, nil, nil, "", "", task.Start, task.End, false, nil, nil)
 	assert.Nil(t, err)
 
 	taskErr := task.Prepare(context.Background())
@@ -130,7 +130,7 @@ func TestDisputeShareDistributionTask_Group_1_TwoValidatorSubmittingInvalidCrede
 		for j := 0; j < n; j++ {
 			task := suite.DisputeShareDistTasks[idx][j]
 
-			err := task.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "DisputeShareDistributionTask", "task-id", nil)
+			err := task.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "DisputeShareDistributionTask", "task-id", task.Start, task.End, false, nil, nil)
 			assert.Nil(t, err)
 
 			err = task.Prepare(ctx)
@@ -207,7 +207,7 @@ func TestDisputeShareDistributionTask_Group_1_AllValidatorSubmittingInvalidCrede
 		for j := 0; j < n; j++ {
 			task := suite.DisputeShareDistTasks[idx][j]
 
-			err := task.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "DisputeShareDistributionTask", "task-id", nil)
+			err := task.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "DisputeShareDistributionTask", "task-id", task.Start, task.End, false, nil, nil)
 			assert.Nil(t, err)
 
 			err = task.Prepare(ctx)

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"github.com/alicenet/alicenet/layer1/executor/marshaller"
 	"github.com/alicenet/alicenet/layer1/executor/tasks"
+	"github.com/alicenet/alicenet/layer1/transaction"
 	"sync"
 )
 
@@ -17,7 +18,7 @@ import (
 type TaskAction int
 
 // The possible actions that the scheduler can do with a task during a request:
-// * KillByType          - To kill/prune a task by type immediately
+// * KillByType          - To kill/prune all the tasks with the same type immediately
 // * KillById            - To kill/prune a task by id immediately
 // * Schedule            - To schedule a new task
 const (
@@ -34,18 +35,18 @@ func (action TaskAction) String() string {
 	}[action]
 }
 
-// HandlerResponse returned from the Handler to the external clients
+// HandlerResponse returned from the Handler to the external clients.
 type HandlerResponse struct {
-	doneChan chan struct{}
-	err      error // error in case the task failed
+	doneChan chan struct{} `json:"-"`
+	err      error         `json:"-"`
 }
 
-// newHandlerResponse creates HandlerResponse
+// newHandlerResponse creates HandlerResponse.
 func newHandlerResponse() *HandlerResponse {
 	return &HandlerResponse{doneChan: make(chan struct{})}
 }
 
-// IsReady function to check if the response from the task is ready to share with Handler client
+// IsReady to check if the response from the task is ready to share with Handler client.
 func (r *HandlerResponse) IsReady() bool {
 	select {
 	case <-r.doneChan:
@@ -66,7 +67,7 @@ func (r *HandlerResponse) GetResponseBlocking(ctx context.Context) error {
 	}
 }
 
-// writeResponse function to write the response or error from the task request being executed
+// writeResponse function to write the response or error from the task request being executed.
 func (r *HandlerResponse) writeResponse(err error) {
 	if !r.IsReady() {
 		r.err = err
@@ -78,7 +79,7 @@ func (r *HandlerResponse) writeResponse(err error) {
 //     Internal models: used for the communication between the Handler and the Manager      //
 //////////////////////////////////////////////////////////////////////////////////////////////
 
-// InternalTaskState is an enumeration indicating the possible states of a task
+// InternalTaskState is an enumeration indicating the possible states of a task.
 type InternalTaskState int
 
 const (
@@ -95,7 +96,7 @@ func (state InternalTaskState) String() string {
 	}[state]
 }
 
-// managerRequest used to make a request from Handler to TaskManager for scheduling or killing a task
+// managerRequest used to make a request from Handler to TaskManager for scheduling or killing a task.
 type managerRequest struct {
 	task     tasks.Task
 	id       string
@@ -103,13 +104,15 @@ type managerRequest struct {
 	response *ManagerResponseChannel
 }
 
-// BaseRequest information needed to start managing a task request
+// BaseRequest information needed to start managing a task request.
 type BaseRequest struct {
-	Id            string            `json:"id"`
-	Name          string            `json:"name"`
-	Start         uint64            `json:"start"`
-	End           uint64            `json:"end"`
-	InternalState InternalTaskState `json:"internalState"`
+	Id                  string                        `json:"id"`
+	Name                string                        `json:"name"`
+	Start               uint64                        `json:"start"`
+	End                 uint64                        `json:"end"`
+	AllowMultiExecution bool                          `json:"allowMultiExecution"`
+	SubscribeOptions    *transaction.SubscribeOptions `json:"subscribeOptions"`
+	InternalState       InternalTaskState             `json:"internalState"`
 }
 
 // ManagerRequestInfo used for controlling, recovering and managing a task request.
@@ -121,35 +124,44 @@ type ManagerRequestInfo struct {
 	killedAt uint64
 }
 
-// ManagerResponseInfo used to cache the responses
+// ManagerResponseInfo used to cache the responses from the TaskExecutor and to the Handler.
 type ManagerResponseInfo struct {
-	ExecutorResponse ExecutorResponse `json:"executor_response"`
-	HandlerResponse  *HandlerResponse `json:"-"`
-	ReceivedOnBlock  uint64           `json:"received_on_block"`
+	ExecutorResponse
+	HandlerResponse *HandlerResponse `json:"-"`
+	ReceivedOnBlock uint64           `json:"receivedOnBlock"`
 }
 
-// requestStored with an internal wrapper for the task interface
+// requestStored with an internal wrapper for the task interface cor recovery.
 type requestStored struct {
 	BaseRequest
 	WrappedTask *marshaller.InstanceWrapper `json:"wrappedTask"`
+	killedAt    uint64                      `json:"killedAt"`
 }
 
-// innerSequentialSchedule used to store requestStored for recovery
-type innerSequentialSchedule struct {
-	Schedule map[string]*requestStored
+// responseStored for recovery.
+type responseStored struct {
+	ErrMsg          string `json:"errMsg"`
+	ReceivedOnBlock uint64 `json:"receivedOnBlock"`
 }
 
-// managerResponse is used to communicate the task response from TaskManager to Handler
+// taskManagerBackup used to store requestStored and responseStored for recovery.
+type taskManagerBackup struct {
+	Schedule       map[string]requestStored
+	Responses      map[string]responseStored
+	LastHeightSeen uint64 `json:"lastHeightSeen"`
+}
+
+// managerResponse is used to communicate the Task response from TaskManager to Handler.
 type managerResponse struct {
 	HandlerResponse *HandlerResponse
 	Err             error
 }
 
 // ManagerResponseChannel is a non-blocking channel that can only be written and closed once.
-// It's used for communication between TaskManager and Handler
+// It's used for communication between TaskManager and Handler.
 type ManagerResponseChannel struct {
 	writeOnce sync.Once
-	channel   chan *managerResponse // internal channel
+	channel   chan *managerResponse
 }
 
 // NewManagerResponseChannel creates ManagerResponseChannel.
@@ -158,7 +170,7 @@ func NewManagerResponseChannel() *ManagerResponseChannel {
 }
 
 // sendResponse and closes the internal ManagerResponseChannel.
-//Additional calls to this function will be no-op
+// Additional calls to this function will be no-op.
 func (rc *ManagerResponseChannel) sendResponse(response *managerResponse) {
 	rc.writeOnce.Do(func() {
 		rc.channel <- response
@@ -166,7 +178,7 @@ func (rc *ManagerResponseChannel) sendResponse(response *managerResponse) {
 	})
 }
 
-// listen until the response is received
+// listen until the response is received.
 func (rc *ManagerResponseChannel) listen(ctx context.Context) (*HandlerResponse, error) {
 	// wait for request to be processed
 	select {
@@ -181,30 +193,35 @@ func (rc *ManagerResponseChannel) listen(ctx context.Context) (*HandlerResponse,
 //     Internal models: used for the communication between the Manager and the Executor     //
 //////////////////////////////////////////////////////////////////////////////////////////////
 
-// ExecutorResponse used inside executorResponseChan to store the task execution result
+// ExecutorResponse used inside executorResponseChan to store the task execution result.
 type ExecutorResponse struct {
 	Id  string `json:"id"`
-	Err error  `json:"error"`
+	Err error  `json:"err"`
 }
 
 // executorResponseChan is used to communicate the task execution result from TaskExecutor to
 // TaskManager. It can only be written and closed once.
 type executorResponseChan struct {
-	writeOnce sync.Once
-	erChan    chan ExecutorResponse
-	isClosed  bool
+	//writeOnce sync.Once
+	sync.Mutex
+	erChan   chan ExecutorResponse
+	isClosed bool
 }
 
-// close executorResponseChan internal erChan
+// close executorResponseChan internal erChan.
 func (tr *executorResponseChan) close() {
-	tr.writeOnce.Do(func() {
+	tr.Lock()
+	defer tr.Unlock()
+	if !tr.isClosed {
 		tr.isClosed = true
 		close(tr.erChan)
-	})
+	}
 }
 
-// Add ExecutorResponse to internal erChan
+// Add ExecutorResponse to internal erChan.
 func (tr *executorResponseChan) Add(id string, err error) {
+	tr.Lock()
+	defer tr.Unlock()
 	if !tr.isClosed {
 		tr.erChan <- ExecutorResponse{Id: id, Err: err}
 	}
@@ -220,4 +237,5 @@ var (
 	ErrTaskIsNil                      = errors.New("the task in the request is nil")
 	ErrTaskTypeNotInRegistry          = errors.New("the task type is not in registry")
 	ErrTaskIdEmpty                    = errors.New("the task id is empty")
+	ErrTaskKilledBeforeExecution      = errors.New("the task killed by request before execution")
 )

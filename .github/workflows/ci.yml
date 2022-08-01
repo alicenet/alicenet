@@ -99,7 +99,6 @@ jobs:
   go-lint:
     runs-on: ubuntu-20.04
     timeout-minutes: 10
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v3
       - uses: golangci/golangci-lint-action@v3
@@ -165,4 +164,8 @@ jobs:
         run: |
           set -euo pipefail
           ./scripts/main.sh init 5
-          go test -tags=integration -race -json -timeout=30m ${{ matrix.test-cmd }} 2>&1 | tee /tmp/gotest.log | gotestfmt
+          go test -tags=integration -race -json -covermode=atomic -coverpkg ./... -coverprofile=coverage.out -timeout=30m ${{ matrix.test-cmd }} 2>&1 | tee /tmp/gotest.log | gotestfmt
+      - uses: codecov/codecov-action@v3
+        with:
+          files: ./coverage.out
+          verbose: true
