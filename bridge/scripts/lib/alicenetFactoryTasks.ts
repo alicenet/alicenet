@@ -311,7 +311,7 @@ task(
     const factory = factoryBase.attach(taskArgs.factoryAddress);
     const logicFactory = await hre.ethers.getContractFactory(
       taskArgs.contractName
-    );
+    ) as ContractFactory;
     const initArgs =
       taskArgs.initCallData === undefined
         ? []

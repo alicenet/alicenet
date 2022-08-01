@@ -68,13 +68,9 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
             block.number >= lastSnapshot.committedAt + _minimumIntervalBetweenSnapshots,
             string(abi.encodePacked(SnapshotsErrorCodes.SNAPSHOT_MIN_BLOCKS_INTERVAL_NOT_PASSED))
         );
-        Epoch storage epochReg = _epochReg();
-        uint32 epoch;
-        if (epochReg.isZero()) {
-            epoch = epochReg.get();
-        } else {
-            epoch = epochReg.get() + 1;
-        }
+        
+        uint32 epoch = _epochRegister().get() + 1;
+        
 
         // // TODO: BRING BACK AFTER GOLANG LOGIC IS DEBUGGED AND MERGED
         // {
@@ -141,7 +137,7 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
         }
 
         _setSnapshot(Snapshot(block.number, blockClaims));
-        epochReg.set(epoch);
+        _epochRegister().set(epoch);
 
         emit SnapshotTaken(
             _chainId,
@@ -164,10 +160,10 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
         onlyFactory
         returns (bool)
     {
-        Epoch storage epochReg = _epochReg();
+        Epoch storage epochReg = _epochRegister();
         {
             require(
-                epochReg.isZero(),
+                epochReg.get() == 0,
                 string(abi.encodePacked(SnapshotsErrorCodes.SNAPSHOT_MIGRATION_NOT_ALLOWED))
             );
             require(

@@ -55,10 +55,12 @@ library RingBuffer {
         view
         returns (uint256)
     {
-        require(epoch_ > 0);
+        require(epoch_ > 0, "epoch too low");
         return epoch_ % self_._array.length;
     }
 }
+
+
 
 library EpochLib {
     function set(Epoch storage self_, uint32 value_) internal {
@@ -66,20 +68,9 @@ library EpochLib {
     }
 
     function get(Epoch storage self_) internal view returns (uint32) {
-        return _max(1, self_._value);
+        return  self_._value;
     }
 
-    //TODO determine if useful
-    function isZero(Epoch storage self_) internal view returns (bool) {
-        return self_._value == 0;
-    }
-
-    function _max(uint32 a, uint32 b) internal pure returns (uint32) {
-        if (a > b) {
-            return a;
-        }
-        return b;
-    }
 }
 
 abstract contract SnapshotRingBuffer {
@@ -93,7 +84,7 @@ abstract contract SnapshotRingBuffer {
     function _getSnapshots() internal view virtual returns (SnapshotBuffer storage);
 
     // Must be defined in storage contract
-    function _epochReg() internal view virtual returns (Epoch storage);
+    function _epochRegister() internal view virtual returns (Epoch storage);
 
     /**
      * @notice Assigns the snapshot to correct index and updates __epoch
@@ -102,7 +93,7 @@ abstract contract SnapshotRingBuffer {
      */
     function _setSnapshot(Snapshot memory snapshot_) internal returns (uint32) {
         uint32 epoch = _getSnapshots().set(_getEpochFromHeight, snapshot_);
-        _epochReg().set(epoch);
+        _epochRegister().set(epoch);
         return epoch;
     }
 
@@ -125,6 +116,6 @@ abstract contract SnapshotRingBuffer {
      * @return ok if the struct is valid and the snapshot struct itself
      */
     function _getLatestSnapshot() internal view returns (bool ok, Snapshot memory snapshot) {
-        return _getSnapshot(_epochReg().get());
+        return _getSnapshot(_epochRegister().get());
     }
 }
