@@ -5,7 +5,8 @@ import (
 	"github.com/alicenet/alicenet/layer1/executor/tasks"
 )
 
-// TaskHandler interface requirements
+// TaskHandler to be implemented by the Handler that receives requests to schedule or
+// kill a Task.
 type TaskHandler interface {
 	ScheduleTask(ctx context.Context, task tasks.Task, id string) (*HandlerResponse, error)
 	KillTaskByType(ctx context.Context, task tasks.Task) (*HandlerResponse, error)
@@ -14,7 +15,8 @@ type TaskHandler interface {
 	Close()
 }
 
-// TaskResponse interface requirements for the shared response
+// TaskResponse to be implemented by a response structure that will be returned to the
+// TaskHandler client.
 type TaskResponse interface {
 	IsReady() bool
 	GetResponseBlocking(ctx context.Context) error

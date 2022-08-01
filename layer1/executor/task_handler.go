@@ -22,6 +22,7 @@ type Handler struct {
 	requestChannel   chan managerRequest
 }
 
+// NewTaskHandler creates a new Handler instance.
 func NewTaskHandler(database *db.Database, eth layer1.Client, contracts layer1.AllSmartContracts, adminHandler monitorInterfaces.AdminHandler, txWatcher transaction.Watcher) (TaskHandler, error) {
 	// main context that will cancel all workers and go routines
 	mainCtx, cf := context.WithCancel(context.Background())
@@ -46,20 +47,21 @@ func NewTaskHandler(database *db.Database, eth layer1.Client, contracts layer1.A
 	return handler, nil
 }
 
+// Start the Handler and the subsequent pieces such as TaskManager.
 func (i *Handler) Start() {
 	i.logger.Info("Starting task handler")
 	i.manager.start()
 }
 
+// Close the Handler and the subsequent pieces such as TaskManager.
 func (i *Handler) Close() {
-	//TODO: rollback the closing function
 	i.logger.Warn("Closing task handler")
 	i.manager.close()
 	i.closeMainContext()
 	close(i.requestChannel)
 }
 
-// ScheduleTask sends the task to the backend
+// ScheduleTask sends the Schedule Task request to the TaskManager.
 func (i *Handler) ScheduleTask(ctx context.Context, task tasks.Task, id string) (*HandlerResponse, error) {
 	// In case the id field is not specified, create it
 	if id == "" {
@@ -73,6 +75,7 @@ func (i *Handler) ScheduleTask(ctx context.Context, task tasks.Task, id string) 
 	return req.response.listen(ctx)
 }
 
+// KillTaskByType sends the KillByType Task request to the TaskManager.
 func (i *Handler) KillTaskByType(ctx context.Context, taskType tasks.Task) (*HandlerResponse, error) {
 	req := managerRequest{task: taskType, action: KillByType, response: NewManagerResponseChannel()}
 	err := i.waitForRequestProcessing(ctx, req)
@@ -82,6 +85,7 @@ func (i *Handler) KillTaskByType(ctx context.Context, taskType tasks.Task) (*Han
 	return req.response.listen(ctx)
 }
 
+// KillTaskById sends the KillById Task request to the TaskManager.
 func (i *Handler) KillTaskById(ctx context.Context, id string) (*HandlerResponse, error) {
 	req := managerRequest{id: id, action: KillById, response: NewManagerResponseChannel()}
 	err := i.waitForRequestProcessing(ctx, req)
@@ -91,6 +95,7 @@ func (i *Handler) KillTaskById(ctx context.Context, id string) (*HandlerResponse
 	return req.response.listen(ctx)
 }
 
+//waitForRequestProcessing or context deadline.
 func (i *Handler) waitForRequestProcessing(ctx context.Context, req managerRequest) error {
 	// wait for request to be accepted
 	select {

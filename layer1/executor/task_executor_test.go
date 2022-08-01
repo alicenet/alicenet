@@ -77,7 +77,7 @@ func Test_TaskExecutor_HappyPath(t *testing.T) {
 	task.GetLoggerFunc.SetDefaultReturn(executor.logger)
 
 	mainCtx := context.Background()
-	executor.handleTaskExecution(mainCtx, task, "", "123", db, executor.logger, client, mocks.NewMockAllSmartContracts(), taskRespChan)
+	executor.handleTaskExecution(mainCtx, task, "", "123", 1, 10, false, nil, db, executor.logger, client, mocks.NewMockAllSmartContracts(), taskRespChan)
 
 	mockrequire.CalledOnce(t, task.PrepareFunc)
 	mockrequire.CalledOnce(t, task.ExecuteFunc)
@@ -118,7 +118,7 @@ func Test_TaskExecutor_TaskErrorRecoverable(t *testing.T) {
 	task.GetLoggerFunc.SetDefaultReturn(executor.logger)
 
 	mainCtx := context.Background()
-	executor.handleTaskExecution(mainCtx, task, "", "123", db, executor.logger, client, mocks.NewMockAllSmartContracts(), taskRespChan)
+	executor.handleTaskExecution(mainCtx, task, "", "123", 1, 10, false, nil, db, executor.logger, client, mocks.NewMockAllSmartContracts(), taskRespChan)
 
 	mockrequire.CalledN(t, task.PrepareFunc, 2)
 	mockrequire.CalledOnce(t, task.ExecuteFunc)
@@ -148,7 +148,7 @@ func Test_TaskExecutor_UnrecoverableError(t *testing.T) {
 
 	task.PrepareFunc.SetDefaultReturn(taskErr)
 	mainCtx := context.Background()
-	executor.handleTaskExecution(mainCtx, task, "", "123", db, executor.logger, client, mocks.NewMockAllSmartContracts(), taskRespChan)
+	executor.handleTaskExecution(mainCtx, task, "", "123", 1, 10, false, nil, db, executor.logger, client, mocks.NewMockAllSmartContracts(), taskRespChan)
 
 	mockrequire.CalledOnce(t, task.PrepareFunc)
 	mockrequire.NotCalled(t, task.ExecuteFunc)
@@ -189,7 +189,7 @@ func Test_TaskExecutor_TaskInTasksExecutorTransactions(t *testing.T) {
 
 	mainCtx := context.Background()
 	executor.TxsBackup[task.GetId()] = txn
-	executor.handleTaskExecution(mainCtx, task, "", taskId, db, executor.logger, client, mocks.NewMockAllSmartContracts(), taskRespChan)
+	executor.handleTaskExecution(mainCtx, task, "", taskId, 1, 10, false, nil, db, executor.logger, client, mocks.NewMockAllSmartContracts(), taskRespChan)
 
 	mockrequire.NotCalled(t, task.PrepareFunc)
 	mockrequire.NotCalled(t, task.ExecuteFunc)
@@ -222,7 +222,7 @@ func Test_TaskExecutor_ExecuteWithErrors(t *testing.T) {
 	task.GetLoggerFunc.SetDefaultReturn(executor.logger)
 
 	mainCtx := context.Background()
-	executor.handleTaskExecution(mainCtx, task, "", "123", db, executor.logger, client, mocks.NewMockAllSmartContracts(), taskRespChan)
+	executor.handleTaskExecution(mainCtx, task, "", "123", 1, 10, false, nil, db, executor.logger, client, mocks.NewMockAllSmartContracts(), taskRespChan)
 
 	mockrequire.CalledOnce(t, task.PrepareFunc)
 	mockrequire.CalledN(t, task.ExecuteFunc, 2)
@@ -272,7 +272,7 @@ func Test_TaskExecutor_ReceiptWithErrorAndFailure(t *testing.T) {
 	task.ShouldExecuteFunc.PushReturn(false, nil)
 
 	mainCtx := context.Background()
-	executor.handleTaskExecution(mainCtx, task, "", "123", db, executor.logger, client, mocks.NewMockAllSmartContracts(), taskRespChan)
+	executor.handleTaskExecution(mainCtx, task, "", "123", 1, 10, false, nil, db, executor.logger, client, mocks.NewMockAllSmartContracts(), taskRespChan)
 
 	mockrequire.CalledOnce(t, task.PrepareFunc)
 	mockrequire.CalledN(t, task.ExecuteFunc, 3)
@@ -353,12 +353,12 @@ func Test_TaskExecutor_Recovering(t *testing.T) {
 	task.GetLoggerFunc.SetDefaultReturn(executor.logger)
 
 	mainCtx := context.Background()
-	executor.handleTaskExecution(mainCtx, task, "", "123", db, executor.logger, client, mocks.NewMockAllSmartContracts(), taskRespChan)
+	executor.handleTaskExecution(mainCtx, task, "", "123", 1, 10, false, nil, db, executor.logger, client, mocks.NewMockAllSmartContracts(), taskRespChan)
 
 	assert.Equalf(t, 1, len(executor.TxsBackup), "Expected one transaction (stale status)")
 	executor, err = newTaskExecutor(txWatcher, db, logger.WithField("Component", "schedule"))
 	assert.Nil(t, err)
-	executor.handleTaskExecution(mainCtx, task, "", "123", db, executor.logger, client, mocks.NewMockAllSmartContracts(), taskRespChan)
+	executor.handleTaskExecution(mainCtx, task, "", "123", 1, 10, false, nil, db, executor.logger, client, mocks.NewMockAllSmartContracts(), taskRespChan)
 
 	mockrequire.CalledOnce(t, task.PrepareFunc)
 	mockrequire.CalledOnce(t, task.ExecuteFunc)
