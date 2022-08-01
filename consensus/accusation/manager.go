@@ -68,6 +68,7 @@ type Manager struct {
 // NewManager creates a new *Manager
 func NewManager(database *db.Database, sstore *lstate.Store, taskHandler executor.TaskHandler, logger *logrus.Logger) *Manager {
 	detectors := make([]detector, 0)
+	detectors = append(detectors, detectMultipleProposal)
 
 	m := &Manager{}
 	m.detectionPipeline = detectors

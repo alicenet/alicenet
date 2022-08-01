@@ -18,12 +18,16 @@ import (
 
 func detectMultipleProposal(rs *objs.RoundState, lrs *lstate.RoundStates, db *db.Database) (tasks.Task, bool) {
 
+	logger := logging.GetLogger("accusations")
+
 	// rs.Proposal and rs.ConflictingProposal should both not be nil
 	if rs.Proposal == nil || rs.ConflictingProposal == nil {
+		logger.Debug("false: rs.Proposal or rs.ConflictingProposal is nil")
 		return nil, false
 	}
 
 	if !bytes.Equal(rs.Proposal.Proposer, rs.ConflictingProposal.Proposer) {
+		logger.Debug("false: rs.Proposal.Proposer != rs.ConflictingProposal.Proposer")
 		return nil, false
 	}
 
@@ -37,18 +41,29 @@ func detectMultipleProposal(rs *objs.RoundState, lrs *lstate.RoundStates, db *db
 	}
 
 	if bytes.Equal(proposalPClaimsBin, conflictingProposalPClaimsBin) {
+		logger.Debug("false: rs.Proposal.PClaims == rs.ConflictingProposal.PClaims")
 		// we don't have multiple proposals, we can jump ship
 		return nil, false
 	}
 
 	// make sure proposer is a validator
+	for i, v := range lrs.ValidatorSet.Validators {
+		logger.Debugf("validator %v: 0x%x", i, v.VAddr)
+	}
+
 	isValidator := lrs.ValidatorSet.IsVAddrValidator(rs.Proposal.Proposer)
 	if !isValidator {
+		logger.WithFields(logrus.Fields{
+			"rs.Proposal.Proposer":            fmt.Sprintf("0x%x", rs.Proposal.Proposer),
+			"rs.ConflictingProposal.Proposer": fmt.Sprintf("0x%x", rs.ConflictingProposal.Proposer),
+			//"vSet":                            fmt.Sprintf("%#v", lrs.ValidatorSet),
+		}).Debugf("false: rs.Proposal.Proposer is not a validator")
 		return nil, false
 	}
 
 	// check if the proposal is being proposed by the correct validator
 	if !lrs.IsProposerValid(rs.Proposal.Proposer) {
+		logger.Debug("false: rs.Proposal.Proposer is not the correct validator")
 		return nil, false
 	}
 
@@ -70,16 +85,19 @@ func detectMultipleProposal(rs *objs.RoundState, lrs *lstate.RoundStates, db *db
 
 	// proposals must have same RClaims: PClaim -> rcert -> rclaims
 	if !rs.Proposal.PClaims.RCert.RClaims.Equals(rs.ConflictingProposal.PClaims.RCert.RClaims) {
+		logger.Debug("false: rs.Proposal.PClaims.RCert.RClaims != rs.ConflictingProposal.PClaims.RCert.RClaims")
 		return nil, false
 	}
 
 	// if signatures are different it means multiple proposals were sent
 	err = rs.Proposal.ValidateSignatures(&crypto.Secp256k1Validator{}, &crypto.BNGroupValidator{})
 	if err != nil {
+		logger.Debug("false: rs.Proposal.ValidateSignatures failed")
 		return nil, false
 	}
 	err = rs.ConflictingProposal.ValidateSignatures(&crypto.Secp256k1Validator{}, &crypto.BNGroupValidator{})
 	if err != nil {
+		logger.Debug("false: rs.ConflictingProposal.ValidateSignatures failed")
 		return nil, false
 	}
 

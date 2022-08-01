@@ -177,9 +177,10 @@ func TestDetectMultipleProposalBehavior(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	// ensure prop.PClaims != prop2.PClaims
-	prop2.PClaims.RCert.SigGroup = crypto.Hasher([]byte("blah"))
-	assert.NotEqual(t, prop.PClaims.RCert.SigGroup, prop2.PClaims.RCert.SigGroup)
+	// cause a multiple proposal by making prop.PClaims != prop2.PClaims
+	prop2.PClaims.BClaims.PrevBlock = crypto.Hasher([]byte("blah"))
+	assert.NotEqual(t, prop.PClaims.BClaims.PrevBlock, prop2.PClaims.BClaims.PrevBlock)
+
 	// sign proposal2
 	err = prop2.Sign(secpSigner)
 	if err != nil {
