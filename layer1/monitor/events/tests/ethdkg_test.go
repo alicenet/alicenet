@@ -1,11 +1,12 @@
 package tests
 
 import (
+	"github.com/alicenet/alicenet/layer1/executor"
+	execMocks "github.com/alicenet/alicenet/layer1/executor/mocks"
 	"strings"
 	"testing"
 
 	"github.com/alicenet/alicenet/bridge/bindings"
-	"github.com/alicenet/alicenet/layer1/executor/tasks"
 	"github.com/alicenet/alicenet/layer1/monitor/events"
 	"github.com/alicenet/alicenet/layer1/monitor/interfaces"
 	"github.com/alicenet/alicenet/layer1/monitor/objects"
@@ -19,8 +20,9 @@ func TestRegisteringETHDKGEvents(t *testing.T) {
 	var em *objects.EventMap = objects.NewEventMap()
 	db := mocks.NewTestDB()
 	var adminHandler interfaces.AdminHandler = mocks.NewMockAdminHandler()
+	var taskHandler executor.TaskHandler = execMocks.NewMockTaskHandler()
 
-	events.RegisterETHDKGEvents(em, db, adminHandler, make(chan tasks.TaskRequest, 100))
+	events.RegisterETHDKGEvents(em, db, adminHandler, taskHandler)
 
 	ethDkgABI, err := abi.JSON(strings.NewReader(bindings.ETHDKGMetaData.ABI))
 	if err != nil {

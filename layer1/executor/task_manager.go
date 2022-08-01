@@ -597,7 +597,7 @@ func (tm *TaskManager) MarshalJSON() ([]byte, error) {
 		if err != nil {
 			return []byte{}, err
 		}
-		ws.Schedule[k] = requestStored{BaseRequest: v.BaseRequest, WrappedTask: wt}
+		ws.Schedule[k] = requestStored{BaseRequest: v.BaseRequest, WrappedTask: wt, killedAt: v.killedAt}
 	}
 
 	for k, v := range tm.Responses {
@@ -649,6 +649,7 @@ func (tm *TaskManager) UnmarshalJSON(raw []byte) error {
 		tm.Schedule[k] = ManagerRequestInfo{
 			BaseRequest: v.BaseRequest,
 			Task:        t.(tasks.Task),
+			killedAt:    v.killedAt,
 		}
 	}
 
