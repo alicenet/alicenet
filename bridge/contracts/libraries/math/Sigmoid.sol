@@ -28,7 +28,9 @@ abstract contract Sigmoid {
     }
 
     function _safeAbsSub(uint256 a, uint256 b) internal pure returns (uint256) {
-        return _max(a, b) - _min(a, b);
+        uint256 r = _max(a, b) - _min(a, b);
+        return r;
+        //    return _max(a, b) - _min(a, b);
     }
 
     function _min(uint256 a_, uint256 b_) internal pure returns (uint256) {

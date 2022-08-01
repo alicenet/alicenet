@@ -158,7 +158,7 @@ describe("Testing BToken Minting methods", async () => {
     ).to.be.revertedWith("ERC20: mint to the zero address");
   });
 
-  it.skip("Should fail to mint with big min BToken quantity", async () => {
+  it("Should fail to mint with big min BToken quantity", async () => {
     const oneBToken = ethers.utils.parseUnits("1", 18).toBigInt();
     const minBTokens = 900n * oneBToken;
     const expectedBTokensMintedForEthValue = "399028731704364116575";
