@@ -57,14 +57,102 @@ contract Dynamics is ImmutableSnapshots {
     uint16 MinEpochsBetweenDynamicValuesUpdates;
 
     constructor() ImmutableFactory(msg.sender) ImmutableSnapshots() {}
+    function deployStorage(bytes calldata data)public returns(address contractAddr){
+        bytes memory deployCode = abi.encodePacked(
+            _UNIVERSAL_DEPLOY_CODE,
+            data
+        );
+        assembly{
+            contractAddr := create(0,add(deployCode, 0x20), deployCode)
+        }
+    }
+    function decodeBlob(address addr)public view returns (ValueTypes memory){
+        uint8[12] memory sizes = [32,16,16,16,16,16,16,128,64,64,64,64];
+        uint256 ptr;
+        uint256 retPtr;
+        assembly{
+            ptr := mload(0x40)
+            retPtr := 0x80
+            let size := extcodesize(addr)
+            extcodecopy(addr, ptr, 0, size)    
+        }
+        for(uint8 i = 0; i < sizes.length; i++){
+            uint8 size = sizes[i];
+            assembly{
+                mstore(retPtr, shr(sub(256,size),mload(ptr)))
+                ptr := add(ptr, div(size,8))
+                retPtr := add(retPtr, 0x20)
+            }
+        }
+    }
+    
+    function decodeDeterministicBlob(address addr) public view returns(ConstantValues memory){
+        uint8[1] memory sizes = [32];
+        uint256 ptr;
+        uint256 retPtr;
+        assembly{
+            ptr := mload(0x40)
+            retPtr := 0x80
+            let offset := 0x13
+            let size := sub(extcodesize(addr), offset)
+            extcodecopy(addr, ptr, 0x1d, size)    
+        }
+        for(uint8 i = 0; i < sizes.length; i++){
+            uint8 size = sizes[i];
+            assembly{
+                mstore(retPtr, shr(sub(256,size),mload(ptr)))
+                ptr := add(ptr, div(size,8))
+                retPtr := add(retPtr, 0x20)
+            }
+        }
+    }
+    function getValueAtIndex(address storageAddr, uint8 index) public view returns (uint256){
+        uint8[12] memory sizes = [32,16,16,16,16,16,16,128,64,64,64,64];
+        uint32 offset = 0;
+        uint256 ptr;
+        uint8 size = sizes[index];
+        assembly{
+            ptr := mload(0x40)
+            let csize := extcodesize(storageAddr)
+            extcodecopy(storageAddr, ptr, 0, csize) 
+        }
+        for(uint8 i = 0; i < index; i++){
+            offset = offset + sizes[i];
+        }
+        offset = offset/8;
+        assembly{
+            mstore(0x80, shr(sub(256,size), mload(add(ptr,offset))))
+            return(0x80, 0x20)
+        }
+        
+    }
 
-    function deployStorage() public {
+    function getValueAtIndexDeterministic(address storageAddr, uint8 index) public view returns (uint256){
+        uint8[1] memory sizes = [32];
+        uint32 offset = 0;
+        uint256 ptr;
+        uint8 size = sizes[index];
+        assembly{
+            ptr := mload(0x40)
+            let extOffset := 0x1d
+            extcodecopy(storageAddr, ptr, extOffset, sub(extcodesize(storageAddr), extOffset))    
+        }
+        for(uint8 i = 0; i < index; i++){
+            offset = offset + sizes[i];
+        }
+        offset = offset/8;
+        assembly{
+            mstore(0x80, shr(sub(256,size), mload(add(ptr,offset))))
+            return(0x80, 0x20)
+        }
+    }
+
+    function deployStorageDeterministic(uint256 blockheight) public{
         address addr;
-        //FeeStorage byte string
-        bytes32 salt_ = "0x46656553746f72616765";
+        //FeeStorage byte string 
+        bytes32 salt_ = bytes32(blockheight);
         assembly {
             let ptr := mload(0x40)
-            //metamorphic hash 0xae390f39abdbe0aaec7e24a97c6f672ef87c9ea259ab2d3eccf5dc2541f28c56
             mstore(ptr, shl(48, 0x5863e8c0cf5a60e01b81528081602083335AFA3d82833e3d82f3))
             //mstore(ptr, shl(136, 0x5880818283335afa3d82833e3d91f3))
             addr := create2(0, ptr, add(ptr, 0x1a), salt_)
@@ -75,32 +163,18 @@ contract Dynamics is ImmutableSnapshots {
             }
             //if contractAddr or code size at contractAddr is 0 revert with deploy fail message
             if or(iszero(addr), iszero(extcodesize(addr))) {
-                mstore(0, "static pool deploy failed")
+                mstore(0, "storage deployment failed")
                 revert(0, 0x20)
             }
         }
         emit DeployedStorage(addr);
     }
 
-    function getStorageCode() external view returns (bytes memory) {
-        uint256 basePtr;
+    function getStorageCode() external view returns(bytes memory){
+        ConstantValues memory values = constantFees;
         address self = factoryAddress;
-        Fee[] memory input = fees;
-        assembly {
-            let length := mload(0x80)
-            let lengthPrefixOffset := sub(mload(0xa0), 0x20)
-            mstore(lengthPrefixOffset, length)
-            let ptr := sub(lengthPrefixOffset, 0x20)
-            mstore(ptr, 0x20)
-            ptr := sub(ptr, 0x20)
-            basePtr := ptr
-            mstore(ptr, hex"73")
-            ptr := add(ptr, 0x01)
-            mstore(ptr, shl(96, self))
-            ptr := add(ptr, 0x14)
-            mstore(ptr, hex"3303601c5733ff5b")
-            return(basePtr, sub(msize(), basePtr))
-        }
+        bytes memory data = abi.encodePacked(hex"73", self, hex"3303601c5733ff5b", values.tokenDepositFee);
+        return data;
     }
 
     function setValue(
