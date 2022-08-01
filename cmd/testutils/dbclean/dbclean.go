@@ -6,6 +6,7 @@ import (
 
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/logging"
+	"github.com/alicenet/alicenet/utils"
 	"github.com/dgraph-io/badger/v2"
 )
 
@@ -39,7 +40,7 @@ func main() {
 	for i := 0; i < *num; i++ {
 		fmt.Printf("Running iteration: %v\n", i)
 		if err := rawConsensusDb.RunValueLogGC(*ratio); err != nil {
-			if err != badger.ErrNoRewrite {
+			if utils.HandleBadgerErrors(err) != nil {
 				panic(err)
 			}
 			fmt.Println("Done")
