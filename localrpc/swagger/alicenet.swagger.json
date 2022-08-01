@@ -18,8 +18,12 @@
       "name": "P2PDiscovery"
     }
   ],
-  "consumes": ["application/json"],
-  "produces": ["application/json"],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
   "paths": {
     "/v1/get-block-header": {
       "post": {
@@ -49,7 +53,9 @@
             }
           }
         ],
-        "tags": ["LocalState"]
+        "tags": [
+          "LocalState"
+        ]
       }
     },
     "/v1/get-block-number": {
@@ -80,7 +86,9 @@
             }
           }
         ],
-        "tags": ["LocalState"]
+        "tags": [
+          "LocalState"
+        ]
       }
     },
     "/v1/get-chain-id": {
@@ -111,7 +119,9 @@
             }
           }
         ],
-        "tags": ["LocalState"]
+        "tags": [
+          "LocalState"
+        ]
       }
     },
     "/v1/get-data": {
@@ -142,7 +152,9 @@
             }
           }
         ],
-        "tags": ["LocalState"]
+        "tags": [
+          "LocalState"
+        ]
       }
     },
     "/v1/get-epoch-number": {
@@ -173,7 +185,9 @@
             }
           }
         ],
-        "tags": ["LocalState"]
+        "tags": [
+          "LocalState"
+        ]
       }
     },
     "/v1/get-fees": {
@@ -203,7 +217,9 @@
             }
           }
         ],
-        "tags": ["LocalState"]
+        "tags": [
+          "LocalState"
+        ]
       }
     },
     "/v1/get-mined-transaction": {
@@ -234,7 +250,9 @@
             }
           }
         ],
-        "tags": ["LocalState"]
+        "tags": [
+          "LocalState"
+        ]
       }
     },
     "/v1/get-pending-transaction": {
@@ -265,7 +283,9 @@
             }
           }
         ],
-        "tags": ["LocalState"]
+        "tags": [
+          "LocalState"
+        ]
       }
     },
     "/v1/get-round-state-for-validator": {
@@ -296,7 +316,9 @@
             }
           }
         ],
-        "tags": ["LocalState"]
+        "tags": [
+          "LocalState"
+        ]
       }
     },
     "/v1/get-transaction-status": {
@@ -327,7 +349,9 @@
             }
           }
         ],
-        "tags": ["LocalState"]
+        "tags": [
+          "LocalState"
+        ]
       }
     },
     "/v1/get-tx-block-number": {
@@ -358,7 +382,9 @@
             }
           }
         ],
-        "tags": ["LocalState"]
+        "tags": [
+          "LocalState"
+        ]
       }
     },
     "/v1/get-utxo": {
@@ -389,7 +415,9 @@
             }
           }
         ],
-        "tags": ["LocalState"]
+        "tags": [
+          "LocalState"
+        ]
       }
     },
     "/v1/get-validator-set": {
@@ -420,7 +448,9 @@
             }
           }
         ],
-        "tags": ["LocalState"]
+        "tags": [
+          "LocalState"
+        ]
       }
     },
     "/v1/get-value-for-owner": {
@@ -451,7 +481,9 @@
             }
           }
         ],
-        "tags": ["LocalState"]
+        "tags": [
+          "LocalState"
+        ]
       }
     },
     "/v1/iterate-name-space": {
@@ -482,7 +514,9 @@
             }
           }
         ],
-        "tags": ["LocalState"]
+        "tags": [
+          "LocalState"
+        ]
       }
     },
     "/v1/send-transaction": {
@@ -513,7 +547,9 @@
             }
           }
         ],
-        "tags": ["LocalState"]
+        "tags": [
+          "LocalState"
+        ]
       }
     }
   },

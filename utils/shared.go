@@ -2,6 +2,7 @@ package utils
 
 import (
 	"crypto/rand"
+	"errors"
 	"math/big"
 	"os/user"
 	"path/filepath"
@@ -196,4 +197,13 @@ func Min(a uint64, b uint64) uint64 {
 func StringToBytes32(str string) (b [32]byte) {
 	copy(b[:], []byte(str)[0:32])
 	return
+}
+
+// HandleBadgerErrors handles the badger errors. This function will suppress the
+// errors that we expect to happens and are not harmful to the system.
+func HandleBadgerErrors(err error) error {
+	if !errors.Is(err, badger.ErrNoRewrite) && !errors.Is(err, badger.ErrGCInMemoryMode) {
+		return err
+	}
+	return nil
 }
