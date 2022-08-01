@@ -7,6 +7,7 @@ import (
 	"github.com/alicenet/alicenet/consensus/objs"
 	"github.com/alicenet/alicenet/crypto"
 	"github.com/alicenet/alicenet/errorz"
+	"github.com/alicenet/alicenet/logging"
 	"github.com/alicenet/alicenet/utils"
 )
 
@@ -214,7 +215,11 @@ func (r *RoundStates) SetPreCommitNil(pcn *objs.PreCommitNil) error {
 
 func (r *RoundStates) SetNextHeight(pc *objs.NextHeight) error {
 	if err := r.SetProposal(pc.NHClaims.Proposal); err != nil {
-		return err
+		utils.DebugTrace(logging.GetLogger("consensus"), err)
+		var expectedErr *errorz.ErrStale
+		if !errors.As(err, &expectedErr) {
+			return err
+		}
 	}
 	rs := r.GetRoundState(pc.Voter)
 	if rs == nil {

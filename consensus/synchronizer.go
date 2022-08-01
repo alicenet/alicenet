@@ -16,6 +16,7 @@ import (
 	"github.com/alicenet/alicenet/errorz"
 	"github.com/alicenet/alicenet/logging"
 	"github.com/alicenet/alicenet/peering"
+	"github.com/alicenet/alicenet/utils"
 	"github.com/dgraph-io/badger/v2"
 	"github.com/sirupsen/logrus"
 )
@@ -507,11 +508,12 @@ func (s *Synchronizer) setupLoops() {
 			withFn(
 				func() error {
 					err := s.tdb.RunValueLogGC(constants.BadgerDiscardRatio)
-					if err != badger.ErrNoRewrite {
+
+					if utils.HandleBadgerErrors(err) != nil {
 						return err
 					}
 					err = s.tdb.RunValueLogGC(constants.BadgerDiscardRatio)
-					if err != badger.ErrNoRewrite {
+					if utils.HandleBadgerErrors(err) != nil {
 						return err
 					}
 					return nil
