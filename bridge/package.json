@@ -53,7 +53,7 @@
     "hardhat": "^2.10.1",
     "hardhat-abi-exporter": "^2.10.0",
     "hardhat-contract-sizer": "^2.6.1",
-    "hardhat-deploy": "^0.11.11",
+    "hardhat-deploy": "^0.11.12",
     "hardhat-gas-reporter": "^1.0.8",
     "hardhat-log-remover": "^2.0.2",
     "mocha": "^10.0.0",
