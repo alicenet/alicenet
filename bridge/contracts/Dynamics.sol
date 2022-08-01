@@ -3,45 +3,7 @@ pragma solidity ^0.8.13;
 
 import "contracts/interfaces/ISnapshots.sol";
 import "contracts/utils/ImmutableAuth.sol";
-
-/*
-Example:
-Height: 100 swapFee is 10
-Height: 150 swapFee becomes 1
-Accusation:
-Height 140 a validator proposed a new block with a transaction with swapFee 1
-some one accused this on height 160
-
-_nonce
-swapFee[_nonce%3] = [{alicenetHeight: 100, swapFee: 10}, {alicenetHeight: 150, swapFee: 1}, {alicenetHeight: 155, swapFee: 5}]
-swapFee[_nonce%3] = [{alicenetHeight: 156, swapFee: 2}, {alicenetHeight: 150, swapFee: 1}, {alicenetHeight: 155, swapFee: 5}]
-
-struct DynamicFields {
-    alicenetHeight:
-    swapFee
-    BlockSize
-    CanonicalVersion
-    HashOfTheNode
-    dataStoreFee
-}
-
-historyRingBuffer[_nonce%4] = [{alicenetHeight: 100, swapFee: 10}, {alicenetHeight: 110, swapFee: 1}, {alicenetHeight: 150, canonicalVersion: "3.6.1", "hashOfNode": "0xdeadbeef"}, {alicenetHeight: 155, dataStoreFee: 5}]
-historyRingBuffer[_nonce%4] = [{alicenetHeight: 156, blockSize: 10, swapFee: 1},  {alicenetHeight: 110, swapFee: 1}, {alicenetHeight: 150, canonicalVersion: "3.6.1", "hashOfNode": "0xdeadbeef", swapFee: 1}, {alicenetHeight: 155, dataStoreFee: 5, swapFee: 1}]
-
-We are going to change the fee on
-we are on epoch 10 fee 1:
-Should they be additive in nature?
-epoch 100; 10
-epoch 101; 5
-epoch 101; 5
-
-
-epoch 50; 6
-
-Lower Bound: Voting period
-change alicenetHeight to epoch
-
-*/
+import "contracts/libraries/dynamics/DoublyLinkedList.sol";
 
 struct CanonicalVersion {
     uint64 major;
@@ -72,72 +34,27 @@ contract Dynamics is ImmutableSnapshots {
     //     MinEpochsBetweenDynamicValuesUpdates
     // }
 
-    struct ValueType {
+    enum Version {
+        V1
+    }
+
+    struct DynamicValues {
         // first slot
-        uint32 executionEpoch;
-        uint16 messageTimeout;
-        uint16 proposalStepTimeout;
-        uint16 preVoteStepTimeout;
-        uint16 preCommitStepTimeout;
-        uint16 MaxAmountOfBlocksWithoutSnapshots;
-        uint16 MinEpochsBetweenDynamicValuesUpdates;
+        Version encoderVersion;
+        uint24 messageTimeout;
+        uint32 proposalTimeout;
+        uint32 preVoteTimeout;
+        uint32 preCommitTimeout;
         uint128 minScaledTransactionFee;
         // Second slot
-        uint64 depositFee;
         uint64 atomicSwapFee;
         uint64 dataStoreFee;
         uint64 valueStoreFee;
     }
 
-    struct ScheduledValue {
-        uint256 epoch;
-        uint256 value;
-    }
-
-    struct Value {
-        uint256 effectiveEpoch;
-        uint256 currentValue;
-        uint256 previousValue;
-        //todo ringBuffer?
-        ScheduledValue[6] futureValues;
-    }
-
-    Value public depositFee;
-    Value public atomicSwapFee;
-    Value public dataStoreFee;
-    Value public valueStoreFee;
-    // todo: rename this?
-    Value public minTxFee;
-    Value public maxProposalSize;
-    // todo rename this?
-    Value public messageTimeout;
-    Value public proposalStepTimeout;
-    Value public preVoteStepTimeout;
-    Value public preCommitStepTimeout;
-    Value public maxAmountOfBlocksWithoutSnapshots;
-    Value public minEpochsBetweenDynamicValuesUpdates;
-
-    /*
-    unpacked:
-    0x
-    000000000000000000000000000000000000000000000000000000000000000b
-    000000000000000000000000000000000000000000000000000000000000000c
-    000000000000000000000000000000000000000000000000000000000000000d
-    000000000000000000000000000000000000000000000000000000000000000e
-    0000000000000000000000000000000000000000000000000000000000000015
-    0000000000000000000000000000000000000000000000000000000000000016
-    0000000000000000000000000000000000000000000000000000000000000003
-
-    packed:
-    0x
-    000000000000000b
-    000000000000000c
-    000000000000000d
-    000000000000000e
-    00000000000000000000000000000015
-    00000000000000000000000000000016
-    0000000000000000000000000000000000000000000000000000000000000003
-     */
+    uint64 depositFee;
+    uint16 MaxAmountOfBlocksWithoutSnapshots;
+    uint16 MinEpochsBetweenDynamicValuesUpdates;
 
     constructor() ImmutableFactory(msg.sender) ImmutableSnapshots() {}
 
