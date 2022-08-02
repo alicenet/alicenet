@@ -8,9 +8,10 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 
+	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/layer1/executor/tasks"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
-	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/utils"
+	"github.com/alicenet/alicenet/utils"
 )
 
 // CompletionTask contains required state for safely complete ETHDKG
@@ -66,8 +67,23 @@ func (t *CompletionTask) Execute(ctx context.Context) (*types.Transaction, *task
 	}
 
 	client := t.GetClient()
+	isLeading, err := utils.AmILeading(
+		client,
+		ctx,
+		logger,
+		int(t.GetStart()),
+		t.StartBlockHash.Bytes(),
+		dkgState.NumberOfValidators,
+		// we need -1 since ethdkg indexes start at 1 while leader election expect index starting at 0.
+		dkgState.Index-1,
+		constants.ETHDKGDesperationFactor,
+		constants.ETHDKGDesperationDelay,
+	)
+	if err != nil {
+		return nil, tasks.NewTaskErr(fmt.Sprintf("error getting eth height for leader election: %v", err), true)
+	}
 	// submit if I'm a leader for this task
-	if !utils.AmILeading(client, ctx, logger, int(t.GetStart()), t.StartBlockHash.Bytes(), dkgState.NumberOfValidators, dkgState.Index) {
+	if !isLeading {
 		return nil, tasks.NewTaskErr("not leading Completion yet", true)
 	}
 

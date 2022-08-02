@@ -45,7 +45,7 @@ library MerkleProofLibrary {
     ) internal pure returns (bytes32) {
         require(
             proofHeight <= 256 && proofHeight >= 0,
-            "MerkleProofLibrary: Invalid proofHeight, should be [0, 256["
+            "MerkleProofLibrary: Invalid proofHeight, should be [0, 256]"
         );
         return keccak256(abi.encodePacked(key, value, uint8(256 - proofHeight)));
     }

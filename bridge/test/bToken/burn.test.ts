@@ -1,6 +1,7 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
+import { assertErrorMessage } from "../chai-helpers";
 import { expect } from "../chai-setup";
 import { callFunctionAndGetReturnValues, Fixture, getFixture } from "../setup";
 import { format, getState, state } from "./setup";
@@ -101,9 +102,11 @@ describe("Testing BToken Burning methods", async () => {
   it("Should fail to burn more than possible", async () => {
     // Try to burn one more than minted
     const burnQuantity = BigNumber.from(bTokens).add(1);
-    await expect(
-      fixture.bToken.connect(user).burn(burnQuantity, 0)
-    ).to.be.revertedWith("311");
+
+    await assertErrorMessage(
+      fixture.bToken.connect(user).burn(burnQuantity, 0),
+      `BurnAmountExceedsSupply(${burnQuantity}, ${bTokens})`
+    );
   });
 
   it("Should fail to burn 0 tokens", async () => {
@@ -112,9 +115,11 @@ describe("Testing BToken Burning methods", async () => {
     await fixture.bToken.connect(user).mint(minBTokens, {
       value: ethers.utils.parseEther(eth.toString()),
     });
-    await expect(
-      fixture.bToken.connect(user).burn(burnQuantity, 0)
-    ).to.be.revertedWith("302");
+
+    await assertErrorMessage(
+      fixture.bToken.connect(user).burn(burnQuantity, 0),
+      `InvalidBurnAmount(${burnQuantity})`
+    );
   });
 
   it("Should burn to an address", async () => {
@@ -140,30 +145,38 @@ describe("Testing BToken Burning methods", async () => {
   it("Should fail to burn to an address more than possible", async () => {
     // Try to burn one more than minted
     const burnQuantity = BigNumber.from(bTokens).add(1);
-    await expect(
-      fixture.bToken.connect(user).burnTo(admin.address, burnQuantity, 0)
-    ).to.be.revertedWith("311");
+
+    await assertErrorMessage(
+      fixture.bToken.connect(user).burn(burnQuantity, 0),
+      `BurnAmountExceedsSupply(${burnQuantity}, ${bTokens})`
+    );
   });
 
   it("Should fail to burn 0 tokens to an address", async () => {
     const burnQuantity = 0;
-    await expect(
-      fixture.bToken.connect(user).burnTo(admin.address, burnQuantity, 0)
-    ).to.be.revertedWith("302");
+
+    await assertErrorMessage(
+      fixture.bToken.connect(user).burnTo(admin.address, burnQuantity, 0),
+      `InvalidBurnAmount(${burnQuantity})`
+    );
   });
 
   it("Should fail to burn without fulfilling min eth amount", async () => {
     const minEth = ethIn.add(1);
     const burnQuantity = bTokens;
-    await expect(
+
+    await assertErrorMessage(
       fixture.bToken
         .connect(user)
         .burnTo(
           admin.address,
           burnQuantity,
           ethers.utils.parseEther(minEth.toString())
-        )
-    ).to.be.revertedWith("309");
+        ),
+      `MinimumBurnNotMet(${"10000000000000000000"}, ${ethers.utils.parseEther(
+        minEth.toString()
+      )})`
+    );
   });
 
   it("Should burn and keep market spread", async () => {

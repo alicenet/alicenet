@@ -46,7 +46,7 @@ describe("ValidatorPool Access Control: An user with admin role should be able t
         ["0x000000000000000000000000000000000000dEaD"],
         [1],
       ])
-    ).to.be.revertedWith("ERC721: owner query for nonexistent token");
+    ).to.be.revertedWith("ERC721: invalid token ID");
   });
 
   it("Initialize ETHDKG", async function () {

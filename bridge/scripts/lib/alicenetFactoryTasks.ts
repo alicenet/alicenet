@@ -2,7 +2,6 @@ import toml from "@iarna/toml";
 import {
   BigNumber,
   BytesLike,
-  ContractFactory,
   ContractReceipt,
   ContractTransaction,
 } from "ethers";
@@ -309,9 +308,10 @@ task(
     };
     const factoryBase = await hre.ethers.getContractFactory(ALICENET_FACTORY);
     const factory = factoryBase.attach(taskArgs.factoryAddress);
-    const logicFactory = await hre.ethers.getContractFactory(
+    const logicFactory: any = await hre.ethers.getContractFactory(
       taskArgs.contractName
-    ) as ContractFactory;
+    );
+
     const initArgs =
       taskArgs.initCallData === undefined
         ? []
@@ -327,7 +327,7 @@ task(
     // factory interface pointed to deployed factory contract
     // get the 32byte salt from logic contract file
     const salt: BytesLike = await getBytes32Salt(taskArgs.contractName, hre);
-    const logicContract: ContractFactory = await hre.ethers.getContractFactory(
+    const logicContract: any = await hre.ethers.getContractFactory(
       taskArgs.contractName
     );
     const constructorArgs =
@@ -486,14 +486,14 @@ task("multiCallDeployMetamorphic")
     }
     const factoryBase = await hre.ethers.getContractFactory(ALICENET_FACTORY);
     const factory = factoryBase.attach(taskArgs.factoryAddress);
-    const logicContract: ContractFactory = await hre.ethers.getContractFactory(
+    const logicContract: any = await hre.ethers.getContractFactory(
       taskArgs.contractName
     );
     const constructorArgs =
       taskArgs.constructorArgs === undefined ? [] : taskArgs.constructorArgs;
     const deployTxReq = logicContract.getDeployTransaction(...constructorArgs);
 
-    const logicFactory = await hre.ethers.getContractFactory(
+    const logicFactory: any = await hre.ethers.getContractFactory(
       taskArgs.contractName
     );
     const initArgs =
@@ -634,7 +634,7 @@ task(
     }
     const factoryBase = await hre.ethers.getContractFactory(ALICENET_FACTORY);
     const factory = factoryBase.attach(taskArgs.factoryAddress);
-    const logicContract: ContractFactory = await hre.ethers.getContractFactory(
+    const logicContract: any = await hre.ethers.getContractFactory(
       taskArgs.contractName
     );
     const constructorArgs =
@@ -680,7 +680,7 @@ task(
   .setAction(async (taskArgs, hre) => {
     const network = hre.network.name;
     const factoryBase = await hre.ethers.getContractFactory(ALICENET_FACTORY);
-    const logicFactory = await hre.ethers.getContractFactory(
+    const logicFactory: any = await hre.ethers.getContractFactory(
       taskArgs.contractName
     );
     const initArgs =
@@ -734,7 +734,7 @@ task(DEPLOY_CREATE, "deploys a contract from the factory using create")
     const factoryBase = await hre.ethers.getContractFactory(ALICENET_FACTORY);
     // get a factory instance connected to the factory a
     const factory = factoryBase.attach(taskArgs.factoryAddress);
-    const logicContract: ContractFactory = await hre.ethers.getContractFactory(
+    const logicContract: any = await hre.ethers.getContractFactory(
       taskArgs.contractName
     );
     const constructorArgs =
@@ -827,7 +827,7 @@ task(UPGRADE_DEPLOYED_PROXY, "deploys a contract from the factory using create")
     // grab the salt from the logic contract
     const Salt = await getBytes32Salt(taskArgs.contractName, hre);
     // get logic contract interface
-    const logicFactory = await hre.ethers.getContractFactory(
+    const logicFactory: any = await hre.ethers.getContractFactory(
       taskArgs.contractName
     );
     const initArgs =
@@ -899,7 +899,7 @@ task("multiCallDeployProxy", "deploy and upgrade proxy with multicall")
     const network = hre.network.name;
     const factoryBase = await hre.ethers.getContractFactory(ALICENET_FACTORY);
     const factory = factoryBase.attach(taskArgs.factoryAddress);
-    const logicFactory = await hre.ethers.getContractFactory(
+    const logicFactory: any = await hre.ethers.getContractFactory(
       taskArgs.contractName
     );
     const initArgs =
@@ -972,7 +972,7 @@ task(
   .setAction(async (taskArgs, hre) => {
     const factoryBase = await hre.ethers.getContractFactory(ALICENET_FACTORY);
     const factory = factoryBase.attach(taskArgs.factoryAddress);
-    const logicFactory: ContractFactory = await hre.ethers.getContractFactory(
+    const logicFactory: any = await hre.ethers.getContractFactory(
       taskArgs.contractName
     );
     const initArgs =

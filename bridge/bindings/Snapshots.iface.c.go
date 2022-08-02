@@ -85,6 +85,6 @@ type ISnapshotsCaller interface {
 	GetSnapshotDesperationFactor(opts *bind.CallOpts) (*big.Int, error)
 	// MayValidatorSnapshot is a free data retrieval call binding the contract method 0xf45fa246.
 	//
-	// Solidity: function mayValidatorSnapshot(uint256 numValidators, uint256 myIdx, uint256 blocksSinceDesperation, bytes32 blsig, uint256 desperationFactor) pure returns(bool)
-	MayValidatorSnapshot(opts *bind.CallOpts, numValidators *big.Int, myIdx *big.Int, blocksSinceDesperation *big.Int, blsig [32]byte, desperationFactor *big.Int) (bool, error)
+	// Solidity: function mayValidatorSnapshot(uint256 numValidators, uint256 myIdx, uint256 blocksSinceDesperation, bytes32 randomSeed, uint256 desperationFactor) pure returns(bool)
+	MayValidatorSnapshot(opts *bind.CallOpts, numValidators *big.Int, myIdx *big.Int, blocksSinceDesperation *big.Int, randomSeed [32]byte, desperationFactor *big.Int) (bool, error)
 }

@@ -1358,7 +1358,9 @@ func (ssm *SnapShotManager) downloadWithRetryStateNodeClosure(dl *dlReq) workFun
 			batch:          resp,
 		}
 		//    store to the cache
-		ssm.stateNodeCache.insert(snapShotHeight, nr)
+		if err := ssm.stateNodeCache.insert(snapShotHeight, nr); err != nil {
+			utils.DebugTrace(ssm.logger, err)
+		}
 	}
 }
 
@@ -1425,7 +1427,9 @@ func (ssm *SnapShotManager) downloadWithRetryHdrLeafClosure(dl []*dlReq) workFun
 			}
 			//    store to the cache
 			peer.Feedback(1)
-			ssm.hdrLeafCache.insert(sr)
+			if err := ssm.hdrLeafCache.insert(sr); err != nil {
+				utils.DebugTrace(ssm.logger, err)
+			}
 		}
 	}
 }
@@ -1463,7 +1467,9 @@ func (ssm *SnapShotManager) downloadWithRetryStateLeafClosure(dl *dlReq) workFun
 			data:           utils.CopySlice(resp),
 		}
 		//    store to the cache
-		ssm.stateLeafCache.insert(snapShotHeight, sr)
+		if err := ssm.stateLeafCache.insert(snapShotHeight, sr); err != nil {
+			utils.DebugTrace(ssm.logger, err)
+		}
 	}
 }
 
