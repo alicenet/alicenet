@@ -7,6 +7,9 @@ contract BridgeRouterMock {
         uint256 maxTokens,
         bytes calldata data
     ) external returns (uint256) {
+        account = account;
+        maxTokens = maxTokens;
+        data = data;
         return 1000;
     }
 }
