@@ -59,7 +59,8 @@ describe("Snapshots: With successful ETHDKG round completed and validatorPool", 
         expectedHeight,
         ethers.utils.getAddress(validatorsSnapshots1[0].address),
         expectedSafeToProceedConsensus,
-        validSnapshot1024.GroupSignature
+        validSnapshot1024.GroupSignature,
+        validSnapshot1024.BClaims
       );
     await factoryCallAnyFixture(
       fixture,
@@ -107,7 +108,8 @@ describe("Snapshots: With successful ETHDKG round completed and validatorPool", 
         expectedHeight,
         ethers.utils.getAddress(validatorsSnapshots2[0].address),
         expectedSafeToProceedConsensus,
-        validSnapshot2048.GroupSignature
+        validSnapshot2048.GroupSignature,
+        validSnapshot2048.BClaims
       );
   });
 });

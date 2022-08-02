@@ -120,7 +120,8 @@ describe("Snapshots: Migrate state", () => {
         expectedHeight,
         ethers.utils.getAddress(validatorsSnapshots[0].address),
         expectedSafeToProceedConsensus,
-        signedData[503].GroupSignature
+        signedData[503].GroupSignature,
+        signedData[503].BClaims
       );
   });
 

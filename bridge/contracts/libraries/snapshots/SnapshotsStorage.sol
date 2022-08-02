@@ -11,8 +11,6 @@ abstract contract SnapshotsStorage is ImmutableETHDKG, ImmutableValidatorPool, S
 
     uint256 internal immutable _chainId;
 
-    // uint32 internal _epoch;
-
     // Number of ethereum blocks that we should wait between snapshots. Mainly used to prevent the
     // submission of snapshots in short amount of time by validators that could be potentially being
     // malicious
@@ -54,7 +52,7 @@ abstract contract SnapshotsStorage is ImmutableETHDKG, ImmutableValidatorPool, S
         return _snapshots;
     }
 
-    function _epochReg() internal view override returns (Epoch storage) {
+    function _getEpochRegister() internal view override returns (Epoch storage) {
         return _epoch;
     }
 }
