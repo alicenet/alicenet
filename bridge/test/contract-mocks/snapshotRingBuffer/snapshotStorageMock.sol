@@ -7,7 +7,7 @@ import "contracts/utils/ImmutableAuth.sol";
 import "contracts/libraries/snapshots/SnapshotRingBuffer.sol";
 
 contract SnapshotsStorageMock is ImmutableETHDKG, ImmutableValidatorPool, SnapshotRingBuffer {
-    
+
     uint256 internal immutable _epochLength;
 
     uint256 internal immutable _chainId;
@@ -58,7 +58,7 @@ contract SnapshotsStorageMock is ImmutableETHDKG, ImmutableValidatorPool, Snapsh
         return _snapshots;
     }
 
-    function _epochReg() internal view override returns (Epoch storage) {
+    function _epochRegister() internal view override returns (Epoch storage) {
         return _epoch;
     }
 }

@@ -52,7 +52,7 @@ abstract contract SnapshotsStorage is ImmutableETHDKG, ImmutableValidatorPool, S
         return _snapshots;
     }
 
-    function _getEpochRegister() internal view override returns (Epoch storage) {
+    function _epochRegister() internal view override returns (Epoch storage) {
         return _epoch;
     }
 }

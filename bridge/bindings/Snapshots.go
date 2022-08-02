@@ -47,7 +47,7 @@ type Snapshot struct {
 
 // SnapshotsMetaData contains all meta data concerning the Snapshots contract.
 var SnapshotsMetaData = &bind.MetaData{
-	ABI: "[{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"chainID_\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"epochLength_\",\"type\":\"uint256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"chainId\",\"type\":\"uint256\"},{\"indexed\":true,\"internalType\":\"uint256\",\"name\":\"epoch\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"height\",\"type\":\"uint256\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"validator\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"bool\",\"name\":\"isSafeToProceedConsensus\",\"type\":\"bool\"},{\"indexed\":false,\"internalType\":\"bytes\",\"name\":\"signatureRaw\",\"type\":\"bytes\"},{\"components\":[{\"internalType\":\"uint32\",\"name\":\"chainId\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"height\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"txCount\",\"type\":\"uint32\"},{\"internalType\":\"bytes32\",\"name\":\"prevBlock\",\"type\":\"bytes32\"},{\"internalType\":\"bytes32\",\"name\":\"txRoot\",\"type\":\"bytes32\"},{\"internalType\":\"bytes32\",\"name\":\"stateRoot\",\"type\":\"bytes32\"},{\"internalType\":\"bytes32\",\"name\":\"headerRoot\",\"type\":\"bytes32\"}],\"indexed\":false,\"internalType\":\"structBClaimsParserLibrary.BClaims\",\"name\":\"BClaims\",\"type\":\"tuple\"}],\"name\":\"SnapshotTaken\",\"type\":\"event\"},{\"inputs\":[],\"name\":\"getAliceNetHeightFromLatestSnapshot\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"epoch_\",\"type\":\"uint256\"}],\"name\":\"getAliceNetHeightFromSnapshot\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getBlockClaimsFromLatestSnapshot\",\"outputs\":[{\"components\":[{\"internalType\":\"uint32\",\"name\":\"chainId\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"height\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"txCount\",\"type\":\"uint32\"},{\"internalType\":\"bytes32\",\"name\":\"prevBlock\",\"type\":\"bytes32\"},{\"internalType\":\"bytes32\",\"name\":\"txRoot\",\"type\":\"bytes32\"},{\"internalType\":\"bytes32\",\"name\":\"stateRoot\",\"type\":\"bytes32\"},{\"internalType\":\"bytes32\",\"name\":\"headerRoot\",\"type\":\"bytes32\"}],\"internalType\":\"structBClaimsParserLibrary.BClaims\",\"name\":\"\",\"type\":\"tuple\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"epoch_\",\"type\":\"uint256\"}],\"name\":\"getBlockClaimsFromSnapshot\",\"outputs\":[{\"components\":[{\"internalType\":\"uint32\",\"name\":\"chainId\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"height\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"txCount\",\"type\":\"uint32\"},{\"internalType\":\"bytes32\",\"name\":\"prevBlock\",\"type\":\"bytes32\"},{\"internalType\":\"bytes32\",\"name\":\"txRoot\",\"type\":\"bytes32\"},{\"internalType\":\"bytes32\",\"name\":\"stateRoot\",\"type\":\"bytes32\"},{\"internalType\":\"bytes32\",\"name\":\"headerRoot\",\"type\":\"bytes32\"}],\"internalType\":\"structBClaimsParserLibrary.BClaims\",\"name\":\"\",\"type\":\"tuple\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getChainId\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getChainIdFromLatestSnapshot\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"epoch_\",\"type\":\"uint256\"}],\"name\":\"getChainIdFromSnapshot\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getCommittedHeightFromLatestSnapshot\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"epoch_\",\"type\":\"uint256\"}],\"name\":\"getCommittedHeightFromSnapshot\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getEpoch\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"height\",\"type\":\"uint256\"}],\"name\":\"getEpochFromHeight\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getEpochLength\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getLatestSnapshot\",\"outputs\":[{\"components\":[{\"internalType\":\"uint256\",\"name\":\"committedAt\",\"type\":\"uint256\"},{\"components\":[{\"internalType\":\"uint32\",\"name\":\"chainId\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"height\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"txCount\",\"type\":\"uint32\"},{\"internalType\":\"bytes32\",\"name\":\"prevBlock\",\"type\":\"bytes32\"},{\"internalType\":\"bytes32\",\"name\":\"txRoot\",\"type\":\"bytes32\"},{\"internalType\":\"bytes32\",\"name\":\"stateRoot\",\"type\":\"bytes32\"},{\"internalType\":\"bytes32\",\"name\":\"headerRoot\",\"type\":\"bytes32\"}],\"internalType\":\"structBClaimsParserLibrary.BClaims\",\"name\":\"blockClaims\",\"type\":\"tuple\"}],\"internalType\":\"structSnapshot\",\"name\":\"\",\"type\":\"tuple\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"_salt\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"_factory\",\"type\":\"address\"}],\"name\":\"getMetamorphicContractAddress\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getMinimumIntervalBetweenSnapshots\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"epoch_\",\"type\":\"uint256\"}],\"name\":\"getSnapshot\",\"outputs\":[{\"components\":[{\"internalType\":\"uint256\",\"name\":\"committedAt\",\"type\":\"uint256\"},{\"components\":[{\"internalType\":\"uint32\",\"name\":\"chainId\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"height\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"txCount\",\"type\":\"uint32\"},{\"internalType\":\"bytes32\",\"name\":\"prevBlock\",\"type\":\"bytes32\"},{\"internalType\":\"bytes32\",\"name\":\"txRoot\",\"type\":\"bytes32\"},{\"internalType\":\"bytes32\",\"name\":\"stateRoot\",\"type\":\"bytes32\"},{\"internalType\":\"bytes32\",\"name\":\"headerRoot\",\"type\":\"bytes32\"}],\"internalType\":\"structBClaimsParserLibrary.BClaims\",\"name\":\"blockClaims\",\"type\":\"tuple\"}],\"internalType\":\"structSnapshot\",\"name\":\"\",\"type\":\"tuple\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getSnapshotDesperationDelay\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getSnapshotDesperationFactor\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint32\",\"name\":\"desperationDelay_\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"desperationFactor_\",\"type\":\"uint32\"}],\"name\":\"initialize\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"numValidators\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"myIdx\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"blocksSinceDesperation\",\"type\":\"uint256\"},{\"internalType\":\"bytes32\",\"name\":\"blsig\",\"type\":\"bytes32\"},{\"internalType\":\"uint256\",\"name\":\"desperationFactor\",\"type\":\"uint256\"}],\"name\":\"mayValidatorSnapshot\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes[]\",\"name\":\"groupSignature_\",\"type\":\"bytes[]\"},{\"internalType\":\"bytes[]\",\"name\":\"bClaims_\",\"type\":\"bytes[]\"}],\"name\":\"migrateSnapshots\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint32\",\"name\":\"minimumIntervalBetweenSnapshots_\",\"type\":\"uint32\"}],\"name\":\"setMinimumIntervalBetweenSnapshots\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint32\",\"name\":\"desperationDelay_\",\"type\":\"uint32\"}],\"name\":\"setSnapshotDesperationDelay\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint32\",\"name\":\"desperationFactor_\",\"type\":\"uint32\"}],\"name\":\"setSnapshotDesperationFactor\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes\",\"name\":\"groupSignature_\",\"type\":\"bytes\"},{\"internalType\":\"bytes\",\"name\":\"bClaims_\",\"type\":\"bytes\"}],\"name\":\"snapshot\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]",
+	ABI: "[{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"chainID_\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"epochLength_\",\"type\":\"uint256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"offset\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"srcLength\",\"type\":\"uint256\"}],\"name\":\"Bytes32OffsetOutOfBounds\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"offset\",\"type\":\"uint256\"}],\"name\":\"Bytes32OffsetParameterOverflow\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"ChainIdZero\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"dataOffset\",\"type\":\"uint256\"}],\"name\":\"DataOffsetOverflow\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"HeightZero\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"offset\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"srcLength\",\"type\":\"uint256\"}],\"name\":\"LEUint16OffsetOutOfBounds\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"offset\",\"type\":\"uint256\"}],\"name\":\"LEUint16OffsetParameterOverflow\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"offset\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"srcLength\",\"type\":\"uint256\"}],\"name\":\"LEUint256OffsetOutOfBounds\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"offset\",\"type\":\"uint256\"}],\"name\":\"LEUint256OffsetParameterOverflow\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"dataOffset\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"srcLength\",\"type\":\"uint256\"}],\"name\":\"NotEnoughBytes\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"offset\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"srcLength\",\"type\":\"uint256\"}],\"name\":\"OffsetOutOfBounds\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"offset\",\"type\":\"uint256\"}],\"name\":\"OffsetParameterOverflow\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"uint16\",\"name\":\"dataSectionSize\",\"type\":\"uint16\"}],\"name\":\"SizeThresholdExceeded\",\"type\":\"error\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint8\",\"name\":\"version\",\"type\":\"uint8\"}],\"name\":\"Initialized\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"chainId\",\"type\":\"uint256\"},{\"indexed\":true,\"internalType\":\"uint256\",\"name\":\"epoch\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"height\",\"type\":\"uint256\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"validator\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"bool\",\"name\":\"isSafeToProceedConsensus\",\"type\":\"bool\"},{\"indexed\":false,\"internalType\":\"bytes\",\"name\":\"signatureRaw\",\"type\":\"bytes\"},{\"components\":[{\"internalType\":\"uint32\",\"name\":\"chainId\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"height\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"txCount\",\"type\":\"uint32\"},{\"internalType\":\"bytes32\",\"name\":\"prevBlock\",\"type\":\"bytes32\"},{\"internalType\":\"bytes32\",\"name\":\"txRoot\",\"type\":\"bytes32\"},{\"internalType\":\"bytes32\",\"name\":\"stateRoot\",\"type\":\"bytes32\"},{\"internalType\":\"bytes32\",\"name\":\"headerRoot\",\"type\":\"bytes32\"}],\"indexed\":false,\"internalType\":\"structBClaimsParserLibrary.BClaims\",\"name\":\"BClaims\",\"type\":\"tuple\"}],\"name\":\"SnapshotTaken\",\"type\":\"event\"},{\"inputs\":[],\"name\":\"getAliceNetHeightFromLatestSnapshot\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"epoch_\",\"type\":\"uint256\"}],\"name\":\"getAliceNetHeightFromSnapshot\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getBlockClaimsFromLatestSnapshot\",\"outputs\":[{\"components\":[{\"internalType\":\"uint32\",\"name\":\"chainId\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"height\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"txCount\",\"type\":\"uint32\"},{\"internalType\":\"bytes32\",\"name\":\"prevBlock\",\"type\":\"bytes32\"},{\"internalType\":\"bytes32\",\"name\":\"txRoot\",\"type\":\"bytes32\"},{\"internalType\":\"bytes32\",\"name\":\"stateRoot\",\"type\":\"bytes32\"},{\"internalType\":\"bytes32\",\"name\":\"headerRoot\",\"type\":\"bytes32\"}],\"internalType\":\"structBClaimsParserLibrary.BClaims\",\"name\":\"\",\"type\":\"tuple\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"epoch_\",\"type\":\"uint256\"}],\"name\":\"getBlockClaimsFromSnapshot\",\"outputs\":[{\"components\":[{\"internalType\":\"uint32\",\"name\":\"chainId\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"height\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"txCount\",\"type\":\"uint32\"},{\"internalType\":\"bytes32\",\"name\":\"prevBlock\",\"type\":\"bytes32\"},{\"internalType\":\"bytes32\",\"name\":\"txRoot\",\"type\":\"bytes32\"},{\"internalType\":\"bytes32\",\"name\":\"stateRoot\",\"type\":\"bytes32\"},{\"internalType\":\"bytes32\",\"name\":\"headerRoot\",\"type\":\"bytes32\"}],\"internalType\":\"structBClaimsParserLibrary.BClaims\",\"name\":\"\",\"type\":\"tuple\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getChainId\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getChainIdFromLatestSnapshot\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"epoch_\",\"type\":\"uint256\"}],\"name\":\"getChainIdFromSnapshot\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getCommittedHeightFromLatestSnapshot\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"epoch_\",\"type\":\"uint256\"}],\"name\":\"getCommittedHeightFromSnapshot\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getEpoch\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"height\",\"type\":\"uint256\"}],\"name\":\"getEpochFromHeight\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getEpochLength\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getLatestSnapshot\",\"outputs\":[{\"components\":[{\"internalType\":\"uint256\",\"name\":\"committedAt\",\"type\":\"uint256\"},{\"components\":[{\"internalType\":\"uint32\",\"name\":\"chainId\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"height\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"txCount\",\"type\":\"uint32\"},{\"internalType\":\"bytes32\",\"name\":\"prevBlock\",\"type\":\"bytes32\"},{\"internalType\":\"bytes32\",\"name\":\"txRoot\",\"type\":\"bytes32\"},{\"internalType\":\"bytes32\",\"name\":\"stateRoot\",\"type\":\"bytes32\"},{\"internalType\":\"bytes32\",\"name\":\"headerRoot\",\"type\":\"bytes32\"}],\"internalType\":\"structBClaimsParserLibrary.BClaims\",\"name\":\"blockClaims\",\"type\":\"tuple\"}],\"internalType\":\"structSnapshot\",\"name\":\"\",\"type\":\"tuple\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"_salt\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"_factory\",\"type\":\"address\"}],\"name\":\"getMetamorphicContractAddress\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getMinimumIntervalBetweenSnapshots\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"epoch_\",\"type\":\"uint256\"}],\"name\":\"getSnapshot\",\"outputs\":[{\"components\":[{\"internalType\":\"uint256\",\"name\":\"committedAt\",\"type\":\"uint256\"},{\"components\":[{\"internalType\":\"uint32\",\"name\":\"chainId\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"height\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"txCount\",\"type\":\"uint32\"},{\"internalType\":\"bytes32\",\"name\":\"prevBlock\",\"type\":\"bytes32\"},{\"internalType\":\"bytes32\",\"name\":\"txRoot\",\"type\":\"bytes32\"},{\"internalType\":\"bytes32\",\"name\":\"stateRoot\",\"type\":\"bytes32\"},{\"internalType\":\"bytes32\",\"name\":\"headerRoot\",\"type\":\"bytes32\"}],\"internalType\":\"structBClaimsParserLibrary.BClaims\",\"name\":\"blockClaims\",\"type\":\"tuple\"}],\"internalType\":\"structSnapshot\",\"name\":\"\",\"type\":\"tuple\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getSnapshotDesperationDelay\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getSnapshotDesperationFactor\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint32\",\"name\":\"desperationDelay_\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"desperationFactor_\",\"type\":\"uint32\"}],\"name\":\"initialize\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"numValidators\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"myIdx\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"blocksSinceDesperation\",\"type\":\"uint256\"},{\"internalType\":\"bytes32\",\"name\":\"randomSeed\",\"type\":\"bytes32\"},{\"internalType\":\"uint256\",\"name\":\"desperationFactor\",\"type\":\"uint256\"}],\"name\":\"mayValidatorSnapshot\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes[]\",\"name\":\"groupSignature_\",\"type\":\"bytes[]\"},{\"internalType\":\"bytes[]\",\"name\":\"bClaims_\",\"type\":\"bytes[]\"}],\"name\":\"migrateSnapshots\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint32\",\"name\":\"minimumIntervalBetweenSnapshots_\",\"type\":\"uint32\"}],\"name\":\"setMinimumIntervalBetweenSnapshots\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint32\",\"name\":\"desperationDelay_\",\"type\":\"uint32\"}],\"name\":\"setSnapshotDesperationDelay\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint32\",\"name\":\"desperationFactor_\",\"type\":\"uint32\"}],\"name\":\"setSnapshotDesperationFactor\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes\",\"name\":\"groupSignature_\",\"type\":\"bytes\"},{\"internalType\":\"bytes\",\"name\":\"bClaims_\",\"type\":\"bytes\"}],\"name\":\"snapshot\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]",
 }
 
 // SnapshotsABI is the input ABI used to generate the binding from.
@@ -756,10 +756,10 @@ func (_Snapshots *SnapshotsCallerSession) GetSnapshotDesperationFactor() (*big.I
 
 // MayValidatorSnapshot is a free data retrieval call binding the contract method 0xf45fa246.
 //
-// Solidity: function mayValidatorSnapshot(uint256 numValidators, uint256 myIdx, uint256 blocksSinceDesperation, bytes32 blsig, uint256 desperationFactor) pure returns(bool)
-func (_Snapshots *SnapshotsCaller) MayValidatorSnapshot(opts *bind.CallOpts, numValidators *big.Int, myIdx *big.Int, blocksSinceDesperation *big.Int, blsig [32]byte, desperationFactor *big.Int) (bool, error) {
+// Solidity: function mayValidatorSnapshot(uint256 numValidators, uint256 myIdx, uint256 blocksSinceDesperation, bytes32 randomSeed, uint256 desperationFactor) pure returns(bool)
+func (_Snapshots *SnapshotsCaller) MayValidatorSnapshot(opts *bind.CallOpts, numValidators *big.Int, myIdx *big.Int, blocksSinceDesperation *big.Int, randomSeed [32]byte, desperationFactor *big.Int) (bool, error) {
 	var out []interface{}
-	err := _Snapshots.contract.Call(opts, &out, "mayValidatorSnapshot", numValidators, myIdx, blocksSinceDesperation, blsig, desperationFactor)
+	err := _Snapshots.contract.Call(opts, &out, "mayValidatorSnapshot", numValidators, myIdx, blocksSinceDesperation, randomSeed, desperationFactor)
 
 	if err != nil {
 		return *new(bool), err
@@ -773,16 +773,16 @@ func (_Snapshots *SnapshotsCaller) MayValidatorSnapshot(opts *bind.CallOpts, num
 
 // MayValidatorSnapshot is a free data retrieval call binding the contract method 0xf45fa246.
 //
-// Solidity: function mayValidatorSnapshot(uint256 numValidators, uint256 myIdx, uint256 blocksSinceDesperation, bytes32 blsig, uint256 desperationFactor) pure returns(bool)
-func (_Snapshots *SnapshotsSession) MayValidatorSnapshot(numValidators *big.Int, myIdx *big.Int, blocksSinceDesperation *big.Int, blsig [32]byte, desperationFactor *big.Int) (bool, error) {
-	return _Snapshots.Contract.MayValidatorSnapshot(&_Snapshots.CallOpts, numValidators, myIdx, blocksSinceDesperation, blsig, desperationFactor)
+// Solidity: function mayValidatorSnapshot(uint256 numValidators, uint256 myIdx, uint256 blocksSinceDesperation, bytes32 randomSeed, uint256 desperationFactor) pure returns(bool)
+func (_Snapshots *SnapshotsSession) MayValidatorSnapshot(numValidators *big.Int, myIdx *big.Int, blocksSinceDesperation *big.Int, randomSeed [32]byte, desperationFactor *big.Int) (bool, error) {
+	return _Snapshots.Contract.MayValidatorSnapshot(&_Snapshots.CallOpts, numValidators, myIdx, blocksSinceDesperation, randomSeed, desperationFactor)
 }
 
 // MayValidatorSnapshot is a free data retrieval call binding the contract method 0xf45fa246.
 //
-// Solidity: function mayValidatorSnapshot(uint256 numValidators, uint256 myIdx, uint256 blocksSinceDesperation, bytes32 blsig, uint256 desperationFactor) pure returns(bool)
-func (_Snapshots *SnapshotsCallerSession) MayValidatorSnapshot(numValidators *big.Int, myIdx *big.Int, blocksSinceDesperation *big.Int, blsig [32]byte, desperationFactor *big.Int) (bool, error) {
-	return _Snapshots.Contract.MayValidatorSnapshot(&_Snapshots.CallOpts, numValidators, myIdx, blocksSinceDesperation, blsig, desperationFactor)
+// Solidity: function mayValidatorSnapshot(uint256 numValidators, uint256 myIdx, uint256 blocksSinceDesperation, bytes32 randomSeed, uint256 desperationFactor) pure returns(bool)
+func (_Snapshots *SnapshotsCallerSession) MayValidatorSnapshot(numValidators *big.Int, myIdx *big.Int, blocksSinceDesperation *big.Int, randomSeed [32]byte, desperationFactor *big.Int) (bool, error) {
+	return _Snapshots.Contract.MayValidatorSnapshot(&_Snapshots.CallOpts, numValidators, myIdx, blocksSinceDesperation, randomSeed, desperationFactor)
 }
 
 // Initialize is a paid mutator transaction binding the contract method 0x3ecc0f5e.
@@ -909,6 +909,140 @@ func (_Snapshots *SnapshotsSession) Snapshot(groupSignature_ []byte, bClaims_ []
 // Solidity: function snapshot(bytes groupSignature_, bytes bClaims_) returns(bool)
 func (_Snapshots *SnapshotsTransactorSession) Snapshot(groupSignature_ []byte, bClaims_ []byte) (*types.Transaction, error) {
 	return _Snapshots.Contract.Snapshot(&_Snapshots.TransactOpts, groupSignature_, bClaims_)
+}
+
+// SnapshotsInitializedIterator is returned from FilterInitialized and is used to iterate over the raw logs and unpacked data for Initialized events raised by the Snapshots contract.
+type SnapshotsInitializedIterator struct {
+	Event *SnapshotsInitialized // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *SnapshotsInitializedIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(SnapshotsInitialized)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(SnapshotsInitialized)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *SnapshotsInitializedIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *SnapshotsInitializedIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// SnapshotsInitialized represents a Initialized event raised by the Snapshots contract.
+type SnapshotsInitialized struct {
+	Version uint8
+	Raw     types.Log // Blockchain specific contextual infos
+}
+
+// FilterInitialized is a free log retrieval operation binding the contract event 0x7f26b83ff96e1f2b6a682f133852f6798a09c465da95921460cefb3847402498.
+//
+// Solidity: event Initialized(uint8 version)
+func (_Snapshots *SnapshotsFilterer) FilterInitialized(opts *bind.FilterOpts) (*SnapshotsInitializedIterator, error) {
+
+	logs, sub, err := _Snapshots.contract.FilterLogs(opts, "Initialized")
+	if err != nil {
+		return nil, err
+	}
+	return &SnapshotsInitializedIterator{contract: _Snapshots.contract, event: "Initialized", logs: logs, sub: sub}, nil
+}
+
+// WatchInitialized is a free log subscription operation binding the contract event 0x7f26b83ff96e1f2b6a682f133852f6798a09c465da95921460cefb3847402498.
+//
+// Solidity: event Initialized(uint8 version)
+func (_Snapshots *SnapshotsFilterer) WatchInitialized(opts *bind.WatchOpts, sink chan<- *SnapshotsInitialized) (event.Subscription, error) {
+
+	logs, sub, err := _Snapshots.contract.WatchLogs(opts, "Initialized")
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(SnapshotsInitialized)
+				if err := _Snapshots.contract.UnpackLog(event, "Initialized", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseInitialized is a log parse operation binding the contract event 0x7f26b83ff96e1f2b6a682f133852f6798a09c465da95921460cefb3847402498.
+//
+// Solidity: event Initialized(uint8 version)
+func (_Snapshots *SnapshotsFilterer) ParseInitialized(log types.Log) (*SnapshotsInitialized, error) {
+	event := new(SnapshotsInitialized)
+	if err := _Snapshots.contract.UnpackLog(event, "Initialized", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
 }
 
 // SnapshotsSnapshotTakenIterator is returned from FilterSnapshotTaken and is used to iterate over the raw logs and unpacked data for SnapshotTaken events raised by the Snapshots contract.

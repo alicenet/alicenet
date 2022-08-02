@@ -64,14 +64,19 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
             string(abi.encodePacked(SnapshotsErrorCodes.SNAPSHOT_CONSENSUS_RUNNING))
         );
 
-        Snapshot memory lastSnapshot = getLatestSnapshot();
+        uint256 lastSnapshotCommittedAt;
+        {
+            (bool ok, Snapshot memory lastSnapshot) = _getLatestSnapshot();
+            require(ok, string(abi.encodePacked(SnapshotsErrorCodes.SNAPSHOT_NOT_IN_BUFFER)));
+            lastSnapshotCommittedAt = lastSnapshot.committedAt;
+        }
+
         require(
-            block.number >= lastSnapshot.committedAt + _minimumIntervalBetweenSnapshots,
+            block.number >= lastSnapshotCommittedAt + _minimumIntervalBetweenSnapshots,
             string(abi.encodePacked(SnapshotsErrorCodes.SNAPSHOT_MIN_BLOCKS_INTERVAL_NOT_PASSED))
         );
-        
+
         uint32 epoch = _epochRegister().get() + 1;
-        
 
         {
             (uint256[4] memory masterPublicKey, uint256[2] memory signature) = RCertParserLibrary
@@ -112,7 +117,7 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
                 .tryGetParticipantIndex(msg.sender);
             require(success, "Snapshots: Caller didn't participate in the last ethdkg round!");
 
-            uint256 ethBlocksSinceLastSnapshot = block.number - _snapshots[epoch - 1].committedAt;
+            uint256 ethBlocksSinceLastSnapshot = block.number - lastSnapshotCommittedAt;
 
             uint256 blocksSinceDesperation = ethBlocksSinceLastSnapshot >= _snapshotDesperationDelay
                 ? ethBlocksSinceLastSnapshot - _snapshotDesperationDelay
@@ -263,7 +268,6 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
 
     function getSnapshot(uint256 epoch_) public view returns (Snapshot memory) {
         (bool ok, Snapshot memory data) = _getSnapshot(uint32(epoch_));
-
         require(ok, string(abi.encodePacked(SnapshotsErrorCodes.SNAPSHOT_NOT_IN_BUFFER)));
         return data;
     }
