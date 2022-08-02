@@ -74,7 +74,7 @@ contract Dynamics is ImmutableSnapshots {
             ptr := mload(0x40)
             retPtr := 0x80
             let size := extcodesize(addr)
-            extcodecopy(addr, ptr, 0, size)    
+            extcodecopy(addr, ptr, 0, size)
         }
         for(uint8 i = 0; i < sizes.length; i++){
             uint8 size = sizes[i];
@@ -85,7 +85,7 @@ contract Dynamics is ImmutableSnapshots {
             }
         }
     }
-    
+
     function decodeDeterministicBlob(address addr) public view returns(ConstantValues memory){
         uint8[1] memory sizes = [32];
         uint256 ptr;
@@ -95,7 +95,7 @@ contract Dynamics is ImmutableSnapshots {
             retPtr := 0x80
             let offset := 0x13
             let size := sub(extcodesize(addr), offset)
-            extcodecopy(addr, ptr, 0x1d, size)    
+            extcodecopy(addr, ptr, 0x1d, size)
         }
         for(uint8 i = 0; i < sizes.length; i++){
             uint8 size = sizes[i];
@@ -114,7 +114,7 @@ contract Dynamics is ImmutableSnapshots {
         assembly{
             ptr := mload(0x40)
             let csize := extcodesize(storageAddr)
-            extcodecopy(storageAddr, ptr, 0, csize) 
+            extcodecopy(storageAddr, ptr, 0, csize)
         }
         for(uint8 i = 0; i < index; i++){
             offset = offset + sizes[i];
@@ -124,7 +124,7 @@ contract Dynamics is ImmutableSnapshots {
             mstore(0x80, shr(sub(256,size), mload(add(ptr,offset))))
             return(0x80, 0x20)
         }
-        
+
     }
 
     function getValueAtIndexDeterministic(address storageAddr, uint8 index) public view returns (uint256){
@@ -135,7 +135,7 @@ contract Dynamics is ImmutableSnapshots {
         assembly{
             ptr := mload(0x40)
             let extOffset := 0x1d
-            extcodecopy(storageAddr, ptr, extOffset, sub(extcodesize(storageAddr), extOffset))    
+            extcodecopy(storageAddr, ptr, extOffset, sub(extcodesize(storageAddr), extOffset))
         }
         for(uint8 i = 0; i < index; i++){
             offset = offset + sizes[i];
@@ -149,7 +149,7 @@ contract Dynamics is ImmutableSnapshots {
 
     function deployStorageDeterministic(uint256 blockheight) public{
         address addr;
-        //FeeStorage byte string 
+        //FeeStorage byte string
         bytes32 salt_ = bytes32(blockheight);
         assembly {
             let ptr := mload(0x40)
@@ -170,11 +170,13 @@ contract Dynamics is ImmutableSnapshots {
         emit DeployedStorage(addr);
     }
 
-    function getStorageCode() external view returns(bytes memory){
+     function getStorageCode() external view returns(bytes memory){
         ConstantValues memory values = constantFees;
         address self = factoryAddress;
         bytes memory data = abi.encodePacked(hex"73", self, hex"3303601c5733ff5b", values.tokenDepositFee);
-        return data;
+        assembly{
+            return(add(data,0x20), mload(data))
+        }
     }
 
     function setValue(
