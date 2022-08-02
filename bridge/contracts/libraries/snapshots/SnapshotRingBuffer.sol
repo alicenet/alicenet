@@ -59,17 +59,14 @@ library RingBuffer {
     }
 }
 
-
-
 library EpochLib {
     function set(Epoch storage self_, uint32 value_) internal {
         self_._value = value_;
     }
 
     function get(Epoch storage self_) internal view returns (uint32) {
-        return  self_._value;
+        return self_._value;
     }
-
 }
 
 abstract contract SnapshotRingBuffer {

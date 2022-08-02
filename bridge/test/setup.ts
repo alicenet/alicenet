@@ -46,6 +46,15 @@ export interface Snapshot {
   GroupSignature: string;
   height: BigNumberish;
   validatorIndex: number;
+  BClaimsDeserialized?: [
+    number,
+    number,
+    number,
+    string,
+    string,
+    string,
+    string
+  ];
 }
 
 export interface BaseFixture {

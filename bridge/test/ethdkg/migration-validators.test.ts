@@ -247,26 +247,27 @@ describe("Ethdkg: Migrate state", () => {
     let expectedEpoch = 2;
     let expectedHeight = 2048;
     let expectedSafeToProceedConsensus = false;
-    
+
     const txResponse = await fixture.snapshots
+      .connect(await getValidatorEthAccount(validatorsSnapshots2[1]))
+      .snapshot(validSnapshot2048.GroupSignature, validSnapshot2048.BClaims);
+    const rx: any = await txResponse.wait();
+    console.log(rx.events[0].args);
+    await expect(
+      fixture.snapshots
         .connect(await getValidatorEthAccount(validatorsSnapshots2[1]))
         .snapshot(validSnapshot2048.GroupSignature, validSnapshot2048.BClaims)
-    const rx:any = await txResponse.wait()
-    console.log(rx.events[0].args)
-    // await expect(
-    //   fixture.snapshots
-    //     .connect(await getValidatorEthAccount(validatorsSnapshots2[1]))
-    //     .snapshot(validSnapshot2048.GroupSignature, validSnapshot2048.BClaims)
-    // )
-    //   .to.emit(fixture.snapshots, `SnapshotTaken`)
-    //   .withArgs(
-    //     expectedChainId,
-    //     expectedEpoch,
-    //     expectedHeight,
-    //     ethers.utils.getAddress(validatorsSnapshots2[1].address),
-    //     expectedSafeToProceedConsensus,
-    //     validSnapshot2048.GroupSignature
-    //   );
+    )
+      .to.emit(fixture.snapshots, `SnapshotTaken`)
+      .withArgs(
+        expectedChainId,
+        expectedEpoch,
+        expectedHeight,
+        ethers.utils.getAddress(validatorsSnapshots2[1].address),
+        expectedSafeToProceedConsensus,
+        validSnapshot2048.GroupSignature,
+        validSnapshot2048.BClaimsDeserialized
+      );
 
     // unregister validators and register news
     await factoryCallAnyFixture(

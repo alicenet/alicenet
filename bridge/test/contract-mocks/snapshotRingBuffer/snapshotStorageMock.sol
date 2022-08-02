@@ -7,11 +7,9 @@ import "contracts/utils/ImmutableAuth.sol";
 import "contracts/libraries/snapshots/SnapshotRingBuffer.sol";
 
 contract SnapshotsStorageMock is ImmutableETHDKG, ImmutableValidatorPool, SnapshotRingBuffer {
-
     uint256 internal immutable _epochLength;
 
     uint256 internal immutable _chainId;
-
 
     // Number of ethereum blocks that we should wait between snapshots. Mainly used to prevent the
     // submission of snapshots in short amount of time by validators that could be potentially being

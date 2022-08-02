@@ -294,7 +294,7 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
 
     function _getLatestSnapshotSafe() internal view returns (Snapshot memory) {
         if (_epochRegister().get() == 0) {
-            return Snapshot(0, BClaimsParserLibrary.BClaims(0,0,0,0,0,0,0));
+            return Snapshot(0, BClaimsParserLibrary.BClaims(0, 0, 0, 0, 0, 0, 0));
         }
         (bool ok, Snapshot memory snapshotData) = _getLatestSnapshot();
         require(ok, string(abi.encodePacked(SnapshotsErrorCodes.SNAPSHOT_NOT_IN_BUFFER)));
