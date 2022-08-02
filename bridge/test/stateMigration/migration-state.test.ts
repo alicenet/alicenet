@@ -38,6 +38,53 @@ describe("State Migration: Migrate state", () => {
     const expectedChainId = 1;
     const expectedAliceNetHeights = [76800n, 77824n, 78848n, 79872n, 80896n];
     const expectedEpochs = [75n, 76n, 77n, 78n, 79n];
+    const expectedBClaims = [
+      [
+        21,
+        76800,
+        0,
+        "0x031dfcf2fef268ff9956ee399230e9bf1da9dd510d18552b736b3269f4544c01",
+        "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
+        "0xd058c043d927976ecf061b3cdb3a4a0d2de3284fcd69e23733650a1b3ef36753",
+        "0x3807ec1e085227e7bb99f47db1b118cefdae66f2fbfc66449a4500e9a6a2dab2",
+      ],
+      [
+        21,
+        77824,
+        0,
+        "0x9a7a9e6d46b1640392f4444a9cf56d1190fe77fd4a740ee76b0e5f261341d195",
+        "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
+        "0xd29f86626d42e94c88da05e5cec3c29f0fd037f8a9e1fcb6b49a4dd322da317c",
+        "0xe4c870a97b5731173a6d17b71740c498ed409e25e28e9077c7f9119af3c28692",
+      ],
+      [
+        21,
+        78848,
+        0,
+        "0x00f396eeda71abea614606937f7fcbd4d704af9ac0556a66687d689497c8da09",
+        "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
+        "0x33839738f138dbcbb362c3b351c7b7f16041304c75354fb11ae01d3623cc4e14",
+        "0x6a5a9af572eacd9e40d9f508d077419cc191f542c213d2c204d3251ce88c476b",
+      ],
+      [
+        21,
+        79872,
+        0,
+        "0x00af33d9a061b001d8c1c912b2cf58f5f5bccd81e9c0fac7ac4f256134677a27",
+        "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
+        "0x99726b1e813baf97a0f88c89c5257358c4ef40c38b515184ea95bb9113587c85",
+        "0xa06879b5886d1af4f04773c418b9517db8b410de7fdff0fd9ed47316e4c23e9f",
+      ],
+      [
+        21,
+        80896,
+        0,
+        "0x1923548c43980ec331fa993cb8b90b157f4251fc8c37ba3506d205611af468e8",
+        "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
+        "0x2df6fa1cfdeabd709149817a42eb2c1e2c18cc06c6b2bbf4a51d825aaa442f35",
+        "0x16f8b5f4a60397c0efdd38750282135beff68f4cdff36497574894658e2807ce",
+      ],
+    ];
     const signatures = [
       "0x2c28ce7f0c752e035b68687a8210cceb6068b5034bba9a4a8f2d43e3bbaa8877081b33b885370e04cd712601eb860bf821396bdbcd4b089aba0bfe7b1e649dd3253adba688741303e0b046632b35289a0d5c7648b414375e4d61a855abc5f0c3095ed894617e232df1779101e1d98e177340cb0fc6283cbc437d79a12290c2f114551b8239e68c2fc16a68bbfbfe2140b718ca279d784074743ce1dcdb134ed10d0a4d630460957d1c50c0e3a8238cafc3985651674ce03e4b91837da6080de6",
       "0x2c28ce7f0c752e035b68687a8210cceb6068b5034bba9a4a8f2d43e3bbaa8877081b33b885370e04cd712601eb860bf821396bdbcd4b089aba0bfe7b1e649dd3253adba688741303e0b046632b35289a0d5c7648b414375e4d61a855abc5f0c3095ed894617e232df1779101e1d98e177340cb0fc6283cbc437d79a12290c2f11a4d9a0e85b1e265f221c163546d61fcf76b301944368abbfbba42dc56a083ba2ac800dc9a20a25ca95146c65d6c6cddbb299625907c1a057754f70073ec8675",
@@ -55,7 +102,8 @@ describe("State Migration: Migrate state", () => {
           expectedAliceNetHeights[i],
           fixture.factory.address,
           true,
-          signatures[i]
+          signatures[i],
+          expectedBClaims[i],
         );
     }
 
