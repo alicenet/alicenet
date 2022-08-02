@@ -47,6 +47,7 @@ describe("Snapshots: With successful ETHDKG round completed and validatorPool", 
     await mineBlocks(
       (await fixture.snapshots.getMinimumIntervalBetweenSnapshots()).toBigInt()
     );
+
     await expect(
       snapshots
         .connect(await getValidatorEthAccount(validatorsSnapshots1[0]))
@@ -60,8 +61,9 @@ describe("Snapshots: With successful ETHDKG round completed and validatorPool", 
         ethers.utils.getAddress(validatorsSnapshots1[0].address),
         expectedSafeToProceedConsensus,
         validSnapshot1024.GroupSignature,
-        validSnapshot1024.BClaims
+        validSnapshot1024.BClaimsDeserialized
       );
+
     await factoryCallAnyFixture(
       fixture,
       "validatorPool",
@@ -109,7 +111,7 @@ describe("Snapshots: With successful ETHDKG round completed and validatorPool", 
         ethers.utils.getAddress(validatorsSnapshots2[0].address),
         expectedSafeToProceedConsensus,
         validSnapshot2048.GroupSignature,
-        validSnapshot2048.BClaims
+        validSnapshot2048.BClaimsDeserialized
       );
   });
 });

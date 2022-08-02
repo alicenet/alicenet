@@ -64,12 +64,7 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
             string(abi.encodePacked(SnapshotsErrorCodes.SNAPSHOT_CONSENSUS_RUNNING))
         );
 
-        uint256 lastSnapshotCommittedAt;
-        {
-            (bool ok, Snapshot memory lastSnapshot) = _getLatestSnapshot();
-            require(ok, string(abi.encodePacked(SnapshotsErrorCodes.SNAPSHOT_NOT_IN_BUFFER)));
-            lastSnapshotCommittedAt = lastSnapshot.committedAt;
-        }
+        uint256 lastSnapshotCommittedAt = _getLatestSnapshotSafe().committedAt;
 
         require(
             block.number >= lastSnapshotCommittedAt + _minimumIntervalBetweenSnapshots,
@@ -231,7 +226,7 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
     }
 
     function getChainIdFromLatestSnapshot() public view returns (uint256) {
-        return getLatestSnapshot().blockClaims.chainId;
+        return _getLatestSnapshotSafe().blockClaims.chainId;
     }
 
     function getBlockClaimsFromSnapshot(uint256 epoch_)
@@ -247,7 +242,7 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
         view
         returns (BClaimsParserLibrary.BClaims memory)
     {
-        return getLatestSnapshot().blockClaims;
+        return _getLatestSnapshotSafe().blockClaims;
     }
 
     function getCommittedHeightFromSnapshot(uint256 epoch_) public view returns (uint256) {
@@ -255,7 +250,7 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
     }
 
     function getCommittedHeightFromLatestSnapshot() public view returns (uint256) {
-        return getLatestSnapshot().committedAt;
+        return _getLatestSnapshotSafe().committedAt;
     }
 
     function getAliceNetHeightFromSnapshot(uint256 epoch_) public view returns (uint256) {
@@ -263,7 +258,7 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
     }
 
     function getAliceNetHeightFromLatestSnapshot() public view returns (uint256) {
-        return getLatestSnapshot().blockClaims.height;
+        return _getLatestSnapshotSafe().blockClaims.height;
     }
 
     function getSnapshot(uint256 epoch_) public view returns (Snapshot memory) {
@@ -273,9 +268,7 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
     }
 
     function getLatestSnapshot() public view returns (Snapshot memory) {
-        (bool ok, Snapshot memory data) = _getLatestSnapshot();
-        require(ok, string(abi.encodePacked(SnapshotsErrorCodes.SNAPSHOT_NOT_IN_BUFFER)));
-        return data;
+        return _getLatestSnapshotSafe();
     }
 
     function getEpochFromHeight(uint256 height) public view returns (uint256) {
@@ -297,6 +290,15 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
                 randomSeed,
                 desperationFactor
             );
+    }
+
+    function _getLatestSnapshotSafe() internal view returns (Snapshot memory) {
+        if (_epochRegister().get() == 0) {
+            return Snapshot(0, BClaimsParserLibrary.BClaims(0,0,0,0,0,0,0));
+        }
+        (bool ok, Snapshot memory snapshotData) = _getLatestSnapshot();
+        require(ok, string(abi.encodePacked(SnapshotsErrorCodes.SNAPSHOT_NOT_IN_BUFFER)));
+        return snapshotData;
     }
 
     function _mayValidatorSnapshot(

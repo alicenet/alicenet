@@ -1,6 +1,6 @@
 import { BigNumber } from "ethers";
-import { ValidatorRawData } from "../ethdkg/setup";
-import { SignedBClaims, Snapshot } from "../setup";
+import { ValidatorRawData } from "../../ethdkg/setup";
+import { SignedBClaims, Snapshot } from "../../setup";
 
 export const validatorsSnapshotsG2: ValidatorRawData[] = [
   {
