@@ -214,7 +214,7 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
     }
 
     function getEpoch() public view returns (uint256) {
-        return _epoch._value;
+        return _epochRegister().get();
     }
 
     function getEpochLength() public view returns (uint256) {
