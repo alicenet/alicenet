@@ -319,7 +319,7 @@ describe("ValidatorPool: Consensus dependent logic ", async () => {
       })
     ).to.be.revertedWithCustomError(
       fixture.validatorPool,
-      "OnlyNFTContractsAllowed"
+      "OnlyStakingContractsAllowed"
     );
   });
 });

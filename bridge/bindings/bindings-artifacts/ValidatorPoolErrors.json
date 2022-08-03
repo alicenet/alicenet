@@ -135,7 +135,7 @@
   },
   {
     "inputs": [],
-    "name": "OnlyNFTContractsAllowed",
+    "name": "OnlyStakingContractsAllowed",
     "type": "error"
   },
   {

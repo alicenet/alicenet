@@ -57,7 +57,7 @@ contract ValidatorPool is
 
     receive() external payable {
         if (msg.sender != _validatorStakingAddress() && msg.sender != _publicStakingAddress()) {
-            revert ValidatorPoolErrors.OnlyNFTContractsAllowed();
+            revert ValidatorPoolErrors.OnlyStakingContractsAllowed();
         }
     }
 

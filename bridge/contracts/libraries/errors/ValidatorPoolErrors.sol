@@ -5,7 +5,7 @@ library ValidatorPoolErrors {
     error CallerNotValidator(address caller);
     error ConsensusRunning();
     error ETHDKGRoundRunning();
-    error OnlyNFTContractsAllowed();
+    error OnlyStakingContractsAllowed();
     error MinimumBlockIntervalNotMet();
     error NotEnoughValidatorSlotsAvailable(uint256 requiredSlots, uint256 availableSlots);
     error RegistrationParameterLengthMismatch(

@@ -183,11 +183,6 @@
     "type": "error"
   },
   {
-    "inputs": [],
-    "name": "OnlyNFTContractsAllowed",
-    "type": "error"
-  },
-  {
     "inputs": [
       {
         "internalType": "address",
@@ -207,6 +202,11 @@
       }
     ],
     "name": "OnlySnapshots",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "OnlyStakingContractsAllowed",
     "type": "error"
   },
   {
