@@ -139,16 +139,17 @@ contract ETHDKGPhases is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
     ) external {
         // Only progress if all participants distributed their shares
         // and no bad participant was found
-        if (
-            !(_ethdkgPhase == Phase.KeyShareSubmission &&
+        {
+            bool isInKeyShareSubmission = _ethdkgPhase == Phase.KeyShareSubmission &&
                 block.number >= _phaseStartBlock &&
-                block.number < _phaseStartBlock + _phaseLength) &&
-            !(_ethdkgPhase == Phase.DisputeShareDistribution &&
+                block.number < _phaseStartBlock + _phaseLength;
+            bool isInDisputeShareDistribution = _ethdkgPhase == Phase.DisputeShareDistribution &&
                 block.number >= _phaseStartBlock + _phaseLength &&
                 block.number < _phaseStartBlock + 2 * _phaseLength &&
-                _badParticipants == 0)
-        ) {
-            revert ETHDKGErrors.ETHDKGNotInKeyshareSubmissionPhase(_ethdkgPhase);
+                _badParticipants == 0;
+            if (!isInKeyShareSubmission && !isInDisputeShareDistribution) {
+                revert ETHDKGErrors.ETHDKGNotInKeyshareSubmissionPhase(_ethdkgPhase);
+            }
         }
 
         // Since we had a dispute stage prior this state we need to set global state in here
