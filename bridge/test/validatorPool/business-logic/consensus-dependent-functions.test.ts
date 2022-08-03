@@ -9,6 +9,7 @@ import {
   factoryCallAnyFixture,
   Fixture,
   getFixture,
+  getReceiptForFailedTransaction,
   getValidatorEthAccount,
 } from "../../setup";
 import {
@@ -52,17 +53,25 @@ describe("ValidatorPool: Consensus dependent logic ", async () => {
 
   it("Should not allow pausing “consensus” before 1.5 without snapshots", async function () {
     await commitSnapshots(fixture, 1);
-    await expect(
-      factoryCallAnyFixture(
-        fixture,
-        "validatorPool",
-        "pauseConsensusOnArbitraryHeight",
-        [1]
-      )
-    ).to.be.revertedWithCustomError(
-      fixture.validatorPool,
-      "MinimumBlockIntervalNotMet"
+    const latestSnapshotHeight =
+      await fixture.snapshots.getCommittedHeightFromLatestSnapshot();
+    const maxInterval =
+      await fixture.validatorPool.MAX_INTERVAL_WITHOUT_SNAPSHOTS();
+    const txPromise = factoryCallAnyFixture(
+      fixture,
+      "validatorPool",
+      "pauseConsensusOnArbitraryHeight",
+      [1]
     );
+    const expectedBlockNumber = (
+      await getReceiptForFailedTransaction(txPromise)
+    ).blockNumber;
+    await expect(txPromise)
+      .to.be.revertedWithCustomError(
+        fixture.validatorPool,
+        "MinimumBlockIntervalNotMet"
+      )
+      .withArgs(expectedBlockNumber, latestSnapshotHeight.add(maxInterval));
   });
 
   it("Pause consensus after 1.5 days without snapshot", async function () {

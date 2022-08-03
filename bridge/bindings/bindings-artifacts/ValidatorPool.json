@@ -118,7 +118,18 @@
     "type": "error"
   },
   {
-    "inputs": [],
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "currentBlockNumber",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "targetBlockNumber",
+        "type": "uint256"
+      }
+    ],
     "name": "MinimumBlockIntervalNotMet",
     "type": "error"
   },

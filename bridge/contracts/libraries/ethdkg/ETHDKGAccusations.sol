@@ -95,14 +95,13 @@ contract ETHDKGAccusations is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
         uint256[2] memory sharedKeyCorrectnessProof
     ) external {
         // We should allow accusation, even if some of the participants didn't participate
-        if (
-            !(_ethdkgPhase == Phase.DisputeShareDistribution &&
-                block.number >= _phaseStartBlock &&
-                block.number < _phaseStartBlock + _phaseLength) &&
-            !(_ethdkgPhase == Phase.ShareDistribution &&
-                block.number >= _phaseStartBlock + _phaseLength &&
-                block.number < _phaseStartBlock + 2 * _phaseLength)
-        ) {
+        bool isInDisputeShareDistribution = _ethdkgPhase == Phase.DisputeShareDistribution &&
+            block.number >= _phaseStartBlock &&
+            block.number < _phaseStartBlock + _phaseLength;
+        bool isInShareDistribution = _ethdkgPhase == Phase.ShareDistribution &&
+            block.number >= _phaseStartBlock + _phaseLength &&
+            block.number < _phaseStartBlock + 2 * _phaseLength;
+        if (!isInDisputeShareDistribution && !isInShareDistribution) {
             revert ETHDKGErrors.ETHDKGNotInDisputePhase(_ethdkgPhase);
         }
 

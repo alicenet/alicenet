@@ -112,12 +112,10 @@ contract ValidatorPool is
     }
 
     function pauseConsensusOnArbitraryHeight(uint256 aliceNetHeight_) public onlyFactory {
-        if (
-            block.number <=
-            ISnapshots(_snapshotsAddress()).getCommittedHeightFromLatestSnapshot() +
-                MAX_INTERVAL_WITHOUT_SNAPSHOTS
-        ) {
-            revert ValidatorPoolErrors.MinimumBlockIntervalNotMet();
+        uint256 targetBlockNumber = ISnapshots(_snapshotsAddress())
+            .getCommittedHeightFromLatestSnapshot() + MAX_INTERVAL_WITHOUT_SNAPSHOTS;
+        if (block.number <= targetBlockNumber) {
+            revert ValidatorPoolErrors.MinimumBlockIntervalNotMet(block.number, targetBlockNumber);
         }
         _isConsensusRunning = false;
         IETHDKG(_ethdkgAddress()).setCustomAliceNetHeight(aliceNetHeight_);

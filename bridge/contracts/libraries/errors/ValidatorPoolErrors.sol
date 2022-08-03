@@ -6,7 +6,7 @@ library ValidatorPoolErrors {
     error ConsensusRunning();
     error ETHDKGRoundRunning();
     error OnlyStakingContractsAllowed();
-    error MinimumBlockIntervalNotMet();
+    error MinimumBlockIntervalNotMet(uint256 currentBlockNumber, uint256 targetBlockNumber);
     error NotEnoughValidatorSlotsAvailable(uint256 requiredSlots, uint256 availableSlots);
     error RegistrationParameterLengthMismatch(
         uint256 validatorsLength,

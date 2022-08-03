@@ -1,5 +1,10 @@
 import { expect } from "hardhat";
-import { factoryCallAnyFixture, Fixture, getFixture } from "../setup";
+import {
+  factoryCallAnyFixture,
+  Fixture,
+  getFixture,
+  getReceiptForFailedTransaction,
+} from "../setup";
 import { commitSnapshots } from "./setup";
 
 describe("ValidatorPool Access Control: An user with admin role should be able to:", async function () {
@@ -72,16 +77,26 @@ describe("ValidatorPool Access Control: An user with admin role should be able t
 
   it("Pause consensus", async function () {
     await commitSnapshots(fixture, 1);
-    await expect(
-      factoryCallAnyFixture(
-        fixture,
-        "validatorPool",
-        "pauseConsensusOnArbitraryHeight",
-        [1]
-      )
-    ).to.be.revertedWithCustomError(
-      fixture.validatorPool,
-      "MinimumBlockIntervalNotMet"
+    const latestSnapshotHeight =
+      await fixture.snapshots.getCommittedHeightFromLatestSnapshot();
+    const maxInterval =
+      await fixture.validatorPool.MAX_INTERVAL_WITHOUT_SNAPSHOTS();
+
+    const txPromise = factoryCallAnyFixture(
+      fixture,
+      "validatorPool",
+      "pauseConsensusOnArbitraryHeight",
+      [1]
     );
+    const expectedBlockNumber = (
+      await getReceiptForFailedTransaction(txPromise)
+    ).blockNumber;
+
+    await expect(txPromise)
+      .to.be.revertedWithCustomError(
+        fixture.validatorPool,
+        "MinimumBlockIntervalNotMet"
+      )
+      .withArgs(expectedBlockNumber, latestSnapshotHeight.add(maxInterval));
   });
 });
