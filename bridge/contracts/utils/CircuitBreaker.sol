@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT-open-group
 pragma solidity ^0.8.0;
 
-import {CircuitBreakerErrors} from "contracts/libraries/errors/CircuitBreakerErrors.sol";
+import "contracts/libraries/errors/CircuitBreakerErrors.sol";
 
 abstract contract CircuitBreaker {
     bool internal constant _OPEN = true;

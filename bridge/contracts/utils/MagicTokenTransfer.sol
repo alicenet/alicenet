@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import "contracts/utils/MagicValue.sol";
 import "contracts/interfaces/IERC20Transferable.sol";
 import "contracts/interfaces/IMagicTokenTransfer.sol";
-import {MagicTokenTransferErrors} from "contracts/libraries/errors/MagicTokenTransferErrors.sol";
+import "contracts/libraries/errors/MagicTokenTransferErrors.sol";
 
 abstract contract MagicTokenTransfer is MagicValue {
     function _safeTransferTokenWithMagic(

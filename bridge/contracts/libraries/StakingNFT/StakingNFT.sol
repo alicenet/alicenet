@@ -12,8 +12,8 @@ import "contracts/utils/MagicValue.sol";
 import "contracts/interfaces/ICBOpener.sol";
 import "contracts/interfaces/IStakingNFT.sol";
 import "contracts/interfaces/IStakingNFTDescriptor.sol";
-import {StakingNFTErrors} from "contracts/libraries/errors/StakingNFTErrors.sol";
-import {CircuitBreakerErrors} from "contracts/libraries/errors/CircuitBreakerErrors.sol";
+import "contracts/libraries/errors/StakingNFTErrors.sol";
+import "contracts/libraries/errors/CircuitBreakerErrors.sol";
 
 abstract contract StakingNFT is
     Initializable,

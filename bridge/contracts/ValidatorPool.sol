@@ -17,7 +17,7 @@ import "contracts/interfaces/IERC20Transferable.sol";
 import "contracts/interfaces/IStakingNFT.sol";
 import "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import {ValidatorPoolErrors} from "contracts/libraries/errors/ValidatorPoolErrors.sol";
+import "contracts/libraries/errors/ValidatorPoolErrors.sol";
 
 /// @custom:salt ValidatorPool
 /// @custom:deploy-type deployUpgradeable

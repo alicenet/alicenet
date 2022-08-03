@@ -2,7 +2,7 @@
 pragma solidity ^0.8.11;
 
 import "contracts/interfaces/IGovernor.sol";
-import {GovernanceErrors} from "contracts/libraries/errors/GovernanceErrors.sol";
+import "contracts/libraries/errors/GovernanceErrors.sol";
 
 /// @custom:salt Governance
 /// @custom:deploy-type deployUpgradeable

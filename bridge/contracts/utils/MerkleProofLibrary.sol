@@ -2,7 +2,7 @@
 pragma solidity ^0.8.11;
 
 import "contracts/libraries/parsers/MerkleProofParserLibrary.sol";
-import {MerkleProofLibraryErrors} from "contracts/libraries/errors/MerkleProofLibraryErrors.sol";
+import "contracts/libraries/errors/MerkleProofLibraryErrors.sol";
 
 library MerkleProofLibrary {
     /// @notice Check if the bit at the given `index` in `self` is set. Function

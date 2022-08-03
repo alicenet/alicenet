@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT-open-group
 pragma solidity ^0.8.0;
-import {AdminErrors} from "contracts/libraries/errors/AdminErrors.sol";
+import "contracts/libraries/errors/AdminErrors.sol";
 
 abstract contract Admin {
     // _admin is a privileged role

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT-open-group
 pragma solidity ^0.8.0;
 
-import {MutexErrors} from "contracts/libraries/errors/MutexErrors.sol";
+import "contracts/libraries/errors/MutexErrors.sol";
 
 abstract contract Mutex {
     uint256 internal constant _LOCKED = 1;

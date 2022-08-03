@@ -10,7 +10,7 @@ import "contracts/libraries/math/CryptoLibrary.sol";
 import "contracts/libraries/snapshots/SnapshotsStorage.sol";
 import "contracts/utils/DeterministicAddress.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import {SnapshotsErrors} from "contracts/libraries/errors/SnapshotsErrors.sol";
+import "contracts/libraries/errors/SnapshotsErrors.sol";
 
 /// @custom:salt Snapshots
 /// @custom:deploy-type deployUpgradeable

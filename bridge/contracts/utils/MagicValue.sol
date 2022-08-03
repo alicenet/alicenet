@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT-open-group
 pragma solidity ^0.8.0;
-import {MagicValueErrors} from "contracts/libraries/errors/MagicValueErrors.sol";
+import "contracts/libraries/errors/MagicValueErrors.sol";
 
 abstract contract MagicValue {
     // _MAGIC_VALUE is a constant that may be used to prevent

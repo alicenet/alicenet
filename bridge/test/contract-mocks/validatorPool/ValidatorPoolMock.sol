@@ -9,7 +9,7 @@ import "contracts/interfaces/IStakingNFT.sol";
 import "contracts/utils/CustomEnumerableMaps.sol";
 import "contracts/utils/DeterministicAddress.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import {ValidatorPoolErrors} from "contracts/libraries/errors/ValidatorPoolErrors.sol";
+import "contracts/libraries/errors/ValidatorPoolErrors.sol";
 
 contract ValidatorPoolMock is
     Initializable,
