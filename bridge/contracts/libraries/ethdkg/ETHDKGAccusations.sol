@@ -322,9 +322,9 @@ contract ETHDKGAccusations is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
         ////////////////////////////////////////////////////////////////////////
         // First, check length of things
         if (
-            (validators.length != numParticipants) ||
-            (encryptedSharesHash.length != numParticipants) ||
-            (commitments.length != numParticipants)
+            validators.length != numParticipants ||
+            encryptedSharesHash.length != numParticipants ||
+            commitments.length != numParticipants
         ) {
             revert ETHDKGErrors.ArgumentsLengthDoesNotEqualNumberOfParticipants(
                 validators.length,
