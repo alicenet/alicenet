@@ -12,14 +12,14 @@ library ValidatorPoolErrors {
         uint256 validatorsLength,
         uint256 stakerTokenIDsLength
     );
-    error FactoryShouldOwnPosition(uint256 positionId);
+    error SenderShouldOwnPosition(uint256 positionId);
     error LengthGreaterThanAvailableValidators(uint256 length, uint256 availableValidators);
-    error ProfitsNotClaimableWhileConsensusNotRunning();
+    error ProfitsOnlyClaimableWhileConsensusRunning();
     error TokenBalanceChangedDuringOperation();
     error EthBalanceChangedDuringOperation();
     error SenderNotInExitingQueue(address sender);
     error WaitingPeriodNotMet();
-    error DishonestValidatorNotAccusable(address validator);
+    error AddressNotAccusable(address addr);
     error InvalidIndex(uint256 index);
     error AddressAlreadyValidator(address addr);
     error AddressNotValidator(address addr);

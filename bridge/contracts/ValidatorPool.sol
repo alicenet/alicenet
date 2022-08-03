@@ -144,7 +144,7 @@ contract ValidatorPool is
 
         for (uint256 i = 0; i < validators_.length; i++) {
             if (msg.sender != IERC721(_publicStakingAddress()).ownerOf(stakerTokenIDs_[i])) {
-                revert ValidatorPoolErrors.FactoryShouldOwnPosition(stakerTokenIDs_[i]);
+                revert ValidatorPoolErrors.SenderShouldOwnPosition(stakerTokenIDs_[i]);
             }
             _registerValidator(validators_[i], stakerTokenIDs_[i]);
         }
@@ -185,7 +185,7 @@ contract ValidatorPool is
         returns (uint256 payoutEth, uint256 payoutToken)
     {
         if (!_isConsensusRunning) {
-            revert ValidatorPoolErrors.ProfitsNotClaimableWhileConsensusNotRunning();
+            revert ValidatorPoolErrors.ProfitsOnlyClaimableWhileConsensusRunning();
         }
 
         uint256 balanceBeforeToken = IERC20Transferable(_aTokenAddress()).balanceOf(address(this));
@@ -235,7 +235,7 @@ contract ValidatorPool is
 
     function majorSlash(address dishonestValidator_, address disputer_) public onlyETHDKG {
         if (!_isAccusable(dishonestValidator_)) {
-            revert ValidatorPoolErrors.DishonestValidatorNotAccusable(dishonestValidator_);
+            revert ValidatorPoolErrors.AddressNotAccusable(dishonestValidator_);
         }
         uint256 balanceBeforeToken = IERC20Transferable(_aTokenAddress()).balanceOf(address(this));
         uint256 balanceBeforeEth = address(this).balance;
@@ -268,7 +268,7 @@ contract ValidatorPool is
 
     function minorSlash(address dishonestValidator_, address disputer_) public onlyETHDKG {
         if (!_isAccusable(dishonestValidator_)) {
-            revert ValidatorPoolErrors.DishonestValidatorNotAccusable(dishonestValidator_);
+            revert ValidatorPoolErrors.AddressNotAccusable(dishonestValidator_);
         }
         uint256 balanceBeforeToken = IERC20Transferable(_aTokenAddress()).balanceOf(address(this));
         uint256 balanceBeforeEth = address(this).balance;
@@ -427,8 +427,8 @@ contract ValidatorPool is
             uint256 payoutToken
         )
     {
-        if (_validators.length() > _maxNumValidators) {
-            revert ValidatorPoolErrors.NotEnoughValidatorSlotsAvailable(_validators.length(), 0);
+        if (_validators.length() >= _maxNumValidators) {
+            revert ValidatorPoolErrors.NotEnoughValidatorSlotsAvailable(1, 0);
         }
         if (_isAccusable(validator_)) {
             revert ValidatorPoolErrors.AddressAlreadyValidator(validator_);
@@ -499,7 +499,7 @@ contract ValidatorPool is
         );
         uint256 stakeAmount = _stakeAmount;
         if (stakeShares < stakeAmount) {
-            revert ValidatorPoolErrors.InsufficientFundsInStakePosition(stakeShares, _stakeAmount);
+            revert ValidatorPoolErrors.InsufficientFundsInStakePosition(stakeShares, stakeAmount);
         }
         IERC721Transferable(_publicStakingAddress()).safeTransferFrom(
             to_,
@@ -615,7 +615,7 @@ contract ValidatorPool is
         )
     {
         if (!_isAccusable(dishonestValidator_)) {
-            revert ValidatorPoolErrors.DishonestValidatorNotAccusable(dishonestValidator_);
+            revert ValidatorPoolErrors.AddressNotAccusable(dishonestValidator_);
         }
         // If the user accused is a valid validator, we should burn is validatorStaking position,
         // otherwise we burn the user's PublicStaking in the exiting line

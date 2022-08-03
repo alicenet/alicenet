@@ -533,7 +533,7 @@ describe("ValidatorPool: Slashing logic", async () => {
     await expect(ethdkg.majorSlash(validators[0], validators[1]))
       .to.be.revertedWithCustomError(
         fixture.validatorPool,
-        "DishonestValidatorNotAccusable"
+        "AddressNotAccusable"
       )
       .withArgs(ethers.utils.getAddress(validators[0]));
   });
@@ -558,7 +558,7 @@ describe("ValidatorPool: Slashing logic", async () => {
     )
       .to.be.revertedWithCustomError(
         fixture.validatorPool,
-        "DishonestValidatorNotAccusable"
+        "AddressNotAccusable"
       )
       .withArgs(await adminSigner.getAddress());
 
@@ -567,7 +567,7 @@ describe("ValidatorPool: Slashing logic", async () => {
     )
       .to.be.revertedWithCustomError(
         fixture.validatorPool,
-        "DishonestValidatorNotAccusable"
+        "AddressNotAccusable"
       )
       .withArgs(await adminSigner.getAddress());
   });
@@ -711,7 +711,7 @@ describe("ValidatorPool: Slashing logic", async () => {
     await expect(ethdkg.minorSlash(infringer, disputer))
       .to.be.revertedWithCustomError(
         fixture.validatorPool,
-        "DishonestValidatorNotAccusable"
+        "AddressNotAccusable"
       )
       .withArgs(ethers.utils.getAddress(infringer));
   });

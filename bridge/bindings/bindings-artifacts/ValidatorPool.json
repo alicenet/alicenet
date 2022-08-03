@@ -23,6 +23,17 @@
         "type": "address"
       }
     ],
+    "name": "AddressNotAccusable",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "addr",
+        "type": "address"
+      }
+    ],
     "name": "AddressNotValidator",
     "type": "error"
   },
@@ -43,17 +54,6 @@
     "type": "error"
   },
   {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "validator",
-        "type": "address"
-      }
-    ],
-    "name": "DishonestValidatorNotAccusable",
-    "type": "error"
-  },
-  {
     "inputs": [],
     "name": "ETHDKGRoundRunning",
     "type": "error"
@@ -61,17 +61,6 @@
   {
     "inputs": [],
     "name": "EthBalanceChangedDuringOperation",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "positionId",
-        "type": "uint256"
-      }
-    ],
-    "name": "FactoryShouldOwnPosition",
     "type": "error"
   },
   {
@@ -227,7 +216,7 @@
   },
   {
     "inputs": [],
-    "name": "ProfitsNotClaimableWhileConsensusNotRunning",
+    "name": "ProfitsOnlyClaimableWhileConsensusRunning",
     "type": "error"
   },
   {
@@ -255,6 +244,17 @@
       }
     ],
     "name": "SenderNotInExitingQueue",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "positionId",
+        "type": "uint256"
+      }
+    ],
+    "name": "SenderShouldOwnPosition",
     "type": "error"
   },
   {
