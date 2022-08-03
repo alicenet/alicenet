@@ -283,14 +283,13 @@ contract ETHDKGAccusations is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
         address dishonestAddress
     ) external {
         // We should allow accusation, even if some of the participants didn't participate
-        if (
-            !(_ethdkgPhase == Phase.DisputeGPKJSubmission &&
-                block.number >= _phaseStartBlock &&
-                block.number < _phaseStartBlock + _phaseLength) &&
-            !(_ethdkgPhase == Phase.GPKJSubmission &&
-                block.number >= _phaseStartBlock + _phaseLength &&
-                block.number < _phaseStartBlock + 2 * _phaseLength)
-        ) {
+        bool isInDisputeGPKJSubmission = _ethdkgPhase == Phase.DisputeGPKJSubmission &&
+            block.number >= _phaseStartBlock &&
+            block.number < _phaseStartBlock + _phaseLength;
+        bool isInGPKJSubmission = _ethdkgPhase == Phase.GPKJSubmission &&
+            block.number >= _phaseStartBlock + _phaseLength &&
+            block.number < _phaseStartBlock + 2 * _phaseLength;
+        if (!isInDisputeGPKJSubmission && !isInGPKJSubmission) {
             revert ETHDKGErrors.ETHDKGNotInPostGPKJSubmissionPhase(_ethdkgPhase);
         }
 
