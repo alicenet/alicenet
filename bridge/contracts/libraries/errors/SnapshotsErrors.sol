@@ -8,7 +8,7 @@ library SnapshotsErrors {
         uint256 currentBlocksInterval,
         uint256 minimumBlocksInterval
     );
-    error InvalidMasterPublicKey();
+    error InvalidMasterPublicKey(bytes32 calculatedMasterKeyHash, bytes32 expectedMasterKeyHash);
     error SignatureVerificationFailed();
     error InvalidBlockHeight(uint256 blockHeight);
     error InvalidChainId(uint256 chainId);

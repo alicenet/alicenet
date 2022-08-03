@@ -27,7 +27,18 @@
     "type": "error"
   },
   {
-    "inputs": [],
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "calculatedMasterKeyHash",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "expectedMasterKeyHash",
+        "type": "bytes32"
+      }
+    ],
     "name": "InvalidMasterPublicKey",
     "type": "error"
   },

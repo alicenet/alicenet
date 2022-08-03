@@ -93,6 +93,10 @@ describe("Snapshots: With successful ETHDKG round completed", () => {
   });
 
   it("Reverts when snapshot state contains incorrect public key", async function () {
+    const expectedCalculatedPublicKeyHash =
+      "0x888ea4bcd71f772f1af058866a2234d1d1b0967c67a5b9d82248f8ad8d8c144c";
+    const expectedMasterPublicKeyHash =
+      "0x381f9c36df7c05b341eaf3708d6d05d9343cdcbccaf5989da9880024a9a8a4d7";
     await expect(
       snapshots
         .connect(
@@ -104,10 +108,12 @@ describe("Snapshots: With successful ETHDKG round completed", () => {
           invalidSnapshotIncorrectSig.GroupSignature,
           invalidSnapshotIncorrectSig.BClaims
         )
-    ).to.be.revertedWithCustomError(
-      fixture.snapshots,
-      "InvalidMasterPublicKey"
-    );
+    )
+      .to.be.revertedWithCustomError(
+        fixture.snapshots,
+        "InvalidMasterPublicKey"
+      )
+      .withArgs(expectedCalculatedPublicKeyHash, expectedMasterPublicKeyHash);
   });
 
   it("Successfully performs snapshot", async function () {

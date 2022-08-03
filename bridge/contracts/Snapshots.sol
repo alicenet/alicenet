@@ -73,11 +73,15 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
             (uint256[4] memory masterPublicKey, uint256[2] memory signature) = RCertParserLibrary
                 .extractSigGroup(groupSignature_, 0);
 
-            if (
-                keccak256(abi.encodePacked(masterPublicKey)) !=
-                IETHDKG(_ethdkgAddress()).getMasterPublicKeyHash()
-            ) {
-                revert SnapshotsErrors.InvalidMasterPublicKey();
+            bytes32 calculatedMasterPublicKeyHash = keccak256(abi.encodePacked(masterPublicKey));
+            bytes32 expectedMasterPublicKeyHash = IETHDKG(_ethdkgAddress())
+                .getMasterPublicKeyHash();
+
+            if (calculatedMasterPublicKeyHash != expectedMasterPublicKeyHash) {
+                revert SnapshotsErrors.InvalidMasterPublicKey(
+                    calculatedMasterPublicKeyHash,
+                    expectedMasterPublicKeyHash
+                );
             }
 
             if (
