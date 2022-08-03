@@ -7,20 +7,21 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
-	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/utils"
 	"github.com/alicenet/alicenet/layer1/tests"
 	"github.com/alicenet/alicenet/layer1/transaction"
 	"github.com/alicenet/alicenet/logging"
 	"github.com/alicenet/alicenet/test/mocks"
+	"github.com/alicenet/alicenet/utils"
 	"github.com/stretchr/testify/assert"
 )
 
 //We test to ensure that everything behaves correctly.
 func TestMPKSubmission_Group_1_GoodAllValid(t *testing.T) {
-	n := 4
-	fixture := setupEthereum(t, n)
+	numValidators := 4
+	fixture := setupEthereum(t, numValidators)
 	suite := StartFromKeyShareSubmissionPhase(t, fixture, 0, 100)
 	accounts := suite.Eth.GetKnownAccounts()
 	ctx := context.Background()
@@ -28,7 +29,7 @@ func TestMPKSubmission_Group_1_GoodAllValid(t *testing.T) {
 	logger := logging.GetLogger("test").WithField("Validator", "")
 
 	// Do MPK Submission task
-	for idx := 0; idx < n; idx++ {
+	for idx := 0; idx < numValidators; idx++ {
 
 		mpkSubmissionTask := suite.MpkSubmissionTasks[idx]
 		err := mpkSubmissionTask.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "MpkSubmissionTasks", "tak-id", nil)
@@ -43,7 +44,19 @@ func TestMPKSubmission_Group_1_GoodAllValid(t *testing.T) {
 		assert.Nil(t, err)
 		if shouldExecute {
 			txn, taskError := mpkSubmissionTask.Execute(ctx)
-			amILeading := utils.AmILeading(eth, ctx, logger, int(mpkSubmissionTask.GetStart()), mpkSubmissionTask.StartBlockHash[:], n, dkgState.Index)
+			amILeading, err := utils.AmILeading(
+				eth,
+				ctx,
+				logger,
+				int(mpkSubmissionTask.GetStart()),
+				mpkSubmissionTask.StartBlockHash[:],
+				numValidators,
+				// we need -1 since ethdkg indexes start at 1 while leader election expect index starting at 0.
+				dkgState.Index-1,
+				constants.ETHDKGDesperationFactor,
+				constants.ETHDKGDesperationDelay,
+			)
+			assert.Nil(t, err)
 			if amILeading {
 				assert.Nil(t, taskError)
 				rcptResponse, err := fixture.Watcher.Subscribe(ctx, txn, nil)
@@ -92,8 +105,8 @@ func TestMPKSubmission_Group_1_Bad1(t *testing.T) {
 	// to attempt to submit the mpk.
 	// This should result in an error.
 	// EthDKG restart should be required.
-	n := 6
-	fixture := setupEthereum(t, n)
+	numValidators := 6
+	fixture := setupEthereum(t, numValidators)
 	suite := StartFromKeyShareSubmissionPhase(t, fixture, 0, 100)
 	ctx := context.Background()
 
@@ -135,8 +148,8 @@ func TestMPKSubmission_Group_1_Bad2(t *testing.T) {
 // This is caused by submitting invalid state information by not successfully
 // completing KeyShareSubmission phase.
 func TestMPKSubmission_Group_2_Bad4(t *testing.T) {
-	n := 4
-	fixture := setupEthereum(t, n)
+	numValidators := 4
+	fixture := setupEthereum(t, numValidators)
 	suite := StartFromKeyShareSubmissionPhase(t, fixture, 0, 100)
 	ctx := context.Background()
 
@@ -155,13 +168,13 @@ func TestMPKSubmission_Group_2_Bad4(t *testing.T) {
 }
 
 func TestMPKSubmission_Group_2_LeaderElection(t *testing.T) {
-	n := 4
-	fixture := setupEthereum(t, n)
+	numValidators := 4
+	fixture := setupEthereum(t, numValidators)
 	suite := StartFromKeyShareSubmissionPhase(t, fixture, 0, 100)
 	ctx := context.Background()
 	leaders := 0
 
-	for idx := 0; idx < n; idx++ {
+	for idx := 0; idx < numValidators; idx++ {
 		dkgState, err := state.GetDkgState(suite.DKGStatesDbs[idx])
 		assert.Nil(t, err)
 
@@ -172,7 +185,19 @@ func TestMPKSubmission_Group_2_LeaderElection(t *testing.T) {
 		err = task.Prepare(ctx)
 		assert.Nil(t, err)
 
-		amILeading := utils.AmILeading(suite.Eth, ctx, fixture.Logger, int(task.GetStart()), task.StartBlockHash[:], n, dkgState.Index)
+		amILeading, err := utils.AmILeading(
+			suite.Eth,
+			ctx,
+			fixture.Logger,
+			int(task.GetStart()),
+			task.StartBlockHash[:],
+			numValidators,
+			// we need -1 since ethdkg indexes start at 1 while leader election expect index starting at 0.
+			dkgState.Index-1,
+			constants.ETHDKGDesperationFactor,
+			constants.ETHDKGDesperationDelay,
+		)
+		assert.Nil(t, err)
 		if amILeading {
 			leaders++
 		}

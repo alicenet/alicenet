@@ -56,8 +56,14 @@ func (db *rawDataBase) Sync() error {
 }
 
 func (db *rawDataBase) GarbageCollect() error {
-	db.db.RunValueLogGC(constants.BadgerDiscardRatio)
-	db.db.RunValueLogGC(constants.BadgerDiscardRatio)
+	err := db.db.RunValueLogGC(constants.BadgerDiscardRatio)
+	if utils.HandleBadgerErrors(err) != nil {
+		return err
+	}
+	err = db.db.RunValueLogGC(constants.BadgerDiscardRatio)
+	if utils.HandleBadgerErrors(err) != nil {
+		return err
+	}
 	return nil
 }
 
