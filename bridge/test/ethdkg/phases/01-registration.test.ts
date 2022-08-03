@@ -47,6 +47,10 @@ describe("ETHDKG: Registration Open", () => {
       "ETHDKGPhases",
       ethdkg.address
     );
+    const currentNonce = await ethdkg.getNonce();
+    const participantData = await ethdkg.getParticipantInternalState(
+      validators4[0].address
+    );
     // register that same validator again
     await expect(
       ethdkg
@@ -57,7 +61,11 @@ describe("ETHDKG: Registration Open", () => {
         ethDKGPhases,
         `ParticipantParticipatingInRound`
       )
-      .withArgs(ethers.utils.getAddress(validators4[0].address));
+      .withArgs(
+        ethers.utils.getAddress(validators4[0].address),
+        participantData.nonce,
+        currentNonce.sub(BigNumber.from(1))
+      );
   });
 
   it("does not let validators to register with an incorrect key", async function () {

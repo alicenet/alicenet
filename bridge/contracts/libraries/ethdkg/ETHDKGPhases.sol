@@ -32,7 +32,11 @@ contract ETHDKGPhases is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
         }
 
         if (_participants[msg.sender].nonce >= _nonce) {
-            revert ETHDKGErrors.ParticipantParticipatingInRound(msg.sender);
+            revert ETHDKGErrors.ParticipantParticipatingInRound(
+                msg.sender,
+                _participants[msg.sender].nonce,
+                _nonce - 1
+            );
         }
 
         uint32 numRegistered = uint32(_numParticipants);

@@ -496,6 +496,16 @@
         "internalType": "address",
         "name": "participant",
         "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "participantNonce",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "maxExpectedNonce",
+        "type": "uint256"
       }
     ],
     "name": "ParticipantParticipatingInRound",
