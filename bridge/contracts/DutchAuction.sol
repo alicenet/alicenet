@@ -4,7 +4,7 @@ pragma solidity ^0.8.11;
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "contracts/utils/ImmutableAuth.sol";
-import "hardhat/console.sol";
+import {DutchAuctionErrors} from "contracts/libraries/errors/DutchAuctionErrors.sol";
 
 /// @custom:salt DutchAuction
 /// @custom:deploy-type deployUpgradeable
@@ -36,7 +36,7 @@ contract DutchAuction is Initializable, ImmutableFactory {
         uint32 bidders_,
         uint256 durationInBlocks_
     ) public onlyFactory {
-        require(startPrice_ > finalPrice_, "Start price should be higher than final price");
+        if (startPrice_ <= finalPrice_) revert DutchAuctionErrors.IcorrectInitialPrices();
         _startPrice = startPrice_;
         _finalPrice = finalPrice_;
         _bidders = bidders_;
@@ -51,7 +51,8 @@ contract DutchAuction is Initializable, ImmutableFactory {
 
     /// @dev Returns dutch auction price for current block
     function getPrice() public view returns (uint256) {
-        require(block.number - _startBlock <= _durationInBlocks, "Auction is closed!");
+        if (block.number - _startBlock > _durationInBlocks)
+            revert DutchAuctionErrors.AuctionClosed();
         return _dutchAuctionPrice(block.number - _startBlock, _bidders);
     }
 

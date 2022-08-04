@@ -1,8 +1,9 @@
-import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
 
 import { ethers, network } from "hardhat";
 import { DutchAuction } from "../../typechain-types";
+import { assertErrorMessage } from "../chai-helpers";
+
 import {
   deployStaticWithFactory,
   factoryCallAny,
@@ -10,21 +11,18 @@ import {
   getFixture,
 } from "../setup";
 
-let admin: SignerWithAddress;
-let user: SignerWithAddress;
 let fixture: Fixture;
 let dutchAuction: DutchAuction;
 
 const startPrice = ethers.utils.parseEther("10.0");
 const finalPrice = ethers.utils.parseEther("1.0");
-const bidders = 20 // potential validators
+const bidders = 20; // potential validators
 const durationInBlocks = 4;
 const initialDelta = 20;
 
 describe("Testing Dutch Auction", async () => {
   beforeEach(async function () {
     fixture = await getFixture(false, false, false);
-    [admin, user] = await ethers.getSigners();
     dutchAuction = (await deployStaticWithFactory(
       fixture.factory,
       "DutchAuction",
@@ -44,9 +42,7 @@ describe("Testing Dutch Auction", async () => {
   });
 
   it("Should not obtain price is auction is not started", async () => {
-    await expect(dutchAuction.getPrice()).to.be.revertedWith(
-      "Auction is closed!"
-    );
+    await assertErrorMessage(dutchAuction.getPrice(), `AuctionClosed()`);
   });
 
   it("Should obtain lower bid prices through blocks", async () => {
@@ -73,25 +69,23 @@ describe("Testing Dutch Auction", async () => {
       bidders,
       durationInBlocks,
     ]);
-    const initialPrice = await dutchAuction.getPrice();
     for (let i = 0; i < durationInBlocks; i++) {
       await network.provider.send("evm_mine"); // Mine one block
     }
-    await network.provider.send("evm_mine"); // Mine one block
-    await expect(dutchAuction.getPrice()).to.be.revertedWith(
-      "Auction is closed!"
-    );
+    await network.provider.send("evm_mine"); // Mine one more block
+    await assertErrorMessage(dutchAuction.getPrice(), `AuctionClosed()`);
   });
 
   it("Should not start auction with start price lower than final price", async () => {
     const startPrice = 0;
-    await expect(
+    await assertErrorMessage(
       factoryCallAny(fixture.factory, dutchAuction, "startAuction", [
         startPrice,
         finalPrice,
         bidders,
         durationInBlocks,
-      ])
-    ).to.be.revertedWith("Start price should be higher than final price");
+      ]),
+      `IcorrectInitialPrices()`
+    );
   });
 });
