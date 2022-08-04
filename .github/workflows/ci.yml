@@ -162,6 +162,7 @@ jobs:
           cache: "npm"
           cache-dependency-path: bridge/package-lock.json
       - run: npm --prefix bridge/ ci
+      - run: npm --prefix bridge/ run compile
       - uses: ./.github/actions/alicenet-config
       - name: Set up gotestfmt
         run: go install github.com/haveyoudebuggedit/gotestfmt/v2/cmd/gotestfmt@latest
