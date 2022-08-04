@@ -194,7 +194,7 @@ describe("Ethdkg: Migrate state", () => {
     ).to.be.revertedWith("151");
   });
 
-  it.only("Change validators after migration with scheduling maintenance + snapshots", async function () {
+  it("Change validators after migration with scheduling maintenance + snapshots", async function () {
     const validators = await createValidators(fixture, validatorsSnapshots2);
     const stakingTokenIds = await stakeValidators(fixture, validators);
     validatorsAddress = [];
