@@ -16,8 +16,6 @@ import (
 
 func ProcessDepositReceived(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, log types.Log, cdb *db.Database, monDB *db.Database, depositHandler interfaces.DepositHandler) error {
 
-	logger.Info("ProcessDepositReceived() ...")
-
 	event, err := contracts.EthereumContracts().BToken().ParseDepositReceived(log)
 	if err != nil {
 		return err
@@ -30,7 +28,7 @@ func ProcessDepositReceived(eth layer1.Client, contracts layer1.AllSmartContract
 		"DepositID": event.DepositID,
 		"Depositor": event.Depositor,
 		"Amount":    event.Amount,
-	}).Info("Deposit received")
+	}).Debugf("Deposit received")
 
 	err = cdb.Update(func(txn *badger.Txn) error {
 		depositNonce := event.DepositID.Bytes()
