@@ -143,29 +143,6 @@ To list other commands from the script simply run
 ./scripts/main.sh
 ```
 
-# TROUBLESHOOTING
-
-1. `./scripts/main.sh deploy`
-
-```
-+ npx hardhat --network dev --show-stack-traces updateDeploymentArgsWithFactory
-  Loading deploymentArgs from: ./deployments/dev/deploymentArgsTemplate.json
-  Future factory Address: 0x77D7c620E3d913AA78a71acffA006fc1Ae178b66
-  Saving file at: ./deployments/dev/deploymentArgsTemplate.json
-+ npx hardhat run scripts/deployscripts.ts --no-compile --network dev --show-stack-traces
-  Deployed: MadnetFactory, at address: 0x77D7c620E3d913AA78a71acffA006fc1Ae178b66
-  Error: cannot estimate gas; transaction may fail or may require manual gas limit
-```
-
-> Assuming you have `bridge/deployments/dev/deployList.json` defined, otherwise read [bridge documentation](bridge/README.md) file and then apply these changes
->
-> ```shell
->  cd bridge
->  npx hardhat run ./scripts/getDeployList.ts
->  cd ..
-> ```
->
-> now open the file `./scripts/getDeployList.ts` and move `"contracts/ETHDKG.sol:ETHDKG"` as the latest element in the `deployments` array.
 
 # Different Node versions
 
