@@ -91,7 +91,7 @@ describe("ValidatorPool Access Control: An user without admin role should not be
       fixture.validatorPool.connect(notAdmin1Signer).pauseConsensus()
     )
       .to.be.revertedWithCustomError(fixture.validatorPool, `OnlySnapshots`)
-      .withArgs(notAdmin1.address, fixture.snapshots);
+      .withArgs(notAdmin1.address, fixture.snapshots.address);
   });
 
   it("Register validators", async function () {
