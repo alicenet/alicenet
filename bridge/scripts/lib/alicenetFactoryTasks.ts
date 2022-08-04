@@ -47,7 +47,6 @@ import {
 } from "./deployment/deploymentListUtil";
 import {
   DeployArgs,
-  deployContractsMulticall,
   DeploymentArgs,
   DeployProxyMCArgs,
   extractName,
@@ -57,6 +56,7 @@ import {
   getDeployMetaArgs,
   getDeployType,
   getDeployUpgradeableProxyArgs,
+  getMulticallArgs,
   isInitializable,
 } from "./deployment/deploymentUtil";
 import {
@@ -1035,7 +1035,7 @@ task(
     return proxyData;
   });
 
-// Generate a json file with all deployment information
+//Generate a json file with all deployment information
 task(
   "generateContractsDescriptor",
   "Generates deploymentList.json file for faster contract deployment (requires deploymentList and deploymentArgsTemplate files to be already generated)"
@@ -1058,8 +1058,7 @@ task(
       configDirPath === undefined
         ? DEPLOYMENT_ARG_PATH + DEPLOYMENT_ARGS_TEMPLATE_FPATH
         : configDirPath + DEPLOYMENT_ARGS_TEMPLATE_FPATH;
-    const contractsArray: any = [];
-    const json = { contracts: contractsArray };
+    var json = { contracts: Array<Object>() };
     const contracts = await getDeploymentList(taskArgs.inputFolder);
     const deploymentArgsFile = fs.readFileSync(deploymentArgsPath);
     const tomlFile: any = toml.parse(deploymentArgsFile.toLocaleString());
@@ -1069,19 +1068,19 @@ task(
       const tomlConstructorArgs = tomlFile.constructor[
         contract
       ] as toml.JsonArray;
-      const constructorArgs: any = [];
+      let cArgs = new Array();
       if (tomlConstructorArgs !== undefined) {
-        tomlConstructorArgs.forEach((jsonObject) => {
-          constructorArgs.push(JSON.stringify(jsonObject).split('"')[3]);
+        tomlConstructorArgs.map((jsonObject) => {
+          cArgs.push(JSON.stringify(jsonObject).split('"')[3]);
         });
       }
       const tomlInitializerArgs = tomlFile.initializer[
         contract
       ] as toml.JsonArray;
-      const initializerArgs: any = [];
+      let iArgs = new Array();
       if (tomlInitializerArgs !== undefined) {
-        tomlInitializerArgs.forEach((jsonObject) => {
-          initializerArgs.push(JSON.stringify(jsonObject).split('"')[3]);
+        tomlInitializerArgs.map((jsonObject) => {
+          iArgs.push(JSON.stringify(jsonObject).split('"')[3]);
         });
       }
       const deployType = await getDeployType(contract, hre.artifacts);
@@ -1091,7 +1090,7 @@ task(
         hre.artifacts
       );
       if (deployType !== undefined) {
-        const object = {
+        var object = {
           name: contractName,
           fullyQualifiedName: contract,
           deployGroup:
@@ -1100,9 +1099,9 @@ task(
             deployGroupIndex !== undefined && deployGroupIndex
               ? deployGroupIndex
               : "0",
-          deployType,
-          constructorArgs,
-          initializerArgs,
+          deployType: deployType,
+          constructorArgs: cArgs,
+          initializerArgs: iArgs,
         };
         json.contracts.push(object);
       }
@@ -1143,7 +1142,7 @@ task(
       throw new Error(error);
     }
     const rawdata = fs.readFileSync(path);
-    const json = JSON.parse(rawdata.toLocaleString());
+    let json = JSON.parse(rawdata.toLocaleString());
     if (hre.network.name === "hardhat") {
       // hardhat is not being able to estimate correctly the tx gas due to the massive bytes array
       // being sent as input to the function (the contract bytecode), so we need to increase the block
@@ -1152,6 +1151,7 @@ task(
         "0x9000000000000000",
       ]);
     }
+    const artifacts = hre.artifacts;
     // deploy the factory first
     let factoryAddress = taskArgs.factoryAddress;
     if (factoryAddress === undefined) {
@@ -1163,14 +1163,18 @@ task(
     }
     const factoryBase = await hre.ethers.getContractFactory(ALICENET_FACTORY);
     const factory = factoryBase.attach(factoryAddress);
-    const txCount = await hre.ethers.provider.getTransactionCount(
-      factory.address
-    );
-    const contracts = json.contracts;
-    await deployContractsMulticall(
+    let multiCallArgsArray: any[];
+    let txCount: number;
+    const staticAddresses = new Array();
+    const upgradeableAddresses = new Array();
+    const templateAddresses = new Array();
+    txCount = await hre.ethers.provider.getTransactionCount(factory.address);
+    let contracts = json.contracts;
+    multiCallArgsArray = await getMulticallArgs(
       contracts,
       hre,
-      factory.address,
+      factoryBase,
+      factory,
       txCount,
       taskArgs.inputFolder,
       taskArgs.outputFolder
@@ -1324,3 +1328,41 @@ export const showState = async (message: string): Promise<void> => {
     console.log(message);
   }
 };
+
+/**
+ * @description goes through the receipt from the
+ * transaction and extract multiples values for event and variable specified
+ * @param receipt tx object returned from the tran
+ * @param eventName
+ * @param varName
+ * @returns array of values
+ */
+function getMultipleEventVar(
+  receipt: ContractReceipt,
+  eventName: string,
+  varName: string
+) {
+  let result = "0x";
+  let results = Array();
+  if (receipt.events !== undefined) {
+    const events = receipt.events;
+    for (let i = 0; i < events.length; i++) {
+      // look for the event
+      if (events[i].event === eventName) {
+        if (events[i].args !== undefined) {
+          const args = events[i].args;
+          // extract the deployed mock logic contract address from the event
+          result = args !== undefined ? args[varName] : undefined;
+          if (result !== undefined) {
+            results.push(result);
+          }
+        } else {
+          throw new Error(
+            `failed to extract ${varName} from event: ${eventName}`
+          );
+        }
+      }
+    }
+  }
+  return results;
+}

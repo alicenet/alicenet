@@ -5,13 +5,12 @@ import {
   HardhatRuntimeEnvironment,
   RunTaskFunction,
 } from "hardhat/types";
-// import {
-//   AliceNetFactory,
-//   AliceNetFactory__factory,
-// } from "../../../typechain-types";
+import {
+  AliceNetFactory,
+  AliceNetFactory__factory,
+} from "../../../typechain-types";
 import { getEventVar } from "../alicenetFactoryTasks";
 import {
-  ALICENET_FACTORY,
   CONTRACT_ADDR,
   DEFAULT_CONFIG_OUTPUT_DIR,
   DEPLOYED_PROXY,
@@ -331,11 +330,10 @@ export async function getDeployGroupIndex(
 export async function getDeployStaticMultiCallArgs(
   contractDescriptor: ContractDescriptor,
   hre: HardhatRuntimeEnvironment,
-  factoryAddr: string,
+  factoryBase: AliceNetFactory__factory,
+  factory: AliceNetFactory,
   txCount: number
 ) {
-  const factoryBase = await hre.ethers.getContractFactory(ALICENET_FACTORY);
-  const factory = factoryBase.attach(factoryAddr);
   const logicContract: ContractFactory = await hre.ethers.getContractFactory(
     contractDescriptor.name
   );
@@ -366,11 +364,10 @@ export async function getDeployStaticMultiCallArgs(
 export async function getDeployUpgradeableMultiCallArgs(
   contractDescriptor: ContractDescriptor,
   hre: HardhatRuntimeEnvironment,
-  factoryAddr: string,
+  factoryBase: AliceNetFactory__factory,
+  factory: AliceNetFactory,
   txCount: number
 ) {
-  const factoryBase = await hre.ethers.getContractFactory(ALICENET_FACTORY);
-  const factory = factoryBase.attach(factoryAddr);
   const logicContract: ContractFactory = await hre.ethers.getContractFactory(
     contractDescriptor.name
   );
@@ -415,16 +412,15 @@ export async function getDeployUpgradeableMultiCallArgs(
   return multiCallArgs;
 }
 
-export async function deployContractsMulticall(
+export async function getMulticallArgs(
   contracts: ContractDescriptor[],
   hre: HardhatRuntimeEnvironment,
-  factoryAddr: string,
+  factoryBase: AliceNetFactory__factory,
+  factory: AliceNetFactory,
   txCount: number,
   inputFolder?: string,
   outputFolder?: string
 ) {
-  const factoryBase = await hre.ethers.getContractFactory(ALICENET_FACTORY);
-  const factory = factoryBase.attach(factoryAddr);
   let proxyData: ProxyData;
   let multiCallArgsArray = Array();
 
@@ -439,7 +435,8 @@ export async function deployContractsMulticall(
             await getDeployStaticMultiCallArgs(
               contract,
               hre,
-              factory.address,
+              factoryBase,
+              factory,
               txCount
             );
           multiCallArgsArray.push(deployTemplate);
@@ -456,7 +453,8 @@ export async function deployContractsMulticall(
             await getDeployUpgradeableMultiCallArgs(
               contract,
               hre,
-              factory.address,
+              factoryBase,
+              factory,
               txCount
             );
           multiCallArgsArray.push(deployCreate);

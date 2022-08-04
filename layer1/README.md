@@ -4,9 +4,9 @@ The layer 1 package contains all the logic for interacting with all the layer1 b
 
 The package is mainly composed of 3 services:
 
-* **Monitor**: responsible for monitoring and reacting to layer 1 events.
-* **Executor**: responsible for scheduling and executing tasks and actions (e.g snapshots, ethdkg, accusations) against the layer 1 blockchains.
-* **Transaction**: responsible for watching for layer 1 transactions done by the AliceNet node and retrieve its receipts.
+- **Monitor**: responsible for monitoring and reacting to layer 1 events.
+- **Executor**: responsible for scheduling and executing tasks and actions (e.g snapshots, ethdkg, accusations) against the layer 1 blockchains.
+- **Transaction**: responsible for watching for layer 1 transactions done by the AliceNet node and retrieve its receipts.
 
 ## Creating new Tasks
 

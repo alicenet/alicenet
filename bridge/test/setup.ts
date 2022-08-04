@@ -611,10 +611,6 @@ export const getFixture = async (
     "Accusation"
   )) as MultipleProposalAccusation;
 
-  const erc721Mock = await (
-    await (await ethers.getContractFactory("ERC721Mock")).deploy()
-  ).deployed();
-
   await posFixtureSetup(factory, aToken, legacyToken);
   const blockNumber = BigInt(await ethers.provider.getBlockNumber());
   const phaseLength = (await ethdkg.getPhaseLength()).toBigInt();
@@ -640,7 +636,6 @@ export const getFixture = async (
     stakingPositionDescriptor,
     invalidTxConsumptionAccusation,
     multipleProposalAccusation,
-    erc721Mock,
   };
 };
 

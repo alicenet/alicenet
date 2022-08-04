@@ -11,7 +11,7 @@ import "hardhat/console.sol";
 contract DutchAuction is Initializable, ImmutableFactory {
     uint256 private _startPrice;
     uint256 private _finalPrice;
-    uint32 private _potentialValidators;
+    uint32 private _bidders;
     uint256 private _startBlock;
     uint256 private _stopBlock;
     uint256 private _durationInBlocks;
@@ -19,49 +19,47 @@ contract DutchAuction is Initializable, ImmutableFactory {
 
     constructor() ImmutableFactory(msg.sender) {}
 
-    /// @dev Initializes and starts auction defining starting price and discount per block rate
+    /// @dev Initializes contract with initialDelta
+    /// @param initialDelta_ initial delta for decay computing
+    function initialize(uint256 initialDelta_) public initializer onlyFactory {
+        _initialDelta = initialDelta_;
+    }
+
+    /// @dev Starts auction defining starting price, final price, number of bidders and duration in blocks
     /// @param startPrice_ start price for the auction
     /// @param finalPrice_ final price for the auction
-    /// @param potentialValidators_ number of bidders
+    /// @param bidders_ number of bidders
     /// @param durationInBlocks_ auction duration expressed in Ethereum blocks
-    /// @param initialDelta_ initial delta for decay computing
-    function initialize(
+    function startAuction(
         uint256 startPrice_,
         uint256 finalPrice_,
-        uint32 potentialValidators_,
-        uint256 durationInBlocks_,
-        uint256 initialDelta_
-    ) public initializer onlyFactory {
+        uint32 bidders_,
+        uint256 durationInBlocks_
+    ) public onlyFactory {
+        require(startPrice_ > finalPrice_, "Start price should be higher than final price");
         _startPrice = startPrice_;
         _finalPrice = finalPrice_;
-        _potentialValidators = potentialValidators_;
+        _bidders = bidders_;
         _durationInBlocks = durationInBlocks_;
-        _initialDelta = initialDelta_;
-        _resetAuction();
+        _startAuction();
     }
 
-    function resetAuction() public onlyFactory {
-        _resetAuction();
-    }
-
-    function dutchAuctionPrice() public view returns (uint256) {
-        return _dutchAuctionPrice(block.number - _startBlock, _potentialValidators);
-    }
-
-    /// @dev Starts over the auction setting auction start block to the current block
-    function _resetAuction() internal {
+    /// @dev Starts the auction setting auction start block to the current block
+    function _startAuction() internal {
         _startBlock = block.number;
-        require(
-            _startPrice >= _dutchAuctionPrice(block.number - _startBlock, _potentialValidators),
-            "starting price < min"
-        );
+    }
+
+    /// @dev Returns dutch auction price for current block
+    function getPrice() public view returns (uint256) {
+        require(block.number - _startBlock <= _durationInBlocks, "Auction is closed!");
+        return _dutchAuctionPrice(block.number - _startBlock, _bidders);
     }
 
     /// @notice Calculates dutch auction price for the specified period (number of blocks since auction initialization)
     /// and number of bidders
     /// @dev
     /// @param blocks blocks since the auction started
-    /// @param n number of bidders (_potentialValidators)
+    /// @param n number of bidders (_bidders)
     function _dutchAuctionPrice(uint256 blocks, uint256 n) internal view returns (uint256 result) {
         uint256 alfa = _startPrice - _finalPrice;
         uint256 decay = _computeDecay(n);
@@ -73,7 +71,7 @@ contract DutchAuction is Initializable, ImmutableFactory {
 
     /// @notice Computes decay rate for the specified number of bidders
     /// @dev
-    /// @param n number of bidders (_potentialValidators)
+    /// @param n number of bidders (_bidders)
     function _computeDecay(uint256 n) internal view returns (uint256 result) {
         uint256 delta;
         if (n >= 64) {
