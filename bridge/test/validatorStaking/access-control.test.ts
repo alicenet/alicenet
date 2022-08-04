@@ -73,7 +73,7 @@ describe("ValidatorStaking: Testing ValidatorStaking Access Control", async () =
           fixture.validatorStaking,
           `OnlyValidatorPool`
         )
-        .withArgs(notAdmin.address);
+        .withArgs(notAdmin.address, fixture.validatorPool.address);
     });
 
     it("Burn a token", async function () {
@@ -84,7 +84,7 @@ describe("ValidatorStaking: Testing ValidatorStaking Access Control", async () =
           fixture.validatorStaking,
           `OnlyValidatorPool`
         )
-        .withArgs(notAdmin.address);
+        .withArgs(notAdmin.address, fixture.validatorPool.address);
     });
 
     it("Mint a token to an address", async function () {
@@ -97,7 +97,7 @@ describe("ValidatorStaking: Testing ValidatorStaking Access Control", async () =
           fixture.validatorStaking,
           `OnlyValidatorPool`
         )
-        .withArgs(notAdmin.address);
+        .withArgs(notAdmin.address, fixture.validatorPool.address);
     });
 
     it("Burn a token from an address", async function () {
@@ -110,7 +110,7 @@ describe("ValidatorStaking: Testing ValidatorStaking Access Control", async () =
           fixture.validatorStaking,
           `OnlyValidatorPool`
         )
-        .withArgs(notAdmin.address);
+        .withArgs(notAdmin.address, fixture.validatorPool.address);
     });
   });
 });

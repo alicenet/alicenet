@@ -23,7 +23,7 @@ describe("ValidatorPool Access Control: An user without admin role should not be
       fixture.validatorPool.connect(notAdmin1Signer).setStakeAmount(stakeAmount)
     )
       .to.be.revertedWithCustomError(fixture.validatorPool, `OnlyFactory`)
-      .withArgs(notAdmin1.address);
+      .withArgs(notAdmin1.address, fixture.factory.address);
   });
 
   it("Set a maximum number of validators", async function () {
@@ -33,7 +33,7 @@ describe("ValidatorPool Access Control: An user without admin role should not be
         .setMaxNumValidators(maxNumValidators)
     )
       .to.be.revertedWithCustomError(fixture.validatorPool, `OnlyFactory`)
-      .withArgs(notAdmin1.address);
+      .withArgs(notAdmin1.address, fixture.factory.address);
   });
 
   it("Set disputer reward", async function () {
@@ -41,7 +41,7 @@ describe("ValidatorPool Access Control: An user without admin role should not be
       fixture.validatorPool.connect(notAdmin1Signer).setDisputerReward(1)
     )
       .to.be.revertedWithCustomError(fixture.validatorPool, `OnlyFactory`)
-      .withArgs(notAdmin1.address);
+      .withArgs(notAdmin1.address, fixture.factory.address);
   });
 
   it("Set stake Amount", async function () {
@@ -49,7 +49,7 @@ describe("ValidatorPool Access Control: An user without admin role should not be
       fixture.validatorPool.connect(notAdmin1Signer).setStakeAmount(1)
     )
       .to.be.revertedWithCustomError(fixture.validatorPool, `OnlyFactory`)
-      .withArgs(notAdmin1.address);
+      .withArgs(notAdmin1.address, fixture.factory.address);
   });
 
   it("Initialize ETHDKG", async function () {
@@ -57,7 +57,7 @@ describe("ValidatorPool Access Control: An user without admin role should not be
       fixture.validatorPool.connect(notAdmin1Signer).initializeETHDKG()
     )
       .to.be.revertedWithCustomError(fixture.validatorPool, `OnlyFactory`)
-      .withArgs(notAdmin1.address);
+      .withArgs(notAdmin1.address, fixture.factory.address);
   });
 
   it("Complete ETHDKG", async function () {
@@ -65,7 +65,7 @@ describe("ValidatorPool Access Control: An user without admin role should not be
       fixture.validatorPool.connect(notAdmin1Signer).completeETHDKG()
     )
       .to.be.revertedWithCustomError(fixture.validatorPool, `OnlyETHDKG`)
-      .withArgs(notAdmin1.address);
+      .withArgs(notAdmin1.address, fixture.ethdkg.address);
   });
 
   it("Schedule maintenance", async function () {
@@ -73,7 +73,7 @@ describe("ValidatorPool Access Control: An user without admin role should not be
       fixture.validatorPool.connect(notAdmin1Signer).scheduleMaintenance()
     )
       .to.be.revertedWithCustomError(fixture.validatorPool, `OnlyFactory`)
-      .withArgs(notAdmin1.address);
+      .withArgs(notAdmin1.address, fixture.factory.address);
   });
 
   it("Pause consensus on arbitrary height", async function () {
@@ -83,7 +83,7 @@ describe("ValidatorPool Access Control: An user without admin role should not be
         .pauseConsensusOnArbitraryHeight(1)
     )
       .to.be.revertedWithCustomError(fixture.validatorPool, `OnlyFactory`)
-      .withArgs(notAdmin1.address);
+      .withArgs(notAdmin1.address, fixture.factory.address);
   });
 
   it("Pause consensus", async function () {
@@ -91,7 +91,7 @@ describe("ValidatorPool Access Control: An user without admin role should not be
       fixture.validatorPool.connect(notAdmin1Signer).pauseConsensus()
     )
       .to.be.revertedWithCustomError(fixture.validatorPool, `OnlySnapshots`)
-      .withArgs(notAdmin1.address);
+      .withArgs(notAdmin1.address, fixture.snapshots);
   });
 
   it("Register validators", async function () {
@@ -101,7 +101,7 @@ describe("ValidatorPool Access Control: An user without admin role should not be
         .registerValidators(validators, stakingTokenIds)
     )
       .to.be.revertedWithCustomError(fixture.validatorPool, `OnlyFactory`)
-      .withArgs(notAdmin1.address);
+      .withArgs(notAdmin1.address, fixture.factory.address);
   });
 
   it("Unregister validators", async function () {
@@ -111,7 +111,7 @@ describe("ValidatorPool Access Control: An user without admin role should not be
         .unregisterValidators(validators)
     )
       .to.be.revertedWithCustomError(fixture.validatorPool, `OnlyFactory`)
-      .withArgs(notAdmin1.address);
+      .withArgs(notAdmin1.address, fixture.factory.address);
   });
 
   it("Unregister all validators", async function () {
@@ -119,7 +119,7 @@ describe("ValidatorPool Access Control: An user without admin role should not be
       fixture.validatorPool.connect(notAdmin1Signer).unregisterAllValidators()
     )
       .to.be.revertedWithCustomError(fixture.validatorPool, `OnlyFactory`)
-      .withArgs(notAdmin1.address);
+      .withArgs(notAdmin1.address, fixture.factory.address);
   });
 
   it("Set location", async function () {
@@ -151,7 +151,7 @@ describe("ValidatorPool Access Control: An user without admin role should not be
         .majorSlash(notAdmin1Signer.address, notAdmin1Signer.address)
     )
       .to.be.revertedWithCustomError(fixture.validatorPool, `OnlyETHDKG`)
-      .withArgs(notAdmin1.address);
+      .withArgs(notAdmin1.address, fixture.ethdkg.address);
   });
 
   it("Minor slash a validator", async function () {
@@ -161,6 +161,6 @@ describe("ValidatorPool Access Control: An user without admin role should not be
         .minorSlash(notAdmin1Signer.address, notAdmin1Signer.address)
     )
       .to.be.revertedWithCustomError(fixture.validatorPool, `OnlyETHDKG`)
-      .withArgs(notAdmin1.address);
+      .withArgs(notAdmin1.address, fixture.ethdkg.address);
   });
 });

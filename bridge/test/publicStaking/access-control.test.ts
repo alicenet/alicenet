@@ -51,17 +51,17 @@ describe("PublicStaking: Testing StakeNFT Access Control", async () => {
     it("Trip circuit breaker", async function () {
       await expect(fixture.publicStaking.tripCB())
         .to.be.revertedWithCustomError(fixture.bToken, `OnlyFactory`)
-        .withArgs(adminSigner.address);
+        .withArgs(adminSigner.address, fixture.factory.address);
     });
     it("Skim excess of Tokens and ETH", async function () {
       await expect(fixture.publicStaking.skimExcessEth(notAdminSigner.address))
         .to.be.revertedWithCustomError(fixture.bToken, `OnlyFactory`)
-        .withArgs(adminSigner.address);
+        .withArgs(adminSigner.address, fixture.factory.address);
       await expect(
         fixture.publicStaking.skimExcessToken(notAdminSigner.address)
       )
         .to.be.revertedWithCustomError(fixture.bToken, `OnlyFactory`)
-        .withArgs(adminSigner.address);
+        .withArgs(adminSigner.address, fixture.factory.address);
     });
   });
 });

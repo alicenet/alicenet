@@ -16,6 +16,11 @@
         "internalType": "address",
         "name": "sender",
         "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "expected",
+        "type": "address"
       }
     ],
     "name": "OnlyATokenBurner",
@@ -27,6 +32,11 @@
         "internalType": "address",
         "name": "sender",
         "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "expected",
+        "type": "address"
       }
     ],
     "name": "OnlyATokenMinter",
@@ -37,6 +47,11 @@
       {
         "internalType": "address",
         "name": "sender",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "expected",
         "type": "address"
       }
     ],

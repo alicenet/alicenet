@@ -23,13 +23,13 @@ describe("Testing AToken", async () => {
       it("Should not burn when called by external address not identified as burner", async function () {
         await expect(fixture.aToken.externalBurn(user.address, amount))
           .to.be.revertedWithCustomError(fixture.aToken, `OnlyATokenBurner`)
-          .withArgs(admin.address);
+          .withArgs(admin.address, fixture.aTokenBurner.address);
 
         await expect(
           fixture.aToken.connect(admin).externalBurn(user.address, amount)
         )
           .to.be.revertedWithCustomError(fixture.aToken, `OnlyATokenBurner`)
-          .withArgs(admin.address);
+          .withArgs(admin.address, fixture.aTokenBurner.address);
       });
     });
     describe("Business methods with onlyFactory modifier", async () => {
@@ -60,7 +60,7 @@ describe("Testing AToken", async () => {
         // burn
         await expect(fixture.aTokenBurner.burn(user.address, amount))
           .to.be.revertedWithCustomError(fixture.aTokenBurner, `OnlyFactory`)
-          .withArgs(admin.address);
+          .withArgs(admin.address, fixture.factory.address);
       });
     });
   });

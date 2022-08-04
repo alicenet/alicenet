@@ -37,7 +37,7 @@ describe("Snapshots: Access control methods", () => {
         .setSnapshotDesperationDelay(expectedDelay)
     )
       .to.be.revertedWithCustomError(fixture.bToken, `OnlyFactory`)
-      .withArgs(randomer.address);
+      .withArgs(randomer.address, fixture.factory.address);
   });
 
   it("Allows setSnapshotDesperationDelay from admin address", async function () {
@@ -61,7 +61,7 @@ describe("Snapshots: Access control methods", () => {
         .setSnapshotDesperationFactor(expectedFactor)
     )
       .to.be.revertedWithCustomError(fixture.bToken, `OnlyFactory`)
-      .withArgs(randomer.address);
+      .withArgs(randomer.address, fixture.factory.address);
   });
 
   it("Allows setSnapshotDesperationFactor from admin address", async function () {

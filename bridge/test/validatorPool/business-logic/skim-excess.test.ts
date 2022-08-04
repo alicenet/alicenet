@@ -71,9 +71,9 @@ describe("ValidatorPool: Skim excess of ETH and Tokens", async () => {
     const validatorPool = fixture.validatorPool as ValidatorPool;
     await expect(validatorPool.skimExcessEth(validatorsSnapshots[0].address))
       .to.be.revertedWithCustomError(fixture.bToken, `OnlyFactory`)
-      .withArgs(admin.address);
+      .withArgs(admin.address, fixture.factory.address);
     await expect(validatorPool.skimExcessToken(validatorsSnapshots[0].address))
       .to.be.revertedWithCustomError(fixture.bToken, `OnlyFactory`)
-      .withArgs(admin.address);
+      .withArgs(admin.address, fixture.factory.address);
   });
 });

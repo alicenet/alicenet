@@ -6,11 +6,11 @@ import "./DeterministicAddress.sol";
 
 abstract contract ImmutableFactory is DeterministicAddress {
     address private immutable _factory;
-    error OnlyFactory(address sender);
+    error OnlyFactory(address sender, address expected);
 
     modifier onlyFactory() {
         if (msg.sender != _factory) {
-            revert OnlyFactory(msg.sender);
+            revert OnlyFactory(msg.sender, _factory);
         }
         _;
     }
@@ -26,11 +26,11 @@ abstract contract ImmutableFactory is DeterministicAddress {
 
 abstract contract ImmutableAToken is ImmutableFactory {
     address private immutable _aToken;
-    error OnlyAToken(address sender);
+    error OnlyAToken(address sender, address expected);
 
     modifier onlyAToken() {
         if (msg.sender != _aToken) {
-            revert OnlyAToken(msg.sender);
+            revert OnlyAToken(msg.sender, _aToken);
         }
         _;
     }
@@ -53,11 +53,11 @@ abstract contract ImmutableAToken is ImmutableFactory {
 
 abstract contract ImmutableATokenBurner is ImmutableFactory {
     address private immutable _aTokenBurner;
-    error OnlyATokenBurner(address sender);
+    error OnlyATokenBurner(address sender, address expected);
 
     modifier onlyATokenBurner() {
         if (msg.sender != _aTokenBurner) {
-            revert OnlyATokenBurner(msg.sender);
+            revert OnlyATokenBurner(msg.sender, _aTokenBurner);
         }
         _;
     }
@@ -80,11 +80,11 @@ abstract contract ImmutableATokenBurner is ImmutableFactory {
 
 abstract contract ImmutableATokenMinter is ImmutableFactory {
     address private immutable _aTokenMinter;
-    error OnlyATokenMinter(address sender);
+    error OnlyATokenMinter(address sender, address expected);
 
     modifier onlyATokenMinter() {
         if (msg.sender != _aTokenMinter) {
-            revert OnlyATokenMinter(msg.sender);
+            revert OnlyATokenMinter(msg.sender, _aTokenMinter);
         }
         _;
     }
@@ -107,11 +107,11 @@ abstract contract ImmutableATokenMinter is ImmutableFactory {
 
 abstract contract ImmutableBToken is ImmutableFactory {
     address private immutable _bToken;
-    error OnlyBToken(address sender);
+    error OnlyBToken(address sender, address expected);
 
     modifier onlyBToken() {
         if (msg.sender != _bToken) {
-            revert OnlyBToken(msg.sender);
+            revert OnlyBToken(msg.sender, _bToken);
         }
         _;
     }
@@ -134,11 +134,11 @@ abstract contract ImmutableBToken is ImmutableFactory {
 
 abstract contract ImmutableFoundation is ImmutableFactory {
     address private immutable _foundation;
-    error OnlyFoundation(address sender);
+    error OnlyFoundation(address sender, address expected);
 
     modifier onlyFoundation() {
         if (msg.sender != _foundation) {
-            revert OnlyFoundation(msg.sender);
+            revert OnlyFoundation(msg.sender, _foundation);
         }
         _;
     }
@@ -161,11 +161,11 @@ abstract contract ImmutableFoundation is ImmutableFactory {
 
 abstract contract ImmutableGovernance is ImmutableFactory {
     address private immutable _governance;
-    error OnlyGovernance(address sender);
+    error OnlyGovernance(address sender, address expected);
 
     modifier onlyGovernance() {
         if (msg.sender != _governance) {
-            revert OnlyGovernance(msg.sender);
+            revert OnlyGovernance(msg.sender, _governance);
         }
         _;
     }
@@ -188,11 +188,11 @@ abstract contract ImmutableGovernance is ImmutableFactory {
 
 abstract contract ImmutableInvalidTxConsumptionAccusation is ImmutableFactory {
     address private immutable _invalidTxConsumptionAccusation;
-    error OnlyInvalidTxConsumptionAccusation(address sender);
+    error OnlyInvalidTxConsumptionAccusation(address sender, address expected);
 
     modifier onlyInvalidTxConsumptionAccusation() {
         if (msg.sender != _invalidTxConsumptionAccusation) {
-            revert OnlyInvalidTxConsumptionAccusation(msg.sender);
+            revert OnlyInvalidTxConsumptionAccusation(msg.sender, _invalidTxConsumptionAccusation);
         }
         _;
     }
@@ -215,11 +215,11 @@ abstract contract ImmutableInvalidTxConsumptionAccusation is ImmutableFactory {
 
 abstract contract ImmutableLiquidityProviderStaking is ImmutableFactory {
     address private immutable _liquidityProviderStaking;
-    error OnlyLiquidityProviderStaking(address sender);
+    error OnlyLiquidityProviderStaking(address sender, address expected);
 
     modifier onlyLiquidityProviderStaking() {
         if (msg.sender != _liquidityProviderStaking) {
-            revert OnlyLiquidityProviderStaking(msg.sender);
+            revert OnlyLiquidityProviderStaking(msg.sender, _liquidityProviderStaking);
         }
         _;
     }
@@ -242,11 +242,11 @@ abstract contract ImmutableLiquidityProviderStaking is ImmutableFactory {
 
 abstract contract ImmutableMultipleProposalAccusation is ImmutableFactory {
     address private immutable _multipleProposalAccusation;
-    error OnlyMultipleProposalAccusation(address sender);
+    error OnlyMultipleProposalAccusation(address sender, address expected);
 
     modifier onlyMultipleProposalAccusation() {
         if (msg.sender != _multipleProposalAccusation) {
-            revert OnlyMultipleProposalAccusation(msg.sender);
+            revert OnlyMultipleProposalAccusation(msg.sender, _multipleProposalAccusation);
         }
         _;
     }
@@ -269,11 +269,11 @@ abstract contract ImmutableMultipleProposalAccusation is ImmutableFactory {
 
 abstract contract ImmutablePublicStaking is ImmutableFactory {
     address private immutable _publicStaking;
-    error OnlyPublicStaking(address sender);
+    error OnlyPublicStaking(address sender, address expected);
 
     modifier onlyPublicStaking() {
         if (msg.sender != _publicStaking) {
-            revert OnlyPublicStaking(msg.sender);
+            revert OnlyPublicStaking(msg.sender, _publicStaking);
         }
         _;
     }
@@ -296,11 +296,11 @@ abstract contract ImmutablePublicStaking is ImmutableFactory {
 
 abstract contract ImmutableSnapshots is ImmutableFactory {
     address private immutable _snapshots;
-    error OnlySnapshots(address sender);
+    error OnlySnapshots(address sender, address expected);
 
     modifier onlySnapshots() {
         if (msg.sender != _snapshots) {
-            revert OnlySnapshots(msg.sender);
+            revert OnlySnapshots(msg.sender, _snapshots);
         }
         _;
     }
@@ -323,11 +323,11 @@ abstract contract ImmutableSnapshots is ImmutableFactory {
 
 abstract contract ImmutableStakingPositionDescriptor is ImmutableFactory {
     address private immutable _stakingPositionDescriptor;
-    error OnlyStakingPositionDescriptor(address sender);
+    error OnlyStakingPositionDescriptor(address sender, address expected);
 
     modifier onlyStakingPositionDescriptor() {
         if (msg.sender != _stakingPositionDescriptor) {
-            revert OnlyStakingPositionDescriptor(msg.sender);
+            revert OnlyStakingPositionDescriptor(msg.sender, _stakingPositionDescriptor);
         }
         _;
     }
@@ -350,11 +350,11 @@ abstract contract ImmutableStakingPositionDescriptor is ImmutableFactory {
 
 abstract contract ImmutableValidatorPool is ImmutableFactory {
     address private immutable _validatorPool;
-    error OnlyValidatorPool(address sender);
+    error OnlyValidatorPool(address sender, address expected);
 
     modifier onlyValidatorPool() {
         if (msg.sender != _validatorPool) {
-            revert OnlyValidatorPool(msg.sender);
+            revert OnlyValidatorPool(msg.sender, _validatorPool);
         }
         _;
     }
@@ -377,11 +377,11 @@ abstract contract ImmutableValidatorPool is ImmutableFactory {
 
 abstract contract ImmutableValidatorStaking is ImmutableFactory {
     address private immutable _validatorStaking;
-    error OnlyValidatorStaking(address sender);
+    error OnlyValidatorStaking(address sender, address expected);
 
     modifier onlyValidatorStaking() {
         if (msg.sender != _validatorStaking) {
-            revert OnlyValidatorStaking(msg.sender);
+            revert OnlyValidatorStaking(msg.sender, _validatorStaking);
         }
         _;
     }
@@ -404,11 +404,11 @@ abstract contract ImmutableValidatorStaking is ImmutableFactory {
 
 abstract contract ImmutableETHDKGAccusations is ImmutableFactory {
     address private immutable _ethdkgAccusations;
-    error OnlyETHDKGAccusations(address sender);
+    error OnlyETHDKGAccusations(address sender, address expected);
 
     modifier onlyETHDKGAccusations() {
         if (msg.sender != _ethdkgAccusations) {
-            revert OnlyETHDKGAccusations(msg.sender);
+            revert OnlyETHDKGAccusations(msg.sender, _ethdkgAccusations);
         }
         _;
     }
@@ -431,11 +431,11 @@ abstract contract ImmutableETHDKGAccusations is ImmutableFactory {
 
 abstract contract ImmutableETHDKGPhases is ImmutableFactory {
     address private immutable _ethdkgPhases;
-    error OnlyETHDKGPhases(address sender);
+    error OnlyETHDKGPhases(address sender, address expected);
 
     modifier onlyETHDKGPhases() {
         if (msg.sender != _ethdkgPhases) {
-            revert OnlyETHDKGPhases(msg.sender);
+            revert OnlyETHDKGPhases(msg.sender, _ethdkgPhases);
         }
         _;
     }
@@ -458,11 +458,11 @@ abstract contract ImmutableETHDKGPhases is ImmutableFactory {
 
 abstract contract ImmutableETHDKG is ImmutableFactory {
     address private immutable _ethdkg;
-    error OnlyETHDKG(address sender);
+    error OnlyETHDKG(address sender, address expected);
 
     modifier onlyETHDKG() {
         if (msg.sender != _ethdkg) {
-            revert OnlyETHDKG(msg.sender);
+            revert OnlyETHDKG(msg.sender, _ethdkg);
         }
         _;
     }

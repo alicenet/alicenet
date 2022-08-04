@@ -76,11 +76,11 @@ import "./DeterministicAddress.sol";
 
 abstract contract ImmutableFactory is DeterministicAddress {
     address private immutable _factory;
-    error OnlyFactory(address sender);
+    error OnlyFactory(address sender, address expected);
 
     modifier onlyFactory() {
       if (msg.sender != _factory) {
-        revert OnlyFactory(msg.sender);
+        revert OnlyFactory(msg.sender, _factory);
       }
       _;
   }
@@ -109,11 +109,11 @@ function templateContract(contract: Contract): string {
 abstract contract Immutable${contract.name} is ImmutableFactory {
 
     address private immutable _${mixedContractName};
-    error Only${contract.name}(address sender);
+    error Only${contract.name}(address sender, address expected);
 
     modifier only${contract.name}() {
         if (msg.sender != _${mixedContractName}) {
-          revert Only${contract.name}(msg.sender);
+          revert Only${contract.name}(msg.sender, _${mixedContractName});
         }
         _;
     }

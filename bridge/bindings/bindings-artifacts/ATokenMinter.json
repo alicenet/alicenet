@@ -10,6 +10,11 @@
         "internalType": "address",
         "name": "sender",
         "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "expected",
+        "type": "address"
       }
     ],
     "name": "OnlyAToken",
@@ -20,6 +25,11 @@
       {
         "internalType": "address",
         "name": "sender",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "expected",
         "type": "address"
       }
     ],

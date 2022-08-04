@@ -38,7 +38,7 @@ describe("Snapshots: Migrate state", () => {
       )
     )
       .to.be.revertedWithCustomError(fixture.bToken, `OnlyFactory`)
-      .withArgs(admin.address);
+      .withArgs(admin.address, fixture.factory.address);
   });
 
   it("Should not be to do a migration with mismatch state length", async function () {

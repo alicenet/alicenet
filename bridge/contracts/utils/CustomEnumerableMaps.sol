@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: MIT-open-group
 pragma solidity ^0.8.11;
 
-import {
-    CustomEnumerableMapsErrors
-} from "contracts/libraries/errors/CustomEnumerableMapsErrors.sol";
+import "contracts/libraries/errors/CustomEnumerableMapsErrors.sol";
 
 struct ValidatorData {
     address _address;

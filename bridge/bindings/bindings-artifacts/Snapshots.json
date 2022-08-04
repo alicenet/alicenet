@@ -267,6 +267,11 @@
         "internalType": "address",
         "name": "sender",
         "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "expected",
+        "type": "address"
       }
     ],
     "name": "OnlyETHDKG",
@@ -278,6 +283,11 @@
         "internalType": "address",
         "name": "sender",
         "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "expected",
+        "type": "address"
       }
     ],
     "name": "OnlyFactory",
@@ -288,6 +298,11 @@
       {
         "internalType": "address",
         "name": "sender",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "expected",
         "type": "address"
       }
     ],

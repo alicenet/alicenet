@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: MIT-open-group
 pragma solidity ^0.8.11;
 
-import {
-    GenericParserLibraryErrors
-} from "contracts/libraries/errors/GenericParserLibraryErrors.sol";
+import "contracts/libraries/errors/GenericParserLibraryErrors.sol";
 
 import "./BaseParserLibrary.sol";
 import "./RClaimsParserLibrary.sol";

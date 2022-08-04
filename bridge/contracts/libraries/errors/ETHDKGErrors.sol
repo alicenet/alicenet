@@ -39,7 +39,11 @@ library ETHDKGErrors {
     error ETHDKGNotInRegistrationPhase(Phase currentPhase);
     error PublicKeyZero();
     error PublicKeyNotOnCurve();
-    error ParticipantParticipatingInRound(address participant, uint256 participantNonce, uint256 maxExpectedNonce);
+    error ParticipantParticipatingInRound(
+        address participant,
+        uint256 participantNonce,
+        uint256 maxExpectedNonce
+    );
     error ETHDKGNotInSharedDistributionPhase(Phase currentPhase);
     error InvalidNonce(uint256 participantNonce, uint256 nonce);
     error ParticipantDistributedSharesInRound(address participant);

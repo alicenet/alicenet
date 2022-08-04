@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: MIT-open-group
 pragma solidity ^0.8.11;
 
-import {
-    MerkleProofParserLibraryErrors
-} from "contracts/libraries/errors/MerkleProofParserLibraryErrors.sol";
+import "contracts/libraries/errors/MerkleProofParserLibraryErrors.sol";
 
 import "./BaseParserLibrary.sol";
 

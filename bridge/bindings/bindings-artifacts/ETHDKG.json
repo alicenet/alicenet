@@ -53,6 +53,11 @@
         "internalType": "address",
         "name": "sender",
         "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "expected",
+        "type": "address"
       }
     ],
     "name": "OnlyETHDKGAccusations",
@@ -63,6 +68,11 @@
       {
         "internalType": "address",
         "name": "sender",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "expected",
         "type": "address"
       }
     ],
@@ -75,6 +85,11 @@
         "internalType": "address",
         "name": "sender",
         "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "expected",
+        "type": "address"
       }
     ],
     "name": "OnlyFactory",
@@ -86,6 +101,11 @@
         "internalType": "address",
         "name": "sender",
         "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "expected",
+        "type": "address"
       }
     ],
     "name": "OnlySnapshots",
@@ -96,6 +116,11 @@
       {
         "internalType": "address",
         "name": "sender",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "expected",
         "type": "address"
       }
     ],
