@@ -301,7 +301,7 @@ describe("Ethdkg: Migrate state", () => {
     expectedEpoch = 3;
     expectedHeight = 3072;
     expectedSafeToProceedConsensus = true;
-    
+
     await expect(
       fixture.snapshots
         .connect(await getValidatorEthAccount(validatorsSnapshots[1]))
@@ -323,7 +323,7 @@ describe("Ethdkg: Migrate state", () => {
           "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
           "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
           "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
-        ]        
+        ]
       );
   });
 

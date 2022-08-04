@@ -103,7 +103,7 @@ describe("State Migration: Migrate state", () => {
           fixture.factory.address,
           true,
           signatures[i],
-          expectedBClaims[i],
+          expectedBClaims[i]
         );
     }
 
