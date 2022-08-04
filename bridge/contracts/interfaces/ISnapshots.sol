@@ -16,7 +16,7 @@ interface ISnapshots {
         address indexed validator,
         bool isSafeToProceedConsensus,
         bytes signatureRaw,
-        BClaimsParserLibrary.BClaims BClaims
+        BClaimsParserLibrary.BClaims bClaims
     );
 
     function setSnapshotDesperationDelay(uint32 desperationDelay_) external;

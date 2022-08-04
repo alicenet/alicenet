@@ -263,7 +263,7 @@
         ],
         "indexed": false,
         "internalType": "struct BClaimsParserLibrary.BClaims",
-        "name": "BClaims",
+        "name": "bClaims",
         "type": "tuple"
       }
     ],

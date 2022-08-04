@@ -27,14 +27,14 @@ type ISnapshotsFilterer interface {
 	ParseInitialized(log types.Log) (*SnapshotsInitialized, error)
 	// FilterSnapshotTaken is a free log retrieval operation binding the contract event 0x99d9cb62428b4d6868a37392553a298e2c2915033e5d50ba2cf4595510e483f3.
 	//
-	// Solidity: event SnapshotTaken(uint256 chainId, uint256 indexed epoch, uint256 height, address indexed validator, bool isSafeToProceedConsensus, bytes signatureRaw, (uint32,uint32,uint32,bytes32,bytes32,bytes32,bytes32) BClaims)
+	// Solidity: event SnapshotTaken(uint256 chainId, uint256 indexed epoch, uint256 height, address indexed validator, bool isSafeToProceedConsensus, bytes signatureRaw, (uint32,uint32,uint32,bytes32,bytes32,bytes32,bytes32) bClaims)
 	FilterSnapshotTaken(opts *bind.FilterOpts, epoch []*big.Int, validator []common.Address) (*SnapshotsSnapshotTakenIterator, error)
 	// WatchSnapshotTaken is a free log subscription operation binding the contract event 0x99d9cb62428b4d6868a37392553a298e2c2915033e5d50ba2cf4595510e483f3.
 	//
-	// Solidity: event SnapshotTaken(uint256 chainId, uint256 indexed epoch, uint256 height, address indexed validator, bool isSafeToProceedConsensus, bytes signatureRaw, (uint32,uint32,uint32,bytes32,bytes32,bytes32,bytes32) BClaims)
+	// Solidity: event SnapshotTaken(uint256 chainId, uint256 indexed epoch, uint256 height, address indexed validator, bool isSafeToProceedConsensus, bytes signatureRaw, (uint32,uint32,uint32,bytes32,bytes32,bytes32,bytes32) bClaims)
 	WatchSnapshotTaken(opts *bind.WatchOpts, sink chan<- *SnapshotsSnapshotTaken, epoch []*big.Int, validator []common.Address) (event.Subscription, error)
 	// ParseSnapshotTaken is a log parse operation binding the contract event 0x99d9cb62428b4d6868a37392553a298e2c2915033e5d50ba2cf4595510e483f3.
 	//
-	// Solidity: event SnapshotTaken(uint256 chainId, uint256 indexed epoch, uint256 height, address indexed validator, bool isSafeToProceedConsensus, bytes signatureRaw, (uint32,uint32,uint32,bytes32,bytes32,bytes32,bytes32) BClaims)
+	// Solidity: event SnapshotTaken(uint256 chainId, uint256 indexed epoch, uint256 height, address indexed validator, bool isSafeToProceedConsensus, bytes signatureRaw, (uint32,uint32,uint32,bytes32,bytes32,bytes32,bytes32) bClaims)
 	ParseSnapshotTaken(log types.Log) (*SnapshotsSnapshotTaken, error)
 }
