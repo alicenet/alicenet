@@ -222,6 +222,9 @@ init-extra-nodes)
 geth)
     ./scripts/base-scripts/geth-local.sh
     ;;
+geth-resume)
+    ./scripts/base-scripts/geth-local-resume.sh
+    ;;
 bootnode)
     ./scripts/base-scripts/bootnode.sh
     ;;
@@ -273,7 +276,7 @@ clean)
     ;;
 *)
     echo -e "Unknown argument!"
-    echo -e "init # | init-extra-nodes # | geth | bootnode | deploy | validator # | node # | ethdkg | hardhat | stress-test | deposit | schedule-maintenance | unregister | list | status | clean"
+    echo -e "init # | init-extra-nodes # | geth | geth-resume | bootnode | deploy | validator # | node # | ethdkg | hardhat | stress-test | deposit | schedule-maintenance | unregister | list | status | clean"
     exit 1
     ;;
 esac

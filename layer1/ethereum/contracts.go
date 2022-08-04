@@ -185,6 +185,16 @@ func (c *Contracts) lookupContracts() error {
 		c.snapshots, err = bindings.NewSnapshots(c.snapshotsAddress, eth.internalClient)
 		logAndEat(logger, err)
 
+		// MultipleProposalAccusation
+		c.multipleProposalAccusationAddress, err = lookup("MultipleProposalAccusation")
+		logAndEat(logger, err)
+		if bytes.Equal(c.multipleProposalAccusationAddress.Bytes(), make([]byte, 20)) {
+			continue
+		}
+
+		c.multipleProposalAccusation, err = bindings.NewMultipleProposalAccusation(c.multipleProposalAccusationAddress, eth.internalClient)
+		logAndEat(logger, err)
+
 		break
 	}
 

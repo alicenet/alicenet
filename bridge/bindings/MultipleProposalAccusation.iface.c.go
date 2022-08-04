@@ -9,6 +9,10 @@ import (
 
 // IMultipleProposalAccusationCaller ...
 type IMultipleProposalAccusationCaller interface {
+	// CalculateId is a free data retrieval call binding the contract method 0x367c6285.
+	//
+	// Solidity: function calculateId(bytes signature0_, bytes pClaims0_, bytes signature1_, bytes pClaims1_) pure returns(bytes32)
+	CalculateId(opts *bind.CallOpts, signature0_ []byte, pClaims0_ []byte, signature1_ []byte, pClaims1_ []byte) ([32]byte, error)
 	// GetMetamorphicContractAddress is a free data retrieval call binding the contract method 0x8653a465.
 	//
 	// Solidity: function getMetamorphicContractAddress(bytes32 _salt, address _factory) pure returns(address)

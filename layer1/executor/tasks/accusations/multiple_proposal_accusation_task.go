@@ -103,7 +103,7 @@ func (t *MultipleProposalAccusationTask) Execute(ctx context.Context) (*types.Tr
 		return nil, tasks.NewTaskErr(fmt.Sprintf("MultipleProposalAccusationTask: failed to marshal proposal1: %v", err), false)
 	}
 
-	t.GetLogger().Info("MultipleProposalAccusationTask: trying to call smart contract to accuse of multiple proposals")
+	t.GetLogger().Infof("MultipleProposalAccusationTask: trying to call smart contract to accuse of multiple proposals, id: %s", t.GetId())
 	txn, err := t.GetContractsHandler().EthereumContracts().MultipleProposalAccusation().AccuseMultipleProposal(
 		txnOpts,
 		t.Signature0,
@@ -138,18 +138,38 @@ func (t *MultipleProposalAccusationTask) ShouldExecute(ctx context.Context) (boo
 	// chain re-orgs.
 	callOpts, err := client.GetCallOpts(ctx, t.GetClient().GetDefaultAccount())
 	if err != nil {
-		return false, tasks.NewTaskErr(fmt.Sprintf(tasks.FailedGettingCallOpts, err), true)
+		return false, tasks.NewTaskErr(fmt.Sprintf(tasks.FailedGettingCallOpts, err), false)
 	}
 	var id [32]byte
 	idBin, err := hex.DecodeString(t.GetId())
 	if err != nil {
-		return false, tasks.NewTaskErr(fmt.Sprintf("MultipleProposalAccusationTask: failed to decode id: %v", err), true)
+		return false, tasks.NewTaskErr(fmt.Sprintf("MultipleProposalAccusationTask: failed to decode id: %v", err), false)
 	}
 	copy(id[:], idBin)
+
+	// debug
+	prop0, err := t.Proposal0.MarshalBinary()
+	if err != nil {
+		return false, tasks.NewTaskErr(fmt.Sprintf("MultipleProposalAccusationTask: failed to marshal proposal0: %v", err), false)
+	}
+
+	prop1, err := t.Proposal1.MarshalBinary()
+	if err != nil {
+		return false, tasks.NewTaskErr(fmt.Sprintf("MultipleProposalAccusationTask: failed to marshal proposal1: %v", err), false)
+	}
+	calcId, err := t.GetContractsHandler().EthereumContracts().MultipleProposalAccusation().CalculateId(callOpts, t.Signature0, prop0, t.Signature1, prop1)
+	if err != nil {
+		return true, tasks.NewTaskErr(fmt.Sprintf("MultipleProposalAccusationTask: error calculating id: %v", err), true)
+	}
+
+	t.GetLogger().Infof("MultipleProposalAccusationTask: trying to get accuser status for id: %s | %x | %x", t.GetId(), id, calcId)
+
 	isAccused, err := t.GetContractsHandler().EthereumContracts().MultipleProposalAccusation().IsAccused(callOpts, id)
 	if err != nil {
-		return false, tasks.NewTaskErr(fmt.Sprintf("MultipleProposalAccusationTask: error getting foo in the example task: %v", err), true)
+		return true, tasks.NewTaskErr(fmt.Sprintf("MultipleProposalAccusationTask: error getting foo in the example task: %v", err), true)
 	}
+
+	t.GetLogger().Infof("MultipleProposalAccusationTask: accusation status id: %b", isAccused)
 
 	return !isAccused, nil
 }

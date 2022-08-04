@@ -14,6 +14,7 @@ import (
 	"github.com/alicenet/alicenet/layer1/executor"
 	"github.com/alicenet/alicenet/layer1/executor/marshaller"
 	"github.com/alicenet/alicenet/layer1/executor/tasks"
+	"github.com/alicenet/alicenet/utils"
 	"github.com/dgraph-io/badger/v2"
 	"github.com/sirupsen/logrus"
 )
@@ -234,10 +235,11 @@ func (m *Manager) scheduleAccusations() error {
 
 	// schedule existing accusations if they are not yet scheduled in the Task Scheduler
 	for _, acc := range currentAccusations {
-		m.logger.Debugf("Scheduling accusation %#v", acc)
+		//m.logger.Debugf("Scheduling accusation %#v", acc)
 
 		// schedule if not yet scheduled
 		if _, ok := m.runningAccusations[acc.GetId()]; !ok {
+			m.logger.Debugf("Scheduling accusation %s", acc.GetId())
 			resp, err := m.taskHandler.ScheduleTask(m.ctx, acc, acc.GetId())
 			if err != nil {
 				m.logger.Warnf("AccusationManager failed to schedule accusation: %v", err)
@@ -298,6 +300,15 @@ func (m *Manager) processLRS(lrs *lstate.RoundStates) (bool, error) {
 		if rs == nil {
 			m.logger.Errorf("AccusationManager: could not get roundState for validator 0x%x", v.VAddr)
 			continue
+		}
+
+		if rs.Proposal != nil {
+			rs.Proposal.Proposer = utils.CopySlice(v.VAddr)
+			rs.Proposal.GroupKey = utils.CopySlice(lrs.ValidatorSet.GroupKey)
+		}
+		if rs.ConflictingProposal != nil {
+			rs.ConflictingProposal.Proposer = utils.CopySlice(v.VAddr)
+			rs.ConflictingProposal.GroupKey = utils.CopySlice(lrs.ValidatorSet.GroupKey)
 		}
 
 		valAddress := fmt.Sprintf("0x%x", v.VAddr)
