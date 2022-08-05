@@ -44,16 +44,16 @@ contract DutchAuction is Initializable, ImmutableFactory {
         _startAuction();
     }
 
-    /// @dev Starts the auction setting auction start block to the current block
-    function _startAuction() internal {
-        _startBlock = block.number;
-    }
-
     /// @dev Returns dutch auction price for current block
     function getPrice() public view returns (uint256) {
         if (block.number - _startBlock > _durationInBlocks)
             revert DutchAuctionErrors.AuctionClosed();
         return _dutchAuctionPrice(block.number - _startBlock, _bidders);
+    }
+
+    /// @dev Starts the auction setting auction start block to the current block
+    function _startAuction() internal {
+        _startBlock = block.number;
     }
 
     /// @notice Calculates dutch auction price for the specified period (number of blocks since auction initialization)
