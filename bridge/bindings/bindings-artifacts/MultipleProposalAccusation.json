@@ -197,40 +197,6 @@
   {
     "inputs": [
       {
-        "internalType": "bytes",
-        "name": "signature0_",
-        "type": "bytes"
-      },
-      {
-        "internalType": "bytes",
-        "name": "pClaims0_",
-        "type": "bytes"
-      },
-      {
-        "internalType": "bytes",
-        "name": "signature1_",
-        "type": "bytes"
-      },
-      {
-        "internalType": "bytes",
-        "name": "pClaims1_",
-        "type": "bytes"
-      }
-    ],
-    "name": "calculateId",
-    "outputs": [
-      {
-        "internalType": "bytes32",
-        "name": "",
-        "type": "bytes32"
-      }
-    ],
-    "stateMutability": "pure",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
         "internalType": "bytes32",
         "name": "_salt",
         "type": "bytes32"

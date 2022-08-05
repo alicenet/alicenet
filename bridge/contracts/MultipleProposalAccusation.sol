@@ -21,29 +21,10 @@ contract MultipleProposalAccusation is
 
     constructor()
         ImmutableFactory(msg.sender)
-        ImmutableSnapshots()
-        ImmutableETHDKG()
+        ImmutableSnapshots() // does it need this?
+        ImmutableETHDKG() // does it need this?
         ImmutableValidatorPool()
     {}
-
-    function calculateId(bytes calldata signature0_,
-        bytes calldata pClaims0_,
-        bytes calldata signature1_,
-        bytes calldata pClaims1_) public pure returns(bytes32) {
-        // convert signatures to 32byte uints
-        uint256 sig0 = uint256(keccak256(signature0_));
-        uint256 sig1 = uint256(keccak256(signature1_));
-        bytes32 id;
-
-        // check sorting of signatures to generate ID
-        if (sig0 <= sig1) {
-            id = keccak256(abi.encode(signature0_, pClaims0_, signature1_, pClaims1_));
-        } else {
-            id = keccak256(abi.encode(signature1_, pClaims1_, signature0_, pClaims0_));
-        }
-
-        return id;
-    }
 
     /// @notice This function validates an accusation of multiple proposals.
     /// @param signature0_ The signature of pclaims0
@@ -64,9 +45,9 @@ contract MultipleProposalAccusation is
 
         // check sorting of signatures to generate ID
         if (sig0 <= sig1) {
-            id = keccak256(abi.encode(signature0_, pClaims0_, signature1_, pClaims1_));
+            id = keccak256(abi.encodePacked(signature0_, pClaims0_, signature1_, pClaims1_));
         } else {
-            id = keccak256(abi.encode(signature1_, pClaims1_, signature0_, pClaims0_));
+            id = keccak256(abi.encodePacked(signature1_, pClaims1_, signature0_, pClaims0_));
         }
 
         // check if thi accusation has already been submitted
@@ -121,7 +102,7 @@ contract MultipleProposalAccusation is
 
         _accusations[id] = true;
 
-        // major slash this validator. Note: this method already checks if the dishonestValidator (1st argument) is a validator.
+        // major slash this validator. Note: this method already checks if the dishonest validator (1st argument) is a validator.
         IValidatorPool(_validatorPoolAddress()).majorSlash(signerAccount0, msg.sender);
 
         return signerAccount0;

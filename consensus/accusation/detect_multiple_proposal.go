@@ -82,15 +82,15 @@ func detectMultipleProposal(rs *objs.RoundState, lrs *lstate.RoundStates, db *db
 		return nil, false
 	}
 
-	// sig0Big, err := sig0.ToBigInt()
-	// if err != nil {
-	// 	return nil, false
-	// }
+	sig0Big, err := sig0.ToBigInt()
+	if err != nil {
+		return nil, false
+	}
 
-	// sig1Big, err := sig1.ToBigInt()
-	// if err != nil {
-	// 	return nil, false
-	// }
+	sig1Big, err := sig1.ToBigInt()
+	if err != nil {
+		return nil, false
+	}
 
 	// submit both proposals and already validated that both RClaims are valid and sigs are different
 	acc := accusations.NewMultipleProposalAccusationTask(
@@ -100,9 +100,8 @@ func detectMultipleProposal(rs *objs.RoundState, lrs *lstate.RoundStates, db *db
 		rs.ConflictingProposal.PClaims,
 	)
 
-	//sig1.G
 	// deterministic ID
-	if sig0.Cmp(sig1) <= 0 {
+	if sig0Big.Cmp(sig1Big) <= 0 {
 		idBin := crypto.Hasher(
 			rs.Proposal.Signature,
 			proposalPClaimsBin,
