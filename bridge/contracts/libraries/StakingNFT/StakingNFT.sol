@@ -103,10 +103,6 @@ abstract contract StakingNFT is
         uint256 lockDuration_
     ) public override withCircuitBreaker onlyGovernance returns (uint256) {
         require(
-            _exists(tokenID_),
-            string(abi.encodePacked(StakingNFTErrorCodes.STAKENFT_INVALID_TOKEN_ID))
-        );
-        require(
             caller_ == ownerOf(tokenID_),
             string(abi.encodePacked(StakingNFTErrorCodes.STAKENFT_CALLER_NOT_TOKEN_OWNER))
         );
@@ -130,10 +126,6 @@ abstract contract StakingNFT is
         returns (uint256)
     {
         require(
-            _exists(tokenID_),
-            string(abi.encodePacked(StakingNFTErrorCodes.STAKENFT_INVALID_TOKEN_ID))
-        );
-        require(
             msg.sender == ownerOf(tokenID_),
             string(abi.encodePacked(StakingNFTErrorCodes.STAKENFT_CALLER_NOT_TOKEN_OWNER))
         );
@@ -155,10 +147,6 @@ abstract contract StakingNFT is
         withCircuitBreaker
         returns (uint256)
     {
-        require(
-            _exists(tokenID_),
-            string(abi.encodePacked(StakingNFTErrorCodes.STAKENFT_INVALID_TOKEN_ID))
-        );
         require(
             msg.sender == ownerOf(tokenID_),
             string(abi.encodePacked(StakingNFTErrorCodes.STAKENFT_CALLER_NOT_TOKEN_OWNER))
@@ -260,10 +248,6 @@ abstract contract StakingNFT is
     /// collectEth returns all due Eth allocations to caller. The caller
     /// of this function must be the owner of the tokenID
     function collectEth(uint256 tokenID_) public returns (uint256 payout) {
-        require(
-            _exists(tokenID_),
-            string(abi.encodePacked(StakingNFTErrorCodes.STAKENFT_INVALID_TOKEN_ID))
-        );
         address owner = ownerOf(tokenID_);
         require(
             msg.sender == owner,
@@ -290,10 +274,6 @@ abstract contract StakingNFT is
     /// collectToken returns all due AToken allocations to caller. The
     /// caller of this function must be the owner of the tokenID
     function collectToken(uint256 tokenID_) public returns (uint256 payout) {
-        require(
-            _exists(tokenID_),
-            string(abi.encodePacked(StakingNFTErrorCodes.STAKENFT_INVALID_TOKEN_ID))
-        );
         address owner = ownerOf(tokenID_);
         require(
             msg.sender == owner,
@@ -320,10 +300,6 @@ abstract contract StakingNFT is
     /// collectEth returns all due Eth allocations to the to_ address. The caller
     /// of this function must be the owner of the tokenID
     function collectEthTo(address to_, uint256 tokenID_) public returns (uint256 payout) {
-        require(
-            _exists(tokenID_),
-            string(abi.encodePacked(StakingNFTErrorCodes.STAKENFT_INVALID_TOKEN_ID))
-        );
         address owner = ownerOf(tokenID_);
         require(
             msg.sender == owner,
@@ -350,10 +326,6 @@ abstract contract StakingNFT is
     /// collectTokenTo returns all due AToken allocations to the to_ address. The
     /// caller of this function must be the owner of the tokenID
     function collectTokenTo(address to_, uint256 tokenID_) public returns (uint256 payout) {
-        require(
-            _exists(tokenID_),
-            string(abi.encodePacked(StakingNFTErrorCodes.STAKENFT_INVALID_TOKEN_ID))
-        );
         address owner = ownerOf(tokenID_);
         require(
             msg.sender == owner,
@@ -398,10 +370,6 @@ abstract contract StakingNFT is
 
     /// estimateEthCollection returns the amount of eth a tokenID may withdraw
     function estimateEthCollection(uint256 tokenID_) public view returns (uint256 payout) {
-        require(
-            _exists(tokenID_),
-            string(abi.encodePacked(StakingNFTErrorCodes.STAKENFT_INVALID_TOKEN_ID))
-        );
         Position memory p = _positions[tokenID_];
         Accumulator memory ethState = _ethState;
         uint256 shares = _shares;
@@ -416,10 +384,6 @@ abstract contract StakingNFT is
 
     /// estimateTokenCollection returns the amount of AToken a tokenID may withdraw
     function estimateTokenCollection(uint256 tokenID_) public view returns (uint256 payout) {
-        require(
-            _exists(tokenID_),
-            string(abi.encodePacked(StakingNFTErrorCodes.STAKENFT_INVALID_TOKEN_ID))
-        );
         Position memory p = _positions[tokenID_];
         Accumulator memory tokenState = _tokenState;
         uint256 shares = _shares;
@@ -460,10 +424,6 @@ abstract contract StakingNFT is
             uint256 accumulatorToken
         )
     {
-        require(
-            _exists(tokenID_),
-            string(abi.encodePacked(StakingNFTErrorCodes.STAKENFT_INVALID_TOKEN_ID))
-        );
         Position memory p = _positions[tokenID_];
         shares = uint256(p.shares);
         freeAfter = uint256(p.freeAfter);
@@ -479,10 +439,6 @@ abstract contract StakingNFT is
         override(ERC721Upgradeable)
         returns (string memory)
     {
-        require(
-            _exists(tokenId),
-            string(abi.encodePacked(StakingNFTErrorCodes.STAKENFT_INVALID_TOKEN_ID))
-        );
         return IStakingNFTDescriptor(_stakingPositionDescriptorAddress()).tokenURI(this, tokenId);
     }
 
@@ -605,10 +561,6 @@ abstract contract StakingNFT is
         address to_,
         uint256 tokenID_
     ) internal returns (uint256 payoutEth, uint256 payoutToken) {
-        require(
-            _exists(tokenID_),
-            string(abi.encodePacked(StakingNFTErrorCodes.STAKENFT_INVALID_TOKEN_ID))
-        );
         require(
             from_ == ownerOf(tokenID_),
             string(abi.encodePacked(StakingNFTErrorCodes.STAKENFT_CALLER_NOT_TOKEN_OWNER))
