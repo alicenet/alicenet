@@ -99,7 +99,6 @@ jobs:
   go-lint:
     runs-on: ubuntu-20.04
     timeout-minutes: 10
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v3
       - uses: golangci/golangci-lint-action@v3
@@ -157,6 +156,13 @@ jobs:
           ]
     steps:
       - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version-file: "bridge/.nvmrc"
+          cache: "npm"
+          cache-dependency-path: bridge/package-lock.json
+      - run: npm --prefix bridge/ ci
+      - run: npm --prefix bridge/ run compile
       - uses: ./.github/actions/alicenet-config
       - name: Set up gotestfmt
         run: go install github.com/haveyoudebuggedit/gotestfmt/v2/cmd/gotestfmt@latest

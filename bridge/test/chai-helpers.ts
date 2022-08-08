@@ -13,3 +13,23 @@ export async function assertErrorMessage(
     }
   );
 }
+
+export async function assertError(
+  p: Promise<any>,
+  errorName: string,
+  errorArgs: Map<string, any>
+): Promise<void> {
+  return p.then(
+    (value) => {
+      expect.fail(`Found value instead of error: ${value}`);
+    },
+    (reason) => {
+      expect(reason.errorName).to.equal(errorName);
+      expect(reason.errorArgs.length).to.equal(errorArgs.size);
+
+      for (const [key, value] of errorArgs) {
+        expect(reason.errorArgs[key]).to.deep.equal(value);
+      }
+    }
+  );
+}

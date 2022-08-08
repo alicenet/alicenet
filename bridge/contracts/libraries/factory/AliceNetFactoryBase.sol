@@ -4,9 +4,7 @@ import "contracts/Proxy.sol";
 import "contracts/utils/DeterministicAddress.sol";
 import "contracts/libraries/proxy/ProxyUpgrader.sol";
 import "contracts/interfaces/IProxy.sol";
-import {
-    AliceNetFactoryBaseErrorCodes
-} from "contracts/libraries/errorCodes/AliceNetFactoryBaseErrorCodes.sol";
+import {AliceNetFactoryBaseErrors} from "contracts/libraries/errors/AliceNetFactoryBaseErrors.sol";
 
 abstract contract AliceNetFactoryBase is DeterministicAddress, ProxyUpgrader {
     /**
@@ -479,10 +477,9 @@ abstract contract AliceNetFactoryBase is DeterministicAddress, ProxyUpgrader {
      * @param isOk_ boolean false to cause revert
      */
     function _requireAuth(bool isOk_) internal pure {
-        require(
-            isOk_,
-            string(abi.encodePacked(AliceNetFactoryBaseErrorCodes.ALICENETFACTORYBASE_UNAUTHORIZED))
-        );
+        if (!isOk_) {
+            revert AliceNetFactoryBaseErrors.Unauthorized();
+        }
     }
 
     /**
@@ -490,11 +487,8 @@ abstract contract AliceNetFactoryBase is DeterministicAddress, ProxyUpgrader {
      * @param isOk_ boolean false to cause revert
      */
     function _codeSizeZeroRevert(bool isOk_) internal pure {
-        require(
-            isOk_,
-            string(
-                abi.encodePacked(AliceNetFactoryBaseErrorCodes.ALICENETFACTORYBASE_CODE_SIZE_ZERO)
-            )
-        );
+        if (!isOk_) {
+            revert AliceNetFactoryBaseErrors.CodeSizeZero();
+        }
     }
 }

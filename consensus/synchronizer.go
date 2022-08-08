@@ -16,6 +16,7 @@ import (
 	"github.com/alicenet/alicenet/errorz"
 	"github.com/alicenet/alicenet/logging"
 	"github.com/alicenet/alicenet/peering"
+	"github.com/alicenet/alicenet/utils"
 	"github.com/dgraph-io/badger/v2"
 	"github.com/sirupsen/logrus"
 )
@@ -525,8 +526,15 @@ func (s *Synchronizer) setupLoops() {
 			withName("TDB-GCLoop").
 			withFn(
 				func() error {
-					s.tdb.RunValueLogGC(constants.BadgerDiscardRatio)
-					s.tdb.RunValueLogGC(constants.BadgerDiscardRatio)
+					err := s.tdb.RunValueLogGC(constants.BadgerDiscardRatio)
+
+					if utils.HandleBadgerErrors(err) != nil {
+						return err
+					}
+					err = s.tdb.RunValueLogGC(constants.BadgerDiscardRatio)
+					if utils.HandleBadgerErrors(err) != nil {
+						return err
+					}
 					return nil
 				}).
 			withFreq(600 * time.Second).
