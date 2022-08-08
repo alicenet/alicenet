@@ -5,13 +5,13 @@ changelog:
   categories:
     - title: Breaking Changes
       labels:
-        - breaking
+        - t/breaking
     - title: New Features
       labels:
-        - enhancement
+        - t/feature
     - title: Bug Fixes
       labels:
-        - bug
+        - t/bug
     - title: Other Changes
       labels:
         - "*"
