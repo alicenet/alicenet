@@ -6,11 +6,11 @@ import (
 	"github.com/alicenet/alicenet/errorz"
 )
 
-// Vout is a vector of TXOut objects
+// Vout is a vector of TXOut objects.
 type Vout []*TXOut
 
 // ValuePlusFee sums the total value of the UTXOs without any discount
-// and including associated fees
+// and including associated fees.
 func (vout Vout) ValuePlusFee() (*uint256.Uint256, error) {
 	sum := uint256.Zero()
 	for i := 0; i < len(vout); i++ {
@@ -26,7 +26,7 @@ func (vout Vout) ValuePlusFee() (*uint256.Uint256, error) {
 	return sum, nil
 }
 
-// RemainingValue sums the total value of the UTXOs with discount
+// RemainingValue sums the total value of the UTXOs with discount.
 func (vout Vout) RemainingValue(currentHeight uint32) (*uint256.Uint256, error) {
 	sum := uint256.Zero()
 	for i := 0; i < len(vout); i++ {
@@ -42,7 +42,7 @@ func (vout Vout) RemainingValue(currentHeight uint32) (*uint256.Uint256, error) 
 	return sum, nil
 }
 
-// SetTxOutIdx sets the TxOutIdx of each utxo
+// SetTxOutIdx sets the TxOutIdx of each utxo.
 func (vout Vout) SetTxOutIdx() error {
 	for i := 0; i < len(vout); i++ {
 		err := vout[i].SetTxOutIdx(uint32(i))
@@ -53,7 +53,7 @@ func (vout Vout) SetTxOutIdx() error {
 	return nil
 }
 
-// ValidateTxOutIdx validates the TxOutIdx of each utxo
+// ValidateTxOutIdx validates the TxOutIdx of each utxo.
 func (vout Vout) ValidateTxOutIdx() error {
 	var txOutIdx uint32
 	idxMap := make(map[uint32]bool)
@@ -97,7 +97,7 @@ func (vout Vout) ValidateTxOutIdx() error {
 	return nil
 }
 
-// UTXOID returns the list of UTXOIDs from each TXOut in Vout
+// UTXOID returns the list of UTXOIDs from each TXOut in Vout.
 func (vout Vout) UTXOID() ([][]byte, error) {
 	ids := [][]byte{}
 	for i := 0; i < len(vout); i++ {
@@ -110,7 +110,7 @@ func (vout Vout) UTXOID() ([][]byte, error) {
 	return ids, nil
 }
 
-// PreHash returns the list of PreHashs from each TXOut in Vout
+// PreHash returns the list of PreHashs from each TXOut in Vout.
 func (vout Vout) PreHash() ([][]byte, error) {
 	phs := [][]byte{}
 	for i := 0; i < len(vout); i++ {
@@ -123,7 +123,7 @@ func (vout Vout) PreHash() ([][]byte, error) {
 	return phs, nil
 }
 
-// ValidateFees validates the Fee from each TXOut in Vout
+// ValidateFees validates the Fee from each TXOut in Vout.
 func (vout Vout) ValidateFees(storage *wrapper.Storage) error {
 	for i := 0; i < len(vout); i++ {
 		err := vout[i].ValidateFee(storage)
@@ -134,7 +134,7 @@ func (vout Vout) ValidateFees(storage *wrapper.Storage) error {
 	return nil
 }
 
-// ValidatePreSignature validates the PreSignature from each TXOut in Vout
+// ValidatePreSignature validates the PreSignature from each TXOut in Vout.
 func (vout Vout) ValidatePreSignature() error {
 	for i := 0; i < len(vout); i++ {
 		err := vout[i].ValidatePreSignature()
@@ -145,7 +145,7 @@ func (vout Vout) ValidatePreSignature() error {
 	return nil
 }
 
-// ValidateSignature validates the Signature from each TXOut in Vout
+// ValidateSignature validates the Signature from each TXOut in Vout.
 func (vout Vout) ValidateSignature(currentHeight uint32, txIn []*TXIn) error {
 	if len(txIn) != len(vout) {
 		return errorz.ErrInvalid{}.New("vout.validateSignature; mismatched vector lengths")
@@ -159,7 +159,7 @@ func (vout Vout) ValidateSignature(currentHeight uint32, txIn []*TXIn) error {
 	return nil
 }
 
-// MakeTxIn converts Vout to Vin
+// MakeTxIn converts Vout to Vin.
 func (vout Vout) MakeTxIn() (Vin, error) {
 	txIns := Vin{}
 	for i := 0; i < len(vout); i++ {

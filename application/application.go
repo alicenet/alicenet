@@ -4,9 +4,7 @@ import (
 	"bytes"
 	"errors"
 
-	"github.com/alicenet/alicenet/dynamics"
-	"github.com/alicenet/alicenet/errorz"
-	"github.com/alicenet/alicenet/utils"
+	"github.com/dgraph-io/badger/v2"
 	"github.com/sirupsen/logrus"
 
 	"github.com/alicenet/alicenet/application/deposit"
@@ -20,9 +18,11 @@ import (
 	consensusdb "github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/crypto"
+	"github.com/alicenet/alicenet/dynamics"
+	"github.com/alicenet/alicenet/errorz"
 	"github.com/alicenet/alicenet/interfaces"
 	"github.com/alicenet/alicenet/logging"
-	"github.com/dgraph-io/badger/v2"
+	"github.com/alicenet/alicenet/utils"
 )
 
 var _ interfaces.Application = (*Application)(nil)
@@ -74,7 +74,7 @@ func (a *Application) Init(conDB *consensusdb.Database, memDB *badger.DB, dph *d
 var _ interfaces.Transaction = (*objs.Tx)(nil)
 
 // UnmarshalTx allows a transaction to be unmarshalled into a transaction
-// interface for use by the consensus algorithm
+// interface for use by the consensus algorithm.
 func (a *Application) UnmarshalTx(txb []byte) (interfaces.Transaction, error) {
 	tx := &objs.Tx{}
 	err := tx.UnmarshalBinary(txb)
@@ -105,7 +105,7 @@ func (a *Application) convertIfaceToTx(txs []interfaces.Transaction) ([]*objs.Tx
 	return out, true
 }
 
-// GetTxsForGossip returns a list of transactions that should be gossipped
+// GetTxsForGossip returns a list of transactions that should be gossipped.
 func (a *Application) GetTxsForGossip(txnState *badger.Txn, currentHeight uint32) ([]interfaces.Transaction, error) {
 	r, err := a.txHandler.GetTxsForGossip(txnState, currentHeight)
 	if err != nil {
@@ -118,7 +118,7 @@ func (a *Application) GetTxsForGossip(txnState *badger.Txn, currentHeight uint32
 // IsValid returns true if the list of transactions is a valid transformation
 // and false if the list is not valid. If an error is returned, it indicates
 // a low level failure that should stop the main loop.
-func (a *Application) IsValid(txn *badger.Txn, chainID uint32, height uint32, stateHash []byte, txi []interfaces.Transaction) (bool, error) {
+func (a *Application) IsValid(txn *badger.Txn, chainID, height uint32, stateHash []byte, txi []interfaces.Transaction) (bool, error) {
 	tx, ok := a.convertIfaceToTx(txi)
 	if !ok {
 		return false, errorz.ErrCorrupt
@@ -172,7 +172,7 @@ func (a *Application) IsValid(txn *badger.Txn, chainID uint32, height uint32, st
 // GetValidProposal is a function that returns a list of transactions
 // that will cause a valid state transition function for the local node's
 // current state. This is the function used to create a new proposal.
-// comes from application logic
+// comes from application logic.
 func (a *Application) GetValidProposal(txn *badger.Txn, chainID, height, maxBytes uint32) ([]interfaces.Transaction, []byte, error) {
 	r, h, err := a.txHandler.GetTxsForProposal(txn, chainID, height, a.defaultCurveSpec, a.defaultSigner, maxBytes)
 	if err != nil {
@@ -185,8 +185,8 @@ func (a *Application) GetValidProposal(txn *badger.Txn, chainID, height, maxByte
 // ApplyState is a function that returns a list of transactions
 // that will cause a valid state transition function for the local node's
 // current state. This is the function used to create a new proposal.
-// comes from application logic
-func (a *Application) ApplyState(txn *badger.Txn, chainID uint32, height uint32, txs []interfaces.Transaction) (stateHash []byte, err error) {
+// comes from application logic.
+func (a *Application) ApplyState(txn *badger.Txn, chainID, height uint32, txs []interfaces.Transaction) (stateHash []byte, err error) {
 	tx, ok := a.convertIfaceToTx(txs)
 	if !ok {
 		return nil, errorz.ErrMissingTransactions
@@ -196,7 +196,7 @@ func (a *Application) ApplyState(txn *badger.Txn, chainID uint32, height uint32,
 
 // PendingTxAdd adds a transaction to the txPool and cleans up any stale
 // tx as a result.
-func (a *Application) PendingTxAdd(txn *badger.Txn, chainID uint32, height uint32, txs []interfaces.Transaction) error {
+func (a *Application) PendingTxAdd(txn *badger.Txn, chainID, height uint32, txs []interfaces.Transaction) error {
 	tx, ok := a.convertIfaceToTx(txs)
 	if !ok {
 		return errorz.ErrMissingTransactions
@@ -252,7 +252,7 @@ func (a *Application) SetMiningKey(privKey []byte, curveSpec constants.CurveSpec
 }
 
 // MinedTxGet returns a list of mined transactions and a list of missing
-// transaction hashes for mined transactions
+// transaction hashes for mined transactions.
 func (a *Application) MinedTxGet(txn *badger.Txn, txHash [][]byte) ([]interfaces.Transaction, [][]byte, error) {
 	r, m, err := a.txHandler.MinedTxGet(txn, txHash)
 	if err != nil {
@@ -263,7 +263,7 @@ func (a *Application) MinedTxGet(txn *badger.Txn, txHash [][]byte) ([]interfaces
 }
 
 // PendingTxGet returns a list of transactions and a list of missing
-// transaction hashes from the pending transaction pool
+// transaction hashes from the pending transaction pool.
 func (a *Application) PendingTxGet(txn *badger.Txn, height uint32, txHashes [][]byte) ([]interfaces.Transaction, [][]byte, error) {
 	r, m, err := a.txHandler.PendingTxGet(txn, height, txHashes)
 	if err != nil {
@@ -274,19 +274,19 @@ func (a *Application) PendingTxGet(txn *badger.Txn, height uint32, txHashes [][]
 }
 
 // PendingTxContains returns a list of missing transaction hashes
-// from the pending tx pool
+// from the pending tx pool.
 func (a *Application) PendingTxContains(txn *badger.Txn, height uint32, txHashes [][]byte) ([][]byte, error) {
 	return a.txHandler.PendingTxContains(txn, height, txHashes)
 }
 
 // UTXOContains returns true if the passed UTXOID is known and associated with
-// a UTXO
+// a UTXO.
 func (a *Application) UTXOContains(txn *badger.Txn, utxoID []byte) (bool, error) {
 	return a.txHandler.UTXOContains(txn, utxoID)
 }
 
-// UTXOGetData returns the data from a DataStore UTXO
-func (a *Application) UTXOGetData(txn *badger.Txn, curveSpec constants.CurveSpec, account []byte, dataIdx []byte) ([]byte, error) {
+// UTXOGetData returns the data from a DataStore UTXO.
+func (a *Application) UTXOGetData(txn *badger.Txn, curveSpec constants.CurveSpec, account, dataIdx []byte) ([]byte, error) {
 	owner := &objs.Owner{}
 	err := owner.New(account, curveSpec)
 	if err != nil {
@@ -317,13 +317,13 @@ func (a *Application) GetValueForOwner(txn *badger.Txn, curveSpec constants.Curv
 	return a.txHandler.GetValueForOwner(txn, owner, minValue, pt)
 }
 
-// UTXOGet returns a list of UTXO objects
+// UTXOGet returns a list of UTXO objects.
 func (a *Application) UTXOGet(txn *badger.Txn, utxoIDs [][]byte) ([]*objs.TXOut, error) {
 	return a.txHandler.UTXOGet(txn, utxoIDs)
 }
 
 // PaginateDataByOwner returns a list of UTXOIDs and indexes from an account
-// namespace
+// namespace.
 func (a *Application) PaginateDataByOwner(txn *badger.Txn, curveSpec constants.CurveSpec, account []byte, height uint32, numItems int, startIndex []byte) ([]*objs.PaginationResponse, error) {
 	owner := &objs.Owner{}
 	err := owner.New(account, curveSpec)
@@ -334,22 +334,22 @@ func (a *Application) PaginateDataByOwner(txn *badger.Txn, curveSpec constants.C
 	return a.txHandler.PaginateDataByOwner(txn, owner, height, numItems, startIndex)
 }
 
-// GetHeightForTx returns the height at which a tx was mined
+// GetHeightForTx returns the height at which a tx was mined.
 func (a *Application) GetHeightForTx(txn *badger.Txn, txHash []byte) (uint32, error) {
 	return a.txHandler.GetHeightForTx(txn, txHash)
 }
 
-// Cleanup does nothing at this time
+// Cleanup does nothing at this time.
 func (a *Application) Cleanup() error {
 	return nil
 }
 
-// StoreSnapShotNode will store a node of the state trie during fast sync
-func (a *Application) StoreSnapShotNode(txn *badger.Txn, batch []byte, root []byte, layer int) ([][]byte, int, []trie.LeafNode, error) {
+// StoreSnapShotNode will store a node of the state trie during fast sync.
+func (a *Application) StoreSnapShotNode(txn *badger.Txn, batch, root []byte, layer int) ([][]byte, int, []trie.LeafNode, error) {
 	return a.txHandler.StoreSnapShotNode(txn, batch, root, layer)
 }
 
-// GetSnapShotStateData will return a UTXO for snapshot fast sync
+// GetSnapShotStateData will return a UTXO for snapshot fast sync.
 func (a *Application) GetSnapShotStateData(txn *badger.Txn, utxoID []byte) ([]byte, error) {
 	utxo, err := a.txHandler.GetSnapShotStateData(txn, [][]byte{utxoID})
 	if err != nil {
@@ -367,28 +367,28 @@ func (a *Application) GetSnapShotStateData(txn *badger.Txn, utxoID []byte) ([]by
 	return utxoBytes, nil
 }
 
-// GetSnapShotNode will return a node from the state trie
+// GetSnapShotNode will return a node from the state trie.
 func (a *Application) GetSnapShotNode(txn *badger.Txn, height uint32, key []byte) ([]byte, error) {
 	return a.txHandler.GetSnapShotNode(txn, height, key)
 }
 
-// StoreSnapShotStateData stores fast sync state
-func (a *Application) StoreSnapShotStateData(txn *badger.Txn, key []byte, value []byte, data []byte) error {
+// StoreSnapShotStateData stores fast sync state.
+func (a *Application) StoreSnapShotStateData(txn *badger.Txn, key, value, data []byte) error {
 	return a.txHandler.StoreSnapShotStateData(txn, key, value, data)
 }
 
 // FinalizeSnapShotRoot will complete a snapshot fast sync by setting the trie
-// root lookupkeys for the state trie
+// root lookupkeys for the state trie.
 func (a *Application) FinalizeSnapShotRoot(txn *badger.Txn, root []byte, height uint32) error {
 	return a.txHandler.FinalizeSnapShotRoot(txn, root, height)
 }
 
-// BeginSnapShotSync drops all pending txs and state data before fast sync
+// BeginSnapShotSync drops all pending txs and state data before fast sync.
 func (a *Application) BeginSnapShotSync(txn *badger.Txn) error {
 	return a.txHandler.BeginSnapShotSync(txn)
 }
 
-// FinalizeSync will finalize state after a fast sync
+// FinalizeSync will finalize state after a fast sync.
 func (a *Application) FinalizeSync(txn *badger.Txn) error {
 	return a.txHandler.FinalizeSync(txn)
 }
