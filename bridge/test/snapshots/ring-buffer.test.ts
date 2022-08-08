@@ -9,15 +9,15 @@ import {
   getValidatorEthAccount,
   mineBlocks,
 } from "../setup";
+import { createValidators, stakeValidators } from "../validatorPool/setup";
 import {
   signedData1,
   validatorsSnapshotsG1,
-} from "../sharedConstants/4-validators-snapshots-100-Group1";
+} from "./assets/4-validators-snapshots-100-Group1";
 import {
   signedData2,
   validatorsSnapshotsG2,
-} from "../sharedConstants/4-validators-snapshots-100-Group2";
-import { createValidators, stakeValidators } from "../validatorPool/setup";
+} from "./assets/4-validators-snapshots-100-Group2";
 
 contract("SnapshotRingBuffer 0state", async () => {
   const epochLength = 1024;

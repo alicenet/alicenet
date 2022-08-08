@@ -260,7 +260,8 @@ describe("Ethdkg: Migrate state", () => {
         expectedHeight,
         ethers.utils.getAddress(validatorsSnapshots2[1].address),
         expectedSafeToProceedConsensus,
-        validSnapshot2048.GroupSignature
+        validSnapshot2048.GroupSignature,
+        validSnapshot2048.BClaimsDeserialized
       );
 
     // unregister validators and register news
@@ -300,6 +301,7 @@ describe("Ethdkg: Migrate state", () => {
     expectedEpoch = 3;
     expectedHeight = 3072;
     expectedSafeToProceedConsensus = true;
+
     await expect(
       fixture.snapshots
         .connect(await getValidatorEthAccount(validatorsSnapshots[1]))
@@ -312,7 +314,16 @@ describe("Ethdkg: Migrate state", () => {
         expectedHeight,
         ethers.utils.getAddress(validatorsSnapshots[1].address),
         expectedSafeToProceedConsensus,
-        signedData[2].GroupSignature
+        signedData[2].GroupSignature,
+        [
+          expectedChainId,
+          expectedHeight,
+          0,
+          "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
+          "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
+          "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
+          "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
+        ]
       );
   });
 
@@ -376,7 +387,16 @@ describe("Ethdkg: Migrate state", () => {
         expectedHeight,
         ethers.utils.getAddress(validatorsSnapshots[1].address),
         expectedSafeToProceedConsensus,
-        signedData[1].GroupSignature
+        signedData[1].GroupSignature,
+        [
+          expectedChainId,
+          expectedHeight,
+          0,
+          "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
+          "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
+          "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
+          "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
+        ]
       );
 
     await factoryCallAnyFixture(fixture, "validatorPool", "initializeETHDKG");
@@ -411,7 +431,16 @@ describe("Ethdkg: Migrate state", () => {
         expectedHeight,
         ethers.utils.getAddress(validatorsSnapshots[1].address),
         expectedSafeToProceedConsensus,
-        signedData[2].GroupSignature
+        signedData[2].GroupSignature,
+        [
+          expectedChainId,
+          expectedHeight,
+          0,
+          "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
+          "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
+          "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
+          "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
+        ]
       );
   });
 });

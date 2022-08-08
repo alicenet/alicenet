@@ -1,6 +1,7 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
+import { assertError, assertErrorMessage } from "../chai-helpers";
 import { expect } from "../chai-setup";
 import {
   callFunctionAndGetReturnValues,
@@ -32,26 +33,34 @@ describe("Testing BToken Deposit methods", async () => {
   });
 
   it("Should fail querying for an invalid deposit ID", async () => {
-    await expect(fixture.bToken.getDeposit(1000)).to.be.revertedWith("300");
+    const depositId = 1000;
+    await assertError(
+      fixture.bToken.getDeposit(depositId),
+      `InvalidDepositId`,
+      new Map<string, any>([["depositID", BigNumber.from(depositId)]])
+    );
   });
 
   it("Should not deposit to a contract", async () => {
-    await expect(
-      fixture.bToken.deposit(1, fixture.bToken.address, 0)
-    ).to.be.revertedWith("303");
+    await assertErrorMessage(
+      fixture.bToken.deposit(1, fixture.bToken.address, 0),
+      `ContractsDisallowedDeposits("${fixture.bToken.address}")`
+    );
   });
 
   it("Should not deposit with 0 eth amount", async () => {
-    await expect(
+    await assertErrorMessage(
       fixture.bToken.mintDeposit(1, user.address, 0, {
         value: 0,
-      })
-    ).to.be.revertedWith("306");
+      }),
+      `MarketSpreadTooLow(0)`
+    );
   });
 
   it("Should not deposit with 0 deposit amount", async () => {
-    await expect(fixture.bToken.deposit(1, user.address, 0)).to.be.revertedWith(
-      "304"
+    await assertErrorMessage(
+      fixture.bToken.deposit(1, user.address, 0),
+      `DepositAmountZero()`
     );
   });
 

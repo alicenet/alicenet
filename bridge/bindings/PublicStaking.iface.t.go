@@ -78,8 +78,8 @@ type IPublicStakingTransactor interface {
 	SafeTransferFrom(opts *bind.TransactOpts, from common.Address, to common.Address, tokenId *big.Int) (*types.Transaction, error)
 	// SafeTransferFrom0 is a paid mutator transaction binding the contract method 0xb88d4fde.
 	//
-	// Solidity: function safeTransferFrom(address from, address to, uint256 tokenId, bytes _data) returns()
-	SafeTransferFrom0(opts *bind.TransactOpts, from common.Address, to common.Address, tokenId *big.Int, _data []byte) (*types.Transaction, error)
+	// Solidity: function safeTransferFrom(address from, address to, uint256 tokenId, bytes data) returns()
+	SafeTransferFrom0(opts *bind.TransactOpts, from common.Address, to common.Address, tokenId *big.Int, data []byte) (*types.Transaction, error)
 	// SetApprovalForAll is a paid mutator transaction binding the contract method 0xa22cb465.
 	//
 	// Solidity: function setApprovalForAll(address operator, bool approved) returns()

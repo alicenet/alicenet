@@ -12,7 +12,7 @@ import (
 
 // ProcessSnapshotTaken handles receiving snapshots
 func ProcessSnapshotTaken(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, log types.Log, adminHandler monInterfaces.AdminHandler, taskRequestChan chan<- tasks.TaskRequest) error {
-	logger = logger.WithField("method", ProcessSnapshotTaken)
+	logger = logger.WithField("method", "ProcessSnapshotTaken")
 	logger.Info("Processing snapshots...")
 
 	c := contracts.EthereumContracts()

@@ -19,7 +19,7 @@ func TestInfoSaveAndLoad(t *testing.T) {
 	fmt.Printf("%v\n", resultMap)
 	assert.Equal(t, originalMap, resultMap)
 
-	originalInfo := &info{
+	originalInfo := &monitored{
 		Selector: &FuncSelector{2, 2, 2, 2},
 	}
 	fmt.Printf("%v\n", originalInfo.Selector)
@@ -27,7 +27,7 @@ func TestInfoSaveAndLoad(t *testing.T) {
 	originalInfoBytes, err := json.Marshal(originalInfo)
 	assert.Nil(t, err)
 
-	resultInfo := &info{}
+	resultInfo := &monitored{}
 	err = json.Unmarshal(originalInfoBytes, resultInfo)
 	assert.Nil(t, err)
 	fmt.Printf("%v\n", resultInfo.Selector)

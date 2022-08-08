@@ -215,7 +215,7 @@ func (mb *Handlers) PreValidate(v interface{}) error {
 			}
 			round := obj.PClaims.RCert.RClaims.Round
 			if round < r {
-				errorz.ErrStale{}.New("Proposal r<r-1: OwnR:%v ObjR:%v", r, round)
+				return errorz.ErrStale{}.New("Proposal r<r-1: OwnR:%v ObjR:%v", r, round)
 			}
 			if err := obj.ValidateSignatures(mb.secpVal, mb.bnVal); err != nil {
 				return err
@@ -239,7 +239,7 @@ func (mb *Handlers) PreValidate(v interface{}) error {
 			}
 			round = obj.Proposal.PClaims.RCert.RClaims.Round
 			if round < r {
-				errorz.ErrStale{}.New("PreVote r<r-1: OwnR:%v ObjR:%v", r, round)
+				return errorz.ErrStale{}.New("PreVote r<r-1: OwnR:%v ObjR:%v", r, round)
 			}
 			if err := obj.ValidateSignatures(mb.secpVal, mb.bnVal); err != nil {
 				return err
@@ -262,7 +262,7 @@ func (mb *Handlers) PreValidate(v interface{}) error {
 			}
 			round = obj.RCert.RClaims.Round
 			if round < r {
-				errorz.ErrStale{}.New("PreVoteNil r<r-1: OwnR:%v ObjR:%v", r, round)
+				return errorz.ErrStale{}.New("PreVoteNil r<r-1: OwnR:%v ObjR:%v", r, round)
 			}
 			if err := obj.ValidateSignatures(mb.secpVal, mb.bnVal); err != nil {
 				return err
@@ -284,7 +284,7 @@ func (mb *Handlers) PreValidate(v interface{}) error {
 			}
 			round = obj.Proposal.PClaims.RCert.RClaims.Round
 			if round < r {
-				errorz.ErrStale{}.New("PreCommit r<r-1: OwnR:%v ObjR:%v", r, round)
+				return errorz.ErrStale{}.New("PreCommit r<r-1: OwnR:%v ObjR:%v", r, round)
 			}
 			if err := obj.ValidateSignatures(mb.secpVal, mb.bnVal); err != nil {
 				return err
@@ -307,7 +307,7 @@ func (mb *Handlers) PreValidate(v interface{}) error {
 			}
 			round = obj.RCert.RClaims.Round
 			if round < r {
-				errorz.ErrStale{}.New("PreCommitNil r<r-1: OwnR:%v ObjR:%v", r, round)
+				return errorz.ErrStale{}.New("PreCommitNil r<r-1: OwnR:%v ObjR:%v", r, round)
 			}
 			if err := obj.ValidateSignatures(mb.secpVal, mb.bnVal); err != nil {
 				return err
@@ -329,7 +329,7 @@ func (mb *Handlers) PreValidate(v interface{}) error {
 			}
 			round = obj.NRClaims.RCert.RClaims.Round
 			if round < r {
-				errorz.ErrStale{}.New("NextRound r<r-1: OwnR:%v ObjR:%v", r, round)
+				return errorz.ErrStale{}.New("NextRound r<r-1: OwnR:%v ObjR:%v", r, round)
 			}
 			if err := obj.ValidateSignatures(mb.secpVal, mb.bnVal); err != nil {
 				return err

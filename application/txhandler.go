@@ -2,6 +2,7 @@ package application
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	"github.com/alicenet/alicenet/errorz"
@@ -136,8 +137,10 @@ func (tm *txHandler) GetTxsForProposal(txn *badger.Txn, chainID uint32, height u
 			return nil, nil, err
 		}
 		if err := tm.PendingTxAdd(txn, chainID, height, []*objs.Tx{tx}); err != nil {
-			utils.DebugTrace(tm.logger, err)
-			return nil, nil, err
+			if !strings.Contains(err.Error(), "duplicate") {
+				utils.DebugTrace(tm.logger, err)
+				return nil, nil, err
+			}
 		}
 	}
 	txs, _, err := tm.pTxHdlr.GetTxsForProposal(txn, subCtx, height, maxBytes, tx)

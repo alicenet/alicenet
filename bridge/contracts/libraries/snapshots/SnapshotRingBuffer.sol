@@ -13,15 +13,12 @@ struct SnapshotBuffer {
 }
 
 library RingBuffer {
-    function get(SnapshotBuffer storage self_, uint32 epoch_)
-        internal
-        view
-        returns (Snapshot storage)
-    {
-        return self_._array[_indexFor(self_, epoch_)];
-    }
-
-    //writes the new snapshot to the buffer
+    /***
+     * @dev: Sets a new snapshot safely inside the ring buffer.
+     * @param epochFor_: anonymous function to convert a height in an _epoch value.
+     * @param new_: the new snapshot.
+     * @return the the epoch number where the snapshot was stored.
+     */
     function set(
         SnapshotBuffer storage self_,
         function(uint32) returns (uint32) epochFor_,
@@ -30,70 +27,73 @@ library RingBuffer {
         //get the epoch corresponding to the blocknumber
         uint32 epoch = epochFor_(new_.blockClaims.height);
         //gets the snapshot that was at that location of the buffer
-        Snapshot storage old = self_._array[_indexFor(self_, epoch)];
+        Snapshot storage old = self_._array[indexFor(self_, epoch)];
         //checks if the new snapshot height is greater than the previous
-        require(new_.blockClaims.height > old.blockClaims.height, "invalid new blockheight");
+        require(new_.blockClaims.height > old.blockClaims.height, "invalid new blockHeight");
         unsafeSet(self_, new_, epoch);
         return epoch;
     }
 
+    /***
+     * @dev: Sets a new snapshot inside the ring buffer in a specific index.
+     * Don't call this function directly, use set() instead.
+     * @param new_: the new snapshot.
+     * @param epoch_: the index (epoch) where the new snapshot will be stored.
+     */
     function unsafeSet(
         SnapshotBuffer storage self_,
         Snapshot memory new_,
         uint32 epoch_
     ) internal {
-        self_._array[_indexFor(self_, epoch_)] = new_;
+        self_._array[indexFor(self_, epoch_)] = new_;
+    }
+
+    /**
+     * @dev gets the snapshot value at an specific index (epoch).
+     * @param epoch_: the index to retrieve a snapshot.
+     * @return the snapshot stored at the epoch_ location.
+     */
+    function get(SnapshotBuffer storage self_, uint32 epoch_)
+        internal
+        view
+        returns (Snapshot storage)
+    {
+        return self_._array[indexFor(self_, epoch_)];
     }
 
     /**
      * @dev calculates the congruent value for current epoch in respect to the array length
-     * for index to be replaced with most recent epoch
-     * @param epoch_ epoch_ number associated with the snapshot
+     * for index to be replaced with most recent epoch.
+     * @param epoch_ epoch_ number associated with the snapshot.
+     * @return the index corresponding to the epoch number.
      */
-    function _indexFor(SnapshotBuffer storage self_, uint32 epoch_)
-        internal
-        view
-        returns (uint256)
-    {
-        require(epoch_ > 0);
+    function indexFor(SnapshotBuffer storage self_, uint32 epoch_) internal view returns (uint256) {
+        require(epoch_ != 0, "epoch must be non-zero");
         return epoch_ % self_._array.length;
     }
 }
 
 library EpochLib {
+    /***
+     * @dev sets an epoch value in Epoch struct.
+     * @param value_: the epoch value.
+     */
     function set(Epoch storage self_, uint32 value_) internal {
         self_._value = value_;
     }
 
+    /***
+     * @dev gets the latest epoch value stored in the Epoch struct.
+     * @return the latest epoch value stored in the Epoch struct.
+     */
     function get(Epoch storage self_) internal view returns (uint32) {
-        return _max(1, self_._value);
-    }
-
-    //TODO determine if useful
-    function isZero(Epoch storage self_) internal view returns (bool) {
-        return self_._value == 0;
-    }
-
-    function _max(uint32 a, uint32 b) internal pure returns (uint32) {
-        if (a > b) {
-            return a;
-        }
-        return b;
+        return self_._value;
     }
 }
 
 abstract contract SnapshotRingBuffer {
     using RingBuffer for SnapshotBuffer;
     using EpochLib for Epoch;
-
-    // Must be defined in storage contract
-    function _getEpochFromHeight(uint32) internal view virtual returns (uint32);
-
-    // Must be defined in storage contract
-    function _getSnapshots() internal view virtual returns (SnapshotBuffer storage);
-
-    // Must be defined in storage contract
-    function _epochReg() internal view virtual returns (Epoch storage);
 
     /**
      * @notice Assigns the snapshot to correct index and updates __epoch
@@ -102,7 +102,7 @@ abstract contract SnapshotRingBuffer {
      */
     function _setSnapshot(Snapshot memory snapshot_) internal returns (uint32) {
         uint32 epoch = _getSnapshots().set(_getEpochFromHeight, snapshot_);
-        _epochReg().set(epoch);
+        _epochRegister().set(epoch);
         return epoch;
     }
 
@@ -121,10 +121,20 @@ abstract contract SnapshotRingBuffer {
         return (ok, snapshot);
     }
 
-    /**
+    /***
+     * @dev: gets the latest snapshot stored in the ring buffer.
      * @return ok if the struct is valid and the snapshot struct itself
      */
     function _getLatestSnapshot() internal view returns (bool ok, Snapshot memory snapshot) {
-        return _getSnapshot(_epochReg().get());
+        return _getSnapshot(_epochRegister().get());
     }
+
+    // Must be defined in storage contract
+    function _getEpochFromHeight(uint32) internal view virtual returns (uint32);
+
+    // Must be defined in storage contract
+    function _getSnapshots() internal view virtual returns (SnapshotBuffer storage);
+
+    // Must be defined in storage contract
+    function _epochRegister() internal view virtual returns (Epoch storage);
 }

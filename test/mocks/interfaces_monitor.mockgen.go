@@ -205,7 +205,7 @@ func NewMockAdminHandler() *MockAdminHandler {
 			},
 		},
 		RegisterSnapshotCallbackFunc: &AdminHandlerRegisterSnapshotCallbackFunc{
-			defaultHook: func(func(*objs.BlockHeader) error) {
+			defaultHook: func(func(*objs.BlockHeader, int, int) error) {
 				return
 			},
 		},
@@ -242,7 +242,7 @@ func NewStrictMockAdminHandler() *MockAdminHandler {
 			},
 		},
 		RegisterSnapshotCallbackFunc: &AdminHandlerRegisterSnapshotCallbackFunc{
-			defaultHook: func(func(*objs.BlockHeader) error) {
+			defaultHook: func(func(*objs.BlockHeader, int, int) error) {
 				panic("unexpected invocation of MockAdminHandler.RegisterSnapshotCallback")
 			},
 		},
@@ -696,15 +696,15 @@ func (c AdminHandlerIsSynchronizedFuncCall) Results() []interface{} {
 // RegisterSnapshotCallback method of the parent MockAdminHandler instance
 // is invoked.
 type AdminHandlerRegisterSnapshotCallbackFunc struct {
-	defaultHook func(func(*objs.BlockHeader) error)
-	hooks       []func(func(*objs.BlockHeader) error)
+	defaultHook func(func(*objs.BlockHeader, int, int) error)
+	hooks       []func(func(*objs.BlockHeader, int, int) error)
 	history     []AdminHandlerRegisterSnapshotCallbackFuncCall
 	mutex       sync.Mutex
 }
 
 // RegisterSnapshotCallback delegates to the next hook function in the queue
 // and stores the parameter and result values of this invocation.
-func (m *MockAdminHandler) RegisterSnapshotCallback(v0 func(*objs.BlockHeader) error) {
+func (m *MockAdminHandler) RegisterSnapshotCallback(v0 func(*objs.BlockHeader, int, int) error) {
 	m.RegisterSnapshotCallbackFunc.nextHook()(v0)
 	m.RegisterSnapshotCallbackFunc.appendCall(AdminHandlerRegisterSnapshotCallbackFuncCall{v0})
 	return
@@ -713,7 +713,7 @@ func (m *MockAdminHandler) RegisterSnapshotCallback(v0 func(*objs.BlockHeader) e
 // SetDefaultHook sets function that is called when the
 // RegisterSnapshotCallback method of the parent MockAdminHandler instance
 // is invoked and the hook queue is empty.
-func (f *AdminHandlerRegisterSnapshotCallbackFunc) SetDefaultHook(hook func(func(*objs.BlockHeader) error)) {
+func (f *AdminHandlerRegisterSnapshotCallbackFunc) SetDefaultHook(hook func(func(*objs.BlockHeader, int, int) error)) {
 	f.defaultHook = hook
 }
 
@@ -722,7 +722,7 @@ func (f *AdminHandlerRegisterSnapshotCallbackFunc) SetDefaultHook(hook func(func
 // invokes the hook at the front of the queue and discards it. After the
 // queue is empty, the default hook function is invoked for any future
 // action.
-func (f *AdminHandlerRegisterSnapshotCallbackFunc) PushHook(hook func(func(*objs.BlockHeader) error)) {
+func (f *AdminHandlerRegisterSnapshotCallbackFunc) PushHook(hook func(func(*objs.BlockHeader, int, int) error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -731,19 +731,19 @@ func (f *AdminHandlerRegisterSnapshotCallbackFunc) PushHook(hook func(func(*objs
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
 func (f *AdminHandlerRegisterSnapshotCallbackFunc) SetDefaultReturn() {
-	f.SetDefaultHook(func(func(*objs.BlockHeader) error) {
+	f.SetDefaultHook(func(func(*objs.BlockHeader, int, int) error) {
 		return
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
 func (f *AdminHandlerRegisterSnapshotCallbackFunc) PushReturn() {
-	f.PushHook(func(func(*objs.BlockHeader) error) {
+	f.PushHook(func(func(*objs.BlockHeader, int, int) error) {
 		return
 	})
 }
 
-func (f *AdminHandlerRegisterSnapshotCallbackFunc) nextHook() func(func(*objs.BlockHeader) error) {
+func (f *AdminHandlerRegisterSnapshotCallbackFunc) nextHook() func(func(*objs.BlockHeader, int, int) error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -780,7 +780,7 @@ func (f *AdminHandlerRegisterSnapshotCallbackFunc) History() []AdminHandlerRegis
 type AdminHandlerRegisterSnapshotCallbackFuncCall struct {
 	// Arg0 is the value of the 1st argument passed to this method
 	// invocation.
-	Arg0 func(*objs.BlockHeader) error
+	Arg0 func(*objs.BlockHeader, int, int) error
 }
 
 // Args returns an interface slice containing the arguments of this

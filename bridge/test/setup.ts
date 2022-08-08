@@ -46,6 +46,15 @@ export interface Snapshot {
   GroupSignature: string;
   height: BigNumberish;
   validatorIndex: number;
+  BClaimsDeserialized?: [
+    number,
+    number,
+    number,
+    string,
+    string,
+    string,
+    string
+  ];
 }
 
 export interface BaseFixture {
@@ -134,6 +143,7 @@ export const createUsers = async (
   numberOfUsers: number,
   createWithNoFunds: boolean = false
 ): Promise<SignerWithAddress[]> => {
+  const hre: any = await require("hardhat");
   const users: SignerWithAddress[] = [];
   const admin = (await ethers.getSigners())[0];
   for (let i = 0; i < numberOfUsers; i++) {
@@ -141,9 +151,10 @@ export const createUsers = async (
     if (!createWithNoFunds) {
       const balance = await ethers.provider.getBalance(user.address);
       if (balance.eq(0)) {
+        const value = hre.__SOLIDITY_COVERAGE_RUNNING ? "1000000" : "1";
         await admin.sendTransaction({
           to: user.address,
-          value: ethers.utils.parseEther("1"),
+          value: ethers.utils.parseEther(value),
         });
       }
     }
