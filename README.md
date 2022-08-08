@@ -143,7 +143,6 @@ To list other commands from the script simply run
 ./scripts/main.sh
 ```
 
-
 # Different Node versions
 
 In case you are using a different version of Node and you need to keep it you can choose to use one of many Node.js

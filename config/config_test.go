@@ -15,7 +15,8 @@ func TestParseGood(t *testing.T) {
 		{"Just a thing", "and another"},
 		{"yet another", "--age=2"},
 		{"--dangling"},
-		{}}
+		{},
+	}
 
 	for _, goodArgs := range goodArgs {
 		_, err := ParseCommandLine(goodArgs)
@@ -33,7 +34,8 @@ func TestAlternateForms(t *testing.T) {
 	argNames := [][]string{
 		{"--name", "me"},
 		{"--name=me"},
-		{"filler", "--name", "me"}}
+		{"filler", "--name", "me"},
+	}
 
 	for _, argName := range argNames {
 		flags, _ := ParseCommandLine(argName)
@@ -42,7 +44,6 @@ func TestAlternateForms(t *testing.T) {
 		assert.True(t, namePresent, "Name is a flag")
 		assert.Equal(t, "me", nameValue, "Name should be me")
 	}
-
 }
 
 func TestValueNotProvided(t *testing.T) {
@@ -83,7 +84,6 @@ func TestConfigNotProvided(t *testing.T) {
 }
 
 func TestLoadSettingsMergeFileMissing(t *testing.T) {
-
 	commandLine := []string{"--config.filename", "bob.toml"}
 
 	_, err := LoadSettings(commandLine)
