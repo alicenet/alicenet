@@ -3,5 +3,5 @@ pragma solidity ^0.8.11;
 
 library DutchAuctionErrors {
     error IcorrectInitialPrices();
-    error AuctionClosed();
+    error AuctionNotStarted();
 }
