@@ -9,16 +9,17 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/sirupsen/logrus"
+
 	"github.com/alicenet/alicenet/bridge/bindings"
 	"github.com/alicenet/alicenet/layer1"
 	"github.com/alicenet/alicenet/utils"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/sirupsen/logrus"
 )
 
 var _ layer1.EthereumContracts = &Contracts{}
 
-// Contracts contains bindings to smart contract system
+// Contracts contains bindings to smart contract system.
 type Contracts struct {
 	allAddresses            map[common.Address]bool
 	eth                     *Client
@@ -58,9 +59,8 @@ func NewContracts(eth *Client, contractFactoryAddress common.Address) *Contracts
 	return newContracts
 }
 
-// LookupContracts uses the registry to lookup and create bindings for all required contracts
+// LookupContracts uses the registry to lookup and create bindings for all required contracts.
 func (c *Contracts) lookupContracts() error {
-
 	networkCtx, cf := context.WithCancel(context.Background())
 	defer cf()
 	signals := make(chan os.Signal, 1)
@@ -189,7 +189,7 @@ func (c *Contracts) lookupContracts() error {
 	return nil
 }
 
-// return all addresses from all contracts in the contract struct
+// return all addresses from all contracts in the contract struct.
 func (c *Contracts) GetAllAddresses() []common.Address {
 	var allAddresses []common.Address
 	for addr := range c.allAddresses {
@@ -270,7 +270,7 @@ func (c *Contracts) GovernanceAddress() common.Address {
 	return c.governanceAddress
 }
 
-// utils function to log an error
+// utils function to log an error.
 func logAndEat(logger *logrus.Logger, err error) {
 	if err != nil {
 		logger.Error(err)
