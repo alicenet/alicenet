@@ -3,21 +3,20 @@ package objs
 import (
 	"bytes"
 
-	"github.com/alicenet/alicenet/errorz"
-
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/crypto"
+	"github.com/alicenet/alicenet/errorz"
 	"github.com/alicenet/alicenet/utils"
 )
 
-// ValueStoreOwner contains information related to the owner of the ValueStore
+// ValueStoreOwner contains information related to the owner of the ValueStore.
 type ValueStoreOwner struct {
 	SVA       SVA
 	CurveSpec constants.CurveSpec
 	Account   []byte
 }
 
-// New makes a new ValueStoreOwner
+// New makes a new ValueStoreOwner.
 func (vso *ValueStoreOwner) New(acct []byte, curveSpec constants.CurveSpec) {
 	vso.SVA = ValueStoreSVA
 	vso.CurveSpec = curveSpec
@@ -25,7 +24,7 @@ func (vso *ValueStoreOwner) New(acct []byte, curveSpec constants.CurveSpec) {
 }
 
 // NewFromOwner takes an Owner object and creates the corresponding
-// ValueStoreOwner
+// ValueStoreOwner.
 func (vso *ValueStoreOwner) NewFromOwner(o *Owner) error {
 	if vso == nil {
 		return errorz.ErrInvalid{}.New("vso.newFromOwner; vso not initialized")
@@ -44,7 +43,7 @@ func (vso *ValueStoreOwner) NewFromOwner(o *Owner) error {
 }
 
 // MarshalBinary takes the ValueStoreOwner object and returns the canonical
-// byte slice
+// byte slice.
 func (vso *ValueStoreOwner) MarshalBinary() ([]byte, error) {
 	if err := vso.Validate(); err != nil {
 		return nil, err
@@ -56,7 +55,7 @@ func (vso *ValueStoreOwner) MarshalBinary() ([]byte, error) {
 	return owner, nil
 }
 
-// Validate validates the ValueStoreOwner object
+// Validate validates the ValueStoreOwner object.
 func (vso *ValueStoreOwner) Validate() error {
 	if vso == nil {
 		return errorz.ErrInvalid{}.New("vso.validate; vso not initialized")
@@ -74,7 +73,7 @@ func (vso *ValueStoreOwner) Validate() error {
 }
 
 // UnmarshalBinary takes a byte slice and returns the corresponding
-// ValueStoreOwner object
+// ValueStoreOwner object.
 func (vso *ValueStoreOwner) UnmarshalBinary(o []byte) error {
 	if vso == nil {
 		return errorz.ErrInvalid{}.New("vso.unmarshalBinary; vso not initialized")
@@ -104,7 +103,7 @@ func (vso *ValueStoreOwner) UnmarshalBinary(o []byte) error {
 	return nil
 }
 
-// ValidateSignature validates ValueStoreSignature sig for message msg
+// ValidateSignature validates ValueStoreSignature sig for message msg.
 func (vso *ValueStoreOwner) ValidateSignature(msg []byte, sig *ValueStoreSignature) error {
 	if err := vso.Validate(); err != nil {
 		return errorz.ErrInvalid{}.New("vso.validateSignature; invalid ValueStoreOwner")
@@ -174,7 +173,7 @@ func (vso *ValueStoreOwner) validateAccount() error {
 	return nil
 }
 
-// Sign signs message msg with signer s
+// Sign signs message msg with signer s.
 func (vso *ValueStoreOwner) Sign(msg []byte, s Signer) (*ValueStoreSignature, error) {
 	sig := &ValueStoreSignature{
 		SVA: ValueStoreSVA,
@@ -202,7 +201,7 @@ func (vso *ValueStoreOwner) Sign(msg []byte, s Signer) (*ValueStoreSignature, er
 }
 
 // ValueStoreSignature is a struct which the necessary information
-// for signing a ValueStore
+// for signing a ValueStore.
 type ValueStoreSignature struct {
 	SVA       SVA
 	CurveSpec constants.CurveSpec
@@ -210,7 +209,7 @@ type ValueStoreSignature struct {
 }
 
 // UnmarshalBinary takes a byte slice and returns the corresponding
-// ValueStoreSignature object
+// ValueStoreSignature object.
 func (vss *ValueStoreSignature) UnmarshalBinary(signature []byte) error {
 	if vss == nil {
 		return errorz.ErrInvalid{}.New("vss.unmarshalBinary; vss not initialized")
@@ -237,7 +236,7 @@ func (vss *ValueStoreSignature) UnmarshalBinary(signature []byte) error {
 }
 
 // MarshalBinary takes the ValueStoreSignature object and returns the canonical
-// byte slice
+// byte slice.
 func (vss *ValueStoreSignature) MarshalBinary() ([]byte, error) {
 	if err := vss.Validate(); err != nil {
 		return nil, err
@@ -249,7 +248,7 @@ func (vss *ValueStoreSignature) MarshalBinary() ([]byte, error) {
 	return signature, nil
 }
 
-// Validate validates the ValueStoreSignature object
+// Validate validates the ValueStoreSignature object.
 func (vss *ValueStoreSignature) Validate() error {
 	if vss == nil {
 		return errorz.ErrInvalid{}.New("vss.validate; vss not initialized")

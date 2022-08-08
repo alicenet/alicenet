@@ -5,8 +5,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/alicenet/alicenet/constants/dbprefix"
-	"github.com/alicenet/alicenet/errorz"
+	"github.com/dgraph-io/badger/v2"
+	"github.com/sirupsen/logrus"
 
 	"github.com/alicenet/alicenet/application/db"
 	"github.com/alicenet/alicenet/application/indexer"
@@ -16,11 +16,11 @@ import (
 	"github.com/alicenet/alicenet/application/wrapper"
 	trie "github.com/alicenet/alicenet/badgerTrie"
 	"github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/constants/dbprefix"
 	"github.com/alicenet/alicenet/crypto"
+	"github.com/alicenet/alicenet/errorz"
 	"github.com/alicenet/alicenet/logging"
 	"github.com/alicenet/alicenet/utils"
-	"github.com/dgraph-io/badger/v2"
-	"github.com/sirupsen/logrus"
 )
 
 // TODO: cleanup expIndex after fastSync (do in finalization logic)
@@ -31,7 +31,7 @@ import (
 //    THE OWNER INDEX IS A UNIQUE OUTPUT IN THE BATCH OF TXS
 // TODO SET UP PRUNING
 
-// NewUTXOHandler constructs a new UTXOHandler
+// NewUTXOHandler constructs a new UTXOHandler.
 func NewUTXOHandler(dB *badger.DB) *UTXOHandler {
 	return &UTXOHandler{
 		logger:     logging.GetLogger(constants.LoggerApp),
@@ -59,7 +59,7 @@ type UTXOHandler struct {
 ///////////WRAPPERS FOR TRIE////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-// Init will initialize the UTXOHandler
+// Init will initialize the UTXOHandler.
 func (ut *UTXOHandler) Init(height uint32) error {
 	return ut.trie.Init(height)
 }
@@ -69,7 +69,7 @@ func (ut *UTXOHandler) GetTrie() *utxotrie.UTXOTrie {
 }
 
 // IsValid verifies the rules of batches across transactions as is generated in
-// a block
+// a block.
 func (ut *UTXOHandler) IsValid(txn *badger.Txn, txs objs.TxVec, currentHeight uint32, deposits objs.Vout) (objs.Vout, error) {
 	depositMap := make(map[string]*objs.TXOut)
 	for i := 0; i < len(deposits); i++ {
@@ -669,7 +669,7 @@ func (ut *UTXOHandler) getInternal(txn *badger.Txn, utxoID []byte) (*objs.TXOut,
 	return utxo, nil
 }
 
-// dropFromIndexes takes in a utxoID and drops it from the appropriate indexers
+// dropFromIndexes takes in a utxoID and drops it from the appropriate indexers.
 func (ut *UTXOHandler) dropFromIndexes(txn *badger.Txn, utxoID []byte) error {
 	utxo, err := ut.getInternal(txn, utxoID)
 	if err != nil {
@@ -713,7 +713,7 @@ func (ut *UTXOHandler) makeUTXOKey(utxoID []byte) []byte {
 }
 
 // addOneFastSync implements the logic we need for fast sync;
-// it differs some from addOne because of different requriements
+// it differs some from addOne because of different requirements.
 func (ut *UTXOHandler) addOneFastSync(txn *badger.Txn, utxo *objs.TXOut) error {
 	utxoID, err := utxo.UTXOID()
 	if err != nil {
@@ -786,7 +786,7 @@ func (ut *UTXOHandler) addOneFastSync(txn *badger.Txn, utxo *objs.TXOut) error {
 	return nil
 }
 
-func (ut *UTXOHandler) StoreSnapShotNode(txn *badger.Txn, batch []byte, root []byte, layer int) ([][]byte, int, []trie.LeafNode, error) {
+func (ut *UTXOHandler) StoreSnapShotNode(txn *badger.Txn, batch, root []byte, layer int) ([][]byte, int, []trie.LeafNode, error) {
 	return ut.trie.StoreSnapShotNode(txn, batch, root, layer)
 }
 
@@ -807,7 +807,7 @@ func (ut *UTXOHandler) GetSnapShotNode(txn *badger.Txn, height uint32, key []byt
 	return snapShotNode, nil
 }
 
-func (ut *UTXOHandler) StoreSnapShotStateData(txn *badger.Txn, utxoID []byte, preHash []byte, utxoBytes []byte) error {
+func (ut *UTXOHandler) StoreSnapShotStateData(txn *badger.Txn, utxoID, preHash, utxoBytes []byte) error {
 	utxo := &objs.TXOut{}
 	err := utxo.UnmarshalBinary(utxoBytes)
 	if err != nil {
