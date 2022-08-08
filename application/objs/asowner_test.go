@@ -225,7 +225,6 @@ func TestASOwnerSig(t *testing.T) {
 	if !bytes.Equal(aspb00, aspb01) {
 		t.Fatal("mutable")
 	}
-
 }
 
 func TestASOwnerValidateBad1(t *testing.T) {

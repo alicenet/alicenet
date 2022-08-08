@@ -3,14 +3,15 @@ package utxotrie
 import (
 	"bytes"
 
+	"github.com/dgraph-io/badger/v2"
+	"github.com/sirupsen/logrus"
+
 	"github.com/alicenet/alicenet/application/objs"
 	trie "github.com/alicenet/alicenet/badgerTrie"
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/constants/dbprefix"
 	"github.com/alicenet/alicenet/logging"
 	"github.com/alicenet/alicenet/utils"
-	"github.com/dgraph-io/badger/v2"
-	"github.com/sirupsen/logrus"
 )
 
 func makeheightKey(height uint32) []byte {
@@ -274,7 +275,7 @@ func (ut *UTXOTrie) GetStateRootForProposal(txn *badger.Txn, txs objs.TxVec) ([]
 	return sr, nil
 }
 
-func (ut *UTXOTrie) add(txn *badger.Txn, txs objs.TxVec, current *trie.SMT, fn func(txn *badger.Txn, current *trie.SMT, newUTXOIDs [][]byte, newUTXOHashes [][]byte, consumedUTXOIDS [][]byte) ([]byte, error)) ([]byte, error) {
+func (ut *UTXOTrie) add(txn *badger.Txn, txs objs.TxVec, current *trie.SMT, fn func(txn *badger.Txn, current *trie.SMT, newUTXOIDs, newUTXOHashes, consumedUTXOIDS [][]byte) ([]byte, error)) ([]byte, error) {
 	addkeys := [][]byte{}
 	addvalues := [][]byte{}
 	delkeys := [][]byte{}
@@ -323,8 +324,8 @@ func (ut *UTXOTrie) add(txn *badger.Txn, txs objs.TxVec, current *trie.SMT, fn f
 	return fn(txn, current, addkeys, addvalues, delkeys)
 }
 
-func (ut *UTXOTrie) session(txn *badger.Txn) (*trie.SMT, func(txn *badger.Txn, current *trie.SMT, newUTXOIDs [][]byte, newUTXOHashes [][]byte, consumedUTXOIDS [][]byte) ([]byte, error), error) {
-	fn := func(txn *badger.Txn, current *trie.SMT, newUTXOIDs [][]byte, newUTXOHashes [][]byte, consumedUTXOIDS [][]byte) ([]byte, error) {
+func (ut *UTXOTrie) session(txn *badger.Txn) (*trie.SMT, func(txn *badger.Txn, current *trie.SMT, newUTXOIDs, newUTXOHashes, consumedUTXOIDS [][]byte) ([]byte, error), error) {
+	fn := func(txn *badger.Txn, current *trie.SMT, newUTXOIDs, newUTXOHashes, consumedUTXOIDS [][]byte) ([]byte, error) {
 		updateKeys := [][]byte{}
 		updateValues := [][]byte{}
 		for i := 0; i < len(newUTXOIDs); i++ {
@@ -355,7 +356,7 @@ func (ut *UTXOTrie) session(txn *badger.Txn) (*trie.SMT, func(txn *badger.Txn, c
 	return current, fn, nil
 }
 
-func (ut *UTXOTrie) StoreSnapShotNode(txn *badger.Txn, batch []byte, root []byte, layer int) ([][]byte, int, []trie.LeafNode, error) {
+func (ut *UTXOTrie) StoreSnapShotNode(txn *badger.Txn, batch, root []byte, layer int) ([][]byte, int, []trie.LeafNode, error) {
 	t := trie.NewSMT(root, trie.Hasher, func() []byte { return getTriePrefix() })
 	return t.StoreSnapShotNode(txn, batch, root, layer)
 }

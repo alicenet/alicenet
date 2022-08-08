@@ -6,7 +6,7 @@ import (
 	"github.com/alicenet/alicenet/utils"
 )
 
-// AtomicSwapSignature is the signs the AtomicSwap object
+// AtomicSwapSignature is the signs the AtomicSwap object.
 type AtomicSwapSignature struct {
 	SVA        SVA
 	CurveSpec  constants.CurveSpec
@@ -16,7 +16,7 @@ type AtomicSwapSignature struct {
 }
 
 // UnmarshalBinary takes a byte slice and returns the corresponding
-// AtomicSwapSignature object
+// AtomicSwapSignature object.
 func (assig *AtomicSwapSignature) UnmarshalBinary(signature []byte) error {
 	if assig == nil {
 		return errorz.ErrInvalid{}.New("assig.unmarshalBinary; assig not initialized")
@@ -59,7 +59,7 @@ func (assig *AtomicSwapSignature) UnmarshalBinary(signature []byte) error {
 }
 
 // MarshalBinary takes the AtomicSwapSignature object and returns the canonical
-// byte slice
+// byte slice.
 func (assig *AtomicSwapSignature) MarshalBinary() ([]byte, error) {
 	if err := assig.Validate(); err != nil {
 		return nil, err
@@ -73,7 +73,7 @@ func (assig *AtomicSwapSignature) MarshalBinary() ([]byte, error) {
 	return signature, nil
 }
 
-// Validate validates the AtomicSwapSignature
+// Validate validates the AtomicSwapSignature.
 func (assig *AtomicSwapSignature) Validate() error {
 	if assig == nil {
 		return errorz.ErrInvalid{}.New("assig.validate; assig not initialized")
@@ -93,7 +93,7 @@ func (assig *AtomicSwapSignature) Validate() error {
 	return validateSignatureLen(assig.Signature, assig.CurveSpec)
 }
 
-// validateSVA validates the Signature Verification Algorithm
+// validateSVA validates the Signature Verification Algorithm.
 func (assig *AtomicSwapSignature) validateSVA() error {
 	if assig == nil {
 		return errorz.ErrInvalid{}.New("assig.validateSVA; assig not initialized")
@@ -104,7 +104,7 @@ func (assig *AtomicSwapSignature) validateSVA() error {
 	return nil
 }
 
-// validateCurveSpec validates the curve specification
+// validateCurveSpec validates the curve specification.
 func (assig *AtomicSwapSignature) validateCurveSpec() error {
 	if assig == nil {
 		return errorz.ErrInvalid{}.New("assig.validateCurveSpec; assig not initialized")
@@ -115,7 +115,7 @@ func (assig *AtomicSwapSignature) validateCurveSpec() error {
 	return nil
 }
 
-// validateSignerRole validates the roles
+// validateSignerRole validates the roles.
 func (assig *AtomicSwapSignature) validateSignerRole() error {
 	if assig == nil {
 		return errorz.ErrInvalid{}.New("assig.validateSignerRole; assig not initialized")

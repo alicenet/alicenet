@@ -11,16 +11,16 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/alicenet/alicenet/errorz"
-	"github.com/alicenet/alicenet/utils"
+	"github.com/dgraph-io/badger/v2"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
 	"github.com/alicenet/alicenet/application/objs"
 	"github.com/alicenet/alicenet/application/objs/uint256"
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/crypto"
-	"github.com/dgraph-io/badger/v2"
-	"github.com/stretchr/testify/assert"
+	"github.com/alicenet/alicenet/errorz"
+	"github.com/alicenet/alicenet/utils"
 )
 
 type mockTrie struct {
