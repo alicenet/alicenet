@@ -28,7 +28,7 @@ func ProcessDepositReceived(eth layer1.Client, contracts layer1.AllSmartContract
 		"DepositID": event.DepositID,
 		"Depositor": event.Depositor,
 		"Amount":    event.Amount,
-	}).Debugf("Deposit received")
+	}).Debug("Deposit received")
 
 	err = cdb.Update(func(txn *badger.Txn) error {
 		depositNonce := event.DepositID.Bytes()
