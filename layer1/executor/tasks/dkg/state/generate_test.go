@@ -3,12 +3,12 @@
 package state_test
 
 import (
+	"github.com/alicenet/alicenet/layer1/executor/tasks/tests/utils"
 	"math/big"
 	"testing"
 
 	"github.com/alicenet/alicenet/crypto/bn256/cloudflare"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
-	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/assert"
 )

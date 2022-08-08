@@ -3,11 +3,11 @@
 package state_test
 
 import (
+	dkgTestUtils "github.com/alicenet/alicenet/layer1/executor/tasks/tests/utils"
 	"math/big"
 	"testing"
 
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
-	dkgTestUtils "github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests/utils"
 	"github.com/alicenet/alicenet/layer1/tests"
 	"github.com/alicenet/alicenet/logging"
 	"github.com/ethereum/go-ethereum/common"

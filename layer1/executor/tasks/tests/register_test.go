@@ -4,6 +4,7 @@ package tests
 
 import (
 	"context"
+	"github.com/alicenet/alicenet/layer1/executor/tasks/tests/utils"
 	"math/big"
 	"testing"
 	"time"
@@ -11,7 +12,6 @@ import (
 	"github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
-	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests/utils"
 	"github.com/alicenet/alicenet/layer1/monitor/events"
 	"github.com/alicenet/alicenet/layer1/tests"
 	"github.com/ethereum/go-ethereum/common"

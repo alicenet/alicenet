@@ -203,7 +203,7 @@ func StartHardHatNode(hostname string, port string) (*Hardhat, error) {
 	)
 	cmd.Dir = GetHardhatPackagePath()
 
-	// setCommandStdOut(cmd)
+	SetCommandStdOut(cmd)
 	err = cmd.Start()
 	// if there is an error with our execution handle it here
 	if err != nil {

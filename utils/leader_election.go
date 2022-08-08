@@ -16,7 +16,7 @@ func AmILeading(client layer1.Client, ctx context.Context, logger *logrus.Entry,
 		return false, err
 	}
 
-	blocksSinceDesperation := int(currentHeight) - start - desperationDelay
+	blocksSinceDesperation := GetBlocksSinceDesperation(int(currentHeight), start, desperationDelay)
 	amILeading := LeaderElection(numOfValidators, validatorIndex, blocksSinceDesperation, desperationFactor, randHash, logger)
 
 	logger.WithFields(logrus.Fields{
@@ -63,4 +63,13 @@ func LeaderElection(numValidators int, myIdx int, blocksSinceDesperation int, de
 	} else {
 		return myIdx >= start || myIdx < end
 	}
+}
+
+// GetBlocksSinceDesperation calculation
+func GetBlocksSinceDesperation(currentHeight, start, desperationDelay int) int {
+	blocksSinceDesperation := int(currentHeight) - start - desperationDelay
+	if blocksSinceDesperation < 0 {
+		blocksSinceDesperation = 0
+	}
+	return blocksSinceDesperation
 }
