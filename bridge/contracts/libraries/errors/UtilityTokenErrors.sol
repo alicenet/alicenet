@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT-open-group
 pragma solidity ^0.8.11;
 
-library BTokenErrors {
+library UtilityTokenErrors {
     error InvalidDepositId(uint256 depositID);
     error InvalidBalance(uint256 contractBalance, uint256 poolBalance);
     error InvalidBurnAmount(uint256 amount);

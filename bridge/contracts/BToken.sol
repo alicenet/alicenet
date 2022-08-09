@@ -8,7 +8,7 @@ import "contracts/utils/MagicEthTransfer.sol";
 import "contracts/utils/EthSafeTransfer.sol";
 import "contracts/libraries/math/Sigmoid.sol";
 import "contracts/utils/ImmutableAuth.sol";
-import "contracts/libraries/errors/BTokenErrors.sol";
+import "contracts/libraries/errors/UtilityTokenErrors.sol";
 
 /// @custom:salt BToken
 /// @custom:deploy-type deployStatic
@@ -78,7 +78,7 @@ contract BToken is
     {}
 
     function initialize() public onlyFactory initializer {
-        __ERC20_init("BToken", "BOB");
+        __ERC20_init("ALCB", "ALCB");
         _setSplitsInternal(332, 332, 332, 4);
     }
 
@@ -232,7 +232,7 @@ contract BToken is
     function getDeposit(uint256 depositID) public view returns (Deposit memory) {
         Deposit memory d = _deposits[depositID];
         if (d.account == address(uint160(0x00))) {
-            revert BTokenErrors.InvalidDepositId(depositID);
+            revert UtilityTokenErrors.InvalidDepositId(depositID);
         }
 
         return d;
@@ -305,7 +305,7 @@ contract BToken is
             );
         }
         if (address(this).balance < poolBalance) {
-            revert BTokenErrors.InvalidBalance(address(this).balance, poolBalance);
+            revert UtilityTokenErrors.InvalidBalance(address(this).balance, poolBalance);
         }
 
         // invariants hold
@@ -317,7 +317,7 @@ contract BToken is
     // method.
     function _destroyTokens(uint256 numBTK_) internal returns (bool) {
         if (numBTK_ == 0) {
-            revert BTokenErrors.InvalidBurnAmount(numBTK_);
+            revert UtilityTokenErrors.InvalidBurnAmount(numBTK_);
         }
 
         _poolBalance -= _bTokensToEth(_poolBalance, totalSupply(), numBTK_);
@@ -333,15 +333,15 @@ contract BToken is
         uint256 amount_
     ) internal returns (uint256) {
         if (_isContract(to_)) {
-            revert BTokenErrors.ContractsDisallowedDeposits(to_);
+            revert UtilityTokenErrors.ContractsDisallowedDeposits(to_);
         }
 
         if (amount_ == 0) {
-            revert BTokenErrors.DepositAmountZero();
+            revert UtilityTokenErrors.DepositAmountZero();
         }
 
         if (!_destroyTokens(amount_)) {
-            revert BTokenErrors.DepositBurnFail(amount_);
+            revert UtilityTokenErrors.DepositBurnFail(amount_);
         }
 
         // copying state to save gas
@@ -356,11 +356,11 @@ contract BToken is
         uint256 amount_
     ) internal returns (uint256) {
         if (_isContract(to_)) {
-            revert BTokenErrors.ContractsDisallowedDeposits(to_);
+            revert UtilityTokenErrors.ContractsDisallowedDeposits(to_);
         }
 
         if (amount_ == 0) {
-            revert BTokenErrors.DepositAmountZero();
+            revert UtilityTokenErrors.DepositAmountZero();
         }
 
         // copying state to save gas
@@ -376,16 +376,16 @@ contract BToken is
         uint256 numEth_
     ) internal returns (uint256) {
         if (_isContract(to_)) {
-            revert BTokenErrors.ContractsDisallowedDeposits(to_);
+            revert UtilityTokenErrors.ContractsDisallowedDeposits(to_);
         }
         if (numEth_ < _MARKET_SPREAD) {
-            revert BTokenErrors.MarketSpreadTooLow(numEth_);
+            revert UtilityTokenErrors.MarketSpreadTooLow(numEth_);
         }
 
         numEth_ = numEth_ / _MARKET_SPREAD;
         uint256 amount_ = _ethToBTokens(_poolBalance, numEth_);
         if (amount_ < minBTK_) {
-            revert BTokenErrors.InsufficientEth(amount_, minBTK_);
+            revert UtilityTokenErrors.InsufficientEth(amount_, minBTK_);
         }
 
         return _doDepositCommon(accountType_, to_, amount_);
@@ -412,14 +412,14 @@ contract BToken is
         uint256 minBTK_
     ) internal returns (uint256 numBTK) {
         if (numEth_ < _MARKET_SPREAD) {
-            revert BTokenErrors.MarketSpreadTooLow(numEth_);
+            revert UtilityTokenErrors.MarketSpreadTooLow(numEth_);
         }
 
         numEth_ = numEth_ / _MARKET_SPREAD;
         uint256 poolBalance = _poolBalance;
         numBTK = _ethToBTokens(poolBalance, numEth_);
         if (numBTK < minBTK_) {
-            revert BTokenErrors.MinimumMintNotMet(numBTK, minBTK_);
+            revert UtilityTokenErrors.MinimumMintNotMet(numBTK, minBTK_);
         }
 
         poolBalance += numEth_;
@@ -437,14 +437,14 @@ contract BToken is
         uint256 minEth_
     ) internal returns (uint256 numEth) {
         if (numBTK_ == 0) {
-            revert BTokenErrors.InvalidBurnAmount(numBTK_);
+            revert UtilityTokenErrors.InvalidBurnAmount(numBTK_);
         }
 
         uint256 poolBalance = _poolBalance;
         numEth = _bTokensToEth(poolBalance, totalSupply(), numBTK_);
 
         if (numEth < minEth_) {
-            revert BTokenErrors.MinimumBurnNotMet(numEth, minEth_);
+            revert UtilityTokenErrors.MinimumBurnNotMet(numEth, minEth_);
         }
 
         poolBalance -= numEth;
@@ -467,7 +467,7 @@ contract BToken is
                 protocolFee_ !=
             _PERCENTAGE_SCALE
         ) {
-            revert BTokenErrors.SplitValueSumError();
+            revert UtilityTokenErrors.SplitValueSumError();
         }
 
         _validatorStakingSplit = validatorStakingSplit_;
@@ -499,7 +499,7 @@ contract BToken is
         uint256 numBTK_
     ) internal pure returns (uint256 numEth) {
         if (totalSupply_ < numBTK_) {
-            revert BTokenErrors.BurnAmountExceedsSupply(numBTK_, totalSupply_);
+            revert UtilityTokenErrors.BurnAmountExceedsSupply(numBTK_, totalSupply_);
         }
         return _min(poolBalance_, _pInverse(totalSupply_) - _pInverse(totalSupply_ - numBTK_));
     }
