@@ -60,12 +60,18 @@ type MockTask struct {
 	// InitializeFunc is an instance of a mock function object controlling
 	// the behavior of the method Initialize.
 	InitializeFunc *TaskInitializeFunc
+	// LockFunc is an instance of a mock function object controlling the
+	// behavior of the method Lock.
+	LockFunc *TaskLockFunc
 	// PrepareFunc is an instance of a mock function object controlling the
 	// behavior of the method Prepare.
 	PrepareFunc *TaskPrepareFunc
 	// ShouldExecuteFunc is an instance of a mock function object
 	// controlling the behavior of the method ShouldExecute.
 	ShouldExecuteFunc *TaskShouldExecuteFunc
+	// UnlockFunc is an instance of a mock function object controlling the
+	// behavior of the method Unlock.
+	UnlockFunc *TaskUnlockFunc
 	// WasKilledFunc is an instance of a mock function object controlling
 	// the behavior of the method WasKilled.
 	WasKilledFunc *TaskWasKilledFunc
@@ -145,6 +151,11 @@ func NewMockTask() *MockTask {
 				return
 			},
 		},
+		LockFunc: &TaskLockFunc{
+			defaultHook: func() {
+				return
+			},
+		},
 		PrepareFunc: &TaskPrepareFunc{
 			defaultHook: func(context.Context) (r0 *tasks.TaskErr) {
 				return
@@ -152,6 +163,11 @@ func NewMockTask() *MockTask {
 		},
 		ShouldExecuteFunc: &TaskShouldExecuteFunc{
 			defaultHook: func(context.Context) (r0 bool, r1 *tasks.TaskErr) {
+				return
+			},
+		},
+		UnlockFunc: &TaskUnlockFunc{
+			defaultHook: func() {
 				return
 			},
 		},
@@ -237,6 +253,11 @@ func NewStrictMockTask() *MockTask {
 				panic("unexpected invocation of MockTask.Initialize")
 			},
 		},
+		LockFunc: &TaskLockFunc{
+			defaultHook: func() {
+				panic("unexpected invocation of MockTask.Lock")
+			},
+		},
 		PrepareFunc: &TaskPrepareFunc{
 			defaultHook: func(context.Context) *tasks.TaskErr {
 				panic("unexpected invocation of MockTask.Prepare")
@@ -245,6 +266,11 @@ func NewStrictMockTask() *MockTask {
 		ShouldExecuteFunc: &TaskShouldExecuteFunc{
 			defaultHook: func(context.Context) (bool, *tasks.TaskErr) {
 				panic("unexpected invocation of MockTask.ShouldExecute")
+			},
+		},
+		UnlockFunc: &TaskUnlockFunc{
+			defaultHook: func() {
+				panic("unexpected invocation of MockTask.Unlock")
 			},
 		},
 		WasKilledFunc: &TaskWasKilledFunc{
@@ -301,11 +327,17 @@ func NewMockTaskFrom(i tasks.Task) *MockTask {
 		InitializeFunc: &TaskInitializeFunc{
 			defaultHook: i.Initialize,
 		},
+		LockFunc: &TaskLockFunc{
+			defaultHook: i.Lock,
+		},
 		PrepareFunc: &TaskPrepareFunc{
 			defaultHook: i.Prepare,
 		},
 		ShouldExecuteFunc: &TaskShouldExecuteFunc{
 			defaultHook: i.ShouldExecute,
+		},
+		UnlockFunc: &TaskUnlockFunc{
+			defaultHook: i.Unlock,
 		},
 		WasKilledFunc: &TaskWasKilledFunc{
 			defaultHook: i.WasKilled,
@@ -1729,6 +1761,100 @@ func (c TaskInitializeFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0}
 }
 
+// TaskLockFunc describes the behavior when the Lock method of the parent
+// MockTask instance is invoked.
+type TaskLockFunc struct {
+	defaultHook func()
+	hooks       []func()
+	history     []TaskLockFuncCall
+	mutex       sync.Mutex
+}
+
+// Lock delegates to the next hook function in the queue and stores the
+// parameter and result values of this invocation.
+func (m *MockTask) Lock() {
+	m.LockFunc.nextHook()()
+	m.LockFunc.appendCall(TaskLockFuncCall{})
+	return
+}
+
+// SetDefaultHook sets function that is called when the Lock method of the
+// parent MockTask instance is invoked and the hook queue is empty.
+func (f *TaskLockFunc) SetDefaultHook(hook func()) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// Lock method of the parent MockTask instance invokes the hook at the front
+// of the queue and discards it. After the queue is empty, the default hook
+// function is invoked for any future action.
+func (f *TaskLockFunc) PushHook(hook func()) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *TaskLockFunc) SetDefaultReturn() {
+	f.SetDefaultHook(func() {
+		return
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *TaskLockFunc) PushReturn() {
+	f.PushHook(func() {
+		return
+	})
+}
+
+func (f *TaskLockFunc) nextHook() func() {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *TaskLockFunc) appendCall(r0 TaskLockFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of TaskLockFuncCall objects describing the
+// invocations of this function.
+func (f *TaskLockFunc) History() []TaskLockFuncCall {
+	f.mutex.Lock()
+	history := make([]TaskLockFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// TaskLockFuncCall is an object that describes an invocation of method Lock
+// on an instance of MockTask.
+type TaskLockFuncCall struct{}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c TaskLockFuncCall) Args() []interface{} {
+	return []interface{}{}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c TaskLockFuncCall) Results() []interface{} {
+	return []interface{}{}
+}
+
 // TaskPrepareFunc describes the behavior when the Prepare method of the
 // parent MockTask instance is invoked.
 type TaskPrepareFunc struct {
@@ -1932,6 +2058,100 @@ func (c TaskShouldExecuteFuncCall) Args() []interface{} {
 // invocation.
 func (c TaskShouldExecuteFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
+}
+
+// TaskUnlockFunc describes the behavior when the Unlock method of the
+// parent MockTask instance is invoked.
+type TaskUnlockFunc struct {
+	defaultHook func()
+	hooks       []func()
+	history     []TaskUnlockFuncCall
+	mutex       sync.Mutex
+}
+
+// Unlock delegates to the next hook function in the queue and stores the
+// parameter and result values of this invocation.
+func (m *MockTask) Unlock() {
+	m.UnlockFunc.nextHook()()
+	m.UnlockFunc.appendCall(TaskUnlockFuncCall{})
+	return
+}
+
+// SetDefaultHook sets function that is called when the Unlock method of the
+// parent MockTask instance is invoked and the hook queue is empty.
+func (f *TaskUnlockFunc) SetDefaultHook(hook func()) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// Unlock method of the parent MockTask instance invokes the hook at the
+// front of the queue and discards it. After the queue is empty, the default
+// hook function is invoked for any future action.
+func (f *TaskUnlockFunc) PushHook(hook func()) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *TaskUnlockFunc) SetDefaultReturn() {
+	f.SetDefaultHook(func() {
+		return
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *TaskUnlockFunc) PushReturn() {
+	f.PushHook(func() {
+		return
+	})
+}
+
+func (f *TaskUnlockFunc) nextHook() func() {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *TaskUnlockFunc) appendCall(r0 TaskUnlockFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of TaskUnlockFuncCall objects describing the
+// invocations of this function.
+func (f *TaskUnlockFunc) History() []TaskUnlockFuncCall {
+	f.mutex.Lock()
+	history := make([]TaskUnlockFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// TaskUnlockFuncCall is an object that describes an invocation of method
+// Unlock on an instance of MockTask.
+type TaskUnlockFuncCall struct{}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c TaskUnlockFuncCall) Args() []interface{} {
+	return []interface{}{}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c TaskUnlockFuncCall) Results() []interface{} {
+	return []interface{}{}
 }
 
 // TaskWasKilledFunc describes the behavior when the WasKilled method of the

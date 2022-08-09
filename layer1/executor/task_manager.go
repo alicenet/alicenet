@@ -318,7 +318,7 @@ func (tm *TaskManager) startTasks(ctx context.Context, tasks []ManagerRequestInf
 		tm.logger.Debug("Looking for starting tasks")
 		for i := 0; i < len(tasks); i++ {
 			task := tasks[i]
-			logEntry := getTaskLogger(task.Task)
+			logEntry := getTaskLogger(task)
 			logEntry = logEntry.WithField("taskId", task.Id).WithField("taskName", task.Name)
 			getTaskLoggerComplete(task).Info("task is about to start")
 
@@ -576,14 +576,6 @@ func (tm *TaskManager) recoverState() error {
 		}
 	}
 
-	// If we already received a response from TaskExecutor sends it to the Handler.
-	for id, resp := range tm.Responses {
-		if resp.ReceivedOnBlock != 0 {
-			resp.HandlerResponse.writeResponse(resp.ExecutorResponse.Err)
-		}
-		tm.Responses[id] = resp
-	}
-
 	return nil
 }
 
@@ -593,11 +585,16 @@ func (tm *TaskManager) MarshalJSON() ([]byte, error) {
 	ws := &taskManagerBackup{Schedule: make(map[string]requestStored), Responses: make(map[string]responseStored), LastHeightSeen: tm.LastHeightSeen}
 
 	for k, v := range tm.Schedule {
-		clonedTask := reflect.New(reflect.ValueOf(v.Task).Elem().Type()).Interface().(tasks.Task)
-		wt, err := tm.marshaller.WrapInstance(clonedTask)
+		wt, err := func() (*marshaller.InstanceWrapper, error) {
+			v.Task.Lock()
+			defer v.Task.Unlock()
+			return tm.marshaller.WrapInstance(v.Task)
+		}()
+
 		if err != nil {
 			return []byte{}, err
 		}
+
 		ws.Schedule[k] = requestStored{BaseRequest: v.BaseRequest, WrappedTask: wt, killedAt: v.killedAt}
 	}
 
@@ -674,12 +671,12 @@ func (tm *TaskManager) UnmarshalJSON(raw []byte) error {
 }
 
 // getTaskLogger with essential fields.
-func getTaskLogger(task tasks.Task) *logrus.Entry {
+func getTaskLogger(taskReq ManagerRequestInfo) *logrus.Entry {
 	logger := logging.GetLogger("tasks")
 	logEntry := logger.WithFields(logrus.Fields{
 		"Component": "task",
-		"taskStart": task.GetStart(),
-		"taskEnd":   task.GetEnd(),
+		"taskStart": taskReq.Start,
+		"taskEnd":   taskReq.End,
 	})
 	return logEntry
 }
