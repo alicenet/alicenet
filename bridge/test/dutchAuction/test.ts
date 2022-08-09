@@ -1,76 +1,82 @@
 import { expect } from "chai";
-import { BigNumber } from "ethers";
 
 import { ethers, network } from "hardhat";
 import { DutchAuction } from "../../typechain-types";
-import { assertErrorMessage } from "../chai-helpers";
 
 import {
   deployStaticWithFactory,
-  factoryCallAny,
+  factoryCallAnyFixture,
   Fixture,
   getFixture,
 } from "../setup";
 
 let fixture: Fixture;
 let dutchAuction: DutchAuction;
-let durationInBlocks = 4;
+let validators = new Array();
+let stakingTokenIds = new Array();
 
 describe("Testing Dutch Auction", async () => {
   beforeEach(async function () {
-    fixture = await getFixture(false, false, false);
+    fixture = await getFixture(true, false, false);
+    validators.push("0x0000000000000000000000000000000000000000");
+    validators.push("0x0000000000000000000000000000000000000001");
+    validators.push("0x0000000000000000000000000000000000000002");
+    validators.push("0x0000000000000000000000000000000000000003");
+    await factoryCallAnyFixture(
+      fixture,
+      "validatorPool",
+      "registerValidators",
+      [validators, stakingTokenIds]
+    );
     dutchAuction = (await deployStaticWithFactory(
       fixture.factory,
       "DutchAuction",
-      "DutchAuction", undefined)) as DutchAuction;
+      "DutchAuction",
+      undefined
+    )) as DutchAuction;
   });
 
-  it("Should obtain price is auction is started", async () => {
-    await factoryCallAny(fixture.factory, dutchAuction, "startAuction");
+  it("Should obtain bid price", async () => {
     expect(Number(await dutchAuction.getPrice())).to.be.equal(
-      Number("200000000000000384000000")
+      Number("1961725490196078431372")
     );
   });
 
-  it("Should not obtain price is auction is not started", async () => {
-    await assertErrorMessage(dutchAuction.getPrice(), `AuctionNotStarted()`);
+  it("Should obtain prices through blocks according with dutch auction curve", async () => {
+    expect(Number(await dutchAuction.getPrice())).to.be.equal(
+      Number("1961725490196078431372")
+    );
+    await network.provider.send("evm_mine");
+    expect(Number(await dutchAuction.getPrice())).to.be.equal(
+      Number("1949737623232709209017")
+    );
+    await network.provider.send("evm_mine");
+    expect(Number(await dutchAuction.getPrice())).to.be.equal(
+      Number("1937895450056969236612")
+    );
+    await network.provider.send("evm_mine");
+    expect(Number(await dutchAuction.getPrice())).to.be.equal(
+      Number("1926196330690826727066")
+    );
+    await network.provider.send("evm_mine");
+    expect(Number(await dutchAuction.getPrice())).to.be.equal(
+      Number("1914637688555347091932")
+    );
   });
 
-  it("Should obtain prices according with dutch auction curve", async () => {
-    await factoryCallAny(fixture.factory, dutchAuction, "startAuction", [
-    ]);
+  it.skip("Simulate a 7 days run (skipped since it may take too long)", async () => {
     let previousPrice = await dutchAuction.getPrice();
-    expect(Number(await dutchAuction.getPrice())).to.be.equal(
-      Number("200000000000000384000000") // 8200 ETH
-    );
-    await network.provider.send("evm_mine");
-    expect(Number(await dutchAuction.getPrice())).to.be.equal(
-      Number("81967213114754539016393") // 5100 ETH
-    );
-    await network.provider.send("evm_mine");
-    expect(Number(await dutchAuction.getPrice())).to.be.equal(
-      Number("51546391752577774845360") // 3700 ETH
-    );
-    await network.provider.send("evm_mine");
-    expect(Number(await dutchAuction.getPrice())).to.be.equal(
-      Number("37593984962406476992481") // 3000 ETH
-    );
-    await network.provider.send("evm_mine");
-    expect(Number(await dutchAuction.getPrice())).to.be.equal(
-      Number("29585798816568513136094") // 3000 ETH
-    );
-  });
-
-  it.skip("Simulate a 15 days run", async () => {
-    await factoryCallAny(fixture.factory, dutchAuction, "startAuction", [
-    ]);
-    let previousPrice = await dutchAuction.getPrice();
-    for (let d = 0; d < 15; d++) {
+    for (let d = 1; d <= 15; d++) {
+      console.log(
+        "Day",
+        d,
+        "Price",
+        ethers.utils.formatEther(await dutchAuction.getPrice()),
+        await dutchAuction.getPrice()
+      );
       for (let i = 0; i < 5760; i++) {
         await network.provider.send("evm_mine");
       }
-      console.log("Day", d, "Price", ethers.utils.formatEther(await dutchAuction.getPrice()));
     }
   });
-
 });
