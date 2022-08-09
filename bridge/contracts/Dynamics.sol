@@ -11,6 +11,7 @@ struct CanonicalVersion {
     uint64 major;
     uint64 minor;
     uint64 patch;
+    bytes32 binaryHash;
 }
 
 /// @custom:salt Dynamics
@@ -20,6 +21,7 @@ contract Dynamics is Initializable, ImmutableSnapshots {
 
     event DeployedStorageContract(address contractAddr);
     event DynamicValueChanged(uint256 epoch, bytes rawDynamicValues);
+    event NewNodeVersionAvailable(CanonicalVersion version);
 
     // enum to keep track of versions of the dynamic struct for the encoding and
     // decoding algorithms
@@ -48,16 +50,13 @@ contract Dynamics is Initializable, ImmutableSnapshots {
     }
 
     bytes8 internal constant _UNIVERSAL_DEPLOY_CODE = 0x38585839386009f3;
-
-    Version internal immutable _currentVersion;
+    Version internal constant _currentVersion = Version.V1;
 
     DoublyLinkedList internal _dynamicValues;
     Configuration internal _configuration;
+    CanonicalVersion internal _nodeCanonicalVersion;
 
-    constructor() ImmutableFactory(msg.sender) ImmutableSnapshots() {
-        // Change the current version once there a new encoding version is available
-        _currentVersion = Version.V1;
-    }
+    constructor() ImmutableFactory(msg.sender) ImmutableSnapshots() {}
 
     function initialize() public onlyFactory initializer {
         DynamicValues memory initialValues = DynamicValues(
@@ -72,9 +71,9 @@ contract Dynamics is Initializable, ImmutableSnapshots {
             0,
             0
         );
-        // minimum 2 epochs, max 336 epochs (approx 1 month considering a snapshot every
-        // 2h)
+        // minimum 2 epochs,
         uint128 MinEpochsBetweenUpdates = 2;
+        // max 336 epochs (approx 1 month considering a snapshot every 2h)
         uint128 MaxEpochsBetweenUpdates = 336;
         _configuration = Configuration(MinEpochsBetweenUpdates, MaxEpochsBetweenUpdates);
         _addNode(1, initialValues);
@@ -86,21 +85,9 @@ contract Dynamics is Initializable, ImmutableSnapshots {
 
     function changeDynamicValues(uint32 relativeExecutionEpoch, DynamicValues memory newValue)
         public
+        onlyFactory
     {
-        Configuration memory config = _configuration;
-        if (
-            relativeExecutionEpoch < config.MinEpochsBetweenUpdates ||
-            relativeExecutionEpoch > config.MaxEpochsBetweenUpdates
-        ) {
-            revert DynamicsErrors.InvalidScheduledDate(
-                relativeExecutionEpoch,
-                config.MinEpochsBetweenUpdates,
-                config.MaxEpochsBetweenUpdates
-            );
-        }
-        uint32 currentEpoch = uint32(ISnapshots(_snapshotsAddress()).getEpoch());
-        uint32 executionEpoch = relativeExecutionEpoch + currentEpoch;
-        _addNode(executionEpoch, newValue);
+        _changeDynamicValues(relativeExecutionEpoch, newValue);
     }
 
     function updateHead(uint32 currentEpoch) public onlySnapshots {
@@ -108,6 +95,15 @@ contract Dynamics is Initializable, ImmutableSnapshots {
         if (nextEpoch != 0 && currentEpoch >= nextEpoch) {
             _dynamicValues.setHead(nextEpoch);
         }
+    }
+
+    function updateNodeVersion(
+        uint32 majorVersion,
+        uint32 minorVersion,
+        uint32 patch,
+        bytes32 binaryHash
+    ) public onlyFactory {
+        _updateNodeVersion(majorVersion, minorVersion, patch, binaryHash);
     }
 
     function setConfiguration(Configuration calldata newConfig) public onlyFactory {
@@ -118,16 +114,16 @@ contract Dynamics is Initializable, ImmutableSnapshots {
         return _configuration;
     }
 
-    function getEncodingVersion() public view returns (Version) {
-        return _currentVersion;
-    }
-
     function decodeDynamicValues(address addr) public view returns (DynamicValues memory) {
         return _decodeDynamicValues(addr);
     }
 
     function encodeDynamicValues(DynamicValues memory value) public pure returns (bytes memory) {
         return _encodeDynamicValues(value);
+    }
+
+    function getEncodingVersion() public pure returns (Version) {
+        return _currentVersion;
     }
 
     function getPreviousDynamicValues(uint256 epoch) public view returns (DynamicValues memory) {
@@ -147,17 +143,26 @@ contract Dynamics is Initializable, ImmutableSnapshots {
     }
 
     function _addNode(uint32 executionEpoch, DynamicValues memory value) internal {
-        address dataAddress = _deployStorage(_encodeDynamicValues(value));
+        bytes memory encodedData = _encodeDynamicValues(value);
+        address dataAddress = _deployStorage(encodedData);
         _dynamicValues.addNode(executionEpoch, dataAddress);
-        emit DynamicValueChanged(executionEpoch, _encodeDynamicValues(value));
+        emit DynamicValueChanged(executionEpoch, encodedData);
     }
 
-    function _deployStorage(bytes memory data) internal returns (address contractAddr) {
+    function _deployStorage(bytes memory data) internal returns (address) {
         bytes memory deployCode = abi.encodePacked(_UNIVERSAL_DEPLOY_CODE, data);
+        address addr;
         assembly {
-            contractAddr := create(0, add(deployCode, 0x20), mload(deployCode))
+            addr := create(0, add(deployCode, 0x20), mload(deployCode))
+            if iszero(addr) {
+                //if contract creation fails, we want to return any err messages
+                returndatacopy(0x00, 0x00, returndatasize())
+                //revert and return errors
+                revert(0x00, returndatasize())
+            }
         }
-        emit DeployedStorageContract(contractAddr);
+        emit DeployedStorageContract(addr);
+        return addr;
     }
 
     function _decodeDynamicValues(address addr) internal view returns (DynamicValues memory) {
@@ -174,7 +179,6 @@ contract Dynamics is Initializable, ImmutableSnapshots {
         if (extCodeSize == 0 || extCodeSize < dynamicValuesTotalSize) {
             revert DynamicsErrors.InvalidExtCodeSize(addr, extCodeSize);
         }
-
         for (uint8 i = 0; i < sizes.length; i++) {
             uint8 size = sizes[i];
             assembly {
@@ -203,116 +207,153 @@ contract Dynamics is Initializable, ImmutableSnapshots {
             newValue.valueStoreFee,
             newValue.minScaledTransactionFee
         );
+        // Remove the first 32 bytes with the bytes length
         assembly {
-            return(add(data, 0x20), mload(data))
+            data := add(data, 0x20)
         }
+        return data;
     }
 
-    // function getValueAtIndex(address storageAddr, uint8 index) public view returns (uint256) {
-    //     uint8[10] memory sizes = [8, 24, 32, 32, 32, 64, 64, 64, 64, 128];
-    //     uint32 offset = 0;
-    //     uint256 ptr;
-    //     uint256 retPtr;
-    //     uint8 size = sizes[index];
-    //     assembly {
-    //         ptr := mload(0x40)
-    //         let csize := extcodesize(storageAddr)
-    //         extcodecopy(storageAddr, ptr, 0, csize)
-    //         retPtr := add(ptr, size)
-    //     }
-    //     for (uint8 i = 0; i < index; i++) {
-    //         offset += sizes[i];
-    //     }
-    //     offset = offset / 8;
-    //     assembly {
-    //         mstore(retPtr, shr(sub(256, size), mload(add(ptr, offset))))
-    //         return(retPtr, 0x20)
-    //     }
-    // }
+    function _updateNodeVersion(
+        uint32 majorVersion,
+        uint32 minorVersion,
+        uint32 patch,
+        bytes32 binaryHash
+    ) internal {
+        CanonicalVersion memory version = CanonicalVersion(
+            majorVersion,
+            minorVersion,
+            patch,
+            binaryHash
+        );
+        _nodeCanonicalVersion = version;
+        emit NewNodeVersionAvailable(version);
+    }
 
-    //  function deployStorageDeterministic(uint256 blockHeight) public {
-    //     address addr;
-    //     bytes32 salt_ = bytes32(blockHeight);
-    //     assembly {
-    //         let ptr := mload(0x40)
-    //         mstore(ptr, shl(48, 0x5863e8c0cf5a60e01b81528081602083335AFA3d82833e3d82f3))
-    //         addr := create2(0, ptr, add(ptr, 0x1a), salt_)
-    //         //if the returndatasize is not 0 revert with the error message
-    //         if iszero(iszero(returndatasize())) {
-    //             returndatacopy(0x00, 0x00, returndatasize())
-    //             revert(0, returndatasize())
-    //         }
-    //         //if contractAddr or code size at contractAddr is 0 revert with deploy fail message
-    //         if or(iszero(addr), iszero(extcodesize(addr))) {
-    //             mstore(0, "storage deployment failed")
-    //             revert(0, 0x20)
-    //         }
-    //     }
-    //     emit DeployedStorageContract(addr);
-    // }
-
-    // function decodeBlobDeterministic(address addr) public view returns (uint32) {
-    //     uint8[1] memory sizes = [32];
-    //     uint256 ptr;
-    //     uint256 retPtr;
-    //     uint256 extCodeSize;
-    //     assembly {
-    //         ptr := mload(0x40)
-    //         let offset := 0x1d
-    //         let size := sub(extcodesize(addr), offset)
-    //         extcodecopy(addr, ptr, 0x1d, size)
-    //         retPtr := add(ptr, size)
-    //     }
-    //     if (extCodeSize == 0) {
-    //         revert DynamicsErrors.ExtCodeSizeZero(addr);
-    //     }
-    //     for (uint8 i = 0; i < sizes.length; i++) {
-    //         uint8 size = sizes[i];
-    //         assembly {
-    //             mstore(retPtr, shr(sub(256, size), mload(ptr)))
-    //             ptr := add(ptr, div(size, 8))
-    //             retPtr := add(retPtr, 0x20)
-    //         }
-    //     }
-    // }
-
-    // function getValueAtIndexDeterministic(address storageAddr, uint8 index)
-    //     public
-    //     view
-    //     returns (uint256)
-    // {
-    //     uint8[1] memory sizes = [32];
-    //     uint32 offset = 0;
-    //     uint256 ptr;
-    //     uint256 retPtr;
-    //     uint8 size = sizes[index];
-    //     assembly {
-    //         ptr := mload(0x40)
-    //         let extOffset := 0x1d
-    //         extcodecopy(storageAddr, ptr, extOffset, sub(extcodesize(storageAddr), extOffset))
-    //         retPtr := add(ptr, size)
-    //     }
-    //     for (uint8 i = 0; i < index; i++) {
-    //         offset += sizes[i];
-    //     }
-    //     offset = offset / 8;
-    //     assembly {
-    //         mstore(retPtr, shr(sub(256, size), mload(add(ptr, offset))))
-    //         return(retPtr, 0x20)
-    //     }
-    // }
-
-    // function getStorageCode() external view returns (bytes memory) {
-    //     ConstantValues memory values = constantFees;
-    //     address self = factoryAddress;
-    //     bytes memory data = abi.encodePacked(
-    //         hex"73",
-    //         self,
-    //         hex"3303601c5733ff5b",
-    //         values.tokenDepositFee
-    //     );
-    //     assembly {
-    //         return(add(data, 0x20), mload(data))
-    //     }
-    // }
+    function _changeDynamicValues(uint32 relativeExecutionEpoch, DynamicValues memory newValue)
+        internal
+    {
+        Configuration memory config = _configuration;
+        if (
+            relativeExecutionEpoch < config.MinEpochsBetweenUpdates ||
+            relativeExecutionEpoch > config.MaxEpochsBetweenUpdates
+        ) {
+            revert DynamicsErrors.InvalidScheduledDate(
+                relativeExecutionEpoch,
+                config.MinEpochsBetweenUpdates,
+                config.MaxEpochsBetweenUpdates
+            );
+        }
+        uint32 currentEpoch = uint32(ISnapshots(_snapshotsAddress()).getEpoch());
+        uint32 executionEpoch = relativeExecutionEpoch + currentEpoch;
+        _addNode(executionEpoch, newValue);
+    }
 }
+
+// function getValueAtIndex(address storageAddr, uint8 index) public view returns (uint256) {
+//     uint8[10] memory sizes = [8, 24, 32, 32, 32, 64, 64, 64, 64, 128];
+//     uint32 offset = 0;
+//     uint256 ptr;
+//     uint256 retPtr;
+//     uint8 size = sizes[index];
+//     assembly {
+//         ptr := mload(0x40)
+//         let csize := extcodesize(storageAddr)
+//         extcodecopy(storageAddr, ptr, 0, csize)
+//         retPtr := add(ptr, size)
+//     }
+//     for (uint8 i = 0; i < index; i++) {
+//         offset += sizes[i];
+//     }
+//     offset = offset / 8;
+//     assembly {
+//         mstore(retPtr, shr(sub(256, size), mload(add(ptr, offset))))
+//         return(retPtr, 0x20)
+//     }
+// }
+
+//  function deployStorageDeterministic(uint256 blockHeight) public {
+//     address addr;
+//     bytes32 salt_ = bytes32(blockHeight);
+//     assembly {
+//         let ptr := mload(0x40)
+//         mstore(ptr, shl(48, 0x5863e8c0cf5a60e01b81528081602083335AFA3d82833e3d82f3))
+//         addr := create2(0, ptr, add(ptr, 0x1a), salt_)
+//         //if the returndatasize is not 0 revert with the error message
+//         if iszero(iszero(returndatasize())) {
+//             returndatacopy(0x00, 0x00, returndatasize())
+//             revert(0, returndatasize())
+//         }
+//         //if contractAddr or code size at contractAddr is 0 revert with deploy fail message
+//         if or(iszero(addr), iszero(extcodesize(addr))) {
+//             mstore(0, "storage deployment failed")
+//             revert(0, 0x20)
+//         }
+//     }
+//     emit DeployedStorageContract(addr);
+// }
+
+// function decodeBlobDeterministic(address addr) public view returns (uint32) {
+//     uint8[1] memory sizes = [32];
+//     uint256 ptr;
+//     uint256 retPtr;
+//     uint256 extCodeSize;
+//     assembly {
+//         ptr := mload(0x40)
+//         let offset := 0x1d
+//         let size := sub(extcodesize(addr), offset)
+//         extcodecopy(addr, ptr, 0x1d, size)
+//         retPtr := add(ptr, size)
+//     }
+//     if (extCodeSize == 0) {
+//         revert DynamicsErrors.ExtCodeSizeZero(addr);
+//     }
+//     for (uint8 i = 0; i < sizes.length; i++) {
+//         uint8 size = sizes[i];
+//         assembly {
+//             mstore(retPtr, shr(sub(256, size), mload(ptr)))
+//             ptr := add(ptr, div(size, 8))
+//             retPtr := add(retPtr, 0x20)
+//         }
+//     }
+// }
+
+// function getValueAtIndexDeterministic(address storageAddr, uint8 index)
+//     public
+//     view
+//     returns (uint256)
+// {
+//     uint8[1] memory sizes = [32];
+//     uint32 offset = 0;
+//     uint256 ptr;
+//     uint256 retPtr;
+//     uint8 size = sizes[index];
+//     assembly {
+//         ptr := mload(0x40)
+//         let extOffset := 0x1d
+//         extcodecopy(storageAddr, ptr, extOffset, sub(extcodesize(storageAddr), extOffset))
+//         retPtr := add(ptr, size)
+//     }
+//     for (uint8 i = 0; i < index; i++) {
+//         offset += sizes[i];
+//     }
+//     offset = offset / 8;
+//     assembly {
+//         mstore(retPtr, shr(sub(256, size), mload(add(ptr, offset))))
+//         return(retPtr, 0x20)
+//     }
+// }
+
+// function getStorageCode() external view returns (bytes memory) {
+//     ConstantValues memory values = constantFees;
+//     address self = factoryAddress;
+//     bytes memory data = abi.encodePacked(
+//         hex"73",
+//         self,
+//         hex"3303601c5733ff5b",
+//         values.tokenDepositFee
+//     );
+//     assembly {
+//         return(add(data, 0x20), mload(data))
+//     }
+// }
