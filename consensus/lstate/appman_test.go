@@ -2,6 +2,9 @@ package lstate
 
 import (
 	"errors"
+	"strconv"
+	"testing"
+
 	appObjs "github.com/alicenet/alicenet/application/objs"
 	"github.com/alicenet/alicenet/application/objs/uint256"
 	"github.com/alicenet/alicenet/consensus/objs"
@@ -11,8 +14,6 @@ import (
 	"github.com/alicenet/alicenet/interfaces"
 	"github.com/dgraph-io/badger/v2"
 	"github.com/stretchr/testify/assert"
-	"strconv"
-	"testing"
 )
 
 func TestAppMan_AddPendingTx_Error1(t *testing.T) {
@@ -394,7 +395,7 @@ func TestAppMan_applyState_Error2(t *testing.T) {
 		if err == nil {
 			t.Fatalf("Should have raised error")
 		}
-		if !errors.As(err, &errorz.ErrMissingTransactions) {
+		if !errors.Is(err, errorz.ErrMissingTransactions) {
 			t.Fatalf("Should have raised errorz.ErrMissingTransactions error")
 		}
 
