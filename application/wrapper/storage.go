@@ -24,23 +24,6 @@ func (s *Storage) GetMaxBytes() uint32 {
 	return s.storage.GetMaxBytes()
 }
 
-// GetAtomicSwapFee returns the fee for AtomicSwap.
-func (s *Storage) GetAtomicSwapFee() (*uint256.Uint256, error) {
-	if s == nil {
-		return nil, errorz.ErrInvalid{}.New("storage.GetAtomicSwapFee; struct not initialized")
-	}
-	if s.storage == nil {
-		return nil, errorz.ErrInvalid{}.New("storage.GetAtomicSwapFee; storage not initialized")
-	}
-	fee := s.storage.GetAtomicSwapFee()
-	feeUint256 := &uint256.Uint256{}
-	_, err := feeUint256.FromBigInt(fee)
-	if err != nil {
-		return nil, err
-	}
-	return feeUint256, nil
-}
-
 // GetDataStoreEpochFee returns the per-epoch fee of DataStore.
 func (s *Storage) GetDataStoreEpochFee() (*uint256.Uint256, error) {
 	if s == nil {
