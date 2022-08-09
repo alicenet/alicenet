@@ -169,7 +169,7 @@ contract Dynamics is Initializable, ImmutableSnapshots {
         uint256 ptr;
         DynamicValues memory retValue = DynamicValues(Version.V1, 0, 0, 0, 0, 0, 0, 0, 0, 0);
         uint8[10] memory sizes = [8, 24, 32, 32, 32, 64, 64, 64, 64, 128];
-        uint256 dynamicValuesTotalSize = 512;
+        uint256 dynamicValuesTotalSize = 64;
         uint256 extCodeSize;
         assembly {
             ptr := mload(0x40)
@@ -208,9 +208,9 @@ contract Dynamics is Initializable, ImmutableSnapshots {
             newValue.minScaledTransactionFee
         );
         // Remove the first 32 bytes with the bytes length
-        assembly {
-            data := add(data, 0x20)
-        }
+        // assembly {
+        //     data := add(data, 0x20)
+        // }
         return data;
     }
 
@@ -248,6 +248,26 @@ contract Dynamics is Initializable, ImmutableSnapshots {
         uint32 executionEpoch = relativeExecutionEpoch + currentEpoch;
         _addNode(executionEpoch, newValue);
     }
+}
+
+contract test is Dynamics {
+    function testEnconding() public view returns(bytes memory) {
+        DynamicValues memory initialValues = DynamicValues(
+            Version.V1,
+            4000,
+            4000,
+            3000,
+            3000,
+            3000000,
+            0,
+            0,
+            0,
+            0
+        );
+        return Dynamics._encodeDynamicValues(initialValues);
+    }
+
+
 }
 
 // function getValueAtIndex(address storageAddr, uint8 index) public view returns (uint256) {
@@ -354,6 +374,6 @@ contract Dynamics is Initializable, ImmutableSnapshots {
 //         values.tokenDepositFee
 //     );
 //     assembly {
-//         return(add(data, 0x20), mload(data))
+//         data := add(data, 0x20)
 //     }
 // }

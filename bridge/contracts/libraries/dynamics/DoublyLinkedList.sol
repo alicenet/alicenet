@@ -103,6 +103,9 @@ library DoublyLinkedListLogic {
      * @param epoch The epoch value to set as the head pointer
      */
     function setHead(DoublyLinkedList storage list, uint256 epoch) internal {
+        if (!exists(list, epoch)) {
+            revert DoublyLinkedListErrors.InexistentNodeAtPosition(epoch);
+        }
         list.head = epoch;
     }
 
@@ -111,6 +114,9 @@ library DoublyLinkedListLogic {
      * @param epoch The epoch value to set as the tail pointer
      */
     function setTail(DoublyLinkedList storage list, uint256 epoch) internal {
+        if (!exists(list, epoch)) {
+            revert DoublyLinkedListErrors.InexistentNodeAtPosition(epoch);
+        }
         list.tail = epoch;
     }
 
