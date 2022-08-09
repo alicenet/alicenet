@@ -1121,6 +1121,7 @@ func TestRewardDepositEquationGood2(t *testing.T) {
 		t.Fatal("Invalid remainder for epoch =", epochFinal)
 	}
 }
+
 func TestRewardDepositEquationBad(t *testing.T) {
 	dataSize := uint32(1)
 	numEpochs := uint32(3)

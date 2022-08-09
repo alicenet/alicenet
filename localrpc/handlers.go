@@ -8,6 +8,9 @@ import (
 	"math/big"
 	"time"
 
+	"github.com/dgraph-io/badger/v2"
+	"github.com/sirupsen/logrus"
+
 	"github.com/alicenet/alicenet/application"
 	"github.com/alicenet/alicenet/application/objs"
 	"github.com/alicenet/alicenet/application/objs/uint256"
@@ -20,23 +23,23 @@ import (
 	"github.com/alicenet/alicenet/logging"
 	pb "github.com/alicenet/alicenet/proto"
 	"github.com/alicenet/alicenet/utils"
-	"github.com/dgraph-io/badger/v2"
-	"github.com/sirupsen/logrus"
 )
 
-var _ pb.LocalStateGetBlockHeaderHandler = (*Handlers)(nil)
-var _ pb.LocalStateGetPendingTransactionHandler = (*Handlers)(nil)
-var _ pb.LocalStateGetRoundStateForValidatorHandler = (*Handlers)(nil)
-var _ pb.LocalStateGetValidatorSetHandler = (*Handlers)(nil)
-var _ pb.LocalStateGetBlockNumberHandler = (*Handlers)(nil)
-var _ pb.LocalStateGetChainIDHandler = (*Handlers)(nil)
-var _ pb.LocalStateGetEpochNumberHandler = (*Handlers)(nil)
-var _ pb.LocalStateSendTransactionHandler = (*Handlers)(nil)
-var _ pb.LocalStateGetDataHandler = (*Handlers)(nil)
-var _ pb.LocalStateGetMinedTransactionHandler = (*Handlers)(nil)
-var _ pb.LocalStateGetValueForOwnerHandler = (*Handlers)(nil)
-var _ pb.LocalStateIterateNameSpaceHandler = (*Handlers)(nil)
-var _ pb.LocalStateGetUTXOHandler = (*Handlers)(nil)
+var (
+	_ pb.LocalStateGetBlockHeaderHandler            = (*Handlers)(nil)
+	_ pb.LocalStateGetPendingTransactionHandler     = (*Handlers)(nil)
+	_ pb.LocalStateGetRoundStateForValidatorHandler = (*Handlers)(nil)
+	_ pb.LocalStateGetValidatorSetHandler           = (*Handlers)(nil)
+	_ pb.LocalStateGetBlockNumberHandler            = (*Handlers)(nil)
+	_ pb.LocalStateGetChainIDHandler                = (*Handlers)(nil)
+	_ pb.LocalStateGetEpochNumberHandler            = (*Handlers)(nil)
+	_ pb.LocalStateSendTransactionHandler           = (*Handlers)(nil)
+	_ pb.LocalStateGetDataHandler                   = (*Handlers)(nil)
+	_ pb.LocalStateGetMinedTransactionHandler       = (*Handlers)(nil)
+	_ pb.LocalStateGetValueForOwnerHandler          = (*Handlers)(nil)
+	_ pb.LocalStateIterateNameSpaceHandler          = (*Handlers)(nil)
+	_ pb.LocalStateGetUTXOHandler                   = (*Handlers)(nil)
+)
 
 func (srpc *Handlers) notReady() error {
 	if srpc.safe() {
@@ -73,7 +76,7 @@ type Handlers struct {
 	safecount   uint32
 }
 
-// Init will initialize the Consensus Engine and all sub modules
+// Init will initialize the Consensus Engine and all sub modules.
 func (srpc *Handlers) Init(database *db.Database, app *application.Application, gh *gossip.Handlers, pubk []byte, safe func() bool, storage dynamics.StorageGetter) {
 	background := context.Background()
 	ctx, cf := context.WithCancel(background)
@@ -121,13 +124,13 @@ func (srpc *Handlers) SafeMonitor() {
 				srpc.safecount++
 			}
 		}
-		if srpc.safecount > 7 { //todo:HUNTER MOVE INTO SYNCHRONIZER FOR ERROR PROPOGATION
+		if srpc.safecount > 7 { // todo:HUNTER MOVE INTO SYNCHRONIZER FOR ERROR PROPAGATION
 			panic("localRPC handler impossible state")
 		}
 	}
 }
 
-// HandleLocalStateGetPendingTransaction handles the get pending tx request
+// HandleLocalStateGetPendingTransaction handles the get pending tx request.
 func (srpc *Handlers) HandleLocalStateGetPendingTransaction(ctx context.Context, req *pb.PendingTransactionRequest) (*pb.PendingTransactionResponse, error) {
 	if err := srpc.notReady(); err != nil {
 		return nil, err

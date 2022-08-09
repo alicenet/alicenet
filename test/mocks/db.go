@@ -4,11 +4,12 @@ import (
 	"context"
 	"io/ioutil"
 
+	"github.com/dgraph-io/badger/v2"
+
 	"github.com/alicenet/alicenet/consensus/db"
 	constants "github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/logging"
 	"github.com/alicenet/alicenet/utils"
-	"github.com/dgraph-io/badger/v2"
 )
 
 func NewTestRawDB() *badger.DB {

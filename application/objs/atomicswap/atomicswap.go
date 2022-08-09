@@ -2,10 +2,10 @@ package atomicswap
 
 import (
 	mdefs "github.com/alicenet/alicenet/application/objs/capn"
-	// "github.com/alicenet/alicenet/constants"
+	// "github.com/alicenet/alicenet/constants".
 	"github.com/alicenet/alicenet/errorz"
 	// "github.com/alicenet/alicenet/utils"
-	// capnp "github.com/MadBase/go-capnproto2/v2"
+	// capnp "github.com/MadBase/go-capnproto2/v2".
 )
 
 // Marshal will marshal the AtomicSwap object.
@@ -46,7 +46,7 @@ func Unmarshal(data []byte) (mdefs.AtomicSwap, error) {
 	*/
 }
 
-// Validate will validate the AtomicSwap object
+// Validate will validate the AtomicSwap object.
 func Validate(v mdefs.AtomicSwap) error {
 	return errorz.ErrInvalid{}.New("AtomicSwap not activated")
 	/* TODO: uncomment once activated

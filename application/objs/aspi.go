@@ -2,6 +2,7 @@ package objs
 
 import (
 	capnp "github.com/MadBase/go-capnproto2/v2"
+
 	"github.com/alicenet/alicenet/application/objs/aspreimage"
 	mdefs "github.com/alicenet/alicenet/application/objs/capn"
 	"github.com/alicenet/alicenet/application/objs/uint256"
@@ -10,7 +11,7 @@ import (
 	"github.com/alicenet/alicenet/utils"
 )
 
-// ASPreImage holds the values required for an AtomicSwap object
+// ASPreImage holds the values required for an AtomicSwap object.
 type ASPreImage struct {
 	ChainID  uint32
 	Value    *uint256.Uint256
@@ -24,7 +25,7 @@ type ASPreImage struct {
 }
 
 // UnmarshalBinary takes a byte slice and returns the corresponding
-// ASPreImage object
+// ASPreImage object.
 func (b *ASPreImage) UnmarshalBinary(data []byte) error {
 	bc, err := aspreimage.Unmarshal(data)
 	if err != nil {
@@ -34,7 +35,7 @@ func (b *ASPreImage) UnmarshalBinary(data []byte) error {
 }
 
 // MarshalBinary takes the ASPreImage object and returns the canonical
-// byte slice
+// byte slice.
 func (b *ASPreImage) MarshalBinary() ([]byte, error) {
 	if b == nil {
 		return nil, errorz.ErrInvalid{}.New("aspi.marshalBinary; aspi not initialized")
@@ -46,7 +47,7 @@ func (b *ASPreImage) MarshalBinary() ([]byte, error) {
 	return aspreimage.Marshal(bc)
 }
 
-// UnmarshalCapn unmarshals the capnproto definition of the object
+// UnmarshalCapn unmarshals the capnproto definition of the object.
 func (b *ASPreImage) UnmarshalCapn(bc mdefs.ASPreImage) error {
 	if err := aspreimage.Validate(bc); err != nil {
 		return err
@@ -93,7 +94,7 @@ func (b *ASPreImage) UnmarshalCapn(bc mdefs.ASPreImage) error {
 	return nil
 }
 
-// MarshalCapn marshals the object into its capnproto definition
+// MarshalCapn marshals the object into its capnproto definition.
 func (b *ASPreImage) MarshalCapn(seg *capnp.Segment) (mdefs.ASPreImage, error) {
 	if b == nil {
 		return mdefs.ASPreImage{}, errorz.ErrInvalid{}.New("aspi.marshalCapn; aspi not initialized")
@@ -154,7 +155,7 @@ func (b *ASPreImage) MarshalCapn(seg *capnp.Segment) (mdefs.ASPreImage, error) {
 	return bc, nil
 }
 
-// PreHash returns the PreHash of the object
+// PreHash returns the PreHash of the object.
 func (b *ASPreImage) PreHash() ([]byte, error) {
 	if b == nil {
 		return nil, errorz.ErrInvalid{}.New("aspi.preHash; aspi not initialized")
@@ -171,7 +172,7 @@ func (b *ASPreImage) PreHash() ([]byte, error) {
 	return utils.CopySlice(b.preHash), nil
 }
 
-// IsExpired returns true if the current epoch is greater than exp
+// IsExpired returns true if the current epoch is greater than exp.
 func (b *ASPreImage) IsExpired(currentHeight uint32) (bool, error) {
 	if b == nil {
 		return true, errorz.ErrInvalid{}.New("aspi.isExpired; aspi not initialized")
@@ -183,7 +184,7 @@ func (b *ASPreImage) IsExpired(currentHeight uint32) (bool, error) {
 	return false, nil
 }
 
-// ValidateSignature validates the signature for ASPreImage
+// ValidateSignature validates the signature for ASPreImage.
 func (b *ASPreImage) ValidateSignature(currentHeight uint32, msg []byte, sig *AtomicSwapSignature) error {
 	isExpired, err := b.IsExpired(currentHeight)
 	if err != nil {
@@ -192,7 +193,7 @@ func (b *ASPreImage) ValidateSignature(currentHeight uint32, msg []byte, sig *At
 	return b.Owner.ValidateSignature(msg, sig, isExpired)
 }
 
-// SignAsPrimary signs the ASPreImage as the primary account owner
+// SignAsPrimary signs the ASPreImage as the primary account owner.
 func (b *ASPreImage) SignAsPrimary(msg []byte, signer *crypto.Secp256k1Signer, hashKey []byte) (*AtomicSwapSignature, error) {
 	if b == nil {
 		return nil, errorz.ErrInvalid{}.New("aspi.signAsPrimary; aspi not initialized")
@@ -200,7 +201,7 @@ func (b *ASPreImage) SignAsPrimary(msg []byte, signer *crypto.Secp256k1Signer, h
 	return b.Owner.SignAsPrimary(msg, signer, hashKey)
 }
 
-// SignAsAlternate signs the ASPreImage as the alternate account owner
+// SignAsAlternate signs the ASPreImage as the alternate account owner.
 func (b *ASPreImage) SignAsAlternate(msg []byte, signer *crypto.Secp256k1Signer, hashKey []byte) (*AtomicSwapSignature, error) {
 	if b == nil {
 		return nil, errorz.ErrInvalid{}.New("aspi.signAsAlternate; aspi not initialized")

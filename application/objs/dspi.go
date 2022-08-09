@@ -2,6 +2,7 @@ package objs
 
 import (
 	capnp "github.com/MadBase/go-capnproto2/v2"
+
 	mdefs "github.com/alicenet/alicenet/application/objs/capn"
 	"github.com/alicenet/alicenet/application/objs/dspreimage"
 	"github.com/alicenet/alicenet/application/objs/uint256"
@@ -11,7 +12,7 @@ import (
 	"github.com/alicenet/alicenet/utils"
 )
 
-// DSPreImage is a DataStore preimage
+// DSPreImage is a DataStore preimage.
 type DSPreImage struct {
 	ChainID  uint32
 	Index    []byte
@@ -24,7 +25,7 @@ type DSPreImage struct {
 }
 
 // UnmarshalBinary takes a byte slice and returns the corresponding
-// DSPreImage object
+// DSPreImage object.
 func (b *DSPreImage) UnmarshalBinary(data []byte) error {
 	bc, err := dspreimage.Unmarshal(data)
 	if err != nil {
@@ -34,7 +35,7 @@ func (b *DSPreImage) UnmarshalBinary(data []byte) error {
 }
 
 // MarshalBinary takes the DSPreImage object and returns the canonical
-// byte slice
+// byte slice.
 func (b *DSPreImage) MarshalBinary() ([]byte, error) {
 	if b == nil {
 		return nil, errorz.ErrInvalid{}.New("dspi.marshalBinary; dspi not initialized")
@@ -46,7 +47,7 @@ func (b *DSPreImage) MarshalBinary() ([]byte, error) {
 	return dspreimage.Marshal(bc)
 }
 
-// UnmarshalCapn unmarshals the capnproto definition of the object
+// UnmarshalCapn unmarshals the capnproto definition of the object.
 func (b *DSPreImage) UnmarshalCapn(bc mdefs.DSPreImage) error {
 	if err := dspreimage.Validate(bc); err != nil {
 		return err
@@ -94,7 +95,7 @@ func (b *DSPreImage) UnmarshalCapn(bc mdefs.DSPreImage) error {
 	return b.ValidateDeposit()
 }
 
-// MarshalCapn marshals the object into its capnproto definition
+// MarshalCapn marshals the object into its capnproto definition.
 func (b *DSPreImage) MarshalCapn(seg *capnp.Segment) (mdefs.DSPreImage, error) {
 	if b == nil {
 		return mdefs.DSPreImage{}, errorz.ErrInvalid{}.New("dspi.marshalCapn; dspi not initialized")
@@ -163,7 +164,7 @@ func (b *DSPreImage) MarshalCapn(seg *capnp.Segment) (mdefs.DSPreImage, error) {
 	return bc, nil
 }
 
-// PreHash returns the PreHash of the object
+// PreHash returns the PreHash of the object.
 func (b *DSPreImage) PreHash() ([]byte, error) {
 	if b == nil {
 		return nil, errorz.ErrInvalid{}.New("dspi.preHash; dspi not initialized")
@@ -176,7 +177,7 @@ func (b *DSPreImage) PreHash() ([]byte, error) {
 	return hsh, nil
 }
 
-// RemainingValue returns remaining value at the time of consumption
+// RemainingValue returns remaining value at the time of consumption.
 func (b *DSPreImage) RemainingValue(currentHeight uint32) (*uint256.Uint256, error) {
 	if b == nil {
 		return nil, errorz.ErrInvalid{}.New("dspi.remainingValue; dspi not initialized")
@@ -204,7 +205,7 @@ func (b *DSPreImage) RemainingValue(currentHeight uint32) (*uint256.Uint256, err
 	return result, nil
 }
 
-// Value returns the value stored in the object at the time of creation
+// Value returns the value stored in the object at the time of creation.
 func (b *DSPreImage) Value() (*uint256.Uint256, error) {
 	if b == nil {
 		return nil, errorz.ErrInvalid{}.New("dspi.value; dspi not initialized")
@@ -219,7 +220,7 @@ func (b *DSPreImage) Value() (*uint256.Uint256, error) {
 }
 
 // ValidatePreSignature validates the signature of the datastore at the time of
-// creation
+// creation.
 func (b *DSPreImage) ValidatePreSignature(msg []byte, sig *DataStoreSignature) error {
 	if b == nil {
 		return errorz.ErrInvalid{}.New("dspi.validatePreSignature; dspi not initialized")
@@ -228,7 +229,7 @@ func (b *DSPreImage) ValidatePreSignature(msg []byte, sig *DataStoreSignature) e
 }
 
 // ValidateSignature validates the signature of the datastore at the time of
-// consumption
+// consumption.
 func (b *DSPreImage) ValidateSignature(currentHeight uint32, msg []byte, sig *DataStoreSignature) error {
 	if b == nil {
 		return errorz.ErrInvalid{}.New("dspi.validateSignature; dspi not initialized")
@@ -240,7 +241,7 @@ func (b *DSPreImage) ValidateSignature(currentHeight uint32, msg []byte, sig *Da
 	return b.Owner.ValidateSignature(msg, sig, isExpired)
 }
 
-// IsExpired returns true if the datastore is free for garbage collection
+// IsExpired returns true if the datastore is free for garbage collection.
 func (b *DSPreImage) IsExpired(currentHeight uint32) (bool, error) {
 	if b == nil {
 		return true, errorz.ErrInvalid{}.New("dspi.isExpired; dspi not initialized")
@@ -256,7 +257,7 @@ func (b *DSPreImage) IsExpired(currentHeight uint32) (bool, error) {
 }
 
 // EpochOfExpiration returns the epoch in which the datastore may be garbage
-// collected
+// collected.
 func (b *DSPreImage) EpochOfExpiration() (uint32, error) {
 	if b == nil {
 		return 0, errorz.ErrInvalid{}.New("dspi.epochOfExpiration; dspi not initialized")
@@ -335,7 +336,7 @@ func (b *DSPreImage) ValidateDeposit() error {
 
 // RewardDepositEquation allows a reward calculated for cleaning up an expired
 // DataStore.
-func RewardDepositEquation(deposit *uint256.Uint256, dataSize32 uint32, epochInitial uint32, epochFinal uint32) (*uint256.Uint256, error) {
+func RewardDepositEquation(deposit *uint256.Uint256, dataSize32, epochInitial, epochFinal uint32) (*uint256.Uint256, error) {
 	if deposit == nil {
 		return nil, errorz.ErrInvalid{}.New("rewardDepositEquation: deposit is nil")
 	}
@@ -379,7 +380,7 @@ func RewardDepositEquation(deposit *uint256.Uint256, dataSize32 uint32, epochIni
 // The simple equation is
 //
 //		deposit = (dataSize + BaseDatasizeConst) * (2 + numEpochs)
-func BaseDepositEquation(dataSize32 uint32, numEpochs32 uint32) (*uint256.Uint256, error) {
+func BaseDepositEquation(dataSize32, numEpochs32 uint32) (*uint256.Uint256, error) {
 	if dataSize32 > constants.MaxDataStoreSize {
 		// dataSize is too large so we do not perform any checks
 		return nil, errorz.ErrInvalid{}.New("baseDepositEquation: dataSize is too large")
