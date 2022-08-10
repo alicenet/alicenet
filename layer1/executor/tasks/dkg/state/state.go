@@ -5,6 +5,11 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/dgraph-io/badger/v2"
+	"github.com/ethereum/go-ethereum/accounts"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/sirupsen/logrus"
+
 	"github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/constants/dbprefix"
 	"github.com/alicenet/alicenet/crypto/bn256"
@@ -12,10 +17,6 @@ import (
 	"github.com/alicenet/alicenet/layer1/executor/tasks"
 	"github.com/alicenet/alicenet/logging"
 	"github.com/alicenet/alicenet/utils"
-	"github.com/dgraph-io/badger/v2"
-	"github.com/ethereum/go-ethereum/accounts"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/sirupsen/logrus"
 )
 
 // EthDKGPhase is used to indicate what phase we are currently in.
@@ -204,7 +205,7 @@ func (state *DkgState) OnGPKJSubmissionComplete(disputeGPKjStartBlock uint64) {
 }
 
 // OnKeyShareSubmitted processes data from KeyShareSubmitted event.
-func (state *DkgState) OnKeyShareSubmitted(account common.Address, keyShareG1 [2]*big.Int, keyShareG1CorrectnessProof [2]*big.Int, keyShareG2 [4]*big.Int) {
+func (state *DkgState) OnKeyShareSubmitted(account common.Address, keyShareG1, keyShareG1CorrectnessProof [2]*big.Int, keyShareG2 [4]*big.Int) {
 	state.Phase = KeyShareSubmission
 
 	state.Participants[account].Phase = KeyShareSubmission

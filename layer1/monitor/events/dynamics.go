@@ -3,10 +3,11 @@ package events
 import (
 	"fmt"
 
-	"github.com/alicenet/alicenet/consensus/db"
-	"github.com/alicenet/alicenet/layer1"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/sirupsen/logrus"
+
+	"github.com/alicenet/alicenet/consensus/db"
+	"github.com/alicenet/alicenet/layer1"
 )
 
 // ProcessValueUpdated handles a dynamic value updating coming from our smart contract.

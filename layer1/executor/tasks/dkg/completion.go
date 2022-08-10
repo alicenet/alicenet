@@ -5,12 +5,13 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
+
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/layer1/executor/tasks"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
 	"github.com/alicenet/alicenet/utils"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
 )
 
 // CompletionTask contains required state for safely complete ETHDKG.
@@ -24,7 +25,7 @@ type CompletionTask struct {
 var _ tasks.Task = &CompletionTask{}
 
 // NewCompletionTask creates a background task that attempts to call Complete on ethdkg.
-func NewCompletionTask(start uint64, end uint64) *CompletionTask {
+func NewCompletionTask(start, end uint64) *CompletionTask {
 	return &CompletionTask{
 		BaseTask: tasks.NewBaseTask(start, end, false, nil),
 	}

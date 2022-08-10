@@ -5,11 +5,12 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
+
 	"github.com/alicenet/alicenet/layer1/executor/tasks"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/utils"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
 )
 
 // DisputeMissingGPKjTask stores the data required to dispute shares.
@@ -21,7 +22,7 @@ type DisputeMissingGPKjTask struct {
 var _ tasks.Task = &DisputeMissingGPKjTask{}
 
 // NewDisputeMissingGPKjTask creates a new task.
-func NewDisputeMissingGPKjTask(start uint64, end uint64) *DisputeMissingGPKjTask {
+func NewDisputeMissingGPKjTask(start, end uint64) *DisputeMissingGPKjTask {
 	return &DisputeMissingGPKjTask{
 		BaseTask: tasks.NewBaseTask(start, end, false, nil),
 	}

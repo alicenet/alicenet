@@ -6,14 +6,15 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/sirupsen/logrus"
+
 	"github.com/alicenet/alicenet/crypto"
 	"github.com/alicenet/alicenet/crypto/bn256"
 	"github.com/alicenet/alicenet/layer1/executor/tasks"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/utils"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/sirupsen/logrus"
 )
 
 // DisputeGPKjTask contains required state for performing a group accusation.
@@ -27,7 +28,7 @@ type DisputeGPKjTask struct {
 var _ tasks.Task = &DisputeGPKjTask{}
 
 // NewDisputeGPKjTask creates a background task that attempts perform a group accusation if necessary.
-func NewDisputeGPKjTask(start uint64, end uint64, address common.Address) *DisputeGPKjTask {
+func NewDisputeGPKjTask(start, end uint64, address common.Address) *DisputeGPKjTask {
 	return &DisputeGPKjTask{
 		BaseTask: tasks.NewBaseTask(start, end, true, nil),
 		Address:  address,

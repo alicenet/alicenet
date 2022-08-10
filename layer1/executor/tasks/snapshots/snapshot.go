@@ -4,12 +4,13 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/alicenet/alicenet/layer1/executor/tasks"
-	"github.com/alicenet/alicenet/layer1/executor/tasks/snapshots/state"
-	"github.com/alicenet/alicenet/utils"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/sirupsen/logrus"
+
+	"github.com/alicenet/alicenet/layer1/executor/tasks"
+	"github.com/alicenet/alicenet/layer1/executor/tasks/snapshots/state"
+	"github.com/alicenet/alicenet/utils"
 )
 
 // SnapshotTask pushes a snapshot to Ethereum.
@@ -23,7 +24,7 @@ type SnapshotTask struct {
 // asserting that SnapshotTask struct implements interface tasks.Task.
 var _ tasks.Task = &SnapshotTask{}
 
-func NewSnapshotTask(height uint64, numOfValidators int, validatorIndex int) *SnapshotTask {
+func NewSnapshotTask(height uint64, numOfValidators, validatorIndex int) *SnapshotTask {
 	snapshotTask := &SnapshotTask{
 		BaseTask:        tasks.NewBaseTask(0, 0, false, nil),
 		Height:          height,

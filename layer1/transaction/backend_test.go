@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"testing"
 
-	"testing"
-
 	"github.com/stretchr/testify/assert"
 )
 

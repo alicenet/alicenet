@@ -5,10 +5,11 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/ethereum/go-ethereum/core/types"
+
 	"github.com/alicenet/alicenet/layer1/executor/tasks"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/utils"
-	"github.com/ethereum/go-ethereum/core/types"
 )
 
 // RegisterTask contains required state for safely performing a registration.
@@ -20,7 +21,7 @@ type RegisterTask struct {
 var _ tasks.Task = &RegisterTask{}
 
 // NewRegisterTask creates a background task that attempts to register with ETHDKG.
-func NewRegisterTask(start uint64, end uint64) *RegisterTask {
+func NewRegisterTask(start, end uint64) *RegisterTask {
 	return &RegisterTask{
 		BaseTask: tasks.NewBaseTask(start, end, false, nil),
 	}

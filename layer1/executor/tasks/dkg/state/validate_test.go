@@ -6,13 +6,14 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
 	dkgTestUtils "github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests/utils"
 	"github.com/alicenet/alicenet/layer1/tests"
 	"github.com/alicenet/alicenet/logging"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/sirupsen/logrus"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestMath_VerifyDistributedSharesGood1(t *testing.T) {

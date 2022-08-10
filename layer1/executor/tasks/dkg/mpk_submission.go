@@ -6,14 +6,15 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
+
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/crypto"
 	"github.com/alicenet/alicenet/crypto/bn256"
 	"github.com/alicenet/alicenet/layer1/executor/tasks"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
 	"github.com/alicenet/alicenet/utils"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
 )
 
 // MPKSubmissionTask stores the data required to submit the mpk.
@@ -27,7 +28,7 @@ type MPKSubmissionTask struct {
 var _ tasks.Task = &MPKSubmissionTask{}
 
 // NewMPKSubmissionTask creates a new task.
-func NewMPKSubmissionTask(start uint64, end uint64) *MPKSubmissionTask {
+func NewMPKSubmissionTask(start, end uint64) *MPKSubmissionTask {
 	return &MPKSubmissionTask{
 		BaseTask: tasks.NewBaseTask(start, end, false, nil),
 	}

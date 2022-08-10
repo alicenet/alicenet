@@ -5,10 +5,11 @@ import (
 	"errors"
 	"sync"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/layer1"
 	"github.com/alicenet/alicenet/layer1/transaction"
-	"github.com/sirupsen/logrus"
 )
 
 // TaskAction is an enumeration indicating the actions that the scheduler
@@ -79,7 +80,7 @@ type BaseTask struct {
 // NewBaseTask creates a new Base task. BaseTask should be the base of any task.
 // This function is called outside the scheduler to create the object to be
 // scheduled.
-func NewBaseTask(start uint64, end uint64, allowMultiExecution bool, subscribeOptions *transaction.SubscribeOptions) *BaseTask {
+func NewBaseTask(start, end uint64, allowMultiExecution bool, subscribeOptions *transaction.SubscribeOptions) *BaseTask {
 	ctx, cf := context.WithCancel(context.Background())
 
 	return &BaseTask{
@@ -95,7 +96,7 @@ func NewBaseTask(start uint64, end uint64, allowMultiExecution bool, subscribeOp
 // Initialize initializes the task after its creation. It should be only called
 // by the task scheduler during task spawn as separated go routine. This
 // function all the parameters for task execution and control by the scheduler.
-func (bt *BaseTask) Initialize(ctx context.Context, cancelFunc context.CancelFunc, database *db.Database, logger *logrus.Entry, eth layer1.Client, contracts layer1.AllSmartContracts, name string, id string, taskResponseChan TaskResponseChan) error {
+func (bt *BaseTask) Initialize(ctx context.Context, cancelFunc context.CancelFunc, database *db.Database, logger *logrus.Entry, eth layer1.Client, contracts layer1.AllSmartContracts, name, id string, taskResponseChan TaskResponseChan) error {
 	bt.Lock()
 	defer bt.Unlock()
 	if bt.isInitialized {

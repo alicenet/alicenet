@@ -5,9 +5,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/ethereum/go-ethereum/core/types"
+
 	"github.com/alicenet/alicenet/layer1/executor/tasks"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
-	"github.com/ethereum/go-ethereum/core/types"
 )
 
 // ShareDistributionTask stores the state required safely distribute shares.
@@ -19,7 +20,7 @@ type ShareDistributionTask struct {
 var _ tasks.Task = &ShareDistributionTask{}
 
 // NewShareDistributionTask creates a new task.
-func NewShareDistributionTask(start uint64, end uint64) *ShareDistributionTask {
+func NewShareDistributionTask(start, end uint64) *ShareDistributionTask {
 	return &ShareDistributionTask{
 		BaseTask: tasks.NewBaseTask(start, end, false, nil),
 	}

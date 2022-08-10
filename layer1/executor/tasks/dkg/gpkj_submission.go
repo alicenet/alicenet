@@ -5,11 +5,12 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/ethereum/go-ethereum/core/types"
+
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/layer1/executor/tasks"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
 	monInterfaces "github.com/alicenet/alicenet/layer1/monitor/interfaces"
-	"github.com/ethereum/go-ethereum/core/types"
 )
 
 // GPKjSubmissionTask contains required state for gpk submission.
@@ -22,7 +23,7 @@ type GPKjSubmissionTask struct {
 var _ tasks.Task = &GPKjSubmissionTask{}
 
 // NewGPKjSubmissionTask creates a background task that attempts to submit the gpkj in ETHDKG.
-func NewGPKjSubmissionTask(start uint64, end uint64, adminHandler monInterfaces.AdminHandler) *GPKjSubmissionTask {
+func NewGPKjSubmissionTask(start, end uint64, adminHandler monInterfaces.AdminHandler) *GPKjSubmissionTask {
 	return &GPKjSubmissionTask{
 		BaseTask:     tasks.NewBaseTask(start, end, false, nil),
 		adminHandler: adminHandler,

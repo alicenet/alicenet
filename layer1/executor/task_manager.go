@@ -7,6 +7,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/dgraph-io/badger/v2"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/sirupsen/logrus"
+
 	"github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/constants/dbprefix"
@@ -15,9 +19,6 @@ import (
 	"github.com/alicenet/alicenet/layer1/transaction"
 	"github.com/alicenet/alicenet/logging"
 	"github.com/alicenet/alicenet/utils"
-	"github.com/dgraph-io/badger/v2"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/sirupsen/logrus"
 )
 
 type TasksManager struct {
@@ -71,7 +72,7 @@ func (tm *TasksManager) GetTxBackup(uuid string) (*types.Transaction, bool) {
 
 // main function to manage a task. It basically an abstraction to handle the
 // task execution in a separate process.
-func (tm *TasksManager) ManageTask(mainCtx context.Context, task tasks.Task, name string, taskId string, database *db.Database, logger *logrus.Entry, eth layer1.Client, contracts layer1.AllSmartContracts, taskResponseChan tasks.TaskResponseChan) {
+func (tm *TasksManager) ManageTask(mainCtx context.Context, task tasks.Task, name, taskId string, database *db.Database, logger *logrus.Entry, eth layer1.Client, contracts layer1.AllSmartContracts, taskResponseChan tasks.TaskResponseChan) {
 	defer task.Close()
 	err := tm.processTask(mainCtx, task, name, taskId, database, logger, eth, contracts, taskResponseChan)
 	// Clean up in case the task was killed
@@ -82,7 +83,7 @@ func (tm *TasksManager) ManageTask(mainCtx context.Context, task tasks.Task, nam
 	task.Finish(err)
 }
 
-func (tm *TasksManager) processTask(mainCtx context.Context, task tasks.Task, name string, taskId string, database *db.Database, logger *logrus.Entry, eth layer1.Client, contracts layer1.AllSmartContracts, taskResponseChan tasks.TaskResponseChan) error {
+func (tm *TasksManager) processTask(mainCtx context.Context, task tasks.Task, name, taskId string, database *db.Database, logger *logrus.Entry, eth layer1.Client, contracts layer1.AllSmartContracts, taskResponseChan tasks.TaskResponseChan) error {
 	taskCtx, cf := context.WithCancel(mainCtx)
 	defer cf()
 	err := task.Initialize(taskCtx, cf, database, logger, eth, contracts, name, taskId, taskResponseChan)

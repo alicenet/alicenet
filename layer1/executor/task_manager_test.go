@@ -8,17 +8,18 @@ import (
 	"os"
 	"testing"
 
-	"github.com/alicenet/alicenet/consensus/db"
-	"github.com/alicenet/alicenet/layer1/executor/tasks"
-	"github.com/alicenet/alicenet/layer1/transaction"
-	"github.com/alicenet/alicenet/logging"
-	"github.com/alicenet/alicenet/test/mocks"
 	mockrequire "github.com/derision-test/go-mockgen/testutil/require"
 	"github.com/dgraph-io/badger/v2"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/alicenet/alicenet/consensus/db"
+	"github.com/alicenet/alicenet/layer1/executor/tasks"
+	"github.com/alicenet/alicenet/layer1/transaction"
+	"github.com/alicenet/alicenet/logging"
+	"github.com/alicenet/alicenet/test/mocks"
 )
 
 func getTaskManager(t *testing.T) (*TasksManager, *mocks.MockClient, *db.Database, *taskResponseChan, *mocks.MockWatcher, *mocks.MockAllSmartContracts) {

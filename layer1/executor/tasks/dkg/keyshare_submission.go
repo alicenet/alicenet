@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/ethereum/go-ethereum/core/types"
+
 	"github.com/alicenet/alicenet/layer1/executor/tasks"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
-	"github.com/ethereum/go-ethereum/core/types"
 )
 
 // KeyShareSubmissionTask is the task for submitting KeyShare information.
@@ -19,7 +20,7 @@ type KeyShareSubmissionTask struct {
 var _ tasks.Task = &KeyShareSubmissionTask{}
 
 // NewKeyShareSubmissionTask creates a new task.
-func NewKeyShareSubmissionTask(start uint64, end uint64) *KeyShareSubmissionTask {
+func NewKeyShareSubmissionTask(start, end uint64) *KeyShareSubmissionTask {
 	return &KeyShareSubmissionTask{
 		BaseTask: tasks.NewBaseTask(start, end, false, nil),
 	}

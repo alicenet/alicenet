@@ -6,14 +6,15 @@ import (
 	"crypto/rand"
 	"fmt"
 
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/sirupsen/logrus"
+
 	"github.com/alicenet/alicenet/crypto/bn256"
 	"github.com/alicenet/alicenet/crypto/bn256/cloudflare"
 	"github.com/alicenet/alicenet/layer1/executor/tasks"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/utils"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/sirupsen/logrus"
 )
 
 // DisputeShareDistributionTask stores the data required to dispute shares.
@@ -27,7 +28,7 @@ type DisputeShareDistributionTask struct {
 var _ tasks.Task = &DisputeShareDistributionTask{}
 
 // NewDisputeShareDistributionTask creates a new task.
-func NewDisputeShareDistributionTask(start uint64, end uint64, address common.Address) *DisputeShareDistributionTask {
+func NewDisputeShareDistributionTask(start, end uint64, address common.Address) *DisputeShareDistributionTask {
 	return &DisputeShareDistributionTask{
 		BaseTask: tasks.NewBaseTask(start, end, true, nil),
 		Address:  address,

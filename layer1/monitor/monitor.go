@@ -9,6 +9,11 @@ import (
 	"sync"
 	"time"
 
+	"github.com/dgraph-io/badger/v2"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/sirupsen/logrus"
+
 	"github.com/alicenet/alicenet/config"
 	"github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/consensus/objs"
@@ -22,10 +27,6 @@ import (
 	"github.com/alicenet/alicenet/layer1/monitor/objects"
 	"github.com/alicenet/alicenet/logging"
 	"github.com/alicenet/alicenet/utils"
-	"github.com/dgraph-io/badger/v2"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/sirupsen/logrus"
 )
 
 // Monitor describes required functionality to monitor Ethereum.
@@ -82,7 +83,7 @@ func NewMonitor(cdb *db.Database,
 
 	State := objects.NewMonitorState()
 
-	adminHandler.RegisterSnapshotCallback(func(bh *objs.BlockHeader, numOfValidators int, validatorIndex int) error {
+	adminHandler.RegisterSnapshotCallback(func(bh *objs.BlockHeader, numOfValidators, validatorIndex int) error {
 		logger.Info("Entering snapshot callback")
 		return PersistSnapshot(eth, bh, numOfValidators, validatorIndex, taskRequestChan, monDB)
 	})
@@ -362,7 +363,7 @@ func ProcessEvents(eth layer1.Client, contracts layer1.AllSmartContracts, monito
 }
 
 // PersistSnapshot should be registered as a callback and be kicked off automatically by badger when appropriate.
-func PersistSnapshot(eth layer1.Client, bh *objs.BlockHeader, numOfValidators int, validatorIndex int, taskRequestChan chan<- tasks.TaskRequest, monDB *db.Database) error {
+func PersistSnapshot(eth layer1.Client, bh *objs.BlockHeader, numOfValidators, validatorIndex int, taskRequestChan chan<- tasks.TaskRequest, monDB *db.Database) error {
 	if bh == nil {
 		return errors.New("invalid blockHeader for snapshot")
 	}
@@ -466,7 +467,7 @@ func (es *eventSorter) worker() {
 }
 
 // getLogsConcurrentWithSort prepares the workers and start the processing.
-func getLogsConcurrentWithSort(ctx context.Context, addresses []common.Address, eth layer1.Client, processed uint64, lastBlock uint64) ([][]types.Log, error) {
+func getLogsConcurrentWithSort(ctx context.Context, addresses []common.Address, eth layer1.Client, processed, lastBlock uint64) ([][]types.Log, error) {
 	numworkers := utils.Max(utils.Min((utils.Max(lastBlock, processed)-utils.Min(lastBlock, processed))/4, 128), 1)
 	wc := make(chan *logWork, 3+numworkers)
 	go func() {

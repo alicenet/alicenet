@@ -12,10 +12,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/alicenet/alicenet/constants"
-	"github.com/alicenet/alicenet/crypto"
-	"github.com/alicenet/alicenet/layer1"
-	"github.com/alicenet/alicenet/logging"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -26,6 +22,11 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/sirupsen/logrus"
+
+	"github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/crypto"
+	"github.com/alicenet/alicenet/layer1"
+	"github.com/alicenet/alicenet/logging"
 )
 
 // Ethereum specific errors.
@@ -466,7 +467,7 @@ func (eth *Client) EndpointInSync(ctx context.Context) (bool, uint32, error) {
 }
 
 // Get ethereum events from a block range.
-func (eth *Client) GetEvents(ctx context.Context, firstBlock uint64, lastBlock uint64, addresses []common.Address) ([]types.Log, error) {
+func (eth *Client) GetEvents(ctx context.Context, firstBlock, lastBlock uint64, addresses []common.Address) ([]types.Log, error) {
 	logger := eth.logger
 
 	logger.Debugf("...GetEvents(firstBlock:%v,lastBlock:%v,addresses:%x)", firstBlock, lastBlock, addresses)
@@ -593,7 +594,7 @@ func (eth *Client) ExtractTransactionSender(tx *types.Transaction) (common.Addre
 }
 
 // Retry a transaction done by any of the known ethereum accounts.
-func (eth *Client) RetryTransaction(ctx context.Context, tx *types.Transaction, baseFee *big.Int, gasTipCap *big.Int) (*types.Transaction, error) {
+func (eth *Client) RetryTransaction(ctx context.Context, tx *types.Transaction, baseFee, gasTipCap *big.Int) (*types.Transaction, error) {
 	fromAddr, err := eth.ExtractTransactionSender(tx)
 	if err != nil {
 		return nil, err
@@ -713,7 +714,7 @@ func GetValidators(eth layer1.Client, contracts layer1.EthereumContracts, logger
 }
 
 // TransferEther transfer's ether from one account to another, assumes from is unlocked.
-func TransferEther(eth layer1.Client, logger *logrus.Entry, from common.Address, to common.Address, wei *big.Int) (*types.Transaction, error) {
+func TransferEther(eth layer1.Client, logger *logrus.Entry, from, to common.Address, wei *big.Int) (*types.Transaction, error) {
 	ctx, cancel := eth.GetTimeoutContext()
 	defer cancel()
 
@@ -766,7 +767,7 @@ func TransferEther(eth layer1.Client, logger *logrus.Entry, from common.Address,
 }
 
 // Function to compute the gas fee that will be valid for the next 8 full blocks before we are priced out.
-func ComputeGasFeeCap(eth layer1.Client, baseFee *big.Int, tipCap *big.Int) (*big.Int, error) {
+func ComputeGasFeeCap(eth layer1.Client, baseFee, tipCap *big.Int) (*big.Int, error) {
 	baseFeeMultiplied := new(big.Int).Mul(big.NewInt(constants.EthereumBaseFeeMultiplier), baseFee)
 	feeCap := new(big.Int).Add(baseFeeMultiplied, tipCap)
 	if feeCap.Cmp(eth.GetTxMaxGasFeeAllowed()) > 0 {

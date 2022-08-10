@@ -61,7 +61,7 @@ func GetHardhatBinPath() string {
 	return filepath.Join(GetHardhatPackagePath(), "node_modules", ".bin", "hardhat")
 }
 
-func GenerateHardhatConfig(tempDir string, hardhatPath string, endPoint string) string {
+func GenerateHardhatConfig(tempDir, hardhatPath, endPoint string) string {
 	configTemplate := `
 	import "%[1]s/node_modules/@nomiclabs/hardhat-ethers";
 	import "%[1]s/node_modules/@nomiclabs/hardhat-truffle5";
@@ -161,7 +161,7 @@ func StartHardHatNodeWithDefaultHost() (*Hardhat, error) {
 	return StartHardHatNode("127.0.0.1", "8545")
 }
 
-func StartHardHatNode(hostname string, port string) (*Hardhat, error) {
+func StartHardHatNode(hostname, port string) (*Hardhat, error) {
 	sanitizedHostname := ""
 	sanitizedPort := ""
 	if strings.Contains(hostname, "http://") || strings.Contains(hostname, "https://") {
@@ -304,7 +304,7 @@ func (h *Hardhat) IsHardHatRunning() (bool, error) {
 	return false, nil
 }
 
-func (h *Hardhat) DeployFactoryAndContracts(tmpDir string, baseFilesDir string) (string, error) {
+func (h *Hardhat) DeployFactoryAndContracts(tmpDir, baseFilesDir string) (string, error) {
 	modulesDir := GetHardhatPackagePath()
 	output, err := executeCommand(
 		modulesDir,
@@ -364,7 +364,7 @@ func (h *Hardhat) RegisterValidators(factoryAddress string, validators []string)
 }
 
 // SendCommandViaRPC sends a command to the hardhat server via an RPC call.
-func SendCommandViaRPC(url string, command string, params ...interface{}) error {
+func SendCommandViaRPC(url, command string, params ...interface{}) error {
 	commandJson := &ethereum.JsonRPCMessage{
 		Version: "2.0",
 		ID:      []byte("1"),

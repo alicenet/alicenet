@@ -5,11 +5,12 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
+
 	"github.com/alicenet/alicenet/layer1/executor/tasks"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/utils"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
 )
 
 // DisputeMissingRegistrationTask contains required state for accusing missing registrations.
@@ -21,7 +22,7 @@ type DisputeMissingRegistrationTask struct {
 var _ tasks.Task = &DisputeMissingRegistrationTask{}
 
 // NewDisputeMissingRegistrationTask creates a background task to accuse missing registrations during ETHDKG.
-func NewDisputeMissingRegistrationTask(start uint64, end uint64) *DisputeMissingRegistrationTask {
+func NewDisputeMissingRegistrationTask(start, end uint64) *DisputeMissingRegistrationTask {
 	return &DisputeMissingRegistrationTask{
 		BaseTask: tasks.NewBaseTask(start, end, false, nil),
 	}

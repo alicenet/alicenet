@@ -18,7 +18,7 @@ func NewTaskErr(message string, isRecoverable bool) *TaskErr {
 }
 
 const (
-	//Common errors.
+	// Common errors.
 	ErrorLoadingDkgState              = "error loading dkgState: %v"
 	ErrorDuringPreparation            = "error during the preparation: %v"
 	ErrorGettingAccusableParticipants = "error getting accusableParticipants: %v"
