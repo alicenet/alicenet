@@ -108,7 +108,6 @@ describe("Snapshot Ring Buffer library Successes", async () => {
   });
 
   it("Gets the right Snapshot", async () => {
-    //fill with 3 snapshots
     await snapshotRingBufferMock.safeSet(snapshot1);
     expect(await snapshotRingBufferMock.getSnapshotCheck(1)).to.be.deep.equals(
       snapshot1
