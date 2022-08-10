@@ -117,6 +117,147 @@ describe("Sigmoid unit tests", async () => {
       const retSqrt = await sigmoid.sqrt(x);
       expect(retSqrt).to.be.equal(trueSqrt);
     });
+    it("Integer Square Root 17:    (2**128 - 1)**2", async function () {
+      const x = BigNumber.from(
+        "0xfffffffffffffffffffffffffffffffe00000000000000000000000000000001"
+      );
+      const trueSqrt = BigNumber.from("0xffffffffffffffffffffffffffffffff");
+      const retSqrt = await sigmoid.sqrt(x);
+      expect(retSqrt).to.be.equal(trueSqrt);
+    });
+    it("Integer Square Root 18:    (2**128 - 1)**2 - 1", async function () {
+      const x = BigNumber.from(
+        "0xfffffffffffffffffffffffffffffffe00000000000000000000000000000000"
+      );
+      const trueSqrt = BigNumber.from("0xfffffffffffffffffffffffffffffffe");
+      const retSqrt = await sigmoid.sqrt(x);
+      expect(retSqrt).to.be.equal(trueSqrt);
+    });
+  });
+
+  describe("Integer Square Root Tests: Gas", async () => {
+    it("Integer Square Root 0:  0", async function () {
+      const x = 0;
+      const tx = await sigmoid.sqrtPublic(x);
+      const receipt = await tx.wait();
+      expect(receipt.status).to.eq(1);
+    });
+    it("Integer Square Root 1:  1", async function () {
+      const x = 1;
+      const tx = await sigmoid.sqrtPublic(x);
+      const receipt = await tx.wait();
+      expect(receipt.status).to.eq(1);
+    });
+    it("Integer Square Root 2:  4", async function () {
+      const x = 4;
+      const tx = await sigmoid.sqrtPublic(x);
+      const receipt = await tx.wait();
+      expect(receipt.status).to.eq(1);
+    });
+    it("Integer Square Root 3:  5", async function () {
+      const x = 5;
+      const tx = await sigmoid.sqrtPublic(x);
+      const receipt = await tx.wait();
+      expect(receipt.status).to.eq(1);
+    });
+    it("Integer Square Root 4:  10", async function () {
+      const x = 10;
+      const tx = await sigmoid.sqrtPublic(x);
+      const receipt = await tx.wait();
+      expect(receipt.status).to.eq(1);
+    });
+    it("Integer Square Root 5:  257", async function () {
+      const x = 257;
+      const tx = await sigmoid.sqrtPublic(x);
+      const receipt = await tx.wait();
+      expect(receipt.status).to.eq(1);
+    });
+    it("Integer Square Root 6:     2**15  - 19", async function () {
+      const x = 2 ** 15 - 19;
+      const tx = await sigmoid.sqrtPublic(x);
+      const receipt = await tx.wait();
+      expect(receipt.status).to.eq(1);
+    });
+    it("Integer Square Root 7:   3*2**16  + 5", async function () {
+      const x = 3 * 2 ** 16 + 5;
+      const tx = await sigmoid.sqrtPublic(x);
+      const receipt = await tx.wait();
+      expect(receipt.status).to.eq(1);
+    });
+    it("Integer Square Root 8:   5*2**31  - 27", async function () {
+      const x = 5 * 2 ** 31 - 27;
+      const tx = await sigmoid.sqrtPublic(x);
+      const receipt = await tx.wait();
+      expect(receipt.status).to.eq(1);
+    });
+    it("Integer Square Root 9:   7*2**32  + 9", async function () {
+      const x = 7 * 2 ** 32 + 9;
+      const tx = await sigmoid.sqrtPublic(x);
+      const receipt = await tx.wait();
+      expect(receipt.status).to.eq(1);
+    });
+    it("Integer Square Root 10: 11*2**63  - 9", async function () {
+      const x = BigNumber.from("0x57ffffffffffffff7");
+      const tx = await sigmoid.sqrtPublic(x);
+      const receipt = await tx.wait();
+      expect(receipt.status).to.eq(1);
+    });
+    it("Integer Square Root 11: 13*2**64  + 43", async function () {
+      const x = BigNumber.from("0xd000000000000002b");
+      const tx = await sigmoid.sqrtPublic(x);
+      const receipt = await tx.wait();
+      expect(receipt.status).to.eq(1);
+    });
+    it("Integer Square Root 12: 17*2**127 - 23", async function () {
+      const x = BigNumber.from("0x87fffffffffffffffffffffffffffffe9");
+      const tx = await sigmoid.sqrtPublic(x);
+      const receipt = await tx.wait();
+      expect(receipt.status).to.eq(1);
+    });
+    it("Integer Square Root 13: 19*2**128 + 109", async function () {
+      const x = BigNumber.from("0x130000000000000000000000000000006d");
+      const tx = await sigmoid.sqrtPublic(x);
+      const receipt = await tx.wait();
+      expect(receipt.status).to.eq(1);
+    });
+    it("Integer Square Root 14:    2**130 - 5", async function () {
+      const x = BigNumber.from("0x3fffffffffffffffffffffffffffffffb");
+      const tx = await sigmoid.sqrtPublic(x);
+      const receipt = await tx.wait();
+      expect(receipt.status).to.eq(1);
+    });
+    it("Integer Square Root 15:    2**255 - 19", async function () {
+      const x = BigNumber.from(
+        "0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffed"
+      );
+      const tx = await sigmoid.sqrtPublic(x);
+      const receipt = await tx.wait();
+      expect(receipt.status).to.eq(1);
+    });
+    it("Integer Square Root 16:    2**256 - 1", async function () {
+      const x = BigNumber.from(
+        "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+      );
+      const tx = await sigmoid.sqrtPublic(x);
+      const receipt = await tx.wait();
+      expect(receipt.status).to.eq(1);
+    });
+    it("Integer Square Root 17:    (2**128 - 1**2", async function () {
+      const x = BigNumber.from(
+        "0xfffffffffffffffffffffffffffffffe00000000000000000000000000000001"
+      );
+      const tx = await sigmoid.sqrtPublic(x);
+      const receipt = await tx.wait();
+      expect(receipt.status).to.eq(1);
+    });
+    it("Integer Square Root 18:    (2**128 - 1**2 - 1", async function () {
+      const x = BigNumber.from(
+        "0xfffffffffffffffffffffffffffffffe00000000000000000000000000000000"
+      );
+      const tx = await sigmoid.sqrtPublic(x);
+      const receipt = await tx.wait();
+      expect(receipt.status).to.eq(1);
+    });
   });
 
   describe("safeAbsSub Tests", async () => {
