@@ -5,39 +5,41 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/alicenet/alicenet/constants"
-	"github.com/alicenet/alicenet/dynamics"
-	"github.com/alicenet/alicenet/errorz"
-	"github.com/alicenet/alicenet/utils"
+	"github.com/dgraph-io/badger/v2"
+	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
 	"github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/consensus/lstate"
 	"github.com/alicenet/alicenet/consensus/objs"
+	"github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/dynamics"
+	"github.com/alicenet/alicenet/errorz"
 	"github.com/alicenet/alicenet/interfaces"
 	"github.com/alicenet/alicenet/logging"
 	pb "github.com/alicenet/alicenet/proto"
-	"github.com/dgraph-io/badger/v2"
-	"github.com/sirupsen/logrus"
+	"github.com/alicenet/alicenet/utils"
 )
 
-var _ pb.P2PGossipProposalHandler = (*Handlers)(nil)
-var _ pb.P2PGossipPreVoteHandler = (*Handlers)(nil)
-var _ pb.P2PGossipPreVoteNilHandler = (*Handlers)(nil)
-var _ pb.P2PGossipPreCommitHandler = (*Handlers)(nil)
-var _ pb.P2PGossipPreCommitNilHandler = (*Handlers)(nil)
-var _ pb.P2PGossipNextRoundHandler = (*Handlers)(nil)
-var _ pb.P2PGossipNextHeightHandler = (*Handlers)(nil)
-var _ pb.P2PGossipBlockHeaderHandler = (*Handlers)(nil)
-var _ pb.P2PGossipTransactionHandler = (*Handlers)(nil)
+var (
+	_ pb.P2PGossipProposalHandler     = (*Handlers)(nil)
+	_ pb.P2PGossipPreVoteHandler      = (*Handlers)(nil)
+	_ pb.P2PGossipPreVoteNilHandler   = (*Handlers)(nil)
+	_ pb.P2PGossipPreCommitHandler    = (*Handlers)(nil)
+	_ pb.P2PGossipPreCommitNilHandler = (*Handlers)(nil)
+	_ pb.P2PGossipNextRoundHandler    = (*Handlers)(nil)
+	_ pb.P2PGossipNextHeightHandler   = (*Handlers)(nil)
+	_ pb.P2PGossipBlockHeaderHandler  = (*Handlers)(nil)
+	_ pb.P2PGossipTransactionHandler  = (*Handlers)(nil)
+)
 
 type appHandler interface {
-	PendingTxAdd(txn *badger.Txn, chainID uint32, height uint32, tx []interfaces.Transaction) error
+	PendingTxAdd(txn *badger.Txn, chainID, height uint32, tx []interfaces.Transaction) error
 	UnmarshalTx([]byte) (interfaces.Transaction, error)
 }
 
-// Handlers consumes gossip and updates local state
+// Handlers consumes gossip and updates local state.
 type Handlers struct {
 	client pb.P2PClient
 
@@ -74,7 +76,7 @@ func (mb *Handlers) getLock(ctx context.Context) (interfaces.Lockable, bool) {
 
 // Init will initialize the gossip consumer
 // it must be run at least once and will have no
-// effect if run more than once
+// effect if run more than once.
 func (mb *Handlers) Init(chainID uint32, database *db.Database, client pb.P2PClient, app appHandler, handlers *lstate.Handlers, storage dynamics.StorageGetter) {
 	mb.logger = logging.GetLogger(constants.LoggerGossipBus)
 	mb.client = client
@@ -96,12 +98,12 @@ func (mb *Handlers) Init(chainID uint32, database *db.Database, client pb.P2PCli
 }
 
 // Close will shut down the gossip system such that it can not be
-// restarted
+// restarted.
 func (mb *Handlers) Close() {
 	mb.cancelCtx()
 }
 
-// Done blocks until the service has an exit
+// Done blocks until the service has an exit.
 func (mb *Handlers) Done() <-chan struct{} {
 	return mb.ctx.Done()
 }
@@ -157,7 +159,7 @@ func (mb *Handlers) heightAndSync() (uint32, uint32, bool, bool, error) {
 // HandleP2PGossipTransaction adds a transaction to the database
 // This method should be invoked when a remote peer
 // sends this type of object to the local node over
-// the gossip protocol
+// the gossip protocol.
 func (mb *Handlers) HandleP2PGossipTransaction(ctx context.Context, msg *pb.GossipTransactionMessage) (*pb.GossipTransactionAck, error) {
 	select {
 	case <-mb.ctx.Done():
@@ -201,7 +203,7 @@ func (mb *Handlers) HandleP2PGossipTransaction(ctx context.Context, msg *pb.Goss
 // HandleP2PGossipProposal adds a proposal to the database
 // This method should be invoked when a remote peer
 // sends this type of object to the local node over
-// the gossip protocol
+// the gossip protocol.
 func (mb *Handlers) HandleP2PGossipProposal(ctx context.Context, msg *pb.GossipProposalMessage) (*pb.GossipProposalAck, error) {
 	select {
 	case <-mb.ctx.Done():
@@ -239,7 +241,7 @@ func (mb *Handlers) HandleP2PGossipProposal(ctx context.Context, msg *pb.GossipP
 // HandleP2PGossipPreVote adds a preVote to the database
 // This method should be invoked when a remote peer
 // sends this type of object to the local node over
-// the gossip protocol
+// the gossip protocol.
 func (mb *Handlers) HandleP2PGossipPreVote(ctx context.Context, msg *pb.GossipPreVoteMessage) (*pb.GossipPreVoteAck, error) {
 	select {
 	case <-mb.ctx.Done():
@@ -277,7 +279,7 @@ func (mb *Handlers) HandleP2PGossipPreVote(ctx context.Context, msg *pb.GossipPr
 // HandleP2PGossipPreVoteNil adds a preVoteNil to the database
 // This method should be invoked when a remote peer
 // sends this type of object to the local node over
-// the gossip protocol
+// the gossip protocol.
 func (mb *Handlers) HandleP2PGossipPreVoteNil(ctx context.Context, msg *pb.GossipPreVoteNilMessage) (*pb.GossipPreVoteNilAck, error) {
 	select {
 	case <-mb.ctx.Done():
@@ -315,7 +317,7 @@ func (mb *Handlers) HandleP2PGossipPreVoteNil(ctx context.Context, msg *pb.Gossi
 // HandleP2PGossipPreCommit adds a preCommit to the database
 // This method should be invoked when a remote peer
 // sends this type of object to the local node over
-// the gossip protocol
+// the gossip protocol.
 func (mb *Handlers) HandleP2PGossipPreCommit(ctx context.Context, msg *pb.GossipPreCommitMessage) (*pb.GossipPreCommitAck, error) {
 	select {
 	case <-mb.ctx.Done():
@@ -353,7 +355,7 @@ func (mb *Handlers) HandleP2PGossipPreCommit(ctx context.Context, msg *pb.Gossip
 // HandleP2PGossipPreCommitNil adds a preCommitNil to the database
 // This method should be invoked when a remote peer
 // sends this type of object to the local node over
-// the gossip protocol
+// the gossip protocol.
 func (mb *Handlers) HandleP2PGossipPreCommitNil(ctx context.Context, msg *pb.GossipPreCommitNilMessage) (*pb.GossipPreCommitNilAck, error) {
 	select {
 	case <-mb.ctx.Done():
@@ -391,7 +393,7 @@ func (mb *Handlers) HandleP2PGossipPreCommitNil(ctx context.Context, msg *pb.Gos
 // HandleP2PGossipNextRound adds a nextRound to the database
 // This method should be invoked when a remote peer
 // sends this type of object to the local node over
-// the gossip protocol
+// the gossip protocol.
 func (mb *Handlers) HandleP2PGossipNextRound(ctx context.Context, msg *pb.GossipNextRoundMessage) (*pb.GossipNextRoundAck, error) {
 	select {
 	case <-mb.ctx.Done():
@@ -429,7 +431,7 @@ func (mb *Handlers) HandleP2PGossipNextRound(ctx context.Context, msg *pb.Gossip
 // HandleP2PGossipNextHeight adds a nextHeight to the database
 // This method should be invoked when a remote peer
 // sends this type of object to the local node over
-// the gossip protocol
+// the gossip protocol.
 func (mb *Handlers) HandleP2PGossipNextHeight(ctx context.Context, msg *pb.GossipNextHeightMessage) (*pb.GossipNextHeightAck, error) {
 	select {
 	case <-mb.ctx.Done():
@@ -467,7 +469,7 @@ func (mb *Handlers) HandleP2PGossipNextHeight(ctx context.Context, msg *pb.Gossi
 // HandleP2PGossipBlockHeader adds a nextHeight to the database
 // This method should be invoked when a remote peer
 // sends this type of object to the local node over
-// the gossip protocol
+// the gossip protocol.
 func (mb *Handlers) HandleP2PGossipBlockHeader(ctx context.Context, msg *pb.GossipBlockHeaderMessage) (*pb.GossipBlockHeaderAck, error) {
 	select {
 	case <-mb.ctx.Done():
