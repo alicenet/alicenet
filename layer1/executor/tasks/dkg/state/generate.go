@@ -12,14 +12,14 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-// Distributed Key Generation related errors
+// Distributed Key Generation related errors.
 var (
 	ErrInsufficientGoodSigners = errors.New("insufficient non-malicious signers to identify malicious signers")
 	ErrTooFew                  = errors.New("building array of size n with less than n required + optional")
 	ErrTooMany                 = errors.New("building array of size n with more than n required")
 )
 
-// Useful pseudo-constants
+// Useful pseudo-constants.
 var (
 	empty2Big     [2]*big.Int
 	empty4Big     [4]*big.Int
@@ -32,7 +32,7 @@ func ThresholdForUserCount(n int) int {
 	return crypto.CalcThreshold(n)
 }
 
-// InverseArrayForUserCount pre-calculates an inverse array for use by ethereum contracts
+// InverseArrayForUserCount pre-calculates an inverse array for use by ethereum contracts.
 func InverseArrayForUserCount(n int) ([]*big.Int, error) {
 	if n < 4 {
 		return nil, errors.New("invalid user count")
@@ -58,7 +58,7 @@ func InverseArrayForUserCount(n int) ([]*big.Int, error) {
 	return invArrayBig, nil
 }
 
-// GenerateKeys returns a private key and public key
+// GenerateKeys returns a private key and public key.
 func GenerateKeys() (*big.Int, [2]*big.Int, error) {
 	privateKey, publicKeyG1, err := cloudflare.RandomG1(rand.Reader)
 	if err != nil {
@@ -71,7 +71,7 @@ func GenerateKeys() (*big.Int, [2]*big.Int, error) {
 	return privateKey, publicKey, nil
 }
 
-// GenerateShares returns encrypted shares, private coefficients, and commitments
+// GenerateShares returns encrypted shares, private coefficients, and commitments.
 func GenerateShares(transportPrivateKey *big.Int, participants ParticipantList) ([]*big.Int, []*big.Int, [][2]*big.Int, error) {
 	if transportPrivateKey == nil {
 		return nil, nil, nil, errors.New("invalid transportPrivateKey")
@@ -137,7 +137,7 @@ func GenerateShares(transportPrivateKey *big.Int, participants ParticipantList) 
 	return encryptedShares, privateCoefficients, commitments, nil
 }
 
-// GenerateKeyShare returns G1 key share, G1 proof, and G2 key share
+// GenerateKeyShare returns G1 key share, G1 proof, and G2 key share.
 func GenerateKeyShare(secretValue *big.Int) ([2]*big.Int, [2]*big.Int, [4]*big.Int, error) {
 	if secretValue == nil {
 		return empty2Big, empty2Big, empty4Big, errors.New("missing secret value, aka private coefficient[0]")
@@ -187,7 +187,7 @@ func GenerateKeyShare(secretValue *big.Int) ([2]*big.Int, [2]*big.Int, [4]*big.I
 	return keyShareG1Big, keyShareDLEQProof, keyShareG2Big, nil
 }
 
-// GenerateMasterPublicKey returns the master public key
+// GenerateMasterPublicKey returns the master public key.
 func GenerateMasterPublicKey(keyShare1s [][2]*big.Int, keyShare2s [][4]*big.Int) ([4]*big.Int, error) {
 	if len(keyShare1s) != len(keyShare2s) {
 		return empty4Big, errors.New("len(keyShare1s) != len(keyshare2s)")
@@ -233,7 +233,7 @@ func GenerateMasterPublicKey(keyShare1s [][2]*big.Int, keyShare2s [][4]*big.Int)
 	return masterPublicKey, nil
 }
 
-// GenerateGroupKeys returns the group private key, group public key, and a signature
+// GenerateGroupKeys returns the group private key, group public key, and a signature.
 func GenerateGroupKeys(transportPrivateKey *big.Int, privateCoefficients []*big.Int, encryptedShares [][]*big.Int, index int, participants ParticipantList) (*big.Int, [4]*big.Int, error) {
 	// setup
 	n := len(participants)
@@ -290,7 +290,7 @@ func GenerateGroupKeys(transportPrivateKey *big.Int, privateCoefficients []*big.
 	return gskj, gpkjBig, nil
 }
 
-// ComputeDistributedSharesHash computes the distributed shares hash, encrypted shares hash and commitments hash
+// ComputeDistributedSharesHash computes the distributed shares hash, encrypted shares hash and commitments hash.
 func ComputeDistributedSharesHash(encryptedShares []*big.Int, commitments [][2]*big.Int) ([32]byte, [32]byte, [32]byte, error) {
 	var emptyBytes32 [32]byte
 
@@ -313,7 +313,7 @@ func ComputeDistributedSharesHash(encryptedShares []*big.Int, commitments [][2]*
 	copy(commitmentsHash[:], hashSlice)
 
 	// distributed shares hash
-	var distributedSharesBin = append(encryptedSharesHash[:], commitmentsHash[:]...)
+	distributedSharesBin := append(encryptedSharesHash[:], commitmentsHash[:]...)
 	hashSlice = crypto.Hasher(distributedSharesBin)
 	var distributedSharesHash [32]byte
 	copy(distributedSharesHash[:], hashSlice)

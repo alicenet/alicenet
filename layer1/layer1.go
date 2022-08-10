@@ -11,7 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 )
 
-// Client contains state information about a connection to the Ethereum node
+// Client contains state information about a connection to the Ethereum node.
 type Client interface {
 	Close()
 	IsAccessible() bool

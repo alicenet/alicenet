@@ -9,9 +9,8 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// ProcessValueUpdated handles a dynamic value updating coming from our smart contract
+// ProcessValueUpdated handles a dynamic value updating coming from our smart contract.
 func ProcessValueUpdated(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, log types.Log, monDB *db.Database) error {
-
 	logger.Info("ProcessValueUpdated() ...")
 
 	event, err := contracts.EthereumContracts().Governance().ParseValueUpdated(log)

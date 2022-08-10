@@ -163,7 +163,7 @@ func (g *group) sendReceipt(logger *logrus.Entry, receipt *types.Receipt, err er
 	}
 }
 
-// making sure that struct conforms the interface
+// making sure that struct conforms the interface.
 var _ ReceiptResponse = &SharedReceipt{}
 
 // A SharedReceipt retrieved by the watcher.
@@ -376,7 +376,6 @@ func (wb *WatcherBackend) PersistState() error {
 
 // Loop is a main loop where do all the backend actions.
 func (wb *WatcherBackend) Loop() {
-
 	wb.logger.Info(strings.Repeat("-", 80))
 	wb.logger.Infof("Current Monitored Txns: %d", len(wb.MonitoredTxns))
 	for txnHash, monitoredTxn := range wb.MonitoredTxns {
@@ -477,7 +476,6 @@ func (wb *WatcherBackend) queue(req SubscribeRequest) (*SharedReceipt, error) {
 // collectReceipts collects the receipt for all transactions that we have queued.
 // This function only gets the receipts once per block.
 func (wb *WatcherBackend) collectReceipts() {
-
 	lenMonitoredTxns := len(wb.MonitoredTxns)
 
 	// If there's no tx to be monitored just return

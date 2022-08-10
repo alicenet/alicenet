@@ -289,7 +289,6 @@ func GetETHDKGRegistrationOpened(logs []*types.Log, eth layer1.Client, contracts
 }
 
 func GenerateTestAddress(t *testing.T) (common.Address, *big.Int, [2]*big.Int) {
-
 	// Generating a valid ethereum address
 	key, _ := gcrypto.GenerateKey()
 	chainId := big.NewInt(1337)

@@ -18,7 +18,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// We complete everything correctly, happy path
+// We complete everything correctly, happy path.
 func TestCompletion_Group_1_AllGood(t *testing.T) {
 	numValidators := 4
 	fixture := setupEthereum(t, numValidators)
@@ -100,11 +100,10 @@ func TestCompletion_Group_1_AllGood(t *testing.T) {
 				assert.True(t, taskError.IsRecoverable())
 			}
 		}
-
 	}
 }
 
-// We complete everything correctly, but we do not complete in time
+// We complete everything correctly, but we do not complete in time.
 func TestCompletion_Group_1_Bad1(t *testing.T) {
 	numValidators := 6
 	fixture := setupEthereum(t, numValidators)

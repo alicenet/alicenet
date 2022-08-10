@@ -12,12 +12,12 @@ import (
 )
 
 // TaskAction is an enumeration indicating the actions that the scheduler
-// can do with a task during a request:
+// can do with a task during a request:.
 type TaskAction int
 
 // The possible actions that the scheduler can do with a task during a request:
 // * Kill          - To kill/prune a task type immediately
-// * Schedule      - To schedule a new task
+// * Schedule      - To schedule a new task.
 const (
 	Kill TaskAction = iota
 	Schedule

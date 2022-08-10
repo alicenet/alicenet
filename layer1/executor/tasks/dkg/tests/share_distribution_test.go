@@ -15,7 +15,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-//Here we test the happy path.
+// Here we test the happy path.
 func TestShareDistribution_Group_1_Good(t *testing.T) {
 	n := 5
 	fixture := setupEthereum(t, n)
@@ -249,7 +249,7 @@ func TestShareDistribution_Group_2_Bad5(t *testing.T) {
 }
 
 // We begin by submitting invalid information;
-// we submit nil state information
+// we submit nil state information.
 func TestShareDistribution_Group_2_Bad6(t *testing.T) {
 	n := 5
 	fixture := setupEthereum(t, n)

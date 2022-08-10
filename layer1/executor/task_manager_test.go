@@ -367,5 +367,4 @@ func Test_TaskManager_RecoveringTaskManager(t *testing.T) {
 	mockrequire.CalledOnce(t, task.ExecuteFunc)
 	mockrequire.CalledOnceWith(t, task.FinishFunc, mockrequire.Values(nil))
 	assert.Emptyf(t, manager.TxsBackup, "Expected transactions to be empty")
-
 }

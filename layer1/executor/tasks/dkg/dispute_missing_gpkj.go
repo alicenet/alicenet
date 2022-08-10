@@ -5,23 +5,22 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/core/types"
-
 	"github.com/alicenet/alicenet/layer1/executor/tasks"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/utils"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 )
 
-// DisputeMissingGPKjTask stores the data required to dispute shares
+// DisputeMissingGPKjTask stores the data required to dispute shares.
 type DisputeMissingGPKjTask struct {
 	*tasks.BaseTask
 }
 
-// asserting that DisputeMissingGPKjTask struct implements interface tasks.Task
+// asserting that DisputeMissingGPKjTask struct implements interface tasks.Task.
 var _ tasks.Task = &DisputeMissingGPKjTask{}
 
-// NewDisputeMissingGPKjTask creates a new task
+// NewDisputeMissingGPKjTask creates a new task.
 func NewDisputeMissingGPKjTask(start uint64, end uint64) *DisputeMissingGPKjTask {
 	return &DisputeMissingGPKjTask{
 		BaseTask: tasks.NewBaseTask(start, end, false, nil),
@@ -35,7 +34,7 @@ func (t *DisputeMissingGPKjTask) Prepare(ctx context.Context) *tasks.TaskErr {
 	return nil
 }
 
-// Execute executes the task business logic
+// Execute executes the task business logic.
 func (t *DisputeMissingGPKjTask) Execute(ctx context.Context) (*types.Transaction, *tasks.TaskErr) {
 	logger := t.GetLogger().WithField("method", "Execute()")
 	logger.Debug("initiate execution")
@@ -69,7 +68,7 @@ func (t *DisputeMissingGPKjTask) Execute(ctx context.Context) (*types.Transactio
 	return txn, nil
 }
 
-// ShouldExecute checks if it makes sense to execute the task
+// ShouldExecute checks if it makes sense to execute the task.
 func (t *DisputeMissingGPKjTask) ShouldExecute(ctx context.Context) (bool, *tasks.TaskErr) {
 	logger := t.GetLogger().WithField("method", "ShouldExecute()")
 	logger.Debug("should execute task")

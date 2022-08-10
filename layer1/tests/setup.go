@@ -27,7 +27,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// SetupPrivateKeys computes deterministic private keys for testing
+// SetupPrivateKeys computes deterministic private keys for testing.
 func SetupPrivateKeys(n int) []*ecdsa.PrivateKey {
 	if (n < 1) || (n >= 256) {
 		panic("invalid number for accounts")
@@ -62,7 +62,7 @@ func CreateAccounts(unitTestDirectory string, numAccounts int) (string, string, 
 	passCodePath := filepath.Join(unitTestDirectory, "passcodes.txt")
 	keystore := keystore.NewKeyStore(keyStorePath, keystore.StandardScryptN, keystore.StandardScryptP)
 	privateKeys := InitializePrivateKeys(numAccounts)
-	passCodesFile, err := os.OpenFile(passCodePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	passCodesFile, err := os.OpenFile(passCodePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
 	if err != nil {
 		panic(fmt.Errorf("failed to open/create passCode file: %v", err))
 	}

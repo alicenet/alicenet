@@ -14,7 +14,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts"
 )
 
-// asserting that SnapshotState struct implements interface tasks.ITaskState
+// asserting that SnapshotState struct implements interface tasks.ITaskState.
 var _ tasks.TaskState = &SnapshotState{}
 
 type SnapshotState struct {
@@ -59,7 +59,6 @@ func (state *SnapshotState) LoadState(txn *badger.Txn) error {
 	}
 
 	return nil
-
 }
 
 func GetSnapshotState(monDB *db.Database) (*SnapshotState, error) {

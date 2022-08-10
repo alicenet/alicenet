@@ -121,7 +121,7 @@ func TestMath_VerifyDistributedSharesGood4(t *testing.T) {
 	}
 	for idx := 0; idx < n; idx++ {
 		dkgStates[idx].Participants[badParticipant.Address].EncryptedShares = badEncryptedShares
-		//dkgStates[idx].Participants[badParticipant.Address].Commitments = nil
+		// dkgStates[idx].Participants[badParticipant.Address].Commitments = nil
 	}
 
 	// Loop through all participants and ensure that they all evaluate
@@ -192,7 +192,7 @@ func TestMath_VerifyDistributedSharesBad3(t *testing.T) {
 	participant.Address = participantState.Account.Address
 	dkgState.Participants[participant.Address] = participant
 
-	//Test after initial setup; nothing present
+	// Test after initial setup; nothing present
 	valid, present, err := state.VerifyDistributedShares(dkgState, participant)
 	assert.NotNil(t, err)
 	assert.False(t, present)
@@ -245,8 +245,8 @@ func TestMath_VerifyDistributedSharesBad3(t *testing.T) {
 	dkgState.Participants[participant.Address].Commitments = nil
 	dkgState.Participants[participant.Address].EncryptedShares = nil
 
-	//Make commitment list of correct length and valid;
-	//raise an error for invalid public key
+	// Make commitment list of correct length and valid;
+	// raise an error for invalid public key
 	commitments := make([][2]*big.Int, threshold+1)
 	for k := 0; k < len(commitments); k++ {
 		commitments[k] = [2]*big.Int{common.Big1, common.Big2}
@@ -388,14 +388,14 @@ func setupGroupSigners(t *testing.T, n int) ([4]*big.Int, [][4]*big.Int, []*stat
 	participants := []*state.Participant{}
 
 	for idx := 0; idx < n; idx++ {
-
 		address, privateKey, publicKey := dkgTestUtils.GenerateTestAddress(t)
 
 		privateKeys[address] = privateKey
 		participant := &state.Participant{
 			Address:   address,
 			Index:     idx + 1,
-			PublicKey: publicKey}
+			PublicKey: publicKey,
+		}
 
 		participants = append(participants, participant)
 	}
@@ -433,7 +433,7 @@ func setupGroupSigners(t *testing.T, n int) ([4]*big.Int, [][4]*big.Int, []*stat
 	assert.Nil(t, err, "failed to generate master public key")
 
 	publishedPublicKeys := [][4]*big.Int{}
-	//publishedSignatures := [][2]*big.Int{}
+	// publishedSignatures := [][2]*big.Int{}
 	for idx, participant := range participants {
 		privateKey := privateKeys[participant.Address]
 
@@ -441,7 +441,7 @@ func setupGroupSigners(t *testing.T, n int) ([4]*big.Int, [][4]*big.Int, []*stat
 		assert.Nil(t, err, "failed to generate group keys")
 
 		publishedPublicKeys = append(publishedPublicKeys, groupPublicKey)
-		//publishedSignatures = append(publishedSignatures, groupSignature)
+		// publishedSignatures = append(publishedSignatures, groupSignature)
 	}
 
 	return masterPublicKey, publishedPublicKeys, participants, commitmentArray

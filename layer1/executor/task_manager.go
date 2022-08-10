@@ -28,7 +28,7 @@ type TasksManager struct {
 	logger    *logrus.Entry                 `json:"-"`
 }
 
-// Creates a new TasksManager instance
+// Creates a new TasksManager instance.
 func NewTaskManager(txWatcher transaction.Watcher, database *db.Database, logger *logrus.Entry) (*TasksManager, error) {
 	taskManager := &TasksManager{
 		TxsBackup: make(map[string]*types.Transaction),
@@ -121,7 +121,7 @@ func (tm *TasksManager) processTask(mainCtx context.Context, task tasks.Task, na
 }
 
 // prepareTask executes task preparation. We keep retrying until the task is
-// killed, we get an unrecoverable error or we succeed
+// killed, we get an unrecoverable error or we succeed.
 func prepareTask(ctx context.Context, task tasks.Task, retryDelay time.Duration) error {
 	for {
 		select {
@@ -145,7 +145,7 @@ func prepareTask(ctx context.Context, task tasks.Task, retryDelay time.Duration)
 }
 
 // executeTask executes task business logic. We keep retrying until the task is
-// killed, we get an unrecoverable error or we succeed
+// killed, we get an unrecoverable error or we succeed.
 func (tm *TasksManager) executeTask(ctx context.Context, task tasks.Task, retryDelay time.Duration) error {
 	logger := task.GetLogger()
 	for {
@@ -277,7 +277,7 @@ func shouldExecute(ctx context.Context, task tasks.Task) (bool, error) {
 	return true, nil
 }
 
-// persist task manager state to disk
+// persist task manager state to disk.
 func (tm *TasksManager) persistState() error {
 	logger := logging.GetLogger("staterecover").WithField("State", "taskManager")
 	rawData, err := json.Marshal(tm)
@@ -306,7 +306,7 @@ func (tm *TasksManager) persistState() error {
 	return nil
 }
 
-// load task's manager state from database
+// load task's manager state from database.
 func (tm *TasksManager) loadState() error {
 	logger := logging.GetLogger("staterecover").WithField("State", "taskManager")
 	if err := tm.database.View(func(txn *badger.Txn) error {
@@ -334,7 +334,6 @@ func (tm *TasksManager) loadState() error {
 	}
 
 	return nil
-
 }
 
 // sleeps a certain amount of time also checking the context. It fails in case

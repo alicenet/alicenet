@@ -16,7 +16,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-//We test to ensure that everything behaves correctly.
+// We test to ensure that everything behaves correctly.
 func TestGPKjSubmission_Group_1_GoodAllValid(t *testing.T) {
 	n := 4
 	fixture := setupEthereum(t, n)

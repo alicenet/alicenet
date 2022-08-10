@@ -3,11 +3,12 @@
 package tests
 
 import (
+	"os"
+	"testing"
+
 	"github.com/alicenet/alicenet/layer1/tests"
 	"github.com/alicenet/alicenet/logging"
 	"github.com/stretchr/testify/assert"
-	"os"
-	"testing"
 )
 
 var HardHat *tests.Hardhat

@@ -170,7 +170,7 @@ func ProcessRegistrationComplete(eth layer1.Client, contracts layer1.AllSmartCon
 		return utils.LogReturnErrorf(logEntry, "Failed to save dkgState on ProcessRegistrationComplete: %v", err)
 	}
 
-	//Killing previous tasks
+	// Killing previous tasks
 	taskRequestChan <- tasks.NewKillTaskRequest(&dkg.RegisterTask{})
 	taskRequestChan <- tasks.NewKillTaskRequest(&dkg.DisputeMissingRegistrationTask{})
 
@@ -210,8 +210,8 @@ func UpdateStateOnRegistrationComplete(dkgState *state.DkgState, shareDistributi
 	shareDistEndBlock := shareDistStartBlock + dkgState.PhaseLength
 	shareDistributionTask := dkgtasks.NewShareDistributionTask(shareDistStartBlock, shareDistEndBlock)
 
-	var dispShareStartBlock = shareDistEndBlock
-	var dispShareEndBlock = dispShareStartBlock + dkgState.PhaseLength
+	dispShareStartBlock := shareDistEndBlock
+	dispShareEndBlock := dispShareStartBlock + dkgState.PhaseLength
 	disputeMissingShareDistributionTask := dkgtasks.NewDisputeMissingShareDistributionTask(dispShareStartBlock, dispShareEndBlock)
 	disputeBadSharesTasks := GetDisputeShareDistributionTasks(dkgState, dispShareStartBlock, dispShareEndBlock)
 
@@ -284,7 +284,7 @@ func ProcessShareDistributionComplete(eth layer1.Client, contracts layer1.AllSma
 		return utils.LogReturnErrorf(logEntry, "Failed to save dkgState on ProcessShareDistributionComplete: %v", err)
 	}
 
-	//Killing previous tasks
+	// Killing previous tasks
 	taskRequestChan <- tasks.NewKillTaskRequest(&dkg.ShareDistributionTask{})
 	taskRequestChan <- tasks.NewKillTaskRequest(&dkg.DisputeMissingShareDistributionTask{})
 	taskRequestChan <- tasks.NewKillTaskRequest(&dkg.DisputeShareDistributionTask{})
@@ -397,7 +397,7 @@ func ProcessKeyShareSubmissionComplete(eth layer1.Client, contracts layer1.AllSm
 		return utils.LogReturnErrorf(logEntry, "Failed to save dkgState on ProcessKeyShareSubmissionComplete: %v", err)
 	}
 
-	//Killing previous tasks
+	// Killing previous tasks
 	taskRequestChan <- tasks.NewKillTaskRequest(&dkg.KeyShareSubmissionTask{})
 	taskRequestChan <- tasks.NewKillTaskRequest(&dkg.DisputeMissingKeySharesTask{})
 
@@ -457,7 +457,7 @@ func ProcessMPKSet(eth layer1.Client, contracts layer1.AllSmartContracts, logger
 		return utils.LogReturnErrorf(logEntry, "Failed to save dkgState on ProcessMPKSet: %v", err)
 	}
 
-	//Killing previous tasks
+	// Killing previous tasks
 	taskRequestChan <- tasks.NewKillTaskRequest(&dkg.MPKSubmissionTask{})
 
 	// schedule GPKJSubmissionTask
@@ -534,7 +534,7 @@ func ProcessGPKJSubmissionComplete(eth layer1.Client, contracts layer1.AllSmartC
 		return utils.LogReturnErrorf(logEntry, "Failed to save dkgState on ProcessGPKJSubmissionComplete: %v", err)
 	}
 
-	//Killing previous tasks
+	// Killing previous tasks
 	taskRequestChan <- tasks.NewKillTaskRequest(&dkg.GPKjSubmissionTask{})
 	taskRequestChan <- tasks.NewKillTaskRequest(&dkg.DisputeMissingGPKjTask{})
 	taskRequestChan <- tasks.NewKillTaskRequest(&dkg.DisputeGPKjTask{})

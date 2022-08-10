@@ -168,7 +168,6 @@ func InitializeETHDKG(fixture *tests.ClientFixture, callOpts *bind.TransactOpts,
 }
 
 func StartFromRegistrationOpenPhase(t *testing.T, fixture *tests.ClientFixture, unregisteredValidators int, phaseLength uint16) *TestSuite {
-
 	eth := fixture.Client
 	ctx := context.Background()
 	owner := eth.GetDefaultAccount()
@@ -327,7 +326,7 @@ func StartFromShareDistributionPhase(t *testing.T, fixture *tests.ClientFixture,
 	var receiptResponses []transaction.ReceiptResponse
 	// Do Share Distribution task
 	for idx := 0; idx < n; idx++ {
-		var skipLoop = false
+		skipLoop := false
 
 		for _, undistIdx := range undistributedSharesIdx {
 			if idx == undistIdx {
@@ -386,7 +385,6 @@ func StartFromShareDistributionPhase(t *testing.T, fixture *tests.ClientFixture,
 			err = state.SaveDkgState(suite.DKGStatesDbs[j], participantDkgState)
 			assert.Nil(t, err)
 		}
-
 	}
 
 	tests.WaitGroupReceipts(t, suite.Eth, receiptResponses)
@@ -592,7 +590,7 @@ func StartFromGPKjPhase(t *testing.T, fixture *tests.ClientFixture, undistribute
 	suite.BadAddresses = make(map[common.Address]bool)
 	// Do GPKj Submission task
 	for idx := 0; idx < n; idx++ {
-		var skipLoop = false
+		skipLoop := false
 
 		for _, undistIdx := range undistributedGPKjIdx {
 			if idx == undistIdx {
@@ -651,7 +649,6 @@ func StartFromGPKjPhase(t *testing.T, fixture *tests.ClientFixture, undistribute
 			err = state.SaveDkgState(suite.DKGStatesDbs[j], participantDkgState)
 			assert.Nil(t, err)
 		}
-
 	}
 	tests.WaitGroupReceipts(t, suite.Eth, receiptResponses)
 

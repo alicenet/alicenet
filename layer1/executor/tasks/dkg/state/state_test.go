@@ -67,7 +67,6 @@ func TestDKGState_ParticipantListExtractIndices(t *testing.T) {
 }
 
 func TestDKGState_MarshalAndUnmarshalBigInt(t *testing.T) {
-
 	// generate transport keys
 	priv, pub, err := state.GenerateKeys()
 	assert.Nil(t, err)
@@ -143,7 +142,6 @@ func TestDKGState_MarshalAndUnmarshalParticipant(t *testing.T) {
 	err = json.Unmarshal(rawData, participant2)
 	assert.Nil(t, err)
 	assert.Equal(t, participant.PublicKey, participant2.PublicKey)
-
 }
 
 func TestDKGState_MarshalAndUnmarshalDkgState(t *testing.T) {

@@ -3,12 +3,15 @@ package transaction
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestInfoSaveAndLoad(t *testing.T) {
-	originalMap := map[FuncSelector]string{FuncSelector{1, 1, 1, 1}: "selector"}
+	originalMap := map[FuncSelector]string{{1, 1, 1, 1}: "selector"}
 	originalMapBytes, err := json.Marshal(originalMap)
 	assert.Nil(t, err)
 	fmt.Printf("%v\n", originalMap)

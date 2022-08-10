@@ -5,21 +5,20 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/core/types"
-
 	"github.com/alicenet/alicenet/layer1/executor/tasks"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
+	"github.com/ethereum/go-ethereum/core/types"
 )
 
-// KeyShareSubmissionTask is the task for submitting KeyShare information
+// KeyShareSubmissionTask is the task for submitting KeyShare information.
 type KeyShareSubmissionTask struct {
 	*tasks.BaseTask
 }
 
-// asserting that KeyShareSubmissionTask struct implements interface tasks.Task
+// asserting that KeyShareSubmissionTask struct implements interface tasks.Task.
 var _ tasks.Task = &KeyShareSubmissionTask{}
 
-// NewKeyShareSubmissionTask creates a new task
+// NewKeyShareSubmissionTask creates a new task.
 func NewKeyShareSubmissionTask(start uint64, end uint64) *KeyShareSubmissionTask {
 	return &KeyShareSubmissionTask{
 		BaseTask: tasks.NewBaseTask(start, end, false, nil),
@@ -68,7 +67,7 @@ func (t *KeyShareSubmissionTask) Prepare(ctx context.Context) *tasks.TaskErr {
 	return nil
 }
 
-// Execute executes the task business logic
+// Execute executes the task business logic.
 func (t *KeyShareSubmissionTask) Execute(ctx context.Context) (*types.Transaction, *tasks.TaskErr) {
 	logger := t.GetLogger().WithField("method", "Execute()")
 	logger.Debug("initiate execution")
@@ -107,7 +106,7 @@ func (t *KeyShareSubmissionTask) Execute(ctx context.Context) (*types.Transactio
 	return txn, nil
 }
 
-// ShouldExecute checks if it makes sense to execute the task
+// ShouldExecute checks if it makes sense to execute the task.
 func (t *KeyShareSubmissionTask) ShouldExecute(ctx context.Context) (bool, *tasks.TaskErr) {
 	logger := t.GetLogger().WithField("method", "ShouldExecute()")
 	logger.Debug("should execute task")

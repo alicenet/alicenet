@@ -25,7 +25,6 @@ func NewEventMap() *EventMap {
 }
 
 func (em *EventMap) registerLocked(ID string, name string, fn EventProcessor) error {
-
 	em.registry[ID] = &EventInformation{Processor: fn, Name: name}
 
 	return nil

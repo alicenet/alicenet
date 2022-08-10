@@ -8,7 +8,6 @@ import (
 
 	"github.com/alicenet/alicenet/layer1/tests"
 	"github.com/alicenet/alicenet/layer1/transaction"
-
 	"github.com/stretchr/testify/assert"
 )
 
@@ -34,8 +33,8 @@ func TestDisputeMissingRegistrationTask_Group_1_DoTaskSuccessOneParticipantAccus
 		assert.True(t, shouldExecute)
 
 		txn, taskErr := suite.DispMissingRegTasks[idx].Execute(ctx)
-		//after the first accusation the ethereum contracts will return that
-		//the validator is already accused
+		// after the first accusation the ethereum contracts will return that
+		// the validator is already accused
 		if idx == 0 {
 			assert.Nil(t, taskErr)
 			assert.NotNil(t, txn)
@@ -80,8 +79,8 @@ func TestDisputeMissingRegistrationTask_Group_1_DoTaskSuccessThreeParticipantAcc
 		assert.True(t, shouldExecute)
 
 		txn, taskErr := suite.DispMissingRegTasks[idx].Execute(ctx)
-		//after the first accusation the ethereum contracts will return that
-		//the validator is already accused
+		// after the first accusation the ethereum contracts will return that
+		// the validator is already accused
 		if idx == 0 {
 			assert.Nil(t, taskErr)
 			assert.NotNil(t, txn)
@@ -126,8 +125,8 @@ func TestDisputeMissingRegistrationTask_Group_1_DoTaskSuccessAllParticipantsAreB
 		assert.True(t, shouldExecute)
 
 		txn, taskErr := suite.DispMissingRegTasks[idx].Execute(ctx)
-		//after the first accusation the ethereum contracts will return that
-		//the validator is already accused
+		// after the first accusation the ethereum contracts will return that
+		// the validator is already accused
 		if idx == 0 {
 			assert.Nil(t, taskErr)
 			assert.NotNil(t, txn)

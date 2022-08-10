@@ -5,22 +5,21 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/core/types"
-
 	"github.com/alicenet/alicenet/layer1/executor/tasks"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/utils"
+	"github.com/ethereum/go-ethereum/core/types"
 )
 
-// RegisterTask contains required state for safely performing a registration
+// RegisterTask contains required state for safely performing a registration.
 type RegisterTask struct {
 	*tasks.BaseTask
 }
 
-// asserting that RegisterTask struct implements interface tasks.Task
+// asserting that RegisterTask struct implements interface tasks.Task.
 var _ tasks.Task = &RegisterTask{}
 
-// NewRegisterTask creates a background task that attempts to register with ETHDKG
+// NewRegisterTask creates a background task that attempts to register with ETHDKG.
 func NewRegisterTask(start uint64, end uint64) *RegisterTask {
 	return &RegisterTask{
 		BaseTask: tasks.NewBaseTask(start, end, false, nil),
@@ -32,7 +31,7 @@ func NewRegisterTask(start uint64, end uint64) *RegisterTask {
 // which will be used in the ShareDistribution phase for secure communication.
 // These keys are *not* used otherwise.
 // Also get the list of existing validators from the pool to assert accusation
-// in later phases
+// in later phases.
 func (t *RegisterTask) Prepare(ctx context.Context) *tasks.TaskErr {
 	logger := t.GetLogger().WithField("method", "Prepare()")
 	logger.Debugf("preparing task")
@@ -44,7 +43,6 @@ func (t *RegisterTask) Prepare(ctx context.Context) *tasks.TaskErr {
 
 	if dkgState.TransportPrivateKey == nil ||
 		dkgState.TransportPrivateKey.Cmp(big.NewInt(0)) == 0 {
-
 		logger.Debug("generating private-public transport keys")
 		// If this function fails, probably we got a bad random value. We can retry
 		// later to get a new value.
@@ -66,7 +64,7 @@ func (t *RegisterTask) Prepare(ctx context.Context) *tasks.TaskErr {
 	return nil
 }
 
-// Execute executes the task business logic
+// Execute executes the task business logic.
 func (t *RegisterTask) Execute(ctx context.Context) (*types.Transaction, *tasks.TaskErr) {
 	logger := t.GetLogger().WithField("method", "Execute()")
 	logger.Debug("initiate execution")
@@ -99,7 +97,7 @@ func (t *RegisterTask) Execute(ctx context.Context) (*types.Transaction, *tasks.
 	return txn, nil
 }
 
-// ShouldExecute checks if it makes sense to execute the task
+// ShouldExecute checks if it makes sense to execute the task.
 func (t *RegisterTask) ShouldExecute(ctx context.Context) (bool, *tasks.TaskErr) {
 	logger := t.GetLogger().WithField("method", "ShouldExecute()")
 	logger.Debug("should execute task")

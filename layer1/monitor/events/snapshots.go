@@ -10,9 +10,8 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// ProcessSnapshotTaken handles receiving snapshots
+// ProcessSnapshotTaken handles receiving snapshots.
 func ProcessSnapshotTaken(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, log types.Log, adminHandler monInterfaces.AdminHandler, taskRequestChan chan<- tasks.TaskRequest) error {
-
 	logger.Info("ProcessSnapshotTaken() ...")
 
 	c := contracts.EthereumContracts()
@@ -30,7 +29,8 @@ func ProcessSnapshotTaken(eth layer1.Client, contracts layer1.AllSmartContracts,
 		"Epoch":                    epoch,
 		"Height":                   event.Height,
 		"Validator":                event.Validator.Hex(),
-		"IsSafeToProceedConsensus": event.IsSafeToProceedConsensus}).Infof("Snapshot taken")
+		"IsSafeToProceedConsensus": event.IsSafeToProceedConsensus,
+	}).Infof("Snapshot taken")
 
 	// Retrieve snapshot information from contract
 	ctx, cancel := eth.GetTimeoutContext()

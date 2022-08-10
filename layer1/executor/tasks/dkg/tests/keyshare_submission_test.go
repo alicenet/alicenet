@@ -23,7 +23,6 @@ func TestKeyShareSubmission_GoodAllValid(t *testing.T) {
 
 	// Check key shares are present and valid
 	for idx, acct := range accounts {
-
 		dkgState, err := state.GetDkgState(suite.DKGStatesDbs[idx])
 		assert.Nil(t, err)
 
@@ -99,7 +98,5 @@ func TestKeyShareSubmission_Bad4(t *testing.T) {
 
 		_, err = keyshareSubmissionTask.Execute(ctx)
 		assert.NotNil(t, err)
-
 	}
-
 }
