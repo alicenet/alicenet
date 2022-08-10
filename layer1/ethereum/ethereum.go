@@ -12,10 +12,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/alicenet/alicenet/constants"
-	"github.com/alicenet/alicenet/crypto"
-	"github.com/alicenet/alicenet/layer1"
-	"github.com/alicenet/alicenet/logging"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -26,9 +22,14 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/sirupsen/logrus"
+
+	"github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/crypto"
+	"github.com/alicenet/alicenet/layer1"
+	"github.com/alicenet/alicenet/logging"
 )
 
-// Ethereum specific errors
+// Ethereum specific errors.
 var (
 	ErrAccountNotFound  = errors.New("could not find specified account")
 	ErrKeysNotFound     = errors.New("account either not found or not unlocked")
@@ -92,7 +93,7 @@ type Client struct {
 	endpointMinimumPeers uint64
 }
 
-// NewClient creates a new Ethereum abstraction
+// NewClient creates a new Ethereum abstraction.
 func NewClient(
 	endpoint string,
 	pathKeystore string,
@@ -101,8 +102,8 @@ func NewClient(
 	unlockAdditionalAccounts bool,
 	finalityDelay uint64,
 	txMaxGasFeeAllowedInGwei uint64,
-	endpointMinimumPeers uint64) (*Client, error) {
-
+	endpointMinimumPeers uint64,
+) (*Client, error) {
 	logger := logging.GetLogger("ethereum")
 
 	if txMaxGasFeeAllowedInGwei < constants.EthereumMinGasFeeAllowedInGwei {
@@ -169,7 +170,7 @@ func NewClient(
 	return eth, nil
 }
 
-//LoadAccounts Scans the directory specified and loads all the accounts found
+// LoadAccounts Scans the directory specified and loads all the accounts found.
 func (eth *Client) loadAccounts(directoryPath string) {
 	logger := eth.logger
 
@@ -190,7 +191,7 @@ func (eth *Client) loadAccounts(directoryPath string) {
 	eth.keystore = ks
 }
 
-// LoadPasscodes loads the specified passcode file
+// LoadPasscodes loads the specified passcode file.
 func (eth *Client) loadPassCodes(filePath string) error {
 	logger := eth.logger
 
@@ -229,9 +230,8 @@ func (eth *Client) loadPassCodes(filePath string) error {
 	return nil
 }
 
-// UnlockAccount unlocks the previously loaded account using the previously loaded passCodes
+// UnlockAccount unlocks the previously loaded account using the previously loaded passCodes.
 func (eth *Client) unlockAccount(acct accounts.Account) error {
-
 	eth.logger.Infof("Unlocking account address:%v", acct.Address.String())
 
 	accountInfo, accountNotFound := eth.accounts[acct.Address]
@@ -263,12 +263,12 @@ func (eth *Client) unlockAccount(acct accounts.Account) error {
 	return nil
 }
 
-// setDefaultAccount designates the account to be used by default
+// setDefaultAccount designates the account to be used by default.
 func (eth *Client) setDefaultAccount(acct accounts.Account) {
 	eth.defaultAccount = acct
 }
 
-// bump the tip cap for retries
+// bump the tip cap for retries.
 func (eth *Client) bumpTipCap(gasTipCap *big.Int) *big.Int {
 	// calculate percentage% increase in GasTipCap
 	gasTipCapPercent := new(big.Int).Mul(gasTipCap, big.NewInt(int64(constants.EthereumTipCapPercentageBump)))
@@ -277,9 +277,8 @@ func (eth *Client) bumpTipCap(gasTipCap *big.Int) *big.Int {
 	return resultTipCap
 }
 
-// getSyncProgress returns a flag if we are syncing, a pointer to a struct if we are, or an error
+// getSyncProgress returns a flag if we are syncing, a pointer to a struct if we are, or an error.
 func (eth *Client) getSyncProgress() (bool, *ethereum.SyncProgress, error) {
-
 	ctx, ctxCancel := eth.GetTimeoutContext()
 	defer ctxCancel()
 	progress, err := eth.internalClient.SyncProgress(ctx)
@@ -294,7 +293,7 @@ func (eth *Client) getSyncProgress() (bool, *ethereum.SyncProgress, error) {
 	return true, progress, nil
 }
 
-// Get the private key for an account
+// Get the private key for an account.
 func (eth *Client) getAccountKeys(addr common.Address) (*keystore.Key, error) {
 	accountInfo, ok := eth.accounts[addr]
 	if !ok || accountInfo.key == nil {
@@ -303,59 +302,59 @@ func (eth *Client) getAccountKeys(addr common.Address) (*keystore.Key, error) {
 	return accountInfo.key, nil
 }
 
-//ChainID returns the ID used to build ethereum client
+// ChainID returns the ID used to build ethereum client.
 func (eth *Client) GetChainID() *big.Int {
 	return eth.chainID
 }
 
-// Get finality delay
+// Get finality delay.
 func (eth *Client) GetFinalityDelay() uint64 {
 	return eth.finalityDelay
 }
 
-// close the ethereum client
+// close the ethereum client.
 func (eth *Client) Close() {
 	eth.internalClient.Close()
 }
 
-// wrapper around ethclient.TransactionByHash
+// wrapper around ethclient.TransactionByHash.
 func (eth *Client) GetTransactionByHash(ctx context.Context, txHash common.Hash) (tx *types.Transaction, isPending bool, err error) {
 	return eth.internalClient.TransactionByHash(ctx, txHash)
 }
 
-// wrapper around ethclient.TransactionReceipt
+// wrapper around ethclient.TransactionReceipt.
 func (eth *Client) GetTransactionReceipt(ctx context.Context, txHash common.Hash) (*types.Receipt, error) {
 	return eth.internalClient.TransactionReceipt(ctx, txHash)
 }
 
-// wrapper around ethclient.HeaderByNumber
+// wrapper around ethclient.HeaderByNumber.
 func (eth *Client) GetHeaderByNumber(ctx context.Context, number *big.Int) (*types.Header, error) {
 	return eth.internalClient.HeaderByNumber(ctx, number)
 }
 
-// wrapper around ethclient.BlockByNumber
+// wrapper around ethclient.BlockByNumber.
 func (eth *Client) GetBlockByNumber(ctx context.Context, number *big.Int) (*types.Block, error) {
 	return eth.internalClient.BlockByNumber(ctx, number)
 }
 
-// wrapper around ethclient.PendingNonceAt
+// wrapper around ethclient.PendingNonceAt.
 func (eth *Client) GetPendingNonce(ctx context.Context, account common.Address) (uint64, error) {
 	return eth.internalClient.PendingNonceAt(ctx, account)
 }
 
-// wrapper around ethclient.SendTransaction
+// wrapper around ethclient.SendTransaction.
 func (eth *Client) SendTransaction(ctx context.Context, tx *types.Transaction) error {
 	return eth.internalClient.SendTransaction(ctx, tx)
 }
 
 // How many blocks we should wait for removing a tx in case we don't find it in
-// the layer1 chain
+// the layer1 chain.
 func (eth *Client) GetTxNotFoundMaxBlocks() uint64 {
 	return constants.EthereumTxNotFoundMaxBlocks
 }
 
 // Number of blocks to wait for a tx in the memory pool w/o returning to the
-// caller asking for retry
+// caller asking for retry.
 func (eth *Client) GetTxMaxStaleBlocks() uint64 {
 	return constants.EthereumTxMaxStaleBlocks
 }
@@ -377,7 +376,7 @@ func (eth *Client) GetPeerCount(ctx context.Context) (uint64, error) {
 	return peerCount, nil
 }
 
-//IsAccessible checks against endpoint to confirm server responds
+// IsAccessible checks against endpoint to confirm server responds.
 func (eth *Client) IsAccessible() bool {
 	ctx, cancel := eth.GetTimeoutContext()
 	defer cancel()
@@ -390,7 +389,7 @@ func (eth *Client) IsAccessible() bool {
 	return false
 }
 
-// GetAccount returns the account specified
+// GetAccount returns the account specified.
 func (eth *Client) GetAccount(addr common.Address) (accounts.Account, error) {
 	accountInfo, accountFound := eth.accounts[addr]
 	if !accountFound {
@@ -400,12 +399,12 @@ func (eth *Client) GetAccount(addr common.Address) (accounts.Account, error) {
 	return accountInfo.account, nil
 }
 
-// GetDefaultAccount returns the default account
+// GetDefaultAccount returns the default account.
 func (eth *Client) GetDefaultAccount() accounts.Account {
 	return eth.defaultAccount
 }
 
-// GetBalance returns the ETHER balance of account specified
+// GetBalance returns the ETHER balance of account specified.
 func (eth *Client) GetBalance(addr common.Address) (*big.Int, error) {
 	ctx, cancel := eth.GetTimeoutContext()
 	defer cancel()
@@ -416,7 +415,7 @@ func (eth *Client) GetBalance(addr common.Address) (*big.Int, error) {
 	return balance, nil
 }
 
-// Get ip address where are connected to the ethereum node
+// Get ip address where are connected to the ethereum node.
 func (eth *Client) GetEndpoint() string {
 	return eth.endpoint
 }
@@ -432,13 +431,13 @@ func (eth *Client) GetKnownAccounts() []accounts.Account {
 	return accounts
 }
 
-// Get timeout context
+// Get timeout context.
 func (eth *Client) GetTimeoutContext() (context.Context, context.CancelFunc) {
 	return context.WithTimeout(context.Background(), constants.MonitorTimeout)
 }
 
 // EndpointInSync Checks if our endpoint is good to use
-// -- This function is different. Because we need to be aware of errors, State is always updated
+// -- This function is different. Because we need to be aware of errors, State is always updated.
 func (eth *Client) EndpointInSync(ctx context.Context) (bool, uint32, error) {
 	// Default to assuming everything is awful
 	inSync := false
@@ -467,9 +466,8 @@ func (eth *Client) EndpointInSync(ctx context.Context) (bool, uint32, error) {
 	return inSync, peerCount, err
 }
 
-// Get ethereum events from a block range
-func (eth *Client) GetEvents(ctx context.Context, firstBlock uint64, lastBlock uint64, addresses []common.Address) ([]types.Log, error) {
-
+// Get ethereum events from a block range.
+func (eth *Client) GetEvents(ctx context.Context, firstBlock, lastBlock uint64, addresses []common.Address) ([]types.Log, error) {
 	logger := eth.logger
 
 	logger.Debugf("...GetEvents(firstBlock:%v,lastBlock:%v,addresses:%x)", firstBlock, lastBlock, addresses)
@@ -477,7 +475,8 @@ func (eth *Client) GetEvents(ctx context.Context, firstBlock uint64, lastBlock u
 	query := ethereum.FilterQuery{
 		FromBlock: new(big.Int).SetUint64(firstBlock),
 		ToBlock:   new(big.Int).SetUint64(lastBlock),
-		Addresses: addresses}
+		Addresses: addresses,
+	}
 
 	logs, err := eth.internalClient.FilterLogs(ctx, query)
 	if err != nil {
@@ -495,12 +494,12 @@ func (eth *Client) GetEvents(ctx context.Context, firstBlock uint64, lastBlock u
 	return logs, nil
 }
 
-// Get the max gas fee allowed to perform transactions in WEI
+// Get the max gas fee allowed to perform transactions in WEI.
 func (eth *Client) GetTxMaxGasFeeAllowed() *big.Int {
 	return eth.txMaxGasFeeAllowed
 }
 
-// Get the base fee and suggestedGasTip for the latest ethereum block
+// Get the base fee and suggestedGasTip for the latest ethereum block.
 func (eth *Client) GetBlockBaseFeeAndSuggestedGasTip(ctx context.Context) (*big.Int, *big.Int, error) {
 	block, err := eth.internalClient.BlockByNumber(ctx, nil)
 	if err != nil && block == nil {
@@ -524,7 +523,7 @@ func (eth *Client) GetBlockBaseFeeAndSuggestedGasTip(ctx context.Context) (*big.
 	return baseFee, tipCap, nil
 }
 
-// Get transaction options in order to do a transaction
+// Get transaction options in order to do a transaction.
 func (eth *Client) GetTransactionOpts(ctx context.Context, account accounts.Account) (*bind.TransactOpts, error) {
 	opts, err := bind.NewKeyStoreTransactorWithChainID(eth.keystore, account, eth.chainID)
 	if err != nil {
@@ -567,7 +566,8 @@ func (eth *Client) GetCallOpts(ctx context.Context, account accounts.Account) (*
 		BlockNumber: finalizedHeight,
 		Context:     ctx,
 		Pending:     false,
-		From:        account.Address}, nil
+		From:        account.Address,
+	}, nil
 }
 
 // Function to call the smart contract state at the latest block seen by the
@@ -580,10 +580,11 @@ func (eth *Client) GetCallOptsLatestBlock(ctx context.Context, account accounts.
 		BlockNumber: nil,
 		Context:     ctx,
 		Pending:     false,
-		From:        account.Address}
+		From:        account.Address,
+	}
 }
 
-// Extracts the sender of a transaction
+// Extracts the sender of a transaction.
 func (eth *Client) ExtractTransactionSender(tx *types.Transaction) (common.Address, error) {
 	fromAddr, err := types.NewLondonSigner(eth.chainID).Sender(tx)
 	if err != nil {
@@ -593,7 +594,7 @@ func (eth *Client) ExtractTransactionSender(tx *types.Transaction) (common.Addre
 }
 
 // Retry a transaction done by any of the known ethereum accounts.
-func (eth *Client) RetryTransaction(ctx context.Context, tx *types.Transaction, baseFee *big.Int, gasTipCap *big.Int) (*types.Transaction, error) {
+func (eth *Client) RetryTransaction(ctx context.Context, tx *types.Transaction, baseFee, gasTipCap *big.Int) (*types.Transaction, error) {
 	fromAddr, err := eth.ExtractTransactionSender(tx)
 	if err != nil {
 		return nil, err
@@ -649,7 +650,7 @@ func (eth *Client) RetryTransaction(ctx context.Context, tx *types.Transaction, 
 	return signedTx, err
 }
 
-// Sign an ethereum transaction
+// Sign an ethereum transaction.
 func (eth *Client) SignTransaction(tx types.TxData, signerAddress common.Address) (*types.Transaction, error) {
 	signer := types.NewLondonSigner(eth.chainID)
 	userKey, err := eth.getAccountKeys(signerAddress)
@@ -663,12 +664,12 @@ func (eth *Client) SignTransaction(tx types.TxData, signerAddress common.Address
 	return signedTx, nil
 }
 
-// GetCurrentHeight gets the height of the endpoints chain
+// GetCurrentHeight gets the height of the endpoints chain.
 func (eth *Client) GetCurrentHeight(ctx context.Context) (uint64, error) {
 	return eth.internalClient.BlockNumber(ctx)
 }
 
-// GetFinalizedHeight gets the height of the endpoints chain at which is is considered finalized
+// GetFinalizedHeight gets the height of the endpoints chain at which is is considered finalized.
 func (eth *Client) GetFinalizedHeight(ctx context.Context) (uint64, error) {
 	height, err := eth.GetCurrentHeight(ctx)
 	if err != nil {
@@ -679,10 +680,9 @@ func (eth *Client) GetFinalizedHeight(ctx context.Context) (uint64, error) {
 		return 0, nil
 	}
 	return height - eth.finalityDelay, nil
-
 }
 
-// create a new signer for ETH accounts
+// create a new signer for ETH accounts.
 func (eth *Client) CreateSecp256k1Signer() (*crypto.Secp256k1Signer, error) {
 	secp256k1Signer := &crypto.Secp256k1Signer{}
 	key, err := eth.getAccountKeys(eth.defaultAccount.Address)
@@ -698,7 +698,7 @@ func (eth *Client) CreateSecp256k1Signer() (*crypto.Secp256k1Signer, error) {
 
 ////////////////////////////////////////////////////////////////
 
-// Get the current validators
+// Get the current validators.
 func GetValidators(eth layer1.Client, contracts layer1.EthereumContracts, logger *logrus.Logger, ctx context.Context) ([]common.Address, error) {
 	callOpts, err := eth.GetCallOpts(ctx, eth.GetDefaultAccount())
 	if err != nil {
@@ -713,8 +713,8 @@ func GetValidators(eth layer1.Client, contracts layer1.EthereumContracts, logger
 	return validatorAddresses, nil
 }
 
-// TransferEther transfer's ether from one account to another, assumes from is unlocked
-func TransferEther(eth layer1.Client, logger *logrus.Entry, from common.Address, to common.Address, wei *big.Int) (*types.Transaction, error) {
+// TransferEther transfer's ether from one account to another, assumes from is unlocked.
+func TransferEther(eth layer1.Client, logger *logrus.Entry, from, to common.Address, wei *big.Int) (*types.Transaction, error) {
 	ctx, cancel := eth.GetTimeoutContext()
 	defer cancel()
 
@@ -766,8 +766,8 @@ func TransferEther(eth layer1.Client, logger *logrus.Entry, from common.Address,
 	return signedTx, nil
 }
 
-// Function to compute the gas fee that will be valid for the next 8 full blocks before we are priced out
-func ComputeGasFeeCap(eth layer1.Client, baseFee *big.Int, tipCap *big.Int) (*big.Int, error) {
+// Function to compute the gas fee that will be valid for the next 8 full blocks before we are priced out.
+func ComputeGasFeeCap(eth layer1.Client, baseFee, tipCap *big.Int) (*big.Int, error) {
 	baseFeeMultiplied := new(big.Int).Mul(big.NewInt(constants.EthereumBaseFeeMultiplier), baseFee)
 	feeCap := new(big.Int).Add(baseFeeMultiplied, tipCap)
 	if feeCap.Cmp(eth.GetTxMaxGasFeeAllowed()) > 0 {

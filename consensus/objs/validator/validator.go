@@ -2,6 +2,7 @@ package validator
 
 import (
 	capnp "github.com/MadBase/go-capnproto2/v2"
+
 	mdefs "github.com/alicenet/alicenet/consensus/objs/capn"
 	"github.com/alicenet/alicenet/errorz"
 )
@@ -37,7 +38,7 @@ func Unmarshal(data []byte) (mdefs.Validator, error) {
 	return obj, nil
 }
 
-// Validate will validate the Validator object
+// Validate will validate the Validator object.
 func Validate(p mdefs.Validator) error {
 	if !p.IsValid() {
 		return errorz.ErrInvalid{}.New("validator capn obj is not valid")

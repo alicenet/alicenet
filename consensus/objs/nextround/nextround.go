@@ -2,6 +2,7 @@ package nextround
 
 import (
 	capnp "github.com/MadBase/go-capnproto2/v2"
+
 	mdefs "github.com/alicenet/alicenet/consensus/objs/capn"
 	"github.com/alicenet/alicenet/errorz"
 )
@@ -37,7 +38,7 @@ func Unmarshal(data []byte) (mdefs.NextRound, error) {
 	return obj, nil
 }
 
-// Validate will validate the NextRound object
+// Validate will validate the NextRound object.
 func Validate(p mdefs.NextRound) error {
 	if !p.IsValid() {
 		return errorz.ErrInvalid{}.New("nextround capn obj is not valid")

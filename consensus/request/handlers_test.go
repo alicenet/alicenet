@@ -7,6 +7,11 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/dgraph-io/badger/v2"
+	"github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+
 	appObjs "github.com/alicenet/alicenet/application/objs"
 	"github.com/alicenet/alicenet/application/objs/uint256"
 	"github.com/alicenet/alicenet/consensus/db"
@@ -18,10 +23,6 @@ import (
 	"github.com/alicenet/alicenet/interfaces"
 	"github.com/alicenet/alicenet/proto"
 	"github.com/alicenet/alicenet/utils"
-	"github.com/dgraph-io/badger/v2"
-	"github.com/sirupsen/logrus"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 )
 
 type HandlerMock struct {
@@ -32,14 +33,17 @@ func (h *HandlerMock) PendingTxGet(txn *badger.Txn, height uint32, txHash [][]by
 	args := h.Called(txn, height, txHash)
 	return args.Get(0).([]interfaces.Transaction), args.Get(1).([][]byte), args.Error(2)
 }
+
 func (h *HandlerMock) MinedTxGet(txn *badger.Txn, txsHashes [][]byte) ([]interfaces.Transaction, [][]byte, error) {
 	args := h.Called(txn, txsHashes)
 	return args.Get(0).([]interfaces.Transaction), args.Get(1).([][]byte), args.Error(2)
 }
+
 func (h *HandlerMock) GetSnapShotNode(txn *badger.Txn, height uint32, key []byte) ([]byte, error) {
 	args := h.Called(txn, height, key)
 	return args.Get(0).([]byte), args.Error(1)
 }
+
 func (h *HandlerMock) GetSnapShotStateData(txn *badger.Txn, key []byte) ([]byte, error) {
 	args := h.Called(txn, key)
 	return args.Get(0).([]byte), args.Error(1)
@@ -58,7 +62,7 @@ func (m *mockRawDB) GetValue(txn *badger.Txn, key []byte) ([]byte, error) {
 	return value, nil
 }
 
-func (m *mockRawDB) SetValue(txn *badger.Txn, key []byte, value []byte) error {
+func (m *mockRawDB) SetValue(txn *badger.Txn, key, value []byte) error {
 	strValue := string(value)
 	m.rawDB[string(key)] = strValue
 	return nil
@@ -313,7 +317,7 @@ func createOwnState(t *testing.T) *objs.OwnState {
 		panic(err)
 	}
 
-	//BlockHeader
+	// BlockHeader
 	bh := createBlockHeader(t, 1)
 
 	return &objs.OwnState{

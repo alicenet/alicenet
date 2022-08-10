@@ -16,7 +16,7 @@ type TxCacheKey struct {
 }
 
 // MarshalBinary takes the TxCacheKey object and returns
-// the canonical byte slice
+// the canonical byte slice.
 func (b *TxCacheKey) MarshalBinary() ([]byte, error) {
 	if b == nil {
 		return nil, errorz.ErrInvalid{}.New("TxCacheKey.MarshalBinary; tck not initialized")
@@ -40,7 +40,7 @@ func (b *TxCacheKey) MarshalBinary() ([]byte, error) {
 }
 
 // UnmarshalBinary takes a byte slice and returns the corresponding
-// TxCacheKey object
+// TxCacheKey object.
 func (b *TxCacheKey) UnmarshalBinary(data []byte) error {
 	if b == nil {
 		return errorz.ErrInvalid{}.New("TxCacheKey.UnmarshalBinary; tck not initialized")

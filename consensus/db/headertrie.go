@@ -3,17 +3,17 @@ package db
 import (
 	"errors"
 
-	"github.com/alicenet/alicenet/constants/dbprefix"
-	"github.com/alicenet/alicenet/errorz"
-	"github.com/alicenet/alicenet/logging"
-	"github.com/alicenet/alicenet/utils"
+	"github.com/dgraph-io/badger/v2"
 	"github.com/sirupsen/logrus"
 
 	trie "github.com/alicenet/alicenet/badgerTrie"
 	"github.com/alicenet/alicenet/consensus/objs"
 	"github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/constants/dbprefix"
 	"github.com/alicenet/alicenet/crypto"
-	"github.com/dgraph-io/badger/v2"
+	"github.com/alicenet/alicenet/errorz"
+	"github.com/alicenet/alicenet/logging"
+	"github.com/alicenet/alicenet/utils"
 )
 
 // on completion of block one headerRoot_1 is determined
@@ -34,7 +34,7 @@ func (ht *headerTrie) init() {
 	ht.logger = logger
 }
 
-func (ht *headerTrie) VerifyProof(txn *badger.Txn, rootHash []byte, root []byte, proof []byte, blockHeader *objs.BlockHeader) (bool, error) {
+func (ht *headerTrie) VerifyProof(txn *badger.Txn, rootHash, root, proof []byte, blockHeader *objs.BlockHeader) (bool, error) {
 	tr := trie.NewSMT(rootHash, crypto.Hasher, dbprefix.PrefixBlockHeaderTrie)
 	mproof := &MerkleProof{}
 	err := mproof.UnmarshalBinary(proof)
@@ -50,7 +50,7 @@ func (ht *headerTrie) VerifyProof(txn *badger.Txn, rootHash []byte, root []byte,
 	return tr.VerifyInclusionCR(root, mproof.Bitmap, key, mproof.ProofValue, mproof.Path, mproof.KeyHeight), nil
 }
 
-func (ht *headerTrie) GetProof(txn *badger.Txn, rootHash []byte, root []byte, height uint32) (bool, []byte, error) {
+func (ht *headerTrie) GetProof(txn *badger.Txn, rootHash, root []byte, height uint32) (bool, []byte, error) {
 	tr := trie.NewSMT(rootHash, crypto.Hasher, dbprefix.PrefixBlockHeaderTrie)
 	heightBytes := utils.MarshalUint32(height)
 	key := make([]byte, constants.HashLen)
@@ -171,7 +171,7 @@ func (ht *headerTrie) update(txn *badger.Txn, newHeader *objs.BlockHeader, delet
 	panic("headerTrie no-op")
 }
 
-func (ht *headerTrie) StoreSnapShotHdrNode(txn *badger.Txn, batch []byte, root []byte, layer int) ([][]byte, int, []trie.LeafNode, error) {
+func (ht *headerTrie) StoreSnapShotHdrNode(txn *badger.Txn, batch, root []byte, layer int) ([][]byte, int, []trie.LeafNode, error) {
 	t := trie.NewSMT(root, crypto.Hasher, dbprefix.PrefixBlockHeaderTrie)
 	return t.StoreSnapShotNode(txn, batch, root, layer)
 }

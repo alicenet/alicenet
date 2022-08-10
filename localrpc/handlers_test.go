@@ -225,7 +225,6 @@ func TestHandlers_HandleLocalStateGetFees(t *testing.T) {
 				MinTxFee:      fmt.Sprintf("%064d", 4),
 				ValueStoreFee: fmt.Sprintf("%064d", 1),
 				DataStoreFee:  fmt.Sprintf("%064d", 3),
-				AtomicSwapFee: fmt.Sprintf("%064d", 2),
 			},
 		},
 	}

@@ -260,6 +260,10 @@ func main() {
 		for cmd := range options {
 			// Find all the flags
 			cmd.Flags().VisitAll(func(flag *pflag.Flag) {
+				// -help defined by pflag internals and will not parse correctly.
+				if flag.Name == "help" {
+					return
+				}
 				err := flag.Value.Set(viper.GetString(flag.Name))
 				if err != nil {
 					logger.Warnf("Setting flag %q failed:%q", flag.Name, err)
