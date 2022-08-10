@@ -2,6 +2,12 @@ package lstate
 
 import (
 	"errors"
+	"strconv"
+	"testing"
+
+	"github.com/dgraph-io/badger/v2"
+	"github.com/stretchr/testify/assert"
+
 	appObjs "github.com/alicenet/alicenet/application/objs"
 	"github.com/alicenet/alicenet/application/objs/uint256"
 	"github.com/alicenet/alicenet/consensus/objs"
@@ -9,10 +15,6 @@ import (
 	"github.com/alicenet/alicenet/crypto"
 	"github.com/alicenet/alicenet/errorz"
 	"github.com/alicenet/alicenet/interfaces"
-	"github.com/dgraph-io/badger/v2"
-	"github.com/stretchr/testify/assert"
-	"strconv"
-	"testing"
 )
 
 func TestAppMan_AddPendingTx_Error1(t *testing.T) {

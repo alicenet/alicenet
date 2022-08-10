@@ -4,6 +4,7 @@ import (
 	"bytes"
 
 	capnp "github.com/MadBase/go-capnproto2/v2"
+
 	"github.com/alicenet/alicenet/consensus/objs/blockheader"
 	mdefs "github.com/alicenet/alicenet/consensus/objs/capn"
 	"github.com/alicenet/alicenet/constants"
@@ -22,7 +23,7 @@ type BlockHeader struct {
 }
 
 // UnmarshalBinary takes a byte slice and returns the corresponding
-// BlockHeader object
+// BlockHeader object.
 func (b *BlockHeader) UnmarshalBinary(data []byte) error {
 	if b == nil {
 		return errorz.ErrInvalid{}.New("BlockHeader.UnmarshalBinary; bh not initialized")
@@ -35,7 +36,7 @@ func (b *BlockHeader) UnmarshalBinary(data []byte) error {
 	return b.UnmarshalCapn(bh)
 }
 
-// UnmarshalCapn unmarshals the capnproto definition of the object
+// UnmarshalCapn unmarshals the capnproto definition of the object.
 func (b *BlockHeader) UnmarshalCapn(bh mdefs.BlockHeader) error {
 	if b == nil {
 		return errorz.ErrInvalid{}.New("BlockHeader.UnmarshalCapn; bh not initialized")
@@ -67,7 +68,7 @@ func (b *BlockHeader) UnmarshalCapn(bh mdefs.BlockHeader) error {
 }
 
 // MarshalBinary takes the BlockHeader object and returns the canonical
-// byte slice
+// byte slice.
 func (b *BlockHeader) MarshalBinary() ([]byte, error) {
 	if b == nil {
 		return nil, errorz.ErrInvalid{}.New("BlockHeader.MarshalBinary; bh not initialized")
@@ -80,7 +81,7 @@ func (b *BlockHeader) MarshalBinary() ([]byte, error) {
 	return blockheader.Marshal(bh)
 }
 
-// MarshalCapn marshals the object into its capnproto definition
+// MarshalCapn marshals the object into its capnproto definition.
 func (b *BlockHeader) MarshalCapn(seg *capnp.Segment) (mdefs.BlockHeader, error) {
 	if b == nil {
 		return mdefs.BlockHeader{}, errorz.ErrInvalid{}.New("BlockHeader.MarshalCapn; bh not initialized")
@@ -122,7 +123,7 @@ func (b *BlockHeader) MarshalCapn(seg *capnp.Segment) (mdefs.BlockHeader, error)
 	return bh, nil
 }
 
-// BlockHash returns the BlockHash of BlockHeader
+// BlockHash returns the BlockHash of BlockHeader.
 func (b *BlockHeader) BlockHash() ([]byte, error) {
 	if b == nil {
 		return nil, errorz.ErrInvalid{}.New("BlockHeader.BlockHash; bh not initialized")
@@ -131,7 +132,7 @@ func (b *BlockHeader) BlockHash() ([]byte, error) {
 }
 
 // ValidateSignatures validates the TxRoot and group signature
-// on the Blockheader
+// on the Blockheader.
 func (b *BlockHeader) ValidateSignatures(bnVal *crypto.BNGroupValidator) error {
 	if b == nil {
 		return errorz.ErrInvalid{}.New("BlockHeader.ValidateSignatures; bh not initialized")
@@ -162,7 +163,7 @@ func (b *BlockHeader) ValidateSignatures(bnVal *crypto.BNGroupValidator) error {
 	return nil
 }
 
-// GetRCert returns the RCert for BlockHeader
+// GetRCert returns the RCert for BlockHeader.
 func (b *BlockHeader) GetRCert() (*RCert, error) {
 	bhsh, err := b.BlockHash()
 	if err != nil {
@@ -180,7 +181,7 @@ func (b *BlockHeader) GetRCert() (*RCert, error) {
 	return rc, nil
 }
 
-// MakeDeadBlockRoundProposal makes the proposal for the DeadBlockRound
+// MakeDeadBlockRoundProposal makes the proposal for the DeadBlockRound.
 func (b *BlockHeader) MakeDeadBlockRoundProposal(rcert *RCert, headerRoot []byte) (*Proposal, error) {
 	if b == nil {
 		return nil, errorz.ErrInvalid{}.New("BlockHeader.MakeDeadBlockRoundProposal; bh not initialized")

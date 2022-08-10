@@ -1,9 +1,10 @@
 package objs
 
 import (
-	"github.com/alicenet/alicenet/constants"
 	"testing"
 
+
+	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/crypto"
 )
 
