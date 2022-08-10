@@ -31,5 +31,5 @@ geth \
   --http.corsdomain='*' \
   \
   --allow-insecure-unlock \
-  --unlock 0,1,2,3,4,5 \
-  --password ./assets/test/keys/password.txt
+  --unlock 0 \
+  --password ./scripts/base-files/passwordFile

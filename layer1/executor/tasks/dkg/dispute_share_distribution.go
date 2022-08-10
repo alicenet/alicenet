@@ -6,28 +6,29 @@ import (
 	"crypto/rand"
 	"fmt"
 
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/sirupsen/logrus"
+
 	"github.com/alicenet/alicenet/crypto/bn256"
 	"github.com/alicenet/alicenet/crypto/bn256/cloudflare"
 	"github.com/alicenet/alicenet/layer1/executor/tasks"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/utils"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/sirupsen/logrus"
 )
 
-// DisputeShareDistributionTask stores the data required to dispute shares
+// DisputeShareDistributionTask stores the data required to dispute shares.
 type DisputeShareDistributionTask struct {
 	*tasks.BaseTask
 	// additional fields that are not part of the default task
 	Address common.Address
 }
 
-// asserting that DisputeShareDistributionTask struct implements interface tasks.Task
+// asserting that DisputeShareDistributionTask struct implements interface tasks.Task.
 var _ tasks.Task = &DisputeShareDistributionTask{}
 
-// NewDisputeShareDistributionTask creates a new task
-func NewDisputeShareDistributionTask(start uint64, end uint64, address common.Address) *DisputeShareDistributionTask {
+// NewDisputeShareDistributionTask creates a new task.
+func NewDisputeShareDistributionTask(start, end uint64, address common.Address) *DisputeShareDistributionTask {
 	return &DisputeShareDistributionTask{
 		BaseTask: tasks.NewBaseTask(start, end, true, nil),
 		Address:  address,
@@ -43,7 +44,7 @@ func (t *DisputeShareDistributionTask) Prepare(ctx context.Context) *tasks.TaskE
 	return nil
 }
 
-// Execute executes the task business logic
+// Execute executes the task business logic.
 func (t *DisputeShareDistributionTask) Execute(ctx context.Context) (*types.Transaction, *tasks.TaskErr) {
 	logger := t.GetLogger().WithField("method", "Execute()").WithField("address", t.Address)
 	logger.Debug("initiate execution")
@@ -67,7 +68,7 @@ func (t *DisputeShareDistributionTask) Execute(ctx context.Context) (*types.Tran
 		return nil, nil
 	}
 
-	var participantsList = dkgState.GetSortedParticipants()
+	participantsList := dkgState.GetSortedParticipants()
 	var participantState *state.Participant
 	// Loop through all participants and check to see if shares are valid
 	for idx := 0; idx < dkgState.NumberOfValidators; idx++ {
@@ -137,7 +138,7 @@ func (t *DisputeShareDistributionTask) Execute(ctx context.Context) (*types.Tran
 	return txn, nil
 }
 
-// ShouldExecute checks if it makes sense to execute the task
+// ShouldExecute checks if it makes sense to execute the task.
 func (t *DisputeShareDistributionTask) ShouldExecute(ctx context.Context) (bool, *tasks.TaskErr) {
 	logger := t.GetLogger().WithField("method", "ShouldExecute()").WithField("address", t.Address)
 	logger.Debug("should execute task")

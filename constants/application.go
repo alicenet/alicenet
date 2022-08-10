@@ -37,7 +37,7 @@ const (
 	// Thus, it makes sense to set 376 bytes as the base cost of DataStore.
 
 	// MaxDataStoreSize is the largest size of RawData that we store in a
-	// DataStore; 2 MiB (2^21)
+	// DataStore; 2 MiB (2^21).
 	//
 	MaxDataStoreSize uint32 = 2097152
 	//

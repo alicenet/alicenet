@@ -7,6 +7,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/dgraph-io/badger/v2"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/sirupsen/logrus"
+
 	"github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/constants/dbprefix"
@@ -15,9 +19,6 @@ import (
 	"github.com/alicenet/alicenet/layer1/transaction"
 	"github.com/alicenet/alicenet/logging"
 	"github.com/alicenet/alicenet/utils"
-	"github.com/dgraph-io/badger/v2"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/sirupsen/logrus"
 )
 
 type TasksManager struct {
@@ -28,7 +29,7 @@ type TasksManager struct {
 	logger    *logrus.Entry                 `json:"-"`
 }
 
-// Creates a new TasksManager instance
+// Creates a new TasksManager instance.
 func NewTaskManager(txWatcher transaction.Watcher, database *db.Database, logger *logrus.Entry) (*TasksManager, error) {
 	taskManager := &TasksManager{
 		TxsBackup: make(map[string]*types.Transaction),
@@ -71,7 +72,7 @@ func (tm *TasksManager) GetTxBackup(uuid string) (*types.Transaction, bool) {
 
 // main function to manage a task. It basically an abstraction to handle the
 // task execution in a separate process.
-func (tm *TasksManager) ManageTask(mainCtx context.Context, task tasks.Task, name string, taskId string, database *db.Database, logger *logrus.Entry, eth layer1.Client, contracts layer1.AllSmartContracts, taskResponseChan tasks.TaskResponseChan) {
+func (tm *TasksManager) ManageTask(mainCtx context.Context, task tasks.Task, name, taskId string, database *db.Database, logger *logrus.Entry, eth layer1.Client, contracts layer1.AllSmartContracts, taskResponseChan tasks.TaskResponseChan) {
 	defer task.Close()
 	err := tm.processTask(mainCtx, task, name, taskId, database, logger, eth, contracts, taskResponseChan)
 	// Clean up in case the task was killed
@@ -82,7 +83,7 @@ func (tm *TasksManager) ManageTask(mainCtx context.Context, task tasks.Task, nam
 	task.Finish(err)
 }
 
-func (tm *TasksManager) processTask(mainCtx context.Context, task tasks.Task, name string, taskId string, database *db.Database, logger *logrus.Entry, eth layer1.Client, contracts layer1.AllSmartContracts, taskResponseChan tasks.TaskResponseChan) error {
+func (tm *TasksManager) processTask(mainCtx context.Context, task tasks.Task, name, taskId string, database *db.Database, logger *logrus.Entry, eth layer1.Client, contracts layer1.AllSmartContracts, taskResponseChan tasks.TaskResponseChan) error {
 	taskCtx, cf := context.WithCancel(mainCtx)
 	defer cf()
 	err := task.Initialize(taskCtx, cf, database, logger, eth, contracts, name, taskId, taskResponseChan)
@@ -121,7 +122,7 @@ func (tm *TasksManager) processTask(mainCtx context.Context, task tasks.Task, na
 }
 
 // prepareTask executes task preparation. We keep retrying until the task is
-// killed, we get an unrecoverable error or we succeed
+// killed, we get an unrecoverable error or we succeed.
 func prepareTask(ctx context.Context, task tasks.Task, retryDelay time.Duration) error {
 	for {
 		select {
@@ -145,7 +146,7 @@ func prepareTask(ctx context.Context, task tasks.Task, retryDelay time.Duration)
 }
 
 // executeTask executes task business logic. We keep retrying until the task is
-// killed, we get an unrecoverable error or we succeed
+// killed, we get an unrecoverable error or we succeed.
 func (tm *TasksManager) executeTask(ctx context.Context, task tasks.Task, retryDelay time.Duration) error {
 	logger := task.GetLogger()
 	for {
@@ -277,7 +278,7 @@ func shouldExecute(ctx context.Context, task tasks.Task) (bool, error) {
 	return true, nil
 }
 
-// persist task manager state to disk
+// persist task manager state to disk.
 func (tm *TasksManager) persistState() error {
 	logger := logging.GetLogger("staterecover").WithField("State", "taskManager")
 	rawData, err := json.Marshal(tm)
@@ -306,7 +307,7 @@ func (tm *TasksManager) persistState() error {
 	return nil
 }
 
-// load task's manager state from database
+// load task's manager state from database.
 func (tm *TasksManager) loadState() error {
 	logger := logging.GetLogger("staterecover").WithField("State", "taskManager")
 	if err := tm.database.View(func(txn *badger.Txn) error {
@@ -334,7 +335,6 @@ func (tm *TasksManager) loadState() error {
 	}
 
 	return nil
-
 }
 
 // sleeps a certain amount of time also checking the context. It fails in case

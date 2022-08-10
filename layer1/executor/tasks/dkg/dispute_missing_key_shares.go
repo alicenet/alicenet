@@ -5,24 +5,24 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 
 	"github.com/alicenet/alicenet/layer1/executor/tasks"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/utils"
-	"github.com/ethereum/go-ethereum/common"
 )
 
-// DisputeMissingKeySharesTask stores the data required to dispute shares
+// DisputeMissingKeySharesTask stores the data required to dispute shares.
 type DisputeMissingKeySharesTask struct {
 	*tasks.BaseTask
 }
 
-// asserting that DisputeMissingKeySharesTask struct implements interface tasks.Task
+// asserting that DisputeMissingKeySharesTask struct implements interface tasks.Task.
 var _ tasks.Task = &DisputeMissingKeySharesTask{}
 
-// NewDisputeMissingKeySharesTask creates a new task
-func NewDisputeMissingKeySharesTask(start uint64, end uint64) *DisputeMissingKeySharesTask {
+// NewDisputeMissingKeySharesTask creates a new task.
+func NewDisputeMissingKeySharesTask(start, end uint64) *DisputeMissingKeySharesTask {
 	return &DisputeMissingKeySharesTask{
 		BaseTask: tasks.NewBaseTask(start, end, false, nil),
 	}
@@ -35,7 +35,7 @@ func (t *DisputeMissingKeySharesTask) Prepare(ctx context.Context) *tasks.TaskEr
 	return nil
 }
 
-// Execute executes the task business logic
+// Execute executes the task business logic.
 func (t *DisputeMissingKeySharesTask) Execute(ctx context.Context) (*types.Transaction, *tasks.TaskErr) {
 	logger := t.GetLogger().WithField("method", "Execute()")
 	logger.Debug("initiate execution")
@@ -71,7 +71,7 @@ func (t *DisputeMissingKeySharesTask) Execute(ctx context.Context) (*types.Trans
 	return txn, nil
 }
 
-// ShouldExecute checks if it makes sense to execute the task
+// ShouldExecute checks if it makes sense to execute the task.
 func (t *DisputeMissingKeySharesTask) ShouldExecute(ctx context.Context) (bool, *tasks.TaskErr) {
 	logger := t.GetLogger().WithField("method", "ShouldExecute()")
 	logger.Debug("should execute task")

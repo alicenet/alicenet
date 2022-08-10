@@ -4,6 +4,7 @@ import (
 	"bytes"
 
 	capnp "github.com/MadBase/go-capnproto2/v2"
+
 	mdefs "github.com/alicenet/alicenet/consensus/objs/capn"
 	"github.com/alicenet/alicenet/consensus/objs/proposal"
 	"github.com/alicenet/alicenet/constants"
@@ -12,7 +13,7 @@ import (
 	"github.com/alicenet/alicenet/utils"
 )
 
-//Proposal ...
+// Proposal ...
 type Proposal struct {
 	PClaims   *PClaims
 	Signature []byte
@@ -23,7 +24,7 @@ type Proposal struct {
 }
 
 // UnmarshalBinary takes a byte slice and returns the corresponding
-// Proposal object
+// Proposal object.
 func (b *Proposal) UnmarshalBinary(data []byte) error {
 	if b == nil {
 		return errorz.ErrInvalid{}.New("Proposal.UnmarshalBinary; prop not initialized")
@@ -36,7 +37,7 @@ func (b *Proposal) UnmarshalBinary(data []byte) error {
 	return b.UnmarshalCapn(bh)
 }
 
-// UnmarshalCapn unmarshals the capnproto definition of the object
+// UnmarshalCapn unmarshals the capnproto definition of the object.
 func (b *Proposal) UnmarshalCapn(bh mdefs.Proposal) error {
 	if b == nil {
 		return errorz.ErrInvalid{}.New("Proposal.UnmarshalCapn; prop not initialized")
@@ -66,7 +67,7 @@ func (b *Proposal) UnmarshalCapn(bh mdefs.Proposal) error {
 }
 
 // MarshalBinary takes the Proposal object and returns the canonical
-// byte slice
+// byte slice.
 func (b *Proposal) MarshalBinary() ([]byte, error) {
 	if b == nil {
 		return nil, errorz.ErrInvalid{}.New("Proposal.MarshalBinary; prop not initialized")
@@ -79,7 +80,7 @@ func (b *Proposal) MarshalBinary() ([]byte, error) {
 	return proposal.Marshal(bh)
 }
 
-// MarshalCapn marshals the object into its capnproto definition
+// MarshalCapn marshals the object into its capnproto definition.
 func (b *Proposal) MarshalCapn(seg *capnp.Segment) (mdefs.Proposal, error) {
 	if b == nil {
 		return mdefs.Proposal{}, errorz.ErrInvalid{}.New("Proposal.MarshalCapn; prop not initialized")

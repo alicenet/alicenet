@@ -1,14 +1,16 @@
 package lstate
 
 import (
+	"testing"
+
+	"github.com/dgraph-io/badger/v2"
+
 	"github.com/alicenet/alicenet/consensus/objs"
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/crypto"
-	"github.com/dgraph-io/badger/v2"
-	"testing"
 )
 
-//Not IsCurrentValidator
+// Not IsCurrentValidator.
 func TestStateCastLocal_castProposalFromValue_Ok1(t *testing.T) {
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
@@ -97,7 +99,7 @@ func TestStateCastLocal_castProposalFromValue_Error(t *testing.T) {
 	})
 }
 
-//Not IsCurrentValidator
+// Not IsCurrentValidator.
 func TestStateCastLocal_castPreVoteWithLock_Ok1(t *testing.T) {
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
@@ -127,7 +129,7 @@ func TestStateCastLocal_castPreVoteWithLock_Ok1(t *testing.T) {
 	})
 }
 
-//Same BClaims
+// Same BClaims.
 func TestStateCastLocal_castPreVoteWithLock_Ok2(t *testing.T) {
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
@@ -156,7 +158,7 @@ func TestStateCastLocal_castPreVoteWithLock_Ok2(t *testing.T) {
 	})
 }
 
-//Diff BClaims
+// Diff BClaims.
 func TestStateCastLocal_castPreVoteWithLock_Ok3(t *testing.T) {
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
@@ -187,7 +189,7 @@ func TestStateCastLocal_castPreVoteWithLock_Ok3(t *testing.T) {
 	})
 }
 
-//Not IsCurrentValidator
+// Not IsCurrentValidator.
 func TestStateCastLocal_castPreCommit_Ok1(t *testing.T) {
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
@@ -271,7 +273,7 @@ func TestStateCastLocal_castPreCommit_Error(t *testing.T) {
 	})
 }
 
-//Not IsCurrentValidator
+// Not IsCurrentValidator.
 func TestStateCastLocal_castPreCommitNil_Ok1(t *testing.T) {
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
@@ -325,7 +327,7 @@ func TestStateCastLocal_castPreCommitNil_Error(t *testing.T) {
 	})
 }
 
-//Not IsCurrentValidator
+// Not IsCurrentValidator.
 func TestStateCastLocal_castNextRound_Ok1(t *testing.T) {
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
@@ -402,7 +404,7 @@ func TestStateCastLocal_castNextRound_Error2(t *testing.T) {
 	})
 }
 
-//Not IsCurrentValidator
+// Not IsCurrentValidator.
 func TestStateCastLocal_castNextRoundRCert_Ok1(t *testing.T) {
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
@@ -491,7 +493,7 @@ func TestStateCastLocal_castNextRoundRCert_Error1(t *testing.T) {
 	})
 }
 
-//Not IsCurrentValidator
+// Not IsCurrentValidator.
 func TestStateCastLocal_castNextHeightFromNextHeight_Ok1(t *testing.T) {
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
@@ -575,7 +577,7 @@ func TestStateCastLocal_castNextHeightFromNextHeight_Error1(t *testing.T) {
 	})
 }
 
-//Not IsCurrentValidator
+// Not IsCurrentValidator.
 func TestStateCastLocal_castNextHeightFromPreCommits_Ok1(t *testing.T) {
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
