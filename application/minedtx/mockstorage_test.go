@@ -13,7 +13,6 @@ import (
 func makeMockStorageGetter() *mockStorageGetter {
 	maxBytes := uint32(0)
 	dataStoreEpochFee := new(big.Int).SetInt64(0)
-	atomicSwapFee := new(big.Int).SetInt64(0)
 	valueStoreFee := new(big.Int).SetInt64(0)
 	minTxFee := new(big.Int).SetInt64(0)
 
@@ -21,7 +20,6 @@ func makeMockStorageGetter() *mockStorageGetter {
 		maxBytes:          maxBytes,
 		dataStoreEpochFee: dataStoreEpochFee,
 		valueStoreFee:     valueStoreFee,
-		atomicSwapFee:     atomicSwapFee,
 		minTxFee:          minTxFee,
 	}
 	return msg
@@ -36,7 +34,6 @@ type mockStorageGetter struct {
 	maxBytes          uint32
 	dataStoreEpochFee *big.Int
 	valueStoreFee     *big.Int
-	atomicSwapFee     *big.Int
 	minTxFee          *big.Int
 }
 
@@ -119,21 +116,6 @@ func (msg *mockStorageGetter) SetValueStoreFee(value *big.Int) {
 }
 
 func (msg *mockStorageGetter) GetValueStoreValidVersion() uint32 {
-	return 0
-}
-
-func (msg *mockStorageGetter) GetAtomicSwapFee() *big.Int {
-	return msg.atomicSwapFee
-}
-
-func (msg *mockStorageGetter) SetAtomicSwapFee(value *big.Int) {
-	if value == nil {
-		panic("invalid value")
-	}
-	msg.atomicSwapFee.Set(value)
-}
-
-func (msg *mockStorageGetter) GetAtomicSwapValidStopEpoch() uint32 {
 	return 0
 }
 

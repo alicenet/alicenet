@@ -13,24 +13,24 @@ import (
 	monInterfaces "github.com/alicenet/alicenet/layer1/monitor/interfaces"
 )
 
-// GPKjSubmissionTask contains required state for gpk submission
+// GPKjSubmissionTask contains required state for gpk submission.
 type GPKjSubmissionTask struct {
 	*tasks.BaseTask
 	adminHandler monInterfaces.AdminHandler
 }
 
-// asserting that GPKjSubmissionTask struct implements interface Task
+// asserting that GPKjSubmissionTask struct implements interface Task.
 var _ tasks.Task = &GPKjSubmissionTask{}
 
-// NewGPKjSubmissionTask creates a background task that attempts to submit the gpkj in ETHDKG
-func NewGPKjSubmissionTask(start uint64, end uint64, adminHandler monInterfaces.AdminHandler) *GPKjSubmissionTask {
+// NewGPKjSubmissionTask creates a background task that attempts to submit the gpkj in ETHDKG.
+func NewGPKjSubmissionTask(start, end uint64, adminHandler monInterfaces.AdminHandler) *GPKjSubmissionTask {
 	return &GPKjSubmissionTask{
 		BaseTask:     tasks.NewBaseTask(start, end, false, nil),
 		adminHandler: adminHandler,
 	}
 }
 
-// Prepare prepares for work to be done in the GPKjSubmissionTask
+// Prepare prepares for work to be done in the GPKjSubmissionTask.
 func (t *GPKjSubmissionTask) Prepare(ctx context.Context) *tasks.TaskErr {
 	logger := t.GetLogger().WithField("method", "Prepare()")
 	logger.Debug("preparing task")
@@ -42,9 +42,8 @@ func (t *GPKjSubmissionTask) Prepare(ctx context.Context) *tasks.TaskErr {
 
 	if dkgState.GroupPrivateKey == nil ||
 		dkgState.GroupPrivateKey.Cmp(big.NewInt(0)) == 0 {
-
 		// Collecting all the participants encrypted shares to be used for the GPKj
-		var participantsList = dkgState.GetSortedParticipants()
+		participantsList := dkgState.GetSortedParticipants()
 		encryptedShares := make([][]*big.Int, 0, dkgState.NumberOfValidators)
 		for _, participant := range participantsList {
 			logger.Tracef(
@@ -86,7 +85,7 @@ func (t *GPKjSubmissionTask) Prepare(ctx context.Context) *tasks.TaskErr {
 	return nil
 }
 
-// Execute executes the task business logic
+// Execute executes the task business logic.
 func (t *GPKjSubmissionTask) Execute(ctx context.Context) (*types.Transaction, *tasks.TaskErr) {
 	logger := t.GetLogger().WithField("method", "Execute()")
 	logger.Debug("initiate execution")
@@ -112,7 +111,7 @@ func (t *GPKjSubmissionTask) Execute(ctx context.Context) (*types.Transaction, *
 	return txn, nil
 }
 
-// ShouldExecute checks if it makes sense to execute the task
+// ShouldExecute checks if it makes sense to execute the task.
 func (t *GPKjSubmissionTask) ShouldExecute(ctx context.Context) (bool, *tasks.TaskErr) {
 	logger := t.GetLogger().WithField("method", "ShouldExecute()")
 	logger.Debug("should execute task")
@@ -128,7 +127,7 @@ func (t *GPKjSubmissionTask) ShouldExecute(ctx context.Context) (bool, *tasks.Ta
 		return false, nil
 	}
 
-	//Check if my GPKj is submitted, if not should retry
+	// Check if my GPKj is submitted, if not should retry
 	defaultAddr := dkgState.Account
 	callOpts, err := client.GetCallOpts(ctx, defaultAddr)
 	if err != nil {
@@ -149,7 +148,7 @@ func (t *GPKjSubmissionTask) ShouldExecute(ctx context.Context) (bool, *tasks.Ta
 	return true, nil
 }
 
-// SetAdminHandler sets the task adminHandler
+// SetAdminHandler sets the task adminHandler.
 func (t *GPKjSubmissionTask) SetAdminHandler(adminHandler monInterfaces.AdminHandler) {
 	t.adminHandler = adminHandler
 }

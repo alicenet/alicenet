@@ -5,6 +5,11 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/dgraph-io/badger/v2"
+	"github.com/ethereum/go-ethereum/accounts"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/sirupsen/logrus"
+
 	"github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/constants/dbprefix"
 	"github.com/alicenet/alicenet/crypto/bn256"
@@ -12,16 +17,12 @@ import (
 	"github.com/alicenet/alicenet/layer1/executor/tasks"
 	"github.com/alicenet/alicenet/logging"
 	"github.com/alicenet/alicenet/utils"
-	"github.com/dgraph-io/badger/v2"
-	"github.com/ethereum/go-ethereum/accounts"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/sirupsen/logrus"
 )
 
-// EthDKGPhase is used to indicate what phase we are currently in
+// EthDKGPhase is used to indicate what phase we are currently in.
 type EthDKGPhase uint8
 
-// These are the valid phases of ETHDKG
+// These are the valid phases of ETHDKG.
 const (
 	RegistrationOpen EthDKGPhase = iota
 	ShareDistribution
@@ -46,7 +47,7 @@ func (phase EthDKGPhase) String() string {
 	}[phase]
 }
 
-// DkgState is used to track the state of the ETHDKG
+// DkgState is used to track the state of the ETHDKG.
 type DkgState struct {
 	IsValidator        bool        `json:"isValidator"`
 	Phase              EthDKGPhase `json:"phase"`
@@ -114,9 +115,9 @@ type DkgState struct {
 	Inverse []*big.Int `json:"inverse"`
 }
 
-// GetSortedParticipants returns the participant list sorted by Index field
+// GetSortedParticipants returns the participant list sorted by Index field.
 func (state *DkgState) GetSortedParticipants() ParticipantList {
-	var list = make(ParticipantList, len(state.Participants))
+	list := make(ParticipantList, len(state.Participants))
 
 	for _, p := range state.Participants {
 		list[p.Index-1] = p
@@ -125,10 +126,10 @@ func (state *DkgState) GetSortedParticipants() ParticipantList {
 	return list
 }
 
-// asserting that DkgState struct implements interface tasks.TaskState
+// asserting that DkgState struct implements interface tasks.TaskState.
 var _ tasks.TaskState = &DkgState{}
 
-// OnRegistrationOpened processes data from RegistrationOpened event
+// OnRegistrationOpened processes data from RegistrationOpened event.
 func (state *DkgState) OnRegistrationOpened(startBlock, phaseLength, confirmationLength, nonce uint64) {
 	state.Phase = RegistrationOpen
 	state.PhaseStart = startBlock
@@ -137,7 +138,7 @@ func (state *DkgState) OnRegistrationOpened(startBlock, phaseLength, confirmatio
 	state.Nonce = nonce
 }
 
-// OnAddressRegistered processes data from AddressRegistered event
+// OnAddressRegistered processes data from AddressRegistered event.
 func (state *DkgState) OnAddressRegistered(account common.Address, index int, nonce uint64, publicKey [2]*big.Int) {
 	state.Participants[account] = &Participant{
 		Address:   account,
@@ -153,13 +154,13 @@ func (state *DkgState) OnAddressRegistered(account common.Address, index int, no
 	}
 }
 
-// OnRegistrationComplete processes data from RegistrationComplete event
+// OnRegistrationComplete processes data from RegistrationComplete event.
 func (state *DkgState) OnRegistrationComplete(shareDistributionStartBlockNumber uint64) {
 	state.Phase = ShareDistribution
 	state.PhaseStart = shareDistributionStartBlockNumber + state.ConfirmationLength
 }
 
-// OnSharesDistributed processes data from SharesDistributed event
+// OnSharesDistributed processes data from SharesDistributed event.
 func (state *DkgState) OnSharesDistributed(logger *logrus.Entry, account common.Address, encryptedShares []*big.Int, commitments [][2]*big.Int) error {
 	// compute distributed shares hash
 	distributedSharesHash, _, _, err := ComputeDistributedSharesHash(encryptedShares, commitments)
@@ -176,7 +177,7 @@ func (state *DkgState) OnSharesDistributed(logger *logrus.Entry, account common.
 	return nil
 }
 
-// OnShareDistributionComplete processes data from ShareDistributionComplete event
+// OnShareDistributionComplete processes data from ShareDistributionComplete event.
 func (state *DkgState) OnShareDistributionComplete(disputeShareDistributionStartBlock uint64) {
 	state.Phase = DisputeShareDistribution
 
@@ -185,26 +186,26 @@ func (state *DkgState) OnShareDistributionComplete(disputeShareDistributionStart
 	state.PhaseStart = dispShareStartBlock
 }
 
-// OnKeyShareSubmissionComplete processes data from KeyShareSubmissionComplete event
+// OnKeyShareSubmissionComplete processes data from KeyShareSubmissionComplete event.
 func (state *DkgState) OnKeyShareSubmissionComplete(mpkSubmissionStartBlock uint64) {
 	state.Phase = MPKSubmission
 	state.PhaseStart = mpkSubmissionStartBlock + state.ConfirmationLength
 }
 
-// OnMPKSet processes data from MPKSet event
+// OnMPKSet processes data from MPKSet event.
 func (state *DkgState) OnMPKSet(gpkjSubmissionStartBlock uint64) {
 	state.Phase = GPKJSubmission
 	state.PhaseStart = gpkjSubmissionStartBlock
 }
 
-// OnGPKJSubmissionComplete processes data from GPKJSubmissionComplete event
+// OnGPKJSubmissionComplete processes data from GPKJSubmissionComplete event.
 func (state *DkgState) OnGPKJSubmissionComplete(disputeGPKjStartBlock uint64) {
 	state.Phase = DisputeGPKJSubmission
 	state.PhaseStart = disputeGPKjStartBlock + state.ConfirmationLength
 }
 
-// OnKeyShareSubmitted processes data from KeyShareSubmitted event
-func (state *DkgState) OnKeyShareSubmitted(account common.Address, keyShareG1 [2]*big.Int, keyShareG1CorrectnessProof [2]*big.Int, keyShareG2 [4]*big.Int) {
+// OnKeyShareSubmitted processes data from KeyShareSubmitted event.
+func (state *DkgState) OnKeyShareSubmitted(account common.Address, keyShareG1, keyShareG1CorrectnessProof [2]*big.Int, keyShareG2 [4]*big.Int) {
 	state.Phase = KeyShareSubmission
 
 	state.Participants[account].Phase = KeyShareSubmission
@@ -213,18 +214,18 @@ func (state *DkgState) OnKeyShareSubmitted(account common.Address, keyShareG1 [2
 	state.Participants[account].KeyShareG2s = keyShareG2
 }
 
-// OnGPKjSubmitted processes data from GPKjSubmitted event
+// OnGPKjSubmitted processes data from GPKjSubmitted event.
 func (state *DkgState) OnGPKjSubmitted(account common.Address, gpkj [4]*big.Int) {
 	state.Participants[account].GPKj = gpkj
 	state.Participants[account].Phase = GPKJSubmission
 }
 
-// OnCompletion processes data from ValidatorSetCompleted event
+// OnCompletion processes data from ValidatorSetCompleted event.
 func (state *DkgState) OnCompletion() {
 	state.Phase = Completion
 }
 
-// NewDkgState makes a new DkgState object
+// NewDkgState makes a new DkgState object.
 func NewDkgState(account accounts.Account) *DkgState {
 	return &DkgState{
 		Account:      account,
@@ -287,10 +288,9 @@ func (state *DkgState) LoadState(txn *badger.Txn) error {
 	}
 
 	return nil
-
 }
 
-// Participant contains what we know about other participants, i.e. public information
+// Participant contains what we know about other participants, i.e. public information.
 type Participant struct {
 	// Address is the Ethereum address corresponding to the Ethereum Public Key
 	// for the Participant.
@@ -341,10 +341,10 @@ type Participant struct {
 	GPKj [4]*big.Int `json:"gpkj"`
 }
 
-// ParticipantList is a required type alias since the Sort interface is awful
+// ParticipantList is a required type alias since the Sort interface is awful.
 type ParticipantList []*Participant
 
-// Simplify logging
+// Simplify logging.
 func (p *Participant) String() string {
 	out, err := json.Marshal(p)
 	if err != nil {
@@ -354,7 +354,7 @@ func (p *Participant) String() string {
 	return string(out)
 }
 
-// Copy makes returns a copy of Participant
+// Copy makes returns a copy of Participant.
 func (p *Participant) Copy() *Participant {
 	c := &Participant{}
 	c.Index = p.Index
@@ -364,7 +364,7 @@ func (p *Participant) Copy() *Participant {
 	return c
 }
 
-// ExtractIndices returns the list of indices of ParticipantList
+// ExtractIndices returns the list of indices of ParticipantList.
 func (pl ParticipantList) ExtractIndices() []int {
 	indices := []int{}
 	for k := 0; k < len(pl); k++ {
@@ -373,22 +373,22 @@ func (pl ParticipantList) ExtractIndices() []int {
 	return indices
 }
 
-// Len returns the len of the collection
+// Len returns the len of the collection.
 func (pl ParticipantList) Len() int {
 	return len(pl)
 }
 
-// Less decides if element i is 'Less' than element j -- less ~= before
+// Less decides if element i is 'Less' than element j -- less ~= before.
 func (pl ParticipantList) Less(i, j int) bool {
 	return pl[i].Index < pl[j].Index
 }
 
-// Swap swaps elements i and j within the collection
+// Swap swaps elements i and j within the collection.
 func (pl ParticipantList) Swap(i, j int) {
 	pl[i], pl[j] = pl[j], pl[i]
 }
 
-// CategorizeGroupSigners returns 0 based indices of honest participants, 0 based indices of dishonest participants
+// CategorizeGroupSigners returns 0 based indices of honest participants, 0 based indices of dishonest participants.
 func CategorizeGroupSigners(publishedPublicKeys [][4]*big.Int, participants ParticipantList, commitments [][][2]*big.Int) (ParticipantList, ParticipantList, ParticipantList, error) {
 	// Setup + sanity checks before starting
 	n := len(participants)

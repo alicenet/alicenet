@@ -27,29 +27,6 @@ func (onr *Owner) New(acct []byte, curveSpec constants.CurveSpec) error {
 	return nil
 }
 
-// NewFromAtomicSwapOwner makes a new Owner from an AtomicSwapOwner
-// (PrimaryOwner).
-func (onr *Owner) NewFromAtomicSwapOwner(aso *AtomicSwapOwner) error {
-	if onr == nil {
-		return errorz.ErrInvalid{}.New("owner.newFromAtomicSwapOwner; owner not initialized")
-	}
-	if err := aso.Validate(); err != nil {
-		return err
-	}
-	return onr.New(aso.PrimaryOwner.Account, aso.PrimaryOwner.CurveSpec)
-}
-
-// NewFromAtomicSwapSubOwner makes a new Owner from an AtomicSwapSubOwner.
-func (onr *Owner) NewFromAtomicSwapSubOwner(asso *AtomicSwapSubOwner) error {
-	if onr == nil {
-		return errorz.ErrInvalid{}.New("owner.newFromAtomicSwapSubOwner; owner not initialized")
-	}
-	if err := asso.Validate(); err != nil {
-		return err
-	}
-	return onr.New(asso.Account, asso.CurveSpec)
-}
-
 // NewFromDataStoreOwner makes a new Owner from a DataStoreOwner.
 func (onr *Owner) NewFromDataStoreOwner(dso *DataStoreOwner) error {
 	if onr == nil {

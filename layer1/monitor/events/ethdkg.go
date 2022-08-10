@@ -1,6 +1,11 @@
 package events
 
 import (
+	"github.com/ethereum/go-ethereum/accounts"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/sirupsen/logrus"
+
 	"github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/layer1"
 	"github.com/alicenet/alicenet/layer1/executor/tasks"
@@ -10,10 +15,6 @@ import (
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/utils"
 	monitorInterfaces "github.com/alicenet/alicenet/layer1/monitor/interfaces"
 	"github.com/alicenet/alicenet/layer1/monitor/objects"
-	"github.com/ethereum/go-ethereum/accounts"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/sirupsen/logrus"
 )
 
 func isValidator(acct accounts.Account, state *objects.MonitorState) bool {
@@ -170,7 +171,7 @@ func ProcessRegistrationComplete(eth layer1.Client, contracts layer1.AllSmartCon
 		return utils.LogReturnErrorf(logEntry, "Failed to save dkgState on ProcessRegistrationComplete: %v", err)
 	}
 
-	//Killing previous tasks
+	// Killing previous tasks
 	taskRequestChan <- tasks.NewKillTaskRequest(&dkg.RegisterTask{})
 	taskRequestChan <- tasks.NewKillTaskRequest(&dkg.DisputeMissingRegistrationTask{})
 
@@ -210,8 +211,8 @@ func UpdateStateOnRegistrationComplete(dkgState *state.DkgState, shareDistributi
 	shareDistEndBlock := shareDistStartBlock + dkgState.PhaseLength
 	shareDistributionTask := dkgtasks.NewShareDistributionTask(shareDistStartBlock, shareDistEndBlock)
 
-	var dispShareStartBlock = shareDistEndBlock
-	var dispShareEndBlock = dispShareStartBlock + dkgState.PhaseLength
+	dispShareStartBlock := shareDistEndBlock
+	dispShareEndBlock := dispShareStartBlock + dkgState.PhaseLength
 	disputeMissingShareDistributionTask := dkgtasks.NewDisputeMissingShareDistributionTask(dispShareStartBlock, dispShareEndBlock)
 	disputeBadSharesTasks := GetDisputeShareDistributionTasks(dkgState, dispShareStartBlock, dispShareEndBlock)
 
@@ -284,7 +285,7 @@ func ProcessShareDistributionComplete(eth layer1.Client, contracts layer1.AllSma
 		return utils.LogReturnErrorf(logEntry, "Failed to save dkgState on ProcessShareDistributionComplete: %v", err)
 	}
 
-	//Killing previous tasks
+	// Killing previous tasks
 	taskRequestChan <- tasks.NewKillTaskRequest(&dkg.ShareDistributionTask{})
 	taskRequestChan <- tasks.NewKillTaskRequest(&dkg.DisputeMissingShareDistributionTask{})
 	taskRequestChan <- tasks.NewKillTaskRequest(&dkg.DisputeShareDistributionTask{})
@@ -397,7 +398,7 @@ func ProcessKeyShareSubmissionComplete(eth layer1.Client, contracts layer1.AllSm
 		return utils.LogReturnErrorf(logEntry, "Failed to save dkgState on ProcessKeyShareSubmissionComplete: %v", err)
 	}
 
-	//Killing previous tasks
+	// Killing previous tasks
 	taskRequestChan <- tasks.NewKillTaskRequest(&dkg.KeyShareSubmissionTask{})
 	taskRequestChan <- tasks.NewKillTaskRequest(&dkg.DisputeMissingKeySharesTask{})
 
@@ -457,7 +458,7 @@ func ProcessMPKSet(eth layer1.Client, contracts layer1.AllSmartContracts, logger
 		return utils.LogReturnErrorf(logEntry, "Failed to save dkgState on ProcessMPKSet: %v", err)
 	}
 
-	//Killing previous tasks
+	// Killing previous tasks
 	taskRequestChan <- tasks.NewKillTaskRequest(&dkg.MPKSubmissionTask{})
 
 	// schedule GPKJSubmissionTask
@@ -534,7 +535,7 @@ func ProcessGPKJSubmissionComplete(eth layer1.Client, contracts layer1.AllSmartC
 		return utils.LogReturnErrorf(logEntry, "Failed to save dkgState on ProcessGPKJSubmissionComplete: %v", err)
 	}
 
-	//Killing previous tasks
+	// Killing previous tasks
 	taskRequestChan <- tasks.NewKillTaskRequest(&dkg.GPKjSubmissionTask{})
 	taskRequestChan <- tasks.NewKillTaskRequest(&dkg.DisputeMissingGPKjTask{})
 	taskRequestChan <- tasks.NewKillTaskRequest(&dkg.DisputeGPKjTask{})
@@ -575,7 +576,7 @@ func UpdateStateOnGPKJSubmissionComplete(dkgState *state.DkgState, disputeGPKjSt
 	return disputeGPKjTasks, completionTask
 }
 
-func GetDisputeShareDistributionTasks(dkgState *state.DkgState, phaseStart uint64, phaseEnd uint64) []*dkgtasks.DisputeShareDistributionTask {
+func GetDisputeShareDistributionTasks(dkgState *state.DkgState, phaseStart, phaseEnd uint64) []*dkgtasks.DisputeShareDistributionTask {
 	var disputeShareDistributionTasks []*dkgtasks.DisputeShareDistributionTask
 	for address := range dkgState.Participants {
 		disputeShareDistributionTasks = append(disputeShareDistributionTasks, dkgtasks.NewDisputeShareDistributionTask(phaseStart, phaseEnd, address))
@@ -583,7 +584,7 @@ func GetDisputeShareDistributionTasks(dkgState *state.DkgState, phaseStart uint6
 	return disputeShareDistributionTasks
 }
 
-func GetDisputeGPKjTasks(dkgState *state.DkgState, phaseStart uint64, phaseEnd uint64) []*dkgtasks.DisputeGPKjTask {
+func GetDisputeGPKjTasks(dkgState *state.DkgState, phaseStart, phaseEnd uint64) []*dkgtasks.DisputeGPKjTask {
 	var disputeGPKjTasks []*dkgtasks.DisputeGPKjTask
 	for address := range dkgState.Participants {
 		disputeGPKjTasks = append(disputeGPKjTasks, dkgtasks.NewDisputeGPKjTask(phaseStart, phaseEnd, address))

@@ -3,17 +3,18 @@ package tasks
 import (
 	"context"
 
-	"github.com/alicenet/alicenet/consensus/db"
-	"github.com/alicenet/alicenet/layer1"
-	"github.com/alicenet/alicenet/layer1/transaction"
 	"github.com/dgraph-io/badger/v2"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/sirupsen/logrus"
+
+	"github.com/alicenet/alicenet/consensus/db"
+	"github.com/alicenet/alicenet/layer1"
+	"github.com/alicenet/alicenet/layer1/transaction"
 )
 
-// Task the interface requirements of a task
+// Task the interface requirements of a task.
 type Task interface {
-	Initialize(ctx context.Context, cancelFunc context.CancelFunc, database *db.Database, logger *logrus.Entry, eth layer1.Client, contracts layer1.AllSmartContracts, name string, id string, taskResponseChan TaskResponseChan) error
+	Initialize(ctx context.Context, cancelFunc context.CancelFunc, database *db.Database, logger *logrus.Entry, eth layer1.Client, contracts layer1.AllSmartContracts, name, id string, taskResponseChan TaskResponseChan) error
 	Prepare(ctx context.Context) *TaskErr
 	Execute(ctx context.Context) (*types.Transaction, *TaskErr)
 	ShouldExecute(ctx context.Context) (bool, *TaskErr)
@@ -32,13 +33,13 @@ type Task interface {
 	GetLogger() *logrus.Entry
 }
 
-// TaskState the interface requirements of a task state
+// TaskState the interface requirements of a task state.
 type TaskState interface {
 	PersistState(txn *badger.Txn) error
 	LoadState(txn *badger.Txn) error
 }
 
-// TaskResponseChan the interface requirements of a task response chan
+// TaskResponseChan the interface requirements of a task response chan.
 type TaskResponseChan interface {
 	Add(TaskResponse)
 }
