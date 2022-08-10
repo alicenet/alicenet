@@ -12,8 +12,8 @@ import {
 
 let fixture: Fixture;
 let dutchAuction: DutchAuction;
-let validators = new Array();
-let stakingTokenIds = new Array();
+const validators: String[] = [];
+const stakingTokenIds: String[] = [];
 
 describe("Testing Dutch Auction", async () => {
   beforeEach(async function () {
@@ -65,7 +65,6 @@ describe("Testing Dutch Auction", async () => {
   });
 
   it.skip("Simulate a 7 days run (skipped since it may take too long)", async () => {
-    let previousPrice = await dutchAuction.getPrice();
     for (let d = 1; d <= 15; d++) {
       console.log(
         "Day",
