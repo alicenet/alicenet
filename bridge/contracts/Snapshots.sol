@@ -267,7 +267,7 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
 
     function getSnapshot(uint256 epoch_) public view returns (Snapshot memory) {
         (bool ok, Snapshot memory data) = _getSnapshot(uint32(epoch_));
-        require(ok, string(abi.encodePacked(SnapshotsErrorCodes.SNAPSHOT_NOT_IN_BUFFER)));
+        require(ok, "snapshot not in buffer");
         return data;
     }
 
@@ -301,7 +301,7 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
             return Snapshot(0, BClaimsParserLibrary.BClaims(0, 0, 0, 0, 0, 0, 0));
         }
         (bool ok, Snapshot memory snapshotData) = _getLatestSnapshot();
-        require(ok, string(abi.encodePacked(SnapshotsErrorCodes.SNAPSHOT_NOT_IN_BUFFER)));
+        require(ok, "snapshot not in buffer");
         return snapshotData;
     }
 
