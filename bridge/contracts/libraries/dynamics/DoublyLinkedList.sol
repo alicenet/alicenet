@@ -146,26 +146,17 @@ library DoublyLinkedListLogic {
         list.nodes[nextEpoch].prev = prevEpoch;
     }
 
-
     /**
      * @dev Retrieves the head.
      */
-    function getHead(DoublyLinkedList storage list)
-        internal
-        view
-        returns (uint256)
-    {
+    function getHead(DoublyLinkedList storage list) internal view returns (uint256) {
         return list.head;
     }
 
     /**
      * @dev Retrieves the tail.
      */
-    function getTail(DoublyLinkedList storage list)
-        internal
-        view
-        returns (uint256)
-    {
+    function getTail(DoublyLinkedList storage list) internal view returns (uint256) {
         return list.tail;
     }
 

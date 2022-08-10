@@ -5,7 +5,7 @@ import "contracts/interfaces/IValidatorPool.sol";
 import "contracts/interfaces/IETHDKG.sol";
 import "contracts/utils/ImmutableAuth.sol";
 
-abstract contract SnapshotsStorage is ImmutableETHDKG, ImmutableValidatorPool {
+abstract contract SnapshotsStorage is ImmutableETHDKG, ImmutableValidatorPool, ImmutableDynamics {
     uint256 internal immutable _epochLength;
 
     uint256 internal immutable _chainId;
@@ -31,6 +31,7 @@ abstract contract SnapshotsStorage is ImmutableETHDKG, ImmutableValidatorPool {
         ImmutableFactory(msg.sender)
         ImmutableETHDKG()
         ImmutableValidatorPool()
+        ImmutableDynamics()
     {
         _chainId = chainId_;
         _epochLength = epochLength_;

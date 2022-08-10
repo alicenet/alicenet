@@ -133,6 +133,34 @@ abstract contract ImmutableBToken is ImmutableFactory {
     }
 }
 
+abstract contract ImmutableDynamics is ImmutableFactory {
+    address private immutable _dynamics;
+
+    modifier onlyDynamics() {
+        //TODO: fix this when error codes are merged
+        require(
+            msg.sender == _dynamics,
+            string(abi.encodePacked(ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_BTOKEN))
+        );
+        _;
+    }
+
+    constructor() {
+        _dynamics = getMetamorphicContractAddress(
+            0x44796e616d696373000000000000000000000000000000000000000000000000,
+            _factoryAddress()
+        );
+    }
+
+    function _dynamicsAddress() internal view returns (address) {
+        return _dynamics;
+    }
+
+    function _saltForDynamics() internal pure returns (bytes32) {
+        return 0x44796e616d696373000000000000000000000000000000000000000000000000;
+    }
+}
+
 abstract contract ImmutableFoundation is ImmutableFactory {
     address private immutable _foundation;
 

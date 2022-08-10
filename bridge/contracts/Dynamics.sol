@@ -6,51 +6,15 @@ import "contracts/interfaces/ISnapshots.sol";
 import "contracts/utils/ImmutableAuth.sol";
 import "contracts/libraries/dynamics/DoublyLinkedList.sol";
 import "contracts/libraries/errors/DynamicsErrors.sol";
-
-struct CanonicalVersion {
-    uint64 major;
-    uint64 minor;
-    uint64 patch;
-    bytes32 binaryHash;
-}
+import "contracts/interfaces/IDynamics.sol";
 
 /// @custom:salt Dynamics
 /// @custom:deploy-type deployUpgradeable
-contract Dynamics is Initializable, ImmutableSnapshots {
+contract Dynamics is Initializable, IDynamics, ImmutableSnapshots {
     using DoublyLinkedListLogic for DoublyLinkedList;
 
-    event DeployedStorageContract(address contractAddr);
-    event DynamicValueChanged(uint256 epoch, bytes rawDynamicValues);
-    event NewNodeVersionAvailable(CanonicalVersion version);
-
-    // enum to keep track of versions of the dynamic struct for the encoding and
-    // decoding algorithms
-    enum Version {
-        V1
-    }
-
-    struct DynamicValues {
-        // first slot
-        Version encoderVersion;
-        uint24 messageTimeout;
-        uint32 proposalTimeout;
-        uint32 preVoteTimeout;
-        uint32 preCommitTimeout;
-        uint64 maxBlockSize;
-        uint64 atomicSwapFee;
-        // Second slot
-        uint64 dataStoreFee;
-        uint64 valueStoreFee;
-        uint128 minScaledTransactionFee;
-    }
-
-    struct Configuration {
-        uint128 MinEpochsBetweenUpdates;
-        uint128 MaxEpochsBetweenUpdates;
-    }
-
     bytes8 internal constant _UNIVERSAL_DEPLOY_CODE = 0x38585839386009f3;
-    Version internal constant _currentVersion = Version.V1;
+    Version internal constant _CURRENT_VERSION = Version.V1;
 
     DoublyLinkedList internal _dynamicValues;
     Configuration internal _configuration;
@@ -72,10 +36,10 @@ contract Dynamics is Initializable, ImmutableSnapshots {
             0
         );
         // minimum 2 epochs,
-        uint128 MinEpochsBetweenUpdates = 2;
+        uint128 minEpochsBetweenUpdates = 2;
         // max 336 epochs (approx 1 month considering a snapshot every 2h)
-        uint128 MaxEpochsBetweenUpdates = 336;
-        _configuration = Configuration(MinEpochsBetweenUpdates, MaxEpochsBetweenUpdates);
+        uint128 maxEpochsBetweenUpdates = 336;
+        _configuration = Configuration(minEpochsBetweenUpdates, maxEpochsBetweenUpdates);
         _addNode(1, initialValues);
     }
 
@@ -97,13 +61,14 @@ contract Dynamics is Initializable, ImmutableSnapshots {
         }
     }
 
-    function updateNodeVersion(
+    function updateAliceNetNodeVersion(
+        uint32 relativeUpdateEpoch,
         uint32 majorVersion,
         uint32 minorVersion,
         uint32 patch,
         bytes32 binaryHash
     ) public onlyFactory {
-        _updateNodeVersion(majorVersion, minorVersion, patch, binaryHash);
+        _updateNodeVersion(relativeUpdateEpoch, majorVersion, minorVersion, patch, binaryHash);
     }
 
     function setConfiguration(Configuration calldata newConfig) public onlyFactory {
@@ -114,16 +79,8 @@ contract Dynamics is Initializable, ImmutableSnapshots {
         return _configuration;
     }
 
-    function decodeDynamicValues(address addr) public view returns (DynamicValues memory) {
-        return _decodeDynamicValues(addr);
-    }
-
-    function encodeDynamicValues(DynamicValues memory value) public pure returns (bytes memory) {
-        return _encodeDynamicValues(value);
-    }
-
-    function getEncodingVersion() public pure returns (Version) {
-        return _currentVersion;
+    function getLatestDynamicValues() public view returns (DynamicValues memory) {
+        return _decodeDynamicValues(_dynamicValues.getValue(_dynamicValues.getHead()));
     }
 
     function getPreviousDynamicValues(uint256 epoch) public view returns (DynamicValues memory) {
@@ -138,8 +95,16 @@ contract Dynamics is Initializable, ImmutableSnapshots {
         revert DynamicsErrors.DynamicValueNotFound(epoch);
     }
 
-    function getLatestDynamicValues() public view returns (DynamicValues memory) {
-        return _decodeDynamicValues(_dynamicValues.getValue(_dynamicValues.getHead()));
+    function decodeDynamicValues(address addr) public view returns (DynamicValues memory) {
+        return _decodeDynamicValues(addr);
+    }
+
+    function encodeDynamicValues(DynamicValues memory value) public pure returns (bytes memory) {
+        return _encodeDynamicValues(value);
+    }
+
+    function getEncodingVersion() public pure returns (Version) {
+        return _CURRENT_VERSION;
     }
 
     function _addNode(uint32 executionEpoch, DynamicValues memory value) internal {
@@ -165,10 +130,53 @@ contract Dynamics is Initializable, ImmutableSnapshots {
         return addr;
     }
 
-    function _decodeDynamicValues(address addr) internal view returns (DynamicValues memory values) {
+    function _updateNodeVersion(
+        uint32 relativeUpdateEpoch,
+        uint32 majorVersion,
+        uint32 minorVersion,
+        uint32 patch,
+        bytes32 binaryHash
+    ) internal {
+        CanonicalVersion memory version = CanonicalVersion(
+            majorVersion,
+            minorVersion,
+            patch,
+            binaryHash
+        );
+        _nodeCanonicalVersion = version;
+        emit NewNodeVersionAvailable(_computeExecutionEpoch(relativeUpdateEpoch), version);
+    }
+
+    function _changeDynamicValues(uint32 relativeExecutionEpoch, DynamicValues memory newValue)
+        internal
+    {
+        _addNode(_computeExecutionEpoch(relativeExecutionEpoch), newValue);
+    }
+
+    function _computeExecutionEpoch(uint32 relativeExecutionEpoch) internal view returns (uint32) {
+        Configuration memory config = _configuration;
+        if (
+            relativeExecutionEpoch < config.minEpochsBetweenUpdates ||
+            relativeExecutionEpoch > config.maxEpochsBetweenUpdates
+        ) {
+            revert DynamicsErrors.InvalidScheduledDate(
+                relativeExecutionEpoch,
+                config.minEpochsBetweenUpdates,
+                config.maxEpochsBetweenUpdates
+            );
+        }
+        uint32 currentEpoch = uint32(ISnapshots(_snapshotsAddress()).getEpoch());
+        uint32 executionEpoch = relativeExecutionEpoch + currentEpoch;
+        return executionEpoch;
+    }
+
+    function _decodeDynamicValues(address addr)
+        internal
+        view
+        returns (DynamicValues memory values)
+    {
         uint256 ptr;
         uint256 retPtr;
-        // DynamicValues memory retValue = DynamicValues(Version.V1, 0, 0, 0, 0, 0, 0, 0, 0, 0);
         uint8[10] memory sizes = [8, 24, 32, 32, 32, 64, 64, 64, 64, 128];
         uint256 dynamicValuesTotalSize = 64;
         uint256 extCodeSize;
@@ -181,7 +189,7 @@ contract Dynamics is Initializable, ImmutableSnapshots {
         if (extCodeSize == 0 || extCodeSize < dynamicValuesTotalSize) {
             revert DynamicsErrors.InvalidExtCodeSize(addr, extCodeSize);
         }
-        
+
         for (uint8 i = 0; i < sizes.length; i++) {
             uint8 size = sizes[i];
             assembly {
@@ -215,45 +223,10 @@ contract Dynamics is Initializable, ImmutableSnapshots {
         // }
         return data;
     }
-
-    function _updateNodeVersion(
-        uint32 majorVersion,
-        uint32 minorVersion,
-        uint32 patch,
-        bytes32 binaryHash
-    ) internal {
-        CanonicalVersion memory version = CanonicalVersion(
-            majorVersion,
-            minorVersion,
-            patch,
-            binaryHash
-        );
-        _nodeCanonicalVersion = version;
-        emit NewNodeVersionAvailable(version);
-    }
-
-    function _changeDynamicValues(uint32 relativeExecutionEpoch, DynamicValues memory newValue)
-        internal
-    {
-        Configuration memory config = _configuration;
-        if (
-            relativeExecutionEpoch < config.MinEpochsBetweenUpdates ||
-            relativeExecutionEpoch > config.MaxEpochsBetweenUpdates
-        ) {
-            revert DynamicsErrors.InvalidScheduledDate(
-                relativeExecutionEpoch,
-                config.MinEpochsBetweenUpdates,
-                config.MaxEpochsBetweenUpdates
-            );
-        }
-        uint32 currentEpoch = uint32(ISnapshots(_snapshotsAddress()).getEpoch());
-        uint32 executionEpoch = relativeExecutionEpoch + currentEpoch;
-        _addNode(executionEpoch, newValue);
-    }
 }
 
-contract test is Dynamics {
-    function testEnconding() public view returns(bytes memory) {
+contract TestDynamics is Dynamics {
+    function testEnconding() public view returns (bytes memory) {
         DynamicValues memory initialValues = DynamicValues(
             Version.V1,
             4000,
@@ -268,8 +241,6 @@ contract test is Dynamics {
         );
         return Dynamics._encodeDynamicValues(initialValues);
     }
-
-
 }
 
 // function getValueAtIndex(address storageAddr, uint8 index) public view returns (uint256) {
