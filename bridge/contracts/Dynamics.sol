@@ -137,14 +137,27 @@ contract Dynamics is Initializable, IDynamics, ImmutableSnapshots {
         uint32 patch,
         bytes32 binaryHash
     ) internal {
-        CanonicalVersion memory version = CanonicalVersion(
+        CanonicalVersion memory currentVersion = _nodeCanonicalVersion;
+        uint256 currentCompactedVersion = _computeCompactedVersion(
+            currentVersion.major,
+            currentVersion.minor,
+            currentVersion.patch
+        );
+        CanonicalVersion memory newVersion = CanonicalVersion(
             majorVersion,
             minorVersion,
             patch,
             binaryHash
         );
-        _nodeCanonicalVersion = version;
-        emit NewNodeVersionAvailable(_computeExecutionEpoch(relativeUpdateEpoch), version);
+        uint256 newCompactedVersion = _computeCompactedVersion(majorVersion, minorVersion, patch);
+        if (newCompactedVersion <= currentCompactedVersion) {
+            revert DynamicsErrors.InvalidAliceNetNodeVersion(newVersion, currentVersion);
+        }
+        if (binaryHash == 0) {
+            revert DynamicsErrors.InvalidAliceNetNodeHash(binaryHash);
+        }
+        _nodeCanonicalVersion = newVersion;
+        emit NewNodeVersionAvailable(_computeExecutionEpoch(relativeUpdateEpoch), newVersion);
     }
 
     function _changeDynamicValues(uint32 relativeExecutionEpoch, DynamicValues memory newValue)
@@ -168,6 +181,20 @@ contract Dynamics is Initializable, IDynamics, ImmutableSnapshots {
         uint32 currentEpoch = uint32(ISnapshots(_snapshotsAddress()).getEpoch());
         uint32 executionEpoch = relativeExecutionEpoch + currentEpoch;
         return executionEpoch;
+    }
+
+    // 000000000000000000000000000000000000000000000000000000000000000b
+    // 0000000000000000000000000000000000000000000000000000000000000001
+    // 0000000000000000000000000000000000000000000000000000000000000002
+    // 00000000000000000000000000000000000000000000000b0000000100000002
+    function _computeCompactedVersion(
+        uint256 majorVersion,
+        uint256 minorVersion,
+        uint256 patch
+    ) internal pure returns (uint256 fullVersion) {
+        assembly {
+            fullVersion := or(or(shl(majorVersion, 64), shl(minorVersion, 32)), patch)
+        }
     }
 
     function _decodeDynamicValues(address addr)
@@ -217,15 +244,15 @@ contract Dynamics is Initializable, IDynamics, ImmutableSnapshots {
             newValue.valueStoreFee,
             newValue.minScaledTransactionFee
         );
-        // Remove the first 32 bytes with the bytes length
-        // assembly {
-        //     data := add(data, 0x20)
-        // }
         return data;
     }
 }
 
 contract TestDynamics is Dynamics {
+    using DoublyLinkedListLogic for DoublyLinkedList;
+
+    constructor() Dynamics() {}
+
     function testEnconding() public view returns (bytes memory) {
         DynamicValues memory initialValues = DynamicValues(
             Version.V1,
@@ -240,6 +267,46 @@ contract TestDynamics is Dynamics {
             0
         );
         return Dynamics._encodeDynamicValues(initialValues);
+    }
+
+    function testChangeDynamicValues(uint32 relativeExecutionEpoch, DynamicValues memory newValue)
+        public
+    {
+        _changeDynamicValues(relativeExecutionEpoch, newValue);
+    }
+
+    function testUpdateHead(uint32 currentEpoch) public {
+        uint32 nextEpoch = _dynamicValues.getNextEpoch(_dynamicValues.getHead());
+        if (nextEpoch != 0 && currentEpoch >= nextEpoch) {
+            _dynamicValues.setHead(nextEpoch);
+        }
+    }
+
+    function testUpdateAliceNetNodeVersion(
+        uint32 relativeUpdateEpoch,
+        uint32 majorVersion,
+        uint32 minorVersion,
+        uint32 patch,
+        bytes32 binaryHash
+    ) public {
+        _updateNodeVersion(relativeUpdateEpoch, majorVersion, minorVersion, patch, binaryHash);
+    }
+
+    function testSetConfiguration(Configuration calldata newConfig, uint32 majorVersion,
+        uint32 minorVersion,
+        uint32 patch) public {
+        assembly {
+            let fullVersion := or(or(shl(majorVersion, 64), shl(minorVersion, 32)), patch)
+        }
+        _configuration = newConfig;
+    }
+
+    function testCompactedRepresentation(
+        uint32 majorVersion,
+        uint32 minorVersion,
+        uint32 patch
+    ) public pure returns (uint256) {
+        return _computeCompactedVersion(majorVersion, minorVersion, patch);
     }
 }
 

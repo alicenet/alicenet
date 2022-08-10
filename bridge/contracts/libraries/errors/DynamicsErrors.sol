@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT-open-group
 pragma solidity ^0.8.11;
 
+import "contracts/interfaces/IDynamics.sol";
+
 library DynamicsErrors {
     error InvalidScheduledDate(
         uint256 scheduledDate,
@@ -9,4 +11,6 @@ library DynamicsErrors {
     );
     error InvalidExtCodeSize(address addr, uint256 codeSize);
     error DynamicValueNotFound(uint256 epoch);
+    error InvalidAliceNetNodeHash(bytes32 sentHash);
+    error InvalidAliceNetNodeVersion(CanonicalVersion newVersion, CanonicalVersion current);
 }

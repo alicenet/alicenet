@@ -27,9 +27,9 @@ struct Configuration {
 }
 
 struct CanonicalVersion {
-    uint64 major;
-    uint64 minor;
-    uint64 patch;
+    uint32 major;
+    uint32 minor;
+    uint32 patch;
     bytes32 binaryHash;
 }
 
