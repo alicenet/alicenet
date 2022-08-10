@@ -62,21 +62,13 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
             revert SnapshotsErrors.ConsensusNotRunning();
         }
 
-<<<<<<< HEAD
         uint256 lastSnapshotCommittedAt = _getLatestSnapshotSafe().committedAt;
-
-        require(
-            block.number >= lastSnapshotCommittedAt + _minimumIntervalBetweenSnapshots,
-            string(abi.encodePacked(SnapshotsErrorCodes.SNAPSHOT_MIN_BLOCKS_INTERVAL_NOT_PASSED))
-        );
-=======
-        if (block.number < _snapshots[_epoch].committedAt + _minimumIntervalBetweenSnapshots) {
+        if (block.number < lastSnapshotCommittedAt + _minimumIntervalBetweenSnapshots) {
             revert SnapshotsErrors.MinimumBlocksIntervalNotPassed(
                 block.number,
-                _snapshots[_epoch].committedAt + _minimumIntervalBetweenSnapshots
+                lastSnapshotCommittedAt + _minimumIntervalBetweenSnapshots
             );
         }
->>>>>>> upstream/main
 
         uint32 epoch = _epochRegister().get() + 1;
 
@@ -109,17 +101,10 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
         BClaimsParserLibrary.BClaims memory blockClaims = BClaimsParserLibrary.extractBClaims(
             bClaims_
         );
-<<<<<<< HEAD
-        require(
-            epoch * _epochLength == blockClaims.height,
-            string(abi.encodePacked(SnapshotsErrorCodes.SNAPSHOT_INCORRECT_BLOCK_HEIGHT))
-        );
-=======
 
         if (epoch * _epochLength != blockClaims.height) {
             revert SnapshotsErrors.InvalidBlockHeight(blockClaims.height);
         }
->>>>>>> upstream/main
 
         if (blockClaims.chainId != _chainId) {
             revert SnapshotsErrors.InvalidChainId(blockClaims.chainId);
@@ -181,17 +166,7 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
     {
         Epoch storage epochReg = _epochRegister();
         {
-<<<<<<< HEAD
-            require(
-                epochReg.get() == 0,
-                string(abi.encodePacked(SnapshotsErrorCodes.SNAPSHOT_MIGRATION_NOT_ALLOWED))
-            );
-            require(
-                groupSignature_.length == bClaims_.length && groupSignature_.length >= 1,
-                string(abi.encodePacked(SnapshotsErrorCodes.SNAPSHOT_MIGRATION_INPUT_DATA_MISMATCH))
-            );
-=======
-            if (_epoch != 0) {
+            if (epochReg.get() != 0) {
                 revert SnapshotsErrors.MigrationNotAllowedAtCurrentEpoch();
             }
             if (groupSignature_.length != bClaims_.length || groupSignature_.length == 0) {
@@ -200,7 +175,6 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
                     bClaims_.length
                 );
             }
->>>>>>> upstream/main
         }
 
         uint256 epoch;
