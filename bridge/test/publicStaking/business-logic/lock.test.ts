@@ -66,7 +66,7 @@ describe("PublicStaking: Lock and LockWithdrawal", async () => {
       await mineBlocks(3n);
       await expect(
         fixture.publicStaking.connect(adminSigner).lockOwnPosition(1000, 10n)
-      ).to.revertedWith("604");
+      ).to.revertedWith("ERC721: invalid token ID");
     });
   });
 
@@ -101,7 +101,7 @@ describe("PublicStaking: Lock and LockWithdrawal", async () => {
       await mineBlocks(3n);
       await expect(
         fixture.publicStaking.connect(adminSigner).lockWithdraw(1000, 10n)
-      ).to.revertedWith("604");
+      ).to.revertedWith("ERC721: invalid token ID");
     });
 
     it("Should not allow to withdrawalLock a position with a value greater than _MAX_MINT_LOCK", async function () {

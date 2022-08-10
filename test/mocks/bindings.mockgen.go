@@ -44,6 +44,9 @@ type MockIAToken struct {
 	// FilterApprovalFunc is an instance of a mock function object
 	// controlling the behavior of the method FilterApproval.
 	FilterApprovalFunc *IATokenFilterApprovalFunc
+	// FilterInitializedFunc is an instance of a mock function object
+	// controlling the behavior of the method FilterInitialized.
+	FilterInitializedFunc *IATokenFilterInitializedFunc
 	// FilterTransferFunc is an instance of a mock function object
 	// controlling the behavior of the method FilterTransfer.
 	FilterTransferFunc *IATokenFilterTransferFunc
@@ -69,6 +72,9 @@ type MockIAToken struct {
 	// ParseApprovalFunc is an instance of a mock function object
 	// controlling the behavior of the method ParseApproval.
 	ParseApprovalFunc *IATokenParseApprovalFunc
+	// ParseInitializedFunc is an instance of a mock function object
+	// controlling the behavior of the method ParseInitialized.
+	ParseInitializedFunc *IATokenParseInitializedFunc
 	// ParseTransferFunc is an instance of a mock function object
 	// controlling the behavior of the method ParseTransfer.
 	ParseTransferFunc *IATokenParseTransferFunc
@@ -87,6 +93,9 @@ type MockIAToken struct {
 	// WatchApprovalFunc is an instance of a mock function object
 	// controlling the behavior of the method WatchApproval.
 	WatchApprovalFunc *IATokenWatchApprovalFunc
+	// WatchInitializedFunc is an instance of a mock function object
+	// controlling the behavior of the method WatchInitialized.
+	WatchInitializedFunc *IATokenWatchInitializedFunc
 	// WatchTransferFunc is an instance of a mock function object
 	// controlling the behavior of the method WatchTransfer.
 	WatchTransferFunc *IATokenWatchTransferFunc
@@ -141,6 +150,11 @@ func NewMockIAToken() *MockIAToken {
 				return
 			},
 		},
+		FilterInitializedFunc: &IATokenFilterInitializedFunc{
+			defaultHook: func(*bind.FilterOpts) (r0 *bindings.ATokenInitializedIterator, r1 error) {
+				return
+			},
+		},
 		FilterTransferFunc: &IATokenFilterTransferFunc{
 			defaultHook: func(*bind.FilterOpts, []common.Address, []common.Address) (r0 *bindings.ATokenTransferIterator, r1 error) {
 				return
@@ -181,6 +195,11 @@ func NewMockIAToken() *MockIAToken {
 				return
 			},
 		},
+		ParseInitializedFunc: &IATokenParseInitializedFunc{
+			defaultHook: func(types.Log) (r0 *bindings.ATokenInitialized, r1 error) {
+				return
+			},
+		},
 		ParseTransferFunc: &IATokenParseTransferFunc{
 			defaultHook: func(types.Log) (r0 *bindings.ATokenTransfer, r1 error) {
 				return
@@ -208,6 +227,11 @@ func NewMockIAToken() *MockIAToken {
 		},
 		WatchApprovalFunc: &IATokenWatchApprovalFunc{
 			defaultHook: func(*bind.WatchOpts, chan<- *bindings.ATokenApproval, []common.Address, []common.Address) (r0 event.Subscription, r1 error) {
+				return
+			},
+		},
+		WatchInitializedFunc: &IATokenWatchInitializedFunc{
+			defaultHook: func(*bind.WatchOpts, chan<- *bindings.ATokenInitialized) (r0 event.Subscription, r1 error) {
 				return
 			},
 		},
@@ -268,6 +292,11 @@ func NewStrictMockIAToken() *MockIAToken {
 				panic("unexpected invocation of MockIAToken.FilterApproval")
 			},
 		},
+		FilterInitializedFunc: &IATokenFilterInitializedFunc{
+			defaultHook: func(*bind.FilterOpts) (*bindings.ATokenInitializedIterator, error) {
+				panic("unexpected invocation of MockIAToken.FilterInitialized")
+			},
+		},
 		FilterTransferFunc: &IATokenFilterTransferFunc{
 			defaultHook: func(*bind.FilterOpts, []common.Address, []common.Address) (*bindings.ATokenTransferIterator, error) {
 				panic("unexpected invocation of MockIAToken.FilterTransfer")
@@ -308,6 +337,11 @@ func NewStrictMockIAToken() *MockIAToken {
 				panic("unexpected invocation of MockIAToken.ParseApproval")
 			},
 		},
+		ParseInitializedFunc: &IATokenParseInitializedFunc{
+			defaultHook: func(types.Log) (*bindings.ATokenInitialized, error) {
+				panic("unexpected invocation of MockIAToken.ParseInitialized")
+			},
+		},
 		ParseTransferFunc: &IATokenParseTransferFunc{
 			defaultHook: func(types.Log) (*bindings.ATokenTransfer, error) {
 				panic("unexpected invocation of MockIAToken.ParseTransfer")
@@ -336,6 +370,11 @@ func NewStrictMockIAToken() *MockIAToken {
 		WatchApprovalFunc: &IATokenWatchApprovalFunc{
 			defaultHook: func(*bind.WatchOpts, chan<- *bindings.ATokenApproval, []common.Address, []common.Address) (event.Subscription, error) {
 				panic("unexpected invocation of MockIAToken.WatchApproval")
+			},
+		},
+		WatchInitializedFunc: &IATokenWatchInitializedFunc{
+			defaultHook: func(*bind.WatchOpts, chan<- *bindings.ATokenInitialized) (event.Subscription, error) {
+				panic("unexpected invocation of MockIAToken.WatchInitialized")
 			},
 		},
 		WatchTransferFunc: &IATokenWatchTransferFunc{
@@ -377,6 +416,9 @@ func NewMockIATokenFrom(i bindings.IAToken) *MockIAToken {
 		FilterApprovalFunc: &IATokenFilterApprovalFunc{
 			defaultHook: i.FilterApproval,
 		},
+		FilterInitializedFunc: &IATokenFilterInitializedFunc{
+			defaultHook: i.FilterInitialized,
+		},
 		FilterTransferFunc: &IATokenFilterTransferFunc{
 			defaultHook: i.FilterTransfer,
 		},
@@ -401,6 +443,9 @@ func NewMockIATokenFrom(i bindings.IAToken) *MockIAToken {
 		ParseApprovalFunc: &IATokenParseApprovalFunc{
 			defaultHook: i.ParseApproval,
 		},
+		ParseInitializedFunc: &IATokenParseInitializedFunc{
+			defaultHook: i.ParseInitialized,
+		},
 		ParseTransferFunc: &IATokenParseTransferFunc{
 			defaultHook: i.ParseTransfer,
 		},
@@ -418,6 +463,9 @@ func NewMockIATokenFrom(i bindings.IAToken) *MockIAToken {
 		},
 		WatchApprovalFunc: &IATokenWatchApprovalFunc{
 			defaultHook: i.WatchApproval,
+		},
+		WatchInitializedFunc: &IATokenWatchInitializedFunc{
+			defaultHook: i.WatchInitialized,
 		},
 		WatchTransferFunc: &IATokenWatchTransferFunc{
 			defaultHook: i.WatchTransfer,
@@ -1405,6 +1453,111 @@ func (c IATokenFilterApprovalFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
+// IATokenFilterInitializedFunc describes the behavior when the
+// FilterInitialized method of the parent MockIAToken instance is invoked.
+type IATokenFilterInitializedFunc struct {
+	defaultHook func(*bind.FilterOpts) (*bindings.ATokenInitializedIterator, error)
+	hooks       []func(*bind.FilterOpts) (*bindings.ATokenInitializedIterator, error)
+	history     []IATokenFilterInitializedFuncCall
+	mutex       sync.Mutex
+}
+
+// FilterInitialized delegates to the next hook function in the queue and
+// stores the parameter and result values of this invocation.
+func (m *MockIAToken) FilterInitialized(v0 *bind.FilterOpts) (*bindings.ATokenInitializedIterator, error) {
+	r0, r1 := m.FilterInitializedFunc.nextHook()(v0)
+	m.FilterInitializedFunc.appendCall(IATokenFilterInitializedFuncCall{v0, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the FilterInitialized
+// method of the parent MockIAToken instance is invoked and the hook queue
+// is empty.
+func (f *IATokenFilterInitializedFunc) SetDefaultHook(hook func(*bind.FilterOpts) (*bindings.ATokenInitializedIterator, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// FilterInitialized method of the parent MockIAToken instance invokes the
+// hook at the front of the queue and discards it. After the queue is empty,
+// the default hook function is invoked for any future action.
+func (f *IATokenFilterInitializedFunc) PushHook(hook func(*bind.FilterOpts) (*bindings.ATokenInitializedIterator, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *IATokenFilterInitializedFunc) SetDefaultReturn(r0 *bindings.ATokenInitializedIterator, r1 error) {
+	f.SetDefaultHook(func(*bind.FilterOpts) (*bindings.ATokenInitializedIterator, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *IATokenFilterInitializedFunc) PushReturn(r0 *bindings.ATokenInitializedIterator, r1 error) {
+	f.PushHook(func(*bind.FilterOpts) (*bindings.ATokenInitializedIterator, error) {
+		return r0, r1
+	})
+}
+
+func (f *IATokenFilterInitializedFunc) nextHook() func(*bind.FilterOpts) (*bindings.ATokenInitializedIterator, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *IATokenFilterInitializedFunc) appendCall(r0 IATokenFilterInitializedFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of IATokenFilterInitializedFuncCall objects
+// describing the invocations of this function.
+func (f *IATokenFilterInitializedFunc) History() []IATokenFilterInitializedFuncCall {
+	f.mutex.Lock()
+	history := make([]IATokenFilterInitializedFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// IATokenFilterInitializedFuncCall is an object that describes an
+// invocation of method FilterInitialized on an instance of MockIAToken.
+type IATokenFilterInitializedFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 *bind.FilterOpts
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 *bindings.ATokenInitializedIterator
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c IATokenFilterInitializedFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c IATokenFilterInitializedFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
+}
+
 // IATokenFilterTransferFunc describes the behavior when the FilterTransfer
 // method of the parent MockIAToken instance is invoked.
 type IATokenFilterTransferFunc struct {
@@ -2268,6 +2421,111 @@ func (c IATokenParseApprovalFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
+// IATokenParseInitializedFunc describes the behavior when the
+// ParseInitialized method of the parent MockIAToken instance is invoked.
+type IATokenParseInitializedFunc struct {
+	defaultHook func(types.Log) (*bindings.ATokenInitialized, error)
+	hooks       []func(types.Log) (*bindings.ATokenInitialized, error)
+	history     []IATokenParseInitializedFuncCall
+	mutex       sync.Mutex
+}
+
+// ParseInitialized delegates to the next hook function in the queue and
+// stores the parameter and result values of this invocation.
+func (m *MockIAToken) ParseInitialized(v0 types.Log) (*bindings.ATokenInitialized, error) {
+	r0, r1 := m.ParseInitializedFunc.nextHook()(v0)
+	m.ParseInitializedFunc.appendCall(IATokenParseInitializedFuncCall{v0, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the ParseInitialized
+// method of the parent MockIAToken instance is invoked and the hook queue
+// is empty.
+func (f *IATokenParseInitializedFunc) SetDefaultHook(hook func(types.Log) (*bindings.ATokenInitialized, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// ParseInitialized method of the parent MockIAToken instance invokes the
+// hook at the front of the queue and discards it. After the queue is empty,
+// the default hook function is invoked for any future action.
+func (f *IATokenParseInitializedFunc) PushHook(hook func(types.Log) (*bindings.ATokenInitialized, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *IATokenParseInitializedFunc) SetDefaultReturn(r0 *bindings.ATokenInitialized, r1 error) {
+	f.SetDefaultHook(func(types.Log) (*bindings.ATokenInitialized, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *IATokenParseInitializedFunc) PushReturn(r0 *bindings.ATokenInitialized, r1 error) {
+	f.PushHook(func(types.Log) (*bindings.ATokenInitialized, error) {
+		return r0, r1
+	})
+}
+
+func (f *IATokenParseInitializedFunc) nextHook() func(types.Log) (*bindings.ATokenInitialized, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *IATokenParseInitializedFunc) appendCall(r0 IATokenParseInitializedFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of IATokenParseInitializedFuncCall objects
+// describing the invocations of this function.
+func (f *IATokenParseInitializedFunc) History() []IATokenParseInitializedFuncCall {
+	f.mutex.Lock()
+	history := make([]IATokenParseInitializedFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// IATokenParseInitializedFuncCall is an object that describes an invocation
+// of method ParseInitialized on an instance of MockIAToken.
+type IATokenParseInitializedFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 types.Log
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 *bindings.ATokenInitialized
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c IATokenParseInitializedFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c IATokenParseInitializedFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
+}
+
 // IATokenParseTransferFunc describes the behavior when the ParseTransfer
 // method of the parent MockIAToken instance is invoked.
 type IATokenParseTransferFunc struct {
@@ -2917,6 +3175,114 @@ func (c IATokenWatchApprovalFuncCall) Args() []interface{} {
 // Results returns an interface slice containing the results of this
 // invocation.
 func (c IATokenWatchApprovalFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
+}
+
+// IATokenWatchInitializedFunc describes the behavior when the
+// WatchInitialized method of the parent MockIAToken instance is invoked.
+type IATokenWatchInitializedFunc struct {
+	defaultHook func(*bind.WatchOpts, chan<- *bindings.ATokenInitialized) (event.Subscription, error)
+	hooks       []func(*bind.WatchOpts, chan<- *bindings.ATokenInitialized) (event.Subscription, error)
+	history     []IATokenWatchInitializedFuncCall
+	mutex       sync.Mutex
+}
+
+// WatchInitialized delegates to the next hook function in the queue and
+// stores the parameter and result values of this invocation.
+func (m *MockIAToken) WatchInitialized(v0 *bind.WatchOpts, v1 chan<- *bindings.ATokenInitialized) (event.Subscription, error) {
+	r0, r1 := m.WatchInitializedFunc.nextHook()(v0, v1)
+	m.WatchInitializedFunc.appendCall(IATokenWatchInitializedFuncCall{v0, v1, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the WatchInitialized
+// method of the parent MockIAToken instance is invoked and the hook queue
+// is empty.
+func (f *IATokenWatchInitializedFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *bindings.ATokenInitialized) (event.Subscription, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// WatchInitialized method of the parent MockIAToken instance invokes the
+// hook at the front of the queue and discards it. After the queue is empty,
+// the default hook function is invoked for any future action.
+func (f *IATokenWatchInitializedFunc) PushHook(hook func(*bind.WatchOpts, chan<- *bindings.ATokenInitialized) (event.Subscription, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *IATokenWatchInitializedFunc) SetDefaultReturn(r0 event.Subscription, r1 error) {
+	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *bindings.ATokenInitialized) (event.Subscription, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *IATokenWatchInitializedFunc) PushReturn(r0 event.Subscription, r1 error) {
+	f.PushHook(func(*bind.WatchOpts, chan<- *bindings.ATokenInitialized) (event.Subscription, error) {
+		return r0, r1
+	})
+}
+
+func (f *IATokenWatchInitializedFunc) nextHook() func(*bind.WatchOpts, chan<- *bindings.ATokenInitialized) (event.Subscription, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *IATokenWatchInitializedFunc) appendCall(r0 IATokenWatchInitializedFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of IATokenWatchInitializedFuncCall objects
+// describing the invocations of this function.
+func (f *IATokenWatchInitializedFunc) History() []IATokenWatchInitializedFuncCall {
+	f.mutex.Lock()
+	history := make([]IATokenWatchInitializedFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// IATokenWatchInitializedFuncCall is an object that describes an invocation
+// of method WatchInitialized on an instance of MockIAToken.
+type IATokenWatchInitializedFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 *bind.WatchOpts
+	// Arg1 is the value of the 2nd argument passed to this method
+	// invocation.
+	Arg1 chan<- *bindings.ATokenInitialized
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 event.Subscription
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c IATokenWatchInitializedFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0, c.Arg1}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c IATokenWatchInitializedFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
@@ -7630,6 +7996,9 @@ type MockIBToken struct {
 	// FilterDepositReceivedFunc is an instance of a mock function object
 	// controlling the behavior of the method FilterDepositReceived.
 	FilterDepositReceivedFunc *IBTokenFilterDepositReceivedFunc
+	// FilterInitializedFunc is an instance of a mock function object
+	// controlling the behavior of the method FilterInitialized.
+	FilterInitializedFunc *IBTokenFilterInitializedFunc
 	// FilterTransferFunc is an instance of a mock function object
 	// controlling the behavior of the method FilterTransfer.
 	FilterTransferFunc *IBTokenFilterTransferFunc
@@ -7673,6 +8042,9 @@ type MockIBToken struct {
 	// ParseDepositReceivedFunc is an instance of a mock function object
 	// controlling the behavior of the method ParseDepositReceived.
 	ParseDepositReceivedFunc *IBTokenParseDepositReceivedFunc
+	// ParseInitializedFunc is an instance of a mock function object
+	// controlling the behavior of the method ParseInitialized.
+	ParseInitializedFunc *IBTokenParseInitializedFunc
 	// ParseTransferFunc is an instance of a mock function object
 	// controlling the behavior of the method ParseTransfer.
 	ParseTransferFunc *IBTokenParseTransferFunc
@@ -7703,6 +8075,9 @@ type MockIBToken struct {
 	// WatchDepositReceivedFunc is an instance of a mock function object
 	// controlling the behavior of the method WatchDepositReceived.
 	WatchDepositReceivedFunc *IBTokenWatchDepositReceivedFunc
+	// WatchInitializedFunc is an instance of a mock function object
+	// controlling the behavior of the method WatchInitialized.
+	WatchInitializedFunc *IBTokenWatchInitializedFunc
 	// WatchTransferFunc is an instance of a mock function object
 	// controlling the behavior of the method WatchTransfer.
 	WatchTransferFunc *IBTokenWatchTransferFunc
@@ -7777,6 +8152,11 @@ func NewMockIBToken() *MockIBToken {
 				return
 			},
 		},
+		FilterInitializedFunc: &IBTokenFilterInitializedFunc{
+			defaultHook: func(*bind.FilterOpts) (r0 *bindings.BTokenInitializedIterator, r1 error) {
+				return
+			},
+		},
 		FilterTransferFunc: &IBTokenFilterTransferFunc{
 			defaultHook: func(*bind.FilterOpts, []common.Address, []common.Address) (r0 *bindings.BTokenTransferIterator, r1 error) {
 				return
@@ -7847,6 +8227,11 @@ func NewMockIBToken() *MockIBToken {
 				return
 			},
 		},
+		ParseInitializedFunc: &IBTokenParseInitializedFunc{
+			defaultHook: func(types.Log) (r0 *bindings.BTokenInitialized, r1 error) {
+				return
+			},
+		},
 		ParseTransferFunc: &IBTokenParseTransferFunc{
 			defaultHook: func(types.Log) (r0 *bindings.BTokenTransfer, r1 error) {
 				return
@@ -7894,6 +8279,11 @@ func NewMockIBToken() *MockIBToken {
 		},
 		WatchDepositReceivedFunc: &IBTokenWatchDepositReceivedFunc{
 			defaultHook: func(*bind.WatchOpts, chan<- *bindings.BTokenDepositReceived, []*big.Int, []uint8, []common.Address) (r0 event.Subscription, r1 error) {
+				return
+			},
+		},
+		WatchInitializedFunc: &IBTokenWatchInitializedFunc{
+			defaultHook: func(*bind.WatchOpts, chan<- *bindings.BTokenInitialized) (r0 event.Subscription, r1 error) {
 				return
 			},
 		},
@@ -7974,6 +8364,11 @@ func NewStrictMockIBToken() *MockIBToken {
 				panic("unexpected invocation of MockIBToken.FilterDepositReceived")
 			},
 		},
+		FilterInitializedFunc: &IBTokenFilterInitializedFunc{
+			defaultHook: func(*bind.FilterOpts) (*bindings.BTokenInitializedIterator, error) {
+				panic("unexpected invocation of MockIBToken.FilterInitialized")
+			},
+		},
 		FilterTransferFunc: &IBTokenFilterTransferFunc{
 			defaultHook: func(*bind.FilterOpts, []common.Address, []common.Address) (*bindings.BTokenTransferIterator, error) {
 				panic("unexpected invocation of MockIBToken.FilterTransfer")
@@ -8044,6 +8439,11 @@ func NewStrictMockIBToken() *MockIBToken {
 				panic("unexpected invocation of MockIBToken.ParseDepositReceived")
 			},
 		},
+		ParseInitializedFunc: &IBTokenParseInitializedFunc{
+			defaultHook: func(types.Log) (*bindings.BTokenInitialized, error) {
+				panic("unexpected invocation of MockIBToken.ParseInitialized")
+			},
+		},
 		ParseTransferFunc: &IBTokenParseTransferFunc{
 			defaultHook: func(types.Log) (*bindings.BTokenTransfer, error) {
 				panic("unexpected invocation of MockIBToken.ParseTransfer")
@@ -8092,6 +8492,11 @@ func NewStrictMockIBToken() *MockIBToken {
 		WatchDepositReceivedFunc: &IBTokenWatchDepositReceivedFunc{
 			defaultHook: func(*bind.WatchOpts, chan<- *bindings.BTokenDepositReceived, []*big.Int, []uint8, []common.Address) (event.Subscription, error) {
 				panic("unexpected invocation of MockIBToken.WatchDepositReceived")
+			},
+		},
+		WatchInitializedFunc: &IBTokenWatchInitializedFunc{
+			defaultHook: func(*bind.WatchOpts, chan<- *bindings.BTokenInitialized) (event.Subscription, error) {
+				panic("unexpected invocation of MockIBToken.WatchInitialized")
 			},
 		},
 		WatchTransferFunc: &IBTokenWatchTransferFunc{
@@ -8145,6 +8550,9 @@ func NewMockIBTokenFrom(i bindings.IBToken) *MockIBToken {
 		FilterDepositReceivedFunc: &IBTokenFilterDepositReceivedFunc{
 			defaultHook: i.FilterDepositReceived,
 		},
+		FilterInitializedFunc: &IBTokenFilterInitializedFunc{
+			defaultHook: i.FilterInitialized,
+		},
 		FilterTransferFunc: &IBTokenFilterTransferFunc{
 			defaultHook: i.FilterTransfer,
 		},
@@ -8187,6 +8595,9 @@ func NewMockIBTokenFrom(i bindings.IBToken) *MockIBToken {
 		ParseDepositReceivedFunc: &IBTokenParseDepositReceivedFunc{
 			defaultHook: i.ParseDepositReceived,
 		},
+		ParseInitializedFunc: &IBTokenParseInitializedFunc{
+			defaultHook: i.ParseInitialized,
+		},
 		ParseTransferFunc: &IBTokenParseTransferFunc{
 			defaultHook: i.ParseTransfer,
 		},
@@ -8216,6 +8627,9 @@ func NewMockIBTokenFrom(i bindings.IBToken) *MockIBToken {
 		},
 		WatchDepositReceivedFunc: &IBTokenWatchDepositReceivedFunc{
 			defaultHook: i.WatchDepositReceived,
+		},
+		WatchInitializedFunc: &IBTokenWatchInitializedFunc{
+			defaultHook: i.WatchInitialized,
 		},
 		WatchTransferFunc: &IBTokenWatchTransferFunc{
 			defaultHook: i.WatchTransfer,
@@ -9653,6 +10067,111 @@ func (c IBTokenFilterDepositReceivedFuncCall) Args() []interface{} {
 // Results returns an interface slice containing the results of this
 // invocation.
 func (c IBTokenFilterDepositReceivedFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
+}
+
+// IBTokenFilterInitializedFunc describes the behavior when the
+// FilterInitialized method of the parent MockIBToken instance is invoked.
+type IBTokenFilterInitializedFunc struct {
+	defaultHook func(*bind.FilterOpts) (*bindings.BTokenInitializedIterator, error)
+	hooks       []func(*bind.FilterOpts) (*bindings.BTokenInitializedIterator, error)
+	history     []IBTokenFilterInitializedFuncCall
+	mutex       sync.Mutex
+}
+
+// FilterInitialized delegates to the next hook function in the queue and
+// stores the parameter and result values of this invocation.
+func (m *MockIBToken) FilterInitialized(v0 *bind.FilterOpts) (*bindings.BTokenInitializedIterator, error) {
+	r0, r1 := m.FilterInitializedFunc.nextHook()(v0)
+	m.FilterInitializedFunc.appendCall(IBTokenFilterInitializedFuncCall{v0, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the FilterInitialized
+// method of the parent MockIBToken instance is invoked and the hook queue
+// is empty.
+func (f *IBTokenFilterInitializedFunc) SetDefaultHook(hook func(*bind.FilterOpts) (*bindings.BTokenInitializedIterator, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// FilterInitialized method of the parent MockIBToken instance invokes the
+// hook at the front of the queue and discards it. After the queue is empty,
+// the default hook function is invoked for any future action.
+func (f *IBTokenFilterInitializedFunc) PushHook(hook func(*bind.FilterOpts) (*bindings.BTokenInitializedIterator, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *IBTokenFilterInitializedFunc) SetDefaultReturn(r0 *bindings.BTokenInitializedIterator, r1 error) {
+	f.SetDefaultHook(func(*bind.FilterOpts) (*bindings.BTokenInitializedIterator, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *IBTokenFilterInitializedFunc) PushReturn(r0 *bindings.BTokenInitializedIterator, r1 error) {
+	f.PushHook(func(*bind.FilterOpts) (*bindings.BTokenInitializedIterator, error) {
+		return r0, r1
+	})
+}
+
+func (f *IBTokenFilterInitializedFunc) nextHook() func(*bind.FilterOpts) (*bindings.BTokenInitializedIterator, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *IBTokenFilterInitializedFunc) appendCall(r0 IBTokenFilterInitializedFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of IBTokenFilterInitializedFuncCall objects
+// describing the invocations of this function.
+func (f *IBTokenFilterInitializedFunc) History() []IBTokenFilterInitializedFuncCall {
+	f.mutex.Lock()
+	history := make([]IBTokenFilterInitializedFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// IBTokenFilterInitializedFuncCall is an object that describes an
+// invocation of method FilterInitialized on an instance of MockIBToken.
+type IBTokenFilterInitializedFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 *bind.FilterOpts
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 *bindings.BTokenInitializedIterator
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c IBTokenFilterInitializedFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c IBTokenFilterInitializedFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
@@ -11167,6 +11686,111 @@ func (c IBTokenParseDepositReceivedFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
+// IBTokenParseInitializedFunc describes the behavior when the
+// ParseInitialized method of the parent MockIBToken instance is invoked.
+type IBTokenParseInitializedFunc struct {
+	defaultHook func(types.Log) (*bindings.BTokenInitialized, error)
+	hooks       []func(types.Log) (*bindings.BTokenInitialized, error)
+	history     []IBTokenParseInitializedFuncCall
+	mutex       sync.Mutex
+}
+
+// ParseInitialized delegates to the next hook function in the queue and
+// stores the parameter and result values of this invocation.
+func (m *MockIBToken) ParseInitialized(v0 types.Log) (*bindings.BTokenInitialized, error) {
+	r0, r1 := m.ParseInitializedFunc.nextHook()(v0)
+	m.ParseInitializedFunc.appendCall(IBTokenParseInitializedFuncCall{v0, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the ParseInitialized
+// method of the parent MockIBToken instance is invoked and the hook queue
+// is empty.
+func (f *IBTokenParseInitializedFunc) SetDefaultHook(hook func(types.Log) (*bindings.BTokenInitialized, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// ParseInitialized method of the parent MockIBToken instance invokes the
+// hook at the front of the queue and discards it. After the queue is empty,
+// the default hook function is invoked for any future action.
+func (f *IBTokenParseInitializedFunc) PushHook(hook func(types.Log) (*bindings.BTokenInitialized, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *IBTokenParseInitializedFunc) SetDefaultReturn(r0 *bindings.BTokenInitialized, r1 error) {
+	f.SetDefaultHook(func(types.Log) (*bindings.BTokenInitialized, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *IBTokenParseInitializedFunc) PushReturn(r0 *bindings.BTokenInitialized, r1 error) {
+	f.PushHook(func(types.Log) (*bindings.BTokenInitialized, error) {
+		return r0, r1
+	})
+}
+
+func (f *IBTokenParseInitializedFunc) nextHook() func(types.Log) (*bindings.BTokenInitialized, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *IBTokenParseInitializedFunc) appendCall(r0 IBTokenParseInitializedFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of IBTokenParseInitializedFuncCall objects
+// describing the invocations of this function.
+func (f *IBTokenParseInitializedFunc) History() []IBTokenParseInitializedFuncCall {
+	f.mutex.Lock()
+	history := make([]IBTokenParseInitializedFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// IBTokenParseInitializedFuncCall is an object that describes an invocation
+// of method ParseInitialized on an instance of MockIBToken.
+type IBTokenParseInitializedFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 types.Log
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 *bindings.BTokenInitialized
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c IBTokenParseInitializedFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c IBTokenParseInitializedFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
+}
+
 // IBTokenParseTransferFunc describes the behavior when the ParseTransfer
 // method of the parent MockIBToken instance is invoked.
 type IBTokenParseTransferFunc struct {
@@ -12274,6 +12898,114 @@ func (c IBTokenWatchDepositReceivedFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
+// IBTokenWatchInitializedFunc describes the behavior when the
+// WatchInitialized method of the parent MockIBToken instance is invoked.
+type IBTokenWatchInitializedFunc struct {
+	defaultHook func(*bind.WatchOpts, chan<- *bindings.BTokenInitialized) (event.Subscription, error)
+	hooks       []func(*bind.WatchOpts, chan<- *bindings.BTokenInitialized) (event.Subscription, error)
+	history     []IBTokenWatchInitializedFuncCall
+	mutex       sync.Mutex
+}
+
+// WatchInitialized delegates to the next hook function in the queue and
+// stores the parameter and result values of this invocation.
+func (m *MockIBToken) WatchInitialized(v0 *bind.WatchOpts, v1 chan<- *bindings.BTokenInitialized) (event.Subscription, error) {
+	r0, r1 := m.WatchInitializedFunc.nextHook()(v0, v1)
+	m.WatchInitializedFunc.appendCall(IBTokenWatchInitializedFuncCall{v0, v1, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the WatchInitialized
+// method of the parent MockIBToken instance is invoked and the hook queue
+// is empty.
+func (f *IBTokenWatchInitializedFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *bindings.BTokenInitialized) (event.Subscription, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// WatchInitialized method of the parent MockIBToken instance invokes the
+// hook at the front of the queue and discards it. After the queue is empty,
+// the default hook function is invoked for any future action.
+func (f *IBTokenWatchInitializedFunc) PushHook(hook func(*bind.WatchOpts, chan<- *bindings.BTokenInitialized) (event.Subscription, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *IBTokenWatchInitializedFunc) SetDefaultReturn(r0 event.Subscription, r1 error) {
+	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *bindings.BTokenInitialized) (event.Subscription, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *IBTokenWatchInitializedFunc) PushReturn(r0 event.Subscription, r1 error) {
+	f.PushHook(func(*bind.WatchOpts, chan<- *bindings.BTokenInitialized) (event.Subscription, error) {
+		return r0, r1
+	})
+}
+
+func (f *IBTokenWatchInitializedFunc) nextHook() func(*bind.WatchOpts, chan<- *bindings.BTokenInitialized) (event.Subscription, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *IBTokenWatchInitializedFunc) appendCall(r0 IBTokenWatchInitializedFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of IBTokenWatchInitializedFuncCall objects
+// describing the invocations of this function.
+func (f *IBTokenWatchInitializedFunc) History() []IBTokenWatchInitializedFuncCall {
+	f.mutex.Lock()
+	history := make([]IBTokenWatchInitializedFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// IBTokenWatchInitializedFuncCall is an object that describes an invocation
+// of method WatchInitialized on an instance of MockIBToken.
+type IBTokenWatchInitializedFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 *bind.WatchOpts
+	// Arg1 is the value of the 2nd argument passed to this method
+	// invocation.
+	Arg1 chan<- *bindings.BTokenInitialized
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 event.Subscription
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c IBTokenWatchInitializedFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0, c.Arg1}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c IBTokenWatchInitializedFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
+}
+
 // IBTokenWatchTransferFunc describes the behavior when the WatchTransfer
 // method of the parent MockIBToken instance is invoked.
 type IBTokenWatchTransferFunc struct {
@@ -12429,6 +13161,9 @@ type MockIETHDKG struct {
 	// object controlling the behavior of the method
 	// FilterGPKJSubmissionComplete.
 	FilterGPKJSubmissionCompleteFunc *IETHDKGFilterGPKJSubmissionCompleteFunc
+	// FilterInitializedFunc is an instance of a mock function object
+	// controlling the behavior of the method FilterInitialized.
+	FilterInitializedFunc *IETHDKGFilterInitializedFunc
 	// FilterKeyShareSubmissionCompleteFunc is an instance of a mock
 	// function object controlling the behavior of the method
 	// FilterKeyShareSubmissionComplete.
@@ -12531,6 +13266,9 @@ type MockIETHDKG struct {
 	// object controlling the behavior of the method
 	// ParseGPKJSubmissionComplete.
 	ParseGPKJSubmissionCompleteFunc *IETHDKGParseGPKJSubmissionCompleteFunc
+	// ParseInitializedFunc is an instance of a mock function object
+	// controlling the behavior of the method ParseInitialized.
+	ParseInitializedFunc *IETHDKGParseInitializedFunc
 	// ParseKeyShareSubmissionCompleteFunc is an instance of a mock function
 	// object controlling the behavior of the method
 	// ParseKeyShareSubmissionComplete.
@@ -12594,6 +13332,9 @@ type MockIETHDKG struct {
 	// object controlling the behavior of the method
 	// WatchGPKJSubmissionComplete.
 	WatchGPKJSubmissionCompleteFunc *IETHDKGWatchGPKJSubmissionCompleteFunc
+	// WatchInitializedFunc is an instance of a mock function object
+	// controlling the behavior of the method WatchInitialized.
+	WatchInitializedFunc *IETHDKGWatchInitializedFunc
 	// WatchKeyShareSubmissionCompleteFunc is an instance of a mock function
 	// object controlling the behavior of the method
 	// WatchKeyShareSubmissionComplete.
@@ -12679,6 +13420,11 @@ func NewMockIETHDKG() *MockIETHDKG {
 		},
 		FilterGPKJSubmissionCompleteFunc: &IETHDKGFilterGPKJSubmissionCompleteFunc{
 			defaultHook: func(*bind.FilterOpts) (r0 *bindings.ETHDKGGPKJSubmissionCompleteIterator, r1 error) {
+				return
+			},
+		},
+		FilterInitializedFunc: &IETHDKGFilterInitializedFunc{
+			defaultHook: func(*bind.FilterOpts) (r0 *bindings.ETHDKGInitializedIterator, r1 error) {
 				return
 			},
 		},
@@ -12837,6 +13583,11 @@ func NewMockIETHDKG() *MockIETHDKG {
 				return
 			},
 		},
+		ParseInitializedFunc: &IETHDKGParseInitializedFunc{
+			defaultHook: func(types.Log) (r0 *bindings.ETHDKGInitialized, r1 error) {
+				return
+			},
+		},
 		ParseKeyShareSubmissionCompleteFunc: &IETHDKGParseKeyShareSubmissionCompleteFunc{
 			defaultHook: func(types.Log) (r0 *bindings.ETHDKGKeyShareSubmissionComplete, r1 error) {
 				return
@@ -12929,6 +13680,11 @@ func NewMockIETHDKG() *MockIETHDKG {
 		},
 		WatchGPKJSubmissionCompleteFunc: &IETHDKGWatchGPKJSubmissionCompleteFunc{
 			defaultHook: func(*bind.WatchOpts, chan<- *bindings.ETHDKGGPKJSubmissionComplete) (r0 event.Subscription, r1 error) {
+				return
+			},
+		},
+		WatchInitializedFunc: &IETHDKGWatchInitializedFunc{
+			defaultHook: func(*bind.WatchOpts, chan<- *bindings.ETHDKGInitialized) (r0 event.Subscription, r1 error) {
 				return
 			},
 		},
@@ -13032,6 +13788,11 @@ func NewStrictMockIETHDKG() *MockIETHDKG {
 		FilterGPKJSubmissionCompleteFunc: &IETHDKGFilterGPKJSubmissionCompleteFunc{
 			defaultHook: func(*bind.FilterOpts) (*bindings.ETHDKGGPKJSubmissionCompleteIterator, error) {
 				panic("unexpected invocation of MockIETHDKG.FilterGPKJSubmissionComplete")
+			},
+		},
+		FilterInitializedFunc: &IETHDKGFilterInitializedFunc{
+			defaultHook: func(*bind.FilterOpts) (*bindings.ETHDKGInitializedIterator, error) {
+				panic("unexpected invocation of MockIETHDKG.FilterInitialized")
 			},
 		},
 		FilterKeyShareSubmissionCompleteFunc: &IETHDKGFilterKeyShareSubmissionCompleteFunc{
@@ -13189,6 +13950,11 @@ func NewStrictMockIETHDKG() *MockIETHDKG {
 				panic("unexpected invocation of MockIETHDKG.ParseGPKJSubmissionComplete")
 			},
 		},
+		ParseInitializedFunc: &IETHDKGParseInitializedFunc{
+			defaultHook: func(types.Log) (*bindings.ETHDKGInitialized, error) {
+				panic("unexpected invocation of MockIETHDKG.ParseInitialized")
+			},
+		},
 		ParseKeyShareSubmissionCompleteFunc: &IETHDKGParseKeyShareSubmissionCompleteFunc{
 			defaultHook: func(types.Log) (*bindings.ETHDKGKeyShareSubmissionComplete, error) {
 				panic("unexpected invocation of MockIETHDKG.ParseKeyShareSubmissionComplete")
@@ -13284,6 +14050,11 @@ func NewStrictMockIETHDKG() *MockIETHDKG {
 				panic("unexpected invocation of MockIETHDKG.WatchGPKJSubmissionComplete")
 			},
 		},
+		WatchInitializedFunc: &IETHDKGWatchInitializedFunc{
+			defaultHook: func(*bind.WatchOpts, chan<- *bindings.ETHDKGInitialized) (event.Subscription, error) {
+				panic("unexpected invocation of MockIETHDKG.WatchInitialized")
+			},
+		},
 		WatchKeyShareSubmissionCompleteFunc: &IETHDKGWatchKeyShareSubmissionCompleteFunc{
 			defaultHook: func(*bind.WatchOpts, chan<- *bindings.ETHDKGKeyShareSubmissionComplete) (event.Subscription, error) {
 				panic("unexpected invocation of MockIETHDKG.WatchKeyShareSubmissionComplete")
@@ -13365,6 +14136,9 @@ func NewMockIETHDKGFrom(i bindings.IETHDKG) *MockIETHDKG {
 		},
 		FilterGPKJSubmissionCompleteFunc: &IETHDKGFilterGPKJSubmissionCompleteFunc{
 			defaultHook: i.FilterGPKJSubmissionComplete,
+		},
+		FilterInitializedFunc: &IETHDKGFilterInitializedFunc{
+			defaultHook: i.FilterInitialized,
 		},
 		FilterKeyShareSubmissionCompleteFunc: &IETHDKGFilterKeyShareSubmissionCompleteFunc{
 			defaultHook: i.FilterKeyShareSubmissionComplete,
@@ -13459,6 +14233,9 @@ func NewMockIETHDKGFrom(i bindings.IETHDKG) *MockIETHDKG {
 		ParseGPKJSubmissionCompleteFunc: &IETHDKGParseGPKJSubmissionCompleteFunc{
 			defaultHook: i.ParseGPKJSubmissionComplete,
 		},
+		ParseInitializedFunc: &IETHDKGParseInitializedFunc{
+			defaultHook: i.ParseInitialized,
+		},
 		ParseKeyShareSubmissionCompleteFunc: &IETHDKGParseKeyShareSubmissionCompleteFunc{
 			defaultHook: i.ParseKeyShareSubmissionComplete,
 		},
@@ -13515,6 +14292,9 @@ func NewMockIETHDKGFrom(i bindings.IETHDKG) *MockIETHDKG {
 		},
 		WatchGPKJSubmissionCompleteFunc: &IETHDKGWatchGPKJSubmissionCompleteFunc{
 			defaultHook: i.WatchGPKJSubmissionComplete,
+		},
+		WatchInitializedFunc: &IETHDKGWatchInitializedFunc{
+			defaultHook: i.WatchInitialized,
 		},
 		WatchKeyShareSubmissionCompleteFunc: &IETHDKGWatchKeyShareSubmissionCompleteFunc{
 			defaultHook: i.WatchKeyShareSubmissionComplete,
@@ -14669,6 +15449,111 @@ func (c IETHDKGFilterGPKJSubmissionCompleteFuncCall) Args() []interface{} {
 // Results returns an interface slice containing the results of this
 // invocation.
 func (c IETHDKGFilterGPKJSubmissionCompleteFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
+}
+
+// IETHDKGFilterInitializedFunc describes the behavior when the
+// FilterInitialized method of the parent MockIETHDKG instance is invoked.
+type IETHDKGFilterInitializedFunc struct {
+	defaultHook func(*bind.FilterOpts) (*bindings.ETHDKGInitializedIterator, error)
+	hooks       []func(*bind.FilterOpts) (*bindings.ETHDKGInitializedIterator, error)
+	history     []IETHDKGFilterInitializedFuncCall
+	mutex       sync.Mutex
+}
+
+// FilterInitialized delegates to the next hook function in the queue and
+// stores the parameter and result values of this invocation.
+func (m *MockIETHDKG) FilterInitialized(v0 *bind.FilterOpts) (*bindings.ETHDKGInitializedIterator, error) {
+	r0, r1 := m.FilterInitializedFunc.nextHook()(v0)
+	m.FilterInitializedFunc.appendCall(IETHDKGFilterInitializedFuncCall{v0, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the FilterInitialized
+// method of the parent MockIETHDKG instance is invoked and the hook queue
+// is empty.
+func (f *IETHDKGFilterInitializedFunc) SetDefaultHook(hook func(*bind.FilterOpts) (*bindings.ETHDKGInitializedIterator, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// FilterInitialized method of the parent MockIETHDKG instance invokes the
+// hook at the front of the queue and discards it. After the queue is empty,
+// the default hook function is invoked for any future action.
+func (f *IETHDKGFilterInitializedFunc) PushHook(hook func(*bind.FilterOpts) (*bindings.ETHDKGInitializedIterator, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *IETHDKGFilterInitializedFunc) SetDefaultReturn(r0 *bindings.ETHDKGInitializedIterator, r1 error) {
+	f.SetDefaultHook(func(*bind.FilterOpts) (*bindings.ETHDKGInitializedIterator, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *IETHDKGFilterInitializedFunc) PushReturn(r0 *bindings.ETHDKGInitializedIterator, r1 error) {
+	f.PushHook(func(*bind.FilterOpts) (*bindings.ETHDKGInitializedIterator, error) {
+		return r0, r1
+	})
+}
+
+func (f *IETHDKGFilterInitializedFunc) nextHook() func(*bind.FilterOpts) (*bindings.ETHDKGInitializedIterator, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *IETHDKGFilterInitializedFunc) appendCall(r0 IETHDKGFilterInitializedFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of IETHDKGFilterInitializedFuncCall objects
+// describing the invocations of this function.
+func (f *IETHDKGFilterInitializedFunc) History() []IETHDKGFilterInitializedFuncCall {
+	f.mutex.Lock()
+	history := make([]IETHDKGFilterInitializedFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// IETHDKGFilterInitializedFuncCall is an object that describes an
+// invocation of method FilterInitialized on an instance of MockIETHDKG.
+type IETHDKGFilterInitializedFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 *bind.FilterOpts
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 *bindings.ETHDKGInitializedIterator
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c IETHDKGFilterInitializedFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c IETHDKGFilterInitializedFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
@@ -18010,6 +18895,111 @@ func (c IETHDKGParseGPKJSubmissionCompleteFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
+// IETHDKGParseInitializedFunc describes the behavior when the
+// ParseInitialized method of the parent MockIETHDKG instance is invoked.
+type IETHDKGParseInitializedFunc struct {
+	defaultHook func(types.Log) (*bindings.ETHDKGInitialized, error)
+	hooks       []func(types.Log) (*bindings.ETHDKGInitialized, error)
+	history     []IETHDKGParseInitializedFuncCall
+	mutex       sync.Mutex
+}
+
+// ParseInitialized delegates to the next hook function in the queue and
+// stores the parameter and result values of this invocation.
+func (m *MockIETHDKG) ParseInitialized(v0 types.Log) (*bindings.ETHDKGInitialized, error) {
+	r0, r1 := m.ParseInitializedFunc.nextHook()(v0)
+	m.ParseInitializedFunc.appendCall(IETHDKGParseInitializedFuncCall{v0, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the ParseInitialized
+// method of the parent MockIETHDKG instance is invoked and the hook queue
+// is empty.
+func (f *IETHDKGParseInitializedFunc) SetDefaultHook(hook func(types.Log) (*bindings.ETHDKGInitialized, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// ParseInitialized method of the parent MockIETHDKG instance invokes the
+// hook at the front of the queue and discards it. After the queue is empty,
+// the default hook function is invoked for any future action.
+func (f *IETHDKGParseInitializedFunc) PushHook(hook func(types.Log) (*bindings.ETHDKGInitialized, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *IETHDKGParseInitializedFunc) SetDefaultReturn(r0 *bindings.ETHDKGInitialized, r1 error) {
+	f.SetDefaultHook(func(types.Log) (*bindings.ETHDKGInitialized, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *IETHDKGParseInitializedFunc) PushReturn(r0 *bindings.ETHDKGInitialized, r1 error) {
+	f.PushHook(func(types.Log) (*bindings.ETHDKGInitialized, error) {
+		return r0, r1
+	})
+}
+
+func (f *IETHDKGParseInitializedFunc) nextHook() func(types.Log) (*bindings.ETHDKGInitialized, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *IETHDKGParseInitializedFunc) appendCall(r0 IETHDKGParseInitializedFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of IETHDKGParseInitializedFuncCall objects
+// describing the invocations of this function.
+func (f *IETHDKGParseInitializedFunc) History() []IETHDKGParseInitializedFuncCall {
+	f.mutex.Lock()
+	history := make([]IETHDKGParseInitializedFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// IETHDKGParseInitializedFuncCall is an object that describes an invocation
+// of method ParseInitialized on an instance of MockIETHDKG.
+type IETHDKGParseInitializedFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 types.Log
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 *bindings.ETHDKGInitialized
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c IETHDKGParseInitializedFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c IETHDKGParseInitializedFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
+}
+
 // IETHDKGParseKeyShareSubmissionCompleteFunc describes the behavior when
 // the ParseKeyShareSubmissionComplete method of the parent MockIETHDKG
 // instance is invoked.
@@ -20076,6 +21066,114 @@ func (c IETHDKGWatchGPKJSubmissionCompleteFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
+// IETHDKGWatchInitializedFunc describes the behavior when the
+// WatchInitialized method of the parent MockIETHDKG instance is invoked.
+type IETHDKGWatchInitializedFunc struct {
+	defaultHook func(*bind.WatchOpts, chan<- *bindings.ETHDKGInitialized) (event.Subscription, error)
+	hooks       []func(*bind.WatchOpts, chan<- *bindings.ETHDKGInitialized) (event.Subscription, error)
+	history     []IETHDKGWatchInitializedFuncCall
+	mutex       sync.Mutex
+}
+
+// WatchInitialized delegates to the next hook function in the queue and
+// stores the parameter and result values of this invocation.
+func (m *MockIETHDKG) WatchInitialized(v0 *bind.WatchOpts, v1 chan<- *bindings.ETHDKGInitialized) (event.Subscription, error) {
+	r0, r1 := m.WatchInitializedFunc.nextHook()(v0, v1)
+	m.WatchInitializedFunc.appendCall(IETHDKGWatchInitializedFuncCall{v0, v1, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the WatchInitialized
+// method of the parent MockIETHDKG instance is invoked and the hook queue
+// is empty.
+func (f *IETHDKGWatchInitializedFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *bindings.ETHDKGInitialized) (event.Subscription, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// WatchInitialized method of the parent MockIETHDKG instance invokes the
+// hook at the front of the queue and discards it. After the queue is empty,
+// the default hook function is invoked for any future action.
+func (f *IETHDKGWatchInitializedFunc) PushHook(hook func(*bind.WatchOpts, chan<- *bindings.ETHDKGInitialized) (event.Subscription, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *IETHDKGWatchInitializedFunc) SetDefaultReturn(r0 event.Subscription, r1 error) {
+	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *bindings.ETHDKGInitialized) (event.Subscription, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *IETHDKGWatchInitializedFunc) PushReturn(r0 event.Subscription, r1 error) {
+	f.PushHook(func(*bind.WatchOpts, chan<- *bindings.ETHDKGInitialized) (event.Subscription, error) {
+		return r0, r1
+	})
+}
+
+func (f *IETHDKGWatchInitializedFunc) nextHook() func(*bind.WatchOpts, chan<- *bindings.ETHDKGInitialized) (event.Subscription, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *IETHDKGWatchInitializedFunc) appendCall(r0 IETHDKGWatchInitializedFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of IETHDKGWatchInitializedFuncCall objects
+// describing the invocations of this function.
+func (f *IETHDKGWatchInitializedFunc) History() []IETHDKGWatchInitializedFuncCall {
+	f.mutex.Lock()
+	history := make([]IETHDKGWatchInitializedFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// IETHDKGWatchInitializedFuncCall is an object that describes an invocation
+// of method WatchInitialized on an instance of MockIETHDKG.
+type IETHDKGWatchInitializedFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 *bind.WatchOpts
+	// Arg1 is the value of the 2nd argument passed to this method
+	// invocation.
+	Arg1 chan<- *bindings.ETHDKGInitialized
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 event.Subscription
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c IETHDKGWatchInitializedFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0, c.Arg1}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c IETHDKGWatchInitializedFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
+}
+
 // IETHDKGWatchKeyShareSubmissionCompleteFunc describes the behavior when
 // the WatchKeyShareSubmissionComplete method of the parent MockIETHDKG
 // instance is invoked.
@@ -21672,6 +22770,9 @@ type MockIPublicStaking struct {
 	// FilterApprovalForAllFunc is an instance of a mock function object
 	// controlling the behavior of the method FilterApprovalForAll.
 	FilterApprovalForAllFunc *IPublicStakingFilterApprovalForAllFunc
+	// FilterInitializedFunc is an instance of a mock function object
+	// controlling the behavior of the method FilterInitialized.
+	FilterInitializedFunc *IPublicStakingFilterInitializedFunc
 	// FilterTransferFunc is an instance of a mock function object
 	// controlling the behavior of the method FilterTransfer.
 	FilterTransferFunc *IPublicStakingFilterTransferFunc
@@ -21685,6 +22786,9 @@ type MockIPublicStaking struct {
 	// GetEthAccumulatorFunc is an instance of a mock function object
 	// controlling the behavior of the method GetEthAccumulator.
 	GetEthAccumulatorFunc *IPublicStakingGetEthAccumulatorFunc
+	// GetMaxGovernanceLockFunc is an instance of a mock function object
+	// controlling the behavior of the method GetMaxGovernanceLock.
+	GetMaxGovernanceLockFunc *IPublicStakingGetMaxGovernanceLockFunc
 	// GetMaxMintLockFunc is an instance of a mock function object
 	// controlling the behavior of the method GetMaxMintLock.
 	GetMaxMintLockFunc *IPublicStakingGetMaxMintLockFunc
@@ -21740,6 +22844,9 @@ type MockIPublicStaking struct {
 	// ParseApprovalForAllFunc is an instance of a mock function object
 	// controlling the behavior of the method ParseApprovalForAll.
 	ParseApprovalForAllFunc *IPublicStakingParseApprovalForAllFunc
+	// ParseInitializedFunc is an instance of a mock function object
+	// controlling the behavior of the method ParseInitialized.
+	ParseInitializedFunc *IPublicStakingParseInitializedFunc
 	// ParseTransferFunc is an instance of a mock function object
 	// controlling the behavior of the method ParseTransfer.
 	ParseTransferFunc *IPublicStakingParseTransferFunc
@@ -21779,6 +22886,9 @@ type MockIPublicStaking struct {
 	// WatchApprovalForAllFunc is an instance of a mock function object
 	// controlling the behavior of the method WatchApprovalForAll.
 	WatchApprovalForAllFunc *IPublicStakingWatchApprovalForAllFunc
+	// WatchInitializedFunc is an instance of a mock function object
+	// controlling the behavior of the method WatchInitialized.
+	WatchInitializedFunc *IPublicStakingWatchInitializedFunc
 	// WatchTransferFunc is an instance of a mock function object
 	// controlling the behavior of the method WatchTransfer.
 	WatchTransferFunc *IPublicStakingWatchTransferFunc
@@ -21873,6 +22983,11 @@ func NewMockIPublicStaking() *MockIPublicStaking {
 				return
 			},
 		},
+		FilterInitializedFunc: &IPublicStakingFilterInitializedFunc{
+			defaultHook: func(*bind.FilterOpts) (r0 *bindings.PublicStakingInitializedIterator, r1 error) {
+				return
+			},
+		},
 		FilterTransferFunc: &IPublicStakingFilterTransferFunc{
 			defaultHook: func(*bind.FilterOpts, []common.Address, []common.Address, []*big.Int) (r0 *bindings.PublicStakingTransferIterator, r1 error) {
 				return
@@ -21893,6 +23008,11 @@ func NewMockIPublicStaking() *MockIPublicStaking {
 				Accumulator *big.Int
 				Slush       *big.Int
 			}, r1 error) {
+				return
+			},
+		},
+		GetMaxGovernanceLockFunc: &IPublicStakingGetMaxGovernanceLockFunc{
+			defaultHook: func(*bind.CallOpts) (r0 *big.Int, r1 error) {
 				return
 			},
 		},
@@ -21995,6 +23115,11 @@ func NewMockIPublicStaking() *MockIPublicStaking {
 				return
 			},
 		},
+		ParseInitializedFunc: &IPublicStakingParseInitializedFunc{
+			defaultHook: func(types.Log) (r0 *bindings.PublicStakingInitialized, r1 error) {
+				return
+			},
+		},
 		ParseTransferFunc: &IPublicStakingParseTransferFunc{
 			defaultHook: func(types.Log) (r0 *bindings.PublicStakingTransfer, r1 error) {
 				return
@@ -22057,6 +23182,11 @@ func NewMockIPublicStaking() *MockIPublicStaking {
 		},
 		WatchApprovalForAllFunc: &IPublicStakingWatchApprovalForAllFunc{
 			defaultHook: func(*bind.WatchOpts, chan<- *bindings.PublicStakingApprovalForAll, []common.Address, []common.Address) (r0 event.Subscription, r1 error) {
+				return
+			},
+		},
+		WatchInitializedFunc: &IPublicStakingWatchInitializedFunc{
+			defaultHook: func(*bind.WatchOpts, chan<- *bindings.PublicStakingInitialized) (r0 event.Subscription, r1 error) {
 				return
 			},
 		},
@@ -22157,6 +23287,11 @@ func NewStrictMockIPublicStaking() *MockIPublicStaking {
 				panic("unexpected invocation of MockIPublicStaking.FilterApprovalForAll")
 			},
 		},
+		FilterInitializedFunc: &IPublicStakingFilterInitializedFunc{
+			defaultHook: func(*bind.FilterOpts) (*bindings.PublicStakingInitializedIterator, error) {
+				panic("unexpected invocation of MockIPublicStaking.FilterInitialized")
+			},
+		},
 		FilterTransferFunc: &IPublicStakingFilterTransferFunc{
 			defaultHook: func(*bind.FilterOpts, []common.Address, []common.Address, []*big.Int) (*bindings.PublicStakingTransferIterator, error) {
 				panic("unexpected invocation of MockIPublicStaking.FilterTransfer")
@@ -22178,6 +23313,11 @@ func NewStrictMockIPublicStaking() *MockIPublicStaking {
 				Slush       *big.Int
 			}, error) {
 				panic("unexpected invocation of MockIPublicStaking.GetEthAccumulator")
+			},
+		},
+		GetMaxGovernanceLockFunc: &IPublicStakingGetMaxGovernanceLockFunc{
+			defaultHook: func(*bind.CallOpts) (*big.Int, error) {
+				panic("unexpected invocation of MockIPublicStaking.GetMaxGovernanceLock")
 			},
 		},
 		GetMaxMintLockFunc: &IPublicStakingGetMaxMintLockFunc{
@@ -22279,6 +23419,11 @@ func NewStrictMockIPublicStaking() *MockIPublicStaking {
 				panic("unexpected invocation of MockIPublicStaking.ParseApprovalForAll")
 			},
 		},
+		ParseInitializedFunc: &IPublicStakingParseInitializedFunc{
+			defaultHook: func(types.Log) (*bindings.PublicStakingInitialized, error) {
+				panic("unexpected invocation of MockIPublicStaking.ParseInitialized")
+			},
+		},
 		ParseTransferFunc: &IPublicStakingParseTransferFunc{
 			defaultHook: func(types.Log) (*bindings.PublicStakingTransfer, error) {
 				panic("unexpected invocation of MockIPublicStaking.ParseTransfer")
@@ -22342,6 +23487,11 @@ func NewStrictMockIPublicStaking() *MockIPublicStaking {
 		WatchApprovalForAllFunc: &IPublicStakingWatchApprovalForAllFunc{
 			defaultHook: func(*bind.WatchOpts, chan<- *bindings.PublicStakingApprovalForAll, []common.Address, []common.Address) (event.Subscription, error) {
 				panic("unexpected invocation of MockIPublicStaking.WatchApprovalForAll")
+			},
+		},
+		WatchInitializedFunc: &IPublicStakingWatchInitializedFunc{
+			defaultHook: func(*bind.WatchOpts, chan<- *bindings.PublicStakingInitialized) (event.Subscription, error) {
+				panic("unexpected invocation of MockIPublicStaking.WatchInitialized")
 			},
 		},
 		WatchTransferFunc: &IPublicStakingWatchTransferFunc{
@@ -22408,6 +23558,9 @@ func NewMockIPublicStakingFrom(i bindings.IPublicStaking) *MockIPublicStaking {
 		FilterApprovalForAllFunc: &IPublicStakingFilterApprovalForAllFunc{
 			defaultHook: i.FilterApprovalForAll,
 		},
+		FilterInitializedFunc: &IPublicStakingFilterInitializedFunc{
+			defaultHook: i.FilterInitialized,
+		},
 		FilterTransferFunc: &IPublicStakingFilterTransferFunc{
 			defaultHook: i.FilterTransfer,
 		},
@@ -22419,6 +23572,9 @@ func NewMockIPublicStakingFrom(i bindings.IPublicStaking) *MockIPublicStaking {
 		},
 		GetEthAccumulatorFunc: &IPublicStakingGetEthAccumulatorFunc{
 			defaultHook: i.GetEthAccumulator,
+		},
+		GetMaxGovernanceLockFunc: &IPublicStakingGetMaxGovernanceLockFunc{
+			defaultHook: i.GetMaxGovernanceLock,
 		},
 		GetMaxMintLockFunc: &IPublicStakingGetMaxMintLockFunc{
 			defaultHook: i.GetMaxMintLock,
@@ -22474,6 +23630,9 @@ func NewMockIPublicStakingFrom(i bindings.IPublicStaking) *MockIPublicStaking {
 		ParseApprovalForAllFunc: &IPublicStakingParseApprovalForAllFunc{
 			defaultHook: i.ParseApprovalForAll,
 		},
+		ParseInitializedFunc: &IPublicStakingParseInitializedFunc{
+			defaultHook: i.ParseInitialized,
+		},
 		ParseTransferFunc: &IPublicStakingParseTransferFunc{
 			defaultHook: i.ParseTransfer,
 		},
@@ -22512,6 +23671,9 @@ func NewMockIPublicStakingFrom(i bindings.IPublicStaking) *MockIPublicStaking {
 		},
 		WatchApprovalForAllFunc: &IPublicStakingWatchApprovalForAllFunc{
 			defaultHook: i.WatchApprovalForAll,
+		},
+		WatchInitializedFunc: &IPublicStakingWatchInitializedFunc{
+			defaultHook: i.WatchInitialized,
 		},
 		WatchTransferFunc: &IPublicStakingWatchTransferFunc{
 			defaultHook: i.WatchTransfer,
@@ -24391,6 +25553,114 @@ func (c IPublicStakingFilterApprovalForAllFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
+// IPublicStakingFilterInitializedFunc describes the behavior when the
+// FilterInitialized method of the parent MockIPublicStaking instance is
+// invoked.
+type IPublicStakingFilterInitializedFunc struct {
+	defaultHook func(*bind.FilterOpts) (*bindings.PublicStakingInitializedIterator, error)
+	hooks       []func(*bind.FilterOpts) (*bindings.PublicStakingInitializedIterator, error)
+	history     []IPublicStakingFilterInitializedFuncCall
+	mutex       sync.Mutex
+}
+
+// FilterInitialized delegates to the next hook function in the queue and
+// stores the parameter and result values of this invocation.
+func (m *MockIPublicStaking) FilterInitialized(v0 *bind.FilterOpts) (*bindings.PublicStakingInitializedIterator, error) {
+	r0, r1 := m.FilterInitializedFunc.nextHook()(v0)
+	m.FilterInitializedFunc.appendCall(IPublicStakingFilterInitializedFuncCall{v0, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the FilterInitialized
+// method of the parent MockIPublicStaking instance is invoked and the hook
+// queue is empty.
+func (f *IPublicStakingFilterInitializedFunc) SetDefaultHook(hook func(*bind.FilterOpts) (*bindings.PublicStakingInitializedIterator, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// FilterInitialized method of the parent MockIPublicStaking instance
+// invokes the hook at the front of the queue and discards it. After the
+// queue is empty, the default hook function is invoked for any future
+// action.
+func (f *IPublicStakingFilterInitializedFunc) PushHook(hook func(*bind.FilterOpts) (*bindings.PublicStakingInitializedIterator, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *IPublicStakingFilterInitializedFunc) SetDefaultReturn(r0 *bindings.PublicStakingInitializedIterator, r1 error) {
+	f.SetDefaultHook(func(*bind.FilterOpts) (*bindings.PublicStakingInitializedIterator, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *IPublicStakingFilterInitializedFunc) PushReturn(r0 *bindings.PublicStakingInitializedIterator, r1 error) {
+	f.PushHook(func(*bind.FilterOpts) (*bindings.PublicStakingInitializedIterator, error) {
+		return r0, r1
+	})
+}
+
+func (f *IPublicStakingFilterInitializedFunc) nextHook() func(*bind.FilterOpts) (*bindings.PublicStakingInitializedIterator, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *IPublicStakingFilterInitializedFunc) appendCall(r0 IPublicStakingFilterInitializedFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of IPublicStakingFilterInitializedFuncCall
+// objects describing the invocations of this function.
+func (f *IPublicStakingFilterInitializedFunc) History() []IPublicStakingFilterInitializedFuncCall {
+	f.mutex.Lock()
+	history := make([]IPublicStakingFilterInitializedFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// IPublicStakingFilterInitializedFuncCall is an object that describes an
+// invocation of method FilterInitialized on an instance of
+// MockIPublicStaking.
+type IPublicStakingFilterInitializedFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 *bind.FilterOpts
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 *bindings.PublicStakingInitializedIterator
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c IPublicStakingFilterInitializedFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c IPublicStakingFilterInitializedFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
+}
+
 // IPublicStakingFilterTransferFunc describes the behavior when the
 // FilterTransfer method of the parent MockIPublicStaking instance is
 // invoked.
@@ -24861,6 +26131,114 @@ func (c IPublicStakingGetEthAccumulatorFuncCall) Args() []interface{} {
 // Results returns an interface slice containing the results of this
 // invocation.
 func (c IPublicStakingGetEthAccumulatorFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
+}
+
+// IPublicStakingGetMaxGovernanceLockFunc describes the behavior when the
+// GetMaxGovernanceLock method of the parent MockIPublicStaking instance is
+// invoked.
+type IPublicStakingGetMaxGovernanceLockFunc struct {
+	defaultHook func(*bind.CallOpts) (*big.Int, error)
+	hooks       []func(*bind.CallOpts) (*big.Int, error)
+	history     []IPublicStakingGetMaxGovernanceLockFuncCall
+	mutex       sync.Mutex
+}
+
+// GetMaxGovernanceLock delegates to the next hook function in the queue and
+// stores the parameter and result values of this invocation.
+func (m *MockIPublicStaking) GetMaxGovernanceLock(v0 *bind.CallOpts) (*big.Int, error) {
+	r0, r1 := m.GetMaxGovernanceLockFunc.nextHook()(v0)
+	m.GetMaxGovernanceLockFunc.appendCall(IPublicStakingGetMaxGovernanceLockFuncCall{v0, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the GetMaxGovernanceLock
+// method of the parent MockIPublicStaking instance is invoked and the hook
+// queue is empty.
+func (f *IPublicStakingGetMaxGovernanceLockFunc) SetDefaultHook(hook func(*bind.CallOpts) (*big.Int, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// GetMaxGovernanceLock method of the parent MockIPublicStaking instance
+// invokes the hook at the front of the queue and discards it. After the
+// queue is empty, the default hook function is invoked for any future
+// action.
+func (f *IPublicStakingGetMaxGovernanceLockFunc) PushHook(hook func(*bind.CallOpts) (*big.Int, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *IPublicStakingGetMaxGovernanceLockFunc) SetDefaultReturn(r0 *big.Int, r1 error) {
+	f.SetDefaultHook(func(*bind.CallOpts) (*big.Int, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *IPublicStakingGetMaxGovernanceLockFunc) PushReturn(r0 *big.Int, r1 error) {
+	f.PushHook(func(*bind.CallOpts) (*big.Int, error) {
+		return r0, r1
+	})
+}
+
+func (f *IPublicStakingGetMaxGovernanceLockFunc) nextHook() func(*bind.CallOpts) (*big.Int, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *IPublicStakingGetMaxGovernanceLockFunc) appendCall(r0 IPublicStakingGetMaxGovernanceLockFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of IPublicStakingGetMaxGovernanceLockFuncCall
+// objects describing the invocations of this function.
+func (f *IPublicStakingGetMaxGovernanceLockFunc) History() []IPublicStakingGetMaxGovernanceLockFuncCall {
+	f.mutex.Lock()
+	history := make([]IPublicStakingGetMaxGovernanceLockFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// IPublicStakingGetMaxGovernanceLockFuncCall is an object that describes an
+// invocation of method GetMaxGovernanceLock on an instance of
+// MockIPublicStaking.
+type IPublicStakingGetMaxGovernanceLockFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 *bind.CallOpts
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 *big.Int
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c IPublicStakingGetMaxGovernanceLockFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c IPublicStakingGetMaxGovernanceLockFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
@@ -26927,6 +28305,113 @@ func (c IPublicStakingParseApprovalForAllFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
+// IPublicStakingParseInitializedFunc describes the behavior when the
+// ParseInitialized method of the parent MockIPublicStaking instance is
+// invoked.
+type IPublicStakingParseInitializedFunc struct {
+	defaultHook func(types.Log) (*bindings.PublicStakingInitialized, error)
+	hooks       []func(types.Log) (*bindings.PublicStakingInitialized, error)
+	history     []IPublicStakingParseInitializedFuncCall
+	mutex       sync.Mutex
+}
+
+// ParseInitialized delegates to the next hook function in the queue and
+// stores the parameter and result values of this invocation.
+func (m *MockIPublicStaking) ParseInitialized(v0 types.Log) (*bindings.PublicStakingInitialized, error) {
+	r0, r1 := m.ParseInitializedFunc.nextHook()(v0)
+	m.ParseInitializedFunc.appendCall(IPublicStakingParseInitializedFuncCall{v0, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the ParseInitialized
+// method of the parent MockIPublicStaking instance is invoked and the hook
+// queue is empty.
+func (f *IPublicStakingParseInitializedFunc) SetDefaultHook(hook func(types.Log) (*bindings.PublicStakingInitialized, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// ParseInitialized method of the parent MockIPublicStaking instance invokes
+// the hook at the front of the queue and discards it. After the queue is
+// empty, the default hook function is invoked for any future action.
+func (f *IPublicStakingParseInitializedFunc) PushHook(hook func(types.Log) (*bindings.PublicStakingInitialized, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *IPublicStakingParseInitializedFunc) SetDefaultReturn(r0 *bindings.PublicStakingInitialized, r1 error) {
+	f.SetDefaultHook(func(types.Log) (*bindings.PublicStakingInitialized, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *IPublicStakingParseInitializedFunc) PushReturn(r0 *bindings.PublicStakingInitialized, r1 error) {
+	f.PushHook(func(types.Log) (*bindings.PublicStakingInitialized, error) {
+		return r0, r1
+	})
+}
+
+func (f *IPublicStakingParseInitializedFunc) nextHook() func(types.Log) (*bindings.PublicStakingInitialized, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *IPublicStakingParseInitializedFunc) appendCall(r0 IPublicStakingParseInitializedFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of IPublicStakingParseInitializedFuncCall
+// objects describing the invocations of this function.
+func (f *IPublicStakingParseInitializedFunc) History() []IPublicStakingParseInitializedFuncCall {
+	f.mutex.Lock()
+	history := make([]IPublicStakingParseInitializedFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// IPublicStakingParseInitializedFuncCall is an object that describes an
+// invocation of method ParseInitialized on an instance of
+// MockIPublicStaking.
+type IPublicStakingParseInitializedFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 types.Log
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 *bindings.PublicStakingInitialized
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c IPublicStakingParseInitializedFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c IPublicStakingParseInitializedFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
+}
+
 // IPublicStakingParseTransferFunc describes the behavior when the
 // ParseTransfer method of the parent MockIPublicStaking instance is
 // invoked.
@@ -28380,6 +29865,116 @@ func (c IPublicStakingWatchApprovalForAllFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
+// IPublicStakingWatchInitializedFunc describes the behavior when the
+// WatchInitialized method of the parent MockIPublicStaking instance is
+// invoked.
+type IPublicStakingWatchInitializedFunc struct {
+	defaultHook func(*bind.WatchOpts, chan<- *bindings.PublicStakingInitialized) (event.Subscription, error)
+	hooks       []func(*bind.WatchOpts, chan<- *bindings.PublicStakingInitialized) (event.Subscription, error)
+	history     []IPublicStakingWatchInitializedFuncCall
+	mutex       sync.Mutex
+}
+
+// WatchInitialized delegates to the next hook function in the queue and
+// stores the parameter and result values of this invocation.
+func (m *MockIPublicStaking) WatchInitialized(v0 *bind.WatchOpts, v1 chan<- *bindings.PublicStakingInitialized) (event.Subscription, error) {
+	r0, r1 := m.WatchInitializedFunc.nextHook()(v0, v1)
+	m.WatchInitializedFunc.appendCall(IPublicStakingWatchInitializedFuncCall{v0, v1, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the WatchInitialized
+// method of the parent MockIPublicStaking instance is invoked and the hook
+// queue is empty.
+func (f *IPublicStakingWatchInitializedFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *bindings.PublicStakingInitialized) (event.Subscription, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// WatchInitialized method of the parent MockIPublicStaking instance invokes
+// the hook at the front of the queue and discards it. After the queue is
+// empty, the default hook function is invoked for any future action.
+func (f *IPublicStakingWatchInitializedFunc) PushHook(hook func(*bind.WatchOpts, chan<- *bindings.PublicStakingInitialized) (event.Subscription, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *IPublicStakingWatchInitializedFunc) SetDefaultReturn(r0 event.Subscription, r1 error) {
+	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *bindings.PublicStakingInitialized) (event.Subscription, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *IPublicStakingWatchInitializedFunc) PushReturn(r0 event.Subscription, r1 error) {
+	f.PushHook(func(*bind.WatchOpts, chan<- *bindings.PublicStakingInitialized) (event.Subscription, error) {
+		return r0, r1
+	})
+}
+
+func (f *IPublicStakingWatchInitializedFunc) nextHook() func(*bind.WatchOpts, chan<- *bindings.PublicStakingInitialized) (event.Subscription, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *IPublicStakingWatchInitializedFunc) appendCall(r0 IPublicStakingWatchInitializedFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of IPublicStakingWatchInitializedFuncCall
+// objects describing the invocations of this function.
+func (f *IPublicStakingWatchInitializedFunc) History() []IPublicStakingWatchInitializedFuncCall {
+	f.mutex.Lock()
+	history := make([]IPublicStakingWatchInitializedFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// IPublicStakingWatchInitializedFuncCall is an object that describes an
+// invocation of method WatchInitialized on an instance of
+// MockIPublicStaking.
+type IPublicStakingWatchInitializedFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 *bind.WatchOpts
+	// Arg1 is the value of the 2nd argument passed to this method
+	// invocation.
+	Arg1 chan<- *bindings.PublicStakingInitialized
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 event.Subscription
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c IPublicStakingWatchInitializedFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0, c.Arg1}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c IPublicStakingWatchInitializedFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
+}
+
 // IPublicStakingWatchTransferFunc describes the behavior when the
 // WatchTransfer method of the parent MockIPublicStaking instance is
 // invoked.
@@ -28502,6 +30097,9 @@ func (c IPublicStakingWatchTransferFuncCall) Results() []interface{} {
 // the package github.com/alicenet/alicenet/bridge/bindings) used for unit
 // testing.
 type MockISnapshots struct {
+	// FilterInitializedFunc is an instance of a mock function object
+	// controlling the behavior of the method FilterInitialized.
+	FilterInitializedFunc *ISnapshotsFilterInitializedFunc
 	// FilterSnapshotTakenFunc is an instance of a mock function object
 	// controlling the behavior of the method FilterSnapshotTaken.
 	FilterSnapshotTakenFunc *ISnapshotsFilterSnapshotTakenFunc
@@ -28579,6 +30177,9 @@ type MockISnapshots struct {
 	// MigrateSnapshotsFunc is an instance of a mock function object
 	// controlling the behavior of the method MigrateSnapshots.
 	MigrateSnapshotsFunc *ISnapshotsMigrateSnapshotsFunc
+	// ParseInitializedFunc is an instance of a mock function object
+	// controlling the behavior of the method ParseInitialized.
+	ParseInitializedFunc *ISnapshotsParseInitializedFunc
 	// ParseSnapshotTakenFunc is an instance of a mock function object
 	// controlling the behavior of the method ParseSnapshotTaken.
 	ParseSnapshotTakenFunc *ISnapshotsParseSnapshotTakenFunc
@@ -28597,6 +30198,9 @@ type MockISnapshots struct {
 	// SnapshotFunc is an instance of a mock function object controlling the
 	// behavior of the method Snapshot.
 	SnapshotFunc *ISnapshotsSnapshotFunc
+	// WatchInitializedFunc is an instance of a mock function object
+	// controlling the behavior of the method WatchInitialized.
+	WatchInitializedFunc *ISnapshotsWatchInitializedFunc
 	// WatchSnapshotTakenFunc is an instance of a mock function object
 	// controlling the behavior of the method WatchSnapshotTaken.
 	WatchSnapshotTakenFunc *ISnapshotsWatchSnapshotTakenFunc
@@ -28606,6 +30210,11 @@ type MockISnapshots struct {
 // methods return zero values for all results, unless overwritten.
 func NewMockISnapshots() *MockISnapshots {
 	return &MockISnapshots{
+		FilterInitializedFunc: &ISnapshotsFilterInitializedFunc{
+			defaultHook: func(*bind.FilterOpts) (r0 *bindings.SnapshotsInitializedIterator, r1 error) {
+				return
+			},
+		},
 		FilterSnapshotTakenFunc: &ISnapshotsFilterSnapshotTakenFunc{
 			defaultHook: func(*bind.FilterOpts, []*big.Int, []common.Address) (r0 *bindings.SnapshotsSnapshotTakenIterator, r1 error) {
 				return
@@ -28716,6 +30325,11 @@ func NewMockISnapshots() *MockISnapshots {
 				return
 			},
 		},
+		ParseInitializedFunc: &ISnapshotsParseInitializedFunc{
+			defaultHook: func(types.Log) (r0 *bindings.SnapshotsInitialized, r1 error) {
+				return
+			},
+		},
 		ParseSnapshotTakenFunc: &ISnapshotsParseSnapshotTakenFunc{
 			defaultHook: func(types.Log) (r0 *bindings.SnapshotsSnapshotTaken, r1 error) {
 				return
@@ -28741,6 +30355,11 @@ func NewMockISnapshots() *MockISnapshots {
 				return
 			},
 		},
+		WatchInitializedFunc: &ISnapshotsWatchInitializedFunc{
+			defaultHook: func(*bind.WatchOpts, chan<- *bindings.SnapshotsInitialized) (r0 event.Subscription, r1 error) {
+				return
+			},
+		},
 		WatchSnapshotTakenFunc: &ISnapshotsWatchSnapshotTakenFunc{
 			defaultHook: func(*bind.WatchOpts, chan<- *bindings.SnapshotsSnapshotTaken, []*big.Int, []common.Address) (r0 event.Subscription, r1 error) {
 				return
@@ -28753,6 +30372,11 @@ func NewMockISnapshots() *MockISnapshots {
 // All methods panic on invocation, unless overwritten.
 func NewStrictMockISnapshots() *MockISnapshots {
 	return &MockISnapshots{
+		FilterInitializedFunc: &ISnapshotsFilterInitializedFunc{
+			defaultHook: func(*bind.FilterOpts) (*bindings.SnapshotsInitializedIterator, error) {
+				panic("unexpected invocation of MockISnapshots.FilterInitialized")
+			},
+		},
 		FilterSnapshotTakenFunc: &ISnapshotsFilterSnapshotTakenFunc{
 			defaultHook: func(*bind.FilterOpts, []*big.Int, []common.Address) (*bindings.SnapshotsSnapshotTakenIterator, error) {
 				panic("unexpected invocation of MockISnapshots.FilterSnapshotTaken")
@@ -28863,6 +30487,11 @@ func NewStrictMockISnapshots() *MockISnapshots {
 				panic("unexpected invocation of MockISnapshots.MigrateSnapshots")
 			},
 		},
+		ParseInitializedFunc: &ISnapshotsParseInitializedFunc{
+			defaultHook: func(types.Log) (*bindings.SnapshotsInitialized, error) {
+				panic("unexpected invocation of MockISnapshots.ParseInitialized")
+			},
+		},
 		ParseSnapshotTakenFunc: &ISnapshotsParseSnapshotTakenFunc{
 			defaultHook: func(types.Log) (*bindings.SnapshotsSnapshotTaken, error) {
 				panic("unexpected invocation of MockISnapshots.ParseSnapshotTaken")
@@ -28888,6 +30517,11 @@ func NewStrictMockISnapshots() *MockISnapshots {
 				panic("unexpected invocation of MockISnapshots.Snapshot")
 			},
 		},
+		WatchInitializedFunc: &ISnapshotsWatchInitializedFunc{
+			defaultHook: func(*bind.WatchOpts, chan<- *bindings.SnapshotsInitialized) (event.Subscription, error) {
+				panic("unexpected invocation of MockISnapshots.WatchInitialized")
+			},
+		},
 		WatchSnapshotTakenFunc: &ISnapshotsWatchSnapshotTakenFunc{
 			defaultHook: func(*bind.WatchOpts, chan<- *bindings.SnapshotsSnapshotTaken, []*big.Int, []common.Address) (event.Subscription, error) {
 				panic("unexpected invocation of MockISnapshots.WatchSnapshotTaken")
@@ -28900,6 +30534,9 @@ func NewStrictMockISnapshots() *MockISnapshots {
 // All methods delegate to the given implementation, unless overwritten.
 func NewMockISnapshotsFrom(i bindings.ISnapshots) *MockISnapshots {
 	return &MockISnapshots{
+		FilterInitializedFunc: &ISnapshotsFilterInitializedFunc{
+			defaultHook: i.FilterInitialized,
+		},
 		FilterSnapshotTakenFunc: &ISnapshotsFilterSnapshotTakenFunc{
 			defaultHook: i.FilterSnapshotTaken,
 		},
@@ -28966,6 +30603,9 @@ func NewMockISnapshotsFrom(i bindings.ISnapshots) *MockISnapshots {
 		MigrateSnapshotsFunc: &ISnapshotsMigrateSnapshotsFunc{
 			defaultHook: i.MigrateSnapshots,
 		},
+		ParseInitializedFunc: &ISnapshotsParseInitializedFunc{
+			defaultHook: i.ParseInitialized,
+		},
 		ParseSnapshotTakenFunc: &ISnapshotsParseSnapshotTakenFunc{
 			defaultHook: i.ParseSnapshotTaken,
 		},
@@ -28981,10 +30621,119 @@ func NewMockISnapshotsFrom(i bindings.ISnapshots) *MockISnapshots {
 		SnapshotFunc: &ISnapshotsSnapshotFunc{
 			defaultHook: i.Snapshot,
 		},
+		WatchInitializedFunc: &ISnapshotsWatchInitializedFunc{
+			defaultHook: i.WatchInitialized,
+		},
 		WatchSnapshotTakenFunc: &ISnapshotsWatchSnapshotTakenFunc{
 			defaultHook: i.WatchSnapshotTaken,
 		},
 	}
+}
+
+// ISnapshotsFilterInitializedFunc describes the behavior when the
+// FilterInitialized method of the parent MockISnapshots instance is
+// invoked.
+type ISnapshotsFilterInitializedFunc struct {
+	defaultHook func(*bind.FilterOpts) (*bindings.SnapshotsInitializedIterator, error)
+	hooks       []func(*bind.FilterOpts) (*bindings.SnapshotsInitializedIterator, error)
+	history     []ISnapshotsFilterInitializedFuncCall
+	mutex       sync.Mutex
+}
+
+// FilterInitialized delegates to the next hook function in the queue and
+// stores the parameter and result values of this invocation.
+func (m *MockISnapshots) FilterInitialized(v0 *bind.FilterOpts) (*bindings.SnapshotsInitializedIterator, error) {
+	r0, r1 := m.FilterInitializedFunc.nextHook()(v0)
+	m.FilterInitializedFunc.appendCall(ISnapshotsFilterInitializedFuncCall{v0, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the FilterInitialized
+// method of the parent MockISnapshots instance is invoked and the hook
+// queue is empty.
+func (f *ISnapshotsFilterInitializedFunc) SetDefaultHook(hook func(*bind.FilterOpts) (*bindings.SnapshotsInitializedIterator, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// FilterInitialized method of the parent MockISnapshots instance invokes
+// the hook at the front of the queue and discards it. After the queue is
+// empty, the default hook function is invoked for any future action.
+func (f *ISnapshotsFilterInitializedFunc) PushHook(hook func(*bind.FilterOpts) (*bindings.SnapshotsInitializedIterator, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *ISnapshotsFilterInitializedFunc) SetDefaultReturn(r0 *bindings.SnapshotsInitializedIterator, r1 error) {
+	f.SetDefaultHook(func(*bind.FilterOpts) (*bindings.SnapshotsInitializedIterator, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *ISnapshotsFilterInitializedFunc) PushReturn(r0 *bindings.SnapshotsInitializedIterator, r1 error) {
+	f.PushHook(func(*bind.FilterOpts) (*bindings.SnapshotsInitializedIterator, error) {
+		return r0, r1
+	})
+}
+
+func (f *ISnapshotsFilterInitializedFunc) nextHook() func(*bind.FilterOpts) (*bindings.SnapshotsInitializedIterator, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *ISnapshotsFilterInitializedFunc) appendCall(r0 ISnapshotsFilterInitializedFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of ISnapshotsFilterInitializedFuncCall objects
+// describing the invocations of this function.
+func (f *ISnapshotsFilterInitializedFunc) History() []ISnapshotsFilterInitializedFuncCall {
+	f.mutex.Lock()
+	history := make([]ISnapshotsFilterInitializedFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// ISnapshotsFilterInitializedFuncCall is an object that describes an
+// invocation of method FilterInitialized on an instance of MockISnapshots.
+type ISnapshotsFilterInitializedFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 *bind.FilterOpts
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 *bindings.SnapshotsInitializedIterator
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c ISnapshotsFilterInitializedFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c ISnapshotsFilterInitializedFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
 }
 
 // ISnapshotsFilterSnapshotTakenFunc describes the behavior when the
@@ -31409,6 +33158,111 @@ func (c ISnapshotsMigrateSnapshotsFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
+// ISnapshotsParseInitializedFunc describes the behavior when the
+// ParseInitialized method of the parent MockISnapshots instance is invoked.
+type ISnapshotsParseInitializedFunc struct {
+	defaultHook func(types.Log) (*bindings.SnapshotsInitialized, error)
+	hooks       []func(types.Log) (*bindings.SnapshotsInitialized, error)
+	history     []ISnapshotsParseInitializedFuncCall
+	mutex       sync.Mutex
+}
+
+// ParseInitialized delegates to the next hook function in the queue and
+// stores the parameter and result values of this invocation.
+func (m *MockISnapshots) ParseInitialized(v0 types.Log) (*bindings.SnapshotsInitialized, error) {
+	r0, r1 := m.ParseInitializedFunc.nextHook()(v0)
+	m.ParseInitializedFunc.appendCall(ISnapshotsParseInitializedFuncCall{v0, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the ParseInitialized
+// method of the parent MockISnapshots instance is invoked and the hook
+// queue is empty.
+func (f *ISnapshotsParseInitializedFunc) SetDefaultHook(hook func(types.Log) (*bindings.SnapshotsInitialized, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// ParseInitialized method of the parent MockISnapshots instance invokes the
+// hook at the front of the queue and discards it. After the queue is empty,
+// the default hook function is invoked for any future action.
+func (f *ISnapshotsParseInitializedFunc) PushHook(hook func(types.Log) (*bindings.SnapshotsInitialized, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *ISnapshotsParseInitializedFunc) SetDefaultReturn(r0 *bindings.SnapshotsInitialized, r1 error) {
+	f.SetDefaultHook(func(types.Log) (*bindings.SnapshotsInitialized, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *ISnapshotsParseInitializedFunc) PushReturn(r0 *bindings.SnapshotsInitialized, r1 error) {
+	f.PushHook(func(types.Log) (*bindings.SnapshotsInitialized, error) {
+		return r0, r1
+	})
+}
+
+func (f *ISnapshotsParseInitializedFunc) nextHook() func(types.Log) (*bindings.SnapshotsInitialized, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *ISnapshotsParseInitializedFunc) appendCall(r0 ISnapshotsParseInitializedFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of ISnapshotsParseInitializedFuncCall objects
+// describing the invocations of this function.
+func (f *ISnapshotsParseInitializedFunc) History() []ISnapshotsParseInitializedFuncCall {
+	f.mutex.Lock()
+	history := make([]ISnapshotsParseInitializedFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// ISnapshotsParseInitializedFuncCall is an object that describes an
+// invocation of method ParseInitialized on an instance of MockISnapshots.
+type ISnapshotsParseInitializedFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 types.Log
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 *bindings.SnapshotsInitialized
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c ISnapshotsParseInitializedFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c ISnapshotsParseInitializedFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
+}
+
 // ISnapshotsParseSnapshotTakenFunc describes the behavior when the
 // ParseSnapshotTaken method of the parent MockISnapshots instance is
 // invoked.
@@ -31962,6 +33816,114 @@ func (c ISnapshotsSnapshotFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
+// ISnapshotsWatchInitializedFunc describes the behavior when the
+// WatchInitialized method of the parent MockISnapshots instance is invoked.
+type ISnapshotsWatchInitializedFunc struct {
+	defaultHook func(*bind.WatchOpts, chan<- *bindings.SnapshotsInitialized) (event.Subscription, error)
+	hooks       []func(*bind.WatchOpts, chan<- *bindings.SnapshotsInitialized) (event.Subscription, error)
+	history     []ISnapshotsWatchInitializedFuncCall
+	mutex       sync.Mutex
+}
+
+// WatchInitialized delegates to the next hook function in the queue and
+// stores the parameter and result values of this invocation.
+func (m *MockISnapshots) WatchInitialized(v0 *bind.WatchOpts, v1 chan<- *bindings.SnapshotsInitialized) (event.Subscription, error) {
+	r0, r1 := m.WatchInitializedFunc.nextHook()(v0, v1)
+	m.WatchInitializedFunc.appendCall(ISnapshotsWatchInitializedFuncCall{v0, v1, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the WatchInitialized
+// method of the parent MockISnapshots instance is invoked and the hook
+// queue is empty.
+func (f *ISnapshotsWatchInitializedFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *bindings.SnapshotsInitialized) (event.Subscription, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// WatchInitialized method of the parent MockISnapshots instance invokes the
+// hook at the front of the queue and discards it. After the queue is empty,
+// the default hook function is invoked for any future action.
+func (f *ISnapshotsWatchInitializedFunc) PushHook(hook func(*bind.WatchOpts, chan<- *bindings.SnapshotsInitialized) (event.Subscription, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *ISnapshotsWatchInitializedFunc) SetDefaultReturn(r0 event.Subscription, r1 error) {
+	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *bindings.SnapshotsInitialized) (event.Subscription, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *ISnapshotsWatchInitializedFunc) PushReturn(r0 event.Subscription, r1 error) {
+	f.PushHook(func(*bind.WatchOpts, chan<- *bindings.SnapshotsInitialized) (event.Subscription, error) {
+		return r0, r1
+	})
+}
+
+func (f *ISnapshotsWatchInitializedFunc) nextHook() func(*bind.WatchOpts, chan<- *bindings.SnapshotsInitialized) (event.Subscription, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *ISnapshotsWatchInitializedFunc) appendCall(r0 ISnapshotsWatchInitializedFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of ISnapshotsWatchInitializedFuncCall objects
+// describing the invocations of this function.
+func (f *ISnapshotsWatchInitializedFunc) History() []ISnapshotsWatchInitializedFuncCall {
+	f.mutex.Lock()
+	history := make([]ISnapshotsWatchInitializedFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// ISnapshotsWatchInitializedFuncCall is an object that describes an
+// invocation of method WatchInitialized on an instance of MockISnapshots.
+type ISnapshotsWatchInitializedFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 *bind.WatchOpts
+	// Arg1 is the value of the 2nd argument passed to this method
+	// invocation.
+	Arg1 chan<- *bindings.SnapshotsInitialized
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 event.Subscription
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c ISnapshotsWatchInitializedFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0, c.Arg1}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c ISnapshotsWatchInitializedFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
+}
+
 // ISnapshotsWatchSnapshotTakenFunc describes the behavior when the
 // WatchSnapshotTaken method of the parent MockISnapshots instance is
 // invoked.
@@ -32093,6 +34055,9 @@ type MockIValidatorPool struct {
 	// CompleteETHDKGFunc is an instance of a mock function object
 	// controlling the behavior of the method CompleteETHDKG.
 	CompleteETHDKGFunc *IValidatorPoolCompleteETHDKGFunc
+	// FilterInitializedFunc is an instance of a mock function object
+	// controlling the behavior of the method FilterInitialized.
+	FilterInitializedFunc *IValidatorPoolFilterInitializedFunc
 	// FilterMaintenanceScheduledFunc is an instance of a mock function
 	// object controlling the behavior of the method
 	// FilterMaintenanceScheduled.
@@ -32179,6 +34144,9 @@ type MockIValidatorPool struct {
 	// POSITIONLOCKPERIODFunc is an instance of a mock function object
 	// controlling the behavior of the method POSITIONLOCKPERIOD.
 	POSITIONLOCKPERIODFunc *IValidatorPoolPOSITIONLOCKPERIODFunc
+	// ParseInitializedFunc is an instance of a mock function object
+	// controlling the behavior of the method ParseInitialized.
+	ParseInitializedFunc *IValidatorPoolParseInitializedFunc
 	// ParseMaintenanceScheduledFunc is an instance of a mock function
 	// object controlling the behavior of the method
 	// ParseMaintenanceScheduled.
@@ -32240,6 +34208,9 @@ type MockIValidatorPool struct {
 	// UnregisterValidatorsFunc is an instance of a mock function object
 	// controlling the behavior of the method UnregisterValidators.
 	UnregisterValidatorsFunc *IValidatorPoolUnregisterValidatorsFunc
+	// WatchInitializedFunc is an instance of a mock function object
+	// controlling the behavior of the method WatchInitialized.
+	WatchInitializedFunc *IValidatorPoolWatchInitializedFunc
 	// WatchMaintenanceScheduledFunc is an instance of a mock function
 	// object controlling the behavior of the method
 	// WatchMaintenanceScheduled.
@@ -32281,6 +34252,11 @@ func NewMockIValidatorPool() *MockIValidatorPool {
 		},
 		CompleteETHDKGFunc: &IValidatorPoolCompleteETHDKGFunc{
 			defaultHook: func(*bind.TransactOpts) (r0 *types.Transaction, r1 error) {
+				return
+			},
+		},
+		FilterInitializedFunc: &IValidatorPoolFilterInitializedFunc{
+			defaultHook: func(*bind.FilterOpts) (r0 *bindings.ValidatorPoolInitializedIterator, r1 error) {
 				return
 			},
 		},
@@ -32419,6 +34395,11 @@ func NewMockIValidatorPool() *MockIValidatorPool {
 				return
 			},
 		},
+		ParseInitializedFunc: &IValidatorPoolParseInitializedFunc{
+			defaultHook: func(types.Log) (r0 *bindings.ValidatorPoolInitialized, r1 error) {
+				return
+			},
+		},
 		ParseMaintenanceScheduledFunc: &IValidatorPoolParseMaintenanceScheduledFunc{
 			defaultHook: func(types.Log) (r0 *bindings.ValidatorPoolMaintenanceScheduled, r1 error) {
 				return
@@ -32514,6 +34495,11 @@ func NewMockIValidatorPool() *MockIValidatorPool {
 				return
 			},
 		},
+		WatchInitializedFunc: &IValidatorPoolWatchInitializedFunc{
+			defaultHook: func(*bind.WatchOpts, chan<- *bindings.ValidatorPoolInitialized) (r0 event.Subscription, r1 error) {
+				return
+			},
+		},
 		WatchMaintenanceScheduledFunc: &IValidatorPoolWatchMaintenanceScheduledFunc{
 			defaultHook: func(*bind.WatchOpts, chan<- *bindings.ValidatorPoolMaintenanceScheduled) (r0 event.Subscription, r1 error) {
 				return
@@ -32564,6 +34550,11 @@ func NewStrictMockIValidatorPool() *MockIValidatorPool {
 		CompleteETHDKGFunc: &IValidatorPoolCompleteETHDKGFunc{
 			defaultHook: func(*bind.TransactOpts) (*types.Transaction, error) {
 				panic("unexpected invocation of MockIValidatorPool.CompleteETHDKG")
+			},
+		},
+		FilterInitializedFunc: &IValidatorPoolFilterInitializedFunc{
+			defaultHook: func(*bind.FilterOpts) (*bindings.ValidatorPoolInitializedIterator, error) {
+				panic("unexpected invocation of MockIValidatorPool.FilterInitialized")
 			},
 		},
 		FilterMaintenanceScheduledFunc: &IValidatorPoolFilterMaintenanceScheduledFunc{
@@ -32701,6 +34692,11 @@ func NewStrictMockIValidatorPool() *MockIValidatorPool {
 				panic("unexpected invocation of MockIValidatorPool.POSITIONLOCKPERIOD")
 			},
 		},
+		ParseInitializedFunc: &IValidatorPoolParseInitializedFunc{
+			defaultHook: func(types.Log) (*bindings.ValidatorPoolInitialized, error) {
+				panic("unexpected invocation of MockIValidatorPool.ParseInitialized")
+			},
+		},
 		ParseMaintenanceScheduledFunc: &IValidatorPoolParseMaintenanceScheduledFunc{
 			defaultHook: func(types.Log) (*bindings.ValidatorPoolMaintenanceScheduled, error) {
 				panic("unexpected invocation of MockIValidatorPool.ParseMaintenanceScheduled")
@@ -32796,6 +34792,11 @@ func NewStrictMockIValidatorPool() *MockIValidatorPool {
 				panic("unexpected invocation of MockIValidatorPool.UnregisterValidators")
 			},
 		},
+		WatchInitializedFunc: &IValidatorPoolWatchInitializedFunc{
+			defaultHook: func(*bind.WatchOpts, chan<- *bindings.ValidatorPoolInitialized) (event.Subscription, error) {
+				panic("unexpected invocation of MockIValidatorPool.WatchInitialized")
+			},
+		},
 		WatchMaintenanceScheduledFunc: &IValidatorPoolWatchMaintenanceScheduledFunc{
 			defaultHook: func(*bind.WatchOpts, chan<- *bindings.ValidatorPoolMaintenanceScheduled) (event.Subscription, error) {
 				panic("unexpected invocation of MockIValidatorPool.WatchMaintenanceScheduled")
@@ -32840,6 +34841,9 @@ func NewMockIValidatorPoolFrom(i bindings.IValidatorPool) *MockIValidatorPool {
 		},
 		CompleteETHDKGFunc: &IValidatorPoolCompleteETHDKGFunc{
 			defaultHook: i.CompleteETHDKG,
+		},
+		FilterInitializedFunc: &IValidatorPoolFilterInitializedFunc{
+			defaultHook: i.FilterInitialized,
 		},
 		FilterMaintenanceScheduledFunc: &IValidatorPoolFilterMaintenanceScheduledFunc{
 			defaultHook: i.FilterMaintenanceScheduled,
@@ -32922,6 +34926,9 @@ func NewMockIValidatorPoolFrom(i bindings.IValidatorPool) *MockIValidatorPool {
 		POSITIONLOCKPERIODFunc: &IValidatorPoolPOSITIONLOCKPERIODFunc{
 			defaultHook: i.POSITIONLOCKPERIOD,
 		},
+		ParseInitializedFunc: &IValidatorPoolParseInitializedFunc{
+			defaultHook: i.ParseInitialized,
+		},
 		ParseMaintenanceScheduledFunc: &IValidatorPoolParseMaintenanceScheduledFunc{
 			defaultHook: i.ParseMaintenanceScheduled,
 		},
@@ -32978,6 +34985,9 @@ func NewMockIValidatorPoolFrom(i bindings.IValidatorPool) *MockIValidatorPool {
 		},
 		UnregisterValidatorsFunc: &IValidatorPoolUnregisterValidatorsFunc{
 			defaultHook: i.UnregisterValidators,
+		},
+		WatchInitializedFunc: &IValidatorPoolWatchInitializedFunc{
+			defaultHook: i.WatchInitialized,
 		},
 		WatchMaintenanceScheduledFunc: &IValidatorPoolWatchMaintenanceScheduledFunc{
 			defaultHook: i.WatchMaintenanceScheduled,
@@ -33420,6 +35430,114 @@ func (c IValidatorPoolCompleteETHDKGFuncCall) Args() []interface{} {
 // Results returns an interface slice containing the results of this
 // invocation.
 func (c IValidatorPoolCompleteETHDKGFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
+}
+
+// IValidatorPoolFilterInitializedFunc describes the behavior when the
+// FilterInitialized method of the parent MockIValidatorPool instance is
+// invoked.
+type IValidatorPoolFilterInitializedFunc struct {
+	defaultHook func(*bind.FilterOpts) (*bindings.ValidatorPoolInitializedIterator, error)
+	hooks       []func(*bind.FilterOpts) (*bindings.ValidatorPoolInitializedIterator, error)
+	history     []IValidatorPoolFilterInitializedFuncCall
+	mutex       sync.Mutex
+}
+
+// FilterInitialized delegates to the next hook function in the queue and
+// stores the parameter and result values of this invocation.
+func (m *MockIValidatorPool) FilterInitialized(v0 *bind.FilterOpts) (*bindings.ValidatorPoolInitializedIterator, error) {
+	r0, r1 := m.FilterInitializedFunc.nextHook()(v0)
+	m.FilterInitializedFunc.appendCall(IValidatorPoolFilterInitializedFuncCall{v0, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the FilterInitialized
+// method of the parent MockIValidatorPool instance is invoked and the hook
+// queue is empty.
+func (f *IValidatorPoolFilterInitializedFunc) SetDefaultHook(hook func(*bind.FilterOpts) (*bindings.ValidatorPoolInitializedIterator, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// FilterInitialized method of the parent MockIValidatorPool instance
+// invokes the hook at the front of the queue and discards it. After the
+// queue is empty, the default hook function is invoked for any future
+// action.
+func (f *IValidatorPoolFilterInitializedFunc) PushHook(hook func(*bind.FilterOpts) (*bindings.ValidatorPoolInitializedIterator, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *IValidatorPoolFilterInitializedFunc) SetDefaultReturn(r0 *bindings.ValidatorPoolInitializedIterator, r1 error) {
+	f.SetDefaultHook(func(*bind.FilterOpts) (*bindings.ValidatorPoolInitializedIterator, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *IValidatorPoolFilterInitializedFunc) PushReturn(r0 *bindings.ValidatorPoolInitializedIterator, r1 error) {
+	f.PushHook(func(*bind.FilterOpts) (*bindings.ValidatorPoolInitializedIterator, error) {
+		return r0, r1
+	})
+}
+
+func (f *IValidatorPoolFilterInitializedFunc) nextHook() func(*bind.FilterOpts) (*bindings.ValidatorPoolInitializedIterator, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *IValidatorPoolFilterInitializedFunc) appendCall(r0 IValidatorPoolFilterInitializedFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of IValidatorPoolFilterInitializedFuncCall
+// objects describing the invocations of this function.
+func (f *IValidatorPoolFilterInitializedFunc) History() []IValidatorPoolFilterInitializedFuncCall {
+	f.mutex.Lock()
+	history := make([]IValidatorPoolFilterInitializedFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// IValidatorPoolFilterInitializedFuncCall is an object that describes an
+// invocation of method FilterInitialized on an instance of
+// MockIValidatorPool.
+type IValidatorPoolFilterInitializedFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 *bind.FilterOpts
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 *bindings.ValidatorPoolInitializedIterator
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c IValidatorPoolFilterInitializedFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c IValidatorPoolFilterInitializedFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
@@ -36388,6 +38506,113 @@ func (c IValidatorPoolPOSITIONLOCKPERIODFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
+// IValidatorPoolParseInitializedFunc describes the behavior when the
+// ParseInitialized method of the parent MockIValidatorPool instance is
+// invoked.
+type IValidatorPoolParseInitializedFunc struct {
+	defaultHook func(types.Log) (*bindings.ValidatorPoolInitialized, error)
+	hooks       []func(types.Log) (*bindings.ValidatorPoolInitialized, error)
+	history     []IValidatorPoolParseInitializedFuncCall
+	mutex       sync.Mutex
+}
+
+// ParseInitialized delegates to the next hook function in the queue and
+// stores the parameter and result values of this invocation.
+func (m *MockIValidatorPool) ParseInitialized(v0 types.Log) (*bindings.ValidatorPoolInitialized, error) {
+	r0, r1 := m.ParseInitializedFunc.nextHook()(v0)
+	m.ParseInitializedFunc.appendCall(IValidatorPoolParseInitializedFuncCall{v0, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the ParseInitialized
+// method of the parent MockIValidatorPool instance is invoked and the hook
+// queue is empty.
+func (f *IValidatorPoolParseInitializedFunc) SetDefaultHook(hook func(types.Log) (*bindings.ValidatorPoolInitialized, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// ParseInitialized method of the parent MockIValidatorPool instance invokes
+// the hook at the front of the queue and discards it. After the queue is
+// empty, the default hook function is invoked for any future action.
+func (f *IValidatorPoolParseInitializedFunc) PushHook(hook func(types.Log) (*bindings.ValidatorPoolInitialized, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *IValidatorPoolParseInitializedFunc) SetDefaultReturn(r0 *bindings.ValidatorPoolInitialized, r1 error) {
+	f.SetDefaultHook(func(types.Log) (*bindings.ValidatorPoolInitialized, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *IValidatorPoolParseInitializedFunc) PushReturn(r0 *bindings.ValidatorPoolInitialized, r1 error) {
+	f.PushHook(func(types.Log) (*bindings.ValidatorPoolInitialized, error) {
+		return r0, r1
+	})
+}
+
+func (f *IValidatorPoolParseInitializedFunc) nextHook() func(types.Log) (*bindings.ValidatorPoolInitialized, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *IValidatorPoolParseInitializedFunc) appendCall(r0 IValidatorPoolParseInitializedFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of IValidatorPoolParseInitializedFuncCall
+// objects describing the invocations of this function.
+func (f *IValidatorPoolParseInitializedFunc) History() []IValidatorPoolParseInitializedFuncCall {
+	f.mutex.Lock()
+	history := make([]IValidatorPoolParseInitializedFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// IValidatorPoolParseInitializedFuncCall is an object that describes an
+// invocation of method ParseInitialized on an instance of
+// MockIValidatorPool.
+type IValidatorPoolParseInitializedFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 types.Log
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 *bindings.ValidatorPoolInitialized
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c IValidatorPoolParseInitializedFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c IValidatorPoolParseInitializedFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
+}
+
 // IValidatorPoolParseMaintenanceScheduledFunc describes the behavior when
 // the ParseMaintenanceScheduled method of the parent MockIValidatorPool
 // instance is invoked.
@@ -38469,6 +40694,116 @@ func (c IValidatorPoolUnregisterValidatorsFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
+// IValidatorPoolWatchInitializedFunc describes the behavior when the
+// WatchInitialized method of the parent MockIValidatorPool instance is
+// invoked.
+type IValidatorPoolWatchInitializedFunc struct {
+	defaultHook func(*bind.WatchOpts, chan<- *bindings.ValidatorPoolInitialized) (event.Subscription, error)
+	hooks       []func(*bind.WatchOpts, chan<- *bindings.ValidatorPoolInitialized) (event.Subscription, error)
+	history     []IValidatorPoolWatchInitializedFuncCall
+	mutex       sync.Mutex
+}
+
+// WatchInitialized delegates to the next hook function in the queue and
+// stores the parameter and result values of this invocation.
+func (m *MockIValidatorPool) WatchInitialized(v0 *bind.WatchOpts, v1 chan<- *bindings.ValidatorPoolInitialized) (event.Subscription, error) {
+	r0, r1 := m.WatchInitializedFunc.nextHook()(v0, v1)
+	m.WatchInitializedFunc.appendCall(IValidatorPoolWatchInitializedFuncCall{v0, v1, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the WatchInitialized
+// method of the parent MockIValidatorPool instance is invoked and the hook
+// queue is empty.
+func (f *IValidatorPoolWatchInitializedFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *bindings.ValidatorPoolInitialized) (event.Subscription, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// WatchInitialized method of the parent MockIValidatorPool instance invokes
+// the hook at the front of the queue and discards it. After the queue is
+// empty, the default hook function is invoked for any future action.
+func (f *IValidatorPoolWatchInitializedFunc) PushHook(hook func(*bind.WatchOpts, chan<- *bindings.ValidatorPoolInitialized) (event.Subscription, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *IValidatorPoolWatchInitializedFunc) SetDefaultReturn(r0 event.Subscription, r1 error) {
+	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *bindings.ValidatorPoolInitialized) (event.Subscription, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *IValidatorPoolWatchInitializedFunc) PushReturn(r0 event.Subscription, r1 error) {
+	f.PushHook(func(*bind.WatchOpts, chan<- *bindings.ValidatorPoolInitialized) (event.Subscription, error) {
+		return r0, r1
+	})
+}
+
+func (f *IValidatorPoolWatchInitializedFunc) nextHook() func(*bind.WatchOpts, chan<- *bindings.ValidatorPoolInitialized) (event.Subscription, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *IValidatorPoolWatchInitializedFunc) appendCall(r0 IValidatorPoolWatchInitializedFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of IValidatorPoolWatchInitializedFuncCall
+// objects describing the invocations of this function.
+func (f *IValidatorPoolWatchInitializedFunc) History() []IValidatorPoolWatchInitializedFuncCall {
+	f.mutex.Lock()
+	history := make([]IValidatorPoolWatchInitializedFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// IValidatorPoolWatchInitializedFuncCall is an object that describes an
+// invocation of method WatchInitialized on an instance of
+// MockIValidatorPool.
+type IValidatorPoolWatchInitializedFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 *bind.WatchOpts
+	// Arg1 is the value of the 2nd argument passed to this method
+	// invocation.
+	Arg1 chan<- *bindings.ValidatorPoolInitialized
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 event.Subscription
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c IValidatorPoolWatchInitializedFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0, c.Arg1}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c IValidatorPoolWatchInitializedFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
+}
+
 // IValidatorPoolWatchMaintenanceScheduledFunc describes the behavior when
 // the WatchMaintenanceScheduled method of the parent MockIValidatorPool
 // instance is invoked.
@@ -39094,6 +41429,9 @@ type MockIValidatorStaking struct {
 	// FilterApprovalForAllFunc is an instance of a mock function object
 	// controlling the behavior of the method FilterApprovalForAll.
 	FilterApprovalForAllFunc *IValidatorStakingFilterApprovalForAllFunc
+	// FilterInitializedFunc is an instance of a mock function object
+	// controlling the behavior of the method FilterInitialized.
+	FilterInitializedFunc *IValidatorStakingFilterInitializedFunc
 	// FilterTransferFunc is an instance of a mock function object
 	// controlling the behavior of the method FilterTransfer.
 	FilterTransferFunc *IValidatorStakingFilterTransferFunc
@@ -39107,6 +41445,9 @@ type MockIValidatorStaking struct {
 	// GetEthAccumulatorFunc is an instance of a mock function object
 	// controlling the behavior of the method GetEthAccumulator.
 	GetEthAccumulatorFunc *IValidatorStakingGetEthAccumulatorFunc
+	// GetMaxGovernanceLockFunc is an instance of a mock function object
+	// controlling the behavior of the method GetMaxGovernanceLock.
+	GetMaxGovernanceLockFunc *IValidatorStakingGetMaxGovernanceLockFunc
 	// GetMaxMintLockFunc is an instance of a mock function object
 	// controlling the behavior of the method GetMaxMintLock.
 	GetMaxMintLockFunc *IValidatorStakingGetMaxMintLockFunc
@@ -39162,6 +41503,9 @@ type MockIValidatorStaking struct {
 	// ParseApprovalForAllFunc is an instance of a mock function object
 	// controlling the behavior of the method ParseApprovalForAll.
 	ParseApprovalForAllFunc *IValidatorStakingParseApprovalForAllFunc
+	// ParseInitializedFunc is an instance of a mock function object
+	// controlling the behavior of the method ParseInitialized.
+	ParseInitializedFunc *IValidatorStakingParseInitializedFunc
 	// ParseTransferFunc is an instance of a mock function object
 	// controlling the behavior of the method ParseTransfer.
 	ParseTransferFunc *IValidatorStakingParseTransferFunc
@@ -39201,6 +41545,9 @@ type MockIValidatorStaking struct {
 	// WatchApprovalForAllFunc is an instance of a mock function object
 	// controlling the behavior of the method WatchApprovalForAll.
 	WatchApprovalForAllFunc *IValidatorStakingWatchApprovalForAllFunc
+	// WatchInitializedFunc is an instance of a mock function object
+	// controlling the behavior of the method WatchInitialized.
+	WatchInitializedFunc *IValidatorStakingWatchInitializedFunc
 	// WatchTransferFunc is an instance of a mock function object
 	// controlling the behavior of the method WatchTransfer.
 	WatchTransferFunc *IValidatorStakingWatchTransferFunc
@@ -39296,6 +41643,11 @@ func NewMockIValidatorStaking() *MockIValidatorStaking {
 				return
 			},
 		},
+		FilterInitializedFunc: &IValidatorStakingFilterInitializedFunc{
+			defaultHook: func(*bind.FilterOpts) (r0 *bindings.ValidatorStakingInitializedIterator, r1 error) {
+				return
+			},
+		},
 		FilterTransferFunc: &IValidatorStakingFilterTransferFunc{
 			defaultHook: func(*bind.FilterOpts, []common.Address, []common.Address, []*big.Int) (r0 *bindings.ValidatorStakingTransferIterator, r1 error) {
 				return
@@ -39316,6 +41668,11 @@ func NewMockIValidatorStaking() *MockIValidatorStaking {
 				Accumulator *big.Int
 				Slush       *big.Int
 			}, r1 error) {
+				return
+			},
+		},
+		GetMaxGovernanceLockFunc: &IValidatorStakingGetMaxGovernanceLockFunc{
+			defaultHook: func(*bind.CallOpts) (r0 *big.Int, r1 error) {
 				return
 			},
 		},
@@ -39418,6 +41775,11 @@ func NewMockIValidatorStaking() *MockIValidatorStaking {
 				return
 			},
 		},
+		ParseInitializedFunc: &IValidatorStakingParseInitializedFunc{
+			defaultHook: func(types.Log) (r0 *bindings.ValidatorStakingInitialized, r1 error) {
+				return
+			},
+		},
 		ParseTransferFunc: &IValidatorStakingParseTransferFunc{
 			defaultHook: func(types.Log) (r0 *bindings.ValidatorStakingTransfer, r1 error) {
 				return
@@ -39480,6 +41842,11 @@ func NewMockIValidatorStaking() *MockIValidatorStaking {
 		},
 		WatchApprovalForAllFunc: &IValidatorStakingWatchApprovalForAllFunc{
 			defaultHook: func(*bind.WatchOpts, chan<- *bindings.ValidatorStakingApprovalForAll, []common.Address, []common.Address) (r0 event.Subscription, r1 error) {
+				return
+			},
+		},
+		WatchInitializedFunc: &IValidatorStakingWatchInitializedFunc{
+			defaultHook: func(*bind.WatchOpts, chan<- *bindings.ValidatorStakingInitialized) (r0 event.Subscription, r1 error) {
 				return
 			},
 		},
@@ -39581,6 +41948,11 @@ func NewStrictMockIValidatorStaking() *MockIValidatorStaking {
 				panic("unexpected invocation of MockIValidatorStaking.FilterApprovalForAll")
 			},
 		},
+		FilterInitializedFunc: &IValidatorStakingFilterInitializedFunc{
+			defaultHook: func(*bind.FilterOpts) (*bindings.ValidatorStakingInitializedIterator, error) {
+				panic("unexpected invocation of MockIValidatorStaking.FilterInitialized")
+			},
+		},
 		FilterTransferFunc: &IValidatorStakingFilterTransferFunc{
 			defaultHook: func(*bind.FilterOpts, []common.Address, []common.Address, []*big.Int) (*bindings.ValidatorStakingTransferIterator, error) {
 				panic("unexpected invocation of MockIValidatorStaking.FilterTransfer")
@@ -39602,6 +41974,11 @@ func NewStrictMockIValidatorStaking() *MockIValidatorStaking {
 				Slush       *big.Int
 			}, error) {
 				panic("unexpected invocation of MockIValidatorStaking.GetEthAccumulator")
+			},
+		},
+		GetMaxGovernanceLockFunc: &IValidatorStakingGetMaxGovernanceLockFunc{
+			defaultHook: func(*bind.CallOpts) (*big.Int, error) {
+				panic("unexpected invocation of MockIValidatorStaking.GetMaxGovernanceLock")
 			},
 		},
 		GetMaxMintLockFunc: &IValidatorStakingGetMaxMintLockFunc{
@@ -39703,6 +42080,11 @@ func NewStrictMockIValidatorStaking() *MockIValidatorStaking {
 				panic("unexpected invocation of MockIValidatorStaking.ParseApprovalForAll")
 			},
 		},
+		ParseInitializedFunc: &IValidatorStakingParseInitializedFunc{
+			defaultHook: func(types.Log) (*bindings.ValidatorStakingInitialized, error) {
+				panic("unexpected invocation of MockIValidatorStaking.ParseInitialized")
+			},
+		},
 		ParseTransferFunc: &IValidatorStakingParseTransferFunc{
 			defaultHook: func(types.Log) (*bindings.ValidatorStakingTransfer, error) {
 				panic("unexpected invocation of MockIValidatorStaking.ParseTransfer")
@@ -39766,6 +42148,11 @@ func NewStrictMockIValidatorStaking() *MockIValidatorStaking {
 		WatchApprovalForAllFunc: &IValidatorStakingWatchApprovalForAllFunc{
 			defaultHook: func(*bind.WatchOpts, chan<- *bindings.ValidatorStakingApprovalForAll, []common.Address, []common.Address) (event.Subscription, error) {
 				panic("unexpected invocation of MockIValidatorStaking.WatchApprovalForAll")
+			},
+		},
+		WatchInitializedFunc: &IValidatorStakingWatchInitializedFunc{
+			defaultHook: func(*bind.WatchOpts, chan<- *bindings.ValidatorStakingInitialized) (event.Subscription, error) {
+				panic("unexpected invocation of MockIValidatorStaking.WatchInitialized")
 			},
 		},
 		WatchTransferFunc: &IValidatorStakingWatchTransferFunc{
@@ -39832,6 +42219,9 @@ func NewMockIValidatorStakingFrom(i bindings.IValidatorStaking) *MockIValidatorS
 		FilterApprovalForAllFunc: &IValidatorStakingFilterApprovalForAllFunc{
 			defaultHook: i.FilterApprovalForAll,
 		},
+		FilterInitializedFunc: &IValidatorStakingFilterInitializedFunc{
+			defaultHook: i.FilterInitialized,
+		},
 		FilterTransferFunc: &IValidatorStakingFilterTransferFunc{
 			defaultHook: i.FilterTransfer,
 		},
@@ -39843,6 +42233,9 @@ func NewMockIValidatorStakingFrom(i bindings.IValidatorStaking) *MockIValidatorS
 		},
 		GetEthAccumulatorFunc: &IValidatorStakingGetEthAccumulatorFunc{
 			defaultHook: i.GetEthAccumulator,
+		},
+		GetMaxGovernanceLockFunc: &IValidatorStakingGetMaxGovernanceLockFunc{
+			defaultHook: i.GetMaxGovernanceLock,
 		},
 		GetMaxMintLockFunc: &IValidatorStakingGetMaxMintLockFunc{
 			defaultHook: i.GetMaxMintLock,
@@ -39898,6 +42291,9 @@ func NewMockIValidatorStakingFrom(i bindings.IValidatorStaking) *MockIValidatorS
 		ParseApprovalForAllFunc: &IValidatorStakingParseApprovalForAllFunc{
 			defaultHook: i.ParseApprovalForAll,
 		},
+		ParseInitializedFunc: &IValidatorStakingParseInitializedFunc{
+			defaultHook: i.ParseInitialized,
+		},
 		ParseTransferFunc: &IValidatorStakingParseTransferFunc{
 			defaultHook: i.ParseTransfer,
 		},
@@ -39936,6 +42332,9 @@ func NewMockIValidatorStakingFrom(i bindings.IValidatorStaking) *MockIValidatorS
 		},
 		WatchApprovalForAllFunc: &IValidatorStakingWatchApprovalForAllFunc{
 			defaultHook: i.WatchApprovalForAll,
+		},
+		WatchInitializedFunc: &IValidatorStakingWatchInitializedFunc{
+			defaultHook: i.WatchInitialized,
 		},
 		WatchTransferFunc: &IValidatorStakingWatchTransferFunc{
 			defaultHook: i.WatchTransfer,
@@ -41831,6 +44230,114 @@ func (c IValidatorStakingFilterApprovalForAllFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
+// IValidatorStakingFilterInitializedFunc describes the behavior when the
+// FilterInitialized method of the parent MockIValidatorStaking instance is
+// invoked.
+type IValidatorStakingFilterInitializedFunc struct {
+	defaultHook func(*bind.FilterOpts) (*bindings.ValidatorStakingInitializedIterator, error)
+	hooks       []func(*bind.FilterOpts) (*bindings.ValidatorStakingInitializedIterator, error)
+	history     []IValidatorStakingFilterInitializedFuncCall
+	mutex       sync.Mutex
+}
+
+// FilterInitialized delegates to the next hook function in the queue and
+// stores the parameter and result values of this invocation.
+func (m *MockIValidatorStaking) FilterInitialized(v0 *bind.FilterOpts) (*bindings.ValidatorStakingInitializedIterator, error) {
+	r0, r1 := m.FilterInitializedFunc.nextHook()(v0)
+	m.FilterInitializedFunc.appendCall(IValidatorStakingFilterInitializedFuncCall{v0, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the FilterInitialized
+// method of the parent MockIValidatorStaking instance is invoked and the
+// hook queue is empty.
+func (f *IValidatorStakingFilterInitializedFunc) SetDefaultHook(hook func(*bind.FilterOpts) (*bindings.ValidatorStakingInitializedIterator, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// FilterInitialized method of the parent MockIValidatorStaking instance
+// invokes the hook at the front of the queue and discards it. After the
+// queue is empty, the default hook function is invoked for any future
+// action.
+func (f *IValidatorStakingFilterInitializedFunc) PushHook(hook func(*bind.FilterOpts) (*bindings.ValidatorStakingInitializedIterator, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *IValidatorStakingFilterInitializedFunc) SetDefaultReturn(r0 *bindings.ValidatorStakingInitializedIterator, r1 error) {
+	f.SetDefaultHook(func(*bind.FilterOpts) (*bindings.ValidatorStakingInitializedIterator, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *IValidatorStakingFilterInitializedFunc) PushReturn(r0 *bindings.ValidatorStakingInitializedIterator, r1 error) {
+	f.PushHook(func(*bind.FilterOpts) (*bindings.ValidatorStakingInitializedIterator, error) {
+		return r0, r1
+	})
+}
+
+func (f *IValidatorStakingFilterInitializedFunc) nextHook() func(*bind.FilterOpts) (*bindings.ValidatorStakingInitializedIterator, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *IValidatorStakingFilterInitializedFunc) appendCall(r0 IValidatorStakingFilterInitializedFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of IValidatorStakingFilterInitializedFuncCall
+// objects describing the invocations of this function.
+func (f *IValidatorStakingFilterInitializedFunc) History() []IValidatorStakingFilterInitializedFuncCall {
+	f.mutex.Lock()
+	history := make([]IValidatorStakingFilterInitializedFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// IValidatorStakingFilterInitializedFuncCall is an object that describes an
+// invocation of method FilterInitialized on an instance of
+// MockIValidatorStaking.
+type IValidatorStakingFilterInitializedFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 *bind.FilterOpts
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 *bindings.ValidatorStakingInitializedIterator
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c IValidatorStakingFilterInitializedFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c IValidatorStakingFilterInitializedFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
+}
+
 // IValidatorStakingFilterTransferFunc describes the behavior when the
 // FilterTransfer method of the parent MockIValidatorStaking instance is
 // invoked.
@@ -42304,6 +44811,115 @@ func (c IValidatorStakingGetEthAccumulatorFuncCall) Args() []interface{} {
 // Results returns an interface slice containing the results of this
 // invocation.
 func (c IValidatorStakingGetEthAccumulatorFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
+}
+
+// IValidatorStakingGetMaxGovernanceLockFunc describes the behavior when the
+// GetMaxGovernanceLock method of the parent MockIValidatorStaking instance
+// is invoked.
+type IValidatorStakingGetMaxGovernanceLockFunc struct {
+	defaultHook func(*bind.CallOpts) (*big.Int, error)
+	hooks       []func(*bind.CallOpts) (*big.Int, error)
+	history     []IValidatorStakingGetMaxGovernanceLockFuncCall
+	mutex       sync.Mutex
+}
+
+// GetMaxGovernanceLock delegates to the next hook function in the queue and
+// stores the parameter and result values of this invocation.
+func (m *MockIValidatorStaking) GetMaxGovernanceLock(v0 *bind.CallOpts) (*big.Int, error) {
+	r0, r1 := m.GetMaxGovernanceLockFunc.nextHook()(v0)
+	m.GetMaxGovernanceLockFunc.appendCall(IValidatorStakingGetMaxGovernanceLockFuncCall{v0, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the GetMaxGovernanceLock
+// method of the parent MockIValidatorStaking instance is invoked and the
+// hook queue is empty.
+func (f *IValidatorStakingGetMaxGovernanceLockFunc) SetDefaultHook(hook func(*bind.CallOpts) (*big.Int, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// GetMaxGovernanceLock method of the parent MockIValidatorStaking instance
+// invokes the hook at the front of the queue and discards it. After the
+// queue is empty, the default hook function is invoked for any future
+// action.
+func (f *IValidatorStakingGetMaxGovernanceLockFunc) PushHook(hook func(*bind.CallOpts) (*big.Int, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *IValidatorStakingGetMaxGovernanceLockFunc) SetDefaultReturn(r0 *big.Int, r1 error) {
+	f.SetDefaultHook(func(*bind.CallOpts) (*big.Int, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *IValidatorStakingGetMaxGovernanceLockFunc) PushReturn(r0 *big.Int, r1 error) {
+	f.PushHook(func(*bind.CallOpts) (*big.Int, error) {
+		return r0, r1
+	})
+}
+
+func (f *IValidatorStakingGetMaxGovernanceLockFunc) nextHook() func(*bind.CallOpts) (*big.Int, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *IValidatorStakingGetMaxGovernanceLockFunc) appendCall(r0 IValidatorStakingGetMaxGovernanceLockFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of
+// IValidatorStakingGetMaxGovernanceLockFuncCall objects describing the
+// invocations of this function.
+func (f *IValidatorStakingGetMaxGovernanceLockFunc) History() []IValidatorStakingGetMaxGovernanceLockFuncCall {
+	f.mutex.Lock()
+	history := make([]IValidatorStakingGetMaxGovernanceLockFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// IValidatorStakingGetMaxGovernanceLockFuncCall is an object that describes
+// an invocation of method GetMaxGovernanceLock on an instance of
+// MockIValidatorStaking.
+type IValidatorStakingGetMaxGovernanceLockFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 *bind.CallOpts
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 *big.Int
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c IValidatorStakingGetMaxGovernanceLockFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c IValidatorStakingGetMaxGovernanceLockFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
@@ -44386,6 +47002,114 @@ func (c IValidatorStakingParseApprovalForAllFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
+// IValidatorStakingParseInitializedFunc describes the behavior when the
+// ParseInitialized method of the parent MockIValidatorStaking instance is
+// invoked.
+type IValidatorStakingParseInitializedFunc struct {
+	defaultHook func(types.Log) (*bindings.ValidatorStakingInitialized, error)
+	hooks       []func(types.Log) (*bindings.ValidatorStakingInitialized, error)
+	history     []IValidatorStakingParseInitializedFuncCall
+	mutex       sync.Mutex
+}
+
+// ParseInitialized delegates to the next hook function in the queue and
+// stores the parameter and result values of this invocation.
+func (m *MockIValidatorStaking) ParseInitialized(v0 types.Log) (*bindings.ValidatorStakingInitialized, error) {
+	r0, r1 := m.ParseInitializedFunc.nextHook()(v0)
+	m.ParseInitializedFunc.appendCall(IValidatorStakingParseInitializedFuncCall{v0, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the ParseInitialized
+// method of the parent MockIValidatorStaking instance is invoked and the
+// hook queue is empty.
+func (f *IValidatorStakingParseInitializedFunc) SetDefaultHook(hook func(types.Log) (*bindings.ValidatorStakingInitialized, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// ParseInitialized method of the parent MockIValidatorStaking instance
+// invokes the hook at the front of the queue and discards it. After the
+// queue is empty, the default hook function is invoked for any future
+// action.
+func (f *IValidatorStakingParseInitializedFunc) PushHook(hook func(types.Log) (*bindings.ValidatorStakingInitialized, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *IValidatorStakingParseInitializedFunc) SetDefaultReturn(r0 *bindings.ValidatorStakingInitialized, r1 error) {
+	f.SetDefaultHook(func(types.Log) (*bindings.ValidatorStakingInitialized, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *IValidatorStakingParseInitializedFunc) PushReturn(r0 *bindings.ValidatorStakingInitialized, r1 error) {
+	f.PushHook(func(types.Log) (*bindings.ValidatorStakingInitialized, error) {
+		return r0, r1
+	})
+}
+
+func (f *IValidatorStakingParseInitializedFunc) nextHook() func(types.Log) (*bindings.ValidatorStakingInitialized, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *IValidatorStakingParseInitializedFunc) appendCall(r0 IValidatorStakingParseInitializedFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of IValidatorStakingParseInitializedFuncCall
+// objects describing the invocations of this function.
+func (f *IValidatorStakingParseInitializedFunc) History() []IValidatorStakingParseInitializedFuncCall {
+	f.mutex.Lock()
+	history := make([]IValidatorStakingParseInitializedFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// IValidatorStakingParseInitializedFuncCall is an object that describes an
+// invocation of method ParseInitialized on an instance of
+// MockIValidatorStaking.
+type IValidatorStakingParseInitializedFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 types.Log
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 *bindings.ValidatorStakingInitialized
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c IValidatorStakingParseInitializedFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c IValidatorStakingParseInitializedFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
+}
+
 // IValidatorStakingParseTransferFunc describes the behavior when the
 // ParseTransfer method of the parent MockIValidatorStaking instance is
 // invoked.
@@ -45844,6 +48568,117 @@ func (c IValidatorStakingWatchApprovalForAllFuncCall) Args() []interface{} {
 // Results returns an interface slice containing the results of this
 // invocation.
 func (c IValidatorStakingWatchApprovalForAllFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
+}
+
+// IValidatorStakingWatchInitializedFunc describes the behavior when the
+// WatchInitialized method of the parent MockIValidatorStaking instance is
+// invoked.
+type IValidatorStakingWatchInitializedFunc struct {
+	defaultHook func(*bind.WatchOpts, chan<- *bindings.ValidatorStakingInitialized) (event.Subscription, error)
+	hooks       []func(*bind.WatchOpts, chan<- *bindings.ValidatorStakingInitialized) (event.Subscription, error)
+	history     []IValidatorStakingWatchInitializedFuncCall
+	mutex       sync.Mutex
+}
+
+// WatchInitialized delegates to the next hook function in the queue and
+// stores the parameter and result values of this invocation.
+func (m *MockIValidatorStaking) WatchInitialized(v0 *bind.WatchOpts, v1 chan<- *bindings.ValidatorStakingInitialized) (event.Subscription, error) {
+	r0, r1 := m.WatchInitializedFunc.nextHook()(v0, v1)
+	m.WatchInitializedFunc.appendCall(IValidatorStakingWatchInitializedFuncCall{v0, v1, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the WatchInitialized
+// method of the parent MockIValidatorStaking instance is invoked and the
+// hook queue is empty.
+func (f *IValidatorStakingWatchInitializedFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *bindings.ValidatorStakingInitialized) (event.Subscription, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// WatchInitialized method of the parent MockIValidatorStaking instance
+// invokes the hook at the front of the queue and discards it. After the
+// queue is empty, the default hook function is invoked for any future
+// action.
+func (f *IValidatorStakingWatchInitializedFunc) PushHook(hook func(*bind.WatchOpts, chan<- *bindings.ValidatorStakingInitialized) (event.Subscription, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *IValidatorStakingWatchInitializedFunc) SetDefaultReturn(r0 event.Subscription, r1 error) {
+	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *bindings.ValidatorStakingInitialized) (event.Subscription, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *IValidatorStakingWatchInitializedFunc) PushReturn(r0 event.Subscription, r1 error) {
+	f.PushHook(func(*bind.WatchOpts, chan<- *bindings.ValidatorStakingInitialized) (event.Subscription, error) {
+		return r0, r1
+	})
+}
+
+func (f *IValidatorStakingWatchInitializedFunc) nextHook() func(*bind.WatchOpts, chan<- *bindings.ValidatorStakingInitialized) (event.Subscription, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *IValidatorStakingWatchInitializedFunc) appendCall(r0 IValidatorStakingWatchInitializedFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of IValidatorStakingWatchInitializedFuncCall
+// objects describing the invocations of this function.
+func (f *IValidatorStakingWatchInitializedFunc) History() []IValidatorStakingWatchInitializedFuncCall {
+	f.mutex.Lock()
+	history := make([]IValidatorStakingWatchInitializedFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// IValidatorStakingWatchInitializedFuncCall is an object that describes an
+// invocation of method WatchInitialized on an instance of
+// MockIValidatorStaking.
+type IValidatorStakingWatchInitializedFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 *bind.WatchOpts
+	// Arg1 is the value of the 2nd argument passed to this method
+	// invocation.
+	Arg1 chan<- *bindings.ValidatorStakingInitialized
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 event.Subscription
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c IValidatorStakingWatchInitializedFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0, c.Arg1}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c IValidatorStakingWatchInitializedFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 

@@ -278,8 +278,8 @@ contract("StakingNFT", async () => {
     it("burn Test 2: fail from tokenID not existing", async () => {
       const tokenID = BigNumber.from("0");
       const tx = stakingNFT.burnMock(tokenID);
-      // Error Code 604 for NFT token does not exist
-      await expect(tx).to.be.revertedWith("604");
+      // Error Code "ERC721: invalid token ID" for NFT token does not exist
+      await expect(tx).to.be.revertedWith("ERC721: invalid token ID");
     });
   });
 
@@ -491,8 +491,8 @@ contract("StakingNFT", async () => {
       const to = signers[0].address;
       const tokenID = BigNumber.from("0");
       const tx = stakingNFT.burnToMock(to, tokenID);
-      // Error Code 604 for NFT token does not exist
-      await expect(tx).to.be.revertedWith("604");
+      // Error Code "ERC721: invalid token ID" for NFT token does not exist
+      await expect(tx).to.be.revertedWith("ERC721: invalid token ID");
     });
   });
 
@@ -934,8 +934,8 @@ contract("StakingNFT", async () => {
       const to = signers[0].address;
       const tokenID = BigNumber.from("0");
       const tx = stakingNFT.burnNFTMock(from, to, tokenID);
-      // Error Code 604 for NFT token does not exist
-      await expect(tx).to.be.revertedWith("604");
+      // Error Code "ERC721: invalid token ID" for NFT token does not exist
+      await expect(tx).to.be.revertedWith("ERC721: invalid token ID");
     });
 
     it("burnNFT Test 4: fail from invalid owner", async () => {
@@ -1510,8 +1510,8 @@ contract("StakingNFT", async () => {
     it("collectEth Test 3: fail because tokenID does not exist", async () => {
       const tokenID = BigNumber.from(0);
       const tx = stakingNFT.collectEthMock(tokenID);
-      // Error Code 604 because tokenID does not exist
-      await expect(tx).to.be.revertedWith("604");
+      // Error Code "ERC721: invalid token ID" for NFT token does not exist
+      await expect(tx).to.be.revertedWith("ERC721: invalid token ID");
     });
 
     it("collectEth Test 4: fail because not owner", async () => {
@@ -1698,8 +1698,8 @@ contract("StakingNFT", async () => {
       const to = signers[0].address;
       const tokenID = BigNumber.from(0);
       const tx = stakingNFT.collectEthToMock(to, tokenID);
-      // Error Code 604 because tokenID does not exist
-      await expect(tx).to.be.revertedWith("604");
+      // Error Code "ERC721: invalid token ID" for NFT token does not exist
+      await expect(tx).to.be.revertedWith("ERC721: invalid token ID");
     });
 
     it("collectEthTo Test 4: fail because not owner", async () => {
@@ -1888,8 +1888,8 @@ contract("StakingNFT", async () => {
     it("collectToken Test 3: fail because tokenID does not exist", async () => {
       const tokenID = BigNumber.from(0);
       const tx = stakingNFT.collectTokenMock(tokenID);
-      // Error Code 604 because tokenID does not exist
-      await expect(tx).to.be.revertedWith("604");
+      // Error Code "ERC721: invalid token ID" for NFT token does not exist
+      await expect(tx).to.be.revertedWith("ERC721: invalid token ID");
     });
 
     it("collectToken Test 4: fail because not owner", async () => {
@@ -2086,8 +2086,8 @@ contract("StakingNFT", async () => {
       const to = signers[0].address;
       const tokenID = BigNumber.from(0);
       const tx = stakingNFT.collectTokenToMock(to, tokenID);
-      // Error Code 604 because tokenID does not exist
-      await expect(tx).to.be.revertedWith("604");
+      // Error Code "ERC721: invalid token ID" for NFT token does not exist
+      await expect(tx).to.be.revertedWith("ERC721: invalid token ID");
     });
 
     it("collectTokenTo Test 4: fail because not owner", async () => {
@@ -2345,8 +2345,8 @@ contract("StakingNFT", async () => {
       const tx = stakingNFT
         .connect(govSigner)
         .lockPositionMock(caller, tokenID, duration);
-      // Error Code 604 for NFT token does not exist
-      await expect(tx).to.be.revertedWith("604");
+      // Error Code "ERC721: invalid token ID" for NFT token does not exist
+      await expect(tx).to.be.revertedWith("ERC721: invalid token ID");
     });
 
     it("lockPosition Test 6: fail, incorrect caller", async () => {
@@ -2567,8 +2567,8 @@ contract("StakingNFT", async () => {
       const tokenID = BigNumber.from("1");
       const duration = BigNumber.from("1");
       const tx = stakingNFT.lockOwnPositionMock(tokenID, duration);
-      // Error Code 604 for NFT token does not exist
-      await expect(tx).to.be.revertedWith("604");
+      // Error Code "ERC721: invalid token ID" for NFT token does not exist
+      await expect(tx).to.be.revertedWith("ERC721: invalid token ID");
     });
 
     it("lockOwnPosition Test 5: fail, wrong owner", async () => {
@@ -2813,8 +2813,8 @@ contract("StakingNFT", async () => {
       const tokenID = BigNumber.from("1");
       const duration = BigNumber.from("1");
       const tx = stakingNFT.lockWithdrawMock(tokenID, duration);
-      // Error Code 604 for NFT token does not exist
-      await expect(tx).to.be.revertedWith("604");
+      // Error Code "ERC721: invalid token ID" for NFT token does not exist
+      await expect(tx).to.be.revertedWith("ERC721: invalid token ID");
     });
 
     it("lockWithdraw Test 5: fail, wrong owner", async () => {
@@ -3268,7 +3268,6 @@ contract("StakingNFT", async () => {
       await expect(estimatedToken).to.eq(expEstimatedToken);
     });
 
-    // TODO: HERE I AM
     it("estimateTokenCollection Test 2: Token", async () => {
       const scaleFactor = await stakingNFT.getAccumulatorScaleFactor();
       // Deposit Token
@@ -3564,7 +3563,6 @@ contract("StakingNFT", async () => {
       expect(retCircuitBreaker).to.eq(expCircuitBreaker);
     });
 
-    // TODO: how to call as factory
     it("circuitBreaker Test 2", async () => {
       let expCircuitBreaker = false;
       let retCircuitBreaker = await stakingNFT.circuitBreakerStateMock();

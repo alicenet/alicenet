@@ -370,6 +370,10 @@ abstract contract StakingNFT is
 
     /// estimateEthCollection returns the amount of eth a tokenID may withdraw
     function estimateEthCollection(uint256 tokenID_) public view returns (uint256 payout) {
+        require(
+            _exists(tokenID_),
+            string(abi.encodePacked(StakingNFTErrorCodes.STAKENFT_INVALID_TOKEN_ID))
+        );
         Position memory p = _positions[tokenID_];
         Accumulator memory ethState = _ethState;
         uint256 shares = _shares;
@@ -384,6 +388,10 @@ abstract contract StakingNFT is
 
     /// estimateTokenCollection returns the amount of AToken a tokenID may withdraw
     function estimateTokenCollection(uint256 tokenID_) public view returns (uint256 payout) {
+        require(
+            _exists(tokenID_),
+            string(abi.encodePacked(StakingNFTErrorCodes.STAKENFT_INVALID_TOKEN_ID))
+        );
         Position memory p = _positions[tokenID_];
         Accumulator memory tokenState = _tokenState;
         uint256 shares = _shares;
@@ -424,6 +432,10 @@ abstract contract StakingNFT is
             uint256 accumulatorToken
         )
     {
+        require(
+            _exists(tokenID_),
+            string(abi.encodePacked(StakingNFTErrorCodes.STAKENFT_INVALID_TOKEN_ID))
+        );
         Position memory p = _positions[tokenID_];
         shares = uint256(p.shares);
         freeAfter = uint256(p.freeAfter);
@@ -433,13 +445,17 @@ abstract contract StakingNFT is
     }
 
     /// Gets token URI
-    function tokenURI(uint256 tokenId)
+    function tokenURI(uint256 tokenID_)
         public
         view
         override(ERC721Upgradeable)
         returns (string memory)
     {
-        return IStakingNFTDescriptor(_stakingPositionDescriptorAddress()).tokenURI(this, tokenId);
+        require(
+            _exists(tokenID_),
+            string(abi.encodePacked(StakingNFTErrorCodes.STAKENFT_INVALID_TOKEN_ID))
+        );
+        return IStakingNFTDescriptor(_stakingPositionDescriptorAddress()).tokenURI(this, tokenID_);
     }
 
     /// gets the _ACCUMULATOR_SCALE_FACTOR used to scale the ether and tokens

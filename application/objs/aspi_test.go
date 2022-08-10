@@ -396,7 +396,6 @@ func TestASPreImageBad6(t *testing.T) {
 	if err == nil {
 		t.Fatal("Should have raised error (4)")
 	}
-
 }
 
 func TestASPreImageSigning(t *testing.T) {

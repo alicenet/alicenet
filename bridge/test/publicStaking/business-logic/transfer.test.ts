@@ -143,7 +143,7 @@ describe("PublicStaking: NFT transfer", async () => {
       fixture.publicStaking
         .connect(notAdminSigner)
         .transferFrom(adminSigner.address, notAdminSigner.address, 2)
-    ).to.be.revertedWith("ERC721: transfer caller is not owner nor approved");
+    ).to.be.revertedWith("ERC721: caller is not token owner nor approved");
   });
 
   it("Approval for all should be able to safe transfer Staking NFT position", async function () {
@@ -236,12 +236,12 @@ describe("PublicStaking: NFT transfer", async () => {
           notAdminSigner.address,
           1
         )
-    ).to.be.rejectedWith("ERC721: transfer caller is not owner nor approved");
+    ).to.be.rejectedWith("ERC721: caller is not token owner nor approved");
     await expect(
       fixture.publicStaking
         .connect(notAdminSigner)
         .transferFrom(adminSigner.address, notAdminSigner.address, 1)
-    ).to.be.rejectedWith("ERC721: transfer caller is not owner nor approved");
+    ).to.be.rejectedWith("ERC721: caller is not token owner nor approved");
   });
 
   it("Shouldn't allow safe transfer NFT to a contract that doesn't implement ERC721Receiver interface", async function () {

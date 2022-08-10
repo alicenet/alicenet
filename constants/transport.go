@@ -1,7 +1,7 @@
 package constants
 
 // GRPC Server Configuration Params
-// Setup to provide backpressure
+// Setup to provide backpressure.
 const (
 	ConsensusMsgQSize       = 1024
 	ConsensusMsgQWorkers    = 4

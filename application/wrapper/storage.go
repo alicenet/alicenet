@@ -7,24 +7,24 @@ import (
 )
 
 // Storage wraps the dynamics.StorageGetter interface to make
-// it easier to interact within application logic
+// it easier to interact within application logic.
 type Storage struct {
 	storage dynamics.StorageGetter
 }
 
 // NewStorage creates a new storage struct which wraps
-// the StorageGetter interface
+// the StorageGetter interface.
 func NewStorage(storageInter dynamics.StorageGetter) *Storage {
 	storage := &Storage{storage: storageInter}
 	return storage
 }
 
-// GetMaxBytes returns MaxBytes
+// GetMaxBytes returns MaxBytes.
 func (s *Storage) GetMaxBytes() uint32 {
 	return s.storage.GetMaxBytes()
 }
 
-// GetAtomicSwapFee returns the fee for AtomicSwap
+// GetAtomicSwapFee returns the fee for AtomicSwap.
 func (s *Storage) GetAtomicSwapFee() (*uint256.Uint256, error) {
 	if s == nil {
 		return nil, errorz.ErrInvalid{}.New("storage.GetAtomicSwapFee; struct not initialized")
@@ -41,7 +41,7 @@ func (s *Storage) GetAtomicSwapFee() (*uint256.Uint256, error) {
 	return feeUint256, nil
 }
 
-// GetDataStoreEpochFee returns the per-epoch fee of DataStore
+// GetDataStoreEpochFee returns the per-epoch fee of DataStore.
 func (s *Storage) GetDataStoreEpochFee() (*uint256.Uint256, error) {
 	if s == nil {
 		return nil, errorz.ErrInvalid{}.New("storage.GetDataStoreEpochFee; struct not initialized")
@@ -58,7 +58,7 @@ func (s *Storage) GetDataStoreEpochFee() (*uint256.Uint256, error) {
 	return feeUint256, nil
 }
 
-// GetValueStoreFee returns the fee of ValueStore
+// GetValueStoreFee returns the fee of ValueStore.
 func (s *Storage) GetValueStoreFee() (*uint256.Uint256, error) {
 	if s == nil {
 		return nil, errorz.ErrInvalid{}.New("storage.GetValueStoreFee; struct not initialized")
@@ -75,7 +75,7 @@ func (s *Storage) GetValueStoreFee() (*uint256.Uint256, error) {
 	return feeUint256, nil
 }
 
-// GetMinTxFee returns the minimum TxFee
+// GetMinTxFee returns the minimum TxFee.
 func (s *Storage) GetMinTxFee() (*uint256.Uint256, error) {
 	if s == nil {
 		return nil, errorz.ErrInvalid{}.New("storage.GetMinTxFee; struct not initialized")

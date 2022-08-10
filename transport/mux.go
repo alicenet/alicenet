@@ -5,18 +5,21 @@ import (
 	"sync"
 	"time"
 
+	"github.com/hashicorp/yamux"
+	"github.com/sirupsen/logrus"
+
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/interfaces"
 	"github.com/alicenet/alicenet/logging"
 	"github.com/alicenet/alicenet/types"
-	"github.com/hashicorp/yamux"
-	"github.com/sirupsen/logrus"
 )
 
 var _ interfaces.P2PMux = (*P2PMux)(nil)
 
-var muxConfig *yamux.Config
-var mlog *logrus.Logger
+var (
+	muxConfig *yamux.Config
+	mlog      *logrus.Logger
+)
 
 func init() {
 	m := &P2PMux{}
@@ -58,7 +61,7 @@ func (pmx *P2PMux) defaultConfig() *yamux.Config {
 }
 
 // HandleConnection runs the multiplexing protocol on the provided P2PConn and
-// returns a multipled client and server P2PConn pair.
+// returns a multiplied client and server P2PConn pair.
 func (pmx *P2PMux) HandleConnection(ctx context.Context, conn interfaces.P2PConn) (interfaces.P2PMuxConn, error) {
 	switch conn.Initiator() {
 	case types.SelfInitiatedConnection:
