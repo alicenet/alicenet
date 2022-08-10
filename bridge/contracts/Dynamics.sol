@@ -174,8 +174,7 @@ contract Dynamics is Initializable, ImmutableSnapshots {
         uint256 extCodeSize;
         assembly {
             ptr := mload(0x40)
-            //need to figure out how to get this value dynamically
-            retPtr := 0x1c0
+            retPtr := values
             extCodeSize := extcodesize(addr)
             extcodecopy(addr, ptr, 0, extCodeSize)
         }
