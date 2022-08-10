@@ -36,42 +36,44 @@ describe("Testing Dutch Auction", async () => {
     )) as DutchAuction;
   });
 
-  it("Should obtain bid price", async () => {
+  it("Should obtain bid price at first auction block", async () => {
     expect(Number(await dutchAuction.getPrice())).to.be.equal(
-      Number("1961725490196078431372")
+      Number("10000950400000000000000")
     );
   });
 
-  it("Should obtain prices through blocks according with dutch auction curve", async () => {
+  it("Should obtain prices through five blocks according to dutch auction curve", async () => {
     expect(Number(await dutchAuction.getPrice())).to.be.equal(
-      Number("1961725490196078431372")
+      Number("10000950400000000000000")
     );
     await network.provider.send("evm_mine");
     expect(Number(await dutchAuction.getPrice())).to.be.equal(
-      Number("1949737623232709209017")
+      Number("9984975974440894568690")
     );
     await network.provider.send("evm_mine");
     expect(Number(await dutchAuction.getPrice())).to.be.equal(
-      Number("1937895450056969236612")
+      Number("9969052503987240829346")
     );
     await network.provider.send("evm_mine");
     expect(Number(await dutchAuction.getPrice())).to.be.equal(
-      Number("1926196330690826727066")
+      Number("9953179745222929936305")
     );
     await network.provider.send("evm_mine");
     expect(Number(await dutchAuction.getPrice())).to.be.equal(
-      Number("1914637688555347091932")
+      Number("9937357456279809220985")
     );
   });
 
-  it.skip("Simulate a 7 days run (skipped since it may take too long)", async () => {
-    for (let d = 1; d <= 15; d++) {
+  it.skip("Simulates a 30 days run (skipped since it takes long)", async () => {
+    for (let d = 1; d <= 30; d++) {
       console.log(
         "Day",
         d,
         "Price",
         ethers.utils.formatEther(await dutchAuction.getPrice()),
-        await dutchAuction.getPrice()
+        await dutchAuction.getPrice(),
+        "Block",
+        await ethers.provider.getBlockNumber()
       );
       for (let i = 0; i < 5760; i++) {
         await network.provider.send("evm_mine");

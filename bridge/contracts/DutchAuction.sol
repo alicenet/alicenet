@@ -10,19 +10,19 @@ import "hardhat/console.sol";
 /// @custom:salt DutchAuction
 /// @custom:deploy-type deployUpgradeable
 contract DutchAuction is Initializable, ImmutableFactory, ImmutableValidatorPool {
-    uint256 private immutable _startPrice = 100000 * 10**18; // 100000 ETH
+    uint256 private immutable _startPrice = 1000000 * 10**18;
     uint8 private immutable _initialDelta = 10;
     uint8 private immutable _decay = 16;
     uint256 private immutable _finalPrice;
-    uint256 private immutable _maxDurationInBlocks;
+    uint256 private immutable _scaleParameter;
     uint256 private _startBlock = 0;
+    uint256 private _alfa;
 
     constructor() ImmutableFactory(msg.sender) {
-        uint32 _goalValidators = 30;
-        uint32 _numberOfBlocksInAMonth = 4 * 60 * 24 * 30;
         uint256 _currentValidators = IValidatorPool(_validatorPoolAddress()).getValidatorsCount();
-        _maxDurationInBlocks = (_goalValidators * _numberOfBlocksInAMonth) / 100000;
+        _scaleParameter = 100;
         _finalPrice = 1200000 * 100 * 10**9 * _currentValidators * 2; // 1200000 is the cost in gas units for an ETHDKG complete round and 100 is an estimated gas price in gweis
+        _alfa = _startPrice - _finalPrice;
     }
 
     function initialize() public {
@@ -43,9 +43,8 @@ contract DutchAuction is Initializable, ImmutableFactory, ImmutableValidatorPool
     /// @dev
     /// @param blocks blocks since the auction started
     function _dutchAuctionPrice(uint256 blocks) internal view returns (uint256 result) {
-        uint256 alfa = _startPrice - _finalPrice;
-        uint256 t1 = alfa * _maxDurationInBlocks;
-        uint256 t2 = _decay * blocks + _maxDurationInBlocks**2;
+        uint256 t1 = _alfa * _scaleParameter;
+        uint256 t2 = _decay * blocks + _scaleParameter**2;
         uint256 ratio = t1 / t2;
         return _finalPrice + ratio;
     }
