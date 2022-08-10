@@ -1,146 +1,129 @@
- import { assert } from "console";
-import { ethers } from "hardhat";
-import { setup } from "mocha";
- import { SnapshotRingBufferMock__factory, Snapshots} from "../../typechain-types";
- import { expect } from "../chai-setup";
- import { completeETHDKGRound } from "../ethdkg/setup";
- import {validSnapshot1024, validSnapshot2048, 
-  validSnapshot7168, validSnapshot8192
- } from "../snapshots/assets/4-validators-snapshots-1";
- import {Snapshot} from "../setup";
+import { assert, ethers } from "hardhat";
+import { SnapshotStructOutput } from "../../typechain-types/contracts/Snapshots";
+import { SnapshotRingBufferMock } from "../../typechain-types/test/contract-mocks/snapshots/SnapshotRingBufferMock";
+import { expect } from "../chai-setup";
+import { SignedBClaims } from "../setup";
+import { signedData1 } from "../snapshots/assets/4-validators-snapshots-100-Group1";
 
-
-
-
+describe("Snapshot Ring Buffer library Successes", async () => {
+  let snapshotRingBufferMock: SnapshotRingBufferMock;
+  let snapshot1: SnapshotStructOutput;
+  //helper function to automatically create snapshots
+  const createSnapshots = async (
+    inputClaims: SignedBClaims[],
+    //the mock contract
+    snapshotRingBufferMock: SnapshotRingBufferMock,
+    //number of snapshots you want
+    snapshotsWanted: number,
+    //where you want to start in the vectir
+    startIndex: number
+  ): Promise<SnapshotStructOutput[]> => {
+    let snapshotsVec: SnapshotStructOutput[] = [];
+    for (let i = startIndex; i < startIndex + snapshotsWanted; i++) {
+      let bClaims = await snapshotRingBufferMock.decodeBClaims(
+        inputClaims[i].BClaims
+      );
+      snapshotsVec.push(
+        await snapshotRingBufferMock.createSnapshot(i, bClaims)
+      );
+    }
+    return snapshotsVec;
+  };
 
   beforeEach(async function () {
-    const SnapshotRingBufferMockFactory = await ethers.getContractFactory("SnapshotRingBufferMock");
-    const SnapshotRingBufferMock = await SnapshotRingBufferMockFactory.deploy();
-    await SnapshotRingBufferMock.deployed();
+    const SnapshotRingBufferMockFactory = await ethers.getContractFactory(
+      "SnapshotRingBufferMock"
+    );
+    snapshotRingBufferMock = await SnapshotRingBufferMockFactory.deploy();
+    await snapshotRingBufferMock.deployed();
+    const blockClaims6 = await snapshotRingBufferMock.decodeBClaims(
+      signedData1[0].BClaims
+    );
+    snapshot1 = await snapshotRingBufferMock.createSnapshot(1, blockClaims6);
   });
 
+  it("Successfully calculates the Epoch for the new snapshot", async () => {
+    //put 1 in there so its not empty
+    await snapshotRingBufferMock.safeSet(snapshot1);
+    const epoch = await snapshotRingBufferMock.getHeight(snapshot1);
+    expect(epoch).to.be.equal(1);
+    expect(
+      await snapshotRingBufferMock.getSnapshotCheck(epoch)
+    ).to.be.deep.equals(snapshot1);
+  });
 
-
-
-describe("Snapshot Ring Buffer library Successes", async() => {
-  const BlockInterval = 1024;
-  //fix imports later for dummy mock data
-  const testBuffer = SnapshotRingBufferMock.createBuffer();
-  const blockClaims1 = BClaimsParserLibrary.BClaims(0,0,0,0x00,0x00,0x00,0x00);
-  const blockClaims2 = BClaimsParserLibrary.BClaims(1,1,1,0x01,0x01,0x01,0x01);
-  const blockClaims3 = BClaimsParserLibrary.BClaims(2,2,2,0x02,0x02,0x02,0x02);
-  const blockClaims4 = BClaimsParserLibrary.BClaims(3,3,3,0x03,0x03,0x03,0x03);
-  const blockClaims5 = BClaimsParserLibrary.BClaims(4,4,4,0x04,0x04,0x04,0x04);
-  const blockClaims6 = BClaimsParserLibrary.BClaims(5,5,5,0x05,0x05,0x05,0x05);
-  const snapshot1 = validSnapshot1024;
-  const snapshot2 = validSnapshot2048;
-  const snapshot3 = validSnapshot7168;
-  const snapshot4 = validSnapshot8192;
-  const snapshot5 = new Snapshot(blockClaims5);
-  const snapshot6 = new Snapshot(blockClaims6);
-  const _snapshotInsert = new Snapshot(7, blockClaims1);
-
-
+  it("Should fail when the query is epoch 0", async () => {
+    //await is outside if you expect something to fail
+    await expect(snapshotRingBufferMock.getSnapshotCheck(0)).to.be.revertedWith(
+      "epoch must be non-zero"
+    );
+  });
 
   it("Successfully adds a new snapshot to the full buffer", async () => {
-    const Blockinterval = 1024;
-    //fill buffer with snapshots
-    SnapshotRingBufferMock.SafeSet(snapshot1, testBuffer);
-    SnapshotRingBufferMock.SafeSet(snapshot2, testBuffer);
-    SnapshotRingBufferMock.SafeSet(snapshot3, testBuffer);
-    SnapshotRingBufferMock.SafeSet(snapshot4, testBuffer);
-    SnapshotRingBufferMock.SafeSet(snapshot5, testBuffer);
-    SnapshotRingBufferMock.SafeSet(snapshot6, testBuffer);
-    const RingBufferTail = SnapshotRingBufferMock.getTail(testBuffer);
-    //get the oldHead to compare
-    const oldHead = SnapshotRingBuffermock.getHead();
-        //check to see if the array is null
-        assert(testBuffer._array.length != 0);
-        //calculate the position for where it goes
-        let IndexFor = SnapshotRingBufferMock.checkIndexFor(_snapshotRingBuffer, 7);
-        //puts the insert into the buffer
-        SnapshotRingBufferMock.SafeSet(_snapshotInsert,testBuffer);
-        //compare the temporary variable to the new snapshot to see if it got replaced
-        assert(testBuffer._array[0] != oldHead);
-        //see if it didnt just overwrite the tail
-        assert(testBuffer._array[5] != _snapshotInsert);
-        //assert the size of the ringbuffer is 6
-        assert(testBuffer._array.length < 6);
-        
-      })
-
-  it("Successfully calculates the Index for the new snapshot", async() =>{
-    //set it with only 3 snapshots next one should be 4
-    SnapshotRingBufferMock.SafeSet(testBuffer, snapshot1);
-    SnapshotRingBufferMock.SafeSet(testBuffer, snapshot2);
-    SnapshotRingBufferMock.SafeSet(testBuffer, snapshot3);
-    //set temp variable for what the Index should be
-    let IndexFor = SnapshotRingBufferMock.checkIndexFor(testBuffer, 7);
-    assert(IndexFor == 1);
-    const IndexFor1 = SnapshotRingBufferMock.checkIndexFor(testBuffer, 22);
-    assert(IndexFor = 4);
-    //unsafeset for the index to see if it will add in the correct position
-    SnapshotRingBufferMock.unsafeSetCheck(testBuffer, snapshot1, IndexFor1);
-    //it should be the length of 4 if the index is right
-    assert(testBuffer._array.length = 4);
+    //fill buffer with snapshots, 7 just so that it overwrites 1
+    const snapshots = await createSnapshots(
+      signedData1,
+      snapshotRingBufferMock,
+      7,
+      0
+    );
+    for (let i = 0; i < snapshots.length; i++) {
+      //you start the buffer at _array[1] not 0
+      await snapshotRingBufferMock.safeSet(snapshots[i]);
+    }
+    //await is inside if you expect it to succeed
+    expect(await snapshotRingBufferMock.getTail()).to.be.deep.equals(
+      snapshots[4]
+    );
+    //check to see if the 7th snapshot overwrote the first
+    expect(await snapshotRingBufferMock.getSnapshotCheck(1)).to.be.deep.equals(
+      snapshots[6]
+    );
   });
 
-  it("Successfully recovers the last Snapshots added"){
+  it("Successfully calculates the Index for the new snapshot", async () => {
+    let IndexFor = (await snapshotRingBufferMock.checkIndexFor(7)).toNumber();
+    assert((IndexFor = 1));
+    let IndexFor1 = await (
+      await snapshotRingBufferMock.checkIndexFor(22)
+    ).toNumber();
+    assert((IndexFor1 = 4));
+  });
+
+  it("Successfully overwrites old Snapshots when the buffer is already full", async () => {
     //input 10 snapshots
+    const snapshots = await createSnapshots(
+      signedData1,
+      snapshotRingBufferMock,
+      10,
+      0
+    );
+    for (let i = 0; i < snapshots.length; i++) {
+      //you start the buffer at _array[1] not 0
+      await snapshotRingBufferMock.safeSet(snapshots[i]);
+    }
+    let Head = await snapshotRingBufferMock.getHead();
+    //assert((Head = snapshots[6]));
+    expect((Head = snapshots[5]));
+  });
 
-    //try to get 6 snapshots from the buffer
-
-    //assert that the first 4 are not in the buffer anymore
-
-
-  }
-
-  it("Gets the right Snapshot", async() => {
+  it("Gets the right Snapshot", async () => {
     //fill with 3 snapshots
-    SnapshotRingBufferMock.SafeSet(testBuffer, snapshot1);
-    SnapshotRingBufferMock.SafeSet(testBuffer, snapshot1);
-    SnapshotRingBufferMock.SafeSet(testBuffer, snapshot1);
-    //get the third
-    let check = SnapshotRingBufferMock.getSnapshotCheck(testBuffer, 3);
-    //check if its the third
-    assert(check == snapshot3);
-  })
-
-  it("Does a successful (safe) set", async() =>{
-
-    SnapshotRingBufferMock.SafeSet(testBuffer, snapshot1);
-    //set the temp variable to whatever is in the calculated position
-    
-
-    //
-
+    await snapshotRingBufferMock.safeSet(snapshot1);
+    expect(await snapshotRingBufferMock.getSnapshotCheck(1)).to.be.deep.equals(
+      snapshot1
+    );
   });
-
-  it("Does a successful unsafe set", async() => {
+  // Apparently we arent testing Unsafe Sets anymore
+  it("Does a successful unsafe set", async () => {
     //calculate indexFor
-    let IndexFor = SnapshotRingBufferMock.checkIndexFor(testBuffer, 22);
-    assert(IndexFor = 4);
+    let IndexFor = (await snapshotRingBufferMock.checkIndexFor(22)).toNumber();
+    assert((IndexFor = 4));
     //unsafeset for the index to see if it will add in the correct position
-    SnapshotRingBufferMock.unsafeSetCheck(testBuffer, snapshot1, IndexFor1);
-    //get the snapshot
-    let check = SnapshotRingBufferMock.getSnapshotCheck(testBuffer, 4);
+    snapshotRingBufferMock.unsafeSetCheck(snapshot1, IndexFor);
     //check to see if its in position
-    assert(testBuffer._array[3] == snapshot1);
+    expect(await snapshotRingBufferMock.getSnapshotCheck(4)).to.be.deep.equals(
+      snapshot1
+    );
   });
-
 });
-
-
-
-
-
-
-
-
-
-
-
-
-
- 
- 
