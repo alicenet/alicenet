@@ -8,6 +8,7 @@ import (
 	"github.com/dgraph-io/badger/v2"
 	"github.com/stretchr/testify/assert"
 
+
 	appObjs "github.com/alicenet/alicenet/application/objs"
 	"github.com/alicenet/alicenet/application/objs/uint256"
 	"github.com/alicenet/alicenet/consensus/objs"
@@ -396,7 +397,7 @@ func TestAppMan_applyState_Error2(t *testing.T) {
 		if err == nil {
 			t.Fatalf("Should have raised error")
 		}
-		if !errors.As(err, &errorz.ErrMissingTransactions) {
+		if !errors.Is(err, errorz.ErrMissingTransactions) {
 			t.Fatalf("Should have raised errorz.ErrMissingTransactions error")
 		}
 
