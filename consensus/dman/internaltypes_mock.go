@@ -2,6 +2,7 @@ package dman
 
 import (
 	"context"
+
 	"github.com/stretchr/testify/mock"
 	"google.golang.org/grpc"
 

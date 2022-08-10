@@ -3,7 +3,6 @@ package objs
 import (
 	"testing"
 
-
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/crypto"
 )
