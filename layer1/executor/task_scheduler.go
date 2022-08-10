@@ -9,6 +9,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/dgraph-io/badger/v2"
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
+
 	"github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/constants/dbprefix"
@@ -21,9 +25,6 @@ import (
 	"github.com/alicenet/alicenet/layer1/transaction"
 	"github.com/alicenet/alicenet/logging"
 	"github.com/alicenet/alicenet/utils"
-	"github.com/dgraph-io/badger/v2"
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
 )
 
 var (
@@ -33,7 +34,7 @@ var (
 	ErrTaskIsNil    = errors.New("the task we're trying to schedule is nil")
 )
 
-// InternalTaskState is an enumeration indicating the possible states of a task
+// InternalTaskState is an enumeration indicating the possible states of a task.
 type InternalTaskState int
 
 const (
@@ -370,7 +371,6 @@ func (s *TasksScheduler) startTasks(ctx context.Context, tasks []TaskRequestInfo
 			task.InternalState = Running
 			s.Schedule[task.Id] = task
 		}
-
 	}
 
 	return nil
@@ -439,7 +439,6 @@ func (s *TasksScheduler) findTasks() ([]TaskRequestInfo, []TaskRequestInfo) {
 		if ((taskRequest.Start == 0 && taskRequest.End == 0) ||
 			(taskRequest.Start != 0 && taskRequest.Start <= s.LastHeightSeen && taskRequest.End == 0) ||
 			(taskRequest.Start <= s.LastHeightSeen && taskRequest.End > s.LastHeightSeen)) && taskRequest.InternalState == NotStarted {
-
 			if taskRequest.Task.GetAllowMultiExecution() {
 				multiExecutionCheck[taskRequest.Name] = true
 				toStart = append(toStart, taskRequest)
@@ -576,11 +575,9 @@ func (s *TasksScheduler) loadState() error {
 	}
 
 	return nil
-
 }
 
 func (s *TasksScheduler) MarshalJSON() ([]byte, error) {
-
 	ws := &innerSequentialSchedule{Schedule: make(map[string]*taskRequestInner)}
 
 	for k, v := range s.Schedule {

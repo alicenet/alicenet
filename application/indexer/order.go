@@ -4,8 +4,9 @@ import (
 	"errors"
 	"time"
 
-	"github.com/alicenet/alicenet/utils"
 	"github.com/dgraph-io/badger/v2"
+
+	"github.com/alicenet/alicenet/utils"
 )
 
 var ErrIterClose = errors.New("iter closed")
@@ -23,12 +24,12 @@ type InsertionOrderIndexerKey struct {
 	key []byte
 }
 
-// MarshalBinary returns the byte slice for the key object
+// MarshalBinary returns the byte slice for the key object.
 func (ioik *InsertionOrderIndexerKey) MarshalBinary() []byte {
 	return utils.CopySlice(ioik.key)
 }
 
-// UnmarshalBinary takes in a byte slice to set the key object
+// UnmarshalBinary takes in a byte slice to set the key object.
 func (ioik *InsertionOrderIndexerKey) UnmarshalBinary(data []byte) {
 	ioik.key = utils.CopySlice(data)
 }
@@ -37,12 +38,12 @@ type InsertionOrderIndexerRevKey struct {
 	revkey []byte
 }
 
-// MarshalBinary returns the byte slice for the key object
+// MarshalBinary returns the byte slice for the key object.
 func (ioirk *InsertionOrderIndexerRevKey) MarshalBinary() []byte {
 	return utils.CopySlice(ioirk.revkey)
 }
 
-// UnmarshalBinary takes in a byte slice to set the key object
+// UnmarshalBinary takes in a byte slice to set the key object.
 func (ioirk *InsertionOrderIndexerRevKey) UnmarshalBinary(data []byte) {
 	ioirk.revkey = utils.CopySlice(data)
 }
@@ -88,7 +89,7 @@ func (ioi *InsertionOrderIndexer) Delete(txn *badger.Txn, txHash []byte) error {
 	return nil
 }
 
-//func (ioi *InsertionOrderIndexer) makeIndexKeys(txHash []byte) ([]byte, []byte, error) {
+// func (ioi *InsertionOrderIndexer) makeIndexKeys(txHash []byte) ([]byte, []byte, error) {.
 func (ioi *InsertionOrderIndexer) makeIndexKeys(txHash []byte) (*InsertionOrderIndexerKey, *InsertionOrderIndexerRevKey, error) {
 	txHashCopy := utils.CopySlice(txHash)
 	ts := time.Now()

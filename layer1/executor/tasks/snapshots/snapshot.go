@@ -4,15 +4,16 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/alicenet/alicenet/layer1/executor/tasks"
-	"github.com/alicenet/alicenet/layer1/executor/tasks/snapshots/state"
-	"github.com/alicenet/alicenet/utils"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/sirupsen/logrus"
+
+	"github.com/alicenet/alicenet/layer1/executor/tasks"
+	"github.com/alicenet/alicenet/layer1/executor/tasks/snapshots/state"
+	"github.com/alicenet/alicenet/utils"
 )
 
-// SnapshotTask pushes a snapshot to Ethereum
+// SnapshotTask pushes a snapshot to Ethereum.
 type SnapshotTask struct {
 	*tasks.BaseTask
 	Height          uint64
@@ -20,10 +21,10 @@ type SnapshotTask struct {
 	ValidatorIndex  int
 }
 
-// asserting that SnapshotTask struct implements interface tasks.Task
+// asserting that SnapshotTask struct implements interface tasks.Task.
 var _ tasks.Task = &SnapshotTask{}
 
-func NewSnapshotTask(height uint64, numOfValidators int, validatorIndex int) *SnapshotTask {
+func NewSnapshotTask(height uint64, numOfValidators, validatorIndex int) *SnapshotTask {
 	snapshotTask := &SnapshotTask{
 		BaseTask:        tasks.NewBaseTask(0, 0, false, nil),
 		Height:          height,
@@ -33,7 +34,7 @@ func NewSnapshotTask(height uint64, numOfValidators int, validatorIndex int) *Sn
 	return snapshotTask
 }
 
-// Prepare prepares for work to be done in the SnapshotTask
+// Prepare prepares for work to be done in the SnapshotTask.
 func (t *SnapshotTask) Prepare(ctx context.Context) *tasks.TaskErr {
 	logger := t.GetLogger().WithFields(
 		logrus.Fields{
@@ -91,7 +92,7 @@ func (t *SnapshotTask) Prepare(ctx context.Context) *tasks.TaskErr {
 	return nil
 }
 
-// Execute executes the task business logic
+// Execute executes the task business logic.
 func (t *SnapshotTask) Execute(ctx context.Context) (*types.Transaction, *tasks.TaskErr) {
 	logger := t.GetLogger().WithFields(
 		logrus.Fields{
@@ -143,7 +144,7 @@ func (t *SnapshotTask) Execute(ctx context.Context) (*types.Transaction, *tasks.
 	return txn, nil
 }
 
-// ShouldExecute checks if it makes sense to execute the task
+// ShouldExecute checks if it makes sense to execute the task.
 func (t *SnapshotTask) ShouldExecute(ctx context.Context) (bool, *tasks.TaskErr) {
 	logger := t.GetLogger().WithFields(
 		logrus.Fields{

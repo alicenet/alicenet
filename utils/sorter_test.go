@@ -94,5 +94,4 @@ func TestSorter(t *testing.T) {
 	if !bytes.Equal(valuesSorted[3], value0) {
 		t.Fatal("Invalid sort: should be value0")
 	}
-
 }

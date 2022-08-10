@@ -138,33 +138,6 @@ func TestExtractCurveSpec(t *testing.T) {
 	}
 }
 
-func TestExtractSignerRole(t *testing.T) {
-	owner := make([]byte, 0)
-	_, _, err := extractSignerRole(owner)
-	if err == nil {
-		t.Fatal("Should have raised error")
-	}
-
-	owner2 := make([]byte, 2)
-	signerRole := PrimarySignerRole
-	owner2[0] = uint8(signerRole)
-	signal := uint8(255)
-	owner2[1] = signal
-	sr, val, err := extractSignerRole(owner2)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if sr != signerRole {
-		t.Fatal("SignerRoles do not match")
-	}
-	if len(val) != 1 {
-		t.Fatal("Incorrect return length")
-	}
-	if uint8(val[0]) != signal {
-		t.Fatal("Returned values do not match")
-	}
-}
-
 func TestExtractAccount(t *testing.T) {
 	owner := make([]byte, 0)
 	_, _, err := extractAccount(owner)

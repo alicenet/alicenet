@@ -1,18 +1,18 @@
 package events
 
 import (
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/sirupsen/logrus"
+
 	"github.com/alicenet/alicenet/consensus/objs"
 	"github.com/alicenet/alicenet/layer1"
 	"github.com/alicenet/alicenet/layer1/executor/tasks"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/snapshots"
 	monInterfaces "github.com/alicenet/alicenet/layer1/monitor/interfaces"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/sirupsen/logrus"
 )
 
-// ProcessSnapshotTaken handles receiving snapshots
+// ProcessSnapshotTaken handles receiving snapshots.
 func ProcessSnapshotTaken(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, log types.Log, adminHandler monInterfaces.AdminHandler, taskRequestChan chan<- tasks.TaskRequest) error {
-
 	logger.Info("ProcessSnapshotTaken() ...")
 
 	c := contracts.EthereumContracts()
@@ -30,7 +30,8 @@ func ProcessSnapshotTaken(eth layer1.Client, contracts layer1.AllSmartContracts,
 		"Epoch":                    epoch,
 		"Height":                   event.Height,
 		"Validator":                event.Validator.Hex(),
-		"IsSafeToProceedConsensus": event.IsSafeToProceedConsensus}).Infof("Snapshot taken")
+		"IsSafeToProceedConsensus": event.IsSafeToProceedConsensus,
+	}).Infof("Snapshot taken")
 
 	// Retrieve snapshot information from contract
 	ctx, cancel := eth.GetTimeoutContext()

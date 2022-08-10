@@ -5,21 +5,22 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/ethereum/go-ethereum/core/types"
+
 	"github.com/alicenet/alicenet/layer1/executor/tasks"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
-	"github.com/ethereum/go-ethereum/core/types"
 )
 
-// ShareDistributionTask stores the state required safely distribute shares
+// ShareDistributionTask stores the state required safely distribute shares.
 type ShareDistributionTask struct {
 	*tasks.BaseTask
 }
 
-// asserting that ShareDistributionTask struct implements interface tasks.Task
+// asserting that ShareDistributionTask struct implements interface tasks.Task.
 var _ tasks.Task = &ShareDistributionTask{}
 
-// NewShareDistributionTask creates a new task
-func NewShareDistributionTask(start uint64, end uint64) *ShareDistributionTask {
+// NewShareDistributionTask creates a new task.
+func NewShareDistributionTask(start, end uint64) *ShareDistributionTask {
 	return &ShareDistributionTask{
 		BaseTask: tasks.NewBaseTask(start, end, false, nil),
 	}
@@ -72,7 +73,7 @@ func (t *ShareDistributionTask) Prepare(ctx context.Context) *tasks.TaskErr {
 	return nil
 }
 
-// Execute executes the task business logic
+// Execute executes the task business logic.
 func (t *ShareDistributionTask) Execute(ctx context.Context) (*types.Transaction, *tasks.TaskErr) {
 	logger := t.GetLogger().WithField("method", "Execute()")
 	logger.Debug("initiate execution")
@@ -106,7 +107,7 @@ func (t *ShareDistributionTask) Execute(ctx context.Context) (*types.Transaction
 	return txn, nil
 }
 
-// ShouldRetry checks if it makes sense to try again
+// ShouldRetry checks if it makes sense to try again.
 func (t *ShareDistributionTask) ShouldExecute(ctx context.Context) (bool, *tasks.TaskErr) {
 	logger := t.GetLogger().WithField("method", "ShouldExecute()")
 	logger.Debug("should execute task")

@@ -32,7 +32,6 @@ func TestUnMarshalInvalid(t *testing.T) {
 	if err := p.UnmarshalBinary(b); err == nil {
 		t.Fatal("Should raise an error when called with invalid LastPaginatedType")
 	}
-
 }
 
 func TestMarshalTransitivity(t *testing.T) {
