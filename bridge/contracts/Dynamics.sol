@@ -165,29 +165,32 @@ contract Dynamics is Initializable, ImmutableSnapshots {
         return addr;
     }
 
-    function _decodeDynamicValues(address addr) internal view returns (DynamicValues memory) {
+    function _decodeDynamicValues(address addr) internal view returns (DynamicValues memory values) {
         uint256 ptr;
-        DynamicValues memory retValue = DynamicValues(Version.V1, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+        uint256 retPtr;
+        // DynamicValues memory retValue = DynamicValues(Version.V1, 0, 0, 0, 0, 0, 0, 0, 0, 0);
         uint8[10] memory sizes = [8, 24, 32, 32, 32, 64, 64, 64, 64, 128];
         uint256 dynamicValuesTotalSize = 64;
         uint256 extCodeSize;
         assembly {
             ptr := mload(0x40)
-            let size := extcodesize(addr)
-            extcodecopy(addr, ptr, 0, size)
+            //need to figure out how to get this value dynamically
+            retPtr := 0x1c0
+            extCodeSize := extcodesize(addr)
+            extcodecopy(addr, ptr, 0, extCodeSize)
         }
         if (extCodeSize == 0 || extCodeSize < dynamicValuesTotalSize) {
             revert DynamicsErrors.InvalidExtCodeSize(addr, extCodeSize);
         }
+        
         for (uint8 i = 0; i < sizes.length; i++) {
             uint8 size = sizes[i];
             assembly {
-                mstore(retValue, shr(sub(256, size), mload(ptr)))
+                mstore(retPtr, shr(sub(256, size), mload(ptr)))
                 ptr := add(ptr, div(size, 8))
-                retValue := add(retValue, 0x20)
+                retPtr := add(retPtr, 0x20)
             }
         }
-        return retValue;
     }
 
     function _encodeDynamicValues(DynamicValues memory newValue)
