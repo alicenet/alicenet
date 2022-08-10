@@ -4,10 +4,11 @@ import (
 	"bytes"
 	"testing"
 
+	"github.com/dgraph-io/badger/v2"
+
 	"github.com/alicenet/alicenet/consensus/objs"
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/crypto"
-	"github.com/dgraph-io/badger/v2"
 )
 
 type testParams struct {
@@ -764,7 +765,7 @@ type mb interface {
 	MarshalBinary() ([]byte, error)
 }
 
-func compareObject(a mb, b mb) (bool, error) {
+func compareObject(a, b mb) (bool, error) {
 	aBin, err := a.MarshalBinary()
 	if err != nil {
 		return false, err

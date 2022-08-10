@@ -7,8 +7,7 @@ import (
 	"github.com/alicenet/alicenet/crypto"
 )
 
-type mockKeyResolver struct {
-}
+type mockKeyResolver struct{}
 
 func (m *mockKeyResolver) GetKey(kid []byte) ([]byte, error) {
 	_ = kid

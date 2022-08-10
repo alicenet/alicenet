@@ -4,6 +4,9 @@ import (
 	"bytes"
 	"fmt"
 
+	"github.com/dgraph-io/badger/v2"
+	"github.com/sirupsen/logrus"
+
 	"github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/consensus/dman"
 	"github.com/alicenet/alicenet/consensus/objs"
@@ -12,8 +15,6 @@ import (
 	"github.com/alicenet/alicenet/errorz"
 	"github.com/alicenet/alicenet/logging"
 	"github.com/alicenet/alicenet/utils"
-	"github.com/dgraph-io/badger/v2"
-	"github.com/sirupsen/logrus"
 )
 
 type Handlers struct {
@@ -25,7 +26,7 @@ type Handlers struct {
 	logger   *logrus.Logger
 }
 
-// Init initializes the Handlers object
+// Init initializes the Handlers object.
 func (mb *Handlers) Init(database *db.Database, dm *dman.DMan) {
 	mb.logger = logging.GetLogger(constants.LoggerConsensus)
 	mb.sstore = &Store{}
@@ -34,42 +35,42 @@ func (mb *Handlers) Init(database *db.Database, dm *dman.DMan) {
 	mb.dm = dm
 }
 
-// AddProposal stores a proposal to the database
+// AddProposal stores a proposal to the database.
 func (mb *Handlers) AddProposal(v *objs.Proposal) error {
 	return mb.Store(v)
 }
 
-// AddPreVote stores a preVote to the database
+// AddPreVote stores a preVote to the database.
 func (mb *Handlers) AddPreVote(v *objs.PreVote) error {
 	return mb.Store(v)
 }
 
-// AddPreVoteNil stores a preVoteNil to the database
+// AddPreVoteNil stores a preVoteNil to the database.
 func (mb *Handlers) AddPreVoteNil(v *objs.PreVoteNil) error {
 	return mb.Store(v)
 }
 
-// AddPreCommit stores a preCommit to the database
+// AddPreCommit stores a preCommit to the database.
 func (mb *Handlers) AddPreCommit(v *objs.PreCommit) error {
 	return mb.Store(v)
 }
 
-// AddPreCommitNil stores a preCommitNil to the database
+// AddPreCommitNil stores a preCommitNil to the database.
 func (mb *Handlers) AddPreCommitNil(v *objs.PreCommitNil) error {
 	return mb.Store(v)
 }
 
-// AddNextRound stores a nextRound object to the database
+// AddNextRound stores a nextRound object to the database.
 func (mb *Handlers) AddNextRound(v *objs.NextRound) error {
 	return mb.Store(v)
 }
 
-// AddNextHeight stores a nextHeight object to the database
+// AddNextHeight stores a nextHeight object to the database.
 func (mb *Handlers) AddNextHeight(v *objs.NextHeight) error {
 	return mb.Store(v)
 }
 
-// AddBlockHeader stores a blockHeader object to the database
+// AddBlockHeader stores a blockHeader object to the database.
 func (mb *Handlers) AddBlockHeader(v *objs.BlockHeader) error {
 	return mb.Store(v)
 }
@@ -180,7 +181,7 @@ func (mb *Handlers) Store(v interface{}) error {
 }
 
 // PreValidate checks a message for validity and performs cryptographic
-// validation
+// validation.
 func (mb *Handlers) PreValidate(v interface{}) error {
 	var Voter []byte
 	var Proposer []byte
@@ -220,11 +221,11 @@ func (mb *Handlers) PreValidate(v interface{}) error {
 			if err := obj.ValidateSignatures(mb.secpVal, mb.bnVal); err != nil {
 				return err
 			}
-			//Voter = nil
+			// Voter = nil
 			Proposer = obj.Proposer
-			//GroupShare = nil
+			// GroupShare = nil
 			GroupKey = obj.GroupKey
-			//CoSigners = nil
+			// CoSigners = nil
 			round = obj.PClaims.RCert.RClaims.Round
 
 			if err := mb.ProposalValidation(txn, GroupKey, Proposer, mb.subOneNoZero(height), height, round); err != nil {
@@ -246,9 +247,9 @@ func (mb *Handlers) PreValidate(v interface{}) error {
 			}
 			Voter = obj.Voter
 			Proposer = obj.Proposal.Proposer
-			//GroupShare = nil
+			// GroupShare = nil
 			GroupKey = obj.GroupKey
-			//CoSigners = nil
+			// CoSigners = nil
 
 			if err := mb.VoteValidation(txn, GroupKey, Voter, Proposer, nil, mb.subOneNoZero(height), height, round); err != nil {
 				return err
@@ -268,10 +269,10 @@ func (mb *Handlers) PreValidate(v interface{}) error {
 				return err
 			}
 			Voter = obj.Voter
-			//Proposer = nil
-			//GroupShare = nil
+			// Proposer = nil
+			// GroupShare = nil
 			GroupKey = obj.GroupKey
-			//CoSigners = nil
+			// CoSigners = nil
 			if err := mb.VoteNilValidation(txn, GroupKey, Voter, mb.subOneNoZero(height), height, round); err != nil {
 				return err
 			}
@@ -291,7 +292,7 @@ func (mb *Handlers) PreValidate(v interface{}) error {
 			}
 			Voter = obj.Voter
 			Proposer = obj.Proposer
-			//GroupShare = nil
+			// GroupShare = nil
 			GroupKey = obj.GroupKey
 			CoSigners = obj.Signers
 
@@ -313,10 +314,10 @@ func (mb *Handlers) PreValidate(v interface{}) error {
 				return err
 			}
 			Voter = obj.Voter
-			//Proposer = nil
-			//GroupShare = nil
+			// Proposer = nil
+			// GroupShare = nil
 			GroupKey = obj.GroupKey
-			//CoSigners = nil
+			// CoSigners = nil
 			if err := mb.VoteNilValidation(txn, GroupKey, Voter, mb.subOneNoZero(height), height, round); err != nil {
 				return err
 			}
@@ -335,10 +336,10 @@ func (mb *Handlers) PreValidate(v interface{}) error {
 				return err
 			}
 			Voter = obj.Voter
-			//Proposer = nil
+			// Proposer = nil
 			GroupShare = obj.GroupShare
 			GroupKey = obj.GroupKey
-			//CoSigners = nil
+			// CoSigners = nil
 			if err := mb.VoteNextValidation(txn, GroupKey, GroupShare, Voter, Proposer, nil, mb.subOneNoZero(height), height, round); err != nil {
 				return err
 			}
@@ -368,11 +369,11 @@ func (mb *Handlers) PreValidate(v interface{}) error {
 			if err := obj.ValidateSignatures(mb.bnVal); err != nil {
 				return err
 			}
-			//Voter = nil
-			//Proposer = nil
-			//GroupShare = nil
+			// Voter = nil
+			// Proposer = nil
+			// GroupShare = nil
 			GroupKey = obj.GroupKey
-			//CoSigners = nil
+			// CoSigners = nil
 			round = 1
 			if err := mb.BlockHeaderValidation(txn, GroupKey, height, height+1, round); err != nil {
 				return err
@@ -390,7 +391,7 @@ func (mb *Handlers) PreValidate(v interface{}) error {
 	return nil
 }
 
-func (mb *Handlers) ValidateRCERT(txn *badger.Txn, groupKey []byte, bHeight uint32, rHeight uint32, rNumber uint32) error {
+func (mb *Handlers) ValidateRCERT(txn *badger.Txn, groupKey []byte, bHeight, rHeight, rNumber uint32) error {
 	if rHeight <= 2 {
 		return nil
 	}
@@ -406,7 +407,7 @@ func (mb *Handlers) ValidateRCERT(txn *badger.Txn, groupKey []byte, bHeight uint
 	return nil
 }
 
-func (mb *Handlers) ProposalValidation(txn *badger.Txn, groupKey []byte, proposer []byte, bHeight uint32, rHeight uint32, rNumber uint32) error {
+func (mb *Handlers) ProposalValidation(txn *badger.Txn, groupKey, proposer []byte, bHeight, rHeight, rNumber uint32) error {
 	// OBJECTS	GROUPKEY	VOTER	GROUPSHARE	PROPOSER	HEIGHT	ROUND_1VSET		ROUND>1VSET
 	// PROPOSAL	TRUE	 	FALSE	FALSE		TRUE		N+1	    N	            N+1
 	if err := mb.ValidateRCERT(txn, groupKey, bHeight, rHeight, rNumber); err != nil {
@@ -432,7 +433,7 @@ func (mb *Handlers) ProposalValidation(txn *badger.Txn, groupKey []byte, propose
 	return nil
 }
 
-func (mb *Handlers) VoteValidation(txn *badger.Txn, groupKey []byte, voter []byte, proposer []byte, coSigners [][]byte, bHeight uint32, rHeight uint32, rNumber uint32) error {
+func (mb *Handlers) VoteValidation(txn *badger.Txn, groupKey, voter, proposer []byte, coSigners [][]byte, bHeight, rHeight, rNumber uint32) error {
 	// OBJECTS		GROUPKEY	VOTER	GROUPSHARE	PROPOSER	HEIGHT	ROUND_1VSET		ROUND>1VSET
 	// PREVOTE		TRUE		TRUE	FALSE		TRUE		N+1		N				N+1
 	// PRECOMMIT	TRUE		TRUE	FALSE		TRUE		N+1		N				N+1
@@ -465,7 +466,7 @@ func (mb *Handlers) VoteValidation(txn *badger.Txn, groupKey []byte, voter []byt
 	return nil
 }
 
-func (mb *Handlers) VoteNilValidation(txn *badger.Txn, groupKey []byte, voter []byte, bHeight uint32, rHeight uint32, rNumber uint32) error {
+func (mb *Handlers) VoteNilValidation(txn *badger.Txn, groupKey, voter []byte, bHeight, rHeight, rNumber uint32) error {
 	// OBJECTS		GROUPKEY	VOTER	GROUPSHARE	PROPOSER	HEIGHT	ROUND_1VSET		ROUND>1VSET
 	// PREVOTENIL	TRUE		TRUE	FALSE		FALSE		N+1		N				N+1
 	// PRECOMMITNIL	TRUE		TRUE	FALSE		FALSE		N+1		N				N+1
@@ -488,7 +489,7 @@ func (mb *Handlers) VoteNilValidation(txn *badger.Txn, groupKey []byte, voter []
 	return nil
 }
 
-func (mb *Handlers) VoteNextValidation(txn *badger.Txn, groupKey []byte, groupShare []byte, voter []byte, proposer []byte, coSigners [][]byte, bHeight uint32, rHeight uint32, rNumber uint32) error {
+func (mb *Handlers) VoteNextValidation(txn *badger.Txn, groupKey, groupShare, voter, proposer []byte, coSigners [][]byte, bHeight, rHeight, rNumber uint32) error {
 	// OBJECTS	GROUPKEY	VOTER	GROUPSHARE	PROPOSER	HEIGHT	ROUND_1VSET	ROUND>1VSET
 	// NROUND	TRUE		TRUE	TRUE		FALSE		N+1		N			N+1
 	// NHEIGHT	TRUE		TRUE	TRUE		TRUE		N+1		N			N+1
@@ -523,7 +524,7 @@ func (mb *Handlers) VoteNextValidation(txn *badger.Txn, groupKey []byte, groupSh
 	return nil
 }
 
-func (mb *Handlers) BlockHeaderValidation(txn *badger.Txn, groupKey []byte, bHeight uint32, rHeight uint32, rNumber uint32) error {
+func (mb *Handlers) BlockHeaderValidation(txn *badger.Txn, groupKey []byte, bHeight, rHeight, rNumber uint32) error {
 	// OBJECTS	GROUPKEY	VOTER	GROUPSHARE	PROPOSER	HEIGHT	ROUND_1VSET	ROUND>1VSET
 	// BH		TRUE		FALSE	FALSE		FALSE		N		N			N+1
 	if bHeight <= 1 {
@@ -548,7 +549,7 @@ func (mb *Handlers) BlockHeaderValidation(txn *badger.Txn, groupKey []byte, bHei
 	return nil
 }
 
-func normalizeHeightForRCERT(bHeight uint32, rHeight uint32, rNumber uint32) uint32 {
+func normalizeHeightForRCERT(bHeight, rHeight, rNumber uint32) uint32 {
 	if bHeight <= 2 || rNumber == 1 {
 		return bHeight
 	}
