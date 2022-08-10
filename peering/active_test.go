@@ -7,13 +7,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"google.golang.org/grpc"
 
 	"github.com/alicenet/alicenet/interfaces"
 	pb "github.com/alicenet/alicenet/proto"
 	"github.com/alicenet/alicenet/transport"
-	"github.com/golang/mock/gomock"
-	"google.golang.org/grpc"
 )
 
 type wrappedMock struct {
@@ -133,7 +133,6 @@ func TestActive(t *testing.T) {
 }
 
 func Test_activePeerStore_add(t *testing.T) {
-
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	P2PClientOne := NewMockP2PClient(ctrl)
@@ -152,7 +151,7 @@ func Test_activePeerStore_add(t *testing.T) {
 	type args struct {
 		c interfaces.P2PClient
 	}
-	var tests = []struct {
+	tests := []struct {
 		name string
 		args args
 	}{

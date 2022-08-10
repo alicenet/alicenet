@@ -8,13 +8,14 @@ import { Fixture, getFixture, mineBlocks } from "../setup";
 describe("ValidatorStaking: Testing ValidatorStaking Access Control", async () => {
   let fixture: Fixture;
   let notAdminSigner: SignerWithAddress;
+  let notAdmin: SignerWithAddress;
   const lockTime = 1;
   let amount: BigNumberish;
   let validatorPool: ValidatorPoolMock;
 
   beforeEach(async function () {
     fixture = await getFixture(true, true);
-    const [, notAdmin] = fixture.namedSigners;
+    [, notAdmin] = fixture.namedSigners;
     notAdminSigner = await ethers.getSigner(notAdmin.address);
     validatorPool = fixture.validatorPool as ValidatorPoolMock;
     amount = await validatorPool.getStakeAmount();
@@ -67,13 +68,23 @@ describe("ValidatorStaking: Testing ValidatorStaking Access Control", async () =
     it("Mint a token", async function () {
       await expect(
         fixture.validatorStaking.connect(notAdminSigner).mint(amount)
-      ).to.be.revertedWith("2010");
+      )
+        .to.be.revertedWithCustomError(
+          fixture.validatorStaking,
+          `OnlyValidatorPool`
+        )
+        .withArgs(notAdmin.address, fixture.validatorPool.address);
     });
 
     it("Burn a token", async function () {
       await expect(
         fixture.validatorStaking.connect(notAdminSigner).burn(42) // nonexistent
-      ).to.be.revertedWith("2010");
+      )
+        .to.be.revertedWithCustomError(
+          fixture.validatorStaking,
+          `OnlyValidatorPool`
+        )
+        .withArgs(notAdmin.address, fixture.validatorPool.address);
     });
 
     it("Mint a token to an address", async function () {
@@ -81,7 +92,12 @@ describe("ValidatorStaking: Testing ValidatorStaking Access Control", async () =
         fixture.validatorStaking
           .connect(notAdminSigner)
           .mintTo(notAdminSigner.address, amount, lockTime)
-      ).to.be.revertedWith("2010");
+      )
+        .to.be.revertedWithCustomError(
+          fixture.validatorStaking,
+          `OnlyValidatorPool`
+        )
+        .withArgs(notAdmin.address, fixture.validatorPool.address);
     });
 
     it("Burn a token from an address", async function () {
@@ -89,7 +105,12 @@ describe("ValidatorStaking: Testing ValidatorStaking Access Control", async () =
         fixture.validatorStaking
           .connect(notAdminSigner)
           .burnTo(notAdminSigner.address, 42) // nonexistent
-      ).to.be.revertedWith("2010");
+      )
+        .to.be.revertedWithCustomError(
+          fixture.validatorStaking,
+          `OnlyValidatorPool`
+        )
+        .withArgs(notAdmin.address, fixture.validatorPool.address);
     });
   });
 });

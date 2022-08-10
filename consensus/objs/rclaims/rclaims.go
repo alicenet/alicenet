@@ -2,6 +2,7 @@ package rclaims
 
 import (
 	capnp "github.com/MadBase/go-capnproto2/v2"
+
 	mdefs "github.com/alicenet/alicenet/consensus/objs/capn"
 	"github.com/alicenet/alicenet/errorz"
 	"github.com/alicenet/alicenet/utils"
@@ -38,7 +39,7 @@ func Unmarshal(data []byte) (mdefs.RClaims, error) {
 	return obj, nil
 }
 
-// Validate will validate the RClaims object
+// Validate will validate the RClaims object.
 func Validate(p mdefs.RClaims) error {
 	if !p.IsValid() {
 		return errorz.ErrInvalid{}.New("rclaims capn obj is not valid")

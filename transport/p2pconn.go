@@ -4,15 +4,18 @@ import (
 	"net"
 	"sync"
 
+	"github.com/hashicorp/yamux"
+	"github.com/sirupsen/logrus"
+
 	"github.com/alicenet/alicenet/interfaces"
 	"github.com/alicenet/alicenet/types"
 	"github.com/alicenet/alicenet/utils"
-	"github.com/hashicorp/yamux"
-	"github.com/sirupsen/logrus"
 )
 
-var _ net.Conn = (*P2PConn)(nil)
-var _ interfaces.P2PConn = (*P2PConn)(nil)
+var (
+	_ net.Conn           = (*P2PConn)(nil)
+	_ interfaces.P2PConn = (*P2PConn)(nil)
+)
 
 // The P2PConn type implements the net.Conn and the P2PConn interfaces.
 // This is a concrete instantiation of the P2PConn object that all other
@@ -31,12 +34,12 @@ type P2PConn struct {
 	session      *yamux.Session
 }
 
-// CloseChan closes channel
+// CloseChan closes channel.
 func (pc *P2PConn) CloseChan() <-chan struct{} {
 	return pc.closeChan
 }
 
-// Close closes the connection
+// Close closes the connection.
 func (pc *P2PConn) Close() error {
 	pc.closeOnce.Do(pc.close)
 	return nil
@@ -50,17 +53,17 @@ func (pc *P2PConn) close() {
 	}
 }
 
-// RemoteAddr See docs for net.Conn
+// RemoteAddr See docs for net.Conn.
 func (pc *P2PConn) RemoteAddr() net.Addr {
 	return pc.nodeAddr
 }
 
-// Initiator defines if this is a locally initiated or peer initiated connection
+// Initiator defines if this is a locally initiated or peer initiated connection.
 func (pc *P2PConn) Initiator() types.P2PInitiator {
 	return pc.initiator
 }
 
-// RemoteP2PAddr returns the connections remote net.Addr as a P2PAddr
+// RemoteP2PAddr returns the connections remote net.Addr as a P2PAddr.
 func (pc *P2PConn) RemoteP2PAddr() interfaces.NodeAddr {
 	return pc.nodeAddr
 }

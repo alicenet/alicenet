@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: MIT-open-group
 pragma solidity ^0.8.11;
 
-import {
-    RClaimsParserLibraryErrorCodes
-} from "contracts/libraries/errorCodes/RClaimsParserLibraryErrorCodes.sol";
+import "contracts/libraries/errors/GenericParserLibraryErrors.sol";
 
 import "./BaseParserLibrary.sol";
 
@@ -50,35 +48,27 @@ library RClaimsParserLibrary {
         pure
         returns (RClaims memory rClaims)
     {
-        require(
-            dataOffset + _RCLAIMS_SIZE > dataOffset,
-            string(
-                abi.encodePacked(
-                    RClaimsParserLibraryErrorCodes.RCLAIMSPARSERLIB_DATA_OFFSET_OVERFLOW
-                )
-            )
-        );
-        require(
-            src.length >= dataOffset + _RCLAIMS_SIZE,
-            string(
-                abi.encodePacked(RClaimsParserLibraryErrorCodes.RCLAIMSPARSERLIB_INSUFFICIENT_BYTES)
-            )
-        );
+        if (dataOffset + _RCLAIMS_SIZE <= dataOffset) {
+            revert GenericParserLibraryErrors.DataOffsetOverflow();
+        }
+        if (src.length < dataOffset + _RCLAIMS_SIZE) {
+            revert GenericParserLibraryErrors.InsufficientBytes(
+                src.length,
+                dataOffset + _RCLAIMS_SIZE
+            );
+        }
         rClaims.chainId = BaseParserLibrary.extractUInt32(src, dataOffset);
-        require(
-            rClaims.chainId > 0,
-            string(abi.encodePacked(RClaimsParserLibraryErrorCodes.RCLAIMSPARSERLIB_CHAINID_ZERO))
-        );
+        if (rClaims.chainId == 0) {
+            revert GenericParserLibraryErrors.ChainIdZero();
+        }
         rClaims.height = BaseParserLibrary.extractUInt32(src, dataOffset + 4);
-        require(
-            rClaims.height > 0,
-            string(abi.encodePacked(RClaimsParserLibraryErrorCodes.RCLAIMSPARSERLIB_HEIGHT_ZERO))
-        );
+        if (rClaims.height == 0) {
+            revert GenericParserLibraryErrors.HeightZero();
+        }
         rClaims.round = BaseParserLibrary.extractUInt32(src, dataOffset + 8);
-        require(
-            rClaims.round > 0,
-            string(abi.encodePacked(RClaimsParserLibraryErrorCodes.RCLAIMSPARSERLIB_ROUND_ZERO))
-        );
+        if (rClaims.round == 0) {
+            revert GenericParserLibraryErrors.RoundZero();
+        }
         rClaims.prevBlock = BaseParserLibrary.extractBytes32(src, dataOffset + 24);
     }
 }

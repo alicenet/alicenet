@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: MIT-open-group
 pragma solidity ^0.8.11;
 
-import {
-    BClaimsParserLibraryErrors
-} from "contracts/libraries/errors/BClaimsParserLibraryErrors.sol";
+import "contracts/libraries/errors/BClaimsParserLibraryErrors.sol";
+import "contracts/libraries/errors/GenericParserLibraryErrors.sol";
 
 import "./BaseParserLibrary.sol";
 
@@ -111,12 +110,12 @@ library BClaimsParserLibrary {
 
         bClaims.chainId = BaseParserLibrary.extractUInt32(src, dataOffset);
         if (bClaims.chainId == 0) {
-            revert BClaimsParserLibraryErrors.ChainIdZero();
+            revert GenericParserLibraryErrors.ChainIdZero();
         }
 
         bClaims.height = BaseParserLibrary.extractUInt32(src, dataOffset + 4);
         if (bClaims.height == 0) {
-            revert BClaimsParserLibraryErrors.HeightZero();
+            revert GenericParserLibraryErrors.HeightZero();
         }
 
         bClaims.prevBlock = BaseParserLibrary.extractBytes32(

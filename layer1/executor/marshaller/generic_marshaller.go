@@ -59,7 +59,6 @@ func (registry *TypeRegistry) lookupType(name string) (reflect.Type, bool) {
 }
 
 func (registry *TypeRegistry) WrapInstance(t interface{}) (*InstanceWrapper, error) {
-
 	tipe := reflect.TypeOf(t)
 	if tipe.Kind() == reflect.Ptr {
 		tipe = tipe.Elem()
@@ -79,7 +78,6 @@ func (registry *TypeRegistry) WrapInstance(t interface{}) (*InstanceWrapper, err
 }
 
 func (registry *TypeRegistry) UnwrapInstance(wrapper *InstanceWrapper) (interface{}, error) {
-
 	tipe, present := registry.lookupType(wrapper.NameType)
 	if !present {
 		return nil, ErrUnknownName

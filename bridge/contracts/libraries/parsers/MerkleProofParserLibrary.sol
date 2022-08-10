@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: MIT-open-group
 pragma solidity ^0.8.11;
 
-import {
-    MerkleProofParserLibraryErrorCodes
-} from "contracts/libraries/errorCodes/MerkleProofParserLibraryErrorCodes.sol";
+import "contracts/libraries/errors/MerkleProofParserLibraryErrors.sol";
 
 import "./BaseParserLibrary.sol";
 
@@ -34,35 +32,19 @@ library MerkleProofParserLibrary {
         pure
         returns (MerkleProof memory mProof)
     {
-        require(
-            src.length >= _MERKLE_PROOF_SIZE,
-            string(
-                abi.encodePacked(
-                    MerkleProofParserLibraryErrorCodes
-                        .MERKLEPROOFPARSERLIB_INVALID_PROOF_MINIMUM_SIZE
-                )
-            )
-        );
+        if (src.length < _MERKLE_PROOF_SIZE) {
+            revert MerkleProofParserLibraryErrors.InvalidProofMinimumSize(src.length);
+        }
         uint16 bitmapLength = BaseParserLibrary.extractUInt16FromBigEndian(src, 99);
         uint16 auditPathLength = BaseParserLibrary.extractUInt16FromBigEndian(src, 101);
-        require(
-            src.length >= _MERKLE_PROOF_SIZE + bitmapLength + auditPathLength * 32,
-            string(
-                abi.encodePacked(
-                    MerkleProofParserLibraryErrorCodes.MERKLEPROOFPARSERLIB_INVALID_PROOF_SIZE
-                )
-            )
-        );
+        if (src.length < _MERKLE_PROOF_SIZE + bitmapLength + auditPathLength * 32) {
+            revert MerkleProofParserLibraryErrors.InvalidProofSize(src.length);
+        }
         mProof.included = BaseParserLibrary.extractBool(src, 0);
         mProof.keyHeight = BaseParserLibrary.extractUInt16FromBigEndian(src, 1);
-        require(
-            mProof.keyHeight >= 0 && mProof.keyHeight <= 256,
-            string(
-                abi.encodePacked(
-                    MerkleProofParserLibraryErrorCodes.MERKLEPROOFPARSERLIB_INVALID_KEY_HEIGHT
-                )
-            )
-        );
+        if (mProof.keyHeight > 256) {
+            revert MerkleProofParserLibraryErrors.InvalidKeyHeight(mProof.keyHeight);
+        }
         mProof.key = BaseParserLibrary.extractBytes32(src, 3);
         mProof.proofKey = BaseParserLibrary.extractBytes32(src, 35);
         mProof.proofValue = BaseParserLibrary.extractBytes32(src, 67);

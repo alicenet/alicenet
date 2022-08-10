@@ -1,4 +1,5 @@
 import { BigNumber } from "ethers";
+import { ethers } from "hardhat";
 import { Snapshots } from "../../typechain-types";
 import { expect } from "../chai-setup";
 import { completeETHDKGRound } from "../ethdkg/setup";
@@ -51,11 +52,24 @@ describe("Snapshots: With successful snapshot completed", () => {
   it("Should not allow committing a snapshot for next epoch before time", async function () {
     const validValidator = await getValidatorEthAccount(validatorsSnapshots[0]);
     expect(await fixture.snapshots.getEpoch()).to.be.equal(BigNumber.from(1));
+    const latestSnapshotCommitHeight =
+      await fixture.snapshots.getCommittedHeightFromLatestSnapshot();
+    const minInterval =
+      await fixture.snapshots.getMinimumIntervalBetweenSnapshots();
+    const latestBlock = await ethers.provider.getBlock("latest");
+    const expectedBlockNumber = latestBlock.number + 1;
+    const expectedMinimumBlockNumber =
+      latestSnapshotCommitHeight.add(minInterval);
     await expect(
       fixture.snapshots
         .connect(validValidator)
         .snapshot(validSnapshot2048.GroupSignature, validSnapshot2048.BClaims)
-    ).to.be.revertedWith("402");
+    )
+      .to.be.revertedWithCustomError(
+        fixture.snapshots,
+        "MinimumBlocksIntervalNotPassed"
+      )
+      .withArgs(expectedBlockNumber, expectedMinimumBlockNumber);
     expect(await fixture.snapshots.getEpoch()).to.be.equal(BigNumber.from(1));
   });
 
@@ -68,7 +82,9 @@ describe("Snapshots: With successful snapshot completed", () => {
       fixture.snapshots
         .connect(validValidator)
         .snapshot(validSnapshot1024.GroupSignature, validSnapshot1024.BClaims)
-    ).to.be.revertedWith("406");
+    )
+      .to.be.revertedWithCustomError(fixture.snapshots, "InvalidBlockHeight")
+      .withArgs(validSnapshot1024.height);
   });
 
   it("Does not allow snapshot if ETHDKG round is Running", async function () {
@@ -85,7 +101,7 @@ describe("Snapshots: With successful snapshot completed", () => {
     const validValidator = await getValidatorEthAccount(validatorsSnapshots[0]);
     await expect(
       fixture.snapshots.connect(validValidator).snapshot(junkData, junkData)
-    ).to.be.revertedWith(`401`);
+    ).to.be.revertedWithCustomError(fixture.snapshots, "ConsensusNotRunning");
   });
 
   it("getLatestSnapshot returns correct snapshot data", async function () {

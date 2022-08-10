@@ -2,6 +2,7 @@ package tx
 
 import (
 	capnp "github.com/MadBase/go-capnproto2/v2"
+
 	mdefs "github.com/alicenet/alicenet/application/objs/capn"
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/errorz"
@@ -40,7 +41,7 @@ func Unmarshal(data []byte) (mdefs.Tx, error) {
 	return obj, nil
 }
 
-// Validate will validate the Tx object
+// Validate will validate the Tx object.
 func Validate(v mdefs.Tx) error {
 	if !v.HasVin() {
 		return errorz.ErrInvalid{}.New("tx capn obj does not have Vin")
