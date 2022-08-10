@@ -72,6 +72,9 @@ func ProcessSnapshotTaken(eth layer1.Client, contracts layer1.AllSmartContracts,
 
 	// kill any task that might still be trying to do this snapshot
 	_, err = taskHandler.KillTaskByType(context.Background(), &snapshots.SnapshotTask{})
+	if err != nil {
+		return err
+	}
 
-	return err
+	return nil
 }

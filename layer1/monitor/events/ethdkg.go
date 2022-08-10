@@ -84,8 +84,11 @@ func ProcessRegistrationOpened(eth layer1.Client, contracts layer1.AllSmartContr
 	}).Info("Scheduling NewDisputeRegistrationTask")
 
 	_, err = taskHandler.ScheduleTask(ctx, disputeMissingRegistrationTask, "")
+	if err != nil {
+		return err
+	}
 
-	return err
+	return nil
 }
 
 func UpdateStateOnRegistrationOpened(account accounts.Account, startBlock, phaseLength, confirmationLength, nonce uint64, amIValidator bool, validatorAddresses []common.Address) (*state.DkgState, *dkgtasks.RegisterTask, *dkgtasks.DisputeMissingRegistrationTask) {
@@ -349,8 +352,11 @@ func ProcessShareDistributionComplete(contracts layer1.AllSmartContracts, logger
 		"TaskEnd":   disputeMissingKeySharesTask.GetEnd(),
 	}).Info("Scheduling NewDisputeMissingKeySharesTask")
 	_, err = taskHandler.ScheduleTask(ctx, disputeMissingKeySharesTask, "")
+	if err != nil {
+		return err
+	}
 
-	return err
+	return nil
 }
 
 func UpdateStateOnShareDistributionComplete(dkgState *state.DkgState, disputeShareDistributionStartBlock uint64) ([]*dkgtasks.DisputeShareDistributionTask, *dkgtasks.KeyShareSubmissionTask, *dkgtasks.DisputeMissingKeySharesTask) {
@@ -452,8 +458,11 @@ func ProcessKeyShareSubmissionComplete(contracts layer1.AllSmartContracts, logge
 		"TaskEnd":     mpkSubmissionTask.GetEnd(),
 	}).Info("Scheduling MPKSubmissionTask")
 	_, err = taskHandler.ScheduleTask(ctx, mpkSubmissionTask, "")
+	if err != nil {
+		return err
+	}
 
-	return err
+	return nil
 }
 
 func UpdateStateOnKeyShareSubmissionComplete(dkgState *state.DkgState, mpkSubmissionStartBlock uint64) *dkgtasks.MPKSubmissionTask {
@@ -624,8 +633,11 @@ func ProcessGPKJSubmissionComplete(contracts layer1.AllSmartContracts, logger *l
 		"TaskEnd":     completionTask.GetEnd(),
 	}).Info("Scheduling NewCompletionTask")
 	_, err = taskHandler.ScheduleTask(ctx, completionTask, "")
+	if err != nil {
+		return err
+	}
 
-	return err
+	return nil
 }
 
 func UpdateStateOnGPKJSubmissionComplete(dkgState *state.DkgState, disputeGPKjStartBlock uint64) ([]*dkgtasks.DisputeGPKjTask, *dkgtasks.CompletionTask) {

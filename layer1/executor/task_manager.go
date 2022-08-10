@@ -102,7 +102,7 @@ func (tm *TaskManager) eventLoop() {
 
 	for {
 		select {
-		case <-tm.mainCtx.Done():
+		case <-tm.cancelChan:
 			tm.logger.Warn("Received closing context request")
 			close(tm.cancelChan)
 			tm.responseChan.close()
