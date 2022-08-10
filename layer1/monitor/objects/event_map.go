@@ -3,9 +3,10 @@ package objects
 import (
 	"sync"
 
-	"github.com/alicenet/alicenet/layer1"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/sirupsen/logrus"
+
+	"github.com/alicenet/alicenet/layer1"
 )
 
 type EventProcessor func(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, state *MonitorState, log types.Log) error
@@ -24,14 +25,13 @@ func NewEventMap() *EventMap {
 	return &EventMap{registry: make(map[string]*EventInformation)}
 }
 
-func (em *EventMap) registerLocked(ID string, name string, fn EventProcessor) error {
-
+func (em *EventMap) registerLocked(ID, name string, fn EventProcessor) error {
 	em.registry[ID] = &EventInformation{Processor: fn, Name: name}
 
 	return nil
 }
 
-func (em *EventMap) Register(ID string, name string, fn EventProcessor) error {
+func (em *EventMap) Register(ID, name string, fn EventProcessor) error {
 	em.Lock()
 	defer em.Unlock()
 

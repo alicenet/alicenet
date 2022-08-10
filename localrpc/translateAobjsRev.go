@@ -89,43 +89,6 @@ func ReverseTranslateVSPreImage(f *from.VSPreImage) (*to.VSPreImage, error) {
 	return t, nil
 }
 
-func ReverseTranslateASPreImage(f *from.ASPreImage) (*to.ASPreImage, error) {
-	t := &to.ASPreImage{}
-	t.ChainID = f.ChainID
-	t.Exp = f.Exp
-	t.IssuedAt = f.IssuedAt
-
-	if f.Owner != "" {
-		ownerBytes, err := ReverseTranslateByte(f.Owner)
-		if err != nil {
-			return nil, err
-		}
-		newOwner := &to.AtomicSwapOwner{}
-		err = newOwner.UnmarshalBinary(ownerBytes)
-		if err != nil {
-			return nil, err
-		}
-		t.Owner = newOwner
-	}
-
-	t.TXOutIdx = f.TXOutIdx
-
-	t.Value = &uint256.Uint256{}
-	err := t.Value.UnmarshalString(f.Value)
-	if err != nil {
-		return nil, err
-	}
-	if len(f.Fee) == 0 {
-		f.Fee = "0"
-	}
-	t.Fee = &uint256.Uint256{}
-	err = t.Fee.UnmarshalString(f.Fee)
-	if err != nil {
-		return nil, err
-	}
-	return t, nil
-}
-
 func ReverseTranslateTXInLinker(f *from.TXInLinker) (*to.TXInLinker, error) {
 	t := &to.TXInLinker{}
 	if f.TXInPreImage != nil {
@@ -178,17 +141,6 @@ func ReverseTranslateTx(f *from.Tx) (*to.Tx, error) {
 func ReverseTranslateTXOut(f *from.TXOut) (*to.TXOut, error) {
 	t := &to.TXOut{}
 	switch f.GetUtxo().(type) {
-	case *from.TXOut_AtomicSwap:
-		ff := f.GetAtomicSwap()
-		obj, err := ReverseTranslateAtomicSwap(ff)
-		if err != nil {
-			return nil, err
-		}
-
-		err = t.NewAtomicSwap(obj)
-		if err != nil {
-			return nil, err
-		}
 	case *from.TXOut_ValueStore:
 		ff := f.GetValueStore()
 		obj, err := ReverseTranslateValueStore(ff)
@@ -218,24 +170,6 @@ func ReverseTranslateTXOut(f *from.TXOut) (*to.TXOut, error) {
 	if err != nil {
 		return nil, err
 	}
-	return t, nil
-}
-
-func ReverseTranslateAtomicSwap(f *from.AtomicSwap) (*to.AtomicSwap, error) {
-	t := &to.AtomicSwap{}
-	if f.ASPreImage != nil {
-		newASPreImage, err := ReverseTranslateASPreImage(f.ASPreImage)
-		if err != nil {
-			return nil, err
-		}
-		t.ASPreImage = newASPreImage
-	}
-
-	newTxHash, err := ReverseTranslateByte(f.TxHash)
-	if err != nil {
-		return nil, err
-	}
-	t.TxHash = newTxHash
 	return t, nil
 }
 

@@ -6,12 +6,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// Common interface
+// Common interface.
 type S interface {
 	Do() int
 }
 
-// Structs
+// Structs.
 type S0 struct {
 	Val int
 }
@@ -24,7 +24,7 @@ type S2 struct {
 	Val int
 }
 
-// Stupid receivers
+// Stupid receivers.
 func (s *S0) Do() int {
 	return s.Val * 2
 }
@@ -99,7 +99,6 @@ func TestNegativeType(t *testing.T) {
 }
 
 func TestNegativeName(t *testing.T) {
-
 	tr := &TypeRegistry{}
 
 	s0 := &S0{Val: 3}
@@ -115,7 +114,6 @@ func TestNegativeName(t *testing.T) {
 }
 
 func TestNegativeRaw(t *testing.T) {
-
 	tr := &TypeRegistry{}
 
 	s0 := &S0{Val: 3}

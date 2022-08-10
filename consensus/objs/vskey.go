@@ -12,7 +12,7 @@ type ValidatorSetKey struct {
 }
 
 // UnmarshalBinary takes a byte slice and returns the corresponding
-// ValidatorSetKey object
+// ValidatorSetKey object.
 func (b *ValidatorSetKey) UnmarshalBinary(data []byte) error {
 	if b == nil {
 		return errorz.ErrInvalid{}.New("ValidatorSetKey.UnmarshalBinary; vsk not initialized")
@@ -30,7 +30,7 @@ func (b *ValidatorSetKey) UnmarshalBinary(data []byte) error {
 }
 
 // MarshalBinary takes the ValidatorSetKey object and returns the canonical
-// byte slice
+// byte slice.
 func (b *ValidatorSetKey) MarshalBinary() ([]byte, error) {
 	if b == nil {
 		return nil, errorz.ErrInvalid{}.New("ValidatorSetKey.MarshalBinary; vsk not initialized")

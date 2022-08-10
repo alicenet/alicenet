@@ -16,11 +16,9 @@ import (
 type TXOut struct {
 	dataStore  *DataStore
 	valueStore *ValueStore
-	atomicSwap *AtomicSwap
 	// not part of serialized object below this line
 	hasDataStore  bool
 	hasValueStore bool
-	hasAtomicSwap bool
 }
 
 // CreateValueStore makes a new ValueStore.
@@ -47,9 +45,7 @@ func (b *TXOut) CreateValueStoreFromDeposit(chainID uint32, value *uint256.Uint2
 func (b *TXOut) NewDataStore(v *DataStore) error {
 	b.hasDataStore = true
 	b.hasValueStore = false
-	b.hasAtomicSwap = false
 	b.dataStore = v
-	b.atomicSwap = nil
 	b.valueStore = nil
 	return nil
 }
@@ -58,21 +54,8 @@ func (b *TXOut) NewDataStore(v *DataStore) error {
 func (b *TXOut) NewValueStore(v *ValueStore) error {
 	b.hasDataStore = false
 	b.hasValueStore = true
-	b.hasAtomicSwap = false
 	b.dataStore = nil
 	b.valueStore = v
-	b.atomicSwap = nil
-	return nil
-}
-
-// NewAtomicSwap makes a TXOut object which with the specified AtomicSwap.
-func (b *TXOut) NewAtomicSwap(v *AtomicSwap) error {
-	b.hasDataStore = false
-	b.hasValueStore = false
-	b.hasAtomicSwap = true
-	b.dataStore = nil
-	b.valueStore = nil
-	b.atomicSwap = v
 	return nil
 }
 
@@ -92,14 +75,6 @@ func (b *TXOut) HasValueStore() bool {
 	return b.hasValueStore
 }
 
-// HasAtomicSwap specifies if the TXOut object has an AtomicSwap.
-func (b *TXOut) HasAtomicSwap() bool {
-	if b == nil {
-		return false
-	}
-	return b.hasAtomicSwap
-}
-
 // DataStore returns the DataStore of the TXOut object if it exists.
 func (b *TXOut) DataStore() (*DataStore, error) {
 	if b.HasDataStore() {
@@ -114,14 +89,6 @@ func (b *TXOut) ValueStore() (*ValueStore, error) {
 		return b.valueStore, nil
 	}
 	return nil, errorz.ErrInvalid{}.New("txout.valuestore; object does not have a ValueStore")
-}
-
-// AtomicSwap returns the AtomicSwap of the TXOut object if it exists.
-func (b *TXOut) AtomicSwap() (*AtomicSwap, error) {
-	if b.HasAtomicSwap() {
-		return b.atomicSwap, nil
-	}
-	return nil, errorz.ErrInvalid{}.New("txout.atomicswap; object does not have an AtomicSwap")
 }
 
 // UnmarshalBinary takes a byte slice and returns the corresponding
@@ -164,8 +131,6 @@ func (b *TXOut) UnmarshalCapn(bc mdefs.TXOut) error {
 		b.hasDataStore = true
 		b.valueStore = nil
 		b.hasValueStore = false
-		b.atomicSwap = nil
-		b.hasAtomicSwap = false
 	case bc.HasValueStore():
 		cObj, err := bc.ValueStore()
 		if err != nil {
@@ -180,24 +145,6 @@ func (b *TXOut) UnmarshalCapn(bc mdefs.TXOut) error {
 		b.hasDataStore = false
 		b.valueStore = obj
 		b.hasValueStore = true
-		b.atomicSwap = nil
-		b.hasAtomicSwap = false
-	case bc.HasAtomicSwap():
-		cObj, err := bc.AtomicSwap()
-		if err != nil {
-			return err
-		}
-		obj := &AtomicSwap{}
-		err = obj.UnmarshalCapn(cObj)
-		if err != nil {
-			return err
-		}
-		b.dataStore = nil
-		b.hasDataStore = false
-		b.valueStore = nil
-		b.hasValueStore = false
-		b.atomicSwap = obj
-		b.hasAtomicSwap = true
 	default:
 		return errorz.ErrInvalid{}.New("txout.unmarshalCapn; type not defined")
 	}
@@ -245,14 +192,6 @@ func (b *TXOut) MarshalCapn(seg *capnp.Segment) (mdefs.TXOut, error) {
 		if err := bc.SetValueStore(vs); err != nil {
 			return bc, err
 		}
-	case b.hasAtomicSwap:
-		as, err := b.atomicSwap.MarshalCapn(seg)
-		if err != nil {
-			return bc, err
-		}
-		if err := bc.SetAtomicSwap(as); err != nil {
-			return bc, err
-		}
 	default:
 		return mdefs.TXOut{}, errorz.ErrInvalid{}.New("txout.marshalCapn; type not defined")
 	}
@@ -268,9 +207,6 @@ func (b *TXOut) PreHash() ([]byte, error) {
 	case b.HasValueStore():
 		obj, _ := b.ValueStore()
 		return obj.PreHash()
-	case b.HasAtomicSwap():
-		obj, _ := b.AtomicSwap()
-		return obj.PreHash()
 	default:
 		return nil, errorz.ErrInvalid{}.New("txout.preHash; type not defined")
 	}
@@ -284,9 +220,6 @@ func (b *TXOut) UTXOID() ([]byte, error) {
 		return obj.UTXOID()
 	case b.HasValueStore():
 		obj, _ := b.ValueStore()
-		return obj.UTXOID()
-	case b.HasAtomicSwap():
-		obj, _ := b.AtomicSwap()
 		return obj.UTXOID()
 	default:
 		return nil, errorz.ErrInvalid{}.New("txout.utxoID; type not defined")
@@ -302,9 +235,6 @@ func (b *TXOut) ChainID() (uint32, error) {
 	case b.HasValueStore():
 		obj, _ := b.ValueStore()
 		return obj.ChainID()
-	case b.HasAtomicSwap():
-		obj, _ := b.AtomicSwap()
-		return obj.ChainID()
 	default:
 		return 0, errorz.ErrInvalid{}.New("txout.chainID; type not defined")
 	}
@@ -319,9 +249,6 @@ func (b *TXOut) TxOutIdx() (uint32, error) {
 	case b.HasValueStore():
 		obj, _ := b.ValueStore()
 		return obj.TxOutIdx()
-	case b.HasAtomicSwap():
-		obj, _ := b.AtomicSwap()
-		return obj.TxOutIdx()
 	default:
 		return 0, errorz.ErrInvalid{}.New("txout.txOutIdx; type not defined")
 	}
@@ -335,9 +262,6 @@ func (b *TXOut) SetTxOutIdx(idx uint32) error {
 		return obj.SetTxOutIdx(idx)
 	case b.HasValueStore():
 		obj, _ := b.ValueStore()
-		return obj.SetTxOutIdx(idx)
-	case b.HasAtomicSwap():
-		obj, _ := b.AtomicSwap()
 		return obj.SetTxOutIdx(idx)
 	default:
 		return errorz.ErrInvalid{}.New("txout.setTxOutIdx; type not defined")
@@ -363,15 +287,6 @@ func (b *TXOut) TxHash() ([]byte, error) {
 			return nil, errorz.ErrInvalid{}.New("txout.txhash: vs.txhash has incorrect length")
 		}
 		return utils.CopySlice(obj.TxHash), nil
-	case b.HasAtomicSwap():
-		obj, _ := b.AtomicSwap()
-		if obj == nil {
-			return nil, errorz.ErrInvalid{}.New("txout.txhash: as not initialized")
-		}
-		if len(obj.TxHash) != constants.HashLen {
-			return nil, errorz.ErrInvalid{}.New("txout.txhash: as.txhash has incorrect length")
-		}
-		return utils.CopySlice(obj.TxHash), nil
 	default:
 		return nil, errorz.ErrInvalid{}.New("txout.txhash; type not defined")
 	}
@@ -386,9 +301,6 @@ func (b *TXOut) SetTxHash(txHash []byte) error {
 	case b.HasValueStore():
 		obj, _ := b.ValueStore()
 		return obj.SetTxHash(utils.CopySlice(txHash))
-	case b.HasAtomicSwap():
-		obj, _ := b.AtomicSwap()
-		return obj.SetTxHash(utils.CopySlice(txHash))
 	default:
 		return errorz.ErrInvalid{}.New("txout.setTxHash; type not defined")
 	}
@@ -402,9 +314,6 @@ func (b *TXOut) IsExpired(currentHeight uint32) (bool, error) {
 		return obj.IsExpired(currentHeight)
 	case b.HasValueStore():
 		return false, nil
-	case b.HasAtomicSwap():
-		obj, _ := b.AtomicSwap()
-		return obj.IsExpired(currentHeight)
 	default:
 		return false, errorz.ErrInvalid{}.New("txout.isExpired; type not defined")
 	}
@@ -418,9 +327,6 @@ func (b *TXOut) RemainingValue(currentHeight uint32) (*uint256.Uint256, error) {
 		return obj.RemainingValue(currentHeight)
 	case b.HasValueStore():
 		obj, _ := b.ValueStore()
-		return obj.Value()
-	case b.HasAtomicSwap():
-		obj, _ := b.AtomicSwap()
 		return obj.Value()
 	default:
 		return nil, errorz.ErrInvalid{}.New("txout.remainingValue; type not defined")
@@ -436,9 +342,6 @@ func (b *TXOut) MakeTxIn() (*TXIn, error) {
 	case b.HasValueStore():
 		obj, _ := b.ValueStore()
 		return obj.MakeTxIn()
-	case b.HasAtomicSwap():
-		obj, _ := b.AtomicSwap()
-		return obj.MakeTxIn()
 	default:
 		return nil, errorz.ErrInvalid{}.New("txout.makeTxIn; type not defined")
 	}
@@ -452,9 +355,6 @@ func (b *TXOut) Value() (*uint256.Uint256, error) {
 		return obj.Value()
 	case b.HasValueStore():
 		obj, _ := b.ValueStore()
-		return obj.Value()
-	case b.HasAtomicSwap():
-		obj, _ := b.AtomicSwap()
 		return obj.Value()
 	default:
 		return nil, errorz.ErrInvalid{}.New("txout.value; type not defined")
@@ -470,9 +370,6 @@ func (b *TXOut) ValuePlusFee() (*uint256.Uint256, error) {
 	case b.HasValueStore():
 		obj, _ := b.ValueStore()
 		return obj.ValuePlusFee()
-	case b.HasAtomicSwap():
-		obj, _ := b.AtomicSwap()
-		return obj.ValuePlusFee()
 	default:
 		return nil, errorz.ErrInvalid{}.New("txout.valuePlusFee; type not defined")
 	}
@@ -487,9 +384,6 @@ func (b *TXOut) ValidateFee(storage *wrapper.Storage) error {
 	case b.HasValueStore():
 		obj, _ := b.ValueStore()
 		return obj.ValidateFee(storage)
-	case b.HasAtomicSwap():
-		obj, _ := b.AtomicSwap()
-		return obj.ValidateFee(storage)
 	default:
 		return errorz.ErrInvalid{}.New("txout.validateFee; type not defined")
 	}
@@ -502,8 +396,6 @@ func (b *TXOut) ValidatePreSignature() error {
 		obj, _ := b.DataStore()
 		return obj.ValidatePreSignature()
 	case b.HasValueStore():
-		return nil
-	case b.HasAtomicSwap():
 		return nil
 	default:
 		return errorz.ErrInvalid{}.New("txout.validatePreSignature; type not defined")
@@ -519,9 +411,6 @@ func (b *TXOut) ValidateSignature(currentHeight uint32, txIn *TXIn) error {
 	case b.HasValueStore():
 		obj, _ := b.ValueStore()
 		return obj.ValidateSignature(txIn)
-	case b.HasAtomicSwap():
-		obj, _ := b.AtomicSwap()
-		return obj.ValidateSignature(currentHeight, txIn)
 	default:
 		return errorz.ErrInvalid{}.New("txout.validateSignature; type not defined")
 	}
@@ -539,13 +428,6 @@ func (b *TXOut) MustBeMinedBeforeHeight() (uint32, error) {
 		return (iat * constants.EpochLength) - 1, nil
 	case b.HasValueStore():
 		return constants.MaxUint32, nil
-	case b.HasAtomicSwap():
-		obj, _ := b.AtomicSwap()
-		iat, err := obj.IssuedAt()
-		if err != nil {
-			return 0, err
-		}
-		return (iat * constants.EpochLength) - 1, nil
 	default:
 		return 0, errorz.ErrInvalid{}.New("txout.mustBeMinedBeforeHeight; type not defined")
 	}
@@ -563,13 +445,6 @@ func (b *TXOut) CannotBeMinedBeforeHeight() (uint32, error) {
 		return (iat-1)*constants.EpochLength + 1, nil
 	case b.HasValueStore():
 		return 1, nil
-	case b.HasAtomicSwap():
-		obj, _ := b.AtomicSwap()
-		iat, err := obj.IssuedAt()
-		if err != nil {
-			return 0, err
-		}
-		return (iat-1)*constants.EpochLength + 1, nil
 	default:
 		return 0, errorz.ErrInvalid{}.New("txout.cannotBeMinedBeforeHeight; type not defined")
 	}
@@ -592,17 +467,6 @@ func (b *TXOut) Account() ([]byte, error) {
 			return nil, err
 		}
 		return utils.CopySlice(vso.Account), nil
-	case b.HasAtomicSwap():
-		obj, _ := b.AtomicSwap()
-		aso, err := obj.Owner()
-		if err != nil {
-			return nil, err
-		}
-		asoPrimaryAcct, err := aso.PrimaryAccount()
-		if err != nil {
-			return nil, err
-		}
-		return utils.CopySlice(asoPrimaryAcct), nil
 	default:
 		return nil, errorz.ErrInvalid{}.New("txout.account; type not defined")
 	}
@@ -620,13 +484,6 @@ func (b *TXOut) GenericOwner() (*Owner, error) {
 		return onr, nil
 	case b.HasValueStore():
 		obj, _ := b.ValueStore()
-		onr, err := obj.GenericOwner()
-		if err != nil {
-			return nil, err
-		}
-		return onr, nil
-	case b.HasAtomicSwap():
-		obj, _ := b.AtomicSwap()
 		onr, err := obj.GenericOwner()
 		if err != nil {
 			return nil, err
