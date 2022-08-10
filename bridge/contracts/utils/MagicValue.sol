@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT-open-group
 pragma solidity ^0.8.0;
-import {MagicValueErrorCodes} from "contracts/libraries/errorCodes/MagicValueErrorCodes.sol";
+import "contracts/libraries/errors/MagicValueErrors.sol";
 
 abstract contract MagicValue {
     // _MAGIC_VALUE is a constant that may be used to prevent
@@ -9,10 +9,9 @@ abstract contract MagicValue {
     uint8 internal constant _MAGIC_VALUE = 42;
 
     modifier checkMagic(uint8 magic_) {
-        require(
-            magic_ == _getMagic(),
-            string(abi.encodePacked(MagicValueErrorCodes.MAGICVALUE_BAD_MAGIC))
-        );
+        if (magic_ != _getMagic()) {
+            revert MagicValueErrors.BadMagic(magic_);
+        }
         _;
     }
 

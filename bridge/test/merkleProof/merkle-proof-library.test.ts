@@ -1,6 +1,5 @@
 import { expect } from "chai";
 import { MockMerkleProofLibrary } from "../../typechain-types";
-import { assertErrorMessage } from "../chai-helpers";
 import { deployLibrary } from "./setup";
 
 const ZERO_BYTES32 =
@@ -107,8 +106,9 @@ describe("Testing Merkle Proof Library", async () => {
           },
           root
         )
-      ).to.be.revertedWith(
-        "MerkleProofLibrary: Invalid Non Inclusion Merkle proof!"
+      ).to.be.revertedWithCustomError(
+        MerkleProofLibrary,
+        "InvalidNonInclusionMerkleProof"
       );
     });
 
@@ -138,8 +138,9 @@ describe("Testing Merkle Proof Library", async () => {
           },
           root
         )
-      ).to.be.revertedWith(
-        "MerkleProofLibrary: The Leaf node provided was not found in the key's path!"
+      ).to.be.revertedWithCustomError(
+        MerkleProofLibrary,
+        "ProvidedLeafNotFoundInKeyPath"
       );
     });
 
@@ -169,8 +170,9 @@ describe("Testing Merkle Proof Library", async () => {
           },
           root
         )
-      ).to.be.revertedWith(
-        "MerkleProofLibrary: The Leaf node provided was not found in the key's path!"
+      ).to.be.revertedWithCustomError(
+        MerkleProofLibrary,
+        "ProvidedLeafNotFoundInKeyPath"
       );
     });
 
@@ -197,8 +199,9 @@ describe("Testing Merkle Proof Library", async () => {
           },
           root
         )
-      ).to.be.revertedWith(
-        "MerkleProofLibrary: Invalid Non Inclusion Merkle proof!"
+      ).to.be.revertedWithCustomError(
+        MerkleProofLibrary,
+        "InvalidNonInclusionMerkleProof"
       );
     });
   });
@@ -254,8 +257,9 @@ describe("Testing Merkle Proof Library", async () => {
           },
           root
         )
-      ).to.be.revertedWith(
-        "MerkleProofLibrary: The proof doesn't match the root of the trie!"
+      ).to.be.revertedWithCustomError(
+        MerkleProofLibrary,
+        "ProofDoesNotMatchTrieRoot"
       );
     });
 
@@ -282,9 +286,7 @@ describe("Testing Merkle Proof Library", async () => {
           },
           root
         )
-      ).to.be.revertedWith(
-        "MerkleProofLibrary: Invalid Inclusion Merkle proof!"
-      );
+      ).to.be.revertedWithCustomError(MerkleProofLibrary, "InclusionZero");
     });
   });
   describe("checkProof:", async () => {
@@ -309,10 +311,9 @@ describe("Testing Merkle Proof Library", async () => {
       const proofValue = VALID_PROOF_VALUE;
       const height = INVALID_HEIGHT_ABOVE_RANGE_MAX;
 
-      await assertErrorMessage(
-        MerkleProofLibrary.computeLeafHash(key, proofValue, height),
-        "MerkleProofLibrary: Invalid proofHeight, should be [0, 256]"
-      );
+      await expect(MerkleProofLibrary.computeLeafHash(key, proofValue, height))
+        .to.be.revertedWithCustomError(MerkleProofLibrary, "InvalidProofHeight")
+        .withArgs(height);
     });
 
     it("succeeds when height is zero and returns correct leaf hash", async () => {
@@ -360,7 +361,7 @@ describe("Testing Merkle Proof Library", async () => {
       const bitset = VALID_BITSET;
       const height = INVALID_HEIGHT_ABOVE_RANGE_MAX;
 
-      await assertErrorMessage(
+      await expect(
         MerkleProofLibrary.checkProof(
           auditPath,
           root,
@@ -368,9 +369,10 @@ describe("Testing Merkle Proof Library", async () => {
           key,
           bitset,
           height
-        ),
-        "MerkleProofLibrary: proofHeight should be in the range [0, 256]"
-      );
+        )
+      )
+        .to.be.revertedWithCustomError(MerkleProofLibrary, "InvalidProofHeight")
+        .withArgs(height);
     });
 
     it("returns true when proof is valid inside MerkleTree with height 0", async () => {

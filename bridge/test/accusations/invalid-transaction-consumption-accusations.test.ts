@@ -67,8 +67,9 @@ describe("InvalidTxConsumptionAccusation: Tests InvalidTxConsumptionAccusation m
           txInPreImage,
           proofs
         )
-      ).to.be.revertedWith(
-        "MerkleProofLibrary: Invalid Non Inclusion Merkle proof!"
+      ).to.be.revertedWithCustomError(
+        accusation,
+        "InvalidNonInclusionMerkleProof"
       );
     });
     it("reverts when validator is not valid", async function () {

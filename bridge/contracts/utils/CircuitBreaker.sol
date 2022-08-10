@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: MIT-open-group
 pragma solidity ^0.8.0;
 
-import {
-    CircuitBreakerErrorCodes
-} from "contracts/libraries/errorCodes/CircuitBreakerErrorCodes.sol";
+import "contracts/libraries/errors/CircuitBreakerErrors.sol";
 
 abstract contract CircuitBreaker {
     bool internal constant _OPEN = true;
@@ -16,10 +14,10 @@ abstract contract CircuitBreaker {
     // withCB is a modifier to enforce the CB must
     // be set for a call to succeed
     modifier withCB() {
-        require(
-            _cb == _CLOSED,
-            string(abi.encodePacked(CircuitBreakerErrorCodes.CIRCUIT_BREAKER_OPENED))
-        );
+        if (_cb == _OPEN) {
+            revert CircuitBreakerErrors.CircuitBreakerOpened();
+        }
+
         _;
     }
 
@@ -28,18 +26,16 @@ abstract contract CircuitBreaker {
     }
 
     function _tripCB() internal {
-        require(
-            _cb == _CLOSED,
-            string(abi.encodePacked(CircuitBreakerErrorCodes.CIRCUIT_BREAKER_OPENED))
-        );
+        if (_cb == _OPEN) {
+            revert CircuitBreakerErrors.CircuitBreakerOpened();
+        }
         _cb = _OPEN;
     }
 
     function _resetCB() internal {
-        require(
-            _cb == _OPEN,
-            string(abi.encodePacked(CircuitBreakerErrorCodes.CIRCUIT_BREAKER_CLOSED))
-        );
+        if (_cb == _CLOSED) {
+            revert CircuitBreakerErrors.CircuitBreakerClosed();
+        }
         _cb = _CLOSED;
     }
 }

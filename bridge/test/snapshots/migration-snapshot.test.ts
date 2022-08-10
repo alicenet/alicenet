@@ -1,3 +1,4 @@
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { ethers } from "hardhat";
 import { completeETHDKGRound } from "../ethdkg/setup";
 import {
@@ -22,9 +23,11 @@ import {
 describe("Snapshots: Migrate state", () => {
   let fixture: Fixture;
   let expectedBlockNumber: bigint;
+  let admin: SignerWithAddress;
 
   beforeEach(async function () {
     fixture = await getFixture();
+    [admin] = fixture.namedSigners;
   });
 
   it("Should not be to do a migration of snapshots if not factory", async function () {
@@ -33,7 +36,9 @@ describe("Snapshots: Migrate state", () => {
         [validSnapshot1024.GroupSignature],
         [validSnapshot1024.BClaims]
       )
-    ).to.be.revertedWith("2000");
+    )
+      .to.be.revertedWithCustomError(fixture.bToken, `OnlyFactory`)
+      .withArgs(admin.address, fixture.factory.address);
   });
 
   it("Should not be to do a migration with mismatch state length", async function () {
@@ -42,7 +47,12 @@ describe("Snapshots: Migrate state", () => {
         [validSnapshot1024.GroupSignature],
         [validSnapshot1024.BClaims, validSnapshot1024.BClaims],
       ])
-    ).to.be.revertedWith("409");
+    )
+      .to.be.revertedWithCustomError(
+        fixture.snapshots,
+        "MigrationInputDataMismatch"
+      )
+      .withArgs(1, 2);
   });
 
   it("Should not be to do a migration with incorrect block height", async function () {
@@ -51,19 +61,25 @@ describe("Snapshots: Migrate state", () => {
         [invalidSnapshot500.GroupSignature, validSnapshot1024.GroupSignature],
         [invalidSnapshot500.BClaims, validSnapshot1024.BClaims],
       ])
-    ).to.be.revertedWith("406");
+    )
+      .to.be.revertedWithCustomError(fixture.snapshots, "InvalidBlockHeight")
+      .withArgs(invalidSnapshot500.height);
     await expect(
       factoryCallAny(fixture.factory, fixture.snapshots, "migrateSnapshots", [
         [validSnapshot1024.GroupSignature, invalidSnapshot500.GroupSignature],
         [validSnapshot1024.BClaims, invalidSnapshot500.BClaims],
       ])
-    ).to.be.revertedWith("406");
+    )
+      .to.be.revertedWithCustomError(fixture.snapshots, "InvalidBlockHeight")
+      .withArgs(invalidSnapshot500.height);
     await expect(
       factoryCallAny(fixture.factory, fixture.snapshots, "migrateSnapshots", [
         [invalidSnapshot500.GroupSignature],
         [invalidSnapshot500.BClaims],
       ])
-    ).to.be.revertedWith("406");
+    )
+      .to.be.revertedWithCustomError(fixture.snapshots, "InvalidBlockHeight")
+      .withArgs(invalidSnapshot500.height);
   });
 
   it("Should be able to do snapshots after migration", async function () {
@@ -196,7 +212,10 @@ describe("Snapshots: Migrate state", () => {
           [validSnapshot1024.GroupSignature],
           [validSnapshot1024.BClaims],
         ])
-      ).to.be.revertedWith("408");
+      ).to.be.revertedWithCustomError(
+        fixture.snapshots,
+        `MigrationNotAllowedAtCurrentEpoch`
+      );
     });
   });
 });
