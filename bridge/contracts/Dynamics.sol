@@ -193,7 +193,7 @@ contract Dynamics is Initializable, IDynamics, ImmutableSnapshots {
         uint256 patch
     ) internal pure returns (uint256 fullVersion) {
         assembly {
-            fullVersion := or(or(shl(majorVersion, 64), shl(minorVersion, 32)), patch)
+            fullVersion := or(or(shl(64, majorVersion), shl(32, minorVersion)), patch)
         }
     }
 
