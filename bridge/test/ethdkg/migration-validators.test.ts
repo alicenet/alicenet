@@ -1,4 +1,6 @@
-import { BigNumberish, ethers } from "ethers";
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
+import { BigNumberish } from "ethers";
+import { ethers } from "hardhat";
 import {
   signedData,
   validatorsSnapshots,
@@ -22,6 +24,7 @@ import { completeETHDKGRound } from "./setup";
 
 describe("Ethdkg: Migrate state", () => {
   let fixture: Fixture;
+  let admin: SignerWithAddress;
   let validatorsAddress: string[];
   let validatorsShares: [
     BigNumberish,
@@ -32,6 +35,7 @@ describe("Ethdkg: Migrate state", () => {
 
   beforeEach(async function () {
     fixture = await getFixture();
+    [admin] = await ethers.getSigners();
     validatorsAddress = [];
     validatorsShares = [];
     for (let i = 0; i < validatorsSnapshots.length; i++) {
@@ -52,14 +56,17 @@ describe("Ethdkg: Migrate state", () => {
         100,
         validatorsSnapshots[0].mpk
       )
-    ).to.be.revertedWith("2000");
+    )
+      .to.be.revertedWithCustomError(fixture.bToken, `OnlyFactory`)
+      .withArgs(admin.address, fixture.factory.address);
   });
 
   it("Should not be to do a migration with mismatch state length", async function () {
+    const validatorIndexes = [1, 2, 3];
     await expect(
       factoryCallAny(fixture.factory, fixture.ethdkg, "migrateValidators", [
         validatorsAddress,
-        [1, 2, 3],
+        validatorIndexes,
         validatorsShares,
         validatorsSnapshots.length,
         0,
@@ -67,11 +74,21 @@ describe("Ethdkg: Migrate state", () => {
         100,
         validatorsSnapshots[0].mpk,
       ])
-    ).to.be.revertedWith("152");
+    )
+      .to.be.revertedWithCustomError(
+        fixture.ethdkg,
+        "MigrationInputDataMismatch"
+      )
+      .withArgs(
+        validatorsAddress.length,
+        validatorIndexes.length,
+        validatorsShares.length
+      );
+    const correctValidatorIndexes = [1, 2, 3, 4];
     await expect(
       factoryCallAny(fixture.factory, fixture.ethdkg, "migrateValidators", [
         validatorsAddress,
-        [1, 2, 3, 4],
+        correctValidatorIndexes,
         validatorsShares.slice(0, 3),
         validatorsSnapshots.length,
         0,
@@ -79,11 +96,16 @@ describe("Ethdkg: Migrate state", () => {
         100,
         validatorsSnapshots[0].mpk,
       ])
-    ).to.be.revertedWith("152");
+    )
+      .to.be.revertedWithCustomError(
+        fixture.ethdkg,
+        "MigrationInputDataMismatch"
+      )
+      .withArgs(validatorsAddress.length, correctValidatorIndexes.length, 3);
     await expect(
       factoryCallAny(fixture.factory, fixture.ethdkg, "migrateValidators", [
         validatorsAddress.slice(0, 3),
-        [1, 2, 3, 4],
+        correctValidatorIndexes,
         validatorsShares,
         validatorsSnapshots.length,
         0,
@@ -91,7 +113,12 @@ describe("Ethdkg: Migrate state", () => {
         100,
         validatorsSnapshots[0].mpk,
       ])
-    ).to.be.revertedWith("152");
+    )
+      .to.be.revertedWithCustomError(
+        fixture.ethdkg,
+        "MigrationInputDataMismatch"
+      )
+      .withArgs(3, correctValidatorIndexes.length, validatorsShares.length);
   });
 
   it("Factory should be able to migrate validators", async function () {
@@ -146,7 +173,7 @@ describe("Ethdkg: Migrate state", () => {
         0,
         fixture.validatorPool.interface.encodeFunctionData("initializeETHDKG")
       )
-    ).to.be.revertedWith("801");
+    ).to.be.revertedWithCustomError(fixture.validatorPool, "ConsensusRunning");
   });
 
   it("Should not be able to run more than 1 migration", async function () {
@@ -191,7 +218,12 @@ describe("Ethdkg: Migrate state", () => {
           validatorsSnapshots[0].mpk,
         ])
       )
-    ).to.be.revertedWith("151");
+    )
+      .to.be.revertedWithCustomError(
+        fixture.ethdkg,
+        "MigrationRequiresZeroNonce"
+      )
+      .withArgs(1);
   });
 
   it("Change validators after migration with scheduling maintenance + snapshots", async function () {

@@ -1,6 +1,6 @@
 module github.com/alicenet/alicenet
 
-go 1.18
+go 1.19
 
 require (
 	github.com/MadBase/go-capnproto2/v2 v2.18.0-custom.1
@@ -8,11 +8,11 @@ require (
 	github.com/derision-test/go-mockgen v1.3.3
 	github.com/dgraph-io/badger/v2 v2.2007.4
 	github.com/emicklei/proto v1.11.0
-	github.com/ethereum/go-ethereum v1.10.20
+	github.com/ethereum/go-ethereum v1.10.21
 	github.com/golang/mock v1.6.0
 	github.com/google/uuid v1.3.0
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
-	github.com/grpc-ecosystem/grpc-gateway/v2 v2.11.0
+	github.com/grpc-ecosystem/grpc-gateway/v2 v2.11.2
 	github.com/hashicorp/golang-lru v0.5.5-0.20210104140557-80c98217689d
 	github.com/hashicorp/yamux v0.0.0-20190923154419-df201c70410d
 	github.com/holiman/uint256 v1.2.0
@@ -28,7 +28,7 @@ require (
 	golang.org/x/net v0.0.0-20220726230323-06994584191e
 	golang.org/x/sys v0.0.0-20220727055044-e65921a090b8
 	golang.org/x/tools v0.1.12
-	google.golang.org/genproto v0.0.0-20220725144611-272f38e5d71b
+	google.golang.org/genproto v0.0.0-20220805133916-01dd62135a58
 	google.golang.org/grpc v1.48.0
 	google.golang.org/protobuf v1.28.1
 )

@@ -1,0 +1,567 @@
+[
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "accused",
+        "type": "address"
+      }
+    ],
+    "name": "AccusedDidNotDistributeSharesInRound",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "accused",
+        "type": "address"
+      }
+    ],
+    "name": "AccusedDidNotParticipateInGPKJSubmission",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "accused",
+        "type": "address"
+      }
+    ],
+    "name": "AccusedDidNotSubmitGPKJInRound",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "accused",
+        "type": "address"
+      }
+    ],
+    "name": "AccusedDistributedGPKJ",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "accused",
+        "type": "address"
+      }
+    ],
+    "name": "AccusedDistributedSharesInRound",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "accused",
+        "type": "address"
+      }
+    ],
+    "name": "AccusedHasCommitments",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "accused",
+        "type": "address"
+      }
+    ],
+    "name": "AccusedNotParticipatingInRound",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "accused",
+        "type": "address"
+      }
+    ],
+    "name": "AccusedNotValidator",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "accused",
+        "type": "address"
+      }
+    ],
+    "name": "AccusedParticipatingInRound",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "accused",
+        "type": "address"
+      }
+    ],
+    "name": "AccusedSubmittedSharesInRound",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "validatorsLength",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "encryptedSharesHashLength",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "commitmentsLength",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "numParticipants",
+        "type": "uint256"
+      }
+    ],
+    "name": "ArgumentsLengthDoesNotEqualNumberOfParticipants",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "CommitmentNotOnCurve",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "CommitmentZero",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "disputer",
+        "type": "address"
+      }
+    ],
+    "name": "DisputerDidNotDistributeSharesInRound",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "disputer",
+        "type": "address"
+      }
+    ],
+    "name": "DisputerDidNotSubmitGPKJInRound",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "disputer",
+        "type": "address"
+      }
+    ],
+    "name": "DisputerNotParticipatingInRound",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "DistributedShareHashZero",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "enum Phase",
+        "name": "currentPhase",
+        "type": "uint8"
+      }
+    ],
+    "name": "ETHDKGNotInDisputePhase",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "enum Phase",
+        "name": "currentPhase",
+        "type": "uint8"
+      }
+    ],
+    "name": "ETHDKGNotInGPKJSubmissionPhase",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "enum Phase",
+        "name": "currentPhase",
+        "type": "uint8"
+      }
+    ],
+    "name": "ETHDKGNotInKeyshareSubmissionPhase",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "enum Phase",
+        "name": "currentPhase",
+        "type": "uint8"
+      }
+    ],
+    "name": "ETHDKGNotInMasterPublicKeySubmissionPhase",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "enum Phase",
+        "name": "currentPhase",
+        "type": "uint8"
+      }
+    ],
+    "name": "ETHDKGNotInPostGPKJDisputePhase",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "enum Phase",
+        "name": "currentPhase",
+        "type": "uint8"
+      }
+    ],
+    "name": "ETHDKGNotInPostGPKJSubmissionPhase",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "enum Phase",
+        "name": "currentPhase",
+        "type": "uint8"
+      }
+    ],
+    "name": "ETHDKGNotInPostKeyshareSubmissionPhase",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "enum Phase",
+        "name": "currentPhase",
+        "type": "uint8"
+      }
+    ],
+    "name": "ETHDKGNotInPostRegistrationAccusationPhase",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "enum Phase",
+        "name": "currentPhase",
+        "type": "uint8"
+      }
+    ],
+    "name": "ETHDKGNotInRegistrationPhase",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "enum Phase",
+        "name": "currentPhase",
+        "type": "uint8"
+      }
+    ],
+    "name": "ETHDKGNotInSharedDistributionPhase",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "ETHDKGRequisitesIncomplete",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "GPKJZero",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "commitmentsLength",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "expectedCommitmentsLength",
+        "type": "uint256"
+      }
+    ],
+    "name": "InvalidCommitments",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "commitmentsLength",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "expectedCommitmentsLength",
+        "type": "uint256"
+      }
+    ],
+    "name": "InvalidCommitmentsAmount",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "sharesLength",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "expectedSharesLength",
+        "type": "uint256"
+      }
+    ],
+    "name": "InvalidEncryptedSharesAmount",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidKeyOrProof",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidKeyshareG1",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidKeyshareG2",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "participantNonce",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "nonce",
+        "type": "uint256"
+      }
+    ],
+    "name": "InvalidNonce",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "participant",
+        "type": "address"
+      }
+    ],
+    "name": "InvalidOrDuplicatedParticipant",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "expectedHash",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "actualHash",
+        "type": "bytes32"
+      }
+    ],
+    "name": "InvalidSharesOrCommitments",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "MasterPublicKeyPairingCheckFailure",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "validatorsAccountsLength",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "validatorIndexesLength",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "validatorSharesLength",
+        "type": "uint256"
+      }
+    ],
+    "name": "MigrationInputDataMismatch",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "nonce",
+        "type": "uint256"
+      }
+    ],
+    "name": "MigrationRequiresZeroNonce",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "currentValidatorsLength",
+        "type": "uint256"
+      }
+    ],
+    "name": "MinimumValidatorsNotMet",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "enum Phase",
+        "name": "currentPhase",
+        "type": "uint8"
+      }
+    ],
+    "name": "NotInPostSharedDistributionPhase",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "sender",
+        "type": "address"
+      }
+    ],
+    "name": "OnlyValidatorsAllowed",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "participant",
+        "type": "address"
+      }
+    ],
+    "name": "ParticipantDistributedSharesInRound",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "participant",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "participantNonce",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "maxExpectedNonce",
+        "type": "uint256"
+      }
+    ],
+    "name": "ParticipantParticipatingInRound",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "participant",
+        "type": "address"
+      }
+    ],
+    "name": "ParticipantSubmittedGPKJInRound",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "participant",
+        "type": "address"
+      }
+    ],
+    "name": "ParticipantSubmittedKeysharesInRound",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "PublicKeyNotOnCurve",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "PublicKeyZero",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "expected",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "actual",
+        "type": "bytes32"
+      }
+    ],
+    "name": "SharesAndCommitmentsMismatch",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "VariableNotSettableWhileETHDKGRunning",
+    "type": "error"
+  }
+]

@@ -1,10 +1,11 @@
 package objs
 
 import (
-	"github.com/stretchr/testify/assert"
 	"math/big"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 
 	"github.com/alicenet/alicenet/crypto"
 	bn256 "github.com/alicenet/alicenet/crypto/bn256/cloudflare"
@@ -75,7 +76,7 @@ func makeSecpSigner(seed []byte) (*crypto.Secp256k1Signer, []byte) {
 	return secpSigner, secpKey
 }
 
-func buildRound(t *testing.T, bnSigners []*crypto.BNGroupSigner, groupShares [][]byte, secpSigners []*crypto.Secp256k1Signer, height uint32, round uint32, prevBlock []byte) (*BlockHeader, []*Proposal, PreVoteList, []*PreVoteNil, PreCommitList, []*PreCommitNil, NextRoundList, NextHeightList, *BlockHeader) {
+func buildRound(t *testing.T, bnSigners []*crypto.BNGroupSigner, groupShares [][]byte, secpSigners []*crypto.Secp256k1Signer, height, round uint32, prevBlock []byte) (*BlockHeader, []*Proposal, PreVoteList, []*PreVoteNil, PreCommitList, []*PreCommitNil, NextRoundList, NextHeightList, *BlockHeader) {
 	pl := []*Proposal{}
 	pvl := PreVoteList{}
 	pvnl := []*PreVoteNil{}

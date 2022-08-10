@@ -8,7 +8,7 @@ import "contracts/utils/MagicEthTransfer.sol";
 import "contracts/utils/EthSafeTransfer.sol";
 import "contracts/libraries/math/Sigmoid.sol";
 import "contracts/utils/ImmutableAuth.sol";
-import {BTokenErrors} from "contracts/libraries/errors/BTokenErrors.sol";
+import "contracts/libraries/errors/BTokenErrors.sol";
 
 /// @custom:salt BToken
 /// @custom:deploy-type deployStatic

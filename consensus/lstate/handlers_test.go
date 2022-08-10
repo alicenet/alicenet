@@ -2,16 +2,18 @@ package lstate
 
 import (
 	"context"
+	"strconv"
+	"testing"
+
+	"github.com/dgraph-io/badger/v2"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/alicenet/alicenet/consensus/appmock"
 	"github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/consensus/dman"
 	"github.com/alicenet/alicenet/consensus/objs"
 	"github.com/alicenet/alicenet/crypto"
 	"github.com/alicenet/alicenet/utils"
-	"github.com/dgraph-io/badger/v2"
-	"github.com/stretchr/testify/assert"
-	"strconv"
-	"testing"
 )
 
 func TestHandlers_AddProposal_Ok(t *testing.T) {

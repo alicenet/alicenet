@@ -12,7 +12,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-//Setting contains string only command line arguments in Key=>Next form
+// Setting contains string only command line arguments in Key=>Next form.
 type Setting struct {
 	Key          string
 	Description  string
@@ -20,10 +20,10 @@ type Setting struct {
 	DefaultValue string
 }
 
-// Settings stores all the command line arguments with values
+// Settings stores all the command line arguments with values.
 type Settings map[string]*Setting
 
-// Creates a new Settings by combining all Settings arguments, with increasing priority left to right
+// Creates a new Settings by combining all Settings arguments, with increasing priority left to right.
 func mergeSettings(settings ...Settings) Settings {
 	combined := make(Settings)
 
@@ -36,9 +36,8 @@ func mergeSettings(settings ...Settings) Settings {
 	return combined
 }
 
-// LoadSettings loads the settings from commandline and the required config file
+// LoadSettings loads the settings from commandline and the required config file.
 func LoadSettings(args []string) (Settings, error) {
-
 	// Start with command line to find the config file name
 	clArgs, clErr := ParseCommandLine(args)
 	if clErr != nil {
@@ -68,14 +67,13 @@ func LoadSettings(args []string) (Settings, error) {
 	return combined, nil
 }
 
-// ParseConfigBuffer reads config from a generic Reader
+// ParseConfigBuffer reads config from a generic Reader.
 func ParseConfigBuffer(in io.Reader, format string) (Settings, error) {
 	settings := make(Settings)
 
 	viper.SetConfigType(format)
 	err := viper.ReadConfig(in)
 	if err == nil {
-
 		for _, k := range viper.AllKeys() {
 			m := viper.GetStringSlice(k)
 			fmt.Printf("m:%q\n", m)
@@ -89,9 +87,8 @@ func ParseConfigBuffer(in io.Reader, format string) (Settings, error) {
 	return settings, err
 }
 
-// ParseConfigFile reads the file using Viper
+// ParseConfigFile reads the file using Viper.
 func ParseConfigFile(configFileName string) (Settings, error) {
-
 	components := strings.Split(configFileName, ".")
 	format := components[len(components)-1]
 
@@ -112,7 +109,7 @@ func ParseConfigFile(configFileName string) (Settings, error) {
 	return settings, err
 }
 
-// ParseCommandLine takes an array of string and turns them into keyvalue pairs
+// ParseCommandLine takes an array of string and turns them into keyvalue pairs.
 func ParseCommandLine(arguments []string) (Settings, error) {
 	args := make(Settings)
 	lookingForValue := false
@@ -148,7 +145,7 @@ func ParseCommandLine(arguments []string) (Settings, error) {
 	return args, nil
 }
 
-// RequiredSettingsPresent Foo
+// RequiredSettingsPresent Foo.
 func (settings Settings) RequiredSettingsPresent(requiredSettings Settings) error {
 	missingFlags := []string{}
 
@@ -165,7 +162,7 @@ func (settings Settings) RequiredSettingsPresent(requiredSettings Settings) erro
 	return nil
 }
 
-// FilterNamespaces returns a copy of settings belonging to given namespace or no namespace
+// FilterNamespaces returns a copy of settings belonging to given namespace or no namespace.
 func (settings Settings) FilterNamespaces(nsKeep string) Settings {
 	remaining := make(Settings)
 
@@ -180,7 +177,7 @@ func (settings Settings) FilterNamespaces(nsKeep string) Settings {
 	return remaining
 }
 
-//GetString returns value of given commandline flag
+// GetString returns value of given commandline flag.
 func (settings Settings) GetString(name string) (string, bool) {
 	flag, present := settings[strings.ToLower(name)]
 
