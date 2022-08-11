@@ -752,7 +752,7 @@ export const getMetamorphicAddress = (
 };
 
 export const getReceiptForFailedTransaction = async (
-  tx: Promise<ContractReceipt>
+  tx: Promise<any>
 ): Promise<any> => {
   let receipt: any;
   try {

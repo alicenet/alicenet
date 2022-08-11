@@ -1,5 +1,9 @@
 import { ethers } from "hardhat";
-import { getFixture, getValidatorEthAccount } from "../../../setup";
+import {
+  getFixture,
+  getReceiptForFailedTransaction,
+  getValidatorEthAccount,
+} from "../../../setup";
 import { validators10 } from "../../assets/10-validators-successful-case";
 import { validators4 } from "../../assets/4-validators-successful-case";
 import {
@@ -117,14 +121,25 @@ describe("ETHDKG: Missing registration Accusation", () => {
       expectedNonce
     );
 
-    await expect(
-      ethdkg.accuseParticipantNotRegistered([validators4[2].address])
-    )
-      .to.be.revertedWithCustomError(
-        ETHDKGAccusations,
-        `ETHDKGNotInPostRegistrationAccusationPhase`
-      )
-      .withArgs(Phase.RegistrationOpen);
+    const txPromise = ethdkg.accuseParticipantNotRegistered([
+      validators4[2].address,
+    ]);
+    const expectedBlockNumber = (
+      await getReceiptForFailedTransaction(txPromise)
+    ).blockNumber;
+    const expectedCurrentPhase = await ethdkg.getETHDKGPhase();
+    const phaseStartBlock = await ethdkg.getPhaseStartBlock();
+    const phaseLength = await ethdkg.getPhaseLength();
+
+    await expect(txPromise)
+      .to.be.revertedWithCustomError(ETHDKGAccusations, `IncorrectPhase`)
+      .withArgs(expectedCurrentPhase, expectedBlockNumber, [
+        [
+          Phase.RegistrationOpen,
+          phaseStartBlock.add(phaseLength),
+          phaseStartBlock.add(phaseLength.mul(2)),
+        ],
+      ]);
     expect(await ethdkg.getBadParticipants()).to.equal(0);
     await assertETHDKGPhase(ethdkg, Phase.RegistrationOpen);
   });
@@ -364,15 +379,26 @@ describe("ETHDKG: Missing registration Accusation", () => {
     // move to the end of RegistrationAccusation phase
     await endCurrentAccusationPhase(ethdkg);
 
+    const txPromise = ethdkg.accuseParticipantNotRegistered([
+      validators4[2].address,
+    ]);
+    const expectedBlockNumber = (
+      await getReceiptForFailedTransaction(txPromise)
+    ).blockNumber;
+    const expectedCurrentPhase = await ethdkg.getETHDKGPhase();
+    const phaseStartBlock = await ethdkg.getPhaseStartBlock();
+    const phaseLength = await ethdkg.getPhaseLength();
+
     // accuse a non-participant validator
-    await expect(
-      ethdkg.accuseParticipantNotRegistered([validators4[2].address])
-    )
-      .to.be.revertedWithCustomError(
-        ETHDKGAccusations,
-        `ETHDKGNotInPostRegistrationAccusationPhase`
-      )
-      .withArgs(Phase.RegistrationOpen);
+    await expect(txPromise)
+      .to.be.revertedWithCustomError(ETHDKGAccusations, `IncorrectPhase`)
+      .withArgs(expectedCurrentPhase, expectedBlockNumber, [
+        [
+          Phase.RegistrationOpen,
+          phaseStartBlock.add(phaseLength),
+          phaseStartBlock.add(phaseLength.mul(2)),
+        ],
+      ]);
 
     expect(await ethdkg.getBadParticipants()).to.equal(0);
   });

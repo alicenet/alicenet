@@ -1,6 +1,10 @@
 import { BigNumberish } from "ethers";
 import { ethers } from "hardhat";
-import { getValidatorEthAccount, mineBlocks } from "../../setup";
+import {
+  getReceiptForFailedTransaction,
+  getValidatorEthAccount,
+  mineBlocks,
+} from "../../setup";
 import { validators4BadDistributeSharesLast } from "../assets/4-validators-1-bad-distribute-shares-last";
 import { validators4BadDistributeShares } from "../assets/4-validators-bad-distribute-shares";
 import { validators4 } from "../assets/4-validators-successful-case";
@@ -29,22 +33,35 @@ describe("ETHDKG: Dispute bad shares", () => {
       ethdkg.address
     );
     // try accusing bad shares
-    await expect(
-      ethdkg
-        .connect(await getValidatorEthAccount(validators4[0]))
-        .accuseParticipantDistributedBadShares(
-          PLACEHOLDER_ADDRESS,
-          [],
-          [[0, 0]],
-          [0, 0],
-          [0, 0]
-        )
-    )
-      .to.be.revertedWithCustomError(
-        ETHDKGAccusations,
-        `ETHDKGNotInDisputePhase`
-      )
-      .withArgs(Phase.ShareDistribution);
+    const txPromise = ethdkg
+      .connect(await getValidatorEthAccount(validators4[0]))
+      .accuseParticipantDistributedBadShares(
+        PLACEHOLDER_ADDRESS,
+        [],
+        [[0, 0]],
+        [0, 0],
+        [0, 0]
+      );
+    const expectedBlockNumber = (
+      await getReceiptForFailedTransaction(txPromise)
+    ).blockNumber;
+    const expectedCurrentPhase = await ethdkg.getETHDKGPhase();
+    const phaseStartBlock = await ethdkg.getPhaseStartBlock();
+    const phaseLength = await ethdkg.getPhaseLength();
+    await expect(txPromise)
+      .to.be.revertedWithCustomError(ETHDKGAccusations, `IncorrectPhase`)
+      .withArgs(expectedCurrentPhase, expectedBlockNumber, [
+        [
+          Phase.DisputeShareDistribution,
+          phaseStartBlock,
+          phaseStartBlock.add(phaseLength),
+        ],
+        [
+          Phase.ShareDistribution,
+          phaseStartBlock.add(phaseLength),
+          phaseStartBlock.add(phaseLength.mul(2)),
+        ],
+      ]);
   });
 
   it("should not allow accusations unless in DisputeShareDistribution phase, or expired ShareDistribution phase", async function () {
@@ -57,22 +74,34 @@ describe("ETHDKG: Dispute bad shares", () => {
       ethdkg.address
     );
     // try accusing bad shares
-    await expect(
-      ethdkg
-        .connect(await getValidatorEthAccount(validators4[0]))
-        .accuseParticipantDistributedBadShares(
-          PLACEHOLDER_ADDRESS,
-          [],
-          [[0, 0]],
-          [0, 0],
-          [0, 0]
-        )
-    )
-      .to.be.revertedWithCustomError(
-        ETHDKGAccusations,
-        `ETHDKGNotInDisputePhase`
-      )
-      .withArgs(Phase.ShareDistribution);
+    let txPromise = ethdkg
+      .connect(await getValidatorEthAccount(validators4[0]))
+      .accuseParticipantDistributedBadShares(
+        PLACEHOLDER_ADDRESS,
+        [],
+        [[0, 0]],
+        [0, 0],
+        [0, 0]
+      );
+    let expectedBlockNumber = (await getReceiptForFailedTransaction(txPromise))
+      .blockNumber;
+    let expectedCurrentPhase = await ethdkg.getETHDKGPhase();
+    let phaseStartBlock = await ethdkg.getPhaseStartBlock();
+    const phaseLength = await ethdkg.getPhaseLength();
+    await expect(txPromise)
+      .to.be.revertedWithCustomError(ETHDKGAccusations, `IncorrectPhase`)
+      .withArgs(expectedCurrentPhase, expectedBlockNumber, [
+        [
+          Phase.DisputeShareDistribution,
+          phaseStartBlock,
+          phaseStartBlock.add(phaseLength),
+        ],
+        [
+          Phase.ShareDistribution,
+          phaseStartBlock.add(phaseLength),
+          phaseStartBlock.add(phaseLength.mul(2)),
+        ],
+      ]);
 
     // distribute shares
     await distributeValidatorsShares(
@@ -96,43 +125,67 @@ describe("ETHDKG: Dispute bad shares", () => {
     );
 
     // try accusing bad shares
-    await expect(
-      ethdkg
-        .connect(await getValidatorEthAccount(validators4[0]))
-        .accuseParticipantDistributedBadShares(
-          PLACEHOLDER_ADDRESS,
-          [],
-          [[0, 0]],
-          [0, 0],
-          [0, 0]
-        )
-    )
-      .to.be.revertedWithCustomError(
-        ETHDKGAccusations,
-        `ETHDKGNotInDisputePhase`
-      )
-      .withArgs(Phase.MPKSubmission);
+    txPromise = ethdkg
+      .connect(await getValidatorEthAccount(validators4[0]))
+      .accuseParticipantDistributedBadShares(
+        PLACEHOLDER_ADDRESS,
+        [],
+        [[0, 0]],
+        [0, 0],
+        [0, 0]
+      );
+    phaseStartBlock = await ethdkg.getPhaseStartBlock();
+    expectedBlockNumber = (await getReceiptForFailedTransaction(txPromise))
+      .blockNumber;
+    expectedCurrentPhase = await ethdkg.getETHDKGPhase();
+
+    await expect(txPromise)
+      .to.be.revertedWithCustomError(ETHDKGAccusations, `IncorrectPhase`)
+      .withArgs(expectedCurrentPhase, expectedBlockNumber, [
+        [
+          Phase.DisputeShareDistribution,
+          phaseStartBlock,
+          phaseStartBlock.add(phaseLength),
+        ],
+        [
+          Phase.ShareDistribution,
+          phaseStartBlock.add(phaseLength),
+          phaseStartBlock.add(phaseLength.mul(2)),
+        ],
+      ]);
 
     // await endCurrentPhase(ethdkg)
     await assertETHDKGPhase(ethdkg, Phase.MPKSubmission);
 
     // try accusing bad shares
-    await expect(
-      ethdkg
-        .connect(await getValidatorEthAccount(validators4[0]))
-        .accuseParticipantDistributedBadShares(
-          PLACEHOLDER_ADDRESS,
-          [],
-          [[0, 0]],
-          [0, 0],
-          [0, 0]
-        )
-    )
-      .to.be.revertedWithCustomError(
-        ETHDKGAccusations,
-        `ETHDKGNotInDisputePhase`
-      )
-      .withArgs(Phase.MPKSubmission);
+    txPromise = ethdkg
+      .connect(await getValidatorEthAccount(validators4[0]))
+      .accuseParticipantDistributedBadShares(
+        PLACEHOLDER_ADDRESS,
+        [],
+        [[0, 0]],
+        [0, 0],
+        [0, 0]
+      );
+    phaseStartBlock = await ethdkg.getPhaseStartBlock();
+    expectedBlockNumber = (await getReceiptForFailedTransaction(txPromise))
+      .blockNumber;
+    expectedCurrentPhase = await ethdkg.getETHDKGPhase();
+
+    await expect(txPromise)
+      .to.be.revertedWithCustomError(ETHDKGAccusations, `IncorrectPhase`)
+      .withArgs(expectedCurrentPhase, expectedBlockNumber, [
+        [
+          Phase.DisputeShareDistribution,
+          phaseStartBlock,
+          phaseStartBlock.add(phaseLength),
+        ],
+        [
+          Phase.ShareDistribution,
+          phaseStartBlock.add(phaseLength),
+          phaseStartBlock.add(phaseLength.mul(2)),
+        ],
+      ]);
 
     // submit MPK
     await mineBlocks((await ethdkg.getConfirmationLength()).toBigInt());
@@ -141,22 +194,34 @@ describe("ETHDKG: Dispute bad shares", () => {
     await assertETHDKGPhase(ethdkg, Phase.GPKJSubmission);
 
     // try accusing bad shares
-    await expect(
-      ethdkg
-        .connect(await getValidatorEthAccount(validators4[0]))
-        .accuseParticipantDistributedBadShares(
-          PLACEHOLDER_ADDRESS,
-          [],
-          [[0, 0]],
-          [0, 0],
-          [0, 0]
-        )
-    )
-      .to.be.revertedWithCustomError(
-        ETHDKGAccusations,
-        `ETHDKGNotInDisputePhase`
-      )
-      .withArgs(Phase.GPKJSubmission);
+    txPromise = ethdkg
+      .connect(await getValidatorEthAccount(validators4[0]))
+      .accuseParticipantDistributedBadShares(
+        PLACEHOLDER_ADDRESS,
+        [],
+        [[0, 0]],
+        [0, 0],
+        [0, 0]
+      );
+    phaseStartBlock = await ethdkg.getPhaseStartBlock();
+    expectedBlockNumber = (await getReceiptForFailedTransaction(txPromise))
+      .blockNumber;
+    expectedCurrentPhase = await ethdkg.getETHDKGPhase();
+
+    await expect(txPromise)
+      .to.be.revertedWithCustomError(ETHDKGAccusations, `IncorrectPhase`)
+      .withArgs(expectedCurrentPhase, expectedBlockNumber, [
+        [
+          Phase.DisputeShareDistribution,
+          phaseStartBlock,
+          phaseStartBlock.add(phaseLength),
+        ],
+        [
+          Phase.ShareDistribution,
+          phaseStartBlock.add(phaseLength),
+          phaseStartBlock.add(phaseLength.mul(2)),
+        ],
+      ]);
 
     // submit GPKj
     await submitValidatorsGPKJ(
@@ -170,41 +235,66 @@ describe("ETHDKG: Dispute bad shares", () => {
     await assertETHDKGPhase(ethdkg, Phase.DisputeGPKJSubmission);
 
     // try accusing bad shares
-    await expect(
-      ethdkg
-        .connect(await getValidatorEthAccount(validators4[0]))
-        .accuseParticipantDistributedBadShares(
-          PLACEHOLDER_ADDRESS,
-          [],
-          [[0, 0]],
-          [0, 0],
-          [0, 0]
-        )
-    )
-      .to.be.revertedWithCustomError(
-        ETHDKGAccusations,
-        `ETHDKGNotInDisputePhase`
-      )
-      .withArgs(Phase.DisputeGPKJSubmission);
+    txPromise = ethdkg
+      .connect(await getValidatorEthAccount(validators4[0]))
+      .accuseParticipantDistributedBadShares(
+        PLACEHOLDER_ADDRESS,
+        [],
+        [[0, 0]],
+        [0, 0],
+        [0, 0]
+      );
+    phaseStartBlock = await ethdkg.getPhaseStartBlock();
+    expectedBlockNumber = (await getReceiptForFailedTransaction(txPromise))
+      .blockNumber;
+    expectedCurrentPhase = await ethdkg.getETHDKGPhase();
+
+    await expect(txPromise)
+      .to.be.revertedWithCustomError(ETHDKGAccusations, `IncorrectPhase`)
+      .withArgs(expectedCurrentPhase, expectedBlockNumber, [
+        [
+          Phase.DisputeShareDistribution,
+          phaseStartBlock,
+          phaseStartBlock.add(phaseLength),
+        ],
+        [
+          Phase.ShareDistribution,
+          phaseStartBlock.add(phaseLength),
+          phaseStartBlock.add(phaseLength.mul(2)),
+        ],
+      ]);
+
     await endCurrentPhase(ethdkg);
 
     // try accusing bad shares
-    await expect(
-      ethdkg
-        .connect(await getValidatorEthAccount(validators4[0]))
-        .accuseParticipantDistributedBadShares(
-          PLACEHOLDER_ADDRESS,
-          [],
-          [[0, 0]],
-          [0, 0],
-          [0, 0]
-        )
-    )
-      .to.be.revertedWithCustomError(
-        ETHDKGAccusations,
-        `ETHDKGNotInDisputePhase`
-      )
-      .withArgs(Phase.DisputeGPKJSubmission);
+    txPromise = ethdkg
+      .connect(await getValidatorEthAccount(validators4[0]))
+      .accuseParticipantDistributedBadShares(
+        PLACEHOLDER_ADDRESS,
+        [],
+        [[0, 0]],
+        [0, 0],
+        [0, 0]
+      );
+    phaseStartBlock = await ethdkg.getPhaseStartBlock();
+    expectedBlockNumber = (await getReceiptForFailedTransaction(txPromise))
+      .blockNumber;
+    expectedCurrentPhase = await ethdkg.getETHDKGPhase();
+
+    await expect(txPromise)
+      .to.be.revertedWithCustomError(ETHDKGAccusations, `IncorrectPhase`)
+      .withArgs(expectedCurrentPhase, expectedBlockNumber, [
+        [
+          Phase.DisputeShareDistribution,
+          phaseStartBlock,
+          phaseStartBlock.add(phaseLength),
+        ],
+        [
+          Phase.ShareDistribution,
+          phaseStartBlock.add(phaseLength),
+          phaseStartBlock.add(phaseLength.mul(2)),
+        ],
+      ]);
 
     // complete ethdkg
     await completeETHDKG(ethdkg, validators4, expectedNonce, 0, 0);
@@ -212,22 +302,34 @@ describe("ETHDKG: Dispute bad shares", () => {
     await assertETHDKGPhase(ethdkg, Phase.Completion);
 
     // try accusing bad shares
-    await expect(
-      ethdkg
-        .connect(await ethers.getSigner(validators4[0].address))
-        .accuseParticipantDistributedBadShares(
-          PLACEHOLDER_ADDRESS,
-          [],
-          [[0, 0]],
-          [0, 0],
-          [0, 0]
-        )
-    )
-      .to.be.revertedWithCustomError(
-        ETHDKGAccusations,
-        `ETHDKGNotInDisputePhase`
-      )
-      .withArgs(Phase.Completion);
+    txPromise = ethdkg
+      .connect(await ethers.getSigner(validators4[0].address))
+      .accuseParticipantDistributedBadShares(
+        PLACEHOLDER_ADDRESS,
+        [],
+        [[0, 0]],
+        [0, 0],
+        [0, 0]
+      );
+    phaseStartBlock = await ethdkg.getPhaseStartBlock();
+    expectedBlockNumber = (await getReceiptForFailedTransaction(txPromise))
+      .blockNumber;
+    expectedCurrentPhase = await ethdkg.getETHDKGPhase();
+
+    await expect(txPromise)
+      .to.be.revertedWithCustomError(ETHDKGAccusations, `IncorrectPhase`)
+      .withArgs(expectedCurrentPhase, expectedBlockNumber, [
+        [
+          Phase.DisputeShareDistribution,
+          phaseStartBlock,
+          phaseStartBlock.add(phaseLength),
+        ],
+        [
+          Phase.ShareDistribution,
+          phaseStartBlock.add(phaseLength),
+          phaseStartBlock.add(phaseLength.mul(2)),
+        ],
+      ]);
   });
 
   it("should not allow accusation of a non-participating validator", async function () {
@@ -736,29 +838,42 @@ describe("ETHDKG: Dispute bad shares", () => {
       .withArgs(Phase.ShareDistribution);
 
     // try accusing the 1st validator again of bad shares using valid encrypted shares and commitments
-    await expect(
-      ethdkg
-        .connect(
-          await getValidatorEthAccount(validators4BadDistributeSharesLast[2])
-        )
-        .accuseParticipantDistributedBadShares(
-          validators4BadDistributeSharesLast[0].address,
-          validators4BadDistributeSharesLast[0].encryptedShares,
-          validators4BadDistributeSharesLast[0].commitments,
-          validators4BadDistributeSharesLast[2].sharedKey as [
-            BigNumberish,
-            BigNumberish
-          ],
-          validators4BadDistributeSharesLast[2].sharedKeyProof as [
-            BigNumberish,
-            BigNumberish
-          ]
-        )
-    )
-      .to.be.revertedWithCustomError(
-        ETHDKGAccusations,
-        `ETHDKGNotInDisputePhase`
+    const txPromise = ethdkg
+      .connect(
+        await getValidatorEthAccount(validators4BadDistributeSharesLast[2])
       )
-      .withArgs(Phase.ShareDistribution);
+      .accuseParticipantDistributedBadShares(
+        validators4BadDistributeSharesLast[0].address,
+        validators4BadDistributeSharesLast[0].encryptedShares,
+        validators4BadDistributeSharesLast[0].commitments,
+        validators4BadDistributeSharesLast[2].sharedKey as [
+          BigNumberish,
+          BigNumberish
+        ],
+        validators4BadDistributeSharesLast[2].sharedKeyProof as [
+          BigNumberish,
+          BigNumberish
+        ]
+      );
+    const expectedBlockNumber = (
+      await getReceiptForFailedTransaction(txPromise)
+    ).blockNumber;
+    const expectedCurrentPhase = await ethdkg.getETHDKGPhase();
+    const phaseStartBlock = await ethdkg.getPhaseStartBlock();
+    const phaseLength = await ethdkg.getPhaseLength();
+    await expect(txPromise)
+      .to.be.revertedWithCustomError(ETHDKGAccusations, `IncorrectPhase`)
+      .withArgs(expectedCurrentPhase, expectedBlockNumber, [
+        [
+          Phase.DisputeShareDistribution,
+          phaseStartBlock,
+          phaseStartBlock.add(phaseLength),
+        ],
+        [
+          Phase.ShareDistribution,
+          phaseStartBlock.add(phaseLength),
+          phaseStartBlock.add(phaseLength.mul(2)),
+        ],
+      ]);
   });
 });

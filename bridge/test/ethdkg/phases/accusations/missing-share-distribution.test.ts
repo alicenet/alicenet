@@ -1,5 +1,8 @@
 import { ethers } from "hardhat";
-import { getValidatorEthAccount } from "../../../setup";
+import {
+  getReceiptForFailedTransaction,
+  getValidatorEthAccount,
+} from "../../../setup";
 import { validators4 } from "../../assets/4-validators-successful-case";
 import {
   distributeValidatorsShares,
@@ -171,14 +174,25 @@ describe("ETHDKG: Missing distribute share accusation", () => {
       expectedNonce
     );
 
-    await expect(
-      ethdkg.accuseParticipantDidNotDistributeShares([validators4[2].address])
-    )
-      .to.be.revertedWithCustomError(
-        ETHDKGAccusations,
-        `NotInPostSharedDistributionPhase`
-      )
-      .withArgs(Phase.ShareDistribution);
+    const txPromise = ethdkg.accuseParticipantDidNotDistributeShares([
+      validators4[2].address,
+    ]);
+    const expectedBlockNumber = (
+      await getReceiptForFailedTransaction(txPromise)
+    ).blockNumber;
+    const expectedCurrentPhase = await ethdkg.getETHDKGPhase();
+    const phaseStartBlock = await ethdkg.getPhaseStartBlock();
+    const phaseLength = await ethdkg.getPhaseLength();
+
+    await expect(txPromise)
+      .to.be.revertedWithCustomError(ETHDKGAccusations, `IncorrectPhase`)
+      .withArgs(expectedCurrentPhase, expectedBlockNumber, [
+        [
+          Phase.ShareDistribution,
+          phaseStartBlock.add(phaseLength),
+          phaseStartBlock.add(phaseLength.mul(2)),
+        ],
+      ]);
   });
 
   it("should not allow validators who did not distributed shares in time to distribute on the accusation phase", async function () {
@@ -360,14 +374,25 @@ describe("ETHDKG: Missing distribute share accusation", () => {
 
     await endCurrentAccusationPhase(ethdkg);
 
-    await expect(
-      ethdkg.accuseParticipantDidNotDistributeShares([validators4[2].address])
-    )
-      .to.be.revertedWithCustomError(
-        ETHDKGAccusations,
-        `NotInPostSharedDistributionPhase`
-      )
-      .withArgs(Phase.ShareDistribution);
+    const txPromise = ethdkg.accuseParticipantDidNotDistributeShares([
+      validators4[2].address,
+    ]);
+    const expectedBlockNumber = (
+      await getReceiptForFailedTransaction(txPromise)
+    ).blockNumber;
+    const expectedCurrentPhase = await ethdkg.getETHDKGPhase();
+    const phaseStartBlock = await ethdkg.getPhaseStartBlock();
+    const phaseLength = await ethdkg.getPhaseLength();
+
+    await expect(txPromise)
+      .to.be.revertedWithCustomError(ETHDKGAccusations, `IncorrectPhase`)
+      .withArgs(expectedCurrentPhase, expectedBlockNumber, [
+        [
+          Phase.ShareDistribution,
+          phaseStartBlock.add(phaseLength),
+          phaseStartBlock.add(phaseLength.mul(2)),
+        ],
+      ]);
   });
 
   it("should not allow accusing a user that distributed the shares in the middle of the ones that did not", async function () {

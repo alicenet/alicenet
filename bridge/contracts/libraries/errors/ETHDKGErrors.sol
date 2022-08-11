@@ -7,14 +7,16 @@ library ETHDKGErrors {
     error OnlyValidatorsAllowed(address sender);
     error VariableNotSettableWhileETHDKGRunning();
     error MinimumValidatorsNotMet(uint256 currentValidatorsLength);
-    error ETHDKGNotInPostRegistrationAccusationPhase(Phase currentPhase);
+    error IncorrectPhase(
+        Phase currentPhase,
+        uint256 currentBlockNumber,
+        PhaseInformation[] expectedPhases
+    );
     error AccusedNotValidator(address accused);
     error AccusedParticipatingInRound(address accused);
-    error NotInPostSharedDistributionPhase(Phase currentPhase);
     error AccusedNotParticipatingInRound(address accused);
     error AccusedDistributedSharesInRound(address accused);
     error AccusedHasCommitments(address accused);
-    error ETHDKGNotInDisputePhase(Phase currentPhase);
     error DisputerNotParticipatingInRound(address disputer);
     error AccusedDidNotDistributeSharesInRound(address accused);
     error DisputerDidNotDistributeSharesInRound(address disputer);
