@@ -8,6 +8,7 @@ import (
 	"github.com/alicenet/alicenet/layer1/executor/tasks/snapshots"
 	"reflect"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/alicenet/alicenet/consensus/db"
@@ -36,7 +37,8 @@ type TaskManager struct {
 	database       *db.Database                   `json:"-"`
 	adminHandler   monitorInterfaces.AdminHandler `json:"-"`
 	marshaller     *marshaller.TypeRegistry       `json:"-"`
-	cancelChan     chan bool                      `json:"-"`
+	closeChan      chan struct{}                  `json:"-"`
+	closeOnce      sync.Once                      `json:"-"`
 	requestChan    <-chan managerRequest          `json:"-"`
 	responseChan   *executorResponseChan          `json:"-"`
 	logger         *logrus.Entry                  `json:"-"`
@@ -54,7 +56,8 @@ func newTaskManager(mainCtx context.Context, eth layer1.Client, contracts layer1
 		contracts:    contracts,
 		adminHandler: adminHandler,
 		marshaller:   getTaskRegistry(),
-		cancelChan:   make(chan bool, 1),
+		closeChan:    make(chan struct{}),
+		closeOnce:    sync.Once{},
 		requestChan:  requestChan,
 		responseChan: &executorResponseChan{erChan: make(chan ExecutorResponse, 100)},
 		logger:       logger,
@@ -92,8 +95,11 @@ func (tm *TaskManager) start() {
 
 // close the TaskManager execution.
 func (tm *TaskManager) close() {
-	tm.logger.Warn("Closing task manager")
-	tm.cancelChan <- true
+	tm.closeOnce.Do(func() {
+		tm.logger.Warn("Closing task manager")
+		tm.responseChan.close()
+		close(tm.closeChan)
+	})
 }
 
 // eventLoop where the interaction with all the pieces is developed.
@@ -102,10 +108,8 @@ func (tm *TaskManager) eventLoop() {
 
 	for {
 		select {
-		case <-tm.cancelChan:
-			tm.logger.Warn("Received closing context request")
-			close(tm.cancelChan)
-			tm.responseChan.close()
+		case <-tm.closeChan:
+			tm.logger.Warn("Received closing request")
 			return
 
 		case taskRequest, ok := <-tm.requestChan:
@@ -261,7 +265,7 @@ func (tm *TaskManager) schedule(ctx context.Context, task tasks.Task, id string)
 			HandlerResponse: newHandlerResponse(),
 		}
 		tm.Responses[id] = taskResp
-		getTaskLoggerComplete(taskReq).Debug("Received task request")
+		getTaskLoggerComplete(tm.logger, taskReq).Debug("Received task request")
 
 		return nil, taskResp.HandlerResponse
 	}
@@ -291,7 +295,7 @@ func (tm *TaskManager) processTaskResponse(ctx context.Context, executorResponse
 		taskResp.HandlerResponse.writeResponse(executorResponse.Err)
 		tm.Responses[executorResponse.Id] = taskResp
 
-		logger = getTaskLoggerComplete(task)
+		logger = getTaskLoggerComplete(tm.logger, task)
 		if executorResponse.Err != nil {
 			if !errors.Is(executorResponse.Err, context.Canceled) {
 				logger.Errorf("Task executed with error: %v", executorResponse.Err)
@@ -318,9 +322,8 @@ func (tm *TaskManager) startTasks(ctx context.Context, tasks []ManagerRequestInf
 		tm.logger.Debug("Looking for starting tasks")
 		for i := 0; i < len(tasks); i++ {
 			task := tasks[i]
-			logEntry := getTaskLogger(task)
-			logEntry = logEntry.WithField("taskId", task.Id).WithField("taskName", task.Name)
-			getTaskLoggerComplete(task).Info("task is about to start")
+			logEntry := getTaskLoggerComplete(tm.logger, task)
+			logEntry.Info("task is about to start")
 
 			go tm.taskExecutor.handleTaskExecution(ctx, task.Task, task.Name, task.Id, task.Start, task.End, task.AllowMultiExecution, task.SubscribeOptions, tm.database, logEntry, tm.eth, tm.contracts, tm.responseChan)
 
@@ -393,16 +396,16 @@ func (tm *TaskManager) killTasks(ctx context.Context, tasks []ManagerRequestInfo
 
 // killTask in a way depending on its state.
 func (tm *TaskManager) killTask(task ManagerRequestInfo) error {
-	getTaskLoggerComplete(task).Info("Task is about to be killed")
+	getTaskLoggerComplete(tm.logger, task).Info("Task is about to be killed")
 	if task.InternalState == Running {
 		task.Task.Close()
 		task.InternalState = Killed
 		task.killedAt = tm.LastHeightSeen
 		tm.Schedule[task.Id] = task
 	} else if task.InternalState == Killed {
-		getTaskLoggerComplete(task).Error("Task already killed")
+		getTaskLoggerComplete(tm.logger, task).Error("Task already killed")
 	} else {
-		getTaskLoggerComplete(task).Trace("Task is not running yet, pruning directly")
+		getTaskLoggerComplete(tm.logger, task).Trace("Task is not running yet, pruning directly")
 
 		taskResp, present := tm.Responses[task.Id]
 		if !present {
@@ -670,21 +673,9 @@ func (tm *TaskManager) UnmarshalJSON(raw []byte) error {
 	return nil
 }
 
-// getTaskLogger with essential fields.
-func getTaskLogger(taskReq ManagerRequestInfo) *logrus.Entry {
-	logger := logging.GetLogger("tasks")
-	logEntry := logger.WithFields(logrus.Fields{
-		"Component": "task",
-		"taskStart": taskReq.Start,
-		"taskEnd":   taskReq.End,
-	})
-	return logEntry
-}
-
 // getTaskLoggerComplete with all the fields.
-func getTaskLoggerComplete(taskReq ManagerRequestInfo) *logrus.Entry {
-	logger := logging.GetLogger("tasks")
-	logEntry := logger.WithFields(logrus.Fields{
+func getTaskLoggerComplete(logger *logrus.Entry, taskReq ManagerRequestInfo) *logrus.Entry {
+	return logger.WithFields(logrus.Fields{
 		"Component": "task",
 		"taskName":  taskReq.Name,
 		"taskStart": taskReq.Start,
@@ -692,7 +683,6 @@ func getTaskLoggerComplete(taskReq ManagerRequestInfo) *logrus.Entry {
 		"taskId":    taskReq.Id,
 		"state":     taskReq.InternalState,
 	})
-	return logEntry
 }
 
 // getTaskRegistry all the Tasks we can handle in the request.

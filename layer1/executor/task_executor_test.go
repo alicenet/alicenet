@@ -3,6 +3,9 @@ package executor
 import (
 	"context"
 	"errors"
+	"github.com/alicenet/alicenet/constants/dbprefix"
+	"github.com/alicenet/alicenet/utils"
+	"github.com/stretchr/testify/require"
 	"io/ioutil"
 	"math/big"
 	"os"
@@ -43,12 +46,15 @@ func getTaskExecutor(t *testing.T) (*TaskExecutor, *mocks.MockClient, *db.Databa
 	assert.Nil(t, err)
 
 	taskRespChan := &executorResponseChan{erChan: make(chan ExecutorResponse, 100)}
+
+	t.Cleanup(func() {
+		taskRespChan.close()
+	})
 	return taskExecutor, client, db, taskRespChan, txWatcher
 }
 
 func Test_TaskExecutor_HappyPath(t *testing.T) {
 	executor, client, db, taskRespChan, txWatcher := getTaskExecutor(t)
-	defer taskRespChan.close()
 
 	receipt := &types.Receipt{
 		Status:      types.ReceiptStatusSuccessful,
@@ -87,7 +93,6 @@ func Test_TaskExecutor_HappyPath(t *testing.T) {
 
 func Test_TaskExecutor_TaskErrorRecoverable(t *testing.T) {
 	executor, client, db, taskRespChan, txWatcher := getTaskExecutor(t)
-	defer taskRespChan.close()
 
 	receipt := &types.Receipt{
 		Status:      types.ReceiptStatusSuccessful,
@@ -128,7 +133,6 @@ func Test_TaskExecutor_TaskErrorRecoverable(t *testing.T) {
 
 func Test_TaskExecutor_UnrecoverableError(t *testing.T) {
 	executor, client, db, taskRespChan, txWatcher := getTaskExecutor(t)
-	defer taskRespChan.close()
 
 	receipt := &types.Receipt{
 		Status:      types.ReceiptStatusSuccessful,
@@ -158,7 +162,6 @@ func Test_TaskExecutor_UnrecoverableError(t *testing.T) {
 
 func Test_TaskExecutor_TaskInTasksExecutorTransactions(t *testing.T) {
 	executor, client, db, taskRespChan, txWatcher := getTaskExecutor(t)
-	defer taskRespChan.close()
 
 	receipt := &types.Receipt{
 		Status:      types.ReceiptStatusSuccessful,
@@ -198,7 +201,6 @@ func Test_TaskExecutor_TaskInTasksExecutorTransactions(t *testing.T) {
 
 func Test_TaskExecutor_ExecuteWithErrors(t *testing.T) {
 	executor, client, db, taskRespChan, txWatcher := getTaskExecutor(t)
-	defer taskRespChan.close()
 
 	receipt := &types.Receipt{
 		Status:      types.ReceiptStatusSuccessful,
@@ -232,7 +234,6 @@ func Test_TaskExecutor_ExecuteWithErrors(t *testing.T) {
 
 func Test_TaskExecutor_ReceiptWithErrorAndFailure(t *testing.T) {
 	executor, client, db, taskRespChan, txWatcher := getTaskExecutor(t)
-	defer taskRespChan.close()
 
 	receipt := &types.Receipt{
 		Status:      types.ReceiptStatusFailed,
@@ -365,4 +366,87 @@ func Test_TaskExecutor_Recovering(t *testing.T) {
 	mockrequire.CalledOnceWith(t, task.FinishFunc, mockrequire.Values(nil))
 	assert.Emptyf(t, executor.TxsBackup, "Expected transactions to be empty")
 
+}
+
+func Test_TaskExecutor_TxFromBackupStale(t *testing.T) {
+	executor, client, db, taskRespChan, txWatcher := getTaskExecutor(t)
+
+	receiptResponse := mocks.NewMockReceiptResponse()
+	receiptResponse.IsReadyFunc.SetDefaultReturn(true)
+	receiptResponse.GetReceiptBlockingFunc.PushReturn(nil, &transaction.ErrTransactionStale{})
+
+	txn := types.NewTx(&types.LegacyTx{
+		Nonce:    1,
+		Value:    big.NewInt(1),
+		Gas:      1,
+		GasPrice: big.NewInt(1),
+		Data:     []byte{52, 66, 175, 92},
+	})
+
+	taskId := "123"
+	task := taskMocks.NewMockTask()
+	task.GetIdFunc.SetDefaultReturn(taskId)
+	task.GetLoggerFunc.SetDefaultReturn(executor.logger)
+	executor.TxsBackup[taskId] = txn
+	txWatcher.SubscribeFunc.PushReturn(receiptResponse, nil)
+
+	mainCtx := context.Background()
+	executor.handleTaskExecution(mainCtx, task, "", "123", 1, 10, false, nil, db, executor.logger, client, mocks.NewMockAllSmartContracts(), taskRespChan)
+
+	mockrequire.CalledOnce(t, txWatcher.SubscribeFunc, 1)
+	mockrequire.CalledOnceWith(t, task.FinishFunc, mockrequire.Values(&transaction.ErrTransactionStale{}))
+}
+
+func Test_TaskExecutor_DbCorrupted(t *testing.T) {
+	database := mocks.NewTestDB()
+
+	err := database.Update(func(txn *badger.Txn) error {
+		key := dbprefix.PrefixTaskExecutorState()
+		rawData := []byte("corrupted data")
+		if err := utils.SetValue(txn, key, rawData); err != nil {
+			return err
+		}
+		return nil
+	})
+	require.Nil(t, err)
+
+	logger := logging.GetLogger("test")
+	txWatcher := mocks.NewMockWatcher()
+	taskExecutor, err := newTaskExecutor(txWatcher, database, logger.WithField("Component", "schedule"))
+	assert.Nil(t, taskExecutor)
+	assert.NotNil(t, err)
+}
+
+func Test_TaskExecutor_InitError(t *testing.T) {
+	executor, client, db, taskRespChan, _ := getTaskExecutor(t)
+
+	taskId := "123"
+	task := taskMocks.NewMockTask()
+	task.GetIdFunc.SetDefaultReturn(taskId)
+	task.GetLoggerFunc.SetDefaultReturn(executor.logger)
+	err := errors.New("init error")
+	task.InitializeFunc.SetDefaultReturn(err)
+
+	mainCtx := context.Background()
+	executor.handleTaskExecution(mainCtx, task, "", "123", 1, 10, false, nil, db, executor.logger, client, mocks.NewMockAllSmartContracts(), taskRespChan)
+
+	mockrequire.CalledOnce(t, task.InitializeFunc)
+	mockrequire.CalledOnceWith(t, task.FinishFunc, mockrequire.Values(err))
+}
+
+func Test_TaskExecutor_MainContextKilled(t *testing.T) {
+	executor, client, db, taskRespChan, _ := getTaskExecutor(t)
+
+	taskId := "123"
+	task := taskMocks.NewMockTask()
+	task.GetIdFunc.SetDefaultReturn(taskId)
+	task.GetLoggerFunc.SetDefaultReturn(executor.logger)
+	task.InitializeFunc.SetDefaultReturn(nil)
+
+	mainCtx, cf := context.WithCancel(context.Background())
+	cf()
+	executor.handleTaskExecution(mainCtx, task, "", "123", 1, 10, false, nil, db, executor.logger, client, mocks.NewMockAllSmartContracts(), taskRespChan)
+
+	mockrequire.CalledOnce(t, task.InitializeFunc)
+	mockrequire.CalledOnceWith(t, task.FinishFunc, mockrequire.Values(context.Canceled))
 }
