@@ -149,6 +149,7 @@ func (t *MultipleProposalAccusationTask) ShouldExecute(ctx context.Context) (boo
 
 	isAccused, err := t.GetContractsHandler().EthereumContracts().MultipleProposalAccusation().IsAccused(callOpts, id)
 	if err != nil {
+		t.GetLogger().Infof("MultipleProposalAccusationTask: error checking IsAccused: %v", err)
 		return true, tasks.NewTaskErr(fmt.Sprintf("MultipleProposalAccusationTask: error getting foo in the example task: %v", err), true)
 	}
 

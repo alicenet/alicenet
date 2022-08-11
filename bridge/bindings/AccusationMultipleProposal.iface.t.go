@@ -7,8 +7,8 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 )
 
-// IMultipleProposalAccusationTransactor ...
-type IMultipleProposalAccusationTransactor interface {
+// IAccusationMultipleProposalTransactor ...
+type IAccusationMultipleProposalTransactor interface {
 	// AccuseMultipleProposal is a paid mutator transaction binding the contract method 0xdfd94cf9.
 	//
 	// Solidity: function accuseMultipleProposal(bytes signature0_, bytes pClaims0_, bytes signature1_, bytes pClaims1_) returns(address)

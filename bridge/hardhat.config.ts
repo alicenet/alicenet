@@ -254,7 +254,8 @@ const config: HardhatUserConfig = {
       "PublicStaking",
       "ValidatorStaking",
       "Governance",
-      "MultipleProposalAccusation",
+      "AccusationMultipleProposal",
+      "AccusationInvalidTxConsumption",
     ],
     except: [
       "I[A-Z].*",

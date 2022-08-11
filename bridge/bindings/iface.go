@@ -20,6 +20,18 @@ type IATokenMinter interface {
 	IATokenMinterFilterer
 }
 
+type IAccusationInvalidTxConsumption interface {
+	IAccusationInvalidTxConsumptionCaller
+	IAccusationInvalidTxConsumptionTransactor
+	IAccusationInvalidTxConsumptionFilterer
+}
+
+type IAccusationMultipleProposal interface {
+	IAccusationMultipleProposalCaller
+	IAccusationMultipleProposalTransactor
+	IAccusationMultipleProposalFilterer
+}
+
 type IAliceNetFactory interface {
 	IAliceNetFactoryCaller
 	IAliceNetFactoryTransactor
@@ -60,12 +72,6 @@ type IGovernanceErrorCodes interface {
 	IGovernanceErrorCodesCaller
 	IGovernanceErrorCodesTransactor
 	IGovernanceErrorCodesFilterer
-}
-
-type IMultipleProposalAccusation interface {
-	IMultipleProposalAccusationCaller
-	IMultipleProposalAccusationTransactor
-	IMultipleProposalAccusationFilterer
 }
 
 type IPublicStaking interface {

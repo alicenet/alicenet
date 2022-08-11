@@ -88,6 +88,13 @@ task("getBytes32Salt", "gets the bytes32 version of salt from contract")
     await showState(salt);
   });
 
+task("getSalt", "gets the string version of salt from contract")
+  .addParam("contractName", "test contract")
+  .setAction(async (taskArgs, hre) => {
+    const salt = await getSalt(taskArgs.contractName, hre);
+    await showState(salt);
+  });
+
 task(
   "deployFactory",
   "Deploys an instance of a factory contract specified by its name"
@@ -1276,6 +1283,18 @@ async function getSalt(
     const path = extractPath(qualifiedName);
     contractOutput = buildInfo.output.contracts[path][contractName];
     devdoc = contractOutput.devdoc;
+    if (devdoc["custom:role"] !== undefined) {
+      let type_ = devdoc["custom:role"];
+      console.log(`found custom:role tag: ${type_}`);
+      let role = hre.ethers.utils.solidityKeccak256(["string"], [type_]);
+      console.log(`role: ${role}`);
+      let contractHash = hre.ethers.utils.solidityKeccak256(["string"], [contractName]);
+      console.log(`contractHash: ${contractHash}`);
+      console.log(`contractHash+role: ${contractHash+role}`);
+      salt = hre.ethers.utils.solidityKeccak256(["bytes32", "bytes32"], [contractHash, role]);
+      console.log("salt: " + salt);
+      return salt;
+    }
     salt = devdoc["custom:salt"];
     return salt;
   } else {
@@ -1296,6 +1315,9 @@ export async function getBytes32Salt(
   hre: HardhatRuntimeEnvironment
 ) {
   const salt: string = await getSalt(contractName, hre);
+  if (salt.startsWith("0x")) {
+    return salt;
+  }
   return hre.ethers.utils.formatBytes32String(salt);
 }
 

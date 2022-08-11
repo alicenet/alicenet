@@ -19,6 +19,8 @@ import "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import {ValidatorPoolErrorCodes} from "contracts/libraries/errorCodes/ValidatorPoolErrorCodes.sol";
 
+error NotAllowedToAccuse(address received, address expected1, address expected2);
+
 /// @custom:salt ValidatorPool
 /// @custom:deploy-type deployUpgradeable
 contract ValidatorPool is
@@ -37,6 +39,15 @@ contract ValidatorPool is
             _isValidator(msg.sender),
             string(abi.encodePacked(ValidatorPoolErrorCodes.VALIDATORPOOL_CALLER_NOT_VALIDATOR))
         );
+        _;
+    }
+
+    modifier onlyETHDKGAndAccusations(bytes32 preSalt) {
+        bytes32 computedSalt = keccak256(abi.encodePacked(preSalt , keccak256(abi.encodePacked("Accusation"))));
+        address computedAddr = getMetamorphicContractAddress(computedSalt, _factoryAddress());
+        if (msg.sender != computedAddr && msg.sender != _ethdkgAddress()) {
+            revert NotAllowedToAccuse(msg.sender, computedAddr, _ethdkgAddress());
+        }
         _;
     }
 
@@ -256,7 +267,7 @@ contract ValidatorPool is
         return data._tokenID;
     }
 
-    function majorSlash(address dishonestValidator_, address disputer_) public onlyETHDKG {
+    function majorSlash(address dishonestValidator_, address disputer_, bytes32 preSalt_) public onlyETHDKGAndAccusations(preSalt_) {
         require(
             _isAccusable(dishonestValidator_),
             string(
@@ -296,7 +307,7 @@ contract ValidatorPool is
         emit ValidatorMajorSlashed(dishonestValidator_);
     }
 
-    function minorSlash(address dishonestValidator_, address disputer_) public onlyETHDKG {
+    function minorSlash(address dishonestValidator_, address disputer_, bytes32 preSalt_) public onlyETHDKGAndAccusations(preSalt_) {
         require(
             _isAccusable(dishonestValidator_),
             string(

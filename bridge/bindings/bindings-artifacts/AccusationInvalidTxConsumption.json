@@ -17,6 +17,60 @@
         "type": "uint256"
       }
     ],
+    "name": "BEUint16OffsetOutOfBounds",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "offset",
+        "type": "uint256"
+      }
+    ],
+    "name": "BEUint16OffsetParameterOverflow",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "offset",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "srcLength",
+        "type": "uint256"
+      }
+    ],
+    "name": "BooleanOffsetOutOfBounds",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "offset",
+        "type": "uint256"
+      }
+    ],
+    "name": "BooleanOffsetParameterOverflow",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "offset",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "srcLength",
+        "type": "uint256"
+      }
+    ],
     "name": "Bytes32OffsetOutOfBounds",
     "type": "error"
   },
@@ -29,6 +83,33 @@
       }
     ],
     "name": "Bytes32OffsetParameterOverflow",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "offset",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "srcLength",
+        "type": "uint256"
+      }
+    ],
+    "name": "BytesOffsetOutOfBounds",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "offset",
+        "type": "uint256"
+      }
+    ],
+    "name": "BytesOffsetParameterOverflow",
     "type": "error"
   },
   {
@@ -161,29 +242,52 @@
     "type": "error"
   },
   {
+    "inputs": [],
+    "name": "PRE_SALT",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "inputs": [
       {
         "internalType": "bytes",
-        "name": "signature0_",
+        "name": "_pClaims",
         "type": "bytes"
       },
       {
         "internalType": "bytes",
-        "name": "pClaims0_",
+        "name": "_pClaimsSig",
         "type": "bytes"
       },
       {
         "internalType": "bytes",
-        "name": "signature1_",
+        "name": "_bClaims",
         "type": "bytes"
       },
       {
         "internalType": "bytes",
-        "name": "pClaims1_",
+        "name": "_bClaimsSigGroup",
         "type": "bytes"
+      },
+      {
+        "internalType": "bytes",
+        "name": "_txInPreImage",
+        "type": "bytes"
+      },
+      {
+        "internalType": "bytes[3]",
+        "name": "_proofs",
+        "type": "bytes[3]"
       }
     ],
-    "name": "accuseMultipleProposal",
+    "name": "accuseInvalidTransactionConsumption",
     "outputs": [
       {
         "internalType": "address",
@@ -216,25 +320,6 @@
       }
     ],
     "stateMutability": "pure",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "bytes32",
-        "name": "id_",
-        "type": "bytes32"
-      }
-    ],
-    "name": "isAccused",
-    "outputs": [
-      {
-        "internalType": "bool",
-        "name": "",
-        "type": "bool"
-      }
-    ],
-    "stateMutability": "view",
     "type": "function"
   }
 ]

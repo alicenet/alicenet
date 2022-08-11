@@ -12,15 +12,17 @@ import "contracts/libraries/math/CryptoLibrary.sol";
 import "contracts/utils/ImmutableAuth.sol";
 import "contracts/utils/AccusationsLibrary.sol";
 
-/// @custom:salt-type Accusation
-/// @custom:salt InvalidTxConsumptionAccusation
+
 /// @custom:deploy-type deployUpgradeable
-contract InvalidTxConsumptionAccusation is
+/// @custom:role Accusation
+contract AccusationInvalidTxConsumption is
     ImmutableFactory,
     ImmutableSnapshots,
     ImmutableETHDKG,
     ImmutableValidatorPool
 {
+    // this is the keccak256 of "AccusationInvalidTxConsumption"
+    bytes32 constant public PRE_SALT = 0xf40095839ea6635a5869735bd0c363085cb0ebd561e0f361f826103b958c27e5;
     mapping(bytes32 => bool) internal _accusations;
 
     constructor()
@@ -48,7 +50,7 @@ contract InvalidTxConsumptionAccusation is
         bytes memory _bClaimsSigGroup,
         bytes memory _txInPreImage,
         bytes[3] memory _proofs
-    ) public view returns (address) {
+    ) public returns (address) {
         // Require that the previous block is signed by correct group key for validator set.
         _verifySignatureGroup(_bClaims, _bClaimsSigGroup);
 
@@ -121,7 +123,8 @@ contract InvalidTxConsumptionAccusation is
             MerkleProofLibrary.verifyNonInclusion(proofAgainstStateRoot, bClaims.stateRoot);
         }
 
-        //todo burn the validator's tokens
+        IValidatorPool(_validatorPoolAddress()).majorSlash(signerAccount, msg.sender, PRE_SALT);
+
         return signerAccount;
     }
 

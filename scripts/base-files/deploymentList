@@ -6,7 +6,9 @@ deploymentList = [
   "contracts/BToken.sol:BToken",
   "contracts/Foundation.sol:Foundation",
   "contracts/Governance.sol:Governance",
+  "contracts/InvalidTxConsumptionAccusation.sol:AccusationInvalidTxConsumption",
   "contracts/LiquidityProviderStaking.sol:LiquidityProviderStaking",
+  "contracts/MultipleProposalAccusation.sol:AccusationMultipleProposal",
   "contracts/PublicStaking.sol:PublicStaking",
   "contracts/Snapshots.sol:Snapshots",
   "contracts/StakingPositionDescriptor.sol:StakingPositionDescriptor",
@@ -14,6 +16,5 @@ deploymentList = [
   "contracts/ValidatorStaking.sol:ValidatorStaking",
   "contracts/libraries/ethdkg/ETHDKGAccusations.sol:ETHDKGAccusations",
   "contracts/libraries/ethdkg/ETHDKGPhases.sol:ETHDKGPhases",
-  "contracts/ETHDKG.sol:ETHDKG",
-  "contracts/MultipleProposalAccusation.sol:MultipleProposalAccusation",
+  "contracts/ETHDKG.sol:ETHDKG"
 ]

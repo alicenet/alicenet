@@ -70,7 +70,7 @@ type EthereumContracts interface {
 	ValidatorPoolAddress() common.Address
 	Governance() bindings.IGovernance
 	GovernanceAddress() common.Address
-	MultipleProposalAccusation() bindings.IMultipleProposalAccusation
+	MultipleProposalAccusation() bindings.IAccusationMultipleProposal
 	MultipleProposalAccusationAddress() common.Address
 }
 

@@ -40,7 +40,7 @@ type Contracts struct {
 	validatorPoolAddress              common.Address
 	governance                        bindings.IGovernance
 	governanceAddress                 common.Address
-	multipleProposalAccusation        bindings.IMultipleProposalAccusation
+	multipleProposalAccusation        bindings.IAccusationMultipleProposal
 	multipleProposalAccusationAddress common.Address
 }
 
@@ -192,7 +192,7 @@ func (c *Contracts) lookupContracts() error {
 			continue
 		}
 
-		c.multipleProposalAccusation, err = bindings.NewMultipleProposalAccusation(c.multipleProposalAccusationAddress, eth.internalClient)
+		c.multipleProposalAccusation, err = bindings.NewAccusationMultipleProposal(c.multipleProposalAccusationAddress, eth.internalClient)
 		logAndEat(logger, err)
 
 		break
@@ -282,7 +282,7 @@ func (c *Contracts) GovernanceAddress() common.Address {
 	return c.governanceAddress
 }
 
-func (c *Contracts) MultipleProposalAccusation() bindings.IMultipleProposalAccusation {
+func (c *Contracts) MultipleProposalAccusation() bindings.IAccusationMultipleProposal {
 	return c.multipleProposalAccusation
 }
 

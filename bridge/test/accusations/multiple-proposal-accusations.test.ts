@@ -1,5 +1,5 @@
 import { assert, expect } from "chai";
-import { MultipleProposalAccusation } from "../../typechain-types";
+import { AccusationMultipleProposal } from "../../typechain-types";
 import { Fixture, getFixture } from "../setup";
 import {
   addValidators,
@@ -13,12 +13,12 @@ import {
 describe("MultipleProposalAccusation: Tests MultipleProposalAccusation methods", async () => {
   let fixture: Fixture;
 
-  let accusation: MultipleProposalAccusation;
+  let accusation: AccusationMultipleProposal;
 
   beforeEach(async function () {
     fixture = await getFixture(true, true);
 
-    accusation = fixture.multipleProposalAccusation;
+    accusation = fixture.accusationMultipleProposal;
   });
 
   describe("accuseMultipleProposal:", async () => {
@@ -30,14 +30,18 @@ describe("MultipleProposalAccusation: Tests MultipleProposalAccusation methods",
 
       await addValidators(fixture.validatorPool, [signerAccount0]);
 
-      const signer = await accusation.accuseMultipleProposal(
+      let isValidator = await fixture.validatorPool.isValidator(signerAccount0);
+      assert.equal(isValidator, true);
+
+      await (await accusation.accuseMultipleProposal(
         sig0,
         pClaims0,
         sig1,
         pClaims1
-      );
+      )).wait();
 
-      assert.equal(signer, signerAccount0);
+      isValidator = await fixture.validatorPool.isValidator(signerAccount0);
+      assert.equal(isValidator, false);
     });
 
     it("reverts when signer is not valid", async function () {
@@ -46,9 +50,7 @@ describe("MultipleProposalAccusation: Tests MultipleProposalAccusation methods",
 
       await expect(
         accusation.accuseMultipleProposal(sig0, pClaims0, sig1, pClaims1)
-      ).to.be.revertedWith(
-        "Accusations: the signer of these proposals is not a valid validator!"
-      );
+      ).to.be.revertedWith("814");
     });
 
     it("reverts when duplicate data for pClaims0 and pClaims1", async function () {

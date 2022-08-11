@@ -6,6 +6,8 @@
 abigen --abi bindings/bindings-artifacts/AToken.json --pkg bindings --type AToken --out bindings/AToken.go
 abigen --abi bindings/bindings-artifacts/ATokenBurner.json --pkg bindings --type ATokenBurner --out bindings/ATokenBurner.go
 abigen --abi bindings/bindings-artifacts/ATokenMinter.json --pkg bindings --type ATokenMinter --out bindings/ATokenMinter.go
+abigen --abi bindings/bindings-artifacts/AccusationInvalidTxConsumption.json --pkg bindings --type AccusationInvalidTxConsumption --out bindings/AccusationInvalidTxConsumption.go
+abigen --abi bindings/bindings-artifacts/AccusationMultipleProposal.json --pkg bindings --type AccusationMultipleProposal --out bindings/AccusationMultipleProposal.go
 abigen --abi bindings/bindings-artifacts/AliceNetFactory.json --pkg bindings --type AliceNetFactory --out bindings/AliceNetFactory.go
 abigen --abi bindings/bindings-artifacts/BToken.json --pkg bindings --type BToken --out bindings/BToken.go
 abigen --abi bindings/bindings-artifacts/BTokenErrors.json --pkg bindings --type BTokenErrors --out bindings/BTokenErrors.go
@@ -13,7 +15,6 @@ abigen --abi bindings/bindings-artifacts/ETHDKG.json --pkg bindings --type ETHDK
 abigen --abi bindings/bindings-artifacts/ETHDKGErrorCodes.json --pkg bindings --type ETHDKGErrorCodes --out bindings/ETHDKGErrorCodes.go
 abigen --abi bindings/bindings-artifacts/Governance.json --pkg bindings --type Governance --out bindings/Governance.go
 abigen --abi bindings/bindings-artifacts/GovernanceErrorCodes.json --pkg bindings --type GovernanceErrorCodes --out bindings/GovernanceErrorCodes.go
-abigen --abi bindings/bindings-artifacts/MultipleProposalAccusation.json --pkg bindings --type MultipleProposalAccusation --out bindings/MultipleProposalAccusation.go
 abigen --abi bindings/bindings-artifacts/PublicStaking.json --pkg bindings --type PublicStaking --out bindings/PublicStaking.go
 abigen --abi bindings/bindings-artifacts/Snapshots.json --pkg bindings --type Snapshots --out bindings/Snapshots.go
 abigen --abi bindings/bindings-artifacts/SnapshotsErrorCodes.json --pkg bindings --type SnapshotsErrorCodes --out bindings/SnapshotsErrorCodes.go

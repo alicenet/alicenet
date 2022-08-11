@@ -5,6 +5,27 @@
     "type": "constructor"
   },
   {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "received",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "expected1",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "expected2",
+        "type": "address"
+      }
+    ],
+    "name": "NotAllowedToAccuse",
+    "type": "error"
+  },
+  {
     "anonymous": false,
     "inputs": [
       {
@@ -471,6 +492,11 @@
         "internalType": "address",
         "name": "disputer_",
         "type": "address"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "preSalt_",
+        "type": "bytes32"
       }
     ],
     "name": "majorSlash",
@@ -489,6 +515,11 @@
         "internalType": "address",
         "name": "disputer_",
         "type": "address"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "preSalt_",
+        "type": "bytes32"
       }
     ],
     "name": "minorSlash",

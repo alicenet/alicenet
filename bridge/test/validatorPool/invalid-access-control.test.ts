@@ -113,7 +113,7 @@ describe("ValidatorPool Access Control: An user without admin role should not be
     await expect(
       fixture.validatorPool
         .connect(notAdmin1Signer)
-        .majorSlash(notAdmin1Signer.address, notAdmin1Signer.address)
+        .majorSlash(notAdmin1Signer.address, notAdmin1Signer.address, "0")
     ).to.be.revertedWith("2016");
   });
 
@@ -121,7 +121,7 @@ describe("ValidatorPool Access Control: An user without admin role should not be
     await expect(
       fixture.validatorPool
         .connect(notAdmin1Signer)
-        .minorSlash(notAdmin1Signer.address, notAdmin1Signer.address)
+        .minorSlash(notAdmin1Signer.address, notAdmin1Signer.address, "0")
     ).to.be.revertedWith("2016");
   });
 });

@@ -41,9 +41,9 @@ interface IValidatorPool {
 
     function claimExitingNFTPosition() external returns (uint256);
 
-    function majorSlash(address dishonestValidator_, address disputer_) external;
+    function majorSlash(address dishonestValidator_, address disputer_, bytes32 preSalt_) external;
 
-    function minorSlash(address dishonestValidator_, address disputer_) external;
+    function minorSlash(address dishonestValidator_, address disputer_, bytes32 preSalt_) external;
 
     function getValidatorsCount() external view returns (uint256);
 

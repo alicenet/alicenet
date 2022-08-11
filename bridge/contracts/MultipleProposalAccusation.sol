@@ -8,15 +8,16 @@ import "contracts/libraries/math/CryptoLibrary.sol";
 import "contracts/utils/ImmutableAuth.sol";
 import "contracts/utils/AccusationsLibrary.sol";
 
-/// @custom:salt MultipleProposalAccusation
 /// @custom:deploy-type deployUpgradeable
-/// @custom:salt-type Accusation
-contract MultipleProposalAccusation is
+/// @custom:role Accusation
+contract AccusationMultipleProposal is
     ImmutableFactory,
     ImmutableSnapshots,
     ImmutableETHDKG,
     ImmutableValidatorPool
 {
+    // this is the keccak256 of "AccusationMultipleProposal"
+    bytes32 constant public PRE_SALT = 0x17287210c71008320429d4cce2075373f0b2c5217b507513fe4904fead741aad;
     mapping(bytes32 => bool) internal _accusations;
 
     constructor()
@@ -103,7 +104,7 @@ contract MultipleProposalAccusation is
         _accusations[id] = true;
 
         // major slash this validator. Note: this method already checks if the dishonest validator (1st argument) is a validator.
-        IValidatorPool(_validatorPoolAddress()).majorSlash(signerAccount0, msg.sender);
+        IValidatorPool(_validatorPoolAddress()).majorSlash(signerAccount0, msg.sender, PRE_SALT);
 
         return signerAccount0;
     }
