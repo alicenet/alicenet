@@ -32,18 +32,14 @@ type IBTokenTransactor interface {
 	//
 	// Solidity: function deposit(uint8 accountType_, address to_, uint256 amount_) returns(uint256)
 	Deposit(opts *bind.TransactOpts, accountType_ uint8, to_ common.Address, amount_ *big.Int) (*types.Transaction, error)
-	// DepositTokensOnBridges is a paid mutator transaction binding the contract method 0xc4412f67.
+	// DepositTokensOnBridges is a paid mutator transaction binding the contract method 0xddeae0b3.
 	//
-	// Solidity: function depositTokensOnBridges(uint256 maxTokens, uint16 bridgeVersion, bytes data) payable returns()
-	DepositTokensOnBridges(opts *bind.TransactOpts, maxTokens *big.Int, bridgeVersion uint16, data []byte) (*types.Transaction, error)
+	// Solidity: function depositTokensOnBridges(uint16 bridgeVersion, bytes data) payable returns()
+	DepositTokensOnBridges(opts *bind.TransactOpts, bridgeVersion uint16, data []byte) (*types.Transaction, error)
 	// DestroyBTokens is a paid mutator transaction binding the contract method 0x2dc6b024.
 	//
 	// Solidity: function destroyBTokens(uint256 numBTK_) returns(bool)
 	DestroyBTokens(opts *bind.TransactOpts, numBTK_ *big.Int) (*types.Transaction, error)
-	// DestroyPreApprovedBTokens is a paid mutator transaction binding the contract method 0xdfda26fd.
-	//
-	// Solidity: function destroyPreApprovedBTokens(address account, uint256 numBTK_) returns(bool)
-	DestroyPreApprovedBTokens(opts *bind.TransactOpts, account common.Address, numBTK_ *big.Int) (*types.Transaction, error)
 	// Distribute is a paid mutator transaction binding the contract method 0xe4fc6b6d.
 	//
 	// Solidity: function distribute() returns(uint256 minerAmount, uint256 stakingAmount, uint256 lpStakingAmount, uint256 foundationAmount)

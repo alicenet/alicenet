@@ -7987,10 +7987,6 @@ type MockIBToken struct {
 	// DestroyBTokensFunc is an instance of a mock function object
 	// controlling the behavior of the method DestroyBTokens.
 	DestroyBTokensFunc *IBTokenDestroyBTokensFunc
-	// DestroyPreApprovedBTokensFunc is an instance of a mock function
-	// object controlling the behavior of the method
-	// DestroyPreApprovedBTokens.
-	DestroyPreApprovedBTokensFunc *IBTokenDestroyPreApprovedBTokensFunc
 	// DistributeFunc is an instance of a mock function object controlling
 	// the behavior of the method Distribute.
 	DistributeFunc *IBTokenDistributeFunc
@@ -8162,17 +8158,12 @@ func NewMockIBToken() *MockIBToken {
 			},
 		},
 		DepositTokensOnBridgesFunc: &IBTokenDepositTokensOnBridgesFunc{
-			defaultHook: func(*bind.TransactOpts, *big.Int, uint16, []byte) (r0 *types.Transaction, r1 error) {
+			defaultHook: func(*bind.TransactOpts, uint16, []byte) (r0 *types.Transaction, r1 error) {
 				return
 			},
 		},
 		DestroyBTokensFunc: &IBTokenDestroyBTokensFunc{
 			defaultHook: func(*bind.TransactOpts, *big.Int) (r0 *types.Transaction, r1 error) {
-				return
-			},
-		},
-		DestroyPreApprovedBTokensFunc: &IBTokenDestroyPreApprovedBTokensFunc{
-			defaultHook: func(*bind.TransactOpts, common.Address, *big.Int) (r0 *types.Transaction, r1 error) {
 				return
 			},
 		},
@@ -8424,18 +8415,13 @@ func NewStrictMockIBToken() *MockIBToken {
 			},
 		},
 		DepositTokensOnBridgesFunc: &IBTokenDepositTokensOnBridgesFunc{
-			defaultHook: func(*bind.TransactOpts, *big.Int, uint16, []byte) (*types.Transaction, error) {
+			defaultHook: func(*bind.TransactOpts, uint16, []byte) (*types.Transaction, error) {
 				panic("unexpected invocation of MockIBToken.DepositTokensOnBridges")
 			},
 		},
 		DestroyBTokensFunc: &IBTokenDestroyBTokensFunc{
 			defaultHook: func(*bind.TransactOpts, *big.Int) (*types.Transaction, error) {
 				panic("unexpected invocation of MockIBToken.DestroyBTokens")
-			},
-		},
-		DestroyPreApprovedBTokensFunc: &IBTokenDestroyPreApprovedBTokensFunc{
-			defaultHook: func(*bind.TransactOpts, common.Address, *big.Int) (*types.Transaction, error) {
-				panic("unexpected invocation of MockIBToken.DestroyPreApprovedBTokens")
 			},
 		},
 		DistributeFunc: &IBTokenDistributeFunc{
@@ -8674,9 +8660,6 @@ func NewMockIBTokenFrom(i bindings.IBToken) *MockIBToken {
 		},
 		DestroyBTokensFunc: &IBTokenDestroyBTokensFunc{
 			defaultHook: i.DestroyBTokens,
-		},
-		DestroyPreApprovedBTokensFunc: &IBTokenDestroyPreApprovedBTokensFunc{
-			defaultHook: i.DestroyPreApprovedBTokens,
 		},
 		DistributeFunc: &IBTokenDistributeFunc{
 			defaultHook: i.Distribute,
@@ -9683,24 +9666,24 @@ func (c IBTokenDepositFuncCall) Results() []interface{} {
 // DepositTokensOnBridges method of the parent MockIBToken instance is
 // invoked.
 type IBTokenDepositTokensOnBridgesFunc struct {
-	defaultHook func(*bind.TransactOpts, *big.Int, uint16, []byte) (*types.Transaction, error)
-	hooks       []func(*bind.TransactOpts, *big.Int, uint16, []byte) (*types.Transaction, error)
+	defaultHook func(*bind.TransactOpts, uint16, []byte) (*types.Transaction, error)
+	hooks       []func(*bind.TransactOpts, uint16, []byte) (*types.Transaction, error)
 	history     []IBTokenDepositTokensOnBridgesFuncCall
 	mutex       sync.Mutex
 }
 
 // DepositTokensOnBridges delegates to the next hook function in the queue
 // and stores the parameter and result values of this invocation.
-func (m *MockIBToken) DepositTokensOnBridges(v0 *bind.TransactOpts, v1 *big.Int, v2 uint16, v3 []byte) (*types.Transaction, error) {
-	r0, r1 := m.DepositTokensOnBridgesFunc.nextHook()(v0, v1, v2, v3)
-	m.DepositTokensOnBridgesFunc.appendCall(IBTokenDepositTokensOnBridgesFuncCall{v0, v1, v2, v3, r0, r1})
+func (m *MockIBToken) DepositTokensOnBridges(v0 *bind.TransactOpts, v1 uint16, v2 []byte) (*types.Transaction, error) {
+	r0, r1 := m.DepositTokensOnBridgesFunc.nextHook()(v0, v1, v2)
+	m.DepositTokensOnBridgesFunc.appendCall(IBTokenDepositTokensOnBridgesFuncCall{v0, v1, v2, r0, r1})
 	return r0, r1
 }
 
 // SetDefaultHook sets function that is called when the
 // DepositTokensOnBridges method of the parent MockIBToken instance is
 // invoked and the hook queue is empty.
-func (f *IBTokenDepositTokensOnBridgesFunc) SetDefaultHook(hook func(*bind.TransactOpts, *big.Int, uint16, []byte) (*types.Transaction, error)) {
+func (f *IBTokenDepositTokensOnBridgesFunc) SetDefaultHook(hook func(*bind.TransactOpts, uint16, []byte) (*types.Transaction, error)) {
 	f.defaultHook = hook
 }
 
@@ -9708,7 +9691,7 @@ func (f *IBTokenDepositTokensOnBridgesFunc) SetDefaultHook(hook func(*bind.Trans
 // DepositTokensOnBridges method of the parent MockIBToken instance invokes
 // the hook at the front of the queue and discards it. After the queue is
 // empty, the default hook function is invoked for any future action.
-func (f *IBTokenDepositTokensOnBridgesFunc) PushHook(hook func(*bind.TransactOpts, *big.Int, uint16, []byte) (*types.Transaction, error)) {
+func (f *IBTokenDepositTokensOnBridgesFunc) PushHook(hook func(*bind.TransactOpts, uint16, []byte) (*types.Transaction, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -9717,19 +9700,19 @@ func (f *IBTokenDepositTokensOnBridgesFunc) PushHook(hook func(*bind.TransactOpt
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
 func (f *IBTokenDepositTokensOnBridgesFunc) SetDefaultReturn(r0 *types.Transaction, r1 error) {
-	f.SetDefaultHook(func(*bind.TransactOpts, *big.Int, uint16, []byte) (*types.Transaction, error) {
+	f.SetDefaultHook(func(*bind.TransactOpts, uint16, []byte) (*types.Transaction, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
 func (f *IBTokenDepositTokensOnBridgesFunc) PushReturn(r0 *types.Transaction, r1 error) {
-	f.PushHook(func(*bind.TransactOpts, *big.Int, uint16, []byte) (*types.Transaction, error) {
+	f.PushHook(func(*bind.TransactOpts, uint16, []byte) (*types.Transaction, error) {
 		return r0, r1
 	})
 }
 
-func (f *IBTokenDepositTokensOnBridgesFunc) nextHook() func(*bind.TransactOpts, *big.Int, uint16, []byte) (*types.Transaction, error) {
+func (f *IBTokenDepositTokensOnBridgesFunc) nextHook() func(*bind.TransactOpts, uint16, []byte) (*types.Transaction, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -9768,13 +9751,10 @@ type IBTokenDepositTokensOnBridgesFuncCall struct {
 	Arg0 *bind.TransactOpts
 	// Arg1 is the value of the 2nd argument passed to this method
 	// invocation.
-	Arg1 *big.Int
+	Arg1 uint16
 	// Arg2 is the value of the 3rd argument passed to this method
 	// invocation.
-	Arg2 uint16
-	// Arg3 is the value of the 4th argument passed to this method
-	// invocation.
-	Arg3 []byte
+	Arg2 []byte
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
 	Result0 *types.Transaction
@@ -9786,7 +9766,7 @@ type IBTokenDepositTokensOnBridgesFuncCall struct {
 // Args returns an interface slice containing the arguments of this
 // invocation.
 func (c IBTokenDepositTokensOnBridgesFuncCall) Args() []interface{} {
-	return []interface{}{c.Arg0, c.Arg1, c.Arg2, c.Arg3}
+	return []interface{}{c.Arg0, c.Arg1, c.Arg2}
 }
 
 // Results returns an interface slice containing the results of this
@@ -9900,120 +9880,6 @@ func (c IBTokenDestroyBTokensFuncCall) Args() []interface{} {
 // Results returns an interface slice containing the results of this
 // invocation.
 func (c IBTokenDestroyBTokensFuncCall) Results() []interface{} {
-	return []interface{}{c.Result0, c.Result1}
-}
-
-// IBTokenDestroyPreApprovedBTokensFunc describes the behavior when the
-// DestroyPreApprovedBTokens method of the parent MockIBToken instance is
-// invoked.
-type IBTokenDestroyPreApprovedBTokensFunc struct {
-	defaultHook func(*bind.TransactOpts, common.Address, *big.Int) (*types.Transaction, error)
-	hooks       []func(*bind.TransactOpts, common.Address, *big.Int) (*types.Transaction, error)
-	history     []IBTokenDestroyPreApprovedBTokensFuncCall
-	mutex       sync.Mutex
-}
-
-// DestroyPreApprovedBTokens delegates to the next hook function in the
-// queue and stores the parameter and result values of this invocation.
-func (m *MockIBToken) DestroyPreApprovedBTokens(v0 *bind.TransactOpts, v1 common.Address, v2 *big.Int) (*types.Transaction, error) {
-	r0, r1 := m.DestroyPreApprovedBTokensFunc.nextHook()(v0, v1, v2)
-	m.DestroyPreApprovedBTokensFunc.appendCall(IBTokenDestroyPreApprovedBTokensFuncCall{v0, v1, v2, r0, r1})
-	return r0, r1
-}
-
-// SetDefaultHook sets function that is called when the
-// DestroyPreApprovedBTokens method of the parent MockIBToken instance is
-// invoked and the hook queue is empty.
-func (f *IBTokenDestroyPreApprovedBTokensFunc) SetDefaultHook(hook func(*bind.TransactOpts, common.Address, *big.Int) (*types.Transaction, error)) {
-	f.defaultHook = hook
-}
-
-// PushHook adds a function to the end of hook queue. Each invocation of the
-// DestroyPreApprovedBTokens method of the parent MockIBToken instance
-// invokes the hook at the front of the queue and discards it. After the
-// queue is empty, the default hook function is invoked for any future
-// action.
-func (f *IBTokenDestroyPreApprovedBTokensFunc) PushHook(hook func(*bind.TransactOpts, common.Address, *big.Int) (*types.Transaction, error)) {
-	f.mutex.Lock()
-	f.hooks = append(f.hooks, hook)
-	f.mutex.Unlock()
-}
-
-// SetDefaultReturn calls SetDefaultHook with a function that returns the
-// given values.
-func (f *IBTokenDestroyPreApprovedBTokensFunc) SetDefaultReturn(r0 *types.Transaction, r1 error) {
-	f.SetDefaultHook(func(*bind.TransactOpts, common.Address, *big.Int) (*types.Transaction, error) {
-		return r0, r1
-	})
-}
-
-// PushReturn calls PushHook with a function that returns the given values.
-func (f *IBTokenDestroyPreApprovedBTokensFunc) PushReturn(r0 *types.Transaction, r1 error) {
-	f.PushHook(func(*bind.TransactOpts, common.Address, *big.Int) (*types.Transaction, error) {
-		return r0, r1
-	})
-}
-
-func (f *IBTokenDestroyPreApprovedBTokensFunc) nextHook() func(*bind.TransactOpts, common.Address, *big.Int) (*types.Transaction, error) {
-	f.mutex.Lock()
-	defer f.mutex.Unlock()
-
-	if len(f.hooks) == 0 {
-		return f.defaultHook
-	}
-
-	hook := f.hooks[0]
-	f.hooks = f.hooks[1:]
-	return hook
-}
-
-func (f *IBTokenDestroyPreApprovedBTokensFunc) appendCall(r0 IBTokenDestroyPreApprovedBTokensFuncCall) {
-	f.mutex.Lock()
-	f.history = append(f.history, r0)
-	f.mutex.Unlock()
-}
-
-// History returns a sequence of IBTokenDestroyPreApprovedBTokensFuncCall
-// objects describing the invocations of this function.
-func (f *IBTokenDestroyPreApprovedBTokensFunc) History() []IBTokenDestroyPreApprovedBTokensFuncCall {
-	f.mutex.Lock()
-	history := make([]IBTokenDestroyPreApprovedBTokensFuncCall, len(f.history))
-	copy(history, f.history)
-	f.mutex.Unlock()
-
-	return history
-}
-
-// IBTokenDestroyPreApprovedBTokensFuncCall is an object that describes an
-// invocation of method DestroyPreApprovedBTokens on an instance of
-// MockIBToken.
-type IBTokenDestroyPreApprovedBTokensFuncCall struct {
-	// Arg0 is the value of the 1st argument passed to this method
-	// invocation.
-	Arg0 *bind.TransactOpts
-	// Arg1 is the value of the 2nd argument passed to this method
-	// invocation.
-	Arg1 common.Address
-	// Arg2 is the value of the 3rd argument passed to this method
-	// invocation.
-	Arg2 *big.Int
-	// Result0 is the value of the 1st result returned from this method
-	// invocation.
-	Result0 *types.Transaction
-	// Result1 is the value of the 2nd result returned from this method
-	// invocation.
-	Result1 error
-}
-
-// Args returns an interface slice containing the arguments of this
-// invocation.
-func (c IBTokenDestroyPreApprovedBTokensFuncCall) Args() []interface{} {
-	return []interface{}{c.Arg0, c.Arg1, c.Arg2}
-}
-
-// Results returns an interface slice containing the results of this
-// invocation.
-func (c IBTokenDestroyPreApprovedBTokensFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 

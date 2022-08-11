@@ -6,7 +6,6 @@ import { callFunctionAndGetReturnValues, Fixture, getFixture } from "../setup";
 import { getEthConsumedAsGas, getState, showState, state } from "./setup";
 
 describe("Testing BToken Destroy methods", async () => {
-  let admin: SignerWithAddress;
   let user: SignerWithAddress;
   let expectedState: state;
   let fixture: Fixture;
@@ -19,7 +18,7 @@ describe("Testing BToken Destroy methods", async () => {
   beforeEach(async function () {
     fixture = await getFixture();
     const signers = await ethers.getSigners();
-    [admin, user] = signers;
+    [, user] = signers;
     ethForMinting = ethers.utils.parseEther(eth.toString());
     [bTokens] = await callFunctionAndGetReturnValues(
       fixture.bToken,
@@ -43,25 +42,25 @@ describe("Testing BToken Destroy methods", async () => {
     expect(await getState(fixture)).to.be.deep.equal(expectedState);
   });
 
-  it("Should burn btokens from address and keep resulting eth on contract", async () => {
-    await fixture.bToken.connect(user).approve(admin.address, bTokens);
-    expectedState = await getState(fixture);
-    const tx = await fixture.bToken.destroyPreApprovedBTokens(
-      user.address,
-      bTokens
-    );
-    expect(bTokens).to.be.equal(BigInt("3990217121585928137263"));
-    expectedState.Balances.bToken.user -= bTokens.toBigInt();
-    expectedState.Balances.bToken.totalSupply -= bTokens.toBigInt();
-    expectedState.Balances.bToken.poolBalance -= ethsFromBurning.toBigInt();
-    expectedState.Balances.eth.admin -= getEthConsumedAsGas(await tx.wait());
+  //   it("Should burn btokens from address and keep resulting eth on contract", async () => {
+  //     await fixture.bToken.connect(user).approve(admin.address, bTokens);
+  //     expectedState = await getState(fixture);
+  //     const tx = await fixture.bToken.destroyPreApprovedBTokens(
+  //       user.address,
+  //       bTokens
+  //     );
+  //     expect(bTokens).to.be.equal(BigInt("3990217121585928137263"));
+  //     expectedState.Balances.bToken.user -= bTokens.toBigInt();
+  //     expectedState.Balances.bToken.totalSupply -= bTokens.toBigInt();
+  //     expectedState.Balances.bToken.poolBalance -= ethsFromBurning.toBigInt();
+  //     expectedState.Balances.eth.admin -= getEthConsumedAsGas(await tx.wait());
 
-    expect(await getState(fixture)).to.be.deep.equal(expectedState);
-  });
+  //     expect(await getState(fixture)).to.be.deep.equal(expectedState);
+  //   });
 
-  it("Should not burn btokens from address if not preapproved", async () => {
-    await expect(
-      fixture.bToken.destroyPreApprovedBTokens(user.address, bTokens)
-    ).to.be.revertedWith("ERC20: insufficient allowance");
-  });
+  //   it("Should not burn btokens from address if not preapproved", async () => {
+  //     await expect(
+  //       fixture.bToken.destroyPreApprovedBTokens(user.address, bTokens)
+  //     ).to.be.revertedWith("ERC20: insufficient allowance");
+  //   });
 });

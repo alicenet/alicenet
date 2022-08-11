@@ -177,6 +177,91 @@
     "type": "error"
   },
   {
+    "inputs": [],
+    "name": "MutexLocked",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "sender",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "expected",
+        "type": "address"
+      }
+    ],
+    "name": "OnlyFactory",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "sender",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "expected",
+        "type": "address"
+      }
+    ],
+    "name": "OnlyFoundation",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "sender",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "expected",
+        "type": "address"
+      }
+    ],
+    "name": "OnlyLiquidityProviderStaking",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "sender",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "expected",
+        "type": "address"
+      }
+    ],
+    "name": "OnlyPublicStaking",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "sender",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "expected",
+        "type": "address"
+      }
+    ],
+    "name": "OnlyValidatorStaking",
+    "type": "error"
+  },
+  {
     "inputs": [
       {
         "internalType": "address",
@@ -475,11 +560,6 @@
   {
     "inputs": [
       {
-        "internalType": "uint256",
-        "name": "maxTokens",
-        "type": "uint256"
-      },
-      {
         "internalType": "uint16",
         "name": "bridgeVersion",
         "type": "uint16"
@@ -504,30 +584,6 @@
       }
     ],
     "name": "destroyBTokens",
-    "outputs": [
-      {
-        "internalType": "bool",
-        "name": "",
-        "type": "bool"
-      }
-    ],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "account",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "numBTK_",
-        "type": "uint256"
-      }
-    ],
-    "name": "destroyPreApprovedBTokens",
     "outputs": [
       {
         "internalType": "bool",

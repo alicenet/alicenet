@@ -31,7 +31,6 @@ describe("Testing BToken bridge methods", async () => {
   const _tokenType = 1; // ERC20
   const chainId = 1337;
   const _poolVersion = 1;
-  const maxTokens = 1000;
   const bTokenFee = 1000; // Fee that's returned by BridgeRouterMok
   const minEthFeeForDeposit = 8; // Curve value for the BridgeRouterMok returned fee
   const refund = 1;
@@ -74,7 +73,7 @@ describe("Testing BToken bridge methods", async () => {
     expectedState = await getState(fixture);
     const tx = await fixture.bToken
       .connect(user)
-      .depositTokensOnBridges(maxTokens, _poolVersion, encodedDepositCallData);
+      .depositTokensOnBridges(_poolVersion, encodedDepositCallData);
     ethsFromBurning = await fixture.bToken.getLatestEthFromBTokensBurn(
       bTokenFee
     );
@@ -104,7 +103,7 @@ describe("Testing BToken bridge methods", async () => {
     await expect(
       fixture.bToken
         .connect(user)
-        .depositTokensOnBridges(maxTokens, _poolVersion, encodedDepositCallData)
+        .depositTokensOnBridges(_poolVersion, encodedDepositCallData)
     ).to.be.revertedWith("InexistentRouterContract");
   });
 
@@ -112,12 +111,9 @@ describe("Testing BToken bridge methods", async () => {
     await expect(
       fixture.bToken
         .connect(user)
-        .depositTokensOnBridges(
-          maxTokens,
-          _poolVersion,
-          encodedDepositCallData,
-          { value: minEthFeeForDeposit - 1 }
-        )
+        .depositTokensOnBridges(_poolVersion, encodedDepositCallData, {
+          value: minEthFeeForDeposit - 1,
+        })
     ).to.be.revertedWith("InsufficientFee");
   });
 
@@ -126,7 +122,7 @@ describe("Testing BToken bridge methods", async () => {
     const ethFeeForDeposit = minEthFeeForDeposit + refund;
     const tx = await fixture.bToken
       .connect(user)
-      .depositTokensOnBridges(maxTokens, _poolVersion, encodedDepositCallData, {
+      .depositTokensOnBridges(_poolVersion, encodedDepositCallData, {
         value: ethFeeForDeposit,
       });
     expectedState.Balances.eth.user -= BigInt(ethFeeForDeposit);

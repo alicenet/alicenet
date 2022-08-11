@@ -199,10 +199,7 @@ contract BToken is
         return true;
     }
 
-    function depositTokensOnBridges(
-        uint16 bridgeVersion,
-        bytes calldata data
-    ) public payable {
+    function depositTokensOnBridges(uint16 bridgeVersion, bytes calldata data) public payable {
         //calculate router address
         bytes32 bridgeRouterSalt = keccak256(
             bytes.concat(
@@ -218,17 +215,15 @@ contract BToken is
             revert BTokenErrors.InexistentRouterContract(bridgeRouterAddress);
         }
         //forward call to router
-        uint256 bTokenFee = IBridgeRouter(bridgeRouterAddress).routeDeposit(
-            msg.sender,
-            data
-        );
+        uint256 bTokenFee = IBridgeRouter(bridgeRouterAddress).routeDeposit(msg.sender, data);
         if (msg.value > 0) {
             uint256 ethFee = _getEthToMintBTokens(totalSupply(), bTokenFee);
             if (ethFee > msg.value) {
                 revert BTokenErrors.InsufficientFee(msg.value, ethFee);
             }
+            uint256 refund;
             unchecked {
-                uint256 refund = msg.value - ethFee;
+                refund = msg.value - ethFee;
             }
             if (refund > 0) {
                 _safeTransferEth(msg.sender, refund);
