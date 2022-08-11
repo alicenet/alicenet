@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 import "contracts/libraries/math/Sigmoid.sol";
 
 contract MockSigmoid is Sigmoid {
-    function sqrtPublic(uint256 x) public returns (uint256) {
+    function sqrtPublic(uint256 x) public pure returns (uint256) {
         return Sigmoid._sqrt(x);
     }
 
