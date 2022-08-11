@@ -50,8 +50,8 @@ contract("StakingNFT", async () => {
       const signers = await ethers.getSigners();
       const to = signers[0].address;
       const tx = stakingNFT.skimExcessEthMock(to);
-      // Error Code 2000 for not calling as factory
-      await expect(tx).to.be.revertedWith("2000");
+      // Error Code for not calling as factory
+      await expect(tx).to.be.revertedWithCustomError(stakingNFT, "OnlyFactory").withArgs(to, fixture.factory.address);
     });
   });
 
@@ -72,8 +72,8 @@ contract("StakingNFT", async () => {
       const signers = await ethers.getSigners();
       const to = signers[0].address;
       const tx = stakingNFT.skimExcessTokenMock(to);
-      // Error Code 2000 for not calling as factory
-      await expect(tx).to.be.revertedWith("2000");
+      // Error Code for not calling as factory
+      await expect(tx).to.be.revertedWithCustomError(stakingNFT, "OnlyFactory").withArgs(to, fixture.factory.address);
     });
   });
 
@@ -954,8 +954,8 @@ contract("StakingNFT", async () => {
       // Ensure from is different signer so different address
       const from = signers[1].address;
       const tx2 = stakingNFT.burnNFTMock(from, to, tokenID);
-      // Error Code 600 for Caller not token owner
-      await expect(tx2).to.be.revertedWith("600");
+      // Error Code for Caller not token owner
+      await expect(tx2).to.be.revertedWithCustomError(stakingNFT, "CallerNotTokenOwner").withArgs(to);
     });
 
     it("burnNFT Test 5: fail from freeAfter", async () => {
@@ -990,7 +990,7 @@ contract("StakingNFT", async () => {
       const from = signers[0].address;
       const tx2 = stakingNFT.burnNFTMock(from, to, tokenID);
       // Error Code 606 for position not ready to be burned
-      await expect(tx2).to.be.revertedWith("606");
+      await expect(tx2).to.be.revertedWithCustomError(stakingNFT, "FreeAfterTimeNotReached");
     });
 
     it("burnNFT Test 6: burn in same block as mint", async () => {
@@ -1010,7 +1010,7 @@ contract("StakingNFT", async () => {
       const from = signers[0].address;
       const tx2 = stakingNFT.burnNFTMock(from, to, tokenID);
       // Error Code 606 for position not ready to be burned
-      await expect(tx2).to.be.revertedWith("606");
+      await expect(tx2).to.be.revertedWithCustomError(stakingNFT, "FreeAfterTimeNotReached");
     });
   });
 
@@ -1051,15 +1051,15 @@ contract("StakingNFT", async () => {
       await stakingNFT.tripCBLowMock();
       const amount = BigNumber.from("0");
       const tx = stakingNFT.mintMock(amount);
-      // Error Code 500 for tripped circuit breaker
-      await expect(tx).to.be.revertedWith("500");
+      // Error Code for tripped circuit breaker
+      await expect(tx).to.be.revertedWithCustomError(stakingNFT, "CircuitBreakerOpened")
     });
 
     it("mint Test 3: fail, amount == 0", async () => {
       const amount = BigNumber.from("0");
       const tx = stakingNFT.mintMock(amount);
-      // Error Code 609 for Invalid Staking Amount 0
-      await expect(tx).to.be.revertedWith("609");
+      // Error Code for Invalid Staking Amount 0
+      await expect(tx).to.be.revertedWithCustomError(stakingNFT, "MintAmountZero")
     });
   });
 
@@ -1141,8 +1141,8 @@ contract("StakingNFT", async () => {
       const to = signers[0].address;
       const amount = BigNumber.from("0");
       const tx = stakingNFT.mintToMock(to, amount, duration);
-      // Error Code 500 for circuit breaker tripped
-      await expect(tx).to.be.revertedWith("500");
+      // Error Code for circuit breaker tripped
+      await expect(tx).to.be.revertedWithCustomError(stakingNFT, "CircuitBreakerOpened")
     });
 
     it("mintTo Test 4: fail, amount == 0", async () => {
@@ -1152,7 +1152,7 @@ contract("StakingNFT", async () => {
       const amount = BigNumber.from("0");
       const tx = stakingNFT.mintToMock(to, amount, duration);
       // Error Code 609 for Invalid Staking Amount 0
-      await expect(tx).to.be.revertedWith("609");
+      await expect(tx).to.be.revertedWithCustomError(stakingNFT, "MintAmountZero")
     });
 
     it("mintTo Test 5: fail, duration > max", async () => {
@@ -1163,7 +1163,7 @@ contract("StakingNFT", async () => {
       const amount = BigNumber.from("1000000000000000000");
       const tx = stakingNFT.mintToMock(to, amount, duration);
       // Error Code 602 for lock duration larger than max
-      await expect(tx).to.be.revertedWith("602");
+      await expect(tx).to.be.revertedWithCustomError(stakingNFT, "LockDurationGreaterThanMintLock")
     });
   });
 
@@ -1345,7 +1345,7 @@ contract("StakingNFT", async () => {
       const amount = BigNumber.from("0");
       const tx = stakingNFT.mintNFTMock(to, amount);
       // Error Code 609 for Invalid Staking Amount 0
-      await expect(tx).to.be.revertedWith("609");
+      await expect(tx).to.be.revertedWithCustomError(stakingNFT, "MintAmountZero")
     });
 
     it("mintNFT Test 6: fail (amount >= 2**224)", async () => {
@@ -1357,7 +1357,7 @@ contract("StakingNFT", async () => {
       );
       const tx = stakingNFT.mintNFTMock(to, amount);
       // Error Code 609 for Invalid Staking Amount larger than maximum allowed
-      await expect(tx).to.be.revertedWith("605");
+      await expect(tx).to.be.revertedWithCustomError(stakingNFT, "MintAmountExceedsMaximumSupply")
     });
 
     it("mintNFT gas Test", async () => {
@@ -1530,8 +1530,8 @@ contract("StakingNFT", async () => {
 
       // collectEth
       const tx = stakingNFT.collectEthMock(tokenID);
-      // Error Code 600 for not calling from owner
-      await expect(tx).to.be.revertedWith("600");
+      // Error Code for Caller not token owner
+      await expect(tx).to.be.revertedWithCustomError(stakingNFT, "CallerNotTokenOwner").withArgs(signers[0].address);
     });
 
     it("collectEth Test 5: fail because not free to withdraw", async () => {
@@ -1551,7 +1551,7 @@ contract("StakingNFT", async () => {
       // collectEth
       const tx = stakingNFT.collectEthMock(tokenID);
       // Error Code 603 for freeAfter not reached
-      await expect(tx).to.be.revertedWith("603");
+      await expect(tx).to.be.revertedWithCustomError(stakingNFT, "LockDurationWithdrawTimeNotReached");
     });
   });
 
@@ -1719,8 +1719,8 @@ contract("StakingNFT", async () => {
 
       // collectEthTo
       const tx = stakingNFT.collectEthToMock(from, tokenID);
-      // Error Code 600 for not calling from owner
-      await expect(tx).to.be.revertedWith("600");
+      // Error Code for Caller not token owner
+      await expect(tx).to.be.revertedWithCustomError(stakingNFT, "CallerNotTokenOwner").withArgs(from);
     });
 
     it("collectEthTo Test 5: fail because not free to withdraw", async () => {
@@ -1740,7 +1740,7 @@ contract("StakingNFT", async () => {
       // collectEthTo
       const tx = stakingNFT.collectEthToMock(to, tokenID);
       // Error Code 603 for freeAfter not reached
-      await expect(tx).to.be.revertedWith("603");
+      await expect(tx).to.be.revertedWithCustomError(stakingNFT, "LockDurationWithdrawTimeNotReached");
     });
   });
 
@@ -1908,8 +1908,8 @@ contract("StakingNFT", async () => {
 
       // collectToken
       const tx = stakingNFT.collectTokenMock(tokenID);
-      // Error Code 600 for not calling from owner
-      await expect(tx).to.be.revertedWith("600");
+      // Error Code for Caller not token owner
+      await expect(tx).to.be.revertedWithCustomError(stakingNFT, "CallerNotTokenOwner").withArgs(signers[0].address);
     });
 
     it("collectToken Test 5: fail because not free to withdraw", async () => {
@@ -1928,8 +1928,8 @@ contract("StakingNFT", async () => {
 
       // collectToken
       const tx = stakingNFT.collectTokenMock(tokenID);
-      // Error Code 603 for freeAfter not reached
-      await expect(tx).to.be.revertedWith("603");
+      // Error Code for freeAfter not reached
+      await expect(tx).to.be.revertedWithCustomError(stakingNFT, "LockDurationWithdrawTimeNotReached");
     });
   });
 
@@ -2107,8 +2107,8 @@ contract("StakingNFT", async () => {
 
       // collectTokenTo
       const tx = stakingNFT.collectTokenToMock(from, tokenID);
-      // Error Code 600 for not calling from owner
-      await expect(tx).to.be.revertedWith("600");
+      // Error Code for Caller not token owner
+      await expect(tx).to.be.revertedWithCustomError(stakingNFT, "CallerNotTokenOwner").withArgs(from);
     });
 
     it("collectTokenTo Test 5: fail because not free to withdraw", async () => {
@@ -2127,8 +2127,8 @@ contract("StakingNFT", async () => {
 
       // collectTokenTo
       const tx = stakingNFT.collectTokenToMock(to, tokenID);
-      // Error Code 603 for freeAfter not reached
-      await expect(tx).to.be.revertedWith("603");
+      // Error Code for freeAfter not reached
+      await expect(tx).to.be.revertedWithCustomError(stakingNFT, "LockDurationWithdrawTimeNotReached");
     });
   });
 
@@ -2301,8 +2301,8 @@ contract("StakingNFT", async () => {
       const duration = BigNumber.from("1");
       await stakingNFT.tripCBLowMock();
       const tx = stakingNFT.lockPositionMock(caller, tokenID, duration);
-      // Error Code 500 because failed circuit breaker is open
-      await expect(tx).to.be.revertedWith("500");
+      // Error Code because failed circuit breaker is open
+      await expect(tx).to.be.revertedWithCustomError(stakingNFT, "CircuitBreakerOpened")
     });
 
     it("lockPosition Test 4: fail, not governance", async () => {
@@ -2311,8 +2311,8 @@ contract("StakingNFT", async () => {
       const tokenID = BigNumber.from("1");
       const duration = BigNumber.from("1");
       const tx = stakingNFT.lockPositionMock(caller, tokenID, duration);
-      // Error Code 2003 because failed onlyGovernance
-      await expect(tx).to.be.revertedWith("2003");
+      // Error Code because failed onlyGovernance
+      await expect(tx).to.be.revertedWithCustomError(stakingNFT, "OnlyGovernance")
     });
 
     it("lockPosition Test 5: fail, does not exist", async () => {
@@ -2389,8 +2389,8 @@ contract("StakingNFT", async () => {
       const tx = stakingNFT
         .connect(govSigner)
         .lockPositionMock(bobAddress, aliceTokenID, duration);
-      // Error Code 600 for caller not token owner
-      await expect(tx).to.be.revertedWith("600");
+      // Error Code for Caller not token owner
+      await expect(tx).to.be.revertedWithCustomError(stakingNFT, "CallerNotTokenOwner").withArgs(govAddress);
     });
 
     it("lockPosition Test 7: fail, above max lock period", async () => {
@@ -2433,8 +2433,8 @@ contract("StakingNFT", async () => {
       const tx = stakingNFT
         .connect(govSigner)
         .lockPositionMock(to, tokenID, duration);
-      // Error Code 601 for lock duration greater than max governance
-      await expect(tx).to.be.revertedWith("601");
+      // Error Code for lock duration greater than max governance
+      await expect(tx).to.be.revertedWithCustomError(stakingNFT, "LockDurationGreaterThanGovernanceLock");
     });
   });
 
@@ -2559,8 +2559,8 @@ contract("StakingNFT", async () => {
       const duration = BigNumber.from("1");
       await stakingNFT.tripCBLowMock();
       const tx = stakingNFT.lockOwnPositionMock(tokenID, duration);
-      // Error Code 500 for circuit breaker tripped
-      await expect(tx).to.be.revertedWith("500");
+      // Error Code for circuit breaker tripped
+      await expect(tx).to.be.revertedWithCustomError(stakingNFT, "CircuitBreakerOpened")
     });
 
     it("lockOwnPosition Test 4: fail, does not exist", async () => {
@@ -2587,8 +2587,8 @@ contract("StakingNFT", async () => {
 
       const duration = BigNumber.from("1");
       const tx = stakingNFT.lockOwnPositionMock(bobTokenID, duration);
-      // Error Code 600 for invalid NFT token owner
-      await expect(tx).to.be.revertedWith("600");
+      // Error Code for Caller not token owner
+      await expect(tx).to.be.revertedWithCustomError(stakingNFT, "CallerNotTokenOwner").withArgs(signers[0].address);
     });
 
     it("lockOwnPosition Test 6: fail, above max lock period", async () => {
@@ -2608,8 +2608,8 @@ contract("StakingNFT", async () => {
       const maxGovLock = await stakingNFT.getMaxGovernanceLock();
       const duration = maxGovLock.add(1);
       const tx = stakingNFT.lockOwnPositionMock(tokenID, duration);
-      // Error Code 601 for lock duration greater than max governance
-      await expect(tx).to.be.revertedWith("601");
+      // Error Code for lock duration greater than max governance
+      await expect(tx).to.be.revertedWithCustomError(stakingNFT, "LockDurationGreaterThanGovernanceLock");
     });
   });
 
@@ -2678,9 +2678,9 @@ contract("StakingNFT", async () => {
       //            the change is noticed.
       const tokenID = BigNumber.from(0);
       const duration = BigNumber.from(1);
-      const tx = await stakingNFT.lockPositionLowMock(tokenID, duration);
-      const receipt = await tx.wait();
-      expect(receipt.status).to.eq(1);
+      const tx = stakingNFT.lockPositionLowMock(tokenID, duration);
+      // Error Code for Invalid NFT TokenID
+      await expect(tx).to.be.revertedWithCustomError(stakingNFT, "InvalidTokenId")
     });
   });
 
@@ -2805,8 +2805,8 @@ contract("StakingNFT", async () => {
       const duration = BigNumber.from("1");
       await stakingNFT.tripCBLowMock();
       const tx = stakingNFT.lockWithdrawMock(tokenID, duration);
-      // Error Code 500 for circuit breaker tripped
-      await expect(tx).to.be.revertedWith("500");
+      // Error Code for circuit breaker tripped
+      await expect(tx).to.be.revertedWithCustomError(stakingNFT, "CircuitBreakerOpened")
     });
 
     it("lockWithdraw Test 4: fail, does not exist", async () => {
@@ -2833,8 +2833,8 @@ contract("StakingNFT", async () => {
 
       const duration = BigNumber.from("1");
       const tx = stakingNFT.lockWithdrawMock(bobTokenID, duration);
-      // Error Code 600 for wrong owner
-      await expect(tx).to.be.revertedWith("600");
+      // Error Code for Caller not token owner
+      await expect(tx).to.be.revertedWithCustomError(stakingNFT, "CallerNotTokenOwner").withArgs(signers[0].address);
     });
 
     it("lockWithdraw Test 6: fail, above max lock period", async () => {
@@ -2854,8 +2854,8 @@ contract("StakingNFT", async () => {
       const maxGovLock = await stakingNFT.getMaxGovernanceLock();
       const duration = maxGovLock.add(1);
       const tx = stakingNFT.lockWithdrawMock(tokenID, duration);
-      // Error Code 601 for lock duration greater than max governance
-      await expect(tx).to.be.revertedWith("601");
+      // Error Code for lock duration greater than max governance
+      await expect(tx).to.be.revertedWithCustomError(stakingNFT, "LockDurationGreaterThanGovernanceLock");
     });
   });
 
@@ -2915,18 +2915,6 @@ contract("StakingNFT", async () => {
       expect(withdrawFreeAfter).to.eq(expWithdrawFreeAfter);
       expect(accumulatorEth).to.eq(expAccumulatorEth);
       expect(accumulatorToken).to.eq(expAccumulatorToken);
-    });
-
-    it("lockWithdrawLow Test 2: fail", async () => {
-      // Note well: Although this test passes, nothing actually happens,
-      //            as the position does not exist.
-      //            This test is here to ensure that if this behavior changes,
-      //            the change is noticed.
-      const tokenID = BigNumber.from("1");
-      const duration = BigNumber.from("1");
-      const tx = await stakingNFT.lockWithdrawLowMock(tokenID, duration);
-      const receipt = await tx.wait();
-      expect(receipt.status).to.eq(1);
     });
   });
 
@@ -3017,8 +3005,8 @@ contract("StakingNFT", async () => {
       const tx = stakingNFT.depositEthMock(magic, {
         value: ethers.utils.parseUnits("1", "ether"),
       });
-      // Error Code 500 for circuit breaker tripped
-      await expect(tx).to.be.revertedWith("500");
+      // Error Code for circuit breaker tripped
+      await expect(tx).to.be.revertedWithCustomError(stakingNFT, "CircuitBreakerOpened")
     });
 
     it("depositEth Test 3: fail, invalid magic number", async () => {
@@ -3026,8 +3014,8 @@ contract("StakingNFT", async () => {
       const tx = stakingNFT.depositEthMock(magic, {
         value: ethers.utils.parseUnits("1", "ether"),
       });
-      // Error Code 2200 for bad magic
-      await expect(tx).to.be.revertedWith("2200");
+      // Error Code for bad magic
+      await expect(tx).to.be.revertedWithCustomError(stakingNFT, "BadMagic")
     });
   });
 
@@ -3053,16 +3041,16 @@ contract("StakingNFT", async () => {
       const magic = BigNumber.from("42");
       const amount = BigNumber.from("1000000000000000000");
       const tx = stakingNFT.depositTokenMock(magic, amount);
-      // Error Code 500 for tripped circuit breaker
-      await expect(tx).to.be.revertedWith("500");
+      // Error Code for tripped circuit breaker
+      await expect(tx).to.be.revertedWithCustomError(stakingNFT, "CircuitBreakerOpened")
     });
 
     it("depositToken Test 3: fail, invalid magic number", async () => {
       const magic = BigNumber.from("0");
       const amount = BigNumber.from("1000000000000000000");
       const tx = stakingNFT.depositTokenMock(magic, amount);
-      // Error Code 2200 for bad magic
-      await expect(tx).to.be.revertedWith("2200");
+      // Error Code for bad magic
+      await expect(tx).to.be.revertedWithCustomError(stakingNFT, "BadMagic")
     });
   });
 
@@ -3244,8 +3232,8 @@ contract("StakingNFT", async () => {
     it("estimateEthCollection Test 5: fail", async () => {
       const tokenID = BigNumber.from("0");
       const tx = stakingNFT.estimateEthCollectionMock(tokenID);
-      // Error Code 604 for Invalid NFT TokenID
-      await expect(tx).to.be.revertedWith("604");
+      // InvalidTokenID
+      await expect(tx).to.be.revertedWithCustomError(stakingNFT, "InvalidTokenId");
     });
 
     it("estimateTokenCollection Test 1: no Token", async () => {
@@ -3448,8 +3436,8 @@ contract("StakingNFT", async () => {
     it("estimateTokenCollection Test 5: fail", async () => {
       const tokenID = BigNumber.from(0);
       const tx = stakingNFT.estimateTokenCollectionMock(tokenID);
-      // Error Code 604 for Invalid NFT TokenID
-      await expect(tx).to.be.revertedWith("604");
+      // Error Code for Invalid NFT TokenID
+      await expect(tx).to.be.revertedWithCustomError(stakingNFT, "InvalidTokenId")
     });
   });
 
@@ -3505,8 +3493,8 @@ contract("StakingNFT", async () => {
     it("getPosition Test 2: Fail", async () => {
       const tokenID = BigNumber.from("0");
       const tx = stakingNFT.getPositionMock(tokenID);
-      // Error Code 604 for Invalid NFT TokenID
-      await expect(tx).to.be.revertedWith("604");
+      // Error Code for Invalid NFT TokenID
+      await expect(tx).to.be.revertedWithCustomError(stakingNFT, "InvalidTokenId")
     });
   });
 
@@ -3543,8 +3531,8 @@ contract("StakingNFT", async () => {
     it("tokenURI Test 2: Fail", async () => {
       const tokenID = BigNumber.from("0");
       const tx = stakingNFT.tokenURIMock(tokenID);
-      // Error Code 604 for Invalid NFT TokenID
-      await expect(tx).to.be.revertedWith("604");
+      // Error Code for Invalid NFT TokenID
+      await expect(tx).to.be.revertedWithCustomError(stakingNFT, "InvalidTokenId")
     });
   });
 
@@ -3586,8 +3574,8 @@ contract("StakingNFT", async () => {
       retCircuitBreaker = await stakingNFT.circuitBreakerStateMock();
       expect(retCircuitBreaker).to.eq(expCircuitBreaker);
       const tx = stakingNFT.tripCBLowMock();
-      // Error Code 500 for circuit breaker is open
-      await expect(tx).to.be.revertedWith("500");
+      // Error Code for circuit breaker is open
+      await expect(tx).to.be.revertedWithCustomError(stakingNFT, "CircuitBreakerOpened")
     });
 
     it("circuitBreaker Test 4: fail, reset CB when closed (low)", async () => {
@@ -3595,17 +3583,18 @@ contract("StakingNFT", async () => {
       const retCircuitBreaker = await stakingNFT.circuitBreakerStateMock();
       expect(retCircuitBreaker).to.eq(expCircuitBreaker);
       const tx = stakingNFT.resetCBLowMock();
-      // Error Code 501 for circuit breaker is closed
-      await expect(tx).to.be.revertedWith("501");
+      // Error Code for circuit breaker is closed
+      await expect(tx).to.be.revertedWithCustomError(stakingNFT, "CircuitBreakerClosed")
     });
 
     it("circuitBreaker Test 5: fail, trip CB when open (not factory)", async () => {
+      const signers = await ethers.getSigners();
       const expCircuitBreaker = false;
       const retCircuitBreaker = await stakingNFT.circuitBreakerStateMock();
       expect(retCircuitBreaker).to.eq(expCircuitBreaker);
       const tx = stakingNFT.tripCBMock();
-      // Error Code 2000 for not calling as factory
-      await expect(tx).to.be.revertedWith("2000");
+      // Error Code for not calling as factory
+      await expect(tx).to.be.revertedWithCustomError(stakingNFT, "OnlyFactory").withArgs(signers[0].address, fixture.factory.address);
     });
   });
 
@@ -4006,8 +3995,8 @@ contract("StakingNFT", async () => {
       };
       // Call deposit
       const tx = stakingNFT.depositPure(delta, state);
-      // Error Code 608 for Slush Too Large; must have slush < 2**167
-      await expect(tx).to.be.revertedWith("608");
+      // Error Code for Slush Too Large; must have slush < 2**167 
+      await expect(tx).to.be.revertedWithCustomError(stakingNFT, "SlushTooLarge").withArgs(stateSlushInitial);
     });
 
     it("deposit gas Test", async () => {

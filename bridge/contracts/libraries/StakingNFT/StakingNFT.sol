@@ -400,10 +400,10 @@ abstract contract StakingNFT is
         override(ERC721Upgradeable)
         returns (string memory)
     {
-        if (!_exists(tokenId)) {
-            revert StakingNFTErrors.InvalidTokenId(tokenId);
+        if (!_exists(tokenID_)) {
+            revert StakingNFTErrors.InvalidTokenId(tokenID_);
         }
-        return IStakingNFTDescriptor(_stakingPositionDescriptorAddress()).tokenURI(this, tokenId);
+        return IStakingNFTDescriptor(_stakingPositionDescriptorAddress()).tokenURI(this, tokenID_);
     }
 
     /// gets the _ACCUMULATOR_SCALE_FACTOR used to scale the ether and tokens
@@ -472,6 +472,9 @@ abstract contract StakingNFT is
     function _mintNFT(address to_, uint256 amount_) internal returns (uint256 tokenID) {
         // this is to allow struct packing and is safe due to AToken having a
         // total distribution of 220M
+        if (amount_ == 0) {
+            revert StakingNFTErrors.MintAmountZero();
+        }
         if (amount_ > 2**224 - 1) {
             revert StakingNFTErrors.MintAmountExceedsMaximumSupply();
         }
