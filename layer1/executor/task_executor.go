@@ -22,7 +22,7 @@ import (
 
 type TaskExecutor struct {
 	sync.RWMutex
-	TxsBackup map[string]*types.Transaction `json:"transactions_backup"`
+	TxsBackup map[string]*types.Transaction `json:"transactionsBackup"`
 	txWatcher transaction.Watcher           `json:"-"`
 	database  *db.Database                  `json:"-"`
 	logger    *logrus.Entry                 `json:"-"`

@@ -176,13 +176,13 @@ RUN_NODE() {
 RACE_VALIDATOR() {
     # Run a validator
     CHECK_EXISTING $1
-    ./madrace --config ./scripts/generated/config/validator$1.toml validator
+    ./alicerace --config ./scripts/generated/config/validator$1.toml validator
 }
 
 STATUS() {
     # Check validator status
     CHECK_EXISTING $1
-    ./alicenet --config ./assets/config/validator$1.toml utils
+    ./alicenet --config ./scripts/generated/config/validator$1.toml utils
 }
 
 # init # - initalize validators directory files

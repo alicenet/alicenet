@@ -4,9 +4,10 @@ import (
 	"math/big"
 	"time"
 
+	"github.com/dgraph-io/badger/v2"
+
 	"github.com/alicenet/alicenet/application/wrapper"
 	"github.com/alicenet/alicenet/dynamics"
-	"github.com/dgraph-io/badger/v2"
 )
 
 func MakeMockStorageGetter() *MockStorageGetter {
@@ -55,24 +56,31 @@ func (msg *MockStorageGetter) GetMaxProposalSize() uint32 {
 func (msg *MockStorageGetter) GetProposalStepTimeout() time.Duration {
 	return time.Duration(0)
 }
+
 func (msg *MockStorageGetter) GetPreVoteStepTimeout() time.Duration {
 	return time.Duration(0)
 }
+
 func (msg *MockStorageGetter) GetPreCommitStepTimeout() time.Duration {
 	return time.Duration(0)
 }
+
 func (msg *MockStorageGetter) GetDeadBlockRoundNextRoundTimeout() time.Duration {
 	return time.Duration(0)
 }
+
 func (msg *MockStorageGetter) GetDownloadTimeout() time.Duration {
 	return time.Duration(0)
 }
+
 func (msg *MockStorageGetter) GetSrvrMsgTimeout() time.Duration {
 	return time.Duration(0)
 }
+
 func (msg *MockStorageGetter) GetMsgTimeout() time.Duration {
 	return time.Duration(0)
 }
+
 func (msg *MockStorageGetter) GetMaxTxVectorLength() int {
 	return 128
 }
@@ -80,6 +88,7 @@ func (msg *MockStorageGetter) GetMaxTxVectorLength() int {
 func (msg *MockStorageGetter) UpdateStorage(txn *badger.Txn, update dynamics.Updater) error {
 	return nil
 }
+
 func (msg *MockStorageGetter) LoadStorage(txn *badger.Txn, epoch uint32) error {
 	return nil
 }

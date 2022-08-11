@@ -4,13 +4,14 @@ import (
 	"net"
 	"sync"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/alicenet/alicenet/config"
 	"github.com/alicenet/alicenet/crypto/secp256k1"
 	"github.com/alicenet/alicenet/interfaces"
 	"github.com/alicenet/alicenet/transport/brontide"
 	"github.com/alicenet/alicenet/types"
 	"github.com/alicenet/alicenet/utils"
-	"github.com/sirupsen/logrus"
 )
 
 var _ interfaces.P2PTransport = (*P2PTransport)(nil)
@@ -76,7 +77,7 @@ func (pt *P2PTransport) Dial(addr interfaces.NodeAddr, protocol types.Protocol) 
 		pt.localNodeAddr.ChainID(),
 		pt.localNodeAddr.Port(),
 		btcAddr,
-		func(network string, address string) (net.Conn, error) {
+		func(network, address string) (net.Conn, error) {
 			return net.Dial(network, addr.String())
 		})
 	if err != nil {

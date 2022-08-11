@@ -3,18 +3,18 @@ package deposit
 import (
 	"math/big"
 
-	"github.com/alicenet/alicenet/constants/dbprefix"
-	"github.com/alicenet/alicenet/errorz"
+	"github.com/dgraph-io/badger/v2"
+	"github.com/sirupsen/logrus"
 
 	"github.com/alicenet/alicenet/application/db"
 	"github.com/alicenet/alicenet/application/indexer"
 	"github.com/alicenet/alicenet/application/objs"
 	"github.com/alicenet/alicenet/application/objs/uint256"
 	"github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/constants/dbprefix"
+	"github.com/alicenet/alicenet/errorz"
 	"github.com/alicenet/alicenet/logging"
 	"github.com/alicenet/alicenet/utils"
-	"github.com/dgraph-io/badger/v2"
-	"github.com/sirupsen/logrus"
 )
 
 // Handler creates a value owner index of all deposits and allows
@@ -25,7 +25,7 @@ type Handler struct {
 	logger     *logrus.Logger
 }
 
-// Init initializes the deposit handler
+// Init initializes the deposit handler.
 func (dp *Handler) Init() {
 	vidx := indexer.NewValueIndex(
 		dbprefix.PrefixDepositValueKey,
@@ -35,7 +35,7 @@ func (dp *Handler) Init() {
 	dp.logger = logging.GetLogger(constants.LoggerApp)
 }
 
-// IsValid determines if the deposits in txvec are valid
+// IsValid determines if the deposits in txvec are valid.
 func (dp *Handler) IsValid(txn *badger.Txn, txs objs.TxVec) ([]*objs.TXOut, error) {
 	utxoIDs, err := txs.ConsumedUTXOIDOnlyDeposits()
 	if err != nil {
@@ -56,7 +56,7 @@ func (dp *Handler) IsValid(txn *badger.Txn, txs objs.TxVec) ([]*objs.TXOut, erro
 	return found, nil
 }
 
-// Add will add a deposit to the handler
+// Add will add a deposit to the handler.
 func (dp *Handler) Add(txn *badger.Txn, chainID uint32, utxoID []byte, biValue *big.Int, owner *objs.Owner) error {
 	value, err := new(uint256.Uint256).FromBigInt(biValue)
 	if err != nil {
@@ -118,7 +118,7 @@ func (dp *Handler) Add(txn *badger.Txn, chainID uint32, utxoID []byte, biValue *
 	return nil
 }
 
-// Remove will delete all references to a deposit from the Handler
+// Remove will delete all references to a deposit from the Handler.
 func (dp *Handler) Remove(txn *badger.Txn, utxoID []byte) error {
 	err := dp.valueIndex.Drop(txn, utxoID)
 	if err != nil {

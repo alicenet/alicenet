@@ -131,7 +131,7 @@ type ManagerResponseInfo struct {
 	ReceivedOnBlock uint64           `json:"receivedOnBlock"`
 }
 
-// requestStored with an internal wrapper for the task interface cor recovery.
+// requestStored with an internal wrapper for the task interface for recovery.
 type requestStored struct {
 	BaseRequest
 	WrappedTask *marshaller.InstanceWrapper `json:"wrappedTask"`
@@ -202,7 +202,6 @@ type ExecutorResponse struct {
 // executorResponseChan is used to communicate the task execution result from TaskExecutor to
 // TaskManager. It can only be written and closed once.
 type executorResponseChan struct {
-	//writeOnce sync.Once
 	sync.Mutex
 	erChan   chan ExecutorResponse
 	isClosed bool

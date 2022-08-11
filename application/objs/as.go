@@ -2,6 +2,7 @@ package objs
 
 import (
 	capnp "github.com/MadBase/go-capnproto2/v2"
+
 	"github.com/alicenet/alicenet/application/objs/atomicswap"
 	mdefs "github.com/alicenet/alicenet/application/objs/capn"
 	"github.com/alicenet/alicenet/application/objs/uint256"
@@ -12,7 +13,7 @@ import (
 	"github.com/alicenet/alicenet/utils"
 )
 
-// AtomicSwap is an atomic swap object based on a time lock hash
+// AtomicSwap is an atomic swap object based on a time lock hash.
 type AtomicSwap struct {
 	ASPreImage *ASPreImage
 	TxHash     []byte
@@ -21,7 +22,7 @@ type AtomicSwap struct {
 }
 
 // UnmarshalBinary takes a byte slice and returns the corresponding
-// AtomicSwap object
+// AtomicSwap object.
 func (b *AtomicSwap) UnmarshalBinary(data []byte) error {
 	bc, err := atomicswap.Unmarshal(data)
 	if err != nil {
@@ -31,7 +32,7 @@ func (b *AtomicSwap) UnmarshalBinary(data []byte) error {
 }
 
 // MarshalBinary takes the AtomicSwap object and returns the canonical
-// byte slice
+// byte slice.
 func (b *AtomicSwap) MarshalBinary() ([]byte, error) {
 	if b == nil {
 		return nil, errorz.ErrInvalid{}.New("as.marshalBinary; as not initialized")
@@ -43,7 +44,7 @@ func (b *AtomicSwap) MarshalBinary() ([]byte, error) {
 	return atomicswap.Marshal(bc)
 }
 
-// UnmarshalCapn unmarshals the capnproto definition of the object
+// UnmarshalCapn unmarshals the capnproto definition of the object.
 func (b *AtomicSwap) UnmarshalCapn(bc mdefs.AtomicSwap) error {
 	if err := atomicswap.Validate(bc); err != nil {
 		return err
@@ -56,7 +57,7 @@ func (b *AtomicSwap) UnmarshalCapn(bc mdefs.AtomicSwap) error {
 	return nil
 }
 
-// MarshalCapn marshals the object into its capnproto definition
+// MarshalCapn marshals the object into its capnproto definition.
 func (b *AtomicSwap) MarshalCapn(seg *capnp.Segment) (mdefs.AtomicSwap, error) {
 	if b == nil {
 		return mdefs.AtomicSwap{}, errorz.ErrInvalid{}.New("as.marshalCapn; as not initialized")
@@ -92,7 +93,7 @@ func (b *AtomicSwap) MarshalCapn(seg *capnp.Segment) (mdefs.AtomicSwap, error) {
 	return bc, nil
 }
 
-// PreHash returns the PreHash of the object
+// PreHash returns the PreHash of the object.
 func (b *AtomicSwap) PreHash() ([]byte, error) {
 	if b == nil {
 		return nil, errorz.ErrInvalid{}.New("as.preHash; as not initialized")
@@ -100,7 +101,7 @@ func (b *AtomicSwap) PreHash() ([]byte, error) {
 	return b.ASPreImage.PreHash()
 }
 
-// UTXOID returns the UTXOID of the object
+// UTXOID returns the UTXOID of the object.
 func (b *AtomicSwap) UTXOID() ([]byte, error) {
 	if b == nil {
 		return nil, errorz.ErrInvalid{}.New("as.utxoID; as not initialized")
@@ -115,7 +116,7 @@ func (b *AtomicSwap) UTXOID() ([]byte, error) {
 	return utils.CopySlice(b.utxoID), nil
 }
 
-// TxOutIdx returns the TxOutIdx of the object
+// TxOutIdx returns the TxOutIdx of the object.
 func (b *AtomicSwap) TxOutIdx() (uint32, error) {
 	if b == nil {
 		return 0, errorz.ErrInvalid{}.New("as.txOutIdx; as not initialized")
@@ -126,7 +127,7 @@ func (b *AtomicSwap) TxOutIdx() (uint32, error) {
 	return b.ASPreImage.TXOutIdx, nil
 }
 
-// SetTxOutIdx sets the TxOutIdx of the object
+// SetTxOutIdx sets the TxOutIdx of the object.
 func (b *AtomicSwap) SetTxOutIdx(idx uint32) error {
 	if b == nil {
 		return errorz.ErrInvalid{}.New("as.setTxOutIdx; as not initialized")
@@ -138,7 +139,7 @@ func (b *AtomicSwap) SetTxOutIdx(idx uint32) error {
 	return nil
 }
 
-// SetTxHash sets the TxHash of the object
+// SetTxHash sets the TxHash of the object.
 func (b *AtomicSwap) SetTxHash(txHash []byte) error {
 	if b == nil {
 		return errorz.ErrInvalid{}.New("as.setTxHash; as not initialized")
@@ -153,7 +154,7 @@ func (b *AtomicSwap) SetTxHash(txHash []byte) error {
 	return nil
 }
 
-// Value returns the Value of the object
+// Value returns the Value of the object.
 func (b *AtomicSwap) Value() (*uint256.Uint256, error) {
 	if b == nil {
 		return nil, errorz.ErrInvalid{}.New("as.value; as not initialized")
@@ -170,7 +171,7 @@ func (b *AtomicSwap) Value() (*uint256.Uint256, error) {
 	return b.ASPreImage.Value.Clone(), nil
 }
 
-// Fee returns the Fee of the object
+// Fee returns the Fee of the object.
 func (b *AtomicSwap) Fee() (*uint256.Uint256, error) {
 	if b == nil {
 		return nil, errorz.ErrInvalid{}.New("as.fee; as not initialized")
@@ -184,7 +185,7 @@ func (b *AtomicSwap) Fee() (*uint256.Uint256, error) {
 	return b.ASPreImage.Fee.Clone(), nil
 }
 
-// ValuePlusFee returns the Value of the object with the associated fee
+// ValuePlusFee returns the Value of the object with the associated fee.
 func (b *AtomicSwap) ValuePlusFee() (*uint256.Uint256, error) {
 	value, err := b.Value()
 	if err != nil {
@@ -201,7 +202,7 @@ func (b *AtomicSwap) ValuePlusFee() (*uint256.Uint256, error) {
 	return total, nil
 }
 
-// Owner returns the AtomicSwapOwner object of the AtomicSwap
+// Owner returns the AtomicSwapOwner object of the AtomicSwap.
 func (b *AtomicSwap) Owner() (*AtomicSwapOwner, error) {
 	if b == nil {
 		return nil, errorz.ErrInvalid{}.New("as.owner; as not initialized")
@@ -215,7 +216,7 @@ func (b *AtomicSwap) Owner() (*AtomicSwapOwner, error) {
 	return b.ASPreImage.Owner, nil
 }
 
-// GenericOwner returns the PrimaryOwner of the AtomicSwap as an Owner object
+// GenericOwner returns the PrimaryOwner of the AtomicSwap as an Owner object.
 func (b *AtomicSwap) GenericOwner() (*Owner, error) {
 	aso, err := b.Owner()
 	if err != nil {
@@ -229,7 +230,7 @@ func (b *AtomicSwap) GenericOwner() (*Owner, error) {
 	return onr, nil
 }
 
-// ChainID returns the ChainID of the AtomicSwap
+// ChainID returns the ChainID of the AtomicSwap.
 func (b *AtomicSwap) ChainID() (uint32, error) {
 	if b == nil {
 		return 0, errorz.ErrInvalid{}.New("as.chainID; as not initialized")
@@ -243,7 +244,7 @@ func (b *AtomicSwap) ChainID() (uint32, error) {
 	return b.ASPreImage.ChainID, nil
 }
 
-// Exp returns the epoch after which the AtomicSwap will expire
+// Exp returns the epoch after which the AtomicSwap will expire.
 func (b *AtomicSwap) Exp() (uint32, error) {
 	if b == nil {
 		return 0, errorz.ErrInvalid{}.New("as.exp; as not initialized")
@@ -257,7 +258,7 @@ func (b *AtomicSwap) Exp() (uint32, error) {
 	return b.ASPreImage.Exp, nil
 }
 
-// IssuedAt returns the epoch of issuance for the AtomicSwap
+// IssuedAt returns the epoch of issuance for the AtomicSwap.
 func (b *AtomicSwap) IssuedAt() (uint32, error) {
 	if b == nil {
 		return 0, errorz.ErrInvalid{}.New("as.issuedAt; as not initialized")
@@ -271,7 +272,7 @@ func (b *AtomicSwap) IssuedAt() (uint32, error) {
 	return b.ASPreImage.IssuedAt, nil
 }
 
-// IsExpired returns true if the current epoch is greater than exp
+// IsExpired returns true if the current epoch is greater than exp.
 func (b *AtomicSwap) IsExpired(currentHeight uint32) (bool, error) {
 	if b == nil {
 		return true, errorz.ErrInvalid{}.New("as.isExpired; as not initialized")
@@ -279,7 +280,7 @@ func (b *AtomicSwap) IsExpired(currentHeight uint32) (bool, error) {
 	return b.ASPreImage.IsExpired(currentHeight)
 }
 
-// ValidateFee validates the fee of the object at the time of creation
+// ValidateFee validates the fee of the object at the time of creation.
 func (b *AtomicSwap) ValidateFee(storage *wrapper.Storage) error {
 	fee, err := b.Fee()
 	if err != nil {
@@ -295,7 +296,7 @@ func (b *AtomicSwap) ValidateFee(storage *wrapper.Storage) error {
 	return nil
 }
 
-// ValidateSignature validates the signature of the TXIn against the atomic swap
+// ValidateSignature validates the signature of the TXIn against the atomic swap.
 func (b *AtomicSwap) ValidateSignature(currentHeight uint32, txIn *TXIn) error {
 	if b == nil {
 		return errorz.ErrInvalid{}.New("vs.validateSignature; as not initialized")
@@ -314,7 +315,7 @@ func (b *AtomicSwap) ValidateSignature(currentHeight uint32, txIn *TXIn) error {
 	return b.ASPreImage.ValidateSignature(currentHeight, msg, sig)
 }
 
-// SignAsPrimary signs the object as the user who is the original creator of the AtomicSwap
+// SignAsPrimary signs the object as the user who is the original creator of the AtomicSwap.
 func (b *AtomicSwap) SignAsPrimary(txIn *TXIn, signer *crypto.Secp256k1Signer, hashKey []byte) error {
 	if b == nil {
 		return errorz.ErrInvalid{}.New("as.signAsPrimary; as not initialized")
@@ -338,7 +339,7 @@ func (b *AtomicSwap) SignAsPrimary(txIn *TXIn, signer *crypto.Secp256k1Signer, h
 	return nil
 }
 
-// SignAsAlternate signs the object as the user who is exchanging in the AtomicSwap
+// SignAsAlternate signs the object as the user who is exchanging in the AtomicSwap.
 func (b *AtomicSwap) SignAsAlternate(txIn *TXIn, signer *crypto.Secp256k1Signer, hashKey []byte) error {
 	if b == nil {
 		return errorz.ErrInvalid{}.New("as.signAsAlternate; as not initialized")
@@ -362,7 +363,7 @@ func (b *AtomicSwap) SignAsAlternate(txIn *TXIn, signer *crypto.Secp256k1Signer,
 	return nil
 }
 
-// MakeTxIn constructs a TXIn object for the current object
+// MakeTxIn constructs a TXIn object for the current object.
 func (b *AtomicSwap) MakeTxIn() (*TXIn, error) {
 	txOutIdx, err := b.TxOutIdx()
 	if err != nil {

@@ -21,10 +21,11 @@ func TestClient_GetBlockHeader(t *testing.T) {
 		want    *consensusObjs.BlockHeader
 		wantErr bool
 	}{
-		{args: args{
-			ctx:    context.Background(),
-			height: 1,
-		},
+		{
+			args: args{
+				ctx:    context.Background(),
+				height: 1,
+			},
 		},
 	}
 	for _, tt := range tests {
@@ -104,7 +105,7 @@ func TestClient_GetBlockHeader(t *testing.T) {
 			}
 		})
 	}
-}
+}.
 */
 func TestClient_GetBlockNumber(t *testing.T) {
 	type args struct {
@@ -116,7 +117,8 @@ func TestClient_GetBlockNumber(t *testing.T) {
 		want    uint32
 		wantErr bool
 	}{
-		{name: constants.LoggerApp,
+		{
+			name: constants.LoggerApp,
 			args: args{
 				ctx: context.Background(),
 			},
@@ -202,7 +204,8 @@ func TestClient_GetEpochNumber(t *testing.T) {
 		want    uint32
 		wantErr bool
 	}{
-		{name: constants.LoggerApp,
+		{
+			name: constants.LoggerApp,
 			args: args{
 				ctx: context.Background(),
 			},
@@ -322,7 +325,7 @@ func TestClient_GetPendingTransaction(t *testing.T) {
             }
         })
     }
-}
+}.
 */
 func TestClient_GetTxFees(t *testing.T) {
 	type args struct {
@@ -334,7 +337,8 @@ func TestClient_GetTxFees(t *testing.T) {
 		want    []string
 		wantErr bool
 	}{
-		{name: constants.LoggerApp,
+		{
+			name: constants.LoggerApp,
 			args: args{
 				ctx: context.Background(),
 			},
@@ -344,7 +348,8 @@ func TestClient_GetTxFees(t *testing.T) {
 				fmt.Sprintf("%064d", 3),
 				fmt.Sprintf("%064d", 2),
 			},
-		}}
+		},
+	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := lrpc.GetTxFees(tt.args.ctx)
@@ -370,7 +375,8 @@ func TestClient_GetUTXO(t *testing.T) {
 		want    [][]byte
 		wantErr bool
 	}{
-		{name: constants.LoggerApp,
+		{
+			name: constants.LoggerApp,
 			args: args{
 				ctx:     context.Background(),
 				utxoIDs: utxoTx1IDs,

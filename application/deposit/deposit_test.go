@@ -6,17 +6,16 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/dgraph-io/badger/v2"
 	"github.com/stretchr/testify/assert"
-
-	"github.com/alicenet/alicenet/constants/dbprefix"
-	"github.com/alicenet/alicenet/internal/testing/environment"
 
 	"github.com/alicenet/alicenet/application/objs"
 	"github.com/alicenet/alicenet/application/objs/uint256"
 	"github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/constants/dbprefix"
 	"github.com/alicenet/alicenet/crypto"
+	"github.com/alicenet/alicenet/internal/testing/environment"
 	"github.com/alicenet/alicenet/utils"
-	"github.com/dgraph-io/badger/v2"
 )
 
 const (
@@ -110,7 +109,7 @@ func TestDeposit(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		//if v != 1 {
+		// if v != 1 {
 		if !v.Eq(uint256.One()) {
 			t.Fatal("not 1", v)
 		}
@@ -122,7 +121,7 @@ func TestDeposit(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		//if retVal != 2 {
+		// if retVal != 2 {
 		if !retVal.Eq(uint256.Two()) {
 			t.Fatal("bad value", retVal)
 		}
@@ -145,7 +144,7 @@ func TestDeposit(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		//if retVal != 2 {
+		// if retVal != 2 {
 		if !retVal.Eq(uint256.Two()) {
 			t.Fatal("bad value", retVal)
 		}
@@ -176,7 +175,7 @@ func TestDeposit(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		//if retVal != 0 {
+		// if retVal != 0 {
 		if !retVal.Eq(uint256.Zero()) {
 			t.Fatal("bad value", retVal)
 		}
@@ -309,7 +308,7 @@ func TestDepositGet(t *testing.T) {
 		}
 
 		err = hndlr.Add(txn, testingChainID, utxoID, one, testingOwner(t))
-		//err = hndlr.Add(txn, testingChainID, utxoID, uint256.One(), testingOwner())
+		// err = hndlr.Add(txn, testingChainID, utxoID, uint256.One(), testingOwner())
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -444,7 +443,7 @@ func TestDepositGetValueForOwner(t *testing.T) {
 	mis := &mockSpender{make(map[[constants.HashLen]byte]bool)}
 	hndlr := newDepositHandler()
 	hndlr.IsSpent = mis.isSpent
-	//minValue := uint32(32)
+	// minValue := uint32(32)
 	minValue, err := new(uint256.Uint256).FromUint64(32)
 	if err != nil {
 		t.Fatal(err)
