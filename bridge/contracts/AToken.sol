@@ -16,6 +16,9 @@ contract AToken is
     ImmutableATokenMinter,
     ImmutableATokenBurner
 {
+
+    uint256 internal constant CONVERSION_MULTIPLIER = 10;
+    uint256 internal constant CONVERSION_SCALE = 10;
     address internal immutable _legacyToken;
     bool internal _migrationAllowed;
 
@@ -34,7 +37,8 @@ contract AToken is
     function migrate(uint256 amount) public {
         require(_migrationAllowed, "MadTokens migration not allowed");
         IERC20(_legacyToken).transferFrom(msg.sender, address(this), amount);
-        _mint(msg.sender, amount);
+        uint256 scaledAmount = amount * CONVERSION_MULTIPLIER / CONVERSION_SCALE;
+        _mint(msg.sender, scaledAmount);
     }
 
     function allowMigration() public onlyFactory {
