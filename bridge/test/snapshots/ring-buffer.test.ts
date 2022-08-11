@@ -169,7 +169,7 @@ contract("SnapshotRingBuffer 0state", async () => {
     });
 
     it("getter functions should be always able to work at epoch 0", async () => {
-      let epochs = (await fixture.snapshots.getEpoch()).toNumber();
+      const epochs = (await fixture.snapshots.getEpoch()).toNumber();
       expect(epochs).to.be.equal(0);
       const lastSnapshot = await fixture.snapshots.getLatestSnapshot();
       expect(lastSnapshot.blockClaims.height).to.equal(0);
