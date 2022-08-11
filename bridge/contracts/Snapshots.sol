@@ -267,7 +267,9 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
 
     function getSnapshot(uint256 epoch_) public view returns (Snapshot memory) {
         (bool ok, Snapshot memory data) = _getSnapshot(uint32(epoch_));
-        require(ok, "snapshot not in buffer");
+        if (!ok) {
+            revert SnapshotsErrors.SnapshotsNotInBuffer(epoch_);
+        }
         return data;
     }
 
@@ -297,11 +299,14 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
     }
 
     function _getLatestSnapshotSafe() internal view returns (Snapshot memory) {
-        if (_epochRegister().get() == 0) {
+        uint256 currentEpoch = _epochRegister().get();
+        if (currentEpoch == 0) {
             return Snapshot(0, BClaimsParserLibrary.BClaims(0, 0, 0, 0, 0, 0, 0));
         }
         (bool ok, Snapshot memory snapshotData) = _getLatestSnapshot();
-        require(ok, "snapshot not in buffer");
+        if (!ok) {
+            revert SnapshotsErrors.SnapshotsNotInBuffer(currentEpoch);
+        }
         return snapshotData;
     }
 

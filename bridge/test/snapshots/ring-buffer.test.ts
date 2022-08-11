@@ -190,12 +190,12 @@ contract("SnapshotRingBuffer 0state", async () => {
           { gasLimit: 30000000 }
         );
         await contractTx.wait();
-        // console.log(`epoch: ${i}, gas: ${receipt.gasUsed}`);
       }
       epochs = (await snapshotsG1.getEpoch()).toNumber();
       const lastSnapshot = await snapshotsG1.getLatestSnapshot();
       expect(lastSnapshot.blockClaims.height).to.equal(epochs * epochLength);
-      await expect(snapshots.getSnapshot(epochs - 6)).to.be.revertedWith("410");
+      await expect(snapshots.getSnapshot(epochs - 6)).to.be.revertedWithCustomError(fixture.snapshots, `SnapshotsNotInBuffer`)
+      .withArgs(epochs - 6);
     });
   });
 });
