@@ -294,7 +294,7 @@ contract("SnapshotRingBuffer 0state", async () => {
       const snapshotsG1 = fixture.snapshots.connect(
         await getValidatorEthAccount(validatorsSnapshotsG1[0])
       );
-      let lastSnapshotBlockNumber
+      let lastSnapshotBlockNumber;
       // take 12 snapshots
       for (let i = epochs + 1; i <= 12; i++) {
         await mineBlocks(
@@ -306,7 +306,7 @@ contract("SnapshotRingBuffer 0state", async () => {
           { gasLimit: 30000000 }
         );
         const rcpt = await contractTx.wait();
-        lastSnapshotBlockNumber = rcpt.blockNumber
+        lastSnapshotBlockNumber = rcpt.blockNumber;
       }
       epochs = (await snapshotsG1.getEpoch()).toNumber();
       lastSnapshot = await fixture.snapshots.getLatestSnapshot();
@@ -364,19 +364,19 @@ contract("SnapshotRingBuffer 0state", async () => {
           `SnapshotsNotInBuffer`
         )
         .withArgs(epochs - 6);
-        await expect(snapshots.getAliceNetHeightFromSnapshot(epochs - 6))
+      await expect(snapshots.getAliceNetHeightFromSnapshot(epochs - 6))
         .to.be.revertedWithCustomError(
           fixture.snapshots,
           `SnapshotsNotInBuffer`
         )
         .withArgs(epochs - 6);
-        await expect(snapshots.getBlockClaimsFromSnapshot(epochs - 6))
+      await expect(snapshots.getBlockClaimsFromSnapshot(epochs - 6))
         .to.be.revertedWithCustomError(
           fixture.snapshots,
           `SnapshotsNotInBuffer`
         )
         .withArgs(epochs - 6);
-        await expect(snapshots.getCommittedHeightFromSnapshot(epochs - 6))
+      await expect(snapshots.getCommittedHeightFromSnapshot(epochs - 6))
         .to.be.revertedWithCustomError(
           fixture.snapshots,
           `SnapshotsNotInBuffer`
