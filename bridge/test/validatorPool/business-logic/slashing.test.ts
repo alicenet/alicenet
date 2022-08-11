@@ -530,9 +530,12 @@ describe("ValidatorPool: Slashing logic", async () => {
       expectedState,
       "Failed checking state after major slashing!"
     );
-    await expect(
-      ethdkg.majorSlash(validators[0], validators[1])
-    ).to.be.revertedWith("814");
+    await expect(ethdkg.majorSlash(validators[0], validators[1]))
+      .to.be.revertedWithCustomError(
+        fixture.validatorPool,
+        "AddressNotAccusable"
+      )
+      .withArgs(ethers.utils.getAddress(validators[0]));
   });
 
   it("Should not allow major/minor slash a person that it's not a validator", async function () {
@@ -552,11 +555,21 @@ describe("ValidatorPool: Slashing logic", async () => {
     );
     await expect(
       ethdkg.majorSlash(await adminSigner.getAddress(), validators[1])
-    ).to.be.revertedWith("814");
+    )
+      .to.be.revertedWithCustomError(
+        fixture.validatorPool,
+        "AddressNotAccusable"
+      )
+      .withArgs(await adminSigner.getAddress());
 
     await expect(
       ethdkg.minorSlash(await adminSigner.getAddress(), validators[1])
-    ).to.be.revertedWith("814");
+    )
+      .to.be.revertedWithCustomError(
+        fixture.validatorPool,
+        "AddressNotAccusable"
+      )
+      .withArgs(await adminSigner.getAddress());
   });
 
   it("Major slash a validator with disputer reward greater than stake Amount", async function () {
@@ -695,9 +708,12 @@ describe("ValidatorPool: Slashing logic", async () => {
       expectedState,
       `Failed on final minor slashing`
     );
-    await expect(ethdkg.minorSlash(infringer, disputer)).to.be.revertedWith(
-      "814"
-    );
+    await expect(ethdkg.minorSlash(infringer, disputer))
+      .to.be.revertedWithCustomError(
+        fixture.validatorPool,
+        "AddressNotAccusable"
+      )
+      .withArgs(ethers.utils.getAddress(infringer));
   });
 
   it("Minor slash a validator with reward equals to the staking amount", async function () {

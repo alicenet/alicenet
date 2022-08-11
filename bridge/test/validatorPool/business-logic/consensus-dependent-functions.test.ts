@@ -9,6 +9,7 @@ import {
   factoryCallAnyFixture,
   Fixture,
   getFixture,
+  getReceiptForFailedTransaction,
   getValidatorEthAccount,
 } from "../../setup";
 import {
@@ -52,14 +53,25 @@ describe("ValidatorPool: Consensus dependent logic ", async () => {
 
   it("Should not allow pausing “consensus” before 1.5 without snapshots", async function () {
     await commitSnapshots(fixture, 1);
-    await expect(
-      factoryCallAnyFixture(
-        fixture,
-        "validatorPool",
-        "pauseConsensusOnArbitraryHeight",
-        [1]
+    const latestSnapshotHeight =
+      await fixture.snapshots.getCommittedHeightFromLatestSnapshot();
+    const maxInterval =
+      await fixture.validatorPool.MAX_INTERVAL_WITHOUT_SNAPSHOTS();
+    const txPromise = factoryCallAnyFixture(
+      fixture,
+      "validatorPool",
+      "pauseConsensusOnArbitraryHeight",
+      [1]
+    );
+    const expectedBlockNumber = (
+      await getReceiptForFailedTransaction(txPromise)
+    ).blockNumber;
+    await expect(txPromise)
+      .to.be.revertedWithCustomError(
+        fixture.validatorPool,
+        "MinimumBlockIntervalNotMet"
       )
-    ).to.be.revertedWith("804");
+      .withArgs(expectedBlockNumber, latestSnapshotHeight.add(maxInterval));
   });
 
   it("Pause consensus after 1.5 days without snapshot", async function () {
@@ -226,14 +238,17 @@ describe("ValidatorPool: Consensus dependent logic ", async () => {
     await factoryCallAnyFixture(fixture, "validatorPool", "initializeETHDKG");
     await expect(
       factoryCallAnyFixture(fixture, "validatorPool", "initializeETHDKG")
-    ).to.be.revertedWith("802");
+    ).to.be.revertedWithCustomError(
+      fixture.validatorPool,
+      "ETHDKGRoundRunning"
+    );
     await completeETHDKGRound(validatorsSnapshots, {
       ethdkg: fixture.ethdkg,
       validatorPool: fixture.validatorPool,
     });
     await expect(
       factoryCallAnyFixture(fixture, "validatorPool", "initializeETHDKG")
-    ).to.be.revertedWith("801");
+    ).to.be.revertedWithCustomError(fixture.validatorPool, "ConsensusRunning");
   });
 
   it("Register validators, run ethdkg, schedule maintenance, do a snapshot, replace some validators, and rerun ethdkg", async function () {
@@ -311,6 +326,9 @@ describe("ValidatorPool: Consensus dependent logic ", async () => {
         to: fixture.validatorPool.address,
         value: 1000,
       })
-    ).to.be.revertedWith("803");
+    ).to.be.revertedWithCustomError(
+      fixture.validatorPool,
+      "OnlyStakingContractsAllowed"
+    );
   });
 });

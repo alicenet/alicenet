@@ -8,7 +8,6 @@ import (
 	"github.com/dgraph-io/badger/v2"
 	"github.com/stretchr/testify/assert"
 
-
 	appObjs "github.com/alicenet/alicenet/application/objs"
 	"github.com/alicenet/alicenet/application/objs/uint256"
 	"github.com/alicenet/alicenet/consensus/objs"

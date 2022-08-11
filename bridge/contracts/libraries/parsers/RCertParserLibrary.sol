@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: MIT-open-group
 pragma solidity ^0.8.11;
 
-import {
-    RCertParserLibraryErrorCodes
-} from "contracts/libraries/errorCodes/RCertParserLibraryErrorCodes.sol";
+import "contracts/libraries/errors/GenericParserLibraryErrors.sol";
 
 import "./BaseParserLibrary.sol";
 import "./RClaimsParserLibrary.sol";
@@ -36,16 +34,15 @@ library RCertParserLibrary {
         pure
         returns (uint256[4] memory publicKey, uint256[2] memory signature)
     {
-        require(
-            dataOffset + RCertParserLibrary._SIG_GROUP_SIZE > dataOffset,
-            string(
-                abi.encodePacked(RCertParserLibraryErrorCodes.RCERTPARSERLIB_DATA_OFFSET_OVERFLOW)
-            )
-        );
-        require(
-            src.length >= dataOffset + RCertParserLibrary._SIG_GROUP_SIZE,
-            string(abi.encodePacked(RCertParserLibraryErrorCodes.RCERTPARSERLIB_INSUFFICIENT_BYTES))
-        );
+        if (dataOffset + RCertParserLibrary._SIG_GROUP_SIZE <= dataOffset) {
+            revert GenericParserLibraryErrors.DataOffsetOverflow();
+        }
+        if (src.length < dataOffset + RCertParserLibrary._SIG_GROUP_SIZE) {
+            revert GenericParserLibraryErrors.InsufficientBytes(
+                src.length,
+                dataOffset + RCertParserLibrary._SIG_GROUP_SIZE
+            );
+        }
         // _SIG_GROUP_SIZE = 192 bytes -> size in bytes of 6 uint256/bytes32 elements (6*32)
         publicKey[0] = BaseParserLibrary.extractUInt256(src, dataOffset + 0);
         publicKey[1] = BaseParserLibrary.extractUInt256(src, dataOffset + 32);
@@ -84,20 +81,15 @@ library RCertParserLibrary {
         pure
         returns (RCert memory rCert)
     {
-        require(
-            dataOffset + _RCERT_SIZE > dataOffset,
-            string(
-                abi.encodePacked(RCertParserLibraryErrorCodes.RCERTPARSERLIB_DATA_OFFSET_OVERFLOW)
-            )
-        );
-        require(
-            src.length >= dataOffset + _RCERT_SIZE,
-            string(
-                abi.encodePacked(
-                    RCertParserLibraryErrorCodes.RCERTPARSERLIB_INSUFFICIENT_BYTES_TO_EXTRACT
-                )
-            )
-        );
+        if (dataOffset + _RCERT_SIZE <= dataOffset) {
+            revert GenericParserLibraryErrors.DataOffsetOverflow();
+        }
+        if (src.length < dataOffset + _RCERT_SIZE) {
+            revert GenericParserLibraryErrors.InsufficientBytes(
+                src.length,
+                dataOffset + _RCERT_SIZE
+            );
+        }
         rCert.rClaims = RClaimsParserLibrary.extractInnerRClaims(src, dataOffset + 16);
         (rCert.sigGroupPublicKey, rCert.sigGroupSignature) = extractSigGroup(src, dataOffset + 72);
     }

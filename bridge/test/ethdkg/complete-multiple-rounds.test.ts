@@ -1,6 +1,12 @@
+import { ethers } from "hardhat";
 import { validators10 } from "./assets/10-validators-successful-case";
 import { validators4 } from "./assets/4-validators-successful-case";
-import { completeETHDKGRound, expect, registerValidators } from "./setup";
+import {
+  completeETHDKGRound,
+  expect,
+  Phase,
+  registerValidators,
+} from "./setup";
 
 describe("ETHDKG: Complete an ETHDKG Round and change validators", () => {
   it("completes ETHDKG with 10 validators then change to 4 validators", async function () {
@@ -21,8 +27,17 @@ describe("ETHDKG: Complete an ETHDKG Round and change validators", () => {
       validators10
     );
 
+    const ethDKGPhases = await ethers.getContractAt(
+      "ETHDKGPhases",
+      ethdkg.address
+    );
     await expect(
       registerValidators(ethdkg, validatorPool, validators10, expectedNonce)
-    ).to.be.revertedWith("128");
+    )
+      .to.be.revertedWithCustomError(
+        ethDKGPhases,
+        `ETHDKGNotInRegistrationPhase`
+      )
+      .withArgs(Phase.Completion);
   });
 });
