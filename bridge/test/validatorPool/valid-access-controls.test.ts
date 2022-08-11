@@ -1,5 +1,10 @@
-import { expect } from "../chai-setup";
-import { factoryCallAnyFixture, Fixture, getFixture } from "../setup";
+import { expect } from "hardhat";
+import {
+  factoryCallAnyFixture,
+  Fixture,
+  getFixture,
+  getReceiptForFailedTransaction,
+} from "../setup";
 import { commitSnapshots } from "./setup";
 
 describe("ValidatorPool Access Control: An user with admin role should be able to:", async function () {
@@ -52,7 +57,9 @@ describe("ValidatorPool Access Control: An user with admin role should be able t
   it("Initialize ETHDKG", async function () {
     await expect(
       factoryCallAnyFixture(fixture, "validatorPool", "initializeETHDKG")
-    ).to.be.revertedWith("102");
+    )
+      .to.be.revertedWithCustomError(fixture.ethdkg, `MinimumValidatorsNotMet`)
+      .withArgs(0);
   });
 
   it("Unregister validators", async function () {
@@ -60,18 +67,36 @@ describe("ValidatorPool Access Control: An user with admin role should be able t
       factoryCallAnyFixture(fixture, "validatorPool", "unregisterValidators", [
         ["0x000000000000000000000000000000000000dEaD"],
       ])
-    ).to.be.revertedWith("808");
+    )
+      .to.be.revertedWithCustomError(
+        fixture.validatorPool,
+        "LengthGreaterThanAvailableValidators"
+      )
+      .withArgs(1, 0);
   });
 
   it("Pause consensus", async function () {
     await commitSnapshots(fixture, 1);
-    await expect(
-      factoryCallAnyFixture(
-        fixture,
-        "validatorPool",
-        "pauseConsensusOnArbitraryHeight",
-        [1]
+    const latestSnapshotHeight =
+      await fixture.snapshots.getCommittedHeightFromLatestSnapshot();
+    const maxInterval =
+      await fixture.validatorPool.MAX_INTERVAL_WITHOUT_SNAPSHOTS();
+
+    const txPromise = factoryCallAnyFixture(
+      fixture,
+      "validatorPool",
+      "pauseConsensusOnArbitraryHeight",
+      [1]
+    );
+    const expectedBlockNumber = (
+      await getReceiptForFailedTransaction(txPromise)
+    ).blockNumber;
+
+    await expect(txPromise)
+      .to.be.revertedWithCustomError(
+        fixture.validatorPool,
+        "MinimumBlockIntervalNotMet"
       )
-    ).to.be.revertedWith("804");
+      .withArgs(expectedBlockNumber, latestSnapshotHeight.add(maxInterval));
   });
 });

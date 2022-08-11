@@ -4,12 +4,13 @@ import (
 	"bytes"
 	"errors"
 
+	"github.com/dgraph-io/badger/v2"
+
 	"github.com/alicenet/alicenet/consensus/objs"
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/errorz"
 	"github.com/alicenet/alicenet/interfaces"
 	"github.com/alicenet/alicenet/utils"
-	"github.com/dgraph-io/badger/v2"
 )
 
 // AddPendingTx ...
@@ -66,7 +67,7 @@ func (ce *Engine) getValidValue(txn *badger.Txn, rs *RoundStates) ([][]byte, []b
 	return txHashes, txRootHash, stateRoot, headerRoot, nil
 }
 
-func (ce *Engine) isValid(txn *badger.Txn, rs *RoundStates, chainID uint32, stateHash []byte, headerRoot []byte, txs []interfaces.Transaction) (bool, error) {
+func (ce *Engine) isValid(txn *badger.Txn, rs *RoundStates, chainID uint32, stateHash, headerRoot []byte, txs []interfaces.Transaction) (bool, error) {
 	goodHeaderRoot, err := ce.database.GetHeaderTrieRoot(txn, rs.OwnState.SyncToBH.BClaims.Height)
 	if err != nil {
 		utils.DebugTrace(ce.logger, err)

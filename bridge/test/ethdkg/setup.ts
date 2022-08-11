@@ -489,12 +489,21 @@ export const submitMasterPublicKey = async (
   expect(await ethdkg.getNumParticipants()).to.eq(0);
   await assertETHDKGPhase(ethdkg, Phase.GPKJSubmission);
   // The other validators should fail
+  const ethDKGPhases = await ethers.getContractAt(
+    "ETHDKGPhases",
+    ethdkg.address
+  );
   for (const validator of validators) {
     await expect(
       ethdkg
         .connect(await getValidatorEthAccount(validator))
         .submitMasterPublicKey(validator.mpk)
-    ).to.be.revertedWith("143");
+    )
+      .to.be.revertedWithCustomError(
+        ethDKGPhases,
+        `ETHDKGNotInMasterPublicKeySubmissionPhase`
+      )
+      .withArgs(Phase.GPKJSubmission);
   }
 };
 
@@ -562,13 +571,22 @@ export const completeETHDKG = async (
     validators[index].mpk
   );
   await assertETHDKGPhase(ethdkg, Phase.Completion);
+  const ethDKGPhases = await ethers.getContractAt(
+    "ETHDKGPhases",
+    ethdkg.address
+  );
   // The other validators should fail
   for (const validator of validators) {
     await expect(
       ethdkg
         .connect(await getValidatorEthAccount(validator))
         .submitMasterPublicKey(validator.mpk)
-    ).to.be.revertedWith("143");
+    )
+      .to.be.revertedWithCustomError(
+        ethDKGPhases,
+        `ETHDKGNotInMasterPublicKeySubmissionPhase`
+      )
+      .withArgs(Phase.Completion);
   }
 };
 

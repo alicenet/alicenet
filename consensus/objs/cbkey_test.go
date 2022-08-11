@@ -42,5 +42,4 @@ func TestBlockHeaderHeightKey(t *testing.T) {
 	if err == nil {
 		t.Fatal("Should have raised error (3)")
 	}
-
 }

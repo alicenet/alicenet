@@ -2,6 +2,7 @@ package txinlinker
 
 import (
 	capnp "github.com/MadBase/go-capnproto2/v2"
+
 	mdefs "github.com/alicenet/alicenet/application/objs/capn"
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/errorz"
@@ -40,7 +41,7 @@ func Unmarshal(data []byte) (mdefs.TXInLinker, error) {
 	return obj, nil
 }
 
-// Validate will validate the TXInLinker object
+// Validate will validate the TXInLinker object.
 func Validate(v mdefs.TXInLinker) error {
 	if !v.HasTXInPreImage() {
 		return errorz.ErrInvalid{}.New("txinlinker capn obj does not have TXInPreImage")

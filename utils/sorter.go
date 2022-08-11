@@ -14,10 +14,12 @@ type kvs struct {
 func (s kvs) Len() int {
 	return len(s.keys)
 }
+
 func (s kvs) Swap(i, j int) {
 	s.keys[i], s.keys[j] = s.keys[j], s.keys[i]
 	s.values[i], s.values[j] = s.values[j], s.values[i]
 }
+
 func (s kvs) Less(i, j int) bool {
 	kv1 := new(big.Int).SetBytes(s.keys[i])
 	kv2 := new(big.Int).SetBytes(s.keys[j])
@@ -29,7 +31,7 @@ func (s kvs) Less(i, j int) bool {
 // values to be sorted by treating each key as a big.Int and preserving the
 // relationship between keys and values during the sort. SortKVs is a copy
 // before sort algorithm. The original slices will remain unsorted.
-func SortKVs(keys [][]byte, values [][]byte) ([][]byte, [][]byte, error) {
+func SortKVs(keys, values [][]byte) ([][]byte, [][]byte, error) {
 	if len(keys) != len(values) {
 		return nil, nil, errors.New("length mismatch")
 	}

@@ -2,6 +2,7 @@ package txin
 
 import (
 	capnp "github.com/MadBase/go-capnproto2/v2"
+
 	mdefs "github.com/alicenet/alicenet/application/objs/capn"
 	"github.com/alicenet/alicenet/errorz"
 	"github.com/alicenet/alicenet/utils"
@@ -39,7 +40,7 @@ func Unmarshal(data []byte) (mdefs.TXIn, error) {
 	return obj, nil
 }
 
-// Validate will validate the TXIn object
+// Validate will validate the TXIn object.
 func Validate(v mdefs.TXIn) error {
 	if !v.HasTXInLinker() {
 		return errorz.ErrInvalid{}.New("txin capn obj does not have TXInLinker")

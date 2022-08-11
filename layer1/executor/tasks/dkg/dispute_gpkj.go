@@ -8,28 +8,27 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/sirupsen/logrus"
 
 	"github.com/alicenet/alicenet/crypto"
 	"github.com/alicenet/alicenet/crypto/bn256"
-
 	"github.com/alicenet/alicenet/layer1/executor/tasks"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/utils"
-	"github.com/sirupsen/logrus"
 )
 
-// DisputeGPKjTask contains required state for performing a group accusation
+// DisputeGPKjTask contains required state for performing a group accusation.
 type DisputeGPKjTask struct {
 	*tasks.BaseTask
 	// additional fields that are not part of the default task
 	Address common.Address
 }
 
-// asserting that DisputeGPKjTask struct implements interface tasks.Task
+// asserting that DisputeGPKjTask struct implements interface tasks.Task.
 var _ tasks.Task = &DisputeGPKjTask{}
 
-// NewDisputeGPKjTask creates a background task that attempts perform a group accusation if necessary
-func NewDisputeGPKjTask(start uint64, end uint64, address common.Address) *DisputeGPKjTask {
+// NewDisputeGPKjTask creates a background task that attempts perform a group accusation if necessary.
+func NewDisputeGPKjTask(start, end uint64, address common.Address) *DisputeGPKjTask {
 	return &DisputeGPKjTask{
 		BaseTask: tasks.NewBaseTask(start, end, true, nil),
 		Address:  address,
@@ -44,7 +43,7 @@ func (t *DisputeGPKjTask) Prepare(ctx context.Context) *tasks.TaskErr {
 	return nil
 }
 
-// Execute executes the task business logic
+// Execute executes the task business logic.
 func (t *DisputeGPKjTask) Execute(ctx context.Context) (*types.Transaction, *tasks.TaskErr) {
 	logger := t.GetLogger().WithField("method", "Execute()").WithField("address", t.Address)
 	logger.Debug("initiate execution")
@@ -63,7 +62,7 @@ func (t *DisputeGPKjTask) Execute(ctx context.Context) (*types.Transaction, *tas
 		groupCommitments [][][2]*big.Int
 	)
 
-	var participantList = dkgState.GetSortedParticipants()
+	participantList := dkgState.GetSortedParticipants()
 
 	for _, participant := range participantList {
 		// Build array
@@ -98,7 +97,7 @@ func (t *DisputeGPKjTask) Execute(ctx context.Context) (*types.Transaction, *tas
 	return nil, nil
 }
 
-// ShouldExecute checks if it makes sense to execute the task
+// ShouldExecute checks if it makes sense to execute the task.
 func (t *DisputeGPKjTask) ShouldExecute(ctx context.Context) (bool, *tasks.TaskErr) {
 	logger := t.GetLogger().WithField("method", "ShouldExecute()").WithField("address", t.Address)
 	logger.Debug("should execute task")

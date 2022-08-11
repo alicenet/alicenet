@@ -113,9 +113,6 @@ func TestUTXODataStoreGood(t *testing.T) {
 	if utxo.HasValueStore() {
 		t.Fatal("Should not have ValueStore!")
 	}
-	if utxo.HasAtomicSwap() {
-		t.Fatal("Should not have AtomicSwap!")
-	}
 
 	dsCopy, err := utxo.DataStore()
 	if err != nil {
@@ -126,11 +123,6 @@ func TestUTXODataStoreGood(t *testing.T) {
 	_, err = utxo.ValueStore()
 	if err == nil {
 		t.Fatal("Should raise error for no ValueStore!")
-	}
-
-	_, err = utxo.AtomicSwap()
-	if err == nil {
-		t.Fatal("Should raise error for no AtomicSwap!")
 	}
 
 	utxo2 := &TXOut{}
@@ -190,9 +182,6 @@ func TestUTXOValueStoreGood(t *testing.T) {
 	if !utxo.HasValueStore() {
 		t.Fatal("Should have ValueStore!")
 	}
-	if utxo.HasAtomicSwap() {
-		t.Fatal("Should not have AtomicSwap!")
-	}
 
 	_, err = utxo.DataStore()
 	if err == nil {
@@ -205,11 +194,6 @@ func TestUTXOValueStoreGood(t *testing.T) {
 	}
 	vsEqual(t, vs, vsCopy)
 
-	_, err = utxo.AtomicSwap()
-	if err == nil {
-		t.Fatal("Should raise error for no AtomicSwap!")
-	}
-
 	utxo2 := &TXOut{}
 	utxoBytes, err := utxo.MarshalBinary()
 	if err != nil {
@@ -221,92 +205,11 @@ func TestUTXOValueStoreGood(t *testing.T) {
 	}
 }
 
-func TestUTXOAtomicSwapGood(t *testing.T) {
-	cid := uint32(2)
-	val, err := new(uint256.Uint256).FromUint64(65537)
-	if err != nil {
-		t.Fatal(err)
-	}
-	txoid := uint32(17)
-
-	ownerSigner := &crypto.Secp256k1Signer{}
-	if err := ownerSigner.SetPrivk(crypto.Hasher([]byte("a"))); err != nil {
-		t.Fatal(err)
-	}
-	ownerPubk, err := ownerSigner.Pubkey()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	hashKey := crypto.Hasher([]byte("foo"))
-
-	ownerAcct := crypto.GetAccount(ownerPubk)
-	owner := &AtomicSwapOwner{}
-	err = owner.New(ownerAcct, ownerAcct, hashKey)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	iat := uint32(1)
-	exp := uint32(1234)
-	asp := &ASPreImage{
-		ChainID:  cid,
-		Value:    val,
-		TXOutIdx: txoid,
-		Owner:    owner,
-		IssuedAt: iat,
-		Exp:      exp,
-	}
-	txHash := make([]byte, constants.HashLen)
-	as := &AtomicSwap{
-		ASPreImage: asp,
-		TxHash:     txHash,
-	}
-
-	utxo := &TXOut{}
-	err = utxo.NewAtomicSwap(as)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if utxo.HasDataStore() {
-		t.Fatal("Should not have DataStore!")
-	}
-	if utxo.HasValueStore() {
-		t.Fatal("Should not have ValueStore!")
-	}
-	if !utxo.HasAtomicSwap() {
-		t.Fatal("Should have AtomicSwap!")
-	}
-
-	_, err = utxo.DataStore()
-	if err == nil {
-		t.Fatal("Should raise error for DataStore!")
-	}
-
-	_, err = utxo.ValueStore()
-	if err == nil {
-		t.Fatal("Should raise error for ValueStore!")
-	}
-
-	asCopy, err := utxo.AtomicSwap()
-	if err != nil {
-		t.Fatal(err)
-	}
-	asEqual(t, as, asCopy)
-}
-
 func TestUTXOMarshalBinary(t *testing.T) {
 	utxo := &TXOut{}
 	_, err := utxo.MarshalBinary()
 	if err == nil {
 		t.Fatal("Should have raised error (1)")
-	}
-
-	as := &AtomicSwap{}
-	err = utxo.NewAtomicSwap(as)
-	if err != nil {
-		t.Fatal(err)
 	}
 	_, err = utxo.MarshalBinary()
 	if err == nil {
@@ -350,11 +253,6 @@ func TestUTXOPreHash(t *testing.T) {
 		t.Fatal("Should have raised error (1)")
 	}
 
-	as := &AtomicSwap{}
-	err = utxo.NewAtomicSwap(as)
-	if err != nil {
-		t.Fatal(err)
-	}
 	_, err = utxo.PreHash()
 	if err == nil {
 		t.Fatal("Should have raised error (2)")
@@ -388,16 +286,6 @@ func TestUTXOUTXOID(t *testing.T) {
 		t.Fatal("Should have raised error (1)")
 	}
 
-	as := &AtomicSwap{}
-	err = utxo.NewAtomicSwap(as)
-	if err != nil {
-		t.Fatal(err)
-	}
-	_, err = utxo.UTXOID()
-	if err == nil {
-		t.Fatal("Should have raised error (2)")
-	}
-
 	ds := &DataStore{}
 	err = utxo.NewDataStore(ds)
 	if err != nil {
@@ -426,16 +314,6 @@ func TestUTXOChainID(t *testing.T) {
 		t.Fatal("Should have raised error (1)")
 	}
 
-	as := &AtomicSwap{}
-	err = utxo.NewAtomicSwap(as)
-	if err != nil {
-		t.Fatal(err)
-	}
-	_, err = utxo.ChainID()
-	if err == nil {
-		t.Fatal("Should have raised error (2)")
-	}
-
 	ds := &DataStore{}
 	err = utxo.NewDataStore(ds)
 	if err != nil {
@@ -462,16 +340,6 @@ func TestUTXOTxOutIdx(t *testing.T) {
 	_, err := utxo.TxOutIdx()
 	if err == nil {
 		t.Fatal("Should have raised error (1)")
-	}
-
-	as := &AtomicSwap{}
-	err = utxo.NewAtomicSwap(as)
-	if err != nil {
-		t.Fatal(err)
-	}
-	_, err = utxo.TxOutIdx()
-	if err == nil {
-		t.Fatal("Should have raised error (2)")
 	}
 
 	ds := &DataStore{}
@@ -503,16 +371,6 @@ func TestUTXOSetTxOutIdx(t *testing.T) {
 		t.Fatal("Should have raised error (1)")
 	}
 
-	as := &AtomicSwap{}
-	err = utxo.NewAtomicSwap(as)
-	if err != nil {
-		t.Fatal(err)
-	}
-	err = utxo.SetTxOutIdx(idx)
-	if err == nil {
-		t.Fatal("Should have raised error (2)")
-	}
-
 	ds := &DataStore{}
 	err = utxo.NewDataStore(ds)
 	if err != nil {
@@ -542,25 +400,6 @@ func TestUTXOTxHash(t *testing.T) {
 		t.Fatal("Should have raised error (1)")
 	}
 
-	as := &AtomicSwap{}
-	err = utxo.NewAtomicSwap(as)
-	if err != nil {
-		t.Fatal(err)
-	}
-	_, err = utxo.TxHash()
-	if err == nil {
-		t.Fatal("Should have raised error (2)")
-	}
-	as.ASPreImage = &ASPreImage{}
-	as.TxHash = txHashTrue
-	txHash, err := utxo.TxHash()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !bytes.Equal(txHash, txHashTrue) {
-		t.Fatal("txHash does not match (2)")
-	}
-
 	ds := &DataStore{}
 	err = utxo.NewDataStore(ds)
 	if err != nil {
@@ -572,7 +411,7 @@ func TestUTXOTxHash(t *testing.T) {
 	}
 	ds.DSLinker = &DSLinker{}
 	ds.DSLinker.TxHash = txHashTrue
-	txHash, err = utxo.TxHash()
+	txHash, err := utxo.TxHash()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -614,16 +453,6 @@ func TestUTXOSetTxHash(t *testing.T) {
 		t.Fatal("Should have raised error (2)")
 	}
 
-	as := &AtomicSwap{}
-	err = utxo.NewAtomicSwap(as)
-	if err != nil {
-		t.Fatal(err)
-	}
-	err = utxo.SetTxHash(txHash)
-	if err == nil {
-		t.Fatal("Should have raised error (3)")
-	}
-
 	ds := &DataStore{}
 	err = utxo.NewDataStore(ds)
 	if err != nil {
@@ -651,16 +480,6 @@ func TestUTXOIsExpired(t *testing.T) {
 	_, err := utxo.IsExpired(currentHeight)
 	if err == nil {
 		t.Fatal("Should have raised error (1)")
-	}
-
-	as := &AtomicSwap{}
-	err = utxo.NewAtomicSwap(as)
-	if err != nil {
-		t.Fatal(err)
-	}
-	_, err = utxo.IsExpired(currentHeight)
-	if err == nil {
-		t.Fatal("Should have raised error (2)")
 	}
 
 	ds := &DataStore{}
@@ -695,16 +514,6 @@ func TestUTXORemainingValue(t *testing.T) {
 		t.Fatal("Should have raised error (1)")
 	}
 
-	as := &AtomicSwap{}
-	err = utxo.NewAtomicSwap(as)
-	if err != nil {
-		t.Fatal(err)
-	}
-	_, err = utxo.RemainingValue(currentHeight)
-	if err == nil {
-		t.Fatal("Should have raised error (2)")
-	}
-
 	ds := &DataStore{}
 	err = utxo.NewDataStore(ds)
 	if err != nil {
@@ -731,16 +540,6 @@ func TestUTXOMakeTxIn(t *testing.T) {
 	_, err := utxo.MakeTxIn()
 	if err == nil {
 		t.Fatal("Should have raised error (1)")
-	}
-
-	as := &AtomicSwap{}
-	err = utxo.NewAtomicSwap(as)
-	if err != nil {
-		t.Fatal(err)
-	}
-	_, err = utxo.MakeTxIn()
-	if err == nil {
-		t.Fatal("Should have raised error (2)")
 	}
 
 	ds := &DataStore{}
@@ -771,16 +570,6 @@ func TestUTXOValue(t *testing.T) {
 		t.Fatal("Should have raised error (1)")
 	}
 
-	as := &AtomicSwap{}
-	err = utxo.NewAtomicSwap(as)
-	if err != nil {
-		t.Fatal(err)
-	}
-	_, err = utxo.Value()
-	if err == nil {
-		t.Fatal("Should have raised error (2)")
-	}
-
 	ds := &DataStore{}
 	err = utxo.NewDataStore(ds)
 	if err != nil {
@@ -807,16 +596,6 @@ func TestUTXOValuePlusFee(t *testing.T) {
 	_, err := utxo.ValuePlusFee()
 	if err == nil {
 		t.Fatal("Should have raised error (1)")
-	}
-
-	as := &AtomicSwap{}
-	err = utxo.NewAtomicSwap(as)
-	if err != nil {
-		t.Fatal(err)
-	}
-	_, err = utxo.ValuePlusFee()
-	if err == nil {
-		t.Fatal("Should have raised error (2)")
 	}
 
 	ds := &DataStore{}
@@ -847,16 +626,6 @@ func TestUTXOValidatePreSignature(t *testing.T) {
 		t.Fatal("Should have raised error (1)")
 	}
 
-	as := &AtomicSwap{}
-	err = utxo.NewAtomicSwap(as)
-	if err != nil {
-		t.Fatal(err)
-	}
-	err = utxo.ValidatePreSignature()
-	if err != nil {
-		t.Fatal("Should pass (1)")
-	}
-
 	ds := &DataStore{}
 	err = utxo.NewDataStore(ds)
 	if err != nil {
@@ -885,16 +654,6 @@ func TestUTXOValidateSignature(t *testing.T) {
 	err := utxo.ValidateSignature(currentHeight, txIn)
 	if err == nil {
 		t.Fatal("Should have raised error (1)")
-	}
-
-	as := &AtomicSwap{}
-	err = utxo.NewAtomicSwap(as)
-	if err != nil {
-		t.Fatal(err)
-	}
-	err = utxo.ValidateSignature(currentHeight, txIn)
-	if err == nil {
-		t.Fatal("Should have raised error (2)")
 	}
 
 	ds := &DataStore{}
@@ -928,25 +687,6 @@ func TestUTXOMustBeMinedBeforeHeight(t *testing.T) {
 	iat := uint32(1)
 	heightTrue := iat*constants.EpochLength - 1
 
-	as := &AtomicSwap{}
-	err = utxo.NewAtomicSwap(as)
-	if err != nil {
-		t.Fatal(err)
-	}
-	_, err = utxo.MustBeMinedBeforeHeight()
-	if err == nil {
-		t.Fatal("Should have raised error (2)")
-	}
-	as.ASPreImage = &ASPreImage{}
-	as.ASPreImage.IssuedAt = iat
-	height, err := utxo.MustBeMinedBeforeHeight()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if height != heightTrue {
-		t.Fatal("Incorrect MinedBefore (2)")
-	}
-
 	ds := &DataStore{}
 	err = utxo.NewDataStore(ds)
 	if err != nil {
@@ -959,7 +699,7 @@ func TestUTXOMustBeMinedBeforeHeight(t *testing.T) {
 	ds.DSLinker = &DSLinker{}
 	ds.DSLinker.DSPreImage = &DSPreImage{}
 	ds.DSLinker.DSPreImage.IssuedAt = iat
-	height, err = utxo.MustBeMinedBeforeHeight()
+	height, err := utxo.MustBeMinedBeforeHeight()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -991,37 +731,11 @@ func TestUTXOAccount(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	hashKey := make([]byte, constants.HashLen)
 
 	utxo := &TXOut{}
 	_, err = utxo.Account()
 	if err == nil {
 		t.Fatal("Should have raised error (1)")
-	}
-
-	as := &AtomicSwap{}
-	err = utxo.NewAtomicSwap(as)
-	if err != nil {
-		t.Fatal(err)
-	}
-	_, err = utxo.Account()
-	if err == nil {
-		t.Fatal("Should have raised error (2)")
-	}
-
-	as.ASPreImage = &ASPreImage{}
-	as.ASPreImage.Owner = &AtomicSwapOwner{}
-	err = as.ASPreImage.Owner.NewFromOwner(o, altOwner, hashKey)
-	if err != nil {
-		t.Fatal(err)
-	}
-	err = utxo.NewAtomicSwap(as)
-	if err != nil {
-		t.Fatal(err)
-	}
-	_, err = utxo.Account()
-	if err != nil {
-		t.Fatal(err)
 	}
 
 	ds := &DataStore{}
@@ -1089,7 +803,6 @@ func TestUTXOGenericOwner(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	hashKey := make([]byte, constants.HashLen)
 
 	ds := &DataStore{}
 	err = utxo.NewDataStore(ds)
@@ -1136,49 +849,6 @@ func TestUTXOGenericOwner(t *testing.T) {
 		t.Fatal(err)
 	}
 	err = utxo.NewDataStore(ds)
-	if err != nil {
-		t.Fatal(err)
-	}
-	_, err = utxo.GenericOwner()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	as := &AtomicSwap{}
-	err = utxo.NewAtomicSwap(as)
-	if err != nil {
-		t.Fatal(err)
-	}
-	_, err = utxo.GenericOwner()
-	if err == nil {
-		t.Fatal("Should have raised error (6)")
-	}
-
-	as.ASPreImage = &ASPreImage{}
-	err = utxo.NewAtomicSwap(as)
-	if err != nil {
-		t.Fatal(err)
-	}
-	_, err = utxo.GenericOwner()
-	if err == nil {
-		t.Fatal("Should have raised error (7)")
-	}
-
-	as.ASPreImage.Owner = &AtomicSwapOwner{}
-	err = utxo.NewAtomicSwap(as)
-	if err != nil {
-		t.Fatal(err)
-	}
-	_, err = utxo.GenericOwner()
-	if err == nil {
-		t.Fatal("Should have raised error (8)")
-	}
-
-	err = as.ASPreImage.Owner.NewFromOwner(o, o, hashKey)
-	if err != nil {
-		t.Fatal(err)
-	}
-	err = utxo.NewAtomicSwap(as)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1238,18 +908,8 @@ func TestUTXOIsDeposit(t *testing.T) {
 		t.Fatal("Should be false (1)")
 	}
 
-	as := &AtomicSwap{}
-	err := utxo.NewAtomicSwap(as)
-	if err != nil {
-		t.Fatal(err)
-	}
-	val = utxo.IsDeposit()
-	if val {
-		t.Fatal("Should be false (2)")
-	}
-
 	ds := &DataStore{}
-	err = utxo.NewDataStore(ds)
+	err := utxo.NewDataStore(ds)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1276,31 +936,6 @@ func TestUTXOCannotBeMinedBeforeHeight(t *testing.T) {
 		t.Fatal("Should have raised error (1)")
 	}
 
-	as := &AtomicSwap{}
-	err = utxo.NewAtomicSwap(as)
-	if err != nil {
-		t.Fatal(err)
-	}
-	_, err = utxo.CannotBeMinedBeforeHeight()
-	if err == nil {
-		t.Fatal("Should have raised error (2)")
-	}
-	as.ASPreImage = &ASPreImage{}
-	as.ASPreImage.IssuedAt = 0
-	_, err = utxo.CannotBeMinedBeforeHeight()
-	if err == nil {
-		t.Fatal("Should have raised error (3)")
-	}
-	as.ASPreImage.IssuedAt = 2
-	heightASTrue := constants.EpochLength + 1
-	height, err := utxo.CannotBeMinedBeforeHeight()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if height != heightASTrue {
-		t.Fatal("Incorrect height for AtomicSwap in CannotBeMinedBeforeHeight")
-	}
-
 	ds := &DataStore{}
 	err = utxo.NewDataStore(ds)
 	if err != nil {
@@ -1319,7 +954,7 @@ func TestUTXOCannotBeMinedBeforeHeight(t *testing.T) {
 	}
 	ds.DSLinker.DSPreImage.IssuedAt = uint32(3)
 	heightDSTrue := 2*constants.EpochLength + 1
-	height, err = utxo.CannotBeMinedBeforeHeight()
+	height, err := utxo.CannotBeMinedBeforeHeight()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1339,14 +974,5 @@ func TestUTXOCannotBeMinedBeforeHeight(t *testing.T) {
 	}
 	if height != heightVSTrue {
 		t.Fatal("Incorrect height for ValueStore in CannotBeMinedBeforeHeight")
-	}
-}
-
-func asEqual(t *testing.T, as1, as2 *AtomicSwap) {
-	aspi1 := as1.ASPreImage
-	aspi2 := as2.ASPreImage
-	aspiEqual(t, aspi1, aspi2)
-	if !bytes.Equal(as1.TxHash, as2.TxHash) {
-		t.Fatal("Do not agree on TxHash!")
 	}
 }

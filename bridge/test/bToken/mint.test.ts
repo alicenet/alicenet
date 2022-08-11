@@ -1,7 +1,6 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
-import { assertErrorMessage } from "../chai-helpers";
 import { expect } from "../chai-setup";
 import { callFunctionAndGetReturnValues, Fixture, getFixture } from "../setup";
 import { getEthConsumedAsGas, getState, showState, state } from "./setup";
@@ -162,11 +161,12 @@ describe("Testing BToken Minting methods", async () => {
     const oneBToken = ethers.utils.parseUnits("1", 18).toBigInt();
     const minBTokens = 900n * oneBToken;
     const expectedBTokensMintedForEthValue = "399028731704364116575";
-    await assertErrorMessage(
+    await expect(
       fixture.bToken.connect(admin).mint(minBTokens, {
         value: ethers.utils.parseEther(eth.toString()),
-      }),
-      `MinimumMintNotMet(${expectedBTokensMintedForEthValue}, ${minBTokens})`
-    );
+      })
+    )
+      .to.be.revertedWithCustomError(fixture.bToken, `MinimumMintNotMet`)
+      .withArgs(expectedBTokensMintedForEthValue, minBTokens);
   });
 });

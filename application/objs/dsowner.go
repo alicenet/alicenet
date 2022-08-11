@@ -3,21 +3,20 @@ package objs
 import (
 	"bytes"
 
-	"github.com/alicenet/alicenet/errorz"
-
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/crypto"
+	"github.com/alicenet/alicenet/errorz"
 	"github.com/alicenet/alicenet/utils"
 )
 
-// DataStoreOwner is the struct which specifies the owner of the DataStore
+// DataStoreOwner is the struct which specifies the owner of the DataStore.
 type DataStoreOwner struct {
 	SVA       SVA
 	CurveSpec constants.CurveSpec
 	Account   []byte
 }
 
-// New makes a new DataStoreOwner
+// New makes a new DataStoreOwner.
 func (dso *DataStoreOwner) New(acct []byte, curveSpec constants.CurveSpec) {
 	dso.SVA = DataStoreSVA
 	dso.CurveSpec = curveSpec
@@ -25,7 +24,7 @@ func (dso *DataStoreOwner) New(acct []byte, curveSpec constants.CurveSpec) {
 }
 
 // NewFromOwner takes an Owner object and creates the corresponding
-// DataStoreOwner
+// DataStoreOwner.
 func (dso *DataStoreOwner) NewFromOwner(o *Owner) error {
 	if dso == nil {
 		return errorz.ErrInvalid{}.New("dso.newFromOwner; dso not initialized")
@@ -44,7 +43,7 @@ func (dso *DataStoreOwner) NewFromOwner(o *Owner) error {
 }
 
 // MarshalBinary takes the DataStoreOwner object and returns the canonical
-// byte slice
+// byte slice.
 func (dso *DataStoreOwner) MarshalBinary() ([]byte, error) {
 	if err := dso.Validate(); err != nil {
 		return nil, err
@@ -56,7 +55,7 @@ func (dso *DataStoreOwner) MarshalBinary() ([]byte, error) {
 	return owner, nil
 }
 
-// Validate validates the DataStoreOwner
+// Validate validates the DataStoreOwner.
 func (dso *DataStoreOwner) Validate() error {
 	if dso == nil {
 		return errorz.ErrInvalid{}.New("dso.validate; dso not initialized")
@@ -74,7 +73,7 @@ func (dso *DataStoreOwner) Validate() error {
 }
 
 // UnmarshalBinary takes a byte slice and returns the corresponding
-// DataStoreOwner object
+// DataStoreOwner object.
 func (dso *DataStoreOwner) UnmarshalBinary(o []byte) error {
 	if dso == nil {
 		return errorz.ErrInvalid{}.New("dso.unmarshalBinary; dso not initialized")
@@ -104,7 +103,7 @@ func (dso *DataStoreOwner) UnmarshalBinary(o []byte) error {
 	return nil
 }
 
-// ValidateSignature validates the DataStoreSignature
+// ValidateSignature validates the DataStoreSignature.
 func (dso *DataStoreOwner) ValidateSignature(msg []byte, sig *DataStoreSignature, isExpired bool) error {
 	if err := dso.Validate(); err != nil {
 		return errorz.ErrInvalid{}.New("dso.validateSignature; invalid DataStoreOwner")
@@ -177,7 +176,7 @@ func (dso *DataStoreOwner) validateAccount() error {
 	return nil
 }
 
-// Sign allows has the DataStoreOwner sign the message msg with signer s
+// Sign allows has the DataStoreOwner sign the message msg with signer s.
 func (dso *DataStoreOwner) Sign(msg []byte, s Signer) (*DataStoreSignature, error) {
 	sig := &DataStoreSignature{
 		SVA: DataStoreSVA,
@@ -212,7 +211,7 @@ type DataStoreSignature struct {
 }
 
 // UnmarshalBinary takes a byte slice and returns the corresponding
-// DataStoreSignature object
+// DataStoreSignature object.
 func (dss *DataStoreSignature) UnmarshalBinary(signature []byte) error {
 	if dss == nil {
 		return errorz.ErrInvalid{}.New("dss.unmarshalBinary; dss not initialized")
@@ -239,7 +238,7 @@ func (dss *DataStoreSignature) UnmarshalBinary(signature []byte) error {
 }
 
 // MarshalBinary takes the DataStoreSignature object and returns the canonical
-// byte slice
+// byte slice.
 func (dss *DataStoreSignature) MarshalBinary() ([]byte, error) {
 	if err := dss.Validate(); err != nil {
 		return nil, err
@@ -251,7 +250,7 @@ func (dss *DataStoreSignature) MarshalBinary() ([]byte, error) {
 	return signature, nil
 }
 
-// Validate validates the DataStoreSignature object
+// Validate validates the DataStoreSignature object.
 func (dss *DataStoreSignature) Validate() error {
 	if dss == nil {
 		return errorz.ErrInvalid{}.New("dss.validate; dss not initialized")

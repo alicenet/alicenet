@@ -2,6 +2,7 @@ package proposal
 
 import (
 	capnp "github.com/MadBase/go-capnproto2/v2"
+
 	mdefs "github.com/alicenet/alicenet/consensus/objs/capn"
 	"github.com/alicenet/alicenet/errorz"
 )
@@ -37,7 +38,7 @@ func Unmarshal(data []byte) (mdefs.Proposal, error) {
 	return obj, nil
 }
 
-// Validate will validate the Proposal object
+// Validate will validate the Proposal object.
 func Validate(p mdefs.Proposal) error {
 	if !p.IsValid() {
 		return errorz.ErrInvalid{}.New("proposal capn obj is not valid")

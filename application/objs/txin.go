@@ -2,6 +2,7 @@ package objs
 
 import (
 	capnp "github.com/MadBase/go-capnproto2/v2"
+
 	mdefs "github.com/alicenet/alicenet/application/objs/capn"
 	"github.com/alicenet/alicenet/application/objs/txin"
 	"github.com/alicenet/alicenet/constants"
@@ -9,14 +10,14 @@ import (
 	"github.com/alicenet/alicenet/utils"
 )
 
-// TXIn is a tx input object that acts as a reference to a UTXO
+// TXIn is a tx input object that acts as a reference to a UTXO.
 type TXIn struct {
 	TXInLinker *TXInLinker
 	Signature  []byte
 }
 
 // UnmarshalBinary takes a byte slice and returns the corresponding
-// TXIn object
+// TXIn object.
 func (b *TXIn) UnmarshalBinary(data []byte) error {
 	bc, err := txin.Unmarshal(data)
 	if err != nil {
@@ -26,7 +27,7 @@ func (b *TXIn) UnmarshalBinary(data []byte) error {
 }
 
 // MarshalBinary takes the TXIn object and returns the canonical
-// byte slice
+// byte slice.
 func (b *TXIn) MarshalBinary() ([]byte, error) {
 	if b == nil {
 		return nil, errorz.ErrInvalid{}.New("txin.marshalBinary; txin not initialized")
@@ -38,7 +39,7 @@ func (b *TXIn) MarshalBinary() ([]byte, error) {
 	return txin.Marshal(bc)
 }
 
-// UnmarshalCapn unmarshals the capnproto definition of the object
+// UnmarshalCapn unmarshals the capnproto definition of the object.
 func (b *TXIn) UnmarshalCapn(bc mdefs.TXIn) error {
 	if err := txin.Validate(bc); err != nil {
 		return err
@@ -51,7 +52,7 @@ func (b *TXIn) UnmarshalCapn(bc mdefs.TXIn) error {
 	return nil
 }
 
-// MarshalCapn marshals the object into its capnproto definition
+// MarshalCapn marshals the object into its capnproto definition.
 func (b *TXIn) MarshalCapn(seg *capnp.Segment) (mdefs.TXIn, error) {
 	if b == nil {
 		return mdefs.TXIn{}, errorz.ErrInvalid{}.New("txin.marshalCapn; txin not initialized")
@@ -88,7 +89,7 @@ func (b *TXIn) MarshalCapn(seg *capnp.Segment) (mdefs.TXIn, error) {
 	return bc, nil
 }
 
-// PreHash returns the PreHash of the object
+// PreHash returns the PreHash of the object.
 func (b *TXIn) PreHash() ([]byte, error) {
 	if b == nil {
 		return nil, errorz.ErrInvalid{}.New("txin.preHash; txin not initialized")
@@ -96,7 +97,7 @@ func (b *TXIn) PreHash() ([]byte, error) {
 	return b.TXInLinker.PreHash()
 }
 
-// UTXOID returns the UTXOID of the object
+// UTXOID returns the UTXOID of the object.
 func (b *TXIn) UTXOID() ([]byte, error) {
 	if b == nil {
 		return nil, errorz.ErrInvalid{}.New("txin.utxoID; txin not initialized")
@@ -112,7 +113,7 @@ func (b *TXIn) IsDeposit() bool {
 	return b.TXInLinker.IsDeposit()
 }
 
-// TxHash returns the TxHash of the TXIn object
+// TxHash returns the TxHash of the TXIn object.
 func (b *TXIn) TxHash() ([]byte, error) {
 	if b == nil {
 		return nil, errorz.ErrInvalid{}.New("txin.txhash; txin not initialized")
@@ -126,7 +127,7 @@ func (b *TXIn) TxHash() ([]byte, error) {
 	return utils.CopySlice(b.TXInLinker.TxHash), nil
 }
 
-// SetTxHash sets the TxHash of the TXIn object
+// SetTxHash sets the TxHash of the TXIn object.
 func (b *TXIn) SetTxHash(txHash []byte) error {
 	if b == nil {
 		return errorz.ErrInvalid{}.New("txin.setTxHash; txin not initialized")
@@ -140,7 +141,7 @@ func (b *TXIn) SetTxHash(txHash []byte) error {
 	return b.TXInLinker.SetTxHash(txHash)
 }
 
-// ChainID returns the chain ID
+// ChainID returns the chain ID.
 func (b *TXIn) ChainID() (uint32, error) {
 	if b == nil {
 		return 0, errorz.ErrInvalid{}.New("txin.chainID; txin not initialized")
@@ -148,7 +149,7 @@ func (b *TXIn) ChainID() (uint32, error) {
 	return b.TXInLinker.ChainID()
 }
 
-// ConsumedTxIdx returns the consumed TxIdx
+// ConsumedTxIdx returns the consumed TxIdx.
 func (b *TXIn) ConsumedTxIdx() (uint32, error) {
 	if b == nil {
 		return 0, errorz.ErrInvalid{}.New("txin.consumedTxIdx; txin not initialized")
@@ -156,7 +157,7 @@ func (b *TXIn) ConsumedTxIdx() (uint32, error) {
 	return b.TXInLinker.ConsumedTxIdx()
 }
 
-// ConsumedTxHash returns the consumed TxHash
+// ConsumedTxHash returns the consumed TxHash.
 func (b *TXIn) ConsumedTxHash() ([]byte, error) {
 	if b == nil {
 		return nil, errorz.ErrInvalid{}.New("txin.consumedTxHash; txin not initialized")

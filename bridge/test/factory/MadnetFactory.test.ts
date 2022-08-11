@@ -1,7 +1,6 @@
 import { expectRevert } from "@openzeppelin/test-helpers";
-import { expect } from "chai";
 import { BytesLike, ContractFactory } from "ethers";
-import { artifacts, ethers } from "hardhat";
+import { artifacts, ethers, expect } from "hardhat";
 import {
   ALICENET_FACTORY,
   CONTRACT_ADDR,
@@ -15,7 +14,6 @@ import {
   PROXY,
   UTILS,
 } from "../../scripts/lib/constants";
-import { assertErrorMessage } from "../chai-helpers";
 import {
   checkMockInit,
   deployCreate2Initable as deployCreate2Initializable,
@@ -76,6 +74,7 @@ describe("AliceNet Contract Factory", () => {
 
   it("should not allow set owner via delegator", async () => {
     let factory = await deployFactory();
+
     const signers = await ethers.getSigners();
     const factoryBase = (
       await ethers.getContractFactory(ALICENET_FACTORY)
@@ -84,7 +83,10 @@ describe("AliceNet Contract Factory", () => {
     await factory.setDelegator(firstDelegator, { from: firstOwner });
     expect(await factory.delegator()).to.equal(firstDelegator);
     factory = factoryBase.attach(factory.address);
-    await assertErrorMessage(factory.setOwner(accounts[0]), `Unauthorized()`);
+    await expect(factory.setOwner(accounts[0])).to.be.revertedWithCustomError(
+      factory,
+      `Unauthorized`
+    );
   });
 
   it("get owner, delegator", async () => {
@@ -140,10 +142,9 @@ describe("AliceNet Contract Factory", () => {
     factory = factoryBase.attach(factory.address);
     const Salt = getSalt();
 
-    await assertErrorMessage(
-      factory.deployStatic(Salt, "0x", { from: firstDelegator }),
-      `Unauthorized()`
-    );
+    await expect(
+      factory.deployStatic(Salt, "0x", { from: firstDelegator })
+    ).to.be.revertedWithCustomError(factory, `Unauthorized`);
   });
 
   it("deploy contract with deploystatic", async () => {
@@ -202,10 +203,9 @@ describe("AliceNet Contract Factory", () => {
     factory = factoryBase.attach(factory.address);
     const Salt = getSalt();
 
-    await assertErrorMessage(
-      factory.deployProxy(Salt, { from: firstDelegator }),
-      `Unauthorized()`
-    );
+    await expect(
+      factory.deployProxy(Salt, { from: firstDelegator })
+    ).to.be.revertedWithCustomError(factory, `Unauthorized`);
   });
 
   it("deploycreate mock logic contract expect success", async () => {
@@ -250,7 +250,10 @@ describe("AliceNet Contract Factory", () => {
     factory = factoryBase.attach(factory.address);
     const txResponse = factory.deployCreate(deployTx.data as BytesLike);
 
-    await assertErrorMessage(txResponse, `Unauthorized()`);
+    await expect(txResponse).to.be.revertedWithCustomError(
+      factory,
+      `Unauthorized`
+    );
   });
 
   it("upgrade proxy to point to mock address with the factory", async () => {
@@ -289,12 +292,11 @@ describe("AliceNet Contract Factory", () => {
     factory = factoryBase.attach(factory.address);
     // console.log("UPGRADE PROXY GASUSED: ", txResponse["receipt"]["gasUsed"]);
 
-    await assertErrorMessage(
+    await expect(
       factory.upgradeProxy(proxySalt, mockContract.address, "0x", {
         from: firstDelegator,
-      }),
-      `Unauthorized()`
-    );
+      })
+    ).to.be.revertedWithCustomError(factory, `Unauthorized`);
   });
 
   it("call setfactory in mock through proxy expect su", async () => {
@@ -328,7 +330,7 @@ describe("AliceNet Contract Factory", () => {
     await expectTxSuccess(txResponse);
     // console.log("LOCK UPGRADES GASUSED: ", txResponse["receipt"]["gasUsed"]);
     const txRes = factory.upgradeProxy(proxySalt, endPoint.address, "0x");
-    await expect(txRes).to.be.revertedWith("revert");
+    await expect(txRes).to.be.reverted;
     txResponse = await proxyMock.unlock();
     await expectTxSuccess(txResponse);
     txResponse = await factory.upgradeProxy(proxySalt, endPoint.address, "0x");
@@ -340,7 +342,10 @@ describe("AliceNet Contract Factory", () => {
     const factory = await deployFactory();
     const txResponse = factory.deployCreate("0x6000");
 
-    await assertErrorMessage(txResponse, `CodeSizeZero()`);
+    await expect(txResponse).to.be.revertedWithCustomError(
+      factory,
+      `CodeSizeZero`
+    );
   });
 
   // fail on unauthorized with bad code
@@ -353,7 +358,10 @@ describe("AliceNet Contract Factory", () => {
     factory = factoryBase.attach(factory.address);
     const txResponse = factory.deployCreate("0x6000");
 
-    await assertErrorMessage(txResponse, `Unauthorized()`);
+    await expect(txResponse).to.be.revertedWithCustomError(
+      factory,
+      `Unauthorized`
+    );
   });
 
   // fail on unauthorized with good code
@@ -367,7 +375,10 @@ describe("AliceNet Contract Factory", () => {
     const factory2 = factoryBase.attach(factory.address);
     const txResponse = factory2.deployCreate(endPointFactory.bytecode);
 
-    await assertErrorMessage(txResponse, `Unauthorized()`);
+    await expect(txResponse).to.be.revertedWithCustomError(
+      factory,
+      `Unauthorized`
+    );
   });
 
   it("deploycreate2 mockinitializable", async () => {
@@ -546,9 +557,8 @@ describe("AliceNet Contract Factory", () => {
     const lockResponse = await proxyContract.upgradeLock();
     const receipt = await lockResponse.wait();
     expect(receipt.status).to.equal(1);
-    await expect(
-      factory.upgradeProxy(salt, endPoint.address, "0x")
-    ).to.revertedWith("reverted with an unrecognized custom error");
+    await expect(factory.upgradeProxy(salt, endPoint.address, "0x")).to.be
+      .reverted;
   });
 
   it("deploys a mock contract, calls payMe from factory with callAny", async () => {
