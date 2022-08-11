@@ -13205,6 +13205,10 @@ type MockIETHDKG struct {
 	// GetETHDKGPhaseFunc is an instance of a mock function object
 	// controlling the behavior of the method GetETHDKGPhase.
 	GetETHDKGPhaseFunc *IETHDKGGetETHDKGPhaseFunc
+	// GetLastRoundParticipantIndexFunc is an instance of a mock function
+	// object controlling the behavior of the method
+	// GetLastRoundParticipantIndex.
+	GetLastRoundParticipantIndexFunc *IETHDKGGetLastRoundParticipantIndexFunc
 	// GetMasterPublicKeyFunc is an instance of a mock function object
 	// controlling the behavior of the method GetMasterPublicKey.
 	GetMasterPublicKeyFunc *IETHDKGGetMasterPublicKeyFunc
@@ -13322,9 +13326,6 @@ type MockIETHDKG struct {
 	// SubmitMasterPublicKeyFunc is an instance of a mock function object
 	// controlling the behavior of the method SubmitMasterPublicKey.
 	SubmitMasterPublicKeyFunc *IETHDKGSubmitMasterPublicKeyFunc
-	// TryGetParticipantIndexFunc is an instance of a mock function object
-	// controlling the behavior of the method TryGetParticipantIndex.
-	TryGetParticipantIndexFunc *IETHDKGTryGetParticipantIndexFunc
 	// WatchAddressRegisteredFunc is an instance of a mock function object
 	// controlling the behavior of the method WatchAddressRegistered.
 	WatchAddressRegisteredFunc *IETHDKGWatchAddressRegisteredFunc
@@ -13485,6 +13486,11 @@ func NewMockIETHDKG() *MockIETHDKG {
 		},
 		GetETHDKGPhaseFunc: &IETHDKGGetETHDKGPhaseFunc{
 			defaultHook: func(*bind.CallOpts) (r0 uint8, r1 error) {
+				return
+			},
+		},
+		GetLastRoundParticipantIndexFunc: &IETHDKGGetLastRoundParticipantIndexFunc{
+			defaultHook: func(*bind.CallOpts, common.Address) (r0 *big.Int, r1 error) {
 				return
 			},
 		},
@@ -13665,11 +13671,6 @@ func NewMockIETHDKG() *MockIETHDKG {
 		},
 		SubmitMasterPublicKeyFunc: &IETHDKGSubmitMasterPublicKeyFunc{
 			defaultHook: func(*bind.TransactOpts, [4]*big.Int) (r0 *types.Transaction, r1 error) {
-				return
-			},
-		},
-		TryGetParticipantIndexFunc: &IETHDKGTryGetParticipantIndexFunc{
-			defaultHook: func(*bind.CallOpts, common.Address) (r0 bool, r1 *big.Int, r2 error) {
 				return
 			},
 		},
@@ -13855,6 +13856,11 @@ func NewStrictMockIETHDKG() *MockIETHDKG {
 				panic("unexpected invocation of MockIETHDKG.GetETHDKGPhase")
 			},
 		},
+		GetLastRoundParticipantIndexFunc: &IETHDKGGetLastRoundParticipantIndexFunc{
+			defaultHook: func(*bind.CallOpts, common.Address) (*big.Int, error) {
+				panic("unexpected invocation of MockIETHDKG.GetLastRoundParticipantIndex")
+			},
+		},
 		GetMasterPublicKeyFunc: &IETHDKGGetMasterPublicKeyFunc{
 			defaultHook: func(*bind.CallOpts) ([4]*big.Int, error) {
 				panic("unexpected invocation of MockIETHDKG.GetMasterPublicKey")
@@ -14035,11 +14041,6 @@ func NewStrictMockIETHDKG() *MockIETHDKG {
 				panic("unexpected invocation of MockIETHDKG.SubmitMasterPublicKey")
 			},
 		},
-		TryGetParticipantIndexFunc: &IETHDKGTryGetParticipantIndexFunc{
-			defaultHook: func(*bind.CallOpts, common.Address) (bool, *big.Int, error) {
-				panic("unexpected invocation of MockIETHDKG.TryGetParticipantIndex")
-			},
-		},
 		WatchAddressRegisteredFunc: &IETHDKGWatchAddressRegisteredFunc{
 			defaultHook: func(*bind.WatchOpts, chan<- *bindings.ETHDKGAddressRegistered) (event.Subscription, error) {
 				panic("unexpected invocation of MockIETHDKG.WatchAddressRegistered")
@@ -14176,6 +14177,9 @@ func NewMockIETHDKGFrom(i bindings.IETHDKG) *MockIETHDKG {
 		GetETHDKGPhaseFunc: &IETHDKGGetETHDKGPhaseFunc{
 			defaultHook: i.GetETHDKGPhase,
 		},
+		GetLastRoundParticipantIndexFunc: &IETHDKGGetLastRoundParticipantIndexFunc{
+			defaultHook: i.GetLastRoundParticipantIndex,
+		},
 		GetMasterPublicKeyFunc: &IETHDKGGetMasterPublicKeyFunc{
 			defaultHook: i.GetMasterPublicKey,
 		},
@@ -14283,9 +14287,6 @@ func NewMockIETHDKGFrom(i bindings.IETHDKG) *MockIETHDKG {
 		},
 		SubmitMasterPublicKeyFunc: &IETHDKGSubmitMasterPublicKeyFunc{
 			defaultHook: i.SubmitMasterPublicKey,
-		},
-		TryGetParticipantIndexFunc: &IETHDKGTryGetParticipantIndexFunc{
-			defaultHook: i.TryGetParticipantIndex,
 		},
 		WatchAddressRegisteredFunc: &IETHDKGWatchAddressRegisteredFunc{
 			defaultHook: i.WatchAddressRegistered,
@@ -16839,6 +16840,117 @@ func (c IETHDKGGetETHDKGPhaseFuncCall) Args() []interface{} {
 // Results returns an interface slice containing the results of this
 // invocation.
 func (c IETHDKGGetETHDKGPhaseFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
+}
+
+// IETHDKGGetLastRoundParticipantIndexFunc describes the behavior when the
+// GetLastRoundParticipantIndex method of the parent MockIETHDKG instance is
+// invoked.
+type IETHDKGGetLastRoundParticipantIndexFunc struct {
+	defaultHook func(*bind.CallOpts, common.Address) (*big.Int, error)
+	hooks       []func(*bind.CallOpts, common.Address) (*big.Int, error)
+	history     []IETHDKGGetLastRoundParticipantIndexFuncCall
+	mutex       sync.Mutex
+}
+
+// GetLastRoundParticipantIndex delegates to the next hook function in the
+// queue and stores the parameter and result values of this invocation.
+func (m *MockIETHDKG) GetLastRoundParticipantIndex(v0 *bind.CallOpts, v1 common.Address) (*big.Int, error) {
+	r0, r1 := m.GetLastRoundParticipantIndexFunc.nextHook()(v0, v1)
+	m.GetLastRoundParticipantIndexFunc.appendCall(IETHDKGGetLastRoundParticipantIndexFuncCall{v0, v1, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the
+// GetLastRoundParticipantIndex method of the parent MockIETHDKG instance is
+// invoked and the hook queue is empty.
+func (f *IETHDKGGetLastRoundParticipantIndexFunc) SetDefaultHook(hook func(*bind.CallOpts, common.Address) (*big.Int, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// GetLastRoundParticipantIndex method of the parent MockIETHDKG instance
+// invokes the hook at the front of the queue and discards it. After the
+// queue is empty, the default hook function is invoked for any future
+// action.
+func (f *IETHDKGGetLastRoundParticipantIndexFunc) PushHook(hook func(*bind.CallOpts, common.Address) (*big.Int, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *IETHDKGGetLastRoundParticipantIndexFunc) SetDefaultReturn(r0 *big.Int, r1 error) {
+	f.SetDefaultHook(func(*bind.CallOpts, common.Address) (*big.Int, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *IETHDKGGetLastRoundParticipantIndexFunc) PushReturn(r0 *big.Int, r1 error) {
+	f.PushHook(func(*bind.CallOpts, common.Address) (*big.Int, error) {
+		return r0, r1
+	})
+}
+
+func (f *IETHDKGGetLastRoundParticipantIndexFunc) nextHook() func(*bind.CallOpts, common.Address) (*big.Int, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *IETHDKGGetLastRoundParticipantIndexFunc) appendCall(r0 IETHDKGGetLastRoundParticipantIndexFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of IETHDKGGetLastRoundParticipantIndexFuncCall
+// objects describing the invocations of this function.
+func (f *IETHDKGGetLastRoundParticipantIndexFunc) History() []IETHDKGGetLastRoundParticipantIndexFuncCall {
+	f.mutex.Lock()
+	history := make([]IETHDKGGetLastRoundParticipantIndexFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// IETHDKGGetLastRoundParticipantIndexFuncCall is an object that describes
+// an invocation of method GetLastRoundParticipantIndex on an instance of
+// MockIETHDKG.
+type IETHDKGGetLastRoundParticipantIndexFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 *bind.CallOpts
+	// Arg1 is the value of the 2nd argument passed to this method
+	// invocation.
+	Arg1 common.Address
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 *big.Int
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c IETHDKGGetLastRoundParticipantIndexFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0, c.Arg1}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c IETHDKGGetLastRoundParticipantIndexFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
@@ -20730,119 +20842,6 @@ func (c IETHDKGSubmitMasterPublicKeyFuncCall) Args() []interface{} {
 // invocation.
 func (c IETHDKGSubmitMasterPublicKeyFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
-}
-
-// IETHDKGTryGetParticipantIndexFunc describes the behavior when the
-// TryGetParticipantIndex method of the parent MockIETHDKG instance is
-// invoked.
-type IETHDKGTryGetParticipantIndexFunc struct {
-	defaultHook func(*bind.CallOpts, common.Address) (bool, *big.Int, error)
-	hooks       []func(*bind.CallOpts, common.Address) (bool, *big.Int, error)
-	history     []IETHDKGTryGetParticipantIndexFuncCall
-	mutex       sync.Mutex
-}
-
-// TryGetParticipantIndex delegates to the next hook function in the queue
-// and stores the parameter and result values of this invocation.
-func (m *MockIETHDKG) TryGetParticipantIndex(v0 *bind.CallOpts, v1 common.Address) (bool, *big.Int, error) {
-	r0, r1, r2 := m.TryGetParticipantIndexFunc.nextHook()(v0, v1)
-	m.TryGetParticipantIndexFunc.appendCall(IETHDKGTryGetParticipantIndexFuncCall{v0, v1, r0, r1, r2})
-	return r0, r1, r2
-}
-
-// SetDefaultHook sets function that is called when the
-// TryGetParticipantIndex method of the parent MockIETHDKG instance is
-// invoked and the hook queue is empty.
-func (f *IETHDKGTryGetParticipantIndexFunc) SetDefaultHook(hook func(*bind.CallOpts, common.Address) (bool, *big.Int, error)) {
-	f.defaultHook = hook
-}
-
-// PushHook adds a function to the end of hook queue. Each invocation of the
-// TryGetParticipantIndex method of the parent MockIETHDKG instance invokes
-// the hook at the front of the queue and discards it. After the queue is
-// empty, the default hook function is invoked for any future action.
-func (f *IETHDKGTryGetParticipantIndexFunc) PushHook(hook func(*bind.CallOpts, common.Address) (bool, *big.Int, error)) {
-	f.mutex.Lock()
-	f.hooks = append(f.hooks, hook)
-	f.mutex.Unlock()
-}
-
-// SetDefaultReturn calls SetDefaultHook with a function that returns the
-// given values.
-func (f *IETHDKGTryGetParticipantIndexFunc) SetDefaultReturn(r0 bool, r1 *big.Int, r2 error) {
-	f.SetDefaultHook(func(*bind.CallOpts, common.Address) (bool, *big.Int, error) {
-		return r0, r1, r2
-	})
-}
-
-// PushReturn calls PushHook with a function that returns the given values.
-func (f *IETHDKGTryGetParticipantIndexFunc) PushReturn(r0 bool, r1 *big.Int, r2 error) {
-	f.PushHook(func(*bind.CallOpts, common.Address) (bool, *big.Int, error) {
-		return r0, r1, r2
-	})
-}
-
-func (f *IETHDKGTryGetParticipantIndexFunc) nextHook() func(*bind.CallOpts, common.Address) (bool, *big.Int, error) {
-	f.mutex.Lock()
-	defer f.mutex.Unlock()
-
-	if len(f.hooks) == 0 {
-		return f.defaultHook
-	}
-
-	hook := f.hooks[0]
-	f.hooks = f.hooks[1:]
-	return hook
-}
-
-func (f *IETHDKGTryGetParticipantIndexFunc) appendCall(r0 IETHDKGTryGetParticipantIndexFuncCall) {
-	f.mutex.Lock()
-	f.history = append(f.history, r0)
-	f.mutex.Unlock()
-}
-
-// History returns a sequence of IETHDKGTryGetParticipantIndexFuncCall
-// objects describing the invocations of this function.
-func (f *IETHDKGTryGetParticipantIndexFunc) History() []IETHDKGTryGetParticipantIndexFuncCall {
-	f.mutex.Lock()
-	history := make([]IETHDKGTryGetParticipantIndexFuncCall, len(f.history))
-	copy(history, f.history)
-	f.mutex.Unlock()
-
-	return history
-}
-
-// IETHDKGTryGetParticipantIndexFuncCall is an object that describes an
-// invocation of method TryGetParticipantIndex on an instance of
-// MockIETHDKG.
-type IETHDKGTryGetParticipantIndexFuncCall struct {
-	// Arg0 is the value of the 1st argument passed to this method
-	// invocation.
-	Arg0 *bind.CallOpts
-	// Arg1 is the value of the 2nd argument passed to this method
-	// invocation.
-	Arg1 common.Address
-	// Result0 is the value of the 1st result returned from this method
-	// invocation.
-	Result0 bool
-	// Result1 is the value of the 2nd result returned from this method
-	// invocation.
-	Result1 *big.Int
-	// Result2 is the value of the 3rd result returned from this method
-	// invocation.
-	Result2 error
-}
-
-// Args returns an interface slice containing the arguments of this
-// invocation.
-func (c IETHDKGTryGetParticipantIndexFuncCall) Args() []interface{} {
-	return []interface{}{c.Arg0, c.Arg1}
-}
-
-// Results returns an interface slice containing the results of this
-// invocation.
-func (c IETHDKGTryGetParticipantIndexFuncCall) Results() []interface{} {
-	return []interface{}{c.Result0, c.Result1, c.Result2}
 }
 
 // IETHDKGWatchAddressRegisteredFunc describes the behavior when the
@@ -30047,6 +30046,10 @@ type MockISnapshots struct {
 	// InitializeFunc is an instance of a mock function object controlling
 	// the behavior of the method Initialize.
 	InitializeFunc *ISnapshotsInitializeFunc
+	// IsValidatorElectedToPerformSnapshotFunc is an instance of a mock
+	// function object controlling the behavior of the method
+	// IsValidatorElectedToPerformSnapshot.
+	IsValidatorElectedToPerformSnapshotFunc *ISnapshotsIsValidatorElectedToPerformSnapshotFunc
 	// MayValidatorSnapshotFunc is an instance of a mock function object
 	// controlling the behavior of the method MayValidatorSnapshot.
 	MayValidatorSnapshotFunc *ISnapshotsMayValidatorSnapshotFunc
@@ -30188,6 +30191,11 @@ func NewMockISnapshots() *MockISnapshots {
 		},
 		InitializeFunc: &ISnapshotsInitializeFunc{
 			defaultHook: func(*bind.TransactOpts, uint32, uint32) (r0 *types.Transaction, r1 error) {
+				return
+			},
+		},
+		IsValidatorElectedToPerformSnapshotFunc: &ISnapshotsIsValidatorElectedToPerformSnapshotFunc{
+			defaultHook: func(*bind.CallOpts, common.Address, *big.Int, [32]byte) (r0 bool, r1 error) {
 				return
 			},
 		},
@@ -30353,6 +30361,11 @@ func NewStrictMockISnapshots() *MockISnapshots {
 				panic("unexpected invocation of MockISnapshots.Initialize")
 			},
 		},
+		IsValidatorElectedToPerformSnapshotFunc: &ISnapshotsIsValidatorElectedToPerformSnapshotFunc{
+			defaultHook: func(*bind.CallOpts, common.Address, *big.Int, [32]byte) (bool, error) {
+				panic("unexpected invocation of MockISnapshots.IsValidatorElectedToPerformSnapshot")
+			},
+		},
 		MayValidatorSnapshotFunc: &ISnapshotsMayValidatorSnapshotFunc{
 			defaultHook: func(*bind.CallOpts, *big.Int, *big.Int, *big.Int, [32]byte, *big.Int) (bool, error) {
 				panic("unexpected invocation of MockISnapshots.MayValidatorSnapshot")
@@ -30472,6 +30485,9 @@ func NewMockISnapshotsFrom(i bindings.ISnapshots) *MockISnapshots {
 		},
 		InitializeFunc: &ISnapshotsInitializeFunc{
 			defaultHook: i.Initialize,
+		},
+		IsValidatorElectedToPerformSnapshotFunc: &ISnapshotsIsValidatorElectedToPerformSnapshotFunc{
+			defaultHook: i.IsValidatorElectedToPerformSnapshot,
 		},
 		MayValidatorSnapshotFunc: &ISnapshotsMayValidatorSnapshotFunc{
 			defaultHook: i.MayValidatorSnapshot,
@@ -32798,6 +32814,125 @@ func (c ISnapshotsInitializeFuncCall) Args() []interface{} {
 // Results returns an interface slice containing the results of this
 // invocation.
 func (c ISnapshotsInitializeFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
+}
+
+// ISnapshotsIsValidatorElectedToPerformSnapshotFunc describes the behavior
+// when the IsValidatorElectedToPerformSnapshot method of the parent
+// MockISnapshots instance is invoked.
+type ISnapshotsIsValidatorElectedToPerformSnapshotFunc struct {
+	defaultHook func(*bind.CallOpts, common.Address, *big.Int, [32]byte) (bool, error)
+	hooks       []func(*bind.CallOpts, common.Address, *big.Int, [32]byte) (bool, error)
+	history     []ISnapshotsIsValidatorElectedToPerformSnapshotFuncCall
+	mutex       sync.Mutex
+}
+
+// IsValidatorElectedToPerformSnapshot delegates to the next hook function
+// in the queue and stores the parameter and result values of this
+// invocation.
+func (m *MockISnapshots) IsValidatorElectedToPerformSnapshot(v0 *bind.CallOpts, v1 common.Address, v2 *big.Int, v3 [32]byte) (bool, error) {
+	r0, r1 := m.IsValidatorElectedToPerformSnapshotFunc.nextHook()(v0, v1, v2, v3)
+	m.IsValidatorElectedToPerformSnapshotFunc.appendCall(ISnapshotsIsValidatorElectedToPerformSnapshotFuncCall{v0, v1, v2, v3, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the
+// IsValidatorElectedToPerformSnapshot method of the parent MockISnapshots
+// instance is invoked and the hook queue is empty.
+func (f *ISnapshotsIsValidatorElectedToPerformSnapshotFunc) SetDefaultHook(hook func(*bind.CallOpts, common.Address, *big.Int, [32]byte) (bool, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// IsValidatorElectedToPerformSnapshot method of the parent MockISnapshots
+// instance invokes the hook at the front of the queue and discards it.
+// After the queue is empty, the default hook function is invoked for any
+// future action.
+func (f *ISnapshotsIsValidatorElectedToPerformSnapshotFunc) PushHook(hook func(*bind.CallOpts, common.Address, *big.Int, [32]byte) (bool, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *ISnapshotsIsValidatorElectedToPerformSnapshotFunc) SetDefaultReturn(r0 bool, r1 error) {
+	f.SetDefaultHook(func(*bind.CallOpts, common.Address, *big.Int, [32]byte) (bool, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *ISnapshotsIsValidatorElectedToPerformSnapshotFunc) PushReturn(r0 bool, r1 error) {
+	f.PushHook(func(*bind.CallOpts, common.Address, *big.Int, [32]byte) (bool, error) {
+		return r0, r1
+	})
+}
+
+func (f *ISnapshotsIsValidatorElectedToPerformSnapshotFunc) nextHook() func(*bind.CallOpts, common.Address, *big.Int, [32]byte) (bool, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *ISnapshotsIsValidatorElectedToPerformSnapshotFunc) appendCall(r0 ISnapshotsIsValidatorElectedToPerformSnapshotFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of
+// ISnapshotsIsValidatorElectedToPerformSnapshotFuncCall objects describing
+// the invocations of this function.
+func (f *ISnapshotsIsValidatorElectedToPerformSnapshotFunc) History() []ISnapshotsIsValidatorElectedToPerformSnapshotFuncCall {
+	f.mutex.Lock()
+	history := make([]ISnapshotsIsValidatorElectedToPerformSnapshotFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// ISnapshotsIsValidatorElectedToPerformSnapshotFuncCall is an object that
+// describes an invocation of method IsValidatorElectedToPerformSnapshot on
+// an instance of MockISnapshots.
+type ISnapshotsIsValidatorElectedToPerformSnapshotFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 *bind.CallOpts
+	// Arg1 is the value of the 2nd argument passed to this method
+	// invocation.
+	Arg1 common.Address
+	// Arg2 is the value of the 3rd argument passed to this method
+	// invocation.
+	Arg2 *big.Int
+	// Arg3 is the value of the 4th argument passed to this method
+	// invocation.
+	Arg3 [32]byte
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 bool
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c ISnapshotsIsValidatorElectedToPerformSnapshotFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0, c.Arg1, c.Arg2, c.Arg3}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c ISnapshotsIsValidatorElectedToPerformSnapshotFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 

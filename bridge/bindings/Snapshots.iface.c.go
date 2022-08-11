@@ -83,6 +83,10 @@ type ISnapshotsCaller interface {
 	//
 	// Solidity: function getSnapshotDesperationFactor() view returns(uint256)
 	GetSnapshotDesperationFactor(opts *bind.CallOpts) (*big.Int, error)
+	// IsValidatorElectedToPerformSnapshot is a free data retrieval call binding the contract method 0xc0e83e81.
+	//
+	// Solidity: function isValidatorElectedToPerformSnapshot(address validator, uint256 lastSnapshotCommittedAt, bytes32 groupSignatureHash) view returns(bool)
+	IsValidatorElectedToPerformSnapshot(opts *bind.CallOpts, validator common.Address, lastSnapshotCommittedAt *big.Int, groupSignatureHash [32]byte) (bool, error)
 	// MayValidatorSnapshot is a free data retrieval call binding the contract method 0xf45fa246.
 	//
 	// Solidity: function mayValidatorSnapshot(uint256 numValidators, uint256 myIdx, uint256 blocksSinceDesperation, bytes32 randomSeed, uint256 desperationFactor) pure returns(bool)
