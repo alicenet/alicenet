@@ -62,7 +62,7 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
             revert SnapshotsErrors.ConsensusNotRunning();
         }
 
-        uint256 lastSnapshotCommittedAt = _getLatestSnapshotSafe().committedAt;
+        uint256 lastSnapshotCommittedAt = _getLatestSnapshot().committedAt;
         if (block.number < lastSnapshotCommittedAt + _minimumIntervalBetweenSnapshots) {
             revert SnapshotsErrors.MinimumBlocksIntervalNotPassed(
                 block.number,
@@ -226,11 +226,11 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
     }
 
     function getChainIdFromSnapshot(uint256 epoch_) public view returns (uint256) {
-        return getSnapshot(epoch_).blockClaims.chainId;
+        return _getSnapshot(uint32(epoch_)).blockClaims.chainId;
     }
 
     function getChainIdFromLatestSnapshot() public view returns (uint256) {
-        return _getLatestSnapshotSafe().blockClaims.chainId;
+        return _getLatestSnapshot().blockClaims.chainId;
     }
 
     function getBlockClaimsFromSnapshot(uint256 epoch_)
@@ -238,7 +238,7 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
         view
         returns (BClaimsParserLibrary.BClaims memory)
     {
-        return getSnapshot(epoch_).blockClaims;
+        return _getSnapshot(uint32(epoch_)).blockClaims;
     }
 
     function getBlockClaimsFromLatestSnapshot()
@@ -246,35 +246,31 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
         view
         returns (BClaimsParserLibrary.BClaims memory)
     {
-        return _getLatestSnapshotSafe().blockClaims;
+        return _getLatestSnapshot().blockClaims;
     }
 
     function getCommittedHeightFromSnapshot(uint256 epoch_) public view returns (uint256) {
-        return getSnapshot(epoch_).committedAt;
+        return _getSnapshot(uint32(epoch_)).committedAt;
     }
 
     function getCommittedHeightFromLatestSnapshot() public view returns (uint256) {
-        return _getLatestSnapshotSafe().committedAt;
+        return _getLatestSnapshot().committedAt;
     }
 
     function getAliceNetHeightFromSnapshot(uint256 epoch_) public view returns (uint256) {
-        return getSnapshot(epoch_).blockClaims.height;
+        return _getSnapshot(uint32(epoch_)).blockClaims.height;
     }
 
     function getAliceNetHeightFromLatestSnapshot() public view returns (uint256) {
-        return _getLatestSnapshotSafe().blockClaims.height;
+        return _getLatestSnapshot().blockClaims.height;
     }
 
     function getSnapshot(uint256 epoch_) public view returns (Snapshot memory) {
-        (bool ok, Snapshot memory data) = _getSnapshot(uint32(epoch_));
-        if (!ok) {
-            revert SnapshotsErrors.SnapshotsNotInBuffer(epoch_);
-        }
-        return data;
+        return _getSnapshot(uint32(epoch_));
     }
 
     function getLatestSnapshot() public view returns (Snapshot memory) {
-        return _getLatestSnapshotSafe();
+        return _getLatestSnapshot();
     }
 
     function getEpochFromHeight(uint256 height) public view returns (uint256) {
@@ -296,18 +292,6 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
                 randomSeed,
                 desperationFactor
             );
-    }
-
-    function _getLatestSnapshotSafe() internal view returns (Snapshot memory) {
-        uint256 currentEpoch = _epochRegister().get();
-        if (currentEpoch == 0) {
-            return Snapshot(0, BClaimsParserLibrary.BClaims(0, 0, 0, 0, 0, 0, 0));
-        }
-        (bool ok, Snapshot memory snapshotData) = _getLatestSnapshot();
-        if (!ok) {
-            revert SnapshotsErrors.SnapshotsNotInBuffer(currentEpoch);
-        }
-        return snapshotData;
     }
 
     function _mayValidatorSnapshot(
