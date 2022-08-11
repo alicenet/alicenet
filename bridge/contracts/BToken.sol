@@ -199,18 +199,7 @@ contract BToken is
         return true;
     }
 
-    /// Burn pre-approved tokens without sending ether back to an account as the
-    /// normal burn function. The generated ether will be distributed in the
-    /// distribute method. Mostly used to burn tokens in a third party contract
-    /// without having to transfer before.
-    function destroyPreApprovedBTokens(address account, uint256 numBTK_) public returns (bool) {
-        ERC20Upgradeable._spendAllowance(account, msg.sender, numBTK_);
-        _destroyTokens(account, numBTK_);
-        return true;
-    }
-
     function depositTokensOnBridges(
-        uint256 maxTokens,
         uint16 bridgeVersion,
         bytes calldata data
     ) public payable {
@@ -231,7 +220,6 @@ contract BToken is
         //forward call to router
         uint256 bTokenFee = IBridgeRouter(bridgeRouterAddress).routeDeposit(
             msg.sender,
-            maxTokens,
             data
         );
         if (msg.value > 0) {
@@ -239,13 +227,15 @@ contract BToken is
             if (ethFee > msg.value) {
                 revert BTokenErrors.InsufficientFee(msg.value, ethFee);
             }
-            uint256 refund = msg.value - ethFee;
+            unchecked {
+                uint256 refund = msg.value - ethFee;
+            }
             if (refund > 0) {
                 _safeTransferEth(msg.sender, refund);
             }
-        } else {
-            _destroyTokens(msg.sender, bTokenFee);
+            return;
         }
+        _destroyTokens(msg.sender, bTokenFee);
     }
 
     /// Burn BToken. This function sends ether corresponding to the amount of
