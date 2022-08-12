@@ -3,16 +3,15 @@
 pragma solidity ^0.8.11;
 
 import "./DeterministicAddress.sol";
-import {ImmutableAuthErrorCodes} from "contracts/libraries/errorCodes/ImmutableAuthErrorCodes.sol";
 
 abstract contract ImmutableFactory is DeterministicAddress {
     address private immutable _factory;
+    error OnlyFactory(address sender, address expected);
 
     modifier onlyFactory() {
-        require(
-            msg.sender == _factory,
-            string(abi.encodePacked(ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_FACTORY))
-        );
+        if (msg.sender != _factory) {
+            revert OnlyFactory(msg.sender, _factory);
+        }
         _;
     }
 
@@ -27,12 +26,12 @@ abstract contract ImmutableFactory is DeterministicAddress {
 
 abstract contract ImmutableAToken is ImmutableFactory {
     address private immutable _aToken;
+    error OnlyAToken(address sender, address expected);
 
     modifier onlyAToken() {
-        require(
-            msg.sender == _aToken,
-            string(abi.encodePacked(ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_ATOKEN))
-        );
+        if (msg.sender != _aToken) {
+            revert OnlyAToken(msg.sender, _aToken);
+        }
         _;
     }
 
@@ -54,12 +53,12 @@ abstract contract ImmutableAToken is ImmutableFactory {
 
 abstract contract ImmutableATokenBurner is ImmutableFactory {
     address private immutable _aTokenBurner;
+    error OnlyATokenBurner(address sender, address expected);
 
     modifier onlyATokenBurner() {
-        require(
-            msg.sender == _aTokenBurner,
-            string(abi.encodePacked(ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_ATOKENBURNER))
-        );
+        if (msg.sender != _aTokenBurner) {
+            revert OnlyATokenBurner(msg.sender, _aTokenBurner);
+        }
         _;
     }
 
@@ -81,12 +80,12 @@ abstract contract ImmutableATokenBurner is ImmutableFactory {
 
 abstract contract ImmutableATokenMinter is ImmutableFactory {
     address private immutable _aTokenMinter;
+    error OnlyATokenMinter(address sender, address expected);
 
     modifier onlyATokenMinter() {
-        require(
-            msg.sender == _aTokenMinter,
-            string(abi.encodePacked(ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_ATOKENMINTER))
-        );
+        if (msg.sender != _aTokenMinter) {
+            revert OnlyATokenMinter(msg.sender, _aTokenMinter);
+        }
         _;
     }
 
@@ -108,12 +107,12 @@ abstract contract ImmutableATokenMinter is ImmutableFactory {
 
 abstract contract ImmutableBToken is ImmutableFactory {
     address private immutable _bToken;
+    error OnlyBToken(address sender, address expected);
 
     modifier onlyBToken() {
-        require(
-            msg.sender == _bToken,
-            string(abi.encodePacked(ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_BTOKEN))
-        );
+        if (msg.sender != _bToken) {
+            revert OnlyBToken(msg.sender, _bToken);
+        }
         _;
     }
 
@@ -135,12 +134,12 @@ abstract contract ImmutableBToken is ImmutableFactory {
 
 abstract contract ImmutableFoundation is ImmutableFactory {
     address private immutable _foundation;
+    error OnlyFoundation(address sender, address expected);
 
     modifier onlyFoundation() {
-        require(
-            msg.sender == _foundation,
-            string(abi.encodePacked(ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_FOUNDATION))
-        );
+        if (msg.sender != _foundation) {
+            revert OnlyFoundation(msg.sender, _foundation);
+        }
         _;
     }
 
@@ -162,12 +161,12 @@ abstract contract ImmutableFoundation is ImmutableFactory {
 
 abstract contract ImmutableGovernance is ImmutableFactory {
     address private immutable _governance;
+    error OnlyGovernance(address sender, address expected);
 
     modifier onlyGovernance() {
-        require(
-            msg.sender == _governance,
-            string(abi.encodePacked(ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_GOVERNANCE))
-        );
+        if (msg.sender != _governance) {
+            revert OnlyGovernance(msg.sender, _governance);
+        }
         _;
     }
 
@@ -187,18 +186,41 @@ abstract contract ImmutableGovernance is ImmutableFactory {
     }
 }
 
+abstract contract ImmutableInvalidTxConsumptionAccusation is ImmutableFactory {
+    address private immutable _invalidTxConsumptionAccusation;
+    error OnlyInvalidTxConsumptionAccusation(address sender, address expected);
+
+    modifier onlyInvalidTxConsumptionAccusation() {
+        if (msg.sender != _invalidTxConsumptionAccusation) {
+            revert OnlyInvalidTxConsumptionAccusation(msg.sender, _invalidTxConsumptionAccusation);
+        }
+        _;
+    }
+
+    constructor() {
+        _invalidTxConsumptionAccusation = getMetamorphicContractAddress(
+            0x92a73f2b6573522d63c8fc84b5d8e5d615fbb685c1b3d7fad2155fe227daf848,
+            _factoryAddress()
+        );
+    }
+
+    function _invalidTxConsumptionAccusationAddress() internal view returns (address) {
+        return _invalidTxConsumptionAccusation;
+    }
+
+    function _saltForInvalidTxConsumptionAccusation() internal pure returns (bytes32) {
+        return 0x92a73f2b6573522d63c8fc84b5d8e5d615fbb685c1b3d7fad2155fe227daf848;
+    }
+}
+
 abstract contract ImmutableLiquidityProviderStaking is ImmutableFactory {
     address private immutable _liquidityProviderStaking;
+    error OnlyLiquidityProviderStaking(address sender, address expected);
 
     modifier onlyLiquidityProviderStaking() {
-        require(
-            msg.sender == _liquidityProviderStaking,
-            string(
-                abi.encodePacked(
-                    ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_LIQUIDITYPROVIDERSTAKING
-                )
-            )
-        );
+        if (msg.sender != _liquidityProviderStaking) {
+            revert OnlyLiquidityProviderStaking(msg.sender, _liquidityProviderStaking);
+        }
         _;
     }
 
@@ -218,14 +240,41 @@ abstract contract ImmutableLiquidityProviderStaking is ImmutableFactory {
     }
 }
 
+abstract contract ImmutableMultipleProposalAccusation is ImmutableFactory {
+    address private immutable _multipleProposalAccusation;
+    error OnlyMultipleProposalAccusation(address sender, address expected);
+
+    modifier onlyMultipleProposalAccusation() {
+        if (msg.sender != _multipleProposalAccusation) {
+            revert OnlyMultipleProposalAccusation(msg.sender, _multipleProposalAccusation);
+        }
+        _;
+    }
+
+    constructor() {
+        _multipleProposalAccusation = getMetamorphicContractAddress(
+            0xcfdffd500b4a956e03976b2afd69712237ffa06e35093df1e05e533688959fdc,
+            _factoryAddress()
+        );
+    }
+
+    function _multipleProposalAccusationAddress() internal view returns (address) {
+        return _multipleProposalAccusation;
+    }
+
+    function _saltForMultipleProposalAccusation() internal pure returns (bytes32) {
+        return 0xcfdffd500b4a956e03976b2afd69712237ffa06e35093df1e05e533688959fdc;
+    }
+}
+
 abstract contract ImmutablePublicStaking is ImmutableFactory {
     address private immutable _publicStaking;
+    error OnlyPublicStaking(address sender, address expected);
 
     modifier onlyPublicStaking() {
-        require(
-            msg.sender == _publicStaking,
-            string(abi.encodePacked(ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_PUBLICSTAKING))
-        );
+        if (msg.sender != _publicStaking) {
+            revert OnlyPublicStaking(msg.sender, _publicStaking);
+        }
         _;
     }
 
@@ -247,12 +296,12 @@ abstract contract ImmutablePublicStaking is ImmutableFactory {
 
 abstract contract ImmutableSnapshots is ImmutableFactory {
     address private immutable _snapshots;
+    error OnlySnapshots(address sender, address expected);
 
     modifier onlySnapshots() {
-        require(
-            msg.sender == _snapshots,
-            string(abi.encodePacked(ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_SNAPSHOTS))
-        );
+        if (msg.sender != _snapshots) {
+            revert OnlySnapshots(msg.sender, _snapshots);
+        }
         _;
     }
 
@@ -274,16 +323,12 @@ abstract contract ImmutableSnapshots is ImmutableFactory {
 
 abstract contract ImmutableStakingPositionDescriptor is ImmutableFactory {
     address private immutable _stakingPositionDescriptor;
+    error OnlyStakingPositionDescriptor(address sender, address expected);
 
     modifier onlyStakingPositionDescriptor() {
-        require(
-            msg.sender == _stakingPositionDescriptor,
-            string(
-                abi.encodePacked(
-                    ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_STAKINGPOSITIONDESCRIPTOR
-                )
-            )
-        );
+        if (msg.sender != _stakingPositionDescriptor) {
+            revert OnlyStakingPositionDescriptor(msg.sender, _stakingPositionDescriptor);
+        }
         _;
     }
 
@@ -305,12 +350,12 @@ abstract contract ImmutableStakingPositionDescriptor is ImmutableFactory {
 
 abstract contract ImmutableValidatorPool is ImmutableFactory {
     address private immutable _validatorPool;
+    error OnlyValidatorPool(address sender, address expected);
 
     modifier onlyValidatorPool() {
-        require(
-            msg.sender == _validatorPool,
-            string(abi.encodePacked(ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_VALIDATORPOOL))
-        );
+        if (msg.sender != _validatorPool) {
+            revert OnlyValidatorPool(msg.sender, _validatorPool);
+        }
         _;
     }
 
@@ -332,12 +377,12 @@ abstract contract ImmutableValidatorPool is ImmutableFactory {
 
 abstract contract ImmutableValidatorStaking is ImmutableFactory {
     address private immutable _validatorStaking;
+    error OnlyValidatorStaking(address sender, address expected);
 
     modifier onlyValidatorStaking() {
-        require(
-            msg.sender == _validatorStaking,
-            string(abi.encodePacked(ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_VALIDATORSTAKING))
-        );
+        if (msg.sender != _validatorStaking) {
+            revert OnlyValidatorStaking(msg.sender, _validatorStaking);
+        }
         _;
     }
 
@@ -359,12 +404,12 @@ abstract contract ImmutableValidatorStaking is ImmutableFactory {
 
 abstract contract ImmutableETHDKGAccusations is ImmutableFactory {
     address private immutable _ethdkgAccusations;
+    error OnlyETHDKGAccusations(address sender, address expected);
 
     modifier onlyETHDKGAccusations() {
-        require(
-            msg.sender == _ethdkgAccusations,
-            string(abi.encodePacked(ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_ETHDKGACCUSATIONS))
-        );
+        if (msg.sender != _ethdkgAccusations) {
+            revert OnlyETHDKGAccusations(msg.sender, _ethdkgAccusations);
+        }
         _;
     }
 
@@ -386,12 +431,12 @@ abstract contract ImmutableETHDKGAccusations is ImmutableFactory {
 
 abstract contract ImmutableETHDKGPhases is ImmutableFactory {
     address private immutable _ethdkgPhases;
+    error OnlyETHDKGPhases(address sender, address expected);
 
     modifier onlyETHDKGPhases() {
-        require(
-            msg.sender == _ethdkgPhases,
-            string(abi.encodePacked(ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_ETHDKGPHASES))
-        );
+        if (msg.sender != _ethdkgPhases) {
+            revert OnlyETHDKGPhases(msg.sender, _ethdkgPhases);
+        }
         _;
     }
 
@@ -413,12 +458,12 @@ abstract contract ImmutableETHDKGPhases is ImmutableFactory {
 
 abstract contract ImmutableETHDKG is ImmutableFactory {
     address private immutable _ethdkg;
+    error OnlyETHDKG(address sender, address expected);
 
     modifier onlyETHDKG() {
-        require(
-            msg.sender == _ethdkg,
-            string(abi.encodePacked(ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_ETHDKG))
-        );
+        if (msg.sender != _ethdkg) {
+            revert OnlyETHDKG(msg.sender, _ethdkg);
+        }
         _;
     }
 

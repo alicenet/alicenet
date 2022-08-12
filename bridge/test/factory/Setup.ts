@@ -8,7 +8,7 @@ import {
 } from "ethers";
 import { ethers } from "hardhat";
 import { ALICENET_FACTORY, END_POINT, MOCK } from "../../scripts/lib/constants";
-import { AliceNetFactory } from "../../typechain-types/AliceNetFactory";
+import { AliceNetFactory } from "../../typechain-types/contracts/AliceNetFactory";
 
 export async function getAccounts() {
   const signers = await ethers.getSigners();
@@ -81,9 +81,7 @@ export async function proxyMockLogicTest(
   await txResponse.wait();
   await expectTxSuccess(txResponse);
   const txRes = factory.upgradeProxy(salt, endPointAddr, "0x");
-  await expect(txRes).to.be.revertedWith(
-    "reverted with an unrecognized custom error"
-  );
+  await expect(txRes).to.be.reverted;
   // unlock the proxy
   txResponse = await mockProxy.unlock();
   await txResponse.wait();

@@ -1,12 +1,12 @@
 import { expect } from "chai";
-import { Snapshots } from "../../typechain-types/Snapshots";
+import { Snapshots } from "../../typechain-types/contracts/Snapshots";
 import { getFixture } from "../setup";
 
 const numValidators = 10;
 const desperationFactor = 40;
 
-// this blocksignature happens to coincide with a starting index of 7 in the case of 10 validators
-const blockSignature = `0x290decd9548b62a8d60345a988386fc84ba6bc95484008f6362f93160ef3e563`;
+// this groupSignatureHash happens to coincide with a starting index of 7 in the case of 10 validators
+const groupSignatureHash = `0x290decd9548b62a8d60345a988386fc84ba6bc95484008f6362f93160ef3e563`;
 
 describe("Snapshots: MayValidatorSnapshot", () => {
   let mayValidatorSnapshot: Snapshots["mayValidatorSnapshot"];
@@ -25,7 +25,7 @@ describe("Snapshots: MayValidatorSnapshot", () => {
           numValidators,
           7,
           blocksSinceDesperation,
-          blockSignature,
+          groupSignatureHash,
           desperationFactor
         )
       ).to.equal(true);
@@ -37,7 +37,7 @@ describe("Snapshots: MayValidatorSnapshot", () => {
           numValidators,
           8,
           blocksSinceDesperation,
-          blockSignature,
+          groupSignatureHash,
           desperationFactor
         )
       ).to.equal(false);
@@ -53,7 +53,7 @@ describe("Snapshots: MayValidatorSnapshot", () => {
           numValidators,
           7,
           blocksSinceDesperation,
-          blockSignature,
+          groupSignatureHash,
           desperationFactor
         )
       ).to.equal(true);
@@ -62,7 +62,7 @@ describe("Snapshots: MayValidatorSnapshot", () => {
           numValidators,
           8,
           blocksSinceDesperation,
-          blockSignature,
+          groupSignatureHash,
           desperationFactor
         )
       ).to.equal(true);
@@ -74,7 +74,7 @@ describe("Snapshots: MayValidatorSnapshot", () => {
           numValidators,
           9,
           blocksSinceDesperation,
-          blockSignature,
+          groupSignatureHash,
           desperationFactor
         )
       ).to.equal(false);
@@ -90,7 +90,7 @@ describe("Snapshots: MayValidatorSnapshot", () => {
           numValidators,
           7,
           blocksSinceDesperation,
-          blockSignature,
+          groupSignatureHash,
           desperationFactor
         )
       ).to.equal(true);
@@ -99,7 +99,7 @@ describe("Snapshots: MayValidatorSnapshot", () => {
           numValidators,
           8,
           blocksSinceDesperation,
-          blockSignature,
+          groupSignatureHash,
           desperationFactor
         )
       ).to.equal(true);
@@ -111,7 +111,7 @@ describe("Snapshots: MayValidatorSnapshot", () => {
           numValidators,
           9,
           blocksSinceDesperation,
-          blockSignature,
+          groupSignatureHash,
           desperationFactor
         )
       ).to.equal(false);
@@ -127,7 +127,7 @@ describe("Snapshots: MayValidatorSnapshot", () => {
           numValidators,
           7,
           blocksSinceDesperation,
-          blockSignature,
+          groupSignatureHash,
           desperationFactor
         )
       ).to.equal(true);
@@ -136,7 +136,7 @@ describe("Snapshots: MayValidatorSnapshot", () => {
           numValidators,
           8,
           blocksSinceDesperation,
-          blockSignature,
+          groupSignatureHash,
           desperationFactor
         )
       ).to.equal(true);
@@ -145,7 +145,7 @@ describe("Snapshots: MayValidatorSnapshot", () => {
           numValidators,
           9,
           blocksSinceDesperation,
-          blockSignature,
+          groupSignatureHash,
           desperationFactor
         )
       ).to.equal(true);
@@ -157,7 +157,7 @@ describe("Snapshots: MayValidatorSnapshot", () => {
           numValidators,
           0,
           blocksSinceDesperation,
-          blockSignature,
+          groupSignatureHash,
           desperationFactor
         )
       ).to.equal(false);
@@ -174,7 +174,7 @@ describe("Snapshots: MayValidatorSnapshot", () => {
           numValidators,
           7,
           blocksSinceDesperation,
-          blockSignature,
+          groupSignatureHash,
           desperationFactor
         )
       ).to.equal(true);
@@ -183,7 +183,7 @@ describe("Snapshots: MayValidatorSnapshot", () => {
           numValidators,
           8,
           blocksSinceDesperation,
-          blockSignature,
+          groupSignatureHash,
           desperationFactor
         )
       ).to.equal(true);
@@ -192,7 +192,7 @@ describe("Snapshots: MayValidatorSnapshot", () => {
           numValidators,
           9,
           blocksSinceDesperation,
-          blockSignature,
+          groupSignatureHash,
           desperationFactor
         )
       ).to.equal(true);
@@ -204,7 +204,7 @@ describe("Snapshots: MayValidatorSnapshot", () => {
           numValidators,
           0,
           blocksSinceDesperation,
-          blockSignature,
+          groupSignatureHash,
           desperationFactor
         )
       ).to.equal(false);
@@ -221,7 +221,7 @@ describe("Snapshots: MayValidatorSnapshot", () => {
           numValidators,
           7,
           blocksSinceDesperation,
-          blockSignature,
+          groupSignatureHash,
           desperationFactor
         )
       ).to.equal(true);
@@ -230,7 +230,7 @@ describe("Snapshots: MayValidatorSnapshot", () => {
           numValidators,
           8,
           blocksSinceDesperation,
-          blockSignature,
+          groupSignatureHash,
           desperationFactor
         )
       ).to.equal(true);
@@ -239,7 +239,7 @@ describe("Snapshots: MayValidatorSnapshot", () => {
           numValidators,
           9,
           blocksSinceDesperation,
-          blockSignature,
+          groupSignatureHash,
           desperationFactor
         )
       ).to.equal(true);
@@ -248,7 +248,7 @@ describe("Snapshots: MayValidatorSnapshot", () => {
           numValidators,
           0,
           blocksSinceDesperation,
-          blockSignature,
+          groupSignatureHash,
           desperationFactor
         )
       ).to.equal(true);
@@ -260,7 +260,7 @@ describe("Snapshots: MayValidatorSnapshot", () => {
           numValidators,
           1,
           blocksSinceDesperation,
-          blockSignature,
+          groupSignatureHash,
           desperationFactor
         )
       ).to.equal(false);
@@ -270,13 +270,13 @@ describe("Snapshots: MayValidatorSnapshot", () => {
   describe("When desperationFactor been reached many times over", () => {
     const blocksSinceDesperation = 1e6;
 
-    it("Still only allows at most one third of the validator pool to snapshot", async () => {
+    it("Allow all validators to do the snapshot", async () => {
       expect(
         await mayValidatorSnapshot(
           numValidators,
           7,
           blocksSinceDesperation,
-          blockSignature,
+          groupSignatureHash,
           desperationFactor
         )
       ).to.equal(true);
@@ -285,7 +285,7 @@ describe("Snapshots: MayValidatorSnapshot", () => {
           numValidators,
           8,
           blocksSinceDesperation,
-          blockSignature,
+          groupSignatureHash,
           desperationFactor
         )
       ).to.equal(true);
@@ -294,7 +294,7 @@ describe("Snapshots: MayValidatorSnapshot", () => {
           numValidators,
           9,
           blocksSinceDesperation,
-          blockSignature,
+          groupSignatureHash,
           desperationFactor
         )
       ).to.equal(true);
@@ -303,7 +303,7 @@ describe("Snapshots: MayValidatorSnapshot", () => {
           numValidators,
           0,
           blocksSinceDesperation,
-          blockSignature,
+          groupSignatureHash,
           desperationFactor
         )
       ).to.equal(true);
@@ -312,60 +312,60 @@ describe("Snapshots: MayValidatorSnapshot", () => {
           numValidators,
           1,
           blocksSinceDesperation,
-          blockSignature,
+          groupSignatureHash,
           desperationFactor
         )
-      ).to.equal(false);
+      ).to.equal(true);
       expect(
         await mayValidatorSnapshot(
           numValidators,
           2,
           blocksSinceDesperation,
-          blockSignature,
+          groupSignatureHash,
           desperationFactor
         )
-      ).to.equal(false);
+      ).to.equal(true);
       expect(
         await mayValidatorSnapshot(
           numValidators,
           3,
           blocksSinceDesperation,
-          blockSignature,
+          groupSignatureHash,
           desperationFactor
         )
-      ).to.equal(false);
+      ).to.equal(true);
       expect(
         await mayValidatorSnapshot(
           numValidators,
           4,
           blocksSinceDesperation,
-          blockSignature,
+          groupSignatureHash,
           desperationFactor
         )
-      ).to.equal(false);
+      ).to.equal(true);
       expect(
         await mayValidatorSnapshot(
           numValidators,
           5,
           blocksSinceDesperation,
-          blockSignature,
+          groupSignatureHash,
           desperationFactor
         )
-      ).to.equal(false);
+      ).to.equal(true);
       expect(
         await mayValidatorSnapshot(
           numValidators,
           6,
           blocksSinceDesperation,
-          blockSignature,
+          groupSignatureHash,
           desperationFactor
         )
-      ).to.equal(false);
+      ).to.equal(true);
     });
   });
 
-  describe("When blockSignature changes", () => {
-    const blockSignature2 = `0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470`;
+  describe("When groupSignature changes", () => {
+    const groupSignatureHash2 = `0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470`;
     const blocksSinceDesperation = 1;
 
     it("Elects a different range of validators", async () => {
@@ -374,7 +374,7 @@ describe("Snapshots: MayValidatorSnapshot", () => {
           numValidators,
           1,
           blocksSinceDesperation,
-          blockSignature2,
+          groupSignatureHash2,
           desperationFactor
         )
       ).to.equal(false);
@@ -383,7 +383,7 @@ describe("Snapshots: MayValidatorSnapshot", () => {
           numValidators,
           2,
           blocksSinceDesperation,
-          blockSignature2,
+          groupSignatureHash2,
           desperationFactor
         )
       ).to.equal(true);
@@ -392,7 +392,7 @@ describe("Snapshots: MayValidatorSnapshot", () => {
           numValidators,
           3,
           blocksSinceDesperation,
-          blockSignature2,
+          groupSignatureHash2,
           desperationFactor
         )
       ).to.equal(true);
@@ -401,7 +401,7 @@ describe("Snapshots: MayValidatorSnapshot", () => {
           numValidators,
           4,
           blocksSinceDesperation,
-          blockSignature2,
+          groupSignatureHash2,
           desperationFactor
         )
       ).to.equal(false);

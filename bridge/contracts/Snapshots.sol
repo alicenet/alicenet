@@ -10,11 +10,13 @@ import "contracts/libraries/math/CryptoLibrary.sol";
 import "contracts/libraries/snapshots/SnapshotsStorage.sol";
 import "contracts/utils/DeterministicAddress.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import {SnapshotsErrorCodes} from "contracts/libraries/errorCodes/SnapshotsErrorCodes.sol";
+import "contracts/libraries/errors/SnapshotsErrors.sol";
 
 /// @custom:salt Snapshots
 /// @custom:deploy-type deployUpgradeable
 contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
+    using EpochLib for Epoch;
+
     constructor(uint256 chainID_, uint256 epochLength_) SnapshotsStorage(chainID_, epochLength_) {}
 
     function initialize(uint32 desperationDelay_, uint32 desperationFactor_)
@@ -29,6 +31,7 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
         _snapshotDesperationFactor = desperationFactor_;
     }
 
+    // todo: compute this value using the dynamic system and the alicenet block times.
     function setSnapshotDesperationDelay(uint32 desperationDelay_) public onlyFactory {
         _snapshotDesperationDelay = desperationDelay_;
     }
@@ -52,80 +55,84 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
         public
         returns (bool)
     {
-        require(
-            IValidatorPool(_validatorPoolAddress()).isValidator(msg.sender),
-            string(abi.encodePacked(SnapshotsErrorCodes.SNAPSHOT_ONLY_VALIDATORS_ALLOWED))
-        );
-        require(
-            IValidatorPool(_validatorPoolAddress()).isConsensusRunning(),
-            string(abi.encodePacked(SnapshotsErrorCodes.SNAPSHOT_CONSENSUS_RUNNING))
-        );
+        if (!IValidatorPool(_validatorPoolAddress()).isValidator(msg.sender)) {
+            revert SnapshotsErrors.OnlyValidatorsAllowed(msg.sender);
+        }
+        if (!IValidatorPool(_validatorPoolAddress()).isConsensusRunning()) {
+            revert SnapshotsErrors.ConsensusNotRunning();
+        }
 
-        require(
-            block.number >= _snapshots[_epoch].committedAt + _minimumIntervalBetweenSnapshots,
-            string(abi.encodePacked(SnapshotsErrorCodes.SNAPSHOT_MIN_BLOCKS_INTERVAL_NOT_PASSED))
-        );
+        uint256 lastSnapshotCommittedAt = _getLatestSnapshot().committedAt;
+        if (block.number < lastSnapshotCommittedAt + _minimumIntervalBetweenSnapshots) {
+            revert SnapshotsErrors.MinimumBlocksIntervalNotPassed(
+                block.number,
+                lastSnapshotCommittedAt + _minimumIntervalBetweenSnapshots
+            );
+        }
 
-        uint32 epoch = _epoch + 1;
-
-        // // TODO: BRING BACK AFTER GOLANG LOGIC IS DEBUGGED AND MERGED
-        // {
-        //     // Check if sender is the elected validator allowed to make the snapshot
-        //     (bool success, uint256 validatorIndex) = IETHDKG(_ethdkgAddress())
-        //         .tryGetParticipantIndex(msg.sender);
-        //     require(success, "Snapshots: Caller didn't participate in the last ethdkg round!");
-
-        //     uint256 ethBlocksSinceLastSnapshot = block.number - _snapshots[epoch - 1].committedAt;
-
-        //     uint256 blocksSinceDesperation = ethBlocksSinceLastSnapshot >= _snapshotDesperationDelay
-        //         ? ethBlocksSinceLastSnapshot - _snapshotDesperationDelay
-        //         : 0;
-
-        //     require(
-        //         _mayValidatorSnapshot(
-        //             IValidatorPool(_validatorPoolAddress()).getValidatorsCount(),
-        //             validatorIndex - 1,
-        //             blocksSinceDesperation,
-        //             keccak256(bClaims_),
-        //             uint256(_snapshotDesperationFactor)
-        //         ),
-        //         "Snapshots: Validator not elected to do snapshot!"
-        //     );
-        // }
+        uint32 epoch = _epochRegister().get() + 1;
 
         {
             (uint256[4] memory masterPublicKey, uint256[2] memory signature) = RCertParserLibrary
                 .extractSigGroup(groupSignature_, 0);
 
-            require(
-                keccak256(abi.encodePacked(masterPublicKey)) ==
-                    IETHDKG(_ethdkgAddress()).getMasterPublicKeyHash(),
-                string(abi.encodePacked(SnapshotsErrorCodes.SNAPSHOT_WRONG_MASTER_PUBLIC_KEY))
-            );
+            bytes32 calculatedMasterPublicKeyHash = keccak256(abi.encodePacked(masterPublicKey));
+            bytes32 expectedMasterPublicKeyHash = IETHDKG(_ethdkgAddress())
+                .getMasterPublicKeyHash();
 
-            require(
-                CryptoLibrary.verifySignatureASM(
+            if (calculatedMasterPublicKeyHash != expectedMasterPublicKeyHash) {
+                revert SnapshotsErrors.InvalidMasterPublicKey(
+                    calculatedMasterPublicKeyHash,
+                    expectedMasterPublicKeyHash
+                );
+            }
+
+            if (
+                !CryptoLibrary.verifySignatureASM(
                     abi.encodePacked(keccak256(bClaims_)),
                     signature,
                     masterPublicKey
-                ),
-                string(abi.encodePacked(SnapshotsErrorCodes.SNAPSHOT_SIGNATURE_VERIFICATION_FAILED))
-            );
+                )
+            ) {
+                revert SnapshotsErrors.SignatureVerificationFailed();
+            }
         }
 
         BClaimsParserLibrary.BClaims memory blockClaims = BClaimsParserLibrary.extractBClaims(
             bClaims_
         );
 
-        require(
-            epoch * _epochLength == blockClaims.height,
-            string(abi.encodePacked(SnapshotsErrorCodes.SNAPSHOT_INCORRECT_BLOCK_HEIGHT))
-        );
+        if (epoch * _epochLength != blockClaims.height) {
+            revert SnapshotsErrors.InvalidBlockHeight(blockClaims.height);
+        }
 
-        require(
-            blockClaims.chainId == _chainId,
-            string(abi.encodePacked(SnapshotsErrorCodes.SNAPSHOT_INCORRECT_CHAIN_ID))
-        );
+        if (blockClaims.chainId != _chainId) {
+            revert SnapshotsErrors.InvalidChainId(blockClaims.chainId);
+        }
+
+        {
+            // Check if sender is the elected validator allowed to make the snapshot
+            (bool success, uint256 validatorIndex) = IETHDKG(_ethdkgAddress())
+                .tryGetParticipantIndex(msg.sender);
+            require(success, "Snapshots: Caller didn't participate in the last ethdkg round!");
+
+            uint256 ethBlocksSinceLastSnapshot = block.number - lastSnapshotCommittedAt;
+
+            uint256 blocksSinceDesperation = ethBlocksSinceLastSnapshot >= _snapshotDesperationDelay
+                ? ethBlocksSinceLastSnapshot - _snapshotDesperationDelay
+                : 0;
+
+            require(
+                _mayValidatorSnapshot(
+                    IValidatorPool(_validatorPoolAddress()).getValidatorsCount(),
+                    validatorIndex - 1,
+                    blocksSinceDesperation,
+                    keccak256(groupSignature_),
+                    uint256(_snapshotDesperationFactor)
+                ),
+                "Snapshots: Validator not elected to do snapshot!"
+            );
+        }
 
         bool isSafeToProceedConsensus = true;
         if (IValidatorPool(_validatorPoolAddress()).isMaintenanceScheduled()) {
@@ -133,8 +140,8 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
             IValidatorPool(_validatorPoolAddress()).pauseConsensus();
         }
 
-        _snapshots[epoch] = Snapshot(block.number, blockClaims);
-        _epoch = epoch;
+        _setSnapshot(Snapshot(block.number, blockClaims));
+        _epochRegister().set(epoch);
 
         emit SnapshotTaken(
             _chainId,
@@ -142,7 +149,8 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
             blockClaims.height,
             msg.sender,
             isSafeToProceedConsensus,
-            groupSignature_
+            groupSignature_,
+            blockClaims
         );
         return isSafeToProceedConsensus;
     }
@@ -156,15 +164,17 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
         onlyFactory
         returns (bool)
     {
+        Epoch storage epochReg = _epochRegister();
         {
-            require(
-                _epoch == 0,
-                string(abi.encodePacked(SnapshotsErrorCodes.SNAPSHOT_MIGRATION_NOT_ALLOWED))
-            );
-            require(
-                groupSignature_.length == bClaims_.length && groupSignature_.length >= 1,
-                string(abi.encodePacked(SnapshotsErrorCodes.SNAPSHOT_MIGRATION_INPUT_DATA_MISMATCH))
-            );
+            if (epochReg.get() != 0) {
+                revert SnapshotsErrors.MigrationNotAllowedAtCurrentEpoch();
+            }
+            if (groupSignature_.length != bClaims_.length || groupSignature_.length == 0) {
+                revert SnapshotsErrors.MigrationInputDataMismatch(
+                    groupSignature_.length,
+                    bClaims_.length
+                );
+            }
         }
 
         uint256 epoch;
@@ -172,22 +182,22 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
             BClaimsParserLibrary.BClaims memory blockClaims = BClaimsParserLibrary.extractBClaims(
                 bClaims_[i]
             );
-            require(
-                blockClaims.height % _epochLength == 0,
-                string(abi.encodePacked(SnapshotsErrorCodes.SNAPSHOT_INCORRECT_BLOCK_HEIGHT))
-            );
+            if (blockClaims.height % _epochLength != 0) {
+                revert SnapshotsErrors.InvalidBlockHeight(blockClaims.height);
+            }
             epoch = getEpochFromHeight(blockClaims.height);
-            _snapshots[epoch] = Snapshot(block.number, blockClaims);
+            _setSnapshot(Snapshot(block.number, blockClaims));
             emit SnapshotTaken(
                 _chainId,
                 epoch,
                 blockClaims.height,
                 msg.sender,
                 true,
-                groupSignature_[i]
+                groupSignature_[i],
+                blockClaims
             );
         }
-        _epoch = uint32(epoch);
+        epochReg.set(uint32(epoch));
         return true;
     }
 
@@ -208,7 +218,7 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
     }
 
     function getEpoch() public view returns (uint256) {
-        return _epoch;
+        return _epochRegister().get();
     }
 
     function getEpochLength() public view returns (uint256) {
@@ -216,11 +226,11 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
     }
 
     function getChainIdFromSnapshot(uint256 epoch_) public view returns (uint256) {
-        return _snapshots[epoch_].blockClaims.chainId;
+        return _getSnapshot(uint32(epoch_)).blockClaims.chainId;
     }
 
     function getChainIdFromLatestSnapshot() public view returns (uint256) {
-        return _snapshots[_epoch].blockClaims.chainId;
+        return _getLatestSnapshot().blockClaims.chainId;
     }
 
     function getBlockClaimsFromSnapshot(uint256 epoch_)
@@ -228,7 +238,7 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
         view
         returns (BClaimsParserLibrary.BClaims memory)
     {
-        return _snapshots[epoch_].blockClaims;
+        return _getSnapshot(uint32(epoch_)).blockClaims;
     }
 
     function getBlockClaimsFromLatestSnapshot()
@@ -236,48 +246,42 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
         view
         returns (BClaimsParserLibrary.BClaims memory)
     {
-        return _snapshots[_epoch].blockClaims;
+        return _getLatestSnapshot().blockClaims;
     }
 
     function getCommittedHeightFromSnapshot(uint256 epoch_) public view returns (uint256) {
-        return _snapshots[epoch_].committedAt;
+        return _getSnapshot(uint32(epoch_)).committedAt;
     }
 
     function getCommittedHeightFromLatestSnapshot() public view returns (uint256) {
-        return _snapshots[_epoch].committedAt;
+        return _getLatestSnapshot().committedAt;
     }
 
     function getAliceNetHeightFromSnapshot(uint256 epoch_) public view returns (uint256) {
-        return _snapshots[epoch_].blockClaims.height;
+        return _getSnapshot(uint32(epoch_)).blockClaims.height;
     }
 
     function getAliceNetHeightFromLatestSnapshot() public view returns (uint256) {
-        return _snapshots[_epoch].blockClaims.height;
+        return _getLatestSnapshot().blockClaims.height;
     }
 
     function getSnapshot(uint256 epoch_) public view returns (Snapshot memory) {
-        return _snapshots[epoch_];
+        return _getSnapshot(uint32(epoch_));
     }
 
     function getLatestSnapshot() public view returns (Snapshot memory) {
-        return _snapshots[_epoch];
+        return _getLatestSnapshot();
     }
 
     function getEpochFromHeight(uint256 height) public view returns (uint256) {
-        if (height <= _epochLength) {
-            return 1;
-        }
-        if (height % _epochLength == 0) {
-            return height / _epochLength;
-        }
-        return (height / _epochLength) + 1;
+        return _getEpochFromHeight(uint32(height));
     }
 
     function mayValidatorSnapshot(
         uint256 numValidators,
         uint256 myIdx,
         uint256 blocksSinceDesperation,
-        bytes32 blsig,
+        bytes32 randomSeed,
         uint256 desperationFactor
     ) public pure returns (bool) {
         return
@@ -285,7 +289,7 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
                 numValidators,
                 myIdx,
                 blocksSinceDesperation,
-                blsig,
+                randomSeed,
                 desperationFactor
             );
     }
@@ -294,18 +298,18 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
         uint256 numValidators,
         uint256 myIdx,
         uint256 blocksSinceDesperation,
-        bytes32 blsig,
+        bytes32 randomSeed,
         uint256 desperationFactor
     ) internal pure returns (bool) {
         uint256 numValidatorsAllowed = 1;
 
         uint256 desperation = 0;
-        while (desperation < blocksSinceDesperation && numValidatorsAllowed <= numValidators / 3) {
+        while (desperation < blocksSinceDesperation && numValidatorsAllowed < numValidators) {
             desperation += desperationFactor / numValidatorsAllowed;
             numValidatorsAllowed++;
         }
 
-        uint256 rand = uint256(blsig);
+        uint256 rand = uint256(randomSeed);
         uint256 start = (rand % numValidators);
         uint256 end = (start + numValidatorsAllowed) % numValidators;
 

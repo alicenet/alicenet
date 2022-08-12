@@ -5,10 +5,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/alicenet/alicenet/logging"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
+
+	"github.com/alicenet/alicenet/logging"
 )
 
 type bootnodeConfig struct {
@@ -28,30 +29,20 @@ type chainConfig struct {
 }
 
 type ethereumConfig struct {
-	DefaultAccount            string
-	DeployAccount             string
-	Endpoint                  string
-	EndpointMinimumPeers      int
-	FinalityDelay             int
-	Keystore                  string
-	MerkleProofContract       string
-	Passcodes                 string
-	RegistryAddress           string
-	RetryCount                int
-	RetryDelay                time.Duration
-	StartingBlock             uint64
-	TestEther                 string
-	Timeout                   time.Duration
-	TxFeePercentageToIncrease int
-	TxMaxFeeThresholdInGwei   uint64
-	TxCheckFrequency          time.Duration
-	TxTimeoutForReplacement   time.Duration
+	DefaultAccount           string
+	Endpoint                 string
+	EndpointMinimumPeers     uint64
+	Keystore                 string
+	PassCodes                string
+	FactoryAddress           string
+	StartingBlock            uint64
+	TxMaxGasFeeAllowedInGwei uint64
+	TxMetricsDisplay         bool
 }
 
 type monitorConfig struct {
 	BatchSize int
 	Interval  time.Duration
-	Timeout   time.Duration
 }
 
 type transportConfig struct {
@@ -136,7 +127,7 @@ type configuration struct {
 	BootNode              bootnodeConfig
 }
 
-// Configuration contains all active settings
+// Configuration contains all active settings.
 var Configuration configuration
 
 type s struct {
@@ -145,7 +136,7 @@ type s struct {
 
 var flagMap map[s]*pflag.Flag
 
-//SetBinding registers a particular Flag as tied to a particular pointer
+// SetBinding registers a particular Flag as tied to a particular pointer.
 func SetBinding(ptr interface{}, f *pflag.Flag) {
 	logger := logging.GetLogger("settings")
 	logger.SetLevel(logrus.WarnLevel)
@@ -156,8 +147,8 @@ func SetBinding(ptr interface{}, f *pflag.Flag) {
 	flagMap[s{ptr}] = f
 }
 
-//SetValue takes a ptr and updates the value of the flag that's pointing to it
-func SetValue(ptr interface{}, value interface{}) {
+// SetValue takes a ptr and updates the value of the flag that's pointing to it.
+func SetValue(ptr, value interface{}) {
 	logger := logging.GetLogger("settings")
 	f, ok := flagMap[s{ptr}]
 	if !ok {

@@ -269,6 +269,58 @@ task("registerValidators", "registers validators")
     console.log("done");
   });
 
+task("unregisterValidators", "unregister validators")
+  .addFlag("test")
+  .addParam("factoryAddress", "address of the factory deploying the contract")
+  .addVariadicPositionalParam(
+    "addresses",
+    "validators' addresses",
+    undefined,
+    types.string,
+    false
+  )
+  .setAction(async (taskArgs, hre) => {
+    console.log("unregisterValidators", taskArgs.addresses);
+    const factory = await hre.ethers.getContractAt(
+      "AliceNetFactory",
+      taskArgs.factoryAddress
+    );
+
+    // checking factory address
+    factory
+      .lookup(hre.ethers.utils.formatBytes32String("AToken"))
+      .catch((error: any) => {
+        throw new Error(
+          `Invalid factory-address ${taskArgs.factoryAddress}!\n${error}`
+        );
+      });
+    const validatorAddresses: string[] = taskArgs.addresses;
+    console.log(validatorAddresses);
+    // Make sure that admin is the named account at position 0
+    const [admin] = await hre.ethers.getSigners();
+    console.log(`Admin address: ${admin.address}`);
+
+    const validatorPool = await hre.ethers.getContractAt(
+      "ValidatorPool",
+      await factory.lookup(
+        hre.ethers.utils.formatBytes32String("ValidatorPool")
+      )
+    );
+    console.log(`validatorPool Address: ${validatorPool.address}`);
+
+    const input = validatorPool.interface.encodeFunctionData(
+      "unregisterValidators",
+      [validatorAddresses]
+    );
+    const recpt = await (
+      await factory.connect(admin).callAny(validatorPool.address, 0, input)
+    ).wait(3);
+    if (recpt.status !== 1) {
+      throw new Error(`Receipt indicates failure: ${recpt}`);
+    }
+    console.log("Done");
+  });
+
 task("ethdkgInput", "calculate the initializeETHDKG selector").setAction(
   async (taskArgs, hre) => {
     const { ethers } = hre;
@@ -295,7 +347,7 @@ task("virtualMintDeposit", "Virtually creates a deposit on the side chain")
     "depositAmount",
     "Amount of BTokens to be deposited",
     undefined,
-    types.int
+    types.string
   )
   .addParam(
     "accountType",
@@ -311,7 +363,7 @@ task("virtualMintDeposit", "Virtually creates a deposit on the side chain")
     const input = iface.encodeFunctionData("virtualMintDeposit", [
       taskArgs.accountType,
       taskArgs.depositOwnerAddress,
-      taskArgs.depositAmount,
+      BigNumber.from(taskArgs.depositAmount),
     ]);
     const [admin] = await ethers.getSigners();
     const adminSigner = await ethers.getSigner(admin.address);
@@ -344,12 +396,13 @@ task("scheduleMaintenance", "Calls schedule Maintenance")
     "the default factory address from factoryState will be used if not set"
   )
   .setAction(async (taskArgs, hre) => {
+    console.log(`scheduling maintenance after the next snapshot`);
     const { ethers } = hre;
     const iface = new ethers.utils.Interface([
       "function scheduleMaintenance()",
     ]);
     const input = iface.encodeFunctionData("scheduleMaintenance", []);
-    console.log("input", input);
+
     const [admin] = await ethers.getSigners();
     const adminSigner = await ethers.getSigner(admin.address);
     const factory = await ethers.getContractAt(
@@ -362,11 +415,12 @@ task("scheduleMaintenance", "Calls schedule Maintenance")
         hre.ethers.utils.formatBytes32String("ValidatorPool")
       )
     );
+    console.log(`calling the contract and waiting receipt`);
     await (
       await factory
         .connect(adminSigner)
         .callAny(validatorPool.address, 0, input)
-    ).wait();
+    ).wait(3);
   });
 
 task(
@@ -801,9 +855,7 @@ task("fundValidators", "manually put 100 eth in each validator account")
     // extract the address out of each validator config file
     const accounts: Array<string> = [];
     validatorConfigs.forEach((val) => {
-      if (val.slice(0, 9) === "validator") {
-        accounts.push(getValidatorAccount(`${configPath}/${val}`));
-      }
+      accounts.push(getValidatorAccount(`${configPath}/${val}`));
     });
 
     const minAmount = 90n;
@@ -871,6 +923,20 @@ task(
           await hre.network.provider.send("evm_setAutomine", [false]);
         } catch (error) {}
       }
+    }
+  });
+
+task("setHardhatBaseFee", "sets the hardhat node base fee for the next block")
+  .addParam("baseFee", "base fee value in GWEIs", "500", types.int)
+  .setAction(async (taskArgs, hre) => {
+    const network = await hre.ethers.provider.getNetwork();
+    const baseFee = BigInt(taskArgs.baseFee) * 10n ** 9n;
+    if (network.chainId === 1337) {
+      try {
+        await hre.network.provider.send("hardhat_setNextBlockBaseFeePerGas", [
+          "0x" + baseFee.toString(16),
+        ]);
+      } catch (error) {}
     }
   });
 

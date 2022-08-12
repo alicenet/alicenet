@@ -1,10 +1,10 @@
 import { BigNumberish } from "ethers";
+import { ethers, expect } from "hardhat";
 import { getValidatorEthAccount } from "../../setup";
 import { validators4 } from "../assets/4-validators-successful-case";
 import {
   assertETHDKGPhase,
   assertEventMPKSet,
-  expect,
   Phase,
   startAtMPKSubmission,
   startAtSubmitKeyShares,
@@ -29,11 +29,20 @@ describe("ETHDKG: Submit Master Public Key", () => {
     await waitNextPhaseStartDelay(ethdkg);
     await assertETHDKGPhase(ethdkg, Phase.KeyShareSubmission);
 
+    const ethDKGPhases = await ethers.getContractAt(
+      "ETHDKGPhases",
+      ethdkg.address
+    );
     await expect(
       ethdkg
         .connect(await getValidatorEthAccount(validators4[3].address))
         .submitMasterPublicKey(validators4[3].mpk)
-    ).to.be.rejectedWith("143");
+    )
+      .to.be.revertedWithCustomError(
+        ethDKGPhases,
+        `ETHDKGNotInMasterPublicKeySubmissionPhase`
+      )
+      .withArgs(Phase.KeyShareSubmission);
   });
 
   it("should allow submission of master public key by a non-validator", async () => {
@@ -65,11 +74,20 @@ describe("ETHDKG: Submit Master Public Key", () => {
 
     await assertEventMPKSet(tx, expectedNonce, val11MPK);
 
+    const ethDKGPhases = await ethers.getContractAt(
+      "ETHDKGPhases",
+      ethdkg.address
+    );
     await expect(
       ethdkg
         .connect(await getValidatorEthAccount(validator11))
         .submitMasterPublicKey(val11MPK)
-    ).to.be.revertedWith("143");
+    )
+      .to.be.revertedWithCustomError(
+        ethDKGPhases,
+        `ETHDKGNotInMasterPublicKeySubmissionPhase`
+      )
+      .withArgs(Phase.GPKJSubmission);
   });
 
   it("should not allow submission of empty master public key", async () => {
@@ -83,10 +101,17 @@ describe("ETHDKG: Submit Master Public Key", () => {
       "0",
     ];
 
+    const ethDKGPhases = await ethers.getContractAt(
+      "ETHDKGPhases",
+      ethdkg.address
+    );
     await expect(
       ethdkg
         .connect(await getValidatorEthAccount(validators4[0].address))
         .submitMasterPublicKey(mpk)
-    ).to.be.revertedWith("144");
+    ).to.be.revertedWithCustomError(
+      ethDKGPhases,
+      `MasterPublicKeyPairingCheckFailure`
+    );
   });
 });

@@ -12,7 +12,7 @@ type StagedBlockHeaderKey struct {
 }
 
 // UnmarshalBinary takes a byte slice and returns the corresponding
-// StagedBlockHeaderKey object
+// StagedBlockHeaderKey object.
 func (b *StagedBlockHeaderKey) UnmarshalBinary(data []byte) error {
 	if b == nil {
 		return errorz.ErrInvalid{}.New("StagedBlockHeaderKey.UnmarshalBinary; sbhk not initialized")
@@ -26,7 +26,7 @@ func (b *StagedBlockHeaderKey) UnmarshalBinary(data []byte) error {
 }
 
 // MarshalBinary takes the StagedBlockHeaderKey object and returns the canonical
-// byte slice
+// byte slice.
 func (b *StagedBlockHeaderKey) MarshalBinary() ([]byte, error) {
 	if b == nil {
 		return nil, errorz.ErrInvalid{}.New("StagedBlockHeaderKey.MarshalBinary; sbhk not initialized")

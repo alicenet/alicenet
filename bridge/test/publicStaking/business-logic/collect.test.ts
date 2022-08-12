@@ -24,9 +24,10 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
   let fixture: BaseTokensFixture;
   let users: SignerWithAddress[];
   const numberUsers = 3;
-
+  let admin: SignerWithAddress;
   beforeEach(async function () {
     fixture = await getBaseTokensFixture();
+    [admin] = await ethers.getSigners();
     await fixture.aToken.approve(
       fixture.publicStaking.address,
       ethers.utils.parseUnits("100000", 18)
@@ -50,7 +51,10 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
     const tokenID = await getTokenIdFromTx(tx);
     await expect(
       fixture.publicStaking.connect(users[0]).collectEth(tokenID)
-    ).to.revertedWith("603");
+    ).to.be.revertedWithCustomError(
+      fixture.publicStaking,
+      "LockDurationWithdrawTimeNotReached"
+    );
   });
 
   it("Shouldn't allow to collect funds for not owned position", async function () {
@@ -59,12 +63,18 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
       .connect(users[0])
       .mint(sharesPerUser);
     const tokenID = await getTokenIdFromTx(tx);
-    await expect(fixture.publicStaking.collectEth(tokenID)).to.revertedWith(
-      "600"
-    );
-    await expect(fixture.publicStaking.collectToken(tokenID)).to.revertedWith(
-      "600"
-    );
+    await expect(fixture.publicStaking.collectEth(tokenID))
+      .to.be.revertedWithCustomError(
+        fixture.publicStaking,
+        "CallerNotTokenOwner"
+      )
+      .withArgs(admin.address);
+    await expect(fixture.publicStaking.collectToken(tokenID))
+      .to.be.revertedWithCustomError(
+        fixture.publicStaking,
+        "CallerNotTokenOwner"
+      )
+      .withArgs(admin.address);
   });
 
   it("Anyone can estimate profits for a position", async function () {
@@ -80,20 +90,23 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
 
   it("Shouldn't allow to collect funds for non-existing position", async function () {
     await expect(fixture.publicStaking.collectEth(100)).to.revertedWith(
-      "ERC721: owner query for nonexistent token"
+      "ERC721: invalid token ID"
     );
     await expect(fixture.publicStaking.collectToken(100)).to.revertedWith(
-      "ERC721: owner query for nonexistent token"
+      "ERC721: invalid token ID"
     );
   });
 
   it("Shouldn't allow to estimate funds for non-existing position", async function () {
+    const nonExistingTokenId = 100;
     await expect(
-      fixture.publicStaking.estimateEthCollection(100)
-    ).to.revertedWith("604");
-    await expect(
-      fixture.publicStaking.estimateTokenCollection(100)
-    ).to.revertedWith("604");
+      fixture.publicStaking.estimateEthCollection(nonExistingTokenId)
+    )
+      .to.be.revertedWithCustomError(fixture.publicStaking, "InvalidTokenId")
+      .withArgs(nonExistingTokenId);
+    await expect(fixture.publicStaking.estimateTokenCollection(100))
+      .to.be.revertedWithCustomError(fixture.publicStaking, "InvalidTokenId")
+      .withArgs(nonExistingTokenId);
   });
 
   it("Mint and collect profits", async function () {

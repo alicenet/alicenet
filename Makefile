@@ -24,7 +24,9 @@ lint:
 .PHONY: format
 format:
 	buf format -w
-	go mod tidy
+	go mod tidy -v
+	cd bridge && npm run format
+	golangci-lint run -E gci,godot,gofumpt,misspell,whitespace --fix
 
 .PHONY: generate
 generate: generate-bridge generate-go
@@ -32,7 +34,6 @@ generate: generate-bridge generate-go
 .PHONY: generate-bridge
 generate-bridge: init
 	find . -iname \*.capnp.go \
-	       -o -iname bridge/bindings \
 		   -exec rm -rf {} \;
 	cd bridge && npm run build
 
@@ -45,15 +46,15 @@ generate-go: init
 		-o -iname \*.swagger.json \
 		-o -iname \*.mockgen.go \
 		-exec rm -rf {} \;
-	go generate ./...
+	go generate -tags tools ./...
 
 .PHONY: clean
 clean:
 	go clean
 	rm -f $(BINARY_NAME) $(RACE_DETECTOR)
-  
+
 .PHONY: setup
 setup:
 	go mod download
 	cat tools.go | grep _ | awk -F'"' '{print $$2}' | xargs -tI % go install %
-	cd bridge && npm install
+	cd bridge && npm ci

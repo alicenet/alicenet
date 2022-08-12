@@ -12,7 +12,6 @@ message Tx {
 // Protobuf message implementation for struct TXOut
 message TXOut {
   oneof utxo {
-    AtomicSwap AtomicSwap = 1;
     ValueStore ValueStore = 2;
     DataStore DataStore = 3;
   }
@@ -35,23 +34,6 @@ message TXInPreImage {
   uint32 ChainID = 1;
   uint32 ConsumedTxIdx = 2;
   string ConsumedTxHash = 3;
-}
-
-// Protobuf message implementation for struct AtomicSwap
-message AtomicSwap {
-  ASPreImage ASPreImage = 1;
-  string TxHash = 2;
-}
-
-// Protobuf message implementation for struct ASPreImage
-message ASPreImage {
-  uint32 ChainID = 1;
-  string Value = 2;
-  uint32 TXOutIdx = 3;
-  uint32 IssuedAt = 4;
-  uint32 Exp = 5;
-  string Owner = 6;
-  string Fee = 7;
 }
 
 // Protobuf message implementation for struct ValueStore

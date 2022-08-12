@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: MIT-open-group
 pragma solidity ^0.8.11;
 
-import {
-    BClaimsParserLibraryErrorCodes
-} from "contracts/libraries/errorCodes/BClaimsParserLibraryErrorCodes.sol";
+import "contracts/libraries/errors/BClaimsParserLibraryErrors.sol";
+import "contracts/libraries/errors/GenericParserLibraryErrors.sol";
 
 import "./BaseParserLibrary.sol";
 
@@ -43,14 +42,11 @@ library BClaimsParserLibrary {
     {
         // Size in capnproto words (16 bytes) of the state section
         uint16 dataSectionSize = BaseParserLibrary.extractUInt16(src, dataOffset);
-        require(
-            dataSectionSize > 0 && dataSectionSize <= 2,
-            string(
-                abi.encodePacked(
-                    BClaimsParserLibraryErrorCodes.BCLAIMSPARSERLIB_SIZE_THRESHOLD_EXCEEDED
-                )
-            )
-        );
+
+        if (dataSectionSize <= 0 || dataSectionSize > 2) {
+            revert BClaimsParserLibraryErrors.SizeThresholdExceeded(dataSectionSize);
+        }
+
         // In case the txCount is 0, the value is not included in the binary
         // blob by capnproto. Therefore, we need to deduce 8 bytes from the
         // pointer's offset.
@@ -94,20 +90,15 @@ library BClaimsParserLibrary {
         uint256 dataOffset,
         uint16 pointerOffsetAdjustment
     ) internal pure returns (BClaims memory bClaims) {
-        require(
-            dataOffset + _BCLAIMS_SIZE - pointerOffsetAdjustment > dataOffset,
-            string(
-                abi.encodePacked(
-                    BClaimsParserLibraryErrorCodes.BCLAIMSPARSERLIB_DATA_OFFSET_OVERFLOW
-                )
-            )
-        );
-        require(
-            src.length >= dataOffset + _BCLAIMS_SIZE - pointerOffsetAdjustment,
-            string(
-                abi.encodePacked(BClaimsParserLibraryErrorCodes.BCLAIMSPARSERLIB_NOT_ENOUGH_BYTES)
-            )
-        );
+        if (dataOffset + _BCLAIMS_SIZE - pointerOffsetAdjustment <= dataOffset) {
+            revert BClaimsParserLibraryErrors.DataOffsetOverflow(dataOffset);
+        }
+        if (dataOffset + _BCLAIMS_SIZE - pointerOffsetAdjustment > src.length) {
+            revert BClaimsParserLibraryErrors.NotEnoughBytes(
+                dataOffset + _BCLAIMS_SIZE - pointerOffsetAdjustment,
+                src.length
+            );
+        }
 
         if (pointerOffsetAdjustment == 0) {
             bClaims.txCount = BaseParserLibrary.extractUInt32(src, dataOffset + 8);
@@ -118,15 +109,15 @@ library BClaimsParserLibrary {
         }
 
         bClaims.chainId = BaseParserLibrary.extractUInt32(src, dataOffset);
-        require(
-            bClaims.chainId > 0,
-            string(abi.encodePacked(BClaimsParserLibraryErrorCodes.BCLAIMSPARSERLIB_CHAINID_ZERO))
-        );
+        if (bClaims.chainId == 0) {
+            revert GenericParserLibraryErrors.ChainIdZero();
+        }
+
         bClaims.height = BaseParserLibrary.extractUInt32(src, dataOffset + 4);
-        require(
-            bClaims.height > 0,
-            string(abi.encodePacked(BClaimsParserLibraryErrorCodes.BCLAIMSPARSERLIB_HEIGHT_ZERO))
-        );
+        if (bClaims.height == 0) {
+            revert GenericParserLibraryErrors.HeightZero();
+        }
+
         bClaims.prevBlock = BaseParserLibrary.extractBytes32(
             src,
             dataOffset + 48 - pointerOffsetAdjustment

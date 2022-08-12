@@ -4,14 +4,14 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"github.com/alicenet/alicenet/logging"
-	"github.com/sirupsen/logrus"
-	"github.com/stretchr/testify/assert"
+	"testing"
 	"time"
 
-	"github.com/alicenet/alicenet/constants"
+	"github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/assert"
 
-	"testing"
+	"github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/logging"
 )
 
 func TestUtils(t *testing.T) {

@@ -1,3 +1,4 @@
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BigNumber, ContractTransaction, Signer } from "ethers";
 import { ethers } from "hardhat";
 import { expect } from "../../chai-setup";
@@ -21,6 +22,7 @@ import {
 
 describe("ValidatorPool: Registration logic", async () => {
   let fixture: Fixture;
+  let admin: SignerWithAddress;
   let adminSigner: Signer;
   const maxNumValidators = 4; // default number
   let stakeAmount: bigint;
@@ -30,7 +32,7 @@ describe("ValidatorPool: Registration logic", async () => {
 
   beforeEach(async function () {
     fixture = await getFixture(false, true, true);
-    const [admin, , ,] = fixture.namedSigners;
+    [admin, , ,] = fixture.namedSigners;
     adminSigner = await getValidatorEthAccount(admin.address);
     validators = await createValidators(fixture, validatorsSnapshots);
     stakingTokenIds = await stakeValidators(fixture, validators);
@@ -50,7 +52,12 @@ describe("ValidatorPool: Registration logic", async () => {
         validators,
         stakingTokenIds,
       ])
-    ).to.be.revertedWith("821");
+    )
+      .to.be.revertedWithCustomError(
+        fixture.validatorPool,
+        "InsufficientFundsInStakePosition"
+      )
+      .withArgs(stakeAmount, stakeAmount + BigInt(1));
   });
 
   it("Should not allow registering more validators that the current number of free spots in the pool", async function () {
@@ -65,7 +72,12 @@ describe("ValidatorPool: Registration logic", async () => {
         validators,
         stakingTokenIds,
       ])
-    ).to.be.revertedWith("805");
+    )
+      .to.be.revertedWithCustomError(
+        fixture.validatorPool,
+        "NotEnoughValidatorSlotsAvailable"
+      )
+      .withArgs(4, 3);
   });
 
   it("Should not allow registering validators if the size of the input state is not correct", async function () {
@@ -74,13 +86,23 @@ describe("ValidatorPool: Registration logic", async () => {
         validators.slice(0, 3),
         stakingTokenIds,
       ])
-    ).to.be.revertedWith("806");
+    )
+      .to.be.revertedWithCustomError(
+        fixture.validatorPool,
+        "RegistrationParameterLengthMismatch"
+      )
+      .withArgs(3, 4);
     await expect(
       factoryCallAnyFixture(fixture, "validatorPool", "registerValidators", [
         validators,
         stakingTokenIds.slice(0, 3),
       ])
-    ).to.be.revertedWith("806");
+    )
+      .to.be.revertedWithCustomError(
+        fixture.validatorPool,
+        "RegistrationParameterLengthMismatch"
+      )
+      .withArgs(4, 3);
   });
 
   it('Should not allow registering validators if "AliceNet consensus is running" or ETHDKG round is running', async function () {
@@ -97,7 +119,10 @@ describe("ValidatorPool: Registration logic", async () => {
         validators,
         stakingTokenIds,
       ])
-    ).to.be.revertedWith("802");
+    ).to.be.revertedWithCustomError(
+      fixture.validatorPool,
+      "ETHDKGRoundRunning"
+    );
     await completeETHDKGRound(validatorsSnapshots, {
       ethdkg: fixture.ethdkg,
       validatorPool: fixture.validatorPool,
@@ -107,7 +132,7 @@ describe("ValidatorPool: Registration logic", async () => {
         validators,
         stakingTokenIds,
       ])
-    ).to.be.revertedWith("801");
+    ).to.be.revertedWithCustomError(fixture.validatorPool, "ConsensusRunning");
   });
 
   it("Should not allow registering validators if the PublicStaking position was not given permissions for the ValidatorPool contract burn it", async function () {
@@ -123,7 +148,7 @@ describe("ValidatorPool: Registration logic", async () => {
         validators,
         stakingTokenIds,
       ])
-    ).to.be.revertedWith("ERC721: transfer caller is not owner nor approved");
+    ).to.be.revertedWith("ERC721: caller is not token owner nor approved");
   });
 
   it("Should not allow registering an address that is already a validator", async function () {
@@ -142,7 +167,12 @@ describe("ValidatorPool: Registration logic", async () => {
         newValidators,
         stakingTokenIds,
       ])
-    ).to.be.revertedWith("816");
+    )
+      .to.be.revertedWithCustomError(
+        fixture.validatorPool,
+        "AddressAlreadyValidator"
+      )
+      .withArgs(ethers.utils.getAddress(newValidators[0]));
   });
 
   it("Should not allow registering an address that is in the exiting queue", async function () {
@@ -166,7 +196,12 @@ describe("ValidatorPool: Registration logic", async () => {
         newValidators,
         newTokensIds,
       ])
-    ).to.be.revertedWith("816");
+    )
+      .to.be.revertedWithCustomError(
+        fixture.validatorPool,
+        "AddressAlreadyValidator"
+      )
+      .withArgs(ethers.utils.getAddress(newValidators[0]));
   });
 
   it("Should successfully register validators if all conditions are met", async function () {
@@ -262,7 +297,12 @@ describe("ValidatorPool: Registration logic", async () => {
     // Position 5 is not a register validator
     await expect(
       fixture.validatorPool.connect(adminSigner).setLocation("1.1.1.1")
-    ).to.be.revertedWith("800");
+    )
+      .to.be.revertedWithCustomError(
+        fixture.validatorPool,
+        "CallerNotValidator"
+      )
+      .withArgs(admin.address);
   });
 
   it("Should not allow users to register reusing previous publicStaking that cannot be burned", async function () {
@@ -312,6 +352,9 @@ describe("ValidatorPool: Registration logic", async () => {
         validators,
         stakingTokenIds,
       ])
-    ).to.be.revertedWith("606");
+    ).to.be.revertedWithCustomError(
+      fixture.publicStaking,
+      `FreeAfterTimeNotReached`
+    );
   });
 });

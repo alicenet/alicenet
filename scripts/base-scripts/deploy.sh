@@ -26,12 +26,12 @@ if [[ -z "${FACTORY_ADDRESS}" ]]; then
 fi
 
 for filePath in $(ls ../scripts/generated/config | xargs); do
-    sed -e "s/registryAddress = .*/registryAddress = $FACTORY_ADDRESS/" "../scripts/generated/config/$filePath" > "../scripts/generated/config/$filePath".bk &&\
+    sed -e "s/factoryAddress = .*/factoryAddress = $FACTORY_ADDRESS/" "../scripts/generated/config/$filePath" > "../scripts/generated/config/$filePath".bk &&\
     mv "../scripts/generated/config/$filePath".bk "../scripts/generated/config/$filePath"
 done
 
 cp ../scripts/base-files/owner.toml ../scripts/generated/owner.toml
-sed -e "s/registryAddress = .*/registryAddress = $FACTORY_ADDRESS/" "../scripts/generated/owner.toml" > "../scripts/generated/owner.toml".bk &&\
+sed -e "s/factoryAddress = .*/factoryAddress = $FACTORY_ADDRESS/" "../scripts/generated/owner.toml" > "../scripts/generated/owner.toml".bk &&\
 mv "../scripts/generated/owner.toml".bk "../scripts/generated/owner.toml"
 # funds validator accounts
 npx hardhat fundValidators --network $NETWORK

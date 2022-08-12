@@ -9,7 +9,7 @@ import "contracts/interfaces/IStakingNFT.sol";
 import "contracts/utils/CustomEnumerableMaps.sol";
 import "contracts/utils/DeterministicAddress.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import {ValidatorPoolErrorCodes} from "contracts/libraries/errorCodes/ValidatorPoolErrorCodes.sol";
+import "contracts/libraries/errors/ValidatorPoolErrors.sol";
 
 contract ValidatorPoolMock is
     Initializable,
@@ -65,14 +65,11 @@ contract ValidatorPoolMock is
     function setDisputerReward(uint256 disputerReward_) public {}
 
     function pauseConsensusOnArbitraryHeight(uint256 aliceNetHeight_) public onlyFactory {
-        require(
-            block.number >
-                ISnapshots(_snapshotsAddress()).getCommittedHeightFromLatestSnapshot() +
-                    MAX_INTERVAL_WITHOUT_SNAPSHOTS,
-            string(
-                abi.encodePacked(ValidatorPoolErrorCodes.VALIDATORPOOL_MIN_BLOCK_INTERVAL_NOT_MET)
-            )
-        );
+        uint256 targetBlockNumber = ISnapshots(_snapshotsAddress())
+            .getCommittedHeightFromLatestSnapshot() + MAX_INTERVAL_WITHOUT_SNAPSHOTS;
+        if (block.number <= targetBlockNumber) {
+            revert ValidatorPoolErrors.MinimumBlockIntervalNotMet(block.number, targetBlockNumber);
+        }
         _isConsensusRunning = false;
         IETHDKG(_ethdkgAddress()).setCustomAliceNetHeight(aliceNetHeight_);
     }
@@ -170,10 +167,9 @@ contract ValidatorPoolMock is
     }
 
     function getValidator(uint256 index_) public view returns (address) {
-        require(
-            index_ < _validators.length(),
-            string(abi.encodePacked(ValidatorPoolErrorCodes.VALIDATORPOOL_INVALID_INDEX))
-        );
+        if (index_ >= _validators.length()) {
+            revert ValidatorPoolErrors.InvalidIndex(index_);
+        }
         return _validators.at(index_)._address;
     }
 
@@ -191,6 +187,11 @@ contract ValidatorPoolMock is
 
     function getValidatorData(uint256 index) public view returns (ValidatorData memory) {
         return _validators.at(index);
+    }
+
+    function isAccusable(address participant) public view returns (bool) {
+        participant;
+        return _isValidator(participant);
     }
 
     function getMaxNumValidators() public pure returns (uint256) {
@@ -228,11 +229,6 @@ contract ValidatorPoolMock is
     }
 
     function isInExitingQueue(address participant) public pure returns (bool) {
-        participant;
-        return false;
-    }
-
-    function isAccusable(address participant) public pure returns (bool) {
         participant;
         return false;
     }

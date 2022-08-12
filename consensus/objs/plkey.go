@@ -13,7 +13,7 @@ type PendingLeafKey struct {
 }
 
 // UnmarshalBinary takes a byte slice and returns the corresponding
-// PendingLeafKey object
+// PendingLeafKey object.
 func (b *PendingLeafKey) UnmarshalBinary(data []byte) error {
 	if b == nil {
 		return errorz.ErrInvalid{}.New("PendingLeafKey.UnmarshalBinary; plk not initialized")
@@ -27,7 +27,7 @@ func (b *PendingLeafKey) UnmarshalBinary(data []byte) error {
 }
 
 // MarshalBinary takes the PendingLeafKey object and returns the canonical
-// byte slice
+// byte slice.
 func (b *PendingLeafKey) MarshalBinary() ([]byte, error) {
 	if b == nil {
 		return nil, errorz.ErrInvalid{}.New("PendingLeafKey.MarshalBinary; plk not initialized")

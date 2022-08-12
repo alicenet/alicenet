@@ -2,3 +2,13 @@
 # Each line is a file pattern followed by one or more owners.
 
 consensus/		@nelsonhp
+
+# Go code
+*.go           @alicenet/go-reviewers
+go.mod         @alicenet/go-reviewers
+.golangci.yaml @alicenet/go-reviewers
+
+# Solidity Code
+*.sol        @alicenet/sol-reviewers
+*.ts         @alicenet/sol-reviewers
+package.json @alicenet/sol-reviewers

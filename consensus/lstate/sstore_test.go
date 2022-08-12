@@ -6,16 +6,17 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/alicenet/alicenet/blockchain/objects"
+	"github.com/dgraph-io/badger/v2"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/consensus/objs"
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/crypto"
 	bn256 "github.com/alicenet/alicenet/crypto/bn256/cloudflare"
+	"github.com/alicenet/alicenet/layer1/monitor/objects"
 	"github.com/alicenet/alicenet/utils"
-	"github.com/dgraph-io/badger/v2"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestStore_LoadLocalState_Ok(t *testing.T) {
@@ -252,7 +253,7 @@ func TestStore_GetDropData_Ok_OS_NotValidator(t *testing.T) {
 	})
 }
 
-//Proposal, PreVote, PreCommit, NextHeight
+// Proposal, PreVote, PreCommit, NextHeight.
 func TestStore_GetGossipValues_Ok1(t *testing.T) {
 	store := initStore(t)
 	os := createOwnState(t, 1)
@@ -322,7 +323,7 @@ func TestStore_GetGossipValues_Ok1(t *testing.T) {
 	})
 }
 
-//Proposal, PreVoteNil, PreCommitNil, NextRound
+// Proposal, PreVoteNil, PreCommitNil, NextRound.
 func TestStore_GetGossipValues_Ok2(t *testing.T) {
 	store := initStore(t)
 	os := createOwnState(t, 1)
@@ -495,6 +496,7 @@ func createProposal(t *testing.T) (*crypto.Secp256k1Signer, *objs.Proposal) {
 
 	return secpSigner, prop
 }
+
 func createRoundStates(os *objs.OwnState, rs *objs.RoundState, vs *objs.ValidatorSet, ovs *objs.OwnValidatingState) *RoundStates {
 	rss := &RoundStates{
 		height:             1,
@@ -520,7 +522,8 @@ func createValidatorsSet(t *testing.T, os *objs.OwnState, rs *objs.RoundState) *
 		createValidator("0x1", 1),
 		createValidator("0x2", 2),
 		createValidator("0x3", 3),
-		createValidator("0x4", 4)}
+		createValidator("0x4", 4),
+	}
 
 	validators := make([]*objs.Validator, 0)
 
@@ -530,7 +533,8 @@ func createValidatorsSet(t *testing.T, os *objs.OwnState, rs *objs.RoundState) *
 		ret := g.Marshal()
 		val := &objs.Validator{
 			VAddr:      v.Account.Bytes(),
-			GroupShare: ret}
+			GroupShare: ret,
+		}
 
 		validators = append(validators, val)
 	}
@@ -568,14 +572,14 @@ func createValidatorsSet(t *testing.T, os *objs.OwnState, rs *objs.RoundState) *
 }
 
 func createSharedKey(addr common.Address) [4]*big.Int {
-
 	b := addr.Bytes()
 
 	return [4]*big.Int{
 		(&big.Int{}).SetBytes(b),
 		(&big.Int{}).SetBytes(b),
 		(&big.Int{}).SetBytes(b),
-		(&big.Int{}).SetBytes(b)}
+		(&big.Int{}).SetBytes(b),
+	}
 }
 
 func createValidator(addrHex string, idx uint8) objects.Validator {
@@ -666,7 +670,7 @@ func createOwnState(t *testing.T, length int) *objs.OwnState {
 		panic(err)
 	}
 
-	//BlockHeader
+	// BlockHeader
 	_, bh := createBlockHeader(t, length)
 
 	return &objs.OwnState{
@@ -928,7 +932,7 @@ func makeSecpSigner(seed []byte) (*crypto.Secp256k1Signer, []byte) {
 	return secpSigner, secpKey
 }
 
-func buildRound(t *testing.T, bnSigners []*crypto.BNGroupSigner, groupSharesOrig [][]byte, secpSigners []*crypto.Secp256k1Signer, height uint32, round uint32, prevBlockOrig []byte) (*objs.BlockHeader, []*objs.Proposal, objs.PreVoteList, []*objs.PreVoteNil, objs.PreCommitList, []*objs.PreCommitNil, objs.NextRoundList, objs.NextHeightList, *objs.BlockHeader) {
+func buildRound(t *testing.T, bnSigners []*crypto.BNGroupSigner, groupSharesOrig [][]byte, secpSigners []*crypto.Secp256k1Signer, height, round uint32, prevBlockOrig []byte) (*objs.BlockHeader, []*objs.Proposal, objs.PreVoteList, []*objs.PreVoteNil, objs.PreCommitList, []*objs.PreCommitNil, objs.NextRoundList, objs.NextHeightList, *objs.BlockHeader) {
 	groupShares := make([][]byte, len(groupSharesOrig))
 	copy(groupShares, groupSharesOrig)
 	prevBlock := utils.CopySlice(prevBlockOrig)

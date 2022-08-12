@@ -2,7 +2,6 @@ import toml from "@iarna/toml";
 import {
   BigNumber,
   BytesLike,
-  ContractFactory,
   ContractReceipt,
   ContractTransaction,
 } from "ethers";
@@ -48,6 +47,7 @@ import {
 } from "./deployment/deploymentListUtil";
 import {
   DeployArgs,
+  deployContractsMulticall,
   DeploymentArgs,
   DeployProxyMCArgs,
   extractName,
@@ -258,6 +258,7 @@ task("deployContracts", "runs the initial deployment of all AliceNet contracts")
             fullyQualifiedName,
             factoryAddress,
             artifacts,
+            taskArgs.inputFolder,
             taskArgs.outputFolder
           );
           proxyData = await hre.run("fullMultiCallDeployProxy", deployArgs);
@@ -308,9 +309,10 @@ task(
     };
     const factoryBase = await hre.ethers.getContractFactory(ALICENET_FACTORY);
     const factory = factoryBase.attach(taskArgs.factoryAddress);
-    const logicFactory = await hre.ethers.getContractFactory(
+    const logicFactory: any = await hre.ethers.getContractFactory(
       taskArgs.contractName
     );
+
     const initArgs =
       taskArgs.initCallData === undefined
         ? []
@@ -326,7 +328,7 @@ task(
     // factory interface pointed to deployed factory contract
     // get the 32byte salt from logic contract file
     const salt: BytesLike = await getBytes32Salt(taskArgs.contractName, hre);
-    const logicContract: ContractFactory = await hre.ethers.getContractFactory(
+    const logicContract: any = await hre.ethers.getContractFactory(
       taskArgs.contractName
     );
     const constructorArgs =
@@ -485,14 +487,14 @@ task("multiCallDeployMetamorphic")
     }
     const factoryBase = await hre.ethers.getContractFactory(ALICENET_FACTORY);
     const factory = factoryBase.attach(taskArgs.factoryAddress);
-    const logicContract: ContractFactory = await hre.ethers.getContractFactory(
+    const logicContract: any = await hre.ethers.getContractFactory(
       taskArgs.contractName
     );
     const constructorArgs =
       taskArgs.constructorArgs === undefined ? [] : taskArgs.constructorArgs;
     const deployTxReq = logicContract.getDeployTransaction(...constructorArgs);
 
-    const logicFactory = await hre.ethers.getContractFactory(
+    const logicFactory: any = await hre.ethers.getContractFactory(
       taskArgs.contractName
     );
     const initArgs =
@@ -633,7 +635,7 @@ task(
     }
     const factoryBase = await hre.ethers.getContractFactory(ALICENET_FACTORY);
     const factory = factoryBase.attach(taskArgs.factoryAddress);
-    const logicContract: ContractFactory = await hre.ethers.getContractFactory(
+    const logicContract: any = await hre.ethers.getContractFactory(
       taskArgs.contractName
     );
     const constructorArgs =
@@ -679,7 +681,7 @@ task(
   .setAction(async (taskArgs, hre) => {
     const network = hre.network.name;
     const factoryBase = await hre.ethers.getContractFactory(ALICENET_FACTORY);
-    const logicFactory = await hre.ethers.getContractFactory(
+    const logicFactory: any = await hre.ethers.getContractFactory(
       taskArgs.contractName
     );
     const initArgs =
@@ -733,7 +735,7 @@ task(DEPLOY_CREATE, "deploys a contract from the factory using create")
     const factoryBase = await hre.ethers.getContractFactory(ALICENET_FACTORY);
     // get a factory instance connected to the factory a
     const factory = factoryBase.attach(taskArgs.factoryAddress);
-    const logicContract: ContractFactory = await hre.ethers.getContractFactory(
+    const logicContract: any = await hre.ethers.getContractFactory(
       taskArgs.contractName
     );
     const constructorArgs =
@@ -826,7 +828,7 @@ task(UPGRADE_DEPLOYED_PROXY, "deploys a contract from the factory using create")
     // grab the salt from the logic contract
     const Salt = await getBytes32Salt(taskArgs.contractName, hre);
     // get logic contract interface
-    const logicFactory = await hre.ethers.getContractFactory(
+    const logicFactory: any = await hre.ethers.getContractFactory(
       taskArgs.contractName
     );
     const initArgs =
@@ -898,7 +900,7 @@ task("multiCallDeployProxy", "deploy and upgrade proxy with multicall")
     const network = hre.network.name;
     const factoryBase = await hre.ethers.getContractFactory(ALICENET_FACTORY);
     const factory = factoryBase.attach(taskArgs.factoryAddress);
-    const logicFactory = await hre.ethers.getContractFactory(
+    const logicFactory: any = await hre.ethers.getContractFactory(
       taskArgs.contractName
     );
     const initArgs =
@@ -971,7 +973,7 @@ task(
   .setAction(async (taskArgs, hre) => {
     const factoryBase = await hre.ethers.getContractFactory(ALICENET_FACTORY);
     const factory = factoryBase.attach(taskArgs.factoryAddress);
-    const logicFactory: ContractFactory = await hre.ethers.getContractFactory(
+    const logicFactory: any = await hre.ethers.getContractFactory(
       taskArgs.contractName
     );
     const initArgs =
@@ -1005,7 +1007,7 @@ task(
       nonce: txCount,
     });
     const upgradeProxy = factoryBase.interface.encodeFunctionData(
-      DEPLOY_CREATE,
+      UPGRADE_PROXY,
       [salt, implAddress, initCallData]
     );
     const PROXY_FACTORY = await hre.ethers.getContractFactory(PROXY);
@@ -1026,7 +1028,7 @@ task(
       logicName: taskArgs.contractName,
       logicAddress: taskArgs.logicAddress,
       salt,
-      proxyAddress: getEventVar(receipt, DEPLOYED_PROXY, CONTRACT_ADDR),
+      proxyAddress,
       gas: receipt.gasUsed.toNumber(),
       receipt,
       initCallData,
@@ -1034,7 +1036,7 @@ task(
     return proxyData;
   });
 
-//Generate a json file with all deployment information
+// Generate a json file with all deployment information
 task(
   "generateContractsDescriptor",
   "Generates deploymentList.json file for faster contract deployment (requires deploymentList and deploymentArgsTemplate files to be already generated)"
@@ -1057,7 +1059,8 @@ task(
       configDirPath === undefined
         ? DEPLOYMENT_ARG_PATH + DEPLOYMENT_ARGS_TEMPLATE_FPATH
         : configDirPath + DEPLOYMENT_ARGS_TEMPLATE_FPATH;
-    var json = { contracts: Array<Object>() };
+    const contractsArray: any = [];
+    const json = { contracts: contractsArray };
     const contracts = await getDeploymentList(taskArgs.inputFolder);
     const deploymentArgsFile = fs.readFileSync(deploymentArgsPath);
     const tomlFile: any = toml.parse(deploymentArgsFile.toLocaleString());
@@ -1067,19 +1070,19 @@ task(
       const tomlConstructorArgs = tomlFile.constructor[
         contract
       ] as toml.JsonArray;
-      let cArgs = new Array();
+      const constructorArgs: any = [];
       if (tomlConstructorArgs !== undefined) {
-        tomlConstructorArgs.map((jsonObject) => {
-          cArgs.push(JSON.stringify(jsonObject).split('"')[3]);
+        tomlConstructorArgs.forEach((jsonObject) => {
+          constructorArgs.push(JSON.stringify(jsonObject).split('"')[3]);
         });
       }
       const tomlInitializerArgs = tomlFile.initializer[
         contract
       ] as toml.JsonArray;
-      let iArgs = new Array();
+      const initializerArgs: any = [];
       if (tomlInitializerArgs !== undefined) {
-        tomlInitializerArgs.map((jsonObject) => {
-          iArgs.push(JSON.stringify(jsonObject).split('"')[3]);
+        tomlInitializerArgs.forEach((jsonObject) => {
+          initializerArgs.push(JSON.stringify(jsonObject).split('"')[3]);
         });
       }
       const deployType = await getDeployType(contract, hre.artifacts);
@@ -1089,7 +1092,7 @@ task(
         hre.artifacts
       );
       if (deployType !== undefined) {
-        var object = {
+        const object = {
           name: contractName,
           fullyQualifiedName: contract,
           deployGroup:
@@ -1098,9 +1101,9 @@ task(
             deployGroupIndex !== undefined && deployGroupIndex
               ? deployGroupIndex
               : "0",
-          deployType: deployType,
-          constructorArgs: cArgs,
-          initializerArgs: iArgs,
+          deployType,
+          constructorArgs,
+          initializerArgs,
         };
         json.contracts.push(object);
       }
@@ -1141,7 +1144,7 @@ task(
       throw new Error(error);
     }
     const rawdata = fs.readFileSync(path);
-    let json = JSON.parse(rawdata.toLocaleString());
+    const json = JSON.parse(rawdata.toLocaleString());
     if (hre.network.name === "hardhat") {
       // hardhat is not being able to estimate correctly the tx gas due to the massive bytes array
       // being sent as input to the function (the contract bytecode), so we need to increase the block
@@ -1150,7 +1153,6 @@ task(
         "0x9000000000000000",
       ]);
     }
-    const artifacts = hre.artifacts;
     // deploy the factory first
     let factoryAddress = taskArgs.factoryAddress;
     if (factoryAddress === undefined) {
@@ -1162,18 +1164,14 @@ task(
     }
     const factoryBase = await hre.ethers.getContractFactory(ALICENET_FACTORY);
     const factory = factoryBase.attach(factoryAddress);
-    let multiCallArgsArray: any[];
-    let txCount: number;
-    const staticAddresses = new Array();
-    const upgradeableAddresses = new Array();
-    const templateAddresses = new Array();
-    txCount = await hre.ethers.provider.getTransactionCount(factory.address);
-    let contracts = json.contracts;
-    multiCallArgsArray = await getMulticallArgs(
+    const txCount = await hre.ethers.provider.getTransactionCount(
+      factory.address
+    );
+    const contracts = json.contracts;
+    await deployContractsMulticall(
       contracts,
       hre,
-      factoryBase,
-      factory,
+      factory.address,
       txCount,
       taskArgs.inputFolder,
       taskArgs.outputFolder
