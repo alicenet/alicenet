@@ -6,6 +6,7 @@ import { callFunctionAndGetReturnValues, Fixture, getFixture } from "../setup";
 import { getEthConsumedAsGas, getState, showState, state } from "./setup";
 
 describe("Testing BToken Destroy methods", async () => {
+  let admin: SignerWithAddress;
   let user: SignerWithAddress;
   let expectedState: state;
   let fixture: Fixture;
@@ -18,7 +19,7 @@ describe("Testing BToken Destroy methods", async () => {
   beforeEach(async function () {
     fixture = await getFixture();
     const signers = await ethers.getSigners();
-    [, user] = signers;
+    [admin, user] = signers;
     ethForMinting = ethers.utils.parseEther(eth.toString());
     [bTokens] = await callFunctionAndGetReturnValues(
       fixture.bToken,
@@ -42,25 +43,31 @@ describe("Testing BToken Destroy methods", async () => {
     expect(await getState(fixture)).to.be.deep.equal(expectedState);
   });
 
-  //   it("Should burn btokens from address and keep resulting eth on contract", async () => {
-  //     await fixture.bToken.connect(user).approve(admin.address, bTokens);
-  //     expectedState = await getState(fixture);
-  //     const tx = await fixture.bToken.destroyPreApprovedBTokens(
-  //       user.address,
-  //       bTokens
-  //     );
-  //     expect(bTokens).to.be.equal(BigInt("3990217121585928137263"));
-  //     expectedState.Balances.bToken.user -= bTokens.toBigInt();
-  //     expectedState.Balances.bToken.totalSupply -= bTokens.toBigInt();
-  //     expectedState.Balances.bToken.poolBalance -= ethsFromBurning.toBigInt();
-  //     expectedState.Balances.eth.admin -= getEthConsumedAsGas(await tx.wait());
+  it("Should not destroy more btokens than suply", async () => {
+    await expect(
+      fixture.bToken
+        .connect(user)
+        .destroyBTokens((await fixture.bToken.balanceOf(user.address)).add(100))
+    )
+      .to.be.revertedWithCustomError(fixture.bToken, "BurnAmountExceedsSupply")
+      .withArgs(3990217121585928137363n, 3990217121585928137263n);
+  });
 
-  //     expect(await getState(fixture)).to.be.deep.equal(expectedState);
-  //   });
+  it("Should not destroy more BTokens than on balance", async () => {
+    // another user mints
+    await fixture.bToken
+      .connect(admin)
+      .mint(1n, { value: 1000000000000000000n });
+    await expect(
+      fixture.bToken
+        .connect(user)
+        .destroyBTokens((await fixture.bToken.balanceOf(user.address)).add(100))
+    ).to.be.revertedWith("ERC20: burn amount exceeds balance");
+  });
 
-  //   it("Should not burn btokens from address if not preapproved", async () => {
-  //     await expect(
-  //       fixture.bToken.destroyPreApprovedBTokens(user.address, bTokens)
-  //     ).to.be.revertedWith("ERC20: insufficient allowance");
-  //   });
+  it("Should not destroy 0 tokens", async () => {
+    await expect(fixture.bToken.connect(user).destroyBTokens(0n))
+      .to.be.revertedWithCustomError(fixture.bToken, `InvalidBurnAmount`)
+      .withArgs(0);
+  });
 });
