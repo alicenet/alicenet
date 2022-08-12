@@ -1,9 +1,10 @@
 import { BigNumberish } from "ethers";
+import { ethers, expect } from "hardhat";
 import { getValidatorEthAccount } from "../../setup";
 import { validators4 } from "../assets/4-validators-successful-case";
 import {
   distributeValidatorsShares,
-  expect,
+  Phase,
   startAtDistributeShares,
   startAtSubmitKeyShares,
   submitValidatorsKeyShares,
@@ -22,6 +23,11 @@ describe("ETHDKG: Submit Key share", () => {
       expectedNonce
     );
 
+    const ethDKGPhases = await ethers.getContractAt(
+      "ETHDKGPhases",
+      ethdkg.address
+    );
+
     await expect(
       submitValidatorsKeyShares(
         ethdkg,
@@ -29,7 +35,12 @@ describe("ETHDKG: Submit Key share", () => {
         validators4,
         expectedNonce
       )
-    ).to.be.rejectedWith("140");
+    )
+      .to.be.revertedWithCustomError(
+        ethDKGPhases,
+        `ETHDKGNotInKeyshareSubmissionPhase`
+      )
+      .withArgs(Phase.DisputeShareDistribution);
   });
 
   it("should allow submission of key shares", async function () {
@@ -71,6 +82,7 @@ describe("ETHDKG: Submit Key share", () => {
       "8743598319810782186450993867080805497457018022200839730580834926549940363993",
       "19522351501097379178289251110843345007238019509263663307388430690023301219325",
     ];
+
     await expect(
       ethdkg
         .connect(await getValidatorEthAccount(validator11))
@@ -79,7 +91,9 @@ describe("ETHDKG: Submit Key share", () => {
           val11KeyShareG1CorrectnessProof,
           val11KeyShareG2
         )
-    ).to.be.rejectedWith("100");
+    )
+      .to.be.revertedWithCustomError(ethdkg, "OnlyValidatorsAllowed")
+      .withArgs(validator11);
   });
 
   it("should not allow multiple submission of key shares by the same validator", async function () {
@@ -94,6 +108,11 @@ describe("ETHDKG: Submit Key share", () => {
       expectedNonce
     );
 
+    const ethDKGPhases = await ethers.getContractAt(
+      "ETHDKGPhases",
+      ethdkg.address
+    );
+
     await expect(
       submitValidatorsKeyShares(
         ethdkg,
@@ -101,18 +120,28 @@ describe("ETHDKG: Submit Key share", () => {
         validators4.slice(0, 1),
         expectedNonce
       )
-    ).to.be.revertedWith("141");
+    )
+      .to.be.revertedWithCustomError(
+        ethDKGPhases,
+        `ParticipantSubmittedKeysharesInRound`
+      )
+      .withArgs(ethers.utils.getAddress(validators4[0].address));
   });
 
   it("should not allow submission of key shares with empty input state", async function () {
     const [ethdkg, ,] = await startAtSubmitKeyShares(validators4);
+
+    const ethDKGPhases = await ethers.getContractAt(
+      "ETHDKGPhases",
+      ethdkg.address
+    );
 
     // Submit empty Key shares for all validators
     await expect(
       ethdkg
         .connect(await getValidatorEthAccount(validators4[0].address))
         .submitKeyShare(["0", "0"], ["0", "0"], ["0", "0", "0", "0"])
-    ).to.be.rejectedWith("141");
+    ).to.be.revertedWithCustomError(ethDKGPhases, `InvalidKeyshareG1`);
 
     await expect(
       ethdkg
@@ -122,7 +151,7 @@ describe("ETHDKG: Submit Key share", () => {
           ["0", "0"],
           ["0", "0", "0", "0"]
         )
-    ).to.be.rejectedWith("141");
+    ).to.be.revertedWithCustomError(ethDKGPhases, `InvalidKeyshareG1`);
 
     await expect(
       ethdkg
@@ -132,6 +161,6 @@ describe("ETHDKG: Submit Key share", () => {
           validators4[0].keyShareG1CorrectnessProof,
           ["0", "0", "0", "0"]
         )
-    ).to.be.rejectedWith("142");
+    ).to.be.revertedWithCustomError(ethDKGPhases, `InvalidKeyshareG2`);
   });
 });

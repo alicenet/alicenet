@@ -35,8 +35,8 @@ describe("PublicStaking: Basics", async () => {
   });
 
   it("Should not be able to get a position that doesn't exist", async function () {
-    await expect(fixture.publicStaking.getPosition(2)).to.be.rejectedWith(
-      "604"
-    );
+    await expect(fixture.publicStaking.getPosition(2))
+      .to.be.revertedWithCustomError(fixture.publicStaking, "InvalidTokenId")
+      .withArgs(2);
   });
 });

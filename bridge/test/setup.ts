@@ -4,6 +4,7 @@ import {
   BigNumberish,
   BytesLike,
   Contract,
+  ContractReceipt,
   ContractTransaction,
   Signer,
   Wallet,
@@ -46,6 +47,15 @@ export interface Snapshot {
   GroupSignature: string;
   height: BigNumberish;
   validatorIndex: number;
+  BClaimsDeserialized?: [
+    number,
+    number,
+    number,
+    string,
+    string,
+    string,
+    string
+  ];
 }
 
 export interface BaseFixture {
@@ -738,4 +748,22 @@ export const getMetamorphicAddress = (
     ethers.utils.formatBytes32String(salt),
     ethers.utils.keccak256(initCode)
   );
+};
+
+export const getReceiptForFailedTransaction = async (
+  tx: Promise<ContractReceipt>
+): Promise<any> => {
+  let receipt: any;
+  try {
+    await tx;
+  } catch (error: any) {
+    receipt = await ethers.provider.getTransactionReceipt(
+      error.transactionHash
+    );
+
+    if (receipt === null) {
+      throw new Error(`Transaction ${error.transactionHash} failed`);
+    }
+  }
+  return receipt;
 };

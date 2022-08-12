@@ -396,7 +396,7 @@ func TestAppMan_applyState_Error2(t *testing.T) {
 		if err == nil {
 			t.Fatalf("Should have raised error")
 		}
-		if !errors.As(err, &errorz.ErrMissingTransactions) {
+		if !errors.Is(err, errorz.ErrMissingTransactions) {
 			t.Fatalf("Should have raised errorz.ErrMissingTransactions error")
 		}
 

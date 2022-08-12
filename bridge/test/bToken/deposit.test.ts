@@ -1,7 +1,6 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
-import { assertError, assertErrorMessage } from "../chai-helpers";
 import { expect } from "../chai-setup";
 import {
   callFunctionAndGetReturnValues,
@@ -34,34 +33,34 @@ describe("Testing BToken Deposit methods", async () => {
 
   it("Should fail querying for an invalid deposit ID", async () => {
     const depositId = 1000;
-    await assertError(
-      fixture.bToken.getDeposit(depositId),
-      `InvalidDepositId`,
-      new Map<string, any>([["depositID", BigNumber.from(depositId)]])
-    );
+    await expect(fixture.bToken.getDeposit(depositId))
+      .to.be.revertedWithCustomError(fixture.bToken, `InvalidDepositId`)
+      .withArgs(depositId);
   });
 
   it("Should not deposit to a contract", async () => {
-    await assertErrorMessage(
-      fixture.bToken.deposit(1, fixture.bToken.address, 0),
-      `ContractsDisallowedDeposits("${fixture.bToken.address}")`
-    );
+    await expect(fixture.bToken.deposit(1, fixture.bToken.address, 0))
+      .to.be.revertedWithCustomError(
+        fixture.bToken,
+        `ContractsDisallowedDeposits`
+      )
+      .withArgs(fixture.bToken.address);
   });
 
   it("Should not deposit with 0 eth amount", async () => {
-    await assertErrorMessage(
+    await expect(
       fixture.bToken.mintDeposit(1, user.address, 0, {
         value: 0,
-      }),
-      `MarketSpreadTooLow(0)`
-    );
+      })
+    )
+      .to.be.revertedWithCustomError(fixture.bToken, `MarketSpreadTooLow`)
+      .withArgs(0);
   });
 
   it("Should not deposit with 0 deposit amount", async () => {
-    await assertErrorMessage(
-      fixture.bToken.deposit(1, user.address, 0),
-      `DepositAmountZero()`
-    );
+    await expect(
+      fixture.bToken.deposit(1, user.address, 0)
+    ).to.be.revertedWithCustomError(fixture.bToken, `DepositAmountZero`);
   });
 
   it("Should deposit funds on side-chain burning main-chain tokens then affecting pool balance", async () => {
