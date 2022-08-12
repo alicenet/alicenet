@@ -109,7 +109,11 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
             }
         }
 
-        _isValidatorElectedToPerformSnapshot(msg.sender, lastSnapshotCommittedAt, keccak256(groupSignature_));
+        _isValidatorElectedToPerformSnapshot(
+            msg.sender,
+            lastSnapshotCommittedAt,
+            keccak256(groupSignature_)
+        );
 
         bool isSafeToProceedConsensus = true;
         if (IValidatorPool(_validatorPoolAddress()).isMaintenanceScheduled()) {
@@ -257,9 +261,13 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
         address validator,
         uint256 lastSnapshotCommittedAt,
         bytes32 groupSignatureHash
-    ) public view returns (bool){
+    ) public view returns (bool) {
         // if the function does not revert, it means that the validator is the selected to perform the snapshot
-        _isValidatorElectedToPerformSnapshot(validator, lastSnapshotCommittedAt, groupSignatureHash);
+        _isValidatorElectedToPerformSnapshot(
+            validator,
+            lastSnapshotCommittedAt,
+            groupSignatureHash
+        );
         return true;
     }
 
@@ -278,18 +286,6 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
             desperationFactor
         );
         return isValidatorElected;
-    }
-
-    function _getLatestSnapshotSafe() internal view returns (Snapshot memory) {
-        uint256 currentEpoch = _epochRegister().get();
-        if (currentEpoch == 0) {
-            return Snapshot(0, BClaimsParserLibrary.BClaims(0, 0, 0, 0, 0, 0, 0));
-        }
-        (bool ok, Snapshot memory snapshotData) = _getLatestSnapshot();
-        if (!ok) {
-            revert SnapshotsErrors.SnapshotsNotInBuffer(currentEpoch);
-        }
-        return snapshotData;
     }
 
     function _isValidatorElectedToPerformSnapshot(
