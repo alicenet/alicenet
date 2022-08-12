@@ -6,19 +6,22 @@ import (
 	"sync"
 	"time"
 
+	"github.com/dgraph-io/badger/v2"
+	grpc_retry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
+	"github.com/sirupsen/logrus"
+	"google.golang.org/grpc"
+
 	"github.com/alicenet/alicenet/consensus/objs"
 	"github.com/alicenet/alicenet/errorz"
 	"github.com/alicenet/alicenet/interfaces"
 	"github.com/alicenet/alicenet/middleware"
 	"github.com/alicenet/alicenet/utils"
-	"github.com/dgraph-io/badger/v2"
-	grpc_retry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
-	"github.com/sirupsen/logrus"
-	"google.golang.org/grpc"
 )
 
-const backoffAmount = 1 // 1 ms backoff per
-const retryMax = 6      // equates to approx 4 seconds
+const (
+	backoffAmount = 1 // 1 ms backoff per
+	retryMax      = 6 // equates to approx 4 seconds
+)
 
 // RootActor spawns top level actor types for download manager.
 // This system allows the synchronously run consensus algorithm to request the
@@ -77,7 +80,7 @@ func (a *RootActor) Close() {
 	})
 }
 
-// TODO verify blockheader cache is being cleaned
+// TODO verify blockheader cache is being cleaned.
 func (a *RootActor) FlushCacheToDisk(txn *badger.Txn, height uint32) error {
 	txList, txHashList := a.txc.GetHeight(height + 1)
 	for i := 0; i < len(txList); i++ {
@@ -92,7 +95,7 @@ func (a *RootActor) FlushCacheToDisk(txn *badger.Txn, height uint32) error {
 	return nil
 }
 
-// CleanCache flushes all items older than 5 blocks from cache
+// CleanCache flushes all items older than 5 blocks from cache.
 func (a *RootActor) CleanCache(txn *badger.Txn, height uint32) error {
 	if height > 10 {
 		dropKeys := a.bhc.DropBeforeHeight(height - 5)
@@ -104,13 +107,13 @@ func (a *RootActor) CleanCache(txn *badger.Txn, height uint32) error {
 	return nil
 }
 
-// DownloadPendingTx downloads txs that are pending from remote peers
+// DownloadPendingTx downloads txs that are pending from remote peers.
 func (a *RootActor) DownloadPendingTx(height, round uint32, txHash []byte) {
 	req := NewTxDownloadRequest(txHash, PendingTxRequest, height, round)
 	a.download(req, false)
 }
 
-// DownloadPendingTx downloads txs that are mined from remote peers
+// DownloadPendingTx downloads txs that are mined from remote peers.
 func (a *RootActor) DownloadMinedTx(height, round uint32, txHash []byte) {
 	req := NewTxDownloadRequest(txHash, MinedTxRequest, height, round)
 	a.download(req, false)
@@ -121,7 +124,7 @@ func (a *RootActor) DownloadTx(height, round uint32, txHash []byte) {
 	a.download(req, false)
 }
 
-// DownloadBlockHeader downloads block headers from remote peers
+// DownloadBlockHeader downloads block headers from remote peers.
 func (a *RootActor) DownloadBlockHeader(height, round uint32) {
 	req := NewBlockHeaderDownloadRequest(height, round, BlockHeaderRequest)
 	a.download(req, false)
@@ -309,7 +312,7 @@ func (a *RootActor) await(req DownloadRequest) {
 	}
 }
 
-// block actor does height based filter drop on requests
+// block actor does height based filter drop on requests.
 type blockActor struct {
 	sync.RWMutex
 	ra            *downloadActor
@@ -421,7 +424,7 @@ func (a *blockActor) await(req DownloadRequest) {
 	}
 }
 
-// download actor does download dispatch based on request type to worker pools
+// download actor does download dispatch based on request type to worker pools.
 type downloadActor struct {
 	WorkQ            chan DownloadRequest
 	PendingDispatchQ chan *TxDownloadRequest

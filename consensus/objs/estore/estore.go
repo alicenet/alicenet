@@ -2,6 +2,7 @@ package estore
 
 import (
 	capnp "github.com/MadBase/go-capnproto2/v2"
+
 	mdefs "github.com/alicenet/alicenet/consensus/objs/capn"
 	"github.com/alicenet/alicenet/errorz"
 )
@@ -37,7 +38,7 @@ func Unmarshal(data []byte) (mdefs.EncryptedStore, error) {
 	return obj, nil
 }
 
-// Validate will validate the EncryptedStore object
+// Validate will validate the EncryptedStore object.
 func Validate(p mdefs.EncryptedStore) error {
 	if !p.IsValid() {
 		return errorz.ErrInvalid{}.New("enc store capn obj is not valid")

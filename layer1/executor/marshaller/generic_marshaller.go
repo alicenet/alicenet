@@ -78,7 +78,6 @@ func (registry *TypeRegistry) WrapInstance(t interface{}) (*InstanceWrapper, err
 }
 
 func (registry *TypeRegistry) UnwrapInstance(wrapper *InstanceWrapper) (interface{}, error) {
-
 	tipe, present := registry.LookupType(wrapper.NameType)
 	if !present {
 		return nil, ErrUnknownName

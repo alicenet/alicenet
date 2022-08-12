@@ -346,7 +346,6 @@ func TestClient_GetTxFees(t *testing.T) {
 				fmt.Sprintf("%064d", 4),
 				fmt.Sprintf("%064d", 1),
 				fmt.Sprintf("%064d", 3),
-				fmt.Sprintf("%064d", 2),
 			},
 		},
 	}

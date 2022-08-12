@@ -12,7 +12,7 @@ type BlockHeaderHeightKey struct {
 }
 
 // UnmarshalBinary takes a byte slice and returns the corresponding
-// BlockHeaderHeightKey object
+// BlockHeaderHeightKey object.
 func (b *BlockHeaderHeightKey) UnmarshalBinary(data []byte) error {
 	if b == nil {
 		return errorz.ErrInvalid{}.New("BlockHeaderHeightKey.UnmarshalBinary; bhhk not initialized")
@@ -33,7 +33,7 @@ func (b *BlockHeaderHeightKey) UnmarshalBinary(data []byte) error {
 }
 
 // MarshalBinary takes the BlockHeaderHeightKey object and returns the canonical
-// byte slice
+// byte slice.
 func (b *BlockHeaderHeightKey) MarshalBinary() ([]byte, error) {
 	if b == nil {
 		return nil, errorz.ErrInvalid{}.New("BlockHeaderHeightKey.MarshalBinary; bhhk not initialized")

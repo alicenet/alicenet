@@ -228,8 +228,8 @@ func UpdateStateOnRegistrationComplete(dkgState *state.DkgState, shareDistributi
 	shareDistEndBlock := shareDistStartBlock + dkgState.PhaseLength
 	shareDistributionTask := dkgtasks.NewShareDistributionTask(shareDistStartBlock, shareDistEndBlock)
 
-	var dispShareStartBlock = shareDistEndBlock
-	var dispShareEndBlock = dispShareStartBlock + dkgState.PhaseLength
+	dispShareStartBlock := shareDistEndBlock
+	dispShareEndBlock := dispShareStartBlock + dkgState.PhaseLength
 	disputeMissingShareDistributionTask := dkgtasks.NewDisputeMissingShareDistributionTask(dispShareStartBlock, dispShareEndBlock)
 	disputeBadSharesTasks := GetDisputeShareDistributionTasks(dkgState, dispShareStartBlock, dispShareEndBlock)
 
@@ -634,7 +634,7 @@ func UpdateStateOnGPKJSubmissionComplete(dkgState *state.DkgState, disputeGPKjSt
 	return disputeGPKjTasks, completionTask
 }
 
-func GetDisputeShareDistributionTasks(dkgState *state.DkgState, phaseStart uint64, phaseEnd uint64) []*dkgtasks.DisputeShareDistributionTask {
+func GetDisputeShareDistributionTasks(dkgState *state.DkgState, phaseStart, phaseEnd uint64) []*dkgtasks.DisputeShareDistributionTask {
 	var disputeShareDistributionTasks []*dkgtasks.DisputeShareDistributionTask
 	for address := range dkgState.Participants {
 		disputeShareDistributionTasks = append(disputeShareDistributionTasks, dkgtasks.NewDisputeShareDistributionTask(phaseStart, phaseEnd, address))
@@ -642,7 +642,7 @@ func GetDisputeShareDistributionTasks(dkgState *state.DkgState, phaseStart uint6
 	return disputeShareDistributionTasks
 }
 
-func GetDisputeGPKjTasks(dkgState *state.DkgState, phaseStart uint64, phaseEnd uint64) []*dkgtasks.DisputeGPKjTask {
+func GetDisputeGPKjTasks(dkgState *state.DkgState, phaseStart, phaseEnd uint64) []*dkgtasks.DisputeGPKjTask {
 	var disputeGPKjTasks []*dkgtasks.DisputeGPKjTask
 	for address := range dkgState.Participants {
 		disputeGPKjTasks = append(disputeGPKjTasks, dkgtasks.NewDisputeGPKjTask(phaseStart, phaseEnd, address))

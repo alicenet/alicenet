@@ -565,49 +565,6 @@
         }
       }
     },
-    "protoASPreImage": {
-      "type": "object",
-      "properties": {
-        "ChainID": {
-          "type": "integer",
-          "format": "int64"
-        },
-        "Value": {
-          "type": "string"
-        },
-        "TXOutIdx": {
-          "type": "integer",
-          "format": "int64"
-        },
-        "IssuedAt": {
-          "type": "integer",
-          "format": "int64"
-        },
-        "Exp": {
-          "type": "integer",
-          "format": "int64"
-        },
-        "Owner": {
-          "type": "string"
-        },
-        "Fee": {
-          "type": "string"
-        }
-      },
-      "title": "Protobuf message implementation for struct ASPreImage"
-    },
-    "protoAtomicSwap": {
-      "type": "object",
-      "properties": {
-        "ASPreImage": {
-          "$ref": "#/definitions/protoASPreImage"
-        },
-        "TxHash": {
-          "type": "string"
-        }
-      },
-      "title": "Protobuf message implementation for struct AtomicSwap"
-    },
     "protoBClaims": {
       "type": "object",
       "properties": {
@@ -790,9 +747,6 @@
           "type": "string"
         },
         "DataStoreFee": {
-          "type": "string"
-        },
-        "AtomicSwapFee": {
           "type": "string"
         }
       }
@@ -1106,9 +1060,6 @@
     "protoTXOut": {
       "type": "object",
       "properties": {
-        "AtomicSwap": {
-          "$ref": "#/definitions/protoAtomicSwap"
-        },
         "ValueStore": {
           "$ref": "#/definitions/protoValueStore"
         },

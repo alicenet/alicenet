@@ -7,15 +7,16 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
 	"github.com/alicenet/alicenet/layer1/tests"
 	"github.com/alicenet/alicenet/logging"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/stretchr/testify/assert"
 )
 
-//Here we test the happy path.
+// Here we test the happy path.
 func TestShareDistribution_Group_1_Good(t *testing.T) {
 	n := 5
 	fixture := setupEthereum(t, n)
@@ -249,7 +250,7 @@ func TestShareDistribution_Group_2_Bad5(t *testing.T) {
 }
 
 // We begin by submitting invalid information;
-// we submit nil state information
+// we submit nil state information.
 func TestShareDistribution_Group_2_Bad6(t *testing.T) {
 	n := 5
 	fixture := setupEthereum(t, n)

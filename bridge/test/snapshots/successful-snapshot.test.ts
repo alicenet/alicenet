@@ -40,7 +40,9 @@ describe("Snapshots: With successful ETHDKG round completed", () => {
       snapshots
         .connect(await getValidatorEthAccount(validatorsSnapshots1[0]))
         .snapshot(junkData, junkData)
-    ).to.be.revertedWith("1401");
+    )
+      .to.be.revertedWithCustomError(snapshots, "InsufficientBytes")
+      .withArgs(32, 192);
   });
 
   it("Reverts when snapshot state contains invalid height", async function () {
@@ -52,7 +54,9 @@ describe("Snapshots: With successful ETHDKG round completed", () => {
           )
         )
         .snapshot(invalidSnapshot500.GroupSignature, invalidSnapshot500.BClaims)
-    ).to.be.revertedWith("406");
+    )
+      .to.be.revertedWithCustomError(fixture.snapshots, "InvalidBlockHeight")
+      .withArgs(invalidSnapshot500.height);
   });
 
   it("Reverts when snapshot state contains invalid chain id", async function () {
@@ -67,7 +71,9 @@ describe("Snapshots: With successful ETHDKG round completed", () => {
           invalidSnapshotChainID2.GroupSignature,
           invalidSnapshotChainID2.BClaims
         )
-    ).to.be.revertedWith("407");
+    )
+      .to.be.revertedWithCustomError(fixture.snapshots, "InvalidChainId")
+      .withArgs(2);
   });
 
   // todo wrong public key failure happens first with this state
@@ -83,10 +89,14 @@ describe("Snapshots: With successful ETHDKG round completed", () => {
           validSnapshot1024.GroupSignature,
           invalidSnapshotIncorrectSig.BClaims
         )
-    ).to.be.revertedWith("405");
+    ).to.be.revertedWithCustomError(snapshots, "SignatureVerificationFailed");
   });
 
   it("Reverts when snapshot state contains incorrect public key", async function () {
+    const expectedCalculatedPublicKeyHash =
+      "0x888ea4bcd71f772f1af058866a2234d1d1b0967c67a5b9d82248f8ad8d8c144c";
+    const expectedMasterPublicKeyHash =
+      "0x381f9c36df7c05b341eaf3708d6d05d9343cdcbccaf5989da9880024a9a8a4d7";
     await expect(
       snapshots
         .connect(
@@ -98,7 +108,12 @@ describe("Snapshots: With successful ETHDKG round completed", () => {
           invalidSnapshotIncorrectSig.GroupSignature,
           invalidSnapshotIncorrectSig.BClaims
         )
-    ).to.be.revertedWith("404");
+    )
+      .to.be.revertedWithCustomError(
+        fixture.snapshots,
+        "InvalidMasterPublicKey"
+      )
+      .withArgs(expectedCalculatedPublicKeyHash, expectedMasterPublicKeyHash);
   });
 
   it("Successfully performs snapshot", async function () {
@@ -121,7 +136,8 @@ describe("Snapshots: With successful ETHDKG round completed", () => {
         expectedHeight,
         ethers.utils.getAddress(validatorsSnapshots1[0].address),
         expectedSafeToProceedConsensus,
-        validSnapshot1024.GroupSignature
+        validSnapshot1024.GroupSignature,
+        validSnapshot1024.BClaimsDeserialized
       );
   });
 

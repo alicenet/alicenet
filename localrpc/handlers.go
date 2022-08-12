@@ -731,16 +731,10 @@ func (srpc *Handlers) HandleLocalStateGetFees(ctx context.Context, req *pb.FeeRe
 	if err != nil {
 		return nil, err
 	}
-	asFee := sg.GetAtomicSwapFee()
-	asfs, err := bigIntToString(asFee)
-	if err != nil {
-		return nil, err
-	}
 	result := &pb.FeeResponse{
 		MinTxFee:      txfs,
 		ValueStoreFee: vsfs,
 		DataStoreFee:  dsfs,
-		AtomicSwapFee: asfs,
 	}
 
 	return result, nil
