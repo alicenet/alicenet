@@ -5,6 +5,7 @@ import { DutchAuction } from "../../typechain-types";
 
 import {
   deployStaticWithFactory,
+  factoryCallAny,
   factoryCallAnyFixture,
   Fixture,
   getFixture,
@@ -64,7 +65,21 @@ describe("Testing Dutch Auction", async () => {
     );
   });
 
-  it.skip("Simulates a 30 days run (skipped since it takes long)", async () => {
+  it("Should restart the auction", async () => {
+    expect(Number(await dutchAuction.getPrice())).to.be.equal(
+      Number("10000950400000000000000")
+    );
+    await network.provider.send("evm_mine");
+    expect(Number(await dutchAuction.getPrice())).to.be.equal(
+      Number("9984975974440894568690")
+    );
+    await factoryCallAny(fixture.factory, dutchAuction, "resetAuction", []);
+    expect(Number(await dutchAuction.getPrice())).to.be.equal(
+      Number("10000950400000000000000")
+    );
+  });
+
+  it.skip("Simulates a 30 days run (skipped since it might take too long)", async () => {
     for (let d = 1; d <= 30; d++) {
       console.log(
         "Day",
