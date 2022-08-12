@@ -80,4 +80,15 @@ interface ISnapshots {
         bytes32 blsig,
         uint256 desperationFactor
     ) external pure returns (bool);
+
+    function checkBClaimsSignature(bytes calldata groupSignature_, bytes calldata bClaims_)
+        external
+        view
+        returns (bool);
+
+    function isValidatorElectedToPerformSnapshot(
+        address validator,
+        uint256 lastSnapshotCommittedAt,
+        bytes32 groupSignatureHash
+    ) external view returns (bool) ;
 }
