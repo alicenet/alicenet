@@ -168,6 +168,8 @@ jobs:
         run: go install github.com/haveyoudebuggedit/gotestfmt/v2/cmd/gotestfmt@latest
       - name: Run tests ${{ matrix.test-cmd }}
         timeout-minutes: 45
+        env:
+          ENABLE_SCRIPT_LOG: "true"
         run: |
           set -euo pipefail
           ./scripts/main.sh init 5

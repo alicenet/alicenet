@@ -3,6 +3,7 @@ pragma solidity ^0.8.11;
 
 import "contracts/libraries/parsers/BClaimsParserLibrary.sol";
 import "contracts/interfaces/ISnapshots.sol";
+import "contracts/libraries/errors/SnapshotsErrors.sol";
 
 struct Epoch {
     uint32 _value;
@@ -29,7 +30,12 @@ library RingBuffer {
         //gets the snapshot that was at that location of the buffer
         Snapshot storage old = self_._array[indexFor(self_, epoch)];
         //checks if the new snapshot height is greater than the previous
-        require(new_.blockClaims.height > old.blockClaims.height, "invalid new blockHeight");
+        if (new_.blockClaims.height <= old.blockClaims.height) {
+            revert SnapshotsErrors.InvalidRingBufferBlockHeight(
+                new_.blockClaims.height,
+                old.blockClaims.height
+            );
+        }
         unsafeSet(self_, new_, epoch);
         return epoch;
     }
@@ -68,7 +74,9 @@ library RingBuffer {
      * @return the index corresponding to the epoch number.
      */
     function indexFor(SnapshotBuffer storage self_, uint32 epoch_) internal view returns (uint256) {
-        require(epoch_ != 0, "epoch must be non-zero");
+        if (epoch_ == 0) {
+            revert SnapshotsErrors.EpochMustBeNonZero();
+        }
         return epoch_ % self_._array.length;
     }
 }
@@ -107,25 +115,26 @@ abstract contract SnapshotRingBuffer {
     }
 
     /**
-     * @notice Returns the snapshot for the passed epoch and safety flag
+     * @notice Returns the snapshot for the passed epoch
      * @param epoch_ of the snapshot
-     * @return ok if the struct is valid and the snapshot struct itself
      */
-    function _getSnapshot(uint32 epoch_) internal view returns (bool ok, Snapshot memory snapshot) {
-        //get the pointer to the specified epoch snapshot
-        Snapshot memory temp = _getSnapshots().get(epoch_);
-        if (_getEpochFromHeight(temp.blockClaims.height) == epoch_) {
-            ok = true;
-            snapshot = temp;
+    function _getSnapshot(uint32 epoch_) internal view returns (Snapshot memory snapshot) {
+        if (epoch_ == 0) {
+            return Snapshot(0, BClaimsParserLibrary.BClaims(0, 0, 0, 0, 0, 0, 0));
         }
-        return (ok, snapshot);
+        //get the pointer to the specified epoch snapshot
+        Snapshot memory snapshot_ = _getSnapshots().get(epoch_);
+        if (_getEpochFromHeight(snapshot_.blockClaims.height) != epoch_) {
+            revert SnapshotsErrors.SnapshotsNotInBuffer(epoch_);
+        }
+        return snapshot_;
     }
 
     /***
      * @dev: gets the latest snapshot stored in the ring buffer.
      * @return ok if the struct is valid and the snapshot struct itself
      */
-    function _getLatestSnapshot() internal view returns (bool ok, Snapshot memory snapshot) {
+    function _getLatestSnapshot() internal view returns (Snapshot memory snapshot) {
         return _getSnapshot(_epochRegister().get());
     }
 
