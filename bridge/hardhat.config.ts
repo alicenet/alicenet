@@ -261,6 +261,7 @@ const config: HardhatUserConfig = {
       ".*Mock",
       ".*Base",
       ".*Storage",
+      ".*Error",
       "ETHDKGAccusations",
       "ETHDKGPhases",
     ],

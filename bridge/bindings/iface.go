@@ -32,34 +32,16 @@ type IBToken interface {
 	IBTokenFilterer
 }
 
-type IBTokenErrors interface {
-	IBTokenErrorsCaller
-	IBTokenErrorsTransactor
-	IBTokenErrorsFilterer
-}
-
 type IETHDKG interface {
 	IETHDKGCaller
 	IETHDKGTransactor
 	IETHDKGFilterer
 }
 
-type IETHDKGErrors interface {
-	IETHDKGErrorsCaller
-	IETHDKGErrorsTransactor
-	IETHDKGErrorsFilterer
-}
-
 type IGovernance interface {
 	IGovernanceCaller
 	IGovernanceTransactor
 	IGovernanceFilterer
-}
-
-type IGovernanceErrors interface {
-	IGovernanceErrorsCaller
-	IGovernanceErrorsTransactor
-	IGovernanceErrorsFilterer
 }
 
 type IPublicStaking interface {
@@ -74,22 +56,10 @@ type ISnapshots interface {
 	ISnapshotsFilterer
 }
 
-type ISnapshotsErrors interface {
-	ISnapshotsErrorsCaller
-	ISnapshotsErrorsTransactor
-	ISnapshotsErrorsFilterer
-}
-
 type IValidatorPool interface {
 	IValidatorPoolCaller
 	IValidatorPoolTransactor
 	IValidatorPoolFilterer
-}
-
-type IValidatorPoolErrors interface {
-	IValidatorPoolErrorsCaller
-	IValidatorPoolErrorsTransactor
-	IValidatorPoolErrorsFilterer
 }
 
 type IValidatorStaking interface {
