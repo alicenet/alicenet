@@ -29,6 +29,7 @@ import {
   ValidatorPool,
   ValidatorPoolMock,
   ValidatorStaking,
+  Dynamics
 } from "../typechain-types";
 import { ValidatorRawData } from "./ethdkg/setup";
 
@@ -611,6 +612,13 @@ export const getFixture = async (
     "Accusation"
   )) as MultipleProposalAccusation;
 
+  const dynamics = (await deployUpgradeableWithFactory(
+    factory,
+    "Dynamics",
+    "Dynamics",
+    []
+  )) as Dynamics;
+
   await posFixtureSetup(factory, aToken, legacyToken);
   const blockNumber = BigInt(await ethers.provider.getBlockNumber());
   const phaseLength = (await ethdkg.getPhaseLength()).toBigInt();
@@ -636,6 +644,7 @@ export const getFixture = async (
     stakingPositionDescriptor,
     invalidTxConsumptionAccusation,
     multipleProposalAccusation,
+    dynamics
   };
 };
 
@@ -713,7 +722,7 @@ export async function callFunctionAndGetReturnValues(
         .callStatic[functionName](...inputParameters, { value: messageValue });
       tx = await contract
         .connect(account)
-        [functionName](...inputParameters, { value: messageValue });
+      [functionName](...inputParameters, { value: messageValue });
     } else {
       returnValues = await contract
         .connect(account)
