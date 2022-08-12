@@ -73,6 +73,7 @@ func getScheduleLen(t *testing.T, manager *TaskManager) int {
 }
 
 func TestTasksHandlerAndManager_Schedule_NilTask(t *testing.T) {
+	t.Parallel()
 	handler, _, _, _, _ := getTaskHandler(t, true)
 	handler.Start()
 	ctx := context.Background()
@@ -83,6 +84,7 @@ func TestTasksHandlerAndManager_Schedule_NilTask(t *testing.T) {
 }
 
 func TestTasksHandlerAndManager_Schedule_NotRegisteredTask(t *testing.T) {
+	t.Parallel()
 	handler, _, _, _, _ := getTaskHandler(t, true)
 	handler.Start()
 	ctx := context.Background()
@@ -104,6 +106,7 @@ func TestTasksHandlerAndManager_Schedule_WrongStartDate(t *testing.T) {
 }
 
 func TestTasksHandlerAndManager_Schedule_WrongEndDate(t *testing.T) {
+	t.Parallel()
 	handler, client, _, _, _ := getTaskHandler(t, true)
 	ctx := context.Background()
 	client.GetFinalizedHeightFunc.SetDefaultReturn(12, nil)
@@ -117,6 +120,7 @@ func TestTasksHandlerAndManager_Schedule_WrongEndDate(t *testing.T) {
 }
 
 func TestTasksHandlerAndManager_Schedule_MultiExecutionNotAllowed(t *testing.T) {
+	t.Parallel()
 	handler, _, _, _, _ := getTaskHandler(t, true)
 	handler.Start()
 	ctx := context.Background()
@@ -132,6 +136,7 @@ func TestTasksHandlerAndManager_Schedule_MultiExecutionNotAllowed(t *testing.T) 
 }
 
 func TestTasksHandlerAndManager_KillById_EmptyId(t *testing.T) {
+	t.Parallel()
 	handler, _, _, _, _ := getTaskHandler(t, true)
 	handler.Start()
 	ctx := context.Background()
@@ -141,6 +146,7 @@ func TestTasksHandlerAndManager_KillById_EmptyId(t *testing.T) {
 }
 
 func TestTasksHandlerAndManager_KillById_NotFound(t *testing.T) {
+	t.Parallel()
 	handler, _, _, _, _ := getTaskHandler(t, true)
 	handler.Start()
 	ctx := context.Background()
