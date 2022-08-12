@@ -3,7 +3,7 @@ package accusation
 import (
 	"bytes"
 	"context"
-	"encoding/hex"
+	"errors"
 	"fmt"
 	"runtime"
 	"sync"
@@ -55,7 +55,7 @@ type Manager struct {
 	database                      *db.Database                         // the database to store detected accusations
 	sstore                        *lstate.Store                        // the state store to get round states from
 	rsCache                       map[string]*rsCacheStruct            // cache of validator's roundState height, round and hash to avoid checking accusations unless anything changes
-	rsCacheLock                   sync.RWMutex                         // this is currently being used by workers when interacting with rsCache
+	rsCacheLock                   sync.Mutex                           // this is currently being used by workers when interacting with rsCache
 	workQ                         chan *lstate.RoundStates             // queue where new roundStates are pushed to be checked for malicious behavior by workers
 	accusationQ                   chan tasks.Task                      // queue where identified accusations are pushed by workers to be further processed
 	unpersistedCreatedAccusations []tasks.Task                         // newly found accusations that where not persisted into DB
@@ -179,13 +179,7 @@ func (m *Manager) persistCreatedAccusations() {
 		for i, acc := range m.unpersistedCreatedAccusations {
 			// persist the accusation into the database
 			err := m.database.Update(func(txn *badger.Txn) error {
-				// todo: put this marshalling into a separate function
-				var id [32]byte
-				idBin, err := hex.DecodeString(acc.GetId())
-				if err != nil {
-					return err
-				}
-				copy(id[:], idBin)
+				var id [32]byte = utils.HexToBytes32(acc.GetId())
 				data, err := marshaller.GobMarshalBinary(acc)
 				if err != nil {
 					return err
@@ -210,21 +204,14 @@ func (m *Manager) persistCreatedAccusations() {
 
 // scheduleAccusations schedules the accusations that are not yet scheduled in the Task Scheduler.
 func (m *Manager) scheduleAccusations() error {
-	var currentAccusations []tasks.Task
+	var rawAccusations [][]byte
+	var err error
 
 	// first retrieve all the current accusations from the database
-	err := m.database.View(func(txn *badger.Txn) error {
-		rawAccusations, err := m.database.GetAccusations(txn, nil)
+	err = m.database.View(func(txn *badger.Txn) error {
+		rawAccusations, err = m.database.GetAccusations(txn)
 		if err != nil {
 			return err
-		}
-
-		for _, rawAcc := range rawAccusations {
-			acc, err := marshaller.GobUnmarshalBinary(rawAcc)
-			if err != nil {
-				return err
-			}
-			currentAccusations = append(currentAccusations, acc)
 		}
 
 		return nil
@@ -233,9 +220,18 @@ func (m *Manager) scheduleAccusations() error {
 		return err
 	}
 
+	// unmarshal the accusations into tasks.Task
+	var currentAccusations []tasks.Task = make([]tasks.Task, len(rawAccusations))
+	for i, rawAcc := range rawAccusations {
+		acc, err := marshaller.GobUnmarshalBinary(rawAcc)
+		if err != nil {
+			return err
+		}
+		currentAccusations[i] = acc
+	}
+
 	// schedule existing accusations if they are not yet scheduled in the Task Scheduler
 	for _, acc := range currentAccusations {
-		//m.logger.Debugf("Scheduling accusation %#v", acc)
 
 		// schedule if not yet scheduled
 		if _, ok := m.runningAccusations[acc.GetId()]; !ok {
@@ -253,30 +249,35 @@ func (m *Manager) scheduleAccusations() error {
 	return nil
 }
 
-// handleCompletedAccusations checks for the completion of the accusations that are scheduled in the Task Scheduler.
-// This function does not block while waiting for task completion. If an accusation task if completed, it is then deleted
-// from the database.
+// handleCompletedAccusations checks for the completion of the accusations that were scheduled in the Task Scheduler.
+// This function does not block while waiting for task completion. If an accusation task if completed,
+// it is then deleted from the database.
 func (m *Manager) handleCompletedAccusations() error {
-	// check for completed accusations in m.runningAccusations ResponseHandler, and cleanup
+	// check for completed accusations in m.runningAccusations (HandlerResponse), and cleanup
 	// the m.runningAccusations map accordingly as well as the database
 	for accusationId, resp := range m.runningAccusations {
 		if resp.IsReady() {
 			err := resp.GetResponseBlocking(m.ctx)
 			if err != nil {
-				// todo: maybe check for an error indicating that the task was concluded because the accusation already took place, perhaps by another validator. or maybe in that case the task can just return OK.
 				m.logger.Warnf("AccusationManager got error response for accusation task: %v", err)
 				return err
 			}
 
-			// delete the response from the database
+			// delete the accusation from the database
 			err = m.database.Update(func(txn *badger.Txn) error {
-				var id [32]byte
-				copy(id[:], []byte(accusationId))
+				var id [32]byte = utils.HexToBytes32(accusationId)
 				return m.database.DeleteAccusation(txn, id)
 			})
 			if err != nil {
 				m.logger.Warnf("AccusationManager failed to delete accusation from DB: %v", err)
-				return err
+				if !errors.Is(err, badger.ErrKeyNotFound) {
+					// try again later if the error is not ErrKeyNotFound, meaning it might still exist in the DB
+					continue
+				}
+
+				// at this point it is certain that the error is badger.ErrKeyNotFound
+				// and so we can safely delete the accusation from the map,
+				// although this should not happen.
 			}
 
 			// delete the completed accusation from the m.runningAccusations map
@@ -294,6 +295,9 @@ func (m *Manager) processLRS(lrs *lstate.RoundStates) (bool, error) {
 	// keep track of new validators to clear the cache from old validators
 	currentValidators := make(map[string]bool)
 	hadUpdates := false
+
+	m.rsCacheLock.Lock()
+	defer m.rsCacheLock.Unlock()
 
 	for _, v := range lrs.ValidatorSet.Validators {
 		rs := lrs.GetRoundState(v.VAddr)
@@ -315,9 +319,9 @@ func (m *Manager) processLRS(lrs *lstate.RoundStates) (bool, error) {
 		updated := false
 		currentValidators[valAddress] = true
 
-		m.rsCacheLock.RLock()
+		//m.rsCacheLock.RLock()
 		rsCacheEntry, isCached := m.rsCache[valAddress]
-		m.rsCacheLock.RUnlock()
+		//m.rsCacheLock.RUnlock()
 
 		if isCached {
 			// validator exists in cache, let's check if there are changes in its roundState
@@ -353,15 +357,15 @@ func (m *Manager) processLRS(lrs *lstate.RoundStates) (bool, error) {
 				return hadUpdates, err
 			}
 			rsCacheEntry.rsHash = rsHash
-			m.rsCacheLock.Lock()
+			// m.rsCacheLock.Lock()
 			m.rsCache[valAddress] = rsCacheEntry
-			m.rsCacheLock.Unlock()
+			//m.rsCacheLock.Unlock()
 		}
 	}
 
 	// remove validators from cache that are not in the current validatorSet,
 	// ensuring the cache is not growing indefinitely with old validators
-	m.rsCacheLock.Lock()
+	//m.rsCacheLock.Lock()
 	toDelete := make([]string, 0)
 	// iterate over the cache and keep track of validators not in the current validatorSet
 	for vAddr := range m.rsCache {
@@ -374,18 +378,18 @@ func (m *Manager) processLRS(lrs *lstate.RoundStates) (bool, error) {
 	for _, vAddr := range toDelete {
 		delete(m.rsCache, vAddr)
 	}
-	m.rsCacheLock.Unlock()
+	//m.rsCacheLock.Unlock()
 
 	return hadUpdates, nil
 }
 
-// findAccusation checks if there is an accusation for a certain roundState and if so, sends it for further processing.
+// findAccusation checks if there is an accusation for a certain roundState and if so, sends it for further processing. the Poll() method will receive this accusation and schedule the accusation task in the TaskHandler
 func (m *Manager) findAccusation(rs *objs.RoundState, lrs *lstate.RoundStates) {
 	for _, detector := range m.detectionPipeline {
 		accusation, found := detector(rs, lrs, m.database)
 		if found {
 			m.accusationQ <- accusation
-			break
+			break // we can stop looking for more accusations as soon as one is found
 		}
 	}
 }

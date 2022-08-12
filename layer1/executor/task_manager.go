@@ -99,8 +99,8 @@ func (tm *TaskManager) start() {
 func (tm *TaskManager) close() {
 	tm.closeOnce.Do(func() {
 		tm.logger.Warn("Closing task manager")
-		tm.responseChan.close()
 		close(tm.closeChan)
+		tm.responseChan.close()
 	})
 }
 

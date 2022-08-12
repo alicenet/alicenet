@@ -2,7 +2,6 @@ package accusation
 
 import (
 	"bytes"
-	"encoding/hex"
 
 	"github.com/alicenet/alicenet/application/objs/uint256"
 	"github.com/alicenet/alicenet/consensus/db"
@@ -11,6 +10,7 @@ import (
 	"github.com/alicenet/alicenet/crypto"
 	"github.com/alicenet/alicenet/layer1/executor/tasks"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/accusations"
+	"github.com/alicenet/alicenet/utils"
 )
 
 func detectMultipleProposal(rs *objs.RoundState, lrs *lstate.RoundStates, db *db.Database) (tasks.Task, bool) {
@@ -100,6 +100,8 @@ func detectMultipleProposal(rs *objs.RoundState, lrs *lstate.RoundStates, db *db
 		rs.ConflictingProposal.PClaims,
 	)
 
+	var id [32]byte
+
 	// deterministic ID
 	if sig0Big.Cmp(sig1Big) <= 0 {
 		idBin := crypto.Hasher(
@@ -108,7 +110,7 @@ func detectMultipleProposal(rs *objs.RoundState, lrs *lstate.RoundStates, db *db
 			rs.ConflictingProposal.Signature,
 			conflictingProposalPClaimsBin,
 		)
-		acc.Id = hex.EncodeToString(idBin)
+		copy(id[:], idBin)
 	} else {
 		idBin := crypto.Hasher(
 			rs.ConflictingProposal.Signature,
@@ -116,8 +118,10 @@ func detectMultipleProposal(rs *objs.RoundState, lrs *lstate.RoundStates, db *db
 			rs.Proposal.Signature,
 			proposalPClaimsBin,
 		)
-		acc.Id = hex.EncodeToString(idBin)
+		copy(id[:], idBin)
 	}
+
+	acc.Id = utils.Bytes32ToHex(id)
 
 	return acc, true
 }
