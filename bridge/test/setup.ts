@@ -4,7 +4,6 @@ import {
   BigNumberish,
   BytesLike,
   Contract,
-  ContractReceipt,
   ContractTransaction,
   Signer,
   Wallet,

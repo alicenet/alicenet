@@ -73,14 +73,6 @@ interface ISnapshots {
 
     function getEpochFromHeight(uint256 height) external view returns (uint256);
 
-    function mayValidatorSnapshot(
-        uint256 numValidators,
-        uint256 myIdx,
-        uint256 blocksSinceDesperation,
-        bytes32 blsig,
-        uint256 desperationFactor
-    ) external pure returns (bool);
-
     function checkBClaimsSignature(bytes calldata groupSignature_, bytes calldata bClaims_)
         external
         view
@@ -90,5 +82,13 @@ interface ISnapshots {
         address validator,
         uint256 lastSnapshotCommittedAt,
         bytes32 groupSignatureHash
-    ) external view returns (bool) ;
+    ) external view returns (bool);
+
+    function mayValidatorSnapshot(
+        uint256 numValidators,
+        uint256 myIdx,
+        uint256 blocksSinceDesperation,
+        bytes32 blsig,
+        uint256 desperationFactor
+    ) external pure returns (bool);
 }
