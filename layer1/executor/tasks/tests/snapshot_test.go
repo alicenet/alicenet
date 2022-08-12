@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/alicenet/alicenet/consensus/objs"
+	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/crypto"
 	"github.com/alicenet/alicenet/crypto/bn256"
 	dkgState "github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
@@ -24,17 +25,20 @@ import (
 	"math/big"
 	"math/rand"
 	"testing"
-	"time"
+)
+
+const (
+	chainID = 1337
 )
 
 func Test_SnapshotTask(t *testing.T) {
-	n := 5
-	fixture, suite := CompleteEthDkgCeremony(t, n)
+	valCount := 5
+	fixture, suite := CompleteEthDkgCeremony(t, valCount)
 	eth := fixture.Client
 	ctx := context.Background()
 
 	bnSigners := make([]*crypto.BNGroupSigner, 0)
-	for idx := 0; idx < n; idx++ {
+	for idx := 0; idx < valCount; idx++ {
 		dkgState, err := dkgState.GetDkgState(suite.DKGStatesDbs[idx])
 		require.Nil(t, err)
 		signer := &crypto.BNGroupSigner{}
@@ -52,7 +56,7 @@ func Test_SnapshotTask(t *testing.T) {
 	// Valid at 1024
 	dkgState, err := dkgState.GetDkgState(suite.DKGStatesDbs[0])
 	require.Nil(t, err)
-	grpSig1024, bClaimsBin1024, err := GenerateSnapshotData(1337, 1024, bnSigners, n, dkgState.MasterPublicKey[:], false)
+	grpSig1024, bClaimsBin1024, err := GenerateSnapshotData(t, chainID, constants.EpochLength, bnSigners, valCount, dkgState.MasterPublicKey[:], false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -69,7 +73,7 @@ func Test_SnapshotTask(t *testing.T) {
 	currentHeight, err := eth.GetCurrentHeight(ctx)
 	assert.Nil(t, err)
 
-	for idx := 0; idx < n; idx++ {
+	for idx := 0; idx < valCount; idx++ {
 		snapshotState := &state.SnapshotState{
 			Account:     eth.GetDefaultAccount(),
 			BlockHeader: bh,
@@ -79,8 +83,8 @@ func Test_SnapshotTask(t *testing.T) {
 		require.Nil(t, err)
 	}
 
-	for idx := 0; idx < n; idx++ {
-		snapshotTask := snapshots.NewSnapshotTask(currentHeight, n, idx)
+	for idx := 0; idx < valCount; idx++ {
+		snapshotTask := snapshots.NewSnapshotTask(currentHeight, valCount, idx)
 
 		err := snapshotTask.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "snapshotTask", "task-id", nil)
 		assert.Nil(t, err)
@@ -120,14 +124,15 @@ func Test_SnapshotTask(t *testing.T) {
 }
 
 func Test_LeaderElectionWithRandomData(t *testing.T) {
+	t.Parallel()
 	valMin := 4
 	valMax := 50
 	fixture := setupEthereum(t, 5)
 	eth := fixture.Client
 	ctx := context.Background()
 	for i := 0; i < 100; i++ {
-		valNum := getRandomNumberInRange(valMin, valMax)
-		valIndex := getRandomNumberInRange(0, valNum)
+		valNum := getRandomNumberInRange(i, valMin, valMax)
+		valIndex := getRandomNumberInRange(i, 0, valNum)
 		hash := []byte(uuid.New().String())
 		keccakedHash := ethCrypto.Keccak256(hash)
 		var hashSlice32 [32]byte
@@ -136,7 +141,7 @@ func Test_LeaderElectionWithRandomData(t *testing.T) {
 		currentHeight, err := eth.GetCurrentHeight(ctx)
 		assert.Nil(t, err)
 
-		blocksToMine := getRandomNumberInRange(1, 1000)
+		blocksToMine := getRandomNumberInRange(i, 1, 1000)
 		advanceToBlock := currentHeight + uint64(blocksToMine)
 		tests.AdvanceTo(eth, advanceToBlock)
 
@@ -145,7 +150,7 @@ func Test_LeaderElectionWithRandomData(t *testing.T) {
 		callOpts, err := eth.GetCallOpts(ctx, owner)
 		assert.Nil(t, err)
 
-		start := getRandomNumberInRange(int(advanceToBlock)-128, int(advanceToBlock))
+		start := getRandomNumberInRange(i, int(advanceToBlock)-128, int(advanceToBlock))
 		desperationFactor, err := fixture.Contracts.EthereumContracts().Snapshots().GetSnapshotDesperationFactor(callOpts)
 		assert.Nil(t, err)
 
@@ -164,6 +169,7 @@ func Test_LeaderElectionWithRandomData(t *testing.T) {
 }
 
 func Test_LeaderElectionWithFixedData(t *testing.T) {
+	t.Parallel()
 	start := 1
 	nValidator := 10
 	desperationDelay := 10
@@ -368,12 +374,12 @@ func Test_LeaderElectionWithFixedData(t *testing.T) {
 	assert.False(t, result)
 }
 
-func getRandomNumberInRange(min, max int) int {
-	rand.Seed(time.Now().UnixNano())
+func getRandomNumberInRange(seed, min, max int) int {
+	rand.Seed(int64(seed))
 	return rand.Intn(max-min) + min
 }
 
-func GenerateSnapshotData(chainID uint32, height uint32, bnSigners []*crypto.BNGroupSigner, n int, mpkI []*big.Int, fakeSig bool) ([]byte, []byte, error) {
+func GenerateSnapshotData(t *testing.T, chainID uint32, height uint32, bnSigners []*crypto.BNGroupSigner, n int, mpkI []*big.Int, fakeSig bool) ([]byte, []byte, error) {
 	bclaims := &objs.BClaims{
 		ChainID:    chainID,
 		Height:     height,
@@ -385,66 +391,50 @@ func GenerateSnapshotData(chainID uint32, height uint32, bnSigners []*crypto.BNG
 	}
 
 	blockHash, err := bclaims.BlockHash()
-	if err != nil {
-		return nil, nil, err
-	}
+	require.Nil(t, err)
 
 	bClaimsBin, err := bclaims.MarshalBinary()
-	if err != nil {
-		return nil, nil, err
-	}
+	require.Nil(t, err)
 
 	grpsig := []byte{}
 	if fakeSig {
 		grpsig, err = bnSigners[0].Sign(blockHash)
-		if err != nil {
-			return nil, nil, err
-		}
+		require.Nil(t, err)
 	} else {
-		grpsig, err = GenerateBlockSignature(bnSigners, n, blockHash, mpkI)
-		if err != nil {
-			return nil, nil, err
-		}
+		grpsig, err = GenerateBlockSignature(t, bnSigners, n, blockHash, mpkI)
+		require.Nil(t, err)
 	}
 
 	bnVal := &crypto.BNGroupValidator{}
 	_, err = bnVal.Validate(blockHash, grpsig)
-	if err != nil {
-		return nil, nil, err
-	}
+	require.Nil(t, err)
 
 	return grpsig, bClaimsBin, nil
 }
 
-func GenerateBlockSignature(bnSigners []*crypto.BNGroupSigner, n int, blockHash []byte, mpkI []*big.Int) ([]byte, error) {
+func GenerateBlockSignature(t *testing.T, bnSigners []*crypto.BNGroupSigner, n int, blockHash []byte, mpkI []*big.Int) ([]byte, error) {
 	sigs := [][]byte{}
 	groupShares := [][]byte{}
 	for idx := 0; idx < n; idx++ {
 		sig, err := bnSigners[idx].Sign(blockHash)
-		if err != nil {
-			return nil, err
-		}
+		require.Nil(t, err)
+
 		fmt.Printf("Sig: %x\n", sig)
 		sigs = append(sigs, sig)
 		pkShare, err := bnSigners[idx].PubkeyShare()
-		if err != nil {
-			return nil, err
-		}
+		require.Nil(t, err)
+
 		groupShares = append(groupShares, pkShare)
 		fmt.Printf("Pkshare: %x\n", pkShare)
 	}
 	s := new(crypto.BNGroupSigner)
 	mpk, err := bn256.MarshalBigIntSlice(mpkI)
 	err = s.SetGroupPubk(mpk)
-	if err != nil {
-		return nil, err
-	}
+	require.Nil(t, err)
 
 	// Finally submit signature
 	grpsig, err := s.Aggregate(sigs, groupShares)
-	if err != nil {
-		return nil, err
-	}
+	require.Nil(t, err)
 	return grpsig, nil
 
 }

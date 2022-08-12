@@ -68,7 +68,7 @@ func LeaderElection(numValidators, myIdx, blocksSinceDesperation, desperationFac
 
 // GetBlocksSinceDesperation calculation
 func GetBlocksSinceDesperation(currentHeight, start, desperationDelay int) int {
-	blocksSinceDesperation := int(currentHeight) - start - desperationDelay
+	blocksSinceDesperation := currentHeight - start - desperationDelay
 	if blocksSinceDesperation < 0 {
 		blocksSinceDesperation = 0
 	}
