@@ -40,7 +40,7 @@ func newTaskExecutor(txWatcher transaction.Watcher, database *db.Database, logge
 	err := taskExecutor.loadState()
 	if err != nil {
 		taskExecutor.logger.Warnf("could not find previous State: %v", err)
-		if err != badger.ErrKeyNotFound {
+		if !errors.Is(err, badger.ErrKeyNotFound) {
 			return nil, err
 		}
 	}
@@ -214,7 +214,7 @@ func (te *TaskExecutor) checkCompletion(ctx context.Context, task tasks.Task, tx
 		select {
 		case <-ctx.Done():
 			return true, ctx.Err()
-		case <-time.After(constants.TaskExecutorPoolingTime):
+		case <-time.After(tasks.ExecutorPoolingTime):
 		}
 
 		if receiptResponse.IsReady() {

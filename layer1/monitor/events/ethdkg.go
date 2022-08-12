@@ -8,7 +8,6 @@ import (
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg"
 	dkgtasks "github.com/alicenet/alicenet/layer1/executor/tasks/dkg"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
-	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/utils"
 	monitorInterfaces "github.com/alicenet/alicenet/layer1/monitor/interfaces"
 	"github.com/alicenet/alicenet/layer1/monitor/objects"
 	"github.com/ethereum/go-ethereum/accounts"
@@ -55,9 +54,9 @@ func ProcessRegistrationOpened(eth layer1.Client, contracts layer1.AllSmartContr
 		"RegistrationEnd":    registrationTask.GetEnd(),
 	}).Info("ETHDKG RegistrationOpened")
 
-	err = state.SaveDkgState(monDB, dkgState)
-	if err != nil {
-		return utils.LogReturnErrorf(logEntry, "Failed to save dkgState on ProcessRegistrationOpened: %v", err)
+	if err = state.SaveDkgState(monDB, dkgState); err != nil {
+		logEntry.Errorf("Failed to save dkgState on ProcessRegistrationOpened: %v", err)
+		return err
 	}
 
 	if !dkgState.IsValidator {
@@ -72,8 +71,7 @@ func ProcessRegistrationOpened(eth layer1.Client, contracts layer1.AllSmartContr
 	}).Info("Scheduling NewRegisterTask")
 
 	ctx := context.Background()
-	_, err = taskHandler.ScheduleTask(ctx, registrationTask, "")
-	if err != nil {
+	if _, err = taskHandler.ScheduleTask(ctx, registrationTask, ""); err != nil {
 		return err
 	}
 
@@ -83,8 +81,7 @@ func ProcessRegistrationOpened(eth layer1.Client, contracts layer1.AllSmartContr
 		"TaskEnd":   disputeMissingRegistrationTask.GetEnd(),
 	}).Info("Scheduling NewDisputeRegistrationTask")
 
-	_, err = taskHandler.ScheduleTask(ctx, disputeMissingRegistrationTask, "")
-	if err != nil {
+	if _, err = taskHandler.ScheduleTask(ctx, disputeMissingRegistrationTask, ""); err != nil {
 		return err
 	}
 
@@ -122,7 +119,8 @@ func ProcessAddressRegistered(contracts layer1.AllSmartContracts, logger *logrus
 
 	dkgState, err := state.GetDkgState(monDB)
 	if err != nil {
-		return utils.LogReturnErrorf(logEntry, "Failed to load dkgState on ProcessAddressRegistered: %v", err)
+		logEntry.Errorf("Failed to load dkgState on ProcessAddressRegistered: %v", err)
+		return err
 	}
 
 	logEntry.WithFields(logrus.Fields{
@@ -137,9 +135,9 @@ func ProcessAddressRegistered(contracts layer1.AllSmartContracts, logger *logrus
 
 	dkgState.OnAddressRegistered(event.Account, int(event.Index.Int64()), event.Nonce.Uint64(), event.PublicKey)
 
-	err = state.SaveDkgState(monDB, dkgState)
-	if err != nil {
-		return utils.LogReturnErrorf(logEntry, "Failed to save dkgState on ProcessAddressRegistered: %v", err)
+	if err = state.SaveDkgState(monDB, dkgState); err != nil {
+		logEntry.Errorf("Failed to save dkgState on ProcessAddressRegistered: %v", err)
+		return err
 	}
 
 	return nil
@@ -154,7 +152,8 @@ func ProcessRegistrationComplete(contracts layer1.AllSmartContracts, logger *log
 
 	dkgState, err := state.GetDkgState(monDB)
 	if err != nil {
-		return utils.LogReturnErrorf(logEntry, "Failed to load dkgState on ProcessRegistrationComplete: %v", err)
+		logEntry.Errorf("Failed to load dkgState on ProcessRegistrationComplete: %v", err)
+		return err
 	}
 
 	if !dkgState.IsValidator {
@@ -173,19 +172,17 @@ func ProcessRegistrationComplete(contracts layer1.AllSmartContracts, logger *log
 
 	shareDistributionTask, disputeMissingShareDistributionTask, disputeBadSharesTasks := UpdateStateOnRegistrationComplete(dkgState, event.BlockNumber.Uint64())
 
-	err = state.SaveDkgState(monDB, dkgState)
-	if err != nil {
-		return utils.LogReturnErrorf(logEntry, "Failed to save dkgState on ProcessRegistrationComplete: %v", err)
+	if err = state.SaveDkgState(monDB, dkgState); err != nil {
+		logEntry.Errorf("Failed to save dkgState on ProcessRegistrationComplete: %v", err)
+		return err
 	}
 
 	//Killing previous tasks
 	ctx := context.Background()
-	_, err = taskHandler.KillTaskByType(ctx, &dkg.RegisterTask{})
-	if err != nil {
+	if _, err = taskHandler.KillTaskByType(ctx, &dkg.RegisterTask{}); err != nil {
 		return err
 	}
-	_, err = taskHandler.KillTaskByType(ctx, &dkg.DisputeMissingRegistrationTask{})
-	if err != nil {
+	if _, err = taskHandler.KillTaskByType(ctx, &dkg.DisputeMissingRegistrationTask{}); err != nil {
 		return err
 	}
 
@@ -195,8 +192,7 @@ func ProcessRegistrationComplete(contracts layer1.AllSmartContracts, logger *log
 		"TaskEnd":   shareDistributionTask.GetEnd(),
 	}).Info("Scheduling NewShareDistributionTask")
 
-	_, err = taskHandler.ScheduleTask(ctx, shareDistributionTask, "")
-	if err != nil {
+	if _, err = taskHandler.ScheduleTask(ctx, shareDistributionTask, ""); err != nil {
 		return err
 	}
 
@@ -206,8 +202,7 @@ func ProcessRegistrationComplete(contracts layer1.AllSmartContracts, logger *log
 		"TaskEnd":   disputeMissingShareDistributionTask.GetEnd(),
 	}).Info("Scheduling NewDisputeParticipantDidNotDistributeSharesTask")
 
-	_, err = taskHandler.ScheduleTask(ctx, disputeMissingShareDistributionTask, "")
-	if err != nil {
+	if _, err = taskHandler.ScheduleTask(ctx, disputeMissingShareDistributionTask, ""); err != nil {
 		return err
 	}
 
@@ -218,8 +213,7 @@ func ProcessRegistrationComplete(contracts layer1.AllSmartContracts, logger *log
 			"TaskEnd":   disputeBadSharesTask.GetEnd(),
 			"Address":   disputeBadSharesTask.Address,
 		}).Info("Scheduling NewDisputeDistributeSharesTask")
-		_, err = taskHandler.ScheduleTask(ctx, disputeBadSharesTask, "")
-		if err != nil {
+		if _, err = taskHandler.ScheduleTask(ctx, disputeBadSharesTask, ""); err != nil {
 			return err
 		}
 	}
@@ -260,17 +254,17 @@ func ProcessShareDistribution(contracts layer1.AllSmartContracts, logger *logrus
 
 	dkgState, err := state.GetDkgState(monDB)
 	if err != nil {
-		return utils.LogReturnErrorf(logEntry, "Failed to save dkgState on ProcessShareDistribution: %v", err)
-	}
-
-	err = dkgState.OnSharesDistributed(logEntry, event.Account, event.EncryptedShares, event.Commitments)
-	if err != nil {
+		logEntry.Errorf("Failed to save dkgState on ProcessShareDistribution: %v", err)
 		return err
 	}
 
-	err = state.SaveDkgState(monDB, dkgState)
-	if err != nil {
-		return utils.LogReturnErrorf(logEntry, "Failed to save dkgState on ProcessShareDistribution: %v", err)
+	if err = dkgState.OnSharesDistributed(logEntry, event.Account, event.EncryptedShares, event.Commitments); err != nil {
+		return err
+	}
+
+	if err = state.SaveDkgState(monDB, dkgState); err != nil {
+		logEntry.Errorf("Failed to save dkgState on ProcessShareDistribution: %v", err)
+		return err
 	}
 
 	return nil
@@ -285,7 +279,8 @@ func ProcessShareDistributionComplete(contracts layer1.AllSmartContracts, logger
 
 	dkgState, err := state.GetDkgState(monDB)
 	if err != nil {
-		return utils.LogReturnErrorf(logEntry, "Failed to load dkgState on ProcessShareDistributionCompleted: %v", err)
+		logEntry.Errorf("Failed to load dkgState on ProcessShareDistributionCompleted: %v", err)
+		return err
 	}
 
 	if !dkgState.IsValidator {
@@ -303,23 +298,20 @@ func ProcessShareDistributionComplete(contracts layer1.AllSmartContracts, logger
 	}).Info("Received share distribution complete")
 
 	disputeShareDistributionTasks, keyShareSubmissionTask, disputeMissingKeySharesTask := UpdateStateOnShareDistributionComplete(dkgState, event.BlockNumber.Uint64())
-	err = state.SaveDkgState(monDB, dkgState)
-	if err != nil {
-		return utils.LogReturnErrorf(logEntry, "Failed to save dkgState on ProcessShareDistributionComplete: %v", err)
+	if err = state.SaveDkgState(monDB, dkgState); err != nil {
+		logEntry.Errorf("Failed to save dkgState on ProcessShareDistributionComplete: %v", err)
+		return err
 	}
 
 	//Killing previous tasks
 	ctx := context.Background()
-	_, err = taskHandler.KillTaskByType(ctx, &dkg.ShareDistributionTask{})
-	if err != nil {
+	if _, err = taskHandler.KillTaskByType(ctx, &dkg.ShareDistributionTask{}); err != nil {
 		return err
 	}
-	_, err = taskHandler.KillTaskByType(ctx, &dkg.DisputeMissingShareDistributionTask{})
-	if err != nil {
+	if _, err = taskHandler.KillTaskByType(ctx, &dkg.DisputeMissingShareDistributionTask{}); err != nil {
 		return err
 	}
-	_, err = taskHandler.KillTaskByType(ctx, &dkg.DisputeShareDistributionTask{})
-	if err != nil {
+	if _, err = taskHandler.KillTaskByType(ctx, &dkg.DisputeShareDistributionTask{}); err != nil {
 		return err
 	}
 
@@ -330,8 +322,7 @@ func ProcessShareDistributionComplete(contracts layer1.AllSmartContracts, logger
 			"TaskEnd":   disputeShareDistributionTask.GetEnd(),
 			"Address":   disputeShareDistributionTask.Address,
 		}).Info("Scheduling NewDisputeShareDistributionTask")
-		_, err = taskHandler.ScheduleTask(ctx, disputeShareDistributionTask, "")
-		if err != nil {
+		if _, err = taskHandler.ScheduleTask(ctx, disputeShareDistributionTask, ""); err != nil {
 			return err
 		}
 	}
@@ -341,8 +332,7 @@ func ProcessShareDistributionComplete(contracts layer1.AllSmartContracts, logger
 		"TaskStart": keyShareSubmissionTask.GetStart(),
 		"TaskEnd":   keyShareSubmissionTask.GetEnd(),
 	}).Info("Scheduling NewKeyShareSubmissionTask")
-	_, err = taskHandler.ScheduleTask(ctx, keyShareSubmissionTask, "")
-	if err != nil {
+	if _, err = taskHandler.ScheduleTask(ctx, keyShareSubmissionTask, ""); err != nil {
 		return err
 	}
 
@@ -351,8 +341,7 @@ func ProcessShareDistributionComplete(contracts layer1.AllSmartContracts, logger
 		"TaskStart": disputeMissingKeySharesTask.GetStart(),
 		"TaskEnd":   disputeMissingKeySharesTask.GetEnd(),
 	}).Info("Scheduling NewDisputeMissingKeySharesTask")
-	_, err = taskHandler.ScheduleTask(ctx, disputeMissingKeySharesTask, "")
-	if err != nil {
+	if _, err = taskHandler.ScheduleTask(ctx, disputeMissingKeySharesTask, ""); err != nil {
 		return err
 	}
 
@@ -396,13 +385,14 @@ func ProcessKeyShareSubmitted(contracts layer1.AllSmartContracts, logger *logrus
 
 	dkgState, err := state.GetDkgState(monDB)
 	if err != nil {
-		return utils.LogReturnErrorf(logEntry, "Failed to load dkgState on ProcessKeyShareSubmitted: %v", err)
+		logEntry.Errorf("Failed to load dkgState on ProcessKeyShareSubmitted: %v", err)
+		return err
 	}
 
 	dkgState.OnKeyShareSubmitted(event.Account, event.KeyShareG1, event.KeyShareG1CorrectnessProof, event.KeyShareG2)
-	err = state.SaveDkgState(monDB, dkgState)
-	if err != nil {
-		return utils.LogReturnErrorf(logEntry, "Failed to save dkgState on ProcessKeyShareSubmitted: %v", err)
+	if err = state.SaveDkgState(monDB, dkgState); err != nil {
+		logEntry.Errorf("Failed to save dkgState on ProcessKeyShareSubmitted: %v", err)
+		return err
 	}
 
 	return nil
@@ -424,7 +414,8 @@ func ProcessKeyShareSubmissionComplete(contracts layer1.AllSmartContracts, logge
 	mpkSubmissionTask := &dkgtasks.MPKSubmissionTask{}
 	dkgState, err := state.GetDkgState(monDB)
 	if err != nil {
-		return utils.LogReturnErrorf(logEntry, "Failed to load dkgState on ProcessKeyShareSubmissionComplete: %v", err)
+		logEntry.Errorf("Failed to load dkgState on ProcessKeyShareSubmissionComplete: %v", err)
+		return err
 	}
 
 	if !dkgState.IsValidator {
@@ -435,19 +426,17 @@ func ProcessKeyShareSubmissionComplete(contracts layer1.AllSmartContracts, logge
 	// schedule MPK submission
 	mpkSubmissionTask = UpdateStateOnKeyShareSubmissionComplete(dkgState, event.BlockNumber.Uint64())
 
-	err = state.SaveDkgState(monDB, dkgState)
-	if err != nil {
-		return utils.LogReturnErrorf(logEntry, "Failed to save dkgState on ProcessKeyShareSubmissionComplete: %v", err)
+	if err = state.SaveDkgState(monDB, dkgState); err != nil {
+		logEntry.Errorf("Failed to save dkgState on ProcessKeyShareSubmissionComplete: %v", err)
+		return err
 	}
 
 	//Killing previous tasks
 	ctx := context.Background()
-	_, err = taskHandler.KillTaskByType(ctx, &dkg.KeyShareSubmissionTask{})
-	if err != nil {
+	if _, err = taskHandler.KillTaskByType(ctx, &dkg.KeyShareSubmissionTask{}); err != nil {
 		return err
 	}
-	_, err = taskHandler.KillTaskByType(ctx, &dkg.DisputeMissingKeySharesTask{})
-	if err != nil {
+	if _, err = taskHandler.KillTaskByType(ctx, &dkg.DisputeMissingKeySharesTask{}); err != nil {
 		return err
 	}
 
@@ -457,8 +446,7 @@ func ProcessKeyShareSubmissionComplete(contracts layer1.AllSmartContracts, logge
 		"TaskStart":   mpkSubmissionTask.GetStart(),
 		"TaskEnd":     mpkSubmissionTask.GetEnd(),
 	}).Info("Scheduling MPKSubmissionTask")
-	_, err = taskHandler.ScheduleTask(ctx, mpkSubmissionTask, "")
-	if err != nil {
+	if _, err = taskHandler.ScheduleTask(ctx, mpkSubmissionTask, ""); err != nil {
 		return err
 	}
 
@@ -494,7 +482,8 @@ func ProcessMPKSet(contracts layer1.AllSmartContracts, logger *logrus.Entry, log
 
 	dkgState, err := state.GetDkgState(monDB)
 	if err != nil {
-		return utils.LogReturnErrorf(logEntry, "Failed to load dkgState on ProcessMPKSet: %v", err)
+		logEntry.Errorf("Failed to load dkgState on ProcessMPKSet: %v", err)
+		return err
 	}
 
 	if !dkgState.IsValidator {
@@ -504,15 +493,14 @@ func ProcessMPKSet(contracts layer1.AllSmartContracts, logger *logrus.Entry, log
 
 	gpkjSubmissionTask, disputeMissingGPKjTask, disputeGPKjTasks := UpdateStateOnMPKSet(dkgState, event.BlockNumber.Uint64(), adminHandler)
 
-	err = state.SaveDkgState(monDB, dkgState)
-	if err != nil {
-		return utils.LogReturnErrorf(logEntry, "Failed to save dkgState on ProcessMPKSet: %v", err)
+	if err = state.SaveDkgState(monDB, dkgState); err != nil {
+		logEntry.Errorf("Failed to save dkgState on ProcessMPKSet: %v", err)
+		return err
 	}
 
 	//Killing previous tasks
 	ctx := context.Background()
-	_, err = taskHandler.KillTaskByType(ctx, &dkg.MPKSubmissionTask{})
-	if err != nil {
+	if _, err = taskHandler.KillTaskByType(ctx, &dkg.MPKSubmissionTask{}); err != nil {
 		return err
 	}
 
@@ -522,8 +510,7 @@ func ProcessMPKSet(contracts layer1.AllSmartContracts, logger *logrus.Entry, log
 		"TaskStart":   gpkjSubmissionTask.GetStart(),
 		"TaskEnd":     gpkjSubmissionTask.GetEnd(),
 	}).Info("Scheduling GPKJSubmissionTask")
-	_, err = taskHandler.ScheduleTask(ctx, gpkjSubmissionTask, "")
-	if err != nil {
+	if _, err = taskHandler.ScheduleTask(ctx, gpkjSubmissionTask, ""); err != nil {
 		return err
 	}
 
@@ -533,8 +520,7 @@ func ProcessMPKSet(contracts layer1.AllSmartContracts, logger *logrus.Entry, log
 		"TaskStart":   gpkjSubmissionTask.GetStart(),
 		"TaskEnd":     gpkjSubmissionTask.GetEnd(),
 	}).Info("Scheduling DisputeMissingGPKjTask")
-	_, err = taskHandler.ScheduleTask(ctx, disputeMissingGPKjTask, "")
-	if err != nil {
+	if _, err = taskHandler.ScheduleTask(ctx, disputeMissingGPKjTask, ""); err != nil {
 		return err
 	}
 
@@ -545,8 +531,7 @@ func ProcessMPKSet(contracts layer1.AllSmartContracts, logger *logrus.Entry, log
 			"TaskStart":   disputeGPKjTask.GetStart(),
 			"TaskEnd":     disputeGPKjTask.GetEnd(),
 		}).Info("Scheduling DisputeGPKjTask")
-		_, err = taskHandler.ScheduleTask(ctx, disputeGPKjTask, "")
-		if err != nil {
+		if _, err = taskHandler.ScheduleTask(ctx, disputeGPKjTask, ""); err != nil {
 			return err
 		}
 	}
@@ -582,7 +567,8 @@ func ProcessGPKJSubmissionComplete(contracts layer1.AllSmartContracts, logger *l
 	completionTask := &dkgtasks.CompletionTask{}
 	dkgState, err := state.GetDkgState(monDB)
 	if err != nil {
-		return utils.LogReturnErrorf(logEntry, "Failed to load dkgState on ProcessGPKJSubmissionComplete: %v", err)
+		logEntry.Errorf("Failed to load dkgState on ProcessGPKJSubmissionComplete: %v", err)
+		return err
 	}
 
 	if !dkgState.IsValidator {
@@ -592,23 +578,20 @@ func ProcessGPKJSubmissionComplete(contracts layer1.AllSmartContracts, logger *l
 
 	disputeGPKjTasks, completionTask := UpdateStateOnGPKJSubmissionComplete(dkgState, event.BlockNumber.Uint64())
 
-	err = state.SaveDkgState(monDB, dkgState)
-	if err != nil {
-		return utils.LogReturnErrorf(logEntry, "Failed to save dkgState on ProcessGPKJSubmissionComplete: %v", err)
+	if err = state.SaveDkgState(monDB, dkgState); err != nil {
+		logEntry.Errorf("Failed to save dkgState on ProcessGPKJSubmissionComplete: %v", err)
+		return err
 	}
 
 	//Killing previous tasks
 	ctx := context.Background()
-	_, err = taskHandler.KillTaskByType(ctx, &dkg.GPKjSubmissionTask{})
-	if err != nil {
+	if _, err = taskHandler.KillTaskByType(ctx, &dkg.GPKjSubmissionTask{}); err != nil {
 		return err
 	}
-	_, err = taskHandler.KillTaskByType(ctx, &dkg.DisputeMissingGPKjTask{})
-	if err != nil {
+	if _, err = taskHandler.KillTaskByType(ctx, &dkg.DisputeMissingGPKjTask{}); err != nil {
 		return err
 	}
-	_, err = taskHandler.KillTaskByType(ctx, &dkg.DisputeGPKjTask{})
-	if err != nil {
+	if _, err = taskHandler.KillTaskByType(ctx, &dkg.DisputeGPKjTask{}); err != nil {
 		return err
 	}
 
@@ -620,8 +603,7 @@ func ProcessGPKJSubmissionComplete(contracts layer1.AllSmartContracts, logger *l
 			"TaskEnd":     disputeGPKjTask.GetEnd(),
 			"Address":     disputeGPKjTask.Address,
 		}).Info("Scheduling NewGPKJDisputeTask")
-		_, err = taskHandler.ScheduleTask(ctx, disputeGPKjTask, "")
-		if err != nil {
+		if _, err = taskHandler.ScheduleTask(ctx, disputeGPKjTask, ""); err != nil {
 			return err
 		}
 	}
@@ -632,8 +614,7 @@ func ProcessGPKJSubmissionComplete(contracts layer1.AllSmartContracts, logger *l
 		"TaskStart":   completionTask.GetStart(),
 		"TaskEnd":     completionTask.GetEnd(),
 	}).Info("Scheduling NewCompletionTask")
-	_, err = taskHandler.ScheduleTask(ctx, completionTask, "")
-	if err != nil {
+	if _, err = taskHandler.ScheduleTask(ctx, completionTask, ""); err != nil {
 		return err
 	}
 

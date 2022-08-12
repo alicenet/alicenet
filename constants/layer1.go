@@ -2,25 +2,6 @@ package constants
 
 import "time"
 
-const (
-	// How much time we are going to poll to check if the task is completed
-	TaskExecutorPoolingTime time.Duration = 7 * time.Second
-)
-
-const (
-	// The size of the buffered channels used by the TaskManager
-	TaskManagerBufferSize uint64 = 1024
-	// Timeout in seconds for the network interactions
-	TaskManagerNetworkTimeout time.Duration = 1 * time.Second
-	// Time in which the scheduler it's going to enter in the main loop to spawn tasks
-	TaskManagerProcessingTime time.Duration = 3 * time.Second
-	// how many blocks after we sent a kill sign to a task to consider it
-	// unresponsive and removing from the scheduler mapping
-	TaskManagerHeightToleranceBeforeRemoving uint64 = 50
-	// how many block we wait before removing a response from the TaskManager
-	TaskManagerResponseToleranceBeforeRemoving uint64 = 50
-)
-
 // Monitor constants.
 const (
 	// Number of attempts that we are going to retry a certain logic in the monitoring service.

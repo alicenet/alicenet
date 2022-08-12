@@ -12,9 +12,9 @@ import (
 )
 
 type BaseTask struct {
-	sync.RWMutex
+	mutex sync.RWMutex
 	// Unique Id of the task
-	Id string `json:"id"`
+	ID string `json:"id"`
 	// Task name/type
 	Name string `json:"name"`
 	// If this task can be executed in parallel with other tasks of the same type/name
@@ -55,13 +55,13 @@ func NewBaseTask(start uint64, end uint64, allowMultiExecution bool, subscribeOp
 // by the task scheduler during task spawn as separated go routine. This
 // function all the parameters for task execution and control by the scheduler.
 func (bt *BaseTask) Initialize(ctx context.Context, cancelFunc context.CancelFunc, database *db.Database, logger *logrus.Entry, eth layer1.Client, contracts layer1.AllSmartContracts, name string, id string, start uint64, end uint64, allowMultiExecution bool, subscribeOptions *transaction.SubscribeOptions, taskResponseChan InternalTaskResponseChan) error {
-	bt.Lock()
-	defer bt.Unlock()
+	bt.mutex.Lock()
+	defer bt.mutex.Unlock()
 	if bt.isInitialized {
 		return errors.New("trying to initialize task twice")
 	}
 
-	bt.Id = id
+	bt.ID = id
 	bt.Name = name
 	bt.Start = start
 	bt.End = end
@@ -87,46 +87,46 @@ func (bt *BaseTask) Initialize(ctx context.Context, cancelFunc context.CancelFun
 
 // GetId gets the task unique ID.
 func (bt *BaseTask) GetId() string {
-	bt.RLock()
-	defer bt.RUnlock()
-	return bt.Id
+	bt.mutex.RLock()
+	defer bt.mutex.RUnlock()
+	return bt.ID
 }
 
 // GetStart gets the start date of a task. Returns 0 if a task does not have a
 // start date (started immediately).
 func (bt *BaseTask) GetStart() uint64 {
-	bt.RLock()
-	defer bt.RUnlock()
+	bt.mutex.RLock()
+	defer bt.mutex.RUnlock()
 	return bt.Start
 }
 
 // GetEnd gets the end date in blocks of a task. In case 0, the task does not
 // have an end block.
 func (bt *BaseTask) GetEnd() uint64 {
-	bt.RLock()
-	defer bt.RUnlock()
+	bt.mutex.RLock()
+	defer bt.mutex.RUnlock()
 	return bt.End
 }
 
 // GetName get the name of the task.
 func (bt *BaseTask) GetName() string {
-	bt.RLock()
-	defer bt.RUnlock()
+	bt.mutex.RLock()
+	defer bt.mutex.RUnlock()
 	return bt.Name
 }
 
 // GetAllowMultiExecution returns if a task type allows multiple execution.
 func (bt *BaseTask) GetAllowMultiExecution() bool {
-	bt.RLock()
-	defer bt.RUnlock()
+	bt.mutex.RLock()
+	defer bt.mutex.RUnlock()
 	return bt.AllowMultiExecution
 }
 
 // GetSubscribeOptions gets the transactionWatcher subscribeOptions specific for
 // a task.
 func (bt *BaseTask) GetSubscribeOptions() *transaction.SubscribeOptions {
-	bt.RLock()
-	defer bt.RUnlock()
+	bt.mutex.RLock()
+	defer bt.mutex.RUnlock()
 
 	if bt.SubscribeOptions == nil {
 		return nil
@@ -137,52 +137,52 @@ func (bt *BaseTask) GetSubscribeOptions() *transaction.SubscribeOptions {
 
 // GetCtx get the context to be used by a task.
 func (bt *BaseTask) GetCtx() context.Context {
-	bt.RLock()
-	defer bt.RUnlock()
+	bt.mutex.RLock()
+	defer bt.mutex.RUnlock()
 	return bt.ctx
 }
 
 // WasKilled returns true if the task was killed otherwise false.
 func (bt *BaseTask) WasKilled() bool {
-	bt.RLock()
-	defer bt.RUnlock()
+	bt.mutex.RLock()
+	defer bt.mutex.RUnlock()
 	return bt.wasKilled
 }
 
 // GetClient returns the layer1 client implemented by the task.
 func (bt *BaseTask) GetClient() layer1.Client {
-	bt.RLock()
-	defer bt.RUnlock()
+	bt.mutex.RLock()
+	defer bt.mutex.RUnlock()
 	return bt.client
 }
 
 // GetContractsHandler returns the handler that has access to all different
 // layer1 smart contracts.
 func (bt *BaseTask) GetContractsHandler() layer1.AllSmartContracts {
-	bt.RLock()
-	defer bt.RUnlock()
+	bt.mutex.RLock()
+	defer bt.mutex.RUnlock()
 	return bt.contracts
 }
 
 // GetLogger returns the task logger.
 func (bt *BaseTask) GetLogger() *logrus.Entry {
-	bt.RLock()
-	defer bt.RUnlock()
+	bt.mutex.RLock()
+	defer bt.mutex.RUnlock()
 	return bt.logger
 }
 
 // GetDB returns the database where the task can save and load its state.
 func (bt *BaseTask) GetDB() *db.Database {
-	bt.RLock()
-	defer bt.RUnlock()
+	bt.mutex.RLock()
+	defer bt.mutex.RUnlock()
 	return bt.database
 }
 
 // Close closes a running task. It set a bool flag and call the cancelFunc in
 // case it's different from nil.
 func (bt *BaseTask) Close() {
-	bt.Lock()
-	defer bt.Unlock()
+	bt.mutex.Lock()
+	defer bt.mutex.Unlock()
 	if bt.cancelFunc != nil {
 		bt.cancelFunc()
 	}
@@ -191,10 +191,10 @@ func (bt *BaseTask) Close() {
 
 // Finish executes the cleanup logic once a task finishes.
 func (bt *BaseTask) Finish(err error) {
-	bt.Lock()
-	defer bt.Unlock()
+	bt.mutex.Lock()
+	defer bt.mutex.Unlock()
 	if err != nil {
-		if bt.wasKilled {
+		if errors.Is(err, context.Canceled) {
 			bt.logger.WithError(err).Debug("cancelling task execution, task was killed")
 		} else {
 			bt.logger.WithError(err).Error("got an error when executing task")
@@ -203,6 +203,14 @@ func (bt *BaseTask) Finish(err error) {
 		bt.logger.Info("task is done")
 	}
 	if bt.taskResponseChan != nil {
-		bt.taskResponseChan.Add(bt.Id, err)
+		bt.taskResponseChan.Add(bt.ID, err)
 	}
+}
+
+func (bt *BaseTask) Lock() {
+	bt.mutex.Lock()
+}
+
+func (bt *BaseTask) Unlock() {
+	bt.mutex.Unlock()
 }

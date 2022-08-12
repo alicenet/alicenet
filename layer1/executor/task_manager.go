@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/alicenet/alicenet/consensus/db"
-	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/constants/dbprefix"
 	"github.com/alicenet/alicenet/layer1"
 	"github.com/alicenet/alicenet/layer1/executor/marshaller"
@@ -66,7 +65,7 @@ func newTaskManager(mainCtx context.Context, eth layer1.Client, contracts layer1
 	err := taskManager.recoverState()
 	if err != nil {
 		taskManager.logger.Warnf("could not find previous State: %v", err)
-		if err != badger.ErrKeyNotFound {
+		if !errors.Is(err, badger.ErrKeyNotFound) {
 			return nil, err
 		}
 	}
@@ -97,14 +96,14 @@ func (tm *TaskManager) start() {
 func (tm *TaskManager) close() {
 	tm.closeOnce.Do(func() {
 		tm.logger.Warn("Closing task manager")
-		tm.responseChan.close()
 		close(tm.closeChan)
+		tm.responseChan.close()
 	})
 }
 
 // eventLoop where the interaction with all the pieces is developed.
 func (tm *TaskManager) eventLoop() {
-	processingTime := time.After(constants.TaskManagerProcessingTime)
+	processingTime := time.After(tasks.ManagerProcessingTime)
 
 	for {
 		select {
@@ -158,7 +157,12 @@ func (tm *TaskManager) eventLoop() {
 				tm.logger.WithError(err).Errorf("Failed to persist state %d on task request", tm.LastHeightSeen)
 			}
 
-		case taskResponse := <-tm.responseChan.erChan:
+		case taskResponse, ok := <-tm.responseChan.erChan:
+			if !ok {
+				tm.logger.Warnf("Received a taskResponse on a closed channel %v", taskResponse)
+				return
+			}
+
 			tm.logger.Trace("received a task response")
 			err := tm.processTaskResponse(tm.mainCtx, taskResponse)
 			if err != nil {
@@ -170,12 +174,12 @@ func (tm *TaskManager) eventLoop() {
 			}
 		case <-processingTime:
 			tm.logger.Trace("processing latest height")
-			networkCtx, networkCf := context.WithTimeout(tm.mainCtx, constants.TaskManagerNetworkTimeout)
+			networkCtx, networkCf := context.WithTimeout(tm.mainCtx, tasks.ManagerNetworkTimeout)
 			height, err := tm.eth.GetFinalizedHeight(networkCtx)
 			networkCf()
 			if err != nil {
 				tm.logger.WithError(err).Debug("Failed to retrieve the latest height from eth node")
-				processingTime = time.After(constants.TaskManagerProcessingTime)
+				processingTime = time.After(tasks.ManagerProcessingTime)
 				continue
 			}
 			tm.LastHeightSeen = height
@@ -204,7 +208,7 @@ func (tm *TaskManager) eventLoop() {
 			if err != nil {
 				tm.logger.WithError(err).Errorf("Failed to persist after kill tasks state %d", tm.LastHeightSeen)
 			}
-			processingTime = time.After(constants.TaskManagerProcessingTime)
+			processingTime = time.After(tasks.ManagerProcessingTime)
 		}
 	}
 }
@@ -227,7 +231,7 @@ func (tm *TaskManager) schedule(ctx context.Context, task tasks.Task, id string)
 			return nil, resp.HandlerResponse
 		}
 
-		taskName, _, present := tm.marshaller.GetNameTypeIsPresent(task)
+		taskName, _, present := tm.marshaller.NameTypeIsPresent(task)
 		if !present {
 			return ErrTaskTypeNotInRegistry, nil
 		}
@@ -346,7 +350,7 @@ func (tm *TaskManager) killTaskByType(ctx context.Context, task tasks.Task) erro
 			return ErrTaskIsNil
 		}
 
-		taskName, _, present := tm.marshaller.GetNameTypeIsPresent(task)
+		taskName, _, present := tm.marshaller.NameTypeIsPresent(task)
 		if !present {
 			return ErrTaskTypeNotInRegistry
 		}
@@ -433,7 +437,7 @@ func (tm *TaskManager) killTask(task ManagerRequestInfo) error {
 // cleanResponses after constants.TaskManagerResponseToleranceBeforeRemoving amount of blocks.
 func (tm *TaskManager) cleanResponses() {
 	for id, resp := range tm.Responses {
-		if resp.ReceivedOnBlock != 0 && resp.ReceivedOnBlock+constants.TaskManagerResponseToleranceBeforeRemoving <= tm.LastHeightSeen {
+		if resp.ReceivedOnBlock != 0 && resp.ReceivedOnBlock+tasks.ManagerResponseToleranceBeforeRemoving <= tm.LastHeightSeen {
 			delete(tm.Responses, id)
 		}
 	}
@@ -446,7 +450,7 @@ func (tm *TaskManager) findTasks() ([]ManagerRequestInfo, []ManagerRequestInfo) 
 	unresponsive := make([]ManagerRequestInfo, 0)
 
 	for _, taskRequest := range tm.Schedule {
-		if taskRequest.InternalState == Killed && taskRequest.killedAt+constants.TaskManagerHeightToleranceBeforeRemoving <= tm.LastHeightSeen {
+		if taskRequest.InternalState == Killed && taskRequest.killedAt+tasks.ManagerHeightToleranceBeforeRemoving <= tm.LastHeightSeen {
 			tm.logger.Errorf("marking task as unresponsive %s", taskRequest.Id)
 			unresponsive = append(unresponsive, taskRequest)
 			continue
