@@ -6,7 +6,7 @@ import "contracts/interfaces/IETHDKG.sol";
 import "contracts/utils/ImmutableAuth.sol";
 import "contracts/libraries/snapshots/SnapshotRingBuffer.sol";
 
-abstract contract SnapshotsStorage is ImmutableETHDKG, ImmutableValidatorPool, SnapshotRingBuffer {
+contract SnapshotsStorageMock is ImmutableETHDKG, ImmutableValidatorPool, SnapshotRingBuffer {
     uint256 internal immutable _epochLength;
 
     uint256 internal immutable _chainId;
@@ -37,6 +37,10 @@ abstract contract SnapshotsStorage is ImmutableETHDKG, ImmutableValidatorPool, S
         _chainId = chainId_;
         _epochLength = epochLength_;
     }
+
+    function setSnapshot() public {}
+
+    function setEpoch() public {}
 
     function _getEpochFromHeight(uint32 height_) internal view override returns (uint32) {
         if (height_ <= _epochLength) {

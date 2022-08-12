@@ -14,4 +14,7 @@ library SnapshotsErrors {
     error InvalidChainId(uint256 chainId);
     error MigrationNotAllowedAtCurrentEpoch();
     error MigrationInputDataMismatch(uint256 groupSignatureLength, uint256 bClaimsLength);
+    error SnapshotsNotInBuffer(uint256 epoch);
+    error InvalidRingBufferBlockHeight(uint256 newBlockHeight, uint256 oldBlockHeight);
+    error EpochMustBeNonZero();
 }
