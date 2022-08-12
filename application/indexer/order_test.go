@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"testing"
 
+	"github.com/dgraph-io/badger/v2"
+
 	"github.com/alicenet/alicenet/crypto"
 	"github.com/alicenet/alicenet/internal/testing/environment"
-	"github.com/dgraph-io/badger/v2"
 )
 
 func makeInsertationOrderIndexer() *InsertionOrderIndexer {

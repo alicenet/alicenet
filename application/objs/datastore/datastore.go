@@ -2,6 +2,7 @@ package datastore
 
 import (
 	capnp "github.com/MadBase/go-capnproto2/v2"
+
 	mdefs "github.com/alicenet/alicenet/application/objs/capn"
 	"github.com/alicenet/alicenet/errorz"
 	"github.com/alicenet/alicenet/utils"
@@ -39,7 +40,7 @@ func Unmarshal(data []byte) (mdefs.DataStore, error) {
 	return obj, nil
 }
 
-// Validate will validate the DataStore object
+// Validate will validate the DataStore object.
 func Validate(v mdefs.DataStore) error {
 	if !v.HasDSLinker() {
 		return errorz.ErrInvalid{}.New("datastore capn obj does not have DSLinker")

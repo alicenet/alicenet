@@ -22,13 +22,15 @@ describe("Testing AToken", async () => {
     describe("Methods with onlyFactory modifier", async () => {
       describe("Methods with onlyATokenMinter modifier", async () => {
         it("Should not mint when called by external address not identified as minter", async function () {
-          await expect(
-            fixture.aToken.externalMint(user.address, amount)
-          ).to.be.revertedWith("2013");
+          await expect(fixture.aToken.externalMint(user.address, amount))
+            .to.be.revertedWithCustomError(fixture.aToken, `OnlyATokenMinter`)
+            .withArgs(admin.address, fixture.aTokenMinter.address);
 
           await expect(
             fixture.aToken.connect(admin).externalMint(user.address, amount)
-          ).to.be.revertedWith("2013");
+          )
+            .to.be.revertedWithCustomError(fixture.aToken, `OnlyATokenMinter`)
+            .withArgs(admin.address, fixture.aTokenMinter.address);
         });
       });
 
@@ -44,9 +46,9 @@ describe("Testing AToken", async () => {
         });
 
         it("Should not mint when called by external identified as minter not impersonating factory", async function () {
-          await expect(
-            fixture.aTokenMinter.mint(user.address, amount)
-          ).to.be.rejectedWith("2000");
+          await expect(fixture.aTokenMinter.mint(user.address, amount))
+            .to.be.revertedWithCustomError(fixture.bToken, `OnlyFactory`)
+            .withArgs(admin.address, fixture.factory.address);
         });
       });
     });

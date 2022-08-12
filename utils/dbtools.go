@@ -16,7 +16,7 @@ func GetValue(txn *badger.Txn, key []byte) ([]byte, error) {
 }
 
 // SetValue sets the value for key in the database that is safe for use.
-func SetValue(txn *badger.Txn, key []byte, value []byte) error {
+func SetValue(txn *badger.Txn, key, value []byte) error {
 	item, err := txn.Get(key)
 	if err != nil {
 		if err != badger.ErrKeyNotFound {
@@ -45,7 +45,7 @@ func DeleteValue(txn *badger.Txn, key []byte) error {
 	return txn.Delete(key)
 }
 
-// GetInt64 will retrieve an int64 value in the database
+// GetInt64 will retrieve an int64 value in the database.
 func GetInt64(txn *badger.Txn, key []byte) (int64, error) {
 	v, err := GetValue(txn, key)
 	if err != nil {
@@ -54,7 +54,7 @@ func GetInt64(txn *badger.Txn, key []byte) (int64, error) {
 	return UnmarshalInt64(v)
 }
 
-// SetInt64 will set an int64 value in the database
+// SetInt64 will set an int64 value in the database.
 func SetInt64(txn *badger.Txn, key []byte, v int64) error {
 	vv := MarshalInt64(v)
 	return SetValue(txn, key, vv)

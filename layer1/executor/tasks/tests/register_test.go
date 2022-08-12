@@ -9,14 +9,15 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
 	"github.com/alicenet/alicenet/layer1/monitor/events"
 	"github.com/alicenet/alicenet/layer1/tests"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestRegisterTask_Group_1_Task(t *testing.T) {
@@ -180,7 +181,6 @@ func TestRegisterTask_Group_1_Good2(t *testing.T) {
 		if p.Phase != uint8(state.RegistrationOpen) {
 			t.Fatal("Invalid participant phase")
 		}
-
 	}
 }
 
@@ -304,7 +304,7 @@ func TestRegisterTask_Group_2_Bad2(t *testing.T) {
 	assert.NotNil(t, err)
 }
 
-// The initialization should fail because we dont allow less than 4 validators
+// The initialization should fail because we dont allow less than 4 validators.
 func TestRegisterTask_Group_2_Bad4(t *testing.T) {
 	n := 3
 	fixture := setupEthereum(t, n)
@@ -387,7 +387,7 @@ func TestRegisterTask_Group_2_Bad5(t *testing.T) {
 	assert.NotNil(t, err)
 }
 
-// ShouldExecute() return false because the registration was successful
+// ShouldExecute() return false because the registration was successful.
 func TestRegisterTask_Group_3_ShouldRetryFalse(t *testing.T) {
 	n := 5
 	fixture := setupEthereum(t, n)
@@ -469,7 +469,7 @@ func TestRegisterTask_Group_3_ShouldRetryFalse(t *testing.T) {
 	assert.False(t, retry)
 }
 
-// ShouldExecute() return true because we din't wait for receipt or the registration failed
+// ShouldExecute() return true because we din't wait for receipt or the registration failed.
 func TestRegisterTask_Group_3_ShouldRetryTrue(t *testing.T) {
 	n := 5
 	fixture := setupEthereum(t, n)

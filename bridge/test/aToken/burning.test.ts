@@ -21,13 +21,15 @@ describe("Testing AToken", async () => {
   describe("Testing burning operation", async () => {
     describe("Methods with onlyATokenBurner modifier", async () => {
       it("Should not burn when called by external address not identified as burner", async function () {
-        await expect(
-          fixture.aToken.externalBurn(user.address, amount)
-        ).to.be.revertedWith("2012");
+        await expect(fixture.aToken.externalBurn(user.address, amount))
+          .to.be.revertedWithCustomError(fixture.aToken, `OnlyATokenBurner`)
+          .withArgs(admin.address, fixture.aTokenBurner.address);
 
         await expect(
           fixture.aToken.connect(admin).externalBurn(user.address, amount)
-        ).to.be.revertedWith("2012");
+        )
+          .to.be.revertedWithCustomError(fixture.aToken, `OnlyATokenBurner`)
+          .withArgs(admin.address, fixture.aTokenBurner.address);
       });
     });
     describe("Business methods with onlyFactory modifier", async () => {
@@ -56,9 +58,9 @@ describe("Testing AToken", async () => {
         await fixture.aToken.connect(user).migrate(amount);
         expectedState = await getState(fixture);
         // burn
-        await expect(
-          fixture.aTokenBurner.burn(user.address, amount)
-        ).to.be.revertedWith("2000");
+        await expect(fixture.aTokenBurner.burn(user.address, amount))
+          .to.be.revertedWithCustomError(fixture.aTokenBurner, `OnlyFactory`)
+          .withArgs(admin.address, fixture.factory.address);
       });
     });
   });

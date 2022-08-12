@@ -523,7 +523,7 @@ func TestDeposit(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	//ds.DSLinker.DSPreImage.Deposit = ds.DSLinker.DSPreImage.Deposit - 1
+	// ds.DSLinker.DSPreImage.Deposit = ds.DSLinker.DSPreImage.Deposit - 1
 	ds.DSLinker.DSPreImage.Deposit = badValue1
 	err = ds.DSLinker.DSPreImage.ValidateDeposit()
 	if err == nil {
@@ -535,7 +535,7 @@ func TestDeposit(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	//ds.DSLinker.DSPreImage.Deposit = ds.DSLinker.DSPreImage.Deposit + 2
+	// ds.DSLinker.DSPreImage.Deposit = ds.DSLinker.DSPreImage.Deposit + 2
 	ds.DSLinker.DSPreImage.Deposit = badValue2
 	err = ds.DSLinker.DSPreImage.ValidateDeposit()
 	if err == nil {

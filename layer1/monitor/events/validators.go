@@ -7,6 +7,10 @@ import (
 	"math/big"
 	"strings"
 
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/sirupsen/logrus"
+
 	"github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/consensus/objs"
 	"github.com/alicenet/alicenet/crypto/bn256"
@@ -15,15 +19,12 @@ import (
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/utils"
 	monInterfaces "github.com/alicenet/alicenet/layer1/monitor/interfaces"
 	"github.com/alicenet/alicenet/layer1/monitor/objects"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/sirupsen/logrus"
 )
 
-// ProcessValidatorSetCompleted handles receiving validatorSet changes
+// ProcessValidatorSetCompleted handles receiving validatorSet changes.
 func ProcessValidatorSetCompleted(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, monitorState *objects.MonitorState, log types.Log, monDB *db.Database,
-	adminHandler monInterfaces.AdminHandler) error {
-
+	adminHandler monInterfaces.AdminHandler,
+) error {
 	c := contracts.EthereumContracts()
 
 	monitorState.Lock()
@@ -88,9 +89,8 @@ func ProcessValidatorSetCompleted(eth layer1.Client, contracts layer1.AllSmartCo
 	return nil
 }
 
-// ProcessValidatorMemberAdded handles receiving keys for a specific validator
+// ProcessValidatorMemberAdded handles receiving keys for a specific validator.
 func ProcessValidatorMemberAdded(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, monitorState *objects.MonitorState, log types.Log, monDB *db.Database) error {
-
 	monitorState.Lock()
 	defer monitorState.Unlock()
 
@@ -127,7 +127,6 @@ func ProcessValidatorMemberAdded(eth layer1.Client, contracts layer1.AllSmartCon
 			dkgState.Participants[event.Account].GPKj[1].Cmp(v.SharedKey[1]) != 0 ||
 			dkgState.Participants[event.Account].GPKj[2].Cmp(v.SharedKey[2]) != 0 ||
 			dkgState.Participants[event.Account].GPKj[3].Cmp(v.SharedKey[3]) != 0) {
-
 		return utils.LogReturnErrorf(logger, "my own GPKj doesn't match event! mine: %v | event: %v", dkgState.Participants[event.Account].GPKj, v.SharedKey)
 	}
 
@@ -147,7 +146,8 @@ func ProcessValidatorMemberAdded(eth layer1.Client, contracts layer1.AllSmartCon
 	monitorState.Validators[epoch][arrayIndex] = v
 	ptrGroupShare := [4]*big.Int{
 		v.SharedKey[0], v.SharedKey[1],
-		v.SharedKey[2], v.SharedKey[3]}
+		v.SharedKey[2], v.SharedKey[3],
+	}
 	groupShare, err := bn256.MarshalG2Big(ptrGroupShare)
 	if err != nil {
 		logger.Errorf("Failed to marshal groupShare: %v", err)
@@ -163,7 +163,7 @@ func ProcessValidatorMemberAdded(eth layer1.Client, contracts layer1.AllSmartCon
 	return nil
 }
 
-// ProcessValidatorJoined handles the Minor Slash event
+// ProcessValidatorJoined handles the Minor Slash event.
 func ProcessValidatorJoined(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
 	event, err := contracts.EthereumContracts().ValidatorPool().ParseValidatorJoined(log)
 	if err != nil {
@@ -181,7 +181,7 @@ func ProcessValidatorJoined(eth layer1.Client, contracts layer1.AllSmartContract
 	return nil
 }
 
-// ProcessValidatorLeft handles the Minor Slash event
+// ProcessValidatorLeft handles the Minor Slash event.
 func ProcessValidatorLeft(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
 	event, err := contracts.EthereumContracts().ValidatorPool().ParseValidatorLeft(log)
 	if err != nil {
@@ -201,7 +201,7 @@ func ProcessValidatorLeft(eth layer1.Client, contracts layer1.AllSmartContracts,
 	return nil
 }
 
-// ProcessValidatorMajorSlashed handles the Major Slash event
+// ProcessValidatorMajorSlashed handles the Major Slash event.
 func ProcessValidatorMajorSlashed(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
 	event, err := contracts.EthereumContracts().ValidatorPool().ParseValidatorMajorSlashed(log)
 	if err != nil {
@@ -220,9 +220,8 @@ func ProcessValidatorMajorSlashed(eth layer1.Client, contracts layer1.AllSmartCo
 	return nil
 }
 
-// ProcessValidatorMinorSlashed handles the Minor Slash event
+// ProcessValidatorMinorSlashed handles the Minor Slash event.
 func ProcessValidatorMinorSlashed(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
-
 	event, err := contracts.EthereumContracts().ValidatorPool().ParseValidatorMinorSlashed(log)
 	if err != nil {
 		return err
@@ -263,7 +262,6 @@ func deletePotentialValidator(state *objects.MonitorState, account common.Addres
 }
 
 func checkValidatorSet(monitorState *objects.MonitorState, epoch uint32, logger *logrus.Entry, monDB *db.Database, adminHandler monInterfaces.AdminHandler) error {
-
 	logger = logger.WithField("Epoch", epoch)
 
 	// Make sure we've received a validator set event
@@ -305,13 +303,15 @@ func checkValidatorSet(monitorState *objects.MonitorState, epoch uint32, logger 
 		vs := &objs.ValidatorSet{
 			GroupKey:   groupKey,
 			Validators: make([]*objs.Validator, validatorSet.ValidatorCount),
-			NotBefore:  validatorSet.NotBeforeAliceNetHeight}
+			NotBefore:  validatorSet.NotBeforeAliceNetHeight,
+		}
 		// Loop over the Validators
 		if receivedCount != 0 {
 			for _, validator := range validators {
 				ptrGroupShare := [4]*big.Int{
 					validator.SharedKey[0], validator.SharedKey[1],
-					validator.SharedKey[2], validator.SharedKey[3]}
+					validator.SharedKey[2], validator.SharedKey[3],
+				}
 				groupShare, err := bn256.MarshalG2Big(ptrGroupShare)
 				if err != nil {
 					logger.Errorf("Failed to marshal groupShare: %v", err)
@@ -319,7 +319,8 @@ func checkValidatorSet(monitorState *objects.MonitorState, epoch uint32, logger 
 				}
 				v := &objs.Validator{
 					VAddr:      validator.Account.Bytes(),
-					GroupShare: groupShare}
+					GroupShare: groupShare,
+				}
 				vs.Validators[validator.Index-1] = v
 				logger.WithFields(logrus.Fields{
 					"Index":      validator.Index,

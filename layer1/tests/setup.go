@@ -11,13 +11,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/alicenet/alicenet/consensus/db"
-	"github.com/alicenet/alicenet/layer1"
-	"github.com/alicenet/alicenet/layer1/ethereum"
-	"github.com/alicenet/alicenet/layer1/handlers"
-	"github.com/alicenet/alicenet/layer1/transaction"
-	"github.com/alicenet/alicenet/test/mocks"
-	"github.com/alicenet/alicenet/utils"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/common"
@@ -25,9 +18,17 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/alicenet/alicenet/consensus/db"
+	"github.com/alicenet/alicenet/layer1"
+	"github.com/alicenet/alicenet/layer1/ethereum"
+	"github.com/alicenet/alicenet/layer1/handlers"
+	"github.com/alicenet/alicenet/layer1/transaction"
+	"github.com/alicenet/alicenet/test/mocks"
+	"github.com/alicenet/alicenet/utils"
 )
 
-// SetupPrivateKeys computes deterministic private keys for testing
+// SetupPrivateKeys computes deterministic private keys for testing.
 func SetupPrivateKeys(n int) []*ecdsa.PrivateKey {
 	if (n < 1) || (n >= 256) {
 		panic("invalid number for accounts")
@@ -62,7 +63,7 @@ func CreateAccounts(unitTestDirectory string, numAccounts int) (string, string, 
 	passCodePath := filepath.Join(unitTestDirectory, "passcodes.txt")
 	keystore := keystore.NewKeyStore(keyStorePath, keystore.StandardScryptN, keystore.StandardScryptP)
 	privateKeys := InitializePrivateKeys(numAccounts)
-	passCodesFile, err := os.OpenFile(passCodePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	passCodesFile, err := os.OpenFile(passCodePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
 	if err != nil {
 		panic(fmt.Errorf("failed to open/create passCode file: %v", err))
 	}
@@ -176,7 +177,7 @@ type ClientFixture struct {
 	Logger         *logrus.Entry
 }
 
-func NewClientFixture(hardhat *Hardhat, finalityDelay uint64, numAccounts int, logger *logrus.Entry, unlockAllAccounts bool, deployContracts bool, registerValidators bool) *ClientFixture {
+func NewClientFixture(hardhat *Hardhat, finalityDelay uint64, numAccounts int, logger *logrus.Entry, unlockAllAccounts, deployContracts, registerValidators bool) *ClientFixture {
 	logger.Logger.SetLevel(logrus.TraceLevel)
 	tempDir, err := os.MkdirTemp("", "unittestdir")
 	if err != nil {

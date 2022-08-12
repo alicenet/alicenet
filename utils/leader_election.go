@@ -5,12 +5,13 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/alicenet/alicenet/layer1"
 	"github.com/sirupsen/logrus"
+
+	"github.com/alicenet/alicenet/layer1"
 )
 
-// AmILeading checks if the current node is a leader for an action
-func AmILeading(client layer1.Client, ctx context.Context, logger *logrus.Entry, start int, randHash []byte, numOfValidators int, validatorIndex int, desperationFactor int, desperationDelay int) (bool, error) {
+// AmILeading checks if the current node is a leader for an action.
+func AmILeading(client layer1.Client, ctx context.Context, logger *logrus.Entry, start int, randHash []byte, numOfValidators, validatorIndex, desperationFactor, desperationDelay int) (bool, error) {
 	currentHeight, err := client.GetCurrentHeight(ctx)
 	if err != nil {
 		return false, err
@@ -34,7 +35,7 @@ func AmILeading(client layer1.Client, ctx context.Context, logger *logrus.Entry,
 }
 
 // LeaderElection runs the leader election algorithm to check if an index is a leader or not.
-func LeaderElection(numValidators int, myIdx int, blocksSinceDesperation int, desperationFactor int, seedHash []byte, logger *logrus.Entry) bool {
+func LeaderElection(numValidators, myIdx, blocksSinceDesperation, desperationFactor int, seedHash []byte, logger *logrus.Entry) bool {
 	var numValidatorsAllowed int = 1
 	for i := int(blocksSinceDesperation); i > 0; {
 		i -= desperationFactor / numValidatorsAllowed

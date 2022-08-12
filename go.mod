@@ -1,6 +1,6 @@
 module github.com/alicenet/alicenet
 
-go 1.18
+go 1.19
 
 require (
 	github.com/MadBase/go-capnproto2/v2 v2.18.0-custom.1

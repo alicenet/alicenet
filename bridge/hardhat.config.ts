@@ -1,6 +1,6 @@
+import "@nomicfoundation/hardhat-chai-matchers";
 import "@nomiclabs/hardhat-ethers";
 import "@nomiclabs/hardhat-truffle5";
-import "@nomiclabs/hardhat-waffle";
 import "@typechain/hardhat";
 import "hardhat-abi-exporter";
 import "hardhat-contract-sizer";
@@ -261,6 +261,7 @@ const config: HardhatUserConfig = {
       ".*Mock",
       ".*Base",
       ".*Storage",
+      ".*Error",
       "ETHDKGAccusations",
       "ETHDKGPhases",
     ],

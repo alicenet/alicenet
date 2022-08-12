@@ -5,8 +5,10 @@ import (
 	"github.com/alicenet/alicenet/utils"
 )
 
-type PreVoteList []*PreVote
-type PreVoteNilList []bool
+type (
+	PreVoteList    []*PreVote
+	PreVoteNilList []bool
+)
 
 func (pvl PreVoteList) MakePreCommit(secpSigner *crypto.Secp256k1Signer) (*PreCommit, error) {
 	sigs := [][]byte{}

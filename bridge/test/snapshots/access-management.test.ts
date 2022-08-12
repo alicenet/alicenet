@@ -1,3 +1,4 @@
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { Signer } from "ethers";
 import { expect } from "../chai-setup";
 import {
@@ -9,12 +10,14 @@ import {
 
 describe("Snapshots: Access control methods", () => {
   let fixture: Fixture;
+  let admin: SignerWithAddress;
+  let randomer: SignerWithAddress;
   let adminSigner: Signer;
   let randomerSigner: Signer;
 
   beforeEach(async function () {
     fixture = await getFixture(true, false);
-    const [admin, , , , , randomer] = fixture.namedSigners;
+    [admin, , , , , randomer] = fixture.namedSigners;
     adminSigner = await getValidatorEthAccount(admin.address);
     randomerSigner = await getValidatorEthAccount(randomer.address);
   });
@@ -32,7 +35,9 @@ describe("Snapshots: Access control methods", () => {
       fixture.snapshots
         .connect(randomerSigner)
         .setSnapshotDesperationDelay(expectedDelay)
-    ).to.be.revertedWith("2000");
+    )
+      .to.be.revertedWithCustomError(fixture.bToken, `OnlyFactory`)
+      .withArgs(randomer.address, fixture.factory.address);
   });
 
   it("Allows setSnapshotDesperationDelay from admin address", async function () {
@@ -54,7 +59,9 @@ describe("Snapshots: Access control methods", () => {
       fixture.snapshots
         .connect(randomerSigner)
         .setSnapshotDesperationFactor(expectedFactor)
-    ).to.be.revertedWith("2000");
+    )
+      .to.be.revertedWithCustomError(fixture.bToken, `OnlyFactory`)
+      .withArgs(randomer.address, fixture.factory.address);
   });
 
   it("Allows setSnapshotDesperationFactor from admin address", async function () {

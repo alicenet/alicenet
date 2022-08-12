@@ -4,17 +4,18 @@ package tests
 
 import (
 	"context"
-	"github.com/alicenet/alicenet/layer1/ethereum"
-	"github.com/alicenet/alicenet/layer1/tests"
-	"github.com/alicenet/alicenet/test/mocks"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/stretchr/testify/require"
 	"math/big"
 	"testing"
 	"time"
 
-	"github.com/alicenet/alicenet/layer1/transaction"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"github.com/alicenet/alicenet/layer1/ethereum"
+	"github.com/alicenet/alicenet/layer1/tests"
+	"github.com/alicenet/alicenet/layer1/transaction"
+	"github.com/alicenet/alicenet/test/mocks"
 )
 
 func Setup(t *testing.T, accounts int, pollingTime time.Duration) (*tests.ClientFixture, *transaction.FrontWatcher) {
@@ -91,7 +92,7 @@ func TestSubscribeAndWaitForInvalidTxNotSigned(t *testing.T) {
 	txOpts.Value = amount
 	assert.Nil(t, err)
 
-	//Creating tx but not sending it
+	// Creating tx but not sending it
 	txn, err := fixture.Contracts.EthereumContracts().BToken().MintTo(txOpts, owner.Address, big.NewInt(1))
 	assert.Nil(t, err)
 
@@ -136,7 +137,7 @@ func TestSubscribeAndWaitForTxNotFound(t *testing.T) {
 	txOpts.Value = amount
 	assert.Nil(t, err)
 
-	//Creating tx but not sending it
+	// Creating tx but not sending it
 	txn, err := fixture.Contracts.EthereumContracts().BToken().MintTo(txOpts, owner.Address, big.NewInt(1))
 	assert.Nil(t, err)
 

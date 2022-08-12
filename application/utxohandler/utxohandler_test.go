@@ -6,12 +6,13 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/dgraph-io/badger/v2"
+
 	"github.com/alicenet/alicenet/application/objs"
 	"github.com/alicenet/alicenet/application/objs/uint256"
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/crypto"
 	"github.com/alicenet/alicenet/utils"
-	"github.com/dgraph-io/badger/v2"
 )
 
 func makeDeposit(t *testing.T, s objs.Signer, chainID uint32, i int, value *uint256.Uint256) *objs.ValueStore {
@@ -108,7 +109,7 @@ func TestUTXOTrie(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	//d := makeDeposit(t, signer, 1, 1, 1)
+	// d := makeDeposit(t, signer, 1, 1, 1)
 	d := makeDeposit(t, signer, 1, 1, uint256.One())
 	utxoDep := &objs.TXOut{}
 	err = utxoDep.NewValueStore(d)

@@ -6,7 +6,7 @@ import (
 	"github.com/alicenet/alicenet/interfaces"
 )
 
-// activePeerStore stores active peers
+// activePeerStore stores active peers.
 type activePeerStore struct {
 	sync.RWMutex
 	// canClose tracks the close permission of the store.
@@ -29,7 +29,7 @@ func (ps *activePeerStore) close() {
 	})
 }
 
-// cleanup the store on closure of peer connections
+// cleanup the store on closure of peer connections.
 func (ps *activePeerStore) onExit(pid uint64, c interfaces.P2PClient) {
 	select {
 	case <-c.CloseChan():
@@ -48,7 +48,7 @@ func (ps *activePeerStore) onExit(pid uint64, c interfaces.P2PClient) {
 	}
 }
 
-// add a peer to the store
+// add a peer to the store.
 func (ps *activePeerStore) add(c interfaces.P2PClient) {
 	ps.Lock()
 	defer ps.Unlock()
@@ -71,7 +71,7 @@ func (ps *activePeerStore) add(c interfaces.P2PClient) {
 	go ps.onExit(pid, c)
 }
 
-// remove a peer from the store
+// remove a peer from the store.
 func (ps *activePeerStore) del(c interfaces.NodeAddr) {
 	ps.Lock()
 	defer ps.Unlock()
@@ -106,7 +106,7 @@ func (ps *activePeerStore) len() int {
 	return len(ps.store)
 }
 
-// random returns a random active peer
+// random returns a random active peer.
 func (ps *activePeerStore) random() (string, bool) {
 	ps.RLock()
 	defer ps.RUnlock()

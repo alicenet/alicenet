@@ -3,9 +3,10 @@ package transport
 import (
 	"sync"
 
+	"github.com/hashicorp/yamux"
+
 	"github.com/alicenet/alicenet/interfaces"
 	"github.com/alicenet/alicenet/types"
-	"github.com/hashicorp/yamux"
 )
 
 var _ interfaces.P2PMuxConn = (*P2PMuxConn)(nil)
@@ -25,7 +26,7 @@ type P2PMuxConn struct {
 }
 
 // CloseChan returns a channel that will close when the connection begins
-// closure
+// closure.
 func (pmc *P2PMuxConn) CloseChan() <-chan struct{} {
 	return pmc.closeChan
 }
@@ -39,7 +40,7 @@ func (pmc *P2PMuxConn) monitor() {
 	}
 }
 
-// Close closes the multiplexed connection
+// Close closes the multiplexed connection.
 func (pmc *P2PMuxConn) Close() error {
 	pmc.closeOnce.Do(func() {
 		go pmc.baseConn.Close()
@@ -50,17 +51,17 @@ func (pmc *P2PMuxConn) Close() error {
 	return nil
 }
 
-// ServerConn gives access to server side of multiplexed connection
+// ServerConn gives access to server side of multiplexed connection.
 func (pmc *P2PMuxConn) ServerConn() interfaces.P2PConn {
 	return pmc.serverConn
 }
 
-// ClientConn gives access to client side of multiplexed connection
+// ClientConn gives access to client side of multiplexed connection.
 func (pmc *P2PMuxConn) ClientConn() interfaces.P2PConn {
 	return pmc.clientConn
 }
 
-// Initiator defines if this is a locally initiated or peer initiated connection
+// Initiator defines if this is a locally initiated or peer initiated connection.
 func (pmc *P2PMuxConn) Initiator() types.P2PInitiator {
 	return pmc.initiator
 }

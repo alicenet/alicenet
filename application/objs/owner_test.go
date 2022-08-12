@@ -95,47 +95,6 @@ func TestOwnerNew(t *testing.T) {
 	}
 }
 
-func TestOwnerNewFromASO(t *testing.T) {
-	onr := &Owner{}
-	aso := &AtomicSwapOwner{}
-	err := onr.NewFromAtomicSwapOwner(aso)
-	if err == nil {
-		t.Fatal("Should raise an error")
-	}
-
-	priOwner := &Owner{}
-	priOwner.CurveSpec = constants.CurveSecp256k1
-	priOwner.Account = make([]byte, constants.OwnerLen)
-	altOwner := &Owner{}
-	altOwner.CurveSpec = constants.CurveSecp256k1
-	altOwner.Account = make([]byte, constants.OwnerLen)
-	hashLock := make([]byte, constants.HashLen)
-	err = aso.NewFromOwner(priOwner, altOwner, hashLock)
-	if err != nil {
-		t.Fatal(err)
-	}
-	err = onr.NewFromAtomicSwapOwner(aso)
-	if err != nil {
-		t.Fatal(err)
-	}
-}
-
-func TestOwnerNewFromASSO(t *testing.T) {
-	onr := &Owner{}
-	asso := &AtomicSwapSubOwner{}
-	err := onr.NewFromAtomicSwapSubOwner(asso)
-	if err == nil {
-		t.Fatal("Should raise an error")
-	}
-
-	asso.CurveSpec = constants.CurveSecp256k1
-	asso.Account = make([]byte, constants.OwnerLen)
-	err = onr.NewFromAtomicSwapSubOwner(asso)
-	if err != nil {
-		t.Fatal(err)
-	}
-}
-
 func TestOwnerNewFromDSO(t *testing.T) {
 	onr := &Owner{}
 	dso := &DataStoreOwner{}
