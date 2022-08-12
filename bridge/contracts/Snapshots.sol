@@ -63,57 +63,18 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
         }
 
         uint32 epoch = _epochRegister().get() + 1;
-        BClaimsParserLibrary.BClaims memory blockClaims = BClaimsParserLibrary.extractBClaims(
-            bClaims_
-        );
-
-        if (epoch * _epochLength != blockClaims.height) {
-            revert SnapshotsErrors.InvalidBlockHeight(blockClaims.height);
-        }
-
-        if (blockClaims.chainId != _chainId) {
-            revert SnapshotsErrors.InvalidChainId(blockClaims.chainId);
-        }
+        BClaimsParserLibrary.BClaims memory blockClaims = _parseAndValidateBClaims(epoch, bClaims_);
 
         uint256 lastSnapshotCommittedAt = _getLatestSnapshot().committedAt;
-        if (block.number < lastSnapshotCommittedAt + _minimumIntervalBetweenSnapshots) {
-            revert SnapshotsErrors.MinimumBlocksIntervalNotPassed(
-                block.number,
-                lastSnapshotCommittedAt + _minimumIntervalBetweenSnapshots
-            );
-        }
-
-        {
-            (uint256[4] memory masterPublicKey, uint256[2] memory signature) = RCertParserLibrary
-                .extractSigGroup(groupSignature_, 0);
-
-            bytes32 calculatedMasterPublicKeyHash = keccak256(abi.encodePacked(masterPublicKey));
-            bytes32 expectedMasterPublicKeyHash = IETHDKG(_ethdkgAddress())
-                .getMasterPublicKeyHash();
-
-            if (calculatedMasterPublicKeyHash != expectedMasterPublicKeyHash) {
-                revert SnapshotsErrors.InvalidMasterPublicKey(
-                    calculatedMasterPublicKeyHash,
-                    expectedMasterPublicKeyHash
-                );
-            }
-
-            if (
-                !CryptoLibrary.verifySignatureASM(
-                    abi.encodePacked(keccak256(bClaims_)),
-                    signature,
-                    masterPublicKey
-                )
-            ) {
-                revert SnapshotsErrors.SignatureVerificationFailed();
-            }
-        }
+        _checkSnapshotMinimumInterval(lastSnapshotCommittedAt);
 
         _isValidatorElectedToPerformSnapshot(
             msg.sender,
             lastSnapshotCommittedAt,
             keccak256(groupSignature_)
         );
+
+        _checkBClaimsSignature(groupSignature_, bClaims_);
 
         bool isSafeToProceedConsensus = true;
         if (IValidatorPool(_validatorPoolAddress()).isMaintenanceScheduled()) {
@@ -257,6 +218,16 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
         return _getEpochFromHeight(uint32(height));
     }
 
+    function checkBClaimsSignature(bytes calldata groupSignature_, bytes calldata bClaims_)
+        public
+        view
+        returns (bool)
+    {
+        // if the function does not revert, it means that the signature is valid
+        _checkBClaimsSignature(groupSignature_, bClaims_);
+        return true;
+    }
+
     function isValidatorElectedToPerformSnapshot(
         address validator,
         uint256 lastSnapshotCommittedAt,
@@ -313,6 +284,60 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
                 startIndex,
                 endIndex,
                 groupSignatureHash
+            );
+        }
+    }
+
+    function _parseAndValidateBClaims(uint32 epoch, bytes calldata bClaims_)
+        internal
+        view
+        returns (BClaimsParserLibrary.BClaims memory blockClaims)
+    {
+        blockClaims = BClaimsParserLibrary.extractBClaims(bClaims_);
+
+        if (epoch * _epochLength != blockClaims.height) {
+            revert SnapshotsErrors.InvalidBlockHeight(blockClaims.height);
+        }
+
+        if (blockClaims.chainId != _chainId) {
+            revert SnapshotsErrors.InvalidChainId(blockClaims.chainId);
+        }
+    }
+
+    function _checkBClaimsSignature(bytes calldata groupSignature_, bytes calldata bClaims_)
+        internal
+        view
+    {
+        (uint256[4] memory masterPublicKey, uint256[2] memory signature) = RCertParserLibrary
+            .extractSigGroup(groupSignature_, 0);
+
+        bytes32 calculatedMasterPublicKeyHash = keccak256(abi.encodePacked(masterPublicKey));
+        bytes32 expectedMasterPublicKeyHash = IETHDKG(_ethdkgAddress()).getMasterPublicKeyHash();
+
+        if (calculatedMasterPublicKeyHash != expectedMasterPublicKeyHash) {
+            revert SnapshotsErrors.InvalidMasterPublicKey(
+                calculatedMasterPublicKeyHash,
+                expectedMasterPublicKeyHash
+            );
+        }
+
+        if (
+            !CryptoLibrary.verifySignatureASM(
+                abi.encodePacked(keccak256(bClaims_)),
+                signature,
+                masterPublicKey
+            )
+        ) {
+            revert SnapshotsErrors.SignatureVerificationFailed();
+        }
+    }
+
+    function _checkSnapshotMinimumInterval(uint256 lastSnapshotCommittedAt) internal view {
+        uint256 minimumIntervalBetweenSnapshots = _minimumIntervalBetweenSnapshots;
+        if (block.number < lastSnapshotCommittedAt + minimumIntervalBetweenSnapshots) {
+            revert SnapshotsErrors.MinimumBlocksIntervalNotPassed(
+                block.number,
+                lastSnapshotCommittedAt + minimumIntervalBetweenSnapshots
             );
         }
     }

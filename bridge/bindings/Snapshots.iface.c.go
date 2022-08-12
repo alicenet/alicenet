@@ -11,6 +11,10 @@ import (
 
 // ISnapshotsCaller ...
 type ISnapshotsCaller interface {
+	// CheckBClaimsSignature is a free data retrieval call binding the contract method 0x0204dffd.
+	//
+	// Solidity: function checkBClaimsSignature(bytes groupSignature_, bytes bClaims_) view returns(bool)
+	CheckBClaimsSignature(opts *bind.CallOpts, groupSignature_ []byte, bClaims_ []byte) (bool, error)
 	// GetAliceNetHeightFromLatestSnapshot is a free data retrieval call binding the contract method 0xff07fc0e.
 	//
 	// Solidity: function getAliceNetHeightFromLatestSnapshot() view returns(uint256)

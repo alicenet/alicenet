@@ -157,6 +157,7 @@ var FunctionMapping = map[[4]byte]string{
 	{200, 123, 86, 221}:  "PublicStaking.tokenURI(uint256)",
 	{35, 184, 114, 221}:  "PublicStaking.transferFrom(address,address,uint256)",
 	{173, 253, 192, 63}:  "PublicStaking.tripCB()",
+	{2, 4, 223, 253}:     "Snapshots.checkBClaimsSignature(bytes,bytes)",
 	{255, 7, 252, 14}:    "Snapshots.getAliceNetHeightFromLatestSnapshot()",
 	{197, 232, 253, 225}: "Snapshots.getAliceNetHeightFromSnapshot(uint256)",
 	{194, 234, 102, 3}:   "Snapshots.getBlockClaimsFromLatestSnapshot()",

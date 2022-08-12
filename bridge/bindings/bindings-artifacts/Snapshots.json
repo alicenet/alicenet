@@ -494,6 +494,30 @@
     "type": "event"
   },
   {
+    "inputs": [
+      {
+        "internalType": "bytes",
+        "name": "groupSignature_",
+        "type": "bytes"
+      },
+      {
+        "internalType": "bytes",
+        "name": "bClaims_",
+        "type": "bytes"
+      }
+    ],
+    "name": "checkBClaimsSignature",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "inputs": [],
     "name": "getAliceNetHeightFromLatestSnapshot",
     "outputs": [
