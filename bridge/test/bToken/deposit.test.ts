@@ -47,7 +47,7 @@ describe("Testing BToken Deposit methods", async () => {
       .withArgs(fixture.bToken.address);
   });
 
-  it.only("Should not deposit with 0 eth amount", async () => {
+  it("Should not deposit with 0 eth amount", async () => {
     await expect(
       fixture.bToken.mintDeposit(1, user.address, 0, {
         value: 0,
