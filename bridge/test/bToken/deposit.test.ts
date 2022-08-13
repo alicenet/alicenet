@@ -47,13 +47,14 @@ describe("Testing BToken Deposit methods", async () => {
       .withArgs(fixture.bToken.address);
   });
 
-  it("Should not deposit with 0 eth amount", async () => {
+  it.only("Should not deposit with 0 eth amount", async () => {
     await expect(
       fixture.bToken.mintDeposit(1, user.address, 0, {
         value: 0,
-      }),
-      `MarketSpreadTooLow(0)`
-    );
+      })
+    )
+      .to.be.revertedWithCustomError(fixture.bToken, "MinimumValueNotMet")
+      .withArgs(0, await fixture.bToken.getMarketSpread());
   });
 
   it("Should not deposit with 0 deposit amount", async () => {
