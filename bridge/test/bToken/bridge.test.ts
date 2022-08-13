@@ -69,7 +69,7 @@ describe("Testing BToken bridge methods", async () => {
     showState("Initial", await getState(fixture));
   });
 
-  it("Should deposit tokens into the bridge and destroy the correspondant btoken fee if no eth fee is sent", async () => {
+  it("Should deposit tokens into the bridge and destroy the correspondent BToken fee if no eth fee is sent", async () => {
     expectedState = await getState(fixture);
     const tx = await fixture.bToken
       .connect(user)
@@ -84,7 +84,7 @@ describe("Testing BToken bridge methods", async () => {
     expect(await getState(fixture)).to.be.deep.equal(expectedState);
   });
 
-  it("Should not deposit btokens into an inexistent bridge router version", async () => {
+  it("Should not deposit BTokens into an inexistent bridge router version", async () => {
     expectedState = await getState(fixture);
     const _poolVersion = 2; // inexistent version
     depositCallData = {
@@ -100,11 +100,16 @@ describe("Testing BToken bridge methods", async () => {
       ],
       [depositCallData]
     );
+    const expectedErrAddress = await fixture.factory.lookup(
+      getBridgeRouterSalt(2)
+    );
     await expect(
       fixture.bToken
         .connect(user)
         .depositTokensOnBridges(_poolVersion, encodedDepositCallData)
-    ).to.be.revertedWith("InexistentRouterContract");
+    )
+      .to.be.revertedWithCustomError(fixture.bToken, "InexistentRouterContract")
+      .withArgs(expectedErrAddress);
   });
 
   it("Should not deposit tokens into the bridge when insufficient eth fee is sent", async () => {
@@ -114,7 +119,9 @@ describe("Testing BToken bridge methods", async () => {
         .depositTokensOnBridges(_poolVersion, encodedDepositCallData, {
           value: minEthFeeForDeposit - 1,
         })
-    ).to.be.revertedWith("InsufficientFee");
+    )
+      .to.be.revertedWithCustomError(fixture.bToken, "InsufficientFee")
+      .withArgs(minEthFeeForDeposit - 1, minEthFeeForDeposit);
   });
 
   it("Should deposit tokens into the bridge and receive a refund when greater than sufficient eth fee is sent", async () => {

@@ -23916,6 +23916,9 @@ type MockIPublicStaking struct {
 	// GetEthAccumulatorFunc is an instance of a mock function object
 	// controlling the behavior of the method GetEthAccumulator.
 	GetEthAccumulatorFunc *IPublicStakingGetEthAccumulatorFunc
+	// GetMaxGovernanceLockFunc is an instance of a mock function object
+	// controlling the behavior of the method GetMaxGovernanceLock.
+	GetMaxGovernanceLockFunc *IPublicStakingGetMaxGovernanceLockFunc
 	// GetMaxMintLockFunc is an instance of a mock function object
 	// controlling the behavior of the method GetMaxMintLock.
 	GetMaxMintLockFunc *IPublicStakingGetMaxMintLockFunc
@@ -24135,6 +24138,11 @@ func NewMockIPublicStaking() *MockIPublicStaking {
 				Accumulator *big.Int
 				Slush       *big.Int
 			}, r1 error) {
+				return
+			},
+		},
+		GetMaxGovernanceLockFunc: &IPublicStakingGetMaxGovernanceLockFunc{
+			defaultHook: func(*bind.CallOpts) (r0 *big.Int, r1 error) {
 				return
 			},
 		},
@@ -24437,6 +24445,11 @@ func NewStrictMockIPublicStaking() *MockIPublicStaking {
 				panic("unexpected invocation of MockIPublicStaking.GetEthAccumulator")
 			},
 		},
+		GetMaxGovernanceLockFunc: &IPublicStakingGetMaxGovernanceLockFunc{
+			defaultHook: func(*bind.CallOpts) (*big.Int, error) {
+				panic("unexpected invocation of MockIPublicStaking.GetMaxGovernanceLock")
+			},
+		},
 		GetMaxMintLockFunc: &IPublicStakingGetMaxMintLockFunc{
 			defaultHook: func(*bind.CallOpts) (*big.Int, error) {
 				panic("unexpected invocation of MockIPublicStaking.GetMaxMintLock")
@@ -24689,6 +24702,9 @@ func NewMockIPublicStakingFrom(i bindings.IPublicStaking) *MockIPublicStaking {
 		},
 		GetEthAccumulatorFunc: &IPublicStakingGetEthAccumulatorFunc{
 			defaultHook: i.GetEthAccumulator,
+		},
+		GetMaxGovernanceLockFunc: &IPublicStakingGetMaxGovernanceLockFunc{
+			defaultHook: i.GetMaxGovernanceLock,
 		},
 		GetMaxMintLockFunc: &IPublicStakingGetMaxMintLockFunc{
 			defaultHook: i.GetMaxMintLock,
@@ -27245,6 +27261,114 @@ func (c IPublicStakingGetEthAccumulatorFuncCall) Args() []interface{} {
 // Results returns an interface slice containing the results of this
 // invocation.
 func (c IPublicStakingGetEthAccumulatorFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
+}
+
+// IPublicStakingGetMaxGovernanceLockFunc describes the behavior when the
+// GetMaxGovernanceLock method of the parent MockIPublicStaking instance is
+// invoked.
+type IPublicStakingGetMaxGovernanceLockFunc struct {
+	defaultHook func(*bind.CallOpts) (*big.Int, error)
+	hooks       []func(*bind.CallOpts) (*big.Int, error)
+	history     []IPublicStakingGetMaxGovernanceLockFuncCall
+	mutex       sync.Mutex
+}
+
+// GetMaxGovernanceLock delegates to the next hook function in the queue and
+// stores the parameter and result values of this invocation.
+func (m *MockIPublicStaking) GetMaxGovernanceLock(v0 *bind.CallOpts) (*big.Int, error) {
+	r0, r1 := m.GetMaxGovernanceLockFunc.nextHook()(v0)
+	m.GetMaxGovernanceLockFunc.appendCall(IPublicStakingGetMaxGovernanceLockFuncCall{v0, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the GetMaxGovernanceLock
+// method of the parent MockIPublicStaking instance is invoked and the hook
+// queue is empty.
+func (f *IPublicStakingGetMaxGovernanceLockFunc) SetDefaultHook(hook func(*bind.CallOpts) (*big.Int, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// GetMaxGovernanceLock method of the parent MockIPublicStaking instance
+// invokes the hook at the front of the queue and discards it. After the
+// queue is empty, the default hook function is invoked for any future
+// action.
+func (f *IPublicStakingGetMaxGovernanceLockFunc) PushHook(hook func(*bind.CallOpts) (*big.Int, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *IPublicStakingGetMaxGovernanceLockFunc) SetDefaultReturn(r0 *big.Int, r1 error) {
+	f.SetDefaultHook(func(*bind.CallOpts) (*big.Int, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *IPublicStakingGetMaxGovernanceLockFunc) PushReturn(r0 *big.Int, r1 error) {
+	f.PushHook(func(*bind.CallOpts) (*big.Int, error) {
+		return r0, r1
+	})
+}
+
+func (f *IPublicStakingGetMaxGovernanceLockFunc) nextHook() func(*bind.CallOpts) (*big.Int, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *IPublicStakingGetMaxGovernanceLockFunc) appendCall(r0 IPublicStakingGetMaxGovernanceLockFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of IPublicStakingGetMaxGovernanceLockFuncCall
+// objects describing the invocations of this function.
+func (f *IPublicStakingGetMaxGovernanceLockFunc) History() []IPublicStakingGetMaxGovernanceLockFuncCall {
+	f.mutex.Lock()
+	history := make([]IPublicStakingGetMaxGovernanceLockFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// IPublicStakingGetMaxGovernanceLockFuncCall is an object that describes an
+// invocation of method GetMaxGovernanceLock on an instance of
+// MockIPublicStaking.
+type IPublicStakingGetMaxGovernanceLockFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 *bind.CallOpts
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 *big.Int
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c IPublicStakingGetMaxGovernanceLockFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c IPublicStakingGetMaxGovernanceLockFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
@@ -42451,6 +42575,9 @@ type MockIValidatorStaking struct {
 	// GetEthAccumulatorFunc is an instance of a mock function object
 	// controlling the behavior of the method GetEthAccumulator.
 	GetEthAccumulatorFunc *IValidatorStakingGetEthAccumulatorFunc
+	// GetMaxGovernanceLockFunc is an instance of a mock function object
+	// controlling the behavior of the method GetMaxGovernanceLock.
+	GetMaxGovernanceLockFunc *IValidatorStakingGetMaxGovernanceLockFunc
 	// GetMaxMintLockFunc is an instance of a mock function object
 	// controlling the behavior of the method GetMaxMintLock.
 	GetMaxMintLockFunc *IValidatorStakingGetMaxMintLockFunc
@@ -42671,6 +42798,11 @@ func NewMockIValidatorStaking() *MockIValidatorStaking {
 				Accumulator *big.Int
 				Slush       *big.Int
 			}, r1 error) {
+				return
+			},
+		},
+		GetMaxGovernanceLockFunc: &IValidatorStakingGetMaxGovernanceLockFunc{
+			defaultHook: func(*bind.CallOpts) (r0 *big.Int, r1 error) {
 				return
 			},
 		},
@@ -42974,6 +43106,11 @@ func NewStrictMockIValidatorStaking() *MockIValidatorStaking {
 				panic("unexpected invocation of MockIValidatorStaking.GetEthAccumulator")
 			},
 		},
+		GetMaxGovernanceLockFunc: &IValidatorStakingGetMaxGovernanceLockFunc{
+			defaultHook: func(*bind.CallOpts) (*big.Int, error) {
+				panic("unexpected invocation of MockIValidatorStaking.GetMaxGovernanceLock")
+			},
+		},
 		GetMaxMintLockFunc: &IValidatorStakingGetMaxMintLockFunc{
 			defaultHook: func(*bind.CallOpts) (*big.Int, error) {
 				panic("unexpected invocation of MockIValidatorStaking.GetMaxMintLock")
@@ -43226,6 +43363,9 @@ func NewMockIValidatorStakingFrom(i bindings.IValidatorStaking) *MockIValidatorS
 		},
 		GetEthAccumulatorFunc: &IValidatorStakingGetEthAccumulatorFunc{
 			defaultHook: i.GetEthAccumulator,
+		},
+		GetMaxGovernanceLockFunc: &IValidatorStakingGetMaxGovernanceLockFunc{
+			defaultHook: i.GetMaxGovernanceLock,
 		},
 		GetMaxMintLockFunc: &IValidatorStakingGetMaxMintLockFunc{
 			defaultHook: i.GetMaxMintLock,
@@ -45801,6 +45941,115 @@ func (c IValidatorStakingGetEthAccumulatorFuncCall) Args() []interface{} {
 // Results returns an interface slice containing the results of this
 // invocation.
 func (c IValidatorStakingGetEthAccumulatorFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
+}
+
+// IValidatorStakingGetMaxGovernanceLockFunc describes the behavior when the
+// GetMaxGovernanceLock method of the parent MockIValidatorStaking instance
+// is invoked.
+type IValidatorStakingGetMaxGovernanceLockFunc struct {
+	defaultHook func(*bind.CallOpts) (*big.Int, error)
+	hooks       []func(*bind.CallOpts) (*big.Int, error)
+	history     []IValidatorStakingGetMaxGovernanceLockFuncCall
+	mutex       sync.Mutex
+}
+
+// GetMaxGovernanceLock delegates to the next hook function in the queue and
+// stores the parameter and result values of this invocation.
+func (m *MockIValidatorStaking) GetMaxGovernanceLock(v0 *bind.CallOpts) (*big.Int, error) {
+	r0, r1 := m.GetMaxGovernanceLockFunc.nextHook()(v0)
+	m.GetMaxGovernanceLockFunc.appendCall(IValidatorStakingGetMaxGovernanceLockFuncCall{v0, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the GetMaxGovernanceLock
+// method of the parent MockIValidatorStaking instance is invoked and the
+// hook queue is empty.
+func (f *IValidatorStakingGetMaxGovernanceLockFunc) SetDefaultHook(hook func(*bind.CallOpts) (*big.Int, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// GetMaxGovernanceLock method of the parent MockIValidatorStaking instance
+// invokes the hook at the front of the queue and discards it. After the
+// queue is empty, the default hook function is invoked for any future
+// action.
+func (f *IValidatorStakingGetMaxGovernanceLockFunc) PushHook(hook func(*bind.CallOpts) (*big.Int, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *IValidatorStakingGetMaxGovernanceLockFunc) SetDefaultReturn(r0 *big.Int, r1 error) {
+	f.SetDefaultHook(func(*bind.CallOpts) (*big.Int, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *IValidatorStakingGetMaxGovernanceLockFunc) PushReturn(r0 *big.Int, r1 error) {
+	f.PushHook(func(*bind.CallOpts) (*big.Int, error) {
+		return r0, r1
+	})
+}
+
+func (f *IValidatorStakingGetMaxGovernanceLockFunc) nextHook() func(*bind.CallOpts) (*big.Int, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *IValidatorStakingGetMaxGovernanceLockFunc) appendCall(r0 IValidatorStakingGetMaxGovernanceLockFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of
+// IValidatorStakingGetMaxGovernanceLockFuncCall objects describing the
+// invocations of this function.
+func (f *IValidatorStakingGetMaxGovernanceLockFunc) History() []IValidatorStakingGetMaxGovernanceLockFuncCall {
+	f.mutex.Lock()
+	history := make([]IValidatorStakingGetMaxGovernanceLockFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// IValidatorStakingGetMaxGovernanceLockFuncCall is an object that describes
+// an invocation of method GetMaxGovernanceLock on an instance of
+// MockIValidatorStaking.
+type IValidatorStakingGetMaxGovernanceLockFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 *bind.CallOpts
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 *big.Int
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c IValidatorStakingGetMaxGovernanceLockFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c IValidatorStakingGetMaxGovernanceLockFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
