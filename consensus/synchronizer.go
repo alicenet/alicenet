@@ -5,6 +5,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/dgraph-io/badger/v2"
+	"github.com/sirupsen/logrus"
+
 	"github.com/alicenet/alicenet/application"
 	"github.com/alicenet/alicenet/consensus/admin"
 	"github.com/alicenet/alicenet/consensus/db"
@@ -17,8 +20,6 @@ import (
 	"github.com/alicenet/alicenet/logging"
 	"github.com/alicenet/alicenet/peering"
 	"github.com/alicenet/alicenet/utils"
-	"github.com/dgraph-io/badger/v2"
-	"github.com/sirupsen/logrus"
 )
 
 type remoteVar struct {
@@ -98,9 +99,11 @@ func newSetOnceVar(condition func() bool) *setOnceVar {
 	}
 }
 
-type conditionFn func() bool
-type singleRetFn func() error
-type twoRetFn func() (bool, error)
+type (
+	conditionFn func() bool
+	singleRetFn func() error
+	twoRetFn    func() (bool, error)
+)
 
 func newLoopConfig() *loopConfig {
 	return &loopConfig{}
@@ -189,7 +192,7 @@ func (lc *loopConfig) withInitialDelay(idt time.Duration) *loopConfig {
 // Synchronizer controls logic hand off between services
 // This system coordinates what services may run under what conditions
 // The system operates as a scheduler as well as a reactor to external
-// events
+// events.
 type Synchronizer struct {
 	sync.Mutex
 	wg        sync.WaitGroup
@@ -217,8 +220,8 @@ type Synchronizer struct {
 	storage dynamics.StorageGetter
 }
 
-// Init initializes the struct
-func (s *Synchronizer) Init(cdb *db.Database, mdb *badger.DB, tdb *badger.DB, gc *gossip.Client, gh *gossip.Handlers, ep *evidence.Pool, eng *lstate.Engine, app *application.Application, ah *admin.Handlers, pman *peering.PeerManager, storage dynamics.StorageGetter) {
+// Init initializes the struct.
+func (s *Synchronizer) Init(cdb *db.Database, mdb, tdb *badger.DB, gc *gossip.Client, gh *gossip.Handlers, ep *evidence.Pool, eng *lstate.Engine, app *application.Application, ah *admin.Handlers, pman *peering.PeerManager, storage dynamics.StorageGetter) {
 	s.logger = logging.GetLogger(constants.LoggerConsensus)
 	s.cdb = cdb
 	s.mdb = mdb
@@ -245,7 +248,7 @@ func (s *Synchronizer) CloseChan() <-chan struct{} {
 	return s.closeChan
 }
 
-// Start will start the Synchronizer
+// Start will start the Synchronizer.
 func (s *Synchronizer) Start() {
 	s.startOnce.Do(func() {
 		s.logger.Debugf("Started Syncronizer")
@@ -258,7 +261,7 @@ func (s *Synchronizer) Start() {
 	})
 }
 
-// Stop terminates the Synchronizer and all managed services
+// Stop terminates the Synchronizer and all managed services.
 func (s *Synchronizer) Stop() {
 	s.closeOnce.Do(func() {
 		s.logger.Warning("Graceful stop of Synchronizer started")

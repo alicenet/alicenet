@@ -75,9 +75,7 @@ describe("PROXY", async () => {
       data: "0xca11c0de" + encodedAddress.substring(2),
     };
     const response = proxy.fallback(txReq);
-    await expect(response).to.be.revertedWith(
-      "reverted with an unrecognized custom error"
-    );
+    await expect(response).to.be.reverted;
     txResponse = await proxyContract.upgradeUnlock();
     receipt = await txResponse.wait();
     expect(receipt.status).to.equal(1);

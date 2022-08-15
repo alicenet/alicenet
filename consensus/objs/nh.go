@@ -4,6 +4,7 @@ import (
 	"bytes"
 
 	capnp "github.com/MadBase/go-capnproto2/v2"
+
 	mdefs "github.com/alicenet/alicenet/consensus/objs/capn"
 	"github.com/alicenet/alicenet/consensus/objs/nextheight"
 	"github.com/alicenet/alicenet/crypto"
@@ -24,7 +25,7 @@ type NextHeight struct {
 }
 
 // UnmarshalBinary takes a byte slice and returns the corresponding
-// NextHeight object
+// NextHeight object.
 func (b *NextHeight) UnmarshalBinary(data []byte) error {
 	if b == nil {
 		return errorz.ErrInvalid{}.New("NextHeight.UnmarshalBinary; nh not initialized")
@@ -37,7 +38,7 @@ func (b *NextHeight) UnmarshalBinary(data []byte) error {
 	return b.UnmarshalCapn(bh)
 }
 
-// UnmarshalCapn unmarshals the capnproto definition of the object
+// UnmarshalCapn unmarshals the capnproto definition of the object.
 func (b *NextHeight) UnmarshalCapn(bh mdefs.NextHeight) error {
 	if b == nil {
 		return errorz.ErrInvalid{}.New("NextHeight.UnmarshalCapn; nh not initialized")
@@ -62,7 +63,7 @@ func (b *NextHeight) UnmarshalCapn(bh mdefs.NextHeight) error {
 }
 
 // MarshalBinary takes the NextHeight object and returns the canonical
-// byte slice
+// byte slice.
 func (b *NextHeight) MarshalBinary() ([]byte, error) {
 	if b == nil {
 		return nil, errorz.ErrInvalid{}.New("NextHeight.MarshalBinary; nh not initialized")
@@ -75,7 +76,7 @@ func (b *NextHeight) MarshalBinary() ([]byte, error) {
 	return nextheight.Marshal(bh)
 }
 
-// MarshalCapn marshals the object into its capnproto definition
+// MarshalCapn marshals the object into its capnproto definition.
 func (b *NextHeight) MarshalCapn(seg *capnp.Segment) (mdefs.NextHeight, error) {
 	if b == nil {
 		return mdefs.NextHeight{}, errorz.ErrInvalid{}.New("NextHeight.MarshalCapn; nh not initialized")

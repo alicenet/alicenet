@@ -2,13 +2,13 @@ package peering
 
 import (
 	"context"
+	"errors"
 	"net"
 	"time"
 
-	"errors"
+	"google.golang.org/grpc"
 
 	"github.com/alicenet/alicenet/interfaces"
-	"google.golang.org/grpc"
 )
 
 // ClientHandler is an object that allows a P2PConn to be converted into
@@ -19,7 +19,7 @@ type clientHandler struct {
 	closeChan chan struct{}
 }
 
-// Close will block further outbound dialing
+// Close will block further outbound dialing.
 func (rpcch *clientHandler) Close() {
 	rpcch.closeChan = make(chan struct{})
 	close(rpcch.closeChan)
@@ -73,7 +73,7 @@ func (rpcch *clientHandler) HandleConnection(p2pconn interfaces.P2PConn) (*grpc.
 	return conn, nil
 }
 
-// NewClientHandler creates a ClientHandler
+// NewClientHandler creates a ClientHandler.
 func newClientHandler() *clientHandler {
 	return &clientHandler{}
 }

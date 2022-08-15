@@ -81,9 +81,7 @@ export async function proxyMockLogicTest(
   await txResponse.wait();
   await expectTxSuccess(txResponse);
   const txRes = factory.upgradeProxy(salt, endPointAddr, "0x");
-  await expect(txRes).to.be.revertedWith(
-    "reverted with an unrecognized custom error"
-  );
+  await expect(txRes).to.be.reverted;
   // unlock the proxy
   txResponse = await mockProxy.unlock();
   await txResponse.wait();

@@ -13,7 +13,7 @@ type PendingNodeKey struct {
 }
 
 // UnmarshalBinary takes a byte slice and returns the corresponding
-// PendingNodeKey object
+// PendingNodeKey object.
 func (b *PendingNodeKey) UnmarshalBinary(data []byte) error {
 	if b == nil {
 		return errorz.ErrInvalid{}.New("PendingNodeKey.UnmarshalBinary; pnk not initialized")
@@ -27,7 +27,7 @@ func (b *PendingNodeKey) UnmarshalBinary(data []byte) error {
 }
 
 // MarshalBinary takes the PendingNodeKey object and returns the canonical
-// byte slice
+// byte slice.
 func (b *PendingNodeKey) MarshalBinary() ([]byte, error) {
 	if b == nil {
 		return nil, errorz.ErrInvalid{}.New("PendingNodeKey.MarshalBinary; pnk not initialized")

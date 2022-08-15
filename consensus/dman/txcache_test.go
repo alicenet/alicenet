@@ -5,12 +5,12 @@ package dman
 import (
 	"testing"
 
-	"github.com/alicenet/alicenet/interfaces"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/alicenet/alicenet/interfaces"
 )
 
-type testingTxMarshaller struct {
-}
+type testingTxMarshaller struct{}
 
 func (tm *testingTxMarshaller) MarshalTx(tx interfaces.Transaction) ([]byte, error) {
 	return tx.TxHash()
@@ -47,7 +47,6 @@ func Test_txCache_Get(t *testing.T) {
 	if !ok {
 		t.Fatal("not found in get")
 	}
-
 }
 
 func Test_txCache_GetHeight(t *testing.T) {
@@ -89,7 +88,6 @@ func Test_txCache_GetHeight(t *testing.T) {
 	if len(txs3) > 2 {
 		t.Fatal("3: found in get")
 	}
-
 }
 
 func Test_txCache_Del(t *testing.T) {

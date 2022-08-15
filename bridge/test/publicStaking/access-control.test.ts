@@ -49,15 +49,19 @@ describe("PublicStaking: Testing StakeNFT Access Control", async () => {
   });
   describe("A user without admin role should not be able to:", async () => {
     it("Trip circuit breaker", async function () {
-      await expect(fixture.publicStaking.tripCB()).to.be.revertedWith("2000");
+      await expect(fixture.publicStaking.tripCB())
+        .to.be.revertedWithCustomError(fixture.bToken, `OnlyFactory`)
+        .withArgs(adminSigner.address, fixture.factory.address);
     });
     it("Skim excess of Tokens and ETH", async function () {
-      await expect(
-        fixture.publicStaking.skimExcessEth(notAdminSigner.address)
-      ).to.be.revertedWith("2000");
+      await expect(fixture.publicStaking.skimExcessEth(notAdminSigner.address))
+        .to.be.revertedWithCustomError(fixture.bToken, `OnlyFactory`)
+        .withArgs(adminSigner.address, fixture.factory.address);
       await expect(
         fixture.publicStaking.skimExcessToken(notAdminSigner.address)
-      ).to.be.revertedWith("2000");
+      )
+        .to.be.revertedWithCustomError(fixture.bToken, `OnlyFactory`)
+        .withArgs(adminSigner.address, fixture.factory.address);
     });
   });
 });

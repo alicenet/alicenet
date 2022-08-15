@@ -9,8 +9,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/alicenet/alicenet/layer1/ethereum"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/alicenet/alicenet/layer1/ethereum"
 )
 
 func TestEthereum_SendTransactionOnlyDefaultAccountUnlocked(t *testing.T) {
@@ -30,7 +31,6 @@ func TestEthereum_SendTransactionOnlyDefaultAccountUnlocked(t *testing.T) {
 			assert.Nil(t, testTxn)
 		}
 	}
-
 }
 
 func TestEthereum_SendTransactionAllAccountUnlocked(t *testing.T) {
@@ -44,7 +44,6 @@ func TestEthereum_SendTransactionAllAccountUnlocked(t *testing.T) {
 		assert.Nil(t, err)
 		assert.NotNil(t, testTxn)
 	}
-
 }
 
 func TestEthereum_HardhatNode(t *testing.T) {

@@ -5,22 +5,23 @@ import (
 	"errors"
 	"math/big"
 
-	"github.com/alicenet/alicenet/bridge/bindings"
-	"github.com/alicenet/alicenet/crypto/bn256"
-	"github.com/alicenet/alicenet/crypto/bn256/cloudflare"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/sirupsen/logrus"
+
+	"github.com/alicenet/alicenet/bridge/bindings"
+	"github.com/alicenet/alicenet/crypto/bn256"
+	"github.com/alicenet/alicenet/crypto/bn256/cloudflare"
 )
 
-// RegistrationStatus is an enumeration indicating the current status of a registration
+// RegistrationStatus is an enumeration indicating the current status of a registration.
 type RegistrationStatus int
 
 // The possible registration statuses:
 // * Undefined       - unknown if the address is registered
 // * Registered      - address is registered with expected public key
 // * NoRegistration  - address does not have a public key registered
-// * BadRegistration - address is regisered with an unexpected public key
+// * BadRegistration - address is regisered with an unexpected public key.
 const (
 	Undefined RegistrationStatus = iota
 	Registered
@@ -37,14 +38,14 @@ func (status RegistrationStatus) String() string {
 	}[status]
 }
 
-// KeyShareStatus is an enumeration indicated the current status of keyshare
+// KeyShareStatus is an enumeration indicated the current status of keyshare.
 type KeyShareStatus int
 
 // The possible key share statuses:
 // * UnknownKeyShare - unknown if the address has shared a key
 // * KeyShared       - address has shared the expected key
 // * NoKeyShared     - address does not have a key share
-// * BadKeyShared    - address has an unexpected key share
+// * BadKeyShared    - address has an unexpected key share.
 const (
 	UnknownKeyShare KeyShareStatus = iota
 	KeyShared
@@ -52,13 +53,13 @@ const (
 	BadKeyShared
 )
 
-// CheckRegistration checks if given address is registered as expected
+// CheckRegistration checks if given address is registered as expected.
 func CheckRegistration(ethdkg bindings.IETHDKG,
 	logger *logrus.Entry,
 	callOpts *bind.CallOpts,
 	addr common.Address,
-	publicKey [2]*big.Int) (RegistrationStatus, error) {
-
+	publicKey [2]*big.Int,
+) (RegistrationStatus, error) {
 	var receivedPublicKey [2]*big.Int
 	var err error
 
@@ -88,7 +89,6 @@ func CheckRegistration(ethdkg bindings.IETHDKG,
 	// Check if expected public key is registered
 	if !(receivedPublicKey[0].Cmp(publicKey[0]) == 0 &&
 		receivedPublicKey[1].Cmp(publicKey[1]) == 0) {
-
 		logger.Debugf("address (%v) is already registered with another publicKey %x", addr.Hex(), receivedPublicKey)
 
 		return BadRegistration, nil
@@ -97,13 +97,13 @@ func CheckRegistration(ethdkg bindings.IETHDKG,
 	return Registered, nil
 }
 
-// CheckKeyShare checks if a given address submitted the keyshare expected
+// CheckKeyShare checks if a given address submitted the keyshare expected.
 func CheckKeyShare(ctx context.Context, ethdkg bindings.IETHDKG,
 	logger *logrus.Entry,
 	callOpts *bind.CallOpts,
 	addr common.Address,
-	keyshare [2]*big.Int) (KeyShareStatus, error) {
-
+	keyshare [2]*big.Int,
+) (KeyShareStatus, error) {
 	var receivedKeyShare [2]*big.Int
 	var err error
 
@@ -123,7 +123,6 @@ func CheckKeyShare(ctx context.Context, ethdkg bindings.IETHDKG,
 	// Check if expected public key is registered
 	if receivedKeyShare[0].Cmp(keyshare[0]) != 0 &&
 		receivedKeyShare[1].Cmp(keyshare[1]) != 0 {
-
 		logger.Debugf("address (%v) is already registered with %x", addr.Hex(), receivedKeyShare)
 
 		return BadKeyShared, nil
@@ -133,9 +132,10 @@ func CheckKeyShare(ctx context.Context, ethdkg bindings.IETHDKG,
 }
 
 // VerifyDistributedShares verifies the distributed shares and returns
-//		true/false if the share is valid/invalid;
-//		true/false if present/not present;
-// 		error if raised
+//
+//	true/false if the share is valid/invalid;
+//	true/false if present/not present;
+//	error if raised
 //
 // If an error is raised, then something unrecoverable has occurred.
 func VerifyDistributedShares(dkgState *DkgState, participant *Participant) (bool, bool, error) {

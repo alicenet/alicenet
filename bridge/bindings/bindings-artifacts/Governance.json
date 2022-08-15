@@ -5,6 +5,17 @@
     "type": "constructor"
   },
   {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "sender",
+        "type": "address"
+      }
+    ],
+    "name": "OnlyFactoryAllowed",
+    "type": "error"
+  },
+  {
     "anonymous": false,
     "inputs": [
       {

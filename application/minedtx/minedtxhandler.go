@@ -1,28 +1,28 @@
 package minedtx
 
 import (
-	"github.com/alicenet/alicenet/constants/dbprefix"
+	"github.com/dgraph-io/badger/v2"
 
 	"github.com/alicenet/alicenet/application/db"
 	"github.com/alicenet/alicenet/application/indexer"
 	"github.com/alicenet/alicenet/application/objs"
+	"github.com/alicenet/alicenet/constants/dbprefix"
 	"github.com/alicenet/alicenet/utils"
-	"github.com/dgraph-io/badger/v2"
 )
 
-// NewMinedTxHandler creates a new MinedTxHandler object
+// NewMinedTxHandler creates a new MinedTxHandler object.
 func NewMinedTxHandler() *MinedTxHandler {
 	return &MinedTxHandler{
 		heightIdxIndex: indexer.NewHeightIdxIndex(dbprefix.PrefixMinedTxIndexKey, dbprefix.PrefixMinedTxIndexRefKey),
 	}
 }
 
-// MinedTxHandler manages the storage of mined trasactions with indexing
+// MinedTxHandler manages the storage of mined trasactions with indexing.
 type MinedTxHandler struct {
 	heightIdxIndex *indexer.HeightIdxIndex
 }
 
-// Add adds txs at height to MinedTxHandler
+// Add adds txs at height to MinedTxHandler.
 func (mt *MinedTxHandler) Add(txn *badger.Txn, height uint32, txs []*objs.Tx) error {
 	for j := 0; j < len(txs); j++ {
 		tx := txs[j]
@@ -38,7 +38,7 @@ func (mt *MinedTxHandler) Add(txn *badger.Txn, height uint32, txs []*objs.Tx) er
 	return nil
 }
 
-// Delete removes txs corresponding to txHashes from MinedTxHandler
+// Delete removes txs corresponding to txHashes from MinedTxHandler.
 func (mt *MinedTxHandler) Delete(txn *badger.Txn, txHashes [][]byte) error {
 	for j := 0; j < len(txHashes); j++ {
 		txHash := utils.CopySlice(txHashes[j])
@@ -54,7 +54,7 @@ func (mt *MinedTxHandler) Delete(txn *badger.Txn, txHashes [][]byte) error {
 	return nil
 }
 
-// Get retrieves txs as well as any txHashes which are missing
+// Get retrieves txs as well as any txHashes which are missing.
 func (mt *MinedTxHandler) Get(txn *badger.Txn, txHashes [][]byte) ([]*objs.Tx, [][]byte, error) {
 	var missing [][]byte
 	var result []*objs.Tx
@@ -73,7 +73,7 @@ func (mt *MinedTxHandler) Get(txn *badger.Txn, txHashes [][]byte) ([]*objs.Tx, [
 	return result, missing, nil
 }
 
-// GetHeightForTx returns height for a given txHash
+// GetHeightForTx returns height for a given txHash.
 func (mt *MinedTxHandler) GetHeightForTx(txn *badger.Txn, txHash []byte) (uint32, error) {
 	height, _, err := mt.heightIdxIndex.GetHeightIdx(txn, txHash)
 	if err != nil {

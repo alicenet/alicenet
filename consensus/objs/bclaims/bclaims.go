@@ -2,6 +2,7 @@ package bclaims
 
 import (
 	capnp "github.com/MadBase/go-capnproto2/v2"
+
 	mdefs "github.com/alicenet/alicenet/consensus/objs/capn"
 	"github.com/alicenet/alicenet/errorz"
 	"github.com/alicenet/alicenet/utils"
@@ -38,7 +39,7 @@ func Unmarshal(data []byte) (mdefs.BClaims, error) {
 	return obj, nil
 }
 
-// Validate will validate the BClaims object
+// Validate will validate the BClaims object.
 func Validate(p mdefs.BClaims) error {
 	if !p.IsValid() {
 		return errorz.ErrInvalid{}.New("bclaims capn obj is not valid")

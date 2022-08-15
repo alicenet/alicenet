@@ -4,13 +4,17 @@ pragma solidity ^0.8.11;
 import "contracts/interfaces/IValidatorPool.sol";
 import "contracts/interfaces/IETHDKG.sol";
 import "contracts/utils/ImmutableAuth.sol";
+import "contracts/libraries/snapshots/SnapshotRingBuffer.sol";
 
-abstract contract SnapshotsStorage is ImmutableETHDKG, ImmutableValidatorPool, ImmutableDynamics {
+abstract contract SnapshotsStorage is
+    ImmutableETHDKG,
+    ImmutableValidatorPool,
+    SnapshotRingBuffer,
+    ImmutableDynamics
+{
     uint256 internal immutable _epochLength;
 
     uint256 internal immutable _chainId;
-
-    uint32 internal _epoch;
 
     // Number of ethereum blocks that we should wait between snapshots. Mainly used to prevent the
     // submission of snapshots in short amount of time by validators that could be potentially being
@@ -25,7 +29,10 @@ abstract contract SnapshotsStorage is ImmutableETHDKG, ImmutableValidatorPool, I
     // _snapshotDesperationDelay has passed
     uint32 internal _snapshotDesperationFactor;
 
-    mapping(uint256 => Snapshot) internal _snapshots;
+    //epoch counter wrapped in a struct
+    Epoch internal _epoch;
+    //new snapshot ring buffer
+    SnapshotBuffer internal _snapshots;
 
     constructor(uint256 chainId_, uint256 epochLength_)
         ImmutableFactory(msg.sender)
@@ -35,5 +42,23 @@ abstract contract SnapshotsStorage is ImmutableETHDKG, ImmutableValidatorPool, I
     {
         _chainId = chainId_;
         _epochLength = epochLength_;
+    }
+
+    function _getEpochFromHeight(uint32 height_) internal view override returns (uint32) {
+        if (height_ <= _epochLength) {
+            return 1;
+        }
+        if (height_ % _epochLength == 0) {
+            return uint32(height_ / _epochLength);
+        }
+        return uint32((height_ / _epochLength) + 1);
+    }
+
+    function _getSnapshots() internal view override returns (SnapshotBuffer storage) {
+        return _snapshots;
+    }
+
+    function _epochRegister() internal view override returns (Epoch storage) {
+        return _epoch;
     }
 }
