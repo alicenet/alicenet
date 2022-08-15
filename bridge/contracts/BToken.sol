@@ -15,7 +15,6 @@ import "contracts/libraries/errors/BTokenErrors.sol";
 /// @custom:deploy-type deployStatic
 contract BToken is
     ERC20Upgradeable,
-    Admin,
     Mutex,
     MagicEthTransfer,
     EthSafeTransfer,
@@ -26,15 +25,6 @@ contract BToken is
     ImmutableLiquidityProviderStaking,
     ImmutableFoundation
 {
-    // Struct to keep track of the amount divided between the staking contracts
-    // dividends distribution.
-    struct Splits {
-        uint32 validatorStaking;
-        uint32 publicStaking;
-        uint32 liquidityProviderStaking;
-        uint32 protocolFee;
-    }
-
     // Struct to keep track of the deposits
     struct Deposit {
         uint8 accountType;
@@ -45,16 +35,8 @@ contract BToken is
     // multiply factor for the selling/minting bonding curve
     uint256 internal constant _MARKET_SPREAD = 4;
 
-    // Scaling factor to get the staking percentages
-    uint256 internal constant _PERCENTAGE_SCALE = 1000;
-
     // Balance in ether that is hold in the contract after minting and burning
     uint256 internal _poolBalance;
-
-    // Value of the percentages that will send to each staking contract. Divide
-    // this value by _PERCENTAGE_SCALE = 1000 to get the corresponding percentages.
-    // These values must sum to 1000.
-    Splits internal _splits;
 
     // Monotonically increasing variable to track the BTokens deposits.
     uint256 internal _depositID;
@@ -76,7 +58,6 @@ contract BToken is
     );
 
     constructor()
-        Admin(msg.sender)
         Mutex()
         ImmutableFactory(msg.sender)
         ImmutablePublicStaking()
@@ -87,36 +68,10 @@ contract BToken is
 
     function initialize() public onlyFactory initializer {
         __ERC20_init("BToken", "BOB");
-        _setSplitsInternal(332, 332, 332, 4);
     }
 
-    /// @dev sets the percentage that will be divided between all the staking
-    /// contracts, must only be called by _admin
-    function setSplits(
-        uint256 validatorStakingSplit_,
-        uint256 publicStakingSplit_,
-        uint256 liquidityProviderStakingSplit_,
-        uint256 protocolFee_
-    ) public onlyAdmin {
-        _setSplitsInternal(
-            validatorStakingSplit_,
-            publicStakingSplit_,
-            liquidityProviderStakingSplit_,
-            protocolFee_
-        );
-    }
-
-    /// Distributes the yields of the BToken sale to all stakeholders: validators,
-    /// public stakers, liquidity providers stakers, foundation.
-    function distribute()
-        public
-        returns (
-            uint256 minerAmount,
-            uint256 stakingAmount,
-            uint256 lpStakingAmount,
-            uint256 foundationAmount
-        )
-    {
+    /// Distributes the yields of the BToken sale to all stakeholders
+    function distribute() public returns (bool) {
         return _distribute();
     }
 
@@ -146,7 +101,7 @@ contract BToken is
         uint8 accountType_,
         address to_,
         uint256 amount_
-    ) public onlyAdmin returns (uint256) {
+    ) public onlyFactory returns (uint256) {
         return _virtualDeposit(accountType_, to_, amount_);
     }
 
@@ -273,13 +228,6 @@ contract BToken is
         return numEth;
     }
 
-    /// Gets the value of the percentages that will send to each staking contract.
-    /// Divide this value by _PERCENTAGE_SCALE = 1000 to get the corresponding
-    /// percentages.
-    function getSplits() public view returns (Splits memory) {
-        return _splits;
-    }
-
     /// Gets the latest deposit ID emitted.
     function getDepositID() public view returns (uint256) {
         return _depositID;
@@ -382,53 +330,19 @@ contract BToken is
     }
 
     /// Distributes the yields from the BToken minting to all stake holders.
-    function _distribute()
-        internal
-        withLock
-        returns (
-            uint256 minerAmount,
-            uint256 stakingAmount,
-            uint256 lpStakingAmount,
-            uint256 foundationAmount
-        )
-    {
+    function _distribute() internal withLock returns (bool) {
         // make a local copy to save gas
         uint256 poolBalance = _poolBalance;
-
         // find all value in excess of what is needed in pool
         uint256 excess = address(this).balance - poolBalance;
+        if (excess == 0) {
+            return true;
+        }
 
-        Splits memory splits = _splits;
-        // take out protocolFee from excess and decrement excess
-        foundationAmount = (excess * splits.protocolFee) / _PERCENTAGE_SCALE;
-        // split remaining between miners, stakers and lp stakers
-        stakingAmount = (excess * splits.publicStaking) / _PERCENTAGE_SCALE;
-        lpStakingAmount = (excess * splits.liquidityProviderStaking) / _PERCENTAGE_SCALE;
-        // then give miners the difference of the original and the sum of the
-        // stakingAmount
-        minerAmount = excess - (stakingAmount + lpStakingAmount + foundationAmount);
-
-        if (foundationAmount != 0) {
-            _safeTransferEthWithMagic(IMagicEthTransfer(_foundationAddress()), foundationAmount);
-        }
-        if (minerAmount != 0) {
-            _safeTransferEthWithMagic(IMagicEthTransfer(_validatorStakingAddress()), minerAmount);
-        }
-        if (stakingAmount != 0) {
-            _safeTransferEthWithMagic(IMagicEthTransfer(_publicStakingAddress()), stakingAmount);
-        }
-        if (lpStakingAmount != 0) {
-            _safeTransferEthWithMagic(
-                IMagicEthTransfer(_liquidityProviderStakingAddress()),
-                lpStakingAmount
-            );
-        }
-        if (address(this).balance < poolBalance) {
-            revert BTokenErrors.InvalidBalance(address(this).balance, poolBalance);
-        }
+        _safeTransferEthWithMagic(IMagicEthTransfer(_foundationAddress()), excess);
 
         // invariants hold
-        return (minerAmount, stakingAmount, lpStakingAmount, foundationAmount);
+        return true;
     }
 
     // Burn the tokens during deposits without sending ether back to user as the
@@ -570,29 +484,6 @@ contract BToken is
         ERC20Upgradeable._burn(from_, numBTK_);
         _safeTransferEth(to_, numEth);
         return numEth;
-    }
-
-    function _setSplitsInternal(
-        uint256 validatorStakingSplit_,
-        uint256 publicStakingSplit_,
-        uint256 liquidityProviderStakingSplit_,
-        uint256 protocolFee_
-    ) internal {
-        if (
-            validatorStakingSplit_ +
-                publicStakingSplit_ +
-                liquidityProviderStakingSplit_ +
-                protocolFee_ !=
-            _PERCENTAGE_SCALE
-        ) {
-            revert BTokenErrors.SplitValueSumError();
-        }
-        _splits = Splits(
-            uint32(validatorStakingSplit_),
-            uint32(publicStakingSplit_),
-            uint32(liquidityProviderStakingSplit_),
-            uint32(protocolFee_)
-        );
     }
 
     // Check if addr_ is EOA (Externally Owned Account) or a contract.

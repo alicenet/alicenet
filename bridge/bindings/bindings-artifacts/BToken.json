@@ -94,22 +94,6 @@
     "inputs": [
       {
         "internalType": "uint256",
-        "name": "contractBalance",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "poolBalance",
-        "type": "uint256"
-      }
-    ],
-    "name": "InvalidBalance",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
         "name": "amount",
         "type": "uint256"
       }
@@ -259,22 +243,6 @@
       }
     ],
     "name": "OnlyValidatorStaking",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "sender",
-        "type": "address"
-      }
-    ],
-    "name": "SenderNotAdmin",
-    "type": "error"
-  },
-  {
-    "inputs": [],
-    "name": "SplitValueSumError",
     "type": "error"
   },
   {
@@ -599,40 +567,12 @@
     "name": "distribute",
     "outputs": [
       {
-        "internalType": "uint256",
-        "name": "minerAmount",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "stakingAmount",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "lpStakingAmount",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "foundationAmount",
-        "type": "uint256"
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
       }
     ],
     "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "getAdmin",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -870,41 +810,6 @@
   },
   {
     "inputs": [],
-    "name": "getSplits",
-    "outputs": [
-      {
-        "components": [
-          {
-            "internalType": "uint32",
-            "name": "validatorStaking",
-            "type": "uint32"
-          },
-          {
-            "internalType": "uint32",
-            "name": "publicStaking",
-            "type": "uint32"
-          },
-          {
-            "internalType": "uint32",
-            "name": "liquidityProviderStaking",
-            "type": "uint32"
-          },
-          {
-            "internalType": "uint32",
-            "name": "protocolFee",
-            "type": "uint32"
-          }
-        ],
-        "internalType": "struct BToken.Splits",
-        "name": "",
-        "type": "tuple"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
     "name": "getTotalBTokensDeposited",
     "outputs": [
       {
@@ -1030,47 +935,6 @@
       }
     ],
     "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "admin_",
-        "type": "address"
-      }
-    ],
-    "name": "setAdmin",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "validatorStakingSplit_",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "publicStakingSplit_",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "liquidityProviderStakingSplit_",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "protocolFee_",
-        "type": "uint256"
-      }
-    ],
-    "name": "setSplits",
-    "outputs": [],
-    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
