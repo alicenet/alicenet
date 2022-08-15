@@ -32,6 +32,12 @@ type IBToken interface {
 	IBTokenFilterer
 }
 
+type IDynamics interface {
+	IDynamicsCaller
+	IDynamicsTransactor
+	IDynamicsFilterer
+}
+
 type IETHDKG interface {
 	IETHDKGCaller
 	IETHDKGTransactor

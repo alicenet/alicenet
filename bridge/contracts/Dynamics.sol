@@ -157,7 +157,10 @@ contract Dynamics is Initializable, IDynamics, ImmutableSnapshots {
             revert DynamicsErrors.InvalidAliceNetNodeHash(binaryHash);
         }
         _nodeCanonicalVersion = newVersion;
-        emit NewNodeVersionAvailable(_computeExecutionEpoch(relativeUpdateEpoch), newVersion);
+        emit NewAliceNetNodeVersionAvailable(
+            _computeExecutionEpoch(relativeUpdateEpoch),
+            newVersion
+        );
     }
 
     function _changeDynamicValues(uint32 relativeExecutionEpoch, DynamicValues memory newValue)
@@ -248,67 +251,70 @@ contract Dynamics is Initializable, IDynamics, ImmutableSnapshots {
     }
 }
 
-contract TestDynamics is Dynamics {
-    using DoublyLinkedListLogic for DoublyLinkedList;
+// contract TestDynamics is Dynamics {
+//     using DoublyLinkedListLogic for DoublyLinkedList;
 
-    constructor() Dynamics() {}
+//     constructor() Dynamics() {}
 
-    function testEnconding() public view returns (bytes memory) {
-        DynamicValues memory initialValues = DynamicValues(
-            Version.V1,
-            4000,
-            4000,
-            3000,
-            3000,
-            3000000,
-            0,
-            0,
-            0,
-            0
-        );
-        return Dynamics._encodeDynamicValues(initialValues);
-    }
+//     function testEnconding() public view returns (bytes memory) {
+//         DynamicValues memory initialValues = DynamicValues(
+//             Version.V1,
+//             4000,
+//             4000,
+//             3000,
+//             3000,
+//             3000000,
+//             0,
+//             0,
+//             0,
+//             0
+//         );
+//         return Dynamics._encodeDynamicValues(initialValues);
+//     }
 
-    function testChangeDynamicValues(uint32 relativeExecutionEpoch, DynamicValues memory newValue)
-        public
-    {
-        _changeDynamicValues(relativeExecutionEpoch, newValue);
-    }
+//     function testChangeDynamicValues(uint32 relativeExecutionEpoch, DynamicValues memory newValue)
+//         public
+//     {
+//         _changeDynamicValues(relativeExecutionEpoch, newValue);
+//     }
 
-    function testUpdateHead(uint32 currentEpoch) public {
-        uint32 nextEpoch = _dynamicValues.getNextEpoch(_dynamicValues.getHead());
-        if (nextEpoch != 0 && currentEpoch >= nextEpoch) {
-            _dynamicValues.setHead(nextEpoch);
-        }
-    }
+//     function testUpdateHead(uint32 currentEpoch) public {
+//         uint32 nextEpoch = _dynamicValues.getNextEpoch(_dynamicValues.getHead());
+//         if (nextEpoch != 0 && currentEpoch >= nextEpoch) {
+//             _dynamicValues.setHead(nextEpoch);
+//         }
+//     }
 
-    function testUpdateAliceNetNodeVersion(
-        uint32 relativeUpdateEpoch,
-        uint32 majorVersion,
-        uint32 minorVersion,
-        uint32 patch,
-        bytes32 binaryHash
-    ) public {
-        _updateNodeVersion(relativeUpdateEpoch, majorVersion, minorVersion, patch, binaryHash);
-    }
+//     function testUpdateAliceNetNodeVersion(
+//         uint32 relativeUpdateEpoch,
+//         uint32 majorVersion,
+//         uint32 minorVersion,
+//         uint32 patch,
+//         bytes32 binaryHash
+//     ) public {
+//         _updateNodeVersion(relativeUpdateEpoch, majorVersion, minorVersion, patch, binaryHash);
+//     }
 
-    function testSetConfiguration(Configuration calldata newConfig, uint32 majorVersion,
-        uint32 minorVersion,
-        uint32 patch) public {
-        assembly {
-            let fullVersion := or(or(shl(majorVersion, 64), shl(minorVersion, 32)), patch)
-        }
-        _configuration = newConfig;
-    }
+//     function testSetConfiguration(
+//         Configuration calldata newConfig,
+//         uint32 majorVersion,
+//         uint32 minorVersion,
+//         uint32 patch
+//     ) public {
+//         assembly {
+//             let fullVersion := or(or(shl(majorVersion, 64), shl(minorVersion, 32)), patch)
+//         }
+//         _configuration = newConfig;
+//     }
 
-    function testCompactedRepresentation(
-        uint32 majorVersion,
-        uint32 minorVersion,
-        uint32 patch
-    ) public pure returns (uint256) {
-        return _computeCompactedVersion(majorVersion, minorVersion, patch);
-    }
-}
+//     function testCompactedRepresentation(
+//         uint32 majorVersion,
+//         uint32 minorVersion,
+//         uint32 patch
+//     ) public pure returns (uint256) {
+//         return _computeCompactedVersion(majorVersion, minorVersion, patch);
+//     }
+// }
 
 // function getValueAtIndex(address storageAddr, uint8 index) public view returns (uint256) {
 //     uint8[10] memory sizes = [8, 24, 32, 32, 32, 64, 64, 64, 64, 128];

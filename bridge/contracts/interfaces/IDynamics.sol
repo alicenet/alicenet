@@ -36,7 +36,7 @@ struct CanonicalVersion {
 interface IDynamics {
     event DeployedStorageContract(address contractAddr);
     event DynamicValueChanged(uint256 epoch, bytes rawDynamicValues);
-    event NewNodeVersionAvailable(uint256 maxUpdateEpoch, CanonicalVersion version);
+    event NewAliceNetNodeVersionAvailable(uint256 maxUpdateEpoch, CanonicalVersion version);
 
     function deployStorage(bytes calldata data) external returns (address contractAddr);
 
