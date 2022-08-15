@@ -84,6 +84,11 @@
     "type": "error"
   },
   {
+    "inputs": [],
+    "name": "MintAmountZero",
+    "type": "error"
+  },
+  {
     "inputs": [
       {
         "internalType": "address",
