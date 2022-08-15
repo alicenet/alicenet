@@ -8,11 +8,13 @@ import "contracts/utils/MagicEthTransfer.sol";
 import "contracts/utils/EthSafeTransfer.sol";
 import "contracts/libraries/math/Sigmoid.sol";
 import "contracts/utils/ImmutableAuth.sol";
+import "contracts/interfaces/IUtilityToken.sol";
 import "contracts/libraries/errors/UtilityTokenErrors.sol";
 
 /// @custom:salt BToken
 /// @custom:deploy-type deployStatic
 contract BToken is
+    IUtilityToken,
     ERC20Upgradeable,
     Admin,
     Mutex,
@@ -25,12 +27,6 @@ contract BToken is
     ImmutableLiquidityProviderStaking,
     ImmutableFoundation
 {
-    struct Deposit {
-        uint8 accountType;
-        address account;
-        uint256 value;
-    }
-
     // multiply factor for the selling/minting bonding curve
     uint256 internal constant _MARKET_SPREAD = 4;
 

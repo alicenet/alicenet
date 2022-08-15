@@ -4,7 +4,7 @@ pragma solidity ^0.8.11;
 import "contracts/interfaces/IStakingToken.sol";
 import "contracts/utils/ImmutableAuth.sol";
 
-/// @custom:salt StakingTokenBurner
+/// @custom:salt ATokenBurner
 /// @custom:deploy-type deployUpgradeable
 contract ATokenBurner is ImmutableAToken {
     constructor() ImmutableFactory(msg.sender) ImmutableAToken() {}
