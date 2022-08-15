@@ -5,7 +5,7 @@ go 1.19
 require (
 	github.com/MadBase/go-capnproto2/v2 v2.18.0-custom.1
 	github.com/bufbuild/buf v1.7.0
-	github.com/derision-test/go-mockgen v1.3.3
+	github.com/derision-test/go-mockgen v1.3.4
 	github.com/dgraph-io/badger/v2 v2.2007.4
 	github.com/emicklei/proto v1.11.0
 	github.com/ethereum/go-ethereum v1.10.21
