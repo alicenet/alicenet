@@ -10,7 +10,8 @@ library SnapshotsErrors {
     );
     error InvalidMasterPublicKey(bytes32 calculatedMasterKeyHash, bytes32 expectedMasterKeyHash);
     error SignatureVerificationFailed();
-    error InvalidBlockHeight(uint256 blockHeight);
+    error UnexpectedBlockHeight(uint256 givenBlockHeight, uint256 expectedBlockHeight);
+    error BlockHeightNotMultipleOfEpochLength(uint256 blockHeight, uint256 epochLength);
     error InvalidChainId(uint256 chainId);
     error MigrationNotAllowedAtCurrentEpoch();
     error MigrationInputDataMismatch(uint256 groupSignatureLength, uint256 bClaimsLength);

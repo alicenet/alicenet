@@ -103,7 +103,7 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
         );
 
         if (epoch * _epochLength != blockClaims.height) {
-            revert SnapshotsErrors.InvalidBlockHeight(blockClaims.height);
+            revert SnapshotsErrors.UnexpectedBlockHeight(blockClaims.height, epoch * _epochLength);
         }
 
         if (blockClaims.chainId != _chainId) {
@@ -183,7 +183,10 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
                 bClaims_[i]
             );
             if (blockClaims.height % _epochLength != 0) {
-                revert SnapshotsErrors.InvalidBlockHeight(blockClaims.height);
+                revert SnapshotsErrors.BlockHeightNotMultipleOfEpochLength(
+                    blockClaims.height,
+                    _epochLength
+                );
             }
             epoch = getEpochFromHeight(blockClaims.height);
             _setSnapshot(Snapshot(block.number, blockClaims));
