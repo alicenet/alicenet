@@ -271,7 +271,13 @@ contract ETHDKGAccusations is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
             block.number < _phaseStartBlock + _phaseLength ||
             block.number >= _phaseStartBlock + 2 * _phaseLength
         ) {
-            revert ETHDKGErrors.ETHDKGNotInPostGPKJSubmissionPhase(_ethdkgPhase);
+            PhaseInformation[] memory expectedPhaseInfos = new PhaseInformation[](1);
+            expectedPhaseInfos[0] = PhaseInformation(
+                Phase.GPKJSubmission,
+                _phaseStartBlock + _phaseLength,
+                _phaseStartBlock + 2 * _phaseLength
+            );
+            revert ETHDKGErrors.IncorrectPhase(_ethdkgPhase, block.number, expectedPhaseInfos);
         }
 
         uint16 badParticipants = _badParticipants;
@@ -322,7 +328,18 @@ contract ETHDKGAccusations is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
                 block.number >= _phaseStartBlock + _phaseLength &&
                 block.number < _phaseStartBlock + 2 * _phaseLength;
             if (!isInDisputeGPKJSubmission && !isInGPKJSubmission) {
-                revert ETHDKGErrors.ETHDKGNotInPostGPKJSubmissionPhase(_ethdkgPhase);
+                PhaseInformation[] memory expectedPhaseInfos = new PhaseInformation[](2);
+                expectedPhaseInfos[0] = PhaseInformation(
+                    Phase.DisputeGPKJSubmission,
+                    _phaseStartBlock,
+                    _phaseStartBlock + _phaseLength
+                );
+                expectedPhaseInfos[1] = PhaseInformation(
+                    Phase.GPKJSubmission,
+                    _phaseStartBlock + _phaseLength,
+                    _phaseStartBlock + 2 * _phaseLength
+                );
+                revert ETHDKGErrors.IncorrectPhase(_ethdkgPhase, block.number, expectedPhaseInfos);
             }
         }
 

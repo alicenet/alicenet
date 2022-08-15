@@ -2,7 +2,13 @@ import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
 import { getFixture, getValidatorEthAccount } from "../../setup";
 import { validators4 } from "../assets/4-validators-successful-case";
-import { addValidators, expect, initializeETHDKG, Phase } from "../setup";
+import {
+  addValidators,
+  expect,
+  getInfoForIncorrectPhaseCustomError,
+  initializeETHDKG,
+  Phase,
+} from "../setup";
 
 describe("ETHDKG: Registration Open", () => {
   it("does not let registrations before ETHDKG Registration is open", async function () {
@@ -13,20 +19,26 @@ describe("ETHDKG: Registration Open", () => {
 
     // for this test, ETHDKG is not started
     // register validator0
-    const ethDKGPhases = await ethers.getContractAt(
-      "ETHDKGPhases",
-      ethdkg.address
-    );
-    await expect(
-      ethdkg
-        .connect(await getValidatorEthAccount(validators4[0].address))
-        .register(validators4[0].aliceNetPublicKey)
-    )
-      .to.be.revertedWithCustomError(
-        ethDKGPhases,
-        `ETHDKGNotInRegistrationPhase`
-      )
-      .withArgs(Phase.RegistrationOpen);
+    const txPromise = ethdkg
+      .connect(await getValidatorEthAccount(validators4[0].address))
+      .register(validators4[0].aliceNetPublicKey);
+    const [
+      ethDKGPhases,
+      ,
+      expectedBlockNumber,
+      expectedCurrentPhase,
+      phaseStartBlock,
+      phaseLength,
+    ] = await getInfoForIncorrectPhaseCustomError(txPromise, ethdkg);
+    await expect(txPromise)
+      .to.be.revertedWithCustomError(ethDKGPhases, `IncorrectPhase`)
+      .withArgs(expectedCurrentPhase, expectedBlockNumber, [
+        [
+          Phase.RegistrationOpen,
+          phaseStartBlock,
+          phaseStartBlock.add(phaseLength),
+        ],
+      ]);
   });
 
   it("does not let validators to register more than once", async function () {
