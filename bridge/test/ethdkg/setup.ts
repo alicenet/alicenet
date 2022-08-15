@@ -585,10 +585,6 @@ export const completeETHDKG = async (
     validators[index].mpk
   );
   await assertETHDKGPhase(ethdkg, Phase.Completion);
-  const ethDKGPhases = await ethers.getContractAt(
-    "ETHDKGPhases",
-    ethdkg.address
-  );
   // The other validators should fail
   for (const validator of validators) {
     const txPromise = ethdkg
