@@ -305,13 +305,8 @@
           },
           {
             "internalType": "uint24",
-            "name": "messageTimeout",
-            "type": "uint24"
-          },
-          {
-            "internalType": "uint32",
             "name": "proposalTimeout",
-            "type": "uint32"
+            "type": "uint24"
           },
           {
             "internalType": "uint32",
@@ -324,14 +319,9 @@
             "type": "uint32"
           },
           {
-            "internalType": "uint64",
+            "internalType": "uint32",
             "name": "maxBlockSize",
-            "type": "uint64"
-          },
-          {
-            "internalType": "uint64",
-            "name": "atomicSwapFee",
-            "type": "uint64"
+            "type": "uint32"
           },
           {
             "internalType": "uint64",
@@ -378,13 +368,8 @@
           },
           {
             "internalType": "uint24",
-            "name": "messageTimeout",
-            "type": "uint24"
-          },
-          {
-            "internalType": "uint32",
             "name": "proposalTimeout",
-            "type": "uint32"
+            "type": "uint24"
           },
           {
             "internalType": "uint32",
@@ -397,14 +382,9 @@
             "type": "uint32"
           },
           {
-            "internalType": "uint64",
+            "internalType": "uint32",
             "name": "maxBlockSize",
-            "type": "uint64"
-          },
-          {
-            "internalType": "uint64",
-            "name": "atomicSwapFee",
-            "type": "uint64"
+            "type": "uint32"
           },
           {
             "internalType": "uint64",
@@ -460,13 +440,8 @@
           },
           {
             "internalType": "uint24",
-            "name": "messageTimeout",
-            "type": "uint24"
-          },
-          {
-            "internalType": "uint32",
             "name": "proposalTimeout",
-            "type": "uint32"
+            "type": "uint24"
           },
           {
             "internalType": "uint32",
@@ -479,14 +454,9 @@
             "type": "uint32"
           },
           {
-            "internalType": "uint64",
+            "internalType": "uint32",
             "name": "maxBlockSize",
-            "type": "uint64"
-          },
-          {
-            "internalType": "uint64",
-            "name": "atomicSwapFee",
-            "type": "uint64"
+            "type": "uint32"
           },
           {
             "internalType": "uint64",
@@ -571,13 +541,8 @@
           },
           {
             "internalType": "uint24",
-            "name": "messageTimeout",
-            "type": "uint24"
-          },
-          {
-            "internalType": "uint32",
             "name": "proposalTimeout",
-            "type": "uint32"
+            "type": "uint24"
           },
           {
             "internalType": "uint32",
@@ -590,14 +555,9 @@
             "type": "uint32"
           },
           {
-            "internalType": "uint64",
+            "internalType": "uint32",
             "name": "maxBlockSize",
-            "type": "uint64"
-          },
-          {
-            "internalType": "uint64",
-            "name": "atomicSwapFee",
-            "type": "uint64"
+            "type": "uint32"
           },
           {
             "internalType": "uint64",
@@ -666,13 +626,8 @@
           },
           {
             "internalType": "uint24",
-            "name": "messageTimeout",
-            "type": "uint24"
-          },
-          {
-            "internalType": "uint32",
             "name": "proposalTimeout",
-            "type": "uint32"
+            "type": "uint24"
           },
           {
             "internalType": "uint32",
@@ -685,14 +640,9 @@
             "type": "uint32"
           },
           {
-            "internalType": "uint64",
+            "internalType": "uint32",
             "name": "maxBlockSize",
-            "type": "uint64"
-          },
-          {
-            "internalType": "uint64",
-            "name": "atomicSwapFee",
-            "type": "uint64"
+            "type": "uint32"
           },
           {
             "internalType": "uint64",

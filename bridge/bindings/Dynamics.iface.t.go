@@ -9,9 +9,9 @@ import (
 
 // IDynamicsTransactor ...
 type IDynamicsTransactor interface {
-	// ChangeDynamicValues is a paid mutator transaction binding the contract method 0xe9b60d53.
+	// ChangeDynamicValues is a paid mutator transaction binding the contract method 0xe84f2fd0.
 	//
-	// Solidity: function changeDynamicValues(uint32 relativeExecutionEpoch, (uint8,uint24,uint32,uint32,uint32,uint64,uint64,uint64,uint64,uint128) newValue) returns()
+	// Solidity: function changeDynamicValues(uint32 relativeExecutionEpoch, (uint8,uint24,uint32,uint32,uint32,uint64,uint64,uint128) newValue) returns()
 	ChangeDynamicValues(opts *bind.TransactOpts, relativeExecutionEpoch uint32, newValue DynamicValues) (*types.Transaction, error)
 	// DeployStorage is a paid mutator transaction binding the contract method 0xa130fd2e.
 	//

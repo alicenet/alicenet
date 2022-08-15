@@ -18,7 +18,7 @@ contract Dynamics is Initializable, IDynamics, ImmutableSnapshots {
 
     DoublyLinkedList internal _dynamicValues;
     Configuration internal _configuration;
-    CanonicalVersion internal _nodeCanonicalVersion;
+    CanonicalVersion internal _aliceNetCanonicalVersion;
 
     constructor() ImmutableFactory(msg.sender) ImmutableSnapshots() {}
 
@@ -26,11 +26,9 @@ contract Dynamics is Initializable, IDynamics, ImmutableSnapshots {
         DynamicValues memory initialValues = DynamicValues(
             Version.V1,
             4000,
-            4000,
             3000,
             3000,
             3000000,
-            0,
             0,
             0,
             0
@@ -68,7 +66,13 @@ contract Dynamics is Initializable, IDynamics, ImmutableSnapshots {
         uint32 patch,
         bytes32 binaryHash
     ) public onlyFactory {
-        _updateNodeVersion(relativeUpdateEpoch, majorVersion, minorVersion, patch, binaryHash);
+        _updateAliceNetNodeVersion(
+            relativeUpdateEpoch,
+            majorVersion,
+            minorVersion,
+            patch,
+            binaryHash
+        );
     }
 
     function setConfiguration(Configuration calldata newConfig) public onlyFactory {
@@ -130,14 +134,14 @@ contract Dynamics is Initializable, IDynamics, ImmutableSnapshots {
         return addr;
     }
 
-    function _updateNodeVersion(
+    function _updateAliceNetNodeVersion(
         uint32 relativeUpdateEpoch,
         uint32 majorVersion,
         uint32 minorVersion,
         uint32 patch,
         bytes32 binaryHash
     ) internal {
-        CanonicalVersion memory currentVersion = _nodeCanonicalVersion;
+        CanonicalVersion memory currentVersion = _aliceNetCanonicalVersion;
         uint256 currentCompactedVersion = _computeCompactedVersion(
             currentVersion.major,
             currentVersion.minor,
@@ -150,13 +154,16 @@ contract Dynamics is Initializable, IDynamics, ImmutableSnapshots {
             binaryHash
         );
         uint256 newCompactedVersion = _computeCompactedVersion(majorVersion, minorVersion, patch);
-        if (newCompactedVersion <= currentCompactedVersion) {
+        if (
+            newCompactedVersion <= currentCompactedVersion ||
+            majorVersion > currentVersion.major + 1
+        ) {
             revert DynamicsErrors.InvalidAliceNetNodeVersion(newVersion, currentVersion);
         }
         if (binaryHash == 0) {
             revert DynamicsErrors.InvalidAliceNetNodeHash(binaryHash);
         }
-        _nodeCanonicalVersion = newVersion;
+        _aliceNetCanonicalVersion = newVersion;
         emit NewAliceNetNodeVersionAvailable(
             _computeExecutionEpoch(relativeUpdateEpoch),
             newVersion
@@ -186,7 +193,6 @@ contract Dynamics is Initializable, IDynamics, ImmutableSnapshots {
         return executionEpoch;
     }
 
-
     function _computeCompactedVersion(
         uint256 majorVersion,
         uint256 minorVersion,
@@ -204,8 +210,8 @@ contract Dynamics is Initializable, IDynamics, ImmutableSnapshots {
     {
         uint256 ptr;
         uint256 retPtr;
-        uint8[10] memory sizes = [8, 24, 32, 32, 32, 64, 64, 64, 64, 128];
-        uint256 dynamicValuesTotalSize = 64;
+        uint8[8] memory sizes = [8, 24, 32, 32, 32, 64, 64, 128];
+        uint256 dynamicValuesTotalSize = 48;
         uint256 extCodeSize;
         assembly {
             ptr := mload(0x40)
@@ -234,12 +240,10 @@ contract Dynamics is Initializable, IDynamics, ImmutableSnapshots {
     {
         bytes memory data = abi.encodePacked(
             newValue.encoderVersion,
-            newValue.messageTimeout,
             newValue.proposalTimeout,
             newValue.preVoteTimeout,
             newValue.preCommitTimeout,
             newValue.maxBlockSize,
-            newValue.atomicSwapFee,
             newValue.dataStoreFee,
             newValue.valueStoreFee,
             newValue.minScaledTransactionFee
@@ -289,7 +293,7 @@ contract Dynamics is Initializable, IDynamics, ImmutableSnapshots {
 //         uint32 patch,
 //         bytes32 binaryHash
 //     ) public {
-//         _updateNodeVersion(relativeUpdateEpoch, majorVersion, minorVersion, patch, binaryHash);
+//         _updateAliceNetNodeVersion(relativeUpdateEpoch, majorVersion, minorVersion, patch, binaryHash);
 //     }
 
 //     function testSetConfiguration(

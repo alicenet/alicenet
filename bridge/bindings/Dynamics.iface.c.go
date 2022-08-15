@@ -13,11 +13,11 @@ import (
 type IDynamicsCaller interface {
 	// DecodeDynamicValues is a free data retrieval call binding the contract method 0x5234bca0.
 	//
-	// Solidity: function decodeDynamicValues(address addr) view returns((uint8,uint24,uint32,uint32,uint32,uint64,uint64,uint64,uint64,uint128))
+	// Solidity: function decodeDynamicValues(address addr) view returns((uint8,uint24,uint32,uint32,uint32,uint64,uint64,uint128))
 	DecodeDynamicValues(opts *bind.CallOpts, addr common.Address) (DynamicValues, error)
-	// EncodeDynamicValues is a free data retrieval call binding the contract method 0x28c2d910.
+	// EncodeDynamicValues is a free data retrieval call binding the contract method 0x972e374c.
 	//
-	// Solidity: function encodeDynamicValues((uint8,uint24,uint32,uint32,uint32,uint64,uint64,uint64,uint64,uint128) value) pure returns(bytes)
+	// Solidity: function encodeDynamicValues((uint8,uint24,uint32,uint32,uint32,uint64,uint64,uint128) value) pure returns(bytes)
 	EncodeDynamicValues(opts *bind.CallOpts, value DynamicValues) ([]byte, error)
 	// GetConfiguration is a free data retrieval call binding the contract method 0x6bd50cef.
 	//
@@ -29,7 +29,7 @@ type IDynamicsCaller interface {
 	GetEncodingVersion(opts *bind.CallOpts) (uint8, error)
 	// GetLatestDynamicValues is a free data retrieval call binding the contract method 0xf53efe02.
 	//
-	// Solidity: function getLatestDynamicValues() view returns((uint8,uint24,uint32,uint32,uint32,uint64,uint64,uint64,uint64,uint128))
+	// Solidity: function getLatestDynamicValues() view returns((uint8,uint24,uint32,uint32,uint32,uint64,uint64,uint128))
 	GetLatestDynamicValues(opts *bind.CallOpts) (DynamicValues, error)
 	// GetMetamorphicContractAddress is a free data retrieval call binding the contract method 0x8653a465.
 	//
@@ -37,6 +37,6 @@ type IDynamicsCaller interface {
 	GetMetamorphicContractAddress(opts *bind.CallOpts, _salt [32]byte, _factory common.Address) (common.Address, error)
 	// GetPreviousDynamicValues is a free data retrieval call binding the contract method 0x72015859.
 	//
-	// Solidity: function getPreviousDynamicValues(uint256 epoch) view returns((uint8,uint24,uint32,uint32,uint32,uint64,uint64,uint64,uint64,uint128))
+	// Solidity: function getPreviousDynamicValues(uint256 epoch) view returns((uint8,uint24,uint32,uint32,uint32,uint64,uint64,uint128))
 	GetPreviousDynamicValues(opts *bind.CallOpts, epoch *big.Int) (DynamicValues, error)
 }

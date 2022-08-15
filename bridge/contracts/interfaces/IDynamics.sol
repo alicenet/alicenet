@@ -9,15 +9,13 @@ enum Version {
 struct DynamicValues {
     // first slot
     Version encoderVersion;
-    uint24 messageTimeout;
-    uint32 proposalTimeout;
+    uint24 proposalTimeout;
     uint32 preVoteTimeout;
     uint32 preCommitTimeout;
-    uint64 maxBlockSize;
-    uint64 atomicSwapFee;
-    // Second slot
+    uint32 maxBlockSize;
     uint64 dataStoreFee;
     uint64 valueStoreFee;
+    // Second slot
     uint128 minScaledTransactionFee;
 }
 
