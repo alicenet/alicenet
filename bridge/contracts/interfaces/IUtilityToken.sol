@@ -1,13 +1,12 @@
 // SPDX-License-Identifier: MIT-open-group
 pragma solidity ^0.8.0;
+struct Deposit {
+    uint8 accountType;
+    address account;
+    uint256 value;
+}
 
 interface IUtilityToken {
-    struct Deposit {
-        uint8 accountType;
-        address account;
-        uint256 value;
-    }
-
     function setSplits(
         uint256 validatorStakingSplit_,
         uint256 publicStakingSplit_,

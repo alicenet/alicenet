@@ -7,7 +7,7 @@ import "contracts/utils/ImmutableAuth.sol";
 /// @custom:salt ATokenMinter
 /// @custom:deploy-type deployUpgradeable
 contract ATokenMinter is ImmutableAToken, IStakingTokenMinter {
-    constructor() ImmutableFactory(msg.sender) ImmutableAToken() {}
+    constructor() ImmutableFactory(msg.sender) ImmutableAToken() IStakingTokenMinter() {}
 
     function mint(address to, uint256 amount) public onlyFactory {
         IStakingToken(_aTokenAddress()).externalMint(to, amount);
