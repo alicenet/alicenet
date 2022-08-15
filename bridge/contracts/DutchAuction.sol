@@ -10,18 +10,13 @@ import "contracts/interfaces/IValidatorPool.sol";
 /// @custom:deploy-type deployUpgradeable
 contract DutchAuction is Initializable, ImmutableFactory, ImmutableValidatorPool {
     uint256 private immutable _startPrice = 1000000 * 10**18;
-    uint8 private immutable _initialDelta = 10;
+    uint256 private immutable _ethdkgValidatorCost = 1200000 * 2 * 100 * 10**9; // Exit and enter at an estimated price of 100 gwei
     uint8 private immutable _decay = 16;
-    uint256 private immutable _finalPrice;
-    uint256 private immutable _scaleParameter = 100;
-    uint256 private _startBlock = 0;
-    uint256 private _alfa;
+    uint16 private immutable _scaleParameter = 100;
+    uint256 private _startBlock;
+    uint256 private _finalPrice;
 
-    constructor() ImmutableFactory(msg.sender) {
-        uint256 _currentValidators = IValidatorPool(_validatorPoolAddress()).getValidatorsCount();
-        _finalPrice = 1200000 * 100 * 10**9 * _currentValidators * 2; // 1200000 is the cost in gas units for an ETHDKG complete round and 100 is an estimated gas price in gweis
-        _alfa = _startPrice - _finalPrice;
-    }
+    constructor() ImmutableFactory(msg.sender) {}
 
     function initialize() public {
         resetAuction();
@@ -29,6 +24,9 @@ contract DutchAuction is Initializable, ImmutableFactory, ImmutableValidatorPool
 
     /// @dev Re-starts auction defining auction's start block
     function resetAuction() public onlyFactory {
+        _finalPrice =
+            _ethdkgValidatorCost *
+            IValidatorPool(_validatorPoolAddress()).getValidatorsCount();
         _startBlock = block.number;
     }
 
@@ -41,6 +39,7 @@ contract DutchAuction is Initializable, ImmutableFactory, ImmutableValidatorPool
     /// @dev
     /// @param blocks blocks since the auction started
     function _dutchAuctionPrice(uint256 blocks) internal view returns (uint256 result) {
+        uint256 _alfa = _startPrice - _finalPrice;
         uint256 t1 = _alfa * _scaleParameter;
         uint256 t2 = _decay * blocks + _scaleParameter**2;
         uint256 ratio = t1 / t2;
