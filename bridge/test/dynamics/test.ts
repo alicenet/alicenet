@@ -60,6 +60,7 @@ describe("Testing Dynamics methods", async () => {
     dynamicValues.valueStoreFee = BigNumber.from(1)
     await factoryCallAny(fixture.factory, dynamics, "changeDynamicValues", [BigNumber.from(3), dynamicValues]);
     await factoryCallAny(fixture.factory, fixture.snapshots, "snapshot", [emptyArray, emptyArray]);
+    expect((await dynamics.getLatestDynamicValues())[6]).to.be.equal(BigNumber.from(0))
     await factoryCallAny(fixture.factory, fixture.snapshots, "snapshot", [emptyArray, emptyArray]);
     expect((await dynamics.getLatestDynamicValues())[6]).to.be.equal(BigNumber.from(0))
     await factoryCallAny(fixture.factory, fixture.snapshots, "snapshot", [emptyArray, emptyArray]);
