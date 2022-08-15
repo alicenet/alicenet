@@ -46,6 +46,7 @@ describe("Snapshots: With successful ETHDKG round completed", () => {
   });
 
   it("Reverts when snapshot state contains invalid height", async function () {
+    const expectedEpoch = 1024;
     await expect(
       snapshots
         .connect(
@@ -55,8 +56,8 @@ describe("Snapshots: With successful ETHDKG round completed", () => {
         )
         .snapshot(invalidSnapshot500.GroupSignature, invalidSnapshot500.BClaims)
     )
-      .to.be.revertedWithCustomError(fixture.snapshots, "InvalidBlockHeight")
-      .withArgs(invalidSnapshot500.height);
+      .to.be.revertedWithCustomError(fixture.snapshots, "UnexpectedBlockHeight")
+      .withArgs(invalidSnapshot500.height, expectedEpoch);
   });
 
   it("Reverts when snapshot state contains invalid chain id", async function () {
