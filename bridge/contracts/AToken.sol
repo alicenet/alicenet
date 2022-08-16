@@ -3,8 +3,8 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "./utils/Admin.sol";
-import "./utils/ImmutableAuth.sol";
+import "contracts/utils/Admin.sol";
+import "contracts/utils/ImmutableAuth.sol";
 import "contracts/interfaces/IAToken.sol";
 
 /// @custom:salt AToken
