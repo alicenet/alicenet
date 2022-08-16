@@ -194,87 +194,23 @@
         "type": "address"
       }
     ],
+    "name": "OnlyDistribution",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "sender",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "expected",
+        "type": "address"
+      }
+    ],
     "name": "OnlyFactory",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "sender",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "expected",
-        "type": "address"
-      }
-    ],
-    "name": "OnlyFoundation",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "sender",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "expected",
-        "type": "address"
-      }
-    ],
-    "name": "OnlyLiquidityProviderStaking",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "sender",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "expected",
-        "type": "address"
-      }
-    ],
-    "name": "OnlyPublicStaking",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "sender",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "expected",
-        "type": "address"
-      }
-    ],
-    "name": "OnlyValidatorStaking",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "sender",
-        "type": "address"
-      }
-    ],
-    "name": "SenderNotAdmin",
-    "type": "error"
-  },
-  {
-    "inputs": [],
-    "name": "SplitValueSumError",
     "type": "error"
   },
   {
@@ -599,40 +535,12 @@
     "name": "distribute",
     "outputs": [
       {
-        "internalType": "uint256",
-        "name": "minerAmount",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "stakingAmount",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "lpStakingAmount",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "foundationAmount",
-        "type": "uint256"
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
       }
     ],
     "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "getAdmin",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -870,34 +778,12 @@
   },
   {
     "inputs": [],
-    "name": "getSplits",
+    "name": "getTotalBTokensDeposited",
     "outputs": [
       {
-        "components": [
-          {
-            "internalType": "uint32",
-            "name": "validatorStaking",
-            "type": "uint32"
-          },
-          {
-            "internalType": "uint32",
-            "name": "publicStaking",
-            "type": "uint32"
-          },
-          {
-            "internalType": "uint32",
-            "name": "liquidityProviderStaking",
-            "type": "uint32"
-          },
-          {
-            "internalType": "uint32",
-            "name": "protocolFee",
-            "type": "uint32"
-          }
-        ],
-        "internalType": "struct BToken.Splits",
+        "internalType": "uint256",
         "name": "",
-        "type": "tuple"
+        "type": "uint256"
       }
     ],
     "stateMutability": "view",
@@ -905,7 +791,7 @@
   },
   {
     "inputs": [],
-    "name": "getTotalBTokensDeposited",
+    "name": "getYield",
     "outputs": [
       {
         "internalType": "uint256",
@@ -1030,47 +916,6 @@
       }
     ],
     "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "admin_",
-        "type": "address"
-      }
-    ],
-    "name": "setAdmin",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "validatorStakingSplit_",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "publicStakingSplit_",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "liquidityProviderStakingSplit_",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "protocolFee_",
-        "type": "uint256"
-      }
-    ],
-    "name": "setSplits",
-    "outputs": [],
-    "stateMutability": "nonpayable",
     "type": "function"
   },
   {

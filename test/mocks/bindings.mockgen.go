@@ -8002,9 +8002,6 @@ type MockIBToken struct {
 	// FilterTransferFunc is an instance of a mock function object
 	// controlling the behavior of the method FilterTransfer.
 	FilterTransferFunc *IBTokenFilterTransferFunc
-	// GetAdminFunc is an instance of a mock function object controlling the
-	// behavior of the method GetAdmin.
-	GetAdminFunc *IBTokenGetAdminFunc
 	// GetDepositFunc is an instance of a mock function object controlling
 	// the behavior of the method GetDeposit.
 	GetDepositFunc *IBTokenGetDepositFunc
@@ -8042,12 +8039,12 @@ type MockIBToken struct {
 	// GetPoolBalanceFunc is an instance of a mock function object
 	// controlling the behavior of the method GetPoolBalance.
 	GetPoolBalanceFunc *IBTokenGetPoolBalanceFunc
-	// GetSplitsFunc is an instance of a mock function object controlling
-	// the behavior of the method GetSplits.
-	GetSplitsFunc *IBTokenGetSplitsFunc
 	// GetTotalBTokensDepositedFunc is an instance of a mock function object
 	// controlling the behavior of the method GetTotalBTokensDeposited.
 	GetTotalBTokensDepositedFunc *IBTokenGetTotalBTokensDepositedFunc
+	// GetYieldFunc is an instance of a mock function object controlling the
+	// behavior of the method GetYield.
+	GetYieldFunc *IBTokenGetYieldFunc
 	// IncreaseAllowanceFunc is an instance of a mock function object
 	// controlling the behavior of the method IncreaseAllowance.
 	IncreaseAllowanceFunc *IBTokenIncreaseAllowanceFunc
@@ -8078,12 +8075,6 @@ type MockIBToken struct {
 	// ParseTransferFunc is an instance of a mock function object
 	// controlling the behavior of the method ParseTransfer.
 	ParseTransferFunc *IBTokenParseTransferFunc
-	// SetAdminFunc is an instance of a mock function object controlling the
-	// behavior of the method SetAdmin.
-	SetAdminFunc *IBTokenSetAdminFunc
-	// SetSplitsFunc is an instance of a mock function object controlling
-	// the behavior of the method SetSplits.
-	SetSplitsFunc *IBTokenSetSplitsFunc
 	// SymbolFunc is an instance of a mock function object controlling the
 	// behavior of the method Symbol.
 	SymbolFunc *IBTokenSymbolFunc
@@ -8192,11 +8183,6 @@ func NewMockIBToken() *MockIBToken {
 				return
 			},
 		},
-		GetAdminFunc: &IBTokenGetAdminFunc{
-			defaultHook: func(*bind.CallOpts) (r0 common.Address, r1 error) {
-				return
-			},
-		},
 		GetDepositFunc: &IBTokenGetDepositFunc{
 			defaultHook: func(*bind.CallOpts, *big.Int) (r0 bindings.BTokenDeposit, r1 error) {
 				return
@@ -8252,12 +8238,12 @@ func NewMockIBToken() *MockIBToken {
 				return
 			},
 		},
-		GetSplitsFunc: &IBTokenGetSplitsFunc{
-			defaultHook: func(*bind.CallOpts) (r0 bindings.BTokenSplits, r1 error) {
+		GetTotalBTokensDepositedFunc: &IBTokenGetTotalBTokensDepositedFunc{
+			defaultHook: func(*bind.CallOpts) (r0 *big.Int, r1 error) {
 				return
 			},
 		},
-		GetTotalBTokensDepositedFunc: &IBTokenGetTotalBTokensDepositedFunc{
+		GetYieldFunc: &IBTokenGetYieldFunc{
 			defaultHook: func(*bind.CallOpts) (r0 *big.Int, r1 error) {
 				return
 			},
@@ -8309,16 +8295,6 @@ func NewMockIBToken() *MockIBToken {
 		},
 		ParseTransferFunc: &IBTokenParseTransferFunc{
 			defaultHook: func(types.Log) (r0 *bindings.BTokenTransfer, r1 error) {
-				return
-			},
-		},
-		SetAdminFunc: &IBTokenSetAdminFunc{
-			defaultHook: func(*bind.TransactOpts, common.Address) (r0 *types.Transaction, r1 error) {
-				return
-			},
-		},
-		SetSplitsFunc: &IBTokenSetSplitsFunc{
-			defaultHook: func(*bind.TransactOpts, *big.Int, *big.Int, *big.Int, *big.Int) (r0 *types.Transaction, r1 error) {
 				return
 			},
 		},
@@ -8449,11 +8425,6 @@ func NewStrictMockIBToken() *MockIBToken {
 				panic("unexpected invocation of MockIBToken.FilterTransfer")
 			},
 		},
-		GetAdminFunc: &IBTokenGetAdminFunc{
-			defaultHook: func(*bind.CallOpts) (common.Address, error) {
-				panic("unexpected invocation of MockIBToken.GetAdmin")
-			},
-		},
 		GetDepositFunc: &IBTokenGetDepositFunc{
 			defaultHook: func(*bind.CallOpts, *big.Int) (bindings.BTokenDeposit, error) {
 				panic("unexpected invocation of MockIBToken.GetDeposit")
@@ -8509,14 +8480,14 @@ func NewStrictMockIBToken() *MockIBToken {
 				panic("unexpected invocation of MockIBToken.GetPoolBalance")
 			},
 		},
-		GetSplitsFunc: &IBTokenGetSplitsFunc{
-			defaultHook: func(*bind.CallOpts) (bindings.BTokenSplits, error) {
-				panic("unexpected invocation of MockIBToken.GetSplits")
-			},
-		},
 		GetTotalBTokensDepositedFunc: &IBTokenGetTotalBTokensDepositedFunc{
 			defaultHook: func(*bind.CallOpts) (*big.Int, error) {
 				panic("unexpected invocation of MockIBToken.GetTotalBTokensDeposited")
+			},
+		},
+		GetYieldFunc: &IBTokenGetYieldFunc{
+			defaultHook: func(*bind.CallOpts) (*big.Int, error) {
+				panic("unexpected invocation of MockIBToken.GetYield")
 			},
 		},
 		IncreaseAllowanceFunc: &IBTokenIncreaseAllowanceFunc{
@@ -8567,16 +8538,6 @@ func NewStrictMockIBToken() *MockIBToken {
 		ParseTransferFunc: &IBTokenParseTransferFunc{
 			defaultHook: func(types.Log) (*bindings.BTokenTransfer, error) {
 				panic("unexpected invocation of MockIBToken.ParseTransfer")
-			},
-		},
-		SetAdminFunc: &IBTokenSetAdminFunc{
-			defaultHook: func(*bind.TransactOpts, common.Address) (*types.Transaction, error) {
-				panic("unexpected invocation of MockIBToken.SetAdmin")
-			},
-		},
-		SetSplitsFunc: &IBTokenSetSplitsFunc{
-			defaultHook: func(*bind.TransactOpts, *big.Int, *big.Int, *big.Int, *big.Int) (*types.Transaction, error) {
-				panic("unexpected invocation of MockIBToken.SetSplits")
 			},
 		},
 		SymbolFunc: &IBTokenSymbolFunc{
@@ -8676,9 +8637,6 @@ func NewMockIBTokenFrom(i bindings.IBToken) *MockIBToken {
 		FilterTransferFunc: &IBTokenFilterTransferFunc{
 			defaultHook: i.FilterTransfer,
 		},
-		GetAdminFunc: &IBTokenGetAdminFunc{
-			defaultHook: i.GetAdmin,
-		},
 		GetDepositFunc: &IBTokenGetDepositFunc{
 			defaultHook: i.GetDeposit,
 		},
@@ -8712,11 +8670,11 @@ func NewMockIBTokenFrom(i bindings.IBToken) *MockIBToken {
 		GetPoolBalanceFunc: &IBTokenGetPoolBalanceFunc{
 			defaultHook: i.GetPoolBalance,
 		},
-		GetSplitsFunc: &IBTokenGetSplitsFunc{
-			defaultHook: i.GetSplits,
-		},
 		GetTotalBTokensDepositedFunc: &IBTokenGetTotalBTokensDepositedFunc{
 			defaultHook: i.GetTotalBTokensDeposited,
+		},
+		GetYieldFunc: &IBTokenGetYieldFunc{
+			defaultHook: i.GetYield,
 		},
 		IncreaseAllowanceFunc: &IBTokenIncreaseAllowanceFunc{
 			defaultHook: i.IncreaseAllowance,
@@ -8747,12 +8705,6 @@ func NewMockIBTokenFrom(i bindings.IBToken) *MockIBToken {
 		},
 		ParseTransferFunc: &IBTokenParseTransferFunc{
 			defaultHook: i.ParseTransfer,
-		},
-		SetAdminFunc: &IBTokenSetAdminFunc{
-			defaultHook: i.SetAdmin,
-		},
-		SetSplitsFunc: &IBTokenSetSplitsFunc{
-			defaultHook: i.SetSplits,
 		},
 		SymbolFunc: &IBTokenSymbolFunc{
 			defaultHook: i.Symbol,
@@ -10429,110 +10381,6 @@ func (c IBTokenFilterTransferFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
-// IBTokenGetAdminFunc describes the behavior when the GetAdmin method of
-// the parent MockIBToken instance is invoked.
-type IBTokenGetAdminFunc struct {
-	defaultHook func(*bind.CallOpts) (common.Address, error)
-	hooks       []func(*bind.CallOpts) (common.Address, error)
-	history     []IBTokenGetAdminFuncCall
-	mutex       sync.Mutex
-}
-
-// GetAdmin delegates to the next hook function in the queue and stores the
-// parameter and result values of this invocation.
-func (m *MockIBToken) GetAdmin(v0 *bind.CallOpts) (common.Address, error) {
-	r0, r1 := m.GetAdminFunc.nextHook()(v0)
-	m.GetAdminFunc.appendCall(IBTokenGetAdminFuncCall{v0, r0, r1})
-	return r0, r1
-}
-
-// SetDefaultHook sets function that is called when the GetAdmin method of
-// the parent MockIBToken instance is invoked and the hook queue is empty.
-func (f *IBTokenGetAdminFunc) SetDefaultHook(hook func(*bind.CallOpts) (common.Address, error)) {
-	f.defaultHook = hook
-}
-
-// PushHook adds a function to the end of hook queue. Each invocation of the
-// GetAdmin method of the parent MockIBToken instance invokes the hook at
-// the front of the queue and discards it. After the queue is empty, the
-// default hook function is invoked for any future action.
-func (f *IBTokenGetAdminFunc) PushHook(hook func(*bind.CallOpts) (common.Address, error)) {
-	f.mutex.Lock()
-	f.hooks = append(f.hooks, hook)
-	f.mutex.Unlock()
-}
-
-// SetDefaultReturn calls SetDefaultHook with a function that returns the
-// given values.
-func (f *IBTokenGetAdminFunc) SetDefaultReturn(r0 common.Address, r1 error) {
-	f.SetDefaultHook(func(*bind.CallOpts) (common.Address, error) {
-		return r0, r1
-	})
-}
-
-// PushReturn calls PushHook with a function that returns the given values.
-func (f *IBTokenGetAdminFunc) PushReturn(r0 common.Address, r1 error) {
-	f.PushHook(func(*bind.CallOpts) (common.Address, error) {
-		return r0, r1
-	})
-}
-
-func (f *IBTokenGetAdminFunc) nextHook() func(*bind.CallOpts) (common.Address, error) {
-	f.mutex.Lock()
-	defer f.mutex.Unlock()
-
-	if len(f.hooks) == 0 {
-		return f.defaultHook
-	}
-
-	hook := f.hooks[0]
-	f.hooks = f.hooks[1:]
-	return hook
-}
-
-func (f *IBTokenGetAdminFunc) appendCall(r0 IBTokenGetAdminFuncCall) {
-	f.mutex.Lock()
-	f.history = append(f.history, r0)
-	f.mutex.Unlock()
-}
-
-// History returns a sequence of IBTokenGetAdminFuncCall objects describing
-// the invocations of this function.
-func (f *IBTokenGetAdminFunc) History() []IBTokenGetAdminFuncCall {
-	f.mutex.Lock()
-	history := make([]IBTokenGetAdminFuncCall, len(f.history))
-	copy(history, f.history)
-	f.mutex.Unlock()
-
-	return history
-}
-
-// IBTokenGetAdminFuncCall is an object that describes an invocation of
-// method GetAdmin on an instance of MockIBToken.
-type IBTokenGetAdminFuncCall struct {
-	// Arg0 is the value of the 1st argument passed to this method
-	// invocation.
-	Arg0 *bind.CallOpts
-	// Result0 is the value of the 1st result returned from this method
-	// invocation.
-	Result0 common.Address
-	// Result1 is the value of the 2nd result returned from this method
-	// invocation.
-	Result1 error
-}
-
-// Args returns an interface slice containing the arguments of this
-// invocation.
-func (c IBTokenGetAdminFuncCall) Args() []interface{} {
-	return []interface{}{c.Arg0}
-}
-
-// Results returns an interface slice containing the results of this
-// invocation.
-func (c IBTokenGetAdminFuncCall) Results() []interface{} {
-	return []interface{}{c.Result0, c.Result1}
-}
-
 // IBTokenGetDepositFunc describes the behavior when the GetDeposit method
 // of the parent MockIBToken instance is invoked.
 type IBTokenGetDepositFunc struct {
@@ -11743,110 +11591,6 @@ func (c IBTokenGetPoolBalanceFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
-// IBTokenGetSplitsFunc describes the behavior when the GetSplits method of
-// the parent MockIBToken instance is invoked.
-type IBTokenGetSplitsFunc struct {
-	defaultHook func(*bind.CallOpts) (bindings.BTokenSplits, error)
-	hooks       []func(*bind.CallOpts) (bindings.BTokenSplits, error)
-	history     []IBTokenGetSplitsFuncCall
-	mutex       sync.Mutex
-}
-
-// GetSplits delegates to the next hook function in the queue and stores the
-// parameter and result values of this invocation.
-func (m *MockIBToken) GetSplits(v0 *bind.CallOpts) (bindings.BTokenSplits, error) {
-	r0, r1 := m.GetSplitsFunc.nextHook()(v0)
-	m.GetSplitsFunc.appendCall(IBTokenGetSplitsFuncCall{v0, r0, r1})
-	return r0, r1
-}
-
-// SetDefaultHook sets function that is called when the GetSplits method of
-// the parent MockIBToken instance is invoked and the hook queue is empty.
-func (f *IBTokenGetSplitsFunc) SetDefaultHook(hook func(*bind.CallOpts) (bindings.BTokenSplits, error)) {
-	f.defaultHook = hook
-}
-
-// PushHook adds a function to the end of hook queue. Each invocation of the
-// GetSplits method of the parent MockIBToken instance invokes the hook at
-// the front of the queue and discards it. After the queue is empty, the
-// default hook function is invoked for any future action.
-func (f *IBTokenGetSplitsFunc) PushHook(hook func(*bind.CallOpts) (bindings.BTokenSplits, error)) {
-	f.mutex.Lock()
-	f.hooks = append(f.hooks, hook)
-	f.mutex.Unlock()
-}
-
-// SetDefaultReturn calls SetDefaultHook with a function that returns the
-// given values.
-func (f *IBTokenGetSplitsFunc) SetDefaultReturn(r0 bindings.BTokenSplits, r1 error) {
-	f.SetDefaultHook(func(*bind.CallOpts) (bindings.BTokenSplits, error) {
-		return r0, r1
-	})
-}
-
-// PushReturn calls PushHook with a function that returns the given values.
-func (f *IBTokenGetSplitsFunc) PushReturn(r0 bindings.BTokenSplits, r1 error) {
-	f.PushHook(func(*bind.CallOpts) (bindings.BTokenSplits, error) {
-		return r0, r1
-	})
-}
-
-func (f *IBTokenGetSplitsFunc) nextHook() func(*bind.CallOpts) (bindings.BTokenSplits, error) {
-	f.mutex.Lock()
-	defer f.mutex.Unlock()
-
-	if len(f.hooks) == 0 {
-		return f.defaultHook
-	}
-
-	hook := f.hooks[0]
-	f.hooks = f.hooks[1:]
-	return hook
-}
-
-func (f *IBTokenGetSplitsFunc) appendCall(r0 IBTokenGetSplitsFuncCall) {
-	f.mutex.Lock()
-	f.history = append(f.history, r0)
-	f.mutex.Unlock()
-}
-
-// History returns a sequence of IBTokenGetSplitsFuncCall objects describing
-// the invocations of this function.
-func (f *IBTokenGetSplitsFunc) History() []IBTokenGetSplitsFuncCall {
-	f.mutex.Lock()
-	history := make([]IBTokenGetSplitsFuncCall, len(f.history))
-	copy(history, f.history)
-	f.mutex.Unlock()
-
-	return history
-}
-
-// IBTokenGetSplitsFuncCall is an object that describes an invocation of
-// method GetSplits on an instance of MockIBToken.
-type IBTokenGetSplitsFuncCall struct {
-	// Arg0 is the value of the 1st argument passed to this method
-	// invocation.
-	Arg0 *bind.CallOpts
-	// Result0 is the value of the 1st result returned from this method
-	// invocation.
-	Result0 bindings.BTokenSplits
-	// Result1 is the value of the 2nd result returned from this method
-	// invocation.
-	Result1 error
-}
-
-// Args returns an interface slice containing the arguments of this
-// invocation.
-func (c IBTokenGetSplitsFuncCall) Args() []interface{} {
-	return []interface{}{c.Arg0}
-}
-
-// Results returns an interface slice containing the results of this
-// invocation.
-func (c IBTokenGetSplitsFuncCall) Results() []interface{} {
-	return []interface{}{c.Result0, c.Result1}
-}
-
 // IBTokenGetTotalBTokensDepositedFunc describes the behavior when the
 // GetTotalBTokensDeposited method of the parent MockIBToken instance is
 // invoked.
@@ -11952,6 +11696,110 @@ func (c IBTokenGetTotalBTokensDepositedFuncCall) Args() []interface{} {
 // Results returns an interface slice containing the results of this
 // invocation.
 func (c IBTokenGetTotalBTokensDepositedFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
+}
+
+// IBTokenGetYieldFunc describes the behavior when the GetYield method of
+// the parent MockIBToken instance is invoked.
+type IBTokenGetYieldFunc struct {
+	defaultHook func(*bind.CallOpts) (*big.Int, error)
+	hooks       []func(*bind.CallOpts) (*big.Int, error)
+	history     []IBTokenGetYieldFuncCall
+	mutex       sync.Mutex
+}
+
+// GetYield delegates to the next hook function in the queue and stores the
+// parameter and result values of this invocation.
+func (m *MockIBToken) GetYield(v0 *bind.CallOpts) (*big.Int, error) {
+	r0, r1 := m.GetYieldFunc.nextHook()(v0)
+	m.GetYieldFunc.appendCall(IBTokenGetYieldFuncCall{v0, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the GetYield method of
+// the parent MockIBToken instance is invoked and the hook queue is empty.
+func (f *IBTokenGetYieldFunc) SetDefaultHook(hook func(*bind.CallOpts) (*big.Int, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// GetYield method of the parent MockIBToken instance invokes the hook at
+// the front of the queue and discards it. After the queue is empty, the
+// default hook function is invoked for any future action.
+func (f *IBTokenGetYieldFunc) PushHook(hook func(*bind.CallOpts) (*big.Int, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *IBTokenGetYieldFunc) SetDefaultReturn(r0 *big.Int, r1 error) {
+	f.SetDefaultHook(func(*bind.CallOpts) (*big.Int, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *IBTokenGetYieldFunc) PushReturn(r0 *big.Int, r1 error) {
+	f.PushHook(func(*bind.CallOpts) (*big.Int, error) {
+		return r0, r1
+	})
+}
+
+func (f *IBTokenGetYieldFunc) nextHook() func(*bind.CallOpts) (*big.Int, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *IBTokenGetYieldFunc) appendCall(r0 IBTokenGetYieldFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of IBTokenGetYieldFuncCall objects describing
+// the invocations of this function.
+func (f *IBTokenGetYieldFunc) History() []IBTokenGetYieldFuncCall {
+	f.mutex.Lock()
+	history := make([]IBTokenGetYieldFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// IBTokenGetYieldFuncCall is an object that describes an invocation of
+// method GetYield on an instance of MockIBToken.
+type IBTokenGetYieldFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 *bind.CallOpts
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 *big.Int
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c IBTokenGetYieldFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c IBTokenGetYieldFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
@@ -13023,229 +12871,6 @@ func (c IBTokenParseTransferFuncCall) Args() []interface{} {
 // Results returns an interface slice containing the results of this
 // invocation.
 func (c IBTokenParseTransferFuncCall) Results() []interface{} {
-	return []interface{}{c.Result0, c.Result1}
-}
-
-// IBTokenSetAdminFunc describes the behavior when the SetAdmin method of
-// the parent MockIBToken instance is invoked.
-type IBTokenSetAdminFunc struct {
-	defaultHook func(*bind.TransactOpts, common.Address) (*types.Transaction, error)
-	hooks       []func(*bind.TransactOpts, common.Address) (*types.Transaction, error)
-	history     []IBTokenSetAdminFuncCall
-	mutex       sync.Mutex
-}
-
-// SetAdmin delegates to the next hook function in the queue and stores the
-// parameter and result values of this invocation.
-func (m *MockIBToken) SetAdmin(v0 *bind.TransactOpts, v1 common.Address) (*types.Transaction, error) {
-	r0, r1 := m.SetAdminFunc.nextHook()(v0, v1)
-	m.SetAdminFunc.appendCall(IBTokenSetAdminFuncCall{v0, v1, r0, r1})
-	return r0, r1
-}
-
-// SetDefaultHook sets function that is called when the SetAdmin method of
-// the parent MockIBToken instance is invoked and the hook queue is empty.
-func (f *IBTokenSetAdminFunc) SetDefaultHook(hook func(*bind.TransactOpts, common.Address) (*types.Transaction, error)) {
-	f.defaultHook = hook
-}
-
-// PushHook adds a function to the end of hook queue. Each invocation of the
-// SetAdmin method of the parent MockIBToken instance invokes the hook at
-// the front of the queue and discards it. After the queue is empty, the
-// default hook function is invoked for any future action.
-func (f *IBTokenSetAdminFunc) PushHook(hook func(*bind.TransactOpts, common.Address) (*types.Transaction, error)) {
-	f.mutex.Lock()
-	f.hooks = append(f.hooks, hook)
-	f.mutex.Unlock()
-}
-
-// SetDefaultReturn calls SetDefaultHook with a function that returns the
-// given values.
-func (f *IBTokenSetAdminFunc) SetDefaultReturn(r0 *types.Transaction, r1 error) {
-	f.SetDefaultHook(func(*bind.TransactOpts, common.Address) (*types.Transaction, error) {
-		return r0, r1
-	})
-}
-
-// PushReturn calls PushHook with a function that returns the given values.
-func (f *IBTokenSetAdminFunc) PushReturn(r0 *types.Transaction, r1 error) {
-	f.PushHook(func(*bind.TransactOpts, common.Address) (*types.Transaction, error) {
-		return r0, r1
-	})
-}
-
-func (f *IBTokenSetAdminFunc) nextHook() func(*bind.TransactOpts, common.Address) (*types.Transaction, error) {
-	f.mutex.Lock()
-	defer f.mutex.Unlock()
-
-	if len(f.hooks) == 0 {
-		return f.defaultHook
-	}
-
-	hook := f.hooks[0]
-	f.hooks = f.hooks[1:]
-	return hook
-}
-
-func (f *IBTokenSetAdminFunc) appendCall(r0 IBTokenSetAdminFuncCall) {
-	f.mutex.Lock()
-	f.history = append(f.history, r0)
-	f.mutex.Unlock()
-}
-
-// History returns a sequence of IBTokenSetAdminFuncCall objects describing
-// the invocations of this function.
-func (f *IBTokenSetAdminFunc) History() []IBTokenSetAdminFuncCall {
-	f.mutex.Lock()
-	history := make([]IBTokenSetAdminFuncCall, len(f.history))
-	copy(history, f.history)
-	f.mutex.Unlock()
-
-	return history
-}
-
-// IBTokenSetAdminFuncCall is an object that describes an invocation of
-// method SetAdmin on an instance of MockIBToken.
-type IBTokenSetAdminFuncCall struct {
-	// Arg0 is the value of the 1st argument passed to this method
-	// invocation.
-	Arg0 *bind.TransactOpts
-	// Arg1 is the value of the 2nd argument passed to this method
-	// invocation.
-	Arg1 common.Address
-	// Result0 is the value of the 1st result returned from this method
-	// invocation.
-	Result0 *types.Transaction
-	// Result1 is the value of the 2nd result returned from this method
-	// invocation.
-	Result1 error
-}
-
-// Args returns an interface slice containing the arguments of this
-// invocation.
-func (c IBTokenSetAdminFuncCall) Args() []interface{} {
-	return []interface{}{c.Arg0, c.Arg1}
-}
-
-// Results returns an interface slice containing the results of this
-// invocation.
-func (c IBTokenSetAdminFuncCall) Results() []interface{} {
-	return []interface{}{c.Result0, c.Result1}
-}
-
-// IBTokenSetSplitsFunc describes the behavior when the SetSplits method of
-// the parent MockIBToken instance is invoked.
-type IBTokenSetSplitsFunc struct {
-	defaultHook func(*bind.TransactOpts, *big.Int, *big.Int, *big.Int, *big.Int) (*types.Transaction, error)
-	hooks       []func(*bind.TransactOpts, *big.Int, *big.Int, *big.Int, *big.Int) (*types.Transaction, error)
-	history     []IBTokenSetSplitsFuncCall
-	mutex       sync.Mutex
-}
-
-// SetSplits delegates to the next hook function in the queue and stores the
-// parameter and result values of this invocation.
-func (m *MockIBToken) SetSplits(v0 *bind.TransactOpts, v1 *big.Int, v2 *big.Int, v3 *big.Int, v4 *big.Int) (*types.Transaction, error) {
-	r0, r1 := m.SetSplitsFunc.nextHook()(v0, v1, v2, v3, v4)
-	m.SetSplitsFunc.appendCall(IBTokenSetSplitsFuncCall{v0, v1, v2, v3, v4, r0, r1})
-	return r0, r1
-}
-
-// SetDefaultHook sets function that is called when the SetSplits method of
-// the parent MockIBToken instance is invoked and the hook queue is empty.
-func (f *IBTokenSetSplitsFunc) SetDefaultHook(hook func(*bind.TransactOpts, *big.Int, *big.Int, *big.Int, *big.Int) (*types.Transaction, error)) {
-	f.defaultHook = hook
-}
-
-// PushHook adds a function to the end of hook queue. Each invocation of the
-// SetSplits method of the parent MockIBToken instance invokes the hook at
-// the front of the queue and discards it. After the queue is empty, the
-// default hook function is invoked for any future action.
-func (f *IBTokenSetSplitsFunc) PushHook(hook func(*bind.TransactOpts, *big.Int, *big.Int, *big.Int, *big.Int) (*types.Transaction, error)) {
-	f.mutex.Lock()
-	f.hooks = append(f.hooks, hook)
-	f.mutex.Unlock()
-}
-
-// SetDefaultReturn calls SetDefaultHook with a function that returns the
-// given values.
-func (f *IBTokenSetSplitsFunc) SetDefaultReturn(r0 *types.Transaction, r1 error) {
-	f.SetDefaultHook(func(*bind.TransactOpts, *big.Int, *big.Int, *big.Int, *big.Int) (*types.Transaction, error) {
-		return r0, r1
-	})
-}
-
-// PushReturn calls PushHook with a function that returns the given values.
-func (f *IBTokenSetSplitsFunc) PushReturn(r0 *types.Transaction, r1 error) {
-	f.PushHook(func(*bind.TransactOpts, *big.Int, *big.Int, *big.Int, *big.Int) (*types.Transaction, error) {
-		return r0, r1
-	})
-}
-
-func (f *IBTokenSetSplitsFunc) nextHook() func(*bind.TransactOpts, *big.Int, *big.Int, *big.Int, *big.Int) (*types.Transaction, error) {
-	f.mutex.Lock()
-	defer f.mutex.Unlock()
-
-	if len(f.hooks) == 0 {
-		return f.defaultHook
-	}
-
-	hook := f.hooks[0]
-	f.hooks = f.hooks[1:]
-	return hook
-}
-
-func (f *IBTokenSetSplitsFunc) appendCall(r0 IBTokenSetSplitsFuncCall) {
-	f.mutex.Lock()
-	f.history = append(f.history, r0)
-	f.mutex.Unlock()
-}
-
-// History returns a sequence of IBTokenSetSplitsFuncCall objects describing
-// the invocations of this function.
-func (f *IBTokenSetSplitsFunc) History() []IBTokenSetSplitsFuncCall {
-	f.mutex.Lock()
-	history := make([]IBTokenSetSplitsFuncCall, len(f.history))
-	copy(history, f.history)
-	f.mutex.Unlock()
-
-	return history
-}
-
-// IBTokenSetSplitsFuncCall is an object that describes an invocation of
-// method SetSplits on an instance of MockIBToken.
-type IBTokenSetSplitsFuncCall struct {
-	// Arg0 is the value of the 1st argument passed to this method
-	// invocation.
-	Arg0 *bind.TransactOpts
-	// Arg1 is the value of the 2nd argument passed to this method
-	// invocation.
-	Arg1 *big.Int
-	// Arg2 is the value of the 3rd argument passed to this method
-	// invocation.
-	Arg2 *big.Int
-	// Arg3 is the value of the 4th argument passed to this method
-	// invocation.
-	Arg3 *big.Int
-	// Arg4 is the value of the 5th argument passed to this method
-	// invocation.
-	Arg4 *big.Int
-	// Result0 is the value of the 1st result returned from this method
-	// invocation.
-	Result0 *types.Transaction
-	// Result1 is the value of the 2nd result returned from this method
-	// invocation.
-	Result1 error
-}
-
-// Args returns an interface slice containing the arguments of this
-// invocation.
-func (c IBTokenSetSplitsFuncCall) Args() []interface{} {
-	return []interface{}{c.Arg0, c.Arg1, c.Arg2, c.Arg3, c.Arg4}
-}
-
-// Results returns an interface slice containing the results of this
-// invocation.
-func (c IBTokenSetSplitsFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 

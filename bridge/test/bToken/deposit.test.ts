@@ -2,12 +2,7 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
 import { expect } from "../chai-setup";
-import {
-  callFunctionAndGetReturnValues,
-  factoryCallAnyFixture,
-  Fixture,
-  getFixture,
-} from "../setup";
+import { callFunctionAndGetReturnValues, Fixture, getFixture } from "../setup";
 import { getEthConsumedAsGas, getState, showState, state } from "./setup";
 
 describe("Testing BToken Deposit methods", async () => {
@@ -16,7 +11,6 @@ describe("Testing BToken Deposit methods", async () => {
   let expectedState: state;
   let fixture: Fixture;
   const minBTokens = 0;
-  const marketSpread = 4;
   const eth = 10;
   const bTokens = 10;
   let ethIn: BigNumber;
@@ -26,7 +20,6 @@ describe("Testing BToken Deposit methods", async () => {
     fixture = await getFixture();
     [admin, user] = await ethers.getSigners();
     showState("Initial", await getState(fixture));
-    await factoryCallAnyFixture(fixture, "bToken", "setAdmin", [admin.address]);
     ethIn = ethers.utils.parseEther(eth.toString());
     bTokenDeposit = ethers.utils.parseUnits(bTokens.toString());
   });
@@ -88,25 +81,39 @@ describe("Testing BToken Deposit methods", async () => {
 
   it("Should deposit funds without burning tokens hence not affecting balances", async () => {
     await expect(
-      fixture.bToken.virtualMintDeposit(1, user.address, bTokenDeposit)
+      fixture.factory
+        .connect(admin)
+        .callAny(
+          fixture.bToken.address,
+          0,
+          fixture.bToken.interface.encodeFunctionData("virtualMintDeposit", [
+            1,
+            user.address,
+            bTokenDeposit,
+          ])
+        )
     )
       .to.emit(fixture.bToken, "DepositReceived")
       .withArgs(1 || 2, 1, user.address, bTokenDeposit);
     expectedState = await getState(fixture);
-    const tx = await fixture.bToken.virtualMintDeposit(
-      1,
-      user.address,
-      bTokenDeposit
-    );
+    const tx = await fixture.factory
+      .connect(admin)
+      .callAny(
+        fixture.bToken.address,
+        0,
+        fixture.bToken.interface.encodeFunctionData("virtualMintDeposit", [
+          1,
+          user.address,
+          bTokenDeposit,
+        ])
+      );
     expectedState.Balances.eth.admin -= getEthConsumedAsGas(await tx.wait());
     expect(await getState(fixture)).to.be.deep.equal(expectedState);
   });
 
   it("Should deposit funds minting tokens hence affecting balances", async () => {
     // Calculate the amount of bTokens per eth value sent
-    const bTokens = await fixture.bToken.getLatestMintedBTokensFromEth(
-      ethIn.div(marketSpread)
-    );
+    const bTokens = await fixture.bToken.getLatestMintedBTokensFromEth(ethIn);
     await expect(
       fixture.bToken.mintDeposit(1, user.address, 0, {
         value: ethIn,
@@ -132,12 +139,18 @@ describe("Testing BToken Deposit methods", async () => {
 
   it("Should get deposit amount by Id", async () => {
     expectedState = await getState(fixture);
-    const [depositId] = await callFunctionAndGetReturnValues(
-      fixture.bToken,
-      "virtualMintDeposit",
-      admin,
-      [1, user.address, bTokenDeposit]
-    );
+    await fixture.factory
+      .connect(admin)
+      .callAny(
+        fixture.bToken.address,
+        0,
+        fixture.bToken.interface.encodeFunctionData("virtualMintDeposit", [
+          1,
+          user.address,
+          bTokenDeposit,
+        ])
+      );
+    const depositId = 1;
     const deposit = await fixture.bToken.getDeposit(depositId);
     expect(deposit.value).to.be.equal(ethIn.toBigInt());
   });
@@ -175,32 +188,35 @@ describe("Testing BToken Deposit methods", async () => {
   });
 
   it("Should distribute after mint deposit", async () => {
-    const bTokens = await fixture.bToken.getLatestMintedBTokensFromEth(
-      ethIn.div(marketSpread)
-    );
+    expectedState = await getState(fixture);
+    const bTokens = await fixture.bToken.getLatestMintedBTokensFromEth(ethIn);
+    let tx0;
     await expect(
-      fixture.bToken.mintDeposit(1, user.address, 0, {
+      (tx0 = fixture.bToken.mintDeposit(1, user.address, 0, {
         value: ethIn,
-      })
+      }))
     )
       .to.emit(fixture.bToken, "DepositReceived")
       .withArgs(1 || 2, 1, user.address, bTokens);
-    expectedState = await getState(fixture);
     const tx = await fixture.bToken.mintDeposit(1, user.address, 0, {
       value: ethIn,
     });
-    const [distribution, tx2] = await callFunctionAndGetReturnValues(
+    let distributedAmount = await fixture.bToken.getYield();
+    const [wasSuccessful, tx2] = await callFunctionAndGetReturnValues(
       fixture.bToken,
       "distribute",
       admin,
       []
     );
-    const distributedAmount = distribution.minerAmount
-      .add(distribution.stakingAmount)
-      .add(distribution.lpStakingAmount)
-      .add(distribution.foundationAmount);
+    expect(wasSuccessful).to.be.equal(true);
+    distributedAmount = await fixture.bToken.getYield();
+    expect(distributedAmount).to.be.equal(0);
     expectedState.Balances.eth.admin -= ethIn.toBigInt();
-    expectedState.Balances.eth.bToken -= distributedAmount.div(2).toBigInt();
+    expectedState.Balances.eth.admin -= ethIn.toBigInt();
+    expectedState.Balances.eth.bToken -= distributedAmount.toBigInt();
+    expectedState.Balances.eth.admin -= getEthConsumedAsGas(
+      await (await tx0).wait()
+    );
     expectedState.Balances.eth.admin -= getEthConsumedAsGas(await tx.wait());
     expectedState.Balances.eth.admin -= getEthConsumedAsGas(await tx2.wait());
     expect(await getState(fixture)).to.be.deep.equal(expectedState);

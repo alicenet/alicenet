@@ -60,7 +60,7 @@ abstract contract StakingNFT is
         slush = _tokenState.slush;
     }
 
-    /// @dev tripCB opens the circuit breaker may only be called by _admin
+    /// @dev tripCB opens the circuit breaker may only be called by the factory
     function tripCB() public override onlyFactory {
         _tripCB();
     }

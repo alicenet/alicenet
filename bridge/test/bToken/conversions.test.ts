@@ -27,9 +27,7 @@ const checkConversionAndMintWei = async (
   admin: SignerWithAddress
 ) => {
   const marketSpread = 4;
-  const bTokens = await fixture.bToken.getLatestMintedBTokensFromEth(
-    eth.div(marketSpread)
-  );
+  const bTokens = await fixture.bToken.getLatestMintedBTokensFromEth(eth);
 
   const convertedEth = await fixture.bToken.getLatestEthToMintBTokens(bTokens);
   // due to rounding errors during integer math, we need to discard errors in the
@@ -50,10 +48,7 @@ const checkConversionAndMintWei = async (
     eth.div(marketSpread)
   );
   expect(
-    await fixture.bToken.getMintedBTokensFromEth(
-      poolBalanceBefore,
-      eth.div(marketSpread)
-    )
+    await fixture.bToken.getMintedBTokensFromEth(poolBalanceBefore, eth)
   ).to.be.equal(bTokens);
   const totalSupplyBefore = (await fixture.bToken.totalSupply()).sub(bTokens);
   expect(

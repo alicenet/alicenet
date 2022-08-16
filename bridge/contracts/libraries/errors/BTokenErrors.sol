@@ -12,7 +12,6 @@ library BTokenErrors {
     error InsufficientEth(uint256 amount, uint256 minimum);
     error MinimumMintNotMet(uint256 amount, uint256 minimum);
     error MinimumBurnNotMet(uint256 amount, uint256 minimum);
-    error SplitValueSumError();
     error BurnAmountExceedsSupply(uint256 amount, uint256 supply);
     error InexistentRouterContract(address contractAddr);
     error InsufficientFee(uint256 amount, uint256 fee);
