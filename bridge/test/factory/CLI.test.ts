@@ -17,7 +17,7 @@ import {
 } from "../../scripts/lib/constants";
 import {
   deployFactory,
-  getBytes32Salt,
+  getBytes32SaltFromContract,
 } from "../../scripts/lib/deployment/deploymentUtil";
 import {
   DeployCreateData,
@@ -98,7 +98,7 @@ describe("Cli tasks", async () => {
       MOCK_INITIALIZABLE,
       factoryData.address
     );
-    const salt = await getBytes32Salt(MOCK_INITIALIZABLE, artifacts, ethers);
+    const salt = await getBytes32SaltFromContract(MOCK_INITIALIZABLE, artifacts, ethers);
     const expectedProxyAddress = getMetamorphicAddress(
       factoryData.address,
       salt
@@ -152,7 +152,7 @@ describe("Cli tasks", async () => {
       MOCK_INITIALIZABLE,
       factoryData.address
     );
-    const salt = await getBytes32Salt(MOCK_INITIALIZABLE, artifacts, ethers);
+    const salt = await getBytes32SaltFromContract(MOCK_INITIALIZABLE, artifacts, ethers);
     const expectedProxyAddress = getMetamorphicAddress(
       factoryData.address,
       salt
@@ -184,7 +184,7 @@ describe("Cli tasks", async () => {
       undefined,
       ["2", "s"]
     );
-    const salt = await getBytes32Salt(MOCK, artifacts, ethers);
+    const salt = await getBytes32SaltFromContract(MOCK, artifacts, ethers);
     const expectedProxyAddress = getMetamorphicAddress(
       factoryData.address,
       salt
@@ -201,7 +201,7 @@ describe("Cli tasks", async () => {
       undefined,
       ["2", "s"]
     );
-    const salt = await getBytes32Salt(MOCK, artifacts, ethers);
+    const salt = await getBytes32SaltFromContract(MOCK, artifacts, ethers);
     const expectedMetaAddress = getMetamorphicAddress(
       factoryData.address,
       salt

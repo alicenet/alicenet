@@ -13,10 +13,8 @@ contract AliceNetFactory is AliceNetFactoryBase {
      * its constructor at the head, runtime code in the body and constructor args at the tail. The
      * constructor then sets proxyTemplate_ state var to the deployed proxy template address the deploy
      * account will be set as the first owner of the factory.
-     * @param selfAddr_ is the factory contracts
-     * address (address of itself)
      */
-    constructor(address selfAddr_) AliceNetFactoryBase(selfAddr_) {}
+    constructor() AliceNetFactoryBase() {}
 
     /**
      * @dev callAny allows EOA to call function impersonating the factory address
@@ -33,22 +31,7 @@ contract AliceNetFactory is AliceNetFactoryBase {
         _callAny(target_, value_, cdata);
         _returnAvailableData();
     }
-
-    /**
-     * @dev delegateCallAny allows EOA to call a function in a contract without impersonating the factory
-     * @param target_: the address of the contract to be called
-     * @param cdata_: Hex encoded state with function signature + arguments of the target function to be called
-     */
-    function delegateCallAny(address target_, bytes calldata cdata_)
-        public
-        payable
-        onlyOwnerOrDelegator
-    {
-        bytes memory cdata = cdata_;
-        _delegateCallAny(target_, cdata);
-        _returnAvailableData();
-    }
-
+    
     /**
      * @dev deployCreate allows the owner to deploy raw contracts through the factory using
      * non-deterministic address generation (create OpCode)
@@ -127,7 +110,7 @@ contract AliceNetFactory is AliceNetFactoryBase {
      */
     function initializeContract(address contract_, bytes calldata initCallData_)
         public
-        onlyOwnerOrDelegator
+        onlyOwner
     {
         _initializeContract(contract_, initCallData_);
     }

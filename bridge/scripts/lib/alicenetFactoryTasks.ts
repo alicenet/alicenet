@@ -99,14 +99,10 @@ task(
     const accounts = await getAccounts(hre);
     const txCount = await hre.ethers.provider.getTransactionCount(accounts[0]);
     // calculate the factory address for the constructor arg
-    const futureFactoryAddress = hre.ethers.utils.getContractAddress({
-      from: accounts[0],
-      nonce: txCount,
-    });
-    const deployTX = factoryBase.getDeployTransaction(futureFactoryAddress);
+    const deployTX = factoryBase.getDeployTransaction();
     const gasCost = await hre.ethers.provider.estimateGas(deployTX);
     // deploys the factory
-    const factory = await factoryBase.deploy(futureFactoryAddress);
+    const factory = await factoryBase.deploy();
     await factory.deployTransaction.wait();
     // record the state in a json file to be used in other tasks
     const factoryData: FactoryData = {
@@ -1285,7 +1281,7 @@ async function getSalt(
 }
 
 /**
- * @description converts
+ * @description gets the salt from the contract natspec tag and converts it to bytes32
  * @param contractName the name of the contract to get the salt for
  * @param hre hardhat runtime environment
  * @returns the string that represents the 32Bytes version

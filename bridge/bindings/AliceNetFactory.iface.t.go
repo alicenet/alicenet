@@ -16,10 +16,6 @@ type IAliceNetFactoryTransactor interface {
 	//
 	// Solidity: function callAny(address target_, uint256 value_, bytes cdata_) payable returns()
 	CallAny(opts *bind.TransactOpts, target_ common.Address, value_ *big.Int, cdata_ []byte) (*types.Transaction, error)
-	// DelegateCallAny is a paid mutator transaction binding the contract method 0x4713ee7a.
-	//
-	// Solidity: function delegateCallAny(address target_, bytes cdata_) payable returns()
-	DelegateCallAny(opts *bind.TransactOpts, target_ common.Address, cdata_ []byte) (*types.Transaction, error)
 	// DeployCreate is a paid mutator transaction binding the contract method 0x27fe1822.
 	//
 	// Solidity: function deployCreate(bytes deployCode_) returns(address contractAddr)
@@ -48,10 +44,6 @@ type IAliceNetFactoryTransactor interface {
 	//
 	// Solidity: function multiCall(bytes[] cdata_) returns()
 	MultiCall(opts *bind.TransactOpts, cdata_ [][]byte) (*types.Transaction, error)
-	// SetDelegator is a paid mutator transaction binding the contract method 0x83cd9cc3.
-	//
-	// Solidity: function setDelegator(address newDelegator_) returns()
-	SetDelegator(opts *bind.TransactOpts, newDelegator_ common.Address) (*types.Transaction, error)
 	// SetImplementation is a paid mutator transaction binding the contract method 0xd784d426.
 	//
 	// Solidity: function setImplementation(address newImplementationAddress_) returns()

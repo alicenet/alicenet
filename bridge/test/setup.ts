@@ -401,15 +401,8 @@ export const deployFactoryAndBaseTokens = async (
 export const deployAliceNetFactory = async (
   admin: SignerWithAddress
 ): Promise<AliceNetFactory> => {
-  const txCount = await ethers.provider.getTransactionCount(admin.address);
-  // calculate the factory address for the constructor arg
-  const futureFactoryAddress = ethers.utils.getContractAddress({
-    from: admin.address,
-    nonce: txCount,
-  });
-
   const Factory = await ethers.getContractFactory("AliceNetFactory");
-  const factory = await Factory.deploy(futureFactoryAddress);
+  const factory = await Factory.deploy();
   await factory.deployed();
   return factory;
 };
@@ -684,23 +677,6 @@ export async function factoryCallAny(
   const txResponse = await factory.callAny(
     contract.address,
     0,
-    contract.interface.encodeFunctionData(functionName, args)
-  );
-  const receipt = await txResponse.wait();
-  return receipt;
-}
-
-export async function delegateFactoryCallAny(
-  factory: AliceNetFactory,
-  contract: Contract,
-  functionName: string,
-  args?: Array<any>
-) {
-  if (args === undefined) {
-    args = [];
-  }
-  const txResponse = await factory.delegateCallAny(
-    contract.address,
     contract.interface.encodeFunctionData(functionName, args)
   );
   const receipt = await txResponse.wait();
