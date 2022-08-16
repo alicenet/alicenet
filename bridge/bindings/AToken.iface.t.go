@@ -44,6 +44,14 @@ type IATokenTransactor interface {
 	//
 	// Solidity: function migrate(uint256 amount) returns()
 	Migrate(opts *bind.TransactOpts, amount *big.Int) (*types.Transaction, error)
+	// ToggleMultiplierOff is a paid mutator transaction binding the contract method 0x4e377234.
+	//
+	// Solidity: function toggleMultiplierOff() returns()
+	ToggleMultiplierOff(opts *bind.TransactOpts) (*types.Transaction, error)
+	// ToggleMultiplierOn is a paid mutator transaction binding the contract method 0x4da9663e.
+	//
+	// Solidity: function toggleMultiplierOn() returns()
+	ToggleMultiplierOn(opts *bind.TransactOpts) (*types.Transaction, error)
 	// Transfer is a paid mutator transaction binding the contract method 0xa9059cbb.
 	//
 	// Solidity: function transfer(address to, uint256 amount) returns(bool)

@@ -29,6 +29,9 @@ type MockIAToken struct {
 	// BalanceOfFunc is an instance of a mock function object controlling
 	// the behavior of the method BalanceOf.
 	BalanceOfFunc *IATokenBalanceOfFunc
+	// CircuitBreakerStateFunc is an instance of a mock function object
+	// controlling the behavior of the method CircuitBreakerState.
+	CircuitBreakerStateFunc *IATokenCircuitBreakerStateFunc
 	// DecimalsFunc is an instance of a mock function object controlling the
 	// behavior of the method Decimals.
 	DecimalsFunc *IATokenDecimalsFunc
@@ -66,6 +69,9 @@ type MockIAToken struct {
 	// MigrateFunc is an instance of a mock function object controlling the
 	// behavior of the method Migrate.
 	MigrateFunc *IATokenMigrateFunc
+	// MultiplyTokensFunc is an instance of a mock function object
+	// controlling the behavior of the method MultiplyTokens.
+	MultiplyTokensFunc *IATokenMultiplyTokensFunc
 	// NameFunc is an instance of a mock function object controlling the
 	// behavior of the method Name.
 	NameFunc *IATokenNameFunc
@@ -81,6 +87,12 @@ type MockIAToken struct {
 	// SymbolFunc is an instance of a mock function object controlling the
 	// behavior of the method Symbol.
 	SymbolFunc *IATokenSymbolFunc
+	// ToggleMultiplierOffFunc is an instance of a mock function object
+	// controlling the behavior of the method ToggleMultiplierOff.
+	ToggleMultiplierOffFunc *IATokenToggleMultiplierOffFunc
+	// ToggleMultiplierOnFunc is an instance of a mock function object
+	// controlling the behavior of the method ToggleMultiplierOn.
+	ToggleMultiplierOnFunc *IATokenToggleMultiplierOnFunc
 	// TotalSupplyFunc is an instance of a mock function object controlling
 	// the behavior of the method TotalSupply.
 	TotalSupplyFunc *IATokenTotalSupplyFunc
@@ -122,6 +134,11 @@ func NewMockIAToken() *MockIAToken {
 		},
 		BalanceOfFunc: &IATokenBalanceOfFunc{
 			defaultHook: func(*bind.CallOpts, common.Address) (r0 *big.Int, r1 error) {
+				return
+			},
+		},
+		CircuitBreakerStateFunc: &IATokenCircuitBreakerStateFunc{
+			defaultHook: func(*bind.CallOpts) (r0 bool, r1 error) {
 				return
 			},
 		},
@@ -185,6 +202,11 @@ func NewMockIAToken() *MockIAToken {
 				return
 			},
 		},
+		MultiplyTokensFunc: &IATokenMultiplyTokensFunc{
+			defaultHook: func(*bind.CallOpts, *big.Int) (r0 *big.Int, r1 error) {
+				return
+			},
+		},
 		NameFunc: &IATokenNameFunc{
 			defaultHook: func(*bind.CallOpts) (r0 string, r1 error) {
 				return
@@ -207,6 +229,16 @@ func NewMockIAToken() *MockIAToken {
 		},
 		SymbolFunc: &IATokenSymbolFunc{
 			defaultHook: func(*bind.CallOpts) (r0 string, r1 error) {
+				return
+			},
+		},
+		ToggleMultiplierOffFunc: &IATokenToggleMultiplierOffFunc{
+			defaultHook: func(*bind.TransactOpts) (r0 *types.Transaction, r1 error) {
+				return
+			},
+		},
+		ToggleMultiplierOnFunc: &IATokenToggleMultiplierOnFunc{
+			defaultHook: func(*bind.TransactOpts) (r0 *types.Transaction, r1 error) {
 				return
 			},
 		},
@@ -265,6 +297,11 @@ func NewStrictMockIAToken() *MockIAToken {
 		BalanceOfFunc: &IATokenBalanceOfFunc{
 			defaultHook: func(*bind.CallOpts, common.Address) (*big.Int, error) {
 				panic("unexpected invocation of MockIAToken.BalanceOf")
+			},
+		},
+		CircuitBreakerStateFunc: &IATokenCircuitBreakerStateFunc{
+			defaultHook: func(*bind.CallOpts) (bool, error) {
+				panic("unexpected invocation of MockIAToken.CircuitBreakerState")
 			},
 		},
 		DecimalsFunc: &IATokenDecimalsFunc{
@@ -327,6 +364,11 @@ func NewStrictMockIAToken() *MockIAToken {
 				panic("unexpected invocation of MockIAToken.Migrate")
 			},
 		},
+		MultiplyTokensFunc: &IATokenMultiplyTokensFunc{
+			defaultHook: func(*bind.CallOpts, *big.Int) (*big.Int, error) {
+				panic("unexpected invocation of MockIAToken.MultiplyTokens")
+			},
+		},
 		NameFunc: &IATokenNameFunc{
 			defaultHook: func(*bind.CallOpts) (string, error) {
 				panic("unexpected invocation of MockIAToken.Name")
@@ -350,6 +392,16 @@ func NewStrictMockIAToken() *MockIAToken {
 		SymbolFunc: &IATokenSymbolFunc{
 			defaultHook: func(*bind.CallOpts) (string, error) {
 				panic("unexpected invocation of MockIAToken.Symbol")
+			},
+		},
+		ToggleMultiplierOffFunc: &IATokenToggleMultiplierOffFunc{
+			defaultHook: func(*bind.TransactOpts) (*types.Transaction, error) {
+				panic("unexpected invocation of MockIAToken.ToggleMultiplierOff")
+			},
+		},
+		ToggleMultiplierOnFunc: &IATokenToggleMultiplierOnFunc{
+			defaultHook: func(*bind.TransactOpts) (*types.Transaction, error) {
+				panic("unexpected invocation of MockIAToken.ToggleMultiplierOn")
 			},
 		},
 		TotalSupplyFunc: &IATokenTotalSupplyFunc{
@@ -401,6 +453,9 @@ func NewMockIATokenFrom(i bindings.IAToken) *MockIAToken {
 		BalanceOfFunc: &IATokenBalanceOfFunc{
 			defaultHook: i.BalanceOf,
 		},
+		CircuitBreakerStateFunc: &IATokenCircuitBreakerStateFunc{
+			defaultHook: i.CircuitBreakerState,
+		},
 		DecimalsFunc: &IATokenDecimalsFunc{
 			defaultHook: i.Decimals,
 		},
@@ -437,6 +492,9 @@ func NewMockIATokenFrom(i bindings.IAToken) *MockIAToken {
 		MigrateFunc: &IATokenMigrateFunc{
 			defaultHook: i.Migrate,
 		},
+		MultiplyTokensFunc: &IATokenMultiplyTokensFunc{
+			defaultHook: i.MultiplyTokens,
+		},
 		NameFunc: &IATokenNameFunc{
 			defaultHook: i.Name,
 		},
@@ -451,6 +509,12 @@ func NewMockIATokenFrom(i bindings.IAToken) *MockIAToken {
 		},
 		SymbolFunc: &IATokenSymbolFunc{
 			defaultHook: i.Symbol,
+		},
+		ToggleMultiplierOffFunc: &IATokenToggleMultiplierOffFunc{
+			defaultHook: i.ToggleMultiplierOff,
+		},
+		ToggleMultiplierOnFunc: &IATokenToggleMultiplierOnFunc{
+			defaultHook: i.ToggleMultiplierOn,
 		},
 		TotalSupplyFunc: &IATokenTotalSupplyFunc{
 			defaultHook: i.TotalSupply,
@@ -902,6 +966,111 @@ func (c IATokenBalanceOfFuncCall) Args() []interface{} {
 // Results returns an interface slice containing the results of this
 // invocation.
 func (c IATokenBalanceOfFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
+}
+
+// IATokenCircuitBreakerStateFunc describes the behavior when the
+// CircuitBreakerState method of the parent MockIAToken instance is invoked.
+type IATokenCircuitBreakerStateFunc struct {
+	defaultHook func(*bind.CallOpts) (bool, error)
+	hooks       []func(*bind.CallOpts) (bool, error)
+	history     []IATokenCircuitBreakerStateFuncCall
+	mutex       sync.Mutex
+}
+
+// CircuitBreakerState delegates to the next hook function in the queue and
+// stores the parameter and result values of this invocation.
+func (m *MockIAToken) CircuitBreakerState(v0 *bind.CallOpts) (bool, error) {
+	r0, r1 := m.CircuitBreakerStateFunc.nextHook()(v0)
+	m.CircuitBreakerStateFunc.appendCall(IATokenCircuitBreakerStateFuncCall{v0, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the CircuitBreakerState
+// method of the parent MockIAToken instance is invoked and the hook queue
+// is empty.
+func (f *IATokenCircuitBreakerStateFunc) SetDefaultHook(hook func(*bind.CallOpts) (bool, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// CircuitBreakerState method of the parent MockIAToken instance invokes the
+// hook at the front of the queue and discards it. After the queue is empty,
+// the default hook function is invoked for any future action.
+func (f *IATokenCircuitBreakerStateFunc) PushHook(hook func(*bind.CallOpts) (bool, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *IATokenCircuitBreakerStateFunc) SetDefaultReturn(r0 bool, r1 error) {
+	f.SetDefaultHook(func(*bind.CallOpts) (bool, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *IATokenCircuitBreakerStateFunc) PushReturn(r0 bool, r1 error) {
+	f.PushHook(func(*bind.CallOpts) (bool, error) {
+		return r0, r1
+	})
+}
+
+func (f *IATokenCircuitBreakerStateFunc) nextHook() func(*bind.CallOpts) (bool, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *IATokenCircuitBreakerStateFunc) appendCall(r0 IATokenCircuitBreakerStateFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of IATokenCircuitBreakerStateFuncCall objects
+// describing the invocations of this function.
+func (f *IATokenCircuitBreakerStateFunc) History() []IATokenCircuitBreakerStateFuncCall {
+	f.mutex.Lock()
+	history := make([]IATokenCircuitBreakerStateFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// IATokenCircuitBreakerStateFuncCall is an object that describes an
+// invocation of method CircuitBreakerState on an instance of MockIAToken.
+type IATokenCircuitBreakerStateFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 *bind.CallOpts
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 bool
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c IATokenCircuitBreakerStateFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c IATokenCircuitBreakerStateFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
@@ -2212,6 +2381,114 @@ func (c IATokenMigrateFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
+// IATokenMultiplyTokensFunc describes the behavior when the MultiplyTokens
+// method of the parent MockIAToken instance is invoked.
+type IATokenMultiplyTokensFunc struct {
+	defaultHook func(*bind.CallOpts, *big.Int) (*big.Int, error)
+	hooks       []func(*bind.CallOpts, *big.Int) (*big.Int, error)
+	history     []IATokenMultiplyTokensFuncCall
+	mutex       sync.Mutex
+}
+
+// MultiplyTokens delegates to the next hook function in the queue and
+// stores the parameter and result values of this invocation.
+func (m *MockIAToken) MultiplyTokens(v0 *bind.CallOpts, v1 *big.Int) (*big.Int, error) {
+	r0, r1 := m.MultiplyTokensFunc.nextHook()(v0, v1)
+	m.MultiplyTokensFunc.appendCall(IATokenMultiplyTokensFuncCall{v0, v1, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the MultiplyTokens
+// method of the parent MockIAToken instance is invoked and the hook queue
+// is empty.
+func (f *IATokenMultiplyTokensFunc) SetDefaultHook(hook func(*bind.CallOpts, *big.Int) (*big.Int, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// MultiplyTokens method of the parent MockIAToken instance invokes the hook
+// at the front of the queue and discards it. After the queue is empty, the
+// default hook function is invoked for any future action.
+func (f *IATokenMultiplyTokensFunc) PushHook(hook func(*bind.CallOpts, *big.Int) (*big.Int, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *IATokenMultiplyTokensFunc) SetDefaultReturn(r0 *big.Int, r1 error) {
+	f.SetDefaultHook(func(*bind.CallOpts, *big.Int) (*big.Int, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *IATokenMultiplyTokensFunc) PushReturn(r0 *big.Int, r1 error) {
+	f.PushHook(func(*bind.CallOpts, *big.Int) (*big.Int, error) {
+		return r0, r1
+	})
+}
+
+func (f *IATokenMultiplyTokensFunc) nextHook() func(*bind.CallOpts, *big.Int) (*big.Int, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *IATokenMultiplyTokensFunc) appendCall(r0 IATokenMultiplyTokensFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of IATokenMultiplyTokensFuncCall objects
+// describing the invocations of this function.
+func (f *IATokenMultiplyTokensFunc) History() []IATokenMultiplyTokensFuncCall {
+	f.mutex.Lock()
+	history := make([]IATokenMultiplyTokensFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// IATokenMultiplyTokensFuncCall is an object that describes an invocation
+// of method MultiplyTokens on an instance of MockIAToken.
+type IATokenMultiplyTokensFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 *bind.CallOpts
+	// Arg1 is the value of the 2nd argument passed to this method
+	// invocation.
+	Arg1 *big.Int
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 *big.Int
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c IATokenMultiplyTokensFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0, c.Arg1}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c IATokenMultiplyTokensFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
+}
+
 // IATokenNameFunc describes the behavior when the Name method of the parent
 // MockIAToken instance is invoked.
 type IATokenNameFunc struct {
@@ -2732,6 +3009,216 @@ func (c IATokenSymbolFuncCall) Args() []interface{} {
 // Results returns an interface slice containing the results of this
 // invocation.
 func (c IATokenSymbolFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
+}
+
+// IATokenToggleMultiplierOffFunc describes the behavior when the
+// ToggleMultiplierOff method of the parent MockIAToken instance is invoked.
+type IATokenToggleMultiplierOffFunc struct {
+	defaultHook func(*bind.TransactOpts) (*types.Transaction, error)
+	hooks       []func(*bind.TransactOpts) (*types.Transaction, error)
+	history     []IATokenToggleMultiplierOffFuncCall
+	mutex       sync.Mutex
+}
+
+// ToggleMultiplierOff delegates to the next hook function in the queue and
+// stores the parameter and result values of this invocation.
+func (m *MockIAToken) ToggleMultiplierOff(v0 *bind.TransactOpts) (*types.Transaction, error) {
+	r0, r1 := m.ToggleMultiplierOffFunc.nextHook()(v0)
+	m.ToggleMultiplierOffFunc.appendCall(IATokenToggleMultiplierOffFuncCall{v0, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the ToggleMultiplierOff
+// method of the parent MockIAToken instance is invoked and the hook queue
+// is empty.
+func (f *IATokenToggleMultiplierOffFunc) SetDefaultHook(hook func(*bind.TransactOpts) (*types.Transaction, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// ToggleMultiplierOff method of the parent MockIAToken instance invokes the
+// hook at the front of the queue and discards it. After the queue is empty,
+// the default hook function is invoked for any future action.
+func (f *IATokenToggleMultiplierOffFunc) PushHook(hook func(*bind.TransactOpts) (*types.Transaction, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *IATokenToggleMultiplierOffFunc) SetDefaultReturn(r0 *types.Transaction, r1 error) {
+	f.SetDefaultHook(func(*bind.TransactOpts) (*types.Transaction, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *IATokenToggleMultiplierOffFunc) PushReturn(r0 *types.Transaction, r1 error) {
+	f.PushHook(func(*bind.TransactOpts) (*types.Transaction, error) {
+		return r0, r1
+	})
+}
+
+func (f *IATokenToggleMultiplierOffFunc) nextHook() func(*bind.TransactOpts) (*types.Transaction, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *IATokenToggleMultiplierOffFunc) appendCall(r0 IATokenToggleMultiplierOffFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of IATokenToggleMultiplierOffFuncCall objects
+// describing the invocations of this function.
+func (f *IATokenToggleMultiplierOffFunc) History() []IATokenToggleMultiplierOffFuncCall {
+	f.mutex.Lock()
+	history := make([]IATokenToggleMultiplierOffFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// IATokenToggleMultiplierOffFuncCall is an object that describes an
+// invocation of method ToggleMultiplierOff on an instance of MockIAToken.
+type IATokenToggleMultiplierOffFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 *bind.TransactOpts
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 *types.Transaction
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c IATokenToggleMultiplierOffFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c IATokenToggleMultiplierOffFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
+}
+
+// IATokenToggleMultiplierOnFunc describes the behavior when the
+// ToggleMultiplierOn method of the parent MockIAToken instance is invoked.
+type IATokenToggleMultiplierOnFunc struct {
+	defaultHook func(*bind.TransactOpts) (*types.Transaction, error)
+	hooks       []func(*bind.TransactOpts) (*types.Transaction, error)
+	history     []IATokenToggleMultiplierOnFuncCall
+	mutex       sync.Mutex
+}
+
+// ToggleMultiplierOn delegates to the next hook function in the queue and
+// stores the parameter and result values of this invocation.
+func (m *MockIAToken) ToggleMultiplierOn(v0 *bind.TransactOpts) (*types.Transaction, error) {
+	r0, r1 := m.ToggleMultiplierOnFunc.nextHook()(v0)
+	m.ToggleMultiplierOnFunc.appendCall(IATokenToggleMultiplierOnFuncCall{v0, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the ToggleMultiplierOn
+// method of the parent MockIAToken instance is invoked and the hook queue
+// is empty.
+func (f *IATokenToggleMultiplierOnFunc) SetDefaultHook(hook func(*bind.TransactOpts) (*types.Transaction, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// ToggleMultiplierOn method of the parent MockIAToken instance invokes the
+// hook at the front of the queue and discards it. After the queue is empty,
+// the default hook function is invoked for any future action.
+func (f *IATokenToggleMultiplierOnFunc) PushHook(hook func(*bind.TransactOpts) (*types.Transaction, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *IATokenToggleMultiplierOnFunc) SetDefaultReturn(r0 *types.Transaction, r1 error) {
+	f.SetDefaultHook(func(*bind.TransactOpts) (*types.Transaction, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *IATokenToggleMultiplierOnFunc) PushReturn(r0 *types.Transaction, r1 error) {
+	f.PushHook(func(*bind.TransactOpts) (*types.Transaction, error) {
+		return r0, r1
+	})
+}
+
+func (f *IATokenToggleMultiplierOnFunc) nextHook() func(*bind.TransactOpts) (*types.Transaction, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *IATokenToggleMultiplierOnFunc) appendCall(r0 IATokenToggleMultiplierOnFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of IATokenToggleMultiplierOnFuncCall objects
+// describing the invocations of this function.
+func (f *IATokenToggleMultiplierOnFunc) History() []IATokenToggleMultiplierOnFuncCall {
+	f.mutex.Lock()
+	history := make([]IATokenToggleMultiplierOnFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// IATokenToggleMultiplierOnFuncCall is an object that describes an
+// invocation of method ToggleMultiplierOn on an instance of MockIAToken.
+type IATokenToggleMultiplierOnFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 *bind.TransactOpts
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 *types.Transaction
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c IATokenToggleMultiplierOnFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c IATokenToggleMultiplierOnFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
