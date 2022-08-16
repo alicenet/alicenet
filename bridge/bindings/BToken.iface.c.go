@@ -23,10 +23,6 @@ type IBTokenCaller interface {
 	//
 	// Solidity: function decimals() view returns(uint8)
 	Decimals(opts *bind.CallOpts) (uint8, error)
-	// GetAdmin is a free data retrieval call binding the contract method 0x6e9960c3.
-	//
-	// Solidity: function getAdmin() view returns(address)
-	GetAdmin(opts *bind.CallOpts) (common.Address, error)
 	// GetDeposit is a free data retrieval call binding the contract method 0x9f9fb968.
 	//
 	// Solidity: function getDeposit(uint256 depositID) view returns((uint8,address,uint256))
@@ -71,14 +67,14 @@ type IBTokenCaller interface {
 	//
 	// Solidity: function getPoolBalance() view returns(uint256)
 	GetPoolBalance(opts *bind.CallOpts) (*big.Int, error)
-	// GetSplits is a free data retrieval call binding the contract method 0x520db906.
-	//
-	// Solidity: function getSplits() view returns((uint32,uint32,uint32,uint32))
-	GetSplits(opts *bind.CallOpts) (BTokenSplits, error)
 	// GetTotalBTokensDeposited is a free data retrieval call binding the contract method 0x5ecef3af.
 	//
 	// Solidity: function getTotalBTokensDeposited() view returns(uint256)
 	GetTotalBTokensDeposited(opts *bind.CallOpts) (*big.Int, error)
+	// GetYield is a free data retrieval call binding the contract method 0x7c262871.
+	//
+	// Solidity: function getYield() view returns(uint256)
+	GetYield(opts *bind.CallOpts) (*big.Int, error)
 	// Name is a free data retrieval call binding the contract method 0x06fdde03.
 	//
 	// Solidity: function name() view returns(string)

@@ -94,6 +94,22 @@
     "inputs": [
       {
         "internalType": "uint256",
+        "name": "contractBalance",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "poolBalance",
+        "type": "uint256"
+      }
+    ],
+    "name": "InvalidBalance",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
         "name": "amount",
         "type": "uint256"
       }
@@ -178,71 +194,23 @@
         "type": "address"
       }
     ],
+    "name": "OnlyDistribution",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "sender",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "expected",
+        "type": "address"
+      }
+    ],
     "name": "OnlyFactory",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "sender",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "expected",
-        "type": "address"
-      }
-    ],
-    "name": "OnlyFoundation",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "sender",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "expected",
-        "type": "address"
-      }
-    ],
-    "name": "OnlyLiquidityProviderStaking",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "sender",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "expected",
-        "type": "address"
-      }
-    ],
-    "name": "OnlyPublicStaking",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "sender",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "expected",
-        "type": "address"
-      }
-    ],
-    "name": "OnlyValidatorStaking",
     "type": "error"
   },
   {
@@ -811,6 +779,19 @@
   {
     "inputs": [],
     "name": "getTotalBTokensDeposited",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getYield",
     "outputs": [
       {
         "internalType": "uint256",

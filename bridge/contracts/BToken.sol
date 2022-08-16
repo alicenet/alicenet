@@ -7,8 +7,8 @@ import "contracts/utils/Admin.sol";
 import "contracts/utils/Mutex.sol";
 import "contracts/utils/MagicEthTransfer.sol";
 import "contracts/utils/EthSafeTransfer.sol";
-import "contracts/libraries/math/Sigmoid.sol";
 import "contracts/utils/ImmutableAuth.sol";
+import "contracts/libraries/math/Sigmoid.sol";
 import "contracts/libraries/errors/BTokenErrors.sol";
 
 /// @custom:salt BToken
@@ -20,10 +20,7 @@ contract BToken is
     EthSafeTransfer,
     Sigmoid,
     ImmutableFactory,
-    ImmutablePublicStaking,
-    ImmutableValidatorStaking,
-    ImmutableLiquidityProviderStaking,
-    ImmutableFoundation
+    ImmutableDistribution
 {
     // Struct to keep track of the deposits
     struct Deposit {
@@ -57,17 +54,11 @@ contract BToken is
         uint256 amount
     );
 
-    constructor()
-        Mutex()
-        ImmutableFactory(msg.sender)
-        ImmutablePublicStaking()
-        ImmutableValidatorStaking()
-        ImmutableLiquidityProviderStaking()
-        ImmutableFoundation()
-    {}
+    constructor() ImmutableFactory(msg.sender) ImmutableDistribution() {}
 
     function initialize() public onlyFactory initializer {
         __ERC20_init("BToken", "BOB");
+        _mutex = _UNLOCKED;
     }
 
     /// Distributes the yields of the BToken sale to all stakeholders
@@ -229,6 +220,11 @@ contract BToken is
     }
 
     /// Gets the latest deposit ID emitted.
+    function getYield() public view returns (uint256) {
+        return address(this).balance - _poolBalance;
+    }
+
+    /// Gets the latest deposit ID emitted.
     function getDepositID() public view returns (uint256) {
         return _depositID;
     }
@@ -280,7 +276,7 @@ contract BToken is
     /// transaction is sent.
     /// @param numEth_ Amount of ether to convert in BTokens
     function getLatestMintedBTokensFromEth(uint256 numEth_) public view returns (uint256) {
-        return _ethToBTokens(_poolBalance, numEth_);
+        return _ethToBTokens(_poolBalance, numEth_ / _MARKET_SPREAD);
     }
 
     /// Gets the market spread (difference between the minting and burning bonding
@@ -316,7 +312,7 @@ contract BToken is
         return _bTokensToEth(poolBalance_, totalSupply_, numBTK_);
     }
 
-    /// Gets an amount of BTokens that will be minted given a point in the bonding
+    /// Gets an amount of BTokens that will be minted at given a point in the bonding
     /// curve.
     /// @param poolBalance_ The pool balance (in ether) at the moment
     /// that of the conversion.
@@ -326,7 +322,7 @@ contract BToken is
         pure
         returns (uint256)
     {
-        return _ethToBTokens(poolBalance_, numEth_);
+        return _ethToBTokens(poolBalance_, numEth_ / _MARKET_SPREAD);
     }
 
     /// Distributes the yields from the BToken minting to all stake holders.
@@ -338,10 +334,10 @@ contract BToken is
         if (excess == 0) {
             return true;
         }
-
-        _safeTransferEthWithMagic(IMagicEthTransfer(_foundationAddress()), excess);
-
-        // invariants hold
+        _safeTransferEthWithMagic(IMagicEthTransfer(_distributionAddress()), excess);
+        if (address(this).balance < poolBalance) {
+            revert BTokenErrors.InvalidBalance(address(this).balance, poolBalance);
+        }
         return true;
     }
 
@@ -489,7 +485,7 @@ contract BToken is
     // Check if addr_ is EOA (Externally Owned Account) or a contract.
     function _isContract(address addr_) internal view returns (bool) {
         uint256 size;
-        assembly {
+        assembly ("memory-safe") {
             size := extcodesize(addr_)
         }
         return size > 0;
