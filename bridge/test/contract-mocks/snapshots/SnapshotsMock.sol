@@ -8,8 +8,7 @@ import "contracts/libraries/parsers/BClaimsParserLibrary.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "contracts/interfaces/IDynamics.sol";
 
-
-contract SnapshotsMock is Initializable, ImmutableValidatorPool, ISnapshots, ImmutableDynamics{
+contract SnapshotsMock is Initializable, ImmutableValidatorPool, ISnapshots, ImmutableDynamics {
     uint32 internal _epoch;
     uint32 internal _epochLength;
 

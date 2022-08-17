@@ -16,6 +16,7 @@ import {
   ATokenBurner,
   ATokenMinter,
   BToken,
+  Dynamics,
   ETHDKG,
   Foundation,
   InvalidTxConsumptionAccusation,
@@ -29,7 +30,6 @@ import {
   ValidatorPool,
   ValidatorPoolMock,
   ValidatorStaking,
-  Dynamics
 } from "../typechain-types";
 import { ValidatorRawData } from "./ethdkg/setup";
 
@@ -644,7 +644,7 @@ export const getFixture = async (
     stakingPositionDescriptor,
     invalidTxConsumptionAccusation,
     multipleProposalAccusation,
-    dynamics
+    dynamics,
   };
 };
 
@@ -722,7 +722,7 @@ export async function callFunctionAndGetReturnValues(
         .callStatic[functionName](...inputParameters, { value: messageValue });
       tx = await contract
         .connect(account)
-      [functionName](...inputParameters, { value: messageValue });
+        [functionName](...inputParameters, { value: messageValue });
     } else {
       returnValues = await contract
         .connect(account)
