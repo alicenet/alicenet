@@ -26,7 +26,7 @@ describe("Snapshots: Migrate state", () => {
     [admin] = fixture.namedSigners;
     const validators = await createValidators(fixture, validatorsSnapshots);
     const stakingTokenIds = await stakeValidators(fixture, validators);
-    let validatorsShares = [];
+    const validatorsShares = [];
     for (let i = 0; i < validatorsSnapshots.length; i++) {
       validatorsShares.push(validatorsSnapshots[i].gpkj);
     }
