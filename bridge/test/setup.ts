@@ -46,6 +46,10 @@ export interface Snapshot {
   GroupSignature: string;
   height: BigNumberish;
   validatorIndex: number;
+  GroupSignatureDeserialized?: [
+    [string, string, string, string],
+    [string, string]
+  ];
   BClaimsDeserialized?: [
     number,
     number,
