@@ -19,11 +19,9 @@ contract AToken is
 {                                                     
     uint256 internal constant _CONVERSION_MULTIPLIER = 1555555555555555556;
     uint256 internal constant _CONVERSION_SCALE = 1000000000000000000;
-    bool internal constant _MULTIPLIER_ON = false;
-    bool internal constant _MULTIPLIER_OFF = true;
     address internal immutable _legacyToken;
     bool internal _migrationAllowed;
-    bool internal _multiply;
+    bool internal _hasEarlyStageEnded;
 
     constructor(address legacyToken_)
         ImmutableFactory(msg.sender)
@@ -47,8 +45,8 @@ contract AToken is
         _migrationAllowed = true;
     }
 
-    function toggleMultiplierOff() public onlyFactory {
-        _toggleMultiplierOff();
+    function finishEarlyStage() public onlyFactory {
+        _finishEarlyStage();
     }
 
     function toggleMultiplierOn() public onlyFactory {
@@ -71,19 +69,19 @@ contract AToken is
         return _convert(amount);
     }
 
-    function _toggleMultiplierOff() internal {
-        _multiply = _MULTIPLIER_OFF;
+    function _finishEarlyStage() internal {
+        _hasEarlyStageEnded = false;
     }
 
     function _toggleMultiplierOn() internal {
-        _multiply = _MULTIPLIER_ON;
+        _hasEarlyStageEnded = true;
     }
 
     function _convert(uint256 amount) internal view returns (uint256) {
-        if (_multiply == _MULTIPLIER_ON) {
-            return _multiplyTokens(amount);
-        } else {
+        if (_hasEarlyStageEnded) {
             return amount;
+        } else {
+            return _multiplyTokens(amount);
         }
     }
 
