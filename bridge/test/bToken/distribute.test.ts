@@ -71,6 +71,42 @@ describe("Testing BToken Distribution methods", async () => {
     ethIn = ethers.utils.parseEther(eth.toString());
   });
 
+  it("Should not allow reentrancy on Distribution contract", async () => {
+    const transaction = await fixture.factory.deployCreate(
+      (
+        await ethers.getContractFactory("ReentrantLoopDistributionMock")
+      ).getDeployTransaction().data as BytesLike
+    );
+    await fixture.factory.upgradeProxy(
+      ethers.utils.formatBytes32String("Distribution"),
+      await getContractAddressFromDeployedRawEvent(transaction),
+      "0x"
+    );
+    await fixture.bToken.mint(0, { value: ethIn });
+    await expect(fixture.bToken.distribute()).to.be.revertedWithCustomError(
+      fixture.bToken,
+      "MutexLocked"
+    );
+  });
+
+  it("Should not allow reentrancy on subCalls in the distribution contract", async () => {
+    const transaction = await fixture.factory.deployCreate(
+      (
+        await ethers.getContractFactory("ReentrantLoopDistributionMock")
+      ).getDeployTransaction().data as BytesLike
+    );
+    await fixture.factory.upgradeProxy(
+      ethers.utils.formatBytes32String("Foundation"),
+      await getContractAddressFromDeployedRawEvent(transaction),
+      "0x"
+    );
+    await fixture.bToken.mint(0, { value: ethIn });
+    await expect(fixture.bToken.distribute()).to.be.revertedWithCustomError(
+      fixture.bToken,
+      "MutexLocked"
+    );
+  });
+
   it("Should correctly distribute", async () => {
     const splits = [250, 250, 250, 250];
     await updateDistributionContract(fixture, splits);
