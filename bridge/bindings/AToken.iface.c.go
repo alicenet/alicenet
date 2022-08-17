@@ -23,6 +23,10 @@ type IATokenCaller interface {
 	//
 	// Solidity: function circuitBreakerState() view returns(bool)
 	CircuitBreakerState(opts *bind.CallOpts) (bool, error)
+	// Convert is a free data retrieval call binding the contract method 0xa3908e1b.
+	//
+	// Solidity: function convert(uint256 amount) view returns(uint256)
+	Convert(opts *bind.CallOpts, amount *big.Int) (*big.Int, error)
 	// Decimals is a free data retrieval call binding the contract method 0x313ce567.
 	//
 	// Solidity: function decimals() view returns(uint8)
@@ -35,10 +39,6 @@ type IATokenCaller interface {
 	//
 	// Solidity: function getMetamorphicContractAddress(bytes32 _salt, address _factory) pure returns(address)
 	GetMetamorphicContractAddress(opts *bind.CallOpts, _salt [32]byte, _factory common.Address) (common.Address, error)
-	// MultiplyTokens is a free data retrieval call binding the contract method 0x31d231f6.
-	//
-	// Solidity: function multiplyTokens(uint256 amount) pure returns(uint256)
-	MultiplyTokens(opts *bind.CallOpts, amount *big.Int) (*big.Int, error)
 	// Name is a free data retrieval call binding the contract method 0x06fdde03.
 	//
 	// Solidity: function name() view returns(string)

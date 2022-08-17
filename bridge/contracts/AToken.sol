@@ -3,7 +3,6 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "./utils/Admin.sol";
 import "./utils/ImmutableAuth.sol";
 import "contracts/interfaces/IAToken.sol";
 import "contracts/utils/CircuitBreaker.sol";
@@ -18,13 +17,14 @@ contract AToken is
     ImmutableATokenMinter,
     ImmutableATokenBurner
 {
-    uint256 internal constant CONVERSION_MULTIPLIER = 155555555555555555555556;
-    uint256 internal constant CONVERSION_SCALE = 100000000000000000000000;
+    uint256 internal constant _CONVERSION_MULTIPLIER = 155555555555555555555556;
+    uint256 internal constant _CONVERSION_SCALE = 100000000000000000000000;
     bool internal constant _MULTIPLIER_ON = false;
     bool internal constant _MULTIPLIER_OFF = true;
     address internal immutable _legacyToken;
     bool internal _migrationAllowed;
     bool internal _multiply;
+
     constructor(address legacyToken_)
         ImmutableFactory(msg.sender)
         ImmutableATokenMinter()
@@ -46,14 +46,14 @@ contract AToken is
     function allowMigration() public onlyFactory {
         _migrationAllowed = true;
     }
-    
+
     function toggleMultiplierOff() public onlyFactory {
         _toggleMultiplierOff();
     }
+
     function toggleMultiplierOn() public onlyFactory {
         _toggleMultiplierOn();
     }
-    
 
     function externalMint(address to, uint256 amount) public onlyATokenMinter {
         _mint(to, amount);
@@ -67,25 +67,27 @@ contract AToken is
         return _legacyToken;
     }
 
-    function multiplyTokens(uint256 amount) public pure returns(uint256){
+    function convert(uint256 amount) public view returns (uint256) {
         return _convert(amount);
     }
-    
+
     function _toggleMultiplierOff() internal {
         _multiply = _MULTIPLIER_OFF;
     }
+
     function _toggleMultiplierOn() internal {
         _multiply = _MULTIPLIER_ON;
     }
-    function _convert(uint256 amount) internal view returns(uint256){
-        if(_multiply == _MULTIPLIER_ON){
+
+    function _convert(uint256 amount) internal view returns (uint256) {
+        if (_multiply == _MULTIPLIER_ON) {
             return _multiplyTokens(amount);
-        } else{
+        } else {
             return amount;
         }
     }
-    
-    function _multiplyTokens(uint256 amount) internal pure returns(uint256){
-        return (amount * CONVERSION_MULTIPLIER) / CONVERSION_SCALE;
+
+    function _multiplyTokens(uint256 amount) internal pure returns (uint256) {
+        return (amount * _CONVERSION_MULTIPLIER) / _CONVERSION_SCALE;
     }
 }

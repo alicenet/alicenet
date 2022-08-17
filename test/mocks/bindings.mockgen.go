@@ -32,6 +32,9 @@ type MockIAToken struct {
 	// CircuitBreakerStateFunc is an instance of a mock function object
 	// controlling the behavior of the method CircuitBreakerState.
 	CircuitBreakerStateFunc *IATokenCircuitBreakerStateFunc
+	// ConvertFunc is an instance of a mock function object controlling the
+	// behavior of the method Convert.
+	ConvertFunc *IATokenConvertFunc
 	// DecimalsFunc is an instance of a mock function object controlling the
 	// behavior of the method Decimals.
 	DecimalsFunc *IATokenDecimalsFunc
@@ -69,9 +72,6 @@ type MockIAToken struct {
 	// MigrateFunc is an instance of a mock function object controlling the
 	// behavior of the method Migrate.
 	MigrateFunc *IATokenMigrateFunc
-	// MultiplyTokensFunc is an instance of a mock function object
-	// controlling the behavior of the method MultiplyTokens.
-	MultiplyTokensFunc *IATokenMultiplyTokensFunc
 	// NameFunc is an instance of a mock function object controlling the
 	// behavior of the method Name.
 	NameFunc *IATokenNameFunc
@@ -142,6 +142,11 @@ func NewMockIAToken() *MockIAToken {
 				return
 			},
 		},
+		ConvertFunc: &IATokenConvertFunc{
+			defaultHook: func(*bind.CallOpts, *big.Int) (r0 *big.Int, r1 error) {
+				return
+			},
+		},
 		DecimalsFunc: &IATokenDecimalsFunc{
 			defaultHook: func(*bind.CallOpts) (r0 uint8, r1 error) {
 				return
@@ -199,11 +204,6 @@ func NewMockIAToken() *MockIAToken {
 		},
 		MigrateFunc: &IATokenMigrateFunc{
 			defaultHook: func(*bind.TransactOpts, *big.Int) (r0 *types.Transaction, r1 error) {
-				return
-			},
-		},
-		MultiplyTokensFunc: &IATokenMultiplyTokensFunc{
-			defaultHook: func(*bind.CallOpts, *big.Int) (r0 *big.Int, r1 error) {
 				return
 			},
 		},
@@ -304,6 +304,11 @@ func NewStrictMockIAToken() *MockIAToken {
 				panic("unexpected invocation of MockIAToken.CircuitBreakerState")
 			},
 		},
+		ConvertFunc: &IATokenConvertFunc{
+			defaultHook: func(*bind.CallOpts, *big.Int) (*big.Int, error) {
+				panic("unexpected invocation of MockIAToken.Convert")
+			},
+		},
 		DecimalsFunc: &IATokenDecimalsFunc{
 			defaultHook: func(*bind.CallOpts) (uint8, error) {
 				panic("unexpected invocation of MockIAToken.Decimals")
@@ -362,11 +367,6 @@ func NewStrictMockIAToken() *MockIAToken {
 		MigrateFunc: &IATokenMigrateFunc{
 			defaultHook: func(*bind.TransactOpts, *big.Int) (*types.Transaction, error) {
 				panic("unexpected invocation of MockIAToken.Migrate")
-			},
-		},
-		MultiplyTokensFunc: &IATokenMultiplyTokensFunc{
-			defaultHook: func(*bind.CallOpts, *big.Int) (*big.Int, error) {
-				panic("unexpected invocation of MockIAToken.MultiplyTokens")
 			},
 		},
 		NameFunc: &IATokenNameFunc{
@@ -456,6 +456,9 @@ func NewMockIATokenFrom(i bindings.IAToken) *MockIAToken {
 		CircuitBreakerStateFunc: &IATokenCircuitBreakerStateFunc{
 			defaultHook: i.CircuitBreakerState,
 		},
+		ConvertFunc: &IATokenConvertFunc{
+			defaultHook: i.Convert,
+		},
 		DecimalsFunc: &IATokenDecimalsFunc{
 			defaultHook: i.Decimals,
 		},
@@ -491,9 +494,6 @@ func NewMockIATokenFrom(i bindings.IAToken) *MockIAToken {
 		},
 		MigrateFunc: &IATokenMigrateFunc{
 			defaultHook: i.Migrate,
-		},
-		MultiplyTokensFunc: &IATokenMultiplyTokensFunc{
-			defaultHook: i.MultiplyTokens,
 		},
 		NameFunc: &IATokenNameFunc{
 			defaultHook: i.Name,
@@ -1071,6 +1071,113 @@ func (c IATokenCircuitBreakerStateFuncCall) Args() []interface{} {
 // Results returns an interface slice containing the results of this
 // invocation.
 func (c IATokenCircuitBreakerStateFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
+}
+
+// IATokenConvertFunc describes the behavior when the Convert method of the
+// parent MockIAToken instance is invoked.
+type IATokenConvertFunc struct {
+	defaultHook func(*bind.CallOpts, *big.Int) (*big.Int, error)
+	hooks       []func(*bind.CallOpts, *big.Int) (*big.Int, error)
+	history     []IATokenConvertFuncCall
+	mutex       sync.Mutex
+}
+
+// Convert delegates to the next hook function in the queue and stores the
+// parameter and result values of this invocation.
+func (m *MockIAToken) Convert(v0 *bind.CallOpts, v1 *big.Int) (*big.Int, error) {
+	r0, r1 := m.ConvertFunc.nextHook()(v0, v1)
+	m.ConvertFunc.appendCall(IATokenConvertFuncCall{v0, v1, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the Convert method of
+// the parent MockIAToken instance is invoked and the hook queue is empty.
+func (f *IATokenConvertFunc) SetDefaultHook(hook func(*bind.CallOpts, *big.Int) (*big.Int, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// Convert method of the parent MockIAToken instance invokes the hook at the
+// front of the queue and discards it. After the queue is empty, the default
+// hook function is invoked for any future action.
+func (f *IATokenConvertFunc) PushHook(hook func(*bind.CallOpts, *big.Int) (*big.Int, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *IATokenConvertFunc) SetDefaultReturn(r0 *big.Int, r1 error) {
+	f.SetDefaultHook(func(*bind.CallOpts, *big.Int) (*big.Int, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *IATokenConvertFunc) PushReturn(r0 *big.Int, r1 error) {
+	f.PushHook(func(*bind.CallOpts, *big.Int) (*big.Int, error) {
+		return r0, r1
+	})
+}
+
+func (f *IATokenConvertFunc) nextHook() func(*bind.CallOpts, *big.Int) (*big.Int, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *IATokenConvertFunc) appendCall(r0 IATokenConvertFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of IATokenConvertFuncCall objects describing
+// the invocations of this function.
+func (f *IATokenConvertFunc) History() []IATokenConvertFuncCall {
+	f.mutex.Lock()
+	history := make([]IATokenConvertFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// IATokenConvertFuncCall is an object that describes an invocation of
+// method Convert on an instance of MockIAToken.
+type IATokenConvertFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 *bind.CallOpts
+	// Arg1 is the value of the 2nd argument passed to this method
+	// invocation.
+	Arg1 *big.Int
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 *big.Int
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c IATokenConvertFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0, c.Arg1}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c IATokenConvertFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
@@ -2378,114 +2485,6 @@ func (c IATokenMigrateFuncCall) Args() []interface{} {
 // Results returns an interface slice containing the results of this
 // invocation.
 func (c IATokenMigrateFuncCall) Results() []interface{} {
-	return []interface{}{c.Result0, c.Result1}
-}
-
-// IATokenMultiplyTokensFunc describes the behavior when the MultiplyTokens
-// method of the parent MockIAToken instance is invoked.
-type IATokenMultiplyTokensFunc struct {
-	defaultHook func(*bind.CallOpts, *big.Int) (*big.Int, error)
-	hooks       []func(*bind.CallOpts, *big.Int) (*big.Int, error)
-	history     []IATokenMultiplyTokensFuncCall
-	mutex       sync.Mutex
-}
-
-// MultiplyTokens delegates to the next hook function in the queue and
-// stores the parameter and result values of this invocation.
-func (m *MockIAToken) MultiplyTokens(v0 *bind.CallOpts, v1 *big.Int) (*big.Int, error) {
-	r0, r1 := m.MultiplyTokensFunc.nextHook()(v0, v1)
-	m.MultiplyTokensFunc.appendCall(IATokenMultiplyTokensFuncCall{v0, v1, r0, r1})
-	return r0, r1
-}
-
-// SetDefaultHook sets function that is called when the MultiplyTokens
-// method of the parent MockIAToken instance is invoked and the hook queue
-// is empty.
-func (f *IATokenMultiplyTokensFunc) SetDefaultHook(hook func(*bind.CallOpts, *big.Int) (*big.Int, error)) {
-	f.defaultHook = hook
-}
-
-// PushHook adds a function to the end of hook queue. Each invocation of the
-// MultiplyTokens method of the parent MockIAToken instance invokes the hook
-// at the front of the queue and discards it. After the queue is empty, the
-// default hook function is invoked for any future action.
-func (f *IATokenMultiplyTokensFunc) PushHook(hook func(*bind.CallOpts, *big.Int) (*big.Int, error)) {
-	f.mutex.Lock()
-	f.hooks = append(f.hooks, hook)
-	f.mutex.Unlock()
-}
-
-// SetDefaultReturn calls SetDefaultHook with a function that returns the
-// given values.
-func (f *IATokenMultiplyTokensFunc) SetDefaultReturn(r0 *big.Int, r1 error) {
-	f.SetDefaultHook(func(*bind.CallOpts, *big.Int) (*big.Int, error) {
-		return r0, r1
-	})
-}
-
-// PushReturn calls PushHook with a function that returns the given values.
-func (f *IATokenMultiplyTokensFunc) PushReturn(r0 *big.Int, r1 error) {
-	f.PushHook(func(*bind.CallOpts, *big.Int) (*big.Int, error) {
-		return r0, r1
-	})
-}
-
-func (f *IATokenMultiplyTokensFunc) nextHook() func(*bind.CallOpts, *big.Int) (*big.Int, error) {
-	f.mutex.Lock()
-	defer f.mutex.Unlock()
-
-	if len(f.hooks) == 0 {
-		return f.defaultHook
-	}
-
-	hook := f.hooks[0]
-	f.hooks = f.hooks[1:]
-	return hook
-}
-
-func (f *IATokenMultiplyTokensFunc) appendCall(r0 IATokenMultiplyTokensFuncCall) {
-	f.mutex.Lock()
-	f.history = append(f.history, r0)
-	f.mutex.Unlock()
-}
-
-// History returns a sequence of IATokenMultiplyTokensFuncCall objects
-// describing the invocations of this function.
-func (f *IATokenMultiplyTokensFunc) History() []IATokenMultiplyTokensFuncCall {
-	f.mutex.Lock()
-	history := make([]IATokenMultiplyTokensFuncCall, len(f.history))
-	copy(history, f.history)
-	f.mutex.Unlock()
-
-	return history
-}
-
-// IATokenMultiplyTokensFuncCall is an object that describes an invocation
-// of method MultiplyTokens on an instance of MockIAToken.
-type IATokenMultiplyTokensFuncCall struct {
-	// Arg0 is the value of the 1st argument passed to this method
-	// invocation.
-	Arg0 *bind.CallOpts
-	// Arg1 is the value of the 2nd argument passed to this method
-	// invocation.
-	Arg1 *big.Int
-	// Result0 is the value of the 1st result returned from this method
-	// invocation.
-	Result0 *big.Int
-	// Result1 is the value of the 2nd result returned from this method
-	// invocation.
-	Result1 error
-}
-
-// Args returns an interface slice containing the arguments of this
-// invocation.
-func (c IATokenMultiplyTokensFuncCall) Args() []interface{} {
-	return []interface{}{c.Arg0, c.Arg1}
-}
-
-// Results returns an interface slice containing the results of this
-// invocation.
-func (c IATokenMultiplyTokensFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
