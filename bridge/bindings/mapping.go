@@ -82,6 +82,7 @@ var FunctionMapping = map[[4]byte]string{
 	{105, 165, 35, 144}:  "Dynamics.encodeDynamicValues(tuple)",
 	{107, 213, 12, 239}:  "Dynamics.getConfiguration()",
 	{73, 241, 63, 104}:   "Dynamics.getEncodingVersion()",
+	{216, 82, 0, 204}:    "Dynamics.getLatestAliceNetVersion()",
 	{245, 62, 254, 2}:    "Dynamics.getLatestDynamicValues()",
 	{134, 83, 164, 101}:  "Dynamics.getMetamorphicContractAddress(bytes32,address)",
 	{114, 1, 88, 89}:     "Dynamics.getPreviousDynamicValues(uint256)",
