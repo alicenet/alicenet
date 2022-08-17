@@ -53,23 +53,23 @@ type BasicContracts interface {
 
 type EthereumContracts interface {
 	BasicContracts
-	Ethdkg() bindings.IETHDKG
+	Ethdkg() *bindings.ETHDKG
 	EthdkgAddress() common.Address
-	AToken() bindings.IAToken
+	AToken() *bindings.AToken
 	ATokenAddress() common.Address
-	BToken() bindings.IBToken
+	BToken() *bindings.BToken
 	BTokenAddress() common.Address
-	PublicStaking() bindings.IPublicStaking
+	PublicStaking() *bindings.PublicStaking
 	PublicStakingAddress() common.Address
-	ValidatorStaking() bindings.IValidatorStaking
+	ValidatorStaking() *bindings.ValidatorStaking
 	ValidatorStakingAddress() common.Address
-	ContractFactory() bindings.IAliceNetFactory
+	ContractFactory() *bindings.AliceNetFactory
 	ContractFactoryAddress() common.Address
 	SnapshotsAddress() common.Address
-	Snapshots() bindings.ISnapshots
-	ValidatorPool() bindings.IValidatorPool
+	Snapshots() *bindings.Snapshots
+	ValidatorPool() *bindings.ValidatorPool
 	ValidatorPoolAddress() common.Address
-	Governance() bindings.IGovernance
+	Governance() *bindings.Governance
 	GovernanceAddress() common.Address
 }
 

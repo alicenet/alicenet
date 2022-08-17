@@ -23,23 +23,23 @@ var _ layer1.EthereumContracts = &Contracts{}
 type Contracts struct {
 	allAddresses            map[common.Address]bool
 	eth                     *Client
-	ethdkg                  bindings.IETHDKG
+	ethdkg                  *bindings.ETHDKG
 	ethdkgAddress           common.Address
-	aToken                  bindings.IAToken
+	aToken                  *bindings.AToken
 	aTokenAddress           common.Address
-	bToken                  bindings.IBToken
+	bToken                  *bindings.BToken
 	bTokenAddress           common.Address
-	publicStaking           bindings.IPublicStaking
+	publicStaking           *bindings.PublicStaking
 	publicStakingAddress    common.Address
-	validatorStaking        bindings.IValidatorStaking
+	validatorStaking        *bindings.ValidatorStaking
 	validatorStakingAddress common.Address
-	contractFactory         bindings.IAliceNetFactory
+	contractFactory         *bindings.AliceNetFactory
 	contractFactoryAddress  common.Address
-	snapshots               bindings.ISnapshots
+	snapshots               *bindings.Snapshots
 	snapshotsAddress        common.Address
-	validatorPool           bindings.IValidatorPool
+	validatorPool           *bindings.ValidatorPool
 	validatorPoolAddress    common.Address
-	governance              bindings.IGovernance
+	governance              *bindings.Governance
 	governanceAddress       common.Address
 }
 
@@ -198,7 +198,7 @@ func (c *Contracts) GetAllAddresses() []common.Address {
 	return allAddresses
 }
 
-func (c *Contracts) Ethdkg() bindings.IETHDKG {
+func (c *Contracts) Ethdkg() *bindings.ETHDKG {
 	return c.ethdkg
 }
 
@@ -206,7 +206,7 @@ func (c *Contracts) EthdkgAddress() common.Address {
 	return c.ethdkgAddress
 }
 
-func (c *Contracts) AToken() bindings.IAToken {
+func (c *Contracts) AToken() *bindings.AToken {
 	return c.aToken
 }
 
@@ -214,7 +214,7 @@ func (c *Contracts) ATokenAddress() common.Address {
 	return c.aTokenAddress
 }
 
-func (c *Contracts) BToken() bindings.IBToken {
+func (c *Contracts) BToken() *bindings.BToken {
 	return c.bToken
 }
 
@@ -222,7 +222,7 @@ func (c *Contracts) BTokenAddress() common.Address {
 	return c.bTokenAddress
 }
 
-func (c *Contracts) PublicStaking() bindings.IPublicStaking {
+func (c *Contracts) PublicStaking() *bindings.PublicStaking {
 	return c.publicStaking
 }
 
@@ -230,7 +230,7 @@ func (c *Contracts) PublicStakingAddress() common.Address {
 	return c.publicStakingAddress
 }
 
-func (c *Contracts) ValidatorStaking() bindings.IValidatorStaking {
+func (c *Contracts) ValidatorStaking() *bindings.ValidatorStaking {
 	return c.validatorStaking
 }
 
@@ -238,7 +238,7 @@ func (c *Contracts) ValidatorStakingAddress() common.Address {
 	return c.validatorStakingAddress
 }
 
-func (c *Contracts) ContractFactory() bindings.IAliceNetFactory {
+func (c *Contracts) ContractFactory() *bindings.AliceNetFactory {
 	return c.contractFactory
 }
 
@@ -246,7 +246,7 @@ func (c *Contracts) ContractFactoryAddress() common.Address {
 	return c.contractFactoryAddress
 }
 
-func (c *Contracts) Snapshots() bindings.ISnapshots {
+func (c *Contracts) Snapshots() *bindings.Snapshots {
 	return c.snapshots
 }
 
@@ -254,7 +254,7 @@ func (c *Contracts) SnapshotsAddress() common.Address {
 	return c.snapshotsAddress
 }
 
-func (c *Contracts) ValidatorPool() bindings.IValidatorPool {
+func (c *Contracts) ValidatorPool() *bindings.ValidatorPool {
 	return c.validatorPool
 }
 
@@ -262,7 +262,7 @@ func (c *Contracts) ValidatorPoolAddress() common.Address {
 	return c.validatorPoolAddress
 }
 
-func (c *Contracts) Governance() bindings.IGovernance {
+func (c *Contracts) Governance() *bindings.Governance {
 	return c.governance
 }
 

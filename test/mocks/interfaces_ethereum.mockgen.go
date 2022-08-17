@@ -3995,7 +3995,7 @@ type MockEthereumContracts struct {
 func NewMockEthereumContracts() *MockEthereumContracts {
 	return &MockEthereumContracts{
 		ATokenFunc: &EthereumContractsATokenFunc{
-			defaultHook: func() (r0 bindings.IAToken) {
+			defaultHook: func() (r0 *bindings.AToken) {
 				return
 			},
 		},
@@ -4005,7 +4005,7 @@ func NewMockEthereumContracts() *MockEthereumContracts {
 			},
 		},
 		BTokenFunc: &EthereumContractsBTokenFunc{
-			defaultHook: func() (r0 bindings.IBToken) {
+			defaultHook: func() (r0 *bindings.BToken) {
 				return
 			},
 		},
@@ -4015,7 +4015,7 @@ func NewMockEthereumContracts() *MockEthereumContracts {
 			},
 		},
 		ContractFactoryFunc: &EthereumContractsContractFactoryFunc{
-			defaultHook: func() (r0 bindings.IAliceNetFactory) {
+			defaultHook: func() (r0 *bindings.AliceNetFactory) {
 				return
 			},
 		},
@@ -4025,7 +4025,7 @@ func NewMockEthereumContracts() *MockEthereumContracts {
 			},
 		},
 		EthdkgFunc: &EthereumContractsEthdkgFunc{
-			defaultHook: func() (r0 bindings.IETHDKG) {
+			defaultHook: func() (r0 *bindings.ETHDKG) {
 				return
 			},
 		},
@@ -4040,7 +4040,7 @@ func NewMockEthereumContracts() *MockEthereumContracts {
 			},
 		},
 		GovernanceFunc: &EthereumContractsGovernanceFunc{
-			defaultHook: func() (r0 bindings.IGovernance) {
+			defaultHook: func() (r0 *bindings.Governance) {
 				return
 			},
 		},
@@ -4050,7 +4050,7 @@ func NewMockEthereumContracts() *MockEthereumContracts {
 			},
 		},
 		PublicStakingFunc: &EthereumContractsPublicStakingFunc{
-			defaultHook: func() (r0 bindings.IPublicStaking) {
+			defaultHook: func() (r0 *bindings.PublicStaking) {
 				return
 			},
 		},
@@ -4060,7 +4060,7 @@ func NewMockEthereumContracts() *MockEthereumContracts {
 			},
 		},
 		SnapshotsFunc: &EthereumContractsSnapshotsFunc{
-			defaultHook: func() (r0 bindings.ISnapshots) {
+			defaultHook: func() (r0 *bindings.Snapshots) {
 				return
 			},
 		},
@@ -4070,7 +4070,7 @@ func NewMockEthereumContracts() *MockEthereumContracts {
 			},
 		},
 		ValidatorPoolFunc: &EthereumContractsValidatorPoolFunc{
-			defaultHook: func() (r0 bindings.IValidatorPool) {
+			defaultHook: func() (r0 *bindings.ValidatorPool) {
 				return
 			},
 		},
@@ -4080,7 +4080,7 @@ func NewMockEthereumContracts() *MockEthereumContracts {
 			},
 		},
 		ValidatorStakingFunc: &EthereumContractsValidatorStakingFunc{
-			defaultHook: func() (r0 bindings.IValidatorStaking) {
+			defaultHook: func() (r0 *bindings.ValidatorStaking) {
 				return
 			},
 		},
@@ -4098,7 +4098,7 @@ func NewMockEthereumContracts() *MockEthereumContracts {
 func NewStrictMockEthereumContracts() *MockEthereumContracts {
 	return &MockEthereumContracts{
 		ATokenFunc: &EthereumContractsATokenFunc{
-			defaultHook: func() bindings.IAToken {
+			defaultHook: func() *bindings.AToken {
 				panic("unexpected invocation of MockEthereumContracts.AToken")
 			},
 		},
@@ -4108,7 +4108,7 @@ func NewStrictMockEthereumContracts() *MockEthereumContracts {
 			},
 		},
 		BTokenFunc: &EthereumContractsBTokenFunc{
-			defaultHook: func() bindings.IBToken {
+			defaultHook: func() *bindings.BToken {
 				panic("unexpected invocation of MockEthereumContracts.BToken")
 			},
 		},
@@ -4118,7 +4118,7 @@ func NewStrictMockEthereumContracts() *MockEthereumContracts {
 			},
 		},
 		ContractFactoryFunc: &EthereumContractsContractFactoryFunc{
-			defaultHook: func() bindings.IAliceNetFactory {
+			defaultHook: func() *bindings.AliceNetFactory {
 				panic("unexpected invocation of MockEthereumContracts.ContractFactory")
 			},
 		},
@@ -4128,7 +4128,7 @@ func NewStrictMockEthereumContracts() *MockEthereumContracts {
 			},
 		},
 		EthdkgFunc: &EthereumContractsEthdkgFunc{
-			defaultHook: func() bindings.IETHDKG {
+			defaultHook: func() *bindings.ETHDKG {
 				panic("unexpected invocation of MockEthereumContracts.Ethdkg")
 			},
 		},
@@ -4143,7 +4143,7 @@ func NewStrictMockEthereumContracts() *MockEthereumContracts {
 			},
 		},
 		GovernanceFunc: &EthereumContractsGovernanceFunc{
-			defaultHook: func() bindings.IGovernance {
+			defaultHook: func() *bindings.Governance {
 				panic("unexpected invocation of MockEthereumContracts.Governance")
 			},
 		},
@@ -4153,7 +4153,7 @@ func NewStrictMockEthereumContracts() *MockEthereumContracts {
 			},
 		},
 		PublicStakingFunc: &EthereumContractsPublicStakingFunc{
-			defaultHook: func() bindings.IPublicStaking {
+			defaultHook: func() *bindings.PublicStaking {
 				panic("unexpected invocation of MockEthereumContracts.PublicStaking")
 			},
 		},
@@ -4163,7 +4163,7 @@ func NewStrictMockEthereumContracts() *MockEthereumContracts {
 			},
 		},
 		SnapshotsFunc: &EthereumContractsSnapshotsFunc{
-			defaultHook: func() bindings.ISnapshots {
+			defaultHook: func() *bindings.Snapshots {
 				panic("unexpected invocation of MockEthereumContracts.Snapshots")
 			},
 		},
@@ -4173,7 +4173,7 @@ func NewStrictMockEthereumContracts() *MockEthereumContracts {
 			},
 		},
 		ValidatorPoolFunc: &EthereumContractsValidatorPoolFunc{
-			defaultHook: func() bindings.IValidatorPool {
+			defaultHook: func() *bindings.ValidatorPool {
 				panic("unexpected invocation of MockEthereumContracts.ValidatorPool")
 			},
 		},
@@ -4183,7 +4183,7 @@ func NewStrictMockEthereumContracts() *MockEthereumContracts {
 			},
 		},
 		ValidatorStakingFunc: &EthereumContractsValidatorStakingFunc{
-			defaultHook: func() bindings.IValidatorStaking {
+			defaultHook: func() *bindings.ValidatorStaking {
 				panic("unexpected invocation of MockEthereumContracts.ValidatorStaking")
 			},
 		},
@@ -4263,15 +4263,15 @@ func NewMockEthereumContractsFrom(i layer1.EthereumContracts) *MockEthereumContr
 // EthereumContractsATokenFunc describes the behavior when the AToken method
 // of the parent MockEthereumContracts instance is invoked.
 type EthereumContractsATokenFunc struct {
-	defaultHook func() bindings.IAToken
-	hooks       []func() bindings.IAToken
+	defaultHook func() *bindings.AToken
+	hooks       []func() *bindings.AToken
 	history     []EthereumContractsATokenFuncCall
 	mutex       sync.Mutex
 }
 
 // AToken delegates to the next hook function in the queue and stores the
 // parameter and result values of this invocation.
-func (m *MockEthereumContracts) AToken() bindings.IAToken {
+func (m *MockEthereumContracts) AToken() *bindings.AToken {
 	r0 := m.ATokenFunc.nextHook()()
 	m.ATokenFunc.appendCall(EthereumContractsATokenFuncCall{r0})
 	return r0
@@ -4280,7 +4280,7 @@ func (m *MockEthereumContracts) AToken() bindings.IAToken {
 // SetDefaultHook sets function that is called when the AToken method of the
 // parent MockEthereumContracts instance is invoked and the hook queue is
 // empty.
-func (f *EthereumContractsATokenFunc) SetDefaultHook(hook func() bindings.IAToken) {
+func (f *EthereumContractsATokenFunc) SetDefaultHook(hook func() *bindings.AToken) {
 	f.defaultHook = hook
 }
 
@@ -4288,7 +4288,7 @@ func (f *EthereumContractsATokenFunc) SetDefaultHook(hook func() bindings.IAToke
 // AToken method of the parent MockEthereumContracts instance invokes the
 // hook at the front of the queue and discards it. After the queue is empty,
 // the default hook function is invoked for any future action.
-func (f *EthereumContractsATokenFunc) PushHook(hook func() bindings.IAToken) {
+func (f *EthereumContractsATokenFunc) PushHook(hook func() *bindings.AToken) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -4296,20 +4296,20 @@ func (f *EthereumContractsATokenFunc) PushHook(hook func() bindings.IAToken) {
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *EthereumContractsATokenFunc) SetDefaultReturn(r0 bindings.IAToken) {
-	f.SetDefaultHook(func() bindings.IAToken {
+func (f *EthereumContractsATokenFunc) SetDefaultReturn(r0 *bindings.AToken) {
+	f.SetDefaultHook(func() *bindings.AToken {
 		return r0
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *EthereumContractsATokenFunc) PushReturn(r0 bindings.IAToken) {
-	f.PushHook(func() bindings.IAToken {
+func (f *EthereumContractsATokenFunc) PushReturn(r0 *bindings.AToken) {
+	f.PushHook(func() *bindings.AToken {
 		return r0
 	})
 }
 
-func (f *EthereumContractsATokenFunc) nextHook() func() bindings.IAToken {
+func (f *EthereumContractsATokenFunc) nextHook() func() *bindings.AToken {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -4344,7 +4344,7 @@ func (f *EthereumContractsATokenFunc) History() []EthereumContractsATokenFuncCal
 type EthereumContractsATokenFuncCall struct {
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 bindings.IAToken
+	Result0 *bindings.AToken
 }
 
 // Args returns an interface slice containing the arguments of this
@@ -4463,15 +4463,15 @@ func (c EthereumContractsATokenAddressFuncCall) Results() []interface{} {
 // EthereumContractsBTokenFunc describes the behavior when the BToken method
 // of the parent MockEthereumContracts instance is invoked.
 type EthereumContractsBTokenFunc struct {
-	defaultHook func() bindings.IBToken
-	hooks       []func() bindings.IBToken
+	defaultHook func() *bindings.BToken
+	hooks       []func() *bindings.BToken
 	history     []EthereumContractsBTokenFuncCall
 	mutex       sync.Mutex
 }
 
 // BToken delegates to the next hook function in the queue and stores the
 // parameter and result values of this invocation.
-func (m *MockEthereumContracts) BToken() bindings.IBToken {
+func (m *MockEthereumContracts) BToken() *bindings.BToken {
 	r0 := m.BTokenFunc.nextHook()()
 	m.BTokenFunc.appendCall(EthereumContractsBTokenFuncCall{r0})
 	return r0
@@ -4480,7 +4480,7 @@ func (m *MockEthereumContracts) BToken() bindings.IBToken {
 // SetDefaultHook sets function that is called when the BToken method of the
 // parent MockEthereumContracts instance is invoked and the hook queue is
 // empty.
-func (f *EthereumContractsBTokenFunc) SetDefaultHook(hook func() bindings.IBToken) {
+func (f *EthereumContractsBTokenFunc) SetDefaultHook(hook func() *bindings.BToken) {
 	f.defaultHook = hook
 }
 
@@ -4488,7 +4488,7 @@ func (f *EthereumContractsBTokenFunc) SetDefaultHook(hook func() bindings.IBToke
 // BToken method of the parent MockEthereumContracts instance invokes the
 // hook at the front of the queue and discards it. After the queue is empty,
 // the default hook function is invoked for any future action.
-func (f *EthereumContractsBTokenFunc) PushHook(hook func() bindings.IBToken) {
+func (f *EthereumContractsBTokenFunc) PushHook(hook func() *bindings.BToken) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -4496,20 +4496,20 @@ func (f *EthereumContractsBTokenFunc) PushHook(hook func() bindings.IBToken) {
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *EthereumContractsBTokenFunc) SetDefaultReturn(r0 bindings.IBToken) {
-	f.SetDefaultHook(func() bindings.IBToken {
+func (f *EthereumContractsBTokenFunc) SetDefaultReturn(r0 *bindings.BToken) {
+	f.SetDefaultHook(func() *bindings.BToken {
 		return r0
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *EthereumContractsBTokenFunc) PushReturn(r0 bindings.IBToken) {
-	f.PushHook(func() bindings.IBToken {
+func (f *EthereumContractsBTokenFunc) PushReturn(r0 *bindings.BToken) {
+	f.PushHook(func() *bindings.BToken {
 		return r0
 	})
 }
 
-func (f *EthereumContractsBTokenFunc) nextHook() func() bindings.IBToken {
+func (f *EthereumContractsBTokenFunc) nextHook() func() *bindings.BToken {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -4544,7 +4544,7 @@ func (f *EthereumContractsBTokenFunc) History() []EthereumContractsBTokenFuncCal
 type EthereumContractsBTokenFuncCall struct {
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 bindings.IBToken
+	Result0 *bindings.BToken
 }
 
 // Args returns an interface slice containing the arguments of this
@@ -4664,15 +4664,15 @@ func (c EthereumContractsBTokenAddressFuncCall) Results() []interface{} {
 // ContractFactory method of the parent MockEthereumContracts instance is
 // invoked.
 type EthereumContractsContractFactoryFunc struct {
-	defaultHook func() bindings.IAliceNetFactory
-	hooks       []func() bindings.IAliceNetFactory
+	defaultHook func() *bindings.AliceNetFactory
+	hooks       []func() *bindings.AliceNetFactory
 	history     []EthereumContractsContractFactoryFuncCall
 	mutex       sync.Mutex
 }
 
 // ContractFactory delegates to the next hook function in the queue and
 // stores the parameter and result values of this invocation.
-func (m *MockEthereumContracts) ContractFactory() bindings.IAliceNetFactory {
+func (m *MockEthereumContracts) ContractFactory() *bindings.AliceNetFactory {
 	r0 := m.ContractFactoryFunc.nextHook()()
 	m.ContractFactoryFunc.appendCall(EthereumContractsContractFactoryFuncCall{r0})
 	return r0
@@ -4681,7 +4681,7 @@ func (m *MockEthereumContracts) ContractFactory() bindings.IAliceNetFactory {
 // SetDefaultHook sets function that is called when the ContractFactory
 // method of the parent MockEthereumContracts instance is invoked and the
 // hook queue is empty.
-func (f *EthereumContractsContractFactoryFunc) SetDefaultHook(hook func() bindings.IAliceNetFactory) {
+func (f *EthereumContractsContractFactoryFunc) SetDefaultHook(hook func() *bindings.AliceNetFactory) {
 	f.defaultHook = hook
 }
 
@@ -4690,7 +4690,7 @@ func (f *EthereumContractsContractFactoryFunc) SetDefaultHook(hook func() bindin
 // invokes the hook at the front of the queue and discards it. After the
 // queue is empty, the default hook function is invoked for any future
 // action.
-func (f *EthereumContractsContractFactoryFunc) PushHook(hook func() bindings.IAliceNetFactory) {
+func (f *EthereumContractsContractFactoryFunc) PushHook(hook func() *bindings.AliceNetFactory) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -4698,20 +4698,20 @@ func (f *EthereumContractsContractFactoryFunc) PushHook(hook func() bindings.IAl
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *EthereumContractsContractFactoryFunc) SetDefaultReturn(r0 bindings.IAliceNetFactory) {
-	f.SetDefaultHook(func() bindings.IAliceNetFactory {
+func (f *EthereumContractsContractFactoryFunc) SetDefaultReturn(r0 *bindings.AliceNetFactory) {
+	f.SetDefaultHook(func() *bindings.AliceNetFactory {
 		return r0
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *EthereumContractsContractFactoryFunc) PushReturn(r0 bindings.IAliceNetFactory) {
-	f.PushHook(func() bindings.IAliceNetFactory {
+func (f *EthereumContractsContractFactoryFunc) PushReturn(r0 *bindings.AliceNetFactory) {
+	f.PushHook(func() *bindings.AliceNetFactory {
 		return r0
 	})
 }
 
-func (f *EthereumContractsContractFactoryFunc) nextHook() func() bindings.IAliceNetFactory {
+func (f *EthereumContractsContractFactoryFunc) nextHook() func() *bindings.AliceNetFactory {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -4747,7 +4747,7 @@ func (f *EthereumContractsContractFactoryFunc) History() []EthereumContractsCont
 type EthereumContractsContractFactoryFuncCall struct {
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 bindings.IAliceNetFactory
+	Result0 *bindings.AliceNetFactory
 }
 
 // Args returns an interface slice containing the arguments of this
@@ -4868,15 +4868,15 @@ func (c EthereumContractsContractFactoryAddressFuncCall) Results() []interface{}
 // EthereumContractsEthdkgFunc describes the behavior when the Ethdkg method
 // of the parent MockEthereumContracts instance is invoked.
 type EthereumContractsEthdkgFunc struct {
-	defaultHook func() bindings.IETHDKG
-	hooks       []func() bindings.IETHDKG
+	defaultHook func() *bindings.ETHDKG
+	hooks       []func() *bindings.ETHDKG
 	history     []EthereumContractsEthdkgFuncCall
 	mutex       sync.Mutex
 }
 
 // Ethdkg delegates to the next hook function in the queue and stores the
 // parameter and result values of this invocation.
-func (m *MockEthereumContracts) Ethdkg() bindings.IETHDKG {
+func (m *MockEthereumContracts) Ethdkg() *bindings.ETHDKG {
 	r0 := m.EthdkgFunc.nextHook()()
 	m.EthdkgFunc.appendCall(EthereumContractsEthdkgFuncCall{r0})
 	return r0
@@ -4885,7 +4885,7 @@ func (m *MockEthereumContracts) Ethdkg() bindings.IETHDKG {
 // SetDefaultHook sets function that is called when the Ethdkg method of the
 // parent MockEthereumContracts instance is invoked and the hook queue is
 // empty.
-func (f *EthereumContractsEthdkgFunc) SetDefaultHook(hook func() bindings.IETHDKG) {
+func (f *EthereumContractsEthdkgFunc) SetDefaultHook(hook func() *bindings.ETHDKG) {
 	f.defaultHook = hook
 }
 
@@ -4893,7 +4893,7 @@ func (f *EthereumContractsEthdkgFunc) SetDefaultHook(hook func() bindings.IETHDK
 // Ethdkg method of the parent MockEthereumContracts instance invokes the
 // hook at the front of the queue and discards it. After the queue is empty,
 // the default hook function is invoked for any future action.
-func (f *EthereumContractsEthdkgFunc) PushHook(hook func() bindings.IETHDKG) {
+func (f *EthereumContractsEthdkgFunc) PushHook(hook func() *bindings.ETHDKG) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -4901,20 +4901,20 @@ func (f *EthereumContractsEthdkgFunc) PushHook(hook func() bindings.IETHDKG) {
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *EthereumContractsEthdkgFunc) SetDefaultReturn(r0 bindings.IETHDKG) {
-	f.SetDefaultHook(func() bindings.IETHDKG {
+func (f *EthereumContractsEthdkgFunc) SetDefaultReturn(r0 *bindings.ETHDKG) {
+	f.SetDefaultHook(func() *bindings.ETHDKG {
 		return r0
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *EthereumContractsEthdkgFunc) PushReturn(r0 bindings.IETHDKG) {
-	f.PushHook(func() bindings.IETHDKG {
+func (f *EthereumContractsEthdkgFunc) PushReturn(r0 *bindings.ETHDKG) {
+	f.PushHook(func() *bindings.ETHDKG {
 		return r0
 	})
 }
 
-func (f *EthereumContractsEthdkgFunc) nextHook() func() bindings.IETHDKG {
+func (f *EthereumContractsEthdkgFunc) nextHook() func() *bindings.ETHDKG {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -4949,7 +4949,7 @@ func (f *EthereumContractsEthdkgFunc) History() []EthereumContractsEthdkgFuncCal
 type EthereumContractsEthdkgFuncCall struct {
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 bindings.IETHDKG
+	Result0 *bindings.ETHDKG
 }
 
 // Args returns an interface slice containing the arguments of this
@@ -5171,15 +5171,15 @@ func (c EthereumContractsGetAllAddressesFuncCall) Results() []interface{} {
 // Governance method of the parent MockEthereumContracts instance is
 // invoked.
 type EthereumContractsGovernanceFunc struct {
-	defaultHook func() bindings.IGovernance
-	hooks       []func() bindings.IGovernance
+	defaultHook func() *bindings.Governance
+	hooks       []func() *bindings.Governance
 	history     []EthereumContractsGovernanceFuncCall
 	mutex       sync.Mutex
 }
 
 // Governance delegates to the next hook function in the queue and stores
 // the parameter and result values of this invocation.
-func (m *MockEthereumContracts) Governance() bindings.IGovernance {
+func (m *MockEthereumContracts) Governance() *bindings.Governance {
 	r0 := m.GovernanceFunc.nextHook()()
 	m.GovernanceFunc.appendCall(EthereumContractsGovernanceFuncCall{r0})
 	return r0
@@ -5188,7 +5188,7 @@ func (m *MockEthereumContracts) Governance() bindings.IGovernance {
 // SetDefaultHook sets function that is called when the Governance method of
 // the parent MockEthereumContracts instance is invoked and the hook queue
 // is empty.
-func (f *EthereumContractsGovernanceFunc) SetDefaultHook(hook func() bindings.IGovernance) {
+func (f *EthereumContractsGovernanceFunc) SetDefaultHook(hook func() *bindings.Governance) {
 	f.defaultHook = hook
 }
 
@@ -5196,7 +5196,7 @@ func (f *EthereumContractsGovernanceFunc) SetDefaultHook(hook func() bindings.IG
 // Governance method of the parent MockEthereumContracts instance invokes
 // the hook at the front of the queue and discards it. After the queue is
 // empty, the default hook function is invoked for any future action.
-func (f *EthereumContractsGovernanceFunc) PushHook(hook func() bindings.IGovernance) {
+func (f *EthereumContractsGovernanceFunc) PushHook(hook func() *bindings.Governance) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -5204,20 +5204,20 @@ func (f *EthereumContractsGovernanceFunc) PushHook(hook func() bindings.IGoverna
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *EthereumContractsGovernanceFunc) SetDefaultReturn(r0 bindings.IGovernance) {
-	f.SetDefaultHook(func() bindings.IGovernance {
+func (f *EthereumContractsGovernanceFunc) SetDefaultReturn(r0 *bindings.Governance) {
+	f.SetDefaultHook(func() *bindings.Governance {
 		return r0
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *EthereumContractsGovernanceFunc) PushReturn(r0 bindings.IGovernance) {
-	f.PushHook(func() bindings.IGovernance {
+func (f *EthereumContractsGovernanceFunc) PushReturn(r0 *bindings.Governance) {
+	f.PushHook(func() *bindings.Governance {
 		return r0
 	})
 }
 
-func (f *EthereumContractsGovernanceFunc) nextHook() func() bindings.IGovernance {
+func (f *EthereumContractsGovernanceFunc) nextHook() func() *bindings.Governance {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -5252,7 +5252,7 @@ func (f *EthereumContractsGovernanceFunc) History() []EthereumContractsGovernanc
 type EthereumContractsGovernanceFuncCall struct {
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 bindings.IGovernance
+	Result0 *bindings.Governance
 }
 
 // Args returns an interface slice containing the arguments of this
@@ -5373,15 +5373,15 @@ func (c EthereumContractsGovernanceAddressFuncCall) Results() []interface{} {
 // PublicStaking method of the parent MockEthereumContracts instance is
 // invoked.
 type EthereumContractsPublicStakingFunc struct {
-	defaultHook func() bindings.IPublicStaking
-	hooks       []func() bindings.IPublicStaking
+	defaultHook func() *bindings.PublicStaking
+	hooks       []func() *bindings.PublicStaking
 	history     []EthereumContractsPublicStakingFuncCall
 	mutex       sync.Mutex
 }
 
 // PublicStaking delegates to the next hook function in the queue and stores
 // the parameter and result values of this invocation.
-func (m *MockEthereumContracts) PublicStaking() bindings.IPublicStaking {
+func (m *MockEthereumContracts) PublicStaking() *bindings.PublicStaking {
 	r0 := m.PublicStakingFunc.nextHook()()
 	m.PublicStakingFunc.appendCall(EthereumContractsPublicStakingFuncCall{r0})
 	return r0
@@ -5390,7 +5390,7 @@ func (m *MockEthereumContracts) PublicStaking() bindings.IPublicStaking {
 // SetDefaultHook sets function that is called when the PublicStaking method
 // of the parent MockEthereumContracts instance is invoked and the hook
 // queue is empty.
-func (f *EthereumContractsPublicStakingFunc) SetDefaultHook(hook func() bindings.IPublicStaking) {
+func (f *EthereumContractsPublicStakingFunc) SetDefaultHook(hook func() *bindings.PublicStaking) {
 	f.defaultHook = hook
 }
 
@@ -5398,7 +5398,7 @@ func (f *EthereumContractsPublicStakingFunc) SetDefaultHook(hook func() bindings
 // PublicStaking method of the parent MockEthereumContracts instance invokes
 // the hook at the front of the queue and discards it. After the queue is
 // empty, the default hook function is invoked for any future action.
-func (f *EthereumContractsPublicStakingFunc) PushHook(hook func() bindings.IPublicStaking) {
+func (f *EthereumContractsPublicStakingFunc) PushHook(hook func() *bindings.PublicStaking) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -5406,20 +5406,20 @@ func (f *EthereumContractsPublicStakingFunc) PushHook(hook func() bindings.IPubl
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *EthereumContractsPublicStakingFunc) SetDefaultReturn(r0 bindings.IPublicStaking) {
-	f.SetDefaultHook(func() bindings.IPublicStaking {
+func (f *EthereumContractsPublicStakingFunc) SetDefaultReturn(r0 *bindings.PublicStaking) {
+	f.SetDefaultHook(func() *bindings.PublicStaking {
 		return r0
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *EthereumContractsPublicStakingFunc) PushReturn(r0 bindings.IPublicStaking) {
-	f.PushHook(func() bindings.IPublicStaking {
+func (f *EthereumContractsPublicStakingFunc) PushReturn(r0 *bindings.PublicStaking) {
+	f.PushHook(func() *bindings.PublicStaking {
 		return r0
 	})
 }
 
-func (f *EthereumContractsPublicStakingFunc) nextHook() func() bindings.IPublicStaking {
+func (f *EthereumContractsPublicStakingFunc) nextHook() func() *bindings.PublicStaking {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -5455,7 +5455,7 @@ func (f *EthereumContractsPublicStakingFunc) History() []EthereumContractsPublic
 type EthereumContractsPublicStakingFuncCall struct {
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 bindings.IPublicStaking
+	Result0 *bindings.PublicStaking
 }
 
 // Args returns an interface slice containing the arguments of this
@@ -5576,15 +5576,15 @@ func (c EthereumContractsPublicStakingAddressFuncCall) Results() []interface{} {
 // EthereumContractsSnapshotsFunc describes the behavior when the Snapshots
 // method of the parent MockEthereumContracts instance is invoked.
 type EthereumContractsSnapshotsFunc struct {
-	defaultHook func() bindings.ISnapshots
-	hooks       []func() bindings.ISnapshots
+	defaultHook func() *bindings.Snapshots
+	hooks       []func() *bindings.Snapshots
 	history     []EthereumContractsSnapshotsFuncCall
 	mutex       sync.Mutex
 }
 
 // Snapshots delegates to the next hook function in the queue and stores the
 // parameter and result values of this invocation.
-func (m *MockEthereumContracts) Snapshots() bindings.ISnapshots {
+func (m *MockEthereumContracts) Snapshots() *bindings.Snapshots {
 	r0 := m.SnapshotsFunc.nextHook()()
 	m.SnapshotsFunc.appendCall(EthereumContractsSnapshotsFuncCall{r0})
 	return r0
@@ -5593,7 +5593,7 @@ func (m *MockEthereumContracts) Snapshots() bindings.ISnapshots {
 // SetDefaultHook sets function that is called when the Snapshots method of
 // the parent MockEthereumContracts instance is invoked and the hook queue
 // is empty.
-func (f *EthereumContractsSnapshotsFunc) SetDefaultHook(hook func() bindings.ISnapshots) {
+func (f *EthereumContractsSnapshotsFunc) SetDefaultHook(hook func() *bindings.Snapshots) {
 	f.defaultHook = hook
 }
 
@@ -5601,7 +5601,7 @@ func (f *EthereumContractsSnapshotsFunc) SetDefaultHook(hook func() bindings.ISn
 // Snapshots method of the parent MockEthereumContracts instance invokes the
 // hook at the front of the queue and discards it. After the queue is empty,
 // the default hook function is invoked for any future action.
-func (f *EthereumContractsSnapshotsFunc) PushHook(hook func() bindings.ISnapshots) {
+func (f *EthereumContractsSnapshotsFunc) PushHook(hook func() *bindings.Snapshots) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -5609,20 +5609,20 @@ func (f *EthereumContractsSnapshotsFunc) PushHook(hook func() bindings.ISnapshot
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *EthereumContractsSnapshotsFunc) SetDefaultReturn(r0 bindings.ISnapshots) {
-	f.SetDefaultHook(func() bindings.ISnapshots {
+func (f *EthereumContractsSnapshotsFunc) SetDefaultReturn(r0 *bindings.Snapshots) {
+	f.SetDefaultHook(func() *bindings.Snapshots {
 		return r0
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *EthereumContractsSnapshotsFunc) PushReturn(r0 bindings.ISnapshots) {
-	f.PushHook(func() bindings.ISnapshots {
+func (f *EthereumContractsSnapshotsFunc) PushReturn(r0 *bindings.Snapshots) {
+	f.PushHook(func() *bindings.Snapshots {
 		return r0
 	})
 }
 
-func (f *EthereumContractsSnapshotsFunc) nextHook() func() bindings.ISnapshots {
+func (f *EthereumContractsSnapshotsFunc) nextHook() func() *bindings.Snapshots {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -5657,7 +5657,7 @@ func (f *EthereumContractsSnapshotsFunc) History() []EthereumContractsSnapshotsF
 type EthereumContractsSnapshotsFuncCall struct {
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 bindings.ISnapshots
+	Result0 *bindings.Snapshots
 }
 
 // Args returns an interface slice containing the arguments of this
@@ -5778,15 +5778,15 @@ func (c EthereumContractsSnapshotsAddressFuncCall) Results() []interface{} {
 // ValidatorPool method of the parent MockEthereumContracts instance is
 // invoked.
 type EthereumContractsValidatorPoolFunc struct {
-	defaultHook func() bindings.IValidatorPool
-	hooks       []func() bindings.IValidatorPool
+	defaultHook func() *bindings.ValidatorPool
+	hooks       []func() *bindings.ValidatorPool
 	history     []EthereumContractsValidatorPoolFuncCall
 	mutex       sync.Mutex
 }
 
 // ValidatorPool delegates to the next hook function in the queue and stores
 // the parameter and result values of this invocation.
-func (m *MockEthereumContracts) ValidatorPool() bindings.IValidatorPool {
+func (m *MockEthereumContracts) ValidatorPool() *bindings.ValidatorPool {
 	r0 := m.ValidatorPoolFunc.nextHook()()
 	m.ValidatorPoolFunc.appendCall(EthereumContractsValidatorPoolFuncCall{r0})
 	return r0
@@ -5795,7 +5795,7 @@ func (m *MockEthereumContracts) ValidatorPool() bindings.IValidatorPool {
 // SetDefaultHook sets function that is called when the ValidatorPool method
 // of the parent MockEthereumContracts instance is invoked and the hook
 // queue is empty.
-func (f *EthereumContractsValidatorPoolFunc) SetDefaultHook(hook func() bindings.IValidatorPool) {
+func (f *EthereumContractsValidatorPoolFunc) SetDefaultHook(hook func() *bindings.ValidatorPool) {
 	f.defaultHook = hook
 }
 
@@ -5803,7 +5803,7 @@ func (f *EthereumContractsValidatorPoolFunc) SetDefaultHook(hook func() bindings
 // ValidatorPool method of the parent MockEthereumContracts instance invokes
 // the hook at the front of the queue and discards it. After the queue is
 // empty, the default hook function is invoked for any future action.
-func (f *EthereumContractsValidatorPoolFunc) PushHook(hook func() bindings.IValidatorPool) {
+func (f *EthereumContractsValidatorPoolFunc) PushHook(hook func() *bindings.ValidatorPool) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -5811,20 +5811,20 @@ func (f *EthereumContractsValidatorPoolFunc) PushHook(hook func() bindings.IVali
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *EthereumContractsValidatorPoolFunc) SetDefaultReturn(r0 bindings.IValidatorPool) {
-	f.SetDefaultHook(func() bindings.IValidatorPool {
+func (f *EthereumContractsValidatorPoolFunc) SetDefaultReturn(r0 *bindings.ValidatorPool) {
+	f.SetDefaultHook(func() *bindings.ValidatorPool {
 		return r0
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *EthereumContractsValidatorPoolFunc) PushReturn(r0 bindings.IValidatorPool) {
-	f.PushHook(func() bindings.IValidatorPool {
+func (f *EthereumContractsValidatorPoolFunc) PushReturn(r0 *bindings.ValidatorPool) {
+	f.PushHook(func() *bindings.ValidatorPool {
 		return r0
 	})
 }
 
-func (f *EthereumContractsValidatorPoolFunc) nextHook() func() bindings.IValidatorPool {
+func (f *EthereumContractsValidatorPoolFunc) nextHook() func() *bindings.ValidatorPool {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -5860,7 +5860,7 @@ func (f *EthereumContractsValidatorPoolFunc) History() []EthereumContractsValida
 type EthereumContractsValidatorPoolFuncCall struct {
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 bindings.IValidatorPool
+	Result0 *bindings.ValidatorPool
 }
 
 // Args returns an interface slice containing the arguments of this
@@ -5982,15 +5982,15 @@ func (c EthereumContractsValidatorPoolAddressFuncCall) Results() []interface{} {
 // ValidatorStaking method of the parent MockEthereumContracts instance is
 // invoked.
 type EthereumContractsValidatorStakingFunc struct {
-	defaultHook func() bindings.IValidatorStaking
-	hooks       []func() bindings.IValidatorStaking
+	defaultHook func() *bindings.ValidatorStaking
+	hooks       []func() *bindings.ValidatorStaking
 	history     []EthereumContractsValidatorStakingFuncCall
 	mutex       sync.Mutex
 }
 
 // ValidatorStaking delegates to the next hook function in the queue and
 // stores the parameter and result values of this invocation.
-func (m *MockEthereumContracts) ValidatorStaking() bindings.IValidatorStaking {
+func (m *MockEthereumContracts) ValidatorStaking() *bindings.ValidatorStaking {
 	r0 := m.ValidatorStakingFunc.nextHook()()
 	m.ValidatorStakingFunc.appendCall(EthereumContractsValidatorStakingFuncCall{r0})
 	return r0
@@ -5999,7 +5999,7 @@ func (m *MockEthereumContracts) ValidatorStaking() bindings.IValidatorStaking {
 // SetDefaultHook sets function that is called when the ValidatorStaking
 // method of the parent MockEthereumContracts instance is invoked and the
 // hook queue is empty.
-func (f *EthereumContractsValidatorStakingFunc) SetDefaultHook(hook func() bindings.IValidatorStaking) {
+func (f *EthereumContractsValidatorStakingFunc) SetDefaultHook(hook func() *bindings.ValidatorStaking) {
 	f.defaultHook = hook
 }
 
@@ -6008,7 +6008,7 @@ func (f *EthereumContractsValidatorStakingFunc) SetDefaultHook(hook func() bindi
 // invokes the hook at the front of the queue and discards it. After the
 // queue is empty, the default hook function is invoked for any future
 // action.
-func (f *EthereumContractsValidatorStakingFunc) PushHook(hook func() bindings.IValidatorStaking) {
+func (f *EthereumContractsValidatorStakingFunc) PushHook(hook func() *bindings.ValidatorStaking) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -6016,20 +6016,20 @@ func (f *EthereumContractsValidatorStakingFunc) PushHook(hook func() bindings.IV
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *EthereumContractsValidatorStakingFunc) SetDefaultReturn(r0 bindings.IValidatorStaking) {
-	f.SetDefaultHook(func() bindings.IValidatorStaking {
+func (f *EthereumContractsValidatorStakingFunc) SetDefaultReturn(r0 *bindings.ValidatorStaking) {
+	f.SetDefaultHook(func() *bindings.ValidatorStaking {
 		return r0
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *EthereumContractsValidatorStakingFunc) PushReturn(r0 bindings.IValidatorStaking) {
-	f.PushHook(func() bindings.IValidatorStaking {
+func (f *EthereumContractsValidatorStakingFunc) PushReturn(r0 *bindings.ValidatorStaking) {
+	f.PushHook(func() *bindings.ValidatorStaking {
 		return r0
 	})
 }
 
-func (f *EthereumContractsValidatorStakingFunc) nextHook() func() bindings.IValidatorStaking {
+func (f *EthereumContractsValidatorStakingFunc) nextHook() func() *bindings.ValidatorStaking {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -6065,7 +6065,7 @@ func (f *EthereumContractsValidatorStakingFunc) History() []EthereumContractsVal
 type EthereumContractsValidatorStakingFuncCall struct {
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 bindings.IValidatorStaking
+	Result0 *bindings.ValidatorStaking
 }
 
 // Args returns an interface slice containing the arguments of this
