@@ -1,8 +1,9 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { BigNumber } from "ethers";
+import { BigNumber, Contract } from "ethers";
 import { ethers } from "hardhat";
 import {
   ConfigurationStruct,
+  CanonicalVersionStruct,
   DynamicValuesStruct,
 } from "../../typechain-types/contracts/Dynamics.sol/Dynamics";
 import { expect } from "../chai-setup";
@@ -34,6 +35,10 @@ describe("Testing Dynamics methods", async () => {
     binaryHash:
       "0xbc36789e7a1e281436464229828f817d6612f7b477d66591ff96a9e064bcc98a",
   };
+  let currentConfiguration: ConfigurationStruct = {
+    minEpochsBetweenUpdates: BigNumber.from(2),
+    maxEpochsBetweenUpdates: BigNumber.from(336),
+  }
 
   beforeEach(async function () {
     fixture = await getFixture(false, true, false);
@@ -41,16 +46,13 @@ describe("Testing Dynamics methods", async () => {
     [admin, user] = signers;
   });
 
-  it("Should get initial Configuration", async () => {
+  it("Should get Dynamics configuration", async () => {
     const configuration =
       (await fixture.dynamics.getConfiguration()) as ConfigurationStruct;
-    expect(configuration.minEpochsBetweenUpdates).to.be.equal(
-      minEpochsBetweenUpdates
-    );
-    expect(configuration.maxEpochsBetweenUpdates).to.be.equal(
-      maxEpochsBetweenUpdates
-    );
+    expect(configuration.maxEpochsBetweenUpdates).to.be.equal(currentConfiguration.maxEpochsBetweenUpdates)
+    expect(configuration.minEpochsBetweenUpdates).to.be.equal(currentConfiguration.minEpochsBetweenUpdates)
   });
+
 
   it("Should not change dynamic values if not impersonating factory", async () => {
     await expect(
@@ -90,20 +92,39 @@ describe("Testing Dynamics methods", async () => {
       );
   });
 
+  it("Should set Dynamics configuration", async () => {
+    currentConfiguration.maxEpochsBetweenUpdates = BigNumber.from(337);
+    await factoryCallAny(fixture.factory, fixture.dynamics, "setConfiguration", [currentConfiguration]);
+    const configuration =
+      (await fixture.dynamics.getConfiguration()) as ConfigurationStruct;
+    expect(configuration.minEpochsBetweenUpdates).to.be.equal(
+      currentConfiguration.minEpochsBetweenUpdates
+    );
+    expect(configuration.maxEpochsBetweenUpdates).to.be.equal(
+      currentConfiguration.maxEpochsBetweenUpdates
+    );
+    await
+      factoryCallAny(fixture.factory, fixture.dynamics, "changeDynamicValues", [
+        maxEpochsBetweenUpdates.add(1),
+        currentDynamicValues,
+      ])
+
+  });
+
   it.skip("Should get latest dynamic values", async () => {
-    const latestDynamicValues =
-      (await fixture.dynamics.getLatestDynamicValues()) as DynamicValuesStruct;
     expect(
       (await fixture.dynamics.getLatestDynamicValues()) as DynamicValuesStruct
     ).to.be.deep.equal(currentDynamicValues);
   });
 
-  it("Should change dynamic values to a valid epoch if impersonating factory", async () => {
+  it("Should change dynamic values to a valid epoch", async () => {
+    const newDynamicValues = { ...currentDynamicValues };
+    newDynamicValues.valueStoreFee = BigNumber.from(1);
     await factoryCallAny(
       fixture.factory,
       fixture.dynamics,
       "changeDynamicValues",
-      [futureEpoch, currentDynamicValues]
+      [futureEpoch, newDynamicValues]
     );
     await factoryCallAny(fixture.factory, fixture.snapshots, "snapshot", [
       [],
@@ -120,7 +141,7 @@ describe("Testing Dynamics methods", async () => {
     expect(
       ((await fixture.dynamics.getLatestDynamicValues()) as DynamicValuesStruct)
         .valueStoreFee
-    ).to.be.equal(currentDynamicValues.valueStoreFee);
+    ).to.be.equal(newDynamicValues.valueStoreFee);
   });
 
   it("Should get previous dynamic values", async () => {
@@ -187,7 +208,7 @@ describe("Testing Dynamics methods", async () => {
           alicenetCurrentVersion.major,
           alicenetCurrentVersion.minor,
           alicenetCurrentVersion.patch,
-          "0xbc36789e7a1e281436464229828f817d6612f7b477d66591ff96a9e064bcc98a",
+          alicenetCurrentVersion.binaryHash,
         ],
         [
           alicenetCurrentVersion.major,
@@ -250,4 +271,22 @@ describe("Testing Dynamics methods", async () => {
     );
     // TODO: add event checking
   });
+
+  it("Should obtain latest Alicenet node version", async () => {
+    const newMajorVersion = alicenetCurrentVersion.major + 1;
+    await factoryCallAny(
+      fixture.factory,
+      fixture.dynamics,
+      "updateAliceNetNodeVersion",
+      [
+        futureEpoch,
+        newMajorVersion,
+        alicenetCurrentVersion.minor,
+        alicenetCurrentVersion.patch,
+        alicenetCurrentVersion.binaryHash,
+      ]
+    );
+    expect((await fixture.dynamics.getLatestAliceNetVersion() as CanonicalVersionStruct).major).to.be.equal(newMajorVersion)
+  });
+
 });
