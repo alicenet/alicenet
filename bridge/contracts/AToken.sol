@@ -68,7 +68,7 @@ contract AToken is
     }
 
     function multiplyTokens(uint256 amount) public pure returns(uint256){
-        return _multiplyTokens(amount);
+        return _convert(amount);
     }
     
     function _toggleMultiplierOff() internal {
