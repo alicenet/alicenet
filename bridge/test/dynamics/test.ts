@@ -17,7 +17,7 @@ describe("Testing Dynamics methods", async () => {
 
   let futureEpoch = BigNumber.from(2);
   let zeroEpoch = BigNumber.from(0);
-  let initialDynamicValues: DynamicValuesStruct = {
+  let currentDynamicValues: DynamicValuesStruct = {
     encoderVersion: 0,
     proposalTimeout: 4000,
     preVoteTimeout: 3000,
@@ -27,28 +27,13 @@ describe("Testing Dynamics methods", async () => {
     valueStoreFee: BigNumber.from(0),
     minScaledTransactionFee: BigNumber.from(0),
   };
-  let changedDynamicValues: DynamicValuesStruct = {
-    encoderVersion: 1,
-    proposalTimeout: 5000,
-    preVoteTimeout: 4000,
-    preCommitTimeout: 4000,
-    maxBlockSize: BigNumber.from(4000000),
-    dataStoreFee: BigNumber.from(1),
-    valueStoreFee: BigNumber.from(1),
-    minScaledTransactionFee: BigNumber.from(1),
-  };
-  let alicenetInitialVersion = {
+  let alicenetCurrentVersion = {
     major: 0,
     minor: 0,
     patch: 0,
-    binaryHash: "0xbc36789e7a1e281436464229828f817d6612f7b477d66591ff96a9e064bcc98a"
-  }
-  let alicenetChangedVersion = {
-    major: 1,
-    minor: 1,
-    patch: 1,
-    binaryHash: "0x0000000000000000000000000000000000000000000000000000000000000000"
-  }
+    binaryHash:
+      "0xbc36789e7a1e281436464229828f817d6612f7b477d66591ff96a9e064bcc98a",
+  };
 
   beforeEach(async function () {
     fixture = await getFixture(false, true, false);
@@ -69,7 +54,7 @@ describe("Testing Dynamics methods", async () => {
 
   it("Should not change dynamic values if not impersonating factory", async () => {
     await expect(
-      fixture.dynamics.changeDynamicValues(futureEpoch, changedDynamicValues)
+      fixture.dynamics.changeDynamicValues(futureEpoch, currentDynamicValues)
     )
       .to.be.revertedWithCustomError(fixture.dynamics, "OnlyFactory")
       .withArgs(admin.address, fixture.factory.address);
@@ -79,7 +64,7 @@ describe("Testing Dynamics methods", async () => {
     await expect(
       factoryCallAny(fixture.factory, fixture.dynamics, "changeDynamicValues", [
         minEpochsBetweenUpdates.sub(1),
-        changedDynamicValues,
+        currentDynamicValues,
       ])
     )
       .to.be.revertedWithCustomError(fixture.dynamics, "InvalidScheduledDate")
@@ -94,7 +79,7 @@ describe("Testing Dynamics methods", async () => {
     await expect(
       factoryCallAny(fixture.factory, fixture.dynamics, "changeDynamicValues", [
         maxEpochsBetweenUpdates.add(1),
-        changedDynamicValues,
+        currentDynamicValues,
       ])
     )
       .to.be.revertedWithCustomError(fixture.dynamics, "InvalidScheduledDate")
@@ -110,7 +95,7 @@ describe("Testing Dynamics methods", async () => {
       (await fixture.dynamics.getLatestDynamicValues()) as DynamicValuesStruct;
     expect(
       (await fixture.dynamics.getLatestDynamicValues()) as DynamicValuesStruct
-    ).to.be.deep.equal(initialDynamicValues);
+    ).to.be.deep.equal(currentDynamicValues);
   });
 
   it("Should change dynamic values to a valid epoch if impersonating factory", async () => {
@@ -118,7 +103,7 @@ describe("Testing Dynamics methods", async () => {
       fixture.factory,
       fixture.dynamics,
       "changeDynamicValues",
-      [futureEpoch, changedDynamicValues]
+      [futureEpoch, currentDynamicValues]
     );
     await factoryCallAny(fixture.factory, fixture.snapshots, "snapshot", [
       [],
@@ -127,7 +112,7 @@ describe("Testing Dynamics methods", async () => {
     expect(
       ((await fixture.dynamics.getLatestDynamicValues()) as DynamicValuesStruct)
         .valueStoreFee
-    ).to.be.equal(initialDynamicValues.valueStoreFee);
+    ).to.be.equal(currentDynamicValues.valueStoreFee);
     await factoryCallAny(fixture.factory, fixture.snapshots, "snapshot", [
       [],
       [],
@@ -135,15 +120,17 @@ describe("Testing Dynamics methods", async () => {
     expect(
       ((await fixture.dynamics.getLatestDynamicValues()) as DynamicValuesStruct)
         .valueStoreFee
-    ).to.be.equal(changedDynamicValues.valueStoreFee);
+    ).to.be.equal(currentDynamicValues.valueStoreFee);
   });
 
   it("Should get previous dynamic values", async () => {
+    const newDynamicValues = { ...currentDynamicValues };
+    newDynamicValues.valueStoreFee = BigNumber.from(1);
     await factoryCallAny(
       fixture.factory,
       fixture.dynamics,
       "changeDynamicValues",
-      [futureEpoch, changedDynamicValues]
+      [futureEpoch, newDynamicValues]
     );
     await factoryCallAny(fixture.factory, fixture.snapshots, "snapshot", [
       [],
@@ -156,14 +143,14 @@ describe("Testing Dynamics methods", async () => {
     expect(
       ((await fixture.dynamics.getLatestDynamicValues()) as DynamicValuesStruct)
         .valueStoreFee
-    ).to.be.equal(changedDynamicValues.valueStoreFee);
+    ).to.be.equal(newDynamicValues.valueStoreFee);
     expect(
       (
         (await fixture.dynamics.getPreviousDynamicValues(
           1
         )) as DynamicValuesStruct
       ).valueStoreFee
-    ).to.be.equal(initialDynamicValues.valueStoreFee);
+    ).to.be.equal(currentDynamicValues.valueStoreFee);
   });
 
   it("Should not get unexistent dynamic values", async () => {
@@ -176,46 +163,91 @@ describe("Testing Dynamics methods", async () => {
       .withArgs(zeroEpoch);
   });
 
-
   it("Should not update Alicenet node version to the same current version", async () => {
-    await expect(factoryCallAny(fixture.factory, fixture.dynamics, "updateAliceNetNodeVersion", [futureEpoch,
-      alicenetInitialVersion.major,
-      alicenetInitialVersion.minor,
-      alicenetInitialVersion.patch,
-      alicenetInitialVersion.binaryHash
-    ])).to.be.revertedWithCustomError(fixture.dynamics, "InvalidAliceNetNodeVersion")
+    await expect(
+      factoryCallAny(
+        fixture.factory,
+        fixture.dynamics,
+        "updateAliceNetNodeVersion",
+        [
+          futureEpoch,
+          alicenetCurrentVersion.major,
+          alicenetCurrentVersion.minor,
+          alicenetCurrentVersion.patch,
+          alicenetCurrentVersion.binaryHash,
+        ]
+      )
+    )
+      .to.be.revertedWithCustomError(
+        fixture.dynamics,
+        "InvalidAliceNetNodeVersion"
+      )
       .withArgs(
-        [alicenetInitialVersion.major, alicenetInitialVersion.minor, alicenetInitialVersion.patch
-          , "0xbc36789e7a1e281436464229828f817d6612f7b477d66591ff96a9e064bcc98a"], [
-        alicenetInitialVersion.major, alicenetInitialVersion.minor, alicenetInitialVersion.patch, "0x0000000000000000000000000000000000000000000000000000000000000000"]
+        [
+          alicenetCurrentVersion.major,
+          alicenetCurrentVersion.minor,
+          alicenetCurrentVersion.patch,
+          "0xbc36789e7a1e281436464229828f817d6612f7b477d66591ff96a9e064bcc98a",
+        ],
+        [
+          alicenetCurrentVersion.major,
+          alicenetCurrentVersion.minor,
+          alicenetCurrentVersion.patch,
+          "0x0000000000000000000000000000000000000000000000000000000000000000",
+        ]
       );
-
   });
 
   it("Should not update Alicenet node version to a non consecutive major version", async () => {
-    alicenetInitialVersion.major += 2
-    await expect(factoryCallAny(fixture.factory, fixture.dynamics, "updateAliceNetNodeVersion", [futureEpoch,
-      alicenetInitialVersion.major,
-      alicenetInitialVersion.minor,
-      alicenetInitialVersion.patch,
-      alicenetInitialVersion.binaryHash
-    ])).to.be.revertedWithCustomError(fixture.dynamics, "InvalidAliceNetNodeVersion")
+    const newMajorVersion = alicenetCurrentVersion.major + 2;
+    await expect(
+      factoryCallAny(
+        fixture.factory,
+        fixture.dynamics,
+        "updateAliceNetNodeVersion",
+        [
+          futureEpoch,
+          newMajorVersion,
+          alicenetCurrentVersion.minor,
+          alicenetCurrentVersion.patch,
+          alicenetCurrentVersion.binaryHash,
+        ]
+      )
+    )
+      .to.be.revertedWithCustomError(
+        fixture.dynamics,
+        "InvalidAliceNetNodeVersion"
+      )
       .withArgs(
-        [alicenetInitialVersion.major, alicenetInitialVersion.minor, alicenetInitialVersion.patch
-          , "0xbc36789e7a1e281436464229828f817d6612f7b477d66591ff96a9e064bcc98a"], [
-        alicenetInitialVersion.major, alicenetInitialVersion.minor, alicenetInitialVersion.patch, "0x0000000000000000000000000000000000000000000000000000000000000000"]
+        [
+          newMajorVersion,
+          alicenetCurrentVersion.minor,
+          alicenetCurrentVersion.patch,
+          "0xbc36789e7a1e281436464229828f817d6612f7b477d66591ff96a9e064bcc98a",
+        ],
+        [
+          alicenetCurrentVersion.major,
+          alicenetCurrentVersion.minor,
+          alicenetCurrentVersion.patch,
+          "0x0000000000000000000000000000000000000000000000000000000000000000",
+        ]
       );
   });
 
   it("Should update Alicenet node version to a valid version and emit corresponding event", async () => {
-    alicenetInitialVersion.major += 1
-    await factoryCallAny(fixture.factory, fixture.dynamics, "updateAliceNetNodeVersion", [futureEpoch,
-      alicenetInitialVersion.major,
-      alicenetInitialVersion.minor,
-      alicenetInitialVersion.patch,
-      alicenetInitialVersion.binaryHash
-    ])
-
+    const newMajorVersion = alicenetCurrentVersion.major + 1;
+    await factoryCallAny(
+      fixture.factory,
+      fixture.dynamics,
+      "updateAliceNetNodeVersion",
+      [
+        futureEpoch,
+        newMajorVersion,
+        alicenetCurrentVersion.minor,
+        alicenetCurrentVersion.patch,
+        alicenetCurrentVersion.binaryHash,
+      ]
+    );
+    // TODO: add event checking
   });
-
 });
