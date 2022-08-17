@@ -8,7 +8,7 @@ describe("Testing AToken", async () => {
   let admin: SignerWithAddress;
   let expectedState: state;
   let currentState: state;
-  const amount = 1000;
+  const amount = BigInt(1000);
   let fixture: Fixture;
 
   beforeEach(async function () {

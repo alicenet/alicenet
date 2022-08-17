@@ -16,9 +16,9 @@ contract AToken is
     ImmutableFactory,
     ImmutableATokenMinter,
     ImmutableATokenBurner
-{
-    uint256 internal constant _CONVERSION_MULTIPLIER = 155555555555555555555556;
-    uint256 internal constant _CONVERSION_SCALE = 100000000000000000000000;
+{                                                     
+    uint256 internal constant _CONVERSION_MULTIPLIER = 1555555555555555556;
+    uint256 internal constant _CONVERSION_SCALE = 1000000000000000000;
     bool internal constant _MULTIPLIER_ON = false;
     bool internal constant _MULTIPLIER_OFF = true;
     address internal immutable _legacyToken;

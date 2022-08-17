@@ -10,14 +10,14 @@ export interface state {
     legacyToken: {
       address: string;
       admin: number;
-      user: number;
-      aToken: number;
+      user: bigint;
+      aToken: bigint;
     };
     aToken: {
       address: string;
       admin: number;
-      user: number;
-      legacyToken: number;
+      user: bigint;
+      legacyToken: bigint;
     };
   };
 }
@@ -29,18 +29,18 @@ export async function getState(fixture: Fixture) {
       legacyToken: {
         address: fixture.legacyToken.address.slice(-4),
         admin: format(await fixture.legacyToken.balanceOf(admin.address)),
-        user: format(await fixture.legacyToken.balanceOf(user.address)),
-        aToken: format(
-          await fixture.legacyToken.balanceOf(fixture.aToken.address)
-        ),
+        user: (await fixture.legacyToken.balanceOf(user.address)).toBigInt(),
+        aToken: 
+          (await fixture.legacyToken.balanceOf(fixture.aToken.address)).toBigInt()
+        ,
       },
       aToken: {
         address: fixture.aToken.address.slice(-4),
         admin: format(await fixture.aToken.balanceOf(admin.address)),
-        user: format(await fixture.aToken.balanceOf(user.address)),
-        legacyToken: format(
-          await fixture.aToken.balanceOf(fixture.legacyToken.address)
-        ),
+        user: (await fixture.aToken.balanceOf(user.address)).toBigInt(),
+        legacyToken: 
+          (await fixture.aToken.balanceOf(fixture.legacyToken.address)).toBigInt()
+        ,
       },
     },
   };
