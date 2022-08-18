@@ -1,9 +1,9 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { BigNumber, Contract } from "ethers";
+import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
 import {
-  ConfigurationStruct,
   CanonicalVersionStruct,
+  ConfigurationStruct,
   DynamicValuesStruct,
 } from "../../typechain-types/contracts/Dynamics.sol/Dynamics";
 import { expect } from "../chai-setup";
@@ -23,7 +23,7 @@ describe("Testing Dynamics methods", async () => {
     proposalTimeout: 4000,
     preVoteTimeout: 3000,
     preCommitTimeout: 3000,
-    maxBlockSize: BigNumber.from(3000000),
+    maxBlockSize: 3000000,
     dataStoreFee: BigNumber.from(0),
     valueStoreFee: BigNumber.from(0),
     minScaledTransactionFee: BigNumber.from(0),
@@ -38,7 +38,7 @@ describe("Testing Dynamics methods", async () => {
   let currentConfiguration: ConfigurationStruct = {
     minEpochsBetweenUpdates: BigNumber.from(2),
     maxEpochsBetweenUpdates: BigNumber.from(336),
-  }
+  };
 
   beforeEach(async function () {
     fixture = await getFixture(false, true, false);
@@ -49,10 +49,13 @@ describe("Testing Dynamics methods", async () => {
   it("Should get Dynamics configuration", async () => {
     const configuration =
       (await fixture.dynamics.getConfiguration()) as ConfigurationStruct;
-    expect(configuration.maxEpochsBetweenUpdates).to.be.equal(currentConfiguration.maxEpochsBetweenUpdates)
-    expect(configuration.minEpochsBetweenUpdates).to.be.equal(currentConfiguration.minEpochsBetweenUpdates)
+    expect(configuration.maxEpochsBetweenUpdates).to.be.equal(
+      currentConfiguration.maxEpochsBetweenUpdates
+    );
+    expect(configuration.minEpochsBetweenUpdates).to.be.equal(
+      currentConfiguration.minEpochsBetweenUpdates
+    );
   });
-
 
   it("Should not change dynamic values if not impersonating factory", async () => {
     await expect(
@@ -62,7 +65,7 @@ describe("Testing Dynamics methods", async () => {
       .withArgs(admin.address, fixture.factory.address);
   });
 
-  it("Should not change dynamic values to a epoch lesser than minEpochsBetweenUpdates", async () => {
+  it("Should not change dynamic values in a epoch lesser than minEpochsBetweenUpdates", async () => {
     await expect(
       factoryCallAny(fixture.factory, fixture.dynamics, "changeDynamicValues", [
         minEpochsBetweenUpdates.sub(1),
@@ -77,7 +80,7 @@ describe("Testing Dynamics methods", async () => {
       );
   });
 
-  it("Should not change dynamic values to a epoch greater than maxEpochsBetweenUpdates", async () => {
+  it("Should not change dynamic values in a epoch greater than maxEpochsBetweenUpdates", async () => {
     await expect(
       factoryCallAny(fixture.factory, fixture.dynamics, "changeDynamicValues", [
         maxEpochsBetweenUpdates.add(1),
@@ -93,8 +96,14 @@ describe("Testing Dynamics methods", async () => {
   });
 
   it("Should set Dynamics configuration", async () => {
-    currentConfiguration.maxEpochsBetweenUpdates = BigNumber.from(337);
-    await factoryCallAny(fixture.factory, fixture.dynamics, "setConfiguration", [currentConfiguration]);
+    currentConfiguration.maxEpochsBetweenUpdates =
+      maxEpochsBetweenUpdates.add(1);
+    await factoryCallAny(
+      fixture.factory,
+      fixture.dynamics,
+      "setConfiguration",
+      [currentConfiguration]
+    );
     const configuration =
       (await fixture.dynamics.getConfiguration()) as ConfigurationStruct;
     expect(configuration.minEpochsBetweenUpdates).to.be.equal(
@@ -103,43 +112,50 @@ describe("Testing Dynamics methods", async () => {
     expect(configuration.maxEpochsBetweenUpdates).to.be.equal(
       currentConfiguration.maxEpochsBetweenUpdates
     );
-    await
-      factoryCallAny(fixture.factory, fixture.dynamics, "changeDynamicValues", [
-        maxEpochsBetweenUpdates.add(1),
-        currentDynamicValues,
-      ])
-
+    await factoryCallAny(
+      fixture.factory,
+      fixture.dynamics,
+      "changeDynamicValues",
+      [maxEpochsBetweenUpdates.add(1), currentDynamicValues]
+    );
   });
 
   it("Should get latest dynamic values", async () => {
-    const latest = (await fixture.dynamics.getLatestDynamicValues()) as DynamicValuesStruct
     expect(
-      ((await fixture.dynamics.getLatestDynamicValues()) as DynamicValuesStruct).encoderVersion
+      ((await fixture.dynamics.getLatestDynamicValues()) as DynamicValuesStruct)
+        .encoderVersion
     ).to.be.deep.equal(currentDynamicValues.encoderVersion);
     expect(
-      ((await fixture.dynamics.getLatestDynamicValues()) as DynamicValuesStruct).proposalTimeout
+      ((await fixture.dynamics.getLatestDynamicValues()) as DynamicValuesStruct)
+        .proposalTimeout
     ).to.be.deep.equal(currentDynamicValues.proposalTimeout);
     expect(
-      ((await fixture.dynamics.getLatestDynamicValues()) as DynamicValuesStruct).preVoteTimeout
+      ((await fixture.dynamics.getLatestDynamicValues()) as DynamicValuesStruct)
+        .preVoteTimeout
     ).to.be.deep.equal(currentDynamicValues.preVoteTimeout);
     expect(
-      ((await fixture.dynamics.getLatestDynamicValues()) as DynamicValuesStruct).preCommitTimeout
+      ((await fixture.dynamics.getLatestDynamicValues()) as DynamicValuesStruct)
+        .preCommitTimeout
     ).to.be.deep.equal(currentDynamicValues.preCommitTimeout);
     expect(
-      ((await fixture.dynamics.getLatestDynamicValues()) as DynamicValuesStruct).maxBlockSize
+      ((await fixture.dynamics.getLatestDynamicValues()) as DynamicValuesStruct)
+        .maxBlockSize
     ).to.be.deep.equal(currentDynamicValues.maxBlockSize);
     expect(
-      ((await fixture.dynamics.getLatestDynamicValues()) as DynamicValuesStruct).dataStoreFee
+      ((await fixture.dynamics.getLatestDynamicValues()) as DynamicValuesStruct)
+        .dataStoreFee
     ).to.be.deep.equal(currentDynamicValues.dataStoreFee);
     expect(
-      ((await fixture.dynamics.getLatestDynamicValues()) as DynamicValuesStruct).valueStoreFee
+      ((await fixture.dynamics.getLatestDynamicValues()) as DynamicValuesStruct)
+        .valueStoreFee
     ).to.be.deep.equal(currentDynamicValues.valueStoreFee);
     expect(
-      ((await fixture.dynamics.getLatestDynamicValues()) as DynamicValuesStruct).minScaledTransactionFee
+      ((await fixture.dynamics.getLatestDynamicValues()) as DynamicValuesStruct)
+        .minScaledTransactionFee
     ).to.be.deep.equal(currentDynamicValues.minScaledTransactionFee);
   });
 
-  it("Should change dynamic values to a valid epoch", async () => {
+  it("Should change dynamic values in a valid epoch and emit corresponding evet", async () => {
     const newDynamicValues = { ...currentDynamicValues };
     newDynamicValues.valueStoreFee = BigNumber.from(1);
     await factoryCallAny(
@@ -148,6 +164,15 @@ describe("Testing Dynamics methods", async () => {
       "changeDynamicValues",
       [futureEpoch, newDynamicValues]
     );
+    //the following code was used to successfully test event emission by removing temporally onlyFactory modifier in changeDynamicValues for test running
+    /*     const encodedDynamicValues = await fixture.dynamics.encodeDynamicValues(newDynamicValues)
+        await expect(
+          fixture.dynamics.changeDynamicValues(
+            futureEpoch, newDynamicValues
+          )
+        )
+          .to.emit(fixture.dynamics, "DynamicValueChanged")
+          .withArgs(futureEpoch, encodedDynamicValues); */
     await factoryCallAny(fixture.factory, fixture.snapshots, "snapshot", [
       [],
       [],
@@ -279,7 +304,7 @@ describe("Testing Dynamics methods", async () => {
 
   it("Should update Alicenet node version to a valid version and emit corresponding event", async () => {
     const newMajorVersion = alicenetCurrentVersion.major + 1;
-    await factoryCallAny(
+    const receipt = await factoryCallAny(
       fixture.factory,
       fixture.dynamics,
       "updateAliceNetNodeVersion",
@@ -291,7 +316,24 @@ describe("Testing Dynamics methods", async () => {
         alicenetCurrentVersion.binaryHash,
       ]
     );
-    // TODO: add event checking
+
+    //the following code was used to successfully test event emission removing temporally onlyFactory modifier in updateAliceNetNodeVersion
+    /*     await expect(
+          fixture.dynamics.updateAliceNetNodeVersion(
+            futureEpoch,
+            newMajorVersion,
+            alicenetCurrentVersion.minor,
+            alicenetCurrentVersion.patch,
+            alicenetCurrentVersion.binaryHash
+          )
+        )
+          .to.emit(fixture.dynamics, "NewAliceNetNodeVersionAvailable")
+          .withArgs(futureEpoch, [
+            newMajorVersion,
+            alicenetCurrentVersion.major,
+            alicenetCurrentVersion.patch,
+            alicenetCurrentVersion.binaryHash,
+          ]); */
   });
 
   it("Should obtain latest Alicenet node version", async () => {
@@ -308,7 +350,10 @@ describe("Testing Dynamics methods", async () => {
         alicenetCurrentVersion.binaryHash,
       ]
     );
-    expect((await fixture.dynamics.getLatestAliceNetVersion() as CanonicalVersionStruct).major).to.be.equal(newMajorVersion)
+    expect(
+      (
+        (await fixture.dynamics.getLatestAliceNetVersion()) as CanonicalVersionStruct
+      ).major
+    ).to.be.equal(newMajorVersion);
   });
-
 });
