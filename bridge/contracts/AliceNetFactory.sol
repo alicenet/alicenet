@@ -31,7 +31,7 @@ contract AliceNetFactory is AliceNetFactoryBase {
         _callAny(target_, value_, cdata);
         _returnAvailableData();
     }
-    
+
     /**
      * @dev deployCreate allows the owner to deploy raw contracts through the factory using
      * non-deterministic address generation (create OpCode)
@@ -108,10 +108,7 @@ contract AliceNetFactory is AliceNetFactoryBase {
      * @param initCallData_ Hex encoded initialization function signature + parameters to initialize the
      * deployed contract
      */
-    function initializeContract(address contract_, bytes calldata initCallData_)
-        public
-        onlyOwner
-    {
+    function initializeContract(address contract_, bytes calldata initCallData_) public onlyOwner {
         _initializeContract(contract_, initCallData_);
     }
 

@@ -395,6 +395,7 @@ task(
 
     console.log("register and migrate state");
     const ethHeight = await hre.ethers.provider.getBlockNumber();
+    const validatorIndexes = [1, 2, 3, 4];
     const contractTx = await migrateSnapshotsAndValidators(
       factory.address,
       publicStakingAddress,
@@ -403,6 +404,7 @@ task(
       validatorPoolAddress,
       tokenIds,
       validatorAccounts,
+      validatorIndexes,
       validatorShares,
       ethHeight,
       masterPublicKey,
@@ -1357,6 +1359,7 @@ export async function migrateSnapshotsAndValidators(
   validatorPoolAddress: string,
   tokenIDs: Array<BigNumber>,
   validatorAccounts: Array<string>,
+  validatorIndexes: Array<number> | Array<string>,
   validatorShares: Array<Array<string>>,
   ethHeight: number,
   masterPublicKey: Array<BigNumber> | Array<string>,
@@ -1392,7 +1395,7 @@ export async function migrateSnapshotsAndValidators(
   }
   console.log(1);
   // register validators
-  const validatorIndexes = [1, 2, 3, 4];
+
   const validatorCount = 4;
   const epoch = 1;
   const sideChainHeight = 0;
