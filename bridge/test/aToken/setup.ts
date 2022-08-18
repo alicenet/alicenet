@@ -30,17 +30,17 @@ export async function getState(fixture: Fixture) {
         address: fixture.legacyToken.address.slice(-4),
         admin: format(await fixture.legacyToken.balanceOf(admin.address)),
         user: format(await fixture.legacyToken.balanceOf(user.address)),
-        aToken: 
-        format(await fixture.legacyToken.balanceOf(fixture.aToken.address))
-        ,
+        aToken: format(
+          await fixture.legacyToken.balanceOf(fixture.aToken.address)
+        ),
       },
       aToken: {
         address: fixture.aToken.address.slice(-4),
         admin: format(await fixture.aToken.balanceOf(admin.address)),
         user: format(await fixture.aToken.balanceOf(user.address)),
-        legacyToken: 
-        format(await fixture.aToken.balanceOf(fixture.legacyToken.address))
-        ,
+        legacyToken: format(
+          await fixture.aToken.balanceOf(fixture.legacyToken.address)
+        ),
       },
     },
   };
