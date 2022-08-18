@@ -91,11 +91,11 @@ contract MockStakingNFT is StakingNFT {
     }
 
     function tripCBLowMock() public {
-        StakingNFT._tripCB();
+        _tripCB();
     }
 
     function resetCBLowMock() public {
-        StakingNFT._resetCB();
+        _resetCB();
     }
 
     function skimExcessEthMock(address to_) public returns (uint256) {
@@ -107,7 +107,7 @@ contract MockStakingNFT is StakingNFT {
     }
 
     function incrementMock() public returns (uint256) {
-        return StakingNFT._increment();
+        return _increment();
     }
 
     function collectMock(
@@ -189,11 +189,11 @@ contract MockStakingNFT is StakingNFT {
     }
 
     function circuitBreakerStateMock() public view returns (bool) {
-        return StakingNFT.circuitBreakerState();
+        return circuitBreakerState();
     }
 
     function getCountMock() public view returns (uint256) {
-        return StakingNFT._getCount();
+        return _getCount();
     }
 
     function getAccumulatorScaleFactorMock() public pure returns (uint256) {

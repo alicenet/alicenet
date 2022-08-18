@@ -4,38 +4,39 @@ pragma solidity ^0.8.0;
 import "contracts/libraries/errors/CircuitBreakerErrors.sol";
 
 abstract contract CircuitBreaker {
-    bool internal constant _OPEN = true;
-    bool internal constant _CLOSED = false;
+    // constants for the cb state
+    bool internal constant _CIRCUIT_BREAKER_CLOSED = false;
+    bool internal constant _CIRCUIT_BREAKER_OPENED = true;
 
-    // cb is the circuit breaker
-    // cb is a set only object
-    bool internal _cb = _CLOSED;
+    // Same as _CIRCUIT_BREAKER_CLOSED
+    bool internal _circuitBreaker;
 
-    // withCB is a modifier to enforce the CB must
+    // withCircuitBreaker is a modifier to enforce the CircuitBreaker must
     // be set for a call to succeed
-    modifier withCB() {
-        if (_cb == _OPEN) {
+    modifier withCircuitBreaker() {
+        if (_circuitBreaker == _CIRCUIT_BREAKER_OPENED) {
             revert CircuitBreakerErrors.CircuitBreakerOpened();
         }
-
         _;
     }
 
-    function cbState() public view returns (bool) {
-        return _cb;
+    function circuitBreakerState() public view returns (bool) {
+        return _circuitBreaker;
     }
 
     function _tripCB() internal {
-        if (_cb == _OPEN) {
+        if (_circuitBreaker == _CIRCUIT_BREAKER_OPENED) {
             revert CircuitBreakerErrors.CircuitBreakerOpened();
         }
-        _cb = _OPEN;
+
+        _circuitBreaker = _CIRCUIT_BREAKER_OPENED;
     }
 
     function _resetCB() internal {
-        if (_cb == _CLOSED) {
+        if (_circuitBreaker == _CIRCUIT_BREAKER_CLOSED) {
             revert CircuitBreakerErrors.CircuitBreakerClosed();
         }
-        _cb = _CLOSED;
+
+        _circuitBreaker = _CIRCUIT_BREAKER_CLOSED;
     }
 }
