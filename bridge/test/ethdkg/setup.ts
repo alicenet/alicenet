@@ -173,7 +173,6 @@ export const assertEventValidatorMemberAdded = async (
   ]);
   const data = receipt.logs[logsPos].data;
   const topics = receipt.logs[logsPos].topics;
-  console.log(topics)
   const event = intrface.decodeEventLog("ValidatorMemberAdded", data, topics);
   expect(event.account).to.equal(account);
   expect(event.index).to.equal(index);

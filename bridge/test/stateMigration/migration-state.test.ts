@@ -127,7 +127,6 @@ describe("State Migration: Migrate state", () => {
     );
     txResponse = await txResponsePromise;
     const receipt = await txResponse.wait()
-    console.log(receipt.events)
     const expectedChainId = 1;
     const expectedAliceNetHeights = [76800n, 77824n, 78848n, 79872n, 80896n];
     const expectedEpochs = [75n, 76n, 77n, 78n, 79n];
