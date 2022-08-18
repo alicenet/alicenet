@@ -32,6 +32,10 @@ type IATokenTransactor interface {
 	//
 	// Solidity: function externalMint(address to, uint256 amount) returns()
 	ExternalMint(opts *bind.TransactOpts, to common.Address, amount *big.Int) (*types.Transaction, error)
+	// FinishEarlyStage is a paid mutator transaction binding the contract method 0xae424781.
+	//
+	// Solidity: function finishEarlyStage() returns()
+	FinishEarlyStage(opts *bind.TransactOpts) (*types.Transaction, error)
 	// IncreaseAllowance is a paid mutator transaction binding the contract method 0x39509351.
 	//
 	// Solidity: function increaseAllowance(address spender, uint256 addedValue) returns(bool)
@@ -44,10 +48,6 @@ type IATokenTransactor interface {
 	//
 	// Solidity: function migrate(uint256 amount) returns()
 	Migrate(opts *bind.TransactOpts, amount *big.Int) (*types.Transaction, error)
-	// ToggleMultiplierOff is a paid mutator transaction binding the contract method 0x4e377234.
-	//
-	// Solidity: function toggleMultiplierOff() returns()
-	ToggleMultiplierOff(opts *bind.TransactOpts) (*types.Transaction, error)
 	// ToggleMultiplierOn is a paid mutator transaction binding the contract method 0x4da9663e.
 	//
 	// Solidity: function toggleMultiplierOn() returns()

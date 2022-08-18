@@ -26,11 +26,6 @@ describe("Testing AToken", async () => {
   });
 
   describe("Testing Migrate operation", async () => {
-    
-    // it("should return amount with multiplier", async () => {
-    //   const maxLegacySupply = await fixture.aToken.multiplyTokens(ethers.utils.formatEther(BigInt(42000000)))
-    //   console.log(maxLegacySupply)
-    // })
 
     it("Should migrate user legacy tokens with 1.55555555555555555555556 multiplier", async function () {
       await fixture.legacyToken

@@ -56,6 +56,9 @@ type MockIAToken struct {
 	// FilterTransferFunc is an instance of a mock function object
 	// controlling the behavior of the method FilterTransfer.
 	FilterTransferFunc *IATokenFilterTransferFunc
+	// FinishEarlyStageFunc is an instance of a mock function object
+	// controlling the behavior of the method FinishEarlyStage.
+	FinishEarlyStageFunc *IATokenFinishEarlyStageFunc
 	// GetLegacyTokenAddressFunc is an instance of a mock function object
 	// controlling the behavior of the method GetLegacyTokenAddress.
 	GetLegacyTokenAddressFunc *IATokenGetLegacyTokenAddressFunc
@@ -87,9 +90,6 @@ type MockIAToken struct {
 	// SymbolFunc is an instance of a mock function object controlling the
 	// behavior of the method Symbol.
 	SymbolFunc *IATokenSymbolFunc
-	// ToggleMultiplierOffFunc is an instance of a mock function object
-	// controlling the behavior of the method ToggleMultiplierOff.
-	ToggleMultiplierOffFunc *IATokenToggleMultiplierOffFunc
 	// ToggleMultiplierOnFunc is an instance of a mock function object
 	// controlling the behavior of the method ToggleMultiplierOn.
 	ToggleMultiplierOnFunc *IATokenToggleMultiplierOnFunc
@@ -182,6 +182,11 @@ func NewMockIAToken() *MockIAToken {
 				return
 			},
 		},
+		FinishEarlyStageFunc: &IATokenFinishEarlyStageFunc{
+			defaultHook: func(*bind.TransactOpts) (r0 *types.Transaction, r1 error) {
+				return
+			},
+		},
 		GetLegacyTokenAddressFunc: &IATokenGetLegacyTokenAddressFunc{
 			defaultHook: func(*bind.CallOpts) (r0 common.Address, r1 error) {
 				return
@@ -229,11 +234,6 @@ func NewMockIAToken() *MockIAToken {
 		},
 		SymbolFunc: &IATokenSymbolFunc{
 			defaultHook: func(*bind.CallOpts) (r0 string, r1 error) {
-				return
-			},
-		},
-		ToggleMultiplierOffFunc: &IATokenToggleMultiplierOffFunc{
-			defaultHook: func(*bind.TransactOpts) (r0 *types.Transaction, r1 error) {
 				return
 			},
 		},
@@ -344,6 +344,11 @@ func NewStrictMockIAToken() *MockIAToken {
 				panic("unexpected invocation of MockIAToken.FilterTransfer")
 			},
 		},
+		FinishEarlyStageFunc: &IATokenFinishEarlyStageFunc{
+			defaultHook: func(*bind.TransactOpts) (*types.Transaction, error) {
+				panic("unexpected invocation of MockIAToken.FinishEarlyStage")
+			},
+		},
 		GetLegacyTokenAddressFunc: &IATokenGetLegacyTokenAddressFunc{
 			defaultHook: func(*bind.CallOpts) (common.Address, error) {
 				panic("unexpected invocation of MockIAToken.GetLegacyTokenAddress")
@@ -392,11 +397,6 @@ func NewStrictMockIAToken() *MockIAToken {
 		SymbolFunc: &IATokenSymbolFunc{
 			defaultHook: func(*bind.CallOpts) (string, error) {
 				panic("unexpected invocation of MockIAToken.Symbol")
-			},
-		},
-		ToggleMultiplierOffFunc: &IATokenToggleMultiplierOffFunc{
-			defaultHook: func(*bind.TransactOpts) (*types.Transaction, error) {
-				panic("unexpected invocation of MockIAToken.ToggleMultiplierOff")
 			},
 		},
 		ToggleMultiplierOnFunc: &IATokenToggleMultiplierOnFunc{
@@ -480,6 +480,9 @@ func NewMockIATokenFrom(i bindings.IAToken) *MockIAToken {
 		FilterTransferFunc: &IATokenFilterTransferFunc{
 			defaultHook: i.FilterTransfer,
 		},
+		FinishEarlyStageFunc: &IATokenFinishEarlyStageFunc{
+			defaultHook: i.FinishEarlyStage,
+		},
 		GetLegacyTokenAddressFunc: &IATokenGetLegacyTokenAddressFunc{
 			defaultHook: i.GetLegacyTokenAddress,
 		},
@@ -509,9 +512,6 @@ func NewMockIATokenFrom(i bindings.IAToken) *MockIAToken {
 		},
 		SymbolFunc: &IATokenSymbolFunc{
 			defaultHook: i.Symbol,
-		},
-		ToggleMultiplierOffFunc: &IATokenToggleMultiplierOffFunc{
-			defaultHook: i.ToggleMultiplierOff,
 		},
 		ToggleMultiplierOnFunc: &IATokenToggleMultiplierOnFunc{
 			defaultHook: i.ToggleMultiplierOn,
@@ -1945,6 +1945,111 @@ func (c IATokenFilterTransferFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
+// IATokenFinishEarlyStageFunc describes the behavior when the
+// FinishEarlyStage method of the parent MockIAToken instance is invoked.
+type IATokenFinishEarlyStageFunc struct {
+	defaultHook func(*bind.TransactOpts) (*types.Transaction, error)
+	hooks       []func(*bind.TransactOpts) (*types.Transaction, error)
+	history     []IATokenFinishEarlyStageFuncCall
+	mutex       sync.Mutex
+}
+
+// FinishEarlyStage delegates to the next hook function in the queue and
+// stores the parameter and result values of this invocation.
+func (m *MockIAToken) FinishEarlyStage(v0 *bind.TransactOpts) (*types.Transaction, error) {
+	r0, r1 := m.FinishEarlyStageFunc.nextHook()(v0)
+	m.FinishEarlyStageFunc.appendCall(IATokenFinishEarlyStageFuncCall{v0, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the FinishEarlyStage
+// method of the parent MockIAToken instance is invoked and the hook queue
+// is empty.
+func (f *IATokenFinishEarlyStageFunc) SetDefaultHook(hook func(*bind.TransactOpts) (*types.Transaction, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// FinishEarlyStage method of the parent MockIAToken instance invokes the
+// hook at the front of the queue and discards it. After the queue is empty,
+// the default hook function is invoked for any future action.
+func (f *IATokenFinishEarlyStageFunc) PushHook(hook func(*bind.TransactOpts) (*types.Transaction, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *IATokenFinishEarlyStageFunc) SetDefaultReturn(r0 *types.Transaction, r1 error) {
+	f.SetDefaultHook(func(*bind.TransactOpts) (*types.Transaction, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *IATokenFinishEarlyStageFunc) PushReturn(r0 *types.Transaction, r1 error) {
+	f.PushHook(func(*bind.TransactOpts) (*types.Transaction, error) {
+		return r0, r1
+	})
+}
+
+func (f *IATokenFinishEarlyStageFunc) nextHook() func(*bind.TransactOpts) (*types.Transaction, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *IATokenFinishEarlyStageFunc) appendCall(r0 IATokenFinishEarlyStageFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of IATokenFinishEarlyStageFuncCall objects
+// describing the invocations of this function.
+func (f *IATokenFinishEarlyStageFunc) History() []IATokenFinishEarlyStageFuncCall {
+	f.mutex.Lock()
+	history := make([]IATokenFinishEarlyStageFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// IATokenFinishEarlyStageFuncCall is an object that describes an invocation
+// of method FinishEarlyStage on an instance of MockIAToken.
+type IATokenFinishEarlyStageFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 *bind.TransactOpts
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 *types.Transaction
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c IATokenFinishEarlyStageFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c IATokenFinishEarlyStageFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
+}
+
 // IATokenGetLegacyTokenAddressFunc describes the behavior when the
 // GetLegacyTokenAddress method of the parent MockIAToken instance is
 // invoked.
@@ -3008,111 +3113,6 @@ func (c IATokenSymbolFuncCall) Args() []interface{} {
 // Results returns an interface slice containing the results of this
 // invocation.
 func (c IATokenSymbolFuncCall) Results() []interface{} {
-	return []interface{}{c.Result0, c.Result1}
-}
-
-// IATokenToggleMultiplierOffFunc describes the behavior when the
-// ToggleMultiplierOff method of the parent MockIAToken instance is invoked.
-type IATokenToggleMultiplierOffFunc struct {
-	defaultHook func(*bind.TransactOpts) (*types.Transaction, error)
-	hooks       []func(*bind.TransactOpts) (*types.Transaction, error)
-	history     []IATokenToggleMultiplierOffFuncCall
-	mutex       sync.Mutex
-}
-
-// ToggleMultiplierOff delegates to the next hook function in the queue and
-// stores the parameter and result values of this invocation.
-func (m *MockIAToken) ToggleMultiplierOff(v0 *bind.TransactOpts) (*types.Transaction, error) {
-	r0, r1 := m.ToggleMultiplierOffFunc.nextHook()(v0)
-	m.ToggleMultiplierOffFunc.appendCall(IATokenToggleMultiplierOffFuncCall{v0, r0, r1})
-	return r0, r1
-}
-
-// SetDefaultHook sets function that is called when the ToggleMultiplierOff
-// method of the parent MockIAToken instance is invoked and the hook queue
-// is empty.
-func (f *IATokenToggleMultiplierOffFunc) SetDefaultHook(hook func(*bind.TransactOpts) (*types.Transaction, error)) {
-	f.defaultHook = hook
-}
-
-// PushHook adds a function to the end of hook queue. Each invocation of the
-// ToggleMultiplierOff method of the parent MockIAToken instance invokes the
-// hook at the front of the queue and discards it. After the queue is empty,
-// the default hook function is invoked for any future action.
-func (f *IATokenToggleMultiplierOffFunc) PushHook(hook func(*bind.TransactOpts) (*types.Transaction, error)) {
-	f.mutex.Lock()
-	f.hooks = append(f.hooks, hook)
-	f.mutex.Unlock()
-}
-
-// SetDefaultReturn calls SetDefaultHook with a function that returns the
-// given values.
-func (f *IATokenToggleMultiplierOffFunc) SetDefaultReturn(r0 *types.Transaction, r1 error) {
-	f.SetDefaultHook(func(*bind.TransactOpts) (*types.Transaction, error) {
-		return r0, r1
-	})
-}
-
-// PushReturn calls PushHook with a function that returns the given values.
-func (f *IATokenToggleMultiplierOffFunc) PushReturn(r0 *types.Transaction, r1 error) {
-	f.PushHook(func(*bind.TransactOpts) (*types.Transaction, error) {
-		return r0, r1
-	})
-}
-
-func (f *IATokenToggleMultiplierOffFunc) nextHook() func(*bind.TransactOpts) (*types.Transaction, error) {
-	f.mutex.Lock()
-	defer f.mutex.Unlock()
-
-	if len(f.hooks) == 0 {
-		return f.defaultHook
-	}
-
-	hook := f.hooks[0]
-	f.hooks = f.hooks[1:]
-	return hook
-}
-
-func (f *IATokenToggleMultiplierOffFunc) appendCall(r0 IATokenToggleMultiplierOffFuncCall) {
-	f.mutex.Lock()
-	f.history = append(f.history, r0)
-	f.mutex.Unlock()
-}
-
-// History returns a sequence of IATokenToggleMultiplierOffFuncCall objects
-// describing the invocations of this function.
-func (f *IATokenToggleMultiplierOffFunc) History() []IATokenToggleMultiplierOffFuncCall {
-	f.mutex.Lock()
-	history := make([]IATokenToggleMultiplierOffFuncCall, len(f.history))
-	copy(history, f.history)
-	f.mutex.Unlock()
-
-	return history
-}
-
-// IATokenToggleMultiplierOffFuncCall is an object that describes an
-// invocation of method ToggleMultiplierOff on an instance of MockIAToken.
-type IATokenToggleMultiplierOffFuncCall struct {
-	// Arg0 is the value of the 1st argument passed to this method
-	// invocation.
-	Arg0 *bind.TransactOpts
-	// Result0 is the value of the 1st result returned from this method
-	// invocation.
-	Result0 *types.Transaction
-	// Result1 is the value of the 2nd result returned from this method
-	// invocation.
-	Result1 error
-}
-
-// Args returns an interface slice containing the arguments of this
-// invocation.
-func (c IATokenToggleMultiplierOffFuncCall) Args() []interface{} {
-	return []interface{}{c.Arg0}
-}
-
-// Results returns an interface slice containing the results of this
-// invocation.
-func (c IATokenToggleMultiplierOffFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
