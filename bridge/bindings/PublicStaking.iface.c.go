@@ -113,6 +113,6 @@ type IPublicStakingCaller interface {
 	Symbol(opts *bind.CallOpts) (string, error)
 	// TokenURI is a free data retrieval call binding the contract method 0xc87b56dd.
 	//
-	// Solidity: function tokenURI(uint256 tokenId) view returns(string)
-	TokenURI(opts *bind.CallOpts, tokenId *big.Int) (string, error)
+	// Solidity: function tokenURI(uint256 tokenID_) view returns(string)
+	TokenURI(opts *bind.CallOpts, tokenID_ *big.Int) (string, error)
 }
