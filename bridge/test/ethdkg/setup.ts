@@ -167,12 +167,13 @@ export const assertEventValidatorMemberAdded = async (
   gpkj: [BigNumberish, BigNumberish, BigNumberish, BigNumberish],
   logsPos: number = 0
 ) => {
-  const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
+  const receipt = await tx.wait();
   const intrface = new ethers.utils.Interface([
     "event ValidatorMemberAdded(address account, uint256 index, uint256 nonce, uint256 epoch, uint256 share0, uint256 share1, uint256 share2, uint256 share3)",
   ]);
   const data = receipt.logs[logsPos].data;
   const topics = receipt.logs[logsPos].topics;
+  console.log(topics)
   const event = intrface.decodeEventLog("ValidatorMemberAdded", data, topics);
   expect(event.account).to.equal(account);
   expect(event.index).to.equal(index);

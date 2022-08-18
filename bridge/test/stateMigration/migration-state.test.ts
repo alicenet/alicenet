@@ -1,5 +1,6 @@
 import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
+import { exit } from "process";
 import {
   migrateSnapshotsAndValidators,
   stakeValidators,
@@ -20,7 +21,7 @@ describe("State Migration: Migrate state", () => {
   it("Should migrate using special migration contract", async function () {
     const hre = await require("hardhat"); // eslint-disable-line
 
-    const txResponse = await stakeValidators(
+    let txResponse = await stakeValidators(
       4,
       fixture.factory.address,
       fixture.aToken.address,
@@ -35,7 +36,7 @@ describe("State Migration: Migrate state", () => {
     if (receipt1.events === undefined) {
       throw new Error("receipt has no events");
     }
-    const events = receipt1.events;
+    let events = receipt1.events;
     const tokenIds: Array<BigNumber> = [];
     const transferEventHash =
       "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
@@ -106,9 +107,9 @@ describe("State Migration: Migrate state", () => {
       "0x322e8f463b925da54a778ed597aef41bc4fe4743",
       "0xadf2a338e19c12298a3007cbea1c5276d1f746e0",
     ];
-    const ethHeight = 566;
+    const ethHeight = 0x236;
     await mineBlocks(2n);
-    const txResponsePromise = await migrateSnapshotsAndValidators(
+    const txResponsePromise = migrateSnapshotsAndValidators(
       fixture.factory.address,
       fixture.publicStaking.address,
       fixture.snapshots.address,
@@ -124,8 +125,9 @@ describe("State Migration: Migrate state", () => {
       groupSignatures,
       hre
     );
-
-    const receipt = await txResponse.wait();
+    txResponse = await txResponsePromise;
+    const receipt = await txResponse.wait()
+    console.log(receipt.events)
     const expectedChainId = 1;
     const expectedAliceNetHeights = [76800n, 77824n, 78848n, 79872n, 80896n];
     const expectedEpochs = [75n, 76n, 77n, 78n, 79n];
@@ -297,8 +299,18 @@ describe("State Migration: Migrate state", () => {
         "0x095ed894617e232df1779101e1d98e177340cb0fc6283cbc437d79a12290c2f1"
       ),
     ];
+    if(receipt.events === undefined){
+      throw new Error("migration tx failed")
+    }
 
-    const ethLog = 45;
+
+    let ethLog = 45;
+    for(let i = 0; i < receipt.events.length; i++){
+      if(receipt.events[i].topics[0] === "0x09b90b08bbc3dbe22e9d2a0bc9c2c7614c7511cd0ad72177727a1e762115bf06"){
+        ethLog = i;
+        break
+      }
+    }
     for (let i = 0; i < validatorsAccounts.length; i++) {
       await assertEventValidatorMemberAdded(
         txResponse,
