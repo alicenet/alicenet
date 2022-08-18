@@ -111,10 +111,32 @@ describe("Testing Dynamics methods", async () => {
 
   });
 
-  it.skip("Should get latest dynamic values", async () => {
+  it("Should get latest dynamic values", async () => {
+    const latest = (await fixture.dynamics.getLatestDynamicValues()) as DynamicValuesStruct
     expect(
-      (await fixture.dynamics.getLatestDynamicValues()) as DynamicValuesStruct
-    ).to.be.deep.equal(currentDynamicValues);
+      ((await fixture.dynamics.getLatestDynamicValues()) as DynamicValuesStruct).encoderVersion
+    ).to.be.deep.equal(currentDynamicValues.encoderVersion);
+    expect(
+      ((await fixture.dynamics.getLatestDynamicValues()) as DynamicValuesStruct).proposalTimeout
+    ).to.be.deep.equal(currentDynamicValues.proposalTimeout);
+    expect(
+      ((await fixture.dynamics.getLatestDynamicValues()) as DynamicValuesStruct).preVoteTimeout
+    ).to.be.deep.equal(currentDynamicValues.preVoteTimeout);
+    expect(
+      ((await fixture.dynamics.getLatestDynamicValues()) as DynamicValuesStruct).preCommitTimeout
+    ).to.be.deep.equal(currentDynamicValues.preCommitTimeout);
+    expect(
+      ((await fixture.dynamics.getLatestDynamicValues()) as DynamicValuesStruct).maxBlockSize
+    ).to.be.deep.equal(currentDynamicValues.maxBlockSize);
+    expect(
+      ((await fixture.dynamics.getLatestDynamicValues()) as DynamicValuesStruct).dataStoreFee
+    ).to.be.deep.equal(currentDynamicValues.dataStoreFee);
+    expect(
+      ((await fixture.dynamics.getLatestDynamicValues()) as DynamicValuesStruct).valueStoreFee
+    ).to.be.deep.equal(currentDynamicValues.valueStoreFee);
+    expect(
+      ((await fixture.dynamics.getLatestDynamicValues()) as DynamicValuesStruct).minScaledTransactionFee
+    ).to.be.deep.equal(currentDynamicValues.minScaledTransactionFee);
   });
 
   it("Should change dynamic values to a valid epoch", async () => {
