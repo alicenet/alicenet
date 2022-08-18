@@ -302,6 +302,13 @@
   },
   {
     "inputs": [],
+    "name": "finishEarlyStage",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "getLegacyTokenAddress",
     "outputs": [
       {
@@ -405,13 +412,6 @@
       }
     ],
     "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "toggleMultiplierOff",
-    "outputs": [],
-    "stateMutability": "nonpayable",
     "type": "function"
   },
   {

@@ -70,11 +70,11 @@ contract AToken is
     }
 
     function _finishEarlyStage() internal {
-        _hasEarlyStageEnded = false;
+        _hasEarlyStageEnded = true;
     }
 
     function _toggleMultiplierOn() internal {
-        _hasEarlyStageEnded = true;
+        _hasEarlyStageEnded = false;
     }
 
     function _convert(uint256 amount) internal view returns (uint256) {

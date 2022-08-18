@@ -10,14 +10,14 @@ export interface state {
     legacyToken: {
       address: string;
       admin: number;
-      user: bigint;
-      aToken: bigint;
+      user: number;
+      aToken: number;
     };
     aToken: {
       address: string;
       admin: number;
-      user: bigint;
-      legacyToken: bigint;
+      user: number;
+      legacyToken: number;
     };
   };
 }
@@ -29,17 +29,17 @@ export async function getState(fixture: Fixture) {
       legacyToken: {
         address: fixture.legacyToken.address.slice(-4),
         admin: format(await fixture.legacyToken.balanceOf(admin.address)),
-        user: (await fixture.legacyToken.balanceOf(user.address)).toBigInt(),
+        user: format(await fixture.legacyToken.balanceOf(user.address)),
         aToken: 
-          (await fixture.legacyToken.balanceOf(fixture.aToken.address)).toBigInt()
+        format(await fixture.legacyToken.balanceOf(fixture.aToken.address))
         ,
       },
       aToken: {
         address: fixture.aToken.address.slice(-4),
         admin: format(await fixture.aToken.balanceOf(admin.address)),
-        user: (await fixture.aToken.balanceOf(user.address)).toBigInt(),
+        user: format(await fixture.aToken.balanceOf(user.address)),
         legacyToken: 
-          (await fixture.aToken.balanceOf(fixture.legacyToken.address)).toBigInt()
+        format(await fixture.aToken.balanceOf(fixture.legacyToken.address))
         ,
       },
     },
@@ -69,9 +69,9 @@ export function getUserNotInRoleReason(address: string, role: string) {
 
 export async function init(fixture: Fixture) {
   [admin, user] = await ethers.getSigners();
-  await fixture.legacyToken.connect(admin).approve(admin.address, 1000);
+  await fixture.legacyToken.connect(admin).approve(admin.address, 10000);
   await fixture.legacyToken
     .connect(admin)
-    .transferFrom(admin.address, user.address, 1000);
+    .transferFrom(admin.address, user.address, 10000);
   showState("Initial", await getState(fixture));
 }
