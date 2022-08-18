@@ -232,27 +232,15 @@ export async function getDeployStaticArgs(
 
 export async function checkMockInit(target: string, initVal: number) {
   const mockFactory = await ethers.getContractFactory(MOCK);
-  const mock = await mockFactory.attach(target);
+  const mock = mockFactory.attach(target);
   const i = await mock.getImut();
   expect(i.toNumber()).to.equal(initVal);
 }
 
 export async function deployFactory() {
   const factoryBase = await ethers.getContractFactory(ALICENET_FACTORY);
-  const accounts = await getAccounts();
-  const firstOwner = accounts[0];
-  // gets the initial transaction count for the address
-  const transactionCount = await ethers.provider.getTransactionCount(
-    firstOwner
-  );
-  // pre calculate the address of the factory contract
-  const futureFactoryAddress = ethers.utils.getContractAddress({
-    from: firstOwner,
-    nonce: transactionCount,
-  });
   // deploy the factory with its address as a constructor input
-  const factory = await factoryBase.deploy(futureFactoryAddress);
-  expect(factory.address).to.equal(futureFactoryAddress);
+  const factory = await factoryBase.deploy();
   return factory;
 }
 
@@ -264,7 +252,7 @@ export async function deployCreate2Initable(
   const txResponse = await factory.deployCreate2(
     0,
     salt,
-    mockInitFactory.bytecode
+    mockInitFactory.getDeployTransaction().data as BytesLike
   );
   return txResponse;
 }

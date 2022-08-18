@@ -20,7 +20,6 @@ describe("AliceNetfactory API test", async () => {
 
   beforeEach(async () => {
     const utilsBase = await ethers.getContractFactory(UTILS);
-    // set owner and delegator
     utilsContract = await utilsBase.deploy();
     factory = await deployFactory();
     const cSize = await utilsContract.getCodeSize(factory.address);

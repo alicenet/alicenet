@@ -8,6 +8,7 @@ import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { DEFAULT_CONFIG_OUTPUT_DIR } from "./constants";
 import { readDeploymentArgs } from "./deployment/deploymentConfigUtil";
 import axios from "axios"
+import { Console } from "console";
 
 
 function delay(milliseconds: number) {
@@ -112,7 +113,7 @@ task("create-local-seed-node", "start and syncs a node with mainnet")
 )
 .setAction(async (taskArgs) => {
   const valNode = spawn(
-    "./madnet",
+    "./alicenet",
     ["--config", taskArgs.configPath, "validator"],
     {
       cwd: "../",
@@ -156,31 +157,31 @@ task("create-local-seed-node", "start and syncs a node with mainnet")
   console.log(alicenetHeight["BlockHeight"]);
   return alicenetHeight["BlockHeight"].toString();
 });
-task("fork-external-chain", "")
-  .addOptionalParam("rpcUrl")
-  .setAction(async () => {
-    const hardhatNode = spawn("npm", ["run", "fork-testnet"]);
-    hardhatNode.stdout.on("data", (data) => {
-      console.log(data.toString());
-    });
-    hardhatNode.stderr.on("data", (data) => {
-      console.log(data.toString());
-    });
-    hardhatNode.on("close", (code) => {
-      console.log(`child process exited with code ${code}`);
-    });
+// task("fork-external-chain", "")
+//   .addOptionalParam("rpcUrl")
+//   .setAction(async () => {
+//     const hardhatNode = spawn("npm", ["run", "fork-testnet"]);
+//     hardhatNode.stdout.on("data", (data) => {
+//       console.log(data.toString());
+//     });
+//     hardhatNode.stderr.on("data", (data) => {
+//       console.log(data.toString());
+//     });
+//     hardhatNode.on("close", (code) => {
+//       console.log(`child process exited with code ${code}`);
+//     });
 
-    while (1) {
-      continue;
-    }
-  });
+//     while (1) {
+//       continue;
+//     }
+//   });
 
 task(
   "start-local-seed-node",
   "starts a node already synce with remote testnet on local testnet"
 ).setAction(async () => {
   const valNode = spawn(
-    "./madnet",
+    "./alicenet",
     [
       "--config",
       "./scripts/base-files/localTestNetBaseConfig.toml",
@@ -265,24 +266,27 @@ task(
     const publicStakingAddress = await factoryLookupAddress(factory.address, "PublicStaking", hre)
     const aTokenMinterAddress = await factoryLookupAddress(factory.address, "ATokenMinter", hre)
     const validatorPoolAddress = await factoryLookupAddress(factory.address, "ValidatorPool", hre)
+    const oldValidatorPoolAddress = await factoryLookupAddress(oldFactory.address, "ValidatorPool", hre)
     const oldSnapshotAddress = await factoryLookupAddress(oldFactory.address, "Snapshots", hre)
     const snapshotAddress = await factoryLookupAddress(factory.address, "Snapshots", hre)
     const ethDKGAddress = await factoryLookupAddress(factory.address, "ETHDKG", hre)
+    const oldEthDKGAddress = await factoryLookupAddress(oldFactory.address, "ETHDKG", hre)
     const validatorPool = await hre.ethers.getContractAt("ValidatorPool", validatorPoolAddress)
     let tokenIds:Array<BigNumber> = []
     const ethdkg =  await hre.ethers.getContractAt("ETHDKG", ethDKGAddress)
     const oldSnapshots = await hre.ethers.getContractAt("Snapshots", oldSnapshotAddress)
-    let epoch = (await oldSnapshots.getEpoch()).toBigInt()
-    let masterPublicKey = await ethdkg.getMasterPublicKey();
-    let mostRecentSnapshot = await oldSnapshots.getLatestSnapshot()
-    let validatorAccounts = await validatorPool.getValidatorsAddresses()
+    let epoch = (await oldSnapshots.getEpoch())
+    let masterPublicKey = await ethdkg.attach(oldEthDKGAddress).getMasterPublicKey();
+    let validatorAccounts = await validatorPool.attach(oldValidatorPoolAddress).getValidatorsAddresses()
+    
     let blockClaims: Array<string> = [
       "0x000000000100040015000000007001000d0000000201000019000000020100002500000002010000310000000201000048a6da1afb1b4f5b7aed8811d2e5a968383e54e8041cd3deeeb21b6e8fdcbe6ec5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a47013bfdf1e93e7db2b7feb5d28dac72be23855cef1bb5910758ce9de10adef7449152e5729228c9ec554a62bd50ef9cd1d141bcacf6b241aa59920d2a0c7b782a7",
       "0x000000000100040015000000007401000d00000002010000190000000201000025000000020100003100000002010000567a6aa5522088975d39fe74b589abfc5d50c53b788773e6977f62ec87fc603dc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470e8c0a9185e8460d02b4d4e80d3f48df4570ace5ef1f647cc36c28babaf7202c5ee41278d43b21b03fef8e113f5b812179079e21fd13cc004b879cd6081edc0e7",
       "0x000000000100040015000000007801000d00000002010000190000000201000025000000020100003100000002010000503ea4b5bdcc147db926fda86c32d756c7fd95a6a8282b2ea6dbffb091a789f1c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470fd78371b4c51bf875319aeb303c1e92597b58739ffeb3965ce9064c20c505f206d852686d811c92d7bc7d975a166b59202905d0597530d15b781fe530b94cf57",
       "0x000000000100040015000000007c01000d000000020100001900000002010000250000000201000031000000020100001658dfb41b10604aad6325e15f9a914b1df38cad213ed98564588f47a48a2b36c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470f8c8e67b32e4e26b13ce0c35c0d0b09b19dab3079ea7e69376f9ee7f596dac76d63c3d11a2cfed48ac943ff92611d5ff3799d842333c492274d8757509d87e50",
       "0x000000000100040015000000008001000d00000002010000190000000201000025000000020100003100000002010000417e8cd8049656c9e1b2cbf90ae9dcc7fa1d70f2aaea7df7a2a4cfcd8b4a02a8c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a4702a5187985e08d03011645d5072d0aadb9b50eafb0014ad93cbc8a2c869a4139054ef9bd198da2c45c75bbecd8062d39451112d53cf60c02b48f144778f40b1b5",
-      "0x000000000100040015000000008401000d0000000201000019000000020100002500000002010000310000000201000034003720c36c4406bd8fd6cb7b6f9ec3877dcdffb08e74058e54f07015e89e99c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a4703139e7a7362b5e743a2013b7f33d360530c5195a402693f74c78200e90afcef57f9e10df3d7cf622c1f2497043de80d3abf4450d05355571d732c1ea47987432"
+      "0x000000000100040015000000008401000d0000000201000019000000020100002500000002010000310000000201000034003720c36c4406bd8fd6cb7b6f9ec3877dcdffb08e74058e54f07015e89e99c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a4703139e7a7362b5e743a2013b7f33d360530c5195a402693f74c78200e90afcef57f9e10df3d7cf622c1f2497043de80d3abf4450d05355571d732c1ea47987432",
+      
     ]
     let validatorShares: Array<Array<string>> = [
       [
@@ -316,7 +320,6 @@ task(
       participant.commitmentsFirstCoefficient
       participant.keyShares
     }
-    console.log(mostRecentSnapshot.blockClaims)
     if (
       taskArgs.skipFirstTransaction === undefined ||
       taskArgs.skipFirstTransaction === false
@@ -371,21 +374,26 @@ task(
       )
     await contractTx.wait()
 
-    // await waitBlocks(3, hre);
+    await waitBlocks(3, hre);
   });
-async function getGroupSignatures(epoch: bigint, hre: HardhatRuntimeEnvironment){
-  let start = BigInt(0)
-  let bufferSize = epoch
+async function getGroupSignatures(epoch: BigNumber, hre: HardhatRuntimeEnvironment){
+  let start = BigNumber.from(0)
+  let bufferSize = BigNumber.from(5)
   let groupSignatures:Array<string> = []
   if(epoch > bufferSize){
-    bufferSize = BigInt(6)
-    start = epoch - bufferSize
+    start = epoch.sub(bufferSize) 
   }
-  for(let i = start; i < bufferSize; i++){
-    let response = await axios.post("https://edge.alice.net/swagger/v1/get-block-header",{height:epoch.toString(10)})
-    groupSignatures.push(response.data)
-    console.log(response.data)
+  console.log(epoch)
+  console.log(start)
+  console.log(start.lt(epoch))
+  for(let i = start; i.lte(epoch); i = i.add(1)){
+    const height = i.mul(1024)
+    console.log(height)
+    let response = await axios.post("https://edge.alice.net/v1/get-block-header", {Height: height.toString()})
+    groupSignatures.push("0x" + response.data["BlockHeader"]["SigGroup"])
+    
   }
+  console.log(groupSignatures)
   return groupSignatures
 
 }
@@ -1236,7 +1244,6 @@ async function migrateSnapshotsAndValidators(
   groupSignatures: Array<string>,
   hre: HardhatRuntimeEnvironment,
   ): Promise<ContractTransaction> {
-    const factoryBase = await hre.ethers.getContractFactory("AliceNetFactory")
     const factory = await hre.ethers.getContractAt(
     "AliceNetFactory",
     factoryAddress
@@ -1253,6 +1260,7 @@ async function migrateSnapshotsAndValidators(
     approve = factory.interface.encodeFunctionData("callAny", [publicStakingAddress, 0, approve])
     approveTokens.push(approve)
   }
+  console.log(1)
   //register validators
   const validatorIndexes = [1,2,3,4]
   const validatorCount = 4
@@ -1274,14 +1282,15 @@ async function migrateSnapshotsAndValidators(
     ])
   migrateValidators = factory.interface.encodeFunctionData("callAny", [ethDKGAddress, 0, migrateValidators])
   //TODO check if this is still needed
-  let virtualMintDeposit = btokenBase.interface.encodeFunctionData("virtualMintDeposit", [1,
-    0xba7809A4114eEF598132461f3202b5013e834CD5,
-    500000000000])
-  virtualMintDeposit = factory.interface.encodeFunctionData("callAny", [bTokenAddress, 0, virtualMintDeposit])
-
+  // let virtualMintDeposit = btokenBase.interface.encodeFunctionData("virtualMintDeposit", [
+  //   1,
+  //   0xba7809A4114eEF598132461f3202b5013e834CD5,
+  //   500000000000])
+  // console.log(3)
+  // virtualMintDeposit = factory.interface.encodeFunctionData("callAny", [bTokenAddress, 0, virtualMintDeposit])
   let migrateSnapshots = snapshotBase.interface.encodeFunctionData("migrateSnapshots", [groupSignatures, bClaims])
   migrateSnapshots = factory.interface.encodeFunctionData("callAny", [snapshotAddress, 0, migrateSnapshots]);
-  return factory.multiCall([...approveTokens, registerValidators, migrateValidators, virtualMintDeposit, migrateSnapshots], {gasLimit: 30000000})
+  return factory.multiCall([...approveTokens, registerValidators, migrateValidators, migrateSnapshots], {gasLimit: 30000000})
 }
 
 async function factoryLookupAddress(factoryAdress: string, salt:string, hre: HardhatRuntimeEnvironment):Promise<string>{

@@ -109,8 +109,9 @@ export async function deployStatic(
   const AliceNetFactory = await ethers.getContractFactory(defaultFactoryName);
   const logicContract = await ethers.getContractFactory(contractName);
   const factory: AliceNetFactory = AliceNetFactory.attach(factoryAddress);
-  const deployBCode = logicContract.bytecode;
+  const deployBCode = logicContract.getDeployTransaction().data as BytesLike;
   let txResponse = await factory.deployTemplate(deployBCode);
+
   let receipt = await txResponse.wait();
   const templateAddress: BytesLike = getEventVar(
     receipt,
@@ -123,6 +124,7 @@ export async function deployStatic(
   }
   txResponse = await factory.deployStatic(metaSalt, "0x");
   receipt = await txResponse.wait();
+  
   const metaAddress: string = getEventVar(
     receipt,
     deployedStaticEvent,

@@ -52,7 +52,7 @@ describe("AliceNet Contract Factory", () => {
     const utils = await UtilsBase.deploy();
     const factory = await deployFactory();
     const endPointFactory = await ethers.getContractFactory(END_POINT);
-    const endPoint = await endPointFactory.deploy(factory.address);
+    const endPoint = await endPointFactory.deploy();
     const size = await utils.getCodeSize(endPoint.address);
     expect(size.toNumber()).to.be.greaterThan(0);
   });
@@ -65,38 +65,11 @@ describe("AliceNet Contract Factory", () => {
     expect(await factory.owner()).to.equal(accounts[1]);
   });
 
-  it("set delegator", async () => {
+
+  it("get owner", async () => {
     const factory = await deployFactory();
-    // sets the second account as delegator
-    await factory.setDelegator(firstDelegator);
-    expect(await factory.delegator()).to.equal(firstDelegator);
-  });
-
-  it("should not allow set owner via delegator", async () => {
-    let factory = await deployFactory();
-
-    const signers = await ethers.getSigners();
-    const factoryBase = (
-      await ethers.getContractFactory(ALICENET_FACTORY)
-    ).connect(signers[2]);
-    // sets the second account as delegator
-    await factory.setDelegator(firstDelegator, { from: firstOwner });
-    expect(await factory.delegator()).to.equal(firstDelegator);
-    factory = factoryBase.attach(factory.address);
-    await expect(factory.setOwner(accounts[0])).to.be.revertedWithCustomError(
-      factory,
-      `Unauthorized`
-    );
-  });
-
-  it("get owner, delegator", async () => {
-    const factory = await deployFactory();
-    await factory.setDelegator(firstDelegator, { from: firstOwner });
-    expect(await factory.delegator()).to.equal(firstDelegator);
     const owner = await factory.owner();
     expect(owner).to.equal(firstOwner);
-    const delegator = await factory.delegator();
-    expect(delegator).to.equal(firstDelegator);
   });
 
   it("deploy mock with deploytemplate as owner expect succeed", async () => {
@@ -303,7 +276,7 @@ describe("AliceNet Contract Factory", () => {
     const factory = await deployFactory();
     const mockFactory = await ethers.getContractFactory(MOCK);
     const endPointFactory = await ethers.getContractFactory(END_POINT);
-    const endPoint = await endPointFactory.deploy(factory.address);
+    const endPoint = await endPointFactory.deploy();
     const mockContract = await mockFactory.deploy(2, "s");
     const proxySalt = getSalt();
     let txResponse = await factory.deployProxy(proxySalt);
@@ -373,7 +346,8 @@ describe("AliceNet Contract Factory", () => {
       await ethers.getContractFactory(ALICENET_FACTORY)
     ).connect(signers[2]);
     const factory2 = factoryBase.attach(factory.address);
-    const txResponse = factory2.deployCreate(endPointFactory.bytecode);
+    const bytecode = endPointFactory.getDeployTransaction().data as BytesLike
+    const txResponse = factory2.deployCreate(bytecode);
 
     await expect(txResponse).to.be.revertedWithCustomError(
       factory,
@@ -423,42 +397,6 @@ describe("AliceNet Contract Factory", () => {
     );
     txResponse = await factory.callAny(mockInitAddr, 0, initCallData);
     await checkMockInit(mockInitAddr, 2);
-  });
-
-  it("delegatecallany", async () => {
-    const factory = await deployFactory();
-    expect(await factory.owner()).to.equal(firstOwner);
-    // deploy an instance of mock logic for factory
-    const mockFactoryBase = await ethers.getContractFactory("MockFactory");
-    const mockFactoryInstance = await mockFactoryBase.deploy();
-    // generate the call state for the factory instance
-    const mfEncode = await ethers.getContractFactory("MockFactory");
-    let setOwner = mfEncode.interface.encodeFunctionData("setOwner", [
-      accounts[2],
-    ]);
-    // delegate call into the factory and change the owner
-    let txResponse = await factory.delegateCallAny(
-      mockFactoryInstance.address,
-      setOwner
-    );
-    await expectTxSuccess(txResponse);
-    let owner = await factory.owner();
-    expect(owner).to.equal(accounts[2]);
-    setOwner = await mfEncode.interface.encodeFunctionData("setOwner", [
-      accounts[0],
-    ]);
-    const signers = await ethers.getSigners();
-    const factoryBase = (
-      await ethers.getContractFactory(ALICENET_FACTORY)
-    ).connect(signers[2]);
-    const factory2 = factoryBase.attach(factory.address);
-    txResponse = await factory2.delegateCallAny(
-      mockFactoryInstance.address,
-      setOwner
-    );
-    await expectTxSuccess(txResponse);
-    owner = await factory.owner();
-    expect(owner).to.equal(accounts[0]);
   });
 
   it("upgrade proxy through factory", async () => {
@@ -526,7 +464,7 @@ describe("AliceNet Contract Factory", () => {
   it("should prevent locked proxy logic from being upgraded from factory", async () => {
     const factory = await deployFactory();
     const endPointFactory = await ethers.getContractFactory(END_POINT);
-    const endPoint = await endPointFactory.deploy(factory.address);
+    const endPoint = await endPointFactory.deploy();
     const endPointLockableFactory = await ethers.getContractFactory(
       "MockEndPointLockable"
     );
@@ -567,16 +505,6 @@ describe("AliceNet Contract Factory", () => {
     const mock = await mockFactory.deploy(2, "s");
     const callData = mockFactory.interface.encodeFunctionData("payMe");
     await factory.callAny(mock.address, 2, callData, {
-      value: 2,
-    });
-  });
-
-  it("deploys a mock contract, calls payMe from factory with delegateCallAny", async () => {
-    const factory = await deployFactory();
-    const mockFactory = await ethers.getContractFactory(MOCK);
-    const mock = await mockFactory.deploy(2, "s");
-    const callData = mockFactory.interface.encodeFunctionData("payMe");
-    await factory.delegateCallAny(mock.address, callData, {
       value: 2,
     });
   });
