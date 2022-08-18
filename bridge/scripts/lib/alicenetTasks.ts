@@ -397,8 +397,6 @@ task(
     const ethHeight = await hre.ethers.provider.getBlockNumber();
     const contractTx = await migrateSnapshotsAndValidators(
       factory.address,
-      aTokenAddress,
-      bTokenAddress,
       publicStakingAddress,
       snapshotAddress,
       ethDKGAddress,
@@ -1271,7 +1269,7 @@ async function mintATokenTo(
   return factory.callAny(aTokenMinterAddr, 0, calldata, { nonce });
 }
 
-async function stakeValidators(
+export async function stakeValidators(
   numValidators: number,
   factoryAddress: string,
   aTokenAddress: string,
@@ -1351,10 +1349,8 @@ async function stakeValidators(
   );
 }
 
-async function migrateSnapshotsAndValidators(
+export async function migrateSnapshotsAndValidators(
   factoryAddress: string,
-  aTokenAddress: string,
-  bTokenAddress: string,
   publicStakingAddress: string,
   snapshotAddress: string,
   ethDKGAddress: string,
@@ -1363,7 +1359,7 @@ async function migrateSnapshotsAndValidators(
   validatorAccounts: Array<string>,
   validatorShares: Array<Array<string>>,
   ethHeight: number,
-  masterPublicKey: Array<BigNumber>,
+  masterPublicKey: Array<BigNumber> | Array<string>,
   bClaims: Array<string>,
   groupSignatures: Array<string>,
   hre: HardhatRuntimeEnvironment

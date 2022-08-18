@@ -71,6 +71,7 @@ export interface BaseTokensFixture extends BaseFixture {
 }
 
 export interface Fixture extends BaseTokensFixture {
+  aTokenMinter: ATokenMinter;
   validatorStaking: ValidatorStaking;
   validatorPool: ValidatorPool | ValidatorPoolMock;
   snapshots: Snapshots | SnapshotsMock;
@@ -491,7 +492,6 @@ export const getFixture = async (
   // Deploy the base tokens
   const { factory, aToken, bToken, legacyToken, publicStaking } =
     await deployFactoryAndBaseTokens(admin);
-
   // ValidatorStaking is not considered a base token since is only used by validators
   const validatorStaking = (await deployUpgradeableWithFactory(
     factory,
