@@ -6,6 +6,8 @@ import "contracts/libraries/StakingNFT/StakingNFTStorage.sol";
 import "contracts/libraries/governance/GovernanceMaxLock.sol";
 
 contract MockStakingNFT is StakingNFT {
+    uint256 internal _dummy = 0;
+
     function mintMock(uint256 amount_) public returns (uint256) {
         return StakingNFT.mint(amount_);
     }
@@ -107,6 +109,7 @@ contract MockStakingNFT is StakingNFT {
     }
 
     function incrementMock() public returns (uint256) {
+        _dummy = 0;
         return _increment();
     }
 
@@ -124,6 +127,7 @@ contract MockStakingNFT is StakingNFT {
             uint256
         )
     {
+        _dummy = 0;
         return StakingNFT._collect(shares_, state_, p_, positionAccumulatorValue_);
     }
 
@@ -131,6 +135,7 @@ contract MockStakingNFT is StakingNFT {
         public
         returns (Accumulator memory)
     {
+        _dummy = 0;
         return StakingNFT._deposit(delta_, state_);
     }
 
@@ -139,6 +144,7 @@ contract MockStakingNFT is StakingNFT {
         uint256 accumulator_,
         uint256 slush_
     ) public returns (uint256, uint256) {
+        _dummy = 0;
         return StakingNFT._slushSkim(shares_, accumulator_, slush_);
     }
 
