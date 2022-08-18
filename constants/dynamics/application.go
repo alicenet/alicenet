@@ -7,9 +7,6 @@ func bigFromBase10(s string) *big.Int {
 	return n
 }
 
-// AtomicSwapFee is the initial fee for the AtomicSwap object.
-var AtomicSwapFee = bigFromBase10("0")
-
 // DataStoreEpochFee is the initial fee for the DataStore object;
 // this fee is the fee per epoch.
 var DataStoreEpochFee = bigFromBase10("0")

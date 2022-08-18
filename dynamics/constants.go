@@ -14,7 +14,6 @@ const preCommitStepTO = constants.PreCommitStepTO
 const dBRNRTO = constants.DBRNRTO
 const downloadTO = constants.DownloadTO
 
-var atomicSwapFee = constants.AtomicSwapFee
 var dataStoreEpochFee = constants.DataStoreEpochFee
 var valueStoreFee = constants.ValueStoreFee
 var minTxFee = constants.MinTxFee
