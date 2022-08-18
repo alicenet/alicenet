@@ -37,25 +37,6 @@ describe("AliceNet Contract Factory", () => {
     firstOwner = accounts[0];
     firstDelegator = accounts[2];
   });
-  // delete
-  it("deploy mock", async () => {
-    const UtilsBase = await ethers.getContractFactory(UTILS);
-    const utils = await UtilsBase.deploy();
-    const mockFactory = await ethers.getContractFactory(MOCK);
-    const mock = await mockFactory.deploy(2, "s");
-    const size = await utils.getCodeSize(mock.address);
-    expect(size.toNumber()).to.be.greaterThan(0);
-  });
-  // delete
-  it("deploy endpoint", async () => {
-    const UtilsBase = await ethers.getContractFactory(UTILS);
-    const utils = await UtilsBase.deploy();
-    const factory = await deployFactory();
-    const endPointFactory = await ethers.getContractFactory(END_POINT);
-    const endPoint = await endPointFactory.deploy();
-    const size = await utils.getCodeSize(endPoint.address);
-    expect(size.toNumber()).to.be.greaterThan(0);
-  });
 
   it("set owner", async () => {
     const factory = await deployFactory();
@@ -64,7 +45,6 @@ describe("AliceNet Contract Factory", () => {
     await factory.setOwner(accounts[1]);
     expect(await factory.owner()).to.equal(accounts[1]);
   });
-
 
   it("get owner", async () => {
     const factory = await deployFactory();
@@ -346,7 +326,7 @@ describe("AliceNet Contract Factory", () => {
       await ethers.getContractFactory(ALICENET_FACTORY)
     ).connect(signers[2]);
     const factory2 = factoryBase.attach(factory.address);
-    const bytecode = endPointFactory.getDeployTransaction().data as BytesLike
+    const bytecode = endPointFactory.getDeployTransaction().data as BytesLike;
     const txResponse = factory2.deployCreate(bytecode);
 
     await expect(txResponse).to.be.revertedWithCustomError(

@@ -124,7 +124,7 @@ export async function deployStatic(
   }
   txResponse = await factory.deployStatic(metaSalt, "0x");
   receipt = await txResponse.wait();
-  
+
   const metaAddress: string = getEventVar(
     receipt,
     deployedStaticEvent,

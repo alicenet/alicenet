@@ -97,7 +97,6 @@ task(
     await checkUserDirPath(taskArgs.outputFolder);
     const factoryBase = await hre.ethers.getContractFactory(ALICENET_FACTORY);
     const accounts = await getAccounts(hre);
-    const txCount = await hre.ethers.provider.getTransactionCount(accounts[0]);
     // calculate the factory address for the constructor arg
     const deployTX = factoryBase.getDeployTransaction();
     const gasCost = await hre.ethers.provider.estimateGas(deployTX);
