@@ -525,7 +525,8 @@ export const getFixture = async (
     validatorPool = (await deployUpgradeableWithFactory(
       factory,
       "ValidatorPoolMock",
-      "ValidatorPool"
+      "ValidatorPool",
+      []
     )) as ValidatorPoolMock;
   } else {
     // ValidatorPool

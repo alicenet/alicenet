@@ -5,7 +5,7 @@ go 1.19
 require (
 	github.com/MadBase/go-capnproto2/v2 v2.18.0-custom.1
 	github.com/bufbuild/buf v1.7.0
-	github.com/derision-test/go-mockgen v1.3.3
+	github.com/derision-test/go-mockgen v1.3.4
 	github.com/dgraph-io/badger/v2 v2.2007.4
 	github.com/emicklei/proto v1.11.0
 	github.com/ethereum/go-ethereum v1.10.21
@@ -24,9 +24,9 @@ require (
 	github.com/stretchr/testify v1.8.0
 	github.com/vburenin/ifacemaker v1.2.0
 	gitlab.com/NebulousLabs/go-upnp v0.0.0-20210414172302-67b91c9a5c03
-	golang.org/x/crypto v0.0.0-20220411220226-7b82a4e95df4
+	golang.org/x/crypto v0.0.0-20220722155217-630584e8d5aa
 	golang.org/x/net v0.0.0-20220726230323-06994584191e
-	golang.org/x/sys v0.0.0-20220727055044-e65921a090b8
+	golang.org/x/sys v0.0.0-20220817070843-5a390386f1f2
 	golang.org/x/tools v0.1.12
 	google.golang.org/genproto v0.0.0-20220805133916-01dd62135a58
 	google.golang.org/grpc v1.48.0
@@ -41,8 +41,7 @@ require (
 	github.com/alecthomas/kingpin v2.2.6+incompatible // indirect
 	github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751 // indirect
 	github.com/alecthomas/units v0.0.0-20211218093645-b94a6e3cc137 // indirect
-	github.com/btcsuite/btcd v0.20.1-beta // indirect
-	github.com/btcsuite/btcd/btcec/v2 v2.2.0 // indirect
+	github.com/btcsuite/btcd/btcec/v2 v2.2.1 // indirect
 	github.com/bufbuild/connect-go v0.2.0 // indirect
 	github.com/cespare/xxhash v1.1.0 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
@@ -94,7 +93,7 @@ require (
 	github.com/jackpal/go-nat-pmp v1.0.2 // indirect
 	github.com/jdxcode/netrc v0.0.0-20210204082910-926c7f70242a // indirect
 	github.com/jedisct1/go-minisign v0.0.0-20190909160543-45766022959e // indirect
-	github.com/jessevdk/go-flags v1.4.1-0.20181029123624-5de817a9aa20 // indirect
+	github.com/jessevdk/go-flags v1.5.0 // indirect
 	github.com/jhump/protocompile v0.0.0-20220216033700-d705409f108f // indirect
 	github.com/jhump/protoreflect v1.12.1-0.20220721211354-060cc04fc18b // indirect
 	github.com/karalabe/usb v0.0.2 // indirect
