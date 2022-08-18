@@ -61,8 +61,6 @@ interface IStakingNFT {
             uint256 accumulatorToken
         );
 
-    function getAccumulatorScaleFactor() external view returns (uint256);
-
     function getTotalShares() external view returns (uint256);
 
     function getTotalReserveEth() external view returns (uint256);
@@ -80,4 +78,12 @@ interface IStakingNFT {
     function getEthAccumulator() external view returns (uint256 accumulator, uint256 slush);
 
     function getTokenAccumulator() external view returns (uint256 accumulator, uint256 slush);
+
+    function getLatestMintedPositionID() external view returns (uint256);
+
+    function getAccumulatorScaleFactor() external pure returns (uint256);
+
+    function getMaxMintLock() external pure returns (uint256);
+
+    function getMaxGovernanceLock() external pure returns (uint256);
 }

@@ -276,11 +276,6 @@ abstract contract StakingNFT is
         Position memory p = _positions[tokenID_];
         Accumulator memory ethState = _ethState;
         uint256 shares = _shares;
-        (ethState.accumulator, ethState.slush) = _slushSkim(
-            shares,
-            ethState.accumulator,
-            ethState.slush
-        );
         (, , , payout) = _collect(shares, ethState, p, p.accumulatorEth);
         return payout;
     }
@@ -288,13 +283,8 @@ abstract contract StakingNFT is
     /// estimateTokenCollection returns the amount of AToken a tokenID may withdraw
     function estimateTokenCollection(uint256 tokenID_) public view onlyIfTokenExists(tokenID_) returns (uint256 payout) {
         Position memory p = _positions[tokenID_];
-        Accumulator memory tokenState = _tokenState;
         uint256 shares = _shares;
-        (tokenState.accumulator, tokenState.slush) = _slushSkim(
-            shares,
-            tokenState.accumulator,
-            tokenState.slush
-        );
+        Accumulator memory tokenState = _tokenState;
         (, , , payout) = _collect(shares, tokenState, p, p.accumulatorToken);
         return payout;
     }
@@ -357,6 +347,11 @@ abstract contract StakingNFT is
     function getTokenAccumulator() public view returns (uint256 accumulator, uint256 slush) {
         accumulator = _tokenState.accumulator;
         slush = _tokenState.slush;
+    }
+
+    /// gets the ID of the latest minted position
+    function getLatestMintedPositionID() public view returns (uint256) {
+        return _getCount();
     }
 
     /// gets the _ACCUMULATOR_SCALE_FACTOR used to scale the ether and tokens
@@ -542,11 +537,6 @@ abstract contract StakingNFT is
     {
         uint256 acc;
         Accumulator memory tokenState = _tokenState;
-        (tokenState.accumulator, tokenState.slush) = _slushSkim(
-            shares_,
-            tokenState.accumulator,
-            tokenState.slush
-        );
         (tokenState, p, acc, payout) = _collect(shares_, tokenState, p_, p_.accumulatorToken);
         _tokenState = tokenState;
         p.accumulatorToken = acc;
@@ -561,11 +551,6 @@ abstract contract StakingNFT is
     {
         uint256 acc;
         Accumulator memory ethState = _ethState;
-        (ethState.accumulator, ethState.slush) = _slushSkim(
-            shares_,
-            ethState.accumulator,
-            ethState.slush
-        );
         (ethState, p, acc, payout) = _collect(shares_, ethState, p_, p_.accumulatorEth);
         _ethState = ethState;
         p.accumulatorEth = acc;
@@ -633,6 +618,11 @@ abstract contract StakingNFT is
             uint256
         )
     {
+        (state_.accumulator, state_.slush) = _slushSkim(
+            shares_,
+            state_.accumulator,
+            state_.slush
+        );
         // determine number of accumulator steps this Position needs distributions from
         uint256 accumulatorDelta;
         if (positionAccumulatorValue_ > state_.accumulator) {

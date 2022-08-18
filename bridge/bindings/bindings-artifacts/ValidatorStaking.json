@@ -378,6 +378,59 @@
         "type": "uint256"
       }
     ],
+    "name": "collectAllProfits",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "payoutToken",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "payoutEth",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "to_",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "tokenID_",
+        "type": "uint256"
+      }
+    ],
+    "name": "collectAllProfitsTo",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "payoutToken",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "payoutEth",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "tokenID_",
+        "type": "uint256"
+      }
+    ],
     "name": "collectEth",
     "outputs": [
       {
@@ -595,6 +648,19 @@
       {
         "internalType": "uint256",
         "name": "slush",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getLatestMintedPositionID",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
         "type": "uint256"
       }
     ],
@@ -1078,6 +1144,49 @@
     "inputs": [
       {
         "internalType": "uint256",
+        "name": "index",
+        "type": "uint256"
+      }
+    ],
+    "name": "tokenByIndex",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "owner",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "index",
+        "type": "uint256"
+      }
+    ],
+    "name": "tokenOfOwnerByIndex",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
         "name": "tokenID_",
         "type": "uint256"
       }
@@ -1088,6 +1197,19 @@
         "internalType": "string",
         "name": "",
         "type": "string"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "totalSupply",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
       }
     ],
     "stateMutability": "view",
