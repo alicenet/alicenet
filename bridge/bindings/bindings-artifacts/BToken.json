@@ -21,6 +21,11 @@
     "type": "error"
   },
   {
+    "inputs": [],
+    "name": "CannotTransferToZeroAddress",
+    "type": "error"
+  },
+  {
     "inputs": [
       {
         "internalType": "address",
@@ -45,6 +50,27 @@
       }
     ],
     "name": "DepositBurnFail",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "from",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "to",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "EthTransferFailed",
     "type": "error"
   },
   {

@@ -70,6 +70,11 @@
   },
   {
     "inputs": [],
+    "name": "EllipticCurvePairingFailed",
+    "type": "error"
+  },
+  {
+    "inputs": [],
     "name": "EpochMustBeNonZero",
     "type": "error"
   },
