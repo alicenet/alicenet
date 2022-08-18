@@ -1,6 +1,5 @@
 import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
-import { exit } from "process";
 import {
   migrateSnapshotsAndValidators,
   stakeValidators,
@@ -36,7 +35,7 @@ describe("State Migration: Migrate state", () => {
     if (receipt1.events === undefined) {
       throw new Error("receipt has no events");
     }
-    let events = receipt1.events;
+    const events = receipt1.events;
     const tokenIds: Array<BigNumber> = [];
     const transferEventHash =
       "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
@@ -126,7 +125,7 @@ describe("State Migration: Migrate state", () => {
       hre
     );
     txResponse = await txResponsePromise;
-    const receipt = await txResponse.wait()
+    const receipt = await txResponse.wait();
     const expectedChainId = 1;
     const expectedAliceNetHeights = [76800n, 77824n, 78848n, 79872n, 80896n];
     const expectedEpochs = [75n, 76n, 77n, 78n, 79n];
@@ -298,16 +297,18 @@ describe("State Migration: Migrate state", () => {
         "0x095ed894617e232df1779101e1d98e177340cb0fc6283cbc437d79a12290c2f1"
       ),
     ];
-    if(receipt.events === undefined){
-      throw new Error("migration tx failed")
+    if (receipt.events === undefined) {
+      throw new Error("migration tx failed");
     }
 
-
     let ethLog = 45;
-    for(let i = 0; i < receipt.events.length; i++){
-      if(receipt.events[i].topics[0] === "0x09b90b08bbc3dbe22e9d2a0bc9c2c7614c7511cd0ad72177727a1e762115bf06"){
+    for (let i = 0; i < receipt.events.length; i++) {
+      if (
+        receipt.events[i].topics[0] ===
+        "0x09b90b08bbc3dbe22e9d2a0bc9c2c7614c7511cd0ad72177727a1e762115bf06"
+      ) {
         ethLog = i;
-        break
+        break;
       }
     }
     for (let i = 0; i < validatorsAccounts.length; i++) {
