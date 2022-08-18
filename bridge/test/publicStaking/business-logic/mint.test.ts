@@ -27,8 +27,10 @@ describe("PublicStaking: Only Mint", async () => {
     const tx = await fixture.publicStaking.connect(adminSigner).mint(1000);
     const blockNumber = BigInt(tx.blockNumber as number);
     const tokenID = await getTokenIdFromTx(tx);
-    expect(tokenID).to.be.equal(1)
-    expect(await fixture.publicStaking.getLatestMintedPositionID()).to.be.equal(1)
+    expect(tokenID).to.be.equal(1);
+    expect(await fixture.publicStaking.getLatestMintedPositionID()).to.be.equal(
+      1
+    );
     await assertPositions(
       fixture.publicStaking,
       tokenID,
@@ -46,8 +48,10 @@ describe("PublicStaking: Only Mint", async () => {
       const tx = await fixture.publicStaking.connect(adminSigner).mint(100);
       const blockNumber = BigInt(tx.blockNumber as number);
       const tokenID = await getTokenIdFromTx(tx);
-      expect(tokenID).to.be.equal(i)
-      expect(await fixture.publicStaking.getLatestMintedPositionID()).to.be.equal(i)
+      expect(tokenID).to.be.equal(i);
+      expect(
+        await fixture.publicStaking.getLatestMintedPositionID()
+      ).to.be.equal(i);
       await assertPositions(
         fixture.publicStaking,
         tokenID,
@@ -115,8 +119,10 @@ describe("PublicStaking: Only Mint", async () => {
       .mintTo(notAdminSigner.address, 1000, 0);
     const blockNumber = BigInt(tx.blockNumber as number);
     const tokenID = await getTokenIdFromTx(tx);
-    expect(tokenID).to.be.equal(1)
-    expect(await fixture.publicStaking.getLatestMintedPositionID()).to.be.equal(1)
+    expect(tokenID).to.be.equal(1);
+    expect(await fixture.publicStaking.getLatestMintedPositionID()).to.be.equal(
+      1
+    );
     await assertPositions(
       fixture.publicStaking,
       tokenID,
@@ -135,8 +141,10 @@ describe("PublicStaking: Only Mint", async () => {
       .mintTo(notAdminSigner.address, 1000, 10);
     const blockNumber = BigInt(tx.blockNumber as number);
     const tokenID = await getTokenIdFromTx(tx);
-    expect(tokenID).to.be.equal(1)
-    expect(await fixture.publicStaking.getLatestMintedPositionID()).to.be.equal(1)
+    expect(tokenID).to.be.equal(1);
+    expect(await fixture.publicStaking.getLatestMintedPositionID()).to.be.equal(
+      1
+    );
     const expectedPosition = newPosition(
       1000n,
       blockNumber + 10n,

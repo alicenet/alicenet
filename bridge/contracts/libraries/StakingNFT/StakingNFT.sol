@@ -272,7 +272,12 @@ abstract contract StakingNFT is
     }
 
     /// estimateEthCollection returns the amount of eth a tokenID may withdraw
-    function estimateEthCollection(uint256 tokenID_) public view onlyIfTokenExists(tokenID_) returns (uint256 payout) {
+    function estimateEthCollection(uint256 tokenID_)
+        public
+        view
+        onlyIfTokenExists(tokenID_)
+        returns (uint256 payout)
+    {
         Position memory p = _positions[tokenID_];
         Accumulator memory ethState = _ethState;
         uint256 shares = _shares;
@@ -281,7 +286,12 @@ abstract contract StakingNFT is
     }
 
     /// estimateTokenCollection returns the amount of AToken a tokenID may withdraw
-    function estimateTokenCollection(uint256 tokenID_) public view onlyIfTokenExists(tokenID_) returns (uint256 payout) {
+    function estimateTokenCollection(uint256 tokenID_)
+        public
+        view
+        onlyIfTokenExists(tokenID_)
+        returns (uint256 payout)
+    {
         Position memory p = _positions[tokenID_];
         uint256 shares = _shares;
         Accumulator memory tokenState = _tokenState;
@@ -387,7 +397,11 @@ abstract contract StakingNFT is
     // Note well: This function *assumes* that tokenID position exists.
     //            This is because the existance check is performed
     //            at the higher level.
-    function _lockPosition(uint256 tokenID_, uint256 duration_) internal onlyIfTokenExists(tokenID_) returns (uint256 shares) {
+    function _lockPosition(uint256 tokenID_, uint256 duration_)
+        internal
+        onlyIfTokenExists(tokenID_)
+        returns (uint256 shares)
+    {
         Position memory p = _positions[tokenID_];
         uint32 freeDur = uint32(block.number) + uint32(duration_);
         p.freeAfter = freeDur > p.freeAfter ? freeDur : p.freeAfter;
@@ -402,7 +416,11 @@ abstract contract StakingNFT is
     // Note well: This function *assumes* that tokenID position exists.
     //            This is because the existance check is performed
     //            at the higher level.
-    function _lockWithdraw(uint256 tokenID_, uint256 duration_) internal onlyIfTokenExists(tokenID_) returns (uint256 shares) {
+    function _lockWithdraw(uint256 tokenID_, uint256 duration_)
+        internal
+        onlyIfTokenExists(tokenID_)
+        returns (uint256 shares)
+    {
         Position memory p = _positions[tokenID_];
         uint256 freeDur = block.number + duration_;
         p.withdrawFreeAfter = freeDur > p.withdrawFreeAfter ? freeDur : p.withdrawFreeAfter;
@@ -618,11 +636,7 @@ abstract contract StakingNFT is
             uint256
         )
     {
-        (state_.accumulator, state_.slush) = _slushSkim(
-            shares_,
-            state_.accumulator,
-            state_.slush
-        );
+        (state_.accumulator, state_.slush) = _slushSkim(shares_, state_.accumulator, state_.slush);
         // determine number of accumulator steps this Position needs distributions from
         uint256 accumulatorDelta;
         if (positionAccumulatorValue_ > state_.accumulator) {
