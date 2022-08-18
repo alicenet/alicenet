@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "./utils/Admin.sol";
 import "./utils/ImmutableAuth.sol";
 import "contracts/interfaces/IAToken.sol";
+import "contracts/libraries/errors/StakingTokenErrors.sol";
 
 /// @custom:salt AToken
 /// @custom:deploy-type deployStatic
@@ -32,7 +33,9 @@ contract AToken is
     }
 
     function migrate(uint256 amount) public {
-        require(_migrationAllowed, "MadTokens migration not allowed");
+        if (!_migrationAllowed) {
+            revert StakingTokenErrors.MigrationNotAllowed();
+        }
         IERC20(_legacyToken).transferFrom(msg.sender, address(this), amount);
         _mint(msg.sender, amount);
     }

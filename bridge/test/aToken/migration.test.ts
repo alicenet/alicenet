@@ -70,9 +70,9 @@ describe("Testing AToken", async () => {
           ethers.utils.parseEther("100000000"),
         ])
       );
-      await expect(aToken.connect(admin).migrate(amount)).to.be.revertedWith(
-        "MadTokens migration not allowed"
-      );
+      await expect(
+        aToken.connect(admin).migrate(amount)
+      ).to.be.revertedWithCustomError(aToken, "MigrationNotAllowed");
     });
 
     it("Should not allow migrate user legacy tokens without token", async function () {

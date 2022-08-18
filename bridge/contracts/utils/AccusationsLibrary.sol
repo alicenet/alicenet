@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT-open-group
 pragma solidity ^0.8.11;
 
+import "contracts/libraries/errors/AccusationsErrors.sol";
+
 library AccusationsLibrary {
     /// @notice Recovers the signer of a message
     /// @param signature The ECDSA signature
@@ -12,7 +14,9 @@ library AccusationsLibrary {
         bytes memory prefix,
         bytes memory message
     ) internal pure returns (address) {
-        require(signature.length == 65, "Accusations: Signature should be 65 bytes");
+        if (signature.length != 65) {
+            revert AccusationsErrors.SignatureLengthMustBe65Bytes(signature.length);
+        }
 
         bytes32 hashedMessage = keccak256(abi.encodePacked(prefix, message));
 
@@ -28,7 +32,9 @@ library AccusationsLibrary {
 
         v = (v < 27) ? (v + 27) : v;
 
-        require(v == 27 || v == 28, "Accusations: Signature uses invalid version");
+        if (v != 27 && v != 28) {
+            revert AccusationsErrors.InvalidSignatureVersion(v);
+        }
 
         return ecrecover(hashedMessage, v, r, s);
     }
