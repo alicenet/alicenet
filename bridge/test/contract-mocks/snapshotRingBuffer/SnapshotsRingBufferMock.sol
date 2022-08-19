@@ -2,6 +2,7 @@
 pragma solidity ^0.8.11;
 
 import "contracts/libraries/snapshots/SnapshotRingBuffer.sol";
+import "contracts/libraries/parsers/BClaimsParserLibrary.sol";
 
 contract SnapshotsRingBufferMock is SnapshotRingBuffer {
     using EpochLib for Epoch;
@@ -12,12 +13,11 @@ contract SnapshotsRingBufferMock is SnapshotRingBuffer {
     //new snapshot ring buffer
     SnapshotBuffer internal _snapshots;
 
-    function unsafeSet(Snapshot memory new_, uint32 epoch_) public {
-        _snapshots.unsafeSet(new_, epoch_);
-    }
-
-    function setSnapshot(Snapshot memory snapshot_) public returns (uint32) {
-        return _setSnapshot(snapshot_);
+    function setSnapshot(bytes calldata bClaims_) public returns (uint32) {
+        BClaimsParserLibrary.BClaims memory blockClaims = BClaimsParserLibrary.extractBClaims(
+            bClaims_
+        );
+        return _setSnapshot(Snapshot(block.number, blockClaims));
     }
 
     function setEpoch(uint32 epoch_) public {
