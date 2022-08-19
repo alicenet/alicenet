@@ -47,6 +47,10 @@ contract SnapshotsRingBufferMock is SnapshotRingBuffer {
     function _getSnapshots() internal view override returns (SnapshotBuffer storage) {
         return _snapshots;
     }
+    
+    function _epochRegister() internal view override returns (Epoch storage) {
+        return _epoch;
+    }
 
     function _getEpochFromHeight(uint32 height_) internal pure override returns (uint32) {
         if (height_ <= _EPOCH_LENGTH) {
@@ -56,11 +60,5 @@ contract SnapshotsRingBufferMock is SnapshotRingBuffer {
             return uint32(height_ / _EPOCH_LENGTH);
         }
         return uint32((height_ / _EPOCH_LENGTH) + 1);
-    }
-
-    
-
-    function _epochRegister() internal view override returns (Epoch storage) {
-        return _epoch;
     }
 }
