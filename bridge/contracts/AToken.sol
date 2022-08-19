@@ -33,7 +33,9 @@ contract AToken is
 
     function initialize(uint256 initialMintAmount) public onlyFactory initializer {
         __ERC20_init("AToken", "ALC");
-        _mint(msg.sender, _convert(initialMintAmount));
+        if(totalSupply() == 0){
+            _mint(msg.sender, _convert(initialMintAmount));
+        }
     }
 
     function migrate(uint256 amount) public {
