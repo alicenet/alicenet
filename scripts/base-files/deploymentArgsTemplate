@@ -7,6 +7,9 @@ chainID_ = "1337"
 [[constructor."contracts/Snapshots.sol:Snapshots"]]
 epochLength_ = "1024"
 
+[[initializer."contracts/AToken.sol:AToken"]]
+initialMintAmount = "20000000000000000000000000"
+
 [[initializer."contracts/Snapshots.sol:Snapshots"]]
 desperationDelay_ = "10"
 
