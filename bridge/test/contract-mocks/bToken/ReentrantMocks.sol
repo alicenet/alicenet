@@ -2,7 +2,7 @@
 pragma solidity ^0.8.11;
 
 import "contracts/utils/ImmutableAuth.sol";
-import "contracts/interfaces/IBToken.sol";
+import "contracts/interfaces/IUtilityToken.sol";
 import "contracts/utils/MagicEthTransfer.sol";
 
 contract ReentrantLoopDistributionMock is MagicEthTransfer, ImmutableFactory, ImmutableBToken {
@@ -21,7 +21,7 @@ contract ReentrantLoopDistributionMock is MagicEthTransfer, ImmutableFactory, Im
     function _internalLoop() internal {
         _counter++;
         if (_counter <= 3) {
-            IBToken(_bTokenAddress()).distribute();
+            IUtilityToken(_bTokenAddress()).distribute();
         }
     }
 }

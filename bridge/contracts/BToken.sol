@@ -162,14 +162,14 @@ contract BToken is
             _factoryAddress()
         );
         if (!_isContract(bridgeRouterAddress)) {
-            revert BTokenErrors.InexistentRouterContract(bridgeRouterAddress);
+            revert UtilityTokenErrors.InexistentRouterContract(bridgeRouterAddress);
         }
         //forward call to router
         uint256 bTokenFee = IBridgeRouter(bridgeRouterAddress).routeDeposit(msg.sender, data);
         if (msg.value > 0) {
             uint256 ethFee = _getEthToMintBTokens(totalSupply(), bTokenFee);
             if (ethFee > msg.value) {
-                revert BTokenErrors.InsufficientFee(msg.value, ethFee);
+                revert UtilityTokenErrors.InsufficientFee(msg.value, ethFee);
             }
             uint256 refund;
             unchecked {
