@@ -47,7 +47,7 @@ contract SnapshotsRingBufferMock is SnapshotRingBuffer {
     function _getSnapshots() internal view override returns (SnapshotBuffer storage) {
         return _snapshots;
     }
-    
+
     function _epochRegister() internal view override returns (Epoch storage) {
         return _epoch;
     }
