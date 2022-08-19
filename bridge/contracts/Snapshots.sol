@@ -299,7 +299,7 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
         blockClaims = BClaimsParserLibrary.extractBClaims(bClaims_);
 
         if (epoch * _epochLength != blockClaims.height) {
-            revert SnapshotsErrors.InvalidBlockHeight(blockClaims.height);
+            revert SnapshotsErrors.UnexpectedBlockHeight(blockClaims.height, epoch * _epochLength);
         }
 
         if (blockClaims.chainId != _chainId) {
