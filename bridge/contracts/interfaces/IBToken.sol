@@ -14,4 +14,6 @@ interface IBToken {
         address to_,
         uint256 amount_
     ) external;
+
+    function distribute() external returns (bool);
 }
