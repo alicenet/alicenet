@@ -7,7 +7,7 @@ import "contracts/libraries/parsers/BClaimsParserLibrary.sol";
 contract SnapshotsRingBufferMock is SnapshotRingBuffer {
     using EpochLib for Epoch;
     using RingBuffer for SnapshotBuffer;
-    uint256 internal constant _epochLength = 1024;
+    uint256 internal constant _EPOCH_LENGTH = 1024;
     //epoch counter wrapped in a struct
     Epoch internal _epoch;
     //new snapshot ring buffer
@@ -44,19 +44,21 @@ contract SnapshotsRingBufferMock is SnapshotRingBuffer {
         return _epochRegister();
     }
 
-    function _getEpochFromHeight(uint32 height_) internal pure override returns (uint32) {
-        if (height_ <= _epochLength) {
-            return 1;
-        }
-        if (height_ % _epochLength == 0) {
-            return uint32(height_ / _epochLength);
-        }
-        return uint32((height_ / _epochLength) + 1);
-    }
-
     function _getSnapshots() internal view override returns (SnapshotBuffer storage) {
         return _snapshots;
     }
+
+    function _getEpochFromHeight(uint32 height_) internal pure override returns (uint32) {
+        if (height_ <= _EPOCH_LENGTH) {
+            return 1;
+        }
+        if (height_ % _EPOCH_LENGTH == 0) {
+            return uint32(height_ / _EPOCH_LENGTH);
+        }
+        return uint32((height_ / _EPOCH_LENGTH) + 1);
+    }
+
+    
 
     function _epochRegister() internal view override returns (Epoch storage) {
         return _epoch;
