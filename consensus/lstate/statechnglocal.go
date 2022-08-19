@@ -280,11 +280,9 @@ func (ce *Engine) doPendingPreCommit(txn *badger.Txn, rs *RoundStates) error {
 	// clear consensus if the total votes is
 	// greater than threshold
 	if rcert.RClaims.Round != constants.DEADBLOCKROUND {
-		if len(pvl)+len(pvnl) >= rs.GetCurrentThreshold() {
-			if err := ce.castPreCommitNil(txn, rs); err != nil {
-				utils.DebugTrace(ce.logger, err)
-				return err
-			}
+		if err := ce.castPreCommitNil(txn, rs); err != nil {
+			utils.DebugTrace(ce.logger, err)
+			return err
 		}
 	}
 	// threshold not met as of yet
