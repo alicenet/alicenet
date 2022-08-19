@@ -953,51 +953,120 @@ func TestEngine_updateLocalStateInternal11(t *testing.T) {
 	})
 }
 
-/*
-	TODO: FIX AND BRING THIS BACK
-*/
-// PVCurrent
+// NOT PVCurrent
 // PVTOExpired.
-// func TestEngine_updateLocalStateInternal12(t *testing.T) {
-// 	engine := initEngine(t, nil)
+func TestEngine_updateLocalStateInternal12(t *testing.T) {
+	engine := initEngine(t, nil)
 
-// 	os := createOwnState(t, 2)
-// 	rs := createRoundState(t, os)
-// 	vs := createValidatorsSet(t, os, rs)
-// 	rss := createRoundStates(os, rs, vs, &objs.OwnValidatingState{})
+	os := createOwnState(t, 2)
+	rs := createRoundState(t, os)
+	vs := createValidatorsSet(t, os, rs)
+	rss := createRoundStates(os, rs, vs, &objs.OwnValidatingState{})
 
-// 	_, bnSigners, bnShares, secpSigners, secpPubks := makeSigners(t)
-// 	if len(secpPubks) != len(bnShares) {
-// 		t.Fatal("key length mismatch")
-// 	}
+	rsBytes, err := rss.PeerStateMap[string(vs.Validators[len(vs.Validators)-1].VAddr)].MarshalBinary()
+	if err != nil {
+		t.Fatalf("Shouldn't have raised error: %v", err)
+	}
+	newRS := &objs.RoundState{}
+	err = newRS.UnmarshalBinary(rsBytes)
+	if err != nil {
+		t.Fatalf("Shouldn't have raised error: %v", err)
+	}
 
-// 	height := uint32(2)
-// 	round := uint32(3)
-// 	prevBlock := crypto.Hasher([]byte("0"))
-// 	_, _, pvl, _, _, _, _, _, _ := buildRound(t, bnSigners, bnShares, secpSigners, height, round, prevBlock)
+	rss.PeerStateMap[string(vs.Validators[len(vs.Validators)-1].VAddr)] = newRS
 
-// 	rsBytes, err := rss.PeerStateMap[string(vs.Validators[len(vs.Validators)-1].VAddr)].MarshalBinary()
-// 	if err != nil {
-// 		t.Fatalf("Shouldn't have raised error: %v", err)
-// 	}
-// 	newRS := &objs.RoundState{}
-// 	err = newRS.UnmarshalBinary(rsBytes)
-// 	if err != nil {
-// 		t.Fatalf("Shouldn't have raised error: %v", err)
-// 	}
-// 	newRS.PreVote = pvl[0]
-// 	//newRS.RCert.RClaims.Height = 1
-// 	//newRS.RCert.RClaims.Round = 1
-// 	rss.PeerStateMap[string(vs.Validators[len(vs.Validators)-1].VAddr)] = newRS
+	_ = engine.sstore.database.Update(func(txn *badger.Txn) error {
+		ok, err := engine.updateLocalStateInternal(txn, rss)
+		assert.Nil(t, err)
+		assert.True(t, ok)
 
-// 	_ = engine.sstore.database.Update(func(txn *badger.Txn) error {
-// 		ok, err := engine.updateLocalStateInternal(txn, rss)
-// 		assert.Nil(t, err)
-// 		assert.True(t, ok)
+		return nil
+	})
+}
 
-// 		return nil
-// 	})
-// }
+// NOT PVCurrent
+// PVTOExpired.
+func TestEngine_updateLocalStateInternal12_2(t *testing.T) {
+	engine := initEngine(t, nil)
+
+	os := createOwnState(t, 2)
+	rs := createRoundState(t, os)
+	vs := createValidatorsSet(t, os, rs)
+	rss := createRoundStates(os, rs, vs, &objs.OwnValidatingState{})
+
+	_, bnSigners, bnShares, secpSigners, secpPubks := makeSigners(t)
+	if len(secpPubks) != len(bnShares) {
+		t.Fatal("key length mismatch")
+	}
+
+	height := uint32(2)
+	round := uint32(3)
+	prevBlock := crypto.Hasher([]byte("0"))
+	_, _, pvl, _, _, _, _, _, _ := buildRound(t, bnSigners, bnShares, secpSigners, height, round, prevBlock)
+
+	rsBytes, err := rss.PeerStateMap[string(vs.Validators[len(vs.Validators)-1].VAddr)].MarshalBinary()
+	if err != nil {
+		t.Fatalf("Shouldn't have raised error: %v", err)
+	}
+	newRS := &objs.RoundState{}
+	err = newRS.UnmarshalBinary(rsBytes)
+	if err != nil {
+		t.Fatalf("Shouldn't have raised error: %v", err)
+	}
+	newRS.PreVote = pvl[0]
+	rss.PeerStateMap[string(vs.Validators[len(vs.Validators)-1].VAddr)] = newRS
+
+	_ = engine.sstore.database.Update(func(txn *badger.Txn) error {
+		ok, err := engine.updateLocalStateInternal(txn, rss)
+		assert.NotNil(t, err)
+		assert.False(t, ok)
+
+		return nil
+	})
+}
+
+// NOT PVCurrent
+// PVTOExpired.
+func TestEngine_updateLocalStateInternal12_3(t *testing.T) {
+	engine := initEngine(t, nil)
+
+	os := createOwnState(t, 2)
+	rs := createRoundState(t, os)
+	vs := createValidatorsSet(t, os, rs)
+	rss := createRoundStates(os, rs, vs, &objs.OwnValidatingState{})
+
+	_, bnSigners, bnShares, secpSigners, secpPubks := makeSigners(t)
+	if len(secpPubks) != len(bnShares) {
+		t.Fatal("key length mismatch")
+	}
+
+	height := uint32(2)
+	round := uint32(3)
+	prevBlock := crypto.Hasher([]byte("0"))
+	_, _, pvl, _, _, _, _, _, _ := buildRound(t, bnSigners, bnShares, secpSigners, height, round, prevBlock)
+
+	rsBytes, err := rss.PeerStateMap[string(vs.Validators[len(vs.Validators)-1].VAddr)].MarshalBinary()
+	if err != nil {
+		t.Fatalf("Shouldn't have raised error: %v", err)
+	}
+	newRS := &objs.RoundState{}
+	err = newRS.UnmarshalBinary(rsBytes)
+	if err != nil {
+		t.Fatalf("Shouldn't have raised error: %v", err)
+	}
+	newRS.PreVote = pvl[0]
+	newRS.RCert.RClaims.Height = 2
+	newRS.RCert.RClaims.Round = 3
+	rss.PeerStateMap[string(vs.Validators[len(vs.Validators)-1].VAddr)] = newRS
+
+	_ = engine.sstore.database.Update(func(txn *badger.Txn) error {
+		ok, err := engine.updateLocalStateInternal(txn, rss)
+		assert.NotNil(t, err)
+		assert.False(t, ok)
+
+		return nil
+	})
+}
 
 // PVCurrent
 // NOT PVTOExpired.
@@ -1042,51 +1111,89 @@ func TestEngine_updateLocalStateInternal13(t *testing.T) {
 	})
 }
 
-/*
-	TODO: FIX AND BRING THIS BACK
-*/
-// PVNCurrent
+// NOT PVNCurrent
 // PVTOExpired.
-// func TestEngine_updateLocalStateInternal14(t *testing.T) {
-// 	engine := initEngine(t, nil)
+func TestEngine_updateLocalStateInternal14(t *testing.T) {
+	engine := initEngine(t, nil)
 
-// 	os := createOwnState(t, 2)
-// 	rs := createRoundState(t, os)
-// 	vs := createValidatorsSet(t, os, rs)
-// 	rss := createRoundStates(os, rs, vs, &objs.OwnValidatingState{})
+	os := createOwnState(t, 2)
+	rs := createRoundState(t, os)
+	vs := createValidatorsSet(t, os, rs)
+	rss := createRoundStates(os, rs, vs, &objs.OwnValidatingState{})
 
-// 	_, bnSigners, bnShares, secpSigners, secpPubks := makeSigners(t)
-// 	if len(secpPubks) != len(bnShares) {
-// 		t.Fatal("key length mismatch")
-// 	}
+	_, bnSigners, bnShares, secpSigners, secpPubks := makeSigners(t)
+	if len(secpPubks) != len(bnShares) {
+		t.Fatal("key length mismatch")
+	}
 
-// 	height := uint32(2)
-// 	round := uint32(3)
-// 	prevBlock := crypto.Hasher([]byte("0"))
-// 	_, _, _, pvnl, _, _, _, _, _ := buildRound(t, bnSigners, bnShares, secpSigners, height, round, prevBlock)
+	height := uint32(2)
+	round := uint32(3)
+	prevBlock := crypto.Hasher([]byte("0"))
+	_, _, _, pvnl, _, _, _, _, _ := buildRound(t, bnSigners, bnShares, secpSigners, height, round, prevBlock)
 
-// 	rsBytes, err := rss.PeerStateMap[string(vs.Validators[len(vs.Validators)-1].VAddr)].MarshalBinary()
-// 	if err != nil {
-// 		t.Fatalf("Shouldn't have raised error: %v", err)
-// 	}
-// 	newRS := &objs.RoundState{}
-// 	err = newRS.UnmarshalBinary(rsBytes)
-// 	if err != nil {
-// 		t.Fatalf("Shouldn't have raised error: %v", err)
-// 	}
-// 	newRS.PreVoteNil = pvnl[0]
-// 	newRS.RCert.RClaims.Height = 2
-// 	newRS.RCert.RClaims.Round = 3
-// 	rss.PeerStateMap[string(vs.Validators[len(vs.Validators)-1].VAddr)] = newRS
+	rsBytes, err := rss.PeerStateMap[string(vs.Validators[len(vs.Validators)-1].VAddr)].MarshalBinary()
+	if err != nil {
+		t.Fatalf("Shouldn't have raised error: %v", err)
+	}
+	newRS := &objs.RoundState{}
+	err = newRS.UnmarshalBinary(rsBytes)
+	if err != nil {
+		t.Fatalf("Shouldn't have raised error: %v", err)
+	}
+	newRS.PreVoteNil = pvnl[0]
+	rss.PeerStateMap[string(vs.Validators[len(vs.Validators)-1].VAddr)] = newRS
 
-// 	_ = engine.sstore.database.Update(func(txn *badger.Txn) error {
-// 		ok, err := engine.updateLocalStateInternal(txn, rss)
-// 		assert.Nil(t, err)
-// 		assert.True(t, ok)
+	_ = engine.sstore.database.Update(func(txn *badger.Txn) error {
+		ok, err := engine.updateLocalStateInternal(txn, rss)
+		assert.NotNil(t, err)
+		assert.False(t, ok)
 
-// 		return nil
-// 	})
-// }
+		return nil
+	})
+}
+
+// NOT PVNCurrent
+// PVTOExpired.
+func TestEngine_updateLocalStateInternal14_2(t *testing.T) {
+	engine := initEngine(t, nil)
+
+	os := createOwnState(t, 2)
+	rs := createRoundState(t, os)
+	vs := createValidatorsSet(t, os, rs)
+	rss := createRoundStates(os, rs, vs, &objs.OwnValidatingState{})
+
+	_, bnSigners, bnShares, secpSigners, secpPubks := makeSigners(t)
+	if len(secpPubks) != len(bnShares) {
+		t.Fatal("key length mismatch")
+	}
+
+	height := uint32(2)
+	round := uint32(3)
+	prevBlock := crypto.Hasher([]byte("0"))
+	_, _, _, pvnl, _, _, _, _, _ := buildRound(t, bnSigners, bnShares, secpSigners, height, round, prevBlock)
+
+	rsBytes, err := rss.PeerStateMap[string(vs.Validators[len(vs.Validators)-1].VAddr)].MarshalBinary()
+	if err != nil {
+		t.Fatalf("Shouldn't have raised error: %v", err)
+	}
+	newRS := &objs.RoundState{}
+	err = newRS.UnmarshalBinary(rsBytes)
+	if err != nil {
+		t.Fatalf("Shouldn't have raised error: %v", err)
+	}
+	newRS.PreVoteNil = pvnl[0]
+	newRS.RCert.RClaims.Height = 2
+	newRS.RCert.RClaims.Round = 3
+	rss.PeerStateMap[string(vs.Validators[len(vs.Validators)-1].VAddr)] = newRS
+
+	_ = engine.sstore.database.Update(func(txn *badger.Txn) error {
+		ok, err := engine.updateLocalStateInternal(txn, rss)
+		assert.NotNil(t, err)
+		assert.False(t, ok)
+
+		return nil
+	})
+}
 
 // PVNCurrent
 // NOT PVTOExpired.
