@@ -1,14 +1,15 @@
 // SPDX-License-Identifier: MIT-open-group
 pragma solidity ^0.8.11;
 
-import "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
 import "contracts/libraries/governance/GovernanceMaxLock.sol";
 import "contracts/libraries/StakingNFT/StakingNFTStorage.sol";
 import "contracts/utils/ImmutableAuth.sol";
 import "contracts/utils/EthSafeTransfer.sol";
 import "contracts/utils/ERC20SafeTransfer.sol";
 import "contracts/utils/MagicValue.sol";
+import "contracts/utils/CircuitBreaker.sol";
+import "contracts/utils/AtomicCounter.sol";
 import "contracts/interfaces/ICBOpener.sol";
 import "contracts/interfaces/IStakingNFT.sol";
 import "contracts/interfaces/IStakingNFTDescriptor.sol";
@@ -17,7 +18,9 @@ import "contracts/libraries/errors/CircuitBreakerErrors.sol";
 
 abstract contract StakingNFT is
     Initializable,
-    ERC721Upgradeable,
+    ERC721EnumerableUpgradeable,
+    CircuitBreaker,
+    AtomicCounter,
     StakingNFTStorage,
     MagicValue,
     EthSafeTransfer,
@@ -31,11 +34,9 @@ abstract contract StakingNFT is
     ImmutableGovernance,
     ImmutableStakingPositionDescriptor
 {
-    // withCircuitBreaker is a modifier to enforce the CircuitBreaker must
-    // be set for a call to succeed
-    modifier withCircuitBreaker() {
-        if (_circuitBreaker == _CIRCUIT_BREAKER_OPENED) {
-            revert CircuitBreakerErrors.CircuitBreakerOpened();
+    modifier onlyIfTokenExists(uint256 tokenID_) {
+        if (!_exists(tokenID_)) {
+            revert StakingNFTErrors.InvalidTokenId(tokenID_);
         }
         _;
     }
@@ -48,19 +49,7 @@ abstract contract StakingNFT is
         ImmutableStakingPositionDescriptor()
     {}
 
-    /// gets the current value for the Eth accumulator
-    function getEthAccumulator() external view returns (uint256 accumulator, uint256 slush) {
-        accumulator = _ethState.accumulator;
-        slush = _ethState.slush;
-    }
-
-    /// gets the current value for the Token accumulator
-    function getTokenAccumulator() external view returns (uint256 accumulator, uint256 slush) {
-        accumulator = _tokenState.accumulator;
-        slush = _tokenState.slush;
-    }
-
-    /// @dev tripCB opens the circuit breaker may only be called by _admin
+    /// @dev tripCB opens the circuit breaker may only be called by _factory owner
     function tripCB() public override onlyFactory {
         _tripCB();
     }
@@ -221,88 +210,48 @@ abstract contract StakingNFT is
         return _burn(msg.sender, to_, tokenID_);
     }
 
-    /// collectEth returns all due Eth allocations to caller. The caller
-    /// of this function must be the owner of the tokenID
+    /// collects the ether yield of a given position. The caller of this function
+    /// must be the owner of the tokenID.
     function collectEth(uint256 tokenID_) public returns (uint256 payout) {
-        address owner = ownerOf(tokenID_);
-        if (msg.sender != owner) {
-            revert StakingNFTErrors.CallerNotTokenOwner(msg.sender);
-        }
-        Position memory position = _positions[tokenID_];
-        if (_positions[tokenID_].withdrawFreeAfter >= block.number) {
-            revert StakingNFTErrors.LockDurationWithdrawTimeNotReached();
-        }
-
-        // get values and update state
-        (_positions[tokenID_], payout) = _collectEth(_shares, position);
-        _reserveEth -= payout;
-        // perform transfer and return amount paid out
-        _safeTransferEth(owner, payout);
-        return payout;
+        payout = _collectEthTo(msg.sender, tokenID_);
     }
 
-    /// collectToken returns all due AToken allocations to caller. The
-    /// caller of this function must be the owner of the tokenID
+    /// collects the ALCa tokens yield of a given position. The caller of
+    /// this function must be the owner of the tokenID.
     function collectToken(uint256 tokenID_) public returns (uint256 payout) {
-        address owner = ownerOf(tokenID_);
-        if (msg.sender != owner) {
-            revert StakingNFTErrors.CallerNotTokenOwner(msg.sender);
-        }
-        Position memory position = _positions[tokenID_];
-        if (position.withdrawFreeAfter >= block.number) {
-            revert StakingNFTErrors.LockDurationWithdrawTimeNotReached();
-        }
-
-        // get values and update state
-        (_positions[tokenID_], payout) = _collectToken(_shares, position);
-        _reserveToken -= payout;
-        // perform transfer and return amount paid out
-        _safeTransferERC20(IERC20Transferable(_aTokenAddress()), owner, payout);
-        return payout;
+        payout = _collectTokenTo(msg.sender, tokenID_);
     }
 
-    /// collectEth returns all due Eth allocations to the to_ address. The caller
-    /// of this function must be the owner of the tokenID
+    /// collects the ether and ALCa tokens yields of a given position. The caller of
+    /// this function must be the owner of the tokenID.
+    function collectAllProfits(uint256 tokenID_)
+        public
+        returns (uint256 payoutToken, uint256 payoutEth)
+    {
+        payoutToken = _collectTokenTo(msg.sender, tokenID_);
+        payoutEth = _collectEthTo(msg.sender, tokenID_);
+    }
+
+    /// collects the ether yield of a given position and send to the `to_` address.
+    /// The caller of this function must be the owner of the tokenID.
     function collectEthTo(address to_, uint256 tokenID_) public returns (uint256 payout) {
-        address owner = ownerOf(tokenID_);
-        if (msg.sender != owner) {
-            revert StakingNFTErrors.CallerNotTokenOwner(msg.sender);
-        }
-        Position memory position = _positions[tokenID_];
-        if (_positions[tokenID_].withdrawFreeAfter >= block.number) {
-            revert StakingNFTErrors.LockDurationWithdrawTimeNotReached();
-        }
-
-        // get values and update state
-        (_positions[tokenID_], payout) = _collectEth(_shares, position);
-        _reserveEth -= payout;
-        // perform transfer and return amount paid out
-        _safeTransferEth(to_, payout);
-        return payout;
+        payout = _collectEthTo(to_, tokenID_);
     }
 
-    /// collectTokenTo returns all due AToken allocations to the to_ address. The
-    /// caller of this function must be the owner of the tokenID
+    /// collects the ALCa tokens yield of a given position and send to the `to_`
+    /// address. The caller of this function must be the owner of the tokenID.
     function collectTokenTo(address to_, uint256 tokenID_) public returns (uint256 payout) {
-        address owner = ownerOf(tokenID_);
-        if (msg.sender != owner) {
-            revert StakingNFTErrors.CallerNotTokenOwner(msg.sender);
-        }
-        Position memory position = _positions[tokenID_];
-        if (position.withdrawFreeAfter >= block.number) {
-            revert StakingNFTErrors.LockDurationWithdrawTimeNotReached();
-        }
-
-        // get values and update state
-        (_positions[tokenID_], payout) = _collectToken(_shares, position);
-        _reserveToken -= payout;
-        // perform transfer and return amount paid out
-        _safeTransferERC20(IERC20Transferable(_aTokenAddress()), to_, payout);
-        return payout;
+        payout = _collectTokenTo(to_, tokenID_);
     }
 
-    function circuitBreakerState() public view returns (bool) {
-        return _circuitBreaker;
+    /// collects the ether and ALCa tokens yields of a given position and send to the
+    /// `to_` address. The caller of this function must be the owner of the tokenID.
+    function collectAllProfitsTo(address to_, uint256 tokenID_)
+        public
+        returns (uint256 payoutToken, uint256 payoutEth)
+    {
+        payoutToken = _collectTokenTo(to_, tokenID_);
+        payoutEth = _collectEthTo(to_, tokenID_);
     }
 
     /// gets the total amount of AToken staked in contract
@@ -321,35 +270,29 @@ abstract contract StakingNFT is
     }
 
     /// estimateEthCollection returns the amount of eth a tokenID may withdraw
-    function estimateEthCollection(uint256 tokenID_) public view returns (uint256 payout) {
-        if (!_exists(tokenID_)) {
-            revert StakingNFTErrors.InvalidTokenId(tokenID_);
-        }
+    function estimateEthCollection(uint256 tokenID_)
+        public
+        view
+        onlyIfTokenExists(tokenID_)
+        returns (uint256 payout)
+    {
         Position memory p = _positions[tokenID_];
         Accumulator memory ethState = _ethState;
         uint256 shares = _shares;
-        (ethState.accumulator, ethState.slush) = _slushSkim(
-            shares,
-            ethState.accumulator,
-            ethState.slush
-        );
         (, , , payout) = _collect(shares, ethState, p, p.accumulatorEth);
         return payout;
     }
 
     /// estimateTokenCollection returns the amount of AToken a tokenID may withdraw
-    function estimateTokenCollection(uint256 tokenID_) public view returns (uint256 payout) {
-        if (!_exists(tokenID_)) {
-            revert StakingNFTErrors.InvalidTokenId(tokenID_);
-        }
+    function estimateTokenCollection(uint256 tokenID_)
+        public
+        view
+        onlyIfTokenExists(tokenID_)
+        returns (uint256 payout)
+    {
         Position memory p = _positions[tokenID_];
-        Accumulator memory tokenState = _tokenState;
         uint256 shares = _shares;
-        (tokenState.accumulator, tokenState.slush) = _slushSkim(
-            shares,
-            tokenState.accumulator,
-            tokenState.slush
-        );
+        Accumulator memory tokenState = _tokenState;
         (, , , payout) = _collect(shares, tokenState, p, p.accumulatorToken);
         return payout;
     }
@@ -374,6 +317,7 @@ abstract contract StakingNFT is
     function getPosition(uint256 tokenID_)
         public
         view
+        onlyIfTokenExists(tokenID_)
         returns (
             uint256 shares,
             uint256 freeAfter,
@@ -382,9 +326,6 @@ abstract contract StakingNFT is
             uint256 accumulatorToken
         )
     {
-        if (!_exists(tokenID_)) {
-            revert StakingNFTErrors.InvalidTokenId(tokenID_);
-        }
         Position memory p = _positions[tokenID_];
         shares = uint256(p.shares);
         freeAfter = uint256(p.freeAfter);
@@ -398,12 +339,27 @@ abstract contract StakingNFT is
         public
         view
         override(ERC721Upgradeable)
+        onlyIfTokenExists(tokenID_)
         returns (string memory)
     {
-        if (!_exists(tokenID_)) {
-            revert StakingNFTErrors.InvalidTokenId(tokenID_);
-        }
         return IStakingNFTDescriptor(_stakingPositionDescriptorAddress()).tokenURI(this, tokenID_);
+    }
+
+    /// gets the current value for the Eth accumulator
+    function getEthAccumulator() public view returns (uint256 accumulator, uint256 slush) {
+        accumulator = _ethState.accumulator;
+        slush = _ethState.slush;
+    }
+
+    /// gets the current value for the Token accumulator
+    function getTokenAccumulator() public view returns (uint256 accumulator, uint256 slush) {
+        accumulator = _tokenState.accumulator;
+        slush = _tokenState.slush;
+    }
+
+    /// gets the ID of the latest minted position
+    function getLatestMintedPositionID() public view returns (uint256) {
+        return _getCount();
     }
 
     /// gets the _ACCUMULATOR_SCALE_FACTOR used to scale the ether and tokens
@@ -439,10 +395,11 @@ abstract contract StakingNFT is
     // Note well: This function *assumes* that tokenID position exists.
     //            This is because the existance check is performed
     //            at the higher level.
-    function _lockPosition(uint256 tokenID_, uint256 duration_) internal returns (uint256 shares) {
-        if (!_exists(tokenID_)) {
-            revert StakingNFTErrors.InvalidTokenId(tokenID_);
-        }
+    function _lockPosition(uint256 tokenID_, uint256 duration_)
+        internal
+        onlyIfTokenExists(tokenID_)
+        returns (uint256 shares)
+    {
         Position memory p = _positions[tokenID_];
         uint32 freeDur = uint32(block.number) + uint32(duration_);
         p.freeAfter = freeDur > p.freeAfter ? freeDur : p.freeAfter;
@@ -457,10 +414,11 @@ abstract contract StakingNFT is
     // Note well: This function *assumes* that tokenID position exists.
     //            This is because the existance check is performed
     //            at the higher level.
-    function _lockWithdraw(uint256 tokenID_, uint256 duration_) internal returns (uint256 shares) {
-        if (!_exists(tokenID_)) {
-            revert StakingNFTErrors.InvalidTokenId(tokenID_);
-        }
+    function _lockWithdraw(uint256 tokenID_, uint256 duration_)
+        internal
+        onlyIfTokenExists(tokenID_)
+        returns (uint256 shares)
+    {
         Position memory p = _positions[tokenID_];
         uint256 freeDur = block.number + duration_;
         p.withdrawFreeAfter = freeDur > p.withdrawFreeAfter ? freeDur : p.withdrawFreeAfter;
@@ -567,17 +525,34 @@ abstract contract StakingNFT is
         return (payoutEth, payoutToken);
     }
 
+    /// collectEth returns all due Eth allocations to the to_ address. The caller
+    /// of this function must be the owner of the tokenID
+    function _collectEthTo(address to_, uint256 tokenID_) internal returns (uint256 payout) {
+        Position memory position = _getPositionToCollect(tokenID_);
+        // get values and update state
+        (_positions[tokenID_], payout) = _collectEth(_shares, position);
+        _reserveEth -= payout;
+        // perform transfer and return amount paid out
+        _safeTransferEth(to_, payout);
+        return payout;
+    }
+
+    function _collectTokenTo(address to_, uint256 tokenID_) internal returns (uint256 payout) {
+        Position memory position = _getPositionToCollect(tokenID_);
+        // get values and update state
+        (_positions[tokenID_], payout) = _collectToken(_shares, position);
+        _reserveToken -= payout;
+        // perform transfer and return amount paid out
+        _safeTransferERC20(IERC20Transferable(_aTokenAddress()), to_, payout);
+        return payout;
+    }
+
     function _collectToken(uint256 shares_, Position memory p_)
         internal
         returns (Position memory p, uint256 payout)
     {
         uint256 acc;
         Accumulator memory tokenState = _tokenState;
-        (tokenState.accumulator, tokenState.slush) = _slushSkim(
-            shares_,
-            tokenState.accumulator,
-            tokenState.slush
-        );
         (tokenState, p, acc, payout) = _collect(shares_, tokenState, p_, p_.accumulatorToken);
         _tokenState = tokenState;
         p.accumulatorToken = acc;
@@ -592,39 +567,10 @@ abstract contract StakingNFT is
     {
         uint256 acc;
         Accumulator memory ethState = _ethState;
-        (ethState.accumulator, ethState.slush) = _slushSkim(
-            shares_,
-            ethState.accumulator,
-            ethState.slush
-        );
         (ethState, p, acc, payout) = _collect(shares_, ethState, p_, p_.accumulatorEth);
         _ethState = ethState;
         p.accumulatorEth = acc;
         return (p, payout);
-    }
-
-    function _tripCB() internal {
-        if (_circuitBreaker == _CIRCUIT_BREAKER_OPENED) {
-            revert CircuitBreakerErrors.CircuitBreakerOpened();
-        }
-
-        _circuitBreaker = _CIRCUIT_BREAKER_OPENED;
-    }
-
-    function _resetCB() internal {
-        if (_circuitBreaker == _CIRCUIT_BREAKER_CLOSED) {
-            revert CircuitBreakerErrors.CircuitBreakerClosed();
-        }
-
-        _circuitBreaker = _CIRCUIT_BREAKER_CLOSED;
-    }
-
-    // _newTokenID increments the counter and returns the new value
-    function _increment() internal returns (uint256 count) {
-        count = _counter;
-        count += 1;
-        _counter = count;
-        return count;
     }
 
     // _estimateExcessEth returns the amount of Eth that is held in the name of
@@ -655,8 +601,19 @@ abstract contract StakingNFT is
         return (aToken, excess);
     }
 
-    function _getCount() internal view returns (uint256) {
-        return _counter;
+    function _getPositionToCollect(uint256 tokenID_)
+        internal
+        view
+        returns (Position memory position)
+    {
+        address owner = ownerOf(tokenID_);
+        if (msg.sender != owner) {
+            revert StakingNFTErrors.CallerNotTokenOwner(msg.sender);
+        }
+        position = _positions[tokenID_];
+        if (_positions[tokenID_].withdrawFreeAfter >= block.number) {
+            revert StakingNFTErrors.LockDurationWithdrawTimeNotReached();
+        }
     }
 
     // _collect performs calculations necessary to determine any distributions
@@ -677,6 +634,7 @@ abstract contract StakingNFT is
             uint256
         )
     {
+        (state_.accumulator, state_.slush) = _slushSkim(shares_, state_.accumulator, state_.slush);
         // determine number of accumulator steps this Position needs distributions from
         uint256 accumulatorDelta;
         if (positionAccumulatorValue_ > state_.accumulator) {
