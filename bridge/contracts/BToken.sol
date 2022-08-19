@@ -52,7 +52,7 @@ contract BToken is
     constructor() ImmutableFactory(msg.sender) ImmutableDistribution() {}
 
     function initialize() public onlyFactory initializer {
-        __ERC20_init("ALCB", "ALCB");
+        __ERC20_init("AliceNet Gas Token", "ALCB");
     }
 
     /// Distributes the yields of the BToken sale to all stakeholders
