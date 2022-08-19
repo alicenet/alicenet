@@ -44,7 +44,7 @@ describe("PublicStaking: Only Mint", async () => {
 
   it("Mint many NFT positions for a user", async function () {
     await fixture.aToken.approve(fixture.publicStaking.address, 1000);
-    for (let i = 2; i <= 10; i++) {
+    for (let i = 1; i <= 10; i++) {
       const tx = await fixture.publicStaking.connect(adminSigner).mint(100);
       const blockNumber = BigInt(tx.blockNumber as number);
       const tokenID = await getTokenIdFromTx(tx);
