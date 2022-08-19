@@ -15,7 +15,8 @@ interface ISnapshots {
         uint256 height,
         address indexed validator,
         bool isSafeToProceedConsensus,
-        bytes signatureRaw,
+        uint256[4] masterPublicKey,
+        uint256[2] signature,
         BClaimsParserLibrary.BClaims bClaims
     );
 
