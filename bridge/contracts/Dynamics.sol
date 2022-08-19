@@ -87,7 +87,7 @@ contract Dynamics is Initializable, IDynamics, ImmutableSnapshots {
         return _decodeDynamicValues(_dynamicValues.getValue(_dynamicValues.getHead()));
     }
 
-    function getLatestAliceNetVersion() public view returns(CanonicalVersion memory) {
+    function getLatestAliceNetVersion() public view returns (CanonicalVersion memory) {
         return _aliceNetCanonicalVersion;
     }
 

@@ -385,6 +385,32 @@
     "type": "error"
   },
   {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "validatorIndex",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "startIndex",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "endIndex",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "groupSignatureHash",
+        "type": "bytes32"
+      }
+    ],
+    "name": "ValidatorNotElected",
+    "type": "error"
+  },
+  {
     "anonymous": false,
     "inputs": [
       {
@@ -432,9 +458,15 @@
       },
       {
         "indexed": false,
-        "internalType": "bytes",
-        "name": "signatureRaw",
-        "type": "bytes"
+        "internalType": "uint256[4]",
+        "name": "masterPublicKey",
+        "type": "uint256[4]"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256[2]",
+        "name": "signature",
+        "type": "uint256[2]"
       },
       {
         "components": [
@@ -482,6 +514,30 @@
     ],
     "name": "SnapshotTaken",
     "type": "event"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes",
+        "name": "groupSignature_",
+        "type": "bytes"
+      },
+      {
+        "internalType": "bytes",
+        "name": "bClaims_",
+        "type": "bytes"
+      }
+    ],
+    "name": "checkBClaimsSignature",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
   },
   {
     "inputs": [],
@@ -952,6 +1008,35 @@
     "name": "initialize",
     "outputs": [],
     "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "validator",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "lastSnapshotCommittedAt",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "groupSignatureHash",
+        "type": "bytes32"
+      }
+    ],
+    "name": "isValidatorElectedToPerformSnapshot",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
     "type": "function"
   },
   {
