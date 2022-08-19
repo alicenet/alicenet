@@ -38,9 +38,17 @@ interface IStakingNFT {
 
     function collectToken(uint256 tokenID_) external returns (uint256 payout);
 
+    function collectAllProfits(uint256 tokenID_)
+        external
+        returns (uint256 payoutToken, uint256 payoutEth);
+
     function collectEthTo(address to_, uint256 tokenID_) external returns (uint256 payout);
 
     function collectTokenTo(address to_, uint256 tokenID_) external returns (uint256 payout);
+
+    function collectAllProfitsTo(address to_, uint256 tokenID_)
+        external
+        returns (uint256 payoutToken, uint256 payoutEth);
 
     function getPosition(uint256 tokenID_)
         external
@@ -52,8 +60,6 @@ interface IStakingNFT {
             uint256 accumulatorEth,
             uint256 accumulatorToken
         );
-
-    function getAccumulatorScaleFactor() external view returns (uint256);
 
     function getTotalShares() external view returns (uint256);
 
@@ -72,4 +78,12 @@ interface IStakingNFT {
     function getEthAccumulator() external view returns (uint256 accumulator, uint256 slush);
 
     function getTokenAccumulator() external view returns (uint256 accumulator, uint256 slush);
+
+    function getLatestMintedPositionID() external view returns (uint256);
+
+    function getAccumulatorScaleFactor() external pure returns (uint256);
+
+    function getMaxMintLock() external pure returns (uint256);
+
+    function getMaxGovernanceLock() external pure returns (uint256);
 }

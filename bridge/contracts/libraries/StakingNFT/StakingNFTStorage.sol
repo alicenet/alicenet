@@ -33,16 +33,6 @@ abstract contract StakingNFTStorage {
     uint256 internal constant _MAX_MINT_LOCK = 1051200;
     // 10**18
     uint256 internal constant _ACCUMULATOR_SCALE_FACTOR = 1000000000000000000;
-    // constants for the cb state
-    bool internal constant _CIRCUIT_BREAKER_OPENED = true;
-    bool internal constant _CIRCUIT_BREAKER_CLOSED = false;
-
-    // monotonically increasing counter
-    uint256 internal _counter;
-
-    // cb is the circuit breaker
-    // cb is a set only object
-    bool internal _circuitBreaker;
 
     // _shares stores total amount of AToken staked in contract
     uint256 internal _shares;
