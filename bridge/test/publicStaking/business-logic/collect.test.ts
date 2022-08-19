@@ -3,6 +3,7 @@ import { expect } from "chai";
 import { ethers } from "hardhat";
 import {
   BaseTokensFixture,
+  callFunctionAndGetReturnValues,
   createUsers,
   getBaseTokensFixture,
   getTokenIdFromTx,
@@ -276,11 +277,16 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
   });
 
   it("Mint, collect and burn tokens for 3 users", async function () {
+    const scaleFactor = (
+      await fixture.publicStaking.getAccumulatorScaleFactor()
+    ).toBigInt();
     const sharesPerUser = 100n;
     const tokensID: number[] = [];
     for (let i = 0; i < users.length; i++) {
       tokensID.push(0);
     }
+    let tokenStateAccum = 0n;
+    let tokenStateSlush = 0n;
 
     const expectedState = await getCurrentState(
       fixture.publicStaking,
@@ -302,6 +308,7 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
 
     // deposit and collect only with 1 user
     let amountDeposited = 50n;
+    tokenStateSlush += 50n * scaleFactor;
     await depositTokensCheckAndUpdateState(
       fixture.publicStaking,
       fixture.aToken,
@@ -312,17 +319,49 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
       "After deposit 1"
     );
 
-    // user 1 should get all the amount deposited since he's the only that skated in the contract
+    // Perform slushSkim
+    let totalSharesBN = await fixture.publicStaking.getTotalShares();
+    let totalShares = totalSharesBN.toBigInt();
+    let deltaAccum = tokenStateSlush / totalShares;
+    tokenStateSlush -= deltaAccum * totalShares;
+    tokenStateAccum += deltaAccum;
+    // get position info
+    let [userPosition] = await callFunctionAndGetReturnValues(
+      fixture.publicStaking,
+      "getPosition",
+      users[0] as SignerWithAddress,
+      [tokensID[0]]
+    );
+    // compute payout
+    let diffAccum = tokenStateAccum - userPosition.accumulatorToken.toBigInt();
+    let payoutEst = diffAccum * sharesPerUser;
+    if (totalShares == userPosition.shares.toBigInt()) {
+      payoutEst += tokenStateSlush;
+      tokenStateSlush = 0n;
+    }
+    let payoutRem = payoutEst;
+    payoutEst /= scaleFactor;
+    payoutRem -= payoutEst * scaleFactor;
+    tokenStateSlush += payoutRem;
+
+    // user 1 should get all the amount deposited since he's the only that staked in the contract
     await collectTokensCheckAndUpdateState(
       fixture.publicStaking,
       fixture.aToken,
-      amountDeposited,
+      payoutEst,
       0,
       users,
       tokensID,
       expectedState,
       "After collect 1"
     );
+
+    // Perform slushSkim
+    totalSharesBN = await fixture.publicStaking.getTotalShares();
+    totalShares = totalSharesBN.toBigInt();
+    deltaAccum = tokenStateSlush / totalShares;
+    tokenStateSlush -= deltaAccum * totalShares;
+    tokenStateAccum += deltaAccum;
 
     // mint another position.
     await mintPositionCheckAndUpdateState(
@@ -339,6 +378,7 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
     // deposit and collect the profits for all users. Since each user staked a equal amount, each user
     // should receive 50% of the amount deposited
     amountDeposited = 500n;
+    tokenStateSlush += 500n * scaleFactor;
     await depositTokensCheckAndUpdateState(
       fixture.publicStaking,
       fixture.aToken,
@@ -351,12 +391,37 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
 
     let numUsers = 2;
     for (let i = 0; i < numUsers; i++) {
+      // Perform slushSkim
+      let totalSharesBN = await fixture.publicStaking.getTotalShares();
+      let totalShares = totalSharesBN.toBigInt();
+      let deltaAccum = tokenStateSlush / totalShares;
+      tokenStateSlush -= deltaAccum * totalShares;
+      tokenStateAccum += deltaAccum;
+      // get position info
+      const [userPosition] = await callFunctionAndGetReturnValues(
+        fixture.publicStaking,
+        "getPosition",
+        users[i] as SignerWithAddress,
+        [tokensID[i]]
+      );
+      // compute payout
+      let diffAccum =
+        tokenStateAccum - userPosition.accumulatorToken.toBigInt();
+      let payoutEst = diffAccum * sharesPerUser;
+      if (totalShares == userPosition.shares.toBigInt()) {
+        payoutEst += tokenStateSlush;
+        tokenStateSlush = 0n;
+      }
+      let payoutRem = payoutEst;
+      payoutEst /= scaleFactor;
+      payoutRem -= payoutEst * scaleFactor;
+      tokenStateSlush += payoutRem;
+
       // 50% of the amount deposited
-      const expectedCollectedAmount = amountDeposited / BigInt(numUsers);
       await collectTokensCheckAndUpdateState(
         fixture.publicStaking,
         fixture.aToken,
-        expectedCollectedAmount,
+        payoutEst,
         i,
         users,
         tokensID,
@@ -364,6 +429,13 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
         "After collect 2-" + i
       );
     }
+
+    // Perform slushSkim
+    totalSharesBN = await fixture.publicStaking.getTotalShares();
+    totalShares = totalSharesBN.toBigInt();
+    deltaAccum = tokenStateSlush / totalShares;
+    tokenStateSlush -= deltaAccum * totalShares;
+    tokenStateAccum += deltaAccum;
 
     // mint another position. With 3 users that staked the same amount, each user should receive 33.33%
     // of the amount deposited, and we should see some leftovers in the slush
@@ -380,6 +452,7 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
 
     // deposit and collect the profits for all users
     amountDeposited = 1000n;
+    tokenStateSlush += 1000n * scaleFactor;
     await depositTokensCheckAndUpdateState(
       fixture.publicStaking,
       fixture.aToken,
@@ -390,29 +463,50 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
       "After deposit 3"
     );
 
-    let expectedSlushes = [
-      333333333333333400n,
-      666666666666666700n,
-      1000000000000000000n,
-    ];
     numUsers = 3;
     for (let i = 0; i < numUsers; i++) {
-      const expectedCollectedAmount = amountDeposited / BigInt(numUsers);
+      // Perform slushSkim
+      let totalSharesBN = await fixture.publicStaking.getTotalShares();
+      let totalShares = totalSharesBN.toBigInt();
+      let deltaAccum = tokenStateSlush / totalShares;
+      tokenStateSlush -= deltaAccum * totalShares;
+      tokenStateAccum += deltaAccum;
+      // get position info
+      const [userPosition] = await callFunctionAndGetReturnValues(
+        fixture.publicStaking,
+        "getPosition",
+        users[i] as SignerWithAddress,
+        [tokensID[i]]
+      );
+      // compute payout
+      let diffAccum =
+        tokenStateAccum - userPosition.accumulatorToken.toBigInt();
+      let payoutEst = diffAccum * sharesPerUser;
+      if (totalShares == userPosition.shares.toBigInt()) {
+        payoutEst += tokenStateSlush;
+        tokenStateSlush = 0n;
+      }
+      let payoutRem = payoutEst;
+      payoutEst /= scaleFactor;
+      payoutRem -= payoutEst * scaleFactor;
+      tokenStateSlush += payoutRem;
+
       await collectTokensCheckAndUpdateState(
         fixture.publicStaking,
         fixture.aToken,
-        expectedCollectedAmount,
+        payoutEst,
         i,
         users,
         tokensID,
         expectedState,
         "After collect 3-" + i,
-        expectedSlushes[i]
+        tokenStateSlush
       );
     }
 
     // deposit and collect the profits for all users
     amountDeposited = 1000n;
+    tokenStateSlush += 1000n * scaleFactor;
     await depositTokensCheckAndUpdateState(
       fixture.publicStaking,
       fixture.aToken,
@@ -425,26 +519,51 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
 
     // Checking the logic if only 2 users withdrawal. The 3rd user will withdrawal later, and should
     // receive the cumulative amount of the 2 deposits without any lost
-    expectedSlushes = [666666666666666800n, 1333333333333333400n];
 
     // only 2 users collect
     for (let i = 0; i < 2; i++) {
-      const expectedCollectedAmount = amountDeposited / BigInt(numUsers);
+      // Perform slushSkim
+      let totalSharesBN = await fixture.publicStaking.getTotalShares();
+      let totalShares = totalSharesBN.toBigInt();
+      let deltaAccum = tokenStateSlush / totalShares;
+      tokenStateSlush -= deltaAccum * totalShares;
+      tokenStateAccum += deltaAccum;
+      // get position info
+      const [userPosition] = await callFunctionAndGetReturnValues(
+        fixture.publicStaking,
+        "getPosition",
+        users[i] as SignerWithAddress,
+        [tokensID[i]]
+      );
+      // compute payout
+      let diffAccum =
+        tokenStateAccum - userPosition.accumulatorToken.toBigInt();
+      let payoutEst = diffAccum * sharesPerUser;
+      if (totalShares == userPosition.shares.toBigInt()) {
+        payoutEst += tokenStateSlush;
+        tokenStateSlush = 0n;
+      }
+      let payoutRem = payoutEst;
+      payoutEst /= scaleFactor;
+      payoutRem -= payoutEst * scaleFactor;
+      tokenStateSlush += payoutRem;
+
       await collectTokensCheckAndUpdateState(
         fixture.publicStaking,
         fixture.aToken,
-        expectedCollectedAmount,
+        payoutEst,
         i,
         users,
         tokensID,
         expectedState,
         "After collect 4-" + i,
-        expectedSlushes[i]
+        tokenStateSlush
       );
     }
 
     // deposit and collect the profits for all users
     amountDeposited = 1666n;
+    tokenStateSlush += 1666n * scaleFactor;
     await depositTokensCheckAndUpdateState(
       fixture.publicStaking,
       fixture.aToken,
@@ -456,29 +575,52 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
     );
 
     // All users collect this time, we expect the last user witch didn't withdrawal last time to get more
-    const expectedCollectedAmounts = [555n, 555n, 889n];
-    expectedSlushes = [
-      777777777777777800n,
-      1555555555555555600n,
-      2000000000000000000n,
-    ];
     for (let i = 0; i < numUsers; i++) {
+      // Perform slushSkim
+      let totalSharesBN = await fixture.publicStaking.getTotalShares();
+      let totalShares = totalSharesBN.toBigInt();
+      let deltaAccum = tokenStateSlush / totalShares;
+      tokenStateSlush -= deltaAccum * totalShares;
+      tokenStateAccum += deltaAccum;
+      // get position info
+      const [userPosition] = await callFunctionAndGetReturnValues(
+        fixture.publicStaking,
+        "getPosition",
+        users[i] as SignerWithAddress,
+        [tokensID[i]]
+      );
+      // compute payout
+      let diffAccum =
+        tokenStateAccum - userPosition.accumulatorToken.toBigInt();
+      let payoutEst = diffAccum * sharesPerUser;
+      if (totalShares == userPosition.shares.toBigInt()) {
+        payoutEst += tokenStateSlush;
+        tokenStateSlush = 0n;
+      }
+      let payoutRem = payoutEst;
+      payoutEst /= scaleFactor;
+      payoutRem -= payoutEst * scaleFactor;
+      tokenStateSlush += payoutRem;
+
       await collectTokensCheckAndUpdateState(
         fixture.publicStaking,
         fixture.aToken,
-        expectedCollectedAmounts[i],
+        payoutEst,
         i,
         users,
         tokensID,
         expectedState,
-        "After collect 4-" + i,
-        expectedSlushes[i]
+        "After collect 5-" + i,
+        tokenStateSlush
       );
     }
     await mineBlocks(2n);
 
     // deposit eth this time
+    let ethStateAccum = 0n;
+    let ethStateSlush = 0n;
     amountDeposited = ethers.utils.parseEther("1000").toBigInt();
+    ethStateSlush += 1000n * 10n ** 18n * scaleFactor;
     await depositEthCheckAndUpdateState(
       fixture.publicStaking,
       fixture.aToken,
@@ -488,54 +630,173 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
       expectedState,
       "After deposit 6 Eth"
     );
-    let expectedSlushEth = 333333333333333400n;
+
+    // Perform slushSkim
+    totalSharesBN = await fixture.publicStaking.getTotalShares();
+    totalShares = totalSharesBN.toBigInt();
+    deltaAccum = tokenStateSlush / totalShares;
+    tokenStateSlush -= deltaAccum * totalShares;
+    tokenStateAccum += deltaAccum;
+    let deltaAccumEth = ethStateSlush / totalShares;
+    ethStateSlush -= deltaAccumEth * totalShares;
+    ethStateAccum += deltaAccumEth;
+    // get position info
+    [userPosition] = await callFunctionAndGetReturnValues(
+      fixture.publicStaking,
+      "getPosition",
+      users[0] as SignerWithAddress,
+      [tokensID[0]]
+    );
+    // compute payout token
+    diffAccum = tokenStateAccum - userPosition.accumulatorToken.toBigInt();
+    payoutEst = diffAccum * sharesPerUser;
+    if (totalShares == userPosition.shares.toBigInt()) {
+      payoutEst += tokenStateSlush;
+      tokenStateSlush = 0n;
+    }
+    payoutRem = payoutEst;
+    payoutEst /= scaleFactor;
+    payoutRem -= payoutEst * scaleFactor;
+    tokenStateSlush += payoutRem;
+    payoutEst += sharesPerUser; // include because burning position
+    // compute payout eth
+    let diffAccumEth = ethStateAccum - userPosition.accumulatorEth.toBigInt();
+    let payoutEstEth = diffAccumEth * sharesPerUser;
+    if (totalShares == userPosition.shares.toBigInt()) {
+      payoutEstEth += ethStateSlush;
+      ethStateSlush = 0n;
+    }
+    let payoutRemEth = payoutEstEth;
+    payoutEstEth /= scaleFactor;
+    payoutRemEth -= payoutEstEth * scaleFactor;
+    ethStateSlush += payoutRemEth;
 
     // Start to burn the positions
     await burnPositionCheckAndUpdateState(
       fixture.publicStaking,
       fixture.aToken,
       sharesPerUser,
-      333_333333333333333333n,
-      100n,
+      payoutEstEth,
+      payoutEst,
       0,
       users,
       tokensID,
       expectedState,
       "After burn 1",
-      expectedSlushEth
+      ethStateSlush,
+      tokenStateSlush
     );
 
-    expectedSlushEth = 666666666666666700n;
+    // Perform slushSkim
+    totalSharesBN = await fixture.publicStaking.getTotalShares();
+    totalShares = totalSharesBN.toBigInt();
+    deltaAccum = tokenStateSlush / totalShares;
+    tokenStateSlush -= deltaAccum * totalShares;
+    tokenStateAccum += deltaAccum;
+    deltaAccumEth = ethStateSlush / totalShares;
+    ethStateSlush -= deltaAccumEth * totalShares;
+    ethStateAccum += deltaAccumEth;
+    // get position info
+    [userPosition] = await callFunctionAndGetReturnValues(
+      fixture.publicStaking,
+      "getPosition",
+      users[1] as SignerWithAddress,
+      [tokensID[1]]
+    );
+    // compute payout token
+    diffAccum = tokenStateAccum - userPosition.accumulatorToken.toBigInt();
+    payoutEst = diffAccum * sharesPerUser;
+    if (totalShares == userPosition.shares.toBigInt()) {
+      payoutEst += tokenStateSlush;
+      tokenStateSlush = 0n;
+    }
+    payoutRem = payoutEst;
+    payoutEst /= scaleFactor;
+    payoutRem -= payoutEst * scaleFactor;
+    tokenStateSlush += payoutRem;
+    payoutEst += sharesPerUser; // include because burning position
+    // compute payout eth
+    diffAccumEth = ethStateAccum - userPosition.accumulatorEth.toBigInt();
+    payoutEstEth = diffAccumEth * sharesPerUser;
+    if (totalShares == userPosition.shares.toBigInt()) {
+      payoutEstEth += ethStateSlush;
+      ethStateSlush = 0n;
+    }
+    payoutRemEth = payoutEstEth;
+    payoutEstEth /= scaleFactor;
+    payoutRemEth -= payoutEstEth * scaleFactor;
+    ethStateSlush += payoutRemEth;
+
     await burnPositionCheckAndUpdateState(
       fixture.publicStaking,
       fixture.aToken,
       sharesPerUser,
-      333_333333333333333333n,
-      100n,
+      payoutEstEth,
+      payoutEst,
       1,
       users,
       tokensID,
       expectedState,
       "After burn 2",
-      expectedSlushEth
+      ethStateSlush,
+      tokenStateSlush
     );
 
+    // Perform slushSkim
+    totalSharesBN = await fixture.publicStaking.getTotalShares();
+    totalShares = totalSharesBN.toBigInt();
+    deltaAccum = tokenStateSlush / totalShares;
+    tokenStateSlush -= deltaAccum * totalShares;
+    tokenStateAccum += deltaAccum;
+    deltaAccumEth = ethStateSlush / totalShares;
+    ethStateSlush -= deltaAccumEth * totalShares;
+    ethStateAccum += deltaAccumEth;
+    // get position info
+    [userPosition] = await callFunctionAndGetReturnValues(
+      fixture.publicStaking,
+      "getPosition",
+      users[2] as SignerWithAddress,
+      [tokensID[2]]
+    );
+    // compute payout token
+    diffAccum = tokenStateAccum - userPosition.accumulatorToken.toBigInt();
+    payoutEst = diffAccum * sharesPerUser;
+    if (totalShares == userPosition.shares.toBigInt()) {
+      payoutEst += tokenStateSlush;
+      tokenStateSlush = 0n;
+    }
+    payoutRem = payoutEst;
+    payoutEst /= scaleFactor;
+    payoutRem -= payoutEst * scaleFactor;
+    tokenStateSlush += payoutRem;
+    payoutEst += sharesPerUser; // include because burning position
+    // compute payout eth
+    diffAccumEth = ethStateAccum - userPosition.accumulatorEth.toBigInt();
+    payoutEstEth = diffAccumEth * sharesPerUser;
+    if (totalShares == userPosition.shares.toBigInt()) {
+      payoutEstEth += ethStateSlush;
+      ethStateSlush = 0n;
+    }
+    payoutRemEth = payoutEstEth;
+    payoutEstEth /= scaleFactor;
+    payoutRemEth -= payoutEstEth * scaleFactor;
+    ethStateSlush += payoutRemEth;
+
+    console.log("Before Burn 3");
     // last user should get the shares + slushes since he's the last user exiting the staking contract
-    expectedSlushEth = 0n;
-    const expectedSlushToken = 0n;
     await burnPositionCheckAndUpdateState(
       fixture.publicStaking,
       fixture.aToken,
       sharesPerUser,
-      333_333333333333333334n,
-      102n,
+      payoutEstEth,
+      payoutEst,
       2,
       users,
       tokensID,
       expectedState,
       "After burn 3",
-      expectedSlushEth,
-      expectedSlushToken
+      ethStateSlush,
+      tokenStateSlush
     );
   });
 });

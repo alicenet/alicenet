@@ -136,7 +136,16 @@ describe("Snapshots: Migrate state", () => {
         expectedHeight,
         ethers.utils.getAddress(validatorsSnapshots[0].address),
         expectedSafeToProceedConsensus,
-        signedData[503].GroupSignature
+        signedData[503].GroupSignature,
+        [
+          1,
+          516096,
+          0,
+          "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
+          "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
+          "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
+          "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
+        ]
       );
   });
 

@@ -75,7 +75,6 @@ contract StateMigration is
     }
 
     function stakeValidators() public {
-        IUtilityToken(_bTokenAddress()).setSplits(0, 0, 0, 1000);
         // Setting staking amount
         IValidatorPool(_validatorPoolAddress()).setStakeAmount(1);
         // Minting 4 aTokensWei to stake the validators

@@ -27,6 +27,7 @@ describe("Snapshots: With successful snapshot completed", () => {
       ethdkg: fixture.ethdkg,
       validatorPool: fixture.validatorPool,
     });
+
     await mineBlocks(
       (await fixture.snapshots.getMinimumIntervalBetweenSnapshots()).toBigInt()
     );

@@ -84,6 +84,11 @@
     "type": "error"
   },
   {
+    "inputs": [],
+    "name": "MintAmountZero",
+    "type": "error"
+  },
+  {
     "inputs": [
       {
         "internalType": "address",
@@ -598,6 +603,19 @@
   },
   {
     "inputs": [],
+    "name": "getMaxGovernanceLock",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "pure",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "getMaxMintLock",
     "outputs": [
       {
@@ -1060,7 +1078,7 @@
     "inputs": [
       {
         "internalType": "uint256",
-        "name": "tokenId",
+        "name": "tokenID_",
         "type": "uint256"
       }
     ],

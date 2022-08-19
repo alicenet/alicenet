@@ -4,7 +4,6 @@ import {
   BigNumberish,
   BytesLike,
   Contract,
-  ContractReceipt,
   ContractTransaction,
   Signer,
   Wallet,
@@ -17,6 +16,7 @@ import {
   ATokenBurner,
   ATokenMinter,
   BToken,
+  Distribution,
   ETHDKG,
   Foundation,
   InvalidTxConsumptionAccusation,
@@ -47,6 +47,15 @@ export interface Snapshot {
   GroupSignature: string;
   height: BigNumberish;
   validatorIndex: number;
+  BClaimsDeserialized?: [
+    number,
+    number,
+    number,
+    string,
+    string,
+    string,
+    string
+  ];
 }
 
 export interface BaseFixture {
@@ -70,6 +79,7 @@ export interface Fixture extends BaseTokensFixture {
   namedSigners: SignerWithAddress[];
   invalidTxConsumptionAccusation: InvalidTxConsumptionAccusation;
   multipleProposalAccusation: MultipleProposalAccusation;
+  distribution: Distribution;
 }
 
 /**
@@ -171,7 +181,7 @@ async function getContractAddressFromDeployedProxyEvent(
   return await getContractAddressFromEventLog(tx, eventSignature, eventName);
 }
 
-async function getContractAddressFromDeployedRawEvent(
+export async function getContractAddressFromDeployedRawEvent(
   tx: ContractTransaction
 ): Promise<string> {
   const eventSignature = "event DeployedRaw(address contractAddr)";
@@ -334,13 +344,13 @@ export const deployUpgradeableWithFactory = async (
     );
   }
   let initCallDataBin = "0x";
-  if (initCallData !== undefined) {
-    try {
-      initCallDataBin = _Contract.interface.encodeFunctionData(
-        "initialize",
-        initCallData
-      );
-    } catch (error) {
+  try {
+    initCallDataBin = _Contract.interface.encodeFunctionData(
+      "initialize",
+      initCallData
+    );
+  } catch (error) {
+    if (!(error as Error).message.includes("no matching function")) {
       console.warn(
         `Error deploying contract ${contractName} couldn't get initialize arguments: ${error}`
       );
@@ -516,7 +526,8 @@ export const getFixture = async (
     validatorPool = (await deployUpgradeableWithFactory(
       factory,
       "ValidatorPoolMock",
-      "ValidatorPool"
+      "ValidatorPool",
+      []
     )) as ValidatorPoolMock;
   } else {
     // ValidatorPool
@@ -612,6 +623,15 @@ export const getFixture = async (
     "Accusation"
   )) as MultipleProposalAccusation;
 
+  // distribution contract for distributing BTokens yields
+  const distribution = (await deployUpgradeableWithFactory(
+    factory,
+    "Distribution",
+    undefined,
+    undefined,
+    [332, 332, 332, 4]
+  )) as Distribution;
+
   await posFixtureSetup(factory, aToken, legacyToken);
   const blockNumber = BigInt(await ethers.provider.getBlockNumber());
   const phaseLength = (await ethdkg.getPhaseLength()).toBigInt();
@@ -637,6 +657,7 @@ export const getFixture = async (
     stakingPositionDescriptor,
     invalidTxConsumptionAccusation,
     multipleProposalAccusation,
+    distribution,
   };
 };
 
@@ -742,7 +763,7 @@ export const getMetamorphicAddress = (
 };
 
 export const getReceiptForFailedTransaction = async (
-  tx: Promise<ContractReceipt>
+  tx: Promise<any>
 ): Promise<any> => {
   let receipt: any;
   try {
