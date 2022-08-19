@@ -23,6 +23,10 @@ type IETHDKGCaller interface {
 	//
 	// Solidity: function getETHDKGPhase() view returns(uint8)
 	GetETHDKGPhase(opts *bind.CallOpts) (uint8, error)
+	// GetLastRoundParticipantIndex is a free data retrieval call binding the contract method 0x775694e1.
+	//
+	// Solidity: function getLastRoundParticipantIndex(address participant) view returns(uint256)
+	GetLastRoundParticipantIndex(opts *bind.CallOpts, participant common.Address) (*big.Int, error)
 	// GetMasterPublicKey is a free data retrieval call binding the contract method 0xe146372a.
 	//
 	// Solidity: function getMasterPublicKey() view returns(uint256[4])
@@ -79,8 +83,4 @@ type IETHDKGCaller interface {
 	//
 	// Solidity: function isMasterPublicKeySet() view returns(bool)
 	IsMasterPublicKeySet(opts *bind.CallOpts) (bool, error)
-	// TryGetParticipantIndex is a free data retrieval call binding the contract method 0x65e62b9b.
-	//
-	// Solidity: function tryGetParticipantIndex(address participant) view returns(bool, uint256)
-	TryGetParticipantIndex(opts *bind.CallOpts, participant common.Address) (bool, *big.Int, error)
 }

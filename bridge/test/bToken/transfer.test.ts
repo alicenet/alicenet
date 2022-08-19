@@ -3,7 +3,7 @@ import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
 import { expect } from "../chai-setup";
 import { callFunctionAndGetReturnValues, Fixture, getFixture } from "../setup";
-import { getState, showState, state } from "./setup";
+import { getEthConsumedAsGas, getState, showState, state } from "./setup";
 
 describe("Testing BToken Transfer methods", async () => {
   let admin: SignerWithAddress;
@@ -34,19 +34,26 @@ describe("Testing BToken Transfer methods", async () => {
   });
 
   it("Should transfer from sender to specified address", async () => {
-    await fixture.bToken.connect(user).transfer(admin.address, bTokens);
+    const tx = await fixture.bToken
+      .connect(user)
+      .transfer(admin.address, bTokens);
     expectedState.Balances.bToken.admin += bTokens.toBigInt();
     expectedState.Balances.bToken.user -= bTokens.toBigInt();
+    expectedState.Balances.eth.user -= getEthConsumedAsGas(await tx.wait());
     expect(await getState(fixture)).to.be.deep.equal(expectedState);
   });
 
   it("Should transfer from specified address to specified address", async () => {
-    await fixture.bToken.connect(user).approve(admin.address, bTokens);
-    await fixture.bToken
+    const tx = await fixture.bToken
+      .connect(user)
+      .approve(admin.address, bTokens);
+    const tx2 = await fixture.bToken
       .connect(admin)
       .transferFrom(user.address, user2.address, bTokens);
     expectedState.Balances.bToken.user -= bTokens.toBigInt();
     expectedState.Balances.bToken.user2 += bTokens.toBigInt();
+    expectedState.Balances.eth.user -= getEthConsumedAsGas(await tx.wait());
+    expectedState.Balances.eth.admin -= getEthConsumedAsGas(await tx2.wait());
     expect(await getState(fixture)).to.be.deep.equal(expectedState);
   });
 

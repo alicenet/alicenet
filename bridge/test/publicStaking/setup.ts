@@ -168,6 +168,37 @@ export const collectToken = async (
   return collectedEth;
 };
 
+export const collectAllProfits = async (
+  contract: Contract,
+  user: SignerWithAddress,
+  tokenID: number
+): Promise<[BigNumber, BigNumber]> => {
+  const [collectedProfits] = await callFunctionAndGetReturnValues(
+    contract,
+    "collectAllProfits",
+    user,
+    [tokenID]
+  );
+
+  return [collectedProfits.payoutToken, collectedProfits.payoutEth];
+};
+
+export const collectAllProfitsTo = async (
+  contract: Contract,
+  user: SignerWithAddress,
+  destinationUser: SignerWithAddress,
+  tokenID: number
+): Promise<[BigNumber, BigNumber]> => {
+  const [collectedProfits] = await callFunctionAndGetReturnValues(
+    contract,
+    "collectAllProfitsTo",
+    user,
+    [destinationUser.address, tokenID]
+  );
+
+  return [collectedProfits.payoutToken, collectedProfits.payoutEth];
+};
+
 export const collectEthTo = async (
   contract: Contract,
   user: SignerWithAddress,
@@ -273,6 +304,42 @@ export const estimateAndCollectEth = async (
   );
 };
 
+export const estimateAndCollectAllProfits = async (
+  contract: Contract,
+  tokenID: number,
+  user: SignerWithAddress,
+  expectedCollectAmountTokens: bigint,
+  expectedCollectAmountEth: bigint
+) => {
+  expect(
+    (await contract.estimateTokenCollection(tokenID)).toBigInt()
+  ).to.be.equals(
+    expectedCollectAmountTokens,
+    "Token collection does not match expected value!"
+  );
+
+  expect(
+    (await contract.estimateEthCollection(tokenID)).toBigInt()
+  ).to.be.equals(
+    expectedCollectAmountEth,
+    "Eth collection does not match expected value!"
+  );
+
+  const [payoutToken, payoutEth] = await collectAllProfits(
+    contract,
+    user,
+    tokenID
+  );
+  expect(payoutToken.toBigInt()).to.be.equals(
+    expectedCollectAmountTokens,
+    "Collected token amount to match expected value!"
+  );
+  expect(payoutEth.toBigInt()).to.be.equals(
+    expectedCollectAmountTokens,
+    "Collected eth amount to match expected value!"
+  );
+};
+
 export const estimateAndCollectTokensTo = async (
   contract: Contract,
   tokenID: number,
@@ -314,6 +381,44 @@ export const estimateAndCollectEthTo = async (
   ).to.be.equals(
     expectedCollectAmount,
     "Collected amount to match expected value!"
+  );
+};
+
+export const estimateAndCollectAllProfitsTo = async (
+  contract: Contract,
+  tokenID: number,
+  user: SignerWithAddress,
+  destinationUser: SignerWithAddress,
+  expectedCollectAmountTokens: bigint,
+  expectedCollectAmountEth: bigint
+) => {
+  expect(
+    (await contract.estimateTokenCollection(tokenID)).toBigInt()
+  ).to.be.equals(
+    expectedCollectAmountTokens,
+    "Token collection does not match expected value!"
+  );
+
+  expect(
+    (await contract.estimateEthCollection(tokenID)).toBigInt()
+  ).to.be.equals(
+    expectedCollectAmountEth,
+    "Eth collection does not match expected value!"
+  );
+
+  const [payoutToken, payoutEth] = await collectAllProfitsTo(
+    contract,
+    user,
+    destinationUser,
+    tokenID
+  );
+  expect(payoutToken.toBigInt()).to.be.equals(
+    expectedCollectAmountTokens,
+    "Collected token amount to match expected value!"
+  );
+  expect(payoutEth.toBigInt()).to.be.equals(
+    expectedCollectAmountTokens,
+    "Collected eth amount to match expected value!"
   );
 };
 
@@ -515,6 +620,72 @@ export const collectEthCheckAndUpdateState = async (
   ).to.be.deep.equals(stakingState, errorMessage);
 };
 
+export const collectAllProfitsCheckAndUpdateState = async (
+  stakingContract: Contract,
+  tokenContract: Contract,
+  expectedEthAmountCollected: bigint,
+  expectedTokenAmountCollected: bigint,
+  userIdx: number,
+  users: SignerWithAddress[],
+  tokensID: number[],
+  stakingState: StakingState,
+  errorMessage: string,
+  expectedSlush?: bigint,
+  expectedSlushToken?: bigint
+) => {
+  if (stakingState.BaseStaking.TotalShares > BigInt(0)) {
+    const overflowValue = 2n ** 168n;
+    // Update eth accum
+    const deltaAccumEth =
+      stakingState.BaseStaking.AccumulatorEth.Slush /
+      stakingState.BaseStaking.TotalShares;
+    stakingState.BaseStaking.AccumulatorEth.Slush -=
+      deltaAccumEth * stakingState.BaseStaking.TotalShares;
+    stakingState.BaseStaking.AccumulatorEth.Accumulator += deltaAccumEth;
+    if (stakingState.BaseStaking.AccumulatorEth.Accumulator >= overflowValue) {
+      stakingState.BaseStaking.AccumulatorEth.Accumulator -= overflowValue;
+    }
+    const deltaAccumToken =
+      stakingState.BaseStaking.AccumulatorToken.Slush /
+      stakingState.BaseStaking.TotalShares;
+    stakingState.BaseStaking.AccumulatorToken.Slush -=
+      deltaAccumToken * stakingState.BaseStaking.TotalShares;
+    stakingState.BaseStaking.AccumulatorToken.Accumulator += deltaAccumToken;
+    if (
+      stakingState.BaseStaking.AccumulatorToken.Accumulator >= overflowValue
+    ) {
+      stakingState.BaseStaking.AccumulatorToken.Accumulator -= overflowValue;
+    }
+  }
+  await estimateAndCollectAllProfits(
+    stakingContract,
+    tokensID[userIdx],
+    users[userIdx],
+    expectedTokenAmountCollected,
+    expectedEthAmountCollected
+  );
+
+  stakingState.Users[userIdx].TokenBalance += expectedTokenAmountCollected;
+  stakingState.Users[userIdx].Position.AccumulatorToken =
+    stakingState.BaseStaking.AccumulatorToken.Accumulator;
+  stakingState.BaseStaking.TokenBalance -= expectedTokenAmountCollected;
+  stakingState.BaseStaking.ReserveTokens -= expectedTokenAmountCollected;
+
+  stakingState.Users[userIdx].Position.AccumulatorEth =
+    stakingState.BaseStaking.AccumulatorEth.Accumulator;
+  stakingState.BaseStaking.EthBalance -= expectedEthAmountCollected;
+  stakingState.BaseStaking.ReserveEth -= expectedEthAmountCollected;
+  if (expectedSlush !== undefined) {
+    stakingState.BaseStaking.AccumulatorEth.Slush = expectedSlush;
+  }
+  if (expectedSlushToken !== undefined) {
+    stakingState.BaseStaking.AccumulatorToken.Slush = expectedSlushToken;
+  }
+  expect(
+    await getCurrentState(stakingContract, tokenContract, users, tokensID)
+  ).to.be.deep.equals(stakingState, errorMessage);
+};
+
 export const collectTokensToCheckAndUpdateState = async (
   stakingContract: Contract,
   tokenContract: Contract,
@@ -606,6 +777,76 @@ export const collectEthToCheckAndUpdateState = async (
   if (expectedSlushToken !== undefined) {
     stakingState.BaseStaking.AccumulatorToken.Slush = expectedSlushToken;
   }
+  expect(
+    await getCurrentState(stakingContract, tokenContract, users, tokensID)
+  ).to.be.deep.equals(stakingState, errorMessage);
+};
+
+export const collectAllProfitsToCheckAndUpdateState = async (
+  stakingContract: Contract,
+  tokenContract: Contract,
+  expectedEthAmountCollected: bigint,
+  expectedTokenAmountCollected: bigint,
+  userIdx: number,
+  destinationUserIdx: number,
+  users: SignerWithAddress[],
+  tokensID: number[],
+  stakingState: StakingState,
+  errorMessage: string,
+  expectedSlush?: bigint,
+  expectedSlushToken?: bigint
+) => {
+  if (stakingState.BaseStaking.TotalShares > BigInt(0)) {
+    const overflowValue = 2n ** 168n;
+    // Update eth accum
+    const deltaAccumEth =
+      stakingState.BaseStaking.AccumulatorEth.Slush /
+      stakingState.BaseStaking.TotalShares;
+    stakingState.BaseStaking.AccumulatorEth.Slush -=
+      deltaAccumEth * stakingState.BaseStaking.TotalShares;
+    stakingState.BaseStaking.AccumulatorEth.Accumulator += deltaAccumEth;
+    if (stakingState.BaseStaking.AccumulatorEth.Accumulator >= overflowValue) {
+      stakingState.BaseStaking.AccumulatorEth.Accumulator -= overflowValue;
+    }
+
+    const deltaAccumToken =
+      stakingState.BaseStaking.AccumulatorToken.Slush /
+      stakingState.BaseStaking.TotalShares;
+    stakingState.BaseStaking.AccumulatorToken.Slush -=
+      deltaAccumToken * stakingState.BaseStaking.TotalShares;
+    stakingState.BaseStaking.AccumulatorToken.Accumulator += deltaAccumToken;
+    if (
+      stakingState.BaseStaking.AccumulatorToken.Accumulator >= overflowValue
+    ) {
+      stakingState.BaseStaking.AccumulatorToken.Accumulator -= overflowValue;
+    }
+  }
+
+  await estimateAndCollectAllProfitsTo(
+    stakingContract,
+    tokensID[userIdx],
+    users[userIdx],
+    users[destinationUserIdx],
+    expectedTokenAmountCollected,
+    expectedEthAmountCollected
+  );
+  stakingState.Users[userIdx].Position.AccumulatorEth =
+    stakingState.BaseStaking.AccumulatorEth.Accumulator;
+  stakingState.BaseStaking.EthBalance -= expectedEthAmountCollected;
+  stakingState.BaseStaking.ReserveEth -= expectedEthAmountCollected;
+  if (expectedSlush !== undefined) {
+    stakingState.BaseStaking.AccumulatorEth.Slush = expectedSlush;
+  }
+  if (expectedSlushToken !== undefined) {
+    stakingState.BaseStaking.AccumulatorToken.Slush = expectedSlushToken;
+  }
+  stakingState.Users[destinationUserIdx].TokenBalance +=
+    expectedTokenAmountCollected;
+  stakingState.Users[userIdx].Position.AccumulatorToken =
+    stakingState.BaseStaking.AccumulatorToken.Accumulator;
+  stakingState.BaseStaking.TokenBalance -= expectedTokenAmountCollected;
+  stakingState.BaseStaking.ReserveTokens -= expectedTokenAmountCollected;
+
   expect(
     await getCurrentState(stakingContract, tokenContract, users, tokensID)
   ).to.be.deep.equals(stakingState, errorMessage);
