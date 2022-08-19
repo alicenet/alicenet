@@ -51,7 +51,7 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
     /// @notice Saves next snapshot
     /// @param groupSignature_ The group signature used to sign the snapshots' block claims
     /// @param bClaims_ The claims being made about given block
-    /// @return Flag whether we should kick off another round of key generation
+    /// @return returns true if the execution succeeded
     function snapshot(bytes calldata groupSignature_, bytes calldata bClaims_)
         public
         returns (bool)
@@ -75,7 +75,10 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
             keccak256(groupSignature_)
         );
 
-        _checkBClaimsSignature(groupSignature_, bClaims_);
+        (uint256[4] memory masterPublicKey, uint256[2] memory signature) = _checkBClaimsSignature(
+            groupSignature_,
+            bClaims_
+        );
 
         bool isSafeToProceedConsensus = true;
         if (IValidatorPool(_validatorPoolAddress()).isMaintenanceScheduled()) {
@@ -96,16 +99,17 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
             blockClaims.height,
             msg.sender,
             isSafeToProceedConsensus,
-            groupSignature_,
+            masterPublicKey,
+            signature,
             blockClaims
         );
         return isSafeToProceedConsensus;
     }
 
-    /// @notice Saves next snapshot
-    /// @param groupSignature_ The group signature used to sign the snapshots' block claims
-    /// @param bClaims_ The claims being made about given block
-    /// @return Flag whether we should kick off another round of key generation
+    /// @notice Migrates a set of snapshots to bootstrap the side chain.
+    /// @param groupSignature_ Array of group signature used to sign the snapshots' block claims
+    /// @param bClaims_ Array of BClaims being migrated as snapshots
+    /// @return returns true if the execution succeeded
     function migrateSnapshots(bytes[] memory groupSignature_, bytes[] memory bClaims_)
         public
         onlyFactory
@@ -131,6 +135,10 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
             if (blockClaims.height % _epochLength != 0) {
                 revert SnapshotsErrors.InvalidBlockHeight(blockClaims.height);
             }
+            (
+                uint256[4] memory masterPublicKey,
+                uint256[2] memory signature
+            ) = _checkBClaimsSignature(groupSignature_[i], bClaims_[i]);
             epoch = getEpochFromHeight(blockClaims.height);
             _setSnapshot(Snapshot(block.number, blockClaims));
             emit SnapshotTaken(
@@ -139,7 +147,8 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
                 blockClaims.height,
                 msg.sender,
                 true,
-                groupSignature_[i],
+                masterPublicKey,
+                signature,
                 blockClaims
             );
         }
@@ -309,9 +318,10 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
         }
     }
 
-    function _checkBClaimsSignature(bytes calldata groupSignature_, bytes calldata bClaims_)
+    function _checkBClaimsSignature(bytes memory groupSignature_, bytes memory bClaims_)
         internal
         view
+        returns (uint256[4] memory, uint256[2] memory)
     {
         (uint256[4] memory masterPublicKey, uint256[2] memory signature) = RCertParserLibrary
             .extractSigGroup(groupSignature_, 0);
@@ -335,6 +345,7 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
         ) {
             revert SnapshotsErrors.SignatureVerificationFailed();
         }
+        return (masterPublicKey, signature);
     }
 
     function _checkSnapshotMinimumInterval(uint256 lastSnapshotCommittedAt) internal view {

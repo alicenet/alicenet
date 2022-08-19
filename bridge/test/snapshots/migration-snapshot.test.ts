@@ -1,6 +1,5 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { ethers } from "hardhat";
-import { completeETHDKGRound } from "../ethdkg/setup";
 import {
   signedData,
   validatorsSnapshots,
@@ -15,10 +14,7 @@ import {
   mineBlocks,
 } from "../setup";
 import { createValidators, stakeValidators } from "../validatorPool/setup";
-import {
-  invalidSnapshot500,
-  validSnapshot1024,
-} from "./assets/4-validators-snapshots-1";
+import { invalidSnapshot500 } from "./assets/4-validators-snapshots-1";
 
 describe("Snapshots: Migrate state", () => {
   let fixture: Fixture;
@@ -28,13 +24,41 @@ describe("Snapshots: Migrate state", () => {
   beforeEach(async function () {
     fixture = await getFixture();
     [admin] = fixture.namedSigners;
+    const validators = await createValidators(fixture, validatorsSnapshots);
+    const stakingTokenIds = await stakeValidators(fixture, validators);
+    const validatorsShares = [];
+    for (let i = 0; i < validatorsSnapshots.length; i++) {
+      validatorsShares.push(validatorsSnapshots[i].gpkj);
+    }
+    await factoryCallAnyFixture(
+      fixture,
+      "validatorPool",
+      "registerValidators",
+      [validators, stakingTokenIds]
+    );
+    const receipt = await factoryCallAny(
+      fixture.factory,
+      fixture.ethdkg,
+      "migrateValidators",
+      [
+        validators,
+        stakingTokenIds,
+        validatorsShares,
+        validatorsSnapshots.length,
+        0,
+        0,
+        100,
+        validatorsSnapshots[0].mpk,
+      ]
+    );
+    expect(receipt.status).to.be.equals(1);
   });
 
   it("Should not be to do a migration of snapshots if not factory", async function () {
     await expect(
       fixture.snapshots.migrateSnapshots(
-        [validSnapshot1024.GroupSignature],
-        [validSnapshot1024.BClaims]
+        [signedData[0].GroupSignature],
+        [signedData[0].BClaims]
       )
     )
       .to.be.revertedWithCustomError(fixture.bToken, `OnlyFactory`)
@@ -44,8 +68,8 @@ describe("Snapshots: Migrate state", () => {
   it("Should not be to do a migration with mismatch state length", async function () {
     await expect(
       factoryCallAny(fixture.factory, fixture.snapshots, "migrateSnapshots", [
-        [validSnapshot1024.GroupSignature],
-        [validSnapshot1024.BClaims, validSnapshot1024.BClaims],
+        [signedData[0].GroupSignature],
+        [signedData[0].BClaims, signedData[0].BClaims],
       ])
     )
       .to.be.revertedWithCustomError(
@@ -58,16 +82,16 @@ describe("Snapshots: Migrate state", () => {
   it("Should not be to do a migration with incorrect block height", async function () {
     await expect(
       factoryCallAny(fixture.factory, fixture.snapshots, "migrateSnapshots", [
-        [invalidSnapshot500.GroupSignature, validSnapshot1024.GroupSignature],
-        [invalidSnapshot500.BClaims, validSnapshot1024.BClaims],
+        [invalidSnapshot500.GroupSignature, signedData[0].GroupSignature],
+        [invalidSnapshot500.BClaims, signedData[0].BClaims],
       ])
     )
       .to.be.revertedWithCustomError(fixture.snapshots, "InvalidBlockHeight")
       .withArgs(invalidSnapshot500.height);
     await expect(
       factoryCallAny(fixture.factory, fixture.snapshots, "migrateSnapshots", [
-        [validSnapshot1024.GroupSignature, invalidSnapshot500.GroupSignature],
-        [validSnapshot1024.BClaims, invalidSnapshot500.BClaims],
+        [signedData[0].GroupSignature, invalidSnapshot500.GroupSignature],
+        [signedData[0].BClaims, invalidSnapshot500.BClaims],
       ])
     )
       .to.be.revertedWithCustomError(fixture.snapshots, "InvalidBlockHeight")
@@ -83,20 +107,6 @@ describe("Snapshots: Migrate state", () => {
   });
 
   it("Should be able to do snapshots after migration", async function () {
-    const validators = await createValidators(fixture, validatorsSnapshots);
-    const stakingTokenIds = await stakeValidators(fixture, validators);
-    await factoryCallAnyFixture(
-      fixture,
-      "validatorPool",
-      "registerValidators",
-      [validators, stakingTokenIds]
-    );
-    await factoryCallAnyFixture(fixture, "validatorPool", "initializeETHDKG");
-    await completeETHDKGRound(validatorsSnapshots, {
-      ethdkg: fixture.ethdkg,
-      validatorPool: fixture.validatorPool,
-    });
-
     const receipt = await factoryCallAny(
       fixture.factory,
       fixture.snapshots,
@@ -136,7 +146,16 @@ describe("Snapshots: Migrate state", () => {
         expectedHeight,
         ethers.utils.getAddress(validatorsSnapshots[0].address),
         expectedSafeToProceedConsensus,
-        signedData[503].GroupSignature,
+        [
+          "0x0062cd4187d44be6f7977e5cbfc18066c3d5029bc6ab1e0ae5b1dd20a691fc6d",
+          "0x08648a63a6690c930265e93c86ec421d6a7ca06504c6b9509640cbd794a1459a",
+          "0x0a0837516f6bdc0ff9fd69776b2d7928432958b31551d10e921cc261f290b23c",
+          "0x06ce5812bf9f76f2dc04d272dd2e0ff8d2424d1e9f19c22da1ad5d2294463428",
+        ],
+        [
+          "0x21729f8d0a3ccfdd2751ecf67834e7247f23c3f3147c5278908758cb048d9780",
+          "0x0d20314089ff3c8caf9d109659b4341630228dcc11412652374b6d94f61e1e11",
+        ],
         [
           1,
           516096,
@@ -151,26 +170,26 @@ describe("Snapshots: Migrate state", () => {
 
   describe("After a successful migration", () => {
     beforeEach(async function () {
-      const bClaims = [
-        "0x000000000100040015000000002c01000d00000002010000190000000201000025000000020100003100000002010000031dfcf2fef268ff9956ee399230e9bf1da9dd510d18552b736b3269f4544c01c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470d058c043d927976ecf061b3cdb3a4a0d2de3284fcd69e23733650a1b3ef367533807ec1e085227e7bb99f47db1b118cefdae66f2fbfc66449a4500e9a6a2dab2",
-        "0x000000000100040015000000003001000d000000020100001900000002010000250000000201000031000000020100009a7a9e6d46b1640392f4444a9cf56d1190fe77fd4a740ee76b0e5f261341d195c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470d29f86626d42e94c88da05e5cec3c29f0fd037f8a9e1fcb6b49a4dd322da317ce4c870a97b5731173a6d17b71740c498ed409e25e28e9077c7f9119af3c28692",
-        "0x000000000100040015000000003401000d0000000201000019000000020100002500000002010000310000000201000000f396eeda71abea614606937f7fcbd4d704af9ac0556a66687d689497c8da09c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a47033839738f138dbcbb362c3b351c7b7f16041304c75354fb11ae01d3623cc4e146a5a9af572eacd9e40d9f508d077419cc191f542c213d2c204d3251ce88c476b",
-        "0x000000000100040015000000003801000d0000000201000019000000020100002500000002010000310000000201000000af33d9a061b001d8c1c912b2cf58f5f5bccd81e9c0fac7ac4f256134677a27c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a47099726b1e813baf97a0f88c89c5257358c4ef40c38b515184ea95bb9113587c85a06879b5886d1af4f04773c418b9517db8b410de7fdff0fd9ed47316e4c23e9f",
-        "0x000000000100040015000000003c01000d000000020100001900000002010000250000000201000031000000020100001923548c43980ec331fa993cb8b90b157f4251fc8c37ba3506d205611af468e8c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a4702df6fa1cfdeabd709149817a42eb2c1e2c18cc06c6b2bbf4a51d825aaa442f3516f8b5f4a60397c0efdd38750282135beff68f4cdff36497574894658e2807ce",
-      ];
-
-      const signatures = [
-        "0x2c28ce7f0c752e035b68687a8210cceb6068b5034bba9a4a8f2d43e3bbaa8877081b33b885370e04cd712601eb860bf821396bdbcd4b089aba0bfe7b1e649dd3253adba688741303e0b046632b35289a0d5c7648b414375e4d61a855abc5f0c3095ed894617e232df1779101e1d98e177340cb0fc6283cbc437d79a12290c2f114551b8239e68c2fc16a68bbfbfe2140b718ca279d784074743ce1dcdb134ed10d0a4d630460957d1c50c0e3a8238cafc3985651674ce03e4b91837da6080de6",
-        "0x2c28ce7f0c752e035b68687a8210cceb6068b5034bba9a4a8f2d43e3bbaa8877081b33b885370e04cd712601eb860bf821396bdbcd4b089aba0bfe7b1e649dd3253adba688741303e0b046632b35289a0d5c7648b414375e4d61a855abc5f0c3095ed894617e232df1779101e1d98e177340cb0fc6283cbc437d79a12290c2f11a4d9a0e85b1e265f221c163546d61fcf76b301944368abbfbba42dc56a083ba2ac800dc9a20a25ca95146c65d6c6cddbb299625907c1a057754f70073ec8675",
-        "0x2c28ce7f0c752e035b68687a8210cceb6068b5034bba9a4a8f2d43e3bbaa8877081b33b885370e04cd712601eb860bf821396bdbcd4b089aba0bfe7b1e649dd3253adba688741303e0b046632b35289a0d5c7648b414375e4d61a855abc5f0c3095ed894617e232df1779101e1d98e177340cb0fc6283cbc437d79a12290c2f106e2ca23e60db68ff939899c926fd9d76e40d15b17720bd5d60df4fd9725cd07288ca12870d4b48f441e6a5b1943c8b9c91f0bd28256ab352e77a61d23124dbb",
-        "0x2c28ce7f0c752e035b68687a8210cceb6068b5034bba9a4a8f2d43e3bbaa8877081b33b885370e04cd712601eb860bf821396bdbcd4b089aba0bfe7b1e649dd3253adba688741303e0b046632b35289a0d5c7648b414375e4d61a855abc5f0c3095ed894617e232df1779101e1d98e177340cb0fc6283cbc437d79a12290c2f11bbb68f54eb8ab7b8276432c152909f11ba49cf685c07fadc1e1ba96c1b579ee27002d8fe6bf013b640e1904525645c5f481cc47358330a8b6eb29d019828e33",
-        "0x2c28ce7f0c752e035b68687a8210cceb6068b5034bba9a4a8f2d43e3bbaa8877081b33b885370e04cd712601eb860bf821396bdbcd4b089aba0bfe7b1e649dd3253adba688741303e0b046632b35289a0d5c7648b414375e4d61a855abc5f0c3095ed894617e232df1779101e1d98e177340cb0fc6283cbc437d79a12290c2f1046a12b7354767f6ec2e660540eee970333bfa01e458ee4cd066588d3c4632972e3c60a8f58a5f89b0926ae265b921bed31fc830056980d70e58db642357af02",
-      ];
       const receipt = await factoryCallAny(
         fixture.factory,
         fixture.snapshots,
         "migrateSnapshots",
-        [signatures, bClaims]
+        [
+          [
+            signedData[74].GroupSignature,
+            signedData[75].GroupSignature,
+            signedData[76].GroupSignature,
+            signedData[77].GroupSignature,
+            signedData[78].GroupSignature,
+          ],
+          [
+            signedData[74].BClaims,
+            signedData[75].BClaims,
+            signedData[76].BClaims,
+            signedData[77].BClaims,
+            signedData[78].BClaims,
+          ],
+        ]
       );
       expect(receipt.status).to.be.equals(1);
       expectedBlockNumber = BigInt(receipt.blockNumber);
@@ -218,8 +237,8 @@ describe("Snapshots: Migrate state", () => {
     it("Should not be able to do another migration after first migration", async function () {
       await expect(
         factoryCallAny(fixture.factory, fixture.snapshots, "migrateSnapshots", [
-          [validSnapshot1024.GroupSignature],
-          [validSnapshot1024.BClaims],
+          [signedData[0].GroupSignature],
+          [signedData[0].BClaims],
         ])
       ).to.be.revertedWithCustomError(
         fixture.snapshots,
