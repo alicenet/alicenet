@@ -3871,8 +3871,10 @@ contract("StakingNFT", async () => {
       const positionAccumulatorValue = BigNumber.from("0");
 
       const accumScaleFactor = await stakingNFT.getAccumulatorScaleFactor();
-      const stateSlushAfterSkim = stateSlush.sub(stateSlush.div(shares).mul(shares))
-      const stateAccumAfterSkim = stateAccum.add(stateSlush.div(shares))
+      const stateSlushAfterSkim = stateSlush.sub(
+        stateSlush.div(shares).mul(shares)
+      );
+      const stateAccumAfterSkim = stateAccum.add(stateSlush.div(shares));
       // Compute Expected Values
       let expStateSlush = stateSlushAfterSkim;
       const accumDelta = stateAccumAfterSkim.sub(positionAccumulatorValue);
@@ -3934,8 +3936,10 @@ contract("StakingNFT", async () => {
       ); // 2**168 - 10**30
 
       const accumScaleFactor = await stakingNFT.getAccumulatorScaleFactor();
-      const stateSlushAfterSkim = stateSlush.sub(stateSlush.div(shares).mul(shares))
-      const stateAccumAfterSkim = stateAccum.add(stateSlush.div(shares))
+      const stateSlushAfterSkim = stateSlush.sub(
+        stateSlush.div(shares).mul(shares)
+      );
+      const stateAccumAfterSkim = stateAccum.add(stateSlush.div(shares));
       // Compute Expected Values
       let expStateSlush = stateSlushAfterSkim;
       const accumDelta = stateAccumAfterSkim.add(
