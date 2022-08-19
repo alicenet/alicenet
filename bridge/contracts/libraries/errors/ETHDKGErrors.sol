@@ -69,4 +69,5 @@ library ETHDKGErrors {
         uint256 validatorIndexesLength,
         uint256 validatorSharesLength
     );
+    error ParticipantNotFoundInLastRound(address addr);
 }
