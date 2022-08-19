@@ -50,6 +50,17 @@
   {
     "inputs": [
       {
+        "internalType": "address",
+        "name": "contractAddr",
+        "type": "address"
+      }
+    ],
+    "name": "InexistentRouterContract",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "uint256",
         "name": "amount",
         "type": "uint256"
@@ -61,6 +72,22 @@
       }
     ],
     "name": "InsufficientEth",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "fee",
+        "type": "uint256"
+      }
+    ],
+    "name": "InsufficientFee",
     "type": "error"
   },
   {
@@ -107,17 +134,6 @@
         "internalType": "uint256",
         "name": "amount",
         "type": "uint256"
-      }
-    ],
-    "name": "MarketSpreadTooLow",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "amount",
-        "type": "uint256"
       },
       {
         "internalType": "uint256",
@@ -145,6 +161,22 @@
     "type": "error"
   },
   {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "minimumValue",
+        "type": "uint256"
+      }
+    ],
+    "name": "MinimumValueNotMet",
+    "type": "error"
+  },
+  {
     "inputs": [],
     "name": "MutexLocked",
     "type": "error"
@@ -162,87 +194,23 @@
         "type": "address"
       }
     ],
+    "name": "OnlyDistribution",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "sender",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "expected",
+        "type": "address"
+      }
+    ],
     "name": "OnlyFactory",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "sender",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "expected",
-        "type": "address"
-      }
-    ],
-    "name": "OnlyFoundation",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "sender",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "expected",
-        "type": "address"
-      }
-    ],
-    "name": "OnlyLiquidityProviderStaking",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "sender",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "expected",
-        "type": "address"
-      }
-    ],
-    "name": "OnlyPublicStaking",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "sender",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "expected",
-        "type": "address"
-      }
-    ],
-    "name": "OnlyValidatorStaking",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "sender",
-        "type": "address"
-      }
-    ],
-    "name": "SenderNotAdmin",
-    "type": "error"
-  },
-  {
-    "inputs": [],
-    "name": "SplitValueSumError",
     "type": "error"
   },
   {
@@ -390,35 +358,6 @@
   {
     "inputs": [
       {
-        "internalType": "uint256",
-        "name": "poolBalance_",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "totalSupply_",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "numBTK_",
-        "type": "uint256"
-      }
-    ],
-    "name": "bTokensToEth",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "numEth",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "pure",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
         "internalType": "address",
         "name": "account",
         "type": "address"
@@ -555,68 +494,53 @@
     "type": "function"
   },
   {
-    "inputs": [],
-    "name": "distribute",
-    "outputs": [
+    "inputs": [
       {
-        "internalType": "uint256",
-        "name": "minerAmount",
-        "type": "uint256"
+        "internalType": "uint16",
+        "name": "bridgeVersion",
+        "type": "uint16"
       },
       {
-        "internalType": "uint256",
-        "name": "stakingAmount",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "lpStakingAmount",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "foundationAmount",
-        "type": "uint256"
+        "internalType": "bytes",
+        "name": "data",
+        "type": "bytes"
       }
     ],
-    "stateMutability": "nonpayable",
+    "name": "depositTokensOnBridges",
+    "outputs": [],
+    "stateMutability": "payable",
     "type": "function"
   },
   {
     "inputs": [
       {
         "internalType": "uint256",
-        "name": "poolBalance_",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "numEth_",
+        "name": "numBTK_",
         "type": "uint256"
       }
     ],
-    "name": "ethToBTokens",
+    "name": "destroyBTokens",
     "outputs": [
       {
-        "internalType": "uint256",
+        "internalType": "bool",
         "name": "",
-        "type": "uint256"
+        "type": "bool"
       }
     ],
-    "stateMutability": "pure",
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
     "inputs": [],
-    "name": "getAdmin",
+    "name": "distribute",
     "outputs": [
       {
-        "internalType": "address",
+        "internalType": "bool",
         "name": "",
-        "type": "address"
+        "type": "bool"
       }
     ],
-    "stateMutability": "view",
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
@@ -647,12 +571,148 @@
             "type": "uint256"
           }
         ],
-        "internalType": "struct BToken.Deposit",
+        "internalType": "struct Deposit",
         "name": "",
         "type": "tuple"
       }
     ],
     "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getDepositID",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "poolBalance_",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "totalSupply_",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "numBTK_",
+        "type": "uint256"
+      }
+    ],
+    "name": "getEthFromBTokensBurn",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "numEth",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "pure",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "totalSupply_",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "numBTK_",
+        "type": "uint256"
+      }
+    ],
+    "name": "getEthToMintBTokens",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "numEth",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "pure",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "numBTK_",
+        "type": "uint256"
+      }
+    ],
+    "name": "getLatestEthFromBTokensBurn",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "numEth",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "numBTK_",
+        "type": "uint256"
+      }
+    ],
+    "name": "getLatestEthToMintBTokens",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "numEth",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "numEth_",
+        "type": "uint256"
+      }
+    ],
+    "name": "getLatestMintedBTokensFromEth",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getMarketSpread",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "pure",
     "type": "function"
   },
   {
@@ -680,6 +740,30 @@
     "type": "function"
   },
   {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "poolBalance_",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "numEth_",
+        "type": "uint256"
+      }
+    ],
+    "name": "getMintedBTokensFromEth",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "pure",
+    "type": "function"
+  },
+  {
     "inputs": [],
     "name": "getPoolBalance",
     "outputs": [
@@ -695,6 +779,19 @@
   {
     "inputs": [],
     "name": "getTotalBTokensDeposited",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getYield",
     "outputs": [
       {
         "internalType": "uint256",
@@ -819,47 +916,6 @@
       }
     ],
     "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "admin_",
-        "type": "address"
-      }
-    ],
-    "name": "setAdmin",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "validatorStakingSplit_",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "publicStakingSplit_",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "liquidityProviderStakingSplit_",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "protocolFee_",
-        "type": "uint256"
-      }
-    ],
-    "name": "setSplits",
-    "outputs": [],
-    "stateMutability": "nonpayable",
     "type": "function"
   },
   {

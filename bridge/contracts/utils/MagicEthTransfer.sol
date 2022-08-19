@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT-open-group
 pragma solidity ^0.8.0;
 
-import "./MagicValue.sol";
-import "../interfaces/IMagicEthTransfer.sol";
+import "contracts/utils/MagicValue.sol";
+import "contracts/interfaces/IMagicEthTransfer.sol";
 
 abstract contract MagicEthTransfer is MagicValue {
     function _safeTransferEthWithMagic(IMagicEthTransfer to_, uint256 amount_) internal {

@@ -7,6 +7,7 @@ import "hardhat-contract-sizer";
 import "hardhat-deploy";
 import "hardhat-gas-reporter";
 import "hardhat-log-remover";
+import "hardhat-storage-layout";
 import { HardhatUserConfig, task } from "hardhat/config";
 import os from "os";
 import "solidity-coverage";
@@ -28,6 +29,14 @@ task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
     console.log(account.address);
   }
 });
+
+task(
+  "storage-check",
+  "Prints contracts storage information",
+  async (taskArgs, hre) => {
+    await hre.storageLayout.export();
+  }
+);
 
 const config: HardhatUserConfig = {
   namedAccounts: {
@@ -192,7 +201,12 @@ const config: HardhatUserConfig = {
         settings: {
           outputSelection: {
             "*": {
-              "*": ["metadata", "evm.bytecode", "evm.bytecode.sourceMap"],
+              "*": [
+                "metadata",
+                "evm.bytecode",
+                "evm.bytecode.sourceMap",
+                "storageLayout",
+              ],
               "": [
                 "ast", // Enable the AST output of every single file.
               ],

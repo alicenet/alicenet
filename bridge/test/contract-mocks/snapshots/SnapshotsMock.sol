@@ -206,4 +206,25 @@ contract SnapshotsMock is Initializable, ImmutableValidatorPool, ISnapshots, Imm
         desperationFactor;
         return true;
     }
+
+    function checkBClaimsSignature(bytes calldata groupSignature_, bytes calldata bClaims_)
+        public
+        pure
+        returns (bool)
+    {
+        groupSignature_;
+        bClaims_;
+        return true;
+    }
+
+    function isValidatorElectedToPerformSnapshot(
+        address validator,
+        uint256 lastSnapshotCommittedAt,
+        bytes32 groupSignatureHash
+    ) public pure returns (bool) {
+        validator;
+        lastSnapshotCommittedAt;
+        groupSignatureHash;
+        return true;
+    }
 }
