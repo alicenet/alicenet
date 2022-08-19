@@ -16,8 +16,4 @@ abstract contract Mutex {
         _;
         _mutex = _UNLOCKED;
     }
-
-    constructor() {
-        _mutex = _UNLOCKED;
-    }
 }
