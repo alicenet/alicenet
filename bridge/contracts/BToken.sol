@@ -58,7 +58,6 @@ contract BToken is
 
     function initialize() public onlyFactory initializer {
         __ERC20_init("BToken", "BOB");
-        _mutex = _UNLOCKED;
     }
 
     /// Distributes the yields of the BToken sale to all stakeholders

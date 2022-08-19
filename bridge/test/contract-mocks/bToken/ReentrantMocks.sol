@@ -4,7 +4,6 @@ pragma solidity ^0.8.11;
 import "contracts/utils/ImmutableAuth.sol";
 import "contracts/interfaces/IBToken.sol";
 import "contracts/utils/MagicEthTransfer.sol";
-import "hardhat/console.sol";
 
 contract ReentrantLoopDistributionMock is MagicEthTransfer, ImmutableFactory, ImmutableBToken {
     uint256 internal _counter;
