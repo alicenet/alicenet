@@ -375,7 +375,7 @@ export const deployFactoryAndBaseTokens = async (
     factory,
     "AToken",
     "AToken",
-    undefined,
+    [ethers.utils.parseEther("200000")],
     [legacyToken.address]
   )) as AToken;
 

@@ -203,7 +203,7 @@ func NewMockIAToken() *MockIAToken {
 			},
 		},
 		InitializeFunc: &IATokenInitializeFunc{
-			defaultHook: func(*bind.TransactOpts) (r0 *types.Transaction, r1 error) {
+			defaultHook: func(*bind.TransactOpts, *big.Int) (r0 *types.Transaction, r1 error) {
 				return
 			},
 		},
@@ -365,7 +365,7 @@ func NewStrictMockIAToken() *MockIAToken {
 			},
 		},
 		InitializeFunc: &IATokenInitializeFunc{
-			defaultHook: func(*bind.TransactOpts) (*types.Transaction, error) {
+			defaultHook: func(*bind.TransactOpts, *big.Int) (*types.Transaction, error) {
 				panic("unexpected invocation of MockIAToken.Initialize")
 			},
 		},
@@ -2385,23 +2385,23 @@ func (c IATokenIncreaseAllowanceFuncCall) Results() []interface{} {
 // IATokenInitializeFunc describes the behavior when the Initialize method
 // of the parent MockIAToken instance is invoked.
 type IATokenInitializeFunc struct {
-	defaultHook func(*bind.TransactOpts) (*types.Transaction, error)
-	hooks       []func(*bind.TransactOpts) (*types.Transaction, error)
+	defaultHook func(*bind.TransactOpts, *big.Int) (*types.Transaction, error)
+	hooks       []func(*bind.TransactOpts, *big.Int) (*types.Transaction, error)
 	history     []IATokenInitializeFuncCall
 	mutex       sync.Mutex
 }
 
 // Initialize delegates to the next hook function in the queue and stores
 // the parameter and result values of this invocation.
-func (m *MockIAToken) Initialize(v0 *bind.TransactOpts) (*types.Transaction, error) {
-	r0, r1 := m.InitializeFunc.nextHook()(v0)
-	m.InitializeFunc.appendCall(IATokenInitializeFuncCall{v0, r0, r1})
+func (m *MockIAToken) Initialize(v0 *bind.TransactOpts, v1 *big.Int) (*types.Transaction, error) {
+	r0, r1 := m.InitializeFunc.nextHook()(v0, v1)
+	m.InitializeFunc.appendCall(IATokenInitializeFuncCall{v0, v1, r0, r1})
 	return r0, r1
 }
 
 // SetDefaultHook sets function that is called when the Initialize method of
 // the parent MockIAToken instance is invoked and the hook queue is empty.
-func (f *IATokenInitializeFunc) SetDefaultHook(hook func(*bind.TransactOpts) (*types.Transaction, error)) {
+func (f *IATokenInitializeFunc) SetDefaultHook(hook func(*bind.TransactOpts, *big.Int) (*types.Transaction, error)) {
 	f.defaultHook = hook
 }
 
@@ -2409,7 +2409,7 @@ func (f *IATokenInitializeFunc) SetDefaultHook(hook func(*bind.TransactOpts) (*t
 // Initialize method of the parent MockIAToken instance invokes the hook at
 // the front of the queue and discards it. After the queue is empty, the
 // default hook function is invoked for any future action.
-func (f *IATokenInitializeFunc) PushHook(hook func(*bind.TransactOpts) (*types.Transaction, error)) {
+func (f *IATokenInitializeFunc) PushHook(hook func(*bind.TransactOpts, *big.Int) (*types.Transaction, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -2418,19 +2418,19 @@ func (f *IATokenInitializeFunc) PushHook(hook func(*bind.TransactOpts) (*types.T
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
 func (f *IATokenInitializeFunc) SetDefaultReturn(r0 *types.Transaction, r1 error) {
-	f.SetDefaultHook(func(*bind.TransactOpts) (*types.Transaction, error) {
+	f.SetDefaultHook(func(*bind.TransactOpts, *big.Int) (*types.Transaction, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
 func (f *IATokenInitializeFunc) PushReturn(r0 *types.Transaction, r1 error) {
-	f.PushHook(func(*bind.TransactOpts) (*types.Transaction, error) {
+	f.PushHook(func(*bind.TransactOpts, *big.Int) (*types.Transaction, error) {
 		return r0, r1
 	})
 }
 
-func (f *IATokenInitializeFunc) nextHook() func(*bind.TransactOpts) (*types.Transaction, error) {
+func (f *IATokenInitializeFunc) nextHook() func(*bind.TransactOpts, *big.Int) (*types.Transaction, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -2466,6 +2466,9 @@ type IATokenInitializeFuncCall struct {
 	// Arg0 is the value of the 1st argument passed to this method
 	// invocation.
 	Arg0 *bind.TransactOpts
+	// Arg1 is the value of the 2nd argument passed to this method
+	// invocation.
+	Arg1 *big.Int
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
 	Result0 *types.Transaction
@@ -2477,7 +2480,7 @@ type IATokenInitializeFuncCall struct {
 // Args returns an interface slice containing the arguments of this
 // invocation.
 func (c IATokenInitializeFuncCall) Args() []interface{} {
-	return []interface{}{c.Arg0}
+	return []interface{}{c.Arg0, c.Arg1}
 }
 
 // Results returns an interface slice containing the results of this

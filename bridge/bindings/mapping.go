@@ -19,7 +19,7 @@ var FunctionMapping = map[[4]byte]string{
 	{3, 92, 112, 153}:    "AToken.getLegacyTokenAddress()",
 	{134, 83, 164, 101}:  "AToken.getMetamorphicContractAddress(bytes32,address)",
 	{57, 80, 147, 81}:    "AToken.increaseAllowance(address,uint256)",
-	{129, 41, 252, 28}:   "AToken.initialize()",
+	{254, 75, 132, 223}:  "AToken.initialize(uint256)",
 	{69, 75, 6, 8}:       "AToken.migrate(uint256)",
 	{6, 253, 222, 3}:     "AToken.name()",
 	{149, 216, 155, 65}:  "AToken.symbol()",
