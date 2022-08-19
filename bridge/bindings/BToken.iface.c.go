@@ -26,7 +26,7 @@ type IBTokenCaller interface {
 	// GetDeposit is a free data retrieval call binding the contract method 0x9f9fb968.
 	//
 	// Solidity: function getDeposit(uint256 depositID) view returns((uint8,address,uint256))
-	GetDeposit(opts *bind.CallOpts, depositID *big.Int) (BTokenDeposit, error)
+	GetDeposit(opts *bind.CallOpts, depositID *big.Int) (Deposit, error)
 	// GetDepositID is a free data retrieval call binding the contract method 0x94f70c8a.
 	//
 	// Solidity: function getDepositID() view returns(uint256)

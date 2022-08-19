@@ -5,12 +5,12 @@ import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "contracts/utils/Admin.sol";
 import "contracts/utils/ImmutableAuth.sol";
-import "contracts/interfaces/IAToken.sol";
+import "contracts/interfaces/IStakingToken.sol";
 
 /// @custom:salt AToken
 /// @custom:deploy-type deployStatic
 contract AToken is
-    IAToken,
+    IStakingToken,
     ERC20Upgradeable,
     ImmutableFactory,
     ImmutableATokenMinter,
@@ -28,7 +28,7 @@ contract AToken is
     }
 
     function initialize() public onlyFactory initializer {
-        __ERC20_init("AToken", "ALC");
+        __ERC20_init("AliceNet Staking Token", "ALCA");
     }
 
     function migrate(uint256 amount) public {
