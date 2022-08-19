@@ -165,7 +165,8 @@ describe("Snapshots: With successful ETHDKG round completed", () => {
         expectedHeight,
         ethers.utils.getAddress(validatorsSnapshots1[0].address),
         expectedSafeToProceedConsensus,
-        validSnapshot1024.GroupSignature,
+        validSnapshot1024.GroupSignatureDeserialized?.[0],
+        validSnapshot1024.GroupSignatureDeserialized?.[1],
         validSnapshot1024.BClaimsDeserialized
       );
   });

@@ -8184,7 +8184,7 @@ func NewMockIBToken() *MockIBToken {
 			},
 		},
 		GetDepositFunc: &IBTokenGetDepositFunc{
-			defaultHook: func(*bind.CallOpts, *big.Int) (r0 bindings.BTokenDeposit, r1 error) {
+			defaultHook: func(*bind.CallOpts, *big.Int) (r0 bindings.Deposit, r1 error) {
 				return
 			},
 		},
@@ -8426,7 +8426,7 @@ func NewStrictMockIBToken() *MockIBToken {
 			},
 		},
 		GetDepositFunc: &IBTokenGetDepositFunc{
-			defaultHook: func(*bind.CallOpts, *big.Int) (bindings.BTokenDeposit, error) {
+			defaultHook: func(*bind.CallOpts, *big.Int) (bindings.Deposit, error) {
 				panic("unexpected invocation of MockIBToken.GetDeposit")
 			},
 		},
@@ -10384,15 +10384,15 @@ func (c IBTokenFilterTransferFuncCall) Results() []interface{} {
 // IBTokenGetDepositFunc describes the behavior when the GetDeposit method
 // of the parent MockIBToken instance is invoked.
 type IBTokenGetDepositFunc struct {
-	defaultHook func(*bind.CallOpts, *big.Int) (bindings.BTokenDeposit, error)
-	hooks       []func(*bind.CallOpts, *big.Int) (bindings.BTokenDeposit, error)
+	defaultHook func(*bind.CallOpts, *big.Int) (bindings.Deposit, error)
+	hooks       []func(*bind.CallOpts, *big.Int) (bindings.Deposit, error)
 	history     []IBTokenGetDepositFuncCall
 	mutex       sync.Mutex
 }
 
 // GetDeposit delegates to the next hook function in the queue and stores
 // the parameter and result values of this invocation.
-func (m *MockIBToken) GetDeposit(v0 *bind.CallOpts, v1 *big.Int) (bindings.BTokenDeposit, error) {
+func (m *MockIBToken) GetDeposit(v0 *bind.CallOpts, v1 *big.Int) (bindings.Deposit, error) {
 	r0, r1 := m.GetDepositFunc.nextHook()(v0, v1)
 	m.GetDepositFunc.appendCall(IBTokenGetDepositFuncCall{v0, v1, r0, r1})
 	return r0, r1
@@ -10400,7 +10400,7 @@ func (m *MockIBToken) GetDeposit(v0 *bind.CallOpts, v1 *big.Int) (bindings.BToke
 
 // SetDefaultHook sets function that is called when the GetDeposit method of
 // the parent MockIBToken instance is invoked and the hook queue is empty.
-func (f *IBTokenGetDepositFunc) SetDefaultHook(hook func(*bind.CallOpts, *big.Int) (bindings.BTokenDeposit, error)) {
+func (f *IBTokenGetDepositFunc) SetDefaultHook(hook func(*bind.CallOpts, *big.Int) (bindings.Deposit, error)) {
 	f.defaultHook = hook
 }
 
@@ -10408,7 +10408,7 @@ func (f *IBTokenGetDepositFunc) SetDefaultHook(hook func(*bind.CallOpts, *big.In
 // GetDeposit method of the parent MockIBToken instance invokes the hook at
 // the front of the queue and discards it. After the queue is empty, the
 // default hook function is invoked for any future action.
-func (f *IBTokenGetDepositFunc) PushHook(hook func(*bind.CallOpts, *big.Int) (bindings.BTokenDeposit, error)) {
+func (f *IBTokenGetDepositFunc) PushHook(hook func(*bind.CallOpts, *big.Int) (bindings.Deposit, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -10416,20 +10416,20 @@ func (f *IBTokenGetDepositFunc) PushHook(hook func(*bind.CallOpts, *big.Int) (bi
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IBTokenGetDepositFunc) SetDefaultReturn(r0 bindings.BTokenDeposit, r1 error) {
-	f.SetDefaultHook(func(*bind.CallOpts, *big.Int) (bindings.BTokenDeposit, error) {
+func (f *IBTokenGetDepositFunc) SetDefaultReturn(r0 bindings.Deposit, r1 error) {
+	f.SetDefaultHook(func(*bind.CallOpts, *big.Int) (bindings.Deposit, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IBTokenGetDepositFunc) PushReturn(r0 bindings.BTokenDeposit, r1 error) {
-	f.PushHook(func(*bind.CallOpts, *big.Int) (bindings.BTokenDeposit, error) {
+func (f *IBTokenGetDepositFunc) PushReturn(r0 bindings.Deposit, r1 error) {
+	f.PushHook(func(*bind.CallOpts, *big.Int) (bindings.Deposit, error) {
 		return r0, r1
 	})
 }
 
-func (f *IBTokenGetDepositFunc) nextHook() func(*bind.CallOpts, *big.Int) (bindings.BTokenDeposit, error) {
+func (f *IBTokenGetDepositFunc) nextHook() func(*bind.CallOpts, *big.Int) (bindings.Deposit, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -10470,7 +10470,7 @@ type IBTokenGetDepositFuncCall struct {
 	Arg1 *big.Int
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 bindings.BTokenDeposit
+	Result0 bindings.Deposit
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
