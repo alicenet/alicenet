@@ -134,13 +134,12 @@ abstract contract ImmutableBToken is ImmutableFactory {
 
 abstract contract ImmutableDynamics is ImmutableFactory {
     address private immutable _dynamics;
+    error OnlyDynamics(address sender, address expected);
 
     modifier onlyDynamics() {
-        //TODO: fix this when error codes are merged
-        require(
-            msg.sender == _dynamics,
-            string(abi.encodePacked(ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_BTOKEN))
-        );
+        if (msg.sender != _dynamics) {
+            revert OnlyDynamics(msg.sender, _dynamics);
+        }
         _;
     }
 

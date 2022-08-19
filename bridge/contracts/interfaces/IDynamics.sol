@@ -9,15 +9,13 @@ enum Version {
 struct DynamicValues {
     // first slot
     Version encoderVersion;
-    uint24 messageTimeout;
-    uint32 proposalTimeout;
+    uint24 proposalTimeout;
     uint32 preVoteTimeout;
     uint32 preCommitTimeout;
-    uint64 maxBlockSize;
-    uint64 atomicSwapFee;
-    // Second slot
+    uint32 maxBlockSize;
     uint64 dataStoreFee;
     uint64 valueStoreFee;
+    // Second slot
     uint128 minScaledTransactionFee;
 }
 
@@ -36,7 +34,7 @@ struct CanonicalVersion {
 interface IDynamics {
     event DeployedStorageContract(address contractAddr);
     event DynamicValueChanged(uint256 epoch, bytes rawDynamicValues);
-    event NewNodeVersionAvailable(uint256 maxUpdateEpoch, CanonicalVersion version);
+    event NewAliceNetNodeVersionAvailable(uint256 maxUpdateEpoch, CanonicalVersion version);
 
     function deployStorage(bytes calldata data) external returns (address contractAddr);
 
@@ -56,6 +54,8 @@ interface IDynamics {
     function setConfiguration(Configuration calldata newConfig) external;
 
     function getConfiguration() external view returns (Configuration memory);
+
+    function getLatestAliceNetVersion() external view returns(CanonicalVersion memory);
 
     function getLatestDynamicValues() external view returns (DynamicValues memory);
 

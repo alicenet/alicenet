@@ -65,7 +65,6 @@ func GenerateHardhatConfig(tempDir, hardhatPath, endPoint string) string {
 	configTemplate := `
 	import "%[1]s/node_modules/@nomiclabs/hardhat-ethers";
 	import "%[1]s/node_modules/@nomiclabs/hardhat-truffle5";
-	import "%[1]s/node_modules/@nomiclabs/hardhat-waffle";
 	import "%[1]s/node_modules/@typechain/hardhat";
 	import { HardhatUserConfig} from "%[1]s/node_modules/hardhat/config";
 	import "%[1]s/scripts/generateImmutableAuth";
@@ -202,7 +201,7 @@ func StartHardHatNode(hostname, port string) (*Hardhat, error) {
 	)
 	cmd.Dir = GetHardhatPackagePath()
 
-	// setCommandStdOut(cmd)
+	SetCommandStdOut(cmd)
 	err = cmd.Start()
 	// if there is an error with our execution handle it here
 	if err != nil {

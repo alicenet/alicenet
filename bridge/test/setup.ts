@@ -4,7 +4,6 @@ import {
   BigNumberish,
   BytesLike,
   Contract,
-  ContractReceipt,
   ContractTransaction,
   Signer,
   Wallet,
@@ -17,6 +16,7 @@ import {
   ATokenBurner,
   ATokenMinter,
   BToken,
+  Dynamics,
   ETHDKG,
   Foundation,
   InvalidTxConsumptionAccusation,
@@ -612,6 +612,13 @@ export const getFixture = async (
     "Accusation"
   )) as MultipleProposalAccusation;
 
+  const dynamics = (await deployUpgradeableWithFactory(
+    factory,
+    "Dynamics",
+    "Dynamics",
+    []
+  )) as Dynamics;
+
   await posFixtureSetup(factory, aToken, legacyToken);
   const blockNumber = BigInt(await ethers.provider.getBlockNumber());
   const phaseLength = (await ethdkg.getPhaseLength()).toBigInt();
@@ -637,6 +644,7 @@ export const getFixture = async (
     stakingPositionDescriptor,
     invalidTxConsumptionAccusation,
     multipleProposalAccusation,
+    dynamics,
   };
 };
 
@@ -739,22 +747,4 @@ export const getMetamorphicAddress = (
     ethers.utils.formatBytes32String(salt),
     ethers.utils.keccak256(initCode)
   );
-};
-
-export const getReceiptForFailedTransaction = async (
-  tx: Promise<ContractReceipt>
-): Promise<any> => {
-  let receipt: any;
-  try {
-    await tx;
-  } catch (error: any) {
-    receipt = await ethers.provider.getTransactionReceipt(
-      error.transactionHash
-    );
-
-    if (receipt === null) {
-      throw new Error(`Transaction ${error.transactionHash} failed`);
-    }
-  }
-  return receipt;
 };

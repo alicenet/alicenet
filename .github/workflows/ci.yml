@@ -168,6 +168,8 @@ jobs:
         run: go install github.com/haveyoudebuggedit/gotestfmt/v2/cmd/gotestfmt@latest
       - name: Run tests ${{ matrix.test-cmd }}
         timeout-minutes: 45
+        env:
+          ENABLE_SCRIPT_LOG: "true"
         run: |
           set -euo pipefail
           ./scripts/main.sh init 5
@@ -176,3 +178,20 @@ jobs:
         with:
           files: ./coverage.out
           verbose: true
+
+  goreleaser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - run: git fetch --force --tags
+      - uses: actions/setup-go@v3
+        with:
+          go-version-file: ./go.mod
+          cache: true
+      - uses: goreleaser/goreleaser-action@v2
+        with:
+          args: release --snapshot --rm-dist
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

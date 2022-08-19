@@ -6,8 +6,9 @@ import "contracts/interfaces/IValidatorPool.sol";
 import "contracts/utils/ImmutableAuth.sol";
 import "contracts/libraries/parsers/BClaimsParserLibrary.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "contracts/interfaces/IDynamics.sol";
 
-contract SnapshotsMock is Initializable, ImmutableValidatorPool, ISnapshots {
+contract SnapshotsMock is Initializable, ImmutableValidatorPool, ISnapshots, ImmutableDynamics {
     uint32 internal _epoch;
     uint32 internal _epochLength;
 
@@ -85,6 +86,8 @@ contract SnapshotsMock is Initializable, ImmutableValidatorPool, ISnapshots {
         );
         _epoch++;
         _snapshots[_epoch] = Snapshot(block.number, blockClaims);
+        IDynamics(_dynamicsAddress()).updateHead(_epoch);
+
         return true;
     }
 

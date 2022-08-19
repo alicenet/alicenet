@@ -41,6 +41,8 @@ type Contracts struct {
 	validatorPoolAddress    common.Address
 	governance              bindings.IGovernance
 	governanceAddress       common.Address
+	dynamics                bindings.IDynamics
+	dynamicsAddress         common.Address
 }
 
 // Set the contractFactoryAddress and looks up for all the contracts that we
@@ -183,6 +185,16 @@ func (c *Contracts) lookupContracts() error {
 		c.snapshots, err = bindings.NewSnapshots(c.snapshotsAddress, eth.internalClient)
 		logAndEat(logger, err)
 
+		// Dynamics
+		c.dynamicsAddress, err = lookup("Dynamics")
+		logAndEat(logger, err)
+		if bytes.Equal(c.dynamicsAddress.Bytes(), make([]byte, 20)) {
+			continue
+		}
+
+		c.dynamics, err = bindings.NewDynamics(c.dynamicsAddress, eth.internalClient)
+		logAndEat(logger, err)
+
 		break
 	}
 
@@ -220,6 +232,14 @@ func (c *Contracts) BToken() bindings.IBToken {
 
 func (c *Contracts) BTokenAddress() common.Address {
 	return c.bTokenAddress
+}
+
+func (c *Contracts) Dynamics() bindings.IDynamics {
+	return c.dynamics
+}
+
+func (c *Contracts) DynamicsAddress() common.Address {
+	return c.dynamicsAddress
 }
 
 func (c *Contracts) PublicStaking() bindings.IPublicStaking {

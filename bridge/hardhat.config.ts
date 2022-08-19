@@ -254,6 +254,7 @@ const config: HardhatUserConfig = {
       "PublicStaking",
       "ValidatorStaking",
       "Governance",
+      "Dynamics",
     ],
     except: [
       "I[A-Z].*",
@@ -261,6 +262,7 @@ const config: HardhatUserConfig = {
       ".*Mock",
       ".*Base",
       ".*Storage",
+      ".*Error",
       "ETHDKGAccusations",
       "ETHDKGPhases",
     ],
