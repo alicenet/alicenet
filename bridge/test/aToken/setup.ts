@@ -69,9 +69,15 @@ export function getUserNotInRoleReason(address: string, role: string) {
 
 export async function init(fixture: Fixture) {
   [admin, user] = await ethers.getSigners();
-  await fixture.legacyToken.connect(admin).approve(admin.address, 10000);
   await fixture.legacyToken
     .connect(admin)
-    .transferFrom(admin.address, user.address, 10000);
+    .approve(admin.address, ethers.utils.parseUnits("220000000", 18));
+  await fixture.legacyToken
+    .connect(admin)
+    .transferFrom(
+      admin.address,
+      user.address,
+      ethers.utils.parseUnits("220000000", 18)
+    );
   showState("Initial", await getState(fixture));
 }

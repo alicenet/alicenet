@@ -142,5 +142,17 @@ describe("Testing AToken", async () => {
         fixture.aToken.connect(user2).migrate(amount)
       ).to.be.revertedWith("ERC20: transfer amount exceeds balance");
     });
+    it("should convert the full amount of legacy", async () => {
+      const cap = 220000000;
+      await fixture.legacyToken
+        .connect(user)
+        .approve(fixture.aToken.address, cap);
+      await fixture.aToken.connect(user).migrate(cap);
+      const expectedBalance = Math.floor(cap * multiplier);
+      const balance = await fixture.aToken.balanceOf(user.address);
+      console.log(balance);
+      console.log(expectedBalance);
+      expect(balance).to.eq(expectedBalance);
+    });
   });
 });

@@ -375,7 +375,7 @@ export const deployFactoryAndBaseTokens = async (
     factory,
     "AToken",
     "AToken",
-    [ethers.utils.parseEther("200000")],
+    [ethers.utils.parseUnits("200000", 18)],
     [legacyToken.address]
   )) as AToken;
 
@@ -443,7 +443,7 @@ export const posFixtureSetup = async (
     0,
     aToken.interface.encodeFunctionData("transfer", [
       admin.address,
-      ethers.utils.parseEther("100000000"),
+      ethers.utils.parseEther("220000000"),
     ])
   );
   // migrating the rest of the legacy tokens to fresh new Atokens
