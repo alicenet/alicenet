@@ -98,8 +98,13 @@ describe("Snapshots: With successful ETHDKG round completed", () => {
           invalidSnapshotChainID2.BClaims
         )
     )
-      .to.be.revertedWithCustomError(fixture.snapshots, "InvalidChainId")
-      .withArgs(2);
+      .to.be.revertedWithCustomError(fixture.snapshots, "UnexpectedBlockHeight")
+      .withArgs(
+        2,
+        (
+          await fixture.snapshots.getEpoch()
+        ).mul(await fixture.snapshots.getEpochLength())
+      );
   });
 
   // todo wrong public key failure happens first with this state
