@@ -32,9 +32,17 @@ type IBTokenTransactor interface {
 	//
 	// Solidity: function deposit(uint8 accountType_, address to_, uint256 amount_) returns(uint256)
 	Deposit(opts *bind.TransactOpts, accountType_ uint8, to_ common.Address, amount_ *big.Int) (*types.Transaction, error)
+	// DepositTokensOnBridges is a paid mutator transaction binding the contract method 0xddeae0b3.
+	//
+	// Solidity: function depositTokensOnBridges(uint16 bridgeVersion, bytes data) payable returns()
+	DepositTokensOnBridges(opts *bind.TransactOpts, bridgeVersion uint16, data []byte) (*types.Transaction, error)
+	// DestroyBTokens is a paid mutator transaction binding the contract method 0x2dc6b024.
+	//
+	// Solidity: function destroyBTokens(uint256 numBTK_) returns(bool)
+	DestroyBTokens(opts *bind.TransactOpts, numBTK_ *big.Int) (*types.Transaction, error)
 	// Distribute is a paid mutator transaction binding the contract method 0xe4fc6b6d.
 	//
-	// Solidity: function distribute() returns(uint256 minerAmount, uint256 stakingAmount, uint256 lpStakingAmount, uint256 foundationAmount)
+	// Solidity: function distribute() returns(bool)
 	Distribute(opts *bind.TransactOpts) (*types.Transaction, error)
 	// IncreaseAllowance is a paid mutator transaction binding the contract method 0x39509351.
 	//
@@ -56,14 +64,6 @@ type IBTokenTransactor interface {
 	//
 	// Solidity: function mintTo(address to_, uint256 minBTK_) payable returns(uint256 numBTK)
 	MintTo(opts *bind.TransactOpts, to_ common.Address, minBTK_ *big.Int) (*types.Transaction, error)
-	// SetAdmin is a paid mutator transaction binding the contract method 0x704b6c02.
-	//
-	// Solidity: function setAdmin(address admin_) returns()
-	SetAdmin(opts *bind.TransactOpts, admin_ common.Address) (*types.Transaction, error)
-	// SetSplits is a paid mutator transaction binding the contract method 0x767bc1bf.
-	//
-	// Solidity: function setSplits(uint256 validatorStakingSplit_, uint256 publicStakingSplit_, uint256 liquidityProviderStakingSplit_, uint256 protocolFee_) returns()
-	SetSplits(opts *bind.TransactOpts, validatorStakingSplit_ *big.Int, publicStakingSplit_ *big.Int, liquidityProviderStakingSplit_ *big.Int, protocolFee_ *big.Int) (*types.Transaction, error)
 	// Transfer is a paid mutator transaction binding the contract method 0xa9059cbb.
 	//
 	// Solidity: function transfer(address to, uint256 amount) returns(bool)
