@@ -350,74 +350,75 @@ func TestHandlers_HandleLocalStateGetPendingTransaction(t *testing.T) {
 }
 
 /*
+
 func TestHandlers_HandleLocalStateGetRoundStateForValidator(t *testing.T) {
 
-		type args struct {
-			ctx context.Context
-			req *pb.RoundStateForValidatorRequest
-		}
-		tests := []struct {
-			name    string
-			fields  fields
-			args    args
-			want    *pb.RoundStateForValidatorResponse
-			wantErr bool
-		}{
-			// TODO: Add test cases.
-		}
-		for _, tt := range tests {
-			t.Run(tt.name, func(t *testing.T) {
-
-				got, err := srpc.HandleLocalStateGetRoundStateForValidator(tt.args.ctx, tt.args.req)
-				if (err != nil) != tt.wantErr {
-					t.Errorf("HandleLocalStateGetRoundStateForValidator() error = %v, wantErr %v", err, tt.wantErr)
-					return
-				}
-				if !reflect.DeepEqual(got, tt.want) {
-					t.Errorf("HandleLocalStateGetRoundStateForValidator() got = %v, want %v", got, tt.want)
-				}
-			})
-		}
+	type args struct {
+		ctx context.Context
+		req *pb.RoundStateForValidatorRequest
 	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    *pb.RoundStateForValidatorResponse
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
 
-	func TestHandlers_HandleLocalStateGetTxBlockNumber(t *testing.T) {
-		type args struct {
-			ctx context.Context
-			req *pb.TxBlockNumberRequest
-		}
-		tests := []struct {
-			name    string
-			args    args
-			want    *pb.TxBlockNumberResponse
-			wantErr bool
-		}{
-			{name: constants.LoggerApp,
-				args: args{
-					ctx: ctx,
-					req: &pb.TxBlockNumberRequest{
-						TxHash: hex.EncodeToString(tx1Hash),
-					},
+			got, err := srpc.HandleLocalStateGetRoundStateForValidator(tt.args.ctx, tt.args.req)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("HandleLocalStateGetRoundStateForValidator() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("HandleLocalStateGetRoundStateForValidator() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestHandlers_HandleLocalStateGetTxBlockNumber(t *testing.T) {
+	type args struct {
+		ctx context.Context
+		req *pb.TxBlockNumberRequest
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    *pb.TxBlockNumberResponse
+		wantErr bool
+	}{
+		{name: constants.LoggerApp,
+			args: args{
+				ctx: ctx,
+				req: &pb.TxBlockNumberRequest{
+					TxHash: hex.EncodeToString(tx1Hash),
 				},
 			},
-		}
-		for _, tt := range tests {
-			t.Run(tt.name, func(t *testing.T) {
-				_, err := srpc.HandleLocalStateSendTransaction(ctx, tx1)
-				if err != nil {
-					t.Errorf("HandleLocalStateGetTxBlockNumber() error creating test TX error = %v\n", err)
-					return
-				}
-				got, err := srpc.HandleLocalStateGetTxBlockNumber(tt.args.ctx, tt.args.req)
-				if (err != nil) != tt.wantErr {
-					t.Errorf("HandleLocalStateGetTxBlockNumber() error = %v, wantErr %v", err, tt.wantErr)
-					return
-				}
-				if !reflect.DeepEqual(got, tt.want) {
-					t.Errorf("HandleLocalStateGetTxBlockNumber() got = %v, want %v", got, tt.want)
-				}
-			})
-		}
-	}.
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := srpc.HandleLocalStateSendTransaction(ctx, tx1)
+			if err != nil {
+				t.Errorf("HandleLocalStateGetTxBlockNumber() error creating test TX error = %v\n", err)
+				return
+			}
+			got, err := srpc.HandleLocalStateGetTxBlockNumber(tt.args.ctx, tt.args.req)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("HandleLocalStateGetTxBlockNumber() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("HandleLocalStateGetTxBlockNumber() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}.
 */
 func TestHandlers_HandleLocalStateGetUTXO(t *testing.T) {
 	type args struct {
@@ -546,33 +547,33 @@ func TestHandlers_HandleLocalStateGetValidatorSet(t *testing.T) {
 /*
 func TestHandlers_HandleLocalStateIterateNameSpace(t *testing.T) {
 
-		type args struct {
-			ctx context.Context
-			req *pb.IterateNameSpaceRequest
-		}
-		tests := []struct {
-			name    string
-			fields  fields
-			args    args
-			want    *pb.IterateNameSpaceResponse
-			wantErr bool
-		}{
-			// TODO: Add test cases.
-		}
-		for _, tt := range tests {
-			t.Run(tt.name, func(t *testing.T) {
+	type args struct {
+		ctx context.Context
+		req *pb.IterateNameSpaceRequest
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    *pb.IterateNameSpaceResponse
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
 
-				got, err := srpc.HandleLocalStateIterateNameSpace(tt.args.ctx, tt.args.req)
-				if (err != nil) != tt.wantErr {
-					t.Errorf("HandleLocalStateIterateNameSpace() error = %v, wantErr %v", err, tt.wantErr)
-					return
-				}
-				if !reflect.DeepEqual(got, tt.want) {
-					t.Errorf("HandleLocalStateIterateNameSpace() got = %v, want %v", got, tt.want)
-				}
-			})
-		}
-	}.
+			got, err := srpc.HandleLocalStateIterateNameSpace(tt.args.ctx, tt.args.req)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("HandleLocalStateIterateNameSpace() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("HandleLocalStateIterateNameSpace() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}.
 */
 var hash []byte
 
