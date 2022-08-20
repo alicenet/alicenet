@@ -578,7 +578,6 @@ var hash []byte
 
 var (
 	newValueStore *objs.ValueStore
-	vsValue       *uint256.Uint256 = uint256.One()
 	vsFee         *uint256.Uint256 = uint256.Zero()
 	chainID       uint32           = 1337
 )
