@@ -3,8 +3,6 @@ package validator
 import (
 	"context"
 	"fmt"
-	"github.com/alicenet/alicenet/bridge/bindings"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"math/big"
 	"os"
 	"os/signal"
@@ -13,6 +11,7 @@ import (
 
 	"github.com/alicenet/alicenet/application"
 	"github.com/alicenet/alicenet/application/deposit"
+	"github.com/alicenet/alicenet/bridge/bindings"
 	"github.com/alicenet/alicenet/cmd/utils"
 	"github.com/alicenet/alicenet/config"
 	"github.com/alicenet/alicenet/consensus"
@@ -38,16 +37,12 @@ import (
 	"github.com/alicenet/alicenet/peering"
 	"github.com/alicenet/alicenet/proto"
 	"github.com/alicenet/alicenet/status"
-	mnutils "github.com/alicenet/alicenet/utils"
+	aUtils "github.com/alicenet/alicenet/utils"
 	"github.com/dgraph-io/badger/v2"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-)
-
-const (
-	retryCount = 5
-	retryDelay = 1 * time.Second
 )
 
 // Command is the cobra.Command specifically for running as a node
@@ -170,7 +165,7 @@ func initLocalStateServer(localStateHandler *localrpc.Handlers) *localrpc.Handle
 }
 
 func initDatabase(ctx context.Context, path string, inMemory bool) *badger.DB {
-	db, err := mnutils.OpenBadger(ctx.Done(), path, inMemory)
+	db, err := aUtils.OpenBadger(ctx.Done(), path, inMemory)
 	if err != nil {
 		panic(err)
 	}
@@ -196,10 +191,17 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	defer eth.Close()
 
 	currentEpoch, latestVersion, err := getCurrentEpochAndCanonicalVersion(nodeCtx, eth, contractsHandler, logger)
-	if newMajorIsGreater, _, _, localVersion := mnutils.CompareCanonicalVersion(latestVersion); newMajorIsGreater &&
+	if newMajorIsGreater, _, _, localVersion := aUtils.CompareCanonicalVersion(latestVersion); newMajorIsGreater &&
 		currentEpoch > latestVersion.ExecutionEpoch {
-		logger.Errorf("CRITICAL: your Major Canonical Node Version %d.%d.%d is lower than the latest %d.%d.%d and you exeeded the execution epoch %d. Please update your node before restart. Exiting!",
-			localVersion.Major, localVersion.Minor, localVersion.Patch, latestVersion.Major, latestVersion.Minor, latestVersion.Patch, latestVersion.ExecutionEpoch)
+		logger.Errorf(
+			"CRITICAL: Exiting! Your Node Version %d.%d.%d is lower than the latest required version %d.%d.%d! Please update your node!",
+			localVersion.Major,
+			localVersion.Minor,
+			localVersion.Patch,
+			latestVersion.Major,
+			latestVersion.Minor,
+			latestVersion.Patch,
+		)
 		return
 	}
 
@@ -393,6 +395,9 @@ func countSignals(logger *logrus.Logger, num int, c chan os.Signal) {
 }
 
 func getCurrentEpochAndCanonicalVersion(ctx context.Context, eth layer1.Client, contractsHandler layer1.AllSmartContracts, logger *logrus.Logger) (uint32, bindings.CanonicalVersion, error) {
+	retryCount := 5
+	retryDelay := 1 * time.Second
+
 	logEntry := logger.WithField("Method", "getCurrentEpochAndCanonicalVersion")
 
 	var callOpts *bind.CallOpts

@@ -12,9 +12,9 @@ func CompareCanonicalVersion(newVersion bindings.CanonicalVersion) (bool, bool, 
 
 func GetLocalVersion() bindings.CanonicalVersion {
 	return bindings.CanonicalVersion{
-		Major:      9,
-		Minor:      9,
-		Patch:      9,
+		Major:      0,
+		Minor:      0,
+		Patch:      0,
 		BinaryHash: [32]byte{},
 	}
 }

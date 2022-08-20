@@ -157,21 +157,7 @@ func SetupEventMap(em *objects.EventMap, cdb, monDB *db.Database, adminHandler m
 
 	if err := em.Register(snapshotTakenEvent.ID.String(), snapshotTakenEvent.Name,
 		func(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
-			return ProcessSnapshotTaken(eth, contracts, logger, log, adminHandler, taskRequestChan, exitFunc)
-		}); err != nil {
-		return err
-	}
-
-	// Governance.ValueUpdated
-	govEvents := GetGovernanceEvents()
-	valueUpdatedEvent, ok := govEvents["ValueUpdated"]
-	if !ok {
-		panic("could not find event Governance.ValueUpdated")
-	}
-
-	if err := em.Register(valueUpdatedEvent.ID.String(), valueUpdatedEvent.Name,
-		func(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
-			return ProcessValueUpdated(eth, contracts, logger, log, monDB)
+			return ProcessSnapshotTaken(eth, contracts, logger, log, adminHandler, taskRequestChan)
 		}); err != nil {
 		return err
 	}
@@ -239,6 +225,30 @@ func SetupEventMap(em *objects.EventMap, cdb, monDB *db.Database, adminHandler m
 	if err := em.Register(newAliceNetNodeVersionAvailableEvent.ID.String(), newAliceNetNodeVersionAvailableEvent.Name,
 		func(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
 			return ProcessNewAliceNetNodeVersionAvailable(contracts, logger, log, state, taskRequestChan)
+		}); err != nil {
+		return err
+	}
+
+	newCanonicalAliceNetNodeVersionEvent, ok := dynamicsEvents["NewCanonicalAliceNetNodeVersion"]
+	if !ok {
+		panic("could not find event Dynamics.NewCanonicalAliceNetNodeVersion")
+	}
+
+	if err := em.Register(newCanonicalAliceNetNodeVersionEvent.ID.String(), newCanonicalAliceNetNodeVersionEvent.Name,
+		func(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+			return ProcessNewCanonicalAliceNetNodeVersion(contracts, logger, log, state, taskRequestChan, exitFunc)
+		}); err != nil {
+		return err
+	}
+
+	dynamicValueChangedEvent, ok := dynamicsEvents["DynamicValueChanged"]
+	if !ok {
+		panic("could not find event Dynamics.DynamicValueChanged")
+	}
+
+	if err := em.Register(dynamicValueChangedEvent.ID.String(), dynamicValueChangedEvent.Name,
+		func(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+			return ProcessDynamicValueChanged(contracts, logger, log)
 		}); err != nil {
 		return err
 	}

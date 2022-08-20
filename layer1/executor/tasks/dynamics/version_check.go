@@ -3,12 +3,13 @@ package dynamics
 import (
 	"context"
 	"fmt"
-	"github.com/alicenet/alicenet/bridge/bindings"
-	"github.com/alicenet/alicenet/utils"
-	"github.com/ethereum/go-ethereum/core/types"
 	"time"
 
+	"github.com/alicenet/alicenet/bridge/bindings"
+	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/layer1/executor/tasks"
+	"github.com/alicenet/alicenet/utils"
+	"github.com/ethereum/go-ethereum/core/types"
 )
 
 // CanonicalVersionCheckTask contains required state for the task.
@@ -36,7 +37,12 @@ func (t *CanonicalVersionCheckTask) Prepare(ctx context.Context) *tasks.TaskErr 
 	logger := t.GetLogger().WithField("method", "Prepare()")
 	logger.Debug("preparing task")
 
-	logger.Infof("Received a new %d.%d.%d Canonical Node Version to be analized", t.Version.Major, t.Version.Minor, t.Version.Patch)
+	logger.Infof(
+		"Received a new %d.%d.%d Canonical Node Version to be analyzed",
+		t.Version.Major,
+		t.Version.Minor,
+		t.Version.Patch,
+	)
 
 	return nil
 }
@@ -47,43 +53,38 @@ func (t *CanonicalVersionCheckTask) Execute(ctx context.Context) (*types.Transac
 	logger.Debug("initiate execution")
 
 	newMajorIsGreater, newMinorIsGreater, newPatchIsGreater, localVersion := utils.CompareCanonicalVersion(t.Version)
-	text := ""
+	logger = logger.WithField("currentVersion", fmt.Sprintf("%d.%d.%d", localVersion.Major, localVersion.Minor, localVersion.Patch))
+
+	text := fmt.Sprintf(
+		"There's a new version of the aliceNet node available: %d.%d.%d",
+		t.Version.Major,
+		t.Version.Minor,
+		t.Version.Patch,
+	)
 
 	if newMajorIsGreater {
-		text = fmt.Sprintf("CRITICAL: your Major Canonical Node Version %d.%d.%d is lower than the latest %d.%d.%d. Please update your node, otherwise it will be killed after epoch %d.",
-			localVersion.Major, localVersion.Minor, localVersion.Patch, t.Version.Major, t.Version.Minor, t.Version.Patch, t.Version.ExecutionEpoch)
+		text = fmt.Sprintf(
+			"CRITICAL: %s. Please update your node, otherwise it will be killed after height %d.",
+			text,
+			t.Version.ExecutionEpoch*constants.EpochLength,
+		)
 	} else if newMinorIsGreater {
-		text = fmt.Sprintf("WARNING: your Minor Canonical Node Version %d.%d.%d is lower than the latest %d.%d.%d. Please update your node.",
-			localVersion.Major, localVersion.Minor, localVersion.Patch, t.Version.Major, t.Version.Minor, t.Version.Patch)
+		text = fmt.Sprintf("WARNING: %s. Please update your node.", text)
 	} else if newPatchIsGreater {
-		text = fmt.Sprintf("WARNING: your Patch Canonical Node Version %d.%d.%d is lower than the latest %d.%d.%d. Please update your node.",
-			localVersion.Major, localVersion.Minor, localVersion.Patch, t.Version.Major, t.Version.Minor, t.Version.Patch)
+		text = fmt.Sprintf("WARNING: %s. Please update your node.", text)
 	}
 
-	for {
-		printingTime := time.After(messageFrequency)
-		select {
-		case <-ctx.Done():
-			return nil, tasks.NewTaskErr(ctx.Err().Error(), false)
-		case <-printingTime:
-			if shouldPrint, _ := t.ShouldExecute(ctx); shouldPrint {
-				logger.Info(text)
-				printingTime = time.After(messageFrequency)
-				continue
-			}
-			return nil, nil
-		}
-	}
+	logger.Warn(text)
+	return nil, tasks.NewTaskErr("printed update message", true)
 }
 
 // ShouldExecute checks if it makes sense to execute the task.
 func (t *CanonicalVersionCheckTask) ShouldExecute(ctx context.Context) (bool, *tasks.TaskErr) {
 	logger := t.GetLogger().WithField("method", "ShouldExecute()")
 	logger.Debug("should execute task")
-
-	if newMajorIsGreater, newMinorIsGreater, newPatchIsGreater, _ := utils.CompareCanonicalVersion(t.Version); newMajorIsGreater || newMinorIsGreater || newPatchIsGreater {
+	newMajorIsGreater, newMinorIsGreater, newPatchIsGreater, _ := utils.CompareCanonicalVersion(t.Version)
+	if newMajorIsGreater || newMinorIsGreater || newPatchIsGreater {
 		return true, nil
 	}
-
 	return false, nil
 }

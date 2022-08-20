@@ -2,36 +2,32 @@ package events
 
 import (
 	"fmt"
+
+	"github.com/alicenet/alicenet/layer1"
 	"github.com/alicenet/alicenet/layer1/executor/tasks"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dynamics"
 	"github.com/alicenet/alicenet/layer1/monitor/objects"
 	"github.com/alicenet/alicenet/utils"
-
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/sirupsen/logrus"
-
-	"github.com/alicenet/alicenet/consensus/db"
-	"github.com/alicenet/alicenet/layer1"
 )
 
-// ProcessValueUpdated handles a dynamic value updating coming from our smart contract.
-func ProcessValueUpdated(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, log types.Log, monDB *db.Database) error {
+// ProcessDynamicValueChanged handles a dynamic value updating coming from our smart contract.
+func ProcessDynamicValueChanged(contracts layer1.AllSmartContracts, logger *logrus.Entry, log types.Log) error {
 	logger.Info("ProcessValueUpdated() ...")
 
-	event, err := contracts.EthereumContracts().Governance().ParseValueUpdated(log)
+	event, err := contracts.EthereumContracts().Dynamics().ParseDynamicValueChanged(log)
 	if err != nil {
 		return err
 	}
 
 	logger = logger.WithFields(logrus.Fields{
 		"Epoch": event.Epoch.Uint64(),
-		"Key":   event.Key.String(),
-		"Value": fmt.Sprintf("0x%x", event.Value),
+		"Value": fmt.Sprintf("0x%x", event.RawDynamicValues),
 	})
-
+	// TODO; decode and add the dynamic value in here
 	logger.Infof("Value updated")
 
-	logger.Warnf("Dropping dynamic value on the floor")
 	return nil
 }
 
@@ -58,10 +54,50 @@ func ProcessNewAliceNetNodeVersionAvailable(contracts layer1.AllSmartContracts, 
 	taskRequestChan <- tasks.NewKillTaskRequest(&dynamics.CanonicalVersionCheckTask{})
 
 	//If any element of the new Version is greater, schedule the task
-	if newMajorIsGreater, newMinorIsGreater, newPatchIsGreater, _ := utils.CompareCanonicalVersion(event.Version); newMajorIsGreater || newMinorIsGreater || newPatchIsGreater {
+	newMajorIsGreater, newMinorIsGreater, newPatchIsGreater, _ := utils.CompareCanonicalVersion(event.Version)
+	if newMajorIsGreater || newMinorIsGreater || newPatchIsGreater {
 		// Scheduling task with the new Canonical Version
 		taskRequestChan <- tasks.NewScheduleTaskRequest(dynamics.NewVersionCheckTask(event.Version))
 	}
 
+	return nil
+}
+func ProcessNewCanonicalAliceNetNodeVersion(
+	contracts layer1.AllSmartContracts,
+	logger *logrus.Entry,
+	log types.Log,
+	monState *objects.MonitorState,
+	taskRequestChan chan<- tasks.TaskRequest,
+	exitFunc func(),
+) error {
+
+	logger = logger.WithField("method", "ProcessNewCanonicalAliceNetNodeVersion")
+	logger.Info("Processing new AliceNet node version becoming canonical...")
+
+	event, err := contracts.EthereumContracts().Dynamics().ParseNewCanonicalAliceNetNodeVersion(log)
+	if err != nil {
+		return err
+	}
+
+	logger = logger.WithFields(logrus.Fields{
+		"ExecutionEpoch": event.Version.ExecutionEpoch,
+		"Major":          event.Version.Major,
+		"Minor":          event.Version.Minor,
+		"Patch":          event.Version.Patch,
+	})
+	newMajorIsGreater, _, _, localVersion := utils.CompareCanonicalVersion(event.Version)
+
+	if newMajorIsGreater {
+		logger.Errorf(
+			"CRITICAL: Exiting! Your Node Version %d.%d.%d is lower than the latest required version %d.%d.%d! Please update your node!",
+			localVersion.Major,
+			localVersion.Minor,
+			localVersion.Patch,
+			event.Version.Major,
+			event.Version.Minor,
+			event.Version.Patch,
+		)
+		exitFunc()
+	}
 	return nil
 }

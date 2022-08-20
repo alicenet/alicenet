@@ -971,24 +971,24 @@ task("updateAliceNetNodeVersion", "Set the Canonical AliceNet Node Version")
 
     if (taskArgs.relativeEpoch < 2) {
       throw new Error(
-        "relativeEpoch not passed or the value was smaller than 2!"
+        "relativeEpoch parameter not sent or the value was smaller than 2!"
       );
     }
 
     if (taskArgs.major < 0) {
-      throw new Error("major not passed or the value was smaller than 0!");
+      throw new Error("major version parameter not sent or the value was smaller than 0!");
     }
 
     if (taskArgs.minor < 0) {
-      throw new Error("minor not passed or the value was smaller than 0!");
+      throw new Error("minor parameter not sent or the value was smaller than 0!");
     }
 
     if (taskArgs.patch < 0) {
-      throw new Error("patch not passed or the value was smaller than 0!");
+      throw new Error("patch parameter not sent or the value was smaller than 0!");
     }
 
     if (!taskArgs.binaryHash) {
-      throw new Error("binaryHash not passed!");
+      throw new Error("binaryHash parameter not sent!");
     }
 
     const [admin] = await hre.ethers.getSigners();
