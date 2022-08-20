@@ -280,21 +280,6 @@ func validatorNode() {
 	consSync.Init(consDB, mDB, tDB, consGossipClient, consGossipHandlers, consTxPool, consLSEngine, app, consAdminHandlers, peerManager, storage)
 	localStateHandler.Init(consDB, app, consGossipHandlers, publicKey, consSync.Safe, storage)
 	statusLogger.Init(consLSEngine, peerManager, consAdminHandlers, nil)
-
-	// No need of signal management for localrpc testing
-	//////////////////////////////////////////////////////////////////////////////
-	//LAUNCH ALL SERVICE GOROUTINES///////////////////////////////////////////////
-	//////////////////////////////////////////////////////////////////////////////
-
-	/* 	select {
-	   	case <-peerManager.CloseChan():
-	   	case <-consSync.CloseChan():
-	   	case <-signals:
-	   	}
-	   	// go countSignals(logger, 5, signals)
-
-	   	defer consSync.Stop()
-	   	defer func() { logger.Warning("Starting graceful unwind of core processes.") }() */
 }
 
 func getTransactionRequest(ConsumedTxHash, account []byte, val uint64) (tx_ *proto.TransactionData, TxHash, TXSignature []byte) {
@@ -326,10 +311,18 @@ func getTransactionRequest(ConsumedTxHash, account []byte, val uint64) (tx_ *pro
 	}
 	tx = &objs.Tx{}
 	tx.Vin = []*objs.TXIn{txin}
+	expectedOutput, err := new(uint256.Uint256).FromUint64(2)
+	if err != nil {
+		panic(err)
+	}
+	expectedOutput, err = new(uint256.Uint256).Sub(expectedOutput, vsFee)
+	if err != nil {
+		panic(err)
+	}
 	newValueStore = &objs.ValueStore{
 		VSPreImage: &objs.VSPreImage{
 			ChainID:  chainID,
-			Value:    vsValue,
+			Value:    expectedOutput,
 			TXOutIdx: 0,
 			Fee:      vsFee,
 			Owner: &objs.ValueStoreOwner{
