@@ -11,6 +11,7 @@ import {
   distributeValidatorsShares,
   endCurrentPhase,
   expect,
+  getInfoForIncorrectPhaseCustomError,
   Phase,
   PLACEHOLDER_ADDRESS,
   startAtDistributeShares,
@@ -284,19 +285,26 @@ describe("ETHDKG: Dispute GPKj", () => {
 
     await endCurrentPhase(ethdkg);
 
-    const ethDKGPhases = await ethers.getContractAt(
-      "ETHDKGPhases",
-      ethdkg.address
-    );
-
-    await expect(
-      ethdkg.connect(await getValidatorEthAccount(validators[1])).complete()
-    )
-      .to.be.revertedWithCustomError(
-        ethDKGPhases,
-        `ETHDKGNotInPostGPKJDisputePhase`
-      )
-      .withArgs(Phase.GPKJSubmission);
+    const txPromise = ethdkg
+      .connect(await getValidatorEthAccount(validators[1]))
+      .complete();
+    const [
+      ethDKGPhases,
+      ,
+      expectedBlockNumber,
+      expectedCurrentPhase,
+      phaseStartBlock,
+      phaseLength,
+    ] = await getInfoForIncorrectPhaseCustomError(txPromise, ethdkg);
+    await expect(txPromise)
+      .to.be.revertedWithCustomError(ethDKGPhases, `IncorrectPhase`)
+      .withArgs(expectedCurrentPhase, expectedBlockNumber, [
+        [
+          Phase.DisputeGPKJSubmission,
+          phaseStartBlock.add(phaseLength),
+          phaseStartBlock.add(phaseLength.mul(2)),
+        ],
+      ]);
   });
 
   it("should not allow accusations before time", async function () {
@@ -304,27 +312,37 @@ describe("ETHDKG: Dispute GPKj", () => {
 
     await assertETHDKGPhase(ethdkg, Phase.GPKJSubmission);
 
-    const ETHDKGAccusations = await ethers.getContractAt(
-      "ETHDKGAccusations",
-      ethdkg.address
-    );
-
     // try accusing bad GPKj
-    await expect(
-      ethdkg
-        .connect(await ethers.getSigner(validators4[0].address))
-        .accuseParticipantSubmittedBadGPKJ(
-          [],
-          [],
-          [[[0, 0]]],
-          PLACEHOLDER_ADDRESS
-        )
-    )
-      .to.be.revertedWithCustomError(
-        ETHDKGAccusations,
-        `ETHDKGNotInPostGPKJSubmissionPhase`
-      )
-      .withArgs(Phase.GPKJSubmission);
+    const txPromise = ethdkg
+      .connect(await ethers.getSigner(validators4[0].address))
+      .accuseParticipantSubmittedBadGPKJ(
+        [],
+        [],
+        [[[0, 0]]],
+        PLACEHOLDER_ADDRESS
+      );
+    const [
+      ,
+      ETHDKGAccusations,
+      expectedBlockNumber,
+      expectedCurrentPhase,
+      phaseStartBlock,
+      phaseLength,
+    ] = await getInfoForIncorrectPhaseCustomError(txPromise, ethdkg);
+    await expect(txPromise)
+      .to.be.revertedWithCustomError(ETHDKGAccusations, `IncorrectPhase`)
+      .withArgs(expectedCurrentPhase, expectedBlockNumber, [
+        [
+          Phase.DisputeGPKJSubmission,
+          phaseStartBlock,
+          phaseStartBlock.add(phaseLength),
+        ],
+        [
+          Phase.GPKJSubmission,
+          phaseStartBlock.add(phaseLength),
+          phaseStartBlock.add(phaseLength.mul(2)),
+        ],
+      ]);
   });
 
   it("should not allow accusations unless in DisputeGPKJSubmission phase, or expired GPKJSubmission phase", async function () {
@@ -333,27 +351,37 @@ describe("ETHDKG: Dispute GPKj", () => {
 
     await assertETHDKGPhase(ethdkg, Phase.ShareDistribution);
 
-    const ETHDKGAccusations = await ethers.getContractAt(
-      "ETHDKGAccusations",
-      ethdkg.address
-    );
-
     // try accusing bad GPKj
-    await expect(
-      ethdkg
-        .connect(await ethers.getSigner(validators4[0].address))
-        .accuseParticipantSubmittedBadGPKJ(
-          [],
-          [],
-          [[[0, 0]]],
-          PLACEHOLDER_ADDRESS
-        )
-    )
-      .to.be.revertedWithCustomError(
-        ETHDKGAccusations,
-        `ETHDKGNotInPostGPKJSubmissionPhase`
-      )
-      .withArgs(Phase.ShareDistribution);
+    let txPromise = ethdkg
+      .connect(await ethers.getSigner(validators4[0].address))
+      .accuseParticipantSubmittedBadGPKJ(
+        [],
+        [],
+        [[[0, 0]]],
+        PLACEHOLDER_ADDRESS
+      );
+    let [
+      ,
+      ETHDKGAccusations,
+      expectedBlockNumber,
+      expectedCurrentPhase,
+      phaseStartBlock,
+      phaseLength,
+    ] = await getInfoForIncorrectPhaseCustomError(txPromise, ethdkg);
+    await expect(txPromise)
+      .to.be.revertedWithCustomError(ETHDKGAccusations, `IncorrectPhase`)
+      .withArgs(expectedCurrentPhase, expectedBlockNumber, [
+        [
+          Phase.DisputeGPKJSubmission,
+          phaseStartBlock,
+          phaseStartBlock.add(phaseLength),
+        ],
+        [
+          Phase.GPKJSubmission,
+          phaseStartBlock.add(phaseLength),
+          phaseStartBlock.add(phaseLength.mul(2)),
+        ],
+      ]);
 
     // distribute shares
     await distributeValidatorsShares(
@@ -377,41 +405,71 @@ describe("ETHDKG: Dispute GPKj", () => {
     );
 
     // try accusing bad GPKj
-    await expect(
-      ethdkg
-        .connect(await ethers.getSigner(validators4[0].address))
-        .accuseParticipantSubmittedBadGPKJ(
-          [],
-          [],
-          [[[0, 0]]],
-          PLACEHOLDER_ADDRESS
-        )
-    )
-      .to.be.revertedWithCustomError(
-        ETHDKGAccusations,
-        `ETHDKGNotInPostGPKJSubmissionPhase`
-      )
-      .withArgs(Phase.MPKSubmission);
+    txPromise = ethdkg
+      .connect(await ethers.getSigner(validators4[0].address))
+      .accuseParticipantSubmittedBadGPKJ(
+        [],
+        [],
+        [[[0, 0]]],
+        PLACEHOLDER_ADDRESS
+      );
+    [
+      ,
+      ETHDKGAccusations,
+      expectedBlockNumber,
+      expectedCurrentPhase,
+      phaseStartBlock,
+      phaseLength,
+    ] = await getInfoForIncorrectPhaseCustomError(txPromise, ethdkg);
+    await expect(txPromise)
+      .to.be.revertedWithCustomError(ETHDKGAccusations, `IncorrectPhase`)
+      .withArgs(expectedCurrentPhase, expectedBlockNumber, [
+        [
+          Phase.DisputeGPKJSubmission,
+          phaseStartBlock,
+          phaseStartBlock.add(phaseLength),
+        ],
+        [
+          Phase.GPKJSubmission,
+          phaseStartBlock.add(phaseLength),
+          phaseStartBlock.add(phaseLength.mul(2)),
+        ],
+      ]);
 
     // await endCurrentPhase(ethdkg)
     await assertETHDKGPhase(ethdkg, Phase.MPKSubmission);
 
     // try accusing bad GPKj
-    await expect(
-      ethdkg
-        .connect(await ethers.getSigner(validators4[0].address))
-        .accuseParticipantSubmittedBadGPKJ(
-          [],
-          [],
-          [[[0, 0]]],
-          PLACEHOLDER_ADDRESS
-        )
-    )
-      .to.be.revertedWithCustomError(
-        ETHDKGAccusations,
-        `ETHDKGNotInPostGPKJSubmissionPhase`
-      )
-      .withArgs(Phase.MPKSubmission);
+    txPromise = ethdkg
+      .connect(await ethers.getSigner(validators4[0].address))
+      .accuseParticipantSubmittedBadGPKJ(
+        [],
+        [],
+        [[[0, 0]]],
+        PLACEHOLDER_ADDRESS
+      );
+    [
+      ,
+      ETHDKGAccusations,
+      expectedBlockNumber,
+      expectedCurrentPhase,
+      phaseStartBlock,
+      phaseLength,
+    ] = await getInfoForIncorrectPhaseCustomError(txPromise, ethdkg);
+    await expect(txPromise)
+      .to.be.revertedWithCustomError(ETHDKGAccusations, `IncorrectPhase`)
+      .withArgs(expectedCurrentPhase, expectedBlockNumber, [
+        [
+          Phase.DisputeGPKJSubmission,
+          phaseStartBlock,
+          phaseStartBlock.add(phaseLength),
+        ],
+        [
+          Phase.GPKJSubmission,
+          phaseStartBlock.add(phaseLength),
+          phaseStartBlock.add(phaseLength.mul(2)),
+        ],
+      ]);
 
     // submit MPK
     await mineBlocks((await ethdkg.getConfirmationLength()).toBigInt());
@@ -420,21 +478,36 @@ describe("ETHDKG: Dispute GPKj", () => {
     await assertETHDKGPhase(ethdkg, Phase.GPKJSubmission);
 
     // try accusing bad GPKj
-    await expect(
-      ethdkg
-        .connect(await ethers.getSigner(validators4[0].address))
-        .accuseParticipantSubmittedBadGPKJ(
-          [],
-          [],
-          [[[0, 0]]],
-          PLACEHOLDER_ADDRESS
-        )
-    )
-      .to.be.revertedWithCustomError(
-        ETHDKGAccusations,
-        `ETHDKGNotInPostGPKJSubmissionPhase`
-      )
-      .withArgs(Phase.GPKJSubmission);
+    txPromise = ethdkg
+      .connect(await ethers.getSigner(validators4[0].address))
+      .accuseParticipantSubmittedBadGPKJ(
+        [],
+        [],
+        [[[0, 0]]],
+        PLACEHOLDER_ADDRESS
+      );
+    [
+      ,
+      ETHDKGAccusations,
+      expectedBlockNumber,
+      expectedCurrentPhase,
+      phaseStartBlock,
+      phaseLength,
+    ] = await getInfoForIncorrectPhaseCustomError(txPromise, ethdkg);
+    await expect(txPromise)
+      .to.be.revertedWithCustomError(ETHDKGAccusations, `IncorrectPhase`)
+      .withArgs(expectedCurrentPhase, expectedBlockNumber, [
+        [
+          Phase.DisputeGPKJSubmission,
+          phaseStartBlock,
+          phaseStartBlock.add(phaseLength),
+        ],
+        [
+          Phase.GPKJSubmission,
+          phaseStartBlock.add(phaseLength),
+          phaseStartBlock.add(phaseLength.mul(2)),
+        ],
+      ]);
 
     // submit GPKj
     await submitValidatorsGPKJ(
@@ -448,40 +521,70 @@ describe("ETHDKG: Dispute GPKj", () => {
     await assertETHDKGPhase(ethdkg, Phase.DisputeGPKJSubmission);
 
     // try accusing bad GPKj
-    await expect(
-      ethdkg
-        .connect(await ethers.getSigner(validators4[0].address))
-        .accuseParticipantSubmittedBadGPKJ(
-          [],
-          [],
-          [[[0, 0]]],
-          PLACEHOLDER_ADDRESS
-        )
-    )
-      .to.be.revertedWithCustomError(
-        ETHDKGAccusations,
-        `ETHDKGNotInPostGPKJSubmissionPhase`
-      )
-      .withArgs(Phase.DisputeGPKJSubmission);
+    txPromise = ethdkg
+      .connect(await ethers.getSigner(validators4[0].address))
+      .accuseParticipantSubmittedBadGPKJ(
+        [],
+        [],
+        [[[0, 0]]],
+        PLACEHOLDER_ADDRESS
+      );
+    [
+      ,
+      ETHDKGAccusations,
+      expectedBlockNumber,
+      expectedCurrentPhase,
+      phaseStartBlock,
+      phaseLength,
+    ] = await getInfoForIncorrectPhaseCustomError(txPromise, ethdkg);
+    await expect(txPromise)
+      .to.be.revertedWithCustomError(ETHDKGAccusations, `IncorrectPhase`)
+      .withArgs(expectedCurrentPhase, expectedBlockNumber, [
+        [
+          Phase.DisputeGPKJSubmission,
+          phaseStartBlock,
+          phaseStartBlock.add(phaseLength),
+        ],
+        [
+          Phase.GPKJSubmission,
+          phaseStartBlock.add(phaseLength),
+          phaseStartBlock.add(phaseLength.mul(2)),
+        ],
+      ]);
 
     await endCurrentPhase(ethdkg);
 
     // try accusing bad GPKj
-    await expect(
-      ethdkg
-        .connect(await ethers.getSigner(validators4[0].address))
-        .accuseParticipantSubmittedBadGPKJ(
-          [],
-          [],
-          [[[0, 0]]],
-          PLACEHOLDER_ADDRESS
-        )
-    )
-      .to.be.revertedWithCustomError(
-        ETHDKGAccusations,
-        `ETHDKGNotInPostGPKJSubmissionPhase`
-      )
-      .withArgs(Phase.DisputeGPKJSubmission);
+    txPromise = ethdkg
+      .connect(await ethers.getSigner(validators4[0].address))
+      .accuseParticipantSubmittedBadGPKJ(
+        [],
+        [],
+        [[[0, 0]]],
+        PLACEHOLDER_ADDRESS
+      );
+    [
+      ,
+      ETHDKGAccusations,
+      expectedBlockNumber,
+      expectedCurrentPhase,
+      phaseStartBlock,
+      phaseLength,
+    ] = await getInfoForIncorrectPhaseCustomError(txPromise, ethdkg);
+    await expect(txPromise)
+      .to.be.revertedWithCustomError(ETHDKGAccusations, `IncorrectPhase`)
+      .withArgs(expectedCurrentPhase, expectedBlockNumber, [
+        [
+          Phase.DisputeGPKJSubmission,
+          phaseStartBlock,
+          phaseStartBlock.add(phaseLength),
+        ],
+        [
+          Phase.GPKJSubmission,
+          phaseStartBlock.add(phaseLength),
+          phaseStartBlock.add(phaseLength.mul(2)),
+        ],
+      ]);
 
     // complete ethdkg
     await completeETHDKG(ethdkg, validators4, expectedNonce, 0, 0);
@@ -489,21 +592,36 @@ describe("ETHDKG: Dispute GPKj", () => {
     await assertETHDKGPhase(ethdkg, Phase.Completion);
 
     // try accusing bad GPKj
-    await expect(
-      ethdkg
-        .connect(await ethers.getSigner(validators4[0].address))
-        .accuseParticipantSubmittedBadGPKJ(
-          [],
-          [],
-          [[[0, 0]]],
-          PLACEHOLDER_ADDRESS
-        )
-    )
-      .to.be.revertedWithCustomError(
-        ETHDKGAccusations,
-        `ETHDKGNotInPostGPKJSubmissionPhase`
-      )
-      .withArgs(Phase.Completion);
+    txPromise = ethdkg
+      .connect(await ethers.getSigner(validators4[0].address))
+      .accuseParticipantSubmittedBadGPKJ(
+        [],
+        [],
+        [[[0, 0]]],
+        PLACEHOLDER_ADDRESS
+      );
+    [
+      ,
+      ETHDKGAccusations,
+      expectedBlockNumber,
+      expectedCurrentPhase,
+      phaseStartBlock,
+      phaseLength,
+    ] = await getInfoForIncorrectPhaseCustomError(txPromise, ethdkg);
+    await expect(txPromise)
+      .to.be.revertedWithCustomError(ETHDKGAccusations, `IncorrectPhase`)
+      .withArgs(expectedCurrentPhase, expectedBlockNumber, [
+        [
+          Phase.DisputeGPKJSubmission,
+          phaseStartBlock,
+          phaseStartBlock.add(phaseLength),
+        ],
+        [
+          Phase.GPKJSubmission,
+          phaseStartBlock.add(phaseLength),
+          phaseStartBlock.add(phaseLength.mul(2)),
+        ],
+      ]);
   });
 
   it("should not allow accusation of a non-participating validator", async function () {

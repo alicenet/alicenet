@@ -2,6 +2,7 @@ import { ethers, expect } from "hardhat";
 import { getValidatorEthAccount } from "../../setup";
 import { validators4 } from "../assets/4-validators-successful-case";
 import {
+  getInfoForIncorrectPhaseCustomError,
   Phase,
   startAtGPKJ,
   startAtMPKSubmission,
@@ -12,21 +13,26 @@ describe("ETHDKG: GPKj submission", () => {
   it("should not allow GPKj submission outside of GPKjSubmission phase", async () => {
     const [ethdkg] = await startAtMPKSubmission(validators4);
 
-    const ethDKGPhases = await ethers.getContractAt(
-      "ETHDKGPhases",
-      ethdkg.address
-    );
-
-    await expect(
-      ethdkg
-        .connect(await getValidatorEthAccount(validators4[0].address))
-        .submitGPKJ(validators4[0].gpkj)
-    )
-      .to.be.revertedWithCustomError(
-        ethDKGPhases,
-        `ETHDKGNotInGPKJSubmissionPhase`
-      )
-      .withArgs(Phase.MPKSubmission);
+    const txPromise = ethdkg
+      .connect(await getValidatorEthAccount(validators4[0].address))
+      .submitGPKJ(validators4[0].gpkj);
+    const [
+      ethDKGPhases,
+      ,
+      expectedBlockNumber,
+      expectedCurrentPhase,
+      phaseStartBlock,
+      phaseLength,
+    ] = await getInfoForIncorrectPhaseCustomError(txPromise, ethdkg);
+    await expect(txPromise)
+      .to.be.revertedWithCustomError(ethDKGPhases, `IncorrectPhase`)
+      .withArgs(expectedCurrentPhase, expectedBlockNumber, [
+        [
+          Phase.GPKJSubmission,
+          phaseStartBlock,
+          phaseStartBlock.add(phaseLength),
+        ],
+      ]);
   });
 
   it("should not allow non-validators to submit GPKj submission", async () => {
