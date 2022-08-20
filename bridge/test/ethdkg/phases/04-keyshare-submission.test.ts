@@ -4,6 +4,7 @@ import { getValidatorEthAccount } from "../../setup";
 import { validators4 } from "../assets/4-validators-successful-case";
 import {
   distributeValidatorsShares,
+  getInfoForIncorrectPhaseCustomError,
   Phase,
   startAtDistributeShares,
   startAtSubmitKeyShares,
@@ -23,24 +24,34 @@ describe("ETHDKG: Submit Key share", () => {
       expectedNonce
     );
 
-    const ethDKGPhases = await ethers.getContractAt(
-      "ETHDKGPhases",
-      ethdkg.address
+    const txPromise = submitValidatorsKeyShares(
+      ethdkg,
+      validatorPool,
+      validators4,
+      expectedNonce
     );
-
-    await expect(
-      submitValidatorsKeyShares(
-        ethdkg,
-        validatorPool,
-        validators4,
-        expectedNonce
-      )
-    )
-      .to.be.revertedWithCustomError(
-        ethDKGPhases,
-        `ETHDKGNotInKeyshareSubmissionPhase`
-      )
-      .withArgs(Phase.DisputeShareDistribution);
+    const [
+      ethDKGPhases,
+      ,
+      expectedBlockNumber,
+      expectedCurrentPhase,
+      phaseStartBlock,
+      phaseLength,
+    ] = await getInfoForIncorrectPhaseCustomError(txPromise, ethdkg);
+    await expect(txPromise)
+      .to.be.revertedWithCustomError(ethDKGPhases, `IncorrectPhase`)
+      .withArgs(expectedCurrentPhase, expectedBlockNumber, [
+        [
+          Phase.KeyShareSubmission,
+          phaseStartBlock,
+          phaseStartBlock.add(phaseLength),
+        ],
+        [
+          Phase.DisputeShareDistribution,
+          phaseStartBlock.add(phaseLength),
+          phaseStartBlock.add(phaseLength.mul(2)),
+        ],
+      ]);
   });
 
   it("should allow submission of key shares", async function () {

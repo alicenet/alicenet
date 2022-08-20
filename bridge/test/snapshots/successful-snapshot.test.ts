@@ -1,3 +1,4 @@
+import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
 import { Snapshots } from "../../typechain-types";
 import { expect } from "../chai-setup";
@@ -57,6 +58,7 @@ describe("Snapshots: With successful ETHDKG round completed", () => {
   });
 
   it("Reverts when snapshot state contains invalid height", async function () {
+    const expectedEpoch = 1024;
     await expect(
       snapshots
         .connect(
@@ -66,8 +68,8 @@ describe("Snapshots: With successful ETHDKG round completed", () => {
         )
         .snapshot(invalidSnapshot500.GroupSignature, invalidSnapshot500.BClaims)
     )
-      .to.be.revertedWithCustomError(fixture.snapshots, "InvalidBlockHeight")
-      .withArgs(invalidSnapshot500.height);
+      .to.be.revertedWithCustomError(fixture.snapshots, "UnexpectedBlockHeight")
+      .withArgs(invalidSnapshot500.height, expectedEpoch);
   });
 
   it("Reverts when snapshot state is the future", async function () {
@@ -80,8 +82,8 @@ describe("Snapshots: With successful ETHDKG round completed", () => {
         )
         .snapshot(validSnapshot2048.GroupSignature, validSnapshot2048.BClaims)
     )
-      .to.be.revertedWithCustomError(fixture.snapshots, "InvalidBlockHeight")
-      .withArgs(validSnapshot2048.height);
+      .to.be.revertedWithCustomError(fixture.snapshots, "UnexpectedBlockHeight")
+      .withArgs(validSnapshot2048.height, BigNumber.from(1024));
   });
 
   it("Reverts when snapshot state contains invalid chain id", async function () {

@@ -80,30 +80,40 @@ describe("Snapshots: Migrate state", () => {
   });
 
   it("Should not be to do a migration with incorrect block height", async function () {
+    const expectedEpochLength = 1024;
     await expect(
       factoryCallAny(fixture.factory, fixture.snapshots, "migrateSnapshots", [
         [invalidSnapshot500.GroupSignature, signedData[0].GroupSignature],
         [invalidSnapshot500.BClaims, signedData[0].BClaims],
       ])
     )
-      .to.be.revertedWithCustomError(fixture.snapshots, "InvalidBlockHeight")
-      .withArgs(invalidSnapshot500.height);
+      .to.be.revertedWithCustomError(
+        fixture.snapshots,
+        "BlockHeightNotMultipleOfEpochLength"
+      )
+      .withArgs(invalidSnapshot500.height, expectedEpochLength);
     await expect(
       factoryCallAny(fixture.factory, fixture.snapshots, "migrateSnapshots", [
         [signedData[0].GroupSignature, invalidSnapshot500.GroupSignature],
         [signedData[0].BClaims, invalidSnapshot500.BClaims],
       ])
     )
-      .to.be.revertedWithCustomError(fixture.snapshots, "InvalidBlockHeight")
-      .withArgs(invalidSnapshot500.height);
+      .to.be.revertedWithCustomError(
+        fixture.snapshots,
+        "BlockHeightNotMultipleOfEpochLength"
+      )
+      .withArgs(invalidSnapshot500.height, expectedEpochLength);
     await expect(
       factoryCallAny(fixture.factory, fixture.snapshots, "migrateSnapshots", [
         [invalidSnapshot500.GroupSignature],
         [invalidSnapshot500.BClaims],
       ])
     )
-      .to.be.revertedWithCustomError(fixture.snapshots, "InvalidBlockHeight")
-      .withArgs(invalidSnapshot500.height);
+      .to.be.revertedWithCustomError(
+        fixture.snapshots,
+        "BlockHeightNotMultipleOfEpochLength"
+      )
+      .withArgs(invalidSnapshot500.height, expectedEpochLength);
   });
 
   it("Should be able to do snapshots after migration", async function () {
