@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: MIT-open-group
 pragma solidity ^0.8.11;
 
-import "./DeterministicAddress.sol";
+import "contracts/utils/DeterministicAddress.sol";
 
 abstract contract ImmutableFactory is DeterministicAddress {
     address private immutable _factory;
@@ -129,6 +129,33 @@ abstract contract ImmutableBToken is ImmutableFactory {
 
     function _saltForBToken() internal pure returns (bytes32) {
         return 0x42546f6b656e0000000000000000000000000000000000000000000000000000;
+    }
+}
+
+abstract contract ImmutableDistribution is ImmutableFactory {
+    address private immutable _distribution;
+    error OnlyDistribution(address sender, address expected);
+
+    modifier onlyDistribution() {
+        if (msg.sender != _distribution) {
+            revert OnlyDistribution(msg.sender, _distribution);
+        }
+        _;
+    }
+
+    constructor() {
+        _distribution = getMetamorphicContractAddress(
+            0x446973747269627574696f6e0000000000000000000000000000000000000000,
+            _factoryAddress()
+        );
+    }
+
+    function _distributionAddress() internal view returns (address) {
+        return _distribution;
+    }
+
+    function _saltForDistribution() internal pure returns (bytes32) {
+        return 0x446973747269627574696f6e0000000000000000000000000000000000000000;
     }
 }
 

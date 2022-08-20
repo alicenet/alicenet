@@ -11,6 +11,8 @@ import {
 } from "../../setup";
 import {
   burnPositionCheckAndUpdateState,
+  collectAllProfitsCheckAndUpdateState,
+  collectAllProfitsToCheckAndUpdateState,
   collectEthCheckAndUpdateState,
   collectEthToCheckAndUpdateState,
   collectTokensCheckAndUpdateState,
@@ -19,6 +21,7 @@ import {
   depositTokensCheckAndUpdateState,
   getCurrentState,
   mintPositionCheckAndUpdateState,
+  StakingState,
 } from "../setup";
 
 describe("PublicStaking: Collect Tokens and ETH profit", async () => {
@@ -110,170 +113,285 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
       .withArgs(nonExistingTokenId);
   });
 
-  it("Mint and collect profits", async function () {
-    const sharesPerUser = ethers.utils.parseUnits("100", 18).toBigInt();
-    const tokensID: number[] = [];
-    for (let i = 0; i < users.length; i++) {
-      tokensID.push(0);
-    }
+  describe("with positions minted", async () => {
+    let sharesPerUser: bigint;
+    let expectedState: StakingState;
+    let tokensID: number[];
+    beforeEach(async function () {
+      sharesPerUser = ethers.utils.parseUnits("100", 18).toBigInt();
 
-    const expectedState = await getCurrentState(
-      fixture.publicStaking,
-      fixture.aToken,
-      users,
-      tokensID
-    );
+      tokensID = [];
+      for (let i = 0; i < users.length; i++) {
+        tokensID.push(0);
+      }
 
-    await mintPositionCheckAndUpdateState(
-      fixture.publicStaking,
-      fixture.aToken,
-      sharesPerUser,
-      0,
-      users,
-      tokensID,
-      expectedState,
-      "After mint 1"
-    );
-
-    await mintPositionCheckAndUpdateState(
-      fixture.publicStaking,
-      fixture.aToken,
-      sharesPerUser,
-      1,
-      users,
-      tokensID,
-      expectedState,
-      "After mint 1"
-    );
-
-    // deposit and collect only with 1 user
-    const amountDeposited = ethers.utils.parseUnits("50", 18).toBigInt();
-    await depositTokensCheckAndUpdateState(
-      fixture.publicStaking,
-      fixture.aToken,
-      amountDeposited,
-      users,
-      tokensID,
-      expectedState,
-      "After deposit 1"
-    );
-
-    await depositEthCheckAndUpdateState(
-      fixture.publicStaking,
-      fixture.aToken,
-      amountDeposited,
-      users,
-      tokensID,
-      expectedState,
-      "After deposit 1 Eth"
-    );
-
-    for (let i = 0; i < 2; i++) {
-      await collectTokensCheckAndUpdateState(
+      expectedState = await getCurrentState(
         fixture.publicStaking,
         fixture.aToken,
-        amountDeposited / 2n,
-        i,
+        users,
+        tokensID
+      );
+    });
+
+    it("collect profits individually", async function () {
+      await mintPositionCheckAndUpdateState(
+        fixture.publicStaking,
+        fixture.aToken,
+        sharesPerUser,
+        0,
         users,
         tokensID,
         expectedState,
-        "After collect 1" + i
+        "After mint 1"
       );
 
-      await collectEthCheckAndUpdateState(
+      await mintPositionCheckAndUpdateState(
         fixture.publicStaking,
         fixture.aToken,
-        amountDeposited / 2n,
-        i,
+        sharesPerUser,
+        1,
         users,
         tokensID,
         expectedState,
-        "After collect 1 Eth" + i
+        "After mint 1"
       );
-    }
-  });
 
-  it("Mint and collectTo profits", async function () {
-    const sharesPerUser = ethers.utils.parseUnits("100", 18).toBigInt();
-    const tokensID: number[] = [];
-    for (let i = 0; i < users.length; i++) {
-      tokensID.push(0);
-    }
+      // deposit and collect only with 1 user
+      const amountDeposited = ethers.utils.parseUnits("50", 18).toBigInt();
+      await depositTokensCheckAndUpdateState(
+        fixture.publicStaking,
+        fixture.aToken,
+        amountDeposited,
+        users,
+        tokensID,
+        expectedState,
+        "After deposit 1"
+      );
 
-    const expectedState = await getCurrentState(
-      fixture.publicStaking,
-      fixture.aToken,
-      users,
-      tokensID
-    );
+      await depositEthCheckAndUpdateState(
+        fixture.publicStaking,
+        fixture.aToken,
+        amountDeposited,
+        users,
+        tokensID,
+        expectedState,
+        "After deposit 1 Eth"
+      );
 
-    await mintPositionCheckAndUpdateState(
-      fixture.publicStaking,
-      fixture.aToken,
-      sharesPerUser,
-      0,
-      users,
-      tokensID,
-      expectedState,
-      "After mint 1"
-    );
+      for (let i = 0; i < 2; i++) {
+        await collectTokensCheckAndUpdateState(
+          fixture.publicStaking,
+          fixture.aToken,
+          amountDeposited / 2n,
+          i,
+          users,
+          tokensID,
+          expectedState,
+          "After collect 1" + i
+        );
 
-    // deposit and collect only with 1 user
-    const amountDeposited = ethers.utils.parseUnits("50", 18).toBigInt();
-    await depositTokensCheckAndUpdateState(
-      fixture.publicStaking,
-      fixture.aToken,
-      amountDeposited,
-      users,
-      tokensID,
-      expectedState,
-      "After deposit 1"
-    );
+        await collectEthCheckAndUpdateState(
+          fixture.publicStaking,
+          fixture.aToken,
+          amountDeposited / 2n,
+          i,
+          users,
+          tokensID,
+          expectedState,
+          "After collect 1 Eth" + i
+        );
+      }
+    });
 
-    await depositEthCheckAndUpdateState(
-      fixture.publicStaking,
-      fixture.aToken,
-      amountDeposited,
-      users,
-      tokensID,
-      expectedState,
-      "After deposit 1 Eth"
-    );
+    it("collect all profits", async function () {
+      await mintPositionCheckAndUpdateState(
+        fixture.publicStaking,
+        fixture.aToken,
+        sharesPerUser,
+        0,
+        users,
+        tokensID,
+        expectedState,
+        "After mint 1"
+      );
 
-    const balanceBeforeDestination = (
-      await ethers.provider.getBalance(users[1].address)
-    ).toBigInt();
-    await collectTokensToCheckAndUpdateState(
-      fixture.publicStaking,
-      fixture.aToken,
-      amountDeposited,
-      0,
-      1,
-      users,
-      tokensID,
-      expectedState,
-      "After collectTo 1"
-    );
+      await mintPositionCheckAndUpdateState(
+        fixture.publicStaking,
+        fixture.aToken,
+        sharesPerUser,
+        1,
+        users,
+        tokensID,
+        expectedState,
+        "After mint 1"
+      );
 
-    await collectEthToCheckAndUpdateState(
-      fixture.publicStaking,
-      fixture.aToken,
-      amountDeposited,
-      0,
-      1,
-      users,
-      tokensID,
-      expectedState,
-      "After collectTo 1 Eth"
-    );
+      // deposit and collect only with 1 user
+      const amountDeposited = ethers.utils.parseUnits("50", 18).toBigInt();
+      await depositTokensCheckAndUpdateState(
+        fixture.publicStaking,
+        fixture.aToken,
+        amountDeposited,
+        users,
+        tokensID,
+        expectedState,
+        "After deposit 1"
+      );
 
-    // only the destination user has to have received the profit
-    expect(
-      (await ethers.provider.getBalance(users[1].address)).toBigInt()
-    ).to.be.equals(
-      balanceBeforeDestination + amountDeposited,
-      "Expected ETH not met for destination address"
-    );
+      await depositEthCheckAndUpdateState(
+        fixture.publicStaking,
+        fixture.aToken,
+        amountDeposited,
+        users,
+        tokensID,
+        expectedState,
+        "After deposit 1 Eth"
+      );
+
+      for (let i = 0; i < 2; i++) {
+        await collectAllProfitsCheckAndUpdateState(
+          fixture.publicStaking,
+          fixture.aToken,
+          amountDeposited / 2n,
+          amountDeposited / 2n,
+          i,
+          users,
+          tokensID,
+          expectedState,
+          "After collect all profits " + i
+        );
+      }
+    });
+
+    it("collectTo profits individually", async function () {
+      await mintPositionCheckAndUpdateState(
+        fixture.publicStaking,
+        fixture.aToken,
+        sharesPerUser,
+        0,
+        users,
+        tokensID,
+        expectedState,
+        "After mint 1"
+      );
+
+      // deposit and collect only with 1 user
+      const amountDeposited = ethers.utils.parseUnits("50", 18).toBigInt();
+      await depositTokensCheckAndUpdateState(
+        fixture.publicStaking,
+        fixture.aToken,
+        amountDeposited,
+        users,
+        tokensID,
+        expectedState,
+        "After deposit 1"
+      );
+
+      await depositEthCheckAndUpdateState(
+        fixture.publicStaking,
+        fixture.aToken,
+        amountDeposited,
+        users,
+        tokensID,
+        expectedState,
+        "After deposit 1 Eth"
+      );
+
+      const balanceBeforeDestination = (
+        await ethers.provider.getBalance(users[1].address)
+      ).toBigInt();
+      await collectTokensToCheckAndUpdateState(
+        fixture.publicStaking,
+        fixture.aToken,
+        amountDeposited,
+        0,
+        1,
+        users,
+        tokensID,
+        expectedState,
+        "After collectTo 1"
+      );
+
+      await collectEthToCheckAndUpdateState(
+        fixture.publicStaking,
+        fixture.aToken,
+        amountDeposited,
+        0,
+        1,
+        users,
+        tokensID,
+        expectedState,
+        "After collectTo 1 Eth"
+      );
+
+      // only the destination user has to have received the profit
+      expect(
+        (await ethers.provider.getBalance(users[1].address)).toBigInt()
+      ).to.be.equals(
+        balanceBeforeDestination + amountDeposited,
+        "Expected ETH not met for destination address"
+      );
+    });
+
+    it("collect all profits at once to", async function () {
+      await mintPositionCheckAndUpdateState(
+        fixture.publicStaking,
+        fixture.aToken,
+        sharesPerUser,
+        0,
+        users,
+        tokensID,
+        expectedState,
+        "After mint 1"
+      );
+
+      // deposit and collect only with 1 user
+      const amountDeposited = ethers.utils.parseUnits("50", 18).toBigInt();
+      await depositTokensCheckAndUpdateState(
+        fixture.publicStaking,
+        fixture.aToken,
+        amountDeposited,
+        users,
+        tokensID,
+        expectedState,
+        "After deposit 1"
+      );
+
+      await depositEthCheckAndUpdateState(
+        fixture.publicStaking,
+        fixture.aToken,
+        amountDeposited,
+        users,
+        tokensID,
+        expectedState,
+        "After deposit 1 Eth"
+      );
+
+      const balanceBeforeDestination = (
+        await ethers.provider.getBalance(users[1].address)
+      ).toBigInt();
+
+      await collectAllProfitsToCheckAndUpdateState(
+        fixture.publicStaking,
+        fixture.aToken,
+        amountDeposited,
+        amountDeposited,
+        0,
+        1,
+        users,
+        tokensID,
+        expectedState,
+        "After collectAllProfitsTo 1"
+      );
+
+      // only the destination user has to have received the profit
+      expect(
+        (await ethers.provider.getBalance(users[1].address)).toBigInt()
+      ).to.be.equals(
+        balanceBeforeDestination + amountDeposited,
+        "Expected ETH not met for destination address"
+      );
+    });
   });
 
   it("Mint, collect and burn tokens for 3 users", async function () {

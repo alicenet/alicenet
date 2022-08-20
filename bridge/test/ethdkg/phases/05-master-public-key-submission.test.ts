@@ -5,6 +5,7 @@ import { validators4 } from "../assets/4-validators-successful-case";
 import {
   assertETHDKGPhase,
   assertEventMPKSet,
+  getInfoForIncorrectPhaseCustomError,
   Phase,
   startAtMPKSubmission,
   startAtSubmitKeyShares,
@@ -29,20 +30,26 @@ describe("ETHDKG: Submit Master Public Key", () => {
     await waitNextPhaseStartDelay(ethdkg);
     await assertETHDKGPhase(ethdkg, Phase.KeyShareSubmission);
 
-    const ethDKGPhases = await ethers.getContractAt(
-      "ETHDKGPhases",
-      ethdkg.address
-    );
-    await expect(
-      ethdkg
-        .connect(await getValidatorEthAccount(validators4[3].address))
-        .submitMasterPublicKey(validators4[3].mpk)
-    )
-      .to.be.revertedWithCustomError(
-        ethDKGPhases,
-        `ETHDKGNotInMasterPublicKeySubmissionPhase`
-      )
-      .withArgs(Phase.KeyShareSubmission);
+    const txPromise = ethdkg
+      .connect(await getValidatorEthAccount(validators4[3].address))
+      .submitMasterPublicKey(validators4[3].mpk);
+    const [
+      ethDKGPhases,
+      ,
+      expectedBlockNumber,
+      expectedCurrentPhase,
+      phaseStartBlock,
+      phaseLength,
+    ] = await getInfoForIncorrectPhaseCustomError(txPromise, ethdkg);
+    await expect(txPromise)
+      .to.be.revertedWithCustomError(ethDKGPhases, `IncorrectPhase`)
+      .withArgs(expectedCurrentPhase, expectedBlockNumber, [
+        [
+          Phase.MPKSubmission,
+          phaseStartBlock,
+          phaseStartBlock.add(phaseLength),
+        ],
+      ]);
   });
 
   it("should allow submission of master public key by a non-validator", async () => {
@@ -74,20 +81,26 @@ describe("ETHDKG: Submit Master Public Key", () => {
 
     await assertEventMPKSet(tx, expectedNonce, val11MPK);
 
-    const ethDKGPhases = await ethers.getContractAt(
-      "ETHDKGPhases",
-      ethdkg.address
-    );
-    await expect(
-      ethdkg
-        .connect(await getValidatorEthAccount(validator11))
-        .submitMasterPublicKey(val11MPK)
-    )
-      .to.be.revertedWithCustomError(
-        ethDKGPhases,
-        `ETHDKGNotInMasterPublicKeySubmissionPhase`
-      )
-      .withArgs(Phase.GPKJSubmission);
+    const txPromise = ethdkg
+      .connect(await getValidatorEthAccount(validator11))
+      .submitMasterPublicKey(val11MPK);
+    const [
+      ethDKGPhases,
+      ,
+      expectedBlockNumber,
+      expectedCurrentPhase,
+      phaseStartBlock,
+      phaseLength,
+    ] = await getInfoForIncorrectPhaseCustomError(txPromise, ethdkg);
+    await expect(txPromise)
+      .to.be.revertedWithCustomError(ethDKGPhases, `IncorrectPhase`)
+      .withArgs(expectedCurrentPhase, expectedBlockNumber, [
+        [
+          Phase.MPKSubmission,
+          phaseStartBlock,
+          phaseStartBlock.add(phaseLength),
+        ],
+      ]);
   });
 
   it("should not allow submission of empty master public key", async () => {

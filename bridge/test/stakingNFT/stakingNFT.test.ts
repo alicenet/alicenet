@@ -3871,9 +3871,13 @@ contract("StakingNFT", async () => {
       const positionAccumulatorValue = BigNumber.from("0");
 
       const accumScaleFactor = await stakingNFT.getAccumulatorScaleFactor();
+      const stateSlushAfterSkim = stateSlush.sub(
+        stateSlush.div(shares).mul(shares)
+      );
+      const stateAccumAfterSkim = stateAccum.add(stateSlush.div(shares));
       // Compute Expected Values
-      let expStateSlush = stateSlush;
-      const accumDelta = stateAccum.sub(positionAccumulatorValue);
+      let expStateSlush = stateSlushAfterSkim;
+      const accumDelta = stateAccumAfterSkim.sub(positionAccumulatorValue);
       let tmp = accumDelta.mul(positionShares);
       if (shares === positionShares) {
         tmp = tmp.add(stateSlush);
@@ -3881,8 +3885,8 @@ contract("StakingNFT", async () => {
       }
       const expPayout = tmp.div(accumScaleFactor);
       const payoutRem = tmp.sub(expPayout.mul(accumScaleFactor));
-      const expPositionAccumulatorValue = stateAccum;
-      const expStateAccumulator = stateAccum;
+      const expPositionAccumulatorValue = stateAccumAfterSkim;
+      const expStateAccumulator = stateAccumAfterSkim;
       expStateSlush = expStateSlush.add(payoutRem);
       const expPositionShares = positionShares;
 
@@ -3932,9 +3936,13 @@ contract("StakingNFT", async () => {
       ); // 2**168 - 10**30
 
       const accumScaleFactor = await stakingNFT.getAccumulatorScaleFactor();
+      const stateSlushAfterSkim = stateSlush.sub(
+        stateSlush.div(shares).mul(shares)
+      );
+      const stateAccumAfterSkim = stateAccum.add(stateSlush.div(shares));
       // Compute Expected Values
-      let expStateSlush = stateSlush;
-      const accumDelta = stateAccum.add(
+      let expStateSlush = stateSlushAfterSkim;
+      const accumDelta = stateAccumAfterSkim.add(
         twoPower168.sub(positionAccumulatorValue)
       );
       let tmp = accumDelta.mul(positionShares);
@@ -3944,8 +3952,8 @@ contract("StakingNFT", async () => {
       }
       const expPayout = tmp.div(accumScaleFactor);
       const payoutRem = tmp.sub(expPayout.mul(accumScaleFactor));
-      const expPositionAccumulatorValue = stateAccum;
-      const expStateAccumulator = stateAccum;
+      const expPositionAccumulatorValue = stateAccumAfterSkim;
+      const expStateAccumulator = stateAccumAfterSkim;
       expStateSlush = expStateSlush.add(payoutRem);
       const expPositionShares = positionShares;
 

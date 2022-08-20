@@ -2,8 +2,8 @@
 pragma solidity ^0.8.11;
 
 import "contracts/interfaces/ISnapshots.sol";
-import "contracts/interfaces/IAToken.sol";
-import "contracts/interfaces/IBToken.sol";
+import "contracts/interfaces/IStakingToken.sol";
+import "contracts/interfaces/IUtilityToken.sol";
 import "contracts/interfaces/IValidatorPool.sol";
 import "contracts/interfaces/IERC20Transferable.sol";
 import "contracts/interfaces/IStakingNFT.sol";
@@ -75,11 +75,10 @@ contract StateMigration is
     }
 
     function stakeValidators() public {
-        IBToken(_bTokenAddress()).setSplits(0, 0, 0, 1000);
         // Setting staking amount
         IValidatorPool(_validatorPoolAddress()).setStakeAmount(1);
         // Minting 4 aTokensWei to stake the validators
-        IATokenMinter(_aTokenMinterAddress()).mint(_factoryAddress(), 4);
+        IStakingTokenMinter(_aTokenMinterAddress()).mint(_factoryAddress(), 4);
         IERC20Transferable(_aTokenAddress()).approve(_publicStakingAddress(), 4);
         uint256[4] memory tokenIDs;
         for (uint256 i; i < 4; i++) {
@@ -172,7 +171,7 @@ contract StateMigration is
         );
 
         // deposit
-        IBToken(_bTokenAddress()).virtualMintDeposit(
+        IUtilityToken(_bTokenAddress()).virtualMintDeposit(
             1,
             0xba7809A4114eEF598132461f3202b5013e834CD5,
             500000000000
