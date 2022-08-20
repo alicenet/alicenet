@@ -35,7 +35,7 @@ describe("Testing BToken Destroy methods", async () => {
   it("Should burn btokens from sender and keep resulting eth on contract", async () => {
     expectedState = await getState(fixture);
     const tx = await fixture.bToken.connect(user).destroyBTokens(bTokens);
-    expect(bTokens).to.be.equal(BigInt("3990217121585928137263"));
+    expect(bTokens).to.be.equal(BigInt("4020217121585928137263"));
     expectedState.Balances.bToken.user -= bTokens.toBigInt();
     expectedState.Balances.bToken.totalSupply -= bTokens.toBigInt();
     expectedState.Balances.bToken.poolBalance -= ethsFromBurning.toBigInt();
@@ -43,14 +43,14 @@ describe("Testing BToken Destroy methods", async () => {
     expect(await getState(fixture)).to.be.deep.equal(expectedState);
   });
 
-  it("Should not destroy more btokens than suply", async () => {
+  it("Should not destroy more bTokens than supply", async () => {
     await expect(
       fixture.bToken
         .connect(user)
         .destroyBTokens((await fixture.bToken.balanceOf(user.address)).add(100))
     )
       .to.be.revertedWithCustomError(fixture.bToken, "BurnAmountExceedsSupply")
-      .withArgs(3990217121585928137363n, 3990217121585928137263n);
+      .withArgs(4020217121585928137363n, 4020217121585928137263n);
   });
 
   it("Should not destroy more BTokens than on balance", async () => {

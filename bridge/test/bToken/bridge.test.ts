@@ -135,12 +135,13 @@ describe("Testing BToken bridge methods", async () => {
 
   it("Should deposit tokens into the bridge and destroy the correspondent BToken fee if no eth fee is sent", async () => {
     expectedState = await getState(fixture);
+    ethsFromBurning = await fixture.bToken.getLatestEthFromBTokensBurn(
+        bTokenFee
+    );
     const tx = await fixture.bToken
       .connect(user)
       .depositTokensOnBridges(_poolVersion, encodedDepositCallData);
-    ethsFromBurning = await fixture.bToken.getLatestEthFromBTokensBurn(
-      bTokenFee
-    );
+    console.log(ethsFromBurning)
     expectedState.Balances.bToken.user -= BigInt(bTokenFee);
     expectedState.Balances.eth.user -= getEthConsumedAsGas(await tx.wait());
     expectedState.Balances.bToken.totalSupply -= BigInt(bTokenFee);
