@@ -1,3 +1,4 @@
+import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
 import { Snapshots } from "../../typechain-types";
 import { expect } from "../chai-setup";
@@ -81,8 +82,8 @@ describe("Snapshots: With successful ETHDKG round completed", () => {
         )
         .snapshot(validSnapshot2048.GroupSignature, validSnapshot2048.BClaims)
     )
-      .to.be.revertedWithCustomError(fixture.snapshots, "InvalidBlockHeight")
-      .withArgs(validSnapshot2048.height);
+      .to.be.revertedWithCustomError(fixture.snapshots, "UnexpectedBlockHeight")
+      .withArgs(validSnapshot2048.height, BigNumber.from(1024));
   });
 
   it("Reverts when snapshot state contains invalid chain id", async function () {
@@ -98,13 +99,8 @@ describe("Snapshots: With successful ETHDKG round completed", () => {
           invalidSnapshotChainID2.BClaims
         )
     )
-      .to.be.revertedWithCustomError(fixture.snapshots, "UnexpectedBlockHeight")
-      .withArgs(
-        2,
-        (
-          await fixture.snapshots.getEpoch()
-        ).mul(await fixture.snapshots.getEpochLength())
-      );
+      .to.be.revertedWithCustomError(fixture.snapshots, "InvalidChainId")
+      .withArgs(2);
   });
 
   // todo wrong public key failure happens first with this state
