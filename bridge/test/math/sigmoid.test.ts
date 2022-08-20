@@ -309,7 +309,7 @@ describe("Sigmoid unit tests", async () => {
       expect(retC).to.be.equal(trueC);
     });
     it("P Constant D", async function () {
-      const trueD = 1;
+      const trueD = 4;
       const retD = await sigmoid.pConstD();
       expect(retD).to.be.equal(trueD);
     });

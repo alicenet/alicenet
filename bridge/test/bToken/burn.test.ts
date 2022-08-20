@@ -41,8 +41,8 @@ describe("Testing BToken Burning methods", async () => {
       user,
       [burnQuantity, 0]
     );
-    expect(bTokens).to.be.equal(BigInt("3990217121585928137263"));
-    expect(eths).to.be.equal(BigInt("9749391845405398553"));
+    expect(bTokens).to.be.equal(BigInt("4020217121585928137263"));
+    expect(eths).to.be.equal(BigInt("9751261920046697614"));
     expectedState.Balances.bToken.user -= burnQuantity;
     expectedState.Balances.eth.user += eths.toBigInt();
     expectedState.Balances.bToken.poolBalance -= eths.toBigInt();
@@ -58,7 +58,7 @@ describe("Testing BToken Burning methods", async () => {
       user,
       [burnQuantity, 0]
     );
-    expect(eths).to.be.equal(BigInt("9749391845405398553"));
+    expect(eths).to.be.equal(BigInt("9751261920046697614"));
     expectedState.Balances.bToken.user -= burnQuantity;
     expectedState.Balances.eth.user += eths2.toBigInt();
     expectedState.Balances.bToken.poolBalance -= eths2.toBigInt();
