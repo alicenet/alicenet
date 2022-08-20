@@ -19,6 +19,22 @@
     "inputs": [
       {
         "internalType": "uint256",
+        "name": "blockHeight",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "epochLength",
+        "type": "uint256"
+      }
+    ],
+    "name": "BlockHeightNotMultipleOfEpochLength",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
         "name": "offset",
         "type": "uint256"
       },
@@ -92,17 +108,6 @@
       }
     ],
     "name": "InsufficientBytes",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "blockHeight",
-        "type": "uint256"
-      }
-    ],
-    "name": "InvalidBlockHeight",
     "type": "error"
   },
   {
@@ -382,6 +387,22 @@
       }
     ],
     "name": "SnapshotsNotInBuffer",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "givenBlockHeight",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "expectedBlockHeight",
+        "type": "uint256"
+      }
+    ],
+    "name": "UnexpectedBlockHeight",
     "type": "error"
   },
   {

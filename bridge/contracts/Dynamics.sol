@@ -197,16 +197,6 @@ contract Dynamics is Initializable, IDynamics, ImmutableSnapshots {
         return executionEpoch;
     }
 
-    function _computeCompactedVersion(
-        uint256 majorVersion,
-        uint256 minorVersion,
-        uint256 patch
-    ) internal pure returns (uint256 fullVersion) {
-        assembly {
-            fullVersion := or(or(shl(64, majorVersion), shl(32, minorVersion)), patch)
-        }
-    }
-
     function _decodeDynamicValues(address addr)
         internal
         view
@@ -234,6 +224,16 @@ contract Dynamics is Initializable, IDynamics, ImmutableSnapshots {
                 ptr := add(ptr, div(size, 8))
                 retPtr := add(retPtr, 0x20)
             }
+        }
+    }
+
+    function _computeCompactedVersion(
+        uint256 majorVersion,
+        uint256 minorVersion,
+        uint256 patch
+    ) internal pure returns (uint256 fullVersion) {
+        assembly {
+            fullVersion := or(or(shl(64, majorVersion), shl(32, minorVersion)), patch)
         }
     }
 

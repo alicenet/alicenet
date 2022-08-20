@@ -8,20 +8,6 @@ contract DynamicsMock is Dynamics {
 
     constructor() Dynamics() {}
 
-    function testEnconding() public pure returns (bytes memory) {
-        DynamicValues memory initialValues = DynamicValues(
-            Version.V1,
-            4000,
-            3000,
-            3000,
-            3000000,
-            0,
-            0,
-            0
-        );
-        return Dynamics._encodeDynamicValues(initialValues);
-    }
-
     function testChangeDynamicValues(uint32 relativeExecutionEpoch, DynamicValues memory newValue)
         public
     {
@@ -51,16 +37,22 @@ contract DynamicsMock is Dynamics {
         );
     }
 
-    function testSetConfiguration(
-        Configuration calldata newConfig,
-        uint32 majorVersion,
-        uint32 minorVersion,
-        uint32 patch
-    ) public {
-        assembly {
-            let fullVersion := or(or(shl(majorVersion, 64), shl(minorVersion, 32)), patch)
-        }
+    function testSetConfiguration(Configuration calldata newConfig) public {
         _configuration = newConfig;
+    }
+
+    function testEnconding() public pure returns (bytes memory) {
+        DynamicValues memory initialValues = DynamicValues(
+            Version.V1,
+            4000,
+            3000,
+            3000,
+            3000000,
+            0,
+            0,
+            0
+        );
+        return Dynamics._encodeDynamicValues(initialValues);
     }
 
     function testCompactedRepresentation(
