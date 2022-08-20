@@ -21,6 +21,7 @@ contract ValidatorPoolMock is
     ImmutableAToken
 {
     using CustomEnumerableMaps for ValidatorDataMap;
+    error OnlyAdminAllowed();
 
     uint256 public constant POSITION_LOCK_PERIOD = 3; // Actual is 172800
 
@@ -40,7 +41,9 @@ contract ValidatorPoolMock is
     uint256 internal _stakeAmount;
 
     modifier onlyAdmin() {
-        require(msg.sender == _admin, "Validators: requires admin privileges");
+        if (msg.sender != _admin) {
+            revert OnlyAdminAllowed();
+        }
         _;
     }
 

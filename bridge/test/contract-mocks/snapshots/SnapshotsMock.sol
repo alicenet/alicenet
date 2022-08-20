@@ -9,6 +9,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "contracts/interfaces/IDynamics.sol";
 
 contract SnapshotsMock is Initializable, ImmutableValidatorPool, ISnapshots, ImmutableDynamics {
+    error onlyAdminAllowed();
     uint32 internal _epoch;
     uint32 internal _epochLength;
 
@@ -26,7 +27,9 @@ contract SnapshotsMock is Initializable, ImmutableValidatorPool, ISnapshots, Imm
     uint256 internal _minimumIntervalBetweenSnapshots;
 
     modifier onlyAdmin() {
-        require(msg.sender == _admin, "Snapshots: Only admin allowed!");
+        if (msg.sender != _admin) {
+            revert onlyAdminAllowed();
+        }
         _;
     }
 
