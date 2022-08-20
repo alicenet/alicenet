@@ -36,8 +36,7 @@ interface IDynamics {
     event DeployedStorageContract(address contractAddr);
     event DynamicValueChanged(uint256 epoch, bytes rawDynamicValues);
     event NewAliceNetNodeVersionAvailable(CanonicalVersion version);
-
-    function deployStorage(bytes calldata data) external returns (address contractAddr);
+    event NewCanonicalAliceNetNodeVersion(CanonicalVersion version);
 
     function changeDynamicValues(uint32 relativeExecutionEpoch, DynamicValues memory newValue)
         external;
@@ -53,6 +52,8 @@ interface IDynamics {
     ) external;
 
     function setConfiguration(Configuration calldata newConfig) external;
+
+    function deployStorage(bytes calldata data) external returns (address contractAddr);
 
     function getConfiguration() external view returns (Configuration memory);
 

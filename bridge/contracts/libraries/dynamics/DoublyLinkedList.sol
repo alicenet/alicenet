@@ -11,8 +11,8 @@ struct Node {
 }
 
 struct DoublyLinkedList {
-    uint256 head;
-    uint256 tail;
+    uint128 head;
+    uint128 tail;
     mapping(uint256 => Node) nodes;
 }
 
@@ -102,7 +102,7 @@ library DoublyLinkedListLogic {
      * @dev Function to update the Head pointer.
      * @param epoch The epoch value to set as the head pointer
      */
-    function setHead(DoublyLinkedList storage list, uint256 epoch) internal {
+    function setHead(DoublyLinkedList storage list, uint128 epoch) internal {
         if (!exists(list, epoch)) {
             revert DoublyLinkedListErrors.InexistentNodeAtPosition(epoch);
         }
@@ -113,7 +113,7 @@ library DoublyLinkedListLogic {
      * @dev Function to update the Tail pointer.
      * @param epoch The epoch value to set as the tail pointer
      */
-    function setTail(DoublyLinkedList storage list, uint256 epoch) internal {
+    function setTail(DoublyLinkedList storage list, uint128 epoch) internal {
         if (!exists(list, epoch)) {
             revert DoublyLinkedListErrors.InexistentNodeAtPosition(epoch);
         }
@@ -222,48 +222,4 @@ library DoublyLinkedListLogic {
     function createNode(uint32 epoch, address data) internal pure returns (Node memory) {
         return Node(epoch, 0, 0, data);
     }
-
-    // /**
-    //  * @dev Insert a new Node in the `epoch` position with `data` address in the data
-    //         field. This function fails if epoch is smaller or equal than the current
-    //         head, if epoch is greater or equal than the current tail, if the data field
-    //         is the zero address or if a node already exists at `epoch`.
-
-    //         This function is disabled for now and will always fail as we are only going to
-    //         allow nodes to be added after the latest tail.
-    //  */
-    // function addNodeInTheMiddle(
-    //     DoublyLinkedList storage list,
-    //     uint32 epoch,
-    //     address data
-    // ) internal {
-    //     uint32 head = uint32(list.head);
-    //     uint32 tail = uint32(list.tail);
-    //     // This function can be added at the end of the addNode function to remove code
-    //     // duplication with the checks below.
-    //     if (epoch <= head || epoch >= tail) {
-    //         revert DoublyLinkedListErrors.InvalidNodeId(head, tail, epoch);
-    //     }
-    //     if (exists(list, epoch)) {
-    //         revert DoublyLinkedListErrors.ExistentNodeAtPosition(epoch);
-    //     }
-    //     if (data == address(0)) {
-    //         revert DoublyLinkedListErrors.InvalidData();
-    //     }
-    //     Node memory node = createNode(epoch, data);
-    //     // appending between the tail and the head
-    //     uint32 currentPosition = tail;
-    //     while (currentPosition != head) {
-    //         Node memory currentNode = list.nodes[currentPosition];
-    //         if (epoch > currentNode.prev) {
-    //             list.nodes[epoch] = node.update(currentNode.prev, currentNode.epoch);
-    //             linkNext(list, currentNode.prev, epoch);
-    //             linkPrevious(list, currentNode.epoch, epoch);
-    //             return;
-    //         }
-    //         currentPosition = currentNode.prev;
-    //     }
-    //     // should not be possible to reach this point
-    //     revert DoublyLinkedListErrors.InvalidNodeInsertion(head, tail, node.epoch);
-    // }
 }

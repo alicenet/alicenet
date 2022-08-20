@@ -89,10 +89,6 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
         _setSnapshot(Snapshot(block.number, blockClaims));
         _epochRegister().set(epoch);
 
-        // check and update the latest dynamics values in case the scheduled changes
-        // start to become valid on this epoch
-        IDynamics(_dynamicsAddress()).updateHead(epoch);
-
         emit SnapshotTaken(
             _chainId,
             epoch,
@@ -103,6 +99,11 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
             signature,
             blockClaims
         );
+
+        // check and update the latest dynamics values in case the scheduled changes
+        // start to become valid on this epoch
+        IDynamics(_dynamicsAddress()).updateHead(epoch);
+
         return isSafeToProceedConsensus;
     }
 

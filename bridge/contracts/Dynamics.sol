@@ -62,6 +62,10 @@ contract Dynamics is Initializable, IDynamics, ImmutableSnapshots {
         if (nextEpoch != 0 && currentEpoch >= nextEpoch) {
             _dynamicValues.setHead(nextEpoch);
         }
+        CanonicalVersion memory currentVersion = _aliceNetCanonicalVersion;
+        if (currentVersion.executionEpoch != 0 && currentVersion.executionEpoch == currentEpoch) {
+            emit NewCanonicalAliceNetNodeVersion(currentVersion);
+        }
     }
 
     /// Updates the aliceNet node version. The new version should always be greater
@@ -99,7 +103,7 @@ contract Dynamics is Initializable, IDynamics, ImmutableSnapshots {
     /// sent in the `data` parameter as its runtime byte code. I.e, it is a basic a
     /// blob of data with an address.
     /// @param data the data to be stored in the storage contract runtime byte code.
-    /// @return the address of the storage contract.
+    /// @return contractAddr the address of the storage contract.
     function deployStorage(bytes calldata data) public returns (address contractAddr) {
         return _deployStorage(data);
     }

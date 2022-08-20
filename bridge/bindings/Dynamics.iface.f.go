@@ -58,4 +58,16 @@ type IDynamicsFilterer interface {
 	//
 	// Solidity: event NewAliceNetNodeVersionAvailable((uint32,uint32,uint32,uint32,bytes32) version)
 	ParseNewAliceNetNodeVersionAvailable(log types.Log) (*DynamicsNewAliceNetNodeVersionAvailable, error)
+	// FilterNewCanonicalAliceNetNodeVersion is a free log retrieval operation binding the contract event 0xa4625685ba31ef67968ffdac1e4e9723a1409a79ea97fa78b30fc214f1646299.
+	//
+	// Solidity: event NewCanonicalAliceNetNodeVersion((uint32,uint32,uint32,uint32,bytes32) version)
+	FilterNewCanonicalAliceNetNodeVersion(opts *bind.FilterOpts) (*DynamicsNewCanonicalAliceNetNodeVersionIterator, error)
+	// WatchNewCanonicalAliceNetNodeVersion is a free log subscription operation binding the contract event 0xa4625685ba31ef67968ffdac1e4e9723a1409a79ea97fa78b30fc214f1646299.
+	//
+	// Solidity: event NewCanonicalAliceNetNodeVersion((uint32,uint32,uint32,uint32,bytes32) version)
+	WatchNewCanonicalAliceNetNodeVersion(opts *bind.WatchOpts, sink chan<- *DynamicsNewCanonicalAliceNetNodeVersion) (event.Subscription, error)
+	// ParseNewCanonicalAliceNetNodeVersion is a log parse operation binding the contract event 0xa4625685ba31ef67968ffdac1e4e9723a1409a79ea97fa78b30fc214f1646299.
+	//
+	// Solidity: event NewCanonicalAliceNetNodeVersion((uint32,uint32,uint32,uint32,bytes32) version)
+	ParseNewCanonicalAliceNetNodeVersion(log types.Log) (*DynamicsNewCanonicalAliceNetNodeVersion, error)
 }

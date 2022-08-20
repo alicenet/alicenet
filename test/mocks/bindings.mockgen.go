@@ -13906,6 +13906,10 @@ type MockIDynamics struct {
 	// function object controlling the behavior of the method
 	// FilterNewAliceNetNodeVersionAvailable.
 	FilterNewAliceNetNodeVersionAvailableFunc *IDynamicsFilterNewAliceNetNodeVersionAvailableFunc
+	// FilterNewCanonicalAliceNetNodeVersionFunc is an instance of a mock
+	// function object controlling the behavior of the method
+	// FilterNewCanonicalAliceNetNodeVersion.
+	FilterNewCanonicalAliceNetNodeVersionFunc *IDynamicsFilterNewCanonicalAliceNetNodeVersionFunc
 	// GetConfigurationFunc is an instance of a mock function object
 	// controlling the behavior of the method GetConfiguration.
 	GetConfigurationFunc *IDynamicsGetConfigurationFunc
@@ -13942,6 +13946,10 @@ type MockIDynamics struct {
 	// function object controlling the behavior of the method
 	// ParseNewAliceNetNodeVersionAvailable.
 	ParseNewAliceNetNodeVersionAvailableFunc *IDynamicsParseNewAliceNetNodeVersionAvailableFunc
+	// ParseNewCanonicalAliceNetNodeVersionFunc is an instance of a mock
+	// function object controlling the behavior of the method
+	// ParseNewCanonicalAliceNetNodeVersion.
+	ParseNewCanonicalAliceNetNodeVersionFunc *IDynamicsParseNewCanonicalAliceNetNodeVersionFunc
 	// SetConfigurationFunc is an instance of a mock function object
 	// controlling the behavior of the method SetConfiguration.
 	SetConfigurationFunc *IDynamicsSetConfigurationFunc
@@ -13966,6 +13974,10 @@ type MockIDynamics struct {
 	// function object controlling the behavior of the method
 	// WatchNewAliceNetNodeVersionAvailable.
 	WatchNewAliceNetNodeVersionAvailableFunc *IDynamicsWatchNewAliceNetNodeVersionAvailableFunc
+	// WatchNewCanonicalAliceNetNodeVersionFunc is an instance of a mock
+	// function object controlling the behavior of the method
+	// WatchNewCanonicalAliceNetNodeVersion.
+	WatchNewCanonicalAliceNetNodeVersionFunc *IDynamicsWatchNewCanonicalAliceNetNodeVersionFunc
 }
 
 // NewMockIDynamics creates a new mock of the IDynamics interface. All
@@ -14009,6 +14021,11 @@ func NewMockIDynamics() *MockIDynamics {
 		},
 		FilterNewAliceNetNodeVersionAvailableFunc: &IDynamicsFilterNewAliceNetNodeVersionAvailableFunc{
 			defaultHook: func(*bind.FilterOpts) (r0 *bindings.DynamicsNewAliceNetNodeVersionAvailableIterator, r1 error) {
+				return
+			},
+		},
+		FilterNewCanonicalAliceNetNodeVersionFunc: &IDynamicsFilterNewCanonicalAliceNetNodeVersionFunc{
+			defaultHook: func(*bind.FilterOpts) (r0 *bindings.DynamicsNewCanonicalAliceNetNodeVersionIterator, r1 error) {
 				return
 			},
 		},
@@ -14067,6 +14084,11 @@ func NewMockIDynamics() *MockIDynamics {
 				return
 			},
 		},
+		ParseNewCanonicalAliceNetNodeVersionFunc: &IDynamicsParseNewCanonicalAliceNetNodeVersionFunc{
+			defaultHook: func(types.Log) (r0 *bindings.DynamicsNewCanonicalAliceNetNodeVersion, r1 error) {
+				return
+			},
+		},
 		SetConfigurationFunc: &IDynamicsSetConfigurationFunc{
 			defaultHook: func(*bind.TransactOpts, bindings.Configuration) (r0 *types.Transaction, r1 error) {
 				return
@@ -14099,6 +14121,11 @@ func NewMockIDynamics() *MockIDynamics {
 		},
 		WatchNewAliceNetNodeVersionAvailableFunc: &IDynamicsWatchNewAliceNetNodeVersionAvailableFunc{
 			defaultHook: func(*bind.WatchOpts, chan<- *bindings.DynamicsNewAliceNetNodeVersionAvailable) (r0 event.Subscription, r1 error) {
+				return
+			},
+		},
+		WatchNewCanonicalAliceNetNodeVersionFunc: &IDynamicsWatchNewCanonicalAliceNetNodeVersionFunc{
+			defaultHook: func(*bind.WatchOpts, chan<- *bindings.DynamicsNewCanonicalAliceNetNodeVersion) (r0 event.Subscription, r1 error) {
 				return
 			},
 		},
@@ -14147,6 +14174,11 @@ func NewStrictMockIDynamics() *MockIDynamics {
 		FilterNewAliceNetNodeVersionAvailableFunc: &IDynamicsFilterNewAliceNetNodeVersionAvailableFunc{
 			defaultHook: func(*bind.FilterOpts) (*bindings.DynamicsNewAliceNetNodeVersionAvailableIterator, error) {
 				panic("unexpected invocation of MockIDynamics.FilterNewAliceNetNodeVersionAvailable")
+			},
+		},
+		FilterNewCanonicalAliceNetNodeVersionFunc: &IDynamicsFilterNewCanonicalAliceNetNodeVersionFunc{
+			defaultHook: func(*bind.FilterOpts) (*bindings.DynamicsNewCanonicalAliceNetNodeVersionIterator, error) {
+				panic("unexpected invocation of MockIDynamics.FilterNewCanonicalAliceNetNodeVersion")
 			},
 		},
 		GetConfigurationFunc: &IDynamicsGetConfigurationFunc{
@@ -14204,6 +14236,11 @@ func NewStrictMockIDynamics() *MockIDynamics {
 				panic("unexpected invocation of MockIDynamics.ParseNewAliceNetNodeVersionAvailable")
 			},
 		},
+		ParseNewCanonicalAliceNetNodeVersionFunc: &IDynamicsParseNewCanonicalAliceNetNodeVersionFunc{
+			defaultHook: func(types.Log) (*bindings.DynamicsNewCanonicalAliceNetNodeVersion, error) {
+				panic("unexpected invocation of MockIDynamics.ParseNewCanonicalAliceNetNodeVersion")
+			},
+		},
 		SetConfigurationFunc: &IDynamicsSetConfigurationFunc{
 			defaultHook: func(*bind.TransactOpts, bindings.Configuration) (*types.Transaction, error) {
 				panic("unexpected invocation of MockIDynamics.SetConfiguration")
@@ -14239,6 +14276,11 @@ func NewStrictMockIDynamics() *MockIDynamics {
 				panic("unexpected invocation of MockIDynamics.WatchNewAliceNetNodeVersionAvailable")
 			},
 		},
+		WatchNewCanonicalAliceNetNodeVersionFunc: &IDynamicsWatchNewCanonicalAliceNetNodeVersionFunc{
+			defaultHook: func(*bind.WatchOpts, chan<- *bindings.DynamicsNewCanonicalAliceNetNodeVersion) (event.Subscription, error) {
+				panic("unexpected invocation of MockIDynamics.WatchNewCanonicalAliceNetNodeVersion")
+			},
+		},
 	}
 }
 
@@ -14269,6 +14311,9 @@ func NewMockIDynamicsFrom(i bindings.IDynamics) *MockIDynamics {
 		},
 		FilterNewAliceNetNodeVersionAvailableFunc: &IDynamicsFilterNewAliceNetNodeVersionAvailableFunc{
 			defaultHook: i.FilterNewAliceNetNodeVersionAvailable,
+		},
+		FilterNewCanonicalAliceNetNodeVersionFunc: &IDynamicsFilterNewCanonicalAliceNetNodeVersionFunc{
+			defaultHook: i.FilterNewCanonicalAliceNetNodeVersion,
 		},
 		GetConfigurationFunc: &IDynamicsGetConfigurationFunc{
 			defaultHook: i.GetConfiguration,
@@ -14303,6 +14348,9 @@ func NewMockIDynamicsFrom(i bindings.IDynamics) *MockIDynamics {
 		ParseNewAliceNetNodeVersionAvailableFunc: &IDynamicsParseNewAliceNetNodeVersionAvailableFunc{
 			defaultHook: i.ParseNewAliceNetNodeVersionAvailable,
 		},
+		ParseNewCanonicalAliceNetNodeVersionFunc: &IDynamicsParseNewCanonicalAliceNetNodeVersionFunc{
+			defaultHook: i.ParseNewCanonicalAliceNetNodeVersion,
+		},
 		SetConfigurationFunc: &IDynamicsSetConfigurationFunc{
 			defaultHook: i.SetConfiguration,
 		},
@@ -14323,6 +14371,9 @@ func NewMockIDynamicsFrom(i bindings.IDynamics) *MockIDynamics {
 		},
 		WatchNewAliceNetNodeVersionAvailableFunc: &IDynamicsWatchNewAliceNetNodeVersionAvailableFunc{
 			defaultHook: i.WatchNewAliceNetNodeVersionAvailable,
+		},
+		WatchNewCanonicalAliceNetNodeVersionFunc: &IDynamicsWatchNewCanonicalAliceNetNodeVersionFunc{
+			defaultHook: i.WatchNewCanonicalAliceNetNodeVersion,
 		},
 	}
 }
@@ -15194,6 +15245,116 @@ func (c IDynamicsFilterNewAliceNetNodeVersionAvailableFuncCall) Args() []interfa
 // Results returns an interface slice containing the results of this
 // invocation.
 func (c IDynamicsFilterNewAliceNetNodeVersionAvailableFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
+}
+
+// IDynamicsFilterNewCanonicalAliceNetNodeVersionFunc describes the behavior
+// when the FilterNewCanonicalAliceNetNodeVersion method of the parent
+// MockIDynamics instance is invoked.
+type IDynamicsFilterNewCanonicalAliceNetNodeVersionFunc struct {
+	defaultHook func(*bind.FilterOpts) (*bindings.DynamicsNewCanonicalAliceNetNodeVersionIterator, error)
+	hooks       []func(*bind.FilterOpts) (*bindings.DynamicsNewCanonicalAliceNetNodeVersionIterator, error)
+	history     []IDynamicsFilterNewCanonicalAliceNetNodeVersionFuncCall
+	mutex       sync.Mutex
+}
+
+// FilterNewCanonicalAliceNetNodeVersion delegates to the next hook function
+// in the queue and stores the parameter and result values of this
+// invocation.
+func (m *MockIDynamics) FilterNewCanonicalAliceNetNodeVersion(v0 *bind.FilterOpts) (*bindings.DynamicsNewCanonicalAliceNetNodeVersionIterator, error) {
+	r0, r1 := m.FilterNewCanonicalAliceNetNodeVersionFunc.nextHook()(v0)
+	m.FilterNewCanonicalAliceNetNodeVersionFunc.appendCall(IDynamicsFilterNewCanonicalAliceNetNodeVersionFuncCall{v0, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the
+// FilterNewCanonicalAliceNetNodeVersion method of the parent MockIDynamics
+// instance is invoked and the hook queue is empty.
+func (f *IDynamicsFilterNewCanonicalAliceNetNodeVersionFunc) SetDefaultHook(hook func(*bind.FilterOpts) (*bindings.DynamicsNewCanonicalAliceNetNodeVersionIterator, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// FilterNewCanonicalAliceNetNodeVersion method of the parent MockIDynamics
+// instance invokes the hook at the front of the queue and discards it.
+// After the queue is empty, the default hook function is invoked for any
+// future action.
+func (f *IDynamicsFilterNewCanonicalAliceNetNodeVersionFunc) PushHook(hook func(*bind.FilterOpts) (*bindings.DynamicsNewCanonicalAliceNetNodeVersionIterator, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *IDynamicsFilterNewCanonicalAliceNetNodeVersionFunc) SetDefaultReturn(r0 *bindings.DynamicsNewCanonicalAliceNetNodeVersionIterator, r1 error) {
+	f.SetDefaultHook(func(*bind.FilterOpts) (*bindings.DynamicsNewCanonicalAliceNetNodeVersionIterator, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *IDynamicsFilterNewCanonicalAliceNetNodeVersionFunc) PushReturn(r0 *bindings.DynamicsNewCanonicalAliceNetNodeVersionIterator, r1 error) {
+	f.PushHook(func(*bind.FilterOpts) (*bindings.DynamicsNewCanonicalAliceNetNodeVersionIterator, error) {
+		return r0, r1
+	})
+}
+
+func (f *IDynamicsFilterNewCanonicalAliceNetNodeVersionFunc) nextHook() func(*bind.FilterOpts) (*bindings.DynamicsNewCanonicalAliceNetNodeVersionIterator, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *IDynamicsFilterNewCanonicalAliceNetNodeVersionFunc) appendCall(r0 IDynamicsFilterNewCanonicalAliceNetNodeVersionFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of
+// IDynamicsFilterNewCanonicalAliceNetNodeVersionFuncCall objects describing
+// the invocations of this function.
+func (f *IDynamicsFilterNewCanonicalAliceNetNodeVersionFunc) History() []IDynamicsFilterNewCanonicalAliceNetNodeVersionFuncCall {
+	f.mutex.Lock()
+	history := make([]IDynamicsFilterNewCanonicalAliceNetNodeVersionFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// IDynamicsFilterNewCanonicalAliceNetNodeVersionFuncCall is an object that
+// describes an invocation of method FilterNewCanonicalAliceNetNodeVersion
+// on an instance of MockIDynamics.
+type IDynamicsFilterNewCanonicalAliceNetNodeVersionFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 *bind.FilterOpts
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 *bindings.DynamicsNewCanonicalAliceNetNodeVersionIterator
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c IDynamicsFilterNewCanonicalAliceNetNodeVersionFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c IDynamicsFilterNewCanonicalAliceNetNodeVersionFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
@@ -16386,6 +16547,116 @@ func (c IDynamicsParseNewAliceNetNodeVersionAvailableFuncCall) Results() []inter
 	return []interface{}{c.Result0, c.Result1}
 }
 
+// IDynamicsParseNewCanonicalAliceNetNodeVersionFunc describes the behavior
+// when the ParseNewCanonicalAliceNetNodeVersion method of the parent
+// MockIDynamics instance is invoked.
+type IDynamicsParseNewCanonicalAliceNetNodeVersionFunc struct {
+	defaultHook func(types.Log) (*bindings.DynamicsNewCanonicalAliceNetNodeVersion, error)
+	hooks       []func(types.Log) (*bindings.DynamicsNewCanonicalAliceNetNodeVersion, error)
+	history     []IDynamicsParseNewCanonicalAliceNetNodeVersionFuncCall
+	mutex       sync.Mutex
+}
+
+// ParseNewCanonicalAliceNetNodeVersion delegates to the next hook function
+// in the queue and stores the parameter and result values of this
+// invocation.
+func (m *MockIDynamics) ParseNewCanonicalAliceNetNodeVersion(v0 types.Log) (*bindings.DynamicsNewCanonicalAliceNetNodeVersion, error) {
+	r0, r1 := m.ParseNewCanonicalAliceNetNodeVersionFunc.nextHook()(v0)
+	m.ParseNewCanonicalAliceNetNodeVersionFunc.appendCall(IDynamicsParseNewCanonicalAliceNetNodeVersionFuncCall{v0, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the
+// ParseNewCanonicalAliceNetNodeVersion method of the parent MockIDynamics
+// instance is invoked and the hook queue is empty.
+func (f *IDynamicsParseNewCanonicalAliceNetNodeVersionFunc) SetDefaultHook(hook func(types.Log) (*bindings.DynamicsNewCanonicalAliceNetNodeVersion, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// ParseNewCanonicalAliceNetNodeVersion method of the parent MockIDynamics
+// instance invokes the hook at the front of the queue and discards it.
+// After the queue is empty, the default hook function is invoked for any
+// future action.
+func (f *IDynamicsParseNewCanonicalAliceNetNodeVersionFunc) PushHook(hook func(types.Log) (*bindings.DynamicsNewCanonicalAliceNetNodeVersion, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *IDynamicsParseNewCanonicalAliceNetNodeVersionFunc) SetDefaultReturn(r0 *bindings.DynamicsNewCanonicalAliceNetNodeVersion, r1 error) {
+	f.SetDefaultHook(func(types.Log) (*bindings.DynamicsNewCanonicalAliceNetNodeVersion, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *IDynamicsParseNewCanonicalAliceNetNodeVersionFunc) PushReturn(r0 *bindings.DynamicsNewCanonicalAliceNetNodeVersion, r1 error) {
+	f.PushHook(func(types.Log) (*bindings.DynamicsNewCanonicalAliceNetNodeVersion, error) {
+		return r0, r1
+	})
+}
+
+func (f *IDynamicsParseNewCanonicalAliceNetNodeVersionFunc) nextHook() func(types.Log) (*bindings.DynamicsNewCanonicalAliceNetNodeVersion, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *IDynamicsParseNewCanonicalAliceNetNodeVersionFunc) appendCall(r0 IDynamicsParseNewCanonicalAliceNetNodeVersionFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of
+// IDynamicsParseNewCanonicalAliceNetNodeVersionFuncCall objects describing
+// the invocations of this function.
+func (f *IDynamicsParseNewCanonicalAliceNetNodeVersionFunc) History() []IDynamicsParseNewCanonicalAliceNetNodeVersionFuncCall {
+	f.mutex.Lock()
+	history := make([]IDynamicsParseNewCanonicalAliceNetNodeVersionFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// IDynamicsParseNewCanonicalAliceNetNodeVersionFuncCall is an object that
+// describes an invocation of method ParseNewCanonicalAliceNetNodeVersion on
+// an instance of MockIDynamics.
+type IDynamicsParseNewCanonicalAliceNetNodeVersionFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 types.Log
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 *bindings.DynamicsNewCanonicalAliceNetNodeVersion
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c IDynamicsParseNewCanonicalAliceNetNodeVersionFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c IDynamicsParseNewCanonicalAliceNetNodeVersionFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
+}
+
 // IDynamicsSetConfigurationFunc describes the behavior when the
 // SetConfiguration method of the parent MockIDynamics instance is invoked.
 type IDynamicsSetConfigurationFunc struct {
@@ -17165,6 +17436,119 @@ func (c IDynamicsWatchNewAliceNetNodeVersionAvailableFuncCall) Args() []interfac
 // Results returns an interface slice containing the results of this
 // invocation.
 func (c IDynamicsWatchNewAliceNetNodeVersionAvailableFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
+}
+
+// IDynamicsWatchNewCanonicalAliceNetNodeVersionFunc describes the behavior
+// when the WatchNewCanonicalAliceNetNodeVersion method of the parent
+// MockIDynamics instance is invoked.
+type IDynamicsWatchNewCanonicalAliceNetNodeVersionFunc struct {
+	defaultHook func(*bind.WatchOpts, chan<- *bindings.DynamicsNewCanonicalAliceNetNodeVersion) (event.Subscription, error)
+	hooks       []func(*bind.WatchOpts, chan<- *bindings.DynamicsNewCanonicalAliceNetNodeVersion) (event.Subscription, error)
+	history     []IDynamicsWatchNewCanonicalAliceNetNodeVersionFuncCall
+	mutex       sync.Mutex
+}
+
+// WatchNewCanonicalAliceNetNodeVersion delegates to the next hook function
+// in the queue and stores the parameter and result values of this
+// invocation.
+func (m *MockIDynamics) WatchNewCanonicalAliceNetNodeVersion(v0 *bind.WatchOpts, v1 chan<- *bindings.DynamicsNewCanonicalAliceNetNodeVersion) (event.Subscription, error) {
+	r0, r1 := m.WatchNewCanonicalAliceNetNodeVersionFunc.nextHook()(v0, v1)
+	m.WatchNewCanonicalAliceNetNodeVersionFunc.appendCall(IDynamicsWatchNewCanonicalAliceNetNodeVersionFuncCall{v0, v1, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the
+// WatchNewCanonicalAliceNetNodeVersion method of the parent MockIDynamics
+// instance is invoked and the hook queue is empty.
+func (f *IDynamicsWatchNewCanonicalAliceNetNodeVersionFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *bindings.DynamicsNewCanonicalAliceNetNodeVersion) (event.Subscription, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// WatchNewCanonicalAliceNetNodeVersion method of the parent MockIDynamics
+// instance invokes the hook at the front of the queue and discards it.
+// After the queue is empty, the default hook function is invoked for any
+// future action.
+func (f *IDynamicsWatchNewCanonicalAliceNetNodeVersionFunc) PushHook(hook func(*bind.WatchOpts, chan<- *bindings.DynamicsNewCanonicalAliceNetNodeVersion) (event.Subscription, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *IDynamicsWatchNewCanonicalAliceNetNodeVersionFunc) SetDefaultReturn(r0 event.Subscription, r1 error) {
+	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *bindings.DynamicsNewCanonicalAliceNetNodeVersion) (event.Subscription, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *IDynamicsWatchNewCanonicalAliceNetNodeVersionFunc) PushReturn(r0 event.Subscription, r1 error) {
+	f.PushHook(func(*bind.WatchOpts, chan<- *bindings.DynamicsNewCanonicalAliceNetNodeVersion) (event.Subscription, error) {
+		return r0, r1
+	})
+}
+
+func (f *IDynamicsWatchNewCanonicalAliceNetNodeVersionFunc) nextHook() func(*bind.WatchOpts, chan<- *bindings.DynamicsNewCanonicalAliceNetNodeVersion) (event.Subscription, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *IDynamicsWatchNewCanonicalAliceNetNodeVersionFunc) appendCall(r0 IDynamicsWatchNewCanonicalAliceNetNodeVersionFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of
+// IDynamicsWatchNewCanonicalAliceNetNodeVersionFuncCall objects describing
+// the invocations of this function.
+func (f *IDynamicsWatchNewCanonicalAliceNetNodeVersionFunc) History() []IDynamicsWatchNewCanonicalAliceNetNodeVersionFuncCall {
+	f.mutex.Lock()
+	history := make([]IDynamicsWatchNewCanonicalAliceNetNodeVersionFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// IDynamicsWatchNewCanonicalAliceNetNodeVersionFuncCall is an object that
+// describes an invocation of method WatchNewCanonicalAliceNetNodeVersion on
+// an instance of MockIDynamics.
+type IDynamicsWatchNewCanonicalAliceNetNodeVersionFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 *bind.WatchOpts
+	// Arg1 is the value of the 2nd argument passed to this method
+	// invocation.
+	Arg1 chan<- *bindings.DynamicsNewCanonicalAliceNetNodeVersion
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 event.Subscription
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c IDynamicsWatchNewCanonicalAliceNetNodeVersionFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0, c.Arg1}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c IDynamicsWatchNewCanonicalAliceNetNodeVersionFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 

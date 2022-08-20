@@ -299,6 +299,46 @@
     "type": "event"
   },
   {
+    "anonymous": false,
+    "inputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint32",
+            "name": "major",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint32",
+            "name": "minor",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint32",
+            "name": "patch",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint32",
+            "name": "executionEpoch",
+            "type": "uint32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "binaryHash",
+            "type": "bytes32"
+          }
+        ],
+        "indexed": false,
+        "internalType": "struct CanonicalVersion",
+        "name": "version",
+        "type": "tuple"
+      }
+    ],
+    "name": "NewCanonicalAliceNetNodeVersion",
+    "type": "event"
+  },
+  {
     "inputs": [
       {
         "internalType": "uint32",
