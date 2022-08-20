@@ -29,7 +29,7 @@ type IDynamicsCaller interface {
 	GetEncodingVersion(opts *bind.CallOpts) (uint8, error)
 	// GetLatestAliceNetVersion is a free data retrieval call binding the contract method 0xd85200cc.
 	//
-	// Solidity: function getLatestAliceNetVersion() view returns((uint32,uint32,uint32,bytes32))
+	// Solidity: function getLatestAliceNetVersion() view returns((uint32,uint32,uint32,uint32,bytes32))
 	GetLatestAliceNetVersion(opts *bind.CallOpts) (CanonicalVersion, error)
 	// GetLatestDynamicValues is a free data retrieval call binding the contract method 0xf53efe02.
 	//

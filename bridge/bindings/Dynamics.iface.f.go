@@ -46,16 +46,16 @@ type IDynamicsFilterer interface {
 	//
 	// Solidity: event Initialized(uint8 version)
 	ParseInitialized(log types.Log) (*DynamicsInitialized, error)
-	// FilterNewAliceNetNodeVersionAvailable is a free log retrieval operation binding the contract event 0x437029890617e44d37bcc80df392a59a70e7cf1cbad9ceaeb54834c2c93ae9fa.
+	// FilterNewAliceNetNodeVersionAvailable is a free log retrieval operation binding the contract event 0xd05fe7fc00936621efe67e776e805ddf5a4e50d53b63179d2c05523244ec95ff.
 	//
-	// Solidity: event NewAliceNetNodeVersionAvailable(uint256 maxUpdateEpoch, (uint32,uint32,uint32,bytes32) version)
+	// Solidity: event NewAliceNetNodeVersionAvailable((uint32,uint32,uint32,uint32,bytes32) version)
 	FilterNewAliceNetNodeVersionAvailable(opts *bind.FilterOpts) (*DynamicsNewAliceNetNodeVersionAvailableIterator, error)
-	// WatchNewAliceNetNodeVersionAvailable is a free log subscription operation binding the contract event 0x437029890617e44d37bcc80df392a59a70e7cf1cbad9ceaeb54834c2c93ae9fa.
+	// WatchNewAliceNetNodeVersionAvailable is a free log subscription operation binding the contract event 0xd05fe7fc00936621efe67e776e805ddf5a4e50d53b63179d2c05523244ec95ff.
 	//
-	// Solidity: event NewAliceNetNodeVersionAvailable(uint256 maxUpdateEpoch, (uint32,uint32,uint32,bytes32) version)
+	// Solidity: event NewAliceNetNodeVersionAvailable((uint32,uint32,uint32,uint32,bytes32) version)
 	WatchNewAliceNetNodeVersionAvailable(opts *bind.WatchOpts, sink chan<- *DynamicsNewAliceNetNodeVersionAvailable) (event.Subscription, error)
-	// ParseNewAliceNetNodeVersionAvailable is a log parse operation binding the contract event 0x437029890617e44d37bcc80df392a59a70e7cf1cbad9ceaeb54834c2c93ae9fa.
+	// ParseNewAliceNetNodeVersionAvailable is a log parse operation binding the contract event 0xd05fe7fc00936621efe67e776e805ddf5a4e50d53b63179d2c05523244ec95ff.
 	//
-	// Solidity: event NewAliceNetNodeVersionAvailable(uint256 maxUpdateEpoch, (uint32,uint32,uint32,bytes32) version)
+	// Solidity: event NewAliceNetNodeVersionAvailable((uint32,uint32,uint32,uint32,bytes32) version)
 	ParseNewAliceNetNodeVersionAvailable(log types.Log) (*DynamicsNewAliceNetNodeVersionAvailable, error)
 }

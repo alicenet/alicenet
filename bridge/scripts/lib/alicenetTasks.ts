@@ -940,6 +940,81 @@ task("setHardhatBaseFee", "sets the hardhat node base fee for the next block")
     }
   });
 
+task("updateAliceNetNodeVersion", "Set the Canonical AliceNet Node Version")
+  .addParam("factoryAddress", "address of the factory deploying the contract")
+  .addParam(
+    "relativeEpoch",
+    "relativeEpoch Canonical AliceNet version",
+    -1,
+    types.int
+  )
+  .addParam("major", "Major Canonical AliceNet version", -1, types.int)
+  .addParam("minor", "Minor Canonical AliceNet version", -1, types.int)
+  .addParam("patch", "Patch Canonical AliceNet version", -1, types.int)
+  .addParam(
+    "binaryHash",
+    "BinaryHash Canonical AliceNet version",
+    "",
+    types.string
+  )
+  .setAction(async (taskArgs, hre) => {
+    const factory = await hre.ethers.getContractAt(
+      "AliceNetFactory",
+      taskArgs.factoryAddress
+    );
+    const dynamics = await hre.ethers.getContractAt(
+      "Dynamics",
+      await factory.callStatic.lookup(
+        hre.ethers.utils.formatBytes32String("Dynamics")
+      )
+    );
+
+    if (taskArgs.relativeEpoch < 2) {
+      throw new Error(
+        "relativeEpoch not passed or the value was smaller than 2!"
+      );
+    }
+
+    if (taskArgs.major < 0) {
+      throw new Error("major not passed or the value was smaller than 0!");
+    }
+
+    if (taskArgs.minor < 0) {
+      throw new Error("minor not passed or the value was smaller than 0!");
+    }
+
+    if (taskArgs.patch < 0) {
+      throw new Error("patch not passed or the value was smaller than 0!");
+    }
+
+    if (!taskArgs.binaryHash) {
+      throw new Error("binaryHash not passed!");
+    }
+
+    const [admin] = await hre.ethers.getSigners();
+    const adminSigner = await hre.ethers.getSigner(admin.address);
+    const input = dynamics.interface.encodeFunctionData(
+      "updateAliceNetNodeVersion",
+      [
+        taskArgs.relativeEpoch,
+        taskArgs.major,
+        taskArgs.minor,
+        taskArgs.patch,
+        hre.ethers.utils.formatBytes32String(taskArgs.binaryHash),
+      ]
+    );
+    console.log(
+      `Updating the updateAliceNetNodeVersion to ${taskArgs.major}.${taskArgs.minor}.${taskArgs.patch}`
+    );
+    const rept = await (
+      await factory.connect(adminSigner).callAny(dynamics.address, 0, input)
+    ).wait(3);
+    if (rept.status !== 1) {
+      throw new Error(`Receipt indicates failure: ${rept}`);
+    }
+    console.log("Done");
+  });
+
 async function mintATokenTo(
   hre: HardhatRuntimeEnvironment,
   factoryAddress: string,

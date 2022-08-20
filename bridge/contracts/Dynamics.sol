@@ -155,6 +155,7 @@ contract Dynamics is Initializable, IDynamics, ImmutableSnapshots {
             majorVersion,
             minorVersion,
             patch,
+            _computeExecutionEpoch(relativeUpdateEpoch),
             binaryHash
         );
         uint256 newCompactedVersion = _computeCompactedVersion(majorVersion, minorVersion, patch);
@@ -169,7 +170,6 @@ contract Dynamics is Initializable, IDynamics, ImmutableSnapshots {
         }
         _aliceNetCanonicalVersion = newVersion;
         emit NewAliceNetNodeVersionAvailable(
-            _computeExecutionEpoch(relativeUpdateEpoch),
             newVersion
         );
     }

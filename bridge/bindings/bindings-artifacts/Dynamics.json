@@ -68,6 +68,11 @@
             "type": "uint32"
           },
           {
+            "internalType": "uint32",
+            "name": "executionEpoch",
+            "type": "uint32"
+          },
+          {
             "internalType": "bytes32",
             "name": "binaryHash",
             "type": "bytes32"
@@ -92,6 +97,11 @@
           {
             "internalType": "uint32",
             "name": "patch",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint32",
+            "name": "executionEpoch",
             "type": "uint32"
           },
           {
@@ -252,12 +262,6 @@
     "anonymous": false,
     "inputs": [
       {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "maxUpdateEpoch",
-        "type": "uint256"
-      },
-      {
         "components": [
           {
             "internalType": "uint32",
@@ -272,6 +276,11 @@
           {
             "internalType": "uint32",
             "name": "patch",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint32",
+            "name": "executionEpoch",
             "type": "uint32"
           },
           {
@@ -547,6 +556,11 @@
           {
             "internalType": "uint32",
             "name": "patch",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint32",
+            "name": "executionEpoch",
             "type": "uint32"
           },
           {
