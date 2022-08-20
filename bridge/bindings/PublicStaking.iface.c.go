@@ -50,6 +50,10 @@ type IPublicStakingCaller interface {
 		Accumulator *big.Int
 		Slush       *big.Int
 	}, error)
+	// GetLatestMintedPositionID is a free data retrieval call binding the contract method 0x79bb0985.
+	//
+	// Solidity: function getLatestMintedPositionID() view returns(uint256)
+	GetLatestMintedPositionID(opts *bind.CallOpts) (*big.Int, error)
 	// GetMaxGovernanceLock is a free data retrieval call binding the contract method 0xf44d258b.
 	//
 	// Solidity: function getMaxGovernanceLock() pure returns(uint256)
@@ -111,8 +115,20 @@ type IPublicStakingCaller interface {
 	//
 	// Solidity: function symbol() view returns(string)
 	Symbol(opts *bind.CallOpts) (string, error)
+	// TokenByIndex is a free data retrieval call binding the contract method 0x4f6ccce7.
+	//
+	// Solidity: function tokenByIndex(uint256 index) view returns(uint256)
+	TokenByIndex(opts *bind.CallOpts, index *big.Int) (*big.Int, error)
+	// TokenOfOwnerByIndex is a free data retrieval call binding the contract method 0x2f745c59.
+	//
+	// Solidity: function tokenOfOwnerByIndex(address owner, uint256 index) view returns(uint256)
+	TokenOfOwnerByIndex(opts *bind.CallOpts, owner common.Address, index *big.Int) (*big.Int, error)
 	// TokenURI is a free data retrieval call binding the contract method 0xc87b56dd.
 	//
 	// Solidity: function tokenURI(uint256 tokenID_) view returns(string)
 	TokenURI(opts *bind.CallOpts, tokenID_ *big.Int) (string, error)
+	// TotalSupply is a free data retrieval call binding the contract method 0x18160ddd.
+	//
+	// Solidity: function totalSupply() view returns(uint256)
+	TotalSupply(opts *bind.CallOpts) (*big.Int, error)
 }

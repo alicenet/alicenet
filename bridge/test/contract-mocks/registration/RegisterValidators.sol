@@ -11,6 +11,7 @@ import "contracts/interfaces/IETHDKG.sol";
 import "contracts/utils/ImmutableAuth.sol";
 import "contracts/libraries/parsers/BClaimsParserLibrary.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import "contracts/libraries/errors/RegisterValidatorErrors.sol";
 
 contract ExternalStoreRegistration is ImmutableFactory {
     uint256 internal _counter;
@@ -85,10 +86,12 @@ contract RegisterValidators is
     }
 
     function registerValidators(address[] calldata validatorsAccounts_) public {
-        require(
-            validatorsAccounts_.length == _externalStore.getTokenIDsLength(),
-            "Incorrect validators account length!"
-        );
+        if (validatorsAccounts_.length != _externalStore.getTokenIDsLength()) {
+            revert RegisterValidatorErrors.InvalidNumberOfValidators(
+                validatorsAccounts_.length,
+                _externalStore.getTokenIDsLength()
+            );
+        }
         uint256[] memory tokenIDs = _externalStore.getTokenIds();
         ////////////// Registering validators /////////////////////////
         IValidatorPool(_validatorPoolAddress()).registerValidators(validatorsAccounts_, tokenIDs);
