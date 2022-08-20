@@ -5,20 +5,19 @@ import {
   CanonicalVersionStruct,
   ConfigurationStruct,
   DynamicValuesStruct,
-} from "../../typechain-types/contracts/Dynamics.sol/Dynamics";
+} from "../../typechain-types/contracts/Dynamics";
 import { expect } from "../chai-setup";
 import { factoryCallAny, Fixture, getFixture } from "../setup";
 
 describe("Testing Dynamics methods", async () => {
   let admin: SignerWithAddress;
-  let user: SignerWithAddress;
   let fixture: Fixture;
   const minEpochsBetweenUpdates = BigNumber.from(2);
   const maxEpochsBetweenUpdates = BigNumber.from(336);
 
-  let futureEpoch = BigNumber.from(2);
-  let zeroEpoch = BigNumber.from(0);
-  let currentDynamicValues: DynamicValuesStruct = {
+  const futureEpoch = BigNumber.from(2);
+  const zeroEpoch = BigNumber.from(0);
+  const currentDynamicValues: DynamicValuesStruct = {
     encoderVersion: 0,
     proposalTimeout: 4000,
     preVoteTimeout: 3000,
@@ -28,14 +27,14 @@ describe("Testing Dynamics methods", async () => {
     valueStoreFee: BigNumber.from(0),
     minScaledTransactionFee: BigNumber.from(0),
   };
-  let alicenetCurrentVersion = {
+  const alicenetCurrentVersion = {
     major: 0,
     minor: 0,
     patch: 0,
     binaryHash:
       "0xbc36789e7a1e281436464229828f817d6612f7b477d66591ff96a9e064bcc98a",
   };
-  let currentConfiguration: ConfigurationStruct = {
+  const currentConfiguration: ConfigurationStruct = {
     minEpochsBetweenUpdates: BigNumber.from(2),
     maxEpochsBetweenUpdates: BigNumber.from(336),
   };
@@ -43,7 +42,7 @@ describe("Testing Dynamics methods", async () => {
   beforeEach(async function () {
     fixture = await getFixture(false, true, false);
     const signers = await ethers.getSigners();
-    [admin, user] = signers;
+    [admin] = signers;
   });
 
   it("Should get Dynamics configuration", async () => {
@@ -164,7 +163,7 @@ describe("Testing Dynamics methods", async () => {
       "changeDynamicValues",
       [futureEpoch, newDynamicValues]
     );
-    //the following code was used to successfully test event emission by removing temporally onlyFactory modifier in changeDynamicValues for test running
+    // the following code was used to successfully test event emission by removing temporally onlyFactory modifier in changeDynamicValues for test running
     /*     const encodedDynamicValues = await fixture.dynamics.encodeDynamicValues(newDynamicValues)
         await expect(
           fixture.dynamics.changeDynamicValues(
@@ -304,7 +303,7 @@ describe("Testing Dynamics methods", async () => {
 
   it("Should update Alicenet node version to a valid version and emit corresponding event", async () => {
     const newMajorVersion = alicenetCurrentVersion.major + 1;
-    const receipt = await factoryCallAny(
+    await factoryCallAny(
       fixture.factory,
       fixture.dynamics,
       "updateAliceNetNodeVersion",
@@ -317,7 +316,7 @@ describe("Testing Dynamics methods", async () => {
       ]
     );
 
-    //the following code was used to successfully test event emission removing temporally onlyFactory modifier in updateAliceNetNodeVersion
+    // the following code was used to successfully test event emission removing temporally onlyFactory modifier in updateAliceNetNodeVersion
     /*     await expect(
           fixture.dynamics.updateAliceNetNodeVersion(
             futureEpoch,
