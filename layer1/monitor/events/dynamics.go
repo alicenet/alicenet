@@ -14,7 +14,7 @@ import (
 
 // ProcessDynamicValueChanged handles a dynamic value updating coming from our smart contract.
 func ProcessDynamicValueChanged(contracts layer1.AllSmartContracts, logger *logrus.Entry, log types.Log) error {
-	logger.Info("ProcessValueUpdated() ...")
+	logger.Info("ProcessDynamicValueChanged() ...")
 
 	event, err := contracts.EthereumContracts().Dynamics().ParseDynamicValueChanged(log)
 	if err != nil {
