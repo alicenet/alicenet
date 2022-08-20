@@ -2,8 +2,8 @@
 pragma solidity ^0.8.11;
 
 import "contracts/interfaces/ISnapshots.sol";
-import "contracts/interfaces/IAToken.sol";
-import "contracts/interfaces/IBToken.sol";
+import "contracts/interfaces/IStakingToken.sol";
+import "contracts/interfaces/IUtilityToken.sol";
 import "contracts/interfaces/IValidatorPool.sol";
 import "contracts/interfaces/IERC20Transferable.sol";
 import "contracts/interfaces/IStakingNFT.sol";
@@ -73,7 +73,7 @@ contract RegisterValidators is
         // Setting staking amount
         IValidatorPool(_validatorPoolAddress()).setStakeAmount(1);
         // Minting 4 aTokensWei to stake the validators
-        IATokenMinter(_aTokenMinterAddress()).mint(_factoryAddress(), numValidators);
+        IStakingTokenMinter(_aTokenMinterAddress()).mint(_factoryAddress(), numValidators);
         IERC20Transferable(_aTokenAddress()).approve(_publicStakingAddress(), numValidators);
         uint256[] memory tokenIDs = new uint256[](numValidators);
         for (uint256 i; i < numValidators; i++) {

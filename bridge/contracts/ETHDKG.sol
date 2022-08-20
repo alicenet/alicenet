@@ -360,14 +360,14 @@ contract ETHDKG is
         return participants;
     }
 
-    function tryGetParticipantIndex(address participant) public view returns (bool, uint256) {
+    function getLastRoundParticipantIndex(address participant) public view returns (uint256) {
         uint256 participantDataIndex = _participants[participant].index;
         uint256 participantDataNonce = _participants[participant].nonce;
         uint256 nonce = _nonce;
-        if (participantDataNonce == nonce && nonce != 0) {
-            return (true, participantDataIndex);
+        if (nonce == 0 || participantDataNonce != nonce) {
+            revert ETHDKGErrors.ParticipantNotFoundInLastRound(participant);
         }
-        return (false, 0);
+        return participantDataIndex;
     }
 
     function getMasterPublicKey() public view returns (uint256[4] memory) {

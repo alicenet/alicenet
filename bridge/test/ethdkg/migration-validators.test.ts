@@ -292,7 +292,8 @@ describe("Ethdkg: Migrate state", () => {
         expectedHeight,
         ethers.utils.getAddress(validatorsSnapshots2[1].address),
         expectedSafeToProceedConsensus,
-        validSnapshot2048.GroupSignature,
+        validSnapshot2048.GroupSignatureDeserialized?.[0],
+        validSnapshot2048.GroupSignatureDeserialized?.[1],
         validSnapshot2048.BClaimsDeserialized
       );
 
@@ -346,7 +347,16 @@ describe("Ethdkg: Migrate state", () => {
         expectedHeight,
         ethers.utils.getAddress(validatorsSnapshots[1].address),
         expectedSafeToProceedConsensus,
-        signedData[2].GroupSignature,
+        [
+          "0x0062cd4187d44be6f7977e5cbfc18066c3d5029bc6ab1e0ae5b1dd20a691fc6d",
+          "0x08648a63a6690c930265e93c86ec421d6a7ca06504c6b9509640cbd794a1459a",
+          "0x0a0837516f6bdc0ff9fd69776b2d7928432958b31551d10e921cc261f290b23c",
+          "0x06ce5812bf9f76f2dc04d272dd2e0ff8d2424d1e9f19c22da1ad5d2294463428",
+        ],
+        [
+          "0x0413ba20de19c18c75e268419c3f6fd86cc4d9a75e3b1127ce180ed93b95bff6",
+          "0x09401a3cf161c59e5e34e0da23593f556c9f834e90264a474933fd8235202b0c",
+        ],
         [
           expectedChainId,
           expectedHeight,
@@ -419,7 +429,16 @@ describe("Ethdkg: Migrate state", () => {
         expectedHeight,
         ethers.utils.getAddress(validatorsSnapshots[1].address),
         expectedSafeToProceedConsensus,
-        signedData[1].GroupSignature,
+        [
+          "0x0062cd4187d44be6f7977e5cbfc18066c3d5029bc6ab1e0ae5b1dd20a691fc6d",
+          "0x08648a63a6690c930265e93c86ec421d6a7ca06504c6b9509640cbd794a1459a",
+          "0x0a0837516f6bdc0ff9fd69776b2d7928432958b31551d10e921cc261f290b23c",
+          "0x06ce5812bf9f76f2dc04d272dd2e0ff8d2424d1e9f19c22da1ad5d2294463428",
+        ],
+        [
+          "0x2a060cf960125afbb506d17644798a7e5c877e9e82b6bf426b7287d543ed59e0",
+          "0x09d52226e77e1bf3321bff5320989ee80f27a564d25bc4daaf4bb0640c73d7b0",
+        ],
         [
           expectedChainId,
           expectedHeight,
@@ -463,7 +482,16 @@ describe("Ethdkg: Migrate state", () => {
         expectedHeight,
         ethers.utils.getAddress(validatorsSnapshots[1].address),
         expectedSafeToProceedConsensus,
-        signedData[2].GroupSignature,
+        [
+          "0x0062cd4187d44be6f7977e5cbfc18066c3d5029bc6ab1e0ae5b1dd20a691fc6d",
+          "0x08648a63a6690c930265e93c86ec421d6a7ca06504c6b9509640cbd794a1459a",
+          "0x0a0837516f6bdc0ff9fd69776b2d7928432958b31551d10e921cc261f290b23c",
+          "0x06ce5812bf9f76f2dc04d272dd2e0ff8d2424d1e9f19c22da1ad5d2294463428",
+        ],
+        [
+          "0x0413ba20de19c18c75e268419c3f6fd86cc4d9a75e3b1127ce180ed93b95bff6",
+          "0x09401a3cf161c59e5e34e0da23593f556c9f834e90264a474933fd8235202b0c",
+        ],
         [
           expectedChainId,
           expectedHeight,

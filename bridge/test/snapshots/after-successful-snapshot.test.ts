@@ -79,13 +79,14 @@ describe("Snapshots: With successful snapshot completed", () => {
     await mineBlocks(
       (await fixture.snapshots.getMinimumIntervalBetweenSnapshots()).toBigInt()
     );
+    const expectedEpoch = 2048;
     await expect(
       fixture.snapshots
         .connect(validValidator)
         .snapshot(validSnapshot1024.GroupSignature, validSnapshot1024.BClaims)
     )
-      .to.be.revertedWithCustomError(fixture.snapshots, "InvalidBlockHeight")
-      .withArgs(validSnapshot1024.height);
+      .to.be.revertedWithCustomError(fixture.snapshots, "UnexpectedBlockHeight")
+      .withArgs(validSnapshot1024.height, expectedEpoch);
   });
 
   it("Does not allow snapshot if ETHDKG round is Running", async function () {
