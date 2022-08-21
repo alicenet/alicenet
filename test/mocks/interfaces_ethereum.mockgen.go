@@ -3948,6 +3948,12 @@ type MockEthereumContracts struct {
 	// ContractFactoryAddressFunc is an instance of a mock function object
 	// controlling the behavior of the method ContractFactoryAddress.
 	ContractFactoryAddressFunc *EthereumContractsContractFactoryAddressFunc
+	// DynamicsFunc is an instance of a mock function object controlling the
+	// behavior of the method Dynamics.
+	DynamicsFunc *EthereumContractsDynamicsFunc
+	// DynamicsAddressFunc is an instance of a mock function object
+	// controlling the behavior of the method DynamicsAddress.
+	DynamicsAddressFunc *EthereumContractsDynamicsAddressFunc
 	// EthdkgFunc is an instance of a mock function object controlling the
 	// behavior of the method Ethdkg.
 	EthdkgFunc *EthereumContractsEthdkgFunc
@@ -4020,6 +4026,16 @@ func NewMockEthereumContracts() *MockEthereumContracts {
 			},
 		},
 		ContractFactoryAddressFunc: &EthereumContractsContractFactoryAddressFunc{
+			defaultHook: func() (r0 common.Address) {
+				return
+			},
+		},
+		DynamicsFunc: &EthereumContractsDynamicsFunc{
+			defaultHook: func() (r0 bindings.IDynamics) {
+				return
+			},
+		},
+		DynamicsAddressFunc: &EthereumContractsDynamicsAddressFunc{
 			defaultHook: func() (r0 common.Address) {
 				return
 			},
@@ -4127,6 +4143,16 @@ func NewStrictMockEthereumContracts() *MockEthereumContracts {
 				panic("unexpected invocation of MockEthereumContracts.ContractFactoryAddress")
 			},
 		},
+		DynamicsFunc: &EthereumContractsDynamicsFunc{
+			defaultHook: func() bindings.IDynamics {
+				panic("unexpected invocation of MockEthereumContracts.Dynamics")
+			},
+		},
+		DynamicsAddressFunc: &EthereumContractsDynamicsAddressFunc{
+			defaultHook: func() common.Address {
+				panic("unexpected invocation of MockEthereumContracts.DynamicsAddress")
+			},
+		},
 		EthdkgFunc: &EthereumContractsEthdkgFunc{
 			defaultHook: func() bindings.IETHDKG {
 				panic("unexpected invocation of MockEthereumContracts.Ethdkg")
@@ -4217,6 +4243,12 @@ func NewMockEthereumContractsFrom(i layer1.EthereumContracts) *MockEthereumContr
 		},
 		ContractFactoryAddressFunc: &EthereumContractsContractFactoryAddressFunc{
 			defaultHook: i.ContractFactoryAddress,
+		},
+		DynamicsFunc: &EthereumContractsDynamicsFunc{
+			defaultHook: i.Dynamics,
+		},
+		DynamicsAddressFunc: &EthereumContractsDynamicsAddressFunc{
+			defaultHook: i.DynamicsAddress,
 		},
 		EthdkgFunc: &EthereumContractsEthdkgFunc{
 			defaultHook: i.Ethdkg,
@@ -4862,6 +4894,207 @@ func (c EthereumContractsContractFactoryAddressFuncCall) Args() []interface{} {
 // Results returns an interface slice containing the results of this
 // invocation.
 func (c EthereumContractsContractFactoryAddressFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0}
+}
+
+// EthereumContractsDynamicsFunc describes the behavior when the Dynamics
+// method of the parent MockEthereumContracts instance is invoked.
+type EthereumContractsDynamicsFunc struct {
+	defaultHook func() bindings.IDynamics
+	hooks       []func() bindings.IDynamics
+	history     []EthereumContractsDynamicsFuncCall
+	mutex       sync.Mutex
+}
+
+// Dynamics delegates to the next hook function in the queue and stores the
+// parameter and result values of this invocation.
+func (m *MockEthereumContracts) Dynamics() bindings.IDynamics {
+	r0 := m.DynamicsFunc.nextHook()()
+	m.DynamicsFunc.appendCall(EthereumContractsDynamicsFuncCall{r0})
+	return r0
+}
+
+// SetDefaultHook sets function that is called when the Dynamics method of
+// the parent MockEthereumContracts instance is invoked and the hook queue
+// is empty.
+func (f *EthereumContractsDynamicsFunc) SetDefaultHook(hook func() bindings.IDynamics) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// Dynamics method of the parent MockEthereumContracts instance invokes the
+// hook at the front of the queue and discards it. After the queue is empty,
+// the default hook function is invoked for any future action.
+func (f *EthereumContractsDynamicsFunc) PushHook(hook func() bindings.IDynamics) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *EthereumContractsDynamicsFunc) SetDefaultReturn(r0 bindings.IDynamics) {
+	f.SetDefaultHook(func() bindings.IDynamics {
+		return r0
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *EthereumContractsDynamicsFunc) PushReturn(r0 bindings.IDynamics) {
+	f.PushHook(func() bindings.IDynamics {
+		return r0
+	})
+}
+
+func (f *EthereumContractsDynamicsFunc) nextHook() func() bindings.IDynamics {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *EthereumContractsDynamicsFunc) appendCall(r0 EthereumContractsDynamicsFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of EthereumContractsDynamicsFuncCall objects
+// describing the invocations of this function.
+func (f *EthereumContractsDynamicsFunc) History() []EthereumContractsDynamicsFuncCall {
+	f.mutex.Lock()
+	history := make([]EthereumContractsDynamicsFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// EthereumContractsDynamicsFuncCall is an object that describes an
+// invocation of method Dynamics on an instance of MockEthereumContracts.
+type EthereumContractsDynamicsFuncCall struct {
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 bindings.IDynamics
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c EthereumContractsDynamicsFuncCall) Args() []interface{} {
+	return []interface{}{}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c EthereumContractsDynamicsFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0}
+}
+
+// EthereumContractsDynamicsAddressFunc describes the behavior when the
+// DynamicsAddress method of the parent MockEthereumContracts instance is
+// invoked.
+type EthereumContractsDynamicsAddressFunc struct {
+	defaultHook func() common.Address
+	hooks       []func() common.Address
+	history     []EthereumContractsDynamicsAddressFuncCall
+	mutex       sync.Mutex
+}
+
+// DynamicsAddress delegates to the next hook function in the queue and
+// stores the parameter and result values of this invocation.
+func (m *MockEthereumContracts) DynamicsAddress() common.Address {
+	r0 := m.DynamicsAddressFunc.nextHook()()
+	m.DynamicsAddressFunc.appendCall(EthereumContractsDynamicsAddressFuncCall{r0})
+	return r0
+}
+
+// SetDefaultHook sets function that is called when the DynamicsAddress
+// method of the parent MockEthereumContracts instance is invoked and the
+// hook queue is empty.
+func (f *EthereumContractsDynamicsAddressFunc) SetDefaultHook(hook func() common.Address) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// DynamicsAddress method of the parent MockEthereumContracts instance
+// invokes the hook at the front of the queue and discards it. After the
+// queue is empty, the default hook function is invoked for any future
+// action.
+func (f *EthereumContractsDynamicsAddressFunc) PushHook(hook func() common.Address) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *EthereumContractsDynamicsAddressFunc) SetDefaultReturn(r0 common.Address) {
+	f.SetDefaultHook(func() common.Address {
+		return r0
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *EthereumContractsDynamicsAddressFunc) PushReturn(r0 common.Address) {
+	f.PushHook(func() common.Address {
+		return r0
+	})
+}
+
+func (f *EthereumContractsDynamicsAddressFunc) nextHook() func() common.Address {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *EthereumContractsDynamicsAddressFunc) appendCall(r0 EthereumContractsDynamicsAddressFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of EthereumContractsDynamicsAddressFuncCall
+// objects describing the invocations of this function.
+func (f *EthereumContractsDynamicsAddressFunc) History() []EthereumContractsDynamicsAddressFuncCall {
+	f.mutex.Lock()
+	history := make([]EthereumContractsDynamicsAddressFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// EthereumContractsDynamicsAddressFuncCall is an object that describes an
+// invocation of method DynamicsAddress on an instance of
+// MockEthereumContracts.
+type EthereumContractsDynamicsAddressFuncCall struct {
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 common.Address
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c EthereumContractsDynamicsAddressFuncCall) Args() []interface{} {
+	return []interface{}{}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c EthereumContractsDynamicsAddressFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0}
 }
 
