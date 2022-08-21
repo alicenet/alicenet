@@ -43,7 +43,8 @@ const updateAliceNetNode = async (
   fixture: Fixture,
   newAliceNetVersion: CanonicalVersionStructOutput,
   relativeEpoch: number,
-  assertReturn: boolean
+  assertReturn: boolean,
+  assertSnapshotEvent: boolean
 ): Promise<any> => {
   const addToCurrentSnapshotEpoch = 10;
   await commitSnapshots(fixture, addToCurrentSnapshotEpoch);
@@ -58,12 +59,23 @@ const updateAliceNetNode = async (
       newAliceNetVersion.binaryHash,
     ])
   );
+  const expectedEpoch = (await fixture.snapshots.getEpoch()).add(relativeEpoch);
   if (assertReturn) {
-    const expectedEpoch = (await fixture.snapshots.getEpoch()).add(
-      relativeEpoch
-    );
     await expect(txPromise)
       .to.emit(fixture.dynamics, "NewAliceNetNodeVersionAvailable")
+      .withArgs([
+        newAliceNetVersion.major,
+        newAliceNetVersion.minor,
+        newAliceNetVersion.patch,
+        expectedEpoch,
+        newAliceNetVersion.binaryHash,
+      ]);
+  }
+
+  if (assertSnapshotEvent) {
+    await fixture.snapshots.snapshot("0x00", "0x00");
+    await expect(fixture.snapshots.snapshot("0x00", "0x00"))
+      .to.emit(fixture.dynamics, "NewCanonicalAliceNetNodeVersion")
       .withArgs([
         newAliceNetVersion.major,
         newAliceNetVersion.minor,
@@ -337,6 +349,7 @@ describe("Testing Dynamics methods", async () => {
       fixture,
       newAliceNetVersion,
       minEpochsBetweenUpdates.toNumber(),
+      true,
       true
     );
   });
@@ -351,6 +364,7 @@ describe("Testing Dynamics methods", async () => {
       fixture,
       newAliceNetVersion,
       minEpochsBetweenUpdates.toNumber(),
+      true,
       true
     );
 
@@ -360,6 +374,7 @@ describe("Testing Dynamics methods", async () => {
       fixture,
       newAliceNetVersion,
       minEpochsBetweenUpdates.toNumber(),
+      true,
       true
     );
 
@@ -369,6 +384,7 @@ describe("Testing Dynamics methods", async () => {
       fixture,
       newAliceNetVersion,
       minEpochsBetweenUpdates.toNumber(),
+      true,
       true
     );
 
@@ -379,6 +395,7 @@ describe("Testing Dynamics methods", async () => {
       fixture,
       newAliceNetVersion,
       minEpochsBetweenUpdates.toNumber(),
+      true,
       true
     );
 
@@ -390,6 +407,7 @@ describe("Testing Dynamics methods", async () => {
       fixture,
       newAliceNetVersion,
       minEpochsBetweenUpdates.toNumber(),
+      true,
       true
     );
   });
@@ -404,7 +422,8 @@ describe("Testing Dynamics methods", async () => {
       fixture,
       newAliceNetVersion,
       minEpochsBetweenUpdates.toNumber(),
-      true
+      true,
+      false
     );
     const latestNode =
       (await fixture.dynamics.getLatestAliceNetVersion()) as CanonicalVersionStruct;
@@ -430,6 +449,7 @@ describe("Testing Dynamics methods", async () => {
       fixture,
       newAliceNetVersion,
       minEpochsBetweenUpdates.toNumber(),
+      true,
       true
     );
     let pastAliceNet = newAliceNetVersion;
@@ -474,6 +494,7 @@ describe("Testing Dynamics methods", async () => {
       fixture,
       newAliceNetVersion,
       minEpochsBetweenUpdates.toNumber(),
+      true,
       true
     );
     const addToCurrentEpoch = 10;
@@ -484,6 +505,7 @@ describe("Testing Dynamics methods", async () => {
         fixture,
         newAliceNetVersion,
         minEpochsBetweenUpdates.toNumber(),
+        false,
         false
       )
     )
@@ -509,6 +531,7 @@ describe("Testing Dynamics methods", async () => {
       fixture,
       newAliceNetVersion,
       minEpochsBetweenUpdates.toNumber(),
+      true,
       true
     );
     const addToCurrentEpoch = 10;
@@ -520,6 +543,7 @@ describe("Testing Dynamics methods", async () => {
         fixture,
         newAliceNetVersion,
         minEpochsBetweenUpdates.toNumber(),
+        false,
         false
       )
     )
@@ -530,6 +554,56 @@ describe("Testing Dynamics methods", async () => {
       .withArgs(
         newAliceNetVersion.binaryHash,
         "0xbc36789e7a1e281436464229828f817d6612f7b477d66591ff96a9e064bcc98a"
+      );
+  });
+
+  it("Should not be possible update AliceNet before minUpdate time", async () => {
+    const newAliceNetVersion = {
+      ...alicenetCurrentVersion,
+    };
+    newAliceNetVersion.major += 1;
+    newAliceNetVersion.minor += 1;
+    newAliceNetVersion.patch += 1;
+
+    await expect(
+      updateAliceNetNode(
+        fixture,
+        newAliceNetVersion,
+        minEpochsBetweenUpdates.toNumber() - 1,
+        false,
+        false
+      )
+    )
+      .to.be.revertedWithCustomError(fixture.dynamics, "InvalidScheduledDate")
+      .withArgs(
+        minEpochsBetweenUpdates.toNumber() - 1,
+        minEpochsBetweenUpdates,
+        maxEpochsBetweenUpdates
+      );
+  });
+
+  it("Should not be possible update AliceNet before minUpdate time", async () => {
+    const newAliceNetVersion = {
+      ...alicenetCurrentVersion,
+    };
+    newAliceNetVersion.major += 1;
+    newAliceNetVersion.minor += 1;
+    newAliceNetVersion.patch += 1;
+
+    await expect(
+      updateAliceNetNode(
+        fixture,
+        newAliceNetVersion,
+        maxEpochsBetweenUpdates.toNumber() + 1,
+        false,
+        false
+      )
+    )
+      .to.be.revertedWithCustomError(fixture.dynamics, "InvalidScheduledDate")
+      .withArgs(
+        maxEpochsBetweenUpdates.toNumber() + 1,
+        minEpochsBetweenUpdates,
+        maxEpochsBetweenUpdates
       );
   });
 });
