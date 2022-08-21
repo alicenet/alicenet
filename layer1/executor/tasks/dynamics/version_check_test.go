@@ -23,10 +23,6 @@ func TestCanonicalVersionCheckTask_ShouldExecute_False(t *testing.T) {
 	shouldExecute, taskErr := task.ShouldExecute(ctx)
 	assert.Nil(t, taskErr)
 	assert.False(t, shouldExecute)
-
-	txn, taskErr := task.Execute(ctx)
-	assert.Nil(t, txn)
-	assert.Nil(t, taskErr)
 }
 
 func TestCanonicalVersionCheckTask_Execute_PatchOutdated(t *testing.T) {

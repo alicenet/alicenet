@@ -5,10 +5,12 @@ package monitor
 import (
 	"encoding/json"
 	"errors"
-	"github.com/alicenet/alicenet/utils"
+	"fmt"
 	"math/big"
 	"testing"
 	"time"
+
+	"github.com/alicenet/alicenet/utils"
 
 	"github.com/dgraph-io/badger/v2"
 	"github.com/ethereum/go-ethereum/accounts"
@@ -69,6 +71,19 @@ func getMonitor(t *testing.T) (*monitor, *executor.TasksScheduler, chan tasks.Ta
 	monDB := mocks.NewTestDB()
 	consDB := mocks.NewTestDB()
 	adminHandler := mocks.NewMockAdminHandler()
+	adminHandler.AddSnapshotFunc.SetDefaultHook(func(bh *objs.BlockHeader, safeToProceedConsensus bool) error {
+		err := consDB.Update(func(txn *badger.Txn) error {
+			err := consDB.SetSnapshotBlockHeader(txn, bh)
+			if err != nil {
+				return err
+			}
+			return nil
+		})
+		if err != nil {
+			panic(err)
+		}
+		return nil
+	})
 	depositHandler := mocks.NewMockDepositHandler()
 	eth := mocks.NewMockClient()
 	tasksReqChan := make(chan tasks.TaskRequest, 10)
@@ -162,10 +177,10 @@ func TestProcessRegistrationOpenedEvent(t *testing.T) {
 
 	err = mon.Start()
 	assert.Nil(t, err)
-
+	maxTimeout := time.After(4500 * time.Millisecond)
 	for {
 		select {
-		case <-time.After(4500 * time.Millisecond):
+		case <-maxTimeout:
 			t.Fatal("didn't update dkg state in time")
 		default:
 		}
@@ -214,10 +229,10 @@ func TestProcessNewAliceNetNodeVersionAvailableEvent(t *testing.T) {
 
 	err = mon.Start()
 	assert.Nil(t, err)
-
+	maxTimeout := time.After(4500 * time.Millisecond)
 	for {
 		select {
-		case <-time.After(4500 * time.Millisecond):
+		case <-maxTimeout:
 			t.Fatal("didn't update event in time")
 		default:
 		}
@@ -255,6 +270,16 @@ func TestProcessSnapshotTakenEventWithOutdatedCanonicalVersion(t *testing.T) {
 		ChainId:                  big.NewInt(1337),
 		Validator:                defaultAcc.Address,
 		IsSafeToProceedConsensus: true,
+		MasterPublicKey: [4]*big.Int{
+			big.NewInt(1),
+			big.NewInt(2),
+			big.NewInt(3),
+			big.NewInt(4),
+		},
+		Signature: [2]*big.Int{
+			big.NewInt(1),
+			big.NewInt(2),
+		},
 		BClaims: bindings.BClaimsParserLibraryBClaims{
 			ChainId:    1337,
 			Height:     10240,
@@ -286,11 +311,70 @@ func TestProcessSnapshotTakenEventWithOutdatedCanonicalVersion(t *testing.T) {
 
 	err := mon.Start()
 	assert.Nil(t, err)
+	maxTimeout := time.After(4500 * time.Millisecond)
+	for {
+		select {
+		case <-maxTimeout:
+			t.Fatal("didn't update event in time")
+		default:
+		}
+		var lastSnapshot *objs.BlockHeader
+		err = mon.cdb.View(func(txn *badger.Txn) error {
+			lastSnapshot, err = mon.cdb.GetLastSnapshot(txn)
+			if err != nil {
+				return err
+			}
+			return nil
+		})
+		if err == nil {
+			fmt.Printf("%v", lastSnapshot)
+			if lastSnapshot.BClaims.Height == 10240 {
+				break
+			}
+		}
+		<-time.After(100 * time.Millisecond)
+	}
+}
 
-	select {
-	case <-time.After(4500 * time.Millisecond):
-		t.Fatal("didn't update event in time")
-	case <-mon.CloseChan():
+func TestProcessProcessNewCanonicalAliceNetNodeVersion(t *testing.T) {
+	mon, tasksScheduler, _, eth, contracts, defaultAcc := getMonitor(t)
+
+	err := tasksScheduler.Start()
+	assert.Nil(t, err)
+
+	mon.State.PotentialValidators[defaultAcc.Address] = objects.PotentialValidator{
+		Account: defaultAcc.Address,
+	}
+	eth.EndpointInSyncFunc.SetDefaultReturn(true, 4, nil)
+	eth.GetFinalizedHeightFunc.SetDefaultReturn(1, nil)
+
+	localVersion := utils.GetLocalVersion()
+	localVersion.Major++
+	version := &bindings.DynamicsNewCanonicalAliceNetNodeVersion{
+		Version: localVersion,
+	}
+	dynamics := mocks.NewMockIDynamics()
+	dynamics.ParseNewCanonicalAliceNetNodeVersionFunc.SetDefaultReturn(version, nil)
+	contracts.DynamicsFunc.SetDefaultReturn(dynamics)
+
+	dynamicsEvents := events.GetDynamicsEvents()
+	logs := []types.Log{
+		{Topics: []common.Hash{dynamicsEvents["NewCanonicalAliceNetNodeVersion"].ID}},
+	}
+
+	eth.GetEventsFunc.SetDefaultReturn(nil, nil)
+	eth.GetEventsFunc.PushReturn(logs, nil)
+
+	err = mon.Start()
+	assert.Nil(t, err)
+	maxTimeout := time.After(4500 * time.Millisecond)
+	for {
+		select {
+		case <-maxTimeout:
+			t.Fatal("didn't update event in time")
+		case <-mon.CloseChan():
+			return
+		}
 	}
 }
 
