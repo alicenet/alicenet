@@ -748,7 +748,7 @@
       },
       {
         "internalType": "uint256",
-        "name": "maxIntervalWithoutSnapshots",
+        "name": "maxIntervalWithoutSnapshots_",
         "type": "uint256"
       }
     ],

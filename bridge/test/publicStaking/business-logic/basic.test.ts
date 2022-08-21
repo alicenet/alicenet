@@ -16,6 +16,27 @@ describe("PublicStaking: Basics", async () => {
     const tx = await fixture.publicStaking.connect(adminSigner).mint(1000);
     blockNumber = BigInt(tx.blockNumber as number);
   });
+
+  it("Should not allow initialize more than once", async () => {
+    await expect(
+      fixture.factory.callAny(
+        fixture.publicStaking.address,
+        0,
+        fixture.publicStaking.interface.encodeFunctionData("initialize")
+      )
+    ).to.revertedWith("Initializable: contract is already initialized");
+  });
+
+  it("Only factory should be allowed to call initialize", async () => {
+    const publicStaking = await (
+      await ethers.getContractFactory("PublicStaking")
+    ).deploy();
+    const [, user] = await ethers.getSigners();
+    await expect(
+      publicStaking.connect(user).initialize()
+    ).to.revertedWithCustomError(publicStaking, "OnlyFactory");
+  });
+
   it("Check ERC721 name and symbol", async function () {
     expect(await fixture.publicStaking.name()).to.be.equals("APSNFT");
     expect(await fixture.publicStaking.symbol()).to.be.equals("APS");
