@@ -329,7 +329,7 @@ describe("Testing Dynamics methods", async () => {
   });
 
   it("Should update AliceNet node version to a valid version and emit corresponding event", async () => {
-    let newAliceNetVersion = {
+    const newAliceNetVersion = {
       ...alicenetCurrentVersion,
     };
     newAliceNetVersion.major += 1;
@@ -342,7 +342,7 @@ describe("Testing Dynamics methods", async () => {
   });
 
   it("Should update AliceNet node version to a valid version and emit corresponding event", async () => {
-    let newAliceNetVersion = {
+    const newAliceNetVersion = {
       ...alicenetCurrentVersion,
     };
     newAliceNetVersion.major += 1;
@@ -395,7 +395,7 @@ describe("Testing Dynamics methods", async () => {
   });
 
   it("Should obtain latest AliceNet node version", async () => {
-    let newAliceNetVersion = {
+    const newAliceNetVersion = {
       ...alicenetCurrentVersion,
     };
     newAliceNetVersion.major += 1;
@@ -419,7 +419,7 @@ describe("Testing Dynamics methods", async () => {
   });
 
   it("Should not update AliceNet node version to smaller version", async () => {
-    let newAliceNetVersion = {
+    const newAliceNetVersion = {
       ...alicenetCurrentVersion,
     };
     newAliceNetVersion.major += 1;
@@ -453,7 +453,7 @@ describe("Testing Dynamics methods", async () => {
   });
 
   it("Should not update AliceNet node version to a non consecutive major version", async () => {
-    let newAliceNetVersion = {
+    const newAliceNetVersion = {
       ...alicenetCurrentVersion,
     };
     newAliceNetVersion.major += 2;
@@ -463,7 +463,7 @@ describe("Testing Dynamics methods", async () => {
   });
 
   it("Should not update AliceNet node with same hash", async () => {
-    let newAliceNetVersion = {
+    const newAliceNetVersion = {
       ...alicenetCurrentVersion,
     };
     newAliceNetVersion.major += 1;
@@ -498,7 +498,7 @@ describe("Testing Dynamics methods", async () => {
   });
 
   it("Should not update AliceNet node hash 0", async () => {
-    let newAliceNetVersion = {
+    const newAliceNetVersion = {
       ...alicenetCurrentVersion,
     };
     newAliceNetVersion.major += 1;
