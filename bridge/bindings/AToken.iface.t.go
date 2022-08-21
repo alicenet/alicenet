@@ -12,10 +12,6 @@ import (
 
 // IATokenTransactor ...
 type IATokenTransactor interface {
-	// AllowMigration is a paid mutator transaction binding the contract method 0x35d69059.
-	//
-	// Solidity: function allowMigration() returns()
-	AllowMigration(opts *bind.TransactOpts) (*types.Transaction, error)
 	// Approve is a paid mutator transaction binding the contract method 0x095ea7b3.
 	//
 	// Solidity: function approve(address spender, uint256 amount) returns(bool)
@@ -40,18 +36,14 @@ type IATokenTransactor interface {
 	//
 	// Solidity: function increaseAllowance(address spender, uint256 addedValue) returns(bool)
 	IncreaseAllowance(opts *bind.TransactOpts, spender common.Address, addedValue *big.Int) (*types.Transaction, error)
-	// Initialize is a paid mutator transaction binding the contract method 0xfe4b84df.
+	// Initialize is a paid mutator transaction binding the contract method 0x8129fc1c.
 	//
-	// Solidity: function initialize(uint256 initialMintAmount) returns()
-	Initialize(opts *bind.TransactOpts, initialMintAmount *big.Int) (*types.Transaction, error)
+	// Solidity: function initialize() returns()
+	Initialize(opts *bind.TransactOpts) (*types.Transaction, error)
 	// Migrate is a paid mutator transaction binding the contract method 0x454b0608.
 	//
 	// Solidity: function migrate(uint256 amount) returns()
 	Migrate(opts *bind.TransactOpts, amount *big.Int) (*types.Transaction, error)
-	// ToggleMultiplierOn is a paid mutator transaction binding the contract method 0x4da9663e.
-	//
-	// Solidity: function toggleMultiplierOn() returns()
-	ToggleMultiplierOn(opts *bind.TransactOpts) (*types.Transaction, error)
 	// Transfer is a paid mutator transaction binding the contract method 0xa9059cbb.
 	//
 	// Solidity: function transfer(address to, uint256 amount) returns(bool)

@@ -383,7 +383,7 @@ export const deployFactoryAndBaseTokens = async (
     factory,
     "AToken",
     "AToken",
-    [ethers.utils.parseUnits("200000", 18)],
+    [],
     [legacyToken.address]
   )) as AToken;
 
@@ -455,11 +455,6 @@ export const posFixtureSetup = async (
       aToken.address,
       ethers.utils.parseEther("100000000"),
     ])
-  );
-  await factory.callAny(
-    aToken.address,
-    0,
-    aToken.interface.encodeFunctionData("allowMigration")
   );
   await factory.callAny(
     aToken.address,
@@ -598,9 +593,16 @@ export const getFixture = async (
     "ATokenMinter",
     "ATokenMinter"
   )) as ATokenMinter;
-  const mintToFactory = aTokenMinter.interface.encodeFunctionData("mint", [factory.address, ethers.utils.parseEther("100000000")])
-  const txResponse = await factory.callAny(aTokenMinter.address, 0, mintToFactory)
-  await txResponse.wait()
+  const mintToFactory = aTokenMinter.interface.encodeFunctionData("mint", [
+    factory.address,
+    ethers.utils.parseEther("100000000"),
+  ]);
+  const txResponse = await factory.callAny(
+    aTokenMinter.address,
+    0,
+    mintToFactory
+  );
+  await txResponse.wait();
   const aTokenBurner = (await deployUpgradeableWithFactory(
     factory,
     "ATokenBurner",
