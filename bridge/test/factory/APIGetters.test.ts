@@ -61,8 +61,7 @@ describe("AliceNetfactory API test", async () => {
 
   it("upgrade deployment", async () => {
     const res = await deployUpgradeable(MOCK, factory.address, ["2", "s"]);
-    const Proxy = await ethers.getContractFactory(PROXY);
-    const proxy = Proxy.attach(res.proxyAddress);
+    const proxy = await ethers.getContractAt(PROXY, res.proxyAddress);
     expect(await proxy.getImplementationAddress()).to.be.equal(
       res.logicAddress
     );

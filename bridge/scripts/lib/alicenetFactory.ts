@@ -11,7 +11,8 @@
 import { BytesLike, ContractReceipt } from "ethers";
 import { artifacts, ethers } from "hardhat";
 import { AliceNetFactory } from "../../typechain-types";
-import { CONTRACT_ADDR, DEPLOYED_RAW } from "./constants";
+import { encodeMultiCallArgs } from "./alicenetTasks";
+import { ALICENET_FACTORY, CONTRACT_ADDR, DEPLOYED_RAW } from "./constants";
 const defaultFactoryName = "AliceNetFactory";
 const DeployedRawEvent = "DeployedRaw";
 const contractAddrVar = "contractAddr";
@@ -23,8 +24,10 @@ export async function deployUpgradeable(
   factoryAddress: string,
   constructorArgs: Array<string>
 ) {
-  const AliceNetFactory = await ethers.getContractFactory(defaultFactoryName);
-  const factory = await AliceNetFactory.attach(factoryAddress);
+  const factory = await ethers.getContractAt(
+    defaultFactoryName,
+    factoryAddress
+  );
   // get an instance of the logic contract interface
   const logicFactory = await ethers.getContractFactory(contractName);
   // get the deployment bytecode from the interface
@@ -50,13 +53,13 @@ export async function deployUpgradeable(
     if (proxySalt !== undefined) {
       // multicall deployProxy. upgradeProxy
       const multiCallArgs = await getDeployUpgradeableMultiCallArgs(
-        defaultFactoryName,
+        factory.address,
         res.proxySalt,
         res.logicAddress
       );
       txResponse = await factory.multiCall(multiCallArgs);
       receipt = await txResponse.wait();
-      res.proxyAddress = await getEventVar(
+      res.proxyAddress = getEventVar(
         receipt,
         DeployedProxyEvent,
         contractAddrVar
@@ -152,12 +155,12 @@ function extractPath(qualifiedName: string) {
 }
 
 async function getDeployUpgradeableMultiCallArgs(
-  factoryName: string,
+  factoryAddress: string,
   Salt: BytesLike,
   logicAddress: BytesLike,
   initCallData?: BytesLike
 ) {
-  const factoryBase = await ethers.getContractFactory(factoryName);
+  const factoryBase = await ethers.getContractFactory(ALICENET_FACTORY);
   const deployProxy: BytesLike = factoryBase.interface.encodeFunctionData(
     "deployProxy",
     [Salt]
@@ -175,7 +178,10 @@ async function getDeployUpgradeableMultiCallArgs(
           "0x",
         ]);
 
-  return [deployProxy, upgradeProxy];
+  return [
+    encodeMultiCallArgs(factoryAddress, 0, deployProxy),
+    encodeMultiCallArgs(factoryAddress, 0, upgradeProxy),
+  ];
 }
 
 export async function getSalt(contractName: string) {
