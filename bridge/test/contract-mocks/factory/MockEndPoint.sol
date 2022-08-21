@@ -21,8 +21,8 @@ contract MockEndPoint is IMockEndPoint {
     event AddedTwo(uint256 indexed i);
     event UpgradeLock(bool indexed lock);
 
-    constructor(address f) {
-        factory = f;
+    constructor() {
+        factory = msg.sender;
     }
 
     function addOne() public {

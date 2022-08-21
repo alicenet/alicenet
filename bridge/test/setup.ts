@@ -76,6 +76,7 @@ export interface BaseTokensFixture extends BaseFixture {
 }
 
 export interface Fixture extends BaseTokensFixture {
+  aTokenMinter: ATokenMinter;
   validatorStaking: ValidatorStaking;
   validatorPool: ValidatorPool | ValidatorPoolMock;
   snapshots: Snapshots | SnapshotsMock;
@@ -408,15 +409,8 @@ export const deployFactoryAndBaseTokens = async (
 export const deployAliceNetFactory = async (
   admin: SignerWithAddress
 ): Promise<AliceNetFactory> => {
-  const txCount = await ethers.provider.getTransactionCount(admin.address);
-  // calculate the factory address for the constructor arg
-  const futureFactoryAddress = ethers.utils.getContractAddress({
-    from: admin.address,
-    nonce: txCount,
-  });
-
   const Factory = await ethers.getContractFactory("AliceNetFactory");
-  const factory = await Factory.deploy(futureFactoryAddress);
+  const factory = await Factory.deploy();
   await factory.deployed();
   return factory;
 };
@@ -505,7 +499,6 @@ export const getFixture = async (
   // Deploy the base tokens
   const { factory, aToken, bToken, legacyToken, publicStaking } =
     await deployFactoryAndBaseTokens(admin);
-
   // ValidatorStaking is not considered a base token since is only used by validators
   const validatorStaking = (await deployUpgradeableWithFactory(
     factory,
@@ -605,6 +598,9 @@ export const getFixture = async (
     "ATokenMinter",
     "ATokenMinter"
   )) as ATokenMinter;
+  const mintToFactory = aTokenMinter.interface.encodeFunctionData("mint", [factory.address, ethers.utils.parseEther("100000000")])
+  const txResponse = await factory.callAny(aTokenMinter.address, 0, mintToFactory)
+  await txResponse.wait()
   const aTokenBurner = (await deployUpgradeableWithFactory(
     factory,
     "ATokenBurner",
@@ -710,23 +706,6 @@ export async function factoryCallAny(
   const txResponse = await factory.callAny(
     contract.address,
     0,
-    contract.interface.encodeFunctionData(functionName, args)
-  );
-  const receipt = await txResponse.wait();
-  return receipt;
-}
-
-export async function delegateFactoryCallAny(
-  factory: AliceNetFactory,
-  contract: Contract,
-  functionName: string,
-  args?: Array<any>
-) {
-  if (args === undefined) {
-    args = [];
-  }
-  const txResponse = await factory.delegateCallAny(
-    contract.address,
     contract.interface.encodeFunctionData(functionName, args)
   );
   const receipt = await txResponse.wait();

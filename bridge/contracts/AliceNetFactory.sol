@@ -13,10 +13,8 @@ contract AliceNetFactory is AliceNetFactoryBase {
      * its constructor at the head, runtime code in the body and constructor args at the tail. The
      * constructor then sets proxyTemplate_ state var to the deployed proxy template address the deploy
      * account will be set as the first owner of the factory.
-     * @param selfAddr_ is the factory contracts
-     * address (address of itself)
      */
-    constructor(address selfAddr_) AliceNetFactoryBase(selfAddr_) {}
+    constructor() AliceNetFactoryBase() {}
 
     /**
      * @dev callAny allows EOA to call function impersonating the factory address
@@ -31,21 +29,6 @@ contract AliceNetFactory is AliceNetFactoryBase {
     ) public payable onlyOwner {
         bytes memory cdata = cdata_;
         _callAny(target_, value_, cdata);
-        _returnAvailableData();
-    }
-
-    /**
-     * @dev delegateCallAny allows EOA to call a function in a contract without impersonating the factory
-     * @param target_: the address of the contract to be called
-     * @param cdata_: Hex encoded state with function signature + arguments of the target function to be called
-     */
-    function delegateCallAny(address target_, bytes calldata cdata_)
-        public
-        payable
-        onlyOwnerOrDelegator
-    {
-        bytes memory cdata = cdata_;
-        _delegateCallAny(target_, cdata);
         _returnAvailableData();
     }
 
@@ -125,10 +108,7 @@ contract AliceNetFactory is AliceNetFactoryBase {
      * @param initCallData_ Hex encoded initialization function signature + parameters to initialize the
      * deployed contract
      */
-    function initializeContract(address contract_, bytes calldata initCallData_)
-        public
-        onlyOwnerOrDelegator
-    {
+    function initializeContract(address contract_, bytes calldata initCallData_) public onlyOwner {
         _initializeContract(contract_, initCallData_);
     }
 
@@ -137,7 +117,7 @@ contract AliceNetFactory is AliceNetFactoryBase {
      * impersonating the factory
      * @param cdata_: array of hex encoded state with the function calls (function signature + arguments)
      */
-    function multiCall(bytes[] calldata cdata_) public onlyOwner {
+    function multiCall(MultiCallArgs[] calldata cdata_) public onlyOwner {
         _multiCall(cdata_);
     }
 

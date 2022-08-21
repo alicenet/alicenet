@@ -3410,12 +3410,6 @@ type MockIAliceNetFactory struct {
 	// ContractsFunc is an instance of a mock function object controlling
 	// the behavior of the method Contracts.
 	ContractsFunc *IAliceNetFactoryContractsFunc
-	// DelegateCallAnyFunc is an instance of a mock function object
-	// controlling the behavior of the method DelegateCallAny.
-	DelegateCallAnyFunc *IAliceNetFactoryDelegateCallAnyFunc
-	// DelegatorFunc is an instance of a mock function object controlling
-	// the behavior of the method Delegator.
-	DelegatorFunc *IAliceNetFactoryDelegatorFunc
 	// DeployCreateFunc is an instance of a mock function object controlling
 	// the behavior of the method DeployCreate.
 	DeployCreateFunc *IAliceNetFactoryDeployCreateFunc
@@ -3486,9 +3480,6 @@ type MockIAliceNetFactory struct {
 	// ParseDeployedTemplateFunc is an instance of a mock function object
 	// controlling the behavior of the method ParseDeployedTemplate.
 	ParseDeployedTemplateFunc *IAliceNetFactoryParseDeployedTemplateFunc
-	// SetDelegatorFunc is an instance of a mock function object controlling
-	// the behavior of the method SetDelegator.
-	SetDelegatorFunc *IAliceNetFactorySetDelegatorFunc
 	// SetImplementationFunc is an instance of a mock function object
 	// controlling the behavior of the method SetImplementation.
 	SetImplementationFunc *IAliceNetFactorySetImplementationFunc
@@ -3527,16 +3518,6 @@ func NewMockIAliceNetFactory() *MockIAliceNetFactory {
 		},
 		ContractsFunc: &IAliceNetFactoryContractsFunc{
 			defaultHook: func(*bind.CallOpts) (r0 [][32]byte, r1 error) {
-				return
-			},
-		},
-		DelegateCallAnyFunc: &IAliceNetFactoryDelegateCallAnyFunc{
-			defaultHook: func(*bind.TransactOpts, common.Address, []byte) (r0 *types.Transaction, r1 error) {
-				return
-			},
-		},
-		DelegatorFunc: &IAliceNetFactoryDelegatorFunc{
-			defaultHook: func(*bind.CallOpts) (r0 common.Address, r1 error) {
 				return
 			},
 		},
@@ -3621,7 +3602,7 @@ func NewMockIAliceNetFactory() *MockIAliceNetFactory {
 			},
 		},
 		MultiCallFunc: &IAliceNetFactoryMultiCallFunc{
-			defaultHook: func(*bind.TransactOpts, [][]byte) (r0 *types.Transaction, r1 error) {
+			defaultHook: func(*bind.TransactOpts, []bindings.AliceNetFactoryBaseMultiCallArgs) (r0 *types.Transaction, r1 error) {
 				return
 			},
 		},
@@ -3652,11 +3633,6 @@ func NewMockIAliceNetFactory() *MockIAliceNetFactory {
 		},
 		ParseDeployedTemplateFunc: &IAliceNetFactoryParseDeployedTemplateFunc{
 			defaultHook: func(types.Log) (r0 *bindings.AliceNetFactoryDeployedTemplate, r1 error) {
-				return
-			},
-		},
-		SetDelegatorFunc: &IAliceNetFactorySetDelegatorFunc{
-			defaultHook: func(*bind.TransactOpts, common.Address) (r0 *types.Transaction, r1 error) {
 				return
 			},
 		},
@@ -3715,16 +3691,6 @@ func NewStrictMockIAliceNetFactory() *MockIAliceNetFactory {
 		ContractsFunc: &IAliceNetFactoryContractsFunc{
 			defaultHook: func(*bind.CallOpts) ([][32]byte, error) {
 				panic("unexpected invocation of MockIAliceNetFactory.Contracts")
-			},
-		},
-		DelegateCallAnyFunc: &IAliceNetFactoryDelegateCallAnyFunc{
-			defaultHook: func(*bind.TransactOpts, common.Address, []byte) (*types.Transaction, error) {
-				panic("unexpected invocation of MockIAliceNetFactory.DelegateCallAny")
-			},
-		},
-		DelegatorFunc: &IAliceNetFactoryDelegatorFunc{
-			defaultHook: func(*bind.CallOpts) (common.Address, error) {
-				panic("unexpected invocation of MockIAliceNetFactory.Delegator")
 			},
 		},
 		DeployCreateFunc: &IAliceNetFactoryDeployCreateFunc{
@@ -3808,7 +3774,7 @@ func NewStrictMockIAliceNetFactory() *MockIAliceNetFactory {
 			},
 		},
 		MultiCallFunc: &IAliceNetFactoryMultiCallFunc{
-			defaultHook: func(*bind.TransactOpts, [][]byte) (*types.Transaction, error) {
+			defaultHook: func(*bind.TransactOpts, []bindings.AliceNetFactoryBaseMultiCallArgs) (*types.Transaction, error) {
 				panic("unexpected invocation of MockIAliceNetFactory.MultiCall")
 			},
 		},
@@ -3840,11 +3806,6 @@ func NewStrictMockIAliceNetFactory() *MockIAliceNetFactory {
 		ParseDeployedTemplateFunc: &IAliceNetFactoryParseDeployedTemplateFunc{
 			defaultHook: func(types.Log) (*bindings.AliceNetFactoryDeployedTemplate, error) {
 				panic("unexpected invocation of MockIAliceNetFactory.ParseDeployedTemplate")
-			},
-		},
-		SetDelegatorFunc: &IAliceNetFactorySetDelegatorFunc{
-			defaultHook: func(*bind.TransactOpts, common.Address) (*types.Transaction, error) {
-				panic("unexpected invocation of MockIAliceNetFactory.SetDelegator")
 			},
 		},
 		SetImplementationFunc: &IAliceNetFactorySetImplementationFunc{
@@ -3900,12 +3861,6 @@ func NewMockIAliceNetFactoryFrom(i bindings.IAliceNetFactory) *MockIAliceNetFact
 		},
 		ContractsFunc: &IAliceNetFactoryContractsFunc{
 			defaultHook: i.Contracts,
-		},
-		DelegateCallAnyFunc: &IAliceNetFactoryDelegateCallAnyFunc{
-			defaultHook: i.DelegateCallAny,
-		},
-		DelegatorFunc: &IAliceNetFactoryDelegatorFunc{
-			defaultHook: i.Delegator,
 		},
 		DeployCreateFunc: &IAliceNetFactoryDeployCreateFunc{
 			defaultHook: i.DeployCreate,
@@ -3975,9 +3930,6 @@ func NewMockIAliceNetFactoryFrom(i bindings.IAliceNetFactory) *MockIAliceNetFact
 		},
 		ParseDeployedTemplateFunc: &IAliceNetFactoryParseDeployedTemplateFunc{
 			defaultHook: i.ParseDeployedTemplate,
-		},
-		SetDelegatorFunc: &IAliceNetFactorySetDelegatorFunc{
-			defaultHook: i.SetDelegator,
 		},
 		SetImplementationFunc: &IAliceNetFactorySetImplementationFunc{
 			defaultHook: i.SetImplementation,
@@ -4222,225 +4174,6 @@ func (c IAliceNetFactoryContractsFuncCall) Args() []interface{} {
 // Results returns an interface slice containing the results of this
 // invocation.
 func (c IAliceNetFactoryContractsFuncCall) Results() []interface{} {
-	return []interface{}{c.Result0, c.Result1}
-}
-
-// IAliceNetFactoryDelegateCallAnyFunc describes the behavior when the
-// DelegateCallAny method of the parent MockIAliceNetFactory instance is
-// invoked.
-type IAliceNetFactoryDelegateCallAnyFunc struct {
-	defaultHook func(*bind.TransactOpts, common.Address, []byte) (*types.Transaction, error)
-	hooks       []func(*bind.TransactOpts, common.Address, []byte) (*types.Transaction, error)
-	history     []IAliceNetFactoryDelegateCallAnyFuncCall
-	mutex       sync.Mutex
-}
-
-// DelegateCallAny delegates to the next hook function in the queue and
-// stores the parameter and result values of this invocation.
-func (m *MockIAliceNetFactory) DelegateCallAny(v0 *bind.TransactOpts, v1 common.Address, v2 []byte) (*types.Transaction, error) {
-	r0, r1 := m.DelegateCallAnyFunc.nextHook()(v0, v1, v2)
-	m.DelegateCallAnyFunc.appendCall(IAliceNetFactoryDelegateCallAnyFuncCall{v0, v1, v2, r0, r1})
-	return r0, r1
-}
-
-// SetDefaultHook sets function that is called when the DelegateCallAny
-// method of the parent MockIAliceNetFactory instance is invoked and the
-// hook queue is empty.
-func (f *IAliceNetFactoryDelegateCallAnyFunc) SetDefaultHook(hook func(*bind.TransactOpts, common.Address, []byte) (*types.Transaction, error)) {
-	f.defaultHook = hook
-}
-
-// PushHook adds a function to the end of hook queue. Each invocation of the
-// DelegateCallAny method of the parent MockIAliceNetFactory instance
-// invokes the hook at the front of the queue and discards it. After the
-// queue is empty, the default hook function is invoked for any future
-// action.
-func (f *IAliceNetFactoryDelegateCallAnyFunc) PushHook(hook func(*bind.TransactOpts, common.Address, []byte) (*types.Transaction, error)) {
-	f.mutex.Lock()
-	f.hooks = append(f.hooks, hook)
-	f.mutex.Unlock()
-}
-
-// SetDefaultReturn calls SetDefaultHook with a function that returns the
-// given values.
-func (f *IAliceNetFactoryDelegateCallAnyFunc) SetDefaultReturn(r0 *types.Transaction, r1 error) {
-	f.SetDefaultHook(func(*bind.TransactOpts, common.Address, []byte) (*types.Transaction, error) {
-		return r0, r1
-	})
-}
-
-// PushReturn calls PushHook with a function that returns the given values.
-func (f *IAliceNetFactoryDelegateCallAnyFunc) PushReturn(r0 *types.Transaction, r1 error) {
-	f.PushHook(func(*bind.TransactOpts, common.Address, []byte) (*types.Transaction, error) {
-		return r0, r1
-	})
-}
-
-func (f *IAliceNetFactoryDelegateCallAnyFunc) nextHook() func(*bind.TransactOpts, common.Address, []byte) (*types.Transaction, error) {
-	f.mutex.Lock()
-	defer f.mutex.Unlock()
-
-	if len(f.hooks) == 0 {
-		return f.defaultHook
-	}
-
-	hook := f.hooks[0]
-	f.hooks = f.hooks[1:]
-	return hook
-}
-
-func (f *IAliceNetFactoryDelegateCallAnyFunc) appendCall(r0 IAliceNetFactoryDelegateCallAnyFuncCall) {
-	f.mutex.Lock()
-	f.history = append(f.history, r0)
-	f.mutex.Unlock()
-}
-
-// History returns a sequence of IAliceNetFactoryDelegateCallAnyFuncCall
-// objects describing the invocations of this function.
-func (f *IAliceNetFactoryDelegateCallAnyFunc) History() []IAliceNetFactoryDelegateCallAnyFuncCall {
-	f.mutex.Lock()
-	history := make([]IAliceNetFactoryDelegateCallAnyFuncCall, len(f.history))
-	copy(history, f.history)
-	f.mutex.Unlock()
-
-	return history
-}
-
-// IAliceNetFactoryDelegateCallAnyFuncCall is an object that describes an
-// invocation of method DelegateCallAny on an instance of
-// MockIAliceNetFactory.
-type IAliceNetFactoryDelegateCallAnyFuncCall struct {
-	// Arg0 is the value of the 1st argument passed to this method
-	// invocation.
-	Arg0 *bind.TransactOpts
-	// Arg1 is the value of the 2nd argument passed to this method
-	// invocation.
-	Arg1 common.Address
-	// Arg2 is the value of the 3rd argument passed to this method
-	// invocation.
-	Arg2 []byte
-	// Result0 is the value of the 1st result returned from this method
-	// invocation.
-	Result0 *types.Transaction
-	// Result1 is the value of the 2nd result returned from this method
-	// invocation.
-	Result1 error
-}
-
-// Args returns an interface slice containing the arguments of this
-// invocation.
-func (c IAliceNetFactoryDelegateCallAnyFuncCall) Args() []interface{} {
-	return []interface{}{c.Arg0, c.Arg1, c.Arg2}
-}
-
-// Results returns an interface slice containing the results of this
-// invocation.
-func (c IAliceNetFactoryDelegateCallAnyFuncCall) Results() []interface{} {
-	return []interface{}{c.Result0, c.Result1}
-}
-
-// IAliceNetFactoryDelegatorFunc describes the behavior when the Delegator
-// method of the parent MockIAliceNetFactory instance is invoked.
-type IAliceNetFactoryDelegatorFunc struct {
-	defaultHook func(*bind.CallOpts) (common.Address, error)
-	hooks       []func(*bind.CallOpts) (common.Address, error)
-	history     []IAliceNetFactoryDelegatorFuncCall
-	mutex       sync.Mutex
-}
-
-// Delegator delegates to the next hook function in the queue and stores the
-// parameter and result values of this invocation.
-func (m *MockIAliceNetFactory) Delegator(v0 *bind.CallOpts) (common.Address, error) {
-	r0, r1 := m.DelegatorFunc.nextHook()(v0)
-	m.DelegatorFunc.appendCall(IAliceNetFactoryDelegatorFuncCall{v0, r0, r1})
-	return r0, r1
-}
-
-// SetDefaultHook sets function that is called when the Delegator method of
-// the parent MockIAliceNetFactory instance is invoked and the hook queue is
-// empty.
-func (f *IAliceNetFactoryDelegatorFunc) SetDefaultHook(hook func(*bind.CallOpts) (common.Address, error)) {
-	f.defaultHook = hook
-}
-
-// PushHook adds a function to the end of hook queue. Each invocation of the
-// Delegator method of the parent MockIAliceNetFactory instance invokes the
-// hook at the front of the queue and discards it. After the queue is empty,
-// the default hook function is invoked for any future action.
-func (f *IAliceNetFactoryDelegatorFunc) PushHook(hook func(*bind.CallOpts) (common.Address, error)) {
-	f.mutex.Lock()
-	f.hooks = append(f.hooks, hook)
-	f.mutex.Unlock()
-}
-
-// SetDefaultReturn calls SetDefaultHook with a function that returns the
-// given values.
-func (f *IAliceNetFactoryDelegatorFunc) SetDefaultReturn(r0 common.Address, r1 error) {
-	f.SetDefaultHook(func(*bind.CallOpts) (common.Address, error) {
-		return r0, r1
-	})
-}
-
-// PushReturn calls PushHook with a function that returns the given values.
-func (f *IAliceNetFactoryDelegatorFunc) PushReturn(r0 common.Address, r1 error) {
-	f.PushHook(func(*bind.CallOpts) (common.Address, error) {
-		return r0, r1
-	})
-}
-
-func (f *IAliceNetFactoryDelegatorFunc) nextHook() func(*bind.CallOpts) (common.Address, error) {
-	f.mutex.Lock()
-	defer f.mutex.Unlock()
-
-	if len(f.hooks) == 0 {
-		return f.defaultHook
-	}
-
-	hook := f.hooks[0]
-	f.hooks = f.hooks[1:]
-	return hook
-}
-
-func (f *IAliceNetFactoryDelegatorFunc) appendCall(r0 IAliceNetFactoryDelegatorFuncCall) {
-	f.mutex.Lock()
-	f.history = append(f.history, r0)
-	f.mutex.Unlock()
-}
-
-// History returns a sequence of IAliceNetFactoryDelegatorFuncCall objects
-// describing the invocations of this function.
-func (f *IAliceNetFactoryDelegatorFunc) History() []IAliceNetFactoryDelegatorFuncCall {
-	f.mutex.Lock()
-	history := make([]IAliceNetFactoryDelegatorFuncCall, len(f.history))
-	copy(history, f.history)
-	f.mutex.Unlock()
-
-	return history
-}
-
-// IAliceNetFactoryDelegatorFuncCall is an object that describes an
-// invocation of method Delegator on an instance of MockIAliceNetFactory.
-type IAliceNetFactoryDelegatorFuncCall struct {
-	// Arg0 is the value of the 1st argument passed to this method
-	// invocation.
-	Arg0 *bind.CallOpts
-	// Result0 is the value of the 1st result returned from this method
-	// invocation.
-	Result0 common.Address
-	// Result1 is the value of the 2nd result returned from this method
-	// invocation.
-	Result1 error
-}
-
-// Args returns an interface slice containing the arguments of this
-// invocation.
-func (c IAliceNetFactoryDelegatorFuncCall) Args() []interface{} {
-	return []interface{}{c.Arg0}
-}
-
-// Results returns an interface slice containing the results of this
-// invocation.
-func (c IAliceNetFactoryDelegatorFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
@@ -6205,15 +5938,15 @@ func (c IAliceNetFactoryLookupFuncCall) Results() []interface{} {
 // IAliceNetFactoryMultiCallFunc describes the behavior when the MultiCall
 // method of the parent MockIAliceNetFactory instance is invoked.
 type IAliceNetFactoryMultiCallFunc struct {
-	defaultHook func(*bind.TransactOpts, [][]byte) (*types.Transaction, error)
-	hooks       []func(*bind.TransactOpts, [][]byte) (*types.Transaction, error)
+	defaultHook func(*bind.TransactOpts, []bindings.AliceNetFactoryBaseMultiCallArgs) (*types.Transaction, error)
+	hooks       []func(*bind.TransactOpts, []bindings.AliceNetFactoryBaseMultiCallArgs) (*types.Transaction, error)
 	history     []IAliceNetFactoryMultiCallFuncCall
 	mutex       sync.Mutex
 }
 
 // MultiCall delegates to the next hook function in the queue and stores the
 // parameter and result values of this invocation.
-func (m *MockIAliceNetFactory) MultiCall(v0 *bind.TransactOpts, v1 [][]byte) (*types.Transaction, error) {
+func (m *MockIAliceNetFactory) MultiCall(v0 *bind.TransactOpts, v1 []bindings.AliceNetFactoryBaseMultiCallArgs) (*types.Transaction, error) {
 	r0, r1 := m.MultiCallFunc.nextHook()(v0, v1)
 	m.MultiCallFunc.appendCall(IAliceNetFactoryMultiCallFuncCall{v0, v1, r0, r1})
 	return r0, r1
@@ -6222,7 +5955,7 @@ func (m *MockIAliceNetFactory) MultiCall(v0 *bind.TransactOpts, v1 [][]byte) (*t
 // SetDefaultHook sets function that is called when the MultiCall method of
 // the parent MockIAliceNetFactory instance is invoked and the hook queue is
 // empty.
-func (f *IAliceNetFactoryMultiCallFunc) SetDefaultHook(hook func(*bind.TransactOpts, [][]byte) (*types.Transaction, error)) {
+func (f *IAliceNetFactoryMultiCallFunc) SetDefaultHook(hook func(*bind.TransactOpts, []bindings.AliceNetFactoryBaseMultiCallArgs) (*types.Transaction, error)) {
 	f.defaultHook = hook
 }
 
@@ -6230,7 +5963,7 @@ func (f *IAliceNetFactoryMultiCallFunc) SetDefaultHook(hook func(*bind.TransactO
 // MultiCall method of the parent MockIAliceNetFactory instance invokes the
 // hook at the front of the queue and discards it. After the queue is empty,
 // the default hook function is invoked for any future action.
-func (f *IAliceNetFactoryMultiCallFunc) PushHook(hook func(*bind.TransactOpts, [][]byte) (*types.Transaction, error)) {
+func (f *IAliceNetFactoryMultiCallFunc) PushHook(hook func(*bind.TransactOpts, []bindings.AliceNetFactoryBaseMultiCallArgs) (*types.Transaction, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -6239,19 +5972,19 @@ func (f *IAliceNetFactoryMultiCallFunc) PushHook(hook func(*bind.TransactOpts, [
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
 func (f *IAliceNetFactoryMultiCallFunc) SetDefaultReturn(r0 *types.Transaction, r1 error) {
-	f.SetDefaultHook(func(*bind.TransactOpts, [][]byte) (*types.Transaction, error) {
+	f.SetDefaultHook(func(*bind.TransactOpts, []bindings.AliceNetFactoryBaseMultiCallArgs) (*types.Transaction, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
 func (f *IAliceNetFactoryMultiCallFunc) PushReturn(r0 *types.Transaction, r1 error) {
-	f.PushHook(func(*bind.TransactOpts, [][]byte) (*types.Transaction, error) {
+	f.PushHook(func(*bind.TransactOpts, []bindings.AliceNetFactoryBaseMultiCallArgs) (*types.Transaction, error) {
 		return r0, r1
 	})
 }
 
-func (f *IAliceNetFactoryMultiCallFunc) nextHook() func(*bind.TransactOpts, [][]byte) (*types.Transaction, error) {
+func (f *IAliceNetFactoryMultiCallFunc) nextHook() func(*bind.TransactOpts, []bindings.AliceNetFactoryBaseMultiCallArgs) (*types.Transaction, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -6289,7 +6022,7 @@ type IAliceNetFactoryMultiCallFuncCall struct {
 	Arg0 *bind.TransactOpts
 	// Arg1 is the value of the 2nd argument passed to this method
 	// invocation.
-	Arg1 [][]byte
+	Arg1 []bindings.AliceNetFactoryBaseMultiCallArgs
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
 	Result0 *types.Transaction
@@ -6952,115 +6685,6 @@ func (c IAliceNetFactoryParseDeployedTemplateFuncCall) Args() []interface{} {
 // Results returns an interface slice containing the results of this
 // invocation.
 func (c IAliceNetFactoryParseDeployedTemplateFuncCall) Results() []interface{} {
-	return []interface{}{c.Result0, c.Result1}
-}
-
-// IAliceNetFactorySetDelegatorFunc describes the behavior when the
-// SetDelegator method of the parent MockIAliceNetFactory instance is
-// invoked.
-type IAliceNetFactorySetDelegatorFunc struct {
-	defaultHook func(*bind.TransactOpts, common.Address) (*types.Transaction, error)
-	hooks       []func(*bind.TransactOpts, common.Address) (*types.Transaction, error)
-	history     []IAliceNetFactorySetDelegatorFuncCall
-	mutex       sync.Mutex
-}
-
-// SetDelegator delegates to the next hook function in the queue and stores
-// the parameter and result values of this invocation.
-func (m *MockIAliceNetFactory) SetDelegator(v0 *bind.TransactOpts, v1 common.Address) (*types.Transaction, error) {
-	r0, r1 := m.SetDelegatorFunc.nextHook()(v0, v1)
-	m.SetDelegatorFunc.appendCall(IAliceNetFactorySetDelegatorFuncCall{v0, v1, r0, r1})
-	return r0, r1
-}
-
-// SetDefaultHook sets function that is called when the SetDelegator method
-// of the parent MockIAliceNetFactory instance is invoked and the hook queue
-// is empty.
-func (f *IAliceNetFactorySetDelegatorFunc) SetDefaultHook(hook func(*bind.TransactOpts, common.Address) (*types.Transaction, error)) {
-	f.defaultHook = hook
-}
-
-// PushHook adds a function to the end of hook queue. Each invocation of the
-// SetDelegator method of the parent MockIAliceNetFactory instance invokes
-// the hook at the front of the queue and discards it. After the queue is
-// empty, the default hook function is invoked for any future action.
-func (f *IAliceNetFactorySetDelegatorFunc) PushHook(hook func(*bind.TransactOpts, common.Address) (*types.Transaction, error)) {
-	f.mutex.Lock()
-	f.hooks = append(f.hooks, hook)
-	f.mutex.Unlock()
-}
-
-// SetDefaultReturn calls SetDefaultHook with a function that returns the
-// given values.
-func (f *IAliceNetFactorySetDelegatorFunc) SetDefaultReturn(r0 *types.Transaction, r1 error) {
-	f.SetDefaultHook(func(*bind.TransactOpts, common.Address) (*types.Transaction, error) {
-		return r0, r1
-	})
-}
-
-// PushReturn calls PushHook with a function that returns the given values.
-func (f *IAliceNetFactorySetDelegatorFunc) PushReturn(r0 *types.Transaction, r1 error) {
-	f.PushHook(func(*bind.TransactOpts, common.Address) (*types.Transaction, error) {
-		return r0, r1
-	})
-}
-
-func (f *IAliceNetFactorySetDelegatorFunc) nextHook() func(*bind.TransactOpts, common.Address) (*types.Transaction, error) {
-	f.mutex.Lock()
-	defer f.mutex.Unlock()
-
-	if len(f.hooks) == 0 {
-		return f.defaultHook
-	}
-
-	hook := f.hooks[0]
-	f.hooks = f.hooks[1:]
-	return hook
-}
-
-func (f *IAliceNetFactorySetDelegatorFunc) appendCall(r0 IAliceNetFactorySetDelegatorFuncCall) {
-	f.mutex.Lock()
-	f.history = append(f.history, r0)
-	f.mutex.Unlock()
-}
-
-// History returns a sequence of IAliceNetFactorySetDelegatorFuncCall
-// objects describing the invocations of this function.
-func (f *IAliceNetFactorySetDelegatorFunc) History() []IAliceNetFactorySetDelegatorFuncCall {
-	f.mutex.Lock()
-	history := make([]IAliceNetFactorySetDelegatorFuncCall, len(f.history))
-	copy(history, f.history)
-	f.mutex.Unlock()
-
-	return history
-}
-
-// IAliceNetFactorySetDelegatorFuncCall is an object that describes an
-// invocation of method SetDelegator on an instance of MockIAliceNetFactory.
-type IAliceNetFactorySetDelegatorFuncCall struct {
-	// Arg0 is the value of the 1st argument passed to this method
-	// invocation.
-	Arg0 *bind.TransactOpts
-	// Arg1 is the value of the 2nd argument passed to this method
-	// invocation.
-	Arg1 common.Address
-	// Result0 is the value of the 1st result returned from this method
-	// invocation.
-	Result0 *types.Transaction
-	// Result1 is the value of the 2nd result returned from this method
-	// invocation.
-	Result1 error
-}
-
-// Args returns an interface slice containing the arguments of this
-// invocation.
-func (c IAliceNetFactorySetDelegatorFuncCall) Args() []interface{} {
-	return []interface{}{c.Arg0, c.Arg1}
-}
-
-// Results returns an interface slice containing the results of this
-// invocation.
-func (c IAliceNetFactorySetDelegatorFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
