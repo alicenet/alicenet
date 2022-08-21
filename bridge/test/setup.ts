@@ -16,6 +16,7 @@ import {
   ATokenBurner,
   ATokenMinter,
   BToken,
+  Distribution,
   Dynamics,
   ETHDKG,
   Foundation,
@@ -84,6 +85,7 @@ export interface Fixture extends BaseTokensFixture {
   invalidTxConsumptionAccusation: InvalidTxConsumptionAccusation;
   multipleProposalAccusation: MultipleProposalAccusation;
   distribution: Distribution;
+  dynamics: Dynamics;
 }
 
 /**
@@ -626,6 +628,15 @@ export const getFixture = async (
     "Accusation"
   )) as MultipleProposalAccusation;
 
+  // distribution contract for distributing BTokens yields
+  const distribution = (await deployUpgradeableWithFactory(
+    factory,
+    "Distribution",
+    undefined,
+    undefined,
+    [332, 332, 332, 4]
+  )) as Distribution;
+
   const dynamics = (await deployUpgradeableWithFactory(
     factory,
     "Dynamics",
@@ -658,6 +669,7 @@ export const getFixture = async (
     stakingPositionDescriptor,
     invalidTxConsumptionAccusation,
     multipleProposalAccusation,
+    distribution,
     dynamics,
   };
 };
@@ -761,4 +773,22 @@ export const getMetamorphicAddress = (
     ethers.utils.formatBytes32String(salt),
     ethers.utils.keccak256(initCode)
   );
+};
+
+export const getReceiptForFailedTransaction = async (
+  tx: Promise<any>
+): Promise<any> => {
+  let receipt: any;
+  try {
+    await tx;
+  } catch (error: any) {
+    receipt = await ethers.provider.getTransactionReceipt(
+      error.transactionHash
+    );
+
+    if (receipt === null) {
+      throw new Error(`Transaction ${error.transactionHash} failed`);
+    }
+  }
+  return receipt;
 };

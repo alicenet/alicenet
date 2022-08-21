@@ -11,6 +11,6 @@ library DynamicsErrors {
     );
     error InvalidExtCodeSize(address addr, uint256 codeSize);
     error DynamicValueNotFound(uint256 epoch);
-    error InvalidAliceNetNodeHash(bytes32 sentHash);
+    error InvalidAliceNetNodeHash(bytes32 sentHash, bytes32 currentHash);
     error InvalidAliceNetNodeVersion(CanonicalVersion newVersion, CanonicalVersion current);
 }

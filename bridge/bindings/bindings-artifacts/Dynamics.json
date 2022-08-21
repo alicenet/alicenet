@@ -43,6 +43,11 @@
         "internalType": "bytes32",
         "name": "sentHash",
         "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "currentHash",
+        "type": "bytes32"
       }
     ],
     "name": "InvalidAliceNetNodeHash",

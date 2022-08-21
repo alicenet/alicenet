@@ -976,15 +976,21 @@ task("updateAliceNetNodeVersion", "Set the Canonical AliceNet Node Version")
     }
 
     if (taskArgs.major < 0) {
-      throw new Error("major version parameter not sent or the value was smaller than 0!");
+      throw new Error(
+        "major version parameter not sent or the value was smaller than 0!"
+      );
     }
 
     if (taskArgs.minor < 0) {
-      throw new Error("minor parameter not sent or the value was smaller than 0!");
+      throw new Error(
+        "minor parameter not sent or the value was smaller than 0!"
+      );
     }
 
     if (taskArgs.patch < 0) {
-      throw new Error("patch parameter not sent or the value was smaller than 0!");
+      throw new Error(
+        "patch parameter not sent or the value was smaller than 0!"
+      );
     }
 
     if (!taskArgs.binaryHash) {

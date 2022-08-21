@@ -213,8 +213,8 @@ contract Dynamics is Initializable, IDynamics, ImmutableSnapshots {
         ) {
             revert DynamicsErrors.InvalidAliceNetNodeVersion(newVersion, currentVersion);
         }
-        if (binaryHash == 0) {
-            revert DynamicsErrors.InvalidAliceNetNodeHash(binaryHash);
+        if (binaryHash == 0 || binaryHash == currentVersion.binaryHash) {
+            revert DynamicsErrors.InvalidAliceNetNodeHash(binaryHash, currentVersion.binaryHash);
         }
         _aliceNetCanonicalVersion = newVersion;
         emit NewAliceNetNodeVersionAvailable(newVersion);
