@@ -48,7 +48,7 @@ func ProcessNewAliceNetNodeVersionAvailable(contracts layer1.AllSmartContracts, 
 	})
 
 	monState.CanonicalVersion = event.Version
-	logger.Infof("New AliceNet node version received and updated")
+	logger.Info("New AliceNet node version available!")
 
 	// Killing previous task
 	taskRequestChan <- tasks.NewKillTaskRequest(&dynamics.CanonicalVersionCheckTask{})

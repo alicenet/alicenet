@@ -191,9 +191,18 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	defer eth.Close()
 
 	currentEpoch, latestVersion, err := getCurrentEpochAndCanonicalVersion(nodeCtx, eth, contractsHandler, logger)
-	if newMajorIsGreater, _, _, localVersion := aUtils.CompareCanonicalVersion(latestVersion); newMajorIsGreater &&
-		currentEpoch > latestVersion.ExecutionEpoch {
-		logger.Errorf(
+	if err != nil {
+		panic(err)
+	}
+	newMajorIsGreater, _, _, localVersion := aUtils.CompareCanonicalVersion(latestVersion)
+	logger.Infof(
+		"Local AliceNet Node Version %d.%d.%d",
+		localVersion.Major,
+		localVersion.Minor,
+		localVersion.Patch,
+	)
+	if newMajorIsGreater && currentEpoch >= latestVersion.ExecutionEpoch {
+		logger.Fatalf(
 			"CRITICAL: Exiting! Your Node Version %d.%d.%d is lower than the latest required version %d.%d.%d! Please update your node!",
 			localVersion.Major,
 			localVersion.Minor,
@@ -202,7 +211,6 @@ func validatorNode(cmd *cobra.Command, args []string) {
 			latestVersion.Minor,
 			latestVersion.Patch,
 		)
-		return
 	}
 
 	// Initialize consensus db: stores all state the consensus mechanism requires to work
@@ -219,7 +227,7 @@ func validatorNode(cmd *cobra.Command, args []string) {
 
 	// giving some time to services finish their work on the databases to avoid
 	// panic when closing the databases
-	defer func() { <-time.After(3 * time.Second) }()
+	defer func() { <-time.After(15 * time.Second) }()
 
 	/////////////////////////////////////////////////////////////////////////////
 	// INITIALIZE ALL SERVICE OBJECTS ///////////////////////////////////////////
@@ -429,7 +437,12 @@ func getCurrentEpochAndCanonicalVersion(ctx context.Context, eth layer1.Client, 
 	if err != nil {
 		return 0, latestVersion, err
 	}
-	logEntry.Infof("Canonical Node Version %d.%d.%d", latestVersion.Major, latestVersion.Minor, latestVersion.Patch)
+	logEntry.Infof(
+		"Current Canonical AliceNet Node Version %d.%d.%d",
+		latestVersion.Major,
+		latestVersion.Minor,
+		latestVersion.Patch,
+	)
 
 	for i := 0; i < retryCount; i++ {
 		currentEpoch, err = contractsHandler.EthereumContracts().Snapshots().GetEpoch(callOpts)

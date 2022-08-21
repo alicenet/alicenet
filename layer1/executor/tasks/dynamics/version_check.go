@@ -3,7 +3,6 @@ package dynamics
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/alicenet/alicenet/bridge/bindings"
 	"github.com/alicenet/alicenet/constants"
@@ -18,8 +17,6 @@ type CanonicalVersionCheckTask struct {
 	//Version info
 	Version bindings.CanonicalVersion
 }
-
-const messageFrequency = 1 * time.Second
 
 // asserting that CanonicalVersionCheckTask struct implements interface tasks.Task.
 var _ tasks.Task = &CanonicalVersionCheckTask{}
@@ -38,7 +35,7 @@ func (t *CanonicalVersionCheckTask) Prepare(ctx context.Context) *tasks.TaskErr 
 	logger.Debug("preparing task")
 
 	logger.Infof(
-		"Received a new %d.%d.%d Canonical Node Version to be analyzed",
+		"Received a new Canonical Node Version %d.%d.%d to be analyzed",
 		t.Version.Major,
 		t.Version.Minor,
 		t.Version.Patch,
