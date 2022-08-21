@@ -1,6 +1,6 @@
 import toml from "@iarna/toml";
 import { spawn } from "child_process";
-import { BigNumber, ContractTransaction } from "ethers";
+import { BigNumber, BigNumberish, BytesLike, ContractTransaction } from "ethers";
 import fs from "fs";
 import { task, types } from "hardhat/config";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
@@ -367,10 +367,7 @@ task(
         4,
         taskArgs.factoryAddress,
         aTokenAddress,
-        bTokenAddress,
         publicStakingAddress,
-        aTokenMinterAddress,
-        validatorPoolAddress,
         hre
       );
       const receipt = await contractTx.wait();
@@ -438,6 +435,7 @@ async function getGroupSignatures(epoch: BigNumber) {
   console.log(groupSignatures);
   return groupSignatures;
 }
+
 task("registerValidators", "registers validators")
   .addFlag("test")
   .addParam("factoryAddress", "address of the factory deploying the contract")
@@ -509,10 +507,7 @@ task("registerValidators", "registers validators")
       4,
       factory.address,
       aTokenAddress,
-      bTokenAddress,
       publicStakingAddress,
-      aTokenMinterAddress,
-      validatorPoolAddress,
       hre
     );
     const receipt = await tx.wait();
@@ -521,7 +516,7 @@ task("registerValidators", "registers validators")
     }
     const events = receipt.events;
     const tokenIds: Array<BigNumber> = [];
-    const approveTokens: Array<string> = [];
+    const approveTokens: Array<MultiCallArgsStruct> = [];
     const transferEventHash =
       "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
     for (const event of events) {
@@ -531,15 +526,14 @@ task("registerValidators", "registers validators")
       ) {
         const id = BigNumber.from(BigInt(event.topics[3]));
         tokenIds.push(id);
-        let approve = publicStakingBase.interface.encodeFunctionData(
+        const approveCallData = publicStakingBase.interface.encodeFunctionData(
           "approve",
           [validatorPoolAddress, id]
         );
-        approve = factory.interface.encodeFunctionData("callAny", [
-          publicStakingAddress,
+        const approve = encodeMultiCallArgs(publicStakingAddress,
           0,
-          approve,
-        ]);
+          approveCallData
+        );
         approveTokens.push(approve);
       }
     }
@@ -552,15 +546,14 @@ task("registerValidators", "registers validators")
       await tx.wait(3);
     }
 
-    let regValidators = validatorPoolBase.interface.encodeFunctionData(
+    let regValidatorsCallData = validatorPoolBase.interface.encodeFunctionData(
       "registerValidators",
       [validatorAddresses, tokenIds]
     );
-    regValidators = factory.interface.encodeFunctionData("callAny", [
-      validatorPoolAddress,
+    const regValidators = encodeMultiCallArgs(validatorPoolAddress,
       0,
-      regValidators,
-    ]);
+      regValidatorsCallData,
+    );
     console.log(tokenIds);
     console.log("Registering validators");
     tx = await factory.multiCall([...approveTokens, regValidators], {
@@ -1270,15 +1263,24 @@ async function mintATokenTo(
   // use the factory to call the A token minter
   return factory.callAny(aTokenMinterAddr, 0, calldata, { nonce });
 }
-
+export type MultiCallArgsStruct = {
+  target: string;
+  value: BigNumberish;
+  data: BytesLike;
+};
+export function encodeMultiCallArgs(targetAddress: string, value: BigNumberish, callData:BytesLike): MultiCallArgsStruct  {
+  let output: MultiCallArgsStruct = {
+    target: targetAddress,
+    value: value,
+    data: callData
+  }
+  return output;
+}
 export async function stakeValidators(
   numValidators: number,
   factoryAddress: string,
   aTokenAddress: string,
-  bTokenAddress: string,
   publicStakingAddress: string,
-  aTokenMinterAddress: string,
-  validatorPoolAddress: string,
   hre: HardhatRuntimeEnvironment
 ): Promise<ContractTransaction> {
   const factoryBase = await hre.ethers.getContractFactory("AliceNetFactory");
@@ -1286,57 +1288,35 @@ export async function stakeValidators(
     "AliceNetFactory",
     factoryAddress
   );
-  const validatorPoolBase = await hre.ethers.getContractFactory(
-    "ValidatorPool"
-  );
   const atokenBase = await hre.ethers.getContractFactory("AToken");
-  const aTokenMinterBase = await hre.ethers.getContractFactory("ATokenMinter");
   const publicStakingBase = await hre.ethers.getContractFactory(
     "PublicStaking"
   );
-  let setStakeAmt = validatorPoolBase.interface.encodeFunctionData(
-    "setStakeAmount",
-    [1]
-  );
-  setStakeAmt = factoryBase.interface.encodeFunctionData("callAny", [
-    validatorPoolAddress,
-    0,
-    setStakeAmt,
-  ]);
-  let mintToken = aTokenMinterBase.interface.encodeFunctionData("mint", [
-    factoryAddress,
-    4,
-  ]);
-  mintToken = factoryBase.interface.encodeFunctionData("callAny", [
-    aTokenMinterAddress,
-    0,
-    mintToken,
-  ]);
-
-  let approveAToken = atokenBase.interface.encodeFunctionData("approve", [
+  const stakeAmt = hre.ethers.utils.parseEther("5000000")
+  const approveATokenCallData = atokenBase.interface.encodeFunctionData("approve", [
     publicStakingAddress,
-    numValidators,
+    BigNumber.from(numValidators).mul(stakeAmt),
   ]);
-  approveAToken = factoryBase.interface.encodeFunctionData("callAny", [
+  const approveAToken = encodeMultiCallArgs(
     aTokenAddress,
     0,
-    approveAToken,
-  ]);
-  const stakeNFT: Array<string> = [];
+    approveATokenCallData,
+  );
+  const stakeNFT: Array<MultiCallArgsStruct> = [];
   for (let i = 0; i < numValidators; i++) {
     const stakeToken = publicStakingBase.interface.encodeFunctionData("mint", [
-      1,
+      stakeAmt,
     ]);
     stakeNFT.push(
-      factoryBase.interface.encodeFunctionData("callAny", [
+      encodeMultiCallArgs(
         publicStakingAddress,
         0,
         stakeToken,
-      ])
+      )
     );
   }
   return factory.multiCall(
-    [setStakeAmt, mintToken, approveAToken, ...stakeNFT],
+    [approveAToken, ...stakeNFT],
     { gasLimit: 30000000 }
   );
 }
@@ -1370,35 +1350,32 @@ export async function migrateSnapshotsAndValidators(
     "PublicStaking"
   );
   // approve token transfer
-  const approveTokens: Array<string> = [];
+  const approveTokens: Array<MultiCallArgsStruct> = [];
   for (const tokenID of tokenIDs) {
-    let approve = publicStakingBase.interface.encodeFunctionData("approve", [
+    const approveCallData = publicStakingBase.interface.encodeFunctionData("approve", [
       validatorPoolAddress,
       tokenID,
     ]);
-    approve = factory.interface.encodeFunctionData("callAny", [
+    const approve = encodeMultiCallArgs(
       publicStakingAddress,
       0,
-      approve,
-    ]);
+      approveCallData);
     approveTokens.push(approve);
   }
-  console.log(1);
   // register validators
 
   const validatorCount = 4;
   const epoch = 1;
   const sideChainHeight = 0;
-  let registerValidators = validatorPoolBase.interface.encodeFunctionData(
+  const registerValidatorsCallData = validatorPoolBase.interface.encodeFunctionData(
     "registerValidators",
     [validatorAccounts, tokenIDs]
   );
-  registerValidators = factory.interface.encodeFunctionData("callAny", [
+  const registerValidators = encodeMultiCallArgs(
     validatorPoolAddress,
     0,
-    registerValidators,
-  ]);
-  let migrateValidators = ethdkgBase.interface.encodeFunctionData(
+    registerValidatorsCallData);
+  let migrateValidatorsCallData = ethdkgBase.interface.encodeFunctionData(
     "migrateValidators",
     [
       validatorAccounts,
@@ -1411,11 +1388,10 @@ export async function migrateSnapshotsAndValidators(
       masterPublicKey,
     ]
   );
-  migrateValidators = factory.interface.encodeFunctionData("callAny", [
+  const migrateValidators = encodeMultiCallArgs(
     ethDKGAddress,
     0,
-    migrateValidators,
-  ]);
+    migrateValidatorsCallData);
   // TODO check if this is still needed
   // let virtualMintDeposit = btokenBase.interface.encodeFunctionData("virtualMintDeposit", [
   //   1,
@@ -1423,15 +1399,14 @@ export async function migrateSnapshotsAndValidators(
   //   500000000000])
   // console.log(3)
   // virtualMintDeposit = factory.interface.encodeFunctionData("callAny", [bTokenAddress, 0, virtualMintDeposit])
-  let migrateSnapshots = snapshotBase.interface.encodeFunctionData(
+  let migrateSnapshotsCallData = snapshotBase.interface.encodeFunctionData(
     "migrateSnapshots",
     [groupSignatures, bClaims]
   );
-  migrateSnapshots = factory.interface.encodeFunctionData("callAny", [
+  const migrateSnapshots = encodeMultiCallArgs(
     snapshotAddress,
     0,
-    migrateSnapshots,
-  ]);
+    migrateSnapshotsCallData);
   return factory.multiCall(
     [...approveTokens, registerValidators, migrateValidators, migrateSnapshots],
     { gasLimit: 30000000 }

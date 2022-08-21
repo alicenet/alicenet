@@ -39,7 +39,7 @@ var FunctionMapping = map[[4]byte]string{
 	{207, 225, 11, 48}:   "AliceNetFactory.getNumContracts()",
 	{225, 215, 168, 228}: "AliceNetFactory.initializeContract(address,bytes)",
 	{243, 158, 193, 247}: "AliceNetFactory.lookup(bytes32)",
-	{52, 138, 12, 220}:   "AliceNetFactory.multiCall(bytes[])",
+	{36, 52, 2, 59}:      "AliceNetFactory.multiCall(tuple[])",
 	{141, 165, 203, 91}:  "AliceNetFactory.owner()",
 	{215, 132, 212, 38}:  "AliceNetFactory.setImplementation(address)",
 	{19, 175, 64, 53}:    "AliceNetFactory.setOwner(address)",

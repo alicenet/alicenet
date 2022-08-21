@@ -325,9 +325,26 @@
   {
     "inputs": [
       {
-        "internalType": "bytes[]",
+        "components": [
+          {
+            "internalType": "address",
+            "name": "target",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "value",
+            "type": "uint256"
+          },
+          {
+            "internalType": "bytes",
+            "name": "data",
+            "type": "bytes"
+          }
+        ],
+        "internalType": "struct AliceNetFactoryBase.MultiCallArgs[]",
         "name": "cdata_",
-        "type": "bytes[]"
+        "type": "tuple[]"
       }
     ],
     "name": "multiCall",

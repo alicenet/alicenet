@@ -1,6 +1,7 @@
 import { expect } from "chai";
 import { ContractFactory } from "ethers";
 import { ethers } from "hardhat";
+import { encodeMultiCallArgs } from "../../scripts/lib/alicenetTasks";
 import {
   ALICENET_FACTORY,
   CONTRACT_ADDR,
@@ -58,9 +59,9 @@ describe("Multicall deploy proxy", () => {
       [Salt, expectedMockLogicAddr, "0x"]
     );
     const txResponse = await factory.multiCall([
-      deployCreate,
-      deployProxy,
-      upgradeProxy,
+      encodeMultiCallArgs(factory.address, 0, deployCreate),
+      encodeMultiCallArgs(factory.address, 0, deployProxy),
+      encodeMultiCallArgs(factory.address, 0, upgradeProxy)
     ]);
     const mockLogicAddr = await getEventVar(
       txResponse,
@@ -104,7 +105,11 @@ describe("Multicall deploy proxy", () => {
       DEPLOY_STATIC,
       [Salt, "0x"]
     );
-    const txResponse = await factory.multiCall([deployTemplate, deployStatic]);
+    const txResponse = await factory.multiCall(
+      [
+        encodeMultiCallArgs(factory.address, 0, deployTemplate), 
+        encodeMultiCallArgs(factory.address, 0, deployStatic)
+      ]);
     // get the deployed template contract address from the event
     const tempSDAddr = await getEventVar(
       txResponse,

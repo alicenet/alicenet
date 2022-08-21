@@ -3602,7 +3602,7 @@ func NewMockIAliceNetFactory() *MockIAliceNetFactory {
 			},
 		},
 		MultiCallFunc: &IAliceNetFactoryMultiCallFunc{
-			defaultHook: func(*bind.TransactOpts, [][]byte) (r0 *types.Transaction, r1 error) {
+			defaultHook: func(*bind.TransactOpts, []bindings.AliceNetFactoryBaseMultiCallArgs) (r0 *types.Transaction, r1 error) {
 				return
 			},
 		},
@@ -3774,7 +3774,7 @@ func NewStrictMockIAliceNetFactory() *MockIAliceNetFactory {
 			},
 		},
 		MultiCallFunc: &IAliceNetFactoryMultiCallFunc{
-			defaultHook: func(*bind.TransactOpts, [][]byte) (*types.Transaction, error) {
+			defaultHook: func(*bind.TransactOpts, []bindings.AliceNetFactoryBaseMultiCallArgs) (*types.Transaction, error) {
 				panic("unexpected invocation of MockIAliceNetFactory.MultiCall")
 			},
 		},
@@ -5938,15 +5938,15 @@ func (c IAliceNetFactoryLookupFuncCall) Results() []interface{} {
 // IAliceNetFactoryMultiCallFunc describes the behavior when the MultiCall
 // method of the parent MockIAliceNetFactory instance is invoked.
 type IAliceNetFactoryMultiCallFunc struct {
-	defaultHook func(*bind.TransactOpts, [][]byte) (*types.Transaction, error)
-	hooks       []func(*bind.TransactOpts, [][]byte) (*types.Transaction, error)
+	defaultHook func(*bind.TransactOpts, []bindings.AliceNetFactoryBaseMultiCallArgs) (*types.Transaction, error)
+	hooks       []func(*bind.TransactOpts, []bindings.AliceNetFactoryBaseMultiCallArgs) (*types.Transaction, error)
 	history     []IAliceNetFactoryMultiCallFuncCall
 	mutex       sync.Mutex
 }
 
 // MultiCall delegates to the next hook function in the queue and stores the
 // parameter and result values of this invocation.
-func (m *MockIAliceNetFactory) MultiCall(v0 *bind.TransactOpts, v1 [][]byte) (*types.Transaction, error) {
+func (m *MockIAliceNetFactory) MultiCall(v0 *bind.TransactOpts, v1 []bindings.AliceNetFactoryBaseMultiCallArgs) (*types.Transaction, error) {
 	r0, r1 := m.MultiCallFunc.nextHook()(v0, v1)
 	m.MultiCallFunc.appendCall(IAliceNetFactoryMultiCallFuncCall{v0, v1, r0, r1})
 	return r0, r1
@@ -5955,7 +5955,7 @@ func (m *MockIAliceNetFactory) MultiCall(v0 *bind.TransactOpts, v1 [][]byte) (*t
 // SetDefaultHook sets function that is called when the MultiCall method of
 // the parent MockIAliceNetFactory instance is invoked and the hook queue is
 // empty.
-func (f *IAliceNetFactoryMultiCallFunc) SetDefaultHook(hook func(*bind.TransactOpts, [][]byte) (*types.Transaction, error)) {
+func (f *IAliceNetFactoryMultiCallFunc) SetDefaultHook(hook func(*bind.TransactOpts, []bindings.AliceNetFactoryBaseMultiCallArgs) (*types.Transaction, error)) {
 	f.defaultHook = hook
 }
 
@@ -5963,7 +5963,7 @@ func (f *IAliceNetFactoryMultiCallFunc) SetDefaultHook(hook func(*bind.TransactO
 // MultiCall method of the parent MockIAliceNetFactory instance invokes the
 // hook at the front of the queue and discards it. After the queue is empty,
 // the default hook function is invoked for any future action.
-func (f *IAliceNetFactoryMultiCallFunc) PushHook(hook func(*bind.TransactOpts, [][]byte) (*types.Transaction, error)) {
+func (f *IAliceNetFactoryMultiCallFunc) PushHook(hook func(*bind.TransactOpts, []bindings.AliceNetFactoryBaseMultiCallArgs) (*types.Transaction, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -5972,19 +5972,19 @@ func (f *IAliceNetFactoryMultiCallFunc) PushHook(hook func(*bind.TransactOpts, [
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
 func (f *IAliceNetFactoryMultiCallFunc) SetDefaultReturn(r0 *types.Transaction, r1 error) {
-	f.SetDefaultHook(func(*bind.TransactOpts, [][]byte) (*types.Transaction, error) {
+	f.SetDefaultHook(func(*bind.TransactOpts, []bindings.AliceNetFactoryBaseMultiCallArgs) (*types.Transaction, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
 func (f *IAliceNetFactoryMultiCallFunc) PushReturn(r0 *types.Transaction, r1 error) {
-	f.PushHook(func(*bind.TransactOpts, [][]byte) (*types.Transaction, error) {
+	f.PushHook(func(*bind.TransactOpts, []bindings.AliceNetFactoryBaseMultiCallArgs) (*types.Transaction, error) {
 		return r0, r1
 	})
 }
 
-func (f *IAliceNetFactoryMultiCallFunc) nextHook() func(*bind.TransactOpts, [][]byte) (*types.Transaction, error) {
+func (f *IAliceNetFactoryMultiCallFunc) nextHook() func(*bind.TransactOpts, []bindings.AliceNetFactoryBaseMultiCallArgs) (*types.Transaction, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -6022,7 +6022,7 @@ type IAliceNetFactoryMultiCallFuncCall struct {
 	Arg0 *bind.TransactOpts
 	// Arg1 is the value of the 2nd argument passed to this method
 	// invocation.
-	Arg1 [][]byte
+	Arg1 []bindings.AliceNetFactoryBaseMultiCallArgs
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
 	Result0 *types.Transaction

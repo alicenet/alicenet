@@ -7,6 +7,11 @@ import "contracts/interfaces/IProxy.sol";
 import "contracts/libraries/errors/AliceNetFactoryBaseErrors.sol";
 
 abstract contract AliceNetFactoryBase is DeterministicAddress, ProxyUpgrader {
+    struct MultiCallArgs {
+        address target;
+        uint256 value;
+        bytes data;
+    }
     /**
     @dev owner role for privileged access to functions
     */
@@ -376,10 +381,9 @@ abstract contract AliceNetFactoryBase is DeterministicAddress, ProxyUpgrader {
      * impersonating the factory
      * @param cdata_: array of abi encoded data with the function calls (function signature + arguments)
      */
-    function _multiCall(bytes[] calldata cdata_) internal {
+    function _multiCall(MultiCallArgs[] calldata cdata_) internal {
         for (uint256 i = 0; i < cdata_.length; i++) {
-            bytes memory cdata = cdata_[i];
-            _callAny(address(this), 0, cdata);
+            _callAny(cdata_[i].target, cdata_[i].value, cdata_[i].data);
         }
         _returnAvailableData();
     }

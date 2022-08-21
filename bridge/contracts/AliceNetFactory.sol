@@ -117,7 +117,7 @@ contract AliceNetFactory is AliceNetFactoryBase {
      * impersonating the factory
      * @param cdata_: array of hex encoded state with the function calls (function signature + arguments)
      */
-    function multiCall(bytes[] calldata cdata_) public onlyOwner {
+    function multiCall(MultiCallArgs[] calldata cdata_) public onlyOwner {
         _multiCall(cdata_);
     }
 

@@ -40,10 +40,10 @@ type IAliceNetFactoryTransactor interface {
 	//
 	// Solidity: function initializeContract(address contract_, bytes initCallData_) returns()
 	InitializeContract(opts *bind.TransactOpts, contract_ common.Address, initCallData_ []byte) (*types.Transaction, error)
-	// MultiCall is a paid mutator transaction binding the contract method 0x348a0cdc.
+	// MultiCall is a paid mutator transaction binding the contract method 0x248b1701.
 	//
-	// Solidity: function multiCall(bytes[] cdata_) returns()
-	MultiCall(opts *bind.TransactOpts, cdata_ [][]byte) (*types.Transaction, error)
+	// Solidity: function multiCall((address,uint256,bytes)[] cdata_) returns()
+	MultiCall(opts *bind.TransactOpts, cdata_ []AliceNetFactoryBaseMultiCallArgs) (*types.Transaction, error)
 	// SetImplementation is a paid mutator transaction binding the contract method 0xd784d426.
 	//
 	// Solidity: function setImplementation(address newImplementationAddress_) returns()
