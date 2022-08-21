@@ -22,8 +22,6 @@ import {
   DEPLOY_CREATE,
   DEPLOY_METAMORPHIC,
   DEPLOY_PROXY,
-  DEPLOY_STATIC,
-  DEPLOY_TEMPLATE,
   DEPLOY_UPGRADEABLE_PROXY,
   INITIALIZER,
   MULTICALL_GAS_LIMIT,
@@ -329,7 +327,7 @@ task(
     const constructorArgs =
       taskArgs.constructorArgs === undefined ? [] : taskArgs.constructorArgs;
     // encode deployBcode
-  
+
     if (hre.network.name === "hardhat") {
       // hardhat is not being able to estimate correctly the tx gas due to the massive bytes array
       // being sent as input to the function (the contract bytecode), so we need to increase the block
@@ -339,8 +337,17 @@ task(
       ]);
     }
     // get the multi call arguements as [deployProxy, upgradeProxy]
-    const contractDescriptor = await getContractDescriptor(taskArgs.contractName, constructorArgs, initArgs, hre)
-    const multiCallArgs = await getDeployUpgradeableMultiCallArgs(contractDescriptor, hre, factory.address)
+    const contractDescriptor = await getContractDescriptor(
+      taskArgs.contractName,
+      constructorArgs,
+      initArgs,
+      hre
+    );
+    const multiCallArgs = await getDeployUpgradeableMultiCallArgs(
+      contractDescriptor,
+      hre,
+      factory.address
+    );
     const estimatedMultiCallGas = await factory.estimateGas.multiCall(
       multiCallArgs
     );
@@ -466,23 +473,37 @@ task("multiCallDeployMetamorphic")
     const logicFactory: any = await hre.ethers.getContractFactory(
       taskArgs.contractName
     );
-    
+
     const initArgs =
       taskArgs.initCallData === undefined
         ? []
         : taskArgs.initCallData.replace(/\s+/g, "").split(",");
-    const contractDescriptor = await getContractDescriptor(taskArgs.contractName, constructorArgs, initArgs, hre)
-    const isInitable = await isInitializable(contractDescriptor.fullyQualifiedName, hre.artifacts);
+    const contractDescriptor = await getContractDescriptor(
+      taskArgs.contractName,
+      constructorArgs,
+      initArgs,
+      hre
+    );
+    const isInitable = await isInitializable(
+      contractDescriptor.fullyQualifiedName,
+      hre.artifacts
+    );
     const initCallData = isInitable
       ? logicFactory.interface.encodeFunctionData(INITIALIZER, initArgs)
       : "0x";
-    const nonce = await hre.ethers.provider.getTransactionCount(factory.address);
+    const nonce = await hre.ethers.provider.getTransactionCount(
+      factory.address
+    );
     const templateAddress = hre.ethers.utils.getContractAddress({
-        from: factory.address,
-        nonce: nonce,
-      });
-    const salt = await getBytes32Salt(contractDescriptor.name, hre)
-    const multiCallArgs = await getDeployStaticMultiCallArgs(contractDescriptor, hre, factory.address)
+      from: factory.address,
+      nonce,
+    });
+    const salt = await getBytes32Salt(contractDescriptor.name, hre);
+    const multiCallArgs = await getDeployStaticMultiCallArgs(
+      contractDescriptor,
+      hre,
+      factory.address
+    );
     const estimatedMultiCallGas = await factory.estimateGas.multiCall(
       multiCallArgs
     );
@@ -879,19 +900,27 @@ task("multiCallDeployProxy", "deploy and upgrade proxy with multicall")
         ? await getBytes32Salt(taskArgs.contractName, hre)
         : hre.ethers.utils.formatBytes32String(taskArgs.salt);
     // encode the deployProxy function call with Salt as arg
-    const deployProxyCallData: BytesLike = factoryBase.interface.encodeFunctionData(
-      DEPLOY_PROXY,
-      [salt]
-    );
+    const deployProxyCallData: BytesLike =
+      factoryBase.interface.encodeFunctionData(DEPLOY_PROXY, [salt]);
     // encode upgrade proxy multicall
-    const upgradeProxyCallData: BytesLike = factoryBase.interface.encodeFunctionData(
-      UPGRADE_PROXY,
-      [salt, taskArgs.logicAddress, initCallData]
-    );
+    const upgradeProxyCallData: BytesLike =
+      factoryBase.interface.encodeFunctionData(UPGRADE_PROXY, [
+        salt,
+        taskArgs.logicAddress,
+        initCallData,
+      ]);
     // get the multi call arguements as [deployProxy, upgradeProxy]
-    
-    const deployProxy = encodeMultiCallArgs(factory.address, 0, deployProxyCallData)
-    const upgradeProxy = encodeMultiCallArgs(factory.address, 0, upgradeProxyCallData)
+
+    const deployProxy = encodeMultiCallArgs(
+      factory.address,
+      0,
+      deployProxyCallData
+    );
+    const upgradeProxy = encodeMultiCallArgs(
+      factory.address,
+      0,
+      upgradeProxyCallData
+    );
     const multiCallArgs = [deployProxy, upgradeProxy];
     // send the multicall transaction with deployProxy and upgradeProxy
     const txResponse = await factory.multiCall(multiCallArgs);
@@ -978,8 +1007,16 @@ task(
     );
     const proxyContract = await PROXY_FACTORY.attach(proxyAddress);
     const oldImpl = await proxyContract.getImplementationAddress();
-    const deployCreate = await encodeMultiCallArgs(factory.address, 0, deployCreateCallData) 
-    const upgradeProxy = await encodeMultiCallArgs(factory.address, 0, upgradeProxyCallData)
+    const deployCreate = await encodeMultiCallArgs(
+      factory.address,
+      0,
+      deployCreateCallData
+    );
+    const upgradeProxy = await encodeMultiCallArgs(
+      factory.address,
+      0,
+      upgradeProxyCallData
+    );
     const txResponse = await factory.multiCall([deployCreate, upgradeProxy]);
     const receipt = await txResponse.wait();
     await showState(
