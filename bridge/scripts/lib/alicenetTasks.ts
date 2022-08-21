@@ -1286,7 +1286,6 @@ export async function stakeValidators(
     "AliceNetFactory",
     factoryAddress
   );
-  const btokenBase = await hre.ethers.getContractFactory("BToken");
   const validatorPoolBase = await hre.ethers.getContractFactory(
     "ValidatorPool"
   );
