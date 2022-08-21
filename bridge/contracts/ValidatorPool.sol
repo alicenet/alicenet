@@ -252,7 +252,11 @@ contract ValidatorPool is
         return data._tokenID;
     }
 
-    function majorSlash(address dishonestValidator_, address disputer_) public onlyETHDKG balanceShouldNotChange {
+    function majorSlash(address dishonestValidator_, address disputer_)
+        public
+        onlyETHDKG
+        balanceShouldNotChange
+    {
         if (!_isAccusable(dishonestValidator_)) {
             revert ValidatorPoolErrors.AddressNotAccusable(dishonestValidator_);
         }
@@ -276,7 +280,11 @@ contract ValidatorPool is
         emit ValidatorMajorSlashed(dishonestValidator_);
     }
 
-    function minorSlash(address dishonestValidator_, address disputer_) public onlyETHDKG balanceShouldNotChange {
+    function minorSlash(address dishonestValidator_, address disputer_)
+        public
+        onlyETHDKG
+        balanceShouldNotChange
+    {
         if (!_isAccusable(dishonestValidator_)) {
             revert ValidatorPoolErrors.AddressNotAccusable(dishonestValidator_);
         }
