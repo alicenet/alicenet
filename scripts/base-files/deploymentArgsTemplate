@@ -34,6 +34,9 @@ maxNumValidators_ = "10"
 [[initializer."contracts/ValidatorPool.sol:ValidatorPool"]]
 disputerReward_ = "1"
 
+[[initializer."contracts/ValidatorPool.sol:ValidatorPool"]]
+maxIntervalWithoutSnapshots = "8192"
+
 [[initializer."contracts/ETHDKG.sol:ETHDKG"]]
 phaseLength_ = "40"
 

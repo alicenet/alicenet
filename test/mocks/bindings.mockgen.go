@@ -39924,6 +39924,10 @@ type MockIValidatorPool struct {
 	// GetLocationsFunc is an instance of a mock function object controlling
 	// the behavior of the method GetLocations.
 	GetLocationsFunc *IValidatorPoolGetLocationsFunc
+	// GetMaxIntervalWithoutSnapshotsFunc is an instance of a mock function
+	// object controlling the behavior of the method
+	// GetMaxIntervalWithoutSnapshots.
+	GetMaxIntervalWithoutSnapshotsFunc *IValidatorPoolGetMaxIntervalWithoutSnapshotsFunc
 	// GetMaxNumValidatorsFunc is an instance of a mock function object
 	// controlling the behavior of the method GetMaxNumValidators.
 	GetMaxNumValidatorsFunc *IValidatorPoolGetMaxNumValidatorsFunc
@@ -39967,10 +39971,6 @@ type MockIValidatorPool struct {
 	// IsValidatorFunc is an instance of a mock function object controlling
 	// the behavior of the method IsValidator.
 	IsValidatorFunc *IValidatorPoolIsValidatorFunc
-	// MAXINTERVALWITHOUTSNAPSHOTSFunc is an instance of a mock function
-	// object controlling the behavior of the method
-	// MAXINTERVALWITHOUTSNAPSHOTS.
-	MAXINTERVALWITHOUTSNAPSHOTSFunc *IValidatorPoolMAXINTERVALWITHOUTSNAPSHOTSFunc
 	// MajorSlashFunc is an instance of a mock function object controlling
 	// the behavior of the method MajorSlash.
 	MajorSlashFunc *IValidatorPoolMajorSlashFunc
@@ -40026,6 +40026,10 @@ type MockIValidatorPool struct {
 	// SetLocationFunc is an instance of a mock function object controlling
 	// the behavior of the method SetLocation.
 	SetLocationFunc *IValidatorPoolSetLocationFunc
+	// SetMaxIntervalWithoutSnapshotsFunc is an instance of a mock function
+	// object controlling the behavior of the method
+	// SetMaxIntervalWithoutSnapshots.
+	SetMaxIntervalWithoutSnapshotsFunc *IValidatorPoolSetMaxIntervalWithoutSnapshotsFunc
 	// SetMaxNumValidatorsFunc is an instance of a mock function object
 	// controlling the behavior of the method SetMaxNumValidators.
 	SetMaxNumValidatorsFunc *IValidatorPoolSetMaxNumValidatorsFunc
@@ -40139,6 +40143,11 @@ func NewMockIValidatorPool() *MockIValidatorPool {
 				return
 			},
 		},
+		GetMaxIntervalWithoutSnapshotsFunc: &IValidatorPoolGetMaxIntervalWithoutSnapshotsFunc{
+			defaultHook: func(*bind.CallOpts) (r0 *big.Int, r1 error) {
+				return
+			},
+		},
 		GetMaxNumValidatorsFunc: &IValidatorPoolGetMaxNumValidatorsFunc{
 			defaultHook: func(*bind.CallOpts) (r0 *big.Int, r1 error) {
 				return
@@ -40175,7 +40184,7 @@ func NewMockIValidatorPool() *MockIValidatorPool {
 			},
 		},
 		InitializeFunc: &IValidatorPoolInitializeFunc{
-			defaultHook: func(*bind.TransactOpts, *big.Int, *big.Int, *big.Int) (r0 *types.Transaction, r1 error) {
+			defaultHook: func(*bind.TransactOpts, *big.Int, *big.Int, *big.Int, *big.Int) (r0 *types.Transaction, r1 error) {
 				return
 			},
 		},
@@ -40206,11 +40215,6 @@ func NewMockIValidatorPool() *MockIValidatorPool {
 		},
 		IsValidatorFunc: &IValidatorPoolIsValidatorFunc{
 			defaultHook: func(*bind.CallOpts, common.Address) (r0 bool, r1 error) {
-				return
-			},
-		},
-		MAXINTERVALWITHOUTSNAPSHOTSFunc: &IValidatorPoolMAXINTERVALWITHOUTSNAPSHOTSFunc{
-			defaultHook: func(*bind.CallOpts) (r0 *big.Int, r1 error) {
 				return
 			},
 		},
@@ -40296,6 +40300,11 @@ func NewMockIValidatorPool() *MockIValidatorPool {
 		},
 		SetLocationFunc: &IValidatorPoolSetLocationFunc{
 			defaultHook: func(*bind.TransactOpts, string) (r0 *types.Transaction, r1 error) {
+				return
+			},
+		},
+		SetMaxIntervalWithoutSnapshotsFunc: &IValidatorPoolSetMaxIntervalWithoutSnapshotsFunc{
+			defaultHook: func(*bind.TransactOpts, *big.Int) (r0 *types.Transaction, r1 error) {
 				return
 			},
 		},
@@ -40436,6 +40445,11 @@ func NewStrictMockIValidatorPool() *MockIValidatorPool {
 				panic("unexpected invocation of MockIValidatorPool.GetLocations")
 			},
 		},
+		GetMaxIntervalWithoutSnapshotsFunc: &IValidatorPoolGetMaxIntervalWithoutSnapshotsFunc{
+			defaultHook: func(*bind.CallOpts) (*big.Int, error) {
+				panic("unexpected invocation of MockIValidatorPool.GetMaxIntervalWithoutSnapshots")
+			},
+		},
 		GetMaxNumValidatorsFunc: &IValidatorPoolGetMaxNumValidatorsFunc{
 			defaultHook: func(*bind.CallOpts) (*big.Int, error) {
 				panic("unexpected invocation of MockIValidatorPool.GetMaxNumValidators")
@@ -40472,7 +40486,7 @@ func NewStrictMockIValidatorPool() *MockIValidatorPool {
 			},
 		},
 		InitializeFunc: &IValidatorPoolInitializeFunc{
-			defaultHook: func(*bind.TransactOpts, *big.Int, *big.Int, *big.Int) (*types.Transaction, error) {
+			defaultHook: func(*bind.TransactOpts, *big.Int, *big.Int, *big.Int, *big.Int) (*types.Transaction, error) {
 				panic("unexpected invocation of MockIValidatorPool.Initialize")
 			},
 		},
@@ -40504,11 +40518,6 @@ func NewStrictMockIValidatorPool() *MockIValidatorPool {
 		IsValidatorFunc: &IValidatorPoolIsValidatorFunc{
 			defaultHook: func(*bind.CallOpts, common.Address) (bool, error) {
 				panic("unexpected invocation of MockIValidatorPool.IsValidator")
-			},
-		},
-		MAXINTERVALWITHOUTSNAPSHOTSFunc: &IValidatorPoolMAXINTERVALWITHOUTSNAPSHOTSFunc{
-			defaultHook: func(*bind.CallOpts) (*big.Int, error) {
-				panic("unexpected invocation of MockIValidatorPool.MAXINTERVALWITHOUTSNAPSHOTS")
 			},
 		},
 		MajorSlashFunc: &IValidatorPoolMajorSlashFunc{
@@ -40594,6 +40603,11 @@ func NewStrictMockIValidatorPool() *MockIValidatorPool {
 		SetLocationFunc: &IValidatorPoolSetLocationFunc{
 			defaultHook: func(*bind.TransactOpts, string) (*types.Transaction, error) {
 				panic("unexpected invocation of MockIValidatorPool.SetLocation")
+			},
+		},
+		SetMaxIntervalWithoutSnapshotsFunc: &IValidatorPoolSetMaxIntervalWithoutSnapshotsFunc{
+			defaultHook: func(*bind.TransactOpts, *big.Int) (*types.Transaction, error) {
+				panic("unexpected invocation of MockIValidatorPool.SetMaxIntervalWithoutSnapshots")
 			},
 		},
 		SetMaxNumValidatorsFunc: &IValidatorPoolSetMaxNumValidatorsFunc{
@@ -40708,6 +40722,9 @@ func NewMockIValidatorPoolFrom(i bindings.IValidatorPool) *MockIValidatorPool {
 		GetLocationsFunc: &IValidatorPoolGetLocationsFunc{
 			defaultHook: i.GetLocations,
 		},
+		GetMaxIntervalWithoutSnapshotsFunc: &IValidatorPoolGetMaxIntervalWithoutSnapshotsFunc{
+			defaultHook: i.GetMaxIntervalWithoutSnapshots,
+		},
 		GetMaxNumValidatorsFunc: &IValidatorPoolGetMaxNumValidatorsFunc{
 			defaultHook: i.GetMaxNumValidators,
 		},
@@ -40749,9 +40766,6 @@ func NewMockIValidatorPoolFrom(i bindings.IValidatorPool) *MockIValidatorPool {
 		},
 		IsValidatorFunc: &IValidatorPoolIsValidatorFunc{
 			defaultHook: i.IsValidator,
-		},
-		MAXINTERVALWITHOUTSNAPSHOTSFunc: &IValidatorPoolMAXINTERVALWITHOUTSNAPSHOTSFunc{
-			defaultHook: i.MAXINTERVALWITHOUTSNAPSHOTS,
 		},
 		MajorSlashFunc: &IValidatorPoolMajorSlashFunc{
 			defaultHook: i.MajorSlash,
@@ -40803,6 +40817,9 @@ func NewMockIValidatorPoolFrom(i bindings.IValidatorPool) *MockIValidatorPool {
 		},
 		SetLocationFunc: &IValidatorPoolSetLocationFunc{
 			defaultHook: i.SetLocation,
+		},
+		SetMaxIntervalWithoutSnapshotsFunc: &IValidatorPoolSetMaxIntervalWithoutSnapshotsFunc{
+			defaultHook: i.SetMaxIntervalWithoutSnapshots,
 		},
 		SetMaxNumValidatorsFunc: &IValidatorPoolSetMaxNumValidatorsFunc{
 			defaultHook: i.SetMaxNumValidators,
@@ -42259,6 +42276,115 @@ func (c IValidatorPoolGetLocationsFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
+// IValidatorPoolGetMaxIntervalWithoutSnapshotsFunc describes the behavior
+// when the GetMaxIntervalWithoutSnapshots method of the parent
+// MockIValidatorPool instance is invoked.
+type IValidatorPoolGetMaxIntervalWithoutSnapshotsFunc struct {
+	defaultHook func(*bind.CallOpts) (*big.Int, error)
+	hooks       []func(*bind.CallOpts) (*big.Int, error)
+	history     []IValidatorPoolGetMaxIntervalWithoutSnapshotsFuncCall
+	mutex       sync.Mutex
+}
+
+// GetMaxIntervalWithoutSnapshots delegates to the next hook function in the
+// queue and stores the parameter and result values of this invocation.
+func (m *MockIValidatorPool) GetMaxIntervalWithoutSnapshots(v0 *bind.CallOpts) (*big.Int, error) {
+	r0, r1 := m.GetMaxIntervalWithoutSnapshotsFunc.nextHook()(v0)
+	m.GetMaxIntervalWithoutSnapshotsFunc.appendCall(IValidatorPoolGetMaxIntervalWithoutSnapshotsFuncCall{v0, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the
+// GetMaxIntervalWithoutSnapshots method of the parent MockIValidatorPool
+// instance is invoked and the hook queue is empty.
+func (f *IValidatorPoolGetMaxIntervalWithoutSnapshotsFunc) SetDefaultHook(hook func(*bind.CallOpts) (*big.Int, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// GetMaxIntervalWithoutSnapshots method of the parent MockIValidatorPool
+// instance invokes the hook at the front of the queue and discards it.
+// After the queue is empty, the default hook function is invoked for any
+// future action.
+func (f *IValidatorPoolGetMaxIntervalWithoutSnapshotsFunc) PushHook(hook func(*bind.CallOpts) (*big.Int, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *IValidatorPoolGetMaxIntervalWithoutSnapshotsFunc) SetDefaultReturn(r0 *big.Int, r1 error) {
+	f.SetDefaultHook(func(*bind.CallOpts) (*big.Int, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *IValidatorPoolGetMaxIntervalWithoutSnapshotsFunc) PushReturn(r0 *big.Int, r1 error) {
+	f.PushHook(func(*bind.CallOpts) (*big.Int, error) {
+		return r0, r1
+	})
+}
+
+func (f *IValidatorPoolGetMaxIntervalWithoutSnapshotsFunc) nextHook() func(*bind.CallOpts) (*big.Int, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *IValidatorPoolGetMaxIntervalWithoutSnapshotsFunc) appendCall(r0 IValidatorPoolGetMaxIntervalWithoutSnapshotsFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of
+// IValidatorPoolGetMaxIntervalWithoutSnapshotsFuncCall objects describing
+// the invocations of this function.
+func (f *IValidatorPoolGetMaxIntervalWithoutSnapshotsFunc) History() []IValidatorPoolGetMaxIntervalWithoutSnapshotsFuncCall {
+	f.mutex.Lock()
+	history := make([]IValidatorPoolGetMaxIntervalWithoutSnapshotsFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// IValidatorPoolGetMaxIntervalWithoutSnapshotsFuncCall is an object that
+// describes an invocation of method GetMaxIntervalWithoutSnapshots on an
+// instance of MockIValidatorPool.
+type IValidatorPoolGetMaxIntervalWithoutSnapshotsFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 *bind.CallOpts
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 *big.Int
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c IValidatorPoolGetMaxIntervalWithoutSnapshotsFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c IValidatorPoolGetMaxIntervalWithoutSnapshotsFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
+}
+
 // IValidatorPoolGetMaxNumValidatorsFunc describes the behavior when the
 // GetMaxNumValidators method of the parent MockIValidatorPool instance is
 // invoked.
@@ -43026,24 +43152,24 @@ func (c IValidatorPoolGetValidatorsCountFuncCall) Results() []interface{} {
 // IValidatorPoolInitializeFunc describes the behavior when the Initialize
 // method of the parent MockIValidatorPool instance is invoked.
 type IValidatorPoolInitializeFunc struct {
-	defaultHook func(*bind.TransactOpts, *big.Int, *big.Int, *big.Int) (*types.Transaction, error)
-	hooks       []func(*bind.TransactOpts, *big.Int, *big.Int, *big.Int) (*types.Transaction, error)
+	defaultHook func(*bind.TransactOpts, *big.Int, *big.Int, *big.Int, *big.Int) (*types.Transaction, error)
+	hooks       []func(*bind.TransactOpts, *big.Int, *big.Int, *big.Int, *big.Int) (*types.Transaction, error)
 	history     []IValidatorPoolInitializeFuncCall
 	mutex       sync.Mutex
 }
 
 // Initialize delegates to the next hook function in the queue and stores
 // the parameter and result values of this invocation.
-func (m *MockIValidatorPool) Initialize(v0 *bind.TransactOpts, v1 *big.Int, v2 *big.Int, v3 *big.Int) (*types.Transaction, error) {
-	r0, r1 := m.InitializeFunc.nextHook()(v0, v1, v2, v3)
-	m.InitializeFunc.appendCall(IValidatorPoolInitializeFuncCall{v0, v1, v2, v3, r0, r1})
+func (m *MockIValidatorPool) Initialize(v0 *bind.TransactOpts, v1 *big.Int, v2 *big.Int, v3 *big.Int, v4 *big.Int) (*types.Transaction, error) {
+	r0, r1 := m.InitializeFunc.nextHook()(v0, v1, v2, v3, v4)
+	m.InitializeFunc.appendCall(IValidatorPoolInitializeFuncCall{v0, v1, v2, v3, v4, r0, r1})
 	return r0, r1
 }
 
 // SetDefaultHook sets function that is called when the Initialize method of
 // the parent MockIValidatorPool instance is invoked and the hook queue is
 // empty.
-func (f *IValidatorPoolInitializeFunc) SetDefaultHook(hook func(*bind.TransactOpts, *big.Int, *big.Int, *big.Int) (*types.Transaction, error)) {
+func (f *IValidatorPoolInitializeFunc) SetDefaultHook(hook func(*bind.TransactOpts, *big.Int, *big.Int, *big.Int, *big.Int) (*types.Transaction, error)) {
 	f.defaultHook = hook
 }
 
@@ -43051,7 +43177,7 @@ func (f *IValidatorPoolInitializeFunc) SetDefaultHook(hook func(*bind.TransactOp
 // Initialize method of the parent MockIValidatorPool instance invokes the
 // hook at the front of the queue and discards it. After the queue is empty,
 // the default hook function is invoked for any future action.
-func (f *IValidatorPoolInitializeFunc) PushHook(hook func(*bind.TransactOpts, *big.Int, *big.Int, *big.Int) (*types.Transaction, error)) {
+func (f *IValidatorPoolInitializeFunc) PushHook(hook func(*bind.TransactOpts, *big.Int, *big.Int, *big.Int, *big.Int) (*types.Transaction, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -43060,19 +43186,19 @@ func (f *IValidatorPoolInitializeFunc) PushHook(hook func(*bind.TransactOpts, *b
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
 func (f *IValidatorPoolInitializeFunc) SetDefaultReturn(r0 *types.Transaction, r1 error) {
-	f.SetDefaultHook(func(*bind.TransactOpts, *big.Int, *big.Int, *big.Int) (*types.Transaction, error) {
+	f.SetDefaultHook(func(*bind.TransactOpts, *big.Int, *big.Int, *big.Int, *big.Int) (*types.Transaction, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
 func (f *IValidatorPoolInitializeFunc) PushReturn(r0 *types.Transaction, r1 error) {
-	f.PushHook(func(*bind.TransactOpts, *big.Int, *big.Int, *big.Int) (*types.Transaction, error) {
+	f.PushHook(func(*bind.TransactOpts, *big.Int, *big.Int, *big.Int, *big.Int) (*types.Transaction, error) {
 		return r0, r1
 	})
 }
 
-func (f *IValidatorPoolInitializeFunc) nextHook() func(*bind.TransactOpts, *big.Int, *big.Int, *big.Int) (*types.Transaction, error) {
+func (f *IValidatorPoolInitializeFunc) nextHook() func(*bind.TransactOpts, *big.Int, *big.Int, *big.Int, *big.Int) (*types.Transaction, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -43117,6 +43243,9 @@ type IValidatorPoolInitializeFuncCall struct {
 	// Arg3 is the value of the 4th argument passed to this method
 	// invocation.
 	Arg3 *big.Int
+	// Arg4 is the value of the 5th argument passed to this method
+	// invocation.
+	Arg4 *big.Int
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
 	Result0 *types.Transaction
@@ -43128,7 +43257,7 @@ type IValidatorPoolInitializeFuncCall struct {
 // Args returns an interface slice containing the arguments of this
 // invocation.
 func (c IValidatorPoolInitializeFuncCall) Args() []interface{} {
-	return []interface{}{c.Arg0, c.Arg1, c.Arg2, c.Arg3}
+	return []interface{}{c.Arg0, c.Arg1, c.Arg2, c.Arg3, c.Arg4}
 }
 
 // Results returns an interface slice containing the results of this
@@ -43784,115 +43913,6 @@ func (c IValidatorPoolIsValidatorFuncCall) Args() []interface{} {
 // Results returns an interface slice containing the results of this
 // invocation.
 func (c IValidatorPoolIsValidatorFuncCall) Results() []interface{} {
-	return []interface{}{c.Result0, c.Result1}
-}
-
-// IValidatorPoolMAXINTERVALWITHOUTSNAPSHOTSFunc describes the behavior when
-// the MAXINTERVALWITHOUTSNAPSHOTS method of the parent MockIValidatorPool
-// instance is invoked.
-type IValidatorPoolMAXINTERVALWITHOUTSNAPSHOTSFunc struct {
-	defaultHook func(*bind.CallOpts) (*big.Int, error)
-	hooks       []func(*bind.CallOpts) (*big.Int, error)
-	history     []IValidatorPoolMAXINTERVALWITHOUTSNAPSHOTSFuncCall
-	mutex       sync.Mutex
-}
-
-// MAXINTERVALWITHOUTSNAPSHOTS delegates to the next hook function in the
-// queue and stores the parameter and result values of this invocation.
-func (m *MockIValidatorPool) MAXINTERVALWITHOUTSNAPSHOTS(v0 *bind.CallOpts) (*big.Int, error) {
-	r0, r1 := m.MAXINTERVALWITHOUTSNAPSHOTSFunc.nextHook()(v0)
-	m.MAXINTERVALWITHOUTSNAPSHOTSFunc.appendCall(IValidatorPoolMAXINTERVALWITHOUTSNAPSHOTSFuncCall{v0, r0, r1})
-	return r0, r1
-}
-
-// SetDefaultHook sets function that is called when the
-// MAXINTERVALWITHOUTSNAPSHOTS method of the parent MockIValidatorPool
-// instance is invoked and the hook queue is empty.
-func (f *IValidatorPoolMAXINTERVALWITHOUTSNAPSHOTSFunc) SetDefaultHook(hook func(*bind.CallOpts) (*big.Int, error)) {
-	f.defaultHook = hook
-}
-
-// PushHook adds a function to the end of hook queue. Each invocation of the
-// MAXINTERVALWITHOUTSNAPSHOTS method of the parent MockIValidatorPool
-// instance invokes the hook at the front of the queue and discards it.
-// After the queue is empty, the default hook function is invoked for any
-// future action.
-func (f *IValidatorPoolMAXINTERVALWITHOUTSNAPSHOTSFunc) PushHook(hook func(*bind.CallOpts) (*big.Int, error)) {
-	f.mutex.Lock()
-	f.hooks = append(f.hooks, hook)
-	f.mutex.Unlock()
-}
-
-// SetDefaultReturn calls SetDefaultHook with a function that returns the
-// given values.
-func (f *IValidatorPoolMAXINTERVALWITHOUTSNAPSHOTSFunc) SetDefaultReturn(r0 *big.Int, r1 error) {
-	f.SetDefaultHook(func(*bind.CallOpts) (*big.Int, error) {
-		return r0, r1
-	})
-}
-
-// PushReturn calls PushHook with a function that returns the given values.
-func (f *IValidatorPoolMAXINTERVALWITHOUTSNAPSHOTSFunc) PushReturn(r0 *big.Int, r1 error) {
-	f.PushHook(func(*bind.CallOpts) (*big.Int, error) {
-		return r0, r1
-	})
-}
-
-func (f *IValidatorPoolMAXINTERVALWITHOUTSNAPSHOTSFunc) nextHook() func(*bind.CallOpts) (*big.Int, error) {
-	f.mutex.Lock()
-	defer f.mutex.Unlock()
-
-	if len(f.hooks) == 0 {
-		return f.defaultHook
-	}
-
-	hook := f.hooks[0]
-	f.hooks = f.hooks[1:]
-	return hook
-}
-
-func (f *IValidatorPoolMAXINTERVALWITHOUTSNAPSHOTSFunc) appendCall(r0 IValidatorPoolMAXINTERVALWITHOUTSNAPSHOTSFuncCall) {
-	f.mutex.Lock()
-	f.history = append(f.history, r0)
-	f.mutex.Unlock()
-}
-
-// History returns a sequence of
-// IValidatorPoolMAXINTERVALWITHOUTSNAPSHOTSFuncCall objects describing the
-// invocations of this function.
-func (f *IValidatorPoolMAXINTERVALWITHOUTSNAPSHOTSFunc) History() []IValidatorPoolMAXINTERVALWITHOUTSNAPSHOTSFuncCall {
-	f.mutex.Lock()
-	history := make([]IValidatorPoolMAXINTERVALWITHOUTSNAPSHOTSFuncCall, len(f.history))
-	copy(history, f.history)
-	f.mutex.Unlock()
-
-	return history
-}
-
-// IValidatorPoolMAXINTERVALWITHOUTSNAPSHOTSFuncCall is an object that
-// describes an invocation of method MAXINTERVALWITHOUTSNAPSHOTS on an
-// instance of MockIValidatorPool.
-type IValidatorPoolMAXINTERVALWITHOUTSNAPSHOTSFuncCall struct {
-	// Arg0 is the value of the 1st argument passed to this method
-	// invocation.
-	Arg0 *bind.CallOpts
-	// Result0 is the value of the 1st result returned from this method
-	// invocation.
-	Result0 *big.Int
-	// Result1 is the value of the 2nd result returned from this method
-	// invocation.
-	Result1 error
-}
-
-// Args returns an interface slice containing the arguments of this
-// invocation.
-func (c IValidatorPoolMAXINTERVALWITHOUTSNAPSHOTSFuncCall) Args() []interface{} {
-	return []interface{}{c.Arg0}
-}
-
-// Results returns an interface slice containing the results of this
-// invocation.
-func (c IValidatorPoolMAXINTERVALWITHOUTSNAPSHOTSFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
@@ -45756,6 +45776,118 @@ func (c IValidatorPoolSetLocationFuncCall) Args() []interface{} {
 // Results returns an interface slice containing the results of this
 // invocation.
 func (c IValidatorPoolSetLocationFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
+}
+
+// IValidatorPoolSetMaxIntervalWithoutSnapshotsFunc describes the behavior
+// when the SetMaxIntervalWithoutSnapshots method of the parent
+// MockIValidatorPool instance is invoked.
+type IValidatorPoolSetMaxIntervalWithoutSnapshotsFunc struct {
+	defaultHook func(*bind.TransactOpts, *big.Int) (*types.Transaction, error)
+	hooks       []func(*bind.TransactOpts, *big.Int) (*types.Transaction, error)
+	history     []IValidatorPoolSetMaxIntervalWithoutSnapshotsFuncCall
+	mutex       sync.Mutex
+}
+
+// SetMaxIntervalWithoutSnapshots delegates to the next hook function in the
+// queue and stores the parameter and result values of this invocation.
+func (m *MockIValidatorPool) SetMaxIntervalWithoutSnapshots(v0 *bind.TransactOpts, v1 *big.Int) (*types.Transaction, error) {
+	r0, r1 := m.SetMaxIntervalWithoutSnapshotsFunc.nextHook()(v0, v1)
+	m.SetMaxIntervalWithoutSnapshotsFunc.appendCall(IValidatorPoolSetMaxIntervalWithoutSnapshotsFuncCall{v0, v1, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the
+// SetMaxIntervalWithoutSnapshots method of the parent MockIValidatorPool
+// instance is invoked and the hook queue is empty.
+func (f *IValidatorPoolSetMaxIntervalWithoutSnapshotsFunc) SetDefaultHook(hook func(*bind.TransactOpts, *big.Int) (*types.Transaction, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// SetMaxIntervalWithoutSnapshots method of the parent MockIValidatorPool
+// instance invokes the hook at the front of the queue and discards it.
+// After the queue is empty, the default hook function is invoked for any
+// future action.
+func (f *IValidatorPoolSetMaxIntervalWithoutSnapshotsFunc) PushHook(hook func(*bind.TransactOpts, *big.Int) (*types.Transaction, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *IValidatorPoolSetMaxIntervalWithoutSnapshotsFunc) SetDefaultReturn(r0 *types.Transaction, r1 error) {
+	f.SetDefaultHook(func(*bind.TransactOpts, *big.Int) (*types.Transaction, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *IValidatorPoolSetMaxIntervalWithoutSnapshotsFunc) PushReturn(r0 *types.Transaction, r1 error) {
+	f.PushHook(func(*bind.TransactOpts, *big.Int) (*types.Transaction, error) {
+		return r0, r1
+	})
+}
+
+func (f *IValidatorPoolSetMaxIntervalWithoutSnapshotsFunc) nextHook() func(*bind.TransactOpts, *big.Int) (*types.Transaction, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *IValidatorPoolSetMaxIntervalWithoutSnapshotsFunc) appendCall(r0 IValidatorPoolSetMaxIntervalWithoutSnapshotsFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of
+// IValidatorPoolSetMaxIntervalWithoutSnapshotsFuncCall objects describing
+// the invocations of this function.
+func (f *IValidatorPoolSetMaxIntervalWithoutSnapshotsFunc) History() []IValidatorPoolSetMaxIntervalWithoutSnapshotsFuncCall {
+	f.mutex.Lock()
+	history := make([]IValidatorPoolSetMaxIntervalWithoutSnapshotsFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// IValidatorPoolSetMaxIntervalWithoutSnapshotsFuncCall is an object that
+// describes an invocation of method SetMaxIntervalWithoutSnapshots on an
+// instance of MockIValidatorPool.
+type IValidatorPoolSetMaxIntervalWithoutSnapshotsFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 *bind.TransactOpts
+	// Arg1 is the value of the 2nd argument passed to this method
+	// invocation.
+	Arg1 *big.Int
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 *types.Transaction
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c IValidatorPoolSetMaxIntervalWithoutSnapshotsFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0, c.Arg1}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c IValidatorPoolSetMaxIntervalWithoutSnapshotsFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
