@@ -4,6 +4,7 @@ import {
   migrateSnapshotsAndValidators,
   stakeValidators,
 } from "../../scripts/lib/alicenetTasks";
+import { factory } from "../../typechain-types/contracts/libraries";
 import {
   assertEventValidatorMemberAdded,
   assertEventValidatorSetCompleted,
@@ -19,18 +20,13 @@ describe("State Migration: Migrate state", () => {
 
   it("Should migrate using special migration contract", async function () {
     const hre = await require("hardhat"); // eslint-disable-line
-
     let txResponse = await stakeValidators(
       4,
       fixture.factory.address,
       fixture.aToken.address,
-      fixture.bToken.address,
       fixture.publicStaking.address,
-      fixture.aTokenMinter.address,
-      fixture.validatorPool.address,
       hre
     );
-
     const receipt1 = await txResponse.wait();
     if (receipt1.events === undefined) {
       throw new Error("receipt has no events");
