@@ -4,7 +4,6 @@ import {
   migrateSnapshotsAndValidators,
   stakeValidators,
 } from "../../scripts/lib/alicenetTasks";
-import { factory } from "../../typechain-types/contracts/libraries";
 import {
   assertEventValidatorMemberAdded,
   assertEventValidatorSetCompleted,
