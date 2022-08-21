@@ -3,6 +3,7 @@ package objects
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/alicenet/alicenet/bridge/bindings"
 	"math/big"
 	"strings"
 	"sync"
@@ -34,6 +35,7 @@ type MonitorState struct {
 	ValidatorSets          map[uint32]ValidatorSet               `json:"validatorSets"`
 	Validators             map[uint32][]Validator                `json:"validators"`
 	PotentialValidators    map[common.Address]PotentialValidator `json:"potentialValidators"`
+	CanonicalVersion       bindings.CanonicalVersion             `json:"canonicalVersion"`
 }
 
 // ValidatorSet is summary information about a ValidatorSet that participated on ETHDKG.

@@ -44,6 +44,16 @@ describe("ValidatorPool Access Control: An user without admin role should not be
       .withArgs(notAdmin1.address, fixture.factory.address);
   });
 
+  it("Set Max Interval Without Snapshots", async function () {
+    await expect(
+      fixture.validatorPool
+        .connect(notAdmin1Signer)
+        .setMaxIntervalWithoutSnapshots(1)
+    )
+      .to.be.revertedWithCustomError(fixture.validatorPool, `OnlyFactory`)
+      .withArgs(notAdmin1.address, fixture.factory.address);
+  });
+
   it("Set stake Amount", async function () {
     await expect(
       fixture.validatorPool.connect(notAdmin1Signer).setStakeAmount(1)

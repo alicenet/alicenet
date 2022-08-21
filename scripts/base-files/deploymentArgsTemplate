@@ -1,6 +1,18 @@
 [[constructor."contracts/AToken.sol:AToken"]]
 legacyToken_ = "0x546f99f244b7b58b855330ae0e2bc1b30b41302f"
 
+[[constructor."contracts/Distribution.sol:Distribution"]]
+validatorStakingSplit_ = "332"
+
+[[constructor."contracts/Distribution.sol:Distribution"]]
+publicStakingSplit_ = "332"
+
+[[constructor."contracts/Distribution.sol:Distribution"]]
+liquidityProviderStakingSplit_ = "332"
+
+[[constructor."contracts/Distribution.sol:Distribution"]]
+protocolFeeSplit_ = "4"
+
 [[constructor."contracts/Snapshots.sol:Snapshots"]]
 chainID_ = "1337"
 
@@ -24,6 +36,9 @@ maxNumValidators_ = "10"
 
 [[initializer."contracts/ValidatorPool.sol:ValidatorPool"]]
 disputerReward_ = "1"
+
+[[initializer."contracts/ValidatorPool.sol:ValidatorPool"]]
+maxIntervalWithoutSnapshots = "8192"
 
 [[initializer."contracts/ETHDKG.sol:ETHDKG"]]
 phaseLength_ = "40"

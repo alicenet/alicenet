@@ -12,6 +12,8 @@ interface IValidatorPool {
 
     function setStakeAmount(uint256 stakeAmount_) external;
 
+    function setMaxIntervalWithoutSnapshots(uint256 maxIntervalWithoutSnapshots) external;
+
     function setMaxNumValidators(uint256 maxNumValidators_) external;
 
     function setDisputerReward(uint256 disputerReward_) external;
@@ -44,6 +46,11 @@ interface IValidatorPool {
     function majorSlash(address dishonestValidator_, address disputer_) external;
 
     function minorSlash(address dishonestValidator_, address disputer_) external;
+
+    function getMaxIntervalWithoutSnapshots()
+        external
+        view
+        returns (uint256 maxIntervalWithoutSnapshots);
 
     function getValidatorsCount() external view returns (uint256);
 

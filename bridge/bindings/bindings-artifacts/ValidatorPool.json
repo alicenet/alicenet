@@ -50,6 +50,16 @@
   },
   {
     "inputs": [],
+    "name": "CannotCallContractMethodsOnZeroAddress",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "CannotTransferToZeroAddress",
+    "type": "error"
+  },
+  {
+    "inputs": [],
     "name": "ConsensusRunning",
     "type": "error"
   },
@@ -59,8 +69,55 @@
     "type": "error"
   },
   {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "erc20Address",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "from",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "to",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "Erc20TransferFailed",
+    "type": "error"
+  },
+  {
     "inputs": [],
     "name": "EthBalanceChangedDuringOperation",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "from",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "to",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "EthTransferFailed",
     "type": "error"
   },
   {
@@ -115,6 +172,27 @@
       }
     ],
     "name": "LengthGreaterThanAvailableValidators",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "MaxIntervalWithoutSnapshotsMustBeNonZero",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "current",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "minMaxValidatorsAllowed",
+        "type": "uint256"
+      }
+    ],
+    "name": "MaxNumValidatorsIsTooLow",
     "type": "error"
   },
   {
@@ -412,19 +490,6 @@
   },
   {
     "inputs": [],
-    "name": "MAX_INTERVAL_WITHOUT_SNAPSHOTS",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
     "name": "POSITION_LOCK_PERIOD",
     "outputs": [
       {
@@ -520,6 +585,19 @@
         "internalType": "string[]",
         "name": "",
         "type": "string[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getMaxIntervalWithoutSnapshots",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "maxIntervalWithoutSnapshots",
+        "type": "uint256"
       }
     ],
     "stateMutability": "view",
@@ -666,6 +744,11 @@
       {
         "internalType": "uint256",
         "name": "disputerReward_",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "maxIntervalWithoutSnapshots",
         "type": "uint256"
       }
     ],
@@ -901,6 +984,19 @@
       }
     ],
     "name": "setLocation",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "maxIntervalWithoutSnapshots",
+        "type": "uint256"
+      }
+    ],
+    "name": "setMaxIntervalWithoutSnapshots",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
