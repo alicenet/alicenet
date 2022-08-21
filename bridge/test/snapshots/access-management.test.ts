@@ -1,5 +1,6 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { Signer } from "ethers";
+import { ethers } from "hardhat";
 import { expect } from "../chai-setup";
 import {
   factoryCallAnyFixture,
@@ -20,6 +21,26 @@ describe("Snapshots: Access control methods", () => {
     [admin, , , , , randomer] = fixture.namedSigners;
     adminSigner = await getValidatorEthAccount(admin.address);
     randomerSigner = await getValidatorEthAccount(randomer.address);
+  });
+
+  it("Should not allow initialize more than once", async () => {
+    await expect(
+      fixture.factory.callAny(
+        fixture.snapshots.address,
+        0,
+        fixture.snapshots.interface.encodeFunctionData("initialize", [1, 2])
+      )
+    ).to.revertedWith("Initializable: contract is already initialized");
+  });
+
+  it("Only factory should be allowed to call initialize", async () => {
+    const snapshots = await (
+      await ethers.getContractFactory("Snapshots")
+    ).deploy(1, 2);
+    const [, user] = await ethers.getSigners();
+    await expect(
+      snapshots.connect(user).initialize(1, 2)
+    ).to.revertedWithCustomError(snapshots, "OnlyFactory");
   });
 
   it("GetEpochLength returns 1024", async function () {

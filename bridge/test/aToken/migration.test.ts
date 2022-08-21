@@ -26,6 +26,25 @@ describe("Testing AToken", async () => {
   });
 
   describe("Testing Migrate operation", async () => {
+    it("Should not allow initialize more than once", async () => {
+      await expect(
+        fixture.factory.callAny(
+          fixture.aToken.address,
+          0,
+          fixture.aToken.interface.encodeFunctionData("initialize")
+        )
+      ).to.revertedWith("Initializable: contract is already initialized");
+    });
+
+    it("Only factory should be allowed to call initialize", async () => {
+      const aToken = await (
+        await ethers.getContractFactory("AToken")
+      ).deploy(user.address);
+      await expect(
+        aToken.connect(user2).initialize()
+      ).to.revertedWithCustomError(aToken, "OnlyFactory");
+    });
+
     it("Should migrate user legacy tokens", async function () {
       await fixture.legacyToken
         .connect(user)

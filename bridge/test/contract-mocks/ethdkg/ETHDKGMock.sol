@@ -68,6 +68,14 @@ contract ETHDKGMock is
         _confirmationLength = uint16(confirmationLength_);
     }
 
+    function reinitialize(uint256 phaseLength_, uint256 confirmationLength_)
+        public
+        reinitializer(2)
+    {
+        _phaseLength = uint16(phaseLength_);
+        _confirmationLength = uint16(confirmationLength_);
+    }
+
     function setPhaseLength(uint16 phaseLength_) public {
         if (_isETHDKGRunning()) {
             revert ETHDKGErrors.VariableNotSettableWhileETHDKGRunning();

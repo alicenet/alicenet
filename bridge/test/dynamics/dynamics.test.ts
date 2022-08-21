@@ -168,6 +168,26 @@ describe("Testing Dynamics methods", async () => {
       "0xbc36789e7a1e281436464229828f817d6612f7b477d66591ff96a9e064bcc98a";
   });
 
+  it("Should not allow initialize more than once", async () => {
+    await expect(
+      fixture.factory.callAny(
+        fixture.dynamics.address,
+        0,
+        fixture.dynamics.interface.encodeFunctionData("initialize")
+      )
+    ).to.revertedWith("Initializable: contract is already initialized");
+  });
+
+  it("Only factory should be allowed to call initialize", async () => {
+    const dynamics = await (
+      await ethers.getContractFactory("Dynamics")
+    ).deploy();
+    const [, user] = await ethers.getSigners();
+    await expect(
+      dynamics.connect(user).initialize()
+    ).to.revertedWithCustomError(dynamics, "OnlyFactory");
+  });
+
   it("Should get Dynamics configuration", async () => {
     const configuration =
       (await fixture.dynamics.getConfiguration()) as ConfigurationStruct;
