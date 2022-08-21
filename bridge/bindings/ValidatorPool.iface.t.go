@@ -26,8 +26,8 @@ type IValidatorPoolTransactor interface {
 	CompleteETHDKG(opts *bind.TransactOpts) (*types.Transaction, error)
 	// Initialize is a paid mutator transaction binding the contract method 0x60a2da44.
 	//
-	// Solidity: function initialize(uint256 stakeAmount_, uint256 maxNumValidators_, uint256 disputerReward_, uint256 maxIntervalWithoutSnapshots) returns()
-	Initialize(opts *bind.TransactOpts, stakeAmount_ *big.Int, maxNumValidators_ *big.Int, disputerReward_ *big.Int, maxIntervalWithoutSnapshots *big.Int) (*types.Transaction, error)
+	// Solidity: function initialize(uint256 stakeAmount_, uint256 maxNumValidators_, uint256 disputerReward_, uint256 maxIntervalWithoutSnapshots_) returns()
+	Initialize(opts *bind.TransactOpts, stakeAmount_ *big.Int, maxNumValidators_ *big.Int, disputerReward_ *big.Int, maxIntervalWithoutSnapshots_ *big.Int) (*types.Transaction, error)
 	// InitializeETHDKG is a paid mutator transaction binding the contract method 0x57b51c9c.
 	//
 	// Solidity: function initializeETHDKG() returns()
