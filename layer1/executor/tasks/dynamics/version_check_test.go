@@ -2,11 +2,11 @@ package dynamics
 
 import (
 	"context"
+	"testing"
+
 	"github.com/alicenet/alicenet/logging"
 	"github.com/alicenet/alicenet/utils"
 	"github.com/stretchr/testify/assert"
-	"testing"
-	"time"
 )
 
 func TestCanonicalVersionCheckTask_ShouldExecute_False(t *testing.T) {
@@ -43,19 +43,10 @@ func TestCanonicalVersionCheckTask_Execute_PatchOutdated(t *testing.T) {
 	shouldExecute, taskErr := task.ShouldExecute(ctx)
 	assert.Nil(t, taskErr)
 	assert.True(t, shouldExecute)
-
-	ctx, cf := context.WithCancel(ctx)
-
-	go func() {
-		select {
-		case <-time.After(messageFrequency):
-			cf()
-		}
-	}()
-
 	txn, taskErr := task.Execute(ctx)
 	assert.Nil(t, txn)
 	assert.NotNil(t, taskErr)
+	assert.Equal(t, taskErr.Error(), "printed update message")
 }
 
 func TestCanonicalVersionCheckTask_Execute_MinorOutdated(t *testing.T) {
@@ -72,19 +63,10 @@ func TestCanonicalVersionCheckTask_Execute_MinorOutdated(t *testing.T) {
 	shouldExecute, taskErr := task.ShouldExecute(ctx)
 	assert.Nil(t, taskErr)
 	assert.True(t, shouldExecute)
-
-	ctx, cf := context.WithCancel(ctx)
-
-	go func() {
-		select {
-		case <-time.After(messageFrequency):
-			cf()
-		}
-	}()
-
 	txn, taskErr := task.Execute(ctx)
 	assert.Nil(t, txn)
 	assert.NotNil(t, taskErr)
+	assert.Equal(t, taskErr.Error(), "printed update message")
 }
 
 func TestCanonicalVersionCheckTask_Execute_MajorOutdated(t *testing.T) {
@@ -101,17 +83,8 @@ func TestCanonicalVersionCheckTask_Execute_MajorOutdated(t *testing.T) {
 	shouldExecute, taskErr := task.ShouldExecute(ctx)
 	assert.Nil(t, taskErr)
 	assert.True(t, shouldExecute)
-
-	ctx, cf := context.WithCancel(ctx)
-
-	go func() {
-		select {
-		case <-time.After(messageFrequency):
-			cf()
-		}
-	}()
-
 	txn, taskErr := task.Execute(ctx)
 	assert.Nil(t, txn)
 	assert.NotNil(t, taskErr)
+	assert.Equal(t, taskErr.Error(), "printed update message")
 }
