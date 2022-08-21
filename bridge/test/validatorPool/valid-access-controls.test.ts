@@ -80,7 +80,7 @@ describe("ValidatorPool Access Control: An user with admin role should be able t
     const latestSnapshotHeight =
       await fixture.snapshots.getCommittedHeightFromLatestSnapshot();
     const maxInterval =
-      await fixture.validatorPool.MAX_INTERVAL_WITHOUT_SNAPSHOTS();
+      await fixture.validatorPool.getMaxIntervalWithoutSnapshots();
 
     const txPromise = factoryCallAnyFixture(
       fixture,

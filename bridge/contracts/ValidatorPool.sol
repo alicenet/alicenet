@@ -53,6 +53,18 @@ contract ValidatorPool is
         _;
     }
 
+    modifier balanceShouldNotChange() {
+        uint256 balanceBeforeToken = IERC20Transferable(_aTokenAddress()).balanceOf(address(this));
+        uint256 balanceBeforeEth = address(this).balance;
+        _;
+        if (balanceBeforeToken != IERC20Transferable(_aTokenAddress()).balanceOf(address(this))) {
+            revert ValidatorPoolErrors.TokenBalanceChangedDuringOperation();
+        }
+        if (balanceBeforeEth != address(this).balance) {
+            revert ValidatorPoolErrors.EthBalanceChangedDuringOperation();
+        }
+    }
+
     constructor() ValidatorPoolStorage() {}
 
     receive() external payable {
@@ -64,18 +76,36 @@ contract ValidatorPool is
     function initialize(
         uint256 stakeAmount_,
         uint256 maxNumValidators_,
-        uint256 disputerReward_
+        uint256 disputerReward_,
+        uint256 maxIntervalWithoutSnapshots
     ) public onlyFactory initializer {
         _stakeAmount = stakeAmount_;
         _maxNumValidators = maxNumValidators_;
         _disputerReward = disputerReward_;
+        _maxIntervalWithoutSnapshots = maxIntervalWithoutSnapshots;
     }
 
     function setStakeAmount(uint256 stakeAmount_) public onlyFactory {
         _stakeAmount = stakeAmount_;
     }
 
+    function setMaxIntervalWithoutSnapshots(uint256 maxIntervalWithoutSnapshots)
+        public
+        onlyFactory
+    {
+        if (maxIntervalWithoutSnapshots == 0) {
+            revert ValidatorPoolErrors.MaxIntervalWithoutSnapshotsMustBeNonZero();
+        }
+        _maxIntervalWithoutSnapshots = maxIntervalWithoutSnapshots;
+    }
+
     function setMaxNumValidators(uint256 maxNumValidators_) public onlyFactory {
+        if (maxNumValidators_ < _validators.length()) {
+            revert ValidatorPoolErrors.MaxNumValidatorsIsTooLow(
+                maxNumValidators_,
+                _validators.length()
+            );
+        }
         _maxNumValidators = maxNumValidators_;
     }
 
@@ -113,7 +143,7 @@ contract ValidatorPool is
 
     function pauseConsensusOnArbitraryHeight(uint256 aliceNetHeight_) public onlyFactory {
         uint256 targetBlockNumber = ISnapshots(_snapshotsAddress())
-            .getCommittedHeightFromLatestSnapshot() + MAX_INTERVAL_WITHOUT_SNAPSHOTS;
+            .getCommittedHeightFromLatestSnapshot() + _maxIntervalWithoutSnapshots;
         if (block.number <= targetBlockNumber) {
             revert ValidatorPoolErrors.MinimumBlockIntervalNotMet(block.number, targetBlockNumber);
         }
@@ -180,14 +210,12 @@ contract ValidatorPool is
     function collectProfits()
         public
         onlyValidator
+        balanceShouldNotChange
         returns (uint256 payoutEth, uint256 payoutToken)
     {
         if (!_isConsensusRunning) {
             revert ValidatorPoolErrors.ProfitsOnlyClaimableWhileConsensusRunning();
         }
-
-        uint256 balanceBeforeToken = IERC20Transferable(_aTokenAddress()).balanceOf(address(this));
-        uint256 balanceBeforeEth = address(this).balance;
 
         uint256 validatorTokenID = _validators.get(msg.sender)._tokenID;
         payoutEth = IStakingNFT(_validatorStakingAddress()).collectEthTo(
@@ -198,13 +226,6 @@ contract ValidatorPool is
             msg.sender,
             validatorTokenID
         );
-
-        if (balanceBeforeToken != IERC20Transferable(_aTokenAddress()).balanceOf(address(this))) {
-            revert ValidatorPoolErrors.TokenBalanceChangedDuringOperation();
-        }
-        if (balanceBeforeEth != address(this).balance) {
-            revert ValidatorPoolErrors.EthBalanceChangedDuringOperation();
-        }
 
         return (payoutEth, payoutToken);
     }
@@ -231,12 +252,10 @@ contract ValidatorPool is
         return data._tokenID;
     }
 
-    function majorSlash(address dishonestValidator_, address disputer_) public onlyETHDKG {
+    function majorSlash(address dishonestValidator_, address disputer_) public onlyETHDKG balanceShouldNotChange {
         if (!_isAccusable(dishonestValidator_)) {
             revert ValidatorPoolErrors.AddressNotAccusable(dishonestValidator_);
         }
-        uint256 balanceBeforeToken = IERC20Transferable(_aTokenAddress()).balanceOf(address(this));
-        uint256 balanceBeforeEth = address(this).balance;
 
         (uint256 minerShares, uint256 payoutEth, uint256 payoutToken) = _slash(dishonestValidator_);
         // deciding which state to clean based if the accusable person was a active validator or was
@@ -254,23 +273,13 @@ contract ValidatorPool is
         // position was burned + the disputerReward
         _transferEthAndTokens(disputer_, payoutEth, payoutToken);
 
-        if (balanceBeforeToken != IERC20Transferable(_aTokenAddress()).balanceOf(address(this))) {
-            revert ValidatorPoolErrors.TokenBalanceChangedDuringOperation();
-        }
-        if (balanceBeforeEth != address(this).balance) {
-            revert ValidatorPoolErrors.EthBalanceChangedDuringOperation();
-        }
-
         emit ValidatorMajorSlashed(dishonestValidator_);
     }
 
-    function minorSlash(address dishonestValidator_, address disputer_) public onlyETHDKG {
+    function minorSlash(address dishonestValidator_, address disputer_) public onlyETHDKG balanceShouldNotChange {
         if (!_isAccusable(dishonestValidator_)) {
             revert ValidatorPoolErrors.AddressNotAccusable(dishonestValidator_);
         }
-        uint256 balanceBeforeToken = IERC20Transferable(_aTokenAddress()).balanceOf(address(this));
-        uint256 balanceBeforeEth = address(this).balance;
-
         (uint256 minerShares, uint256 payoutEth, uint256 payoutToken) = _slash(dishonestValidator_);
         uint256 stakeTokenID;
         // In case there's not enough shares to create a new PublicStaking position, state is just
@@ -286,14 +295,6 @@ contract ValidatorPool is
             }
         }
         _transferEthAndTokens(disputer_, payoutEth, payoutToken);
-
-        if (balanceBeforeToken != IERC20Transferable(_aTokenAddress()).balanceOf(address(this))) {
-            revert ValidatorPoolErrors.TokenBalanceChangedDuringOperation();
-        }
-        if (balanceBeforeEth != address(this).balance) {
-            revert ValidatorPoolErrors.EthBalanceChangedDuringOperation();
-        }
-
         emit ValidatorMinorSlashed(dishonestValidator_, stakeTokenID);
     }
 
@@ -321,6 +322,14 @@ contract ValidatorPool is
 
     function getStakeAmount() public view returns (uint256) {
         return _stakeAmount;
+    }
+
+    function getMaxIntervalWithoutSnapshots()
+        public
+        view
+        returns (uint256 maxIntervalWithoutSnapshots)
+    {
+        return _maxIntervalWithoutSnapshots;
     }
 
     function getMaxNumValidators() public view returns (uint256) {
@@ -419,6 +428,7 @@ contract ValidatorPool is
 
     function _registerValidator(address validator_, uint256 stakerTokenID_)
         internal
+        balanceShouldNotChange
         returns (
             uint256 validatorTokenID,
             uint256 payoutEth,
@@ -432,8 +442,6 @@ contract ValidatorPool is
             revert ValidatorPoolErrors.AddressAlreadyValidator(validator_);
         }
 
-        uint256 balanceBeforeToken = IERC20Transferable(_aTokenAddress()).balanceOf(address(this));
-        uint256 balanceBeforeEth = address(this).balance;
         (validatorTokenID, payoutEth, payoutToken) = _swapPublicStakingForValidatorStaking(
             msg.sender,
             stakerTokenID_
@@ -443,18 +451,12 @@ contract ValidatorPool is
         // transfer back any profit that was available for the PublicStaking position by the time that we
         // burned it
         _transferEthAndTokens(validator_, payoutEth, payoutToken);
-        if (balanceBeforeToken != IERC20Transferable(_aTokenAddress()).balanceOf(address(this))) {
-            revert ValidatorPoolErrors.TokenBalanceChangedDuringOperation();
-        }
-        if (balanceBeforeEth != address(this).balance) {
-            revert ValidatorPoolErrors.EthBalanceChangedDuringOperation();
-        }
-
         emit ValidatorJoined(validator_, validatorTokenID);
     }
 
     function _unregisterValidator(address validator_)
         internal
+        balanceShouldNotChange
         returns (
             uint256 stakeTokenID,
             uint256 payoutEth,
@@ -464,9 +466,6 @@ contract ValidatorPool is
         if (!_isValidator(validator_)) {
             revert ValidatorPoolErrors.AddressNotValidator(validator_);
         }
-
-        uint256 balanceBeforeToken = IERC20Transferable(_aTokenAddress()).balanceOf(address(this));
-        uint256 balanceBeforeEth = address(this).balance;
         (stakeTokenID, payoutEth, payoutToken) = _swapValidatorStakingForPublicStaking(validator_);
 
         _moveToExitingQueue(validator_, stakeTokenID);
@@ -474,13 +473,6 @@ contract ValidatorPool is
         // transfer back any profit that was available for the PublicStaking position by the time that we
         // burned it
         _transferEthAndTokens(validator_, payoutEth, payoutToken);
-        if (balanceBeforeToken != IERC20Transferable(_aTokenAddress()).balanceOf(address(this))) {
-            revert ValidatorPoolErrors.TokenBalanceChangedDuringOperation();
-        }
-        if (balanceBeforeEth != address(this).balance) {
-            revert ValidatorPoolErrors.EthBalanceChangedDuringOperation();
-        }
-
         emit ValidatorLeft(validator_, stakeTokenID);
     }
 

@@ -543,6 +543,7 @@ export const getFixture = async (
         ethers.utils.parseUnits("20000", 18),
         10,
         ethers.utils.parseUnits("3", 18),
+        8192
       ]
     )) as ValidatorPool;
   }
