@@ -17,6 +17,7 @@ import {
   ATokenMinter,
   BToken,
   Distribution,
+  Dynamics,
   ETHDKG,
   Foundation,
   InvalidTxConsumptionAccusation,
@@ -84,6 +85,7 @@ export interface Fixture extends BaseTokensFixture {
   invalidTxConsumptionAccusation: InvalidTxConsumptionAccusation;
   multipleProposalAccusation: MultipleProposalAccusation;
   distribution: Distribution;
+  dynamics: Dynamics;
 }
 
 /**
@@ -530,8 +532,7 @@ export const getFixture = async (
     validatorPool = (await deployUpgradeableWithFactory(
       factory,
       "ValidatorPoolMock",
-      "ValidatorPool",
-      []
+      "ValidatorPool"
     )) as ValidatorPoolMock;
   } else {
     // ValidatorPool
@@ -636,6 +637,13 @@ export const getFixture = async (
     [332, 332, 332, 4]
   )) as Distribution;
 
+  const dynamics = (await deployUpgradeableWithFactory(
+    factory,
+    "Dynamics",
+    "Dynamics",
+    []
+  )) as Dynamics;
+
   await posFixtureSetup(factory, aToken, legacyToken);
   const blockNumber = BigInt(await ethers.provider.getBlockNumber());
   const phaseLength = (await ethdkg.getPhaseLength()).toBigInt();
@@ -662,6 +670,7 @@ export const getFixture = async (
     invalidTxConsumptionAccusation,
     multipleProposalAccusation,
     distribution,
+    dynamics,
   };
 };
 

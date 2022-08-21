@@ -13875,6 +13875,3683 @@ func (c IBTokenWatchTransferFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
+// MockIDynamics is a mock implementation of the IDynamics interface (from
+// the package github.com/alicenet/alicenet/bridge/bindings) used for unit
+// testing.
+type MockIDynamics struct {
+	// ChangeDynamicValuesFunc is an instance of a mock function object
+	// controlling the behavior of the method ChangeDynamicValues.
+	ChangeDynamicValuesFunc *IDynamicsChangeDynamicValuesFunc
+	// DecodeDynamicValuesFunc is an instance of a mock function object
+	// controlling the behavior of the method DecodeDynamicValues.
+	DecodeDynamicValuesFunc *IDynamicsDecodeDynamicValuesFunc
+	// DeployStorageFunc is an instance of a mock function object
+	// controlling the behavior of the method DeployStorage.
+	DeployStorageFunc *IDynamicsDeployStorageFunc
+	// EncodeDynamicValuesFunc is an instance of a mock function object
+	// controlling the behavior of the method EncodeDynamicValues.
+	EncodeDynamicValuesFunc *IDynamicsEncodeDynamicValuesFunc
+	// FilterDeployedStorageContractFunc is an instance of a mock function
+	// object controlling the behavior of the method
+	// FilterDeployedStorageContract.
+	FilterDeployedStorageContractFunc *IDynamicsFilterDeployedStorageContractFunc
+	// FilterDynamicValueChangedFunc is an instance of a mock function
+	// object controlling the behavior of the method
+	// FilterDynamicValueChanged.
+	FilterDynamicValueChangedFunc *IDynamicsFilterDynamicValueChangedFunc
+	// FilterInitializedFunc is an instance of a mock function object
+	// controlling the behavior of the method FilterInitialized.
+	FilterInitializedFunc *IDynamicsFilterInitializedFunc
+	// FilterNewAliceNetNodeVersionAvailableFunc is an instance of a mock
+	// function object controlling the behavior of the method
+	// FilterNewAliceNetNodeVersionAvailable.
+	FilterNewAliceNetNodeVersionAvailableFunc *IDynamicsFilterNewAliceNetNodeVersionAvailableFunc
+	// FilterNewCanonicalAliceNetNodeVersionFunc is an instance of a mock
+	// function object controlling the behavior of the method
+	// FilterNewCanonicalAliceNetNodeVersion.
+	FilterNewCanonicalAliceNetNodeVersionFunc *IDynamicsFilterNewCanonicalAliceNetNodeVersionFunc
+	// GetConfigurationFunc is an instance of a mock function object
+	// controlling the behavior of the method GetConfiguration.
+	GetConfigurationFunc *IDynamicsGetConfigurationFunc
+	// GetEncodingVersionFunc is an instance of a mock function object
+	// controlling the behavior of the method GetEncodingVersion.
+	GetEncodingVersionFunc *IDynamicsGetEncodingVersionFunc
+	// GetLatestAliceNetVersionFunc is an instance of a mock function object
+	// controlling the behavior of the method GetLatestAliceNetVersion.
+	GetLatestAliceNetVersionFunc *IDynamicsGetLatestAliceNetVersionFunc
+	// GetLatestDynamicValuesFunc is an instance of a mock function object
+	// controlling the behavior of the method GetLatestDynamicValues.
+	GetLatestDynamicValuesFunc *IDynamicsGetLatestDynamicValuesFunc
+	// GetMetamorphicContractAddressFunc is an instance of a mock function
+	// object controlling the behavior of the method
+	// GetMetamorphicContractAddress.
+	GetMetamorphicContractAddressFunc *IDynamicsGetMetamorphicContractAddressFunc
+	// GetPreviousDynamicValuesFunc is an instance of a mock function object
+	// controlling the behavior of the method GetPreviousDynamicValues.
+	GetPreviousDynamicValuesFunc *IDynamicsGetPreviousDynamicValuesFunc
+	// InitializeFunc is an instance of a mock function object controlling
+	// the behavior of the method Initialize.
+	InitializeFunc *IDynamicsInitializeFunc
+	// ParseDeployedStorageContractFunc is an instance of a mock function
+	// object controlling the behavior of the method
+	// ParseDeployedStorageContract.
+	ParseDeployedStorageContractFunc *IDynamicsParseDeployedStorageContractFunc
+	// ParseDynamicValueChangedFunc is an instance of a mock function object
+	// controlling the behavior of the method ParseDynamicValueChanged.
+	ParseDynamicValueChangedFunc *IDynamicsParseDynamicValueChangedFunc
+	// ParseInitializedFunc is an instance of a mock function object
+	// controlling the behavior of the method ParseInitialized.
+	ParseInitializedFunc *IDynamicsParseInitializedFunc
+	// ParseNewAliceNetNodeVersionAvailableFunc is an instance of a mock
+	// function object controlling the behavior of the method
+	// ParseNewAliceNetNodeVersionAvailable.
+	ParseNewAliceNetNodeVersionAvailableFunc *IDynamicsParseNewAliceNetNodeVersionAvailableFunc
+	// ParseNewCanonicalAliceNetNodeVersionFunc is an instance of a mock
+	// function object controlling the behavior of the method
+	// ParseNewCanonicalAliceNetNodeVersion.
+	ParseNewCanonicalAliceNetNodeVersionFunc *IDynamicsParseNewCanonicalAliceNetNodeVersionFunc
+	// SetConfigurationFunc is an instance of a mock function object
+	// controlling the behavior of the method SetConfiguration.
+	SetConfigurationFunc *IDynamicsSetConfigurationFunc
+	// UpdateAliceNetNodeVersionFunc is an instance of a mock function
+	// object controlling the behavior of the method
+	// UpdateAliceNetNodeVersion.
+	UpdateAliceNetNodeVersionFunc *IDynamicsUpdateAliceNetNodeVersionFunc
+	// UpdateHeadFunc is an instance of a mock function object controlling
+	// the behavior of the method UpdateHead.
+	UpdateHeadFunc *IDynamicsUpdateHeadFunc
+	// WatchDeployedStorageContractFunc is an instance of a mock function
+	// object controlling the behavior of the method
+	// WatchDeployedStorageContract.
+	WatchDeployedStorageContractFunc *IDynamicsWatchDeployedStorageContractFunc
+	// WatchDynamicValueChangedFunc is an instance of a mock function object
+	// controlling the behavior of the method WatchDynamicValueChanged.
+	WatchDynamicValueChangedFunc *IDynamicsWatchDynamicValueChangedFunc
+	// WatchInitializedFunc is an instance of a mock function object
+	// controlling the behavior of the method WatchInitialized.
+	WatchInitializedFunc *IDynamicsWatchInitializedFunc
+	// WatchNewAliceNetNodeVersionAvailableFunc is an instance of a mock
+	// function object controlling the behavior of the method
+	// WatchNewAliceNetNodeVersionAvailable.
+	WatchNewAliceNetNodeVersionAvailableFunc *IDynamicsWatchNewAliceNetNodeVersionAvailableFunc
+	// WatchNewCanonicalAliceNetNodeVersionFunc is an instance of a mock
+	// function object controlling the behavior of the method
+	// WatchNewCanonicalAliceNetNodeVersion.
+	WatchNewCanonicalAliceNetNodeVersionFunc *IDynamicsWatchNewCanonicalAliceNetNodeVersionFunc
+}
+
+// NewMockIDynamics creates a new mock of the IDynamics interface. All
+// methods return zero values for all results, unless overwritten.
+func NewMockIDynamics() *MockIDynamics {
+	return &MockIDynamics{
+		ChangeDynamicValuesFunc: &IDynamicsChangeDynamicValuesFunc{
+			defaultHook: func(*bind.TransactOpts, uint32, bindings.DynamicValues) (r0 *types.Transaction, r1 error) {
+				return
+			},
+		},
+		DecodeDynamicValuesFunc: &IDynamicsDecodeDynamicValuesFunc{
+			defaultHook: func(*bind.CallOpts, common.Address) (r0 bindings.DynamicValues, r1 error) {
+				return
+			},
+		},
+		DeployStorageFunc: &IDynamicsDeployStorageFunc{
+			defaultHook: func(*bind.TransactOpts, []byte) (r0 *types.Transaction, r1 error) {
+				return
+			},
+		},
+		EncodeDynamicValuesFunc: &IDynamicsEncodeDynamicValuesFunc{
+			defaultHook: func(*bind.CallOpts, bindings.DynamicValues) (r0 []byte, r1 error) {
+				return
+			},
+		},
+		FilterDeployedStorageContractFunc: &IDynamicsFilterDeployedStorageContractFunc{
+			defaultHook: func(*bind.FilterOpts) (r0 *bindings.DynamicsDeployedStorageContractIterator, r1 error) {
+				return
+			},
+		},
+		FilterDynamicValueChangedFunc: &IDynamicsFilterDynamicValueChangedFunc{
+			defaultHook: func(*bind.FilterOpts) (r0 *bindings.DynamicsDynamicValueChangedIterator, r1 error) {
+				return
+			},
+		},
+		FilterInitializedFunc: &IDynamicsFilterInitializedFunc{
+			defaultHook: func(*bind.FilterOpts) (r0 *bindings.DynamicsInitializedIterator, r1 error) {
+				return
+			},
+		},
+		FilterNewAliceNetNodeVersionAvailableFunc: &IDynamicsFilterNewAliceNetNodeVersionAvailableFunc{
+			defaultHook: func(*bind.FilterOpts) (r0 *bindings.DynamicsNewAliceNetNodeVersionAvailableIterator, r1 error) {
+				return
+			},
+		},
+		FilterNewCanonicalAliceNetNodeVersionFunc: &IDynamicsFilterNewCanonicalAliceNetNodeVersionFunc{
+			defaultHook: func(*bind.FilterOpts) (r0 *bindings.DynamicsNewCanonicalAliceNetNodeVersionIterator, r1 error) {
+				return
+			},
+		},
+		GetConfigurationFunc: &IDynamicsGetConfigurationFunc{
+			defaultHook: func(*bind.CallOpts) (r0 bindings.Configuration, r1 error) {
+				return
+			},
+		},
+		GetEncodingVersionFunc: &IDynamicsGetEncodingVersionFunc{
+			defaultHook: func(*bind.CallOpts) (r0 uint8, r1 error) {
+				return
+			},
+		},
+		GetLatestAliceNetVersionFunc: &IDynamicsGetLatestAliceNetVersionFunc{
+			defaultHook: func(*bind.CallOpts) (r0 bindings.CanonicalVersion, r1 error) {
+				return
+			},
+		},
+		GetLatestDynamicValuesFunc: &IDynamicsGetLatestDynamicValuesFunc{
+			defaultHook: func(*bind.CallOpts) (r0 bindings.DynamicValues, r1 error) {
+				return
+			},
+		},
+		GetMetamorphicContractAddressFunc: &IDynamicsGetMetamorphicContractAddressFunc{
+			defaultHook: func(*bind.CallOpts, [32]byte, common.Address) (r0 common.Address, r1 error) {
+				return
+			},
+		},
+		GetPreviousDynamicValuesFunc: &IDynamicsGetPreviousDynamicValuesFunc{
+			defaultHook: func(*bind.CallOpts, *big.Int) (r0 bindings.DynamicValues, r1 error) {
+				return
+			},
+		},
+		InitializeFunc: &IDynamicsInitializeFunc{
+			defaultHook: func(*bind.TransactOpts) (r0 *types.Transaction, r1 error) {
+				return
+			},
+		},
+		ParseDeployedStorageContractFunc: &IDynamicsParseDeployedStorageContractFunc{
+			defaultHook: func(types.Log) (r0 *bindings.DynamicsDeployedStorageContract, r1 error) {
+				return
+			},
+		},
+		ParseDynamicValueChangedFunc: &IDynamicsParseDynamicValueChangedFunc{
+			defaultHook: func(types.Log) (r0 *bindings.DynamicsDynamicValueChanged, r1 error) {
+				return
+			},
+		},
+		ParseInitializedFunc: &IDynamicsParseInitializedFunc{
+			defaultHook: func(types.Log) (r0 *bindings.DynamicsInitialized, r1 error) {
+				return
+			},
+		},
+		ParseNewAliceNetNodeVersionAvailableFunc: &IDynamicsParseNewAliceNetNodeVersionAvailableFunc{
+			defaultHook: func(types.Log) (r0 *bindings.DynamicsNewAliceNetNodeVersionAvailable, r1 error) {
+				return
+			},
+		},
+		ParseNewCanonicalAliceNetNodeVersionFunc: &IDynamicsParseNewCanonicalAliceNetNodeVersionFunc{
+			defaultHook: func(types.Log) (r0 *bindings.DynamicsNewCanonicalAliceNetNodeVersion, r1 error) {
+				return
+			},
+		},
+		SetConfigurationFunc: &IDynamicsSetConfigurationFunc{
+			defaultHook: func(*bind.TransactOpts, bindings.Configuration) (r0 *types.Transaction, r1 error) {
+				return
+			},
+		},
+		UpdateAliceNetNodeVersionFunc: &IDynamicsUpdateAliceNetNodeVersionFunc{
+			defaultHook: func(*bind.TransactOpts, uint32, uint32, uint32, uint32, [32]byte) (r0 *types.Transaction, r1 error) {
+				return
+			},
+		},
+		UpdateHeadFunc: &IDynamicsUpdateHeadFunc{
+			defaultHook: func(*bind.TransactOpts, uint32) (r0 *types.Transaction, r1 error) {
+				return
+			},
+		},
+		WatchDeployedStorageContractFunc: &IDynamicsWatchDeployedStorageContractFunc{
+			defaultHook: func(*bind.WatchOpts, chan<- *bindings.DynamicsDeployedStorageContract) (r0 event.Subscription, r1 error) {
+				return
+			},
+		},
+		WatchDynamicValueChangedFunc: &IDynamicsWatchDynamicValueChangedFunc{
+			defaultHook: func(*bind.WatchOpts, chan<- *bindings.DynamicsDynamicValueChanged) (r0 event.Subscription, r1 error) {
+				return
+			},
+		},
+		WatchInitializedFunc: &IDynamicsWatchInitializedFunc{
+			defaultHook: func(*bind.WatchOpts, chan<- *bindings.DynamicsInitialized) (r0 event.Subscription, r1 error) {
+				return
+			},
+		},
+		WatchNewAliceNetNodeVersionAvailableFunc: &IDynamicsWatchNewAliceNetNodeVersionAvailableFunc{
+			defaultHook: func(*bind.WatchOpts, chan<- *bindings.DynamicsNewAliceNetNodeVersionAvailable) (r0 event.Subscription, r1 error) {
+				return
+			},
+		},
+		WatchNewCanonicalAliceNetNodeVersionFunc: &IDynamicsWatchNewCanonicalAliceNetNodeVersionFunc{
+			defaultHook: func(*bind.WatchOpts, chan<- *bindings.DynamicsNewCanonicalAliceNetNodeVersion) (r0 event.Subscription, r1 error) {
+				return
+			},
+		},
+	}
+}
+
+// NewStrictMockIDynamics creates a new mock of the IDynamics interface. All
+// methods panic on invocation, unless overwritten.
+func NewStrictMockIDynamics() *MockIDynamics {
+	return &MockIDynamics{
+		ChangeDynamicValuesFunc: &IDynamicsChangeDynamicValuesFunc{
+			defaultHook: func(*bind.TransactOpts, uint32, bindings.DynamicValues) (*types.Transaction, error) {
+				panic("unexpected invocation of MockIDynamics.ChangeDynamicValues")
+			},
+		},
+		DecodeDynamicValuesFunc: &IDynamicsDecodeDynamicValuesFunc{
+			defaultHook: func(*bind.CallOpts, common.Address) (bindings.DynamicValues, error) {
+				panic("unexpected invocation of MockIDynamics.DecodeDynamicValues")
+			},
+		},
+		DeployStorageFunc: &IDynamicsDeployStorageFunc{
+			defaultHook: func(*bind.TransactOpts, []byte) (*types.Transaction, error) {
+				panic("unexpected invocation of MockIDynamics.DeployStorage")
+			},
+		},
+		EncodeDynamicValuesFunc: &IDynamicsEncodeDynamicValuesFunc{
+			defaultHook: func(*bind.CallOpts, bindings.DynamicValues) ([]byte, error) {
+				panic("unexpected invocation of MockIDynamics.EncodeDynamicValues")
+			},
+		},
+		FilterDeployedStorageContractFunc: &IDynamicsFilterDeployedStorageContractFunc{
+			defaultHook: func(*bind.FilterOpts) (*bindings.DynamicsDeployedStorageContractIterator, error) {
+				panic("unexpected invocation of MockIDynamics.FilterDeployedStorageContract")
+			},
+		},
+		FilterDynamicValueChangedFunc: &IDynamicsFilterDynamicValueChangedFunc{
+			defaultHook: func(*bind.FilterOpts) (*bindings.DynamicsDynamicValueChangedIterator, error) {
+				panic("unexpected invocation of MockIDynamics.FilterDynamicValueChanged")
+			},
+		},
+		FilterInitializedFunc: &IDynamicsFilterInitializedFunc{
+			defaultHook: func(*bind.FilterOpts) (*bindings.DynamicsInitializedIterator, error) {
+				panic("unexpected invocation of MockIDynamics.FilterInitialized")
+			},
+		},
+		FilterNewAliceNetNodeVersionAvailableFunc: &IDynamicsFilterNewAliceNetNodeVersionAvailableFunc{
+			defaultHook: func(*bind.FilterOpts) (*bindings.DynamicsNewAliceNetNodeVersionAvailableIterator, error) {
+				panic("unexpected invocation of MockIDynamics.FilterNewAliceNetNodeVersionAvailable")
+			},
+		},
+		FilterNewCanonicalAliceNetNodeVersionFunc: &IDynamicsFilterNewCanonicalAliceNetNodeVersionFunc{
+			defaultHook: func(*bind.FilterOpts) (*bindings.DynamicsNewCanonicalAliceNetNodeVersionIterator, error) {
+				panic("unexpected invocation of MockIDynamics.FilterNewCanonicalAliceNetNodeVersion")
+			},
+		},
+		GetConfigurationFunc: &IDynamicsGetConfigurationFunc{
+			defaultHook: func(*bind.CallOpts) (bindings.Configuration, error) {
+				panic("unexpected invocation of MockIDynamics.GetConfiguration")
+			},
+		},
+		GetEncodingVersionFunc: &IDynamicsGetEncodingVersionFunc{
+			defaultHook: func(*bind.CallOpts) (uint8, error) {
+				panic("unexpected invocation of MockIDynamics.GetEncodingVersion")
+			},
+		},
+		GetLatestAliceNetVersionFunc: &IDynamicsGetLatestAliceNetVersionFunc{
+			defaultHook: func(*bind.CallOpts) (bindings.CanonicalVersion, error) {
+				panic("unexpected invocation of MockIDynamics.GetLatestAliceNetVersion")
+			},
+		},
+		GetLatestDynamicValuesFunc: &IDynamicsGetLatestDynamicValuesFunc{
+			defaultHook: func(*bind.CallOpts) (bindings.DynamicValues, error) {
+				panic("unexpected invocation of MockIDynamics.GetLatestDynamicValues")
+			},
+		},
+		GetMetamorphicContractAddressFunc: &IDynamicsGetMetamorphicContractAddressFunc{
+			defaultHook: func(*bind.CallOpts, [32]byte, common.Address) (common.Address, error) {
+				panic("unexpected invocation of MockIDynamics.GetMetamorphicContractAddress")
+			},
+		},
+		GetPreviousDynamicValuesFunc: &IDynamicsGetPreviousDynamicValuesFunc{
+			defaultHook: func(*bind.CallOpts, *big.Int) (bindings.DynamicValues, error) {
+				panic("unexpected invocation of MockIDynamics.GetPreviousDynamicValues")
+			},
+		},
+		InitializeFunc: &IDynamicsInitializeFunc{
+			defaultHook: func(*bind.TransactOpts) (*types.Transaction, error) {
+				panic("unexpected invocation of MockIDynamics.Initialize")
+			},
+		},
+		ParseDeployedStorageContractFunc: &IDynamicsParseDeployedStorageContractFunc{
+			defaultHook: func(types.Log) (*bindings.DynamicsDeployedStorageContract, error) {
+				panic("unexpected invocation of MockIDynamics.ParseDeployedStorageContract")
+			},
+		},
+		ParseDynamicValueChangedFunc: &IDynamicsParseDynamicValueChangedFunc{
+			defaultHook: func(types.Log) (*bindings.DynamicsDynamicValueChanged, error) {
+				panic("unexpected invocation of MockIDynamics.ParseDynamicValueChanged")
+			},
+		},
+		ParseInitializedFunc: &IDynamicsParseInitializedFunc{
+			defaultHook: func(types.Log) (*bindings.DynamicsInitialized, error) {
+				panic("unexpected invocation of MockIDynamics.ParseInitialized")
+			},
+		},
+		ParseNewAliceNetNodeVersionAvailableFunc: &IDynamicsParseNewAliceNetNodeVersionAvailableFunc{
+			defaultHook: func(types.Log) (*bindings.DynamicsNewAliceNetNodeVersionAvailable, error) {
+				panic("unexpected invocation of MockIDynamics.ParseNewAliceNetNodeVersionAvailable")
+			},
+		},
+		ParseNewCanonicalAliceNetNodeVersionFunc: &IDynamicsParseNewCanonicalAliceNetNodeVersionFunc{
+			defaultHook: func(types.Log) (*bindings.DynamicsNewCanonicalAliceNetNodeVersion, error) {
+				panic("unexpected invocation of MockIDynamics.ParseNewCanonicalAliceNetNodeVersion")
+			},
+		},
+		SetConfigurationFunc: &IDynamicsSetConfigurationFunc{
+			defaultHook: func(*bind.TransactOpts, bindings.Configuration) (*types.Transaction, error) {
+				panic("unexpected invocation of MockIDynamics.SetConfiguration")
+			},
+		},
+		UpdateAliceNetNodeVersionFunc: &IDynamicsUpdateAliceNetNodeVersionFunc{
+			defaultHook: func(*bind.TransactOpts, uint32, uint32, uint32, uint32, [32]byte) (*types.Transaction, error) {
+				panic("unexpected invocation of MockIDynamics.UpdateAliceNetNodeVersion")
+			},
+		},
+		UpdateHeadFunc: &IDynamicsUpdateHeadFunc{
+			defaultHook: func(*bind.TransactOpts, uint32) (*types.Transaction, error) {
+				panic("unexpected invocation of MockIDynamics.UpdateHead")
+			},
+		},
+		WatchDeployedStorageContractFunc: &IDynamicsWatchDeployedStorageContractFunc{
+			defaultHook: func(*bind.WatchOpts, chan<- *bindings.DynamicsDeployedStorageContract) (event.Subscription, error) {
+				panic("unexpected invocation of MockIDynamics.WatchDeployedStorageContract")
+			},
+		},
+		WatchDynamicValueChangedFunc: &IDynamicsWatchDynamicValueChangedFunc{
+			defaultHook: func(*bind.WatchOpts, chan<- *bindings.DynamicsDynamicValueChanged) (event.Subscription, error) {
+				panic("unexpected invocation of MockIDynamics.WatchDynamicValueChanged")
+			},
+		},
+		WatchInitializedFunc: &IDynamicsWatchInitializedFunc{
+			defaultHook: func(*bind.WatchOpts, chan<- *bindings.DynamicsInitialized) (event.Subscription, error) {
+				panic("unexpected invocation of MockIDynamics.WatchInitialized")
+			},
+		},
+		WatchNewAliceNetNodeVersionAvailableFunc: &IDynamicsWatchNewAliceNetNodeVersionAvailableFunc{
+			defaultHook: func(*bind.WatchOpts, chan<- *bindings.DynamicsNewAliceNetNodeVersionAvailable) (event.Subscription, error) {
+				panic("unexpected invocation of MockIDynamics.WatchNewAliceNetNodeVersionAvailable")
+			},
+		},
+		WatchNewCanonicalAliceNetNodeVersionFunc: &IDynamicsWatchNewCanonicalAliceNetNodeVersionFunc{
+			defaultHook: func(*bind.WatchOpts, chan<- *bindings.DynamicsNewCanonicalAliceNetNodeVersion) (event.Subscription, error) {
+				panic("unexpected invocation of MockIDynamics.WatchNewCanonicalAliceNetNodeVersion")
+			},
+		},
+	}
+}
+
+// NewMockIDynamicsFrom creates a new mock of the MockIDynamics interface.
+// All methods delegate to the given implementation, unless overwritten.
+func NewMockIDynamicsFrom(i bindings.IDynamics) *MockIDynamics {
+	return &MockIDynamics{
+		ChangeDynamicValuesFunc: &IDynamicsChangeDynamicValuesFunc{
+			defaultHook: i.ChangeDynamicValues,
+		},
+		DecodeDynamicValuesFunc: &IDynamicsDecodeDynamicValuesFunc{
+			defaultHook: i.DecodeDynamicValues,
+		},
+		DeployStorageFunc: &IDynamicsDeployStorageFunc{
+			defaultHook: i.DeployStorage,
+		},
+		EncodeDynamicValuesFunc: &IDynamicsEncodeDynamicValuesFunc{
+			defaultHook: i.EncodeDynamicValues,
+		},
+		FilterDeployedStorageContractFunc: &IDynamicsFilterDeployedStorageContractFunc{
+			defaultHook: i.FilterDeployedStorageContract,
+		},
+		FilterDynamicValueChangedFunc: &IDynamicsFilterDynamicValueChangedFunc{
+			defaultHook: i.FilterDynamicValueChanged,
+		},
+		FilterInitializedFunc: &IDynamicsFilterInitializedFunc{
+			defaultHook: i.FilterInitialized,
+		},
+		FilterNewAliceNetNodeVersionAvailableFunc: &IDynamicsFilterNewAliceNetNodeVersionAvailableFunc{
+			defaultHook: i.FilterNewAliceNetNodeVersionAvailable,
+		},
+		FilterNewCanonicalAliceNetNodeVersionFunc: &IDynamicsFilterNewCanonicalAliceNetNodeVersionFunc{
+			defaultHook: i.FilterNewCanonicalAliceNetNodeVersion,
+		},
+		GetConfigurationFunc: &IDynamicsGetConfigurationFunc{
+			defaultHook: i.GetConfiguration,
+		},
+		GetEncodingVersionFunc: &IDynamicsGetEncodingVersionFunc{
+			defaultHook: i.GetEncodingVersion,
+		},
+		GetLatestAliceNetVersionFunc: &IDynamicsGetLatestAliceNetVersionFunc{
+			defaultHook: i.GetLatestAliceNetVersion,
+		},
+		GetLatestDynamicValuesFunc: &IDynamicsGetLatestDynamicValuesFunc{
+			defaultHook: i.GetLatestDynamicValues,
+		},
+		GetMetamorphicContractAddressFunc: &IDynamicsGetMetamorphicContractAddressFunc{
+			defaultHook: i.GetMetamorphicContractAddress,
+		},
+		GetPreviousDynamicValuesFunc: &IDynamicsGetPreviousDynamicValuesFunc{
+			defaultHook: i.GetPreviousDynamicValues,
+		},
+		InitializeFunc: &IDynamicsInitializeFunc{
+			defaultHook: i.Initialize,
+		},
+		ParseDeployedStorageContractFunc: &IDynamicsParseDeployedStorageContractFunc{
+			defaultHook: i.ParseDeployedStorageContract,
+		},
+		ParseDynamicValueChangedFunc: &IDynamicsParseDynamicValueChangedFunc{
+			defaultHook: i.ParseDynamicValueChanged,
+		},
+		ParseInitializedFunc: &IDynamicsParseInitializedFunc{
+			defaultHook: i.ParseInitialized,
+		},
+		ParseNewAliceNetNodeVersionAvailableFunc: &IDynamicsParseNewAliceNetNodeVersionAvailableFunc{
+			defaultHook: i.ParseNewAliceNetNodeVersionAvailable,
+		},
+		ParseNewCanonicalAliceNetNodeVersionFunc: &IDynamicsParseNewCanonicalAliceNetNodeVersionFunc{
+			defaultHook: i.ParseNewCanonicalAliceNetNodeVersion,
+		},
+		SetConfigurationFunc: &IDynamicsSetConfigurationFunc{
+			defaultHook: i.SetConfiguration,
+		},
+		UpdateAliceNetNodeVersionFunc: &IDynamicsUpdateAliceNetNodeVersionFunc{
+			defaultHook: i.UpdateAliceNetNodeVersion,
+		},
+		UpdateHeadFunc: &IDynamicsUpdateHeadFunc{
+			defaultHook: i.UpdateHead,
+		},
+		WatchDeployedStorageContractFunc: &IDynamicsWatchDeployedStorageContractFunc{
+			defaultHook: i.WatchDeployedStorageContract,
+		},
+		WatchDynamicValueChangedFunc: &IDynamicsWatchDynamicValueChangedFunc{
+			defaultHook: i.WatchDynamicValueChanged,
+		},
+		WatchInitializedFunc: &IDynamicsWatchInitializedFunc{
+			defaultHook: i.WatchInitialized,
+		},
+		WatchNewAliceNetNodeVersionAvailableFunc: &IDynamicsWatchNewAliceNetNodeVersionAvailableFunc{
+			defaultHook: i.WatchNewAliceNetNodeVersionAvailable,
+		},
+		WatchNewCanonicalAliceNetNodeVersionFunc: &IDynamicsWatchNewCanonicalAliceNetNodeVersionFunc{
+			defaultHook: i.WatchNewCanonicalAliceNetNodeVersion,
+		},
+	}
+}
+
+// IDynamicsChangeDynamicValuesFunc describes the behavior when the
+// ChangeDynamicValues method of the parent MockIDynamics instance is
+// invoked.
+type IDynamicsChangeDynamicValuesFunc struct {
+	defaultHook func(*bind.TransactOpts, uint32, bindings.DynamicValues) (*types.Transaction, error)
+	hooks       []func(*bind.TransactOpts, uint32, bindings.DynamicValues) (*types.Transaction, error)
+	history     []IDynamicsChangeDynamicValuesFuncCall
+	mutex       sync.Mutex
+}
+
+// ChangeDynamicValues delegates to the next hook function in the queue and
+// stores the parameter and result values of this invocation.
+func (m *MockIDynamics) ChangeDynamicValues(v0 *bind.TransactOpts, v1 uint32, v2 bindings.DynamicValues) (*types.Transaction, error) {
+	r0, r1 := m.ChangeDynamicValuesFunc.nextHook()(v0, v1, v2)
+	m.ChangeDynamicValuesFunc.appendCall(IDynamicsChangeDynamicValuesFuncCall{v0, v1, v2, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the ChangeDynamicValues
+// method of the parent MockIDynamics instance is invoked and the hook queue
+// is empty.
+func (f *IDynamicsChangeDynamicValuesFunc) SetDefaultHook(hook func(*bind.TransactOpts, uint32, bindings.DynamicValues) (*types.Transaction, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// ChangeDynamicValues method of the parent MockIDynamics instance invokes
+// the hook at the front of the queue and discards it. After the queue is
+// empty, the default hook function is invoked for any future action.
+func (f *IDynamicsChangeDynamicValuesFunc) PushHook(hook func(*bind.TransactOpts, uint32, bindings.DynamicValues) (*types.Transaction, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *IDynamicsChangeDynamicValuesFunc) SetDefaultReturn(r0 *types.Transaction, r1 error) {
+	f.SetDefaultHook(func(*bind.TransactOpts, uint32, bindings.DynamicValues) (*types.Transaction, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *IDynamicsChangeDynamicValuesFunc) PushReturn(r0 *types.Transaction, r1 error) {
+	f.PushHook(func(*bind.TransactOpts, uint32, bindings.DynamicValues) (*types.Transaction, error) {
+		return r0, r1
+	})
+}
+
+func (f *IDynamicsChangeDynamicValuesFunc) nextHook() func(*bind.TransactOpts, uint32, bindings.DynamicValues) (*types.Transaction, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *IDynamicsChangeDynamicValuesFunc) appendCall(r0 IDynamicsChangeDynamicValuesFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of IDynamicsChangeDynamicValuesFuncCall
+// objects describing the invocations of this function.
+func (f *IDynamicsChangeDynamicValuesFunc) History() []IDynamicsChangeDynamicValuesFuncCall {
+	f.mutex.Lock()
+	history := make([]IDynamicsChangeDynamicValuesFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// IDynamicsChangeDynamicValuesFuncCall is an object that describes an
+// invocation of method ChangeDynamicValues on an instance of MockIDynamics.
+type IDynamicsChangeDynamicValuesFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 *bind.TransactOpts
+	// Arg1 is the value of the 2nd argument passed to this method
+	// invocation.
+	Arg1 uint32
+	// Arg2 is the value of the 3rd argument passed to this method
+	// invocation.
+	Arg2 bindings.DynamicValues
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 *types.Transaction
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c IDynamicsChangeDynamicValuesFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0, c.Arg1, c.Arg2}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c IDynamicsChangeDynamicValuesFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
+}
+
+// IDynamicsDecodeDynamicValuesFunc describes the behavior when the
+// DecodeDynamicValues method of the parent MockIDynamics instance is
+// invoked.
+type IDynamicsDecodeDynamicValuesFunc struct {
+	defaultHook func(*bind.CallOpts, common.Address) (bindings.DynamicValues, error)
+	hooks       []func(*bind.CallOpts, common.Address) (bindings.DynamicValues, error)
+	history     []IDynamicsDecodeDynamicValuesFuncCall
+	mutex       sync.Mutex
+}
+
+// DecodeDynamicValues delegates to the next hook function in the queue and
+// stores the parameter and result values of this invocation.
+func (m *MockIDynamics) DecodeDynamicValues(v0 *bind.CallOpts, v1 common.Address) (bindings.DynamicValues, error) {
+	r0, r1 := m.DecodeDynamicValuesFunc.nextHook()(v0, v1)
+	m.DecodeDynamicValuesFunc.appendCall(IDynamicsDecodeDynamicValuesFuncCall{v0, v1, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the DecodeDynamicValues
+// method of the parent MockIDynamics instance is invoked and the hook queue
+// is empty.
+func (f *IDynamicsDecodeDynamicValuesFunc) SetDefaultHook(hook func(*bind.CallOpts, common.Address) (bindings.DynamicValues, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// DecodeDynamicValues method of the parent MockIDynamics instance invokes
+// the hook at the front of the queue and discards it. After the queue is
+// empty, the default hook function is invoked for any future action.
+func (f *IDynamicsDecodeDynamicValuesFunc) PushHook(hook func(*bind.CallOpts, common.Address) (bindings.DynamicValues, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *IDynamicsDecodeDynamicValuesFunc) SetDefaultReturn(r0 bindings.DynamicValues, r1 error) {
+	f.SetDefaultHook(func(*bind.CallOpts, common.Address) (bindings.DynamicValues, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *IDynamicsDecodeDynamicValuesFunc) PushReturn(r0 bindings.DynamicValues, r1 error) {
+	f.PushHook(func(*bind.CallOpts, common.Address) (bindings.DynamicValues, error) {
+		return r0, r1
+	})
+}
+
+func (f *IDynamicsDecodeDynamicValuesFunc) nextHook() func(*bind.CallOpts, common.Address) (bindings.DynamicValues, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *IDynamicsDecodeDynamicValuesFunc) appendCall(r0 IDynamicsDecodeDynamicValuesFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of IDynamicsDecodeDynamicValuesFuncCall
+// objects describing the invocations of this function.
+func (f *IDynamicsDecodeDynamicValuesFunc) History() []IDynamicsDecodeDynamicValuesFuncCall {
+	f.mutex.Lock()
+	history := make([]IDynamicsDecodeDynamicValuesFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// IDynamicsDecodeDynamicValuesFuncCall is an object that describes an
+// invocation of method DecodeDynamicValues on an instance of MockIDynamics.
+type IDynamicsDecodeDynamicValuesFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 *bind.CallOpts
+	// Arg1 is the value of the 2nd argument passed to this method
+	// invocation.
+	Arg1 common.Address
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 bindings.DynamicValues
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c IDynamicsDecodeDynamicValuesFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0, c.Arg1}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c IDynamicsDecodeDynamicValuesFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
+}
+
+// IDynamicsDeployStorageFunc describes the behavior when the DeployStorage
+// method of the parent MockIDynamics instance is invoked.
+type IDynamicsDeployStorageFunc struct {
+	defaultHook func(*bind.TransactOpts, []byte) (*types.Transaction, error)
+	hooks       []func(*bind.TransactOpts, []byte) (*types.Transaction, error)
+	history     []IDynamicsDeployStorageFuncCall
+	mutex       sync.Mutex
+}
+
+// DeployStorage delegates to the next hook function in the queue and stores
+// the parameter and result values of this invocation.
+func (m *MockIDynamics) DeployStorage(v0 *bind.TransactOpts, v1 []byte) (*types.Transaction, error) {
+	r0, r1 := m.DeployStorageFunc.nextHook()(v0, v1)
+	m.DeployStorageFunc.appendCall(IDynamicsDeployStorageFuncCall{v0, v1, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the DeployStorage method
+// of the parent MockIDynamics instance is invoked and the hook queue is
+// empty.
+func (f *IDynamicsDeployStorageFunc) SetDefaultHook(hook func(*bind.TransactOpts, []byte) (*types.Transaction, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// DeployStorage method of the parent MockIDynamics instance invokes the
+// hook at the front of the queue and discards it. After the queue is empty,
+// the default hook function is invoked for any future action.
+func (f *IDynamicsDeployStorageFunc) PushHook(hook func(*bind.TransactOpts, []byte) (*types.Transaction, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *IDynamicsDeployStorageFunc) SetDefaultReturn(r0 *types.Transaction, r1 error) {
+	f.SetDefaultHook(func(*bind.TransactOpts, []byte) (*types.Transaction, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *IDynamicsDeployStorageFunc) PushReturn(r0 *types.Transaction, r1 error) {
+	f.PushHook(func(*bind.TransactOpts, []byte) (*types.Transaction, error) {
+		return r0, r1
+	})
+}
+
+func (f *IDynamicsDeployStorageFunc) nextHook() func(*bind.TransactOpts, []byte) (*types.Transaction, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *IDynamicsDeployStorageFunc) appendCall(r0 IDynamicsDeployStorageFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of IDynamicsDeployStorageFuncCall objects
+// describing the invocations of this function.
+func (f *IDynamicsDeployStorageFunc) History() []IDynamicsDeployStorageFuncCall {
+	f.mutex.Lock()
+	history := make([]IDynamicsDeployStorageFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// IDynamicsDeployStorageFuncCall is an object that describes an invocation
+// of method DeployStorage on an instance of MockIDynamics.
+type IDynamicsDeployStorageFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 *bind.TransactOpts
+	// Arg1 is the value of the 2nd argument passed to this method
+	// invocation.
+	Arg1 []byte
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 *types.Transaction
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c IDynamicsDeployStorageFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0, c.Arg1}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c IDynamicsDeployStorageFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
+}
+
+// IDynamicsEncodeDynamicValuesFunc describes the behavior when the
+// EncodeDynamicValues method of the parent MockIDynamics instance is
+// invoked.
+type IDynamicsEncodeDynamicValuesFunc struct {
+	defaultHook func(*bind.CallOpts, bindings.DynamicValues) ([]byte, error)
+	hooks       []func(*bind.CallOpts, bindings.DynamicValues) ([]byte, error)
+	history     []IDynamicsEncodeDynamicValuesFuncCall
+	mutex       sync.Mutex
+}
+
+// EncodeDynamicValues delegates to the next hook function in the queue and
+// stores the parameter and result values of this invocation.
+func (m *MockIDynamics) EncodeDynamicValues(v0 *bind.CallOpts, v1 bindings.DynamicValues) ([]byte, error) {
+	r0, r1 := m.EncodeDynamicValuesFunc.nextHook()(v0, v1)
+	m.EncodeDynamicValuesFunc.appendCall(IDynamicsEncodeDynamicValuesFuncCall{v0, v1, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the EncodeDynamicValues
+// method of the parent MockIDynamics instance is invoked and the hook queue
+// is empty.
+func (f *IDynamicsEncodeDynamicValuesFunc) SetDefaultHook(hook func(*bind.CallOpts, bindings.DynamicValues) ([]byte, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// EncodeDynamicValues method of the parent MockIDynamics instance invokes
+// the hook at the front of the queue and discards it. After the queue is
+// empty, the default hook function is invoked for any future action.
+func (f *IDynamicsEncodeDynamicValuesFunc) PushHook(hook func(*bind.CallOpts, bindings.DynamicValues) ([]byte, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *IDynamicsEncodeDynamicValuesFunc) SetDefaultReturn(r0 []byte, r1 error) {
+	f.SetDefaultHook(func(*bind.CallOpts, bindings.DynamicValues) ([]byte, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *IDynamicsEncodeDynamicValuesFunc) PushReturn(r0 []byte, r1 error) {
+	f.PushHook(func(*bind.CallOpts, bindings.DynamicValues) ([]byte, error) {
+		return r0, r1
+	})
+}
+
+func (f *IDynamicsEncodeDynamicValuesFunc) nextHook() func(*bind.CallOpts, bindings.DynamicValues) ([]byte, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *IDynamicsEncodeDynamicValuesFunc) appendCall(r0 IDynamicsEncodeDynamicValuesFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of IDynamicsEncodeDynamicValuesFuncCall
+// objects describing the invocations of this function.
+func (f *IDynamicsEncodeDynamicValuesFunc) History() []IDynamicsEncodeDynamicValuesFuncCall {
+	f.mutex.Lock()
+	history := make([]IDynamicsEncodeDynamicValuesFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// IDynamicsEncodeDynamicValuesFuncCall is an object that describes an
+// invocation of method EncodeDynamicValues on an instance of MockIDynamics.
+type IDynamicsEncodeDynamicValuesFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 *bind.CallOpts
+	// Arg1 is the value of the 2nd argument passed to this method
+	// invocation.
+	Arg1 bindings.DynamicValues
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 []byte
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c IDynamicsEncodeDynamicValuesFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0, c.Arg1}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c IDynamicsEncodeDynamicValuesFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
+}
+
+// IDynamicsFilterDeployedStorageContractFunc describes the behavior when
+// the FilterDeployedStorageContract method of the parent MockIDynamics
+// instance is invoked.
+type IDynamicsFilterDeployedStorageContractFunc struct {
+	defaultHook func(*bind.FilterOpts) (*bindings.DynamicsDeployedStorageContractIterator, error)
+	hooks       []func(*bind.FilterOpts) (*bindings.DynamicsDeployedStorageContractIterator, error)
+	history     []IDynamicsFilterDeployedStorageContractFuncCall
+	mutex       sync.Mutex
+}
+
+// FilterDeployedStorageContract delegates to the next hook function in the
+// queue and stores the parameter and result values of this invocation.
+func (m *MockIDynamics) FilterDeployedStorageContract(v0 *bind.FilterOpts) (*bindings.DynamicsDeployedStorageContractIterator, error) {
+	r0, r1 := m.FilterDeployedStorageContractFunc.nextHook()(v0)
+	m.FilterDeployedStorageContractFunc.appendCall(IDynamicsFilterDeployedStorageContractFuncCall{v0, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the
+// FilterDeployedStorageContract method of the parent MockIDynamics instance
+// is invoked and the hook queue is empty.
+func (f *IDynamicsFilterDeployedStorageContractFunc) SetDefaultHook(hook func(*bind.FilterOpts) (*bindings.DynamicsDeployedStorageContractIterator, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// FilterDeployedStorageContract method of the parent MockIDynamics instance
+// invokes the hook at the front of the queue and discards it. After the
+// queue is empty, the default hook function is invoked for any future
+// action.
+func (f *IDynamicsFilterDeployedStorageContractFunc) PushHook(hook func(*bind.FilterOpts) (*bindings.DynamicsDeployedStorageContractIterator, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *IDynamicsFilterDeployedStorageContractFunc) SetDefaultReturn(r0 *bindings.DynamicsDeployedStorageContractIterator, r1 error) {
+	f.SetDefaultHook(func(*bind.FilterOpts) (*bindings.DynamicsDeployedStorageContractIterator, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *IDynamicsFilterDeployedStorageContractFunc) PushReturn(r0 *bindings.DynamicsDeployedStorageContractIterator, r1 error) {
+	f.PushHook(func(*bind.FilterOpts) (*bindings.DynamicsDeployedStorageContractIterator, error) {
+		return r0, r1
+	})
+}
+
+func (f *IDynamicsFilterDeployedStorageContractFunc) nextHook() func(*bind.FilterOpts) (*bindings.DynamicsDeployedStorageContractIterator, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *IDynamicsFilterDeployedStorageContractFunc) appendCall(r0 IDynamicsFilterDeployedStorageContractFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of
+// IDynamicsFilterDeployedStorageContractFuncCall objects describing the
+// invocations of this function.
+func (f *IDynamicsFilterDeployedStorageContractFunc) History() []IDynamicsFilterDeployedStorageContractFuncCall {
+	f.mutex.Lock()
+	history := make([]IDynamicsFilterDeployedStorageContractFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// IDynamicsFilterDeployedStorageContractFuncCall is an object that
+// describes an invocation of method FilterDeployedStorageContract on an
+// instance of MockIDynamics.
+type IDynamicsFilterDeployedStorageContractFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 *bind.FilterOpts
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 *bindings.DynamicsDeployedStorageContractIterator
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c IDynamicsFilterDeployedStorageContractFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c IDynamicsFilterDeployedStorageContractFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
+}
+
+// IDynamicsFilterDynamicValueChangedFunc describes the behavior when the
+// FilterDynamicValueChanged method of the parent MockIDynamics instance is
+// invoked.
+type IDynamicsFilterDynamicValueChangedFunc struct {
+	defaultHook func(*bind.FilterOpts) (*bindings.DynamicsDynamicValueChangedIterator, error)
+	hooks       []func(*bind.FilterOpts) (*bindings.DynamicsDynamicValueChangedIterator, error)
+	history     []IDynamicsFilterDynamicValueChangedFuncCall
+	mutex       sync.Mutex
+}
+
+// FilterDynamicValueChanged delegates to the next hook function in the
+// queue and stores the parameter and result values of this invocation.
+func (m *MockIDynamics) FilterDynamicValueChanged(v0 *bind.FilterOpts) (*bindings.DynamicsDynamicValueChangedIterator, error) {
+	r0, r1 := m.FilterDynamicValueChangedFunc.nextHook()(v0)
+	m.FilterDynamicValueChangedFunc.appendCall(IDynamicsFilterDynamicValueChangedFuncCall{v0, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the
+// FilterDynamicValueChanged method of the parent MockIDynamics instance is
+// invoked and the hook queue is empty.
+func (f *IDynamicsFilterDynamicValueChangedFunc) SetDefaultHook(hook func(*bind.FilterOpts) (*bindings.DynamicsDynamicValueChangedIterator, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// FilterDynamicValueChanged method of the parent MockIDynamics instance
+// invokes the hook at the front of the queue and discards it. After the
+// queue is empty, the default hook function is invoked for any future
+// action.
+func (f *IDynamicsFilterDynamicValueChangedFunc) PushHook(hook func(*bind.FilterOpts) (*bindings.DynamicsDynamicValueChangedIterator, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *IDynamicsFilterDynamicValueChangedFunc) SetDefaultReturn(r0 *bindings.DynamicsDynamicValueChangedIterator, r1 error) {
+	f.SetDefaultHook(func(*bind.FilterOpts) (*bindings.DynamicsDynamicValueChangedIterator, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *IDynamicsFilterDynamicValueChangedFunc) PushReturn(r0 *bindings.DynamicsDynamicValueChangedIterator, r1 error) {
+	f.PushHook(func(*bind.FilterOpts) (*bindings.DynamicsDynamicValueChangedIterator, error) {
+		return r0, r1
+	})
+}
+
+func (f *IDynamicsFilterDynamicValueChangedFunc) nextHook() func(*bind.FilterOpts) (*bindings.DynamicsDynamicValueChangedIterator, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *IDynamicsFilterDynamicValueChangedFunc) appendCall(r0 IDynamicsFilterDynamicValueChangedFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of IDynamicsFilterDynamicValueChangedFuncCall
+// objects describing the invocations of this function.
+func (f *IDynamicsFilterDynamicValueChangedFunc) History() []IDynamicsFilterDynamicValueChangedFuncCall {
+	f.mutex.Lock()
+	history := make([]IDynamicsFilterDynamicValueChangedFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// IDynamicsFilterDynamicValueChangedFuncCall is an object that describes an
+// invocation of method FilterDynamicValueChanged on an instance of
+// MockIDynamics.
+type IDynamicsFilterDynamicValueChangedFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 *bind.FilterOpts
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 *bindings.DynamicsDynamicValueChangedIterator
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c IDynamicsFilterDynamicValueChangedFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c IDynamicsFilterDynamicValueChangedFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
+}
+
+// IDynamicsFilterInitializedFunc describes the behavior when the
+// FilterInitialized method of the parent MockIDynamics instance is invoked.
+type IDynamicsFilterInitializedFunc struct {
+	defaultHook func(*bind.FilterOpts) (*bindings.DynamicsInitializedIterator, error)
+	hooks       []func(*bind.FilterOpts) (*bindings.DynamicsInitializedIterator, error)
+	history     []IDynamicsFilterInitializedFuncCall
+	mutex       sync.Mutex
+}
+
+// FilterInitialized delegates to the next hook function in the queue and
+// stores the parameter and result values of this invocation.
+func (m *MockIDynamics) FilterInitialized(v0 *bind.FilterOpts) (*bindings.DynamicsInitializedIterator, error) {
+	r0, r1 := m.FilterInitializedFunc.nextHook()(v0)
+	m.FilterInitializedFunc.appendCall(IDynamicsFilterInitializedFuncCall{v0, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the FilterInitialized
+// method of the parent MockIDynamics instance is invoked and the hook queue
+// is empty.
+func (f *IDynamicsFilterInitializedFunc) SetDefaultHook(hook func(*bind.FilterOpts) (*bindings.DynamicsInitializedIterator, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// FilterInitialized method of the parent MockIDynamics instance invokes the
+// hook at the front of the queue and discards it. After the queue is empty,
+// the default hook function is invoked for any future action.
+func (f *IDynamicsFilterInitializedFunc) PushHook(hook func(*bind.FilterOpts) (*bindings.DynamicsInitializedIterator, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *IDynamicsFilterInitializedFunc) SetDefaultReturn(r0 *bindings.DynamicsInitializedIterator, r1 error) {
+	f.SetDefaultHook(func(*bind.FilterOpts) (*bindings.DynamicsInitializedIterator, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *IDynamicsFilterInitializedFunc) PushReturn(r0 *bindings.DynamicsInitializedIterator, r1 error) {
+	f.PushHook(func(*bind.FilterOpts) (*bindings.DynamicsInitializedIterator, error) {
+		return r0, r1
+	})
+}
+
+func (f *IDynamicsFilterInitializedFunc) nextHook() func(*bind.FilterOpts) (*bindings.DynamicsInitializedIterator, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *IDynamicsFilterInitializedFunc) appendCall(r0 IDynamicsFilterInitializedFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of IDynamicsFilterInitializedFuncCall objects
+// describing the invocations of this function.
+func (f *IDynamicsFilterInitializedFunc) History() []IDynamicsFilterInitializedFuncCall {
+	f.mutex.Lock()
+	history := make([]IDynamicsFilterInitializedFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// IDynamicsFilterInitializedFuncCall is an object that describes an
+// invocation of method FilterInitialized on an instance of MockIDynamics.
+type IDynamicsFilterInitializedFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 *bind.FilterOpts
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 *bindings.DynamicsInitializedIterator
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c IDynamicsFilterInitializedFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c IDynamicsFilterInitializedFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
+}
+
+// IDynamicsFilterNewAliceNetNodeVersionAvailableFunc describes the behavior
+// when the FilterNewAliceNetNodeVersionAvailable method of the parent
+// MockIDynamics instance is invoked.
+type IDynamicsFilterNewAliceNetNodeVersionAvailableFunc struct {
+	defaultHook func(*bind.FilterOpts) (*bindings.DynamicsNewAliceNetNodeVersionAvailableIterator, error)
+	hooks       []func(*bind.FilterOpts) (*bindings.DynamicsNewAliceNetNodeVersionAvailableIterator, error)
+	history     []IDynamicsFilterNewAliceNetNodeVersionAvailableFuncCall
+	mutex       sync.Mutex
+}
+
+// FilterNewAliceNetNodeVersionAvailable delegates to the next hook function
+// in the queue and stores the parameter and result values of this
+// invocation.
+func (m *MockIDynamics) FilterNewAliceNetNodeVersionAvailable(v0 *bind.FilterOpts) (*bindings.DynamicsNewAliceNetNodeVersionAvailableIterator, error) {
+	r0, r1 := m.FilterNewAliceNetNodeVersionAvailableFunc.nextHook()(v0)
+	m.FilterNewAliceNetNodeVersionAvailableFunc.appendCall(IDynamicsFilterNewAliceNetNodeVersionAvailableFuncCall{v0, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the
+// FilterNewAliceNetNodeVersionAvailable method of the parent MockIDynamics
+// instance is invoked and the hook queue is empty.
+func (f *IDynamicsFilterNewAliceNetNodeVersionAvailableFunc) SetDefaultHook(hook func(*bind.FilterOpts) (*bindings.DynamicsNewAliceNetNodeVersionAvailableIterator, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// FilterNewAliceNetNodeVersionAvailable method of the parent MockIDynamics
+// instance invokes the hook at the front of the queue and discards it.
+// After the queue is empty, the default hook function is invoked for any
+// future action.
+func (f *IDynamicsFilterNewAliceNetNodeVersionAvailableFunc) PushHook(hook func(*bind.FilterOpts) (*bindings.DynamicsNewAliceNetNodeVersionAvailableIterator, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *IDynamicsFilterNewAliceNetNodeVersionAvailableFunc) SetDefaultReturn(r0 *bindings.DynamicsNewAliceNetNodeVersionAvailableIterator, r1 error) {
+	f.SetDefaultHook(func(*bind.FilterOpts) (*bindings.DynamicsNewAliceNetNodeVersionAvailableIterator, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *IDynamicsFilterNewAliceNetNodeVersionAvailableFunc) PushReturn(r0 *bindings.DynamicsNewAliceNetNodeVersionAvailableIterator, r1 error) {
+	f.PushHook(func(*bind.FilterOpts) (*bindings.DynamicsNewAliceNetNodeVersionAvailableIterator, error) {
+		return r0, r1
+	})
+}
+
+func (f *IDynamicsFilterNewAliceNetNodeVersionAvailableFunc) nextHook() func(*bind.FilterOpts) (*bindings.DynamicsNewAliceNetNodeVersionAvailableIterator, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *IDynamicsFilterNewAliceNetNodeVersionAvailableFunc) appendCall(r0 IDynamicsFilterNewAliceNetNodeVersionAvailableFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of
+// IDynamicsFilterNewAliceNetNodeVersionAvailableFuncCall objects describing
+// the invocations of this function.
+func (f *IDynamicsFilterNewAliceNetNodeVersionAvailableFunc) History() []IDynamicsFilterNewAliceNetNodeVersionAvailableFuncCall {
+	f.mutex.Lock()
+	history := make([]IDynamicsFilterNewAliceNetNodeVersionAvailableFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// IDynamicsFilterNewAliceNetNodeVersionAvailableFuncCall is an object that
+// describes an invocation of method FilterNewAliceNetNodeVersionAvailable
+// on an instance of MockIDynamics.
+type IDynamicsFilterNewAliceNetNodeVersionAvailableFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 *bind.FilterOpts
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 *bindings.DynamicsNewAliceNetNodeVersionAvailableIterator
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c IDynamicsFilterNewAliceNetNodeVersionAvailableFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c IDynamicsFilterNewAliceNetNodeVersionAvailableFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
+}
+
+// IDynamicsFilterNewCanonicalAliceNetNodeVersionFunc describes the behavior
+// when the FilterNewCanonicalAliceNetNodeVersion method of the parent
+// MockIDynamics instance is invoked.
+type IDynamicsFilterNewCanonicalAliceNetNodeVersionFunc struct {
+	defaultHook func(*bind.FilterOpts) (*bindings.DynamicsNewCanonicalAliceNetNodeVersionIterator, error)
+	hooks       []func(*bind.FilterOpts) (*bindings.DynamicsNewCanonicalAliceNetNodeVersionIterator, error)
+	history     []IDynamicsFilterNewCanonicalAliceNetNodeVersionFuncCall
+	mutex       sync.Mutex
+}
+
+// FilterNewCanonicalAliceNetNodeVersion delegates to the next hook function
+// in the queue and stores the parameter and result values of this
+// invocation.
+func (m *MockIDynamics) FilterNewCanonicalAliceNetNodeVersion(v0 *bind.FilterOpts) (*bindings.DynamicsNewCanonicalAliceNetNodeVersionIterator, error) {
+	r0, r1 := m.FilterNewCanonicalAliceNetNodeVersionFunc.nextHook()(v0)
+	m.FilterNewCanonicalAliceNetNodeVersionFunc.appendCall(IDynamicsFilterNewCanonicalAliceNetNodeVersionFuncCall{v0, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the
+// FilterNewCanonicalAliceNetNodeVersion method of the parent MockIDynamics
+// instance is invoked and the hook queue is empty.
+func (f *IDynamicsFilterNewCanonicalAliceNetNodeVersionFunc) SetDefaultHook(hook func(*bind.FilterOpts) (*bindings.DynamicsNewCanonicalAliceNetNodeVersionIterator, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// FilterNewCanonicalAliceNetNodeVersion method of the parent MockIDynamics
+// instance invokes the hook at the front of the queue and discards it.
+// After the queue is empty, the default hook function is invoked for any
+// future action.
+func (f *IDynamicsFilterNewCanonicalAliceNetNodeVersionFunc) PushHook(hook func(*bind.FilterOpts) (*bindings.DynamicsNewCanonicalAliceNetNodeVersionIterator, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *IDynamicsFilterNewCanonicalAliceNetNodeVersionFunc) SetDefaultReturn(r0 *bindings.DynamicsNewCanonicalAliceNetNodeVersionIterator, r1 error) {
+	f.SetDefaultHook(func(*bind.FilterOpts) (*bindings.DynamicsNewCanonicalAliceNetNodeVersionIterator, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *IDynamicsFilterNewCanonicalAliceNetNodeVersionFunc) PushReturn(r0 *bindings.DynamicsNewCanonicalAliceNetNodeVersionIterator, r1 error) {
+	f.PushHook(func(*bind.FilterOpts) (*bindings.DynamicsNewCanonicalAliceNetNodeVersionIterator, error) {
+		return r0, r1
+	})
+}
+
+func (f *IDynamicsFilterNewCanonicalAliceNetNodeVersionFunc) nextHook() func(*bind.FilterOpts) (*bindings.DynamicsNewCanonicalAliceNetNodeVersionIterator, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *IDynamicsFilterNewCanonicalAliceNetNodeVersionFunc) appendCall(r0 IDynamicsFilterNewCanonicalAliceNetNodeVersionFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of
+// IDynamicsFilterNewCanonicalAliceNetNodeVersionFuncCall objects describing
+// the invocations of this function.
+func (f *IDynamicsFilterNewCanonicalAliceNetNodeVersionFunc) History() []IDynamicsFilterNewCanonicalAliceNetNodeVersionFuncCall {
+	f.mutex.Lock()
+	history := make([]IDynamicsFilterNewCanonicalAliceNetNodeVersionFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// IDynamicsFilterNewCanonicalAliceNetNodeVersionFuncCall is an object that
+// describes an invocation of method FilterNewCanonicalAliceNetNodeVersion
+// on an instance of MockIDynamics.
+type IDynamicsFilterNewCanonicalAliceNetNodeVersionFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 *bind.FilterOpts
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 *bindings.DynamicsNewCanonicalAliceNetNodeVersionIterator
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c IDynamicsFilterNewCanonicalAliceNetNodeVersionFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c IDynamicsFilterNewCanonicalAliceNetNodeVersionFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
+}
+
+// IDynamicsGetConfigurationFunc describes the behavior when the
+// GetConfiguration method of the parent MockIDynamics instance is invoked.
+type IDynamicsGetConfigurationFunc struct {
+	defaultHook func(*bind.CallOpts) (bindings.Configuration, error)
+	hooks       []func(*bind.CallOpts) (bindings.Configuration, error)
+	history     []IDynamicsGetConfigurationFuncCall
+	mutex       sync.Mutex
+}
+
+// GetConfiguration delegates to the next hook function in the queue and
+// stores the parameter and result values of this invocation.
+func (m *MockIDynamics) GetConfiguration(v0 *bind.CallOpts) (bindings.Configuration, error) {
+	r0, r1 := m.GetConfigurationFunc.nextHook()(v0)
+	m.GetConfigurationFunc.appendCall(IDynamicsGetConfigurationFuncCall{v0, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the GetConfiguration
+// method of the parent MockIDynamics instance is invoked and the hook queue
+// is empty.
+func (f *IDynamicsGetConfigurationFunc) SetDefaultHook(hook func(*bind.CallOpts) (bindings.Configuration, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// GetConfiguration method of the parent MockIDynamics instance invokes the
+// hook at the front of the queue and discards it. After the queue is empty,
+// the default hook function is invoked for any future action.
+func (f *IDynamicsGetConfigurationFunc) PushHook(hook func(*bind.CallOpts) (bindings.Configuration, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *IDynamicsGetConfigurationFunc) SetDefaultReturn(r0 bindings.Configuration, r1 error) {
+	f.SetDefaultHook(func(*bind.CallOpts) (bindings.Configuration, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *IDynamicsGetConfigurationFunc) PushReturn(r0 bindings.Configuration, r1 error) {
+	f.PushHook(func(*bind.CallOpts) (bindings.Configuration, error) {
+		return r0, r1
+	})
+}
+
+func (f *IDynamicsGetConfigurationFunc) nextHook() func(*bind.CallOpts) (bindings.Configuration, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *IDynamicsGetConfigurationFunc) appendCall(r0 IDynamicsGetConfigurationFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of IDynamicsGetConfigurationFuncCall objects
+// describing the invocations of this function.
+func (f *IDynamicsGetConfigurationFunc) History() []IDynamicsGetConfigurationFuncCall {
+	f.mutex.Lock()
+	history := make([]IDynamicsGetConfigurationFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// IDynamicsGetConfigurationFuncCall is an object that describes an
+// invocation of method GetConfiguration on an instance of MockIDynamics.
+type IDynamicsGetConfigurationFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 *bind.CallOpts
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 bindings.Configuration
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c IDynamicsGetConfigurationFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c IDynamicsGetConfigurationFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
+}
+
+// IDynamicsGetEncodingVersionFunc describes the behavior when the
+// GetEncodingVersion method of the parent MockIDynamics instance is
+// invoked.
+type IDynamicsGetEncodingVersionFunc struct {
+	defaultHook func(*bind.CallOpts) (uint8, error)
+	hooks       []func(*bind.CallOpts) (uint8, error)
+	history     []IDynamicsGetEncodingVersionFuncCall
+	mutex       sync.Mutex
+}
+
+// GetEncodingVersion delegates to the next hook function in the queue and
+// stores the parameter and result values of this invocation.
+func (m *MockIDynamics) GetEncodingVersion(v0 *bind.CallOpts) (uint8, error) {
+	r0, r1 := m.GetEncodingVersionFunc.nextHook()(v0)
+	m.GetEncodingVersionFunc.appendCall(IDynamicsGetEncodingVersionFuncCall{v0, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the GetEncodingVersion
+// method of the parent MockIDynamics instance is invoked and the hook queue
+// is empty.
+func (f *IDynamicsGetEncodingVersionFunc) SetDefaultHook(hook func(*bind.CallOpts) (uint8, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// GetEncodingVersion method of the parent MockIDynamics instance invokes
+// the hook at the front of the queue and discards it. After the queue is
+// empty, the default hook function is invoked for any future action.
+func (f *IDynamicsGetEncodingVersionFunc) PushHook(hook func(*bind.CallOpts) (uint8, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *IDynamicsGetEncodingVersionFunc) SetDefaultReturn(r0 uint8, r1 error) {
+	f.SetDefaultHook(func(*bind.CallOpts) (uint8, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *IDynamicsGetEncodingVersionFunc) PushReturn(r0 uint8, r1 error) {
+	f.PushHook(func(*bind.CallOpts) (uint8, error) {
+		return r0, r1
+	})
+}
+
+func (f *IDynamicsGetEncodingVersionFunc) nextHook() func(*bind.CallOpts) (uint8, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *IDynamicsGetEncodingVersionFunc) appendCall(r0 IDynamicsGetEncodingVersionFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of IDynamicsGetEncodingVersionFuncCall objects
+// describing the invocations of this function.
+func (f *IDynamicsGetEncodingVersionFunc) History() []IDynamicsGetEncodingVersionFuncCall {
+	f.mutex.Lock()
+	history := make([]IDynamicsGetEncodingVersionFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// IDynamicsGetEncodingVersionFuncCall is an object that describes an
+// invocation of method GetEncodingVersion on an instance of MockIDynamics.
+type IDynamicsGetEncodingVersionFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 *bind.CallOpts
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 uint8
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c IDynamicsGetEncodingVersionFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c IDynamicsGetEncodingVersionFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
+}
+
+// IDynamicsGetLatestAliceNetVersionFunc describes the behavior when the
+// GetLatestAliceNetVersion method of the parent MockIDynamics instance is
+// invoked.
+type IDynamicsGetLatestAliceNetVersionFunc struct {
+	defaultHook func(*bind.CallOpts) (bindings.CanonicalVersion, error)
+	hooks       []func(*bind.CallOpts) (bindings.CanonicalVersion, error)
+	history     []IDynamicsGetLatestAliceNetVersionFuncCall
+	mutex       sync.Mutex
+}
+
+// GetLatestAliceNetVersion delegates to the next hook function in the queue
+// and stores the parameter and result values of this invocation.
+func (m *MockIDynamics) GetLatestAliceNetVersion(v0 *bind.CallOpts) (bindings.CanonicalVersion, error) {
+	r0, r1 := m.GetLatestAliceNetVersionFunc.nextHook()(v0)
+	m.GetLatestAliceNetVersionFunc.appendCall(IDynamicsGetLatestAliceNetVersionFuncCall{v0, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the
+// GetLatestAliceNetVersion method of the parent MockIDynamics instance is
+// invoked and the hook queue is empty.
+func (f *IDynamicsGetLatestAliceNetVersionFunc) SetDefaultHook(hook func(*bind.CallOpts) (bindings.CanonicalVersion, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// GetLatestAliceNetVersion method of the parent MockIDynamics instance
+// invokes the hook at the front of the queue and discards it. After the
+// queue is empty, the default hook function is invoked for any future
+// action.
+func (f *IDynamicsGetLatestAliceNetVersionFunc) PushHook(hook func(*bind.CallOpts) (bindings.CanonicalVersion, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *IDynamicsGetLatestAliceNetVersionFunc) SetDefaultReturn(r0 bindings.CanonicalVersion, r1 error) {
+	f.SetDefaultHook(func(*bind.CallOpts) (bindings.CanonicalVersion, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *IDynamicsGetLatestAliceNetVersionFunc) PushReturn(r0 bindings.CanonicalVersion, r1 error) {
+	f.PushHook(func(*bind.CallOpts) (bindings.CanonicalVersion, error) {
+		return r0, r1
+	})
+}
+
+func (f *IDynamicsGetLatestAliceNetVersionFunc) nextHook() func(*bind.CallOpts) (bindings.CanonicalVersion, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *IDynamicsGetLatestAliceNetVersionFunc) appendCall(r0 IDynamicsGetLatestAliceNetVersionFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of IDynamicsGetLatestAliceNetVersionFuncCall
+// objects describing the invocations of this function.
+func (f *IDynamicsGetLatestAliceNetVersionFunc) History() []IDynamicsGetLatestAliceNetVersionFuncCall {
+	f.mutex.Lock()
+	history := make([]IDynamicsGetLatestAliceNetVersionFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// IDynamicsGetLatestAliceNetVersionFuncCall is an object that describes an
+// invocation of method GetLatestAliceNetVersion on an instance of
+// MockIDynamics.
+type IDynamicsGetLatestAliceNetVersionFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 *bind.CallOpts
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 bindings.CanonicalVersion
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c IDynamicsGetLatestAliceNetVersionFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c IDynamicsGetLatestAliceNetVersionFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
+}
+
+// IDynamicsGetLatestDynamicValuesFunc describes the behavior when the
+// GetLatestDynamicValues method of the parent MockIDynamics instance is
+// invoked.
+type IDynamicsGetLatestDynamicValuesFunc struct {
+	defaultHook func(*bind.CallOpts) (bindings.DynamicValues, error)
+	hooks       []func(*bind.CallOpts) (bindings.DynamicValues, error)
+	history     []IDynamicsGetLatestDynamicValuesFuncCall
+	mutex       sync.Mutex
+}
+
+// GetLatestDynamicValues delegates to the next hook function in the queue
+// and stores the parameter and result values of this invocation.
+func (m *MockIDynamics) GetLatestDynamicValues(v0 *bind.CallOpts) (bindings.DynamicValues, error) {
+	r0, r1 := m.GetLatestDynamicValuesFunc.nextHook()(v0)
+	m.GetLatestDynamicValuesFunc.appendCall(IDynamicsGetLatestDynamicValuesFuncCall{v0, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the
+// GetLatestDynamicValues method of the parent MockIDynamics instance is
+// invoked and the hook queue is empty.
+func (f *IDynamicsGetLatestDynamicValuesFunc) SetDefaultHook(hook func(*bind.CallOpts) (bindings.DynamicValues, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// GetLatestDynamicValues method of the parent MockIDynamics instance
+// invokes the hook at the front of the queue and discards it. After the
+// queue is empty, the default hook function is invoked for any future
+// action.
+func (f *IDynamicsGetLatestDynamicValuesFunc) PushHook(hook func(*bind.CallOpts) (bindings.DynamicValues, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *IDynamicsGetLatestDynamicValuesFunc) SetDefaultReturn(r0 bindings.DynamicValues, r1 error) {
+	f.SetDefaultHook(func(*bind.CallOpts) (bindings.DynamicValues, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *IDynamicsGetLatestDynamicValuesFunc) PushReturn(r0 bindings.DynamicValues, r1 error) {
+	f.PushHook(func(*bind.CallOpts) (bindings.DynamicValues, error) {
+		return r0, r1
+	})
+}
+
+func (f *IDynamicsGetLatestDynamicValuesFunc) nextHook() func(*bind.CallOpts) (bindings.DynamicValues, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *IDynamicsGetLatestDynamicValuesFunc) appendCall(r0 IDynamicsGetLatestDynamicValuesFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of IDynamicsGetLatestDynamicValuesFuncCall
+// objects describing the invocations of this function.
+func (f *IDynamicsGetLatestDynamicValuesFunc) History() []IDynamicsGetLatestDynamicValuesFuncCall {
+	f.mutex.Lock()
+	history := make([]IDynamicsGetLatestDynamicValuesFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// IDynamicsGetLatestDynamicValuesFuncCall is an object that describes an
+// invocation of method GetLatestDynamicValues on an instance of
+// MockIDynamics.
+type IDynamicsGetLatestDynamicValuesFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 *bind.CallOpts
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 bindings.DynamicValues
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c IDynamicsGetLatestDynamicValuesFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c IDynamicsGetLatestDynamicValuesFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
+}
+
+// IDynamicsGetMetamorphicContractAddressFunc describes the behavior when
+// the GetMetamorphicContractAddress method of the parent MockIDynamics
+// instance is invoked.
+type IDynamicsGetMetamorphicContractAddressFunc struct {
+	defaultHook func(*bind.CallOpts, [32]byte, common.Address) (common.Address, error)
+	hooks       []func(*bind.CallOpts, [32]byte, common.Address) (common.Address, error)
+	history     []IDynamicsGetMetamorphicContractAddressFuncCall
+	mutex       sync.Mutex
+}
+
+// GetMetamorphicContractAddress delegates to the next hook function in the
+// queue and stores the parameter and result values of this invocation.
+func (m *MockIDynamics) GetMetamorphicContractAddress(v0 *bind.CallOpts, v1 [32]byte, v2 common.Address) (common.Address, error) {
+	r0, r1 := m.GetMetamorphicContractAddressFunc.nextHook()(v0, v1, v2)
+	m.GetMetamorphicContractAddressFunc.appendCall(IDynamicsGetMetamorphicContractAddressFuncCall{v0, v1, v2, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the
+// GetMetamorphicContractAddress method of the parent MockIDynamics instance
+// is invoked and the hook queue is empty.
+func (f *IDynamicsGetMetamorphicContractAddressFunc) SetDefaultHook(hook func(*bind.CallOpts, [32]byte, common.Address) (common.Address, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// GetMetamorphicContractAddress method of the parent MockIDynamics instance
+// invokes the hook at the front of the queue and discards it. After the
+// queue is empty, the default hook function is invoked for any future
+// action.
+func (f *IDynamicsGetMetamorphicContractAddressFunc) PushHook(hook func(*bind.CallOpts, [32]byte, common.Address) (common.Address, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *IDynamicsGetMetamorphicContractAddressFunc) SetDefaultReturn(r0 common.Address, r1 error) {
+	f.SetDefaultHook(func(*bind.CallOpts, [32]byte, common.Address) (common.Address, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *IDynamicsGetMetamorphicContractAddressFunc) PushReturn(r0 common.Address, r1 error) {
+	f.PushHook(func(*bind.CallOpts, [32]byte, common.Address) (common.Address, error) {
+		return r0, r1
+	})
+}
+
+func (f *IDynamicsGetMetamorphicContractAddressFunc) nextHook() func(*bind.CallOpts, [32]byte, common.Address) (common.Address, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *IDynamicsGetMetamorphicContractAddressFunc) appendCall(r0 IDynamicsGetMetamorphicContractAddressFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of
+// IDynamicsGetMetamorphicContractAddressFuncCall objects describing the
+// invocations of this function.
+func (f *IDynamicsGetMetamorphicContractAddressFunc) History() []IDynamicsGetMetamorphicContractAddressFuncCall {
+	f.mutex.Lock()
+	history := make([]IDynamicsGetMetamorphicContractAddressFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// IDynamicsGetMetamorphicContractAddressFuncCall is an object that
+// describes an invocation of method GetMetamorphicContractAddress on an
+// instance of MockIDynamics.
+type IDynamicsGetMetamorphicContractAddressFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 *bind.CallOpts
+	// Arg1 is the value of the 2nd argument passed to this method
+	// invocation.
+	Arg1 [32]byte
+	// Arg2 is the value of the 3rd argument passed to this method
+	// invocation.
+	Arg2 common.Address
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 common.Address
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c IDynamicsGetMetamorphicContractAddressFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0, c.Arg1, c.Arg2}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c IDynamicsGetMetamorphicContractAddressFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
+}
+
+// IDynamicsGetPreviousDynamicValuesFunc describes the behavior when the
+// GetPreviousDynamicValues method of the parent MockIDynamics instance is
+// invoked.
+type IDynamicsGetPreviousDynamicValuesFunc struct {
+	defaultHook func(*bind.CallOpts, *big.Int) (bindings.DynamicValues, error)
+	hooks       []func(*bind.CallOpts, *big.Int) (bindings.DynamicValues, error)
+	history     []IDynamicsGetPreviousDynamicValuesFuncCall
+	mutex       sync.Mutex
+}
+
+// GetPreviousDynamicValues delegates to the next hook function in the queue
+// and stores the parameter and result values of this invocation.
+func (m *MockIDynamics) GetPreviousDynamicValues(v0 *bind.CallOpts, v1 *big.Int) (bindings.DynamicValues, error) {
+	r0, r1 := m.GetPreviousDynamicValuesFunc.nextHook()(v0, v1)
+	m.GetPreviousDynamicValuesFunc.appendCall(IDynamicsGetPreviousDynamicValuesFuncCall{v0, v1, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the
+// GetPreviousDynamicValues method of the parent MockIDynamics instance is
+// invoked and the hook queue is empty.
+func (f *IDynamicsGetPreviousDynamicValuesFunc) SetDefaultHook(hook func(*bind.CallOpts, *big.Int) (bindings.DynamicValues, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// GetPreviousDynamicValues method of the parent MockIDynamics instance
+// invokes the hook at the front of the queue and discards it. After the
+// queue is empty, the default hook function is invoked for any future
+// action.
+func (f *IDynamicsGetPreviousDynamicValuesFunc) PushHook(hook func(*bind.CallOpts, *big.Int) (bindings.DynamicValues, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *IDynamicsGetPreviousDynamicValuesFunc) SetDefaultReturn(r0 bindings.DynamicValues, r1 error) {
+	f.SetDefaultHook(func(*bind.CallOpts, *big.Int) (bindings.DynamicValues, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *IDynamicsGetPreviousDynamicValuesFunc) PushReturn(r0 bindings.DynamicValues, r1 error) {
+	f.PushHook(func(*bind.CallOpts, *big.Int) (bindings.DynamicValues, error) {
+		return r0, r1
+	})
+}
+
+func (f *IDynamicsGetPreviousDynamicValuesFunc) nextHook() func(*bind.CallOpts, *big.Int) (bindings.DynamicValues, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *IDynamicsGetPreviousDynamicValuesFunc) appendCall(r0 IDynamicsGetPreviousDynamicValuesFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of IDynamicsGetPreviousDynamicValuesFuncCall
+// objects describing the invocations of this function.
+func (f *IDynamicsGetPreviousDynamicValuesFunc) History() []IDynamicsGetPreviousDynamicValuesFuncCall {
+	f.mutex.Lock()
+	history := make([]IDynamicsGetPreviousDynamicValuesFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// IDynamicsGetPreviousDynamicValuesFuncCall is an object that describes an
+// invocation of method GetPreviousDynamicValues on an instance of
+// MockIDynamics.
+type IDynamicsGetPreviousDynamicValuesFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 *bind.CallOpts
+	// Arg1 is the value of the 2nd argument passed to this method
+	// invocation.
+	Arg1 *big.Int
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 bindings.DynamicValues
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c IDynamicsGetPreviousDynamicValuesFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0, c.Arg1}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c IDynamicsGetPreviousDynamicValuesFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
+}
+
+// IDynamicsInitializeFunc describes the behavior when the Initialize method
+// of the parent MockIDynamics instance is invoked.
+type IDynamicsInitializeFunc struct {
+	defaultHook func(*bind.TransactOpts) (*types.Transaction, error)
+	hooks       []func(*bind.TransactOpts) (*types.Transaction, error)
+	history     []IDynamicsInitializeFuncCall
+	mutex       sync.Mutex
+}
+
+// Initialize delegates to the next hook function in the queue and stores
+// the parameter and result values of this invocation.
+func (m *MockIDynamics) Initialize(v0 *bind.TransactOpts) (*types.Transaction, error) {
+	r0, r1 := m.InitializeFunc.nextHook()(v0)
+	m.InitializeFunc.appendCall(IDynamicsInitializeFuncCall{v0, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the Initialize method of
+// the parent MockIDynamics instance is invoked and the hook queue is empty.
+func (f *IDynamicsInitializeFunc) SetDefaultHook(hook func(*bind.TransactOpts) (*types.Transaction, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// Initialize method of the parent MockIDynamics instance invokes the hook
+// at the front of the queue and discards it. After the queue is empty, the
+// default hook function is invoked for any future action.
+func (f *IDynamicsInitializeFunc) PushHook(hook func(*bind.TransactOpts) (*types.Transaction, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *IDynamicsInitializeFunc) SetDefaultReturn(r0 *types.Transaction, r1 error) {
+	f.SetDefaultHook(func(*bind.TransactOpts) (*types.Transaction, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *IDynamicsInitializeFunc) PushReturn(r0 *types.Transaction, r1 error) {
+	f.PushHook(func(*bind.TransactOpts) (*types.Transaction, error) {
+		return r0, r1
+	})
+}
+
+func (f *IDynamicsInitializeFunc) nextHook() func(*bind.TransactOpts) (*types.Transaction, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *IDynamicsInitializeFunc) appendCall(r0 IDynamicsInitializeFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of IDynamicsInitializeFuncCall objects
+// describing the invocations of this function.
+func (f *IDynamicsInitializeFunc) History() []IDynamicsInitializeFuncCall {
+	f.mutex.Lock()
+	history := make([]IDynamicsInitializeFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// IDynamicsInitializeFuncCall is an object that describes an invocation of
+// method Initialize on an instance of MockIDynamics.
+type IDynamicsInitializeFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 *bind.TransactOpts
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 *types.Transaction
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c IDynamicsInitializeFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c IDynamicsInitializeFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
+}
+
+// IDynamicsParseDeployedStorageContractFunc describes the behavior when the
+// ParseDeployedStorageContract method of the parent MockIDynamics instance
+// is invoked.
+type IDynamicsParseDeployedStorageContractFunc struct {
+	defaultHook func(types.Log) (*bindings.DynamicsDeployedStorageContract, error)
+	hooks       []func(types.Log) (*bindings.DynamicsDeployedStorageContract, error)
+	history     []IDynamicsParseDeployedStorageContractFuncCall
+	mutex       sync.Mutex
+}
+
+// ParseDeployedStorageContract delegates to the next hook function in the
+// queue and stores the parameter and result values of this invocation.
+func (m *MockIDynamics) ParseDeployedStorageContract(v0 types.Log) (*bindings.DynamicsDeployedStorageContract, error) {
+	r0, r1 := m.ParseDeployedStorageContractFunc.nextHook()(v0)
+	m.ParseDeployedStorageContractFunc.appendCall(IDynamicsParseDeployedStorageContractFuncCall{v0, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the
+// ParseDeployedStorageContract method of the parent MockIDynamics instance
+// is invoked and the hook queue is empty.
+func (f *IDynamicsParseDeployedStorageContractFunc) SetDefaultHook(hook func(types.Log) (*bindings.DynamicsDeployedStorageContract, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// ParseDeployedStorageContract method of the parent MockIDynamics instance
+// invokes the hook at the front of the queue and discards it. After the
+// queue is empty, the default hook function is invoked for any future
+// action.
+func (f *IDynamicsParseDeployedStorageContractFunc) PushHook(hook func(types.Log) (*bindings.DynamicsDeployedStorageContract, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *IDynamicsParseDeployedStorageContractFunc) SetDefaultReturn(r0 *bindings.DynamicsDeployedStorageContract, r1 error) {
+	f.SetDefaultHook(func(types.Log) (*bindings.DynamicsDeployedStorageContract, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *IDynamicsParseDeployedStorageContractFunc) PushReturn(r0 *bindings.DynamicsDeployedStorageContract, r1 error) {
+	f.PushHook(func(types.Log) (*bindings.DynamicsDeployedStorageContract, error) {
+		return r0, r1
+	})
+}
+
+func (f *IDynamicsParseDeployedStorageContractFunc) nextHook() func(types.Log) (*bindings.DynamicsDeployedStorageContract, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *IDynamicsParseDeployedStorageContractFunc) appendCall(r0 IDynamicsParseDeployedStorageContractFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of
+// IDynamicsParseDeployedStorageContractFuncCall objects describing the
+// invocations of this function.
+func (f *IDynamicsParseDeployedStorageContractFunc) History() []IDynamicsParseDeployedStorageContractFuncCall {
+	f.mutex.Lock()
+	history := make([]IDynamicsParseDeployedStorageContractFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// IDynamicsParseDeployedStorageContractFuncCall is an object that describes
+// an invocation of method ParseDeployedStorageContract on an instance of
+// MockIDynamics.
+type IDynamicsParseDeployedStorageContractFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 types.Log
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 *bindings.DynamicsDeployedStorageContract
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c IDynamicsParseDeployedStorageContractFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c IDynamicsParseDeployedStorageContractFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
+}
+
+// IDynamicsParseDynamicValueChangedFunc describes the behavior when the
+// ParseDynamicValueChanged method of the parent MockIDynamics instance is
+// invoked.
+type IDynamicsParseDynamicValueChangedFunc struct {
+	defaultHook func(types.Log) (*bindings.DynamicsDynamicValueChanged, error)
+	hooks       []func(types.Log) (*bindings.DynamicsDynamicValueChanged, error)
+	history     []IDynamicsParseDynamicValueChangedFuncCall
+	mutex       sync.Mutex
+}
+
+// ParseDynamicValueChanged delegates to the next hook function in the queue
+// and stores the parameter and result values of this invocation.
+func (m *MockIDynamics) ParseDynamicValueChanged(v0 types.Log) (*bindings.DynamicsDynamicValueChanged, error) {
+	r0, r1 := m.ParseDynamicValueChangedFunc.nextHook()(v0)
+	m.ParseDynamicValueChangedFunc.appendCall(IDynamicsParseDynamicValueChangedFuncCall{v0, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the
+// ParseDynamicValueChanged method of the parent MockIDynamics instance is
+// invoked and the hook queue is empty.
+func (f *IDynamicsParseDynamicValueChangedFunc) SetDefaultHook(hook func(types.Log) (*bindings.DynamicsDynamicValueChanged, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// ParseDynamicValueChanged method of the parent MockIDynamics instance
+// invokes the hook at the front of the queue and discards it. After the
+// queue is empty, the default hook function is invoked for any future
+// action.
+func (f *IDynamicsParseDynamicValueChangedFunc) PushHook(hook func(types.Log) (*bindings.DynamicsDynamicValueChanged, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *IDynamicsParseDynamicValueChangedFunc) SetDefaultReturn(r0 *bindings.DynamicsDynamicValueChanged, r1 error) {
+	f.SetDefaultHook(func(types.Log) (*bindings.DynamicsDynamicValueChanged, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *IDynamicsParseDynamicValueChangedFunc) PushReturn(r0 *bindings.DynamicsDynamicValueChanged, r1 error) {
+	f.PushHook(func(types.Log) (*bindings.DynamicsDynamicValueChanged, error) {
+		return r0, r1
+	})
+}
+
+func (f *IDynamicsParseDynamicValueChangedFunc) nextHook() func(types.Log) (*bindings.DynamicsDynamicValueChanged, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *IDynamicsParseDynamicValueChangedFunc) appendCall(r0 IDynamicsParseDynamicValueChangedFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of IDynamicsParseDynamicValueChangedFuncCall
+// objects describing the invocations of this function.
+func (f *IDynamicsParseDynamicValueChangedFunc) History() []IDynamicsParseDynamicValueChangedFuncCall {
+	f.mutex.Lock()
+	history := make([]IDynamicsParseDynamicValueChangedFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// IDynamicsParseDynamicValueChangedFuncCall is an object that describes an
+// invocation of method ParseDynamicValueChanged on an instance of
+// MockIDynamics.
+type IDynamicsParseDynamicValueChangedFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 types.Log
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 *bindings.DynamicsDynamicValueChanged
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c IDynamicsParseDynamicValueChangedFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c IDynamicsParseDynamicValueChangedFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
+}
+
+// IDynamicsParseInitializedFunc describes the behavior when the
+// ParseInitialized method of the parent MockIDynamics instance is invoked.
+type IDynamicsParseInitializedFunc struct {
+	defaultHook func(types.Log) (*bindings.DynamicsInitialized, error)
+	hooks       []func(types.Log) (*bindings.DynamicsInitialized, error)
+	history     []IDynamicsParseInitializedFuncCall
+	mutex       sync.Mutex
+}
+
+// ParseInitialized delegates to the next hook function in the queue and
+// stores the parameter and result values of this invocation.
+func (m *MockIDynamics) ParseInitialized(v0 types.Log) (*bindings.DynamicsInitialized, error) {
+	r0, r1 := m.ParseInitializedFunc.nextHook()(v0)
+	m.ParseInitializedFunc.appendCall(IDynamicsParseInitializedFuncCall{v0, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the ParseInitialized
+// method of the parent MockIDynamics instance is invoked and the hook queue
+// is empty.
+func (f *IDynamicsParseInitializedFunc) SetDefaultHook(hook func(types.Log) (*bindings.DynamicsInitialized, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// ParseInitialized method of the parent MockIDynamics instance invokes the
+// hook at the front of the queue and discards it. After the queue is empty,
+// the default hook function is invoked for any future action.
+func (f *IDynamicsParseInitializedFunc) PushHook(hook func(types.Log) (*bindings.DynamicsInitialized, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *IDynamicsParseInitializedFunc) SetDefaultReturn(r0 *bindings.DynamicsInitialized, r1 error) {
+	f.SetDefaultHook(func(types.Log) (*bindings.DynamicsInitialized, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *IDynamicsParseInitializedFunc) PushReturn(r0 *bindings.DynamicsInitialized, r1 error) {
+	f.PushHook(func(types.Log) (*bindings.DynamicsInitialized, error) {
+		return r0, r1
+	})
+}
+
+func (f *IDynamicsParseInitializedFunc) nextHook() func(types.Log) (*bindings.DynamicsInitialized, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *IDynamicsParseInitializedFunc) appendCall(r0 IDynamicsParseInitializedFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of IDynamicsParseInitializedFuncCall objects
+// describing the invocations of this function.
+func (f *IDynamicsParseInitializedFunc) History() []IDynamicsParseInitializedFuncCall {
+	f.mutex.Lock()
+	history := make([]IDynamicsParseInitializedFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// IDynamicsParseInitializedFuncCall is an object that describes an
+// invocation of method ParseInitialized on an instance of MockIDynamics.
+type IDynamicsParseInitializedFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 types.Log
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 *bindings.DynamicsInitialized
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c IDynamicsParseInitializedFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c IDynamicsParseInitializedFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
+}
+
+// IDynamicsParseNewAliceNetNodeVersionAvailableFunc describes the behavior
+// when the ParseNewAliceNetNodeVersionAvailable method of the parent
+// MockIDynamics instance is invoked.
+type IDynamicsParseNewAliceNetNodeVersionAvailableFunc struct {
+	defaultHook func(types.Log) (*bindings.DynamicsNewAliceNetNodeVersionAvailable, error)
+	hooks       []func(types.Log) (*bindings.DynamicsNewAliceNetNodeVersionAvailable, error)
+	history     []IDynamicsParseNewAliceNetNodeVersionAvailableFuncCall
+	mutex       sync.Mutex
+}
+
+// ParseNewAliceNetNodeVersionAvailable delegates to the next hook function
+// in the queue and stores the parameter and result values of this
+// invocation.
+func (m *MockIDynamics) ParseNewAliceNetNodeVersionAvailable(v0 types.Log) (*bindings.DynamicsNewAliceNetNodeVersionAvailable, error) {
+	r0, r1 := m.ParseNewAliceNetNodeVersionAvailableFunc.nextHook()(v0)
+	m.ParseNewAliceNetNodeVersionAvailableFunc.appendCall(IDynamicsParseNewAliceNetNodeVersionAvailableFuncCall{v0, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the
+// ParseNewAliceNetNodeVersionAvailable method of the parent MockIDynamics
+// instance is invoked and the hook queue is empty.
+func (f *IDynamicsParseNewAliceNetNodeVersionAvailableFunc) SetDefaultHook(hook func(types.Log) (*bindings.DynamicsNewAliceNetNodeVersionAvailable, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// ParseNewAliceNetNodeVersionAvailable method of the parent MockIDynamics
+// instance invokes the hook at the front of the queue and discards it.
+// After the queue is empty, the default hook function is invoked for any
+// future action.
+func (f *IDynamicsParseNewAliceNetNodeVersionAvailableFunc) PushHook(hook func(types.Log) (*bindings.DynamicsNewAliceNetNodeVersionAvailable, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *IDynamicsParseNewAliceNetNodeVersionAvailableFunc) SetDefaultReturn(r0 *bindings.DynamicsNewAliceNetNodeVersionAvailable, r1 error) {
+	f.SetDefaultHook(func(types.Log) (*bindings.DynamicsNewAliceNetNodeVersionAvailable, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *IDynamicsParseNewAliceNetNodeVersionAvailableFunc) PushReturn(r0 *bindings.DynamicsNewAliceNetNodeVersionAvailable, r1 error) {
+	f.PushHook(func(types.Log) (*bindings.DynamicsNewAliceNetNodeVersionAvailable, error) {
+		return r0, r1
+	})
+}
+
+func (f *IDynamicsParseNewAliceNetNodeVersionAvailableFunc) nextHook() func(types.Log) (*bindings.DynamicsNewAliceNetNodeVersionAvailable, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *IDynamicsParseNewAliceNetNodeVersionAvailableFunc) appendCall(r0 IDynamicsParseNewAliceNetNodeVersionAvailableFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of
+// IDynamicsParseNewAliceNetNodeVersionAvailableFuncCall objects describing
+// the invocations of this function.
+func (f *IDynamicsParseNewAliceNetNodeVersionAvailableFunc) History() []IDynamicsParseNewAliceNetNodeVersionAvailableFuncCall {
+	f.mutex.Lock()
+	history := make([]IDynamicsParseNewAliceNetNodeVersionAvailableFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// IDynamicsParseNewAliceNetNodeVersionAvailableFuncCall is an object that
+// describes an invocation of method ParseNewAliceNetNodeVersionAvailable on
+// an instance of MockIDynamics.
+type IDynamicsParseNewAliceNetNodeVersionAvailableFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 types.Log
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 *bindings.DynamicsNewAliceNetNodeVersionAvailable
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c IDynamicsParseNewAliceNetNodeVersionAvailableFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c IDynamicsParseNewAliceNetNodeVersionAvailableFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
+}
+
+// IDynamicsParseNewCanonicalAliceNetNodeVersionFunc describes the behavior
+// when the ParseNewCanonicalAliceNetNodeVersion method of the parent
+// MockIDynamics instance is invoked.
+type IDynamicsParseNewCanonicalAliceNetNodeVersionFunc struct {
+	defaultHook func(types.Log) (*bindings.DynamicsNewCanonicalAliceNetNodeVersion, error)
+	hooks       []func(types.Log) (*bindings.DynamicsNewCanonicalAliceNetNodeVersion, error)
+	history     []IDynamicsParseNewCanonicalAliceNetNodeVersionFuncCall
+	mutex       sync.Mutex
+}
+
+// ParseNewCanonicalAliceNetNodeVersion delegates to the next hook function
+// in the queue and stores the parameter and result values of this
+// invocation.
+func (m *MockIDynamics) ParseNewCanonicalAliceNetNodeVersion(v0 types.Log) (*bindings.DynamicsNewCanonicalAliceNetNodeVersion, error) {
+	r0, r1 := m.ParseNewCanonicalAliceNetNodeVersionFunc.nextHook()(v0)
+	m.ParseNewCanonicalAliceNetNodeVersionFunc.appendCall(IDynamicsParseNewCanonicalAliceNetNodeVersionFuncCall{v0, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the
+// ParseNewCanonicalAliceNetNodeVersion method of the parent MockIDynamics
+// instance is invoked and the hook queue is empty.
+func (f *IDynamicsParseNewCanonicalAliceNetNodeVersionFunc) SetDefaultHook(hook func(types.Log) (*bindings.DynamicsNewCanonicalAliceNetNodeVersion, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// ParseNewCanonicalAliceNetNodeVersion method of the parent MockIDynamics
+// instance invokes the hook at the front of the queue and discards it.
+// After the queue is empty, the default hook function is invoked for any
+// future action.
+func (f *IDynamicsParseNewCanonicalAliceNetNodeVersionFunc) PushHook(hook func(types.Log) (*bindings.DynamicsNewCanonicalAliceNetNodeVersion, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *IDynamicsParseNewCanonicalAliceNetNodeVersionFunc) SetDefaultReturn(r0 *bindings.DynamicsNewCanonicalAliceNetNodeVersion, r1 error) {
+	f.SetDefaultHook(func(types.Log) (*bindings.DynamicsNewCanonicalAliceNetNodeVersion, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *IDynamicsParseNewCanonicalAliceNetNodeVersionFunc) PushReturn(r0 *bindings.DynamicsNewCanonicalAliceNetNodeVersion, r1 error) {
+	f.PushHook(func(types.Log) (*bindings.DynamicsNewCanonicalAliceNetNodeVersion, error) {
+		return r0, r1
+	})
+}
+
+func (f *IDynamicsParseNewCanonicalAliceNetNodeVersionFunc) nextHook() func(types.Log) (*bindings.DynamicsNewCanonicalAliceNetNodeVersion, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *IDynamicsParseNewCanonicalAliceNetNodeVersionFunc) appendCall(r0 IDynamicsParseNewCanonicalAliceNetNodeVersionFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of
+// IDynamicsParseNewCanonicalAliceNetNodeVersionFuncCall objects describing
+// the invocations of this function.
+func (f *IDynamicsParseNewCanonicalAliceNetNodeVersionFunc) History() []IDynamicsParseNewCanonicalAliceNetNodeVersionFuncCall {
+	f.mutex.Lock()
+	history := make([]IDynamicsParseNewCanonicalAliceNetNodeVersionFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// IDynamicsParseNewCanonicalAliceNetNodeVersionFuncCall is an object that
+// describes an invocation of method ParseNewCanonicalAliceNetNodeVersion on
+// an instance of MockIDynamics.
+type IDynamicsParseNewCanonicalAliceNetNodeVersionFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 types.Log
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 *bindings.DynamicsNewCanonicalAliceNetNodeVersion
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c IDynamicsParseNewCanonicalAliceNetNodeVersionFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c IDynamicsParseNewCanonicalAliceNetNodeVersionFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
+}
+
+// IDynamicsSetConfigurationFunc describes the behavior when the
+// SetConfiguration method of the parent MockIDynamics instance is invoked.
+type IDynamicsSetConfigurationFunc struct {
+	defaultHook func(*bind.TransactOpts, bindings.Configuration) (*types.Transaction, error)
+	hooks       []func(*bind.TransactOpts, bindings.Configuration) (*types.Transaction, error)
+	history     []IDynamicsSetConfigurationFuncCall
+	mutex       sync.Mutex
+}
+
+// SetConfiguration delegates to the next hook function in the queue and
+// stores the parameter and result values of this invocation.
+func (m *MockIDynamics) SetConfiguration(v0 *bind.TransactOpts, v1 bindings.Configuration) (*types.Transaction, error) {
+	r0, r1 := m.SetConfigurationFunc.nextHook()(v0, v1)
+	m.SetConfigurationFunc.appendCall(IDynamicsSetConfigurationFuncCall{v0, v1, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the SetConfiguration
+// method of the parent MockIDynamics instance is invoked and the hook queue
+// is empty.
+func (f *IDynamicsSetConfigurationFunc) SetDefaultHook(hook func(*bind.TransactOpts, bindings.Configuration) (*types.Transaction, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// SetConfiguration method of the parent MockIDynamics instance invokes the
+// hook at the front of the queue and discards it. After the queue is empty,
+// the default hook function is invoked for any future action.
+func (f *IDynamicsSetConfigurationFunc) PushHook(hook func(*bind.TransactOpts, bindings.Configuration) (*types.Transaction, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *IDynamicsSetConfigurationFunc) SetDefaultReturn(r0 *types.Transaction, r1 error) {
+	f.SetDefaultHook(func(*bind.TransactOpts, bindings.Configuration) (*types.Transaction, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *IDynamicsSetConfigurationFunc) PushReturn(r0 *types.Transaction, r1 error) {
+	f.PushHook(func(*bind.TransactOpts, bindings.Configuration) (*types.Transaction, error) {
+		return r0, r1
+	})
+}
+
+func (f *IDynamicsSetConfigurationFunc) nextHook() func(*bind.TransactOpts, bindings.Configuration) (*types.Transaction, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *IDynamicsSetConfigurationFunc) appendCall(r0 IDynamicsSetConfigurationFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of IDynamicsSetConfigurationFuncCall objects
+// describing the invocations of this function.
+func (f *IDynamicsSetConfigurationFunc) History() []IDynamicsSetConfigurationFuncCall {
+	f.mutex.Lock()
+	history := make([]IDynamicsSetConfigurationFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// IDynamicsSetConfigurationFuncCall is an object that describes an
+// invocation of method SetConfiguration on an instance of MockIDynamics.
+type IDynamicsSetConfigurationFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 *bind.TransactOpts
+	// Arg1 is the value of the 2nd argument passed to this method
+	// invocation.
+	Arg1 bindings.Configuration
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 *types.Transaction
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c IDynamicsSetConfigurationFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0, c.Arg1}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c IDynamicsSetConfigurationFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
+}
+
+// IDynamicsUpdateAliceNetNodeVersionFunc describes the behavior when the
+// UpdateAliceNetNodeVersion method of the parent MockIDynamics instance is
+// invoked.
+type IDynamicsUpdateAliceNetNodeVersionFunc struct {
+	defaultHook func(*bind.TransactOpts, uint32, uint32, uint32, uint32, [32]byte) (*types.Transaction, error)
+	hooks       []func(*bind.TransactOpts, uint32, uint32, uint32, uint32, [32]byte) (*types.Transaction, error)
+	history     []IDynamicsUpdateAliceNetNodeVersionFuncCall
+	mutex       sync.Mutex
+}
+
+// UpdateAliceNetNodeVersion delegates to the next hook function in the
+// queue and stores the parameter and result values of this invocation.
+func (m *MockIDynamics) UpdateAliceNetNodeVersion(v0 *bind.TransactOpts, v1 uint32, v2 uint32, v3 uint32, v4 uint32, v5 [32]byte) (*types.Transaction, error) {
+	r0, r1 := m.UpdateAliceNetNodeVersionFunc.nextHook()(v0, v1, v2, v3, v4, v5)
+	m.UpdateAliceNetNodeVersionFunc.appendCall(IDynamicsUpdateAliceNetNodeVersionFuncCall{v0, v1, v2, v3, v4, v5, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the
+// UpdateAliceNetNodeVersion method of the parent MockIDynamics instance is
+// invoked and the hook queue is empty.
+func (f *IDynamicsUpdateAliceNetNodeVersionFunc) SetDefaultHook(hook func(*bind.TransactOpts, uint32, uint32, uint32, uint32, [32]byte) (*types.Transaction, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// UpdateAliceNetNodeVersion method of the parent MockIDynamics instance
+// invokes the hook at the front of the queue and discards it. After the
+// queue is empty, the default hook function is invoked for any future
+// action.
+func (f *IDynamicsUpdateAliceNetNodeVersionFunc) PushHook(hook func(*bind.TransactOpts, uint32, uint32, uint32, uint32, [32]byte) (*types.Transaction, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *IDynamicsUpdateAliceNetNodeVersionFunc) SetDefaultReturn(r0 *types.Transaction, r1 error) {
+	f.SetDefaultHook(func(*bind.TransactOpts, uint32, uint32, uint32, uint32, [32]byte) (*types.Transaction, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *IDynamicsUpdateAliceNetNodeVersionFunc) PushReturn(r0 *types.Transaction, r1 error) {
+	f.PushHook(func(*bind.TransactOpts, uint32, uint32, uint32, uint32, [32]byte) (*types.Transaction, error) {
+		return r0, r1
+	})
+}
+
+func (f *IDynamicsUpdateAliceNetNodeVersionFunc) nextHook() func(*bind.TransactOpts, uint32, uint32, uint32, uint32, [32]byte) (*types.Transaction, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *IDynamicsUpdateAliceNetNodeVersionFunc) appendCall(r0 IDynamicsUpdateAliceNetNodeVersionFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of IDynamicsUpdateAliceNetNodeVersionFuncCall
+// objects describing the invocations of this function.
+func (f *IDynamicsUpdateAliceNetNodeVersionFunc) History() []IDynamicsUpdateAliceNetNodeVersionFuncCall {
+	f.mutex.Lock()
+	history := make([]IDynamicsUpdateAliceNetNodeVersionFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// IDynamicsUpdateAliceNetNodeVersionFuncCall is an object that describes an
+// invocation of method UpdateAliceNetNodeVersion on an instance of
+// MockIDynamics.
+type IDynamicsUpdateAliceNetNodeVersionFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 *bind.TransactOpts
+	// Arg1 is the value of the 2nd argument passed to this method
+	// invocation.
+	Arg1 uint32
+	// Arg2 is the value of the 3rd argument passed to this method
+	// invocation.
+	Arg2 uint32
+	// Arg3 is the value of the 4th argument passed to this method
+	// invocation.
+	Arg3 uint32
+	// Arg4 is the value of the 5th argument passed to this method
+	// invocation.
+	Arg4 uint32
+	// Arg5 is the value of the 6th argument passed to this method
+	// invocation.
+	Arg5 [32]byte
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 *types.Transaction
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c IDynamicsUpdateAliceNetNodeVersionFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0, c.Arg1, c.Arg2, c.Arg3, c.Arg4, c.Arg5}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c IDynamicsUpdateAliceNetNodeVersionFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
+}
+
+// IDynamicsUpdateHeadFunc describes the behavior when the UpdateHead method
+// of the parent MockIDynamics instance is invoked.
+type IDynamicsUpdateHeadFunc struct {
+	defaultHook func(*bind.TransactOpts, uint32) (*types.Transaction, error)
+	hooks       []func(*bind.TransactOpts, uint32) (*types.Transaction, error)
+	history     []IDynamicsUpdateHeadFuncCall
+	mutex       sync.Mutex
+}
+
+// UpdateHead delegates to the next hook function in the queue and stores
+// the parameter and result values of this invocation.
+func (m *MockIDynamics) UpdateHead(v0 *bind.TransactOpts, v1 uint32) (*types.Transaction, error) {
+	r0, r1 := m.UpdateHeadFunc.nextHook()(v0, v1)
+	m.UpdateHeadFunc.appendCall(IDynamicsUpdateHeadFuncCall{v0, v1, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the UpdateHead method of
+// the parent MockIDynamics instance is invoked and the hook queue is empty.
+func (f *IDynamicsUpdateHeadFunc) SetDefaultHook(hook func(*bind.TransactOpts, uint32) (*types.Transaction, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// UpdateHead method of the parent MockIDynamics instance invokes the hook
+// at the front of the queue and discards it. After the queue is empty, the
+// default hook function is invoked for any future action.
+func (f *IDynamicsUpdateHeadFunc) PushHook(hook func(*bind.TransactOpts, uint32) (*types.Transaction, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *IDynamicsUpdateHeadFunc) SetDefaultReturn(r0 *types.Transaction, r1 error) {
+	f.SetDefaultHook(func(*bind.TransactOpts, uint32) (*types.Transaction, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *IDynamicsUpdateHeadFunc) PushReturn(r0 *types.Transaction, r1 error) {
+	f.PushHook(func(*bind.TransactOpts, uint32) (*types.Transaction, error) {
+		return r0, r1
+	})
+}
+
+func (f *IDynamicsUpdateHeadFunc) nextHook() func(*bind.TransactOpts, uint32) (*types.Transaction, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *IDynamicsUpdateHeadFunc) appendCall(r0 IDynamicsUpdateHeadFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of IDynamicsUpdateHeadFuncCall objects
+// describing the invocations of this function.
+func (f *IDynamicsUpdateHeadFunc) History() []IDynamicsUpdateHeadFuncCall {
+	f.mutex.Lock()
+	history := make([]IDynamicsUpdateHeadFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// IDynamicsUpdateHeadFuncCall is an object that describes an invocation of
+// method UpdateHead on an instance of MockIDynamics.
+type IDynamicsUpdateHeadFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 *bind.TransactOpts
+	// Arg1 is the value of the 2nd argument passed to this method
+	// invocation.
+	Arg1 uint32
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 *types.Transaction
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c IDynamicsUpdateHeadFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0, c.Arg1}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c IDynamicsUpdateHeadFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
+}
+
+// IDynamicsWatchDeployedStorageContractFunc describes the behavior when the
+// WatchDeployedStorageContract method of the parent MockIDynamics instance
+// is invoked.
+type IDynamicsWatchDeployedStorageContractFunc struct {
+	defaultHook func(*bind.WatchOpts, chan<- *bindings.DynamicsDeployedStorageContract) (event.Subscription, error)
+	hooks       []func(*bind.WatchOpts, chan<- *bindings.DynamicsDeployedStorageContract) (event.Subscription, error)
+	history     []IDynamicsWatchDeployedStorageContractFuncCall
+	mutex       sync.Mutex
+}
+
+// WatchDeployedStorageContract delegates to the next hook function in the
+// queue and stores the parameter and result values of this invocation.
+func (m *MockIDynamics) WatchDeployedStorageContract(v0 *bind.WatchOpts, v1 chan<- *bindings.DynamicsDeployedStorageContract) (event.Subscription, error) {
+	r0, r1 := m.WatchDeployedStorageContractFunc.nextHook()(v0, v1)
+	m.WatchDeployedStorageContractFunc.appendCall(IDynamicsWatchDeployedStorageContractFuncCall{v0, v1, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the
+// WatchDeployedStorageContract method of the parent MockIDynamics instance
+// is invoked and the hook queue is empty.
+func (f *IDynamicsWatchDeployedStorageContractFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *bindings.DynamicsDeployedStorageContract) (event.Subscription, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// WatchDeployedStorageContract method of the parent MockIDynamics instance
+// invokes the hook at the front of the queue and discards it. After the
+// queue is empty, the default hook function is invoked for any future
+// action.
+func (f *IDynamicsWatchDeployedStorageContractFunc) PushHook(hook func(*bind.WatchOpts, chan<- *bindings.DynamicsDeployedStorageContract) (event.Subscription, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *IDynamicsWatchDeployedStorageContractFunc) SetDefaultReturn(r0 event.Subscription, r1 error) {
+	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *bindings.DynamicsDeployedStorageContract) (event.Subscription, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *IDynamicsWatchDeployedStorageContractFunc) PushReturn(r0 event.Subscription, r1 error) {
+	f.PushHook(func(*bind.WatchOpts, chan<- *bindings.DynamicsDeployedStorageContract) (event.Subscription, error) {
+		return r0, r1
+	})
+}
+
+func (f *IDynamicsWatchDeployedStorageContractFunc) nextHook() func(*bind.WatchOpts, chan<- *bindings.DynamicsDeployedStorageContract) (event.Subscription, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *IDynamicsWatchDeployedStorageContractFunc) appendCall(r0 IDynamicsWatchDeployedStorageContractFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of
+// IDynamicsWatchDeployedStorageContractFuncCall objects describing the
+// invocations of this function.
+func (f *IDynamicsWatchDeployedStorageContractFunc) History() []IDynamicsWatchDeployedStorageContractFuncCall {
+	f.mutex.Lock()
+	history := make([]IDynamicsWatchDeployedStorageContractFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// IDynamicsWatchDeployedStorageContractFuncCall is an object that describes
+// an invocation of method WatchDeployedStorageContract on an instance of
+// MockIDynamics.
+type IDynamicsWatchDeployedStorageContractFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 *bind.WatchOpts
+	// Arg1 is the value of the 2nd argument passed to this method
+	// invocation.
+	Arg1 chan<- *bindings.DynamicsDeployedStorageContract
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 event.Subscription
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c IDynamicsWatchDeployedStorageContractFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0, c.Arg1}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c IDynamicsWatchDeployedStorageContractFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
+}
+
+// IDynamicsWatchDynamicValueChangedFunc describes the behavior when the
+// WatchDynamicValueChanged method of the parent MockIDynamics instance is
+// invoked.
+type IDynamicsWatchDynamicValueChangedFunc struct {
+	defaultHook func(*bind.WatchOpts, chan<- *bindings.DynamicsDynamicValueChanged) (event.Subscription, error)
+	hooks       []func(*bind.WatchOpts, chan<- *bindings.DynamicsDynamicValueChanged) (event.Subscription, error)
+	history     []IDynamicsWatchDynamicValueChangedFuncCall
+	mutex       sync.Mutex
+}
+
+// WatchDynamicValueChanged delegates to the next hook function in the queue
+// and stores the parameter and result values of this invocation.
+func (m *MockIDynamics) WatchDynamicValueChanged(v0 *bind.WatchOpts, v1 chan<- *bindings.DynamicsDynamicValueChanged) (event.Subscription, error) {
+	r0, r1 := m.WatchDynamicValueChangedFunc.nextHook()(v0, v1)
+	m.WatchDynamicValueChangedFunc.appendCall(IDynamicsWatchDynamicValueChangedFuncCall{v0, v1, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the
+// WatchDynamicValueChanged method of the parent MockIDynamics instance is
+// invoked and the hook queue is empty.
+func (f *IDynamicsWatchDynamicValueChangedFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *bindings.DynamicsDynamicValueChanged) (event.Subscription, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// WatchDynamicValueChanged method of the parent MockIDynamics instance
+// invokes the hook at the front of the queue and discards it. After the
+// queue is empty, the default hook function is invoked for any future
+// action.
+func (f *IDynamicsWatchDynamicValueChangedFunc) PushHook(hook func(*bind.WatchOpts, chan<- *bindings.DynamicsDynamicValueChanged) (event.Subscription, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *IDynamicsWatchDynamicValueChangedFunc) SetDefaultReturn(r0 event.Subscription, r1 error) {
+	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *bindings.DynamicsDynamicValueChanged) (event.Subscription, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *IDynamicsWatchDynamicValueChangedFunc) PushReturn(r0 event.Subscription, r1 error) {
+	f.PushHook(func(*bind.WatchOpts, chan<- *bindings.DynamicsDynamicValueChanged) (event.Subscription, error) {
+		return r0, r1
+	})
+}
+
+func (f *IDynamicsWatchDynamicValueChangedFunc) nextHook() func(*bind.WatchOpts, chan<- *bindings.DynamicsDynamicValueChanged) (event.Subscription, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *IDynamicsWatchDynamicValueChangedFunc) appendCall(r0 IDynamicsWatchDynamicValueChangedFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of IDynamicsWatchDynamicValueChangedFuncCall
+// objects describing the invocations of this function.
+func (f *IDynamicsWatchDynamicValueChangedFunc) History() []IDynamicsWatchDynamicValueChangedFuncCall {
+	f.mutex.Lock()
+	history := make([]IDynamicsWatchDynamicValueChangedFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// IDynamicsWatchDynamicValueChangedFuncCall is an object that describes an
+// invocation of method WatchDynamicValueChanged on an instance of
+// MockIDynamics.
+type IDynamicsWatchDynamicValueChangedFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 *bind.WatchOpts
+	// Arg1 is the value of the 2nd argument passed to this method
+	// invocation.
+	Arg1 chan<- *bindings.DynamicsDynamicValueChanged
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 event.Subscription
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c IDynamicsWatchDynamicValueChangedFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0, c.Arg1}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c IDynamicsWatchDynamicValueChangedFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
+}
+
+// IDynamicsWatchInitializedFunc describes the behavior when the
+// WatchInitialized method of the parent MockIDynamics instance is invoked.
+type IDynamicsWatchInitializedFunc struct {
+	defaultHook func(*bind.WatchOpts, chan<- *bindings.DynamicsInitialized) (event.Subscription, error)
+	hooks       []func(*bind.WatchOpts, chan<- *bindings.DynamicsInitialized) (event.Subscription, error)
+	history     []IDynamicsWatchInitializedFuncCall
+	mutex       sync.Mutex
+}
+
+// WatchInitialized delegates to the next hook function in the queue and
+// stores the parameter and result values of this invocation.
+func (m *MockIDynamics) WatchInitialized(v0 *bind.WatchOpts, v1 chan<- *bindings.DynamicsInitialized) (event.Subscription, error) {
+	r0, r1 := m.WatchInitializedFunc.nextHook()(v0, v1)
+	m.WatchInitializedFunc.appendCall(IDynamicsWatchInitializedFuncCall{v0, v1, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the WatchInitialized
+// method of the parent MockIDynamics instance is invoked and the hook queue
+// is empty.
+func (f *IDynamicsWatchInitializedFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *bindings.DynamicsInitialized) (event.Subscription, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// WatchInitialized method of the parent MockIDynamics instance invokes the
+// hook at the front of the queue and discards it. After the queue is empty,
+// the default hook function is invoked for any future action.
+func (f *IDynamicsWatchInitializedFunc) PushHook(hook func(*bind.WatchOpts, chan<- *bindings.DynamicsInitialized) (event.Subscription, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *IDynamicsWatchInitializedFunc) SetDefaultReturn(r0 event.Subscription, r1 error) {
+	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *bindings.DynamicsInitialized) (event.Subscription, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *IDynamicsWatchInitializedFunc) PushReturn(r0 event.Subscription, r1 error) {
+	f.PushHook(func(*bind.WatchOpts, chan<- *bindings.DynamicsInitialized) (event.Subscription, error) {
+		return r0, r1
+	})
+}
+
+func (f *IDynamicsWatchInitializedFunc) nextHook() func(*bind.WatchOpts, chan<- *bindings.DynamicsInitialized) (event.Subscription, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *IDynamicsWatchInitializedFunc) appendCall(r0 IDynamicsWatchInitializedFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of IDynamicsWatchInitializedFuncCall objects
+// describing the invocations of this function.
+func (f *IDynamicsWatchInitializedFunc) History() []IDynamicsWatchInitializedFuncCall {
+	f.mutex.Lock()
+	history := make([]IDynamicsWatchInitializedFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// IDynamicsWatchInitializedFuncCall is an object that describes an
+// invocation of method WatchInitialized on an instance of MockIDynamics.
+type IDynamicsWatchInitializedFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 *bind.WatchOpts
+	// Arg1 is the value of the 2nd argument passed to this method
+	// invocation.
+	Arg1 chan<- *bindings.DynamicsInitialized
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 event.Subscription
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c IDynamicsWatchInitializedFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0, c.Arg1}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c IDynamicsWatchInitializedFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
+}
+
+// IDynamicsWatchNewAliceNetNodeVersionAvailableFunc describes the behavior
+// when the WatchNewAliceNetNodeVersionAvailable method of the parent
+// MockIDynamics instance is invoked.
+type IDynamicsWatchNewAliceNetNodeVersionAvailableFunc struct {
+	defaultHook func(*bind.WatchOpts, chan<- *bindings.DynamicsNewAliceNetNodeVersionAvailable) (event.Subscription, error)
+	hooks       []func(*bind.WatchOpts, chan<- *bindings.DynamicsNewAliceNetNodeVersionAvailable) (event.Subscription, error)
+	history     []IDynamicsWatchNewAliceNetNodeVersionAvailableFuncCall
+	mutex       sync.Mutex
+}
+
+// WatchNewAliceNetNodeVersionAvailable delegates to the next hook function
+// in the queue and stores the parameter and result values of this
+// invocation.
+func (m *MockIDynamics) WatchNewAliceNetNodeVersionAvailable(v0 *bind.WatchOpts, v1 chan<- *bindings.DynamicsNewAliceNetNodeVersionAvailable) (event.Subscription, error) {
+	r0, r1 := m.WatchNewAliceNetNodeVersionAvailableFunc.nextHook()(v0, v1)
+	m.WatchNewAliceNetNodeVersionAvailableFunc.appendCall(IDynamicsWatchNewAliceNetNodeVersionAvailableFuncCall{v0, v1, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the
+// WatchNewAliceNetNodeVersionAvailable method of the parent MockIDynamics
+// instance is invoked and the hook queue is empty.
+func (f *IDynamicsWatchNewAliceNetNodeVersionAvailableFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *bindings.DynamicsNewAliceNetNodeVersionAvailable) (event.Subscription, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// WatchNewAliceNetNodeVersionAvailable method of the parent MockIDynamics
+// instance invokes the hook at the front of the queue and discards it.
+// After the queue is empty, the default hook function is invoked for any
+// future action.
+func (f *IDynamicsWatchNewAliceNetNodeVersionAvailableFunc) PushHook(hook func(*bind.WatchOpts, chan<- *bindings.DynamicsNewAliceNetNodeVersionAvailable) (event.Subscription, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *IDynamicsWatchNewAliceNetNodeVersionAvailableFunc) SetDefaultReturn(r0 event.Subscription, r1 error) {
+	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *bindings.DynamicsNewAliceNetNodeVersionAvailable) (event.Subscription, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *IDynamicsWatchNewAliceNetNodeVersionAvailableFunc) PushReturn(r0 event.Subscription, r1 error) {
+	f.PushHook(func(*bind.WatchOpts, chan<- *bindings.DynamicsNewAliceNetNodeVersionAvailable) (event.Subscription, error) {
+		return r0, r1
+	})
+}
+
+func (f *IDynamicsWatchNewAliceNetNodeVersionAvailableFunc) nextHook() func(*bind.WatchOpts, chan<- *bindings.DynamicsNewAliceNetNodeVersionAvailable) (event.Subscription, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *IDynamicsWatchNewAliceNetNodeVersionAvailableFunc) appendCall(r0 IDynamicsWatchNewAliceNetNodeVersionAvailableFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of
+// IDynamicsWatchNewAliceNetNodeVersionAvailableFuncCall objects describing
+// the invocations of this function.
+func (f *IDynamicsWatchNewAliceNetNodeVersionAvailableFunc) History() []IDynamicsWatchNewAliceNetNodeVersionAvailableFuncCall {
+	f.mutex.Lock()
+	history := make([]IDynamicsWatchNewAliceNetNodeVersionAvailableFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// IDynamicsWatchNewAliceNetNodeVersionAvailableFuncCall is an object that
+// describes an invocation of method WatchNewAliceNetNodeVersionAvailable on
+// an instance of MockIDynamics.
+type IDynamicsWatchNewAliceNetNodeVersionAvailableFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 *bind.WatchOpts
+	// Arg1 is the value of the 2nd argument passed to this method
+	// invocation.
+	Arg1 chan<- *bindings.DynamicsNewAliceNetNodeVersionAvailable
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 event.Subscription
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c IDynamicsWatchNewAliceNetNodeVersionAvailableFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0, c.Arg1}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c IDynamicsWatchNewAliceNetNodeVersionAvailableFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
+}
+
+// IDynamicsWatchNewCanonicalAliceNetNodeVersionFunc describes the behavior
+// when the WatchNewCanonicalAliceNetNodeVersion method of the parent
+// MockIDynamics instance is invoked.
+type IDynamicsWatchNewCanonicalAliceNetNodeVersionFunc struct {
+	defaultHook func(*bind.WatchOpts, chan<- *bindings.DynamicsNewCanonicalAliceNetNodeVersion) (event.Subscription, error)
+	hooks       []func(*bind.WatchOpts, chan<- *bindings.DynamicsNewCanonicalAliceNetNodeVersion) (event.Subscription, error)
+	history     []IDynamicsWatchNewCanonicalAliceNetNodeVersionFuncCall
+	mutex       sync.Mutex
+}
+
+// WatchNewCanonicalAliceNetNodeVersion delegates to the next hook function
+// in the queue and stores the parameter and result values of this
+// invocation.
+func (m *MockIDynamics) WatchNewCanonicalAliceNetNodeVersion(v0 *bind.WatchOpts, v1 chan<- *bindings.DynamicsNewCanonicalAliceNetNodeVersion) (event.Subscription, error) {
+	r0, r1 := m.WatchNewCanonicalAliceNetNodeVersionFunc.nextHook()(v0, v1)
+	m.WatchNewCanonicalAliceNetNodeVersionFunc.appendCall(IDynamicsWatchNewCanonicalAliceNetNodeVersionFuncCall{v0, v1, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the
+// WatchNewCanonicalAliceNetNodeVersion method of the parent MockIDynamics
+// instance is invoked and the hook queue is empty.
+func (f *IDynamicsWatchNewCanonicalAliceNetNodeVersionFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *bindings.DynamicsNewCanonicalAliceNetNodeVersion) (event.Subscription, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// WatchNewCanonicalAliceNetNodeVersion method of the parent MockIDynamics
+// instance invokes the hook at the front of the queue and discards it.
+// After the queue is empty, the default hook function is invoked for any
+// future action.
+func (f *IDynamicsWatchNewCanonicalAliceNetNodeVersionFunc) PushHook(hook func(*bind.WatchOpts, chan<- *bindings.DynamicsNewCanonicalAliceNetNodeVersion) (event.Subscription, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *IDynamicsWatchNewCanonicalAliceNetNodeVersionFunc) SetDefaultReturn(r0 event.Subscription, r1 error) {
+	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *bindings.DynamicsNewCanonicalAliceNetNodeVersion) (event.Subscription, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *IDynamicsWatchNewCanonicalAliceNetNodeVersionFunc) PushReturn(r0 event.Subscription, r1 error) {
+	f.PushHook(func(*bind.WatchOpts, chan<- *bindings.DynamicsNewCanonicalAliceNetNodeVersion) (event.Subscription, error) {
+		return r0, r1
+	})
+}
+
+func (f *IDynamicsWatchNewCanonicalAliceNetNodeVersionFunc) nextHook() func(*bind.WatchOpts, chan<- *bindings.DynamicsNewCanonicalAliceNetNodeVersion) (event.Subscription, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *IDynamicsWatchNewCanonicalAliceNetNodeVersionFunc) appendCall(r0 IDynamicsWatchNewCanonicalAliceNetNodeVersionFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of
+// IDynamicsWatchNewCanonicalAliceNetNodeVersionFuncCall objects describing
+// the invocations of this function.
+func (f *IDynamicsWatchNewCanonicalAliceNetNodeVersionFunc) History() []IDynamicsWatchNewCanonicalAliceNetNodeVersionFuncCall {
+	f.mutex.Lock()
+	history := make([]IDynamicsWatchNewCanonicalAliceNetNodeVersionFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// IDynamicsWatchNewCanonicalAliceNetNodeVersionFuncCall is an object that
+// describes an invocation of method WatchNewCanonicalAliceNetNodeVersion on
+// an instance of MockIDynamics.
+type IDynamicsWatchNewCanonicalAliceNetNodeVersionFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 *bind.WatchOpts
+	// Arg1 is the value of the 2nd argument passed to this method
+	// invocation.
+	Arg1 chan<- *bindings.DynamicsNewCanonicalAliceNetNodeVersion
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 event.Subscription
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c IDynamicsWatchNewCanonicalAliceNetNodeVersionFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0, c.Arg1}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c IDynamicsWatchNewCanonicalAliceNetNodeVersionFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
+}
+
 // MockIETHDKG is a mock implementation of the IETHDKG interface (from the
 // package github.com/alicenet/alicenet/bridge/bindings) used for unit
 // testing.

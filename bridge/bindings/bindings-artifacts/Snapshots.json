@@ -305,6 +305,22 @@
         "type": "address"
       }
     ],
+    "name": "OnlyDynamics",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "sender",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "expected",
+        "type": "address"
+      }
+    ],
     "name": "OnlyETHDKG",
     "type": "error"
   },

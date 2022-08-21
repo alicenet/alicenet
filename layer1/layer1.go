@@ -71,6 +71,8 @@ type EthereumContracts interface {
 	ValidatorPoolAddress() common.Address
 	Governance() bindings.IGovernance
 	GovernanceAddress() common.Address
+	Dynamics() bindings.IDynamics
+	DynamicsAddress() common.Address
 }
 
 type AllSmartContracts interface {

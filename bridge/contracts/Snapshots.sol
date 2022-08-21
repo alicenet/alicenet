@@ -4,6 +4,7 @@ pragma solidity ^0.8.11;
 import "contracts/interfaces/ISnapshots.sol";
 import "contracts/interfaces/IValidatorPool.sol";
 import "contracts/interfaces/IETHDKG.sol";
+import "contracts/interfaces/IDynamics.sol";
 import "contracts/libraries/parsers/RCertParserLibrary.sol";
 import "contracts/libraries/parsers/BClaimsParserLibrary.sol";
 import "contracts/libraries/math/CryptoLibrary.sol";
@@ -98,6 +99,11 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
             signature,
             blockClaims
         );
+
+        // check and update the latest dynamics values in case the scheduled changes
+        // start to become valid on this epoch
+        IDynamics(_dynamicsAddress()).updateHead(epoch);
+
         return isSafeToProceedConsensus;
     }
 

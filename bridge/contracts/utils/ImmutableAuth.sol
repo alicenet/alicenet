@@ -159,6 +159,33 @@ abstract contract ImmutableDistribution is ImmutableFactory {
     }
 }
 
+abstract contract ImmutableDynamics is ImmutableFactory {
+    address private immutable _dynamics;
+    error OnlyDynamics(address sender, address expected);
+
+    modifier onlyDynamics() {
+        if (msg.sender != _dynamics) {
+            revert OnlyDynamics(msg.sender, _dynamics);
+        }
+        _;
+    }
+
+    constructor() {
+        _dynamics = getMetamorphicContractAddress(
+            0x44796e616d696373000000000000000000000000000000000000000000000000,
+            _factoryAddress()
+        );
+    }
+
+    function _dynamicsAddress() internal view returns (address) {
+        return _dynamics;
+    }
+
+    function _saltForDynamics() internal pure returns (bytes32) {
+        return 0x44796e616d696373000000000000000000000000000000000000000000000000;
+    }
+}
+
 abstract contract ImmutableFoundation is ImmutableFactory {
     address private immutable _foundation;
     error OnlyFoundation(address sender, address expected);
