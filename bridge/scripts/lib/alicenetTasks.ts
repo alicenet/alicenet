@@ -1295,15 +1295,6 @@ export async function stakeValidators(
   const publicStakingBase = await hre.ethers.getContractFactory(
     "PublicStaking"
   );
-  let setSplits = btokenBase.interface.encodeFunctionData(
-    "setSplits",
-    [0, 0, 0, 1000]
-  );
-  setSplits = factoryBase.interface.encodeFunctionData("callAny", [
-    bTokenAddress,
-    0,
-    setSplits,
-  ]);
   let setStakeAmt = validatorPoolBase.interface.encodeFunctionData(
     "setStakeAmount",
     [1]
@@ -1346,7 +1337,7 @@ export async function stakeValidators(
     );
   }
   return factory.multiCall(
-    [setSplits, setStakeAmt, mintToken, approveAToken, ...stakeNFT],
+    [setStakeAmt, mintToken, approveAToken, ...stakeNFT],
     { gasLimit: 30000000 }
   );
 }
