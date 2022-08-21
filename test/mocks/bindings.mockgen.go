@@ -26604,15 +26604,24 @@ func (c IETHDKGWatchValidatorSetCompletedFuncCall) Results() []interface{} {
 // (from the package github.com/alicenet/alicenet/bridge/bindings) used for
 // unit testing.
 type MockIGovernance struct {
+	// FilterSnapshotTakenFunc is an instance of a mock function object
+	// controlling the behavior of the method FilterSnapshotTaken.
+	FilterSnapshotTakenFunc *IGovernanceFilterSnapshotTakenFunc
 	// FilterValueUpdatedFunc is an instance of a mock function object
 	// controlling the behavior of the method FilterValueUpdated.
 	FilterValueUpdatedFunc *IGovernanceFilterValueUpdatedFunc
+	// ParseSnapshotTakenFunc is an instance of a mock function object
+	// controlling the behavior of the method ParseSnapshotTaken.
+	ParseSnapshotTakenFunc *IGovernanceParseSnapshotTakenFunc
 	// ParseValueUpdatedFunc is an instance of a mock function object
 	// controlling the behavior of the method ParseValueUpdated.
 	ParseValueUpdatedFunc *IGovernanceParseValueUpdatedFunc
 	// UpdateValueFunc is an instance of a mock function object controlling
 	// the behavior of the method UpdateValue.
 	UpdateValueFunc *IGovernanceUpdateValueFunc
+	// WatchSnapshotTakenFunc is an instance of a mock function object
+	// controlling the behavior of the method WatchSnapshotTaken.
+	WatchSnapshotTakenFunc *IGovernanceWatchSnapshotTakenFunc
 	// WatchValueUpdatedFunc is an instance of a mock function object
 	// controlling the behavior of the method WatchValueUpdated.
 	WatchValueUpdatedFunc *IGovernanceWatchValueUpdatedFunc
@@ -26622,8 +26631,18 @@ type MockIGovernance struct {
 // methods return zero values for all results, unless overwritten.
 func NewMockIGovernance() *MockIGovernance {
 	return &MockIGovernance{
+		FilterSnapshotTakenFunc: &IGovernanceFilterSnapshotTakenFunc{
+			defaultHook: func(*bind.FilterOpts, []*big.Int, []common.Address) (r0 *bindings.GovernanceSnapshotTakenIterator, r1 error) {
+				return
+			},
+		},
 		FilterValueUpdatedFunc: &IGovernanceFilterValueUpdatedFunc{
 			defaultHook: func(*bind.FilterOpts, []*big.Int, []*big.Int, [][32]byte) (r0 *bindings.GovernanceValueUpdatedIterator, r1 error) {
+				return
+			},
+		},
+		ParseSnapshotTakenFunc: &IGovernanceParseSnapshotTakenFunc{
+			defaultHook: func(types.Log) (r0 *bindings.GovernanceSnapshotTaken, r1 error) {
 				return
 			},
 		},
@@ -26634,6 +26653,11 @@ func NewMockIGovernance() *MockIGovernance {
 		},
 		UpdateValueFunc: &IGovernanceUpdateValueFunc{
 			defaultHook: func(*bind.TransactOpts, *big.Int, *big.Int, [32]byte) (r0 *types.Transaction, r1 error) {
+				return
+			},
+		},
+		WatchSnapshotTakenFunc: &IGovernanceWatchSnapshotTakenFunc{
+			defaultHook: func(*bind.WatchOpts, chan<- *bindings.GovernanceSnapshotTaken, []*big.Int, []common.Address) (r0 event.Subscription, r1 error) {
 				return
 			},
 		},
@@ -26649,9 +26673,19 @@ func NewMockIGovernance() *MockIGovernance {
 // All methods panic on invocation, unless overwritten.
 func NewStrictMockIGovernance() *MockIGovernance {
 	return &MockIGovernance{
+		FilterSnapshotTakenFunc: &IGovernanceFilterSnapshotTakenFunc{
+			defaultHook: func(*bind.FilterOpts, []*big.Int, []common.Address) (*bindings.GovernanceSnapshotTakenIterator, error) {
+				panic("unexpected invocation of MockIGovernance.FilterSnapshotTaken")
+			},
+		},
 		FilterValueUpdatedFunc: &IGovernanceFilterValueUpdatedFunc{
 			defaultHook: func(*bind.FilterOpts, []*big.Int, []*big.Int, [][32]byte) (*bindings.GovernanceValueUpdatedIterator, error) {
 				panic("unexpected invocation of MockIGovernance.FilterValueUpdated")
+			},
+		},
+		ParseSnapshotTakenFunc: &IGovernanceParseSnapshotTakenFunc{
+			defaultHook: func(types.Log) (*bindings.GovernanceSnapshotTaken, error) {
+				panic("unexpected invocation of MockIGovernance.ParseSnapshotTaken")
 			},
 		},
 		ParseValueUpdatedFunc: &IGovernanceParseValueUpdatedFunc{
@@ -26662,6 +26696,11 @@ func NewStrictMockIGovernance() *MockIGovernance {
 		UpdateValueFunc: &IGovernanceUpdateValueFunc{
 			defaultHook: func(*bind.TransactOpts, *big.Int, *big.Int, [32]byte) (*types.Transaction, error) {
 				panic("unexpected invocation of MockIGovernance.UpdateValue")
+			},
+		},
+		WatchSnapshotTakenFunc: &IGovernanceWatchSnapshotTakenFunc{
+			defaultHook: func(*bind.WatchOpts, chan<- *bindings.GovernanceSnapshotTaken, []*big.Int, []common.Address) (event.Subscription, error) {
+				panic("unexpected invocation of MockIGovernance.WatchSnapshotTaken")
 			},
 		},
 		WatchValueUpdatedFunc: &IGovernanceWatchValueUpdatedFunc{
@@ -26677,8 +26716,14 @@ func NewStrictMockIGovernance() *MockIGovernance {
 // overwritten.
 func NewMockIGovernanceFrom(i bindings.IGovernance) *MockIGovernance {
 	return &MockIGovernance{
+		FilterSnapshotTakenFunc: &IGovernanceFilterSnapshotTakenFunc{
+			defaultHook: i.FilterSnapshotTaken,
+		},
 		FilterValueUpdatedFunc: &IGovernanceFilterValueUpdatedFunc{
 			defaultHook: i.FilterValueUpdated,
+		},
+		ParseSnapshotTakenFunc: &IGovernanceParseSnapshotTakenFunc{
+			defaultHook: i.ParseSnapshotTaken,
 		},
 		ParseValueUpdatedFunc: &IGovernanceParseValueUpdatedFunc{
 			defaultHook: i.ParseValueUpdated,
@@ -26686,10 +26731,126 @@ func NewMockIGovernanceFrom(i bindings.IGovernance) *MockIGovernance {
 		UpdateValueFunc: &IGovernanceUpdateValueFunc{
 			defaultHook: i.UpdateValue,
 		},
+		WatchSnapshotTakenFunc: &IGovernanceWatchSnapshotTakenFunc{
+			defaultHook: i.WatchSnapshotTaken,
+		},
 		WatchValueUpdatedFunc: &IGovernanceWatchValueUpdatedFunc{
 			defaultHook: i.WatchValueUpdated,
 		},
 	}
+}
+
+// IGovernanceFilterSnapshotTakenFunc describes the behavior when the
+// FilterSnapshotTaken method of the parent MockIGovernance instance is
+// invoked.
+type IGovernanceFilterSnapshotTakenFunc struct {
+	defaultHook func(*bind.FilterOpts, []*big.Int, []common.Address) (*bindings.GovernanceSnapshotTakenIterator, error)
+	hooks       []func(*bind.FilterOpts, []*big.Int, []common.Address) (*bindings.GovernanceSnapshotTakenIterator, error)
+	history     []IGovernanceFilterSnapshotTakenFuncCall
+	mutex       sync.Mutex
+}
+
+// FilterSnapshotTaken delegates to the next hook function in the queue and
+// stores the parameter and result values of this invocation.
+func (m *MockIGovernance) FilterSnapshotTaken(v0 *bind.FilterOpts, v1 []*big.Int, v2 []common.Address) (*bindings.GovernanceSnapshotTakenIterator, error) {
+	r0, r1 := m.FilterSnapshotTakenFunc.nextHook()(v0, v1, v2)
+	m.FilterSnapshotTakenFunc.appendCall(IGovernanceFilterSnapshotTakenFuncCall{v0, v1, v2, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the FilterSnapshotTaken
+// method of the parent MockIGovernance instance is invoked and the hook
+// queue is empty.
+func (f *IGovernanceFilterSnapshotTakenFunc) SetDefaultHook(hook func(*bind.FilterOpts, []*big.Int, []common.Address) (*bindings.GovernanceSnapshotTakenIterator, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// FilterSnapshotTaken method of the parent MockIGovernance instance invokes
+// the hook at the front of the queue and discards it. After the queue is
+// empty, the default hook function is invoked for any future action.
+func (f *IGovernanceFilterSnapshotTakenFunc) PushHook(hook func(*bind.FilterOpts, []*big.Int, []common.Address) (*bindings.GovernanceSnapshotTakenIterator, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *IGovernanceFilterSnapshotTakenFunc) SetDefaultReturn(r0 *bindings.GovernanceSnapshotTakenIterator, r1 error) {
+	f.SetDefaultHook(func(*bind.FilterOpts, []*big.Int, []common.Address) (*bindings.GovernanceSnapshotTakenIterator, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *IGovernanceFilterSnapshotTakenFunc) PushReturn(r0 *bindings.GovernanceSnapshotTakenIterator, r1 error) {
+	f.PushHook(func(*bind.FilterOpts, []*big.Int, []common.Address) (*bindings.GovernanceSnapshotTakenIterator, error) {
+		return r0, r1
+	})
+}
+
+func (f *IGovernanceFilterSnapshotTakenFunc) nextHook() func(*bind.FilterOpts, []*big.Int, []common.Address) (*bindings.GovernanceSnapshotTakenIterator, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *IGovernanceFilterSnapshotTakenFunc) appendCall(r0 IGovernanceFilterSnapshotTakenFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of IGovernanceFilterSnapshotTakenFuncCall
+// objects describing the invocations of this function.
+func (f *IGovernanceFilterSnapshotTakenFunc) History() []IGovernanceFilterSnapshotTakenFuncCall {
+	f.mutex.Lock()
+	history := make([]IGovernanceFilterSnapshotTakenFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// IGovernanceFilterSnapshotTakenFuncCall is an object that describes an
+// invocation of method FilterSnapshotTaken on an instance of
+// MockIGovernance.
+type IGovernanceFilterSnapshotTakenFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 *bind.FilterOpts
+	// Arg1 is the value of the 2nd argument passed to this method
+	// invocation.
+	Arg1 []*big.Int
+	// Arg2 is the value of the 3rd argument passed to this method
+	// invocation.
+	Arg2 []common.Address
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 *bindings.GovernanceSnapshotTakenIterator
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c IGovernanceFilterSnapshotTakenFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0, c.Arg1, c.Arg2}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c IGovernanceFilterSnapshotTakenFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
 }
 
 // IGovernanceFilterValueUpdatedFunc describes the behavior when the
@@ -26805,6 +26966,113 @@ func (c IGovernanceFilterValueUpdatedFuncCall) Args() []interface{} {
 // Results returns an interface slice containing the results of this
 // invocation.
 func (c IGovernanceFilterValueUpdatedFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
+}
+
+// IGovernanceParseSnapshotTakenFunc describes the behavior when the
+// ParseSnapshotTaken method of the parent MockIGovernance instance is
+// invoked.
+type IGovernanceParseSnapshotTakenFunc struct {
+	defaultHook func(types.Log) (*bindings.GovernanceSnapshotTaken, error)
+	hooks       []func(types.Log) (*bindings.GovernanceSnapshotTaken, error)
+	history     []IGovernanceParseSnapshotTakenFuncCall
+	mutex       sync.Mutex
+}
+
+// ParseSnapshotTaken delegates to the next hook function in the queue and
+// stores the parameter and result values of this invocation.
+func (m *MockIGovernance) ParseSnapshotTaken(v0 types.Log) (*bindings.GovernanceSnapshotTaken, error) {
+	r0, r1 := m.ParseSnapshotTakenFunc.nextHook()(v0)
+	m.ParseSnapshotTakenFunc.appendCall(IGovernanceParseSnapshotTakenFuncCall{v0, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the ParseSnapshotTaken
+// method of the parent MockIGovernance instance is invoked and the hook
+// queue is empty.
+func (f *IGovernanceParseSnapshotTakenFunc) SetDefaultHook(hook func(types.Log) (*bindings.GovernanceSnapshotTaken, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// ParseSnapshotTaken method of the parent MockIGovernance instance invokes
+// the hook at the front of the queue and discards it. After the queue is
+// empty, the default hook function is invoked for any future action.
+func (f *IGovernanceParseSnapshotTakenFunc) PushHook(hook func(types.Log) (*bindings.GovernanceSnapshotTaken, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *IGovernanceParseSnapshotTakenFunc) SetDefaultReturn(r0 *bindings.GovernanceSnapshotTaken, r1 error) {
+	f.SetDefaultHook(func(types.Log) (*bindings.GovernanceSnapshotTaken, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *IGovernanceParseSnapshotTakenFunc) PushReturn(r0 *bindings.GovernanceSnapshotTaken, r1 error) {
+	f.PushHook(func(types.Log) (*bindings.GovernanceSnapshotTaken, error) {
+		return r0, r1
+	})
+}
+
+func (f *IGovernanceParseSnapshotTakenFunc) nextHook() func(types.Log) (*bindings.GovernanceSnapshotTaken, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *IGovernanceParseSnapshotTakenFunc) appendCall(r0 IGovernanceParseSnapshotTakenFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of IGovernanceParseSnapshotTakenFuncCall
+// objects describing the invocations of this function.
+func (f *IGovernanceParseSnapshotTakenFunc) History() []IGovernanceParseSnapshotTakenFuncCall {
+	f.mutex.Lock()
+	history := make([]IGovernanceParseSnapshotTakenFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// IGovernanceParseSnapshotTakenFuncCall is an object that describes an
+// invocation of method ParseSnapshotTaken on an instance of
+// MockIGovernance.
+type IGovernanceParseSnapshotTakenFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 types.Log
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 *bindings.GovernanceSnapshotTaken
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c IGovernanceParseSnapshotTakenFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c IGovernanceParseSnapshotTakenFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
@@ -27025,6 +27293,122 @@ func (c IGovernanceUpdateValueFuncCall) Args() []interface{} {
 // Results returns an interface slice containing the results of this
 // invocation.
 func (c IGovernanceUpdateValueFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
+}
+
+// IGovernanceWatchSnapshotTakenFunc describes the behavior when the
+// WatchSnapshotTaken method of the parent MockIGovernance instance is
+// invoked.
+type IGovernanceWatchSnapshotTakenFunc struct {
+	defaultHook func(*bind.WatchOpts, chan<- *bindings.GovernanceSnapshotTaken, []*big.Int, []common.Address) (event.Subscription, error)
+	hooks       []func(*bind.WatchOpts, chan<- *bindings.GovernanceSnapshotTaken, []*big.Int, []common.Address) (event.Subscription, error)
+	history     []IGovernanceWatchSnapshotTakenFuncCall
+	mutex       sync.Mutex
+}
+
+// WatchSnapshotTaken delegates to the next hook function in the queue and
+// stores the parameter and result values of this invocation.
+func (m *MockIGovernance) WatchSnapshotTaken(v0 *bind.WatchOpts, v1 chan<- *bindings.GovernanceSnapshotTaken, v2 []*big.Int, v3 []common.Address) (event.Subscription, error) {
+	r0, r1 := m.WatchSnapshotTakenFunc.nextHook()(v0, v1, v2, v3)
+	m.WatchSnapshotTakenFunc.appendCall(IGovernanceWatchSnapshotTakenFuncCall{v0, v1, v2, v3, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the WatchSnapshotTaken
+// method of the parent MockIGovernance instance is invoked and the hook
+// queue is empty.
+func (f *IGovernanceWatchSnapshotTakenFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *bindings.GovernanceSnapshotTaken, []*big.Int, []common.Address) (event.Subscription, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// WatchSnapshotTaken method of the parent MockIGovernance instance invokes
+// the hook at the front of the queue and discards it. After the queue is
+// empty, the default hook function is invoked for any future action.
+func (f *IGovernanceWatchSnapshotTakenFunc) PushHook(hook func(*bind.WatchOpts, chan<- *bindings.GovernanceSnapshotTaken, []*big.Int, []common.Address) (event.Subscription, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *IGovernanceWatchSnapshotTakenFunc) SetDefaultReturn(r0 event.Subscription, r1 error) {
+	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *bindings.GovernanceSnapshotTaken, []*big.Int, []common.Address) (event.Subscription, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *IGovernanceWatchSnapshotTakenFunc) PushReturn(r0 event.Subscription, r1 error) {
+	f.PushHook(func(*bind.WatchOpts, chan<- *bindings.GovernanceSnapshotTaken, []*big.Int, []common.Address) (event.Subscription, error) {
+		return r0, r1
+	})
+}
+
+func (f *IGovernanceWatchSnapshotTakenFunc) nextHook() func(*bind.WatchOpts, chan<- *bindings.GovernanceSnapshotTaken, []*big.Int, []common.Address) (event.Subscription, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *IGovernanceWatchSnapshotTakenFunc) appendCall(r0 IGovernanceWatchSnapshotTakenFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of IGovernanceWatchSnapshotTakenFuncCall
+// objects describing the invocations of this function.
+func (f *IGovernanceWatchSnapshotTakenFunc) History() []IGovernanceWatchSnapshotTakenFuncCall {
+	f.mutex.Lock()
+	history := make([]IGovernanceWatchSnapshotTakenFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// IGovernanceWatchSnapshotTakenFuncCall is an object that describes an
+// invocation of method WatchSnapshotTaken on an instance of
+// MockIGovernance.
+type IGovernanceWatchSnapshotTakenFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 *bind.WatchOpts
+	// Arg1 is the value of the 2nd argument passed to this method
+	// invocation.
+	Arg1 chan<- *bindings.GovernanceSnapshotTaken
+	// Arg2 is the value of the 3rd argument passed to this method
+	// invocation.
+	Arg2 []*big.Int
+	// Arg3 is the value of the 4th argument passed to this method
+	// invocation.
+	Arg3 []common.Address
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 event.Subscription
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c IGovernanceWatchSnapshotTakenFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0, c.Arg1, c.Arg2, c.Arg3}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c IGovernanceWatchSnapshotTakenFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
