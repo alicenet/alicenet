@@ -33,7 +33,7 @@ describe("Testing BToken Minting methods", async () => {
       [minBTokens],
       ethInWeis
     );
-    expect(bTokens).to.be.equal(BigInt("399028731704364116575"));
+    expect(bTokens).to.be.equal(BigInt("402028731704364116575"));
     expectedState.Balances.eth.user -= ethInWeis.toBigInt();
     expectedState.Balances.eth.user -= getEthConsumedAsGas(await tx.wait());
     expectedState.Balances.bToken.user += bTokens.toBigInt();
@@ -60,7 +60,7 @@ describe("Testing BToken Minting methods", async () => {
     expectedState.Balances.bToken.totalSupply += bTokens2.toBigInt();
     expectedState.Balances.bToken.poolBalance += ethInWeis.div(4).toBigInt();
     expectedState.Balances.eth.bToken += ethInWeis.toBigInt();
-    expect(bTokens2).to.be.equal(BigInt("399027176702820751481"));
+    expect(bTokens2).to.be.equal(BigInt("402027176702820751481"));
     expect(await getState(fixture)).to.be.deep.equal(
       expectedState,
       "State 2 comp"
@@ -78,7 +78,7 @@ describe("Testing BToken Minting methods", async () => {
       [minBTokens],
       ethInWeis
     );
-    expect(bTokens).to.be.equal(BigInt("17501004975246203818081563855"));
+    expect(bTokens).to.be.equal(BigInt("70001004975246203818081563855"));
     expect(await fixture.bToken.getPoolBalance()).to.be.equal(
       ethInWeis.div(marketSpread).toBigInt()
     );
@@ -94,7 +94,7 @@ describe("Testing BToken Minting methods", async () => {
       [user.address, minBTokens],
       ethInWeis
     );
-    expect(bTokens).to.be.equal(BigInt("399028731704364116575"));
+    expect(bTokens).to.be.equal(BigInt("402028731704364116575"));
     expectedState.Balances.eth.admin -= ethInWeis.toBigInt();
     expectedState.Balances.eth.admin -= getEthConsumedAsGas(await tx.wait());
     expectedState.Balances.bToken.user += bTokens.toBigInt();
@@ -120,7 +120,7 @@ describe("Testing BToken Minting methods", async () => {
       .div(marketSpread)
       .toBigInt();
     expectedState.Balances.eth.bToken += ethInWeis.toBigInt();
-    expect(bTokens2).to.be.equal(BigInt("399027176702820751481"));
+    expect(bTokens2).to.be.equal(BigInt("402027176702820751481"));
     expect(await getState(fixture)).to.be.deep.equal(expectedState);
   });
 
@@ -135,7 +135,7 @@ describe("Testing BToken Minting methods", async () => {
       [user.address, minBTokens],
       ethInWeis
     );
-    expect(bTokens).to.be.equal(BigInt("17501004975246203818081563855"));
+    expect(bTokens).to.be.equal(BigInt("70001004975246203818081563855"));
     expectedState.Balances.eth.admin -= ethInWeis.toBigInt();
     expectedState.Balances.eth.admin -= getEthConsumedAsGas(await tx.wait());
     expectedState.Balances.bToken.user += bTokens.toBigInt();
@@ -160,7 +160,7 @@ describe("Testing BToken Minting methods", async () => {
   it("Should fail to mint with big min BToken quantity", async () => {
     const oneBToken = ethers.utils.parseUnits("1", 18).toBigInt();
     const minBTokens = 900n * oneBToken;
-    const expectedBTokensMintedForEthValue = "399028731704364116575";
+    const expectedBTokensMintedForEthValue = "402028731704364116575";
     await expect(
       fixture.bToken.connect(admin).mint(minBTokens, {
         value: ethers.utils.parseEther(eth.toString()),

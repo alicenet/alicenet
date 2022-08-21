@@ -16,16 +16,16 @@ describe("Testing BToken Utils methods", async () => {
     let bTokens = await fixture.bToken.getLatestMintedBTokensFromEth(
       ethers.utils.parseEther(eth.toString())
     );
-    expect(bTokens).to.be.equal(BigInt("936764568799449143863271"));
+    expect(bTokens).to.be.equal(BigInt("944264568799449143863271"));
     eth = 20000;
     bTokens = await fixture.bToken.getLatestMintedBTokensFromEth(
       ethers.utils.parseEther(eth.toString())
     );
-    expect(bTokens).to.be.equal(BigInt("1005000000000000000000000"));
+    expect(bTokens).to.be.equal(BigInt("1020000000000000000000000"));
     eth = 25000;
     bTokens = await fixture.bToken.getLatestMintedBTokensFromEth(
       ethers.utils.parseEther(eth.toString())
     );
-    expect(bTokens).to.be.equal(BigInt("1007899288252135716968558"));
+    expect(bTokens).to.be.equal(BigInt("1026649288252135716968558"));
   });
 });

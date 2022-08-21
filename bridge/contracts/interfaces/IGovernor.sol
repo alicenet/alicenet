@@ -9,6 +9,15 @@ interface IGovernor {
         address who
     );
 
+    event SnapshotTaken(
+        uint256 chainId,
+        uint256 indexed epoch,
+        uint256 height,
+        address indexed validator,
+        bool isSafeToProceedConsensus,
+        bytes signatureRaw
+    );
+
     function updateValue(
         uint256 epoch,
         uint256 key,

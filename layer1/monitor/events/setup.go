@@ -162,6 +162,20 @@ func SetupEventMap(em *objects.EventMap, cdb, monDB *db.Database, adminHandler m
 		return err
 	}
 
+	// Governance.ValueUpdated
+	govEvents := GetGovernanceEvents()
+	snapshotTakenOldEvent, ok := govEvents["SnapshotTaken"]
+	if !ok {
+		panic("could not find event Snapshots.SnapshotTakenOld")
+	}
+
+	if err := em.Register(snapshotTakenOldEvent.ID.String(), snapshotTakenOldEvent.Name,
+		func(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+			return ProcessSnapshotTakenOld(eth, contracts, logger, log, adminHandler, taskRequestChan)
+		}); err != nil {
+		return err
+	}
+
 	// ValidatorPool.ValidatorMinorSlashed
 	vpEvents := GetValidatorPoolEvents()
 
