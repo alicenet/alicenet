@@ -77,12 +77,12 @@ contract ValidatorPool is
         uint256 stakeAmount_,
         uint256 maxNumValidators_,
         uint256 disputerReward_,
-        uint256 maxIntervalWithoutSnapshots
+        uint256 maxIntervalWithoutSnapshots_
     ) public onlyFactory initializer {
         _stakeAmount = stakeAmount_;
         _maxNumValidators = maxNumValidators_;
         _disputerReward = disputerReward_;
-        _maxIntervalWithoutSnapshots = maxIntervalWithoutSnapshots;
+        _maxIntervalWithoutSnapshots = maxIntervalWithoutSnapshots_;
     }
 
     function setStakeAmount(uint256 stakeAmount_) public onlyFactory {
