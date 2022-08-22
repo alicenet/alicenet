@@ -70,6 +70,15 @@ func GetPublicStakingEvents() map[string]abi.Event {
 	return publicStakingABI.Events
 }
 
+func GetDynamicsEvents() map[string]abi.Event {
+	snapshotsABI, err := abi.JSON(strings.NewReader(bindings.DynamicsMetaData.ABI))
+	if err != nil {
+		panic(err)
+	}
+
+	return snapshotsABI.Events
+}
+
 func RegisterETHDKGEvents(em *objects.EventMap, monDB *db.Database, adminHandler monInterfaces.AdminHandler, taskHandler executor.TaskHandler) {
 	ethDkgEvents := GetETHDKGEvents()
 
@@ -123,7 +132,7 @@ func RegisterETHDKGEvents(em *objects.EventMap, monDB *db.Database, adminHandler
 	}
 }
 
-func SetupEventMap(em *objects.EventMap, cdb *db.Database, monDB *db.Database, adminHandler monInterfaces.AdminHandler, depositHandler monInterfaces.DepositHandler, taskHandler executor.TaskHandler) error {
+func SetupEventMap(em *objects.EventMap, cdb *db.Database, monDB *db.Database, adminHandler monInterfaces.AdminHandler, depositHandler monInterfaces.DepositHandler, taskHandler executor.TaskHandler, exitFunc func()) error {
 	RegisterETHDKGEvents(em, monDB, adminHandler, taskHandler)
 
 	// MadByte.DepositReceived
@@ -156,14 +165,14 @@ func SetupEventMap(em *objects.EventMap, cdb *db.Database, monDB *db.Database, a
 
 	// Governance.ValueUpdated
 	govEvents := GetGovernanceEvents()
-	valueUpdatedEvent, ok := govEvents["ValueUpdated"]
+	snapshotTakenOldEvent, ok := govEvents["SnapshotTaken"]
 	if !ok {
-		panic("could not find event Governance.ValueUpdated")
+		panic("could not find event Snapshots.SnapshotTakenOld")
 	}
 
-	if err := em.Register(valueUpdatedEvent.ID.String(), valueUpdatedEvent.Name,
+	if err := em.Register(snapshotTakenOldEvent.ID.String(), snapshotTakenOldEvent.Name,
 		func(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
-			return ProcessValueUpdated(eth, contracts, logger, log, monDB)
+			return ProcessSnapshotTakenOld(eth, contracts, logger, log, adminHandler, taskHandler)
 		}); err != nil {
 		return err
 	}
@@ -220,6 +229,43 @@ func SetupEventMap(em *objects.EventMap, cdb *db.Database, monDB *db.Database, a
 	}
 	if err := em.Register(validatorMajorSlashedEvent.ID.String(), validatorMajorSlashedEvent.Name, processValidatorMajorSlashedFunc); err != nil {
 		panic(err)
+	}
+
+	dynamicsEvents := GetDynamicsEvents()
+	newAliceNetNodeVersionAvailableEvent, ok := dynamicsEvents["NewAliceNetNodeVersionAvailable"]
+	if !ok {
+		panic("could not find event Dynamics.NewAliceNetNodeVersionAvailable")
+	}
+
+	if err := em.Register(newAliceNetNodeVersionAvailableEvent.ID.String(), newAliceNetNodeVersionAvailableEvent.Name,
+		func(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+			return ProcessNewAliceNetNodeVersionAvailable(contracts, logger, log, state, taskHandler)
+		}); err != nil {
+		return err
+	}
+
+	newCanonicalAliceNetNodeVersionEvent, ok := dynamicsEvents["NewCanonicalAliceNetNodeVersion"]
+	if !ok {
+		panic("could not find event Dynamics.NewCanonicalAliceNetNodeVersion")
+	}
+
+	if err := em.Register(newCanonicalAliceNetNodeVersionEvent.ID.String(), newCanonicalAliceNetNodeVersionEvent.Name,
+		func(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+			return ProcessNewCanonicalAliceNetNodeVersion(contracts, logger, log, exitFunc)
+		}); err != nil {
+		return err
+	}
+
+	dynamicValueChangedEvent, ok := dynamicsEvents["DynamicValueChanged"]
+	if !ok {
+		panic("could not find event Dynamics.DynamicValueChanged")
+	}
+
+	if err := em.Register(dynamicValueChangedEvent.ID.String(), dynamicValueChangedEvent.Name,
+		func(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+			return ProcessDynamicValueChanged(contracts, logger, log)
+		}); err != nil {
+		return err
 	}
 
 	return nil

@@ -1,9 +1,9 @@
-import { ethers } from "hardhat";
 import { validators10 } from "./assets/10-validators-successful-case";
 import { validators4 } from "./assets/4-validators-successful-case";
 import {
   completeETHDKGRound,
   expect,
+  getInfoForIncorrectPhaseCustomError,
   Phase,
   registerValidators,
 } from "./setup";
@@ -27,17 +27,28 @@ describe("ETHDKG: Complete an ETHDKG Round and change validators", () => {
       validators10
     );
 
-    const ethDKGPhases = await ethers.getContractAt(
-      "ETHDKGPhases",
-      ethdkg.address
+    const txPromise = registerValidators(
+      ethdkg,
+      validatorPool,
+      validators10,
+      expectedNonce
     );
-    await expect(
-      registerValidators(ethdkg, validatorPool, validators10, expectedNonce)
-    )
-      .to.be.revertedWithCustomError(
-        ethDKGPhases,
-        `ETHDKGNotInRegistrationPhase`
-      )
-      .withArgs(Phase.Completion);
+    const [
+      ethDKGPhases,
+      ,
+      expectedBlockNumber,
+      expectedCurrentPhase,
+      phaseStartBlock,
+      phaseLength,
+    ] = await getInfoForIncorrectPhaseCustomError(txPromise, ethdkg);
+    await expect(txPromise)
+      .to.be.revertedWithCustomError(ethDKGPhases, `IncorrectPhase`)
+      .withArgs(expectedCurrentPhase, expectedBlockNumber, [
+        [
+          Phase.RegistrationOpen,
+          phaseStartBlock,
+          phaseStartBlock.add(phaseLength),
+        ],
+      ]);
   });
 });

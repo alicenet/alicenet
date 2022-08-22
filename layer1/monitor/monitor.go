@@ -49,7 +49,8 @@ type monitor struct {
 	tickInterval         time.Duration
 	timeout              time.Duration
 	logger               *logrus.Entry
-	cancelChan           chan bool
+	closeOnce            sync.Once
+	closeChan            chan struct{}
 	statusChan           chan string
 	State                *objects.MonitorState
 	batchSize            uint64
@@ -75,37 +76,38 @@ func NewMonitor(cdb *db.Database,
 		"Timeout":  constants.MonitorTimeout.String(),
 	})
 
+	mon := &monitor{
+		adminHandler:         adminHandler,
+		depositHandler:       depositHandler,
+		eth:                  eth,
+		contracts:            contracts,
+		eventFilterAddresses: eventFilterAddresses,
+		cdb:                  cdb,
+		db:                   monDB,
+		logger:               logger,
+		tickInterval:         tickInterval,
+		timeout:              constants.MonitorTimeout,
+		closeChan:            make(chan struct{}),
+		closeOnce:            sync.Once{},
+		statusChan:           make(chan string, 1),
+		batchSize:            batchSize,
+		taskHandler:          taskHandler,
+	}
+
 	eventMap := objects.NewEventMap()
-	err := events.SetupEventMap(eventMap, cdb, monDB, adminHandler, depositHandler, taskHandler)
+	err := events.SetupEventMap(eventMap, cdb, monDB, adminHandler, depositHandler, taskHandler, mon.Close)
 	if err != nil {
 		return nil, err
 	}
-
-	State := objects.NewMonitorState()
+	mon.eventMap = eventMap
+	mon.State = objects.NewMonitorState()
 
 	adminHandler.RegisterSnapshotCallback(func(bh *objs.BlockHeader, numOfValidators, validatorIndex int) error {
 		logger.Info("Entering snapshot callback")
 		return PersistSnapshot(eth, bh, numOfValidators, validatorIndex, taskHandler, monDB)
 	})
 
-	return &monitor{
-		adminHandler:         adminHandler,
-		depositHandler:       depositHandler,
-		eth:                  eth,
-		contracts:            contracts,
-		eventFilterAddresses: eventFilterAddresses,
-		eventMap:             eventMap,
-		cdb:                  cdb,
-		db:                   monDB,
-		logger:               logger,
-		tickInterval:         tickInterval,
-		timeout:              constants.MonitorTimeout,
-		cancelChan:           make(chan bool, 1),
-		statusChan:           make(chan string, 1),
-		State:                State,
-		batchSize:            batchSize,
-		taskHandler:          taskHandler,
-	}, nil
+	return mon, nil
 }
 
 // GetStatus of the monitor.
@@ -115,7 +117,15 @@ func (mon *monitor) GetStatus() <-chan string {
 
 // Close the event loop.
 func (mon *monitor) Close() {
-	mon.cancelChan <- true
+	mon.closeOnce.Do(func() {
+		close(mon.closeChan)
+	})
+}
+
+// CloseChan returns a channel that is closed when the monitor is
+// shutting down.
+func (mon *monitor) CloseChan() <-chan struct{} {
+	return mon.closeChan
 }
 
 // Start starts the event loop.
@@ -164,13 +174,12 @@ func (mon *monitor) Start() error {
 	logger.Infof("...Monitor tick interval: %v", mon.tickInterval.String())
 	logger.Info(strings.Repeat("-", 80))
 
-	mon.cancelChan = make(chan bool)
-	go mon.eventLoop(logger, mon.cancelChan)
+	go mon.eventLoop(logger)
 	return nil
 }
 
 // eventLoop to process the events and chain changes.
-func (mon *monitor) eventLoop(logger *logrus.Entry, cancelChan <-chan bool) {
+func (mon *monitor) eventLoop(logger *logrus.Entry) {
 	gcTimer := time.After(time.Second * constants.MonDBGCFreq)
 	for {
 		ctx, cf := context.WithTimeout(context.Background(), mon.timeout)
@@ -187,7 +196,7 @@ func (mon *monitor) eventLoop(logger *logrus.Entry, cancelChan <-chan bool) {
 				logger.Debugf("Failed to reclaim any space during garbage collection: %v", err)
 			}
 			gcTimer = time.After(time.Second * constants.MonDBGCFreq)
-		case <-cancelChan:
+		case <-mon.closeChan:
 			mon.logger.Warnf("Received cancel request for event loop.")
 			cf()
 			return

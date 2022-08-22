@@ -52,7 +52,7 @@ func Validate(v mdefs.VSPreImage) error {
 	if len(v.Owner()) == 0 {
 		return errorz.ErrInvalid{}.New("vspreimage capn obj is not valid: invalid Owner; zero byte length")
 	}
-	if v.Value()|v.Value1()|v.Value2()|v.Value3()|v.Value4()|v.Value5()|v.Value6()|v.Value7() == 0 {
+	if (v.Value() + v.Value1() + v.Value2() + v.Value3() + v.Value4() + v.Value5() + v.Value6() + v.Value7()) == 0 {
 		return errorz.ErrInvalid{}.New("vspreimage capn obj is not valid; no value")
 	}
 	if v.TXOutIdx() != constants.MaxUint32 {

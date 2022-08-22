@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
-pragma solidity ^0.8.11;
+pragma solidity ^0.8.16;
 
 import "contracts/libraries/metadata/StakingDescriptor.sol";
 import "contracts/interfaces/IStakingNFTDescriptor.sol";

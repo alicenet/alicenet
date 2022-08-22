@@ -1,0 +1,64 @@
+logging = "main=info,ethereum=info,consensus=debug"
+
+[loglevel]
+blockchain = "debug"
+consensus = "debug"
+admin = "debug"
+
+[chain]
+id = 67
+stateDB = "./scripts/generated/stateDBs/integration/"
+stateDBInMemory = false
+transactionDB = ""
+transactionDBInMemory = true
+monitorDB = "scripts/generated/monitorDBs/integration/"
+monitorDBInMemory = false
+
+[bootnode]
+listeningAddress = ""
+cacheSize = 20
+
+[transport]
+upnp = false
+originLimit = 50
+privateKey = "B9C9335223ABDCFD81FFAE3A7BB1B1D6"
+bootNodeAddresses = "0000002a|029570051a8573e865af31a066eb100e7744bcbd05d814e899a763500163675be9@127.0.0.1:4242"
+p2pListeningAddress = "0.0.0.0:4343"
+discoveryListeningAddress = "0.0.0.0:4445"
+localStateListeningAddress = "0.0.0.0:8885"
+peerLimitMax = 24
+peerLimitMin = 3
+
+[monitor]
+batchSize = 1_000
+interval = "7s"
+timeout = "1h"
+
+[ethereum]
+defaultAccount = "0x8dc55490Eb47b6aCaF47bcCB3b4c71440fe0CeC3"
+endpoint = "http://localhost:8545"
+endpointPeers = 0
+keystore = "scripts/generated/keystores/keys"
+timeout = "1h"
+passcodes = "scripts/generated/keystores/passcodes.txt"
+testEther = "f000000000000000000"
+finalityDelay = 6
+retryCount = 10
+retryDelay = "5s"
+startingBlock = 1
+registryAddress = "0x9ae1e758e7b4d200b499EE2C7Ca01426cAb7c218"
+txFeePercentageToIncrease = 50
+txMaxFeeThresholdInGwei = 1000000
+txCheckFrequency = "5s"
+txTimeoutForReplacement = "30s"
+
+[edge]
+ethTimeout = "5s"
+
+[utils]
+status = true
+
+[validator]
+rewardAccount = "0x546F99F244b7B58B855330AE0E2BC1b30b41302F"
+rewardCurveSpec = 1
+symmetricKey = "someSuperFancySecretThatWillBeHashed"

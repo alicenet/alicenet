@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT-open-group
-pragma solidity ^0.8.11;
+pragma solidity ^0.8.16;
 
 import "contracts/Proxy.sol";
 import "contracts/libraries/proxy/ProxyInternalUpgradeLock.sol";
@@ -21,6 +21,7 @@ contract MockEndPointLockable is
     ProxyInternalUpgradeUnlock,
     IMockEndPointLockable
 {
+    error Unauthorized();
     address private immutable _factory;
     address public owner;
     uint256 public i;
@@ -64,6 +65,8 @@ contract MockEndPointLockable is
     }
 
     function _requireAuth(bool isOk_) internal pure {
-        require(isOk_, "unauthorized");
+        if (!isOk_) {
+            revert Unauthorized();
+        }
     }
 }

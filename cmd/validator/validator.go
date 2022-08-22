@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/alicenet/alicenet/layer1/handlers"
+	"math/big"
 	"os"
 	"os/signal"
 	"syscall"
@@ -11,6 +12,7 @@ import (
 
 	"github.com/alicenet/alicenet/application"
 	"github.com/alicenet/alicenet/application/deposit"
+	"github.com/alicenet/alicenet/bridge/bindings"
 	"github.com/alicenet/alicenet/cmd/utils"
 	"github.com/alicenet/alicenet/config"
 	"github.com/alicenet/alicenet/consensus"
@@ -34,8 +36,9 @@ import (
 	"github.com/alicenet/alicenet/peering"
 	"github.com/alicenet/alicenet/proto"
 	"github.com/alicenet/alicenet/status"
-	mnutils "github.com/alicenet/alicenet/utils"
+	aUtils "github.com/alicenet/alicenet/utils"
 	"github.com/dgraph-io/badger/v2"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -161,7 +164,7 @@ func initLocalStateServer(localStateHandler *localrpc.Handlers) *localrpc.Handle
 }
 
 func initDatabase(ctx context.Context, path string, inMemory bool) *badger.DB {
-	db, err := mnutils.OpenBadger(ctx.Done(), path, inMemory)
+	db, err := aUtils.OpenBadger(ctx.Done(), path, inMemory)
 	if err != nil {
 		panic(err)
 	}
@@ -186,6 +189,29 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	eth, contractsHandler, secp256k1Signer, publicKey := initEthereumConnection(logger)
 	defer eth.Close()
 
+	currentEpoch, latestVersion, err := getCurrentEpochAndCanonicalVersion(nodeCtx, eth, contractsHandler, logger)
+	if err != nil {
+		panic(err)
+	}
+	newMajorIsGreater, _, _, localVersion := aUtils.CompareCanonicalVersion(latestVersion)
+	logger.Infof(
+		"Local AliceNet Node Version %d.%d.%d",
+		localVersion.Major,
+		localVersion.Minor,
+		localVersion.Patch,
+	)
+	if newMajorIsGreater && currentEpoch >= latestVersion.ExecutionEpoch {
+		logger.Fatalf(
+			"CRITICAL: Exiting! Your Node Version %d.%d.%d is lower than the latest required version %d.%d.%d! Please update your node!",
+			localVersion.Major,
+			localVersion.Minor,
+			localVersion.Patch,
+			latestVersion.Major,
+			latestVersion.Minor,
+			latestVersion.Patch,
+		)
+	}
+
 	// Initialize consensus db: stores all state the consensus mechanism requires to work
 	rawConsensusDb := initDatabase(nodeCtx, config.Configuration.Chain.StateDbPath, config.Configuration.Chain.StateDbInMemory)
 	defer rawConsensusDb.Close()
@@ -200,7 +226,7 @@ func validatorNode(cmd *cobra.Command, args []string) {
 
 	// giving some time to services finish their work on the databases to avoid
 	// panic when closing the databases
-	defer func() { <-time.After(3 * time.Second) }()
+	defer func() { <-time.After(15 * time.Second) }()
 
 	/////////////////////////////////////////////////////////////////////////////
 	// INITIALIZE ALL SERVICE OBJECTS ///////////////////////////////////////////
@@ -349,6 +375,7 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	select {
 	case <-peerManager.CloseChan():
 	case <-consSync.CloseChan():
+	case <-mon.CloseChan():
 	case <-signals:
 	}
 	go countSignals(logger, 5, signals)
@@ -366,4 +393,62 @@ func countSignals(logger *logrus.Logger, num int, c chan os.Signal) {
 		<-c
 	}
 	os.Exit(1)
+}
+
+func getCurrentEpochAndCanonicalVersion(ctx context.Context, eth layer1.Client, contractsHandler layer1.AllSmartContracts, logger *logrus.Logger) (uint32, bindings.CanonicalVersion, error) {
+	retryCount := 5
+	retryDelay := 1 * time.Second
+
+	logEntry := logger.WithField("Method", "getCurrentEpochAndCanonicalVersion")
+
+	var callOpts *bind.CallOpts
+	var err error
+	var latestVersion bindings.CanonicalVersion
+	var currentEpoch *big.Int
+	for i := 0; i < retryCount; i++ {
+		callOpts, err = eth.GetCallOpts(ctx, eth.GetDefaultAccount())
+		if err != nil {
+			logEntry.Errorf("Received and error during GetCallOpts: %v", err)
+			<-time.After(retryDelay)
+			continue
+		}
+		break
+	}
+	if err != nil {
+		return 0, latestVersion, err
+	}
+
+	for i := 0; i < retryCount; i++ {
+		latestVersion, err = contractsHandler.EthereumContracts().Dynamics().GetLatestAliceNetVersion(callOpts)
+		if err != nil {
+			logEntry.Errorf("Received and error during GetLatestAliceNetVersion: %v", err)
+			<-time.After(retryDelay)
+			continue
+		}
+		break
+	}
+	if err != nil {
+		return 0, latestVersion, err
+	}
+	logEntry.Infof(
+		"Current Canonical AliceNet Node Version %d.%d.%d",
+		latestVersion.Major,
+		latestVersion.Minor,
+		latestVersion.Patch,
+	)
+
+	for i := 0; i < retryCount; i++ {
+		currentEpoch, err = contractsHandler.EthereumContracts().Snapshots().GetEpoch(callOpts)
+		if err != nil {
+			logEntry.Errorf("Received and error during GetEpoch: %v", err)
+			<-time.After(retryDelay)
+			continue
+		}
+		break
+	}
+	if err != nil {
+		return 0, latestVersion, err
+	}
+
+	return uint32(currentEpoch.Uint64()), latestVersion, err
 }

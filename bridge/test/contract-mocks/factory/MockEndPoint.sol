@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT-open-group
-pragma solidity ^0.8.11;
+pragma solidity ^0.8.16;
 
 interface IMockEndPoint {
     function addOne() external;
@@ -21,8 +21,8 @@ contract MockEndPoint is IMockEndPoint {
     event AddedTwo(uint256 indexed i);
     event UpgradeLock(bool indexed lock);
 
-    constructor(address f) {
-        factory = f;
+    constructor() {
+        factory = msg.sender;
     }
 
     function addOne() public {

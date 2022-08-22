@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT-open-group
-pragma solidity ^0.8.11;
+pragma solidity ^0.8.16;
 
 import "contracts/libraries/errors/CryptoLibraryErrors.sol";
 
@@ -199,7 +199,9 @@ library CryptoLibrary {
             // 64       size of call return value, i.e. 64 bytes / 512 bit for a BN256 curve point
             success := staticcall(not(0), 0x07, input, 96, result, 64)
         }
-        require(success, "elliptic curve multiplication failed");
+        if (!success) {
+            revert CryptoLibraryErrors.EllipticCurveMultiplicationFailed();
+        }
     }
 
     function bn128CheckPairing(uint256[12] memory input) internal view returns (bool) {
@@ -213,7 +215,9 @@ library CryptoLibrary {
             // 32        size of result (one 32 byte boolean!)
             success := staticcall(not(0), 0x08, input, 384, result, 32)
         }
-        require(success, "elliptic curve pairing failed");
+        if (!success) {
+            revert CryptoLibraryErrors.EllipticCurvePairingFailed();
+        }
         return result[0] == 1;
     }
 
@@ -248,7 +252,9 @@ library CryptoLibrary {
             // data
             result := mload(p)
         }
-        require(success, "modular exponentiation falied");
+        if (!success) {
+            revert CryptoLibraryErrors.ModularExponentiationFailed();
+        }
     }
 
     // Sign takes byte slice message and private key privK.
@@ -818,7 +824,12 @@ library CryptoLibrary {
         uint256 threshold,
         uint256[] memory invArray
     ) internal view returns (uint256[2] memory) {
-        require(pointsG1.length == indices.length, "Mismatch between pointsG1 and indices arrays");
+        if (pointsG1.length != indices.length) {
+            revert CryptoLibraryErrors.SignatureIndicesLengthMismatch(
+                pointsG1.length,
+                indices.length
+            );
+        }
         uint256[2] memory val;
         val[0] = 0;
         val[1] = 0;
@@ -860,7 +871,9 @@ library CryptoLibrary {
         uint256 j,
         uint256[] memory invArray
     ) internal pure returns (uint256) {
-        require(k != j, "Must have k != j when computing rj partial constants");
+        if (k == j) {
+            revert CryptoLibraryErrors.KMustNotEqualJ();
+        }
         uint256 tmp1 = k;
         uint256 tmp2;
         if (k > j) {
@@ -969,10 +982,9 @@ library CryptoLibrary {
         uint256 kInv;
         uint256 res;
         bool validInverses = true;
-        require(
-            (maxIndex - 1) <= invArray.length,
-            "checkInverses: insufficient inverses for group signature calculation"
-        );
+        if ((maxIndex - 1) > invArray.length) {
+            revert CryptoLibraryErrors.InvalidInverseArrayLength();
+        }
         for (k = 1; k < maxIndex; k++) {
             kInv = invArray[k - 1];
             res = mulmod(k, kInv, GROUP_ORDER);

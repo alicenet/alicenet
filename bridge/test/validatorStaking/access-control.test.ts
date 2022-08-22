@@ -5,6 +5,34 @@ import { ValidatorPoolMock } from "../../typechain-types";
 import { expect } from "../chai-setup";
 import { Fixture, getFixture, mineBlocks } from "../setup";
 
+describe("Initialization", async function () {
+  let fixture: Fixture;
+
+  beforeEach(async function () {
+    fixture = await getFixture();
+  });
+
+  it("Should not allow initialize more than once", async () => {
+    await expect(
+      fixture.factory.callAny(
+        fixture.validatorStaking.address,
+        0,
+        fixture.validatorStaking.interface.encodeFunctionData("initialize")
+      )
+    ).to.revertedWith("Initializable: contract is already initialized");
+  });
+
+  it("Only factory should be allowed to call initialize", async () => {
+    const validatorStaking = await (
+      await ethers.getContractFactory("ValidatorStaking")
+    ).deploy();
+    const [, user] = await ethers.getSigners();
+    await expect(
+      validatorStaking.connect(user).initialize()
+    ).to.revertedWithCustomError(validatorStaking, "OnlyFactory");
+  });
+});
+
 describe("ValidatorStaking: Testing ValidatorStaking Access Control", async () => {
   let fixture: Fixture;
   let notAdminSigner: SignerWithAddress;

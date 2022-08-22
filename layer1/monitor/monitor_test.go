@@ -5,6 +5,7 @@ package monitor
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/alicenet/alicenet/bridge/bindings"
 	"github.com/alicenet/alicenet/consensus/objs"
 	"github.com/alicenet/alicenet/crypto"
@@ -15,6 +16,8 @@ import (
 	"math/big"
 	"testing"
 	"time"
+
+	"github.com/alicenet/alicenet/utils"
 
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/layer1/executor"
@@ -62,12 +65,25 @@ func populateMonitor(monitorState *objects.MonitorState, EPOCH uint32) {
 	}
 }
 
-func getMonitor(t *testing.T) (*monitor, executor.TaskHandler, *mocks.MockClient, accounts.Account) {
+func getMonitor(t *testing.T) (*monitor, executor.TaskHandler, *mocks.MockClient, *mocks.MockEthereumContracts, accounts.Account) {
 	monDB := mocks.NewTestDB()
+	consDB := mocks.NewTestDB()
 	adminHandler := mocks.NewMockAdminHandler()
+	adminHandler.AddSnapshotFunc.SetDefaultHook(func(bh *objs.BlockHeader, safeToProceedConsensus bool) error {
+		err := consDB.Update(func(txn *badger.Txn) error {
+			err := consDB.SetSnapshotBlockHeader(txn, bh)
+			if err != nil {
+				return err
+			}
+			return nil
+		})
+		if err != nil {
+			panic(err)
+		}
+		return nil
+	})
 	depositHandler := mocks.NewMockDepositHandler()
 	eth := mocks.NewMockClient()
-	contracts := mocks.NewMockAllSmartContracts()
 	txWatcher := transaction.NewWatcher(eth, 12, monDB, false, constants.TxPollingTime)
 
 	account := accounts.Account{
@@ -93,11 +109,12 @@ func getMonitor(t *testing.T) (*monitor, executor.TaskHandler, *mocks.MockClient
 	ethereumContracts := mocks.NewMockEthereumContracts()
 	ethereumContracts.EthdkgFunc.SetDefaultReturn(ethDkgMock)
 	ethereumContracts.GetAllAddressesFunc.SetDefaultReturn([]common.Address{})
+
+	contracts := mocks.NewMockAllSmartContracts()
 	contracts.EthereumContractsFunc.SetDefaultReturn(ethereumContracts)
 
 	tasksHandler, err := executor.NewTaskHandler(monDB, eth, contracts, adminHandler, txWatcher)
-
-	mon, err := NewMonitor(monDB, monDB, adminHandler, depositHandler, eth, contracts, contracts.EthereumContracts().GetAllAddresses(), 2*time.Second, 100, tasksHandler)
+	mon, err := NewMonitor(consDB, monDB, adminHandler, depositHandler, eth, contracts, contracts.EthereumContracts().GetAllAddresses(), 2*time.Second, 100, tasksHandler)
 	assert.Nil(t, err)
 	EPOCH := uint32(1)
 	populateMonitor(mon.State, EPOCH)
@@ -106,14 +123,15 @@ func getMonitor(t *testing.T) (*monitor, executor.TaskHandler, *mocks.MockClient
 		mon.Close()
 		tasksHandler.Close()
 		monDB.DB().Close()
+		consDB.DB().Close()
 	})
 
-	return mon, tasksHandler, eth, account
+	return mon, tasksHandler, eth, ethereumContracts, account
 }
 
 // Actual tests.
 func TestMonitorPersist(t *testing.T) {
-	mon, taskHandler, eth, _ := getMonitor(t)
+	mon, taskHandler, eth, _, _ := getMonitor(t)
 	raw, err := json.Marshal(mon)
 	assert.Nil(t, err)
 	t.Logf("Raw: %v", string(raw))
@@ -132,9 +150,8 @@ func TestMonitorPersist(t *testing.T) {
 	t.Logf("NewRaw: %v", string(newRaw))
 }
 
-func TestProcessEvents(t *testing.T) {
-	mon, taskHandler, eth, defaultAcc := getMonitor(t)
-
+func TestProcessRegistrationOpenedEvent(t *testing.T) {
+	mon, taskHandler, eth, _, defaultAcc := getMonitor(t)
 	taskHandler.Start()
 
 	mon.State.PotentialValidators[defaultAcc.Address] = objects.PotentialValidator{
@@ -154,10 +171,10 @@ func TestProcessEvents(t *testing.T) {
 
 	err := mon.Start()
 	assert.Nil(t, err)
-
+	maxTimeout := time.After(4500 * time.Millisecond)
 	for {
 		select {
-		case <-time.After(4500 * time.Millisecond):
+		case <-maxTimeout:
 			t.Fatal("didn't update dkg state in time")
 		default:
 		}
@@ -174,8 +191,178 @@ func TestProcessEvents(t *testing.T) {
 	}
 }
 
+func TestProcessNewAliceNetNodeVersionAvailableEvent(t *testing.T) {
+	mon, taskHandler, eth, contracts, defaultAcc := getMonitor(t)
+	taskHandler.Start()
+
+	mon.State.PotentialValidators[defaultAcc.Address] = objects.PotentialValidator{
+		Account: defaultAcc.Address,
+	}
+	eth.EndpointInSyncFunc.SetDefaultReturn(true, 4, nil)
+	eth.GetFinalizedHeightFunc.SetDefaultReturn(1, nil)
+
+	localVersion := utils.GetLocalVersion()
+	localVersion.Major++
+	version := &bindings.DynamicsNewAliceNetNodeVersionAvailable{
+		Version: localVersion,
+	}
+	dynamics := mocks.NewMockIDynamics()
+	dynamics.ParseNewAliceNetNodeVersionAvailableFunc.SetDefaultReturn(version, nil)
+	contracts.DynamicsFunc.SetDefaultReturn(dynamics)
+
+	dynamicsEvents := events.GetDynamicsEvents()
+	logs := []types.Log{
+		{Topics: []common.Hash{dynamicsEvents["NewAliceNetNodeVersionAvailable"].ID}},
+	}
+
+	eth.GetEventsFunc.SetDefaultReturn(nil, nil)
+	eth.GetEventsFunc.PushReturn(logs, nil)
+
+	err := mon.Start()
+	assert.Nil(t, err)
+	maxTimeout := time.After(4500 * time.Millisecond)
+	for {
+		select {
+		case <-maxTimeout:
+			t.Fatal("didn't update event in time")
+		default:
+		}
+
+		monState := &objects.MonitorState{}
+		err := monState.LoadState(mon.db)
+		if err != nil {
+			assert.Equal(t, badger.ErrKeyNotFound, err)
+		}
+
+		if monState.CanonicalVersion.Major != 0 {
+			assert.Equal(t, version.Version.Major, monState.CanonicalVersion.Major)
+			assert.Equal(t, version.Version.Minor, monState.CanonicalVersion.Minor)
+			assert.Equal(t, version.Version.Patch, monState.CanonicalVersion.Patch)
+			assert.Equal(t, version.Version.ExecutionEpoch, monState.CanonicalVersion.ExecutionEpoch)
+			break
+		}
+
+		<-time.After(100 * time.Millisecond)
+	}
+}
+
+func TestProcessSnapshotTakenEvent(t *testing.T) {
+	mon, _, eth, contracts, defaultAcc := getMonitor(t)
+
+	mon.State.PotentialValidators[defaultAcc.Address] = objects.PotentialValidator{
+		Account: defaultAcc.Address,
+	}
+	eth.EndpointInSyncFunc.SetDefaultReturn(true, 4, nil)
+	eth.GetFinalizedHeightFunc.SetDefaultReturn(1, nil)
+
+	snapshotTakenEvent := &bindings.SnapshotsSnapshotTaken{
+		Epoch:                    big.NewInt(10),
+		Height:                   big.NewInt(10240),
+		ChainId:                  big.NewInt(1337),
+		Validator:                defaultAcc.Address,
+		IsSafeToProceedConsensus: true,
+		MasterPublicKey: [4]*big.Int{
+			big.NewInt(1),
+			big.NewInt(2),
+			big.NewInt(3),
+			big.NewInt(4),
+		},
+		Signature: [2]*big.Int{
+			big.NewInt(1),
+			big.NewInt(2),
+		},
+		BClaims: bindings.BClaimsParserLibraryBClaims{
+			ChainId:    1337,
+			Height:     10240,
+			TxCount:    0,
+			PrevBlock:  [32]byte{},
+			TxRoot:     [32]byte{},
+			StateRoot:  [32]byte{},
+			HeaderRoot: [32]byte{},
+		},
+	}
+	snapshots := mocks.NewMockISnapshots()
+	snapshots.ParseSnapshotTakenFunc.SetDefaultReturn(snapshotTakenEvent, nil)
+	contracts.SnapshotsFunc.SetDefaultReturn(snapshots)
+
+	snapshotEvents := events.GetSnapshotEvents()
+	logs := []types.Log{
+		{Topics: []common.Hash{snapshotEvents["SnapshotTaken"].ID}},
+	}
+
+	eth.GetEventsFunc.SetDefaultReturn(nil, nil)
+	eth.GetEventsFunc.PushReturn(logs, nil)
+	eth.GetCallOptsFunc.SetDefaultReturn(nil, nil)
+
+	err := mon.Start()
+	assert.Nil(t, err)
+	maxTimeout := time.After(45000 * time.Millisecond)
+	for {
+		select {
+		case <-maxTimeout:
+			t.Fatal("didn't update event in time")
+		default:
+		}
+		var lastSnapshot *objs.BlockHeader
+		err = mon.cdb.View(func(txn *badger.Txn) error {
+			lastSnapshot, err = mon.cdb.GetLastSnapshot(txn)
+			if err != nil {
+				return err
+			}
+			return nil
+		})
+		if err == nil {
+			fmt.Printf("%v", lastSnapshot)
+			if lastSnapshot.BClaims.Height == 10240 {
+				break
+			}
+		}
+		<-time.After(100 * time.Millisecond)
+	}
+}
+
+func TestProcessProcessNewCanonicalAliceNetNodeVersion(t *testing.T) {
+	mon, taskHandler, eth, contracts, defaultAcc := getMonitor(t)
+	taskHandler.Start()
+
+	mon.State.PotentialValidators[defaultAcc.Address] = objects.PotentialValidator{
+		Account: defaultAcc.Address,
+	}
+	eth.EndpointInSyncFunc.SetDefaultReturn(true, 4, nil)
+	eth.GetFinalizedHeightFunc.SetDefaultReturn(1, nil)
+
+	localVersion := utils.GetLocalVersion()
+	localVersion.Major++
+	version := &bindings.DynamicsNewCanonicalAliceNetNodeVersion{
+		Version: localVersion,
+	}
+	dynamics := mocks.NewMockIDynamics()
+	dynamics.ParseNewCanonicalAliceNetNodeVersionFunc.SetDefaultReturn(version, nil)
+	contracts.DynamicsFunc.SetDefaultReturn(dynamics)
+
+	dynamicsEvents := events.GetDynamicsEvents()
+	logs := []types.Log{
+		{Topics: []common.Hash{dynamicsEvents["NewCanonicalAliceNetNodeVersion"].ID}},
+	}
+
+	eth.GetEventsFunc.SetDefaultReturn(nil, nil)
+	eth.GetEventsFunc.PushReturn(logs, nil)
+
+	err := mon.Start()
+	assert.Nil(t, err)
+	maxTimeout := time.After(4500 * time.Millisecond)
+	for {
+		select {
+		case <-maxTimeout:
+			t.Fatal("didn't update event in time")
+		case <-mon.CloseChan():
+			return
+		}
+	}
+}
+
 func TestPersistSnapshot(t *testing.T) {
-	mon, taskHandler, eth, _ := getMonitor(t)
+	mon, taskHandler, eth, _, _ := getMonitor(t)
 	eth.GetFinalizedHeightFunc.SetDefaultReturn(1, nil)
 
 	taskHandler.Start()

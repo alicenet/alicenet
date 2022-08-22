@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT-open-group
-pragma solidity ^0.8.11;
+pragma solidity ^0.8.16;
 
 import "contracts/libraries/errors/GenericParserLibraryErrors.sol";
 
-import "./BaseParserLibrary.sol";
-import "./BClaimsParserLibrary.sol";
-import "./RCertParserLibrary.sol";
+import "contracts/libraries/parsers/BaseParserLibrary.sol";
+import "contracts/libraries/parsers/BClaimsParserLibrary.sol";
+import "contracts/libraries/parsers/RCertParserLibrary.sol";
 
 /// @title Library to parse the PClaims structure from a blob of capnproto state
 library PClaimsParserLibrary {

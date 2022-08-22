@@ -15,10 +15,6 @@ type IAliceNetFactoryCaller interface {
 	//
 	// Solidity: function contracts() view returns(bytes32[] contracts_)
 	Contracts(opts *bind.CallOpts) ([][32]byte, error)
-	// Delegator is a free data retrieval call binding the contract method 0xce9b7930.
-	//
-	// Solidity: function delegator() view returns(address delegator_)
-	Delegator(opts *bind.CallOpts) (common.Address, error)
 	// GetImplementation is a free data retrieval call binding the contract method 0xaaf10f42.
 	//
 	// Solidity: function getImplementation() view returns(address)
