@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: MIT-open-group
 pragma solidity ^0.8.11;
 
-import "./DeterministicAddress.sol";
+import "contracts/utils/DeterministicAddress.sol";
 
 abstract contract ImmutableFactory is DeterministicAddress {
     address private immutable _factory;
@@ -129,6 +129,60 @@ abstract contract ImmutableBToken is ImmutableFactory {
 
     function _saltForBToken() internal pure returns (bytes32) {
         return 0x42546f6b656e0000000000000000000000000000000000000000000000000000;
+    }
+}
+
+abstract contract ImmutableDistribution is ImmutableFactory {
+    address private immutable _distribution;
+    error OnlyDistribution(address sender, address expected);
+
+    modifier onlyDistribution() {
+        if (msg.sender != _distribution) {
+            revert OnlyDistribution(msg.sender, _distribution);
+        }
+        _;
+    }
+
+    constructor() {
+        _distribution = getMetamorphicContractAddress(
+            0x446973747269627574696f6e0000000000000000000000000000000000000000,
+            _factoryAddress()
+        );
+    }
+
+    function _distributionAddress() internal view returns (address) {
+        return _distribution;
+    }
+
+    function _saltForDistribution() internal pure returns (bytes32) {
+        return 0x446973747269627574696f6e0000000000000000000000000000000000000000;
+    }
+}
+
+abstract contract ImmutableDynamics is ImmutableFactory {
+    address private immutable _dynamics;
+    error OnlyDynamics(address sender, address expected);
+
+    modifier onlyDynamics() {
+        if (msg.sender != _dynamics) {
+            revert OnlyDynamics(msg.sender, _dynamics);
+        }
+        _;
+    }
+
+    constructor() {
+        _dynamics = getMetamorphicContractAddress(
+            0x44796e616d696373000000000000000000000000000000000000000000000000,
+            _factoryAddress()
+        );
+    }
+
+    function _dynamicsAddress() internal view returns (address) {
+        return _dynamics;
+    }
+
+    function _saltForDynamics() internal pure returns (bytes32) {
+        return 0x44796e616d696373000000000000000000000000000000000000000000000000;
     }
 }
 

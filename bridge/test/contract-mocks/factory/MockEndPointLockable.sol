@@ -21,6 +21,7 @@ contract MockEndPointLockable is
     ProxyInternalUpgradeUnlock,
     IMockEndPointLockable
 {
+    error Unauthorized();
     address private immutable _factory;
     address public owner;
     uint256 public i;
@@ -64,6 +65,8 @@ contract MockEndPointLockable is
     }
 
     function _requireAuth(bool isOk_) internal pure {
-        require(isOk_, "unauthorized");
+        if (!isOk_) {
+            revert Unauthorized();
+        }
     }
 }

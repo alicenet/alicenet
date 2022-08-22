@@ -6,7 +6,7 @@ abstract contract Sigmoid {
     uint256 internal constant _P_A = 200;
     uint256 internal constant _P_B = 2500 * 10**18;
     uint256 internal constant _P_C = 5611050234958650739260304 + 125 * 10**39;
-    uint256 internal constant _P_D = 1;
+    uint256 internal constant _P_D = 4;
     uint256 internal constant _P_S = 2524876234590519489452;
 
     // Constants for P Inverse function

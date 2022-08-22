@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"github.com/alicenet/alicenet/layer1/executor/tasks/dynamics"
 	"reflect"
 	"strings"
 	"sync"
@@ -152,6 +153,7 @@ func GetTaskRegistry() *marshaller.TypeRegistry {
 	tr.RegisterInstanceType(&dkg.DisputeMissingRegistrationTask{})
 	tr.RegisterInstanceType(&dkg.ShareDistributionTask{})
 	tr.RegisterInstanceType(&snapshots.SnapshotTask{})
+	tr.RegisterInstanceType(&dynamics.CanonicalVersionCheckTask{})
 	return tr
 }
 

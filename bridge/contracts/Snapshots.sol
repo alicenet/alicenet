@@ -4,6 +4,7 @@ pragma solidity ^0.8.11;
 import "contracts/interfaces/ISnapshots.sol";
 import "contracts/interfaces/IValidatorPool.sol";
 import "contracts/interfaces/IETHDKG.sol";
+import "contracts/interfaces/IDynamics.sol";
 import "contracts/libraries/parsers/RCertParserLibrary.sol";
 import "contracts/libraries/parsers/BClaimsParserLibrary.sol";
 import "contracts/libraries/math/CryptoLibrary.sol";
@@ -50,7 +51,7 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
     /// @notice Saves next snapshot
     /// @param groupSignature_ The group signature used to sign the snapshots' block claims
     /// @param bClaims_ The claims being made about given block
-    /// @return Flag whether we should kick off another round of key generation
+    /// @return returns true if the execution succeeded
     function snapshot(bytes calldata groupSignature_, bytes calldata bClaims_)
         public
         returns (bool)
@@ -62,77 +63,22 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
             revert SnapshotsErrors.ConsensusNotRunning();
         }
 
-        uint256 lastSnapshotCommittedAt = _getLatestSnapshot().committedAt;
-        if (block.number < lastSnapshotCommittedAt + _minimumIntervalBetweenSnapshots) {
-            revert SnapshotsErrors.MinimumBlocksIntervalNotPassed(
-                block.number,
-                lastSnapshotCommittedAt + _minimumIntervalBetweenSnapshots
-            );
-        }
-
         uint32 epoch = _epochRegister().get() + 1;
+        BClaimsParserLibrary.BClaims memory blockClaims = _parseAndValidateBClaims(epoch, bClaims_);
 
-        {
-            (uint256[4] memory masterPublicKey, uint256[2] memory signature) = RCertParserLibrary
-                .extractSigGroup(groupSignature_, 0);
+        uint256 lastSnapshotCommittedAt = _getLatestSnapshot().committedAt;
+        _checkSnapshotMinimumInterval(lastSnapshotCommittedAt);
 
-            bytes32 calculatedMasterPublicKeyHash = keccak256(abi.encodePacked(masterPublicKey));
-            bytes32 expectedMasterPublicKeyHash = IETHDKG(_ethdkgAddress())
-                .getMasterPublicKeyHash();
-
-            if (calculatedMasterPublicKeyHash != expectedMasterPublicKeyHash) {
-                revert SnapshotsErrors.InvalidMasterPublicKey(
-                    calculatedMasterPublicKeyHash,
-                    expectedMasterPublicKeyHash
-                );
-            }
-
-            if (
-                !CryptoLibrary.verifySignatureASM(
-                    abi.encodePacked(keccak256(bClaims_)),
-                    signature,
-                    masterPublicKey
-                )
-            ) {
-                revert SnapshotsErrors.SignatureVerificationFailed();
-            }
-        }
-
-        BClaimsParserLibrary.BClaims memory blockClaims = BClaimsParserLibrary.extractBClaims(
-            bClaims_
+        _isValidatorElectedToPerformSnapshot(
+            msg.sender,
+            lastSnapshotCommittedAt,
+            keccak256(groupSignature_)
         );
 
-        if (epoch * _epochLength != blockClaims.height) {
-            revert SnapshotsErrors.InvalidBlockHeight(blockClaims.height);
-        }
-
-        if (blockClaims.chainId != _chainId) {
-            revert SnapshotsErrors.InvalidChainId(blockClaims.chainId);
-        }
-
-        {
-            // Check if sender is the elected validator allowed to make the snapshot
-            (bool success, uint256 validatorIndex) = IETHDKG(_ethdkgAddress())
-                .tryGetParticipantIndex(msg.sender);
-            require(success, "Snapshots: Caller didn't participate in the last ethdkg round!");
-
-            uint256 ethBlocksSinceLastSnapshot = block.number - lastSnapshotCommittedAt;
-
-            uint256 blocksSinceDesperation = ethBlocksSinceLastSnapshot >= _snapshotDesperationDelay
-                ? ethBlocksSinceLastSnapshot - _snapshotDesperationDelay
-                : 0;
-
-            require(
-                _mayValidatorSnapshot(
-                    IValidatorPool(_validatorPoolAddress()).getValidatorsCount(),
-                    validatorIndex - 1,
-                    blocksSinceDesperation,
-                    keccak256(groupSignature_),
-                    uint256(_snapshotDesperationFactor)
-                ),
-                "Snapshots: Validator not elected to do snapshot!"
-            );
-        }
+        (uint256[4] memory masterPublicKey, uint256[2] memory signature) = _checkBClaimsSignature(
+            groupSignature_,
+            bClaims_
+        );
 
         bool isSafeToProceedConsensus = true;
         if (IValidatorPool(_validatorPoolAddress()).isMaintenanceScheduled()) {
@@ -149,16 +95,22 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
             blockClaims.height,
             msg.sender,
             isSafeToProceedConsensus,
-            groupSignature_,
+            masterPublicKey,
+            signature,
             blockClaims
         );
+
+        // check and update the latest dynamics values in case the scheduled changes
+        // start to become valid on this epoch
+        IDynamics(_dynamicsAddress()).updateHead(epoch);
+
         return isSafeToProceedConsensus;
     }
 
-    /// @notice Saves next snapshot
-    /// @param groupSignature_ The group signature used to sign the snapshots' block claims
-    /// @param bClaims_ The claims being made about given block
-    /// @return Flag whether we should kick off another round of key generation
+    /// @notice Migrates a set of snapshots to bootstrap the side chain.
+    /// @param groupSignature_ Array of group signature used to sign the snapshots' block claims
+    /// @param bClaims_ Array of BClaims being migrated as snapshots
+    /// @return returns true if the execution succeeded
     function migrateSnapshots(bytes[] memory groupSignature_, bytes[] memory bClaims_)
         public
         onlyFactory
@@ -176,15 +128,21 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
                 );
             }
         }
-
         uint256 epoch;
         for (uint256 i = 0; i < bClaims_.length; i++) {
             BClaimsParserLibrary.BClaims memory blockClaims = BClaimsParserLibrary.extractBClaims(
                 bClaims_[i]
             );
             if (blockClaims.height % _epochLength != 0) {
-                revert SnapshotsErrors.InvalidBlockHeight(blockClaims.height);
+                revert SnapshotsErrors.BlockHeightNotMultipleOfEpochLength(
+                    blockClaims.height,
+                    _epochLength
+                );
             }
+            (
+                uint256[4] memory masterPublicKey,
+                uint256[2] memory signature
+            ) = _checkBClaimsSignature(groupSignature_[i], bClaims_[i]);
             epoch = getEpochFromHeight(blockClaims.height);
             _setSnapshot(Snapshot(block.number, blockClaims));
             emit SnapshotTaken(
@@ -193,7 +151,8 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
                 blockClaims.height,
                 msg.sender,
                 true,
-                groupSignature_[i],
+                masterPublicKey,
+                signature,
                 blockClaims
             );
         }
@@ -277,6 +236,30 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
         return _getEpochFromHeight(uint32(height));
     }
 
+    function checkBClaimsSignature(bytes calldata groupSignature_, bytes calldata bClaims_)
+        public
+        view
+        returns (bool)
+    {
+        // if the function does not revert, it means that the signature is valid
+        _checkBClaimsSignature(groupSignature_, bClaims_);
+        return true;
+    }
+
+    function isValidatorElectedToPerformSnapshot(
+        address validator,
+        uint256 lastSnapshotCommittedAt,
+        bytes32 groupSignatureHash
+    ) public view returns (bool) {
+        // if the function does not revert, it means that the validator is the selected to perform the snapshot
+        _isValidatorElectedToPerformSnapshot(
+            validator,
+            lastSnapshotCommittedAt,
+            groupSignatureHash
+        );
+        return true;
+    }
+
     function mayValidatorSnapshot(
         uint256 numValidators,
         uint256 myIdx,
@@ -284,14 +267,99 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
         bytes32 randomSeed,
         uint256 desperationFactor
     ) public pure returns (bool) {
-        return
-            _mayValidatorSnapshot(
-                numValidators,
-                myIdx,
-                blocksSinceDesperation,
-                randomSeed,
-                desperationFactor
+        (bool isValidatorElected, , ) = _mayValidatorSnapshot(
+            numValidators,
+            myIdx,
+            blocksSinceDesperation,
+            randomSeed,
+            desperationFactor
+        );
+        return isValidatorElected;
+    }
+
+    function _isValidatorElectedToPerformSnapshot(
+        address validator,
+        uint256 lastSnapshotCommittedAt,
+        bytes32 groupSignatureHash
+    ) internal view {
+        // Check if sender is the elected validator allowed to make the snapshot
+        uint256 validatorIndex = IETHDKG(_ethdkgAddress()).getLastRoundParticipantIndex(validator);
+        uint256 ethBlocksSinceLastSnapshot = block.number - lastSnapshotCommittedAt;
+        uint256 desperationDelay = _snapshotDesperationDelay;
+        uint256 blocksSinceDesperation = ethBlocksSinceLastSnapshot >= desperationDelay
+            ? ethBlocksSinceLastSnapshot - desperationDelay
+            : 0;
+        (bool isValidatorElected, uint256 startIndex, uint256 endIndex) = _mayValidatorSnapshot(
+            IValidatorPool(_validatorPoolAddress()).getValidatorsCount(),
+            validatorIndex - 1,
+            blocksSinceDesperation,
+            groupSignatureHash,
+            uint256(_snapshotDesperationFactor)
+        );
+        if (!isValidatorElected) {
+            revert SnapshotsErrors.ValidatorNotElected(
+                validatorIndex - 1,
+                startIndex,
+                endIndex,
+                groupSignatureHash
             );
+        }
+    }
+
+    function _parseAndValidateBClaims(uint32 epoch, bytes calldata bClaims_)
+        internal
+        view
+        returns (BClaimsParserLibrary.BClaims memory blockClaims)
+    {
+        blockClaims = BClaimsParserLibrary.extractBClaims(bClaims_);
+
+        if (epoch * _epochLength != blockClaims.height) {
+            revert SnapshotsErrors.UnexpectedBlockHeight(blockClaims.height, epoch * _epochLength);
+        }
+
+        if (blockClaims.chainId != _chainId) {
+            revert SnapshotsErrors.InvalidChainId(blockClaims.chainId);
+        }
+    }
+
+    function _checkBClaimsSignature(bytes memory groupSignature_, bytes memory bClaims_)
+        internal
+        view
+        returns (uint256[4] memory, uint256[2] memory)
+    {
+        (uint256[4] memory masterPublicKey, uint256[2] memory signature) = RCertParserLibrary
+            .extractSigGroup(groupSignature_, 0);
+
+        bytes32 calculatedMasterPublicKeyHash = keccak256(abi.encodePacked(masterPublicKey));
+        bytes32 expectedMasterPublicKeyHash = IETHDKG(_ethdkgAddress()).getMasterPublicKeyHash();
+
+        if (calculatedMasterPublicKeyHash != expectedMasterPublicKeyHash) {
+            revert SnapshotsErrors.InvalidMasterPublicKey(
+                calculatedMasterPublicKeyHash,
+                expectedMasterPublicKeyHash
+            );
+        }
+
+        if (
+            !CryptoLibrary.verifySignatureASM(
+                abi.encodePacked(keccak256(bClaims_)),
+                signature,
+                masterPublicKey
+            )
+        ) {
+            revert SnapshotsErrors.SignatureVerificationFailed();
+        }
+        return (masterPublicKey, signature);
+    }
+
+    function _checkSnapshotMinimumInterval(uint256 lastSnapshotCommittedAt) internal view {
+        uint256 minimumIntervalBetweenSnapshots = _minimumIntervalBetweenSnapshots;
+        if (block.number < lastSnapshotCommittedAt + minimumIntervalBetweenSnapshots) {
+            revert SnapshotsErrors.MinimumBlocksIntervalNotPassed(
+                block.number,
+                lastSnapshotCommittedAt + minimumIntervalBetweenSnapshots
+            );
+        }
     }
 
     function _mayValidatorSnapshot(
@@ -300,7 +368,15 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
         uint256 blocksSinceDesperation,
         bytes32 randomSeed,
         uint256 desperationFactor
-    ) internal pure returns (bool) {
+    )
+        internal
+        pure
+        returns (
+            bool,
+            uint256,
+            uint256
+        )
+    {
         uint256 numValidatorsAllowed = 1;
 
         uint256 desperation = 0;
@@ -312,11 +388,12 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
         uint256 rand = uint256(randomSeed);
         uint256 start = (rand % numValidators);
         uint256 end = (start + numValidatorsAllowed) % numValidators;
-
+        bool isAllowedToDoSnapshots;
         if (end > start) {
-            return myIdx >= start && myIdx < end;
+            isAllowedToDoSnapshots = myIdx >= start && myIdx < end;
         } else {
-            return myIdx >= start || myIdx < end;
+            isAllowedToDoSnapshots = myIdx >= start || myIdx < end;
         }
+        return (isAllowedToDoSnapshots, start, end);
     }
 }

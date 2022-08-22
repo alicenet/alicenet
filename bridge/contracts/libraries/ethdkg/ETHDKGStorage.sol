@@ -29,6 +29,12 @@ struct Participant {
     uint256[4] gpkj;
 }
 
+struct PhaseInformation {
+    Phase phase;
+    uint64 startBlock;
+    uint64 endBlock;
+}
+
 abstract contract ETHDKGStorage is
     Initializable,
     ImmutableFactory,
