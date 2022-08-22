@@ -45,12 +45,13 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// Command is the cobra.Command specifically for running as a node
+// Command is the cobra.Command specifically for running as a node.
 var Command = cobra.Command{
 	Use:   "validator",
 	Short: "Starts a node",
 	Long:  "Runs a AliceNet node in mining or non-mining mode",
-	Run:   validatorNode}
+	Run:   validatorNode,
+}
 
 func initEthereumConnection(logger *logrus.Logger) (layer1.Client, layer1.AllSmartContracts, *mncrypto.Secp256k1Signer, []byte) {
 	// Ethereum connection setup
@@ -64,7 +65,6 @@ func initEthereumConnection(logger *logrus.Logger) (layer1.Client, layer1.AllSma
 		constants.EthereumFinalityDelay,
 		config.Configuration.Ethereum.TxMaxGasFeeAllowedInGwei,
 		config.Configuration.Ethereum.EndpointMinimumPeers)
-
 	if err != nil {
 		logger.Fatalf("NewEthereumEndpoint(...) failed: %v", err)
 		panic(err)
@@ -96,7 +96,7 @@ func initEthereumConnection(logger *logrus.Logger) (layer1.Client, layer1.AllSma
 // Setup the peer manager:
 // Peer manager owns the raw TCP connections of the p2p system
 // Runs the gossip protocol
-// Provides functionality to access methods on a remote peer (validators, miners, those who care about voting and consensus)
+// Provides functionality to access methods on a remote peer (validators, miners, those who care about voting and consensus).
 func initPeerManager(consGossipHandlers *gossip.Handlers, consReqHandler *request.Handler) *peering.PeerManager {
 	p2pDispatch := proto.NewP2PDispatch()
 
@@ -133,7 +133,7 @@ func initPeerManager(consGossipHandlers *gossip.Handlers, consReqHandler *reques
 	return peerManager
 }
 
-// Setup the localstate RPC server, a more REST-like API, used by e.g. wallet users (or anything that's not a node)
+// Setup the localstate RPC server, a more REST-like API, used by e.g. wallet users (or anything that's not a node).
 func initLocalStateServer(localStateHandler *localrpc.Handlers) *localrpc.Handler {
 	localStateDispatch := proto.NewLocalStateDispatch()
 	localStateServer, err := localrpc.NewStateServerHandler(
@@ -173,7 +173,6 @@ func initDatabase(ctx context.Context, path string, inMemory bool) *badger.DB {
 }
 
 func validatorNode(cmd *cobra.Command, args []string) {
-
 	// setup logger for program assembly operations
 	logger := logging.GetLogger(cmd.Name())
 	logger.Infof("Starting node with args %v", args)
@@ -194,7 +193,12 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	if err != nil {
 		panic(err)
 	}
-	newMajorIsGreater, _, _, localVersion := aUtils.CompareCanonicalVersion(latestVersion)
+
+	newMajorIsGreater, _, _, localVersion, err := aUtils.CompareCanonicalVersion(latestVersion)
+	if err != nil {
+		panic(err)
+	}
+
 	logger.Infof(
 		"Local AliceNet Node Version %d.%d.%d",
 		localVersion.Major,
@@ -392,7 +396,7 @@ func validatorNode(cmd *cobra.Command, args []string) {
 }
 
 // countSignals will cause a forced exit on repeated Ctrl+C commands
-// this is a convenient escape from a deadlock during shutdown
+// this is a convenient escape from a deadlock during shutdown.
 func countSignals(logger *logrus.Logger, num int, c chan os.Signal) {
 	<-c
 	for count := 0; count < num; count++ {
