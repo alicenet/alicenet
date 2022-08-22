@@ -53,6 +53,8 @@ contract BToken is
 
     function initialize() public onlyFactory initializer {
         __ERC20_init("AliceNet Utility Token", "ALCB");
+        // Initial deposit to cover the migrated txs on aliceNet
+        _virtualDeposit(1, 0xba7809A4114eEF598132461f3202b5013e834CD5, 500000000000);
     }
 
     /// Distributes the yields of the BToken sale to all stakeholders
