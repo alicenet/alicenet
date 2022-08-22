@@ -24,12 +24,12 @@ func NewErr(msg string) *Err {
 	return &Err{msg, nil, []string{}}
 }
 
-// Unwrap returns the wrapper (inner) error.
+// Unwrap returns the wrapper (inner) error
 func (s *Err) Unwrap() error {
 	return s.wrapped
 }
 
-// Wrap wraps this error around a given error.
+// Wrap wraps this error around a given error
 func (e *Err) Wrap(inner error) *Err {
 	if inner == nil {
 		return nil
@@ -40,7 +40,7 @@ func (e *Err) Wrap(inner error) *Err {
 }
 
 // Trace adds a trace line to this error with an optional suffix
-// Suffix can be a single value, or an format string followed by format values.
+// Suffix can be a single value, or an format string followed by format values
 func (e *Err) Trace(suffix ...interface{}) *Err {
 	return e.trace(1, suffix...)
 }
@@ -66,7 +66,7 @@ func (e *Err) trace(depth int, suffix ...interface{}) *Err {
 	return e
 }
 
-// Error returns the error message and traces of this error and any wrapped errors.
+// Error returns the error message and traces of this error and any wrapped errors
 func (e *Err) Error() string {
 	ret := e.msg
 

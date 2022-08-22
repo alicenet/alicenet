@@ -1,8 +1,9 @@
 package interfaces
 
 import (
-	trie "github.com/alicenet/alicenet/badgerTrie"
 	"github.com/dgraph-io/badger/v2"
+
+	trie "github.com/alicenet/alicenet/badgerTrie"
 )
 
 // Application ...

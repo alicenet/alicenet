@@ -84,7 +84,6 @@ type Server struct {
 }
 
 // KnownNodes returns a set of recently seen peers when the bootnode is connected to
-//
 //goland:noinspection GoUnusedParameter
 func (bn *Server) KnownNodes(ctx context.Context, r *pb.BootNodeRequest) (*pb.BootNodeResponse, error) {
 	// get the identity of the caller

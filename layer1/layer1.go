@@ -4,11 +4,12 @@ import (
 	"context"
 	"math/big"
 
-	"github.com/alicenet/alicenet/bridge/bindings"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+
+	"github.com/alicenet/alicenet/bridge/bindings"
 )
 
 // Client contains state information about a connection to the Ethereum node.
