@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT-open-group
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.16;
 
 abstract contract GovernanceMaxLock {
     // _MAX_GOVERNANCE_LOCK describes the maximum interval
