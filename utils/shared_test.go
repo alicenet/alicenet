@@ -7,10 +7,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/alicenet/alicenet/constants"
-	"github.com/alicenet/alicenet/logging"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/logging"
 )
 
 func TestUtils(t *testing.T) {
