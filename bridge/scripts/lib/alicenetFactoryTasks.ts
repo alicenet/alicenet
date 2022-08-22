@@ -8,6 +8,7 @@ import {
 import fs from "fs";
 import { task } from "hardhat/config";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
+import { encodeMultiCallArgs } from "./alicenetTasks";
 import {
   ALICENET_FACTORY,
   CONTRACT_ADDR,
@@ -21,8 +22,6 @@ import {
   DEPLOY_CREATE,
   DEPLOY_METAMORPHIC,
   DEPLOY_PROXY,
-  DEPLOY_STATIC,
-  DEPLOY_TEMPLATE,
   DEPLOY_UPGRADEABLE_PROXY,
   INITIALIZER,
   MULTICALL_GAS_LIMIT,
@@ -52,10 +51,13 @@ import {
   DeployProxyMCArgs,
   extractName,
   getAllContracts,
+  getContractDescriptor,
   getDeployGroup,
   getDeployGroupIndex,
   getDeployMetaArgs,
+  getDeployStaticMultiCallArgs,
   getDeployType,
+  getDeployUpgradeableMultiCallArgs,
   getDeployUpgradeableProxyArgs,
   getMulticallArgs,
   isInitializable,
@@ -98,16 +100,11 @@ task(
     await checkUserDirPath(taskArgs.outputFolder);
     const factoryBase = await hre.ethers.getContractFactory(ALICENET_FACTORY);
     const accounts = await getAccounts(hre);
-    const txCount = await hre.ethers.provider.getTransactionCount(accounts[0]);
     // calculate the factory address for the constructor arg
-    const futureFactoryAddress = hre.ethers.utils.getContractAddress({
-      from: accounts[0],
-      nonce: txCount,
-    });
-    const deployTX = factoryBase.getDeployTransaction(futureFactoryAddress);
+    const deployTX = factoryBase.getDeployTransaction();
     const gasCost = await hre.ethers.provider.estimateGas(deployTX);
     // deploys the factory
-    const factory = await factoryBase.deploy(futureFactoryAddress);
+    const factory = await factoryBase.deploy();
     await factory.deployTransaction.wait();
     // record the state in a json file to be used in other tasks
     const factoryData: FactoryData = {
@@ -328,13 +325,10 @@ task(
     // factory interface pointed to deployed factory contract
     // get the 32byte salt from logic contract file
     const salt: BytesLike = await getBytes32Salt(taskArgs.contractName, hre);
-    const logicContract: any = await hre.ethers.getContractFactory(
-      taskArgs.contractName
-    );
     const constructorArgs =
       taskArgs.constructorArgs === undefined ? [] : taskArgs.constructorArgs;
     // encode deployBcode
-    const deployTx = logicContract.getDeployTransaction(...constructorArgs);
+
     if (hre.network.name === "hardhat") {
       // hardhat is not being able to estimate correctly the tx gas due to the massive bytes array
       // being sent as input to the function (the contract bytecode), so we need to increase the block
@@ -343,30 +337,18 @@ task(
         "0x3000000000000000",
       ]);
     }
-    const txCount = await hre.ethers.provider.getTransactionCount(
+    // get the multi call arguements as [deployProxy, upgradeProxy]
+    const contractDescriptor = await getContractDescriptor(
+      taskArgs.contractName,
+      constructorArgs,
+      initArgs,
+      hre
+    );
+    const multiCallArgs = await getDeployUpgradeableMultiCallArgs(
+      contractDescriptor,
+      hre,
       factory.address
     );
-    const logicAddress = hre.ethers.utils.getContractAddress({
-      from: factory.address,
-      nonce: txCount,
-    });
-    // encode deploy create
-    const deployCreate: BytesLike = factoryBase.interface.encodeFunctionData(
-      DEPLOY_CREATE,
-      [deployTx.data]
-    );
-    // encode the deployProxy function call with Salt as arg
-    const deployProxy: BytesLike = factoryBase.interface.encodeFunctionData(
-      DEPLOY_PROXY,
-      [salt]
-    );
-    // encode upgrade proxy multicall
-    const upgradeProxy: BytesLike = factoryBase.interface.encodeFunctionData(
-      UPGRADE_PROXY,
-      [salt, logicAddress, initCallData]
-    );
-    // get the multi call arguements as [deployProxy, upgradeProxy]
-    const multiCallArgs = [deployCreate, deployProxy, upgradeProxy];
     const estimatedMultiCallGas = await factory.estimateGas.multiCall(
       multiCallArgs
     );
@@ -487,45 +469,42 @@ task("multiCallDeployMetamorphic")
     }
     const factoryBase = await hre.ethers.getContractFactory(ALICENET_FACTORY);
     const factory = factoryBase.attach(taskArgs.factoryAddress);
-    const logicContract: any = await hre.ethers.getContractFactory(
-      taskArgs.contractName
-    );
     const constructorArgs =
       taskArgs.constructorArgs === undefined ? [] : taskArgs.constructorArgs;
-    const deployTxReq = logicContract.getDeployTransaction(...constructorArgs);
-
     const logicFactory: any = await hre.ethers.getContractFactory(
       taskArgs.contractName
     );
+
     const initArgs =
       taskArgs.initCallData === undefined
         ? []
         : taskArgs.initCallData.replace(/\s+/g, "").split(",");
-    const fullname = (await getFullyQualifiedName(
+    const contractDescriptor = await getContractDescriptor(
       taskArgs.contractName,
+      constructorArgs,
+      initArgs,
       hre
-    )) as string;
-    const isInitable = await isInitializable(fullname, hre.artifacts);
+    );
+    const isInitable = await isInitializable(
+      contractDescriptor.fullyQualifiedName,
+      hre.artifacts
+    );
     const initCallData = isInitable
       ? logicFactory.interface.encodeFunctionData(INITIALIZER, initArgs)
       : "0x";
-    const salt = await getBytes32Salt(taskArgs.contractName, hre);
-    const txCount = await hre.ethers.provider.getTransactionCount(
+    const nonce = await hre.ethers.provider.getTransactionCount(
       factory.address
     );
     const templateAddress = hre.ethers.utils.getContractAddress({
       from: factory.address,
-      nonce: txCount,
+      nonce,
     });
-    const deployTemplate: BytesLike = factoryBase.interface.encodeFunctionData(
-      DEPLOY_TEMPLATE,
-      [deployTxReq.data]
+    const salt = await getBytes32Salt(contractDescriptor.name, hre);
+    const multiCallArgs = await getDeployStaticMultiCallArgs(
+      contractDescriptor,
+      hre,
+      factory.address
     );
-    const deployStatic: BytesLike = factoryBase.interface.encodeFunctionData(
-      DEPLOY_STATIC,
-      [salt, initCallData]
-    );
-    const multiCallArgs = [deployTemplate, deployStatic];
     const estimatedMultiCallGas = await factory.estimateGas.multiCall(
       multiCallArgs
     );
@@ -922,16 +901,27 @@ task("multiCallDeployProxy", "deploy and upgrade proxy with multicall")
         ? await getBytes32Salt(taskArgs.contractName, hre)
         : hre.ethers.utils.formatBytes32String(taskArgs.salt);
     // encode the deployProxy function call with Salt as arg
-    const deployProxy: BytesLike = factoryBase.interface.encodeFunctionData(
-      DEPLOY_PROXY,
-      [salt]
-    );
+    const deployProxyCallData: BytesLike =
+      factoryBase.interface.encodeFunctionData(DEPLOY_PROXY, [salt]);
     // encode upgrade proxy multicall
-    const upgradeProxy: BytesLike = factoryBase.interface.encodeFunctionData(
-      UPGRADE_PROXY,
-      [salt, taskArgs.logicAddress, initCallData]
-    );
+    const upgradeProxyCallData: BytesLike =
+      factoryBase.interface.encodeFunctionData(UPGRADE_PROXY, [
+        salt,
+        taskArgs.logicAddress,
+        initCallData,
+      ]);
     // get the multi call arguements as [deployProxy, upgradeProxy]
+
+    const deployProxy = encodeMultiCallArgs(
+      factory.address,
+      0,
+      deployProxyCallData
+    );
+    const upgradeProxy = encodeMultiCallArgs(
+      factory.address,
+      0,
+      upgradeProxyCallData
+    );
     const multiCallArgs = [deployProxy, upgradeProxy];
     // send the multicall transaction with deployProxy and upgradeProxy
     const txResponse = await factory.multiCall(multiCallArgs);
@@ -991,7 +981,7 @@ task(
     const deployTx = logicFactory.getDeployTransaction(
       ...taskArgs.constructorArgs
     );
-    const deployCreate = factoryBase.interface.encodeFunctionData(
+    const deployCreateCallData = factoryBase.interface.encodeFunctionData(
       DEPLOY_CREATE,
       [deployTx.data]
     );
@@ -1006,7 +996,7 @@ task(
       from: factory.address,
       nonce: txCount,
     });
-    const upgradeProxy = factoryBase.interface.encodeFunctionData(
+    const upgradeProxyCallData = factoryBase.interface.encodeFunctionData(
       UPGRADE_PROXY,
       [salt, implAddress, initCallData]
     );
@@ -1018,6 +1008,16 @@ task(
     );
     const proxyContract = await PROXY_FACTORY.attach(proxyAddress);
     const oldImpl = await proxyContract.getImplementationAddress();
+    const deployCreate = await encodeMultiCallArgs(
+      factory.address,
+      0,
+      deployCreateCallData
+    );
+    const upgradeProxy = await encodeMultiCallArgs(
+      factory.address,
+      0,
+      upgradeProxyCallData
+    );
     const txResponse = await factory.multiCall([deployCreate, upgradeProxy]);
     const receipt = await txResponse.wait();
     await showState(
@@ -1286,7 +1286,7 @@ async function getSalt(
 }
 
 /**
- * @description converts
+ * @description gets the salt from the contract natspec tag and converts it to bytes32
  * @param contractName the name of the contract to get the salt for
  * @param hre hardhat runtime environment
  * @returns the string that represents the 32Bytes version

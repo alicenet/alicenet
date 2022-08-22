@@ -15,7 +15,8 @@ interface ISnapshots {
         uint256 height,
         address indexed validator,
         bool isSafeToProceedConsensus,
-        bytes signatureRaw,
+        uint256[4] masterPublicKey,
+        uint256[2] signature,
         BClaimsParserLibrary.BClaims bClaims
     );
 
@@ -72,6 +73,17 @@ interface ISnapshots {
     function getLatestSnapshot() external view returns (Snapshot memory);
 
     function getEpochFromHeight(uint256 height) external view returns (uint256);
+
+    function checkBClaimsSignature(bytes calldata groupSignature_, bytes calldata bClaims_)
+        external
+        view
+        returns (bool);
+
+    function isValidatorElectedToPerformSnapshot(
+        address validator,
+        uint256 lastSnapshotCommittedAt,
+        bytes32 groupSignatureHash
+    ) external view returns (bool);
 
     function mayValidatorSnapshot(
         uint256 numValidators,

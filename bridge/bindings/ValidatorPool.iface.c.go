@@ -15,10 +15,6 @@ type IValidatorPoolCaller interface {
 	//
 	// Solidity: function CLAIM_PERIOD() view returns(uint256)
 	CLAIMPERIOD(opts *bind.CallOpts) (*big.Int, error)
-	// MAXINTERVALWITHOUTSNAPSHOTS is a free data retrieval call binding the contract method 0x61aee135.
-	//
-	// Solidity: function MAX_INTERVAL_WITHOUT_SNAPSHOTS() view returns(uint256)
-	MAXINTERVALWITHOUTSNAPSHOTS(opts *bind.CallOpts) (*big.Int, error)
 	// POSITIONLOCKPERIOD is a free data retrieval call binding the contract method 0x9c87e3ed.
 	//
 	// Solidity: function POSITION_LOCK_PERIOD() view returns(uint256)
@@ -35,6 +31,10 @@ type IValidatorPoolCaller interface {
 	//
 	// Solidity: function getLocations(address[] validators_) view returns(string[])
 	GetLocations(opts *bind.CallOpts, validators_ []common.Address) ([]string, error)
+	// GetMaxIntervalWithoutSnapshots is a free data retrieval call binding the contract method 0xd3dfe445.
+	//
+	// Solidity: function getMaxIntervalWithoutSnapshots() view returns(uint256 maxIntervalWithoutSnapshots)
+	GetMaxIntervalWithoutSnapshots(opts *bind.CallOpts) (*big.Int, error)
 	// GetMaxNumValidators is a free data retrieval call binding the contract method 0xd2992f54.
 	//
 	// Solidity: function getMaxNumValidators() view returns(uint256)

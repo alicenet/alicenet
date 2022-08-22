@@ -1,8 +1,10 @@
+import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
 import { Snapshots } from "../../typechain-types";
 import { expect } from "../chai-setup";
 import { completeETHDKGRound } from "../ethdkg/setup";
 import {
+  factoryCallAnyFixture,
   Fixture,
   getFixture,
   getValidatorEthAccount,
@@ -14,6 +16,7 @@ import {
   invalidSnapshotIncorrectSig,
   validatorsSnapshots as validatorsSnapshots1,
   validSnapshot1024,
+  validSnapshot2048,
 } from "./assets/4-validators-snapshots-1";
 
 describe("Snapshots: With successful ETHDKG round completed", () => {
@@ -31,21 +34,31 @@ describe("Snapshots: With successful ETHDKG round completed", () => {
   });
 
   it("Reverts when validator not elected to do snapshot", async function () {
+    await factoryCallAnyFixture(
+      fixture,
+      "snapshots",
+      "setSnapshotDesperationDelay",
+      [30000000n]
+    );
     await mineBlocks(
       (await fixture.snapshots.getMinimumIntervalBetweenSnapshots()).toBigInt()
     );
-    const junkData =
-      "0x0000000000000000000000000000000000000000000000000000006d6168616d";
     await expect(
       snapshots
-        .connect(await getValidatorEthAccount(validatorsSnapshots1[0]))
-        .snapshot(junkData, junkData)
+        .connect(await getValidatorEthAccount(validatorsSnapshots1[2]))
+        .snapshot(validSnapshot1024.GroupSignature, validSnapshot1024.BClaims)
     )
-      .to.be.revertedWithCustomError(snapshots, "InsufficientBytes")
-      .withArgs(32, 192);
+      .to.be.revertedWithCustomError(snapshots, "ValidatorNotElected")
+      .withArgs(
+        2,
+        3,
+        0,
+        "0xe49578123478a2663c878cc45bdda03dd0ffa36f7f8f6517d849e726450aa04f"
+      );
   });
 
   it("Reverts when snapshot state contains invalid height", async function () {
+    const expectedEpoch = 1024;
     await expect(
       snapshots
         .connect(
@@ -55,8 +68,22 @@ describe("Snapshots: With successful ETHDKG round completed", () => {
         )
         .snapshot(invalidSnapshot500.GroupSignature, invalidSnapshot500.BClaims)
     )
-      .to.be.revertedWithCustomError(fixture.snapshots, "InvalidBlockHeight")
-      .withArgs(invalidSnapshot500.height);
+      .to.be.revertedWithCustomError(fixture.snapshots, "UnexpectedBlockHeight")
+      .withArgs(invalidSnapshot500.height, expectedEpoch);
+  });
+
+  it("Reverts when snapshot state is the future", async function () {
+    await expect(
+      snapshots
+        .connect(
+          await getValidatorEthAccount(
+            validatorsSnapshots1[validSnapshot2048.validatorIndex]
+          )
+        )
+        .snapshot(validSnapshot2048.GroupSignature, validSnapshot2048.BClaims)
+    )
+      .to.be.revertedWithCustomError(fixture.snapshots, "UnexpectedBlockHeight")
+      .withArgs(validSnapshot2048.height, BigNumber.from(1024));
   });
 
   it("Reverts when snapshot state contains invalid chain id", async function () {
@@ -78,6 +105,9 @@ describe("Snapshots: With successful ETHDKG round completed", () => {
 
   // todo wrong public key failure happens first with this state
   it("Reverts when snapshot state contains incorrect signature", async function () {
+    await mineBlocks(
+      (await fixture.snapshots.getMinimumIntervalBetweenSnapshots()).toBigInt()
+    );
     await expect(
       snapshots
         .connect(
@@ -136,21 +166,9 @@ describe("Snapshots: With successful ETHDKG round completed", () => {
         expectedHeight,
         ethers.utils.getAddress(validatorsSnapshots1[0].address),
         expectedSafeToProceedConsensus,
-        validSnapshot1024.GroupSignature,
+        validSnapshot1024.GroupSignatureDeserialized?.[0],
+        validSnapshot1024.GroupSignatureDeserialized?.[1],
         validSnapshot1024.BClaimsDeserialized
       );
   });
-
-  /*
-  FYI this scenario is not possible to cover due to the fact that no validators can be registered but not participate in the ETHDKG round.
-
-  it('Does not allow snapshot caller did not participate in the last ETHDKG round', async function () {
-    await expect(
-      snapshots
-        .connect(await getValidatorEthAccount(validatorsSnapshots1[0]))
-        .snapshot(validSnapshot1024.GroupSignature, validSnapshot1024.BClaims)
-    ).to.be.revertedWith(
-      `Snapshots: Caller didn't participate in the last ethdkg round!`
-    )
-  }) */
 });

@@ -56,7 +56,7 @@ describe("ValidatorPool: Consensus dependent logic ", async () => {
     const latestSnapshotHeight =
       await fixture.snapshots.getCommittedHeightFromLatestSnapshot();
     const maxInterval =
-      await fixture.validatorPool.MAX_INTERVAL_WITHOUT_SNAPSHOTS();
+      await fixture.validatorPool.getMaxIntervalWithoutSnapshots();
     const txPromise = factoryCallAnyFixture(
       fixture,
       "validatorPool",
@@ -95,7 +95,7 @@ describe("ValidatorPool: Consensus dependent logic ", async () => {
     await network.provider.send("hardhat_mine", [
       ethers.utils.hexValue(
         (
-          await fixture.validatorPool.MAX_INTERVAL_WITHOUT_SNAPSHOTS()
+          await fixture.validatorPool.getMaxIntervalWithoutSnapshots()
         ).toBigInt() + BigInt(1)
       ),
     ]);
@@ -142,7 +142,7 @@ describe("ValidatorPool: Consensus dependent logic ", async () => {
     await network.provider.send("hardhat_mine", [
       ethers.utils.hexValue(
         (
-          await fixture.validatorPool.MAX_INTERVAL_WITHOUT_SNAPSHOTS()
+          await fixture.validatorPool.getMaxIntervalWithoutSnapshots()
         ).toBigInt() + BigInt(1)
       ),
     ]);

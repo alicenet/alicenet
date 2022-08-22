@@ -5,7 +5,8 @@ import {
   getFixture,
   getReceiptForFailedTransaction,
 } from "../setup";
-import { commitSnapshots } from "./setup";
+import { validatorsSnapshots } from "../snapshots/assets/4-validators-snapshots-1";
+import { commitSnapshots, createValidators, stakeValidators } from "./setup";
 
 describe("ValidatorPool Access Control: An user with admin role should be able to:", async function () {
   let fixture: Fixture;
@@ -34,6 +35,19 @@ describe("ValidatorPool Access Control: An user with admin role should be able t
       [maxNumValidators]
     );
     expect(rcpt.status).to.equal(1);
+  });
+
+  it("Set Max Interval Without Snapshots", async function () {
+    const rcpt = await factoryCallAnyFixture(
+      fixture,
+      "validatorPool",
+      "setMaxIntervalWithoutSnapshots",
+      [1]
+    );
+    expect(rcpt.status).to.equal(1);
+    expect(
+      await fixture.validatorPool.getMaxIntervalWithoutSnapshots()
+    ).to.be.equals(1);
   });
 
   it("Schedule maintenance", async function () {
@@ -80,7 +94,7 @@ describe("ValidatorPool Access Control: An user with admin role should be able t
     const latestSnapshotHeight =
       await fixture.snapshots.getCommittedHeightFromLatestSnapshot();
     const maxInterval =
-      await fixture.validatorPool.MAX_INTERVAL_WITHOUT_SNAPSHOTS();
+      await fixture.validatorPool.getMaxIntervalWithoutSnapshots();
 
     const txPromise = factoryCallAnyFixture(
       fixture,
@@ -98,5 +112,55 @@ describe("ValidatorPool Access Control: An user with admin role should be able t
         "MinimumBlockIntervalNotMet"
       )
       .withArgs(expectedBlockNumber, latestSnapshotHeight.add(maxInterval));
+  });
+});
+
+describe("ValidatorPool Access Control: An user with admin role should not be able to:", async function () {
+  let fixture: Fixture;
+
+  beforeEach(async function () {
+    fixture = await getFixture(false, true);
+  });
+
+  it("Set Max Interval Without Snapshots to 0", async function () {
+    await expect(
+      fixture.factory.callAny(
+        fixture.validatorPool.address,
+        0,
+        fixture.validatorPool.interface.encodeFunctionData(
+          "setMaxIntervalWithoutSnapshots",
+          [0]
+        )
+      )
+    ).to.be.revertedWithCustomError(
+      fixture.validatorPool,
+      "MaxIntervalWithoutSnapshotsMustBeNonZero"
+    );
+  });
+
+  it("Set Max Num Validators to a number smaller then validatorPool length", async function () {
+    const validators = await createValidators(fixture, validatorsSnapshots);
+    const stakingTokenIds = await stakeValidators(fixture, validators);
+    await factoryCallAnyFixture(
+      fixture,
+      "validatorPool",
+      "registerValidators",
+      [validators, stakingTokenIds]
+    );
+    await expect(
+      fixture.factory.callAny(
+        fixture.validatorPool.address,
+        0,
+        fixture.validatorPool.interface.encodeFunctionData(
+          "setMaxNumValidators",
+          [3]
+        )
+      )
+    )
+      .to.be.revertedWithCustomError(
+        fixture.validatorPool,
+        "MaxNumValidatorsIsTooLow"
+      )
+      .withArgs(3, 4);
   });
 });

@@ -6,6 +6,7 @@ import {
   addValidators,
   assertEventSharesDistributed,
   distributeValidatorsShares,
+  getInfoForIncorrectPhaseCustomError,
   initializeETHDKG,
   Phase,
   registerValidators,
@@ -31,24 +32,30 @@ describe("ETHDKG: Distribute Shares", () => {
       validators4.slice(0, 1),
       expectedNonce
     );
-    const ethDKGPhases = await ethers.getContractAt(
-      "ETHDKGPhases",
-      ethdkg.address
+    const txPromise = distributeValidatorsShares(
+      ethdkg,
+      validatorPool,
+      validators4.slice(0, 1),
+      expectedNonce
     );
+    const [
+      ethDKGPhases,
+      ,
+      expectedBlockNumber,
+      expectedCurrentPhase,
+      phaseStartBlock,
+      phaseLength,
+    ] = await getInfoForIncorrectPhaseCustomError(txPromise, ethdkg);
     // distribute shares before the time
-    await expect(
-      distributeValidatorsShares(
-        ethdkg,
-        validatorPool,
-        validators4.slice(0, 1),
-        expectedNonce
-      )
-    )
-      .to.be.revertedWithCustomError(
-        ethDKGPhases,
-        `ETHDKGNotInSharedDistributionPhase`
-      )
-      .withArgs(Phase.RegistrationOpen);
+    await expect(txPromise)
+      .to.be.revertedWithCustomError(ethDKGPhases, `IncorrectPhase`)
+      .withArgs(expectedCurrentPhase, expectedBlockNumber, [
+        [
+          Phase.ShareDistribution,
+          phaseStartBlock,
+          phaseStartBlock.add(phaseLength),
+        ],
+      ]);
   });
 
   it("does not let non-validators to distribute shares", async function () {

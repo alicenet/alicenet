@@ -3,7 +3,7 @@ pragma solidity ^0.8.11;
 
 import "contracts/libraries/errors/GenericParserLibraryErrors.sol";
 
-import "./BaseParserLibrary.sol";
+import "contracts/libraries/parsers/BaseParserLibrary.sol";
 
 /// @title Library to parse the RClaims structure from a blob of capnproto state
 library RClaimsParserLibrary {

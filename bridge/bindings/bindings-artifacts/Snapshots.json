@@ -19,6 +19,22 @@
     "inputs": [
       {
         "internalType": "uint256",
+        "name": "blockHeight",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "epochLength",
+        "type": "uint256"
+      }
+    ],
+    "name": "BlockHeightNotMultipleOfEpochLength",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
         "name": "offset",
         "type": "uint256"
       },
@@ -70,6 +86,11 @@
   },
   {
     "inputs": [],
+    "name": "EllipticCurvePairingFailed",
+    "type": "error"
+  },
+  {
+    "inputs": [],
     "name": "EpochMustBeNonZero",
     "type": "error"
   },
@@ -92,17 +113,6 @@
       }
     ],
     "name": "InsufficientBytes",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "blockHeight",
-        "type": "uint256"
-      }
-    ],
-    "name": "InvalidBlockHeight",
     "type": "error"
   },
   {
@@ -295,6 +305,22 @@
         "type": "address"
       }
     ],
+    "name": "OnlyDynamics",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "sender",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "expected",
+        "type": "address"
+      }
+    ],
     "name": "OnlyETHDKG",
     "type": "error"
   },
@@ -369,6 +395,48 @@
     "type": "error"
   },
   {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "givenBlockHeight",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "expectedBlockHeight",
+        "type": "uint256"
+      }
+    ],
+    "name": "UnexpectedBlockHeight",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "validatorIndex",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "startIndex",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "endIndex",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "groupSignatureHash",
+        "type": "bytes32"
+      }
+    ],
+    "name": "ValidatorNotElected",
+    "type": "error"
+  },
+  {
     "anonymous": false,
     "inputs": [
       {
@@ -416,9 +484,15 @@
       },
       {
         "indexed": false,
-        "internalType": "bytes",
-        "name": "signatureRaw",
-        "type": "bytes"
+        "internalType": "uint256[4]",
+        "name": "masterPublicKey",
+        "type": "uint256[4]"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256[2]",
+        "name": "signature",
+        "type": "uint256[2]"
       },
       {
         "components": [
@@ -466,6 +540,30 @@
     ],
     "name": "SnapshotTaken",
     "type": "event"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes",
+        "name": "groupSignature_",
+        "type": "bytes"
+      },
+      {
+        "internalType": "bytes",
+        "name": "bClaims_",
+        "type": "bytes"
+      }
+    ],
+    "name": "checkBClaimsSignature",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
   },
   {
     "inputs": [],
@@ -936,6 +1034,35 @@
     "name": "initialize",
     "outputs": [],
     "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "validator",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "lastSnapshotCommittedAt",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "groupSignatureHash",
+        "type": "bytes32"
+      }
+    ],
+    "name": "isValidatorElectedToPerformSnapshot",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
     "type": "function"
   },
   {
