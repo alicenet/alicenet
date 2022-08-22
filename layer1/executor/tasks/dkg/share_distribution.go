@@ -5,9 +5,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/ethereum/go-ethereum/core/types"
+
 	"github.com/alicenet/alicenet/layer1/executor/tasks"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
-	"github.com/ethereum/go-ethereum/core/types"
 )
 
 // ShareDistributionTask stores the state required safely distribute shares.

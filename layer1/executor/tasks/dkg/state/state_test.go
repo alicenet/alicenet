@@ -8,10 +8,11 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
 )
 
 func TestDKGState_ParticipantCopy(t *testing.T) {
