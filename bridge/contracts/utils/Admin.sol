@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT-open-group
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.16;
 import "contracts/libraries/errors/AdminErrors.sol";
 
 abstract contract Admin {
