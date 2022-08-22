@@ -7,11 +7,12 @@ import { getPosition, newPosition } from "../setup";
 describe("PublicStaking: Basics", async () => {
   let fixture: BaseTokensFixture;
   let adminSigner: SignerWithAddress;
+  let otherSigner: SignerWithAddress;
   let blockNumber: bigint;
 
   beforeEach(async function () {
     fixture = await getBaseTokensFixture();
-    [adminSigner] = await ethers.getSigners();
+    [adminSigner, otherSigner] = await ethers.getSigners();
     await fixture.aToken.approve(fixture.publicStaking.address, 1000);
     const tx = await fixture.publicStaking.connect(adminSigner).mint(1000);
     blockNumber = BigInt(tx.blockNumber as number);
@@ -55,9 +56,81 @@ describe("PublicStaking: Basics", async () => {
     );
   });
 
+  it("Should return correct owner address for valid position", async function () {
+    expect(await fixture.publicStaking.ownerOf(1)).to.be.equal(
+      adminSigner.address
+    );
+  });
+
+  it("Should return correct token id for index of owned token", async function () {
+    const index = 0;
+    const expectedTokenId = 1;
+    expect(
+      await fixture.publicStaking.tokenOfOwnerByIndex(
+        adminSigner.address,
+        index
+      )
+    ).to.be.equal(expectedTokenId);
+  });
+
+  it("Should revert for incorrect token id for index out of owned token bounds", async function () {
+    const index = 1;
+
+    await expect(
+      fixture.publicStaking.tokenOfOwnerByIndex(adminSigner.address, index)
+    ).to.be.revertedWith("ERC721Enumerable: owner index out of bounds");
+  });
+
   it("Should not be able to get a position that doesn't exist", async function () {
     await expect(fixture.publicStaking.getPosition(2))
       .to.be.revertedWithCustomError(fixture.publicStaking, "InvalidTokenId")
       .withArgs(2);
+  });
+
+  describe("With multiple tokens minted", async function () {
+    beforeEach(async function () {
+      await fixture.aToken.approve(fixture.publicStaking.address, 3000);
+      await fixture.publicStaking.connect(adminSigner).mint(1000);
+      await fixture.publicStaking.connect(adminSigner).mint(1000);
+      await fixture.publicStaking.connect(adminSigner).mint(1000);
+
+      await fixture.publicStaking
+        .connect(adminSigner)
+        .transferFrom(adminSigner.address, otherSigner.address, 1);
+    });
+
+    it("Should return correct balance for address", async function () {
+      const expectedAdminSignerBalance = 3;
+      expect(
+        await fixture.publicStaking.balanceOf(adminSigner.address)
+      ).to.be.equal(expectedAdminSignerBalance);
+
+      const expectedOtherSignerBalance = 1;
+      expect(
+        await fixture.publicStaking.balanceOf(otherSigner.address)
+      ).to.be.equal(expectedOtherSignerBalance);
+    });
+
+    it("Should return correct token id by index of token owned by address", async function () {
+      const adminBalance = 3;
+      const expectedTokenIds = [4, 2, 3];
+      for (let i = 0; i < adminBalance; i++) {
+        expect(
+          await fixture.publicStaking.tokenOfOwnerByIndex(
+            adminSigner.address,
+            i
+          )
+        ).to.be.equal(expectedTokenIds[i]);
+      }
+
+      const index = 0;
+      const expectedTokenId = 1;
+      expect(
+        await fixture.publicStaking.tokenOfOwnerByIndex(
+          otherSigner.address,
+          index
+        )
+      ).to.be.equal(expectedTokenId);
+    });
   });
 });
