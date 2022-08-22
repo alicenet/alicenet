@@ -7,9 +7,8 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
+	"github.com/stretchr/testify/assert"
 )
 
 // We test to ensure that everything behaves correctly.

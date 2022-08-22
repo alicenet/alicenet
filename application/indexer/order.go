@@ -4,9 +4,8 @@ import (
 	"errors"
 	"time"
 
-	"github.com/dgraph-io/badger/v2"
-
 	"github.com/alicenet/alicenet/utils"
+	"github.com/dgraph-io/badger/v2"
 )
 
 var ErrIterClose = errors.New("iter closed")

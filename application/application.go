@@ -4,9 +4,6 @@ import (
 	"bytes"
 	"errors"
 
-	"github.com/dgraph-io/badger/v2"
-	"github.com/sirupsen/logrus"
-
 	"github.com/alicenet/alicenet/application/deposit"
 	"github.com/alicenet/alicenet/application/minedtx"
 	"github.com/alicenet/alicenet/application/objs"
@@ -23,6 +20,8 @@ import (
 	"github.com/alicenet/alicenet/interfaces"
 	"github.com/alicenet/alicenet/logging"
 	"github.com/alicenet/alicenet/utils"
+	"github.com/dgraph-io/badger/v2"
+	"github.com/sirupsen/logrus"
 )
 
 var _ interfaces.Application = (*Application)(nil)

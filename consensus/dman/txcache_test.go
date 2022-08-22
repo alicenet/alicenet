@@ -5,9 +5,8 @@ package dman
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
 	"github.com/alicenet/alicenet/interfaces"
+	"github.com/stretchr/testify/assert"
 )
 
 type testingTxMarshaller struct{}

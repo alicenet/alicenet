@@ -5,11 +5,10 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/core/types"
-
 	"github.com/alicenet/alicenet/layer1/executor/tasks"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/utils"
+	"github.com/ethereum/go-ethereum/core/types"
 )
 
 // RegisterTask contains required state for safely performing a registration.

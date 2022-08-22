@@ -8,13 +8,12 @@ import (
 	"math/big"
 	"sync"
 
+	"github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/layer1"
 	goEthereum "github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/sirupsen/logrus"
-
-	"github.com/alicenet/alicenet/constants"
-	"github.com/alicenet/alicenet/layer1"
 )
 
 // MonitorWorkRequest is an internal struct used to send work requests to the

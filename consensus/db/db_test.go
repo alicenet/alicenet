@@ -4,11 +4,10 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/dgraph-io/badger/v2"
-
 	"github.com/alicenet/alicenet/consensus/objs"
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/crypto"
+	"github.com/dgraph-io/badger/v2"
 )
 
 type testParams struct {

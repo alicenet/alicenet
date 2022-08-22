@@ -5,9 +5,8 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/alicenet/alicenet/layer1"
+	"github.com/sirupsen/logrus"
 )
 
 // AmILeading checks if the current node is a leader for an action.

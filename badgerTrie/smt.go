@@ -217,7 +217,7 @@ func (s *SMT) update(txn *badger.Txn, root []byte, keys, values, batch [][]byte,
 	}
 }
 
-// updateRight updates the right side of the tree
+// updateRight updates the right side of the tree.
 func (s *SMT) updateRight(txn *badger.Txn, lnode, rnode, root []byte, keys, values, batch [][]byte, iBatch, height int, ch chan<- mresult) {
 	// all the keys go in the right subtree
 	newch := make(chan mresult, 1)
@@ -237,7 +237,7 @@ func (s *SMT) updateRight(txn *badger.Txn, lnode, rnode, root []byte, keys, valu
 	ch <- mresult{node, false, nil}
 }
 
-// updateLeft updates the left side of the tree
+// updateLeft updates the left side of the tree.
 func (s *SMT) updateLeft(txn *badger.Txn, lnode, rnode, root []byte, keys, values, batch [][]byte, iBatch, height int, ch chan<- mresult) {
 	// all the keys go in the left subtree
 	newch := make(chan mresult, 1)
@@ -257,7 +257,7 @@ func (s *SMT) updateLeft(txn *badger.Txn, lnode, rnode, root []byte, keys, value
 	ch <- mresult{node, false, nil}
 }
 
-// updateParallel updates both sides of the trie simultaneously
+// updateParallel updates both sides of the trie simultaneously.
 func (s *SMT) updateParallel(txn *badger.Txn, lnode, rnode, root []byte, lkeys, rkeys, lvalues, rvalues, batch [][]byte, iBatch, height int, ch chan<- mresult) {
 	lch := make(chan mresult, 1)
 	rch := make(chan mresult, 1)
@@ -284,7 +284,7 @@ func (s *SMT) updateParallel(txn *badger.Txn, lnode, rnode, root []byte, lkeys, 
 	ch <- mresult{node, false, nil}
 }
 
-// deleteOldNode deletes an old node that has been updated
+// deleteOldNode deletes an old node that has been updated.
 func (s *SMT) deleteOldNode(root []byte, height int, movingUp bool) {
 	//var node Hash
 	//copy(node[:], root)
@@ -297,7 +297,7 @@ func (s *SMT) deleteOldNode(root []byte, height int, movingUp bool) {
 	//}
 }
 
-// splitKeys divides the array of keys into 2 so they can update left and right branches in parallel
+// splitKeys divides the array of keys into 2 so they can update left and right branches in parallel.
 func (s *SMT) splitKeys(keys [][]byte, height int) ([][]byte, [][]byte) {
 	for i, key := range keys {
 		if bitIsSet(key, height) {
@@ -307,7 +307,7 @@ func (s *SMT) splitKeys(keys [][]byte, height int) ([][]byte, [][]byte) {
 	return keys, nil
 }
 
-// maybeMoveUpShortcut moves up a shortcut if it's sibling node is default
+// maybeMoveUpShortcut moves up a shortcut if it's sibling node is default.
 func (s *SMT) maybeMoveUpShortcut(txn *badger.Txn, left, right, root []byte, batch [][]byte, iBatch, height int, ch chan<- mresult) bool {
 	if len(left) == 0 && len(right) == 0 {
 		// Both update and sibling are deleted subtrees
@@ -364,7 +364,7 @@ func (s *SMT) moveUpShortcut(txn *badger.Txn, shortcut, root []byte, batch [][]b
 		// otherwise every nodes moved up is recorded
 		s.deleteOldNode(shortcut, height, true)
 	} else {
-		//move up shortcut
+		// move up shortcut
 		batch[2*iBatch+1] = shortcutKey
 		batch[2*iBatch+2] = shortcutVal
 		batch[2*iShortcut+1] = nil
@@ -375,7 +375,7 @@ func (s *SMT) moveUpShortcut(txn *badger.Txn, shortcut, root []byte, batch [][]b
 }
 
 // maybeAddShortcutToKV adds a shortcut key to the keys array to be updated.
-// this is used when a subtree containing a shortcut node is being updated
+// this is used when a subtree containing a shortcut node is being updated.
 func (s *SMT) maybeAddShortcutToKV(keys, values [][]byte, shortcutKey, shortcutVal []byte) ([][]byte, [][]byte) {
 	newKeys := make([][]byte, 0, len(keys)+1)
 	newVals := make([][]byte, 0, len(keys)+1)
@@ -451,7 +451,7 @@ func (s *SMT) loadChildren(txn *badger.Txn, root []byte, height, iBatch int, bat
 	return batch, iBatch, batch[2*iBatch+1], batch[2*iBatch+2], isShortcut, nil
 }
 
-// loadBatch fetches a batch of nodes in cache or db
+// loadBatch fetches a batch of nodes in cache or db.
 func (s *SMT) loadBatch(txn *badger.Txn, root []byte) ([][]byte, error) {
 	var node Hash
 	copy(node[:], root)
@@ -477,7 +477,7 @@ func (s *SMT) loadBatch(txn *badger.Txn, root []byte) ([][]byte, error) {
 	return nil, fmt.Errorf("the trie node %x is unavailable in the disk db, db may be corrupted", root)
 }
 
-// parseBatch decodes the byte data into a slice of nodes and bitmap
+// parseBatch decodes the byte data into a slice of nodes and bitmap.
 func (s *SMT) parseBatch(val []byte) ([][]byte, error) {
 	batch := make([][]byte, 31)
 	if len(val) == 0 {
@@ -522,7 +522,7 @@ func (s *SMT) parseBatch(val []byte) ([][]byte, error) {
 
 // check ||| take in height with respect to height of tree in general
 // take in root as an arg instead of over-writing batch[0]
-// make a bool flag as last arg and have this flag specify classic mode vs leaf height hash mode
+// make a bool flag as last arg and have this flag specify classic mode vs leaf height hash mode.
 func (s *SMT) verifyBatch(batch [][]byte, idx, subtreeHeight, height int, root []byte, useUniformLeafHeight bool) ([]byte, bool) {
 	lidx := idx*2 + 1
 	ridx := idx*2 + 2
@@ -576,10 +576,8 @@ func (s *SMT) verifyBatch(batch [][]byte, idx, subtreeHeight, height int, root [
 
 		// if children are leaves then get hash and return
 		if len(lres) == 0 && len(rres) == 0 {
-
 			if batch[idx][32] == 1 && idx < 15 {
 				res = s.hash(batch[lidx][:constants.HashLen], batch[ridx][:constants.HashLen], []byte{byte(height + subtreeHeight)})
-
 			} else if len(batch[ridx]) > 0 && len(batch[lidx]) > 0 {
 				res = s.hash(batch[lidx][:constants.HashLen], batch[ridx][:constants.HashLen])
 			} else if len(batch[ridx]) > 0 {
@@ -587,7 +585,6 @@ func (s *SMT) verifyBatch(batch [][]byte, idx, subtreeHeight, height int, root [
 			} else if len(batch[lidx]) > 0 {
 				res = s.hash(batch[lidx][:constants.HashLen], DefaultLeaf)
 			}
-
 		} else if len(lres) > 0 && len(rres) > 0 { // hashing our way back up the tree
 			res = s.hash(lres, rres)
 		} else if len(lres) > 0 {
@@ -607,7 +604,6 @@ func (s *SMT) verifyBatch(batch [][]byte, idx, subtreeHeight, height int, root [
 }
 
 func (s *SMT) getInteriorNodesNext(batch [][]byte, idx, subtreeHeight, height int, root []byte) ([][]byte, []byte, bool) {
-
 	if !bytes.Equal(batch[0], []byte{0}) {
 		return [][]byte{}, root, true
 	}
@@ -654,7 +650,6 @@ func (s *SMT) getInteriorNodesNext(batch [][]byte, idx, subtreeHeight, height in
 
 		// if children are leaves then get hash and return
 		if len(lres) == 0 && len(rres) == 0 {
-
 			if batch[idx][len(batch[idx])-1] == 1 && idx < 15 {
 				res = s.hash(batch[lidx][:constants.HashLen], batch[ridx][:constants.HashLen], []byte{byte(height + subtreeHeight)})
 			} else if len(batch[ridx]) > 0 && len(batch[lidx]) > 0 {
@@ -671,7 +666,6 @@ func (s *SMT) getInteriorNodesNext(batch [][]byte, idx, subtreeHeight, height in
 				unfinishedLeaves = append(unfinishedLeaves, batch[lidx][:constants.HashLen])
 				res = s.hash(batch[lidx][:constants.HashLen], DefaultLeaf)
 			}
-
 		} else if len(lres) > 0 && len(rres) > 0 { // hashing our way back up the tree
 			res = s.hash(lres, rres)
 		} else if len(lres) > 0 {
@@ -679,7 +673,6 @@ func (s *SMT) getInteriorNodesNext(batch [][]byte, idx, subtreeHeight, height in
 		} else if len(rres) > 0 {
 			res = s.hash(DefaultLeaf, rres)
 		}
-
 	}
 
 	return unfinishedLeaves, res, true
@@ -755,7 +748,6 @@ func (s *SMT) getUnsyncedNodes(txn *badger.Txn, batch [][]byte, idx, subtreeHeig
 				}
 				res = s.hash(batch[lidx][:constants.HashLen], DefaultLeaf)
 			}
-
 		} else if len(lres) > 0 && len(rres) > 0 { // hashing our way back up the tree
 			res = s.hash(lres, rres)
 		} else if len(lres) > 0 {
@@ -763,7 +755,6 @@ func (s *SMT) getUnsyncedNodes(txn *badger.Txn, batch [][]byte, idx, subtreeHeig
 		} else if len(rres) > 0 {
 			res = s.hash(DefaultLeaf, rres)
 		}
-
 	}
 
 	return unsyncedNodes, res
@@ -833,7 +824,7 @@ func (s *SMT) leafHash(key, value, oldRoot []byte, batch [][]byte, iBatch, heigh
 	return h
 }
 
-// storeNode stores a batch and deletes the old node from cache
+// storeNode stores a batch and deletes the old node from cache.
 func (s *SMT) storeNode(batch [][]byte, h, oldRoot []byte, height int) {
 	if !bytes.Equal(h, oldRoot) {
 		var node Hash
@@ -885,7 +876,6 @@ type result struct {
 // continue to cause callbacks. No further callbacks will be invoked after
 // this error is returned and the function will return nil.
 func (s *SMT) walkNodes(txn *badger.Txn, root []byte, cb func([]byte, []byte) error) error {
-
 	// create the parent wait group for all sub routines
 	wg := &sync.WaitGroup{}
 	// create a cancel channel to signal child routines to stop work
@@ -1048,7 +1038,7 @@ func (s *SMT) walkNodes(txn *badger.Txn, root []byte, cb func([]byte, []byte) er
 	}
 }
 
-// invoked by walkNodes to walk a sub node of the root
+// invoked by walkNodes to walk a sub node of the root.
 func (s *SMT) walk(txn *badger.Txn, cbChan chan<- result, errChan chan<- error, cancelChan <-chan struct{}, wg *sync.WaitGroup, root []byte, height int) {
 	// register the cleanup of the wait group for this routine
 	defer wg.Done()

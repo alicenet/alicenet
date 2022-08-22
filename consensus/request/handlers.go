@@ -4,15 +4,14 @@ import (
 	"context"
 	"sync"
 
-	"github.com/dgraph-io/badger/v2"
-	"github.com/sirupsen/logrus"
-
 	"github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/dynamics"
 	"github.com/alicenet/alicenet/interfaces"
 	"github.com/alicenet/alicenet/logging"
 	pb "github.com/alicenet/alicenet/proto"
+	"github.com/dgraph-io/badger/v2"
+	"github.com/sirupsen/logrus"
 )
 
 var (

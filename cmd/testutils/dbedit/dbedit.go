@@ -24,7 +24,7 @@ var prefixList = [][]byte{
 	[]byte("ao"),
 }
 
-// Command is the cobra.Command specifically for running as a node
+// Command is the cobra.Command specifically for running as a node.
 func initDatabase(ctx context.Context, path string, inMemory bool) *badger.DB {
 	db, err := mnutils.OpenBadger(ctx.Done(), path, inMemory)
 	if err != nil {
@@ -70,7 +70,6 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-
 }
 
 func resetOvs(db *db.Database, txn *badger.Txn) {

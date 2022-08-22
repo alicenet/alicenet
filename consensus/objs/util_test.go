@@ -4,10 +4,9 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/crypto"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestMakeTxRoot(t *testing.T) {

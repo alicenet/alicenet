@@ -5,11 +5,6 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/dgraph-io/badger/v2"
-	"github.com/ethereum/go-ethereum/accounts"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/sirupsen/logrus"
-
 	"github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/constants/dbprefix"
 	"github.com/alicenet/alicenet/crypto/bn256"
@@ -17,6 +12,10 @@ import (
 	"github.com/alicenet/alicenet/layer1/executor/tasks"
 	"github.com/alicenet/alicenet/logging"
 	"github.com/alicenet/alicenet/utils"
+	"github.com/dgraph-io/badger/v2"
+	"github.com/ethereum/go-ethereum/accounts"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/sirupsen/logrus"
 )
 
 // EthDKGPhase is used to indicate what phase we are currently in.

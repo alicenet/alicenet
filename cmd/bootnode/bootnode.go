@@ -19,12 +19,13 @@ import (
 	"google.golang.org/grpc/peer"
 )
 
-// Command is the cobra.Command specifically for running as an edge node, i.e. not a validator or relay
+// Command is the cobra.Command specifically for running as an edge node, i.e. not a validator or relay.
 var Command = cobra.Command{
 	Use:   "bootnode",
 	Short: "Starts a bootnode",
 	Long:  "Boot nodes do nothing put seed the peer table",
-	Run:   bootNode}
+	Run:   bootNode,
+}
 
 func extractPort(addr string) (uint32, error) {
 	_, portStr, err := net.SplitHostPort(addr)
@@ -77,13 +78,14 @@ func bootNode(cmd *cobra.Command, args []string) {
 	acceptLoop(logger, xport, handler)
 }
 
-// Server implements the bootnode protocol
+// Server implements the bootnode protocol.
 type Server struct {
 	log   *logrus.Logger
 	nodes *lru.Cache
 }
 
 // KnownNodes returns a set of recently seen peers when the bootnode is connected to
+//
 //goland:noinspection GoUnusedParameter
 func (bn *Server) KnownNodes(ctx context.Context, r *pb.BootNodeRequest) (*pb.BootNodeResponse, error) {
 	// get the identity of the caller

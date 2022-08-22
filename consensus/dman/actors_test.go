@@ -10,14 +10,13 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/dgraph-io/badger/v2"
-	"google.golang.org/grpc"
-
 	"github.com/alicenet/alicenet/consensus/objs"
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/crypto"
 	"github.com/alicenet/alicenet/interfaces"
 	"github.com/alicenet/alicenet/logging"
+	"github.com/dgraph-io/badger/v2"
+	"google.golang.org/grpc"
 )
 
 type testingProxyCall int

@@ -4,13 +4,12 @@ import (
 	"net"
 	"sync"
 
-	"github.com/sirupsen/logrus"
-	"google.golang.org/grpc"
-
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/interfaces"
 	pb "github.com/alicenet/alicenet/proto"
 	"github.com/alicenet/alicenet/utils"
+	"github.com/sirupsen/logrus"
+	"google.golang.org/grpc"
 )
 
 // ServerHandler binds a RPCListener to a grpc server such that the connections

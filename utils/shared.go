@@ -7,12 +7,11 @@ import (
 	"os/user"
 	"path/filepath"
 
-	"github.com/dgraph-io/badger/v2"
-	"github.com/sirupsen/logrus"
-
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/errorz"
 	"github.com/alicenet/alicenet/logging"
+	"github.com/dgraph-io/badger/v2"
+	"github.com/sirupsen/logrus"
 )
 
 // ForceSliceToLength will return a byte slice of size length.

@@ -6,8 +6,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
-
 	"github.com/alicenet/alicenet/application/objs"
 	"github.com/alicenet/alicenet/config"
 	"github.com/alicenet/alicenet/consensus/admin"
@@ -16,6 +14,7 @@ import (
 	"github.com/alicenet/alicenet/constants"
 	mncrypto "github.com/alicenet/alicenet/crypto"
 	"github.com/alicenet/alicenet/utils"
+	"github.com/stretchr/testify/assert"
 )
 
 const (

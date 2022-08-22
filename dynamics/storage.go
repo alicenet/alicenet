@@ -11,7 +11,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// Ensuring interface check
+// Ensuring interface check.
 var _ StorageGetter = (*Storage)(nil)
 
 /*
@@ -107,7 +107,7 @@ func (s *Storage) Start() {
 }
 
 // UpdateStorage updates the database to include changes that must be made
-// to the database
+// to the database.
 func (s *Storage) UpdateStorage(txn *badger.Txn, update Updater) error {
 	<-s.startChan
 
@@ -388,7 +388,8 @@ func (s *Storage) loadStorage(txn *badger.Txn, epoch uint32) (*RawStorage, error
 //
 // We start at the most updated epoch and proceed backwards until we arrive
 // at the node with
-//		epoch >= node.thisEpoch
+//
+//	epoch >= node.thisEpoch
 func (s *Storage) loadRawStorage(txn *badger.Txn, epoch uint32) (*RawStorage, error) {
 	if epoch == 0 {
 		return nil, ErrZeroEpoch
@@ -591,7 +592,7 @@ func (s *Storage) addNodeSplit(txn *badger.Txn, node, prevNode, nextNode *Node) 
 	return nil
 }
 
-// GetMaxBytes returns the maximum allowed bytes
+// GetMaxBytes returns the maximum allowed bytes.
 func (s *Storage) GetMaxBytes() uint32 {
 	<-s.startChan
 
@@ -600,7 +601,7 @@ func (s *Storage) GetMaxBytes() uint32 {
 	return s.rawStorage.GetMaxBytes()
 }
 
-// GetMaxProposalSize returns the maximum size of bytes allowed in a proposal
+// GetMaxProposalSize returns the maximum size of bytes allowed in a proposal.
 func (s *Storage) GetMaxProposalSize() uint32 {
 	<-s.startChan
 
@@ -609,7 +610,7 @@ func (s *Storage) GetMaxProposalSize() uint32 {
 	return s.rawStorage.GetMaxProposalSize()
 }
 
-// GetSrvrMsgTimeout returns the time before timeout of server message
+// GetSrvrMsgTimeout returns the time before timeout of server message.
 func (s *Storage) GetSrvrMsgTimeout() time.Duration {
 	<-s.startChan
 
@@ -618,7 +619,7 @@ func (s *Storage) GetSrvrMsgTimeout() time.Duration {
 	return s.rawStorage.GetSrvrMsgTimeout()
 }
 
-// GetMsgTimeout returns the timeout to receive a message
+// GetMsgTimeout returns the timeout to receive a message.
 func (s *Storage) GetMsgTimeout() time.Duration {
 	<-s.startChan
 
@@ -627,7 +628,7 @@ func (s *Storage) GetMsgTimeout() time.Duration {
 	return s.rawStorage.GetMsgTimeout()
 }
 
-// GetProposalStepTimeout returns the proposal step timeout
+// GetProposalStepTimeout returns the proposal step timeout.
 func (s *Storage) GetProposalStepTimeout() time.Duration {
 	<-s.startChan
 
@@ -636,7 +637,7 @@ func (s *Storage) GetProposalStepTimeout() time.Duration {
 	return s.rawStorage.GetProposalStepTimeout()
 }
 
-// GetPreVoteStepTimeout returns the prevote step timeout
+// GetPreVoteStepTimeout returns the prevote step timeout.
 func (s *Storage) GetPreVoteStepTimeout() time.Duration {
 	<-s.startChan
 
@@ -645,7 +646,7 @@ func (s *Storage) GetPreVoteStepTimeout() time.Duration {
 	return s.rawStorage.GetPreVoteStepTimeout()
 }
 
-// GetPreCommitStepTimeout returns the precommit step timeout
+// GetPreCommitStepTimeout returns the precommit step timeout.
 func (s *Storage) GetPreCommitStepTimeout() time.Duration {
 	<-s.startChan
 
@@ -655,7 +656,7 @@ func (s *Storage) GetPreCommitStepTimeout() time.Duration {
 }
 
 // GetDeadBlockRoundNextRoundTimeout returns the timeout required before
-// moving into the DeadBlockRound
+// moving into the DeadBlockRound.
 func (s *Storage) GetDeadBlockRoundNextRoundTimeout() time.Duration {
 	<-s.startChan
 
@@ -664,7 +665,7 @@ func (s *Storage) GetDeadBlockRoundNextRoundTimeout() time.Duration {
 	return s.rawStorage.GetDeadBlockRoundNextRoundTimeout()
 }
 
-// GetDownloadTimeout returns the timeout for downloads
+// GetDownloadTimeout returns the timeout for downloads.
 func (s *Storage) GetDownloadTimeout() time.Duration {
 	<-s.startChan
 
@@ -682,7 +683,7 @@ func (s *Storage) GetMinTxFee() *big.Int {
 	return s.rawStorage.GetMinTxFee()
 }
 
-// GetTxValidVersion returns the transaction valid version
+// GetTxValidVersion returns the transaction valid version.
 func (s *Storage) GetTxValidVersion() uint32 {
 	<-s.startChan
 
@@ -691,7 +692,7 @@ func (s *Storage) GetTxValidVersion() uint32 {
 	return s.rawStorage.GetTxValidVersion()
 }
 
-// GetValueStoreFee returns the transaction fee for ValueStore
+// GetValueStoreFee returns the transaction fee for ValueStore.
 func (s *Storage) GetValueStoreFee() *big.Int {
 	<-s.startChan
 
@@ -700,7 +701,7 @@ func (s *Storage) GetValueStoreFee() *big.Int {
 	return s.rawStorage.GetValueStoreFee()
 }
 
-// GetValueStoreValidVersion returns the ValueStore valid version
+// GetValueStoreValidVersion returns the ValueStore valid version.
 func (s *Storage) GetValueStoreValidVersion() uint32 {
 	<-s.startChan
 
@@ -709,7 +710,7 @@ func (s *Storage) GetValueStoreValidVersion() uint32 {
 	return s.rawStorage.GetValueStoreValidVersion()
 }
 
-// GetDataStoreEpochFee returns the DataStore fee per epoch
+// GetDataStoreEpochFee returns the DataStore fee per epoch.
 func (s *Storage) GetDataStoreEpochFee() *big.Int {
 	<-s.startChan
 
@@ -718,7 +719,7 @@ func (s *Storage) GetDataStoreEpochFee() *big.Int {
 	return s.rawStorage.GetDataStoreEpochFee()
 }
 
-// GetDataStoreValidVersion returns the DataStore valid version
+// GetDataStoreValidVersion returns the DataStore valid version.
 func (s *Storage) GetDataStoreValidVersion() uint32 {
 	<-s.startChan
 

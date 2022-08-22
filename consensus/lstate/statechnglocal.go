@@ -4,14 +4,13 @@ import (
 	"bytes"
 	"errors"
 
-	"github.com/dgraph-io/badger/v2"
-
 	"github.com/alicenet/alicenet/consensus/objs"
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/crypto"
 	"github.com/alicenet/alicenet/errorz"
 	"github.com/alicenet/alicenet/interfaces"
 	"github.com/alicenet/alicenet/utils"
+	"github.com/dgraph-io/badger/v2"
 )
 
 // These are the step handlers. They figure out how to take an action based on

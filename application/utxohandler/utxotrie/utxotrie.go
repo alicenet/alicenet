@@ -3,15 +3,14 @@ package utxotrie
 import (
 	"bytes"
 
-	"github.com/dgraph-io/badger/v2"
-	"github.com/sirupsen/logrus"
-
 	"github.com/alicenet/alicenet/application/objs"
 	trie "github.com/alicenet/alicenet/badgerTrie"
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/constants/dbprefix"
 	"github.com/alicenet/alicenet/logging"
 	"github.com/alicenet/alicenet/utils"
+	"github.com/dgraph-io/badger/v2"
+	"github.com/sirupsen/logrus"
 )
 
 func makeheightKey(height uint32) []byte {

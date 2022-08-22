@@ -6,10 +6,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
 	"github.com/alicenet/alicenet/layer1/tests"
 	"github.com/alicenet/alicenet/layer1/transaction"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestDisputeMissingRegistrationTask_Group_1_DoTaskSuccessOneParticipantAccused(t *testing.T) {

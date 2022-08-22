@@ -5,11 +5,10 @@ import (
 	"errors"
 	"sync"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/layer1"
 	"github.com/alicenet/alicenet/layer1/transaction"
+	"github.com/sirupsen/logrus"
 )
 
 // TaskAction is an enumeration indicating the actions that the scheduler

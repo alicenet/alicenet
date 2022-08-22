@@ -3,9 +3,6 @@ package request
 import (
 	"context"
 
-	"github.com/sirupsen/logrus"
-	"google.golang.org/grpc"
-
 	"github.com/alicenet/alicenet/consensus/objs"
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/crypto"
@@ -15,6 +12,8 @@ import (
 	"github.com/alicenet/alicenet/middleware"
 	pb "github.com/alicenet/alicenet/proto"
 	"github.com/alicenet/alicenet/utils"
+	"github.com/sirupsen/logrus"
+	"google.golang.org/grpc"
 )
 
 // Client serves incoming requests and handles routing of outgoing

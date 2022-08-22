@@ -6,11 +6,10 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
 	"github.com/alicenet/alicenet/consensus/objs"
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/crypto"
+	"github.com/stretchr/testify/assert"
 )
 
 func goodBH() *objs.BlockHeader {

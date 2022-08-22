@@ -4,9 +4,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/alicenet/alicenet/interfaces"
+	"github.com/sirupsen/logrus"
 )
 
 func TestTransportfail(t *testing.T) {

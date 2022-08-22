@@ -4,9 +4,6 @@ import (
 	"bytes"
 	"fmt"
 
-	"github.com/dgraph-io/badger/v2"
-	"github.com/sirupsen/logrus"
-
 	"github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/consensus/dman"
 	"github.com/alicenet/alicenet/consensus/objs"
@@ -15,6 +12,8 @@ import (
 	"github.com/alicenet/alicenet/errorz"
 	"github.com/alicenet/alicenet/logging"
 	"github.com/alicenet/alicenet/utils"
+	"github.com/dgraph-io/badger/v2"
+	"github.com/sirupsen/logrus"
 )
 
 type Handlers struct {

@@ -2,7 +2,6 @@ package objs
 
 import (
 	capnp "github.com/MadBase/go-capnproto2/v2"
-
 	mdefs "github.com/alicenet/alicenet/application/objs/capn"
 	"github.com/alicenet/alicenet/application/objs/datastore"
 	"github.com/alicenet/alicenet/application/objs/uint256"
@@ -251,7 +250,8 @@ func (b *DataStore) Value() (*uint256.Uint256, error) {
 // Fee returns the fee stored in the object at the time of creation.
 // This is the total fee associated with the DataStore object.
 // Thus, we have
-//			Fee == perEpochFee*(numEpochs + 2)
+//
+//	Fee == perEpochFee*(numEpochs + 2)
 func (b *DataStore) Fee() (*uint256.Uint256, error) {
 	if b == nil {
 		return nil, errorz.ErrInvalid{}.New("ds.fee: ds not initialized")
@@ -264,7 +264,7 @@ func (b *DataStore) Fee() (*uint256.Uint256, error) {
 // Given a DataStore with data of size dataSize bytes which are to be stored
 // for of numEpochs, the value is
 //
-//		value := (dataSize + BaseDatasizeConst) * (numEpochs + 2)
+//	value := (dataSize + BaseDatasizeConst) * (numEpochs + 2)
 //
 // Here, BaseDatasizeConst is a constant which includes the base cost of the
 // actual storage object. Furthermore, we include 2 additional epochs into
@@ -273,14 +273,14 @@ func (b *DataStore) Fee() (*uint256.Uint256, error) {
 // Given the base cost, we also want to be able to include additional fees.
 // These fees would be on a per-epoch basis. Thus, we have the form
 //
-//		valuePlusFee := (dataSize + BaseDatasizeConst + perEpochFee) * (numEpochs + 2)
-//					  = (dataSize + BaseDatasizeConst) * (numEpochs + 2)
-//					    + perEpochFee * (numEpochs + 2)
-//					  = value + fee
+//	valuePlusFee := (dataSize + BaseDatasizeConst + perEpochFee) * (numEpochs + 2)
+//				  = (dataSize + BaseDatasizeConst) * (numEpochs + 2)
+//				    + perEpochFee * (numEpochs + 2)
+//				  = value + fee
 //
 // with
 //
-//		fee := perEpochFee * (numEpochs + 2)
+//	fee := perEpochFee * (numEpochs + 2)
 //
 // The fee is burned at creation.
 func (b *DataStore) ValuePlusFee() (*uint256.Uint256, error) {

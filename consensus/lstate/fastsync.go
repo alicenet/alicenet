@@ -8,11 +8,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dgraph-io/badger/v2"
-	grpc_retry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
-	"github.com/sirupsen/logrus"
-	"google.golang.org/grpc"
-
 	"github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/consensus/objs"
 	"github.com/alicenet/alicenet/consensus/request"
@@ -23,6 +18,10 @@ import (
 	"github.com/alicenet/alicenet/logging"
 	"github.com/alicenet/alicenet/middleware"
 	"github.com/alicenet/alicenet/utils"
+	"github.com/dgraph-io/badger/v2"
+	grpc_retry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
+	"github.com/sirupsen/logrus"
+	"google.golang.org/grpc"
 )
 
 const (

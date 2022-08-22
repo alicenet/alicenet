@@ -76,23 +76,23 @@ func DecryptSS(encryptedValue *big.Int, sharedSecret *G1, participantIndex int) 
 
 // GenerateDLEQProofG1 generates the discrete log equality proof, showing
 //
-// 		y1 == x1^alpha and y2 == x2^alpha
+//	y1 == x1^alpha and y2 == x2^alpha
 //
 // without disclosing alpha. It is based on the premise that if w is random and
 //
-//		t1 == x1^w    and    t2 == x2^w,
+//	t1 == x1^w    and    t2 == x2^w,
 //
 // then
 //
-//		x1^r * y1^c == x1^w == t1    and    x2^r * y2^c == x2^w == t2,
+//	x1^r * y1^c == x1^w == t1    and    x2^r * y2^c == x2^w == t2,
 //
 // where c and r are chosen beforehand to satisfy
 //
-//		c == Hash(x1, y1, x2, y2, t1, t2)
+//	c == Hash(x1, y1, x2, y2, t1, t2)
 //
 // and
 //
-//		r == w - alpha*c.
+//	r == w - alpha*c.
 //
 // This is used during the distributed key generation protocol to ensure
 // honest participation.
@@ -134,12 +134,12 @@ func GenerateDLEQProofG1(x1, y1, x2, y2 *G1, alpha *big.Int, rIO io.Reader) ([2]
 // returns nil for a valid proof and an error when invalid.
 // This verifies that
 //
-// 		y1 == x1^alpha    and    y2 == x2^alpha
+//	y1 == x1^alpha    and    y2 == x2^alpha
 //
 // without disclosing alpha. From the proof pi == (c, r),
 // if the above equalities hold, then
 //
-//		x1^r * y1^c == x1^w == t1    and    x2^r * y2^c == x2^w == t2,
+//	x1^r * y1^c == x1^w == t1    and    x2^r * y2^c == x2^w == t2,
 //
 // where w is a random value found in generating the proof.
 // This is used during the distributed key generation protocol to ensure

@@ -2,7 +2,6 @@ package objs
 
 import (
 	capnp "github.com/MadBase/go-capnproto2/v2"
-
 	mdefs "github.com/alicenet/alicenet/consensus/objs/capn"
 	"github.com/alicenet/alicenet/consensus/objs/precommitnil"
 	"github.com/alicenet/alicenet/crypto"

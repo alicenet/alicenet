@@ -7,13 +7,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/golang/mock/gomock"
-	"github.com/stretchr/testify/assert"
-	"google.golang.org/grpc"
-
 	"github.com/alicenet/alicenet/interfaces"
 	pb "github.com/alicenet/alicenet/proto"
 	"github.com/alicenet/alicenet/transport"
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/assert"
+	"google.golang.org/grpc"
 )
 
 type wrappedMock struct {

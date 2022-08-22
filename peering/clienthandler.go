@@ -6,9 +6,8 @@ import (
 	"net"
 	"time"
 
-	"google.golang.org/grpc"
-
 	"github.com/alicenet/alicenet/interfaces"
+	"google.golang.org/grpc"
 )
 
 // ClientHandler is an object that allows a P2PConn to be converted into

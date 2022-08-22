@@ -12,7 +12,7 @@ import (
 	"github.com/dgraph-io/badger/v2"
 )
 
-// Command is the cobra.Command specifically for running as a node
+// Command is the cobra.Command specifically for running as a node.
 func initDatabase(ctx context.Context, path string, inMemory bool) *badger.DB {
 	db, err := mnutils.OpenBadger(ctx.Done(), path, inMemory)
 	if err != nil {
@@ -20,6 +20,7 @@ func initDatabase(ctx context.Context, path string, inMemory bool) *badger.DB {
 	}
 	return db
 }
+
 func main() {
 	dbpath := flag.String("p", "", "Path to the db")
 	cmd := flag.String("c", "", "function to run")
@@ -100,6 +101,7 @@ func main() {
 		panic(err)
 	}
 }
+
 func printBH(bh *objs.BlockHeader) {
 	fmt.Printf("   CHAINID: %v\n", bh.BClaims.ChainID)
 	fmt.Printf("    HEIGHT: %v\n", bh.BClaims.Height)

@@ -148,7 +148,7 @@ func (e *gfP2) Square(a *gfP2) *gfP2 {
 	return e
 }
 
-// Invert computes the multiplicative inverse in gfP2
+// Invert computes the multiplicative inverse in gfP2.
 func (e *gfP2) Invert(a *gfP2) *gfP2 {
 	// See "Implementing cryptographic pairings", M. Scott, section 3.2.
 	// ftp://136.206.11.249/pub/crypto/pairings.pdf
@@ -167,7 +167,7 @@ func (e *gfP2) Invert(a *gfP2) *gfP2 {
 	return e
 }
 
-// Legendre determines if a square exists in gfP2
+// Legendre determines if a square exists in gfP2.
 func (e *gfP2) Legendre() int {
 	ap1 := &gfP{}
 	gfpMul(ap1, &e.x, &e.x)
@@ -200,8 +200,8 @@ func (e *gfP2) exp(f *gfP2, bits [4]uint64) {
 // This assumes a square root of e exists; use Legendre to determine existence.
 // This algorithm is taken from Algorithm 9 in the 2012 paper
 //
-//		Square root computation over even extension fields
-//		by Gora Adj and Francisco Rodrı́guez-Henrı́quez
+//	Square root computation over even extension fields
+//	by Gora Adj and Francisco Rodrı́guez-Henrı́quez
 //
 // Nonexistence of a square root will lead to incorrect results.
 func (e *gfP2) Sqrt(f *gfP2) {

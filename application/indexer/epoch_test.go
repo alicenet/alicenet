@@ -4,12 +4,11 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/dgraph-io/badger/v2"
-
 	trie "github.com/alicenet/alicenet/badgerTrie"
 	"github.com/alicenet/alicenet/crypto"
 	"github.com/alicenet/alicenet/internal/testing/environment"
 	"github.com/alicenet/alicenet/utils"
+	"github.com/dgraph-io/badger/v2"
 )
 
 func makeEpochConstrainedList() *EpochConstrainedList {

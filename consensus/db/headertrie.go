@@ -3,9 +3,6 @@ package db
 import (
 	"errors"
 
-	"github.com/dgraph-io/badger/v2"
-	"github.com/sirupsen/logrus"
-
 	trie "github.com/alicenet/alicenet/badgerTrie"
 	"github.com/alicenet/alicenet/consensus/objs"
 	"github.com/alicenet/alicenet/constants"
@@ -14,6 +11,8 @@ import (
 	"github.com/alicenet/alicenet/errorz"
 	"github.com/alicenet/alicenet/logging"
 	"github.com/alicenet/alicenet/utils"
+	"github.com/dgraph-io/badger/v2"
+	"github.com/sirupsen/logrus"
 )
 
 // on completion of block one headerRoot_1 is determined

@@ -1,11 +1,10 @@
 package pendingindex
 
 import (
-	"github.com/dgraph-io/badger/v2"
-
 	"github.com/alicenet/alicenet/application/indexer"
 	"github.com/alicenet/alicenet/constants/dbprefix"
 	"github.com/alicenet/alicenet/utils"
+	"github.com/dgraph-io/badger/v2"
 )
 
 func NewPendingTxIndexer() *PendingTxIndexer {

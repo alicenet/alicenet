@@ -8,16 +8,15 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/interfaces"
+	pb "github.com/alicenet/alicenet/proto"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/rs/cors"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 	"google.golang.org/grpc"
-
-	"github.com/alicenet/alicenet/constants"
-	"github.com/alicenet/alicenet/interfaces"
-	pb "github.com/alicenet/alicenet/proto"
 )
 
 // Handler binds a Listener to a grpc server and sets up a RESTful API based on

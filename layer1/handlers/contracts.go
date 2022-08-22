@@ -1,10 +1,9 @@
 package handlers
 
 import (
-	"github.com/ethereum/go-ethereum/common"
-
 	"github.com/alicenet/alicenet/layer1"
 	"github.com/alicenet/alicenet/layer1/ethereum"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 var _ layer1.AllSmartContracts = &AllSmartContractsHandle{}

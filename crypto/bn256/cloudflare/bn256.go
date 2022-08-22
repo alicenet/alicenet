@@ -19,7 +19,7 @@ import (
 	"math/big"
 )
 
-// numBytes specifies the number of bytes in a GFp object
+// numBytes specifies the number of bytes in a GFp object.
 const numBytes = 32
 
 // randomK returns a random *big.Int with value in [0, Order),
@@ -53,7 +53,7 @@ func (e *G1) String() string {
 	return "bn256.G1" + e.p.String()
 }
 
-// IsEqual checks to see if e and a are equal
+// IsEqual checks to see if e and a are equal.
 func (e *G1) IsEqual(a *G1) bool {
 	return e.String() == a.String()
 }
@@ -185,7 +185,7 @@ func (e *G2) String() string {
 	return "bn256.G2" + e.p.String()
 }
 
-// IsEqual checks to see if e and a are equal
+// IsEqual checks to see if e and a are equal.
 func (e *G2) IsEqual(a *G2) bool {
 	return e.String() == a.String()
 }
@@ -344,7 +344,7 @@ func (e *GT) String() string {
 	return "bn256.GT" + e.p.String()
 }
 
-// IsEqual checks to see if e and a are equal
+// IsEqual checks to see if e and a are equal.
 func (e *GT) IsEqual(a *GT) bool {
 	return e.String() == a.String()
 }

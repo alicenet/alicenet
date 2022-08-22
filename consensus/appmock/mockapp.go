@@ -4,9 +4,6 @@ import (
 	"bytes"
 	"errors"
 
-	"github.com/dgraph-io/badger/v2"
-	"github.com/sirupsen/logrus"
-
 	appObjs "github.com/alicenet/alicenet/application/objs"
 	trie "github.com/alicenet/alicenet/badgerTrie"
 	"github.com/alicenet/alicenet/consensus/objs"
@@ -15,6 +12,8 @@ import (
 	"github.com/alicenet/alicenet/errorz"
 	"github.com/alicenet/alicenet/interfaces"
 	"github.com/alicenet/alicenet/logging"
+	"github.com/dgraph-io/badger/v2"
+	"github.com/sirupsen/logrus"
 )
 
 var _ interfaces.Application = (*MockApplication)(nil)

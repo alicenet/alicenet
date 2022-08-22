@@ -9,13 +9,12 @@ import (
 	"sync"
 	"time"
 
-	"google.golang.org/grpc"
-
 	aobjs "github.com/alicenet/alicenet/application/objs"
 	"github.com/alicenet/alicenet/application/objs/uint256"
 	"github.com/alicenet/alicenet/consensus/objs"
 	"github.com/alicenet/alicenet/constants"
 	pb "github.com/alicenet/alicenet/proto"
+	"google.golang.org/grpc"
 )
 
 // Client is a wrapper around the gRPC local state server. This wrapper

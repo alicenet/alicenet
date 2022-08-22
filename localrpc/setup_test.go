@@ -12,9 +12,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dgraph-io/badger/v2"
-	"github.com/spf13/viper"
-
 	"github.com/alicenet/alicenet/application"
 	"github.com/alicenet/alicenet/application/deposit"
 	"github.com/alicenet/alicenet/application/objs"
@@ -37,6 +34,8 @@ import (
 	"github.com/alicenet/alicenet/proto"
 	"github.com/alicenet/alicenet/status"
 	"github.com/alicenet/alicenet/utils"
+	"github.com/dgraph-io/badger/v2"
+	"github.com/spf13/viper"
 )
 
 var (

@@ -23,7 +23,7 @@ func (s *SMT) Get(txn *badger.Txn, key []byte) ([]byte, error) {
 }
 
 // get fetches the value of a key in a given trie
-// defined by root
+// defined by root.
 func (s *SMT) get(txn *badger.Txn, root []byte, key []byte, batch [][]byte, iBatch, height int) ([]byte, error) {
 	if len(root) == 0 {
 		return nil, nil
@@ -47,7 +47,7 @@ func (s *SMT) get(txn *badger.Txn, root []byte, key []byte, batch [][]byte, iBat
 }
 
 // Commit stores the updated nodes to disk
-// Commit should be called for every block
+// Commit should be called for every block.
 func (s *SMT) Commit(txn *badger.Txn, height uint32) ([]byte, error) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
@@ -61,7 +61,7 @@ func (s *SMT) Commit(txn *badger.Txn, height uint32) ([]byte, error) {
 	return utils.CopySlice(s.Root), nil
 }
 
-// Discard rolls back the changes made by previous updates made without commit
+// Discard rolls back the changes made by previous updates made without commit.
 func (s *SMT) Discard() {
 	s.lock.Lock()
 	defer s.lock.Unlock()
@@ -94,7 +94,7 @@ func (s *SMT) Drop(bDB *badger.DB) error {
 	return s.db.drop(bDB)
 }
 
-// Height returns the number of times commit has been called on this trie
+// Height returns the number of times commit has been called on this trie.
 func (s *SMT) Height(txn *badger.Txn) (uint32, error) {
 	return s.db.getCommitHeightDB(txn)
 }

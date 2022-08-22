@@ -6,12 +6,11 @@ import (
 	"os"
 	"testing"
 
-	"github.com/sirupsen/logrus"
-	"github.com/stretchr/testify/assert"
-
 	"github.com/alicenet/alicenet/layer1"
 	"github.com/alicenet/alicenet/layer1/tests"
 	"github.com/alicenet/alicenet/logging"
+	"github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/assert"
 )
 
 var HardHat *tests.Hardhat

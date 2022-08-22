@@ -4,7 +4,6 @@ import (
 	"bytes"
 
 	capnp "github.com/MadBase/go-capnproto2/v2"
-
 	"github.com/alicenet/alicenet/consensus/objs/blockheader"
 	mdefs "github.com/alicenet/alicenet/consensus/objs/capn"
 	"github.com/alicenet/alicenet/constants"

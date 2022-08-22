@@ -3,10 +3,9 @@ package dman
 import (
 	"context"
 
+	"github.com/alicenet/alicenet/consensus/objs"
 	"github.com/stretchr/testify/mock"
 	"google.golang.org/grpc"
-
-	"github.com/alicenet/alicenet/consensus/objs"
 )
 
 type ReqBusViewMock struct {

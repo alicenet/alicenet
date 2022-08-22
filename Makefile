@@ -9,11 +9,11 @@ init:
 
 .PHONY: build
 build: init
-	go build -o $(BINARY_NAME) ./cmd/main.go;
+	go build -ldflags="-X main.version=0.0.0-dev" -o $(BINARY_NAME) ./cmd/main.go;
 
 .PHONY: race
 race:
-	go build -o $(RACE_DETECTOR) -race ./cmd/main.go;
+	go build -ldflags="-X main.version=0.0.0-dev" -o $(RACE_DETECTOR) -race ./cmd/main.go;
 
 .PHONY: lint
 lint:

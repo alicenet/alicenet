@@ -2,7 +2,6 @@ package cloudflare
 
 import (
 	"crypto/rand"
-
 	"testing"
 )
 

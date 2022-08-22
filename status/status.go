@@ -5,14 +5,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/alicenet/alicenet/consensus/admin"
 	"github.com/alicenet/alicenet/consensus/lstate"
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/layer1/monitor"
 	"github.com/alicenet/alicenet/logging"
 	"github.com/alicenet/alicenet/peering"
+	"github.com/sirupsen/logrus"
 )
 
 // Logger is a status logging object. This object aggregates state summaries

@@ -5,13 +5,12 @@ import (
 	"errors"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/sirupsen/logrus"
-
 	"github.com/alicenet/alicenet/bridge/bindings"
 	"github.com/alicenet/alicenet/crypto/bn256"
 	"github.com/alicenet/alicenet/crypto/bn256/cloudflare"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/sirupsen/logrus"
 )
 
 // RegistrationStatus is an enumeration indicating the current status of a registration.

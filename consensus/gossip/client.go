@@ -5,10 +5,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dgraph-io/badger/v2"
-	"github.com/sirupsen/logrus"
-	"google.golang.org/grpc"
-
 	"github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/consensus/lstate"
 	"github.com/alicenet/alicenet/consensus/objs"
@@ -19,6 +15,9 @@ import (
 	"github.com/alicenet/alicenet/middleware"
 	pb "github.com/alicenet/alicenet/proto"
 	"github.com/alicenet/alicenet/utils"
+	"github.com/dgraph-io/badger/v2"
+	"github.com/sirupsen/logrus"
+	"google.golang.org/grpc"
 )
 
 type appClient interface {

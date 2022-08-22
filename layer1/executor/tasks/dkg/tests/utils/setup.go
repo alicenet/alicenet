@@ -5,12 +5,6 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
-	gcrypto "github.com/ethereum/go-ethereum/crypto"
-	"github.com/stretchr/testify/assert"
-
 	"github.com/alicenet/alicenet/bridge/bindings"
 	"github.com/alicenet/alicenet/crypto"
 	"github.com/alicenet/alicenet/crypto/bn256"
@@ -19,6 +13,11 @@ import (
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
 	"github.com/alicenet/alicenet/layer1/monitor/events"
 	"github.com/alicenet/alicenet/layer1/tests"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
+	gcrypto "github.com/ethereum/go-ethereum/crypto"
+	"github.com/stretchr/testify/assert"
 )
 
 const SETUP_GROUP int = 13

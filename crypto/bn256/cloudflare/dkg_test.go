@@ -232,7 +232,7 @@ func TestGenerateSecretShares(t *testing.T) {
 	//		share2to3 = 101 + 1*3 + 2*3^2 = 122
 	//		share2to4 = 101 + 1*4 + 2*4^2 = 137
 	share2to1 := big.NewInt(104)
-	//share2to2 := big.NewInt(111)
+	// share2to2 := big.NewInt(111)
 	share2to3 := big.NewInt(122)
 	share2to4 := big.NewInt(137)
 	secretValues2to1 := secretValues2[0]
@@ -260,7 +260,7 @@ func TestGenerateSecretShares(t *testing.T) {
 	//		share3to4 = 102 + 1*4 + 2*4^2 = 138
 	share3to1 := big.NewInt(105)
 	share3to2 := big.NewInt(112)
-	//share3to3 := big.NewInt(123)
+	// share3to3 := big.NewInt(123)
 	share3to4 := big.NewInt(138)
 	secretValues3to1 := secretValues3[0]
 	secretValues3to2 := secretValues3[1]
@@ -288,7 +288,7 @@ func TestGenerateSecretShares(t *testing.T) {
 	share4to1 := big.NewInt(106)
 	share4to2 := big.NewInt(113)
 	share4to3 := big.NewInt(124)
-	//share4to4 := big.NewInt(139)
+	// share4to4 := big.NewInt(139)
 	secretValues4to1 := secretValues4[0]
 	secretValues4to2 := secretValues4[1]
 	secretValues4to3 := secretValues4[2]
@@ -400,7 +400,7 @@ func TestGenerateEncryptedShares(t *testing.T) {
 	//		share2to3 = 101 + 1*3 + 2*3^2 = 122
 	//		share2to4 = 101 + 1*4 + 2*4^2 = 137
 	share2to1 := big.NewInt(104)
-	//share2to2 := big.NewInt(111)
+	// share2to2 := big.NewInt(111)
 	share2to3 := big.NewInt(122)
 	share2to4 := big.NewInt(137)
 	decrypted2to1 := Decrypt(enc2to1, privK1, pubK2, part1)
@@ -435,7 +435,7 @@ func TestGenerateEncryptedShares(t *testing.T) {
 	//		share3to4 = 102 + 1*4 + 2*4^2 = 138
 	share3to1 := big.NewInt(105)
 	share3to2 := big.NewInt(112)
-	//share3to3 := big.NewInt(123)
+	// share3to3 := big.NewInt(123)
 	share3to4 := big.NewInt(138)
 	decrypted3to1 := Decrypt(enc3to1, privK1, pubK3, part1)
 	if decrypted3to1.Cmp(share3to1) != 0 {
@@ -470,7 +470,7 @@ func TestGenerateEncryptedShares(t *testing.T) {
 	share4to1 := big.NewInt(106)
 	share4to2 := big.NewInt(113)
 	share4to3 := big.NewInt(124)
-	//share4to4 := big.NewInt(139)
+	// share4to4 := big.NewInt(139)
 	decrypted4to1 := Decrypt(enc4to1, privK1, pubK4, part1)
 	if decrypted4to1.Cmp(share4to1) != 0 {
 		t.Fatal("Error in sharing 4 to 1")

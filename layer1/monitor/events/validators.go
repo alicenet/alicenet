@@ -7,10 +7,6 @@ import (
 	"math/big"
 	"strings"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/sirupsen/logrus"
-
 	"github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/consensus/objs"
 	"github.com/alicenet/alicenet/crypto/bn256"
@@ -19,6 +15,9 @@ import (
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/utils"
 	monInterfaces "github.com/alicenet/alicenet/layer1/monitor/interfaces"
 	"github.com/alicenet/alicenet/layer1/monitor/objects"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/sirupsen/logrus"
 )
 
 // ProcessValidatorSetCompleted handles receiving validatorSet changes.

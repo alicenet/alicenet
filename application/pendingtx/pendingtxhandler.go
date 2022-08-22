@@ -4,9 +4,6 @@ import (
 	"context"
 	"time"
 
-	"github.com/dgraph-io/badger/v2"
-	"github.com/sirupsen/logrus"
-
 	"github.com/alicenet/alicenet/application/db"
 	"github.com/alicenet/alicenet/application/objs"
 	index "github.com/alicenet/alicenet/application/pendingtx/pendingindex"
@@ -15,6 +12,8 @@ import (
 	"github.com/alicenet/alicenet/errorz"
 	"github.com/alicenet/alicenet/logging"
 	"github.com/alicenet/alicenet/utils"
+	"github.com/dgraph-io/badger/v2"
+	"github.com/sirupsen/logrus"
 )
 
 type utxoHandler interface {

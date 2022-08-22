@@ -50,8 +50,7 @@ func (bns *BNSigner) Sign(msg []byte) ([]byte, error) {
 
 // BNValidator is the object that performs cryptographic validation of
 // BNSigner signatures.
-type BNValidator struct {
-}
+type BNValidator struct{}
 
 // Validate will validate a BNSigner signature for msg.
 func (bnv *BNValidator) Validate(msg []byte, sig []byte) ([]byte, error) {

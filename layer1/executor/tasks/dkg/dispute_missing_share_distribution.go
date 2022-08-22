@@ -4,12 +4,11 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
-
 	"github.com/alicenet/alicenet/layer1/executor/tasks"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/utils"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 )
 
 // DisputeMissingShareDistributionTask stores the data required to dispute shares.

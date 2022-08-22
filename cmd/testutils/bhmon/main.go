@@ -4,7 +4,6 @@ import (
 	"context"
 	"flag"
 	"fmt"
-
 	"time"
 
 	"github.com/alicenet/alicenet/consensus/objs"

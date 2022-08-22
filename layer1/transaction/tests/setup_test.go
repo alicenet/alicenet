@@ -6,10 +6,9 @@ import (
 	"os"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
 	"github.com/alicenet/alicenet/layer1/tests"
 	"github.com/alicenet/alicenet/logging"
+	"github.com/stretchr/testify/assert"
 )
 
 var HardHat *tests.Hardhat

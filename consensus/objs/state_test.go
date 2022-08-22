@@ -5,10 +5,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
-
 	"github.com/alicenet/alicenet/crypto"
 	bn256 "github.com/alicenet/alicenet/crypto/bn256/cloudflare"
+	"github.com/stretchr/testify/assert"
 )
 
 const (

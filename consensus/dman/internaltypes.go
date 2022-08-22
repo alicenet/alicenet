@@ -4,13 +4,12 @@ import (
 	"context"
 	"strconv"
 
-	"github.com/dgraph-io/badger/v2"
-	"github.com/sirupsen/logrus"
-	"google.golang.org/grpc"
-
 	"github.com/alicenet/alicenet/consensus/objs"
 	"github.com/alicenet/alicenet/interfaces"
 	"github.com/alicenet/alicenet/utils"
+	"github.com/dgraph-io/badger/v2"
+	"github.com/sirupsen/logrus"
+	"google.golang.org/grpc"
 )
 
 type DownloadType int

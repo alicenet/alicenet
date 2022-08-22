@@ -29,7 +29,6 @@ func newTestServer(address string) (getMsg func() []mock.Msg, write func([]byte)
 	var lis *net.UnixListener
 	var conn *net.UnixConn
 	go func() {
-
 		lis, err := net.ListenUnix("unix", &net.UnixAddr{Name: address, Net: "unix"})
 		if err != nil {
 			rcvAppend(mock.Msg{Bytes: nil, Err: err})

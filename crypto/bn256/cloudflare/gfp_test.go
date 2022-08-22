@@ -87,7 +87,7 @@ func TestGFpMul(t *testing.T) {
 //
 // Thus, the entry (64; 13) means 2^64 + 13 is a (probable) prime.
 
-// Test Montgomery encoding and decoding
+// Test Montgomery encoding and decoding.
 func TestEcDc(t *testing.T) {
 	var k int64
 	var start int64 = -10
@@ -111,7 +111,7 @@ func TestEcDc(t *testing.T) {
 	}
 }
 
-// Test encoding and decoding for int64
+// Test encoding and decoding for int64.
 func ecDcInt64(t *testing.T, g int64) {
 	gGFp := newGFp(g)
 	dec := newGFp(0)
@@ -264,12 +264,16 @@ func TestBigToGFp(t *testing.T) {
 	}
 
 	// Test outside int64 range
-	eArr := []uint{64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75,
+	eArr := []uint{
+		64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75,
 		128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139,
-		192, 193, 194, 195, 196, 197, 198, 199, 200, 201, 202, 203}
-	kArr := []uint{13, 131, 9, 3, 33, 29, 25, 11, 15, 29, 37, 33,
+		192, 193, 194, 195, 196, 197, 198, 199, 200, 201, 202, 203,
+	}
+	kArr := []uint{
+		13, 131, 9, 3, 33, 29, 25, 11, 15, 29, 37, 33,
 		51, 17, 169, 39, 67, 27, 27, 33, 85, 155, 87, 155,
-		133, 65, 27, 35, 21, 107, 15, 101, 235, 351, 67, 15}
+		133, 65, 27, 35, 21, 107, 15, 101, 235, 351, 67, 15,
+	}
 	if len(eArr) != len(kArr) {
 		t.Fatal("eArr and kArr have different lengths")
 	}
@@ -299,7 +303,7 @@ func bigToGFpOutside(t *testing.T, e uint, k uint) {
 	}
 }
 
-// Test basic arithmetic (addition, subtraction, multiplication)
+// Test basic arithmetic (addition, subtraction, multiplication).
 func TestBasicArithmetic(t *testing.T) {
 	var i, j, h int64
 	var start int64 = -10
@@ -475,7 +479,7 @@ func invertOutside(t *testing.T, e uint, k uint) {
 	}
 }
 
-// Test the Legrendre symbol
+// Test the Legrendre symbol.
 func TestLegendreGFP(t *testing.T) {
 	var k int64
 	var start int64 = -10
@@ -635,7 +639,7 @@ func exponentiationOutside(t *testing.T, e uint, k uint) {
 	}
 }
 
-// Test the sign0 function for determining sign of gfP
+// Test the sign0 function for determining sign of gfP.
 func TestSign0(t *testing.T) {
 	gfpTwo := newGFp(2)
 	if sign0(gfpTwo) != 1 {

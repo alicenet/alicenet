@@ -9,9 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
 	"github.com/alicenet/alicenet/layer1/ethereum"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestEthereum_SendTransactionOnlyDefaultAccountUnlocked(t *testing.T) {

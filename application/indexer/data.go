@@ -3,12 +3,11 @@ package indexer
 import (
 	"bytes"
 
-	"github.com/dgraph-io/badger/v2"
-
 	"github.com/alicenet/alicenet/application/objs"
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/errorz"
 	"github.com/alicenet/alicenet/utils"
+	"github.com/dgraph-io/badger/v2"
 )
 
 // NewDataIndex creates a new dataIndex object.

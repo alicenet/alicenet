@@ -1,10 +1,9 @@
 package db
 
 import (
-	"github.com/dgraph-io/badger/v2"
-
 	"github.com/alicenet/alicenet/application/objs"
 	"github.com/alicenet/alicenet/utils"
+	"github.com/dgraph-io/badger/v2"
 )
 
 // SetUTXO will set a UTXO in the database.

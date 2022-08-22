@@ -4,10 +4,9 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/dgraph-io/badger/v2"
-
 	"github.com/alicenet/alicenet/application/wrapper"
 	"github.com/alicenet/alicenet/dynamics"
+	"github.com/dgraph-io/badger/v2"
 )
 
 func makeMockStorageGetter() *mockStorageGetter {

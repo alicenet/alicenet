@@ -5,9 +5,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/dgraph-io/badger/v2"
-	"github.com/sirupsen/logrus"
-
 	"github.com/alicenet/alicenet/application/db"
 	"github.com/alicenet/alicenet/application/indexer"
 	"github.com/alicenet/alicenet/application/objs"
@@ -21,6 +18,8 @@ import (
 	"github.com/alicenet/alicenet/errorz"
 	"github.com/alicenet/alicenet/logging"
 	"github.com/alicenet/alicenet/utils"
+	"github.com/dgraph-io/badger/v2"
+	"github.com/sirupsen/logrus"
 )
 
 // TODO: cleanup expIndex after fastSync (do in finalization logic)

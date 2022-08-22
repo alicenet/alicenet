@@ -17,19 +17,21 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// Command is the cobra.Command specifically for running as an edge node, i.e. not a validator or relay
+// Command is the cobra.Command specifically for running as an edge node, i.e. not a validator or relay.
 var Command = cobra.Command{
 	Use:   "utils",
 	Short: "A collection of tools for node administration",
 	Long:  "utils is a misc. collection of tools. Ranges from initial config to automating Ethereum setup",
-	Run:   utilsNode}
+	Run:   utilsNode,
+}
 
-// SendWeiCommand is the command that sends wei from one account to another
+// SendWeiCommand is the command that sends wei from one account to another.
 var SendWeiCommand = cobra.Command{
 	Use:   "sendwei",
 	Short: "",
 	Long:  "",
-	Run:   utilsNode}
+	Run:   utilsNode,
+}
 
 func setupEthereum(logger *logrus.Entry) (layer1.Client, layer1.AllSmartContracts, error) {
 	logger.Info("Connecting to Ethereum endpoint ...")
@@ -43,7 +45,6 @@ func setupEthereum(logger *logrus.Entry) (layer1.Client, layer1.AllSmartContract
 		config.Configuration.Ethereum.TxMaxGasFeeAllowedInGwei,
 		config.Configuration.Ethereum.EndpointMinimumPeers,
 	)
-
 	if err != nil {
 		return nil, nil, err
 	}
@@ -56,9 +57,8 @@ func setupEthereum(logger *logrus.Entry) (layer1.Client, layer1.AllSmartContract
 	return eth, contractsHandler, err
 }
 
-// LogStatus sends simple info about our Ethereum setup to the logger
+// LogStatus sends simple info about our Ethereum setup to the logger.
 func LogStatus(logger *logrus.Entry, eth layer1.Client, contracts layer1.AllSmartContracts) {
-
 	acct := eth.GetDefaultAccount()
 
 	weiBalance, err := eth.GetBalance(acct.Address)
@@ -94,7 +94,6 @@ func LogStatus(logger *logrus.Entry, eth layer1.Client, contracts layer1.AllSmar
 }
 
 func utilsNode(cmd *cobra.Command, args []string) {
-
 	logger := logging.GetLogger("utils").WithField("Component", cmd.Use)
 
 	// Utils wide setup
@@ -124,7 +123,6 @@ func utilsNode(cmd *cobra.Command, args []string) {
 }
 
 func sendWei(logger *logrus.Entry, eth layer1.Client, cmd *cobra.Command, args []string) int {
-
 	if len(args) < 2 {
 		logger.Errorf("Arguments must include: amount, who\nwho can be a space delimited list of addresses")
 		return 1

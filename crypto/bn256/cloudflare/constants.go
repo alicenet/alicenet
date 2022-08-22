@@ -62,51 +62,51 @@ var xiToPSquaredMinus1Over6 = &gfP{0xca8d800500fa1bf2, 0xf0c5d61468b39769, 0x0e2
 var xiTo2PMinus2Over3 = &gfP2{gfP{0x5dddfd154bd8c949, 0x62cb29a5a4445b60, 0x37bc870a0c7dd2b9, 0x24830a9d3171f0fd}, gfP{0x7361d77f843abe92, 0xa5bb2bd3273411fb, 0x9c941f314b3e2399, 0x15df9cddbb9fd3ec}}
 
 // pMinus2 is the representation of P-2 in [4]uint64 array; this is used in gfP Invert
-// pMinus2 == 21888242871839275222246405745257275088696311157297823662689037894645226208581
+// pMinus2 == 21888242871839275222246405745257275088696311157297823662689037894645226208581.
 var pMinus2 = [4]uint64{0x3c208c16d87cfd45, 0x97816a916871ca8d, 0xb85045b68181585d, 0x30644e72e131a029}
 
-// pPlus1 is the representation of P+1 in [4]uint64 array
+// pPlus1 is the representation of P+1 in [4]uint64 array.
 var pPlus1 = [4]uint64{0x3c208c16d87cfd48, 0x97816a916871ca8d, 0xb85045b68181585d, 0x30644e72e131a029}
 
 // pPlus1Over4 is the representation of (P+1)/4 in [4]uint64 array; this is used in gfP Sqrt
-// pPlus1Over4 == 5472060717959818805561601436314318772174077789324455915672259473661306552146
+// pPlus1Over4 == 5472060717959818805561601436314318772174077789324455915672259473661306552146.
 var pPlus1Over4 = [4]uint64{0x4f082305b61f3f52, 0x65e05aa45a1c72a3, 0x6e14116da0605617, 0x0c19139cb84c680a}
 
-// pMinus3Over4 is the representation of (P-3)/4 in [4]uint64 array; this is used in gfP2 Sqrt
+// pMinus3Over4 is the representation of (P-3)/4 in [4]uint64 array; this is used in gfP2 Sqrt.
 var pMinus3Over4 = [4]uint64{0x4f082305b61f3f51, 0x65e05aa45a1c72a3, 0x6e14116da0605617, 0x0c19139cb84c680a}
 
-// For Legendre symbol; that is, for determining if square roots exist
+// For Legendre symbol; that is, for determining if square roots exist.
 var pMinus1Over2Big = bigFromBase10("10944121435919637611123202872628637544348155578648911831344518947322613104291")
 
-// pMinus1Over2 is the representation of (P-1)/2 in [4]uint64 array; this is used in Legendre
+// pMinus1Over2 is the representation of (P-1)/2 in [4]uint64 array; this is used in Legendre.
 var pMinus1Over2 = [4]uint64{0x9e10460b6c3e7ea3, 0xcbc0b548b438e546, 0xdc2822db40c0ac2e, 0x183227397098d014}
 
-// two256ModP is 2^256 mod P; this is used in hashToBase
+// two256ModP is 2^256 mod P; this is used in hashToBase.
 var two256ModP = bigFromBase10("6350874878119819312338956282401532409788428879151445726012394534686998597021")
 
-// gfP constant for use in HashToG1 function; (-1 + sqrt(-3))/2
+// gfP constant for use in HashToG1 function; (-1 + sqrt(-3))/2.
 var g1HashConst1 = &gfP{0x71930c11d782e155, 0xa6bb947cffbe3323, 0xaa303344d4741444, 0x2c3b3f0d26594943}
 
-// gfP constant for use in HashToG1 function; sqrt(-3)
+// gfP constant for use in HashToG1 function; sqrt(-3).
 var g1HashConst2 = &gfP{0x3e424383c39ad5b9, 0x28ed3f00245fdc6a, 0x4a2e7e8c1e5ebdfa, 0x05b858f624573163}
 
-// gfP constant for use in HashToG1 function; 1/3
+// gfP constant for use in HashToG1 function; 1/3.
 var g1HashConst3 = &gfP{0xafd49a8c34aeae4c, 0xe0a8c73e1f684743, 0xb4ea4db753538a2d, 0x14cf9766d3bdd51d}
 
-// gfP constant for use in HashToG1 function; g(1) == 1 + curveB (== 4)
+// gfP constant for use in HashToG1 function; g(1) == 1 + curveB (== 4).
 var g1HashConst4 = &gfP{0x115482203dbf392d, 0x926242126eaa626a, 0xe16a48076063c052, 0x07c5909386eddc93}
 
-// gfP2 constant for use in HashToG2 function; (-1 + sqrt(-3))/2
+// gfP2 constant for use in HashToG2 function; (-1 + sqrt(-3))/2.
 var g2HashConst1 = &gfP2{gfP{0x0000000000000000, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000}, gfP{0x71930c11d782e155, 0xa6bb947cffbe3323, 0xaa303344d4741444, 0x2c3b3f0d26594943}}
 
-// gfP2 constant for use in HashToG2 function; sqrt(-3)
+// gfP2 constant for use in HashToG2 function; sqrt(-3).
 var g2HashConst2 = &gfP2{gfP{0x0000000000000000, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000}, gfP{0x3e424383c39ad5b9, 0x28ed3f00245fdc6a, 0x4a2e7e8c1e5ebdfa, 0x05b858f624573163}}
 
-// gfP2 constant for use in HashToG2 function; 1/3
+// gfP2 constant for use in HashToG2 function; 1/3.
 var g2HashConst3 = &gfP2{gfP{0x0000000000000000, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000}, gfP{0xafd49a8c34aeae4c, 0xe0a8c73e1f684743, 0xb4ea4db753538a2d, 0x14cf9766d3bdd51d}}
 
-// gfP2 constant for use in HashToG2 function; g'(1) == 1 + twistB
+// gfP2 constant for use in HashToG2 function; g'(1) == 1 + twistB.
 var g2HashConst4 = &gfP2{gfP{0x38e7ecccd1dcff67, 0x65f0b37d93ce0d3e, 0xd749d0dd22ac00aa, 0x0141b9ce4a688d4d}, gfP{0xd335f05a64ca12fe, 0x75029bbec388940d, 0xd4d64ba9406d402e, 0x02baef80fc5ae772}}
 
-// Cofactor in the twist curve; twistCofactor == 2P - Order
+// Cofactor in the twist curve; twistCofactor == 2P - Order.
 var twistCofactor = bigFromBase10("21888242871839275222246405745257275088844257914179612981679871602714643921549")

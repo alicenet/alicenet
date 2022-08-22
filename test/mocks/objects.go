@@ -1,9 +1,8 @@
 package mocks
 
 import (
-	"github.com/ethereum/go-ethereum/core/types"
-
 	objs "github.com/alicenet/alicenet/consensus/objs"
+	"github.com/ethereum/go-ethereum/core/types"
 )
 
 // This file contains functions to generate commonly used object types you may use in tests

@@ -10,14 +10,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/alicenet/alicenet/utils"
-
-	"github.com/dgraph-io/badger/v2"
-	"github.com/ethereum/go-ethereum/accounts"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/stretchr/testify/assert"
-
 	"github.com/alicenet/alicenet/bridge/bindings"
 	"github.com/alicenet/alicenet/consensus/objs"
 	"github.com/alicenet/alicenet/constants"
@@ -30,6 +22,12 @@ import (
 	"github.com/alicenet/alicenet/layer1/monitor/objects"
 	"github.com/alicenet/alicenet/layer1/transaction"
 	"github.com/alicenet/alicenet/test/mocks"
+	"github.com/alicenet/alicenet/utils"
+	"github.com/dgraph-io/badger/v2"
+	"github.com/ethereum/go-ethereum/accounts"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/stretchr/testify/assert"
 )
 
 func createSharedKey(addr common.Address) [4]*big.Int {
@@ -210,7 +208,7 @@ func TestProcessNewAliceNetNodeVersionAvailableEvent(t *testing.T) {
 	eth.EndpointInSyncFunc.SetDefaultReturn(true, 4, nil)
 	eth.GetFinalizedHeightFunc.SetDefaultReturn(1, nil)
 
-	localVersion := utils.GetLocalVersion()
+	localVersion, _ := utils.GetLocalVersion()
 	localVersion.Major++
 	version := &bindings.DynamicsNewAliceNetNodeVersionAvailable{
 		Version: localVersion,
@@ -294,7 +292,7 @@ func TestProcessSnapshotTakenEventWithOutdatedCanonicalVersion(t *testing.T) {
 	snapshots.ParseSnapshotTakenFunc.SetDefaultReturn(snapshotTakenEvent, nil)
 	contracts.SnapshotsFunc.SetDefaultReturn(snapshots)
 
-	localVersion := utils.GetLocalVersion()
+	localVersion, _ := utils.GetLocalVersion()
 	localVersion.Major++
 	dynamics := mocks.NewMockIDynamics()
 	dynamics.GetLatestAliceNetVersionFunc.SetDefaultReturn(localVersion, nil)
@@ -348,7 +346,7 @@ func TestProcessProcessNewCanonicalAliceNetNodeVersion(t *testing.T) {
 	eth.EndpointInSyncFunc.SetDefaultReturn(true, 4, nil)
 	eth.GetFinalizedHeightFunc.SetDefaultReturn(1, nil)
 
-	localVersion := utils.GetLocalVersion()
+	localVersion, _ := utils.GetLocalVersion()
 	localVersion.Major++
 	version := &bindings.DynamicsNewCanonicalAliceNetNodeVersion{
 		Version: localVersion,

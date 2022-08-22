@@ -6,10 +6,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
 	"github.com/alicenet/alicenet/layer1/tests"
 	"github.com/alicenet/alicenet/layer1/transaction"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestDisputeMissingKeySharesTask_FourUnsubmittedKeyShare_DoWork_Success(t *testing.T) {

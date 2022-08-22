@@ -38,7 +38,7 @@ func initializeStorageWithFirstNode() *Storage {
 	return s
 }
 
-// Test Storage Init with nothing initialized
+// Test Storage Init with nothing initialized.
 func TestStorageInit1(t *testing.T) {
 	storageLogger := newLogger()
 	mock := &MockRawDB{}
@@ -210,7 +210,7 @@ func TestStorageCheckUpdate(t *testing.T) {
 	}
 }
 
-// Test success of LoadStorage
+// Test success of LoadStorage.
 func TestStorageLoadStorageGood1(t *testing.T) {
 	s := initializeStorage()
 	epoch := uint32(25519)
@@ -235,7 +235,7 @@ func TestStorageLoadStorageGood1(t *testing.T) {
 	}
 }
 
-// Test success of LoadStorage again
+// Test success of LoadStorage again.
 func TestStorageLoadStorageGood2(t *testing.T) {
 	s := initializeStorageWithFirstNode()
 	epoch := uint32(25519)
@@ -260,7 +260,7 @@ func TestStorageLoadStorageGood2(t *testing.T) {
 	}
 }
 
-// Test failure of LoadStorage
+// Test failure of LoadStorage.
 func TestStorageLoadStorageBad1(t *testing.T) {
 	s := initializeStorage()
 	// We attempt to load the zero epoch;
@@ -296,7 +296,7 @@ func TestStorageLoadRawStorageGood1(t *testing.T) {
 	}
 }
 
-// Test success of loadRawStorage again
+// Test success of loadRawStorage again.
 func TestStorageLoadRawStorageGood2(t *testing.T) {
 	s := initializeStorageWithFirstNode()
 	rsTrue := &RawStorage{}
@@ -334,7 +334,7 @@ func TestStorageLoadRawStorageGood2(t *testing.T) {
 }
 
 // Test failure of loadRawStorage.
-// We raise an error for attempting to load epoch 0
+// We raise an error for attempting to load epoch 0.
 func TestStorageLoadRawStorageBad1(t *testing.T) {
 	s := initializeStorageWithFirstNode()
 
@@ -710,7 +710,7 @@ func TestStorageAddNodeSplitBad2(t *testing.T) {
 	}
 }
 
-// Test addNode when adding to Head
+// Test addNode when adding to Head.
 func TestStorageAddNodeGood1(t *testing.T) {
 	origEpoch := uint32(1)
 	s := initializeStorageWithFirstNode()
@@ -790,7 +790,7 @@ func TestStorageAddNodeGood1(t *testing.T) {
 	}
 }
 
-// Test addNode when adding to Head and then in between
+// Test addNode when adding to Head and then in between.
 func TestStorageAddNodeGood2(t *testing.T) {
 	origEpoch := uint32(1)
 	s := initializeStorageWithFirstNode()
@@ -1036,7 +1036,7 @@ func TestStorageAddNodeBad6(t *testing.T) {
 	}
 }
 
-// Test failure of UpdateStorage
+// Test failure of UpdateStorage.
 func TestStorageUpdateStorageBad(t *testing.T) {
 	s := initializeStorage()
 	epoch := uint32(25519)
@@ -1053,7 +1053,7 @@ func TestStorageUpdateStorageBad(t *testing.T) {
 	}
 }
 
-// Test success of UpdateStorage
+// Test success of UpdateStorage.
 func TestStorageUpdateStorageGood1(t *testing.T) {
 	s := initializeStorage()
 	epoch := uint32(1)
@@ -1101,7 +1101,7 @@ func TestStorageUpdateStorageGood1(t *testing.T) {
 	}
 }
 
-// Test success of UpdateStorage
+// Test success of UpdateStorage.
 func TestStorageUpdateStorageGood2(t *testing.T) {
 	s := initializeStorage()
 	epoch := uint32(25519)
@@ -1148,7 +1148,7 @@ func TestStorageUpdateStorageGood2(t *testing.T) {
 	}
 }
 
-// Test success of UpdateStorage
+// Test success of UpdateStorage.
 func TestStorageUpdateStorageGood3(t *testing.T) {
 	s := initializeStorageWithFirstNode()
 
@@ -1240,7 +1240,7 @@ func TestStorageUpdateStorageGood3(t *testing.T) {
 }
 
 // Test failure of UpdateStorageValue
-// Attempt to perform invalid update at future epoch
+// Attempt to perform invalid update at future epoch.
 func TestStorageUpdateStorageValueBad1(t *testing.T) {
 	s := initializeStorage()
 	epoch := uint32(25519)
@@ -1258,7 +1258,7 @@ func TestStorageUpdateStorageValueBad1(t *testing.T) {
 }
 
 // Test failure of UpdateStorageValue
-// Attempt to perform invalid update at current epoch
+// Attempt to perform invalid update at current epoch.
 func TestStorageUpdateStorageValueBad2(t *testing.T) {
 	s := initializeStorage()
 	epoch := uint32(1)
@@ -1276,7 +1276,7 @@ func TestStorageUpdateStorageValueBad2(t *testing.T) {
 }
 
 // Test failure of UpdateStorageValue
-// Attempt to perform invalid update at previous epoch
+// Attempt to perform invalid update at previous epoch.
 func TestStorageUpdateStorageValueBad3(t *testing.T) {
 	s := initializeStorage()
 	epoch := uint32(1)
@@ -1294,7 +1294,7 @@ func TestStorageUpdateStorageValueBad3(t *testing.T) {
 }
 
 // Test failure of UpdateStorageValue
-// Attempt to perform invalid update in between two valid storage values
+// Attempt to perform invalid update in between two valid storage values.
 func TestStorageUpdateStorageValueBad4(t *testing.T) {
 	s := initializeStorageWithFirstNode()
 	rs := &RawStorage{}

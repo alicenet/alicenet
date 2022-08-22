@@ -4,10 +4,6 @@ import (
 	"context"
 	"testing"
 
-	"github.com/dgraph-io/badger/v2"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
-
 	appObjs "github.com/alicenet/alicenet/application/objs"
 	trie "github.com/alicenet/alicenet/badgerTrie"
 	"github.com/alicenet/alicenet/consensus/appmock"
@@ -18,6 +14,9 @@ import (
 	"github.com/alicenet/alicenet/dynamics"
 	"github.com/alicenet/alicenet/proto"
 	"github.com/alicenet/alicenet/utils"
+	"github.com/dgraph-io/badger/v2"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 func TestSnapShotManager_startFastSync_Ok(t *testing.T) {

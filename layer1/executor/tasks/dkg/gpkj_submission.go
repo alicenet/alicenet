@@ -5,12 +5,11 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/core/types"
-
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/layer1/executor/tasks"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
 	monInterfaces "github.com/alicenet/alicenet/layer1/monitor/interfaces"
+	"github.com/ethereum/go-ethereum/core/types"
 )
 
 // GPKjSubmissionTask contains required state for gpk submission.

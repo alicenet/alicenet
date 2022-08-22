@@ -14,7 +14,7 @@ import (
 // CanonicalVersionCheckTask contains required state for the task.
 type CanonicalVersionCheckTask struct {
 	*tasks.BaseTask
-	//Version info
+	// Version info
 	Version bindings.CanonicalVersion
 }
 
@@ -49,7 +49,10 @@ func (t *CanonicalVersionCheckTask) Execute(ctx context.Context) (*types.Transac
 	logger := t.GetLogger().WithField("method", "Execute()")
 	logger.Debug("initiate execution")
 
-	newMajorIsGreater, newMinorIsGreater, newPatchIsGreater, localVersion := utils.CompareCanonicalVersion(t.Version)
+	newMajorIsGreater, newMinorIsGreater, newPatchIsGreater, localVersion, err := utils.CompareCanonicalVersion(t.Version)
+	if err != nil {
+		return nil, tasks.NewTaskErr(fmt.Sprintf("version error: %s", err), false)
+	}
 	logger = logger.WithField("currentVersion", fmt.Sprintf("%d.%d.%d", localVersion.Major, localVersion.Minor, localVersion.Patch))
 
 	text := fmt.Sprintf(
@@ -79,7 +82,11 @@ func (t *CanonicalVersionCheckTask) Execute(ctx context.Context) (*types.Transac
 func (t *CanonicalVersionCheckTask) ShouldExecute(ctx context.Context) (bool, *tasks.TaskErr) {
 	logger := t.GetLogger().WithField("method", "ShouldExecute()")
 	logger.Debug("should execute task")
-	newMajorIsGreater, newMinorIsGreater, newPatchIsGreater, _ := utils.CompareCanonicalVersion(t.Version)
+	newMajorIsGreater, newMinorIsGreater, newPatchIsGreater, _, err := utils.CompareCanonicalVersion(t.Version)
+	if err != nil {
+		return false, tasks.NewTaskErr(fmt.Sprintf("version error: %s", err), false)
+	}
+
 	if newMajorIsGreater || newMinorIsGreater || newPatchIsGreater {
 		return true, nil
 	}
