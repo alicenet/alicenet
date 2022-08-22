@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT-open-group
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.16;
 
 // enum to keep track of versions of the dynamic struct for the encoding and
 // decoding algorithms
