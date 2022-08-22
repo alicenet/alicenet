@@ -47,6 +47,7 @@ export interface DeploymentArgs {
 export type DeployProxyMCArgs = {
   contractName: string;
   logicAddress: string;
+  waitConfirmation?: boolean;
   factoryAddress?: string;
   initCallData?: BytesLike;
   outputFolder?: string;
@@ -59,6 +60,7 @@ export type MultiCallArgsStruct = {
 export type DeployArgs = {
   contractName: string;
   factoryAddress: string;
+  waitConfirmation?: boolean;
   initCallData?: string;
   constructorArgs?: any;
   outputFolder?: string;
@@ -120,6 +122,7 @@ export async function deployFactory(run: RunTaskFunction, usrPath?: string) {
 
 export async function getDeployMetaArgs(
   fullyQualifiedName: string,
+  waitConfirmation: boolean,
   factoryAddress: string,
   artifacts: Artifacts,
   inputFolder?: string,
@@ -141,6 +144,7 @@ export async function getDeployMetaArgs(
     : undefined;
   return {
     contractName: extractName(fullyQualifiedName),
+    waitConfirmation: waitConfirmation,
     factoryAddress: factoryAddress,
     initCallData: initCallData,
     constructorArgs: constructorArgs,
@@ -152,6 +156,7 @@ export async function getDeployUpgradeableProxyArgs(
   fullyQualifiedName: string,
   factoryAddress: string,
   artifacts: Artifacts,
+  waitConfirmation?: boolean,
   inputFolder?: string,
   outputFolder?: string
 ): Promise<DeployArgs> {
@@ -170,6 +175,7 @@ export async function getDeployUpgradeableProxyArgs(
     : undefined;
   return {
     contractName: extractName(fullyQualifiedName),
+    waitConfirmation: waitConfirmation,
     factoryAddress: factoryAddress,
     initCallData: initCallData,
     constructorArgs: constructorArgs,
