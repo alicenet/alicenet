@@ -270,8 +270,8 @@ task("deployContracts", "runs the initial deployment of all AliceNet contracts")
           const name = extractName(fullyQualifiedName);
           const salt: BytesLike = await getBytes32Salt(name, hre);
           proxyData = await hre.run("deployProxy", {
-            factoryAddress: factoryAddress,
-            salt: salt,
+            factoryAddress,
+            salt,
             waitConfirmation: taskArgs.waitConfirmation,
           });
           cumulativeGasUsed = cumulativeGasUsed.add(proxyData.gas);
