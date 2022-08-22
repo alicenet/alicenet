@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT-open-group
-pragma solidity ^0.8.16;
+pragma solidity ^0.8.11;
 
 abstract contract ETHDKGUtils {
     function _getThreshold(uint256 numParticipants_) internal pure returns (uint256 threshold) {

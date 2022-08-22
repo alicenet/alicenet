@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT-open-group
-pragma solidity ^0.8.16;
+pragma solidity ^0.8.0;
 
 abstract contract AtomicCounter {
     // monotonically increasing counter

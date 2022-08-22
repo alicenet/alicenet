@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT-open-group
-pragma solidity ^0.8.16;
+pragma solidity ^0.8.0;
 
 import "contracts/interfaces/IERC20Transferable.sol";
 import "contracts/libraries/errors/ERC20SafeTransferErrors.sol";

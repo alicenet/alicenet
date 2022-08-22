@@ -97,7 +97,7 @@ task(
   .addFlag("waitConfirmation", "wait 8 blocks between transactions")
   .addOptionalParam("outputFolder", "output folder path to save factoryState")
   .setAction(async (taskArgs, hre) => {
-    const waitBlocks = taskArgs.waitConfirmation === true ? 8 : undefined;
+    const waitBlocks = taskArgs.waitConfirmation === true ? 8 : undefined
     await checkUserDirPath(taskArgs.outputFolder);
     const factoryBase = await hre.ethers.getContractFactory(ALICENET_FACTORY);
     const accounts = await getAccounts(hre);
@@ -270,8 +270,8 @@ task("deployContracts", "runs the initial deployment of all AliceNet contracts")
           const name = extractName(fullyQualifiedName);
           const salt: BytesLike = await getBytes32Salt(name, hre);
           proxyData = await hre.run("deployProxy", {
-            factoryAddress,
-            salt,
+            factoryAddress: factoryAddress,
+            salt: salt,
             waitConfirmation: taskArgs.waitConfirmation,
           });
           cumulativeGasUsed = cumulativeGasUsed.add(proxyData.gas);
@@ -288,7 +288,7 @@ task("deployContracts", "runs the initial deployment of all AliceNet contracts")
 task(
   "fullMultiCallDeployProxy",
   "Multicalls deployCreate, deployProxy, and upgradeProxy, if gas cost exceeds 10 million deployUpgradeableProxy will be used"
-)
+  )
   .addFlag("waitConfirmation", "wait 8 blocks between transactions")
   .addParam("contractName", "Name of logic contract to point the proxy at")
   .addParam(
@@ -302,7 +302,7 @@ task(
   .addOptionalParam("outputFolder", "output folder path to save factory state")
   .addOptionalVariadicPositionalParam("constructorArgs", "")
   .setAction(async (taskArgs, hre) => {
-    const waitBlocks = taskArgs.waitConfirmation === true ? 8 : undefined;
+    const waitBlocks = taskArgs.waitConfirmation === true ? 8 : undefined
     const network = hre.network.name;
     const callArgs: DeployArgs = {
       contractName: taskArgs.contractName,
@@ -462,7 +462,7 @@ task("multiCallDeployMetamorphic")
     "array that holds all arguments for constructor"
   )
   .setAction(async (taskArgs, hre) => {
-    const waitBlocks = taskArgs.waitConfirmation === true ? 8 : undefined;
+    const waitBlocks = taskArgs.waitConfirmation === true ? 8 : undefined
     const callArgs: DeployArgs = {
       contractName: taskArgs.contractName,
       factoryAddress: taskArgs.factoryAddress,
@@ -620,7 +620,7 @@ task(
     "input constructor args at the end of call"
   )
   .setAction(async (taskArgs, hre) => {
-    const waitBlocks = taskArgs.waitConfirmation === true ? 8 : undefined;
+    const waitBlocks = taskArgs.waitConfirmation === true ? 8 : undefined
     const network = hre.network.name;
     if (network === "hardhat") {
       // hardhat is not being able to estimate correctly the tx gas due to the massive bytes array
@@ -677,7 +677,7 @@ task(
   )
   .addOptionalParam("outputFolder", "output folder path to save factoryState")
   .setAction(async (taskArgs, hre) => {
-    const waitBlocks = taskArgs.waitConfirmation === true ? 8 : undefined;
+    const waitBlocks = taskArgs.waitConfirmation === true ? 8 : undefined
     const network = hre.network.name;
     const factoryBase = await hre.ethers.getContractFactory(ALICENET_FACTORY);
     const logicFactory: any = await hre.ethers.getContractFactory(
@@ -732,7 +732,7 @@ task(DEPLOY_CREATE, "deploys a contract from the factory using create")
     "array that holds all arguments for constructor"
   )
   .setAction(async (taskArgs, hre) => {
-    const waitBlocks = taskArgs.waitConfirmation === true ? 8 : undefined;
+    const waitBlocks = taskArgs.waitConfirmation === true ? 8 : undefined
     const factoryBase = await hre.ethers.getContractFactory(ALICENET_FACTORY);
     // get a factory instance connected to the factory a
     const factory = factoryBase.attach(taskArgs.factoryAddress);
@@ -790,7 +790,7 @@ task(DEPLOY_PROXY, "deploys a proxy from the factory")
     "the default factory address from factoryState will be used if not set"
   )
   .setAction(async (taskArgs, hre) => {
-    const waitBlocks = taskArgs.waitConfirmation === true ? 8 : undefined;
+    const waitBlocks = taskArgs.waitConfirmation === true ? 8 : undefined
     const factoryBase = await hre.ethers.getContractFactory(ALICENET_FACTORY);
     const factory = factoryBase.attach(taskArgs.factoryAddress);
     const txResponse = await factory.deployProxy(taskArgs.salt);
@@ -827,7 +827,7 @@ task(UPGRADE_DEPLOYED_PROXY, "deploys a contract from the factory using create")
   )
   .addOptionalParam("outputFolder", "output folder path to save factory state")
   .setAction(async (taskArgs, hre) => {
-    const waitBlocks = taskArgs.waitConfirmation === true ? 8 : undefined;
+    const waitBlocks = taskArgs.waitConfirmation === true ? 8 : undefined
     const network = hre.network.name;
     const factoryBase = await hre.ethers.getContractFactory(ALICENET_FACTORY);
     // grab the salt from the logic contract
@@ -903,7 +903,7 @@ task("multiCallDeployProxy", "deploy and upgrade proxy with multicall")
     "unique salt for specifying proxy defaults to salt specified in logic contract"
   )
   .setAction(async (taskArgs, hre) => {
-    const waitBlocks = taskArgs.waitConfirmation === true ? 8 : undefined;
+    const waitBlocks = taskArgs.waitConfirmation === true ? 8 : undefined
     const network = hre.network.name;
     const factoryBase = await hre.ethers.getContractFactory(ALICENET_FACTORY);
     const factory = factoryBase.attach(taskArgs.factoryAddress);
@@ -990,7 +990,7 @@ task(
   )
   .addOptionalVariadicPositionalParam("constructorArgs")
   .setAction(async (taskArgs, hre) => {
-    const waitBlocks = taskArgs.waitConfirmation === true ? 8 : undefined;
+    const waitBlocks = taskArgs.waitConfirmation === true ? 8 : undefined
     const factoryBase = await hre.ethers.getContractFactory(ALICENET_FACTORY);
     const factory = factoryBase.attach(taskArgs.factoryAddress);
     const logicFactory: any = await hre.ethers.getContractFactory(
