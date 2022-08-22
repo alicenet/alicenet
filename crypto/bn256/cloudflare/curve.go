@@ -20,9 +20,9 @@ var curveGen = &curvePoint{
 	t: *newGFp(1),
 }
 
-// returnCurveGen returns curveGen to ensure curveGen does not change.
+// returnCurveGen returns curveGen to ensure curveGen does not change
 func returnCurveGen() *curvePoint {
-	cG := &curvePoint{
+	var cG = &curvePoint{
 		x: *newGFp(1),
 		y: *newGFp(2),
 		z: *newGFp(1),
@@ -66,7 +66,7 @@ func (c *curvePoint) IsOnCurve() bool {
 	return *y2 == *x3
 }
 
-// SetInfinity sets c to Infinity, the identity element of the group.
+// SetInfinity sets c to Infinity, the identity element of the group
 func (c *curvePoint) SetInfinity() {
 	c.x = gfP{0}
 	c.y = *newGFp(1)
@@ -74,7 +74,7 @@ func (c *curvePoint) SetInfinity() {
 	c.t = gfP{0}
 }
 
-// IsInfinity checks if c is Infinity, the identity element of the group.
+// IsInfinity checks if c is Infinity, the identity element of the group
 func (c *curvePoint) IsInfinity() bool {
 	return c.z == gfP{0}
 }

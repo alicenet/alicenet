@@ -69,7 +69,7 @@ func (bns *BNGroupSigner) VerifyGroupShares(groupShares [][]byte) error {
 	return nil
 }
 
-// PubkeyShare returns the marshalled public key of the BNGroupSigner.
+// PubkeyShare returns the marshalled public key of the BNGroupSigner
 func (bns *BNGroupSigner) PubkeyShare() ([]byte, error) {
 	if bns == nil || bns.privk == nil {
 		return nil, ErrPrivkNotSet
@@ -122,7 +122,8 @@ func (bns *BNGroupSigner) Aggregate(sigs [][]byte, groupShares [][]byte) ([]byte
 
 // BNGroupValidator is the object that performs cryptographic validation of
 // BNGroupSigner signatures.
-type BNGroupValidator struct{}
+type BNGroupValidator struct {
+}
 
 // Validate will validate a BNGroupSigner signature or group signature for msg.
 func (bnv *BNGroupValidator) Validate(msg []byte, sig []byte) ([]byte, error) {

@@ -7,7 +7,7 @@ import (
 	"github.com/alicenet/alicenet/utils"
 )
 
-// NodeKey stores the necessary information to load a Node.
+// NodeKey stores the necessary information to load a Node
 type NodeKey struct {
 	prefix []byte
 	epoch  uint32
@@ -24,7 +24,7 @@ func makeNodeKey(epoch uint32) (*NodeKey, error) {
 	return nk, nil
 }
 
-// Marshal converts NodeKey into the byte slice.
+// Marshal converts NodeKey into the byte slice
 func (nk *NodeKey) Marshal() ([]byte, error) {
 	if !bytes.Equal(nk.prefix, dbprefix.PrefixStorageNodeKey()) {
 		return nil, ErrInvalidNodeKey

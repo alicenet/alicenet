@@ -7,14 +7,14 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// Database is an abstraction for object storage.
+// Database is an abstraction for object storage
 type Database struct {
 	sync.Mutex
 	rawDB  rawDataBase
 	logger *logrus.Logger
 }
 
-// SetNode stores Node in the database.
+// SetNode stores Node in the database
 func (db *Database) SetNode(txn *badger.Txn, node *Node) error {
 	if !node.IsValid() {
 		return ErrInvalidNode
@@ -38,7 +38,7 @@ func (db *Database) SetNode(txn *badger.Txn, node *Node) error {
 	return nil
 }
 
-// GetNode retrieves Node from the database.
+// GetNode retrieves Node from the database
 func (db *Database) GetNode(txn *badger.Txn, epoch uint32) (*Node, error) {
 	nodeKey, err := makeNodeKey(epoch)
 	if err != nil {
@@ -67,7 +67,7 @@ func (db *Database) GetNode(txn *badger.Txn, epoch uint32) (*Node, error) {
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-// SetLinkedList saves LinkedList to the database.
+// SetLinkedList saves LinkedList to the database
 func (db *Database) SetLinkedList(txn *badger.Txn, ll *LinkedList) error {
 	if !ll.IsValid() {
 		return ErrInvalid
@@ -85,7 +85,7 @@ func (db *Database) SetLinkedList(txn *badger.Txn, ll *LinkedList) error {
 	return nil
 }
 
-// GetLinkedList retrieves LinkedList from the database.
+// GetLinkedList retrieves LinkedList from the database
 func (db *Database) GetLinkedList(txn *badger.Txn) (*LinkedList, error) {
 	llKey := makeLinkedListKey()
 	key, err := llKey.Marshal()

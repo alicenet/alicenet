@@ -226,7 +226,7 @@ func TestNodeIsTail(t *testing.T) {
 	}
 }
 
-// SetNode with prevNode at Head.
+// SetNode with prevNode at Head
 func TestNodeSetEpochsGood1(t *testing.T) {
 	rs := &RawStorage{}
 	rs.standardParameters()
@@ -286,7 +286,7 @@ func TestNodeSetEpochsGood1(t *testing.T) {
 	}
 }
 
-// SetNode in between prevNode and nextNode.
+// SetNode in between prevNode and nextNode
 func TestNodeSetEpochsGood2(t *testing.T) {
 	rs := &RawStorage{}
 	rs.standardParameters()
@@ -372,7 +372,7 @@ func TestNodeSetEpochsGood2(t *testing.T) {
 	}
 }
 
-// We should raise an error when having node not PreValid.
+// We should raise an error when having node not PreValid
 func TestNodeSetEpochsBad1(t *testing.T) {
 	node := &Node{}
 	err := node.SetEpochs(nil, nil)
@@ -381,7 +381,7 @@ func TestNodeSetEpochsBad1(t *testing.T) {
 	}
 }
 
-// We should raise error for prevNode being invalid.
+// We should raise error for prevNode being invalid
 func TestNodeSetEpochsBad2(t *testing.T) {
 	rs := &RawStorage{}
 	rs.standardParameters()
@@ -404,7 +404,7 @@ func TestNodeSetEpochsBad2(t *testing.T) {
 	}
 }
 
-// We should raise error for nextNode not nil.
+// We should raise error for nextNode not nil
 func TestNodeSetEpochsBad3(t *testing.T) {
 	rs := &RawStorage{}
 	rs.standardParameters()
@@ -433,7 +433,7 @@ func TestNodeSetEpochsBad3(t *testing.T) {
 	}
 }
 
-// We should raise error for prevNode.thisEpoch >= node.thisEpoch.
+// We should raise error for prevNode.thisEpoch >= node.thisEpoch
 func TestNodeSetEpochsBad4(t *testing.T) {
 	rs := &RawStorage{}
 	rs.standardParameters()
@@ -464,7 +464,7 @@ func TestNodeSetEpochsBad4(t *testing.T) {
 	}
 }
 
-// We should raise error for prevNode not nil.
+// We should raise error for prevNode not nil
 func TestNodeSetEpochsBad5(t *testing.T) {
 	rs := &RawStorage{}
 	rs.standardParameters()
@@ -488,7 +488,7 @@ func TestNodeSetEpochsBad5(t *testing.T) {
 	}
 }
 
-// We should raise error for prevNode not nil.
+// We should raise error for prevNode not nil
 func TestNodeSetEpochsBad6(t *testing.T) {
 	rs := &RawStorage{}
 	rs.standardParameters()
@@ -508,7 +508,7 @@ func TestNodeSetEpochsBad6(t *testing.T) {
 	}
 }
 
-// We should raise error for prevNode not nil.
+// We should raise error for prevNode not nil
 func TestNodeSetEpochsBad7(t *testing.T) {
 	rs := &RawStorage{}
 	rs.standardParameters()
@@ -541,7 +541,7 @@ func TestNodeSetEpochsBad7(t *testing.T) {
 	}
 }
 
-// We should raise error for prevNode not nil.
+// We should raise error for prevNode not nil
 func TestNodeSetEpochsBad8(t *testing.T) {
 	rs := &RawStorage{}
 	rs.standardParameters()

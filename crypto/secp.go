@@ -52,7 +52,8 @@ func (secps *Secp256k1Signer) Sign(msg []byte) ([]byte, error) {
 
 // Secp256k1Validator is a struct which allows for validation of cryptographic
 // signatures from Secp256k1Signer.
-type Secp256k1Validator struct{}
+type Secp256k1Validator struct {
+}
 
 // Validate will validate a Secp256k1Signer signature for msg.
 func (secpv *Secp256k1Validator) Validate(msg []byte, sig []byte) ([]byte, error) {

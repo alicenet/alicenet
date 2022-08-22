@@ -60,7 +60,7 @@ func (e *gfP12) Neg(a *gfP12) *gfP12 {
 	return e
 }
 
-// Frobenius computes (xω+y)^p = x^p ω·ξ^((p-1)/6) + y^p.
+// Frobenius computes (xω+y)^p = x^p ω·ξ^((p-1)/6) + y^p
 func (e *gfP12) Frobenius(a *gfP12) *gfP12 {
 	e.x.Frobenius(&a.x)
 	e.y.Frobenius(&a.y)
@@ -68,7 +68,7 @@ func (e *gfP12) Frobenius(a *gfP12) *gfP12 {
 	return e
 }
 
-// FrobeniusP2 computes (xω+y)^p² = x^p² ω·ξ^((p²-1)/6) + y^p².
+// FrobeniusP2 computes (xω+y)^p² = x^p² ω·ξ^((p²-1)/6) + y^p²
 func (e *gfP12) FrobeniusP2(a *gfP12) *gfP12 {
 	e.x.FrobeniusP2(&a.x)
 	e.x.MulGFP(&e.x, xiToPSquaredMinus1Over6)
@@ -164,7 +164,7 @@ func (e *gfP12) Invert(a *gfP12) *gfP12 {
 }
 
 // IsOneCurve determines if e is on the subgroup by checking
-// the multiplicative order.
+// the multiplicative order
 func (e *gfP12) IsOnCurve() bool {
 	f := &gfP12{}
 	f.Exp(e, Order)

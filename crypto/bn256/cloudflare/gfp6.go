@@ -64,7 +64,7 @@ func (e *gfP6) Frobenius(a *gfP6) *gfP6 {
 	return e
 }
 
-// FrobeniusP2 computes (xτ²+yτ+z)^(p²) = xτ^(2p²) + yτ^(p²) + z.
+// FrobeniusP2 computes (xτ²+yτ+z)^(p²) = xτ^(2p²) + yτ^(p²) + z
 func (e *gfP6) FrobeniusP2(a *gfP6) *gfP6 {
 	// τ^(2p²) = τ²τ^(2p²-2) = τ²ξ^((2p²-2)/3)
 	e.x.MulScalar(&a.x, xiTo2PSquaredMinus2Over3)
@@ -139,7 +139,7 @@ func (e *gfP6) MulGFP(a *gfP6, b *gfP) *gfP6 {
 	return e
 }
 
-// MulTau computes τ·(aτ²+bτ+c) = bτ²+cτ+aξ.
+// MulTau computes τ·(aτ²+bτ+c) = bτ²+cτ+aξ
 func (e *gfP6) MulTau(a *gfP6) *gfP6 {
 	tz := (&gfP2{}).MulXi(&a.x)
 	ty := (&gfP2{}).Set(&a.y)

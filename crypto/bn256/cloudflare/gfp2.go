@@ -148,7 +148,7 @@ func (e *gfP2) Square(a *gfP2) *gfP2 {
 	return e
 }
 
-// Invert computes the multiplicative inverse in gfP2.
+// Invert computes the multiplicative inverse in gfP2
 func (e *gfP2) Invert(a *gfP2) *gfP2 {
 	// See "Implementing cryptographic pairings", M. Scott, section 3.2.
 	// ftp://136.206.11.249/pub/crypto/pairings.pdf
@@ -167,7 +167,7 @@ func (e *gfP2) Invert(a *gfP2) *gfP2 {
 	return e
 }
 
-// Legendre determines if a square exists in gfP2.
+// Legendre determines if a square exists in gfP2
 func (e *gfP2) Legendre() int {
 	ap1 := &gfP{}
 	gfpMul(ap1, &e.x, &e.x)

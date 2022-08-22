@@ -4,13 +4,13 @@ import "errors"
 
 var (
 	// ErrPubkeyGroupNotSet occurs when the group public key
-	// (master public key [mpk]) has not been set.
+	// (master public key [mpk]) has not been set
 	ErrPubkeyGroupNotSet = errors.New("groupPubk not set")
 
-	// ErrPrivkNotSet occurs when the private key has not been set.
+	// ErrPrivkNotSet occurs when the private key has not been set
 	ErrPrivkNotSet = errors.New("privk not set")
 
-	// ErrInvalidSignature occurs when signature validation fails.
+	// ErrInvalidSignature occurs when signature validation fails
 	ErrInvalidSignature = errors.New("signature validation failed")
 
 	// ErrInvalid occurs when signer is not valid;

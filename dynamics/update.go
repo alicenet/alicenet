@@ -6,52 +6,52 @@ import (
 	"time"
 )
 
-// Ensuring interface check.
+// Ensuring interface check
 var _ Updater = (*Update)(nil)
 
-// UpdateType specifies which field will be updated.
+// UpdateType specifies which field will be updated
 type UpdateType int
 
 const (
-	// MaxBytesType is the UpdateType for updating MaxBytes and MaxProposalSize.
+	// MaxBytesType is the UpdateType for updating MaxBytes and MaxProposalSize
 	MaxBytesType UpdateType = iota + 1
 
 	// ProposalStepTimeoutType is the UpdateType for updating ProposalStepTimeout;
-	// this also parameterizes DownloadTimeout and DeadBlockRoundNextRoundTimeout.
+	// this also parameterizes DownloadTimeout and DeadBlockRoundNextRoundTimeout
 	ProposalStepTimeoutType
 
 	// PreVoteStepTimeoutType is the UpdateType for updating PreVoteStepTimeout;
-	// this also parameterizes DownloadTimeout and DeadBlockRoundNextRoundTimeout.
+	// this also parameterizes DownloadTimeout and DeadBlockRoundNextRoundTimeout
 	PreVoteStepTimeoutType
 
 	// PreCommitStepTimeoutType is the UpdateType for updating PreCommitStepTimeout;
-	// this also parameterizes DownloadTimeout and DeadBlockRoundNextRoundTimeout.
+	// this also parameterizes DownloadTimeout and DeadBlockRoundNextRoundTimeout
 	PreCommitStepTimeoutType
 
 	// MsgTimeoutType is the UpdateType for updating MsgTimeout;
-	// this also parameterizes SrvrMsgTimeout.
+	// this also parameterizes SrvrMsgTimeout
 	MsgTimeoutType
 
-	// MinTxFeeType is the UpdateType for updating MinTxFee.
+	// MinTxFeeType is the UpdateType for updating MinTxFee
 	MinTxFeeType
 
-	// TxValidVersionType is the UpdateType for updating TxValidVersion.
+	// TxValidVersionType is the UpdateType for updating TxValidVersion
 	TxValidVersionType
 
-	// ValueStoreFeeType is the UpdateType for updating ValueStoreFee.
+	// ValueStoreFeeType is the UpdateType for updating ValueStoreFee
 	ValueStoreFeeType
 
-	// ValueStoreValidVersionType is the UpdateType for updating ValueStoreValidVersion.
+	// ValueStoreValidVersionType is the UpdateType for updating ValueStoreValidVersion
 	ValueStoreValidVersionType
 
-	// DataStoreEpochFeeType is the UpdateType for updating DataStoreEpochFee.
+	// DataStoreEpochFeeType is the UpdateType for updating DataStoreEpochFee
 	DataStoreEpochFeeType
 
-	// DataStoreValidVersionType is the UpdateType for updating DataStoreValidVersion.
+	// DataStoreValidVersionType is the UpdateType for updating DataStoreValidVersion
 	DataStoreValidVersionType
 )
 
-// Updater specifies the interface we use for updating Storage.
+// Updater specifies the interface we use for updating Storage
 type Updater interface {
 	Name() string
 	Type() UpdateType
@@ -59,7 +59,7 @@ type Updater interface {
 	Epoch() uint32
 }
 
-// Update is an implementation of Updater interface.
+// Update is an implementation of Updater interface
 type Update struct {
 	name  string
 	key   UpdateType
@@ -67,27 +67,27 @@ type Update struct {
 	epoch uint32
 }
 
-// Name returns the name of Update.
+// Name returns the name of Update
 func (u *Update) Name() string {
 	return u.name
 }
 
-// Type returns the type of Update.
+// Type returns the type of Update
 func (u *Update) Type() UpdateType {
 	return u.key
 }
 
-// Value returns the value of Update.
+// Value returns the value of Update
 func (u *Update) Value() string {
 	return u.value
 }
 
-// Epoch returns the epoch of Update.
+// Epoch returns the epoch of Update
 func (u *Update) Epoch() uint32 {
 	return u.epoch
 }
 
-// NewUpdate makes a valid valid Update struct which is then used.
+// NewUpdate makes a valid valid Update struct which is then used
 func NewUpdate(field, value string, epoch uint32) (*Update, error) {
 	keyType, err := convertFieldToType(field)
 	if err != nil {
@@ -102,7 +102,7 @@ func NewUpdate(field, value string, epoch uint32) (*Update, error) {
 	return u, nil
 }
 
-// stringToInt32 converts a string into an int32.
+// stringToInt32 converts a string into an int32
 func stringToInt32(value string) (int32, error) {
 	v64, err := strconv.ParseInt(value, 10, 32)
 	if err != nil {
@@ -112,7 +112,7 @@ func stringToInt32(value string) (int32, error) {
 	return v, nil
 }
 
-// stringToUint32 converts a string into a uint32.
+// stringToUint32 converts a string into a uint32
 func stringToUint32(value string) (uint32, error) {
 	v64, err := strconv.ParseUint(value, 10, 32)
 	if err != nil {
@@ -151,7 +151,7 @@ func stringToBigInt(value string) (*big.Int, error) {
 	return v, nil
 }
 
-// convertFieldToType returns the type associated types from the field.
+// convertFieldToType returns the type associated types from the field
 func convertFieldToType(field string) (UpdateType, error) {
 	switch field {
 	case "maxBytes":

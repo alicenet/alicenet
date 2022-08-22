@@ -20,12 +20,12 @@ func makeLinkedListKey() *NodeKey {
 	return nk
 }
 
-// GetEpochLastUpdated returns highest epoch with changes.
+// GetEpochLastUpdated returns highest epoch with changes
 func (ll *LinkedList) GetEpochLastUpdated() uint32 {
 	return ll.epochLastUpdated
 }
 
-// SetEpochLastUpdated returns highest epoch with changes.
+// SetEpochLastUpdated returns highest epoch with changes
 func (ll *LinkedList) SetEpochLastUpdated(epoch uint32) error {
 	if epoch == 0 {
 		return ErrZeroEpoch
@@ -34,13 +34,13 @@ func (ll *LinkedList) SetEpochLastUpdated(epoch uint32) error {
 	return nil
 }
 
-// Marshal marshals LinkedList.
+// Marshal marshals LinkedList
 func (ll *LinkedList) Marshal() []byte {
 	eluBytes := utils.MarshalUint32(ll.epochLastUpdated)
 	return eluBytes
 }
 
-// Unmarshal unmarshals LinkedList.
+// Unmarshal unmarshals LinkedList
 func (ll *LinkedList) Unmarshal(v []byte) error {
 	if len(v) != 4 {
 		return ErrInvalidNode
@@ -50,7 +50,7 @@ func (ll *LinkedList) Unmarshal(v []byte) error {
 	return nil
 }
 
-// IsValid returns true if LinkedList is valid.
+// IsValid returns true if LinkedList is valid
 func (ll *LinkedList) IsValid() bool {
 	return ll.epochLastUpdated != 0
 }

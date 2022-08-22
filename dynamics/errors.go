@@ -33,9 +33,9 @@ var (
 	// ErrInvalid is an error which is returned when the struct is invalid.
 	ErrInvalid = errors.New("invalid value")
 
-	// ErrInvalidNodeKey is an error which occurs when the NodeKey is invalid.
+	// ErrInvalidNodeKey is an error which occurs when the NodeKey is invalid
 	ErrInvalidNodeKey = errors.New("invalid NodeKey")
 
-	// ErrInvalidNode is an error which occurs when a Node is invalid.
+	// ErrInvalidNode is an error which occurs when a Node is invalid
 	ErrInvalidNode = errors.New("invalid Node")
 )

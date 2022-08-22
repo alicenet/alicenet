@@ -14,7 +14,7 @@ type Node struct {
 	rawStorage *RawStorage
 }
 
-// Marshal marshals a Node.
+// Marshal marshals a Node
 func (n *Node) Marshal() ([]byte, error) {
 	rsBytes, err := n.rawStorage.Marshal()
 	if err != nil {
@@ -31,7 +31,7 @@ func (n *Node) Marshal() ([]byte, error) {
 	return v, nil
 }
 
-// Unmarshal unmarshals a Node.
+// Unmarshal unmarshals a Node
 func (n *Node) Unmarshal(v []byte) error {
 	if len(v) < 12 {
 		return ErrInvalid
@@ -50,7 +50,7 @@ func (n *Node) Unmarshal(v []byte) error {
 	return nil
 }
 
-// IsValid returns true if Node is valid.
+// IsValid returns true if Node is valid
 func (n *Node) IsValid() bool {
 	if n == nil {
 		return false
@@ -70,7 +70,7 @@ func (n *Node) IsValid() bool {
 }
 
 // IsPreValid returns true if Node is ready to be added to database
-// but prevEpoch and nextEpoch are not yet set.
+// but prevEpoch and nextEpoch are not yet set
 func (n *Node) IsPreValid() bool {
 	if n == nil {
 		return false
@@ -85,7 +85,7 @@ func (n *Node) IsPreValid() bool {
 	return true
 }
 
-// Copy makes a copy of Node.
+// Copy makes a copy of Node
 func (n *Node) Copy() (*Node, error) {
 	nodeBytes, err := n.Marshal()
 	if err != nil {
@@ -133,7 +133,7 @@ func (n *Node) SetEpochs(prevNode *Node, nextNode *Node) error {
 }
 
 // IsHead returns true if Node is end of linked list;
-// in this case, n.nextEpoch == n.thisEpoch.
+// in this case, n.nextEpoch == n.thisEpoch
 func (n *Node) IsHead() bool {
 	if !n.IsValid() {
 		return false
@@ -145,7 +145,7 @@ func (n *Node) IsHead() bool {
 }
 
 // IsTail returns true if Node is beginning of linked list;
-// in this case, n.prevEpoch == n.thisEpoch.
+// in this case, n.prevEpoch == n.thisEpoch
 func (n *Node) IsTail() bool {
 	if !n.IsValid() {
 		return false

@@ -4,7 +4,7 @@ import (
 	"time"
 )
 
-// Original from constants/consensus.go.
+// Original from constants/consensus.go
 const (
 	maxBytes        = 3000000
 	maxProposalSize = maxBytes // Parameterize: equal to maxBytes
