@@ -346,7 +346,8 @@ task(
     const multiCallArgs = await getDeployUpgradeableMultiCallArgs(
       contractDescriptor,
       hre,
-      factory.address
+      factory.address,
+      initCallData
     );
     const estimatedMultiCallGas = await factory.estimateGas.multiCall(
       multiCallArgs
@@ -502,7 +503,8 @@ task("multiCallDeployMetamorphic")
     const multiCallArgs = await getDeployStaticMultiCallArgs(
       contractDescriptor,
       hre,
-      factory.address
+      factory.address,
+      initCallData
     );
     const estimatedMultiCallGas = await factory.estimateGas.multiCall(
       multiCallArgs

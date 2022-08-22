@@ -362,7 +362,8 @@ export async function getDeployGroupIndex(
 export async function getDeployStaticMultiCallArgs(
   contractDescriptor: ContractDescriptor,
   hre: HardhatRuntimeEnvironment,
-  factoryAddr: string
+  factoryAddr: string,
+  inputedInitCallData?: string
 ) {
   const factoryBase = await hre.ethers.getContractFactory(ALICENET_FACTORY);
   const factory = factoryBase.attach(factoryAddr);
@@ -376,6 +377,9 @@ export async function getDeployStaticMultiCallArgs(
     ...contractDescriptor.constructorArgs
   );
   let initCallData = "0x";
+  if (inputedInitCallData) {
+    initCallData = inputedInitCallData;
+  }
   if (contractDescriptor.initializerArgs.length > 0)
     initCallData = logicFactory.interface.encodeFunctionData(
       INITIALIZER,
@@ -411,7 +415,8 @@ export async function getDeployStaticMultiCallArgs(
 export async function getDeployUpgradeableMultiCallArgs(
   contractDescriptor: ContractDescriptor,
   hre: HardhatRuntimeEnvironment,
-  factoryAddr: string
+  factoryAddr: string,
+  inputedInitCallData?: string
 ) {
   const factoryBase = await hre.ethers.getContractFactory(ALICENET_FACTORY);
   const factory = factoryBase.attach(factoryAddr);
@@ -425,6 +430,9 @@ export async function getDeployUpgradeableMultiCallArgs(
     ...contractDescriptor.constructorArgs
   );
   let initCallData = "0x";
+  if (inputedInitCallData) {
+    initCallData = inputedInitCallData;
+  }
   if (contractDescriptor.initializerArgs.length > 0)
     initCallData = logicFactory.interface.encodeFunctionData(
       INITIALIZER,
