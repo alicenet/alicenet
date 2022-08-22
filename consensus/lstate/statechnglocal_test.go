@@ -3,11 +3,12 @@ package lstate
 import (
 	"testing"
 
+	"github.com/dgraph-io/badger/v2"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/alicenet/alicenet/consensus/objs"
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/crypto"
-	"github.com/dgraph-io/badger/v2"
-	"github.com/stretchr/testify/assert"
 )
 
 // Not IsCurrentValidator.

@@ -14,14 +14,16 @@ import (
 	"github.com/alicenet/alicenet/crypto"
 )
 
-// DefaultLeaf is the value that may be passed to Update in order to delete
-// a key from the database.
-var DefaultLeaf = Hasher([]byte{0})
+var (
+	// DefaultLeaf is the value that may be passed to Update in order to delete
+	// a key from the database.
+	DefaultLeaf = Hasher([]byte{0})
+)
 
-// Hash is used to convert a hash into a byte array.
+// Hash is used to convert a hash into a byte array
 type Hash [constants.HashLen]byte
 
-// GetFreshData gets size number of byte slice where each slice should have a length of length.
+// GetFreshData gets size number of byte slice where each slice should have a length of length
 func GetFreshData(size, length int) [][]byte {
 	var data [][]byte
 	for i := 0; i < size; i++ {
@@ -36,7 +38,7 @@ func GetFreshData(size, length int) [][]byte {
 	return data
 }
 
-// GetFreshDataSorted gets size number of byte slice where each slice should have a length of length.
+// GetFreshDataSorted gets size number of byte slice where each slice should have a length of length
 func GetFreshDataUnsorted(size, length int) [][]byte {
 	var data [][]byte
 	for i := 0; i < size; i++ {
@@ -71,17 +73,15 @@ func Hasher(data ...[]byte) []byte {
 	return crypto.Hasher(data...)
 }
 
-// DataArray is for sorting.
+// DataArray is for sorting
 type DataArray [][]byte
 
 func (d DataArray) Len() int {
 	return len(d)
 }
-
 func (d DataArray) Swap(i, j int) {
 	d[i], d[j] = d[j], d[i]
 }
-
 func (d DataArray) Less(i, j int) bool {
 	return bytes.Compare(d[i], d[j]) == -1
 }

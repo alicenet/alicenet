@@ -33,21 +33,18 @@ type MockImplementation struct {
 func NewImplementation() *MockImplementation {
 	return &MockImplementation{calls: Calls{Update: make([]UpdateCall, 0)}}
 }
-
 func (mi *MockImplementation) GetAllowedAddresses() (lib.AddressSet, error) {
 	mi.mu.Lock()
 	mi.calls.Get++
 	mi.mu.Unlock()
 	return mi.GetRet.Ret, mi.GetRet.Err
 }
-
 func (mi *MockImplementation) UpdateAllowedAddresses(toAdd lib.AddressSet, toDelete lib.AddressSet) error {
 	mi.mu.Lock()
 	mi.calls.Update = append(mi.calls.Update, UpdateCall{toAdd, toDelete})
 	mi.mu.Unlock()
 	return mi.UpdateRet
 }
-
 func (mi *MockImplementation) Calls() Calls {
 	mi.mu.Lock()
 	update := make([]UpdateCall, len(mi.calls.Update))

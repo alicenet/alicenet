@@ -51,11 +51,11 @@ func dirExists(dirname string) bool {
 }
 
 func main() {
-	infilepath := flag.String("i", "", "Required. The relative path to the file used for input.")
-	outpath := flag.String("o", "", "Required. The relative path to the directory used for output.")
-	packagestr := flag.String("p", "", "Required. The package name to be used in the generated files.")
+	var infilepath = flag.String("i", "", "Required. The relative path to the file used for input.")
+	var outpath = flag.String("o", "", "Required. The relative path to the directory used for output.")
+	var packagestr = flag.String("p", "", "Required. The package name to be used in the generated files.")
 
-	help := flag.Bool("help", false, "Shows help.")
+	var help = flag.Bool("help", false, "Shows help.")
 	flag.Parse()
 	if *help {
 		flag.Usage()
@@ -89,4 +89,5 @@ func main() {
 
 	runTemplate(proto, *packagestr, implDef, filepath.Join(*outpath, strings.Join([]string{infilename, "mngen.go"}, "_")))
 	runTemplate(proto, *packagestr, testDef, filepath.Join(*outpath, strings.Join([]string{infilename, "mngen_test.go"}, "_")))
+
 }

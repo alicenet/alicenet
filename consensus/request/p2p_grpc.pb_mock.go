@@ -3,11 +3,12 @@ package request
 import (
 	"context"
 
+	"github.com/stretchr/testify/mock"
+	"google.golang.org/grpc"
+
 	"github.com/alicenet/alicenet/interfaces"
 	"github.com/alicenet/alicenet/middleware"
 	"github.com/alicenet/alicenet/proto"
-	"github.com/stretchr/testify/mock"
-	"google.golang.org/grpc"
 )
 
 type P2PClientMock struct {

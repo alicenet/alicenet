@@ -1,10 +1,11 @@
 package evidence
 
 import (
+	"github.com/dgraph-io/badger/v2"
+
 	"github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/consensus/lstate"
 	"github.com/alicenet/alicenet/constants"
-	"github.com/dgraph-io/badger/v2"
 )
 
 const defaultMax = 2000

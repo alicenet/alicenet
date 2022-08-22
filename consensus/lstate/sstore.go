@@ -1,9 +1,10 @@
 package lstate
 
 import (
+	"github.com/dgraph-io/badger/v2"
+
 	"github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/consensus/objs"
-	"github.com/dgraph-io/badger/v2"
 )
 
 type Store struct {

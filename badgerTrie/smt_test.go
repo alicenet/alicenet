@@ -8,13 +8,14 @@ package trie
 import (
 	"bytes"
 	"encoding/hex"
-	"fmt"
-	"testing"
 
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/internal/testing/environment"
 	"github.com/alicenet/alicenet/utils"
 	"github.com/dgraph-io/badger/v2"
+
+	"fmt"
+	"testing"
 )
 
 func prefixFn() []byte {
@@ -167,7 +168,7 @@ func TestSmtDelete(t *testing.T) {
 			t.Fatal("roots mismatch")
 		}
 
-		// Empty the trie
+		//Empty the trie
 		var newValues [][]byte
 		for i := 0; i < 10; i++ {
 			newValues = append(newValues, DefaultLeaf)
@@ -199,7 +200,7 @@ func TestSmtDelete(t *testing.T) {
 	testDb(t, fn)
 }
 
-// test updating and deleting at the same time.
+// test updating and deleting at the same time
 func TestTrieUpdateAndDelete(t *testing.T) {
 	t.Parallel()
 	fn := func(txn *badger.Txn) error {
@@ -386,6 +387,7 @@ func TestVerifySubtree(t *testing.T) {
 				if res != true {
 					t.Fatal("the sub tree verification did not succeed")
 				}
+
 			} else {
 				_, res := smt.verifyBatchEasy(subBatch, unfinished[i], 1)
 				if res != true {
@@ -461,6 +463,7 @@ func TestSmtFastSync(t *testing.T) {
 	leaves := []LeafNode{}
 	var subBatchStart []pending
 	err = db2.Update(func(txn *badger.Txn) error {
+
 		var batch []byte
 		err := db.View(func(txn2 *badger.Txn) error {
 			tmp, err := GetNodeDB(txn2, prefixFn(), smt.Root)
@@ -803,7 +806,7 @@ func TestGetFinalLeafNodesrRValues(t *testing.T) {
 	}
 }
 
-// This test is only looking for panics.
+// This test is only looking for panics
 func TestParseBatchNoPanic(t *testing.T) {
 	t.Parallel()
 	smt := NewSMT(nil, Hasher, prefixFn)

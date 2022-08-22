@@ -598,16 +598,9 @@ export const getFixture = async (
     "ATokenMinter",
     "ATokenMinter"
   )) as ATokenMinter;
-  const mintToFactory = aTokenMinter.interface.encodeFunctionData("mint", [
-    factory.address,
-    ethers.utils.parseEther("100000000"),
-  ]);
-  const txResponse = await factory.callAny(
-    aTokenMinter.address,
-    0,
-    mintToFactory
-  );
-  await txResponse.wait();
+  const mintToFactory = aTokenMinter.interface.encodeFunctionData("mint", [factory.address, ethers.utils.parseEther("100000000")])
+  const txResponse = await factory.callAny(aTokenMinter.address, 0, mintToFactory)
+  await txResponse.wait()
   const aTokenBurner = (await deployUpgradeableWithFactory(
     factory,
     "ATokenBurner",

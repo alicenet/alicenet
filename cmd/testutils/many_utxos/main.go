@@ -77,7 +77,7 @@ func (f *funder) init(privk string, numChildren int, nodeList []string, baseIdx 
 		panic(err)
 	}
 
-	// utxos, value, err := f.blockingGetFunding(f.client, f.getCurveSpec(f.signer), f.acct, uint64(len(children)))
+	//utxos, value, err := f.blockingGetFunding(f.client, f.getCurveSpec(f.signer), f.acct, uint64(len(children)))
 	utxos, value, err := f.blockingGetFunding(ctx, f.client, f.getCurveSpec(f.signer), f.acct, numChildren256)
 	if err != nil {
 		fmt.Printf("Funder error at blockingGetFunding: %v\n", err)
@@ -222,7 +222,7 @@ func (f *funder) setupTransaction(signer aobjs.Signer, ownerAcct []byte, consume
 		newValueStore := &aobjs.ValueStore{
 			VSPreImage: &aobjs.VSPreImage{
 				ChainID: chainID,
-				// Value:    consumedValue - valueOut,
+				//Value:    consumedValue - valueOut,
 				Value:    diff,
 				Owner:    newOwner,
 				TXOutIdx: 0,
@@ -294,6 +294,7 @@ func (f *funder) blockingGetFunding(ctx context.Context, client *localrpc.Client
 				continue
 			}
 			utxos, err := client.GetUTXO(ctx, utxoIDs)
+
 			if err != nil {
 				fmt.Printf("Getting UTXO err: %v\n", err)
 				continue

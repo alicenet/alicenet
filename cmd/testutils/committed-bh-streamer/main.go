@@ -7,11 +7,13 @@ import (
 
 	"github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/consensus/objs"
+
 	"github.com/alicenet/alicenet/utils"
 	"github.com/dgraph-io/badger/v2"
 )
 
 func main() {
+
 	stateDbPath := flag.String("path", "", "path to db")
 	flag.Parse()
 	// create execution context for application
