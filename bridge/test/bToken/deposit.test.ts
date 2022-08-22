@@ -21,7 +21,7 @@ describe("Testing BToken Deposit methods", async () => {
     [admin, user] = await ethers.getSigners();
     showState("Initial", await getState(fixture));
     ethIn = ethers.utils.parseEther(eth.toString());
-    bTokenDeposit = ethers.utils.parseUnits(bTokens.toString());
+    bTokenDeposit = ethers.utils.parseUnits(bTokens.toString(10));
   });
 
   it("Should fail querying for an invalid deposit ID", async () => {
@@ -67,7 +67,7 @@ describe("Testing BToken Deposit methods", async () => {
     );
     await expect(fixture.bToken.deposit(1, user.address, bTokenDeposit))
       .to.emit(fixture.bToken, "DepositReceived")
-      .withArgs(1 || 2, 1, user.address, bTokenDeposit);
+      .withArgs(2, 1, user.address, bTokenDeposit);
     expectedState = await getState(fixture);
     const tx = await fixture.bToken.deposit(1, user.address, bTokenDeposit);
     expectedState.Balances.bToken.admin -= bTokenDeposit.toBigInt();
@@ -94,7 +94,7 @@ describe("Testing BToken Deposit methods", async () => {
         )
     )
       .to.emit(fixture.bToken, "DepositReceived")
-      .withArgs(1 || 2, 1, user.address, bTokenDeposit);
+      .withArgs(2, 1, user.address, bTokenDeposit);
     expectedState = await getState(fixture);
     const tx = await fixture.factory
       .connect(admin)
@@ -120,7 +120,7 @@ describe("Testing BToken Deposit methods", async () => {
       })
     )
       .to.emit(fixture.bToken, "DepositReceived")
-      .withArgs(1 || 2, 1, user.address, bTokens);
+      .withArgs(2, 1, user.address, bTokens);
     expectedState = await getState(fixture);
     const tx = await fixture.bToken.mintDeposit(1, user.address, 0, {
       value: ethIn,
@@ -150,7 +150,7 @@ describe("Testing BToken Deposit methods", async () => {
           bTokenDeposit,
         ])
       );
-    const depositId = 1;
+    const depositId = 2;
     const deposit = await fixture.bToken.getDeposit(depositId);
     expect(deposit.value).to.be.equal(ethIn.toBigInt());
   });
@@ -165,7 +165,7 @@ describe("Testing BToken Deposit methods", async () => {
     );
     await expect(fixture.bToken.deposit(1, user.address, bTokenDeposit))
       .to.emit(fixture.bToken, "DepositReceived")
-      .withArgs(1 || 2, 1, user.address, bTokenDeposit);
+      .withArgs(2, 1, user.address, bTokenDeposit);
     expectedState = await getState(fixture);
     const tx = await fixture.bToken.deposit(1, user.address, bTokenDeposit);
     const [, tx2] = await callFunctionAndGetReturnValues(
@@ -197,7 +197,7 @@ describe("Testing BToken Deposit methods", async () => {
       }))
     )
       .to.emit(fixture.bToken, "DepositReceived")
-      .withArgs(1 || 2, 1, user.address, bTokens);
+      .withArgs(2, 1, user.address, bTokens);
     const tx = await fixture.bToken.mintDeposit(1, user.address, 0, {
       value: ethIn,
     });
