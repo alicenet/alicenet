@@ -2,5 +2,5 @@
 pragma solidity ^0.8.11;
 
 library StakingTokenErrors {
-    error MigrationNotAllowed();
+    error InvalidConversionAmount();
 }

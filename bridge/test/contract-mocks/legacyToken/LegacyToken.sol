@@ -15,6 +15,6 @@ contract LegacyToken is LegacyTokenBase {
 
     function initialize() public onlyAdmin initializer {
         __legacyTokenBaseInit();
-        _mint(msg.sender, 220000000 * 10**decimals());
+        _mint(msg.sender, 320000000 * 10**decimals());
     }
 }

@@ -12,7 +12,7 @@
   },
   {
     "inputs": [],
-    "name": "MigrationNotAllowed",
+    "name": "InvalidConversionAmount",
     "type": "error"
   },
   {
@@ -127,13 +127,6 @@
     "type": "event"
   },
   {
-    "inputs": [],
-    "name": "allowMigration",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
     "inputs": [
       {
         "internalType": "address",
@@ -190,6 +183,25 @@
       }
     ],
     "name": "balanceOf",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "convert",
     "outputs": [
       {
         "internalType": "uint256",
@@ -269,6 +281,13 @@
       }
     ],
     "name": "externalMint",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "finishEarlyStage",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"

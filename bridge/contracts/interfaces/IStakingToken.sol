@@ -4,13 +4,15 @@ pragma solidity ^0.8.0;
 interface IStakingToken {
     function migrate(uint256 amount) external;
 
+    function finishEarlyStage() external;
+
     function externalMint(address to, uint256 amount) external;
 
     function externalBurn(address from, uint256 amount) external;
 
-    function allowMigration() external;
-
     function getLegacyTokenAddress() external view returns (address);
+
+    function convert(uint256 amount) external view returns (uint256);
 }
 
 interface IStakingTokenMinter {
