@@ -21,7 +21,7 @@
   },
   "devDependencies": {
     "@iarna/toml": "^2.2.5",
-    "@nomicfoundation/hardhat-chai-matchers": "^1.0.2",
+    "@nomicfoundation/hardhat-chai-matchers": "^1.0.3",
     "@nomiclabs/hardhat-ethers": "^2.1.0",
     "@nomiclabs/hardhat-truffle5": "^2.0.6",
     "@nomiclabs/hardhat-web3": "^2.0.0",
