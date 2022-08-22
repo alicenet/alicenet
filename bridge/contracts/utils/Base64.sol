@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.11;
+pragma solidity ^0.8.16;
 
-import {Base64Errors} from "contracts/libraries/errors/Base64Errors.sol";
+import "contracts/libraries/errors/Base64Errors.sol";
 
 /* solhint-disable */
 

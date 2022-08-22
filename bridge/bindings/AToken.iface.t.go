@@ -12,10 +12,6 @@ import (
 
 // IATokenTransactor ...
 type IATokenTransactor interface {
-	// AllowMigration is a paid mutator transaction binding the contract method 0x35d69059.
-	//
-	// Solidity: function allowMigration() returns()
-	AllowMigration(opts *bind.TransactOpts) (*types.Transaction, error)
 	// Approve is a paid mutator transaction binding the contract method 0x095ea7b3.
 	//
 	// Solidity: function approve(address spender, uint256 amount) returns(bool)
@@ -32,6 +28,10 @@ type IATokenTransactor interface {
 	//
 	// Solidity: function externalMint(address to, uint256 amount) returns()
 	ExternalMint(opts *bind.TransactOpts, to common.Address, amount *big.Int) (*types.Transaction, error)
+	// FinishEarlyStage is a paid mutator transaction binding the contract method 0xae424781.
+	//
+	// Solidity: function finishEarlyStage() returns()
+	FinishEarlyStage(opts *bind.TransactOpts) (*types.Transaction, error)
 	// IncreaseAllowance is a paid mutator transaction binding the contract method 0x39509351.
 	//
 	// Solidity: function increaseAllowance(address spender, uint256 addedValue) returns(bool)

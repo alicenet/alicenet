@@ -6,7 +6,7 @@
       // Update the VARIANT arg to pick a version of Go: 1, 1.16, 1.17
       // Append -bullseye or -buster to pin to an OS version.
       // Use -bullseye variants on local arm64/Apple Silicon.
-      "VARIANT": "1.18-bullseye",
+      "VARIANT": "1.19-bullseye",
       "NODE_VERSION": "lts/gallium"
     }
   },
@@ -23,7 +23,9 @@
       "extensions": [
         "golang.Go",
         "ms-azuretools.vscode-docker",
-        "eg2.vscode-npm-script"
+        "eg2.vscode-npm-script",
+        "tintinweb.solidity-visual-auditor",
+        "eamodio.gitlens"
       ]
     }
   },

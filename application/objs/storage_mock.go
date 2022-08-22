@@ -4,15 +4,15 @@ import (
 	"math/big"
 	"time"
 
+	"github.com/dgraph-io/badger/v2"
+
 	"github.com/alicenet/alicenet/application/wrapper"
 	"github.com/alicenet/alicenet/dynamics"
-	"github.com/dgraph-io/badger/v2"
 )
 
 func MakeMockStorageGetter() *MockStorageGetter {
 	maxBytes := uint32(0)
 	dataStoreEpochFee := new(big.Int)
-	atomicSwapFee := new(big.Int)
 	valueStoreFee := new(big.Int)
 	minTxFee := new(big.Int)
 
@@ -20,7 +20,6 @@ func MakeMockStorageGetter() *MockStorageGetter {
 		maxBytes:          maxBytes,
 		dataStoreEpochFee: dataStoreEpochFee,
 		valueStoreFee:     valueStoreFee,
-		atomicSwapFee:     atomicSwapFee,
 		minTxFee:          minTxFee,
 	}
 	return msg
@@ -35,7 +34,6 @@ type MockStorageGetter struct {
 	maxBytes          uint32
 	dataStoreEpochFee *big.Int
 	valueStoreFee     *big.Int
-	atomicSwapFee     *big.Int
 	minTxFee          *big.Int
 	// maxTxVectorLength int
 }
@@ -55,24 +53,31 @@ func (msg *MockStorageGetter) GetMaxProposalSize() uint32 {
 func (msg *MockStorageGetter) GetProposalStepTimeout() time.Duration {
 	return time.Duration(0)
 }
+
 func (msg *MockStorageGetter) GetPreVoteStepTimeout() time.Duration {
 	return time.Duration(0)
 }
+
 func (msg *MockStorageGetter) GetPreCommitStepTimeout() time.Duration {
 	return time.Duration(0)
 }
+
 func (msg *MockStorageGetter) GetDeadBlockRoundNextRoundTimeout() time.Duration {
 	return time.Duration(0)
 }
+
 func (msg *MockStorageGetter) GetDownloadTimeout() time.Duration {
 	return time.Duration(0)
 }
+
 func (msg *MockStorageGetter) GetSrvrMsgTimeout() time.Duration {
 	return time.Duration(0)
 }
+
 func (msg *MockStorageGetter) GetMsgTimeout() time.Duration {
 	return time.Duration(0)
 }
+
 func (msg *MockStorageGetter) GetMaxTxVectorLength() int {
 	return 128
 }
@@ -80,6 +85,7 @@ func (msg *MockStorageGetter) GetMaxTxVectorLength() int {
 func (msg *MockStorageGetter) UpdateStorage(txn *badger.Txn, update dynamics.Updater) error {
 	return nil
 }
+
 func (msg *MockStorageGetter) LoadStorage(txn *badger.Txn, epoch uint32) error {
 	return nil
 }
@@ -111,21 +117,6 @@ func (msg *MockStorageGetter) SetValueStoreFee(value *big.Int) {
 }
 
 func (msg *MockStorageGetter) GetValueStoreValidVersion() uint32 {
-	return 0
-}
-
-func (msg *MockStorageGetter) GetAtomicSwapFee() *big.Int {
-	return msg.atomicSwapFee
-}
-
-func (msg *MockStorageGetter) SetAtomicSwapFee(value *big.Int) {
-	if value == nil {
-		panic("invalid value")
-	}
-	msg.atomicSwapFee.Set(value)
-}
-
-func (msg *MockStorageGetter) GetAtomicSwapValidStopEpoch() uint32 {
 	return 0
 }
 

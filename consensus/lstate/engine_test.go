@@ -5,6 +5,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/dgraph-io/badger/v2"
+	"github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+
 	appObjs "github.com/alicenet/alicenet/application/objs"
 	"github.com/alicenet/alicenet/config"
 	"github.com/alicenet/alicenet/consensus/admin"
@@ -19,10 +24,6 @@ import (
 	"github.com/alicenet/alicenet/logging"
 	"github.com/alicenet/alicenet/proto"
 	"github.com/alicenet/alicenet/utils"
-	"github.com/dgraph-io/badger/v2"
-	"github.com/sirupsen/logrus"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 )
 
 func TestEngine_Status_Ok(t *testing.T) {
@@ -64,7 +65,7 @@ func TestEngine_Status_Error(t *testing.T) {
 	assert.NotNil(t, err)
 }
 
-//ce.ethAcct != ownState.VAddr
+// ce.ethAcct != ownState.VAddr.
 func TestEngine_UpdateLocalState1(t *testing.T) {
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
@@ -91,8 +92,8 @@ func TestEngine_UpdateLocalState1(t *testing.T) {
 	assert.True(t, isSync)
 }
 
-//ce.ethAcct == ownState.VAddr
-//os val GetPrivK not found
+// ce.ethAcct == ownState.VAddr
+// os val GetPrivK not found.
 func TestEngine_UpdateLocalState2(t *testing.T) {
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
@@ -120,8 +121,8 @@ func TestEngine_UpdateLocalState2(t *testing.T) {
 	assert.True(t, isSync)
 }
 
-//ce.ethAcct == ownState.VAddr
-//os val GetPrivK found but pubk mismatch
+// ce.ethAcct == ownState.VAddr
+// os val GetPrivK found but pubk mismatch.
 func TestEngine_UpdateLocalState3(t *testing.T) {
 	defer func() {
 		if r := recover(); r == nil {
@@ -168,9 +169,9 @@ func TestEngine_UpdateLocalState3(t *testing.T) {
 	_, _ = engine.UpdateLocalState()
 }
 
-//ce.ethAcct == ownState.VAddr
-//os val GetPrivK not found
-//new validators set
+// ce.ethAcct == ownState.VAddr
+// os val GetPrivK not found
+// new validators set.
 func TestEngine_UpdateLocalState4(t *testing.T) {
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
@@ -212,8 +213,8 @@ func TestEngine_UpdateLocalState4(t *testing.T) {
 	assert.True(t, isSync)
 }
 
-//updateLoadedObjects = OK
-//updateLocalStateInternal = OK
+// updateLoadedObjects = OK
+// updateLocalStateInternal = OK.
 func TestEngine_UpdateLocalState5(t *testing.T) {
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
@@ -265,9 +266,9 @@ func TestEngine_UpdateLocalState5(t *testing.T) {
 	assert.True(t, isSync)
 }
 
-//updateLoadedObjects = OK
-//updateLocalStateInternal = OK
-//bHeight = 1024 and not safe to proceed
+// updateLoadedObjects = OK
+// updateLocalStateInternal = OK
+// bHeight = 1024 and not safe to proceed.
 func TestEngine_UpdateLocalState6(t *testing.T) {
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1024)
@@ -319,9 +320,9 @@ func TestEngine_UpdateLocalState6(t *testing.T) {
 	assert.True(t, isSync)
 }
 
-//updateLoadedObjects = OK
-//updateLocalStateInternal = OK
-//bHeight = 1024 and safe to proceed
+// updateLoadedObjects = OK
+// updateLocalStateInternal = OK
+// bHeight = 1024 and safe to proceed.
 func TestEngine_UpdateLocalState7(t *testing.T) {
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1024)
@@ -378,7 +379,7 @@ func TestEngine_UpdateLocalState7(t *testing.T) {
 	assert.True(t, isSync)
 }
 
-//MaxBHSeen and SyncToBH same height
+// MaxBHSeen and SyncToBH same height.
 func TestEngine_Sync1(t *testing.T) {
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
@@ -407,8 +408,8 @@ func TestEngine_Sync1(t *testing.T) {
 	assert.True(t, isSync)
 }
 
-//MaxBHSeen and SyncToBH diff height
-//fastSync not done
+// MaxBHSeen and SyncToBH diff height
+// fastSync not done.
 func TestEngine_Sync2(t *testing.T) {
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 5800)
@@ -458,7 +459,7 @@ func TestEngine_Sync2(t *testing.T) {
 	assert.False(t, isSync)
 }
 
-//MaxBHSeen and SyncToBH diff height
+// MaxBHSeen and SyncToBH diff height.
 func TestEngine_Sync3(t *testing.T) {
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
@@ -498,8 +499,8 @@ func TestEngine_Sync3(t *testing.T) {
 	assert.False(t, isSync)
 }
 
-//Not current validator
-//No future heights
+// Not current validator
+// No future heights.
 func TestEngine_updateLocalStateInternal1(t *testing.T) {
 	engine := initEngine(t, nil)
 
@@ -517,8 +518,8 @@ func TestEngine_updateLocalStateInternal1(t *testing.T) {
 	})
 }
 
-//round jump
-//dead block round
+// round jump
+// dead block round.
 func TestEngine_updateLocalStateInternal2(t *testing.T) {
 	engine := initEngine(t, nil)
 
@@ -548,7 +549,7 @@ func TestEngine_updateLocalStateInternal2(t *testing.T) {
 	})
 }
 
-//peer with future height
+// peer with future height.
 func TestEngine_updateLocalStateInternal3(t *testing.T) {
 	engine := initEngine(t, nil)
 
@@ -578,7 +579,6 @@ func TestEngine_updateLocalStateInternal3(t *testing.T) {
 	newBH.BClaims.Height = newRS.RCert.RClaims.Height
 
 	_ = engine.sstore.database.Update(func(txn *badger.Txn) error {
-
 		newBH.BClaims.Height = 1
 		err = engine.database.SetCommittedBlockHeader(txn, newBH)
 		if err != nil {
@@ -632,8 +632,8 @@ func TestEngine_updateLocalStateInternal3(t *testing.T) {
 	})
 }
 
-//next round in round preceding the dead block round
-//invalid proposal
+// next round in round preceding the dead block round
+// invalid proposal.
 func TestEngine_updateLocalStateInternal4(t *testing.T) {
 	engine := initEngine(t, nil)
 
@@ -671,9 +671,9 @@ func TestEngine_updateLocalStateInternal4(t *testing.T) {
 	})
 }
 
-//next height exist
-//NHCurrent
-//invalid validators shares
+// next height exist
+// NHCurrent
+// invalid validators shares.
 func TestEngine_updateLocalStateInternal5(t *testing.T) {
 	engine := initEngine(t, nil)
 
@@ -709,7 +709,7 @@ func TestEngine_updateLocalStateInternal5(t *testing.T) {
 	})
 }
 
-//round jump
+// round jump.
 func TestEngine_updateLocalStateInternal6(t *testing.T) {
 	engine := initEngine(t, nil)
 
@@ -739,7 +739,7 @@ func TestEngine_updateLocalStateInternal6(t *testing.T) {
 	})
 }
 
-//NRCurrent
+// NRCurrent.
 func TestEngine_updateLocalStateInternal7(t *testing.T) {
 	engine := initEngine(t, nil)
 
@@ -781,8 +781,8 @@ func TestEngine_updateLocalStateInternal7(t *testing.T) {
 	})
 }
 
-//PCCurrent
-//PCTOExpired
+// PCCurrent
+// PCTOExpired.
 func TestEngine_updateLocalStateInternal8(t *testing.T) {
 	engine := initEngine(t, nil)
 
@@ -824,8 +824,8 @@ func TestEngine_updateLocalStateInternal8(t *testing.T) {
 	})
 }
 
-//PCCurrent
-//NOT PCTOExpired
+// PCCurrent
+// NOT PCTOExpired.
 func TestEngine_updateLocalStateInternal9(t *testing.T) {
 	engine := initEngine(t, nil)
 
@@ -867,8 +867,8 @@ func TestEngine_updateLocalStateInternal9(t *testing.T) {
 	})
 }
 
-//PCNCurrent
-//PCTOExpired
+// PCNCurrent
+// PCTOExpired.
 func TestEngine_updateLocalStateInternal10(t *testing.T) {
 	engine := initEngine(t, nil)
 
@@ -910,8 +910,8 @@ func TestEngine_updateLocalStateInternal10(t *testing.T) {
 	})
 }
 
-//PCNCurrent
-//NOT PCTOExpired
+// PCNCurrent
+// NOT PCTOExpired.
 func TestEngine_updateLocalStateInternal11(t *testing.T) {
 	engine := initEngine(t, nil)
 
@@ -953,9 +953,81 @@ func TestEngine_updateLocalStateInternal11(t *testing.T) {
 	})
 }
 
-//PVCurrent
-//PVTOExpired
+// NOT PVCurrent
+// PVTOExpired.
 func TestEngine_updateLocalStateInternal12(t *testing.T) {
+	engine := initEngine(t, nil)
+
+	os := createOwnState(t, 2)
+	rs := createRoundState(t, os)
+	vs := createValidatorsSet(t, os, rs)
+	rss := createRoundStates(os, rs, vs, &objs.OwnValidatingState{})
+
+	rsBytes, err := rss.PeerStateMap[string(vs.Validators[len(vs.Validators)-1].VAddr)].MarshalBinary()
+	if err != nil {
+		t.Fatalf("Shouldn't have raised error: %v", err)
+	}
+	newRS := &objs.RoundState{}
+	err = newRS.UnmarshalBinary(rsBytes)
+	if err != nil {
+		t.Fatalf("Shouldn't have raised error: %v", err)
+	}
+
+	rss.PeerStateMap[string(vs.Validators[len(vs.Validators)-1].VAddr)] = newRS
+
+	_ = engine.sstore.database.Update(func(txn *badger.Txn) error {
+		ok, err := engine.updateLocalStateInternal(txn, rss)
+		assert.Nil(t, err)
+		assert.True(t, ok)
+
+		return nil
+	})
+}
+
+// NOT PVCurrent
+// PVTOExpired.
+func TestEngine_updateLocalStateInternal12_2(t *testing.T) {
+	engine := initEngine(t, nil)
+
+	os := createOwnState(t, 2)
+	rs := createRoundState(t, os)
+	vs := createValidatorsSet(t, os, rs)
+	rss := createRoundStates(os, rs, vs, &objs.OwnValidatingState{})
+
+	_, bnSigners, bnShares, secpSigners, secpPubks := makeSigners(t)
+	if len(secpPubks) != len(bnShares) {
+		t.Fatal("key length mismatch")
+	}
+
+	height := uint32(2)
+	round := uint32(3)
+	prevBlock := crypto.Hasher([]byte("0"))
+	_, _, pvl, _, _, _, _, _, _ := buildRound(t, bnSigners, bnShares, secpSigners, height, round, prevBlock)
+
+	rsBytes, err := rss.PeerStateMap[string(vs.Validators[len(vs.Validators)-1].VAddr)].MarshalBinary()
+	if err != nil {
+		t.Fatalf("Shouldn't have raised error: %v", err)
+	}
+	newRS := &objs.RoundState{}
+	err = newRS.UnmarshalBinary(rsBytes)
+	if err != nil {
+		t.Fatalf("Shouldn't have raised error: %v", err)
+	}
+	newRS.PreVote = pvl[0]
+	rss.PeerStateMap[string(vs.Validators[len(vs.Validators)-1].VAddr)] = newRS
+
+	_ = engine.sstore.database.Update(func(txn *badger.Txn) error {
+		ok, err := engine.updateLocalStateInternal(txn, rss)
+		assert.NotNil(t, err)
+		assert.False(t, ok)
+
+		return nil
+	})
+}
+
+// NOT PVCurrent
+// PVTOExpired.
+func TestEngine_updateLocalStateInternal12_3(t *testing.T) {
 	engine := initEngine(t, nil)
 
 	os := createOwnState(t, 2)
@@ -989,15 +1061,15 @@ func TestEngine_updateLocalStateInternal12(t *testing.T) {
 
 	_ = engine.sstore.database.Update(func(txn *badger.Txn) error {
 		ok, err := engine.updateLocalStateInternal(txn, rss)
-		assert.Nil(t, err)
-		assert.True(t, ok)
+		assert.NotNil(t, err)
+		assert.False(t, ok)
 
 		return nil
 	})
 }
 
-//PVCurrent
-//NOT PVTOExpired
+// PVCurrent
+// NOT PVTOExpired.
 func TestEngine_updateLocalStateInternal13(t *testing.T) {
 	engine := initEngine(t, nil)
 
@@ -1039,9 +1111,50 @@ func TestEngine_updateLocalStateInternal13(t *testing.T) {
 	})
 }
 
-//PVNCurrent
-//PVTOExpired
+// NOT PVNCurrent
+// PVTOExpired.
 func TestEngine_updateLocalStateInternal14(t *testing.T) {
+	engine := initEngine(t, nil)
+
+	os := createOwnState(t, 2)
+	rs := createRoundState(t, os)
+	vs := createValidatorsSet(t, os, rs)
+	rss := createRoundStates(os, rs, vs, &objs.OwnValidatingState{})
+
+	_, bnSigners, bnShares, secpSigners, secpPubks := makeSigners(t)
+	if len(secpPubks) != len(bnShares) {
+		t.Fatal("key length mismatch")
+	}
+
+	height := uint32(2)
+	round := uint32(3)
+	prevBlock := crypto.Hasher([]byte("0"))
+	_, _, _, pvnl, _, _, _, _, _ := buildRound(t, bnSigners, bnShares, secpSigners, height, round, prevBlock)
+
+	rsBytes, err := rss.PeerStateMap[string(vs.Validators[len(vs.Validators)-1].VAddr)].MarshalBinary()
+	if err != nil {
+		t.Fatalf("Shouldn't have raised error: %v", err)
+	}
+	newRS := &objs.RoundState{}
+	err = newRS.UnmarshalBinary(rsBytes)
+	if err != nil {
+		t.Fatalf("Shouldn't have raised error: %v", err)
+	}
+	newRS.PreVoteNil = pvnl[0]
+	rss.PeerStateMap[string(vs.Validators[len(vs.Validators)-1].VAddr)] = newRS
+
+	_ = engine.sstore.database.Update(func(txn *badger.Txn) error {
+		ok, err := engine.updateLocalStateInternal(txn, rss)
+		assert.NotNil(t, err)
+		assert.False(t, ok)
+
+		return nil
+	})
+}
+
+// NOT PVNCurrent
+// PVTOExpired.
+func TestEngine_updateLocalStateInternal14_2(t *testing.T) {
 	engine := initEngine(t, nil)
 
 	os := createOwnState(t, 2)
@@ -1075,15 +1188,15 @@ func TestEngine_updateLocalStateInternal14(t *testing.T) {
 
 	_ = engine.sstore.database.Update(func(txn *badger.Txn) error {
 		ok, err := engine.updateLocalStateInternal(txn, rss)
-		assert.Nil(t, err)
-		assert.True(t, ok)
+		assert.NotNil(t, err)
+		assert.False(t, ok)
 
 		return nil
 	})
 }
 
-//PVNCurrent
-//NOT PVTOExpired
+// PVNCurrent
+// NOT PVTOExpired.
 func TestEngine_updateLocalStateInternal15(t *testing.T) {
 	engine := initEngine(t, nil)
 
@@ -1125,9 +1238,9 @@ func TestEngine_updateLocalStateInternal15(t *testing.T) {
 	})
 }
 
-//PTOExpired
-//ISProposer
-//NOT PCurrent
+// PTOExpired
+// ISProposer
+// NOT PCurrent.
 func TestEngine_updateLocalStateInternal16(t *testing.T) {
 	engine := initEngine(t, nil)
 
@@ -1167,7 +1280,7 @@ func TestEngine_updateLocalStateInternal16(t *testing.T) {
 	})
 }
 
-//Nothing to update
+// Nothing to update.
 func TestEngine_updateLocalStateInternal17(t *testing.T) {
 	engine := initEngine(t, nil)
 

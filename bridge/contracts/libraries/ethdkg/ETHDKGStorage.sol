@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT-open-group
-pragma solidity ^0.8.11;
+pragma solidity ^0.8.16;
 
 import "contracts/interfaces/IValidatorPool.sol";
 import "contracts/interfaces/ISnapshots.sol";
@@ -27,6 +27,12 @@ struct Participant {
     uint256[2] commitmentsFirstCoefficient;
     uint256[2] keyShares;
     uint256[4] gpkj;
+}
+
+struct PhaseInformation {
+    Phase phase;
+    uint64 startBlock;
+    uint64 endBlock;
 }
 
 abstract contract ETHDKGStorage is

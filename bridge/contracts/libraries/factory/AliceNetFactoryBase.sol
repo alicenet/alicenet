@@ -1,21 +1,21 @@
 // SPDX-License-Identifier: MIT-open-group
-pragma solidity ^0.8.11;
+pragma solidity ^0.8.16;
 import "contracts/Proxy.sol";
 import "contracts/utils/DeterministicAddress.sol";
 import "contracts/libraries/proxy/ProxyUpgrader.sol";
 import "contracts/interfaces/IProxy.sol";
-import {AliceNetFactoryBaseErrors} from "contracts/libraries/errors/AliceNetFactoryBaseErrors.sol";
+import "contracts/libraries/errors/AliceNetFactoryBaseErrors.sol";
 
 abstract contract AliceNetFactoryBase is DeterministicAddress, ProxyUpgrader {
+    struct MultiCallArgs {
+        address target;
+        uint256 value;
+        bytes data;
+    }
     /**
     @dev owner role for privileged access to functions
     */
     address private _owner;
-
-    /**
-    @dev delegator role for privileged access to delegateCallAny
-    */
-    address private _delegator;
 
     /**
     @dev array to store list of contract salts
@@ -46,14 +46,6 @@ abstract contract AliceNetFactoryBase is DeterministicAddress, ProxyUpgrader {
         _;
     }
 
-    // modifier restricts caller to owner or self via multicall
-    modifier onlyOwnerOrDelegator() {
-        _requireAuth(
-            msg.sender == address(this) || msg.sender == owner() || msg.sender == delegator()
-        );
-        _;
-    }
-
     /**
      * @dev The constructor encodes the proxy deploy byte code with the _UNIVERSAL_DEPLOY_CODE at the
      * head and the factory address at the tail, and deploys the proxy byte code using create OpCode.
@@ -61,15 +53,13 @@ abstract contract AliceNetFactoryBase is DeterministicAddress, ProxyUpgrader {
      * its constructor at the head, runtime code in the body and constructor args at the tail. The
      * constructor then sets proxyTemplate_ state var to the deployed proxy template address the deploy
      * account will be set as the first owner of the factory.
-     * @param selfAddr_ is the factory contracts
-     * address (address of itself)
      */
-    constructor(address selfAddr_) {
+    constructor() {
         bytes memory proxyDeployCode = abi.encodePacked(
             //8 byte code copy constructor code
             _UNIVERSAL_DEPLOY_CODE,
             type(Proxy).creationCode,
-            bytes32(uint256(uint160(selfAddr_)))
+            bytes32(uint256(uint160(address(this))))
         );
         //variable to store the address created from create(the location of the proxy template contract)
         address addr;
@@ -104,7 +94,7 @@ abstract contract AliceNetFactoryBase is DeterministicAddress, ProxyUpgrader {
      * @dev Sets a new implementation address
      * @param newImplementationAddress_: address of the contract with the new implementation
      */
-    function setImplementation(address newImplementationAddress_) public onlyOwnerOrDelegator {
+    function setImplementation(address newImplementationAddress_) public onlyOwner {
         _implementation = newImplementationAddress_;
     }
 
@@ -114,14 +104,6 @@ abstract contract AliceNetFactoryBase is DeterministicAddress, ProxyUpgrader {
      */
     function setOwner(address newOwner_) public onlyOwner {
         _owner = newOwner_;
-    }
-
-    /**
-     * @dev Sets the new delegator
-     * @param newDelegator_: address of the new delegator
-     */
-    function setDelegator(address newDelegator_) public onlyOwner {
-        _delegator = newDelegator_;
     }
 
     /**
@@ -146,14 +128,6 @@ abstract contract AliceNetFactoryBase is DeterministicAddress, ProxyUpgrader {
      */
     function owner() public view returns (address owner_) {
         owner_ = _owner;
-    }
-
-    /**
-     * @dev delegator is public getter function for the _delegator account address
-     * @return delegator_ address of the delegator account
-     */
-    function delegator() public view returns (address delegator_) {
-        delegator_ = _delegator;
     }
 
     /**
@@ -190,22 +164,6 @@ abstract contract AliceNetFactoryBase is DeterministicAddress, ProxyUpgrader {
             let size := mload(cdata_)
             let ptr := add(0x20, cdata_)
             if iszero(call(gas(), target_, value_, ptr, size, 0x00, 0x00)) {
-                returndatacopy(0x00, 0x00, returndatasize())
-                revert(0x00, returndatasize())
-            }
-        }
-    }
-
-    /**
-     * @dev _delegateCallAny allows EOA to call a function in a contract without impersonating the factory
-     * @param target_: the address of the contract to be called
-     * @param cdata_: Hex encoded data with function signature + arguments of the target function to be called
-     */
-    function _delegateCallAny(address target_, bytes memory cdata_) internal {
-        assembly {
-            let size := mload(cdata_)
-            let ptr := add(0x20, cdata_)
-            if iszero(delegatecall(gas(), target_, ptr, size, 0x00, 0x00)) {
                 returndatacopy(0x00, 0x00, returndatasize())
                 revert(0x00, returndatasize())
             }
@@ -388,9 +346,6 @@ abstract contract AliceNetFactoryBase is DeterministicAddress, ProxyUpgrader {
             calldatacopy(ptr, deployCode_.offset, deployCode_.length)
             // Move the ptr to the end of the code in memory
             ptr := add(ptr, deployCode_.length)
-            // put address on constructor
-            mstore(ptr, address())
-            ptr := add(ptr, 0x20)
             contractAddr := create(0, basePtr, sub(ptr, basePtr))
         }
         _codeSizeZeroRevert((_extCodeSize(contractAddr) != 0));
@@ -426,10 +381,9 @@ abstract contract AliceNetFactoryBase is DeterministicAddress, ProxyUpgrader {
      * impersonating the factory
      * @param cdata_: array of abi encoded data with the function calls (function signature + arguments)
      */
-    function _multiCall(bytes[] calldata cdata_) internal {
+    function _multiCall(MultiCallArgs[] calldata cdata_) internal {
         for (uint256 i = 0; i < cdata_.length; i++) {
-            bytes memory cdata = cdata_[i];
-            _callAny(address(this), 0, cdata);
+            _callAny(cdata_[i].target, cdata_[i].value, cdata_[i].data);
         }
         _returnAvailableData();
     }

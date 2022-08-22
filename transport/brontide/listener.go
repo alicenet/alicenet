@@ -17,10 +17,10 @@ import (
 	"github.com/alicenet/alicenet/utils"
 )
 
-// ErrReject is an error raised if a connection is rejected
+// ErrReject is an error raised if a connection is rejected.
 var ErrReject = errors.New("unable to accept connection")
 
-// ErrBrontideClose is an error raised if a connection is closed
+// ErrBrontideClose is an error raised if a connection is closed.
 var ErrBrontideClose = errors.New("brontide connection closed")
 
 type connCloseWrapper struct {
@@ -63,7 +63,7 @@ type Listener struct {
 
 // NewListener returns a new net.Listener which enforces the Brontide scheme
 // during both initial connection establishment and state transfer.
-func NewListener(localStatic *secp256k1.PrivateKey, host string, port int, protoVersion types.ProtoVersion, chainID types.ChainIdentifier, totalLimit int, pubkeyLimit int, originLimit int) (*Listener, error) {
+func NewListener(localStatic *secp256k1.PrivateKey, host string, port int, protoVersion types.ProtoVersion, chainID types.ChainIdentifier, totalLimit, pubkeyLimit, originLimit int) (*Listener, error) {
 	listenAddr := net.JoinHostPort(host, strconv.Itoa(port))
 
 	addr, err := net.ResolveTCPAddr("tcp", listenAddr)
@@ -131,7 +131,7 @@ func (l *Listener) listen() {
 	}
 }
 
-// preHandshake limits by connections by remote host
+// preHandshake limits by connections by remote host.
 func (l *Listener) preHandshake(conn net.Conn) {
 	l.Lock()
 	defer l.Unlock()
@@ -203,7 +203,7 @@ func (l *Listener) postHandshake(conn *Conn) {
 	// increment host counter
 	l.numConnectionsbyPubkey[pubk]++
 
-	//if guard logic passes create cleanup fn closure
+	// if guard logic passes create cleanup fn closure
 	conn.wrapClose(func() error {
 		l.Lock()
 		defer l.Unlock()

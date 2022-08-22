@@ -1,6 +1,6 @@
 package types
 
-// ProtoVersion is a custom type used to store protocol version
+// ProtoVersion is a custom type used to store protocol version.
 type ProtoVersion uint32
 
 // Protocol specifies if this is a P2P or a discovery connection.

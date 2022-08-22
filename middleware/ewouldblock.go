@@ -7,7 +7,7 @@ import (
 )
 
 // ErrWouldBlock is an error that indicates a WithNoBlocking request failed
-// due to blocking
+// due to blocking.
 var ErrWouldBlock = errors.New("would block")
 
 type backpressureCallOption struct {

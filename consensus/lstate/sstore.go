@@ -1,9 +1,10 @@
 package lstate
 
 import (
+	"github.com/dgraph-io/badger/v2"
+
 	"github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/consensus/objs"
-	"github.com/dgraph-io/badger/v2"
 )
 
 type Store struct {
@@ -137,7 +138,7 @@ func (ss *Store) WriteState(txn *badger.Txn, rs *RoundStates) error {
 }
 
 // GetDropData ...
-func (ss *Store) GetDropData(txn *badger.Txn) (isValidator bool, isSync bool, chainID uint32, height uint32, round uint32, err error) {
+func (ss *Store) GetDropData(txn *badger.Txn) (isValidator, isSync bool, chainID, height, round uint32, err error) {
 	ownState, err := ss.database.GetOwnState(txn)
 	if err != nil {
 		return isValidator, isSync, chainID, height, round, err

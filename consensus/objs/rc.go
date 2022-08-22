@@ -2,6 +2,7 @@ package objs
 
 import (
 	capnp "github.com/MadBase/go-capnproto2/v2"
+
 	mdefs "github.com/alicenet/alicenet/consensus/objs/capn"
 	"github.com/alicenet/alicenet/consensus/objs/rcert"
 	"github.com/alicenet/alicenet/constants"
@@ -19,7 +20,7 @@ type RCert struct {
 }
 
 // UnmarshalBinary takes a byte slice and returns the corresponding
-// RCert object
+// RCert object.
 func (b *RCert) UnmarshalBinary(data []byte) error {
 	if b == nil {
 		return errorz.ErrInvalid{}.New("RCert.UnmarshalBinary; rcert not initialized")
@@ -32,7 +33,7 @@ func (b *RCert) UnmarshalBinary(data []byte) error {
 	return b.UnmarshalCapn(bh)
 }
 
-// UnmarshalCapn unmarshals the capnproto definition of the object
+// UnmarshalCapn unmarshals the capnproto definition of the object.
 func (b *RCert) UnmarshalCapn(bh mdefs.RCert) error {
 	if b == nil {
 		return errorz.ErrInvalid{}.New("RCert.UnmarshalCapn; rcert not initialized")
@@ -51,7 +52,7 @@ func (b *RCert) UnmarshalCapn(bh mdefs.RCert) error {
 }
 
 // MarshalBinary takes the RCert object and returns the canonical
-// byte slice
+// byte slice.
 func (b *RCert) MarshalBinary() ([]byte, error) {
 	if b == nil {
 		return nil, errorz.ErrInvalid{}.New("RCert.MarshalBinary; rcert not initialized")
@@ -64,7 +65,7 @@ func (b *RCert) MarshalBinary() ([]byte, error) {
 	return rcert.Marshal(bh)
 }
 
-// MarshalCapn marshals the object into its capnproto definition
+// MarshalCapn marshals the object into its capnproto definition.
 func (b *RCert) MarshalCapn(seg *capnp.Segment) (mdefs.RCert, error) {
 	if b == nil {
 		return mdefs.RCert{}, errorz.ErrInvalid{}.New("RCert.MarshalCapn; rcert not initialized")
@@ -102,7 +103,7 @@ func (b *RCert) MarshalCapn(seg *capnp.Segment) (mdefs.RCert, error) {
 	return bh, nil
 }
 
-// ValidateSignature validates the group signature on the RCert
+// ValidateSignature validates the group signature on the RCert.
 func (b *RCert) ValidateSignature(bnVal *crypto.BNGroupValidator) error {
 	if b == nil {
 		return errorz.ErrInvalid{}.New("RCert.ValidateSignatures; rcert not initialized")
@@ -157,7 +158,7 @@ func (b *RCert) ValidateSignature(bnVal *crypto.BNGroupValidator) error {
 	return nil
 }
 
-// PreVoteNil constructs a PreVoteNil object from RCert
+// PreVoteNil constructs a PreVoteNil object from RCert.
 func (b *RCert) PreVoteNil(secpSigner *crypto.Secp256k1Signer) (*PreVoteNil, error) {
 	rce, err := b.MarshalBinary()
 	if err != nil {
@@ -184,7 +185,7 @@ func (b *RCert) PreVoteNil(secpSigner *crypto.Secp256k1Signer) (*PreVoteNil, err
 	return pvn, nil
 }
 
-// PreCommitNil constructs a PreCommitNil object from RCert
+// PreCommitNil constructs a PreCommitNil object from RCert.
 func (b *RCert) PreCommitNil(secpSigner *crypto.Secp256k1Signer) (*PreCommitNil, error) {
 	rce, err := b.MarshalBinary()
 	if err != nil {
@@ -211,7 +212,7 @@ func (b *RCert) PreCommitNil(secpSigner *crypto.Secp256k1Signer) (*PreCommitNil,
 	return pcn, nil
 }
 
-// NextRound constructs a NextRound object from RCert
+// NextRound constructs a NextRound object from RCert.
 func (b *RCert) NextRound(secpSigner *crypto.Secp256k1Signer, bnSigner *crypto.BNGroupSigner) (*NextRound, error) {
 	if b == nil {
 		return nil, errorz.ErrInvalid{}.New("RCert.NextRound; rcert not initialized")

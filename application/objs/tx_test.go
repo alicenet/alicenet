@@ -7,10 +7,11 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/alicenet/alicenet/application/objs/uint256"
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/crypto"
-	"github.com/stretchr/testify/assert"
 )
 
 func makeVS(t *testing.T, ownerSigner Signer, i int) *TXOut {
@@ -108,7 +109,7 @@ func makeVSWithValueFee(t *testing.T, ownerSigner Signer, i int, value, fee *uin
 	return utxInputs
 }
 
-func makeDSWithValueFee(t *testing.T, ownerSigner Signer, i int, rawData []byte, index []byte, startEpoch uint32, numEpochs uint32, fee *uint256.Uint256) *TXOut {
+func makeDSWithValueFee(t *testing.T, ownerSigner Signer, i int, rawData, index []byte, startEpoch, numEpochs uint32, fee *uint256.Uint256) *TXOut {
 	if fee == nil || len(rawData) == 0 {
 		panic("invalid fee or rawData")
 	}

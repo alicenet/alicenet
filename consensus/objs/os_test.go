@@ -4,13 +4,14 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/alicenet/alicenet/crypto"
 	bn256 "github.com/alicenet/alicenet/crypto/bn256/cloudflare"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestOwnState(t *testing.T) {
-	//Vaddr
+	// Vaddr
 	secret1 := big.NewInt(100)
 	secret2 := big.NewInt(101)
 	secret3 := big.NewInt(102)
@@ -43,7 +44,7 @@ func TestOwnState(t *testing.T) {
 		panic(err)
 	}
 
-	//BlockHeader
+	// BlockHeader
 	bclaimsList, txHashListList, err := generateChain(1)
 	if err != nil {
 		t.Fatal(err)
