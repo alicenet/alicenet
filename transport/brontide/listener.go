@@ -8,12 +8,13 @@ import (
 	"sync"
 	"time"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/crypto/secp256k1"
 	"github.com/alicenet/alicenet/logging"
 	"github.com/alicenet/alicenet/types"
 	"github.com/alicenet/alicenet/utils"
-	"github.com/sirupsen/logrus"
 )
 
 // ErrReject is an error raised if a connection is rejected.

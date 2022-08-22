@@ -135,8 +135,9 @@ func montDecode(c, a *gfP) { gfpMul(c, a, &gfP{1}) }
 // sign0 computes the sign of gfP.
 // We take the convention from Wahby and Boneh 2019 paper:
 //
-//	sign0(e) == { 1,	0 <= e <= (P-1)/2 	}
-//				 -1,	(P-1)/2 < e <= P-1
+//
+//		sign0(e) == { 1,	0 <= e <= (P-1)/2 	}
+//					 -1,	(P-1)/2 < e <= P-1
 //
 // Wahby and Boneh use sign0 to replace their final Legendre function call in
 // BaseToG1/G2 to save computation

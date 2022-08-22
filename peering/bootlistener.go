@@ -4,9 +4,10 @@ import (
 	"net"
 	"sync"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/alicenet/alicenet/interfaces"
 	"github.com/alicenet/alicenet/transport"
-	"github.com/sirupsen/logrus"
 )
 
 // DiscoveryListener allows a P2PConn to be converted into a net.Conn through the

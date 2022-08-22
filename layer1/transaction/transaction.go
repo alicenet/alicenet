@@ -5,12 +5,13 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/alicenet/alicenet/consensus/db"
-	"github.com/alicenet/alicenet/layer1"
-	"github.com/alicenet/alicenet/logging"
 	"github.com/dgraph-io/badger/v2"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/sirupsen/logrus"
+
+	"github.com/alicenet/alicenet/consensus/db"
+	"github.com/alicenet/alicenet/layer1"
+	"github.com/alicenet/alicenet/logging"
 )
 
 // ReceiptResponse to be implemented by the returning object from the Watcher.

@@ -10,9 +10,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/alicenet/alicenet/interfaces"
 	"github.com/alicenet/alicenet/types"
-	"github.com/sirupsen/logrus"
 )
 
 var testWaitForClose = time.Second * 6

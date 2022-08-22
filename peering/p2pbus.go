@@ -5,15 +5,16 @@ import (
 	"errors"
 	"time"
 
+	grpc_retry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
+	"github.com/sirupsen/logrus"
+	"google.golang.org/grpc"
+
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/interfaces"
 	"github.com/alicenet/alicenet/logging"
 	"github.com/alicenet/alicenet/middleware"
 	pb "github.com/alicenet/alicenet/proto"
 	"github.com/alicenet/alicenet/utils"
-	grpc_retry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
-	"github.com/sirupsen/logrus"
-	"google.golang.org/grpc"
 )
 
 type StatusRequest struct {

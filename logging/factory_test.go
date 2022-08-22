@@ -18,6 +18,7 @@ func TestGetValidLoggers(t *testing.T) {
 		logger := logging.GetLogger(constants.ValidLoggers[idx])
 		assert.NotNil(t, logger)
 	}
+
 }
 
 func TestGetInvalidLogger(t *testing.T) {

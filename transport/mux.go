@@ -5,12 +5,13 @@ import (
 	"sync"
 	"time"
 
+	"github.com/hashicorp/yamux"
+	"github.com/sirupsen/logrus"
+
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/interfaces"
 	"github.com/alicenet/alicenet/logging"
 	"github.com/alicenet/alicenet/types"
-	"github.com/hashicorp/yamux"
-	"github.com/sirupsen/logrus"
 )
 
 var _ interfaces.P2PMux = (*P2PMux)(nil)

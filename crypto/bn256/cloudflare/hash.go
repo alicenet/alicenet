@@ -103,17 +103,17 @@ func safeSigningPoint(g *G1) bool {
 //
 // To obtain a better distribution with less bias, we take 2 uint256 hash
 // outputs (using byteI and byteJ for domain separation so the hashes are
-// independent) and concatenate them to form a “uint512”. Of course,
+// independent) and concatenate them to form a ``uint512''. Of course,
 // this is not possible in practice, so we view the combined output as
 //
-//	x == s0*2^256 + s1.
+//      x == s0*2^256 + s1.
 //
 // This implies that x (combined from s0 and s1 in this way) is a
 // 512-bit uint. If s0 and s1 are uniformly distributed modulo 2^256,
 // then x is uniformly distributed modulo 2^512. We now want to reduce
 // this modulo P. This is done as follows:
 //
-//	x mod P == [(s0 mod P)*(2^256 mod P)] + s1 mod P.
+//      x mod P == [(s0 mod P)*(2^256 mod P)] + s1 mod P.
 //
 // This allows us easily compute the result without needing to implement
 // higher precision in the EVM. The 1-norm error between x mod P and a uniform
@@ -138,9 +138,9 @@ func hashToBase(msg []byte, dsp0 byte, dsp1 byte) *gfP {
 
 // baseToG1 takes an element of the finite field and outputs an element of
 // the underlying elliptic curve. This algorithm follows Fouque and Tibouchi's
-// 2012 paper “Indifferentiable Hashing to Barreto--Naehrig Curves”.
+// 2012 paper ``Indifferentiable Hashing to Barreto--Naehrig Curves''.
 // We also use some ideas from Wahby and Boneh's 2019 paper
-// “Fast and simple constant-time hashing to the BLS12-381 elliptic curve”.
+// ``Fast and simple constant-time hashing to the BLS12-381 elliptic curve''.
 // The main idea is that given an input t, we produce points x1, x2, x3
 // which are finite field elements. At least one of these points is the
 // x-coordinate of a valid point on the elliptic curve. For uniqueness, we
@@ -155,7 +155,7 @@ func hashToBase(msg []byte, dsp0 byte, dsp1 byte) *gfP {
 //
 // We let
 //
-//	g(x) == x^3 + curveB
+//		g(x) == x^3 + curveB
 func baseToG1(t *gfP) (*G1, error) {
 	gfpOne := newGFp(1)
 
@@ -296,7 +296,7 @@ func baseToG1(t *gfP) (*G1, error) {
 // HashToG2 maps a byte slice into G2; while baseToTwist maps only to the
 // twist curve, we clear the cofactor to ensure the hash point lies on G2.
 // Because we map from Fp2 to Twist in the same way as above in HashToG1,
-// it is likely the proof carries over, ensuring that “HashToTwist”
+// it is likely the proof carries over, ensuring that ``HashToTwist''
 // (HashToG2 without clearing the cofactor) is indistinguishable from
 // a random oracle on Twist. If this were the case, it would follow
 // that HashToG2 is indistinguishable from a random oracle.
@@ -345,12 +345,12 @@ func HashToG2(msg []byte) (*G2, error) {
 // The major change is that all sqrt and inversion calculations are done
 // by arithmetic in gfP2 (naturally). The square root calculations can be
 // found in Gora Adj and Francisco Rodrı́guez-Henrı́quez's 2012 paper
-// “Square root computation over even extension fields”.
+// ``Square root computation over even extension fields''.
 // That paper also contains how to compute the Legendre symbol in gfP2.
 //
 // We let
 //
-//	g'(x) == x^3 + twistB
+//		g'(x) == x^3 + twistB
 func baseToTwist(t *gfP2) (*twistPoint, error) {
 	gfp2One := &gfP2{}
 	gfp2One.SetOne()

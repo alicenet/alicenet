@@ -200,8 +200,8 @@ func (e *gfP2) exp(f *gfP2, bits [4]uint64) {
 // This assumes a square root of e exists; use Legendre to determine existence.
 // This algorithm is taken from Algorithm 9 in the 2012 paper
 //
-//	Square root computation over even extension fields
-//	by Gora Adj and Francisco Rodrı́guez-Henrı́quez
+//		Square root computation over even extension fields
+//		by Gora Adj and Francisco Rodrı́guez-Henrı́quez
 //
 // Nonexistence of a square root will lead to incorrect results.
 func (e *gfP2) Sqrt(f *gfP2) {

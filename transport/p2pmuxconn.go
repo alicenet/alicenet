@@ -3,9 +3,10 @@ package transport
 import (
 	"sync"
 
+	"github.com/hashicorp/yamux"
+
 	"github.com/alicenet/alicenet/interfaces"
 	"github.com/alicenet/alicenet/types"
-	"github.com/hashicorp/yamux"
 )
 
 var _ interfaces.P2PMuxConn = (*P2PMuxConn)(nil)

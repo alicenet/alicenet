@@ -8,6 +8,9 @@ import (
 	"math/big"
 	"time"
 
+	"github.com/dgraph-io/badger/v2"
+	"github.com/sirupsen/logrus"
+
 	"github.com/alicenet/alicenet/application"
 	"github.com/alicenet/alicenet/application/objs"
 	"github.com/alicenet/alicenet/application/objs/uint256"
@@ -20,8 +23,6 @@ import (
 	"github.com/alicenet/alicenet/logging"
 	pb "github.com/alicenet/alicenet/proto"
 	"github.com/alicenet/alicenet/utils"
-	"github.com/dgraph-io/badger/v2"
-	"github.com/sirupsen/logrus"
 )
 
 var (

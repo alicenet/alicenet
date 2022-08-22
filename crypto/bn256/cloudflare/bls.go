@@ -18,12 +18,12 @@ func Sign(msg []byte, privK *big.Int, hashG1Func func(msg []byte) (*G1, error)) 
 
 // Verify ensures that
 //
-//	e(sig, h2) == e(hashG1Func(msg), pubK).
+// 		e(sig, h2) == e(hashG1Func(msg), pubK).
 //
 // To do this, we use PairingCheck because this will be called by the
 // Ethereum Virtual Machine. Thus, we check
 //
-//	e(sig, h2Neg) * e(hashG1Func(msg), pubK) == 1.
+//		e(sig, h2Neg) * e(hashG1Func(msg), pubK) == 1.
 //
 // Here, h2Neg is the negation (in additive notation) of h2, which
 // is the standard generator for G2.
@@ -57,7 +57,7 @@ func Verify(msg []byte, sig *G1, pubK *G2, hashG1Func func(msg []byte) (*G1, err
 //
 // The end result is
 //
-//	val = Prod(pointsG1[j]^Rj, j).
+// 		val = Prod(pointsG1[j]^Rj, j).
 //
 // Here, Rj is a constant which depends only on indices. As this relates to
 // AggregateSignatures, the Rj constants only depend upon the signers
@@ -107,7 +107,7 @@ func LagrangeInterpolationG1(pointsG1 []*G1, indices []int, threshold int) (*G1,
 // liRjPartialConst makes the Rj constants as required in
 // LagrangeInterpolationG1. This partial constant is
 //
-//	k/(k - j).
+//		k/(k - j).
 //
 // All of these operations are performed in the finite field F_Order
 // (the finite field of size Order, the size of the groups G1, G2, and GT).
@@ -125,13 +125,13 @@ func liRjPartialConst(k, j int) *big.Int {
 // and public keys. In particular, given signature sig_j, we call
 // LagrangeInterpolationG1 in order to produce
 //
-//	grpsig = Prod(sig_j^Rj, j).
+//		grpsig = Prod(sig_j^Rj, j).
 //
 // Here, Rj is a constant which depends only on the validating set.
 // If mpk is the master public key (the group signing key), then we have
 // the following equality:
 //
-//	e(grpsig, h2) == e(hashG1Func(M), mpk).
+//		e(grpsig, h2) == e(hashG1Func(M), mpk).
 func AggregateSignatures(sigs []*G1, indices []int, threshold int) (*G1, error) {
 	if len(sigs) != len(indices) {
 		return nil, ErrMismatchedSlices

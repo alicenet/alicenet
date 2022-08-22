@@ -1,8 +1,9 @@
 package middleware
 
 import (
-	"github.com/alicenet/alicenet/interfaces"
 	"google.golang.org/grpc"
+
+	"github.com/alicenet/alicenet/interfaces"
 )
 
 // PeerClient is an extension of the interfaces.P2PClient

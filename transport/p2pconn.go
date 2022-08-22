@@ -4,11 +4,12 @@ import (
 	"net"
 	"sync"
 
+	"github.com/hashicorp/yamux"
+	"github.com/sirupsen/logrus"
+
 	"github.com/alicenet/alicenet/interfaces"
 	"github.com/alicenet/alicenet/types"
 	"github.com/alicenet/alicenet/utils"
-	"github.com/hashicorp/yamux"
-	"github.com/sirupsen/logrus"
 )
 
 var (
