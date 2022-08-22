@@ -338,8 +338,11 @@ contract ValidatorPool is
         return (payoutEth, payoutToken);
     }
 
-
-
+    /**
+     * Function that allows an unregistered validator to claim the registered staked
+     * amount as public staking position after the waiting period in epochs has
+     * passed.
+     */
     function claimExitingNFTPosition() public returns (uint256) {
         ExitingValidatorData memory data = _exitingValidatorsData[msg.sender];
         if (data._freeAfter == 0) {
