@@ -4,12 +4,13 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/alicenet/alicenet/layer1/executor/tasks"
-	"github.com/alicenet/alicenet/layer1/executor/tasks/snapshots/state"
-	"github.com/alicenet/alicenet/utils"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/sirupsen/logrus"
+
+	"github.com/alicenet/alicenet/layer1/executor/tasks"
+	"github.com/alicenet/alicenet/layer1/executor/tasks/snapshots/state"
+	"github.com/alicenet/alicenet/utils"
 )
 
 // SnapshotTask pushes a snapshot to Ethereum.

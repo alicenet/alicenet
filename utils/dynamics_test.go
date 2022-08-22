@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"sync"
 	"testing"
 
 	"github.com/alicenet/alicenet/bridge/bindings"
@@ -9,9 +10,15 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+var globalVersion sync.Once
+
+func setVersion() {
+	config.Configuration.Version = "v0.0.0"
+}
+
 func TestCompareOnlyMajorUpdateCanonicalVersion(t *testing.T) {
 	t.Parallel()
-	config.Configuration.Version = "v0.0.0"
+	globalVersion.Do(setVersion)
 	updatedVersion, err := GetLocalVersion()
 	require.Nil(t, err)
 
@@ -30,7 +37,7 @@ func TestCompareOnlyMajorUpdateCanonicalVersion(t *testing.T) {
 
 func TestCompareOnlyMinorUpdateCanonicalVersion(t *testing.T) {
 	t.Parallel()
-	config.Configuration.Version = "v0.0.0"
+	globalVersion.Do(setVersion)
 	updatedVersion, err := GetLocalVersion()
 	require.Nil(t, err)
 
@@ -49,7 +56,7 @@ func TestCompareOnlyMinorUpdateCanonicalVersion(t *testing.T) {
 
 func TestCompareOnlyPatchUpdateCanonicalVersion(t *testing.T) {
 	t.Parallel()
-	config.Configuration.Version = "v0.0.0"
+	globalVersion.Do(setVersion)
 	updatedVersion, err := GetLocalVersion()
 	require.Nil(t, err)
 
@@ -67,7 +74,7 @@ func TestCompareOnlyPatchUpdateCanonicalVersion(t *testing.T) {
 
 func TestCompareMixUpdateCanonicalVersion(t *testing.T) {
 	t.Parallel()
-	config.Configuration.Version = "v0.0.0"
+	globalVersion.Do(setVersion)
 	updatedVersion, err := GetLocalVersion()
 	require.Nil(t, err)
 
@@ -86,7 +93,7 @@ func TestCompareMixUpdateCanonicalVersion(t *testing.T) {
 
 func TestCompareMixUpdateCanonicalVersion2(t *testing.T) {
 	t.Parallel()
-	config.Configuration.Version = "v0.0.0"
+	globalVersion.Do(setVersion)
 	updatedVersion, err := GetLocalVersion()
 	require.Nil(t, err)
 
@@ -105,7 +112,6 @@ func TestCompareMixUpdateCanonicalVersion2(t *testing.T) {
 }
 
 func TestGetLocalVersion(t *testing.T) {
-	// todo: fix this once we have the logic to get the canonical version from the binary.
 	config.Configuration.Version = "v1.2.3"
 	version, err := GetLocalVersion()
 	require.Nil(t, err)

@@ -2,6 +2,7 @@ package dynamics
 
 import (
 	"context"
+	"sync"
 	"testing"
 
 	"github.com/alicenet/alicenet/config"
@@ -11,9 +12,15 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+var globalVersion sync.Once
+
+func setVersion() {
+	config.Configuration.Version = "v0.0.0"
+}
+
 func TestCanonicalVersionCheckTask_ShouldExecute_False(t *testing.T) {
 	t.Parallel()
-	config.Configuration.Version = "v0.0.0"
+	globalVersion.Do(setVersion)
 	localVersion, err := utils.GetLocalVersion()
 	require.Nil(t, err)
 
@@ -32,7 +39,7 @@ func TestCanonicalVersionCheckTask_ShouldExecute_False(t *testing.T) {
 
 func TestCanonicalVersionCheckTask_Execute_PatchOutdated(t *testing.T) {
 	t.Parallel()
-	config.Configuration.Version = "v0.0.0"
+	globalVersion.Do(setVersion)
 	localVersion, err := utils.GetLocalVersion()
 	require.Nil(t, err)
 	ctx := context.Background()
@@ -54,7 +61,7 @@ func TestCanonicalVersionCheckTask_Execute_PatchOutdated(t *testing.T) {
 
 func TestCanonicalVersionCheckTask_Execute_MinorOutdated(t *testing.T) {
 	t.Parallel()
-	config.Configuration.Version = "v0.0.0"
+	globalVersion.Do(setVersion)
 	localVersion, err := utils.GetLocalVersion()
 	require.Nil(t, err)
 	ctx := context.Background()
@@ -76,7 +83,7 @@ func TestCanonicalVersionCheckTask_Execute_MinorOutdated(t *testing.T) {
 
 func TestCanonicalVersionCheckTask_Execute_MajorOutdated(t *testing.T) {
 	t.Parallel()
-	config.Configuration.Version = "v0.0.0"
+	globalVersion.Do(setVersion)
 	localVersion, err := utils.GetLocalVersion()
 	require.Nil(t, err)
 	ctx := context.Background()
