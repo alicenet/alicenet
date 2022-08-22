@@ -7,6 +7,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/dgraph-io/badger/v2"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/sirupsen/logrus"
+
 	"github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/constants/dbprefix"
@@ -15,9 +19,6 @@ import (
 	"github.com/alicenet/alicenet/layer1/transaction"
 	"github.com/alicenet/alicenet/logging"
 	"github.com/alicenet/alicenet/utils"
-	"github.com/dgraph-io/badger/v2"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/sirupsen/logrus"
 )
 
 type TasksManager struct {

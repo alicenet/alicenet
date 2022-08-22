@@ -12,10 +12,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/alicenet/alicenet/constants"
-	"github.com/alicenet/alicenet/crypto"
-	"github.com/alicenet/alicenet/layer1"
-	"github.com/alicenet/alicenet/logging"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -26,6 +22,11 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/sirupsen/logrus"
+
+	"github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/crypto"
+	"github.com/alicenet/alicenet/layer1"
+	"github.com/alicenet/alicenet/logging"
 )
 
 // Ethereum specific errors.

@@ -388,8 +388,7 @@ func (s *Storage) loadStorage(txn *badger.Txn, epoch uint32) (*RawStorage, error
 //
 // We start at the most updated epoch and proceed backwards until we arrive
 // at the node with
-//
-//	epoch >= node.thisEpoch
+//		epoch >= node.thisEpoch
 func (s *Storage) loadRawStorage(txn *badger.Txn, epoch uint32) (*RawStorage, error) {
 	if epoch == 0 {
 		return nil, ErrZeroEpoch
