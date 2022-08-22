@@ -323,7 +323,7 @@ describe("State Migration: Migrate state", () => {
 
     const expectedValidatorCount = 4;
     const expectedNonce = 1;
-    const expectedEpoch = 1;
+    const expectedEpoch = 0;
     const expectedEthHeight = 0x236;
     const expectedSideChainHeight = 0;
     const masterPublicKey = [
