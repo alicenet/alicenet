@@ -19,10 +19,6 @@ type IATokenCaller interface {
 	//
 	// Solidity: function balanceOf(address account) view returns(uint256)
 	BalanceOf(opts *bind.CallOpts, account common.Address) (*big.Int, error)
-	// CircuitBreakerState is a free data retrieval call binding the contract method 0x89465c62.
-	//
-	// Solidity: function circuitBreakerState() view returns(bool)
-	CircuitBreakerState(opts *bind.CallOpts) (bool, error)
 	// Convert is a free data retrieval call binding the contract method 0xa3908e1b.
 	//
 	// Solidity: function convert(uint256 amount) view returns(uint256)
