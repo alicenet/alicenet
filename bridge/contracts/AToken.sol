@@ -5,7 +5,6 @@ import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "contracts/utils/ImmutableAuth.sol";
 import "contracts/interfaces/IStakingToken.sol";
-import "contracts/utils/CircuitBreaker.sol";
 import "contracts/libraries/errors/StakingTokenErrors.sol";
 
 /**
@@ -18,7 +17,6 @@ import "contracts/libraries/errors/StakingTokenErrors.sol";
 contract AToken is
     IStakingToken,
     ERC20Upgradeable,
-    CircuitBreaker,
     ImmutableFactory,
     ImmutableATokenMinter,
     ImmutableATokenBurner

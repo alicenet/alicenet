@@ -8,7 +8,6 @@ var FunctionMapping = map[[4]byte]string{
 	{221, 98, 237, 62}:   "AToken.allowance(address,address)",
 	{9, 94, 167, 179}:    "AToken.approve(address,uint256)",
 	{112, 160, 130, 49}:  "AToken.balanceOf(address)",
-	{137, 70, 92, 98}:    "AToken.circuitBreakerState()",
 	{163, 144, 142, 27}:  "AToken.convert(uint256)",
 	{49, 60, 229, 103}:   "AToken.decimals()",
 	{164, 87, 194, 215}:  "AToken.decreaseAllowance(address,uint256)",
