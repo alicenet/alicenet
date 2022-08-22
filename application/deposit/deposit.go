@@ -3,6 +3,9 @@ package deposit
 import (
 	"math/big"
 
+	"github.com/dgraph-io/badger/v2"
+	"github.com/sirupsen/logrus"
+
 	"github.com/alicenet/alicenet/application/db"
 	"github.com/alicenet/alicenet/application/indexer"
 	"github.com/alicenet/alicenet/application/objs"
@@ -12,8 +15,6 @@ import (
 	"github.com/alicenet/alicenet/errorz"
 	"github.com/alicenet/alicenet/logging"
 	"github.com/alicenet/alicenet/utils"
-	"github.com/dgraph-io/badger/v2"
-	"github.com/sirupsen/logrus"
 )
 
 // Handler creates a value owner index of all deposits and allows

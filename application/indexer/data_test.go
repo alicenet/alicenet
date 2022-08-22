@@ -5,12 +5,13 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/dgraph-io/badger/v2"
+
 	"github.com/alicenet/alicenet/application/objs"
 	trie "github.com/alicenet/alicenet/badgerTrie"
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/crypto"
 	"github.com/alicenet/alicenet/internal/testing/environment"
-	"github.com/dgraph-io/badger/v2"
 )
 
 func makeOwner() *objs.Owner {

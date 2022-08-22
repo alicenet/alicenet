@@ -6,10 +6,11 @@ import (
 	"math/big"
 	"strings"
 
+	"github.com/holiman/uint256"
+
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/errorz"
 	"github.com/alicenet/alicenet/utils"
-	"github.com/holiman/uint256"
 )
 
 // TODO: clone a little bit and confirm no nil pointer deferences

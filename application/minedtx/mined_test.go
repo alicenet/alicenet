@@ -5,13 +5,14 @@ import (
 	"math/rand"
 	"testing"
 
+	"github.com/dgraph-io/badger/v2"
+
 	"github.com/alicenet/alicenet/application/objs"
 	"github.com/alicenet/alicenet/application/objs/uint256"
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/constants/dbprefix"
 	"github.com/alicenet/alicenet/crypto"
 	"github.com/alicenet/alicenet/internal/testing/environment"
-	"github.com/dgraph-io/badger/v2"
 )
 
 func testingOwner(t *testing.T) objs.Signer {

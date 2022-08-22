@@ -11,9 +11,10 @@ given height index get txHash
 */
 
 import (
+	"github.com/dgraph-io/badger/v2"
+
 	"github.com/alicenet/alicenet/errorz"
 	"github.com/alicenet/alicenet/utils"
-	"github.com/dgraph-io/badger/v2"
 )
 
 func NewHeightIdxIndex(p, pp prefixFunc) *HeightIdxIndex {

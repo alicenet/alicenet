@@ -1,9 +1,10 @@
 package indexer
 
 import (
+	"github.com/dgraph-io/badger/v2"
+
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/utils"
-	"github.com/dgraph-io/badger/v2"
 )
 
 /*

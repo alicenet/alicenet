@@ -7,10 +7,11 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/alicenet/alicenet/application/objs/uint256"
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/crypto"
-	"github.com/stretchr/testify/assert"
 )
 
 func makeVS(t *testing.T, ownerSigner Signer, i int) *TXOut {

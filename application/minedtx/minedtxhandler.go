@@ -1,12 +1,13 @@
 package minedtx
 
 import (
+	"github.com/dgraph-io/badger/v2"
+
 	"github.com/alicenet/alicenet/application/db"
 	"github.com/alicenet/alicenet/application/indexer"
 	"github.com/alicenet/alicenet/application/objs"
 	"github.com/alicenet/alicenet/constants/dbprefix"
 	"github.com/alicenet/alicenet/utils"
-	"github.com/dgraph-io/badger/v2"
 )
 
 // NewMinedTxHandler creates a new MinedTxHandler object.

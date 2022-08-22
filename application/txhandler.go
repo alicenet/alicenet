@@ -5,6 +5,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/dgraph-io/badger/v2"
+	"github.com/sirupsen/logrus"
+
 	"github.com/alicenet/alicenet/application/deposit"
 	"github.com/alicenet/alicenet/application/minedtx"
 	"github.com/alicenet/alicenet/application/objs"
@@ -18,8 +21,6 @@ import (
 	"github.com/alicenet/alicenet/constants/dbprefix"
 	"github.com/alicenet/alicenet/errorz"
 	"github.com/alicenet/alicenet/utils"
-	"github.com/dgraph-io/badger/v2"
-	"github.com/sirupsen/logrus"
 )
 
 // TODO SET UP PRUNING
