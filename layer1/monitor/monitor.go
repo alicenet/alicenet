@@ -69,6 +69,7 @@ func NewMonitor(cdb *db.Database,
 	eventFilterAddresses []common.Address,
 	tickInterval time.Duration,
 	batchSize uint64,
+	chainId uint32,
 	taskRequestChan chan<- tasks.TaskRequest,
 ) (*monitor, error) {
 	logger := logging.GetLogger("monitor").WithFields(logrus.Fields{
@@ -95,7 +96,7 @@ func NewMonitor(cdb *db.Database,
 	}
 
 	eventMap := objects.NewEventMap()
-	err := events.SetupEventMap(eventMap, cdb, monDB, adminHandler, depositHandler, taskRequestChan, mon.Close)
+	err := events.SetupEventMap(eventMap, cdb, monDB, adminHandler, depositHandler, taskRequestChan, mon.Close, chainId)
 	if err != nil {
 		return nil, err
 	}

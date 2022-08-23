@@ -720,17 +720,17 @@ func (ssm *SnapShotManager) syncHdrNodes(txn *badger.Txn, snapShotHeight uint32)
 			utils.DebugTrace(ssm.logger, err)
 			continue
 		}
-		// remove the keys from the pending set in the database
-		err = ssm.database.DeletePendingHdrNodeKey(txn, utils.CopySlice(nodeHdrKeys[i].key[:]))
-		if err != nil {
-			utils.DebugTrace(ssm.logger, err)
-		}
 		// store all of those nodes into the database and get new pending keys
 		pendingBatch, newLayer, lvs, err := ssm.database.SetSnapShotHdrNode(txn, resp.batch, resp.root, resp.layer)
 		if err != nil {
 			// should not return if err invalid
 			utils.DebugTrace(ssm.logger, err)
 			continue
+		}
+		// remove the keys from the pending set in the database
+		err = ssm.database.DeletePendingHdrNodeKey(txn, utils.CopySlice(nodeHdrKeys[i].key[:]))
+		if err != nil {
+			utils.DebugTrace(ssm.logger, err)
 		}
 		// store new pending keys to db
 		for j := 0; j < len(pendingBatch); j++ {
@@ -998,18 +998,18 @@ func (ssm *SnapShotManager) syncStateNodes(txn *badger.Txn, snapShotHeight uint3
 			utils.DebugTrace(ssm.logger, err)
 			continue
 		}
-		// remove the keys from the pending set in the database
-		err = ssm.database.DeletePendingNodeKey(txn, utils.CopySlice(nodeKeys[i].key[:]))
-		if err != nil {
-			utils.DebugTrace(ssm.logger, err)
-			return err
-		}
 		// store all of those nodes into the database and get new pending keys
 		pendingBatch, newLayer, lvs, err := ssm.appHandler.StoreSnapShotNode(txn, utils.CopySlice(resp.batch), utils.CopySlice(resp.root), resp.layer)
 		if err != nil {
 			// should not return if err invalid
 			utils.DebugTrace(ssm.logger, err)
 			continue
+		}
+		// remove the keys from the pending set in the database
+		err = ssm.database.DeletePendingNodeKey(txn, utils.CopySlice(nodeKeys[i].key[:]))
+		if err != nil {
+			utils.DebugTrace(ssm.logger, err)
+			return err
 		}
 		// store pending leaves ( blockheader height/hashes)
 		for j := 0; j < len(lvs); j++ {
@@ -1090,11 +1090,7 @@ func (ssm *SnapShotManager) syncStateLeaves(txn *badger.Txn, snapShotHeight uint
 			utils.DebugTrace(ssm.logger, err)
 			continue
 		}
-		// remove the keys from the pending set in the database
-		err = ssm.database.DeletePendingLeafKey(txn, utils.CopySlice(leafKeys[i].key[:]))
-		if err != nil {
-			utils.DebugTrace(ssm.logger, err)
-		}
+
 		// store key-value state
 		err = ssm.appHandler.StoreSnapShotStateData(txn, utils.CopySlice(resp.key), utils.CopySlice(resp.value), utils.CopySlice(resp.data))
 		if err != nil {
@@ -1102,6 +1098,13 @@ func (ssm *SnapShotManager) syncStateLeaves(txn *badger.Txn, snapShotHeight uint
 			utils.DebugTrace(ssm.logger, err)
 			continue
 		}
+
+		// remove the keys from the pending set in the database
+		err = ssm.database.DeletePendingLeafKey(txn, utils.CopySlice(leafKeys[i].key[:]))
+		if err != nil {
+			utils.DebugTrace(ssm.logger, err)
+		}
+
 	}
 	return nil
 }
@@ -1156,11 +1159,6 @@ func (ssm *SnapShotManager) syncHdrLeaves(txn *badger.Txn, snapShotHeight uint32
 			utils.DebugTrace(ssm.logger, err)
 			continue
 		}
-		err = ssm.database.DeletePendingHdrLeafKey(txn, leafKeys[i].key[:])
-		if err != nil {
-			utils.DebugTrace(ssm.logger, err)
-			return err
-		}
 		bh := &objs.BlockHeader{}
 		err = bh.UnmarshalBinary(resp.data)
 		if err != nil {
@@ -1168,6 +1166,11 @@ func (ssm *SnapShotManager) syncHdrLeaves(txn *badger.Txn, snapShotHeight uint32
 			return err
 		}
 		err = ssm.database.SetCommittedBlockHeaderFastSync(txn, bh)
+		if err != nil {
+			utils.DebugTrace(ssm.logger, err)
+			return err
+		}
+		err = ssm.database.DeletePendingHdrLeafKey(txn, leafKeys[i].key[:])
 		if err != nil {
 			utils.DebugTrace(ssm.logger, err)
 			return err
