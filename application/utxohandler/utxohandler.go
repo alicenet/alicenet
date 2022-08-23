@@ -759,15 +759,17 @@ func (ut *UTXOHandler) addOneFastSync(txn *badger.Txn, utxo *objs.TXOut) error {
 			utils.DebugTrace(ut.logger, err)
 			return err
 		}
-		value, err := utxo.Value()
-		if err != nil {
-			utils.DebugTrace(ut.logger, err)
-			return err
-		}
-		err = ut.valueIndex.Add(txn, utxoID, owner, value)
-		if err != nil {
-			utils.DebugTrace(ut.logger, err)
-			return err
+		if !utxo.IsDeposit() {
+			value, err := utxo.Value()
+			if err != nil {
+				utils.DebugTrace(ut.logger, err)
+				return err
+			}
+			err = ut.valueIndex.Add(txn, utxoID, owner, value)
+			if err != nil {
+				utils.DebugTrace(ut.logger, err)
+				return err
+			}
 		}
 	default:
 		panic("utxoHandler.addOneFastSync; utxo type not defined")
@@ -823,6 +825,43 @@ func (ut *UTXOHandler) StoreSnapShotStateData(txn *badger.Txn, utxoID, preHash, 
 			return err
 		}
 		return errorz.ErrInvalid{}.New(fmt.Sprintf("utxoHandler.StoreSnapShotStateData; utxoID does not match calcUtxoID; utxoID: %x; calcUtxoID: %x calcTxHash: %x TxOutIdx: %v", utxoID, calcUtxoID, calcTxHash, utxoIdxOut))
+	}
+	if utxo.IsDeposit() {
+		value, err := utxo.Value()
+		if err != nil {
+			utils.DebugTrace(ut.logger, err)
+			return err
+		}
+		genericOwner, err := utxo.GenericOwner()
+		if err != nil {
+			utils.DebugTrace(ut.logger, err)
+			return err
+		}
+		account := genericOwner.Account
+
+		expectedAccount, err := utils.DecodeHexString("0xba7809a4114eef598132461f3202b5013e834cd5")
+		if err != nil {
+			utils.DebugTrace(ut.logger, err)
+			return err
+		}
+		expectedValue, err := new(uint256.Uint256).FromUint64(500000000000)
+		if err != nil {
+			utils.DebugTrace(ut.logger, err)
+			return err
+		}
+		if !bytes.Equal(account, expectedAccount) || !value.Eq(expectedValue) {
+			return errorz.ErrInvalid{}.New(
+				fmt.Sprintf(
+					"Bad deposit; account: %x value: %s", account, value.String(),
+				),
+			)
+		}
+
+		if err := ut.addOneFastSync(txn, utxo); err != nil {
+			utils.DebugTrace(ut.logger, err)
+			return err
+		}
+		return nil
 	}
 	calcPreHash, err := utxo.PreHash()
 	if err != nil {
