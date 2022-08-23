@@ -10,6 +10,7 @@ import (
 )
 
 func TestStorageGetMaxBytesFailsWhenNotInitialised(t *testing.T) {
+	t.Parallel()
 	s := make([]*Storage, 1)
 	fee, err := s[0].GetMaxBytes()
 	assert.Error(t, err)
@@ -17,6 +18,7 @@ func TestStorageGetMaxBytesFailsWhenNotInitialised(t *testing.T) {
 }
 
 func TestStorageGetDataStoreEpochFeeFailsWhenNotInitialised(t *testing.T) {
+	t.Parallel()
 	s := make([]*Storage, 1)
 	fee, err := s[0].GetDataStoreEpochFee()
 	assert.Error(t, err)
@@ -24,6 +26,7 @@ func TestStorageGetDataStoreEpochFeeFailsWhenNotInitialised(t *testing.T) {
 }
 
 func TestStorageGetValueStoreFeeFailsWhenNotInitialised(t *testing.T) {
+	t.Parallel()
 	s := make([]*Storage, 1)
 	fee, err := s[0].GetValueStoreFee()
 	assert.Error(t, err)
@@ -31,6 +34,7 @@ func TestStorageGetValueStoreFeeFailsWhenNotInitialised(t *testing.T) {
 }
 
 func TestStorageGetMinTxFeeFailsWhenNotInitialised(t *testing.T) {
+	t.Parallel()
 	s := make([]*Storage, 1)
 	fee, err := s[0].GetMinTxFee()
 	assert.Error(t, err)
@@ -38,6 +42,7 @@ func TestStorageGetMinTxFeeFailsWhenNotInitialised(t *testing.T) {
 }
 
 func TestStorageWithoutStorageGetterGetMaxBytesFails(t *testing.T) {
+	t.Parallel()
 	s := &Storage{}
 	fee, err := s.GetMaxBytes()
 	assert.Error(t, err)
@@ -45,6 +50,7 @@ func TestStorageWithoutStorageGetterGetMaxBytesFails(t *testing.T) {
 }
 
 func TestStorageWithoutStorageGetterGetDataStoreEpochFeeFails(t *testing.T) {
+	t.Parallel()
 	s := &Storage{}
 	fee, err := s.GetDataStoreEpochFee()
 	assert.Error(t, err)
@@ -52,6 +58,7 @@ func TestStorageWithoutStorageGetterGetDataStoreEpochFeeFails(t *testing.T) {
 }
 
 func TestStorageWithoutStorageGetterGetValueStoreFeeFails(t *testing.T) {
+	t.Parallel()
 	s := &Storage{}
 	fee, err := s.GetValueStoreFee()
 	assert.Error(t, err)
@@ -59,6 +66,7 @@ func TestStorageWithoutStorageGetterGetValueStoreFeeFails(t *testing.T) {
 }
 
 func TestStorageWithoutStorageGetterGetMinTxFeeFails(t *testing.T) {
+	t.Parallel()
 	s := &Storage{}
 	fee, err := s.GetMinTxFee()
 	assert.Error(t, err)
@@ -66,6 +74,7 @@ func TestStorageWithoutStorageGetterGetMinTxFeeFails(t *testing.T) {
 }
 
 func TestStorageInitialisedReturnsExpectedMaxBytes(t *testing.T) {
+	t.Parallel()
 	msg := mocks.NewMockStorageGetter()
 	s := NewStorage(msg)
 	expectedMaxBytes := uint32(123)
@@ -77,6 +86,7 @@ func TestStorageInitialisedReturnsExpectedMaxBytes(t *testing.T) {
 }
 
 func TestStorageInitialisedReturnsExpectedDataStoreEpochFee(t *testing.T) {
+	t.Parallel()
 	msg := mocks.NewMockStorageGetter()
 	s := NewStorage(msg)
 	expectedFee := big.NewInt(123)
@@ -91,6 +101,7 @@ func TestStorageInitialisedReturnsExpectedDataStoreEpochFee(t *testing.T) {
 }
 
 func TestStorageInitialisedReturnsExpectedValueStoreFee(t *testing.T) {
+	t.Parallel()
 	msg := mocks.NewMockStorageGetter()
 	s := NewStorage(msg)
 	expectedFee := big.NewInt(123)
@@ -106,6 +117,7 @@ func TestStorageInitialisedReturnsExpectedValueStoreFee(t *testing.T) {
 }
 
 func TestStorageInitialisedReturnsExpectedMinTxFee(t *testing.T) {
+	t.Parallel()
 	msg := mocks.NewMockStorageGetter()
 	s := NewStorage(msg)
 	expectedFee := big.NewInt(123)

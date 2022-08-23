@@ -9,6 +9,7 @@ import (
 )
 
 func TestPendingTxIndexer_Add_shouldAdd(t *testing.T) {
+	t.Parallel()
 	pendingtxIndexer := NewPendingTxIndexer()
 
 	database := environment.SetupBadgerDatabase(t)
@@ -24,6 +25,7 @@ func TestPendingTxIndexer_Add_shouldAdd(t *testing.T) {
 }
 
 func TestPendingTxIndexer_DeleteOne_shouldDeleteOne(t *testing.T) {
+	t.Parallel()
 	pendingtxIndexer := NewPendingTxIndexer()
 
 	database := environment.SetupBadgerDatabase(t)
@@ -38,6 +40,7 @@ func TestPendingTxIndexer_DeleteOne_shouldDeleteOne(t *testing.T) {
 }
 
 func TestPendingTxIndexer_DeleteMined_shouldDeleteMined(t *testing.T) {
+	t.Parallel()
 	pendingtxIndexer := NewPendingTxIndexer()
 
 	database := environment.SetupBadgerDatabase(t)
@@ -55,6 +58,7 @@ func TestPendingTxIndexer_DeleteMined_shouldDeleteMined(t *testing.T) {
 }
 
 func TestPendingTxIndexer_DropBefore_shouldDropBefore(t *testing.T) {
+	t.Parallel()
 	pendingtxIndexer := NewPendingTxIndexer()
 
 	database := environment.SetupBadgerDatabase(t)
@@ -71,6 +75,7 @@ func TestPendingTxIndexer_DropBefore_shouldDropBefore(t *testing.T) {
 }
 
 func TestPendingTxIndexer_Add_shouldEvictOnThresholdReached(t *testing.T) {
+	t.Parallel()
 	pendingtxIndexer := NewPendingTxIndexer()
 
 	database := environment.SetupBadgerDatabase(t)
