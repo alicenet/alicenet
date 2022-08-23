@@ -488,7 +488,7 @@ task("registerValidators", "registers validators")
     console.log(`validatorPool Address: ${validatorPool.address}`);
     console.log("Staking validators");
     let tx = await stakeValidators(
-      4,
+      validatorAddresses.length,
       factory.address,
       aTokenAddress,
       publicStakingAddress,
