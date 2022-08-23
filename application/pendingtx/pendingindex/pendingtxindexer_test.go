@@ -1,26 +1,12 @@
 package pendingindex
 
 import (
-	"context"
 	"testing"
 
-	"github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/internal/testing/environment"
-	"github.com/alicenet/alicenet/utils"
 	"github.com/dgraph-io/badger/v2"
 	"github.com/stretchr/testify/assert"
 )
-
-func createDb(t *testing.T) *db.Database {
-	t.Helper()
-	rawEngineDb, err := utils.OpenBadger(context.Background().Done(), "", true)
-	if err != nil {
-		t.Fatal(err)
-	}
-	database := &db.Database{}
-	database.Init(rawEngineDb)
-	return database
-}
 
 func TestPendingTxIndexer_Add_shouldAdd(t *testing.T) {
 	pendingtxIndexer := NewPendingTxIndexer()
