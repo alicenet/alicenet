@@ -10,7 +10,7 @@ const (
 	maxProposalSize = maxBytes // Parameterize: equal to maxBytes
 	msgTimeout      = 4 * time.Second
 	srvrMsgTimeout  = (3 * msgTimeout) / 4 // Parameterize: 0.75*MsgTimeout
-	proposalStepTO  = 4 * time.Second
+	proposalStepTO  = 600 * time.Second
 	preVoteStepTO   = 3 * time.Second
 	preCommitStepTO = 3 * time.Second
 	dBRNRTO         = (5 * (proposalStepTO + preVoteStepTO + preCommitStepTO)) / 2 // Parameterize: make 2.5 times Prop, PV, PC timeouts
