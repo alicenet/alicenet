@@ -10,14 +10,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/alicenet/alicenet/utils"
-
-	"github.com/dgraph-io/badger/v2"
-	"github.com/ethereum/go-ethereum/accounts"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/stretchr/testify/assert"
-
 	"github.com/alicenet/alicenet/bridge/bindings"
 	"github.com/alicenet/alicenet/consensus/objs"
 	"github.com/alicenet/alicenet/constants"
@@ -30,6 +22,12 @@ import (
 	"github.com/alicenet/alicenet/layer1/monitor/objects"
 	"github.com/alicenet/alicenet/layer1/transaction"
 	"github.com/alicenet/alicenet/test/mocks"
+	"github.com/alicenet/alicenet/utils"
+	"github.com/dgraph-io/badger/v2"
+	"github.com/ethereum/go-ethereum/accounts"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/stretchr/testify/assert"
 )
 
 func createSharedKey(addr common.Address) [4]*big.Int {
@@ -117,7 +115,7 @@ func getMonitor(t *testing.T) (*monitor, *executor.TasksScheduler, chan tasks.Ta
 	contracts.EthereumContractsFunc.SetDefaultReturn(ethereumContracts)
 
 	tasksScheduler, err := executor.NewTasksScheduler(monDB, eth, contracts, adminHandler, tasksReqChan, txWatcher)
-	mon, err := NewMonitor(consDB, monDB, adminHandler, depositHandler, eth, contracts, []common.Address{}, 2*time.Second, 100, tasksReqChan)
+	mon, err := NewMonitor(consDB, monDB, adminHandler, depositHandler, eth, contracts, []common.Address{}, 2*time.Second, 100, 42, tasksReqChan)
 	assert.Nil(t, err)
 	EPOCH := uint32(1)
 	populateMonitor(mon.State, EPOCH)
@@ -143,7 +141,7 @@ func TestMonitorPersist(t *testing.T) {
 	err = mon.State.PersistState(mon.db)
 	assert.Nil(t, err)
 
-	newMon, err := NewMonitor(mon.db, mon.db, mocks.NewMockAdminHandler(), mocks.NewMockDepositHandler(), eth, mocks.NewMockAllSmartContracts(), []common.Address{}, 10*time.Millisecond, 100, make(chan tasks.TaskRequest, 10))
+	newMon, err := NewMonitor(mon.db, mon.db, mocks.NewMockAdminHandler(), mocks.NewMockDepositHandler(), eth, mocks.NewMockAllSmartContracts(), []common.Address{}, 10*time.Millisecond, 100, 42, make(chan tasks.TaskRequest, 10))
 	assert.Nil(t, err)
 
 	err = newMon.State.LoadState(mon.db)
@@ -210,7 +208,7 @@ func TestProcessNewAliceNetNodeVersionAvailableEvent(t *testing.T) {
 	eth.EndpointInSyncFunc.SetDefaultReturn(true, 4, nil)
 	eth.GetFinalizedHeightFunc.SetDefaultReturn(1, nil)
 
-	localVersion := utils.GetLocalVersion()
+	localVersion, _ := utils.GetLocalVersion()
 	localVersion.Major++
 	version := &bindings.DynamicsNewAliceNetNodeVersionAvailable{
 		Version: localVersion,
@@ -294,7 +292,7 @@ func TestProcessSnapshotTakenEventWithOutdatedCanonicalVersion(t *testing.T) {
 	snapshots.ParseSnapshotTakenFunc.SetDefaultReturn(snapshotTakenEvent, nil)
 	contracts.SnapshotsFunc.SetDefaultReturn(snapshots)
 
-	localVersion := utils.GetLocalVersion()
+	localVersion, _ := utils.GetLocalVersion()
 	localVersion.Major++
 	dynamics := mocks.NewMockIDynamics()
 	dynamics.GetLatestAliceNetVersionFunc.SetDefaultReturn(localVersion, nil)
@@ -348,7 +346,7 @@ func TestProcessProcessNewCanonicalAliceNetNodeVersion(t *testing.T) {
 	eth.EndpointInSyncFunc.SetDefaultReturn(true, 4, nil)
 	eth.GetFinalizedHeightFunc.SetDefaultReturn(1, nil)
 
-	localVersion := utils.GetLocalVersion()
+	localVersion, _ := utils.GetLocalVersion()
 	localVersion.Major++
 	version := &bindings.DynamicsNewCanonicalAliceNetNodeVersion{
 		Version: localVersion,

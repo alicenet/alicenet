@@ -279,11 +279,6 @@ task(
       "ValidatorPool",
       hre
     );
-    const oldValidatorPoolAddress = await factoryLookupAddress(
-      oldFactory.address,
-      "ValidatorPool",
-      hre
-    );
     const oldSnapshotAddress = await factoryLookupAddress(
       oldFactory.address,
       "Snapshots",
@@ -304,10 +299,6 @@ task(
       "ETHDKG",
       hre
     );
-    const validatorPool = await hre.ethers.getContractAt(
-      "ValidatorPool",
-      validatorPoolAddress
-    );
     const tokenIds: Array<BigNumber> = [];
     const ethdkg = await hre.ethers.getContractAt("ETHDKG", ethDKGAddress);
     const oldSnapshots = await hre.ethers.getContractAt(
@@ -318,9 +309,13 @@ task(
     const masterPublicKey = await ethdkg
       .attach(oldEthDKGAddress)
       .getMasterPublicKey();
-    const validatorAccounts = await validatorPool
-      .attach(oldValidatorPoolAddress)
-      .getValidatorsAddresses();
+    console.log("Master Public Key: " + masterPublicKey);
+    const validatorAccounts = [
+      "0xb80d6653f7e5b80dbbe8d0aa9f61b5d72e8028ad",
+      "0x25489d6a720663f7e5253df68948edb302dfdcb6",
+      "0x322e8f463b925da54a778ed597aef41bc4fe4743",
+      "0xadf2a338e19c12298a3007cbea1c5276d1f746e0",
+    ];
 
     const blockClaims: Array<string> = [
       "0x000000000100040015000000007401000d00000002010000190000000201000025000000020100003100000002010000567a6aa5522088975d39fe74b589abfc5d50c53b788773e6977f62ec87fc603dc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470e8c0a9185e8460d02b4d4e80d3f48df4570ace5ef1f647cc36c28babaf7202c5ee41278d43b21b03fef8e113f5b812179079e21fd13cc004b879cd6081edc0e7",
@@ -369,7 +364,7 @@ task(
         publicStakingAddress,
         hre
       );
-      const receipt = await contractTx.wait();
+      const receipt = await contractTx.wait(8);
       if (receipt.events === undefined) {
         throw new Error("receipt has no events");
       }
@@ -408,7 +403,7 @@ task(
       groupSignatures,
       hre
     );
-    await contractTx.wait();
+    await contractTx.wait(8);
 
     await waitBlocks(3, hre);
   });
@@ -493,7 +488,7 @@ task("registerValidators", "registers validators")
     console.log(`validatorPool Address: ${validatorPool.address}`);
     console.log("Staking validators");
     let tx = await stakeValidators(
-      4,
+      validatorAddresses.length,
       factory.address,
       aTokenAddress,
       publicStakingAddress,
@@ -1429,9 +1424,8 @@ export async function migrateSnapshotsAndValidators(
     approveTokens.push(approve);
   }
   // register validators
-
   const validatorCount = 4;
-  const epoch = 1;
+  const epoch = 0;
   const sideChainHeight = 0;
   const registerValidatorsCallData =
     validatorPoolBase.interface.encodeFunctionData("registerValidators", [
@@ -1461,13 +1455,6 @@ export async function migrateSnapshotsAndValidators(
     0,
     migrateValidatorsCallData
   );
-  // TODO check if this is still needed
-  // let virtualMintDeposit = btokenBase.interface.encodeFunctionData("virtualMintDeposit", [
-  //   1,
-  //   0xba7809A4114eEF598132461f3202b5013e834CD5,
-  //   500000000000])
-  // console.log(3)
-  // virtualMintDeposit = factory.interface.encodeFunctionData("callAny", [bTokenAddress, 0, virtualMintDeposit])
   const migrateSnapshotsCallData = snapshotBase.interface.encodeFunctionData(
     "migrateSnapshots",
     [groupSignatures, bClaims]

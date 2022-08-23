@@ -53,8 +53,12 @@ func ProcessNewAliceNetNodeVersionAvailable(contracts layer1.AllSmartContracts, 
 	// Killing previous task
 	taskRequestChan <- tasks.NewKillTaskRequest(&dynamics.CanonicalVersionCheckTask{})
 
-	//If any element of the new Version is greater, schedule the task
-	newMajorIsGreater, newMinorIsGreater, newPatchIsGreater, _ := utils.CompareCanonicalVersion(event.Version)
+	// If any element of the new Version is greater, schedule the task
+	newMajorIsGreater, newMinorIsGreater, newPatchIsGreater, _, err := utils.CompareCanonicalVersion(event.Version)
+	if err != nil {
+		return fmt.Errorf("processing new version available: %w", err)
+	}
+
 	if newMajorIsGreater || newMinorIsGreater || newPatchIsGreater {
 		// Scheduling task with the new Canonical Version
 		taskRequestChan <- tasks.NewScheduleTaskRequest(dynamics.NewVersionCheckTask(event.Version))
@@ -62,6 +66,7 @@ func ProcessNewAliceNetNodeVersionAvailable(contracts layer1.AllSmartContracts, 
 
 	return nil
 }
+
 func ProcessNewCanonicalAliceNetNodeVersion(
 	contracts layer1.AllSmartContracts,
 	logger *logrus.Entry,
@@ -70,7 +75,6 @@ func ProcessNewCanonicalAliceNetNodeVersion(
 	taskRequestChan chan<- tasks.TaskRequest,
 	exitFunc func(),
 ) error {
-
 	logger = logger.WithField("method", "ProcessNewCanonicalAliceNetNodeVersion")
 	logger.Info("Processing new AliceNet node version becoming canonical...")
 
@@ -85,7 +89,10 @@ func ProcessNewCanonicalAliceNetNodeVersion(
 		"Minor":          event.Version.Minor,
 		"Patch":          event.Version.Patch,
 	})
-	newMajorIsGreater, _, _, localVersion := utils.CompareCanonicalVersion(event.Version)
+	newMajorIsGreater, _, _, localVersion, err := utils.CompareCanonicalVersion(event.Version)
+	if err != nil {
+		return fmt.Errorf("processing new canonical version: %w", err)
+	}
 
 	if newMajorIsGreater {
 		logger.Errorf(

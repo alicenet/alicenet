@@ -7,7 +7,7 @@
       "deployGroupIndex": "0",
       "deployType": "deployStatic",
       "constructorArgs": ["0x546f99f244b7b58b855330ae0e2bc1b30b41302f"],
-      "initializerArgs": []
+      "initializerArgs": [1000000]
     },
     {
       "name": "ATokenBurner",
@@ -25,7 +25,7 @@
       "deployGroupIndex": "0",
       "deployType": "deployUpgradeable",
       "constructorArgs": [],
-      "initializerArgs": []
+      "initializerArgs": ["0x108b2a2c28029094000000"]
     },
     {
       "name": "BToken",
