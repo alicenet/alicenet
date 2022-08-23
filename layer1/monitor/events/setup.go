@@ -131,7 +131,7 @@ func RegisterETHDKGEvents(em *objects.EventMap, monDB *db.Database, adminHandler
 	}
 }
 
-func SetupEventMap(em *objects.EventMap, cdb, monDB *db.Database, adminHandler monInterfaces.AdminHandler, depositHandler monInterfaces.DepositHandler, taskRequestChan chan<- tasks.TaskRequest, exitFunc func()) error {
+func SetupEventMap(em *objects.EventMap, cdb, monDB *db.Database, adminHandler monInterfaces.AdminHandler, depositHandler monInterfaces.DepositHandler, taskRequestChan chan<- tasks.TaskRequest, exitFunc func(), chainID uint32) error {
 	RegisterETHDKGEvents(em, monDB, adminHandler, taskRequestChan)
 
 	// MadByte.DepositReceived
@@ -143,7 +143,7 @@ func SetupEventMap(em *objects.EventMap, cdb, monDB *db.Database, adminHandler m
 
 	if err := em.Register(depositReceived.ID.String(), depositReceived.Name,
 		func(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
-			return ProcessDepositReceived(eth, contracts, logger, log, cdb, monDB, depositHandler)
+			return ProcessDepositReceived(eth, contracts, logger, log, cdb, monDB, depositHandler, chainID)
 		}); err != nil {
 		return err
 	}

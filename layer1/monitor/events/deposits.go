@@ -15,14 +15,11 @@ import (
 	"github.com/alicenet/alicenet/layer1/monitor/interfaces"
 )
 
-func ProcessDepositReceived(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, log types.Log, cdb, monDB *db.Database, depositHandler interfaces.DepositHandler) error {
+func ProcessDepositReceived(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, log types.Log, cdb, monDB *db.Database, depositHandler interfaces.DepositHandler, chainID uint32) error {
 	event, err := contracts.EthereumContracts().BToken().ParseDepositReceived(log)
 	if err != nil {
 		return err
 	}
-
-	bigChainID := eth.GetChainID()
-	chainID := uint32(bigChainID.Uint64())
 
 	logger.WithFields(logrus.Fields{
 		"DepositID": event.DepositID,
