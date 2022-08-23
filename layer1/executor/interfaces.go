@@ -13,6 +13,7 @@ type TaskHandler interface {
 	KillTaskById(ctx context.Context, id string) (*HandlerResponse, error)
 	Start()
 	Close()
+	CloseChan() <-chan struct{}
 }
 
 // TaskResponse to be implemented by a response structure that will be returned to the

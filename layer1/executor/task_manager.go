@@ -31,26 +31,25 @@ type TaskManager struct {
 	Schedule       map[string]ManagerRequestInfo  `json:"schedule"`
 	Responses      map[string]ManagerResponseInfo `json:"responses"`
 	LastHeightSeen uint64                         `json:"lastHeightSeen"`
-	mainCtx        context.Context                `json:"-"`
-	eth            layer1.Client                  `json:"-"`
-	contracts      layer1.AllSmartContracts       `json:"-"`
-	database       *db.Database                   `json:"-"`
-	adminHandler   monitorInterfaces.AdminHandler `json:"-"`
-	marshaller     *marshaller.TypeRegistry       `json:"-"`
-	closeChan      chan struct{}                  `json:"-"`
-	closeOnce      sync.Once                      `json:"-"`
-	requestChan    <-chan managerRequest          `json:"-"`
-	responseChan   *executorResponseChan          `json:"-"`
-	logger         *logrus.Entry                  `json:"-"`
-	taskExecutor   *TaskExecutor                  `json:"-"`
+	//mainCtx        context.Context                `json:"-"`
+	eth          layer1.Client                  `json:"-"`
+	contracts    layer1.AllSmartContracts       `json:"-"`
+	database     *db.Database                   `json:"-"`
+	adminHandler monitorInterfaces.AdminHandler `json:"-"`
+	marshaller   *marshaller.TypeRegistry       `json:"-"`
+	closeChan    chan struct{}                  `json:"-"`
+	closeOnce    sync.Once                      `json:"-"`
+	requestChan  <-chan managerRequest          `json:"-"`
+	responseChan *executorResponseChan          `json:"-"`
+	logger       *logrus.Entry                  `json:"-"`
+	taskExecutor *TaskExecutor                  `json:"-"`
 }
 
 // newTaskManager creates a new TaskManager instance and recover the previous state from DB.
-func newTaskManager(mainCtx context.Context, eth layer1.Client, contracts layer1.AllSmartContracts, database *db.Database, logger *logrus.Entry, adminHandler monitorInterfaces.AdminHandler, requestChan <-chan managerRequest, txWatcher transaction.Watcher) (*TaskManager, error) {
+func newTaskManager(eth layer1.Client, contracts layer1.AllSmartContracts, database *db.Database, logger *logrus.Entry, adminHandler monitorInterfaces.AdminHandler, requestChan <-chan managerRequest, txWatcher transaction.Watcher) (*TaskManager, error) {
 	taskManager := &TaskManager{
 		Schedule:     make(map[string]ManagerRequestInfo),
 		Responses:    make(map[string]ManagerResponseInfo),
-		mainCtx:      mainCtx,
 		database:     database,
 		eth:          eth,
 		contracts:    contracts,
@@ -102,6 +101,12 @@ func (tm *TaskManager) close() {
 	})
 }
 
+// triggered when onUnrecoverableError occurs during the execution.
+func (tm *TaskManager) onUnrecoverableError(err error) {
+	tm.logger.WithError(err).Errorf("An unercoverable error occured %v", err)
+	tm.close()
+}
+
 // eventLoop where the interaction with all the pieces is developed.
 func (tm *TaskManager) eventLoop() {
 	processingTime := time.After(tasks.ManagerProcessingTime)
@@ -125,20 +130,20 @@ func (tm *TaskManager) eventLoop() {
 			response := &managerResponse{Err: nil}
 			switch taskRequest.action {
 			case KillByType:
-				err := tm.killTaskByType(tm.mainCtx, taskRequest.task)
+				err := tm.killTaskByType(taskRequest.task)
 				if err != nil {
 					tm.logger.WithError(err).Errorf("Failed to killTaskByType %v", taskRequest.task)
 					response.Err = err
 				}
 			case KillById:
-				err := tm.killTaskById(tm.mainCtx, taskRequest.id)
+				err := tm.killTaskById(taskRequest.id)
 				if err != nil {
 					tm.logger.WithError(err).Errorf("Failed to killTaskById %v", taskRequest.id)
 					response.Err = err
 				}
 			case Schedule:
 				tm.logger.Trace("received request for a task")
-				err, sharedResponse := tm.schedule(tm.mainCtx, taskRequest.task, taskRequest.id)
+				err, sharedResponse := tm.schedule(taskRequest.task, taskRequest.id)
 				if err != nil {
 					// if we are not synchronized, don't log expired task as errors, since we will
 					// be replaying the events from far way in the past
@@ -153,11 +158,7 @@ func (tm *TaskManager) eventLoop() {
 				}
 			}
 			taskRequest.response.sendResponse(response)
-			err := tm.persistState()
-			if err != nil {
-				tm.logger.WithError(err).Errorf("Failed to persist state %d on task request", tm.LastHeightSeen)
-			}
-
+			tm.persistState()
 		case taskResponse, ok := <-tm.responseChan.erChan:
 			if !ok {
 				tm.logger.Warnf("Received a taskResponse on a closed channel %v", taskResponse)
@@ -165,17 +166,14 @@ func (tm *TaskManager) eventLoop() {
 			}
 
 			tm.logger.Trace("received a task response")
-			err := tm.processTaskResponse(tm.mainCtx, taskResponse)
+			err := tm.processTaskResponse(taskResponse)
 			if err != nil {
 				tm.logger.WithError(err).Errorf("Failed to processTaskResponse %v", taskResponse)
 			}
-			err = tm.persistState()
-			if err != nil {
-				tm.logger.WithError(err).Errorf("Failed to persist state %d on task response", tm.LastHeightSeen)
-			}
+			tm.persistState()
 		case <-processingTime:
 			tm.logger.Trace("processing latest height")
-			networkCtx, networkCf := context.WithTimeout(tm.mainCtx, tasks.ManagerNetworkTimeout)
+			networkCtx, networkCf := context.WithTimeout(context.Background(), tasks.ManagerNetworkTimeout)
 			height, err := tm.eth.GetFinalizedHeight(networkCtx)
 			networkCf()
 			if err != nil {
@@ -186,39 +184,30 @@ func (tm *TaskManager) eventLoop() {
 			tm.LastHeightSeen = height
 
 			toStart, expired := tm.findTasks()
-			err = tm.startTasks(tm.mainCtx, toStart)
+			err = tm.startTasks(toStart)
 			if err != nil {
 				tm.logger.WithError(err).Errorf("Failed to startTasks %d", tm.LastHeightSeen)
 			}
-			err = tm.persistState()
-			if err != nil {
-				tm.logger.WithError(err).Errorf("Failed to persist state after start tasks %d", tm.LastHeightSeen)
-			}
+			tm.persistState()
 
-			err = tm.killTasks(tm.mainCtx, expired)
+			err = tm.killTasks(expired)
 			if err != nil {
 				tm.logger.WithError(err).Errorf("Failed to killExpiredTasks %d", tm.LastHeightSeen)
 			}
-			err = tm.persistState()
-			if err != nil {
-				tm.logger.WithError(err).Errorf("Failed to persist after kill tasks state %d", tm.LastHeightSeen)
-			}
+			tm.persistState()
 
 			tm.cleanResponses()
-			err = tm.persistState()
-			if err != nil {
-				tm.logger.WithError(err).Errorf("Failed to persist after kill tasks state %d", tm.LastHeightSeen)
-			}
+			tm.persistState()
 			processingTime = time.After(tasks.ManagerProcessingTime)
 		}
 	}
 }
 
 // schedule the task after its validation.
-func (tm *TaskManager) schedule(ctx context.Context, task tasks.Task, id string) (error, *HandlerResponse) {
+func (tm *TaskManager) schedule(task tasks.Task, id string) (error, *HandlerResponse) {
 	select {
-	case <-ctx.Done():
-		return ctx.Err(), nil
+	case <-tm.closeChan:
+		return ErrTaskManagerClosed, nil
 	default:
 		if task == nil {
 			return ErrTaskIsNil, nil
@@ -277,10 +266,10 @@ func (tm *TaskManager) schedule(ctx context.Context, task tasks.Task, id string)
 }
 
 // processTaskResponse from the TaskExecutor and writes it to the HandlerResponse.
-func (tm *TaskManager) processTaskResponse(ctx context.Context, executorResponse ExecutorResponse) error {
+func (tm *TaskManager) processTaskResponse(executorResponse ExecutorResponse) error {
 	select {
-	case <-ctx.Done():
-		return ctx.Err()
+	case <-tm.closeChan:
+		return ErrTaskManagerClosed
 	default:
 		logger := tm.logger
 		task, present := tm.Schedule[executorResponse.Id]
@@ -321,8 +310,8 @@ func (tm *TaskManager) processTaskResponse(ctx context.Context, executorResponse
 // startTasks spawning a go routine to handle Task execution using the TaskExecutor.
 func (tm *TaskManager) startTasks(ctx context.Context, tasks []ManagerRequestInfo) error {
 	select {
-	case <-ctx.Done():
-		return ctx.Err()
+	case <-tm.closeChan:
+		return ErrTaskManagerClosed
 	default:
 		tm.logger.Debug("Looking for starting tasks")
 		for i := 0; i < len(tasks); i++ {
@@ -342,10 +331,10 @@ func (tm *TaskManager) startTasks(ctx context.Context, tasks []ManagerRequestInf
 }
 
 // killTaskByType sends task to kill after the request validation.
-func (tm *TaskManager) killTaskByType(ctx context.Context, task tasks.Task) error {
+func (tm *TaskManager) killTaskByType(task tasks.Task) error {
 	select {
-	case <-ctx.Done():
-		return ctx.Err()
+	case <-tm.closeChan:
+		return ErrTaskManagerClosed
 	default:
 		if task == nil {
 			return ErrTaskIsNil
@@ -357,15 +346,15 @@ func (tm *TaskManager) killTaskByType(ctx context.Context, task tasks.Task) erro
 		}
 
 		tm.logger.Tracef("received request to kill all tasks type: %v", taskName)
-		return tm.killTasks(ctx, tm.findTasksByName(taskName))
+		return tm.killTasks(tm.findTasksByName(taskName))
 	}
 }
 
 // killTaskById sends task to kill after the request validation.
-func (tm *TaskManager) killTaskById(ctx context.Context, id string) error {
+func (tm *TaskManager) killTaskById(id string) error {
 	select {
-	case <-ctx.Done():
-		return ctx.Err()
+	case <-tm.closeChan:
+		return ErrTaskManagerClosed
 	default:
 		if id == "" {
 			return ErrTaskIdEmpty
@@ -382,10 +371,10 @@ func (tm *TaskManager) killTaskById(ctx context.Context, id string) error {
 }
 
 // iterates a list of Task to killTasks
-func (tm *TaskManager) killTasks(ctx context.Context, tasks []ManagerRequestInfo) error {
+func (tm *TaskManager) killTasks(tasks []ManagerRequestInfo) error {
 	select {
-	case <-ctx.Done():
-		return ctx.Err()
+	case <-tm.closeChan:
+		return ErrTaskManagerClosed
 	default:
 		for i := 0; i < len(tasks); i++ {
 			task := tasks[i]
@@ -505,11 +494,11 @@ func (tm *TaskManager) remove(id string) error {
 }
 
 // persistState TaskManager to database.
-func (tm *TaskManager) persistState() error {
+func (tm *TaskManager) persistState() {
 	logger := logging.GetLogger("staterecover").WithField("State", "manager")
 	rawData, err := json.Marshal(tm)
 	if err != nil {
-		return err
+		tm.onUnrecoverableError(err)
 	}
 
 	err = tm.database.Update(func(txn *badger.Txn) error {
@@ -522,15 +511,13 @@ func (tm *TaskManager) persistState() error {
 		return nil
 	})
 	if err != nil {
-		return err
+		tm.onUnrecoverableError(err)
 	}
 
 	if err := tm.database.Sync(); err != nil {
 		logger.Error("Failed to set sync")
-		return err
+		tm.onUnrecoverableError(err)
 	}
-
-	return nil
 }
 
 // loadState TaskManager from database.
