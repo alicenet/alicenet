@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/alicenet/alicenet/application/objs/uint256"
-	"github.com/alicenet/alicenet/test/mocks"
+	"github.com/alicenet/alicenet/dynamics/mocks"
 	"github.com/stretchr/testify/assert"
 )
 
