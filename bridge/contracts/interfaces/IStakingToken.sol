@@ -20,5 +20,5 @@ interface IStakingTokenMinter {
 }
 
 interface IStakingTokenBurner {
-    function burn(address to, uint256 amount) external;
+    function burn(address from, uint256 amount) external;
 }

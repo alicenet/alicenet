@@ -29,6 +29,9 @@ contract Foundation is
     /// fail if the circuit breaker is tripped. The magic_ parameter is intended
     /// to stop some one from successfully interacting with this method without
     /// first reading the source code and hopefully this comment
+    /// @notice deposits aTokens that will be distributed to stakers evenly
+    /// @param magic_ The required control number to allow operation
+    /// @param amount_ The amount of AToken to be deposited
     function depositToken(uint8 magic_, uint256 amount_) public checkMagic(magic_) {
         // collect tokens
         _safeTransferFromERC20(IERC20Transferable(_aTokenAddress()), msg.sender, amount_);
@@ -41,8 +44,13 @@ contract Foundation is
     /// breaker is tripped the magic_ parameter is intended to stop some one from
     /// successfully interacting with this method without first reading the
     /// source code and hopefully this comment
+    /// @notice deposits eths that will be distributed to stakers evenly
+    /// @param magic_ The required control number to allow operation
     function depositEth(uint8 magic_) public payable checkMagic(magic_) {}
 
+    /// Delegates a call to the specified contract with any set of parameters encoded
+    /// @param target_ The address of the contract to be delagated to
+    /// @param cdata_ The encoded parameters of the delegate call encoded
     function delegateCallAny(address target_, bytes memory cdata_) public payable onlyFactory {
         assembly {
             let size := mload(cdata_)

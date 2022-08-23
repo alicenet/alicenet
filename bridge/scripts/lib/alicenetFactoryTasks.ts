@@ -59,7 +59,6 @@ import {
   getDeployType,
   getDeployUpgradeableMultiCallArgs,
   getDeployUpgradeableProxyArgs,
-  getMulticallArgs,
   isInitializable,
 } from "./deployment/deploymentUtil";
 import {
