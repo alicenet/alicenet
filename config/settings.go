@@ -5,11 +5,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/alicenet/alicenet/logging"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
-
-	"github.com/alicenet/alicenet/logging"
 )
 
 type bootnodeConfig struct {
@@ -125,6 +124,7 @@ type configuration struct {
 	Firewalld             firewalldConfig
 	Chain                 chainConfig
 	BootNode              bootnodeConfig
+	Version               string
 }
 
 // Configuration contains all active settings.
