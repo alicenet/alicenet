@@ -8,7 +8,7 @@ import "contracts/utils/ImmutableAuth.sol";
 /// @custom:deploy-type deployUpgradeable
 contract ATokenBurner is ImmutableAToken, IStakingTokenBurner {
     constructor() ImmutableFactory(msg.sender) ImmutableAToken() IStakingTokenBurner() {}
- 
+
     /// Burns ATokens
     /// @param from_ The address from where the tokens will be burned
     /// @param amount_ The amount of ATokens to be burned
