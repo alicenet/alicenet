@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT-open-group
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.16;
 
-import "../interfaces/IERC20Transferable.sol";
+import "contracts/interfaces/IERC20Transferable.sol";
+import "contracts/libraries/errors/ERC20SafeTransferErrors.sol";
 
 abstract contract ERC20SafeTransfer {
     // _safeTransferFromERC20 performs a transferFrom call against an erc20 contract in a safe manner
@@ -16,12 +17,19 @@ abstract contract ERC20SafeTransfer {
         if (amount_ == 0) {
             return;
         }
-        require(
-            address(contract_) != address(0x0),
-            "ERC20SafeTransfer: Cannot call methods on contract address 0x0."
-        );
+        if (address(contract_) == address(0x0)) {
+            revert ERC20SafeTransferErrors.CannotCallContractMethodsOnZeroAddress();
+        }
+
         bool success = contract_.transferFrom(sender_, address(this), amount_);
-        require(success, "ERC20SafeTransfer: Transfer failed.");
+        if (!success) {
+            revert ERC20SafeTransferErrors.Erc20TransferFailed(
+                address(contract_),
+                sender_,
+                address(this),
+                amount_
+            );
+        }
     }
 
     // _safeTransferERC20 performs a transfer call against an erc20 contract in a safe manner
@@ -36,11 +44,17 @@ abstract contract ERC20SafeTransfer {
         if (amount_ == 0) {
             return;
         }
-        require(
-            address(contract_) != address(0x0),
-            "ERC20SafeTransfer: Cannot call methods on contract address 0x0."
-        );
+        if (address(contract_) == address(0x0)) {
+            revert ERC20SafeTransferErrors.CannotCallContractMethodsOnZeroAddress();
+        }
         bool success = contract_.transfer(to_, amount_);
-        require(success, "ERC20SafeTransfer: Transfer failed.");
+        if (!success) {
+            revert ERC20SafeTransferErrors.Erc20TransferFailed(
+                address(contract_),
+                address(this),
+                to_,
+                amount_
+            );
+        }
     }
 }

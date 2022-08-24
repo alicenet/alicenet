@@ -326,10 +326,18 @@ func getTransactionRequest(ConsumedTxHash, account []byte, val uint64) (tx_ *pro
 	}
 	tx = &objs.Tx{}
 	tx.Vin = []*objs.TXIn{txin}
+	expectedOutput, err := new(uint256.Uint256).FromUint64(2)
+	if err != nil {
+		panic(err)
+	}
+	expectedOutput, err = new(uint256.Uint256).Sub(expectedOutput, vsFee)
+	if err != nil {
+		panic(err)
+	}
 	newValueStore = &objs.ValueStore{
 		VSPreImage: &objs.VSPreImage{
 			ChainID:  chainID,
-			Value:    vsValue,
+			Value:    expectedOutput,
 			TXOutIdx: 0,
 			Fee:      vsFee,
 			Owner: &objs.ValueStoreOwner{

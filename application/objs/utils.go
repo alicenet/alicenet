@@ -60,13 +60,6 @@ func extractCurveSpec(owner []byte) (constants.CurveSpec, []byte, error) {
 	return constants.CurveSpec(owner[0]), utils.CopySlice(owner[1:]), nil
 }
 
-func extractSignerRole(owner []byte) (SignerRole, []byte, error) {
-	if len(owner) < 1 {
-		return 0, nil, errorz.ErrInvalid{}.New("extractSignerRole; extraction failed")
-	}
-	return SignerRole(owner[0]), utils.CopySlice(owner[1:]), nil
-}
-
 func extractAccount(owner []byte) ([]byte, []byte, error) {
 	if len(owner) < constants.OwnerLen {
 		return nil, nil, errorz.ErrInvalid{}.New("extractAccount; extraction failed")

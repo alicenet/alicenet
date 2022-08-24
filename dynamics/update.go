@@ -44,12 +44,6 @@ const (
 	// ValueStoreValidVersionType is the UpdateType for updating ValueStoreValidVersion
 	ValueStoreValidVersionType
 
-	// AtomicSwapFeeType is the UpdateType for updating AtomicSwapFee
-	AtomicSwapFeeType
-
-	// AtomicSwapValidStopEpochType is the UpdateType for updating AtomicSwapValidStopEpoch
-	AtomicSwapValidStopEpochType
-
 	// DataStoreEpochFeeType is the UpdateType for updating DataStoreEpochFee
 	DataStoreEpochFeeType
 
@@ -178,10 +172,6 @@ func convertFieldToType(field string) (UpdateType, error) {
 		return ValueStoreFeeType, nil
 	case "valueStoreValidVersion":
 		return ValueStoreValidVersionType, nil
-	case "atomicSwapFee":
-		return AtomicSwapFeeType, nil
-	case "atomicSwapValidStopEpoch":
-		return AtomicSwapValidStopEpochType, nil
 	case "dataStoreEpochFee":
 		return DataStoreEpochFeeType, nil
 	case "dataStoreValidVersion":

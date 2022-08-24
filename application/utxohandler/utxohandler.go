@@ -647,8 +647,6 @@ func (ut *UTXOHandler) addOne(txn *badger.Txn, utxo *objs.TXOut) error {
 			utils.DebugTrace(ut.logger, err)
 			return err
 		}
-	case utxo.HasAtomicSwap():
-		panic("utxoHandler.addOne; not implemented for AtomicSwap objects")
 	default:
 		panic("utxoHandler.addOne; utxo type not defined")
 	}
@@ -697,8 +695,6 @@ func (ut *UTXOHandler) dropFromIndexes(txn *badger.Txn, utxoID []byte) error {
 			utils.DebugTrace(ut.logger, err)
 			return err
 		}
-	case utxo.HasAtomicSwap():
-		panic("utxoHandler.dropFromIndexes; not implemented for AtomicSwap objects")
 	default:
 		panic("utxoHandler.dropFromIndexes; utxo type not defined")
 	}
@@ -773,8 +769,6 @@ func (ut *UTXOHandler) addOneFastSync(txn *badger.Txn, utxo *objs.TXOut) error {
 			utils.DebugTrace(ut.logger, err)
 			return err
 		}
-	case utxo.HasAtomicSwap():
-		panic("utxoHandler.addOneFastSync; not implemented for AtomicSwap objects")
 	default:
 		panic("utxoHandler.addOneFastSync; utxo type not defined")
 	}

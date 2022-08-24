@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT-open-group
-pragma solidity ^0.8.11;
+pragma solidity ^0.8.16;
 
 import "contracts/interfaces/IValidatorPool.sol";
 import "contracts/interfaces/ISnapshots.sol";
@@ -7,6 +7,7 @@ import "contracts/libraries/parsers/PClaimsParserLibrary.sol";
 import "contracts/libraries/math/CryptoLibrary.sol";
 import "contracts/utils/ImmutableAuth.sol";
 import "contracts/utils/AccusationsLibrary.sol";
+import "contracts/libraries/errors/AccusationsErrors.sol";
 
 /// @custom:deploy-type deployUpgradeable
 /// @custom:role Accusation
@@ -43,16 +44,14 @@ contract AccusationMultipleProposal is
         address signerAccount0 = AccusationsLibrary.recoverMadNetSigner(signature0_, pClaims0_);
         address signerAccount1 = AccusationsLibrary.recoverMadNetSigner(signature1_, pClaims1_);
 
-        require(
-            signerAccount0 == signerAccount1,
-            "Accusations: the signers of the proposals should be the same"
-        );
+        if (signerAccount0 != signerAccount1) {
+            revert AccusationsErrors.SignersDoNotMatch(signerAccount0, signerAccount1);
+        }
 
         // ensure the hashes of blob0/1 are different
-        require(
-            keccak256(pClaims0_) != keccak256(pClaims1_),
-            "Accusations: the PClaims are equal!"
-        );
+        if (keccak256(_pClaims0) == keccak256(_pClaims1)) {
+            revert AccusationsErrors.PClaimsAreEqual();
+        }
 
         PClaimsParserLibrary.PClaims memory pClaims0 = PClaimsParserLibrary.extractPClaims(
             pClaims0_
@@ -62,22 +61,28 @@ contract AccusationMultipleProposal is
         );
 
         // ensure the height of blob0/1 are equal using RCert sub object of PClaims
-        require(
-            pClaims0.rCert.rClaims.height == pClaims1.rCert.rClaims.height,
-            "Accusations: the block heights between the proposals are different!"
-        );
+        if (pClaims0.rCert.rClaims.height != pClaims1.rCert.rClaims.height) {
+            revert AccusationsErrors.PClaimsHeightsDoNotMatch(
+                pClaims0.rCert.rClaims.height,
+                pClaims1.rCert.rClaims.height
+            );
+        }
 
         // ensure the round of blob0/1 are equal using RCert sub object of PClaims
-        require(
-            pClaims0.rCert.rClaims.round == pClaims1.rCert.rClaims.round,
-            "Accusations: the round between the proposals are different!"
-        );
+        if (pClaims0.rCert.rClaims.round != pClaims1.rCert.rClaims.round) {
+            revert AccusationsErrors.PClaimsRoundsDoNotMatch(
+                pClaims0.rCert.rClaims.round,
+                pClaims1.rCert.rClaims.round
+            );
+        }
 
         // ensure the chainid of blob0/1 are equal using RCert sub object of PClaims
-        require(
-            pClaims0.rCert.rClaims.chainId == pClaims1.rCert.rClaims.chainId,
-            "Accusations: the chainId between the proposals are different!"
-        );
+        if (pClaims0.rCert.rClaims.chainId != pClaims1.rCert.rClaims.chainId) {
+            revert AccusationsErrors.PClaimsChainIdsDoNotMatch(
+                pClaims0.rCert.rClaims.chainId,
+                pClaims1.rCert.rClaims.chainId
+            );
+        }
 
         // ensure the chainid of blob0 is correct for this chain using RCert sub object of PClaims
         uint256 chainId = ISnapshots(_snapshotsAddress()).getChainId();

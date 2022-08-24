@@ -71,8 +71,9 @@ describe("AccusationInvalidTxConsumption: Tests AccusationInvalidTxConsumption m
           txInPreImage,
           proofs
         )
-      ).to.be.revertedWith(
-        "MerkleProofLibrary: Invalid Non Inclusion Merkle proof!"
+      ).to.be.revertedWithCustomError(
+        accusation,
+        "InvalidNonInclusionMerkleProof"
       );
     });
     it("reverts when validator is not valid", async function () {
@@ -94,9 +95,9 @@ describe("AccusationInvalidTxConsumption: Tests AccusationInvalidTxConsumption m
           txInPreImage,
           proofs
         )
-      ).to.be.revertedWith(
-        "Accusations: the signer of these proposal is not a valid validator!"
-      );
+      )
+        .to.be.revertedWithCustomError(accusation, "SignerNotValidValidator")
+        .withArgs(signerAccount0);
     });
 
     it("reverts when chain id is not valid", async function () {
@@ -111,6 +112,9 @@ describe("AccusationInvalidTxConsumption: Tests AccusationInvalidTxConsumption m
         proofs,
       } = getValidAccusationDataForNonExistentUTXOChainId2();
 
+      const expectedBClaimsChainId = 1337;
+      const expectedpClaimsChainId = 1;
+      const expectedActualChainId = 1;
       await expect(
         accusation.accuseInvalidTransactionConsumption(
           pClaims,
@@ -120,7 +124,13 @@ describe("AccusationInvalidTxConsumption: Tests AccusationInvalidTxConsumption m
           txInPreImage,
           proofs
         )
-      ).to.be.revertedWith("Accusations: ChainId should be the same");
+      )
+        .to.be.revertedWithCustomError(accusation, "ChainIdDoesNotMatch")
+        .withArgs(
+          expectedBClaimsChainId,
+          expectedpClaimsChainId,
+          expectedActualChainId
+        );
     });
 
     it("reverts when height is not valid", async function () {
@@ -136,6 +146,9 @@ describe("AccusationInvalidTxConsumption: Tests AccusationInvalidTxConsumption m
         proofs,
       } = getValidAccusationDataForNonExistentUTXOWithInvalidHeight();
 
+      const expectedBClaimsHeight = 42;
+      const expectedPClaimsHeight = 2;
+
       await expect(
         accusation.accuseInvalidTransactionConsumption(
           pClaims,
@@ -145,7 +158,9 @@ describe("AccusationInvalidTxConsumption: Tests AccusationInvalidTxConsumption m
           txInPreImage,
           proofs
         )
-      ).to.be.revertedWith("Accusations: Height delta should be 1");
+      )
+        .to.be.revertedWithCustomError(accusation, "HeightDeltaShouldBeOne")
+        .withArgs(expectedBClaimsHeight, expectedPClaimsHeight);
     });
 
     it("reverts when sig group is not valid", async function () {
@@ -171,7 +186,7 @@ describe("AccusationInvalidTxConsumption: Tests AccusationInvalidTxConsumption m
           txInPreImage,
           proofs
         )
-      ).to.be.revertedWith("elliptic curve pairing failed");
+      ).to.be.revertedWithCustomError(accusation, "EllipticCurvePairingFailed");
     });
 
     it("reverts when sig group is signed with a different key", async function () {
@@ -199,7 +214,10 @@ describe("AccusationInvalidTxConsumption: Tests AccusationInvalidTxConsumption m
           txInPreImage,
           proofs
         )
-      ).to.be.revertedWith("Accusations: Signature verification failed");
+      ).to.be.revertedWithCustomError(
+        accusation,
+        "SignatureVerificationFailed"
+      );
     });
 
     it("reverts when BClaims is invalid without transactions", async function () {
@@ -254,8 +272,9 @@ describe("AccusationInvalidTxConsumption: Tests AccusationInvalidTxConsumption m
           txInPreImage,
           proofs
         )
-      ).to.be.revertedWith(
-        "Accusations: The accused proposal doesn't have any transaction!"
+      ).to.be.revertedWithCustomError(
+        accusation,
+        "NoTransactionInAccusedProposal"
       );
     });
   });

@@ -5,16 +5,17 @@ import (
 	"errors"
 	"sync"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/layer1"
 	"github.com/alicenet/alicenet/layer1/transaction"
-	"github.com/sirupsen/logrus"
 )
 
 type BaseTask struct {
 	mutex sync.RWMutex
 	// Unique Id of the task
-	Id string `json:"id"`
+	ID string `json:"id"`
 	// Task name/type
 	Name string `json:"name"`
 	// If this task can be executed in parallel with other tasks of the same type/name
@@ -78,7 +79,7 @@ func (bt *BaseTask) Initialize(ctx context.Context, cancelFunc context.CancelFun
 		return errors.New("trying to initialize task twice")
 	}
 
-	bt.Id = id
+	bt.ID = id
 	bt.Name = name
 	bt.Start = start
 	bt.End = end
@@ -106,7 +107,7 @@ func (bt *BaseTask) Initialize(ctx context.Context, cancelFunc context.CancelFun
 func (bt *BaseTask) GetId() string {
 	bt.mutex.RLock()
 	defer bt.mutex.RUnlock()
-	return bt.Id
+	return bt.ID
 }
 
 // GetStart gets the start date of a task. Returns 0 if a task does not have a
@@ -211,7 +212,7 @@ func (bt *BaseTask) Finish(err error) {
 	bt.mutex.Lock()
 	defer bt.mutex.Unlock()
 	if err != nil {
-		if bt.wasKilled {
+		if errors.Is(err, context.Canceled) {
 			bt.logger.WithError(err).Debug("cancelling task execution, task was killed")
 		} else {
 			bt.logger.WithError(err).Error("got an error when executing task")
@@ -220,6 +221,14 @@ func (bt *BaseTask) Finish(err error) {
 		bt.logger.Info("task is done")
 	}
 	if bt.taskResponseChan != nil {
-		bt.taskResponseChan.Add(bt.Id, err)
+		bt.taskResponseChan.Add(bt.ID, err)
 	}
+}
+
+func (bt *BaseTask) Lock() {
+	bt.mutex.Lock()
+}
+
+func (bt *BaseTask) Unlock() {
+	bt.mutex.Unlock()
 }

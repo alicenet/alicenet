@@ -3,6 +3,7 @@ package validator
 import (
 	"context"
 	"fmt"
+	"math/big"
 	"os"
 	"os/signal"
 	"syscall"
@@ -14,6 +15,7 @@ import (
 
 	"github.com/alicenet/alicenet/application"
 	"github.com/alicenet/alicenet/application/deposit"
+	"github.com/alicenet/alicenet/bridge/bindings"
 	"github.com/alicenet/alicenet/cmd/utils"
 	"github.com/alicenet/alicenet/config"
 	"github.com/alicenet/alicenet/consensus"
@@ -38,19 +40,21 @@ import (
 	"github.com/alicenet/alicenet/peering"
 	"github.com/alicenet/alicenet/proto"
 	"github.com/alicenet/alicenet/status"
-	mnutils "github.com/alicenet/alicenet/utils"
+	aUtils "github.com/alicenet/alicenet/utils"
 	"github.com/dgraph-io/badger/v2"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
-// Command is the cobra.Command specifically for running as a node
+// Command is the cobra.Command specifically for running as a node.
 var Command = cobra.Command{
 	Use:   "validator",
 	Short: "Starts a node",
 	Long:  "Runs a AliceNet node in mining or non-mining mode",
-	Run:   validatorNode}
+	Run:   validatorNode,
+}
 
 func initEthereumConnection(logger *logrus.Logger) (layer1.Client, layer1.AllSmartContracts, *mncrypto.Secp256k1Signer, []byte) {
 	// Ethereum connection setup
@@ -64,7 +68,6 @@ func initEthereumConnection(logger *logrus.Logger) (layer1.Client, layer1.AllSma
 		constants.EthereumFinalityDelay,
 		config.Configuration.Ethereum.TxMaxGasFeeAllowedInGwei,
 		config.Configuration.Ethereum.EndpointMinimumPeers)
-
 	if err != nil {
 		logger.Fatalf("NewEthereumEndpoint(...) failed: %v", err)
 		panic(err)
@@ -96,7 +99,7 @@ func initEthereumConnection(logger *logrus.Logger) (layer1.Client, layer1.AllSma
 // Setup the peer manager:
 // Peer manager owns the raw TCP connections of the p2p system
 // Runs the gossip protocol
-// Provides functionality to access methods on a remote peer (validators, miners, those who care about voting and consensus)
+// Provides functionality to access methods on a remote peer (validators, miners, those who care about voting and consensus).
 func initPeerManager(consGossipHandlers *gossip.Handlers, consReqHandler *request.Handler) *peering.PeerManager {
 	p2pDispatch := proto.NewP2PDispatch()
 
@@ -133,7 +136,7 @@ func initPeerManager(consGossipHandlers *gossip.Handlers, consReqHandler *reques
 	return peerManager
 }
 
-// Setup the localstate RPC server, a more REST-like API, used by e.g. wallet users (or anything that's not a node)
+// Setup the localstate RPC server, a more REST-like API, used by e.g. wallet users (or anything that's not a node).
 func initLocalStateServer(localStateHandler *localrpc.Handlers) *localrpc.Handler {
 	localStateDispatch := proto.NewLocalStateDispatch()
 	localStateServer, err := localrpc.NewStateServerHandler(
@@ -165,7 +168,7 @@ func initLocalStateServer(localStateHandler *localrpc.Handlers) *localrpc.Handle
 }
 
 func initDatabase(ctx context.Context, path string, inMemory bool) *badger.DB {
-	db, err := mnutils.OpenBadger(ctx.Done(), path, inMemory)
+	db, err := aUtils.OpenBadger(ctx.Done(), path, inMemory)
 	if err != nil {
 		panic(err)
 	}
@@ -173,7 +176,6 @@ func initDatabase(ctx context.Context, path string, inMemory bool) *badger.DB {
 }
 
 func validatorNode(cmd *cobra.Command, args []string) {
-
 	// setup logger for program assembly operations
 	logger := logging.GetLogger(cmd.Name())
 	logger.Infof("Starting node with args %v", args)
@@ -190,6 +192,34 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	eth, contractsHandler, secp256k1Signer, publicKey := initEthereumConnection(logger)
 	defer eth.Close()
 
+	currentEpoch, latestVersion, err := getCurrentEpochAndCanonicalVersion(nodeCtx, eth, contractsHandler, logger)
+	if err != nil {
+		panic(err)
+	}
+
+	newMajorIsGreater, _, _, localVersion, err := aUtils.CompareCanonicalVersion(latestVersion)
+	if err != nil {
+		panic(err)
+	}
+
+	logger.Infof(
+		"Local AliceNet Node Version %d.%d.%d",
+		localVersion.Major,
+		localVersion.Minor,
+		localVersion.Patch,
+	)
+	if newMajorIsGreater && currentEpoch >= latestVersion.ExecutionEpoch {
+		logger.Fatalf(
+			"CRITICAL: Exiting! Your Node Version %d.%d.%d is lower than the latest required version %d.%d.%d! Please update your node!",
+			localVersion.Major,
+			localVersion.Minor,
+			localVersion.Patch,
+			latestVersion.Major,
+			latestVersion.Minor,
+			latestVersion.Patch,
+		)
+	}
+
 	// Initialize consensus db: stores all state the consensus mechanism requires to work
 	rawConsensusDb := initDatabase(nodeCtx, config.Configuration.Chain.StateDbPath, config.Configuration.Chain.StateDbInMemory)
 	defer rawConsensusDb.Close()
@@ -204,7 +234,7 @@ func validatorNode(cmd *cobra.Command, args []string) {
 
 	// giving some time to services finish their work on the databases to avoid
 	// panic when closing the databases
-	defer func() { <-time.After(3 * time.Second) }()
+	defer func() { <-time.After(15 * time.Second) }()
 
 	/////////////////////////////////////////////////////////////////////////////
 	// INITIALIZE ALL SERVICE OBJECTS ///////////////////////////////////////////
@@ -288,7 +318,7 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	}
 
 	monitorInterval := config.Configuration.Monitor.Interval
-	mon, err := monitor.NewMonitor(consDB, monDB, consAdminHandlers, appDepositHandler, eth, contractsHandler, contractsHandler.EthereumContracts().GetAllAddresses(), monitorInterval, uint64(batchSize), tasksHandler)
+	mon, err := monitor.NewMonitor(consDB, monDB, consAdminHandlers, appDepositHandler, eth, contractsHandler, contractsHandler.EthereumContracts().GetAllAddresses(), monitorInterval, uint64(batchSize), uint32(config.Configuration.Chain.ID), tasksHandler)
 	if err != nil {
 		panic(err)
 	}
@@ -361,6 +391,7 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	select {
 	case <-peerManager.CloseChan():
 	case <-consSync.CloseChan():
+	case <-mon.CloseChan():
 	case <-signals:
 	}
 	go countSignals(logger, 5, signals)
@@ -370,7 +401,7 @@ func validatorNode(cmd *cobra.Command, args []string) {
 }
 
 // countSignals will cause a forced exit on repeated Ctrl+C commands
-// this is a convenient escape from a deadlock during shutdown
+// this is a convenient escape from a deadlock during shutdown.
 func countSignals(logger *logrus.Logger, num int, c chan os.Signal) {
 	<-c
 	for count := 0; count < num; count++ {
@@ -378,4 +409,62 @@ func countSignals(logger *logrus.Logger, num int, c chan os.Signal) {
 		<-c
 	}
 	os.Exit(1)
+}
+
+func getCurrentEpochAndCanonicalVersion(ctx context.Context, eth layer1.Client, contractsHandler layer1.AllSmartContracts, logger *logrus.Logger) (uint32, bindings.CanonicalVersion, error) {
+	retryCount := 5
+	retryDelay := 1 * time.Second
+
+	logEntry := logger.WithField("Method", "getCurrentEpochAndCanonicalVersion")
+
+	var callOpts *bind.CallOpts
+	var err error
+	var latestVersion bindings.CanonicalVersion
+	var currentEpoch *big.Int
+	for i := 0; i < retryCount; i++ {
+		callOpts, err = eth.GetCallOpts(ctx, eth.GetDefaultAccount())
+		if err != nil {
+			logEntry.Errorf("Received and error during GetCallOpts: %v", err)
+			<-time.After(retryDelay)
+			continue
+		}
+		break
+	}
+	if err != nil {
+		return 0, latestVersion, err
+	}
+
+	for i := 0; i < retryCount; i++ {
+		latestVersion, err = contractsHandler.EthereumContracts().Dynamics().GetLatestAliceNetVersion(callOpts)
+		if err != nil {
+			logEntry.Errorf("Received and error during GetLatestAliceNetVersion: %v", err)
+			<-time.After(retryDelay)
+			continue
+		}
+		break
+	}
+	if err != nil {
+		return 0, latestVersion, err
+	}
+	logEntry.Infof(
+		"Current Canonical AliceNet Node Version %d.%d.%d",
+		latestVersion.Major,
+		latestVersion.Minor,
+		latestVersion.Patch,
+	)
+
+	for i := 0; i < retryCount; i++ {
+		currentEpoch, err = contractsHandler.EthereumContracts().Snapshots().GetEpoch(callOpts)
+		if err != nil {
+			logEntry.Errorf("Received and error during GetEpoch: %v", err)
+			<-time.After(retryDelay)
+			continue
+		}
+		break
+	}
+	if err != nil {
+		return 0, latestVersion, err
+	}
+
+	return uint32(currentEpoch.Uint64()), latestVersion, err
 }

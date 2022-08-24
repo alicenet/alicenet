@@ -2,6 +2,7 @@ package objs
 
 import (
 	capnp "github.com/MadBase/go-capnproto2/v2"
+
 	mdefs "github.com/alicenet/alicenet/consensus/objs/capn"
 	"github.com/alicenet/alicenet/consensus/objs/prevotenil"
 	"github.com/alicenet/alicenet/crypto"
@@ -19,7 +20,7 @@ type PreVoteNil struct {
 }
 
 // UnmarshalBinary takes a byte slice and returns the corresponding
-// PreVoteNil object
+// PreVoteNil object.
 func (b *PreVoteNil) UnmarshalBinary(data []byte) error {
 	if b == nil {
 		return errorz.ErrInvalid{}.New("PreVoteNil.UnmarshalBinary; pvn not initialized")
@@ -32,7 +33,7 @@ func (b *PreVoteNil) UnmarshalBinary(data []byte) error {
 	return b.UnmarshalCapn(bh)
 }
 
-// UnmarshalCapn unmarshals the capnproto definition of the object
+// UnmarshalCapn unmarshals the capnproto definition of the object.
 func (b *PreVoteNil) UnmarshalCapn(bh mdefs.PreVoteNil) error {
 	if b == nil {
 		return errorz.ErrInvalid{}.New("PreVoteNil.UnmarshalCapn; pvn not initialized")
@@ -51,7 +52,7 @@ func (b *PreVoteNil) UnmarshalCapn(bh mdefs.PreVoteNil) error {
 }
 
 // MarshalBinary takes the PreVoteNil object and returns the canonical
-// byte slice
+// byte slice.
 func (b *PreVoteNil) MarshalBinary() ([]byte, error) {
 	if b == nil {
 		return nil, errorz.ErrInvalid{}.New("PreVoteNil.MarshalBinary; pvn not initialized")
@@ -64,7 +65,7 @@ func (b *PreVoteNil) MarshalBinary() ([]byte, error) {
 	return prevotenil.Marshal(bh)
 }
 
-// MarshalCapn marshals the object into its capnproto definition
+// MarshalCapn marshals the object into its capnproto definition.
 func (b *PreVoteNil) MarshalCapn(seg *capnp.Segment) (mdefs.PreVoteNil, error) {
 	if b == nil {
 		return mdefs.PreVoteNil{}, errorz.ErrInvalid{}.New("PreVoteNil.MarshalCapn; pvn not initialized")

@@ -44,10 +44,10 @@ type IBToken interface {
 	IBTokenFilterer
 }
 
-type IBTokenErrors interface {
-	IBTokenErrorsCaller
-	IBTokenErrorsTransactor
-	IBTokenErrorsFilterer
+type IDynamics interface {
+	IDynamicsCaller
+	IDynamicsTransactor
+	IDynamicsFilterer
 }
 
 type IETHDKG interface {

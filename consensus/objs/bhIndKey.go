@@ -13,7 +13,7 @@ type BlockHeaderHashIndexKey struct {
 }
 
 // UnmarshalBinary takes a byte slice and returns the corresponding
-// BlockHeaderHashIndexKey object
+// BlockHeaderHashIndexKey object.
 func (b *BlockHeaderHashIndexKey) UnmarshalBinary(data []byte) error {
 	if b == nil {
 		return errorz.ErrInvalid{}.New("BlockHeaderHashIndexKey.UnmarshalBinary; bhhik not initialized")
@@ -27,7 +27,7 @@ func (b *BlockHeaderHashIndexKey) UnmarshalBinary(data []byte) error {
 }
 
 // MarshalBinary takes the BlockHeaderHashIndexKey object and returns
-// the canonical byte slice
+// the canonical byte slice.
 func (b *BlockHeaderHashIndexKey) MarshalBinary() ([]byte, error) {
 	if b == nil {
 		return nil, errorz.ErrInvalid{}.New("BlockHeaderHashIndexKey.MarshalBinary; bhhik not initialized")

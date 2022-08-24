@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT-open-group
-pragma solidity ^0.8.11;
+pragma solidity ^0.8.16;
 
 import "contracts/libraries/math/CryptoLibrary.sol";
 import "contracts/utils/AtomicCounter.sol";
@@ -10,7 +10,7 @@ import "contracts/interfaces/IProxy.sol";
 import "contracts/libraries/ethdkg/ETHDKGStorage.sol";
 import "contracts/utils/ETHDKGUtils.sol";
 import "contracts/utils/ImmutableAuth.sol";
-import {ETHDKGErrorCodes} from "contracts/libraries/errorCodes/ETHDKGErrorCodes.sol";
+import "contracts/libraries/errors/ETHDKGErrors.sol";
 
 contract ETHDKGMock is
     ETHDKGStorage,
@@ -24,10 +24,9 @@ contract ETHDKGMock is
     address internal immutable _ethdkgPhases;
 
     modifier onlyValidator() {
-        require(
-            IValidatorPool(_validatorPoolAddress()).isValidator(msg.sender),
-            string(abi.encodePacked(ETHDKGErrorCodes.ETHDKG_ONLY_VALIDATORS_ALLOWED))
-        );
+        if (!IValidatorPool(_validatorPoolAddress()).isValidator(msg.sender)) {
+            revert ETHDKGErrors.OnlyValidatorsAllowed(msg.sender);
+        }
         _;
     }
 
@@ -69,19 +68,25 @@ contract ETHDKGMock is
         _confirmationLength = uint16(confirmationLength_);
     }
 
+    function reinitialize(uint256 phaseLength_, uint256 confirmationLength_)
+        public
+        reinitializer(2)
+    {
+        _phaseLength = uint16(phaseLength_);
+        _confirmationLength = uint16(confirmationLength_);
+    }
+
     function setPhaseLength(uint16 phaseLength_) public {
-        require(
-            !_isETHDKGRunning(),
-            string(abi.encodePacked(ETHDKGErrorCodes.ETHDKG_VARIABLE_CANNOT_BE_SET_WHILE_RUNNING))
-        );
+        if (_isETHDKGRunning()) {
+            revert ETHDKGErrors.VariableNotSettableWhileETHDKGRunning();
+        }
         _phaseLength = phaseLength_;
     }
 
     function setConfirmationLength(uint16 confirmationLength_) public {
-        require(
-            !_isETHDKGRunning(),
-            string(abi.encodePacked(ETHDKGErrorCodes.ETHDKG_VARIABLE_CANNOT_BE_SET_WHILE_RUNNING))
-        );
+        if (_isETHDKGRunning()) {
+            revert ETHDKGErrors.VariableNotSettableWhileETHDKGRunning();
+        }
         _confirmationLength = confirmationLength_;
     }
 
@@ -291,12 +296,14 @@ contract ETHDKGMock is
         return participants;
     }
 
-    function tryGetParticipantIndex(address participant) public view returns (bool, uint256) {
-        Participant memory participantData = _participants[participant];
-        if (participantData.nonce == _nonce && _nonce != 0) {
-            return (true, _participants[participant].index);
+    function getLastRoundParticipantIndex(address participant) public view returns (uint256) {
+        uint256 participantDataIndex = _participants[participant].index;
+        uint256 participantDataNonce = _participants[participant].nonce;
+        uint256 nonce = _nonce;
+        if (nonce == 0 || participantDataNonce != nonce) {
+            revert ETHDKGErrors.ParticipantNotFoundInLastRound(participant);
         }
-        return (false, 0);
+        return participantDataIndex;
     }
 
     function getMasterPublicKey() public view returns (uint256[4] memory) {
@@ -362,10 +369,9 @@ contract ETHDKGMock is
     function _initializeETHDKG() internal {
         //todo: should we reward ppl here?
         uint256 numberValidators = IValidatorPool(_validatorPoolAddress()).getValidatorsCount();
-        require(
-            numberValidators >= _MIN_VALIDATORS,
-            string(abi.encodePacked(ETHDKGErrorCodes.ETHDKG_MIN_VALIDATORS_NOT_MET))
-        );
+        if (numberValidators < _MIN_VALIDATORS) {
+            revert ETHDKGErrors.MinimumValidatorsNotMet(numberValidators);
+        }
 
         _phaseStartBlock = uint64(block.number);
         _nonce++;

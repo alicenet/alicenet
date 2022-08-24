@@ -6,10 +6,10 @@ import (
 	"context"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/alicenet/alicenet/layer1/tests"
 	"github.com/alicenet/alicenet/layer1/transaction"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestDisputeMissingShareDistributionTask_Group_1_ShouldAccuseOneValidatorWhoDidNotDistributeShares(t *testing.T) {
@@ -36,8 +36,8 @@ func TestDisputeMissingShareDistributionTask_Group_1_ShouldAccuseOneValidatorWho
 		assert.True(t, shouldExecute)
 
 		txn, taskErr := task.Execute(ctx)
-		//after the first accusation the ethereum contracts will return that
-		//the validator is already accused
+		// after the first accusation the ethereum contracts will return that
+		// the validator is already accused
 		if idx == 0 {
 			assert.Nil(t, taskErr)
 			assert.NotNil(t, txn)
@@ -86,8 +86,8 @@ func TestDisputeMissingShareDistributionTask_Group_1_ShouldAccuseAllValidatorsWh
 		assert.True(t, shouldExecute)
 
 		txn, taskErr := task.Execute(ctx)
-		//after the first accusation the ethereum contracts will return that
-		//the validator is already accused
+		// after the first accusation the ethereum contracts will return that
+		// the validator is already accused
 		if idx == 0 {
 			assert.Nil(t, taskErr)
 			assert.NotNil(t, txn)

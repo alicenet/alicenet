@@ -1,15 +1,17 @@
 package lstate
 
 import (
+	"testing"
+
+	"github.com/dgraph-io/badger/v2"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/alicenet/alicenet/consensus/objs"
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/crypto"
-	"github.com/dgraph-io/badger/v2"
-	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
-//Not IsCurrentValidator
+// Not IsCurrentValidator.
 func TestStateChngLocal_doPendingProposalStep_Ok1(t *testing.T) {
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
@@ -28,7 +30,7 @@ func TestStateChngLocal_doPendingProposalStep_Ok1(t *testing.T) {
 	})
 }
 
-//Deadblock round
+// Deadblock round.
 func TestStateChngLocal_doPendingProposalStep_Ok2(t *testing.T) {
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
@@ -125,7 +127,7 @@ func TestStateChngLocal_doPendingProposalStep_Error1(t *testing.T) {
 	})
 }
 
-//Not IsCurrentValidator
+// Not IsCurrentValidator.
 func TestStateChngLocal_doPendingPreVoteStep_Ok1(t *testing.T) {
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
@@ -144,7 +146,7 @@ func TestStateChngLocal_doPendingPreVoteStep_Ok1(t *testing.T) {
 	})
 }
 
-//Deadblock round
+// Deadblock round.
 func TestStateChngLocal_doPendingPreVoteStep_Error1(t *testing.T) {
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
@@ -163,7 +165,7 @@ func TestStateChngLocal_doPendingPreVoteStep_Error1(t *testing.T) {
 	})
 }
 
-//Deadblock round
+// Deadblock round.
 func TestStateChngLocal_doPendingPreVoteStep_Error2(t *testing.T) {
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
@@ -187,7 +189,7 @@ func TestStateChngLocal_doPendingPreVoteStep_Error2(t *testing.T) {
 	})
 }
 
-//invalid proposal
+// invalid proposal.
 func TestStateChngLocal_doPendingPreVoteStep_Error3(t *testing.T) {
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
@@ -259,7 +261,7 @@ func TestStateChngLocal_doPendingPreVoteStep_Error5(t *testing.T) {
 	})
 }
 
-//Not IsCurrentValidator
+// Not IsCurrentValidator.
 func TestStateChngLocal_doPreVoteStep_Ok1(t *testing.T) {
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
@@ -312,7 +314,7 @@ func TestStateChngLocal_doPreVoteStep_Error1(t *testing.T) {
 	})
 }
 
-//Not IsCurrentValidator
+// Not IsCurrentValidator.
 func TestStateChngLocal_doPreVoteNilStep_Ok1(t *testing.T) {
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
@@ -438,7 +440,7 @@ func TestStateChngLocal_doPreVoteNilStep_Error3(t *testing.T) {
 	})
 }
 
-//Not IsCurrentValidator
+// Not IsCurrentValidator.
 func TestStateChngLocal_doPendingPreCommit_Ok1(t *testing.T) {
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
@@ -573,7 +575,7 @@ func TestStateChngLocal_doPendingPreCommit_Error3(t *testing.T) {
 	})
 }
 
-//Not IsCurrentValidator
+// Not IsCurrentValidator.
 func TestStateChngLocal_doPreCommitStep_Ok1(t *testing.T) {
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
@@ -714,7 +716,7 @@ func TestStateChngLocal_doPreCommitStep_Error3(t *testing.T) {
 	})
 }
 
-//Not IsCurrentValidator
+// Not IsCurrentValidator.
 func TestStateChngLocal_doPreCommitNilStep_Ok1(t *testing.T) {
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
@@ -889,7 +891,7 @@ func TestStateChngLocal_doPreCommitNilStep_Error4(t *testing.T) {
 	})
 }
 
-//Not IsCurrentValidator
+// Not IsCurrentValidator.
 func TestStateChngLocal_doPendingNext_Ok1(t *testing.T) {
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)
@@ -1100,7 +1102,7 @@ func TestStateChngLocal_doPendingNext_Error5(t *testing.T) {
 	})
 }
 
-//Not IsCurrentValidator
+// Not IsCurrentValidator.
 func TestStateChngLocal_doNextRoundStep_Ok1(t *testing.T) {
 	engine := initEngine(t, nil)
 	os := createOwnState(t, 1)

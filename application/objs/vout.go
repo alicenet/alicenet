@@ -74,13 +74,6 @@ func (vout Vout) ValidateTxOutIdx() error {
 				return err
 			}
 			txOutIdx = vsTxOutIdx
-		case utxo.HasAtomicSwap():
-			as, _ := utxo.AtomicSwap()
-			asTxOutIdx, err := as.TxOutIdx()
-			if err != nil {
-				return err
-			}
-			txOutIdx = asTxOutIdx
 		default:
 			return errorz.ErrInvalid{}.New("vout.validateTxOutIdx; bad txOutIdx: Invalid Type")
 		}

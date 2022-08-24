@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT-open-group
-pragma solidity ^0.8.11;
+pragma solidity ^0.8.16;
 
 import "contracts/interfaces/IETHDKG.sol";
 import "contracts/interfaces/ISnapshots.sol";
@@ -9,7 +9,7 @@ import "contracts/interfaces/IStakingNFT.sol";
 import "contracts/utils/CustomEnumerableMaps.sol";
 import "contracts/utils/DeterministicAddress.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import {ValidatorPoolErrorCodes} from "contracts/libraries/errorCodes/ValidatorPoolErrorCodes.sol";
+import "contracts/libraries/errors/ValidatorPoolErrors.sol";
 
 contract ValidatorPoolMock is
     Initializable,
@@ -21,10 +21,11 @@ contract ValidatorPoolMock is
     ImmutableAToken
 {
     using CustomEnumerableMaps for ValidatorDataMap;
+    error OnlyAdminAllowed();
 
     uint256 public constant POSITION_LOCK_PERIOD = 3; // Actual is 172800
 
-    uint256 public constant MAX_INTERVAL_WITHOUT_SNAPSHOTS = 0; // Actual is 8192
+    uint256 internal _maxIntervalWithoutSnapshots = 0; // Actual is 8192
 
     uint256 internal _tokenIDCounter;
     //IETHDKG immutable internal _ethdkg;
@@ -40,7 +41,9 @@ contract ValidatorPoolMock is
     uint256 internal _stakeAmount;
 
     modifier onlyAdmin() {
-        require(msg.sender == _admin, "Validators: requires admin privileges");
+        if (msg.sender != _admin) {
+            revert OnlyAdminAllowed();
+        }
         _;
     }
 
@@ -65,14 +68,11 @@ contract ValidatorPoolMock is
     function setDisputerReward(uint256 disputerReward_) public {}
 
     function pauseConsensusOnArbitraryHeight(uint256 aliceNetHeight_) public onlyFactory {
-        require(
-            block.number >
-                ISnapshots(_snapshotsAddress()).getCommittedHeightFromLatestSnapshot() +
-                    MAX_INTERVAL_WITHOUT_SNAPSHOTS,
-            string(
-                abi.encodePacked(ValidatorPoolErrorCodes.VALIDATORPOOL_MIN_BLOCK_INTERVAL_NOT_MET)
-            )
-        );
+        uint256 targetBlockNumber = ISnapshots(_snapshotsAddress())
+            .getCommittedHeightFromLatestSnapshot() + _maxIntervalWithoutSnapshots;
+        if (block.number <= targetBlockNumber) {
+            revert ValidatorPoolErrors.MinimumBlockIntervalNotMet(block.number, targetBlockNumber);
+        }
         _isConsensusRunning = false;
         IETHDKG(_ethdkgAddress()).setCustomAliceNetHeight(aliceNetHeight_);
     }
@@ -154,6 +154,13 @@ contract ValidatorPoolMock is
         _isConsensusRunning = isRunning;
     }
 
+    function setMaxIntervalWithoutSnapshots(uint256 maxIntervalWithoutSnapshots) public {
+        if (maxIntervalWithoutSnapshots == 0) {
+            revert ValidatorPoolErrors.MaxIntervalWithoutSnapshotsMustBeNonZero();
+        }
+        _maxIntervalWithoutSnapshots = maxIntervalWithoutSnapshots;
+    }
+
     function setStakeAmount(uint256 stakeAmount_) public {}
 
     function setSnapshot(address _address) public {}
@@ -177,15 +184,22 @@ contract ValidatorPoolMock is
         return _stakeAmount;
     }
 
+    function getMaxIntervalWithoutSnapshots()
+        public
+        view
+        returns (uint256 maxIntervalWithoutSnapshots)
+    {
+        return _maxIntervalWithoutSnapshots;
+    }
+
     function getValidatorsCount() public view returns (uint256) {
         return _validators.length();
     }
 
     function getValidator(uint256 index_) public view returns (address) {
-        require(
-            index_ < _validators.length(),
-            string(abi.encodePacked(ValidatorPoolErrorCodes.VALIDATORPOOL_INVALID_INDEX))
-        );
+        if (index_ >= _validators.length()) {
+            revert ValidatorPoolErrors.InvalidIndex(index_);
+        }
         return _validators.at(index_)._address;
     }
 

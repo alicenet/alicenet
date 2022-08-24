@@ -7,6 +7,8 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
@@ -15,10 +17,9 @@ import (
 	"github.com/alicenet/alicenet/logging"
 	"github.com/alicenet/alicenet/test/mocks"
 	"github.com/alicenet/alicenet/utils"
-	"github.com/stretchr/testify/assert"
 )
 
-//We test to ensure that everything behaves correctly.
+// We test to ensure that everything behaves correctly.
 func TestMPKSubmission_Group_1_GoodAllValid(t *testing.T) {
 	numValidators := 4
 	fixture := setupEthereum(t, numValidators)
@@ -30,7 +31,6 @@ func TestMPKSubmission_Group_1_GoodAllValid(t *testing.T) {
 
 	// Do MPK Submission task
 	for idx := 0; idx < numValidators; idx++ {
-
 		mpkSubmissionTask := suite.MpkSubmissionTasks[idx]
 		err := mpkSubmissionTask.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "MpkSubmissionTasks", "tak-id", mpkSubmissionTask.Start, mpkSubmissionTask.End, false, nil, nil)
 		assert.Nil(t, err)
@@ -141,7 +141,6 @@ func TestMPKSubmission_Group_1_Bad2(t *testing.T) {
 	taskErr := task.Prepare(context.Background())
 	assert.NotNil(t, taskErr)
 	assert.False(t, taskErr.IsRecoverable())
-
 }
 
 // We force an error.

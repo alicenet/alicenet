@@ -10,7 +10,7 @@ abigen --abi bindings/bindings-artifacts/AccusationInvalidTxConsumption.json --p
 abigen --abi bindings/bindings-artifacts/AccusationMultipleProposal.json --pkg bindings --type AccusationMultipleProposal --out bindings/AccusationMultipleProposal.go
 abigen --abi bindings/bindings-artifacts/AliceNetFactory.json --pkg bindings --type AliceNetFactory --out bindings/AliceNetFactory.go
 abigen --abi bindings/bindings-artifacts/BToken.json --pkg bindings --type BToken --out bindings/BToken.go
-abigen --abi bindings/bindings-artifacts/BTokenErrors.json --pkg bindings --type BTokenErrors --out bindings/BTokenErrors.go
+abigen --abi bindings/bindings-artifacts/Dynamics.json --pkg bindings --type Dynamics --out bindings/Dynamics.go
 abigen --abi bindings/bindings-artifacts/ETHDKG.json --pkg bindings --type ETHDKG --out bindings/ETHDKG.go
 abigen --abi bindings/bindings-artifacts/ETHDKGErrorCodes.json --pkg bindings --type ETHDKGErrorCodes --out bindings/ETHDKGErrorCodes.go
 abigen --abi bindings/bindings-artifacts/Governance.json --pkg bindings --type Governance --out bindings/Governance.go

@@ -78,7 +78,6 @@ func (registry *TypeRegistry) WrapInstance(t interface{}) (*InstanceWrapper, err
 }
 
 func (registry *TypeRegistry) UnwrapInstance(wrapper *InstanceWrapper) (interface{}, error) {
-
 	tipe, present := registry.LookupType(wrapper.NameType)
 	if !present {
 		return nil, ErrUnknownName
@@ -102,7 +101,7 @@ func GetNameType(t interface{}) (string, reflect.Type) {
 	return tipe.String(), tipe
 }
 
-func (registry *TypeRegistry) GetNameTypeIsPresent(t interface{}) (string, reflect.Type, bool) {
+func (registry *TypeRegistry) NameTypeIsPresent(t any) (string, reflect.Type, bool) {
 	name, tipe := GetNameType(t)
 
 	_, present := registry.lookupName(tipe)

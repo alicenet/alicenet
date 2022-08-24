@@ -64,8 +64,8 @@ func Test_TaskExecutor_HappyPath(t *testing.T) {
 	receiptResponse := mocks.NewMockReceiptResponse()
 	receiptResponse.IsReadyFunc.SetDefaultReturn(true)
 	receiptResponse.GetReceiptBlockingFunc.SetDefaultReturn(receipt, nil)
-
-	txWatcher.SubscribeFunc.SetDefaultReturn(receiptResponse, nil)
+	txWatcher.SubscribeFunc.PushReturn(nil, errors.New("subscribe error"))
+	txWatcher.SubscribeFunc.PushReturn(receiptResponse, nil)
 
 	client.GetTransactionReceiptFunc.SetDefaultReturn(receipt, nil)
 
@@ -86,7 +86,7 @@ func Test_TaskExecutor_HappyPath(t *testing.T) {
 	executor.handleTaskExecution(mainCtx, task, "", "123", 1, 10, false, nil, db, executor.logger, client, mocks.NewMockAllSmartContracts(), taskRespChan)
 
 	mockrequire.CalledOnce(t, task.PrepareFunc)
-	mockrequire.CalledOnce(t, task.ExecuteFunc)
+	mockrequire.CalledN(t, task.ExecuteFunc, 2)
 	mockrequire.CalledOnceWith(t, task.FinishFunc, mockrequire.Values(nil))
 	assert.Emptyf(t, executor.TxsBackup, "Expected transactions to be empty")
 }
@@ -449,4 +449,128 @@ func Test_TaskExecutor_MainContextKilled(t *testing.T) {
 
 	mockrequire.CalledOnce(t, task.InitializeFunc)
 	mockrequire.CalledOnceWith(t, task.FinishFunc, mockrequire.Values(context.Canceled))
+}
+
+func Test_TaskExecutor_ShouldExecuteError(t *testing.T) {
+	executor, client, db, taskRespChan, _ := getTaskExecutor(t)
+
+	taskId := "123"
+	task := taskMocks.NewMockTask()
+	task.GetIdFunc.SetDefaultReturn(taskId)
+	task.GetLoggerFunc.SetDefaultReturn(executor.logger)
+	err := tasks.NewTaskErr("should execute error", false)
+	task.InitializeFunc.SetDefaultReturn(nil)
+	task.ShouldExecuteFunc.SetDefaultReturn(false, err)
+
+	mainCtx := context.Background()
+	executor.handleTaskExecution(mainCtx, task, "", "123", 1, 10, false, nil, db, executor.logger, client, mocks.NewMockAllSmartContracts(), taskRespChan)
+
+	mockrequire.CalledOnce(t, task.InitializeFunc)
+	mockrequire.CalledOnce(t, task.ShouldExecuteFunc)
+	mockrequire.CalledOnceWith(t, task.FinishFunc, mockrequire.Values(err))
+}
+
+func Test_TaskExecutor_ShouldExecuteFalse(t *testing.T) {
+	executor, client, db, taskRespChan, _ := getTaskExecutor(t)
+
+	taskId := "123"
+	task := taskMocks.NewMockTask()
+	task.GetIdFunc.SetDefaultReturn(taskId)
+	task.GetLoggerFunc.SetDefaultReturn(executor.logger)
+	task.InitializeFunc.SetDefaultReturn(nil)
+	task.ShouldExecuteFunc.SetDefaultReturn(false, nil)
+
+	mainCtx := context.Background()
+	executor.handleTaskExecution(mainCtx, task, "", "123", 1, 10, false, nil, db, executor.logger, client, mocks.NewMockAllSmartContracts(), taskRespChan)
+
+	mockrequire.CalledOnce(t, task.InitializeFunc)
+	mockrequire.CalledOnce(t, task.ShouldExecuteFunc)
+	mockrequire.CalledOnceWith(t, task.FinishFunc, mockrequire.Values(nil))
+}
+
+func Test_TaskExecutor_ExecuteWithoutTxn(t *testing.T) {
+	executor, client, db, taskRespChan, _ := getTaskExecutor(t)
+
+	taskId := "123"
+	task := taskMocks.NewMockTask()
+	task.GetIdFunc.SetDefaultReturn(taskId)
+	task.GetLoggerFunc.SetDefaultReturn(executor.logger)
+	task.InitializeFunc.SetDefaultReturn(nil)
+	task.ShouldExecuteFunc.SetDefaultReturn(true, nil)
+	task.ExecuteFunc.SetDefaultReturn(nil, nil)
+
+	mainCtx := context.Background()
+	executor.handleTaskExecution(mainCtx, task, "", "123", 1, 10, false, nil, db, executor.logger, client, mocks.NewMockAllSmartContracts(), taskRespChan)
+
+	mockrequire.CalledOnce(t, task.InitializeFunc)
+	mockrequire.CalledOnce(t, task.ShouldExecuteFunc)
+	mockrequire.CalledOnce(t, task.ExecuteFunc)
+	mockrequire.CalledOnceWith(t, task.FinishFunc, mockrequire.Values(nil))
+}
+
+func Test_TaskExecutor_HasToExecuteError(t *testing.T) {
+	executor, client, db, taskRespChan, txWatcher := getTaskExecutor(t)
+
+	receipt := &types.Receipt{
+		Status:      types.ReceiptStatusSuccessful,
+		BlockNumber: big.NewInt(20),
+	}
+
+	receiptResponse := mocks.NewMockReceiptResponse()
+	receiptResponse.IsReadyFunc.PushReturn(false)
+	receiptResponse.IsReadyFunc.PushReturn(true)
+	receiptResponse.GetReceiptBlockingFunc.SetDefaultReturn(receipt, nil)
+	txWatcher.SubscribeFunc.SetDefaultReturn(receiptResponse, nil)
+
+	client.GetTransactionReceiptFunc.SetDefaultReturn(receipt, nil)
+
+	task := taskMocks.NewMockTask()
+	task.PrepareFunc.SetDefaultReturn(nil)
+	txn := types.NewTx(&types.LegacyTx{
+		Nonce:    1,
+		Value:    big.NewInt(1),
+		Gas:      1,
+		GasPrice: big.NewInt(1),
+		Data:     []byte{52, 66, 175, 92},
+	})
+	task.ExecuteFunc.SetDefaultReturn(txn, nil)
+	task.ShouldExecuteFunc.PushReturn(true, nil)
+	err := tasks.NewTaskErr("should execute error", false)
+	task.ShouldExecuteFunc.PushReturn(true, err)
+	task.GetLoggerFunc.SetDefaultReturn(executor.logger)
+
+	mainCtx := context.Background()
+	executor.handleTaskExecution(mainCtx, task, "", "123", 1, 10, false, nil, db, executor.logger, client, mocks.NewMockAllSmartContracts(), taskRespChan)
+
+	mockrequire.CalledOnce(t, task.PrepareFunc)
+	mockrequire.CalledN(t, task.ShouldExecuteFunc, 2)
+	mockrequire.CalledN(t, task.ExecuteFunc, 1)
+	mockrequire.CalledOnceWith(t, task.FinishFunc, mockrequire.Values(err))
+}
+
+func Test_TaskExecutor_ShouldExecuteRecoverableError(t *testing.T) {
+	executor, client, db, taskRespChan, _ := getTaskExecutor(t)
+
+	taskId := "123"
+	task := taskMocks.NewMockTask()
+	task.GetIdFunc.SetDefaultReturn(taskId)
+	task.GetLoggerFunc.SetDefaultReturn(executor.logger)
+	err := tasks.NewTaskErr("should execute error", true)
+	task.InitializeFunc.SetDefaultReturn(nil)
+	task.ShouldExecuteFunc.SetDefaultReturn(false, err)
+	task.ExecuteFunc.SetDefaultReturn(nil, nil)
+
+	mainCtx := context.Background()
+	executor.handleTaskExecution(mainCtx, task, "", "123", 1, 10, false, nil, db, executor.logger, client, mocks.NewMockAllSmartContracts(), taskRespChan)
+
+	mockrequire.CalledOnce(t, task.InitializeFunc)
+	mockrequire.CalledN(t, task.ShouldExecuteFunc, 10)
+	mockrequire.CalledOnceWith(t, task.FinishFunc, mockrequire.Values(nil))
+}
+
+func Test_TaskExecutor_PersistError(t *testing.T) {
+	executor, _, _, _, _ := getTaskExecutor(t)
+	executor.database.DB().Close()
+	err := executor.persistState()
+	assert.NotNil(t, err)
 }

@@ -9,17 +9,18 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+
 	"github.com/alicenet/alicenet/bridge/bindings"
 	"github.com/alicenet/alicenet/layer1"
 	"github.com/alicenet/alicenet/utils"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/sirupsen/logrus"
 )
 
 var _ layer1.EthereumContracts = &Contracts{}
 
-// Contracts contains bindings to smart contract system
+// Contracts contains bindings to smart contract system.
 type Contracts struct {
 	allAddresses                      map[common.Address]bool
 	eth                               *Client
@@ -43,11 +44,13 @@ type Contracts struct {
 	governanceAddress                 common.Address
 	multipleProposalAccusation        bindings.IAccusationMultipleProposal
 	multipleProposalAccusationAddress common.Address
+	dynamics                          bindings.IDynamics
+	dynamicsAddress                   common.Address
 }
 
-/// Set the contractFactoryAddress and looks up for all the contracts that we
-/// need that were deployed via the factory. It's only executed once. Other call
-/// to this functions are no-op.
+// Set the contractFactoryAddress and looks up for all the contracts that we
+// need that were deployed via the factory. It's only executed once. Other call
+// to this functions are no-op.
 func NewContracts(eth *Client, contractFactoryAddress common.Address) *Contracts {
 	newContracts := &Contracts{
 		allAddresses:           make(map[common.Address]bool),
@@ -61,9 +64,8 @@ func NewContracts(eth *Client, contractFactoryAddress common.Address) *Contracts
 	return newContracts
 }
 
-// LookupContracts uses the registry to lookup and create bindings for all required contracts
+// LookupContracts uses the registry to lookup and create bindings for all required contracts.
 func (c *Contracts) lookupContracts() error {
-
 	networkCtx, cf := context.WithCancel(context.Background())
 	defer cf()
 	signals := make(chan os.Signal, 1)
@@ -174,6 +176,16 @@ func (c *Contracts) lookupContracts() error {
 		c.snapshots, err = bindings.NewSnapshots(c.snapshotsAddress, eth.internalClient)
 		logAndEat(logger, err)
 
+		// Dynamics
+		c.dynamicsAddress, err = lookupString("Dynamics")
+		logAndEat(logger, err)
+		if bytes.Equal(c.dynamicsAddress.Bytes(), make([]byte, 20)) {
+			continue
+		}
+
+		c.dynamics, err = bindings.NewDynamics(c.dynamicsAddress, eth.internalClient)
+		logAndEat(logger, err)
+
 		// AccusationMultipleProposal
 		contractSaltComponents := []string{"AccusationMultipleProposal", "Accusation"}
 		c.multipleProposalAccusationAddress, err = c.lookupRoleBasedSalt(callOpts, contractSaltComponents)
@@ -228,7 +240,7 @@ func (c *Contracts) lookupBytes32(callOpts *bind.CallOpts, salt [32]byte) (commo
 	return addr, nil
 }
 
-// return all addresses from all contracts in the contract struct
+// return all addresses from all contracts in the contract struct.
 func (c *Contracts) GetAllAddresses() []common.Address {
 	var allAddresses []common.Address
 	for addr := range c.allAddresses {
@@ -259,6 +271,14 @@ func (c *Contracts) BToken() bindings.IBToken {
 
 func (c *Contracts) BTokenAddress() common.Address {
 	return c.bTokenAddress
+}
+
+func (c *Contracts) Dynamics() bindings.IDynamics {
+	return c.dynamics
+}
+
+func (c *Contracts) DynamicsAddress() common.Address {
+	return c.dynamicsAddress
 }
 
 func (c *Contracts) PublicStaking() bindings.IPublicStaking {
@@ -317,7 +337,7 @@ func (c *Contracts) MultipleProposalAccusationAddress() common.Address {
 	return c.multipleProposalAccusationAddress
 }
 
-// utils function to log an error
+// utils function to log an error.
 func logAndEat(logger *logrus.Logger, err error) {
 	if err != nil {
 		logger.Error(err)

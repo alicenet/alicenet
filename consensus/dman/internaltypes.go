@@ -4,12 +4,13 @@ import (
 	"context"
 	"strconv"
 
-	"github.com/alicenet/alicenet/consensus/objs"
-	"github.com/alicenet/alicenet/interfaces"
-	"github.com/alicenet/alicenet/utils"
 	"github.com/dgraph-io/badger/v2"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
+
+	"github.com/alicenet/alicenet/consensus/objs"
+	"github.com/alicenet/alicenet/interfaces"
+	"github.com/alicenet/alicenet/utils"
 )
 
 type DownloadType int
@@ -45,7 +46,7 @@ type typeProxyIface interface {
 }
 
 type databaseView interface {
-	SetTxCacheItem(txn *badger.Txn, height uint32, txHash []byte, tx []byte) error
+	SetTxCacheItem(txn *badger.Txn, height uint32, txHash, tx []byte) error
 	GetTxCacheItem(txn *badger.Txn, height uint32, txHash []byte) ([]byte, error)
 	SetCommittedBlockHeader(txn *badger.Txn, v *objs.BlockHeader) error
 	TxCacheDropBefore(txn *badger.Txn, beforeHeight uint32, maxKeys int) error
@@ -183,7 +184,7 @@ func (r *BlockHeaderDownloadRequest) Identifier() string {
 	return strconv.Itoa(int(r.Height))
 }
 
-func NewBlockHeaderDownloadRequest(height uint32, round uint32, downloadType DownloadType) *BlockHeaderDownloadRequest {
+func NewBlockHeaderDownloadRequest(height, round uint32, downloadType DownloadType) *BlockHeaderDownloadRequest {
 	responseChan := make(chan DownloadResponse, 1)
 	return &BlockHeaderDownloadRequest{
 		responseChan: responseChan,

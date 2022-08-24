@@ -5,7 +5,6 @@ import (
 	"encoding/gob"
 
 	"github.com/alicenet/alicenet/consensus/db"
-	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/layer1"
 	"github.com/alicenet/alicenet/layer1/executor/tasks"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/accusations"
@@ -31,7 +30,7 @@ func NewTaskHandler(database *db.Database, eth layer1.Client, contracts layer1.A
 	mainCtx, cf := context.WithCancel(context.Background())
 
 	// Setup tasks scheduler
-	requestChan := make(chan managerRequest, constants.TaskManagerBufferSize)
+	requestChan := make(chan managerRequest, tasks.ManagerBufferSize)
 	logger := logging.GetLogger("tasks")
 
 	taskManager, err := newTaskManager(mainCtx, eth, contracts, database, logger.WithField("Component", "TaskManager"), adminHandler, requestChan, txWatcher)
@@ -101,7 +100,7 @@ func (i *Handler) KillTaskById(ctx context.Context, id string) (*HandlerResponse
 	return req.response.listen(ctx)
 }
 
-//waitForRequestProcessing or context deadline.
+// waitForRequestProcessing or context deadline.
 func (i *Handler) waitForRequestProcessing(ctx context.Context, req managerRequest) error {
 	// wait for request to be accepted
 	select {

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT-open-group
-pragma solidity ^0.8.11;
+pragma solidity ^0.8.16;
 
 import "contracts/utils/MerkleProofLibrary.sol";
 import "contracts/interfaces/IValidatorPool.sol";
@@ -11,6 +11,7 @@ import "contracts/libraries/parsers/TXInPreImageParserLibrary.sol";
 import "contracts/libraries/math/CryptoLibrary.sol";
 import "contracts/utils/ImmutableAuth.sol";
 import "contracts/utils/AccusationsLibrary.sol";
+import "contracts/libraries/errors/AccusationsErrors.sol";
 
 
 /// @custom:deploy-type deployUpgradeable
@@ -58,29 +59,31 @@ contract AccusationInvalidTxConsumption is
         BClaimsParserLibrary.BClaims memory bClaims = BClaimsParserLibrary.extractBClaims(_bClaims);
         PClaimsParserLibrary.PClaims memory pClaims = PClaimsParserLibrary.extractPClaims(_pClaims);
 
-        require(
-            pClaims.bClaims.txCount > 0,
-            "Accusations: The accused proposal doesn't have any transaction!"
-        );
-        require(
-            bClaims.height + 1 == pClaims.bClaims.height,
-            "Accusations: Height delta should be 1"
-        );
+        if (pClaims.bClaims.txCount == 0) {
+            revert AccusationsErrors.NoTransactionInAccusedProposal();
+        }
+        if (bClaims.height + 1 != pClaims.bClaims.height) {
+            revert AccusationsErrors.HeightDeltaShouldBeOne(bClaims.height, pClaims.bClaims.height);
+        }
 
         // Require that chainID is equal.
-        require(
-            bClaims.chainId == pClaims.bClaims.chainId &&
-                bClaims.chainId == ISnapshots(_snapshotsAddress()).getChainId(),
-            "Accusations: ChainId should be the same"
-        );
+        if (
+            bClaims.chainId != pClaims.bClaims.chainId ||
+            bClaims.chainId != ISnapshots(_snapshotsAddress()).getChainId()
+        ) {
+            revert AccusationsErrors.ChainIdDoesNotMatch(
+                bClaims.chainId,
+                pClaims.bClaims.chainId,
+                ISnapshots(_snapshotsAddress()).getChainId()
+            );
+        }
 
         // Require that Proposal was signed by active validator.
         address signerAccount = AccusationsLibrary.recoverMadNetSigner(_pClaimsSig, _pClaims);
 
-        require(
-            IValidatorPool(_validatorPoolAddress()).isAccusable(signerAccount),
-            "Accusations: the signer of these proposal is not a valid validator!"
-        );
+        if (!IValidatorPool(_validatorPoolAddress()).isAccusable(signerAccount)) {
+            revert AccusationsErrors.SignerNotValidValidator(signerAccount);
+        }
 
         // Validate ProofInclusionTxRoot against PClaims.BClaims.TxRoot.
         MerkleProofParserLibrary.MerkleProof memory proofInclusionTxRoot = MerkleProofParserLibrary
@@ -94,10 +97,12 @@ contract AccusationInvalidTxConsumption is
 
         MerkleProofParserLibrary.MerkleProof memory proofAgainstStateRoot = MerkleProofParserLibrary
             .extractMerkleProof(_proofs[0]);
-        require(
-            proofAgainstStateRoot.key == proofOfInclusionTxHash.key,
-            "Accusations: The UTXO should match!"
-        );
+        if (proofAgainstStateRoot.key != proofOfInclusionTxHash.key) {
+            revert AccusationsErrors.UTXODoesnotMatch(
+                proofAgainstStateRoot.key,
+                proofOfInclusionTxHash.key
+            );
+        }
 
         TXInPreImageParserLibrary.TXInPreImage memory txInPreImage = TXInPreImageParserLibrary
             .extractTXInPreImage(_txInPreImage);
@@ -105,21 +110,28 @@ contract AccusationInvalidTxConsumption is
         // checking if we are consuming a deposit or an UTXO
         if (txInPreImage.consumedTxIdx == 0xFFFFFFFF) {
             // Double spending problem, i.e, consuming a deposit that was already consumed
-            require(
-                txInPreImage.consumedTxHash == proofAgainstStateRoot.key,
-                "Accusations: The key of Merkle Proof should be equal to the consumed deposit key!"
-            );
+            if (txInPreImage.consumedTxHash != proofAgainstStateRoot.key) {
+                revert AccusationsErrors.MerkleProofKeyDoesNotMatchConsumedDepositKey(
+                    txInPreImage.consumedTxHash,
+                    proofAgainstStateRoot.key
+                );
+            }
             MerkleProofLibrary.verifyInclusion(proofAgainstStateRoot, bClaims.stateRoot);
             // todo: deposit that doesn't exist in the chain. Maybe split this in separate functions?
         } else {
             // Consuming a non existing UTXO
-            require(
-                AccusationsLibrary.computeUTXOID(
+            {
+                bytes32 computedUTXOID = AccusationsLibrary.computeUTXOID(
                     txInPreImage.consumedTxHash,
                     txInPreImage.consumedTxIdx
-                ) == proofAgainstStateRoot.key,
-                "Accusations: The key of Merkle Proof should be equal to the UTXOID being spent!"
-            );
+                );
+                if (computedUTXOID != proofAgainstStateRoot.key) {
+                    revert AccusationsErrors.MerkleProofKeyDoesNotMatchUTXOIDBeingSpent(
+                        computedUTXOID,
+                        proofAgainstStateRoot.key
+                    );
+                }
+            }
             MerkleProofLibrary.verifyNonInclusion(proofAgainstStateRoot, bClaims.stateRoot);
         }
 
@@ -141,13 +153,14 @@ contract AccusationInvalidTxConsumption is
 
         // todo: check if the signature is equals to any of the previous master public key?
 
-        require(
-            CryptoLibrary.verifySignatureASM(
+        if (
+            !CryptoLibrary.verifySignatureASM(
                 abi.encodePacked(keccak256(_bClaims)),
                 signature,
                 publicKey
-            ),
-            "Accusations: Signature verification failed"
-        );
+            )
+        ) {
+            revert AccusationsErrors.SignatureVerificationFailed();
+        }
     }
 }
