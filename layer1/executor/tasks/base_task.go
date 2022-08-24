@@ -31,8 +31,8 @@ type BaseTask struct {
 	End              uint64                   `json:"end"`
 	isInitialized    bool                     `json:"-"`
 	wasKilled        bool                     `json:"-"`
-	ctx              context.Context          `json:"-"`
-	cancelFunc       context.CancelFunc       `json:"-"`
+	closeChan        chan struct{}            `json:"-"`
+	closeOnce        sync.Once                `json:"-"`
 	database         *db.Database             `json:"-"`
 	logger           *logrus.Entry            `json:"-"`
 	client           layer1.Client            `json:"-"`
@@ -55,7 +55,7 @@ func NewBaseTask(start uint64, end uint64, allowMultiExecution bool, subscribeOp
 // Initialize initializes the task after its creation. It should be only called
 // by the task scheduler during task spawn as separated go routine. This
 // function all the parameters for task execution and control by the scheduler.
-func (bt *BaseTask) Initialize(ctx context.Context, cancelFunc context.CancelFunc, database *db.Database, logger *logrus.Entry, eth layer1.Client, contracts layer1.AllSmartContracts, name string, id string, start uint64, end uint64, allowMultiExecution bool, subscribeOptions *transaction.SubscribeOptions, taskResponseChan InternalTaskResponseChan) error {
+func (bt *BaseTask) Initialize(database *db.Database, logger *logrus.Entry, eth layer1.Client, contracts layer1.AllSmartContracts, name string, id string, start uint64, end uint64, allowMultiExecution bool, subscribeOptions *transaction.SubscribeOptions, taskResponseChan InternalTaskResponseChan) error {
 	bt.mutex.Lock()
 	defer bt.mutex.Unlock()
 	if bt.isInitialized {
@@ -74,8 +74,8 @@ func (bt *BaseTask) Initialize(ctx context.Context, cancelFunc context.CancelFun
 		subscribeOptionsClone := *subscribeOptions
 		bt.SubscribeOptions = &subscribeOptionsClone
 	}
-	bt.ctx = ctx
-	bt.cancelFunc = cancelFunc
+	bt.closeChan = make(chan struct{})
+	bt.closeOnce = sync.Once{}
 	bt.database = database
 	bt.logger = logger
 	bt.client = eth
@@ -136,13 +136,6 @@ func (bt *BaseTask) GetSubscribeOptions() *transaction.SubscribeOptions {
 	return &subscribeOptionsClone
 }
 
-// GetCtx get the context to be used by a task.
-func (bt *BaseTask) GetCtx() context.Context {
-	bt.mutex.RLock()
-	defer bt.mutex.RUnlock()
-	return bt.ctx
-}
-
 // WasKilled returns true if the task was killed otherwise false.
 func (bt *BaseTask) WasKilled() bool {
 	bt.mutex.RLock()
@@ -179,15 +172,35 @@ func (bt *BaseTask) GetDB() *db.Database {
 	return bt.database
 }
 
-// Close closes a running task. It set a bool flag and call the cancelFunc in
-// case it's different from nil.
+// Close a running task. This only can be done once.
 func (bt *BaseTask) Close() {
 	bt.mutex.Lock()
 	defer bt.mutex.Unlock()
-	if bt.cancelFunc != nil {
-		bt.cancelFunc()
+	bt.closeOnce.Do(func() {
+		bt.logger.Warnf("Closing task %s-%s", bt.Name, bt.ID)
+		close(bt.closeChan)
+		bt.wasKilled = true
+	})
+}
+
+// CloseChan returns a channel that is closed when the Task is
+// shutting down.
+func (bt *BaseTask) CloseChan() <-chan struct{} {
+	bt.mutex.RLock()
+	defer bt.mutex.RUnlock()
+	return bt.closeChan
+}
+
+// IsClosed return true if the task was closed.
+func (bt *BaseTask) IsClosed() bool {
+	bt.mutex.RLock()
+	defer bt.mutex.RUnlock()
+	select {
+	case <-bt.closeChan:
+		return true
+	default:
+		return false
 	}
-	bt.wasKilled = true
 }
 
 // Finish executes the cleanup logic once a task finishes.
@@ -195,7 +208,7 @@ func (bt *BaseTask) Finish(err error) {
 	bt.mutex.Lock()
 	defer bt.mutex.Unlock()
 	if err != nil {
-		if errors.Is(err, context.Canceled) {
+		if errors.Is(err, context.Canceled) || errors.Is(err, ErrTaskClosed) {
 			bt.logger.WithError(err).Debug("cancelling task execution, task was killed")
 		} else {
 			bt.logger.WithError(err).Error("got an error when executing task")
@@ -206,6 +219,7 @@ func (bt *BaseTask) Finish(err error) {
 	if bt.taskResponseChan != nil {
 		bt.taskResponseChan.Add(bt.ID, err)
 	}
+	bt.Close()
 }
 
 func (bt *BaseTask) Lock() {

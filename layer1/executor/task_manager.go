@@ -308,7 +308,7 @@ func (tm *TaskManager) processTaskResponse(executorResponse ExecutorResponse) er
 }
 
 // startTasks spawning a go routine to handle Task execution using the TaskExecutor.
-func (tm *TaskManager) startTasks(ctx context.Context, tasks []ManagerRequestInfo) error {
+func (tm *TaskManager) startTasks(tasks []ManagerRequestInfo) error {
 	select {
 	case <-tm.closeChan:
 		return ErrTaskManagerClosed
@@ -319,7 +319,12 @@ func (tm *TaskManager) startTasks(ctx context.Context, tasks []ManagerRequestInf
 			logEntry := getTaskLoggerComplete(tm.logger, task)
 			logEntry.Info("task is about to start")
 
-			go tm.taskExecutor.handleTaskExecution(ctx, task.Task, task.Name, task.Id, task.Start, task.End, task.AllowMultiExecution, task.SubscribeOptions, tm.database, logEntry, tm.eth, tm.contracts, tm.responseChan)
+			if tm.taskExecutor.isClosed() {
+				tm.onUnrecoverableError(ErrTaskExecutorClosed)
+				return ErrTaskExecutorClosed
+			}
+
+			go tm.taskExecutor.handleTaskExecution(task.Task, task.Name, task.Id, task.Start, task.End, task.AllowMultiExecution, task.SubscribeOptions, tm.database, logEntry, tm.eth, tm.contracts, tm.responseChan)
 
 			task.InternalState = Running
 			tm.Schedule[task.Id] = task

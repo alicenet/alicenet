@@ -238,4 +238,5 @@ var (
 	ErrTaskIdEmpty                    = errors.New("the task id is empty")
 	ErrTaskKilledBeforeExecution      = errors.New("the task killed by request before execution")
 	ErrTaskManagerClosed              = errors.New("task manager is closed, aborting execution")
+	ErrTaskExecutorClosed             = errors.New("task executor is closed, aborting execution")
 )

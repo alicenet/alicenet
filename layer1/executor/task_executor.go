@@ -23,6 +23,8 @@ import (
 type TaskExecutor struct {
 	sync.RWMutex
 	TxsBackup map[string]*types.Transaction `json:"transactionsBackup"`
+	closeChan chan struct{}                 `json:"-"`
+	closeOnce sync.Once                     `json:"-"`
 	txWatcher transaction.Watcher           `json:"-"`
 	database  *db.Database                  `json:"-"`
 	logger    *logrus.Entry                 `json:"-"`
@@ -32,6 +34,8 @@ type TaskExecutor struct {
 func newTaskExecutor(txWatcher transaction.Watcher, database *db.Database, logger *logrus.Entry) (*TaskExecutor, error) {
 	taskExecutor := &TaskExecutor{
 		TxsBackup: make(map[string]*types.Transaction),
+		closeChan: make(chan struct{}),
+		closeOnce: sync.Once{},
 		txWatcher: txWatcher,
 		database:  database,
 		logger:    logger,
@@ -46,6 +50,34 @@ func newTaskExecutor(txWatcher transaction.Watcher, database *db.Database, logge
 	}
 
 	return taskExecutor, nil
+}
+
+// close a TaskExecutor. This only can be done once.
+func (te *TaskExecutor) close() {
+	te.Lock()
+	defer te.Unlock()
+	te.closeOnce.Do(func() {
+		te.logger.Warn("Closing Task Executor")
+		close(te.closeChan)
+	})
+}
+
+// isClosed return true if the task was closed.
+func (te *TaskExecutor) isClosed() bool {
+	te.RLock()
+	defer te.RUnlock()
+	select {
+	case <-te.closeChan:
+		return true
+	default:
+		return false
+	}
+}
+
+// triggered when onUnrecoverableError occurs during the execution.
+func (te *TaskExecutor) onUnrecoverableError(err error) {
+	te.logger.WithError(err).Errorf("An unercoverable error occured %v", err)
+	te.close()
 }
 
 // addTxBackup adds txn to the backup map for recovery.
@@ -73,9 +105,9 @@ func (te *TaskExecutor) getTxBackup(uuid string) (*types.Transaction, bool) {
 }
 
 // handleTaskExecution It is basically an abstraction to handle the task execution in a separate process.
-func (te *TaskExecutor) handleTaskExecution(mainCtx context.Context, task tasks.Task, name string, taskId string, start uint64, end uint64, allowMultiExecution bool, subscribeOptions *transaction.SubscribeOptions, database *db.Database, logger *logrus.Entry, eth layer1.Client, contracts layer1.AllSmartContracts, taskResponseChan tasks.InternalTaskResponseChan) {
+func (te *TaskExecutor) handleTaskExecution(task tasks.Task, name string, taskId string, start uint64, end uint64, allowMultiExecution bool, subscribeOptions *transaction.SubscribeOptions, database *db.Database, logger *logrus.Entry, eth layer1.Client, contracts layer1.AllSmartContracts, taskResponseChan tasks.InternalTaskResponseChan) {
 	defer task.Close()
-	err := te.processTask(mainCtx, task, name, taskId, start, end, allowMultiExecution, subscribeOptions, database, logger, eth, contracts, taskResponseChan)
+	err := te.processTask(task, name, taskId, start, end, allowMultiExecution, subscribeOptions, database, logger, eth, contracts, taskResponseChan)
 	// Clean up in case the task was killed
 	if task.WasKilled() {
 		task.GetLogger().Trace("task was externally killed, removing tx backup")
@@ -85,11 +117,11 @@ func (te *TaskExecutor) handleTaskExecution(mainCtx context.Context, task tasks.
 }
 
 // processTask processes all the stages of the task execution.
-func (te *TaskExecutor) processTask(mainCtx context.Context, task tasks.Task, name string, taskId string, start uint64, end uint64, allowMultiExecution bool, subscribeOptions *transaction.SubscribeOptions, database *db.Database, logger *logrus.Entry, eth layer1.Client, contracts layer1.AllSmartContracts, taskResponseChan tasks.InternalTaskResponseChan) error {
-	taskCtx, cf := context.WithCancel(mainCtx)
+func (te *TaskExecutor) processTask(task tasks.Task, name string, taskId string, start uint64, end uint64, allowMultiExecution bool, subscribeOptions *transaction.SubscribeOptions, database *db.Database, logger *logrus.Entry, eth layer1.Client, contracts layer1.AllSmartContracts, taskResponseChan tasks.InternalTaskResponseChan) error {
+	taskCtx, cf := context.WithCancel(context.Background())
 	defer cf()
 
-	err := task.Initialize(taskCtx, cf, database, logger, eth, contracts, name, taskId, start, end, allowMultiExecution, subscribeOptions, taskResponseChan)
+	err := task.Initialize(database, logger, eth, contracts, name, taskId, start, end, allowMultiExecution, subscribeOptions, taskResponseChan)
 	if err != nil {
 		return err
 	}
@@ -128,11 +160,10 @@ func (te *TaskExecutor) processTask(mainCtx context.Context, task tasks.Task, na
 // killed, we get an unrecoverable error, or we succeed.
 func prepareTask(ctx context.Context, task tasks.Task, retryDelay time.Duration) error {
 	for {
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		default:
+		if task.IsClosed() {
+			return tasks.ErrTaskClosed
 		}
+
 		taskErr := task.Prepare(ctx)
 		// no errors or unrecoverable errors
 		if taskErr == nil {
@@ -141,7 +172,7 @@ func prepareTask(ctx context.Context, task tasks.Task, retryDelay time.Duration)
 		if !taskErr.IsRecoverable() {
 			return taskErr
 		}
-		err := sleepWithContext(ctx, retryDelay)
+		err := sleepOrClose(task, retryDelay)
 		if err != nil {
 			return err
 		}
@@ -164,7 +195,7 @@ func (te *TaskExecutor) executeTask(ctx context.Context, task tasks.Task, retryD
 		if taskErr != nil {
 			if taskErr.IsRecoverable() {
 				logger.Tracef("got a recoverable error during task.execute: %v", taskErr.Error())
-				err := sleepWithContext(ctx, retryDelay)
+				err := sleepOrClose(task, retryDelay)
 				if err != nil {
 					return err
 				}
@@ -212,8 +243,8 @@ func (te *TaskExecutor) checkCompletion(ctx context.Context, task tasks.Task, tx
 
 	for {
 		select {
-		case <-ctx.Done():
-			return true, ctx.Err()
+		case <-task.CloseChan():
+			return true, tasks.ErrTaskClosed
 		case <-time.After(tasks.ExecutorPoolingTime):
 		}
 
@@ -258,15 +289,14 @@ func (te *TaskExecutor) checkCompletion(ctx context.Context, task tasks.Task, tx
 func shouldExecute(ctx context.Context, task tasks.Task) (bool, error) {
 	logger := task.GetLogger()
 	for i := uint64(1); i <= constants.MonitorRetryCount; i++ {
-		select {
-		case <-ctx.Done():
-			return false, ctx.Err()
-		default:
+		if task.IsClosed() {
+			return false, tasks.ErrTaskClosed
 		}
+
 		if hasToExecute, err := task.ShouldExecute(ctx); err != nil {
 			if err.IsRecoverable() {
 				logger.Tracef("got a recoverable error during task.ShouldExecute: %v", err)
-				if err := sleepWithContext(ctx, constants.MonitorRetryDelay); err != nil {
+				if err := sleepOrClose(task, constants.MonitorRetryDelay); err != nil {
 					return false, err
 				}
 				continue
@@ -287,6 +317,7 @@ func (te *TaskExecutor) persistState() error {
 	logger := logging.GetLogger("staterecover").WithField("State", "task_executor")
 	rawData, err := json.Marshal(te)
 	if err != nil {
+		te.onUnrecoverableError(err)
 		return err
 	}
 
@@ -300,11 +331,13 @@ func (te *TaskExecutor) persistState() error {
 		return nil
 	})
 	if err != nil {
+		te.onUnrecoverableError(err)
 		return err
 	}
 
 	if err := te.database.Sync(); err != nil {
 		logger.Error("Failed to set sync")
+		te.onUnrecoverableError(err)
 		return err
 	}
 
@@ -342,12 +375,12 @@ func (te *TaskExecutor) loadState() error {
 
 }
 
-// sleepWithContext sleeps a certain amount of time also checking the context.
-// It fails in case the context is cancelled.
-func sleepWithContext(ctx context.Context, delay time.Duration) error {
+// sleepOrClose sleeps a certain amount of time.
+// It fails in case the task is closed.
+func sleepOrClose(task tasks.Task, delay time.Duration) error {
 	select {
-	case <-ctx.Done():
-		return ctx.Err()
+	case <-task.CloseChan():
+		return tasks.ErrTaskClosed
 	case <-time.After(delay):
 		return nil
 	}
