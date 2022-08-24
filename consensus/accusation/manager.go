@@ -155,7 +155,7 @@ func (m *Manager) Poll() error {
 		return nil
 	case acc := <-m.accusationQ:
 		// an accusation has been formed and it needs to be sent to the smart contracts
-		m.logger.Debugf("Got an accusation from a worker: %#v", acc)
+		m.logger.WithField("id", acc.GetId()).Debugf("Got an accusation from a worker: %#v", acc)
 		m.unpersistedCreatedAccusations = append(m.unpersistedCreatedAccusations, acc)
 	default:
 		//m.logger.Debug("AccusationManager did not find an accusation")
@@ -389,7 +389,7 @@ func (m *Manager) findAccusation(rs *objs.RoundState, lrs *lstate.RoundStates) {
 		accusation, found := detector(rs, lrs, m.database)
 		if found {
 			m.accusationQ <- accusation
-			break // we can stop looking for more accusations as soon as one is found
+			break // we can stop looking for more accusations on this RoundState as soon as one is found
 		}
 	}
 }

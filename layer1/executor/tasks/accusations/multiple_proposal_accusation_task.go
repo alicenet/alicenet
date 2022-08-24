@@ -2,11 +2,11 @@ package accusations
 
 import (
 	"context"
-	"encoding/hex"
 	"fmt"
 
 	"github.com/alicenet/alicenet/consensus/objs"
 	"github.com/alicenet/alicenet/layer1/executor/tasks"
+	"github.com/alicenet/alicenet/utils"
 	"github.com/ethereum/go-ethereum/core/types"
 )
 
@@ -140,12 +140,7 @@ func (t *MultipleProposalAccusationTask) ShouldExecute(ctx context.Context) (boo
 	if err != nil {
 		return true, tasks.NewTaskErr(fmt.Sprintf(tasks.FailedGettingCallOpts, err), true)
 	}
-	var id [32]byte
-	idDecodedBin, err := hex.DecodeString(t.GetId())
-	if err != nil {
-		return false, tasks.NewTaskErr(fmt.Sprintf("MultipleProposalAccusationTask: failed to decode id: %v", err), false)
-	}
-	copy(id[:], idDecodedBin)
+	var id [32]byte = utils.HexToBytes32(t.GetId())
 
 	isAccused, err := t.GetContractsHandler().EthereumContracts().MultipleProposalAccusation().IsAccused(callOpts, id)
 	if err != nil {

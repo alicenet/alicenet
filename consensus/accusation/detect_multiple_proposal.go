@@ -2,15 +2,16 @@ package accusation
 
 import (
 	"bytes"
+	"encoding/hex"
+	"math/big"
 
-	"github.com/alicenet/alicenet/application/objs/uint256"
 	"github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/consensus/lstate"
 	"github.com/alicenet/alicenet/consensus/objs"
 	"github.com/alicenet/alicenet/crypto"
 	"github.com/alicenet/alicenet/layer1/executor/tasks"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/accusations"
-	"github.com/alicenet/alicenet/utils"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 func detectMultipleProposal(rs *objs.RoundState, lrs *lstate.RoundStates, db *db.Database) (tasks.Task, bool) {
@@ -63,35 +64,6 @@ func detectMultipleProposal(rs *objs.RoundState, lrs *lstate.RoundStates, db *db
 		return nil, false
 	}
 
-	/*
-		to calculate the deterministic accusation ID based on signature sorting:
-
-		convert sig0 and sig1 to uints and sort ASC
-		if for example sig0 < sig1 then
-		  id = keccak(sig0, pclaims0, sig1, pclaims1)
-		no need to submit acc object with sig0 being the lowest sig and sig1 being the highest sig
-	*/
-	sig0 := uint256.Zero()
-	err = sig0.UnmarshalBinary(crypto.Hasher(rs.Proposal.Signature))
-	if err != nil {
-		return nil, false
-	}
-	sig1 := uint256.Zero()
-	err = sig1.UnmarshalBinary(crypto.Hasher(rs.ConflictingProposal.Signature))
-	if err != nil {
-		return nil, false
-	}
-
-	sig0Big, err := sig0.ToBigInt()
-	if err != nil {
-		return nil, false
-	}
-
-	sig1Big, err := sig1.ToBigInt()
-	if err != nil {
-		return nil, false
-	}
-
 	// submit both proposals and already validated that both RClaims are valid and sigs are different
 	acc := accusations.NewMultipleProposalAccusationTask(
 		rs.Proposal.Signature,
@@ -100,28 +72,20 @@ func detectMultipleProposal(rs *objs.RoundState, lrs *lstate.RoundStates, db *db
 		rs.ConflictingProposal.PClaims,
 	)
 
-	var id [32]byte
+	// deterministic accusation ID
+	var chainID []byte = common.LeftPadBytes(big.NewInt(int64(rs.Proposal.PClaims.RCert.RClaims.ChainID)).Bytes(), 4)
+	var height []byte = common.LeftPadBytes(big.NewInt(int64(rs.Proposal.PClaims.RCert.RClaims.Height)).Bytes(), 4)
+	var round []byte = common.LeftPadBytes(big.NewInt(int64(rs.Proposal.PClaims.RCert.RClaims.Round)).Bytes(), 4)
+	var preSalt []byte = crypto.Hasher([]byte("AccusationMultipleProposal"))
 
-	// deterministic ID
-	if sig0Big.Cmp(sig1Big) <= 0 {
-		idBin := crypto.Hasher(
-			rs.Proposal.Signature,
-			proposalPClaimsBin,
-			rs.ConflictingProposal.Signature,
-			conflictingProposalPClaimsBin,
-		)
-		copy(id[:], idBin)
-	} else {
-		idBin := crypto.Hasher(
-			rs.ConflictingProposal.Signature,
-			conflictingProposalPClaimsBin,
-			rs.Proposal.Signature,
-			proposalPClaimsBin,
-		)
-		copy(id[:], idBin)
-	}
-
-	acc.Id = utils.Bytes32ToHex(id)
+	var id []byte = crypto.Hasher(
+		rs.Proposal.Proposer,
+		chainID,
+		height,
+		round,
+		preSalt,
+	)
+	acc.Id = hex.EncodeToString(id)
 
 	return acc, true
 }

@@ -39,21 +39,6 @@ contract AccusationMultipleProposal is
         bytes calldata signature1_,
         bytes calldata pClaims1_
     ) public returns (address) {
-        // convert signatures to 32byte uints
-        uint256 sig0 = uint256(keccak256(signature0_));
-        uint256 sig1 = uint256(keccak256(signature1_));
-        bytes32 id;
-
-        // check sorting of signatures to generate ID
-        if (sig0 <= sig1) {
-            id = keccak256(abi.encodePacked(signature0_, pClaims0_, signature1_, pClaims1_));
-        } else {
-            id = keccak256(abi.encodePacked(signature1_, pClaims1_, signature0_, pClaims0_));
-        }
-
-        // check if thi accusation has already been submitted
-        require(!_accusations[id], "Accusations: the accusation has already been submitted!");
-
         // ecrecover sig0/1 and ensure both are valid and accounts are equal
         address signerAccount0 = AccusationsLibrary.recoverMadNetSigner(signature0_, pClaims0_);
         address signerAccount1 = AccusationsLibrary.recoverMadNetSigner(signature1_, pClaims1_);
@@ -101,9 +86,21 @@ contract AccusationMultipleProposal is
             "Accusations: the chainId is invalid for this chain!"
         );
 
+        // deterministic accusation ID
+        bytes32 id = keccak256(abi.encodePacked(
+            signerAccount0,
+            pClaims0.rCert.rClaims.chainId,
+            pClaims0.rCert.rClaims.height,
+            pClaims0.rCert.rClaims.round,
+            PRE_SALT
+        ));
+
+        // check if this accusation ID has already been submitted
+        require(!_accusations[id], "Accusations: the accusation has already been submitted!");
+
         _accusations[id] = true;
 
-        // major slash this validator. Note: this method already checks if the dishonest validator (1st argument) is a validator.
+        // major slash this validator. Note: this method already checks if the dishonest validator (1st argument) is an accusable validator.
         IValidatorPool(_validatorPoolAddress()).majorSlash(signerAccount0, msg.sender, PRE_SALT);
 
         return signerAccount0;
