@@ -106,22 +106,18 @@ contract ValidatorPoolMock is
     function minorSlash(address validator, address disputer, bytes32 preSalt_) public {
         disputer; //no-op to suppress warning of not using disputer address
         preSalt_; //no-op to suppress warning of not using disputer address
-        require(isAccusable(validator), string(
-                abi.encodePacked(
-                    ValidatorPoolErrorCodes.VALIDATORPOOL_DISHONEST_VALIDATOR_NOT_ACCUSABLE
-                )
-            ));
+        if (!isAccusable(validator)) {
+            revert ValidatorPoolErrors.AddressNotAccusable(validator);
+        }
         _removeValidator(validator);
     }
 
     function majorSlash(address validator, address disputer, bytes32 preSalt_) public {
         disputer; //no-op to suppress warning of not using disputer address
         preSalt_; //no-op to suppress warning of not using disputer address
-        require(isAccusable(validator), string(
-                abi.encodePacked(
-                    ValidatorPoolErrorCodes.VALIDATORPOOL_DISHONEST_VALIDATOR_NOT_ACCUSABLE
-                )
-            ));
+        if (!isAccusable(validator)) {
+            revert ValidatorPoolErrors.AddressNotAccusable(validator);
+        }
         _removeValidator(validator);
     }
 

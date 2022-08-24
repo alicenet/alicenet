@@ -49,7 +49,7 @@ contract AccusationMultipleProposal is
         }
 
         // ensure the hashes of blob0/1 are different
-        if (keccak256(_pClaims0) == keccak256(_pClaims1)) {
+        if (keccak256(pClaims0_) == keccak256(pClaims1_)) {
             revert AccusationsErrors.PClaimsAreEqual();
         }
 

@@ -177,7 +177,7 @@ func (c *Contracts) lookupContracts() error {
 		logAndEat(logger, err)
 
 		// Dynamics
-		c.dynamicsAddress, err = lookupString("Dynamics")
+		c.dynamicsAddress, err = c.lookupString(callOpts, "Dynamics")
 		logAndEat(logger, err)
 		if bytes.Equal(c.dynamicsAddress.Bytes(), make([]byte, 20)) {
 			continue

@@ -53,7 +53,7 @@ contract ValidatorPool is
         bytes32 computedSalt = keccak256(abi.encodePacked(preSalt , keccak256(abi.encodePacked("Accusation"))));
         address computedAddr = getMetamorphicContractAddress(computedSalt, _factoryAddress());
         if (msg.sender != computedAddr && msg.sender != _ethdkgAddress()) {
-            revert NotAllowedToAccuse(msg.sender, computedAddr, _ethdkgAddress());
+            revert ValidatorPoolErrors.NotAllowedToAccuse(msg.sender, computedAddr, _ethdkgAddress());
         }
         _;
     }

@@ -85,7 +85,7 @@ func detectMultipleProposal(rs *objs.RoundState, lrs *lstate.RoundStates, db *db
 		round,
 		preSalt,
 	)
-	acc.Id = hex.EncodeToString(id)
+	acc.ID = hex.EncodeToString(id)
 
 	return acc, true
 }

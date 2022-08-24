@@ -52,22 +52,6 @@ func NewBaseTask(start uint64, end uint64, allowMultiExecution bool, subscribeOp
 	}
 }
 
-// func (bt *BaseTask) RLock() {
-// 	bt.mutex.RLock()
-// }
-
-// func (bt *BaseTask) RUnlock() {
-// 	bt.mutex.RUnlock()
-// }
-
-func (bt *BaseTask) Lock() {
-	bt.mutex.Lock()
-}
-
-func (bt *BaseTask) Unlock() {
-	bt.mutex.Unlock()
-}
-
 // Initialize initializes the task after its creation. It should be only called
 // by the task scheduler during task spawn as separated go routine. This
 // function all the parameters for task execution and control by the scheduler.

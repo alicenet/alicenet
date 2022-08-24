@@ -49,7 +49,39 @@
   },
   {
     "inputs": [],
+    "name": "DataOffsetOverflow",
+    "type": "error"
+  },
+  {
+    "inputs": [],
     "name": "HeightZero",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "bytesLength",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "requiredBytesLength",
+        "type": "uint256"
+      }
+    ],
+    "name": "InsufficientBytes",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint8",
+        "name": "signatureVersion",
+        "type": "uint8"
+      }
+    ],
+    "name": "InvalidSignatureVersion",
     "type": "error"
   },
   {
@@ -147,6 +179,155 @@
       }
     ],
     "name": "OffsetParameterOverflow",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "sender",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "expected",
+        "type": "address"
+      }
+    ],
+    "name": "OnlyETHDKG",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "sender",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "expected",
+        "type": "address"
+      }
+    ],
+    "name": "OnlyFactory",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "sender",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "expected",
+        "type": "address"
+      }
+    ],
+    "name": "OnlySnapshots",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "sender",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "expected",
+        "type": "address"
+      }
+    ],
+    "name": "OnlyValidatorPool",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "PClaimsAreEqual",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "pClaims0ChainId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "pClaims1ChainId",
+        "type": "uint256"
+      }
+    ],
+    "name": "PClaimsChainIdsDoNotMatch",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "pClaims0Height",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "pClaims1Height",
+        "type": "uint256"
+      }
+    ],
+    "name": "PClaimsHeightsDoNotMatch",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint32",
+        "name": "pClaims0Round",
+        "type": "uint32"
+      },
+      {
+        "internalType": "uint32",
+        "name": "pClaims1Round",
+        "type": "uint32"
+      }
+    ],
+    "name": "PClaimsRoundsDoNotMatch",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "RoundZero",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "signatureLength",
+        "type": "uint256"
+      }
+    ],
+    "name": "SignatureLengthMustBe65Bytes",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "signer1",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "signer2",
+        "type": "address"
+      }
+    ],
+    "name": "SignersDoNotMatch",
     "type": "error"
   },
   {
