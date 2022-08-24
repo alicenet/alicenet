@@ -3,7 +3,7 @@
 <!--
 Briefly describe the issue you are experiencing. Tell us what you were trying
 to do and what happened instead. Remember, this is _not_ a place to ask
-questions. For that consider visiting AliceNet Discord: (https://www.google.com.br)! <!--todo:add link --->
+questions. For that consider visiting AliceNet Discord: https://discord.gg/bkhW2KUWDu
 
 <!--
 Before reporting the issue make sure that:
