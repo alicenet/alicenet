@@ -1,17 +1,65 @@
-import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { BigNumber } from "ethers";
+import { BigNumber, BytesLike } from "ethers";
 import { ethers } from "hardhat";
 import { expect } from "../chai-setup";
 import {
-  callFunctionAndGetReturnValues,
-  factoryCallAnyFixture,
+  BaseTokensFixture,
   Fixture,
+  getContractAddressFromDeployedRawEvent,
   getFixture,
 } from "../setup";
 import { getState, showState } from "./setup";
 
+const updateDistributionContract = async (
+  fixture: Fixture | BaseTokensFixture,
+  splits: number[]
+) => {
+  const transaction = await fixture.factory.deployCreate(
+    (
+      await ethers.getContractFactory("Distribution")
+    ).getDeployTransaction(splits[0], splits[1], splits[2], splits[3])
+      .data as BytesLike
+  );
+  await fixture.factory.upgradeProxy(
+    ethers.utils.formatBytes32String("Distribution"),
+    await getContractAddressFromDeployedRawEvent(transaction),
+    "0x"
+  );
+};
+
+const assertSplitsBalance = async (
+  fixture: Fixture | BaseTokensFixture,
+  splits: number[],
+  distributable: BigNumber
+) => {
+  expect(
+    await ethers.provider.getBalance(fixture.validatorStaking.address)
+  ).to.be.equal(distributable.mul(splits[0]).div(1000));
+  expect(
+    await ethers.provider.getBalance(fixture.publicStaking.address)
+  ).to.be.equal(distributable.mul(splits[1]).div(1000));
+  expect(
+    await ethers.provider.getBalance(fixture.liquidityProviderStaking.address)
+  ).to.be.equal(distributable.mul(splits[2]).div(1000));
+  expect(
+    await ethers.provider.getBalance(fixture.foundation.address)
+  ).to.be.equal(distributable.mul(splits[3]).div(1000));
+};
+
+const mintDistributeAndAssert = async (
+  fixture: Fixture | BaseTokensFixture,
+  splits: number[],
+  ethIn: BigNumber,
+  distributable: BigNumber
+): Promise<BigNumber> => {
+  await fixture.bToken.mint(0, { value: ethIn });
+  distributable = distributable.add(await fixture.bToken.getYield());
+  await fixture.bToken.distribute();
+  expect(await fixture.bToken.getYield()).to.be.equals(0);
+  await assertSplitsBalance(fixture, splits, distributable);
+  return distributable;
+};
+
 describe("Testing BToken Distribution methods", async () => {
-  let admin: SignerWithAddress;
   let fixture: Fixture;
   const minBTokens = 0;
   const eth = 4;
@@ -19,246 +67,117 @@ describe("Testing BToken Distribution methods", async () => {
 
   beforeEach(async function () {
     fixture = await getFixture();
-    const signers = await ethers.getSigners();
-    [admin] = signers;
     showState("Initial", await getState(fixture));
-    await factoryCallAnyFixture(fixture, "bToken", "setAdmin", [admin.address]);
     ethIn = ethers.utils.parseEther(eth.toString());
   });
 
-  it("Should correctly distribute", async () => {
-    await callFunctionAndGetReturnValues(
-      fixture.bToken,
-      "mint",
-      admin,
-      [minBTokens],
-      ethIn
-    );
-    const splits = [250, 250, 250, 250];
-    await fixture.bToken.setSplits(splits[0], splits[1], splits[2], splits[3]);
-    await callFunctionAndGetReturnValues(
-      fixture.bToken,
-      "distribute",
-      admin,
-      []
-    );
-    const distributable = ethIn.sub(await fixture.bToken.getPoolBalance());
-    expect(
-      (await ethers.provider.getBalance(fixture.validatorStaking.address)).mul(
-        1000
-      )
-    ).to.be.equal(distributable.mul(splits[0]));
-    expect(
-      (await ethers.provider.getBalance(fixture.publicStaking.address)).mul(
-        1000
-      )
-    ).to.be.equal(distributable.mul(splits[1]));
-    expect(
+  it("Should not allow reentrancy on Distribution contract", async () => {
+    const transaction = await fixture.factory.deployCreate(
       (
-        await ethers.provider.getBalance(
-          fixture.liquidityProviderStaking.address
-        )
-      ).mul(1000)
-    ).to.be.equal(distributable.mul(splits[2]));
-    expect(
-      (await ethers.provider.getBalance(fixture.foundation.address)).mul(1000)
-    ).to.be.equal(distributable.mul(splits[3]));
+        await ethers.getContractFactory("ReentrantLoopDistributionMock")
+      ).getDeployTransaction().data as BytesLike
+    );
+    await fixture.factory.upgradeProxy(
+      ethers.utils.formatBytes32String("Distribution"),
+      await getContractAddressFromDeployedRawEvent(transaction),
+      "0x"
+    );
+    await fixture.bToken.mint(0, { value: ethIn });
+    await expect(fixture.bToken.distribute()).to.be.revertedWithCustomError(
+      fixture.bToken,
+      "MutexLocked"
+    );
+  });
+
+  it("Should not allow reentrancy on subCalls in the distribution contract", async () => {
+    const transaction = await fixture.factory.deployCreate(
+      (
+        await ethers.getContractFactory("ReentrantLoopDistributionMock")
+      ).getDeployTransaction().data as BytesLike
+    );
+    await fixture.factory.upgradeProxy(
+      ethers.utils.formatBytes32String("Foundation"),
+      await getContractAddressFromDeployedRawEvent(transaction),
+      "0x"
+    );
+    await fixture.bToken.mint(0, { value: ethIn });
+    await expect(fixture.bToken.distribute()).to.be.revertedWithCustomError(
+      fixture.bToken,
+      "MutexLocked"
+    );
+  });
+
+  it("Should correctly distribute", async () => {
+    const splits = [250, 250, 250, 250];
+    await updateDistributionContract(fixture, splits);
+    const distributable = await mintDistributeAndAssert(
+      fixture,
+      splits,
+      ethIn,
+      BigNumber.from(0)
+    );
+    await mintDistributeAndAssert(fixture, splits, ethIn, distributable);
   });
 
   it("Should correctly distribute big amount of eth", async () => {
-    ethIn = ethers.utils.parseEther("70000000000".toString());
+    ethIn = ethers.utils.parseEther("70000000000");
     const splits = [250, 250, 250, 250];
-    await fixture.bToken.setSplits(splits[0], splits[1], splits[2], splits[3]);
-    // Burn previous supply
-    await callFunctionAndGetReturnValues(
-      fixture.bToken,
-      "mint",
-      admin,
-      [minBTokens],
-      ethIn
+    await updateDistributionContract(fixture, splits);
+    const distributable = await mintDistributeAndAssert(
+      fixture,
+      splits,
+      ethIn,
+      BigNumber.from(0)
     );
-    await callFunctionAndGetReturnValues(
-      fixture.bToken,
-      "distribute",
-      admin,
-      []
-    );
-    const distributable = ethIn.sub(await fixture.bToken.getPoolBalance());
-    expect(
-      (await ethers.provider.getBalance(fixture.validatorStaking.address)).mul(
-        1000
-      )
-    ).to.be.equal(distributable.mul(splits[0]));
-    expect(
-      (await ethers.provider.getBalance(fixture.publicStaking.address)).mul(
-        1000
-      )
-    ).to.be.equal(distributable.mul(splits[1]));
-    expect(
-      (
-        await ethers.provider.getBalance(
-          fixture.liquidityProviderStaking.address
-        )
-      ).mul(1000)
-    ).to.be.equal(distributable.mul(splits[2]));
-    expect(
-      (await ethers.provider.getBalance(fixture.foundation.address)).mul(1000)
-    ).to.be.equal(distributable.mul(splits[3]));
+    await mintDistributeAndAssert(fixture, splits, ethIn, distributable);
   });
 
   it("Should distribute without foundation", async () => {
-    await callFunctionAndGetReturnValues(
-      fixture.bToken,
-      "mint",
-      admin,
-      [minBTokens],
-      ethIn
-    );
+    await fixture.bToken.mint(minBTokens, { value: ethIn });
     const splits = [350, 350, 300, 0];
-    await fixture.bToken.setSplits(splits[0], splits[1], splits[2], splits[3]);
-    await callFunctionAndGetReturnValues(
-      fixture.bToken,
-      "distribute",
-      admin,
-      []
+    await updateDistributionContract(fixture, splits);
+    const distributable = await mintDistributeAndAssert(
+      fixture,
+      splits,
+      ethIn,
+      BigNumber.from(0)
     );
-    const distributable = ethIn.sub(await fixture.bToken.getPoolBalance());
-    expect(
-      (await ethers.provider.getBalance(fixture.validatorStaking.address)).mul(
-        1000
-      )
-    ).to.be.equal(distributable.mul(splits[0]));
-    expect(
-      (await ethers.provider.getBalance(fixture.publicStaking.address)).mul(
-        1000
-      )
-    ).to.be.equal(distributable.mul(splits[1]));
-    expect(
-      (
-        await ethers.provider.getBalance(
-          fixture.liquidityProviderStaking.address
-        )
-      ).mul(1000)
-    ).to.be.equal(distributable.mul(splits[2]));
-    expect(
-      (await ethers.provider.getBalance(fixture.foundation.address)).mul(1000)
-    ).to.be.equal(distributable.mul(splits[3]));
+    await mintDistributeAndAssert(fixture, splits, ethIn, distributable);
   });
 
   it("Should distribute without liquidityProviderStaking", async () => {
-    await callFunctionAndGetReturnValues(
-      fixture.bToken,
-      "mint",
-      admin,
-      [minBTokens],
-      ethIn
-    );
     const splits = [350, 350, 0, 300];
-    await fixture.bToken.setSplits(splits[0], splits[1], splits[2], splits[3]);
-    await callFunctionAndGetReturnValues(
-      fixture.bToken,
-      "distribute",
-      admin,
-      []
+    await updateDistributionContract(fixture, splits);
+    const distributable = await mintDistributeAndAssert(
+      fixture,
+      splits,
+      ethIn,
+      BigNumber.from(0)
     );
-    const distributable = ethIn.sub(await fixture.bToken.getPoolBalance());
-    expect(
-      (await ethers.provider.getBalance(fixture.validatorStaking.address)).mul(
-        1000
-      )
-    ).to.be.equal(distributable.mul(splits[0]));
-    expect(
-      (await ethers.provider.getBalance(fixture.publicStaking.address)).mul(
-        1000
-      )
-    ).to.be.equal(distributable.mul(splits[1]));
-    expect(
-      (
-        await ethers.provider.getBalance(
-          fixture.liquidityProviderStaking.address
-        )
-      ).mul(1000)
-    ).to.be.equal(distributable.mul(splits[2]));
-    expect(
-      (await ethers.provider.getBalance(fixture.foundation.address)).mul(1000)
-    ).to.be.equal(distributable.mul(splits[3]));
+    await mintDistributeAndAssert(fixture, splits, ethIn, distributable);
   });
 
   it("Should distribute without publicStaking", async () => {
-    await callFunctionAndGetReturnValues(
-      fixture.bToken,
-      "mint",
-      admin,
-      [minBTokens],
-      ethIn
+    const splits = [350, 0, 350, 300];
+    await updateDistributionContract(fixture, splits);
+    const distributable = await mintDistributeAndAssert(
+      fixture,
+      splits,
+      ethIn,
+      BigNumber.from(0)
     );
-    const splits = [350, 350, 0, 300];
-    await fixture.bToken.setSplits(splits[0], splits[1], splits[2], splits[3]);
-    await callFunctionAndGetReturnValues(
-      fixture.bToken,
-      "distribute",
-      admin,
-      []
-    );
-    const distributable = ethIn.sub(await fixture.bToken.getPoolBalance());
-    expect(
-      (await ethers.provider.getBalance(fixture.validatorStaking.address)).mul(
-        1000
-      )
-    ).to.be.equal(distributable.mul(splits[0]));
-    expect(
-      (await ethers.provider.getBalance(fixture.publicStaking.address)).mul(
-        1000
-      )
-    ).to.be.equal(distributable.mul(splits[1]));
-    expect(
-      (
-        await ethers.provider.getBalance(
-          fixture.liquidityProviderStaking.address
-        )
-      ).mul(1000)
-    ).to.be.equal(distributable.mul(splits[2]));
-    expect(
-      (await ethers.provider.getBalance(fixture.foundation.address)).mul(1000)
-    ).to.be.equal(distributable.mul(splits[3]));
+    await mintDistributeAndAssert(fixture, splits, ethIn, distributable);
   });
 
   it("Should distribute without validatorStaking", async () => {
-    await callFunctionAndGetReturnValues(
-      fixture.bToken,
-      "mint",
-      admin,
-      [minBTokens],
-      ethIn
-    );
     const splits = [0, 350, 350, 300];
-    await fixture.bToken.setSplits(splits[0], splits[1], splits[2], splits[3]);
-    await callFunctionAndGetReturnValues(
-      fixture.bToken,
-      "distribute",
-      admin,
-      []
+    await updateDistributionContract(fixture, splits);
+    const distributable = await mintDistributeAndAssert(
+      fixture,
+      splits,
+      ethIn,
+      BigNumber.from(0)
     );
-    const distributable = ethIn.sub(await fixture.bToken.getPoolBalance());
-    expect(
-      (await ethers.provider.getBalance(fixture.validatorStaking.address)).mul(
-        1000
-      )
-    ).to.be.equal(distributable.mul(splits[0]));
-    expect(
-      (await ethers.provider.getBalance(fixture.publicStaking.address)).mul(
-        1000
-      )
-    ).to.be.equal(distributable.mul(splits[1]));
-    expect(
-      (
-        await ethers.provider.getBalance(
-          fixture.liquidityProviderStaking.address
-        )
-      ).mul(1000)
-    ).to.be.equal(distributable.mul(splits[2]));
-    expect(
-      (await ethers.provider.getBalance(fixture.foundation.address)).mul(1000)
-    ).to.be.equal(distributable.mul(splits[3]));
+    await mintDistributeAndAssert(fixture, splits, ethIn, distributable);
   });
 });

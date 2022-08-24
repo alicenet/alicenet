@@ -2,6 +2,7 @@ package objs
 
 import (
 	capnp "github.com/MadBase/go-capnproto2/v2"
+
 	mdefs "github.com/alicenet/alicenet/application/objs/capn"
 	"github.com/alicenet/alicenet/application/objs/txinlinker"
 	"github.com/alicenet/alicenet/constants"
@@ -16,7 +17,7 @@ type TXInLinker struct {
 }
 
 // UnmarshalBinary takes a byte slice and returns the corresponding
-// TXInLinker object
+// TXInLinker object.
 func (b *TXInLinker) UnmarshalBinary(data []byte) error {
 	bc, err := txinlinker.Unmarshal(data)
 	if err != nil {
@@ -26,7 +27,7 @@ func (b *TXInLinker) UnmarshalBinary(data []byte) error {
 }
 
 // MarshalBinary takes the TXInLinker object and returns the canonical
-// byte slice
+// byte slice.
 func (b *TXInLinker) MarshalBinary() ([]byte, error) {
 	if b == nil {
 		return nil, errorz.ErrInvalid{}.New("txinl.marshalBinary; txinl not initialized")
@@ -38,7 +39,7 @@ func (b *TXInLinker) MarshalBinary() ([]byte, error) {
 	return txinlinker.Marshal(bc)
 }
 
-// UnmarshalCapn unmarshals the capnproto definition of the object
+// UnmarshalCapn unmarshals the capnproto definition of the object.
 func (b *TXInLinker) UnmarshalCapn(bc mdefs.TXInLinker) error {
 	if err := txinlinker.Validate(bc); err != nil {
 		return err
@@ -51,7 +52,7 @@ func (b *TXInLinker) UnmarshalCapn(bc mdefs.TXInLinker) error {
 	return nil
 }
 
-// MarshalCapn marshals the object into its capnproto definition
+// MarshalCapn marshals the object into its capnproto definition.
 func (b *TXInLinker) MarshalCapn(seg *capnp.Segment) (mdefs.TXInLinker, error) {
 	if b == nil {
 		return mdefs.TXInLinker{}, errorz.ErrInvalid{}.New("txinl.marshalCapn; txinl not initialized")
@@ -88,7 +89,7 @@ func (b *TXInLinker) MarshalCapn(seg *capnp.Segment) (mdefs.TXInLinker, error) {
 	return bc, nil
 }
 
-// PreHash returns the PreHash of the object
+// PreHash returns the PreHash of the object.
 func (b *TXInLinker) PreHash() ([]byte, error) {
 	if b == nil {
 		return nil, errorz.ErrInvalid{}.New("txinl.preHash; txinl not initialized")
@@ -96,7 +97,7 @@ func (b *TXInLinker) PreHash() ([]byte, error) {
 	return b.TXInPreImage.PreHash()
 }
 
-// UTXOID returns the UTXOID of the object
+// UTXOID returns the UTXOID of the object.
 func (b *TXInLinker) UTXOID() ([]byte, error) {
 	if b == nil {
 		return nil, errorz.ErrInvalid{}.New("txinl.utxoID; txinl not initialized")
@@ -112,7 +113,7 @@ func (b *TXInLinker) IsDeposit() bool {
 	return b.TXInPreImage.IsDeposit()
 }
 
-// ChainID returns the chain ID
+// ChainID returns the chain ID.
 func (b *TXInLinker) ChainID() (uint32, error) {
 	if b == nil {
 		return 0, errorz.ErrInvalid{}.New("txinl.chainID; txinl not initialized")
@@ -126,7 +127,7 @@ func (b *TXInLinker) ChainID() (uint32, error) {
 	return b.TXInPreImage.ChainID, nil
 }
 
-// SetTxHash sets TxHash
+// SetTxHash sets TxHash.
 func (b *TXInLinker) SetTxHash(txHash []byte) error {
 	if b == nil {
 		return errorz.ErrInvalid{}.New("txinl.setTxHash; txinl not initialized")
@@ -141,7 +142,7 @@ func (b *TXInLinker) SetTxHash(txHash []byte) error {
 	return nil
 }
 
-// ConsumedTxIdx returns the consumed TxIdx
+// ConsumedTxIdx returns the consumed TxIdx.
 func (b *TXInLinker) ConsumedTxIdx() (uint32, error) {
 	if b == nil {
 		return 0, errorz.ErrInvalid{}.New("txinl.consumedTxIdx; txinl not initialized")
@@ -152,7 +153,7 @@ func (b *TXInLinker) ConsumedTxIdx() (uint32, error) {
 	return b.TXInPreImage.ConsumedTxIdx, nil
 }
 
-// ConsumedTxHash returns the consumed TxHash
+// ConsumedTxHash returns the consumed TxHash.
 func (b *TXInLinker) ConsumedTxHash() ([]byte, error) {
 	if b == nil {
 		return nil, errorz.ErrInvalid{}.New("txinl.consumedTxHash; txinl not initialized")

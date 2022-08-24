@@ -2,6 +2,7 @@ package txinpreimage
 
 import (
 	capnp "github.com/MadBase/go-capnproto2/v2"
+
 	mdefs "github.com/alicenet/alicenet/application/objs/capn"
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/errorz"
@@ -40,7 +41,7 @@ func Unmarshal(data []byte) (mdefs.TXInPreImage, error) {
 	return obj, nil
 }
 
-// Validate will validate the TXInPreImage object
+// Validate will validate the TXInPreImage object.
 func Validate(v mdefs.TXInPreImage) error {
 	if v.ChainID() < 1 {
 		return errorz.ErrInvalid{}.New("txinpreimage capn obj is not valid: invalid ChainID")

@@ -6,17 +6,17 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/alicenet/alicenet/bridge/bindings"
 	"github.com/alicenet/alicenet/layer1/monitor/events"
 	"github.com/alicenet/alicenet/layer1/monitor/interfaces"
 	"github.com/alicenet/alicenet/layer1/monitor/objects"
 	"github.com/alicenet/alicenet/test/mocks"
-	"github.com/ethereum/go-ethereum/accounts/abi"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestRegisteringETHDKGEvents(t *testing.T) {
-
 	var em *objects.EventMap = objects.NewEventMap()
 	db := mocks.NewTestDB()
 	var adminHandler interfaces.AdminHandler = mocks.NewMockAdminHandler()

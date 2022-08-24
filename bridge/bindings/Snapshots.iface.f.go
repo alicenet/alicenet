@@ -25,16 +25,16 @@ type ISnapshotsFilterer interface {
 	//
 	// Solidity: event Initialized(uint8 version)
 	ParseInitialized(log types.Log) (*SnapshotsInitialized, error)
-	// FilterSnapshotTaken is a free log retrieval operation binding the contract event 0x24b0dff7469a7007db81d741ef90d7966936fb78bc19d667f4575ecbf56ab350.
+	// FilterSnapshotTaken is a free log retrieval operation binding the contract event 0x709e2f13a448a6bdef51a1fcadf45303dee0b6bff5bdf628829f401b019b7e9b.
 	//
-	// Solidity: event SnapshotTaken(uint256 chainId, uint256 indexed epoch, uint256 height, address indexed validator, bool isSafeToProceedConsensus, bytes signatureRaw)
+	// Solidity: event SnapshotTaken(uint256 chainId, uint256 indexed epoch, uint256 height, address indexed validator, bool isSafeToProceedConsensus, uint256[4] masterPublicKey, uint256[2] signature, (uint32,uint32,uint32,bytes32,bytes32,bytes32,bytes32) bClaims)
 	FilterSnapshotTaken(opts *bind.FilterOpts, epoch []*big.Int, validator []common.Address) (*SnapshotsSnapshotTakenIterator, error)
-	// WatchSnapshotTaken is a free log subscription operation binding the contract event 0x24b0dff7469a7007db81d741ef90d7966936fb78bc19d667f4575ecbf56ab350.
+	// WatchSnapshotTaken is a free log subscription operation binding the contract event 0x709e2f13a448a6bdef51a1fcadf45303dee0b6bff5bdf628829f401b019b7e9b.
 	//
-	// Solidity: event SnapshotTaken(uint256 chainId, uint256 indexed epoch, uint256 height, address indexed validator, bool isSafeToProceedConsensus, bytes signatureRaw)
+	// Solidity: event SnapshotTaken(uint256 chainId, uint256 indexed epoch, uint256 height, address indexed validator, bool isSafeToProceedConsensus, uint256[4] masterPublicKey, uint256[2] signature, (uint32,uint32,uint32,bytes32,bytes32,bytes32,bytes32) bClaims)
 	WatchSnapshotTaken(opts *bind.WatchOpts, sink chan<- *SnapshotsSnapshotTaken, epoch []*big.Int, validator []common.Address) (event.Subscription, error)
-	// ParseSnapshotTaken is a log parse operation binding the contract event 0x24b0dff7469a7007db81d741ef90d7966936fb78bc19d667f4575ecbf56ab350.
+	// ParseSnapshotTaken is a log parse operation binding the contract event 0x709e2f13a448a6bdef51a1fcadf45303dee0b6bff5bdf628829f401b019b7e9b.
 	//
-	// Solidity: event SnapshotTaken(uint256 chainId, uint256 indexed epoch, uint256 height, address indexed validator, bool isSafeToProceedConsensus, bytes signatureRaw)
+	// Solidity: event SnapshotTaken(uint256 chainId, uint256 indexed epoch, uint256 height, address indexed validator, bool isSafeToProceedConsensus, uint256[4] masterPublicKey, uint256[2] signature, (uint32,uint32,uint32,bytes32,bytes32,bytes32,bytes32) bClaims)
 	ParseSnapshotTaken(log types.Log) (*SnapshotsSnapshotTaken, error)
 }

@@ -2,6 +2,7 @@ package objs
 
 import (
 	capnp "github.com/MadBase/go-capnproto2/v2"
+
 	mdefs "github.com/alicenet/alicenet/consensus/objs/capn"
 	"github.com/alicenet/alicenet/consensus/objs/nextround"
 	"github.com/alicenet/alicenet/crypto"
@@ -19,7 +20,7 @@ type NextRound struct {
 }
 
 // UnmarshalBinary takes a byte slice and returns the corresponding
-// NextRound object
+// NextRound object.
 func (b *NextRound) UnmarshalBinary(data []byte) error {
 	if b == nil {
 		return errorz.ErrInvalid{}.New("NextRound.UnmarshalBinary; nr not initialized")
@@ -32,7 +33,7 @@ func (b *NextRound) UnmarshalBinary(data []byte) error {
 	return b.UnmarshalCapn(bh)
 }
 
-// UnmarshalCapn unmarshals the capnproto definition of the object
+// UnmarshalCapn unmarshals the capnproto definition of the object.
 func (b *NextRound) UnmarshalCapn(bh mdefs.NextRound) error {
 	if b == nil {
 		return errorz.ErrInvalid{}.New("NextRound.UnmarshalCapn; nr not initialized")
@@ -51,7 +52,7 @@ func (b *NextRound) UnmarshalCapn(bh mdefs.NextRound) error {
 }
 
 // MarshalBinary takes the NextRound object and returns the canonical
-// byte slice
+// byte slice.
 func (b *NextRound) MarshalBinary() ([]byte, error) {
 	if b == nil {
 		return nil, errorz.ErrInvalid{}.New("NextRound.MarshalBinary; nr not initialized")
@@ -64,7 +65,7 @@ func (b *NextRound) MarshalBinary() ([]byte, error) {
 	return nextround.Marshal(bh)
 }
 
-// MarshalCapn marshals the object into its capnproto definition
+// MarshalCapn marshals the object into its capnproto definition.
 func (b *NextRound) MarshalCapn(seg *capnp.Segment) (mdefs.NextRound, error) {
 	if b == nil {
 		return mdefs.NextRound{}, errorz.ErrInvalid{}.New("NextRound.MarshalCapn; nr not initialized")

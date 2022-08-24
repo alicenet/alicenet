@@ -30,7 +30,7 @@ var (
 
 // GovernanceMetaData contains all meta data concerning the Governance contract.
 var GovernanceMetaData = &bind.MetaData{
-	ABI: "[{\"inputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"uint256\",\"name\":\"epoch\",\"type\":\"uint256\"},{\"indexed\":true,\"internalType\":\"uint256\",\"name\":\"key\",\"type\":\"uint256\"},{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"value\",\"type\":\"bytes32\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"who\",\"type\":\"address\"}],\"name\":\"ValueUpdated\",\"type\":\"event\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"epoch\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"key\",\"type\":\"uint256\"},{\"internalType\":\"bytes32\",\"name\":\"value\",\"type\":\"bytes32\"}],\"name\":\"updateValue\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]",
+	ABI: "[{\"inputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"}],\"name\":\"OnlyFactoryAllowed\",\"type\":\"error\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"chainId\",\"type\":\"uint256\"},{\"indexed\":true,\"internalType\":\"uint256\",\"name\":\"epoch\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"height\",\"type\":\"uint256\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"validator\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"bool\",\"name\":\"isSafeToProceedConsensus\",\"type\":\"bool\"},{\"indexed\":false,\"internalType\":\"bytes\",\"name\":\"signatureRaw\",\"type\":\"bytes\"}],\"name\":\"SnapshotTaken\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"uint256\",\"name\":\"epoch\",\"type\":\"uint256\"},{\"indexed\":true,\"internalType\":\"uint256\",\"name\":\"key\",\"type\":\"uint256\"},{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"value\",\"type\":\"bytes32\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"who\",\"type\":\"address\"}],\"name\":\"ValueUpdated\",\"type\":\"event\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"epoch\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"key\",\"type\":\"uint256\"},{\"internalType\":\"bytes32\",\"name\":\"value\",\"type\":\"bytes32\"}],\"name\":\"updateValue\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]",
 }
 
 // GovernanceABI is the input ABI used to generate the binding from.
@@ -198,6 +198,165 @@ func (_Governance *GovernanceSession) UpdateValue(epoch *big.Int, key *big.Int, 
 // Solidity: function updateValue(uint256 epoch, uint256 key, bytes32 value) returns()
 func (_Governance *GovernanceTransactorSession) UpdateValue(epoch *big.Int, key *big.Int, value [32]byte) (*types.Transaction, error) {
 	return _Governance.Contract.UpdateValue(&_Governance.TransactOpts, epoch, key, value)
+}
+
+// GovernanceSnapshotTakenIterator is returned from FilterSnapshotTaken and is used to iterate over the raw logs and unpacked data for SnapshotTaken events raised by the Governance contract.
+type GovernanceSnapshotTakenIterator struct {
+	Event *GovernanceSnapshotTaken // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *GovernanceSnapshotTakenIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(GovernanceSnapshotTaken)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(GovernanceSnapshotTaken)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *GovernanceSnapshotTakenIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *GovernanceSnapshotTakenIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// GovernanceSnapshotTaken represents a SnapshotTaken event raised by the Governance contract.
+type GovernanceSnapshotTaken struct {
+	ChainId                  *big.Int
+	Epoch                    *big.Int
+	Height                   *big.Int
+	Validator                common.Address
+	IsSafeToProceedConsensus bool
+	SignatureRaw             []byte
+	Raw                      types.Log // Blockchain specific contextual infos
+}
+
+// FilterSnapshotTaken is a free log retrieval operation binding the contract event 0x24b0dff7469a7007db81d741ef90d7966936fb78bc19d667f4575ecbf56ab350.
+//
+// Solidity: event SnapshotTaken(uint256 chainId, uint256 indexed epoch, uint256 height, address indexed validator, bool isSafeToProceedConsensus, bytes signatureRaw)
+func (_Governance *GovernanceFilterer) FilterSnapshotTaken(opts *bind.FilterOpts, epoch []*big.Int, validator []common.Address) (*GovernanceSnapshotTakenIterator, error) {
+
+	var epochRule []interface{}
+	for _, epochItem := range epoch {
+		epochRule = append(epochRule, epochItem)
+	}
+
+	var validatorRule []interface{}
+	for _, validatorItem := range validator {
+		validatorRule = append(validatorRule, validatorItem)
+	}
+
+	logs, sub, err := _Governance.contract.FilterLogs(opts, "SnapshotTaken", epochRule, validatorRule)
+	if err != nil {
+		return nil, err
+	}
+	return &GovernanceSnapshotTakenIterator{contract: _Governance.contract, event: "SnapshotTaken", logs: logs, sub: sub}, nil
+}
+
+// WatchSnapshotTaken is a free log subscription operation binding the contract event 0x24b0dff7469a7007db81d741ef90d7966936fb78bc19d667f4575ecbf56ab350.
+//
+// Solidity: event SnapshotTaken(uint256 chainId, uint256 indexed epoch, uint256 height, address indexed validator, bool isSafeToProceedConsensus, bytes signatureRaw)
+func (_Governance *GovernanceFilterer) WatchSnapshotTaken(opts *bind.WatchOpts, sink chan<- *GovernanceSnapshotTaken, epoch []*big.Int, validator []common.Address) (event.Subscription, error) {
+
+	var epochRule []interface{}
+	for _, epochItem := range epoch {
+		epochRule = append(epochRule, epochItem)
+	}
+
+	var validatorRule []interface{}
+	for _, validatorItem := range validator {
+		validatorRule = append(validatorRule, validatorItem)
+	}
+
+	logs, sub, err := _Governance.contract.WatchLogs(opts, "SnapshotTaken", epochRule, validatorRule)
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(GovernanceSnapshotTaken)
+				if err := _Governance.contract.UnpackLog(event, "SnapshotTaken", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseSnapshotTaken is a log parse operation binding the contract event 0x24b0dff7469a7007db81d741ef90d7966936fb78bc19d667f4575ecbf56ab350.
+//
+// Solidity: event SnapshotTaken(uint256 chainId, uint256 indexed epoch, uint256 height, address indexed validator, bool isSafeToProceedConsensus, bytes signatureRaw)
+func (_Governance *GovernanceFilterer) ParseSnapshotTaken(log types.Log) (*GovernanceSnapshotTaken, error) {
+	event := new(GovernanceSnapshotTaken)
+	if err := _Governance.contract.UnpackLog(event, "SnapshotTaken", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
 }
 
 // GovernanceValueUpdatedIterator is returned from FilterValueUpdated and is used to iterate over the raw logs and unpacked data for ValueUpdated events raised by the Governance contract.

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT-open-group
-pragma solidity ^0.8.11;
+pragma solidity ^0.8.16;
 import "contracts/utils/DeterministicAddress.sol";
 import "contracts/interfaces/IStakingNFT.sol";
 import "contracts/interfaces/IERC20Transferable.sol";
@@ -21,7 +21,7 @@ abstract contract ValidatorPoolStorage is
     uint256 public constant CLAIM_PERIOD = 3;
 
     // Maximum number the ethereum blocks allowed without a validator committing a snapshot
-    uint256 public constant MAX_INTERVAL_WITHOUT_SNAPSHOTS = 8192;
+    uint256 internal _maxIntervalWithoutSnapshots;
 
     // Minimum amount to stake
     uint256 internal _stakeAmount;

@@ -5,7 +5,7 @@ import (
 	"encoding/hex"
 )
 
-// Converts a uint32 into a hex string
+// Converts a uint32 into a hex string.
 func uint32ToHexString(v uint32) string {
 	b := make([]byte, 4)
 	binary.BigEndian.PutUint32(b[:], v)

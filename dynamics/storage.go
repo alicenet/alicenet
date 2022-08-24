@@ -54,9 +54,6 @@ type StorageGetter interface {
 	GetValueStoreFee() *big.Int
 	GetValueStoreValidVersion() uint32
 
-	GetAtomicSwapFee() *big.Int
-	GetAtomicSwapValidStopEpoch() uint32
-
 	GetMinTxFee() *big.Int
 	GetTxValidVersion() uint32
 }
@@ -391,7 +388,8 @@ func (s *Storage) loadStorage(txn *badger.Txn, epoch uint32) (*RawStorage, error
 //
 // We start at the most updated epoch and proceed backwards until we arrive
 // at the node with
-//		epoch >= node.thisEpoch
+//
+//	epoch >= node.thisEpoch
 func (s *Storage) loadRawStorage(txn *badger.Txn, epoch uint32) (*RawStorage, error) {
 	if epoch == 0 {
 		return nil, ErrZeroEpoch
@@ -710,24 +708,6 @@ func (s *Storage) GetValueStoreValidVersion() uint32 {
 	s.RLock()
 	defer s.RUnlock()
 	return s.rawStorage.GetValueStoreValidVersion()
-}
-
-// GetAtomicSwapFee returns the transaction fee for AtomicSwap
-func (s *Storage) GetAtomicSwapFee() *big.Int {
-	<-s.startChan
-
-	s.RLock()
-	defer s.RUnlock()
-	return s.rawStorage.GetAtomicSwapFee()
-}
-
-// GetAtomicSwapValidStopEpoch returns the last epoch at which AtomicSwap is valid
-func (s *Storage) GetAtomicSwapValidStopEpoch() uint32 {
-	<-s.startChan
-
-	s.RLock()
-	defer s.RUnlock()
-	return s.rawStorage.GetAtomicSwapValidStopEpoch()
 }
 
 // GetDataStoreEpochFee returns the DataStore fee per epoch

@@ -49,7 +49,7 @@ describe("PROXY", async () => {
     );
     const endPointLockable = await endPointLockableFactory.deploy(accounts[0]);
     const endPointFactory = await ethers.getContractFactory(END_POINT);
-    const endPoint = await endPointFactory.deploy(accounts[0]);
+    const endPoint = await endPointFactory.deploy();
     expect(proxy.deployed());
     const abicoder = new ethers.utils.AbiCoder();
     let encodedAddress = abicoder.encode(
@@ -75,9 +75,7 @@ describe("PROXY", async () => {
       data: "0xca11c0de" + encodedAddress.substring(2),
     };
     const response = proxy.fallback(txReq);
-    await expect(response).to.be.revertedWith(
-      "reverted with an unrecognized custom error"
-    );
+    await expect(response).to.be.reverted;
     txResponse = await proxyContract.upgradeUnlock();
     receipt = await txResponse.wait();
     expect(receipt.status).to.equal(1);

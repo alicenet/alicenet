@@ -19,6 +19,10 @@ type IATokenCaller interface {
 	//
 	// Solidity: function balanceOf(address account) view returns(uint256)
 	BalanceOf(opts *bind.CallOpts, account common.Address) (*big.Int, error)
+	// Convert is a free data retrieval call binding the contract method 0xa3908e1b.
+	//
+	// Solidity: function convert(uint256 amount) view returns(uint256)
+	Convert(opts *bind.CallOpts, amount *big.Int) (*big.Int, error)
 	// Decimals is a free data retrieval call binding the contract method 0x313ce567.
 	//
 	// Solidity: function decimals() view returns(uint8)

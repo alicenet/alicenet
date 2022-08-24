@@ -2,6 +2,7 @@ package objs
 
 import (
 	capnp "github.com/MadBase/go-capnproto2/v2"
+
 	mdefs "github.com/alicenet/alicenet/consensus/objs/capn"
 	"github.com/alicenet/alicenet/consensus/objs/validator"
 	"github.com/alicenet/alicenet/errorz"
@@ -15,7 +16,7 @@ type Validator struct {
 }
 
 // UnmarshalBinary takes a byte slice and returns the corresponding
-// Validator object
+// Validator object.
 func (b *Validator) UnmarshalBinary(data []byte) error {
 	if b == nil {
 		return errorz.ErrInvalid{}.New("Validator.UnmarshalBinary; validator not initialized")
@@ -28,7 +29,7 @@ func (b *Validator) UnmarshalBinary(data []byte) error {
 	return b.UnmarshalCapn(bh)
 }
 
-// UnmarshalCapn unmarshals the capnproto definition of the object
+// UnmarshalCapn unmarshals the capnproto definition of the object.
 func (b *Validator) UnmarshalCapn(bh mdefs.Validator) error {
 	if b == nil {
 		return errorz.ErrInvalid{}.New("Validator.UnmarshalCapn; validator not initialized")
@@ -43,7 +44,7 @@ func (b *Validator) UnmarshalCapn(bh mdefs.Validator) error {
 }
 
 // MarshalBinary takes the Validator object and returns the canonical
-// byte slice
+// byte slice.
 func (b *Validator) MarshalBinary() ([]byte, error) {
 	if b == nil {
 		return nil, errorz.ErrInvalid{}.New("Validator.MarshalBinary; validator not initialized")
@@ -56,7 +57,7 @@ func (b *Validator) MarshalBinary() ([]byte, error) {
 	return validator.Marshal(bh)
 }
 
-// MarshalCapn marshals the object into its capnproto definition
+// MarshalCapn marshals the object into its capnproto definition.
 func (b *Validator) MarshalCapn(seg *capnp.Segment) (mdefs.Validator, error) {
 	if b == nil {
 		return mdefs.Validator{}, errorz.ErrInvalid{}.New("Validator.MarshalCapn; validator not initialized")

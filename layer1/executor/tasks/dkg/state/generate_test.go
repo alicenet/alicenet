@@ -6,11 +6,12 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/alicenet/alicenet/crypto/bn256/cloudflare"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests/utils"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestMath_CalculateThreshold(t *testing.T) {
@@ -79,7 +80,8 @@ func TestMath_GenerateShares(t *testing.T) {
 		participant := &state.Participant{
 			Address:   address,
 			Index:     idx + 1,
-			PublicKey: publicKey}
+			PublicKey: publicKey,
+		}
 
 		participants = append(participants, participant)
 	}
@@ -124,13 +126,13 @@ func TestMath_GenerateKeyShare(t *testing.T) {
 	// Make n participants
 	participants := []*state.Participant{{Index: 0}}
 	for idx := 0; idx < n; idx++ {
-
 		address, _, publicKey := utils.GenerateTestAddress(t)
 
 		participant := &state.Participant{
 			Address:   address,
 			Index:     idx + 1,
-			PublicKey: publicKey}
+			PublicKey: publicKey,
+		}
 
 		participants = append(participants, participant)
 	}
@@ -177,14 +179,14 @@ func TestMath_GenerateMasterPublicKey(t *testing.T) {
 	privateKeys := make(map[common.Address]*big.Int)
 	participants := []*state.Participant{{Index: 0}}
 	for idx := 0; idx < n; idx++ {
-
 		address, privateKey, publicKey := utils.GenerateTestAddress(t)
 
 		privateKeys[address] = privateKey
 		participant := &state.Participant{
 			Address:   address,
 			Index:     idx + 1,
-			PublicKey: publicKey}
+			PublicKey: publicKey,
+		}
 
 		participants = append(participants, participant)
 	}
@@ -221,21 +223,21 @@ func TestMath_GenerateMasterPublicKey(t *testing.T) {
 }
 
 func TestMath_GenerateMasterPublicKeyBad(t *testing.T) {
-	keyShare1s := [][2]*big.Int{[2]*big.Int{nil, nil}}
+	keyShare1s := [][2]*big.Int{{nil, nil}}
 	keyShare2s := [][4]*big.Int{}
 	_, err := state.GenerateMasterPublicKey(keyShare1s, keyShare2s)
 	if err == nil {
 		t.Fatal("Should have raised error (1)")
 	}
 
-	keyShare1s = [][2]*big.Int{[2]*big.Int{nil, nil}}
-	keyShare2s = [][4]*big.Int{[4]*big.Int{nil, nil, nil, nil}}
+	keyShare1s = [][2]*big.Int{{nil, nil}}
+	keyShare2s = [][4]*big.Int{{nil, nil, nil, nil}}
 	_, err = state.GenerateMasterPublicKey(keyShare1s, keyShare2s)
 	if err == nil {
 		t.Fatal("Should have raised error (2)")
 	}
 
-	keyShare1s = [][2]*big.Int{[2]*big.Int{common.Big1, common.Big2}}
+	keyShare1s = [][2]*big.Int{{common.Big1, common.Big2}}
 	_, err = state.GenerateMasterPublicKey(keyShare1s, keyShare2s)
 	if err == nil {
 		t.Fatal("Should have raised error (3)")
@@ -295,7 +297,7 @@ func TestMath_GenerateGroupKeys(t *testing.T) {
 	// assert.NotNil(t, groupSignature[0], "group signature element is missing")
 	// assert.NotNil(t, groupSignature[1], "group signature element is missing")
 
-	//t.Logf("groupPrivate:%x groupPublic:%x groupSignature:%x", groupPrivate, groupPublic, groupSignature)
+	// t.Logf("groupPrivate:%x groupPublic:%x groupSignature:%x", groupPrivate, groupPublic, groupSignature)
 }
 
 func TestMath_GenerateGroupKeysBad1(t *testing.T) {

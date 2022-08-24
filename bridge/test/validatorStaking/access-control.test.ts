@@ -5,16 +5,45 @@ import { ValidatorPoolMock } from "../../typechain-types";
 import { expect } from "../chai-setup";
 import { Fixture, getFixture, mineBlocks } from "../setup";
 
+describe("Initialization", async function () {
+  let fixture: Fixture;
+
+  beforeEach(async function () {
+    fixture = await getFixture();
+  });
+
+  it("Should not allow initialize more than once", async () => {
+    await expect(
+      fixture.factory.callAny(
+        fixture.validatorStaking.address,
+        0,
+        fixture.validatorStaking.interface.encodeFunctionData("initialize")
+      )
+    ).to.revertedWith("Initializable: contract is already initialized");
+  });
+
+  it("Only factory should be allowed to call initialize", async () => {
+    const validatorStaking = await (
+      await ethers.getContractFactory("ValidatorStaking")
+    ).deploy();
+    const [, user] = await ethers.getSigners();
+    await expect(
+      validatorStaking.connect(user).initialize()
+    ).to.revertedWithCustomError(validatorStaking, "OnlyFactory");
+  });
+});
+
 describe("ValidatorStaking: Testing ValidatorStaking Access Control", async () => {
   let fixture: Fixture;
   let notAdminSigner: SignerWithAddress;
+  let notAdmin: SignerWithAddress;
   const lockTime = 1;
   let amount: BigNumberish;
   let validatorPool: ValidatorPoolMock;
 
   beforeEach(async function () {
     fixture = await getFixture(true, true);
-    const [, notAdmin] = fixture.namedSigners;
+    [, notAdmin] = fixture.namedSigners;
     notAdminSigner = await ethers.getSigner(notAdmin.address);
     validatorPool = fixture.validatorPool as ValidatorPoolMock;
     amount = await validatorPool.getStakeAmount();
@@ -67,13 +96,23 @@ describe("ValidatorStaking: Testing ValidatorStaking Access Control", async () =
     it("Mint a token", async function () {
       await expect(
         fixture.validatorStaking.connect(notAdminSigner).mint(amount)
-      ).to.be.revertedWith("2010");
+      )
+        .to.be.revertedWithCustomError(
+          fixture.validatorStaking,
+          `OnlyValidatorPool`
+        )
+        .withArgs(notAdmin.address, fixture.validatorPool.address);
     });
 
     it("Burn a token", async function () {
       await expect(
         fixture.validatorStaking.connect(notAdminSigner).burn(42) // nonexistent
-      ).to.be.revertedWith("2010");
+      )
+        .to.be.revertedWithCustomError(
+          fixture.validatorStaking,
+          `OnlyValidatorPool`
+        )
+        .withArgs(notAdmin.address, fixture.validatorPool.address);
     });
 
     it("Mint a token to an address", async function () {
@@ -81,7 +120,12 @@ describe("ValidatorStaking: Testing ValidatorStaking Access Control", async () =
         fixture.validatorStaking
           .connect(notAdminSigner)
           .mintTo(notAdminSigner.address, amount, lockTime)
-      ).to.be.revertedWith("2010");
+      )
+        .to.be.revertedWithCustomError(
+          fixture.validatorStaking,
+          `OnlyValidatorPool`
+        )
+        .withArgs(notAdmin.address, fixture.validatorPool.address);
     });
 
     it("Burn a token from an address", async function () {
@@ -89,7 +133,12 @@ describe("ValidatorStaking: Testing ValidatorStaking Access Control", async () =
         fixture.validatorStaking
           .connect(notAdminSigner)
           .burnTo(notAdminSigner.address, 42) // nonexistent
-      ).to.be.revertedWith("2010");
+      )
+        .to.be.revertedWithCustomError(
+          fixture.validatorStaking,
+          `OnlyValidatorPool`
+        )
+        .withArgs(notAdmin.address, fixture.validatorPool.address);
     });
   });
 });

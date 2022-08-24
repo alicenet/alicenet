@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"testing"
 
+	"github.com/dgraph-io/badger/v2"
+
 	"github.com/alicenet/alicenet/crypto"
 	"github.com/alicenet/alicenet/internal/testing/environment"
-	"github.com/dgraph-io/badger/v2"
 )
 
 func makeHeightIdxIndex() *HeightIdxIndex {
@@ -161,7 +162,7 @@ func TestHeightIdxIndexgetHeightIdx(t *testing.T) {
 	t.Parallel()
 
 	index := makeHeightIdxIndex()
-	//txHash := crypto.Hasher([]byte("utxoID"))
+	// txHash := crypto.Hasher([]byte("utxoID"))
 	heightTrue := uint32(1234)
 	idxTrue := uint32(25519)
 

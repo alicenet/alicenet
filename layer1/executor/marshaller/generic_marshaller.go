@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/alicenet/alicenet/layer1/executor/tasks"
 	"reflect"
 	"sync"
 )
@@ -60,8 +59,7 @@ func (registry *TypeRegistry) LookupType(name string) (reflect.Type, bool) {
 }
 
 func (registry *TypeRegistry) WrapInstance(t interface{}) (*InstanceWrapper, error) {
-	clonedT := reflect.New(reflect.ValueOf(t).Elem().Type()).Interface().(tasks.Task)
-	tipe := reflect.TypeOf(clonedT)
+	tipe := reflect.TypeOf(t)
 	if tipe.Kind() == reflect.Ptr {
 		tipe = tipe.Elem()
 	}
@@ -71,7 +69,7 @@ func (registry *TypeRegistry) WrapInstance(t interface{}) (*InstanceWrapper, err
 		panic(fmt.Errorf("unable to wrapInstance: %v", tipe))
 	}
 
-	raw, err := json.Marshal(clonedT)
+	raw, err := json.Marshal(t)
 	if err != nil {
 		return nil, err
 	}
@@ -80,7 +78,6 @@ func (registry *TypeRegistry) WrapInstance(t interface{}) (*InstanceWrapper, err
 }
 
 func (registry *TypeRegistry) UnwrapInstance(wrapper *InstanceWrapper) (interface{}, error) {
-
 	tipe, present := registry.LookupType(wrapper.NameType)
 	if !present {
 		return nil, ErrUnknownName
@@ -104,7 +101,7 @@ func GetNameType(t interface{}) (string, reflect.Type) {
 	return tipe.String(), tipe
 }
 
-func (registry *TypeRegistry) GetNameTypeIsPresent(t interface{}) (string, reflect.Type, bool) {
+func (registry *TypeRegistry) NameTypeIsPresent(t any) (string, reflect.Type, bool) {
 	name, tipe := GetNameType(t)
 
 	_, present := registry.lookupName(tipe)

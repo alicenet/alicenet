@@ -5,6 +5,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/dgraph-io/badger/v2"
+	"github.com/sirupsen/logrus"
+	"google.golang.org/grpc"
+
 	"github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/consensus/lstate"
 	"github.com/alicenet/alicenet/consensus/objs"
@@ -15,10 +19,6 @@ import (
 	"github.com/alicenet/alicenet/middleware"
 	pb "github.com/alicenet/alicenet/proto"
 	"github.com/alicenet/alicenet/utils"
-
-	"github.com/dgraph-io/badger/v2"
-	"github.com/sirupsen/logrus"
-	"google.golang.org/grpc"
 )
 
 type appClient interface {
@@ -36,6 +36,7 @@ func (mb *mutexBool) Set(v bool) {
 	defer mb.Unlock()
 	mb.value = v
 }
+
 func (mb *mutexBool) Get() bool {
 	mb.RLock()
 	defer mb.RUnlock()
@@ -52,13 +53,14 @@ func (mb *mutexUint32) Set(v uint32) {
 	defer mb.Unlock()
 	mb.value = v
 }
+
 func (mb *mutexUint32) Get() uint32 {
 	mb.RLock()
 	defer mb.RUnlock()
 	return mb.value
 }
 
-// Client handles outbound gossip
+// Client handles outbound gossip.
 type Client struct {
 	sync.Mutex
 	wg       sync.WaitGroup
@@ -100,18 +102,18 @@ func (mb *Client) Init(database *db.Database, client pb.P2PClient, app appClient
 	mb.gossipTimeout = constants.MsgTimeout
 }
 
-// Close will stop the gossip bus such that it can not be started again
+// Close will stop the gossip bus such that it can not be started again.
 func (mb *Client) Close() {
 	mb.cancelCtx()
 	mb.wg.Wait()
 }
 
-// Done blocks until the service has an exit
+// Done blocks until the service has an exit.
 func (mb *Client) Done() <-chan struct{} {
 	return mb.ctx.Done()
 }
 
-// Start will start the service
+// Start will start the service.
 func (mb *Client) Start() error {
 	mb.database.SubscribeBroadcastTransaction(
 		mb.ctx,
@@ -215,7 +217,7 @@ func (mb *Client) getReGossipTxs(txn *badger.Txn, height uint32) ([][]byte, erro
 	return txout, nil
 }
 
-// ReGossip performs the reGossip logic
+// ReGossip performs the reGossip logic.
 func (mb *Client) ReGossip() error {
 	var isValidator bool
 	var height uint32

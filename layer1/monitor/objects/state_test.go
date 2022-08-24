@@ -8,7 +8,6 @@ import (
 )
 
 func createState() *MonitorState {
-
 	ms := &MonitorState{
 		Version:                0,
 		HighestBlockProcessed:  614,
@@ -40,7 +39,6 @@ func assertStateMatch(t *testing.T, ms *MonitorState) {
 }
 
 func TestBidirectionalJson(t *testing.T) {
-
 	// Build up a pseudo-realistic State instance
 	ms := createState()
 
