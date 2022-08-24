@@ -32,15 +32,21 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
         _snapshotDesperationFactor = desperationFactor_;
     }
 
+    /// @notice Set snapshot desperation delay
+    /// @param desperationDelay_ The desperation delay
     // todo: compute this value using the dynamic system and the alicenet block times.
     function setSnapshotDesperationDelay(uint32 desperationDelay_) public onlyFactory {
         _snapshotDesperationDelay = desperationDelay_;
     }
 
+    /// @notice Set snapshot desperation factor
+    /// @param desperationFactor_ The desperation factor
     function setSnapshotDesperationFactor(uint32 desperationFactor_) public onlyFactory {
         _snapshotDesperationFactor = desperationFactor_;
     }
 
+    /// @notice Set minimum interval between snapshots
+    /// @param minimumIntervalBetweenSnapshots_ The interval in blocks
     function setMinimumIntervalBetweenSnapshots(uint32 minimumIntervalBetweenSnapshots_)
         public
         onlyFactory
@@ -160,38 +166,58 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
         return true;
     }
 
+    /// @notice Gets snapshot desperation factor
+    /// @return The snapshot desperation factor
     function getSnapshotDesperationFactor() public view returns (uint256) {
         return _snapshotDesperationFactor;
     }
 
+    /// @notice Gets snapshot desperation delay
+    /// @return The snapshot desperation delay
     function getSnapshotDesperationDelay() public view returns (uint256) {
         return _snapshotDesperationDelay;
     }
 
+    /// @notice Gets minimal interval between snapshots
+    /// @return The minimal interval between snapshots
     function getMinimumIntervalBetweenSnapshots() public view returns (uint256) {
         return _minimumIntervalBetweenSnapshots;
     }
 
+    /// @notice Gets the chain Id
+    /// @return The chain Id
     function getChainId() public view returns (uint256) {
         return _chainId;
     }
 
+    /// @notice Gets the epoch from epoch register
+    /// @return The epoch from epoch register
     function getEpoch() public view returns (uint256) {
         return _epochRegister().get();
     }
 
+    /// @notice Gets the epoch length
+    /// @return The epoch length
     function getEpochLength() public view returns (uint256) {
         return _epochLength;
     }
 
+    /// @notice Gets the chain Id from snapshot for specified epoch
+    /// @param epoch_ The epoch of the snapshot
+    /// @return The chain Id of the snapshot at the epoch specified
     function getChainIdFromSnapshot(uint256 epoch_) public view returns (uint256) {
         return _getSnapshot(uint32(epoch_)).blockClaims.chainId;
     }
 
+    /// @notice Gets the chain Id from latest snapshot
+    /// @return The chain Id of latest snapshot
     function getChainIdFromLatestSnapshot() public view returns (uint256) {
         return _getLatestSnapshot().blockClaims.chainId;
     }
 
+    /// @notice Gets block claims from snapshot for specified epoch
+    /// @param epoch_ The epoch of the snapshot
+    /// @return The block claims from snapshot for specified epoch
     function getBlockClaimsFromSnapshot(uint256 epoch_)
         public
         view
@@ -200,6 +226,8 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
         return _getSnapshot(uint32(epoch_)).blockClaims;
     }
 
+    /// @notice Gets block claims from latest snapshot
+    /// @return The block claims from latest snapshot
     function getBlockClaimsFromLatestSnapshot()
         public
         view
@@ -208,30 +236,48 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
         return _getLatestSnapshot().blockClaims;
     }
 
+    /// @notice Gets committed height from snapshot at specified epoch
+    /// @param epoch_ The epoch of the snapshot
+    /// @return The committed height from snapshot at specified epoch
     function getCommittedHeightFromSnapshot(uint256 epoch_) public view returns (uint256) {
         return _getSnapshot(uint32(epoch_)).committedAt;
     }
 
+    /// @notice Gets committed height from latest snapshot
+    /// @return The committed height from latest snapshot
     function getCommittedHeightFromLatestSnapshot() public view returns (uint256) {
         return _getLatestSnapshot().committedAt;
     }
 
+    /// @notice Gets alicenet height from snapshot at specified epoch
+    /// @param epoch_ The epoch of the snapshot
+    /// @return Alicenet height from snapshot at specified epoch
     function getAliceNetHeightFromSnapshot(uint256 epoch_) public view returns (uint256) {
         return _getSnapshot(uint32(epoch_)).blockClaims.height;
     }
 
+    /// @notice Gets alicenet height from latest snapshot
+    /// @return Alicenet height from latest snapshot
     function getAliceNetHeightFromLatestSnapshot() public view returns (uint256) {
         return _getLatestSnapshot().blockClaims.height;
     }
 
+    /// @notice Gets snapshot for specified epoch
+    /// @param epoch_ The epoch of the snapshot
+    /// @return The snapshot at specified epoch
     function getSnapshot(uint256 epoch_) public view returns (Snapshot memory) {
         return _getSnapshot(uint32(epoch_));
     }
 
+    /// @notice Gets latest snapshot
+    /// @return The latest snapshot
     function getLatestSnapshot() public view returns (Snapshot memory) {
         return _getLatestSnapshot();
     }
 
+    /// @notice Gets epoch for specified height
+    /// @param height The height specified
+    /// @return The epoch at specified height
     function getEpochFromHeight(uint256 height) public view returns (uint256) {
         return _getEpochFromHeight(uint32(height));
     }
@@ -277,6 +323,10 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
         return isValidatorElected;
     }
 
+    /// @notice Checks if validator is the one elected to perform snapshot
+    /// @param validator The validator to be checked
+    /// @param lastSnapshotCommittedAt Block number of last snapshot committed
+    /// @param groupSignatureHash The block groups signature hash
     function _isValidatorElectedToPerformSnapshot(
         address validator,
         uint256 lastSnapshotCommittedAt,
@@ -306,6 +356,10 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
         }
     }
 
+    /// @notice Validates Block Claims for an epoch
+    /// @param epoch The epoch to be validated
+    /// @param bClaims_ Encoded block claims
+    /// @return blockClaims as struct if valid
     function _parseAndValidateBClaims(uint32 epoch, bytes calldata bClaims_)
         internal
         view
@@ -322,6 +376,10 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
         }
     }
 
+    /// @notice Checks block claims signature
+    /// @param groupSignature_ The group signature
+    /// @param bClaims_ The block claims to be checked
+    /// @return signature validity
     function _checkBClaimsSignature(bytes memory groupSignature_, bytes memory bClaims_)
         internal
         view
@@ -352,6 +410,8 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
         return (masterPublicKey, signature);
     }
 
+    /// @notice Checks if snapshot minimum interval has passed
+    /// @param lastSnapshotCommittedAt Block number of the last snapshot committed
     function _checkSnapshotMinimumInterval(uint256 lastSnapshotCommittedAt) internal view {
         uint256 minimumIntervalBetweenSnapshots = _minimumIntervalBetweenSnapshots;
         if (block.number < lastSnapshotCommittedAt + minimumIntervalBetweenSnapshots) {
@@ -362,6 +422,13 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
         }
     }
 
+    /// @notice Checks if validator is allowed to take snapshots
+    /// @param  numValidators number of current validators
+    /// @param  myIdx index
+    /// @param  blocksSinceDesperation Number of blocks since desperation
+    /// @param  randomSeed Random seed
+    /// @param  desperationFactor Desperation Factor
+    /// @return true if allowed to do snapshots and start and end snapshot range
     function _mayValidatorSnapshot(
         uint256 numValidators,
         uint256 myIdx,

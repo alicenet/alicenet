@@ -88,7 +88,6 @@ library StakingDescriptor {
         return symbol;
     }
 
-
     /// @notice Generates a SVG image out of a token URI
     /// @param params parameters of the token URI
     /// @return svg A string with SVG data
@@ -120,7 +119,6 @@ library StakingDescriptor {
                 )
             );
     }
-
 
     /// @notice Generates the second part of the Staking Descriptor
     /// @param  tokenId the token id of this descriptor
