@@ -74,10 +74,11 @@ func (te *TaskExecutor) isClosed() bool {
 	}
 }
 
-// triggered when onUnrecoverableError occurs during the execution.
-func (te *TaskExecutor) onUnrecoverableError(err error) {
+// triggered when onError occurs during the execution.
+func (te *TaskExecutor) onError(err error) error {
 	te.logger.WithError(err).Errorf("An unercoverable error occured %v", err)
 	te.close()
+	return err
 }
 
 // addTxBackup adds txn to the backup map for recovery.
@@ -106,7 +107,6 @@ func (te *TaskExecutor) getTxBackup(uuid string) (*types.Transaction, bool) {
 
 // handleTaskExecution It is basically an abstraction to handle the task execution in a separate process.
 func (te *TaskExecutor) handleTaskExecution(task tasks.Task, name string, taskId string, start uint64, end uint64, allowMultiExecution bool, subscribeOptions *transaction.SubscribeOptions, database *db.Database, logger *logrus.Entry, eth layer1.Client, contracts layer1.AllSmartContracts, taskResponseChan tasks.InternalTaskResponseChan) {
-	defer task.Close()
 	err := te.processTask(task, name, taskId, start, end, allowMultiExecution, subscribeOptions, database, logger, eth, contracts, taskResponseChan)
 	// Clean up in case the task was killed
 	if task.WasKilled() {
@@ -133,7 +133,7 @@ func (te *TaskExecutor) processTask(task tasks.Task, name string, taskId string,
 			return err
 		}
 	} else {
-		err = prepareTask(taskCtx, task, retryDelay)
+		err = te.prepareTask(taskCtx, task, retryDelay)
 		if err != nil {
 			// unrecoverable errors or ctx.done
 			return err
@@ -158,10 +158,13 @@ func (te *TaskExecutor) processTask(task tasks.Task, name string, taskId string,
 
 // prepareTask executes task preparation. We keep retrying until the task is
 // killed, we get an unrecoverable error, or we succeed.
-func prepareTask(ctx context.Context, task tasks.Task, retryDelay time.Duration) error {
+func (te *TaskExecutor) prepareTask(ctx context.Context, task tasks.Task, retryDelay time.Duration) error {
 	for {
-		if task.IsClosed() {
-			return tasks.ErrTaskClosed
+		if task.WasKilled() {
+			return tasks.ErrTaskKilled
+		}
+		if te.isClosed() {
+			return tasks.ErrTaskExecutionMechanismClosed
 		}
 
 		taskErr := task.Prepare(ctx)
@@ -172,7 +175,7 @@ func prepareTask(ctx context.Context, task tasks.Task, retryDelay time.Duration)
 		if !taskErr.IsRecoverable() {
 			return taskErr
 		}
-		err := sleepOrClose(task, retryDelay)
+		err := te.sleepOrExit(task, retryDelay)
 		if err != nil {
 			return err
 		}
@@ -184,7 +187,7 @@ func prepareTask(ctx context.Context, task tasks.Task, retryDelay time.Duration)
 func (te *TaskExecutor) executeTask(ctx context.Context, task tasks.Task, retryDelay time.Duration) error {
 	logger := task.GetLogger()
 	for {
-		hasToExecute, err := shouldExecute(ctx, task)
+		hasToExecute, err := te.shouldExecute(ctx, task)
 		if err != nil {
 			return err
 		}
@@ -195,7 +198,7 @@ func (te *TaskExecutor) executeTask(ctx context.Context, task tasks.Task, retryD
 		if taskErr != nil {
 			if taskErr.IsRecoverable() {
 				logger.Tracef("got a recoverable error during task.execute: %v", taskErr.Error())
-				err := sleepOrClose(task, retryDelay)
+				err := te.sleepOrExit(task, retryDelay)
 				if err != nil {
 					return err
 				}
@@ -243,8 +246,10 @@ func (te *TaskExecutor) checkCompletion(ctx context.Context, task tasks.Task, tx
 
 	for {
 		select {
-		case <-task.CloseChan():
-			return true, tasks.ErrTaskClosed
+		case <-task.KillChan():
+			return true, tasks.ErrTaskKilled
+		case <-te.closeChan:
+			return true, tasks.ErrTaskExecutionMechanismClosed
 		case <-time.After(tasks.ExecutorPoolingTime):
 		}
 
@@ -270,7 +275,7 @@ func (te *TaskExecutor) checkCompletion(ctx context.Context, task tasks.Task, tx
 		}
 
 		logger.Trace("receipt is not ready yet")
-		hasToExecute, err := shouldExecute(ctx, task)
+		hasToExecute, err := te.shouldExecute(ctx, task)
 		if err != nil {
 			return false, err
 		}
@@ -286,17 +291,20 @@ func (te *TaskExecutor) checkCompletion(ctx context.Context, task tasks.Task, tx
 // The function returns false in case of unrecoverable errors, or if it
 // shouldn't execute a task. In case of no errors, the return value is true
 // (default case to t.ShouldExecute to return that a task should be executed).
-func shouldExecute(ctx context.Context, task tasks.Task) (bool, error) {
+func (te *TaskExecutor) shouldExecute(ctx context.Context, task tasks.Task) (bool, error) {
 	logger := task.GetLogger()
 	for i := uint64(1); i <= constants.MonitorRetryCount; i++ {
-		if task.IsClosed() {
-			return false, tasks.ErrTaskClosed
+		if task.WasKilled() {
+			return false, tasks.ErrTaskKilled
+		}
+		if te.isClosed() {
+			return false, tasks.ErrTaskExecutionMechanismClosed
 		}
 
 		if hasToExecute, err := task.ShouldExecute(ctx); err != nil {
 			if err.IsRecoverable() {
 				logger.Tracef("got a recoverable error during task.ShouldExecute: %v", err)
-				if err := sleepOrClose(task, constants.MonitorRetryDelay); err != nil {
+				if err := te.sleepOrExit(task, constants.MonitorRetryDelay); err != nil {
 					return false, err
 				}
 				continue
@@ -317,8 +325,7 @@ func (te *TaskExecutor) persistState() error {
 	logger := logging.GetLogger("staterecover").WithField("State", "task_executor")
 	rawData, err := json.Marshal(te)
 	if err != nil {
-		te.onUnrecoverableError(err)
-		return err
+		return te.onError(err)
 	}
 
 	err = te.database.Update(func(txn *badger.Txn) error {
@@ -331,14 +338,12 @@ func (te *TaskExecutor) persistState() error {
 		return nil
 	})
 	if err != nil {
-		te.onUnrecoverableError(err)
-		return err
+		return te.onError(err)
 	}
 
-	if err := te.database.Sync(); err != nil {
+	if err = te.database.Sync(); err != nil {
 		logger.Error("Failed to set sync")
-		te.onUnrecoverableError(err)
-		return err
+		return te.onError(err)
 	}
 
 	return nil
@@ -362,13 +367,13 @@ func (te *TaskExecutor) loadState() error {
 
 		return nil
 	}); err != nil {
-		return err
+		return te.onError(err)
 	}
 
 	// synchronizing db state to disk
 	if err := te.database.Sync(); err != nil {
 		logger.Error("Failed to set sync")
-		return err
+		return te.onError(err)
 	}
 
 	return nil
@@ -377,10 +382,12 @@ func (te *TaskExecutor) loadState() error {
 
 // sleepOrClose sleeps a certain amount of time.
 // It fails in case the task is closed.
-func sleepOrClose(task tasks.Task, delay time.Duration) error {
+func (te *TaskExecutor) sleepOrExit(task tasks.Task, delay time.Duration) error {
 	select {
-	case <-task.CloseChan():
-		return tasks.ErrTaskClosed
+	case <-task.KillChan():
+		return tasks.ErrTaskKilled
+	case <-te.closeChan:
+		return tasks.ErrTaskExecutionMechanismClosed
 	case <-time.After(delay):
 		return nil
 	}

@@ -380,6 +380,7 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	case <-peerManager.CloseChan():
 	case <-consSync.CloseChan():
 	case <-mon.CloseChan():
+	case <-tasksHandler.CloseChan():
 	case <-signals:
 	}
 	go countSignals(logger, 5, signals)

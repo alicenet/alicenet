@@ -8,9 +8,9 @@ import (
 // TaskHandler to be implemented by the Handler that receives requests to schedule or
 // kill a Task.
 type TaskHandler interface {
-	ScheduleTask(ctx context.Context, task tasks.Task, id string) (*HandlerResponse, error)
-	KillTaskByType(ctx context.Context, task tasks.Task) (*HandlerResponse, error)
-	KillTaskById(ctx context.Context, id string) (*HandlerResponse, error)
+	ScheduleTask(task tasks.Task, id string) (*HandlerResponse, error)
+	KillTaskByType(task tasks.Task) (*HandlerResponse, error)
+	KillTaskById(id string) (*HandlerResponse, error)
 	Start()
 	Close()
 	CloseChan() <-chan struct{}

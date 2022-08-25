@@ -1,7 +1,6 @@
 package events
 
 import (
-	"context"
 	"math/big"
 
 	"github.com/alicenet/alicenet/consensus/objs"
@@ -72,7 +71,7 @@ func ProcessSnapshotTaken(contracts layer1.AllSmartContracts, logger *logrus.Ent
 	}
 
 	// kill any task that might still be trying to do this snapshot
-	_, err = taskHandler.KillTaskByType(context.Background(), &snapshots.SnapshotTask{})
+	_, err = taskHandler.KillTaskByType(&snapshots.SnapshotTask{})
 	if err != nil {
 		return err
 	}
@@ -140,7 +139,7 @@ func ProcessSnapshotTakenOld(eth layer1.Client, contracts layer1.AllSmartContrac
 	}
 
 	// kill any task that might still be trying to do this snapshot
-	_, err = taskHandler.KillTaskByType(context.Background(), &snapshots.SnapshotTask{})
+	_, err = taskHandler.KillTaskByType(&snapshots.SnapshotTask{})
 	if err != nil {
 		return err
 	}

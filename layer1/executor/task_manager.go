@@ -31,18 +31,17 @@ type TaskManager struct {
 	Schedule       map[string]ManagerRequestInfo  `json:"schedule"`
 	Responses      map[string]ManagerResponseInfo `json:"responses"`
 	LastHeightSeen uint64                         `json:"lastHeightSeen"`
-	//mainCtx        context.Context                `json:"-"`
-	eth          layer1.Client                  `json:"-"`
-	contracts    layer1.AllSmartContracts       `json:"-"`
-	database     *db.Database                   `json:"-"`
-	adminHandler monitorInterfaces.AdminHandler `json:"-"`
-	marshaller   *marshaller.TypeRegistry       `json:"-"`
-	closeChan    chan struct{}                  `json:"-"`
-	closeOnce    sync.Once                      `json:"-"`
-	requestChan  <-chan managerRequest          `json:"-"`
-	responseChan *executorResponseChan          `json:"-"`
-	logger       *logrus.Entry                  `json:"-"`
-	taskExecutor *TaskExecutor                  `json:"-"`
+	eth            layer1.Client                  `json:"-"`
+	contracts      layer1.AllSmartContracts       `json:"-"`
+	database       *db.Database                   `json:"-"`
+	adminHandler   monitorInterfaces.AdminHandler `json:"-"`
+	marshaller     *marshaller.TypeRegistry       `json:"-"`
+	closeChan      chan struct{}                  `json:"-"`
+	closeOnce      sync.Once                      `json:"-"`
+	requestChan    <-chan managerRequest          `json:"-"`
+	responseChan   *executorResponseChan          `json:"-"`
+	logger         *logrus.Entry                  `json:"-"`
+	taskExecutor   *TaskExecutor                  `json:"-"`
 }
 
 // newTaskManager creates a new TaskManager instance and recover the previous state from DB.
@@ -96,15 +95,18 @@ func (tm *TaskManager) start() {
 func (tm *TaskManager) close() {
 	tm.closeOnce.Do(func() {
 		tm.logger.Warn("Closing task manager")
+		tm.taskExecutor.close()
 		close(tm.closeChan)
 		tm.responseChan.close()
 	})
 }
 
-// triggered when onUnrecoverableError occurs during the execution.
-func (tm *TaskManager) onUnrecoverableError(err error) {
+// triggered when onError occurs during the execution.
+func (tm *TaskManager) onError(err error) error {
 	tm.logger.WithError(err).Errorf("An unercoverable error occured %v", err)
 	tm.close()
+
+	return err
 }
 
 // eventLoop where the interaction with all the pieces is developed.
@@ -143,7 +145,7 @@ func (tm *TaskManager) eventLoop() {
 				}
 			case Schedule:
 				tm.logger.Trace("received request for a task")
-				err, sharedResponse := tm.schedule(taskRequest.task, taskRequest.id)
+				sharedResponse, err := tm.schedule(taskRequest.task, taskRequest.id)
 				if err != nil {
 					// if we are not synchronized, don't log expired task as errors, since we will
 					// be replaying the events from far way in the past
@@ -188,57 +190,66 @@ func (tm *TaskManager) eventLoop() {
 			if err != nil {
 				tm.logger.WithError(err).Errorf("Failed to startTasks %d", tm.LastHeightSeen)
 			}
-			tm.persistState()
+			err = tm.persistState()
+			if err != nil {
+				return
+			}
 
 			err = tm.killTasks(expired)
 			if err != nil {
 				tm.logger.WithError(err).Errorf("Failed to killExpiredTasks %d", tm.LastHeightSeen)
 			}
-			tm.persistState()
+			err = tm.persistState()
+			if err != nil {
+				return
+			}
 
 			tm.cleanResponses()
-			tm.persistState()
+			err = tm.persistState()
+			if err != nil {
+				return
+			}
 			processingTime = time.After(tasks.ManagerProcessingTime)
 		}
 	}
 }
 
 // schedule the task after its validation.
-func (tm *TaskManager) schedule(task tasks.Task, id string) (error, *HandlerResponse) {
+func (tm *TaskManager) schedule(task tasks.Task, id string) (*HandlerResponse, error) {
 	select {
 	case <-tm.closeChan:
-		return ErrTaskManagerClosed, nil
+		return nil, tasks.ErrTaskExecutionMechanismClosed
 	default:
 		if task == nil {
-			return ErrTaskIsNil, nil
+			return nil, ErrTaskIsNil
 		}
 
 		if id == "" {
-			return ErrTaskIdEmpty, nil
+			return nil, ErrTaskIdEmpty
 		}
 
 		if resp, exists := tm.Responses[id]; exists {
-			return nil, resp.HandlerResponse
+			return resp.HandlerResponse, nil
 		}
 
 		taskName, _, present := tm.marshaller.NameTypeIsPresent(task)
 		if !present {
-			return ErrTaskTypeNotInRegistry, nil
+			return nil, ErrTaskTypeNotInRegistry
 		}
 
 		start := task.GetStart()
 		end := task.GetEnd()
 
 		if start != 0 && end != 0 && start >= end {
-			return ErrWrongParams, nil
+			return nil, ErrWrongParams
 		}
 
 		if end != 0 && end <= tm.LastHeightSeen {
-			return ErrTaskExpired, nil
+			return nil, ErrTaskExpired
 		}
 
 		if !task.GetAllowMultiExecution() && len(tm.findTasksByName(taskName)) > 0 {
-			return ErrTaskNotAllowMultipleExecutions, nil
+			return nil, ErrTaskNotAllowMultipleExecutions
 		}
 
 		taskReq := ManagerRequestInfo{
@@ -261,7 +272,7 @@ func (tm *TaskManager) schedule(task tasks.Task, id string) (error, *HandlerResp
 		tm.Responses[id] = taskResp
 		getTaskLoggerComplete(tm.logger, taskReq).Debug("Received task request")
 
-		return nil, taskResp.HandlerResponse
+		return taskResp.HandlerResponse, nil
 	}
 }
 
@@ -269,7 +280,7 @@ func (tm *TaskManager) schedule(task tasks.Task, id string) (error, *HandlerResp
 func (tm *TaskManager) processTaskResponse(executorResponse ExecutorResponse) error {
 	select {
 	case <-tm.closeChan:
-		return ErrTaskManagerClosed
+		return tasks.ErrTaskExecutionMechanismClosed
 	default:
 		logger := tm.logger
 		task, present := tm.Schedule[executorResponse.Id]
@@ -308,20 +319,19 @@ func (tm *TaskManager) processTaskResponse(executorResponse ExecutorResponse) er
 }
 
 // startTasks spawning a go routine to handle Task execution using the TaskExecutor.
-func (tm *TaskManager) startTasks(tasks []ManagerRequestInfo) error {
+func (tm *TaskManager) startTasks(taskList []ManagerRequestInfo) error {
 	select {
 	case <-tm.closeChan:
-		return ErrTaskManagerClosed
+		return tasks.ErrTaskExecutionMechanismClosed
 	default:
 		tm.logger.Debug("Looking for starting tasks")
-		for i := 0; i < len(tasks); i++ {
-			task := tasks[i]
+		for i := 0; i < len(taskList); i++ {
+			task := taskList[i]
 			logEntry := getTaskLoggerComplete(tm.logger, task)
 			logEntry.Info("task is about to start")
 
 			if tm.taskExecutor.isClosed() {
-				tm.onUnrecoverableError(ErrTaskExecutorClosed)
-				return ErrTaskExecutorClosed
+				return tm.onError(tasks.ErrTaskExecutionMechanismClosed)
 			}
 
 			go tm.taskExecutor.handleTaskExecution(task.Task, task.Name, task.Id, task.Start, task.End, task.AllowMultiExecution, task.SubscribeOptions, tm.database, logEntry, tm.eth, tm.contracts, tm.responseChan)
@@ -339,7 +349,7 @@ func (tm *TaskManager) startTasks(tasks []ManagerRequestInfo) error {
 func (tm *TaskManager) killTaskByType(task tasks.Task) error {
 	select {
 	case <-tm.closeChan:
-		return ErrTaskManagerClosed
+		return tasks.ErrTaskExecutionMechanismClosed
 	default:
 		if task == nil {
 			return ErrTaskIsNil
@@ -359,7 +369,7 @@ func (tm *TaskManager) killTaskByType(task tasks.Task) error {
 func (tm *TaskManager) killTaskById(id string) error {
 	select {
 	case <-tm.closeChan:
-		return ErrTaskManagerClosed
+		return tasks.ErrTaskExecutionMechanismClosed
 	default:
 		if id == "" {
 			return ErrTaskIdEmpty
@@ -376,13 +386,13 @@ func (tm *TaskManager) killTaskById(id string) error {
 }
 
 // iterates a list of Task to killTasks
-func (tm *TaskManager) killTasks(tasks []ManagerRequestInfo) error {
+func (tm *TaskManager) killTasks(taskList []ManagerRequestInfo) error {
 	select {
 	case <-tm.closeChan:
-		return ErrTaskManagerClosed
+		return tasks.ErrTaskExecutionMechanismClosed
 	default:
-		for i := 0; i < len(tasks); i++ {
-			task := tasks[i]
+		for i := 0; i < len(taskList); i++ {
+			task := taskList[i]
 			err := tm.killTask(task)
 			if err != nil {
 				return err
@@ -397,7 +407,7 @@ func (tm *TaskManager) killTasks(tasks []ManagerRequestInfo) error {
 func (tm *TaskManager) killTask(task ManagerRequestInfo) error {
 	getTaskLoggerComplete(tm.logger, task).Info("Task is about to be killed")
 	if task.InternalState == Running {
-		task.Task.Close()
+		task.Task.Kill()
 		task.InternalState = Killed
 		task.killedAt = tm.LastHeightSeen
 		tm.Schedule[task.Id] = task
@@ -499,11 +509,11 @@ func (tm *TaskManager) remove(id string) error {
 }
 
 // persistState TaskManager to database.
-func (tm *TaskManager) persistState() {
+func (tm *TaskManager) persistState() error {
 	logger := logging.GetLogger("staterecover").WithField("State", "manager")
 	rawData, err := json.Marshal(tm)
 	if err != nil {
-		tm.onUnrecoverableError(err)
+		return tm.onError(err)
 	}
 
 	err = tm.database.Update(func(txn *badger.Txn) error {
@@ -516,13 +526,15 @@ func (tm *TaskManager) persistState() {
 		return nil
 	})
 	if err != nil {
-		tm.onUnrecoverableError(err)
+		return tm.onError(err)
 	}
 
 	if err := tm.database.Sync(); err != nil {
 		logger.Error("Failed to set sync")
-		tm.onUnrecoverableError(err)
+		return tm.onError(err)
 	}
+
+	return nil
 }
 
 // loadState TaskManager from database.
@@ -543,13 +555,13 @@ func (tm *TaskManager) loadState() error {
 
 		return nil
 	}); err != nil {
-		return err
+		return tm.onError(err)
 	}
 
 	// synchronizing db state to disk
 	if err := tm.database.Sync(); err != nil {
 		logger.Error("Failed to set sync")
-		return err
+		return tm.onError(err)
 	}
 
 	return nil
@@ -569,9 +581,9 @@ func (tm *TaskManager) recoverState() error {
 			task.InternalState = NotStarted
 			tm.Schedule[task.Id] = task
 		} else if task.InternalState == Killed {
-			err := tm.remove(task.Id)
+			err = tm.remove(task.Id)
 			if err != nil {
-				return err
+				return tm.onError(err)
 			}
 		}
 	}

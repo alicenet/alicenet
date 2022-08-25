@@ -30,9 +30,8 @@ type BaseTask struct {
 	// Otherwise, the task will end at the specified block.
 	End              uint64                   `json:"end"`
 	isInitialized    bool                     `json:"-"`
-	wasKilled        bool                     `json:"-"`
-	closeChan        chan struct{}            `json:"-"`
-	closeOnce        sync.Once                `json:"-"`
+	killChan         chan struct{}            `json:"-"`
+	killOnce         sync.Once                `json:"-"`
 	database         *db.Database             `json:"-"`
 	logger           *logrus.Entry            `json:"-"`
 	client           layer1.Client            `json:"-"`
@@ -74,8 +73,8 @@ func (bt *BaseTask) Initialize(database *db.Database, logger *logrus.Entry, eth 
 		subscribeOptionsClone := *subscribeOptions
 		bt.SubscribeOptions = &subscribeOptionsClone
 	}
-	bt.closeChan = make(chan struct{})
-	bt.closeOnce = sync.Once{}
+	bt.killChan = make(chan struct{})
+	bt.killOnce = sync.Once{}
 	bt.database = database
 	bt.logger = logger
 	bt.client = eth
@@ -136,13 +135,6 @@ func (bt *BaseTask) GetSubscribeOptions() *transaction.SubscribeOptions {
 	return &subscribeOptionsClone
 }
 
-// WasKilled returns true if the task was killed otherwise false.
-func (bt *BaseTask) WasKilled() bool {
-	bt.mutex.RLock()
-	defer bt.mutex.RUnlock()
-	return bt.wasKilled
-}
-
 // GetClient returns the layer1 client implemented by the task.
 func (bt *BaseTask) GetClient() layer1.Client {
 	bt.mutex.RLock()
@@ -172,31 +164,30 @@ func (bt *BaseTask) GetDB() *db.Database {
 	return bt.database
 }
 
-// Close a running task. This only can be done once.
-func (bt *BaseTask) Close() {
+// Kill a running task. This only can be done once.
+func (bt *BaseTask) Kill() {
 	bt.mutex.Lock()
 	defer bt.mutex.Unlock()
-	bt.closeOnce.Do(func() {
+	bt.killOnce.Do(func() {
 		bt.logger.Warnf("Closing task %s-%s", bt.Name, bt.ID)
-		close(bt.closeChan)
-		bt.wasKilled = true
+		close(bt.killChan)
 	})
 }
 
-// CloseChan returns a channel that is closed when the Task is
-// shutting down.
-func (bt *BaseTask) CloseChan() <-chan struct{} {
+// KillChan returns a channel that is closed when the Task was
+// killed.
+func (bt *BaseTask) KillChan() <-chan struct{} {
 	bt.mutex.RLock()
 	defer bt.mutex.RUnlock()
-	return bt.closeChan
+	return bt.killChan
 }
 
-// IsClosed return true if the task was closed.
-func (bt *BaseTask) IsClosed() bool {
+// WasKilled return true if the task was killed.
+func (bt *BaseTask) WasKilled() bool {
 	bt.mutex.RLock()
 	defer bt.mutex.RUnlock()
 	select {
-	case <-bt.closeChan:
+	case <-bt.killChan:
 		return true
 	default:
 		return false
@@ -208,8 +199,8 @@ func (bt *BaseTask) Finish(err error) {
 	bt.mutex.Lock()
 	defer bt.mutex.Unlock()
 	if err != nil {
-		if errors.Is(err, context.Canceled) || errors.Is(err, ErrTaskClosed) {
-			bt.logger.WithError(err).Debug("cancelling task execution, task was killed")
+		if errors.Is(err, context.Canceled) || errors.Is(err, ErrTaskKilled) || errors.Is(err, ErrTaskExecutionMechanismClosed) {
+			bt.logger.WithError(err).Debug("finishing task execution, it was aborted")
 		} else {
 			bt.logger.WithError(err).Error("got an error when executing task")
 		}
@@ -219,7 +210,6 @@ func (bt *BaseTask) Finish(err error) {
 	if bt.taskResponseChan != nil {
 		bt.taskResponseChan.Add(bt.ID, err)
 	}
-	bt.Close()
 }
 
 func (bt *BaseTask) Lock() {

@@ -18,11 +18,10 @@ type Task interface {
 	Prepare(ctx context.Context) *TaskErr
 	Execute(ctx context.Context) (*types.Transaction, *TaskErr)
 	ShouldExecute(ctx context.Context) (bool, *TaskErr)
-	WasKilled() bool
 	Finish(err error)
-	Close()
-	CloseChan() <-chan struct{}
-	IsClosed() bool
+	Kill()
+	KillChan() <-chan struct{}
+	WasKilled() bool
 	GetId() string
 	GetStart() uint64
 	GetEnd() uint64

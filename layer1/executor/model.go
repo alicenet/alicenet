@@ -179,13 +179,13 @@ func (rc *ManagerResponseChannel) sendResponse(response *managerResponse) {
 }
 
 // listen until the response is received.
-func (rc *ManagerResponseChannel) listen(ctx context.Context) (*HandlerResponse, error) {
+func (rc *ManagerResponseChannel) listen(closeChan <-chan struct{}) (*HandlerResponse, error) {
 	// wait for request to be processed
 	select {
 	case response := <-rc.channel:
 		return response.HandlerResponse, response.Err
-	case <-ctx.Done():
-		return nil, ctx.Err()
+	case <-closeChan:
+		return nil, tasks.ErrTaskExecutionMechanismClosed
 	}
 }
 
@@ -237,6 +237,4 @@ var (
 	ErrTaskTypeNotInRegistry          = errors.New("the task type is not in registry")
 	ErrTaskIdEmpty                    = errors.New("the task id is empty")
 	ErrTaskKilledBeforeExecution      = errors.New("the task killed by request before execution")
-	ErrTaskManagerClosed              = errors.New("task manager is closed, aborting execution")
-	ErrTaskExecutorClosed             = errors.New("task executor is closed, aborting execution")
 )

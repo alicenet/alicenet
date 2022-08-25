@@ -32,5 +32,6 @@ const (
 )
 
 var (
-	ErrTaskClosed = errors.New("the task is closed, aborting execution")
+	ErrTaskKilled                   = errors.New("the task was killed, aborting execution")
+	ErrTaskExecutionMechanismClosed = errors.New("tasks execution mechanism is closed, aborting execution")
 )

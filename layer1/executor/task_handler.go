@@ -1,7 +1,6 @@
 package executor
 
 import (
-	"context"
 	"github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/layer1"
 	"github.com/alicenet/alicenet/layer1/executor/tasks"
@@ -49,6 +48,7 @@ func NewTaskHandler(database *db.Database, eth layer1.Client, contracts layer1.A
 func (h *Handler) Start() {
 	h.logger.Info("Starting task handler")
 	h.manager.start()
+	go h.checkClosing()
 }
 
 // Close the Handler and the subsequent pieces such as TaskManager.
@@ -68,46 +68,57 @@ func (h *Handler) CloseChan() <-chan struct{} {
 }
 
 // ScheduleTask sends the Schedule Task request to the TaskManager.
-func (h *Handler) ScheduleTask(ctx context.Context, task tasks.Task, id string) (*HandlerResponse, error) {
+func (h *Handler) ScheduleTask(task tasks.Task, id string) (*HandlerResponse, error) {
 	// In case the id field is not specified, create it
 	if id == "" {
 		id = uuid.New().String()
 	}
 	req := managerRequest{task: task, id: id, action: Schedule, response: NewManagerResponseChannel()}
-	err := h.waitForRequestProcessing(ctx, req)
+	err := h.waitForRequestProcessing(req)
 	if err != nil {
 		return nil, err
 	}
-	return req.response.listen(ctx)
+	return req.response.listen(h.closeChan)
 }
 
 // KillTaskByType sends the KillByType Task request to the TaskManager.
-func (h *Handler) KillTaskByType(ctx context.Context, taskType tasks.Task) (*HandlerResponse, error) {
+func (h *Handler) KillTaskByType(taskType tasks.Task) (*HandlerResponse, error) {
 	req := managerRequest{task: taskType, action: KillByType, response: NewManagerResponseChannel()}
-	err := h.waitForRequestProcessing(ctx, req)
+	err := h.waitForRequestProcessing(req)
 	if err != nil {
 		return nil, err
 	}
-	return req.response.listen(ctx)
+	return req.response.listen(h.closeChan)
 }
 
 // KillTaskById sends the KillById Task request to the TaskManager.
-func (h *Handler) KillTaskById(ctx context.Context, id string) (*HandlerResponse, error) {
+func (h *Handler) KillTaskById(id string) (*HandlerResponse, error) {
 	req := managerRequest{id: id, action: KillById, response: NewManagerResponseChannel()}
-	err := h.waitForRequestProcessing(ctx, req)
+	err := h.waitForRequestProcessing(req)
 	if err != nil {
 		return nil, err
 	}
-	return req.response.listen(ctx)
+	return req.response.listen(h.closeChan)
 }
 
 //waitForRequestProcessing or context deadline.
-func (h *Handler) waitForRequestProcessing(ctx context.Context, req managerRequest) error {
+func (h *Handler) waitForRequestProcessing(req managerRequest) error {
 	// wait for request to be accepted
 	select {
 	case h.requestChannel <- req:
-	case <-ctx.Done():
-		return ctx.Err()
+	case <-h.closeChan:
+		return tasks.ErrTaskExecutionMechanismClosed
 	}
+
 	return nil
+}
+
+func (h *Handler) checkClosing() {
+	select {
+	case <-h.closeChan:
+		return
+	case <-h.manager.closeChan:
+	case <-h.manager.taskExecutor.closeChan:
+	}
+	h.Close()
 }
