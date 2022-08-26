@@ -37,11 +37,7 @@ type ethereumConfig struct {
 	StartingBlock            uint64
 	TxMaxGasFeeAllowedInGwei uint64
 	TxMetricsDisplay         bool
-}
-
-type monitorConfig struct {
-	BatchSize int
-	Interval  time.Duration
+	ProcessingBlockBatchSize uint64
 }
 
 type transportConfig struct {
@@ -56,7 +52,6 @@ type transportConfig struct {
 	PrivateKey                 string
 	BootNodeAddresses          string
 	P2PListeningAddress        string
-	DiscoveryListeningAddress  string
 	LocalStateListeningAddress string
 	UPnP                       bool
 }
@@ -117,7 +112,6 @@ type configuration struct {
 	Logging               loggingConfig
 	Deploy                deployConfig
 	Ethereum              ethereumConfig
-	Monitor               monitorConfig
 	Transport             transportConfig
 	Utils                 utilsConfig
 	Validator             validatorConfig
