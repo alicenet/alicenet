@@ -81,7 +81,6 @@ CREATE_CONFIGS() {
             sed -e 's/rewardAccount = .*/rewardAccount = \"'"$ADDRESS"'\"/' |
             sed -e 's/listeningAddress = .*/listeningAddress = \"0.0.0.0:'"$LA"'\"/' |
             sed -e 's/p2pListeningAddress = .*/p2pListeningAddress = \"0.0.0.0:'"$PA"'\"/' |
-            sed -e 's/discoveryListeningAddress = .*/discoveryListeningAddress = \"0.0.0.0:'"$DA"'\"/' |
             sed -e 's/localStateListeningAddress = .*/localStateListeningAddress = \"0.0.0.0:'"$LSA"'\"/' |
             sed -e 's/passCodes = .*/passCodes = \"scripts\/generated\/keystores\/passcodes.txt\"/' |
             sed -e 's/keystore = .*/keystore = \"scripts\/generated\/keystores\/keys\"/' |
@@ -123,7 +122,6 @@ CREATE_EXTRA_NODES_CONFIGS() {
             sed -e 's/rewardAccount = .*/rewardAccount = \"'"$ADDRESS"'\"/' |
             sed -e 's/listeningAddress = .*/listeningAddress = \"0.0.0.0:'"$LA"'\"/' |
             sed -e 's/p2pListeningAddress = .*/p2pListeningAddress = \"0.0.0.0:'"$PA"'\"/' |
-            sed -e 's/discoveryListeningAddress = .*/discoveryListeningAddress = \"0.0.0.0:'"$DA"'\"/' |
             sed -e 's/localStateListeningAddress = .*/localStateListeningAddress = \"0.0.0.0:'"$LSA"'\"/' |
             sed -e 's/passCodes = .*/passCodes = \"scripts\/generated\/extra-nodes\/keystores\/passcodes.txt\"/' |
             sed -e 's/keystore = .*/keystore = \"scripts\/generated\/extra-nodes\/keystores\/keys\"/' |

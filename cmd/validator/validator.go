@@ -184,7 +184,7 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	defer cf()
 
 	chainID := uint32(config.Configuration.Chain.ID)
-	batchSize := config.Configuration.Monitor.BatchSize
+	batchSize := config.Configuration.Ethereum.ProcessingBlockBatchSize
 
 	eth, contractsHandler, secp256k1Signer, publicKey := initEthereumConnection(logger)
 	defer eth.Close()
@@ -317,8 +317,8 @@ func validatorNode(cmd *cobra.Command, args []string) {
 		panic(err)
 	}
 
-	monitorInterval := config.Configuration.Monitor.Interval
-	mon, err := monitor.NewMonitor(consDB, monDB, consAdminHandlers, appDepositHandler, eth, contractsHandler, contractsHandler.EthereumContracts().GetAllAddresses(), monitorInterval, uint64(batchSize), uint32(config.Configuration.Chain.ID), taskRequestChan)
+	monitorInterval := constants.MonitorInterval
+	mon, err := monitor.NewMonitor(consDB, monDB, consAdminHandlers, appDepositHandler, eth, contractsHandler, contractsHandler.EthereumContracts().GetAllAddresses(), monitorInterval, batchSize, uint32(config.Configuration.Chain.ID), taskRequestChan)
 	if err != nil {
 		panic(err)
 	}
