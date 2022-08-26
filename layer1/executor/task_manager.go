@@ -555,13 +555,13 @@ func (tm *TaskManager) loadState() error {
 
 		return nil
 	}); err != nil {
-		return tm.onError(err)
+		return err
 	}
 
 	// synchronizing db state to disk
 	if err := tm.database.Sync(); err != nil {
 		logger.Error("Failed to set sync")
-		return tm.onError(err)
+		return err
 	}
 
 	return nil
@@ -583,7 +583,7 @@ func (tm *TaskManager) recoverState() error {
 		} else if task.InternalState == Killed {
 			err = tm.remove(task.Id)
 			if err != nil {
-				return tm.onError(err)
+				return err
 			}
 		}
 	}

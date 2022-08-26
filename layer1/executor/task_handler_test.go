@@ -76,9 +76,8 @@ func TestTasksHandlerAndManager_Schedule_NilTask(t *testing.T) {
 	t.Parallel()
 	handler, _, _, _, _ := getTaskHandler(t, true)
 	handler.Start()
-	ctx := context.Background()
 
-	_, err := handler.ScheduleTask(ctx, nil, "")
+	_, err := handler.ScheduleTask(nil, "")
 	require.Equal(t, ErrTaskIsNil, err)
 	require.Equal(t, 0, getScheduleLen(t, handler.manager))
 }
@@ -87,9 +86,8 @@ func TestTasksHandlerAndManager_Schedule_NotRegisteredTask(t *testing.T) {
 	t.Parallel()
 	handler, _, _, _, _ := getTaskHandler(t, true)
 	handler.Start()
-	ctx := context.Background()
 
-	_, err := handler.ScheduleTask(ctx, taskMocks.NewMockTask(), "")
+	_, err := handler.ScheduleTask(taskMocks.NewMockTask(), "")
 	require.Equal(t, ErrTaskTypeNotInRegistry, err)
 	require.Equal(t, 0, getScheduleLen(t, handler.manager))
 }
@@ -97,10 +95,9 @@ func TestTasksHandlerAndManager_Schedule_NotRegisteredTask(t *testing.T) {
 func TestTasksHandlerAndManager_Schedule_WrongStartDate(t *testing.T) {
 	handler, _, _, _, _ := getTaskHandler(t, true)
 	handler.Start()
-	ctx := context.Background()
 
 	task := dkg.NewCompletionTask(2, 1)
-	_, err := handler.ScheduleTask(ctx, task, "")
+	_, err := handler.ScheduleTask(task, "")
 	require.Equal(t, ErrWrongParams, err)
 	require.Equal(t, 0, getScheduleLen(t, handler.manager))
 }
@@ -108,13 +105,12 @@ func TestTasksHandlerAndManager_Schedule_WrongStartDate(t *testing.T) {
 func TestTasksHandlerAndManager_Schedule_WrongEndDate(t *testing.T) {
 	t.Parallel()
 	handler, client, _, _, _ := getTaskHandler(t, true)
-	ctx := context.Background()
 	client.GetFinalizedHeightFunc.SetDefaultReturn(12, nil)
 	handler.Start()
 	<-time.After(tasks.ManagerProcessingTime)
 
 	task := dkg.NewCompletionTask(2, 3)
-	_, err := handler.ScheduleTask(ctx, task, "")
+	_, err := handler.ScheduleTask(task, "")
 	require.Equal(t, ErrTaskExpired, err)
 	require.Equal(t, 0, getScheduleLen(t, handler.manager))
 }
@@ -123,14 +119,13 @@ func TestTasksHandlerAndManager_Schedule_MultiExecutionNotAllowed(t *testing.T) 
 	t.Parallel()
 	handler, _, _, _, _ := getTaskHandler(t, true)
 	handler.Start()
-	ctx := context.Background()
 
 	task := dkg.NewCompletionTask(10, 40)
-	resp, err := handler.ScheduleTask(ctx, task, "")
+	resp, err := handler.ScheduleTask(task, "")
 	require.Nil(t, err)
 	require.NotNil(t, resp)
 
-	_, err = handler.ScheduleTask(ctx, task, "")
+	_, err = handler.ScheduleTask(task, "")
 	require.Equal(t, ErrTaskNotAllowMultipleExecutions, err)
 	require.Equal(t, 1, getScheduleLen(t, handler.manager))
 }
@@ -139,9 +134,8 @@ func TestTasksHandlerAndManager_KillById_EmptyId(t *testing.T) {
 	t.Parallel()
 	handler, _, _, _, _ := getTaskHandler(t, true)
 	handler.Start()
-	ctx := context.Background()
 
-	_, err := handler.KillTaskById(ctx, "")
+	_, err := handler.KillTaskById("")
 	require.Equal(t, ErrTaskIdEmpty, err)
 }
 
@@ -149,25 +143,23 @@ func TestTasksHandlerAndManager_KillById_NotFound(t *testing.T) {
 	t.Parallel()
 	handler, _, _, _, _ := getTaskHandler(t, true)
 	handler.Start()
-	ctx := context.Background()
 
-	_, err := handler.KillTaskById(ctx, "123")
+	_, err := handler.KillTaskById("123")
 	require.Equal(t, ErrNotScheduled, err)
 }
 
 func TestTasksHandlerAndManager_ScheduleAndKillById(t *testing.T) {
 	handler, _, _, _, _ := getTaskHandler(t, true)
 	handler.Start()
-	ctx := context.Background()
 
 	task := dkg.NewCompletionTask(10, 40)
 	taskId := uuid.New().String()
-	resp, err := handler.ScheduleTask(ctx, task, taskId)
+	resp, err := handler.ScheduleTask(task, taskId)
 	require.Nil(t, err)
 	require.NotNil(t, resp)
 	require.Equal(t, 1, getScheduleLen(t, handler.manager))
 
-	_, err = handler.KillTaskById(ctx, taskId)
+	_, err = handler.KillTaskById(taskId)
 	require.Nil(t, err)
 	require.Equal(t, 0, getScheduleLen(t, handler.manager))
 }
@@ -176,7 +168,6 @@ func TestTasksHandlerAndManager_ScheduleAndKillById_RunningTask(t *testing.T) {
 	handler, client, contracts, _, acc := getTaskHandler(t, true)
 	client.GetFinalizedHeightFunc.SetDefaultReturn(12, nil)
 	handler.Start()
-	ctx := context.Background()
 
 	dkgState := state.NewDkgState(acc)
 	dkgState.OnRegistrationOpened(
@@ -206,7 +197,7 @@ func TestTasksHandlerAndManager_ScheduleAndKillById_RunningTask(t *testing.T) {
 
 	task := dkg.NewRegisterTask(10, 40)
 	taskId := uuid.New().String()
-	resp, err := handler.ScheduleTask(ctx, task, taskId)
+	resp, err := handler.ScheduleTask(task, taskId)
 	require.Nil(t, err)
 	require.NotNil(t, resp)
 	require.Equal(t, 1, getScheduleLen(t, handler.manager))
@@ -224,7 +215,7 @@ func TestTasksHandlerAndManager_ScheduleAndKillById_RunningTask(t *testing.T) {
 		isRunning = taskCopy.InternalState == Running
 	}
 
-	_, err = handler.KillTaskById(ctx, taskId)
+	_, err = handler.KillTaskById(taskId)
 	require.Nil(t, err)
 
 	failTime = time.After(tasks.ManagerProcessingTime)
@@ -236,7 +227,7 @@ func TestTasksHandlerAndManager_ScheduleAndKillById_RunningTask(t *testing.T) {
 		}
 	}
 
-	blockingResp := resp.GetResponseBlocking(ctx)
+	blockingResp := resp.GetResponseBlocking(context.Background())
 	require.NotNil(t, blockingResp)
 	require.Equal(t, context.Canceled, blockingResp)
 	require.Equal(t, 0, getScheduleLen(t, handler.manager))
@@ -245,41 +236,38 @@ func TestTasksHandlerAndManager_ScheduleAndKillById_RunningTask(t *testing.T) {
 func TestTasksHandlerAndManager_KillByType_Nil(t *testing.T) {
 	handler, _, _, _, _ := getTaskHandler(t, true)
 	handler.Start()
-	ctx := context.Background()
 
-	_, err := handler.KillTaskByType(ctx, nil)
+	_, err := handler.KillTaskByType(nil)
 	require.Equal(t, ErrTaskIsNil, err)
 }
 
 func TestTasksHandlerAndManager_KillByType_NotInRegistry(t *testing.T) {
 	handler, _, _, _, _ := getTaskHandler(t, true)
 	handler.Start()
-	ctx := context.Background()
 
-	_, err := handler.KillTaskByType(ctx, taskMocks.NewMockTask())
+	_, err := handler.KillTaskByType(taskMocks.NewMockTask())
 	require.Equal(t, ErrTaskTypeNotInRegistry, err)
 }
 
 func TestTasksHandlerAndManager_ScheduleAndKillByType(t *testing.T) {
 	handler, _, _, _, _ := getTaskHandler(t, true)
 	handler.Start()
-	ctx := context.Background()
 
 	task1 := dkg.NewCompletionTask(10, 40)
 	task1.AllowMultiExecution = true
-	resp, err := handler.ScheduleTask(ctx, task1, "")
+	resp, err := handler.ScheduleTask(task1, "")
 	require.Nil(t, err)
 	require.NotNil(t, resp)
 	require.Equal(t, 1, getScheduleLen(t, handler.manager))
 
 	task2 := dkg.NewCompletionTask(10, 40)
 	task2.AllowMultiExecution = true
-	resp, err = handler.ScheduleTask(ctx, task1, "")
+	resp, err = handler.ScheduleTask(task1, "")
 	require.Nil(t, err)
 	require.NotNil(t, resp)
 	require.Equal(t, 2, getScheduleLen(t, handler.manager))
 
-	_, err = handler.KillTaskByType(ctx, &dkg.CompletionTask{})
+	_, err = handler.KillTaskByType(&dkg.CompletionTask{})
 	require.Nil(t, err)
 	require.Equal(t, 0, getScheduleLen(t, handler.manager))
 }
@@ -288,7 +276,6 @@ func TestTasksHandlerAndManager_ScheduleKillCloseAndRecover(t *testing.T) {
 	handler, client, contracts, _, acc := getTaskHandler(t, false)
 	handler.Start()
 	client.GetFinalizedHeightFunc.SetDefaultReturn(12, nil)
-	ctx := context.Background()
 
 	dkgState := state.NewDkgState(acc)
 	dkgState.OnRegistrationOpened(
@@ -323,7 +310,7 @@ func TestTasksHandlerAndManager_ScheduleKillCloseAndRecover(t *testing.T) {
 		MaxStaleBlocks:  14,
 	}
 	taskId := uuid.New().String()
-	resp, err := handler.ScheduleTask(ctx, task, taskId)
+	resp, err := handler.ScheduleTask(task, taskId)
 	require.Nil(t, err)
 	require.NotNil(t, resp)
 	require.Equal(t, 1, getScheduleLen(t, handler.manager))
@@ -354,12 +341,12 @@ func TestTasksHandlerAndManager_ScheduleKillCloseAndRecover(t *testing.T) {
 	require.Nil(t, err)
 	newHandler.Start()
 
-	resp, err = newHandler.ScheduleTask(ctx, task, taskId)
+	resp, err = newHandler.ScheduleTask(task, taskId)
 	require.Nil(t, err)
 	require.NotNil(t, resp)
 	require.Equal(t, 1, getScheduleLen(t, newHandler.(*Handler).manager))
 
-	_, err = newHandler.KillTaskById(ctx, taskId)
+	_, err = newHandler.KillTaskById(taskId)
 	require.Nil(t, err)
 
 	failTime = time.After(tasks.ManagerProcessingTime)
@@ -371,7 +358,7 @@ func TestTasksHandlerAndManager_ScheduleKillCloseAndRecover(t *testing.T) {
 		}
 	}
 
-	blockingResp := resp.GetResponseBlocking(ctx)
+	blockingResp := resp.GetResponseBlocking(context.Background())
 	require.NotNil(t, blockingResp)
 	require.Equal(t, ErrTaskKilledBeforeExecution, blockingResp)
 	require.Equal(t, 0, getScheduleLen(t, newHandler.(*Handler).manager))
@@ -381,7 +368,7 @@ func TestTasksHandlerAndManager_ScheduleKillCloseAndRecover(t *testing.T) {
 	require.Nil(t, err)
 	newHandler2.Start()
 
-	resp, err = newHandler2.ScheduleTask(ctx, task, taskId)
+	resp, err = newHandler2.ScheduleTask(task, taskId)
 	require.Nil(t, err)
 	require.NotNil(t, resp)
 	require.Equal(t, 0, getScheduleLen(t, newHandler2.(*Handler).manager))
@@ -406,7 +393,6 @@ func TestTasksHandlerAndManager_ScheduleAndRecover_RunningSnapshotTask(t *testin
 	handler, client, contracts, _, acc := getTaskHandler(t, false)
 	client.GetFinalizedHeightFunc.SetDefaultReturn(12, nil)
 	handler.Start()
-	ctx := context.Background()
 
 	bh := &objs.BlockHeader{
 		BClaims: &objs.BClaims{
@@ -442,7 +428,7 @@ func TestTasksHandlerAndManager_ScheduleAndRecover_RunningSnapshotTask(t *testin
 
 	task := snapshots.NewSnapshotTask(0, 5, 1)
 	taskId := uuid.New().String()
-	resp, err := handler.ScheduleTask(ctx, task, taskId)
+	resp, err := handler.ScheduleTask(task, taskId)
 	require.Nil(t, err)
 	require.NotNil(t, resp)
 	require.Equal(t, 1, getScheduleLen(t, handler.manager))

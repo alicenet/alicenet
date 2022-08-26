@@ -76,8 +76,10 @@ func (te *TaskExecutor) isClosed() bool {
 
 // triggered when onError occurs during the execution.
 func (te *TaskExecutor) onError(err error) error {
+	te.Lock()
+	defer te.close()
+	defer te.Unlock()
 	te.logger.WithError(err).Errorf("An unercoverable error occured %v", err)
-	te.close()
 	return err
 }
 
@@ -367,13 +369,13 @@ func (te *TaskExecutor) loadState() error {
 
 		return nil
 	}); err != nil {
-		return te.onError(err)
+		return err
 	}
 
 	// synchronizing db state to disk
 	if err := te.database.Sync(); err != nil {
 		logger.Error("Failed to set sync")
-		return te.onError(err)
+		return err
 	}
 
 	return nil
