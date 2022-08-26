@@ -35,6 +35,6 @@ The last step, before creating a Pull Request to submit your work, is to make su
 
 ## Submitting your work as a Pull Request
 
-Now its finally time to submit your work. See the [github pull request documentation](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request-from-a-fork) to see how to create a Pull Request from your fork against the AliceNet repository.
+Now, its finally time to submit your work. See the [github pull request documentation](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request-from-a-fork) to see how to create a Pull Request from your fork against the AliceNet repository.
 
 And again, thank you for your help!
