@@ -14,11 +14,11 @@ To learn more, check out our official [website](https://https://www.alice.net/) 
 
 ## Quick Start
 
-First step to run an AliceNet blockchain node is to get an AliceNet client binary.
+First step to run an AliceNet blockchain node is to get an AliceNet binary.
 
 Pre-compiled binaries are available in our [release page](https://github.com/alicenet/alicenet/releases). For instructions about how to build and install from the source code, see the [Building instructions](./docs/BUILD.md).
 
-Once you have an AliceNet binary, see the documentation [How to configure and run your node](CONFIGURE.md) to run your own node against one of AliceNet's networks.
+Once you have an AliceNet binary, see the documentation [How to configure and run your node](CONFIGURE.md) to run your own node against one of AliceNet's networks and check out our official [wallet](https://github.com/alicenet/wallet).
 
 ## Examples
 
@@ -26,8 +26,7 @@ Basic examples can be found in our official [website](https://https://www.alice.
 
 ## How to contribute
 
-AliceNet is still under development and contributions are always welcome! Please
-make sure to check the [Developers Guide](./CONTRIBUTING.md) if you want to help.
+AliceNet is still under development and contributions are always welcome! Please make sure to check the [Contribution Guide Lines](./CONTRIBUTING.md) if you want to help.
 
 ## License
 

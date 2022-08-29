@@ -1,5 +1,9 @@
 # Building from Source
 
+## Support
+
+At the moment, the compilation of the alicenet binary and its operation were only tested on Linux and MacOs systems. Support for Windows may be added in the future.
+
 ## Prerequisites
 
 - [Docker v20 with docker-compose](https://docs.docker.com/get-docker)
@@ -7,13 +11,12 @@
 - [Geth 1.10.22](https://geth.ethereum.org/docs/install-and-build/installing-geth)
 - [Node 16](https://nodejs.org/en/download/)
 
-Before proceeding, make sure that you have your `GOPATH` in your `PATH`. You can do this by adding the following line to your terminal configuration file (e.g $HOME/.bashrc, $HOME/.zshrc):
+In addition to this, linux users are required to install gcc and make. Debian / Ubuntu users can do this by running the following command on terminal:
 
 ```shell
-export PATH="$PATH:$(go env GOPATH)/bin"
+sudo apt update
+sudo apt install build-essential
 ```
-
-Note: Changes made to a configuration file may not apply until you restart your terminal.
 
 ## Clone the Repository
 
@@ -47,7 +50,35 @@ If you are developing a new functionality for AliceNet and you are implementing 
 - The solidity contracts and want these to be used by the AliceNet binary.
 - The public API surface of AliceNet.
 
-You will need to run an additional command before building the binary. In the AliceNet root run the following command:
+You will need to install some extra-dependencies and run an additional command to (re) generate the bindings before building the binary.
+
+### Installing CapnProto
+
+Before generating the new bindings, you will need to install the [capnproto package](https://capnproto.org/install.html). You can do this by running the following command on the terminal:
+
+Linux Users (Debian / Ubuntu):
+```shell
+sudo apt-get install capnproto
+```
+
+MacOs users
+```shell
+brew install capnp
+```
+
+### Adding GOPATH to your PATH environment
+
+Make sure that you have the `go binary` and the `GOPATH` in your `PATH` environment. You can do this by adding the following line to your terminal configuration file (e.g $HOME/.bashrc, $HOME/.zshrc):
+
+```shell
+export PATH="$PATH:$(go env GOPATH)/bin"
+```
+
+Note: Changes made to a configuration file may not apply until you restart your terminal.
+
+### Generating the new bindings
+
+In the AliceNet root run the following command:
 
 - `make generate`
 
@@ -73,6 +104,6 @@ make build
 
 ## What's next
 
-Once you have an AliceNet binary, see the documentation [How to configure your node](CONFIGURE.md) to run your own node against one of AliceNet's networks.
+Once you have an AliceNet binary, see the documentation [How to configure and run your node](CONFIGURE.md) to run your own node against one of AliceNet's networks and check out our official [wallet](https://github.com/alicenet/wallet).
 
-Or, check the [Testing Documentation](./TESTING.md) to see how to run the AliceNet tests.
+Or, check the [Testing Documentation](./TESTING.md) or [Running a full local AliceNet network](./LOCAL_NETWORK.md) to see how to run the AliceNet tests.

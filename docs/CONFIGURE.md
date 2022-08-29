@@ -1,10 +1,33 @@
-# Running an AliceNet node
+# How to configure and run your node
 
-Before running an AliceNet node, you must create and configure a `config.toml` file, so the node can be executed in the chosen network.
+This document will guide you through on how to configure and run your AliceNet node against one of the AliceNet Networks available.
 
+## Creating the alicenet folder
+
+Before running an AliceNet node, we must setup some files and dependencies that will be used by the node. Firstly, let's create a folder where we are going to store all the AliceNet dependencies. During this documentation, we will be creating a folder on the $HOME directory, but you can change the folder to a desired location, just make sure to input the folder on the necessary configuration files.
+
+If you want to run your node against AliceNet mainnet, open a new terminal and run the following command:
+
+```shell
+mkdir -p ~/alicenet/mainnet/keystores/keys
+```
+
+If you want to run your node against AliceNet testnet, use the following command:
+
+```shell
+mkdir -p ~/alicenet/testnet/keystores/keys
+```
+
+Copy the alicenet binary and paste to `~/alicenet` folder. You may need to unzip the binary first, in case you downloaded the binary from the [release page](https://github.com/alicenet/alicenet/releases).
+
+Now, let's step in inside the newly created directory:
+```shell
+cd ~/alicenet
+```
 
 ## Creating a configuration file
 
+To create and configure a `config.toml` file, so the node can be executed in the chosen network.
 
 ```toml
 [loglevel]
@@ -119,7 +142,7 @@ status = true
 
 # OPTIONAL: Only necessary if you plan to run a validator node.
 [validator]
-# Type of ellipt curve used to generate the AliceNet address. 1: secp256 (same
+# Type of elliptic curve used to generate the AliceNet address. 1: secp256k1 (same
 # as ethereum), 2: BN128
 rewardCurveSpec = 1
 # Address of the AliceNet account used to do transactions in the AliceNet
@@ -133,10 +156,10 @@ symmetricKey = "<SOME_SUPER_FANCY_SECRET_THAT_WILL_BE_HASHED>"
 Right now, there are 2 AliceNet networks being run. AliceNet main (anchored on ethereum mainnet) and AliceNet testnet (anchored on goerli ethereum testnet).
 
 TODO: add the table
-<!-- | AliceNet Network | Ethereum Network | ChainID | Bootnode address                                                                               | Ethereum Smart Contract Factory Address    | Starting Block |
+| AliceNet Network | Ethereum Network | ChainID | Bootnode address                                                                               | Ethereum Smart Contract Factory Address    | Starting Block |
 | ---------------- | ---------------- | ------- | ---------------------------------------------------------------------------------------------- | ------------------------------------------ | -------------- |
 | main             | mainnet          | 21      | 00000015\|029570051a8573e865af31a066eb100e7744bcbd05d814e899a763500163675be9@127.0.0.1:4242 | 0x0000000000000000000000000000000000000000 | 00000000       |
-| testnet          | goerli           | 42      | 0000002A\|029570051a8573e865af31a066eb100e7744bcbd05d814e899a763500163675be9@127.0.0.1:4242 | 0x0000000000000000000000000000000000000000 | 00000000       | -->
+| testnet          | goerli           | 42      | 0000002A\|029570051a8573e865af31a066eb100e7744bcbd05d814e899a763500163675be9@127.0.0.1:4242 | 0x0000000000000000000000000000000000000000 | 00000000       |
 
 
 ## Running the node
