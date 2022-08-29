@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT-open-group
-pragma solidity ^0.8.11;
+pragma solidity ^0.8.16;
 
 import "contracts/interfaces/IValidatorPool.sol";
 import "contracts/libraries/ethdkg/ETHDKGStorage.sol";
@@ -21,7 +21,13 @@ contract ETHDKGAccusations is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
             block.number < _phaseStartBlock + _phaseLength ||
             block.number >= _phaseStartBlock + 2 * _phaseLength
         ) {
-            revert ETHDKGErrors.ETHDKGNotInPostRegistrationAccusationPhase(_ethdkgPhase);
+            PhaseInformation[] memory expectedPhaseInfos = new PhaseInformation[](1);
+            expectedPhaseInfos[0] = PhaseInformation(
+                Phase.RegistrationOpen,
+                _phaseStartBlock + _phaseLength,
+                _phaseStartBlock + 2 * _phaseLength
+            );
+            revert ETHDKGErrors.IncorrectPhase(_ethdkgPhase, block.number, expectedPhaseInfos);
         }
 
         uint16 badParticipants = _badParticipants;
@@ -51,7 +57,13 @@ contract ETHDKGAccusations is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
             block.number < _phaseStartBlock + _phaseLength ||
             block.number >= _phaseStartBlock + 2 * _phaseLength
         ) {
-            revert ETHDKGErrors.NotInPostSharedDistributionPhase(_ethdkgPhase);
+            PhaseInformation[] memory expectedPhaseInfos = new PhaseInformation[](1);
+            expectedPhaseInfos[0] = PhaseInformation(
+                Phase.ShareDistribution,
+                _phaseStartBlock + _phaseLength,
+                _phaseStartBlock + 2 * _phaseLength
+            );
+            revert ETHDKGErrors.IncorrectPhase(_ethdkgPhase, block.number, expectedPhaseInfos);
         }
 
         uint16 badParticipants = _badParticipants;
@@ -95,14 +107,27 @@ contract ETHDKGAccusations is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
         uint256[2] memory sharedKeyCorrectnessProof
     ) external {
         // We should allow accusation, even if some of the participants didn't participate
-        bool isInDisputeShareDistribution = _ethdkgPhase == Phase.DisputeShareDistribution &&
-            block.number >= _phaseStartBlock &&
-            block.number < _phaseStartBlock + _phaseLength;
-        bool isInShareDistribution = _ethdkgPhase == Phase.ShareDistribution &&
-            block.number >= _phaseStartBlock + _phaseLength &&
-            block.number < _phaseStartBlock + 2 * _phaseLength;
-        if (!isInDisputeShareDistribution && !isInShareDistribution) {
-            revert ETHDKGErrors.ETHDKGNotInDisputePhase(_ethdkgPhase);
+        {
+            bool isInDisputeShareDistribution = _ethdkgPhase == Phase.DisputeShareDistribution &&
+                block.number >= _phaseStartBlock &&
+                block.number < _phaseStartBlock + _phaseLength;
+            bool isInShareDistribution = _ethdkgPhase == Phase.ShareDistribution &&
+                block.number >= _phaseStartBlock + _phaseLength &&
+                block.number < _phaseStartBlock + 2 * _phaseLength;
+            if (!isInDisputeShareDistribution && !isInShareDistribution) {
+                PhaseInformation[] memory expectedPhaseInfos = new PhaseInformation[](2);
+                expectedPhaseInfos[0] = PhaseInformation(
+                    Phase.DisputeShareDistribution,
+                    _phaseStartBlock,
+                    _phaseStartBlock + _phaseLength
+                );
+                expectedPhaseInfos[1] = PhaseInformation(
+                    Phase.ShareDistribution,
+                    _phaseStartBlock + _phaseLength,
+                    _phaseStartBlock + 2 * _phaseLength
+                );
+                revert ETHDKGErrors.IncorrectPhase(_ethdkgPhase, block.number, expectedPhaseInfos);
+            }
         }
 
         if (!IValidatorPool(_validatorPoolAddress()).isValidator(dishonestAddress)) {
@@ -203,7 +228,13 @@ contract ETHDKGAccusations is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
             block.number < _phaseStartBlock + _phaseLength ||
             block.number >= _phaseStartBlock + 2 * _phaseLength
         ) {
-            revert ETHDKGErrors.ETHDKGNotInPostKeyshareSubmissionPhase(_ethdkgPhase);
+            PhaseInformation[] memory expectedPhaseInfos = new PhaseInformation[](1);
+            expectedPhaseInfos[0] = PhaseInformation(
+                Phase.KeyShareSubmission,
+                _phaseStartBlock + _phaseLength,
+                _phaseStartBlock + 2 * _phaseLength
+            );
+            revert ETHDKGErrors.IncorrectPhase(_ethdkgPhase, block.number, expectedPhaseInfos);
         }
 
         uint16 badParticipants = _badParticipants;
@@ -240,7 +271,13 @@ contract ETHDKGAccusations is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
             block.number < _phaseStartBlock + _phaseLength ||
             block.number >= _phaseStartBlock + 2 * _phaseLength
         ) {
-            revert ETHDKGErrors.ETHDKGNotInPostGPKJSubmissionPhase(_ethdkgPhase);
+            PhaseInformation[] memory expectedPhaseInfos = new PhaseInformation[](1);
+            expectedPhaseInfos[0] = PhaseInformation(
+                Phase.GPKJSubmission,
+                _phaseStartBlock + _phaseLength,
+                _phaseStartBlock + 2 * _phaseLength
+            );
+            revert ETHDKGErrors.IncorrectPhase(_ethdkgPhase, block.number, expectedPhaseInfos);
         }
 
         uint16 badParticipants = _badParticipants;
@@ -291,7 +328,18 @@ contract ETHDKGAccusations is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
                 block.number >= _phaseStartBlock + _phaseLength &&
                 block.number < _phaseStartBlock + 2 * _phaseLength;
             if (!isInDisputeGPKJSubmission && !isInGPKJSubmission) {
-                revert ETHDKGErrors.ETHDKGNotInPostGPKJSubmissionPhase(_ethdkgPhase);
+                PhaseInformation[] memory expectedPhaseInfos = new PhaseInformation[](2);
+                expectedPhaseInfos[0] = PhaseInformation(
+                    Phase.DisputeGPKJSubmission,
+                    _phaseStartBlock,
+                    _phaseStartBlock + _phaseLength
+                );
+                expectedPhaseInfos[1] = PhaseInformation(
+                    Phase.GPKJSubmission,
+                    _phaseStartBlock + _phaseLength,
+                    _phaseStartBlock + 2 * _phaseLength
+                );
+                revert ETHDKGErrors.IncorrectPhase(_ethdkgPhase, block.number, expectedPhaseInfos);
             }
         }
 

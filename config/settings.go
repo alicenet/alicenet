@@ -5,11 +5,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/alicenet/alicenet/logging"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
-
-	"github.com/alicenet/alicenet/logging"
 )
 
 type bootnodeConfig struct {
@@ -38,11 +37,7 @@ type ethereumConfig struct {
 	StartingBlock            uint64
 	TxMaxGasFeeAllowedInGwei uint64
 	TxMetricsDisplay         bool
-}
-
-type monitorConfig struct {
-	BatchSize int
-	Interval  time.Duration
+	ProcessingBlockBatchSize uint64
 }
 
 type transportConfig struct {
@@ -57,7 +52,6 @@ type transportConfig struct {
 	PrivateKey                 string
 	BootNodeAddresses          string
 	P2PListeningAddress        string
-	DiscoveryListeningAddress  string
 	LocalStateListeningAddress string
 	UPnP                       bool
 }
@@ -118,13 +112,13 @@ type configuration struct {
 	Logging               loggingConfig
 	Deploy                deployConfig
 	Ethereum              ethereumConfig
-	Monitor               monitorConfig
 	Transport             transportConfig
 	Utils                 utilsConfig
 	Validator             validatorConfig
 	Firewalld             firewalldConfig
 	Chain                 chainConfig
 	BootNode              bootnodeConfig
+	Version               string
 }
 
 // Configuration contains all active settings.

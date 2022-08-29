@@ -49,7 +49,7 @@ describe("PROXY", async () => {
     );
     const endPointLockable = await endPointLockableFactory.deploy(accounts[0]);
     const endPointFactory = await ethers.getContractFactory(END_POINT);
-    const endPoint = await endPointFactory.deploy(accounts[0]);
+    const endPoint = await endPointFactory.deploy();
     expect(proxy.deployed());
     const abicoder = new ethers.utils.AbiCoder();
     let encodedAddress = abicoder.encode(

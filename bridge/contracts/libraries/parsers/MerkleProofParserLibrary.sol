@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT-open-group
-pragma solidity ^0.8.11;
+pragma solidity ^0.8.16;
 
 import "contracts/libraries/errors/MerkleProofParserLibraryErrors.sol";
 
-import "./BaseParserLibrary.sol";
+import "contracts/libraries/parsers/BaseParserLibrary.sol";
 
 /// @title Library to parse the MerkleProof structure from a blob of binary state
 library MerkleProofParserLibrary {

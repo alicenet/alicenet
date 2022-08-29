@@ -1,12 +1,17 @@
 // SPDX-License-Identifier: MIT-open-group
-pragma solidity ^0.8.11;
+pragma solidity ^0.8.16;
 
 import "contracts/interfaces/IValidatorPool.sol";
 import "contracts/interfaces/IETHDKG.sol";
 import "contracts/utils/ImmutableAuth.sol";
 import "contracts/libraries/snapshots/SnapshotRingBuffer.sol";
 
-abstract contract SnapshotsStorage is ImmutableETHDKG, ImmutableValidatorPool, SnapshotRingBuffer {
+abstract contract SnapshotsStorage is
+    ImmutableETHDKG,
+    ImmutableValidatorPool,
+    SnapshotRingBuffer,
+    ImmutableDynamics
+{
     uint256 internal immutable _epochLength;
 
     uint256 internal immutable _chainId;
@@ -33,6 +38,7 @@ abstract contract SnapshotsStorage is ImmutableETHDKG, ImmutableValidatorPool, S
         ImmutableFactory(msg.sender)
         ImmutableETHDKG()
         ImmutableValidatorPool()
+        ImmutableDynamics()
     {
         _chainId = chainId_;
         _epochLength = epochLength_;

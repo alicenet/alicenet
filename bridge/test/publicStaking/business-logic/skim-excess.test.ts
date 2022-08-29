@@ -167,7 +167,7 @@ describe("PublicStaking: Skim excess of tokens", async () => {
         users,
         tokensID,
         expectedState,
-        "After deposit 1 Tokens" + i
+        "After deposit 1 Tokens " + i
       );
       await depositEthCheckAndUpdateState(
         stakingContract,
@@ -176,7 +176,7 @@ describe("PublicStaking: Skim excess of tokens", async () => {
         users,
         tokensID,
         expectedState,
-        "After deposit 1 Eth" + i
+        "After deposit 1 Eth " + i
       );
       const expectedCollectedAmount = [330n, 330n, 330n];
       for (let j = 0; j < numberUsers; j++) {
@@ -188,7 +188,7 @@ describe("PublicStaking: Skim excess of tokens", async () => {
           users,
           tokensID,
           expectedState,
-          "After collect 1" + j
+          "After collect 1 Token " + j
         );
 
         await collectEthCheckAndUpdateState(
@@ -199,7 +199,7 @@ describe("PublicStaking: Skim excess of tokens", async () => {
           users,
           tokensID,
           expectedState,
-          "After collect 1 Eth" + j
+          "After collect 1 Eth " + j
         );
       }
     }
@@ -240,15 +240,15 @@ describe("PublicStaking: Skim excess of tokens", async () => {
       expectedState,
       "After deposit 2 Eth"
     );
-    const expectedPayoutAmountEth = [300n, 300n, 320n];
-    // last user burning should also get the slush of 20
+    const expectedPayoutAmountEth = [300n, 310n, 310n];
+    // last two users burning split the slush of 20
     const expectedPayoutAmountToken = [
       sharesPerUser + 300n,
-      sharesPerUser + 300n,
-      sharesPerUser + 320n,
+      sharesPerUser + 310n,
+      sharesPerUser + 310n,
     ];
 
-    const expectedSlushes = [20000000000000000000n, 20000000000000000000n, 0n];
+    const expectedSlushes = [20000000000000000000n, 0n, 0n];
     for (let j = 0; j < numberUsers; j++) {
       await burnPositionCheckAndUpdateState(
         stakingContract,

@@ -9,4 +9,4 @@ package mocks
 
 // Mocks created from bindings:
 
-//go:generate go-mockgen -f -i IETHDKG -i IGovernance -i IAToken -i IBToken -i IAliceNetFactory -i IPublicStaking -i ISnapshots -i IValidatorPool -i IValidatorStaking  -o bindings.mockgen.go ../../bridge/bindings
+//go:generate go-mockgen -f -i IETHDKG -i IGovernance -i IAToken -i IBToken -i IAliceNetFactory -i IPublicStaking -i ISnapshots -i IValidatorPool -i IValidatorStaking -i IDynamics -o bindings.mockgen.go ../../bridge/bindings

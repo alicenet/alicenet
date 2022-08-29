@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT-open-group
-pragma solidity ^0.8.11;
+pragma solidity ^0.8.16;
 
 import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import "contracts/utils/Admin.sol";
@@ -15,6 +15,6 @@ contract LegacyToken is LegacyTokenBase {
 
     function initialize() public onlyAdmin initializer {
         __legacyTokenBaseInit();
-        _mint(msg.sender, 220000000 * 10**decimals());
+        _mint(msg.sender, 320000000 * 10**decimals());
     }
 }

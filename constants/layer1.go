@@ -21,6 +21,7 @@ const (
 
 // Monitor constants.
 const (
+	MonitorInterval time.Duration = 7 * time.Second
 	// Number of attempts that we are going to retry a certain logic in the monitoring service.
 	MonitorRetryCount uint64 = 10
 	// How much time we are going to wait for retrying a certain logic in the monitoring service.

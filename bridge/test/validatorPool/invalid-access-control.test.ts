@@ -1,7 +1,39 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { ethers } from "hardhat";
+import { ValidatorPool } from "../../typechain-types";
 import { expect } from "../chai-setup";
 import { Fixture, getFixture } from "../setup";
+
+describe("Initialization", async function () {
+  let fixture: Fixture;
+
+  beforeEach(async function () {
+    fixture = await getFixture();
+  });
+
+  it("Should not allow initialize more than once", async () => {
+    await expect(
+      fixture.factory.callAny(
+        fixture.validatorPool.address,
+        0,
+        (fixture.validatorPool as ValidatorPool).interface.encodeFunctionData(
+          "initialize",
+          [1, 2, 3, 4]
+        )
+      )
+    ).to.revertedWith("Initializable: contract is already initialized");
+  });
+
+  it("Only factory should be allowed to call initialize", async () => {
+    const validatorPool = await (
+      await ethers.getContractFactory("ValidatorPool")
+    ).deploy();
+    const [, user] = await ethers.getSigners();
+    await expect(
+      validatorPool.connect(user).initialize(1, 2, 3, 4)
+    ).to.revertedWithCustomError(validatorPool, "OnlyFactory");
+  });
+});
 
 describe("ValidatorPool Access Control: An user without admin role should not be able to:", async function () {
   let fixture: Fixture;
@@ -39,6 +71,16 @@ describe("ValidatorPool Access Control: An user without admin role should not be
   it("Set disputer reward", async function () {
     await expect(
       fixture.validatorPool.connect(notAdmin1Signer).setDisputerReward(1)
+    )
+      .to.be.revertedWithCustomError(fixture.validatorPool, `OnlyFactory`)
+      .withArgs(notAdmin1.address, fixture.factory.address);
+  });
+
+  it("Set Max Interval Without Snapshots", async function () {
+    await expect(
+      fixture.validatorPool
+        .connect(notAdmin1Signer)
+        .setMaxIntervalWithoutSnapshots(1)
     )
       .to.be.revertedWithCustomError(fixture.validatorPool, `OnlyFactory`)
       .withArgs(notAdmin1.address, fixture.factory.address);

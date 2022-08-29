@@ -1,12 +1,6 @@
 [
   {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "selfAddr_",
-        "type": "address"
-      }
-    ],
+    "inputs": [],
     "stateMutability": "nonpayable",
     "type": "constructor"
   },
@@ -126,37 +120,6 @@
         "internalType": "bytes32[]",
         "name": "contracts_",
         "type": "bytes32[]"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "target_",
-        "type": "address"
-      },
-      {
-        "internalType": "bytes",
-        "name": "cdata_",
-        "type": "bytes"
-      }
-    ],
-    "name": "delegateCallAny",
-    "outputs": [],
-    "stateMutability": "payable",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "delegator",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "delegator_",
-        "type": "address"
       }
     ],
     "stateMutability": "view",
@@ -362,9 +325,26 @@
   {
     "inputs": [
       {
-        "internalType": "bytes[]",
+        "components": [
+          {
+            "internalType": "address",
+            "name": "target",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "value",
+            "type": "uint256"
+          },
+          {
+            "internalType": "bytes",
+            "name": "data",
+            "type": "bytes"
+          }
+        ],
+        "internalType": "struct AliceNetFactoryBase.MultiCallArgs[]",
         "name": "cdata_",
-        "type": "bytes[]"
+        "type": "tuple[]"
       }
     ],
     "name": "multiCall",
@@ -383,19 +363,6 @@
       }
     ],
     "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "newDelegator_",
-        "type": "address"
-      }
-    ],
-    "name": "setDelegator",
-    "outputs": [],
-    "stateMutability": "nonpayable",
     "type": "function"
   },
   {

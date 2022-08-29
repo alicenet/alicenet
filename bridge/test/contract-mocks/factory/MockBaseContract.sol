@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT-open-group
-pragma solidity ^0.8.11;
+pragma solidity ^0.8.16;
 import "contracts/libraries/proxy/ProxyInternalUpgradeLock.sol";
 import "contracts/libraries/proxy/ProxyInternalUpgradeUnlock.sol";
 
@@ -23,6 +23,7 @@ contract MockBaseContract is
     ProxyInternalUpgradeUnlock,
     IMockBaseContract
 {
+    error Failed();
     address internal _factory;
     uint256 internal _var;
     uint256 internal immutable _imut;
@@ -69,6 +70,8 @@ contract MockBaseContract is
     }
 
     function fail() public pure {
-        require(false == true, "Failed!");
+        if (false != true) {
+            revert Failed();
+        }
     }
 }

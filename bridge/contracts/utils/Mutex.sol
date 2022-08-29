@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT-open-group
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.16;
 
 import "contracts/libraries/errors/MutexErrors.sol";
 
@@ -14,10 +14,6 @@ abstract contract Mutex {
         }
         _mutex = _LOCKED;
         _;
-        _mutex = _UNLOCKED;
-    }
-
-    constructor() {
         _mutex = _UNLOCKED;
     }
 }
