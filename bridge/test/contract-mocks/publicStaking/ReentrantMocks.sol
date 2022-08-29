@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT-open-group
-pragma solidity ^0.8.11;
+pragma solidity ^0.8.16;
 
 import "test/contract-mocks/publicStaking/BaseMock.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";

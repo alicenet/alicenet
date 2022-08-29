@@ -39,8 +39,8 @@ func sanitizePathFromOutput(output []byte) string {
 
 	return filepath.Join(rootPath...)
 }
-func GetProjectRootPath() string {
 
+func GetProjectRootPath() string {
 	cmd := exec.Command("go", "list", "-m", "-f", "'{{.Dir}}'", "github.com/alicenet/alicenet")
 	stdout, err := cmd.Output()
 	if err != nil {
@@ -49,7 +49,7 @@ func GetProjectRootPath() string {
 	return sanitizePathFromOutput(stdout)
 }
 
-// GetHardhatPackagePath return the bridge folder path
+// GetHardhatPackagePath return the bridge folder path.
 func GetHardhatPackagePath() string {
 	rootPath := GetProjectRootPath()
 	bridgePath := filepath.Join(rootPath, SmartContractsRelativeFolder)
@@ -61,11 +61,10 @@ func GetHardhatBinPath() string {
 	return filepath.Join(GetHardhatPackagePath(), "node_modules", ".bin", "hardhat")
 }
 
-func GenerateHardhatConfig(tempDir string, hardhatPath string, endPoint string) string {
+func GenerateHardhatConfig(tempDir, hardhatPath, endPoint string) string {
 	configTemplate := `
 	import "%[1]s/node_modules/@nomiclabs/hardhat-ethers";
 	import "%[1]s/node_modules/@nomiclabs/hardhat-truffle5";
-	import "%[1]s/node_modules/@nomiclabs/hardhat-waffle";
 	import "%[1]s/node_modules/@typechain/hardhat";
 	import { HardhatUserConfig} from "%[1]s/node_modules/hardhat/config";
 	import "%[1]s/scripts/generateImmutableAuth";
@@ -102,7 +101,7 @@ func GenerateHardhatConfig(tempDir string, hardhatPath string, endPoint string) 
 	export default config;
 	`
 	hardhatConfigPath := filepath.Join(tempDir, "hardhat.config.ts")
-	hardhatConfig, err := os.OpenFile(hardhatConfigPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	hardhatConfig, err := os.OpenFile(hardhatConfigPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
 	if err != nil {
 		panic(fmt.Errorf("failed to open/create hardhat config file: %v", err))
 	}
@@ -119,9 +118,8 @@ func GenerateHardhatConfig(tempDir string, hardhatPath string, endPoint string) 
 	return hardhatConfigPath
 }
 
-// SetCommandStdOut If ENABLE_SCRIPT_LOG env variable is set as 'true' the command will show scripts logs
+// SetCommandStdOut If ENABLE_SCRIPT_LOG env variable is set as 'true' the command will show scripts logs.
 func SetCommandStdOut(cmd *exec.Cmd) {
-
 	flagValue, found := os.LookupEnv("ENABLE_SCRIPT_LOG")
 	enabled, err := strconv.ParseBool(flagValue)
 
@@ -162,7 +160,7 @@ func StartHardHatNodeWithDefaultHost() (*Hardhat, error) {
 	return StartHardHatNode("127.0.0.1", "8545")
 }
 
-func StartHardHatNode(hostname string, port string) (*Hardhat, error) {
+func StartHardHatNode(hostname, port string) (*Hardhat, error) {
 	sanitizedHostname := ""
 	sanitizedPort := ""
 	if strings.Contains(hostname, "http://") || strings.Contains(hostname, "https://") {
@@ -203,7 +201,7 @@ func StartHardHatNode(hostname string, port string) (*Hardhat, error) {
 	)
 	cmd.Dir = GetHardhatPackagePath()
 
-	// setCommandStdOut(cmd)
+	SetCommandStdOut(cmd)
 	err = cmd.Start()
 	// if there is an error with our execution handle it here
 	if err != nil {
@@ -291,7 +289,7 @@ func (h *Hardhat) Close() error {
 }
 
 func (h *Hardhat) IsHardHatRunning() (bool, error) {
-	var client = http.Client{Timeout: 5 * time.Second}
+	client := http.Client{Timeout: 5 * time.Second}
 	resp, err := client.Head(h.url)
 	if err != nil {
 		return false, err
@@ -305,7 +303,7 @@ func (h *Hardhat) IsHardHatRunning() (bool, error) {
 	return false, nil
 }
 
-func (h *Hardhat) DeployFactoryAndContracts(tmpDir string, baseFilesDir string) (string, error) {
+func (h *Hardhat) DeployFactoryAndContracts(tmpDir, baseFilesDir string) (string, error) {
 	modulesDir := GetHardhatPackagePath()
 	output, err := executeCommand(
 		modulesDir,
@@ -364,8 +362,8 @@ func (h *Hardhat) RegisterValidators(factoryAddress string, validators []string)
 	return nil
 }
 
-// SendCommandViaRPC sends a command to the hardhat server via an RPC call
-func SendCommandViaRPC(url string, command string, params ...interface{}) error {
+// SendCommandViaRPC sends a command to the hardhat server via an RPC call.
+func SendCommandViaRPC(url, command string, params ...interface{}) error {
 	commandJson := &ethereum.JsonRPCMessage{
 		Version: "2.0",
 		ID:      []byte("1"),
@@ -394,7 +392,6 @@ func SendCommandViaRPC(url string, command string, params ...interface{}) error 
 		"application/json",
 		reader,
 	)
-
 	if err != nil {
 		return err
 	}
@@ -406,10 +403,10 @@ func SendCommandViaRPC(url string, command string, params ...interface{}) error 
 	return nil
 }
 
-// MineBlocks mines a certain number of hardhat blocks
+// MineBlocks mines a certain number of hardhat blocks.
 func MineBlocks(endPoint string, blocksToMine uint64) {
 	logger := logging.GetLogger("test")
-	var blocksToMineString = "0x" + strconv.FormatUint(blocksToMine, 16)
+	blocksToMineString := "0x" + strconv.FormatUint(blocksToMine, 16)
 	logger.Tracef("hardhat_mine %v blocks ", blocksToMine)
 	err := SendCommandViaRPC(endPoint, "hardhat_mine", blocksToMineString)
 	if err != nil {
@@ -417,12 +414,12 @@ func MineBlocks(endPoint string, blocksToMine uint64) {
 	}
 }
 
-// Mine finality delay blocks + 1
+// Mine finality delay blocks + 1.
 func MineFinalityDelayBlocks(client layer1.Client) {
 	MineBlocks(client.GetEndpoint(), client.GetFinalityDelay()+1)
 }
 
-// AdvanceTo advances to a certain block number
+// AdvanceTo advances to a certain block number.
 func AdvanceTo(eth layer1.Client, target uint64) {
 	logger := logging.GetLogger("test")
 	currentBlock, err := eth.GetCurrentHeight(context.Background())
@@ -433,7 +430,7 @@ func AdvanceTo(eth layer1.Client, target uint64) {
 		return
 	}
 	blocksToMine := target - currentBlock
-	var blocksToMineString = "0x" + strconv.FormatUint(blocksToMine, 16)
+	blocksToMineString := "0x" + strconv.FormatUint(blocksToMine, 16)
 
 	logger.Tracef("hardhat_mine %v blocks to target height %v", blocksToMine, target)
 
@@ -453,7 +450,7 @@ func SetNextBlockBaseFee(endPoint string, target uint64) {
 	}
 }
 
-// SetAutoMine enables/disables hardhat autoMine
+// SetAutoMine enables/disables hardhat autoMine.
 func SetAutoMine(endPoint string, autoMine bool) {
 	logger := logging.GetLogger("test")
 	logger.Tracef("Setting Automine to %v", autoMine)
@@ -464,7 +461,7 @@ func SetAutoMine(endPoint string, autoMine bool) {
 	}
 }
 
-// ResetHardhatNode resets hardhat node from scratch
+// ResetHardhatNode resets hardhat node from scratch.
 func ResetHardhatNode(endPoint string) {
 	logger := logging.GetLogger("test")
 	logger.Trace("Resetting hardhat node from scratch")
@@ -488,7 +485,7 @@ func SetBlockInterval(endPoint string, intervalInMilliSeconds uint64) {
 	}
 }
 
-// ResetHardhatConfigs resets the hardhat configs to automine true and basefee 100GWei
+// ResetHardhatConfigs resets the hardhat configs to automine true and basefee 100GWei.
 func ResetHardhatConfigs(endPoint string) {
 	ResetHardhatNode(endPoint)
 	SetAutoMine(endPoint, true)

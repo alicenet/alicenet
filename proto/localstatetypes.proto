@@ -128,5 +128,4 @@ message FeeResponse {
   string MinTxFee = 1;
   string ValueStoreFee = 2;
   string DataStoreFee = 3;
-  string AtomicSwapFee = 4;
 }

@@ -4,6 +4,7 @@ local-geth/*
 /alicenet
 /alicerace
 /mngen
+dist/
 **/__debug_bin
 **/*.log
 *.exe

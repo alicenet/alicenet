@@ -299,8 +299,8 @@ type handshakeState struct {
 // with the prologue and protocol name. If this is the responder's handshake
 // state, then the remotePub can be nil.
 func newHandshakeState(initiator bool, prologue []byte,
-	localPub *secp256k1.PrivateKey, remotePub *secp256k1.PublicKey) handshakeState {
-
+	localPub *secp256k1.PrivateKey, remotePub *secp256k1.PublicKey,
+) handshakeState {
 	h := handshakeState{
 		initiator:    initiator,
 		localStatic:  localPub,
@@ -349,19 +349,21 @@ func EphemeralGenerator(gen func() (*secp256k1.PrivateKey, error)) func(*Machine
 // itself.
 //
 // The acts proceeds the following order (initiator on the left):
-//  GenActOne()   ->
-//                    RecvActOne()
-//                <-  GenActTwo()
-//  RecvActTwo()
-//  GenActThree() ->
-//                    RecvActThree()
+//
+//	GenActOne()   ->
+//	                  RecvActOne()
+//	              <-  GenActTwo()
+//	RecvActTwo()
+//	GenActThree() ->
+//	                  RecvActThree()
 //
 // This exchange corresponds to the following Noise handshake:
-//   <- s
-//   ...
-//   -> e, es
-//   <- e, ee
-//   -> s, se
+//
+//	<- s
+//	...
+//	-> e, es
+//	<- e, ee
+//	-> s, se
 type Machine struct {
 	sendCipher cipherState
 	recvCipher cipherState
@@ -393,8 +395,8 @@ type Machine struct {
 // arguments for adding additional options to the brontide Machine
 // initialization.
 func NewBrontideMachine(initiator bool, localPub *secp256k1.PrivateKey,
-	remotePub *secp256k1.PublicKey, options ...func(*Machine)) *Machine {
-
+	remotePub *secp256k1.PublicKey, options ...func(*Machine),
+) *Machine {
 	handshake := newHandshakeState(
 		initiator, lightningPrologue, localPub, remotePub,
 	)
@@ -423,14 +425,14 @@ const (
 	// responder in ActOne. The packet consists of a handshake version, an
 	// ephemeral key in compressed format, and a 16-byte poly1305 tag.
 	//
-	// 1 + 33 + 16
+	// 1 + 33 + 16.
 	ActOneSize = 50
 
 	// ActTwoSize is the size the packet sent from responder to initiator
 	// in ActTwo. The packet consists of a handshake version, an ephemeral
 	// key in compressed format and a 16-byte poly1305 tag.
 	//
-	// 1 + 33 + 16
+	// 1 + 33 + 16.
 	ActTwoSize = 50
 
 	// ActThreeSize is the size of the packet sent from initiator to
@@ -439,7 +441,7 @@ const (
 	// a 16-byte poly1035
 	// tag.
 	//
-	// 1 + 33 + 16 + 16
+	// 1 + 33 + 16 + 16.
 	ActThreeSize = 66
 )
 
@@ -449,7 +451,7 @@ const (
 // and the responder's static key. Future payloads are encrypted with a key
 // derived from this result.
 //
-//    -> e, es
+//	-> e, es
 func (b *Machine) GenActOne() ([ActOneSize]byte, error) {
 	var (
 		err    error
@@ -522,7 +524,7 @@ func (b *Machine) RecvActOne(actOne [ActOneSize]byte) error {
 // act one, but then results in a different ECDH operation between the
 // initiator's and responder's ephemeral keys.
 //
-//    <- e, ee
+//	<- e, ee
 func (b *Machine) GenActTwo() ([ActTwoSize]byte, error) {
 	var (
 		err    error
@@ -593,7 +595,7 @@ func (b *Machine) RecvActTwo(actTwo [ActTwoSize]byte) error {
 // the responder. This act also includes the final ECDH operation which yields
 // the final session.
 //
-//    -> s, se
+//	-> s, se
 func (b *Machine) GenActThree() ([ActThreeSize]byte, error) {
 	var actThree [ActThreeSize]byte
 
@@ -789,7 +791,6 @@ func (b *Machine) Flush(w io.Writer) (int, error) {
 		// MAC-only:                                        S-------E-0
 		start, end := n+len(b.nextBodySend), len(b.nextBodySend)
 		switch {
-
 		// Straddles payload and MAC bytes, subtract number of MAC bytes
 		// written from the actual number written.
 		case start > macSize && end <= macSize:

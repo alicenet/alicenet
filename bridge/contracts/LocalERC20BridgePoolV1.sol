@@ -13,7 +13,7 @@ import "contracts/Snapshots.sol";
 import "contracts/libraries/parsers/BClaimsParserLibrary.sol";
 import "contracts/utils/ERC20SafeTransfer.sol";
 import "contracts/BridgePoolDepositNotifier.sol";
-import "contracts/BridgeRouter.sol";
+import {BridgeRouter} from "contracts/BridgeRouterV1.sol";
 
 /// @custom:salt LocalERC20BridgePoolV1
 /// @custom:deploy-type deployStatic

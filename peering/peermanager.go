@@ -8,6 +8,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/interfaces"
 	"github.com/alicenet/alicenet/logging"
@@ -15,7 +17,6 @@ import (
 	"github.com/alicenet/alicenet/transport"
 	"github.com/alicenet/alicenet/types"
 	"github.com/alicenet/alicenet/utils"
-	"github.com/sirupsen/logrus"
 )
 
 // PeerManager is a self contained system for management of peering.
@@ -52,7 +53,7 @@ type PeerManager struct {
 
 // NewPeerManager creates a new peer manager based on the Configuration
 // values passed to the process.
-func NewPeerManager(p2pServer interfaces.P2PServer, chainID uint32, pLimMin int, pLimMax int, fwMode bool, fwHost, listenAddr, tprivk string, upnp bool) (*PeerManager, error) {
+func NewPeerManager(p2pServer interfaces.P2PServer, chainID uint32, pLimMin, pLimMax int, fwMode bool, fwHost, listenAddr, tprivk string, upnp bool) (*PeerManager, error) {
 	logger := logging.GetLogger(constants.LoggerPeerMan)
 	ctx := context.Background()
 	subCtx, cf := context.WithCancel(ctx)
@@ -134,7 +135,7 @@ func NewPeerManager(p2pServer interfaces.P2PServer, chainID uint32, pLimMin int,
 	return pm, nil
 }
 
-// Start launches the background loops of the peer manager
+// Start launches the background loops of the peer manager.
 func (ps *PeerManager) Start() {
 	go ps.runDiscoveryLoops()
 	go ps.acceptLoop()
@@ -146,9 +147,11 @@ func (ps *PeerManager) Start() {
 	<-ps.CloseChan()
 }
 
-type peerChan chan interface{}
-type chanList []chan interface{}
-type chanMap map[string]chan interface{}
+type (
+	peerChan chan interface{}
+	chanList []chan interface{}
+	chanMap  map[string]chan interface{}
+)
 
 func (ps *PeerManager) getPeerChans(cmap chanMap) chanList {
 	chans := []chan interface{}{}
@@ -255,7 +258,7 @@ func (ps *PeerManager) Close() error {
 	return nil
 }
 
-// acceptLoop accepts incoming peer connections
+// acceptLoop accepts incoming peer connections.
 func (ps *PeerManager) acceptLoop() {
 	defer func() { go ps.Close() }()
 	for {
@@ -278,7 +281,7 @@ func (ps *PeerManager) acceptLoop() {
 	}
 }
 
-// handle discovery dials from remote peers
+// handle discovery dials from remote peers.
 func (ps *PeerManager) handleDisc(conn interfaces.P2PConn) {
 	defer func() {
 		defer conn.Close()
@@ -298,7 +301,7 @@ func (ps *PeerManager) handleDisc(conn interfaces.P2PConn) {
 }
 
 // handle p2p dials from remote peers by tracking the connection
-// in local stores and notifying subscribers
+// in local stores and notifying subscribers.
 func (ps *PeerManager) handleP2P(conn interfaces.P2PConn) {
 	ps.logger.Debugf("New connection in peerManager from %s", conn.NodeAddr().P2PAddr())
 	ctx, cf := context.WithDeadline(ps.ctx, time.Now().Add(time.Second*5))
@@ -349,7 +352,7 @@ func (ps *PeerManager) P2PClient() pb.P2PClient {
 	return &P2PClient{reqChan: ps.reqChan, gossipChan: ps.gossipChan, gossipTxChan: ps.gossipTxChan}
 }
 
-// dialp2p dials remote peers
+// dialp2p dials remote peers.
 func (ps *PeerManager) dialP2P(addr interfaces.NodeAddr) {
 	conn, err := ps.transport.Dial(addr, types.P2PProtocol)
 	if err != nil {
@@ -359,7 +362,7 @@ func (ps *PeerManager) dialP2P(addr interfaces.NodeAddr) {
 	go ps.handleP2P(conn)
 }
 
-// Counts returns the active and inactive peer counts
+// Counts returns the active and inactive peer counts.
 func (ps *PeerManager) Counts() (int, int) {
 	return ps.active.len(), ps.inactive.len()
 }
@@ -369,7 +372,7 @@ func (ps *PeerManager) Counts() (int, int) {
 //P2P SERVER HANDLERS///////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-// HandleP2PGetPeers is the handler for the P2P method GetPeers
+// HandleP2PGetPeers is the handler for the P2P method GetPeers.
 func (ps *PeerManager) HandleP2PGetPeers(ctx context.Context, req *pb.GetPeersRequest) (*pb.GetPeersResponse, error) {
 	return ps.GetPeers(ctx, req)
 }
@@ -410,7 +413,7 @@ func (ps *PeerManager) Status(smap map[string]interface{}) (map[string]interface
 //P2P SERVER DISCOVERY LOOPS ///////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-// PeeringComplete returns true if the peering is complete for the node
+// PeeringComplete returns true if the peering is complete for the node.
 func (ps *PeerManager) PeeringComplete() bool {
 	ps.RLock()
 	defer ps.RUnlock()

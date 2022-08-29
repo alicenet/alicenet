@@ -29,3 +29,5 @@ bindings-artifacts/*
 !deployments/dev/deploymentArgsTemplate.json
 !deployments/dev/deployList.json
 **/generated/*
+storageLayout/*
+storageLayout

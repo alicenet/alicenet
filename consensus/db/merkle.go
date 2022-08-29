@@ -9,7 +9,7 @@ import (
 )
 
 // MerkleProof is a structure which holds a proof of inclusion or exclusion
-// for in a Merkle trie
+// for in a Merkle trie.
 type MerkleProof struct {
 	Included   bool
 	KeyHeight  int
@@ -21,7 +21,7 @@ type MerkleProof struct {
 }
 
 // MarshalBinary takes the MerkleProof object and returns the canonical
-// byte slice
+// byte slice.
 func (mp *MerkleProof) MarshalBinary() ([]byte, error) {
 	out := []byte{}
 	Included := make([]byte, 1)
@@ -63,7 +63,7 @@ func (mp *MerkleProof) MarshalBinary() ([]byte, error) {
 }
 
 // UnmarshalBinary takes a byte slice and returns the corresponding
-// MerkleProof object
+// MerkleProof object.
 func (mp *MerkleProof) UnmarshalBinary(data []byte) error {
 	if len(data) < 7+3*constants.HashLen {
 		return errorz.ErrInvalid{}.New("bad merkle proof len")

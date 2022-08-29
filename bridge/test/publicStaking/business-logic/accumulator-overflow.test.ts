@@ -181,7 +181,7 @@ describe("PublicStaking: Accumulator Overflow", async () => {
         users,
         tokensID,
         expectedState,
-        "After collect token 1-" + i
+        "After collect Token 1 - " + i
       );
       await collectEthCheckAndUpdateState(
         stakingContract,
@@ -191,7 +191,7 @@ describe("PublicStaking: Accumulator Overflow", async () => {
         users,
         tokensID,
         expectedState,
-        "After collect Eth 1-" + i
+        "After collect Eth 1 - " + i
       );
     }
 
@@ -228,7 +228,7 @@ describe("PublicStaking: Accumulator Overflow", async () => {
         users,
         tokensID,
         expectedState,
-        "After collect token 2-" + i
+        "After collect token 2 - " + i
       );
       await collectEthCheckAndUpdateState(
         stakingContract,
@@ -238,7 +238,7 @@ describe("PublicStaking: Accumulator Overflow", async () => {
         users,
         tokensID,
         expectedState,
-        "After collect Eth 2-" + i
+        "After collect Eth 2 - " + i
       );
     }
   });

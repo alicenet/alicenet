@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 import "contracts/utils/ImmutableAuth.sol";
-import "contracts/BridgeRouter.sol";
+import {BridgeRouter} from "contracts/BridgeRouterV1.sol";
 
 /// @custom:salt BridgePoolDepositNotifier
 /// @custom:deploy-type deployUpgradeable

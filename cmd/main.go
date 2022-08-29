@@ -20,6 +20,12 @@ import (
 	"github.com/spf13/viper"
 )
 
+// Variables set by goreleaser process: https://goreleaser.com/cookbooks/using-main.version.
+var (
+	// Version from git tag.
+	version = "dev"
+)
+
 type option struct {
 	name  string
 	short string
@@ -27,7 +33,7 @@ type option struct {
 	value interface{}
 }
 
-// Runner wraps a cobra command's Run() and sets up loggers first
+// Runner wraps a cobra command's Run() and sets up loggers first.
 func runner(commandRun func(*cobra.Command, []string)) func(*cobra.Command, []string) {
 	logger := logging.GetLogger("main")
 	return func(a *cobra.Command, b []string) {
@@ -55,7 +61,6 @@ func runner(commandRun func(*cobra.Command, []string)) func(*cobra.Command, []st
 			}
 		}
 		commandRun(a, b)
-
 	}
 }
 
@@ -85,11 +90,14 @@ func main() {
 	logger := logging.GetLogger("main")
 	logger.SetLevel(logrus.InfoLevel)
 
+	config.Configuration.Version = version
+
 	// Root for all commands
 	rootCommand := cobra.Command{
 		Use:   "alicenet",
 		Short: "Short description of alicenet",
-		Long:  "This is a not so long description for alicenet"}
+		Long:  "This is a not so long description for alicenet",
+	}
 
 	// All the configuration options available. Used for command line and config file.
 	options := map[*cobra.Command][]*option{
@@ -138,8 +146,7 @@ func main() {
 			{"ethereum.factoryAddress", "", "", &config.Configuration.Ethereum.FactoryAddress},
 			{"ethereum.txMaxGasFeeAllowedInGwei", "", "", &config.Configuration.Ethereum.TxMaxGasFeeAllowedInGwei},
 			{"ethereum.txMetricsDisplay", "", "", &config.Configuration.Ethereum.TxMetricsDisplay},
-			{"monitor.batchSize", "", "", &config.Configuration.Monitor.BatchSize},
-			{"monitor.interval", "", "", &config.Configuration.Monitor.Interval},
+			{"ethereum.processingBlockBatchSize", "", "", &config.Configuration.Ethereum.ProcessingBlockBatchSize},
 			{"transport.peerLimitMin", "", "", &config.Configuration.Transport.PeerLimitMin},
 			{"transport.peerLimitMax", "", "", &config.Configuration.Transport.PeerLimitMax},
 			{"transport.privateKey", "", "", &config.Configuration.Transport.PrivateKey},
@@ -147,7 +154,6 @@ func main() {
 			{"transport.whitelist", "", "", &config.Configuration.Transport.Whitelist},
 			{"transport.bootnodeAddresses", "", "", &config.Configuration.Transport.BootNodeAddresses},
 			{"transport.p2pListeningAddress", "", "", &config.Configuration.Transport.P2PListeningAddress},
-			{"transport.discoveryListeningAddress", "", "", &config.Configuration.Transport.DiscoveryListeningAddress},
 			{"transport.upnp", "", "", &config.Configuration.Transport.UPnP},
 			{"transport.localStateListeningAddress", "", "", &config.Configuration.Transport.LocalStateListeningAddress},
 			{"transport.timeout", "", "", &config.Configuration.Transport.Timeout},
@@ -158,19 +164,22 @@ func main() {
 		},
 
 		&utils.Command: {
-			{"utils.status", "", "", &config.Configuration.Utils.Status}},
+			{"utils.status", "", "", &config.Configuration.Utils.Status},
+		},
 
 		&utils.SendWeiCommand: {},
 
 		&bootnode.Command: {
 			{"bootnode.listeningAddress", "", "", &config.Configuration.BootNode.ListeningAddress},
-			{"bootnode.cacheSize", "", "", &config.Configuration.BootNode.CacheSize}},
+			{"bootnode.cacheSize", "", "", &config.Configuration.BootNode.CacheSize},
+		},
 
 		&firewalld.Command: {},
 
 		&validator.Command: {
 			{"validator.rewardAccount", "", "", &config.Configuration.Validator.RewardAccount},
-			{"validator.rewardCurveSpec", "", "", &config.Configuration.Validator.RewardCurveSpec}},
+			{"validator.rewardCurveSpec", "", "", &config.Configuration.Validator.RewardCurveSpec},
+		},
 	}
 
 	// Establish command hierarchy
@@ -184,7 +193,6 @@ func main() {
 
 	// Convert option abstraction into concrete settings for Cobra and Viper
 	for c := range options {
-
 		cFlags := c.PersistentFlags() // just a convenience thing
 
 		if c.Run != nil {
@@ -198,7 +206,6 @@ func main() {
 
 		var defaultStringArray []string
 		for _, o := range options[c] {
-
 			typeOfPtr := reflect.TypeOf(o.value)
 			if typeOfPtr.Kind() != reflect.Ptr {
 				logger.Fatalf("Option value for %v should be supplied as a pointer.", o.name)
@@ -234,7 +241,6 @@ func main() {
 
 	// This has to be registered prior to root command execute. Cobra executes this first thing when executing.
 	cobra.OnInitialize(func() {
-
 		// Read the config file
 		file, err := os.Open(config.Configuration.ConfigurationFileName)
 		if err == nil {
@@ -260,6 +266,10 @@ func main() {
 		for cmd := range options {
 			// Find all the flags
 			cmd.Flags().VisitAll(func(flag *pflag.Flag) {
+				// -help defined by pflag internals and will not parse correctly.
+				if flag.Name == "help" {
+					return
+				}
 				err := flag.Value.Set(viper.GetString(flag.Name))
 				if err != nil {
 					logger.Warnf("Setting flag %q failed:%q", flag.Name, err)

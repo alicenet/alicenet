@@ -5,7 +5,7 @@ import "contracts/utils/ImmutableAuth.sol";
 import "contracts/interfaces/IBridgePool.sol";
 import "contracts/libraries/errorCodes/BridgeRouterErrorCodes.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "contracts/libraries/errorCodes/CircuitBreakerErrorCodes.sol";
+import "contracts/libraries/errors/CircuitBreakerErrors.sol";
 import "hardhat/console.sol";
 
 /// @custom:salt BridgeRouter
