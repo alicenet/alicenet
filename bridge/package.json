@@ -47,7 +47,7 @@
     "eslint-plugin-n": "^15.2.5",
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-prettier": "^4.2.1",
-    "eslint-plugin-promise": "^6.0.0",
+    "eslint-plugin-promise": "^6.0.1",
     "ethers": "^5.7.0",
     "hardhat": "^2.10.2",
     "hardhat-abi-exporter": "^2.10.0",
