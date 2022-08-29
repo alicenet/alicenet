@@ -22,7 +22,7 @@ const EXPECTED_PRICE_BLOCK_FOUR: Number = Number("9937357456279809220985");
 describe("Testing Dutch Auction", async () => {
   beforeEach(async function () {
     fixture = await getFixture(true, false, false);
-    //Simulate 4 registered validators
+    // Simulate 4 registered validators
     VALIDATORS.push("0x0000000000000000000000000000000000000000");
     VALIDATORS.push("0x0000000000000000000000000000000000000001");
     VALIDATORS.push("0x0000000000000000000000000000000000000002");
