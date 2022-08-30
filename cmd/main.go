@@ -10,8 +10,8 @@ import (
 
 	"github.com/alicenet/alicenet/cmd/bootnode"
 	"github.com/alicenet/alicenet/cmd/firewalld"
+	"github.com/alicenet/alicenet/cmd/node"
 	"github.com/alicenet/alicenet/cmd/utils"
-	"github.com/alicenet/alicenet/cmd/validator"
 	"github.com/alicenet/alicenet/config"
 	"github.com/alicenet/alicenet/logging"
 	"github.com/sirupsen/logrus"
@@ -177,7 +177,7 @@ func main() {
 
 		&firewalld.Command: {},
 
-		&validator.Command: {
+		&node.Command: {
 			{"validator.rewardAccount", "", "", &config.Configuration.Validator.RewardAccount},
 			{"validator.rewardCurveSpec", "", "", &config.Configuration.Validator.RewardCurveSpec},
 		},
@@ -187,7 +187,7 @@ func main() {
 	hierarchy := map[*cobra.Command]*cobra.Command{
 		&firewalld.Command:    &rootCommand,
 		&bootnode.Command:     &rootCommand,
-		&validator.Command:    &rootCommand,
+		&node.Command:         &rootCommand,
 		&utils.Command:        &rootCommand,
 		&utils.SendWeiCommand: &utils.Command,
 	}
@@ -241,7 +241,7 @@ func main() {
 	}
 
 	// If none command and option are present, the `node` command with the default --config option will be executed.
-	setDefaultCommandIfNonePresent(&validator.Command, logger)
+	setDefaultCommandIfNonePresent(&node.Command, logger)
 
 	// This has to be registered prior to root command execute. Cobra executes this first thing when executing.
 	cobra.OnInitialize(func() {
