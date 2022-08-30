@@ -26,7 +26,7 @@ The command above will generate the configuration files, keystores, genesis file
 
 In sequence, we need to run an AliceNet bootnode client. A bootnode is special AliceNet client that responsible for facilitating the node peering up in the network. Once a normal node starts, it reaches to a bootnode defined in the `config.toml` file to get information about other peers.
 
-To run a bootnode, open a new terminal and execute the following command:
+To run a bootnode, execute the following command:
 
 ```shell
 ./scripts/main.sh bootnode
@@ -46,22 +46,67 @@ The above command will start a [hardhat node](https://hardhat.org/hardhat-networ
 
 ## Deploying the AliceNet Ethereum smart contracts locally
 
-Open now another terminal to deploy the contracts. This command will also register validators in the ValidatorPool. If you are having problems in this step,
-check [POSSIBLE TROUBLE SHOOTING](#TROUBLESHOOTING) section.
+In order to deploy the AliceNet smart contract on your local ethereum node, open now another terminal and run the command bellow.
 
 ```shell
 ./scripts/main.sh deploy
 ```
 
-Once this has finished, turn on each of the validators, each in its own terminal shell
+The command will also register validators created by the `init` command and setup some AliceNet configurations in the smart contracts. After the command is executed, you should see something like this on your terminal:
 
+```shell
+Deployed: AliceNetFactory, at address: 0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc
+Deployed Metamorphic for AToken (ALCA) at: 0x4426F1939966427C436c565a4532e41028c60301, deployment template at, 0x3bfdED457D9F230a91e6735771113478791C09C1, gas used: 3390937
+Deployed ATokenBurner with proxy at 0x75E39fEEa676DBAe11Da1Ab5452510c04eC35FA2, gasCost: 440273
+Deployed ATokenMinter with proxy at 0xb95e07ae46Fa2274cAd21b989b00FC0913749403, gasCost: 437437
+Deployed Metamorphic for BToken (ALCB) at: 0x3e4b55722e041c0FC55A90B6EBa50EA5d3f7c02A, deployment template at, 0xdC87dEBA768b39eC371ff9C1D8f4D364697F15C6, gas used: 5387764
+Deployed Distribution with proxy at 0x0200855f9FdB1bE7aB1A945D65d1cF35eDa0Bed2, gasCost: 634552
+Deployed Dynamics with proxy at 0x7594465457d6b870039543345210A602E9f2d299, gasCost: 2279490
+Deployed Foundation with proxy at 0x0b094A44994b28f21a7068BA104C192643B42439, gasCost: 771863
+Deployed Governance with proxy at 0x9cd25e05b55BD08B22c4302D542a30BD5273aB97, gasCost: 322946
+Deployed InvalidTxConsumptionAccusation with proxy at 0x2C37fAC6241D6A96106E2777820C7EEd4Bef3776, gasCost: 2964754
+Deployed LiquidityProviderStaking with proxy at 0xE426557C98f5A75bcBA6A8a677e6848E81a4e833, gasCost: 4698999
+Deployed MultipleProposalAccusation with proxy at 0x26AFe9e5536A6102c43fEd6Be329734e70437198, gasCost: 1489418
+Deployed PublicStaking with proxy at 0x0F27E1c790d776CE13eF852623E2Bc6AcE1b9d4B, gasCost: 4698711
+Deployed Snapshots with proxy at 0x0418C73320d1Bc86fad09f7125250Af3aD2c29eF, gasCost: 3651438
+Deployed StakingPositionDescriptor with proxy at 0x70a8944A142A03fC62889B6206c801b171Ade659, gasCost: 1176485
+Deployed ValidatorPool with proxy at 0x5D48E7935F895c1dC92c19F160Ef54e5C735EDA8, gasCost: 4847685
+Deployed ValidatorStaking with proxy at 0xe37c14a34907f8Fcb99243AaeC4842FBb1ce1965, gasCost: 4845358
+Deployed ETHDKGAccusations with proxy at 0x167Eb24B7b51f9322a4A2EfCC849310550BE86cD, gasCost: 4591576
+Deployed ETHDKGPhases with proxy at 0xb701ce9AaF414Beb3Ed11422eEa6D1f08c5e995f, gasCost: 3569217
+Deployed ETHDKG with proxy at 0x9a757acedE2bD60bd09b57163595078636c2bC36, gasCost: 3565690
+total gas used: 55167643
+
+Funding validators
+account 0xA98A74404C7a0E8540A48bC35A056773D51af97c now has 100000000000000000000 ether
+account 0x6DcD347968C8cb034F83171910f55f928da705d3 now has 100000000000000000000 ether
+account 0x838aDD5bda57f4273B1aD43c2560Faa1a51E86a9 now has 100000000000000000000 ether
+account 0x7586165AB696c645e747ba45D793546a6415A518 now has 100000000000000000000 ether
+account 0x49dF85eFe81c958Ae210accC012EeD30147a2a98 now has 100000000000000000000 ether
+
+Registering Validators
+ [
+  '0x49dF85eFe81c958Ae210accC012EeD30147a2a98',
+  '0x6DcD347968C8cb034F83171910f55f928da705d3',
+  '0x7586165AB696c645e747ba45D793546a6415A518',
+  '0x838aDD5bda57f4273B1aD43c2560Faa1a51E86a9',
+  '0xA98A74404C7a0E8540A48bC35A056773D51af97c'
+]
+
+Setting the setMinimumIntervalBetweenSnapshots to 10
 ```
+
+In case you want to interact with ALCB and ALCA tokens using metamask and the AliceNet wallet, save the addresses of the `AliceNetFactory`, `ALCA` and `ALCB` contracts. In the example above, they are: `0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc`, `0x4426F1939966427C436c565a4532e41028c60301` and `0x3e4b55722e041c0FC55A90B6EBa50EA5d3f7c02A` respectively.
+
+## Running the validators node
+
+In sequence, we need to start the AliceNet validator nodes. For each validator, open a new terminal and run the following command:
+
+```shell
 ./scripts/main.sh validator {# for the validator you want to start}
 ```
 
-In the validators shell, there is this log looking like `Peers=24/x/3/0`, which gives you an idea on how many validator
-have been discovered in the network for the selected validator. You will see the `x`
-value increasing overtime . Eg if you initialized 5 validator the Peers value looks like
+Now, you need to wait for all validators to peer up. In the validator's terminal, check for the following log `Peers=24/x/3/0`. This log gives you an idea on how many validator have been discovered in the network for the selected validator. You will see the `x` value increasing overtime. Eg if you initialized 5 validator the Peers value looks like:
 
 ```shell
 ...
@@ -74,18 +119,53 @@ Peers=24/3/3/0
 Peers=24/4/3/0
 ```
 
-Once all the validators discovered the others and have peered together, then start ethDKG:
+## Starting ETHDKG
 
-```
+Once all the validators node have discovered their peers, we wil need to start the ETHDKG. On a free terminal run the following command:
+
+```shell
 ./scripts/main.sh ethdkg
 ```
 
-This will print out blocks at which ethDKG events will happen.
+The above command will start the Distributed Key Generation Process (ETHDKG) on your local ethereum node, so the validators can create the Master Private Key and Master Public Key for validating new AliceNet blocks.
 
-> For a quicker local setup, you might want to change the `scripts/base-files/baseConfig` template and
-> set `finalityDelay` from `6` -> `1` to speed up the ethdkg process.
+Once you have executed the command above, you should see something similar to this being displayed in the validators console:
 
-Once it has been completed and AliceNet starts mining blocks, the system is ready.
+```shell
+... msg="processing registration" ...
+... msg="ETHDKG RegistrationOpened" ...
+... msg="Scheduling NewRegisterTask" ...
+... msg="Scheduling NewDisputeRegistrationTask" ...
+... msg="task is about to start" ...
+... msg="Previous BaseFee:17793 GasUsed:0 GasLimit:30000000" ...
+... msg="Creating TX with MaximumGasPrice: 1000035586 WEI" ...
+... msg="Registering  publicKey (0x027...545) with ETHDKG" ...
+... msg="Previous BaseFee:17793 GasUsed:0 GasLimit:30000000" ...
+```
+
+The whole process should take around 15 minutes to complete. At the end of the process, you should see something similar to this being displayed in the validators console:
+
+```shell
+```
+
+
+Once it has been completed, the validators should start validating (mining) blocks. At this point, you should see something like this:
+
+```shell
+```
+
+Now you should be able to play around with the AliceNet environment (e.g do RPC calls against the node, do alicenet transactions).
+
+## Minting ALCA (AliceNet Staking Tokens)
+
+## Minting ALCB (AliceNet Utility Tokens)
+
+## Depositing ALCB into AliceNet
+
+## Connecting Metamask to the local ethereum network
+
+## Connecting AliceNet Wallet
+## Doing AliceNet transactions
 
 Deposits are required in order to submit DataStores. Run the following at least 4 times in order to deposit enough funds
 to inject datastores.
@@ -94,149 +174,9 @@ to inject datastores.
 ./scripts/main.sh deposit
 ```
 
-Note that DataStores are injected in the [Wallet-JS tests](https://github.com/MadBase/MadNetWallet-v2), so submitting
-these deposits are required for the tests to be successful.
-At this point, the testnet should now be ready to run the standard tests.
-
-To list other commands from the script simply run
-
-```
-./scripts/main.sh
-```
-
-
-
-# TEST
-
-
-
-### Random Kill and Restart
-
-Randomly kill and restart the individual validators. There should be no noticeable change in the behavior of the other
-validators and AliceNet consensus should not be affected.
-
-### Extended Kill and Restart
-
-Randomly kill one validator for an extended period; in particular, let at least 10 blocks pass before restarting the
-killed validator. This will cause the validator to be out of sync. The validator should be able to rejoin and resync
-without much delay.
-
-### Kill Half Nodes and Restart
-
-Kill half the validators. This will cause the remaining validators to stop because they are unable to reach consensus
-due to a lack of validators. After waiting for at least 20 seconds, restart the killed validators. After
-resynchronizing, consensus should continue as before and blocks should be mined.
-
-### Kill All Nodes and Restart
-
-Shut down all the validators. Wait at least 20 seconds and restart all of them. Once the validators are resynchronized,
-blocks should continue to be mined as though the shutdown did not occur.
-
-### DataStore Consumption Test
-
-There are 1024 blocks per epoch; this is defined in
-`./constants/shared.go` as `EpochLength = 1024`. Blocks are mined approximately every 6 seconds, so one epoch lasts over
-one hour. The DataStore test stores the datastore for 5 epochs, implying the data would be stored for over 8.5 hours. To
-make this test more reasonable and ensure that datastore are consumed, change `EpochLength = 16`.
-
-### View DataStore
-
-Tests involving datastores require being able to determine whether the datastores are present. One way to ensure this is
-using the Swagger API.
-
-To understand how to run through this, we run an example. We assume that the test environment has been successfully
-setup and that the Swagger API is available. Furthermore, validator4 must be running.
-
-```
-cd ./cmd/testutils/inject/
-go run . -d -m=hello -i=foo
-```
-
-This test submits a DataStore of message `hello` at index `foo`
-and then overwrites the DataStore, setting the value to `hello-two`
-Here is a truncation of the output:
-
-```
-Running in DataStore Mode
-...
-...
-...
-secp
-Consumed Value:12000    ValueOut:2695
-DS:  index:4943a3029516011ac24ba62f5e4183eb6e7dbbe8a3c6644fbc3a515188eef7f8    deposit:2695    EpochOfExpire:7    msg:hello-two
-Consumed Value:12000    ValueOut:2695
-secp
-Consumed Value:12000    ValueOut:12000
-...
-...
-...
-Getting Tx  err: rpc error: code = Unknown desc = unknown transaction: d3e6cc649be314aca13c9172c2b5bb9faa9a389440e277c323a0d9cbcfcd0ed5
-Sending Tx
-Sending Tx  err: rpc error: code = Unknown desc = the object is invalid:utxoID already in trie
-GetMinedTransaction Tx  err: <nil>
-```
-
-Here, `d3e6cc649be314aca13c9172c2b5bb9faa9a389440e277c323a0d9cbcfcd0ed5`
-(64 hex characters on the fourth-from-bottom line)
-is the TxHash of the transaction of which overwrote the original transaction we submitted. As noted above, the original
-message is `hello` and the new message is `hello-two`
-In the Swagger API, if we click on `get-mined-transaction`
-and set the TxHash value to
-`d3e6cc649be314aca13c9172c2b5bb9faa9a389440e277c323a0d9cbcfcd0ed5`. Here is a portion of the transaction:
-
-```
-"DataStore": {
-  "DSLinker": {
-    "DSPreImage": {
-      "ChainID": 42,
-      "Index": "4943a3029516011ac24ba62f5e4183eb6e7dbbe8a3c6644fbc3a515188eef7f8",
-      "IssuedAt": 1,
-      "Deposit": 2695,
-      "RawData": "68656c6c6f2d74776f",
-      "Owner": "0301546f99f244b7b58b855330ae0e2bc1b30b41302f"
-    },
-    "TxHash": "d3e6cc649be314aca13c9172c2b5bb9faa9a389440e277c323a0d9cbcfcd0ed5"
-  },
-  "Signature": "03018e362b2f4fade93d4b06f1cd32b43a8905ccf6dce9f2326a0411a96b652211026671c240cc5d0a23335eabe10a5accd0199dc0dec050f0ec463af8130235557d00"
-}
-```
-
-Although we could use the value of `Rawdata` to obtain its value, we will use another Swagger API call. This is useful
-because upon consumption, `Rawdata` will not be present and this will ensure that the DataStore was consumed as
-expected. Instead, we will use `get-data`, which requires the `CurveSpec`,
-`Account`, and `Index`. We have `CurveSpec = 1` because the test uses the `Secp256k1`
-elliptic curve. The value for `Account` comes from removing the first 4 characters of the `Owner` hexidecimal string.
-`Index` can be copied directly from above. Thus, we enter
-
-```
-{
-  "CurveSpec": 1,
-  "Account": "546f99f244b7b58b855330ae0e2bc1b30b41302f",
-  "Index": "4943a3029516011ac24ba62f5e4183eb6e7dbbe8a3c6644fbc3a515188eef7f8"
-}
-```
-
-Upon execution, we have
-
-```
-{
-  "Rawdata": "68656c6c6f2d74776f"
-}
-```
-
-This matches `Rawdata` from the transaction and decodes to
-`hello-two`, as expected.
-
-If a DataStore is not present, then a "Key not found"
-error will be returned; this error will happen when the DataStore is consumed.
-
-# Interaction
-
-### API Docs and Limited GUI
+## API calls
 
 The swagger-ui for the localRPC of a validator may be found at `http://localhost:8885/swagger`. The default port for
 `validator4` is `8888`. Thus, you may speak to validator 4 (a non-mining node) at `http://localhost:8888`
 
-### Programmatic Interaction
 
-The localRPC directory contains a client library that abstracts the localRPC system for easier development.
