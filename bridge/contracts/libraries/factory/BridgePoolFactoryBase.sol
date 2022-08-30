@@ -13,7 +13,7 @@ abstract contract BridgePoolFactoryBase is ImmutableFactory {
 
     modifier onlyFactoryOrPublicPoolDeploymentEnabled() {
         if (msg.sender != _factoryAddress() && !publicPoolDeploymentEnabled) {
-            revert BridgePoolFactoryErrors.PublicPoolDeploymentDisabled();
+            revert BridgePoolFactoryErrors.PublicPoolDeploymentTemporallyDisabled();
         }
         _;
     }

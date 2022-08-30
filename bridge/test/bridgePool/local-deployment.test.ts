@@ -9,6 +9,7 @@ let depositCallData: any;
 let encodedDepositCallData: string;
 const valueSent = ethers.utils.parseEther("1.0");
 const valueOrId = 100; // value if ERC20 , tokenId otherwise
+const bridgeVersion = 1;
 
 tokenTypes.forEach(function (run) {
   describe(
@@ -19,6 +20,8 @@ tokenTypes.forEach(function (run) {
         [, user] = await ethers.getSigners();
         depositCallData = {
           ERCContract: fixture[run.options.ercContractName].address,
+          destinationAccountType: 1, // 1 for secp256k1, 2 for bn128
+          destinationAccount: ethers.constants.AddressZero,
           tokenType: run.options.poolType,
           number: valueOrId,
           chainID: 1337,
@@ -26,7 +29,7 @@ tokenTypes.forEach(function (run) {
         };
         encodedDepositCallData = ethers.utils.defaultAbiCoder.encode(
           [
-            "tuple(address ERCContract, uint8 tokenType, uint256 number, uint256 chainID, uint16 poolVersion)",
+            "tuple(address ERCContract, uint8 destinationAccountType, address destinationAccount, uint8 tokenType, uint256 number, uint256 chainID, uint16 poolVersion)",
           ],
           [depositCallData]
         );
@@ -43,13 +46,13 @@ tokenTypes.forEach(function (run) {
             1,
           ]
         );
-        /*         await expect(
-                  fixture.bToken
-                    .connect(user)
-                    .payAndDeposit(maxEth, maxTokens, encodedDepositCallData, {
-                      value: valueSent,
-                    })
-                ).to.be.revertedWith(run.options.errorReason); */
+        await
+          fixture.bToken
+            .connect(user)
+            .depositTokensOnBridges(bridgeVersion, encodedDepositCallData, {
+              value: valueSent,
+            })
+
       });
 
       it("Should not deploy new BridgePool as user if public pool deployment is not enabled", async () => {
@@ -68,7 +71,7 @@ tokenTypes.forEach(function (run) {
       it("Should deploy new BridgePool as user if public pool deployment is enabled", async () => {
         await factoryCallAnyFixture(
           fixture,
-          "bridgeRouter",
+          "bridgePoolFactory",
           "togglePublicPoolDeployment",
           []
         );

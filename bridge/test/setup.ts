@@ -15,8 +15,8 @@ import {
   AToken,
   ATokenBurner,
   ATokenMinter,
-  BridgePoolDepositNotifier,
   BridgePoolFactory,
+  BridgePoolRouterV1,
   BToken,
   Distribution,
   Dynamics,
@@ -647,14 +647,14 @@ export const getFixture = async (
     [1337]
   )) as BridgePoolFactory;
 
-  //BridgePoolDepositNotifier
-  const bridgePoolDepositNotifier = (await deployUpgradeableWithFactory(
+  // BridgeRouter
+  const bridgeRouter = (await deployUpgradeableWithFactory(
     factory,
-    "BridgePoolDepositNotifier",
-    "BridgePoolDepositNotifier",
+    "BridgePoolRouterV1",
+    "BridgePoolRouterV1",
     undefined,
     [1337]
-  )) as BridgePoolDepositNotifier;
+  )) as BridgePoolRouterV1;
 
   const erc721Mock = await (
     await (await ethers.getContractFactory("ERC721Mock")).deploy()
@@ -720,7 +720,6 @@ export const getFixture = async (
     erc721Mock,
     erc20Mock,
     bridgePoolFactory,
-    bridgePoolDepositNotifier,
     namedSigners,
     aTokenMinter,
     aTokenBurner,

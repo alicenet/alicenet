@@ -13,7 +13,6 @@ import "contracts/interfaces/IBridgePool.sol";
 import "contracts/Snapshots.sol";
 import "contracts/libraries/parsers/BClaimsParserLibrary.sol";
 import "contracts/utils/ERC20SafeTransfer.sol";
-import "contracts/BridgePoolDepositNotifier.sol";
 
 /// @custom:salt LocalERC721BridgePoolV1
 /// @custom:deploy-type deployStatic
@@ -24,7 +23,6 @@ contract LocalERC721BridgePoolV1 is
     Initializable,
     ImmutableSnapshots,
     ImmutableBridgePoolFactory,
-    ImmutableBridgePoolDepositNotifier,
     ImmutableBridgeRouter
 {
     using MerkleProofParserLibrary for bytes;
@@ -51,22 +49,6 @@ contract LocalERC721BridgePoolV1 is
     /// @param number The token ID of the NFT to be deposited
     function deposit(address msgSender, uint256 number) public onlyBridgeRouter {
         IERC721Transferable(_erc721Contract).safeTransferFrom(msgSender, address(this), number);
-        uint8 bridgeType = 2;
-        uint256 chainId = 1337;
-        uint16 bridgeImplVersion = 1;
-        bytes32 salt = getBridgePoolSalt(
-            _erc721Contract,
-            bridgeType,
-            chainId,
-            bridgeImplVersion
-        );
-        BridgePoolDepositNotifier(_bridgePoolDepositNotifierAddress()).doEmit(
-            salt,
-            _erc721Contract,
-            msgSender,
-            bridgeType,
-            number
-        );
     }
 
     /// @notice Transfer token to sender upon a verificable proof of burn in sidechain
@@ -87,29 +69,6 @@ contract LocalERC721BridgePoolV1 is
             msg.sender,
             burnedUTXO.value // tokenId
         );
-    }
-     
-    // @notice calculates salt for a BridgePool contract based on ERC contract's address, tokenType, chainID and version_
-    // @param tokenContractAddr_ address of ERC contract of BridgePool
-    // @param tokenType_ type of token (1=ERC20, 2=ERC721)
-    // @param version_ version of the implementation
-    // @param chainID_ chain ID
-    // @return calculated calculated salt
-    function getBridgePoolSalt(
-        address tokenContractAddr_,
-        uint8 tokenType_,
-        uint256 chainID_,
-        uint16 version_
-    ) public pure returns (bytes32) {
-        return
-            keccak256(
-                bytes.concat(
-                    keccak256(abi.encodePacked(tokenContractAddr_)),
-                    keccak256(abi.encodePacked(tokenType_)),
-                    keccak256(abi.encodePacked(chainID_)),
-                    keccak256(abi.encodePacked(version_))
-                )
-            );
     }
 
 }
