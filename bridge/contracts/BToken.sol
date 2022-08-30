@@ -149,7 +149,7 @@ contract BToken is
     /// function will deduce the fee amount and refund any extra amount. If no ether
     /// is sent, the function will deduce the amount of BToken corresponding to the
     /// fees directly from the user's balance.
-    /// @param bridgeVersion The bridge version where to deposit the tokens.
+    /// @param bridgeVersion The version of pool to deposit token on.
     /// @param data Encoded data necessary to deposit the arbitrary tokens in the bridges.
     function depositTokensOnBridges(uint16 bridgeVersion, bytes calldata data) public payable {
         //calculate router address
