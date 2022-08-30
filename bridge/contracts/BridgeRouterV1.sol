@@ -6,16 +6,17 @@ import "contracts/interfaces/IBridgePool.sol";
 import "contracts/libraries/errorCodes/BridgeRouterErrorCodes.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "contracts/libraries/errorCodes/CircuitBreakerErrorCodes.sol";
-import "hardhat/console.sol";
+import "contracts/utils/BridgePoolAddressUtil.sol"
 
-/// @custom:salt BridgeRouter
-/// @custom:deploy-type deployUpgradeable
-contract BridgeRouter is
+/// @custom:salt BridgePoolRouterV1
+/// @custom:deploy-type deployStatic
+contract BridgePoolRouterV1 is
     Initializable,
     ImmutableFactory,
     ImmutableBridgeRouter,
     ImmutableBridgePoolDepositNotifier,
-    ImmutableBToken
+    ImmutableBToken,
+    CircuitBreaker
 {
     event DepositedERCToken(
         uint256 nonce,
@@ -56,7 +57,7 @@ contract BridgeRouter is
         address msgSender,
         uint256 maxTokens,
         bytes memory data
-    ) public onlyBToken returns (uint256 btokenFeeAmount) {
+    ) public onlyBToken withCircuitBreaker returns (uint256 btokenFeeAmount) {
         //get the fee to deposit a token into the bridge
         btokenFeeAmount = 1000; // TODO: @gus get proper value for bToken fee
         require(
@@ -66,18 +67,18 @@ contract BridgeRouter is
         // use abi decode to extract the information out of data
         DepositCallData memory depositCallData = abi.decode(data, (DepositCallData));
         //encode the salt with the information from
-        bytes32 poolSalt = getBridgePoolSalt(
+        bytes32 poolSalt = BridgePoolAddressUtil.getBridgePoolSalt(
             depositCallData.ERCContract,
             depositCallData.tokenType,
             depositCallData.chainID,
             POOL_VERSION
         );
         // calculate the address of the pool
-        address poolAddress = getStaticPoolContractAddress(poolSalt, address(this));
+        address poolAddress = BridgePoolAddressUtil.getBridgePoolAddress(poolSalt, address(this));
 
         //call the pool to initiate deposit
         IBridgePool(poolAddress).deposit(msgSender, depositCallData.number);
-
+        //TODO determine if we are tracking current networkID or token NetworkID
         emit DepositedERCToken(
             nonce,
             depositCallData.ERCContract,
@@ -89,4 +90,13 @@ contract BridgeRouter is
         nonce++;
         return btokenFeeAmount;
     }
+
+    function pauseAllDeposits()public onlyFactory{
+        _tripCB();
+    }
+
+    function unPauseAllDeposits() public onlyFactory{
+        _resetCB()l
+    }
+
 }
