@@ -3,22 +3,21 @@ pragma solidity ^0.8.16;
 
 import "contracts/utils/ImmutableAuth.sol";
 import "contracts/libraries/errors/BridgePoolFactoryErrors.sol";
+import "contracts/interfaces/IBridgePool.sol";
 
-
-
-abstract contract BridgePoolFactoryBase is ImmutableFactory{
-    
-    event BridgePoolCreated(address poolAddress, address token );
+abstract contract BridgePoolFactoryBase is ImmutableFactory {
+    event BridgePoolCreated(address poolAddress, address token);
     uint256 immutable _chainID;
     bool publicPoolDeploymentEnabled;
     address _implementation;
 
     modifier onlyFactoryOrPublicPoolDeploymentEnabled() {
-        if(msg.sender != _factoryAddress() && !publicPoolDeploymentEnabled){
-            revert(BridgePoolFactoryErrors.PublicPoolDeploymentDisabled());
+        if (msg.sender != _factoryAddress() && !publicPoolDeploymentEnabled) {
+            revert BridgePoolFactoryErrors.PublicPoolDeploymentDisabled();
         }
         _;
     }
+
     constructor(uint256 chainID_) ImmutableFactory(msg.sender) {
         _chainID = chainID_;
     }
@@ -27,8 +26,7 @@ abstract contract BridgePoolFactoryBase is ImmutableFactory{
      * @dev enables or disables public pool deployment
      **/
     function _togglePublicPoolDeployment() internal {
-        if (publicPoolDeploymentEnabled == true) publicPoolDeploymentEnabled = false;
-        else publicPoolDeploymentEnabled = true;
+        publicPoolDeploymentEnabled = !publicPoolDeploymentEnabled;
     }
 
     /**
@@ -60,8 +58,8 @@ abstract contract BridgePoolFactoryBase is ImmutableFactory{
         assembly {
             implementationSize := extcodesize(implementation)
         }
-        if( implementationSize == 0){
-            BridgePoolFactoryErrors.PoolVersionNotSupported(poolVersion_);
+        if (implementationSize == 0) {
+            revert BridgePoolFactoryErrors.PoolVersionNotSupported(poolVersion_);
         }
         address contractAddr = _deployStaticPool(bridgePoolSalt);
         IBridgePool(contractAddr).initialize(ercContract_);
@@ -93,7 +91,7 @@ abstract contract BridgePoolFactoryBase is ImmutableFactory{
                 )
             );
     }
-    
+
     /**
      * @notice calculates salt for a BridgePool implementation contract based on tokenType and version
      * @param tokenType_ type of token (1=ERC20, 2=ERC721)
@@ -132,8 +130,8 @@ abstract contract BridgePoolFactoryBase is ImmutableFactory{
             contractAddr := create2(0, ptr, 15, salt_)
             contractSize := extcodesize(contractAddr)
         }
-        if(contractSize == 0){
-            BridgePoolFactoryErrors.StaticPoolDeploymentFailed(salt_);
+        if (contractSize == 0) {
+            revert BridgePoolFactoryErrors.StaticPoolDeploymentFailed(salt_);
         }
         return contractAddr;
     }
@@ -151,5 +149,4 @@ abstract contract BridgePoolFactoryBase is ImmutableFactory{
             return(ptr, 45)
         }
     }
-
 }

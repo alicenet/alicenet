@@ -1,0 +1,9 @@
+// SPDX-License-Identifier: MIT-open-group
+pragma solidity ^0.8.16;
+
+library BridgeRouterErrors {
+    error UnexistentBridgePoolImplementationVersion(uint16 version);
+    error UnableToDeployBridgePool(bytes32 salt_);
+    error InsufficientFunds();
+    error PublicPoolDeploymentTemporallyDisabled();
+}

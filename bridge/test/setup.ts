@@ -16,7 +16,7 @@ import {
   ATokenBurner,
   ATokenMinter,
   BridgePoolDepositNotifier,
-  BridgeRouter,
+  BridgePoolFactory,
   BToken,
   Distribution,
   Dynamics,
@@ -639,13 +639,13 @@ export const getFixture = async (
   )) as IBridgePool;
 
   // BridgePoolFactory
-  const bridgeRouter = (await deployUpgradeableWithFactory(
+  const bridgePoolFactory = (await deployUpgradeableWithFactory(
     factory,
-    "BridgeRouter",
-    "BridgeRouter",
+    "BridgePoolFactory",
+    "BridgePoolFactory",
     undefined,
     [1337]
-  )) as BridgeRouter;
+  )) as BridgePoolFactory;
 
   //BridgePoolDepositNotifier
   const bridgePoolDepositNotifier = (await deployUpgradeableWithFactory(
@@ -664,23 +664,6 @@ export const getFixture = async (
     await (await ethers.getContractFactory("ERC20Mock")).deploy()
   ).deployed();
 
-  const immutableAuthErrorCodesContract = await (
-    await (await ethers.getContractFactory("ImmutableAuthErrorCodes")).deploy()
-  ).deployed();
-
-  const bridgePoolErrorCodesContract = await (
-    await (await ethers.getContractFactory("BridgePoolErrorCodes")).deploy()
-  ).deployed();
-
-  const bridgeRouterErrorCodesContract = await (
-    await (await ethers.getContractFactory("BridgeRouterErrorCodes")).deploy()
-  ).deployed();
-
-  const aliceNetFactoryBaseErrorCodesContract = await (
-    await (
-      await ethers.getContractFactory("AliceNetFactoryBaseErrorCodes")
-    ).deploy()
-  ).deployed();
   const invalidTxConsumptionAccusation = (await deployUpgradeableWithFactory(
     factory,
     "InvalidTxConsumptionAccusation",
@@ -736,7 +719,7 @@ export const getFixture = async (
     localERC20BridgePoolV1,
     erc721Mock,
     erc20Mock,
-    bridgeRouter,
+    bridgePoolFactory,
     bridgePoolDepositNotifier,
     namedSigners,
     aTokenMinter,
@@ -744,10 +727,6 @@ export const getFixture = async (
     liquidityProviderStaking,
     foundation,
     stakingPositionDescriptor,
-    bridgePoolErrorCodesContract,
-    immutableAuthErrorCodesContract,
-    aliceNetFactoryBaseErrorCodesContract,
-    bridgeRouterErrorCodesContract,
     invalidTxConsumptionAccusation,
     multipleProposalAccusation,
     distribution,
@@ -855,4 +834,28 @@ export const getReceiptForFailedTransaction = async (
     }
   }
   return receipt;
+};
+
+export const getLocalERC20BridgePoolSalt = (version: number): string => {
+  return ethers.utils.keccak256(
+    ethers.utils.solidityPack(
+      ["bytes32", "bytes32"],
+      [
+        ethers.utils.solidityKeccak256(["string"], ["LocalERC20"]),
+        ethers.utils.solidityKeccak256(["uint16"], [version]),
+      ]
+    )
+  );
+};
+
+export const getLocalERC721BridgePoolSalt = (version: number): string => {
+  return ethers.utils.keccak256(
+    ethers.utils.solidityPack(
+      ["bytes32", "bytes32"],
+      [
+        ethers.utils.solidityKeccak256(["string"], ["LocalERC721"]),
+        ethers.utils.solidityKeccak256(["uint16"], [version]),
+      ]
+    )
+  );
 };

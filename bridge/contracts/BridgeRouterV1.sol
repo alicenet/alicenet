@@ -3,10 +3,9 @@ pragma solidity ^0.8.11;
 import "contracts/AliceNetFactory.sol";
 import "contracts/utils/ImmutableAuth.sol";
 import "contracts/interfaces/IBridgePool.sol";
-import "contracts/libraries/errorCodes/BridgeRouterErrorCodes.sol";
+import "contracts/libraries/errors/BridgeRouterErrors.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "contracts/libraries/errors/CircuitBreakerErrors.sol";
-import "hardhat/console.sol";
 
 /// @custom:salt BridgeRouter
 /// @custom:deploy-type deployUpgradeable
@@ -35,26 +34,21 @@ contract BridgeRouter is
     }
     uint16 constant POOL_VERSION = 1;
     uint256 internal immutable _networkId;
-    
+
     uint256 nonce;
     bool private publicPoolDeploymentEnabled = false;
 
     modifier onlyFactoryOrPublicPoolDeploymentEnabled() {
-        require(
-            msg.sender == _factoryAddress() || publicPoolDeploymentEnabled == true,
-            string(
-                abi.encodePacked(
-                    BridgeRouterErrorCodes.BRIDGEROUTER_POOL_DEPLOYMENT_TEMPORALLY_DISABLED
-                )
-            )
-        );
+        if (msg.sender != _factoryAddress() && publicPoolDeploymentEnabled != true) {
+            revert BridgeRouterErrors.PublicPoolDeploymentTemporallyDisabled();
+        }
         _;
     }
 
     constructor(uint256 networkId_) ImmutableFactory(msg.sender) {
         _networkId = networkId_;
     }
-    
+
     /**
      * @notice calculates salt for a BridgePool contract based on ERC contract's address, tokenType, chainID and version_
      * @param tokenContractAddr_ address of ERC contract of BridgePool
@@ -96,10 +90,9 @@ contract BridgeRouter is
     ) public onlyBToken returns (uint256 btokenFeeAmount) {
         //get the fee to deposit a token into the bridge
         btokenFeeAmount = 1000; // TODO: @gus get proper value for bToken fee
-        require(
-            maxTokens >= btokenFeeAmount,
-            string(abi.encodePacked(BridgeRouterErrorCodes.BRIDGEROUTER_INSUFFICIENT_FUNDS))
-        );
+        if (maxTokens < btokenFeeAmount) {
+            revert BridgeRouterErrors.InsufficientFunds();
+        }
         // use abi decode to extract the information out of data
         DepositCallData memory depositCallData = abi.decode(data, (DepositCallData));
         //encode the salt with the information from
