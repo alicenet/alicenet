@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -ex
+set -e
 
 CURRENT_WD=$PWD
 BRIDGE_DIR=./bridge

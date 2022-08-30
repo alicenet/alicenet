@@ -537,8 +537,14 @@ task("multiCallDeployMetamorphic")
         receipt,
         initCallData,
       };
+      let contractName = taskArgs.contractName
+      if (taskArgs.contractName === "BToken") {
+        contractName = "BToken (ALCB)";
+      } else if (taskArgs.contractName === "AToken") {
+        contractName = "AToken (ALCA)";
+      }
       await showState(
-        `Deployed Metamorphic for ${taskArgs.contractName} at: ${metaContractData.metaAddress}, deployment template at, ${metaContractData.templateAddress}, gas used: ${metaContractData.gas}`
+        `Deployed Metamorphic for ${contractName} at: ${metaContractData.metaAddress}, deployment template at, ${metaContractData.templateAddress}, gas used: ${metaContractData.gas}`
       );
       await updateMetaList(network, metaContractData, taskArgs.outputFolder);
       return metaContractData;
@@ -598,8 +604,14 @@ task(
     );
     cumulativeGas = cumulativeGas.add(metaContractData.gas);
     metaContractData.gas = cumulativeGas;
+    let contractName = taskArgs.contractName
+    if (taskArgs.contractName === "BToken") {
+      contractName = "BToken (ALCB)";
+    } else if (taskArgs.contractName === "AToken") {
+      contractName = "AToken (ALCA)";
+    }
     await showState(
-      `Deployed Metamorphic for ${taskArgs.contractName} at: ${metaContractData.metaAddress}, with deployment template at, ${metaContractData.templateAddress}, gas used: ${metaContractData.gas}`
+      `Deployed Metamorphic for ${contractName} at: ${metaContractData.metaAddress}, with deployment template at, ${metaContractData.templateAddress}, gas used: ${metaContractData.gas}`
     );
     return metaContractData;
   });
