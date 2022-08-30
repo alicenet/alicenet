@@ -92,8 +92,14 @@ func initialiseFilesAndFolders(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	// create config.toml file as text file in environment folder
+	// check if config file exists, and exit if it does
 	configPath := envPath + "/config.toml"
+	if _, err := os.Stat(configPath); err == nil {
+		logger.Error("Config file already exists - exiting")
+		os.Exit(1)
+	}
+
+	// create config.toml file as text file in environment folder
 	configFile, err := os.Create(configPath)
 	if err != nil {
 		logger.Error("Error creating config.toml file: ", err)
@@ -111,9 +117,9 @@ func initialiseFilesAndFolders(cmd *cobra.Command, args []string) {
 	}
 
 	// write config.toml file
-	configFile.WriteString("[loglevel]\n")
-	configFile.WriteString("# Controls the logging level of the alicenet sub-services. To get the complete\n")
-	configFile.WriteString("# list of supported services check ./constants/shared.go\n")
+	configFile.WriteString("[loglevel]" + "\n")
+	configFile.WriteString("# Controls the logging level of the alicenet sub-services. To get the complete" + "\n")
+	configFile.WriteString("# list of supported services check ./constants/shared.go" + "\n")
 	configFile.WriteString(`admin = "info"` + "\n")
 	configFile.WriteString(`blockchain = "info"` + "\n")
 	configFile.WriteString(`consensus = "info"` + "\n")
