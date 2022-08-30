@@ -11,6 +11,11 @@ import (
 	"github.com/spf13/viper"
 )
 
+type initConfig struct {
+	Path    string
+	Network string
+}
+
 type bootnodeConfig struct {
 	Name             string
 	ListeningAddress string
@@ -127,6 +132,7 @@ type configuration struct {
 	BootNode              bootnodeConfig
 	EthKey                ethKeyConfig
 	Version               string
+	Initialization        initConfig
 }
 
 // Configuration contains all active settings.

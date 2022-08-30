@@ -11,6 +11,7 @@ import (
 
 	"github.com/alicenet/alicenet/cmd/bootnode"
 	"github.com/alicenet/alicenet/cmd/firewalld"
+	"github.com/alicenet/alicenet/cmd/initialization"
 	"github.com/alicenet/alicenet/cmd/utils"
 	"github.com/alicenet/alicenet/cmd/validator"
 	"github.com/alicenet/alicenet/config"
@@ -188,16 +189,21 @@ func main() {
 			{"ethkey.privatekey", "", "file containing a raw private key to encrypt", &config.Configuration.EthKey.PrivateKey},
 			{"ethkey.lightkdf", "", "use less secure scrypt parameters", &config.Configuration.EthKey.LightKDF},
 		},
+		&initialization.Command: {
+			{"initialization.path", "p", "Path to save the files/folders", &config.Configuration.Initialization.Path},
+			{"initialization.network", "n", "Network environment to use (testnet, mainnet)", &config.Configuration.Initialization.Network},
+		},
 	}
 
 	// Establish command hierarchy
 	hierarchy := map[*cobra.Command]*cobra.Command{
-		&firewalld.Command:    &rootCommand,
-		&bootnode.Command:     &rootCommand,
-		&validator.Command:    &rootCommand,
-		&ethkey.Command:       &rootCommand,
-		&utils.Command:        &rootCommand,
-		&utils.SendWeiCommand: &utils.Command,
+		&firewalld.Command:      &rootCommand,
+		&bootnode.Command:       &rootCommand,
+		&validator.Command:      &rootCommand,
+		&utils.Command:          &rootCommand,
+		&utils.SendWeiCommand:   &utils.Command,
+		&initialization.Command: &rootCommand,
+		&ethkey.Command:		 &rootCommand,
 	}
 
 	// Convert option abstraction into concrete settings for Cobra and Viper

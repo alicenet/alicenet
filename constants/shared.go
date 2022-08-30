@@ -128,4 +128,5 @@ var ValidLoggers []string = []string{
 	"tasks",
 	"staterecover",
 	"ethkey",
+	"init",
 }
