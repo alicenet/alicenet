@@ -12,6 +12,7 @@ import (
 	"github.com/alicenet/alicenet/cmd/ethkey"
 	"github.com/alicenet/alicenet/cmd/firewalld"
 	"github.com/alicenet/alicenet/cmd/node"
+	"github.com/alicenet/alicenet/cmd/initialization"
 	"github.com/alicenet/alicenet/cmd/utils"
 	"github.com/alicenet/alicenet/config"
 	"github.com/alicenet/alicenet/logging"
@@ -202,6 +203,10 @@ func main() {
 			{"ethkey.passwordfile", "", "the file that contains the password for the keyfile", &config.Configuration.EthKey.PasswordFile},
 			{"ethkey.newpasswordfile", "", "the file that contains the new password for the keyfile", &config.Configuration.EthKey.NewPasswordFile},
 		},
+		&initialization.Command: {
+			{"initialization.path", "p", "Path to save the files/folders", &config.Configuration.Initialization.Path},
+			{"initialization.network", "n", "Network environment to use (testnet, mainnet)", &config.Configuration.Initialization.Network},
+		},
 	}
 
 	// Establish command hierarchy
@@ -214,6 +219,7 @@ func main() {
 		&ethkey.ChangePassword: &rootCommand,
 		&utils.Command:         &rootCommand,
 		&utils.SendWeiCommand:  &utils.Command,
+		&initialization.Command: &rootCommand,
 	}
 
 	// Convert option abstraction into concrete settings for Cobra and Viper
