@@ -39,12 +39,7 @@ library BridgePoolAddressUtil {
                 uint160(
                     uint256(
                         keccak256(
-                            abi.encodePacked(
-                                hex"ff",
-                                bridgeFactory_,
-                                bridgePoolSalt_,
-                                initCodeHash
-                            )
+                            abi.encodePacked(hex"ff", bridgeFactory_, bridgePoolSalt_, initCodeHash)
                         )
                     )
                 )

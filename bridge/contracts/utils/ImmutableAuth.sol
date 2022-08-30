@@ -24,6 +24,34 @@ abstract contract ImmutableFactory is DeterministicAddress {
     }
 }
 
+abstract contract ImmutableBridgePoolFactory is ImmutableFactory {
+    address private immutable _bridgePoolFactory;
+    error OnlyBridgePoolFactory(address sender, address expected);
+
+    modifier onlyBridgePoolFactory() {
+        if (msg.sender != _bridgePoolFactory) {
+            revert OnlyBridgePoolFactory(msg.sender, _bridgePoolFactory);
+        }
+        _;
+    }
+
+    constructor() {
+        _bridgePoolFactory = getMetamorphicContractAddress(
+            0x427269646765506f6f6c466163746f7279000000000000000000000000000000,
+            _factoryAddress()
+        );
+    }
+
+    function _bridgePoolFactoryAddress() internal view returns (address) {
+        return _bridgePoolFactory;
+    }
+
+    // bytes32 formatted "BridgePoolFactory"
+    function _saltForBridgePoolFactory() internal pure returns (bytes32) {
+        return 0x427269646765506f6f6c466163746f7279000000000000000000000000000000;
+    }
+}
+
 abstract contract ImmutableAToken is ImmutableFactory {
     address private immutable _aToken;
     error OnlyAToken(address sender, address expected);
