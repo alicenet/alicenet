@@ -146,15 +146,32 @@ Once you have executed the command above, you should see something similar to th
 The whole process should take around 15 minutes to complete. At the end of the process, you should see something similar to this being displayed in the validators console:
 
 ```shell
+... msg="ProcessValidatorSetCompleted()" ...
+... msg="Building ValidatorSet..." ...
+... msg="ValidatorMember" ...
+... msg="ValidatorMember" ...
+... msg="ValidatorMember" ...
+... msg="ValidatorMember" ...
+... msg="ValidatorMember" ...
+... msg="Complete ValidatorSet..." ... Validators="0x49df85efe81c958ae210accc012eed30147a2a98 0x6dcd347968c8cb034f83171910f55f928da705d3,0xa98a74404c7a0e8540a48bc35a056773d51af97c,0x838add5bda57f4273b1ad43c2560faa1a51e86a9,0x7586165ab696c645e747ba45d793546a6415a518"
 ```
 
 
 Once it has been completed, the validators should start validating (mining) blocks. At this point, you should see something like this:
 
 ```shell
+... msg="HighestBlockFinalized: 326 -> 329, HighestBlockProcessed: 326 -> 329" Blk/Rnd=1/1 BlkHsh=42ec..1796 BlkTime=23m37.24s GRCnt=238 Peers=24/4/3/0 TxCt=0
+... msg="HighestBlockFinalized: 329 -> 332, HighestBlockProcessed: 329 -> 332" Blk/Rnd=1/1 BlkHsh=42ec..1796 BlkTime=23m37.24s GRCnt=238 Peers=24/4/3/0 TxCt=0
+... msg="HighestBlockFinalized: 329 -> 332, HighestBlockProcessed: 329 -> 332" Blk/Rnd=1/2 BlkHsh=42ec..1796 BlkTime=1m44.11s GRCnt=237 Peers=24/4/3/0 TxCt=0
+... msg="HighestBlockFinalized: 332 -> 335, HighestBlockProcessed: 332 -> 335" Blk/Rnd=1/2 BlkHsh=42ec..1796 BlkTime=1m44.11s GRCnt=237 Peers=24/4/3/0 TxCt=0
+... msg="HighestBlockFinalized: 332 -> 335, HighestBlockProcessed: 332 -> 335" Blk/Rnd=2/1 BlkHsh=287f..ec49 BlkTime=5s GRCnt=237 Peers=24/4/3/0 TxCt=0
+... msg="HighestBlockFinalized: 335 -> 338, HighestBlockProcessed: 335 -> 338" Blk/Rnd=2/1 BlkHsh=287f..ec49 BlkTime=5s GRCnt=238 Peers=24/4/3/0 TxCt=0
+... msg="HighestBlockFinalized: 335 -> 338, HighestBlockProcessed: 335 -> 338" Blk/Rnd=3/1 BlkHsh=91c1..36f5 BlkTime=5s GRCnt=237 Peers=24/4/3/0 TxCt=0
 ```
 
-Now you should be able to play around with the AliceNet environment (e.g do RPC calls against the node, do alicenet transactions).
+The `Blk/Rnd=3/1` field indicates which is the current block being validated.
+
+Now you should be able to play around with the AliceNet environment (e.g do RPC calls against the node, do AliceNet transactions, ALCB deposits).
 
 ## Minting ALCA (AliceNet Staking Tokens)
 
