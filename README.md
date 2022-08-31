@@ -1,10 +1,10 @@
 # AliceNet
 
 ![GitHub Repo stars](https://img.shields.io/github/stars/alicenet/alicenet?style=social)
-![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/alicenet/alicenet)
-![License](https://img.shields.io/github/license/alicenet/alicenet)
+[![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/alicenet/alicenet)](https://github.com/alicenet/alicenet/releases)
+[![License](https://img.shields.io/github/license/alicenet/alicenet)](./LICENSE)
 [![codecov](https://codecov.io/gh/alicenet/alicenet/branch/main/graph/badge.svg?token=B5RGO1P416)](https://codecov.io/gh/alicenet/alicenet)
-![Discord](https://img.shields.io/badge/Discord-7289DA?url=https://discord.gg/bkhW2KUWDu&logo=discord&logoColor=white)
+[![Discord](https://img.shields.io/badge/Discord-7289DA?logo=discord&logoColor=white)](https://discord.gg/bkhW2KUWDu)
 
 Official repository for the AliceNet blockchain.
 

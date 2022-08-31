@@ -301,11 +301,11 @@ depositor: '0x546F99F244b7B58B855330AE0E2BC1b30b41302F',
 amount: BigNumber { value: "1000000000000000" }
 ```
 
-You can now check the ALCB balance of the `0x546F99F244b7B58B855330AE0E2BC1b30b41302F` inside the AliceNet network using the official AliceNet wallet.
+Now, you can now check the ALCB balance of the `0x546F99F244b7B58B855330AE0E2BC1b30b41302F` inside the AliceNet network using the official AliceNet wallet.
 
 ## Connecting Metamask to the local ethereum network
 
-You can connect your Metamask with the local ethereum network for better support getting the tokens balances. In order to do this, open Metamask on your browser and add the hardhat network:
+You can connect your Metamask with the local ethereum network for better support on getting the tokens balances. In order to do this, open Metamask on your browser and add the hardhat network:
 
 ```toml
 url = http://127.0.0.1:8545
@@ -319,6 +319,8 @@ Now, add the following private key (account) for the local ethereum admin accoun
 ```
 
 > Important: This private is not secure. Ensure you do not use it on production blockchains, or else you risk losing funds.
+
+Finally, import the ALCA and ALCB tokens to metamask. You can get the address in the output of your [deployment script](#deploying-the-alicenet-ethereum-smart-contracts-locally).
 
 ## Connecting AliceNet Wallet
 
