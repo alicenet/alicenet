@@ -198,7 +198,7 @@ Now you should finally be able to play around with the AliceNet environment (e.g
 Inside the bridge folder, you will be able to find some useful hardhat scripts to run some actions against the AliceNet smart contracts. With these scripts, you will be able to change some AliceNet configs, mint some ALCB and ALCA, change the hardhat block time and many more. You can check all scripts available by executing the following command in a terminal inside the bridge folder (`cd ./bridge`):
 
 ```shell
-npx hardhat--help
+npx hardhat --help
 ```
 
 ### Speeding up hardhat blocks
