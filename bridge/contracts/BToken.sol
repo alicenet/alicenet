@@ -7,10 +7,10 @@ import "contracts/utils/Admin.sol";
 import "contracts/utils/Mutex.sol";
 import "contracts/utils/MagicEthTransfer.sol";
 import "contracts/utils/EthSafeTransfer.sol";
-import "contracts/libraries/math/Sigmoid.sol";
 import "contracts/utils/ImmutableAuth.sol";
-import "contracts/BridgeRouter.sol";
-import "contracts/libraries/errorCodes/BTokenErrorCodes.sol";
+import "contracts/interfaces/IUtilityToken.sol";
+import "contracts/libraries/errors/UtilityTokenErrors.sol";
+import "contracts/libraries/math/Sigmoid.sol";
 
 /// @custom:salt BToken
 /// @custom:deploy-type deployStatic
@@ -52,53 +52,9 @@ contract BToken is
     constructor() ImmutableFactory(msg.sender) ImmutableDistribution() {}
 
     function initialize() public onlyFactory initializer {
-        __ERC20_init("BToken", "BOB");
-        _setSplitsInternal(332, 332, 332, 4);
-    }
-
-    /// @dev
-    ///
-    function payAndDeposit(
-        uint256 maxEth,
-        uint256 maxTokens,
-        bytes calldata data
-    ) public payable {
-        //forward call to btoken
-        uint256 bTokenFee = BridgeRouter(_bridgeRouterAddress()).routeDeposit(
-            msg.sender,
-            maxTokens,
-            data
-        );
-        //if the message has value (eth payment) require the value of eth equal btokenAmount, else destroy btoken amount specified
-        if (msg.value > 0) {
-            uint256 ethFee = _bTokensToEthMint(totalSupply(), bTokenFee);
-            require(
-                maxEth <= ethFee && msg.value >= ethFee,
-                string(abi.encodePacked(BTokenErrorCodes.BTOKEN_ERC_MINT_INSUFFICIENT_ETH))
-            );
-            uint256 refund = msg.value - ethFee;
-            if (refund > 0) {
-                payable(msg.sender).transfer(refund);
-            }
-        } else {
-            _destroyTokens(bTokenFee);
-        }
-    }
-
-    /// @dev sets the percentage that will be divided between all the staking
-    /// contracts, must only be called by _admin
-    function setSplits(
-        uint256 validatorStakingSplit_,
-        uint256 publicStakingSplit_,
-        uint256 liquidityProviderStakingSplit_,
-        uint256 protocolFee_
-    ) public onlyAdmin {
-        _setSplitsInternal(
-            validatorStakingSplit_,
-            publicStakingSplit_,
-            liquidityProviderStakingSplit_,
-            protocolFee_
-        );
+        __ERC20_init("AliceNet Utility Token", "ALCB");
+        // Initial deposit to cover the migrated txs on aliceNet
+        _virtualDeposit(1, 0xba7809A4114eEF598132461f3202b5013e834CD5, 500000000000);
     }
 
     /// Distributes the yields of the BToken sale to all stakeholders
@@ -292,14 +248,59 @@ contract BToken is
         return d;
     }
 
-    /// Converts an amount of BTokens in ether given a point in the bonding
-    /// curve (poolbalance and totalsupply at given time).
-    /// @param poolBalance_ The pool balance (in ether) at a given moment
-    /// where we want to compute the amount of ether.
-    /// @param totalSupply_ The total supply of BToken at a given moment
-    /// where we want to compute the amount of ether.
+    /// Compute how many ether will be necessary to mint an amount of BTokens in the
+    /// current state of the contract. Should be used carefully if its being called
+    /// outside an smart contract transaction, as the bonding curve state can change
+    /// before a future transaction is sent.
     /// @param numBTK_ Amount of BTokens that we want to convert in ether
-    function bTokensToEth(
+    function getLatestEthToMintBTokens(uint256 numBTK_) public view returns (uint256 numEth) {
+        return _getEthToMintBTokens(totalSupply(), numBTK_);
+    }
+
+    /// Compute how many ether will be received during a BToken burn at the current
+    /// bonding curve state. Should be used carefully if its being called outside an
+    /// smart contract transaction, as the bonding curve state can change before a
+    /// future transaction is sent.
+    /// @param numBTK_ Amount of BTokens to convert in ether
+    function getLatestEthFromBTokensBurn(uint256 numBTK_) public view returns (uint256 numEth) {
+        return _bTokensToEth(_poolBalance, totalSupply(), numBTK_);
+    }
+
+    /// Gets an amount of BTokens that will be minted at the current state of the
+    /// bonding curve. Should be used carefully if its being called outside an smart
+    /// contract transaction, as the bonding curve state can change before a future
+    /// transaction is sent.
+    /// @param numEth_ Amount of ether to convert in BTokens
+    function getLatestMintedBTokensFromEth(uint256 numEth_) public view returns (uint256) {
+        return _ethToBTokens(_poolBalance, numEth_ / _MARKET_SPREAD);
+    }
+
+    /// Gets the market spread (difference between the minting and burning bonding
+    /// curves).
+    function getMarketSpread() public pure returns (uint256) {
+        return _MARKET_SPREAD;
+    }
+
+    /// Compute how many ether will be necessary to mint an amount of BTokens at a
+    /// certain point in the bonding curve.
+    /// @param totalSupply_ The total supply of BToken at a given moment where we
+    /// want to compute the amount of ether necessary to mint.
+    /// @param numBTK_ Amount of BTokens that we want to convert in ether
+    function getEthToMintBTokens(uint256 totalSupply_, uint256 numBTK_)
+        public
+        pure
+        returns (uint256 numEth)
+    {
+        return _getEthToMintBTokens(totalSupply_, numBTK_);
+    }
+
+    /// Compute how many ether will be received during a BToken burn.
+    /// @param poolBalance_ The pool balance (in ether) at the moment
+    /// that of the conversion.
+    /// @param totalSupply_ The total supply of BToken at the moment
+    /// that of the conversion.
+    /// @param numBTK_ Amount of BTokens to convert in ether
+    function getEthFromBTokensBurn(
         uint256 poolBalance_,
         uint256 totalSupply_,
         uint256 numBTK_
@@ -326,32 +327,10 @@ contract BToken is
         uint256 poolBalance = _poolBalance;
         // find all value in excess of what is needed in pool
         uint256 excess = address(this).balance - poolBalance;
-
-        // take out protocolFee from excess and decrement excess
-        foundationAmount = (excess * _protocolFee) / _PERCENTAGE_SCALE;
-
-        // split remaining between miners, stakers and lp stakers
-        stakingAmount = (excess * _publicStakingSplit) / _PERCENTAGE_SCALE;
-        lpStakingAmount = (excess * _liquidityProviderStakingSplit) / _PERCENTAGE_SCALE;
-        // then give miners the difference of the original and the sum of the
-        // stakingAmount
-        minerAmount = excess - (stakingAmount + lpStakingAmount + foundationAmount);
-
-        if (foundationAmount != 0) {
-            _safeTransferEthWithMagic(IMagicEthTransfer(_foundationAddress()), foundationAmount);
+        if (excess == 0) {
+            return true;
         }
-        if (minerAmount != 0) {
-            _safeTransferEthWithMagic(IMagicEthTransfer(_validatorStakingAddress()), minerAmount);
-        }
-        if (stakingAmount != 0) {
-            _safeTransferEthWithMagic(IMagicEthTransfer(_publicStakingAddress()), stakingAmount);
-        }
-        if (lpStakingAmount != 0) {
-            _safeTransferEthWithMagic(
-                IMagicEthTransfer(_liquidityProviderStakingAddress()),
-                lpStakingAmount
-            );
-        }
+        _safeTransferEthWithMagic(IMagicEthTransfer(_distributionAddress()), excess);
         if (address(this).balance < poolBalance) {
             revert UtilityTokenErrors.InvalidBalance(address(this).balance, poolBalance);
         }
@@ -534,7 +513,7 @@ contract BToken is
         pure
         returns (uint256 numEth)
     {
-        return _fp(totalSupply_ + numBTK_) - _fp(totalSupply_);
+        return (_pInverse(totalSupply_ + numBTK_) - _pInverse(totalSupply_)) * _MARKET_SPREAD;
     }
 
     function _newDeposit(

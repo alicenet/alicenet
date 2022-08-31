@@ -1,10 +1,9 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
+import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
 import { expect } from "../chai-setup";
-import { BigNumber } from "ethers";
 
 import {
-  callFunctionAndGetReturnValues,
   factoryCallAnyFixture,
   Fixture,
   getContractAddressFromEventLog,
@@ -95,7 +94,7 @@ tokenTypes.forEach(function (run) {
         fixture[run.options.ercContractName]
           .connect(user)
           .approve(bridgePool.address, valueOrId);
-          console.log(await ethers.provider.getBalance(fixture.bToken.address));
+        console.log(await ethers.provider.getBalance(fixture.bToken.address));
 
         // // Mint and approve some bTokens to deposit as fee
         // await callFunctionAndGetReturnValues(

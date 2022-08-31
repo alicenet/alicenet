@@ -70,5 +70,4 @@ contract LocalERC721BridgePoolV1 is
             burnedUTXO.value // tokenId
         );
     }
-
 }

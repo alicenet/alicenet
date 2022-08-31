@@ -6,7 +6,7 @@ import "contracts/interfaces/IValidatorPool.sol";
 import "contracts/utils/ImmutableAuth.sol";
 import "contracts/libraries/parsers/BClaimsParserLibrary.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "hardhat/console.sol";
+import "contracts/interfaces/IDynamics.sol";
 
 contract SnapshotsMock is Initializable, ImmutableValidatorPool, ISnapshots, ImmutableDynamics {
     error onlyAdminAllowed();
@@ -78,14 +78,15 @@ contract SnapshotsMock is Initializable, ImmutableValidatorPool, ISnapshots, Imm
         // dummy to silence compiling warnings
         groupSignature_;
         bClaims_;
-        BClaimsParserLibrary.BClaims memory blockClaims;
-        if (bClaims_.length == 1) {
-            //If claims are not passed on call we create blockClaims from 0
-            blockClaims = BClaimsParserLibrary.BClaims(0, 0, 0, 0x00, 0x00, 0x00, 0x00);
-        } else {
-            // If claims are passed we create blockClaims with parameter
-            blockClaims = abi.decode(bClaims_, (BClaimsParserLibrary.BClaims));
-        }
+        BClaimsParserLibrary.BClaims memory blockClaims = BClaimsParserLibrary.BClaims(
+            0,
+            0,
+            0,
+            0x00,
+            0x00,
+            0x00,
+            0x00
+        );
         _epoch++;
         _snapshots[_epoch] = Snapshot(block.number, blockClaims);
         IDynamics(_dynamicsAddress()).updateHead(_epoch);

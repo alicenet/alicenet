@@ -8,5 +8,4 @@ library BridgePoolFactoryErrors {
     error UnableToDeployBridgePool(bytes32 salt_);
     error InsufficientFunds();
     error PublicPoolDeploymentTemporallyDisabled();
-
 }

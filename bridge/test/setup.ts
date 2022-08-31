@@ -651,7 +651,7 @@ export const getFixture = async (
   const bridgeRouter = (await deployUpgradeableWithFactory(
     factory,
     "BridgePoolRouterV1",
-    "BridgePoolRouterV1",
+    getBridgeRouterSalt(1),
     undefined,
     [1337]
   )) as BridgePoolRouterV1;
@@ -664,23 +664,6 @@ export const getFixture = async (
     await (await ethers.getContractFactory("ERC20Mock")).deploy()
   ).deployed();
 
-  const immutableAuthErrorCodesContract = await (
-    await (await ethers.getContractFactory("ImmutableAuthErrorCodes")).deploy()
-  ).deployed();
-
-  const bridgePoolErrorCodesContract = await (
-    await (await ethers.getContractFactory("BridgePoolErrorCodes")).deploy()
-  ).deployed();
-
-  const bridgeRouterErrorCodesContract = await (
-    await (await ethers.getContractFactory("BridgeRouterErrorCodes")).deploy()
-  ).deployed();
-
-  const aliceNetFactoryBaseErrorCodesContract = await (
-    await (
-      await ethers.getContractFactory("AliceNetFactoryBaseErrorCodes")
-    ).deploy()
-  ).deployed();
   const invalidTxConsumptionAccusation = (await deployUpgradeableWithFactory(
     factory,
     "InvalidTxConsumptionAccusation",
@@ -807,7 +790,7 @@ export async function callFunctionAndGetReturnValues(
         .callStatic[functionName](...inputParameters, { value: messageValue });
       tx = await contract
         .connect(account)
-      [functionName](...inputParameters, { value: messageValue });
+        [functionName](...inputParameters, { value: messageValue });
     } else {
       returnValues = await contract
         .connect(account)
@@ -870,6 +853,18 @@ export const getLocalERC721BridgePoolSalt = (version: number): string => {
       ["bytes32", "bytes32"],
       [
         ethers.utils.solidityKeccak256(["string"], ["LocalERC721"]),
+        ethers.utils.solidityKeccak256(["uint16"], [version]),
+      ]
+    )
+  );
+};
+
+export const getBridgeRouterSalt = (version: number): string => {
+  return ethers.utils.keccak256(
+    ethers.utils.solidityPack(
+      ["bytes32", "bytes32"],
+      [
+        ethers.utils.solidityKeccak256(["string"], ["BridgeRouter"]),
         ethers.utils.solidityKeccak256(["uint16"], [version]),
       ]
     )

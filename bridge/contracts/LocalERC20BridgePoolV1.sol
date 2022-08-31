@@ -46,7 +46,6 @@ contract LocalERC20BridgePoolV1 is
     /// @param number The number of tokens to be deposited
     function deposit(address msgSender, uint256 number) public onlyBridgeRouter {
         IERC20Transferable(_erc20Contract).transferFrom(msgSender, address(this), number);
-
     }
 
     /// @notice Transfer tokens to sender upon a verificable proof of burn in sidechain
@@ -64,5 +63,4 @@ contract LocalERC20BridgePoolV1 is
         merkleProof.verifyInclusion(bClaims.stateRoot);
         IERC20Transferable(_erc20Contract).transfer(msg.sender, burnedUTXO.value);
     }
-
 }
