@@ -10,7 +10,7 @@ Official repository for the AliceNet blockchain.
 
 AliceNet is a Proof-Of-Stake, UTXO based blockchain written in golang that enables high-speed bridging between Layer 1 and Layer 2 protocols while emphasizing strong security and identity standards.
 
-To learn more, check out our official [website](https://https://www.alice.net/) and join our official [Discord community](https://discord.gg/bkhW2KUWDu).
+To learn more, check out our official [website](https://www.alice.net/) and join our official [Discord community](https://discord.gg/bkhW2KUWDu).
 
 ## Quick Start
 
@@ -22,7 +22,7 @@ Once you have an AliceNet binary, see the documentation [How to configure and ru
 
 ## Examples
 
-Basic examples can be found in our official [website](https://https://www.alice.net/).
+Basic examples can be found in our official [website](https://www.alice.net/).
 
 ## How to contribute
 
