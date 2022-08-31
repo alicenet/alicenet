@@ -468,21 +468,12 @@ task("registerValidators", "registers validators")
       hre
     );
     const validatorAddresses: string[] = taskArgs.addresses;
-    // Make sure that admin is the named account at position 0
-    const [admin] = await hre.ethers.getSigners();
 
     if (taskArgs.test) {
       await hre.network.provider.send("hardhat_mine", [
         hre.ethers.utils.hexValue(3),
       ]);
     }
-
-    const validatorPool = await hre.ethers.getContractAt(
-      "ValidatorPool",
-      await factory.lookup(
-        hre.ethers.utils.formatBytes32String("ValidatorPool")
-      )
-    );
     let tx = await stakeValidators(
       validatorAddresses.length,
       factory.address,
@@ -1125,7 +1116,7 @@ task("fundValidators", "manually put 100 eth in each validator account")
     "./../scripts/generated/config"
   )
   .setAction(async (taskArgs, hre) => {
-    console.log("\nFunding validators")
+    console.log("\nFunding validators");
     const signers = await hre.ethers.getSigners();
     const configPath = taskArgs.configPath;
     let validatorConfigs: Array<string> = [];

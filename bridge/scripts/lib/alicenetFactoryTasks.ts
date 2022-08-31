@@ -537,7 +537,7 @@ task("multiCallDeployMetamorphic")
         receipt,
         initCallData,
       };
-      let contractName = taskArgs.contractName
+      let contractName = taskArgs.contractName;
       if (taskArgs.contractName === "BToken") {
         contractName = "BToken (ALCB)";
       } else if (taskArgs.contractName === "AToken") {
@@ -604,7 +604,7 @@ task(
     );
     cumulativeGas = cumulativeGas.add(metaContractData.gas);
     metaContractData.gas = cumulativeGas;
-    let contractName = taskArgs.contractName
+    let contractName = taskArgs.contractName;
     if (taskArgs.contractName === "BToken") {
       contractName = "BToken (ALCB)";
     } else if (taskArgs.contractName === "AToken") {
