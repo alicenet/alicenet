@@ -81,7 +81,6 @@ CREATE_CONFIGS() {
             sed -e 's/rewardAccount = .*/rewardAccount = \"'"$ADDRESS"'\"/' |
             sed -e 's/listeningAddress = .*/listeningAddress = \"0.0.0.0:'"$LA"'\"/' |
             sed -e 's/p2pListeningAddress = .*/p2pListeningAddress = \"0.0.0.0:'"$PA"'\"/' |
-            sed -e 's/discoveryListeningAddress = .*/discoveryListeningAddress = \"0.0.0.0:'"$DA"'\"/' |
             sed -e 's/localStateListeningAddress = .*/localStateListeningAddress = \"0.0.0.0:'"$LSA"'\"/' |
             sed -e 's/passCodes = .*/passCodes = \"scripts\/generated\/keystores\/passcodes.txt\"/' |
             sed -e 's/keystore = .*/keystore = \"scripts\/generated\/keystores\/keys\"/' |
@@ -123,7 +122,6 @@ CREATE_EXTRA_NODES_CONFIGS() {
             sed -e 's/rewardAccount = .*/rewardAccount = \"'"$ADDRESS"'\"/' |
             sed -e 's/listeningAddress = .*/listeningAddress = \"0.0.0.0:'"$LA"'\"/' |
             sed -e 's/p2pListeningAddress = .*/p2pListeningAddress = \"0.0.0.0:'"$PA"'\"/' |
-            sed -e 's/discoveryListeningAddress = .*/discoveryListeningAddress = \"0.0.0.0:'"$DA"'\"/' |
             sed -e 's/localStateListeningAddress = .*/localStateListeningAddress = \"0.0.0.0:'"$LSA"'\"/' |
             sed -e 's/passCodes = .*/passCodes = \"scripts\/generated\/extra-nodes\/keystores\/passcodes.txt\"/' |
             sed -e 's/keystore = .*/keystore = \"scripts\/generated\/extra-nodes\/keystores\/keys\"/' |
@@ -176,13 +174,13 @@ RUN_NODE() {
 RACE_VALIDATOR() {
     # Run a validator
     CHECK_EXISTING $1
-    ./madrace --config ./scripts/generated/config/validator$1.toml validator
+    ./alicerace --config ./scripts/generated/config/validator$1.toml validator
 }
 
 STATUS() {
     # Check validator status
     CHECK_EXISTING $1
-    ./alicenet --config ./assets/config/validator$1.toml utils
+    ./alicenet --config ./scripts/generated/config/validator$1.toml utils
 }
 
 # init # - initalize validators directory files

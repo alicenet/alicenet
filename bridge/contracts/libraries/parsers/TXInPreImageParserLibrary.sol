@@ -1,10 +1,8 @@
 // SPDX-License-Identifier: MIT-open-group
-pragma solidity ^0.8.11;
+pragma solidity ^0.8.16;
 
-import {
-    TXInPreImageParserLibraryErrorCodes
-} from "contracts/libraries/errorCodes/TXInPreImageParserLibraryErrorCodes.sol";
-import "./BaseParserLibrary.sol";
+import "contracts/libraries/errors/GenericParserLibraryErrors.sol";
+import "contracts/libraries/parsers/BaseParserLibrary.sol";
 
 /// @title Library to parse the TXInPreImage structure from a blob of capnproto state
 library TXInPreImageParserLibrary {
@@ -49,31 +47,19 @@ library TXInPreImageParserLibrary {
         pure
         returns (TXInPreImage memory txInPreImage)
     {
-        require(
-            dataOffset + _TX_IN_PRE_IMAGE_SIZE > dataOffset,
-            string(
-                abi.encodePacked(
-                    TXInPreImageParserLibraryErrorCodes.TXINPREIMAGEPARSERLIB_DATA_OFFSET_OVERFLOW
-                )
-            )
-        );
-        require(
-            src.length >= dataOffset + _TX_IN_PRE_IMAGE_SIZE,
-            string(
-                abi.encodePacked(
-                    TXInPreImageParserLibraryErrorCodes.TXINPREIMAGEPARSERLIB_INSUFFICIENT_BYTES
-                )
-            )
-        );
+        if (dataOffset + _TX_IN_PRE_IMAGE_SIZE <= dataOffset) {
+            revert GenericParserLibraryErrors.DataOffsetOverflow();
+        }
+        if (src.length < dataOffset + _TX_IN_PRE_IMAGE_SIZE) {
+            revert GenericParserLibraryErrors.InsufficientBytes(
+                src.length,
+                dataOffset + _TX_IN_PRE_IMAGE_SIZE
+            );
+        }
         txInPreImage.chainId = BaseParserLibrary.extractUInt32(src, dataOffset);
-        require(
-            txInPreImage.chainId > 0,
-            string(
-                abi.encodePacked(
-                    TXInPreImageParserLibraryErrorCodes.TXINPREIMAGEPARSERLIB_CHAINID_ZERO
-                )
-            )
-        );
+        if (txInPreImage.chainId == 0) {
+            revert GenericParserLibraryErrors.ChainIdZero();
+        }
         txInPreImage.consumedTxIdx = BaseParserLibrary.extractUInt32(src, dataOffset + 4);
         txInPreImage.consumedTxHash = BaseParserLibrary.extractBytes32(src, dataOffset + 16);
     }

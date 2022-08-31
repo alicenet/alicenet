@@ -10,13 +10,14 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/dgraph-io/badger/v2"
+	"google.golang.org/grpc"
+
 	"github.com/alicenet/alicenet/consensus/objs"
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/crypto"
 	"github.com/alicenet/alicenet/interfaces"
 	"github.com/alicenet/alicenet/logging"
-	"github.com/dgraph-io/badger/v2"
-	"google.golang.org/grpc"
 )
 
 type testingProxyCall int
@@ -88,15 +89,18 @@ func (trb *testingProxy) expect(trbc []testingProxyCall, rtypes [][]interface{})
 	trb.returns = rtypes
 }
 
-func (dv *testingProxy) SetTxCacheItem(txn *badger.Txn, height uint32, txHash []byte, tx []byte) error {
+func (dv *testingProxy) SetTxCacheItem(txn *badger.Txn, height uint32, txHash, tx []byte) error {
 	panic("")
 }
+
 func (dv *testingProxy) GetTxCacheItem(txn *badger.Txn, height uint32, txHash []byte) ([]byte, error) {
 	panic("")
 }
+
 func (dv *testingProxy) SetCommittedBlockHeader(txn *badger.Txn, v *objs.BlockHeader) error {
 	panic("")
 }
+
 func (dv *testingProxy) TxCacheDropBefore(txn *badger.Txn, beforeHeight uint32, maxKeys int) error {
 	panic("")
 }

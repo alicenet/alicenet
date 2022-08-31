@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT-open-group
-pragma solidity ^0.8.11;
+pragma solidity ^0.8.16;
 
-import {CryptoLibraryErrorCodes} from "contracts/libraries/errorCodes/CryptoLibraryErrorCodes.sol";
+import "contracts/libraries/errors/CryptoLibraryErrors.sol";
 
 /*
     Author: Philipp Schindler
@@ -173,10 +173,10 @@ library CryptoLibrary {
             // 64       size of call return value, i.e. 64 bytes / 512 bit for a BN256 curve point
             success := staticcall(not(0), 0x06, input, 128, result, 64)
         }
-        require(
-            success,
-            string(abi.encodePacked(CryptoLibraryErrorCodes.CRYPTOLIB_ELLIPTIC_CURVE_ADDITION))
-        );
+
+        if (!success) {
+            revert CryptoLibraryErrors.EllipticCurveAdditionFailed();
+        }
     }
 
     function bn128Multiply(uint256[3] memory input)
@@ -199,7 +199,9 @@ library CryptoLibrary {
             // 64       size of call return value, i.e. 64 bytes / 512 bit for a BN256 curve point
             success := staticcall(not(0), 0x07, input, 96, result, 64)
         }
-        require(success, "elliptic curve multiplication failed");
+        if (!success) {
+            revert CryptoLibraryErrors.EllipticCurveMultiplicationFailed();
+        }
     }
 
     function bn128CheckPairing(uint256[12] memory input) internal view returns (bool) {
@@ -213,7 +215,9 @@ library CryptoLibrary {
             // 32        size of result (one 32 byte boolean!)
             success := staticcall(not(0), 0x08, input, 384, result, 32)
         }
-        require(success, "elliptic curve pairing failed");
+        if (!success) {
+            revert CryptoLibraryErrors.EllipticCurvePairingFailed();
+        }
         return result[0] == 1;
     }
 
@@ -248,7 +252,9 @@ library CryptoLibrary {
             // data
             result := mload(p)
         }
-        require(success, "modular exponentiation falied");
+        if (!success) {
+            revert CryptoLibraryErrors.ModularExponentiationFailed();
+        }
     }
 
     // Sign takes byte slice message and private key privK.
@@ -358,14 +364,13 @@ library CryptoLibrary {
         // Again, this is to ensure that even if something strange happens, we
         // will not return an invalid curvepoint.
         h = bn128Add([h0[0], h0[1], h1[0], h1[1]]);
-        require(
-            bn128IsOnCurve(h),
-            string(abi.encodePacked(CryptoLibraryErrorCodes.CRYPTOLIB_HASH_POINT_NOT_ON_CURVE))
-        );
-        require(
-            safeSigningPoint(h),
-            string(abi.encodePacked(CryptoLibraryErrorCodes.CRYPTOLIB_HASH_POINT_UNSAFE))
-        );
+
+        if (!bn128IsOnCurve(h)) {
+            revert CryptoLibraryErrors.HashPointNotOnCurve();
+        }
+        if (!safeSigningPoint(h)) {
+            revert CryptoLibraryErrors.HashPointUnsafeForSigning();
+        }
     }
 
     /// HashToG1 takes byte slice message and outputs an element of G1. Optimized version of `hashToG1`
@@ -738,10 +743,9 @@ library CryptoLibrary {
         // From Fouque-Tibouchi 2012, the only way to get an invalid point is
         // when t == 0, but we have already taken care of that to ensure that
         // when t == 0, we still return a valid curve point.
-        require(
-            bn128IsOnCurve([x, y]),
-            string(abi.encodePacked(CryptoLibraryErrorCodes.CRYPTOLIB_POINT_NOT_ON_CURVE))
-        );
+        if (!bn128IsOnCurve([x, y])) {
+            revert CryptoLibraryErrors.PointNotOnCurve();
+        }
 
         h[0] = x;
         h[1] = y;
@@ -793,27 +797,18 @@ library CryptoLibrary {
         uint256 threshold,
         uint256[] memory invArray
     ) internal view returns (uint256[2] memory) {
-        require(
-            sigs.length == indices.length,
-            string(
-                abi.encodePacked(
-                    CryptoLibraryErrorCodes.CRYPTOLIB_SIGNATURES_INDICES_LENGTH_MISMATCH
-                )
-            )
-        );
-        require(
-            sigs.length > threshold,
-            string(
-                abi.encodePacked(
-                    CryptoLibraryErrorCodes.CRYPTOLIB_SIGNATURES_LENGTH_THRESHOLD_NOT_MET
-                )
-            )
-        );
+        if (sigs.length != indices.length) {
+            revert CryptoLibraryErrors.SignatureIndicesLengthMismatch(sigs.length, indices.length);
+        }
+
+        if (sigs.length <= threshold) {
+            revert CryptoLibraryErrors.SignaturesLengthThresholdNotMet(sigs.length, threshold);
+        }
+
         uint256 maxIndex = computeArrayMax(indices);
-        require(
-            checkInverses(invArray, maxIndex),
-            string(abi.encodePacked(CryptoLibraryErrorCodes.CRYPTOLIB_INVERSE_ARRAY_INCORRECT))
-        );
+        if (!checkInverses(invArray, maxIndex)) {
+            revert CryptoLibraryErrors.InverseArrayIncorrect();
+        }
         uint256[2] memory grpsig;
         grpsig = lagrangeInterpolationG1(sigs, indices, threshold, invArray);
         return grpsig;
@@ -829,7 +824,12 @@ library CryptoLibrary {
         uint256 threshold,
         uint256[] memory invArray
     ) internal view returns (uint256[2] memory) {
-        require(pointsG1.length == indices.length, "Mismatch between pointsG1 and indices arrays");
+        if (pointsG1.length != indices.length) {
+            revert CryptoLibraryErrors.SignatureIndicesLengthMismatch(
+                pointsG1.length,
+                indices.length
+            );
+        }
         uint256[2] memory val;
         val[0] = 0;
         val[1] = 0;
@@ -871,7 +871,9 @@ library CryptoLibrary {
         uint256 j,
         uint256[] memory invArray
     ) internal pure returns (uint256) {
-        require(k != j, "Must have k != j when computing rj partial constants");
+        if (k == j) {
+            revert CryptoLibraryErrors.KMustNotEqualJ();
+        }
         uint256 tmp1 = k;
         uint256 tmp2;
         if (k > j) {
@@ -980,10 +982,9 @@ library CryptoLibrary {
         uint256 kInv;
         uint256 res;
         bool validInverses = true;
-        require(
-            (maxIndex - 1) <= invArray.length,
-            "checkInverses: insufficient inverses for group signature calculation"
-        );
+        if ((maxIndex - 1) > invArray.length) {
+            revert CryptoLibraryErrors.InvalidInverseArrayLength();
+        }
         for (k = 1; k < maxIndex; k++) {
             kInv = invArray[k - 1];
             res = mulmod(k, kInv, GROUP_ORDER);

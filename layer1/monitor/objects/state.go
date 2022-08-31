@@ -3,19 +3,21 @@ package objects
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/alicenet/alicenet/bridge/bindings"
 	"math/big"
 	"strings"
 	"sync"
+
+	"github.com/dgraph-io/badger/v2"
+	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/constants/dbprefix"
 	"github.com/alicenet/alicenet/logging"
 	"github.com/alicenet/alicenet/utils"
-	"github.com/dgraph-io/badger/v2"
-	"github.com/ethereum/go-ethereum/common"
 )
 
-// MonitorState contains info required to monitor Ethereum
+// MonitorState contains info required to monitor Ethereum.
 type MonitorState struct {
 	sync.RWMutex           `json:"-"`
 	Version                uint8                                 `json:"version"`
@@ -33,16 +35,17 @@ type MonitorState struct {
 	ValidatorSets          map[uint32]ValidatorSet               `json:"validatorSets"`
 	Validators             map[uint32][]Validator                `json:"validators"`
 	PotentialValidators    map[common.Address]PotentialValidator `json:"potentialValidators"`
+	CanonicalVersion       bindings.CanonicalVersion             `json:"canonicalVersion"`
 }
 
-// ValidatorSet is summary information about a ValidatorSet that participated on ETHDKG
+// ValidatorSet is summary information about a ValidatorSet that participated on ETHDKG.
 type ValidatorSet struct {
 	ValidatorCount          uint8       `json:"validator_count"`
 	GroupKey                [4]*big.Int `json:"group_key"`
 	NotBeforeAliceNetHeight uint32      `json:"not_before_mad_net_height"`
 }
 
-// Validator contains information about a Validator that participated on ETHDKG
+// Validator contains information about a Validator that participated on ETHDKG.
 type Validator struct {
 	Account   common.Address `json:"account"`
 	Index     uint8          `json:"index"`
@@ -50,7 +53,7 @@ type Validator struct {
 }
 
 // Potential Validator contains information about a validators that entered the
-// pool, but might not participated on ETHDKG yet
+// pool, but might not participated on ETHDKG yet.
 type PotentialValidator struct {
 	Account common.Address `json:"account"`
 	TokenID uint64         `json:"tokenID"`
@@ -64,7 +67,7 @@ func NewMonitorState() *MonitorState {
 	}
 }
 
-// Get a copy of the monitor state that is saved on disk
+// Get a copy of the monitor state that is saved on disk.
 func GetMonitorState(db *db.Database) (*MonitorState, error) {
 	monState := NewMonitorState()
 	err := monState.LoadState(db)
@@ -87,7 +90,7 @@ func (s *MonitorState) String() string {
 }
 
 // Clone builds a deep copy of a small portion of state
-// TODO Make this create a complete clone of state
+// TODO Make this create a complete clone of state.
 func (s *MonitorState) Clone() *MonitorState {
 	ns := NewMonitorState()
 
@@ -106,7 +109,6 @@ func (s *MonitorState) Clone() *MonitorState {
 }
 
 func (s *MonitorState) LoadState(db *db.Database) error {
-
 	logger := logging.GetLogger("staterecover").WithField("State", "monitorState")
 
 	s.Lock()
@@ -131,11 +133,9 @@ func (s *MonitorState) LoadState(db *db.Database) error {
 	}
 
 	return nil
-
 }
 
 func (mon *MonitorState) PersistState(db *db.Database) error {
-
 	logger := logging.GetLogger("staterecover").WithField("State", "monitorState")
 
 	mon.Lock()
@@ -167,7 +167,7 @@ func (mon *MonitorState) PersistState(db *db.Database) error {
 	return nil
 }
 
-// Diff builds a textual description between states
+// Diff builds a textual description between states.
 func (s *MonitorState) Diff(o *MonitorState) (string, bool) {
 	s.RLock()
 	defer s.RUnlock()

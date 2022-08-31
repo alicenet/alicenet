@@ -117,6 +117,22 @@ describe("Sigmoid unit tests", async () => {
       const retSqrt = await sigmoid.sqrt(x);
       expect(retSqrt).to.be.equal(trueSqrt);
     });
+    it("Integer Square Root 17:    (2**128 - 1)**2", async function () {
+      const x = BigNumber.from(
+        "0xfffffffffffffffffffffffffffffffe00000000000000000000000000000001"
+      );
+      const trueSqrt = BigNumber.from("0xffffffffffffffffffffffffffffffff");
+      const retSqrt = await sigmoid.sqrt(x);
+      expect(retSqrt).to.be.equal(trueSqrt);
+    });
+    it("Integer Square Root 18:    (2**128 - 1)**2 - 1", async function () {
+      const x = BigNumber.from(
+        "0xfffffffffffffffffffffffffffffffe00000000000000000000000000000000"
+      );
+      const trueSqrt = BigNumber.from("0xfffffffffffffffffffffffffffffffe");
+      const retSqrt = await sigmoid.sqrt(x);
+      expect(retSqrt).to.be.equal(trueSqrt);
+    });
   });
 
   describe("safeAbsSub Tests", async () => {
@@ -293,7 +309,7 @@ describe("Sigmoid unit tests", async () => {
       expect(retC).to.be.equal(trueC);
     });
     it("P Constant D", async function () {
-      const trueD = 1;
+      const trueD = 4;
       const retD = await sigmoid.pConstD();
       expect(retD).to.be.equal(trueD);
     });

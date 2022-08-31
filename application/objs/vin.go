@@ -1,9 +1,9 @@
 package objs
 
-// Vin is a vector of TxIn objects
+// Vin is a vector of TxIn objects.
 type Vin []*TXIn
 
-// UTXOID returns the list of UTXOIDs from each TXIn in Vin
+// UTXOID returns the list of UTXOIDs from each TXIn in Vin.
 func (vin Vin) UTXOID() ([][]byte, error) {
 	ids := [][]byte{}
 	for i := 0; i < len(vin); i++ {
@@ -16,7 +16,7 @@ func (vin Vin) UTXOID() ([][]byte, error) {
 	return ids, nil
 }
 
-// PreHash returns the list of PreHashs from each TXIn in Vin
+// PreHash returns the list of PreHashs from each TXIn in Vin.
 func (vin Vin) PreHash() ([][]byte, error) {
 	ids := [][]byte{}
 	for i := 0; i < len(vin); i++ {
@@ -30,7 +30,7 @@ func (vin Vin) PreHash() ([][]byte, error) {
 }
 
 // IsDeposit returns a list of bools specifying if each TXTn in Vin
-// is a deposit
+// is a deposit.
 func (vin Vin) IsDeposit() []bool {
 	ids := []bool{}
 	for i := 0; i < len(vin); i++ {

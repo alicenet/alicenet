@@ -13,7 +13,7 @@ type PendingHdrLeafKey struct {
 }
 
 // UnmarshalBinary takes a byte slice and returns the corresponding
-// PendingHdrLeafKey object
+// PendingHdrLeafKey object.
 func (b *PendingHdrLeafKey) UnmarshalBinary(data []byte) error {
 	if b == nil {
 		return errorz.ErrInvalid{}.New("PendingHdrLeafKey.UnmarshalBinary; phlk not initialized")
@@ -27,7 +27,7 @@ func (b *PendingHdrLeafKey) UnmarshalBinary(data []byte) error {
 }
 
 // MarshalBinary takes the PendingHdrLeafKey object and returns the canonical
-// byte slice
+// byte slice.
 func (b *PendingHdrLeafKey) MarshalBinary() ([]byte, error) {
 	if b == nil {
 		return nil, errorz.ErrInvalid{}.New("PendingHdrLeafKey.MarshalBinary; phlk not initialized")

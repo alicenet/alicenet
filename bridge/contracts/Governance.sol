@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT-open-group
-pragma solidity ^0.8.11;
+pragma solidity ^0.8.16;
 
 import "contracts/interfaces/IGovernor.sol";
-import {GovernanceErrorCodes} from "contracts/libraries/errorCodes/GovernanceErrorCodes.sol";
+import "contracts/libraries/errors/GovernanceErrors.sol";
 
 /// @custom:salt Governance
 /// @custom:deploy-type deployUpgradeable
@@ -19,10 +19,9 @@ contract Governance is IGovernor {
         uint256 key,
         bytes32 value
     ) external {
-        require(
-            msg.sender == _factory,
-            string(abi.encodePacked(GovernanceErrorCodes.GOVERNANCE_ONLY_FACTORY_ALLOWED))
-        );
+        if (msg.sender != _factory) {
+            revert GovernanceErrors.OnlyFactoryAllowed(msg.sender);
+        }
         emit ValueUpdated(epoch, key, value, msg.sender);
     }
 }

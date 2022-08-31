@@ -1,21 +1,18 @@
 // SPDX-License-Identifier: MIT-open-group
-pragma solidity ^0.8.11;
+pragma solidity ^0.8.16;
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
 import "contracts/interfaces/IERC721Transferable.sol";
 import "contracts/utils/ImmutableAuth.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "contracts/BToken.sol";
-import {BridgePoolErrorCodes} from "contracts/libraries/errorCodes/BridgePoolErrorCodes.sol";
+import "contracts/libraries/errors/BridgePoolErrors.sol";
 import "contracts/libraries/parsers/MerkleProofParserLibrary.sol";
 import "contracts/utils/MerkleProofLibrary.sol";
 import "contracts/interfaces/IBridgePool.sol";
 import "contracts/Snapshots.sol";
 import "contracts/libraries/parsers/BClaimsParserLibrary.sol";
 import "contracts/utils/ERC20SafeTransfer.sol";
-import "contracts/BridgePoolDepositNotifier.sol";
-import "contracts/BridgeRouter.sol";
 
 /// @custom:salt LocalERC721BridgePoolV1
 /// @custom:deploy-type deployStatic
@@ -25,8 +22,7 @@ contract LocalERC721BridgePoolV1 is
     IBridgePool,
     Initializable,
     ImmutableSnapshots,
-    ImmutableBToken,
-    ImmutableBridgePoolDepositNotifier,
+    ImmutableBridgePoolFactory,
     ImmutableBridgeRouter
 {
     using MerkleProofParserLibrary for bytes;
@@ -44,7 +40,7 @@ contract LocalERC721BridgePoolV1 is
 
     constructor() ImmutableFactory(msg.sender) {}
 
-    function initialize(address erc721Contract_) public onlyBridgeRouter initializer {
+    function initialize(address erc721Contract_) public onlyBridgePoolFactory initializer {
         _erc721Contract = erc721Contract_;
     }
 
@@ -53,22 +49,6 @@ contract LocalERC721BridgePoolV1 is
     /// @param number The token ID of the NFT to be deposited
     function deposit(address msgSender, uint256 number) public onlyBridgeRouter {
         IERC721Transferable(_erc721Contract).safeTransferFrom(msgSender, address(this), number);
-        uint8 bridgeType = 2;
-        uint256 chainId = 1337;
-        uint16 bridgeImplVersion = 1;
-        bytes32 salt = BridgeRouter(_bridgeRouterAddress()).getBridgePoolSalt(
-            _erc721Contract,
-            bridgeType,
-            chainId,
-            bridgeImplVersion
-        );
-        BridgePoolDepositNotifier(_bridgePoolDepositNotifierAddress()).doEmit(
-            salt,
-            _erc721Contract,
-            msgSender,
-            bridgeType,
-            number
-        );
     }
 
     /// @notice Transfer token to sender upon a verificable proof of burn in sidechain
@@ -80,14 +60,9 @@ contract LocalERC721BridgePoolV1 is
         MerkleProofParserLibrary.MerkleProof memory merkleProof = encodedMerkleProof
             .extractMerkleProof();
         UTXO memory burnedUTXO = abi.decode(encodedBurnedUTXO, (UTXO));
-        require(
-            burnedUTXO.owner == msg.sender,
-            string(
-                abi.encodePacked(
-                    BridgePoolErrorCodes.BRIDGEPOOL_RECEIVER_IS_NOT_OWNER_ON_PROOF_OF_BURN_UTXO
-                )
-            )
-        );
+        if (burnedUTXO.owner != msg.sender) {
+            revert BridgePoolErrors.ReceiverIsNotOwnerOnProofOfBurnUTXO();
+        }
         merkleProof.verifyInclusion(bClaims.stateRoot);
         IERC721Transferable(_erc721Contract).safeTransferFrom(
             address(this),
@@ -95,4 +70,5 @@ contract LocalERC721BridgePoolV1 is
             burnedUTXO.value // tokenId
         );
     }
+
 }

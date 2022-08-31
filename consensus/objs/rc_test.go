@@ -10,7 +10,7 @@ import (
 
 func TestRCert(t *testing.T) {
 	bnVal := &crypto.BNGroupValidator{}
-	//secpVal := &crypto.Secp256k1Validator{}
+	// secpVal := &crypto.Secp256k1Validator{}
 	bclaimsList, txHashListList, err := generateChain(3)
 	if err != nil {
 		t.Fatal(err)

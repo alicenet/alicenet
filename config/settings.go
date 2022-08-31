@@ -37,11 +37,7 @@ type ethereumConfig struct {
 	StartingBlock            uint64
 	TxMaxGasFeeAllowedInGwei uint64
 	TxMetricsDisplay         bool
-}
-
-type monitorConfig struct {
-	BatchSize int
-	Interval  time.Duration
+	ProcessingBlockBatchSize uint64
 }
 
 type transportConfig struct {
@@ -56,7 +52,6 @@ type transportConfig struct {
 	PrivateKey                 string
 	BootNodeAddresses          string
 	P2PListeningAddress        string
-	DiscoveryListeningAddress  string
 	LocalStateListeningAddress string
 	UPnP                       bool
 }
@@ -117,16 +112,16 @@ type configuration struct {
 	Logging               loggingConfig
 	Deploy                deployConfig
 	Ethereum              ethereumConfig
-	Monitor               monitorConfig
 	Transport             transportConfig
 	Utils                 utilsConfig
 	Validator             validatorConfig
 	Firewalld             firewalldConfig
 	Chain                 chainConfig
 	BootNode              bootnodeConfig
+	Version               string
 }
 
-// Configuration contains all active settings
+// Configuration contains all active settings.
 var Configuration configuration
 
 type s struct {
@@ -135,7 +130,7 @@ type s struct {
 
 var flagMap map[s]*pflag.Flag
 
-//SetBinding registers a particular Flag as tied to a particular pointer
+// SetBinding registers a particular Flag as tied to a particular pointer.
 func SetBinding(ptr interface{}, f *pflag.Flag) {
 	logger := logging.GetLogger("settings")
 	logger.SetLevel(logrus.WarnLevel)
@@ -146,8 +141,8 @@ func SetBinding(ptr interface{}, f *pflag.Flag) {
 	flagMap[s{ptr}] = f
 }
 
-//SetValue takes a ptr and updates the value of the flag that's pointing to it
-func SetValue(ptr interface{}, value interface{}) {
+// SetValue takes a ptr and updates the value of the flag that's pointing to it.
+func SetValue(ptr, value interface{}) {
 	logger := logging.GetLogger("settings")
 	f, ok := flagMap[s{ptr}]
 	if !ok {

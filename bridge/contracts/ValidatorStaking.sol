@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT-open-group
-pragma solidity ^0.8.11;
+pragma solidity ^0.8.16;
 
 import "contracts/libraries/StakingNFT/StakingNFT.sol";
 
@@ -37,12 +37,9 @@ contract ValidatorStaking is StakingNFT {
         uint256 amount_,
         uint256 lockDuration_
     ) public override withCircuitBreaker onlyValidatorPool returns (uint256 tokenID) {
-        require(
-            lockDuration_ <= _MAX_MINT_LOCK,
-            string(
-                abi.encodePacked(StakingNFTErrorCodes.STAKENFT_LOCK_DURATION_GREATER_THAN_MINT_LOCK)
-            )
-        );
+        if (lockDuration_ > _MAX_MINT_LOCK) {
+            revert StakingNFTErrors.LockDurationGreaterThanMintLock();
+        }
         tokenID = _mintNFT(to_, amount_);
         if (lockDuration_ > 0) {
             _lockPosition(tokenID, lockDuration_);

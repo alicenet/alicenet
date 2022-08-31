@@ -1,8 +1,9 @@
 package indexer
 
 import (
-	"github.com/alicenet/alicenet/utils"
 	"github.com/dgraph-io/badger/v2"
+
+	"github.com/alicenet/alicenet/utils"
 )
 
 func NewRefCounter(p prefixFunc) *RefCounter {
@@ -17,12 +18,12 @@ type RefCounterKey struct {
 	key []byte
 }
 
-// MarshalBinary returns the byte slice for the key object
+// MarshalBinary returns the byte slice for the key object.
 func (rck *RefCounterKey) MarshalBinary() []byte {
 	return utils.CopySlice(rck.key)
 }
 
-// UnmarshalBinary takes in a byte slice to set the key object
+// UnmarshalBinary takes in a byte slice to set the key object.
 func (rck *RefCounterKey) UnmarshalBinary(data []byte) {
 	rck.key = utils.CopySlice(data)
 }

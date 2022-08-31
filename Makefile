@@ -9,11 +9,11 @@ init:
 
 .PHONY: build
 build: init
-	go build -o $(BINARY_NAME) ./cmd/main.go;
+	go build -ldflags="-X main.version=$(shell git describe --tags)" -o $(BINARY_NAME) ./cmd/main.go;
 
 .PHONY: race
 race:
-	go build -o $(RACE_DETECTOR) -race ./cmd/main.go;
+	go build -ldflags="-X main.version=$(shell git describe --tags)" -o $(RACE_DETECTOR) -race ./cmd/main.go;
 
 .PHONY: lint
 lint:
@@ -24,8 +24,9 @@ lint:
 .PHONY: format
 format:
 	buf format -w
-	go mod tidy
+	go mod tidy -v
 	cd bridge && npm run format
+	golangci-lint run -E gci,godot,gofumpt,misspell,whitespace --fix
 
 .PHONY: generate
 generate: generate-bridge generate-go

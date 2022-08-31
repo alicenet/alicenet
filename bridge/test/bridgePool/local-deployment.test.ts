@@ -2,13 +2,14 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { ethers } from "hardhat";
 import { expect } from "../chai-setup";
 import { factoryCallAnyFixture, Fixture, getFixture } from "../setup";
-import { maxEth, maxTokens, tokenTypes } from "./setup";
+import { tokenTypes } from "./setup";
 let user: SignerWithAddress;
 let fixture: Fixture;
 let depositCallData: any;
 let encodedDepositCallData: string;
 const valueSent = ethers.utils.parseEther("1.0");
 const valueOrId = 100; // value if ERC20 , tokenId otherwise
+const bridgeVersion = 1;
 
 tokenTypes.forEach(function (run) {
   describe(
@@ -19,6 +20,8 @@ tokenTypes.forEach(function (run) {
         [, user] = await ethers.getSigners();
         depositCallData = {
           ERCContract: fixture[run.options.ercContractName].address,
+          destinationAccountType: 1, // 1 for secp256k1, 2 for bn128
+          destinationAccount: ethers.constants.AddressZero,
           tokenType: run.options.poolType,
           number: valueOrId,
           chainID: 1337,
@@ -26,16 +29,16 @@ tokenTypes.forEach(function (run) {
         };
         encodedDepositCallData = ethers.utils.defaultAbiCoder.encode(
           [
-            "tuple(address ERCContract, uint8 tokenType, uint256 number, uint256 chainID, uint16 poolVersion)",
+            "tuple(address ERCContract, uint8 destinationAccountType, address destinationAccount, uint8 tokenType, uint256 number, uint256 chainID, uint16 poolVersion)",
           ],
           [depositCallData]
         );
       });
 
-      it("Should deploy new BridgePool as factory if public pool deployment is not enabled", async () => {
+      it.only("Should deploy new BridgePool as factory if public pool deployment is not enabled", async () => {
         await factoryCallAnyFixture(
           fixture,
-          "bridgeRouter",
+          "bridgePoolFactory",
           "deployNewLocalPool",
           [
             run.options.poolType,
@@ -43,13 +46,13 @@ tokenTypes.forEach(function (run) {
             1,
           ]
         );
-        await expect(
+        await
           fixture.bToken
             .connect(user)
-            .payAndDeposit(maxEth, maxTokens, encodedDepositCallData, {
+            .depositTokensOnBridges(bridgeVersion, encodedDepositCallData, {
               value: valueSent,
             })
-        ).to.be.revertedWith(run.options.errorReason);
+
       });
 
       it("Should not deploy new BridgePool as user if public pool deployment is not enabled", async () => {
@@ -68,7 +71,7 @@ tokenTypes.forEach(function (run) {
       it("Should deploy new BridgePool as user if public pool deployment is enabled", async () => {
         await factoryCallAnyFixture(
           fixture,
-          "bridgeRouter",
+          "bridgePoolFactory",
           "togglePublicPoolDeployment",
           []
         );
@@ -77,13 +80,13 @@ tokenTypes.forEach(function (run) {
           fixture[run.options.ercContractName].address,
           1
         );
-        await expect(
-          fixture.bToken
-            .connect(user)
-            .payAndDeposit(maxEth, maxTokens, encodedDepositCallData, {
-              value: valueSent,
-            })
-        ).to.be.revertedWith(run.options.errorReason);
+        /*         await expect(
+                  fixture.bToken
+                    .connect(user)
+                    .payAndDeposit(maxEth, maxTokens, encodedDepositCallData, {
+                      value: valueSent,
+                    })
+                ).to.be.revertedWith(run.options.errorReason); */
       });
 
       it("Should not deploy two BridgePools with same ERC contract and version", async () => {

@@ -209,7 +209,7 @@ describe("Cli tasks", async () => {
     expect(metaContractData.metaAddress).to.equal(expectedMetaAddress);
   });
 
-  it("deploys all contracts in deploymentList", async () => {
+  xit("deploys all contracts in deploymentList", async () => {
     await cliDeployContracts();
   });
 });

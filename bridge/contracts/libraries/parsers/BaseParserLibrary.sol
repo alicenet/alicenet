@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT-open-group
-pragma solidity ^0.8.11;
+pragma solidity ^0.8.16;
 
-import {BaseParserLibraryErrors} from "contracts/libraries/errors/BaseParserLibraryErrors.sol";
+import "contracts/libraries/errors/BaseParserLibraryErrors.sol";
 
 library BaseParserLibrary {
     // Size of a word, in bytes.
