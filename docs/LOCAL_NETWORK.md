@@ -318,7 +318,7 @@ Now, add the following private key (account) for the local ethereum admin accoun
 0x6aea45ee1273170fb525da34015e4f20ba39fe792f486ba74020bcacc9badfc1
 ```
 
-> Important: This private is not secure. Ensure you do not use it on production blockchains, or else you risk losing funds.
+> Important: This private key is not secure. Ensure you do not use it on production blockchains, or else you risk losing funds.
 
 Finally, import the ALCA and ALCB tokens to metamask. You can get the address in the output of your [deployment script](#deploying-the-alicenet-ethereum-smart-contracts-locally).
 
