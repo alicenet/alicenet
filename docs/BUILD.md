@@ -2,7 +2,7 @@
 
 ## Support
 
-At the moment, the compilation of the alicenet binary and its operation were only tested on Linux and MacOs systems. Support for Windows may be added in the future.
+The compilation of the alicenet binary supported on Linux, MacOs and Windows with [WSL2](https://docs.microsoft.com/en-us/windows/wsl/install). Support for pure Windows may be added in the future.
 
 ## Prerequisites
 
@@ -27,7 +27,7 @@ git clone --recursive https://github.com/alicenet/alicenet.git
 cd alicenet
 ```
 
-If you want to help to develop AliceNet, you should fork AliceNet. See our [Contribution Guide Lines](../CONTRIBUTING.md) for more details.
+If you want to help on the AliceNet development, make sure to check out our [Contribution Guide Lines](../CONTRIBUTING.md) for more details.
 
 ## Installing dependencies
 
@@ -57,24 +57,26 @@ You will need to install some extra-dependencies and run an additional command t
 Before generating the new bindings, you will need to install the [capnproto package](https://capnproto.org/install.html). You can do this by running the following command on the terminal:
 
 Linux Users (Debian / Ubuntu):
+
 ```shell
 sudo apt-get install capnproto
 ```
 
 MacOs users
+
 ```shell
 brew install capnp
 ```
 
 ### Adding GOPATH to your PATH environment
 
-Make sure that you have the `go binary` and the `GOPATH` in your `PATH` environment. You can do this by adding the following line to your terminal configuration file (e.g $HOME/.bashrc, $HOME/.zshrc):
+Make sure that you have the `go binary` and the `GOPATH` in your `PATH` environment. You can do this by adding the following line to your terminal configuration file (e.g `$HOME/.bashrc`, `$HOME/.zshrc`):
 
 ```shell
 export PATH="$PATH:$(go env GOPATH)/bin"
 ```
 
-Note: Changes made to a configuration file may not apply until you restart your terminal.
+> Note: Changes made to a configuration file may not apply until you restart your terminal.
 
 ### Generating the new bindings
 
@@ -104,6 +106,6 @@ make build
 
 ## What's next
 
-Once you have an AliceNet binary, see the documentation [How to configure and run your node](CONFIGURE.md) to run your own node against one of AliceNet's networks and check out our official [wallet](https://github.com/alicenet/wallet).
+Once you have an AliceNet binary, see the documentation [How to configure and run your node](CONFIGURE.md) to run your own node against one of AliceNet's networks and check our official [wallet](https://github.com/alicenet/wallet) to unlock the full potential of your AliceNet node.
 
 Or, check the [Testing Documentation](./TESTING.md) or [Running a full local AliceNet network](./LOCAL_NETWORK.md) to see how to run the AliceNet tests.

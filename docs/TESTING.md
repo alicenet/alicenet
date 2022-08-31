@@ -46,8 +46,7 @@ To run the golang integration tests, open a new terminal in the repository root,
 go test -race -tags=integration -timeout=30m -v github.com/alicenet/alicenet/layer1/...
 ```
 
-If you want to have even more verbose output, during the integration tests you can set the env variable `ENABLE_SCRIPT_LOG` to `true`.
-For instance to run blockchain tests you will execute
+During the integration tests, if you want to have even more verbose output, you can set the env variable `ENABLE_SCRIPT_LOG` to `true`.
 
 ```shell
 ENABLE_SCRIPT_LOG=true go test -race -tags=integration -timeout=30m -v github.com/alicenet/alicenet/layer1/...

@@ -10,15 +10,15 @@ Official repository for the AliceNet blockchain.
 
 AliceNet is a Proof-Of-Stake, UTXO based blockchain written in golang that enables high-speed bridging between Layer 1 and Layer 2 protocols while emphasizing strong security and identity standards.
 
-To learn more, check out our official [website](https://https://www.alice.net/) and join our official [Discord community](Discord-7289DA).
+To learn more, check out our official [website](https://https://www.alice.net/) and join our official [Discord community](https://discord.gg/bkhW2KUWDu).
 
 ## Quick Start
 
-First step to run an AliceNet blockchain node is to get an AliceNet binary.
+The first step to run an AliceNet blockchain node is to get an AliceNet binary.
 
-Pre-compiled binaries are available in our [release page](https://github.com/alicenet/alicenet/releases). For instructions about how to build and install from the source code, see the [Building instructions](./docs/BUILD.md).
+Pre-compiled binaries are available in our [release page](https://github.com/alicenet/alicenet/releases) and instructions on how to build the binary from the source code, can be found in the [Building from Source](./docs/BUILD.md) documentation.
 
-Once you have an AliceNet binary, see the documentation [How to configure and run your node](CONFIGURE.md) to run your own node against one of AliceNet's networks and check out our official [wallet](https://github.com/alicenet/wallet).
+Once you have an AliceNet binary, see the documentation [How to configure and run your node](./docs/CONFIGURE.md) to run your own node against one of AliceNet's networks and check out our official [wallet](https://github.com/alicenet/wallet) to unlock the full potential of your AliceNet node.
 
 ## Examples
 

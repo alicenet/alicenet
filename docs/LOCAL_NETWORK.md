@@ -1,32 +1,53 @@
 # Running a full local AliceNet network
 
-For testing purposes some times is useful to start a full local AliceNet network. In order to do so, you will need to run an ethereum test node, deploy all smart contract infra-structure, run all the validators and bootnode locally. This documentation will guide you step by step on how to run your own local AliceNet network.
+For testing purposes, some times is useful to start a full local AliceNet network. In order to do so, you will need to run an ethereum test node, deploy all smart contract infra-structure, run all the validators and bootnode locally. This documentation will guide you step by step on how to run your own local AliceNet network.
 
 ## Requirements
 
-In order to run the test suite, you must have followed and completed the [Building from Source](./BUILD.md) instructions.
+In order to run the AliceNet local network, you must have followed and completed the [Building from Source](./BUILD.md) instructions.
+
+**MacOs Users**
+
+The bash scripts that will be executed in the next steps will require some flags that don't come out with the MacOs version of `grep`, `ls`, `find` and `sed`. Therefore, we recommend that you install the GNU version of these tools before proceeding. You can do this by running the following commands in your terminal:
+
+```shell
+brew install grep
+brew install gnu-sed
+brew install coreutils
+brew install findutils
+```
+
+In sequence, add the following lines to your terminal configuration file (e.g ~/.bashrc, ~/.zshrc, etc):
+
+```bash
+export PATH="/usr/local/opt/grep/libexec/gnubin:$PATH"
+export PATH="/usr/local/opt/gnu-sed/libexec/gnubin:$PATH"
+export PATH="$(brew --prefix)/opt/findutils/libexec/gnubin:$PATH"
+export PATH="/usr/local/opt/coreutils/libexec/gnubin:${PATH}"
+alias ls="/usr/local/opt/coreutils/libexec/gnubin/ls"
+```
 
 ## Setup Test Environment
 
-**[OPTIONAL] If already executed this step before, you may want to run the following command first, to clean any leftover files from a previous execution.**
+If already executed this step before, you may want to run the following command first to clean any leftover files from a previous execution.
 
 ```shell
 ./scripts/main.sh clean
 ```
 
-In order to initialize a chain, we need to create all configuration files first. To do this, open a new terminal and them run the following command:
+The first step to run you local network is to create all configuration files. To do this, open a new terminal and then run:
 
 ```shell
 ./scripts/main.sh init {# number of validators 4-32}
 ```
 
-The command above will generate the configuration files, keystores, genesis file, and password files inside: `./scripts/generated`.
+The command above will generate the configuration files, keystores, genesis file, and password files inside: `./scripts/generated` folder.
 
 ## Running a bootnode
 
-In sequence, we need to run an AliceNet bootnode client. A bootnode is special AliceNet client that responsible for facilitating the node peering up in the network. Once a normal node starts, it reaches to a bootnode defined in the `config.toml` file to get information about other peers.
+As a next step, you need to run an AliceNet bootnode client. A bootnode is special AliceNet client that is responsible for facilitating the connection between nodes in the network. Once a normal node starts, it reaches to a bootnode defined in the `config.toml` file to get information about other peers.
 
-To run a bootnode, execute the following command:
+To run a bootnode, execute the following command in a new terminal:
 
 ```shell
 ./scripts/main.sh bootnode
@@ -34,7 +55,7 @@ To run a bootnode, execute the following command:
 
 ## Running an ethereum test node
 
-The next step is to run an ethereum test node so we can configure the AliceNet smart contract intra-structure.
+The next step is to run an ethereum test network in order to deploy the AliceNet smart contract intra-structure.
 
 To start the ethereum test node, just open a new terminal and run:
 
@@ -42,17 +63,17 @@ To start the ethereum test node, just open a new terminal and run:
 ./scripts/main.sh hardhat
 ```
 
-The above command will start a [hardhat node](https://hardhat.org/hardhat-network/docs/overview) locally, listening at `http://127.0.0.1:8545`
+The above command will start a [hardhat node instance](https://hardhat.org/hardhat-network/docs/overview) locally, listening at `http://127.0.0.1:8545`
 
 ## Deploying the AliceNet Ethereum smart contracts locally
 
-In order to deploy the AliceNet smart contract on your local ethereum node, open now another terminal and run the command bellow.
+In order to deploy the AliceNet smart contracts on your local ethereum network, just execute the following command in a new terminal:
 
 ```shell
 ./scripts/main.sh deploy
 ```
 
-The command will also register validators created by the `init` command and setup some AliceNet configurations in the smart contracts. After the command is executed, you should see something like this on your terminal:
+The command above will also register the validators created by the [init](#setup-test-environment) command and setup some AliceNet configurations in the smart contracts. After the command is executed, you should see something like this on your terminal:
 
 ```shell
 Deployed: AliceNetFactory, at address: 0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc
@@ -96,32 +117,32 @@ Registering Validators
 Setting the setMinimumIntervalBetweenSnapshots to 10
 ```
 
-In case you want to interact with ALCB and ALCA tokens using metamask and the AliceNet wallet, save the addresses of the `AliceNetFactory`, `ALCA` and `ALCB` contracts. In the example above, they are: `0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc`, `0x4426F1939966427C436c565a4532e41028c60301` and `0x3e4b55722e041c0FC55A90B6EBa50EA5d3f7c02A` respectively.
+In case you want to interact with ALCB and ALCA tokens using metamask and the AliceNet wallet, save the addresses of the `AliceNetFactory`, `ALCA` and `ALCB` contracts. In the example above, they are at: `0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc`, `0x4426F1939966427C436c565a4532e41028c60301` and `0x3e4b55722e041c0FC55A90B6EBa50EA5d3f7c02A` respectively.
 
 ## Running the validators node
 
-In sequence, we need to start the AliceNet validator nodes. For each validator, open a new terminal and run the following command:
+The next step, is to start the AliceNet validator nodes. For each validator, open a new terminal and run the following command:
 
 ```shell
 ./scripts/main.sh validator {# for the validator you want to start}
 ```
 
-Now, you need to wait for all validators to peer up. In the validator's terminal, check for the following log `Peers=24/x/3/0`. This log gives you an idea on how many validator have been discovered in the network for the selected validator. You will see the `x` value increasing overtime. Eg if you initialized 5 validator the Peers value looks like:
+Now, you need to wait for all validators to peer up. In the validator's terminal, check for the following log entry `Peers=24/x/3/0`. This log gives you an idea on how many validator have been discovered in the network for the selected validator. You will see the `x` value increasing overtime. Eg: if you initialized 5 validator the Peers value looks like:
 
 ```shell
 ...
-Peers=24/1/3/0
+...Peers=24/1/3/0...
 ...
-Peers=24/2/3/0
+...Peers=24/2/3/0...
 ...
-Peers=24/3/3/0
+...Peers=24/3/3/0..
 ...
-Peers=24/4/3/0
+...Peers=24/4/3/0...
 ```
 
 ## Starting ETHDKG
 
-Once all the validators node have discovered their peers, we wil need to start the ETHDKG. On a free terminal run the following command:
+Once all the validator nodes have discovered their peers, the next step is to start the ETHDKG. On a free terminal run the following command:
 
 ```shell
 ./scripts/main.sh ethdkg
@@ -143,7 +164,7 @@ Once you have executed the command above, you should see something similar to th
 ... msg="Previous BaseFee:17793 GasUsed:0 GasLimit:30000000" ...
 ```
 
-The whole process should take around 15 minutes to complete. At the end of the process, you should see something similar to this being displayed in the validators console:
+The whole process should take around 15 minutes to complete (you can speed up this process by changing some hardhat configurations, see the [Speeding up hardhat blocks](#speeding-up-hardhat-blocks) section for more details). At the end of the process, you should see something similar to this being displayed in the validators console:
 
 ```shell
 ... msg="ProcessValidatorSetCompleted()" ...
@@ -156,8 +177,7 @@ The whole process should take around 15 minutes to complete. At the end of the p
 ... msg="Complete ValidatorSet..." ... Validators="0x49df85efe81c958ae210accc012eed30147a2a98 0x6dcd347968c8cb034f83171910f55f928da705d3,0xa98a74404c7a0e8540a48bc35a056773d51af97c,0x838add5bda57f4273b1ad43c2560faa1a51e86a9,0x7586165ab696c645e747ba45d793546a6415a518"
 ```
 
-
-Once it has been completed, the validators should start validating (mining) blocks. At this point, you should see something like this:
+Once it has been completed, the validators will start validating (mining) blocks. At this point, you should see something like this:
 
 ```shell
 ... msg="HighestBlockFinalized: 326 -> 329, HighestBlockProcessed: 326 -> 329" Blk/Rnd=1/1 BlkHsh=42ec..1796 BlkTime=23m37.24s GRCnt=238 Peers=24/4/3/0 TxCt=0
@@ -171,29 +191,143 @@ Once it has been completed, the validators should start validating (mining) bloc
 
 The `Blk/Rnd=3/1` field indicates which is the current block being validated.
 
-Now you should be able to play around with the AliceNet environment (e.g do RPC calls against the node, do AliceNet transactions, ALCB deposits).
+Now you should finally be able to play around with the AliceNet environment (e.g do RPC calls against the node, do AliceNet transactions, ALCB deposits).
 
-## Minting ALCA (AliceNet Staking Tokens)
+## Hardhat utility scripts
 
-## Minting ALCB (AliceNet Utility Tokens)
+Inside the bridge folder, you will be able to find some useful hardhat scripts to run some actions against the AliceNet smart contracts. With these scripts, you will be able to change some AliceNet configs, mint some ALCB and ALCA, change the hardhat block time and many more. You can check all scripts available by executing the following command in a terminal inside the bridge folder (`cd ./bridge`):
 
-## Depositing ALCB into AliceNet
+```shell
+npx hardhat--help
+```
+
+### Speeding up hardhat blocks
+
+You can speed up the ETHDKG ceremony by changing hardhat mined blocks frequency by executing the following command inside the bridge folder (`cd ./bridge`):
+
+```shell
+npx hardhat --network dev setHardhatIntervalMining --interval AMOUNT_IN_MILLISECONDS
+```
+
+For a more realistic network, change the value back to the `13000` after ETHDKG has completed.
+
+### Minting ALCA (AToken/AliceNet Staking Tokens)
+
+Inside the bridge folder, you will be able to mint ALCA by running the following command:
+
+```shell
+npx hardhat --network dev mintATokenTo --factory-address ALICENET_FACTORY_ADDRESS --amount AMOUNT --to ETHEREUM_ADDRESS
+```
+
+For instance, assuming the addresses that we got from the [deployment section](#deploying-the-alicenet-ethereum-smart-contracts-locally):
+
+```shell
+npx hardhat --network dev mintATokenTo --factory-address 0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc --amount 1000000000000 --to 0x546F99F244b7B58B855330AE0E2BC1b30b41302F
+```
+
+You can check the AToken (ALCA) balance with:
+
+```shell
+npx hardhat --network dev getATokenBalance --factory-address ALICENET_FACTORY_ADDRESS --account ETHEREUM_ADDRESS
+```
+
+Using the example above:
+
+```shell
+npx hardhat --network dev getATokenBalance --factory-address 0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc --account 0x546F99F244b7B58B855330AE0E2BC1b30b41302F
+```
+
+You should see something like this on your terminal:
+
+```shell
+BigNumber { value: "1000000000000" }
+```
+
+### Minting ALCB (AliceNet Utility Tokens)
+
+Inside the bridge folder, you will be able to mint ALCB by running the following command:
+
+```shell
+npx hardhat --network dev mintBTokenTo --factory-address ALICENET_FACTORY_ADDRESS --amount MIN_AMOUNT_MINTED_EXPECTED --num-wei AMOUNT_OF_ETHER_TO_BUY_BTOKEN --to ETHEREUM_ADDRESS
+```
+
+For instance, assuming the addresses that we got from the [deployment section](#deploying-the-alicenet-ethereum-smart-contracts-locally):
+
+```shell
+npx hardhat --network dev mintBTokenTo --factory-address 0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc --amount 1 --to 0x546F99F244b7B58B855330AE0E2BC1b30b41302F --num-wei 5555555555555
+```
+
+Now, you can check the BToken (ALCB) balance with:
+
+```shell
+npx hardhat --network dev getBTokenBalance --factory-address ALICENET_FACTORY_ADDRESS --account ETHEREUM_ADDRESS
+```
+
+Using the example above:
+
+```shell
+npx hardhat --network dev getBTokenBalance --factory-address 0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc --account 0x546F99F244b7B58B855330AE0E2BC1b30b41302F
+```
+
+You should see something like this on your terminal:
+
+```shell
+BigNumber { value: "558374317491666" }
+```
+
+### Depositing ALCB into AliceNet
+
+In order to do AliceNet transactions, one have to have deposited BTokens (ALCB) into the AliceNet side chain to pay for the transaction gas. On your local testnet, you can deposit ALCB into the side chain with:
+
+```shell
+npx hardhat --network dev virtualMintDeposit --factory-address ALICENET_FACTORY_ADDRESS --account-type ACCOUNT_TYPE --deposit-owner-address ACCOUNT_ADDRESS --deposit-amount AMOUNT
+```
+
+The `ACCOUNT_TYPE` will be the type of account (elliptic curve used to generate the address) that you have inside the AliceNet chain. It will be `1` for `secp256k1` addresses and `2` for `BN128` addresses.
+
+Assuming the addresses that we got from the [deployment section](#deploying-the-alicenet-ethereum-smart-contracts-locally), you can a deposit to the main account with:
+
+```shell
+npx hardhat --network dev virtualMintDeposit --factory-address 0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc --account-type 1 --deposit-owner-address "0x546F99F244b7B58B855330AE0E2BC1b30b41302F" --deposit-amount 1000000000000000
+```
+
+In your terminal, you should see something like this:
+
+```shell
+...
+depositID: BigNumber { value: "2" },
+accountType: 1,
+depositor: '0x546F99F244b7B58B855330AE0E2BC1b30b41302F',
+amount: BigNumber { value: "1000000000000000" }
+```
+
+You can now check the ALCB balance of the `0x546F99F244b7B58B855330AE0E2BC1b30b41302F` inside the AliceNet network using the official AliceNet wallet.
 
 ## Connecting Metamask to the local ethereum network
 
+You can connect your Metamask with the local ethereum network for better support getting the tokens balances. In order to do this, open Metamask on your browser and add the hardhat network:
+
+```toml
+url = http://127.0.0.1:8545
+chainID = 1337
+```
+
+Now, add the following private key (account) for the local ethereum admin account to your Metamask:
+
+```toml
+0x6aea45ee1273170fb525da34015e4f20ba39fe792f486ba74020bcacc9badfc1
+```
+
+> Important: This private is not secure. Ensure you do not use it on production blockchains, or else you risk losing funds.
+
 ## Connecting AliceNet Wallet
-## Doing AliceNet transactions
 
-Deposits are required in order to submit DataStores. Run the following at least 4 times in order to deposit enough funds
-to inject datastores.
-
-```
-./scripts/main.sh deposit
-```
+Check out the [Wallet documentation](https://github.com/alicenet/wallet) for more information on how to connect your wallet to your local AliceNet network.
 
 ## API calls
 
-The swagger-ui for the localRPC of a validator may be found at `http://localhost:8885/swagger`. The default port for
-`validator4` is `8888`. Thus, you may speak to validator 4 (a non-mining node) at `http://localhost:8888`
+The AliceNet nodes will be listening to RPC requests in the address defined by the field `localStateListeningAddress` in the configuration file. The AliceNet binary comes with a swagger implementation by default to make the experimentation with the API more user-friendly.
 
+In order to access the swagger page, open one of the validator config file located at `./scripts/generated/config/` and grab the port defined at `localStateListeningAddress`. Now, open a new browser window and paste `http://localhost:<PORT_NUMBER>/swagger`.
 
+For instance, the node running the validator 1 will be usually listening at: `http://localhost:8884/swagger`.
