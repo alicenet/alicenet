@@ -321,14 +321,9 @@ export const deployUpgradeableWithFactory = async (
   let saltBytes;
 
   if (role) {
-    console.log(`found custom:role tag: ${role}`);
     let roleHash = hre.ethers.utils.solidityKeccak256(["string"], [role]);
-    console.log(`roleHash: ${roleHash}`);
     let contractHash = hre.ethers.utils.solidityKeccak256(["string"], [contractName]);
-    console.log(`contractHash: ${contractHash}`);
-    console.log(`contractHash+roleHash: ${contractHash+roleHash}`);
     saltBytes = hre.ethers.utils.solidityKeccak256(["bytes32", "bytes32"], [contractHash, roleHash]);
-    console.log("saltBytes: " + saltBytes);
   } else {
     if (salt === undefined) {
       saltBytes = getBytes32Salt(contractName);

@@ -9,7 +9,7 @@ import {
 //   AliceNetFactory,
 //   AliceNetFactory__factory,
 // } from "../../../typechain-types";
-import { getEventVar } from "../alicenetFactoryTasks";
+import { getBytes32Salt, getEventVar } from "../alicenetFactoryTasks";
 import { encodeMultiCallArgs } from "../alicenetTasks";
 import {
   ALICENET_FACTORY,
@@ -329,19 +329,21 @@ export async function getDeploymentInitializerArgs(
   return output;
 }
 
-export async function getSalt(fullName: string, artifacts: Artifacts) {
-  return await getCustomNSTag(fullName, "salt", artifacts);
-}
+// export async function getSalt(fullName: string, artifacts: Artifacts) {
+//   return await getCustomNSTag(fullName, "salt", artifacts);
+// }
 
-export async function getBytes32Salt(
-  contractName: string,
-  artifacts: Artifacts,
-  ethers: Ethers
-) {
-  const fullName = await getFullyQualifiedName(contractName, artifacts);
-  const salt: string = await getSalt(fullName, artifacts);
-  return ethers.utils.formatBytes32String(salt);
-}
+// export async function getBytes32Salt(
+//   contractName: string,
+//   artifacts: Artifacts,
+//   ethers: Ethers
+// ) {
+//   const fullName = await getFullyQualifiedName(contractName, artifacts);
+//   console.log('.fullName', fullName)
+//   const salt: string = await getSalt(fullName, artifacts);
+//   console.log('.salt', salt)
+//   return ethers.utils.formatBytes32String(salt);
+// }
 export async function getFullyQualifiedName(
   contractName: string,
   artifacts: Artifacts
@@ -393,8 +395,7 @@ export async function getDeployStaticMultiCallArgs(
     );
   const salt = await getBytes32Salt(
     contractDescriptor.name,
-    hre.artifacts,
-    hre.ethers
+    hre
   );
   const deployTemplateCallData: BytesLike =
     factoryBase.interface.encodeFunctionData(DEPLOY_TEMPLATE, [
@@ -446,8 +447,7 @@ export async function getDeployUpgradeableMultiCallArgs(
     );
   const salt = await getBytes32Salt(
     contractDescriptor.name,
-    hre.artifacts,
-    hre.ethers
+    hre
   );
   const nonce = await hre.ethers.provider.getTransactionCount(factory.address);
   const logicAddress = hre.ethers.utils.getContractAddress({
@@ -538,8 +538,7 @@ export async function deployContractsMulticall(
           const name = extractName(contract.fullyQualifiedName);
           const salt: BytesLike = await getBytes32Salt(
             name,
-            hre.artifacts,
-            hre.ethers
+            hre
           );
           const factoryAddress = factory.address;
           proxyData = await hre.run("deployProxy", {

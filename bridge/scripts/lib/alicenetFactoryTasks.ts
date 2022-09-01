@@ -1316,14 +1316,9 @@ async function getSalt(
     devdoc = contractOutput.devdoc;
     if (devdoc["custom:role"] !== undefined) {
       let type_ = devdoc["custom:role"];
-      console.log(`found custom:role tag: ${type_}`);
       let role = hre.ethers.utils.solidityKeccak256(["string"], [type_]);
-      console.log(`role: ${role}`);
       let contractHash = hre.ethers.utils.solidityKeccak256(["string"], [contractName]);
-      console.log(`contractHash: ${contractHash}`);
-      console.log(`contractHash+role: ${contractHash+role}`);
       salt = hre.ethers.utils.solidityKeccak256(["bytes32", "bytes32"], [contractHash, role]);
-      console.log("salt: " + salt);
       return salt;
     }
     salt = devdoc["custom:salt"];
