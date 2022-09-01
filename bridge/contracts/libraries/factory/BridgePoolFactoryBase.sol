@@ -53,6 +53,7 @@ abstract contract BridgePoolFactoryBase is ImmutableFactory {
             getLocalERCImplementationSalt(tokenType_, poolVersion_),
             _factoryAddress()
         );
+        _implementation = implementation;
         //check if the logic exists for the specified pool
         uint256 implementationSize;
         assembly {
@@ -63,7 +64,6 @@ abstract contract BridgePoolFactoryBase is ImmutableFactory {
         }
         address contractAddr = _deployStaticPool(bridgePoolSalt);
         IBridgePool(contractAddr).initialize(ercContract_);
-        _implementation = implementation;
         emit BridgePoolCreated(contractAddr, ercContract_);
     }
 
@@ -104,9 +104,9 @@ abstract contract BridgePoolFactoryBase is ImmutableFactory {
         returns (bytes32)
     {
         string memory tag;
-        if (tokenType_ == 1) {
-            tag = "LocalERC20";
-        } else if (tokenType_ == 2) tag = "LocalERC721";
+        if (tokenType_ == 1)  tag = "LocalERC20";
+        else if (tokenType_ == 2) tag = "LocalERC721";
+        else if (tokenType_ == 3) tag = "LocalERC1155";
         else tag = "Unknown";
         return
             keccak256(

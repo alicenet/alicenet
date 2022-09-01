@@ -1,8 +1,9 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { ethers } from "hardhat";
+import { IBridgePool } from "../../typechain-types";
 import { expect } from "../chai-setup";
-import { factoryCallAnyFixture, Fixture, getFixture } from "../setup";
-import { tokenTypes } from "./setup";
+import { callFunctionAndGetReturnValues, factoryCallAnyFixture, Fixture, getBridgePoolSalt, getFixture, getMetamorphicAddress } from "../setup";
+import { getBridgePoolMetamorphicAddress, getState, showState, tokenTypes } from "./setup";
 let user: SignerWithAddress;
 let fixture: Fixture;
 let depositCallData: any;
@@ -37,8 +38,9 @@ tokenTypes.forEach(function (run) {
         );
       });
 
-      it("Should deploy new BridgePool as factory if public pool deployment is not enabled", async () => {
-        await factoryCallAnyFixture(
+      it.only("Should deploy new BridgePool as factory if public pool deployment is not enabled", async () => {
+
+         await factoryCallAnyFixture(
           fixture,
           "bridgePoolFactory",
           "deployNewLocalPool",
@@ -47,13 +49,13 @@ tokenTypes.forEach(function (run) {
             fixture[run.options.ercContractName].address,
             bridgePoolVersion,
           ]
-        );
-        await
+        );     
+        await expect(
           fixture.bToken
             .connect(user)
             .depositTokensOnBridges(bridgePoolVersion, encodedDepositCallData, {
               value: valueSent
-            })
+            }) ).to.be.revertedWithCustomError(fixture.bridgeRouter,"OnlyBridgeRouter")
       });
 
       it("Should not deploy new BridgePool as user if public pool deployment is not enabled", async () => {

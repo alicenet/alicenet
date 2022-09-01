@@ -627,14 +627,21 @@ export const getFixture = async (
   const localERC20BridgePoolV1 = (await deployStaticWithFactory(
     factory,
     "LocalERC20BridgePoolV1",
-    getLocalERC20BridgePoolSalt(1),
+    getBridgePoolSalt("LocalERC20",1),
     [1337]
   )) as IBridgePool;
 
   const localERC721BridgePoolV1 = (await deployStaticWithFactory(
     factory,
     "LocalERC721BridgePoolV1",
-    getLocalERC721BridgePoolSalt(1),
+    getBridgePoolSalt("LocalERC721",1),
+    [1337]
+  )) as IBridgePool;
+
+  const localERC1155BridgePoolV1 = (await deployStaticWithFactory(
+    factory,
+    "LocalERC1155BridgePoolV1",
+    getBridgePoolSalt("LocalERC1155",1),
     [1337]
   )) as IBridgePool;
 
@@ -651,7 +658,7 @@ export const getFixture = async (
   const bridgeRouter = (await deployUpgradeableWithFactory(
     factory,
     "BridgePoolRouterV1",
-    getBridgeRouterSalt(1),
+    getBridgePoolSalt("BridgeRouter",1),
     undefined,
     [1337]
   )) as BridgePoolRouterV1;
@@ -662,6 +669,10 @@ export const getFixture = async (
 
   const erc20Mock = await (
     await (await ethers.getContractFactory("ERC20Mock")).deploy()
+  ).deployed();
+
+  const erc1155Mock = await (
+    await (await ethers.getContractFactory("ERC1155Mock")).deploy()
   ).deployed();
 
   const invalidTxConsumptionAccusation = (await deployUpgradeableWithFactory(
@@ -717,9 +728,12 @@ export const getFixture = async (
     factory,
     localERC721BridgePoolV1,
     localERC20BridgePoolV1,
+    localERC1155BridgePoolV1,
+    erc1155Mock,
     erc721Mock,
     erc20Mock,
     bridgePoolFactory,
+    bridgeRouter,
     namedSigners,
     aTokenMinter,
     aTokenBurner,
@@ -835,38 +849,16 @@ export const getReceiptForFailedTransaction = async (
   return receipt;
 };
 
-export const getLocalERC20BridgePoolSalt = (version: number): string => {
+
+export const getBridgePoolSalt = (id: string, version: number): string => {
   return ethers.utils.keccak256(
     ethers.utils.solidityPack(
       ["bytes32", "bytes32"],
       [
-        ethers.utils.solidityKeccak256(["string"], ["LocalERC20"]),
+        ethers.utils.solidityKeccak256(["string"], [id]),
         ethers.utils.solidityKeccak256(["uint16"], [version]),
       ]
     )
   );
 };
 
-export const getLocalERC721BridgePoolSalt = (version: number): string => {
-  return ethers.utils.keccak256(
-    ethers.utils.solidityPack(
-      ["bytes32", "bytes32"],
-      [
-        ethers.utils.solidityKeccak256(["string"], ["LocalERC721"]),
-        ethers.utils.solidityKeccak256(["uint16"], [version]),
-      ]
-    )
-  );
-};
-
-export const getBridgeRouterSalt = (version: number): string => {
-  return ethers.utils.keccak256(
-    ethers.utils.solidityPack(
-      ["bytes32", "bytes32"],
-      [
-        ethers.utils.solidityKeccak256(["string"], ["BridgeRouter"]),
-        ethers.utils.solidityKeccak256(["uint16"], [version]),
-      ]
-    )
-  );
-};

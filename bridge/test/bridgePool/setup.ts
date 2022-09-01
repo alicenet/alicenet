@@ -4,6 +4,7 @@ import { ethers } from "hardhat";
 import { IBridgePool } from "../../typechain-types";
 import { Fixture } from "../setup";
 
+const  ERC1155_FIXED_TOKEN_ID = 1;
 export interface state {
   Balances: {
     bToken: {
@@ -34,10 +35,16 @@ export interface state {
       user: bigint;
       bridgePool: bigint;
     };
+    ERC1155: {
+      address: string;
+      admin: bigint;
+      user: bigint;
+      bridgePool: bigint;
+    };
   };
 }
 
-export async function getState(fixture: Fixture, bridgePool: IBridgePool) {
+export async function getState(fixture: Fixture, bridgePoolAddress: string) {
   const [admin, user] = await ethers.getSigners();
   const state: state = {
     Balances: {
@@ -46,7 +53,7 @@ export async function getState(fixture: Fixture, bridgePool: IBridgePool) {
         admin: (await fixture.bToken.balanceOf(admin.address)).toBigInt(),
         user: (await fixture.bToken.balanceOf(user.address)).toBigInt(),
         bridgePool: (
-          await fixture.bToken.balanceOf(bridgePool.address)
+          await fixture.bToken.balanceOf(bridgePoolAddress)
         ).toBigInt(),
         totalSupply: (await fixture.bToken.totalSupply()).toBigInt(),
       },
@@ -55,7 +62,7 @@ export async function getState(fixture: Fixture, bridgePool: IBridgePool) {
         admin: formatBigInt(await ethers.provider.getBalance(admin.address)),
         user: formatBigInt(await ethers.provider.getBalance(user.address)),
         bridgePool: (
-          await ethers.provider.getBalance(bridgePool.address)
+          await ethers.provider.getBalance(bridgePoolAddress)
         ).toBigInt(),
         aToken: (
           await ethers.provider.getBalance(fixture.aToken.address)
@@ -69,7 +76,7 @@ export async function getState(fixture: Fixture, bridgePool: IBridgePool) {
         admin: (await fixture.erc20Mock.balanceOf(admin.address)).toBigInt(),
         user: (await fixture.erc20Mock.balanceOf(user.address)).toBigInt(),
         bridgePool: (
-          await fixture.erc20Mock.balanceOf(bridgePool.address)
+          await fixture.erc20Mock.balanceOf(bridgePoolAddress)
         ).toBigInt(),
       },
       ERC721: {
@@ -77,7 +84,15 @@ export async function getState(fixture: Fixture, bridgePool: IBridgePool) {
         admin: (await fixture.erc721Mock.balanceOf(admin.address)).toBigInt(),
         user: (await fixture.erc721Mock.balanceOf(user.address)).toBigInt(),
         bridgePool: (
-          await fixture.erc721Mock.balanceOf(bridgePool.address)
+          await fixture.erc721Mock.balanceOf(bridgePoolAddress)
+        ).toBigInt(),
+      },
+      ERC1155: {
+        address: fixture.erc1155Mock.address.slice(-4),
+        admin: (await fixture.erc1155Mock.balanceOf(admin.address,ERC1155_FIXED_TOKEN_ID)).toBigInt(),
+        user: (await fixture.erc1155Mock.balanceOf(user.address,ERC1155_FIXED_TOKEN_ID)).toBigInt(),
+        bridgePool: (
+          await fixture.erc1155Mock.balanceOf(bridgePoolAddress, ERC1155_FIXED_TOKEN_ID)
         ).toBigInt(),
       },
     },
@@ -87,7 +102,7 @@ export async function getState(fixture: Fixture, bridgePool: IBridgePool) {
 
 export function showState(title: string, state: state) {
   if (process.env.npm_config_detailed === "true") {
-    // execute "npm run --detailed=t--detailed=truerue test" to see this output
+    // execute "npm run --detailed=true test ..." to see this output
     console.log(title, state);
   }
 }
@@ -120,7 +135,7 @@ export const maxTokens = 1010; // has to be > bTokenFee => 10
 export const valueSent = ethers.utils.parseEther("1.0");
 
 export const tokenTypes = [
-  {
+    {
     it: "ERC20",
     options: {
       ercContractName: "erc20Mock",
@@ -139,5 +154,28 @@ export const tokenTypes = [
       quantity: 1,
       errorReason: "ERC721: invalid token ID",
     },
-  },
+  },  
+   {
+    it: "ERC1155",
+    options: {
+      ercContractName: "erc1155Mock",
+      poolType: 3,
+      bridgeImpl: "LocalERC1155BridgePoolV1",
+      quantity: 1,
+      errorReason: "ERC1155: caller is not token owner nor approved",
+    },
+  }, 
 ];
+
+
+export const getBridgePoolMetamorphicAddress = (
+  factoryAddress: string,
+  salt: string
+): string => {
+  const initCode = "0x6020363636335afa1536363636515af43d36363e3d36f3";
+  return ethers.utils.getCreate2Address(
+    factoryAddress,
+    salt,
+    ethers.utils.keccak256(initCode)
+  );
+};
