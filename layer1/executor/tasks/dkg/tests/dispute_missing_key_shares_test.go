@@ -6,10 +6,10 @@ import (
 	"context"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/alicenet/alicenet/layer1/tests"
 	"github.com/alicenet/alicenet/layer1/transaction"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestDisputeMissingKeySharesTask_FourUnsubmittedKeyShare_DoWork_Success(t *testing.T) {
@@ -26,7 +26,7 @@ func TestDisputeMissingKeySharesTask_FourUnsubmittedKeyShare_DoWork_Success(t *t
 	for idx := 0; idx < n; idx++ {
 		disputeMissingKeyshareTask := suite.DisputeMissingKeyshareTasks[idx]
 
-		err := disputeMissingKeyshareTask.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "DisputeMissingKeyshareTask", "task-id", nil)
+		err := disputeMissingKeyshareTask.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "DisputeMissingKeyshareTask", "task-id", disputeMissingKeyshareTask.Start, disputeMissingKeyshareTask.End, false, nil, nil)
 		assert.Nil(t, err)
 
 		err = disputeMissingKeyshareTask.Prepare(ctx)
@@ -71,7 +71,7 @@ func TestDisputeMissingKeySharesTask_NoUnSubmittedKeyShare(t *testing.T) {
 	// Do dispute missing key share task
 	for idx := 0; idx < n; idx++ {
 		disputeMissingKeyshareTask := suite.DisputeMissingKeyshareTasks[idx]
-		err := disputeMissingKeyshareTask.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "disputeMissingKeyshareTask", "task-id", nil)
+		err := disputeMissingKeyshareTask.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "disputeMissingKeyshareTask", "task-id", disputeMissingKeyshareTask.Start, disputeMissingKeyshareTask.End, false, nil, nil)
 		assert.Nil(t, err)
 		err = disputeMissingKeyshareTask.Prepare(ctx)
 		assert.Nil(t, err)

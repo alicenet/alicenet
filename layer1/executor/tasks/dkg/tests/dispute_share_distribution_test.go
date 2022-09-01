@@ -7,6 +7,9 @@ import (
 	"context"
 	"testing"
 
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/utils"
@@ -14,8 +17,6 @@ import (
 	"github.com/alicenet/alicenet/layer1/transaction"
 	"github.com/alicenet/alicenet/logging"
 	"github.com/alicenet/alicenet/test/mocks"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/stretchr/testify/assert"
 )
 
 // We test to ensure that everything behaves correctly.
@@ -35,7 +36,7 @@ func TestDisputeShareDistributionTask_Group_1_OneValidatorSubmittingInvalidCrede
 		for j := 0; j < n; j++ {
 			task := suite.DisputeShareDistTasks[idx][j]
 
-			err := task.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "DisputeShareDistributionTask", "task-id", nil)
+			err := task.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "DisputeShareDistributionTask", "task-id", task.Start, task.End, false, nil, nil)
 			assert.Nil(t, err)
 
 			err = task.Prepare(ctx)
@@ -61,7 +62,7 @@ func TestDisputeShareDistributionTask_Group_1_OneValidatorSubmittingInvalidCrede
 					receiptResponses = append(receiptResponses, rcptResponse)
 				} else {
 					if isValidator {
-						var participantsList = dkgState.GetSortedParticipants()
+						participantsList := dkgState.GetSortedParticipants()
 						if bytes.Equal(task.Address.Bytes(), participantsList[idx].Address.Bytes()) {
 							assert.Nil(t, taskErr)
 							assert.Nil(t, txn)
@@ -104,7 +105,7 @@ func TestDisputeShareDistributionTask_Group_1_Bad2(t *testing.T) {
 	db := mocks.NewTestDB()
 	log := logging.GetLogger("test").WithField("test", "test")
 
-	err := task.Initialize(context.Background(), nil, db, log, nil, nil, "", "", nil)
+	err := task.Initialize(context.Background(), nil, db, log, nil, nil, "", "", task.Start, task.End, false, nil, nil)
 	assert.Nil(t, err)
 
 	taskErr := task.Prepare(context.Background())
@@ -130,7 +131,7 @@ func TestDisputeShareDistributionTask_Group_1_TwoValidatorSubmittingInvalidCrede
 		for j := 0; j < n; j++ {
 			task := suite.DisputeShareDistTasks[idx][j]
 
-			err := task.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "DisputeShareDistributionTask", "task-id", nil)
+			err := task.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "DisputeShareDistributionTask", "task-id", task.Start, task.End, false, nil, nil)
 			assert.Nil(t, err)
 
 			err = task.Prepare(ctx)
@@ -156,7 +157,7 @@ func TestDisputeShareDistributionTask_Group_1_TwoValidatorSubmittingInvalidCrede
 					receiptResponses = append(receiptResponses, rcptResponse)
 				} else {
 					if isValidator {
-						var participantsList = dkgState.GetSortedParticipants()
+						participantsList := dkgState.GetSortedParticipants()
 						if bytes.Equal(task.Address.Bytes(), participantsList[idx].Address.Bytes()) {
 							assert.Nil(t, taskErr)
 							assert.Nil(t, txn)
@@ -207,7 +208,7 @@ func TestDisputeShareDistributionTask_Group_1_AllValidatorSubmittingInvalidCrede
 		for j := 0; j < n; j++ {
 			task := suite.DisputeShareDistTasks[idx][j]
 
-			err := task.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "DisputeShareDistributionTask", "task-id", nil)
+			err := task.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "DisputeShareDistributionTask", "task-id", task.Start, task.End, false, nil, nil)
 			assert.Nil(t, err)
 
 			err = task.Prepare(ctx)
@@ -223,7 +224,7 @@ func TestDisputeShareDistributionTask_Group_1_AllValidatorSubmittingInvalidCrede
 
 			badAddress := false
 			if suite.BadAddresses[task.Address] {
-				var participantsList = dkgState.GetSortedParticipants()
+				participantsList := dkgState.GetSortedParticipants()
 				if bytes.Equal(task.Address.Bytes(), participantsList[idx].Address.Bytes()) {
 					assert.Nil(t, taskErr)
 					assert.Nil(t, txn)

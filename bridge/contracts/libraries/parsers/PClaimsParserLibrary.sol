@@ -1,13 +1,11 @@
 // SPDX-License-Identifier: MIT-open-group
-pragma solidity ^0.8.11;
+pragma solidity ^0.8.16;
 
-import {
-    PClaimsParserLibraryErrorCodes
-} from "contracts/libraries/errorCodes/PClaimsParserLibraryErrorCodes.sol";
+import "contracts/libraries/errors/GenericParserLibraryErrors.sol";
 
-import "./BaseParserLibrary.sol";
-import "./BClaimsParserLibrary.sol";
-import "./RCertParserLibrary.sol";
+import "contracts/libraries/parsers/BaseParserLibrary.sol";
+import "contracts/libraries/parsers/BClaimsParserLibrary.sol";
+import "contracts/libraries/parsers/RCertParserLibrary.sol";
 
 /// @title Library to parse the PClaims structure from a blob of capnproto state
 library PClaimsParserLibrary {
@@ -55,25 +53,20 @@ library PClaimsParserLibrary {
         pure
         returns (PClaims memory pClaims, uint256 pClaimsBinarySize)
     {
-        require(
-            dataOffset + _PCLAIMS_SIZE > dataOffset,
-            string(
-                abi.encodePacked(
-                    PClaimsParserLibraryErrorCodes.PCLAIMSPARSERLIB_DATA_OFFSET_OVERFLOW
-                )
-            )
-        );
+        if (dataOffset + _PCLAIMS_SIZE <= dataOffset) {
+            revert GenericParserLibraryErrors.DataOffsetOverflow();
+        }
         uint16 pointerOffsetAdjustment = BClaimsParserLibrary.getPointerOffsetAdjustment(
             src,
             dataOffset + 4
         );
         pClaimsBinarySize = _PCLAIMS_SIZE - pointerOffsetAdjustment;
-        require(
-            src.length >= dataOffset + pClaimsBinarySize,
-            string(
-                abi.encodePacked(PClaimsParserLibraryErrorCodes.PCLAIMSPARSERLIB_INSUFFICIENT_BYTES)
-            )
-        );
+        if (src.length < dataOffset + pClaimsBinarySize) {
+            revert GenericParserLibraryErrors.InsufficientBytes(
+                src.length,
+                dataOffset + pClaimsBinarySize
+            );
+        }
         pClaims.bClaims = BClaimsParserLibrary.extractInnerBClaims(
             src,
             dataOffset + 16,

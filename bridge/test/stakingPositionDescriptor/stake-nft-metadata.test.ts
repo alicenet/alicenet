@@ -47,9 +47,9 @@ describe("StakingPositionDescriptor: Tests StakingPositionDescriptor methods", a
   it("Fails if token at id does not exist", async function () {
     const invalidTokenId = 1234;
 
-    await expect(publicStaking.tokenURI(invalidTokenId)).to.be.revertedWith(
-      "604"
-    );
+    await expect(publicStaking.tokenURI(invalidTokenId))
+      .to.be.revertedWithCustomError(fixture.publicStaking, "InvalidTokenId")
+      .withArgs(invalidTokenId);
   });
 
   describe("Given valid token id", async () => {

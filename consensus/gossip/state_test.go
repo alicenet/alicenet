@@ -6,12 +6,13 @@ import (
 	"os"
 	"testing"
 
+	"github.com/dgraph-io/badger/v2"
+
 	"github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/consensus/objs"
 	"github.com/alicenet/alicenet/crypto"
 	bn256 "github.com/alicenet/alicenet/crypto/bn256/cloudflare"
 	"github.com/alicenet/alicenet/utils"
-	"github.com/dgraph-io/badger/v2"
 )
 
 const (
@@ -105,7 +106,6 @@ func TestState(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-
 }
 
 func makeSecpSigner(seed []byte) (*crypto.Secp256k1Signer, []byte) {
@@ -118,7 +118,7 @@ func makeSecpSigner(seed []byte) (*crypto.Secp256k1Signer, []byte) {
 	return secpSigner, secpKey
 }
 
-func buildRound(t *testing.T, bnSigners []*crypto.BNGroupSigner, groupSharesOrig [][]byte, secpSigners []*crypto.Secp256k1Signer, height uint32, round uint32, prevBlockOrig []byte) (*objs.BlockHeader, []*objs.Proposal, objs.PreVoteList, []*objs.PreVoteNil, objs.PreCommitList, []*objs.PreCommitNil, objs.NextRoundList, objs.NextHeightList, *objs.BlockHeader) {
+func buildRound(t *testing.T, bnSigners []*crypto.BNGroupSigner, groupSharesOrig [][]byte, secpSigners []*crypto.Secp256k1Signer, height, round uint32, prevBlockOrig []byte) (*objs.BlockHeader, []*objs.Proposal, objs.PreVoteList, []*objs.PreVoteNil, objs.PreCommitList, []*objs.PreCommitNil, objs.NextRoundList, objs.NextHeightList, *objs.BlockHeader) {
 	groupShares := make([][]byte, len(groupSharesOrig))
 	copy(groupShares, groupSharesOrig)
 	prevBlock := utils.CopySlice(prevBlockOrig)
@@ -420,7 +420,7 @@ func makeRoundStates(secpSigners []*crypto.Secp256k1Signer, bnSigners []*crypto.
 	return rsl
 }
 
-func makeRoundState(secpKeyOrig []byte, groupShareOrig []byte, groupkOrig []byte, idx int, rcertOrig *objs.RCert) *objs.RoundState {
+func makeRoundState(secpKeyOrig, groupShareOrig, groupkOrig []byte, idx int, rcertOrig *objs.RCert) *objs.RoundState {
 	secpKey := utils.CopySlice(secpKeyOrig)
 	groupKey := utils.CopySlice(groupkOrig)
 	groupShare := make([]byte, len(groupShareOrig))

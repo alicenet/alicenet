@@ -11,27 +11,29 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/alicenet/alicenet/bridge/bindings"
-	"github.com/alicenet/alicenet/consensus/db"
-	"github.com/alicenet/alicenet/crypto/bn256"
-	"github.com/alicenet/alicenet/crypto/bn256/cloudflare"
-	"github.com/alicenet/alicenet/layer1"
-	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg"
-	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
-	testutils "github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests/utils"
-	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/utils"
-	"github.com/alicenet/alicenet/layer1/monitor/events"
-	"github.com/alicenet/alicenet/layer1/monitor/objects"
-	"github.com/alicenet/alicenet/layer1/tests"
-	"github.com/alicenet/alicenet/layer1/transaction"
-	"github.com/alicenet/alicenet/logging"
-	"github.com/alicenet/alicenet/test/mocks"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/alicenet/alicenet/bridge/bindings"
+	"github.com/alicenet/alicenet/consensus/db"
+	"github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/crypto/bn256"
+	"github.com/alicenet/alicenet/crypto/bn256/cloudflare"
+	"github.com/alicenet/alicenet/layer1"
+	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg"
+	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
+	testutils "github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests/utils"
+	"github.com/alicenet/alicenet/layer1/monitor/events"
+	"github.com/alicenet/alicenet/layer1/monitor/objects"
+	"github.com/alicenet/alicenet/layer1/tests"
+	"github.com/alicenet/alicenet/layer1/transaction"
+	"github.com/alicenet/alicenet/logging"
+	"github.com/alicenet/alicenet/test/mocks"
+	gUtils "github.com/alicenet/alicenet/utils"
 )
 
 var HardHat *tests.Hardhat
@@ -167,7 +169,6 @@ func InitializeETHDKG(fixture *tests.ClientFixture, callOpts *bind.TransactOpts,
 }
 
 func StartFromRegistrationOpenPhase(t *testing.T, fixture *tests.ClientFixture, unregisteredValidators int, phaseLength uint16) *TestSuite {
-
 	eth := fixture.Client
 	ctx := context.Background()
 	owner := eth.GetDefaultAccount()
@@ -232,7 +233,7 @@ func StartFromRegistrationOpenPhase(t *testing.T, fixture *tests.ClientFixture, 
 		regTasks[idx] = regTask
 		dispMissingRegTasks[idx] = dispMissingRegTask
 
-		err = regTasks[idx].Initialize(ctx, nil, dkgDb, logger, eth, fixture.Contracts, "RegistrationTask", fmt.Sprintf("%v", idx), nil)
+		err = regTasks[idx].Initialize(ctx, nil, dkgDb, logger, eth, fixture.Contracts, "RegistrationTask", fmt.Sprintf("%v", idx), regTasks[idx].Start, regTasks[idx].End, false, nil, nil)
 		assert.Nil(t, err)
 		err = regTasks[idx].Prepare(ctx)
 		assert.Nil(t, err)
@@ -308,7 +309,7 @@ func StartFromRegistrationOpenPhase(t *testing.T, fixture *tests.ClientFixture, 
 	}
 }
 
-func StartFromShareDistributionPhase(t *testing.T, fixture *tests.ClientFixture, undistributedSharesIdx []int, badSharesIdx []int, phaseLength uint16) *TestSuite {
+func StartFromShareDistributionPhase(t *testing.T, fixture *tests.ClientFixture, undistributedSharesIdx, badSharesIdx []int, phaseLength uint16) *TestSuite {
 	suite := StartFromRegistrationOpenPhase(t, fixture, 0, phaseLength)
 	ctx := context.Background()
 	logger := logging.GetLogger("test").WithField("Validator", "")
@@ -326,7 +327,7 @@ func StartFromShareDistributionPhase(t *testing.T, fixture *tests.ClientFixture,
 	var receiptResponses []transaction.ReceiptResponse
 	// Do Share Distribution task
 	for idx := 0; idx < n; idx++ {
-		var skipLoop = false
+		skipLoop := false
 
 		for _, undistIdx := range undistributedSharesIdx {
 			if idx == undistIdx {
@@ -340,7 +341,7 @@ func StartFromShareDistributionPhase(t *testing.T, fixture *tests.ClientFixture,
 
 		shareDistTask := suite.ShareDistTasks[idx]
 
-		err = shareDistTask.Initialize(ctx, nil, suite.DKGStatesDbs[idx], logger, suite.Eth, fixture.Contracts, "ShareDistributionTask", fmt.Sprintf("%v", idx), nil)
+		err = shareDistTask.Initialize(ctx, nil, suite.DKGStatesDbs[idx], logger, suite.Eth, fixture.Contracts, "ShareDistributionTask", fmt.Sprintf("%v", idx), shareDistTask.Start, shareDistTask.End, false, nil, nil)
 		assert.Nil(t, err)
 		err = shareDistTask.Prepare(ctx)
 		assert.Nil(t, err)
@@ -385,7 +386,6 @@ func StartFromShareDistributionPhase(t *testing.T, fixture *tests.ClientFixture,
 			err = state.SaveDkgState(suite.DKGStatesDbs[j], participantDkgState)
 			assert.Nil(t, err)
 		}
-
 	}
 
 	tests.WaitGroupReceipts(t, suite.Eth, receiptResponses)
@@ -448,7 +448,7 @@ func StartFromKeyShareSubmissionPhase(t *testing.T, fixture *tests.ClientFixture
 
 		keyshareSubmissionTask := suite.KeyshareSubmissionTasks[idx]
 
-		err := keyshareSubmissionTask.Initialize(ctx, nil, suite.DKGStatesDbs[idx], logger, suite.Eth, fixture.Contracts, "KeyShareSubmissionTask", fmt.Sprintf("%v", idx), nil)
+		err := keyshareSubmissionTask.Initialize(ctx, nil, suite.DKGStatesDbs[idx], logger, suite.Eth, fixture.Contracts, "KeyShareSubmissionTask", fmt.Sprintf("%v", idx), keyshareSubmissionTask.Start, keyshareSubmissionTask.End, false, nil, nil)
 		assert.Nil(t, err)
 		err = keyshareSubmissionTask.Prepare(ctx)
 		assert.Nil(t, err)
@@ -518,20 +518,33 @@ func StartFromMPKSubmissionPhase(t *testing.T, fixture *tests.ClientFixture, pha
 	suite := StartFromKeyShareSubmissionPhase(t, fixture, 0, phaseLength)
 	ctx := context.Background()
 	logger := logging.GetLogger("test").WithField("Validator", "")
-	n := len(suite.Eth.GetKnownAccounts())
+	numValidators := len(suite.Eth.GetKnownAccounts())
 
 	// Do MPK Submission task (once is enough)
 	var receiptResponses []transaction.ReceiptResponse
-	for idx := 0; idx < n; idx++ {
+	for idx := 0; idx < numValidators; idx++ {
 		task := suite.MpkSubmissionTasks[idx]
-		err := task.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "MPKSubmissionTask", fmt.Sprintf("%v", idx), nil)
+		err := task.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "MPKSubmissionTask", fmt.Sprintf("%v", idx), task.Start, task.End, false, nil, nil)
 		assert.Nil(t, err)
 		err = task.Prepare(ctx)
 		assert.Nil(t, err)
 
 		dkgState, err := state.GetDkgState(suite.DKGStatesDbs[idx])
 		assert.Nil(t, err)
-		if utils.AmILeading(suite.Eth, ctx, logger, int(task.GetStart()), task.StartBlockHash[:], n, dkgState.Index) {
+		amILeading, err := gUtils.AmILeading(
+			suite.Eth,
+			ctx,
+			logger,
+			int(task.GetStart()),
+			task.StartBlockHash[:],
+			numValidators,
+			// we need -1 since ethdkg indexes start at 1 while leader election expect index starting at 0.
+			dkgState.Index-1,
+			constants.ETHDKGDesperationFactor,
+			constants.ETHDKGDesperationDelay,
+		)
+		assert.Nil(t, err)
+		if amILeading {
 			txn, err := task.Execute(ctx)
 			assert.Nil(t, err)
 
@@ -546,11 +559,11 @@ func StartFromMPKSubmissionPhase(t *testing.T, fixture *tests.ClientFixture, pha
 	height, err := suite.Eth.GetCurrentHeight(ctx)
 	assert.Nil(t, err)
 
-	gpkjSubmissionTasks := make([]*dkg.GPKjSubmissionTask, n)
-	disputeMissingGPKjTasks := make([]*dkg.DisputeMissingGPKjTask, n)
-	disputeGPKjTasks := make([][]*dkg.DisputeGPKjTask, n)
+	gpkjSubmissionTasks := make([]*dkg.GPKjSubmissionTask, numValidators)
+	disputeMissingGPKjTasks := make([]*dkg.DisputeMissingGPKjTask, numValidators)
+	disputeGPKjTasks := make([][]*dkg.DisputeGPKjTask, numValidators)
 
-	for idx := 0; idx < n; idx++ {
+	for idx := 0; idx < numValidators; idx++ {
 		dkgState, err := state.GetDkgState(suite.DKGStatesDbs[idx])
 		assert.Nil(t, err)
 		gpkjSubmissionTask, disputeMissingGPKjTask, disputeGPKjTask := events.UpdateStateOnMPKSet(dkgState, height, mocks.NewMockAdminHandler())
@@ -569,7 +582,7 @@ func StartFromMPKSubmissionPhase(t *testing.T, fixture *tests.ClientFixture, pha
 	return suite
 }
 
-func StartFromGPKjPhase(t *testing.T, fixture *tests.ClientFixture, undistributedGPKjIdx []int, badGPKjIdx []int, phaseLength uint16) *TestSuite {
+func StartFromGPKjPhase(t *testing.T, fixture *tests.ClientFixture, undistributedGPKjIdx, badGPKjIdx []int, phaseLength uint16) *TestSuite {
 	suite := StartFromMPKSubmissionPhase(t, fixture, phaseLength)
 	ctx := context.Background()
 	logger := logging.GetLogger("test").WithField("Validator", "")
@@ -578,7 +591,7 @@ func StartFromGPKjPhase(t *testing.T, fixture *tests.ClientFixture, undistribute
 	suite.BadAddresses = make(map[common.Address]bool)
 	// Do GPKj Submission task
 	for idx := 0; idx < n; idx++ {
-		var skipLoop = false
+		skipLoop := false
 
 		for _, undistIdx := range undistributedGPKjIdx {
 			if idx == undistIdx {
@@ -592,7 +605,7 @@ func StartFromGPKjPhase(t *testing.T, fixture *tests.ClientFixture, undistribute
 
 		gpkjSubTask := suite.GpkjSubmissionTasks[idx]
 
-		err := gpkjSubTask.Initialize(ctx, nil, suite.DKGStatesDbs[idx], logger, suite.Eth, fixture.Contracts, "GPKjSubmissionTask", fmt.Sprintf("%v", idx), nil)
+		err := gpkjSubTask.Initialize(ctx, nil, suite.DKGStatesDbs[idx], logger, suite.Eth, fixture.Contracts, "GPKjSubmissionTask", fmt.Sprintf("%v", idx), gpkjSubTask.Start, gpkjSubTask.End, false, nil, nil)
 		assert.Nil(t, err)
 		err = gpkjSubTask.Prepare(ctx)
 		assert.Nil(t, err)
@@ -637,7 +650,6 @@ func StartFromGPKjPhase(t *testing.T, fixture *tests.ClientFixture, undistribute
 			err = state.SaveDkgState(suite.DKGStatesDbs[j], participantDkgState)
 			assert.Nil(t, err)
 		}
-
 	}
 	tests.WaitGroupReceipts(t, suite.Eth, receiptResponses)
 

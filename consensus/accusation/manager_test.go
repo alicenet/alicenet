@@ -2,6 +2,8 @@ package accusation
 
 import (
 	"context"
+	"encoding/gob"
+	"encoding/hex"
 	"math/big"
 	"strconv"
 	"testing"
@@ -13,12 +15,16 @@ import (
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/crypto"
 	bn256 "github.com/alicenet/alicenet/crypto/bn256/cloudflare"
+	"github.com/alicenet/alicenet/layer1/executor"
+	"github.com/alicenet/alicenet/layer1/executor/marshaller"
+	"github.com/alicenet/alicenet/layer1/executor/mocks"
+	"github.com/alicenet/alicenet/layer1/executor/tasks"
 	"github.com/alicenet/alicenet/layer1/monitor/objects"
 	"github.com/alicenet/alicenet/logging"
 	"github.com/alicenet/alicenet/utils"
 	"github.com/dgraph-io/badger/v2"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/google/uuid"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 )
@@ -28,6 +34,7 @@ type managerTestProxy struct {
 	db             *db.Database
 	manager        *Manager
 	rawConsensusDb *badger.DB
+	ta             executor.TaskHandler
 }
 
 func setupManagerTests(t *testing.T) *managerTestProxy {
@@ -53,13 +60,16 @@ func setupManagerTests(t *testing.T) *managerTestProxy {
 	sstore := &lstate.Store{}
 	sstore.Init(db)
 
+	var ta executor.TaskHandler = mocks.NewMockTaskHandler()
+
 	testProxy := &managerTestProxy{
 		logger:         logger,
 		db:             db,
 		rawConsensusDb: rawConsensusDb,
+		ta:             ta,
 	}
 
-	testProxy.manager = NewManager(db, sstore, logger)
+	testProxy.manager = NewManager(db, sstore, ta, logger)
 	t.Cleanup(testProxy.manager.StopWorkers)
 
 	return testProxy
@@ -222,18 +232,34 @@ func TestManagerPollCache(t *testing.T) {
 	assert.True(t, hadUpdates)
 }
 
-// accuseAllRoundStates is a detector function that accuses all round states because it's a test
-func accuseAllRoundStates(rs *objs.RoundState, lrs *lstate.RoundStates) (objs.Accusation, bool) {
-	uuid := uuid.New()
-	id, err := uuid.MarshalBinary()
-	if err != nil {
-		panic(err)
-	}
+// mockAccusationTask
+type mockAccusationTask struct {
+	*tasks.BaseTask
+	SomeData string
+}
 
-	acc := &objs.BaseAccusation{
-		State: objs.Created,
+var _ tasks.Task = &mockAccusationTask{}
+
+func (t *mockAccusationTask) Prepare(ctx context.Context) *tasks.TaskErr {
+	return nil
+}
+
+func (t *mockAccusationTask) Execute(ctx context.Context) (*types.Transaction, *tasks.TaskErr) {
+	return nil, nil
+}
+
+func (t *mockAccusationTask) ShouldExecute(ctx context.Context) (bool, *tasks.TaskErr) {
+	return true, nil
+}
+
+// accuseAllRoundStates is a detector function that accuses all round states because it's a test
+func accuseAllRoundStates(rs *objs.RoundState, lrs *lstate.RoundStates, db *db.Database) (tasks.Task, bool) {
+	acc := &mockAccusationTask{
+		BaseTask: tasks.NewBaseTask(0, 0, false, nil),
+		SomeData: "accusing all the things",
 	}
-	copy(acc.ID[:], id)
+	acc.Id = hex.EncodeToString(crypto.Hasher([]byte("some id")))
+
 	return acc, true
 }
 
@@ -292,7 +318,7 @@ func TestManagerAccusable(t *testing.T) {
 
 	// check if an accusation is inside the accusationQueue
 	receivedAcc := 0
-	var accusation objs.Accusation
+	var accusation tasks.Task
 	assert.Nil(t, accusation)
 
 	for receivedAcc < len(vs.Validators) { // all validators are being accused here
@@ -303,8 +329,6 @@ func TestManagerAccusable(t *testing.T) {
 			receivedAcc += 1
 
 			assert.NotNil(t, accusation)
-			assert.Equal(t, accusation.GetState(), objs.Created)
-			assert.Equal(t, accusation.GetPersistenceTimestamp(), uint64(0))
 		default:
 			time.Sleep(100 * time.Millisecond)
 		}
@@ -315,12 +339,17 @@ func TestManagerAccusable(t *testing.T) {
 func TestManagerPersistCreatedAccusations(t *testing.T) {
 	testProxy := setupManagerTests(t)
 
+	// register mockAccusationTask in gob
+	gob.Register(&mockAccusationTask{})
+
 	// attach accuseAllRoundStates to the manager processing pipeline
 	testProxy.manager.detectionPipeline = append(testProxy.manager.detectionPipeline, accuseAllRoundStates)
 
 	// create accusation
-	accusation := &objs.BaseAccusation{}
-	copy(accusation.ID[:], crypto.Hasher([]byte("blah")))
+	accusation := &mockAccusationTask{BaseTask: tasks.NewBaseTask(0, 0, true, nil)}
+	idString := hex.EncodeToString(crypto.Hasher([]byte("some ID")))
+	accusation.Id = idString
+	assert.Equal(t, 64, len(accusation.Id))
 
 	assert.Empty(t, testProxy.manager.unpersistedCreatedAccusations)
 
@@ -334,12 +363,17 @@ func TestManagerPersistCreatedAccusations(t *testing.T) {
 	assert.Empty(t, testProxy.manager.unpersistedCreatedAccusations)
 
 	err := testProxy.manager.database.View(func(txn *badger.Txn) error {
-		acc, err := testProxy.manager.database.GetAccusation(txn, accusation.GetID())
+		var id [32]byte
+		idBin, err := hex.DecodeString(accusation.GetId())
+		assert.Nil(t, err)
+		copy(id[:], idBin)
+
+		accRaw, err := testProxy.manager.database.GetAccusationRaw(txn, id)
+		assert.Nil(t, err)
+		acc, err := marshaller.GobUnmarshalBinary(accRaw)
 		assert.Nil(t, err)
 
-		assert.Equal(t, acc.GetID(), accusation.GetID())
-		assert.Equal(t, acc.GetState(), accusation.GetState())
-		assert.Equal(t, acc.GetPersistenceTimestamp(), accusation.GetPersistenceTimestamp())
+		assert.Equal(t, acc.GetId(), accusation.GetId())
 
 		accs, err := testProxy.manager.database.GetAccusations(txn, nil)
 		assert.Nil(t, err)
@@ -354,35 +388,40 @@ func TestManagerPersistCreatedAccusations(t *testing.T) {
 func TestManagerPersistScheduledAccusations(t *testing.T) {
 	testProxy := setupManagerTests(t)
 
+	// register mockAccusationTask in gob
+	gob.Register(&mockAccusationTask{})
+
 	// attach accuseAllRoundStates to the manager processing pipeline
 	testProxy.manager.detectionPipeline = append(testProxy.manager.detectionPipeline, accuseAllRoundStates)
 
 	// create a Persisted accusation and store in DB
-	accusation := &objs.BaseAccusation{
-		State:                objs.Persisted,
-		PersistenceTimestamp: uint64(time.Now().Unix()),
+	accusation := &mockAccusationTask{
+		BaseTask: tasks.NewBaseTask(0, 0, true, nil),
+		SomeData: "accusing all the things",
 	}
-	copy(accusation.ID[:], crypto.Hasher([]byte("blah")))
-
-	err := testProxy.manager.database.Update(func(txn *badger.Txn) error {
-		return testProxy.manager.database.SetAccusation(txn, accusation)
-	})
+	accusation.Id = hex.EncodeToString(crypto.Hasher([]byte("some ID")))
+	var id [32]byte
+	idBin, err := hex.DecodeString(accusation.GetId())
+	assert.Nil(t, err)
+	copy(id[:], idBin)
+	accusationRaw, err := marshaller.GobMarshalBinary(accusation)
 	assert.Nil(t, err)
 
-	assert.Empty(t, testProxy.manager.unpersistedScheduledAccusations)
+	err = testProxy.manager.database.Update(func(txn *badger.Txn) error {
+		return testProxy.manager.database.SetAccusationRaw(txn, id, accusationRaw)
+	})
+	assert.Nil(t, err)
 
 	err = testProxy.manager.scheduleAccusations()
 	assert.Nil(t, err)
 
-	assert.Empty(t, testProxy.manager.unpersistedScheduledAccusations)
-
 	err = testProxy.manager.database.View(func(txn *badger.Txn) error {
-		acc, err := testProxy.manager.database.GetAccusation(txn, accusation.GetID())
+		accRaw, err := testProxy.manager.database.GetAccusationRaw(txn, id)
+		assert.Nil(t, err)
+		acc, err := marshaller.GobUnmarshalBinary(accRaw)
 		assert.Nil(t, err)
 
-		assert.Equal(t, acc.GetID(), accusation.GetID())
-		assert.Equal(t, acc.GetState(), objs.ScheduledForExecution)
-		assert.Equal(t, acc.GetPersistenceTimestamp(), accusation.GetPersistenceTimestamp())
+		assert.Equal(t, acc.GetId(), accusation.GetId())
 
 		accs, err := testProxy.manager.database.GetAccusations(txn, nil)
 		assert.Nil(t, err)

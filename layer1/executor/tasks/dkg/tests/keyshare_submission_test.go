@@ -7,8 +7,9 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
 )
 
 // We test to ensure that everything behaves correctly.
@@ -23,7 +24,6 @@ func TestKeyShareSubmission_GoodAllValid(t *testing.T) {
 
 	// Check key shares are present and valid
 	for idx, acct := range accounts {
-
 		dkgState, err := state.GetDkgState(suite.DKGStatesDbs[idx])
 		assert.Nil(t, err)
 
@@ -64,7 +64,7 @@ func TestKeyShareSubmission_Bad3(t *testing.T) {
 		assert.Nil(t, err)
 		keyshareSubmissionTask := suite.KeyshareSubmissionTasks[idx]
 
-		err = keyshareSubmissionTask.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "KeyShareSubmissionTask", "task-id", nil)
+		err = keyshareSubmissionTask.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "KeyShareSubmissionTask", "task-id", keyshareSubmissionTask.Start, keyshareSubmissionTask.End, false, nil, nil)
 		assert.Nil(t, err)
 		err = keyshareSubmissionTask.Prepare(ctx)
 		assert.NotNil(t, err)
@@ -84,7 +84,7 @@ func TestKeyShareSubmission_Bad4(t *testing.T) {
 	// Do key share submission task
 	for idx := 0; idx < n; idx++ {
 		keyshareSubmissionTask := suite.KeyshareSubmissionTasks[idx]
-		err := keyshareSubmissionTask.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "KeyShareSubmissionTask", "task-id", nil)
+		err := keyshareSubmissionTask.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "KeyShareSubmissionTask", "task-id", keyshareSubmissionTask.Start, keyshareSubmissionTask.End, false, nil, nil)
 		assert.Nil(t, err)
 		err = keyshareSubmissionTask.Prepare(ctx)
 		assert.Nil(t, err)
@@ -99,7 +99,5 @@ func TestKeyShareSubmission_Bad4(t *testing.T) {
 
 		_, err = keyshareSubmissionTask.Execute(ctx)
 		assert.NotNil(t, err)
-
 	}
-
 }

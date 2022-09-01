@@ -6,9 +6,10 @@ import (
 	"context"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/alicenet/alicenet/layer1/tests"
 	"github.com/alicenet/alicenet/layer1/transaction"
-	"github.com/stretchr/testify/assert"
 )
 
 // We test to ensure that everything behaves correctly.
@@ -27,7 +28,7 @@ func TestGPKjDispute_NoBadGPKj(t *testing.T) {
 		for j := 0; j < n; j++ {
 			disputeBadGPKjTask := suite.DisputeGPKjTasks[idx][j]
 
-			err := disputeBadGPKjTask.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "DisputeBadGPKjTask", "task-id", nil)
+			err := disputeBadGPKjTask.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "DisputeBadGPKjTask", "task-id", disputeBadGPKjTask.Start, disputeBadGPKjTask.End, false, nil, nil)
 			assert.Nil(t, err)
 			err = disputeBadGPKjTask.Prepare(ctx)
 			assert.Nil(t, err)
@@ -80,7 +81,7 @@ func TestGPKjDispute_TwoInvalid(t *testing.T) {
 		for j := 0; j < n; j++ {
 			disputeBadGPKjTask := suite.DisputeGPKjTasks[idx][j]
 
-			err := disputeBadGPKjTask.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "DisputeBadGPKjTask", "task-id", nil)
+			err := disputeBadGPKjTask.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "DisputeBadGPKjTask", "task-id", disputeBadGPKjTask.Start, disputeBadGPKjTask.End, false, nil, nil)
 			assert.Nil(t, err)
 			err = disputeBadGPKjTask.Prepare(ctx)
 			assert.Nil(t, err)
@@ -135,7 +136,7 @@ func TestGPKjDispute_FiveInvalid(t *testing.T) {
 		for j := 0; j < n; j++ {
 			disputeBadGPKjTask := suite.DisputeGPKjTasks[idx][j]
 
-			err := disputeBadGPKjTask.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "DisputeBadGPKjTask", "task-id", nil)
+			err := disputeBadGPKjTask.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "DisputeBadGPKjTask", "task-id", disputeBadGPKjTask.Start, disputeBadGPKjTask.End, false, nil, nil)
 			assert.Nil(t, err)
 			err = disputeBadGPKjTask.Prepare(ctx)
 			assert.Nil(t, err)

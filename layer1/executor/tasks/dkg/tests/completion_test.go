@@ -6,43 +6,44 @@ import (
 	"context"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
+	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
-	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/utils"
 	"github.com/alicenet/alicenet/layer1/monitor/objects"
 	"github.com/alicenet/alicenet/layer1/tests"
 	"github.com/alicenet/alicenet/layer1/transaction"
 	"github.com/alicenet/alicenet/logging"
 	"github.com/alicenet/alicenet/test/mocks"
-
-	"github.com/stretchr/testify/assert"
+	"github.com/alicenet/alicenet/utils"
 )
 
-// We complete everything correctly, happy path
+// We complete everything correctly, happy path.
 func TestCompletion_Group_1_AllGood(t *testing.T) {
-	n := 4
-	fixture := setupEthereum(t, n)
+	numValidators := 4
+	fixture := setupEthereum(t, numValidators)
 	suite := StartFromGPKjPhase(t, fixture, []int{}, []int{}, 100)
 	ctx := context.Background()
 
 	monState := objects.NewMonitorState()
 	accounts := suite.Eth.GetKnownAccounts()
-	for idx := 0; idx < n; idx++ {
+	for idx := 0; idx < numValidators; idx++ {
 		monState.PotentialValidators[accounts[idx].Address] = objects.PotentialValidator{
 			Account: accounts[idx].Address,
 		}
 	}
 
-	for idx := 0; idx < n; idx++ {
+	for idx := 0; idx < numValidators; idx++ {
 		err := monState.PersistState(suite.DKGStatesDbs[idx])
 		assert.Nil(t, err)
 	}
 
-	for idx := 0; idx < n; idx++ {
-		for j := 0; j < n; j++ {
+	for idx := 0; idx < numValidators; idx++ {
+		for j := 0; j < numValidators; j++ {
 			disputeGPKjTask := suite.DisputeGPKjTasks[idx][j]
 
-			err := disputeGPKjTask.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "disputeGPKjTask", "task-id", nil)
+			err := disputeGPKjTask.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "disputeGPKjTask", "task-id", disputeGPKjTask.Start, disputeGPKjTask.End, false, nil, nil)
 			assert.Nil(t, err)
 			err = disputeGPKjTask.Prepare(ctx)
 			assert.Nil(t, err)
@@ -61,10 +62,10 @@ func TestCompletion_Group_1_AllGood(t *testing.T) {
 	assert.Nil(t, err)
 	tests.AdvanceTo(suite.Eth, dkgState.PhaseStart+dkgState.PhaseLength)
 
-	for idx := 0; idx < n; idx++ {
+	for idx := 0; idx < numValidators; idx++ {
 		completionTask := suite.CompletionTasks[idx]
 
-		err := completionTask.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "CompletionTask", "task-id", nil)
+		err := completionTask.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "CompletionTask", "task-id", completionTask.Start, completionTask.End, false, nil, nil)
 		assert.Nil(t, err)
 		err = completionTask.Prepare(ctx)
 		assert.Nil(t, err)
@@ -76,7 +77,19 @@ func TestCompletion_Group_1_AllGood(t *testing.T) {
 		assert.Nil(t, err)
 		if shouldExecute {
 			txn, taskError := completionTask.Execute(ctx)
-			amILeading := utils.AmILeading(suite.Eth, ctx, fixture.Logger, int(completionTask.GetStart()), completionTask.StartBlockHash[:], n, dkgState.Index)
+			amILeading, err := utils.AmILeading(
+				suite.Eth,
+				ctx,
+				fixture.Logger,
+				int(completionTask.GetStart()),
+				completionTask.StartBlockHash[:],
+				numValidators,
+				// we need -1 since ethdkg indexes start at 1 while leader election expect index starting at 0.
+				dkgState.Index-1,
+				constants.ETHDKGDesperationFactor,
+				constants.ETHDKGDesperationDelay,
+			)
+			assert.Nil(t, err)
 			if amILeading {
 				assert.Nil(t, taskError)
 				rcptResponse, err := fixture.Watcher.Subscribe(ctx, txn, nil)
@@ -88,14 +101,13 @@ func TestCompletion_Group_1_AllGood(t *testing.T) {
 				assert.True(t, taskError.IsRecoverable())
 			}
 		}
-
 	}
 }
 
-// We complete everything correctly, but we do not complete in time
+// We complete everything correctly, but we do not complete in time.
 func TestCompletion_Group_1_Bad1(t *testing.T) {
-	n := 6
-	fixture := setupEthereum(t, n)
+	numValidators := 6
+	fixture := setupEthereum(t, numValidators)
 	suite := StartFromGPKjPhase(t, fixture, []int{}, []int{}, 100)
 	ctx := context.Background()
 
@@ -104,7 +116,7 @@ func TestCompletion_Group_1_Bad1(t *testing.T) {
 	tests.AdvanceTo(suite.Eth, dkgState.PhaseStart+dkgState.PhaseLength)
 
 	task := suite.CompletionTasks[0]
-	err = task.Initialize(ctx, nil, suite.DKGStatesDbs[0], fixture.Logger, suite.Eth, fixture.Contracts, "CompletionTask", "task-id", nil)
+	err = task.Initialize(ctx, nil, suite.DKGStatesDbs[0], fixture.Logger, suite.Eth, fixture.Contracts, "CompletionTask", "task-id", task.Start, task.End, false, nil, nil)
 	assert.Nil(t, err)
 
 	err = task.Prepare(ctx)
@@ -124,7 +136,7 @@ func TestCompletion_Group_1_Bad2(t *testing.T) {
 	db := mocks.NewTestDB()
 	log := logging.GetLogger("test").WithField("test", "test")
 
-	err := task.Initialize(context.Background(), nil, db, log, nil, nil, "", "", nil)
+	err := task.Initialize(context.Background(), nil, db, log, nil, nil, "", "", task.Start, task.End, false, nil, nil)
 	assert.Nil(t, err)
 
 	taskErr := task.Prepare(context.Background())

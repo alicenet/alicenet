@@ -5,15 +5,16 @@ import (
 	"errors"
 	"time"
 
+	grpc_retry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
+	"github.com/sirupsen/logrus"
+	"google.golang.org/grpc"
+
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/interfaces"
 	"github.com/alicenet/alicenet/logging"
 	"github.com/alicenet/alicenet/middleware"
 	pb "github.com/alicenet/alicenet/proto"
 	"github.com/alicenet/alicenet/utils"
-	grpc_retry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
-	"github.com/sirupsen/logrus"
-	"google.golang.org/grpc"
 )
 
 type StatusRequest struct {
@@ -222,7 +223,7 @@ type GetPeersResponse struct {
 
 // NewP2PBus binds a peer to the common work sharing and broadcast channels of
 // the peer system.
-func newP2PBus(client interfaces.P2PClient, reqChan <-chan interface{}, gossipChan <-chan interface{}, gossipTxChan <-chan interface{}, closeChan <-chan struct{}, reqCount int, gossipCount int, gossipTxCount int, cleanup func()) *P2PBus {
+func newP2PBus(client interfaces.P2PClient, reqChan, gossipChan, gossipTxChan <-chan interface{}, closeChan <-chan struct{}, reqCount, gossipCount, gossipTxCount int, cleanup func()) *P2PBus {
 	p2p := &P2PBus{
 		client:            client,
 		reqChan:           reqChan,
@@ -295,7 +296,7 @@ func (p2p *P2PBus) cleaner() {
 	<-time.After(6 * constants.MsgTimeout)
 }
 
-// TODO: add additional logic that allows better introspection
+// TODO: add additional logic that allows better introspection.
 func (p2p *P2PBus) workerOversight() {
 	for {
 		select {

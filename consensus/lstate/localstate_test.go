@@ -2,11 +2,12 @@ package lstate
 
 import (
 	"errors"
+	"testing"
+
 	"github.com/alicenet/alicenet/consensus/objs"
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/crypto"
 	"github.com/alicenet/alicenet/errorz"
-	"testing"
 )
 
 func TestLocalState_setMostRecentProposal_Error1(t *testing.T) {

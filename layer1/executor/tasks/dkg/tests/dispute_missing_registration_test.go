@@ -6,10 +6,10 @@ import (
 	"context"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/alicenet/alicenet/layer1/tests"
 	"github.com/alicenet/alicenet/layer1/transaction"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestDisputeMissingRegistrationTask_Group_1_DoTaskSuccessOneParticipantAccused(t *testing.T) {
@@ -23,7 +23,7 @@ func TestDisputeMissingRegistrationTask_Group_1_DoTaskSuccessOneParticipantAccus
 
 	var receiptResponses []transaction.ReceiptResponse
 	for idx := 0; idx < n; idx++ {
-		err := suite.DispMissingRegTasks[idx].Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "DisputeMissingRegistrationTask", "task-id", nil)
+		err := suite.DispMissingRegTasks[idx].Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "DisputeMissingRegistrationTask", "task-id", suite.DispMissingRegTasks[idx].Start, suite.DispMissingRegTasks[idx].End, false, nil, nil)
 		assert.Nil(t, err)
 
 		err = suite.DispMissingRegTasks[idx].Prepare(ctx)
@@ -34,8 +34,8 @@ func TestDisputeMissingRegistrationTask_Group_1_DoTaskSuccessOneParticipantAccus
 		assert.True(t, shouldExecute)
 
 		txn, taskErr := suite.DispMissingRegTasks[idx].Execute(ctx)
-		//after the first accusation the ethereum contracts will return that
-		//the validator is already accused
+		// after the first accusation the ethereum contracts will return that
+		// the validator is already accused
 		if idx == 0 {
 			assert.Nil(t, taskErr)
 			assert.NotNil(t, txn)
@@ -69,7 +69,7 @@ func TestDisputeMissingRegistrationTask_Group_1_DoTaskSuccessThreeParticipantAcc
 
 	var receiptResponses []transaction.ReceiptResponse
 	for idx := 0; idx < n; idx++ {
-		err := suite.DispMissingRegTasks[idx].Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "DisputeMissingRegistrationTask", "task-id", nil)
+		err := suite.DispMissingRegTasks[idx].Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "DisputeMissingRegistrationTask", "task-id", suite.DispMissingRegTasks[idx].Start, suite.DispMissingRegTasks[idx].End, false, nil, nil)
 		assert.Nil(t, err)
 
 		err = suite.DispMissingRegTasks[idx].Prepare(ctx)
@@ -80,8 +80,8 @@ func TestDisputeMissingRegistrationTask_Group_1_DoTaskSuccessThreeParticipantAcc
 		assert.True(t, shouldExecute)
 
 		txn, taskErr := suite.DispMissingRegTasks[idx].Execute(ctx)
-		//after the first accusation the ethereum contracts will return that
-		//the validator is already accused
+		// after the first accusation the ethereum contracts will return that
+		// the validator is already accused
 		if idx == 0 {
 			assert.Nil(t, taskErr)
 			assert.NotNil(t, txn)
@@ -115,7 +115,7 @@ func TestDisputeMissingRegistrationTask_Group_1_DoTaskSuccessAllParticipantsAreB
 
 	var receiptResponses []transaction.ReceiptResponse
 	for idx := 0; idx < n; idx++ {
-		err := suite.DispMissingRegTasks[idx].Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "DisputeMissingRegistrationTask", "task-id", nil)
+		err := suite.DispMissingRegTasks[idx].Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "DisputeMissingRegistrationTask", "task-id", suite.DispMissingRegTasks[idx].Start, suite.DispMissingRegTasks[idx].End, false, nil, nil)
 		assert.Nil(t, err)
 
 		err = suite.DispMissingRegTasks[idx].Prepare(ctx)
@@ -126,8 +126,8 @@ func TestDisputeMissingRegistrationTask_Group_1_DoTaskSuccessAllParticipantsAreB
 		assert.True(t, shouldExecute)
 
 		txn, taskErr := suite.DispMissingRegTasks[idx].Execute(ctx)
-		//after the first accusation the ethereum contracts will return that
-		//the validator is already accused
+		// after the first accusation the ethereum contracts will return that
+		// the validator is already accused
 		if idx == 0 {
 			assert.Nil(t, taskErr)
 			assert.NotNil(t, txn)

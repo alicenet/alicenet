@@ -14,7 +14,7 @@ import (
 	"github.com/alicenet/alicenet/consensus/objs"
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/layer1"
-	"github.com/alicenet/alicenet/layer1/executor/tasks"
+	"github.com/alicenet/alicenet/layer1/executor"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/snapshots"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/snapshots/state"
 	"github.com/alicenet/alicenet/layer1/monitor/events"
@@ -28,7 +28,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// Monitor describes required functionality to monitor Ethereum
+// Monitor describes required functionality to monitor Ethereum.
 type Monitor interface {
 	Start() error
 	Close()
@@ -48,16 +48,17 @@ type monitor struct {
 	tickInterval         time.Duration
 	timeout              time.Duration
 	logger               *logrus.Entry
-	cancelChan           chan bool
+	closeOnce            sync.Once
+	closeChan            chan struct{}
 	statusChan           chan string
 	State                *objects.MonitorState
 	batchSize            uint64
 
 	//for communication with the TasksScheduler
-	taskRequestChan chan<- tasks.TaskRequest
+	taskHandler executor.TaskHandler
 }
 
-// NewMonitor creates a new Monitor
+// NewMonitor creates a new Monitor.
 func NewMonitor(cdb *db.Database,
 	monDB *db.Database,
 	adminHandler interfaces.AdminHandler,
@@ -67,59 +68,68 @@ func NewMonitor(cdb *db.Database,
 	eventFilterAddresses []common.Address,
 	tickInterval time.Duration,
 	batchSize uint64,
-	taskRequestChan chan<- tasks.TaskRequest,
+	chainId uint32,
+	taskHandler executor.TaskHandler,
 ) (*monitor, error) {
-
 	logger := logging.GetLogger("monitor").WithFields(logrus.Fields{
 		"Interval": tickInterval.String(),
 		"Timeout":  constants.MonitorTimeout.String(),
 	})
 
-	eventMap := objects.NewEventMap()
-	err := events.SetupEventMap(eventMap, cdb, monDB, adminHandler, depositHandler, taskRequestChan)
-	if err != nil {
-		return nil, err
-	}
-
-	State := objects.NewMonitorState()
-
-	adminHandler.RegisterSnapshotCallback(func(bh *objs.BlockHeader) error {
-		logger.Info("Entering snapshot callback")
-		return PersistSnapshot(eth, bh, taskRequestChan, monDB)
-	})
-
-	return &monitor{
+	mon := &monitor{
 		adminHandler:         adminHandler,
 		depositHandler:       depositHandler,
 		eth:                  eth,
 		contracts:            contracts,
 		eventFilterAddresses: eventFilterAddresses,
-		eventMap:             eventMap,
 		cdb:                  cdb,
 		db:                   monDB,
 		logger:               logger,
 		tickInterval:         tickInterval,
 		timeout:              constants.MonitorTimeout,
-		cancelChan:           make(chan bool, 1),
+		closeChan:            make(chan struct{}),
+		closeOnce:            sync.Once{},
 		statusChan:           make(chan string, 1),
-		State:                State,
 		batchSize:            batchSize,
-		taskRequestChan:      taskRequestChan,
-	}, nil
+		taskHandler:          taskHandler,
+	}
 
+	eventMap := objects.NewEventMap()
+	err := events.SetupEventMap(eventMap, cdb, monDB, adminHandler, depositHandler, taskHandler, mon.Close, chainId)
+	if err != nil {
+		return nil, err
+	}
+	mon.eventMap = eventMap
+	mon.State = objects.NewMonitorState()
+
+	adminHandler.RegisterSnapshotCallback(func(bh *objs.BlockHeader, numOfValidators, validatorIndex int) error {
+		logger.Info("Entering snapshot callback")
+		return PersistSnapshot(eth, bh, numOfValidators, validatorIndex, taskHandler, monDB)
+	})
+
+	return mon, nil
 }
 
+// GetStatus of the monitor.
 func (mon *monitor) GetStatus() <-chan string {
 	return mon.statusChan
 }
 
+// Close the event loop.
 func (mon *monitor) Close() {
-	mon.cancelChan <- true
+	mon.closeOnce.Do(func() {
+		close(mon.closeChan)
+	})
 }
 
-// Start starts the event loop
-func (mon *monitor) Start() error {
+// CloseChan returns a channel that is closed when the monitor is
+// shutting down.
+func (mon *monitor) CloseChan() <-chan struct{} {
+	return mon.closeChan
+}
 
+// Start starts the event loop.
+func (mon *monitor) Start() error {
 	logger := mon.logger
 
 	// Load or create initial State
@@ -141,7 +151,8 @@ func (mon *monitor) Start() error {
 	if startingBlock > mon.State.HighestBlockProcessed {
 		logger.WithFields(logrus.Fields{
 			"StartingBlock":         startingBlock,
-			"HighestBlockProcessed": mon.State.HighestBlockProcessed}).
+			"HighestBlockProcessed": mon.State.HighestBlockProcessed,
+		}).
 			Info("Overriding highest block processed due to config")
 		mon.State.HighestBlockProcessed = startingBlock
 	}
@@ -149,7 +160,8 @@ func (mon *monitor) Start() error {
 	if startingBlock > mon.State.HighestBlockFinalized {
 		logger.WithFields(logrus.Fields{
 			"StartingBlock":         startingBlock,
-			"HighestBlockFinalized": mon.State.HighestBlockFinalized}).
+			"HighestBlockFinalized": mon.State.HighestBlockFinalized,
+		}).
 			Info("Overriding highest block finalized due to config")
 		mon.State.HighestBlockFinalized = startingBlock
 	}
@@ -162,13 +174,12 @@ func (mon *monitor) Start() error {
 	logger.Infof("...Monitor tick interval: %v", mon.tickInterval.String())
 	logger.Info(strings.Repeat("-", 80))
 
-	mon.cancelChan = make(chan bool)
-	go mon.eventLoop(logger, mon.cancelChan)
+	go mon.eventLoop(logger)
 	return nil
 }
 
-func (mon *monitor) eventLoop(logger *logrus.Entry, cancelChan <-chan bool) {
-
+// eventLoop to process the events and chain changes.
+func (mon *monitor) eventLoop(logger *logrus.Entry) {
 	gcTimer := time.After(time.Second * constants.MonDBGCFreq)
 	for {
 		ctx, cf := context.WithTimeout(context.Background(), mon.timeout)
@@ -185,7 +196,7 @@ func (mon *monitor) eventLoop(logger *logrus.Entry, cancelChan <-chan bool) {
 				logger.Debugf("Failed to reclaim any space during garbage collection: %v", err)
 			}
 			gcTimer = time.After(time.Second * constants.MonDBGCFreq)
-		case <-cancelChan:
+		case <-mon.closeChan:
 			mon.logger.Warnf("Received cancel request for event loop.")
 			cf()
 			return
@@ -214,11 +225,11 @@ func (mon *monitor) eventLoop(logger *logrus.Entry, cancelChan <-chan bool) {
 	}
 }
 
+// MarshalJSON implements the json.Marshaler interface. It will only marshal the State field.
 func (m *monitor) MarshalJSON() ([]byte, error) {
 	m.State.RLock()
 	defer m.State.RUnlock()
 	rawData, err := json.Marshal(m.State)
-
 	if err != nil {
 		return nil, fmt.Errorf("could not marshal state: %v", err)
 	}
@@ -226,19 +237,21 @@ func (m *monitor) MarshalJSON() ([]byte, error) {
 	return rawData, nil
 }
 
+// UnmarshalJSON implements the json.Unmarshaler interface. It will only unmarshal the State field.
 func (m *monitor) UnmarshalJSON(raw []byte) error {
 	err := json.Unmarshal(raw, m.State)
 	return err
 }
 
-// MonitorTick using existing monitorState and incrementally updates it based on current State of Ethereum endpoint
+// MonitorTick using existing monitorState and incrementally updates it based on current State of Ethereum endpoint.
 func MonitorTick(ctx context.Context, cf context.CancelFunc, eth layer1.Client, allContracts layer1.AllSmartContracts, monitorState *objects.MonitorState, logger *logrus.Entry,
-	eventMap *objects.EventMap, adminHandler interfaces.AdminHandler, batchSize uint64, filterContracts []common.Address) error {
-
+	eventMap *objects.EventMap, adminHandler interfaces.AdminHandler, batchSize uint64, filterContracts []common.Address,
+) error {
 	defer cf()
 	logger = logger.WithFields(logrus.Fields{
 		"EndpointInSync": monitorState.EndpointInSync,
-		"EthereumInSync": monitorState.EthereumInSync})
+		"EthereumInSync": monitorState.EthereumInSync,
+	})
 
 	addresses := filterContracts
 
@@ -331,12 +344,12 @@ func MonitorTick(ctx context.Context, cf context.CancelFunc, eth layer1.Client, 
 	return nil
 }
 
+// ProcessEvents returned from layer1 chain.
 func ProcessEvents(eth layer1.Client, contracts layer1.AllSmartContracts, monitorState *objects.MonitorState, logs []types.Log, logger *logrus.Entry, currentBlock uint64, eventMap *objects.EventMap) (uint64, error) {
 	logEntry := logger.WithField("Block", currentBlock)
 
 	// Check all the logs for an event we want to process
 	for _, log := range logs {
-
 		eventID := log.Topics[0].String()
 		logEntry := logEntry.WithField("EventID", eventID)
 
@@ -359,7 +372,7 @@ func ProcessEvents(eth layer1.Client, contracts layer1.AllSmartContracts, monito
 }
 
 // PersistSnapshot should be registered as a callback and be kicked off automatically by badger when appropriate
-func PersistSnapshot(eth layer1.Client, bh *objs.BlockHeader, taskRequestChan chan<- tasks.TaskRequest, monDB *db.Database) error {
+func PersistSnapshot(eth layer1.Client, bh *objs.BlockHeader, numOfValidators int, validatorIndex int, taskHandler executor.TaskHandler, monDB *db.Database) error {
 	if bh == nil {
 		return errors.New("invalid blockHeader for snapshot")
 	}
@@ -375,15 +388,18 @@ func PersistSnapshot(eth layer1.Client, bh *objs.BlockHeader, taskRequestChan ch
 	}
 
 	// kill any snapshot task that might be running
-	taskRequestChan <- tasks.NewKillTaskRequest(&snapshots.SnapshotTask{})
+	ctx := context.Background()
+	_, err = taskHandler.KillTaskByType(ctx, &snapshots.SnapshotTask{})
+	if err != nil {
+		return err
+	}
 
-	taskRequestChan <- tasks.NewScheduleTaskRequest(snapshots.NewSnapshotTask(0, 0, uint64(bh.BClaims.Height)))
-
-	return nil
+	_, err = taskHandler.ScheduleTask(ctx, snapshots.NewSnapshotTask(uint64(bh.BClaims.Height), numOfValidators, validatorIndex), "")
+	return err
 }
 
 // TODO: Remove from request hot path use memory cache
-// persist worker group across execution iterations
+// logWork for persisting worker group across execution iterations.
 type logWork struct {
 	isLast    bool
 	ctx       context.Context
@@ -393,6 +409,7 @@ type logWork struct {
 	err       error
 }
 
+// eventSorter is used to sort and keep track of processing events.
 type eventSorter struct {
 	*sync.Mutex
 	wg      *sync.WaitGroup
@@ -401,6 +418,7 @@ type eventSorter struct {
 	eth     layer1.Client
 }
 
+// Start all the workers.
 func (es *eventSorter) Start(num uint64) {
 	for i := uint64(0); i < num; i++ {
 		es.wg.Add(1)
@@ -409,6 +427,7 @@ func (es *eventSorter) Start(num uint64) {
 	es.wg.Wait()
 }
 
+// worker gets the logs for a specific block and address.
 func (es *eventSorter) worker() {
 	defer es.wg.Done()
 	for {
@@ -459,7 +478,8 @@ func (es *eventSorter) worker() {
 	}
 }
 
-func getLogsConcurrentWithSort(ctx context.Context, addresses []common.Address, eth layer1.Client, processed uint64, lastBlock uint64) ([][]types.Log, error) {
+// getLogsConcurrentWithSort prepares the workers and start the processing.
+func getLogsConcurrentWithSort(ctx context.Context, addresses []common.Address, eth layer1.Client, processed, lastBlock uint64) ([][]types.Log, error) {
 	numworkers := utils.Max(utils.Min((utils.Max(lastBlock, processed)-utils.Min(lastBlock, processed))/4, 128), 1)
 	wc := make(chan *logWork, 3+numworkers)
 	go func() {

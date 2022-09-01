@@ -8,37 +8,39 @@ import (
 	"math/big"
 	"sync"
 
-	"github.com/alicenet/alicenet/constants"
-	"github.com/alicenet/alicenet/layer1"
 	goEthereum "github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/sirupsen/logrus"
+
+	"github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/layer1"
 )
 
-// Internal struct used to send work requests to the workers that will retrieve
-// the receipts
+// MonitorWorkRequest is an internal struct used to send work requests to the
+// workers that will retrieve the receipts.
 type MonitorWorkRequest struct {
-	txn    info   // Info object that contains the state that will be used to retrieve the receipt from the blockchain
-	height uint64 // Current height of the blockchain head
+	txn    monitored // monitored txn that contains the state that will be used to retrieve the receipt from the blockchain
+	height uint64    // Current height of the blockchain head
 }
 
-// Internal struct used by the workers to communicate the result from the receipt retrieval work
+// MonitorWorkResponse is an internal struct used by the workers to communicate the result
+// from the receipt retrieval work.
 type MonitorWorkResponse struct {
 	txnHash    common.Hash         // hash of transaction
-	retriedTxn *retriedTransaction // transaction info object from the analyzed transaction
+	retriedTxn *retriedTransaction // transaction monitored object from the analyzed transaction
 	err        error               // any error found during the receipt retrieve (can be NonRecoverable, Recoverable or TransactionStale errors)
-	receipt    *types.Receipt      // receipt retrieved (can be nil) if a receipt was not found or it's not ready yet
+	receipt    *types.Receipt      // receipt retrieved (can be nil) if a receipt was not found, or it's not ready yet
 }
 
-// Internal struct to keep track of retried transaction by the workers
+// retriedTransaction is an internal struct to keep track of retried transaction by the workers.
 type retriedTransaction struct {
 	txn *types.Transaction // new transaction after the retry attempt
 	err error              // error that happened during the transaction retry
 }
 
-// Structs that keep track of the state needed by the worker pool service. The
-// workerPool spawn multiple go routines (workers) to check and retrieve the
+// WorkerPool is a Struct that keep track of the state needed by the worker pool service.
+// The WorkerPool spawn multiple go routines (workers) to check and retrieve the
 // receipts.
 type WorkerPool struct {
 	wg                  *sync.WaitGroup
@@ -47,16 +49,16 @@ type WorkerPool struct {
 	baseFee             *big.Int                   // Base fee of the current block in case we need to retry a stale transaction
 	tipCap              *big.Int                   // Miner tip cap of the current block in case we need to retry a stale transaction
 	logger              *logrus.Entry              // Logger to log messages
-	requestWorkChannel  <-chan MonitorWorkRequest  // Channel where will be send the work requests
-	responseWorkChannel chan<- MonitorWorkResponse // Channel where the work response will be send
+	requestWorkChannel  <-chan MonitorWorkRequest  // Channel where will be sent the work requests
+	responseWorkChannel chan<- MonitorWorkResponse // Channel where the work response will be sent
 }
 
-// Creates a new WorkerPool service
-func NewWorkerPool(ctx context.Context, client layer1.Client, baseFee *big.Int, tipCap *big.Int, logger *logrus.Entry, requestWorkChannel <-chan MonitorWorkRequest, responseWorkChannel chan<- MonitorWorkResponse) *WorkerPool {
+// NewWorkerPool creates a new WorkerPool service.
+func NewWorkerPool(ctx context.Context, client layer1.Client, baseFee, tipCap *big.Int, logger *logrus.Entry, requestWorkChannel <-chan MonitorWorkRequest, responseWorkChannel chan<- MonitorWorkResponse) *WorkerPool {
 	return &WorkerPool{new(sync.WaitGroup), ctx, client, baseFee, tipCap, logger, requestWorkChannel, responseWorkChannel}
 }
 
-// Function to spawn the workers and wait for the job to be done.
+// ExecuteWork is a function to spawn the workers and wait for the job to be done.
 func (w *WorkerPool) ExecuteWork(numWorkers uint64) {
 	for i := uint64(0); i < numWorkers; i++ {
 		w.wg.Add(1)
@@ -66,10 +68,10 @@ func (w *WorkerPool) ExecuteWork(numWorkers uint64) {
 	close(w.responseWorkChannel)
 }
 
-// Unit of work. A worker is spawned as go routine. A worker check and retrieve
+// worker is a unit of work. A worker is spawned as go routine. A worker check and retrieve
 // receipts for multiple transactions. The worker will be executing while
 // there's transactions to be checked or there's a timeout (set by
-// constants.TxWorkerTimeout)
+// constants.TxWorkerTimeout).
 func (w *WorkerPool) worker() {
 	ctx, cf := context.WithTimeout(w.ctx, constants.TxWorkerTimeout)
 	defer cf()
@@ -105,7 +107,8 @@ func (w *WorkerPool) worker() {
 	}
 }
 
-func (w *WorkerPool) handleResponse(ctx context.Context, monitoredTx info, txnHash common.Hash, rcpt *types.Receipt, err error, iteration uint64) (MonitorWorkResponse, bool) {
+// handleResponse handles the receipt for the txn and decides how to proceed based on it information.
+func (w *WorkerPool) handleResponse(ctx context.Context, monitoredTxn monitored, txnHash common.Hash, rcpt *types.Receipt, err error, iteration uint64) (MonitorWorkResponse, bool) {
 	if err != nil {
 		switch err.(type) {
 		case *ErrRecoverable:
@@ -115,10 +118,10 @@ func (w *WorkerPool) handleResponse(ctx context.Context, monitoredTx info, txnHa
 			}
 		case *ErrTransactionStale:
 			// try to replace a transaction if the conditions are met
-			if monitoredTx.EnableAutoRetry {
+			if monitoredTxn.EnableAutoRetry {
 				defaultAccount := w.client.GetDefaultAccount()
-				if bytes.Equal(monitoredTx.FromAddress[:], defaultAccount.Address[:]) {
-					newTxn, retryTxErr := w.client.RetryTransaction(ctx, monitoredTx.Txn, w.baseFee, w.tipCap)
+				if bytes.Equal(monitoredTxn.FromAddress[:], defaultAccount.Address[:]) {
+					newTxn, retryTxErr := w.client.RetryTransaction(ctx, monitoredTxn.Txn, w.baseFee, w.tipCap)
 					return MonitorWorkResponse{txnHash: txnHash, retriedTxn: &retriedTransaction{txn: newTxn, err: retryTxErr}}, false
 				}
 			}
@@ -128,18 +131,18 @@ func (w *WorkerPool) handleResponse(ctx context.Context, monitoredTx info, txnHa
 		// other errors back to main
 		return MonitorWorkResponse{txnHash: txnHash, err: err}, false
 	} else {
-		// send receipt (even if it nil) back to main thread
+		// send receipt (even if it is nil) back to main thread
 		return MonitorWorkResponse{txnHash: txnHash, receipt: rcpt}, false
 	}
 }
 
-// Internal function used by the workers to check/retrieve the receipts for a given transaction
-func (w *WorkerPool) getReceipt(ctx context.Context, monitoredTx info, currentHeight uint64, txnHash common.Hash) (*types.Receipt, error) {
+// getReceipt is an internal function used by the workers to check/retrieve the receipts for a given transaction.
+func (w *WorkerPool) getReceipt(ctx context.Context, monitoredTx monitored, currentHeight uint64, txnHash common.Hash) (*types.Receipt, error) {
 	txnHex := txnHash.Hex()
 	blockTimeSpan := currentHeight - monitoredTx.MonitoringHeight
 	_, isPending, err := w.client.GetTransactionByHash(ctx, txnHash)
 	if err != nil {
-		// if we couldn't locate a tx after NotFoundMaxBlocks blocks and we are still
+		// if we couldn't locate a tx after NotFoundMaxBlocks blocks, and we are still
 		// failing in getting the tx data, probably means that it was dropped
 		if errors.Is(err, goEthereum.NotFound) {
 			return nil, &ErrTxNotFound{fmt.Sprintf("could not find tx %v in the height %v!", txnHex, currentHeight)}
@@ -149,11 +152,11 @@ func (w *WorkerPool) getReceipt(ctx context.Context, monitoredTx info, currentHe
 	}
 	if isPending {
 		// We multiply MaxStaleBlocks by the number of times that we tried to retry a tx
-		// to add a increasing delay between successful retry attempts.
+		// to add an increasing delay between successful retry attempts.
 		// startedMonitoringHeight is restarted at every retry attempt. Most of the time
 		// after a successful retry, the tx being replaced will fall in the branch above
 		// (err tx not found). But in case of an edge case, where tx replacing and tx
-		// replaced are both valid (e.g sending tx to different nodes) we will continue
+		// replaced are both valid (e.g. sending tx to different nodes) we will continue
 		// to retry both, until we have a valid tx for this nonce.
 		maxPendingBlocks := monitoredTx.MaxStaleBlocks * (monitoredTx.RetryAmount + 1)
 		// after first retry we increase the delay between retries

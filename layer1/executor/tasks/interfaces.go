@@ -11,9 +11,11 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// Task the interface requirements of a task
+// Task to be implemented by every task to be used by TaskHandler.
 type Task interface {
-	Initialize(ctx context.Context, cancelFunc context.CancelFunc, database *db.Database, logger *logrus.Entry, eth layer1.Client, contracts layer1.AllSmartContracts, name string, id string, taskResponseChan TaskResponseChan) error
+	Lock()
+	Unlock()
+	Initialize(ctx context.Context, cancelFunc context.CancelFunc, database *db.Database, logger *logrus.Entry, eth layer1.Client, contracts layer1.AllSmartContracts, name string, id string, start uint64, end uint64, allowMultiExecution bool, subscribeOptions *transaction.SubscribeOptions, taskResponseChan InternalTaskResponseChan) error
 	Prepare(ctx context.Context) *TaskErr
 	Execute(ctx context.Context) (*types.Transaction, *TaskErr)
 	ShouldExecute(ctx context.Context) (bool, *TaskErr)
@@ -32,13 +34,14 @@ type Task interface {
 	GetLogger() *logrus.Entry
 }
 
-// TaskState the interface requirements of a task state
+// TaskState to be implemented by every task for persistence.
 type TaskState interface {
 	PersistState(txn *badger.Txn) error
 	LoadState(txn *badger.Txn) error
 }
 
-// TaskResponseChan the interface requirements of a task response chan
-type TaskResponseChan interface {
-	Add(TaskResponse)
+// InternalTaskResponseChan to be implemented by a response channel used
+// for communication between the TaskManager and TaskExecutor.
+type InternalTaskResponseChan interface {
+	Add(id string, err error)
 }
