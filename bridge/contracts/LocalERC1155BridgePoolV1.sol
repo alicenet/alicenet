@@ -28,11 +28,6 @@ contract LocalERC1155BridgePoolV1 is
     using MerkleProofParserLibrary for bytes;
     using MerkleProofLibrary for MerkleProofParserLibrary.MerkleProof;
 
-    uint256 private constant ERC1155_FIXED_TOKEN_ID =1;
-    bytes private constant ERC1155_EMPTY_DATA = abi.encodePacked("");
-
-    address internal _erc1155Contract;
-
     struct UTXO {
         uint32 chainID;
         address owner;
@@ -40,6 +35,10 @@ contract LocalERC1155BridgePoolV1 is
         uint256 fee;
         bytes32 txHash;
     }
+
+    uint256 private constant _ERC1155_FIXED_TOKEN_ID = 1;
+    bytes private constant _ERC1155_EMPTY_DATA = abi.encodePacked("");
+    address internal _erc1155Contract;
 
     constructor() ImmutableFactory(msg.sender) {}
 
@@ -50,8 +49,14 @@ contract LocalERC1155BridgePoolV1 is
     /// @notice Transfer tokens from sender and emit a "Deposited" event for minting correspondent tokens in sidechain
     /// @param msgSender The address of ERC sender
     /// @param number The amount or token Id
-    function deposit(address msgSender,  uint256 number) public onlyBridgeRouter {
-        IERC1155(_erc1155Contract).safeTransferFrom(msgSender, address(this), ERC1155_FIXED_TOKEN_ID, number, ERC1155_EMPTY_DATA);
+    function deposit(address msgSender, uint256 number) public onlyBridgeRouter {
+        IERC1155(_erc1155Contract).safeTransferFrom(
+            msgSender,
+            address(this),
+            _ERC1155_FIXED_TOKEN_ID,
+            number,
+            _ERC1155_EMPTY_DATA
+        );
     }
 
     /// @notice Transfer token to sender upon a verificable proof of burn in sidechain
@@ -67,7 +72,7 @@ contract LocalERC1155BridgePoolV1 is
             revert BridgePoolErrors.ReceiverIsNotOwnerOnProofOfBurnUTXO();
         }
         merkleProof.verifyInclusion(bClaims.stateRoot);
-/*         IERC1155(_erc1155Contract).safeTransferFrom(address(this), msg.sender, burnedUTXO.id, burnedUTXO.amount, burnedUTXO.data);
- */        
+        /*         IERC1155(_erc1155Contract).safeTransferFrom(address(this), msg.sender, burnedUTXO.id, burnedUTXO.amount, burnedUTXO.data);
+         */
     }
 }

@@ -28,8 +28,6 @@ contract LocalERC721BridgePoolV1 is
     using MerkleProofParserLibrary for bytes;
     using MerkleProofLibrary for MerkleProofParserLibrary.MerkleProof;
 
-    address internal _erc721Contract;
-
     struct UTXO {
         uint32 chainID;
         address owner;
@@ -37,6 +35,8 @@ contract LocalERC721BridgePoolV1 is
         uint256 fee;
         bytes32 txHash;
     }
+
+    address internal _erc721Contract;
 
     constructor() ImmutableFactory(msg.sender) {}
 

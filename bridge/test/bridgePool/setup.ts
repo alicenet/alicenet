@@ -1,10 +1,9 @@
 import { BigNumber } from "ethers";
 import { defaultAbiCoder } from "ethers/lib/utils";
 import { ethers } from "hardhat";
-import { IBridgePool } from "../../typechain-types";
 import { Fixture } from "../setup";
 
-const  ERC1155_FIXED_TOKEN_ID = 1;
+const ERC1155_FIXED_TOKEN_ID = 1;
 export interface state {
   Balances: {
     bToken: {
@@ -89,10 +88,23 @@ export async function getState(fixture: Fixture, bridgePoolAddress: string) {
       },
       ERC1155: {
         address: fixture.erc1155Mock.address.slice(-4),
-        admin: (await fixture.erc1155Mock.balanceOf(admin.address,ERC1155_FIXED_TOKEN_ID)).toBigInt(),
-        user: (await fixture.erc1155Mock.balanceOf(user.address,ERC1155_FIXED_TOKEN_ID)).toBigInt(),
+        admin: (
+          await fixture.erc1155Mock.balanceOf(
+            admin.address,
+            ERC1155_FIXED_TOKEN_ID
+          )
+        ).toBigInt(),
+        user: (
+          await fixture.erc1155Mock.balanceOf(
+            user.address,
+            ERC1155_FIXED_TOKEN_ID
+          )
+        ).toBigInt(),
         bridgePool: (
-          await fixture.erc1155Mock.balanceOf(bridgePoolAddress, ERC1155_FIXED_TOKEN_ID)
+          await fixture.erc1155Mock.balanceOf(
+            bridgePoolAddress,
+            ERC1155_FIXED_TOKEN_ID
+          )
         ).toBigInt(),
       },
     },
@@ -135,7 +147,7 @@ export const maxTokens = 1010; // has to be > bTokenFee => 10
 export const valueSent = ethers.utils.parseEther("1.0");
 
 export const tokenTypes = [
-    {
+  {
     it: "ERC20",
     options: {
       ercContractName: "erc20Mock",
@@ -154,8 +166,8 @@ export const tokenTypes = [
       quantity: 1,
       errorReason: "ERC721: invalid token ID",
     },
-  },  
-   {
+  },
+  {
     it: "ERC1155",
     options: {
       ercContractName: "erc1155Mock",
@@ -164,9 +176,8 @@ export const tokenTypes = [
       quantity: 1,
       errorReason: "ERC1155: caller is not token owner nor approved",
     },
-  }, 
+  },
 ];
-
 
 export const getBridgePoolMetamorphicAddress = (
   factoryAddress: string,

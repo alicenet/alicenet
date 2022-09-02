@@ -6,13 +6,14 @@ import "contracts/libraries/errors/BridgePoolFactoryErrors.sol";
 import "contracts/interfaces/IBridgePool.sol";
 
 abstract contract BridgePoolFactoryBase is ImmutableFactory {
+    uint256 private immutable _chainID;
+    bool private _publicPoolDeploymentEnabled;
+    address private _implementation;
+
     event BridgePoolCreated(address poolAddress, address token);
-    uint256 immutable _chainID;
-    bool publicPoolDeploymentEnabled;
-    address _implementation;
 
     modifier onlyFactoryOrPublicPoolDeploymentEnabled() {
-        if (msg.sender != _factoryAddress() && !publicPoolDeploymentEnabled) {
+        if (msg.sender != _factoryAddress() && !_publicPoolDeploymentEnabled) {
             revert BridgePoolFactoryErrors.PublicPoolDeploymentTemporallyDisabled();
         }
         _;
@@ -23,10 +24,49 @@ abstract contract BridgePoolFactoryBase is ImmutableFactory {
     }
 
     /**
+     * @notice returns bytecode for a Minimal Proxy (EIP-1167) that routes to BridgePool implementation
+     */
+    fallback() external {
+        address implementation_ = _implementation;
+        assembly {
+            let ptr := mload(0x40)
+            mstore(ptr, shl(176, 0x363d3d373d3d3d363d73)) //10
+            mstore(add(ptr, 10), shl(96, implementation_)) //20
+            mstore(add(ptr, 30), shl(136, 0x5af43d82803e903d91602b57fd5bf3)) //15
+            return(ptr, 45)
+        }
+    }
+
+    /**
+     * @notice calculates salt for a BridgePool implementation contract based on tokenType and version
+     * @param tokenType_ type of token (1=ERC20, 2=ERC721)
+     * @param version_ version of the implementation
+     * @return calculated calculated salt
+     */
+    function getLocalERCImplementationSalt(uint8 tokenType_, uint16 version_)
+        public
+        pure
+        returns (bytes32)
+    {
+        string memory tag;
+        if (tokenType_ == 1) tag = "LocalERC20";
+        else if (tokenType_ == 2) tag = "LocalERC721";
+        else if (tokenType_ == 3) tag = "LocalERC1155";
+        else tag = "Unknown";
+        return
+            keccak256(
+                bytes.concat(
+                    keccak256(abi.encodePacked(tag)),
+                    keccak256(abi.encodePacked(version_))
+                )
+            );
+    }
+
+    /**
      * @dev enables or disables public pool deployment
      **/
     function _togglePublicPoolDeployment() internal {
-        publicPoolDeploymentEnabled = !publicPoolDeploymentEnabled;
+        _publicPoolDeploymentEnabled = !_publicPoolDeploymentEnabled;
     }
 
     /**
@@ -68,6 +108,25 @@ abstract contract BridgePoolFactoryBase is ImmutableFactory {
     }
 
     /**
+     * @notice creates a BridgePool contract with specific salt and bytecode returned by this contract fallback
+     * @param salt_ salt of the implementation contract
+     * @return contractAddr the address of the BridgePool
+     */
+    function _deployStaticPool(bytes32 salt_) internal returns (address contractAddr) {
+        uint256 contractSize;
+        assembly {
+            let ptr := mload(0x40)
+            mstore(ptr, shl(136, 0x5880818283335afa3d82833e3d82f3))
+            contractAddr := create2(0, ptr, 15, salt_)
+            contractSize := extcodesize(contractAddr)
+        }
+        if (contractSize == 0) {
+            revert BridgePoolFactoryErrors.StaticPoolDeploymentFailed(salt_);
+        }
+        return contractAddr;
+    }
+
+    /**
      * @notice calculates salt for a BridgePool contract based on ERC contract's address, tokenType, chainID and version_
      * @param tokenContractAddr_ address of ERC contract of BridgePool
      * @param tokenType_ type of token (1=ERC20, 2=ERC721)
@@ -90,63 +149,5 @@ abstract contract BridgePoolFactoryBase is ImmutableFactory {
                     keccak256(abi.encodePacked(version_))
                 )
             );
-    }
-
-    /**
-     * @notice calculates salt for a BridgePool implementation contract based on tokenType and version
-     * @param tokenType_ type of token (1=ERC20, 2=ERC721)
-     * @param version_ version of the implementation
-     * @return calculated calculated salt
-     */
-    function getLocalERCImplementationSalt(uint8 tokenType_, uint16 version_)
-        public
-        pure
-        returns (bytes32)
-    {
-        string memory tag;
-        if (tokenType_ == 1)  tag = "LocalERC20";
-        else if (tokenType_ == 2) tag = "LocalERC721";
-        else if (tokenType_ == 3) tag = "LocalERC1155";
-        else tag = "Unknown";
-        return
-            keccak256(
-                bytes.concat(
-                    keccak256(abi.encodePacked(tag)),
-                    keccak256(abi.encodePacked(version_))
-                )
-            );
-    }
-
-    /**
-     * @notice creates a BridgePool contract with specific salt and bytecode returned by this contract fallback
-     * @param salt_ salt of the implementation contract
-     * @return contractAddr the address of the BridgePool
-     */
-    function _deployStaticPool(bytes32 salt_) internal returns (address contractAddr) {
-        uint256 contractSize;
-        assembly {
-            let ptr := mload(0x40)
-            mstore(ptr, shl(136, 0x5880818283335afa3d82833e3d82f3))
-            contractAddr := create2(0, ptr, 15, salt_)
-            contractSize := extcodesize(contractAddr)
-        }
-        if (contractSize == 0) {
-            revert BridgePoolFactoryErrors.StaticPoolDeploymentFailed(salt_);
-        }
-        return contractAddr;
-    }
-
-    /**
-     * @notice returns bytecode for a Minimal Proxy (EIP-1167) that routes to BridgePool implementation
-     */
-    fallback() external {
-        address implementation_ = _implementation;
-        assembly {
-            let ptr := mload(0x40)
-            mstore(ptr, shl(176, 0x363d3d373d3d3d363d73)) //10
-            mstore(add(ptr, 10), shl(96, implementation_)) //20
-            mstore(add(ptr, 30), shl(136, 0x5af43d82803e903d91602b57fd5bf3)) //15
-            return(ptr, 45)
-        }
     }
 }

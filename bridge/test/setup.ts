@@ -627,21 +627,21 @@ export const getFixture = async (
   const localERC20BridgePoolV1 = (await deployStaticWithFactory(
     factory,
     "LocalERC20BridgePoolV1",
-    getBridgePoolSalt("LocalERC20",1),
+    getBridgePoolSalt("LocalERC20", 1),
     [1337]
   )) as IBridgePool;
 
   const localERC721BridgePoolV1 = (await deployStaticWithFactory(
     factory,
     "LocalERC721BridgePoolV1",
-    getBridgePoolSalt("LocalERC721",1),
+    getBridgePoolSalt("LocalERC721", 1),
     [1337]
   )) as IBridgePool;
 
   const localERC1155BridgePoolV1 = (await deployStaticWithFactory(
     factory,
     "LocalERC1155BridgePoolV1",
-    getBridgePoolSalt("LocalERC1155",1),
+    getBridgePoolSalt("LocalERC1155", 1),
     [1337]
   )) as IBridgePool;
 
@@ -658,7 +658,7 @@ export const getFixture = async (
   const bridgeRouter = (await deployStaticWithFactory(
     factory,
     "BridgePoolRouterV1",
-    getBridgePoolSalt("BridgeRouter",1),
+    getBridgePoolSalt("BridgeRouter", 1),
     undefined,
     [1337]
   )) as BridgePoolRouterV1;
@@ -849,7 +849,6 @@ export const getReceiptForFailedTransaction = async (
   return receipt;
 };
 
-
 export const getBridgePoolSalt = (id: string, version: number): string => {
   return ethers.utils.keccak256(
     ethers.utils.solidityPack(
@@ -861,4 +860,3 @@ export const getBridgePoolSalt = (id: string, version: number): string => {
     )
   );
 };
-

@@ -1,9 +1,8 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { ethers } from "hardhat";
-import { IBridgePool } from "../../typechain-types";
 import { expect } from "../chai-setup";
-import { callFunctionAndGetReturnValues, factoryCallAnyFixture, Fixture, getBridgePoolSalt, getFixture, getMetamorphicAddress } from "../setup";
-import { getBridgePoolMetamorphicAddress, getState, showState, tokenTypes } from "./setup";
+import { factoryCallAnyFixture, Fixture, getFixture } from "../setup";
+import { tokenTypes } from "./setup";
 let user: SignerWithAddress;
 let fixture: Fixture;
 let depositCallData: any;
@@ -12,7 +11,6 @@ const valueSent = ethers.utils.parseEther("1.0");
 const valueOrId = 100; // value if ERC20 , tokenId otherwise
 const bridgePoolVersion = 1;
 const unexistentBridgePoolVersion = 11;
-
 
 tokenTypes.forEach(function (run) {
   describe(
@@ -39,22 +37,23 @@ tokenTypes.forEach(function (run) {
       });
 
       it("Should deploy new BridgePool as factory if public pool deployment is not enabled", async () => {
-         await factoryCallAnyFixture(
+        await factoryCallAnyFixture(
           fixture,
           "bridgePoolFactory",
           "deployNewLocalPool",
           [
             run.options.poolType,
             fixture[run.options.ercContractName].address,
-            bridgePoolVersion
+            bridgePoolVersion,
           ]
-        );     
+        );
         await expect(
           fixture.bToken
             .connect(user)
             .depositTokensOnBridges(bridgePoolVersion, encodedDepositCallData, {
-              value: valueSent
-            })).to.be.revertedWith(run.options.errorReason)
+              value: valueSent,
+            })
+        ).to.be.revertedWith(run.options.errorReason);
       });
 
       it("Should not deploy new BridgePool as user if public pool deployment is not enabled", async () => {
@@ -63,7 +62,11 @@ tokenTypes.forEach(function (run) {
             run.options.poolType,
             fixture[run.options.ercContractName].address,
             1
-          )).to.be.revertedWithCustomError(fixture.bridgePoolFactory,'PublicPoolDeploymentTemporallyDisabled')
+          )
+        ).to.be.revertedWithCustomError(
+          fixture.bridgePoolFactory,
+          "PublicPoolDeploymentTemporallyDisabled"
+        );
       });
 
       it("Should deploy new BridgePool as factory if public pool deployment is enabled", async () => {
@@ -87,8 +90,9 @@ tokenTypes.forEach(function (run) {
           fixture.bToken
             .connect(user)
             .depositTokensOnBridges(bridgePoolVersion, encodedDepositCallData, {
-              value: valueSent
-            })).to.be.revertedWith(run.options.errorReason)
+              value: valueSent,
+            })
+        ).to.be.revertedWith(run.options.errorReason);
       });
 
       it("Should deploy new BridgePool as user if public pool deployment is enabled", async () => {
@@ -107,8 +111,9 @@ tokenTypes.forEach(function (run) {
           fixture.bToken
             .connect(user)
             .depositTokensOnBridges(bridgePoolVersion, encodedDepositCallData, {
-              value: valueSent
-            })).to.be.revertedWith(run.options.errorReason)
+              value: valueSent,
+            })
+        ).to.be.revertedWith(run.options.errorReason);
       });
 
       it("Should not deploy two BridgePools with same ERC contract and version", async () => {
@@ -123,23 +128,41 @@ tokenTypes.forEach(function (run) {
           ]
         );
         await expect(
-          factoryCallAnyFixture(fixture, "bridgePoolFactory", "deployNewLocalPool", [
-            run.options.poolType,
-            fixture[run.options.ercContractName].address,
-            bridgePoolVersion,
-          ])
-        ).to.be.revertedWithCustomError(fixture.bridgePoolFactory,"StaticPoolDeploymentFailed");
+          factoryCallAnyFixture(
+            fixture,
+            "bridgePoolFactory",
+            "deployNewLocalPool",
+            [
+              run.options.poolType,
+              fixture[run.options.ercContractName].address,
+              bridgePoolVersion,
+            ]
+          )
+        ).to.be.revertedWithCustomError(
+          fixture.bridgePoolFactory,
+          "StaticPoolDeploymentFailed"
+        );
       });
 
       it("Should not deploy new BridgePool with inexistent version", async () => {
         await expect(
-          factoryCallAnyFixture(fixture, "bridgePoolFactory", "deployNewLocalPool", [
-            run.options.poolType,
-            fixture[run.options.ercContractName].address,
-            unexistentBridgePoolVersion,
-          ])
-          ).to.be.revertedWithCustomError(fixture.bridgePoolFactory,"PoolVersionNotSupported").withArgs(unexistentBridgePoolVersion);;
-        });
+          factoryCallAnyFixture(
+            fixture,
+            "bridgePoolFactory",
+            "deployNewLocalPool",
+            [
+              run.options.poolType,
+              fixture[run.options.ercContractName].address,
+              unexistentBridgePoolVersion,
+            ]
+          )
+        )
+          .to.be.revertedWithCustomError(
+            fixture.bridgePoolFactory,
+            "PoolVersionNotSupported"
+          )
+          .withArgs(unexistentBridgePoolVersion);
+      });
     }
   );
 });

@@ -1,5 +1,4 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
 import { expect } from "../chai-setup";
 
@@ -24,7 +23,6 @@ import {
 
 let fixture: Fixture;
 let expectedState: state;
-let firstOwner: SignerWithAddress;
 let user: SignerWithAddress;
 let user2: SignerWithAddress;
 let bridgePool: any;
@@ -32,7 +30,6 @@ let depositCallData: any;
 let encodedDepositCallData: string;
 
 const bTokenFeeInWEI = 1000;
-const ethIn = BigNumber.from(10000);
 
 // The following merkle proof and stateRoot values can be obtained from accusation_builder_test.go execution
 const merkleProof =
@@ -62,7 +59,7 @@ tokenTypes.forEach(function (run) {
     "Testing BridgePool Router Deposit/Withdraw for tokenType " + run.it,
     async () => {
       beforeEach(async () => {
-        [firstOwner, user, user2] = await ethers.getSigners();
+        const [, user] = await ethers.getSigners();
         fixture = await getFixture(true, true, false);
         console.log(await ethers.provider.getBalance(fixture.bToken.address));
         // const ethIn = ethers.utils.parseEther(bTokenFeeInWEI.toString());

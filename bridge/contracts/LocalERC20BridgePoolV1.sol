@@ -24,9 +24,6 @@ contract LocalERC20BridgePoolV1 is
 {
     using MerkleProofParserLibrary for bytes;
     using MerkleProofLibrary for MerkleProofParserLibrary.MerkleProof;
-
-    address internal _erc20Contract;
-
     struct UTXO {
         uint32 chainID;
         address owner;
@@ -34,6 +31,8 @@ contract LocalERC20BridgePoolV1 is
         uint256 fee;
         bytes32 txHash;
     }
+
+    address internal _erc20Contract;
 
     constructor() ImmutableFactory(msg.sender) {}
 
