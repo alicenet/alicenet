@@ -87,7 +87,7 @@ func initialiseFilesAndFolders(cmd *cobra.Command, args []string) {
 	}
 
 	config := &config.RootSerializableConfiguration{
-		LogLevel: config.LoggingConfig{
+		Logging: config.LoggingConfig{
 			Consensus: "info",
 		},
 		Chain: config.ChainConfig{
