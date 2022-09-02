@@ -33,6 +33,16 @@ func initialiseFilesAndFolders(cmd *cobra.Command, args []string) {
 		network = "mainnet"
 	}
 
+	var chainId int
+	switch network {
+	case "testnet":
+		chainId = 42
+	case "mainnet":
+		chainId = 21
+	default:
+		logger.Fatal("Invalid network specified - must be either testnet or mainnet")
+	}
+
 	logger.Info("Initialising AliceNet configuration files and folders...")
 
 	// alicenet related paths and files
@@ -74,16 +84,6 @@ func initialiseFilesAndFolders(cmd *cobra.Command, args []string) {
 			}
 			logger.Fatal("Exiting")
 		}
-	}
-
-	var chainId int
-	switch network {
-	case "testnet":
-		chainId = 42
-	case "mainnet":
-		chainId = 21
-	default:
-		chainId = 21
 	}
 
 	config := &config.RootSerializableConfiguration{
@@ -132,7 +132,7 @@ func initialiseFilesAndFolders(cmd *cobra.Command, args []string) {
 	}
 	b, err := toml.Marshal(config)
 	if err != nil {
-		logger.Fatal(err)
+		logger.WithError(err).Fatal("Failed to marshal config")
 	}
 
 	// create config.toml file as text file in environment folder
