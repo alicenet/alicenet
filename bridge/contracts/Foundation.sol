@@ -44,7 +44,7 @@ contract Foundation is
     /// breaker is tripped the magic_ parameter is intended to stop some one from
     /// successfully interacting with this method without first reading the
     /// source code and hopefully this comment
-    /// @notice deposits eths that will be distributed to stakers evenly
+    /// @notice deposits eths that will be distributed to the foundation
     /// @param magic_ The required control number to allow operation
     function depositEth(uint8 magic_) public payable checkMagic(magic_) {}
 
