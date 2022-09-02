@@ -29,7 +29,7 @@ contract Foundation is
     /// fail if the circuit breaker is tripped. The magic_ parameter is intended
     /// to stop some one from successfully interacting with this method without
     /// first reading the source code and hopefully this comment
-    /// @notice deposits aTokens that will be distributed to stakers evenly
+    /// @notice deposits aTokens that will be distributed to the foundation
     /// @param magic_ The required control number to allow operation
     /// @param amount_ The amount of AToken to be deposited
     function depositToken(uint8 magic_, uint256 amount_) public checkMagic(magic_) {
