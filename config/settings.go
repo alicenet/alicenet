@@ -119,31 +119,29 @@ type FirewalldConfig struct {
 	Enabled    bool   `toml:",omitempty"`
 	SocketFile string `toml:",omitempty"`
 }
-
-type RootConfiguration struct {
-	ConfigurationFileName string
-	LoggingLevels         string // backwards compatibility
-	Logging               LoggingConfig
-	Deploy                DeployConfig
-	Ethereum              EthereumConfig
-	Transport             TransportConfig
-	Utils                 UtilsConfig
-	Validator             ValidatorConfig
-	Firewalld             FirewalldConfig
-	Chain                 ChainConfig
-	BootNode              BootnodeConfig
-	EthKey                EthKeyConfig
-	Version               string
-	Initialization        InitConfig
-}
-
 type RootSerializableConfiguration struct {
-	LogLevel  LoggingConfig   `toml:"loglevel"`
+	Logging   LoggingConfig   `toml:"loglevel"`
 	Chain     ChainConfig     `toml:"chain"`
 	Transport TransportConfig `toml:"transport"`
 	Ethereum  EthereumConfig  `toml:"ethereum"`
 	Utils     UtilsConfig     `toml:"utils"`
 	Validator ValidatorConfig `toml:"validator" comment:"OPTIONAL: Only necessary if you plan to run a validator node."`
+}
+type RootConfiguration struct {
+	ConfigurationFileName string
+	LoggingLevels         string // backwards compatibility
+	Deploy                DeployConfig
+	Firewalld             FirewalldConfig
+	BootNode              BootnodeConfig
+	EthKey                EthKeyConfig
+	Version               string
+	Initialization        InitConfig
+	Logging               LoggingConfig   `toml:"loglevel"`
+	Chain                 ChainConfig     `toml:"chain"`
+	Transport             TransportConfig `toml:"transport"`
+	Ethereum              EthereumConfig  `toml:"ethereum"`
+	Utils                 UtilsConfig     `toml:"utils"`
+	Validator             ValidatorConfig `toml:"validator" comment:"OPTIONAL: Only necessary if you plan to run a validator node."`
 }
 
 // Configuration contains all active settings.
