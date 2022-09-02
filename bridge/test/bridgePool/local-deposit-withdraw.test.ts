@@ -53,6 +53,7 @@ const encodedBurnedUTXO = ethers.utils.defaultAbiCoder.encode(
 const ethFee = 2;
 const refund = valueSent.sub(ethFee);
 const chainId = 1337;
+const bridgePoolVersion = 1;
 
 tokenTypes.forEach(function (run) {
   describe(
@@ -92,7 +93,7 @@ tokenTypes.forEach(function (run) {
           .connect(user)
           .approve(bridgePool.address, valueOrId);
         console.log(await ethers.provider.getBalance(fixture.bToken.address));
-
+ 
         // // Mint and approve some bTokens to deposit as fee
         // await callFunctionAndGetReturnValues(
         //   fixture.bToken,
@@ -106,6 +107,7 @@ tokenTypes.forEach(function (run) {
         const encodedMockBlockClaims =
           getMockBlockClaimsForStateRoot(stateRoot);
         // Take a mock snapshot
+
         await fixture.snapshots.snapshot(
           Buffer.from("0x0"),
           encodedMockBlockClaims
@@ -123,7 +125,10 @@ tokenTypes.forEach(function (run) {
           ],
           [depositCallData]
         );
+        console.log("hoila")
+
         showState("Initial", await getState(fixture, bridgePool));
+        console.log("hoila3")
       });
 
       it.only("Should make a deposit", async () => {
@@ -136,10 +141,10 @@ tokenTypes.forEach(function (run) {
         expectedState.Balances.eth.user -= formatBigInt(valueSent);
         expectedState.Balances.eth.user += formatBigInt(refund);
         await fixture.bToken
-          .connect(user)
-          .payAndDeposit(maxEth, maxTokens, encodedDepositCallData, {
-            value: valueSent,
-          });
+        .connect(user)
+        .depositTokensOnBridges(bridgePoolVersion, encodedDepositCallData, {
+          value: valueSent,
+        })
         showState("After Deposit", await getState(fixture, bridgePool));
         expect(await getState(fixture, bridgePool)).to.be.deep.equal(
           expectedState
@@ -149,10 +154,10 @@ tokenTypes.forEach(function (run) {
       it("Should make a withdraw for amount specified on informed burned UTXO upon proof verification", async () => {
         // Make first a deposit to withdraw afterwards
         await fixture.bToken
-          .connect(user)
-          .payAndDeposit(maxEth, maxTokens, encodedDepositCallData, {
-            value: valueSent,
-          });
+        .connect(user)
+        .depositTokensOnBridges(bridgePoolVersion, encodedDepositCallData, {
+          value: valueSent,
+        })
         showState("After Deposit", await getState(fixture, bridgePool));
         expectedState = await getState(fixture, bridgePool);
         const erc = run.it as keyof typeof expectedState.Balances;
@@ -185,10 +190,10 @@ tokenTypes.forEach(function (run) {
         );
         await expect(
           fixture.bToken
-            .connect(user)
-            .payAndDeposit(maxEth, maxTokens - 100, encodedDepositCallData, {
-              value: valueSent,
-            })
+          .connect(user)
+          .depositTokensOnBridges(bridgePoolVersion, encodedDepositCallData, {
+            value: valueSent,
+          })
         ).to.be.revertedWith(reason);
       });
 
@@ -228,11 +233,11 @@ tokenTypes.forEach(function (run) {
       it("Should emit an event if called from a BridgePool", async () => {
         const nonce = 1;
         await expect(
-          fixture.bToken
-            .connect(user)
-            .payAndDeposit(maxEth, maxTokens, encodedDepositCallData, {
-              value: valueSent,
-            })
+          await fixture.bToken
+          .connect(user)
+          .depositTokensOnBridges(bridgePoolVersion, encodedDepositCallData, {
+            value: valueSent,
+          })
         )
           .to.emit(fixture.bridgePoolDepositNotifier, "Deposited")
           .withArgs(
