@@ -134,12 +134,12 @@ type RootConfiguration struct {
 	EthKey                EthKeyConfig
 	Version               string
 	Initialization        InitConfig
-	Logging               LoggingConfig   `toml:"loglevel"`
-	Chain                 ChainConfig     `toml:"chain"`
-	Transport             TransportConfig `toml:"transport"`
-	Ethereum              EthereumConfig  `toml:"ethereum"`
-	Utils                 UtilsConfig     `toml:"utils"`
-	Validator             ValidatorConfig `toml:"validator" comment:"OPTIONAL: Only necessary if you plan to run a validator node."`
+	Logging               LoggingConfig
+	Chain                 ChainConfig
+	Transport             TransportConfig
+	Ethereum              EthereumConfig
+	Utils                 UtilsConfig
+	Validator             ValidatorConfig
 }
 
 // Configuration contains all active settings.
