@@ -190,8 +190,8 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
         return _chainId;
     }
 
-    /// @notice Gets the epoch from epoch register
-    /// @return The epoch from epoch register
+    /// @notice Gets the epoch of epoch register
+    /// @return The epoch
     function getEpoch() public view returns (uint256) {
         return _epochRegister().get();
     }
@@ -202,22 +202,24 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
         return _epochLength;
     }
 
-    /// @notice Gets the chain Id from snapshot for specified epoch
+    /// @notice Gets the chain Id of snapshot at specified epoch
     /// @param epoch_ The epoch of the snapshot
-    /// @return The chain Id of the snapshot at the epoch specified
+    /// @return The chain Id
+    /// This function will fail in case the user tries to get information of a snapshot older than 6 epochs from the current one
     function getChainIdFromSnapshot(uint256 epoch_) public view returns (uint256) {
         return _getSnapshot(uint32(epoch_)).blockClaims.chainId;
     }
 
-    /// @notice Gets the chain Id from latest snapshot
-    /// @return The chain Id of latest snapshot
+    /// @notice Gets the chain Id of latest snapshot
+    /// @return The chain Id
     function getChainIdFromLatestSnapshot() public view returns (uint256) {
         return _getLatestSnapshot().blockClaims.chainId;
     }
 
-    /// @notice Gets block claims from snapshot for specified epoch
+    /// @notice Gets block claims of snapshot at specified epoch
     /// @param epoch_ The epoch of the snapshot
-    /// @return The block claims from snapshot for specified epoch
+    /// @return The block claims
+    /// This function will fail in case the user tries to get information of a snapshot older than 6 epochs from the current one
     function getBlockClaimsFromSnapshot(uint256 epoch_)
         public
         view
@@ -226,8 +228,8 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
         return _getSnapshot(uint32(epoch_)).blockClaims;
     }
 
-    /// @notice Gets block claims from latest snapshot
-    /// @return The block claims from latest snapshot
+    /// @notice Gets block claims of latest snapshot
+    /// @return The block claims
     function getBlockClaimsFromLatestSnapshot()
         public
         view
@@ -236,28 +238,30 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
         return _getLatestSnapshot().blockClaims;
     }
 
-    /// @notice Gets committed height from snapshot at specified epoch
+    /// @notice Gets committed height of snapshot at specified epoch
     /// @param epoch_ The epoch of the snapshot
-    /// @return The committed height from snapshot at specified epoch
+    /// @return The committed height
+    /// This function will fail in case the user tries to get information of a snapshot older than 6 epochs from the current one
     function getCommittedHeightFromSnapshot(uint256 epoch_) public view returns (uint256) {
         return _getSnapshot(uint32(epoch_)).committedAt;
     }
 
-    /// @notice Gets committed height from latest snapshot
-    /// @return The committed height from latest snapshot
+    /// @notice Gets committed height of latest snapshot
+    /// @return The committed height of latest snapshot
     function getCommittedHeightFromLatestSnapshot() public view returns (uint256) {
         return _getLatestSnapshot().committedAt;
     }
 
-    /// @notice Gets alicenet height from snapshot at specified epoch
+    /// @notice Gets alicenet height of snapshot at specified epoch
     /// @param epoch_ The epoch of the snapshot
-    /// @return Alicenet height from snapshot at specified epoch
+    /// @return The AliceNet height
+    /// This function will fail in case the user tries to get information of a snapshot older than 6 epochs from the current one
     function getAliceNetHeightFromSnapshot(uint256 epoch_) public view returns (uint256) {
         return _getSnapshot(uint32(epoch_)).blockClaims.height;
     }
 
-    /// @notice Gets alicenet height from latest snapshot
-    /// @return Alicenet height from latest snapshot
+    /// @notice Gets alicenet height of latest snapshot
+    /// @return Alicenet height of latest snapshot
     function getAliceNetHeightFromLatestSnapshot() public view returns (uint256) {
         return _getLatestSnapshot().blockClaims.height;
     }
@@ -265,6 +269,7 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
     /// @notice Gets snapshot for specified epoch
     /// @param epoch_ The epoch of the snapshot
     /// @return The snapshot at specified epoch
+    /// This function will fail in case the user tries to get information of a snapshot older than 6 epochs from the current one
     function getSnapshot(uint256 epoch_) public view returns (Snapshot memory) {
         return _getSnapshot(uint32(epoch_));
     }
