@@ -7,7 +7,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "contracts/utils/BridgePoolAddressUtil.sol";
 import "contracts/libraries/errors/BridgeRouterV1Errors.sol";
 
-/// @custom:salt BridgePoolRouterV1
+/// @custom:salt BridgeRouter
 /// @custom:deploy-type deployStatic
 contract BridgePoolRouterV1 is
     Initializable,

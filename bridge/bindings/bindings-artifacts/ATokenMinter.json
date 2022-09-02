@@ -63,6 +63,30 @@
   {
     "inputs": [
       {
+        "internalType": "bytes32",
+        "name": "_salt",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "address",
+        "name": "_bridgeRouter",
+        "type": "address"
+      }
+    ],
+    "name": "getStaticPoolContractAddress",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "pure",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "address",
         "name": "to",
         "type": "address"

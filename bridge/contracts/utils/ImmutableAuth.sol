@@ -163,7 +163,7 @@ abstract contract ImmutableBridgeRouter is ImmutableFactory {
     }
 
     constructor() {
-        _bridgeRouter = getMetamorphicContractAddress(0x427269646765526f757465720000000000000000000000000000000000000000, _factoryAddress());
+        _bridgeRouter = getMetamorphicContractAddress(0xa4c282a597c549d47c7eb184be62b5714edde2189c3893d7d3c305ff482371b7, _factoryAddress());
     }
 
     function _bridgeRouterAddress() internal view returns(address) {
@@ -171,7 +171,7 @@ abstract contract ImmutableBridgeRouter is ImmutableFactory {
     }
 
     function _saltForBridgeRouter() internal pure returns(bytes32) {
-        return 0x427269646765526f757465720000000000000000000000000000000000000000;
+        return 0xa4c282a597c549d47c7eb184be62b5714edde2189c3893d7d3c305ff482371b7;
     }
 }
     

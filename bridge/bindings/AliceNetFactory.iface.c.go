@@ -27,6 +27,10 @@ type IAliceNetFactoryCaller interface {
 	//
 	// Solidity: function getNumContracts() view returns(uint256)
 	GetNumContracts(opts *bind.CallOpts) (*big.Int, error)
+	// GetStaticPoolContractAddress is a free data retrieval call binding the contract method 0x0ffd7a81.
+	//
+	// Solidity: function getStaticPoolContractAddress(bytes32 _salt, address _bridgeRouter) pure returns(address)
+	GetStaticPoolContractAddress(opts *bind.CallOpts, _salt [32]byte, _bridgeRouter common.Address) (common.Address, error)
 	// Lookup is a free data retrieval call binding the contract method 0xf39ec1f7.
 	//
 	// Solidity: function lookup(bytes32 salt_) view returns(address addr)

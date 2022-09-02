@@ -1021,6 +1021,30 @@
   {
     "inputs": [
       {
+        "internalType": "bytes32",
+        "name": "_salt",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "address",
+        "name": "_bridgeRouter",
+        "type": "address"
+      }
+    ],
+    "name": "getStaticPoolContractAddress",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "pure",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "uint32",
         "name": "desperationDelay_",
         "type": "uint32"

@@ -38,8 +38,7 @@ tokenTypes.forEach(function (run) {
         );
       });
 
-      it.only("Should deploy new BridgePool as factory if public pool deployment is not enabled", async () => {
-
+      it("Should deploy new BridgePool as factory if public pool deployment is not enabled", async () => {
          await factoryCallAnyFixture(
           fixture,
           "bridgePoolFactory",
@@ -47,7 +46,7 @@ tokenTypes.forEach(function (run) {
           [
             run.options.poolType,
             fixture[run.options.ercContractName].address,
-            bridgePoolVersion,
+            bridgePoolVersion
           ]
         );     
         await expect(
@@ -55,7 +54,7 @@ tokenTypes.forEach(function (run) {
             .connect(user)
             .depositTokensOnBridges(bridgePoolVersion, encodedDepositCallData, {
               value: valueSent
-            }) ).to.be.revertedWithCustomError(fixture.bridgeRouter,"OnlyBridgeRouter")
+            })).to.be.revertedWith(run.options.errorReason)
       });
 
       it("Should not deploy new BridgePool as user if public pool deployment is not enabled", async () => {
@@ -84,15 +83,15 @@ tokenTypes.forEach(function (run) {
             bridgePoolVersion,
           ]
         );
-        await
+        await expect(
           fixture.bToken
             .connect(user)
             .depositTokensOnBridges(bridgePoolVersion, encodedDepositCallData, {
               value: valueSent
-            })
+            })).to.be.revertedWith(run.options.errorReason)
       });
 
-      it("Should not deploy new BridgePool as user if public pool deployment is enabled", async () => {
+      it("Should deploy new BridgePool as user if public pool deployment is enabled", async () => {
         await factoryCallAnyFixture(
           fixture,
           "bridgePoolFactory",
@@ -104,14 +103,13 @@ tokenTypes.forEach(function (run) {
           fixture[run.options.ercContractName].address,
           1
         );
-        await
+        await expect(
           fixture.bToken
             .connect(user)
             .depositTokensOnBridges(bridgePoolVersion, encodedDepositCallData, {
               value: valueSent
-            })
+            })).to.be.revertedWith(run.options.errorReason)
       });
-
 
       it("Should not deploy two BridgePools with same ERC contract and version", async () => {
         await factoryCallAnyFixture(

@@ -35,6 +35,10 @@ type IATokenCaller interface {
 	//
 	// Solidity: function getMetamorphicContractAddress(bytes32 _salt, address _factory) pure returns(address)
 	GetMetamorphicContractAddress(opts *bind.CallOpts, _salt [32]byte, _factory common.Address) (common.Address, error)
+	// GetStaticPoolContractAddress is a free data retrieval call binding the contract method 0x0ffd7a81.
+	//
+	// Solidity: function getStaticPoolContractAddress(bytes32 _salt, address _bridgeRouter) pure returns(address)
+	GetStaticPoolContractAddress(opts *bind.CallOpts, _salt [32]byte, _bridgeRouter common.Address) (common.Address, error)
 	// Name is a free data retrieval call binding the contract method 0x06fdde03.
 	//
 	// Solidity: function name() view returns(string)

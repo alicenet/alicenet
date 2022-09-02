@@ -655,7 +655,7 @@ export const getFixture = async (
   )) as BridgePoolFactory;
 
   // BridgeRouter
-  const bridgeRouter = (await deployUpgradeableWithFactory(
+  const bridgeRouter = (await deployStaticWithFactory(
     factory,
     "BridgePoolRouterV1",
     getBridgePoolSalt("BridgeRouter",1),

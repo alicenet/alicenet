@@ -67,6 +67,10 @@ type IBTokenCaller interface {
 	//
 	// Solidity: function getPoolBalance() view returns(uint256)
 	GetPoolBalance(opts *bind.CallOpts) (*big.Int, error)
+	// GetStaticPoolContractAddress is a free data retrieval call binding the contract method 0x0ffd7a81.
+	//
+	// Solidity: function getStaticPoolContractAddress(bytes32 _salt, address _bridgeRouter) pure returns(address)
+	GetStaticPoolContractAddress(opts *bind.CallOpts, _salt [32]byte, _bridgeRouter common.Address) (common.Address, error)
 	// GetTotalBTokensDeposited is a free data retrieval call binding the contract method 0x5ecef3af.
 	//
 	// Solidity: function getTotalBTokensDeposited() view returns(uint256)
