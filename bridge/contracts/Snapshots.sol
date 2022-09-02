@@ -45,7 +45,7 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
         _snapshotDesperationFactor = desperationFactor_;
     }
 
-    /// @notice Set minimum interval between snapshots
+    /// @notice Set minimum interval between snapshots in Ethereum blocks
     /// @param minimumIntervalBetweenSnapshots_ The interval in blocks
     function setMinimumIntervalBetweenSnapshots(uint32 minimumIntervalBetweenSnapshots_)
         public
