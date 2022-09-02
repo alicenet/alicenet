@@ -178,7 +178,7 @@ contract Snapshots is Initializable, SnapshotsStorage, ISnapshots {
         return _snapshotDesperationDelay;
     }
 
-    /// @notice Gets minimal interval between snapshots
+    /// @notice Gets minimal interval in Ethereum blocks between snapshots
     /// @return The minimal interval between snapshots
     function getMinimumIntervalBetweenSnapshots() public view returns (uint256) {
         return _minimumIntervalBetweenSnapshots;
