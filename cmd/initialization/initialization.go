@@ -43,7 +43,7 @@ func initialiseFilesAndFolders(cmd *cobra.Command, args []string) {
 		logger.Fatal("Invalid network specified - must be either testnet or mainnet")
 	}
 
-	logger.Info("Initialising AliceNet configuration files and folders...")
+	logger.Info("Initializing AliceNet configuration files and folders...")
 
 	// alicenet related paths and files
 	alicenetPath := path + "/alicenet"
@@ -60,7 +60,7 @@ func initialiseFilesAndFolders(cmd *cobra.Command, args []string) {
 	// loop through the paths checking to see if they exist and exit if any of them do
 	for _, path := range paths {
 		if _, err := os.Stat(path); !os.IsNotExist(err) {
-			logger.WithError(err).Error("Path already exists", path)
+			logger.WithError(err).Error("Path already exists: ", path)
 			logger.Fatal("Remove all existing paths and try again")
 		}
 	}
