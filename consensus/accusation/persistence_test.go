@@ -27,7 +27,7 @@ func NewAccusationTest1Task(id string) tasks.Task {
 	t := &AccusationTest1{
 		BaseTask: tasks.NewBaseTask(0, 0, true, nil),
 	}
-	t.Id = id
+	t.ID = id
 	return t
 }
 
@@ -78,7 +78,7 @@ func NewAccusationTest2Task(id string) tasks.Task {
 	t := &AccusationTest2{
 		BaseTask: tasks.NewBaseTask(0, 0, true, nil),
 	}
-	t.Id = id
+	t.ID = id
 	return t
 }
 

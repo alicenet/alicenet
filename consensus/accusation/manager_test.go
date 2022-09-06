@@ -258,7 +258,7 @@ func accuseAllRoundStates(rs *objs.RoundState, lrs *lstate.RoundStates, db *db.D
 		BaseTask: tasks.NewBaseTask(0, 0, false, nil),
 		SomeData: "accusing all the things",
 	}
-	acc.Id = hex.EncodeToString(crypto.Hasher([]byte("some id")))
+	acc.ID = hex.EncodeToString(crypto.Hasher([]byte("some id")))
 
 	return acc, true
 }
@@ -348,8 +348,8 @@ func TestManagerPersistCreatedAccusations(t *testing.T) {
 	// create accusation
 	accusation := &mockAccusationTask{BaseTask: tasks.NewBaseTask(0, 0, true, nil)}
 	idString := hex.EncodeToString(crypto.Hasher([]byte("some ID")))
-	accusation.Id = idString
-	assert.Equal(t, 64, len(accusation.Id))
+	accusation.ID = idString
+	assert.Equal(t, 64, len(accusation.ID))
 
 	assert.Empty(t, testProxy.manager.unpersistedCreatedAccusations)
 
@@ -399,7 +399,7 @@ func TestManagerPersistScheduledAccusations(t *testing.T) {
 		BaseTask: tasks.NewBaseTask(0, 0, true, nil),
 		SomeData: "accusing all the things",
 	}
-	accusation.Id = hex.EncodeToString(crypto.Hasher([]byte("some ID")))
+	accusation.ID = hex.EncodeToString(crypto.Hasher([]byte("some ID")))
 	var id [32]byte
 	idBin, err := hex.DecodeString(accusation.GetId())
 	assert.Nil(t, err)
