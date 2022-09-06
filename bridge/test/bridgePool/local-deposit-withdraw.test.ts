@@ -1,5 +1,7 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
+import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
+import { IBridgePool } from "../../typechain-types";
 import { expect } from "../chai-setup";
 
 import {
@@ -23,9 +25,10 @@ import {
 
 let fixture: Fixture;
 let expectedState: state;
+let admin: SignerWithAddress;
 let user: SignerWithAddress;
 let user2: SignerWithAddress;
-let bridgePool: any;
+let bridgePool: IBridgePool;
 let depositCallData: any;
 let encodedDepositCallData: string;
 
@@ -54,60 +57,18 @@ const ethFee = 2;
 const refund = valueSent.sub(ethFee);
 const chainId = 1337;
 const bridgePoolVersion = 1;
+let erc: "bToken" | "eth" | "ERC20" | "ERC721" | "ERC1155"
 
 tokenTypes.forEach(function (run) {
   describe(
     "Testing BridgePool Router Deposit/Withdraw for tokenType " + run.it,
     async () => {
       beforeEach(async () => {
-        const [, user] = await ethers.getSigners();
+        [admin, user] = await ethers.getSigners();
         fixture = await getFixture(true, true, false);
-        console.log(await ethers.provider.getBalance(fixture.bToken.address));
-        // const ethIn = ethers.utils.parseEther(bTokenFeeInWEI.toString());
-        // Deploy a new pool
-        await factoryCallAnyFixture(
-          fixture,
-          "bridgePoolFactory",
-          "togglePublicPoolDeployment",
-          []
-        );
-        const deployNewPoolTransaction =
-          await fixture.bridgePoolFactory.deployNewLocalPool(
-            run.options.poolType,
-            fixture[run.options.ercContractName].address,
-            1
-          );
-        const eventSignature = "event BridgePoolCreated(address contractAddr)";
-        const eventName = "BridgePoolCreated";
-        const bridgePoolAddress = await getContractAddressFromEventLog(
-          deployNewPoolTransaction,
-          eventSignature,
-          eventName
-        );
-        bridgePool = (
-          await ethers.getContractFactory(run.options.bridgeImpl)
-        ).attach(bridgePoolAddress);
-        // Mint and approve an ERC token to deposit
-        fixture[run.options.ercContractName].mint(user.address, valueOrId);
-        fixture[run.options.ercContractName]
-          .connect(user)
-          .approve(bridgePool.address, valueOrId);
-        console.log(await ethers.provider.getBalance(fixture.bToken.address));
- 
-        // // Mint and approve some bTokens to deposit as fee
-        // await callFunctionAndGetReturnValues(
-        //   fixture.bToken,
-        //   "mintTo",
-        //   firstOwner,
-        //   [user.address, 0],
-        //   ethIn
-        // );
-        console.log(await ethers.provider.getBalance(fixture.bToken.address));
-
         const encodedMockBlockClaims =
           getMockBlockClaimsForStateRoot(stateRoot);
         // Take a mock snapshot
-
         await fixture.snapshots.snapshot(
           Buffer.from("0x0"),
           encodedMockBlockClaims
@@ -125,47 +86,36 @@ tokenTypes.forEach(function (run) {
           ],
           [depositCallData]
         );
-        console.log("hoila")
+        bridgePool = fixture[run.options.bridgeImpl] as IBridgePool
+        fixture[run.options.ercContractName].mint(user.address, valueOrId);
+        fixture[run.options.ercContractName].connect(user).approve(bridgePool.address, valueOrId);
+        showState("Initial", await getState(fixture, bridgePool.address));
+        erc = run.it as keyof typeof expectedState.Balances;
 
-        showState("Initial", await getState(fixture, bridgePool));
-        console.log("hoila3")
+
       });
 
-      it.only("Should make a deposit", async () => {
-        expectedState = await getState(fixture, bridgePool);
-        const erc = run.it as keyof typeof expectedState.Balances;
+      it("Should make a deposit", async () => {
+        expectedState = await getState(fixture, bridgePool.address);
         expectedState.Balances[erc].user -= BigInt(run.options.quantity);
         expectedState.Balances[erc].bridgePool += BigInt(run.options.quantity);
-        console.log(ethFee, bTokenFeeInWEI, valueSent, refund);
-        expectedState.Balances.eth.bToken += BigInt(bTokenFeeInWEI);
-        expectedState.Balances.eth.user -= formatBigInt(valueSent);
-        expectedState.Balances.eth.user += formatBigInt(refund);
-        await fixture.bToken
-        .connect(user)
-        .depositTokensOnBridges(bridgePoolVersion, encodedDepositCallData, {
-          value: valueSent,
-        })
-        showState("After Deposit", await getState(fixture, bridgePool));
-        expect(await getState(fixture, bridgePool)).to.be.deep.equal(
+        await fixture.bridgeRouter.routeDeposit(user.address,BigNumber.from(run.options.quantity));
+        showState("After Deposit", await getState(fixture, bridgePool.address));
+        expect(await getState(fixture, bridgePool.address)).to.be.deep.equal(
           expectedState
         );
       });
 
-      it("Should make a withdraw for amount specified on informed burned UTXO upon proof verification", async () => {
+      it.only("Should make a withdraw for amount specified on informed burned UTXO upon proof verification", async () => {
+        expectedState = await getState(fixture, bridgePool.address);
         // Make first a deposit to withdraw afterwards
-        await fixture.bToken
-        .connect(user)
-        .depositTokensOnBridges(bridgePoolVersion, encodedDepositCallData, {
-          value: valueSent,
-        })
-        showState("After Deposit", await getState(fixture, bridgePool));
-        expectedState = await getState(fixture, bridgePool);
-        const erc = run.it as keyof typeof expectedState.Balances;
+        await fixture.bridgeRouter.routeDeposit(user.address,BigNumber.from(run.options.quantity));
+        showState("After Deposit", await getState(fixture, bridgePool.address));
         expectedState.Balances[erc].user += BigInt(run.options.quantity);
         expectedState.Balances[erc].bridgePool -= BigInt(run.options.quantity);
         await bridgePool.connect(user).withdraw(merkleProof, encodedBurnedUTXO);
-        showState("After withdraw", await getState(fixture, bridgePool));
-        expect(await getState(fixture, bridgePool)).to.be.deep.equal(
+        showState("After withdraw", await getState(fixture, bridgePool.address));
+        expect(await getState(fixture, bridgePool.address)).to.be.deep.equal(
           expectedState
         );
       });
@@ -173,13 +123,13 @@ tokenTypes.forEach(function (run) {
       it("Should not make a withdraw for amount specified on informed burned UTXO with not verified merkle proof", async () => {
         const wrongMerkleProof =
           "0x0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
-        expectedState = await getState(fixture, bridgePool);
+        expectedState = await getState(fixture, bridgePool.address);
         await expect(
           bridgePool.connect(user).withdraw(wrongMerkleProof, encodedBurnedUTXO)
         ).to.be.revertedWith(
           "MerkleProofLibrary: Invalid Inclusion Merkle proof!"
         );
-        expect(await getState(fixture, bridgePool)).to.be.deep.equal(
+        expect(await getState(fixture, bridgePool.address)).to.be.deep.equal(
           expectedState
         );
       });
@@ -206,26 +156,26 @@ tokenTypes.forEach(function (run) {
           Buffer.from("0x0"),
           encodedMockBlockClaims
         );
-        expectedState = await getState(fixture, bridgePool);
+        expectedState = await getState(fixture, bridgePool.address);
         await expect(
           bridgePool.connect(user).withdraw(merkleProof, encodedBurnedUTXO)
         ).to.be.revertedWith(
           "MerkleProofLibrary: The proof doesn't match the root of the trie!"
         );
-        expect(await getState(fixture, bridgePool)).to.be.deep.equal(
+        expect(await getState(fixture, bridgePool.address)).to.be.deep.equal(
           expectedState
         );
       });
 
       it("Should not make a withdraw to an address that is not the owner in informed burned UTXO", async () => {
         const reason = ethers.utils.parseBytes32String(
-          await fixture.bridgePoolErrorCodesContract.BRIDGEPOOL_RECEIVER_IS_NOT_OWNER_ON_PROOF_OF_BURN_UTXO()
+          await fixture.bridgePool.addressErrorCodesContract.BRIDGEPOOL_RECEIVER_IS_NOT_OWNER_ON_PROOF_OF_BURN_UTXO()
         );
-        expectedState = await getState(fixture, bridgePool);
+        expectedState = await getState(fixture, bridgePool.address);
         await expect(
           bridgePool.connect(user2).withdraw(merkleProof, encodedBurnedUTXO)
         ).to.be.revertedWith(reason);
-        expect(await getState(fixture, bridgePool)).to.be.deep.equal(
+        expect(await getState(fixture, bridgePool.address)).to.be.deep.equal(
           expectedState
         );
       });
@@ -239,7 +189,7 @@ tokenTypes.forEach(function (run) {
             value: valueSent,
           })
         )
-          .to.emit(fixture.bridgePoolDepositNotifier, "Deposited")
+          .to.emit(fixture.bridgePool.addressDepositNotifier, "Deposited")
           .withArgs(
             BigInt(nonce),
             fixture[run.options.ercContractName].address,
@@ -256,7 +206,7 @@ tokenTypes.forEach(function (run) {
           await fixture.immutableAuthErrorCodesContract.IMMUTEABLEAUTH_ONLY_BRIDGEPOOL()
         );
         await expect(
-          fixture.bridgePoolDepositNotifier.doEmit(
+          fixture.bridgePool.addressDepositNotifier.doEmit(
             salt,
             fixture[run.options.ercContractName].address,
             user.address,

@@ -12,9 +12,10 @@ import "contracts/Snapshots.sol";
 import "contracts/libraries/parsers/BClaimsParserLibrary.sol";
 import "contracts/utils/ERC20SafeTransfer.sol";
 
+import "hardhat/console.sol";
+
 /// @custom:salt LocalERC20BridgePoolV1
 /// @custom:deploy-type deployStatic
-
 contract LocalERC20BridgePoolV1 is
     IBridgePool,
     Initializable,
@@ -36,7 +37,7 @@ contract LocalERC20BridgePoolV1 is
 
     constructor() ImmutableFactory(msg.sender) {}
 
-    function initialize(address erc20Contract_) public onlyBridgePoolFactory initializer {
+    function initialize(address erc20Contract_) public onlyFactory initializer {
         _erc20Contract = erc20Contract_;
     }
 
@@ -44,7 +45,7 @@ contract LocalERC20BridgePoolV1 is
     /// @param msgSender The address of ERC sender
     /// @param number The number of tokens to be deposited
     function deposit(address msgSender, uint256 number) public onlyBridgeRouter {
-        IERC20Transferable(_erc20Contract).transferFrom(msgSender, address(this), number);
+         IERC20Transferable(_erc20Contract).transferFrom(msgSender, address(this), number);
     }
 
     /// @notice Transfer tokens to sender upon a verificable proof of burn in sidechain
@@ -59,6 +60,7 @@ contract LocalERC20BridgePoolV1 is
         if (burnedUTXO.owner != msg.sender) {
             revert BridgePoolErrors.ReceiverIsNotOwnerOnProofOfBurnUTXO();
         }
+        console.logBytes32(bClaims.stateRoot);
         merkleProof.verifyInclusion(bClaims.stateRoot);
         IERC20Transferable(_erc20Contract).transfer(msg.sender, burnedUTXO.value);
     }

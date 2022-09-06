@@ -6,7 +6,7 @@ import {
   getSortedDeployList,
   transformDeploymentList,
 } from "./lib/deployment/deploymentListUtil";
-import { getAllContracts } from "./lib/deployment/deploymentUtil";
+import { getAllContracts, getCustomNSTag } from "./lib/deployment/deploymentUtil";
 
 task("generate-immutable-auth-contract", "Generate contracts")
   .addOptionalParam(
@@ -25,7 +25,7 @@ task("generate-immutable-auth-contract", "Generate contracts")
     let contracts;
 
     if (input === undefined) {
-      const allContracts = await getAllContracts(hre.artifacts);
+      let allContracts = await getAllContracts(hre.artifacts);
       let deploymentList = await getSortedDeployList(
         allContracts,
         hre.artifacts
@@ -39,6 +39,9 @@ task("generate-immutable-auth-contract", "Generate contracts")
       const fullyQualifiedName = contracts[i];
       let contractName = fullyQualifiedName.split(":")[1];
       let salt = await getSalt(contractName, hre);
+      // This change would allow the generation of modifiers based on salt name instead of contract name
+      // For example a contract BridgeRouterMock with BridgeRouter salt name would create an OnlyBridgeRouter and not an OnlyBridgeRouterMock modifier
+      // contractName = await getCustomNSTag(fullyQualifiedName, "salt", hre.artifacts);
       contractNameSaltMap.push([contractName, salt]);
     }
 
