@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"github.com/alicenet/alicenet/cmd/ethkey"
 	"io/ioutil"
 	"os"
 	"reflect"
@@ -181,6 +182,13 @@ func main() {
 			{"validator.rewardAccount", "", "", &config.Configuration.Validator.RewardAccount},
 			{"validator.rewardCurveSpec", "", "", &config.Configuration.Validator.RewardCurveSpec},
 		},
+
+		&ethkey.Command: {
+			{"ethkey.passwordfile", "", "the file that contains the password for the keyfile", &config.Configuration.EthKey.PasswordFile},
+			{"ethkey.json", "", "output JSON instead of human-readable format", &config.Configuration.EthKey.Json},
+			{"ethkey.privatekey", "", "file containing a raw private key to encrypt", &config.Configuration.EthKey.PrivateKey},
+			{"ethkey.lightkdf", "", "use less secure scrypt parameters", &config.Configuration.EthKey.LightKDF},
+		},
 	}
 
 	// Establish command hierarchy
@@ -188,6 +196,7 @@ func main() {
 		&firewalld.Command:    &rootCommand,
 		&bootnode.Command:     &rootCommand,
 		&node.Command:         &rootCommand,
+		&ethkey.Command:       &rootCommand,
 		&utils.Command:        &rootCommand,
 		&utils.SendWeiCommand: &utils.Command,
 	}

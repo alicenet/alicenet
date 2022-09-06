@@ -75,7 +75,7 @@ CREATE_CONFIGS() {
     CLEAN_UP
     # Loop through and create all essentail validator files
     for ((l = 1; l <= $1; l++)); do
-        ADDRESS=$(ethkey generate --passwordfile ./scripts/base-files/passwordFile | cut -d' ' -f2)
+        ADDRESS=$(./alicenet generate-ethkey --ethkey.passwordfile ./scripts/base-files/passwordFile | cut -d' ' -f2)
         PK=$(hexdump -n 16 -e '4/4 "%08X" 1 "\n"' /dev/urandom)
         sed -e 's/defaultAccount = .*/defaultAccount = \"'"$ADDRESS"'\"/' ./scripts/base-files/baseConfig |
             sed -e 's/rewardAccount = .*/rewardAccount = \"'"$ADDRESS"'\"/' |
@@ -114,9 +114,9 @@ CREATE_EXTRA_NODES_CONFIGS() {
         exit 1
     fi
     CLEAN_UP_NODES
-    # Loop through and create all essentail validator files
+    # Loop through and create all essential validator files
     for ((l = 1; l <= $1; l++)); do
-        ADDRESS=$(ethkey generate --passwordfile ./scripts/base-files/passwordFile | cut -d' ' -f2)
+        ADDRESS=$(./alicenet generate-ethkey --ethkey.passwordfile ./scripts/base-files/passwordFile | cut -d' ' -f2)
         PK=$(hexdump -n 16 -e '4/4 "%08X" 1 "\n"' /dev/urandom)
         sed -e 's/defaultAccount = .*/defaultAccount = \"'"$ADDRESS"'\"/' ./scripts/base-files/baseConfig |
             sed -e 's/rewardAccount = .*/rewardAccount = \"'"$ADDRESS"'\"/' |
