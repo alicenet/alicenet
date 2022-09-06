@@ -623,29 +623,13 @@ export const getFixture = async (
     "ATokenBurner"
   )) as ATokenBurner;
 
-  // BridgePoolV1
   const localERC20BridgePoolV1 = (await deployStaticWithFactory(
     factory,
-    "LocalERC20BridgePoolV1",
+    "LocalERC20BridgePoolV1Mock",
     getBridgePoolSalt("LocalERC20", 1),
     [1337]
   )) as IBridgePool;
 
-  const localERC721BridgePoolV1 = (await deployStaticWithFactory(
-    factory,
-    "LocalERC721BridgePoolV1",
-    getBridgePoolSalt("LocalERC721", 1),
-    [1337]
-  )) as IBridgePool;
-
-  const localERC1155BridgePoolV1 = (await deployStaticWithFactory(
-    factory,
-    "LocalERC1155BridgePoolV1",
-    getBridgePoolSalt("LocalERC1155", 1),
-    [1337]
-  )) as IBridgePool;
-
-  // BridgePoolFactory
   const bridgePoolFactory = (await deployUpgradeableWithFactory(
     factory,
     "BridgePoolFactory",
@@ -654,25 +638,8 @@ export const getFixture = async (
     [1337]
   )) as BridgePoolFactory;
 
-  // BridgeRouter
-  const bridgeRouter = (await deployStaticWithFactory(
-    factory,
-    "BridgePoolRouterV1",
-    getBridgePoolSalt("BridgeRouter", 1),
-    undefined,
-    [1337]
-  )) as BridgePoolRouterV1;
-
-  const erc721Mock = await (
-    await (await ethers.getContractFactory("ERC721Mock")).deploy()
-  ).deployed();
-
   const erc20Mock = await (
     await (await ethers.getContractFactory("ERC20Mock")).deploy()
-  ).deployed();
-
-  const erc1155Mock = await (
-    await (await ethers.getContractFactory("ERC1155Mock")).deploy()
   ).deployed();
 
   const invalidTxConsumptionAccusation = (await deployUpgradeableWithFactory(
@@ -726,14 +693,9 @@ export const getFixture = async (
     snapshots,
     ethdkg,
     factory,
-    localERC721BridgePoolV1,
     localERC20BridgePoolV1,
-    localERC1155BridgePoolV1,
-    erc1155Mock,
-    erc721Mock,
     erc20Mock,
     bridgePoolFactory,
-    bridgeRouter,
     namedSigners,
     aTokenMinter,
     aTokenBurner,

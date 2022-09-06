@@ -152,12 +152,12 @@ export const tokenTypes = [
     options: {
       ercContractName: "erc20Mock",
       poolType: 1,
-      bridgeImpl: "LocalERC20BridgePoolV1",
+      bridgeImpl: "localERC20BridgePoolV1",
       quantity: valueOrId,
       errorReason: "ERC20: insufficient allowance",
     },
   },
-  {
+/*   {
     it: "ERC721",
     options: {
       ercContractName: "erc721Mock",
@@ -177,7 +177,7 @@ export const tokenTypes = [
       errorReason: "ERC1155: caller is not token owner nor approved",
     },
   },
-];
+ */];
 
 export const getBridgePoolMetamorphicAddress = (
   factoryAddress: string,

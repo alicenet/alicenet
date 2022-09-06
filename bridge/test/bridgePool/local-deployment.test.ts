@@ -47,13 +47,6 @@ tokenTypes.forEach(function (run) {
             bridgePoolVersion,
           ]
         );
-        await expect(
-          fixture.bToken
-            .connect(user)
-            .depositTokensOnBridges(bridgePoolVersion, encodedDepositCallData, {
-              value: valueSent,
-            })
-        ).to.be.revertedWith(run.options.errorReason);
       });
 
       it("Should not deploy new BridgePool as user if public pool deployment is not enabled", async () => {
@@ -86,13 +79,6 @@ tokenTypes.forEach(function (run) {
             bridgePoolVersion,
           ]
         );
-        await expect(
-          fixture.bToken
-            .connect(user)
-            .depositTokensOnBridges(bridgePoolVersion, encodedDepositCallData, {
-              value: valueSent,
-            })
-        ).to.be.revertedWith(run.options.errorReason);
       });
 
       it("Should deploy new BridgePool as user if public pool deployment is enabled", async () => {
@@ -107,13 +93,6 @@ tokenTypes.forEach(function (run) {
           fixture[run.options.ercContractName].address,
           1
         );
-        await expect(
-          fixture.bToken
-            .connect(user)
-            .depositTokensOnBridges(bridgePoolVersion, encodedDepositCallData, {
-              value: valueSent,
-            })
-        ).to.be.revertedWith(run.options.errorReason);
       });
 
       it("Should not deploy two BridgePools with same ERC contract and version", async () => {
