@@ -7,13 +7,13 @@ import "contracts/interfaces/IBridgePool.sol";
 
 abstract contract BridgePoolFactoryBase is ImmutableFactory {
     uint256 private immutable _chainID;
-    bool private _publicPoolDeploymentEnabled;
+    bool public publicPoolDeploymentEnabled;
     address private _implementation;
 
     event BridgePoolCreated(address poolAddress, address token);
 
     modifier onlyFactoryOrPublicPoolDeploymentEnabled() {
-        if (msg.sender != _factoryAddress() && !_publicPoolDeploymentEnabled) {
+        if (msg.sender != _factoryAddress() && !publicPoolDeploymentEnabled) {
             revert BridgePoolFactoryErrors.PublicPoolDeploymentTemporallyDisabled();
         }
         _;
@@ -66,7 +66,7 @@ abstract contract BridgePoolFactoryBase is ImmutableFactory {
      * @dev enables or disables public pool deployment
      **/
     function _togglePublicPoolDeployment() internal {
-        _publicPoolDeploymentEnabled = !_publicPoolDeploymentEnabled;
+        publicPoolDeploymentEnabled = !publicPoolDeploymentEnabled;
     }
 
     /**

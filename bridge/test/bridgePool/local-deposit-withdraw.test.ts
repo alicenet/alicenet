@@ -67,12 +67,12 @@ tokenTypes.forEach(function (run) {
         // Deploy a new pool
         await factoryCallAnyFixture(
           fixture,
-          "bridgeRouter",
+          "bridgePoolFactory",
           "togglePublicPoolDeployment",
           []
         );
         const deployNewPoolTransaction =
-          await fixture.bridgeRouter.deployNewLocalPool(
+          await fixture.bridgePoolFactory.deployNewLocalPool(
             run.options.poolType,
             fixture[run.options.ercContractName].address,
             1

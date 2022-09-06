@@ -36,7 +36,7 @@ tokenTypes.forEach(function (run) {
         );
       });
 
-      it("Should deploy new BridgePool as factory if public pool deployment is not enabled", async () => {
+      it("Should deploy new BridgePool as factory even if public pool deployment is not enabled", async () => {
         await factoryCallAnyFixture(
           fixture,
           "bridgePoolFactory",
