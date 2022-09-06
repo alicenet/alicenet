@@ -107,10 +107,10 @@ tokenTypes.forEach(function (run) {
       });
 
       it.only("Should make a withdraw for amount specified on informed burned UTXO upon proof verification", async () => {
-        expectedState = await getState(fixture, bridgePool.address);
         // Make first a deposit to withdraw afterwards
         await fixture.bridgeRouter.routeDeposit(user.address,BigNumber.from(run.options.quantity));
         showState("After Deposit", await getState(fixture, bridgePool.address));
+        expectedState = await getState(fixture, bridgePool.address);
         expectedState.Balances[erc].user += BigInt(run.options.quantity);
         expectedState.Balances[erc].bridgePool -= BigInt(run.options.quantity);
         await bridgePool.connect(user).withdraw(merkleProof, encodedBurnedUTXO);

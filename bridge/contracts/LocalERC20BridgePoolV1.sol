@@ -12,8 +12,6 @@ import "contracts/Snapshots.sol";
 import "contracts/libraries/parsers/BClaimsParserLibrary.sol";
 import "contracts/utils/ERC20SafeTransfer.sol";
 
-import "hardhat/console.sol";
-
 /// @custom:salt LocalERC20BridgePoolV1
 /// @custom:deploy-type deployStatic
 contract LocalERC20BridgePoolV1 is
@@ -60,7 +58,6 @@ contract LocalERC20BridgePoolV1 is
         if (burnedUTXO.owner != msg.sender) {
             revert BridgePoolErrors.ReceiverIsNotOwnerOnProofOfBurnUTXO();
         }
-        console.logBytes32(bClaims.stateRoot);
         merkleProof.verifyInclusion(bClaims.stateRoot);
         IERC20Transferable(_erc20Contract).transfer(msg.sender, burnedUTXO.value);
     }
