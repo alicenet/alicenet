@@ -5,6 +5,8 @@ import "contracts/utils/DeterministicAddress.sol";
 import "contracts/libraries/proxy/ProxyUpgrader.sol";
 import "contracts/interfaces/IProxy.sol";
 import "contracts/libraries/errors/AliceNetFactoryBaseErrors.sol";
+import "contracts/BToken.sol";
+import "contracts/AToken.sol";
 
 abstract contract AliceNetFactoryBase is DeterministicAddress, ProxyUpgrader {
     struct MultiCallArgs {
@@ -12,6 +14,12 @@ abstract contract AliceNetFactoryBase is DeterministicAddress, ProxyUpgrader {
         uint256 value;
         bytes data;
     }
+
+    struct ContractInfo {
+        bool exist;
+        address logicAddr;
+    }
+
     /**
     @dev owner role for privileged access to functions
     */
@@ -30,6 +38,17 @@ abstract contract AliceNetFactoryBase is DeterministicAddress, ProxyUpgrader {
     address private immutable _proxyTemplate;
 
     bytes8 private constant _UNIVERSAL_DEPLOY_CODE = 0x38585839386009f3;
+
+    mapping(bytes32 => ContractInfo) internal _externalContractRegistry;
+
+    address internal immutable _aTokenAddress;
+    address internal immutable _bTokenAddress;
+    bytes32 internal immutable _aTokenCreationCodeHash;
+    bytes32 internal immutable _bTokenCreationCodeHash;
+    bytes32 internal constant _aTokenSalt =
+        0x41546f6b656e0000000000000000000000000000000000000000000000000000;
+    bytes32 internal constant _bTokenSalt =
+        0x42546f6b656e0000000000000000000000000000000000000000000000000000;
 
     /**
      *@dev events that notify of contract deployment
@@ -77,6 +96,34 @@ abstract contract AliceNetFactoryBase is DeterministicAddress, ProxyUpgrader {
         _proxyTemplate = addr;
         //State var that stores the _owner address
         _owner = msg.sender;
+
+        // Deploying ALCA and ALCB
+        bytes memory aTokenCreationCode = type(AToken).creationCode;
+        bytes memory bTokenCreationCode = type(BToken).creationCode;
+        address aTokenAddress;
+        address bTokenAddress;
+        assembly {
+            aTokenAddress := create2(
+                0,
+                add(aTokenCreationCode, 0x20),
+                mload(aTokenCreationCode),
+                _aTokenSalt
+            )
+        }
+        _codeSizeZeroRevert((_extCodeSize(aTokenAddress) != 0));
+        assembly {
+            bTokenAddress := create2(
+                0,
+                add(bTokenCreationCode, 0x20),
+                mload(bTokenCreationCode),
+                _bTokenSalt
+            )
+        }
+        _codeSizeZeroRevert((_extCodeSize(bTokenAddress) != 0));
+        _aTokenAddress = aTokenAddress;
+        _bTokenAddress = bTokenAddress;
+        _aTokenCreationCodeHash = keccak256(abi.encodePacked(aTokenCreationCode));
+        _bTokenCreationCodeHash = keccak256(abi.encodePacked(bTokenCreationCode));
     }
 
     // solhint-disable payable-fallback
@@ -99,6 +146,18 @@ abstract contract AliceNetFactoryBase is DeterministicAddress, ProxyUpgrader {
     }
 
     /**
+     * @dev Add a new address and "pseudo" salt to the externalContractRegistry
+     * @param salt_: salt to be used to retrieve the contract
+     * @param newContractAddress_: address of the contract to be added to registry
+     */
+    function addNewExternalContract(bytes32 salt_, address newContractAddress_) public onlyOwner {
+        if (_externalContractRegistry[salt_].exist) {
+            revert AliceNetFactoryBaseErrors.SaltAlreadyInUse();
+        }
+        _externalContractRegistry[salt_] = ContractInfo(true, newContractAddress_);
+    }
+
+    /**
      * @dev Sets the new owner
      * @param newOwner_: address of the new owner
      */
@@ -108,11 +167,23 @@ abstract contract AliceNetFactoryBase is DeterministicAddress, ProxyUpgrader {
 
     /**
      * @dev lookup allows anyone interacting with the contract to get the address of contract specified
-     * by its name_
+     * by its salt_
      * @param salt_: Custom NatSpec tag @custom:salt at the top of the contract solidity file
      */
-    function lookup(bytes32 salt_) public view returns (address addr) {
-        addr = getMetamorphicContractAddress(salt_, address(this));
+    function lookup(bytes32 salt_) public view returns (address) {
+        // check if the salt belongs to one of the pre-defined contracts deployed during the factory deployment
+        if (salt_ == _aTokenSalt) {
+            return _aTokenAddress;
+        }
+        if (salt_ == _bTokenSalt) {
+            return _bTokenAddress;
+        }
+        // check if the salt belongs to any address in the external contract registry (contracts deployed outside the factory)
+        ContractInfo memory contractInfo = _externalContractRegistry[salt_];
+        if (contractInfo.exist) {
+            return contractInfo.logicAddr;
+        }
+        return getMetamorphicContractAddress(salt_, address(this));
     }
 
     /**

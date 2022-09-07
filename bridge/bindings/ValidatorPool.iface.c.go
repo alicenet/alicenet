@@ -19,6 +19,10 @@ type IValidatorPoolCaller interface {
 	//
 	// Solidity: function POSITION_LOCK_PERIOD() view returns(uint256)
 	POSITIONLOCKPERIOD(opts *bind.CallOpts) (*big.Int, error)
+	// GetArbitraryContractAddress is a free data retrieval call binding the contract method 0x3cd1efee.
+	//
+	// Solidity: function getArbitraryContractAddress(bytes32 _salt, address _factory, bytes32 byteCodeHash_) pure returns(address)
+	GetArbitraryContractAddress(opts *bind.CallOpts, _salt [32]byte, _factory common.Address, byteCodeHash_ [32]byte) (common.Address, error)
 	// GetDisputerReward is a free data retrieval call binding the contract method 0x9ccdf830.
 	//
 	// Solidity: function getDisputerReward() view returns(uint256)

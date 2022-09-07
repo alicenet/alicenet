@@ -53,6 +53,10 @@ type MockIAToken struct {
 	// FinishEarlyStageFunc is an instance of a mock function object
 	// controlling the behavior of the method FinishEarlyStage.
 	FinishEarlyStageFunc *IATokenFinishEarlyStageFunc
+	// GetArbitraryContractAddressFunc is an instance of a mock function
+	// object controlling the behavior of the method
+	// GetArbitraryContractAddress.
+	GetArbitraryContractAddressFunc *IATokenGetArbitraryContractAddressFunc
 	// GetLegacyTokenAddressFunc is an instance of a mock function object
 	// controlling the behavior of the method GetLegacyTokenAddress.
 	GetLegacyTokenAddressFunc *IATokenGetLegacyTokenAddressFunc
@@ -165,6 +169,11 @@ func NewMockIAToken() *MockIAToken {
 		},
 		FinishEarlyStageFunc: &IATokenFinishEarlyStageFunc{
 			defaultHook: func(*bind.TransactOpts) (r0 *types.Transaction, r1 error) {
+				return
+			},
+		},
+		GetArbitraryContractAddressFunc: &IATokenGetArbitraryContractAddressFunc{
+			defaultHook: func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (r0 common.Address, r1 error) {
 				return
 			},
 		},
@@ -315,6 +324,11 @@ func NewStrictMockIAToken() *MockIAToken {
 				panic("unexpected invocation of MockIAToken.FinishEarlyStage")
 			},
 		},
+		GetArbitraryContractAddressFunc: &IATokenGetArbitraryContractAddressFunc{
+			defaultHook: func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error) {
+				panic("unexpected invocation of MockIAToken.GetArbitraryContractAddress")
+			},
+		},
 		GetLegacyTokenAddressFunc: &IATokenGetLegacyTokenAddressFunc{
 			defaultHook: func(*bind.CallOpts) (common.Address, error) {
 				panic("unexpected invocation of MockIAToken.GetLegacyTokenAddress")
@@ -437,6 +451,9 @@ func NewMockIATokenFrom(i bindings.IAToken) *MockIAToken {
 		},
 		FinishEarlyStageFunc: &IATokenFinishEarlyStageFunc{
 			defaultHook: i.FinishEarlyStage,
+		},
+		GetArbitraryContractAddressFunc: &IATokenGetArbitraryContractAddressFunc{
+			defaultHook: i.GetArbitraryContractAddress,
 		},
 		GetLegacyTokenAddressFunc: &IATokenGetLegacyTokenAddressFunc{
 			defaultHook: i.GetLegacyTokenAddress,
@@ -1789,6 +1806,123 @@ func (c IATokenFinishEarlyStageFuncCall) Args() []interface{} {
 // Results returns an interface slice containing the results of this
 // invocation.
 func (c IATokenFinishEarlyStageFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
+}
+
+// IATokenGetArbitraryContractAddressFunc describes the behavior when the
+// GetArbitraryContractAddress method of the parent MockIAToken instance is
+// invoked.
+type IATokenGetArbitraryContractAddressFunc struct {
+	defaultHook func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error)
+	hooks       []func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error)
+	history     []IATokenGetArbitraryContractAddressFuncCall
+	mutex       sync.Mutex
+}
+
+// GetArbitraryContractAddress delegates to the next hook function in the
+// queue and stores the parameter and result values of this invocation.
+func (m *MockIAToken) GetArbitraryContractAddress(v0 *bind.CallOpts, v1 [32]byte, v2 common.Address, v3 [32]byte) (common.Address, error) {
+	r0, r1 := m.GetArbitraryContractAddressFunc.nextHook()(v0, v1, v2, v3)
+	m.GetArbitraryContractAddressFunc.appendCall(IATokenGetArbitraryContractAddressFuncCall{v0, v1, v2, v3, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the
+// GetArbitraryContractAddress method of the parent MockIAToken instance is
+// invoked and the hook queue is empty.
+func (f *IATokenGetArbitraryContractAddressFunc) SetDefaultHook(hook func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// GetArbitraryContractAddress method of the parent MockIAToken instance
+// invokes the hook at the front of the queue and discards it. After the
+// queue is empty, the default hook function is invoked for any future
+// action.
+func (f *IATokenGetArbitraryContractAddressFunc) PushHook(hook func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *IATokenGetArbitraryContractAddressFunc) SetDefaultReturn(r0 common.Address, r1 error) {
+	f.SetDefaultHook(func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *IATokenGetArbitraryContractAddressFunc) PushReturn(r0 common.Address, r1 error) {
+	f.PushHook(func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error) {
+		return r0, r1
+	})
+}
+
+func (f *IATokenGetArbitraryContractAddressFunc) nextHook() func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *IATokenGetArbitraryContractAddressFunc) appendCall(r0 IATokenGetArbitraryContractAddressFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of IATokenGetArbitraryContractAddressFuncCall
+// objects describing the invocations of this function.
+func (f *IATokenGetArbitraryContractAddressFunc) History() []IATokenGetArbitraryContractAddressFuncCall {
+	f.mutex.Lock()
+	history := make([]IATokenGetArbitraryContractAddressFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// IATokenGetArbitraryContractAddressFuncCall is an object that describes an
+// invocation of method GetArbitraryContractAddress on an instance of
+// MockIAToken.
+type IATokenGetArbitraryContractAddressFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 *bind.CallOpts
+	// Arg1 is the value of the 2nd argument passed to this method
+	// invocation.
+	Arg1 [32]byte
+	// Arg2 is the value of the 3rd argument passed to this method
+	// invocation.
+	Arg2 common.Address
+	// Arg3 is the value of the 4th argument passed to this method
+	// invocation.
+	Arg3 [32]byte
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 common.Address
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c IATokenGetArbitraryContractAddressFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0, c.Arg1, c.Arg2, c.Arg3}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c IATokenGetArbitraryContractAddressFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
@@ -3527,6 +3661,9 @@ func (c IATokenWatchTransferFuncCall) Results() []interface{} {
 // interface (from the package github.com/alicenet/alicenet/bridge/bindings)
 // used for unit testing.
 type MockIAliceNetFactory struct {
+	// AddNewExternalContractFunc is an instance of a mock function object
+	// controlling the behavior of the method AddNewExternalContract.
+	AddNewExternalContractFunc *IAliceNetFactoryAddNewExternalContractFunc
 	// CallAnyFunc is an instance of a mock function object controlling the
 	// behavior of the method CallAny.
 	CallAnyFunc *IAliceNetFactoryCallAnyFunc
@@ -3566,6 +3703,10 @@ type MockIAliceNetFactory struct {
 	// FilterDeployedTemplateFunc is an instance of a mock function object
 	// controlling the behavior of the method FilterDeployedTemplate.
 	FilterDeployedTemplateFunc *IAliceNetFactoryFilterDeployedTemplateFunc
+	// GetArbitraryContractAddressFunc is an instance of a mock function
+	// object controlling the behavior of the method
+	// GetArbitraryContractAddress.
+	GetArbitraryContractAddressFunc *IAliceNetFactoryGetArbitraryContractAddressFunc
 	// GetImplementationFunc is an instance of a mock function object
 	// controlling the behavior of the method GetImplementation.
 	GetImplementationFunc *IAliceNetFactoryGetImplementationFunc
@@ -3634,6 +3775,11 @@ type MockIAliceNetFactory struct {
 // overwritten.
 func NewMockIAliceNetFactory() *MockIAliceNetFactory {
 	return &MockIAliceNetFactory{
+		AddNewExternalContractFunc: &IAliceNetFactoryAddNewExternalContractFunc{
+			defaultHook: func(*bind.TransactOpts, [32]byte, common.Address) (r0 *types.Transaction, r1 error) {
+				return
+			},
+		},
 		CallAnyFunc: &IAliceNetFactoryCallAnyFunc{
 			defaultHook: func(*bind.TransactOpts, common.Address, *big.Int, []byte) (r0 *types.Transaction, r1 error) {
 				return
@@ -3696,6 +3842,11 @@ func NewMockIAliceNetFactory() *MockIAliceNetFactory {
 		},
 		FilterDeployedTemplateFunc: &IAliceNetFactoryFilterDeployedTemplateFunc{
 			defaultHook: func(*bind.FilterOpts) (r0 *bindings.AliceNetFactoryDeployedTemplateIterator, r1 error) {
+				return
+			},
+		},
+		GetArbitraryContractAddressFunc: &IAliceNetFactoryGetArbitraryContractAddressFunc{
+			defaultHook: func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (r0 common.Address, r1 error) {
 				return
 			},
 		},
@@ -3806,6 +3957,11 @@ func NewMockIAliceNetFactory() *MockIAliceNetFactory {
 // interface. All methods panic on invocation, unless overwritten.
 func NewStrictMockIAliceNetFactory() *MockIAliceNetFactory {
 	return &MockIAliceNetFactory{
+		AddNewExternalContractFunc: &IAliceNetFactoryAddNewExternalContractFunc{
+			defaultHook: func(*bind.TransactOpts, [32]byte, common.Address) (*types.Transaction, error) {
+				panic("unexpected invocation of MockIAliceNetFactory.AddNewExternalContract")
+			},
+		},
 		CallAnyFunc: &IAliceNetFactoryCallAnyFunc{
 			defaultHook: func(*bind.TransactOpts, common.Address, *big.Int, []byte) (*types.Transaction, error) {
 				panic("unexpected invocation of MockIAliceNetFactory.CallAny")
@@ -3869,6 +4025,11 @@ func NewStrictMockIAliceNetFactory() *MockIAliceNetFactory {
 		FilterDeployedTemplateFunc: &IAliceNetFactoryFilterDeployedTemplateFunc{
 			defaultHook: func(*bind.FilterOpts) (*bindings.AliceNetFactoryDeployedTemplateIterator, error) {
 				panic("unexpected invocation of MockIAliceNetFactory.FilterDeployedTemplate")
+			},
+		},
+		GetArbitraryContractAddressFunc: &IAliceNetFactoryGetArbitraryContractAddressFunc{
+			defaultHook: func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error) {
+				panic("unexpected invocation of MockIAliceNetFactory.GetArbitraryContractAddress")
 			},
 		},
 		GetImplementationFunc: &IAliceNetFactoryGetImplementationFunc{
@@ -3979,6 +4140,9 @@ func NewStrictMockIAliceNetFactory() *MockIAliceNetFactory {
 // implementation, unless overwritten.
 func NewMockIAliceNetFactoryFrom(i bindings.IAliceNetFactory) *MockIAliceNetFactory {
 	return &MockIAliceNetFactory{
+		AddNewExternalContractFunc: &IAliceNetFactoryAddNewExternalContractFunc{
+			defaultHook: i.AddNewExternalContract,
+		},
 		CallAnyFunc: &IAliceNetFactoryCallAnyFunc{
 			defaultHook: i.CallAny,
 		},
@@ -4017,6 +4181,9 @@ func NewMockIAliceNetFactoryFrom(i bindings.IAliceNetFactory) *MockIAliceNetFact
 		},
 		FilterDeployedTemplateFunc: &IAliceNetFactoryFilterDeployedTemplateFunc{
 			defaultHook: i.FilterDeployedTemplate,
+		},
+		GetArbitraryContractAddressFunc: &IAliceNetFactoryGetArbitraryContractAddressFunc{
+			defaultHook: i.GetArbitraryContractAddress,
 		},
 		GetImplementationFunc: &IAliceNetFactoryGetImplementationFunc{
 			defaultHook: i.GetImplementation,
@@ -4079,6 +4246,121 @@ func NewMockIAliceNetFactoryFrom(i bindings.IAliceNetFactory) *MockIAliceNetFact
 			defaultHook: i.WatchDeployedTemplate,
 		},
 	}
+}
+
+// IAliceNetFactoryAddNewExternalContractFunc describes the behavior when
+// the AddNewExternalContract method of the parent MockIAliceNetFactory
+// instance is invoked.
+type IAliceNetFactoryAddNewExternalContractFunc struct {
+	defaultHook func(*bind.TransactOpts, [32]byte, common.Address) (*types.Transaction, error)
+	hooks       []func(*bind.TransactOpts, [32]byte, common.Address) (*types.Transaction, error)
+	history     []IAliceNetFactoryAddNewExternalContractFuncCall
+	mutex       sync.Mutex
+}
+
+// AddNewExternalContract delegates to the next hook function in the queue
+// and stores the parameter and result values of this invocation.
+func (m *MockIAliceNetFactory) AddNewExternalContract(v0 *bind.TransactOpts, v1 [32]byte, v2 common.Address) (*types.Transaction, error) {
+	r0, r1 := m.AddNewExternalContractFunc.nextHook()(v0, v1, v2)
+	m.AddNewExternalContractFunc.appendCall(IAliceNetFactoryAddNewExternalContractFuncCall{v0, v1, v2, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the
+// AddNewExternalContract method of the parent MockIAliceNetFactory instance
+// is invoked and the hook queue is empty.
+func (f *IAliceNetFactoryAddNewExternalContractFunc) SetDefaultHook(hook func(*bind.TransactOpts, [32]byte, common.Address) (*types.Transaction, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// AddNewExternalContract method of the parent MockIAliceNetFactory instance
+// invokes the hook at the front of the queue and discards it. After the
+// queue is empty, the default hook function is invoked for any future
+// action.
+func (f *IAliceNetFactoryAddNewExternalContractFunc) PushHook(hook func(*bind.TransactOpts, [32]byte, common.Address) (*types.Transaction, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *IAliceNetFactoryAddNewExternalContractFunc) SetDefaultReturn(r0 *types.Transaction, r1 error) {
+	f.SetDefaultHook(func(*bind.TransactOpts, [32]byte, common.Address) (*types.Transaction, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *IAliceNetFactoryAddNewExternalContractFunc) PushReturn(r0 *types.Transaction, r1 error) {
+	f.PushHook(func(*bind.TransactOpts, [32]byte, common.Address) (*types.Transaction, error) {
+		return r0, r1
+	})
+}
+
+func (f *IAliceNetFactoryAddNewExternalContractFunc) nextHook() func(*bind.TransactOpts, [32]byte, common.Address) (*types.Transaction, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *IAliceNetFactoryAddNewExternalContractFunc) appendCall(r0 IAliceNetFactoryAddNewExternalContractFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of
+// IAliceNetFactoryAddNewExternalContractFuncCall objects describing the
+// invocations of this function.
+func (f *IAliceNetFactoryAddNewExternalContractFunc) History() []IAliceNetFactoryAddNewExternalContractFuncCall {
+	f.mutex.Lock()
+	history := make([]IAliceNetFactoryAddNewExternalContractFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// IAliceNetFactoryAddNewExternalContractFuncCall is an object that
+// describes an invocation of method AddNewExternalContract on an instance
+// of MockIAliceNetFactory.
+type IAliceNetFactoryAddNewExternalContractFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 *bind.TransactOpts
+	// Arg1 is the value of the 2nd argument passed to this method
+	// invocation.
+	Arg1 [32]byte
+	// Arg2 is the value of the 3rd argument passed to this method
+	// invocation.
+	Arg2 common.Address
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 *types.Transaction
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c IAliceNetFactoryAddNewExternalContractFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0, c.Arg1, c.Arg2}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c IAliceNetFactoryAddNewExternalContractFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
 }
 
 // IAliceNetFactoryCallAnyFunc describes the behavior when the CallAny
@@ -5502,6 +5784,124 @@ func (c IAliceNetFactoryFilterDeployedTemplateFuncCall) Args() []interface{} {
 // Results returns an interface slice containing the results of this
 // invocation.
 func (c IAliceNetFactoryFilterDeployedTemplateFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
+}
+
+// IAliceNetFactoryGetArbitraryContractAddressFunc describes the behavior
+// when the GetArbitraryContractAddress method of the parent
+// MockIAliceNetFactory instance is invoked.
+type IAliceNetFactoryGetArbitraryContractAddressFunc struct {
+	defaultHook func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error)
+	hooks       []func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error)
+	history     []IAliceNetFactoryGetArbitraryContractAddressFuncCall
+	mutex       sync.Mutex
+}
+
+// GetArbitraryContractAddress delegates to the next hook function in the
+// queue and stores the parameter and result values of this invocation.
+func (m *MockIAliceNetFactory) GetArbitraryContractAddress(v0 *bind.CallOpts, v1 [32]byte, v2 common.Address, v3 [32]byte) (common.Address, error) {
+	r0, r1 := m.GetArbitraryContractAddressFunc.nextHook()(v0, v1, v2, v3)
+	m.GetArbitraryContractAddressFunc.appendCall(IAliceNetFactoryGetArbitraryContractAddressFuncCall{v0, v1, v2, v3, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the
+// GetArbitraryContractAddress method of the parent MockIAliceNetFactory
+// instance is invoked and the hook queue is empty.
+func (f *IAliceNetFactoryGetArbitraryContractAddressFunc) SetDefaultHook(hook func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// GetArbitraryContractAddress method of the parent MockIAliceNetFactory
+// instance invokes the hook at the front of the queue and discards it.
+// After the queue is empty, the default hook function is invoked for any
+// future action.
+func (f *IAliceNetFactoryGetArbitraryContractAddressFunc) PushHook(hook func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *IAliceNetFactoryGetArbitraryContractAddressFunc) SetDefaultReturn(r0 common.Address, r1 error) {
+	f.SetDefaultHook(func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *IAliceNetFactoryGetArbitraryContractAddressFunc) PushReturn(r0 common.Address, r1 error) {
+	f.PushHook(func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error) {
+		return r0, r1
+	})
+}
+
+func (f *IAliceNetFactoryGetArbitraryContractAddressFunc) nextHook() func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *IAliceNetFactoryGetArbitraryContractAddressFunc) appendCall(r0 IAliceNetFactoryGetArbitraryContractAddressFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of
+// IAliceNetFactoryGetArbitraryContractAddressFuncCall objects describing
+// the invocations of this function.
+func (f *IAliceNetFactoryGetArbitraryContractAddressFunc) History() []IAliceNetFactoryGetArbitraryContractAddressFuncCall {
+	f.mutex.Lock()
+	history := make([]IAliceNetFactoryGetArbitraryContractAddressFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// IAliceNetFactoryGetArbitraryContractAddressFuncCall is an object that
+// describes an invocation of method GetArbitraryContractAddress on an
+// instance of MockIAliceNetFactory.
+type IAliceNetFactoryGetArbitraryContractAddressFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 *bind.CallOpts
+	// Arg1 is the value of the 2nd argument passed to this method
+	// invocation.
+	Arg1 [32]byte
+	// Arg2 is the value of the 3rd argument passed to this method
+	// invocation.
+	Arg2 common.Address
+	// Arg3 is the value of the 4th argument passed to this method
+	// invocation.
+	Arg3 [32]byte
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 common.Address
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c IAliceNetFactoryGetArbitraryContractAddressFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0, c.Arg1, c.Arg2, c.Arg3}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c IAliceNetFactoryGetArbitraryContractAddressFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
@@ -7749,6 +8149,10 @@ type MockIBToken struct {
 	// FilterTransferFunc is an instance of a mock function object
 	// controlling the behavior of the method FilterTransfer.
 	FilterTransferFunc *IBTokenFilterTransferFunc
+	// GetArbitraryContractAddressFunc is an instance of a mock function
+	// object controlling the behavior of the method
+	// GetArbitraryContractAddress.
+	GetArbitraryContractAddressFunc *IBTokenGetArbitraryContractAddressFunc
 	// GetDepositFunc is an instance of a mock function object controlling
 	// the behavior of the method GetDeposit.
 	GetDepositFunc *IBTokenGetDepositFunc
@@ -7927,6 +8331,11 @@ func NewMockIBToken() *MockIBToken {
 		},
 		FilterTransferFunc: &IBTokenFilterTransferFunc{
 			defaultHook: func(*bind.FilterOpts, []common.Address, []common.Address) (r0 *bindings.BTokenTransferIterator, r1 error) {
+				return
+			},
+		},
+		GetArbitraryContractAddressFunc: &IBTokenGetArbitraryContractAddressFunc{
+			defaultHook: func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (r0 common.Address, r1 error) {
 				return
 			},
 		},
@@ -8172,6 +8581,11 @@ func NewStrictMockIBToken() *MockIBToken {
 				panic("unexpected invocation of MockIBToken.FilterTransfer")
 			},
 		},
+		GetArbitraryContractAddressFunc: &IBTokenGetArbitraryContractAddressFunc{
+			defaultHook: func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error) {
+				panic("unexpected invocation of MockIBToken.GetArbitraryContractAddress")
+			},
+		},
 		GetDepositFunc: &IBTokenGetDepositFunc{
 			defaultHook: func(*bind.CallOpts, *big.Int) (bindings.Deposit, error) {
 				panic("unexpected invocation of MockIBToken.GetDeposit")
@@ -8383,6 +8797,9 @@ func NewMockIBTokenFrom(i bindings.IBToken) *MockIBToken {
 		},
 		FilterTransferFunc: &IBTokenFilterTransferFunc{
 			defaultHook: i.FilterTransfer,
+		},
+		GetArbitraryContractAddressFunc: &IBTokenGetArbitraryContractAddressFunc{
+			defaultHook: i.GetArbitraryContractAddress,
 		},
 		GetDepositFunc: &IBTokenGetDepositFunc{
 			defaultHook: i.GetDeposit,
@@ -10125,6 +10542,123 @@ func (c IBTokenFilterTransferFuncCall) Args() []interface{} {
 // Results returns an interface slice containing the results of this
 // invocation.
 func (c IBTokenFilterTransferFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
+}
+
+// IBTokenGetArbitraryContractAddressFunc describes the behavior when the
+// GetArbitraryContractAddress method of the parent MockIBToken instance is
+// invoked.
+type IBTokenGetArbitraryContractAddressFunc struct {
+	defaultHook func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error)
+	hooks       []func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error)
+	history     []IBTokenGetArbitraryContractAddressFuncCall
+	mutex       sync.Mutex
+}
+
+// GetArbitraryContractAddress delegates to the next hook function in the
+// queue and stores the parameter and result values of this invocation.
+func (m *MockIBToken) GetArbitraryContractAddress(v0 *bind.CallOpts, v1 [32]byte, v2 common.Address, v3 [32]byte) (common.Address, error) {
+	r0, r1 := m.GetArbitraryContractAddressFunc.nextHook()(v0, v1, v2, v3)
+	m.GetArbitraryContractAddressFunc.appendCall(IBTokenGetArbitraryContractAddressFuncCall{v0, v1, v2, v3, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the
+// GetArbitraryContractAddress method of the parent MockIBToken instance is
+// invoked and the hook queue is empty.
+func (f *IBTokenGetArbitraryContractAddressFunc) SetDefaultHook(hook func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// GetArbitraryContractAddress method of the parent MockIBToken instance
+// invokes the hook at the front of the queue and discards it. After the
+// queue is empty, the default hook function is invoked for any future
+// action.
+func (f *IBTokenGetArbitraryContractAddressFunc) PushHook(hook func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *IBTokenGetArbitraryContractAddressFunc) SetDefaultReturn(r0 common.Address, r1 error) {
+	f.SetDefaultHook(func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *IBTokenGetArbitraryContractAddressFunc) PushReturn(r0 common.Address, r1 error) {
+	f.PushHook(func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error) {
+		return r0, r1
+	})
+}
+
+func (f *IBTokenGetArbitraryContractAddressFunc) nextHook() func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *IBTokenGetArbitraryContractAddressFunc) appendCall(r0 IBTokenGetArbitraryContractAddressFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of IBTokenGetArbitraryContractAddressFuncCall
+// objects describing the invocations of this function.
+func (f *IBTokenGetArbitraryContractAddressFunc) History() []IBTokenGetArbitraryContractAddressFuncCall {
+	f.mutex.Lock()
+	history := make([]IBTokenGetArbitraryContractAddressFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// IBTokenGetArbitraryContractAddressFuncCall is an object that describes an
+// invocation of method GetArbitraryContractAddress on an instance of
+// MockIBToken.
+type IBTokenGetArbitraryContractAddressFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 *bind.CallOpts
+	// Arg1 is the value of the 2nd argument passed to this method
+	// invocation.
+	Arg1 [32]byte
+	// Arg2 is the value of the 3rd argument passed to this method
+	// invocation.
+	Arg2 common.Address
+	// Arg3 is the value of the 4th argument passed to this method
+	// invocation.
+	Arg3 [32]byte
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 common.Address
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c IBTokenGetArbitraryContractAddressFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0, c.Arg1, c.Arg2, c.Arg3}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c IBTokenGetArbitraryContractAddressFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
@@ -13657,6 +14191,10 @@ type MockIDynamics struct {
 	// function object controlling the behavior of the method
 	// FilterNewCanonicalAliceNetNodeVersion.
 	FilterNewCanonicalAliceNetNodeVersionFunc *IDynamicsFilterNewCanonicalAliceNetNodeVersionFunc
+	// GetArbitraryContractAddressFunc is an instance of a mock function
+	// object controlling the behavior of the method
+	// GetArbitraryContractAddress.
+	GetArbitraryContractAddressFunc *IDynamicsGetArbitraryContractAddressFunc
 	// GetConfigurationFunc is an instance of a mock function object
 	// controlling the behavior of the method GetConfiguration.
 	GetConfigurationFunc *IDynamicsGetConfigurationFunc
@@ -13773,6 +14311,11 @@ func NewMockIDynamics() *MockIDynamics {
 		},
 		FilterNewCanonicalAliceNetNodeVersionFunc: &IDynamicsFilterNewCanonicalAliceNetNodeVersionFunc{
 			defaultHook: func(*bind.FilterOpts) (r0 *bindings.DynamicsNewCanonicalAliceNetNodeVersionIterator, r1 error) {
+				return
+			},
+		},
+		GetArbitraryContractAddressFunc: &IDynamicsGetArbitraryContractAddressFunc{
+			defaultHook: func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (r0 common.Address, r1 error) {
 				return
 			},
 		},
@@ -13928,6 +14471,11 @@ func NewStrictMockIDynamics() *MockIDynamics {
 				panic("unexpected invocation of MockIDynamics.FilterNewCanonicalAliceNetNodeVersion")
 			},
 		},
+		GetArbitraryContractAddressFunc: &IDynamicsGetArbitraryContractAddressFunc{
+			defaultHook: func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error) {
+				panic("unexpected invocation of MockIDynamics.GetArbitraryContractAddress")
+			},
+		},
 		GetConfigurationFunc: &IDynamicsGetConfigurationFunc{
 			defaultHook: func(*bind.CallOpts) (bindings.Configuration, error) {
 				panic("unexpected invocation of MockIDynamics.GetConfiguration")
@@ -14061,6 +14609,9 @@ func NewMockIDynamicsFrom(i bindings.IDynamics) *MockIDynamics {
 		},
 		FilterNewCanonicalAliceNetNodeVersionFunc: &IDynamicsFilterNewCanonicalAliceNetNodeVersionFunc{
 			defaultHook: i.FilterNewCanonicalAliceNetNodeVersion,
+		},
+		GetArbitraryContractAddressFunc: &IDynamicsGetArbitraryContractAddressFunc{
+			defaultHook: i.GetArbitraryContractAddress,
 		},
 		GetConfigurationFunc: &IDynamicsGetConfigurationFunc{
 			defaultHook: i.GetConfiguration,
@@ -15102,6 +15653,124 @@ func (c IDynamicsFilterNewCanonicalAliceNetNodeVersionFuncCall) Args() []interfa
 // Results returns an interface slice containing the results of this
 // invocation.
 func (c IDynamicsFilterNewCanonicalAliceNetNodeVersionFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
+}
+
+// IDynamicsGetArbitraryContractAddressFunc describes the behavior when the
+// GetArbitraryContractAddress method of the parent MockIDynamics instance
+// is invoked.
+type IDynamicsGetArbitraryContractAddressFunc struct {
+	defaultHook func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error)
+	hooks       []func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error)
+	history     []IDynamicsGetArbitraryContractAddressFuncCall
+	mutex       sync.Mutex
+}
+
+// GetArbitraryContractAddress delegates to the next hook function in the
+// queue and stores the parameter and result values of this invocation.
+func (m *MockIDynamics) GetArbitraryContractAddress(v0 *bind.CallOpts, v1 [32]byte, v2 common.Address, v3 [32]byte) (common.Address, error) {
+	r0, r1 := m.GetArbitraryContractAddressFunc.nextHook()(v0, v1, v2, v3)
+	m.GetArbitraryContractAddressFunc.appendCall(IDynamicsGetArbitraryContractAddressFuncCall{v0, v1, v2, v3, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the
+// GetArbitraryContractAddress method of the parent MockIDynamics instance
+// is invoked and the hook queue is empty.
+func (f *IDynamicsGetArbitraryContractAddressFunc) SetDefaultHook(hook func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// GetArbitraryContractAddress method of the parent MockIDynamics instance
+// invokes the hook at the front of the queue and discards it. After the
+// queue is empty, the default hook function is invoked for any future
+// action.
+func (f *IDynamicsGetArbitraryContractAddressFunc) PushHook(hook func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *IDynamicsGetArbitraryContractAddressFunc) SetDefaultReturn(r0 common.Address, r1 error) {
+	f.SetDefaultHook(func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *IDynamicsGetArbitraryContractAddressFunc) PushReturn(r0 common.Address, r1 error) {
+	f.PushHook(func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error) {
+		return r0, r1
+	})
+}
+
+func (f *IDynamicsGetArbitraryContractAddressFunc) nextHook() func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *IDynamicsGetArbitraryContractAddressFunc) appendCall(r0 IDynamicsGetArbitraryContractAddressFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of
+// IDynamicsGetArbitraryContractAddressFuncCall objects describing the
+// invocations of this function.
+func (f *IDynamicsGetArbitraryContractAddressFunc) History() []IDynamicsGetArbitraryContractAddressFuncCall {
+	f.mutex.Lock()
+	history := make([]IDynamicsGetArbitraryContractAddressFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// IDynamicsGetArbitraryContractAddressFuncCall is an object that describes
+// an invocation of method GetArbitraryContractAddress on an instance of
+// MockIDynamics.
+type IDynamicsGetArbitraryContractAddressFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 *bind.CallOpts
+	// Arg1 is the value of the 2nd argument passed to this method
+	// invocation.
+	Arg1 [32]byte
+	// Arg2 is the value of the 3rd argument passed to this method
+	// invocation.
+	Arg2 common.Address
+	// Arg3 is the value of the 4th argument passed to this method
+	// invocation.
+	Arg3 [32]byte
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 common.Address
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c IDynamicsGetArbitraryContractAddressFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0, c.Arg1, c.Arg2, c.Arg3}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c IDynamicsGetArbitraryContractAddressFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
@@ -17375,6 +18044,10 @@ type MockIETHDKG struct {
 	// object controlling the behavior of the method
 	// FilterValidatorSetCompleted.
 	FilterValidatorSetCompletedFunc *IETHDKGFilterValidatorSetCompletedFunc
+	// GetArbitraryContractAddressFunc is an instance of a mock function
+	// object controlling the behavior of the method
+	// GetArbitraryContractAddress.
+	GetArbitraryContractAddressFunc *IETHDKGGetArbitraryContractAddressFunc
 	// GetBadParticipantsFunc is an instance of a mock function object
 	// controlling the behavior of the method GetBadParticipants.
 	GetBadParticipantsFunc *IETHDKGGetBadParticipantsFunc
@@ -17650,6 +18323,11 @@ func NewMockIETHDKG() *MockIETHDKG {
 		},
 		FilterValidatorSetCompletedFunc: &IETHDKGFilterValidatorSetCompletedFunc{
 			defaultHook: func(*bind.FilterOpts) (r0 *bindings.ETHDKGValidatorSetCompletedIterator, r1 error) {
+				return
+			},
+		},
+		GetArbitraryContractAddressFunc: &IETHDKGGetArbitraryContractAddressFunc{
+			defaultHook: func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (r0 common.Address, r1 error) {
 				return
 			},
 		},
@@ -18020,6 +18698,11 @@ func NewStrictMockIETHDKG() *MockIETHDKG {
 				panic("unexpected invocation of MockIETHDKG.FilterValidatorSetCompleted")
 			},
 		},
+		GetArbitraryContractAddressFunc: &IETHDKGGetArbitraryContractAddressFunc{
+			defaultHook: func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error) {
+				panic("unexpected invocation of MockIETHDKG.GetArbitraryContractAddress")
+			},
+		},
 		GetBadParticipantsFunc: &IETHDKGGetBadParticipantsFunc{
 			defaultHook: func(*bind.CallOpts) (*big.Int, error) {
 				panic("unexpected invocation of MockIETHDKG.GetBadParticipants")
@@ -18346,6 +19029,9 @@ func NewMockIETHDKGFrom(i bindings.IETHDKG) *MockIETHDKG {
 		},
 		FilterValidatorSetCompletedFunc: &IETHDKGFilterValidatorSetCompletedFunc{
 			defaultHook: i.FilterValidatorSetCompleted,
+		},
+		GetArbitraryContractAddressFunc: &IETHDKGGetArbitraryContractAddressFunc{
+			defaultHook: i.GetArbitraryContractAddress,
 		},
 		GetBadParticipantsFunc: &IETHDKGGetBadParticipantsFunc{
 			defaultHook: i.GetBadParticipants,
@@ -20703,6 +21389,123 @@ func (c IETHDKGFilterValidatorSetCompletedFuncCall) Args() []interface{} {
 // Results returns an interface slice containing the results of this
 // invocation.
 func (c IETHDKGFilterValidatorSetCompletedFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
+}
+
+// IETHDKGGetArbitraryContractAddressFunc describes the behavior when the
+// GetArbitraryContractAddress method of the parent MockIETHDKG instance is
+// invoked.
+type IETHDKGGetArbitraryContractAddressFunc struct {
+	defaultHook func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error)
+	hooks       []func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error)
+	history     []IETHDKGGetArbitraryContractAddressFuncCall
+	mutex       sync.Mutex
+}
+
+// GetArbitraryContractAddress delegates to the next hook function in the
+// queue and stores the parameter and result values of this invocation.
+func (m *MockIETHDKG) GetArbitraryContractAddress(v0 *bind.CallOpts, v1 [32]byte, v2 common.Address, v3 [32]byte) (common.Address, error) {
+	r0, r1 := m.GetArbitraryContractAddressFunc.nextHook()(v0, v1, v2, v3)
+	m.GetArbitraryContractAddressFunc.appendCall(IETHDKGGetArbitraryContractAddressFuncCall{v0, v1, v2, v3, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the
+// GetArbitraryContractAddress method of the parent MockIETHDKG instance is
+// invoked and the hook queue is empty.
+func (f *IETHDKGGetArbitraryContractAddressFunc) SetDefaultHook(hook func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// GetArbitraryContractAddress method of the parent MockIETHDKG instance
+// invokes the hook at the front of the queue and discards it. After the
+// queue is empty, the default hook function is invoked for any future
+// action.
+func (f *IETHDKGGetArbitraryContractAddressFunc) PushHook(hook func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *IETHDKGGetArbitraryContractAddressFunc) SetDefaultReturn(r0 common.Address, r1 error) {
+	f.SetDefaultHook(func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *IETHDKGGetArbitraryContractAddressFunc) PushReturn(r0 common.Address, r1 error) {
+	f.PushHook(func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error) {
+		return r0, r1
+	})
+}
+
+func (f *IETHDKGGetArbitraryContractAddressFunc) nextHook() func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *IETHDKGGetArbitraryContractAddressFunc) appendCall(r0 IETHDKGGetArbitraryContractAddressFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of IETHDKGGetArbitraryContractAddressFuncCall
+// objects describing the invocations of this function.
+func (f *IETHDKGGetArbitraryContractAddressFunc) History() []IETHDKGGetArbitraryContractAddressFuncCall {
+	f.mutex.Lock()
+	history := make([]IETHDKGGetArbitraryContractAddressFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// IETHDKGGetArbitraryContractAddressFuncCall is an object that describes an
+// invocation of method GetArbitraryContractAddress on an instance of
+// MockIETHDKG.
+type IETHDKGGetArbitraryContractAddressFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 *bind.CallOpts
+	// Arg1 is the value of the 2nd argument passed to this method
+	// invocation.
+	Arg1 [32]byte
+	// Arg2 is the value of the 3rd argument passed to this method
+	// invocation.
+	Arg2 common.Address
+	// Arg3 is the value of the 4th argument passed to this method
+	// invocation.
+	Arg3 [32]byte
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 common.Address
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c IETHDKGGetArbitraryContractAddressFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0, c.Arg1, c.Arg2, c.Arg3}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c IETHDKGGetArbitraryContractAddressFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
@@ -27351,6 +28154,10 @@ type MockIPublicStaking struct {
 	// GetApprovedFunc is an instance of a mock function object controlling
 	// the behavior of the method GetApproved.
 	GetApprovedFunc *IPublicStakingGetApprovedFunc
+	// GetArbitraryContractAddressFunc is an instance of a mock function
+	// object controlling the behavior of the method
+	// GetArbitraryContractAddress.
+	GetArbitraryContractAddressFunc *IPublicStakingGetArbitraryContractAddressFunc
 	// GetEthAccumulatorFunc is an instance of a mock function object
 	// controlling the behavior of the method GetEthAccumulator.
 	GetEthAccumulatorFunc *IPublicStakingGetEthAccumulatorFunc
@@ -27591,6 +28398,11 @@ func NewMockIPublicStaking() *MockIPublicStaking {
 		},
 		GetApprovedFunc: &IPublicStakingGetApprovedFunc{
 			defaultHook: func(*bind.CallOpts, *big.Int) (r0 common.Address, r1 error) {
+				return
+			},
+		},
+		GetArbitraryContractAddressFunc: &IPublicStakingGetArbitraryContractAddressFunc{
+			defaultHook: func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (r0 common.Address, r1 error) {
 				return
 			},
 		},
@@ -27928,6 +28740,11 @@ func NewStrictMockIPublicStaking() *MockIPublicStaking {
 				panic("unexpected invocation of MockIPublicStaking.GetApproved")
 			},
 		},
+		GetArbitraryContractAddressFunc: &IPublicStakingGetArbitraryContractAddressFunc{
+			defaultHook: func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error) {
+				panic("unexpected invocation of MockIPublicStaking.GetArbitraryContractAddress")
+			},
+		},
 		GetEthAccumulatorFunc: &IPublicStakingGetEthAccumulatorFunc{
 			defaultHook: func(*bind.CallOpts) (struct {
 				Accumulator *big.Int
@@ -28216,6 +29033,9 @@ func NewMockIPublicStakingFrom(i bindings.IPublicStaking) *MockIPublicStaking {
 		},
 		GetApprovedFunc: &IPublicStakingGetApprovedFunc{
 			defaultHook: i.GetApproved,
+		},
+		GetArbitraryContractAddressFunc: &IPublicStakingGetArbitraryContractAddressFunc{
+			defaultHook: i.GetArbitraryContractAddress,
 		},
 		GetEthAccumulatorFunc: &IPublicStakingGetEthAccumulatorFunc{
 			defaultHook: i.GetEthAccumulator,
@@ -30874,6 +31694,124 @@ func (c IPublicStakingGetApprovedFuncCall) Args() []interface{} {
 // Results returns an interface slice containing the results of this
 // invocation.
 func (c IPublicStakingGetApprovedFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
+}
+
+// IPublicStakingGetArbitraryContractAddressFunc describes the behavior when
+// the GetArbitraryContractAddress method of the parent MockIPublicStaking
+// instance is invoked.
+type IPublicStakingGetArbitraryContractAddressFunc struct {
+	defaultHook func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error)
+	hooks       []func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error)
+	history     []IPublicStakingGetArbitraryContractAddressFuncCall
+	mutex       sync.Mutex
+}
+
+// GetArbitraryContractAddress delegates to the next hook function in the
+// queue and stores the parameter and result values of this invocation.
+func (m *MockIPublicStaking) GetArbitraryContractAddress(v0 *bind.CallOpts, v1 [32]byte, v2 common.Address, v3 [32]byte) (common.Address, error) {
+	r0, r1 := m.GetArbitraryContractAddressFunc.nextHook()(v0, v1, v2, v3)
+	m.GetArbitraryContractAddressFunc.appendCall(IPublicStakingGetArbitraryContractAddressFuncCall{v0, v1, v2, v3, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the
+// GetArbitraryContractAddress method of the parent MockIPublicStaking
+// instance is invoked and the hook queue is empty.
+func (f *IPublicStakingGetArbitraryContractAddressFunc) SetDefaultHook(hook func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// GetArbitraryContractAddress method of the parent MockIPublicStaking
+// instance invokes the hook at the front of the queue and discards it.
+// After the queue is empty, the default hook function is invoked for any
+// future action.
+func (f *IPublicStakingGetArbitraryContractAddressFunc) PushHook(hook func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *IPublicStakingGetArbitraryContractAddressFunc) SetDefaultReturn(r0 common.Address, r1 error) {
+	f.SetDefaultHook(func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *IPublicStakingGetArbitraryContractAddressFunc) PushReturn(r0 common.Address, r1 error) {
+	f.PushHook(func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error) {
+		return r0, r1
+	})
+}
+
+func (f *IPublicStakingGetArbitraryContractAddressFunc) nextHook() func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *IPublicStakingGetArbitraryContractAddressFunc) appendCall(r0 IPublicStakingGetArbitraryContractAddressFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of
+// IPublicStakingGetArbitraryContractAddressFuncCall objects describing the
+// invocations of this function.
+func (f *IPublicStakingGetArbitraryContractAddressFunc) History() []IPublicStakingGetArbitraryContractAddressFuncCall {
+	f.mutex.Lock()
+	history := make([]IPublicStakingGetArbitraryContractAddressFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// IPublicStakingGetArbitraryContractAddressFuncCall is an object that
+// describes an invocation of method GetArbitraryContractAddress on an
+// instance of MockIPublicStaking.
+type IPublicStakingGetArbitraryContractAddressFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 *bind.CallOpts
+	// Arg1 is the value of the 2nd argument passed to this method
+	// invocation.
+	Arg1 [32]byte
+	// Arg2 is the value of the 3rd argument passed to this method
+	// invocation.
+	Arg2 common.Address
+	// Arg3 is the value of the 4th argument passed to this method
+	// invocation.
+	Arg3 [32]byte
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 common.Address
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c IPublicStakingGetArbitraryContractAddressFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0, c.Arg1, c.Arg2, c.Arg3}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c IPublicStakingGetArbitraryContractAddressFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
@@ -35434,6 +36372,10 @@ type MockISnapshots struct {
 	// object controlling the behavior of the method
 	// GetAliceNetHeightFromSnapshot.
 	GetAliceNetHeightFromSnapshotFunc *ISnapshotsGetAliceNetHeightFromSnapshotFunc
+	// GetArbitraryContractAddressFunc is an instance of a mock function
+	// object controlling the behavior of the method
+	// GetArbitraryContractAddress.
+	GetArbitraryContractAddressFunc *ISnapshotsGetArbitraryContractAddressFunc
 	// GetBlockClaimsFromLatestSnapshotFunc is an instance of a mock
 	// function object controlling the behavior of the method
 	// GetBlockClaimsFromLatestSnapshot.
@@ -35559,6 +36501,11 @@ func NewMockISnapshots() *MockISnapshots {
 		},
 		GetAliceNetHeightFromSnapshotFunc: &ISnapshotsGetAliceNetHeightFromSnapshotFunc{
 			defaultHook: func(*bind.CallOpts, *big.Int) (r0 *big.Int, r1 error) {
+				return
+			},
+		},
+		GetArbitraryContractAddressFunc: &ISnapshotsGetArbitraryContractAddressFunc{
+			defaultHook: func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (r0 common.Address, r1 error) {
 				return
 			},
 		},
@@ -35734,6 +36681,11 @@ func NewStrictMockISnapshots() *MockISnapshots {
 				panic("unexpected invocation of MockISnapshots.GetAliceNetHeightFromSnapshot")
 			},
 		},
+		GetArbitraryContractAddressFunc: &ISnapshotsGetArbitraryContractAddressFunc{
+			defaultHook: func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error) {
+				panic("unexpected invocation of MockISnapshots.GetArbitraryContractAddress")
+			},
+		},
 		GetBlockClaimsFromLatestSnapshotFunc: &ISnapshotsGetBlockClaimsFromLatestSnapshotFunc{
 			defaultHook: func(*bind.CallOpts) (bindings.BClaimsParserLibraryBClaims, error) {
 				panic("unexpected invocation of MockISnapshots.GetBlockClaimsFromLatestSnapshot")
@@ -35895,6 +36847,9 @@ func NewMockISnapshotsFrom(i bindings.ISnapshots) *MockISnapshots {
 		},
 		GetAliceNetHeightFromSnapshotFunc: &ISnapshotsGetAliceNetHeightFromSnapshotFunc{
 			defaultHook: i.GetAliceNetHeightFromSnapshot,
+		},
+		GetArbitraryContractAddressFunc: &ISnapshotsGetArbitraryContractAddressFunc{
+			defaultHook: i.GetArbitraryContractAddress,
 		},
 		GetBlockClaimsFromLatestSnapshotFunc: &ISnapshotsGetBlockClaimsFromLatestSnapshotFunc{
 			defaultHook: i.GetBlockClaimsFromLatestSnapshot,
@@ -36535,6 +37490,124 @@ func (c ISnapshotsGetAliceNetHeightFromSnapshotFuncCall) Args() []interface{} {
 // Results returns an interface slice containing the results of this
 // invocation.
 func (c ISnapshotsGetAliceNetHeightFromSnapshotFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
+}
+
+// ISnapshotsGetArbitraryContractAddressFunc describes the behavior when the
+// GetArbitraryContractAddress method of the parent MockISnapshots instance
+// is invoked.
+type ISnapshotsGetArbitraryContractAddressFunc struct {
+	defaultHook func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error)
+	hooks       []func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error)
+	history     []ISnapshotsGetArbitraryContractAddressFuncCall
+	mutex       sync.Mutex
+}
+
+// GetArbitraryContractAddress delegates to the next hook function in the
+// queue and stores the parameter and result values of this invocation.
+func (m *MockISnapshots) GetArbitraryContractAddress(v0 *bind.CallOpts, v1 [32]byte, v2 common.Address, v3 [32]byte) (common.Address, error) {
+	r0, r1 := m.GetArbitraryContractAddressFunc.nextHook()(v0, v1, v2, v3)
+	m.GetArbitraryContractAddressFunc.appendCall(ISnapshotsGetArbitraryContractAddressFuncCall{v0, v1, v2, v3, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the
+// GetArbitraryContractAddress method of the parent MockISnapshots instance
+// is invoked and the hook queue is empty.
+func (f *ISnapshotsGetArbitraryContractAddressFunc) SetDefaultHook(hook func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// GetArbitraryContractAddress method of the parent MockISnapshots instance
+// invokes the hook at the front of the queue and discards it. After the
+// queue is empty, the default hook function is invoked for any future
+// action.
+func (f *ISnapshotsGetArbitraryContractAddressFunc) PushHook(hook func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *ISnapshotsGetArbitraryContractAddressFunc) SetDefaultReturn(r0 common.Address, r1 error) {
+	f.SetDefaultHook(func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *ISnapshotsGetArbitraryContractAddressFunc) PushReturn(r0 common.Address, r1 error) {
+	f.PushHook(func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error) {
+		return r0, r1
+	})
+}
+
+func (f *ISnapshotsGetArbitraryContractAddressFunc) nextHook() func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *ISnapshotsGetArbitraryContractAddressFunc) appendCall(r0 ISnapshotsGetArbitraryContractAddressFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of
+// ISnapshotsGetArbitraryContractAddressFuncCall objects describing the
+// invocations of this function.
+func (f *ISnapshotsGetArbitraryContractAddressFunc) History() []ISnapshotsGetArbitraryContractAddressFuncCall {
+	f.mutex.Lock()
+	history := make([]ISnapshotsGetArbitraryContractAddressFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// ISnapshotsGetArbitraryContractAddressFuncCall is an object that describes
+// an invocation of method GetArbitraryContractAddress on an instance of
+// MockISnapshots.
+type ISnapshotsGetArbitraryContractAddressFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 *bind.CallOpts
+	// Arg1 is the value of the 2nd argument passed to this method
+	// invocation.
+	Arg1 [32]byte
+	// Arg2 is the value of the 3rd argument passed to this method
+	// invocation.
+	Arg2 common.Address
+	// Arg3 is the value of the 4th argument passed to this method
+	// invocation.
+	Arg3 [32]byte
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 common.Address
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c ISnapshotsGetArbitraryContractAddressFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0, c.Arg1, c.Arg2, c.Arg3}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c ISnapshotsGetArbitraryContractAddressFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
@@ -39662,6 +40735,10 @@ type MockIValidatorPool struct {
 	// object controlling the behavior of the method
 	// FilterValidatorMinorSlashed.
 	FilterValidatorMinorSlashedFunc *IValidatorPoolFilterValidatorMinorSlashedFunc
+	// GetArbitraryContractAddressFunc is an instance of a mock function
+	// object controlling the behavior of the method
+	// GetArbitraryContractAddress.
+	GetArbitraryContractAddressFunc *IValidatorPoolGetArbitraryContractAddressFunc
 	// GetDisputerRewardFunc is an instance of a mock function object
 	// controlling the behavior of the method GetDisputerReward.
 	GetDisputerRewardFunc *IValidatorPoolGetDisputerRewardFunc
@@ -39872,6 +40949,11 @@ func NewMockIValidatorPool() *MockIValidatorPool {
 		},
 		FilterValidatorMinorSlashedFunc: &IValidatorPoolFilterValidatorMinorSlashedFunc{
 			defaultHook: func(*bind.FilterOpts, []common.Address) (r0 *bindings.ValidatorPoolValidatorMinorSlashedIterator, r1 error) {
+				return
+			},
+		},
+		GetArbitraryContractAddressFunc: &IValidatorPoolGetArbitraryContractAddressFunc{
+			defaultHook: func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (r0 common.Address, r1 error) {
 				return
 			},
 		},
@@ -40177,6 +41259,11 @@ func NewStrictMockIValidatorPool() *MockIValidatorPool {
 				panic("unexpected invocation of MockIValidatorPool.FilterValidatorMinorSlashed")
 			},
 		},
+		GetArbitraryContractAddressFunc: &IValidatorPoolGetArbitraryContractAddressFunc{
+			defaultHook: func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error) {
+				panic("unexpected invocation of MockIValidatorPool.GetArbitraryContractAddress")
+			},
+		},
 		GetDisputerRewardFunc: &IValidatorPoolGetDisputerRewardFunc{
 			defaultHook: func(*bind.CallOpts) (*big.Int, error) {
 				panic("unexpected invocation of MockIValidatorPool.GetDisputerReward")
@@ -40459,6 +41546,9 @@ func NewMockIValidatorPoolFrom(i bindings.IValidatorPool) *MockIValidatorPool {
 		},
 		FilterValidatorMinorSlashedFunc: &IValidatorPoolFilterValidatorMinorSlashedFunc{
 			defaultHook: i.FilterValidatorMinorSlashed,
+		},
+		GetArbitraryContractAddressFunc: &IValidatorPoolGetArbitraryContractAddressFunc{
+			defaultHook: i.GetArbitraryContractAddress,
 		},
 		GetDisputerRewardFunc: &IValidatorPoolGetDisputerRewardFunc{
 			defaultHook: i.GetDisputerReward,
@@ -41696,6 +42786,124 @@ func (c IValidatorPoolFilterValidatorMinorSlashedFuncCall) Args() []interface{} 
 // Results returns an interface slice containing the results of this
 // invocation.
 func (c IValidatorPoolFilterValidatorMinorSlashedFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
+}
+
+// IValidatorPoolGetArbitraryContractAddressFunc describes the behavior when
+// the GetArbitraryContractAddress method of the parent MockIValidatorPool
+// instance is invoked.
+type IValidatorPoolGetArbitraryContractAddressFunc struct {
+	defaultHook func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error)
+	hooks       []func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error)
+	history     []IValidatorPoolGetArbitraryContractAddressFuncCall
+	mutex       sync.Mutex
+}
+
+// GetArbitraryContractAddress delegates to the next hook function in the
+// queue and stores the parameter and result values of this invocation.
+func (m *MockIValidatorPool) GetArbitraryContractAddress(v0 *bind.CallOpts, v1 [32]byte, v2 common.Address, v3 [32]byte) (common.Address, error) {
+	r0, r1 := m.GetArbitraryContractAddressFunc.nextHook()(v0, v1, v2, v3)
+	m.GetArbitraryContractAddressFunc.appendCall(IValidatorPoolGetArbitraryContractAddressFuncCall{v0, v1, v2, v3, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the
+// GetArbitraryContractAddress method of the parent MockIValidatorPool
+// instance is invoked and the hook queue is empty.
+func (f *IValidatorPoolGetArbitraryContractAddressFunc) SetDefaultHook(hook func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// GetArbitraryContractAddress method of the parent MockIValidatorPool
+// instance invokes the hook at the front of the queue and discards it.
+// After the queue is empty, the default hook function is invoked for any
+// future action.
+func (f *IValidatorPoolGetArbitraryContractAddressFunc) PushHook(hook func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *IValidatorPoolGetArbitraryContractAddressFunc) SetDefaultReturn(r0 common.Address, r1 error) {
+	f.SetDefaultHook(func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *IValidatorPoolGetArbitraryContractAddressFunc) PushReturn(r0 common.Address, r1 error) {
+	f.PushHook(func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error) {
+		return r0, r1
+	})
+}
+
+func (f *IValidatorPoolGetArbitraryContractAddressFunc) nextHook() func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *IValidatorPoolGetArbitraryContractAddressFunc) appendCall(r0 IValidatorPoolGetArbitraryContractAddressFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of
+// IValidatorPoolGetArbitraryContractAddressFuncCall objects describing the
+// invocations of this function.
+func (f *IValidatorPoolGetArbitraryContractAddressFunc) History() []IValidatorPoolGetArbitraryContractAddressFuncCall {
+	f.mutex.Lock()
+	history := make([]IValidatorPoolGetArbitraryContractAddressFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// IValidatorPoolGetArbitraryContractAddressFuncCall is an object that
+// describes an invocation of method GetArbitraryContractAddress on an
+// instance of MockIValidatorPool.
+type IValidatorPoolGetArbitraryContractAddressFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 *bind.CallOpts
+	// Arg1 is the value of the 2nd argument passed to this method
+	// invocation.
+	Arg1 [32]byte
+	// Arg2 is the value of the 3rd argument passed to this method
+	// invocation.
+	Arg2 common.Address
+	// Arg3 is the value of the 4th argument passed to this method
+	// invocation.
+	Arg3 [32]byte
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 common.Address
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c IValidatorPoolGetArbitraryContractAddressFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0, c.Arg1, c.Arg2, c.Arg3}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c IValidatorPoolGetArbitraryContractAddressFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
@@ -47166,6 +48374,10 @@ type MockIValidatorStaking struct {
 	// GetApprovedFunc is an instance of a mock function object controlling
 	// the behavior of the method GetApproved.
 	GetApprovedFunc *IValidatorStakingGetApprovedFunc
+	// GetArbitraryContractAddressFunc is an instance of a mock function
+	// object controlling the behavior of the method
+	// GetArbitraryContractAddress.
+	GetArbitraryContractAddressFunc *IValidatorStakingGetArbitraryContractAddressFunc
 	// GetEthAccumulatorFunc is an instance of a mock function object
 	// controlling the behavior of the method GetEthAccumulator.
 	GetEthAccumulatorFunc *IValidatorStakingGetEthAccumulatorFunc
@@ -47407,6 +48619,11 @@ func NewMockIValidatorStaking() *MockIValidatorStaking {
 		},
 		GetApprovedFunc: &IValidatorStakingGetApprovedFunc{
 			defaultHook: func(*bind.CallOpts, *big.Int) (r0 common.Address, r1 error) {
+				return
+			},
+		},
+		GetArbitraryContractAddressFunc: &IValidatorStakingGetArbitraryContractAddressFunc{
+			defaultHook: func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (r0 common.Address, r1 error) {
 				return
 			},
 		},
@@ -47745,6 +48962,11 @@ func NewStrictMockIValidatorStaking() *MockIValidatorStaking {
 				panic("unexpected invocation of MockIValidatorStaking.GetApproved")
 			},
 		},
+		GetArbitraryContractAddressFunc: &IValidatorStakingGetArbitraryContractAddressFunc{
+			defaultHook: func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error) {
+				panic("unexpected invocation of MockIValidatorStaking.GetArbitraryContractAddress")
+			},
+		},
 		GetEthAccumulatorFunc: &IValidatorStakingGetEthAccumulatorFunc{
 			defaultHook: func(*bind.CallOpts) (struct {
 				Accumulator *big.Int
@@ -48033,6 +49255,9 @@ func NewMockIValidatorStakingFrom(i bindings.IValidatorStaking) *MockIValidatorS
 		},
 		GetApprovedFunc: &IValidatorStakingGetApprovedFunc{
 			defaultHook: i.GetApproved,
+		},
+		GetArbitraryContractAddressFunc: &IValidatorStakingGetArbitraryContractAddressFunc{
+			defaultHook: i.GetArbitraryContractAddress,
 		},
 		GetEthAccumulatorFunc: &IValidatorStakingGetEthAccumulatorFunc{
 			defaultHook: i.GetEthAccumulator,
@@ -50711,6 +51936,124 @@ func (c IValidatorStakingGetApprovedFuncCall) Args() []interface{} {
 // Results returns an interface slice containing the results of this
 // invocation.
 func (c IValidatorStakingGetApprovedFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
+}
+
+// IValidatorStakingGetArbitraryContractAddressFunc describes the behavior
+// when the GetArbitraryContractAddress method of the parent
+// MockIValidatorStaking instance is invoked.
+type IValidatorStakingGetArbitraryContractAddressFunc struct {
+	defaultHook func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error)
+	hooks       []func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error)
+	history     []IValidatorStakingGetArbitraryContractAddressFuncCall
+	mutex       sync.Mutex
+}
+
+// GetArbitraryContractAddress delegates to the next hook function in the
+// queue and stores the parameter and result values of this invocation.
+func (m *MockIValidatorStaking) GetArbitraryContractAddress(v0 *bind.CallOpts, v1 [32]byte, v2 common.Address, v3 [32]byte) (common.Address, error) {
+	r0, r1 := m.GetArbitraryContractAddressFunc.nextHook()(v0, v1, v2, v3)
+	m.GetArbitraryContractAddressFunc.appendCall(IValidatorStakingGetArbitraryContractAddressFuncCall{v0, v1, v2, v3, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the
+// GetArbitraryContractAddress method of the parent MockIValidatorStaking
+// instance is invoked and the hook queue is empty.
+func (f *IValidatorStakingGetArbitraryContractAddressFunc) SetDefaultHook(hook func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// GetArbitraryContractAddress method of the parent MockIValidatorStaking
+// instance invokes the hook at the front of the queue and discards it.
+// After the queue is empty, the default hook function is invoked for any
+// future action.
+func (f *IValidatorStakingGetArbitraryContractAddressFunc) PushHook(hook func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *IValidatorStakingGetArbitraryContractAddressFunc) SetDefaultReturn(r0 common.Address, r1 error) {
+	f.SetDefaultHook(func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *IValidatorStakingGetArbitraryContractAddressFunc) PushReturn(r0 common.Address, r1 error) {
+	f.PushHook(func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error) {
+		return r0, r1
+	})
+}
+
+func (f *IValidatorStakingGetArbitraryContractAddressFunc) nextHook() func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *IValidatorStakingGetArbitraryContractAddressFunc) appendCall(r0 IValidatorStakingGetArbitraryContractAddressFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of
+// IValidatorStakingGetArbitraryContractAddressFuncCall objects describing
+// the invocations of this function.
+func (f *IValidatorStakingGetArbitraryContractAddressFunc) History() []IValidatorStakingGetArbitraryContractAddressFuncCall {
+	f.mutex.Lock()
+	history := make([]IValidatorStakingGetArbitraryContractAddressFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// IValidatorStakingGetArbitraryContractAddressFuncCall is an object that
+// describes an invocation of method GetArbitraryContractAddress on an
+// instance of MockIValidatorStaking.
+type IValidatorStakingGetArbitraryContractAddressFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 *bind.CallOpts
+	// Arg1 is the value of the 2nd argument passed to this method
+	// invocation.
+	Arg1 [32]byte
+	// Arg2 is the value of the 3rd argument passed to this method
+	// invocation.
+	Arg2 common.Address
+	// Arg3 is the value of the 4th argument passed to this method
+	// invocation.
+	Arg3 [32]byte
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 common.Address
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c IValidatorStakingGetArbitraryContractAddressFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0, c.Arg1, c.Arg2, c.Arg3}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c IValidatorStakingGetArbitraryContractAddressFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 

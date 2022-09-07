@@ -11,8 +11,6 @@ import "contracts/libraries/errors/StakingTokenErrors.sol";
  * @notice This is the ERC20 implementation of the staking token used by the
  * AliceNet layer2 dapp.
  *
- * @custom:salt AToken
- * @custom:deploy-type deployStatic
  */
 contract AToken is
     IStakingToken,

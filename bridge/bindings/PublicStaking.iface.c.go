@@ -43,6 +43,10 @@ type IPublicStakingCaller interface {
 	//
 	// Solidity: function getApproved(uint256 tokenId) view returns(address)
 	GetApproved(opts *bind.CallOpts, tokenId *big.Int) (common.Address, error)
+	// GetArbitraryContractAddress is a free data retrieval call binding the contract method 0x3cd1efee.
+	//
+	// Solidity: function getArbitraryContractAddress(bytes32 _salt, address _factory, bytes32 byteCodeHash_) pure returns(address)
+	GetArbitraryContractAddress(opts *bind.CallOpts, _salt [32]byte, _factory common.Address, byteCodeHash_ [32]byte) (common.Address, error)
 	// GetEthAccumulator is a free data retrieval call binding the contract method 0x548652d2.
 	//
 	// Solidity: function getEthAccumulator() view returns(uint256 accumulator, uint256 slush)

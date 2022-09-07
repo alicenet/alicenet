@@ -30,7 +30,7 @@ var (
 
 // ATokenMinterMetaData contains all meta data concerning the ATokenMinter contract.
 var ATokenMinterMetaData = &bind.MetaData{
-	ABI: "[{\"inputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"expected\",\"type\":\"address\"}],\"name\":\"OnlyAToken\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"expected\",\"type\":\"address\"}],\"name\":\"OnlyFactory\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"_salt\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"_factory\",\"type\":\"address\"}],\"name\":\"getMetamorphicContractAddress\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"mint\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]",
+	ABI: "[{\"inputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"expected\",\"type\":\"address\"}],\"name\":\"OnlyAToken\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"expected\",\"type\":\"address\"}],\"name\":\"OnlyFactory\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"_salt\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"_factory\",\"type\":\"address\"},{\"internalType\":\"bytes32\",\"name\":\"byteCodeHash_\",\"type\":\"bytes32\"}],\"name\":\"getArbitraryContractAddress\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"_salt\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"_factory\",\"type\":\"address\"}],\"name\":\"getMetamorphicContractAddress\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"mint\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]",
 }
 
 // ATokenMinterABI is the input ABI used to generate the binding from.
@@ -177,6 +177,37 @@ func (_ATokenMinter *ATokenMinterTransactorRaw) Transfer(opts *bind.TransactOpts
 // Transact invokes the (paid) contract method with params as input values.
 func (_ATokenMinter *ATokenMinterTransactorRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error) {
 	return _ATokenMinter.Contract.contract.Transact(opts, method, params...)
+}
+
+// GetArbitraryContractAddress is a free data retrieval call binding the contract method 0x3cd1efee.
+//
+// Solidity: function getArbitraryContractAddress(bytes32 _salt, address _factory, bytes32 byteCodeHash_) pure returns(address)
+func (_ATokenMinter *ATokenMinterCaller) GetArbitraryContractAddress(opts *bind.CallOpts, _salt [32]byte, _factory common.Address, byteCodeHash_ [32]byte) (common.Address, error) {
+	var out []interface{}
+	err := _ATokenMinter.contract.Call(opts, &out, "getArbitraryContractAddress", _salt, _factory, byteCodeHash_)
+
+	if err != nil {
+		return *new(common.Address), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(common.Address)).(*common.Address)
+
+	return out0, err
+
+}
+
+// GetArbitraryContractAddress is a free data retrieval call binding the contract method 0x3cd1efee.
+//
+// Solidity: function getArbitraryContractAddress(bytes32 _salt, address _factory, bytes32 byteCodeHash_) pure returns(address)
+func (_ATokenMinter *ATokenMinterSession) GetArbitraryContractAddress(_salt [32]byte, _factory common.Address, byteCodeHash_ [32]byte) (common.Address, error) {
+	return _ATokenMinter.Contract.GetArbitraryContractAddress(&_ATokenMinter.CallOpts, _salt, _factory, byteCodeHash_)
+}
+
+// GetArbitraryContractAddress is a free data retrieval call binding the contract method 0x3cd1efee.
+//
+// Solidity: function getArbitraryContractAddress(bytes32 _salt, address _factory, bytes32 byteCodeHash_) pure returns(address)
+func (_ATokenMinter *ATokenMinterCallerSession) GetArbitraryContractAddress(_salt [32]byte, _factory common.Address, byteCodeHash_ [32]byte) (common.Address, error) {
+	return _ATokenMinter.Contract.GetArbitraryContractAddress(&_ATokenMinter.CallOpts, _salt, _factory, byteCodeHash_)
 }
 
 // GetMetamorphicContractAddress is a free data retrieval call binding the contract method 0x8653a465.
