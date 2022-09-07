@@ -3,6 +3,7 @@ package ethkey
 import (
 	"crypto/ecdsa"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/alicenet/alicenet/config"
 	"github.com/alicenet/alicenet/logging"
@@ -35,7 +36,7 @@ var Command = cobra.Command{
 }
 
 func generate(cmd *cobra.Command, args []string) {
-	logger := logging.GetLogger("ethkey")
+	logger := logging.GetLogger("ethkey").WithField("method", "generate")
 
 	// Check if keyfile path given and make sure it doesn't already exist.
 	keyfilepath := defaultKeyfileName
@@ -48,42 +49,9 @@ func generate(cmd *cobra.Command, args []string) {
 		logger.Fatalf("Error checking if keyfile exists: %v", err)
 	}
 
-	var privateKey *ecdsa.PrivateKey
-	var err error
-	if file := config.Configuration.EthKey.PrivateKey; file != "" {
-		// Load private key from file.
-		privateKey, err = crypto.LoadECDSA(file)
-		if err != nil {
-			logger.Fatalf("Can't load private key: %v", err)
-		}
-	} else {
-		// If not loaded, generate random.
-		privateKey, err = crypto.GenerateKey()
-		if err != nil {
-			logger.Fatalf("Failed to generate random private key: %v", err)
-		}
-	}
-
-	// Create the keyfile object with a random UUID.
-	UUID, err := uuid.NewRandom()
+	keyjson, key, _, err := GenerateKeyFile(logger)
 	if err != nil {
-		logger.Fatalf("Failed to generate random uuid: %v", err)
-	}
-	key := &keystore.Key{
-		Id:         UUID,
-		Address:    crypto.PubkeyToAddress(privateKey.PublicKey),
-		PrivateKey: privateKey,
-	}
-
-	// Encrypt key with passphrase.
-	passphrase := getPassphrase(true, logger)
-	scryptN, scryptP := keystore.StandardScryptN, keystore.StandardScryptP
-	if config.Configuration.EthKey.LightKDF {
-		scryptN, scryptP = keystore.LightScryptN, keystore.LightScryptP
-	}
-	keyjson, err := keystore.EncryptKey(key, passphrase, scryptN, scryptP)
-	if err != nil {
-		logger.Fatalf("Error encrypting key: %v", err)
+		logger.Fatalf(err.Error())
 	}
 
 	// Store the file to disk.
@@ -105,10 +73,52 @@ func generate(cmd *cobra.Command, args []string) {
 	}
 }
 
+func GenerateKeyFile(logger *logrus.Entry) ([]byte, *keystore.Key, string, error) {
+	var privateKey *ecdsa.PrivateKey
+	var err error
+	if file := config.Configuration.EthKey.PrivateKey; file != "" {
+		// Load private key from file.
+		privateKey, err = crypto.LoadECDSA(file)
+		if err != nil {
+			return nil, nil, "", errors.New(fmt.Sprintf("Can't load private key: %v", err))
+		}
+	} else {
+		// If not loaded, generate random.
+		privateKey, err = crypto.GenerateKey()
+		if err != nil {
+			return nil, nil, "", errors.New(fmt.Sprintf("Failed to generate random private key: %v", err))
+		}
+	}
+
+	// Create the keyfile object with a random UUID.
+	UUID, err := uuid.NewRandom()
+	if err != nil {
+		return nil, nil, "", errors.New(fmt.Sprintf("Failed to generate random uuid: %v", err))
+	}
+	key := &keystore.Key{
+		Id:         UUID,
+		Address:    crypto.PubkeyToAddress(privateKey.PublicKey),
+		PrivateKey: privateKey,
+	}
+
+	// Encrypt key with passphrase.
+	passphrase := getPassphrase(true, logger)
+	scryptN, scryptP := keystore.StandardScryptN, keystore.StandardScryptP
+	if config.Configuration.EthKey.LightKDF {
+		scryptN, scryptP = keystore.LightScryptN, keystore.LightScryptP
+	}
+	keyjson, err := keystore.EncryptKey(key, passphrase, scryptN, scryptP)
+	if err != nil {
+		return nil, nil, "", errors.New(fmt.Sprintf("Error encrypting key: %v", err))
+	}
+
+	return keyjson, key, passphrase, nil
+}
+
 // getPassphrase obtains a passphrase given by the user.  It first checks the
 // --passfile command line flag and ultimately prompts the user for a
 // passphrase.
-func getPassphrase(confirmation bool, logger *logrus.Logger) string {
+func getPassphrase(confirmation bool, logger *logrus.Entry) string {
 	// Look for the --passwordfile flag.
 	passphraseFile := config.Configuration.EthKey.PasswordFile
 	if passphraseFile != "" {
@@ -126,7 +136,7 @@ func getPassphrase(confirmation bool, logger *logrus.Logger) string {
 
 // mustPrintJSON prints the JSON encoding of the given object and
 // exits the program with an error message when the marshaling fails.
-func mustPrintJSON(jsonObject interface{}, logger *logrus.Logger) {
+func mustPrintJSON(jsonObject interface{}, logger *logrus.Entry) {
 	str, err := json.MarshalIndent(jsonObject, "", "  ")
 	if err != nil {
 		logger.Fatalf("Failed to marshal JSON object: %v", err)

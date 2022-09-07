@@ -12,8 +12,9 @@ import (
 )
 
 type InitConfig struct {
-	Path    string
-	Network string
+	Path               string
+	Network            string
+	DontGenerateEthkey bool
 }
 
 type BootnodeConfig struct {

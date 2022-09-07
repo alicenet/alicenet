@@ -1,6 +1,7 @@
 package initialization
 
 import (
+	"github.com/alicenet/alicenet/cmd/ethkey"
 	"os"
 
 	"github.com/alicenet/alicenet/config"
@@ -16,6 +17,8 @@ var Command = cobra.Command{
 	Long:  "Initialize the files/folders required for running the alicenet client",
 	Run:   initialiseFilesAndFolders,
 }
+
+const passcodesFile = "/passcodes.txt"
 
 func initialiseFilesAndFolders(cmd *cobra.Command, args []string) {
 	logger := logging.GetLogger("init").WithField("Component", cmd.Use)
@@ -86,6 +89,27 @@ func initialiseFilesAndFolders(cmd *cobra.Command, args []string) {
 		}
 	}
 
+	// create the keyfile if cancelling flag not specified
+	defaultAccount := "<0xETHEREUM_ADDRESS>"
+	if !config.Configuration.Initialization.DontGenerateEthkey {
+		keyJSON, key, passphrase, err := ethkey.GenerateKeyFile(logger)
+		if err != nil {
+			logger.Fatalf(err.Error())
+		}
+
+		defaultAccount = key.Address.Hex()
+		keyFilePath := keysPath + "/" + defaultAccount
+		if err := os.WriteFile(keyFilePath, keyJSON, 0600); err != nil {
+			logger.Fatalf("Failed to write keyfile to %s: %v", keyFilePath, err)
+		}
+
+		passphraseData := []byte(key.Address.Hex() + "=" + passphrase)
+		passphraseFilePath := keystoresPath + passcodesFile
+		if err := os.WriteFile(passphraseFilePath, passphraseData, 0600); err != nil {
+			logger.Fatalf("Failed to write passphrase to %s: %v", passphraseFilePath, err)
+		}
+	}
+
 	config := &config.RootSerializableConfiguration{
 		Logging: config.LoggingConfig{
 			Consensus: "info",
@@ -112,9 +136,9 @@ func initialiseFilesAndFolders(cmd *cobra.Command, args []string) {
 		Ethereum: config.EthereumConfig{
 			Endpoint:                 "<ETHEREUM_ENDPOINT_URL>",
 			EndpointMinimumPeers:     1,
-			DefaultAccount:           "<0xETHEREUM_ADDRESS>",
+			DefaultAccount:           defaultAccount,
 			Keystore:                 keystoresPath,
-			PassCodes:                keystoresPath + "/passcodes.txt",
+			PassCodes:                keystoresPath + passcodesFile,
 			FactoryAddress:           "<0xFACTORY_ETHEREUM_ADDRESS>",
 			StartingBlock:            0,
 			ProcessingBlockBatchSize: 1_000,
@@ -143,8 +167,14 @@ func initialiseFilesAndFolders(cmd *cobra.Command, args []string) {
 	}
 
 	// write config.toml file
-	configFile.Write(b)
-	configFile.Close()
+	_, err = configFile.Write(b)
+	if err != nil {
+		logger.WithError(err).Fatal("Failed to write to file")
+	}
+	err = configFile.Close()
+	if err != nil {
+		logger.WithError(err).Fatal("Failed to close the file")
+	}
 
 	logger.Info("created config file")
 

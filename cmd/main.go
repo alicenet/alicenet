@@ -192,6 +192,7 @@ func main() {
 		&initialization.Command: {
 			{"initialization.path", "p", "Path to save the files/folders", &config.Configuration.Initialization.Path},
 			{"initialization.network", "n", "Network environment to use (testnet, mainnet)", &config.Configuration.Initialization.Network},
+			{"initialization.dontGenerateEthkey", "", "Flag to cancel ethkey generation", &config.Configuration.Initialization.Network},
 		},
 	}
 
@@ -203,7 +204,7 @@ func main() {
 		&utils.Command:          &rootCommand,
 		&utils.SendWeiCommand:   &utils.Command,
 		&initialization.Command: &rootCommand,
-		&ethkey.Command:		 &rootCommand,
+		&ethkey.Command:         &rootCommand,
 	}
 
 	// Convert option abstraction into concrete settings for Cobra and Viper
