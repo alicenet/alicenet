@@ -127,4 +127,5 @@ var ValidLoggers []string = []string{
 	"transaction",
 	"tasks",
 	"staterecover",
+	"ethkey",
 }

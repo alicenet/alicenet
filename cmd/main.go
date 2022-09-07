@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"github.com/alicenet/alicenet/cmd/ethkey"
 	"io/ioutil"
 	"os"
 	"reflect"
@@ -146,8 +147,7 @@ func main() {
 			{"ethereum.factoryAddress", "", "", &config.Configuration.Ethereum.FactoryAddress},
 			{"ethereum.txMaxGasFeeAllowedInGwei", "", "", &config.Configuration.Ethereum.TxMaxGasFeeAllowedInGwei},
 			{"ethereum.txMetricsDisplay", "", "", &config.Configuration.Ethereum.TxMetricsDisplay},
-			{"monitor.batchSize", "", "", &config.Configuration.Monitor.BatchSize},
-			{"monitor.interval", "", "", &config.Configuration.Monitor.Interval},
+			{"ethereum.processingBlockBatchSize", "", "", &config.Configuration.Ethereum.ProcessingBlockBatchSize},
 			{"transport.peerLimitMin", "", "", &config.Configuration.Transport.PeerLimitMin},
 			{"transport.peerLimitMax", "", "", &config.Configuration.Transport.PeerLimitMax},
 			{"transport.privateKey", "", "", &config.Configuration.Transport.PrivateKey},
@@ -155,7 +155,6 @@ func main() {
 			{"transport.whitelist", "", "", &config.Configuration.Transport.Whitelist},
 			{"transport.bootnodeAddresses", "", "", &config.Configuration.Transport.BootNodeAddresses},
 			{"transport.p2pListeningAddress", "", "", &config.Configuration.Transport.P2PListeningAddress},
-			{"transport.discoveryListeningAddress", "", "", &config.Configuration.Transport.DiscoveryListeningAddress},
 			{"transport.upnp", "", "", &config.Configuration.Transport.UPnP},
 			{"transport.localStateListeningAddress", "", "", &config.Configuration.Transport.LocalStateListeningAddress},
 			{"transport.timeout", "", "", &config.Configuration.Transport.Timeout},
@@ -182,6 +181,13 @@ func main() {
 			{"validator.rewardAccount", "", "", &config.Configuration.Validator.RewardAccount},
 			{"validator.rewardCurveSpec", "", "", &config.Configuration.Validator.RewardCurveSpec},
 		},
+
+		&ethkey.Command: {
+			{"ethkey.passwordfile", "", "the file that contains the password for the keyfile", &config.Configuration.EthKey.PasswordFile},
+			{"ethkey.json", "", "output JSON instead of human-readable format", &config.Configuration.EthKey.Json},
+			{"ethkey.privatekey", "", "file containing a raw private key to encrypt", &config.Configuration.EthKey.PrivateKey},
+			{"ethkey.lightkdf", "", "use less secure scrypt parameters", &config.Configuration.EthKey.LightKDF},
+		},
 	}
 
 	// Establish command hierarchy
@@ -189,6 +195,7 @@ func main() {
 		&firewalld.Command:    &rootCommand,
 		&bootnode.Command:     &rootCommand,
 		&validator.Command:    &rootCommand,
+		&ethkey.Command:       &rootCommand,
 		&utils.Command:        &rootCommand,
 		&utils.SendWeiCommand: &utils.Command,
 	}
