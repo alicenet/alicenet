@@ -13,13 +13,13 @@ import "contracts/interfaces/IBridgePool.sol";
 import "contracts/Snapshots.sol";
 import "contracts/libraries/parsers/BClaimsParserLibrary.sol";
 import "contracts/utils/ERC20SafeTransfer.sol";
+import "hardhat/console.sol";
 
 /// @custom:salt LocalERC1155BridgePoolV1
 /// @custom:deploy-type deployStatic
 
 contract LocalERC1155BridgePoolV1 is
     ERC1155Holder,
-    IBridgePool,
     Initializable,
     ImmutableSnapshots,
     ImmutableBridgePoolFactory,
@@ -36,24 +36,28 @@ contract LocalERC1155BridgePoolV1 is
         bytes32 txHash;
     }
 
-    uint256 private constant _ERC1155_FIXED_TOKEN_ID = 1;
     bytes private constant _ERC1155_EMPTY_DATA = abi.encodePacked("");
     address internal _erc1155Contract;
 
     constructor() ImmutableFactory(msg.sender) {}
 
-    function initialize(address erc1155Contract_) public onlyBridgePoolFactory initializer {
+    function initialize(address erc1155Contract_) public onlyFactory initializer {
         _erc1155Contract = erc1155Contract_;
     }
 
     /// @notice Transfer tokens from sender and emit a "Deposited" event for minting correspondent tokens in sidechain
     /// @param msgSender The address of ERC sender
     /// @param number The amount or token Id
-    function deposit(address msgSender, uint256 number) public onlyBridgeRouter {
+    function deposit(
+        address msgSender,
+        uint256 number,
+        uint256 tokenId
+    ) public onlyBridgeRouter {
+        console.log(msgSender, number, tokenId);
         IERC1155(_erc1155Contract).safeTransferFrom(
             msgSender,
             address(this),
-            _ERC1155_FIXED_TOKEN_ID,
+            tokenId,
             number,
             _ERC1155_EMPTY_DATA
         );
@@ -72,7 +76,12 @@ contract LocalERC1155BridgePoolV1 is
             revert BridgePoolErrors.ReceiverIsNotOwnerOnProofOfBurnUTXO();
         }
         merkleProof.verifyInclusion(bClaims.stateRoot);
-        /*         IERC1155(_erc1155Contract).safeTransferFrom(address(this), msg.sender, burnedUTXO.id, burnedUTXO.amount, burnedUTXO.data);
-         */
+        IERC1155(_erc1155Contract).safeTransferFrom(
+            address(this),
+            msg.sender,
+            1,
+            burnedUTXO.number,
+            abi.encodePacked("")
+        );
     }
 }

@@ -40,7 +40,7 @@ contract LocalERC721BridgePoolV1 is
 
     constructor() ImmutableFactory(msg.sender) {}
 
-    function initialize(address erc721Contract_) public onlyBridgePoolFactory initializer {
+    function initialize(address erc721Contract_) public onlyFactory initializer {
         _erc721Contract = erc721Contract_;
     }
 

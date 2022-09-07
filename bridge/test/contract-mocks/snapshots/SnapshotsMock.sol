@@ -85,7 +85,8 @@ contract SnapshotsMock is Initializable, ImmutableValidatorPool, ISnapshots, Imm
         } else {
             // If claims are passed we create blockClaims with parameter
             blockClaims = abi.decode(bClaims_, (BClaimsParserLibrary.BClaims));
-        }        _epoch++;
+        }
+        _epoch++;
         _snapshots[_epoch] = Snapshot(block.number, blockClaims);
         IDynamics(_dynamicsAddress()).updateHead(_epoch);
         return true;

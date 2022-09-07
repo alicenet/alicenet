@@ -43,7 +43,7 @@ contract LocalERC20BridgePoolV1 is
     /// @param msgSender The address of ERC sender
     /// @param number The number of tokens to be deposited
     function deposit(address msgSender, uint256 number) public onlyBridgeRouter {
-         IERC20Transferable(_erc20Contract).transferFrom(msgSender, address(this), number);
+        IERC20Transferable(_erc20Contract).transferFrom(msgSender, address(this), number);
     }
 
     /// @notice Transfer tokens to sender upon a verificable proof of burn in sidechain

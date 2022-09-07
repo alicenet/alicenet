@@ -34,7 +34,13 @@ export interface state {
       user: bigint;
       bridgePool: bigint;
     };
-    ERC1155: {
+    ERC1155Fungible: {
+      address: string;
+      admin: bigint;
+      user: bigint;
+      bridgePool: bigint;
+    };
+    ERC1155NonFungible: {
       address: string;
       admin: bigint;
       user: bigint;
@@ -86,7 +92,28 @@ export async function getState(fixture: Fixture, bridgePoolAddress: string) {
           await fixture.erc721Mock.balanceOf(bridgePoolAddress)
         ).toBigInt(),
       },
-      ERC1155: {
+      ERC1155Fungible: {
+        address: fixture.erc1155Mock.address.slice(-4),
+        admin: (
+          await fixture.erc1155Mock.balanceOf(
+            admin.address,
+            ERC1155_FIXED_TOKEN_ID
+          )
+        ).toBigInt(),
+        user: (
+          await fixture.erc1155Mock.balanceOf(
+            user.address,
+            ERC1155_FIXED_TOKEN_ID
+          )
+        ).toBigInt(),
+        bridgePool: (
+          await fixture.erc1155Mock.balanceOf(
+            bridgePoolAddress,
+            ERC1155_FIXED_TOKEN_ID
+          )
+        ).toBigInt(),
+      },
+      ERC1155NonFungible: {
         address: fixture.erc1155Mock.address.slice(-4),
         admin: (
           await fixture.erc1155Mock.balanceOf(
@@ -151,33 +178,44 @@ export const tokenTypes = [
     it: "ERC20",
     options: {
       ercContractName: "erc20Mock",
-      poolType: 1,
+      tokenType: 1,
       bridgeImpl: "localERC20BridgePoolV1",
       quantity: valueOrId,
       errorReason: "ERC20: insufficient allowance",
     },
   },
-/*   {
+  {
     it: "ERC721",
     options: {
       ercContractName: "erc721Mock",
-      poolType: 2,
-      bridgeImpl: "LocalERC721BridgePoolV1",
+      tokenType: 2,
+      bridgeImpl: "localERC721BridgePoolV1",
       quantity: 1,
       errorReason: "ERC721: invalid token ID",
     },
   },
-  {
-    it: "ERC1155",
+  /* {
+    it: "ERC1155Fungible",
     options: {
       ercContractName: "erc1155Mock",
-      poolType: 3,
-      bridgeImpl: "LocalERC1155BridgePoolV1",
-      quantity: 1,
+      tokenType: 3,
+      bridgeImpl: "localERC1155BridgePoolV1",
+      quantity: valueOrId,
       errorReason: "ERC1155: caller is not token owner nor approved",
     },
   },
- */];
+    {
+    it: "ERC1155NonFungible",
+    options: {
+      ercContractName: "erc1155Mock",
+      tokenType: 3,
+      bridgeImpl: "localERC1155BridgePoolV1",
+      quantity: 1,
+      errorReason: "ERC1155: caller is not token owner nor approved",
+    },
+  }
+ */
+];
 
 export const getBridgePoolMetamorphicAddress = (
   factoryAddress: string,

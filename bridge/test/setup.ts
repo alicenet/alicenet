@@ -15,7 +15,6 @@ import {
   AToken,
   ATokenBurner,
   ATokenMinter,
-  BridgePoolFactory,
   BToken,
   Distribution,
   Dynamics,
@@ -262,20 +261,20 @@ export const deployStaticWithFactory = async (
   }
 
   let tx;
-    let initCallDataBin;
-    try {
-      initCallDataBin = _Contract.interface.encodeFunctionData(
-        "initialize",
-        initCallData
-      );
-    } catch (error) {
-      console.log(
-        `Warning couldnt get init call data for contract: ${contractName}`
-      );
-      console.log(error);
-      initCallDataBin = "0x";
-    }
-    tx = await factory.deployStatic(saltBytes, initCallDataBin);
+  let initCallDataBin;
+  try {
+    initCallDataBin = _Contract.interface.encodeFunctionData(
+      "initialize",
+      initCallData
+    );
+  } catch (error) {
+    console.log(
+      `Warning couldnt get init call data for contract: ${contractName}`
+    );
+    console.log(error);
+    initCallDataBin = "0x";
+  }
+  tx = await factory.deployStatic(saltBytes, initCallDataBin);
 
   receipt = await ethers.provider.getTransactionReceipt(tx.hash);
 
@@ -637,10 +636,10 @@ export const getFixture = async (
     []
   )) as IBridgePool;
 
-/*   const localERC721BridgePoolV1 = (await deployStaticWithFactory(
+  const localERC721BridgePoolV1 = (await deployStaticWithFactory(
     factory,
     "LocalERC721BridgePoolV1",
-    getBridgePoolSalt("LocalERC721", 1),
+    "LocalERC721BridgePoolV1",
     [erc721Mock.address],
     []
   )) as IBridgePool;
@@ -648,10 +647,10 @@ export const getFixture = async (
   const localERC1155BridgePoolV1 = (await deployStaticWithFactory(
     factory,
     "LocalERC1155BridgePoolV1",
-    getBridgePoolSalt("LocalERC1155", 1),
+    "LocalERC1155BridgePoolV1",
     [erc1155Mock.address],
     []
-  )) as IBridgePool; */
+  )) as IBridgePool;
 
   const bridgeRouter = (await deployStaticWithFactory(
     factory,
@@ -713,6 +712,8 @@ export const getFixture = async (
     ethdkg,
     factory,
     localERC20BridgePoolV1,
+    localERC721BridgePoolV1,
+    localERC1155BridgePoolV1,
     bridgeRouter,
     erc1155Mock,
     erc721Mock,
