@@ -16,7 +16,6 @@ import {
   ATokenBurner,
   ATokenMinter,
   BridgePoolFactory,
-  BridgePoolRouterV1,
   BToken,
   Distribution,
   Dynamics,
@@ -36,6 +35,7 @@ import {
   ValidatorStaking,
 } from "../typechain-types";
 import { ValidatorRawData } from "./ethdkg/setup";
+import { deployFactory } from "./factory/Setup";
 
 export const PLACEHOLDER_ADDRESS = "0x0000000000000000000000000000000000000000";
 
@@ -383,6 +383,12 @@ export const deployUpgradeableWithFactory = async (
     await getContractAddressFromDeployedProxyEvent(transaction2)
   );
 };
+
+export async function deployAliceNetFactoryAndBridgePoolFactory(): Promise<BaseFixture> {
+  const factory = await deployFactory();
+  deployUpgradeableWithFactory(factory, "BridgePoolFactory", "BridgePoolFactory", )
+  return {factory}
+}
 
 export const deployFactoryAndBaseTokens = async (
   admin: SignerWithAddress
