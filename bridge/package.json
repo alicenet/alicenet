@@ -49,7 +49,7 @@
     "eslint-plugin-prettier": "^4.2.1",
     "eslint-plugin-promise": "^6.0.1",
     "ethers": "^5.7.0",
-    "hardhat": "^2.10.2",
+    "hardhat": "^2.11.1",
     "hardhat-abi-exporter": "^2.10.0",
     "hardhat-contract-sizer": "^2.6.1",
     "hardhat-deploy": "^0.11.13",
