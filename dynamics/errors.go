@@ -2,6 +2,7 @@ package dynamics
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/dgraph-io/badger/v2"
 )
@@ -39,3 +40,22 @@ var (
 	// ErrInvalidNode is an error which occurs when a Node is invalid
 	ErrInvalidNode = errors.New("invalid Node")
 )
+
+type ErrInvalidDynamicValueStructLen struct {
+	data        string
+	actualLen   int
+	expectedLen int
+}
+
+func (e *ErrInvalidDynamicValueStructLen) Error() string {
+	return fmt.Sprintf("Got data %s with length %d, expected length %d", e.data, e.actualLen, e.expectedLen)
+}
+
+type ErrInvalidDynamicValue struct {
+	err  string
+	name string
+}
+
+func (e *ErrInvalidDynamicValue) Error() string {
+	return fmt.Sprintf("failed to decode %s in dynamic value: %v", e.name, e.err)
+}

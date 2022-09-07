@@ -2,11 +2,119 @@ package dynamics
 
 import (
 	"encoding/json"
+	"fmt"
 	"math/big"
 	"time"
+
+	"github.com/alicenet/alicenet/utils"
 )
 
-// TODO: RACE ON READ OF MsgTimeout FROM SYNCHRONIZER.SETUPLOOPS AND FROM RAWSTORAGE.START
+// Version is an enumeration indicating which dynamic values versions we can get
+type Version int
+
+// Possible versions that we can have during the dynamic value event change
+const (
+	V1 Version = iota
+)
+
+func (version Version) String() string {
+	return [...]string{
+		"V1",
+	}[version]
+}
+
+const DynamicsValueV1Size int = 48
+
+type DynamicValuesV1 struct {
+	EncoderVersion          Version
+	ProposalTimeout         time.Duration
+	PreVoteTimeout          time.Duration
+	PreCommitTimeout        time.Duration
+	MaxBlockSize            uint64
+	DataStoreFee            uint64
+	ValueStoreFee           uint64
+	MinScaledTransactionFee *big.Int
+}
+
+func DecodeDynamicValuesV1(data []byte) (*DynamicValuesV1, error) {
+	if len(data) < DynamicsValueV1Size {
+		return nil, &ErrInvalidDynamicValueStructLen{fmt.Sprintf("%x", data), len(data), DynamicsValueV1Size}
+	}
+	encoderVersion, err := decodeUInt32WithArbitraryLength(data[0:1])
+	if err != nil {
+		return nil, &ErrInvalidDynamicValue{"version", err.Error()}
+	}
+
+	proposalTimeout, err := decodeTimeDurationInMilliSeconds(data[1:4])
+	if err != nil {
+		return nil, &ErrInvalidDynamicValue{"proposalTimeout", err.Error()}
+	}
+
+	preVoteTimeout, err := decodeTimeDurationInMilliSeconds(data[4:8])
+	if err != nil {
+		return nil, &ErrInvalidDynamicValue{"preVoteTimeout", err.Error()}
+	}
+
+	preCommitTimeout, err := decodeTimeDurationInMilliSeconds(data[8:12])
+	if err != nil {
+		return nil, &ErrInvalidDynamicValue{"preCommitTimeout", err.Error()}
+	}
+
+	maxBlockSize, err := decodeUInt64WithArbitraryLength(data[12:16])
+	if err != nil {
+		return nil, &ErrInvalidDynamicValue{"maxBlockSize", err.Error()}
+	}
+
+	dataStoreFee, err := decodeUInt64WithArbitraryLength(data[16:24])
+	if err != nil {
+		return nil, &ErrInvalidDynamicValue{"dataStoreFee", err.Error()}
+	}
+
+	valueStoreFee, err := decodeUInt64WithArbitraryLength(data[24:32])
+	if err != nil {
+		return nil, &ErrInvalidDynamicValue{"valueStoreFee", err.Error()}
+	}
+
+	minScaledTransactionFee := new(big.Int).SetBytes(data[32:48])
+
+	dynamicValuesV1 := &DynamicValuesV1{
+		Version(encoderVersion),
+		proposalTimeout,
+		preVoteTimeout,
+		preCommitTimeout,
+		maxBlockSize,
+		dataStoreFee,
+		valueStoreFee,
+		minScaledTransactionFee,
+	}
+
+	return dynamicValuesV1, nil
+}
+
+func decodeUInt32WithArbitraryLength(data []byte) (uint32, error) {
+	value, err := utils.UnmarshalUint32(utils.ForceSliceToLength(data, 4))
+	if err != nil {
+		return 0, err
+	}
+	return value, nil
+}
+
+func decodeTimeDurationInMilliSeconds(data []byte) (time.Duration, error) {
+	timeDurationInt, err := decodeUInt32WithArbitraryLength(data)
+	if err != nil {
+		return 0, err
+	}
+	timeDuration := time.Duration(timeDurationInt) * time.Millisecond
+	return timeDuration, nil
+}
+
+func decodeUInt64WithArbitraryLength(data []byte) (uint64, error) {
+	value, err := utils.UnmarshalUint64(utils.ForceSliceToLength(data, 8))
+	if err != nil {
+		return 0, err
+	}
+	return value, nil
+}
 
 // RawStorage is the struct which stores dynamic values;
 // these values may change from epoch to epoch
@@ -20,15 +128,12 @@ type RawStorage struct {
 	DownloadTimeout                time.Duration `json:"downloadTimeout,omitempty"`
 	SrvrMsgTimeout                 time.Duration `json:"srvrMsgTimeout,omitempty"`
 	MsgTimeout                     time.Duration `json:"msgTimeout,omitempty"`
-
-	MinTxFee       *big.Int `json:"minTxFee,omitempty"`
-	TxValidVersion uint32   `json:"txValidVersion,omitempty"`
-
-	ValueStoreFee          *big.Int `json:"valueStoreFee,omitempty"`
-	ValueStoreValidVersion uint32   `json:"valueStoreValidVersion,omitempty"`
-
-	DataStoreEpochFee     *big.Int `json:"dataStoreEpochFee,omitempty"`
-	DataStoreValidVersion uint32   `json:"dataStoreValidVersion,omitempty"`
+	MinTxFee                       *big.Int      `json:"minTxFee,omitempty"`
+	TxValidVersion                 uint32        `json:"txValidVersion,omitempty"`
+	ValueStoreFee                  *big.Int      `json:"valueStoreFee,omitempty"`
+	ValueStoreValidVersion         uint32        `json:"valueStoreValidVersion,omitempty"`
+	DataStoreEpochFee              *big.Int      `json:"dataStoreEpochFee,omitempty"`
+	DataStoreValidVersion          uint32        `json:"dataStoreValidVersion,omitempty"`
 }
 
 // Marshal performs json.Marshal on the RawStorage struct.

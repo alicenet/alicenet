@@ -101,11 +101,12 @@ func (s *Storage) Init(rawDB rawDataBase, logger *logrus.Logger) error {
 func (s *Storage) Start() {
 	s.Lock()
 	defer s.Unlock()
+
 	s.startOnce.Do(func() {
+		s.rawStorage = &RawStorage{}
+		s.rawStorage.standardParameters()
 		close(s.startChan)
 	})
-	s.rawStorage = &RawStorage{}
-	s.rawStorage.standardParameters()
 }
 
 // UpdateStorage updates the database to include changes that must be made

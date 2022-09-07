@@ -2,11 +2,15 @@ package dynamics
 
 import (
 	"bytes"
+	"encoding/hex"
 	"errors"
 	"math/big"
 	"strconv"
 	"testing"
 	"time"
+
+	"github.com/google/go-cmp/cmp"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestRawStorageMarshal(t *testing.T) {
@@ -1061,5 +1065,27 @@ func TestRawStorageUpdateDataStoreValidVersion(t *testing.T) {
 	retDSTxValidVersion = rs.GetDataStoreValidVersion()
 	if retDSTxValidVersion != dsTxValidTrue {
 		t.Fatal("Incorrect DataStoreTxValidVersion (2)")
+	}
+}
+
+func TestDecodeDynamicValuesV1(t *testing.T) {
+	data, err := hex.DecodeString("00000fa000000bb800000bb8002dc6c00000000000000000000000000000000000000000000000000000000000000000")
+	assert.Nil(t, err)
+	dynamicValues, err := DecodeDynamicValuesV1(data)
+	assert.Nil(t, err)
+	bigIntComparer := func(a *big.Int, b *big.Int) bool {
+		return a.Cmp(b) == 0
+	}
+	if diff := cmp.Diff(dynamicValues, &DynamicValuesV1{
+		V1,
+		time.Duration(4) * time.Second,
+		time.Duration(3) * time.Second,
+		time.Duration(3) * time.Second,
+		3_000_000,
+		0,
+		0,
+		new(big.Int).SetUint64(0),
+	}, cmp.Comparer(bigIntComparer)); diff != "" {
+		t.Errorf("mismatch (-got +want):\n%s", diff)
 	}
 }
