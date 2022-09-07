@@ -92,7 +92,13 @@ func DecodeDynamicValuesV1(data []byte) (*DynamicValuesV1, error) {
 }
 
 func decodeUInt32WithArbitraryLength(data []byte) (uint32, error) {
-	value, err := utils.UnmarshalUint32(utils.ForceSliceToLength(data, 4))
+	size := 4
+	if len(data) == 0 || len(data) > size {
+		return 0, &ErrInvalidSize{
+			fmt.Sprintf("invalid number of bytes to convert to a uint32: %d", len(data)),
+		}
+	}
+	value, err := utils.UnmarshalUint32(utils.ForceSliceToLength(data, size))
 	if err != nil {
 		return 0, err
 	}
@@ -109,7 +115,13 @@ func decodeTimeDurationInMilliSeconds(data []byte) (time.Duration, error) {
 }
 
 func decodeUInt64WithArbitraryLength(data []byte) (uint64, error) {
-	value, err := utils.UnmarshalUint64(utils.ForceSliceToLength(data, 8))
+	size := 8
+	if len(data) == 0 || len(data) > size {
+		return 0, &ErrInvalidSize{
+			fmt.Sprintf("invalid number of bytes to convert to a uint64: %d", len(data)),
+		}
+	}
+	value, err := utils.UnmarshalUint64(utils.ForceSliceToLength(data, size))
 	if err != nil {
 		return 0, err
 	}

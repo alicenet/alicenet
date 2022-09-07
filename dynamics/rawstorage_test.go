@@ -1069,23 +1069,212 @@ func TestRawStorageUpdateDataStoreValidVersion(t *testing.T) {
 }
 
 func TestDecodeDynamicValuesV1(t *testing.T) {
-	data, err := hex.DecodeString("00000fa000000bb800000bb8002dc6c00000000000000000000000000000000000000000000000000000000000000000")
-	assert.Nil(t, err)
-	dynamicValues, err := DecodeDynamicValuesV1(data)
-	assert.Nil(t, err)
-	bigIntComparer := func(a *big.Int, b *big.Int) bool {
-		return a.Cmp(b) == 0
+	maxUint128, ok := new(big.Int).SetString("340282366920938463463374607431768211455", 10)
+	assert.True(t, ok)
+	randUint128, ok := new(big.Int).SetString("253455453978969546304077282559958826669", 10)
+	assert.True(t, ok)
+	tests := []struct {
+		name     string
+		input    string
+		expected *DynamicValuesV1
+	}{
+		{
+			name:  "Correctly decode dynamic values",
+			input: "00000fa000000bb800000bb8002dc6c00000000000000000000000000000000000000000000000000000000000000000",
+			expected: &DynamicValuesV1{
+				V1,
+				time.Duration(4) * time.Second,
+				time.Duration(3) * time.Second,
+				time.Duration(3) * time.Second,
+				3_000_000,
+				0,
+				0,
+				new(big.Int).SetUint64(0),
+			},
+		},
+		{
+			name:  "Correctly decode dynamic values 2",
+			input: "00babecadeadcafedeadcafebeadbeadbeadbeadbeadbeadbeadbeadbeadbeadbeadbeadbeadbeadbeadbeadbeadbead",
+			expected: &DynamicValuesV1{
+				V1,
+				time.Duration(12_238_538) * time.Millisecond,
+				time.Duration(3_735_931_646) * time.Millisecond,
+				time.Duration(3_735_931_646) * time.Millisecond,
+				3_199_057_581,
+				13_739_847_691_614_928_557,
+				13_739_847_691_614_928_557,
+				randUint128,
+			},
+		},
+		{
+			name:  "Correctly decode dynamic values with extra bytes",
+			input: "00000fa000000bb800000bb8002dc6c00000000000000000000000000000000000000000000000000000000000000000cafecafe",
+			expected: &DynamicValuesV1{
+				V1,
+				time.Duration(4) * time.Second,
+				time.Duration(3) * time.Second,
+				time.Duration(3) * time.Second,
+				3_000_000,
+				0,
+				0,
+				new(big.Int).SetUint64(0),
+			},
+		},
+		{
+			name:  "Correctly decode dynamic values with all zeros",
+			input: "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+			expected: &DynamicValuesV1{
+				V1,
+				time.Duration(0) * time.Second,
+				time.Duration(0) * time.Second,
+				time.Duration(0) * time.Second,
+				0,
+				0,
+				0,
+				new(big.Int).SetUint64(0),
+			},
+		},
+		{
+			name:  "Correctly decode dynamic values with all max values",
+			input: "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+			expected: &DynamicValuesV1{
+				255,
+				time.Duration(16_777_215) * time.Millisecond,
+				time.Duration(4_294_967_295) * time.Millisecond,
+				time.Duration(4_294_967_295) * time.Millisecond,
+				4_294_967_295,
+				18_446_744_073_709_551_615,
+				18_446_744_073_709_551_615,
+				maxUint128,
+			},
+		},
 	}
-	if diff := cmp.Diff(dynamicValues, &DynamicValuesV1{
-		V1,
-		time.Duration(4) * time.Second,
-		time.Duration(3) * time.Second,
-		time.Duration(3) * time.Second,
-		3_000_000,
-		0,
-		0,
-		new(big.Int).SetUint64(0),
-	}, cmp.Comparer(bigIntComparer)); diff != "" {
-		t.Errorf("mismatch (-got +want):\n%s", diff)
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			data, err := hex.DecodeString(tt.input)
+			assert.Nil(t, err)
+			dynamicValues, err := DecodeDynamicValuesV1(data)
+			assert.Nil(t, err)
+			bigIntComparer := func(a *big.Int, b *big.Int) bool {
+				return a.Cmp(b) == 0
+			}
+			if diff := cmp.Diff(dynamicValues, tt.expected, cmp.Comparer(bigIntComparer)); diff != "" {
+				t.Errorf("mismatch (-got +want):\n%s", diff)
+			}
+
+		})
+	}
+}
+
+func TestShouldNotDecodeIncorrectSizeDynamicValuesV1(t *testing.T) {
+	t.Parallel()
+	data, err := hex.DecodeString("00000fa000000bb800000bb8002dc6c000000000000000000000000000000000000000")
+	assert.Nil(t, err)
+	_, err = DecodeDynamicValuesV1(data)
+	targetError := &ErrInvalidDynamicValueStructLen{}
+	if !errors.As(err, &targetError) {
+		t.Fatalf("expected function to fail with error type: &ErrInvalidDynamicValueStructLen{} got %v", err)
+	}
+}
+
+func TestShouldNotDecodeIncorrectSize2DynamicValuesV1(t *testing.T) {
+	t.Parallel()
+	data, err := hex.DecodeString("00000fa000000bb800000bb8002dc6c000000000000000000000000000000000000000000000000000000000000000")
+	assert.Nil(t, err)
+	_, err = DecodeDynamicValuesV1(data)
+	targetError := &ErrInvalidDynamicValueStructLen{}
+	if !errors.As(err, &targetError) {
+		t.Fatalf("expected function to fail with error type: &ErrInvalidDynamicValueStructLen{} got %v", err)
+	}
+}
+
+func TestShouldDecodeUint32(t *testing.T) {
+	t.Parallel()
+	data, err := hex.DecodeString("babebabe")
+	assert.Nil(t, err)
+	uint32Data, err := decodeUInt32WithArbitraryLength(data)
+	assert.Nil(t, err)
+	assert.Equal(t, uint32Data, uint32(0xbabebabe))
+}
+
+func TestShouldDecode2Uint32(t *testing.T) {
+	t.Parallel()
+	data, err := hex.DecodeString("babe")
+	assert.Nil(t, err)
+	uint32Data, err := decodeUInt32WithArbitraryLength(data)
+	assert.Nil(t, err)
+	assert.Equal(t, uint32Data, uint32(0xbabe))
+}
+
+func TestShouldNotDecodeInvalidUint32(t *testing.T) {
+	t.Parallel()
+	data, err := hex.DecodeString("babebabeca")
+	assert.Nil(t, err)
+	_, err = decodeUInt32WithArbitraryLength(data)
+	targetError := &ErrInvalidSize{}
+	if !errors.As(err, &targetError) {
+		t.Fatalf("expected function to fail with error type: &ErrInvalidSize{} got %v", err)
+	}
+}
+
+func TestShouldNotDecodeEmptyUint32(t *testing.T) {
+	t.Parallel()
+	data, err := hex.DecodeString("")
+	assert.Nil(t, err)
+	_, err = decodeUInt32WithArbitraryLength(data)
+	targetError := &ErrInvalidSize{}
+	if !errors.As(err, &targetError) {
+		t.Fatalf("expected function to fail with error type: &ErrInvalidSize{} got %v", err)
+	}
+}
+
+func TestShouldDecodeTimeDuration(t *testing.T) {
+	t.Parallel()
+	data, err := hex.DecodeString("babebabe")
+	assert.Nil(t, err)
+	uint32Data, err := decodeTimeDurationInMilliSeconds(data)
+	assert.Nil(t, err)
+	assert.Equal(t, uint32Data, time.Duration(0xbabebabe)*time.Millisecond)
+}
+
+func TestShouldDecodeUint64(t *testing.T) {
+	t.Parallel()
+	data, err := hex.DecodeString("babebabecafecafe")
+	assert.Nil(t, err)
+	uint64Data, err := decodeUInt64WithArbitraryLength(data)
+	assert.Nil(t, err)
+	assert.Equal(t, uint64Data, uint64(0xbabebabecafecafe))
+}
+
+func TestShouldDecode2Uint64(t *testing.T) {
+	t.Parallel()
+	data, err := hex.DecodeString("babe")
+	assert.Nil(t, err)
+	uint64Data, err := decodeUInt64WithArbitraryLength(data)
+	assert.Nil(t, err)
+	assert.Equal(t, uint64Data, uint64(0xbabe))
+}
+
+func TestShouldNotDecodeInvalidUint64(t *testing.T) {
+	t.Parallel()
+	data, err := hex.DecodeString("babebabecafecafeba")
+	assert.Nil(t, err)
+	_, err = decodeUInt64WithArbitraryLength(data)
+	targetError := &ErrInvalidSize{}
+	if !errors.As(err, &targetError) {
+		t.Fatalf("expected function to fail with error type: &ErrInvalidSize{} got %v", err)
+	}
+}
+
+func TestShouldNotDecodeEmptyUint64(t *testing.T) {
+	t.Parallel()
+	data, err := hex.DecodeString("")
+	assert.Nil(t, err)
+	_, err = decodeUInt64WithArbitraryLength(data)
+	targetError := &ErrInvalidSize{}
+	if !errors.As(err, &targetError) {
+		t.Fatalf("expected function to fail with error type: &ErrInvalidSize{} got %v", err)
 	}
 }

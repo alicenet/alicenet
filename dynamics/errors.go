@@ -59,3 +59,11 @@ type ErrInvalidDynamicValue struct {
 func (e *ErrInvalidDynamicValue) Error() string {
 	return fmt.Sprintf("failed to decode %s in dynamic value: %v", e.name, e.err)
 }
+
+type ErrInvalidSize struct {
+	message string
+}
+
+func (e *ErrInvalidSize) Error() string {
+	return e.message
+}
