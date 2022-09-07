@@ -46,7 +46,7 @@ async function waitBlocks(waitingBlocks: number, hre: any) {
 }
 
 task(
-  "deployLegacyTokenAndUpdateDeploymentArgs",
+  "deploy-legacy-token-and-update-deployment-args",
   "Computes factory address and to the deploymentArgs file"
 )
   .addOptionalParam(
@@ -233,7 +233,7 @@ task("mine-num-blocks")
   });
 
 task(
-  "deployStateMigrationContract",
+  "deploy-state-migration-contract",
   "Deploy state migration contract and run migrations"
 )
   .addParam("oldFactoryAddress", "the previous factory address")
@@ -264,7 +264,7 @@ task(
       "AliceNetFactory",
       taskArgs.oldFactoryAddress
     );
-    const aTokenAddress = await factoryLookupAddress(
+    const alcaAddress = await factoryLookupAddress(
       factory.address,
       "AToken",
       hre
@@ -356,11 +356,11 @@ task(
       taskArgs.skipFirstTransaction === undefined ||
       taskArgs.skipFirstTransaction === false
     ) {
-      console.log("Minting and staking Atoken!");
+      console.log("Minting and staking ALCA!");
       const contractTx = await stakeValidators(
         4,
         taskArgs.factoryAddress,
-        aTokenAddress,
+        alcaAddress,
         publicStakingAddress,
         hre
       );
@@ -430,7 +430,7 @@ async function getGroupSignatures(epoch: BigNumber) {
   return groupSignatures;
 }
 
-task("registerValidators", "registers validators")
+task("register-validators", "registers validators")
   .addFlag("test")
   .addParam("factoryAddress", "address of the factory deploying the contract")
   .addVariadicPositionalParam(
@@ -452,7 +452,7 @@ task("registerValidators", "registers validators")
     const validatorPoolBase = await hre.ethers.getContractFactory(
       "ValidatorPool"
     );
-    const aTokenAddress = await factoryLookupAddress(
+    const alcaAddress = await factoryLookupAddress(
       factory.address,
       "AToken",
       hre
@@ -490,7 +490,7 @@ task("registerValidators", "registers validators")
     let tx = await stakeValidators(
       validatorAddresses.length,
       factory.address,
-      aTokenAddress,
+      alcaAddress,
       publicStakingAddress,
       hre
     );
@@ -557,7 +557,7 @@ task("registerValidators", "registers validators")
     console.log("done");
   });
 
-task("unregisterValidators", "unregister validators")
+task("unregister-validators", "unregister validators")
   .addFlag("test")
   .addParam("factoryAddress", "address of the factory deploying the contract")
   .addVariadicPositionalParam(
@@ -609,7 +609,7 @@ task("unregisterValidators", "unregister validators")
     console.log("Done");
   });
 
-task("ethdkgInput", "calculate the initializeETHDKG selector").setAction(
+task("ethdkg-input", "calculate the initializeETHDKG selector").setAction(
   async (taskArgs, hre) => {
     const { ethers } = hre;
     const iface = new ethers.utils.Interface(["function initializeETHDKG()"]);
@@ -618,7 +618,7 @@ task("ethdkgInput", "calculate the initializeETHDKG selector").setAction(
   }
 );
 
-task("virtualMintDeposit", "Virtually creates a deposit on the side chain")
+task("virtual-mint-deposit", "Virtually creates a deposit on the side chain")
   .addParam(
     "factoryAddress",
     "the default factory address from factoryState will be used if not set",
@@ -633,7 +633,7 @@ task("virtualMintDeposit", "Virtually creates a deposit on the side chain")
   )
   .addParam(
     "depositAmount",
-    "Amount of BTokens to be deposited",
+    "Amount of ALCB to be deposited",
     undefined,
     types.string
   )
@@ -659,13 +659,13 @@ task("virtualMintDeposit", "Virtually creates a deposit on the side chain")
       "AliceNetFactory",
       taskArgs.factoryAddress
     );
-    const bToken = await ethers.getContractAt(
+    const alcb = await ethers.getContractAt(
       "BToken",
       await factory.lookup(hre.ethers.utils.formatBytes32String("BToken"))
     );
     const tx = await factory
       .connect(adminSigner)
-      .callAny(bToken.address, 0, input);
+      .callAny(alcb.address, 0, input);
     await tx.wait();
     const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
     console.log(receipt);
@@ -678,7 +678,7 @@ task("virtualMintDeposit", "Virtually creates a deposit on the side chain")
     console.log(event);
   });
 
-task("scheduleMaintenance", "Calls schedule Maintenance")
+task("schedule-maintenance", "Calls schedule Maintenance")
   .addParam(
     "factoryAddress",
     "the default factory address from factoryState will be used if not set"
@@ -712,7 +712,7 @@ task("scheduleMaintenance", "Calls schedule Maintenance")
   });
 
 task(
-  "pauseEthdkgArbitraryHeight",
+  "pause-ethdkg-arbitrary-height",
   "Forcing consensus to stop on block number defined by --input"
 )
   .addParam("alicenetHeight", "The block number after the latest block mined")
@@ -747,7 +747,7 @@ task(
     ).wait();
   });
 
-task("initializeEthdkg", "Start the ethdkg process")
+task("initialize-ethdkg", "Start the ethdkg process")
   .addParam(
     "factoryAddress",
     "the default factory address from factoryState will be used if not set"
@@ -781,7 +781,7 @@ task("initializeEthdkg", "Start the ethdkg process")
     console.log("Done");
   });
 
-task("transferEth", "transfers eth from default account to receiver")
+task("transfer-eth", "transfers eth from default account to receiver")
   .addParam("receiver", "address of the account to fund")
   .addParam("amount", "amount of eth to transfer")
   .setAction(async (taskArgs, hre) => {
@@ -808,7 +808,7 @@ task("transferEth", "transfers eth from default account to receiver")
     console.log(`new owner balance: ${ownerBal.sub(ownerBal2).toString()}`);
   });
 
-task("mintATokenTo", "mints A token to an address")
+task("mint-alca-To", "mints ALCA to an address")
   .addParam("factoryAddress", "address of the factory deploying the contract")
   .addParam("amount", "amount to mint")
   .addParam("to", "address of the recipient")
@@ -851,7 +851,7 @@ task("mintATokenTo", "mints A token to an address")
     );
   });
 
-task("getATokenBalance", "gets AToken balance of account")
+task("get-alca-balance", "gets ALCA balance of account")
   .addParam("factoryAddress", "address of the factory deploying the contract")
   .addParam("account", "address of account to get balance of")
   .setAction(async (taskArgs, hre) => {
@@ -859,18 +859,18 @@ task("getATokenBalance", "gets AToken balance of account")
       "AliceNetFactory",
       taskArgs.factoryAddress
     );
-    const aToken = await hre.ethers.getContractAt(
+    const alca = await hre.ethers.getContractAt(
       "AToken",
       await factory.callStatic.lookup(
         hre.ethers.utils.formatBytes32String("AToken")
       )
     );
-    const bal = await aToken.callStatic.balanceOf(taskArgs.account);
+    const bal = await alca.callStatic.balanceOf(taskArgs.account);
     console.log(bal);
     return bal;
   });
 
-task("mintBTokenTo", "mints B token to an address")
+task("mint-alcb-to", "mints ALCB to an address")
   .addParam("factoryAddress", "address of the factory deploying the contract")
   .addParam("amount", "amount to mint")
   .addParam("numWei", "amount of eth to use")
@@ -886,24 +886,24 @@ task("mintBTokenTo", "mints B token to an address")
       "AliceNetFactory",
       taskArgs.factoryAddress
     );
-    const bToken = await hre.ethers.getContractAt(
+    const alcb = await hre.ethers.getContractAt(
       "BToken",
       await factory.callStatic.lookup(
         hre.ethers.utils.formatBytes32String("BToken")
       )
     );
-    const bal1 = await bToken.callStatic.balanceOf(taskArgs.to);
-    const txResponse = await bToken.mintTo(taskArgs.to, taskArgs.amount, {
+    const bal1 = await alcb.callStatic.balanceOf(taskArgs.to);
+    const txResponse = await alcb.mintTo(taskArgs.to, taskArgs.amount, {
       value: taskArgs.numWei,
     });
     await txResponse.wait();
-    const bal2 = await bToken.callStatic.balanceOf(taskArgs.to);
+    const bal2 = await alcb.callStatic.balanceOf(taskArgs.to);
     console.log(
-      `Minted ${bal2.sub(bal1).toString()} BToken to account ${taskArgs.to}`
+      `Minted ${bal2.sub(bal1).toString()} ALCB to account ${taskArgs.to}`
     );
   });
 
-task("getBTokenBalance", "gets BToken balance of account")
+task("get-alcb-balance", "gets ALCB balance of account")
   .addParam("factoryAddress", "address of the factory deploying the contract")
   .addParam("account", "address of account to get balance of")
   .setAction(async (taskArgs, hre) => {
@@ -911,19 +911,19 @@ task("getBTokenBalance", "gets BToken balance of account")
       "AliceNetFactory",
       taskArgs.factoryAddress
     );
-    const bToken = await hre.ethers.getContractAt(
+    const alcb = await hre.ethers.getContractAt(
       "BToken",
       await factory.callStatic.lookup(
         hre.ethers.utils.formatBytes32String("BToken")
       )
     );
-    const bal = await bToken.callStatic.balanceOf(taskArgs.account);
+    const bal = await alcb.callStatic.balanceOf(taskArgs.account);
     console.log(bal);
     return bal;
   });
 
 task(
-  "setMinEthereumBlocksPerSnapshot",
+  "set-min-ethereum-blocks-per-snapshot",
   "Set the minimum number of ethereum blocks that we should wait between snapshots"
 )
   .addParam("factoryAddress", "address of the factory deploying the contract")
@@ -967,7 +967,7 @@ task(
     console.log("Done");
   });
 
-task("getEthBalance", "gets AToken balance of account")
+task("get-eth-balance", "gets Ethereum balance of account")
   .addParam("account", "address of account to get balance of")
   .setAction(async (taskArgs, hre) => {
     const bal = await hre.ethers.provider.getBalance(taskArgs.account);
@@ -981,7 +981,7 @@ function notSoRandomNumBetweenRange(max: number, min: number): number {
 // WARNING ONLY RUN THIS ON TESTNET TO TESTLOAD
 // RUNNING THIS ON MAINNET WILL WASTE ALL YOUR ETH
 task(
-  "spamEthereum",
+  "spam-ethereum",
   "inject a bunch of random transactions to simulate regular block usage"
 )
   .addParam("factoryAddress", "address of the factory deploying the contract")
@@ -1128,7 +1128,7 @@ task(
     }
   });
 
-task("fundValidators", "manually put 100 eth in each validator account")
+task("fund-validators", "manually put 100 eth in each validator account")
   .addOptionalParam(
     "configPath",
     "path to validator configs dir",
@@ -1173,7 +1173,7 @@ function getValidatorAccount(path: string): string {
   return config.validator.rewardAccount;
 }
 
-task("getGasCost", "gets the current gas cost")
+task("get-gas-cost", "gets the current gas cost")
   .addFlag("ludicrous", "over inflate certain blocks")
   .setAction(async (taskArgs, hre) => {
     let lastBlock = 0;
@@ -1192,7 +1192,7 @@ task("getGasCost", "gets the current gas cost")
   });
 
 task(
-  "setHardhatIntervalMining",
+  "set-hardhat-interval-mining",
   "sets the hardhat node to mine on a interval and automine off"
 )
   .addFlag("enableAutoMine")
@@ -1214,7 +1214,7 @@ task(
     }
   });
 
-task("setHardhatBaseFee", "sets the hardhat node base fee for the next block")
+task("set-hardhat-base-fee", "sets the hardhat node base fee for the next block")
   .addParam("baseFee", "base fee value in GWEIs", "500", types.int)
   .setAction(async (taskArgs, hre) => {
     const network = await hre.ethers.provider.getNetwork();
@@ -1228,7 +1228,7 @@ task("setHardhatBaseFee", "sets the hardhat node base fee for the next block")
     }
   });
 
-task("updateAliceNetNodeVersion", "Set the Canonical AliceNet Node Version")
+task("update-alicenet-node-version", "Set the Canonical AliceNet Node Version")
   .addParam("factoryAddress", "address of the factory deploying the contract")
   .addParam(
     "relativeEpoch",

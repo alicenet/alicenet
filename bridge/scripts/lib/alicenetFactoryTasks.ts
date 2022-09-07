@@ -75,7 +75,7 @@ import {
 } from "./deployment/factoryStateUtil";
 
 task(
-  "getNetwork",
+  "get-network",
   "gets the current network being used from provider"
 ).setAction(async (taskArgs, hre) => {
   const network = hre.network.name;
@@ -83,7 +83,7 @@ task(
   return network;
 });
 
-task("getBytes32Salt", "gets the bytes32 version of salt from contract")
+task("get-bytes32-salt", "gets the bytes32 version of salt from contract")
   .addParam("contractName", "test contract")
   .setAction(async (taskArgs, hre) => {
     const salt = await getBytes32Salt(taskArgs.contractName, hre);
@@ -91,7 +91,7 @@ task("getBytes32Salt", "gets the bytes32 version of salt from contract")
   });
 
 task(
-  "deployFactory",
+  "deploy-factory",
   "Deploys an instance of a factory contract specified by its name"
 )
   .addFlag("waitConfirmation", "wait 8 blocks between transactions")
@@ -122,7 +122,7 @@ task(
   });
 
 task(
-  "generateDeploymentConfigs",
+  "generate-deployment-configs",
   "default list and arg template will be generated if all optional variables are not specified"
 )
   .addFlag("list", "flag to only generate deploy list")
@@ -201,7 +201,7 @@ task(
     }
   });
 
-task("deployContracts", "runs the initial deployment of all AliceNet contracts")
+task("deploy-contracts", "runs the initial deployment of all AliceNet contracts")
   .addFlag("waitConfirmation", "wait 8 blocks between transactions")
   .addOptionalParam(
     "factoryAddress",
@@ -286,8 +286,8 @@ task("deployContracts", "runs the initial deployment of all AliceNet contracts")
   });
 
 task(
-  "fullMultiCallDeployProxy",
-  "Multicalls deployCreate, deployProxy, and upgradeProxy, if gas cost exceeds 10 million deployUpgradeableProxy will be used"
+  "full-multi-call-deploy-proxy",
+  "Multicalls deploy-create, deploy-proxy, and upgrade-proxy, if gas cost exceeds 10 million deploy-upgradeable-proxy will be used"
 )
   .addFlag("waitConfirmation", "wait 8 blocks between transactions")
   .addParam("contractName", "Name of logic contract to point the proxy at")
@@ -441,7 +441,7 @@ task(
     return proxyData;
   });
 
-task("multiCallDeployMetamorphic")
+task("multi-call-deploy-metamorphic")
   .addFlag("waitConfirmation", "wait 8 blocks between transactions")
   .addParam(
     "contractName",
@@ -605,7 +605,7 @@ task(
   });
 
 task(
-  "deployTemplate",
+  "deploy-template",
   "deploys a template contract with the universal code copy constructor that deploys"
 )
   .addFlag("waitConfirmation", "wait 8 blocks between transactions")
@@ -662,7 +662,7 @@ task(
 
 // takes in optional
 task(
-  "deployStatic",
+  "deploy-static",
   "deploys a template contract with the universal code copy constructor that deploys"
 )
   .addFlag("waitConfirmation", "wait 8 blocks between transactions")
@@ -882,7 +882,7 @@ task(UPGRADE_DEPLOYED_PROXY, "deploys a contract from the factory using create")
  * deploys a proxy and upgrades it using multicall from factory
  * @returns a proxyData object with logic contract name, address and proxy salt, and address.
  */
-task("multiCallDeployProxy", "deploy and upgrade proxy with multicall")
+task("multi-call-deploy-proxy", "deploy and upgrade proxy with multicall")
   .addFlag("waitConfirmation", "wait 8 blocks between transactions")
   .addParam("contractName", "logic contract name")
   .addParam(
@@ -971,7 +971,7 @@ task("multiCallDeployProxy", "deploy and upgrade proxy with multicall")
   });
 
 task(
-  "multiCallUpgradeProxy",
+  "multi-call-upgrade-proxy",
   "multi call to deploy logic and upgrade proxy through factory"
 )
   .addFlag("waitConfirmation", "wait 8 blocks between transactions")
@@ -1068,7 +1068,7 @@ task(
 
 // Generate a json file with all deployment information
 task(
-  "generateContractsDescriptor",
+  "generate-contracts-descriptor",
   "Generates deploymentList.json file for faster contract deployment (requires deploymentList and deploymentArgsTemplate files to be already generated)"
 )
   .addOptionalParam(
@@ -1142,7 +1142,7 @@ task(
   });
 
 task(
-  "deployContractsFromDescriptor",
+  "deploy-contracts-from-descriptor",
   "Deploys ALL AliceNet contracts reading deploymentList.json"
 )
   .addOptionalParam(
