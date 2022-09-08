@@ -1,11 +1,13 @@
 # AliceNet
 
+[![codecov](https://codecov.io/gh/alicenet/alicenet/branch/main/graph/badge.svg?token=B5RGO1P416)](https://codecov.io/gh/alicenet/alicenet)
+
 ## Requirements
 
-* [Docker v20 with docker-compose](https://docs.docker.com/get-docker)
-* [Go 1.18](https://go.dev/dl/)
-* [Geth 1.10.16](https://geth.ethereum.org/docs/install-and-build/installing-geth)
-* [Node 16](https://nodejs.org/en/download/)
+- [Docker v20 with docker-compose](https://docs.docker.com/get-docker)
+- [Go 1.18](https://go.dev/dl/)
+- [Geth 1.10.16](https://geth.ethereum.org/docs/install-and-build/installing-geth)
+- [Node 16](https://nodejs.org/en/download/)
 
 To setup local development after those dependencies are installed, run:
 
@@ -27,14 +29,17 @@ make build
 ## File generation
 
 The `make generate` command runs two subcommands:
-* `make generate-bridge`
-* `make generate-go`
+
+- `make generate-bridge`
+- `make generate-go`
 
 ### Command: make generate-bridge
+
 This command:
-* (re)compiles all the solidity contracts
-* (re)compiles the Go bindings for the solidity contracts
-* (re)generates the ABI definitions for the solidity contracts
+
+- (re)compiles all the solidity contracts
+- (re)compiles the Go bindings for the solidity contracts
+- (re)generates the ABI definitions for the solidity contracts
 
 Rerun this every time you made changes to the solidity contracts and want these to be used by the alicenet binary
 
@@ -43,13 +48,15 @@ Under the hood, this commend runs the `bridge` module's `compile` script to comp
 <br />
 
 ### Command: make generate-go
+
 This command:
-* (re)compiles all the protobuf type definitions into Go sourcecode
-* (re)compiles all the capnproto type definitions into Go sourcecode
-* (re)compiles all the grpc endpoint definitions into Go sourcecode
-* (re)generates convenient wrapper functions for the grpc endpoints using `cmd/mngen`
-* (re)generates a new swagger json file based on the grpc endpoints
-* (re)generates a Go source file containing the swagger json file in binary format, so it can be baked into the final executable
+
+- (re)compiles all the protobuf type definitions into Go sourcecode
+- (re)compiles all the capnproto type definitions into Go sourcecode
+- (re)compiles all the grpc endpoint definitions into Go sourcecode
+- (re)generates convenient wrapper functions for the grpc endpoints using `cmd/mngen`
+- (re)generates a new swagger json file based on the grpc endpoints
+- (re)generates a Go source file containing the swagger json file in binary format, so it can be baked into the final executable
 
 Rerun this command every time you made changes to the public API surface of AliceNet.
 
@@ -78,7 +85,7 @@ Open another terminal to start geth with
 ./scripts/main.sh geth
 ```
 
-Open now another terminal to deploy the contracts. This command will also register validators in the ValidatorPool. If you are having problems in this step, 
+Open now another terminal to deploy the contracts. This command will also register validators in the ValidatorPool. If you are having problems in this step,
 check [POSSIBLE TROUBLE SHOOTING](#TROUBLESHOOTING) section.
 
 ```
@@ -113,6 +120,7 @@ Once all the validators discovered the others and have peered together, then sta
 ```
 
 This will print out blocks at which ethDKG events will happen.
+
 > For a quicker local setup, you might want to change the `scripts/base-files/baseConfig` template and
 > set `finalityDelay` from `6` -> `1` to speed up the ethdkg process.
 
@@ -125,38 +133,18 @@ to inject datastores.
 ./scripts/main.sh deposit
 ```
 
-Note that DataStores are injected in the [Wallet-JS tests](https://github.com/MadBase/MadNetWallet-v2), so submitting 
-these deposits are required for the tests to be successful. 
+Note that DataStores are injected in the [Wallet-JS tests](https://github.com/MadBase/MadNetWallet-v2), so submitting
+these deposits are required for the tests to be successful.
 At this point, the testnet should now be ready to run the standard tests.
 
-To list other commands from the script simply run 
-```
-./scripts/main.sh 
-```
-
-# TROUBLESHOOTING
-
-1. `./scripts/main.sh deploy`
+To list other commands from the script simply run
 
 ```
-+ npx hardhat --network dev --show-stack-traces updateDeploymentArgsWithFactory
-  Loading deploymentArgs from: ./deployments/dev/deploymentArgsTemplate.json
-  Future factory Address: 0x77D7c620E3d913AA78a71acffA006fc1Ae178b66
-  Saving file at: ./deployments/dev/deploymentArgsTemplate.json
-+ npx hardhat run scripts/deployscripts.ts --no-compile --network dev --show-stack-traces
-  Deployed: MadnetFactory, at address: 0x77D7c620E3d913AA78a71acffA006fc1Ae178b66
-  Error: cannot estimate gas; transaction may fail or may require manual gas limit
+./scripts/main.sh
 ```
-
-> Assuming you have `bridge/deployments/dev/deployList.json` defined, otherwise read [bridge documentation](bridge/README.md) file and then apply these changes
->```shell
->  cd bridge
->  npx hardhat run ./scripts/getDeployList.ts 
->  cd ..
->```
-> now open the file `./scripts/getDeployList.ts` and move `"contracts/ETHDKG.sol:ETHDKG"` as the latest element in the `deployments` array.
 
 # Different Node versions
+
 In case you are using a different version of Node and you need to keep it you can choose to use one of many Node.js
 version managements system such as [n - link](https://www.npmjs.com/package/n). Quick snippet to get the right version
 
@@ -177,8 +165,10 @@ with [Madnet Wallet](https://github.com/MadBase/MadNetWallet-v2).
 # TEST
 
 ### Verbose log
-To show all the scripts logs in the console during tests you must set the env variable `ENABLE_SCRIPT_LOG` to `true`. 
+
+To show all the scripts logs in the console during tests you must set the env variable `ENABLE_SCRIPT_LOG` to `true`.
 For instance to run blockchain tests you will execute
+
 ```shell
 ENABLE_SCRIPT_LOG=true go test -v github.com/alicenet/alicenet/blockchain
 ```

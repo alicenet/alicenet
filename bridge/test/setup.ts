@@ -17,10 +17,14 @@ import {
   ATokenBurner,
   ATokenMinter,
   BToken,
+  Distribution,
+  Dynamics,
   ETHDKG,
   Foundation,
+  AccusationInvalidTxConsumption,
   LegacyToken,
   LiquidityProviderStaking,
+  AccusationMultipleProposal,
   PublicStaking,
   Snapshots,
   SnapshotsMock,
@@ -45,6 +49,19 @@ export interface Snapshot {
   GroupSignature: string;
   height: BigNumberish;
   validatorIndex: number;
+  GroupSignatureDeserialized?: [
+    [string, string, string, string],
+    [string, string]
+  ];
+  BClaimsDeserialized?: [
+    number,
+    number,
+    number,
+    string,
+    string,
+    string,
+    string
+  ];
 }
 
 export interface BaseFixture {
@@ -60,13 +77,17 @@ export interface BaseTokensFixture extends BaseFixture {
 }
 
 export interface Fixture extends BaseTokensFixture {
+  aTokenMinter: ATokenMinter;
   validatorStaking: ValidatorStaking;
   validatorPool: ValidatorPool | ValidatorPoolMock;
   snapshots: Snapshots | SnapshotsMock;
   ethdkg: ETHDKG;
   stakingPositionDescriptor: StakingPositionDescriptor;
   namedSigners: SignerWithAddress[];
-  accusations: Accusations;
+  accusationInvalidTxConsumption: AccusationInvalidTxConsumption;
+  accusationMultipleProposal: AccusationMultipleProposal;
+  distribution: Distribution;
+  dynamics: Dynamics;
 }
 
 /**
@@ -132,16 +153,18 @@ export const createUsers = async (
   numberOfUsers: number,
   createWithNoFunds: boolean = false
 ): Promise<SignerWithAddress[]> => {
+  const hre: any = await require("hardhat");
   const users: SignerWithAddress[] = [];
   const admin = (await ethers.getSigners())[0];
   for (let i = 0; i < numberOfUsers; i++) {
-    const user = new Wallet(ethers.utils.randomBytes(64), ethers.provider);
+    const user = new Wallet(Wallet.createRandom(), ethers.provider);
     if (!createWithNoFunds) {
       const balance = await ethers.provider.getBalance(user.address);
       if (balance.eq(0)) {
+        const value = hre.__SOLIDITY_COVERAGE_RUNNING ? "1000000" : "1";
         await admin.sendTransaction({
           to: user.address,
-          value: ethers.utils.parseEther("1"),
+          value: ethers.utils.parseEther(value),
         });
       }
     }
@@ -166,7 +189,7 @@ async function getContractAddressFromDeployedProxyEvent(
   return await getContractAddressFromEventLog(tx, eventSignature, eventName);
 }
 
-async function getContractAddressFromDeployedRawEvent(
+export async function getContractAddressFromDeployedRawEvent(
   tx: ContractTransaction
 ): Promise<string> {
   const eventSignature = "event DeployedRaw(address contractAddr)";
@@ -264,7 +287,8 @@ export const deployUpgradeableWithFactory = async (
   contractName: string,
   salt?: string,
   initCallData?: any[],
-  constructorArgs: any[] = []
+  constructorArgs: any[] = [],
+  role?: string
 ): Promise<Contract> => {
   const _Contract = await ethers.getContractFactory(contractName);
   let deployCode: BytesLike;
@@ -296,10 +320,19 @@ export const deployUpgradeableWithFactory = async (
 
   const logicAddr = await getContractAddressFromDeployedRawEvent(transaction);
   let saltBytes;
-  if (salt === undefined) {
-    saltBytes = getBytes32Salt(contractName);
+
+  if (role) {
+    let roleHash = hre.ethers.utils.solidityKeccak256(["string"], [role]);
+    let contractHash = hre.ethers.utils.solidityKeccak256(["string"], [contractName]);
+    saltBytes = hre.ethers.utils.solidityKeccak256(["bytes32", "bytes32"], [contractHash, roleHash]);
   } else {
-    saltBytes = getBytes32Salt(salt);
+    if (salt === undefined) {
+      saltBytes = getBytes32Salt(contractName);
+    } else if (salt.startsWith("0x")) {
+      saltBytes = salt;
+    } else {
+      saltBytes = getBytes32Salt(salt);
+    }
   }
 
   const transaction2 = await factory.deployProxy(saltBytes);
@@ -313,13 +346,13 @@ export const deployUpgradeableWithFactory = async (
     );
   }
   let initCallDataBin = "0x";
-  if (initCallData !== undefined) {
-    try {
-      initCallDataBin = _Contract.interface.encodeFunctionData(
-        "initialize",
-        initCallData
-      );
-    } catch (error) {
+  try {
+    initCallDataBin = _Contract.interface.encodeFunctionData(
+      "initialize",
+      initCallData
+    );
+  } catch (error) {
+    if (!(error as Error).message.includes("no matching function")) {
       console.warn(
         `Error deploying contract ${contractName} couldn't get initialize arguments: ${error}`
       );
@@ -345,7 +378,7 @@ export const deployFactoryAndBaseTokens = async (
     factory,
     "AToken",
     "AToken",
-    undefined,
+    [],
     [legacyToken.address]
   )) as AToken;
 
@@ -371,15 +404,8 @@ export const deployFactoryAndBaseTokens = async (
 export const deployAliceNetFactory = async (
   admin: SignerWithAddress
 ): Promise<AliceNetFactory> => {
-  const txCount = await ethers.provider.getTransactionCount(admin.address);
-  // calculate the factory address for the constructor arg
-  const futureFactoryAddress = ethers.utils.getContractAddress({
-    from: admin.address,
-    nonce: txCount,
-  });
-
   const Factory = await ethers.getContractFactory("AliceNetFactory");
-  const factory = await Factory.deploy(futureFactoryAddress);
+  const factory = await Factory.deploy();
   await factory.deployed();
   return factory;
 };
@@ -413,7 +439,7 @@ export const posFixtureSetup = async (
     0,
     aToken.interface.encodeFunctionData("transfer", [
       admin.address,
-      ethers.utils.parseEther("100000000"),
+      ethers.utils.parseEther("220000000"),
     ])
   );
   // migrating the rest of the legacy tokens to fresh new Atokens
@@ -424,11 +450,6 @@ export const posFixtureSetup = async (
       aToken.address,
       ethers.utils.parseEther("100000000"),
     ])
-  );
-  await factory.callAny(
-    aToken.address,
-    0,
-    aToken.interface.encodeFunctionData("allowMigration")
   );
   await factory.callAny(
     aToken.address,
@@ -468,7 +489,6 @@ export const getFixture = async (
   // Deploy the base tokens
   const { factory, aToken, bToken, legacyToken, publicStaking } =
     await deployFactoryAndBaseTokens(admin);
-
   // ValidatorStaking is not considered a base token since is only used by validators
   const validatorStaking = (await deployUpgradeableWithFactory(
     factory,
@@ -507,6 +527,7 @@ export const getFixture = async (
         ethers.utils.parseUnits("20000", 18),
         10,
         ethers.utils.parseUnits("3", 18),
+        8192,
       ]
     )) as ValidatorPool;
   }
@@ -567,17 +588,55 @@ export const getFixture = async (
     "ATokenMinter",
     "ATokenMinter"
   )) as ATokenMinter;
+  const mintToFactory = aTokenMinter.interface.encodeFunctionData("mint", [
+    factory.address,
+    ethers.utils.parseEther("100000000"),
+  ]);
+  const txResponse = await factory.callAny(
+    aTokenMinter.address,
+    0,
+    mintToFactory
+  );
+  await txResponse.wait();
   const aTokenBurner = (await deployUpgradeableWithFactory(
     factory,
     "ATokenBurner",
     "ATokenBurner"
   )) as ATokenBurner;
 
-  const accusations = (await deployUpgradeableWithFactory(
+  const accusationInvalidTxConsumption = (await deployUpgradeableWithFactory(
     factory,
-    "Accusations",
-    "Accusations"
-  )) as Accusations;
+    "AccusationInvalidTxConsumption",
+    "AccusationInvalidTxConsumption",
+    undefined,
+    undefined,
+    "Accusation"
+  )) as AccusationInvalidTxConsumption;
+
+  const accusationMultipleProposal = (await deployUpgradeableWithFactory(
+    factory,
+    "AccusationMultipleProposal",
+    "AccusationMultipleProposal",
+    undefined,
+    undefined,
+    "Accusation"
+  )) as AccusationMultipleProposal;
+
+  // distribution contract for distributing BTokens yields
+  const distribution = (await deployUpgradeableWithFactory(
+    factory,
+    "Distribution",
+    undefined,
+    undefined,
+    [332, 332, 332, 4]
+  )) as Distribution;
+
+  const dynamics = (await deployUpgradeableWithFactory(
+    factory,
+    "Dynamics",
+    "Dynamics",
+    []
+  )) as Dynamics;
 
   await posFixtureSetup(factory, aToken, legacyToken);
   const blockNumber = BigInt(await ethers.provider.getBlockNumber());
@@ -602,7 +661,10 @@ export const getFixture = async (
     liquidityProviderStaking,
     foundation,
     stakingPositionDescriptor,
-    accusations,
+    accusationInvalidTxConsumption,
+    accusationMultipleProposal,
+    distribution,
+    dynamics,
   };
 };
 
@@ -641,23 +703,6 @@ export async function factoryCallAny(
   const txResponse = await factory.callAny(
     contract.address,
     0,
-    contract.interface.encodeFunctionData(functionName, args)
-  );
-  const receipt = await txResponse.wait();
-  return receipt;
-}
-
-export async function delegateFactoryCallAny(
-  factory: AliceNetFactory,
-  contract: Contract,
-  functionName: string,
-  args?: Array<any>
-) {
-  if (args === undefined) {
-    args = [];
-  }
-  const txResponse = await factory.delegateCallAny(
-    contract.address,
     contract.interface.encodeFunctionData(functionName, args)
   );
   const receipt = await txResponse.wait();
@@ -705,4 +750,22 @@ export const getMetamorphicAddress = (
     ethers.utils.formatBytes32String(salt),
     ethers.utils.keccak256(initCode)
   );
+};
+
+export const getReceiptForFailedTransaction = async (
+  tx: Promise<any>
+): Promise<any> => {
+  let receipt: any;
+  try {
+    await tx;
+  } catch (error: any) {
+    receipt = await ethers.provider.getTransactionReceipt(
+      error.transactionHash
+    );
+
+    if (receipt === null) {
+      throw new Error(`Transaction ${error.transactionHash} failed`);
+    }
+  }
+  return receipt;
 };

@@ -7,5 +7,7 @@ What is changing with this PR?
 Why are we doing this?
 
 ## Todos
-If any, what are the follow-up tasks required other than merging this PR?  Have they been arranged?
+
+If any, what are the follow-up tasks required other than merging this PR? Have they been arranged?
+
 - [ ] ???

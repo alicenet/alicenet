@@ -2,7 +2,6 @@ package objs
 
 import (
 	"bytes"
-	"encoding/hex"
 
 	"github.com/alicenet/alicenet/errorz"
 	"github.com/alicenet/alicenet/utils"
@@ -18,16 +17,14 @@ type AccusationKey struct {
 // the canonical byte slice
 func (a *AccusationKey) MarshalBinary() ([]byte, error) {
 	if a == nil {
-		return nil, errorz.ErrInvalid{}.New("AccusationKey.MarshalBinary; accusation not initialized")
+		panic("AccusationKey.MarshalBinary; accusation not initialized")
 	}
 
 	key := []byte{}
 	Prefix := utils.CopySlice(a.Prefix)
-	id := make([]byte, hex.EncodedLen(len(a.ID)))
-	_ = hex.Encode(id, a.ID[:])
 	key = append(key, Prefix...)
 	key = append(key, []byte("|")...)
-	key = append(key, id...)
+	key = append(key, a.ID[:]...)
 
 	return key, nil
 }
@@ -36,19 +33,14 @@ func (a *AccusationKey) MarshalBinary() ([]byte, error) {
 // AccusationKey object
 func (a *AccusationKey) UnmarshalBinary(data []byte) error {
 	if a == nil {
-		return errorz.ErrInvalid{}.New("AccusationKey.UnmarshalBinary; accusation not initialized")
+		panic("AccusationKey.UnmarshalBinary; accusation not initialized")
 	}
 	splitData := bytes.Split(data, []byte("|"))
-	if len(splitData) != 4 {
+	if len(splitData) != 2 {
 		return errorz.ErrCorrupt
 	}
 	a.Prefix = splitData[0]
-	id := make([]byte, hex.DecodedLen(len(splitData[1])))
-	_, err := hex.Decode(id, splitData[1])
-	if err != nil {
-		return err
-	}
-	copy(a.ID[:], id)
+	copy(a.ID[:], splitData[1])
 
 	return nil
 }
@@ -57,7 +49,7 @@ func (a *AccusationKey) UnmarshalBinary(data []byte) error {
 // the canonical byte slice without the UUID
 func (a *AccusationKey) MakeIterKey() ([]byte, error) {
 	if a == nil {
-		return nil, errorz.ErrInvalid{}.New("AccusationKey.MakeIterKey; accusation not initialized")
+		panic("AccusationKey.MakeIterKey; accusation not initialized")
 	}
 
 	key := []byte{}

@@ -5,8 +5,10 @@ import (
 	"github.com/alicenet/alicenet/utils"
 )
 
-type PreCommitList []*PreCommit
-type PreCommitNilList []bool
+type (
+	PreCommitList    []*PreCommit
+	PreCommitNilList []bool
+)
 
 func (pcl PreCommitList) MakeNextHeight(secpSigner *crypto.Secp256k1Signer, bnSigner *crypto.BNGroupSigner) (*NextHeight, error) {
 	propBytes, err := pcl[0].Proposal.MarshalBinary()

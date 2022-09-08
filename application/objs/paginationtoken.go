@@ -21,7 +21,7 @@ const (
 )
 
 // UnmarshalBinary takes a byte slice and returns the corresponding
-// PaginationToken object
+// PaginationToken object.
 func (pt *PaginationToken) UnmarshalBinary(data []byte) error {
 	if pt == nil {
 		return errorz.ErrInvalid{}.New("pt.unmarshalBinary; pt not initialized")
@@ -47,7 +47,7 @@ func (pt *PaginationToken) UnmarshalBinary(data []byte) error {
 }
 
 // MarshalBinary takes the PaginationToken object and returns the canonical
-// byte slice
+// byte slice.
 func (pt *PaginationToken) MarshalBinary() ([]byte, error) {
 	if pt == nil {
 		return nil, errorz.ErrInvalid{}.New("pt.marshalBinary; pt not initialized")

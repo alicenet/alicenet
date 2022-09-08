@@ -2,6 +2,7 @@ package objs
 
 import (
 	capnp "github.com/MadBase/go-capnproto2/v2"
+
 	mdefs "github.com/alicenet/alicenet/application/objs/capn"
 	"github.com/alicenet/alicenet/application/objs/txinpreimage"
 	"github.com/alicenet/alicenet/constants"
@@ -10,7 +11,7 @@ import (
 	"github.com/alicenet/alicenet/utils"
 )
 
-// TXInPreImage is the tx input preimage
+// TXInPreImage is the tx input preimage.
 type TXInPreImage struct {
 	ChainID        uint32
 	ConsumedTxIdx  uint32
@@ -18,7 +19,7 @@ type TXInPreImage struct {
 }
 
 // UnmarshalBinary takes a byte slice and returns the corresponding
-// TXInPreImage object
+// TXInPreImage object.
 func (b *TXInPreImage) UnmarshalBinary(data []byte) error {
 	bc, err := txinpreimage.Unmarshal(data)
 	if err != nil {
@@ -28,7 +29,7 @@ func (b *TXInPreImage) UnmarshalBinary(data []byte) error {
 }
 
 // MarshalBinary takes the TXInPreImage object and returns the canonical
-// byte slice
+// byte slice.
 func (b *TXInPreImage) MarshalBinary() ([]byte, error) {
 	if b == nil {
 		return nil, errorz.ErrInvalid{}.New("txinpi.marshalBinary; txinpi not initialized")
@@ -46,7 +47,7 @@ func (b *TXInPreImage) MarshalBinary() ([]byte, error) {
 	return txinpreimage.Marshal(bc)
 }
 
-// UnmarshalCapn unmarshals the capnproto definition of the object
+// UnmarshalCapn unmarshals the capnproto definition of the object.
 func (b *TXInPreImage) UnmarshalCapn(bc mdefs.TXInPreImage) error {
 	if err := txinpreimage.Validate(bc); err != nil {
 		return err
@@ -57,7 +58,7 @@ func (b *TXInPreImage) UnmarshalCapn(bc mdefs.TXInPreImage) error {
 	return nil
 }
 
-// MarshalCapn marshals the object into its capnproto definition
+// MarshalCapn marshals the object into its capnproto definition.
 func (b *TXInPreImage) MarshalCapn(seg *capnp.Segment) (mdefs.TXInPreImage, error) {
 	if b == nil {
 		return mdefs.TXInPreImage{}, errorz.ErrInvalid{}.New("txinpi.marshalCapn; txinpi not initialized")
@@ -88,7 +89,7 @@ func (b *TXInPreImage) MarshalCapn(seg *capnp.Segment) (mdefs.TXInPreImage, erro
 	return bc, nil
 }
 
-// PreHash returns the PreHash of the object
+// PreHash returns the PreHash of the object.
 func (b *TXInPreImage) PreHash() ([]byte, error) {
 	msg, err := b.MarshalBinary()
 	if err != nil {
@@ -98,7 +99,7 @@ func (b *TXInPreImage) PreHash() ([]byte, error) {
 	return hsh, nil
 }
 
-// UTXOID returns the UTXOID of the object
+// UTXOID returns the UTXOID of the object.
 func (b *TXInPreImage) UTXOID() ([]byte, error) {
 	if b == nil {
 		return nil, errorz.ErrInvalid{}.New("txinpi.utxoID; txinpi not initialized")

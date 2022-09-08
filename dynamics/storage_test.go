@@ -162,16 +162,6 @@ func TestStorageInitialized(t *testing.T) {
 		t.Fatal("Incorrect valueStoreValidVersion")
 	}
 
-	asFeeReturned := s.GetAtomicSwapFee()
-	if asFeeReturned.Cmp(atomicSwapFee) != 0 {
-		t.Fatal("Incorrect atomicSwapFee")
-	}
-
-	asStopEpoch := s.GetAtomicSwapValidStopEpoch()
-	if asStopEpoch != 0 {
-		t.Fatal("Incorrect atomicSwapValidStopEpoch")
-	}
-
 	dsEpochFeeReturned := s.GetDataStoreEpochFee()
 	if dsEpochFeeReturned.Cmp(dataStoreEpochFee) != 0 {
 		t.Fatal("Incorrect dataStoreEpochFee")
@@ -1435,39 +1425,5 @@ func TestStorageGetValueStoreFee(t *testing.T) {
 	vsFee = s.GetValueStoreFee()
 	if vsFee.Cmp(valueTrue) != 0 {
 		t.Fatal("incorrect valueStoreFee")
-	}
-}
-
-func TestStorageGetAtomicSwapFee(t *testing.T) {
-	s := initializeStorageWithFirstNode()
-	asFee := s.GetAtomicSwapFee()
-	if asFee.Cmp(atomicSwapFee) != 0 {
-		t.Fatal("asFee incorrect")
-	}
-
-	epoch := uint32(25519)
-	field := "atomicSwapFee"
-	value := "123456789"
-	update, err := NewUpdate(field, value, epoch)
-	if err != nil {
-		t.Fatal(err)
-	}
-	err = s.UpdateStorage(nil, update)
-	if err != nil {
-		t.Fatal(err)
-	}
-	err = s.LoadStorage(nil, epoch)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	valueTrue, err := stringToBigInt(value)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	asFee = s.GetAtomicSwapFee()
-	if asFee.Cmp(valueTrue) != 0 {
-		t.Fatal("incorrect atomicSwapFee")
 	}
 }

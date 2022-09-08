@@ -1,11 +1,13 @@
+import "@nomicfoundation/hardhat-chai-matchers";
 import "@nomiclabs/hardhat-ethers";
 import "@nomiclabs/hardhat-truffle5";
-import "@nomiclabs/hardhat-waffle";
 import "@typechain/hardhat";
 import "hardhat-abi-exporter";
 import "hardhat-contract-sizer";
 import "hardhat-deploy";
 import "hardhat-gas-reporter";
+import "hardhat-log-remover";
+import "hardhat-storage-layout";
 import { HardhatUserConfig, task } from "hardhat/config";
 import os from "os";
 import "solidity-coverage";
@@ -27,6 +29,14 @@ task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
     console.log(account.address);
   }
 });
+
+task(
+  "storage-check",
+  "Prints contracts storage information",
+  async (taskArgs, hre) => {
+    await hre.storageLayout.export();
+  }
+);
 
 const config: HardhatUserConfig = {
   namedAccounts: {
@@ -187,11 +197,16 @@ const config: HardhatUserConfig = {
   solidity: {
     compilers: [
       {
-        version: "0.8.13",
+        version: "0.8.16",
         settings: {
           outputSelection: {
             "*": {
-              "*": ["metadata", "evm.bytecode", "evm.bytecode.sourceMap"],
+              "*": [
+                "metadata",
+                "evm.bytecode",
+                "evm.bytecode.sourceMap",
+                "storageLayout",
+              ],
               "": [
                 "ast", // Enable the AST output of every single file.
               ],
@@ -234,7 +249,7 @@ const config: HardhatUserConfig = {
     excludeContracts: ["*.t.sol"],
   },
   mocha: {
-    timeout: 120000,
+    timeout: 240000,
     jobs: os.cpus().length / 2 > 1 ? os.cpus().length / 2 : 1,
   },
 
@@ -253,6 +268,9 @@ const config: HardhatUserConfig = {
       "PublicStaking",
       "ValidatorStaking",
       "Governance",
+      "Dynamics",
+      "AccusationMultipleProposal",
+      "AccusationInvalidTxConsumption",
     ],
     except: [
       "I[A-Z].*",
@@ -260,6 +278,7 @@ const config: HardhatUserConfig = {
       ".*Mock",
       ".*Base",
       ".*Storage",
+      ".*Error",
       "ETHDKGAccusations",
       "ETHDKGPhases",
     ],

@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT-open-group
-pragma solidity ^0.8.11;
+pragma solidity ^0.8.16;
 
 import "contracts/libraries/math/CryptoLibrary.sol";
 import "contracts/interfaces/IETHDKG.sol";
 import "contracts/interfaces/IETHDKGEvents.sol";
 import "contracts/libraries/ethdkg/ETHDKGStorage.sol";
 import "contracts/utils/ETHDKGUtils.sol";
-import {ETHDKGErrorCodes} from "contracts/libraries/errorCodes/ETHDKGErrorCodes.sol";
+import "contracts/libraries/errors/ETHDKGErrors.sol";
 
 /// @custom:salt ETHDKGPhases
 /// @custom:deploy-type deployUpgradeable
@@ -16,25 +16,35 @@ contract ETHDKGPhases is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
     constructor() ETHDKGStorage() {}
 
     function register(uint256[2] memory publicKey) external {
-        require(
-            _ethdkgPhase == Phase.RegistrationOpen &&
-                block.number >= _phaseStartBlock &&
-                block.number < _phaseStartBlock + _phaseLength,
-            string(abi.encodePacked(ETHDKGErrorCodes.ETHDKG_NOT_IN_REGISTRATION_PHASE))
-        );
-        require(
-            publicKey[0] != 0 && publicKey[1] != 0,
-            string(abi.encodePacked(ETHDKGErrorCodes.ETHDKG_PUBLIC_KEY_ZERO))
-        );
+        if (
+            _ethdkgPhase != Phase.RegistrationOpen ||
+            block.number < _phaseStartBlock ||
+            block.number >= _phaseStartBlock + _phaseLength
+        ) {
+            PhaseInformation[] memory expectedPhaseInfos = new PhaseInformation[](1);
+            expectedPhaseInfos[0] = PhaseInformation(
+                Phase.RegistrationOpen,
+                _phaseStartBlock,
+                _phaseStartBlock + _phaseLength
+            );
+            revert ETHDKGErrors.IncorrectPhase(_ethdkgPhase, block.number, expectedPhaseInfos);
+        }
+        if (publicKey[0] == 0 || publicKey[1] == 0) {
+            revert ETHDKGErrors.PublicKeyZero();
+        }
 
-        require(
-            CryptoLibrary.bn128IsOnCurve(publicKey),
-            string(abi.encodePacked(ETHDKGErrorCodes.ETHDKG_PUBLIC_KEY_NOT_ON_CURVE))
-        );
-        require(
-            _participants[msg.sender].nonce < _nonce,
-            string(abi.encodePacked(ETHDKGErrorCodes.ETHDKG_PARTICIPANT_PARTICIPATING_IN_ROUND))
-        );
+        if (!CryptoLibrary.bn128IsOnCurve(publicKey)) {
+            revert ETHDKGErrors.PublicKeyNotOnCurve();
+        }
+
+        if (_participants[msg.sender].nonce >= _nonce) {
+            revert ETHDKGErrors.ParticipantParticipatingInRound(
+                msg.sender,
+                _participants[msg.sender].nonce,
+                _nonce - 1
+            );
+        }
+
         uint32 numRegistered = uint32(_numParticipants);
         numRegistered++;
         _participants[msg.sender] = Participant({
@@ -63,43 +73,48 @@ contract ETHDKGPhases is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
     function distributeShares(uint256[] memory encryptedShares, uint256[2][] memory commitments)
         external
     {
-        require(
-            _ethdkgPhase == Phase.ShareDistribution &&
-                block.number >= _phaseStartBlock &&
-                block.number < _phaseStartBlock + _phaseLength,
-            string(abi.encodePacked(ETHDKGErrorCodes.ETHDKG_NOT_IN_SHARED_DISTRIBUTION_PHASE))
-        );
+        if (
+            _ethdkgPhase != Phase.ShareDistribution ||
+            block.number < _phaseStartBlock ||
+            block.number >= _phaseStartBlock + _phaseLength
+        ) {
+            PhaseInformation[] memory expectedPhaseInfos = new PhaseInformation[](1);
+            expectedPhaseInfos[0] = PhaseInformation(
+                Phase.ShareDistribution,
+                _phaseStartBlock,
+                _phaseStartBlock + _phaseLength
+            );
+            revert ETHDKGErrors.IncorrectPhase(_ethdkgPhase, block.number, expectedPhaseInfos);
+        }
+
         Participant memory participant = _participants[msg.sender];
-        require(
-            participant.nonce == _nonce,
-            string(abi.encodePacked(ETHDKGErrorCodes.ETHDKG_INVALID_NONCE))
-        );
-        require(
-            participant.phase == Phase.RegistrationOpen,
-            string(
-                abi.encodePacked(ETHDKGErrorCodes.ETHDKG_PARTICIPANT_DISTRIBUTED_SHARES_IN_ROUND)
-            )
-        );
+        if (participant.nonce != _nonce) {
+            revert ETHDKGErrors.InvalidNonce(participant.nonce, _nonce);
+        }
+
+        if (participant.phase != Phase.RegistrationOpen) {
+            revert ETHDKGErrors.ParticipantDistributedSharesInRound(msg.sender);
+        }
 
         uint256 numValidators = IValidatorPool(_validatorPoolAddress()).getValidatorsCount();
         uint256 threshold = _getThreshold(numValidators);
-        require(
-            encryptedShares.length == numValidators - 1,
-            string(abi.encodePacked(ETHDKGErrorCodes.ETHDKG_INVALID_NUM_ENCRYPTED_SHARES))
-        );
-        require(
-            commitments.length == threshold + 1,
-            string(abi.encodePacked(ETHDKGErrorCodes.ETHDKG_INVALID_NUM_COMMITMENTS))
-        );
+        if (encryptedShares.length != numValidators - 1) {
+            revert ETHDKGErrors.InvalidEncryptedSharesAmount(
+                encryptedShares.length,
+                numValidators - 1
+            );
+        }
+
+        if (commitments.length != threshold + 1) {
+            revert ETHDKGErrors.InvalidCommitmentsAmount(commitments.length, threshold + 1);
+        }
         for (uint256 k = 0; k <= threshold; k++) {
-            require(
-                CryptoLibrary.bn128IsOnCurve(commitments[k]),
-                string(abi.encodePacked(ETHDKGErrorCodes.ETHDKG_COMMITMENT_NOT_ON_CURVE))
-            );
-            require(
-                commitments[k][0] != 0,
-                string(abi.encodePacked(ETHDKGErrorCodes.ETHDKG_COMMITMENT_ZERO))
-            );
+            if (!CryptoLibrary.bn128IsOnCurve(commitments[k])) {
+                revert ETHDKGErrors.CommitmentNotOnCurve();
+            }
+            if (commitments[k][0] == 0) {
+                revert ETHDKGErrors.CommitmentZero();
+            }
         }
 
         bytes32 encryptedSharesHash = keccak256(abi.encodePacked(encryptedShares));
@@ -107,10 +122,9 @@ contract ETHDKGPhases is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
         participant.distributedSharesHash = keccak256(
             abi.encodePacked(encryptedSharesHash, commitmentsHash)
         );
-        require(
-            participant.distributedSharesHash != 0x0,
-            string(abi.encodePacked(ETHDKGErrorCodes.ETHDKG_DISTRIBUTED_SHARE_HASH_ZERO))
-        );
+        if (participant.distributedSharesHash == 0x0) {
+            revert ETHDKGErrors.DistributedShareHashZero();
+        }
         participant.commitmentsFirstCoefficient = commitments[0];
         participant.phase = Phase.ShareDistribution;
 
@@ -137,45 +151,56 @@ contract ETHDKGPhases is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
     ) external {
         // Only progress if all participants distributed their shares
         // and no bad participant was found
-        require(
-            (_ethdkgPhase == Phase.KeyShareSubmission &&
+        {
+            bool isInKeyShareSubmission = _ethdkgPhase == Phase.KeyShareSubmission &&
                 block.number >= _phaseStartBlock &&
-                block.number < _phaseStartBlock + _phaseLength) ||
-                (_ethdkgPhase == Phase.DisputeShareDistribution &&
-                    block.number >= _phaseStartBlock + _phaseLength &&
-                    block.number < _phaseStartBlock + 2 * _phaseLength &&
-                    _badParticipants == 0),
-            string(abi.encodePacked(ETHDKGErrorCodes.ETHDKG_NOT_IN_KEYSHARE_SUBMISSION_PHASE))
-        );
+                block.number < _phaseStartBlock + _phaseLength;
+            bool isInDisputeShareDistribution = _ethdkgPhase == Phase.DisputeShareDistribution &&
+                block.number >= _phaseStartBlock + _phaseLength &&
+                block.number < _phaseStartBlock + 2 * _phaseLength &&
+                _badParticipants == 0;
+            if (!isInKeyShareSubmission && !isInDisputeShareDistribution) {
+                PhaseInformation[] memory expectedPhaseInfos = new PhaseInformation[](2);
+                expectedPhaseInfos[0] = PhaseInformation(
+                    Phase.KeyShareSubmission,
+                    _phaseStartBlock,
+                    _phaseStartBlock + _phaseLength
+                );
+                expectedPhaseInfos[1] = PhaseInformation(
+                    Phase.DisputeShareDistribution,
+                    _phaseStartBlock + _phaseLength,
+                    _phaseStartBlock + 2 * _phaseLength
+                );
+                revert ETHDKGErrors.IncorrectPhase(_ethdkgPhase, block.number, expectedPhaseInfos);
+            }
+        }
 
         // Since we had a dispute stage prior this state we need to set global state in here
         if (_ethdkgPhase != Phase.KeyShareSubmission) {
             _setPhase(Phase.KeyShareSubmission);
         }
         Participant memory participant = _participants[msg.sender];
-        require(
-            participant.nonce == _nonce,
-            string(abi.encodePacked(ETHDKGErrorCodes.ETHDKG_KEYSHARE_PHASE_INVALID_NONCE))
-        );
-        require(
-            participant.phase == Phase.ShareDistribution,
-            string(
-                abi.encodePacked(ETHDKGErrorCodes.ETHDKG_PARTICIPANT_SUBMITTED_KEYSHARES_IN_ROUND)
-            )
-        );
+        if (participant.nonce != _nonce) {
+            revert ETHDKGErrors.InvalidNonce(participant.nonce, _nonce);
+        }
+        if (participant.phase != Phase.ShareDistribution) {
+            revert ETHDKGErrors.ParticipantSubmittedKeysharesInRound(msg.sender);
+        }
 
-        require(
-            CryptoLibrary.discreteLogEquality(
+        if (
+            !CryptoLibrary.discreteLogEquality(
                 [CryptoLibrary.H1_X, CryptoLibrary.H1_Y],
                 keyShareG1,
                 [CryptoLibrary.G1_X, CryptoLibrary.G1_Y],
                 participant.commitmentsFirstCoefficient,
                 keyShareG1CorrectnessProof
-            ),
-            string(abi.encodePacked(ETHDKGErrorCodes.ETHDKG_INVALID_KEYSHARE_G1))
-        );
-        require(
-            CryptoLibrary.bn128CheckPairing(
+            )
+        ) {
+            revert ETHDKGErrors.InvalidKeyshareG1();
+        }
+
+        if (
+            !CryptoLibrary.bn128CheckPairing(
                 [
                     keyShareG1[0],
                     keyShareG1[1],
@@ -190,9 +215,10 @@ contract ETHDKGPhases is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
                     keyShareG2[2],
                     keyShareG2[3]
                 ]
-            ),
-            string(abi.encodePacked(ETHDKGErrorCodes.ETHDKG_INVALID_KEYSHARE_G2))
-        );
+            )
+        ) {
+            revert ETHDKGErrors.InvalidKeyshareG2();
+        }
 
         participant.keyShares = keyShareG1;
         participant.phase = Phase.KeyShareSubmission;
@@ -228,17 +254,22 @@ contract ETHDKGPhases is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
     }
 
     function submitMasterPublicKey(uint256[4] memory masterPublicKey_) external {
-        require(
-            _ethdkgPhase == Phase.MPKSubmission &&
-                block.number >= _phaseStartBlock &&
-                block.number < _phaseStartBlock + _phaseLength,
-            string(
-                abi.encodePacked(ETHDKGErrorCodes.ETHDKG_NOT_IN_MASTER_PUBLIC_KEY_SUBMISSION_PHASE)
-            )
-        );
+        if (
+            _ethdkgPhase != Phase.MPKSubmission ||
+            block.number < _phaseStartBlock ||
+            block.number >= _phaseStartBlock + _phaseLength
+        ) {
+            PhaseInformation[] memory expectedPhaseInfos = new PhaseInformation[](1);
+            expectedPhaseInfos[0] = PhaseInformation(
+                Phase.MPKSubmission,
+                _phaseStartBlock,
+                _phaseStartBlock + _phaseLength
+            );
+            revert ETHDKGErrors.IncorrectPhase(_ethdkgPhase, block.number, expectedPhaseInfos);
+        }
         uint256[2] memory mpkG1 = _mpkG1;
-        require(
-            CryptoLibrary.bn128CheckPairing(
+        if (
+            !CryptoLibrary.bn128CheckPairing(
                 [
                     mpkG1[0],
                     mpkG1[1],
@@ -253,11 +284,10 @@ contract ETHDKGPhases is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
                     masterPublicKey_[2],
                     masterPublicKey_[3]
                 ]
-            ),
-            string(
-                abi.encodePacked(ETHDKGErrorCodes.ETHDKG_MASTER_PUBLIC_KEY_PAIRING_CHECK_FAILURE)
             )
-        );
+        ) {
+            revert ETHDKGErrors.MasterPublicKeyPairingCheckFailure();
+        }
 
         _masterPublicKey = masterPublicKey_;
         _masterPublicKeyHash = keccak256(abi.encodePacked(masterPublicKey_));
@@ -268,28 +298,32 @@ contract ETHDKGPhases is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
 
     function submitGPKJ(uint256[4] memory gpkj) external {
         //todo: should we evict all validators if no one sent the master public key in time?
-        require(
-            _ethdkgPhase == Phase.GPKJSubmission &&
-                block.number >= _phaseStartBlock &&
-                block.number < _phaseStartBlock + _phaseLength,
-            string(abi.encodePacked(ETHDKGErrorCodes.ETHDKG_NOT_IN_GPKJ_SUBMISSION_PHASE))
-        );
+        if (
+            _ethdkgPhase != Phase.GPKJSubmission ||
+            block.number < _phaseStartBlock ||
+            block.number >= _phaseStartBlock + _phaseLength
+        ) {
+            PhaseInformation[] memory expectedPhaseInfos = new PhaseInformation[](1);
+            expectedPhaseInfos[0] = PhaseInformation(
+                Phase.GPKJSubmission,
+                _phaseStartBlock,
+                _phaseStartBlock + _phaseLength
+            );
+            revert ETHDKGErrors.IncorrectPhase(_ethdkgPhase, block.number, expectedPhaseInfos);
+        }
 
         Participant memory participant = _participants[msg.sender];
 
-        require(
-            participant.nonce == _nonce,
-            string(abi.encodePacked(ETHDKGErrorCodes.ETHDKG_KEYSHARE_PHASE_INVALID_NONCE))
-        );
-        require(
-            participant.phase == Phase.KeyShareSubmission,
-            string(abi.encodePacked(ETHDKGErrorCodes.ETHDKG_PARTICIPANT_SUBMITTED_GPKJ_IN_ROUND))
-        );
+        if (participant.nonce != _nonce) {
+            revert ETHDKGErrors.InvalidNonce(participant.nonce, _nonce);
+        }
+        if (participant.phase != Phase.KeyShareSubmission) {
+            revert ETHDKGErrors.ParticipantSubmittedGPKJInRound(msg.sender);
+        }
 
-        require(
-            gpkj[0] != 0 || gpkj[1] != 0 || gpkj[2] != 0 || gpkj[3] != 0,
-            string(abi.encodePacked(ETHDKGErrorCodes.ETHDKG_GPKJ_ZERO))
-        );
+        if (gpkj[0] == 0 && gpkj[1] == 0 && gpkj[2] == 0 && gpkj[3] == 0) {
+            revert ETHDKGErrors.GPKJZero();
+        }
 
         participant.gpkj = gpkj;
         participant.phase = Phase.GPKJSubmission;
@@ -320,16 +354,22 @@ contract ETHDKGPhases is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
 
     function complete() external {
         //todo: should we reward ppl here?
-        require(
-            (_ethdkgPhase == Phase.DisputeGPKJSubmission &&
-                block.number >= _phaseStartBlock + _phaseLength) &&
-                block.number < _phaseStartBlock + 2 * _phaseLength,
-            string(abi.encodePacked(ETHDKGErrorCodes.ETHDKG_NOT_IN_POST_GPKJ_DISPUTE_PHASE))
-        );
-        require(
-            _badParticipants == 0,
-            string(abi.encodePacked(ETHDKGErrorCodes.ETHDKG_REQUISITES_INCOMPLETE))
-        );
+        if (
+            _ethdkgPhase != Phase.DisputeGPKJSubmission ||
+            block.number < _phaseStartBlock + _phaseLength ||
+            block.number >= _phaseStartBlock + 2 * _phaseLength
+        ) {
+            PhaseInformation[] memory expectedPhaseInfos = new PhaseInformation[](1);
+            expectedPhaseInfos[0] = PhaseInformation(
+                Phase.DisputeGPKJSubmission,
+                _phaseStartBlock + _phaseLength,
+                _phaseStartBlock + 2 * _phaseLength
+            );
+            revert ETHDKGErrors.IncorrectPhase(_ethdkgPhase, block.number, expectedPhaseInfos);
+        }
+        if (_badParticipants != 0) {
+            revert ETHDKGErrors.ETHDKGRequisitesIncomplete();
+        }
 
         // Since we had a dispute stage prior this state we need to set global state in here
         _setPhase(Phase.Completion);

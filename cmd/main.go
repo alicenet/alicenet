@@ -20,6 +20,12 @@ import (
 	"github.com/spf13/viper"
 )
 
+// Variables set by goreleaser process: https://goreleaser.com/cookbooks/using-main.version.
+var (
+	// Version from git tag.
+	version = "dev"
+)
+
 type option struct {
 	name  string
 	short string
@@ -27,7 +33,7 @@ type option struct {
 	value interface{}
 }
 
-// Runner wraps a cobra command's Run() and sets up loggers first
+// Runner wraps a cobra command's Run() and sets up loggers first.
 func runner(commandRun func(*cobra.Command, []string)) func(*cobra.Command, []string) {
 	logger := logging.GetLogger("main")
 	return func(a *cobra.Command, b []string) {
@@ -55,13 +61,14 @@ func runner(commandRun func(*cobra.Command, []string)) func(*cobra.Command, []st
 			}
 		}
 		commandRun(a, b)
-
 	}
 }
 
 func setLogger(name string, level string) {
 	lgr := logging.GetLogger(name)
 	switch level {
+	case "trace":
+		lgr.SetLevel(logrus.TraceLevel)
 	case "debug":
 		lgr.SetLevel(logrus.DebugLevel)
 	case "info":
@@ -70,6 +77,10 @@ func setLogger(name string, level string) {
 		lgr.SetLevel(logrus.WarnLevel)
 	case "error":
 		lgr.SetLevel(logrus.ErrorLevel)
+	case "fatal":
+		lgr.SetLevel(logrus.FatalLevel)
+	case "panic":
+		lgr.SetLevel(logrus.PanicLevel)
 	default:
 		lgr.SetLevel(logrus.InfoLevel)
 	}
@@ -79,11 +90,14 @@ func main() {
 	logger := logging.GetLogger("main")
 	logger.SetLevel(logrus.InfoLevel)
 
+	config.Configuration.Version = version
+
 	// Root for all commands
 	rootCommand := cobra.Command{
 		Use:   "alicenet",
 		Short: "Short description of alicenet",
-		Long:  "This is a not so long description for alicenet"}
+		Long:  "This is a not so long description for alicenet",
+	}
 
 	// All the configuration options available. Used for command line and config file.
 	options := map[*cobra.Command][]*option{
@@ -124,25 +138,16 @@ func main() {
 			{"chain.monitorDB", "", "", &config.Configuration.Chain.MonitorDbPath},
 			{"chain.monitorDBInMemory", "", "", &config.Configuration.Chain.MonitorDbInMemory},
 			{"ethereum.endpoint", "", "", &config.Configuration.Ethereum.Endpoint},
-			{"ethereum.endpointPeers", "", "Minimum peers required", &config.Configuration.Ethereum.EndpointMinimumPeers},
+			{"ethereum.endpointMinimumPeers", "", "Minimum peers required", &config.Configuration.Ethereum.EndpointMinimumPeers},
 			{"ethereum.keystore", "", "", &config.Configuration.Ethereum.Keystore},
-			{"ethereum.timeout", "", "", &config.Configuration.Ethereum.Timeout},
-			{"ethereum.testEther", "", "", &config.Configuration.Ethereum.TestEther},
-			{"ethereum.deployAccount", "", "", &config.Configuration.Ethereum.DeployAccount},
 			{"ethereum.defaultAccount", "", "", &config.Configuration.Ethereum.DefaultAccount},
-			{"ethereum.finalityDelay", "", "Number blocks before we consider a block final", &config.Configuration.Ethereum.FinalityDelay},
-			{"ethereum.retryCount", "", "Number of times to retry an Ethereum operation", &config.Configuration.Ethereum.RetryCount},
-			{"ethereum.retryDelay", "", "Delay between retry attempts", &config.Configuration.Ethereum.RetryDelay},
-			{"ethereum.passcodes", "", "Passcodes for keystore", &config.Configuration.Ethereum.Passcodes},
+			{"ethereum.passCodes", "", "PassCodes for keystore", &config.Configuration.Ethereum.PassCodes},
 			{"ethereum.startingBlock", "", "The first block we care about", &config.Configuration.Ethereum.StartingBlock},
-			{"ethereum.registryAddress", "", "", &config.Configuration.Ethereum.RegistryAddress},
-			{"ethereum.txFeePercentageToIncrease", "", "", &config.Configuration.Ethereum.TxFeePercentageToIncrease},
-			{"ethereum.txMaxFeeThresholdInGwei", "", "", &config.Configuration.Ethereum.TxMaxFeeThresholdInGwei},
-			{"ethereum.txCheckFrequency", "", "", &config.Configuration.Ethereum.TxCheckFrequency},
-			{"ethereum.txTimeoutForReplacement", "", "", &config.Configuration.Ethereum.TxTimeoutForReplacement},
+			{"ethereum.factoryAddress", "", "", &config.Configuration.Ethereum.FactoryAddress},
+			{"ethereum.txMaxGasFeeAllowedInGwei", "", "", &config.Configuration.Ethereum.TxMaxGasFeeAllowedInGwei},
+			{"ethereum.txMetricsDisplay", "", "", &config.Configuration.Ethereum.TxMetricsDisplay},
 			{"monitor.batchSize", "", "", &config.Configuration.Monitor.BatchSize},
 			{"monitor.interval", "", "", &config.Configuration.Monitor.Interval},
-			{"monitor.timeout", "", "", &config.Configuration.Monitor.Timeout},
 			{"transport.peerLimitMin", "", "", &config.Configuration.Transport.PeerLimitMin},
 			{"transport.peerLimitMax", "", "", &config.Configuration.Transport.PeerLimitMax},
 			{"transport.privateKey", "", "", &config.Configuration.Transport.PrivateKey},
@@ -161,40 +166,35 @@ func main() {
 		},
 
 		&utils.Command: {
-			{"utils.status", "", "", &config.Configuration.Utils.Status}},
+			{"utils.status", "", "", &config.Configuration.Utils.Status},
+		},
 
-		&utils.EthdkgCommand:  {},
 		&utils.SendWeiCommand: {},
 
 		&bootnode.Command: {
 			{"bootnode.listeningAddress", "", "", &config.Configuration.BootNode.ListeningAddress},
-			{"bootnode.cacheSize", "", "", &config.Configuration.BootNode.CacheSize}},
+			{"bootnode.cacheSize", "", "", &config.Configuration.BootNode.CacheSize},
+		},
 
 		&firewalld.Command: {},
 
 		&validator.Command: {
 			{"validator.rewardAccount", "", "", &config.Configuration.Validator.RewardAccount},
-			{"validator.rewardCurveSpec", "", "", &config.Configuration.Validator.RewardCurveSpec}},
-
-		// &deploy.Command: {
-		// 	{"deploy.migrations", "", "", &config.Configuration.Deploy.Migrations},
-		// 	{"deploy.testMigrations", "", "", &config.Configuration.Deploy.TestMigrations}},
+			{"validator.rewardCurveSpec", "", "", &config.Configuration.Validator.RewardCurveSpec},
+		},
 	}
 
 	// Establish command hierarchy
 	hierarchy := map[*cobra.Command]*cobra.Command{
-		&firewalld.Command: &rootCommand,
-		&bootnode.Command:  &rootCommand,
-		&validator.Command: &rootCommand,
-		// &deploy.Command:              &rootCommand,
+		&firewalld.Command:    &rootCommand,
+		&bootnode.Command:     &rootCommand,
+		&validator.Command:    &rootCommand,
 		&utils.Command:        &rootCommand,
-		&utils.EthdkgCommand:  &utils.Command,
 		&utils.SendWeiCommand: &utils.Command,
 	}
 
 	// Convert option abstraction into concrete settings for Cobra and Viper
 	for c := range options {
-
 		cFlags := c.PersistentFlags() // just a convenience thing
 
 		if c.Run != nil {
@@ -208,7 +208,6 @@ func main() {
 
 		var defaultStringArray []string
 		for _, o := range options[c] {
-
 			typeOfPtr := reflect.TypeOf(o.value)
 			if typeOfPtr.Kind() != reflect.Ptr {
 				logger.Fatalf("Option value for %v should be supplied as a pointer.", o.name)
@@ -244,7 +243,6 @@ func main() {
 
 	// This has to be registered prior to root command execute. Cobra executes this first thing when executing.
 	cobra.OnInitialize(func() {
-
 		// Read the config file
 		file, err := os.Open(config.Configuration.ConfigurationFileName)
 		if err == nil {
@@ -270,6 +268,10 @@ func main() {
 		for cmd := range options {
 			// Find all the flags
 			cmd.Flags().VisitAll(func(flag *pflag.Flag) {
+				// -help defined by pflag internals and will not parse correctly.
+				if flag.Name == "help" {
+					return
+				}
 				err := flag.Value.Set(viper.GetString(flag.Name))
 				if err != nil {
 					logger.Warnf("Setting flag %q failed:%q", flag.Name, err)
@@ -285,5 +287,5 @@ func main() {
 	if err != nil {
 		logger.Fatalf("Execute() failed:%q", err)
 	}
-	logger.Debugf("main() -- Configuration:%q", config.Configuration.Ethereum)
+	logger.Debugf("main() -- Configuration:%v", config.Configuration.Ethereum)
 }

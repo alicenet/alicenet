@@ -1,17 +1,16 @@
 package db
 
 import (
-	"bytes"
 	"context"
-	"encoding/gob"
 	"sync"
 	"time"
+
+	"github.com/dgraph-io/badger/v2"
+	"github.com/sirupsen/logrus"
 
 	"github.com/alicenet/alicenet/consensus/objs"
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/utils"
-	"github.com/dgraph-io/badger/v2"
-	"github.com/sirupsen/logrus"
 )
 
 type Txn struct {
@@ -58,8 +57,14 @@ func (db *rawDataBase) Sync() error {
 }
 
 func (db *rawDataBase) GarbageCollect() error {
-	db.db.RunValueLogGC(constants.BadgerDiscardRatio)
-	db.db.RunValueLogGC(constants.BadgerDiscardRatio)
+	err := db.db.RunValueLogGC(constants.BadgerDiscardRatio)
+	if utils.HandleBadgerErrors(err) != nil {
+		return err
+	}
+	err = db.db.RunValueLogGC(constants.BadgerDiscardRatio)
+	if utils.HandleBadgerErrors(err) != nil {
+		return err
+	}
 	return nil
 }
 
@@ -67,7 +72,7 @@ func (db *rawDataBase) DropPrefix(k []byte) error {
 	return db.db.DropPrefix(k)
 }
 
-// subscribe to prefix is used to form the proposal subscription
+// subscribe to prefix is used to form the proposal subscription.
 func (db *rawDataBase) subscribeToPrefix(ctx context.Context, prefix []byte, cb func([]byte) error) {
 	fn := func(kvs *badger.KVList) error {
 		for i := 0; i < len(kvs.Kv); i++ {
@@ -94,7 +99,7 @@ func (db *rawDataBase) getValue(txn *badger.Txn, key []byte) ([]byte, error) {
 	return utils.GetValue(txn, key)
 }
 
-func (db *rawDataBase) SetValue(txn *badger.Txn, key []byte, value []byte) error {
+func (db *rawDataBase) SetValue(txn *badger.Txn, key, value []byte) error {
 	return utils.SetValue(txn, key, value)
 }
 
@@ -598,18 +603,18 @@ func (db *rawDataBase) getCounter(txn *badger.Txn, k []byte) (int, error) {
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-func (db *rawDataBase) SetAccusation(txn *badger.Txn, key []byte, a objs.Accusation) error {
-	buf := &bytes.Buffer{}
-	enc := gob.NewEncoder(buf)
-	err := enc.Encode(&a)
-	if err != nil {
-		return err
-	}
-	vv := buf.Bytes()
-	return utils.SetValue(txn, key, vv)
+func (db *rawDataBase) SetAccusationRaw(txn *badger.Txn, key []byte, data []byte) error {
+	// buf := &bytes.Buffer{}
+	// enc := gob.NewEncoder(buf)
+	// err := enc.Encode(&a)
+	// if err != nil {
+	// 	return err
+	// }
+	// vv := buf.Bytes()
+	return utils.SetValue(txn, key, data)
 }
 
-func (db *rawDataBase) GetAccusation(txn *badger.Txn, key []byte) (objs.Accusation, error) {
+func (db *rawDataBase) GetAccusationRaw(txn *badger.Txn, key []byte) ([]byte, error) {
 	v, err := db.getValue(txn, key)
 	if err != nil {
 		return nil, err
@@ -618,14 +623,14 @@ func (db *rawDataBase) GetAccusation(txn *badger.Txn, key []byte) (objs.Accusati
 		return nil, nil
 	}
 
-	buf := &bytes.Buffer{}
-	buf.Write(v)
-	dec := gob.NewDecoder(buf)
-	var acc objs.Accusation
-	err = dec.Decode(&acc) // decode concrete implementation into an interface var without knowing which implementation it is (gob is awesome)
-	if err != nil {
-		return nil, err
-	}
+	// buf := &bytes.Buffer{}
+	// buf.Write(v)
+	// dec := gob.NewDecoder(buf)
+	// var acc tasks.Task
+	// err = dec.Decode(&acc) // decode concrete implementation into an interface var without knowing which implementation it is (gob is awesome)
+	// if err != nil {
+	// 	return nil, err
+	// }
 
-	return acc, nil
+	return v, nil
 }

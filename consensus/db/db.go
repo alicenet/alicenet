@@ -1,10 +1,11 @@
 package db
 
 import (
-	"bytes"
 	"context"
-	"encoding/gob"
 	"sync"
+
+	"github.com/dgraph-io/badger/v2"
+	"github.com/sirupsen/logrus"
 
 	trie "github.com/alicenet/alicenet/badgerTrie"
 	"github.com/alicenet/alicenet/consensus/objs"
@@ -12,11 +13,9 @@ import (
 	"github.com/alicenet/alicenet/constants/dbprefix"
 	"github.com/alicenet/alicenet/logging"
 	"github.com/alicenet/alicenet/utils"
-	"github.com/dgraph-io/badger/v2"
-	"github.com/sirupsen/logrus"
 )
 
-// Database is an abstraction of the header trie and the object storage
+// Database is an abstraction of the header trie and the object storage.
 type Database struct {
 	sync.Mutex
 	rawDB  *rawDataBase
@@ -24,7 +23,7 @@ type Database struct {
 	logger *logrus.Logger
 }
 
-// Init will initialize the database
+// Init will initialize the database.
 func (db *Database) Init(DB *badger.DB) {
 	logger := logging.GetLogger(constants.LoggerDB)
 	db.logger = logger
@@ -32,9 +31,6 @@ func (db *Database) Init(DB *badger.DB) {
 	hdrTrie := &headerTrie{}
 	hdrTrie.init()
 	db.trie = hdrTrie
-
-	// register BaseAccusation as a known implementation of Accusation into gob
-	gob.Register(&objs.BaseAccusation{})
 }
 
 func (db *Database) DB() *badger.DB {
@@ -104,7 +100,7 @@ func (db *Database) GetEncryptedStore(txn *badger.Txn, name []byte) (*objs.Encry
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-// index current by VAddr
+// index current by VAddr.
 func (db *Database) makeCurrentRoundStateKey(vAddr []byte) ([]byte, error) {
 	key := &objs.RoundStateCurrentKey{
 		Prefix: dbprefix.PrefixCurrentRoundState(),
@@ -141,8 +137,8 @@ func (db *Database) GetCurrentRoundState(txn *badger.Txn, vaddr []byte) (*objs.R
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-// index historic by by height|round|vkey
-func (db *Database) makeHistoricRoundStateKey(vaddr []byte, height uint32, round uint32) ([]byte, error) {
+// index historic by by height|round|vkey.
+func (db *Database) makeHistoricRoundStateKey(vaddr []byte, height, round uint32) ([]byte, error) {
 	key := &objs.RoundStateHistoricKey{
 		Prefix: dbprefix.PrefixHistoricRoundState(),
 		Height: height,
@@ -173,7 +169,7 @@ func (db *Database) SetHistoricRoundState(txn *badger.Txn, v *objs.RoundState) e
 	return nil
 }
 
-func (db *Database) GetHistoricRoundState(txn *badger.Txn, vaddr []byte, height uint32, round uint32) (*objs.RoundState, error) {
+func (db *Database) GetHistoricRoundState(txn *badger.Txn, vaddr []byte, height, round uint32) (*objs.RoundState, error) {
 	key, err := db.makeHistoricRoundStateKey(vaddr, height, round)
 	if err != nil {
 		return nil, err
@@ -1077,7 +1073,7 @@ func (db *Database) GetLastSnapshot(txn *badger.Txn) (*objs.BlockHeader, error) 
 	return result, nil
 }
 
-// Gets the latest snapshot starting from the AliceNet 'height'
+// Gets the latest snapshot starting from the AliceNet 'height'.
 func (db *Database) GetSnapshotByHeight(txn *badger.Txn, height uint32) (*objs.BlockHeader, error) {
 	prefix := db.makeSnapshotBlockHeaderIterKey()
 	seek := []byte{}
@@ -1133,7 +1129,7 @@ func (db *Database) makeTxCacheIterKey(height uint32) ([]byte, error) {
 	return key.MakeIterKey()
 }
 
-func (db *Database) SetTxCacheItem(txn *badger.Txn, height uint32, txHash []byte, tx []byte) error {
+func (db *Database) SetTxCacheItem(txn *badger.Txn, height uint32, txHash, tx []byte) error {
 	key, err := db.makeTxCacheKey(txHash, height)
 	if err != nil {
 		return err
@@ -1587,7 +1583,7 @@ func (db *Database) DropPendingLeafKeys(txn *badger.Txn) error {
 	return nil
 }
 
-func (db *Database) SetPendingLeafKey(txn *badger.Txn, leafKey []byte, value []byte) error {
+func (db *Database) SetPendingLeafKey(txn *badger.Txn, leafKey, value []byte) error {
 	plkey, err := db.makePendingLeafKey(leafKey)
 	if err != nil {
 		return err
@@ -1765,7 +1761,7 @@ func (db *Database) GetSnapShotHdrNode(txn *badger.Txn, root []byte) ([]byte, er
 	return db.trie.GetSnapShotHdrNode(txn, root)
 }
 
-func (db *Database) SetSnapShotHdrNode(txn *badger.Txn, batch []byte, root []byte, layer int) ([][]byte, int, []trie.LeafNode, error) {
+func (db *Database) SetSnapShotHdrNode(txn *badger.Txn, batch, root []byte, layer int) ([][]byte, int, []trie.LeafNode, error) {
 	return db.trie.StoreSnapShotHdrNode(txn, batch, root, layer)
 }
 
@@ -1813,7 +1809,7 @@ func (db *Database) DropPendingHdrLeafKeys(txn *badger.Txn) error {
 	return nil
 }
 
-func (db *Database) SetPendingHdrLeafKey(txn *badger.Txn, hdrLeafKey []byte, value []byte) error {
+func (db *Database) SetPendingHdrLeafKey(txn *badger.Txn, hdrLeafKey, value []byte) error {
 	phlkey, err := db.makePendingHdrLeafKey(hdrLeafKey)
 	if err != nil {
 		return err
@@ -1906,12 +1902,12 @@ func (db *Database) makeAccusationIterKey() ([]byte, error) {
 	return key.MakeIterKey()
 }
 
-func (db *Database) SetAccusation(txn *badger.Txn, a objs.Accusation) error {
-	key, err := db.makeAccusationKey(a.GetID())
+func (db *Database) SetAccusationRaw(txn *badger.Txn, id [32]byte, data []byte) error {
+	key, err := db.makeAccusationKey(id)
 	if err != nil {
 		return err
 	}
-	err = db.rawDB.SetAccusation(txn, key, a)
+	err = db.rawDB.SetAccusationRaw(txn, key, data)
 	if err != nil {
 		utils.DebugTrace(db.logger, err)
 		return err
@@ -1919,17 +1915,41 @@ func (db *Database) SetAccusation(txn *badger.Txn, a objs.Accusation) error {
 	return nil
 }
 
-func (db *Database) GetAccusation(txn *badger.Txn, id [32]byte) (objs.Accusation, error) {
+func (db *Database) GetAccusationRaw(txn *badger.Txn, id [32]byte) ([]byte, error) {
 	key, err := db.makeAccusationKey(id)
 	if err != nil {
 		return nil, err
 	}
-	result, err := db.rawDB.GetAccusation(txn, key)
+	result, err := db.rawDB.GetAccusationRaw(txn, key)
 	if err != nil {
 		utils.DebugTrace(db.logger, err)
 		return nil, err
 	}
 	return result, nil
+}
+
+func (db *Database) GetAccusations(txn *badger.Txn) ([][]byte, error) {
+	prefix, err := db.makeAccusationIterKey()
+	if err != nil {
+		return nil, err
+	}
+	opts := badger.DefaultIteratorOptions
+	opts.PrefetchValues = true
+	opts.PrefetchSize = 100
+	it := txn.NewIterator(opts)
+	defer it.Close()
+	accusations := make([][]byte, 0)
+	for it.Seek(prefix); it.ValidForPrefix(prefix); it.Next() {
+		item := it.Item()
+		accBytes, err := item.ValueCopy(nil)
+		if err != nil {
+			return nil, err
+		}
+
+		accusations = append(accusations, accBytes)
+	}
+
+	return accusations, nil
 }
 
 func (db *Database) DeleteAccusation(txn *badger.Txn, id [32]byte) error {
@@ -1951,67 +1971,6 @@ func (db *Database) DeleteAccusation(txn *badger.Txn, id [32]byte) error {
 		}
 	}
 	return nil
-}
-
-func (db *Database) GetAccusations(txn *badger.Txn, filter *func(objs.Accusation) bool) ([]objs.Accusation, error) {
-	// keys := [][]byte{}
-	prefix, err := db.makeAccusationIterKey()
-	if err != nil {
-		return nil, err
-	}
-	opts := badger.DefaultIteratorOptions
-	opts.PrefetchValues = true
-	opts.PrefetchSize = 100
-	it := txn.NewIterator(opts)
-	defer it.Close()
-	accusations := make([]objs.Accusation, 0)
-	for it.Seek(prefix); it.ValidForPrefix(prefix); it.Next() {
-		item := it.Item()
-		accBytes, err := item.ValueCopy(nil)
-		if err != nil {
-			return nil, err
-		}
-
-		buf := &bytes.Buffer{}
-		buf.Write(accBytes)
-		dec := gob.NewDecoder(buf)
-		var acc objs.Accusation
-		err = dec.Decode(&acc) // decode concrete implementation into an interface var without knowing which implementation it is (gob is awesome)
-		if err != nil {
-			return nil, err
-		}
-
-		// filter if there's a filter
-		if filter == nil || (*filter)(acc) {
-			accusations = append(accusations, acc)
-		}
-	}
-
-	return accusations, nil
-}
-
-// GetPersistedButUnscheduledAccusations retrieves accusations that are persisted but not yet scheduled in the Task manager
-func (db *Database) GetPersistedButUnscheduledAccusations(txn *badger.Txn) ([]objs.Accusation, error) {
-	filter := func(acc objs.Accusation) bool {
-		return acc.GetState() == objs.Persisted
-	}
-	return db.GetAccusations(txn, &filter)
-}
-
-// GetScheduledButIncompleteAccusations retrieves accusations that are scheduled in the Task manager but not yet completed
-func (db *Database) GetScheduledButIncompleteAccusations(txn *badger.Txn) ([]objs.Accusation, error) {
-	filter := func(acc objs.Accusation) bool {
-		return acc.GetState() == objs.ScheduledForExecution
-	}
-	return db.GetAccusations(txn, &filter)
-}
-
-// GetCompletedAccusations retrieves accusations that are completed
-func (db *Database) GetCompletedAccusations(txn *badger.Txn) ([]objs.Accusation, error) {
-	filter := func(acc objs.Accusation) bool {
-		return acc.GetState() == objs.Completed
-	}
-	return db.GetAccusations(txn, &filter)
 }
 
 // PendingHdrLeafIter

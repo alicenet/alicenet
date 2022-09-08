@@ -24,6 +24,14 @@ type IValidatorStakingTransactor interface {
 	//
 	// Solidity: function burnTo(address to_, uint256 tokenID_) returns(uint256 payoutEth, uint256 payoutAToken)
 	BurnTo(opts *bind.TransactOpts, to_ common.Address, tokenID_ *big.Int) (*types.Transaction, error)
+	// CollectAllProfits is a paid mutator transaction binding the contract method 0x0df4b2dd.
+	//
+	// Solidity: function collectAllProfits(uint256 tokenID_) returns(uint256 payoutToken, uint256 payoutEth)
+	CollectAllProfits(opts *bind.TransactOpts, tokenID_ *big.Int) (*types.Transaction, error)
+	// CollectAllProfitsTo is a paid mutator transaction binding the contract method 0x8303fef7.
+	//
+	// Solidity: function collectAllProfitsTo(address to_, uint256 tokenID_) returns(uint256 payoutToken, uint256 payoutEth)
+	CollectAllProfitsTo(opts *bind.TransactOpts, to_ common.Address, tokenID_ *big.Int) (*types.Transaction, error)
 	// CollectEth is a paid mutator transaction binding the contract method 0x2a0d8bd1.
 	//
 	// Solidity: function collectEth(uint256 tokenID_) returns(uint256 payout)
@@ -78,8 +86,8 @@ type IValidatorStakingTransactor interface {
 	SafeTransferFrom(opts *bind.TransactOpts, from common.Address, to common.Address, tokenId *big.Int) (*types.Transaction, error)
 	// SafeTransferFrom0 is a paid mutator transaction binding the contract method 0xb88d4fde.
 	//
-	// Solidity: function safeTransferFrom(address from, address to, uint256 tokenId, bytes _data) returns()
-	SafeTransferFrom0(opts *bind.TransactOpts, from common.Address, to common.Address, tokenId *big.Int, _data []byte) (*types.Transaction, error)
+	// Solidity: function safeTransferFrom(address from, address to, uint256 tokenId, bytes data) returns()
+	SafeTransferFrom0(opts *bind.TransactOpts, from common.Address, to common.Address, tokenId *big.Int, data []byte) (*types.Transaction, error)
 	// SetApprovalForAll is a paid mutator transaction binding the contract method 0xa22cb465.
 	//
 	// Solidity: function setApprovalForAll(address operator, bool approved) returns()

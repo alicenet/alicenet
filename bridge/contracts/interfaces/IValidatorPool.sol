@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT-open-group
-pragma solidity ^0.8.11;
+pragma solidity ^0.8.16;
 
 import "contracts/utils/CustomEnumerableMaps.sol";
 
@@ -11,6 +11,8 @@ interface IValidatorPool {
     event MaintenanceScheduled();
 
     function setStakeAmount(uint256 stakeAmount_) external;
+
+    function setMaxIntervalWithoutSnapshots(uint256 maxIntervalWithoutSnapshots) external;
 
     function setMaxNumValidators(uint256 maxNumValidators_) external;
 
@@ -41,9 +43,14 @@ interface IValidatorPool {
 
     function claimExitingNFTPosition() external returns (uint256);
 
-    function majorSlash(address dishonestValidator_, address disputer_) external;
+    function majorSlash(address dishonestValidator_, address disputer_, bytes32 preSalt_) external;
 
-    function minorSlash(address dishonestValidator_, address disputer_) external;
+    function minorSlash(address dishonestValidator_, address disputer_, bytes32 preSalt_) external;
+
+    function getMaxIntervalWithoutSnapshots()
+        external
+        view
+        returns (uint256 maxIntervalWithoutSnapshots);
 
     function getValidatorsCount() external view returns (uint256);
 

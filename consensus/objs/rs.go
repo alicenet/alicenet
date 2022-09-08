@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	capnp "github.com/MadBase/go-capnproto2/v2"
+
 	mdefs "github.com/alicenet/alicenet/consensus/objs/capn"
 	"github.com/alicenet/alicenet/consensus/objs/rstate"
 	"github.com/alicenet/alicenet/constants"
@@ -38,7 +39,7 @@ type RoundState struct {
 }
 
 // UnmarshalBinary takes a byte slice and returns the corresponding
-// RoundState object
+// RoundState object.
 func (b *RoundState) UnmarshalBinary(data []byte) error {
 	if b == nil {
 		return errorz.ErrInvalid{}.New("RoundState.UnmarshalBinary; rs not initialized")
@@ -51,7 +52,7 @@ func (b *RoundState) UnmarshalBinary(data []byte) error {
 	return b.UnmarshalCapn(bh)
 }
 
-// UnmarshalCapn unmarshals the capnproto definition of the object
+// UnmarshalCapn unmarshals the capnproto definition of the object.
 func (b *RoundState) UnmarshalCapn(bh mdefs.RoundState) error {
 	if b == nil {
 		return errorz.ErrInvalid{}.New("RoundState.UnmarshalCapn; rs not initialized")
@@ -159,7 +160,7 @@ func (b *RoundState) UnmarshalCapn(bh mdefs.RoundState) error {
 }
 
 // MarshalBinary takes the RoundState object and returns the canonical
-// byte slice
+// byte slice.
 func (b *RoundState) MarshalBinary() ([]byte, error) {
 	if b == nil {
 		return nil, errorz.ErrInvalid{}.New("RoundState.MarshalBinary; rs not initialized")
@@ -172,7 +173,7 @@ func (b *RoundState) MarshalBinary() ([]byte, error) {
 	return rstate.Marshal(bh)
 }
 
-// MarshalCapn marshals the object into its capnproto definition
+// MarshalCapn marshals the object into its capnproto definition.
 func (b *RoundState) MarshalCapn(seg *capnp.Segment) (mdefs.RoundState, error) {
 	if b == nil {
 		return mdefs.RoundState{}, errorz.ErrInvalid{}.New("RoundState.MarshalCapn; rs not initialized")
@@ -450,7 +451,7 @@ func (b *RoundState) NHCurrent(a *RCert) bool {
 	if b.NextHeight != nil {
 		// if we are in DBR
 		if IsDeadBlockRound(a) || IsDeadBlockRound(b) {
-			//ignore a NH from before DBR
+			// ignore a NH from before DBR
 			if RelateHR(a, b.NextHeight) == 0 {
 				// count all NH from DBR
 				return true

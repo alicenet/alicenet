@@ -8,6 +8,11 @@ import (
 	"sync"
 	"time"
 
+	"github.com/dgraph-io/badger/v2"
+	grpc_retry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
+	"github.com/sirupsen/logrus"
+	"google.golang.org/grpc"
+
 	"github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/consensus/objs"
 	"github.com/alicenet/alicenet/consensus/request"
@@ -18,18 +23,16 @@ import (
 	"github.com/alicenet/alicenet/logging"
 	"github.com/alicenet/alicenet/middleware"
 	"github.com/alicenet/alicenet/utils"
-	"github.com/dgraph-io/badger/v2"
-	grpc_retry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
-	"github.com/sirupsen/logrus"
-	"google.golang.org/grpc"
 )
 
-const chanBuffering int = int(constants.EpochLength)
-const maxNumber int = chanBuffering
-const minWorkers = 4
-const maxRetryCount = 6
-const backOffAmount = 1
-const backOffJitter = float64(.1)
+const (
+	chanBuffering int = int(constants.EpochLength)
+	maxNumber     int = chanBuffering
+	minWorkers        = 4
+	maxRetryCount     = 6
+	backOffAmount     = 1
+	backOffJitter     = float64(.1)
+)
 
 type dlReq struct {
 	snapShotHeight uint32
@@ -437,7 +440,7 @@ type SnapShotManager struct {
 	numWorkers int
 }
 
-// Init initializes the SnapShotManager
+// Init initializes the SnapShotManager.
 func (ssm *SnapShotManager) Init(database *db.Database, storage dynamics.StorageGetter) {
 	ssm.storage = storage
 	ssm.snapShotHeight = new(atomicU32)
@@ -661,7 +664,7 @@ func (ssm *SnapShotManager) finalizeSync(txn *badger.Txn, snapShotBlockHeader *o
 	return nil
 }
 
-func (ssm *SnapShotManager) updateDls(txn *badger.Txn, snapShotHeight uint32, bhCount int, hlCount int) error {
+func (ssm *SnapShotManager) updateDls(txn *badger.Txn, snapShotHeight uint32, bhCount, hlCount int) error {
 	if err := ssm.dlHdrNodes(txn, snapShotHeight); err != nil {
 		utils.DebugTrace(ssm.logger, err)
 		return err
@@ -717,17 +720,17 @@ func (ssm *SnapShotManager) syncHdrNodes(txn *badger.Txn, snapShotHeight uint32)
 			utils.DebugTrace(ssm.logger, err)
 			continue
 		}
-		// remove the keys from the pending set in the database
-		err = ssm.database.DeletePendingHdrNodeKey(txn, utils.CopySlice(nodeHdrKeys[i].key[:]))
-		if err != nil {
-			utils.DebugTrace(ssm.logger, err)
-		}
 		// store all of those nodes into the database and get new pending keys
 		pendingBatch, newLayer, lvs, err := ssm.database.SetSnapShotHdrNode(txn, resp.batch, resp.root, resp.layer)
 		if err != nil {
 			// should not return if err invalid
 			utils.DebugTrace(ssm.logger, err)
 			continue
+		}
+		// remove the keys from the pending set in the database
+		err = ssm.database.DeletePendingHdrNodeKey(txn, utils.CopySlice(nodeHdrKeys[i].key[:]))
+		if err != nil {
+			utils.DebugTrace(ssm.logger, err)
 		}
 		// store new pending keys to db
 		for j := 0; j < len(pendingBatch); j++ {
@@ -784,7 +787,7 @@ func (ssm *SnapShotManager) syncHdrNodes(txn *badger.Txn, snapShotHeight uint32)
 	return nil
 }
 
-func (ssm *SnapShotManager) findTailSyncHeight(txn *badger.Txn, thisHeight int, lastHeight int) (*objs.BlockHeader, error) {
+func (ssm *SnapShotManager) findTailSyncHeight(txn *badger.Txn, thisHeight, lastHeight int) (*objs.BlockHeader, error) {
 	var lastKnown *objs.BlockHeader
 	for i := thisHeight; lastHeight < i; i-- {
 		if i <= 2 {
@@ -988,10 +991,17 @@ func (ssm *SnapShotManager) syncStateNodes(txn *badger.Txn, snapShotHeight uint3
 	// node cache into the database as well as to get the leaf keys and store
 	// those into the database as well
 	nodeKeys := ssm.stateNodeCache.getNodeKeys(snapShotHeight, maxNumber)
-	//for each key
+	// for each key
 	for i := 0; i < len(nodeKeys); i++ {
 		resp, err := ssm.stateNodeCache.pop(snapShotHeight, utils.CopySlice(nodeKeys[i].key[:]))
 		if err != nil {
+			utils.DebugTrace(ssm.logger, err)
+			continue
+		}
+		// store all of those nodes into the database and get new pending keys
+		pendingBatch, newLayer, lvs, err := ssm.appHandler.StoreSnapShotNode(txn, utils.CopySlice(resp.batch), utils.CopySlice(resp.root), resp.layer)
+		if err != nil {
+			// should not return if err invalid
 			utils.DebugTrace(ssm.logger, err)
 			continue
 		}
@@ -1000,13 +1010,6 @@ func (ssm *SnapShotManager) syncStateNodes(txn *badger.Txn, snapShotHeight uint3
 		if err != nil {
 			utils.DebugTrace(ssm.logger, err)
 			return err
-		}
-		// store all of those nodes into the database and get new pending keys
-		pendingBatch, newLayer, lvs, err := ssm.appHandler.StoreSnapShotNode(txn, utils.CopySlice(resp.batch), utils.CopySlice(resp.root), resp.layer)
-		if err != nil {
-			// should not return if err invalid
-			utils.DebugTrace(ssm.logger, err)
-			continue
 		}
 		// store pending leaves ( blockheader height/hashes)
 		for j := 0; j < len(lvs); j++ {
@@ -1087,11 +1090,7 @@ func (ssm *SnapShotManager) syncStateLeaves(txn *badger.Txn, snapShotHeight uint
 			utils.DebugTrace(ssm.logger, err)
 			continue
 		}
-		// remove the keys from the pending set in the database
-		err = ssm.database.DeletePendingLeafKey(txn, utils.CopySlice(leafKeys[i].key[:]))
-		if err != nil {
-			utils.DebugTrace(ssm.logger, err)
-		}
+
 		// store key-value state
 		err = ssm.appHandler.StoreSnapShotStateData(txn, utils.CopySlice(resp.key), utils.CopySlice(resp.value), utils.CopySlice(resp.data))
 		if err != nil {
@@ -1099,6 +1098,13 @@ func (ssm *SnapShotManager) syncStateLeaves(txn *badger.Txn, snapShotHeight uint
 			utils.DebugTrace(ssm.logger, err)
 			continue
 		}
+
+		// remove the keys from the pending set in the database
+		err = ssm.database.DeletePendingLeafKey(txn, utils.CopySlice(leafKeys[i].key[:]))
+		if err != nil {
+			utils.DebugTrace(ssm.logger, err)
+		}
+
 	}
 	return nil
 }
@@ -1153,11 +1159,6 @@ func (ssm *SnapShotManager) syncHdrLeaves(txn *badger.Txn, snapShotHeight uint32
 			utils.DebugTrace(ssm.logger, err)
 			continue
 		}
-		err = ssm.database.DeletePendingHdrLeafKey(txn, leafKeys[i].key[:])
-		if err != nil {
-			utils.DebugTrace(ssm.logger, err)
-			return err
-		}
 		bh := &objs.BlockHeader{}
 		err = bh.UnmarshalBinary(resp.data)
 		if err != nil {
@@ -1165,6 +1166,11 @@ func (ssm *SnapShotManager) syncHdrLeaves(txn *badger.Txn, snapShotHeight uint32
 			return err
 		}
 		err = ssm.database.SetCommittedBlockHeaderFastSync(txn, bh)
+		if err != nil {
+			utils.DebugTrace(ssm.logger, err)
+			return err
+		}
+		err = ssm.database.DeletePendingHdrLeafKey(txn, leafKeys[i].key[:])
 		if err != nil {
 			utils.DebugTrace(ssm.logger, err)
 			return err
@@ -1260,7 +1266,6 @@ func (ssm *SnapShotManager) sendWork(w func()) {
 					return
 				}
 			}
-
 		}
 	}
 }
@@ -1358,7 +1363,9 @@ func (ssm *SnapShotManager) downloadWithRetryStateNodeClosure(dl *dlReq) workFun
 			batch:          resp,
 		}
 		//    store to the cache
-		ssm.stateNodeCache.insert(snapShotHeight, nr)
+		if err := ssm.stateNodeCache.insert(snapShotHeight, nr); err != nil {
+			utils.DebugTrace(ssm.logger, err)
+		}
 	}
 }
 
@@ -1425,7 +1432,9 @@ func (ssm *SnapShotManager) downloadWithRetryHdrLeafClosure(dl []*dlReq) workFun
 			}
 			//    store to the cache
 			peer.Feedback(1)
-			ssm.hdrLeafCache.insert(sr)
+			if err := ssm.hdrLeafCache.insert(sr); err != nil {
+				utils.DebugTrace(ssm.logger, err)
+			}
 		}
 	}
 }
@@ -1447,7 +1456,6 @@ func (ssm *SnapShotManager) downloadWithRetryStateLeafClosure(dl *dlReq) workFun
 		peerOpt := middleware.NewPeerInterceptor()
 		newOpts := append(opts, peerOpt)
 		resp, err := ssm.requestBus.RequestP2PGetSnapShotStateData(context.Background(), key, newOpts...)
-
 		if err != nil {
 			return
 		}
@@ -1463,7 +1471,9 @@ func (ssm *SnapShotManager) downloadWithRetryStateLeafClosure(dl *dlReq) workFun
 			data:           utils.CopySlice(resp),
 		}
 		//    store to the cache
-		ssm.stateLeafCache.insert(snapShotHeight, sr)
+		if err := ssm.stateLeafCache.insert(snapShotHeight, sr); err != nil {
+			utils.DebugTrace(ssm.logger, err)
+		}
 	}
 }
 

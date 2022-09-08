@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/alicenet/alicenet/errorz"
+	"github.com/stretchr/testify/assert"
 
 	"github.com/alicenet/alicenet/crypto"
 )
@@ -184,7 +185,7 @@ func mkBH(t *testing.T, bnSigner *crypto.BNGroupSigner, bclaims *BClaims, txHash
 	return bh
 }
 
-func mkP(t *testing.T, secpSigner *crypto.Secp256k1Signer, prevBH *BlockHeader, bh *BlockHeader) *Proposal {
+func mkP(t *testing.T, secpSigner *crypto.Secp256k1Signer, prevBH, bh *BlockHeader) *Proposal {
 	rcert, err := prevBH.GetRCert()
 	if err != nil {
 		t.Fatal(err)
@@ -276,7 +277,7 @@ func mkNRL(t *testing.T, secpSigners []*crypto.Secp256k1Signer, bnSigners []*cry
 	return nrl
 }
 
-func initRS(t *testing.T, idx uint8, secpSigner *crypto.Secp256k1Signer, bnSigner *crypto.BNGroupSigner, groupSigner *crypto.BNGroupSigner, rcert *RCert) *RoundState {
+func initRS(t *testing.T, idx uint8, secpSigner *crypto.Secp256k1Signer, bnSigner, groupSigner *crypto.BNGroupSigner, rcert *RCert) *RoundState {
 	secpPK, err := secpSigner.Pubkey()
 	if err != nil {
 		t.Fatal(err)
@@ -1445,4 +1446,17 @@ func TestProgress(t *testing.T) {
 		}
 		rsEqual(t, rsMap[0], rs2)
 	}
+}
+
+func TestRSHash(t *testing.T) {
+	_, _, _, _, rsMap := setup(t)
+	hash, err := rsMap[0].Hash()
+	assert.Nil(t, err)
+	assert.NotEmpty(t, hash)
+}
+
+func TestNilRSHash(t *testing.T) {
+	var rs *RoundState
+	_, err := rs.Hash()
+	assert.NotNil(t, err)
 }

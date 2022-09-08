@@ -2,14 +2,18 @@ package utils
 
 import (
 	"crypto/rand"
+	"errors"
+	"math/big"
 	"os/user"
 	"path/filepath"
+
+	"github.com/dgraph-io/badger/v2"
+	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/sirupsen/logrus"
 
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/errorz"
 	"github.com/alicenet/alicenet/logging"
-	"github.com/dgraph-io/badger/v2"
-	"github.com/sirupsen/logrus"
 )
 
 // ForceSliceToLength will return a byte slice of size length.
@@ -43,7 +47,7 @@ func Epoch(height uint32) uint32 {
 	return (height / constants.EpochLength) + 1
 }
 
-// ValidateHash checks whether or not hsh has the correct length
+// ValidateHash checks whether or not hsh has the correct length.
 func ValidateHash(hsh []byte) error {
 	if len(hsh) != constants.HashLen {
 		return errorz.ErrInvalid{}.New("the length of the hash is incorrect")
@@ -51,7 +55,7 @@ func ValidateHash(hsh []byte) error {
 	return nil
 }
 
-// RandomBytes will return a byte slice of num random bytes using crypto rand
+// RandomBytes will return a byte slice of num random bytes using crypto rand.
 func RandomBytes(num int) ([]byte, error) {
 	b := make([]byte, num)
 	_, err := rand.Read(b)
@@ -62,7 +66,7 @@ func RandomBytes(num int) ([]byte, error) {
 }
 
 // OpenBadger opens a badgerdb database and closes the db when closeChan
-// returns a struct{}{}
+// returns a struct{}{}.
 func OpenBadger(closeChan <-chan struct{}, directoryName string, inMemory bool) (*badger.DB, error) {
 	logger := logging.GetLogger(constants.LoggerBadger)
 
@@ -135,5 +139,85 @@ func DebugTrace(logger *logrus.Logger, err error, s ...string) {
 		return
 	}
 	logger.WithField("l", trace).Debug("")
+}
 
+// CloneBigInt makes a deep copy of a big.Int.
+func CloneBigInt(original *big.Int) *big.Int {
+	return new(big.Int).Set(original)
+}
+
+// CloneSliceBigInt2 makes a deep copy of a slice of array [2] of big.Int's.
+func CloneSliceBigInt2(original [][2]*big.Int) [][2]*big.Int {
+	clone := make([][2]*big.Int, len(original))
+	for idx := 0; idx < len(original); idx++ {
+		clone[idx] = CloneBigInt2(original[idx])
+	}
+	return clone
+}
+
+// CloneBigInt2 makes a deep copy of an array [2] of big.Int's.
+func CloneBigInt2(original [2]*big.Int) [2]*big.Int {
+	return [2]*big.Int{new(big.Int).Set(original[0]), new(big.Int).Set(original[1])}
+}
+
+// CloneBigInt4 makes a deep copy of a array [4] of big.Int's.
+func CloneBigInt4(original [4]*big.Int) [4]*big.Int {
+	return [4]*big.Int{
+		new(big.Int).Set(original[0]),
+		new(big.Int).Set(original[1]),
+		new(big.Int).Set(original[2]),
+		new(big.Int).Set(original[3]),
+	}
+}
+
+// CloneBigIntSlice makes a deep copy of a slice of big.Int's.
+func CloneBigIntSlice(original []*big.Int) []*big.Int {
+	clone := make([]*big.Int, len(original))
+	for idx := 0; idx < len(original); idx++ {
+		clone[idx] = CloneBigInt(original[idx])
+	}
+	return clone
+}
+
+// Computes and returns the max between two uint64.
+func Max(a, b uint64) uint64 {
+	if a > b {
+		return a
+	}
+	return b
+}
+
+// Computes and returns the min between two uint64.
+func Min(a, b uint64) uint64 {
+	if a > b {
+		return b
+	}
+	return a
+}
+
+// StringToBytes32 is useful for convert a Go string into a bytes32 useful calling Solidity.
+func StringToBytes32(str string) (b [32]byte) {
+	copy(b[:], []byte(str)[0:32])
+	return
+}
+
+// HandleBadgerErrors handles the badger errors. This function will suppress the
+// errors that we expect to happens and are not harmful to the system.
+func HandleBadgerErrors(err error) error {
+	if !errors.Is(err, badger.ErrNoRewrite) && !errors.Is(err, badger.ErrGCInMemoryMode) {
+		return err
+	}
+	return nil
+}
+
+func CalculateSaltFromComponents(components []string) [32]byte {
+	var hashedComponents [][]byte = make([][]byte, len(components))
+
+	for i, component := range components {
+		hashedComponents[i] = crypto.Keccak256([]byte(component))
+	}
+
+	var salt32 [32]byte
+	copy(salt32[:], crypto.Keccak256(hashedComponents...)[:32])
+	return salt32
 }

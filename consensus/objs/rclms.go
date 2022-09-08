@@ -4,6 +4,7 @@ import (
 	"bytes"
 
 	capnp "github.com/MadBase/go-capnproto2/v2"
+
 	mdefs "github.com/alicenet/alicenet/consensus/objs/capn"
 	"github.com/alicenet/alicenet/consensus/objs/rclaims"
 	"github.com/alicenet/alicenet/constants"
@@ -20,7 +21,7 @@ type RClaims struct {
 }
 
 // UnmarshalBinary takes a byte slice and returns the corresponding
-// RClaims object
+// RClaims object.
 func (b *RClaims) UnmarshalBinary(data []byte) error {
 	if b == nil {
 		return errorz.ErrInvalid{}.New("RClaims.UnmarshalBinary; rclaims not initialized")
@@ -33,7 +34,7 @@ func (b *RClaims) UnmarshalBinary(data []byte) error {
 	return b.UnmarshalCapn(bh)
 }
 
-// UnmarshalCapn unmarshals the capnproto definition of the object
+// UnmarshalCapn unmarshals the capnproto definition of the object.
 func (b *RClaims) UnmarshalCapn(bh mdefs.RClaims) error {
 	if b == nil {
 		return errorz.ErrInvalid{}.New("RClaims.UnmarshalCapn; rclaims not initialized")
@@ -62,7 +63,7 @@ func (b *RClaims) UnmarshalCapn(bh mdefs.RClaims) error {
 }
 
 // MarshalBinary takes the RClaims object and returns the canonical
-// byte slice
+// byte slice.
 func (b *RClaims) MarshalBinary() ([]byte, error) {
 	if b == nil {
 		return nil, errorz.ErrInvalid{}.New("RClaims.MarshalBinary; rclaims not initialized")
@@ -87,7 +88,7 @@ func (b *RClaims) MarshalBinary() ([]byte, error) {
 	return rclaims.Marshal(bh)
 }
 
-// MarshalCapn marshals the object into its capnproto definition
+// MarshalCapn marshals the object into its capnproto definition.
 func (b *RClaims) MarshalCapn(seg *capnp.Segment) (mdefs.RClaims, error) {
 	if b == nil {
 		return mdefs.RClaims{}, errorz.ErrInvalid{}.New("RClaims.MarshalCapn; rclaims not initialized")

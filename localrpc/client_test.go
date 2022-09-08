@@ -21,10 +21,11 @@ func TestClient_GetBlockHeader(t *testing.T) {
 		want    *consensusObjs.BlockHeader
 		wantErr bool
 	}{
-		{args: args{
-			ctx:    context.Background(),
-			height: 1,
-		},
+		{
+			args: args{
+				ctx:    context.Background(),
+				height: 1,
+			},
 		},
 	}
 	for _, tt := range tests {
@@ -41,71 +42,6 @@ func TestClient_GetBlockHeader(t *testing.T) {
 	}
 }
 
-/* func TestClient_GetBlockHeightForTx(t *testing.T) {
-	type fields struct {
-		Mutex       sync.Mutex
-		closeChan   chan struct{}
-		closeOnce   sync.Once
-		Address     string
-		TimeOut     time.Duration
-		conn        *grpc.ClientConn
-		client      proto.LocalStateClient
-		wg          sync.WaitGroup
-		isConnected bool
-	}
-	type args struct {
-		ctx    context.Context
-		txHash []byte
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		want    uint32
-		wantErr bool
-	}{
-		{name: constants.LoggerApp,
-			fields: fields{
-				Mutex:       sync.Mutex{},
-				closeChan:   nil,
-				closeOnce:   sync.Once{},
-				Address:     address,
-				TimeOut:     timeout,
-				conn:        nil,
-				client:      nil,
-				wg:          sync.WaitGroup{},
-				isConnected: false,
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			lrpc := &Client{
-				Mutex:       tt.fields.Mutex,
-				closeChan:   tt.fields.closeChan,
-				closeOnce:   tt.fields.closeOnce,
-				Address:     tt.fields.Address,
-				TimeOut:     tt.fields.TimeOut,
-				conn:        tt.fields.conn,
-				client:      tt.fields.client,
-				wg:          tt.fields.wg,
-				isConnected: tt.fields.isConnected,
-			}
-			if err := lrpc.Connect(tt.args.ctx); (err != nil) != tt.wantErr {
-				t.Printf("Connect() error = %v, wantErr %v %v \n", err, tt.wantErr)
-			}
-			got, err := lrpc.GetBlockHeightForTx(tt.args.ctx, tt.args.txHash)
-			if (err != nil) != tt.wantErr {
-				t.Printf("GetBlockHeightForTx() error = %v, wantErr %v %v \n", err, tt.wantErr)
-				return
-			}
-			if got != tt.want {
-				t.Printf("GetBlockHeightForTx() got = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-*/
 func TestClient_GetBlockNumber(t *testing.T) {
 	type args struct {
 		ctx context.Context
@@ -116,7 +52,8 @@ func TestClient_GetBlockNumber(t *testing.T) {
 		want    uint32
 		wantErr bool
 	}{
-		{name: constants.LoggerApp,
+		{
+			name: constants.LoggerApp,
 			args: args{
 				ctx: context.Background(),
 			},
@@ -202,7 +139,8 @@ func TestClient_GetEpochNumber(t *testing.T) {
 		want    uint32
 		wantErr bool
 	}{
-		{name: constants.LoggerApp,
+		{
+			name: constants.LoggerApp,
 			args: args{
 				ctx: context.Background(),
 			},
@@ -223,107 +161,6 @@ func TestClient_GetEpochNumber(t *testing.T) {
 	}
 }
 
-/*
-func TestClient_GetMinedTransaction(t *testing.T) {
-    type fields struct {
-        Mutex       sync.Mutex
-        closeChan   chan struct{}
-        closeOnce   sync.Once
-        Address     string
-        TimeOut     time.Duration
-        conn        *grpc.ClientConn
-        client      proto.LocalStateClient
-        wg          sync.WaitGroup
-        isConnected bool
-    }
-    type args struct {
-        ctx    context.Context
-        txHash []byte
-    }
-    tests := []struct {
-        name    string
-        fields  fields
-        args    args
-        want    *aobjs.Tx
-        wantErr bool
-    }{
-        // TODO: Add test cases.
-    }
-    for _, tt := range tests {
-        t.Run(tt.name, func(t *testing.T) {
-            lrpc := &Client{
-                Mutex:       tt.fields.Mutex,
-                closeChan:   tt.fields.closeChan,
-                closeOnce:   tt.fields.closeOnce,
-                Address:     tt.fields.Address,
-                TimeOut:     tt.fields.TimeOut,
-                conn:        tt.fields.conn,
-                client:      tt.fields.client,
-                wg:          tt.fields.wg,
-                isConnected: tt.fields.isConnected,
-            }
-            got, err := lrpc.GetMinedTransaction(tt.args.ctx, tt.args.txHash)
-            if (err != nil) != tt.wantErr {
-                t.Printf("GetMinedTransaction() error = %v, wantErr %v %v \n", err, tt.wantErr)
-                return
-            }
-            if !reflect.DeepEqual(got, tt.want) {
-                t.Printf("GetMinedTransaction() got = %v, want %v", got, tt.want)
-            }
-        })
-    }
-}
-
-func TestClient_GetPendingTransaction(t *testing.T) {
-    type fields struct {
-        Mutex       sync.Mutex
-        closeChan   chan struct{}
-        closeOnce   sync.Once
-        Address     string
-        TimeOut     time.Duration
-        conn        *grpc.ClientConn
-        client      proto.LocalStateClient
-        wg          sync.WaitGroup
-        isConnected bool
-    }
-    type args struct {
-        ctx    context.Context
-        txHash []byte
-    }
-    tests := []struct {
-        name    string
-        fields  fields
-        args    args
-        want    *aobjs.Tx
-        wantErr bool
-    }{
-        // TODO: Add test cases.
-    }
-    for _, tt := range tests {
-        t.Run(tt.name, func(t *testing.T) {
-            lrpc := &Client{
-                Mutex:       tt.fields.Mutex,
-                closeChan:   tt.fields.closeChan,
-                closeOnce:   tt.fields.closeOnce,
-                Address:     tt.fields.Address,
-                TimeOut:     tt.fields.TimeOut,
-                conn:        tt.fields.conn,
-                client:      tt.fields.client,
-                wg:          tt.fields.wg,
-                isConnected: tt.fields.isConnected,
-            }
-            got, err := lrpc.GetPendingTransaction(tt.args.ctx, tt.args.txHash)
-            if (err != nil) != tt.wantErr {
-                t.Printf("GetPendingTransaction() error = %v, wantErr %v %v \n", err, tt.wantErr)
-                return
-            }
-            if !reflect.DeepEqual(got, tt.want) {
-                t.Printf("GetPendingTransaction() got = %v, want %v", got, tt.want)
-            }
-        })
-    }
-}
-*/
 func TestClient_GetTxFees(t *testing.T) {
 	type args struct {
 		ctx context.Context
@@ -334,17 +171,18 @@ func TestClient_GetTxFees(t *testing.T) {
 		want    []string
 		wantErr bool
 	}{
-		{name: constants.LoggerApp,
+		{
+			name: constants.LoggerApp,
 			args: args{
 				ctx: context.Background(),
 			},
 			want: []string{
-				fmt.Sprintf("%064d", 4),
-				fmt.Sprintf("%064d", 1),
-				fmt.Sprintf("%064d", 3),
-				fmt.Sprintf("%064d", 2),
+				fmt.Sprintf("%064d", 0),
+				fmt.Sprintf("%064d", 0),
+				fmt.Sprintf("%064d", 0),
 			},
-		}}
+		},
+	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := lrpc.GetTxFees(tt.args.ctx)
@@ -370,7 +208,8 @@ func TestClient_GetUTXO(t *testing.T) {
 		want    [][]byte
 		wantErr bool
 	}{
-		{name: constants.LoggerApp,
+		{
+			name: constants.LoggerApp,
 			args: args{
 				ctx:     context.Background(),
 				utxoIDs: utxoTx1IDs,

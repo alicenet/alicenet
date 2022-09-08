@@ -1,4 +1,6 @@
 {
+  "trailingComma": "es5",
+  "tabWidth": 2,
   "overrides": [
     {
       "files": "*.sol",
@@ -9,43 +11,7 @@
         "singleQuote": false,
         "bracketSpacing": false,
         "explicitTypes": "always",
-        "compiler": "^0.8.11"
-      }
-    },
-    {
-      "files": "*.json",
-      "options": {
-        "tabWidth": 2,
-        "useTabs": false,
-        "singleQuote": false,
-        "bracketSpacing": false
-      }
-    },
-    {
-      "files": "*.prettierrc",
-      "options": {
-        "tabWidth": 2,
-        "useTabs": false,
-        "singleQuote": false,
-        "bracketSpacing": false
-      }
-    },
-    {
-      "files": "*.ts",
-      "options": {
-        "tabWidth": 2,
-        "useTabs": false,
-        "singleQuote": false,
-        "bracketSpacing": true
-      }
-    },
-    {
-      "files": "*.js",
-      "options": {
-        "tabWidth": 2,
-        "useTabs": false,
-        "singleQuote": false,
-        "bracketSpacing": true
+        "compiler": "^0.8.16"
       }
     }
   ]

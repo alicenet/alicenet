@@ -24,22 +24,22 @@ type IValidatorPoolTransactor interface {
 	//
 	// Solidity: function completeETHDKG() returns()
 	CompleteETHDKG(opts *bind.TransactOpts) (*types.Transaction, error)
-	// Initialize is a paid mutator transaction binding the contract method 0x80d85911.
+	// Initialize is a paid mutator transaction binding the contract method 0x60a2da44.
 	//
-	// Solidity: function initialize(uint256 stakeAmount_, uint256 maxNumValidators_, uint256 disputerReward_) returns()
-	Initialize(opts *bind.TransactOpts, stakeAmount_ *big.Int, maxNumValidators_ *big.Int, disputerReward_ *big.Int) (*types.Transaction, error)
+	// Solidity: function initialize(uint256 stakeAmount_, uint256 maxNumValidators_, uint256 disputerReward_, uint256 maxIntervalWithoutSnapshots_) returns()
+	Initialize(opts *bind.TransactOpts, stakeAmount_ *big.Int, maxNumValidators_ *big.Int, disputerReward_ *big.Int, maxIntervalWithoutSnapshots_ *big.Int) (*types.Transaction, error)
 	// InitializeETHDKG is a paid mutator transaction binding the contract method 0x57b51c9c.
 	//
 	// Solidity: function initializeETHDKG() returns()
 	InitializeETHDKG(opts *bind.TransactOpts) (*types.Transaction, error)
-	// MajorSlash is a paid mutator transaction binding the contract method 0x048d56c7.
+	// MajorSlash is a paid mutator transaction binding the contract method 0xc7d62984.
 	//
-	// Solidity: function majorSlash(address dishonestValidator_, address disputer_) returns()
-	MajorSlash(opts *bind.TransactOpts, dishonestValidator_ common.Address, disputer_ common.Address) (*types.Transaction, error)
-	// MinorSlash is a paid mutator transaction binding the contract method 0x64c0461c.
+	// Solidity: function majorSlash(address dishonestValidator_, address disputer_, bytes32 preSalt_) returns()
+	MajorSlash(opts *bind.TransactOpts, dishonestValidator_ common.Address, disputer_ common.Address, preSalt_ [32]byte) (*types.Transaction, error)
+	// MinorSlash is a paid mutator transaction binding the contract method 0x517d3bfc.
 	//
-	// Solidity: function minorSlash(address dishonestValidator_, address disputer_) returns()
-	MinorSlash(opts *bind.TransactOpts, dishonestValidator_ common.Address, disputer_ common.Address) (*types.Transaction, error)
+	// Solidity: function minorSlash(address dishonestValidator_, address disputer_, bytes32 preSalt_) returns()
+	MinorSlash(opts *bind.TransactOpts, dishonestValidator_ common.Address, disputer_ common.Address, preSalt_ [32]byte) (*types.Transaction, error)
 	// OnERC721Received is a paid mutator transaction binding the contract method 0x150b7a02.
 	//
 	// Solidity: function onERC721Received(address , address , uint256 , bytes ) returns(bytes4)
@@ -68,6 +68,10 @@ type IValidatorPoolTransactor interface {
 	//
 	// Solidity: function setLocation(string ip_) returns()
 	SetLocation(opts *bind.TransactOpts, ip_ string) (*types.Transaction, error)
+	// SetMaxIntervalWithoutSnapshots is a paid mutator transaction binding the contract method 0x564a7005.
+	//
+	// Solidity: function setMaxIntervalWithoutSnapshots(uint256 maxIntervalWithoutSnapshots) returns()
+	SetMaxIntervalWithoutSnapshots(opts *bind.TransactOpts, maxIntervalWithoutSnapshots *big.Int) (*types.Transaction, error)
 	// SetMaxNumValidators is a paid mutator transaction binding the contract method 0x6c0da0b4.
 	//
 	// Solidity: function setMaxNumValidators(uint256 maxNumValidators_) returns()

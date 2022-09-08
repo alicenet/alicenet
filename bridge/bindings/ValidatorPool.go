@@ -36,7 +36,7 @@ type ValidatorData struct {
 
 // ValidatorPoolMetaData contains all meta data concerning the ValidatorPool contract.
 var ValidatorPoolMetaData = &bind.MetaData{
-	ABI: "[{\"inputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[],\"name\":\"MaintenanceScheduled\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"validatorStakingTokenID\",\"type\":\"uint256\"}],\"name\":\"ValidatorJoined\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"publicStakingTokenID\",\"type\":\"uint256\"}],\"name\":\"ValidatorLeft\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"ValidatorMajorSlashed\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"publicStakingTokenID\",\"type\":\"uint256\"}],\"name\":\"ValidatorMinorSlashed\",\"type\":\"event\"},{\"inputs\":[],\"name\":\"CLAIM_PERIOD\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"MAX_INTERVAL_WITHOUT_SNAPSHOTS\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"POSITION_LOCK_PERIOD\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"claimExitingNFTPosition\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"collectProfits\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"payoutEth\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"payoutToken\",\"type\":\"uint256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"completeETHDKG\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getDisputerReward\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"validator_\",\"type\":\"address\"}],\"name\":\"getLocation\",\"outputs\":[{\"internalType\":\"string\",\"name\":\"\",\"type\":\"string\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address[]\",\"name\":\"validators_\",\"type\":\"address[]\"}],\"name\":\"getLocations\",\"outputs\":[{\"internalType\":\"string[]\",\"name\":\"\",\"type\":\"string[]\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getMaxNumValidators\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"_salt\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"_factory\",\"type\":\"address\"}],\"name\":\"getMetamorphicContractAddress\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getStakeAmount\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"index_\",\"type\":\"uint256\"}],\"name\":\"getValidator\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"index_\",\"type\":\"uint256\"}],\"name\":\"getValidatorData\",\"outputs\":[{\"components\":[{\"internalType\":\"address\",\"name\":\"_address\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_tokenID\",\"type\":\"uint256\"}],\"internalType\":\"structValidatorData\",\"name\":\"\",\"type\":\"tuple\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getValidatorsAddresses\",\"outputs\":[{\"internalType\":\"address[]\",\"name\":\"\",\"type\":\"address[]\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getValidatorsCount\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"stakeAmount_\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"maxNumValidators_\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"disputerReward_\",\"type\":\"uint256\"}],\"name\":\"initialize\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"initializeETHDKG\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"account_\",\"type\":\"address\"}],\"name\":\"isAccusable\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"isConsensusRunning\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"account_\",\"type\":\"address\"}],\"name\":\"isInExitingQueue\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"isMaintenanceScheduled\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"account_\",\"type\":\"address\"}],\"name\":\"isValidator\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"dishonestValidator_\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"disputer_\",\"type\":\"address\"}],\"name\":\"majorSlash\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"dishonestValidator_\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"disputer_\",\"type\":\"address\"}],\"name\":\"minorSlash\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"},{\"internalType\":\"bytes\",\"name\":\"\",\"type\":\"bytes\"}],\"name\":\"onERC721Received\",\"outputs\":[{\"internalType\":\"bytes4\",\"name\":\"\",\"type\":\"bytes4\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"pauseConsensus\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"aliceNetHeight_\",\"type\":\"uint256\"}],\"name\":\"pauseConsensusOnArbitraryHeight\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address[]\",\"name\":\"validators_\",\"type\":\"address[]\"},{\"internalType\":\"uint256[]\",\"name\":\"stakerTokenIDs_\",\"type\":\"uint256[]\"}],\"name\":\"registerValidators\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"scheduleMaintenance\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"disputerReward_\",\"type\":\"uint256\"}],\"name\":\"setDisputerReward\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"ip_\",\"type\":\"string\"}],\"name\":\"setLocation\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"maxNumValidators_\",\"type\":\"uint256\"}],\"name\":\"setMaxNumValidators\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"stakeAmount_\",\"type\":\"uint256\"}],\"name\":\"setStakeAmount\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"to_\",\"type\":\"address\"}],\"name\":\"skimExcessEth\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"excess\",\"type\":\"uint256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"to_\",\"type\":\"address\"}],\"name\":\"skimExcessToken\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"excess\",\"type\":\"uint256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"account_\",\"type\":\"address\"}],\"name\":\"tryGetTokenID\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"},{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"unregisterAllValidators\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address[]\",\"name\":\"validators_\",\"type\":\"address[]\"}],\"name\":\"unregisterValidators\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"stateMutability\":\"payable\",\"type\":\"receive\"}]",
+	ABI: "[{\"inputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"addr\",\"type\":\"address\"}],\"name\":\"AddressAlreadyValidator\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"addr\",\"type\":\"address\"}],\"name\":\"AddressNotAccusable\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"addr\",\"type\":\"address\"}],\"name\":\"AddressNotValidator\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"caller\",\"type\":\"address\"}],\"name\":\"CallerNotValidator\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"CannotCallContractMethodsOnZeroAddress\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"CannotTransferToZeroAddress\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"ConsensusRunning\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"ETHDKGRoundRunning\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"erc20Address\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"from\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"Erc20TransferFailed\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"EthBalanceChangedDuringOperation\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"from\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"EthTransferFailed\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"stakeAmount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"minimumRequiredAmount\",\"type\":\"uint256\"}],\"name\":\"InsufficientFundsInStakePosition\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"index\",\"type\":\"uint256\"}],\"name\":\"InvalidIndex\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"key\",\"type\":\"address\"}],\"name\":\"KeyNotInMap\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"length\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"availableValidators\",\"type\":\"uint256\"}],\"name\":\"LengthGreaterThanAvailableValidators\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"MaxIntervalWithoutSnapshotsMustBeNonZero\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"current\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"minMaxValidatorsAllowed\",\"type\":\"uint256\"}],\"name\":\"MaxNumValidatorsIsTooLow\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"currentBlockNumber\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"targetBlockNumber\",\"type\":\"uint256\"}],\"name\":\"MinimumBlockIntervalNotMet\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"accuserAddress\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"accusationAddress\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"ethdkgAddress\",\"type\":\"address\"}],\"name\":\"NotAllowedToAccuse\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"requiredSlots\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"availableSlots\",\"type\":\"uint256\"}],\"name\":\"NotEnoughValidatorSlotsAvailable\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"expected\",\"type\":\"address\"}],\"name\":\"OnlyAToken\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"expected\",\"type\":\"address\"}],\"name\":\"OnlyETHDKG\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"expected\",\"type\":\"address\"}],\"name\":\"OnlyFactory\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"expected\",\"type\":\"address\"}],\"name\":\"OnlyPublicStaking\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"expected\",\"type\":\"address\"}],\"name\":\"OnlySnapshots\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"OnlyStakingContractsAllowed\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"expected\",\"type\":\"address\"}],\"name\":\"OnlyValidatorStaking\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"PayoutTooLow\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"ProfitsOnlyClaimableWhileConsensusRunning\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"validatorsLength\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"stakerTokenIDsLength\",\"type\":\"uint256\"}],\"name\":\"RegistrationParameterLengthMismatch\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"}],\"name\":\"SenderNotInExitingQueue\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"positionId\",\"type\":\"uint256\"}],\"name\":\"SenderShouldOwnPosition\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"TokenBalanceChangedDuringOperation\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"WaitingPeriodNotMet\",\"type\":\"error\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint8\",\"name\":\"version\",\"type\":\"uint8\"}],\"name\":\"Initialized\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[],\"name\":\"MaintenanceScheduled\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"validatorStakingTokenID\",\"type\":\"uint256\"}],\"name\":\"ValidatorJoined\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"publicStakingTokenID\",\"type\":\"uint256\"}],\"name\":\"ValidatorLeft\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"ValidatorMajorSlashed\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"publicStakingTokenID\",\"type\":\"uint256\"}],\"name\":\"ValidatorMinorSlashed\",\"type\":\"event\"},{\"inputs\":[],\"name\":\"CLAIM_PERIOD\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"POSITION_LOCK_PERIOD\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"claimExitingNFTPosition\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"collectProfits\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"payoutEth\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"payoutToken\",\"type\":\"uint256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"completeETHDKG\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getDisputerReward\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"validator_\",\"type\":\"address\"}],\"name\":\"getLocation\",\"outputs\":[{\"internalType\":\"string\",\"name\":\"\",\"type\":\"string\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address[]\",\"name\":\"validators_\",\"type\":\"address[]\"}],\"name\":\"getLocations\",\"outputs\":[{\"internalType\":\"string[]\",\"name\":\"\",\"type\":\"string[]\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getMaxIntervalWithoutSnapshots\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"maxIntervalWithoutSnapshots\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getMaxNumValidators\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"_salt\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"_factory\",\"type\":\"address\"}],\"name\":\"getMetamorphicContractAddress\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getStakeAmount\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"index_\",\"type\":\"uint256\"}],\"name\":\"getValidator\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"index_\",\"type\":\"uint256\"}],\"name\":\"getValidatorData\",\"outputs\":[{\"components\":[{\"internalType\":\"address\",\"name\":\"_address\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_tokenID\",\"type\":\"uint256\"}],\"internalType\":\"structValidatorData\",\"name\":\"\",\"type\":\"tuple\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getValidatorsAddresses\",\"outputs\":[{\"internalType\":\"address[]\",\"name\":\"\",\"type\":\"address[]\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getValidatorsCount\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"stakeAmount_\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"maxNumValidators_\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"disputerReward_\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"maxIntervalWithoutSnapshots_\",\"type\":\"uint256\"}],\"name\":\"initialize\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"initializeETHDKG\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"account_\",\"type\":\"address\"}],\"name\":\"isAccusable\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"isConsensusRunning\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"account_\",\"type\":\"address\"}],\"name\":\"isInExitingQueue\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"isMaintenanceScheduled\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"account_\",\"type\":\"address\"}],\"name\":\"isValidator\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"dishonestValidator_\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"disputer_\",\"type\":\"address\"},{\"internalType\":\"bytes32\",\"name\":\"preSalt_\",\"type\":\"bytes32\"}],\"name\":\"majorSlash\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"dishonestValidator_\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"disputer_\",\"type\":\"address\"},{\"internalType\":\"bytes32\",\"name\":\"preSalt_\",\"type\":\"bytes32\"}],\"name\":\"minorSlash\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"},{\"internalType\":\"bytes\",\"name\":\"\",\"type\":\"bytes\"}],\"name\":\"onERC721Received\",\"outputs\":[{\"internalType\":\"bytes4\",\"name\":\"\",\"type\":\"bytes4\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"pauseConsensus\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"aliceNetHeight_\",\"type\":\"uint256\"}],\"name\":\"pauseConsensusOnArbitraryHeight\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address[]\",\"name\":\"validators_\",\"type\":\"address[]\"},{\"internalType\":\"uint256[]\",\"name\":\"stakerTokenIDs_\",\"type\":\"uint256[]\"}],\"name\":\"registerValidators\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"scheduleMaintenance\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"disputerReward_\",\"type\":\"uint256\"}],\"name\":\"setDisputerReward\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"ip_\",\"type\":\"string\"}],\"name\":\"setLocation\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"maxIntervalWithoutSnapshots\",\"type\":\"uint256\"}],\"name\":\"setMaxIntervalWithoutSnapshots\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"maxNumValidators_\",\"type\":\"uint256\"}],\"name\":\"setMaxNumValidators\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"stakeAmount_\",\"type\":\"uint256\"}],\"name\":\"setStakeAmount\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"to_\",\"type\":\"address\"}],\"name\":\"skimExcessEth\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"excess\",\"type\":\"uint256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"to_\",\"type\":\"address\"}],\"name\":\"skimExcessToken\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"excess\",\"type\":\"uint256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"account_\",\"type\":\"address\"}],\"name\":\"tryGetTokenID\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"},{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"unregisterAllValidators\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address[]\",\"name\":\"validators_\",\"type\":\"address[]\"}],\"name\":\"unregisterValidators\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"stateMutability\":\"payable\",\"type\":\"receive\"}]",
 }
 
 // ValidatorPoolABI is the input ABI used to generate the binding from.
@@ -216,37 +216,6 @@ func (_ValidatorPool *ValidatorPoolCallerSession) CLAIMPERIOD() (*big.Int, error
 	return _ValidatorPool.Contract.CLAIMPERIOD(&_ValidatorPool.CallOpts)
 }
 
-// MAXINTERVALWITHOUTSNAPSHOTS is a free data retrieval call binding the contract method 0x61aee135.
-//
-// Solidity: function MAX_INTERVAL_WITHOUT_SNAPSHOTS() view returns(uint256)
-func (_ValidatorPool *ValidatorPoolCaller) MAXINTERVALWITHOUTSNAPSHOTS(opts *bind.CallOpts) (*big.Int, error) {
-	var out []interface{}
-	err := _ValidatorPool.contract.Call(opts, &out, "MAX_INTERVAL_WITHOUT_SNAPSHOTS")
-
-	if err != nil {
-		return *new(*big.Int), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
-
-	return out0, err
-
-}
-
-// MAXINTERVALWITHOUTSNAPSHOTS is a free data retrieval call binding the contract method 0x61aee135.
-//
-// Solidity: function MAX_INTERVAL_WITHOUT_SNAPSHOTS() view returns(uint256)
-func (_ValidatorPool *ValidatorPoolSession) MAXINTERVALWITHOUTSNAPSHOTS() (*big.Int, error) {
-	return _ValidatorPool.Contract.MAXINTERVALWITHOUTSNAPSHOTS(&_ValidatorPool.CallOpts)
-}
-
-// MAXINTERVALWITHOUTSNAPSHOTS is a free data retrieval call binding the contract method 0x61aee135.
-//
-// Solidity: function MAX_INTERVAL_WITHOUT_SNAPSHOTS() view returns(uint256)
-func (_ValidatorPool *ValidatorPoolCallerSession) MAXINTERVALWITHOUTSNAPSHOTS() (*big.Int, error) {
-	return _ValidatorPool.Contract.MAXINTERVALWITHOUTSNAPSHOTS(&_ValidatorPool.CallOpts)
-}
-
 // POSITIONLOCKPERIOD is a free data retrieval call binding the contract method 0x9c87e3ed.
 //
 // Solidity: function POSITION_LOCK_PERIOD() view returns(uint256)
@@ -369,6 +338,37 @@ func (_ValidatorPool *ValidatorPoolSession) GetLocations(validators_ []common.Ad
 // Solidity: function getLocations(address[] validators_) view returns(string[])
 func (_ValidatorPool *ValidatorPoolCallerSession) GetLocations(validators_ []common.Address) ([]string, error) {
 	return _ValidatorPool.Contract.GetLocations(&_ValidatorPool.CallOpts, validators_)
+}
+
+// GetMaxIntervalWithoutSnapshots is a free data retrieval call binding the contract method 0xd3dfe445.
+//
+// Solidity: function getMaxIntervalWithoutSnapshots() view returns(uint256 maxIntervalWithoutSnapshots)
+func (_ValidatorPool *ValidatorPoolCaller) GetMaxIntervalWithoutSnapshots(opts *bind.CallOpts) (*big.Int, error) {
+	var out []interface{}
+	err := _ValidatorPool.contract.Call(opts, &out, "getMaxIntervalWithoutSnapshots")
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
+}
+
+// GetMaxIntervalWithoutSnapshots is a free data retrieval call binding the contract method 0xd3dfe445.
+//
+// Solidity: function getMaxIntervalWithoutSnapshots() view returns(uint256 maxIntervalWithoutSnapshots)
+func (_ValidatorPool *ValidatorPoolSession) GetMaxIntervalWithoutSnapshots() (*big.Int, error) {
+	return _ValidatorPool.Contract.GetMaxIntervalWithoutSnapshots(&_ValidatorPool.CallOpts)
+}
+
+// GetMaxIntervalWithoutSnapshots is a free data retrieval call binding the contract method 0xd3dfe445.
+//
+// Solidity: function getMaxIntervalWithoutSnapshots() view returns(uint256 maxIntervalWithoutSnapshots)
+func (_ValidatorPool *ValidatorPoolCallerSession) GetMaxIntervalWithoutSnapshots() (*big.Int, error) {
+	return _ValidatorPool.Contract.GetMaxIntervalWithoutSnapshots(&_ValidatorPool.CallOpts)
 }
 
 // GetMaxNumValidators is a free data retrieval call binding the contract method 0xd2992f54.
@@ -839,25 +839,25 @@ func (_ValidatorPool *ValidatorPoolTransactorSession) CompleteETHDKG() (*types.T
 	return _ValidatorPool.Contract.CompleteETHDKG(&_ValidatorPool.TransactOpts)
 }
 
-// Initialize is a paid mutator transaction binding the contract method 0x80d85911.
+// Initialize is a paid mutator transaction binding the contract method 0x60a2da44.
 //
-// Solidity: function initialize(uint256 stakeAmount_, uint256 maxNumValidators_, uint256 disputerReward_) returns()
-func (_ValidatorPool *ValidatorPoolTransactor) Initialize(opts *bind.TransactOpts, stakeAmount_ *big.Int, maxNumValidators_ *big.Int, disputerReward_ *big.Int) (*types.Transaction, error) {
-	return _ValidatorPool.contract.Transact(opts, "initialize", stakeAmount_, maxNumValidators_, disputerReward_)
+// Solidity: function initialize(uint256 stakeAmount_, uint256 maxNumValidators_, uint256 disputerReward_, uint256 maxIntervalWithoutSnapshots_) returns()
+func (_ValidatorPool *ValidatorPoolTransactor) Initialize(opts *bind.TransactOpts, stakeAmount_ *big.Int, maxNumValidators_ *big.Int, disputerReward_ *big.Int, maxIntervalWithoutSnapshots_ *big.Int) (*types.Transaction, error) {
+	return _ValidatorPool.contract.Transact(opts, "initialize", stakeAmount_, maxNumValidators_, disputerReward_, maxIntervalWithoutSnapshots_)
 }
 
-// Initialize is a paid mutator transaction binding the contract method 0x80d85911.
+// Initialize is a paid mutator transaction binding the contract method 0x60a2da44.
 //
-// Solidity: function initialize(uint256 stakeAmount_, uint256 maxNumValidators_, uint256 disputerReward_) returns()
-func (_ValidatorPool *ValidatorPoolSession) Initialize(stakeAmount_ *big.Int, maxNumValidators_ *big.Int, disputerReward_ *big.Int) (*types.Transaction, error) {
-	return _ValidatorPool.Contract.Initialize(&_ValidatorPool.TransactOpts, stakeAmount_, maxNumValidators_, disputerReward_)
+// Solidity: function initialize(uint256 stakeAmount_, uint256 maxNumValidators_, uint256 disputerReward_, uint256 maxIntervalWithoutSnapshots_) returns()
+func (_ValidatorPool *ValidatorPoolSession) Initialize(stakeAmount_ *big.Int, maxNumValidators_ *big.Int, disputerReward_ *big.Int, maxIntervalWithoutSnapshots_ *big.Int) (*types.Transaction, error) {
+	return _ValidatorPool.Contract.Initialize(&_ValidatorPool.TransactOpts, stakeAmount_, maxNumValidators_, disputerReward_, maxIntervalWithoutSnapshots_)
 }
 
-// Initialize is a paid mutator transaction binding the contract method 0x80d85911.
+// Initialize is a paid mutator transaction binding the contract method 0x60a2da44.
 //
-// Solidity: function initialize(uint256 stakeAmount_, uint256 maxNumValidators_, uint256 disputerReward_) returns()
-func (_ValidatorPool *ValidatorPoolTransactorSession) Initialize(stakeAmount_ *big.Int, maxNumValidators_ *big.Int, disputerReward_ *big.Int) (*types.Transaction, error) {
-	return _ValidatorPool.Contract.Initialize(&_ValidatorPool.TransactOpts, stakeAmount_, maxNumValidators_, disputerReward_)
+// Solidity: function initialize(uint256 stakeAmount_, uint256 maxNumValidators_, uint256 disputerReward_, uint256 maxIntervalWithoutSnapshots_) returns()
+func (_ValidatorPool *ValidatorPoolTransactorSession) Initialize(stakeAmount_ *big.Int, maxNumValidators_ *big.Int, disputerReward_ *big.Int, maxIntervalWithoutSnapshots_ *big.Int) (*types.Transaction, error) {
+	return _ValidatorPool.Contract.Initialize(&_ValidatorPool.TransactOpts, stakeAmount_, maxNumValidators_, disputerReward_, maxIntervalWithoutSnapshots_)
 }
 
 // InitializeETHDKG is a paid mutator transaction binding the contract method 0x57b51c9c.
@@ -881,46 +881,46 @@ func (_ValidatorPool *ValidatorPoolTransactorSession) InitializeETHDKG() (*types
 	return _ValidatorPool.Contract.InitializeETHDKG(&_ValidatorPool.TransactOpts)
 }
 
-// MajorSlash is a paid mutator transaction binding the contract method 0x048d56c7.
+// MajorSlash is a paid mutator transaction binding the contract method 0xc7d62984.
 //
-// Solidity: function majorSlash(address dishonestValidator_, address disputer_) returns()
-func (_ValidatorPool *ValidatorPoolTransactor) MajorSlash(opts *bind.TransactOpts, dishonestValidator_ common.Address, disputer_ common.Address) (*types.Transaction, error) {
-	return _ValidatorPool.contract.Transact(opts, "majorSlash", dishonestValidator_, disputer_)
+// Solidity: function majorSlash(address dishonestValidator_, address disputer_, bytes32 preSalt_) returns()
+func (_ValidatorPool *ValidatorPoolTransactor) MajorSlash(opts *bind.TransactOpts, dishonestValidator_ common.Address, disputer_ common.Address, preSalt_ [32]byte) (*types.Transaction, error) {
+	return _ValidatorPool.contract.Transact(opts, "majorSlash", dishonestValidator_, disputer_, preSalt_)
 }
 
-// MajorSlash is a paid mutator transaction binding the contract method 0x048d56c7.
+// MajorSlash is a paid mutator transaction binding the contract method 0xc7d62984.
 //
-// Solidity: function majorSlash(address dishonestValidator_, address disputer_) returns()
-func (_ValidatorPool *ValidatorPoolSession) MajorSlash(dishonestValidator_ common.Address, disputer_ common.Address) (*types.Transaction, error) {
-	return _ValidatorPool.Contract.MajorSlash(&_ValidatorPool.TransactOpts, dishonestValidator_, disputer_)
+// Solidity: function majorSlash(address dishonestValidator_, address disputer_, bytes32 preSalt_) returns()
+func (_ValidatorPool *ValidatorPoolSession) MajorSlash(dishonestValidator_ common.Address, disputer_ common.Address, preSalt_ [32]byte) (*types.Transaction, error) {
+	return _ValidatorPool.Contract.MajorSlash(&_ValidatorPool.TransactOpts, dishonestValidator_, disputer_, preSalt_)
 }
 
-// MajorSlash is a paid mutator transaction binding the contract method 0x048d56c7.
+// MajorSlash is a paid mutator transaction binding the contract method 0xc7d62984.
 //
-// Solidity: function majorSlash(address dishonestValidator_, address disputer_) returns()
-func (_ValidatorPool *ValidatorPoolTransactorSession) MajorSlash(dishonestValidator_ common.Address, disputer_ common.Address) (*types.Transaction, error) {
-	return _ValidatorPool.Contract.MajorSlash(&_ValidatorPool.TransactOpts, dishonestValidator_, disputer_)
+// Solidity: function majorSlash(address dishonestValidator_, address disputer_, bytes32 preSalt_) returns()
+func (_ValidatorPool *ValidatorPoolTransactorSession) MajorSlash(dishonestValidator_ common.Address, disputer_ common.Address, preSalt_ [32]byte) (*types.Transaction, error) {
+	return _ValidatorPool.Contract.MajorSlash(&_ValidatorPool.TransactOpts, dishonestValidator_, disputer_, preSalt_)
 }
 
-// MinorSlash is a paid mutator transaction binding the contract method 0x64c0461c.
+// MinorSlash is a paid mutator transaction binding the contract method 0x517d3bfc.
 //
-// Solidity: function minorSlash(address dishonestValidator_, address disputer_) returns()
-func (_ValidatorPool *ValidatorPoolTransactor) MinorSlash(opts *bind.TransactOpts, dishonestValidator_ common.Address, disputer_ common.Address) (*types.Transaction, error) {
-	return _ValidatorPool.contract.Transact(opts, "minorSlash", dishonestValidator_, disputer_)
+// Solidity: function minorSlash(address dishonestValidator_, address disputer_, bytes32 preSalt_) returns()
+func (_ValidatorPool *ValidatorPoolTransactor) MinorSlash(opts *bind.TransactOpts, dishonestValidator_ common.Address, disputer_ common.Address, preSalt_ [32]byte) (*types.Transaction, error) {
+	return _ValidatorPool.contract.Transact(opts, "minorSlash", dishonestValidator_, disputer_, preSalt_)
 }
 
-// MinorSlash is a paid mutator transaction binding the contract method 0x64c0461c.
+// MinorSlash is a paid mutator transaction binding the contract method 0x517d3bfc.
 //
-// Solidity: function minorSlash(address dishonestValidator_, address disputer_) returns()
-func (_ValidatorPool *ValidatorPoolSession) MinorSlash(dishonestValidator_ common.Address, disputer_ common.Address) (*types.Transaction, error) {
-	return _ValidatorPool.Contract.MinorSlash(&_ValidatorPool.TransactOpts, dishonestValidator_, disputer_)
+// Solidity: function minorSlash(address dishonestValidator_, address disputer_, bytes32 preSalt_) returns()
+func (_ValidatorPool *ValidatorPoolSession) MinorSlash(dishonestValidator_ common.Address, disputer_ common.Address, preSalt_ [32]byte) (*types.Transaction, error) {
+	return _ValidatorPool.Contract.MinorSlash(&_ValidatorPool.TransactOpts, dishonestValidator_, disputer_, preSalt_)
 }
 
-// MinorSlash is a paid mutator transaction binding the contract method 0x64c0461c.
+// MinorSlash is a paid mutator transaction binding the contract method 0x517d3bfc.
 //
-// Solidity: function minorSlash(address dishonestValidator_, address disputer_) returns()
-func (_ValidatorPool *ValidatorPoolTransactorSession) MinorSlash(dishonestValidator_ common.Address, disputer_ common.Address) (*types.Transaction, error) {
-	return _ValidatorPool.Contract.MinorSlash(&_ValidatorPool.TransactOpts, dishonestValidator_, disputer_)
+// Solidity: function minorSlash(address dishonestValidator_, address disputer_, bytes32 preSalt_) returns()
+func (_ValidatorPool *ValidatorPoolTransactorSession) MinorSlash(dishonestValidator_ common.Address, disputer_ common.Address, preSalt_ [32]byte) (*types.Transaction, error) {
+	return _ValidatorPool.Contract.MinorSlash(&_ValidatorPool.TransactOpts, dishonestValidator_, disputer_, preSalt_)
 }
 
 // OnERC721Received is a paid mutator transaction binding the contract method 0x150b7a02.
@@ -1070,6 +1070,27 @@ func (_ValidatorPool *ValidatorPoolTransactorSession) SetLocation(ip_ string) (*
 	return _ValidatorPool.Contract.SetLocation(&_ValidatorPool.TransactOpts, ip_)
 }
 
+// SetMaxIntervalWithoutSnapshots is a paid mutator transaction binding the contract method 0x564a7005.
+//
+// Solidity: function setMaxIntervalWithoutSnapshots(uint256 maxIntervalWithoutSnapshots) returns()
+func (_ValidatorPool *ValidatorPoolTransactor) SetMaxIntervalWithoutSnapshots(opts *bind.TransactOpts, maxIntervalWithoutSnapshots *big.Int) (*types.Transaction, error) {
+	return _ValidatorPool.contract.Transact(opts, "setMaxIntervalWithoutSnapshots", maxIntervalWithoutSnapshots)
+}
+
+// SetMaxIntervalWithoutSnapshots is a paid mutator transaction binding the contract method 0x564a7005.
+//
+// Solidity: function setMaxIntervalWithoutSnapshots(uint256 maxIntervalWithoutSnapshots) returns()
+func (_ValidatorPool *ValidatorPoolSession) SetMaxIntervalWithoutSnapshots(maxIntervalWithoutSnapshots *big.Int) (*types.Transaction, error) {
+	return _ValidatorPool.Contract.SetMaxIntervalWithoutSnapshots(&_ValidatorPool.TransactOpts, maxIntervalWithoutSnapshots)
+}
+
+// SetMaxIntervalWithoutSnapshots is a paid mutator transaction binding the contract method 0x564a7005.
+//
+// Solidity: function setMaxIntervalWithoutSnapshots(uint256 maxIntervalWithoutSnapshots) returns()
+func (_ValidatorPool *ValidatorPoolTransactorSession) SetMaxIntervalWithoutSnapshots(maxIntervalWithoutSnapshots *big.Int) (*types.Transaction, error) {
+	return _ValidatorPool.Contract.SetMaxIntervalWithoutSnapshots(&_ValidatorPool.TransactOpts, maxIntervalWithoutSnapshots)
+}
+
 // SetMaxNumValidators is a paid mutator transaction binding the contract method 0x6c0da0b4.
 //
 // Solidity: function setMaxNumValidators(uint256 maxNumValidators_) returns()
@@ -1215,6 +1236,140 @@ func (_ValidatorPool *ValidatorPoolSession) Receive() (*types.Transaction, error
 // Solidity: receive() payable returns()
 func (_ValidatorPool *ValidatorPoolTransactorSession) Receive() (*types.Transaction, error) {
 	return _ValidatorPool.Contract.Receive(&_ValidatorPool.TransactOpts)
+}
+
+// ValidatorPoolInitializedIterator is returned from FilterInitialized and is used to iterate over the raw logs and unpacked data for Initialized events raised by the ValidatorPool contract.
+type ValidatorPoolInitializedIterator struct {
+	Event *ValidatorPoolInitialized // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *ValidatorPoolInitializedIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(ValidatorPoolInitialized)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(ValidatorPoolInitialized)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *ValidatorPoolInitializedIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *ValidatorPoolInitializedIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// ValidatorPoolInitialized represents a Initialized event raised by the ValidatorPool contract.
+type ValidatorPoolInitialized struct {
+	Version uint8
+	Raw     types.Log // Blockchain specific contextual infos
+}
+
+// FilterInitialized is a free log retrieval operation binding the contract event 0x7f26b83ff96e1f2b6a682f133852f6798a09c465da95921460cefb3847402498.
+//
+// Solidity: event Initialized(uint8 version)
+func (_ValidatorPool *ValidatorPoolFilterer) FilterInitialized(opts *bind.FilterOpts) (*ValidatorPoolInitializedIterator, error) {
+
+	logs, sub, err := _ValidatorPool.contract.FilterLogs(opts, "Initialized")
+	if err != nil {
+		return nil, err
+	}
+	return &ValidatorPoolInitializedIterator{contract: _ValidatorPool.contract, event: "Initialized", logs: logs, sub: sub}, nil
+}
+
+// WatchInitialized is a free log subscription operation binding the contract event 0x7f26b83ff96e1f2b6a682f133852f6798a09c465da95921460cefb3847402498.
+//
+// Solidity: event Initialized(uint8 version)
+func (_ValidatorPool *ValidatorPoolFilterer) WatchInitialized(opts *bind.WatchOpts, sink chan<- *ValidatorPoolInitialized) (event.Subscription, error) {
+
+	logs, sub, err := _ValidatorPool.contract.WatchLogs(opts, "Initialized")
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(ValidatorPoolInitialized)
+				if err := _ValidatorPool.contract.UnpackLog(event, "Initialized", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseInitialized is a log parse operation binding the contract event 0x7f26b83ff96e1f2b6a682f133852f6798a09c465da95921460cefb3847402498.
+//
+// Solidity: event Initialized(uint8 version)
+func (_ValidatorPool *ValidatorPoolFilterer) ParseInitialized(log types.Log) (*ValidatorPoolInitialized, error) {
+	event := new(ValidatorPoolInitialized)
+	if err := _ValidatorPool.contract.UnpackLog(event, "Initialized", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
 }
 
 // ValidatorPoolMaintenanceScheduledIterator is returned from FilterMaintenanceScheduled and is used to iterate over the raw logs and unpacked data for MaintenanceScheduled events raised by the ValidatorPool contract.

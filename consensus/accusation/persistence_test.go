@@ -4,41 +4,43 @@ import (
 	"context"
 	"encoding/gob"
 	"testing"
-	"time"
 
 	"github.com/alicenet/alicenet/consensus/db"
-	"github.com/alicenet/alicenet/consensus/objs"
 	"github.com/alicenet/alicenet/crypto"
+	"github.com/alicenet/alicenet/layer1/executor/marshaller"
+	"github.com/alicenet/alicenet/layer1/executor/tasks"
 	"github.com/alicenet/alicenet/utils"
 	"github.com/dgraph-io/badger/v2"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/stretchr/testify/assert"
 )
 
 type AccusationTest1 struct {
-	objs.BaseAccusation
+	*tasks.BaseTask
 }
 
-func (a *AccusationTest1) SubmitToSmartContracts() error {
-	return objs.ErrNotImpl
+var _ tasks.Task = &AccusationTest1{}
+
+func NewAccusationTest1Task(id string) tasks.Task {
+	t := &AccusationTest1{
+		BaseTask: tasks.NewBaseTask(0, 0, true, nil),
+	}
+	t.ID = id
+	return t
 }
 
-func (a *AccusationTest1) GetID() [32]byte {
-	return a.ID
+func (t *AccusationTest1) Prepare(ctx context.Context) *tasks.TaskErr {
+	return nil
 }
 
-func (a *AccusationTest1) SetID(id [32]byte) {
-	a.ID = id
+func (t *AccusationTest1) Execute(ctx context.Context) (*types.Transaction, *tasks.TaskErr) {
+	return nil, nil
 }
 
-func (a *AccusationTest1) GetPersistenceTimestamp() uint64 {
-	return a.PersistenceTimestamp
+func (t *AccusationTest1) ShouldExecute(ctx context.Context) (bool, *tasks.TaskErr) {
+	return true, nil
 }
-
-func (a *AccusationTest1) SetPersistenceTimestamp(timestamp uint64) {
-	a.PersistenceTimestamp = timestamp
-}
-
-var _ objs.Accusation = &AccusationTest1{}
 
 func TestPersistenceUnknownImpl(t *testing.T) {
 	ctx := context.Background()
@@ -53,51 +55,40 @@ func TestPersistenceUnknownImpl(t *testing.T) {
 	db := &db.Database{}
 	db.Init(rawConsensusDb)
 
-	var id [32]byte
-	copy(id[:], crypto.Hasher([]byte("test")))
-	acc := &AccusationTest1{}
-	acc.SetID(id)
-
-	err = db.Update(func(txn *badger.Txn) error {
-		err := db.SetAccusation(txn, acc)
-		assert.NotNil(t, err)
-
-		_, err = db.GetAccusation(txn, id)
-		assert.NotNil(t, err)
-
-		return nil
-	})
-
-	assert.Nil(t, err)
+	var idString string = common.Bytes2Hex(crypto.Hasher([]byte("test")))
+	acc := NewAccusationTest1Task(idString)
+	accRaw, err := marshaller.GobMarshalBinary(acc)
+	assert.NotNil(t, err)
+	assert.Empty(t, accRaw)
 }
 
 ///////////////////////////////////
 
 type AccusationTest2 struct {
-	objs.BaseAccusation
+	*tasks.BaseTask
 }
 
-func (a *AccusationTest2) SubmitToSmartContracts() error {
+var _ tasks.Task = &AccusationTest2{}
+
+func NewAccusationTest2Task(id string) tasks.Task {
+	t := &AccusationTest2{
+		BaseTask: tasks.NewBaseTask(0, 0, true, nil),
+	}
+	t.ID = id
+	return t
+}
+
+func (t *AccusationTest2) Prepare(ctx context.Context) *tasks.TaskErr {
 	return nil
 }
 
-func (a *AccusationTest2) GetID() [32]byte {
-	return a.ID
+func (t *AccusationTest2) Execute(ctx context.Context) (*types.Transaction, *tasks.TaskErr) {
+	return nil, nil
 }
 
-func (a *AccusationTest2) SetID(id [32]byte) {
-	a.ID = id
+func (t *AccusationTest2) ShouldExecute(ctx context.Context) (bool, *tasks.TaskErr) {
+	return true, nil
 }
-
-func (a *AccusationTest2) GetPersistenceTimestamp() uint64 {
-	return a.PersistenceTimestamp
-}
-
-func (a *AccusationTest2) SetPersistenceTimestamp(timestamp uint64) {
-	a.PersistenceTimestamp = timestamp
-}
-
-var _ objs.Accusation = &AccusationTest2{}
 
 func TestPersistenceKnownImpl(t *testing.T) {
 	// register AccusationTest2 as a known implementation of Accusation into gob
@@ -115,22 +106,26 @@ func TestPersistenceKnownImpl(t *testing.T) {
 	db := &db.Database{}
 	db.Init(rawConsensusDb)
 
-	var id [32]byte
-	copy(id[:], crypto.Hasher([]byte("test")))
-	acc := &AccusationTest2{}
-	acc.SetID(id)
+	var idString string = common.Bytes2Hex(crypto.Hasher([]byte("test")))
+	var id [32]byte = utils.HexToBytes32(idString)
+	acc := NewAccusationTest2Task(idString)
+	accRaw, err := marshaller.GobMarshalBinary(acc)
+	assert.Nil(t, err)
 
 	err = db.Update(func(txn *badger.Txn) error {
-		err := db.SetAccusation(txn, acc)
+		err := db.SetAccusationRaw(txn, id, accRaw)
 		assert.Nil(t, err)
 
-		acc2, err := db.GetAccusation(txn, id)
+		acc2Raw, err := db.GetAccusationRaw(txn, id)
 		assert.Nil(t, err)
-		assert.Equal(t, acc.GetID(), acc2.GetID())
+		assert.NotEmpty(t, acc2Raw)
+		acc2, err := marshaller.GobUnmarshalBinary(acc2Raw)
+		assert.Nil(t, err)
+		assert.Equal(t, acc.GetId(), acc2.GetId())
 
 		acc3, ok := acc2.(*AccusationTest2)
 		assert.True(t, ok)
-		assert.Equal(t, acc.GetID(), acc3.GetID())
+		assert.Equal(t, acc.GetId(), acc3.GetId())
 
 		return nil
 	})
@@ -154,122 +149,36 @@ func TestPersistAccusation(t *testing.T) {
 	db := &db.Database{}
 	db.Init(rawConsensusDb)
 
-	var id [32]byte
-	copy(id[:], crypto.Hasher([]byte("test")))
-	acc := &AccusationTest2{}
-	acc.SetID(id)
-	acc.SetPersistenceTimestamp(uint64(time.Now().Unix()))
-	acc.SetState(objs.Persisted)
+	var idString string = common.Bytes2Hex(crypto.Hasher([]byte("test")))
+	var id [32]byte = utils.HexToBytes32(idString)
+	acc := NewAccusationTest2Task(idString)
+	accRaw, err := marshaller.GobMarshalBinary(acc)
+	assert.Nil(t, err)
 
 	err = db.Update(func(txn *badger.Txn) error {
-		err := db.SetAccusation(txn, acc)
+		err := db.SetAccusationRaw(txn, id, accRaw)
 		assert.Nil(t, err)
 
 		// check the retrieved accusation has the same values as the original
-		acc2, err := db.GetAccusation(txn, id)
+		acc2Raw, err := db.GetAccusationRaw(txn, id)
 		assert.Nil(t, err)
-		assert.Equal(t, acc.GetID(), acc2.GetID())
-		assert.Equal(t, acc.GetState(), acc2.GetState())
-		assert.Equal(t, acc.GetPersistenceTimestamp(), acc2.GetPersistenceTimestamp())
+		assert.NotEmpty(t, acc2Raw)
+		acc2, err := marshaller.GobUnmarshalBinary(acc2Raw)
+		assert.Nil(t, err)
+		assert.Equal(t, acc.GetId(), acc2.GetId())
 
 		// check the retrieved accusation is of type AccusationTest2
 		acc3, ok := acc2.(*AccusationTest2)
 		assert.True(t, ok)
-		assert.Equal(t, acc.GetID(), acc3.GetID())
+		assert.Equal(t, acc.GetId(), acc3.GetId())
 
-		// get all accusations without filters
-		accs, err := db.GetAccusations(txn, nil)
+		// get all accusations
+		accs, err := db.GetAccusations(txn)
 		assert.Nil(t, err)
 		assert.Equal(t, 1, len(accs))
-		assert.Equal(t, acc.GetID(), accs[0].GetID())
-
-		// get persisted but unsheduled accusations
-		accs, err = db.GetPersistedButUnscheduledAccusations(txn)
+		accs0, err := marshaller.GobUnmarshalBinary(accs[0])
 		assert.Nil(t, err)
-		assert.Equal(t, 1, len(accs))
-		assert.Equal(t, acc.GetID(), accs[0].GetID())
-
-		// get scheduled but incomplete accusations
-		accs, err = db.GetScheduledButIncompleteAccusations(txn)
-		assert.Nil(t, err)
-		assert.Empty(t, accs)
-
-		// get completed accusations
-		accs, err = db.GetCompletedAccusations(txn)
-		assert.Nil(t, err)
-		assert.Empty(t, accs)
-
-		//////////////
-		// set accusation state to ScheduledForExecution and persist it
-		//////////////
-		acc.SetState(objs.ScheduledForExecution)
-		err = db.SetAccusation(txn, acc)
-		assert.Nil(t, err)
-
-		// check the retrieved accusation has the same values as the original
-		acc2, err = db.GetAccusation(txn, id)
-		assert.Nil(t, err)
-		assert.Equal(t, acc.GetID(), acc2.GetID())
-		assert.Equal(t, acc.GetState(), acc2.GetState())
-		assert.Equal(t, acc.GetPersistenceTimestamp(), acc2.GetPersistenceTimestamp())
-
-		// get all accusations without filters
-		accs, err = db.GetAccusations(txn, nil)
-		assert.Nil(t, err)
-		assert.Equal(t, 1, len(accs))
-		assert.Equal(t, acc.GetID(), accs[0].GetID())
-
-		// get persisted but unscheduled accusations
-		accs, err = db.GetPersistedButUnscheduledAccusations(txn)
-		assert.Nil(t, err)
-		assert.Empty(t, accs)
-
-		// get scheduled but incomplete accusations
-		accs, err = db.GetScheduledButIncompleteAccusations(txn)
-		assert.Nil(t, err)
-		assert.Equal(t, 1, len(accs))
-		assert.Equal(t, acc.GetID(), accs[0].GetID())
-
-		// get completed accusations
-		accs, err = db.GetCompletedAccusations(txn)
-		assert.Nil(t, err)
-		assert.Empty(t, accs)
-
-		//////////////
-		// set accusation state to Completed and persist it
-		//////////////
-		acc.SetState(objs.Completed)
-		err = db.SetAccusation(txn, acc)
-		assert.Nil(t, err)
-
-		// check the retrieved accusation has the same values as the original
-		acc2, err = db.GetAccusation(txn, id)
-		assert.Nil(t, err)
-		assert.Equal(t, acc.GetID(), acc2.GetID())
-		assert.Equal(t, acc.GetState(), acc2.GetState())
-		assert.Equal(t, acc.GetPersistenceTimestamp(), acc2.GetPersistenceTimestamp())
-
-		// get all accusations without filters
-		accs, err = db.GetAccusations(txn, nil)
-		assert.Nil(t, err)
-		assert.Equal(t, 1, len(accs))
-		assert.Equal(t, acc.GetID(), accs[0].GetID())
-
-		// get persisted but unscheduled accusations
-		accs, err = db.GetPersistedButUnscheduledAccusations(txn)
-		assert.Nil(t, err)
-		assert.Empty(t, accs)
-
-		// get scheduled but incomplete accusations
-		accs, err = db.GetScheduledButIncompleteAccusations(txn)
-		assert.Nil(t, err)
-		assert.Empty(t, accs)
-
-		// get completed accusations
-		accs, err = db.GetCompletedAccusations(txn)
-		assert.Nil(t, err)
-		assert.Equal(t, 1, len(accs))
-		assert.Equal(t, acc.GetID(), accs[0].GetID())
+		assert.Equal(t, acc.GetId(), accs0.GetId())
 
 		return nil
 	})
@@ -293,154 +202,53 @@ func TestPersistMultipleAccusations(t *testing.T) {
 	db := &db.Database{}
 	db.Init(rawConsensusDb)
 
-	var idA [32]byte
-	copy(idA[:], crypto.Hasher([]byte("idA")))
-	accA := &AccusationTest2{}
-	accA.SetID(idA)
-	accA.SetPersistenceTimestamp(uint64(time.Now().Unix()))
-	accA.SetState(objs.Persisted)
+	var idAString string = common.Bytes2Hex(crypto.Hasher([]byte("idA")))
+	var idA [32]byte = utils.HexToBytes32(idAString)
+	accA := NewAccusationTest2Task(idAString)
 
-	var idB [32]byte
-	copy(idB[:], crypto.Hasher([]byte("idB")))
-	accB := &AccusationTest2{}
-	accB.SetID(idB)
-	accB.SetPersistenceTimestamp(uint64(time.Now().Unix() + 300))
-	accB.SetState(objs.Persisted)
-	accusations := make(map[[32]byte]objs.Accusation)
+	var idBString string = common.Bytes2Hex(crypto.Hasher([]byte("idB")))
+	var idB [32]byte = utils.HexToBytes32(idBString)
+	accB := NewAccusationTest2Task(idBString)
+
+	accusations := make(map[[32]byte]tasks.Task)
 	accusations[idA] = accA
 	accusations[idB] = accB
 
 	err = db.Update(func(txn *badger.Txn) error {
-		for _, acc := range accusations {
-			err = db.SetAccusation(txn, acc)
+		for id, acc := range accusations {
+			accRaw, err := marshaller.GobMarshalBinary(acc)
+			assert.Nil(t, err)
+			err = db.SetAccusationRaw(txn, id, accRaw)
 			assert.Nil(t, err)
 		}
 
 		// check the retrieved accusation has the same values as the original
-		accA2, err := db.GetAccusation(txn, idA)
+		accA2Raw, err := db.GetAccusationRaw(txn, idA)
 		assert.Nil(t, err)
-		assert.Equal(t, accA.GetID(), accA2.GetID())
-		assert.Equal(t, accA.GetState(), accA2.GetState())
-		assert.Equal(t, accA.GetPersistenceTimestamp(), accA2.GetPersistenceTimestamp())
+		accA2, err := marshaller.GobUnmarshalBinary(accA2Raw)
+		assert.Nil(t, err)
+		assert.Equal(t, accA.GetId(), accA2.GetId())
 
 		// check the retrieved accusation has the same values as the original
-		accB2, err := db.GetAccusation(txn, idB)
+		accB2Raw, err := db.GetAccusationRaw(txn, idB)
 		assert.Nil(t, err)
-		assert.Equal(t, accB.GetID(), accB2.GetID())
-		assert.Equal(t, accB.GetState(), accB2.GetState())
-		assert.Equal(t, accB.GetPersistenceTimestamp(), accB2.GetPersistenceTimestamp())
+		accB2, err := marshaller.GobUnmarshalBinary(accB2Raw)
+		assert.Nil(t, err)
+		assert.Equal(t, accB.GetId(), accB2.GetId())
 
-		// get all accusations without filters
-		accs, err := db.GetAccusations(txn, nil)
+		// get all accusations
+		accs, err := db.GetAccusations(txn)
 		assert.Nil(t, err)
 		assert.Equal(t, 2, len(accs))
-		for _, acc := range accs {
-			a, ok := accusations[acc.GetID()]
+		for _, accRaw := range accs {
+			acc, err := marshaller.GobUnmarshalBinary(accRaw)
+			assert.Nil(t, err)
+
+			var id [32]byte = utils.HexToBytes32(acc.GetId())
+			a, ok := accusations[id]
 			assert.True(t, ok)
-			assert.Equal(t, a.GetID(), acc.GetID())
+			assert.Equal(t, a.GetId(), acc.GetId())
 		}
-
-		// get persisted but unsheduled accusations
-		accs, err = db.GetPersistedButUnscheduledAccusations(txn)
-		assert.Nil(t, err)
-		assert.Equal(t, 2, len(accs))
-		for _, acc := range accs {
-			a, ok := accusations[acc.GetID()]
-			assert.True(t, ok)
-			assert.Equal(t, a.GetID(), acc.GetID())
-		}
-
-		// get scheduled but incomplete accusations
-		accs, err = db.GetScheduledButIncompleteAccusations(txn)
-		assert.Nil(t, err)
-		assert.Empty(t, accs)
-
-		// get completed accusations
-		accs, err = db.GetCompletedAccusations(txn)
-		assert.Nil(t, err)
-		assert.Empty(t, accs)
-
-		//////////////
-		// set accusation state to ScheduledForExecution and persist it
-		//////////////
-		accA.SetState(objs.ScheduledForExecution)
-		err = db.SetAccusation(txn, accA)
-		assert.Nil(t, err)
-
-		// check the retrieved accusation has the same values as the original
-		accA2, err = db.GetAccusation(txn, idA)
-		assert.Nil(t, err)
-		assert.Equal(t, accA.GetID(), accA2.GetID())
-		assert.Equal(t, accA.GetState(), accA2.GetState())
-		assert.Equal(t, accA.GetPersistenceTimestamp(), accA2.GetPersistenceTimestamp())
-
-		// get all accusations without filters
-		accs, err = db.GetAccusations(txn, nil)
-		assert.Nil(t, err)
-		assert.Equal(t, 2, len(accs))
-		for _, acc := range accs {
-			a, ok := accusations[acc.GetID()]
-			assert.True(t, ok)
-			assert.Equal(t, a.GetID(), acc.GetID())
-		}
-
-		// get persisted but unscheduled accusations
-		accs, err = db.GetPersistedButUnscheduledAccusations(txn)
-		assert.Nil(t, err)
-		assert.Equal(t, 1, len(accs))
-		assert.Equal(t, accB.GetID(), accs[0].GetID())
-
-		// get scheduled but incomplete accusations
-		accs, err = db.GetScheduledButIncompleteAccusations(txn)
-		assert.Nil(t, err)
-		assert.Equal(t, 1, len(accs))
-		assert.Equal(t, accA.GetID(), accs[0].GetID())
-
-		// get completed accusations
-		accs, err = db.GetCompletedAccusations(txn)
-		assert.Nil(t, err)
-		assert.Empty(t, accs)
-
-		//////////////
-		// set accusation state to Completed and persist it
-		//////////////
-		accA.SetState(objs.Completed)
-		err = db.SetAccusation(txn, accA)
-		assert.Nil(t, err)
-
-		// check the retrieved accusation has the same values as the original
-		accA2, err = db.GetAccusation(txn, idA)
-		assert.Nil(t, err)
-		assert.Equal(t, accA.GetID(), accA2.GetID())
-		assert.Equal(t, accA.GetState(), accA2.GetState())
-		assert.Equal(t, accA.GetPersistenceTimestamp(), accA2.GetPersistenceTimestamp())
-
-		// get all accusations without filters
-		accs, err = db.GetAccusations(txn, nil)
-		assert.Nil(t, err)
-		assert.Equal(t, 2, len(accs))
-		for _, acc := range accs {
-			a, ok := accusations[acc.GetID()]
-			assert.True(t, ok)
-			assert.Equal(t, a.GetID(), acc.GetID())
-		}
-
-		// get persisted but unscheduled accusations
-		accs, err = db.GetPersistedButUnscheduledAccusations(txn)
-		assert.Nil(t, err)
-		assert.Equal(t, 1, len(accs))
-		assert.Equal(t, accB.GetID(), accs[0].GetID())
-
-		// get scheduled but incomplete accusations
-		accs, err = db.GetScheduledButIncompleteAccusations(txn)
-		assert.Nil(t, err)
-		assert.Empty(t, accs)
-
-		// get completed accusations
-		accs, err = db.GetCompletedAccusations(txn)
-		assert.Nil(t, err)
-		assert.Equal(t, 1, len(accs))
-		assert.Equal(t, accA.GetID(), accs[0].GetID())
 
 		return nil
 	})
@@ -467,22 +275,7 @@ func TestPersistEmptyAccusationDB(t *testing.T) {
 	err = db.View(func(txn *badger.Txn) error {
 
 		// get all accusations without filters
-		accs, err := db.GetAccusations(txn, nil)
-		assert.Nil(t, err)
-		assert.Empty(t, accs)
-
-		// get persisted but unsheduled accusations
-		accs, err = db.GetPersistedButUnscheduledAccusations(txn)
-		assert.Nil(t, err)
-		assert.Empty(t, accs)
-
-		// get scheduled but incomplete accusations
-		accs, err = db.GetScheduledButIncompleteAccusations(txn)
-		assert.Nil(t, err)
-		assert.Empty(t, accs)
-
-		// get completed accusations
-		accs, err = db.GetCompletedAccusations(txn)
+		accs, err := db.GetAccusations(txn)
 		assert.Nil(t, err)
 		assert.Empty(t, accs)
 

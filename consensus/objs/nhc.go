@@ -2,6 +2,7 @@ package objs
 
 import (
 	capnp "github.com/MadBase/go-capnproto2/v2"
+
 	mdefs "github.com/alicenet/alicenet/consensus/objs/capn"
 	"github.com/alicenet/alicenet/consensus/objs/nhclaims"
 	"github.com/alicenet/alicenet/crypto"
@@ -17,7 +18,7 @@ type NHClaims struct {
 }
 
 // UnmarshalBinary takes a byte slice and returns the corresponding
-// NHClaims object
+// NHClaims object.
 func (b *NHClaims) UnmarshalBinary(data []byte) error {
 	if b == nil {
 		return errorz.ErrInvalid{}.New("NHClaims.UnmarshalBinary; nhclaims not initialized")
@@ -30,7 +31,7 @@ func (b *NHClaims) UnmarshalBinary(data []byte) error {
 	return b.UnmarshalCapn(bh)
 }
 
-// UnmarshalCapn unmarshals the capnproto definition of the object
+// UnmarshalCapn unmarshals the capnproto definition of the object.
 func (b *NHClaims) UnmarshalCapn(bh mdefs.NHClaims) error {
 	if b == nil {
 		return errorz.ErrInvalid{}.New("NHClaims.UnmarshalCapn; nhclaims not initialized")
@@ -49,7 +50,7 @@ func (b *NHClaims) UnmarshalCapn(bh mdefs.NHClaims) error {
 }
 
 // MarshalBinary takes the NHClaims object and returns the canonical
-// byte slice
+// byte slice.
 func (b *NHClaims) MarshalBinary() ([]byte, error) {
 	if b == nil {
 		return nil, errorz.ErrInvalid{}.New("NHClaims.MarshalBinary; nhclaims not initialized")
@@ -62,7 +63,7 @@ func (b *NHClaims) MarshalBinary() ([]byte, error) {
 	return nhclaims.Marshal(bh)
 }
 
-// MarshalCapn marshals the object into its capnproto definition
+// MarshalCapn marshals the object into its capnproto definition.
 func (b *NHClaims) MarshalCapn(seg *capnp.Segment) (mdefs.NHClaims, error) {
 	if b == nil {
 		return mdefs.NHClaims{}, errorz.ErrInvalid{}.New("NHClaims.MarshalCapn; nhclaims not initialized")

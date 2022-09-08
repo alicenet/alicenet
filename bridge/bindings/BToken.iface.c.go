@@ -15,10 +15,6 @@ type IBTokenCaller interface {
 	//
 	// Solidity: function allowance(address owner, address spender) view returns(uint256)
 	Allowance(opts *bind.CallOpts, owner common.Address, spender common.Address) (*big.Int, error)
-	// BTokensToEth is a free data retrieval call binding the contract method 0xc7636071.
-	//
-	// Solidity: function bTokensToEth(uint256 poolBalance_, uint256 totalSupply_, uint256 numBTK_) pure returns(uint256 numEth)
-	BTokensToEth(opts *bind.CallOpts, poolBalance_ *big.Int, totalSupply_ *big.Int, numBTK_ *big.Int) (*big.Int, error)
 	// BalanceOf is a free data retrieval call binding the contract method 0x70a08231.
 	//
 	// Solidity: function balanceOf(address account) view returns(uint256)
@@ -27,22 +23,46 @@ type IBTokenCaller interface {
 	//
 	// Solidity: function decimals() view returns(uint8)
 	Decimals(opts *bind.CallOpts) (uint8, error)
-	// EthToBTokens is a free data retrieval call binding the contract method 0x75a86a7e.
-	//
-	// Solidity: function ethToBTokens(uint256 poolBalance_, uint256 numEth_) pure returns(uint256)
-	EthToBTokens(opts *bind.CallOpts, poolBalance_ *big.Int, numEth_ *big.Int) (*big.Int, error)
-	// GetAdmin is a free data retrieval call binding the contract method 0x6e9960c3.
-	//
-	// Solidity: function getAdmin() view returns(address)
-	GetAdmin(opts *bind.CallOpts) (common.Address, error)
 	// GetDeposit is a free data retrieval call binding the contract method 0x9f9fb968.
 	//
 	// Solidity: function getDeposit(uint256 depositID) view returns((uint8,address,uint256))
-	GetDeposit(opts *bind.CallOpts, depositID *big.Int) (BTokenDeposit, error)
+	GetDeposit(opts *bind.CallOpts, depositID *big.Int) (Deposit, error)
+	// GetDepositID is a free data retrieval call binding the contract method 0x94f70c8a.
+	//
+	// Solidity: function getDepositID() view returns(uint256)
+	GetDepositID(opts *bind.CallOpts) (*big.Int, error)
+	// GetEthFromBTokensBurn is a free data retrieval call binding the contract method 0xc3559a18.
+	//
+	// Solidity: function getEthFromBTokensBurn(uint256 poolBalance_, uint256 totalSupply_, uint256 numBTK_) pure returns(uint256 numEth)
+	GetEthFromBTokensBurn(opts *bind.CallOpts, poolBalance_ *big.Int, totalSupply_ *big.Int, numBTK_ *big.Int) (*big.Int, error)
+	// GetEthToMintBTokens is a free data retrieval call binding the contract method 0x06f1ad83.
+	//
+	// Solidity: function getEthToMintBTokens(uint256 totalSupply_, uint256 numBTK_) pure returns(uint256 numEth)
+	GetEthToMintBTokens(opts *bind.CallOpts, totalSupply_ *big.Int, numBTK_ *big.Int) (*big.Int, error)
+	// GetLatestEthFromBTokensBurn is a free data retrieval call binding the contract method 0xc425d3a0.
+	//
+	// Solidity: function getLatestEthFromBTokensBurn(uint256 numBTK_) view returns(uint256 numEth)
+	GetLatestEthFromBTokensBurn(opts *bind.CallOpts, numBTK_ *big.Int) (*big.Int, error)
+	// GetLatestEthToMintBTokens is a free data retrieval call binding the contract method 0xbcd6abb4.
+	//
+	// Solidity: function getLatestEthToMintBTokens(uint256 numBTK_) view returns(uint256 numEth)
+	GetLatestEthToMintBTokens(opts *bind.CallOpts, numBTK_ *big.Int) (*big.Int, error)
+	// GetLatestMintedBTokensFromEth is a free data retrieval call binding the contract method 0x5878677c.
+	//
+	// Solidity: function getLatestMintedBTokensFromEth(uint256 numEth_) view returns(uint256)
+	GetLatestMintedBTokensFromEth(opts *bind.CallOpts, numEth_ *big.Int) (*big.Int, error)
+	// GetMarketSpread is a free data retrieval call binding the contract method 0x086cfefd.
+	//
+	// Solidity: function getMarketSpread() pure returns(uint256)
+	GetMarketSpread(opts *bind.CallOpts) (*big.Int, error)
 	// GetMetamorphicContractAddress is a free data retrieval call binding the contract method 0x8653a465.
 	//
 	// Solidity: function getMetamorphicContractAddress(bytes32 _salt, address _factory) pure returns(address)
 	GetMetamorphicContractAddress(opts *bind.CallOpts, _salt [32]byte, _factory common.Address) (common.Address, error)
+	// GetMintedBTokensFromEth is a free data retrieval call binding the contract method 0x823fa03a.
+	//
+	// Solidity: function getMintedBTokensFromEth(uint256 poolBalance_, uint256 numEth_) pure returns(uint256)
+	GetMintedBTokensFromEth(opts *bind.CallOpts, poolBalance_ *big.Int, numEth_ *big.Int) (*big.Int, error)
 	// GetPoolBalance is a free data retrieval call binding the contract method 0xabd70aa2.
 	//
 	// Solidity: function getPoolBalance() view returns(uint256)
@@ -51,6 +71,10 @@ type IBTokenCaller interface {
 	//
 	// Solidity: function getTotalBTokensDeposited() view returns(uint256)
 	GetTotalBTokensDeposited(opts *bind.CallOpts) (*big.Int, error)
+	// GetYield is a free data retrieval call binding the contract method 0x7c262871.
+	//
+	// Solidity: function getYield() view returns(uint256)
+	GetYield(opts *bind.CallOpts) (*big.Int, error)
 	// Name is a free data retrieval call binding the contract method 0x06fdde03.
 	//
 	// Solidity: function name() view returns(string)

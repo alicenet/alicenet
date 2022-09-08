@@ -15,7 +15,11 @@ export async function readDeploymentArgs(usrPath?: string) {
 }
 
 export async function readFactoryState(usrPath?: string) {
-  return await readTOML(FACTORY_STATE_PATH, usrPath);
+  const path =
+    usrPath === undefined
+      ? FACTORY_STATE_PATH
+      : usrPath.replace(/\/+$/, "") + "/factoryState";
+  return await readTOML(FACTORY_STATE_PATH, path);
 }
 
 export async function readTOML(defaultPath: string, usrPath?: string) {
