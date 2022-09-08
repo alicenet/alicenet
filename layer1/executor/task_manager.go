@@ -121,12 +121,12 @@ func (tm *TaskManager) eventLoop() {
 
 		case taskRequest, ok := <-tm.requestChan:
 			if !ok {
-				tm.logger.Warnf("Received a request on a closed channel %v", taskRequest)
+				tm.onError(ErrReceivedRequestClosedChan)
 				return
 			}
 			if taskRequest.response == nil {
 				tm.logger.Warn("Received a request with nil response channel")
-				return
+				continue
 			}
 
 			response := &managerResponse{Err: nil}
@@ -163,7 +163,7 @@ func (tm *TaskManager) eventLoop() {
 			tm.persistState()
 		case taskResponse, ok := <-tm.responseChan.erChan:
 			if !ok {
-				tm.logger.Warnf("Received a taskResponse on a closed channel %v", taskResponse)
+				tm.onError(ErrReceivedResponseClosedChan)
 				return
 			}
 
@@ -171,6 +171,7 @@ func (tm *TaskManager) eventLoop() {
 			err := tm.processTaskResponse(taskResponse)
 			if err != nil {
 				tm.logger.WithError(err).Errorf("Failed to processTaskResponse %v", taskResponse)
+				continue
 			}
 			tm.persistState()
 		case <-processingTime:
@@ -302,7 +303,7 @@ func (tm *TaskManager) processTaskResponse(executorResponse ExecutorResponse) er
 
 		logger = getTaskLoggerComplete(tm.logger, task)
 		if executorResponse.Err != nil {
-			if !errors.Is(executorResponse.Err, context.Canceled) {
+			if !errors.Is(executorResponse.Err, tasks.ErrTaskKilled) {
 				logger.Errorf("Task executed with error: %v", executorResponse.Err)
 			} else {
 				logger.Debug("Task got killed")

@@ -237,4 +237,6 @@ var (
 	ErrTaskTypeNotInRegistry          = errors.New("the task type is not in registry")
 	ErrTaskIdEmpty                    = errors.New("the task id is empty")
 	ErrTaskKilledBeforeExecution      = errors.New("the task killed by request before execution")
+	ErrReceivedRequestClosedChan      = errors.New("received a request on a closed channel")
+	ErrReceivedResponseClosedChan     = errors.New("received a taskResponse on a closed channel")
 )

@@ -500,25 +500,34 @@ func TestHandlerManagerAndExecutor_ErrorOnCreation(t *testing.T) {
 	require.NotNil(t, err)
 }
 
-func TestTasksHandlerAndManager_SendNilResponseAndCloseResponseChan(t *testing.T) {
+func TestTasksHandlerAndManager_SendNilResponseAndCloseRequestChan(t *testing.T) {
 	handler, _, _, _, _ := getTaskHandler(t, true)
 	handler.Start()
 
 	task1 := dkg.NewCompletionTask(10, 40)
-	task1.AllowMultiExecution = true
-	resp, err := handler.ScheduleTask(task1, "")
-	require.Nil(t, err)
-	require.NotNil(t, resp)
-	require.Equal(t, 1, getScheduleLen(t, handler.manager))
-
-	task2 := dkg.NewCompletionTask(10, 40)
-	task2.AllowMultiExecution = true
-	resp, err = handler.ScheduleTask(task1, "")
-	require.Nil(t, err)
-	require.NotNil(t, resp)
-	require.Equal(t, 2, getScheduleLen(t, handler.manager))
-
-	_, err = handler.KillTaskByType(&dkg.CompletionTask{})
-	require.Nil(t, err)
+	req := managerRequest{task: task1, id: "task-id", action: Schedule, response: nil}
+	handler.requestChannel <- req
+	<-time.After(100 * time.Millisecond)
 	require.Equal(t, 0, getScheduleLen(t, handler.manager))
+}
+
+func TestTasksHandlerAndManager_CloseResponseChan(t *testing.T) {
+	handler, _, _, _, _ := getTaskHandler(t, true)
+	handler.Start()
+	handler.manager.responseChan.close()
+	<-time.After(100 * time.Millisecond)
+
+	task := snapshots.NewSnapshotTask(0, 5, 1)
+	taskId := uuid.New().String()
+	resp, err := handler.ScheduleTask(task, taskId)
+	require.NotNil(t, err)
+	require.Equal(t, tasks.ErrTaskExecutionMechanismClosed, err)
+	require.Nil(t, resp)
+	require.Equal(t, 0, getScheduleLen(t, handler.manager))
+
+	select {
+	case <-handler.CloseChan():
+	case <-time.After(1 * time.Second):
+		t.Fatal("handler didnt close in time")
+	}
 }

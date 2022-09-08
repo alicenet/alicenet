@@ -56,8 +56,8 @@ func (h *Handler) Close() {
 	h.closeOnce.Do(func() {
 		h.logger.Warn("Closing task handler")
 		h.manager.close()
-		close(h.requestChannel)
 		close(h.closeChan)
+		close(h.requestChannel)
 	})
 }
 
@@ -105,9 +105,9 @@ func (h *Handler) KillTaskById(id string) (*HandlerResponse, error) {
 func (h *Handler) waitForRequestProcessing(req managerRequest) error {
 	// wait for request to be accepted
 	select {
-	case h.requestChannel <- req:
 	case <-h.closeChan:
 		return tasks.ErrTaskExecutionMechanismClosed
+	case h.requestChannel <- req:
 	}
 
 	return nil
