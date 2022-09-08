@@ -2,7 +2,6 @@ package objs
 
 import (
 	"bytes"
-	"encoding/hex"
 
 	"github.com/alicenet/alicenet/errorz"
 	"github.com/alicenet/alicenet/utils"
@@ -23,11 +22,9 @@ func (a *AccusationKey) MarshalBinary() ([]byte, error) {
 
 	key := []byte{}
 	Prefix := utils.CopySlice(a.Prefix)
-	id := make([]byte, hex.EncodedLen(len(a.ID)))
-	_ = hex.Encode(id, a.ID[:])
 	key = append(key, Prefix...)
 	key = append(key, []byte("|")...)
-	key = append(key, id...)
+	key = append(key, a.ID[:]...)
 
 	return key, nil
 }
@@ -43,12 +40,7 @@ func (a *AccusationKey) UnmarshalBinary(data []byte) error {
 		return errorz.ErrCorrupt
 	}
 	a.Prefix = splitData[0]
-	id := make([]byte, hex.DecodedLen(len(splitData[1])))
-	_, err := hex.Decode(id, splitData[1])
-	if err != nil {
-		return err
-	}
-	copy(a.ID[:], id)
+	copy(a.ID[:], splitData[1])
 
 	return nil
 }

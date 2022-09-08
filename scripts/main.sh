@@ -222,6 +222,9 @@ init-extra-nodes)
 geth)
     ./scripts/base-scripts/geth-local.sh
     ;;
+geth-resume)
+    ./scripts/base-scripts/geth-local-resume.sh
+    ;;
 bootnode)
     ./scripts/base-scripts/bootnode.sh
     ;;

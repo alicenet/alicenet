@@ -375,7 +375,7 @@ func TestManagerPersistCreatedAccusations(t *testing.T) {
 
 		assert.Equal(t, acc.GetId(), accusation.GetId())
 
-		accs, err := testProxy.manager.database.GetAccusations(txn, nil)
+		accs, err := testProxy.manager.database.GetAccusations(txn)
 		assert.Nil(t, err)
 		assert.Equal(t, 1, len(accs))
 
@@ -423,7 +423,7 @@ func TestManagerPersistScheduledAccusations(t *testing.T) {
 
 		assert.Equal(t, acc.GetId(), accusation.GetId())
 
-		accs, err := testProxy.manager.database.GetAccusations(txn, nil)
+		accs, err := testProxy.manager.database.GetAccusations(txn)
 		assert.Nil(t, err)
 		assert.Equal(t, 1, len(accs))
 

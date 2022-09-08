@@ -9,40 +9,45 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/sirupsen/logrus"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 
 	"github.com/alicenet/alicenet/bridge/bindings"
 	"github.com/alicenet/alicenet/layer1"
 	"github.com/alicenet/alicenet/utils"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/sirupsen/logrus"
 )
 
 var _ layer1.EthereumContracts = &Contracts{}
 
 // Contracts contains bindings to smart contract system.
 type Contracts struct {
-	allAddresses            map[common.Address]bool
-	eth                     *Client
-	ethdkg                  bindings.IETHDKG
-	ethdkgAddress           common.Address
-	aToken                  bindings.IAToken
-	aTokenAddress           common.Address
-	bToken                  bindings.IBToken
-	bTokenAddress           common.Address
-	publicStaking           bindings.IPublicStaking
-	publicStakingAddress    common.Address
-	validatorStaking        bindings.IValidatorStaking
-	validatorStakingAddress common.Address
-	contractFactory         bindings.IAliceNetFactory
-	contractFactoryAddress  common.Address
-	snapshots               bindings.ISnapshots
-	snapshotsAddress        common.Address
-	validatorPool           bindings.IValidatorPool
-	validatorPoolAddress    common.Address
-	governance              bindings.IGovernance
-	governanceAddress       common.Address
-	dynamics                bindings.IDynamics
-	dynamicsAddress         common.Address
+	allAddresses                          map[common.Address]bool
+	eth                                   *Client
+	ethdkg                                bindings.IETHDKG
+	ethdkgAddress                         common.Address
+	aToken                                bindings.IAToken
+	aTokenAddress                         common.Address
+	bToken                                bindings.IBToken
+	bTokenAddress                         common.Address
+	publicStaking                         bindings.IPublicStaking
+	publicStakingAddress                  common.Address
+	validatorStaking                      bindings.IValidatorStaking
+	validatorStakingAddress               common.Address
+	contractFactory                       bindings.IAliceNetFactory
+	contractFactoryAddress                common.Address
+	snapshots                             bindings.ISnapshots
+	snapshotsAddress                      common.Address
+	validatorPool                         bindings.IValidatorPool
+	validatorPoolAddress                  common.Address
+	governance                            bindings.IGovernance
+	governanceAddress                     common.Address
+	accusationMultipleProposal            bindings.IAccusationMultipleProposal
+	accusationMultipleProposalAddress     common.Address
+	accusationInvalidTxConsumption        bindings.IAccusationInvalidTxConsumption
+	accusationInvalidTxConsumptionAddress common.Address
+	dynamics                              bindings.IDynamics
+	dynamicsAddress                       common.Address
 }
 
 // Set the contractFactoryAddress and looks up for all the contracts that we
@@ -90,23 +95,11 @@ func (c *Contracts) lookupContracts() error {
 		callOpts, err := eth.GetCallOpts(networkCtx, eth.defaultAccount)
 		if err != nil {
 			logger.Errorf("Failed to generate call options for lookup %v", err)
-		}
-
-		// Just a help for looking up other contracts
-		lookup := func(name string) (common.Address, error) {
-			salt := utils.StringToBytes32(name)
-			addr, err := contractFactory.Lookup(callOpts, salt)
-			if err != nil {
-				logger.Errorf("Failed lookup of \"%v\": %v", name, err)
-			} else {
-				logger.Infof("Lookup up of \"%v\" is 0x%x", name, addr)
-			}
-			c.allAddresses[addr] = true
-			return addr, err
+			continue
 		}
 
 		// ETHDKG
-		c.ethdkgAddress, err = lookup("ETHDKG")
+		c.ethdkgAddress, err = c.lookupString(callOpts, "ETHDKG")
 		logAndEat(logger, err)
 		if bytes.Equal(c.ethdkgAddress.Bytes(), make([]byte, 20)) {
 			continue
@@ -116,7 +109,7 @@ func (c *Contracts) lookupContracts() error {
 		logAndEat(logger, err)
 
 		// ValidatorPool
-		c.validatorPoolAddress, err = lookup("ValidatorPool")
+		c.validatorPoolAddress, err = c.lookupString(callOpts, "ValidatorPool")
 		logAndEat(logger, err)
 		if bytes.Equal(c.validatorPoolAddress.Bytes(), make([]byte, 20)) {
 			continue
@@ -126,7 +119,7 @@ func (c *Contracts) lookupContracts() error {
 		logAndEat(logger, err)
 
 		// BToken
-		c.bTokenAddress, err = lookup("BToken")
+		c.bTokenAddress, err = c.lookupString(callOpts, "BToken")
 		logAndEat(logger, err)
 		if bytes.Equal(c.bTokenAddress.Bytes(), make([]byte, 20)) {
 			continue
@@ -136,7 +129,7 @@ func (c *Contracts) lookupContracts() error {
 		logAndEat(logger, err)
 
 		// AToken
-		c.aTokenAddress, err = lookup("AToken")
+		c.aTokenAddress, err = c.lookupString(callOpts, "AToken")
 		logAndEat(logger, err)
 		if bytes.Equal(c.aTokenAddress.Bytes(), make([]byte, 20)) {
 			continue
@@ -146,7 +139,7 @@ func (c *Contracts) lookupContracts() error {
 		logAndEat(logger, err)
 
 		// PublicStaking
-		c.publicStakingAddress, err = lookup("PublicStaking")
+		c.publicStakingAddress, err = c.lookupString(callOpts, "PublicStaking")
 		logAndEat(logger, err)
 		if bytes.Equal(c.publicStakingAddress.Bytes(), make([]byte, 20)) {
 			continue
@@ -156,7 +149,7 @@ func (c *Contracts) lookupContracts() error {
 		logAndEat(logger, err)
 
 		// ValidatorStaking
-		c.validatorStakingAddress, err = lookup("ValidatorStaking")
+		c.validatorStakingAddress, err = c.lookupString(callOpts, "ValidatorStaking")
 		logAndEat(logger, err)
 		if bytes.Equal(c.validatorStakingAddress.Bytes(), make([]byte, 20)) {
 			continue
@@ -166,7 +159,7 @@ func (c *Contracts) lookupContracts() error {
 		logAndEat(logger, err)
 
 		// Governance
-		c.governanceAddress, err = lookup("Governance")
+		c.governanceAddress, err = c.lookupString(callOpts, "Governance")
 		logAndEat(logger, err)
 		if bytes.Equal(c.governanceAddress.Bytes(), make([]byte, 20)) {
 			continue
@@ -176,7 +169,7 @@ func (c *Contracts) lookupContracts() error {
 		logAndEat(logger, err)
 
 		// Snapshots
-		c.snapshotsAddress, err = lookup("Snapshots")
+		c.snapshotsAddress, err = c.lookupString(callOpts, "Snapshots")
 		logAndEat(logger, err)
 		if bytes.Equal(c.snapshotsAddress.Bytes(), make([]byte, 20)) {
 			continue
@@ -186,7 +179,7 @@ func (c *Contracts) lookupContracts() error {
 		logAndEat(logger, err)
 
 		// Dynamics
-		c.dynamicsAddress, err = lookup("Dynamics")
+		c.dynamicsAddress, err = c.lookupString(callOpts, "Dynamics")
 		logAndEat(logger, err)
 		if bytes.Equal(c.dynamicsAddress.Bytes(), make([]byte, 20)) {
 			continue
@@ -195,10 +188,69 @@ func (c *Contracts) lookupContracts() error {
 		c.dynamics, err = bindings.NewDynamics(c.dynamicsAddress, eth.internalClient)
 		logAndEat(logger, err)
 
+		// AccusationMultipleProposal
+		contractSaltComponents := []string{"AccusationMultipleProposal", "Accusation"}
+		c.accusationMultipleProposalAddress, err = c.lookupRoleBasedSalt(callOpts, contractSaltComponents)
+		logAndEat(logger, err)
+		if bytes.Equal(c.accusationMultipleProposalAddress.Bytes(), make([]byte, 20)) {
+			continue
+		}
+
+		c.accusationMultipleProposal, err = bindings.NewAccusationMultipleProposal(c.accusationMultipleProposalAddress, eth.internalClient)
+		logAndEat(logger, err)
+
+		// AccusationInvalidTxConsumption
+		contractSaltComponents = []string{"AccusationInvalidTxConsumption", "Accusation"}
+		c.accusationInvalidTxConsumptionAddress, err = c.lookupRoleBasedSalt(callOpts, contractSaltComponents)
+		logAndEat(logger, err)
+		if bytes.Equal(c.accusationInvalidTxConsumptionAddress.Bytes(), make([]byte, 20)) {
+			continue
+		}
+
+		c.accusationInvalidTxConsumption, err = bindings.NewAccusationInvalidTxConsumption(c.accusationInvalidTxConsumptionAddress, eth.internalClient)
+		logAndEat(logger, err)
+
 		break
 	}
 
 	return nil
+}
+
+func (c *Contracts) lookupString(callOpts *bind.CallOpts, name string) (common.Address, error) {
+	salt := utils.StringToBytes32(name)
+	addr, err := c.lookupBytes32(callOpts, salt)
+
+	if err != nil {
+		c.eth.logger.Errorf("Failed lookup of contract \"%v\": %v", name, err)
+		return common.Address{}, err
+	}
+
+	c.eth.logger.Infof("Lookup up of contract \"%v\" is 0x%x", name, addr)
+	return addr, nil
+}
+
+func (c *Contracts) lookupRoleBasedSalt(callOpts *bind.CallOpts, saltComponents []string) (common.Address, error) {
+	salt := utils.CalculateSaltFromComponents(saltComponents)
+	addr, err := c.lookupBytes32(callOpts, salt)
+
+	if err != nil {
+		c.eth.logger.Errorf("Failed lookup of contract \"%v\" with salt \"0x%x\": %v", saltComponents[0], salt, err)
+		return common.Address{}, err
+	}
+
+	c.eth.logger.Infof("Lookup up of contract \"%v\" is 0x%x", saltComponents[0], addr)
+	return addr, nil
+}
+
+func (c *Contracts) lookupBytes32(callOpts *bind.CallOpts, salt [32]byte) (common.Address, error) {
+	addr, err := c.contractFactory.Lookup(callOpts, salt)
+	if err != nil {
+		c.eth.logger.Errorf("Failed lookup of salt \"0x%x\": %v", salt, err)
+		return common.Address{}, err
+	}
+
+	c.allAddresses[addr] = true
+	return addr, nil
 }
 
 // return all addresses from all contracts in the contract struct.
@@ -288,6 +340,22 @@ func (c *Contracts) Governance() bindings.IGovernance {
 
 func (c *Contracts) GovernanceAddress() common.Address {
 	return c.governanceAddress
+}
+
+func (c *Contracts) MultipleProposalAccusation() bindings.IAccusationMultipleProposal {
+	return c.accusationMultipleProposal
+}
+
+func (c *Contracts) MultipleProposalAccusationAddress() common.Address {
+	return c.accusationMultipleProposalAddress
+}
+
+func (c *Contracts) AccusationInvalidTxConsumption() bindings.IAccusationInvalidTxConsumption {
+	return c.accusationInvalidTxConsumption
+}
+
+func (c *Contracts) AccusationInvalidTxConsumptionAddress() common.Address {
+	return c.accusationInvalidTxConsumptionAddress
 }
 
 // utils function to log an error.

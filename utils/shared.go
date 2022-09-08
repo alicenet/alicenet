@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 
 	"github.com/dgraph-io/badger/v2"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/sirupsen/logrus"
 
 	"github.com/alicenet/alicenet/constants"
@@ -207,4 +208,16 @@ func HandleBadgerErrors(err error) error {
 		return err
 	}
 	return nil
+}
+
+func CalculateSaltFromComponents(components []string) [32]byte {
+	var hashedComponents [][]byte = make([][]byte, len(components))
+
+	for i, component := range components {
+		hashedComponents[i] = crypto.Keccak256([]byte(component))
+	}
+
+	var salt32 [32]byte
+	copy(salt32[:], crypto.Keccak256(hashedComponents...)[:32])
+	return salt32
 }

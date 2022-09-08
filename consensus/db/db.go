@@ -1928,7 +1928,7 @@ func (db *Database) GetAccusationRaw(txn *badger.Txn, id [32]byte) ([]byte, erro
 	return result, nil
 }
 
-func (db *Database) GetAccusations(txn *badger.Txn, filter *func([]byte) bool) ([][]byte, error) {
+func (db *Database) GetAccusations(txn *badger.Txn) ([][]byte, error) {
 	prefix, err := db.makeAccusationIterKey()
 	if err != nil {
 		return nil, err
@@ -1946,10 +1946,7 @@ func (db *Database) GetAccusations(txn *badger.Txn, filter *func([]byte) bool) (
 			return nil, err
 		}
 
-		// filter if there's a filter
-		if filter == nil || (*filter)(accBytes) {
-			accusations = append(accusations, accBytes)
-		}
+		accusations = append(accusations, accBytes)
 	}
 
 	return accusations, nil
