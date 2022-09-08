@@ -14,6 +14,6 @@ import (
 type IATokenBurnerTransactor interface {
 	// Burn is a paid mutator transaction binding the contract method 0x9dc29fac.
 	//
-	// Solidity: function burn(address from_, uint256 amount_) returns()
-	Burn(opts *bind.TransactOpts, from_ common.Address, amount_ *big.Int) (*types.Transaction, error)
+	// Solidity: function burn(address to, uint256 amount) returns()
+	Burn(opts *bind.TransactOpts, to common.Address, amount *big.Int) (*types.Transaction, error)
 }

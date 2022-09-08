@@ -43,8 +43,4 @@ type IDynamicsCaller interface {
 	//
 	// Solidity: function getPreviousDynamicValues(uint256 epoch) view returns((uint8,uint24,uint32,uint32,uint32,uint64,uint64,uint128))
 	GetPreviousDynamicValues(opts *bind.CallOpts, epoch *big.Int) (DynamicValues, error)
-	// GetStaticPoolContractAddress is a free data retrieval call binding the contract method 0x0ffd7a81.
-	//
-	// Solidity: function getStaticPoolContractAddress(bytes32 _salt, address _bridgeRouter) pure returns(address)
-	GetStaticPoolContractAddress(opts *bind.CallOpts, _salt [32]byte, _bridgeRouter common.Address) (common.Address, error)
 }
