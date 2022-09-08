@@ -10,7 +10,7 @@ import {
   generateSigAndPClaimsDifferentRound,
 } from "./accusations-test-helpers";
 
-describe("MultipleProposalAccusation: Tests MultipleProposalAccusation methods", async () => {
+describe("AccusationMultipleProposal: Tests AccusationMultipleProposal methods", async () => {
   let fixture: Fixture;
 
   let accusation: AccusationMultipleProposal;
@@ -30,9 +30,6 @@ describe("MultipleProposalAccusation: Tests MultipleProposalAccusation methods",
 
       await addValidators(fixture.validatorPool, [signerAccount0]);
 
-      let isValidator = await fixture.validatorPool.isValidator(signerAccount0);
-      assert.equal(isValidator, true);
-
       await (await accusation.accuseMultipleProposal(
         sig0,
         pClaims0,
@@ -40,7 +37,7 @@ describe("MultipleProposalAccusation: Tests MultipleProposalAccusation methods",
         pClaims1
       )).wait();
 
-      isValidator = await fixture.validatorPool.isValidator(signerAccount0);
+      const isValidator = await fixture.validatorPool.isValidator(signerAccount0);
       assert.equal(isValidator, false);
     });
 

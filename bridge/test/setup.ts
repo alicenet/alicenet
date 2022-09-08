@@ -11,6 +11,7 @@ import {
 import { isHexString } from "ethers/lib/utils";
 import { ethers, network } from "hardhat";
 import {
+  Accusations,
   AliceNetFactory,
   AToken,
   ATokenBurner,

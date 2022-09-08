@@ -59,6 +59,18 @@ contract ValidatorPool is
     }
 
     /**
+     * Modifier to guarantee that only ETHDKG or Accusations are calling a function.
+     */
+    modifier onlyETHDKGAndAccusations(bytes32 preSalt) {
+        bytes32 computedSalt = keccak256(abi.encodePacked(preSalt , keccak256(abi.encodePacked("Accusation"))));
+        address computedAddr = getMetamorphicContractAddress(computedSalt, _factoryAddress());
+        if (msg.sender != computedAddr && msg.sender != _ethdkgAddress()) {
+            revert ValidatorPoolErrors.NotAllowedToAccuse(msg.sender, computedAddr, _ethdkgAddress());
+        }
+        _;
+    }
+
+    /**
      * Modifier to make sure that the AliceNet consensus is not running.
      */
     modifier assertNotConsensusRunning() {

@@ -33,6 +33,8 @@ ON THE EPOCH BOUNDARY OF NOT ACTIVE TO ACTIVE, THE STORAGE STRUCT MUST BE UPDATE
 // StorageGetter is the interface that all Storage structs must match
 // to be valid. These will be used to store the constants which may change
 // each epoch as governance determines.
+//
+//go:generate go-mockgen -f -i StorageGetter -o mocks/storage.mockgen.go .
 type StorageGetter interface {
 	GetMaxBytes() uint32
 	GetMaxProposalSize() uint32

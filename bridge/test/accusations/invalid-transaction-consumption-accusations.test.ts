@@ -34,10 +34,7 @@ describe("AccusationInvalidTxConsumption: Tests AccusationInvalidTxConsumption m
         proofs,
       } = getValidAccusationDataForNonExistentUTXO();
 
-      let isValidator = await fixture.validatorPool.isValidator(signerAccount0);
-      assert.equal(isValidator, true);
-
-      await(await accusation.accuseInvalidTransactionConsumption(
+      await (await accusation.accuseInvalidTransactionConsumption(
         pClaims,
         pClaimsSig,
         bClaims,
@@ -46,7 +43,7 @@ describe("AccusationInvalidTxConsumption: Tests AccusationInvalidTxConsumption m
         proofs
       )).wait();
 
-      isValidator = await fixture.validatorPool.isValidator(signerAccount0);
+      const isValidator = await fixture.validatorPool.isValidator(signerAccount0);
       assert.equal(isValidator, false);
     });
 

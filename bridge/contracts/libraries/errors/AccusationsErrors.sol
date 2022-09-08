@@ -28,4 +28,5 @@ library AccusationsErrors {
     error PClaimsAreEqual();
     error SignatureLengthMustBe65Bytes(uint256 signatureLength);
     error InvalidSignatureVersion(uint8 signatureVersion);
+    error AccusationAlreadySubmitted(bytes32 id);
 }

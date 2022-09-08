@@ -290,7 +290,9 @@ func (m *Manager) handleCompletedAccusations() error {
 
 // processLRS processes the local state of the blockchain. This function
 // is called by a worker. It returns a boolean indicating whether the
-// local round state had updates or not, as well as an error.
+// local round state had updates or not, as well as an error. To avoid
+// processing the same round states over and over again, it keeps a cache
+// of the last processed round states.
 func (m *Manager) processLRS(lrs *lstate.RoundStates) (bool, error) {
 	// keep track of new validators to clear the cache from old validators
 	currentValidators := make(map[string]bool)

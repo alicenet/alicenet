@@ -9,11 +9,10 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-
 	"github.com/alicenet/alicenet/bridge/bindings"
 	"github.com/alicenet/alicenet/layer1"
 	"github.com/alicenet/alicenet/utils"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/sirupsen/logrus"
 )
@@ -22,30 +21,32 @@ var _ layer1.EthereumContracts = &Contracts{}
 
 // Contracts contains bindings to smart contract system.
 type Contracts struct {
-	allAddresses                      map[common.Address]bool
-	eth                               *Client
-	ethdkg                            bindings.IETHDKG
-	ethdkgAddress                     common.Address
-	aToken                            bindings.IAToken
-	aTokenAddress                     common.Address
-	bToken                            bindings.IBToken
-	bTokenAddress                     common.Address
-	publicStaking                     bindings.IPublicStaking
-	publicStakingAddress              common.Address
-	validatorStaking                  bindings.IValidatorStaking
-	validatorStakingAddress           common.Address
-	contractFactory                   bindings.IAliceNetFactory
-	contractFactoryAddress            common.Address
-	snapshots                         bindings.ISnapshots
-	snapshotsAddress                  common.Address
-	validatorPool                     bindings.IValidatorPool
-	validatorPoolAddress              common.Address
-	governance                        bindings.IGovernance
-	governanceAddress                 common.Address
-	multipleProposalAccusation        bindings.IAccusationMultipleProposal
-	multipleProposalAccusationAddress common.Address
-	dynamics                          bindings.IDynamics
-	dynamicsAddress                   common.Address
+	allAddresses                          map[common.Address]bool
+	eth                                   *Client
+	ethdkg                                bindings.IETHDKG
+	ethdkgAddress                         common.Address
+	aToken                                bindings.IAToken
+	aTokenAddress                         common.Address
+	bToken                                bindings.IBToken
+	bTokenAddress                         common.Address
+	publicStaking                         bindings.IPublicStaking
+	publicStakingAddress                  common.Address
+	validatorStaking                      bindings.IValidatorStaking
+	validatorStakingAddress               common.Address
+	contractFactory                       bindings.IAliceNetFactory
+	contractFactoryAddress                common.Address
+	snapshots                             bindings.ISnapshots
+	snapshotsAddress                      common.Address
+	validatorPool                         bindings.IValidatorPool
+	validatorPoolAddress                  common.Address
+	governance                            bindings.IGovernance
+	governanceAddress                     common.Address
+	accusationMultipleProposal            bindings.IAccusationMultipleProposal
+	accusationMultipleProposalAddress     common.Address
+	accusationInvalidTxConsumption        bindings.IAccusationInvalidTxConsumption
+	accusationInvalidTxConsumptionAddress common.Address
+	dynamics                              bindings.IDynamics
+	dynamicsAddress                       common.Address
 }
 
 // Set the contractFactoryAddress and looks up for all the contracts that we
@@ -188,13 +189,24 @@ func (c *Contracts) lookupContracts() error {
 
 		// AccusationMultipleProposal
 		contractSaltComponents := []string{"AccusationMultipleProposal", "Accusation"}
-		c.multipleProposalAccusationAddress, err = c.lookupRoleBasedSalt(callOpts, contractSaltComponents)
+		c.accusationMultipleProposalAddress, err = c.lookupRoleBasedSalt(callOpts, contractSaltComponents)
 		logAndEat(logger, err)
-		if bytes.Equal(c.multipleProposalAccusationAddress.Bytes(), make([]byte, 20)) {
+		if bytes.Equal(c.accusationMultipleProposalAddress.Bytes(), make([]byte, 20)) {
 			continue
 		}
 
-		c.multipleProposalAccusation, err = bindings.NewAccusationMultipleProposal(c.multipleProposalAccusationAddress, eth.internalClient)
+		c.accusationMultipleProposal, err = bindings.NewAccusationMultipleProposal(c.accusationMultipleProposalAddress, eth.internalClient)
+		logAndEat(logger, err)
+
+		// AccusationInvalidTxConsumption
+		contractSaltComponents = []string{"AccusationInvalidTxConsumption", "Accusation"}
+		c.accusationInvalidTxConsumptionAddress, err = c.lookupRoleBasedSalt(callOpts, contractSaltComponents)
+		logAndEat(logger, err)
+		if bytes.Equal(c.accusationInvalidTxConsumptionAddress.Bytes(), make([]byte, 20)) {
+			continue
+		}
+
+		c.accusationInvalidTxConsumption, err = bindings.NewAccusationInvalidTxConsumption(c.accusationInvalidTxConsumptionAddress, eth.internalClient)
 		logAndEat(logger, err)
 
 		break
@@ -330,11 +342,19 @@ func (c *Contracts) GovernanceAddress() common.Address {
 }
 
 func (c *Contracts) MultipleProposalAccusation() bindings.IAccusationMultipleProposal {
-	return c.multipleProposalAccusation
+	return c.accusationMultipleProposal
 }
 
 func (c *Contracts) MultipleProposalAccusationAddress() common.Address {
-	return c.multipleProposalAccusationAddress
+	return c.accusationMultipleProposalAddress
+}
+
+func (c *Contracts) AccusationInvalidTxConsumption() bindings.IAccusationInvalidTxConsumption {
+	return c.accusationInvalidTxConsumption
+}
+
+func (c *Contracts) AccusationInvalidTxConsumptionAddress() common.Address {
+	return c.accusationInvalidTxConsumptionAddress
 }
 
 // utils function to log an error.

@@ -339,9 +339,7 @@ export async function getDeploymentInitializerArgs(
 //   ethers: Ethers
 // ) {
 //   const fullName = await getFullyQualifiedName(contractName, artifacts);
-//   console.log('.fullName', fullName)
 //   const salt: string = await getSalt(fullName, artifacts);
-//   console.log('.salt', salt)
 //   return ethers.utils.formatBytes32String(salt);
 // }
 export async function getFullyQualifiedName(

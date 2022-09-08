@@ -604,13 +604,6 @@ func (db *rawDataBase) getCounter(txn *badger.Txn, k []byte) (int, error) {
 ////////////////////////////////////////////////////////////////////////////////
 
 func (db *rawDataBase) SetAccusationRaw(txn *badger.Txn, key []byte, data []byte) error {
-	// buf := &bytes.Buffer{}
-	// enc := gob.NewEncoder(buf)
-	// err := enc.Encode(&a)
-	// if err != nil {
-	// 	return err
-	// }
-	// vv := buf.Bytes()
 	return utils.SetValue(txn, key, data)
 }
 
@@ -622,15 +615,6 @@ func (db *rawDataBase) GetAccusationRaw(txn *badger.Txn, key []byte) ([]byte, er
 	if v == nil {
 		return nil, nil
 	}
-
-	// buf := &bytes.Buffer{}
-	// buf.Write(v)
-	// dec := gob.NewDecoder(buf)
-	// var acc tasks.Task
-	// err = dec.Decode(&acc) // decode concrete implementation into an interface var without knowing which implementation it is (gob is awesome)
-	// if err != nil {
-	// 	return nil, err
-	// }
 
 	return v, nil
 }

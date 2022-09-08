@@ -4018,6 +4018,16 @@ func NewMockEthereumContracts() *MockEthereumContracts {
 				return
 			},
 		},
+		AccusationInvalidTxConsumptionFunc: &EthereumContractsAccusationInvalidTxConsumptionFunc{
+			defaultHook: func() (r0 bindings.IAccusationInvalidTxConsumption) {
+				return
+			},
+		},
+		AccusationInvalidTxConsumptionAddressFunc: &EthereumContractsAccusationInvalidTxConsumptionAddressFunc{
+			defaultHook: func() (r0 common.Address) {
+				return
+			},
+		},
 		BTokenFunc: &EthereumContractsBTokenFunc{
 			defaultHook: func() (r0 bindings.IBToken) {
 				return
