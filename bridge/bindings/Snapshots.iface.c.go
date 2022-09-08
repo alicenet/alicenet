@@ -23,10 +23,6 @@ type ISnapshotsCaller interface {
 	//
 	// Solidity: function getAliceNetHeightFromSnapshot(uint256 epoch_) view returns(uint256)
 	GetAliceNetHeightFromSnapshot(opts *bind.CallOpts, epoch_ *big.Int) (*big.Int, error)
-	// GetArbitraryContractAddress is a free data retrieval call binding the contract method 0x3cd1efee.
-	//
-	// Solidity: function getArbitraryContractAddress(bytes32 _salt, address _factory, bytes32 byteCodeHash_) pure returns(address)
-	GetArbitraryContractAddress(opts *bind.CallOpts, _salt [32]byte, _factory common.Address, byteCodeHash_ [32]byte) (common.Address, error)
 	// GetBlockClaimsFromLatestSnapshot is a free data retrieval call binding the contract method 0xc2ea6603.
 	//
 	// Solidity: function getBlockClaimsFromLatestSnapshot() view returns((uint32,uint32,uint32,bytes32,bytes32,bytes32,bytes32))

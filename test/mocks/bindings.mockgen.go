@@ -44,19 +44,12 @@ type MockIAToken struct {
 	// FilterApprovalFunc is an instance of a mock function object
 	// controlling the behavior of the method FilterApproval.
 	FilterApprovalFunc *IATokenFilterApprovalFunc
-	// FilterInitializedFunc is an instance of a mock function object
-	// controlling the behavior of the method FilterInitialized.
-	FilterInitializedFunc *IATokenFilterInitializedFunc
 	// FilterTransferFunc is an instance of a mock function object
 	// controlling the behavior of the method FilterTransfer.
 	FilterTransferFunc *IATokenFilterTransferFunc
 	// FinishEarlyStageFunc is an instance of a mock function object
 	// controlling the behavior of the method FinishEarlyStage.
 	FinishEarlyStageFunc *IATokenFinishEarlyStageFunc
-	// GetArbitraryContractAddressFunc is an instance of a mock function
-	// object controlling the behavior of the method
-	// GetArbitraryContractAddress.
-	GetArbitraryContractAddressFunc *IATokenGetArbitraryContractAddressFunc
 	// GetLegacyTokenAddressFunc is an instance of a mock function object
 	// controlling the behavior of the method GetLegacyTokenAddress.
 	GetLegacyTokenAddressFunc *IATokenGetLegacyTokenAddressFunc
@@ -67,9 +60,6 @@ type MockIAToken struct {
 	// IncreaseAllowanceFunc is an instance of a mock function object
 	// controlling the behavior of the method IncreaseAllowance.
 	IncreaseAllowanceFunc *IATokenIncreaseAllowanceFunc
-	// InitializeFunc is an instance of a mock function object controlling
-	// the behavior of the method Initialize.
-	InitializeFunc *IATokenInitializeFunc
 	// MigrateFunc is an instance of a mock function object controlling the
 	// behavior of the method Migrate.
 	MigrateFunc *IATokenMigrateFunc
@@ -79,9 +69,6 @@ type MockIAToken struct {
 	// ParseApprovalFunc is an instance of a mock function object
 	// controlling the behavior of the method ParseApproval.
 	ParseApprovalFunc *IATokenParseApprovalFunc
-	// ParseInitializedFunc is an instance of a mock function object
-	// controlling the behavior of the method ParseInitialized.
-	ParseInitializedFunc *IATokenParseInitializedFunc
 	// ParseTransferFunc is an instance of a mock function object
 	// controlling the behavior of the method ParseTransfer.
 	ParseTransferFunc *IATokenParseTransferFunc
@@ -100,9 +87,6 @@ type MockIAToken struct {
 	// WatchApprovalFunc is an instance of a mock function object
 	// controlling the behavior of the method WatchApproval.
 	WatchApprovalFunc *IATokenWatchApprovalFunc
-	// WatchInitializedFunc is an instance of a mock function object
-	// controlling the behavior of the method WatchInitialized.
-	WatchInitializedFunc *IATokenWatchInitializedFunc
 	// WatchTransferFunc is an instance of a mock function object
 	// controlling the behavior of the method WatchTransfer.
 	WatchTransferFunc *IATokenWatchTransferFunc
@@ -157,11 +141,6 @@ func NewMockIAToken() *MockIAToken {
 				return
 			},
 		},
-		FilterInitializedFunc: &IATokenFilterInitializedFunc{
-			defaultHook: func(*bind.FilterOpts) (r0 *bindings.ATokenInitializedIterator, r1 error) {
-				return
-			},
-		},
 		FilterTransferFunc: &IATokenFilterTransferFunc{
 			defaultHook: func(*bind.FilterOpts, []common.Address, []common.Address) (r0 *bindings.ATokenTransferIterator, r1 error) {
 				return
@@ -169,11 +148,6 @@ func NewMockIAToken() *MockIAToken {
 		},
 		FinishEarlyStageFunc: &IATokenFinishEarlyStageFunc{
 			defaultHook: func(*bind.TransactOpts) (r0 *types.Transaction, r1 error) {
-				return
-			},
-		},
-		GetArbitraryContractAddressFunc: &IATokenGetArbitraryContractAddressFunc{
-			defaultHook: func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (r0 common.Address, r1 error) {
 				return
 			},
 		},
@@ -192,11 +166,6 @@ func NewMockIAToken() *MockIAToken {
 				return
 			},
 		},
-		InitializeFunc: &IATokenInitializeFunc{
-			defaultHook: func(*bind.TransactOpts) (r0 *types.Transaction, r1 error) {
-				return
-			},
-		},
 		MigrateFunc: &IATokenMigrateFunc{
 			defaultHook: func(*bind.TransactOpts, *big.Int) (r0 *types.Transaction, r1 error) {
 				return
@@ -209,11 +178,6 @@ func NewMockIAToken() *MockIAToken {
 		},
 		ParseApprovalFunc: &IATokenParseApprovalFunc{
 			defaultHook: func(types.Log) (r0 *bindings.ATokenApproval, r1 error) {
-				return
-			},
-		},
-		ParseInitializedFunc: &IATokenParseInitializedFunc{
-			defaultHook: func(types.Log) (r0 *bindings.ATokenInitialized, r1 error) {
 				return
 			},
 		},
@@ -244,11 +208,6 @@ func NewMockIAToken() *MockIAToken {
 		},
 		WatchApprovalFunc: &IATokenWatchApprovalFunc{
 			defaultHook: func(*bind.WatchOpts, chan<- *bindings.ATokenApproval, []common.Address, []common.Address) (r0 event.Subscription, r1 error) {
-				return
-			},
-		},
-		WatchInitializedFunc: &IATokenWatchInitializedFunc{
-			defaultHook: func(*bind.WatchOpts, chan<- *bindings.ATokenInitialized) (r0 event.Subscription, r1 error) {
 				return
 			},
 		},
@@ -309,11 +268,6 @@ func NewStrictMockIAToken() *MockIAToken {
 				panic("unexpected invocation of MockIAToken.FilterApproval")
 			},
 		},
-		FilterInitializedFunc: &IATokenFilterInitializedFunc{
-			defaultHook: func(*bind.FilterOpts) (*bindings.ATokenInitializedIterator, error) {
-				panic("unexpected invocation of MockIAToken.FilterInitialized")
-			},
-		},
 		FilterTransferFunc: &IATokenFilterTransferFunc{
 			defaultHook: func(*bind.FilterOpts, []common.Address, []common.Address) (*bindings.ATokenTransferIterator, error) {
 				panic("unexpected invocation of MockIAToken.FilterTransfer")
@@ -322,11 +276,6 @@ func NewStrictMockIAToken() *MockIAToken {
 		FinishEarlyStageFunc: &IATokenFinishEarlyStageFunc{
 			defaultHook: func(*bind.TransactOpts) (*types.Transaction, error) {
 				panic("unexpected invocation of MockIAToken.FinishEarlyStage")
-			},
-		},
-		GetArbitraryContractAddressFunc: &IATokenGetArbitraryContractAddressFunc{
-			defaultHook: func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error) {
-				panic("unexpected invocation of MockIAToken.GetArbitraryContractAddress")
 			},
 		},
 		GetLegacyTokenAddressFunc: &IATokenGetLegacyTokenAddressFunc{
@@ -344,11 +293,6 @@ func NewStrictMockIAToken() *MockIAToken {
 				panic("unexpected invocation of MockIAToken.IncreaseAllowance")
 			},
 		},
-		InitializeFunc: &IATokenInitializeFunc{
-			defaultHook: func(*bind.TransactOpts) (*types.Transaction, error) {
-				panic("unexpected invocation of MockIAToken.Initialize")
-			},
-		},
 		MigrateFunc: &IATokenMigrateFunc{
 			defaultHook: func(*bind.TransactOpts, *big.Int) (*types.Transaction, error) {
 				panic("unexpected invocation of MockIAToken.Migrate")
@@ -362,11 +306,6 @@ func NewStrictMockIAToken() *MockIAToken {
 		ParseApprovalFunc: &IATokenParseApprovalFunc{
 			defaultHook: func(types.Log) (*bindings.ATokenApproval, error) {
 				panic("unexpected invocation of MockIAToken.ParseApproval")
-			},
-		},
-		ParseInitializedFunc: &IATokenParseInitializedFunc{
-			defaultHook: func(types.Log) (*bindings.ATokenInitialized, error) {
-				panic("unexpected invocation of MockIAToken.ParseInitialized")
 			},
 		},
 		ParseTransferFunc: &IATokenParseTransferFunc{
@@ -397,11 +336,6 @@ func NewStrictMockIAToken() *MockIAToken {
 		WatchApprovalFunc: &IATokenWatchApprovalFunc{
 			defaultHook: func(*bind.WatchOpts, chan<- *bindings.ATokenApproval, []common.Address, []common.Address) (event.Subscription, error) {
 				panic("unexpected invocation of MockIAToken.WatchApproval")
-			},
-		},
-		WatchInitializedFunc: &IATokenWatchInitializedFunc{
-			defaultHook: func(*bind.WatchOpts, chan<- *bindings.ATokenInitialized) (event.Subscription, error) {
-				panic("unexpected invocation of MockIAToken.WatchInitialized")
 			},
 		},
 		WatchTransferFunc: &IATokenWatchTransferFunc{
@@ -443,17 +377,11 @@ func NewMockIATokenFrom(i bindings.IAToken) *MockIAToken {
 		FilterApprovalFunc: &IATokenFilterApprovalFunc{
 			defaultHook: i.FilterApproval,
 		},
-		FilterInitializedFunc: &IATokenFilterInitializedFunc{
-			defaultHook: i.FilterInitialized,
-		},
 		FilterTransferFunc: &IATokenFilterTransferFunc{
 			defaultHook: i.FilterTransfer,
 		},
 		FinishEarlyStageFunc: &IATokenFinishEarlyStageFunc{
 			defaultHook: i.FinishEarlyStage,
-		},
-		GetArbitraryContractAddressFunc: &IATokenGetArbitraryContractAddressFunc{
-			defaultHook: i.GetArbitraryContractAddress,
 		},
 		GetLegacyTokenAddressFunc: &IATokenGetLegacyTokenAddressFunc{
 			defaultHook: i.GetLegacyTokenAddress,
@@ -464,9 +392,6 @@ func NewMockIATokenFrom(i bindings.IAToken) *MockIAToken {
 		IncreaseAllowanceFunc: &IATokenIncreaseAllowanceFunc{
 			defaultHook: i.IncreaseAllowance,
 		},
-		InitializeFunc: &IATokenInitializeFunc{
-			defaultHook: i.Initialize,
-		},
 		MigrateFunc: &IATokenMigrateFunc{
 			defaultHook: i.Migrate,
 		},
@@ -475,9 +400,6 @@ func NewMockIATokenFrom(i bindings.IAToken) *MockIAToken {
 		},
 		ParseApprovalFunc: &IATokenParseApprovalFunc{
 			defaultHook: i.ParseApproval,
-		},
-		ParseInitializedFunc: &IATokenParseInitializedFunc{
-			defaultHook: i.ParseInitialized,
 		},
 		ParseTransferFunc: &IATokenParseTransferFunc{
 			defaultHook: i.ParseTransfer,
@@ -496,9 +418,6 @@ func NewMockIATokenFrom(i bindings.IAToken) *MockIAToken {
 		},
 		WatchApprovalFunc: &IATokenWatchApprovalFunc{
 			defaultHook: i.WatchApproval,
-		},
-		WatchInitializedFunc: &IATokenWatchInitializedFunc{
-			defaultHook: i.WatchInitialized,
 		},
 		WatchTransferFunc: &IATokenWatchTransferFunc{
 			defaultHook: i.WatchTransfer,
@@ -1488,111 +1407,6 @@ func (c IATokenFilterApprovalFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
-// IATokenFilterInitializedFunc describes the behavior when the
-// FilterInitialized method of the parent MockIAToken instance is invoked.
-type IATokenFilterInitializedFunc struct {
-	defaultHook func(*bind.FilterOpts) (*bindings.ATokenInitializedIterator, error)
-	hooks       []func(*bind.FilterOpts) (*bindings.ATokenInitializedIterator, error)
-	history     []IATokenFilterInitializedFuncCall
-	mutex       sync.Mutex
-}
-
-// FilterInitialized delegates to the next hook function in the queue and
-// stores the parameter and result values of this invocation.
-func (m *MockIAToken) FilterInitialized(v0 *bind.FilterOpts) (*bindings.ATokenInitializedIterator, error) {
-	r0, r1 := m.FilterInitializedFunc.nextHook()(v0)
-	m.FilterInitializedFunc.appendCall(IATokenFilterInitializedFuncCall{v0, r0, r1})
-	return r0, r1
-}
-
-// SetDefaultHook sets function that is called when the FilterInitialized
-// method of the parent MockIAToken instance is invoked and the hook queue
-// is empty.
-func (f *IATokenFilterInitializedFunc) SetDefaultHook(hook func(*bind.FilterOpts) (*bindings.ATokenInitializedIterator, error)) {
-	f.defaultHook = hook
-}
-
-// PushHook adds a function to the end of hook queue. Each invocation of the
-// FilterInitialized method of the parent MockIAToken instance invokes the
-// hook at the front of the queue and discards it. After the queue is empty,
-// the default hook function is invoked for any future action.
-func (f *IATokenFilterInitializedFunc) PushHook(hook func(*bind.FilterOpts) (*bindings.ATokenInitializedIterator, error)) {
-	f.mutex.Lock()
-	f.hooks = append(f.hooks, hook)
-	f.mutex.Unlock()
-}
-
-// SetDefaultReturn calls SetDefaultHook with a function that returns the
-// given values.
-func (f *IATokenFilterInitializedFunc) SetDefaultReturn(r0 *bindings.ATokenInitializedIterator, r1 error) {
-	f.SetDefaultHook(func(*bind.FilterOpts) (*bindings.ATokenInitializedIterator, error) {
-		return r0, r1
-	})
-}
-
-// PushReturn calls PushHook with a function that returns the given values.
-func (f *IATokenFilterInitializedFunc) PushReturn(r0 *bindings.ATokenInitializedIterator, r1 error) {
-	f.PushHook(func(*bind.FilterOpts) (*bindings.ATokenInitializedIterator, error) {
-		return r0, r1
-	})
-}
-
-func (f *IATokenFilterInitializedFunc) nextHook() func(*bind.FilterOpts) (*bindings.ATokenInitializedIterator, error) {
-	f.mutex.Lock()
-	defer f.mutex.Unlock()
-
-	if len(f.hooks) == 0 {
-		return f.defaultHook
-	}
-
-	hook := f.hooks[0]
-	f.hooks = f.hooks[1:]
-	return hook
-}
-
-func (f *IATokenFilterInitializedFunc) appendCall(r0 IATokenFilterInitializedFuncCall) {
-	f.mutex.Lock()
-	f.history = append(f.history, r0)
-	f.mutex.Unlock()
-}
-
-// History returns a sequence of IATokenFilterInitializedFuncCall objects
-// describing the invocations of this function.
-func (f *IATokenFilterInitializedFunc) History() []IATokenFilterInitializedFuncCall {
-	f.mutex.Lock()
-	history := make([]IATokenFilterInitializedFuncCall, len(f.history))
-	copy(history, f.history)
-	f.mutex.Unlock()
-
-	return history
-}
-
-// IATokenFilterInitializedFuncCall is an object that describes an
-// invocation of method FilterInitialized on an instance of MockIAToken.
-type IATokenFilterInitializedFuncCall struct {
-	// Arg0 is the value of the 1st argument passed to this method
-	// invocation.
-	Arg0 *bind.FilterOpts
-	// Result0 is the value of the 1st result returned from this method
-	// invocation.
-	Result0 *bindings.ATokenInitializedIterator
-	// Result1 is the value of the 2nd result returned from this method
-	// invocation.
-	Result1 error
-}
-
-// Args returns an interface slice containing the arguments of this
-// invocation.
-func (c IATokenFilterInitializedFuncCall) Args() []interface{} {
-	return []interface{}{c.Arg0}
-}
-
-// Results returns an interface slice containing the results of this
-// invocation.
-func (c IATokenFilterInitializedFuncCall) Results() []interface{} {
-	return []interface{}{c.Result0, c.Result1}
-}
-
 // IATokenFilterTransferFunc describes the behavior when the FilterTransfer
 // method of the parent MockIAToken instance is invoked.
 type IATokenFilterTransferFunc struct {
@@ -1806,123 +1620,6 @@ func (c IATokenFinishEarlyStageFuncCall) Args() []interface{} {
 // Results returns an interface slice containing the results of this
 // invocation.
 func (c IATokenFinishEarlyStageFuncCall) Results() []interface{} {
-	return []interface{}{c.Result0, c.Result1}
-}
-
-// IATokenGetArbitraryContractAddressFunc describes the behavior when the
-// GetArbitraryContractAddress method of the parent MockIAToken instance is
-// invoked.
-type IATokenGetArbitraryContractAddressFunc struct {
-	defaultHook func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error)
-	hooks       []func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error)
-	history     []IATokenGetArbitraryContractAddressFuncCall
-	mutex       sync.Mutex
-}
-
-// GetArbitraryContractAddress delegates to the next hook function in the
-// queue and stores the parameter and result values of this invocation.
-func (m *MockIAToken) GetArbitraryContractAddress(v0 *bind.CallOpts, v1 [32]byte, v2 common.Address, v3 [32]byte) (common.Address, error) {
-	r0, r1 := m.GetArbitraryContractAddressFunc.nextHook()(v0, v1, v2, v3)
-	m.GetArbitraryContractAddressFunc.appendCall(IATokenGetArbitraryContractAddressFuncCall{v0, v1, v2, v3, r0, r1})
-	return r0, r1
-}
-
-// SetDefaultHook sets function that is called when the
-// GetArbitraryContractAddress method of the parent MockIAToken instance is
-// invoked and the hook queue is empty.
-func (f *IATokenGetArbitraryContractAddressFunc) SetDefaultHook(hook func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error)) {
-	f.defaultHook = hook
-}
-
-// PushHook adds a function to the end of hook queue. Each invocation of the
-// GetArbitraryContractAddress method of the parent MockIAToken instance
-// invokes the hook at the front of the queue and discards it. After the
-// queue is empty, the default hook function is invoked for any future
-// action.
-func (f *IATokenGetArbitraryContractAddressFunc) PushHook(hook func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error)) {
-	f.mutex.Lock()
-	f.hooks = append(f.hooks, hook)
-	f.mutex.Unlock()
-}
-
-// SetDefaultReturn calls SetDefaultHook with a function that returns the
-// given values.
-func (f *IATokenGetArbitraryContractAddressFunc) SetDefaultReturn(r0 common.Address, r1 error) {
-	f.SetDefaultHook(func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error) {
-		return r0, r1
-	})
-}
-
-// PushReturn calls PushHook with a function that returns the given values.
-func (f *IATokenGetArbitraryContractAddressFunc) PushReturn(r0 common.Address, r1 error) {
-	f.PushHook(func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error) {
-		return r0, r1
-	})
-}
-
-func (f *IATokenGetArbitraryContractAddressFunc) nextHook() func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error) {
-	f.mutex.Lock()
-	defer f.mutex.Unlock()
-
-	if len(f.hooks) == 0 {
-		return f.defaultHook
-	}
-
-	hook := f.hooks[0]
-	f.hooks = f.hooks[1:]
-	return hook
-}
-
-func (f *IATokenGetArbitraryContractAddressFunc) appendCall(r0 IATokenGetArbitraryContractAddressFuncCall) {
-	f.mutex.Lock()
-	f.history = append(f.history, r0)
-	f.mutex.Unlock()
-}
-
-// History returns a sequence of IATokenGetArbitraryContractAddressFuncCall
-// objects describing the invocations of this function.
-func (f *IATokenGetArbitraryContractAddressFunc) History() []IATokenGetArbitraryContractAddressFuncCall {
-	f.mutex.Lock()
-	history := make([]IATokenGetArbitraryContractAddressFuncCall, len(f.history))
-	copy(history, f.history)
-	f.mutex.Unlock()
-
-	return history
-}
-
-// IATokenGetArbitraryContractAddressFuncCall is an object that describes an
-// invocation of method GetArbitraryContractAddress on an instance of
-// MockIAToken.
-type IATokenGetArbitraryContractAddressFuncCall struct {
-	// Arg0 is the value of the 1st argument passed to this method
-	// invocation.
-	Arg0 *bind.CallOpts
-	// Arg1 is the value of the 2nd argument passed to this method
-	// invocation.
-	Arg1 [32]byte
-	// Arg2 is the value of the 3rd argument passed to this method
-	// invocation.
-	Arg2 common.Address
-	// Arg3 is the value of the 4th argument passed to this method
-	// invocation.
-	Arg3 [32]byte
-	// Result0 is the value of the 1st result returned from this method
-	// invocation.
-	Result0 common.Address
-	// Result1 is the value of the 2nd result returned from this method
-	// invocation.
-	Result1 error
-}
-
-// Args returns an interface slice containing the arguments of this
-// invocation.
-func (c IATokenGetArbitraryContractAddressFuncCall) Args() []interface{} {
-	return []interface{}{c.Arg0, c.Arg1, c.Arg2, c.Arg3}
-}
-
-// Results returns an interface slice containing the results of this
-// invocation.
-func (c IATokenGetArbitraryContractAddressFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
@@ -2258,110 +1955,6 @@ func (c IATokenIncreaseAllowanceFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
-// IATokenInitializeFunc describes the behavior when the Initialize method
-// of the parent MockIAToken instance is invoked.
-type IATokenInitializeFunc struct {
-	defaultHook func(*bind.TransactOpts) (*types.Transaction, error)
-	hooks       []func(*bind.TransactOpts) (*types.Transaction, error)
-	history     []IATokenInitializeFuncCall
-	mutex       sync.Mutex
-}
-
-// Initialize delegates to the next hook function in the queue and stores
-// the parameter and result values of this invocation.
-func (m *MockIAToken) Initialize(v0 *bind.TransactOpts) (*types.Transaction, error) {
-	r0, r1 := m.InitializeFunc.nextHook()(v0)
-	m.InitializeFunc.appendCall(IATokenInitializeFuncCall{v0, r0, r1})
-	return r0, r1
-}
-
-// SetDefaultHook sets function that is called when the Initialize method of
-// the parent MockIAToken instance is invoked and the hook queue is empty.
-func (f *IATokenInitializeFunc) SetDefaultHook(hook func(*bind.TransactOpts) (*types.Transaction, error)) {
-	f.defaultHook = hook
-}
-
-// PushHook adds a function to the end of hook queue. Each invocation of the
-// Initialize method of the parent MockIAToken instance invokes the hook at
-// the front of the queue and discards it. After the queue is empty, the
-// default hook function is invoked for any future action.
-func (f *IATokenInitializeFunc) PushHook(hook func(*bind.TransactOpts) (*types.Transaction, error)) {
-	f.mutex.Lock()
-	f.hooks = append(f.hooks, hook)
-	f.mutex.Unlock()
-}
-
-// SetDefaultReturn calls SetDefaultHook with a function that returns the
-// given values.
-func (f *IATokenInitializeFunc) SetDefaultReturn(r0 *types.Transaction, r1 error) {
-	f.SetDefaultHook(func(*bind.TransactOpts) (*types.Transaction, error) {
-		return r0, r1
-	})
-}
-
-// PushReturn calls PushHook with a function that returns the given values.
-func (f *IATokenInitializeFunc) PushReturn(r0 *types.Transaction, r1 error) {
-	f.PushHook(func(*bind.TransactOpts) (*types.Transaction, error) {
-		return r0, r1
-	})
-}
-
-func (f *IATokenInitializeFunc) nextHook() func(*bind.TransactOpts) (*types.Transaction, error) {
-	f.mutex.Lock()
-	defer f.mutex.Unlock()
-
-	if len(f.hooks) == 0 {
-		return f.defaultHook
-	}
-
-	hook := f.hooks[0]
-	f.hooks = f.hooks[1:]
-	return hook
-}
-
-func (f *IATokenInitializeFunc) appendCall(r0 IATokenInitializeFuncCall) {
-	f.mutex.Lock()
-	f.history = append(f.history, r0)
-	f.mutex.Unlock()
-}
-
-// History returns a sequence of IATokenInitializeFuncCall objects
-// describing the invocations of this function.
-func (f *IATokenInitializeFunc) History() []IATokenInitializeFuncCall {
-	f.mutex.Lock()
-	history := make([]IATokenInitializeFuncCall, len(f.history))
-	copy(history, f.history)
-	f.mutex.Unlock()
-
-	return history
-}
-
-// IATokenInitializeFuncCall is an object that describes an invocation of
-// method Initialize on an instance of MockIAToken.
-type IATokenInitializeFuncCall struct {
-	// Arg0 is the value of the 1st argument passed to this method
-	// invocation.
-	Arg0 *bind.TransactOpts
-	// Result0 is the value of the 1st result returned from this method
-	// invocation.
-	Result0 *types.Transaction
-	// Result1 is the value of the 2nd result returned from this method
-	// invocation.
-	Result1 error
-}
-
-// Args returns an interface slice containing the arguments of this
-// invocation.
-func (c IATokenInitializeFuncCall) Args() []interface{} {
-	return []interface{}{c.Arg0}
-}
-
-// Results returns an interface slice containing the results of this
-// invocation.
-func (c IATokenInitializeFuncCall) Results() []interface{} {
-	return []interface{}{c.Result0, c.Result1}
-}
-
 // IATokenMigrateFunc describes the behavior when the Migrate method of the
 // parent MockIAToken instance is invoked.
 type IATokenMigrateFunc struct {
@@ -2675,111 +2268,6 @@ func (c IATokenParseApprovalFuncCall) Args() []interface{} {
 // Results returns an interface slice containing the results of this
 // invocation.
 func (c IATokenParseApprovalFuncCall) Results() []interface{} {
-	return []interface{}{c.Result0, c.Result1}
-}
-
-// IATokenParseInitializedFunc describes the behavior when the
-// ParseInitialized method of the parent MockIAToken instance is invoked.
-type IATokenParseInitializedFunc struct {
-	defaultHook func(types.Log) (*bindings.ATokenInitialized, error)
-	hooks       []func(types.Log) (*bindings.ATokenInitialized, error)
-	history     []IATokenParseInitializedFuncCall
-	mutex       sync.Mutex
-}
-
-// ParseInitialized delegates to the next hook function in the queue and
-// stores the parameter and result values of this invocation.
-func (m *MockIAToken) ParseInitialized(v0 types.Log) (*bindings.ATokenInitialized, error) {
-	r0, r1 := m.ParseInitializedFunc.nextHook()(v0)
-	m.ParseInitializedFunc.appendCall(IATokenParseInitializedFuncCall{v0, r0, r1})
-	return r0, r1
-}
-
-// SetDefaultHook sets function that is called when the ParseInitialized
-// method of the parent MockIAToken instance is invoked and the hook queue
-// is empty.
-func (f *IATokenParseInitializedFunc) SetDefaultHook(hook func(types.Log) (*bindings.ATokenInitialized, error)) {
-	f.defaultHook = hook
-}
-
-// PushHook adds a function to the end of hook queue. Each invocation of the
-// ParseInitialized method of the parent MockIAToken instance invokes the
-// hook at the front of the queue and discards it. After the queue is empty,
-// the default hook function is invoked for any future action.
-func (f *IATokenParseInitializedFunc) PushHook(hook func(types.Log) (*bindings.ATokenInitialized, error)) {
-	f.mutex.Lock()
-	f.hooks = append(f.hooks, hook)
-	f.mutex.Unlock()
-}
-
-// SetDefaultReturn calls SetDefaultHook with a function that returns the
-// given values.
-func (f *IATokenParseInitializedFunc) SetDefaultReturn(r0 *bindings.ATokenInitialized, r1 error) {
-	f.SetDefaultHook(func(types.Log) (*bindings.ATokenInitialized, error) {
-		return r0, r1
-	})
-}
-
-// PushReturn calls PushHook with a function that returns the given values.
-func (f *IATokenParseInitializedFunc) PushReturn(r0 *bindings.ATokenInitialized, r1 error) {
-	f.PushHook(func(types.Log) (*bindings.ATokenInitialized, error) {
-		return r0, r1
-	})
-}
-
-func (f *IATokenParseInitializedFunc) nextHook() func(types.Log) (*bindings.ATokenInitialized, error) {
-	f.mutex.Lock()
-	defer f.mutex.Unlock()
-
-	if len(f.hooks) == 0 {
-		return f.defaultHook
-	}
-
-	hook := f.hooks[0]
-	f.hooks = f.hooks[1:]
-	return hook
-}
-
-func (f *IATokenParseInitializedFunc) appendCall(r0 IATokenParseInitializedFuncCall) {
-	f.mutex.Lock()
-	f.history = append(f.history, r0)
-	f.mutex.Unlock()
-}
-
-// History returns a sequence of IATokenParseInitializedFuncCall objects
-// describing the invocations of this function.
-func (f *IATokenParseInitializedFunc) History() []IATokenParseInitializedFuncCall {
-	f.mutex.Lock()
-	history := make([]IATokenParseInitializedFuncCall, len(f.history))
-	copy(history, f.history)
-	f.mutex.Unlock()
-
-	return history
-}
-
-// IATokenParseInitializedFuncCall is an object that describes an invocation
-// of method ParseInitialized on an instance of MockIAToken.
-type IATokenParseInitializedFuncCall struct {
-	// Arg0 is the value of the 1st argument passed to this method
-	// invocation.
-	Arg0 types.Log
-	// Result0 is the value of the 1st result returned from this method
-	// invocation.
-	Result0 *bindings.ATokenInitialized
-	// Result1 is the value of the 2nd result returned from this method
-	// invocation.
-	Result1 error
-}
-
-// Args returns an interface slice containing the arguments of this
-// invocation.
-func (c IATokenParseInitializedFuncCall) Args() []interface{} {
-	return []interface{}{c.Arg0}
-}
-
-// Results returns an interface slice containing the results of this
-// invocation.
-func (c IATokenParseInitializedFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
@@ -3435,114 +2923,6 @@ func (c IATokenWatchApprovalFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
-// IATokenWatchInitializedFunc describes the behavior when the
-// WatchInitialized method of the parent MockIAToken instance is invoked.
-type IATokenWatchInitializedFunc struct {
-	defaultHook func(*bind.WatchOpts, chan<- *bindings.ATokenInitialized) (event.Subscription, error)
-	hooks       []func(*bind.WatchOpts, chan<- *bindings.ATokenInitialized) (event.Subscription, error)
-	history     []IATokenWatchInitializedFuncCall
-	mutex       sync.Mutex
-}
-
-// WatchInitialized delegates to the next hook function in the queue and
-// stores the parameter and result values of this invocation.
-func (m *MockIAToken) WatchInitialized(v0 *bind.WatchOpts, v1 chan<- *bindings.ATokenInitialized) (event.Subscription, error) {
-	r0, r1 := m.WatchInitializedFunc.nextHook()(v0, v1)
-	m.WatchInitializedFunc.appendCall(IATokenWatchInitializedFuncCall{v0, v1, r0, r1})
-	return r0, r1
-}
-
-// SetDefaultHook sets function that is called when the WatchInitialized
-// method of the parent MockIAToken instance is invoked and the hook queue
-// is empty.
-func (f *IATokenWatchInitializedFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *bindings.ATokenInitialized) (event.Subscription, error)) {
-	f.defaultHook = hook
-}
-
-// PushHook adds a function to the end of hook queue. Each invocation of the
-// WatchInitialized method of the parent MockIAToken instance invokes the
-// hook at the front of the queue and discards it. After the queue is empty,
-// the default hook function is invoked for any future action.
-func (f *IATokenWatchInitializedFunc) PushHook(hook func(*bind.WatchOpts, chan<- *bindings.ATokenInitialized) (event.Subscription, error)) {
-	f.mutex.Lock()
-	f.hooks = append(f.hooks, hook)
-	f.mutex.Unlock()
-}
-
-// SetDefaultReturn calls SetDefaultHook with a function that returns the
-// given values.
-func (f *IATokenWatchInitializedFunc) SetDefaultReturn(r0 event.Subscription, r1 error) {
-	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *bindings.ATokenInitialized) (event.Subscription, error) {
-		return r0, r1
-	})
-}
-
-// PushReturn calls PushHook with a function that returns the given values.
-func (f *IATokenWatchInitializedFunc) PushReturn(r0 event.Subscription, r1 error) {
-	f.PushHook(func(*bind.WatchOpts, chan<- *bindings.ATokenInitialized) (event.Subscription, error) {
-		return r0, r1
-	})
-}
-
-func (f *IATokenWatchInitializedFunc) nextHook() func(*bind.WatchOpts, chan<- *bindings.ATokenInitialized) (event.Subscription, error) {
-	f.mutex.Lock()
-	defer f.mutex.Unlock()
-
-	if len(f.hooks) == 0 {
-		return f.defaultHook
-	}
-
-	hook := f.hooks[0]
-	f.hooks = f.hooks[1:]
-	return hook
-}
-
-func (f *IATokenWatchInitializedFunc) appendCall(r0 IATokenWatchInitializedFuncCall) {
-	f.mutex.Lock()
-	f.history = append(f.history, r0)
-	f.mutex.Unlock()
-}
-
-// History returns a sequence of IATokenWatchInitializedFuncCall objects
-// describing the invocations of this function.
-func (f *IATokenWatchInitializedFunc) History() []IATokenWatchInitializedFuncCall {
-	f.mutex.Lock()
-	history := make([]IATokenWatchInitializedFuncCall, len(f.history))
-	copy(history, f.history)
-	f.mutex.Unlock()
-
-	return history
-}
-
-// IATokenWatchInitializedFuncCall is an object that describes an invocation
-// of method WatchInitialized on an instance of MockIAToken.
-type IATokenWatchInitializedFuncCall struct {
-	// Arg0 is the value of the 1st argument passed to this method
-	// invocation.
-	Arg0 *bind.WatchOpts
-	// Arg1 is the value of the 2nd argument passed to this method
-	// invocation.
-	Arg1 chan<- *bindings.ATokenInitialized
-	// Result0 is the value of the 1st result returned from this method
-	// invocation.
-	Result0 event.Subscription
-	// Result1 is the value of the 2nd result returned from this method
-	// invocation.
-	Result1 error
-}
-
-// Args returns an interface slice containing the arguments of this
-// invocation.
-func (c IATokenWatchInitializedFuncCall) Args() []interface{} {
-	return []interface{}{c.Arg0, c.Arg1}
-}
-
-// Results returns an interface slice containing the results of this
-// invocation.
-func (c IATokenWatchInitializedFuncCall) Results() []interface{} {
-	return []interface{}{c.Result0, c.Result1}
-}
-
 // IATokenWatchTransferFunc describes the behavior when the WatchTransfer
 // method of the parent MockIAToken instance is invoked.
 type IATokenWatchTransferFunc struct {
@@ -3679,12 +3059,6 @@ type MockIAliceNetFactory struct {
 	// DeployProxyFunc is an instance of a mock function object controlling
 	// the behavior of the method DeployProxy.
 	DeployProxyFunc *IAliceNetFactoryDeployProxyFunc
-	// DeployStaticFunc is an instance of a mock function object controlling
-	// the behavior of the method DeployStatic.
-	DeployStaticFunc *IAliceNetFactoryDeployStaticFunc
-	// DeployTemplateFunc is an instance of a mock function object
-	// controlling the behavior of the method DeployTemplate.
-	DeployTemplateFunc *IAliceNetFactoryDeployTemplateFunc
 	// FallbackFunc is an instance of a mock function object controlling the
 	// behavior of the method Fallback.
 	FallbackFunc *IAliceNetFactoryFallbackFunc
@@ -3703,10 +3077,6 @@ type MockIAliceNetFactory struct {
 	// FilterDeployedTemplateFunc is an instance of a mock function object
 	// controlling the behavior of the method FilterDeployedTemplate.
 	FilterDeployedTemplateFunc *IAliceNetFactoryFilterDeployedTemplateFunc
-	// GetArbitraryContractAddressFunc is an instance of a mock function
-	// object controlling the behavior of the method
-	// GetArbitraryContractAddress.
-	GetArbitraryContractAddressFunc *IAliceNetFactoryGetArbitraryContractAddressFunc
 	// GetImplementationFunc is an instance of a mock function object
 	// controlling the behavior of the method GetImplementation.
 	GetImplementationFunc *IAliceNetFactoryGetImplementationFunc
@@ -3805,16 +3175,6 @@ func NewMockIAliceNetFactory() *MockIAliceNetFactory {
 				return
 			},
 		},
-		DeployStaticFunc: &IAliceNetFactoryDeployStaticFunc{
-			defaultHook: func(*bind.TransactOpts, [32]byte, []byte) (r0 *types.Transaction, r1 error) {
-				return
-			},
-		},
-		DeployTemplateFunc: &IAliceNetFactoryDeployTemplateFunc{
-			defaultHook: func(*bind.TransactOpts, []byte) (r0 *types.Transaction, r1 error) {
-				return
-			},
-		},
 		FallbackFunc: &IAliceNetFactoryFallbackFunc{
 			defaultHook: func(*bind.TransactOpts, []byte) (r0 *types.Transaction, r1 error) {
 				return
@@ -3842,11 +3202,6 @@ func NewMockIAliceNetFactory() *MockIAliceNetFactory {
 		},
 		FilterDeployedTemplateFunc: &IAliceNetFactoryFilterDeployedTemplateFunc{
 			defaultHook: func(*bind.FilterOpts) (r0 *bindings.AliceNetFactoryDeployedTemplateIterator, r1 error) {
-				return
-			},
-		},
-		GetArbitraryContractAddressFunc: &IAliceNetFactoryGetArbitraryContractAddressFunc{
-			defaultHook: func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (r0 common.Address, r1 error) {
 				return
 			},
 		},
@@ -3987,16 +3342,6 @@ func NewStrictMockIAliceNetFactory() *MockIAliceNetFactory {
 				panic("unexpected invocation of MockIAliceNetFactory.DeployProxy")
 			},
 		},
-		DeployStaticFunc: &IAliceNetFactoryDeployStaticFunc{
-			defaultHook: func(*bind.TransactOpts, [32]byte, []byte) (*types.Transaction, error) {
-				panic("unexpected invocation of MockIAliceNetFactory.DeployStatic")
-			},
-		},
-		DeployTemplateFunc: &IAliceNetFactoryDeployTemplateFunc{
-			defaultHook: func(*bind.TransactOpts, []byte) (*types.Transaction, error) {
-				panic("unexpected invocation of MockIAliceNetFactory.DeployTemplate")
-			},
-		},
 		FallbackFunc: &IAliceNetFactoryFallbackFunc{
 			defaultHook: func(*bind.TransactOpts, []byte) (*types.Transaction, error) {
 				panic("unexpected invocation of MockIAliceNetFactory.Fallback")
@@ -4025,11 +3370,6 @@ func NewStrictMockIAliceNetFactory() *MockIAliceNetFactory {
 		FilterDeployedTemplateFunc: &IAliceNetFactoryFilterDeployedTemplateFunc{
 			defaultHook: func(*bind.FilterOpts) (*bindings.AliceNetFactoryDeployedTemplateIterator, error) {
 				panic("unexpected invocation of MockIAliceNetFactory.FilterDeployedTemplate")
-			},
-		},
-		GetArbitraryContractAddressFunc: &IAliceNetFactoryGetArbitraryContractAddressFunc{
-			defaultHook: func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error) {
-				panic("unexpected invocation of MockIAliceNetFactory.GetArbitraryContractAddress")
 			},
 		},
 		GetImplementationFunc: &IAliceNetFactoryGetImplementationFunc{
@@ -4158,12 +3498,6 @@ func NewMockIAliceNetFactoryFrom(i bindings.IAliceNetFactory) *MockIAliceNetFact
 		DeployProxyFunc: &IAliceNetFactoryDeployProxyFunc{
 			defaultHook: i.DeployProxy,
 		},
-		DeployStaticFunc: &IAliceNetFactoryDeployStaticFunc{
-			defaultHook: i.DeployStatic,
-		},
-		DeployTemplateFunc: &IAliceNetFactoryDeployTemplateFunc{
-			defaultHook: i.DeployTemplate,
-		},
 		FallbackFunc: &IAliceNetFactoryFallbackFunc{
 			defaultHook: i.Fallback,
 		},
@@ -4181,9 +3515,6 @@ func NewMockIAliceNetFactoryFrom(i bindings.IAliceNetFactory) *MockIAliceNetFact
 		},
 		FilterDeployedTemplateFunc: &IAliceNetFactoryFilterDeployedTemplateFunc{
 			defaultHook: i.FilterDeployedTemplate,
-		},
-		GetArbitraryContractAddressFunc: &IAliceNetFactoryGetArbitraryContractAddressFunc{
-			defaultHook: i.GetArbitraryContractAddress,
 		},
 		GetImplementationFunc: &IAliceNetFactoryGetImplementationFunc{
 			defaultHook: i.GetImplementation,
@@ -4916,228 +4247,6 @@ func (c IAliceNetFactoryDeployProxyFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
-// IAliceNetFactoryDeployStaticFunc describes the behavior when the
-// DeployStatic method of the parent MockIAliceNetFactory instance is
-// invoked.
-type IAliceNetFactoryDeployStaticFunc struct {
-	defaultHook func(*bind.TransactOpts, [32]byte, []byte) (*types.Transaction, error)
-	hooks       []func(*bind.TransactOpts, [32]byte, []byte) (*types.Transaction, error)
-	history     []IAliceNetFactoryDeployStaticFuncCall
-	mutex       sync.Mutex
-}
-
-// DeployStatic delegates to the next hook function in the queue and stores
-// the parameter and result values of this invocation.
-func (m *MockIAliceNetFactory) DeployStatic(v0 *bind.TransactOpts, v1 [32]byte, v2 []byte) (*types.Transaction, error) {
-	r0, r1 := m.DeployStaticFunc.nextHook()(v0, v1, v2)
-	m.DeployStaticFunc.appendCall(IAliceNetFactoryDeployStaticFuncCall{v0, v1, v2, r0, r1})
-	return r0, r1
-}
-
-// SetDefaultHook sets function that is called when the DeployStatic method
-// of the parent MockIAliceNetFactory instance is invoked and the hook queue
-// is empty.
-func (f *IAliceNetFactoryDeployStaticFunc) SetDefaultHook(hook func(*bind.TransactOpts, [32]byte, []byte) (*types.Transaction, error)) {
-	f.defaultHook = hook
-}
-
-// PushHook adds a function to the end of hook queue. Each invocation of the
-// DeployStatic method of the parent MockIAliceNetFactory instance invokes
-// the hook at the front of the queue and discards it. After the queue is
-// empty, the default hook function is invoked for any future action.
-func (f *IAliceNetFactoryDeployStaticFunc) PushHook(hook func(*bind.TransactOpts, [32]byte, []byte) (*types.Transaction, error)) {
-	f.mutex.Lock()
-	f.hooks = append(f.hooks, hook)
-	f.mutex.Unlock()
-}
-
-// SetDefaultReturn calls SetDefaultHook with a function that returns the
-// given values.
-func (f *IAliceNetFactoryDeployStaticFunc) SetDefaultReturn(r0 *types.Transaction, r1 error) {
-	f.SetDefaultHook(func(*bind.TransactOpts, [32]byte, []byte) (*types.Transaction, error) {
-		return r0, r1
-	})
-}
-
-// PushReturn calls PushHook with a function that returns the given values.
-func (f *IAliceNetFactoryDeployStaticFunc) PushReturn(r0 *types.Transaction, r1 error) {
-	f.PushHook(func(*bind.TransactOpts, [32]byte, []byte) (*types.Transaction, error) {
-		return r0, r1
-	})
-}
-
-func (f *IAliceNetFactoryDeployStaticFunc) nextHook() func(*bind.TransactOpts, [32]byte, []byte) (*types.Transaction, error) {
-	f.mutex.Lock()
-	defer f.mutex.Unlock()
-
-	if len(f.hooks) == 0 {
-		return f.defaultHook
-	}
-
-	hook := f.hooks[0]
-	f.hooks = f.hooks[1:]
-	return hook
-}
-
-func (f *IAliceNetFactoryDeployStaticFunc) appendCall(r0 IAliceNetFactoryDeployStaticFuncCall) {
-	f.mutex.Lock()
-	f.history = append(f.history, r0)
-	f.mutex.Unlock()
-}
-
-// History returns a sequence of IAliceNetFactoryDeployStaticFuncCall
-// objects describing the invocations of this function.
-func (f *IAliceNetFactoryDeployStaticFunc) History() []IAliceNetFactoryDeployStaticFuncCall {
-	f.mutex.Lock()
-	history := make([]IAliceNetFactoryDeployStaticFuncCall, len(f.history))
-	copy(history, f.history)
-	f.mutex.Unlock()
-
-	return history
-}
-
-// IAliceNetFactoryDeployStaticFuncCall is an object that describes an
-// invocation of method DeployStatic on an instance of MockIAliceNetFactory.
-type IAliceNetFactoryDeployStaticFuncCall struct {
-	// Arg0 is the value of the 1st argument passed to this method
-	// invocation.
-	Arg0 *bind.TransactOpts
-	// Arg1 is the value of the 2nd argument passed to this method
-	// invocation.
-	Arg1 [32]byte
-	// Arg2 is the value of the 3rd argument passed to this method
-	// invocation.
-	Arg2 []byte
-	// Result0 is the value of the 1st result returned from this method
-	// invocation.
-	Result0 *types.Transaction
-	// Result1 is the value of the 2nd result returned from this method
-	// invocation.
-	Result1 error
-}
-
-// Args returns an interface slice containing the arguments of this
-// invocation.
-func (c IAliceNetFactoryDeployStaticFuncCall) Args() []interface{} {
-	return []interface{}{c.Arg0, c.Arg1, c.Arg2}
-}
-
-// Results returns an interface slice containing the results of this
-// invocation.
-func (c IAliceNetFactoryDeployStaticFuncCall) Results() []interface{} {
-	return []interface{}{c.Result0, c.Result1}
-}
-
-// IAliceNetFactoryDeployTemplateFunc describes the behavior when the
-// DeployTemplate method of the parent MockIAliceNetFactory instance is
-// invoked.
-type IAliceNetFactoryDeployTemplateFunc struct {
-	defaultHook func(*bind.TransactOpts, []byte) (*types.Transaction, error)
-	hooks       []func(*bind.TransactOpts, []byte) (*types.Transaction, error)
-	history     []IAliceNetFactoryDeployTemplateFuncCall
-	mutex       sync.Mutex
-}
-
-// DeployTemplate delegates to the next hook function in the queue and
-// stores the parameter and result values of this invocation.
-func (m *MockIAliceNetFactory) DeployTemplate(v0 *bind.TransactOpts, v1 []byte) (*types.Transaction, error) {
-	r0, r1 := m.DeployTemplateFunc.nextHook()(v0, v1)
-	m.DeployTemplateFunc.appendCall(IAliceNetFactoryDeployTemplateFuncCall{v0, v1, r0, r1})
-	return r0, r1
-}
-
-// SetDefaultHook sets function that is called when the DeployTemplate
-// method of the parent MockIAliceNetFactory instance is invoked and the
-// hook queue is empty.
-func (f *IAliceNetFactoryDeployTemplateFunc) SetDefaultHook(hook func(*bind.TransactOpts, []byte) (*types.Transaction, error)) {
-	f.defaultHook = hook
-}
-
-// PushHook adds a function to the end of hook queue. Each invocation of the
-// DeployTemplate method of the parent MockIAliceNetFactory instance invokes
-// the hook at the front of the queue and discards it. After the queue is
-// empty, the default hook function is invoked for any future action.
-func (f *IAliceNetFactoryDeployTemplateFunc) PushHook(hook func(*bind.TransactOpts, []byte) (*types.Transaction, error)) {
-	f.mutex.Lock()
-	f.hooks = append(f.hooks, hook)
-	f.mutex.Unlock()
-}
-
-// SetDefaultReturn calls SetDefaultHook with a function that returns the
-// given values.
-func (f *IAliceNetFactoryDeployTemplateFunc) SetDefaultReturn(r0 *types.Transaction, r1 error) {
-	f.SetDefaultHook(func(*bind.TransactOpts, []byte) (*types.Transaction, error) {
-		return r0, r1
-	})
-}
-
-// PushReturn calls PushHook with a function that returns the given values.
-func (f *IAliceNetFactoryDeployTemplateFunc) PushReturn(r0 *types.Transaction, r1 error) {
-	f.PushHook(func(*bind.TransactOpts, []byte) (*types.Transaction, error) {
-		return r0, r1
-	})
-}
-
-func (f *IAliceNetFactoryDeployTemplateFunc) nextHook() func(*bind.TransactOpts, []byte) (*types.Transaction, error) {
-	f.mutex.Lock()
-	defer f.mutex.Unlock()
-
-	if len(f.hooks) == 0 {
-		return f.defaultHook
-	}
-
-	hook := f.hooks[0]
-	f.hooks = f.hooks[1:]
-	return hook
-}
-
-func (f *IAliceNetFactoryDeployTemplateFunc) appendCall(r0 IAliceNetFactoryDeployTemplateFuncCall) {
-	f.mutex.Lock()
-	f.history = append(f.history, r0)
-	f.mutex.Unlock()
-}
-
-// History returns a sequence of IAliceNetFactoryDeployTemplateFuncCall
-// objects describing the invocations of this function.
-func (f *IAliceNetFactoryDeployTemplateFunc) History() []IAliceNetFactoryDeployTemplateFuncCall {
-	f.mutex.Lock()
-	history := make([]IAliceNetFactoryDeployTemplateFuncCall, len(f.history))
-	copy(history, f.history)
-	f.mutex.Unlock()
-
-	return history
-}
-
-// IAliceNetFactoryDeployTemplateFuncCall is an object that describes an
-// invocation of method DeployTemplate on an instance of
-// MockIAliceNetFactory.
-type IAliceNetFactoryDeployTemplateFuncCall struct {
-	// Arg0 is the value of the 1st argument passed to this method
-	// invocation.
-	Arg0 *bind.TransactOpts
-	// Arg1 is the value of the 2nd argument passed to this method
-	// invocation.
-	Arg1 []byte
-	// Result0 is the value of the 1st result returned from this method
-	// invocation.
-	Result0 *types.Transaction
-	// Result1 is the value of the 2nd result returned from this method
-	// invocation.
-	Result1 error
-}
-
-// Args returns an interface slice containing the arguments of this
-// invocation.
-func (c IAliceNetFactoryDeployTemplateFuncCall) Args() []interface{} {
-	return []interface{}{c.Arg0, c.Arg1}
-}
-
-// Results returns an interface slice containing the results of this
-// invocation.
-func (c IAliceNetFactoryDeployTemplateFuncCall) Results() []interface{} {
-	return []interface{}{c.Result0, c.Result1}
-}
-
 // IAliceNetFactoryFallbackFunc describes the behavior when the Fallback
 // method of the parent MockIAliceNetFactory instance is invoked.
 type IAliceNetFactoryFallbackFunc struct {
@@ -5784,124 +4893,6 @@ func (c IAliceNetFactoryFilterDeployedTemplateFuncCall) Args() []interface{} {
 // Results returns an interface slice containing the results of this
 // invocation.
 func (c IAliceNetFactoryFilterDeployedTemplateFuncCall) Results() []interface{} {
-	return []interface{}{c.Result0, c.Result1}
-}
-
-// IAliceNetFactoryGetArbitraryContractAddressFunc describes the behavior
-// when the GetArbitraryContractAddress method of the parent
-// MockIAliceNetFactory instance is invoked.
-type IAliceNetFactoryGetArbitraryContractAddressFunc struct {
-	defaultHook func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error)
-	hooks       []func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error)
-	history     []IAliceNetFactoryGetArbitraryContractAddressFuncCall
-	mutex       sync.Mutex
-}
-
-// GetArbitraryContractAddress delegates to the next hook function in the
-// queue and stores the parameter and result values of this invocation.
-func (m *MockIAliceNetFactory) GetArbitraryContractAddress(v0 *bind.CallOpts, v1 [32]byte, v2 common.Address, v3 [32]byte) (common.Address, error) {
-	r0, r1 := m.GetArbitraryContractAddressFunc.nextHook()(v0, v1, v2, v3)
-	m.GetArbitraryContractAddressFunc.appendCall(IAliceNetFactoryGetArbitraryContractAddressFuncCall{v0, v1, v2, v3, r0, r1})
-	return r0, r1
-}
-
-// SetDefaultHook sets function that is called when the
-// GetArbitraryContractAddress method of the parent MockIAliceNetFactory
-// instance is invoked and the hook queue is empty.
-func (f *IAliceNetFactoryGetArbitraryContractAddressFunc) SetDefaultHook(hook func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error)) {
-	f.defaultHook = hook
-}
-
-// PushHook adds a function to the end of hook queue. Each invocation of the
-// GetArbitraryContractAddress method of the parent MockIAliceNetFactory
-// instance invokes the hook at the front of the queue and discards it.
-// After the queue is empty, the default hook function is invoked for any
-// future action.
-func (f *IAliceNetFactoryGetArbitraryContractAddressFunc) PushHook(hook func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error)) {
-	f.mutex.Lock()
-	f.hooks = append(f.hooks, hook)
-	f.mutex.Unlock()
-}
-
-// SetDefaultReturn calls SetDefaultHook with a function that returns the
-// given values.
-func (f *IAliceNetFactoryGetArbitraryContractAddressFunc) SetDefaultReturn(r0 common.Address, r1 error) {
-	f.SetDefaultHook(func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error) {
-		return r0, r1
-	})
-}
-
-// PushReturn calls PushHook with a function that returns the given values.
-func (f *IAliceNetFactoryGetArbitraryContractAddressFunc) PushReturn(r0 common.Address, r1 error) {
-	f.PushHook(func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error) {
-		return r0, r1
-	})
-}
-
-func (f *IAliceNetFactoryGetArbitraryContractAddressFunc) nextHook() func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error) {
-	f.mutex.Lock()
-	defer f.mutex.Unlock()
-
-	if len(f.hooks) == 0 {
-		return f.defaultHook
-	}
-
-	hook := f.hooks[0]
-	f.hooks = f.hooks[1:]
-	return hook
-}
-
-func (f *IAliceNetFactoryGetArbitraryContractAddressFunc) appendCall(r0 IAliceNetFactoryGetArbitraryContractAddressFuncCall) {
-	f.mutex.Lock()
-	f.history = append(f.history, r0)
-	f.mutex.Unlock()
-}
-
-// History returns a sequence of
-// IAliceNetFactoryGetArbitraryContractAddressFuncCall objects describing
-// the invocations of this function.
-func (f *IAliceNetFactoryGetArbitraryContractAddressFunc) History() []IAliceNetFactoryGetArbitraryContractAddressFuncCall {
-	f.mutex.Lock()
-	history := make([]IAliceNetFactoryGetArbitraryContractAddressFuncCall, len(f.history))
-	copy(history, f.history)
-	f.mutex.Unlock()
-
-	return history
-}
-
-// IAliceNetFactoryGetArbitraryContractAddressFuncCall is an object that
-// describes an invocation of method GetArbitraryContractAddress on an
-// instance of MockIAliceNetFactory.
-type IAliceNetFactoryGetArbitraryContractAddressFuncCall struct {
-	// Arg0 is the value of the 1st argument passed to this method
-	// invocation.
-	Arg0 *bind.CallOpts
-	// Arg1 is the value of the 2nd argument passed to this method
-	// invocation.
-	Arg1 [32]byte
-	// Arg2 is the value of the 3rd argument passed to this method
-	// invocation.
-	Arg2 common.Address
-	// Arg3 is the value of the 4th argument passed to this method
-	// invocation.
-	Arg3 [32]byte
-	// Result0 is the value of the 1st result returned from this method
-	// invocation.
-	Result0 common.Address
-	// Result1 is the value of the 2nd result returned from this method
-	// invocation.
-	Result1 error
-}
-
-// Args returns an interface slice containing the arguments of this
-// invocation.
-func (c IAliceNetFactoryGetArbitraryContractAddressFuncCall) Args() []interface{} {
-	return []interface{}{c.Arg0, c.Arg1, c.Arg2, c.Arg3}
-}
-
-// Results returns an interface slice containing the results of this
-// invocation.
-func (c IAliceNetFactoryGetArbitraryContractAddressFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
@@ -8143,16 +7134,9 @@ type MockIBToken struct {
 	// FilterDepositReceivedFunc is an instance of a mock function object
 	// controlling the behavior of the method FilterDepositReceived.
 	FilterDepositReceivedFunc *IBTokenFilterDepositReceivedFunc
-	// FilterInitializedFunc is an instance of a mock function object
-	// controlling the behavior of the method FilterInitialized.
-	FilterInitializedFunc *IBTokenFilterInitializedFunc
 	// FilterTransferFunc is an instance of a mock function object
 	// controlling the behavior of the method FilterTransfer.
 	FilterTransferFunc *IBTokenFilterTransferFunc
-	// GetArbitraryContractAddressFunc is an instance of a mock function
-	// object controlling the behavior of the method
-	// GetArbitraryContractAddress.
-	GetArbitraryContractAddressFunc *IBTokenGetArbitraryContractAddressFunc
 	// GetDepositFunc is an instance of a mock function object controlling
 	// the behavior of the method GetDeposit.
 	GetDepositFunc *IBTokenGetDepositFunc
@@ -8199,9 +7183,6 @@ type MockIBToken struct {
 	// IncreaseAllowanceFunc is an instance of a mock function object
 	// controlling the behavior of the method IncreaseAllowance.
 	IncreaseAllowanceFunc *IBTokenIncreaseAllowanceFunc
-	// InitializeFunc is an instance of a mock function object controlling
-	// the behavior of the method Initialize.
-	InitializeFunc *IBTokenInitializeFunc
 	// MintFunc is an instance of a mock function object controlling the
 	// behavior of the method Mint.
 	MintFunc *IBTokenMintFunc
@@ -8220,9 +7201,6 @@ type MockIBToken struct {
 	// ParseDepositReceivedFunc is an instance of a mock function object
 	// controlling the behavior of the method ParseDepositReceived.
 	ParseDepositReceivedFunc *IBTokenParseDepositReceivedFunc
-	// ParseInitializedFunc is an instance of a mock function object
-	// controlling the behavior of the method ParseInitialized.
-	ParseInitializedFunc *IBTokenParseInitializedFunc
 	// ParseTransferFunc is an instance of a mock function object
 	// controlling the behavior of the method ParseTransfer.
 	ParseTransferFunc *IBTokenParseTransferFunc
@@ -8247,9 +7225,6 @@ type MockIBToken struct {
 	// WatchDepositReceivedFunc is an instance of a mock function object
 	// controlling the behavior of the method WatchDepositReceived.
 	WatchDepositReceivedFunc *IBTokenWatchDepositReceivedFunc
-	// WatchInitializedFunc is an instance of a mock function object
-	// controlling the behavior of the method WatchInitialized.
-	WatchInitializedFunc *IBTokenWatchInitializedFunc
 	// WatchTransferFunc is an instance of a mock function object
 	// controlling the behavior of the method WatchTransfer.
 	WatchTransferFunc *IBTokenWatchTransferFunc
@@ -8324,18 +7299,8 @@ func NewMockIBToken() *MockIBToken {
 				return
 			},
 		},
-		FilterInitializedFunc: &IBTokenFilterInitializedFunc{
-			defaultHook: func(*bind.FilterOpts) (r0 *bindings.BTokenInitializedIterator, r1 error) {
-				return
-			},
-		},
 		FilterTransferFunc: &IBTokenFilterTransferFunc{
 			defaultHook: func(*bind.FilterOpts, []common.Address, []common.Address) (r0 *bindings.BTokenTransferIterator, r1 error) {
-				return
-			},
-		},
-		GetArbitraryContractAddressFunc: &IBTokenGetArbitraryContractAddressFunc{
-			defaultHook: func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (r0 common.Address, r1 error) {
 				return
 			},
 		},
@@ -8409,11 +7374,6 @@ func NewMockIBToken() *MockIBToken {
 				return
 			},
 		},
-		InitializeFunc: &IBTokenInitializeFunc{
-			defaultHook: func(*bind.TransactOpts) (r0 *types.Transaction, r1 error) {
-				return
-			},
-		},
 		MintFunc: &IBTokenMintFunc{
 			defaultHook: func(*bind.TransactOpts, *big.Int) (r0 *types.Transaction, r1 error) {
 				return
@@ -8441,11 +7401,6 @@ func NewMockIBToken() *MockIBToken {
 		},
 		ParseDepositReceivedFunc: &IBTokenParseDepositReceivedFunc{
 			defaultHook: func(types.Log) (r0 *bindings.BTokenDepositReceived, r1 error) {
-				return
-			},
-		},
-		ParseInitializedFunc: &IBTokenParseInitializedFunc{
-			defaultHook: func(types.Log) (r0 *bindings.BTokenInitialized, r1 error) {
 				return
 			},
 		},
@@ -8486,11 +7441,6 @@ func NewMockIBToken() *MockIBToken {
 		},
 		WatchDepositReceivedFunc: &IBTokenWatchDepositReceivedFunc{
 			defaultHook: func(*bind.WatchOpts, chan<- *bindings.BTokenDepositReceived, []*big.Int, []uint8, []common.Address) (r0 event.Subscription, r1 error) {
-				return
-			},
-		},
-		WatchInitializedFunc: &IBTokenWatchInitializedFunc{
-			defaultHook: func(*bind.WatchOpts, chan<- *bindings.BTokenInitialized) (r0 event.Subscription, r1 error) {
 				return
 			},
 		},
@@ -8571,19 +7521,9 @@ func NewStrictMockIBToken() *MockIBToken {
 				panic("unexpected invocation of MockIBToken.FilterDepositReceived")
 			},
 		},
-		FilterInitializedFunc: &IBTokenFilterInitializedFunc{
-			defaultHook: func(*bind.FilterOpts) (*bindings.BTokenInitializedIterator, error) {
-				panic("unexpected invocation of MockIBToken.FilterInitialized")
-			},
-		},
 		FilterTransferFunc: &IBTokenFilterTransferFunc{
 			defaultHook: func(*bind.FilterOpts, []common.Address, []common.Address) (*bindings.BTokenTransferIterator, error) {
 				panic("unexpected invocation of MockIBToken.FilterTransfer")
-			},
-		},
-		GetArbitraryContractAddressFunc: &IBTokenGetArbitraryContractAddressFunc{
-			defaultHook: func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error) {
-				panic("unexpected invocation of MockIBToken.GetArbitraryContractAddress")
 			},
 		},
 		GetDepositFunc: &IBTokenGetDepositFunc{
@@ -8656,11 +7596,6 @@ func NewStrictMockIBToken() *MockIBToken {
 				panic("unexpected invocation of MockIBToken.IncreaseAllowance")
 			},
 		},
-		InitializeFunc: &IBTokenInitializeFunc{
-			defaultHook: func(*bind.TransactOpts) (*types.Transaction, error) {
-				panic("unexpected invocation of MockIBToken.Initialize")
-			},
-		},
 		MintFunc: &IBTokenMintFunc{
 			defaultHook: func(*bind.TransactOpts, *big.Int) (*types.Transaction, error) {
 				panic("unexpected invocation of MockIBToken.Mint")
@@ -8689,11 +7624,6 @@ func NewStrictMockIBToken() *MockIBToken {
 		ParseDepositReceivedFunc: &IBTokenParseDepositReceivedFunc{
 			defaultHook: func(types.Log) (*bindings.BTokenDepositReceived, error) {
 				panic("unexpected invocation of MockIBToken.ParseDepositReceived")
-			},
-		},
-		ParseInitializedFunc: &IBTokenParseInitializedFunc{
-			defaultHook: func(types.Log) (*bindings.BTokenInitialized, error) {
-				panic("unexpected invocation of MockIBToken.ParseInitialized")
 			},
 		},
 		ParseTransferFunc: &IBTokenParseTransferFunc{
@@ -8734,11 +7664,6 @@ func NewStrictMockIBToken() *MockIBToken {
 		WatchDepositReceivedFunc: &IBTokenWatchDepositReceivedFunc{
 			defaultHook: func(*bind.WatchOpts, chan<- *bindings.BTokenDepositReceived, []*big.Int, []uint8, []common.Address) (event.Subscription, error) {
 				panic("unexpected invocation of MockIBToken.WatchDepositReceived")
-			},
-		},
-		WatchInitializedFunc: &IBTokenWatchInitializedFunc{
-			defaultHook: func(*bind.WatchOpts, chan<- *bindings.BTokenInitialized) (event.Subscription, error) {
-				panic("unexpected invocation of MockIBToken.WatchInitialized")
 			},
 		},
 		WatchTransferFunc: &IBTokenWatchTransferFunc{
@@ -8792,14 +7717,8 @@ func NewMockIBTokenFrom(i bindings.IBToken) *MockIBToken {
 		FilterDepositReceivedFunc: &IBTokenFilterDepositReceivedFunc{
 			defaultHook: i.FilterDepositReceived,
 		},
-		FilterInitializedFunc: &IBTokenFilterInitializedFunc{
-			defaultHook: i.FilterInitialized,
-		},
 		FilterTransferFunc: &IBTokenFilterTransferFunc{
 			defaultHook: i.FilterTransfer,
-		},
-		GetArbitraryContractAddressFunc: &IBTokenGetArbitraryContractAddressFunc{
-			defaultHook: i.GetArbitraryContractAddress,
 		},
 		GetDepositFunc: &IBTokenGetDepositFunc{
 			defaultHook: i.GetDeposit,
@@ -8843,9 +7762,6 @@ func NewMockIBTokenFrom(i bindings.IBToken) *MockIBToken {
 		IncreaseAllowanceFunc: &IBTokenIncreaseAllowanceFunc{
 			defaultHook: i.IncreaseAllowance,
 		},
-		InitializeFunc: &IBTokenInitializeFunc{
-			defaultHook: i.Initialize,
-		},
 		MintFunc: &IBTokenMintFunc{
 			defaultHook: i.Mint,
 		},
@@ -8863,9 +7779,6 @@ func NewMockIBTokenFrom(i bindings.IBToken) *MockIBToken {
 		},
 		ParseDepositReceivedFunc: &IBTokenParseDepositReceivedFunc{
 			defaultHook: i.ParseDepositReceived,
-		},
-		ParseInitializedFunc: &IBTokenParseInitializedFunc{
-			defaultHook: i.ParseInitialized,
 		},
 		ParseTransferFunc: &IBTokenParseTransferFunc{
 			defaultHook: i.ParseTransfer,
@@ -8890,9 +7803,6 @@ func NewMockIBTokenFrom(i bindings.IBToken) *MockIBToken {
 		},
 		WatchDepositReceivedFunc: &IBTokenWatchDepositReceivedFunc{
 			defaultHook: i.WatchDepositReceived,
-		},
-		WatchInitializedFunc: &IBTokenWatchInitializedFunc{
-			defaultHook: i.WatchInitialized,
 		},
 		WatchTransferFunc: &IBTokenWatchTransferFunc{
 			defaultHook: i.WatchTransfer,
@@ -10329,111 +9239,6 @@ func (c IBTokenFilterDepositReceivedFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
-// IBTokenFilterInitializedFunc describes the behavior when the
-// FilterInitialized method of the parent MockIBToken instance is invoked.
-type IBTokenFilterInitializedFunc struct {
-	defaultHook func(*bind.FilterOpts) (*bindings.BTokenInitializedIterator, error)
-	hooks       []func(*bind.FilterOpts) (*bindings.BTokenInitializedIterator, error)
-	history     []IBTokenFilterInitializedFuncCall
-	mutex       sync.Mutex
-}
-
-// FilterInitialized delegates to the next hook function in the queue and
-// stores the parameter and result values of this invocation.
-func (m *MockIBToken) FilterInitialized(v0 *bind.FilterOpts) (*bindings.BTokenInitializedIterator, error) {
-	r0, r1 := m.FilterInitializedFunc.nextHook()(v0)
-	m.FilterInitializedFunc.appendCall(IBTokenFilterInitializedFuncCall{v0, r0, r1})
-	return r0, r1
-}
-
-// SetDefaultHook sets function that is called when the FilterInitialized
-// method of the parent MockIBToken instance is invoked and the hook queue
-// is empty.
-func (f *IBTokenFilterInitializedFunc) SetDefaultHook(hook func(*bind.FilterOpts) (*bindings.BTokenInitializedIterator, error)) {
-	f.defaultHook = hook
-}
-
-// PushHook adds a function to the end of hook queue. Each invocation of the
-// FilterInitialized method of the parent MockIBToken instance invokes the
-// hook at the front of the queue and discards it. After the queue is empty,
-// the default hook function is invoked for any future action.
-func (f *IBTokenFilterInitializedFunc) PushHook(hook func(*bind.FilterOpts) (*bindings.BTokenInitializedIterator, error)) {
-	f.mutex.Lock()
-	f.hooks = append(f.hooks, hook)
-	f.mutex.Unlock()
-}
-
-// SetDefaultReturn calls SetDefaultHook with a function that returns the
-// given values.
-func (f *IBTokenFilterInitializedFunc) SetDefaultReturn(r0 *bindings.BTokenInitializedIterator, r1 error) {
-	f.SetDefaultHook(func(*bind.FilterOpts) (*bindings.BTokenInitializedIterator, error) {
-		return r0, r1
-	})
-}
-
-// PushReturn calls PushHook with a function that returns the given values.
-func (f *IBTokenFilterInitializedFunc) PushReturn(r0 *bindings.BTokenInitializedIterator, r1 error) {
-	f.PushHook(func(*bind.FilterOpts) (*bindings.BTokenInitializedIterator, error) {
-		return r0, r1
-	})
-}
-
-func (f *IBTokenFilterInitializedFunc) nextHook() func(*bind.FilterOpts) (*bindings.BTokenInitializedIterator, error) {
-	f.mutex.Lock()
-	defer f.mutex.Unlock()
-
-	if len(f.hooks) == 0 {
-		return f.defaultHook
-	}
-
-	hook := f.hooks[0]
-	f.hooks = f.hooks[1:]
-	return hook
-}
-
-func (f *IBTokenFilterInitializedFunc) appendCall(r0 IBTokenFilterInitializedFuncCall) {
-	f.mutex.Lock()
-	f.history = append(f.history, r0)
-	f.mutex.Unlock()
-}
-
-// History returns a sequence of IBTokenFilterInitializedFuncCall objects
-// describing the invocations of this function.
-func (f *IBTokenFilterInitializedFunc) History() []IBTokenFilterInitializedFuncCall {
-	f.mutex.Lock()
-	history := make([]IBTokenFilterInitializedFuncCall, len(f.history))
-	copy(history, f.history)
-	f.mutex.Unlock()
-
-	return history
-}
-
-// IBTokenFilterInitializedFuncCall is an object that describes an
-// invocation of method FilterInitialized on an instance of MockIBToken.
-type IBTokenFilterInitializedFuncCall struct {
-	// Arg0 is the value of the 1st argument passed to this method
-	// invocation.
-	Arg0 *bind.FilterOpts
-	// Result0 is the value of the 1st result returned from this method
-	// invocation.
-	Result0 *bindings.BTokenInitializedIterator
-	// Result1 is the value of the 2nd result returned from this method
-	// invocation.
-	Result1 error
-}
-
-// Args returns an interface slice containing the arguments of this
-// invocation.
-func (c IBTokenFilterInitializedFuncCall) Args() []interface{} {
-	return []interface{}{c.Arg0}
-}
-
-// Results returns an interface slice containing the results of this
-// invocation.
-func (c IBTokenFilterInitializedFuncCall) Results() []interface{} {
-	return []interface{}{c.Result0, c.Result1}
-}
-
 // IBTokenFilterTransferFunc describes the behavior when the FilterTransfer
 // method of the parent MockIBToken instance is invoked.
 type IBTokenFilterTransferFunc struct {
@@ -10542,123 +9347,6 @@ func (c IBTokenFilterTransferFuncCall) Args() []interface{} {
 // Results returns an interface slice containing the results of this
 // invocation.
 func (c IBTokenFilterTransferFuncCall) Results() []interface{} {
-	return []interface{}{c.Result0, c.Result1}
-}
-
-// IBTokenGetArbitraryContractAddressFunc describes the behavior when the
-// GetArbitraryContractAddress method of the parent MockIBToken instance is
-// invoked.
-type IBTokenGetArbitraryContractAddressFunc struct {
-	defaultHook func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error)
-	hooks       []func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error)
-	history     []IBTokenGetArbitraryContractAddressFuncCall
-	mutex       sync.Mutex
-}
-
-// GetArbitraryContractAddress delegates to the next hook function in the
-// queue and stores the parameter and result values of this invocation.
-func (m *MockIBToken) GetArbitraryContractAddress(v0 *bind.CallOpts, v1 [32]byte, v2 common.Address, v3 [32]byte) (common.Address, error) {
-	r0, r1 := m.GetArbitraryContractAddressFunc.nextHook()(v0, v1, v2, v3)
-	m.GetArbitraryContractAddressFunc.appendCall(IBTokenGetArbitraryContractAddressFuncCall{v0, v1, v2, v3, r0, r1})
-	return r0, r1
-}
-
-// SetDefaultHook sets function that is called when the
-// GetArbitraryContractAddress method of the parent MockIBToken instance is
-// invoked and the hook queue is empty.
-func (f *IBTokenGetArbitraryContractAddressFunc) SetDefaultHook(hook func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error)) {
-	f.defaultHook = hook
-}
-
-// PushHook adds a function to the end of hook queue. Each invocation of the
-// GetArbitraryContractAddress method of the parent MockIBToken instance
-// invokes the hook at the front of the queue and discards it. After the
-// queue is empty, the default hook function is invoked for any future
-// action.
-func (f *IBTokenGetArbitraryContractAddressFunc) PushHook(hook func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error)) {
-	f.mutex.Lock()
-	f.hooks = append(f.hooks, hook)
-	f.mutex.Unlock()
-}
-
-// SetDefaultReturn calls SetDefaultHook with a function that returns the
-// given values.
-func (f *IBTokenGetArbitraryContractAddressFunc) SetDefaultReturn(r0 common.Address, r1 error) {
-	f.SetDefaultHook(func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error) {
-		return r0, r1
-	})
-}
-
-// PushReturn calls PushHook with a function that returns the given values.
-func (f *IBTokenGetArbitraryContractAddressFunc) PushReturn(r0 common.Address, r1 error) {
-	f.PushHook(func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error) {
-		return r0, r1
-	})
-}
-
-func (f *IBTokenGetArbitraryContractAddressFunc) nextHook() func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error) {
-	f.mutex.Lock()
-	defer f.mutex.Unlock()
-
-	if len(f.hooks) == 0 {
-		return f.defaultHook
-	}
-
-	hook := f.hooks[0]
-	f.hooks = f.hooks[1:]
-	return hook
-}
-
-func (f *IBTokenGetArbitraryContractAddressFunc) appendCall(r0 IBTokenGetArbitraryContractAddressFuncCall) {
-	f.mutex.Lock()
-	f.history = append(f.history, r0)
-	f.mutex.Unlock()
-}
-
-// History returns a sequence of IBTokenGetArbitraryContractAddressFuncCall
-// objects describing the invocations of this function.
-func (f *IBTokenGetArbitraryContractAddressFunc) History() []IBTokenGetArbitraryContractAddressFuncCall {
-	f.mutex.Lock()
-	history := make([]IBTokenGetArbitraryContractAddressFuncCall, len(f.history))
-	copy(history, f.history)
-	f.mutex.Unlock()
-
-	return history
-}
-
-// IBTokenGetArbitraryContractAddressFuncCall is an object that describes an
-// invocation of method GetArbitraryContractAddress on an instance of
-// MockIBToken.
-type IBTokenGetArbitraryContractAddressFuncCall struct {
-	// Arg0 is the value of the 1st argument passed to this method
-	// invocation.
-	Arg0 *bind.CallOpts
-	// Arg1 is the value of the 2nd argument passed to this method
-	// invocation.
-	Arg1 [32]byte
-	// Arg2 is the value of the 3rd argument passed to this method
-	// invocation.
-	Arg2 common.Address
-	// Arg3 is the value of the 4th argument passed to this method
-	// invocation.
-	Arg3 [32]byte
-	// Result0 is the value of the 1st result returned from this method
-	// invocation.
-	Result0 common.Address
-	// Result1 is the value of the 2nd result returned from this method
-	// invocation.
-	Result1 error
-}
-
-// Args returns an interface slice containing the arguments of this
-// invocation.
-func (c IBTokenGetArbitraryContractAddressFuncCall) Args() []interface{} {
-	return []interface{}{c.Arg0, c.Arg1, c.Arg2, c.Arg3}
-}
-
-// Results returns an interface slice containing the results of this
-// invocation.
-func (c IBTokenGetArbitraryContractAddressFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
@@ -12195,110 +10883,6 @@ func (c IBTokenIncreaseAllowanceFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
-// IBTokenInitializeFunc describes the behavior when the Initialize method
-// of the parent MockIBToken instance is invoked.
-type IBTokenInitializeFunc struct {
-	defaultHook func(*bind.TransactOpts) (*types.Transaction, error)
-	hooks       []func(*bind.TransactOpts) (*types.Transaction, error)
-	history     []IBTokenInitializeFuncCall
-	mutex       sync.Mutex
-}
-
-// Initialize delegates to the next hook function in the queue and stores
-// the parameter and result values of this invocation.
-func (m *MockIBToken) Initialize(v0 *bind.TransactOpts) (*types.Transaction, error) {
-	r0, r1 := m.InitializeFunc.nextHook()(v0)
-	m.InitializeFunc.appendCall(IBTokenInitializeFuncCall{v0, r0, r1})
-	return r0, r1
-}
-
-// SetDefaultHook sets function that is called when the Initialize method of
-// the parent MockIBToken instance is invoked and the hook queue is empty.
-func (f *IBTokenInitializeFunc) SetDefaultHook(hook func(*bind.TransactOpts) (*types.Transaction, error)) {
-	f.defaultHook = hook
-}
-
-// PushHook adds a function to the end of hook queue. Each invocation of the
-// Initialize method of the parent MockIBToken instance invokes the hook at
-// the front of the queue and discards it. After the queue is empty, the
-// default hook function is invoked for any future action.
-func (f *IBTokenInitializeFunc) PushHook(hook func(*bind.TransactOpts) (*types.Transaction, error)) {
-	f.mutex.Lock()
-	f.hooks = append(f.hooks, hook)
-	f.mutex.Unlock()
-}
-
-// SetDefaultReturn calls SetDefaultHook with a function that returns the
-// given values.
-func (f *IBTokenInitializeFunc) SetDefaultReturn(r0 *types.Transaction, r1 error) {
-	f.SetDefaultHook(func(*bind.TransactOpts) (*types.Transaction, error) {
-		return r0, r1
-	})
-}
-
-// PushReturn calls PushHook with a function that returns the given values.
-func (f *IBTokenInitializeFunc) PushReturn(r0 *types.Transaction, r1 error) {
-	f.PushHook(func(*bind.TransactOpts) (*types.Transaction, error) {
-		return r0, r1
-	})
-}
-
-func (f *IBTokenInitializeFunc) nextHook() func(*bind.TransactOpts) (*types.Transaction, error) {
-	f.mutex.Lock()
-	defer f.mutex.Unlock()
-
-	if len(f.hooks) == 0 {
-		return f.defaultHook
-	}
-
-	hook := f.hooks[0]
-	f.hooks = f.hooks[1:]
-	return hook
-}
-
-func (f *IBTokenInitializeFunc) appendCall(r0 IBTokenInitializeFuncCall) {
-	f.mutex.Lock()
-	f.history = append(f.history, r0)
-	f.mutex.Unlock()
-}
-
-// History returns a sequence of IBTokenInitializeFuncCall objects
-// describing the invocations of this function.
-func (f *IBTokenInitializeFunc) History() []IBTokenInitializeFuncCall {
-	f.mutex.Lock()
-	history := make([]IBTokenInitializeFuncCall, len(f.history))
-	copy(history, f.history)
-	f.mutex.Unlock()
-
-	return history
-}
-
-// IBTokenInitializeFuncCall is an object that describes an invocation of
-// method Initialize on an instance of MockIBToken.
-type IBTokenInitializeFuncCall struct {
-	// Arg0 is the value of the 1st argument passed to this method
-	// invocation.
-	Arg0 *bind.TransactOpts
-	// Result0 is the value of the 1st result returned from this method
-	// invocation.
-	Result0 *types.Transaction
-	// Result1 is the value of the 2nd result returned from this method
-	// invocation.
-	Result1 error
-}
-
-// Args returns an interface slice containing the arguments of this
-// invocation.
-func (c IBTokenInitializeFuncCall) Args() []interface{} {
-	return []interface{}{c.Arg0}
-}
-
-// Results returns an interface slice containing the results of this
-// invocation.
-func (c IBTokenInitializeFuncCall) Results() []interface{} {
-	return []interface{}{c.Result0, c.Result1}
-}
-
 // IBTokenMintFunc describes the behavior when the Mint method of the parent
 // MockIBToken instance is invoked.
 type IBTokenMintFunc struct {
@@ -12942,111 +11526,6 @@ func (c IBTokenParseDepositReceivedFuncCall) Args() []interface{} {
 // Results returns an interface slice containing the results of this
 // invocation.
 func (c IBTokenParseDepositReceivedFuncCall) Results() []interface{} {
-	return []interface{}{c.Result0, c.Result1}
-}
-
-// IBTokenParseInitializedFunc describes the behavior when the
-// ParseInitialized method of the parent MockIBToken instance is invoked.
-type IBTokenParseInitializedFunc struct {
-	defaultHook func(types.Log) (*bindings.BTokenInitialized, error)
-	hooks       []func(types.Log) (*bindings.BTokenInitialized, error)
-	history     []IBTokenParseInitializedFuncCall
-	mutex       sync.Mutex
-}
-
-// ParseInitialized delegates to the next hook function in the queue and
-// stores the parameter and result values of this invocation.
-func (m *MockIBToken) ParseInitialized(v0 types.Log) (*bindings.BTokenInitialized, error) {
-	r0, r1 := m.ParseInitializedFunc.nextHook()(v0)
-	m.ParseInitializedFunc.appendCall(IBTokenParseInitializedFuncCall{v0, r0, r1})
-	return r0, r1
-}
-
-// SetDefaultHook sets function that is called when the ParseInitialized
-// method of the parent MockIBToken instance is invoked and the hook queue
-// is empty.
-func (f *IBTokenParseInitializedFunc) SetDefaultHook(hook func(types.Log) (*bindings.BTokenInitialized, error)) {
-	f.defaultHook = hook
-}
-
-// PushHook adds a function to the end of hook queue. Each invocation of the
-// ParseInitialized method of the parent MockIBToken instance invokes the
-// hook at the front of the queue and discards it. After the queue is empty,
-// the default hook function is invoked for any future action.
-func (f *IBTokenParseInitializedFunc) PushHook(hook func(types.Log) (*bindings.BTokenInitialized, error)) {
-	f.mutex.Lock()
-	f.hooks = append(f.hooks, hook)
-	f.mutex.Unlock()
-}
-
-// SetDefaultReturn calls SetDefaultHook with a function that returns the
-// given values.
-func (f *IBTokenParseInitializedFunc) SetDefaultReturn(r0 *bindings.BTokenInitialized, r1 error) {
-	f.SetDefaultHook(func(types.Log) (*bindings.BTokenInitialized, error) {
-		return r0, r1
-	})
-}
-
-// PushReturn calls PushHook with a function that returns the given values.
-func (f *IBTokenParseInitializedFunc) PushReturn(r0 *bindings.BTokenInitialized, r1 error) {
-	f.PushHook(func(types.Log) (*bindings.BTokenInitialized, error) {
-		return r0, r1
-	})
-}
-
-func (f *IBTokenParseInitializedFunc) nextHook() func(types.Log) (*bindings.BTokenInitialized, error) {
-	f.mutex.Lock()
-	defer f.mutex.Unlock()
-
-	if len(f.hooks) == 0 {
-		return f.defaultHook
-	}
-
-	hook := f.hooks[0]
-	f.hooks = f.hooks[1:]
-	return hook
-}
-
-func (f *IBTokenParseInitializedFunc) appendCall(r0 IBTokenParseInitializedFuncCall) {
-	f.mutex.Lock()
-	f.history = append(f.history, r0)
-	f.mutex.Unlock()
-}
-
-// History returns a sequence of IBTokenParseInitializedFuncCall objects
-// describing the invocations of this function.
-func (f *IBTokenParseInitializedFunc) History() []IBTokenParseInitializedFuncCall {
-	f.mutex.Lock()
-	history := make([]IBTokenParseInitializedFuncCall, len(f.history))
-	copy(history, f.history)
-	f.mutex.Unlock()
-
-	return history
-}
-
-// IBTokenParseInitializedFuncCall is an object that describes an invocation
-// of method ParseInitialized on an instance of MockIBToken.
-type IBTokenParseInitializedFuncCall struct {
-	// Arg0 is the value of the 1st argument passed to this method
-	// invocation.
-	Arg0 types.Log
-	// Result0 is the value of the 1st result returned from this method
-	// invocation.
-	Result0 *bindings.BTokenInitialized
-	// Result1 is the value of the 2nd result returned from this method
-	// invocation.
-	Result1 error
-}
-
-// Args returns an interface slice containing the arguments of this
-// invocation.
-func (c IBTokenParseInitializedFuncCall) Args() []interface{} {
-	return []interface{}{c.Arg0}
-}
-
-// Results returns an interface slice containing the results of this
-// invocation.
-func (c IBTokenParseInitializedFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
@@ -13934,114 +12413,6 @@ func (c IBTokenWatchDepositReceivedFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
-// IBTokenWatchInitializedFunc describes the behavior when the
-// WatchInitialized method of the parent MockIBToken instance is invoked.
-type IBTokenWatchInitializedFunc struct {
-	defaultHook func(*bind.WatchOpts, chan<- *bindings.BTokenInitialized) (event.Subscription, error)
-	hooks       []func(*bind.WatchOpts, chan<- *bindings.BTokenInitialized) (event.Subscription, error)
-	history     []IBTokenWatchInitializedFuncCall
-	mutex       sync.Mutex
-}
-
-// WatchInitialized delegates to the next hook function in the queue and
-// stores the parameter and result values of this invocation.
-func (m *MockIBToken) WatchInitialized(v0 *bind.WatchOpts, v1 chan<- *bindings.BTokenInitialized) (event.Subscription, error) {
-	r0, r1 := m.WatchInitializedFunc.nextHook()(v0, v1)
-	m.WatchInitializedFunc.appendCall(IBTokenWatchInitializedFuncCall{v0, v1, r0, r1})
-	return r0, r1
-}
-
-// SetDefaultHook sets function that is called when the WatchInitialized
-// method of the parent MockIBToken instance is invoked and the hook queue
-// is empty.
-func (f *IBTokenWatchInitializedFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *bindings.BTokenInitialized) (event.Subscription, error)) {
-	f.defaultHook = hook
-}
-
-// PushHook adds a function to the end of hook queue. Each invocation of the
-// WatchInitialized method of the parent MockIBToken instance invokes the
-// hook at the front of the queue and discards it. After the queue is empty,
-// the default hook function is invoked for any future action.
-func (f *IBTokenWatchInitializedFunc) PushHook(hook func(*bind.WatchOpts, chan<- *bindings.BTokenInitialized) (event.Subscription, error)) {
-	f.mutex.Lock()
-	f.hooks = append(f.hooks, hook)
-	f.mutex.Unlock()
-}
-
-// SetDefaultReturn calls SetDefaultHook with a function that returns the
-// given values.
-func (f *IBTokenWatchInitializedFunc) SetDefaultReturn(r0 event.Subscription, r1 error) {
-	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *bindings.BTokenInitialized) (event.Subscription, error) {
-		return r0, r1
-	})
-}
-
-// PushReturn calls PushHook with a function that returns the given values.
-func (f *IBTokenWatchInitializedFunc) PushReturn(r0 event.Subscription, r1 error) {
-	f.PushHook(func(*bind.WatchOpts, chan<- *bindings.BTokenInitialized) (event.Subscription, error) {
-		return r0, r1
-	})
-}
-
-func (f *IBTokenWatchInitializedFunc) nextHook() func(*bind.WatchOpts, chan<- *bindings.BTokenInitialized) (event.Subscription, error) {
-	f.mutex.Lock()
-	defer f.mutex.Unlock()
-
-	if len(f.hooks) == 0 {
-		return f.defaultHook
-	}
-
-	hook := f.hooks[0]
-	f.hooks = f.hooks[1:]
-	return hook
-}
-
-func (f *IBTokenWatchInitializedFunc) appendCall(r0 IBTokenWatchInitializedFuncCall) {
-	f.mutex.Lock()
-	f.history = append(f.history, r0)
-	f.mutex.Unlock()
-}
-
-// History returns a sequence of IBTokenWatchInitializedFuncCall objects
-// describing the invocations of this function.
-func (f *IBTokenWatchInitializedFunc) History() []IBTokenWatchInitializedFuncCall {
-	f.mutex.Lock()
-	history := make([]IBTokenWatchInitializedFuncCall, len(f.history))
-	copy(history, f.history)
-	f.mutex.Unlock()
-
-	return history
-}
-
-// IBTokenWatchInitializedFuncCall is an object that describes an invocation
-// of method WatchInitialized on an instance of MockIBToken.
-type IBTokenWatchInitializedFuncCall struct {
-	// Arg0 is the value of the 1st argument passed to this method
-	// invocation.
-	Arg0 *bind.WatchOpts
-	// Arg1 is the value of the 2nd argument passed to this method
-	// invocation.
-	Arg1 chan<- *bindings.BTokenInitialized
-	// Result0 is the value of the 1st result returned from this method
-	// invocation.
-	Result0 event.Subscription
-	// Result1 is the value of the 2nd result returned from this method
-	// invocation.
-	Result1 error
-}
-
-// Args returns an interface slice containing the arguments of this
-// invocation.
-func (c IBTokenWatchInitializedFuncCall) Args() []interface{} {
-	return []interface{}{c.Arg0, c.Arg1}
-}
-
-// Results returns an interface slice containing the results of this
-// invocation.
-func (c IBTokenWatchInitializedFuncCall) Results() []interface{} {
-	return []interface{}{c.Result0, c.Result1}
-}
-
 // IBTokenWatchTransferFunc describes the behavior when the WatchTransfer
 // method of the parent MockIBToken instance is invoked.
 type IBTokenWatchTransferFunc struct {
@@ -14191,10 +12562,6 @@ type MockIDynamics struct {
 	// function object controlling the behavior of the method
 	// FilterNewCanonicalAliceNetNodeVersion.
 	FilterNewCanonicalAliceNetNodeVersionFunc *IDynamicsFilterNewCanonicalAliceNetNodeVersionFunc
-	// GetArbitraryContractAddressFunc is an instance of a mock function
-	// object controlling the behavior of the method
-	// GetArbitraryContractAddress.
-	GetArbitraryContractAddressFunc *IDynamicsGetArbitraryContractAddressFunc
 	// GetConfigurationFunc is an instance of a mock function object
 	// controlling the behavior of the method GetConfiguration.
 	GetConfigurationFunc *IDynamicsGetConfigurationFunc
@@ -14311,11 +12678,6 @@ func NewMockIDynamics() *MockIDynamics {
 		},
 		FilterNewCanonicalAliceNetNodeVersionFunc: &IDynamicsFilterNewCanonicalAliceNetNodeVersionFunc{
 			defaultHook: func(*bind.FilterOpts) (r0 *bindings.DynamicsNewCanonicalAliceNetNodeVersionIterator, r1 error) {
-				return
-			},
-		},
-		GetArbitraryContractAddressFunc: &IDynamicsGetArbitraryContractAddressFunc{
-			defaultHook: func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (r0 common.Address, r1 error) {
 				return
 			},
 		},
@@ -14471,11 +12833,6 @@ func NewStrictMockIDynamics() *MockIDynamics {
 				panic("unexpected invocation of MockIDynamics.FilterNewCanonicalAliceNetNodeVersion")
 			},
 		},
-		GetArbitraryContractAddressFunc: &IDynamicsGetArbitraryContractAddressFunc{
-			defaultHook: func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error) {
-				panic("unexpected invocation of MockIDynamics.GetArbitraryContractAddress")
-			},
-		},
 		GetConfigurationFunc: &IDynamicsGetConfigurationFunc{
 			defaultHook: func(*bind.CallOpts) (bindings.Configuration, error) {
 				panic("unexpected invocation of MockIDynamics.GetConfiguration")
@@ -14609,9 +12966,6 @@ func NewMockIDynamicsFrom(i bindings.IDynamics) *MockIDynamics {
 		},
 		FilterNewCanonicalAliceNetNodeVersionFunc: &IDynamicsFilterNewCanonicalAliceNetNodeVersionFunc{
 			defaultHook: i.FilterNewCanonicalAliceNetNodeVersion,
-		},
-		GetArbitraryContractAddressFunc: &IDynamicsGetArbitraryContractAddressFunc{
-			defaultHook: i.GetArbitraryContractAddress,
 		},
 		GetConfigurationFunc: &IDynamicsGetConfigurationFunc{
 			defaultHook: i.GetConfiguration,
@@ -15653,124 +14007,6 @@ func (c IDynamicsFilterNewCanonicalAliceNetNodeVersionFuncCall) Args() []interfa
 // Results returns an interface slice containing the results of this
 // invocation.
 func (c IDynamicsFilterNewCanonicalAliceNetNodeVersionFuncCall) Results() []interface{} {
-	return []interface{}{c.Result0, c.Result1}
-}
-
-// IDynamicsGetArbitraryContractAddressFunc describes the behavior when the
-// GetArbitraryContractAddress method of the parent MockIDynamics instance
-// is invoked.
-type IDynamicsGetArbitraryContractAddressFunc struct {
-	defaultHook func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error)
-	hooks       []func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error)
-	history     []IDynamicsGetArbitraryContractAddressFuncCall
-	mutex       sync.Mutex
-}
-
-// GetArbitraryContractAddress delegates to the next hook function in the
-// queue and stores the parameter and result values of this invocation.
-func (m *MockIDynamics) GetArbitraryContractAddress(v0 *bind.CallOpts, v1 [32]byte, v2 common.Address, v3 [32]byte) (common.Address, error) {
-	r0, r1 := m.GetArbitraryContractAddressFunc.nextHook()(v0, v1, v2, v3)
-	m.GetArbitraryContractAddressFunc.appendCall(IDynamicsGetArbitraryContractAddressFuncCall{v0, v1, v2, v3, r0, r1})
-	return r0, r1
-}
-
-// SetDefaultHook sets function that is called when the
-// GetArbitraryContractAddress method of the parent MockIDynamics instance
-// is invoked and the hook queue is empty.
-func (f *IDynamicsGetArbitraryContractAddressFunc) SetDefaultHook(hook func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error)) {
-	f.defaultHook = hook
-}
-
-// PushHook adds a function to the end of hook queue. Each invocation of the
-// GetArbitraryContractAddress method of the parent MockIDynamics instance
-// invokes the hook at the front of the queue and discards it. After the
-// queue is empty, the default hook function is invoked for any future
-// action.
-func (f *IDynamicsGetArbitraryContractAddressFunc) PushHook(hook func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error)) {
-	f.mutex.Lock()
-	f.hooks = append(f.hooks, hook)
-	f.mutex.Unlock()
-}
-
-// SetDefaultReturn calls SetDefaultHook with a function that returns the
-// given values.
-func (f *IDynamicsGetArbitraryContractAddressFunc) SetDefaultReturn(r0 common.Address, r1 error) {
-	f.SetDefaultHook(func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error) {
-		return r0, r1
-	})
-}
-
-// PushReturn calls PushHook with a function that returns the given values.
-func (f *IDynamicsGetArbitraryContractAddressFunc) PushReturn(r0 common.Address, r1 error) {
-	f.PushHook(func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error) {
-		return r0, r1
-	})
-}
-
-func (f *IDynamicsGetArbitraryContractAddressFunc) nextHook() func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error) {
-	f.mutex.Lock()
-	defer f.mutex.Unlock()
-
-	if len(f.hooks) == 0 {
-		return f.defaultHook
-	}
-
-	hook := f.hooks[0]
-	f.hooks = f.hooks[1:]
-	return hook
-}
-
-func (f *IDynamicsGetArbitraryContractAddressFunc) appendCall(r0 IDynamicsGetArbitraryContractAddressFuncCall) {
-	f.mutex.Lock()
-	f.history = append(f.history, r0)
-	f.mutex.Unlock()
-}
-
-// History returns a sequence of
-// IDynamicsGetArbitraryContractAddressFuncCall objects describing the
-// invocations of this function.
-func (f *IDynamicsGetArbitraryContractAddressFunc) History() []IDynamicsGetArbitraryContractAddressFuncCall {
-	f.mutex.Lock()
-	history := make([]IDynamicsGetArbitraryContractAddressFuncCall, len(f.history))
-	copy(history, f.history)
-	f.mutex.Unlock()
-
-	return history
-}
-
-// IDynamicsGetArbitraryContractAddressFuncCall is an object that describes
-// an invocation of method GetArbitraryContractAddress on an instance of
-// MockIDynamics.
-type IDynamicsGetArbitraryContractAddressFuncCall struct {
-	// Arg0 is the value of the 1st argument passed to this method
-	// invocation.
-	Arg0 *bind.CallOpts
-	// Arg1 is the value of the 2nd argument passed to this method
-	// invocation.
-	Arg1 [32]byte
-	// Arg2 is the value of the 3rd argument passed to this method
-	// invocation.
-	Arg2 common.Address
-	// Arg3 is the value of the 4th argument passed to this method
-	// invocation.
-	Arg3 [32]byte
-	// Result0 is the value of the 1st result returned from this method
-	// invocation.
-	Result0 common.Address
-	// Result1 is the value of the 2nd result returned from this method
-	// invocation.
-	Result1 error
-}
-
-// Args returns an interface slice containing the arguments of this
-// invocation.
-func (c IDynamicsGetArbitraryContractAddressFuncCall) Args() []interface{} {
-	return []interface{}{c.Arg0, c.Arg1, c.Arg2, c.Arg3}
-}
-
-// Results returns an interface slice containing the results of this
-// invocation.
-func (c IDynamicsGetArbitraryContractAddressFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
@@ -18044,10 +16280,6 @@ type MockIETHDKG struct {
 	// object controlling the behavior of the method
 	// FilterValidatorSetCompleted.
 	FilterValidatorSetCompletedFunc *IETHDKGFilterValidatorSetCompletedFunc
-	// GetArbitraryContractAddressFunc is an instance of a mock function
-	// object controlling the behavior of the method
-	// GetArbitraryContractAddress.
-	GetArbitraryContractAddressFunc *IETHDKGGetArbitraryContractAddressFunc
 	// GetBadParticipantsFunc is an instance of a mock function object
 	// controlling the behavior of the method GetBadParticipants.
 	GetBadParticipantsFunc *IETHDKGGetBadParticipantsFunc
@@ -18323,11 +16555,6 @@ func NewMockIETHDKG() *MockIETHDKG {
 		},
 		FilterValidatorSetCompletedFunc: &IETHDKGFilterValidatorSetCompletedFunc{
 			defaultHook: func(*bind.FilterOpts) (r0 *bindings.ETHDKGValidatorSetCompletedIterator, r1 error) {
-				return
-			},
-		},
-		GetArbitraryContractAddressFunc: &IETHDKGGetArbitraryContractAddressFunc{
-			defaultHook: func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (r0 common.Address, r1 error) {
 				return
 			},
 		},
@@ -18698,11 +16925,6 @@ func NewStrictMockIETHDKG() *MockIETHDKG {
 				panic("unexpected invocation of MockIETHDKG.FilterValidatorSetCompleted")
 			},
 		},
-		GetArbitraryContractAddressFunc: &IETHDKGGetArbitraryContractAddressFunc{
-			defaultHook: func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error) {
-				panic("unexpected invocation of MockIETHDKG.GetArbitraryContractAddress")
-			},
-		},
 		GetBadParticipantsFunc: &IETHDKGGetBadParticipantsFunc{
 			defaultHook: func(*bind.CallOpts) (*big.Int, error) {
 				panic("unexpected invocation of MockIETHDKG.GetBadParticipants")
@@ -19029,9 +17251,6 @@ func NewMockIETHDKGFrom(i bindings.IETHDKG) *MockIETHDKG {
 		},
 		FilterValidatorSetCompletedFunc: &IETHDKGFilterValidatorSetCompletedFunc{
 			defaultHook: i.FilterValidatorSetCompleted,
-		},
-		GetArbitraryContractAddressFunc: &IETHDKGGetArbitraryContractAddressFunc{
-			defaultHook: i.GetArbitraryContractAddress,
 		},
 		GetBadParticipantsFunc: &IETHDKGGetBadParticipantsFunc{
 			defaultHook: i.GetBadParticipants,
@@ -21389,123 +19608,6 @@ func (c IETHDKGFilterValidatorSetCompletedFuncCall) Args() []interface{} {
 // Results returns an interface slice containing the results of this
 // invocation.
 func (c IETHDKGFilterValidatorSetCompletedFuncCall) Results() []interface{} {
-	return []interface{}{c.Result0, c.Result1}
-}
-
-// IETHDKGGetArbitraryContractAddressFunc describes the behavior when the
-// GetArbitraryContractAddress method of the parent MockIETHDKG instance is
-// invoked.
-type IETHDKGGetArbitraryContractAddressFunc struct {
-	defaultHook func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error)
-	hooks       []func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error)
-	history     []IETHDKGGetArbitraryContractAddressFuncCall
-	mutex       sync.Mutex
-}
-
-// GetArbitraryContractAddress delegates to the next hook function in the
-// queue and stores the parameter and result values of this invocation.
-func (m *MockIETHDKG) GetArbitraryContractAddress(v0 *bind.CallOpts, v1 [32]byte, v2 common.Address, v3 [32]byte) (common.Address, error) {
-	r0, r1 := m.GetArbitraryContractAddressFunc.nextHook()(v0, v1, v2, v3)
-	m.GetArbitraryContractAddressFunc.appendCall(IETHDKGGetArbitraryContractAddressFuncCall{v0, v1, v2, v3, r0, r1})
-	return r0, r1
-}
-
-// SetDefaultHook sets function that is called when the
-// GetArbitraryContractAddress method of the parent MockIETHDKG instance is
-// invoked and the hook queue is empty.
-func (f *IETHDKGGetArbitraryContractAddressFunc) SetDefaultHook(hook func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error)) {
-	f.defaultHook = hook
-}
-
-// PushHook adds a function to the end of hook queue. Each invocation of the
-// GetArbitraryContractAddress method of the parent MockIETHDKG instance
-// invokes the hook at the front of the queue and discards it. After the
-// queue is empty, the default hook function is invoked for any future
-// action.
-func (f *IETHDKGGetArbitraryContractAddressFunc) PushHook(hook func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error)) {
-	f.mutex.Lock()
-	f.hooks = append(f.hooks, hook)
-	f.mutex.Unlock()
-}
-
-// SetDefaultReturn calls SetDefaultHook with a function that returns the
-// given values.
-func (f *IETHDKGGetArbitraryContractAddressFunc) SetDefaultReturn(r0 common.Address, r1 error) {
-	f.SetDefaultHook(func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error) {
-		return r0, r1
-	})
-}
-
-// PushReturn calls PushHook with a function that returns the given values.
-func (f *IETHDKGGetArbitraryContractAddressFunc) PushReturn(r0 common.Address, r1 error) {
-	f.PushHook(func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error) {
-		return r0, r1
-	})
-}
-
-func (f *IETHDKGGetArbitraryContractAddressFunc) nextHook() func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error) {
-	f.mutex.Lock()
-	defer f.mutex.Unlock()
-
-	if len(f.hooks) == 0 {
-		return f.defaultHook
-	}
-
-	hook := f.hooks[0]
-	f.hooks = f.hooks[1:]
-	return hook
-}
-
-func (f *IETHDKGGetArbitraryContractAddressFunc) appendCall(r0 IETHDKGGetArbitraryContractAddressFuncCall) {
-	f.mutex.Lock()
-	f.history = append(f.history, r0)
-	f.mutex.Unlock()
-}
-
-// History returns a sequence of IETHDKGGetArbitraryContractAddressFuncCall
-// objects describing the invocations of this function.
-func (f *IETHDKGGetArbitraryContractAddressFunc) History() []IETHDKGGetArbitraryContractAddressFuncCall {
-	f.mutex.Lock()
-	history := make([]IETHDKGGetArbitraryContractAddressFuncCall, len(f.history))
-	copy(history, f.history)
-	f.mutex.Unlock()
-
-	return history
-}
-
-// IETHDKGGetArbitraryContractAddressFuncCall is an object that describes an
-// invocation of method GetArbitraryContractAddress on an instance of
-// MockIETHDKG.
-type IETHDKGGetArbitraryContractAddressFuncCall struct {
-	// Arg0 is the value of the 1st argument passed to this method
-	// invocation.
-	Arg0 *bind.CallOpts
-	// Arg1 is the value of the 2nd argument passed to this method
-	// invocation.
-	Arg1 [32]byte
-	// Arg2 is the value of the 3rd argument passed to this method
-	// invocation.
-	Arg2 common.Address
-	// Arg3 is the value of the 4th argument passed to this method
-	// invocation.
-	Arg3 [32]byte
-	// Result0 is the value of the 1st result returned from this method
-	// invocation.
-	Result0 common.Address
-	// Result1 is the value of the 2nd result returned from this method
-	// invocation.
-	Result1 error
-}
-
-// Args returns an interface slice containing the arguments of this
-// invocation.
-func (c IETHDKGGetArbitraryContractAddressFuncCall) Args() []interface{} {
-	return []interface{}{c.Arg0, c.Arg1, c.Arg2, c.Arg3}
-}
-
-// Results returns an interface slice containing the results of this
-// invocation.
-func (c IETHDKGGetArbitraryContractAddressFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
@@ -28154,10 +26256,6 @@ type MockIPublicStaking struct {
 	// GetApprovedFunc is an instance of a mock function object controlling
 	// the behavior of the method GetApproved.
 	GetApprovedFunc *IPublicStakingGetApprovedFunc
-	// GetArbitraryContractAddressFunc is an instance of a mock function
-	// object controlling the behavior of the method
-	// GetArbitraryContractAddress.
-	GetArbitraryContractAddressFunc *IPublicStakingGetArbitraryContractAddressFunc
 	// GetEthAccumulatorFunc is an instance of a mock function object
 	// controlling the behavior of the method GetEthAccumulator.
 	GetEthAccumulatorFunc *IPublicStakingGetEthAccumulatorFunc
@@ -28398,11 +26496,6 @@ func NewMockIPublicStaking() *MockIPublicStaking {
 		},
 		GetApprovedFunc: &IPublicStakingGetApprovedFunc{
 			defaultHook: func(*bind.CallOpts, *big.Int) (r0 common.Address, r1 error) {
-				return
-			},
-		},
-		GetArbitraryContractAddressFunc: &IPublicStakingGetArbitraryContractAddressFunc{
-			defaultHook: func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (r0 common.Address, r1 error) {
 				return
 			},
 		},
@@ -28740,11 +26833,6 @@ func NewStrictMockIPublicStaking() *MockIPublicStaking {
 				panic("unexpected invocation of MockIPublicStaking.GetApproved")
 			},
 		},
-		GetArbitraryContractAddressFunc: &IPublicStakingGetArbitraryContractAddressFunc{
-			defaultHook: func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error) {
-				panic("unexpected invocation of MockIPublicStaking.GetArbitraryContractAddress")
-			},
-		},
 		GetEthAccumulatorFunc: &IPublicStakingGetEthAccumulatorFunc{
 			defaultHook: func(*bind.CallOpts) (struct {
 				Accumulator *big.Int
@@ -29033,9 +27121,6 @@ func NewMockIPublicStakingFrom(i bindings.IPublicStaking) *MockIPublicStaking {
 		},
 		GetApprovedFunc: &IPublicStakingGetApprovedFunc{
 			defaultHook: i.GetApproved,
-		},
-		GetArbitraryContractAddressFunc: &IPublicStakingGetArbitraryContractAddressFunc{
-			defaultHook: i.GetArbitraryContractAddress,
 		},
 		GetEthAccumulatorFunc: &IPublicStakingGetEthAccumulatorFunc{
 			defaultHook: i.GetEthAccumulator,
@@ -31694,124 +29779,6 @@ func (c IPublicStakingGetApprovedFuncCall) Args() []interface{} {
 // Results returns an interface slice containing the results of this
 // invocation.
 func (c IPublicStakingGetApprovedFuncCall) Results() []interface{} {
-	return []interface{}{c.Result0, c.Result1}
-}
-
-// IPublicStakingGetArbitraryContractAddressFunc describes the behavior when
-// the GetArbitraryContractAddress method of the parent MockIPublicStaking
-// instance is invoked.
-type IPublicStakingGetArbitraryContractAddressFunc struct {
-	defaultHook func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error)
-	hooks       []func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error)
-	history     []IPublicStakingGetArbitraryContractAddressFuncCall
-	mutex       sync.Mutex
-}
-
-// GetArbitraryContractAddress delegates to the next hook function in the
-// queue and stores the parameter and result values of this invocation.
-func (m *MockIPublicStaking) GetArbitraryContractAddress(v0 *bind.CallOpts, v1 [32]byte, v2 common.Address, v3 [32]byte) (common.Address, error) {
-	r0, r1 := m.GetArbitraryContractAddressFunc.nextHook()(v0, v1, v2, v3)
-	m.GetArbitraryContractAddressFunc.appendCall(IPublicStakingGetArbitraryContractAddressFuncCall{v0, v1, v2, v3, r0, r1})
-	return r0, r1
-}
-
-// SetDefaultHook sets function that is called when the
-// GetArbitraryContractAddress method of the parent MockIPublicStaking
-// instance is invoked and the hook queue is empty.
-func (f *IPublicStakingGetArbitraryContractAddressFunc) SetDefaultHook(hook func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error)) {
-	f.defaultHook = hook
-}
-
-// PushHook adds a function to the end of hook queue. Each invocation of the
-// GetArbitraryContractAddress method of the parent MockIPublicStaking
-// instance invokes the hook at the front of the queue and discards it.
-// After the queue is empty, the default hook function is invoked for any
-// future action.
-func (f *IPublicStakingGetArbitraryContractAddressFunc) PushHook(hook func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error)) {
-	f.mutex.Lock()
-	f.hooks = append(f.hooks, hook)
-	f.mutex.Unlock()
-}
-
-// SetDefaultReturn calls SetDefaultHook with a function that returns the
-// given values.
-func (f *IPublicStakingGetArbitraryContractAddressFunc) SetDefaultReturn(r0 common.Address, r1 error) {
-	f.SetDefaultHook(func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error) {
-		return r0, r1
-	})
-}
-
-// PushReturn calls PushHook with a function that returns the given values.
-func (f *IPublicStakingGetArbitraryContractAddressFunc) PushReturn(r0 common.Address, r1 error) {
-	f.PushHook(func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error) {
-		return r0, r1
-	})
-}
-
-func (f *IPublicStakingGetArbitraryContractAddressFunc) nextHook() func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error) {
-	f.mutex.Lock()
-	defer f.mutex.Unlock()
-
-	if len(f.hooks) == 0 {
-		return f.defaultHook
-	}
-
-	hook := f.hooks[0]
-	f.hooks = f.hooks[1:]
-	return hook
-}
-
-func (f *IPublicStakingGetArbitraryContractAddressFunc) appendCall(r0 IPublicStakingGetArbitraryContractAddressFuncCall) {
-	f.mutex.Lock()
-	f.history = append(f.history, r0)
-	f.mutex.Unlock()
-}
-
-// History returns a sequence of
-// IPublicStakingGetArbitraryContractAddressFuncCall objects describing the
-// invocations of this function.
-func (f *IPublicStakingGetArbitraryContractAddressFunc) History() []IPublicStakingGetArbitraryContractAddressFuncCall {
-	f.mutex.Lock()
-	history := make([]IPublicStakingGetArbitraryContractAddressFuncCall, len(f.history))
-	copy(history, f.history)
-	f.mutex.Unlock()
-
-	return history
-}
-
-// IPublicStakingGetArbitraryContractAddressFuncCall is an object that
-// describes an invocation of method GetArbitraryContractAddress on an
-// instance of MockIPublicStaking.
-type IPublicStakingGetArbitraryContractAddressFuncCall struct {
-	// Arg0 is the value of the 1st argument passed to this method
-	// invocation.
-	Arg0 *bind.CallOpts
-	// Arg1 is the value of the 2nd argument passed to this method
-	// invocation.
-	Arg1 [32]byte
-	// Arg2 is the value of the 3rd argument passed to this method
-	// invocation.
-	Arg2 common.Address
-	// Arg3 is the value of the 4th argument passed to this method
-	// invocation.
-	Arg3 [32]byte
-	// Result0 is the value of the 1st result returned from this method
-	// invocation.
-	Result0 common.Address
-	// Result1 is the value of the 2nd result returned from this method
-	// invocation.
-	Result1 error
-}
-
-// Args returns an interface slice containing the arguments of this
-// invocation.
-func (c IPublicStakingGetArbitraryContractAddressFuncCall) Args() []interface{} {
-	return []interface{}{c.Arg0, c.Arg1, c.Arg2, c.Arg3}
-}
-
-// Results returns an interface slice containing the results of this
-// invocation.
-func (c IPublicStakingGetArbitraryContractAddressFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
@@ -36372,10 +34339,6 @@ type MockISnapshots struct {
 	// object controlling the behavior of the method
 	// GetAliceNetHeightFromSnapshot.
 	GetAliceNetHeightFromSnapshotFunc *ISnapshotsGetAliceNetHeightFromSnapshotFunc
-	// GetArbitraryContractAddressFunc is an instance of a mock function
-	// object controlling the behavior of the method
-	// GetArbitraryContractAddress.
-	GetArbitraryContractAddressFunc *ISnapshotsGetArbitraryContractAddressFunc
 	// GetBlockClaimsFromLatestSnapshotFunc is an instance of a mock
 	// function object controlling the behavior of the method
 	// GetBlockClaimsFromLatestSnapshot.
@@ -36501,11 +34464,6 @@ func NewMockISnapshots() *MockISnapshots {
 		},
 		GetAliceNetHeightFromSnapshotFunc: &ISnapshotsGetAliceNetHeightFromSnapshotFunc{
 			defaultHook: func(*bind.CallOpts, *big.Int) (r0 *big.Int, r1 error) {
-				return
-			},
-		},
-		GetArbitraryContractAddressFunc: &ISnapshotsGetArbitraryContractAddressFunc{
-			defaultHook: func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (r0 common.Address, r1 error) {
 				return
 			},
 		},
@@ -36681,11 +34639,6 @@ func NewStrictMockISnapshots() *MockISnapshots {
 				panic("unexpected invocation of MockISnapshots.GetAliceNetHeightFromSnapshot")
 			},
 		},
-		GetArbitraryContractAddressFunc: &ISnapshotsGetArbitraryContractAddressFunc{
-			defaultHook: func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error) {
-				panic("unexpected invocation of MockISnapshots.GetArbitraryContractAddress")
-			},
-		},
 		GetBlockClaimsFromLatestSnapshotFunc: &ISnapshotsGetBlockClaimsFromLatestSnapshotFunc{
 			defaultHook: func(*bind.CallOpts) (bindings.BClaimsParserLibraryBClaims, error) {
 				panic("unexpected invocation of MockISnapshots.GetBlockClaimsFromLatestSnapshot")
@@ -36847,9 +34800,6 @@ func NewMockISnapshotsFrom(i bindings.ISnapshots) *MockISnapshots {
 		},
 		GetAliceNetHeightFromSnapshotFunc: &ISnapshotsGetAliceNetHeightFromSnapshotFunc{
 			defaultHook: i.GetAliceNetHeightFromSnapshot,
-		},
-		GetArbitraryContractAddressFunc: &ISnapshotsGetArbitraryContractAddressFunc{
-			defaultHook: i.GetArbitraryContractAddress,
 		},
 		GetBlockClaimsFromLatestSnapshotFunc: &ISnapshotsGetBlockClaimsFromLatestSnapshotFunc{
 			defaultHook: i.GetBlockClaimsFromLatestSnapshot,
@@ -37490,124 +35440,6 @@ func (c ISnapshotsGetAliceNetHeightFromSnapshotFuncCall) Args() []interface{} {
 // Results returns an interface slice containing the results of this
 // invocation.
 func (c ISnapshotsGetAliceNetHeightFromSnapshotFuncCall) Results() []interface{} {
-	return []interface{}{c.Result0, c.Result1}
-}
-
-// ISnapshotsGetArbitraryContractAddressFunc describes the behavior when the
-// GetArbitraryContractAddress method of the parent MockISnapshots instance
-// is invoked.
-type ISnapshotsGetArbitraryContractAddressFunc struct {
-	defaultHook func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error)
-	hooks       []func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error)
-	history     []ISnapshotsGetArbitraryContractAddressFuncCall
-	mutex       sync.Mutex
-}
-
-// GetArbitraryContractAddress delegates to the next hook function in the
-// queue and stores the parameter and result values of this invocation.
-func (m *MockISnapshots) GetArbitraryContractAddress(v0 *bind.CallOpts, v1 [32]byte, v2 common.Address, v3 [32]byte) (common.Address, error) {
-	r0, r1 := m.GetArbitraryContractAddressFunc.nextHook()(v0, v1, v2, v3)
-	m.GetArbitraryContractAddressFunc.appendCall(ISnapshotsGetArbitraryContractAddressFuncCall{v0, v1, v2, v3, r0, r1})
-	return r0, r1
-}
-
-// SetDefaultHook sets function that is called when the
-// GetArbitraryContractAddress method of the parent MockISnapshots instance
-// is invoked and the hook queue is empty.
-func (f *ISnapshotsGetArbitraryContractAddressFunc) SetDefaultHook(hook func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error)) {
-	f.defaultHook = hook
-}
-
-// PushHook adds a function to the end of hook queue. Each invocation of the
-// GetArbitraryContractAddress method of the parent MockISnapshots instance
-// invokes the hook at the front of the queue and discards it. After the
-// queue is empty, the default hook function is invoked for any future
-// action.
-func (f *ISnapshotsGetArbitraryContractAddressFunc) PushHook(hook func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error)) {
-	f.mutex.Lock()
-	f.hooks = append(f.hooks, hook)
-	f.mutex.Unlock()
-}
-
-// SetDefaultReturn calls SetDefaultHook with a function that returns the
-// given values.
-func (f *ISnapshotsGetArbitraryContractAddressFunc) SetDefaultReturn(r0 common.Address, r1 error) {
-	f.SetDefaultHook(func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error) {
-		return r0, r1
-	})
-}
-
-// PushReturn calls PushHook with a function that returns the given values.
-func (f *ISnapshotsGetArbitraryContractAddressFunc) PushReturn(r0 common.Address, r1 error) {
-	f.PushHook(func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error) {
-		return r0, r1
-	})
-}
-
-func (f *ISnapshotsGetArbitraryContractAddressFunc) nextHook() func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error) {
-	f.mutex.Lock()
-	defer f.mutex.Unlock()
-
-	if len(f.hooks) == 0 {
-		return f.defaultHook
-	}
-
-	hook := f.hooks[0]
-	f.hooks = f.hooks[1:]
-	return hook
-}
-
-func (f *ISnapshotsGetArbitraryContractAddressFunc) appendCall(r0 ISnapshotsGetArbitraryContractAddressFuncCall) {
-	f.mutex.Lock()
-	f.history = append(f.history, r0)
-	f.mutex.Unlock()
-}
-
-// History returns a sequence of
-// ISnapshotsGetArbitraryContractAddressFuncCall objects describing the
-// invocations of this function.
-func (f *ISnapshotsGetArbitraryContractAddressFunc) History() []ISnapshotsGetArbitraryContractAddressFuncCall {
-	f.mutex.Lock()
-	history := make([]ISnapshotsGetArbitraryContractAddressFuncCall, len(f.history))
-	copy(history, f.history)
-	f.mutex.Unlock()
-
-	return history
-}
-
-// ISnapshotsGetArbitraryContractAddressFuncCall is an object that describes
-// an invocation of method GetArbitraryContractAddress on an instance of
-// MockISnapshots.
-type ISnapshotsGetArbitraryContractAddressFuncCall struct {
-	// Arg0 is the value of the 1st argument passed to this method
-	// invocation.
-	Arg0 *bind.CallOpts
-	// Arg1 is the value of the 2nd argument passed to this method
-	// invocation.
-	Arg1 [32]byte
-	// Arg2 is the value of the 3rd argument passed to this method
-	// invocation.
-	Arg2 common.Address
-	// Arg3 is the value of the 4th argument passed to this method
-	// invocation.
-	Arg3 [32]byte
-	// Result0 is the value of the 1st result returned from this method
-	// invocation.
-	Result0 common.Address
-	// Result1 is the value of the 2nd result returned from this method
-	// invocation.
-	Result1 error
-}
-
-// Args returns an interface slice containing the arguments of this
-// invocation.
-func (c ISnapshotsGetArbitraryContractAddressFuncCall) Args() []interface{} {
-	return []interface{}{c.Arg0, c.Arg1, c.Arg2, c.Arg3}
-}
-
-// Results returns an interface slice containing the results of this
-// invocation.
-func (c ISnapshotsGetArbitraryContractAddressFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
@@ -40735,10 +38567,6 @@ type MockIValidatorPool struct {
 	// object controlling the behavior of the method
 	// FilterValidatorMinorSlashed.
 	FilterValidatorMinorSlashedFunc *IValidatorPoolFilterValidatorMinorSlashedFunc
-	// GetArbitraryContractAddressFunc is an instance of a mock function
-	// object controlling the behavior of the method
-	// GetArbitraryContractAddress.
-	GetArbitraryContractAddressFunc *IValidatorPoolGetArbitraryContractAddressFunc
 	// GetDisputerRewardFunc is an instance of a mock function object
 	// controlling the behavior of the method GetDisputerReward.
 	GetDisputerRewardFunc *IValidatorPoolGetDisputerRewardFunc
@@ -40949,11 +38777,6 @@ func NewMockIValidatorPool() *MockIValidatorPool {
 		},
 		FilterValidatorMinorSlashedFunc: &IValidatorPoolFilterValidatorMinorSlashedFunc{
 			defaultHook: func(*bind.FilterOpts, []common.Address) (r0 *bindings.ValidatorPoolValidatorMinorSlashedIterator, r1 error) {
-				return
-			},
-		},
-		GetArbitraryContractAddressFunc: &IValidatorPoolGetArbitraryContractAddressFunc{
-			defaultHook: func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (r0 common.Address, r1 error) {
 				return
 			},
 		},
@@ -41259,11 +39082,6 @@ func NewStrictMockIValidatorPool() *MockIValidatorPool {
 				panic("unexpected invocation of MockIValidatorPool.FilterValidatorMinorSlashed")
 			},
 		},
-		GetArbitraryContractAddressFunc: &IValidatorPoolGetArbitraryContractAddressFunc{
-			defaultHook: func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error) {
-				panic("unexpected invocation of MockIValidatorPool.GetArbitraryContractAddress")
-			},
-		},
 		GetDisputerRewardFunc: &IValidatorPoolGetDisputerRewardFunc{
 			defaultHook: func(*bind.CallOpts) (*big.Int, error) {
 				panic("unexpected invocation of MockIValidatorPool.GetDisputerReward")
@@ -41546,9 +39364,6 @@ func NewMockIValidatorPoolFrom(i bindings.IValidatorPool) *MockIValidatorPool {
 		},
 		FilterValidatorMinorSlashedFunc: &IValidatorPoolFilterValidatorMinorSlashedFunc{
 			defaultHook: i.FilterValidatorMinorSlashed,
-		},
-		GetArbitraryContractAddressFunc: &IValidatorPoolGetArbitraryContractAddressFunc{
-			defaultHook: i.GetArbitraryContractAddress,
 		},
 		GetDisputerRewardFunc: &IValidatorPoolGetDisputerRewardFunc{
 			defaultHook: i.GetDisputerReward,
@@ -42786,124 +40601,6 @@ func (c IValidatorPoolFilterValidatorMinorSlashedFuncCall) Args() []interface{} 
 // Results returns an interface slice containing the results of this
 // invocation.
 func (c IValidatorPoolFilterValidatorMinorSlashedFuncCall) Results() []interface{} {
-	return []interface{}{c.Result0, c.Result1}
-}
-
-// IValidatorPoolGetArbitraryContractAddressFunc describes the behavior when
-// the GetArbitraryContractAddress method of the parent MockIValidatorPool
-// instance is invoked.
-type IValidatorPoolGetArbitraryContractAddressFunc struct {
-	defaultHook func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error)
-	hooks       []func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error)
-	history     []IValidatorPoolGetArbitraryContractAddressFuncCall
-	mutex       sync.Mutex
-}
-
-// GetArbitraryContractAddress delegates to the next hook function in the
-// queue and stores the parameter and result values of this invocation.
-func (m *MockIValidatorPool) GetArbitraryContractAddress(v0 *bind.CallOpts, v1 [32]byte, v2 common.Address, v3 [32]byte) (common.Address, error) {
-	r0, r1 := m.GetArbitraryContractAddressFunc.nextHook()(v0, v1, v2, v3)
-	m.GetArbitraryContractAddressFunc.appendCall(IValidatorPoolGetArbitraryContractAddressFuncCall{v0, v1, v2, v3, r0, r1})
-	return r0, r1
-}
-
-// SetDefaultHook sets function that is called when the
-// GetArbitraryContractAddress method of the parent MockIValidatorPool
-// instance is invoked and the hook queue is empty.
-func (f *IValidatorPoolGetArbitraryContractAddressFunc) SetDefaultHook(hook func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error)) {
-	f.defaultHook = hook
-}
-
-// PushHook adds a function to the end of hook queue. Each invocation of the
-// GetArbitraryContractAddress method of the parent MockIValidatorPool
-// instance invokes the hook at the front of the queue and discards it.
-// After the queue is empty, the default hook function is invoked for any
-// future action.
-func (f *IValidatorPoolGetArbitraryContractAddressFunc) PushHook(hook func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error)) {
-	f.mutex.Lock()
-	f.hooks = append(f.hooks, hook)
-	f.mutex.Unlock()
-}
-
-// SetDefaultReturn calls SetDefaultHook with a function that returns the
-// given values.
-func (f *IValidatorPoolGetArbitraryContractAddressFunc) SetDefaultReturn(r0 common.Address, r1 error) {
-	f.SetDefaultHook(func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error) {
-		return r0, r1
-	})
-}
-
-// PushReturn calls PushHook with a function that returns the given values.
-func (f *IValidatorPoolGetArbitraryContractAddressFunc) PushReturn(r0 common.Address, r1 error) {
-	f.PushHook(func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error) {
-		return r0, r1
-	})
-}
-
-func (f *IValidatorPoolGetArbitraryContractAddressFunc) nextHook() func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error) {
-	f.mutex.Lock()
-	defer f.mutex.Unlock()
-
-	if len(f.hooks) == 0 {
-		return f.defaultHook
-	}
-
-	hook := f.hooks[0]
-	f.hooks = f.hooks[1:]
-	return hook
-}
-
-func (f *IValidatorPoolGetArbitraryContractAddressFunc) appendCall(r0 IValidatorPoolGetArbitraryContractAddressFuncCall) {
-	f.mutex.Lock()
-	f.history = append(f.history, r0)
-	f.mutex.Unlock()
-}
-
-// History returns a sequence of
-// IValidatorPoolGetArbitraryContractAddressFuncCall objects describing the
-// invocations of this function.
-func (f *IValidatorPoolGetArbitraryContractAddressFunc) History() []IValidatorPoolGetArbitraryContractAddressFuncCall {
-	f.mutex.Lock()
-	history := make([]IValidatorPoolGetArbitraryContractAddressFuncCall, len(f.history))
-	copy(history, f.history)
-	f.mutex.Unlock()
-
-	return history
-}
-
-// IValidatorPoolGetArbitraryContractAddressFuncCall is an object that
-// describes an invocation of method GetArbitraryContractAddress on an
-// instance of MockIValidatorPool.
-type IValidatorPoolGetArbitraryContractAddressFuncCall struct {
-	// Arg0 is the value of the 1st argument passed to this method
-	// invocation.
-	Arg0 *bind.CallOpts
-	// Arg1 is the value of the 2nd argument passed to this method
-	// invocation.
-	Arg1 [32]byte
-	// Arg2 is the value of the 3rd argument passed to this method
-	// invocation.
-	Arg2 common.Address
-	// Arg3 is the value of the 4th argument passed to this method
-	// invocation.
-	Arg3 [32]byte
-	// Result0 is the value of the 1st result returned from this method
-	// invocation.
-	Result0 common.Address
-	// Result1 is the value of the 2nd result returned from this method
-	// invocation.
-	Result1 error
-}
-
-// Args returns an interface slice containing the arguments of this
-// invocation.
-func (c IValidatorPoolGetArbitraryContractAddressFuncCall) Args() []interface{} {
-	return []interface{}{c.Arg0, c.Arg1, c.Arg2, c.Arg3}
-}
-
-// Results returns an interface slice containing the results of this
-// invocation.
-func (c IValidatorPoolGetArbitraryContractAddressFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
@@ -48374,10 +46071,6 @@ type MockIValidatorStaking struct {
 	// GetApprovedFunc is an instance of a mock function object controlling
 	// the behavior of the method GetApproved.
 	GetApprovedFunc *IValidatorStakingGetApprovedFunc
-	// GetArbitraryContractAddressFunc is an instance of a mock function
-	// object controlling the behavior of the method
-	// GetArbitraryContractAddress.
-	GetArbitraryContractAddressFunc *IValidatorStakingGetArbitraryContractAddressFunc
 	// GetEthAccumulatorFunc is an instance of a mock function object
 	// controlling the behavior of the method GetEthAccumulator.
 	GetEthAccumulatorFunc *IValidatorStakingGetEthAccumulatorFunc
@@ -48619,11 +46312,6 @@ func NewMockIValidatorStaking() *MockIValidatorStaking {
 		},
 		GetApprovedFunc: &IValidatorStakingGetApprovedFunc{
 			defaultHook: func(*bind.CallOpts, *big.Int) (r0 common.Address, r1 error) {
-				return
-			},
-		},
-		GetArbitraryContractAddressFunc: &IValidatorStakingGetArbitraryContractAddressFunc{
-			defaultHook: func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (r0 common.Address, r1 error) {
 				return
 			},
 		},
@@ -48962,11 +46650,6 @@ func NewStrictMockIValidatorStaking() *MockIValidatorStaking {
 				panic("unexpected invocation of MockIValidatorStaking.GetApproved")
 			},
 		},
-		GetArbitraryContractAddressFunc: &IValidatorStakingGetArbitraryContractAddressFunc{
-			defaultHook: func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error) {
-				panic("unexpected invocation of MockIValidatorStaking.GetArbitraryContractAddress")
-			},
-		},
 		GetEthAccumulatorFunc: &IValidatorStakingGetEthAccumulatorFunc{
 			defaultHook: func(*bind.CallOpts) (struct {
 				Accumulator *big.Int
@@ -49255,9 +46938,6 @@ func NewMockIValidatorStakingFrom(i bindings.IValidatorStaking) *MockIValidatorS
 		},
 		GetApprovedFunc: &IValidatorStakingGetApprovedFunc{
 			defaultHook: i.GetApproved,
-		},
-		GetArbitraryContractAddressFunc: &IValidatorStakingGetArbitraryContractAddressFunc{
-			defaultHook: i.GetArbitraryContractAddress,
 		},
 		GetEthAccumulatorFunc: &IValidatorStakingGetEthAccumulatorFunc{
 			defaultHook: i.GetEthAccumulator,
@@ -51936,124 +49616,6 @@ func (c IValidatorStakingGetApprovedFuncCall) Args() []interface{} {
 // Results returns an interface slice containing the results of this
 // invocation.
 func (c IValidatorStakingGetApprovedFuncCall) Results() []interface{} {
-	return []interface{}{c.Result0, c.Result1}
-}
-
-// IValidatorStakingGetArbitraryContractAddressFunc describes the behavior
-// when the GetArbitraryContractAddress method of the parent
-// MockIValidatorStaking instance is invoked.
-type IValidatorStakingGetArbitraryContractAddressFunc struct {
-	defaultHook func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error)
-	hooks       []func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error)
-	history     []IValidatorStakingGetArbitraryContractAddressFuncCall
-	mutex       sync.Mutex
-}
-
-// GetArbitraryContractAddress delegates to the next hook function in the
-// queue and stores the parameter and result values of this invocation.
-func (m *MockIValidatorStaking) GetArbitraryContractAddress(v0 *bind.CallOpts, v1 [32]byte, v2 common.Address, v3 [32]byte) (common.Address, error) {
-	r0, r1 := m.GetArbitraryContractAddressFunc.nextHook()(v0, v1, v2, v3)
-	m.GetArbitraryContractAddressFunc.appendCall(IValidatorStakingGetArbitraryContractAddressFuncCall{v0, v1, v2, v3, r0, r1})
-	return r0, r1
-}
-
-// SetDefaultHook sets function that is called when the
-// GetArbitraryContractAddress method of the parent MockIValidatorStaking
-// instance is invoked and the hook queue is empty.
-func (f *IValidatorStakingGetArbitraryContractAddressFunc) SetDefaultHook(hook func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error)) {
-	f.defaultHook = hook
-}
-
-// PushHook adds a function to the end of hook queue. Each invocation of the
-// GetArbitraryContractAddress method of the parent MockIValidatorStaking
-// instance invokes the hook at the front of the queue and discards it.
-// After the queue is empty, the default hook function is invoked for any
-// future action.
-func (f *IValidatorStakingGetArbitraryContractAddressFunc) PushHook(hook func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error)) {
-	f.mutex.Lock()
-	f.hooks = append(f.hooks, hook)
-	f.mutex.Unlock()
-}
-
-// SetDefaultReturn calls SetDefaultHook with a function that returns the
-// given values.
-func (f *IValidatorStakingGetArbitraryContractAddressFunc) SetDefaultReturn(r0 common.Address, r1 error) {
-	f.SetDefaultHook(func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error) {
-		return r0, r1
-	})
-}
-
-// PushReturn calls PushHook with a function that returns the given values.
-func (f *IValidatorStakingGetArbitraryContractAddressFunc) PushReturn(r0 common.Address, r1 error) {
-	f.PushHook(func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error) {
-		return r0, r1
-	})
-}
-
-func (f *IValidatorStakingGetArbitraryContractAddressFunc) nextHook() func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error) {
-	f.mutex.Lock()
-	defer f.mutex.Unlock()
-
-	if len(f.hooks) == 0 {
-		return f.defaultHook
-	}
-
-	hook := f.hooks[0]
-	f.hooks = f.hooks[1:]
-	return hook
-}
-
-func (f *IValidatorStakingGetArbitraryContractAddressFunc) appendCall(r0 IValidatorStakingGetArbitraryContractAddressFuncCall) {
-	f.mutex.Lock()
-	f.history = append(f.history, r0)
-	f.mutex.Unlock()
-}
-
-// History returns a sequence of
-// IValidatorStakingGetArbitraryContractAddressFuncCall objects describing
-// the invocations of this function.
-func (f *IValidatorStakingGetArbitraryContractAddressFunc) History() []IValidatorStakingGetArbitraryContractAddressFuncCall {
-	f.mutex.Lock()
-	history := make([]IValidatorStakingGetArbitraryContractAddressFuncCall, len(f.history))
-	copy(history, f.history)
-	f.mutex.Unlock()
-
-	return history
-}
-
-// IValidatorStakingGetArbitraryContractAddressFuncCall is an object that
-// describes an invocation of method GetArbitraryContractAddress on an
-// instance of MockIValidatorStaking.
-type IValidatorStakingGetArbitraryContractAddressFuncCall struct {
-	// Arg0 is the value of the 1st argument passed to this method
-	// invocation.
-	Arg0 *bind.CallOpts
-	// Arg1 is the value of the 2nd argument passed to this method
-	// invocation.
-	Arg1 [32]byte
-	// Arg2 is the value of the 3rd argument passed to this method
-	// invocation.
-	Arg2 common.Address
-	// Arg3 is the value of the 4th argument passed to this method
-	// invocation.
-	Arg3 [32]byte
-	// Result0 is the value of the 1st result returned from this method
-	// invocation.
-	Result0 common.Address
-	// Result1 is the value of the 2nd result returned from this method
-	// invocation.
-	Result1 error
-}
-
-// Args returns an interface slice containing the arguments of this
-// invocation.
-func (c IValidatorStakingGetArbitraryContractAddressFuncCall) Args() []interface{} {
-	return []interface{}{c.Arg0, c.Arg1, c.Arg2, c.Arg3}
-}
-
-// Results returns an interface slice containing the results of this
-// invocation.
-func (c IValidatorStakingGetArbitraryContractAddressFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 

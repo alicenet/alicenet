@@ -5,6 +5,7 @@ import "contracts/Proxy.sol";
 import "contracts/libraries/factory/AliceNetFactoryBase.sol";
 
 /// @custom:salt AliceNetFactory
+/// @custom:deploy-type deployStatic
 contract AliceNetFactory is AliceNetFactoryBase {
     /**
      * @dev The constructor encodes the proxy deploy byte code with the _UNIVERSAL_DEPLOY_CODE at the
@@ -14,7 +15,7 @@ contract AliceNetFactory is AliceNetFactoryBase {
      * constructor then sets proxyTemplate_ state var to the deployed proxy template address the deploy
      * account will be set as the first owner of the factory.
      */
-    constructor() AliceNetFactoryBase() {}
+    constructor(address legacyToken_) AliceNetFactoryBase(legacyToken_) {}
 
     /**
      * @dev callAny allows EOA to call function impersonating the factory address
@@ -70,36 +71,6 @@ contract AliceNetFactory is AliceNetFactoryBase {
      */
     function deployProxy(bytes32 salt_) public onlyOwner returns (address contractAddr) {
         contractAddr = _deployProxy(salt_);
-    }
-
-    /**
-     * @dev deployStatic finishes the deployment started with the deployTemplate of a contract with
-     * determinist address. This function call any initialize() function in the deployed contract
-     * in case the arguments are provided. Should be called after deployTemplate.
-     * @param salt_ salt used to determine the final determinist address for the deployed contract
-     * @param initCallData_ Hex encoded initialization function signature + parameters to initialize the deployed contract
-     * @return contractAddr the address of the deployed template contract
-     */
-    function deployStatic(bytes32 salt_, bytes calldata initCallData_)
-        public
-        onlyOwner
-        returns (address contractAddr)
-    {
-        contractAddr = _deployStatic(salt_, initCallData_);
-    }
-
-    /**
-     * @dev deployTemplate deploys a template contract with the universal code copy constructor that
-     * deploys the contract+constructorArgs defined in the deployCode_ as the contracts runtime code.
-     * @param deployCode_ Hex encoded state with the deploymentCode + (constructor args appended if any)
-     * @return contractAddr the address of the deployed template contract
-     */
-    function deployTemplate(bytes calldata deployCode_)
-        public
-        onlyOwner
-        returns (address contractAddr)
-    {
-        contractAddr = _deployTemplate(deployCode_);
     }
 
     /**

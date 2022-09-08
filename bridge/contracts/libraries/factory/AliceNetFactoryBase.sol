@@ -73,7 +73,7 @@ abstract contract AliceNetFactoryBase is DeterministicAddress, ProxyUpgrader {
      * constructor then sets proxyTemplate_ state var to the deployed proxy template address the deploy
      * account will be set as the first owner of the factory.
      */
-    constructor() {
+    constructor(address legacyToken_) {
         bytes memory proxyDeployCode = abi.encodePacked(
             //8 byte code copy constructor code
             _UNIVERSAL_DEPLOY_CODE,
@@ -98,7 +98,7 @@ abstract contract AliceNetFactoryBase is DeterministicAddress, ProxyUpgrader {
         _owner = msg.sender;
 
         // Deploying ALCA and ALCB
-        bytes memory aTokenCreationCode = type(AToken).creationCode;
+        bytes memory aTokenCreationCode = abi.encodePacked(type(AToken).creationCode, bytes32(uint256(uint160(legacyToken_))));
         bytes memory bTokenCreationCode = type(BToken).creationCode;
         address aTokenAddress;
         address bTokenAddress;
@@ -321,107 +321,6 @@ abstract contract AliceNetFactoryBase is DeterministicAddress, ProxyUpgrader {
         // record the contract salt to the contracts array
         _contracts.push(salt_);
         emit DeployedProxy(contractAddr);
-        return contractAddr;
-    }
-
-    /**
-     * @dev _deployStatic finishes the deployment started with the deployTemplate of a contract with
-     * determinist address. This function call any initialize() function in the deployed contract
-     * in case the arguments are provided. Should be called after deployTemplate.
-     * @param salt_ salt used to determine the final determinist address for the deployed contract
-     * @param initCallData_ Hex encoded initialization function signature + parameters to initialize the deployed contract
-     * @return contractAddr the address of the deployed template contract
-     */
-    function _deployStatic(bytes32 salt_, bytes calldata initCallData_)
-        internal
-        returns (address contractAddr)
-    {
-        assembly {
-            // store proxy template address as implementation,
-            //sstore(_implementation.slot, _impl)
-            let ptr := mload(0x40)
-            mstore(0x40, add(ptr, 0x20))
-            // put metamorphic code as initcode
-            /*
-                00 60 PUSH1     20
-                02 36 CALLDATASIZE          20
-                03 36 CALLDATASIZE          0 | 20
-                04 36 CALLDATASIZE          0 | 0 | 20
-                05 33 CALLER                0 | 0 | 0 | 20
-                06 5a GAS                   CALLER | 0 | 0 | 0 | 20
-                07 fa STATICCALL            GAS | CALLER | 0 | 0 | 0 | 20
-                08 15 ISZERO                tmeplateaddress
-                09 36 CALLDATASIZE          0
-                0a 36 CALLDATASIZE          0 | 0
-                0b 36 CALLDATASIZE          0 | 0 | 0
-                0c 36 CALLDATASIZE          0 | 0 | 0 | 0
-                0d 51 MLOAD                 0 | 0 | 0 | 0 | 0
-                0e 5a GAS                   address | 0 | 0 | 0 | 0
-                0f f4 DELEGATECALL          GAS | address | 0 | 0 | 0 | 0
-                10 3d RETURNDATASIZE
-                11 36 CALLDATASIZE          RETURNDATASIZE
-                12 36 CALLDATASIZE
-                13 3e RETURNDATACOPY
-                14 3d RETURNDATASIZE
-                15 36 CALLDATASIZE
-                16 f3 RETURN
-            */
-            mstore(ptr, shl(72, 0x6020363636335afa1536363636515af43d36363e3d36f3))
-            contractAddr := create2(0, ptr, 0x17, salt_)
-            //if the returndatasize is not 0 revert with the error message
-            if iszero(iszero(returndatasize())) {
-                returndatacopy(0x00, 0x00, returndatasize())
-                revert(0, returndatasize())
-            }
-            //if contractAddr or code size at contractAddr is 0 revert with deploy fail message
-            if or(iszero(contractAddr), iszero(extcodesize(contractAddr))) {
-                mstore(0, "Static deploy failed")
-                revert(0, 0x20)
-            }
-        }
-        if (initCallData_.length > 0) {
-            _initializeContract(contractAddr, initCallData_);
-        }
-        _codeSizeZeroRevert((_extCodeSize(contractAddr) != 0));
-        _contracts.push(salt_);
-        emit DeployedStatic(contractAddr);
-        return contractAddr;
-    }
-
-    /**
-     * @dev _deployTemplate deploys a template contract with the universal code copy constructor that
-     * deploys the contract+constructorArgs defined in the deployCode_ as the contracts runtime code.
-     * @param deployCode_ Hex encoded data with the deploymentCode + (constructor args appended if any)
-     * @return contractAddr the address of the deployed template contract
-     */
-    function _deployTemplate(bytes calldata deployCode_) internal returns (address contractAddr) {
-        assembly {
-            //get the next free pointer
-            let basePtr := mload(0x40)
-            mstore(0x40, add(basePtr, add(deployCode_.length, 0x28)))
-            let ptr := basePtr
-            //codesize, pc,  pc, codecopy, codesize, push1 09, return push2 <codesize> 56 5b
-            /*
-            00 38 codesize
-            01 58 pc            codesize
-            02 58 pc            01 | codesize
-            03 39 codecopy      02 | 01 | codesize
-            04 38 codesize
-            05 60 push1 09      codesize
-            07 f3 return        09 | codesize
-             */
-            mstore(ptr, hex"38585839386009f3")
-            //0x38585839386009f3
-            ptr := add(ptr, 0x08)
-            //copy the initialization code of the implementation contract
-            calldatacopy(ptr, deployCode_.offset, deployCode_.length)
-            // Move the ptr to the end of the code in memory
-            ptr := add(ptr, deployCode_.length)
-            contractAddr := create(0, basePtr, sub(ptr, basePtr))
-        }
-        _codeSizeZeroRevert((_extCodeSize(contractAddr) != 0));
-        emit DeployedTemplate(contractAddr);
-        _implementation = contractAddr;
         return contractAddr;
     }
 

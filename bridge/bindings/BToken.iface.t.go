@@ -48,10 +48,6 @@ type IBTokenTransactor interface {
 	//
 	// Solidity: function increaseAllowance(address spender, uint256 addedValue) returns(bool)
 	IncreaseAllowance(opts *bind.TransactOpts, spender common.Address, addedValue *big.Int) (*types.Transaction, error)
-	// Initialize is a paid mutator transaction binding the contract method 0x8129fc1c.
-	//
-	// Solidity: function initialize() returns()
-	Initialize(opts *bind.TransactOpts) (*types.Transaction, error)
 	// Mint is a paid mutator transaction binding the contract method 0xa0712d68.
 	//
 	// Solidity: function mint(uint256 minBTK_) payable returns(uint256 numBTK)

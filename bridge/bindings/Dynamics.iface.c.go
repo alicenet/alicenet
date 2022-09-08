@@ -19,10 +19,6 @@ type IDynamicsCaller interface {
 	//
 	// Solidity: function encodeDynamicValues((uint8,uint24,uint32,uint32,uint32,uint64,uint64,uint128) value) pure returns(bytes)
 	EncodeDynamicValues(opts *bind.CallOpts, value DynamicValues) ([]byte, error)
-	// GetArbitraryContractAddress is a free data retrieval call binding the contract method 0x3cd1efee.
-	//
-	// Solidity: function getArbitraryContractAddress(bytes32 _salt, address _factory, bytes32 byteCodeHash_) pure returns(address)
-	GetArbitraryContractAddress(opts *bind.CallOpts, _salt [32]byte, _factory common.Address, byteCodeHash_ [32]byte) (common.Address, error)
 	// GetConfiguration is a free data retrieval call binding the contract method 0x6bd50cef.
 	//
 	// Solidity: function getConfiguration() view returns((uint128,uint128))

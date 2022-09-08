@@ -85,48 +85,4 @@ describe("Multicall deploy proxy", () => {
       factory.address
     );
   });
-
-  it("multicall deploytemplate, deploystatic", async () => {
-    const factory = await deployFactory();
-    const utilsBase: ContractFactory = await ethers.getContractFactory(UTILS);
-    const mockFactory: ContractFactory = await ethers.getContractFactory(MOCK);
-    const utilsContract = await utilsBase.deploy();
-    const Salt = getSalt();
-    // ethers instance of Mock contract abstraction
-    const deployTX = mockFactory.getDeployTransaction(2, "s");
-    const AliceNetFactory = await ethers.getContractFactory(ALICENET_FACTORY);
-    // encoded function call to deployTemplate
-    const deployTemplate = AliceNetFactory.interface.encodeFunctionData(
-      DEPLOY_TEMPLATE,
-      [deployTX.data]
-    );
-    // encoded function call to deployStatic
-    const deployStatic = AliceNetFactory.interface.encodeFunctionData(
-      DEPLOY_STATIC,
-      [Salt, "0x"]
-    );
-    const txResponse = await factory.multiCall([
-      encodeMultiCallArgs(factory.address, 0, deployTemplate),
-      encodeMultiCallArgs(factory.address, 0, deployStatic),
-    ]);
-    // get the deployed template contract address from the event
-    const tempSDAddr = await getEventVar(
-      txResponse,
-      DEPLOYED_TEMPLATE,
-      CONTRACT_ADDR
-    );
-    // get the deployed metamorphic contract address from the event
-    const metaAddr = await getEventVar(
-      txResponse,
-      DEPLOYED_STATIC,
-      CONTRACT_ADDR
-    );
-    const tempCSize = await utilsContract.getCodeSize(tempSDAddr);
-    const staticCSize = await utilsContract.getCodeSize(metaAddr);
-    expect(tempCSize.toNumber()).to.be.greaterThan(0);
-    expect(staticCSize.toNumber()).to.be.greaterThan(0);
-    // test logic at deployed metamorphic location
-    await metaMockLogicTest(mockFactory, metaAddr, factory.address);
-    // console.log("MULTICALL DEPLOYTEMPLATE, DEPLOYSTATIC GASUSED: ", receipt["receipt"]["gasUsed"]);
-  });
 });

@@ -23,10 +23,6 @@ type IBTokenCaller interface {
 	//
 	// Solidity: function decimals() view returns(uint8)
 	Decimals(opts *bind.CallOpts) (uint8, error)
-	// GetArbitraryContractAddress is a free data retrieval call binding the contract method 0x3cd1efee.
-	//
-	// Solidity: function getArbitraryContractAddress(bytes32 _salt, address _factory, bytes32 byteCodeHash_) pure returns(address)
-	GetArbitraryContractAddress(opts *bind.CallOpts, _salt [32]byte, _factory common.Address, byteCodeHash_ [32]byte) (common.Address, error)
 	// GetDeposit is a free data retrieval call binding the contract method 0x9f9fb968.
 	//
 	// Solidity: function getDeposit(uint256 depositID) view returns((uint8,address,uint256))

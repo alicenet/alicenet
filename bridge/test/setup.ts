@@ -32,6 +32,7 @@ import {
   ValidatorPoolMock,
   ValidatorStaking,
 } from "../typechain-types";
+import { factory } from "../typechain-types/contracts/libraries";
 import { ValidatorRawData } from "./ethdkg/setup";
 
 export const PLACEHOLDER_ADDRESS = "0x0000000000000000000000000000000000000000";
@@ -225,61 +226,7 @@ function getBytes32Salt(contractName: string) {
   return ethers.utils.formatBytes32String(contractName);
 }
 
-export const deployStaticWithFactory = async (
-  factory: AliceNetFactory,
-  contractName: string,
-  salt?: string,
-  initCallData?: any[],
-  constructorArgs: any[] = []
-): Promise<Contract> => {
-  const hre: any = await require("hardhat");
-  const _Contract = await ethers.getContractFactory(contractName);
-  const contractTx = await factory.deployTemplate(
-    _Contract.getDeployTransaction(...constructorArgs).data as BytesLike
-  );
 
-  let receipt = await ethers.provider.getTransactionReceipt(contractTx.hash);
-  if (
-    receipt.gasUsed.gt(10_000_000) &&
-    hre.__SOLIDITY_COVERAGE_RUNNING !== true
-  ) {
-    throw new Error(
-      `Contract deployment size:${receipt.gasUsed} is greater than 10 million`
-    );
-  }
-
-  let initCallDataBin;
-  try {
-    initCallDataBin = _Contract.interface.encodeFunctionData(
-      "initialize",
-      initCallData
-    );
-  } catch (error) {
-    console.log(
-      `Warning couldnt get init call data for contract: ${contractName}`
-    );
-    console.log(error);
-    initCallDataBin = "0x";
-  }
-  let saltBytes;
-  if (salt === undefined) {
-    saltBytes = getBytes32Salt(contractName);
-  } else {
-    saltBytes = getBytes32Salt(salt);
-  }
-  const tx = await factory.deployStatic(saltBytes, initCallDataBin);
-  receipt = await ethers.provider.getTransactionReceipt(tx.hash);
-  if (
-    receipt.gasUsed.gt(10_000_000) &&
-    hre.__SOLIDITY_COVERAGE_RUNNING !== true
-  ) {
-    throw new Error(
-      `Contract deployment size:${receipt.gasUsed} is greater than 10 million`
-    );
-  }
-
-  return _Contract.attach(await getContractAddressFromDeployedStaticEvent(tx));
-};
 
 export const deployUpgradeableWithFactory = async (
   factory: AliceNetFactory,
@@ -290,24 +237,10 @@ export const deployUpgradeableWithFactory = async (
   saltType?: string
 ): Promise<Contract> => {
   const _Contract = await ethers.getContractFactory(contractName);
-  let deployCode: BytesLike;
-
-  const contractTx = await factory.deployTemplate(
-    (deployCode = _Contract.getDeployTransaction(...constructorArgs)
-      .data as BytesLike)
-  );
+  let deployCode = _Contract.getDeployTransaction(...constructorArgs).data as BytesLike
   const hre: any = await require("hardhat");
-  let receipt = await ethers.provider.getTransactionReceipt(contractTx.hash);
-  if (
-    receipt.gasUsed.gt(10_000_000) &&
-    hre.__SOLIDITY_COVERAGE_RUNNING !== true
-  ) {
-    throw new Error(
-      `Contract deployment size:${receipt.gasUsed} is greater than 10 million`
-    );
-  }
   const transaction = await factory.deployCreate(deployCode);
-  receipt = await ethers.provider.getTransactionReceipt(transaction.hash);
+  let receipt = await ethers.provider.getTransactionReceipt(transaction.hash);
   if (
     receipt.gasUsed.gt(10_000_000) &&
     hre.__SOLIDITY_COVERAGE_RUNNING !== true
@@ -373,13 +306,11 @@ export const deployFactoryAndBaseTokens = async (
   admin: SignerWithAddress
 ): Promise<BaseTokensFixture> => {
   const factory = await deployAliceNetFactory(admin);
-
+  const legacyTokenBase = await ethers.getContractFactory("LegacyToken")
   // LegacyToken
-  const legacyToken = (await deployStaticWithFactory(
-    factory,
-    "LegacyToken"
-  )) as LegacyToken;
-  const aToken = (await deployStaticWithFactory(
+  const legacyToken = await legacyTokenBase.deploy()
+  const atokenSalt = ethers.utils.parseBytes32String("AToken")
+  const aToken = await ethers.getContractAt("AToken", await factory.lookup(atokenSalt))
     factory,
     "AToken",
     "AToken",

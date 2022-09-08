@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT-open-group
 pragma solidity ^0.8.16;
 
-import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "contracts/interfaces/IBridgeRouter.sol";
 import "contracts/utils/Admin.sol";
 import "contracts/utils/Mutex.sol";
@@ -14,7 +14,7 @@ import "contracts/libraries/math/Sigmoid.sol";
 
 contract BToken is
     IUtilityToken,
-    ERC20Upgradeable,
+    ERC20,
     Mutex,
     MagicEthTransfer,
     EthSafeTransfer,
@@ -47,11 +47,7 @@ contract BToken is
         uint256 amount
     );
 
-    constructor() ImmutableFactory(msg.sender) ImmutableDistribution() {}
-
-    function initialize() public onlyFactory initializer {
-        __ERC20_init("AliceNet Utility Token", "ALCB");
-        // Initial deposit to cover the migrated txs on aliceNet
+    constructor() ERC20("AliceNet Utility Token", "ALCB") ImmutableFactory(msg.sender) ImmutableDistribution() {
         _virtualDeposit(1, 0xba7809A4114eEF598132461f3202b5013e834CD5, 500000000000);
     }
 
@@ -343,7 +339,7 @@ contract BToken is
             revert UtilityTokenErrors.InvalidBurnAmount(numBTK_);
         }
         _poolBalance -= _bTokensToEth(_poolBalance, totalSupply(), numBTK_);
-        ERC20Upgradeable._burn(account, numBTK_);
+        ERC20._burn(account, numBTK_);
         return true;
     }
 
@@ -446,7 +442,7 @@ contract BToken is
 
         poolBalance += numEth_;
         _poolBalance = poolBalance;
-        ERC20Upgradeable._mint(to_, numBTK);
+        ERC20._mint(to_, numBTK);
         return numBTK;
     }
 
@@ -471,7 +467,7 @@ contract BToken is
 
         poolBalance -= numEth;
         _poolBalance = poolBalance;
-        ERC20Upgradeable._burn(from_, numBTK_);
+        ERC20._burn(from_, numBTK_);
         _safeTransferEth(to_, numEth);
         return numEth;
     }

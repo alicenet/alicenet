@@ -9,10 +9,6 @@ import (
 
 // IATokenMinterCaller ...
 type IATokenMinterCaller interface {
-	// GetArbitraryContractAddress is a free data retrieval call binding the contract method 0x3cd1efee.
-	//
-	// Solidity: function getArbitraryContractAddress(bytes32 _salt, address _factory, bytes32 byteCodeHash_) pure returns(address)
-	GetArbitraryContractAddress(opts *bind.CallOpts, _salt [32]byte, _factory common.Address, byteCodeHash_ [32]byte) (common.Address, error)
 	// GetMetamorphicContractAddress is a free data retrieval call binding the contract method 0x8653a465.
 	//
 	// Solidity: function getMetamorphicContractAddress(bytes32 _salt, address _factory) pure returns(address)
