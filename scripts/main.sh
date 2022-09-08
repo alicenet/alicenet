@@ -162,19 +162,19 @@ CHECK_EXISTING() {
 RUN_VALIDATOR() {
     # Run a validator
     CHECK_EXISTING $1
-    ./alicenet --config ./scripts/generated/config/validator$1.toml validator
+    ./alicenet --config ./scripts/generated/config/validator$1.toml node
 }
 
 RUN_NODE() {
     # Run a normal node (non validator)
     CHECK_EXISTING $1
-    ./alicenet --config ./scripts/generated/extra-nodes/config/node$1.toml validator
+    ./alicenet --config ./scripts/generated/extra-nodes/config/node$1.toml node
 }
 
 RACE_VALIDATOR() {
     # Run a validator
     CHECK_EXISTING $1
-    ./alicerace --config ./scripts/generated/config/validator$1.toml validator
+    ./alicerace --config ./scripts/generated/config/validator$1.toml node
 }
 
 STATUS() {
