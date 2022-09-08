@@ -26,28 +26,4 @@ abstract contract DeterministicAddress {
                 )
             );
     }
-
-    function getStaticPoolContractAddress(bytes32 _salt, address _bridgeRouter)
-        public
-        pure
-        returns (address)
-    {
-        // works: 5880818283335afa3d82833e3d82f3
-        bytes32 metamorphicContractBytecodeHash_ = 0xf231e946a2f88d89eafa7b43271c54f58277304b93ac77d138d9b0bb3a989b6d;
-        return
-            address(
-                uint160(
-                    uint256(
-                        keccak256(
-                            abi.encodePacked(
-                                hex"ff",
-                                _bridgeRouter,
-                                _salt,
-                                metamorphicContractBytecodeHash_
-                            )
-                        )
-                    )
-                )
-            );
-    }
 }
