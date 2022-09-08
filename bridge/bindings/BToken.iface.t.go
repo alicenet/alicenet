@@ -32,10 +32,10 @@ type IBTokenTransactor interface {
 	//
 	// Solidity: function deposit(uint8 accountType_, address to_, uint256 amount_) returns(uint256)
 	Deposit(opts *bind.TransactOpts, accountType_ uint8, to_ common.Address, amount_ *big.Int) (*types.Transaction, error)
-	// DepositTokensOnBridges is a paid mutator transaction binding the contract method 0xddeae0b3.
+	// DepositTokensOnBridges is a paid mutator transaction binding the contract method 0xc4602af3.
 	//
-	// Solidity: function depositTokensOnBridges(uint16 bridgeVersion, bytes data) payable returns()
-	DepositTokensOnBridges(opts *bind.TransactOpts, bridgeVersion uint16, data []byte) (*types.Transaction, error)
+	// Solidity: function depositTokensOnBridges(uint8 routerVersion_, bytes data_) payable returns()
+	DepositTokensOnBridges(opts *bind.TransactOpts, routerVersion_ uint8, data_ []byte) (*types.Transaction, error)
 	// DestroyBTokens is a paid mutator transaction binding the contract method 0x2dc6b024.
 	//
 	// Solidity: function destroyBTokens(uint256 numBTK_) returns(bool)
@@ -60,6 +60,10 @@ type IBTokenTransactor interface {
 	//
 	// Solidity: function mintTo(address to_, uint256 minBTK_) payable returns(uint256 numBTK)
 	MintTo(opts *bind.TransactOpts, to_ common.Address, minBTK_ *big.Int) (*types.Transaction, error)
+	// SetBridgeRouterAddress is a paid mutator transaction binding the contract method 0xe0a79bcf.
+	//
+	// Solidity: function setBridgeRouterAddress(address newAddress_, uint8 routerVersion_) returns()
+	SetBridgeRouterAddress(opts *bind.TransactOpts, newAddress_ common.Address, routerVersion_ uint8) (*types.Transaction, error)
 	// Transfer is a paid mutator transaction binding the contract method 0xa9059cbb.
 	//
 	// Solidity: function transfer(address to, uint256 amount) returns(bool)

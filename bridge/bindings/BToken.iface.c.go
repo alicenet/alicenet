@@ -23,6 +23,10 @@ type IBTokenCaller interface {
 	//
 	// Solidity: function decimals() view returns(uint8)
 	Decimals(opts *bind.CallOpts) (uint8, error)
+	// GetBridgeRouterAddress is a free data retrieval call binding the contract method 0xf4d35744.
+	//
+	// Solidity: function getBridgeRouterAddress(uint8 routerVersion_) view returns(address)
+	GetBridgeRouterAddress(opts *bind.CallOpts, routerVersion_ uint8) (common.Address, error)
 	// GetDeposit is a free data retrieval call binding the contract method 0x9f9fb968.
 	//
 	// Solidity: function getDeposit(uint256 depositID) view returns((uint8,address,uint256))
