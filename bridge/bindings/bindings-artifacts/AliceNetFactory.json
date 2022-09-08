@@ -157,6 +157,24 @@
   {
     "inputs": [
       {
+        "internalType": "address",
+        "name": "target_",
+        "type": "address"
+      },
+      {
+        "internalType": "bytes",
+        "name": "cdata_",
+        "type": "bytes"
+      }
+    ],
+    "name": "delegateCallAny",
+    "outputs": [],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "bytes",
         "name": "deployCode_",
         "type": "bytes"

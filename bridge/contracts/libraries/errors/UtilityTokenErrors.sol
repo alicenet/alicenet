@@ -15,4 +15,5 @@ library UtilityTokenErrors {
     error BurnAmountExceedsSupply(uint256 amount, uint256 supply);
     error InexistentRouterContract(address contractAddr);
     error InsufficientFee(uint256 amount, uint256 fee);
+    error CannotSetRouterToZeroAddress();
 }

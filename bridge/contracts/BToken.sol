@@ -38,7 +38,7 @@ contract BToken is
     // Tracks the amount of each deposit. Key is deposit id, value is amount
     // deposited.
     mapping(uint256 => Deposit) internal _deposits;
-
+    mapping (uint8 => address) internal _bridgeRouterAddresses;
     /// @notice Event emitted when a deposit is received
     event DepositReceived(
         uint256 indexed depositID,
@@ -70,7 +70,18 @@ contract BToken is
     ) public returns (uint256) {
         return _deposit(accountType_, to_, amount_);
     }
-
+    /**
+    *
+     */
+    function setBridgeRouterAddress(address newAddress_, uint8 routerVersion_) public onlyFactory {
+        if(newAddress_ == address(0)){
+            revert UtilityTokenErrors.CannotSetRouterToZeroAddress();
+        }
+        if (!_isContract(newAddress_)) {
+            revert UtilityTokenErrors.InexistentRouterContract(newAddress_);
+        }
+        _bridgeRouterAddresses[routerVersion_] = newAddress_;
+    }
     /// Allows deposits to be minted in a virtual manner and sent to the AliceNet
     /// chain by simply emitting a Deposit event without actually minting or
     /// burning any tokens, must only be called by _admin.
@@ -143,25 +154,12 @@ contract BToken is
     /// function will deduce the fee amount and refund any extra amount. If no ether
     /// is sent, the function will deduce the amount of BToken corresponding to the
     /// fees directly from the user's balance.
-    /// @param bridgeVersion The bridge version where to deposit the tokens.
-    /// @param data Encoded data necessary to deposit the arbitrary tokens in the bridges.
-    function depositTokensOnBridges(uint16 bridgeVersion, bytes calldata data) public payable {
-        //calculate router address
-        bytes32 bridgeRouterSalt = keccak256(
-            bytes.concat(
-                keccak256(abi.encodePacked("BridgeRouter")),
-                keccak256(abi.encodePacked(bridgeVersion))
-            )
-        );
-        address bridgeRouterAddress = getMetamorphicContractAddress(
-            bridgeRouterSalt,
-            _factoryAddress()
-        );
-        if (!_isContract(bridgeRouterAddress)) {
-            revert UtilityTokenErrors.InexistentRouterContract(bridgeRouterAddress);
-        }
+    /// @param routerVersion_ The bridge version where to deposit the tokens.
+    /// @param data_ Encoded data necessary to deposit the arbitrary tokens in the bridges.
+    function depositTokensOnBridges(uint8 routerVersion_, bytes calldata data_) public payable {
+        address bridgeRouterAddress = _bridgeRouterAddresses[routerVersion_];
         //forward call to router
-        uint256 bTokenFee = IBridgeRouter(bridgeRouterAddress).routeDeposit(msg.sender, data);
+        uint256 bTokenFee = IBridgeRouter(bridgeRouterAddress).routeDeposit(msg.sender, data_);
         if (msg.value > 0) {
             uint256 ethFee = _getEthToMintBTokens(totalSupply(), bTokenFee);
             if (ethFee > msg.value) {
@@ -207,6 +205,11 @@ contract BToken is
     ) public returns (uint256 numEth) {
         numEth = _burn(msg.sender, to_, amount_, minEth_);
         return numEth;
+    }
+    /**
+    * gets the address of the  */
+    function getBridgeRouterAddress(uint8 routerVersion_) public view returns(address){
+        return _bridgeRouterAddresses[routerVersion_];
     }
 
     /// Gets the latest deposit ID emitted.

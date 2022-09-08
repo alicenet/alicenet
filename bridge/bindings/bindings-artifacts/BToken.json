@@ -22,6 +22,11 @@
   },
   {
     "inputs": [],
+    "name": "CannotSetRouterToZeroAddress",
+    "type": "error"
+  },
+  {
+    "inputs": [],
     "name": "CannotTransferToZeroAddress",
     "type": "error"
   },
@@ -509,13 +514,13 @@
   {
     "inputs": [
       {
-        "internalType": "uint16",
-        "name": "bridgeVersion",
-        "type": "uint16"
+        "internalType": "uint8",
+        "name": "routerVersion_",
+        "type": "uint8"
       },
       {
         "internalType": "bytes",
-        "name": "data",
+        "name": "data_",
         "type": "bytes"
       }
     ],
@@ -554,6 +559,25 @@
       }
     ],
     "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint8",
+        "name": "routerVersion_",
+        "type": "uint8"
+      }
+    ],
+    "name": "getBridgeRouterAddress",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -922,6 +946,24 @@
       }
     ],
     "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "newAddress_",
+        "type": "address"
+      },
+      {
+        "internalType": "uint8",
+        "name": "routerVersion_",
+        "type": "uint8"
+      }
+    ],
+    "name": "setBridgeRouterAddress",
+    "outputs": [],
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
