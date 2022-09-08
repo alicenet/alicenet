@@ -40,7 +40,12 @@ func (tm *txHandler) GetTxsForGossip(txnState *badger.Txn, currentHeight uint32)
 	ctx := context.Background()
 	subCtx, cf := context.WithTimeout(ctx, 100*time.Millisecond)
 	defer cf()
-	utxos, err := tm.pTxHdlr.GetTxsForGossip(txnState, subCtx, currentHeight, tm.storage.GetMaxBytes())
+	maxBytes, err := tm.storage.GetMaxBytes()
+	if err != nil {
+		utils.DebugTrace(tm.logger, err)
+		return nil, err
+	}
+	utxos, err := tm.pTxHdlr.GetTxsForGossip(txnState, subCtx, currentHeight, maxBytes)
 	if err != nil {
 		utils.DebugTrace(tm.logger, err)
 		return nil, err

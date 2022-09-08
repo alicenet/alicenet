@@ -9,7 +9,10 @@ import "contracts/utils/ImmutableAuth.sol";
 contract ATokenMinter is ImmutableAToken, IStakingTokenMinter {
     constructor() ImmutableFactory(msg.sender) ImmutableAToken() IStakingTokenMinter() {}
 
-    function mint(address to, uint256 amount) public onlyFactory {
-        IStakingToken(_aTokenAddress()).externalMint(to, amount);
+    /// Mints ATokens
+    /// @param to_ The address to where the tokens will be minted
+    /// @param amount_ The amount of ATokens to be minted
+    function mint(address to_, uint256 amount_) public onlyFactory {
+        IStakingToken(_aTokenAddress()).externalMint(to_, amount_);
     }
 }

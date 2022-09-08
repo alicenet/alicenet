@@ -5,6 +5,7 @@ import (
 	"errors"
 	"github.com/alicenet/alicenet/bridge/bindings"
 	"github.com/alicenet/alicenet/consensus/objs"
+	"github.com/alicenet/alicenet/constants/dbprefix"
 	"github.com/alicenet/alicenet/crypto"
 	"github.com/alicenet/alicenet/layer1/executor/tasks"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg"
@@ -14,6 +15,7 @@ import (
 	snapshotState "github.com/alicenet/alicenet/layer1/executor/tasks/snapshots/state"
 	"github.com/alicenet/alicenet/layer1/transaction"
 	"github.com/alicenet/alicenet/test/mocks"
+	"github.com/alicenet/alicenet/utils"
 	"github.com/dgraph-io/badger/v2"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/common"
@@ -103,7 +105,6 @@ func TestTasksHandlerAndManager_Schedule_WrongStartDate(t *testing.T) {
 }
 
 func TestTasksHandlerAndManager_Schedule_WrongEndDate(t *testing.T) {
-	t.Parallel()
 	handler, client, _, _, _ := getTaskHandler(t, true)
 	client.GetFinalizedHeightFunc.SetDefaultReturn(12, nil)
 	handler.Start()
@@ -229,7 +230,7 @@ func TestTasksHandlerAndManager_ScheduleAndKillById_RunningTask(t *testing.T) {
 
 	blockingResp := resp.GetResponseBlocking(context.Background())
 	require.NotNil(t, blockingResp)
-	require.Equal(t, context.Canceled, blockingResp)
+	require.Equal(t, tasks.ErrTaskKilled, blockingResp)
 	require.Equal(t, 0, getScheduleLen(t, handler.manager))
 }
 
@@ -474,4 +475,50 @@ func TestTasksHandlerAndManager_ScheduleAndRecover_RunningSnapshotTask(t *testin
 	}
 
 	newHandler.Close()
+}
+
+func TestHandlerManagerAndExecutor_ErrorOnCreation(t *testing.T) {
+	t.Parallel()
+	db := mocks.NewTestDB()
+	client := mocks.NewMockClient()
+	adminHandlers := mocks.NewMockAdminHandler()
+	txWatcher := mocks.NewMockWatcher()
+	contracts := mocks.NewMockAllSmartContracts()
+
+	err := db.Update(func(txn *badger.Txn) error {
+		key := dbprefix.PrefixTaskExecutorState()
+		if err := utils.SetValue(txn, key, []byte("corrupted data")); err != nil {
+			return err
+		}
+		return nil
+	})
+	require.Nil(t, err)
+
+	taskHandler, err := NewTaskHandler(db, client, contracts, adminHandlers, txWatcher)
+
+	require.Nil(t, taskHandler)
+	require.NotNil(t, err)
+}
+
+func TestTasksHandlerAndManager_SendNilResponseAndCloseResponseChan(t *testing.T) {
+	handler, _, _, _, _ := getTaskHandler(t, true)
+	handler.Start()
+
+	task1 := dkg.NewCompletionTask(10, 40)
+	task1.AllowMultiExecution = true
+	resp, err := handler.ScheduleTask(task1, "")
+	require.Nil(t, err)
+	require.NotNil(t, resp)
+	require.Equal(t, 1, getScheduleLen(t, handler.manager))
+
+	task2 := dkg.NewCompletionTask(10, 40)
+	task2.AllowMultiExecution = true
+	resp, err = handler.ScheduleTask(task1, "")
+	require.Nil(t, err)
+	require.NotNil(t, resp)
+	require.Equal(t, 2, getScheduleLen(t, handler.manager))
+
+	_, err = handler.KillTaskByType(&dkg.CompletionTask{})
+	require.Nil(t, err)
+	require.Equal(t, 0, getScheduleLen(t, handler.manager))
 }
