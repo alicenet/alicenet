@@ -1,11 +1,14 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { Contract } from "ethers";
+import { BigNumber, Contract } from "ethers";
 import { ethers } from "hardhat";
+import hre from "hardhat";
 import { IBridgePool } from "../../typechain-types";
 import { expect } from "../chai-setup";
 
+
 import { Fixture, getFixture } from "../setup";
 import {
+  getMetamorphicContractAddress,
   getMockBlockClaimsForStateRoot,
   getState,
   showState,
@@ -14,6 +17,7 @@ import {
   valueOrId,
   valueSent,
 } from "./setup";
+import { assert } from "console";
 
 let fixture: Fixture;
 let expectedState: state;
@@ -22,7 +26,8 @@ let user: SignerWithAddress;
 let user2: SignerWithAddress;
 let bridgePool: IBridgePool;
 let depositCallData: any;
-let encodedDepositCallData: string;
+
+
 
 const bTokenFeeInWEI = 1000;
 
@@ -47,10 +52,6 @@ const encodedBurnedUTXO = ethers.utils.defaultAbiCoder.encode(
   ],
   [burnedUTXO]
 );
-const ethFee = 2;
-const refund = valueSent.sub(ethFee);
-const chainId = 1337;
-const bridgePoolVersion = 1;
 let merkleProofLibraryErrors: Contract;
 let erc:
   | "bToken"
@@ -59,6 +60,8 @@ let erc:
   | "ERC721"
   | "ERC1155Fungible"
   | "ERC1155NonFungible";
+
+  let  bridgeRouter:any;
 
 tokenTypes.forEach(function (run) {
   describe(
@@ -79,7 +82,6 @@ tokenTypes.forEach(function (run) {
             await ethers.getContractFactory("MerkleProofLibraryErrors")
           ).deploy()
         ).deployed();
-
         depositCallData = {
           ercContract: fixture[run.options.ercContractName].address,
           destinationAccountType: 1,
@@ -89,11 +91,16 @@ tokenTypes.forEach(function (run) {
           chainID: 1337,
           poolVersion: 1,
         };
-        encodedDepositCallData = ethers.utils.defaultAbiCoder.encode(
-          [
-            "tuple(address ercContract, uint8 destinationAccountType, address destinationAccount, uint8 tokenType, uint256 number, uint256 chainID, uint16 poolVersion)",
-          ],
-          [depositCallData]
+        //Simulate a bridge router with some gas for transaction
+        const bridgeRouterAddress = 
+        getMetamorphicContractAddress("BridgeRouter",fixture.factory.address)
+        await admin.sendTransaction({to: bridgeRouterAddress , value: ethers.utils.parseEther("1")})
+        await hre.network.provider.request({
+          method: "hardhat_impersonateAccount",
+          params: [bridgeRouterAddress],
+        });
+        bridgeRouter = ethers.provider.getSigner(
+          bridgeRouterAddress
         );
         bridgePool = fixture[run.options.bridgeImpl] as IBridgePool;
         if (run.options.tokenType == 3) {
@@ -103,7 +110,6 @@ tokenTypes.forEach(function (run) {
             .setApprovalForAll(bridgePool.address, true);
         } else {
           fixture[run.options.ercContractName].mint(user.address, valueOrId);
-
           fixture[run.options.ercContractName]
             .connect(user)
             .approve(bridgePool.address, valueOrId);
@@ -116,10 +122,7 @@ tokenTypes.forEach(function (run) {
         expectedState = await getState(fixture, bridgePool.address);
         expectedState.Balances[erc].user -= BigInt(run.options.quantity);
         expectedState.Balances[erc].bridgePool += BigInt(run.options.quantity);
-        await fixture.bridgeRouter.routeDeposit(
-          user.address,
-          encodedDepositCallData
-        );
+        await bridgePool.connect(bridgeRouter).deposit(user.address, valueOrId)
         showState("After Deposit", await getState(fixture, bridgePool.address));
         expect(await getState(fixture, bridgePool.address)).to.be.deep.equal(
           expectedState
@@ -128,10 +131,7 @@ tokenTypes.forEach(function (run) {
 
       it("Should make a withdraw for amount specified on informed burned UTXO upon proof verification", async () => {
         // Make first a deposit to withdraw afterwards
-        await fixture.bridgeRouter.routeDeposit(
-          user.address,
-          encodedDepositCallData
-        );
+        await bridgePool.connect(bridgeRouter).deposit(user.address, valueOrId)
         showState("After Deposit", await getState(fixture, bridgePool.address));
         expectedState = await getState(fixture, bridgePool.address);
         expectedState.Balances[erc].user += BigInt(run.options.quantity);
@@ -182,4 +182,6 @@ tokenTypes.forEach(function (run) {
       });
     }
   );
+
 });
+

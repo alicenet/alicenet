@@ -652,14 +652,6 @@ export const getFixture = async (
     []
   )) as IBridgePool;
 
-  const bridgeRouter = (await deployStaticWithFactory(
-    factory,
-    "BridgeRouter",
-    "BridgeRouter",
-    undefined,
-    [100]
-  )) as IBridgeRouter;
-
   const invalidTxConsumptionAccusation = (await deployUpgradeableWithFactory(
     factory,
     "InvalidTxConsumptionAccusation",
@@ -714,7 +706,6 @@ export const getFixture = async (
     localERC20BridgePoolV1,
     localERC721BridgePoolV1,
     localERC1155BridgePoolV1,
-    bridgeRouter,
     erc1155Mock,
     erc721Mock,
     erc20Mock,

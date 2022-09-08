@@ -184,7 +184,7 @@ export const tokenTypes = [
       errorReason: "ERC20: insufficient allowance",
     },
   },
-  {
+   {
     it: "ERC721",
     options: {
       ercContractName: "erc721Mock",
@@ -193,8 +193,8 @@ export const tokenTypes = [
       quantity: 1,
       errorReason: "ERC721: invalid token ID",
     },
-  },
-  /* {
+  }, 
+    /* {
     it: "ERC1155Fungible",
     options: {
       ercContractName: "erc1155Mock",
@@ -227,4 +227,20 @@ export const getBridgePoolMetamorphicAddress = (
     salt,
     ethers.utils.keccak256(initCode)
   );
+};
+
+export const getMetamorphicContractAddress = (contractName :string, factoryAddress:string): string => {
+  const metamorphicContractBytecodeHash_ = "0x1c0bf703a3415cada9785e89e9d70314c3111ae7d8e04f33bb42eb1d264088be";
+  const salt = ethers.utils.formatBytes32String(contractName);
+  return "0x"+ethers.utils.keccak256(
+    ethers.utils.solidityPack(
+      ["bytes1", "address","bytes32", "bytes32"],
+      [
+        "0xff",
+        factoryAddress,
+        salt,
+        metamorphicContractBytecodeHash_
+      ]
+    )
+  ).slice(-40);
 };

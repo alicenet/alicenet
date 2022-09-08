@@ -13,7 +13,6 @@ import "contracts/interfaces/IBridgePool.sol";
 import "contracts/Snapshots.sol";
 import "contracts/libraries/parsers/BClaimsParserLibrary.sol";
 import "contracts/utils/ERC20SafeTransfer.sol";
-import "hardhat/console.sol";
 
 /// @custom:salt LocalERC1155BridgePoolV1
 /// @custom:deploy-type deployStatic
@@ -53,7 +52,6 @@ contract LocalERC1155BridgePoolV1 is
         uint256 number,
         uint256 tokenId
     ) public onlyBridgeRouter {
-        console.log(msgSender, number, tokenId);
         IERC1155(_erc1155Contract).safeTransferFrom(
             msgSender,
             address(this),
