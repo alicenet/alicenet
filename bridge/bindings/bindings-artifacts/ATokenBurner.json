@@ -40,12 +40,12 @@
     "inputs": [
       {
         "internalType": "address",
-        "name": "to",
+        "name": "from_",
         "type": "address"
       },
       {
         "internalType": "uint256",
-        "name": "amount",
+        "name": "amount_",
         "type": "uint256"
       }
     ],
