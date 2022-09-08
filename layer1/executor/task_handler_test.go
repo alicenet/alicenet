@@ -106,7 +106,6 @@ func TestTasksHandlerAndManager_Schedule_WrongStartDate(t *testing.T) {
 }
 
 func TestTasksHandlerAndManager_Schedule_WrongEndDate(t *testing.T) {
-	t.Parallel()
 	handler, client, _, _, _ := getTaskHandler(t, true)
 	ctx := context.Background()
 	client.GetFinalizedHeightFunc.SetDefaultReturn(12, nil)
