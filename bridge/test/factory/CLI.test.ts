@@ -218,7 +218,7 @@ export async function cliDeployContracts(
   factoryAddress?: string,
   inputFolder?: string
 ) {
-  return await run("deployContracts", {
+  return await run("deploy-contracts", {
     factoryAddress,
     inputFolder,
   });
@@ -231,7 +231,7 @@ export async function cliFullMultiCallDeployProxy(
   outputFolder?: string,
   constructorArgs?: Array<string>
 ): Promise<ProxyData> {
-  return await run("fullMultiCallDeployProxy", {
+  return await run("full-multi-call-deploy-proxy", {
     contractName,
     factoryAddress,
     initCallData,
@@ -247,7 +247,7 @@ export async function cliMultiCallDeployMetamorphic(
   outputFolder?: string,
   constructorArgs?: Array<string>
 ): Promise<MetaContractData> {
-  return await run("multiCallDeployMetamorphic", {
+  return await run("multi-call-deploy-metamorphic", {
     contractName,
     factoryAddress,
     initCallData,

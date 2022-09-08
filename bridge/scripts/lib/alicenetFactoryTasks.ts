@@ -220,7 +220,7 @@ task("deploy-contracts", "runs the initial deployment of all AliceNet contracts"
     // deploy the factory first
     let factoryAddress = taskArgs.factoryAddress;
     if (factoryAddress === undefined) {
-      const factoryData: FactoryData = await hre.run("deployFactory", {
+      const factoryData: FactoryData = await hre.run("deploy-factory", {
         outputFolder: taskArgs.outputFolder,
       });
       factoryAddress = factoryData.address;
@@ -247,7 +247,7 @@ task("deploy-contracts", "runs the initial deployment of all AliceNet contracts"
             taskArgs.outputFolder
           );
           metaContractData = await hre.run(
-            "multiCallDeployMetamorphic",
+            "multi-call-deploy-metamorphic",
             deployArgs
           );
           cumulativeGasUsed = cumulativeGasUsed.add(metaContractData.gas);
@@ -262,14 +262,14 @@ task("deploy-contracts", "runs the initial deployment of all AliceNet contracts"
             taskArgs.inputFolder,
             taskArgs.outputFolder
           );
-          proxyData = await hre.run("fullMultiCallDeployProxy", deployArgs);
+          proxyData = await hre.run("full-multi-call-deploy-proxy", deployArgs);
           cumulativeGasUsed = cumulativeGasUsed.add(proxyData.gas);
           break;
         }
         case ONLY_PROXY: {
           const name = extractName(fullyQualifiedName);
           const salt: BytesLike = await getBytes32Salt(name, hre);
-          proxyData = await hre.run("deployProxy", {
+          proxyData = await hre.run("deploy-proxy", {
             factoryAddress,
             salt,
             waitConfirmation: taskArgs.waitConfirmation,
@@ -581,7 +581,7 @@ task(
     };
     // deploy create the logic contract
     const templateData: TemplateData = await hre.run(
-      "deployTemplate",
+      "deploy-template",
       callArgs
     );
     cumulativeGas = cumulativeGas.add(templateData.gas);
@@ -593,7 +593,7 @@ task(
       outputFolder: taskArgs.outputFolder,
     };
     const metaContractData: MetaContractData = await hre.run(
-      "deployStatic",
+      "deploy-static",
       callArgs
     );
     cumulativeGas = cumulativeGas.add(metaContractData.gas);
@@ -1170,7 +1170,7 @@ task(
         "Could not find " +
         DEFAULT_CONFIG_OUTPUT_DIR +
         DEPLOYMENT_LIST_FPATH +
-        ".json file. It must be generated first with generateContractsDescriptor task";
+        ".json file. It must be generated first with generate-contracts-descriptor task";
       throw new Error(error);
     }
     const rawdata = fs.readFileSync(path);
@@ -1186,7 +1186,7 @@ task(
     // deploy the factory first
     let factoryAddress = taskArgs.factoryAddress;
     if (factoryAddress === undefined) {
-      const factoryData: FactoryData = await hre.run("deployFactory", {
+      const factoryData: FactoryData = await hre.run("deploy-factory", {
         outputFolder: taskArgs.outputFolder,
       });
       factoryAddress = factoryData.address;

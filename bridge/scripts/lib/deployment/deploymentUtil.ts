@@ -117,7 +117,7 @@ export async function getContractDescriptor(
 }
 // function to deploy the factory
 export async function deployFactory(run: RunTaskFunction, usrPath?: string) {
-  return await run("deployFactory", { outputFolder: usrPath });
+  return await run("deploy-factory", { outputFolder: usrPath });
 }
 
 export async function getDeployMetaArgs(
