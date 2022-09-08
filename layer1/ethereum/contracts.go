@@ -9,11 +9,10 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-
 	"github.com/alicenet/alicenet/bridge/bindings"
 	"github.com/alicenet/alicenet/layer1"
 	"github.com/alicenet/alicenet/utils"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/sirupsen/logrus"
 )

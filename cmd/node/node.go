@@ -354,8 +354,11 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	go statusLogger.Run()
 	defer statusLogger.Close()
 
-	tasksHandler.Start()
-	defer tasksHandler.Close()
+	err = tasksScheduler.Start()
+	if err != nil {
+		panic(err)
+	}
+	defer tasksScheduler.Close()
 
 	err = mon.Start()
 	if err != nil {
