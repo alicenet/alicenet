@@ -241,6 +241,22 @@ abstract contract AliceNetFactoryBase is DeterministicAddress, ProxyUpgrader {
         }
     }
 
+     /**
+     * @dev _delegateCallAny allows EOA to call a function in a contract without impersonating the factory
+     * @param target_: the address of the contract to be called
+     * @param cdata_: Hex encoded data with function signature + arguments of the target function to be called
+     */
+    function _delegateCallAny(address target_, bytes memory cdata_) internal {
+        assembly {
+            let size := mload(cdata_)
+            let ptr := add(0x20, cdata_)
+            if iszero(delegatecall(gas(), target_, ptr, size, 0x00, 0x00)) {
+                returndatacopy(0x00, 0x00, returndatasize())
+                revert(0x00, returndatasize())
+            }
+        }
+    }
+
     /**
      * @dev _deployCreate allows the owner to deploy raw contracts through the factory using
      * non-deterministic address generation (create OpCode)

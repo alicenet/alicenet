@@ -32,7 +32,20 @@ contract AliceNetFactory is AliceNetFactoryBase {
         _callAny(target_, value_, cdata);
         _returnAvailableData();
     }
-
+     /**
+     * @dev delegateCallAny allows EOA to call a function in a contract without impersonating the factory
+     * @param target_: the address of the contract to be called
+     * @param cdata_: Hex encoded state with function signature + arguments of the target function to be called
+     */
+    function delegateCallAny(address target_, bytes calldata cdata_)
+        public
+        payable
+        onlyOwner
+    {
+        bytes memory cdata = cdata_;
+        _delegateCallAny(target_, cdata);
+        _returnAvailableData();
+    }
     /**
      * @dev deployCreate allows the owner to deploy raw contracts through the factory using
      * non-deterministic address generation (create OpCode)
