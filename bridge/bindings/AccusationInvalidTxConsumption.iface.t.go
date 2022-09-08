@@ -11,6 +11,6 @@ import (
 type IAccusationInvalidTxConsumptionTransactor interface {
 	// AccuseInvalidTransactionConsumption is a paid mutator transaction binding the contract method 0x6ae40457.
 	//
-	// Solidity: function accuseInvalidTransactionConsumption(bytes _pClaims, bytes _pClaimsSig, bytes _bClaims, bytes _bClaimsSigGroup, bytes _txInPreImage, bytes[3] _proofs) returns(address)
-	AccuseInvalidTransactionConsumption(opts *bind.TransactOpts, _pClaims []byte, _pClaimsSig []byte, _bClaims []byte, _bClaimsSigGroup []byte, _txInPreImage []byte, _proofs [3][]byte) (*types.Transaction, error)
+	// Solidity: function accuseInvalidTransactionConsumption(bytes pClaims_, bytes pClaimsSig_, bytes bClaims_, bytes bClaimsSigGroup_, bytes txInPreImage_, bytes[3] proofs_) returns(address)
+	AccuseInvalidTransactionConsumption(opts *bind.TransactOpts, pClaims_ []byte, pClaimsSig_ []byte, bClaims_ []byte, bClaimsSigGroup_ []byte, txInPreImage_ []byte, proofs_ [3][]byte) (*types.Transaction, error)
 }

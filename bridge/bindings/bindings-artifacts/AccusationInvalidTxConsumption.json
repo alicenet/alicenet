@@ -550,32 +550,32 @@
     "inputs": [
       {
         "internalType": "bytes",
-        "name": "_pClaims",
+        "name": "pClaims_",
         "type": "bytes"
       },
       {
         "internalType": "bytes",
-        "name": "_pClaimsSig",
+        "name": "pClaimsSig_",
         "type": "bytes"
       },
       {
         "internalType": "bytes",
-        "name": "_bClaims",
+        "name": "bClaims_",
         "type": "bytes"
       },
       {
         "internalType": "bytes",
-        "name": "_bClaimsSigGroup",
+        "name": "bClaimsSigGroup_",
         "type": "bytes"
       },
       {
         "internalType": "bytes",
-        "name": "_txInPreImage",
+        "name": "txInPreImage_",
         "type": "bytes"
       },
       {
         "internalType": "bytes[3]",
-        "name": "_proofs",
+        "name": "proofs_",
         "type": "bytes[3]"
       }
     ],

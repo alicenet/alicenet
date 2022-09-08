@@ -7,6 +7,17 @@
   {
     "inputs": [
       {
+        "internalType": "bytes32",
+        "name": "id",
+        "type": "bytes32"
+      }
+    ],
+    "name": "AccusationAlreadySubmitted",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "uint256",
         "name": "offset",
         "type": "uint256"
@@ -71,6 +82,22 @@
       }
     ],
     "name": "InsufficientBytes",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "pClaimsChainId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "expectedChainId",
+        "type": "uint256"
+      }
+    ],
+    "name": "InvalidChainId",
     "type": "error"
   },
   {
