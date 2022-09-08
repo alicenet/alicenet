@@ -9,7 +9,7 @@ NETWORK=${1:-"dev"}
 cd $BRIDGE_DIR
 
 # if on hardhat network this switches automine on to deploy faster
-npx hardhat set-hardhat-interval-mining --network $NETWORK --enable-auto-mine
+npx hardhat set-local-environment-interval-mining --network $NETWORK --enable-auto-mine
 
 # Copy the deployList to the generated folder so we have deploymentList and deploymentArgsTemplate in the same folder
 cp ../scripts/base-files/deploymentList ../scripts/generated/deploymentList
@@ -50,14 +50,14 @@ if [[ -z "${FACTORY_ADDRESS}" ]]; then
 fi
 
 cd $BRIDGE_DIR
-npx hardhat set-hardhat-interval-mining --network $NETWORK --interval 1000
+npx hardhat set-local-environment-interval-mining --network $NETWORK --interval 1000
 cd $CURRENT_WD
 
 ./scripts/main.sh register
 
 cd $BRIDGE_DIR
 npx hardhat --network $NETWORK set-min-ethereum-blocks-per-snapshot --factory-address $FACTORY_ADDRESS --block-num 10
-npx hardhat set-hardhat-interval-mining --network $NETWORK
+npx hardhat set-local-environment-interval-mining --network $NETWORK
 cd $CURRENT_WD
 
 if [[ -n "${AUTO_START_VALIDATORS}" ]]; then

@@ -210,7 +210,7 @@ task(
   // });
 });
 
-task("enable-hardhat-impersonate")
+task("enable-local-environment-impersonate")
   .addParam(
     "account",
     "account to impersonate",
@@ -1192,8 +1192,8 @@ task("get-gas-cost", "gets the current gas cost")
   });
 
 task(
-  "set-hardhat-interval-mining",
-  "sets the hardhat node to mine on a interval and automine off"
+  "set-local-environment-interval-mining",
+  "sets the local environment node to mine on a interval and automine off"
 )
   .addFlag("enableAutoMine")
   .addOptionalParam("interval", "time between blocks", "15000")
@@ -1214,7 +1214,7 @@ task(
     }
   });
 
-task("set-hardhat-base-fee", "sets the hardhat node base fee for the next block")
+task("set-local-environment-base-fee", "sets the local environment node base fee for the next block")
   .addParam("baseFee", "base fee value in GWEIs", "500", types.int)
   .setAction(async (taskArgs, hre) => {
     const network = await hre.ethers.provider.getNetwork();
