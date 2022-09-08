@@ -20,6 +20,9 @@ library StakingDescriptor {
         uint256 accumulatorToken;
     }
 
+    /// @notice Constructs a token URI out of token URI parameters
+    /// @param params parameters of the token URI
+    /// @return the token URI
     function constructTokenURI(ConstructTokenURIParams memory params)
         internal
         pure
@@ -60,6 +63,9 @@ library StakingDescriptor {
             );
     }
 
+    /// @notice Escapes double quotes from a string
+    /// @param symbol the string to be processed
+    /// @return The string with escaped quotes
     function escapeQuotes(string memory symbol) internal pure returns (string memory) {
         bytes memory symbolBytes = bytes(symbol);
         uint8 quotesCount = 0;
@@ -82,6 +88,9 @@ library StakingDescriptor {
         return symbol;
     }
 
+    /// @notice Generates a SVG image out of a token URI
+    /// @param params parameters of the token URI
+    /// @return svg A string with SVG data
     function generateSVGImage(ConstructTokenURIParams memory params)
         internal
         pure
@@ -98,6 +107,8 @@ library StakingDescriptor {
         return StakingSVG.generateSVG(svgParams);
     }
 
+    /// @notice Generates the first part of the Staking Descriptor
+    /// @return A string with the first part of the Staking Descriptor
     function generateDescriptionPartOne() private pure returns (string memory) {
         return
             string(
@@ -109,6 +120,14 @@ library StakingDescriptor {
             );
     }
 
+    /// @notice Generates the second part of the Staking Descriptor
+    /// @param  tokenId the token id of this descriptor
+    /// @param  shares number of AToken
+    /// @param  freeAfter block number after which the position may be burned.
+    /// @param  withdrawFreeAfter block number after which the position may be collected or burned
+    /// @param  accumulatorEth the last value of the ethState accumulator this account performed a withdraw at
+    /// @param  accumulatorToken the last value of the tokenState accumulator this account performed a withdraw at
+    /// @return A string with the second part of the Staking Descriptor
     function generateDescriptionPartTwo(
         string memory tokenId,
         string memory shares,
