@@ -1,4 +1,4 @@
-package validator
+package node
 
 import (
 	"context"
@@ -46,7 +46,7 @@ import (
 
 // Command is the cobra.Command specifically for running as a node.
 var Command = cobra.Command{
-	Use:   "validator",
+	Use:   "node",
 	Short: "Starts a node",
 	Long:  "Runs a AliceNet node in mining or non-mining mode",
 	Run:   validatorNode,
