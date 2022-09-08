@@ -103,7 +103,7 @@ task(
     await checkUserDirPath(taskArgs.outputFolder);
     const factoryBase = await hre.ethers.getContractFactory(ALICENET_FACTORY);
     let constructorArgs = await getFactoryDeploymentArgs(hre.artifacts);
-    constructorArgs = constructorArgs === undefined? [] : constructorArgs 
+    constructorArgs = constructorArgs === undefined? [] : constructorArgs
     const accounts = await getAccounts(hre);
     // calculate the factory address for the constructor arg
     const deployTX = factoryBase.getDeployTransaction(constructorArgs[0]);
@@ -374,7 +374,7 @@ task(
     );
     let txResponse: ContractTransaction;
     let receipt: ContractReceipt;
-    
+
     if (estimatedMultiCallGas.lt(BigNumber.from(MULTICALL_GAS_LIMIT))) {
       // send the multicall transaction with deployProxy and upgradeProxy
       txResponse = await factory.multiCall(multiCallArgs, await getGasPrices(hre));
@@ -1095,22 +1095,20 @@ export const showState = async (message: string): Promise<void> => {
 export async function getGasPrices(hre: HardhatRuntimeEnvironment){
   //get the latest block
   let blockBaseFee = await hre.network.provider.send("eth_gasPrice")
-  //get the previouse latest block
+  //get the previous basefee from the latest block
   blockBaseFee = BigNumber.from(blockBaseFee)
   blockBaseFee = blockBaseFee.toBigInt()
-  console.log(blockBaseFee)
   // miner tip
-  let maxPriorityFeePerGas = await hre.network.provider.send("eth_maxPriorityFeePerGas")
-  console.log(maxPriorityFeePerGas)
-  maxPriorityFeePerGas = BigNumber.from(maxPriorityFeePerGas)
-  maxPriorityFeePerGas = (maxPriorityFeePerGas.toBigInt() * BigInt(125))/BigInt(100)
-  console.log(maxPriorityFeePerGas)
-  const minTip = hre.ethers.utils.parseUnits("2.0", "gwei") 
-  maxPriorityFeePerGas = maxPriorityFeePerGas < minTip ? minTip : maxPriorityFeePerGas
-  const maxFeePerGas = BigInt(2)*(blockBaseFee) + maxPriorityFeePerGas
+  let maxPriorityFeePerGas: bigint
+  const network = await hre.ethers.provider.getNetwork();
+  const minValue = hre.ethers.utils.parseUnits("2.0", "gwei").toBigInt()
+  if (network.chainId === 1337) {
+    maxPriorityFeePerGas = minValue
+  } else {
+    maxPriorityFeePerGas = BigInt(await hre.network.provider.send("eth_maxPriorityFeePerGas"))
+  }
+  maxPriorityFeePerGas = (maxPriorityFeePerGas * 125n)/100n
+  maxPriorityFeePerGas = maxPriorityFeePerGas < minValue ? minValue : maxPriorityFeePerGas
+  const maxFeePerGas = 2n * blockBaseFee + maxPriorityFeePerGas
   return{maxPriorityFeePerGas,maxFeePerGas}
 }
-
-task("getFees").setAction(async (taskargs, hre)=>{
-  console.log(await getGasPrices(hre))
-})

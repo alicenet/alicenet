@@ -67,7 +67,7 @@ describe("PublicStaking: Skim excess of tokens", async () => {
       "PublicStaking",
       "PublicStaking"
     )) as PublicStaking;
-    await posFixtureSetup(factory, aToken, legacyToken);
+    await posFixtureSetup(factory, aToken);
     tokenExcess = ethers.utils.parseUnits("100", 18).toBigInt();
     await aToken.approve(
       stakingContract.address,

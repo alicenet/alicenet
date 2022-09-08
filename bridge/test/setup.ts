@@ -305,21 +305,14 @@ export const deployUpgradeableWithFactory = async (
 export const deployFactoryAndBaseTokens = async (
   admin: SignerWithAddress
 ): Promise<BaseTokensFixture> => {
-  const factory = await deployAliceNetFactory(admin);
   const legacyTokenBase = await ethers.getContractFactory("LegacyToken")
   // LegacyToken
   const legacyToken = await legacyTokenBase.deploy()
-  const atokenSalt = ethers.utils.parseBytes32String("AToken")
-  const aToken = await ethers.getContractAt("AToken", await factory.lookup(atokenSalt))
-    factory,
-    "AToken",
-    "AToken",
-    [],
-    [legacyToken.address]
-  )) as AToken;
-
-  // BToken
-  const bToken = (await deployStaticWithFactory(factory, "BToken")) as BToken;
+  const factory = await deployAliceNetFactory(admin, legacyToken.address);
+//   AToken is deployed on the factory constructor
+  const aToken = await ethers.getContractAt("AToken", await factory.lookup(ethers.utils.formatBytes32String("AToken")))
+  // BToken is deployed on the factory constructor
+  const bToken = await ethers.getContractAt("BToken", await factory.lookup(ethers.utils.formatBytes32String("BToken")))
   // PublicStaking
   const publicStaking = (await deployUpgradeableWithFactory(
     factory,
@@ -338,10 +331,11 @@ export const deployFactoryAndBaseTokens = async (
 };
 
 export const deployAliceNetFactory = async (
-  admin: SignerWithAddress
+  admin: SignerWithAddress,
+  legacyTokenAddress_: string,
 ): Promise<AliceNetFactory> => {
   const Factory = await ethers.getContractFactory("AliceNetFactory");
-  const factory = await Factory.deploy();
+  const factory = await Factory.deploy(legacyTokenAddress_);
   await factory.deployed();
   return factory;
 };
@@ -359,8 +353,7 @@ export const preFixtureSetup = async () => {
 
 export const posFixtureSetup = async (
   factory: AliceNetFactory,
-  aToken: AToken,
-  legacyToken: LegacyToken
+  aToken: AToken
 ) => {
   // finish workaround, putting the blockgas limit to the previous value 30_000_000
   const hre = await require("hardhat");
@@ -369,32 +362,8 @@ export const posFixtureSetup = async (
   }
   await network.provider.send("hardhat_setNextBlockBaseFeePerGas", ["0x1"]);
   const [admin] = await ethers.getSigners();
-  // transferring some part of the legacy token from the factory to the admin
-  await factory.callAny(
-    legacyToken.address,
-    0,
-    aToken.interface.encodeFunctionData("transfer", [
-      admin.address,
-      ethers.utils.parseEther("220000000"),
-    ])
-  );
-  // migrating the rest of the legacy tokens to fresh new Atokens
-  await factory.callAny(
-    legacyToken.address,
-    0,
-    aToken.interface.encodeFunctionData("approve", [
-      aToken.address,
-      ethers.utils.parseEther("100000000"),
-    ])
-  );
-  await factory.callAny(
-    aToken.address,
-    0,
-    aToken.interface.encodeFunctionData("migrate", [
-      ethers.utils.parseEther("100000000"),
-    ])
-  );
-  // transferring those Atokens to the admin
+
+  // transferring those ATokens to the admin
   await factory.callAny(
     aToken.address,
     0,
@@ -410,7 +379,7 @@ export const getBaseTokensFixture = async (): Promise<BaseTokensFixture> => {
   const [admin] = await ethers.getSigners();
   // AToken
   const fixture = await deployFactoryAndBaseTokens(admin);
-  await posFixtureSetup(fixture.factory, fixture.aToken, fixture.legacyToken);
+  await posFixtureSetup(fixture.factory, fixture.aToken);
   return fixture;
 };
 
@@ -574,7 +543,7 @@ export const getFixture = async (
     []
   )) as Dynamics;
 
-  await posFixtureSetup(factory, aToken, legacyToken);
+  await posFixtureSetup(factory, aToken);
   const blockNumber = BigInt(await ethers.provider.getBlockNumber());
   const phaseLength = (await ethdkg.getPhaseLength()).toBigInt();
   if (phaseLength >= blockNumber) {

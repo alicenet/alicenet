@@ -70,6 +70,7 @@ contract BToken is
     ) public returns (uint256) {
         return _deposit(accountType_, to_, amount_);
     }
+
     /**
     *
      */

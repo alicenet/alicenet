@@ -76,11 +76,4 @@ describe("AliceNetfactory API test", async () => {
     );
   });
 
-  it("deploystatic", async () => {
-    const res = await deployStatic(END_POINT, factory.address);
-    let cSize = await utilsContract.getCodeSize(res.templateAddress);
-    expect(cSize.toNumber()).to.be.greaterThan(0);
-    cSize = await utilsContract.getCodeSize(res.metaAddress);
-    expect(cSize.toNumber()).to.be.greaterThan(0);
-  });
 });

@@ -1,4 +1,4 @@
-import { expect } from "chai";
+import { assert, expect } from "../chai-setup";
 import { BytesLike } from "ethers";
 import { artifacts, ethers, run } from "hardhat";
 import {
@@ -60,20 +60,6 @@ describe("Cli tasks", async () => {
     );
     expect(proxyData.proxyAddress).to.equal(expectedProxyAddress);
   });
-  // todo check mock logic
-  it("deploys mock contract with deployStatic", async () => {
-    // deploys factory using the deployFactory task
-    const factoryData: FactoryData = await cliDeployFactory();
-    const metaData = await cliDeployMetamorphic(
-      MOCK,
-      factoryData.address,
-      undefined,
-      ["2", "s"]
-    );
-    const salt = ethers.utils.formatBytes32String("Mock");
-    const expectedMetaAddr = getMetamorphicAddress(factoryData.address, salt);
-    expect(metaData.metaAddress).to.equal(expectedMetaAddr);
-  });
 
   it("deploys MockInitializable contract with deployCreate", async () => {
     const factoryData: FactoryData = await cliDeployFactory();
@@ -115,35 +101,6 @@ describe("Cli tasks", async () => {
     const mockContract = logicFactory.attach(upgradedProxyData.proxyAddress);
     const i = await mockContract.callStatic.getImut();
     expect(i.toNumber()).to.equal(parseInt(test, 10));
-  });
-
-  it("deploys mock contract with deployTemplate then deploys a metamorphic contract", async () => {
-    const factoryData: FactoryData = await cliDeployFactory();
-    const testVar1 = "14";
-    const testVar2 = "s";
-    const nonce = await ethers.provider.getTransactionCount(
-      factoryData.address
-    );
-    const expectTemplateAddress = ethers.utils.getContractAddress({
-      from: factoryData.address,
-      nonce,
-    });
-    const templateData = await cliDeployTemplate(MOCK, factoryData.address, [
-      testVar1,
-      testVar2,
-    ]);
-    expect(templateData.address).to.equal(expectTemplateAddress);
-    const metaData = await cliDeployStatic(
-      MOCK,
-      factoryData.address,
-      undefined
-    );
-    const logicFactory = await ethers.getContractFactory(MOCK);
-    const mockContract = logicFactory.attach(metaData.metaAddress);
-    const i = await mockContract.callStatic.getImut();
-    expect(i.toNumber()).to.equal(parseInt(testVar1, 10));
-    const pString = await mockContract.callStatic.getpString();
-    expect(pString).to.equal(testVar2);
   });
 
   it("deploys mockInitializable with deployCreate, then deploy and upgrades a proxy with multiCallDeployProxy", async () => {
@@ -190,23 +147,6 @@ describe("Cli tasks", async () => {
       salt
     );
     expect(proxyData.proxyAddress).to.equal(expectedProxyAddress);
-  });
-
-  it("deploys MockBaseContract with multiCallDeployMetamorphic", async () => {
-    const factoryData: FactoryData = await cliDeployFactory();
-    const metaContractData = await cliMultiCallDeployMetamorphic(
-      MOCK,
-      factoryData.address,
-      undefined,
-      undefined,
-      ["2", "s"]
-    );
-    const salt = await getBytes32Salt(MOCK, artifacts, ethers);
-    const expectedMetaAddress = getMetamorphicAddress(
-      factoryData.address,
-      salt
-    );
-    expect(metaContractData.metaAddress).to.equal(expectedMetaAddress);
   });
 
   xit("deploys all contracts in deploymentList", async () => {
@@ -270,20 +210,6 @@ export async function cliDeployUpgradeableProxy(
   });
 }
 
-export async function cliDeployMetamorphic(
-  contractName: string,
-  factoryAddress: string,
-  initCallData?: string,
-  constructorArgs?: Array<string>
-): Promise<MetaContractData> {
-  return await run(DEPLOY_METAMORPHIC, {
-    contractName,
-    factoryAddress,
-    initCallData,
-    constructorArgs,
-  });
-}
-
 export async function cliDeployCreate(
   contractName: string,
   factoryAddress: string,
@@ -305,30 +231,6 @@ export async function cliUpgradeDeployedProxy(
   return await run(UPGRADE_DEPLOYED_PROXY, {
     contractName,
     logicAddress,
-    factoryAddress,
-    initCallData,
-  });
-}
-
-export async function cliDeployTemplate(
-  contractName: string,
-  factoryAddress: string,
-  constructorArgs?: Array<string>
-): Promise<TemplateData> {
-  return await run(DEPLOY_TEMPLATE, {
-    contractName,
-    factoryAddress,
-    constructorArgs,
-  });
-}
-
-export async function cliDeployStatic(
-  contractName: string,
-  factoryAddress: string,
-  initCallData?: Array<string>
-): Promise<MetaContractData> {
-  return await run(DEPLOY_STATIC, {
-    contractName,
     factoryAddress,
     initCallData,
   });

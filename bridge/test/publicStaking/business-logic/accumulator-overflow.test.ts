@@ -56,7 +56,7 @@ describe("PublicStaking: Accumulator Overflow", async () => {
       "PublicStaking"
     )) as HugeAccumulatorStaking;
 
-    await posFixtureSetup(factory, aToken, legacyToken);
+    await posFixtureSetup(factory, aToken);
     await aToken.approve(
       stakingContract.address,
       ethers.utils.parseUnits("100000", 18)
