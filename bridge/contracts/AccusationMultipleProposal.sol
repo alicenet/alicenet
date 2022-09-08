@@ -39,7 +39,7 @@ contract AccusationMultipleProposal is
         bytes calldata pClaims0_,
         bytes calldata signature1_,
         bytes calldata pClaims1_
-    ) public view returns (address) {
+    ) public returns (address) {
         // ecrecover sig0/1 and ensure both are valid and accounts are equal
         address signerAccount0 = AccusationsLibrary.recoverMadNetSigner(signature0_, pClaims0_);
         address signerAccount1 = AccusationsLibrary.recoverMadNetSigner(signature1_, pClaims1_);
@@ -101,7 +101,7 @@ contract AccusationMultipleProposal is
 
         // check if this accusation ID has already been submitted
         if (_accusations[id]) {
-            revert AccusationAlreadySubmitted(id);
+            revert AccusationsErrors.AccusationAlreadySubmitted(id);
         }
 
         _accusations[id] = true;

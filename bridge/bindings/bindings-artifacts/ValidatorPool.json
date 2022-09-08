@@ -214,6 +214,27 @@
   {
     "inputs": [
       {
+        "internalType": "address",
+        "name": "accuserAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "accusationAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "ethdkgAddress",
+        "type": "address"
+      }
+    ],
+    "name": "NotAllowedToAccuse",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "uint256",
         "name": "requiredSlots",
         "type": "uint256"
@@ -858,6 +879,11 @@
         "internalType": "address",
         "name": "disputer_",
         "type": "address"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "preSalt_",
+        "type": "bytes32"
       }
     ],
     "name": "majorSlash",
@@ -876,6 +902,11 @@
         "internalType": "address",
         "name": "disputer_",
         "type": "address"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "preSalt_",
+        "type": "bytes32"
       }
     ],
     "name": "minorSlash",

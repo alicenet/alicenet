@@ -32,14 +32,14 @@ type IValidatorPoolTransactor interface {
 	//
 	// Solidity: function initializeETHDKG() returns()
 	InitializeETHDKG(opts *bind.TransactOpts) (*types.Transaction, error)
-	// MajorSlash is a paid mutator transaction binding the contract method 0x048d56c7.
+	// MajorSlash is a paid mutator transaction binding the contract method 0xc7d62984.
 	//
-	// Solidity: function majorSlash(address dishonestValidator_, address disputer_) returns()
-	MajorSlash(opts *bind.TransactOpts, dishonestValidator_ common.Address, disputer_ common.Address) (*types.Transaction, error)
-	// MinorSlash is a paid mutator transaction binding the contract method 0x64c0461c.
+	// Solidity: function majorSlash(address dishonestValidator_, address disputer_, bytes32 preSalt_) returns()
+	MajorSlash(opts *bind.TransactOpts, dishonestValidator_ common.Address, disputer_ common.Address, preSalt_ [32]byte) (*types.Transaction, error)
+	// MinorSlash is a paid mutator transaction binding the contract method 0x517d3bfc.
 	//
-	// Solidity: function minorSlash(address dishonestValidator_, address disputer_) returns()
-	MinorSlash(opts *bind.TransactOpts, dishonestValidator_ common.Address, disputer_ common.Address) (*types.Transaction, error)
+	// Solidity: function minorSlash(address dishonestValidator_, address disputer_, bytes32 preSalt_) returns()
+	MinorSlash(opts *bind.TransactOpts, dishonestValidator_ common.Address, disputer_ common.Address, preSalt_ [32]byte) (*types.Transaction, error)
 	// OnERC721Received is a paid mutator transaction binding the contract method 0x150b7a02.
 	//
 	// Solidity: function onERC721Received(address , address , uint256 , bytes ) returns(bytes4)
