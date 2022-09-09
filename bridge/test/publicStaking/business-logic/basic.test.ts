@@ -41,8 +41,7 @@ describe("PublicStaking: Basics", async () => {
     const publicStakingAddress = await getContractAddressFromDeployedRawEvent(
       await fixture.factory.deployCreate(deployData)
     );
-
-    const publicStaking = await await ethers.getContractAt(
+    const publicStaking = await ethers.getContractAt(
       "PublicStaking",
       publicStakingAddress
     );

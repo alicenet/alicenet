@@ -3080,6 +3080,10 @@ type MockIAliceNetFactory struct {
 	// FilterDeployedTemplateFunc is an instance of a mock function object
 	// controlling the behavior of the method FilterDeployedTemplate.
 	FilterDeployedTemplateFunc *IAliceNetFactoryFilterDeployedTemplateFunc
+	// GetArbitraryContractAddressFunc is an instance of a mock function
+	// object controlling the behavior of the method
+	// GetArbitraryContractAddress.
+	GetArbitraryContractAddressFunc *IAliceNetFactoryGetArbitraryContractAddressFunc
 	// GetImplementationFunc is an instance of a mock function object
 	// controlling the behavior of the method GetImplementation.
 	GetImplementationFunc *IAliceNetFactoryGetImplementationFunc
@@ -3210,6 +3214,11 @@ func NewMockIAliceNetFactory() *MockIAliceNetFactory {
 		},
 		FilterDeployedTemplateFunc: &IAliceNetFactoryFilterDeployedTemplateFunc{
 			defaultHook: func(*bind.FilterOpts) (r0 *bindings.AliceNetFactoryDeployedTemplateIterator, r1 error) {
+				return
+			},
+		},
+		GetArbitraryContractAddressFunc: &IAliceNetFactoryGetArbitraryContractAddressFunc{
+			defaultHook: func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (r0 common.Address, r1 error) {
 				return
 			},
 		},
@@ -3385,6 +3394,11 @@ func NewStrictMockIAliceNetFactory() *MockIAliceNetFactory {
 				panic("unexpected invocation of MockIAliceNetFactory.FilterDeployedTemplate")
 			},
 		},
+		GetArbitraryContractAddressFunc: &IAliceNetFactoryGetArbitraryContractAddressFunc{
+			defaultHook: func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error) {
+				panic("unexpected invocation of MockIAliceNetFactory.GetArbitraryContractAddress")
+			},
+		},
 		GetImplementationFunc: &IAliceNetFactoryGetImplementationFunc{
 			defaultHook: func(*bind.CallOpts) (common.Address, error) {
 				panic("unexpected invocation of MockIAliceNetFactory.GetImplementation")
@@ -3531,6 +3545,9 @@ func NewMockIAliceNetFactoryFrom(i bindings.IAliceNetFactory) *MockIAliceNetFact
 		},
 		FilterDeployedTemplateFunc: &IAliceNetFactoryFilterDeployedTemplateFunc{
 			defaultHook: i.FilterDeployedTemplate,
+		},
+		GetArbitraryContractAddressFunc: &IAliceNetFactoryGetArbitraryContractAddressFunc{
+			defaultHook: i.GetArbitraryContractAddress,
 		},
 		GetImplementationFunc: &IAliceNetFactoryGetImplementationFunc{
 			defaultHook: i.GetImplementation,
@@ -5023,6 +5040,124 @@ func (c IAliceNetFactoryFilterDeployedTemplateFuncCall) Args() []interface{} {
 // Results returns an interface slice containing the results of this
 // invocation.
 func (c IAliceNetFactoryFilterDeployedTemplateFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
+}
+
+// IAliceNetFactoryGetArbitraryContractAddressFunc describes the behavior
+// when the GetArbitraryContractAddress method of the parent
+// MockIAliceNetFactory instance is invoked.
+type IAliceNetFactoryGetArbitraryContractAddressFunc struct {
+	defaultHook func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error)
+	hooks       []func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error)
+	history     []IAliceNetFactoryGetArbitraryContractAddressFuncCall
+	mutex       sync.Mutex
+}
+
+// GetArbitraryContractAddress delegates to the next hook function in the
+// queue and stores the parameter and result values of this invocation.
+func (m *MockIAliceNetFactory) GetArbitraryContractAddress(v0 *bind.CallOpts, v1 [32]byte, v2 common.Address, v3 [32]byte) (common.Address, error) {
+	r0, r1 := m.GetArbitraryContractAddressFunc.nextHook()(v0, v1, v2, v3)
+	m.GetArbitraryContractAddressFunc.appendCall(IAliceNetFactoryGetArbitraryContractAddressFuncCall{v0, v1, v2, v3, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the
+// GetArbitraryContractAddress method of the parent MockIAliceNetFactory
+// instance is invoked and the hook queue is empty.
+func (f *IAliceNetFactoryGetArbitraryContractAddressFunc) SetDefaultHook(hook func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// GetArbitraryContractAddress method of the parent MockIAliceNetFactory
+// instance invokes the hook at the front of the queue and discards it.
+// After the queue is empty, the default hook function is invoked for any
+// future action.
+func (f *IAliceNetFactoryGetArbitraryContractAddressFunc) PushHook(hook func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *IAliceNetFactoryGetArbitraryContractAddressFunc) SetDefaultReturn(r0 common.Address, r1 error) {
+	f.SetDefaultHook(func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *IAliceNetFactoryGetArbitraryContractAddressFunc) PushReturn(r0 common.Address, r1 error) {
+	f.PushHook(func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error) {
+		return r0, r1
+	})
+}
+
+func (f *IAliceNetFactoryGetArbitraryContractAddressFunc) nextHook() func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *IAliceNetFactoryGetArbitraryContractAddressFunc) appendCall(r0 IAliceNetFactoryGetArbitraryContractAddressFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of
+// IAliceNetFactoryGetArbitraryContractAddressFuncCall objects describing
+// the invocations of this function.
+func (f *IAliceNetFactoryGetArbitraryContractAddressFunc) History() []IAliceNetFactoryGetArbitraryContractAddressFuncCall {
+	f.mutex.Lock()
+	history := make([]IAliceNetFactoryGetArbitraryContractAddressFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// IAliceNetFactoryGetArbitraryContractAddressFuncCall is an object that
+// describes an invocation of method GetArbitraryContractAddress on an
+// instance of MockIAliceNetFactory.
+type IAliceNetFactoryGetArbitraryContractAddressFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 *bind.CallOpts
+	// Arg1 is the value of the 2nd argument passed to this method
+	// invocation.
+	Arg1 [32]byte
+	// Arg2 is the value of the 3rd argument passed to this method
+	// invocation.
+	Arg2 common.Address
+	// Arg3 is the value of the 4th argument passed to this method
+	// invocation.
+	Arg3 [32]byte
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 common.Address
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c IAliceNetFactoryGetArbitraryContractAddressFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0, c.Arg1, c.Arg2, c.Arg3}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c IAliceNetFactoryGetArbitraryContractAddressFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
@@ -7267,9 +7402,10 @@ type MockIBToken struct {
 	// FilterTransferFunc is an instance of a mock function object
 	// controlling the behavior of the method FilterTransfer.
 	FilterTransferFunc *IBTokenFilterTransferFunc
-	// GetBridgeRouterAddressFunc is an instance of a mock function object
-	// controlling the behavior of the method GetBridgeRouterAddress.
-	GetBridgeRouterAddressFunc *IBTokenGetBridgeRouterAddressFunc
+	// GetCentralBridgeRouterAddressFunc is an instance of a mock function
+	// object controlling the behavior of the method
+	// GetCentralBridgeRouterAddress.
+	GetCentralBridgeRouterAddressFunc *IBTokenGetCentralBridgeRouterAddressFunc
 	// GetDepositFunc is an instance of a mock function object controlling
 	// the behavior of the method GetDeposit.
 	GetDepositFunc *IBTokenGetDepositFunc
@@ -7337,9 +7473,6 @@ type MockIBToken struct {
 	// ParseTransferFunc is an instance of a mock function object
 	// controlling the behavior of the method ParseTransfer.
 	ParseTransferFunc *IBTokenParseTransferFunc
-	// SetBridgeRouterAddressFunc is an instance of a mock function object
-	// controlling the behavior of the method SetBridgeRouterAddress.
-	SetBridgeRouterAddressFunc *IBTokenSetBridgeRouterAddressFunc
 	// SymbolFunc is an instance of a mock function object controlling the
 	// behavior of the method Symbol.
 	SymbolFunc *IBTokenSymbolFunc
@@ -7440,8 +7573,8 @@ func NewMockIBToken() *MockIBToken {
 				return
 			},
 		},
-		GetBridgeRouterAddressFunc: &IBTokenGetBridgeRouterAddressFunc{
-			defaultHook: func(*bind.CallOpts, uint8) (r0 common.Address, r1 error) {
+		GetCentralBridgeRouterAddressFunc: &IBTokenGetCentralBridgeRouterAddressFunc{
+			defaultHook: func(*bind.CallOpts) (r0 common.Address, r1 error) {
 				return
 			},
 		},
@@ -7547,11 +7680,6 @@ func NewMockIBToken() *MockIBToken {
 		},
 		ParseTransferFunc: &IBTokenParseTransferFunc{
 			defaultHook: func(types.Log) (r0 *bindings.BTokenTransfer, r1 error) {
-				return
-			},
-		},
-		SetBridgeRouterAddressFunc: &IBTokenSetBridgeRouterAddressFunc{
-			defaultHook: func(*bind.TransactOpts, common.Address, uint8) (r0 *types.Transaction, r1 error) {
 				return
 			},
 		},
@@ -7672,9 +7800,9 @@ func NewStrictMockIBToken() *MockIBToken {
 				panic("unexpected invocation of MockIBToken.FilterTransfer")
 			},
 		},
-		GetBridgeRouterAddressFunc: &IBTokenGetBridgeRouterAddressFunc{
-			defaultHook: func(*bind.CallOpts, uint8) (common.Address, error) {
-				panic("unexpected invocation of MockIBToken.GetBridgeRouterAddress")
+		GetCentralBridgeRouterAddressFunc: &IBTokenGetCentralBridgeRouterAddressFunc{
+			defaultHook: func(*bind.CallOpts) (common.Address, error) {
+				panic("unexpected invocation of MockIBToken.GetCentralBridgeRouterAddress")
 			},
 		},
 		GetDepositFunc: &IBTokenGetDepositFunc{
@@ -7782,11 +7910,6 @@ func NewStrictMockIBToken() *MockIBToken {
 				panic("unexpected invocation of MockIBToken.ParseTransfer")
 			},
 		},
-		SetBridgeRouterAddressFunc: &IBTokenSetBridgeRouterAddressFunc{
-			defaultHook: func(*bind.TransactOpts, common.Address, uint8) (*types.Transaction, error) {
-				panic("unexpected invocation of MockIBToken.SetBridgeRouterAddress")
-			},
-		},
 		SymbolFunc: &IBTokenSymbolFunc{
 			defaultHook: func(*bind.CallOpts) (string, error) {
 				panic("unexpected invocation of MockIBToken.Symbol")
@@ -7876,8 +7999,8 @@ func NewMockIBTokenFrom(i bindings.IBToken) *MockIBToken {
 		FilterTransferFunc: &IBTokenFilterTransferFunc{
 			defaultHook: i.FilterTransfer,
 		},
-		GetBridgeRouterAddressFunc: &IBTokenGetBridgeRouterAddressFunc{
-			defaultHook: i.GetBridgeRouterAddress,
+		GetCentralBridgeRouterAddressFunc: &IBTokenGetCentralBridgeRouterAddressFunc{
+			defaultHook: i.GetCentralBridgeRouterAddress,
 		},
 		GetDepositFunc: &IBTokenGetDepositFunc{
 			defaultHook: i.GetDeposit,
@@ -7941,9 +8064,6 @@ func NewMockIBTokenFrom(i bindings.IBToken) *MockIBToken {
 		},
 		ParseTransferFunc: &IBTokenParseTransferFunc{
 			defaultHook: i.ParseTransfer,
-		},
-		SetBridgeRouterAddressFunc: &IBTokenSetBridgeRouterAddressFunc{
-			defaultHook: i.SetBridgeRouterAddress,
 		},
 		SymbolFunc: &IBTokenSymbolFunc{
 			defaultHook: i.Symbol,
@@ -9512,36 +9632,37 @@ func (c IBTokenFilterTransferFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
-// IBTokenGetBridgeRouterAddressFunc describes the behavior when the
-// GetBridgeRouterAddress method of the parent MockIBToken instance is
-// invoked.
-type IBTokenGetBridgeRouterAddressFunc struct {
-	defaultHook func(*bind.CallOpts, uint8) (common.Address, error)
-	hooks       []func(*bind.CallOpts, uint8) (common.Address, error)
-	history     []IBTokenGetBridgeRouterAddressFuncCall
+// IBTokenGetCentralBridgeRouterAddressFunc describes the behavior when the
+// GetCentralBridgeRouterAddress method of the parent MockIBToken instance
+// is invoked.
+type IBTokenGetCentralBridgeRouterAddressFunc struct {
+	defaultHook func(*bind.CallOpts) (common.Address, error)
+	hooks       []func(*bind.CallOpts) (common.Address, error)
+	history     []IBTokenGetCentralBridgeRouterAddressFuncCall
 	mutex       sync.Mutex
 }
 
-// GetBridgeRouterAddress delegates to the next hook function in the queue
-// and stores the parameter and result values of this invocation.
-func (m *MockIBToken) GetBridgeRouterAddress(v0 *bind.CallOpts, v1 uint8) (common.Address, error) {
-	r0, r1 := m.GetBridgeRouterAddressFunc.nextHook()(v0, v1)
-	m.GetBridgeRouterAddressFunc.appendCall(IBTokenGetBridgeRouterAddressFuncCall{v0, v1, r0, r1})
+// GetCentralBridgeRouterAddress delegates to the next hook function in the
+// queue and stores the parameter and result values of this invocation.
+func (m *MockIBToken) GetCentralBridgeRouterAddress(v0 *bind.CallOpts) (common.Address, error) {
+	r0, r1 := m.GetCentralBridgeRouterAddressFunc.nextHook()(v0)
+	m.GetCentralBridgeRouterAddressFunc.appendCall(IBTokenGetCentralBridgeRouterAddressFuncCall{v0, r0, r1})
 	return r0, r1
 }
 
 // SetDefaultHook sets function that is called when the
-// GetBridgeRouterAddress method of the parent MockIBToken instance is
-// invoked and the hook queue is empty.
-func (f *IBTokenGetBridgeRouterAddressFunc) SetDefaultHook(hook func(*bind.CallOpts, uint8) (common.Address, error)) {
+// GetCentralBridgeRouterAddress method of the parent MockIBToken instance
+// is invoked and the hook queue is empty.
+func (f *IBTokenGetCentralBridgeRouterAddressFunc) SetDefaultHook(hook func(*bind.CallOpts) (common.Address, error)) {
 	f.defaultHook = hook
 }
 
 // PushHook adds a function to the end of hook queue. Each invocation of the
-// GetBridgeRouterAddress method of the parent MockIBToken instance invokes
-// the hook at the front of the queue and discards it. After the queue is
-// empty, the default hook function is invoked for any future action.
-func (f *IBTokenGetBridgeRouterAddressFunc) PushHook(hook func(*bind.CallOpts, uint8) (common.Address, error)) {
+// GetCentralBridgeRouterAddress method of the parent MockIBToken instance
+// invokes the hook at the front of the queue and discards it. After the
+// queue is empty, the default hook function is invoked for any future
+// action.
+func (f *IBTokenGetCentralBridgeRouterAddressFunc) PushHook(hook func(*bind.CallOpts) (common.Address, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -9549,20 +9670,20 @@ func (f *IBTokenGetBridgeRouterAddressFunc) PushHook(hook func(*bind.CallOpts, u
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IBTokenGetBridgeRouterAddressFunc) SetDefaultReturn(r0 common.Address, r1 error) {
-	f.SetDefaultHook(func(*bind.CallOpts, uint8) (common.Address, error) {
+func (f *IBTokenGetCentralBridgeRouterAddressFunc) SetDefaultReturn(r0 common.Address, r1 error) {
+	f.SetDefaultHook(func(*bind.CallOpts) (common.Address, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IBTokenGetBridgeRouterAddressFunc) PushReturn(r0 common.Address, r1 error) {
-	f.PushHook(func(*bind.CallOpts, uint8) (common.Address, error) {
+func (f *IBTokenGetCentralBridgeRouterAddressFunc) PushReturn(r0 common.Address, r1 error) {
+	f.PushHook(func(*bind.CallOpts) (common.Address, error) {
 		return r0, r1
 	})
 }
 
-func (f *IBTokenGetBridgeRouterAddressFunc) nextHook() func(*bind.CallOpts, uint8) (common.Address, error) {
+func (f *IBTokenGetCentralBridgeRouterAddressFunc) nextHook() func(*bind.CallOpts) (common.Address, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -9575,33 +9696,31 @@ func (f *IBTokenGetBridgeRouterAddressFunc) nextHook() func(*bind.CallOpts, uint
 	return hook
 }
 
-func (f *IBTokenGetBridgeRouterAddressFunc) appendCall(r0 IBTokenGetBridgeRouterAddressFuncCall) {
+func (f *IBTokenGetCentralBridgeRouterAddressFunc) appendCall(r0 IBTokenGetCentralBridgeRouterAddressFuncCall) {
 	f.mutex.Lock()
 	f.history = append(f.history, r0)
 	f.mutex.Unlock()
 }
 
-// History returns a sequence of IBTokenGetBridgeRouterAddressFuncCall
-// objects describing the invocations of this function.
-func (f *IBTokenGetBridgeRouterAddressFunc) History() []IBTokenGetBridgeRouterAddressFuncCall {
+// History returns a sequence of
+// IBTokenGetCentralBridgeRouterAddressFuncCall objects describing the
+// invocations of this function.
+func (f *IBTokenGetCentralBridgeRouterAddressFunc) History() []IBTokenGetCentralBridgeRouterAddressFuncCall {
 	f.mutex.Lock()
-	history := make([]IBTokenGetBridgeRouterAddressFuncCall, len(f.history))
+	history := make([]IBTokenGetCentralBridgeRouterAddressFuncCall, len(f.history))
 	copy(history, f.history)
 	f.mutex.Unlock()
 
 	return history
 }
 
-// IBTokenGetBridgeRouterAddressFuncCall is an object that describes an
-// invocation of method GetBridgeRouterAddress on an instance of
+// IBTokenGetCentralBridgeRouterAddressFuncCall is an object that describes
+// an invocation of method GetCentralBridgeRouterAddress on an instance of
 // MockIBToken.
-type IBTokenGetBridgeRouterAddressFuncCall struct {
+type IBTokenGetCentralBridgeRouterAddressFuncCall struct {
 	// Arg0 is the value of the 1st argument passed to this method
 	// invocation.
 	Arg0 *bind.CallOpts
-	// Arg1 is the value of the 2nd argument passed to this method
-	// invocation.
-	Arg1 uint8
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
 	Result0 common.Address
@@ -9612,13 +9731,13 @@ type IBTokenGetBridgeRouterAddressFuncCall struct {
 
 // Args returns an interface slice containing the arguments of this
 // invocation.
-func (c IBTokenGetBridgeRouterAddressFuncCall) Args() []interface{} {
-	return []interface{}{c.Arg0, c.Arg1}
+func (c IBTokenGetCentralBridgeRouterAddressFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0}
 }
 
 // Results returns an interface slice containing the results of this
 // invocation.
-func (c IBTokenGetBridgeRouterAddressFuncCall) Results() []interface{} {
+func (c IBTokenGetCentralBridgeRouterAddressFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
@@ -11903,119 +12022,6 @@ func (c IBTokenParseTransferFuncCall) Args() []interface{} {
 // Results returns an interface slice containing the results of this
 // invocation.
 func (c IBTokenParseTransferFuncCall) Results() []interface{} {
-	return []interface{}{c.Result0, c.Result1}
-}
-
-// IBTokenSetBridgeRouterAddressFunc describes the behavior when the
-// SetBridgeRouterAddress method of the parent MockIBToken instance is
-// invoked.
-type IBTokenSetBridgeRouterAddressFunc struct {
-	defaultHook func(*bind.TransactOpts, common.Address, uint8) (*types.Transaction, error)
-	hooks       []func(*bind.TransactOpts, common.Address, uint8) (*types.Transaction, error)
-	history     []IBTokenSetBridgeRouterAddressFuncCall
-	mutex       sync.Mutex
-}
-
-// SetBridgeRouterAddress delegates to the next hook function in the queue
-// and stores the parameter and result values of this invocation.
-func (m *MockIBToken) SetBridgeRouterAddress(v0 *bind.TransactOpts, v1 common.Address, v2 uint8) (*types.Transaction, error) {
-	r0, r1 := m.SetBridgeRouterAddressFunc.nextHook()(v0, v1, v2)
-	m.SetBridgeRouterAddressFunc.appendCall(IBTokenSetBridgeRouterAddressFuncCall{v0, v1, v2, r0, r1})
-	return r0, r1
-}
-
-// SetDefaultHook sets function that is called when the
-// SetBridgeRouterAddress method of the parent MockIBToken instance is
-// invoked and the hook queue is empty.
-func (f *IBTokenSetBridgeRouterAddressFunc) SetDefaultHook(hook func(*bind.TransactOpts, common.Address, uint8) (*types.Transaction, error)) {
-	f.defaultHook = hook
-}
-
-// PushHook adds a function to the end of hook queue. Each invocation of the
-// SetBridgeRouterAddress method of the parent MockIBToken instance invokes
-// the hook at the front of the queue and discards it. After the queue is
-// empty, the default hook function is invoked for any future action.
-func (f *IBTokenSetBridgeRouterAddressFunc) PushHook(hook func(*bind.TransactOpts, common.Address, uint8) (*types.Transaction, error)) {
-	f.mutex.Lock()
-	f.hooks = append(f.hooks, hook)
-	f.mutex.Unlock()
-}
-
-// SetDefaultReturn calls SetDefaultHook with a function that returns the
-// given values.
-func (f *IBTokenSetBridgeRouterAddressFunc) SetDefaultReturn(r0 *types.Transaction, r1 error) {
-	f.SetDefaultHook(func(*bind.TransactOpts, common.Address, uint8) (*types.Transaction, error) {
-		return r0, r1
-	})
-}
-
-// PushReturn calls PushHook with a function that returns the given values.
-func (f *IBTokenSetBridgeRouterAddressFunc) PushReturn(r0 *types.Transaction, r1 error) {
-	f.PushHook(func(*bind.TransactOpts, common.Address, uint8) (*types.Transaction, error) {
-		return r0, r1
-	})
-}
-
-func (f *IBTokenSetBridgeRouterAddressFunc) nextHook() func(*bind.TransactOpts, common.Address, uint8) (*types.Transaction, error) {
-	f.mutex.Lock()
-	defer f.mutex.Unlock()
-
-	if len(f.hooks) == 0 {
-		return f.defaultHook
-	}
-
-	hook := f.hooks[0]
-	f.hooks = f.hooks[1:]
-	return hook
-}
-
-func (f *IBTokenSetBridgeRouterAddressFunc) appendCall(r0 IBTokenSetBridgeRouterAddressFuncCall) {
-	f.mutex.Lock()
-	f.history = append(f.history, r0)
-	f.mutex.Unlock()
-}
-
-// History returns a sequence of IBTokenSetBridgeRouterAddressFuncCall
-// objects describing the invocations of this function.
-func (f *IBTokenSetBridgeRouterAddressFunc) History() []IBTokenSetBridgeRouterAddressFuncCall {
-	f.mutex.Lock()
-	history := make([]IBTokenSetBridgeRouterAddressFuncCall, len(f.history))
-	copy(history, f.history)
-	f.mutex.Unlock()
-
-	return history
-}
-
-// IBTokenSetBridgeRouterAddressFuncCall is an object that describes an
-// invocation of method SetBridgeRouterAddress on an instance of
-// MockIBToken.
-type IBTokenSetBridgeRouterAddressFuncCall struct {
-	// Arg0 is the value of the 1st argument passed to this method
-	// invocation.
-	Arg0 *bind.TransactOpts
-	// Arg1 is the value of the 2nd argument passed to this method
-	// invocation.
-	Arg1 common.Address
-	// Arg2 is the value of the 3rd argument passed to this method
-	// invocation.
-	Arg2 uint8
-	// Result0 is the value of the 1st result returned from this method
-	// invocation.
-	Result0 *types.Transaction
-	// Result1 is the value of the 2nd result returned from this method
-	// invocation.
-	Result1 error
-}
-
-// Args returns an interface slice containing the arguments of this
-// invocation.
-func (c IBTokenSetBridgeRouterAddressFuncCall) Args() []interface{} {
-	return []interface{}{c.Arg0, c.Arg1, c.Arg2}
-}
-
-// Results returns an interface slice containing the results of this
-// invocation.
-func (c IBTokenSetBridgeRouterAddressFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
