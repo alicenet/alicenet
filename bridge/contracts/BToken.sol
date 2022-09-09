@@ -25,6 +25,9 @@ contract BToken is
     // multiply factor for the selling/minting bonding curve
     uint256 internal constant _MARKET_SPREAD = 4;
 
+    // Address of the central bridge router contract
+    address internal immutable _centralBridgeRouter;
+
     // Balance in ether that is hold in the contract after minting and burning
     uint256 internal _poolBalance;
 
@@ -38,7 +41,7 @@ contract BToken is
     // Tracks the amount of each deposit. Key is deposit id, value is amount
     // deposited.
     mapping(uint256 => Deposit) internal _deposits;
-    mapping (uint8 => address) internal _bridgeRouterAddresses;
+
     /// @notice Event emitted when a deposit is received
     event DepositReceived(
         uint256 indexed depositID,
@@ -47,7 +50,14 @@ contract BToken is
         uint256 amount
     );
 
-    constructor() ERC20("AliceNet Utility Token", "ALCB") ImmutableFactory(msg.sender) ImmutableDistribution() {
+    constructor(address centralBridgeRouterAddress_) ERC20("AliceNet Utility Token", "ALCB") ImmutableFactory(msg.sender) ImmutableDistribution() {
+        if(centralBridgeRouterAddress_ == address(0)){
+            revert UtilityTokenErrors.CannotSetRouterToZeroAddress();
+        }
+        if (!_isContract(centralBridgeRouterAddress_)) {
+            revert UtilityTokenErrors.InexistentRouterContract(centralBridgeRouterAddress_);
+        }
+        _centralBridgeRouter = centralBridgeRouterAddress_;
         _virtualDeposit(1, 0xba7809A4114eEF598132461f3202b5013e834CD5, 500000000000);
     }
 
@@ -71,18 +81,6 @@ contract BToken is
         return _deposit(accountType_, to_, amount_);
     }
 
-    /**
-    *
-     */
-    function setBridgeRouterAddress(address newAddress_, uint8 routerVersion_) public onlyFactory {
-        if(newAddress_ == address(0)){
-            revert UtilityTokenErrors.CannotSetRouterToZeroAddress();
-        }
-        if (!_isContract(newAddress_)) {
-            revert UtilityTokenErrors.InexistentRouterContract(newAddress_);
-        }
-        _bridgeRouterAddresses[routerVersion_] = newAddress_;
-    }
     /// Allows deposits to be minted in a virtual manner and sent to the AliceNet
     /// chain by simply emitting a Deposit event without actually minting or
     /// burning any tokens, must only be called by _admin.
@@ -158,9 +156,8 @@ contract BToken is
     /// @param routerVersion_ The bridge version where to deposit the tokens.
     /// @param data_ Encoded data necessary to deposit the arbitrary tokens in the bridges.
     function depositTokensOnBridges(uint8 routerVersion_, bytes calldata data_) public payable {
-        address bridgeRouterAddress = _bridgeRouterAddresses[routerVersion_];
         //forward call to router
-        uint256 bTokenFee = IBridgeRouter(bridgeRouterAddress).routeDeposit(msg.sender, data_);
+        uint256 bTokenFee = IBridgeRouter(_centralBridgeRouter).routeDeposit(msg.sender, routerVersion_, data_);
         if (msg.value > 0) {
             uint256 ethFee = _getEthToMintBTokens(totalSupply(), bTokenFee);
             if (ethFee > msg.value) {
@@ -207,10 +204,10 @@ contract BToken is
         numEth = _burn(msg.sender, to_, amount_, minEth_);
         return numEth;
     }
-    /**
-    * gets the address of the  */
-    function getBridgeRouterAddress(uint8 routerVersion_) public view returns(address){
-        return _bridgeRouterAddresses[routerVersion_];
+
+    /// Gets the address to the central router for the bridge system
+    function getCentralBridgeRouterAddress() public view returns(address){
+        return _centralBridgeRouter;
     }
 
     /// Gets the latest deposit ID emitted.

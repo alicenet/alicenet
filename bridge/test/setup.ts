@@ -303,7 +303,7 @@ export const deployUpgradeableWithFactory = async (
 };
 
 export const deployFactoryAndBaseTokens = async (
-  admin: SignerWithAddress
+  admin: SignerWithAddress,
 ): Promise<BaseTokensFixture> => {
   const legacyTokenBase = await ethers.getContractFactory("LegacyToken")
   // LegacyToken
@@ -311,7 +311,10 @@ export const deployFactoryAndBaseTokens = async (
   const factory = await deployAliceNetFactory(admin, legacyToken.address);
 //   AToken is deployed on the factory constructor
   const aToken = await ethers.getContractAt("AToken", await factory.lookup(ethers.utils.formatBytes32String("AToken")))
-  // BToken is deployed on the factory constructor
+  // BToken
+  const centralRouter = await (await ethers.getContractFactory("CentralBridgeRouterMock")).deploy()
+  const bTokenBase = await ethers.getContractFactory("BToken")
+  const deployData = bTokenBase.getDeployTransaction().data as BytesLike
   const bToken = await ethers.getContractAt("BToken", await factory.lookup(ethers.utils.formatBytes32String("BToken")))
   // PublicStaking
   const publicStaking = (await deployUpgradeableWithFactory(

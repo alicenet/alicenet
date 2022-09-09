@@ -45,7 +45,7 @@ const depositAndCheckRefundWei = async (
   const ethFeeForDeposit = minEthFeeForDeposit + refund;
   const tx = await fixture.bToken
     .connect(user)
-    .depositTokensOnBridges(_poolVersion, encodedDepositCallData, {
+    .depositTokensOnBridges(encodedDepositCallData, {
       value: ethFeeForDeposit,
     });
   expectedState.Balances.eth.bToken += BigInt(minEthFeeForDeposit);
@@ -140,7 +140,7 @@ describe("Testing BToken bridge methods", async () => {
     );
     const tx = await fixture.bToken
       .connect(user)
-      .depositTokensOnBridges(_poolVersion, encodedDepositCallData);
+      .depositTokensOnBridges(encodedDepositCallData);
     console.log(ethsFromBurning);
     expectedState.Balances.bToken.user -= BigInt(bTokenFee);
     expectedState.Balances.eth.user -= getEthConsumedAsGas(await tx.wait());
@@ -161,7 +161,7 @@ describe("Testing BToken bridge methods", async () => {
     await expect(
       fixture.bToken
         .connect(user)
-        .depositTokensOnBridges(_poolVersion, encodedDepositCallData)
+        .depositTokensOnBridges(encodedDepositCallData)
     ).to.be.revertedWith("ERC20: burn amount exceeds balance");
   });
 
@@ -182,7 +182,7 @@ describe("Testing BToken bridge methods", async () => {
     );
     let tx = await fixture.bToken
       .connect(user)
-      .depositTokensOnBridges(_poolVersion, encodedDepositCallData);
+      .depositTokensOnBridges(encodedDepositCallData);
 
     expectedState.Balances.bToken.user -= BigInt(newBTokenFee);
     expectedState.Balances.eth.user -= getEthConsumedAsGas(await tx.wait());
@@ -198,7 +198,7 @@ describe("Testing BToken bridge methods", async () => {
     );
     tx = await fixture.bToken
       .connect(user)
-      .depositTokensOnBridges(_oldPoolVersion, encodedDepositCallData);
+      .depositTokensOnBridges(encodedDepositCallData);
     expectedState.Balances.bToken.user -= BigInt(bTokenFee);
     expectedState.Balances.eth.user -= getEthConsumedAsGas(await tx.wait());
     expectedState.Balances.bToken.totalSupply -= BigInt(bTokenFee);
@@ -215,7 +215,7 @@ describe("Testing BToken bridge methods", async () => {
     await expect(
       fixture.bToken
         .connect(user)
-        .depositTokensOnBridges(_poolVersion, encodedDepositCallData)
+        .depositTokensOnBridges(encodedDepositCallData)
     )
       .to.be.revertedWithCustomError(fixture.bToken, "InexistentRouterContract")
       .withArgs(expectedErrAddress);
@@ -225,7 +225,7 @@ describe("Testing BToken bridge methods", async () => {
     await expect(
       fixture.bToken
         .connect(user)
-        .depositTokensOnBridges(_poolVersion, encodedDepositCallData, {
+        .depositTokensOnBridges(encodedDepositCallData, {
           value: minEthFeeForDeposit - 1,
         })
     )

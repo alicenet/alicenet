@@ -1,6 +1,12 @@
 [
   {
-    "inputs": [],
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "centralBridgeRouterAddress_",
+        "type": "address"
+      }
+    ],
     "stateMutability": "nonpayable",
     "type": "constructor"
   },
@@ -562,14 +568,8 @@
     "type": "function"
   },
   {
-    "inputs": [
-      {
-        "internalType": "uint8",
-        "name": "routerVersion_",
-        "type": "uint8"
-      }
-    ],
-    "name": "getBridgeRouterAddress",
+    "inputs": [],
+    "name": "getCentralBridgeRouterAddress",
     "outputs": [
       {
         "internalType": "address",
@@ -946,24 +946,6 @@
       }
     ],
     "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "newAddress_",
-        "type": "address"
-      },
-      {
-        "internalType": "uint8",
-        "name": "routerVersion_",
-        "type": "uint8"
-      }
-    ],
-    "name": "setBridgeRouterAddress",
-    "outputs": [],
-    "stateMutability": "nonpayable",
     "type": "function"
   },
   {

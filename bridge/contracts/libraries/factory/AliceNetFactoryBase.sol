@@ -2,13 +2,13 @@
 pragma solidity ^0.8.16;
 import "contracts/Proxy.sol";
 import "contracts/utils/DeterministicAddress.sol";
+import "contracts/utils/ArbitraryDeterministicAddress.sol";
 import "contracts/libraries/proxy/ProxyUpgrader.sol";
 import "contracts/interfaces/IProxy.sol";
 import "contracts/libraries/errors/AliceNetFactoryBaseErrors.sol";
-import "contracts/BToken.sol";
 import "contracts/AToken.sol";
 
-abstract contract AliceNetFactoryBase is DeterministicAddress, ProxyUpgrader {
+abstract contract AliceNetFactoryBase is DeterministicAddress, ArbitraryDeterministicAddress, ProxyUpgrader {
     struct MultiCallArgs {
         address target;
         uint256 value;
@@ -42,13 +42,9 @@ abstract contract AliceNetFactoryBase is DeterministicAddress, ProxyUpgrader {
     mapping(bytes32 => ContractInfo) internal _externalContractRegistry;
 
     address internal immutable _aTokenAddress;
-    address internal immutable _bTokenAddress;
     bytes32 internal immutable _aTokenCreationCodeHash;
-    bytes32 internal immutable _bTokenCreationCodeHash;
     bytes32 internal constant _aTokenSalt =
         0x41546f6b656e0000000000000000000000000000000000000000000000000000;
-    bytes32 internal constant _bTokenSalt =
-        0x42546f6b656e0000000000000000000000000000000000000000000000000000;
 
     /**
      *@dev events that notify of contract deployment
@@ -97,11 +93,9 @@ abstract contract AliceNetFactoryBase is DeterministicAddress, ProxyUpgrader {
         //State var that stores the _owner address
         _owner = msg.sender;
 
-        // Deploying ALCA and ALCB
+        // Deploying ALCA
         bytes memory aTokenCreationCode = abi.encodePacked(type(AToken).creationCode, bytes32(uint256(uint160(legacyToken_))));
-        bytes memory bTokenCreationCode = type(BToken).creationCode;
         address aTokenAddress;
-        address bTokenAddress;
         assembly {
             aTokenAddress := create2(
                 0,
@@ -111,19 +105,8 @@ abstract contract AliceNetFactoryBase is DeterministicAddress, ProxyUpgrader {
             )
         }
         _codeSizeZeroRevert((_extCodeSize(aTokenAddress) != 0));
-        assembly {
-            bTokenAddress := create2(
-                0,
-                add(bTokenCreationCode, 0x20),
-                mload(bTokenCreationCode),
-                _bTokenSalt
-            )
-        }
-        _codeSizeZeroRevert((_extCodeSize(bTokenAddress) != 0));
         _aTokenAddress = aTokenAddress;
-        _bTokenAddress = bTokenAddress;
         _aTokenCreationCodeHash = keccak256(abi.encodePacked(aTokenCreationCode));
-        _bTokenCreationCodeHash = keccak256(abi.encodePacked(bTokenCreationCode));
     }
 
     // solhint-disable payable-fallback
@@ -174,9 +157,6 @@ abstract contract AliceNetFactoryBase is DeterministicAddress, ProxyUpgrader {
         // check if the salt belongs to one of the pre-defined contracts deployed during the factory deployment
         if (salt_ == _aTokenSalt) {
             return _aTokenAddress;
-        }
-        if (salt_ == _bTokenSalt) {
-            return _bTokenAddress;
         }
         // check if the salt belongs to any address in the external contract registry (contracts deployed outside the factory)
         ContractInfo memory contractInfo = _externalContractRegistry[salt_];
