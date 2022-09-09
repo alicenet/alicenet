@@ -50,8 +50,12 @@ contract BToken is
         uint256 amount
     );
 
-    constructor(address centralBridgeRouterAddress_) ERC20("AliceNet Utility Token", "ALCB") ImmutableFactory(msg.sender) ImmutableDistribution() {
-        if(centralBridgeRouterAddress_ == address(0)){
+    constructor(address centralBridgeRouterAddress_)
+        ERC20("AliceNet Utility Token", "ALCB")
+        ImmutableFactory(msg.sender)
+        ImmutableDistribution()
+    {
+        if (centralBridgeRouterAddress_ == address(0)) {
             revert UtilityTokenErrors.CannotSetRouterToZeroAddress();
         }
         if (!_isContract(centralBridgeRouterAddress_)) {
@@ -157,7 +161,11 @@ contract BToken is
     /// @param data_ Encoded data necessary to deposit the arbitrary tokens in the bridges.
     function depositTokensOnBridges(uint8 routerVersion_, bytes calldata data_) public payable {
         //forward call to router
-        uint256 bTokenFee = IBridgeRouter(_centralBridgeRouter).routeDeposit(msg.sender, routerVersion_, data_);
+        uint256 bTokenFee = IBridgeRouter(_centralBridgeRouter).routeDeposit(
+            msg.sender,
+            routerVersion_,
+            data_
+        );
         if (msg.value > 0) {
             uint256 ethFee = _getEthToMintBTokens(totalSupply(), bTokenFee);
             if (ethFee > msg.value) {
@@ -206,7 +214,7 @@ contract BToken is
     }
 
     /// Gets the address to the central router for the bridge system
-    function getCentralBridgeRouterAddress() public view returns(address){
+    function getCentralBridgeRouterAddress() public view returns (address) {
         return _centralBridgeRouter;
     }
 

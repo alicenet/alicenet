@@ -303,9 +303,10 @@ export const deployUpgradeableWithFactory = async (
 export const deployFactoryAndBaseTokens = async (
   admin: SignerWithAddress
 ): Promise<BaseTokensFixture> => {
-  const legacyTokenBase = await ethers.getContractFactory("LegacyToken");
   // LegacyToken
-  const legacyToken = await legacyTokenBase.deploy();
+  const legacyToken = await (
+    await ethers.getContractFactory("LegacyToken")
+  ).deploy();
   const factory = await deployAliceNetFactory(admin, legacyToken.address);
   //   AToken is deployed on the factory constructor
   const aToken = await ethers.getContractAt(

@@ -20,7 +20,6 @@ describe("Testing AToken", async () => {
   });
 
   describe("Testing Migrate operation", async () => {
-
     it("Only factory should be allowed to call finishEarlyStage", async () => {
       await expect(fixture.aToken.connect(user2).finishEarlyStage())
         .to.revertedWithCustomError(fixture.aToken, "OnlyFactory")

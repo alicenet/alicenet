@@ -1,13 +1,9 @@
-import { assert, expect } from "../chai-setup";
 import { BytesLike } from "ethers";
 import { artifacts, ethers, run } from "hardhat";
 import {
   DEPLOY_CREATE,
   DEPLOY_FACTORY,
-  DEPLOY_METAMORPHIC,
   DEPLOY_PROXY,
-  DEPLOY_STATIC,
-  DEPLOY_TEMPLATE,
   DEPLOY_UPGRADEABLE_PROXY,
   MOCK,
   MOCK_INITIALIZABLE,
@@ -24,8 +20,8 @@ import {
   FactoryData,
   MetaContractData,
   ProxyData,
-  TemplateData,
 } from "../../scripts/lib/deployment/factoryStateUtil";
+import { expect } from "../chai-setup";
 import {
   getAccounts,
   getMetamorphicAddress,

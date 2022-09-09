@@ -3,14 +3,10 @@ import {
   deployUpgradeable,
   upgradeProxy,
 } from "../../scripts/lib/alicenetFactory";
-import { END_POINT, MOCK, PROXY, UTILS } from "../../scripts/lib/constants";
+import { MOCK, PROXY, UTILS } from "../../scripts/lib/constants";
 import { AliceNetFactory, Utils } from "../../typechain-types";
 import { assert, expect } from "../chai-setup";
-import {
-  bytes32ArrayToStringArray,
-  deployFactory,
-  getMetamorphicAddress,
-} from "./Setup";
+import { deployFactory } from "./Setup";
 process.env.silencer = "true";
 
 describe("AliceNetfactory API test", async () => {
@@ -55,5 +51,4 @@ describe("AliceNetfactory API test", async () => {
       "Logic address should be different after updateProxy!"
     );
   });
-
 });

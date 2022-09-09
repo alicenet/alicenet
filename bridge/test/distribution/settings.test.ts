@@ -53,9 +53,8 @@ describe("Testing splits settings update", async () => {
   });
 
   it("Should fail to set all splits to 0", async () => {
-    await expect(
-      deployDistributionViaFactory(fixture.factory, 0, 0, 0, 0)
-    ).to.be.reverted;
+    await expect(deployDistributionViaFactory(fixture.factory, 0, 0, 0, 0)).to
+      .be.reverted;
   });
 
   it("Should set some splits to 0 on a new deployment", async () => {

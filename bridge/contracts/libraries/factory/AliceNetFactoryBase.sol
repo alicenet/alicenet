@@ -8,7 +8,11 @@ import "contracts/interfaces/IProxy.sol";
 import "contracts/libraries/errors/AliceNetFactoryBaseErrors.sol";
 import "contracts/AToken.sol";
 
-abstract contract AliceNetFactoryBase is DeterministicAddress, ArbitraryDeterministicAddress, ProxyUpgrader {
+abstract contract AliceNetFactoryBase is
+    DeterministicAddress,
+    ArbitraryDeterministicAddress,
+    ProxyUpgrader
+{
     struct MultiCallArgs {
         address target;
         uint256 value;
@@ -94,7 +98,10 @@ abstract contract AliceNetFactoryBase is DeterministicAddress, ArbitraryDetermin
         _owner = msg.sender;
 
         // Deploying ALCA
-        bytes memory aTokenCreationCode = abi.encodePacked(type(AToken).creationCode, bytes32(uint256(uint160(legacyToken_))));
+        bytes memory aTokenCreationCode = abi.encodePacked(
+            type(AToken).creationCode,
+            bytes32(uint256(uint160(legacyToken_)))
+        );
         address aTokenAddress;
         assembly {
             aTokenAddress := create2(
@@ -221,7 +228,7 @@ abstract contract AliceNetFactoryBase is DeterministicAddress, ArbitraryDetermin
         }
     }
 
-     /**
+    /**
      * @dev _delegateCallAny allows EOA to call a function in a contract without impersonating the factory
      * @param target_: the address of the contract to be called
      * @param cdata_: Hex encoded data with function signature + arguments of the target function to be called

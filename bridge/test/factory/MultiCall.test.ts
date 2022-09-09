@@ -1,5 +1,4 @@
 import { expect } from "chai";
-import { ContractFactory } from "ethers";
 import { ethers } from "hardhat";
 import { encodeMultiCallArgs } from "../../scripts/lib/alicenetTasks";
 import {
@@ -7,20 +6,14 @@ import {
   CONTRACT_ADDR,
   DEPLOYED_PROXY,
   DEPLOYED_RAW,
-  DEPLOYED_STATIC,
-  DEPLOYED_TEMPLATE,
-  DEPLOY_STATIC,
-  DEPLOY_TEMPLATE,
   END_POINT,
   MOCK,
-  UTILS,
 } from "../../scripts/lib/constants";
 import {
   deployFactory,
   getCreateAddress,
   getEventVar,
   getSalt,
-  metaMockLogicTest,
   proxyMockLogicTest,
 } from "./Setup";
 

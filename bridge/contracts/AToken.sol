@@ -34,7 +34,6 @@ contract AToken is
         _mint(msg.sender, _INITIAL_MINT_AMOUNT);
     }
 
-
     /**
      * Migrates an amount of legacy token (MADToken) to ALCA tokens
      * @param amount the amount of legacy token to migrate.

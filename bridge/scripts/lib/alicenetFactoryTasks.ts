@@ -1,5 +1,4 @@
 import toml from "@iarna/toml";
-import axios from "axios";
 import {
   BigNumber,
   BytesLike,
@@ -16,12 +15,10 @@ import {
   DEFAULT_CONFIG_OUTPUT_DIR,
   DEPLOYED_PROXY,
   DEPLOYED_RAW,
-  DEPLOYED_STATIC,
   DEPLOYMENT_ARGS_TEMPLATE_FPATH,
   DEPLOYMENT_ARG_PATH,
   DEPLOYMENT_LIST_FPATH,
   DEPLOY_CREATE,
-  DEPLOY_METAMORPHIC,
   DEPLOY_PROXY,
   DEPLOY_UPGRADEABLE_PROXY,
   INITIALIZER,
@@ -56,7 +53,6 @@ import {
   getDeployGroup,
   getDeployGroupIndex,
   getDeployMetaArgs,
-  getDeployStaticMultiCallArgs,
   getDeployType,
   getDeployUpgradeableMultiCallArgs,
   getDeployUpgradeableProxyArgs,
@@ -68,12 +64,9 @@ import {
   FactoryData,
   MetaContractData,
   ProxyData,
-  TemplateData,
   updateDefaultFactoryData,
   updateDeployCreateList,
-  updateMetaList,
   updateProxyList,
-  updateTemplateList,
 } from "./deployment/factoryStateUtil";
 
 task(
@@ -103,13 +96,16 @@ task(
     await checkUserDirPath(taskArgs.outputFolder);
     const factoryBase = await hre.ethers.getContractFactory(ALICENET_FACTORY);
     let constructorArgs = await getFactoryDeploymentArgs(hre.artifacts);
-    constructorArgs = constructorArgs === undefined? [] : constructorArgs
+    constructorArgs = constructorArgs === undefined ? [] : constructorArgs;
     const accounts = await getAccounts(hre);
     // calculate the factory address for the constructor arg
     const deployTX = factoryBase.getDeployTransaction(constructorArgs[0]);
     const gasCost = await hre.ethers.provider.estimateGas(deployTX);
     // deploys the factory
-    const factory = await factoryBase.deploy(constructorArgs[0], await getGasPrices(hre));
+    const factory = await factoryBase.deploy(
+      constructorArgs[0],
+      await getGasPrices(hre)
+    );
     await factory.deployTransaction.wait(waitBlocks);
     // record the state in a json file to be used in other tasks
     const factoryData: FactoryData = {
@@ -159,9 +155,9 @@ task(
       // create the default list
       // setting list name will specify default configs
       const contracts = await getAllContracts(hre.artifacts);
-      console.log(contracts)
+      console.log(contracts);
       deploymentList = await getSortedDeployList(contracts, hre.artifacts);
-      console.log(deploymentList)
+      console.log(deploymentList);
       list = await transformDeploymentList(deploymentList);
       deploymentArgs = await generateDeployArgTemplate(list, hre.artifacts);
     } // user defined path and list
@@ -197,12 +193,12 @@ task(
       );
     }
     if (taskArgs.args !== true) {
-      let filteredList = []
-      for(const name of list){
-        if(name.includes("AliceNetFactory")){
-          continue
+      let filteredList = [];
+      for (const name of list) {
+        if (name.includes("AliceNetFactory")) {
+          continue;
         }
-        filteredList.push(name)
+        filteredList.push(name);
       }
       await writeDeploymentList(filteredList, path);
     }
@@ -377,7 +373,10 @@ task(
 
     if (estimatedMultiCallGas.lt(BigNumber.from(MULTICALL_GAS_LIMIT))) {
       // send the multicall transaction with deployProxy and upgradeProxy
-      txResponse = await factory.multiCall(multiCallArgs, await getGasPrices(hre));
+      txResponse = await factory.multiCall(
+        multiCallArgs,
+        await getGasPrices(hre)
+      );
       receipt = await txResponse.wait(waitBlocks);
       const proxyData: ProxyData = {
         factoryAddress: taskArgs.factoryAddress,
@@ -488,7 +487,10 @@ task(DEPLOY_CREATE, "deploys a contract from the factory using create")
       ]);
     }
     if (deployTx.data !== undefined) {
-      const txResponse = await factory.deployCreate(deployTx.data, await getGasPrices(hre));
+      const txResponse = await factory.deployCreate(
+        deployTx.data,
+        await getGasPrices(hre)
+      );
       const receipt = await txResponse.wait(waitBlocks);
       const deployCreateData: DeployCreateData = {
         name: taskArgs.contractName,
@@ -529,7 +531,10 @@ task(DEPLOY_PROXY, "deploys a proxy from the factory")
     const waitBlocks = taskArgs.waitConfirmation === true ? 8 : undefined;
     const factoryBase = await hre.ethers.getContractFactory(ALICENET_FACTORY);
     const factory = factoryBase.attach(taskArgs.factoryAddress);
-    const txResponse = await factory.deployProxy(taskArgs.salt, await getGasPrices(hre));
+    const txResponse = await factory.deployProxy(
+      taskArgs.salt,
+      await getGasPrices(hre)
+    );
     const receipt = await txResponse.wait(waitBlocks);
     const proxyAddr = getEventVar(receipt, DEPLOYED_PROXY, CONTRACT_ADDR);
     const proxyData: ProxyData = {
@@ -588,8 +593,9 @@ task(UPGRADE_DEPLOYED_PROXY, "deploys a contract from the factory using create")
     const txResponse = await factory.upgradeProxy(
       Salt,
       taskArgs.logicAddress,
-      initCallData
-      , await getGasPrices(hre));
+      initCallData,
+      await getGasPrices(hre)
+    );
     const receipt = await txResponse.wait(waitBlocks);
     // Data to return to the main task
     const proxyData: ProxyData = {
@@ -688,7 +694,10 @@ task("multiCallDeployProxy", "deploy and upgrade proxy with multicall")
     );
     const multiCallArgs = [deployProxy, upgradeProxy];
     // send the multicall transaction with deployProxy and upgradeProxy
-    const txResponse = await factory.multiCall(multiCallArgs, await getGasPrices(hre));
+    const txResponse = await factory.multiCall(
+      multiCallArgs,
+      await getGasPrices(hre)
+    );
     const receipt = await txResponse.wait(waitBlocks);
     // Data to return to the main task
     const proxyData: ProxyData = {
@@ -784,7 +793,10 @@ task(
       0,
       upgradeProxyCallData
     );
-    const txResponse = await factory.multiCall([deployCreate, upgradeProxy], await getGasPrices(hre));
+    const txResponse = await factory.multiCall(
+      [deployCreate, upgradeProxy],
+      await getGasPrices(hre)
+    );
     const receipt = await txResponse.wait(waitBlocks);
     await showState(
       `Updating logic for the ${taskArgs.contractName} proxy at ${proxyAddress} from ${oldImpl} to ${implAddress}, gasCost: ${receipt.gasUsed}`
@@ -1092,23 +1104,26 @@ export const showState = async (message: string): Promise<void> => {
   }
 };
 
-export async function getGasPrices(hre: HardhatRuntimeEnvironment){
+export async function getGasPrices(hre: HardhatRuntimeEnvironment) {
   //get the latest block
-  let blockBaseFee = await hre.network.provider.send("eth_gasPrice")
+  let blockBaseFee = await hre.network.provider.send("eth_gasPrice");
   //get the previous basefee from the latest block
-  blockBaseFee = BigNumber.from(blockBaseFee)
-  blockBaseFee = blockBaseFee.toBigInt()
+  blockBaseFee = BigNumber.from(blockBaseFee);
+  blockBaseFee = blockBaseFee.toBigInt();
   // miner tip
-  let maxPriorityFeePerGas: bigint
+  let maxPriorityFeePerGas: bigint;
   const network = await hre.ethers.provider.getNetwork();
-  const minValue = hre.ethers.utils.parseUnits("2.0", "gwei").toBigInt()
+  const minValue = hre.ethers.utils.parseUnits("2.0", "gwei").toBigInt();
   if (network.chainId === 1337) {
-    maxPriorityFeePerGas = minValue
+    maxPriorityFeePerGas = minValue;
   } else {
-    maxPriorityFeePerGas = BigInt(await hre.network.provider.send("eth_maxPriorityFeePerGas"))
+    maxPriorityFeePerGas = BigInt(
+      await hre.network.provider.send("eth_maxPriorityFeePerGas")
+    );
   }
-  maxPriorityFeePerGas = (maxPriorityFeePerGas * 125n)/100n
-  maxPriorityFeePerGas = maxPriorityFeePerGas < minValue ? minValue : maxPriorityFeePerGas
-  const maxFeePerGas = 2n * blockBaseFee + maxPriorityFeePerGas
-  return{maxPriorityFeePerGas,maxFeePerGas}
+  maxPriorityFeePerGas = (maxPriorityFeePerGas * 125n) / 100n;
+  maxPriorityFeePerGas =
+    maxPriorityFeePerGas < minValue ? minValue : maxPriorityFeePerGas;
+  const maxFeePerGas = 2n * blockBaseFee + maxPriorityFeePerGas;
+  return { maxPriorityFeePerGas, maxFeePerGas };
 }

@@ -1,4 +1,3 @@
-import { expectRevert } from "@openzeppelin/test-helpers";
 import { BytesLike, ContractFactory } from "ethers";
 import { artifacts, ethers, expect } from "hardhat";
 import {
@@ -6,8 +5,6 @@ import {
   CONTRACT_ADDR,
   DEPLOYED_PROXY,
   DEPLOYED_RAW,
-  DEPLOYED_STATIC,
-  DEPLOYED_TEMPLATE,
   END_POINT,
   MOCK,
   MOCK_INITIALIZABLE,
@@ -20,9 +17,6 @@ import {
   deployFactory,
   expectTxSuccess,
   getAccounts,
-  getCreateAddress,
-  getDeployStaticArgs,
-  getDeployTemplateArgs,
   getEventVar,
   getMetamorphicAddress,
   getSalt,

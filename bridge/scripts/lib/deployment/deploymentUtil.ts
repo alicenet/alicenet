@@ -151,13 +151,19 @@ export async function getDeployMetaArgs(
     outputFolder: outputFolder,
   };
 }
-export async function getFactoryDeploymentArgs(artifacts: Artifacts,  inputFolder?: string){
-  const fullyQualifiedName = await getFullyQualifiedName("AliceNetFactory", artifacts)
+export async function getFactoryDeploymentArgs(
+  artifacts: Artifacts,
+  inputFolder?: string
+) {
+  const fullyQualifiedName = await getFullyQualifiedName(
+    "AliceNetFactory",
+    artifacts
+  );
   const hasConArgs = await hasConstructorArgs(fullyQualifiedName, artifacts);
   const constructorArgs = hasConArgs
     ? await getDeploymentConstructorArgs(fullyQualifiedName, inputFolder)
     : undefined;
-  return constructorArgs
+  return constructorArgs;
 }
 export async function getDeployUpgradeableProxyArgs(
   fullyQualifiedName: string,
