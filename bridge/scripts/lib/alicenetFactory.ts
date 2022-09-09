@@ -16,8 +16,6 @@ const defaultFactoryName = "AliceNetFactory";
 const DeployedRawEvent = "DeployedRaw";
 const contractAddrVar = "contractAddr";
 const DeployedProxyEvent = "DeployedProxy";
-const deployedStaticEvent = "DeployedStatic";
-const deployedTemplateEvent = "DeployedTemplate";
 export async function deployUpgradeable(
   contractName: string,
   factoryAddress: string,

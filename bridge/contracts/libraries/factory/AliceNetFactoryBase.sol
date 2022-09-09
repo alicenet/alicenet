@@ -45,9 +45,9 @@ abstract contract AliceNetFactoryBase is
 
     mapping(bytes32 => ContractInfo) internal _externalContractRegistry;
 
-    address internal immutable _aTokenAddress;
-    bytes32 internal immutable _aTokenCreationCodeHash;
-    bytes32 internal constant _aTokenSalt =
+    address internal immutable _alcaAddress;
+    bytes32 internal immutable _alcaCreationCodeHash;
+    bytes32 internal constant _ALCA_SALT =
         0x41546f6b656e0000000000000000000000000000000000000000000000000000;
 
     /**
@@ -98,22 +98,22 @@ abstract contract AliceNetFactoryBase is
         _owner = msg.sender;
 
         // Deploying ALCA
-        bytes memory aTokenCreationCode = abi.encodePacked(
+        bytes memory alcaCreationCode = abi.encodePacked(
             type(AToken).creationCode,
             bytes32(uint256(uint160(legacyToken_)))
         );
-        address aTokenAddress;
+        address alcaAddress;
         assembly {
-            aTokenAddress := create2(
+            alcaAddress := create2(
                 0,
-                add(aTokenCreationCode, 0x20),
-                mload(aTokenCreationCode),
-                _aTokenSalt
+                add(alcaCreationCode, 0x20),
+                mload(alcaCreationCode),
+                _ALCA_SALT
             )
         }
-        _codeSizeZeroRevert((_extCodeSize(aTokenAddress) != 0));
-        _aTokenAddress = aTokenAddress;
-        _aTokenCreationCodeHash = keccak256(abi.encodePacked(aTokenCreationCode));
+        _codeSizeZeroRevert((_extCodeSize(alcaAddress) != 0));
+        _alcaAddress = alcaAddress;
+        _alcaCreationCodeHash = keccak256(abi.encodePacked(alcaCreationCode));
     }
 
     // solhint-disable payable-fallback
@@ -162,8 +162,8 @@ abstract contract AliceNetFactoryBase is
      */
     function lookup(bytes32 salt_) public view returns (address) {
         // check if the salt belongs to one of the pre-defined contracts deployed during the factory deployment
-        if (salt_ == _aTokenSalt) {
-            return _aTokenAddress;
+        if (salt_ == _ALCA_SALT) {
+            return _alcaAddress;
         }
         // check if the salt belongs to any address in the external contract registry (contracts deployed outside the factory)
         ContractInfo memory contractInfo = _externalContractRegistry[salt_];

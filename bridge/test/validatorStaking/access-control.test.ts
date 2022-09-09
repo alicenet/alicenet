@@ -3,7 +3,12 @@ import { BigNumberish, BytesLike } from "ethers";
 import { ethers, network } from "hardhat";
 import { ValidatorPoolMock } from "../../typechain-types";
 import { expect } from "../chai-setup";
-import { Fixture, getContractAddressFromDeployedRawEvent, getFixture, mineBlocks } from "../setup";
+import {
+  Fixture,
+  getContractAddressFromDeployedRawEvent,
+  getFixture,
+  mineBlocks,
+} from "../setup";
 
 describe("Initialization", async function () {
   let fixture: Fixture;

@@ -193,7 +193,7 @@ task(
       );
     }
     if (taskArgs.args !== true) {
-      let filteredList = [];
+      const filteredList = [];
       for (const name of list) {
         if (name.includes("AliceNetFactory")) {
           continue;
@@ -1105,9 +1105,9 @@ export const showState = async (message: string): Promise<void> => {
 };
 
 export async function getGasPrices(hre: HardhatRuntimeEnvironment) {
-  //get the latest block
+  // get the latest block
   let blockBaseFee = await hre.network.provider.send("eth_gasPrice");
-  //get the previous basefee from the latest block
+  // get the previous basefee from the latest block
   blockBaseFee = BigNumber.from(blockBaseFee);
   blockBaseFee = blockBaseFee.toBigInt();
   // miner tip
