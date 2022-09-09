@@ -1,6 +1,5 @@
 import { ethers } from "hardhat";
 import {
-  deployStatic,
   deployUpgradeable,
   upgradeProxy,
 } from "../../scripts/lib/alicenetFactory";
@@ -24,25 +23,6 @@ describe("AliceNetfactory API test", async () => {
     factory = await deployFactory();
     const cSize = await utilsContract.getCodeSize(factory.address);
     expect(cSize.toNumber()).to.be.greaterThan(0);
-  });
-
-  it("getters", async () => {
-    await deployStatic(END_POINT, factory.address);
-    const implAddr = await factory.getImplementation();
-    expect(implAddr).to.not.equal(undefined);
-    const saltsArray = await factory.contracts();
-    expect(saltsArray.length).to.be.greaterThan(0);
-    const numContracts = await factory.getNumContracts();
-    expect(numContracts.toNumber()).to.equal(saltsArray.length);
-    const saltStrings = bytes32ArrayToStringArray(saltsArray);
-    for (let i = 0; i < saltStrings.length; i++) {
-      const address = await factory.lookup(
-        ethers.utils.formatBytes32String(saltStrings[i])
-      );
-      expect(address).to.equal(
-        getMetamorphicAddress(factory.address, saltsArray[i])
-      );
-    }
   });
 
   it("deploy Upgradeable", async () => {

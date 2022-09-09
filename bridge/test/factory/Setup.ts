@@ -239,8 +239,10 @@ export async function checkMockInit(target: string, initVal: number) {
 
 export async function deployFactory() {
   const factoryBase = await ethers.getContractFactory(ALICENET_FACTORY);
+  const legacyTokenBase = await ethers.getContractFactory("LegacyToken");
+  const legacyToken = await legacyTokenBase.deploy()
   // deploy the factory with its address as a constructor input
-  const factory = await factoryBase.deploy();
+  const factory = await factoryBase.deploy(legacyToken.address);
   return factory;
 }
 

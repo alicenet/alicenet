@@ -97,7 +97,7 @@ task(
       .connect(admin)
       .deploy();
 
-    await (await legacyToken.connect(admin).initialize()).wait();
+
     console.log(
       `Minted ${await legacyToken.balanceOf(admin.address)} tokens for user: ${
         admin.address

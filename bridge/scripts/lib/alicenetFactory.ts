@@ -105,41 +105,6 @@ export async function upgradeProxy(
   return res;
 }
 
-export async function deployStatic(
-  contractName: string,
-  factoryAddress: string
-) {
-  const AliceNetFactory = await ethers.getContractFactory(defaultFactoryName);
-  const logicContract = await ethers.getContractFactory(contractName);
-  const factory: AliceNetFactory = AliceNetFactory.attach(factoryAddress);
-  const deployBCode = logicContract.getDeployTransaction().data as BytesLike;
-  let txResponse = await factory.deployTemplate(deployBCode);
-
-  let receipt = await txResponse.wait();
-  const templateAddress: BytesLike = getEventVar(
-    receipt,
-    deployedTemplateEvent,
-    contractAddrVar
-  );
-  const metaSalt = await getSalt(contractName);
-  if (typeof metaSalt === "undefined") {
-    throw new Error(`Couldn't get the salt for: ${contractName}`);
-  }
-  txResponse = await factory.deployStatic(metaSalt, "0x");
-  receipt = await txResponse.wait();
-
-  const metaAddress: string = getEventVar(
-    receipt,
-    deployedStaticEvent,
-    contractAddrVar
-  );
-  return {
-    templateAddress,
-    metaSalt,
-    metaAddress,
-  };
-}
-
 async function getFullyQualifiedName(contractName: string) {
   const artifactPaths = await artifacts.getAllFullyQualifiedNames();
   for (let i = 0; i < artifactPaths.length; i++) {
