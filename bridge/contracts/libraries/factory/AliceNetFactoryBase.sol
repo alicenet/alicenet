@@ -40,11 +40,11 @@ abstract contract AliceNetFactoryBase is DeterministicAddress, ProxyUpgrader {
 
     mapping(bytes32 => ContractInfo) internal _externalContractRegistry;
 
-    address internal immutable _alcaAddress;
-    bytes32 internal immutable _alcaCreationCodeHash;
-    // ALCA salt = Bytes32(AToken) AToken is the old ALCA name, salt kept to
-    // maintain compatibility
-    bytes32 internal constant _ALCA_SALT =
+    address internal immutable _aTokenAddress;
+    bytes32 internal immutable _aTokenCreationCodeHash;
+    // AToken salt = Bytes32(AToken)
+    // AToken is the old ALCA name, salt kept to maintain compatibility
+    bytes32 internal constant _ATOKEN_SALT =
         0x41546f6b656e0000000000000000000000000000000000000000000000000000;
 
     /**
@@ -95,22 +95,17 @@ abstract contract AliceNetFactoryBase is DeterministicAddress, ProxyUpgrader {
         _owner = msg.sender;
 
         // Deploying ALCA
-        bytes memory alcaCreationCode = abi.encodePacked(
+        bytes memory creationCode = abi.encodePacked(
             type(AToken).creationCode,
             bytes32(uint256(uint160(legacyToken_)))
         );
-        address alcaAddress;
+        address aTokenAddress;
         assembly {
-            alcaAddress := create2(
-                0,
-                add(alcaCreationCode, 0x20),
-                mload(alcaCreationCode),
-                _ALCA_SALT
-            )
+            aTokenAddress := create2(0, add(creationCode, 0x20), mload(creationCode), _ATOKEN_SALT)
         }
-        _codeSizeZeroRevert((_extCodeSize(alcaAddress) != 0));
-        _alcaAddress = alcaAddress;
-        _alcaCreationCodeHash = keccak256(abi.encodePacked(alcaCreationCode));
+        _codeSizeZeroRevert((_extCodeSize(aTokenAddress) != 0));
+        _aTokenAddress = aTokenAddress;
+        _aTokenCreationCodeHash = keccak256(abi.encodePacked(creationCode));
     }
 
     // solhint-disable payable-fallback
@@ -159,8 +154,8 @@ abstract contract AliceNetFactoryBase is DeterministicAddress, ProxyUpgrader {
      */
     function lookup(bytes32 salt_) public view returns (address) {
         // check if the salt belongs to one of the pre-defined contracts deployed during the factory deployment
-        if (salt_ == _ALCA_SALT) {
-            return _alcaAddress;
+        if (salt_ == _ATOKEN_SALT) {
+            return _aTokenAddress;
         }
         // check if the salt belongs to any address in the external contract registry (contracts deployed outside the factory)
         ContractInfo memory contractInfo = _externalContractRegistry[salt_];
