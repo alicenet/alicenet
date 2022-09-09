@@ -45,7 +45,7 @@ contract ETHDKGAccusations is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
 
             // this makes sure we cannot accuse someone twice because a minor fine will be enough to
             // evict the validator from the pool
-            IValidatorPool(_validatorPoolAddress()).minorSlash(dishonestAddresses[i], msg.sender);
+            IValidatorPool(_validatorPoolAddress()).minorSlash(dishonestAddresses[i], msg.sender, 0);
             badParticipants++;
         }
         _badParticipants = badParticipants;
@@ -92,7 +92,7 @@ contract ETHDKGAccusations is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
                 revert ETHDKGErrors.AccusedHasCommitments(dishonestAddresses[i]);
             }
 
-            IValidatorPool(_validatorPoolAddress()).minorSlash(dishonestAddresses[i], msg.sender);
+            IValidatorPool(_validatorPoolAddress()).minorSlash(dishonestAddresses[i], msg.sender, 0);
             badParticipants++;
         }
 
@@ -215,9 +215,9 @@ contract ETHDKGAccusations is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
         // will have his stake burned.
         tmp = CryptoLibrary.bn128Multiply([CryptoLibrary.G1_X, CryptoLibrary.G1_Y, share]);
         if (result[0] != tmp[0] || result[1] != tmp[1]) {
-            IValidatorPool(_validatorPoolAddress()).majorSlash(dishonestAddress, msg.sender);
+            IValidatorPool(_validatorPoolAddress()).majorSlash(dishonestAddress, msg.sender, 0);
         } else {
-            IValidatorPool(_validatorPoolAddress()).majorSlash(msg.sender, dishonestAddress);
+            IValidatorPool(_validatorPoolAddress()).majorSlash(msg.sender, dishonestAddress, 0);
         }
         _badParticipants++;
     }
@@ -259,7 +259,7 @@ contract ETHDKGAccusations is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
             }
 
             // evict the validator that didn't submit his shares
-            IValidatorPool(_validatorPoolAddress()).minorSlash(dishonestAddresses[i], msg.sender);
+            IValidatorPool(_validatorPoolAddress()).minorSlash(dishonestAddresses[i], msg.sender, 0);
             badParticipants++;
         }
         _badParticipants = badParticipants;
@@ -306,7 +306,7 @@ contract ETHDKGAccusations is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
                 revert ETHDKGErrors.AccusedDistributedGPKJ(dishonestAddresses[i]);
             }
 
-            IValidatorPool(_validatorPoolAddress()).minorSlash(dishonestAddresses[i], msg.sender);
+            IValidatorPool(_validatorPoolAddress()).minorSlash(dishonestAddresses[i], msg.sender, 0);
             badParticipants++;
         }
 
@@ -501,9 +501,9 @@ contract ETHDKGAccusations is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
             ]
         );
         if (!isValid) {
-            IValidatorPool(_validatorPoolAddress()).majorSlash(dishonestAddress, msg.sender);
+            IValidatorPool(_validatorPoolAddress()).majorSlash(dishonestAddress, msg.sender, 0);
         } else {
-            IValidatorPool(_validatorPoolAddress()).majorSlash(msg.sender, dishonestAddress);
+            IValidatorPool(_validatorPoolAddress()).majorSlash(msg.sender, dishonestAddress, 0);
         }
         badParticipants++;
         _badParticipants = badParticipants;

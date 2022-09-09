@@ -3,8 +3,6 @@ package accusation
 import (
 	"context"
 	"encoding/gob"
-	"encoding/hex"
-	"fmt"
 	"testing"
 
 	"github.com/alicenet/alicenet/consensus/db"
@@ -13,6 +11,7 @@ import (
 	"github.com/alicenet/alicenet/layer1/executor/tasks"
 	"github.com/alicenet/alicenet/utils"
 	"github.com/dgraph-io/badger/v2"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/stretchr/testify/assert"
 )
@@ -27,7 +26,7 @@ func NewAccusationTest1Task(id string) tasks.Task {
 	t := &AccusationTest1{
 		BaseTask: tasks.NewBaseTask(0, 0, true, nil),
 	}
-	t.Id = id
+	t.ID = id
 	return t
 }
 
@@ -56,10 +55,7 @@ func TestPersistenceUnknownImpl(t *testing.T) {
 	db := &db.Database{}
 	db.Init(rawConsensusDb)
 
-	var id [32]byte
-	idHash := crypto.Hasher([]byte("test"))
-	copy(id[:], idHash)
-	var idString string = fmt.Sprintf("%x", id)
+	var idString string = common.Bytes2Hex(crypto.Hasher([]byte("test")))
 	acc := NewAccusationTest1Task(idString)
 	accRaw, err := marshaller.GobMarshalBinary(acc)
 	assert.NotNil(t, err)
@@ -78,7 +74,7 @@ func NewAccusationTest2Task(id string) tasks.Task {
 	t := &AccusationTest2{
 		BaseTask: tasks.NewBaseTask(0, 0, true, nil),
 	}
-	t.Id = id
+	t.ID = id
 	return t
 }
 
@@ -110,10 +106,8 @@ func TestPersistenceKnownImpl(t *testing.T) {
 	db := &db.Database{}
 	db.Init(rawConsensusDb)
 
-	var id [32]byte
-	idHash := crypto.Hasher([]byte("test"))
-	copy(id[:], idHash)
-	var idString string = fmt.Sprintf("%x", id)
+	var idString string = common.Bytes2Hex(crypto.Hasher([]byte("test")))
+	var id [32]byte = utils.HexToBytes32(idString)
 	acc := NewAccusationTest2Task(idString)
 	accRaw, err := marshaller.GobMarshalBinary(acc)
 	assert.Nil(t, err)
@@ -155,10 +149,8 @@ func TestPersistAccusation(t *testing.T) {
 	db := &db.Database{}
 	db.Init(rawConsensusDb)
 
-	var id [32]byte
-	idHash := crypto.Hasher([]byte("test"))
-	copy(id[:], idHash)
-	var idString string = fmt.Sprintf("%x", id)
+	var idString string = common.Bytes2Hex(crypto.Hasher([]byte("test")))
+	var id [32]byte = utils.HexToBytes32(idString)
 	acc := NewAccusationTest2Task(idString)
 	accRaw, err := marshaller.GobMarshalBinary(acc)
 	assert.Nil(t, err)
@@ -180,8 +172,8 @@ func TestPersistAccusation(t *testing.T) {
 		assert.True(t, ok)
 		assert.Equal(t, acc.GetId(), acc3.GetId())
 
-		// get all accusations without filters
-		accs, err := db.GetAccusations(txn, nil)
+		// get all accusations
+		accs, err := db.GetAccusations(txn)
 		assert.Nil(t, err)
 		assert.Equal(t, 1, len(accs))
 		accs0, err := marshaller.GobUnmarshalBinary(accs[0])
@@ -210,16 +202,12 @@ func TestPersistMultipleAccusations(t *testing.T) {
 	db := &db.Database{}
 	db.Init(rawConsensusDb)
 
-	var idA [32]byte
-	idAHash := crypto.Hasher([]byte("idA"))
-	copy(idA[:], idAHash)
-	var idAString string = fmt.Sprintf("%x", idA)
+	var idAString string = common.Bytes2Hex(crypto.Hasher([]byte("idA")))
+	var idA [32]byte = utils.HexToBytes32(idAString)
 	accA := NewAccusationTest2Task(idAString)
 
-	var idB [32]byte
-	idBHash := crypto.Hasher([]byte("idB"))
-	copy(idB[:], idBHash)
-	var idBString string = fmt.Sprintf("%x", idB)
+	var idBString string = common.Bytes2Hex(crypto.Hasher([]byte("idB")))
+	var idB [32]byte = utils.HexToBytes32(idBString)
 	accB := NewAccusationTest2Task(idBString)
 
 	accusations := make(map[[32]byte]tasks.Task)
@@ -248,18 +236,15 @@ func TestPersistMultipleAccusations(t *testing.T) {
 		assert.Nil(t, err)
 		assert.Equal(t, accB.GetId(), accB2.GetId())
 
-		// get all accusations without filters
-		accs, err := db.GetAccusations(txn, nil)
+		// get all accusations
+		accs, err := db.GetAccusations(txn)
 		assert.Nil(t, err)
 		assert.Equal(t, 2, len(accs))
 		for _, accRaw := range accs {
 			acc, err := marshaller.GobUnmarshalBinary(accRaw)
 			assert.Nil(t, err)
 
-			var id [32]byte
-			idBin, err := hex.DecodeString(acc.GetId())
-			assert.Nil(t, err)
-			copy(id[:], idBin)
+			var id [32]byte = utils.HexToBytes32(acc.GetId())
 			a, ok := accusations[id]
 			assert.True(t, ok)
 			assert.Equal(t, a.GetId(), acc.GetId())
@@ -290,7 +275,7 @@ func TestPersistEmptyAccusationDB(t *testing.T) {
 	err = db.View(func(txn *badger.Txn) error {
 
 		// get all accusations without filters
-		accs, err := db.GetAccusations(txn, nil)
+		accs, err := db.GetAccusations(txn)
 		assert.Nil(t, err)
 		assert.Empty(t, accs)
 

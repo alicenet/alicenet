@@ -117,6 +117,7 @@ var ValidLoggers []string = []string{
 	"services",
 	"settings",
 	"validator",
+	"node",
 	"muxhandler",
 	"bootnode",
 	"p2pmux",
@@ -127,5 +128,6 @@ var ValidLoggers []string = []string{
 	"transaction",
 	"tasks",
 	"staterecover",
+	"ethkey",
 	"accusations",
 }

@@ -1,5 +1,5 @@
 import { assert, expect } from "chai";
-import { InvalidTxConsumptionAccusation } from "../../typechain-types";
+import { AccusationInvalidTxConsumption } from "../../typechain-types";
 import { Fixture, getFixture } from "../setup";
 import {
   addValidators,
@@ -10,15 +10,15 @@ import {
   getValidAccusationDataForNonExistentUTXOWithInvalidHeight,
 } from "./accusations-test-helpers";
 
-describe("InvalidTxConsumptionAccusation: Tests InvalidTxConsumptionAccusation methods", async () => {
+describe("AccusationInvalidTxConsumption: Tests AccusationInvalidTxConsumption methods", async () => {
   let fixture: Fixture;
 
-  let accusation: InvalidTxConsumptionAccusation;
+  let accusation: AccusationInvalidTxConsumption;
 
   beforeEach(async function () {
     fixture = await getFixture(true, true);
 
-    accusation = fixture.invalidTxConsumptionAccusation;
+    accusation = fixture.accusationInvalidTxConsumption;
   });
 
   describe("accuseInvalidTransactionConsumption:", async () => {
@@ -34,16 +34,17 @@ describe("InvalidTxConsumptionAccusation: Tests InvalidTxConsumptionAccusation m
         proofs,
       } = getValidAccusationDataForNonExistentUTXO();
 
-      const signer = await accusation.accuseInvalidTransactionConsumption(
+      await (await accusation.accuseInvalidTransactionConsumption(
         pClaims,
         pClaimsSig,
         bClaims,
         bClaimsSigGroup,
         txInPreImage,
         proofs
-      );
+      )).wait();
 
-      assert.equal(signer, signerAccount0);
+      const isValidator = await fixture.validatorPool.isValidator(signerAccount0);
+      assert.equal(isValidator, false);
     });
 
     it("reverts with InvalidAccusation (ConsumptionOfValidDeposit)", async function () {

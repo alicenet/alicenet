@@ -39966,12 +39966,12 @@ func NewMockIValidatorPool() *MockIValidatorPool {
 			},
 		},
 		MajorSlashFunc: &IValidatorPoolMajorSlashFunc{
-			defaultHook: func(*bind.TransactOpts, common.Address, common.Address) (r0 *types.Transaction, r1 error) {
+			defaultHook: func(*bind.TransactOpts, common.Address, common.Address, [32]byte) (r0 *types.Transaction, r1 error) {
 				return
 			},
 		},
 		MinorSlashFunc: &IValidatorPoolMinorSlashFunc{
-			defaultHook: func(*bind.TransactOpts, common.Address, common.Address) (r0 *types.Transaction, r1 error) {
+			defaultHook: func(*bind.TransactOpts, common.Address, common.Address, [32]byte) (r0 *types.Transaction, r1 error) {
 				return
 			},
 		},
@@ -40268,12 +40268,12 @@ func NewStrictMockIValidatorPool() *MockIValidatorPool {
 			},
 		},
 		MajorSlashFunc: &IValidatorPoolMajorSlashFunc{
-			defaultHook: func(*bind.TransactOpts, common.Address, common.Address) (*types.Transaction, error) {
+			defaultHook: func(*bind.TransactOpts, common.Address, common.Address, [32]byte) (*types.Transaction, error) {
 				panic("unexpected invocation of MockIValidatorPool.MajorSlash")
 			},
 		},
 		MinorSlashFunc: &IValidatorPoolMinorSlashFunc{
-			defaultHook: func(*bind.TransactOpts, common.Address, common.Address) (*types.Transaction, error) {
+			defaultHook: func(*bind.TransactOpts, common.Address, common.Address, [32]byte) (*types.Transaction, error) {
 				panic("unexpected invocation of MockIValidatorPool.MinorSlash")
 			},
 		},
@@ -43666,24 +43666,24 @@ func (c IValidatorPoolIsValidatorFuncCall) Results() []interface{} {
 // IValidatorPoolMajorSlashFunc describes the behavior when the MajorSlash
 // method of the parent MockIValidatorPool instance is invoked.
 type IValidatorPoolMajorSlashFunc struct {
-	defaultHook func(*bind.TransactOpts, common.Address, common.Address) (*types.Transaction, error)
-	hooks       []func(*bind.TransactOpts, common.Address, common.Address) (*types.Transaction, error)
+	defaultHook func(*bind.TransactOpts, common.Address, common.Address, [32]byte) (*types.Transaction, error)
+	hooks       []func(*bind.TransactOpts, common.Address, common.Address, [32]byte) (*types.Transaction, error)
 	history     []IValidatorPoolMajorSlashFuncCall
 	mutex       sync.Mutex
 }
 
 // MajorSlash delegates to the next hook function in the queue and stores
 // the parameter and result values of this invocation.
-func (m *MockIValidatorPool) MajorSlash(v0 *bind.TransactOpts, v1 common.Address, v2 common.Address) (*types.Transaction, error) {
-	r0, r1 := m.MajorSlashFunc.nextHook()(v0, v1, v2)
-	m.MajorSlashFunc.appendCall(IValidatorPoolMajorSlashFuncCall{v0, v1, v2, r0, r1})
+func (m *MockIValidatorPool) MajorSlash(v0 *bind.TransactOpts, v1 common.Address, v2 common.Address, v3 [32]byte) (*types.Transaction, error) {
+	r0, r1 := m.MajorSlashFunc.nextHook()(v0, v1, v2, v3)
+	m.MajorSlashFunc.appendCall(IValidatorPoolMajorSlashFuncCall{v0, v1, v2, v3, r0, r1})
 	return r0, r1
 }
 
 // SetDefaultHook sets function that is called when the MajorSlash method of
 // the parent MockIValidatorPool instance is invoked and the hook queue is
 // empty.
-func (f *IValidatorPoolMajorSlashFunc) SetDefaultHook(hook func(*bind.TransactOpts, common.Address, common.Address) (*types.Transaction, error)) {
+func (f *IValidatorPoolMajorSlashFunc) SetDefaultHook(hook func(*bind.TransactOpts, common.Address, common.Address, [32]byte) (*types.Transaction, error)) {
 	f.defaultHook = hook
 }
 
@@ -43691,7 +43691,7 @@ func (f *IValidatorPoolMajorSlashFunc) SetDefaultHook(hook func(*bind.TransactOp
 // MajorSlash method of the parent MockIValidatorPool instance invokes the
 // hook at the front of the queue and discards it. After the queue is empty,
 // the default hook function is invoked for any future action.
-func (f *IValidatorPoolMajorSlashFunc) PushHook(hook func(*bind.TransactOpts, common.Address, common.Address) (*types.Transaction, error)) {
+func (f *IValidatorPoolMajorSlashFunc) PushHook(hook func(*bind.TransactOpts, common.Address, common.Address, [32]byte) (*types.Transaction, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -43700,19 +43700,19 @@ func (f *IValidatorPoolMajorSlashFunc) PushHook(hook func(*bind.TransactOpts, co
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
 func (f *IValidatorPoolMajorSlashFunc) SetDefaultReturn(r0 *types.Transaction, r1 error) {
-	f.SetDefaultHook(func(*bind.TransactOpts, common.Address, common.Address) (*types.Transaction, error) {
+	f.SetDefaultHook(func(*bind.TransactOpts, common.Address, common.Address, [32]byte) (*types.Transaction, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
 func (f *IValidatorPoolMajorSlashFunc) PushReturn(r0 *types.Transaction, r1 error) {
-	f.PushHook(func(*bind.TransactOpts, common.Address, common.Address) (*types.Transaction, error) {
+	f.PushHook(func(*bind.TransactOpts, common.Address, common.Address, [32]byte) (*types.Transaction, error) {
 		return r0, r1
 	})
 }
 
-func (f *IValidatorPoolMajorSlashFunc) nextHook() func(*bind.TransactOpts, common.Address, common.Address) (*types.Transaction, error) {
+func (f *IValidatorPoolMajorSlashFunc) nextHook() func(*bind.TransactOpts, common.Address, common.Address, [32]byte) (*types.Transaction, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -43754,6 +43754,9 @@ type IValidatorPoolMajorSlashFuncCall struct {
 	// Arg2 is the value of the 3rd argument passed to this method
 	// invocation.
 	Arg2 common.Address
+	// Arg3 is the value of the 4th argument passed to this method
+	// invocation.
+	Arg3 [32]byte
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
 	Result0 *types.Transaction
@@ -43765,7 +43768,7 @@ type IValidatorPoolMajorSlashFuncCall struct {
 // Args returns an interface slice containing the arguments of this
 // invocation.
 func (c IValidatorPoolMajorSlashFuncCall) Args() []interface{} {
-	return []interface{}{c.Arg0, c.Arg1, c.Arg2}
+	return []interface{}{c.Arg0, c.Arg1, c.Arg2, c.Arg3}
 }
 
 // Results returns an interface slice containing the results of this
@@ -43777,24 +43780,24 @@ func (c IValidatorPoolMajorSlashFuncCall) Results() []interface{} {
 // IValidatorPoolMinorSlashFunc describes the behavior when the MinorSlash
 // method of the parent MockIValidatorPool instance is invoked.
 type IValidatorPoolMinorSlashFunc struct {
-	defaultHook func(*bind.TransactOpts, common.Address, common.Address) (*types.Transaction, error)
-	hooks       []func(*bind.TransactOpts, common.Address, common.Address) (*types.Transaction, error)
+	defaultHook func(*bind.TransactOpts, common.Address, common.Address, [32]byte) (*types.Transaction, error)
+	hooks       []func(*bind.TransactOpts, common.Address, common.Address, [32]byte) (*types.Transaction, error)
 	history     []IValidatorPoolMinorSlashFuncCall
 	mutex       sync.Mutex
 }
 
 // MinorSlash delegates to the next hook function in the queue and stores
 // the parameter and result values of this invocation.
-func (m *MockIValidatorPool) MinorSlash(v0 *bind.TransactOpts, v1 common.Address, v2 common.Address) (*types.Transaction, error) {
-	r0, r1 := m.MinorSlashFunc.nextHook()(v0, v1, v2)
-	m.MinorSlashFunc.appendCall(IValidatorPoolMinorSlashFuncCall{v0, v1, v2, r0, r1})
+func (m *MockIValidatorPool) MinorSlash(v0 *bind.TransactOpts, v1 common.Address, v2 common.Address, v3 [32]byte) (*types.Transaction, error) {
+	r0, r1 := m.MinorSlashFunc.nextHook()(v0, v1, v2, v3)
+	m.MinorSlashFunc.appendCall(IValidatorPoolMinorSlashFuncCall{v0, v1, v2, v3, r0, r1})
 	return r0, r1
 }
 
 // SetDefaultHook sets function that is called when the MinorSlash method of
 // the parent MockIValidatorPool instance is invoked and the hook queue is
 // empty.
-func (f *IValidatorPoolMinorSlashFunc) SetDefaultHook(hook func(*bind.TransactOpts, common.Address, common.Address) (*types.Transaction, error)) {
+func (f *IValidatorPoolMinorSlashFunc) SetDefaultHook(hook func(*bind.TransactOpts, common.Address, common.Address, [32]byte) (*types.Transaction, error)) {
 	f.defaultHook = hook
 }
 
@@ -43802,7 +43805,7 @@ func (f *IValidatorPoolMinorSlashFunc) SetDefaultHook(hook func(*bind.TransactOp
 // MinorSlash method of the parent MockIValidatorPool instance invokes the
 // hook at the front of the queue and discards it. After the queue is empty,
 // the default hook function is invoked for any future action.
-func (f *IValidatorPoolMinorSlashFunc) PushHook(hook func(*bind.TransactOpts, common.Address, common.Address) (*types.Transaction, error)) {
+func (f *IValidatorPoolMinorSlashFunc) PushHook(hook func(*bind.TransactOpts, common.Address, common.Address, [32]byte) (*types.Transaction, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -43811,19 +43814,19 @@ func (f *IValidatorPoolMinorSlashFunc) PushHook(hook func(*bind.TransactOpts, co
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
 func (f *IValidatorPoolMinorSlashFunc) SetDefaultReturn(r0 *types.Transaction, r1 error) {
-	f.SetDefaultHook(func(*bind.TransactOpts, common.Address, common.Address) (*types.Transaction, error) {
+	f.SetDefaultHook(func(*bind.TransactOpts, common.Address, common.Address, [32]byte) (*types.Transaction, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
 func (f *IValidatorPoolMinorSlashFunc) PushReturn(r0 *types.Transaction, r1 error) {
-	f.PushHook(func(*bind.TransactOpts, common.Address, common.Address) (*types.Transaction, error) {
+	f.PushHook(func(*bind.TransactOpts, common.Address, common.Address, [32]byte) (*types.Transaction, error) {
 		return r0, r1
 	})
 }
 
-func (f *IValidatorPoolMinorSlashFunc) nextHook() func(*bind.TransactOpts, common.Address, common.Address) (*types.Transaction, error) {
+func (f *IValidatorPoolMinorSlashFunc) nextHook() func(*bind.TransactOpts, common.Address, common.Address, [32]byte) (*types.Transaction, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -43865,6 +43868,9 @@ type IValidatorPoolMinorSlashFuncCall struct {
 	// Arg2 is the value of the 3rd argument passed to this method
 	// invocation.
 	Arg2 common.Address
+	// Arg3 is the value of the 4th argument passed to this method
+	// invocation.
+	Arg3 [32]byte
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
 	Result0 *types.Transaction
@@ -43876,7 +43882,7 @@ type IValidatorPoolMinorSlashFuncCall struct {
 // Args returns an interface slice containing the arguments of this
 // invocation.
 func (c IValidatorPoolMinorSlashFuncCall) Args() []interface{} {
-	return []interface{}{c.Arg0, c.Arg1, c.Arg2}
+	return []interface{}{c.Arg0, c.Arg1, c.Arg2, c.Arg3}
 }
 
 // Results returns an interface slice containing the results of this

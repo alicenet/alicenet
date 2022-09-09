@@ -73,6 +73,10 @@ type EthereumContracts interface {
 	GovernanceAddress() common.Address
 	Dynamics() bindings.IDynamics
 	DynamicsAddress() common.Address
+	MultipleProposalAccusation() bindings.IAccusationMultipleProposal
+	MultipleProposalAccusationAddress() common.Address
+	AccusationInvalidTxConsumption() bindings.IAccusationInvalidTxConsumption
+	AccusationInvalidTxConsumptionAddress() common.Address
 }
 
 type AllSmartContracts interface {

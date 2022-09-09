@@ -75,13 +75,12 @@ CREATE_CONFIGS() {
     CLEAN_UP
     # Loop through and create all essentail validator files
     for ((l = 1; l <= $1; l++)); do
-        ADDRESS=$(ethkey generate --passwordfile ./scripts/base-files/passwordFile | cut -d' ' -f2)
+        ADDRESS=$(./alicenet generate-ethkey --ethkey.passwordfile ./scripts/base-files/passwordFile | cut -d' ' -f2)
         PK=$(hexdump -n 16 -e '4/4 "%08X" 1 "\n"' /dev/urandom)
         sed -e 's/defaultAccount = .*/defaultAccount = \"'"$ADDRESS"'\"/' ./scripts/base-files/baseConfig |
             sed -e 's/rewardAccount = .*/rewardAccount = \"'"$ADDRESS"'\"/' |
             sed -e 's/listeningAddress = .*/listeningAddress = \"0.0.0.0:'"$LA"'\"/' |
             sed -e 's/p2pListeningAddress = .*/p2pListeningAddress = \"0.0.0.0:'"$PA"'\"/' |
-            sed -e 's/discoveryListeningAddress = .*/discoveryListeningAddress = \"0.0.0.0:'"$DA"'\"/' |
             sed -e 's/localStateListeningAddress = .*/localStateListeningAddress = \"0.0.0.0:'"$LSA"'\"/' |
             sed -e 's/passCodes = .*/passCodes = \"scripts\/generated\/keystores\/passcodes.txt\"/' |
             sed -e 's/keystore = .*/keystore = \"scripts\/generated\/keystores\/keys\"/' |
@@ -115,15 +114,14 @@ CREATE_EXTRA_NODES_CONFIGS() {
         exit 1
     fi
     CLEAN_UP_NODES
-    # Loop through and create all essentail validator files
+    # Loop through and create all essential validator files
     for ((l = 1; l <= $1; l++)); do
-        ADDRESS=$(ethkey generate --passwordfile ./scripts/base-files/passwordFile | cut -d' ' -f2)
+        ADDRESS=$(./alicenet generate-ethkey --ethkey.passwordfile ./scripts/base-files/passwordFile | cut -d' ' -f2)
         PK=$(hexdump -n 16 -e '4/4 "%08X" 1 "\n"' /dev/urandom)
         sed -e 's/defaultAccount = .*/defaultAccount = \"'"$ADDRESS"'\"/' ./scripts/base-files/baseConfig |
             sed -e 's/rewardAccount = .*/rewardAccount = \"'"$ADDRESS"'\"/' |
             sed -e 's/listeningAddress = .*/listeningAddress = \"0.0.0.0:'"$LA"'\"/' |
             sed -e 's/p2pListeningAddress = .*/p2pListeningAddress = \"0.0.0.0:'"$PA"'\"/' |
-            sed -e 's/discoveryListeningAddress = .*/discoveryListeningAddress = \"0.0.0.0:'"$DA"'\"/' |
             sed -e 's/localStateListeningAddress = .*/localStateListeningAddress = \"0.0.0.0:'"$LSA"'\"/' |
             sed -e 's/passCodes = .*/passCodes = \"scripts\/generated\/extra-nodes\/keystores\/passcodes.txt\"/' |
             sed -e 's/keystore = .*/keystore = \"scripts\/generated\/extra-nodes\/keystores\/keys\"/' |
@@ -164,19 +162,19 @@ CHECK_EXISTING() {
 RUN_VALIDATOR() {
     # Run a validator
     CHECK_EXISTING $1
-    ./alicenet --config ./scripts/generated/config/validator$1.toml validator
+    ./alicenet --config ./scripts/generated/config/validator$1.toml node
 }
 
 RUN_NODE() {
     # Run a normal node (non validator)
     CHECK_EXISTING $1
-    ./alicenet --config ./scripts/generated/extra-nodes/config/node$1.toml validator
+    ./alicenet --config ./scripts/generated/extra-nodes/config/node$1.toml node
 }
 
 RACE_VALIDATOR() {
     # Run a validator
     CHECK_EXISTING $1
-    ./alicerace --config ./scripts/generated/config/validator$1.toml validator
+    ./alicerace --config ./scripts/generated/config/validator$1.toml node
 }
 
 STATUS() {
@@ -221,6 +219,9 @@ init-extra-nodes)
     ;;
 geth)
     ./scripts/base-scripts/geth-local.sh
+    ;;
+geth-resume)
+    ./scripts/base-scripts/geth-local-resume.sh
     ;;
 bootnode)
     ./scripts/base-scripts/bootnode.sh

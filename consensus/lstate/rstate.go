@@ -35,11 +35,14 @@ func (r *RoundStates) IsMe(vAddr []byte) bool {
 }
 
 func (r *RoundStates) LocalIsProposer() bool {
-	ownVAddr := r.OwnState.VAddr
+	return r.IsProposerValid(r.OwnState.VAddr)
+}
+
+func (r *RoundStates) IsProposerValid(pAddr []byte) bool {
 	idx := objs.GetProposerIdx(len(r.ValidatorSet.Validators), r.height, r.round)
 	proposerValObj := r.ValidatorSet.Validators[idx]
 	vAddr := proposerValObj.VAddr
-	return bytes.Equal(vAddr, ownVAddr)
+	return bytes.Equal(vAddr, pAddr)
 }
 
 func (r *RoundStates) IsCurrentValidator() bool {

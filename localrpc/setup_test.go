@@ -226,11 +226,6 @@ func validatorNode() {
 
 	peerManager = initPeerManager(consGossipHandlers, consReqHandler)
 
-	// Initialize the consensus engine signer
-	// if err := secp256k1Signer.SetPrivk(crypto.FromECDSA(keys.PrivateKey)); err != nil {
-	// 	panic(err)
-	// }
-
 	consDB.Init(rawConsensusDb)
 
 	// consTxPool takes old state from consensusDB, used as evidence for what was done (new blocks, consensus, voting)
@@ -260,13 +255,6 @@ func validatorNode() {
 
 	// Setup monitor
 	monDB.Init(rawMonitorDb)
-	// No need of mon for localrpc testing
-	// monitorInterval := config.Configuration.Monitor.Interval
-	// monitorTimeout := config.Configuration.Monitor.Timeout
-	// mon, err := monitor.NewMonitor(consDB, monDB, consAdminHandlers, appDepositHandler, nil, monitorInterval, monitorTimeout, uint64(batchSize))
-	// if err != nil {
-	// 	panic(err)
-	// }
 
 	var tDB, mDB *badger.DB = nil, nil
 	if config.Configuration.Chain.TransactionDbInMemory {
@@ -281,20 +269,6 @@ func validatorNode() {
 	localStateHandler.Init(consDB, app, consGossipHandlers, publicKey, consSync.Safe, storage)
 	statusLogger.Init(consLSEngine, peerManager, consAdminHandlers, nil)
 
-	// No need of signal management for localrpc testing
-	//////////////////////////////////////////////////////////////////////////////
-	//LAUNCH ALL SERVICE GOROUTINES///////////////////////////////////////////////
-	//////////////////////////////////////////////////////////////////////////////
-
-	/* 	select {
-	   	case <-peerManager.CloseChan():
-	   	case <-consSync.CloseChan():
-	   	case <-signals:
-	   	}
-	   	// go countSignals(logger, 5, signals)
-
-	   	defer consSync.Stop()
-	   	defer func() { logger.Warning("Starting graceful unwind of core processes.") }() */
 }
 
 func getTransactionRequest(ConsumedTxHash, account []byte, val uint64) (tx_ *proto.TransactionData, TxHash, TXSignature []byte) {

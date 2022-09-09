@@ -190,7 +190,7 @@ describe("ValidatorPool Access Control: An user without admin role should not be
     await expect(
       fixture.validatorPool
         .connect(notAdmin1Signer)
-        .majorSlash(notAdmin1Signer.address, notAdmin1Signer.address)
+        .majorSlash(notAdmin1Signer.address, notAdmin1Signer.address, "0")
     )
       .to.be.revertedWithCustomError(fixture.validatorPool, `OnlyETHDKG`)
       .withArgs(notAdmin1.address, fixture.ethdkg.address);
@@ -200,7 +200,7 @@ describe("ValidatorPool Access Control: An user without admin role should not be
     await expect(
       fixture.validatorPool
         .connect(notAdmin1Signer)
-        .minorSlash(notAdmin1Signer.address, notAdmin1Signer.address)
+        .minorSlash(notAdmin1Signer.address, notAdmin1Signer.address, "0")
     )
       .to.be.revertedWithCustomError(fixture.validatorPool, `OnlyETHDKG`)
       .withArgs(notAdmin1.address, fixture.ethdkg.address);
