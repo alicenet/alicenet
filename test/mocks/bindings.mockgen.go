@@ -3080,10 +3080,6 @@ type MockIAliceNetFactory struct {
 	// FilterDeployedTemplateFunc is an instance of a mock function object
 	// controlling the behavior of the method FilterDeployedTemplate.
 	FilterDeployedTemplateFunc *IAliceNetFactoryFilterDeployedTemplateFunc
-	// GetArbitraryContractAddressFunc is an instance of a mock function
-	// object controlling the behavior of the method
-	// GetArbitraryContractAddress.
-	GetArbitraryContractAddressFunc *IAliceNetFactoryGetArbitraryContractAddressFunc
 	// GetImplementationFunc is an instance of a mock function object
 	// controlling the behavior of the method GetImplementation.
 	GetImplementationFunc *IAliceNetFactoryGetImplementationFunc
@@ -3214,11 +3210,6 @@ func NewMockIAliceNetFactory() *MockIAliceNetFactory {
 		},
 		FilterDeployedTemplateFunc: &IAliceNetFactoryFilterDeployedTemplateFunc{
 			defaultHook: func(*bind.FilterOpts) (r0 *bindings.AliceNetFactoryDeployedTemplateIterator, r1 error) {
-				return
-			},
-		},
-		GetArbitraryContractAddressFunc: &IAliceNetFactoryGetArbitraryContractAddressFunc{
-			defaultHook: func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (r0 common.Address, r1 error) {
 				return
 			},
 		},
@@ -3394,11 +3385,6 @@ func NewStrictMockIAliceNetFactory() *MockIAliceNetFactory {
 				panic("unexpected invocation of MockIAliceNetFactory.FilterDeployedTemplate")
 			},
 		},
-		GetArbitraryContractAddressFunc: &IAliceNetFactoryGetArbitraryContractAddressFunc{
-			defaultHook: func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error) {
-				panic("unexpected invocation of MockIAliceNetFactory.GetArbitraryContractAddress")
-			},
-		},
 		GetImplementationFunc: &IAliceNetFactoryGetImplementationFunc{
 			defaultHook: func(*bind.CallOpts) (common.Address, error) {
 				panic("unexpected invocation of MockIAliceNetFactory.GetImplementation")
@@ -3545,9 +3531,6 @@ func NewMockIAliceNetFactoryFrom(i bindings.IAliceNetFactory) *MockIAliceNetFact
 		},
 		FilterDeployedTemplateFunc: &IAliceNetFactoryFilterDeployedTemplateFunc{
 			defaultHook: i.FilterDeployedTemplate,
-		},
-		GetArbitraryContractAddressFunc: &IAliceNetFactoryGetArbitraryContractAddressFunc{
-			defaultHook: i.GetArbitraryContractAddress,
 		},
 		GetImplementationFunc: &IAliceNetFactoryGetImplementationFunc{
 			defaultHook: i.GetImplementation,
@@ -5040,124 +5023,6 @@ func (c IAliceNetFactoryFilterDeployedTemplateFuncCall) Args() []interface{} {
 // Results returns an interface slice containing the results of this
 // invocation.
 func (c IAliceNetFactoryFilterDeployedTemplateFuncCall) Results() []interface{} {
-	return []interface{}{c.Result0, c.Result1}
-}
-
-// IAliceNetFactoryGetArbitraryContractAddressFunc describes the behavior
-// when the GetArbitraryContractAddress method of the parent
-// MockIAliceNetFactory instance is invoked.
-type IAliceNetFactoryGetArbitraryContractAddressFunc struct {
-	defaultHook func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error)
-	hooks       []func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error)
-	history     []IAliceNetFactoryGetArbitraryContractAddressFuncCall
-	mutex       sync.Mutex
-}
-
-// GetArbitraryContractAddress delegates to the next hook function in the
-// queue and stores the parameter and result values of this invocation.
-func (m *MockIAliceNetFactory) GetArbitraryContractAddress(v0 *bind.CallOpts, v1 [32]byte, v2 common.Address, v3 [32]byte) (common.Address, error) {
-	r0, r1 := m.GetArbitraryContractAddressFunc.nextHook()(v0, v1, v2, v3)
-	m.GetArbitraryContractAddressFunc.appendCall(IAliceNetFactoryGetArbitraryContractAddressFuncCall{v0, v1, v2, v3, r0, r1})
-	return r0, r1
-}
-
-// SetDefaultHook sets function that is called when the
-// GetArbitraryContractAddress method of the parent MockIAliceNetFactory
-// instance is invoked and the hook queue is empty.
-func (f *IAliceNetFactoryGetArbitraryContractAddressFunc) SetDefaultHook(hook func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error)) {
-	f.defaultHook = hook
-}
-
-// PushHook adds a function to the end of hook queue. Each invocation of the
-// GetArbitraryContractAddress method of the parent MockIAliceNetFactory
-// instance invokes the hook at the front of the queue and discards it.
-// After the queue is empty, the default hook function is invoked for any
-// future action.
-func (f *IAliceNetFactoryGetArbitraryContractAddressFunc) PushHook(hook func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error)) {
-	f.mutex.Lock()
-	f.hooks = append(f.hooks, hook)
-	f.mutex.Unlock()
-}
-
-// SetDefaultReturn calls SetDefaultHook with a function that returns the
-// given values.
-func (f *IAliceNetFactoryGetArbitraryContractAddressFunc) SetDefaultReturn(r0 common.Address, r1 error) {
-	f.SetDefaultHook(func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error) {
-		return r0, r1
-	})
-}
-
-// PushReturn calls PushHook with a function that returns the given values.
-func (f *IAliceNetFactoryGetArbitraryContractAddressFunc) PushReturn(r0 common.Address, r1 error) {
-	f.PushHook(func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error) {
-		return r0, r1
-	})
-}
-
-func (f *IAliceNetFactoryGetArbitraryContractAddressFunc) nextHook() func(*bind.CallOpts, [32]byte, common.Address, [32]byte) (common.Address, error) {
-	f.mutex.Lock()
-	defer f.mutex.Unlock()
-
-	if len(f.hooks) == 0 {
-		return f.defaultHook
-	}
-
-	hook := f.hooks[0]
-	f.hooks = f.hooks[1:]
-	return hook
-}
-
-func (f *IAliceNetFactoryGetArbitraryContractAddressFunc) appendCall(r0 IAliceNetFactoryGetArbitraryContractAddressFuncCall) {
-	f.mutex.Lock()
-	f.history = append(f.history, r0)
-	f.mutex.Unlock()
-}
-
-// History returns a sequence of
-// IAliceNetFactoryGetArbitraryContractAddressFuncCall objects describing
-// the invocations of this function.
-func (f *IAliceNetFactoryGetArbitraryContractAddressFunc) History() []IAliceNetFactoryGetArbitraryContractAddressFuncCall {
-	f.mutex.Lock()
-	history := make([]IAliceNetFactoryGetArbitraryContractAddressFuncCall, len(f.history))
-	copy(history, f.history)
-	f.mutex.Unlock()
-
-	return history
-}
-
-// IAliceNetFactoryGetArbitraryContractAddressFuncCall is an object that
-// describes an invocation of method GetArbitraryContractAddress on an
-// instance of MockIAliceNetFactory.
-type IAliceNetFactoryGetArbitraryContractAddressFuncCall struct {
-	// Arg0 is the value of the 1st argument passed to this method
-	// invocation.
-	Arg0 *bind.CallOpts
-	// Arg1 is the value of the 2nd argument passed to this method
-	// invocation.
-	Arg1 [32]byte
-	// Arg2 is the value of the 3rd argument passed to this method
-	// invocation.
-	Arg2 common.Address
-	// Arg3 is the value of the 4th argument passed to this method
-	// invocation.
-	Arg3 [32]byte
-	// Result0 is the value of the 1st result returned from this method
-	// invocation.
-	Result0 common.Address
-	// Result1 is the value of the 2nd result returned from this method
-	// invocation.
-	Result1 error
-}
-
-// Args returns an interface slice containing the arguments of this
-// invocation.
-func (c IAliceNetFactoryGetArbitraryContractAddressFuncCall) Args() []interface{} {
-	return []interface{}{c.Arg0, c.Arg1, c.Arg2, c.Arg3}
-}
-
-// Results returns an interface slice containing the results of this
-// invocation.
-func (c IAliceNetFactoryGetArbitraryContractAddressFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 

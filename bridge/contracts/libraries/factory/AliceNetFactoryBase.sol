@@ -2,17 +2,12 @@
 pragma solidity ^0.8.16;
 import "contracts/Proxy.sol";
 import "contracts/utils/DeterministicAddress.sol";
-import "contracts/utils/ArbitraryDeterministicAddress.sol";
 import "contracts/libraries/proxy/ProxyUpgrader.sol";
 import "contracts/interfaces/IProxy.sol";
 import "contracts/libraries/errors/AliceNetFactoryBaseErrors.sol";
 import "contracts/AToken.sol";
 
-abstract contract AliceNetFactoryBase is
-    DeterministicAddress,
-    ArbitraryDeterministicAddress,
-    ProxyUpgrader
-{
+abstract contract AliceNetFactoryBase is DeterministicAddress, ProxyUpgrader {
     struct MultiCallArgs {
         address target;
         uint256 value;
@@ -47,6 +42,8 @@ abstract contract AliceNetFactoryBase is
 
     address internal immutable _alcaAddress;
     bytes32 internal immutable _alcaCreationCodeHash;
+    // ALCA salt = Bytes32(AToken) AToken is the old ALCA name, salt kept to
+    // maintain compatibility
     bytes32 internal constant _ALCA_SALT =
         0x41546f6b656e0000000000000000000000000000000000000000000000000000;
 

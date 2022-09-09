@@ -34,7 +34,6 @@ var FunctionMapping = map[[4]byte]string{
 	{39, 254, 24, 34}:    "AliceNetFactory.deployCreate(bytes)",
 	{86, 242, 167, 97}:   "AliceNetFactory.deployCreate2(uint256,bytes32,bytes)",
 	{57, 202, 180, 114}:  "AliceNetFactory.deployProxy(bytes32)",
-	{60, 209, 239, 238}:  "AliceNetFactory.getArbitraryContractAddress(bytes32,address,bytes32)",
 	{170, 241, 15, 66}:   "AliceNetFactory.getImplementation()",
 	{134, 83, 164, 101}:  "AliceNetFactory.getMetamorphicContractAddress(bytes32,address)",
 	{207, 225, 11, 48}:   "AliceNetFactory.getNumContracts()",
