@@ -32,7 +32,6 @@ import {
   ValidatorPoolMock,
   ValidatorStaking,
 } from "../typechain-types";
-import { factory } from "../typechain-types/contracts/libraries";
 import { ValidatorRawData } from "./ethdkg/setup";
 
 export const PLACEHOLDER_ADDRESS = "0x0000000000000000000000000000000000000000";
@@ -226,8 +225,6 @@ function getBytes32Salt(contractName: string) {
   return ethers.utils.formatBytes32String(contractName);
 }
 
-
-
 export const deployUpgradeableWithFactory = async (
   factory: AliceNetFactory,
   contractName: string,
@@ -237,7 +234,8 @@ export const deployUpgradeableWithFactory = async (
   saltType?: string
 ): Promise<Contract> => {
   const _Contract = await ethers.getContractFactory(contractName);
-  let deployCode = _Contract.getDeployTransaction(...constructorArgs).data as BytesLike
+  let deployCode = _Contract.getDeployTransaction(...constructorArgs)
+    .data as BytesLike;
   const hre: any = await require("hardhat");
   const transaction = await factory.deployCreate(deployCode);
   let receipt = await ethers.provider.getTransactionReceipt(transaction.hash);
@@ -303,19 +301,38 @@ export const deployUpgradeableWithFactory = async (
 };
 
 export const deployFactoryAndBaseTokens = async (
-  admin: SignerWithAddress,
+  admin: SignerWithAddress
 ): Promise<BaseTokensFixture> => {
-  const legacyTokenBase = await ethers.getContractFactory("LegacyToken")
+  const legacyTokenBase = await ethers.getContractFactory("LegacyToken");
   // LegacyToken
-  const legacyToken = await legacyTokenBase.deploy()
+  const legacyToken = await legacyTokenBase.deploy();
   const factory = await deployAliceNetFactory(admin, legacyToken.address);
-//   AToken is deployed on the factory constructor
-  const aToken = await ethers.getContractAt("AToken", await factory.lookup(ethers.utils.formatBytes32String("AToken")))
+  //   AToken is deployed on the factory constructor
+  const aToken = await ethers.getContractAt(
+    "AToken",
+    await factory.lookup(ethers.utils.formatBytes32String("AToken"))
+  );
+
   // BToken
-  const centralRouter = await (await ethers.getContractFactory("CentralBridgeRouterMock")).deploy()
-  const bTokenBase = await ethers.getContractFactory("BToken")
-  const deployData = bTokenBase.getDeployTransaction().data as BytesLike
-  const bToken = await ethers.getContractAt("BToken", await factory.lookup(ethers.utils.formatBytes32String("BToken")))
+  const centralRouter = await (
+    await ethers.getContractFactory("CentralBridgeRouterMock")
+  ).deploy(1000);
+  const deployData = (
+    await ethers.getContractFactory("BToken")
+  ).getDeployTransaction(centralRouter.address).data as BytesLike;
+  const bTokenSalt = ethers.utils.formatBytes32String("BToken");
+  const transaction = await factory.deployCreate2(0, bTokenSalt, deployData);
+  const bTokenAddress = await getContractAddressFromDeployedRawEvent(
+    transaction
+  );
+  // registering in the factory.lookup
+  await factory.addNewExternalContract(bTokenSalt, bTokenAddress);
+  // finally attach BToken to the address of the deployed contract above
+  const bToken = await ethers.getContractAt(
+    "BToken",
+    await factory.lookup(bTokenSalt)
+  );
+
   // PublicStaking
   const publicStaking = (await deployUpgradeableWithFactory(
     factory,
@@ -335,7 +352,7 @@ export const deployFactoryAndBaseTokens = async (
 
 export const deployAliceNetFactory = async (
   admin: SignerWithAddress,
-  legacyTokenAddress_: string,
+  legacyTokenAddress_: string
 ): Promise<AliceNetFactory> => {
   const Factory = await ethers.getContractFactory("AliceNetFactory");
   const factory = await Factory.deploy(legacyTokenAddress_);
