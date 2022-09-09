@@ -19,6 +19,13 @@ abstract contract AliceNetFactoryBase is DeterministicAddress, ProxyUpgrader {
         address logicAddr;
     }
 
+    // AToken salt = Bytes32(AToken)
+    // AToken is the old ALCA name, salt kept to maintain compatibility
+    bytes32 internal constant _ATOKEN_SALT =
+        0x41546f6b656e0000000000000000000000000000000000000000000000000000;
+    address internal immutable _aTokenAddress;
+    bytes32 internal immutable _aTokenCreationCodeHash;
+
     /**
     @dev owner role for privileged access to functions
     */
@@ -39,13 +46,6 @@ abstract contract AliceNetFactoryBase is DeterministicAddress, ProxyUpgrader {
     bytes8 private constant _UNIVERSAL_DEPLOY_CODE = 0x38585839386009f3;
 
     mapping(bytes32 => ContractInfo) internal _externalContractRegistry;
-
-    address internal immutable _aTokenAddress;
-    bytes32 internal immutable _aTokenCreationCodeHash;
-    // AToken salt = Bytes32(AToken)
-    // AToken is the old ALCA name, salt kept to maintain compatibility
-    bytes32 internal constant _ATOKEN_SALT =
-        0x41546f6b656e0000000000000000000000000000000000000000000000000000;
 
     /**
      *@dev events that notify of contract deployment
@@ -197,6 +197,22 @@ abstract contract AliceNetFactoryBase is DeterministicAddress, ProxyUpgrader {
      */
     function getNumContracts() public view returns (uint256) {
         return _contracts.length;
+    }
+
+    /**
+     * @dev getter function for retrieving the hash of the AToken creation code.
+     * @return the hash of the AToken creation code.
+     */
+    function getATokenCreationCodeHash() public view returns (bytes32) {
+        return _aTokenCreationCodeHash;
+    }
+
+    /**
+     * @dev getter function for retrieving the address of the AToken contract.
+     * @return AToken address.
+     */
+    function getATokenAddress() public view returns (address) {
+        return _aTokenAddress;
     }
 
     /**

@@ -155,9 +155,7 @@ task(
       // create the default list
       // setting list name will specify default configs
       const contracts = await getAllContracts(hre.artifacts);
-      console.log(contracts);
       deploymentList = await getSortedDeployList(contracts, hre.artifacts);
-      console.log(deploymentList);
       list = await transformDeploymentList(deploymentList);
       deploymentArgs = await generateDeployArgTemplate(list, hre.artifacts);
     } // user defined path and list

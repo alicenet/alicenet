@@ -3080,6 +3080,13 @@ type MockIAliceNetFactory struct {
 	// FilterDeployedTemplateFunc is an instance of a mock function object
 	// controlling the behavior of the method FilterDeployedTemplate.
 	FilterDeployedTemplateFunc *IAliceNetFactoryFilterDeployedTemplateFunc
+	// GetATokenAddressFunc is an instance of a mock function object
+	// controlling the behavior of the method GetATokenAddress.
+	GetATokenAddressFunc *IAliceNetFactoryGetATokenAddressFunc
+	// GetATokenCreationCodeHashFunc is an instance of a mock function
+	// object controlling the behavior of the method
+	// GetATokenCreationCodeHash.
+	GetATokenCreationCodeHashFunc *IAliceNetFactoryGetATokenCreationCodeHashFunc
 	// GetImplementationFunc is an instance of a mock function object
 	// controlling the behavior of the method GetImplementation.
 	GetImplementationFunc *IAliceNetFactoryGetImplementationFunc
@@ -3210,6 +3217,16 @@ func NewMockIAliceNetFactory() *MockIAliceNetFactory {
 		},
 		FilterDeployedTemplateFunc: &IAliceNetFactoryFilterDeployedTemplateFunc{
 			defaultHook: func(*bind.FilterOpts) (r0 *bindings.AliceNetFactoryDeployedTemplateIterator, r1 error) {
+				return
+			},
+		},
+		GetATokenAddressFunc: &IAliceNetFactoryGetATokenAddressFunc{
+			defaultHook: func(*bind.CallOpts) (r0 common.Address, r1 error) {
+				return
+			},
+		},
+		GetATokenCreationCodeHashFunc: &IAliceNetFactoryGetATokenCreationCodeHashFunc{
+			defaultHook: func(*bind.CallOpts) (r0 [32]byte, r1 error) {
 				return
 			},
 		},
@@ -3385,6 +3402,16 @@ func NewStrictMockIAliceNetFactory() *MockIAliceNetFactory {
 				panic("unexpected invocation of MockIAliceNetFactory.FilterDeployedTemplate")
 			},
 		},
+		GetATokenAddressFunc: &IAliceNetFactoryGetATokenAddressFunc{
+			defaultHook: func(*bind.CallOpts) (common.Address, error) {
+				panic("unexpected invocation of MockIAliceNetFactory.GetATokenAddress")
+			},
+		},
+		GetATokenCreationCodeHashFunc: &IAliceNetFactoryGetATokenCreationCodeHashFunc{
+			defaultHook: func(*bind.CallOpts) ([32]byte, error) {
+				panic("unexpected invocation of MockIAliceNetFactory.GetATokenCreationCodeHash")
+			},
+		},
 		GetImplementationFunc: &IAliceNetFactoryGetImplementationFunc{
 			defaultHook: func(*bind.CallOpts) (common.Address, error) {
 				panic("unexpected invocation of MockIAliceNetFactory.GetImplementation")
@@ -3531,6 +3558,12 @@ func NewMockIAliceNetFactoryFrom(i bindings.IAliceNetFactory) *MockIAliceNetFact
 		},
 		FilterDeployedTemplateFunc: &IAliceNetFactoryFilterDeployedTemplateFunc{
 			defaultHook: i.FilterDeployedTemplate,
+		},
+		GetATokenAddressFunc: &IAliceNetFactoryGetATokenAddressFunc{
+			defaultHook: i.GetATokenAddress,
+		},
+		GetATokenCreationCodeHashFunc: &IAliceNetFactoryGetATokenCreationCodeHashFunc{
+			defaultHook: i.GetATokenCreationCodeHash,
 		},
 		GetImplementationFunc: &IAliceNetFactoryGetImplementationFunc{
 			defaultHook: i.GetImplementation,
@@ -5023,6 +5056,223 @@ func (c IAliceNetFactoryFilterDeployedTemplateFuncCall) Args() []interface{} {
 // Results returns an interface slice containing the results of this
 // invocation.
 func (c IAliceNetFactoryFilterDeployedTemplateFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
+}
+
+// IAliceNetFactoryGetATokenAddressFunc describes the behavior when the
+// GetATokenAddress method of the parent MockIAliceNetFactory instance is
+// invoked.
+type IAliceNetFactoryGetATokenAddressFunc struct {
+	defaultHook func(*bind.CallOpts) (common.Address, error)
+	hooks       []func(*bind.CallOpts) (common.Address, error)
+	history     []IAliceNetFactoryGetATokenAddressFuncCall
+	mutex       sync.Mutex
+}
+
+// GetATokenAddress delegates to the next hook function in the queue and
+// stores the parameter and result values of this invocation.
+func (m *MockIAliceNetFactory) GetATokenAddress(v0 *bind.CallOpts) (common.Address, error) {
+	r0, r1 := m.GetATokenAddressFunc.nextHook()(v0)
+	m.GetATokenAddressFunc.appendCall(IAliceNetFactoryGetATokenAddressFuncCall{v0, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the GetATokenAddress
+// method of the parent MockIAliceNetFactory instance is invoked and the
+// hook queue is empty.
+func (f *IAliceNetFactoryGetATokenAddressFunc) SetDefaultHook(hook func(*bind.CallOpts) (common.Address, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// GetATokenAddress method of the parent MockIAliceNetFactory instance
+// invokes the hook at the front of the queue and discards it. After the
+// queue is empty, the default hook function is invoked for any future
+// action.
+func (f *IAliceNetFactoryGetATokenAddressFunc) PushHook(hook func(*bind.CallOpts) (common.Address, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *IAliceNetFactoryGetATokenAddressFunc) SetDefaultReturn(r0 common.Address, r1 error) {
+	f.SetDefaultHook(func(*bind.CallOpts) (common.Address, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *IAliceNetFactoryGetATokenAddressFunc) PushReturn(r0 common.Address, r1 error) {
+	f.PushHook(func(*bind.CallOpts) (common.Address, error) {
+		return r0, r1
+	})
+}
+
+func (f *IAliceNetFactoryGetATokenAddressFunc) nextHook() func(*bind.CallOpts) (common.Address, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *IAliceNetFactoryGetATokenAddressFunc) appendCall(r0 IAliceNetFactoryGetATokenAddressFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of IAliceNetFactoryGetATokenAddressFuncCall
+// objects describing the invocations of this function.
+func (f *IAliceNetFactoryGetATokenAddressFunc) History() []IAliceNetFactoryGetATokenAddressFuncCall {
+	f.mutex.Lock()
+	history := make([]IAliceNetFactoryGetATokenAddressFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// IAliceNetFactoryGetATokenAddressFuncCall is an object that describes an
+// invocation of method GetATokenAddress on an instance of
+// MockIAliceNetFactory.
+type IAliceNetFactoryGetATokenAddressFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 *bind.CallOpts
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 common.Address
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c IAliceNetFactoryGetATokenAddressFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c IAliceNetFactoryGetATokenAddressFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
+}
+
+// IAliceNetFactoryGetATokenCreationCodeHashFunc describes the behavior when
+// the GetATokenCreationCodeHash method of the parent MockIAliceNetFactory
+// instance is invoked.
+type IAliceNetFactoryGetATokenCreationCodeHashFunc struct {
+	defaultHook func(*bind.CallOpts) ([32]byte, error)
+	hooks       []func(*bind.CallOpts) ([32]byte, error)
+	history     []IAliceNetFactoryGetATokenCreationCodeHashFuncCall
+	mutex       sync.Mutex
+}
+
+// GetATokenCreationCodeHash delegates to the next hook function in the
+// queue and stores the parameter and result values of this invocation.
+func (m *MockIAliceNetFactory) GetATokenCreationCodeHash(v0 *bind.CallOpts) ([32]byte, error) {
+	r0, r1 := m.GetATokenCreationCodeHashFunc.nextHook()(v0)
+	m.GetATokenCreationCodeHashFunc.appendCall(IAliceNetFactoryGetATokenCreationCodeHashFuncCall{v0, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the
+// GetATokenCreationCodeHash method of the parent MockIAliceNetFactory
+// instance is invoked and the hook queue is empty.
+func (f *IAliceNetFactoryGetATokenCreationCodeHashFunc) SetDefaultHook(hook func(*bind.CallOpts) ([32]byte, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// GetATokenCreationCodeHash method of the parent MockIAliceNetFactory
+// instance invokes the hook at the front of the queue and discards it.
+// After the queue is empty, the default hook function is invoked for any
+// future action.
+func (f *IAliceNetFactoryGetATokenCreationCodeHashFunc) PushHook(hook func(*bind.CallOpts) ([32]byte, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *IAliceNetFactoryGetATokenCreationCodeHashFunc) SetDefaultReturn(r0 [32]byte, r1 error) {
+	f.SetDefaultHook(func(*bind.CallOpts) ([32]byte, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *IAliceNetFactoryGetATokenCreationCodeHashFunc) PushReturn(r0 [32]byte, r1 error) {
+	f.PushHook(func(*bind.CallOpts) ([32]byte, error) {
+		return r0, r1
+	})
+}
+
+func (f *IAliceNetFactoryGetATokenCreationCodeHashFunc) nextHook() func(*bind.CallOpts) ([32]byte, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *IAliceNetFactoryGetATokenCreationCodeHashFunc) appendCall(r0 IAliceNetFactoryGetATokenCreationCodeHashFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of
+// IAliceNetFactoryGetATokenCreationCodeHashFuncCall objects describing the
+// invocations of this function.
+func (f *IAliceNetFactoryGetATokenCreationCodeHashFunc) History() []IAliceNetFactoryGetATokenCreationCodeHashFuncCall {
+	f.mutex.Lock()
+	history := make([]IAliceNetFactoryGetATokenCreationCodeHashFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// IAliceNetFactoryGetATokenCreationCodeHashFuncCall is an object that
+// describes an invocation of method GetATokenCreationCodeHash on an
+// instance of MockIAliceNetFactory.
+type IAliceNetFactoryGetATokenCreationCodeHashFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 *bind.CallOpts
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 [32]byte
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c IAliceNetFactoryGetATokenCreationCodeHashFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c IAliceNetFactoryGetATokenCreationCodeHashFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
