@@ -8,9 +8,9 @@ import (
 )
 
 var (
-	// ErrRawStorageNilPointer is an error which results from a
+	// ErrDynamicValueNilPointer is an error which results from a
 	// RawStorage struct which has not been initialized.
-	ErrRawStorageNilPointer = errors.New("invalid RawStorage: nil pointer")
+	ErrDynamicValueNilPointer = errors.New("invalid RawStorage: nil pointer")
 
 	// ErrZeroEpoch is an error which is raised whenever the epoch is given
 	// as zero; there is no zero epoch.

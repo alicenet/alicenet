@@ -36,28 +36,22 @@ ON THE EPOCH BOUNDARY OF NOT ACTIVE TO ACTIVE, THE STORAGE STRUCT MUST BE UPDATE
 //
 //go:generate go-mockgen -f -i StorageGetter -o mocks/storage.mockgen.go .
 type StorageGetter interface {
-	GetMaxBytes() uint32
-	GetMaxProposalSize() uint32
-
-	GetProposalStepTimeout() time.Duration
-	GetPreVoteStepTimeout() time.Duration
-	GetPreCommitStepTimeout() time.Duration
+	GetMaxBlockSize() uint64
+	GetMaxProposalSize() uint64
+	GetProposalTimeout() time.Duration
+	GetPreVoteTimeout() time.Duration
+	GetPreCommitTimeout() time.Duration
 	GetDeadBlockRoundNextRoundTimeout() time.Duration
 	GetDownloadTimeout() time.Duration
-	GetSrvrMsgTimeout() time.Duration
-	GetMsgTimeout() time.Duration
+	GetMinScaledTransactionFee() *big.Int
+	GetDataStoreFee() *big.Int
+	GetValueStoreFee() *big.Int
+	GetValueStoreValidVersion() uint32
+	GetDataStoreValidVersion() uint32
+	GetTxValidVersion() uint32
 
 	UpdateStorage(*badger.Txn, Updater) error
 	LoadStorage(*badger.Txn, uint32) error
-
-	GetDataStoreEpochFee() *big.Int
-	GetDataStoreValidVersion() uint32
-
-	GetValueStoreFee() *big.Int
-	GetValueStoreValidVersion() uint32
-
-	GetMinTxFee() *big.Int
-	GetTxValidVersion() uint32
 }
 
 // Storage is the struct which will implement the StorageGetter interface.
@@ -66,21 +60,8 @@ type Storage struct {
 	database   *Database
 	startChan  chan struct{}
 	startOnce  sync.Once
-	rawStorage *RawStorage
+	rawStorage *DynamicValues
 	logger     *logrus.Logger
-}
-
-// checkUpdate confirms the specified update is valid.
-func checkUpdate(update Updater) error {
-	if update.Epoch() == 0 {
-		return ErrInvalidUpdateValue
-	}
-	rs := &RawStorage{}
-	err := rs.UpdateValue(update)
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 // Init initializes the Storage structure.
@@ -103,8 +84,7 @@ func (s *Storage) Start() {
 	defer s.Unlock()
 
 	s.startOnce.Do(func() {
-		s.rawStorage = &RawStorage{}
-		s.rawStorage.standardParameters()
+		s.rawStorage = DynamicValuesWithStandardValues()
 		close(s.startChan)
 	})
 }
@@ -117,23 +97,16 @@ func (s *Storage) UpdateStorage(txn *badger.Txn, update Updater) error {
 	s.Lock()
 	defer s.Unlock()
 
-	err := checkUpdate(update)
-	if err != nil {
-		utils.DebugTrace(s.logger, err)
-		return err
-	}
-
 	// Need to add code to check if initialization has been performed;
 	// that is, is this the first call to UpdateStorage?
-	_, err = s.database.GetLinkedList(txn)
+	_, err := s.database.GetLinkedList(txn)
 	if err != nil {
 		if !errors.Is(err, ErrKeyNotPresent) {
 			utils.DebugTrace(s.logger, err)
 			return err
 		}
-		rs := &RawStorage{}
-		rs.standardParameters()
-		node, ll, err := CreateLinkedList(1, rs)
+		dv := DynamicValuesWithStandardValues()
+		node, ll, err := CreateLinkedList(1, dv)
 		if err != nil {
 			utils.DebugTrace(s.logger, err)
 			return err
@@ -601,7 +574,7 @@ func (s *Storage) GetMaxBytes() uint32 {
 
 	s.RLock()
 	defer s.RUnlock()
-	return s.rawStorage.GetMaxBytes()
+	return uint32(s.rawStorage.GetMaxBlockSize())
 }
 
 // GetMaxProposalSize returns the maximum size of bytes allowed in a proposal
@@ -610,52 +583,34 @@ func (s *Storage) GetMaxProposalSize() uint32 {
 
 	s.RLock()
 	defer s.RUnlock()
-	return s.rawStorage.GetMaxProposalSize()
-}
-
-// GetSrvrMsgTimeout returns the time before timeout of server message
-func (s *Storage) GetSrvrMsgTimeout() time.Duration {
-	<-s.startChan
-
-	s.RLock()
-	defer s.RUnlock()
-	return s.rawStorage.GetSrvrMsgTimeout()
-}
-
-// GetMsgTimeout returns the timeout to receive a message
-func (s *Storage) GetMsgTimeout() time.Duration {
-	<-s.startChan
-
-	s.RLock()
-	defer s.RUnlock()
-	return s.rawStorage.GetMsgTimeout()
+	return uint32(s.rawStorage.GetMaxProposalSize())
 }
 
 // GetProposalStepTimeout returns the proposal step timeout
-func (s *Storage) GetProposalStepTimeout() time.Duration {
+func (s *Storage) GetProposalTimeout() time.Duration {
 	<-s.startChan
 
 	s.RLock()
 	defer s.RUnlock()
-	return s.rawStorage.GetProposalStepTimeout()
+	return s.rawStorage.GetProposalTimeout()
 }
 
 // GetPreVoteStepTimeout returns the prevote step timeout
-func (s *Storage) GetPreVoteStepTimeout() time.Duration {
+func (s *Storage) GetPreVoteTimeout() time.Duration {
 	<-s.startChan
 
 	s.RLock()
 	defer s.RUnlock()
-	return s.rawStorage.GetPreVoteStepTimeout()
+	return s.rawStorage.GetPreVoteTimeout()
 }
 
 // GetPreCommitStepTimeout returns the precommit step timeout
-func (s *Storage) GetPreCommitStepTimeout() time.Duration {
+func (s *Storage) GetPreCommitTimeout() time.Duration {
 	<-s.startChan
 
 	s.RLock()
 	defer s.RUnlock()
-	return s.rawStorage.GetPreCommitStepTimeout()
+	return s.rawStorage.GetPreCommitTimeout()
 }
 
 // GetDeadBlockRoundNextRoundTimeout returns the timeout required before
@@ -678,12 +633,12 @@ func (s *Storage) GetDownloadTimeout() time.Duration {
 }
 
 // GetMinTxFee returns the minimum transaction fee.
-func (s *Storage) GetMinTxFee() *big.Int {
+func (s *Storage) GetMinScaledTransactionFee() *big.Int {
 	<-s.startChan
 
 	s.RLock()
 	defer s.RUnlock()
-	return s.rawStorage.GetMinTxFee()
+	return s.rawStorage.GetMinScaledTransactionFee()
 }
 
 // GetTxValidVersion returns the transaction valid version
@@ -719,7 +674,7 @@ func (s *Storage) GetDataStoreEpochFee() *big.Int {
 
 	s.RLock()
 	defer s.RUnlock()
-	return s.rawStorage.GetDataStoreEpochFee()
+	return s.rawStorage.GetDataStoreFee()
 }
 
 // GetDataStoreValidVersion returns the DataStore valid version
