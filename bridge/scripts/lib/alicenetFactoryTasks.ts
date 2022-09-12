@@ -87,6 +87,7 @@ task(
   "Deploys an instance of a factory contract specified by its name"
 )
   .addFlag("waitConfirmation", "wait 8 blocks between transactions")
+  .addFlag("verify", "try to automatically verify contracts on etherscan")
   .addOptionalParam("outputFolder", "output folder path to save factoryState")
   .setAction(async (taskArgs, hre) => {
     const waitBlocks = taskArgs.waitConfirmation === true ? 8 : undefined;
@@ -230,6 +231,7 @@ task("deployContracts", "runs the initial deployment of all AliceNet contracts")
     if (factoryAddress === undefined) {
       const factoryData: FactoryData = await hre.run("deployFactory", {
         outputFolder: taskArgs.outputFolder,
+        verify: taskArgs.verify,
       });
       factoryAddress = factoryData.address;
       cumulativeGasUsed = cumulativeGasUsed.add(factoryData.gas);
@@ -282,7 +284,7 @@ task(
   "Multicalls deployCreate, deployProxy, and upgradeProxy, if gas cost exceeds 10 million deployUpgradeableProxy will be used"
 )
   .addFlag("waitConfirmation", "wait 8 blocks between transactions")
-  .addFlag("verify", "automatically verify contract on etherscan")
+  .addFlag("verify", "try to automatically verify contracts on etherscan")
   .addParam("contractName", "Name of logic contract to point the proxy at")
   .addParam(
     "factoryAddress",
@@ -1127,18 +1129,16 @@ export async function verifyContract(
 ) {
   let result;
   try {
-    console.log(hre.network.name);
     result = await hre.run("verify", {
       network: hre.network.name,
-      DEPLOYED_CONTRACT_ADDRESS: deployedContractAddress,
-      constructorArgs,
+      address: deployedContractAddress,
+      constructorArgsParams: constructorArgs,
     });
   } catch (error) {
     console.log(
-      `failed to automatically verify ${deployedContractAddress} please do it manually`
+      `Failed to automatically verify ${deployedContractAddress} please do it manually!`
     );
     console.log(error);
   }
-  console.log(result);
   return result;
 }
