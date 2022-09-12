@@ -26,7 +26,6 @@ import {
   MULTI_CALL_DEPLOY_PROXY,
   ONLY_PROXY,
   PROXY,
-  STATIC_DEPLOYMENT,
   UPGRADEABLE_DEPLOYMENT,
   UPGRADE_DEPLOYED_PROXY,
   UPGRADE_PROXY,
@@ -52,7 +51,6 @@ import {
   getContractDescriptor,
   getDeployGroup,
   getDeployGroupIndex,
-  getDeployMetaArgs,
   getDeployType,
   getDeployUpgradeableMultiCallArgs,
   getDeployUpgradeableProxyArgs,
@@ -62,7 +60,6 @@ import {
 import {
   DeployCreateData,
   FactoryData,
-  MetaContractData,
   ProxyData,
   updateDefaultFactoryData,
   updateDeployCreateList,
@@ -113,6 +110,9 @@ task(
       owner: accounts[0],
       gas: gasCost,
     };
+    if (taskArgs.verify) {
+      await verifyContract(hre, factory.address, constructorArgs);
+    }
     const network = hre.network.name;
     await updateDefaultFactoryData(network, factoryData, taskArgs.outputFolder);
     await showState(
@@ -210,6 +210,7 @@ task(
 
 task("deployContracts", "runs the initial deployment of all AliceNet contracts")
   .addFlag("waitConfirmation", "wait 8 blocks between transactions")
+  .addFlag("verify", "try to automatically verify contracts on etherscan")
   .addOptionalParam(
     "factoryAddress",
     "specify if a factory is already deployed, if not specified a new factory will be deployed"
@@ -236,7 +237,6 @@ task("deployContracts", "runs the initial deployment of all AliceNet contracts")
     let deployArgs: DeployArgs;
     // get an array of all contracts in the artifacts
     const contracts = await getDeploymentList(taskArgs.inputFolder);
-    let metaContractData: MetaContractData;
     let proxyData: ProxyData;
     // let contracts = ["src/tokens/periphery/validatorPool/Snapshots.sol:Snapshots"]
     for (let i = 0; i < contracts.length; i++) {
@@ -244,22 +244,6 @@ task("deployContracts", "runs the initial deployment of all AliceNet contracts")
       // check the contract for the @custom:deploy-type tag
       const deployType = await getDeployType(fullyQualifiedName, artifacts);
       switch (deployType) {
-        case STATIC_DEPLOYMENT: {
-          deployArgs = await getDeployMetaArgs(
-            fullyQualifiedName,
-            taskArgs.waitConfirmation,
-            factoryAddress,
-            artifacts,
-            taskArgs.inputFolder,
-            taskArgs.outputFolder
-          );
-          metaContractData = await hre.run(
-            "multiCallDeployMetamorphic",
-            deployArgs
-          );
-          cumulativeGasUsed = cumulativeGasUsed.add(metaContractData.gas);
-          break;
-        }
         case UPGRADEABLE_DEPLOYMENT: {
           deployArgs = await getDeployUpgradeableProxyArgs(
             fullyQualifiedName,
@@ -267,7 +251,8 @@ task("deployContracts", "runs the initial deployment of all AliceNet contracts")
             artifacts,
             taskArgs.waitConfirmation,
             taskArgs.inputFolder,
-            taskArgs.outputFolder
+            taskArgs.outputFolder,
+            taskArgs.verify
           );
           proxyData = await hre.run("fullMultiCallDeployProxy", deployArgs);
           cumulativeGasUsed = cumulativeGasUsed.add(proxyData.gas);
@@ -297,6 +282,7 @@ task(
   "Multicalls deployCreate, deployProxy, and upgradeProxy, if gas cost exceeds 10 million deployUpgradeableProxy will be used"
 )
   .addFlag("waitConfirmation", "wait 8 blocks between transactions")
+  .addFlag("verify", "automatically verify contract on etherscan")
   .addParam("contractName", "Name of logic contract to point the proxy at")
   .addParam(
     "factoryAddress",
@@ -376,10 +362,18 @@ task(
         await getGasPrices(hre)
       );
       receipt = await txResponse.wait(waitBlocks);
+      const deployedLogicAddress = getEventVar(
+        receipt,
+        DEPLOYED_RAW,
+        CONTRACT_ADDR
+      );
+      if (taskArgs.verify) {
+        await verifyContract(hre, deployedLogicAddress, constructorArgs);
+      }
       const proxyData: ProxyData = {
         factoryAddress: taskArgs.factoryAddress,
         logicName: taskArgs.contractName,
-        logicAddress: taskArgs.logicAddress,
+        logicAddress: deployedLogicAddress,
         salt,
         proxyAddress: getEventVar(receipt, DEPLOYED_PROXY, CONTRACT_ADDR),
         gas: receipt.gasUsed,
@@ -1124,4 +1118,27 @@ export async function getGasPrices(hre: HardhatRuntimeEnvironment) {
     maxPriorityFeePerGas < minValue ? minValue : maxPriorityFeePerGas;
   const maxFeePerGas = 2n * blockBaseFee + maxPriorityFeePerGas;
   return { maxPriorityFeePerGas, maxFeePerGas };
+}
+
+export async function verifyContract(
+  hre: HardhatRuntimeEnvironment,
+  deployedContractAddress: string,
+  constructorArgs: Array<any>
+) {
+  let result;
+  try {
+    console.log(hre.network.name);
+    result = await hre.run("verify", {
+      network: hre.network.name,
+      DEPLOYED_CONTRACT_ADDRESS: deployedContractAddress,
+      constructorArgs,
+    });
+  } catch (error) {
+    console.log(
+      `failed to automatically verify ${deployedContractAddress} please do it manually`
+    );
+    console.log(error);
+  }
+  console.log(result);
+  return result;
 }

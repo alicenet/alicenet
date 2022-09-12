@@ -15,6 +15,7 @@ import "./scripts/generateImmutableAuth";
 import "./scripts/lib/alicenetFactoryTasks";
 import "./scripts/lib/alicenetTasks";
 import "./scripts/lib/gogogen";
+import "@nomiclabs/hardhat-etherscan";
 require("dotenv").config();
 
 /**
@@ -193,6 +194,9 @@ const config: HardhatUserConfig = {
         },
       ],
     },
+  },
+  etherscan: {
+    apiKey: process.env.ETHERSCAN_API_KEY
   },
   solidity: {
     compilers: [

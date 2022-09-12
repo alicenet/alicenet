@@ -4,8 +4,7 @@ import "contracts/utils/DeterministicAddress.sol";
 import "contracts/Proxy.sol";
 import "contracts/libraries/factory/AliceNetFactoryBase.sol";
 
-/// @custom:salt AliceNetFactory
-/// @custom:deploy-type deployStatic
+
 contract AliceNetFactory is AliceNetFactoryBase {
     /**
      * @dev The constructor encodes the proxy deploy byte code with the _UNIVERSAL_DEPLOY_CODE at the

@@ -204,32 +204,6 @@ export function getSalt() {
   return ethers.utils.formatBytes32String(Salt.toString());
 }
 
-export async function getDeployTemplateArgs(contractName: string) {
-  const contract = await ethers.getContractFactory(contractName);
-  const deployByteCode = contract.getDeployTransaction();
-  return deployByteCode.data as BytesLike;
-}
-
-export type DeployStaticArgs = {
-  salt: string;
-  initCallData: string;
-};
-
-export async function getDeployStaticArgs(
-  contractName: string,
-  argsArray: Array<any>
-) {
-  const contract = await ethers.getContractFactory(contractName);
-  const ret: DeployStaticArgs = {
-    salt: getSalt(),
-    initCallData: contract.interface.encodeFunctionData(
-      "initialize",
-      argsArray
-    ),
-  };
-  return ret;
-}
-
 export async function checkMockInit(target: string, initVal: number) {
   const mockFactory = await ethers.getContractFactory(MOCK);
   const mock = mockFactory.attach(target);
