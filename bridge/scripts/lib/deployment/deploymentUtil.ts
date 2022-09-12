@@ -24,6 +24,8 @@ import {
   INITIALIZER,
   ONLY_PROXY,
   STATIC_DEPLOYMENT,
+  TASK_DEPLOY_FACTORY,
+  TASK_DEPLOY_PROXY,
   UPGRADEABLE_DEPLOYMENT,
   UPGRADE_PROXY,
 } from "../constants";
@@ -117,7 +119,7 @@ export async function getContractDescriptor(
 }
 // function to deploy the factory
 export async function deployFactory(run: RunTaskFunction, usrPath?: string) {
-  return await run("deploy-factory", { outputFolder: usrPath });
+  return await run(TASK_DEPLOY_FACTORY, { outputFolder: usrPath });
 }
 
 export async function getDeployMetaArgs(
@@ -542,7 +544,7 @@ export async function deployContractsMulticall(
             hre.ethers
           );
           const factoryAddress = factory.address;
-          proxyData = await hre.run("deployProxy", {
+          proxyData = await hre.run(TASK_DEPLOY_PROXY, {
             factoryAddress,
             salt,
           });

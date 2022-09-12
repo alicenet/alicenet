@@ -1214,7 +1214,10 @@ task(
     }
   });
 
-task("set-local-environment-base-fee", "sets the local environment node base fee for the next block")
+task(
+  "set-local-environment-base-fee",
+  "sets the local environment node base fee for the next block"
+)
   .addParam("baseFee", "base fee value in GWEIs", "500", types.int)
   .setAction(async (taskArgs, hre) => {
     const network = await hre.ethers.provider.getNetwork();

@@ -20,17 +20,25 @@ import {
   DEPLOYMENT_ARG_PATH,
   DEPLOYMENT_LIST_FPATH,
   DEPLOY_CREATE,
-  DEPLOY_METAMORPHIC,
   DEPLOY_PROXY,
-  DEPLOY_UPGRADEABLE_PROXY,
   INITIALIZER,
   MULTICALL_GAS_LIMIT,
-  MULTI_CALL_DEPLOY_PROXY,
   ONLY_PROXY,
   PROXY,
   STATIC_DEPLOYMENT,
+  TASK_DEPLOY_CONTRACTS,
+  TASK_DEPLOY_CREATE,
+  TASK_DEPLOY_FACTORY,
+  TASK_DEPLOY_METAMORPHIC,
+  TASK_DEPLOY_PROXY,
+  TASK_DEPLOY_STATIC,
+  TASK_DEPLOY_TEMPLATE,
+  TASK_DEPLOY_UPGRADEABLE_PROXY,
+  TASK_FULL_MULTI_CALL_DEPLOY_PROXY,
+  TASK_MULTI_CALL_DEPLOY_METAMORPHIC,
+  TASK_MULTI_CALL_DEPLOY_PROXY,
+  TASK_UPGRADE_DEPLOYED_PROXY,
   UPGRADEABLE_DEPLOYMENT,
-  UPGRADE_DEPLOYED_PROXY,
   UPGRADE_PROXY,
 } from "./constants";
 import {
@@ -91,7 +99,7 @@ task("get-bytes32-salt", "gets the bytes32 version of salt from contract")
   });
 
 task(
-  "deploy-factory",
+  TASK_DEPLOY_FACTORY,
   "Deploys an instance of a factory contract specified by its name"
 )
   .addFlag("waitConfirmation", "wait 8 blocks between transactions")
@@ -201,7 +209,10 @@ task(
     }
   });
 
-task("deploy-contracts", "runs the initial deployment of all AliceNet contracts")
+task(
+  TASK_DEPLOY_CONTRACTS,
+  "runs the initial deployment of all AliceNet contracts"
+)
   .addFlag("waitConfirmation", "wait 8 blocks between transactions")
   .addOptionalParam(
     "factoryAddress",
@@ -220,7 +231,7 @@ task("deploy-contracts", "runs the initial deployment of all AliceNet contracts"
     // deploy the factory first
     let factoryAddress = taskArgs.factoryAddress;
     if (factoryAddress === undefined) {
-      const factoryData: FactoryData = await hre.run("deploy-factory", {
+      const factoryData: FactoryData = await hre.run(TASK_DEPLOY_FACTORY, {
         outputFolder: taskArgs.outputFolder,
       });
       factoryAddress = factoryData.address;
@@ -247,7 +258,7 @@ task("deploy-contracts", "runs the initial deployment of all AliceNet contracts"
             taskArgs.outputFolder
           );
           metaContractData = await hre.run(
-            "multi-call-deploy-metamorphic",
+            TASK_MULTI_CALL_DEPLOY_METAMORPHIC,
             deployArgs
           );
           cumulativeGasUsed = cumulativeGasUsed.add(metaContractData.gas);
@@ -262,14 +273,17 @@ task("deploy-contracts", "runs the initial deployment of all AliceNet contracts"
             taskArgs.inputFolder,
             taskArgs.outputFolder
           );
-          proxyData = await hre.run("full-multi-call-deploy-proxy", deployArgs);
+          proxyData = await hre.run(
+            TASK_FULL_MULTI_CALL_DEPLOY_PROXY,
+            deployArgs
+          );
           cumulativeGasUsed = cumulativeGasUsed.add(proxyData.gas);
           break;
         }
         case ONLY_PROXY: {
           const name = extractName(fullyQualifiedName);
           const salt: BytesLike = await getBytes32Salt(name, hre);
-          proxyData = await hre.run("deploy-proxy", {
+          proxyData = await hre.run(TASK_DEPLOY_PROXY, {
             factoryAddress,
             salt,
             waitConfirmation: taskArgs.waitConfirmation,
@@ -286,7 +300,7 @@ task("deploy-contracts", "runs the initial deployment of all AliceNet contracts"
   });
 
 task(
-  "full-multi-call-deploy-proxy",
+  TASK_FULL_MULTI_CALL_DEPLOY_PROXY,
   "Multicalls deploy-create, deploy-proxy, and upgrade-proxy, if gas cost exceeds 10 million deploy-upgradeable-proxy will be used"
 )
   .addFlag("waitConfirmation", "wait 8 blocks between transactions")
@@ -382,12 +396,12 @@ task(
       await updateProxyList(network, proxyData, taskArgs.outputFolder);
       return proxyData;
     } else {
-      return await hre.run(DEPLOY_UPGRADEABLE_PROXY, callArgs);
+      return await hre.run(TASK_DEPLOY_UPGRADEABLE_PROXY, callArgs);
     }
   });
 
 task(
-  DEPLOY_UPGRADEABLE_PROXY,
+  TASK_DEPLOY_UPGRADEABLE_PROXY,
   "deploys logic contract, proxy contract, and points the proxy to the logic contract"
 )
   .addFlag("waitConfirmation", "wait 8 blocks between transactions")
@@ -417,7 +431,7 @@ task(
     };
     // deploy create the logic contract
     const deployCreateData: DeployCreateData = await hre.run(
-      DEPLOY_CREATE,
+      TASK_DEPLOY_CREATE,
       callArgs
     );
     cumulativeGas = cumulativeGas.add(deployCreateData.gas);
@@ -430,7 +444,7 @@ task(
       outputFolder: taskArgs.outputFolder,
     };
     const proxyData: ProxyData = await hre.run(
-      MULTI_CALL_DEPLOY_PROXY,
+      TASK_MULTI_CALL_DEPLOY_PROXY,
       mcCallArgs
     );
     cumulativeGas = cumulativeGas.add(proxyData.gas);
@@ -441,7 +455,7 @@ task(
     return proxyData;
   });
 
-task("multi-call-deploy-metamorphic")
+task(TASK_MULTI_CALL_DEPLOY_METAMORPHIC)
   .addFlag("waitConfirmation", "wait 8 blocks between transactions")
   .addParam(
     "contractName",
@@ -543,12 +557,12 @@ task("multi-call-deploy-metamorphic")
       await updateMetaList(network, metaContractData, taskArgs.outputFolder);
       return metaContractData;
     } else {
-      return await hre.run(DEPLOY_METAMORPHIC, callArgs);
+      return await hre.run(TASK_DEPLOY_METAMORPHIC, callArgs);
     }
   });
 
 task(
-  DEPLOY_METAMORPHIC,
+  TASK_DEPLOY_METAMORPHIC,
   "deploys template contract, and then deploys metamorphic contract, and points the proxy to the logic contract"
 )
   .addFlag("waitConfirmation", "wait 8 blocks between transactions")
@@ -581,7 +595,7 @@ task(
     };
     // deploy create the logic contract
     const templateData: TemplateData = await hre.run(
-      "deploy-template",
+      TASK_DEPLOY_TEMPLATE,
       callArgs
     );
     cumulativeGas = cumulativeGas.add(templateData.gas);
@@ -593,7 +607,7 @@ task(
       outputFolder: taskArgs.outputFolder,
     };
     const metaContractData: MetaContractData = await hre.run(
-      "deploy-static",
+      TASK_DEPLOY_STATIC,
       callArgs
     );
     cumulativeGas = cumulativeGas.add(metaContractData.gas);
@@ -719,7 +733,7 @@ task(
   });
 
 // factoryName param doesnt do anything right now
-task(DEPLOY_CREATE, "deploys a contract from the factory using create")
+task(TASK_DEPLOY_CREATE, "deploys a contract from the factory using create")
   .addFlag("waitConfirmation", "wait 8 blocks between transactions")
   .addParam("contractName", "logic contract name")
   .addParam(
@@ -779,7 +793,7 @@ task(DEPLOY_CREATE, "deploys a contract from the factory using create")
     }
   });
 
-task(DEPLOY_PROXY, "deploys a proxy from the factory")
+task(TASK_DEPLOY_PROXY, "deploys a proxy from the factory")
   .addFlag("waitConfirmation", "wait 8 blocks between transactions")
   .addParam(
     "salt",
@@ -810,7 +824,10 @@ task(DEPLOY_PROXY, "deploys a proxy from the factory")
     return proxyData;
   });
 
-task(UPGRADE_DEPLOYED_PROXY, "deploys a contract from the factory using create")
+task(
+  TASK_UPGRADE_DEPLOYED_PROXY,
+  "deploys a contract from the factory using create"
+)
   .addFlag("waitConfirmation", "wait 8 blocks between transactions")
   .addParam("contractName", "logic contract name")
   .addParam(
@@ -1186,7 +1203,7 @@ task(
     // deploy the factory first
     let factoryAddress = taskArgs.factoryAddress;
     if (factoryAddress === undefined) {
-      const factoryData: FactoryData = await hre.run("deploy-factory", {
+      const factoryData: FactoryData = await hre.run(TASK_DEPLOY_FACTORY, {
         outputFolder: taskArgs.outputFolder,
       });
       factoryAddress = factoryData.address;
