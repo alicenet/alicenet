@@ -4,7 +4,7 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "contracts/interfaces/IERC20Transferable.sol";
 import "contracts/utils/ImmutableAuth.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "contracts/libraries/errors/LocalBridgePoolBaseErrors.sol";
+import "contracts/libraries/errors/LocalERCBridgePoolBaseErrors.sol";
 import "contracts/libraries/parsers/MerkleProofParserLibrary.sol";
 import "contracts/utils/MerkleProofLibrary.sol";
 import "contracts/Snapshots.sol";
@@ -52,7 +52,7 @@ abstract contract LocalERCBridgePoolBase is ImmutableSnapshots {
             .extractMerkleProof();
         UTXO memory burnedUTXO = abi.decode(encodedBurnedUTXO, (UTXO));
         if (burnedUTXO.owner != msg.sender) {
-            revert LocalBridgePoolBaseErrors.ReceiverIsNotOwnerOnProofOfBurnUTXO();
+            revert LocalERCBridgePoolBaseErrors.ReceiverIsNotOwnerOnProofOfBurnUTXO();
         }
         merkleProof.verifyInclusion(bClaims.stateRoot);
     }
