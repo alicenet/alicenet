@@ -643,18 +643,17 @@ export const getFixture = async (
     []
   )) as Dynamics;
 
-  const erc20Mock = await deployStaticWithFactory(
-    factory,
-    "ERC20Mock",
-    "ERC20Mock",
-    [ethers.constants.AddressZero],
-    []
-  );
+  const erc20Mock = await (
+    await (
+      await ethers.getContractFactory("ERC20Mock")
+    ).deploy()
+  ).deployed();
+
   const localERC20BridgePoolV1 = await deployStaticWithFactory(
     factory,
     "LocalERC20BridgePoolV1",
     "LocalERC20BridgePoolV1",
-    [erc20Mock.AddressZero],
+    [erc20Mock.address],
     []
   );
 

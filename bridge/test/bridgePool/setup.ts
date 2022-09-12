@@ -61,7 +61,6 @@ export const getBridgePoolMetamorphicAddress = (
 export const getMetamorphicContractAddress = (contractName :string, factoryAddress:string): string => {
   const metamorphicContractBytecodeHash_ = "0x1c0bf703a3415cada9785e89e9d70314c3111ae7d8e04f33bb42eb1d264088be";
   const salt = ethers.utils.formatBytes32String(contractName);
-  console.log(salt)
   return "0x"+ethers.utils.keccak256(
     ethers.utils.solidityPack(
       ["bytes1", "address","bytes32", "bytes32"],
@@ -76,8 +75,7 @@ export const getMetamorphicContractAddress = (contractName :string, factoryAddre
 };
 
 export const getSimulatedBridgeRouter = async (factoryAddress: string): Promise<any> => {
-  const bridgeRouterAddress = getMetamorphicContractAddress("BridgeRouter",factoryAddress)
-  console.log(bridgeRouterAddress)
+  const  bridgeRouterAddress = await getMetamorphicContractAddress("BridgeRouter",factoryAddress)
   const [admin] = await ethers.getSigners();
   await admin.sendTransaction({to: bridgeRouterAddress , value: ethers.utils.parseEther("1")})
 await hre.network.provider.request({

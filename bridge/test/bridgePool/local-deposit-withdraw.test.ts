@@ -53,6 +53,11 @@ const encodedBurnedUTXO = ethers.utils.defaultAbiCoder.encode(
 );
 let merkleProofLibraryErrors: Contract;
   let  bridgeRouter:any;
+  let erc:
+  | "bToken"
+  | "eth"
+  | "ERC20"
+
 
   describe(
     "Testing BridgePool Router Deposit/Withdraw for tokenType ERC20",
@@ -74,7 +79,7 @@ let merkleProofLibraryErrors: Contract;
         ).deployed();
 
         //Simulate a bridge router with some gas for transactions
-        const bridgeRouterAddress = getSimulatedBridgeRouter(fixture.factory.address);
+       bridgeRouter = await getSimulatedBridgeRouter(fixture.factory.address);
         depositCallData = {
           ercContract: fixture[tokenTypes[0].options.ercContractName].address,
           destinationAccountType: 1,
@@ -104,13 +109,13 @@ let merkleProofLibraryErrors: Contract;
         );
       });
 
-/*       it("Should make a withdraw for amount specified on informed burned UTXO upon proof verification", async () => {
+       it("Should make a withdraw for amount specified on informed burned UTXO upon proof verification", async () => {
         // Make first a deposit to withdraw afterwards
         await bridgePool.connect(bridgeRouter).deposit(user.address, valueOrId)
         showState("After Deposit", await getState(fixture, bridgePool.address));
         expectedState = await getState(fixture, bridgePool.address);
-        expectedState.Balances[erc].user += BigInt(run.options.quantity);
-        expectedState.Balances[erc].bridgePool -= BigInt(run.options.quantity);
+        expectedState.Balances[erc].user += BigInt(tokenTypes[0].options.quantity);
+        expectedState.Balances[erc].bridgePool -= BigInt(tokenTypes[0].options.quantity);
         await bridgePool.connect(user).withdraw(merkleProof, encodedBurnedUTXO);
         showState(
           "After withdraw",
@@ -155,7 +160,7 @@ let merkleProofLibraryErrors: Contract;
           "ReceiverIsNotOwnerOnProofOfBurnUTXO"
         );
       });
- */    
+    
 });
 
 
