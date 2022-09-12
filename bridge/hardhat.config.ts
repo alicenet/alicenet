@@ -90,6 +90,17 @@ const config: HardhatUserConfig = {
               : "0x0000000000000000000000000000000000000000000000000000000000000000",
           ],
       },
+    main: {
+      url: process.env.MAIN_NET_ENDPOINT ? process.env.MAIN_NET_ENDPOINT : "http://127.0.0.1:8545",
+      gas: "auto",
+      gasMultiplier: 2,
+      gasPrice: "auto",
+      accounts: [
+          process.env.GOERLI_PK
+            ? process.env.GOERLI_PK
+            : "0x0000000000000000000000000000000000000000000000000000000000000000",
+        ],
+    },
     production: {
       url: "https://eth.alice.net/",
       gas: 15000000,

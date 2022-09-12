@@ -4,6 +4,7 @@ import {
   BytesLike,
   ContractReceipt,
   ContractTransaction,
+  Transaction,
 } from "ethers";
 import fs from "fs";
 import { task } from "hardhat/config";

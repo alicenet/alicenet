@@ -13,6 +13,7 @@ import { HardhatRuntimeEnvironment } from "hardhat/types";
 import axios from "axios";
 import { DEFAULT_CONFIG_OUTPUT_DIR } from "./constants";
 import { readDeploymentArgs } from "./deployment/deploymentConfigUtil";
+import { getGasPrices } from "./alicenetFactoryTasks";
 export type MultiCallArgsStruct = {
   target: string;
   value: BigNumberish;
@@ -235,7 +236,6 @@ task(
   "deployStateMigrationContract",
   "Deploy state migration contract and run migrations"
 )
-  .addParam("oldFactoryAddress", "the previous factory address")
   .addParam(
     "factoryAddress",
     "the default factory address from factoryState will be used if not set"
@@ -259,10 +259,6 @@ task(
       "AliceNetFactory",
       taskArgs.factoryAddress
     );
-    const oldFactory = await hre.ethers.getContractAt(
-      "AliceNetFactory",
-      taskArgs.oldFactoryAddress
-    );
     const aTokenAddress = await factoryLookupAddress(
       factory.address,
       "AToken",
@@ -278,11 +274,6 @@ task(
       "ValidatorPool",
       hre
     );
-    const oldSnapshotAddress = await factoryLookupAddress(
-      oldFactory.address,
-      "Snapshots",
-      hre
-    );
     const snapshotAddress = await factoryLookupAddress(
       factory.address,
       "Snapshots",
@@ -293,21 +284,14 @@ task(
       "ETHDKG",
       hre
     );
-    const oldEthDKGAddress = await factoryLookupAddress(
-      oldFactory.address,
-      "ETHDKG",
-      hre
-    );
     const tokenIds: Array<BigNumber> = [];
-    const ethdkg = await hre.ethers.getContractAt("ETHDKG", ethDKGAddress);
-    const oldSnapshots = await hre.ethers.getContractAt(
-      "Snapshots",
-      oldSnapshotAddress
-    );
-    const epoch = await oldSnapshots.getEpoch();
-    const masterPublicKey = await ethdkg
-      .attach(oldEthDKGAddress)
-      .getMasterPublicKey();
+    const epoch = BigNumber.from(101);
+    const masterPublicKey = [
+      BigNumber.from("19973864405227474494428046886218960395017286398286997273859673757240376592503"),
+      BigNumber.from("3666564623138203565215945530726129772754495167220101411282198856069539995091"),
+      BigNumber.from("16839568499509318396654065605910525620620734593528167444141729662886794883267"),
+      BigNumber.from("4238394038888761339041070176707923282936512397513542246905279490862584218353")
+    ]
     console.log("Master Public Key: " + masterPublicKey);
     const validatorAccounts = [
       "0xb80d6653f7e5b80dbbe8d0aa9f61b5d72e8028ad",
@@ -407,10 +391,10 @@ task(
     await waitBlocks(3, hre);
   });
 async function getGroupSignatures(epoch: BigNumber) {
-  let start = BigNumber.from(0);
+  let start = BigNumber.from(1);
   const bufferSize = BigNumber.from(5);
   const groupSignatures: Array<string> = [];
-  if (epoch > bufferSize) {
+  if (epoch.gt(bufferSize)) {
     start = epoch.sub(bufferSize);
   }
   console.log(epoch);
@@ -1375,9 +1359,7 @@ export async function stakeValidators(
     ]);
     stakeNFT.push(encodeMultiCallArgs(publicStakingAddress, 0, stakeToken));
   }
-  return factory.multiCall([approveAToken, ...stakeNFT], {
-    gasLimit: 30000000,
-  });
+  return factory.multiCall([approveAToken, ...stakeNFT], await getGasPrices(hre));
 }
 
 export async function migrateSnapshotsAndValidators(
@@ -1465,7 +1447,7 @@ export async function migrateSnapshotsAndValidators(
   );
   return factory.multiCall(
     [...approveTokens, registerValidators, migrateValidators, migrateSnapshots],
-    { gasLimit: 30000000 }
+    await getGasPrices(hre)
   );
 }
 
