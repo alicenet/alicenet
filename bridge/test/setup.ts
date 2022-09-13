@@ -643,6 +643,18 @@ export const getFixture = async (
     []
   )) as Dynamics;
 
+  const erc1155Mock = await (
+    await (await ethers.getContractFactory("ERC1155Mock")).deploy()
+  ).deployed();
+
+  const localERC1155BridgePoolV1 = await deployStaticWithFactory(
+    factory,
+    "LocalERC1155BridgePoolV1",
+    "LocalERC1155BridgePoolV1",
+    [erc1155Mock.address],
+    []
+  );
+
   await posFixtureSetup(factory, aToken, legacyToken);
   const blockNumber = BigInt(await ethers.provider.getBlockNumber());
   const phaseLength = (await ethdkg.getPhaseLength()).toBigInt();
@@ -659,7 +671,9 @@ export const getFixture = async (
     validatorPool,
     snapshots,
     ethdkg,
+    erc1155Mock,
     factory,
+    localERC1155BridgePoolV1,
     namedSigners,
     aTokenMinter,
     aTokenBurner,
