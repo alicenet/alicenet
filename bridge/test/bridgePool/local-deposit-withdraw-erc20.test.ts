@@ -5,7 +5,7 @@ import { expect } from "../chai-setup";
 
 import { Fixture, getFixture } from "../setup";
 import {
-  encodedBurnedUTXO,
+  encodedBurnedUTXOERC20,
   getMockBlockClaimsForStateRoot,
   getSimulatedBridgeRouter,
   merkleProof,
@@ -74,7 +74,9 @@ describe("Testing BridgePool Deposit/Withdraw for tokenType ERC20", async () => 
   it("Should make a withdraw for amount specified on informed burned UTXO upon proof verification", async () => {
     // Make first a deposit to withdraw afterwards
     await bridgePool.connect(bridgeRouter).deposit(user.address, tokenAmount);
-    await bridgePool.connect(user).withdraw(merkleProof, encodedBurnedUTXO);
+    await bridgePool
+      .connect(user)
+      .withdraw(merkleProof, encodedBurnedUTXOERC20);
     expect(await fixture.erc20Mock.balanceOf(user.address)).to.be.eq(
       initialUserBalance
     );
@@ -85,7 +87,9 @@ describe("Testing BridgePool Deposit/Withdraw for tokenType ERC20", async () => 
 
   it("Should not make a withdraw for amount specified on informed burned UTXO with wrong merkle proof", async () => {
     await expect(
-      bridgePool.connect(user).withdraw(wrongMerkleProof, encodedBurnedUTXO)
+      bridgePool
+        .connect(user)
+        .withdraw(wrongMerkleProof, encodedBurnedUTXOERC20)
     ).to.be.revertedWithCustomError(
       merkleProofLibraryErrors,
       "ProofDoesNotMatchTrieRoot"
@@ -102,7 +106,7 @@ describe("Testing BridgePool Deposit/Withdraw for tokenType ERC20", async () => 
       encodedMockBlockClaims
     );
     await expect(
-      bridgePool.connect(user).withdraw(merkleProof, encodedBurnedUTXO)
+      bridgePool.connect(user).withdraw(merkleProof, encodedBurnedUTXOERC20)
     ).to.be.revertedWithCustomError(
       merkleProofLibraryErrors,
       "ProofDoesNotMatchTrieRoot"
@@ -111,7 +115,7 @@ describe("Testing BridgePool Deposit/Withdraw for tokenType ERC20", async () => 
 
   it("Should not make a withdraw to an address that is not the owner in informed burned UTXO", async () => {
     await expect(
-      bridgePool.connect(user2).withdraw(merkleProof, encodedBurnedUTXO)
+      bridgePool.connect(user2).withdraw(merkleProof, encodedBurnedUTXOERC20)
     ).to.be.revertedWithCustomError(
       bridgePool,
       "ReceiverIsNotOwnerOnProofOfBurnUTXO"

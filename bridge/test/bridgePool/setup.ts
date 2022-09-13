@@ -43,7 +43,7 @@ export function getEncodedBurnedUTXO(userAddress: string, valueOrId: number) {
   );
 }
 
-export const burnedUTXO = {
+export const burnedUTXOERC20 = {
   chainId: 0,
   owner: "0x9AC1c9afBAec85278679fF75Ef109217f26b1417",
   value: tokenAmount,
@@ -51,11 +51,11 @@ export const burnedUTXO = {
   txHash: "0x0000000000000000000000000000000000000000000000000000000000000000",
 };
 
-export const encodedBurnedUTXO = ethers.utils.defaultAbiCoder.encode(
+export const encodedBurnedUTXOERC20 = ethers.utils.defaultAbiCoder.encode(
   [
     "tuple(uint256 chainId, address owner, uint256 value, uint256 fee, bytes32 txHash)",
   ],
-  [burnedUTXO]
+  [burnedUTXOERC20]
 );
 
 export const getBridgePoolMetamorphicAddress = (
