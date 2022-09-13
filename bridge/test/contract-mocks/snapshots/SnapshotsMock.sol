@@ -77,7 +77,7 @@ contract SnapshotsMock is Initializable, ImmutableValidatorPool, ISnapshots, Imm
         }
         // dummy to silence compiling warnings
         groupSignature_;
-        bClaims_; 
+        bClaims_;
         BClaimsParserLibrary.BClaims memory blockClaims;
         if (bClaims_.length == 1) {
             //If claims are not passed on call we create blockClaims from 0
