@@ -644,9 +644,7 @@ export const getFixture = async (
   )) as Dynamics;
 
   const erc20Mock = await (
-    await (
-      await ethers.getContractFactory("ERC20Mock")
-    ).deploy()
+    await (await ethers.getContractFactory("ERC20Mock")).deploy()
   ).deployed();
 
   const localERC20BridgePoolV1 = await deployStaticWithFactory(

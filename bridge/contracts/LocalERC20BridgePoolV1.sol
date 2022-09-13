@@ -10,12 +10,7 @@ import "contracts/utils/ERC20SafeTransfer.sol";
 
 /// @custom:salt LocalERC20BridgePoolV1
 /// @custom:deploy-type deployStatic
-contract LocalERC20BridgePoolV1 is
-    LocalERCBridgePoolBase,
-    Initializable,
-    ImmutableBridgeRouter
-{
-
+contract LocalERC20BridgePoolV1 is LocalERCBridgePoolBase, Initializable, ImmutableBridgeRouter {
     address internal _erc20Contract;
 
     function initialize(address erc20Contract_) public onlyFactory initializer {
@@ -25,15 +20,18 @@ contract LocalERC20BridgePoolV1 is
     /// @notice Transfer tokens from sender and emit a "Deposited" event for minting correspondent tokens in sidechain
     /// @param msgSender The address of ERC sender
     /// @param number The number of tokens to be deposited
-    function deposit(address msgSender, uint256 number) public onlyBridgeRouter override {
-        super.deposit(msgSender,number);
+    function deposit(address msgSender, uint256 number) public override onlyBridgeRouter {
+        super.deposit(msgSender, number);
         IERC20Transferable(_erc20Contract).transferFrom(msgSender, address(this), number);
     }
 
     /// @notice Transfer tokens to sender upon a verificable proof of burn in sidechain
     /// @param encodedMerkleProof The merkle proof
     /// @param encodedBurnedUTXO The burned UTXO
-    function withdraw(bytes memory encodedMerkleProof, bytes memory encodedBurnedUTXO) public override {
+    function withdraw(bytes memory encodedMerkleProof, bytes memory encodedBurnedUTXO)
+        public
+        override
+    {
         super.withdraw(encodedMerkleProof, encodedBurnedUTXO);
         UTXO memory burnedUTXO = abi.decode(encodedBurnedUTXO, (UTXO));
         IERC20Transferable(_erc20Contract).transfer(msg.sender, burnedUTXO.value);
