@@ -16,14 +16,10 @@ import {
   CONTRACT_ADDR,
   DEFAULT_CONFIG_OUTPUT_DIR,
   DEPLOYED_PROXY,
-  DEPLOYED_STATIC,
   DEPLOY_CREATE,
   DEPLOY_PROXY,
-  DEPLOY_STATIC,
-  DEPLOY_TEMPLATE,
   INITIALIZER,
   ONLY_PROXY,
-  STATIC_DEPLOYMENT,
   UPGRADEABLE_DEPLOYMENT,
   UPGRADE_PROXY,
 } from "../constants";
@@ -151,7 +147,7 @@ export async function getDeployMetaArgs(
     initCallData: initCallData,
     constructorArgs: constructorArgs,
     outputFolder: outputFolder,
-    verify: verify
+    verify: verify,
   };
 }
 export async function getFactoryDeploymentArgs(
@@ -197,7 +193,7 @@ export async function getDeployUpgradeableProxyArgs(
     initCallData: initCallData,
     constructorArgs: constructorArgs,
     outputFolder: outputFolder,
-    verify: verify
+    verify: verify,
   };
 }
 

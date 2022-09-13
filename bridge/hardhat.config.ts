@@ -1,5 +1,6 @@
 import "@nomicfoundation/hardhat-chai-matchers";
 import "@nomiclabs/hardhat-ethers";
+import "@nomiclabs/hardhat-etherscan";
 import "@nomiclabs/hardhat-truffle5";
 import "@typechain/hardhat";
 import "hardhat-abi-exporter";
@@ -15,7 +16,6 @@ import "./scripts/generateImmutableAuth";
 import "./scripts/lib/alicenetFactoryTasks";
 import "./scripts/lib/alicenetTasks";
 import "./scripts/lib/gogogen";
-import "@nomiclabs/hardhat-etherscan";
 require("dotenv").config();
 
 /**
@@ -80,26 +80,30 @@ const config: HardhatUserConfig = {
       ],
     },
     goerli: {
-        url: process.env.GOERLI_ENDPOINT ? process.env.GOERLI_ENDPOINT : "http://127.0.0.1:8545",
-        gas: "auto",
-        gasMultiplier: 2,
-        gasPrice: "auto",
-        accounts: [
-            process.env.GOERLI_PK
-              ? process.env.GOERLI_PK
-              : "0x0000000000000000000000000000000000000000000000000000000000000000",
-          ],
-      },
-    main: {
-      url: process.env.MAIN_NET_ENDPOINT ? process.env.MAIN_NET_ENDPOINT : "http://127.0.0.1:8545",
+      url: process.env.GOERLI_ENDPOINT
+        ? process.env.GOERLI_ENDPOINT
+        : "http://127.0.0.1:8545",
       gas: "auto",
       gasMultiplier: 2,
       gasPrice: "auto",
       accounts: [
-          process.env.GOERLI_PK
-            ? process.env.GOERLI_PK
-            : "0x0000000000000000000000000000000000000000000000000000000000000000",
-        ],
+        process.env.GOERLI_PK
+          ? process.env.GOERLI_PK
+          : "0x0000000000000000000000000000000000000000000000000000000000000000",
+      ],
+    },
+    mainnet: {
+      url: process.env.MAINNET_ENDPOINT
+        ? process.env.MAINNET_ENDPOINT
+        : "http://127.0.0.1:8545",
+      gas: "auto",
+      gasMultiplier: 2,
+      gasPrice: "auto",
+      accounts: [
+        process.env.MAINNET_PK
+          ? process.env.MAINNET_PK
+          : "0x0000000000000000000000000000000000000000000000000000000000000000",
+      ],
     },
     production: {
       url: "https://eth.alice.net/",
@@ -218,7 +222,7 @@ const config: HardhatUserConfig = {
     },
   },
   etherscan: {
-    apiKey: process.env.ETHERSCAN_API_KEY
+    apiKey: process.env.ETHERSCAN_API_KEY,
   },
   solidity: {
     compilers: [

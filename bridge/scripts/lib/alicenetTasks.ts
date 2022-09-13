@@ -11,9 +11,9 @@ import { task, types } from "hardhat/config";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 // import { ValidatorPool } from "../../typechain-types";
 import axios from "axios";
+import { getGasPrices } from "./alicenetFactoryTasks";
 import { DEFAULT_CONFIG_OUTPUT_DIR } from "./constants";
 import { readDeploymentArgs } from "./deployment/deploymentConfigUtil";
-import { getGasPrices } from "./alicenetFactoryTasks";
 export type MultiCallArgsStruct = {
   target: string;
   value: BigNumberish;
@@ -287,11 +287,19 @@ task(
     const tokenIds: Array<BigNumber> = [];
     const epoch = BigNumber.from(101);
     const masterPublicKey = [
-      BigNumber.from("19973864405227474494428046886218960395017286398286997273859673757240376592503"),
-      BigNumber.from("3666564623138203565215945530726129772754495167220101411282198856069539995091"),
-      BigNumber.from("16839568499509318396654065605910525620620734593528167444141729662886794883267"),
-      BigNumber.from("4238394038888761339041070176707923282936512397513542246905279490862584218353")
-    ]
+      BigNumber.from(
+        "19973864405227474494428046886218960395017286398286997273859673757240376592503"
+      ),
+      BigNumber.from(
+        "3666564623138203565215945530726129772754495167220101411282198856069539995091"
+      ),
+      BigNumber.from(
+        "16839568499509318396654065605910525620620734593528167444141729662886794883267"
+      ),
+      BigNumber.from(
+        "4238394038888761339041070176707923282936512397513542246905279490862584218353"
+      ),
+    ];
     console.log("Master Public Key: " + masterPublicKey);
     const validatorAccounts = [
       "0xb80d6653f7e5b80dbbe8d0aa9f61b5d72e8028ad",
@@ -526,9 +534,10 @@ task("registerValidators", "registers validators")
     );
     console.log(tokenIds);
     console.log("Registering validators");
-    tx = await factory.multiCall([...approveTokens, regValidators], {
-      gasLimit: 30000000,
-    });
+    tx = await factory.multiCall(
+      [...approveTokens, regValidators],
+      await getGasPrices(hre)
+    );
     if (taskArgs.test) {
       await hre.network.provider.send("hardhat_mine", [
         hre.ethers.utils.hexValue(3),
@@ -722,6 +731,75 @@ task(
       await factory.lookup(
         hre.ethers.utils.formatBytes32String("ValidatorPool")
       )
+    );
+    await (
+      await factory
+        .connect(adminSigner)
+        .callAny(validatorPool.address, 0, input)
+    ).wait();
+  });
+
+task(
+  "change-interval-to-evict-validators",
+  "Task to change the interval to evict validators from the validator pool in case of no snapshots"
+)
+  .addParam(
+    "interval",
+    "The block internal without snapshots to evict validators from the validator pool"
+  )
+  .addParam(
+    "factoryAddress",
+    "the default factory address from factoryState will be used if not set"
+  )
+  .setAction(async (taskArgs, hre) => {
+    const { ethers } = hre;
+    const [admin] = await ethers.getSigners();
+    const adminSigner = await ethers.getSigner(admin.address);
+    const factory = await ethers.getContractAt(
+      "AliceNetFactory",
+      taskArgs.factoryAddress
+    );
+    const validatorPool = await hre.ethers.getContractAt(
+      "ValidatorPool",
+      await factory.lookup(
+        hre.ethers.utils.formatBytes32String("ValidatorPool")
+      )
+    );
+    const input = validatorPool.interface.encodeFunctionData(
+      "setMaxIntervalWithoutSnapshots",
+      [taskArgs.interval]
+    );
+    await (
+      await factory
+        .connect(adminSigner)
+        .callAny(validatorPool.address, 0, input)
+    ).wait();
+  });
+
+task(
+  "unregister-all-validators",
+  "Task to unregister all validators (in case of pause-consensus-on-arbitrary-height)"
+)
+  .addParam(
+    "factoryAddress",
+    "the default factory address from factoryState will be used if not set"
+  )
+  .setAction(async (taskArgs, hre) => {
+    const { ethers } = hre;
+    const [admin] = await ethers.getSigners();
+    const adminSigner = await ethers.getSigner(admin.address);
+    const factory = await ethers.getContractAt(
+      "AliceNetFactory",
+      taskArgs.factoryAddress
+    );
+    const validatorPool = await hre.ethers.getContractAt(
+      "ValidatorPool",
+      await factory.lookup(
+        hre.ethers.utils.formatBytes32String("ValidatorPool")
+      )
+    );
+    const input = validatorPool.interface.encodeFunctionData(
+      "unregisterAllValidators"
     );
     await (
       await factory
@@ -1359,7 +1437,10 @@ export async function stakeValidators(
     ]);
     stakeNFT.push(encodeMultiCallArgs(publicStakingAddress, 0, stakeToken));
   }
-  return factory.multiCall([approveAToken, ...stakeNFT], await getGasPrices(hre));
+  return factory.multiCall(
+    [approveAToken, ...stakeNFT],
+    await getGasPrices(hre)
+  );
 }
 
 export async function migrateSnapshotsAndValidators(
