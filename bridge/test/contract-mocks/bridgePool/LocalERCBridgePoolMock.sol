@@ -13,20 +13,18 @@ contract LocalERCBridgePoolMock is Initializable, LocalERCBridgePoolBase {
 
     /// @notice Transfer tokens from sender for minting them on sidechain
     /// @param msgSender The address of ERC sender
-    /// @param number The number of tokens to be deposited
-    function deposit(address msgSender, uint256 number) public override {
-        super.deposit(msgSender, number);
-        //IERC20Transferable(_ercContract).transferFrom(msgSender, address(this), number);
+    /// @param depositParameters_ encoded deposit parameters (ERC20:tokenAmount, ERC721:tokenId or ERC1155:tokenAmount+tokenId)
+    function deposit(address msgSender, bytes  calldata depositParameters_) public override {
+        super.deposit(msgSender, depositParameters_);
     }
 
     /// @notice Transfer tokens to sender upon a verificable proof of burn in sidechain
-    /// @param encodedMerkleProof The merkle proof
-    /// @param encodedBurnedUTXO The burned UTXO
-    function withdraw(bytes memory encodedMerkleProof, bytes memory encodedBurnedUTXO)
+    /// @param encodedBurnedUTXO encoded UTXO burned in sidechain
+    /// @param encodedMerkleProof merkle proof of burn
+    function withdraw( bytes memory encodedBurnedUTXO, bytes memory encodedMerkleProof)
         public
         override
     {
-        super.withdraw(encodedMerkleProof, encodedBurnedUTXO);
-        // IERC20Transferable(_ercContract).transfer(msg.sender, 1);
+        super.withdraw(encodedBurnedUTXO, encodedMerkleProof);
     }
 }
