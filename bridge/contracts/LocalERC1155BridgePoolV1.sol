@@ -2,7 +2,6 @@
 pragma solidity ^0.8.16;
 import "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
 import "contracts/interfaces/IERC1155Transferable.sol";
-import "contracts/interfaces/IBridgePool.sol";
 import "contracts/LocalERCBridgePoolBase.sol";
 import "contracts/utils/ImmutableAuth.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
@@ -10,7 +9,6 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 /// @custom:salt LocalERC1155BridgePoolV1
 /// @custom:deploy-type deployStatic
 contract LocalERC1155BridgePoolV1 is
-    IBridgePool,
     ERC1155Holder,
     LocalERCBridgePoolBase,
     Initializable,
@@ -50,11 +48,8 @@ contract LocalERC1155BridgePoolV1 is
         public
         override
     {
-        super.verifyMerkleProof(encodedMerkleProof);
+        super.withdraw(encodedMerkleProof, encodedBurnedUTXO);
         UTXO memory burnedUTXO = abi.decode(encodedBurnedUTXO, (UTXO));
-        if (burnedUTXO.owner != msg.sender) {
-            revert LocalERCBridgePoolBaseErrors.ReceiverIsNotOwnerOnProofOfBurnUTXO();
-        }
         IERC1155Transferable(_erc1155Contract).safeTransferFrom(
             address(this),
             msg.sender,

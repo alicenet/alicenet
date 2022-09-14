@@ -31,13 +31,26 @@ abstract contract LocalERCBridgePoolBase is IBridgePool, ImmutableSnapshots {
 
     constructor() ImmutableFactory(msg.sender) {}
 
+    /// @notice Transfer ERC20 or ERC721 tokens from sender for minting them on sidechain
+    /// @param msgSender The address of ERC sender
+    /// @param depositParameters encoded deposit parameters (ERC20:tokenAmount, ERC721:tokenId or ERC1155:tokenAmount+tokenId)
+    function deposit(address msgSender, bytes calldata depositParameters) public virtual {}
+
     /// @notice Transfer tokens to sender upon a verificable proof of burn in sidechain
     /// @param encodedMerkleProof The merkle proof
-    function verifyMerkleProof(bytes memory encodedMerkleProof) public virtual {
+    /// @param encodedBurnedUTXO encoded burned UTXO
+    function withdraw(bytes memory encodedMerkleProof, bytes memory encodedBurnedUTXO)
+        public
+        virtual
+    {
         BClaimsParserLibrary.BClaims memory bClaims = Snapshots(_snapshotsAddress())
             .getBlockClaimsFromLatestSnapshot();
         MerkleProofParserLibrary.MerkleProof memory merkleProof = encodedMerkleProof
             .extractMerkleProof();
         merkleProof.verifyInclusion(bClaims.stateRoot);
+        UTXO memory burnedUTXO = abi.decode(encodedBurnedUTXO, (UTXO));
+        if (burnedUTXO.owner != msg.sender) {
+            revert LocalERCBridgePoolBaseErrors.ReceiverIsNotOwnerOnProofOfBurnUTXO();
+        }
     }
 }
