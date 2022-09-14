@@ -1,7 +1,6 @@
 import { defaultAbiCoder } from "ethers/lib/utils";
 import hre, { ethers } from "hardhat";
 
-export const tokenAmount = 100;
 // The following merkle proof and stateRoot values can be obtained from accusation_builder_test.go execution
 export const merkleProof =
   "0x010005cda80a6c60e1215c1882b25b4744bd9d95c1218a2fd17827ab809c68196fd9bf0000000000000000000000000000000000000000000000000000000000000000af469f3b9864a5132323df8bdd9cbd59ea728cd7525b65252133a5a02f1566ee00010003a8793650a7050ac58cf53ea792426b97212251673788bf0b4045d0bb5bdc3843aafb9eb5ced6edc2826e734abad6235c8cf638c812247fd38f04e7080d431933b9c6d6f24756341fde3e8055dd3a83743a94dddc122ab3f32a3db0c4749ff57bad"; // capnproto
@@ -26,37 +25,28 @@ export function getMockBlockClaimsForStateRoot(stateRoot: string) {
   );
 }
 
-export function getEncodedBurnedUTXO(userAddress: string, valueOrId: number) {
+export function getEncodedBurnedUTXO(
+  userAddress: string,
+  tokenId_: number,
+  tokenAmount_: number
+) {
   return defaultAbiCoder.encode(
     [
-      "tuple(uint256 chainId, address owner, uint256 value, uint256 fee, bytes32 txHash)",
+      "tuple(uint256 chainId, address owner, uint256 tokenId, uint256 tokenAmount, uint256 fee, bytes32 txHash)",
     ],
     [
       {
         chainId: 0,
         owner: userAddress,
-        value: valueOrId,
+        tokenId: tokenId_,
+        tokenAmount: tokenAmount_,
         fee: 1,
-        txHash: ethers.constants.HashZero,
+        txHash:
+          "0x0000000000000000000000000000000000000000000000000000000000000000",
       },
     ]
   );
 }
-
-export const burnedUTXOERC20 = {
-  chainId: 0,
-  owner: "0x9AC1c9afBAec85278679fF75Ef109217f26b1417",
-  value: tokenAmount,
-  fee: 1,
-  txHash: "0x0000000000000000000000000000000000000000000000000000000000000000",
-};
-
-export const encodedBurnedUTXOERC20 = ethers.utils.defaultAbiCoder.encode(
-  [
-    "tuple(uint256 chainId, address owner, uint256 value, uint256 fee, bytes32 txHash)",
-  ],
-  [burnedUTXOERC20]
-);
 
 export const getBridgePoolMetamorphicAddress = (
   factoryAddress: string,
