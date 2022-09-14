@@ -35,7 +35,7 @@ describe("Testing BridgePool Deposit/Withdraw for tokenType ERC721", async () =>
       Buffer.from("0x0"),
       encodedMockBlockClaims
     );
-    encodedBurnedUTXO = getEncodedBurnedUTXO(user.address);
+    encodedBurnedUTXO = getEncodedBurnedUTXO(user.address, tokenId, tokenAmount);
     merkleProofLibraryErrors = await (
       await (
         await ethers.getContractFactory("MerkleProofLibraryErrors")
