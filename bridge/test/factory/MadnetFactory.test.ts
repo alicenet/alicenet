@@ -305,6 +305,53 @@ describe("AliceNet Contract Factory", () => {
     await checkMockInit(mockInitAddr, 2);
   });
 
+  it("delegatecallany", async () => {
+    const factory = await deployFactory();
+    expect(await factory.owner()).to.equal(firstOwner);
+    // deploy an instance of mock logic for factory
+    const mockFactoryBase = await ethers.getContractFactory("MockFactory");
+    const mockFactoryInstance = await mockFactoryBase.deploy();
+    // generate the call state for the factory instance
+    const mfEncode = await ethers.getContractFactory("MockFactory");
+    let setOwner = mfEncode.interface.encodeFunctionData("setOwner", [
+      accounts[2],
+    ]);
+    // delegate call into the factory and change the owner
+    let txResponse = await factory.delegateCallAny(
+      mockFactoryInstance.address,
+      setOwner
+    );
+    await expectTxSuccess(txResponse);
+    let owner = await factory.owner();
+    expect(owner).to.equal(accounts[2]);
+    setOwner = await mfEncode.interface.encodeFunctionData("setOwner", [
+      accounts[0],
+    ]);
+    const signers = await ethers.getSigners();
+    const factoryBase = (
+      await ethers.getContractFactory(ALICENET_FACTORY)
+    ).connect(signers[2]);
+    const factory2 = factoryBase.attach(factory.address);
+    txResponse = await factory2.delegateCallAny(
+      mockFactoryInstance.address,
+      setOwner
+    );
+    await expectTxSuccess(txResponse);
+    owner = await factory.owner();
+    expect(owner).to.equal(accounts[0]);
+  });
+
+  it("deploys a mock contract, calls payMe from factory with delegateCallAny", async () => {
+    const factory = await deployFactory();
+    const mockFactory = await ethers.getContractFactory(MOCK);
+    const mock = await mockFactory.deploy(2, "s");
+    const callData = mockFactory.interface.encodeFunctionData("payMe");
+    await factory.delegateCallAny(mock.address, callData, {
+      value: 2,
+    });
+    expect(await ethers.provider.getBalance(factory.address)).to.equal(2)
+  });
+
   it("upgrade proxy through factory", async () => {
     const factory = await deployFactory();
     const endPointLockableFactory = await ethers.getContractFactory(
