@@ -21,7 +21,7 @@ let bridgeRouter: any;
 let initialUserBalance: any;
 let initialBridgePoolBalance: any;
 let merkleProofLibraryErrors: any;
-let encodedBurnedUTXO:any;
+let encodedBurnedUTXO: any;
 const tokenId = 1;
 const tokenAmount = 1;
 
@@ -45,8 +45,7 @@ describe("Testing BridgePool Deposit/Withdraw for tokenType ERC721", async () =>
     bridgeRouter = await getSimulatedBridgeRouter(fixture.factory.address);
     bridgePool = fixture.localERC721BridgePoolV1 as IBridgePool;
     fixture.erc721Mock.mint(user.address, tokenId);
-    fixture.erc721Mock.connect(user)
-      .approve(bridgePool.address, tokenId);
+    fixture.erc721Mock.connect(user).approve(bridgePool.address, tokenId);
     initialUserBalance = await fixture.erc721Mock.balanceOf(user.address);
     initialBridgePoolBalance = await fixture.erc721Mock.balanceOf(
       bridgePool.address
@@ -54,7 +53,9 @@ describe("Testing BridgePool Deposit/Withdraw for tokenType ERC721", async () =>
   });
 
   it("Should make a deposit", async () => {
-    await bridgePool.connect(bridgeRouter).deposit(user.address, encodedDepositParameters);
+    await bridgePool
+      .connect(bridgeRouter)
+      .deposit(user.address, encodedDepositParameters);
     expect(await fixture.erc721Mock.balanceOf(user.address)).to.be.eq(
       initialUserBalance - tokenAmount
     );
@@ -65,10 +66,10 @@ describe("Testing BridgePool Deposit/Withdraw for tokenType ERC721", async () =>
 
   it("Should make a withdraw for amount specified on informed burned UTXO upon proof verification", async () => {
     // Make first a deposit to withdraw afterwards
-    await bridgePool.connect(bridgeRouter).deposit(user.address, encodedDepositParameters);
     await bridgePool
-      .connect(user)
-      .withdraw(merkleProof, encodedBurnedUTXO);
+      .connect(bridgeRouter)
+      .deposit(user.address, encodedDepositParameters);
+    await bridgePool.connect(user).withdraw(merkleProof, encodedBurnedUTXO);
     expect(await fixture.erc721Mock.balanceOf(user.address)).to.be.eq(
       initialUserBalance
     );
@@ -79,9 +80,7 @@ describe("Testing BridgePool Deposit/Withdraw for tokenType ERC721", async () =>
 
   it("Should not make a withdraw for amount specified on informed burned UTXO with wrong merkle proof", async () => {
     await expect(
-      bridgePool
-        .connect(user)
-        .withdraw(wrongMerkleProof, encodedBurnedUTXO)
+      bridgePool.connect(user).withdraw(wrongMerkleProof, encodedBurnedUTXO)
     ).to.be.revertedWithCustomError(
       merkleProofLibraryErrors,
       "ProofDoesNotMatchTrieRoot"

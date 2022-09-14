@@ -32,14 +32,17 @@ export function getEncodedBurnedUTXO(userAddress: string) {
     [
       "tuple(uint256 chainId, address owner, uint256 tokenId_, uint256 tokenAmount_, uint256 fee, bytes32 txHash)",
     ],
-    [{
-      chainId: 0,
-      owner: userAddress,
-      tokenId_: tokenId,
-      tokenAmount_: tokenAmount,
-      fee: 1,
-      txHash: "0x0000000000000000000000000000000000000000000000000000000000000000",
-    }]
+    [
+      {
+        chainId: 0,
+        owner: userAddress,
+        tokenId_: tokenId,
+        tokenAmount_: tokenAmount,
+        fee: 1,
+        txHash:
+          "0x0000000000000000000000000000000000000000000000000000000000000000",
+      },
+    ]
   );
 }
 
@@ -93,5 +96,3 @@ export const getSimulatedBridgeRouter = async (
   });
   return ethers.provider.getSigner(bridgeRouterAddress);
 };
-
-
