@@ -25,6 +25,29 @@ export function getMockBlockClaimsForStateRoot(stateRoot: string) {
   );
 }
 
+export function getEncodedBurnedUTXO(
+  userAddress: string,
+  tokenId_: number,
+  tokenAmount_: number
+) {
+  return defaultAbiCoder.encode(
+    [
+      "tuple(uint256 chainId, address owner, uint256 tokenId, uint256 tokenAmount, uint256 fee, bytes32 txHash)",
+    ],
+    [
+      {
+        chainId: 0,
+        owner: userAddress,
+        tokenId: tokenId_,
+        tokenAmount: tokenAmount_,
+        fee: 1,
+        txHash:
+          "0x0000000000000000000000000000000000000000000000000000000000000000",
+      },
+    ]
+  );
+}
+
 export const getBridgePoolMetamorphicAddress = (
   factoryAddress: string,
   salt: string

@@ -5,6 +5,7 @@ import { IBridgePool } from "../../typechain-types";
 import { expect } from "../chai-setup";
 import { Fixture, getFixture } from "../setup";
 import {
+  getEncodedBurnedUTXO,
   getMockBlockClaimsForStateRoot,
   getSimulatedBridgeRouter,
   merkleProof,
@@ -20,8 +21,18 @@ let bridgeRouter: any;
 let initialUserBalance: any;
 let initialBridgePoolBalance: any;
 let merkleProofLibraryErrors: any;
-const tokenAmount = 1;
+let encodedBurnedUTXO: any;
 const tokenId = 100;
+const tokenAmount = 1;
+const encodedDepositParameters = defaultAbiCoder.encode(
+  ["tuple(uint256 tokenId_, uint256 tokenAmount_)"],
+  [
+    {
+      tokenId_: tokenId,
+      tokenAmount_: tokenAmount,
+    },
+  ]
+);
 
 describe("Testing BridgePool Deposit/Withdraw for tokenType ERC1155", async () => {
   beforeEach(async () => {
@@ -32,6 +43,11 @@ describe("Testing BridgePool Deposit/Withdraw for tokenType ERC1155", async () =
     await fixture.snapshots.snapshot(
       Buffer.from("0x0"),
       encodedMockBlockClaims
+    );
+    encodedBurnedUTXO = getEncodedBurnedUTXO(
+      user.address,
+      tokenId,
+      tokenAmount
     );
     merkleProofLibraryErrors = await (
       await (
@@ -72,9 +88,7 @@ describe("Testing BridgePool Deposit/Withdraw for tokenType ERC1155", async () =
     await bridgePool
       .connect(bridgeRouter)
       .deposit(user.address, encodedDepositParameters);
-    await bridgePool
-      .connect(user)
-      .withdraw(merkleProof, encodedBurnedUTXOERC1155);
+    await bridgePool.connect(user).withdraw(merkleProof, encodedBurnedUTXO);
     expect(await fixture.erc1155Mock.balanceOf(user.address, tokenId)).to.be.eq(
       initialUserBalance
     );
@@ -85,9 +99,7 @@ describe("Testing BridgePool Deposit/Withdraw for tokenType ERC1155", async () =
 
   it("Should not make a withdraw for amount specified on informed burned UTXO with wrong merkle proof", async () => {
     await expect(
-      bridgePool
-        .connect(user)
-        .withdraw(wrongMerkleProof, encodedBurnedUTXOERC1155)
+      bridgePool.connect(user).withdraw(wrongMerkleProof, encodedBurnedUTXO)
     ).to.be.revertedWithCustomError(
       merkleProofLibraryErrors,
       "ProofDoesNotMatchTrieRoot"
@@ -104,7 +116,7 @@ describe("Testing BridgePool Deposit/Withdraw for tokenType ERC1155", async () =
       encodedMockBlockClaims
     );
     await expect(
-      bridgePool.connect(user).withdraw(merkleProof, encodedBurnedUTXOERC1155)
+      bridgePool.connect(user).withdraw(merkleProof, encodedBurnedUTXO)
     ).to.be.revertedWithCustomError(
       merkleProofLibraryErrors,
       "ProofDoesNotMatchTrieRoot"
@@ -113,37 +125,10 @@ describe("Testing BridgePool Deposit/Withdraw for tokenType ERC1155", async () =
 
   it("Should not make a withdraw to an address that is not the owner in informed burned UTXO", async () => {
     await expect(
-      bridgePool.connect(user2).withdraw(merkleProof, encodedBurnedUTXOERC1155)
+      bridgePool.connect(user2).withdraw(merkleProof, encodedBurnedUTXO)
     ).to.be.revertedWithCustomError(
       bridgePool,
       "ReceiverIsNotOwnerOnProofOfBurnUTXO"
     );
   });
 });
-
-const encodedDepositParameters = defaultAbiCoder.encode(
-  ["tuple(uint256 tokenId_, uint256 tokenAmount_)"],
-  [
-    {
-      tokenId_: tokenId,
-      tokenAmount_: tokenAmount,
-    },
-  ]
-);
-
-const encodedBurnedUTXOERC1155 = ethers.utils.defaultAbiCoder.encode(
-  [
-    "tuple(uint256 chainId, address owner, uint256 tokenId_, uint256 tokenAmount_, uint256 fee, bytes32 txHash)",
-  ],
-  [
-    {
-      chainId: 0,
-      owner: "0x9AC1c9afBAec85278679fF75Ef109217f26b1417",
-      tokenId_: tokenId,
-      tokenAmount_: tokenAmount,
-      fee: 1,
-      txHash:
-        "0x0000000000000000000000000000000000000000000000000000000000000000",
-    },
-  ]
-);
