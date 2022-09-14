@@ -6,5 +6,5 @@ interface IBridgePool {
 
     function deposit(address msgSender, bytes calldata depositParameters) external;
 
-    function withdraw(bytes memory encodedMerkleProof, bytes memory encodedBurnedUTXO) external;
+    function withdraw(bytes memory encodedBurnedUTXO, bytes memory encodedMerkleProof) external;
 }
