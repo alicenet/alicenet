@@ -51,6 +51,20 @@ interface IDynamics {
         bytes32 binaryHash
     ) external;
 
+    function setMinProposalTimeout(uint24 minProposalTimeout_) external;
+
+    function setMinPreVoteTimeout(uint32 minPreVoteTimeout_) external;
+
+    function setMinPreCommitTimeout(uint32 minPreCommitTimeout_) external;
+
+    function setMinMaxBlockSize(uint32 minMaxBlockSize_) external;
+
+    function setMinDataStoreFee(uint64 minDataStoreFee_) external;
+
+    function setMinMinScaledTransactionFee(uint128 minMinScaledTransactionFee_) external;
+
+    function setMinValueStoreFee(uint64 minValueStoreFee_) external;
+
     function setConfiguration(Configuration calldata newConfig) external;
 
     function deployStorage(bytes calldata data) external returns (address contractAddr);

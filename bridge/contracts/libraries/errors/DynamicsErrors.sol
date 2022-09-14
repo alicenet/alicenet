@@ -13,4 +13,12 @@ library DynamicsErrors {
     error DynamicValueNotFound(uint256 epoch);
     error InvalidAliceNetNodeHash(bytes32 sentHash, bytes32 currentHash);
     error InvalidAliceNetNodeVersion(CanonicalVersion newVersion, CanonicalVersion current);
+    error InvalidEncoderVersion(Version actual, Version expected);
+    error InvalidProposalTimeout(uint24 actual, uint24 expected);
+    error InvalidPreVoteTimeout(uint32 actual, uint32 expected);
+    error InvalidPreCommitTimeout(uint32 actual, uint32 expected);
+    error InvalidMaxBlockSize(uint32 actual, uint32 expected);
+    error InvalidMinDataStoreFee(uint64 actual, uint64 expected);
+    error InvalidMinValueStoreFee(uint64 actual, uint64 expected);
+    error InvalidMinScaledTransactionFee(uint128 actual, uint128 expected);
 }
