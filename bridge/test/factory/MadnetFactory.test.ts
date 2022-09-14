@@ -40,6 +40,52 @@ describe("AliceNet Contract Factory", () => {
     expect(await factory.owner()).to.equal(accounts[1]);
   });
 
+  it("adds a new external contract to the externalContractRegistry with salt", async () => {
+    const factory = await deployFactory();
+    const salt = ethers.utils.formatBytes32String("test");
+    const mockEndPointBase = await ethers.getContractFactory("MockEndPoint");
+    const mockEndPoint = await mockEndPointBase.deploy();
+    const lookupBefore = await factory.lookup(salt);
+    const txResponse = await factory.addNewExternalContract(
+      salt,
+      mockEndPoint.address
+    );
+    await txResponse.wait();
+    const lookupAfter = await factory.lookup(salt);
+    expect(lookupBefore).to.not.equal(lookupAfter);
+    expect(lookupAfter).to.equal(mockEndPoint.address);
+  });
+
+  it("onlyOwner should be able add new external contract", async () => {
+    const factory = await deployFactory();
+    const salt = ethers.utils.formatBytes32String("test");
+    const mockEndPointBase = await ethers.getContractFactory("MockEndPoint");
+    const mockEndPoint = await mockEndPointBase.deploy();
+    const signers = await ethers.getSigners();
+    const txResponse = factory
+      .connect(signers[1])
+      .addNewExternalContract(salt, mockEndPoint.address);
+    await expect(txResponse).to.be.revertedWithCustomError(
+      factory,
+      "Unauthorized"
+    );
+  });
+
+  it("should not allow changing address of registered salt", async () => {
+    const factory = await deployFactory();
+    const salt = ethers.utils.formatBytes32String("test");
+    const mockEndPointBase = await ethers.getContractFactory("MockEndPoint");
+    const mockEndPoint = await mockEndPointBase.deploy();
+    let txResponse = factory.addNewExternalContract(salt, mockEndPoint.address);
+    await (await txResponse).wait();
+    const mockEndPoint2 = await mockEndPointBase.deploy();
+    txResponse = factory.addNewExternalContract(salt, mockEndPoint2.address);
+    await expect(txResponse).to.be.revertedWithCustomError(
+      factory,
+      "SaltAlreadyInUse"
+    );
+  });
+
   it("get owner", async () => {
     const factory = await deployFactory();
     const owner = await factory.owner();
