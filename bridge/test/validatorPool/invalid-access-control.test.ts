@@ -1,8 +1,13 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { ethers } from "hardhat";
+import { BytesLike } from "ethers";
+import { ethers, network } from "hardhat";
 import { ValidatorPool } from "../../typechain-types";
 import { expect } from "../chai-setup";
-import { Fixture, getFixture } from "../setup";
+import {
+  Fixture,
+  getContractAddressFromDeployedRawEvent,
+  getFixture,
+} from "../setup";
 
 describe("Initialization", async function () {
   let fixture: Fixture;
@@ -25,9 +30,17 @@ describe("Initialization", async function () {
   });
 
   it("Only factory should be allowed to call initialize", async () => {
-    const validatorPool = await (
+    const deployData = (
       await ethers.getContractFactory("ValidatorPool")
-    ).deploy();
+    ).getDeployTransaction().data as BytesLike;
+    await network.provider.send("evm_setBlockGasLimit", ["0x3000000000000000"]);
+    const publicStakingAddress = await getContractAddressFromDeployedRawEvent(
+      await fixture.factory.deployCreate(deployData)
+    );
+    const validatorPool = await ethers.getContractAt(
+      "ValidatorPool",
+      publicStakingAddress
+    );
     const [, user] = await ethers.getSigners();
     await expect(
       validatorPool.connect(user).initialize(1, 2, 3, 4)
