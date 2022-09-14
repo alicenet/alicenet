@@ -27,36 +27,31 @@ export function getMockBlockClaimsForStateRoot(stateRoot: string) {
   );
 }
 
-export function getEncodedBurnedUTXO(userAddress: string, valueOrId: number) {
-  return defaultAbiCoder.encode(
-    [
-      "tuple(uint256 chainId, address owner, uint256 value, uint256 fee, bytes32 txHash)",
-    ],
-    [
-      {
-        chainId: 0,
-        owner: userAddress,
-        value: valueOrId,
-        fee: 1,
-        txHash: ethers.constants.HashZero,
-      },
-    ]
-  );
-}
-
-export const burnedUTXOERC1155 = {
-  chainId: 0,
-  owner: "0x9AC1c9afBAec85278679fF75Ef109217f26b1417",
-  value: tokenId,
-  fee: 1,
-  txHash: "0x0000000000000000000000000000000000000000000000000000000000000000",
-};
+export const encodedDepositParameters = defaultAbiCoder.encode(
+  ["tuple(uint256 tokenId_, uint256 tokenAmount_)"],
+  [
+    {
+      tokenId_: tokenId,
+      tokenAmount_: tokenAmount,
+    },
+  ]
+);
 
 export const encodedBurnedUTXOERC1155 = ethers.utils.defaultAbiCoder.encode(
   [
-    "tuple(uint256 chainId, address owner, uint256 value, uint256 fee, bytes32 txHash)",
+    "tuple(uint256 chainId, address owner, uint256 tokenId_, uint256 tokenAmount_, uint256 fee, bytes32 txHash)",
   ],
-  [burnedUTXOERC1155]
+  [
+    {
+      chainId: 0,
+      owner: "0x9AC1c9afBAec85278679fF75Ef109217f26b1417",
+      tokenId_: tokenId,
+      tokenAmount_: tokenAmount,
+      fee: 1,
+      txHash:
+        "0x0000000000000000000000000000000000000000000000000000000000000000",
+    },
+  ]
 );
 
 export const getBridgePoolMetamorphicAddress = (

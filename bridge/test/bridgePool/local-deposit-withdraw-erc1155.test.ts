@@ -1,11 +1,11 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { defaultAbiCoder } from "ethers/lib/utils";
 import { ethers } from "hardhat";
 import { IBridgePool } from "../../typechain-types";
 import { expect } from "../chai-setup";
 import { Fixture, getFixture } from "../setup";
 import {
   encodedBurnedUTXOERC1155,
+  encodedDepositParameters,
   getMockBlockClaimsForStateRoot,
   getSimulatedBridgeRouter,
   merkleProof,
@@ -23,16 +23,6 @@ let bridgeRouter: any;
 let initialUserBalance: any;
 let initialBridgePoolBalance: any;
 let merkleProofLibraryErrors: any;
-const erc1155data = {
-  it: "ERC1155",
-  options: {
-    ercContractName: "erc1155Mock",
-    tokenType: 1,
-    bridgeImpl: "localERC1155BridgePoolV1",
-    quantity: tokenAmount,
-    errorReason: "ERC1155: insufficient allowance",
-  },
-};
 
 describe("Testing BridgePool Deposit/Withdraw for tokenType ERC1155", async () => {
   beforeEach(async () => {
@@ -51,48 +41,47 @@ describe("Testing BridgePool Deposit/Withdraw for tokenType ERC1155", async () =
     ).deployed();
     // Simulate a bridge router with some gas for transactions
     bridgeRouter = await getSimulatedBridgeRouter(fixture.factory.address);
-    bridgePool = fixture[erc1155data.options.bridgeImpl] as IBridgePool;
-    fixture[erc1155data.options.ercContractName].mint(user.address, tokenId, tokenAmount);
-    fixture[erc1155data.options.ercContractName]
+    bridgePool = fixture.localERC1155BridgePoolV1 as IBridgePool;
+    fixture.erc1155Mock.mint(user.address, tokenId, tokenAmount);
+    fixture.erc1155Mock
       .connect(user)
       .setApprovalForAll(bridgePool.address, true);
-      initialUserBalance = await fixture.erc1155Mock.balanceOf(user.address,tokenId);
-      initialBridgePoolBalance = await fixture.erc1155Mock.balanceOf(
-      bridgePool.address, tokenId
-      );
+    initialUserBalance = await fixture.erc1155Mock.balanceOf(
+      user.address,
+      tokenId
+    );
+    initialBridgePoolBalance = await fixture.erc1155Mock.balanceOf(
+      bridgePool.address,
+      tokenId
+    );
   });
 
   it("Should make a deposit", async () => {
-    const depositParameters = defaultAbiCoder.encode([
-      "tuple(uint256 tokenId, uint256 tokenAmount)",
-    ],
-    [
-      {
-        tokenId: 1,
-        tokenAmount: 100,
-      },
-    ])
-    await bridgePool.connect(bridgeRouter).deposit(user.address, depositParameters);
-    expect(await fixture.erc1155Mock.balanceOf(user.address)).to.be.eq(
+    await bridgePool
+      .connect(bridgeRouter)
+      .deposit(user.address, encodedDepositParameters);
+    expect(await fixture.erc1155Mock.balanceOf(user.address, tokenId)).to.be.eq(
       initialUserBalance - tokenAmount
     );
-    expect(await fixture.erc1155Mock.balanceOf(bridgePool.address)).to.be.eq(
-      initialBridgePoolBalance + tokenAmount
-    );
+    expect(
+      await fixture.erc1155Mock.balanceOf(bridgePool.address, tokenId)
+    ).to.be.eq(initialBridgePoolBalance + tokenAmount);
   });
 
-/*   it("Should make a withdraw for amount specified on informed burned UTXO upon proof verification", async () => {
+  it("Should make a withdraw for amount specified on informed burned UTXO upon proof verification", async () => {
     // Make first a deposit to withdraw afterwards
-    await bridgePool.connect(bridgeRouter).deposit(user.address, tokenId);
+    await bridgePool
+      .connect(bridgeRouter)
+      .deposit(user.address, encodedDepositParameters);
     await bridgePool
       .connect(user)
       .withdraw(merkleProof, encodedBurnedUTXOERC1155);
-    expect(await fixture.erc1155Mock.balanceOf(user.address)).to.be.eq(
+    expect(await fixture.erc1155Mock.balanceOf(user.address, tokenId)).to.be.eq(
       initialUserBalance
     );
-    expect(await fixture.erc1155Mock.balanceOf(bridgePool.address)).to.be.eq(
-      initialBridgePoolBalance
-    );
+    expect(
+      await fixture.erc1155Mock.balanceOf(bridgePool.address, tokenId)
+    ).to.be.eq(initialBridgePoolBalance);
   });
 
   it("Should not make a withdraw for amount specified on informed burned UTXO with wrong merkle proof", async () => {
@@ -131,4 +120,4 @@ describe("Testing BridgePool Deposit/Withdraw for tokenType ERC1155", async () =
       "ReceiverIsNotOwnerOnProofOfBurnUTXO"
     );
   });
- */});
+});

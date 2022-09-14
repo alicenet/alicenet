@@ -15,20 +15,25 @@ abstract contract LocalERCBridgePoolBase is IBridgePool, ImmutableSnapshots {
     using MerkleProofParserLibrary for bytes;
     using MerkleProofLibrary for MerkleProofParserLibrary.MerkleProof;
 
-    constructor() ImmutableFactory(msg.sender) {}
+    struct UTXO {
+        uint32 chainID;
+        address owner;
+        uint256 tokenId;
+        uint256 tokenAmount;
+        uint256 fee;
+        bytes32 txHash;
+    }
 
-    /// @notice Transfer ERC20 or ERC721 tokens from sender for minting them on sidechain
-    /// @param msgSender The address of ERC sender
-    /// @param depositParameters encoded deposit parameters (tokenAmount, tokenId or tokenAmount+tokenId)
-    function deposit(address msgSender, bytes calldata depositParameters) public virtual {}
+    struct DepositParameters {
+        uint256 tokenId;
+        uint256 tokenAmount;
+    }
+
+    constructor() ImmutableFactory(msg.sender) {}
 
     /// @notice Transfer tokens to sender upon a verificable proof of burn in sidechain
     /// @param encodedMerkleProof The merkle proof
-    /// @param encodedBurnedUTXO The burned UTXO
-    function withdraw(bytes memory encodedMerkleProof, bytes memory encodedBurnedUTXO)
-        public
-        virtual
-    {
+    function verifyMerkleProof(bytes memory encodedMerkleProof) public virtual {
         BClaimsParserLibrary.BClaims memory bClaims = Snapshots(_snapshotsAddress())
             .getBlockClaimsFromLatestSnapshot();
         MerkleProofParserLibrary.MerkleProof memory merkleProof = encodedMerkleProof
