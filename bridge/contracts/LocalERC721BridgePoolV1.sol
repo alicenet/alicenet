@@ -23,10 +23,11 @@ contract LocalERC721BridgePoolV1 is
 
     /// @notice Transfer tokens from sender and emit a "Deposited" event for minting correspondent tokens in sidechain
     /// @param msgSender The address of ERC sender
-    /// @param number The number of tokens to be deposited
-    function deposit(address msgSender, uint256 number) public override onlyBridgeRouter {
-        super.deposit(msgSender, number);
-        IERC721Transferable(_erc721Contract).safeTransferFrom(msgSender, address(this), number);
+    /// @param depositParameters_ encoded deposit parameters (ERC20:tokenAmount, ERC721:tokenId or ERC1155:tokenAmount+tokenId)
+    function deposit(address msgSender, bytes calldata depositParameters_) public override onlyBridgeRouter {
+        super.deposit(msgSender, depositParameters_);
+        DepositParameters memory _depositParameters = abi.decode(depositParameters_, (DepositParameters));
+        IERC721Transferable(_erc721Contract).safeTransferFrom(msgSender, address(this), _depositParameters.tokenId);
     }
 
     /// @notice Transfer tokens to sender upon a verificable proof of burn in sidechain
@@ -41,7 +42,7 @@ contract LocalERC721BridgePoolV1 is
         IERC721Transferable(_erc721Contract).safeTransferFrom(
             address(this),
             msg.sender,
-            burnedUTXO.value
+            burnedUTXO.tokenId
         );
     }
 }
