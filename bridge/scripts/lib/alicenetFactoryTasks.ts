@@ -1100,10 +1100,13 @@ export const showState = async (message: string): Promise<void> => {
 
 export async function getGasPrices(hre: HardhatRuntimeEnvironment) {
   // get the latest block
-  let blockBaseFee = await hre.network.provider.send("eth_gasPrice");
+  const latestBlock = await hre.ethers.provider.getBlock("latest");
   // get the previous basefee from the latest block
-  blockBaseFee = BigNumber.from(blockBaseFee);
-  blockBaseFee = blockBaseFee.toBigInt();
+  const _blockBaseFee = latestBlock.baseFeePerGas;
+  if (_blockBaseFee === undefined || _blockBaseFee === null) {
+    throw new Error("undefined block base fee per gas");
+  }
+  const blockBaseFee = _blockBaseFee.toBigInt();
   // miner tip
   let maxPriorityFeePerGas: bigint;
   const network = await hre.ethers.provider.getNetwork();
