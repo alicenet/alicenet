@@ -3,6 +3,7 @@ pragma solidity ^0.8.16;
 import "contracts/utils/DeterministicAddress.sol";
 import "contracts/Proxy.sol";
 import "contracts/libraries/factory/AliceNetFactoryBase.sol";
+import "contracts/AToken.sol";
 
 contract AliceNetFactory is AliceNetFactoryBase {
     // AToken salt = Bytes32(AToken)
