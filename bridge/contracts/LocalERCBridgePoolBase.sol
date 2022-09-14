@@ -37,9 +37,9 @@ abstract contract LocalERCBridgePoolBase is IBridgePool, ImmutableSnapshots {
     function deposit(address msgSender, bytes calldata depositParameters) public virtual {}
 
     /// @notice Transfer tokens to sender upon a verificable proof of burn in sidechain
-    /// @param encodedMerkleProof The merkle proof
-    /// @param encodedBurnedUTXO encoded burned UTXO
-    function withdraw(bytes memory encodedMerkleProof, bytes memory encodedBurnedUTXO)
+    /// @param encodedBurnedUTXO encoded UTXO burned in sidechain
+    /// @param encodedMerkleProof merkle proof of burn
+    function withdraw(bytes memory encodedBurnedUTXO, bytes memory encodedMerkleProof)
         public
         virtual
     {
