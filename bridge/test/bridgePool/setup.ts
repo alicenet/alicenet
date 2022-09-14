@@ -1,8 +1,6 @@
 import { defaultAbiCoder } from "ethers/lib/utils";
 import hre, { ethers } from "hardhat";
 
-export const tokenAmount = 1;
-export const tokenId = 100;
 // The following merkle proof and stateRoot values can be obtained from accusation_builder_test.go execution
 export const merkleProof =
   "0x010005cda80a6c60e1215c1882b25b4744bd9d95c1218a2fd17827ab809c68196fd9bf0000000000000000000000000000000000000000000000000000000000000000af469f3b9864a5132323df8bdd9cbd59ea728cd7525b65252133a5a02f1566ee00010003a8793650a7050ac58cf53ea792426b97212251673788bf0b4045d0bb5bdc3843aafb9eb5ced6edc2826e734abad6235c8cf638c812247fd38f04e7080d431933b9c6d6f24756341fde3e8055dd3a83743a94dddc122ab3f32a3db0c4749ff57bad"; // capnproto
@@ -26,33 +24,6 @@ export function getMockBlockClaimsForStateRoot(stateRoot: string) {
     ]
   );
 }
-
-export const encodedDepositParameters = defaultAbiCoder.encode(
-  ["tuple(uint256 tokenId_, uint256 tokenAmount_)"],
-  [
-    {
-      tokenId_: tokenId,
-      tokenAmount_: tokenAmount,
-    },
-  ]
-);
-
-export const encodedBurnedUTXOERC1155 = ethers.utils.defaultAbiCoder.encode(
-  [
-    "tuple(uint256 chainId, address owner, uint256 tokenId_, uint256 tokenAmount_, uint256 fee, bytes32 txHash)",
-  ],
-  [
-    {
-      chainId: 0,
-      owner: "0x9AC1c9afBAec85278679fF75Ef109217f26b1417",
-      tokenId_: tokenId,
-      tokenAmount_: tokenAmount,
-      fee: 1,
-      txHash:
-        "0x0000000000000000000000000000000000000000000000000000000000000000",
-    },
-  ]
-);
 
 export const getBridgePoolMetamorphicAddress = (
   factoryAddress: string,

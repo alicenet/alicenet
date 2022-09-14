@@ -1,17 +1,14 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
+import { defaultAbiCoder } from "ethers/lib/utils";
 import { ethers } from "hardhat";
 import { IBridgePool } from "../../typechain-types";
 import { expect } from "../chai-setup";
 import { Fixture, getFixture } from "../setup";
 import {
-  encodedBurnedUTXOERC1155,
-  encodedDepositParameters,
   getMockBlockClaimsForStateRoot,
   getSimulatedBridgeRouter,
   merkleProof,
   stateRoot,
-  tokenAmount,
-  tokenId,
   wrongMerkleProof,
 } from "./setup";
 
@@ -23,6 +20,8 @@ let bridgeRouter: any;
 let initialUserBalance: any;
 let initialBridgePoolBalance: any;
 let merkleProofLibraryErrors: any;
+const tokenAmount = 1;
+const tokenId = 100;
 
 describe("Testing BridgePool Deposit/Withdraw for tokenType ERC1155", async () => {
   beforeEach(async () => {
@@ -121,3 +120,30 @@ describe("Testing BridgePool Deposit/Withdraw for tokenType ERC1155", async () =
     );
   });
 });
+
+const encodedDepositParameters = defaultAbiCoder.encode(
+  ["tuple(uint256 tokenId_, uint256 tokenAmount_)"],
+  [
+    {
+      tokenId_: tokenId,
+      tokenAmount_: tokenAmount,
+    },
+  ]
+);
+
+const encodedBurnedUTXOERC1155 = ethers.utils.defaultAbiCoder.encode(
+  [
+    "tuple(uint256 chainId, address owner, uint256 tokenId_, uint256 tokenAmount_, uint256 fee, bytes32 txHash)",
+  ],
+  [
+    {
+      chainId: 0,
+      owner: "0x9AC1c9afBAec85278679fF75Ef109217f26b1417",
+      tokenId_: tokenId,
+      tokenAmount_: tokenAmount,
+      fee: 1,
+      txHash:
+        "0x0000000000000000000000000000000000000000000000000000000000000000",
+    },
+  ]
+);
