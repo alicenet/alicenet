@@ -63,7 +63,7 @@ abstract contract AliceNetFactoryBase is DeterministicAddress, ProxyUpgrader {
      * constructor then sets proxyTemplate_ state var to the deployed proxy template address the deploy
      * account will be set as the first owner of the factory.
      */
-    constructor() {
+    constructor(address legacyToken_) {
         bytes memory proxyDeployCode = abi.encodePacked(
             //8 byte code copy constructor code
             _UNIVERSAL_DEPLOY_CODE,
@@ -86,6 +86,19 @@ abstract contract AliceNetFactoryBase is DeterministicAddress, ProxyUpgrader {
         _proxyTemplate = addr;
         //State var that stores the _owner address
         _owner = msg.sender;
+
+        // Deploying ALCA
+        bytes memory creationCode = abi.encodePacked(
+            type(AToken).creationCode,
+            bytes32(uint256(uint160(legacyToken_)))
+        );
+        address aTokenAddress;
+        assembly {
+            aTokenAddress := create2(0, add(creationCode, 0x20), mload(creationCode), _ATOKEN_SALT)
+        }
+        _codeSizeZeroRevert((_extCodeSize(aTokenAddress) != 0));
+        _aTokenAddress = aTokenAddress;
+        _aTokenCreationCodeHash = keccak256(abi.encodePacked(creationCode));
     }
 
     // solhint-disable payable-fallback
@@ -168,6 +181,22 @@ abstract contract AliceNetFactoryBase is DeterministicAddress, ProxyUpgrader {
      */
     function getNumContracts() public view returns (uint256) {
         return _contracts.length;
+    }
+
+    /**
+     * @dev getter function for retrieving the hash of the AToken creation code.
+     * @return the hash of the AToken creation code.
+     */
+    function getATokenCreationCodeHash() public view returns (bytes32) {
+        return _aTokenCreationCodeHash;
+    }
+
+    /**
+     * @dev getter function for retrieving the address of the AToken contract.
+     * @return AToken address.
+     */
+    function getATokenAddress() public view returns (address) {
+        return _aTokenAddress;
     }
 
     /**
