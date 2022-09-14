@@ -131,22 +131,6 @@
   {
     "inputs": [
       {
-        "internalType": "enum Version",
-        "name": "actual",
-        "type": "uint8"
-      },
-      {
-        "internalType": "enum Version",
-        "name": "expected",
-        "type": "uint8"
-      }
-    ],
-    "name": "InvalidEncoderVersion",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
         "internalType": "address",
         "name": "addr",
         "type": "address"
@@ -158,70 +142,6 @@
       }
     ],
     "name": "InvalidExtCodeSize",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint32",
-        "name": "actual",
-        "type": "uint32"
-      },
-      {
-        "internalType": "uint32",
-        "name": "expected",
-        "type": "uint32"
-      }
-    ],
-    "name": "InvalidMaxBlockSize",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint64",
-        "name": "actual",
-        "type": "uint64"
-      },
-      {
-        "internalType": "uint64",
-        "name": "expected",
-        "type": "uint64"
-      }
-    ],
-    "name": "InvalidMinDataStoreFee",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint128",
-        "name": "actual",
-        "type": "uint128"
-      },
-      {
-        "internalType": "uint128",
-        "name": "expected",
-        "type": "uint128"
-      }
-    ],
-    "name": "InvalidMinScaledTransactionFee",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint64",
-        "name": "actual",
-        "type": "uint64"
-      },
-      {
-        "internalType": "uint64",
-        "name": "expected",
-        "type": "uint64"
-      }
-    ],
-    "name": "InvalidMinValueStoreFee",
     "type": "error"
   },
   {
@@ -243,54 +163,6 @@
       }
     ],
     "name": "InvalidNodeId",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint32",
-        "name": "actual",
-        "type": "uint32"
-      },
-      {
-        "internalType": "uint32",
-        "name": "expected",
-        "type": "uint32"
-      }
-    ],
-    "name": "InvalidPreCommitTimeout",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint32",
-        "name": "actual",
-        "type": "uint32"
-      },
-      {
-        "internalType": "uint32",
-        "name": "expected",
-        "type": "uint32"
-      }
-    ],
-    "name": "InvalidPreVoteTimeout",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint24",
-        "name": "actual",
-        "type": "uint24"
-      },
-      {
-        "internalType": "uint24",
-        "name": "expected",
-        "type": "uint24"
-      }
-    ],
-    "name": "InvalidProposalTimeout",
     "type": "error"
   },
   {
@@ -918,97 +790,6 @@
       }
     ],
     "name": "setConfiguration",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint64",
-        "name": "minDataStoreFee_",
-        "type": "uint64"
-      }
-    ],
-    "name": "setMinDataStoreFee",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint32",
-        "name": "minMaxBlockSize_",
-        "type": "uint32"
-      }
-    ],
-    "name": "setMinMaxBlockSize",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint128",
-        "name": "minMinScaledTransactionFee_",
-        "type": "uint128"
-      }
-    ],
-    "name": "setMinMinScaledTransactionFee",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint32",
-        "name": "minPreCommitTimeout_",
-        "type": "uint32"
-      }
-    ],
-    "name": "setMinPreCommitTimeout",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint32",
-        "name": "minPreVoteTimeout_",
-        "type": "uint32"
-      }
-    ],
-    "name": "setMinPreVoteTimeout",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint24",
-        "name": "minProposalTimeout_",
-        "type": "uint24"
-      }
-    ],
-    "name": "setMinProposalTimeout",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint64",
-        "name": "minValueStoreFee_",
-        "type": "uint64"
-      }
-    ],
-    "name": "setMinValueStoreFee",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"

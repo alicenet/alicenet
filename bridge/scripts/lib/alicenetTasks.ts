@@ -808,6 +808,25 @@ task(
     ).wait();
   });
 
+task(
+  "lookup-contract-address",
+  "Task to get address of contract deployed by AliceNet factory"
+)
+  .addParam(
+    "factoryAddress",
+    "the default factory address from factoryState will be used if not set"
+  )
+  .addParam("salt", "contract salt, usually the contract name")
+  .setAction(async (taskArgs, hre) => {
+    const factory = await hre.ethers.getContractAt(
+      "AliceNetFactory",
+      taskArgs.factoryAddress
+    );
+    console.log(
+      await factory.lookup(hre.ethers.utils.formatBytes32String(taskArgs.salt))
+    );
+  });
+
 task("initializeEthdkg", "Start the ethdkg process")
   .addParam(
     "factoryAddress",

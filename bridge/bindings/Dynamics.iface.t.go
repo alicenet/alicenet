@@ -3,8 +3,6 @@
 package bindings
 
 import (
-	"math/big"
-
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/core/types"
 )
@@ -27,34 +25,6 @@ type IDynamicsTransactor interface {
 	//
 	// Solidity: function setConfiguration((uint128,uint128) newConfig) returns()
 	SetConfiguration(opts *bind.TransactOpts, newConfig Configuration) (*types.Transaction, error)
-	// SetMinDataStoreFee is a paid mutator transaction binding the contract method 0x5361cc6b.
-	//
-	// Solidity: function setMinDataStoreFee(uint64 minDataStoreFee_) returns()
-	SetMinDataStoreFee(opts *bind.TransactOpts, minDataStoreFee_ uint64) (*types.Transaction, error)
-	// SetMinMaxBlockSize is a paid mutator transaction binding the contract method 0x6aca1b3a.
-	//
-	// Solidity: function setMinMaxBlockSize(uint32 minMaxBlockSize_) returns()
-	SetMinMaxBlockSize(opts *bind.TransactOpts, minMaxBlockSize_ uint32) (*types.Transaction, error)
-	// SetMinMinScaledTransactionFee is a paid mutator transaction binding the contract method 0xddc9c616.
-	//
-	// Solidity: function setMinMinScaledTransactionFee(uint128 minMinScaledTransactionFee_) returns()
-	SetMinMinScaledTransactionFee(opts *bind.TransactOpts, minMinScaledTransactionFee_ *big.Int) (*types.Transaction, error)
-	// SetMinPreCommitTimeout is a paid mutator transaction binding the contract method 0x5129bfb9.
-	//
-	// Solidity: function setMinPreCommitTimeout(uint32 minPreCommitTimeout_) returns()
-	SetMinPreCommitTimeout(opts *bind.TransactOpts, minPreCommitTimeout_ uint32) (*types.Transaction, error)
-	// SetMinPreVoteTimeout is a paid mutator transaction binding the contract method 0x30d7649a.
-	//
-	// Solidity: function setMinPreVoteTimeout(uint32 minPreVoteTimeout_) returns()
-	SetMinPreVoteTimeout(opts *bind.TransactOpts, minPreVoteTimeout_ uint32) (*types.Transaction, error)
-	// SetMinProposalTimeout is a paid mutator transaction binding the contract method 0xfbffa08a.
-	//
-	// Solidity: function setMinProposalTimeout(uint24 minProposalTimeout_) returns()
-	SetMinProposalTimeout(opts *bind.TransactOpts, minProposalTimeout_ *big.Int) (*types.Transaction, error)
-	// SetMinValueStoreFee is a paid mutator transaction binding the contract method 0x47d3fdd0.
-	//
-	// Solidity: function setMinValueStoreFee(uint64 minValueStoreFee_) returns()
-	SetMinValueStoreFee(opts *bind.TransactOpts, minValueStoreFee_ uint64) (*types.Transaction, error)
 	// UpdateAliceNetNodeVersion is a paid mutator transaction binding the contract method 0xab8a8411.
 	//
 	// Solidity: function updateAliceNetNodeVersion(uint32 relativeUpdateEpoch, uint32 majorVersion, uint32 minorVersion, uint32 patch, bytes32 binaryHash) returns()

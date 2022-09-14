@@ -20,14 +20,6 @@ contract Dynamics is Initializable, IDynamics, ImmutableSnapshots {
     Configuration internal _configuration;
     CanonicalVersion internal _aliceNetCanonicalVersion;
 
-    uint24 internal _minProposalTimeout;
-    uint32 internal _minPreVoteTimeout;
-    uint32 internal _minPreCommitTimeout;
-    uint32 internal _minMaxBlockSize;
-    uint64 internal _minDataStoreFee;
-    uint64 internal _minValueStoreFee;
-    uint128 internal _minMinScaledTransactionFee;
-
     constructor() ImmutableFactory(msg.sender) ImmutableSnapshots() {}
 
     /// Initializes the dynamic value linked list and configurations.
@@ -47,11 +39,6 @@ contract Dynamics is Initializable, IDynamics, ImmutableSnapshots {
         // max 336 epochs (approx 1 month considering a snapshot every 2h)
         uint128 maxEpochsBetweenUpdates = 336;
         _configuration = Configuration(minEpochsBetweenUpdates, maxEpochsBetweenUpdates);
-        // setting minimum values
-        _minProposalTimeout = 3000;
-        _minPreVoteTimeout = 3000;
-        _minPreCommitTimeout = 3000;
-        _minMaxBlockSize = 1000000;
         _addNode(1, initialValues);
     }
 
@@ -104,48 +91,6 @@ contract Dynamics is Initializable, IDynamics, ImmutableSnapshots {
             patch,
             binaryHash
         );
-    }
-
-    /// Sets the minimum value to allow for a proposal timeout.
-    /// @param minProposalTimeout_ the new minimum value for the proposal timeout.
-    function setMinProposalTimeout(uint24 minProposalTimeout_) public onlyFactory {
-        _minProposalTimeout = minProposalTimeout_;
-    }
-
-    /// Sets the minimum value to allow for a pre-vote timeout.
-    /// @param minPreVoteTimeout_ the new minimum value for the pre-vote timeout.
-    function setMinPreVoteTimeout(uint32 minPreVoteTimeout_) public onlyFactory {
-        _minPreVoteTimeout = minPreVoteTimeout_;
-    }
-
-    /// Sets the minimum value to allow for a pre-commit timeout.
-    /// @param minPreCommitTimeout_ the new minimum value for the pre-commit timeout.
-    function setMinPreCommitTimeout(uint32 minPreCommitTimeout_) public onlyFactory {
-        _minPreCommitTimeout = minPreCommitTimeout_;
-    }
-
-    /// Sets the minimum value to allow for a the MaxBlockSize value.
-    /// @param minMaxBlockSize_ the new minimum value for the MaxBlockSize timeout.
-    function setMinMaxBlockSize(uint32 minMaxBlockSize_) public onlyFactory {
-        _minMaxBlockSize = minMaxBlockSize_;
-    }
-
-    /// Sets the minimum value to allow for a data store fee value.
-    /// @param minDataStoreFee_ the new minimum value for the data store fee timeout.
-    function setMinDataStoreFee(uint64 minDataStoreFee_) public onlyFactory {
-        _minDataStoreFee = minDataStoreFee_;
-    }
-
-    /// Sets the minimum value to allow for the min Scaled Transaction Fee value.
-    /// @param minMinScaledTransactionFee_ the new minimum value for the min Scaled Transaction Fee timeout.
-    function setMinMinScaledTransactionFee(uint128 minMinScaledTransactionFee_) public onlyFactory {
-        _minMinScaledTransactionFee = minMinScaledTransactionFee_;
-    }
-
-    /// Sets the minimum value to allow for a value store fee value.
-    /// @param minValueStoreFee_ the new minimum value for the value store fee timeout.
-    function setMinValueStoreFee(uint64 minValueStoreFee_) public onlyFactory {
-        _minValueStoreFee = minValueStoreFee_;
     }
 
     /// Sets the configuration for the dynamic system.
@@ -282,7 +227,6 @@ contract Dynamics is Initializable, IDynamics, ImmutableSnapshots {
     function _changeDynamicValues(uint32 relativeExecutionEpoch, DynamicValues memory newValue)
         internal
     {
-        _validateDynamicValues(newValue);
         _addNode(_computeExecutionEpoch(relativeExecutionEpoch), newValue);
     }
 
@@ -298,50 +242,6 @@ contract Dynamics is Initializable, IDynamics, ImmutableSnapshots {
         address dataAddress = _deployStorage(encodedData);
         _dynamicValues.addNode(executionEpoch, dataAddress);
         emit DynamicValueChanged(executionEpoch, encodedData);
-    }
-
-    // Internal function to validate if the dynamic values are valid.
-    // @param newValue DynamicValue struct with the new values.
-    function _validateDynamicValues(DynamicValues memory newValue) internal view {
-        if (newValue.encoderVersion != _CURRENT_VERSION) {
-            revert DynamicsErrors.InvalidEncoderVersion(newValue.encoderVersion, _CURRENT_VERSION);
-        }
-        if (newValue.proposalTimeout < _minProposalTimeout) {
-            revert DynamicsErrors.InvalidProposalTimeout(
-                newValue.proposalTimeout,
-                _minProposalTimeout
-            );
-        }
-        if (newValue.preVoteTimeout < _minPreVoteTimeout) {
-            revert DynamicsErrors.InvalidPreVoteTimeout(
-                newValue.preVoteTimeout,
-                _minPreVoteTimeout
-            );
-        }
-        if (newValue.preCommitTimeout < _minPreCommitTimeout) {
-            revert DynamicsErrors.InvalidPreCommitTimeout(
-                newValue.preCommitTimeout,
-                _minPreCommitTimeout
-            );
-        }
-        if (newValue.maxBlockSize < _minMaxBlockSize) {
-            revert DynamicsErrors.InvalidMaxBlockSize(newValue.maxBlockSize, _minMaxBlockSize);
-        }
-        if (newValue.dataStoreFee < _minDataStoreFee) {
-            revert DynamicsErrors.InvalidMinDataStoreFee(newValue.dataStoreFee, _minDataStoreFee);
-        }
-        if (newValue.valueStoreFee < _minValueStoreFee) {
-            revert DynamicsErrors.InvalidMinValueStoreFee(
-                newValue.valueStoreFee,
-                _minValueStoreFee
-            );
-        }
-        if (newValue.minScaledTransactionFee < _minMinScaledTransactionFee) {
-            revert DynamicsErrors.InvalidMinScaledTransactionFee(
-                newValue.minScaledTransactionFee,
-                _minMinScaledTransactionFee
-            );
-        }
     }
 
     // Internal function to compute the execution epoch. This function gets the
