@@ -286,7 +286,7 @@ describe("AliceNet Contract Factory", () => {
 
   it("callany", async () => {
     const factory = await deployFactory();
-    const salt = await getSalt();
+    const salt = getSalt();
     let txResponse = await deployCreate2Initializable(factory, salt);
     await expectTxSuccess(txResponse);
     const mockInitAddr = await getEventVar(
@@ -297,7 +297,7 @@ describe("AliceNet Contract Factory", () => {
     expect(mockInitAddr).to.not.be.equals(undefined);
     // call state to initialize mockInitializable
     const mockInitable = await ethers.getContractFactory(MOCK_INITIALIZABLE);
-    const initCallData = await mockInitable.interface.encodeFunctionData(
+    const initCallData = mockInitable.interface.encodeFunctionData(
       "initialize",
       [2]
     );
@@ -349,7 +349,7 @@ describe("AliceNet Contract Factory", () => {
     await factory.delegateCallAny(mock.address, callData, {
       value: 2,
     });
-    expect(await ethers.provider.getBalance(factory.address)).to.equal(2)
+    expect(await ethers.provider.getBalance(factory.address)).to.equal(2);
   });
 
   it("upgrade proxy through factory", async () => {
