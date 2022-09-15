@@ -87,17 +87,6 @@
   {
     "inputs": [
       {
-        "internalType": "address",
-        "name": "contractAddr",
-        "type": "address"
-      }
-    ],
-    "name": "InexistentRouterContract",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
         "internalType": "uint256",
         "name": "amount",
         "type": "uint256"

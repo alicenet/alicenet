@@ -33,19 +33,6 @@ export async function getTokenIdFromTx(ethers: any, tx: ContractTransaction) {
   return log.args[2];
 }
 
-async function waitBlocks(waitingBlocks: number, hre: any) {
-  let constBlock = await hre.ethers.provider.getBlockNumber();
-  const expectedBlock = constBlock + waitingBlocks;
-  console.log(
-    `Current block: ${constBlock} Waiting for ${waitingBlocks} blocks to be mined!`
-  );
-  while (constBlock < expectedBlock) {
-    constBlock = await hre.ethers.provider.getBlockNumber();
-    console.log(`Current block: ${constBlock}`);
-    await delay(10000);
-  }
-}
-
 task(
   "deployLegacyTokenAndUpdateDeploymentArgs",
   "Computes factory address and to the deploymentArgs file"
@@ -79,7 +66,7 @@ task(
       taskArgs.deploymentArgsTemplatePath
     );
 
-    const expectedContract = "contracts/AToken.sol:AToken";
+    const expectedContract = "contracts/AliceNetFactory.sol:AliceNetFactory";
     const expectedField = "legacyToken_";
     if (deploymentConfig.constructor[expectedContract] === undefined) {
       throw new Error(
@@ -93,10 +80,10 @@ task(
     console.log(`Admin address: ${admin.address}`);
 
     const legacyToken = await (
-      await hre.ethers.getContractFactory("LegacyToken")
-    )
-      .connect(admin)
-      .deploy();
+      await (await hre.ethers.getContractFactory("LegacyToken"))
+        .connect(admin)
+        .deploy()
+    ).deployed();
 
     console.log(
       `Minted ${await legacyToken.balanceOf(admin.address)} tokens for user: ${
@@ -112,6 +99,7 @@ task(
     const data = toml.stringify(deploymentConfig);
     fs.writeFileSync(taskArgs.outputFolder + "/deploymentArgsTemplate", data);
   });
+
 task("create-local-seed-node", "start and syncs a node with mainnet")
   .addOptionalParam(
     "configPath",
@@ -347,7 +335,7 @@ task(
       taskArgs.skipFirstTransaction === undefined ||
       taskArgs.skipFirstTransaction === false
     ) {
-      console.log("Minting and staking Atoken!");
+      console.log("Staking Atoken!");
       const contractTx = await stakeValidators(
         4,
         taskArgs.factoryAddress,
@@ -371,11 +359,10 @@ task(
           tokenIds.push(BigNumber.from(BigInt(event.topics[3])));
         }
       }
-      console.log(tokenIds);
-      await waitBlocks(3, hre);
+      console.log("minted the following tokens: ", tokenIds);
     }
 
-    console.log("register and migrate state");
+    console.log("registering and migrating state");
     const ethHeight = await hre.ethers.provider.getBlockNumber();
     const validatorIndexes = [1, 2, 3, 4];
     const contractTx = await migrateSnapshotsAndValidators(
@@ -394,9 +381,8 @@ task(
       groupSignatures,
       hre
     );
+    console.log("finished migration");
     await contractTx.wait(8);
-
-    await waitBlocks(3, hre);
   });
 async function getGroupSignatures(epoch: BigNumber) {
   let start = BigNumber.from(1);
@@ -405,19 +391,19 @@ async function getGroupSignatures(epoch: BigNumber) {
   if (epoch.gt(bufferSize)) {
     start = epoch.sub(bufferSize);
   }
-  console.log(epoch);
-  console.log(start);
-  console.log(start.lt(epoch));
+  console.log("epoch: ", epoch);
+  console.log("epoch start: ", start);
+  console.log("is epoch start less than epoch: ", start.lt(epoch));
   for (let i = start; i.lte(epoch); i = i.add(1)) {
     const height = i.mul(1024);
-    console.log(height);
+    console.log("retrieved alicenet height from rpc request: ", height);
     const response = await axios.post(
       "https://edge.alice.net/v1/get-block-header",
       { Height: height.toString() }
     );
     groupSignatures.push("0x" + response.data.BlockHeader.SigGroup);
   }
-  console.log(groupSignatures);
+  console.log("snapshot group signatures: ", groupSignatures);
   return groupSignatures;
 }
 
@@ -806,6 +792,25 @@ task(
         .connect(adminSigner)
         .callAny(validatorPool.address, 0, input)
     ).wait();
+  });
+
+task(
+  "lookup-contract-address",
+  "Task to get address of contract deployed by AliceNet factory"
+)
+  .addParam(
+    "factoryAddress",
+    "the default factory address from factoryState will be used if not set"
+  )
+  .addParam("salt", "contract salt, usually the contract name")
+  .setAction(async (taskArgs, hre) => {
+    const factory = await hre.ethers.getContractAt(
+      "AliceNetFactory",
+      taskArgs.factoryAddress
+    );
+    console.log(
+      await factory.lookup(hre.ethers.utils.formatBytes32String(taskArgs.salt))
+    );
   });
 
 task("initializeEthdkg", "Start the ethdkg process")

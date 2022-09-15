@@ -3,8 +3,17 @@ pragma solidity ^0.8.16;
 import "contracts/utils/DeterministicAddress.sol";
 import "contracts/Proxy.sol";
 import "contracts/libraries/factory/AliceNetFactoryBase.sol";
+import "contracts/AToken.sol";
 
 contract AliceNetFactory is AliceNetFactoryBase {
+    // AToken salt = Bytes32(AToken)
+    // AToken is the old ALCA name, salt kept to maintain compatibility
+    bytes32 internal constant _ATOKEN_SALT =
+        0x41546f6b656e0000000000000000000000000000000000000000000000000000;
+
+    bytes32 internal immutable _aTokenCreationCodeHash;
+    address internal immutable _aTokenAddress;
+
     /**
      * @dev The constructor encodes the proxy deploy byte code with the _UNIVERSAL_DEPLOY_CODE at the
      * head and the factory address at the tail, and deploys the proxy byte code using create OpCode.
@@ -13,7 +22,20 @@ contract AliceNetFactory is AliceNetFactoryBase {
      * constructor then sets proxyTemplate_ state var to the deployed proxy template address the deploy
      * account will be set as the first owner of the factory.
      */
-    constructor(address legacyToken_) AliceNetFactoryBase(legacyToken_) {}
+    constructor(address legacyToken_) AliceNetFactoryBase() {
+        // Deploying ALCA
+        bytes memory creationCode = abi.encodePacked(
+            type(AToken).creationCode,
+            bytes32(uint256(uint160(legacyToken_)))
+        );
+        address aTokenAddress;
+        assembly {
+            aTokenAddress := create2(0, add(creationCode, 0x20), mload(creationCode), _ATOKEN_SALT)
+        }
+        _codeSizeZeroRevert((_extCodeSize(aTokenAddress) != 0));
+        _aTokenAddress = aTokenAddress;
+        _aTokenCreationCodeHash = keccak256(abi.encodePacked(creationCode));
+    }
 
     /**
      * @dev callAny allows EOA to call function impersonating the factory address
@@ -114,5 +136,34 @@ contract AliceNetFactory is AliceNetFactoryBase {
         bytes calldata initCallData_
     ) public onlyOwner {
         _upgradeProxy(salt_, newImpl_, initCallData_);
+    }
+
+    /**
+     * @dev lookup allows anyone interacting with the contract to get the address of contract specified
+     * by its salt_
+     * @param salt_: Custom NatSpec tag @custom:salt at the top of the contract solidity file
+     */
+    function lookup(bytes32 salt_) public view override returns (address) {
+        // check if the salt belongs to one of the pre-defined contracts deployed during the factory deployment
+        if (salt_ == _ATOKEN_SALT) {
+            return _aTokenAddress;
+        }
+        return AliceNetFactoryBase._lookup(salt_);
+    }
+
+    /**
+     * @dev getter function for retrieving the hash of the AToken creation code.
+     * @return the hash of the AToken creation code.
+     */
+    function getATokenCreationCodeHash() public view returns (bytes32) {
+        return _aTokenCreationCodeHash;
+    }
+
+    /**
+     * @dev getter function for retrieving the address of the AToken contract.
+     * @return AToken address.
+     */
+    function getATokenAddress() public view returns (address) {
+        return _aTokenAddress;
     }
 }

@@ -58,9 +58,6 @@ contract BToken is
         if (centralBridgeRouterAddress_ == address(0)) {
             revert UtilityTokenErrors.CannotSetRouterToZeroAddress();
         }
-        if (!_isContract(centralBridgeRouterAddress_)) {
-            revert UtilityTokenErrors.InexistentRouterContract(centralBridgeRouterAddress_);
-        }
         _centralBridgeRouter = centralBridgeRouterAddress_;
         _virtualDeposit(1, 0xba7809A4114eEF598132461f3202b5013e834CD5, 500000000000);
     }
