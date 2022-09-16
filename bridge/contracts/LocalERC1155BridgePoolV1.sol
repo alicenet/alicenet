@@ -5,6 +5,7 @@ import "contracts/interfaces/IERC1155Transferable.sol";
 import "contracts/LocalERCBridgePoolBase.sol";
 import "contracts/utils/ImmutableAuth.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "hardhat/console.sol";
 
 /// @custom:salt LocalERC1155BridgePoolV1
 /// @custom:deploy-type deployStatic
@@ -37,6 +38,24 @@ contract LocalERC1155BridgePoolV1 is
             address(this),
             _depositParameters.tokenId,
             _depositParameters.tokenAmount,
+            abi.encodePacked("")
+        );
+    }
+
+    /// @notice Transfer multiple tokens from sender in one operation and emit a "Deposited" event for minting correspondent tokens in sidechain
+    /// @param msgSender The address of ERC sender
+    /// @param tokenIds array of tokenIds to transfer
+    /// @param tokenAmounts array of tokenAmounts to transfer
+    function batchDeposit(
+        address msgSender,
+        uint256[] calldata tokenIds,
+        uint256[] calldata tokenAmounts
+    ) public onlyBridgeRouter {
+        IERC1155Transferable(_erc1155Contract).safeBatchTransferFrom(
+            msgSender,
+            address(this),
+            tokenIds,
+            tokenAmounts,
             abi.encodePacked("")
         );
     }

@@ -9,4 +9,12 @@ interface IERC1155Transferable {
         uint256 amount,
         bytes calldata data
     ) external;
+
+    function safeBatchTransferFrom(
+        address from,
+        address to,
+        uint256[] calldata tokenIds,
+        uint256[] calldata amount,
+        bytes calldata data
+    ) external;
 }
