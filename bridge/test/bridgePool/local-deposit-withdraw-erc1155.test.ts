@@ -125,7 +125,7 @@ describe("Testing BridgePool Deposit/Withdraw for tokenType ERC1155", async () =
     ).to.be.deep.eq(initialBatchUserBalance);
   });
 
-  it.only("Should make a batch deposit with arrays of different length", async () => {
+  it("Should not make a batch deposit with arrays of different length", async () => {
     await expect(
       bridgePool
         .connect(bridgeRouter)
