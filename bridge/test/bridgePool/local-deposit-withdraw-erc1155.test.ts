@@ -191,17 +191,4 @@ describe("Testing BridgePool Deposit/Withdraw for tokenType ERC1155", async () =
     );
   });
 
-  it("Should support EIP165", async () => {
-    const interfaceID = ethers.utils
-      .id("supportsInterface(bytes4)")
-      .substring(0, 10);
-    await bridgePool.supportsInterface(interfaceID);
-  });
-
-  it("Should support onERC1155Received", async () => {
-    const interfaceID = ethers.utils
-      .id("onERC1155Received(address,address,uint256,uint256,bytes)")
-      .substring(0, 10);
-    await bridgePool.supportsInterface(interfaceID);
-  });
 });
