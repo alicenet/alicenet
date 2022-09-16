@@ -35,7 +35,11 @@ describe("Testing BridgePool Deposit/Withdraw for tokenType ERC721", async () =>
       Buffer.from("0x0"),
       encodedMockBlockClaims
     );
-    encodedBurnedUTXO = getEncodedBurnedUTXO(user.address, tokenId, tokenAmount);
+    encodedBurnedUTXO = getEncodedBurnedUTXO(
+      user.address,
+      tokenId,
+      tokenAmount
+    );
     merkleProofLibraryErrors = await (
       await (
         await ethers.getContractFactory("MerkleProofLibraryErrors")
@@ -80,7 +84,7 @@ describe("Testing BridgePool Deposit/Withdraw for tokenType ERC721", async () =>
 
   it("Should not make a withdraw for amount specified on informed burned UTXO with wrong merkle proof", async () => {
     await expect(
-      bridgePool.connect(user).withdraw(encodedBurnedUTXO,wrongMerkleProof)
+      bridgePool.connect(user).withdraw(encodedBurnedUTXO, wrongMerkleProof)
     ).to.be.revertedWithCustomError(
       merkleProofLibraryErrors,
       "ProofDoesNotMatchTrieRoot"
@@ -97,7 +101,7 @@ describe("Testing BridgePool Deposit/Withdraw for tokenType ERC721", async () =>
       encodedMockBlockClaims
     );
     await expect(
-      bridgePool.connect(user).withdraw(encodedBurnedUTXO,merkleProof )
+      bridgePool.connect(user).withdraw(encodedBurnedUTXO, merkleProof)
     ).to.be.revertedWithCustomError(
       merkleProofLibraryErrors,
       "ProofDoesNotMatchTrieRoot"
@@ -106,7 +110,7 @@ describe("Testing BridgePool Deposit/Withdraw for tokenType ERC721", async () =>
 
   it("Should not make a withdraw to an address that is not the owner in informed burned UTXO", async () => {
     await expect(
-      bridgePool.connect(user2).withdraw(encodedBurnedUTXO,merkleProof )
+      bridgePool.connect(user2).withdraw(encodedBurnedUTXO, merkleProof)
     ).to.be.revertedWithCustomError(
       bridgePool,
       "ReceiverIsNotOwnerOnProofOfBurnUTXO"

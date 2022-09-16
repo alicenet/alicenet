@@ -48,7 +48,7 @@ contract LocalERC721BridgePoolV1 is
         public
         override
     {
-        super.withdraw(encodedBurnedUTXO,encodedMerkleProof);
+        super.withdraw(encodedBurnedUTXO, encodedMerkleProof);
         UTXO memory burnedUTXO = abi.decode(encodedBurnedUTXO, (UTXO));
         IERC721Transferable(_erc721Contract).safeTransferFrom(
             address(this),
