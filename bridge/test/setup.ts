@@ -568,7 +568,7 @@ export const getFixture = async (
     await (await ethers.getContractFactory("ERC1155Mock")).deploy()
   ).deployed();
 
-  const localERC1155BridgePoolV1 = await deployStaticWithFactory(
+  const localERC1155BridgePoolV1 = await deployUpgradeableWithFactory(
     factory,
     "LocalERC1155BridgePoolV1",
     "LocalERC1155BridgePoolV1",

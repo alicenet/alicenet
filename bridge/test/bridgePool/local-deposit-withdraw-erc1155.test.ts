@@ -125,6 +125,14 @@ describe("Testing BridgePool Deposit/Withdraw for tokenType ERC1155", async () =
     ).to.be.deep.eq(initialBatchUserBalance);
   });
 
+  it.only("Should make a batch deposit with arrays of different length", async () => {
+    await expect(
+      bridgePool
+        .connect(bridgeRouter)
+        .batchDeposit(user.address, batchTokenIds, batchTokenAmounts.slice(1))
+    ).to.be.revertedWith("ERC1155: ids and amounts length mismatch");
+  });
+
   it("Should make a withdraw for amount specified on informed burned UTXO upon proof verification", async () => {
     // Make first a deposit to withdraw afterwards
     await bridgePool
