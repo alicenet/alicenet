@@ -8,7 +8,14 @@ contract ERC1155Mock is ERC1155 {
     uint256 public constant NON_FUNGIBLE_1 = 2;
     uint256 public constant NON_FUNGIBLE_2 = 3;
 
-    event HookCalled();
+    event HookCalled(
+        address operator,
+        address from,
+        address to,
+        uint256[] ids,
+        uint256[] amounts,
+        bytes data
+    );
 
     constructor() ERC1155("https://example.com/api/item/{id}.json") {
         _mint(msg.sender, FUNGIBLE_1, 10**18, "");
@@ -33,6 +40,6 @@ contract ERC1155Mock is ERC1155 {
         uint256[] memory amounts,
         bytes memory data
     ) internal override {
-        emit HookCalled();
+        emit HookCalled(operator, from, to, ids, amounts, data);
     }
 }

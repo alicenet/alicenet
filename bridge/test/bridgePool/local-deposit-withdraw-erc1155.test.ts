@@ -21,7 +21,6 @@ let bridgeRouter: any;
 let initialUserBalance: any;
 let initialBridgePoolBalance: any;
 let initialBatchUserBalance: BigNumber[];
-let initialBatchBridgePoolBalance: BigNumber[];
 let merkleProofLibraryErrors: any;
 let encodedBurnedUTXO: any;
 const tokenId = 100;
@@ -114,7 +113,7 @@ describe("Testing BridgePool Deposit/Withdraw for tokenType ERC1155", async () =
     ).to.be.eq(initialBridgePoolBalance + tokenAmount);
   });
 
-  it.only("Should make a batch deposit", async () => {
+  it("Should make a batch deposit", async () => {
     await bridgePool
       .connect(bridgeRouter)
       .batchDeposit(user.address, batchTokenIds, batchTokenAmounts);
