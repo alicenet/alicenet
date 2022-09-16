@@ -30,7 +30,7 @@ var (
 
 // ATokenMinterMetaData contains all meta data concerning the ATokenMinter contract.
 var ATokenMinterMetaData = &bind.MetaData{
-	ABI: "[{\"inputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"expected\",\"type\":\"address\"}],\"name\":\"OnlyAToken\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"expected\",\"type\":\"address\"}],\"name\":\"OnlyFactory\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"_salt\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"_factory\",\"type\":\"address\"}],\"name\":\"getMetamorphicContractAddress\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"mint\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]",
+	ABI: "[{\"inputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"expected\",\"type\":\"address\"}],\"name\":\"OnlyAToken\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"expected\",\"type\":\"address\"}],\"name\":\"OnlyFactory\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"_salt\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"_factory\",\"type\":\"address\"}],\"name\":\"getMetamorphicContractAddress\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"to_\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"amount_\",\"type\":\"uint256\"}],\"name\":\"mint\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]",
 }
 
 // ATokenMinterABI is the input ABI used to generate the binding from.
@@ -212,21 +212,21 @@ func (_ATokenMinter *ATokenMinterCallerSession) GetMetamorphicContractAddress(_s
 
 // Mint is a paid mutator transaction binding the contract method 0x40c10f19.
 //
-// Solidity: function mint(address to, uint256 amount) returns()
-func (_ATokenMinter *ATokenMinterTransactor) Mint(opts *bind.TransactOpts, to common.Address, amount *big.Int) (*types.Transaction, error) {
-	return _ATokenMinter.contract.Transact(opts, "mint", to, amount)
+// Solidity: function mint(address to_, uint256 amount_) returns()
+func (_ATokenMinter *ATokenMinterTransactor) Mint(opts *bind.TransactOpts, to_ common.Address, amount_ *big.Int) (*types.Transaction, error) {
+	return _ATokenMinter.contract.Transact(opts, "mint", to_, amount_)
 }
 
 // Mint is a paid mutator transaction binding the contract method 0x40c10f19.
 //
-// Solidity: function mint(address to, uint256 amount) returns()
-func (_ATokenMinter *ATokenMinterSession) Mint(to common.Address, amount *big.Int) (*types.Transaction, error) {
-	return _ATokenMinter.Contract.Mint(&_ATokenMinter.TransactOpts, to, amount)
+// Solidity: function mint(address to_, uint256 amount_) returns()
+func (_ATokenMinter *ATokenMinterSession) Mint(to_ common.Address, amount_ *big.Int) (*types.Transaction, error) {
+	return _ATokenMinter.Contract.Mint(&_ATokenMinter.TransactOpts, to_, amount_)
 }
 
 // Mint is a paid mutator transaction binding the contract method 0x40c10f19.
 //
-// Solidity: function mint(address to, uint256 amount) returns()
-func (_ATokenMinter *ATokenMinterTransactorSession) Mint(to common.Address, amount *big.Int) (*types.Transaction, error) {
-	return _ATokenMinter.Contract.Mint(&_ATokenMinter.TransactOpts, to, amount)
+// Solidity: function mint(address to_, uint256 amount_) returns()
+func (_ATokenMinter *ATokenMinterTransactorSession) Mint(to_ common.Address, amount_ *big.Int) (*types.Transaction, error) {
+	return _ATokenMinter.Contract.Mint(&_ATokenMinter.TransactOpts, to_, amount_)
 }
