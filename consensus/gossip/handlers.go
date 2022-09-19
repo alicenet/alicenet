@@ -3,12 +3,11 @@ package gossip
 import (
 	"context"
 	"fmt"
-	"time"
-
 	"github.com/dgraph-io/badger/v2"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"time"
 
 	"github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/consensus/lstate"
@@ -111,7 +110,13 @@ func (mb *Handlers) Done() <-chan struct{} {
 func (mb *Handlers) Start() {
 	heightSet := false
 	for {
-		<-time.After(3 * time.Second)
+		select {
+		case <-mb.ctx.Done():
+			mb.logger.Warnf("Closing gossip loop due to cancelled context")
+			return
+		case <-time.After(3 * time.Second):
+		}
+
 		if !heightSet {
 			height := mb.height.Get()
 			if height == 0 {

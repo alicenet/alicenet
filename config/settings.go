@@ -107,10 +107,12 @@ type firewalldConfig struct {
 }
 
 type ethKeyConfig struct {
-	PasswordFile string
-	Json         bool
-	PrivateKey   string
-	LightKDF     bool
+	PasswordFile    string
+	Json            bool
+	PrivateKey      string
+	LightKDF        bool
+	Private         bool
+	NewPasswordFile string
 }
 
 type configuration struct {
