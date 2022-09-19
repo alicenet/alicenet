@@ -10,7 +10,12 @@ import "contracts/utils/ERC20SafeTransfer.sol";
 
 /// @custom:salt LocalERC20BridgePoolV1
 /// @custom:deploy-type deployStatic
-contract LocalERC20BridgePoolV1 is LocalERCBridgePoolBase, Initializable, ImmutableBridgeRouter {
+contract LocalERC20BridgePoolV1 is
+    LocalERCBridgePoolBase,
+    Initializable,
+    ImmutableBridgeRouter,
+    ERC20SafeTransfer
+{
     address internal _erc20Contract;
 
     function initialize(address erc20Contract_) public onlyFactory initializer {
@@ -30,9 +35,9 @@ contract LocalERC20BridgePoolV1 is LocalERCBridgePoolBase, Initializable, Immuta
             depositParameters_,
             (DepositParameters)
         );
-        IERC20Transferable(_erc20Contract).transferFrom(
+        _safeTransferFromERC20(
+            IERC20Transferable(_erc20Contract),
             msgSender,
-            address(this),
             _depositParameters.tokenAmount
         );
     }
@@ -46,6 +51,6 @@ contract LocalERC20BridgePoolV1 is LocalERCBridgePoolBase, Initializable, Immuta
     {
         super.withdraw(encodedBurnedUTXO, encodedMerkleProof);
         UTXO memory burnedUTXO = abi.decode(encodedBurnedUTXO, (UTXO));
-        IERC20Transferable(_erc20Contract).transfer(msg.sender, burnedUTXO.tokenAmount);
+        _safeTransferERC20(IERC20Transferable(_erc20Contract), msg.sender, burnedUTXO.tokenAmount);
     }
 }
