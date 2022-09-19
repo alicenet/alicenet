@@ -5,7 +5,7 @@ import { ethers } from "hardhat";
 import { IBridgePool } from "../../typechain-types";
 import { expect } from "../chai-setup";
 
-import { deployStaticWithFactory, Fixture, getFixture } from "../setup";
+import { deployUpgradeableWithFactory, Fixture, getFixture } from "../setup";
 import {
   getEncodedBurnedUTXO,
   getMockBlockClaimsForStateRoot,
@@ -21,8 +21,8 @@ let merkleProofLibraryErrors: Contract;
 let localERCBridgePoolBase: Contract;
 let encodedBurnedUTXO: string;
 let bridgePool: any;
-let tokenId = 0;
-let tokenAmount = 0;
+const tokenId = 0;
+const tokenAmount = 0;
 const encodedDepositParameters = defaultAbiCoder.encode(
   ["tuple(uint256 tokenId_, uint256 tokenAmount_)"],
   [
@@ -48,19 +48,28 @@ describe("Testing Base BridgePool Deposit/Withdraw", async () => {
         await ethers.getContractFactory("MerkleProofLibraryErrors")
       ).deploy()
     ).deployed();
-    localERCBridgePoolBase = await deployStaticWithFactory(
+    localERCBridgePoolBase = await deployUpgradeableWithFactory(
       fixture.factory,
       "LocalERCBridgePoolMock",
       "LocalERCBridgePoolMock",
-      [ethers.constants.AddressZero],
-      []
+      undefined,
+      undefined,
+      undefined,
+      false
     );
-    encodedBurnedUTXO = getEncodedBurnedUTXO(user.address, tokenId, tokenAmount);
+    encodedBurnedUTXO = getEncodedBurnedUTXO(
+      user.address,
+      tokenId,
+      tokenAmount
+    );
     bridgePool = localERCBridgePoolBase as IBridgePool;
   });
 
   it("Should call a deposit", async () => {
-    await localERCBridgePoolBase.deposit(user.address, encodedDepositParameters);
+    await localERCBridgePoolBase.deposit(
+      user.address,
+      encodedDepositParameters
+    );
   });
 
   it("Should call a withdraw for amount specified on informed burned UTXO upon proof verification", async () => {
@@ -110,4 +119,3 @@ describe("Testing Base BridgePool Deposit/Withdraw", async () => {
     );
   });
 });
-

@@ -231,8 +231,10 @@ export const deployUpgradeableWithFactory = async (
   salt?: string,
   initCallData?: any[],
   constructorArgs: any[] = [],
-  saltType?: string
+  saltType?: string,
+  initialize?: boolean
 ): Promise<Contract> => {
+  if (initialize === undefined) initialize = true;
   const _Contract = await ethers.getContractFactory(contractName);
   let deployCode = _Contract.getDeployTransaction(...constructorArgs)
     .data as BytesLike;
@@ -282,16 +284,18 @@ export const deployUpgradeableWithFactory = async (
     );
   }
   let initCallDataBin = "0x";
-  try {
-    initCallDataBin = _Contract.interface.encodeFunctionData(
-      "initialize",
-      initCallData
-    );
-  } catch (error) {
-    if (!(error as Error).message.includes("no matching function")) {
-      console.warn(
-        `Error deploying contract ${contractName} couldn't get initialize arguments: ${error}`
+  if (initialize) {
+    try {
+      initCallDataBin = _Contract.interface.encodeFunctionData(
+        "initialize",
+        initCallData
       );
+    } catch (error) {
+      if (!(error as Error).message.includes("no matching function")) {
+        console.warn(
+          `Error deploying contract ${contractName} couldn't get initialize arguments: ${error}`
+        );
+      }
     }
   }
   await factory.upgradeProxy(saltBytes, logicAddr, initCallDataBin);
