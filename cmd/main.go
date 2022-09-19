@@ -183,22 +183,35 @@ func main() {
 			{"validator.rewardCurveSpec", "", "", &config.Configuration.Validator.RewardCurveSpec},
 		},
 
-		&ethkey.Command: {
+		&ethkey.Generate: {
 			{"ethkey.passwordfile", "", "the file that contains the password for the keyfile", &config.Configuration.EthKey.PasswordFile},
 			{"ethkey.json", "", "output JSON instead of human-readable format", &config.Configuration.EthKey.Json},
 			{"ethkey.privatekey", "", "file containing a raw private key to encrypt", &config.Configuration.EthKey.PrivateKey},
 			{"ethkey.lightkdf", "", "use less secure scrypt parameters", &config.Configuration.EthKey.LightKDF},
 		},
+
+		&ethkey.Inspect: {
+			{"ethkey.passwordfile", "", "the file that contains the password for the keyfile", &config.Configuration.EthKey.PasswordFile},
+			{"ethkey.json", "", "output JSON instead of human-readable format", &config.Configuration.EthKey.Json},
+			{"ethkey.private", "", "include the private key in the output", &config.Configuration.EthKey.Private},
+		},
+
+		&ethkey.ChangePassword: {
+			{"ethkey.passwordfile", "", "the file that contains the password for the keyfile", &config.Configuration.EthKey.PasswordFile},
+			{"ethkey.newpasswordfile", "", "the file that contains the new password for the keyfile", &config.Configuration.EthKey.NewPasswordFile},
+		},
 	}
 
 	// Establish command hierarchy
 	hierarchy := map[*cobra.Command]*cobra.Command{
-		&firewalld.Command:    &rootCommand,
-		&bootnode.Command:     &rootCommand,
-		&node.Command:         &rootCommand,
-		&ethkey.Command:       &rootCommand,
-		&utils.Command:        &rootCommand,
-		&utils.SendWeiCommand: &utils.Command,
+		&firewalld.Command:     &rootCommand,
+		&bootnode.Command:      &rootCommand,
+		&node.Command:          &rootCommand,
+		&ethkey.Generate:       &rootCommand,
+		&ethkey.Inspect:        &rootCommand,
+		&ethkey.ChangePassword: &rootCommand,
+		&utils.Command:         &rootCommand,
+		&utils.SendWeiCommand:  &utils.Command,
 	}
 
 	// Convert option abstraction into concrete settings for Cobra and Viper

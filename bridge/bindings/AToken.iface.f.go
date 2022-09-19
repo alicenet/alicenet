@@ -23,18 +23,6 @@ type IATokenFilterer interface {
 	//
 	// Solidity: event Approval(address indexed owner, address indexed spender, uint256 value)
 	ParseApproval(log types.Log) (*ATokenApproval, error)
-	// FilterInitialized is a free log retrieval operation binding the contract event 0x7f26b83ff96e1f2b6a682f133852f6798a09c465da95921460cefb3847402498.
-	//
-	// Solidity: event Initialized(uint8 version)
-	FilterInitialized(opts *bind.FilterOpts) (*ATokenInitializedIterator, error)
-	// WatchInitialized is a free log subscription operation binding the contract event 0x7f26b83ff96e1f2b6a682f133852f6798a09c465da95921460cefb3847402498.
-	//
-	// Solidity: event Initialized(uint8 version)
-	WatchInitialized(opts *bind.WatchOpts, sink chan<- *ATokenInitialized) (event.Subscription, error)
-	// ParseInitialized is a log parse operation binding the contract event 0x7f26b83ff96e1f2b6a682f133852f6798a09c465da95921460cefb3847402498.
-	//
-	// Solidity: event Initialized(uint8 version)
-	ParseInitialized(log types.Log) (*ATokenInitialized, error)
 	// FilterTransfer is a free log retrieval operation binding the contract event 0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef.
 	//
 	// Solidity: event Transfer(address indexed from, address indexed to, uint256 value)

@@ -3,6 +3,7 @@
 pragma solidity ^0.8.11;
 
 import "contracts/utils/DeterministicAddress.sol";
+import "contracts/interfaces/IAliceNetFactory.sol";
 
 abstract contract ImmutableFactory is DeterministicAddress {
     address private immutable _factory;
@@ -36,10 +37,7 @@ abstract contract ImmutableAToken is ImmutableFactory {
     }
 
     constructor() {
-        _aToken = getMetamorphicContractAddress(
-            0x41546f6b656e0000000000000000000000000000000000000000000000000000,
-            _factoryAddress()
-        );
+        _aToken = IAliceNetFactory(_factoryAddress()).lookup(_saltForAToken());
     }
 
     function _aTokenAddress() internal view returns (address) {
@@ -48,6 +46,30 @@ abstract contract ImmutableAToken is ImmutableFactory {
 
     function _saltForAToken() internal pure returns (bytes32) {
         return 0x41546f6b656e0000000000000000000000000000000000000000000000000000;
+    }
+}
+
+abstract contract ImmutableBToken is ImmutableFactory {
+    address private immutable _bToken;
+    error OnlyBToken(address sender, address expected);
+
+    modifier onlyBToken() {
+        if (msg.sender != _bToken) {
+            revert OnlyBToken(msg.sender, _bToken);
+        }
+        _;
+    }
+
+    constructor() {
+        _bToken = IAliceNetFactory(_factoryAddress()).lookup(_saltForBToken());
+    }
+
+    function _bTokenAddress() internal view returns (address) {
+        return _bToken;
+    }
+
+    function _saltForBToken() internal pure returns (bytes32) {
+        return 0x42546f6b656e0000000000000000000000000000000000000000000000000000;
     }
 }
 
@@ -102,60 +124,6 @@ abstract contract ImmutableATokenMinter is ImmutableFactory {
 
     function _saltForATokenMinter() internal pure returns (bytes32) {
         return 0x41546f6b656e4d696e7465720000000000000000000000000000000000000000;
-    }
-}
-
-abstract contract ImmutableBToken is ImmutableFactory {
-    address private immutable _bToken;
-    error OnlyBToken(address sender, address expected);
-
-    modifier onlyBToken() {
-        if (msg.sender != _bToken) {
-            revert OnlyBToken(msg.sender, _bToken);
-        }
-        _;
-    }
-
-    constructor() {
-        _bToken = getMetamorphicContractAddress(
-            0x42546f6b656e0000000000000000000000000000000000000000000000000000,
-            _factoryAddress()
-        );
-    }
-
-    function _bTokenAddress() internal view returns (address) {
-        return _bToken;
-    }
-
-    function _saltForBToken() internal pure returns (bytes32) {
-        return 0x42546f6b656e0000000000000000000000000000000000000000000000000000;
-    }
-}
-
-abstract contract ImmutableBridgePoolFactory is ImmutableFactory {
-    address private immutable _bridgePoolFactory;
-    error OnlyBridgePoolFactory(address sender, address expected);
-
-    modifier onlyBridgePoolFactory() {
-        if (msg.sender != _bridgePoolFactory) {
-            revert OnlyBridgePoolFactory(msg.sender, _bridgePoolFactory);
-        }
-        _;
-    }
-
-    constructor() {
-        _bridgePoolFactory = getMetamorphicContractAddress(
-            0x427269646765506f6f6c466163746f7279000000000000000000000000000000,
-            _factoryAddress()
-        );
-    }
-
-    function _bridgePoolFactoryAddress() internal view returns (address) {
-        return _bridgePoolFactory;
-    }
-
-    function _saltForBridgePoolFactory() internal pure returns (bytes32) {
-        return 0x427269646765506f6f6c466163746f7279000000000000000000000000000000;
     }
 }
 
@@ -321,33 +289,6 @@ abstract contract ImmutableLiquidityProviderStaking is ImmutableFactory {
     }
 }
 
-abstract contract ImmutableLocalERC1155BridgePoolV1 is ImmutableFactory {
-    address private immutable _localERC1155BridgePoolV1;
-    error OnlyLocalERC1155BridgePoolV1(address sender, address expected);
-
-    modifier onlyLocalERC1155BridgePoolV1() {
-        if (msg.sender != _localERC1155BridgePoolV1) {
-            revert OnlyLocalERC1155BridgePoolV1(msg.sender, _localERC1155BridgePoolV1);
-        }
-        _;
-    }
-
-    constructor() {
-        _localERC1155BridgePoolV1 = getMetamorphicContractAddress(
-            0x4c6f63616c45524331313535427269646765506f6f6c56310000000000000000,
-            _factoryAddress()
-        );
-    }
-
-    function _localERC1155BridgePoolV1Address() internal view returns (address) {
-        return _localERC1155BridgePoolV1;
-    }
-
-    function _saltForLocalERC1155BridgePoolV1() internal pure returns (bytes32) {
-        return 0x4c6f63616c45524331313535427269646765506f6f6c56310000000000000000;
-    }
-}
-
 abstract contract ImmutableLocalERC20BridgePoolV1 is ImmutableFactory {
     address private immutable _localERC20BridgePoolV1;
     error OnlyLocalERC20BridgePoolV1(address sender, address expected);
@@ -372,33 +313,6 @@ abstract contract ImmutableLocalERC20BridgePoolV1 is ImmutableFactory {
 
     function _saltForLocalERC20BridgePoolV1() internal pure returns (bytes32) {
         return 0x4c6f63616c4552433230427269646765506f6f6c563100000000000000000000;
-    }
-}
-
-abstract contract ImmutableLocalERC721BridgePoolV1 is ImmutableFactory {
-    address private immutable _localERC721BridgePoolV1;
-    error OnlyLocalERC721BridgePoolV1(address sender, address expected);
-
-    modifier onlyLocalERC721BridgePoolV1() {
-        if (msg.sender != _localERC721BridgePoolV1) {
-            revert OnlyLocalERC721BridgePoolV1(msg.sender, _localERC721BridgePoolV1);
-        }
-        _;
-    }
-
-    constructor() {
-        _localERC721BridgePoolV1 = getMetamorphicContractAddress(
-            0x4c6f63616c455243373231427269646765506f6f6c5631000000000000000000,
-            _factoryAddress()
-        );
-    }
-
-    function _localERC721BridgePoolV1Address() internal view returns (address) {
-        return _localERC721BridgePoolV1;
-    }
-
-    function _saltForLocalERC721BridgePoolV1() internal pure returns (bytes32) {
-        return 0x4c6f63616c455243373231427269646765506f6f6c5631000000000000000000;
     }
 }
 
