@@ -316,60 +316,6 @@ abstract contract ImmutableLocalERC1155BridgePoolV1 is ImmutableFactory {
     }
 }
 
-abstract contract ImmutableLocalERC20BridgePoolV1 is ImmutableFactory {
-    address private immutable _localERC20BridgePoolV1;
-    error OnlyLocalERC20BridgePoolV1(address sender, address expected);
-
-    modifier onlyLocalERC20BridgePoolV1() {
-        if (msg.sender != _localERC20BridgePoolV1) {
-            revert OnlyLocalERC20BridgePoolV1(msg.sender, _localERC20BridgePoolV1);
-        }
-        _;
-    }
-
-    constructor() {
-        _localERC20BridgePoolV1 = getMetamorphicContractAddress(
-            0x4c6f63616c4552433230427269646765506f6f6c563100000000000000000000,
-            _factoryAddress()
-        );
-    }
-
-    function _localERC20BridgePoolV1Address() internal view returns (address) {
-        return _localERC20BridgePoolV1;
-    }
-
-    function _saltForLocalERC20BridgePoolV1() internal pure returns (bytes32) {
-        return 0x4c6f63616c4552433230427269646765506f6f6c563100000000000000000000;
-    }
-}
-
-abstract contract ImmutableLocalERC721BridgePoolV1 is ImmutableFactory {
-    address private immutable _localERC721BridgePoolV1;
-    error OnlyLocalERC721BridgePoolV1(address sender, address expected);
-
-    modifier onlyLocalERC721BridgePoolV1() {
-        if (msg.sender != _localERC721BridgePoolV1) {
-            revert OnlyLocalERC721BridgePoolV1(msg.sender, _localERC721BridgePoolV1);
-        }
-        _;
-    }
-
-    constructor() {
-        _localERC721BridgePoolV1 = getMetamorphicContractAddress(
-            0x4c6f63616c455243373231427269646765506f6f6c5631000000000000000000,
-            _factoryAddress()
-        );
-    }
-
-    function _localERC721BridgePoolV1Address() internal view returns (address) {
-        return _localERC721BridgePoolV1;
-    }
-
-    function _saltForLocalERC721BridgePoolV1() internal pure returns (bytes32) {
-        return 0x4c6f63616c455243373231427269646765506f6f6c5631000000000000000000;
-    }
-}
-
 abstract contract ImmutableMultipleProposalAccusation is ImmutableFactory {
     address private immutable _multipleProposalAccusation;
     error OnlyMultipleProposalAccusation(address sender, address expected);
