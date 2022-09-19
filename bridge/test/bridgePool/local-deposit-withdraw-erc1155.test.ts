@@ -85,7 +85,6 @@ describe("Testing BridgePool Deposit/Withdraw for tokenType ERC1155", async () =
     fixture.erc1155Mock
       .connect(user)
       .setApprovalForAll(bridgePool.address, true);
-
     initialUserBalance = await fixture.erc1155Mock.balanceOf(
       user.address,
       tokenId
@@ -94,7 +93,6 @@ describe("Testing BridgePool Deposit/Withdraw for tokenType ERC1155", async () =
       bridgePool.address,
       tokenId
     );
-
     initialBatchUserBalance = await fixture.erc1155Mock.balanceOfBatch(
       batchUserAccounts,
       batchTokenIds
@@ -131,6 +129,19 @@ describe("Testing BridgePool Deposit/Withdraw for tokenType ERC1155", async () =
         .connect(bridgeRouter)
         .batchDeposit(user.address, batchTokenIds, batchTokenAmounts.slice(1))
     ).to.be.revertedWith("ERC1155: ids and amounts length mismatch");
+  });
+
+  it.only("Should not make a deposit to address 0", async () => {
+    const userAddress = ethers.constants.AddressZero;
+    fixture.erc1155Mock.mint(userAddress, tokenId, tokenAmount);
+    fixture.erc1155Mock
+      .connect(userAddress)
+      .setApprovalForAll(bridgePool.address, true);
+    await expect(
+      bridgePool
+        .connect(bridgeRouter)
+        .deposit(userAddress, encodedDepositParameters)
+    ).to.be.revertedWith("ERC1155: caller is not token owner nor approved");
   });
 
   it("Should make a withdraw for amount specified on informed burned UTXO upon proof verification", async () => {
@@ -190,5 +201,4 @@ describe("Testing BridgePool Deposit/Withdraw for tokenType ERC1155", async () =
       "ReceiverIsNotOwnerOnProofOfBurnUTXO"
     );
   });
-
 });

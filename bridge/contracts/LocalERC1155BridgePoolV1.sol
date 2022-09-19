@@ -60,7 +60,6 @@ contract LocalERC1155BridgePoolV1 is
         );
     }
 
-
     /// @notice Transfer tokens to sender upon a verificable proof of burn in sidechain
     /// @param encodedBurnedUTXO encoded UTXO burned in sidechain
     /// @param encodedMerkleProof merkle proof of burn
@@ -78,5 +77,4 @@ contract LocalERC1155BridgePoolV1 is
             abi.encodePacked("")
         );
     }
-
 }
