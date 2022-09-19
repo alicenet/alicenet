@@ -29,8 +29,8 @@ library StakingDescriptor {
         returns (string memory)
     {
         string memory name = generateName(params);
-        string memory descriptionPartOne = generateDescriptionPartOne();
-        string memory descriptionPartTwo = generateDescriptionPartTwo(
+        string memory description = generateDescription();
+        string memory attributes = generateAttributes(
             params.tokenId.toString(),
             params.shares.toString(),
             params.freeAfter.toString(),
@@ -43,20 +43,19 @@ library StakingDescriptor {
         return
             string(
                 abi.encodePacked(
-                    "data:application/json;base64,",
-                    Base64.encode(
-                        bytes(
-                            abi.encodePacked(
-                                '{"name":"',
-                                name,
-                                '", "description":"',
-                                descriptionPartOne,
-                                descriptionPartTwo,
-                                '", "image": "',
-                                "data:image/svg+xml;base64,",
-                                image,
-                                '"}'
-                            )
+                    "data:application/json;utf8,",
+                    bytes(
+                        abi.encodePacked(
+                            '{"name":"',
+                            name,
+                            '", "description":"',
+                            description,
+                            '", "attributes": ',
+                            attributes,
+                            ', "image_data": "',
+                            "data:image/svg+xml;base64,",
+                            image,
+                            '"}'
                         )
                     )
                 )
@@ -107,28 +106,26 @@ library StakingDescriptor {
         return StakingSVG.generateSVG(svgParams);
     }
 
-    /// @notice Generates the first part of the Staking Descriptor
-    /// @return A string with the first part of the Staking Descriptor
-    function generateDescriptionPartOne() private pure returns (string memory) {
+    /// @notice Generates the description of the Staking Descriptor
+    /// @return A string with the description of the Staking Descriptor
+    function generateDescription() private pure returns (string memory) {
         return
             string(
                 abi.encodePacked(
-                    "This NFT represents a staked position on AliceNet.",
-                    "\\n",
-                    "The owner of this NFT can modify or redeem the position.\\n"
+                    "This NFT represents a staked position on AliceNet. The owner of this NFT can modify or redeem the position."
                 )
             );
     }
 
-    /// @notice Generates the second part of the Staking Descriptor
+    /// @notice Generates the attributes part of the Staking Descriptor
     /// @param  tokenId the token id of this descriptor
     /// @param  shares number of AToken
     /// @param  freeAfter block number after which the position may be burned.
     /// @param  withdrawFreeAfter block number after which the position may be collected or burned
     /// @param  accumulatorEth the last value of the ethState accumulator this account performed a withdraw at
     /// @param  accumulatorToken the last value of the tokenState accumulator this account performed a withdraw at
-    /// @return A string with the second part of the Staking Descriptor
-    function generateDescriptionPartTwo(
+    /// @return A string with the attributes part of the Staking Descriptor
+    function generateAttributes(
         string memory tokenId,
         string memory shares,
         string memory freeAfter,
@@ -139,18 +136,26 @@ library StakingDescriptor {
         return
             string(
                 abi.encodePacked(
-                    " Shares: ",
+                    "[",
+                    '{"trait_type": "Shares", "value": "',
                     shares,
-                    "\\nFree After: ",
+                    '"},'
+                    '{"trait_type": "Free After", "value": "',
                     freeAfter,
-                    "\\nWithdraw Free After: ",
+                    '"},'
+                    '{"trait_type": "Withdraw Free After", "value": "',
                     withdrawFreeAfter,
-                    "\\nAccumulator Eth: ",
+                    '"},'
+                    '{"trait_type": "Accumulator Eth", "value": "',
                     accumulatorEth,
-                    "\\nAccumulator Token: ",
+                    '"},'
+                    '{"trait_type": "Accumulator Token", "value": "',
                     accumulatorToken,
-                    "\\nToken ID: ",
-                    tokenId
+                    '"},'
+                    '{"trait_type": "Token ID", "value": "',
+                    tokenId,
+                    '"}'
+                    "]"
                 )
             );
     }
@@ -162,7 +167,7 @@ library StakingDescriptor {
     {
         return
             string(
-                abi.encodePacked("AliceNet Staked token for position #", params.tokenId.toString())
+                abi.encodePacked("AliceNet Staked Token For Position #", params.tokenId.toString())
             );
     }
 }

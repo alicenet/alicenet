@@ -1,14 +1,10 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { ethers } from "hardhat";
-import {
-  AToken,
-  HugeAccumulatorStaking,
-  LegacyToken,
-} from "../../../typechain-types";
+import { AToken, HugeAccumulatorStaking } from "../../../typechain-types";
 import {
   createUsers,
   deployAliceNetFactory,
-  deployStaticWithFactory,
+  deployUpgradeableWithFactory,
   mineBlocks,
   posFixtureSetup,
   preFixtureSetup,
@@ -34,29 +30,25 @@ describe("PublicStaking: Accumulator Overflow", async () => {
   beforeEach(async function () {
     const [adminSigner] = await ethers.getSigners();
     await preFixtureSetup();
-    const factory = await deployAliceNetFactory(adminSigner);
-
-    const legacyToken = (await deployStaticWithFactory(
-      factory,
-      "LegacyToken"
-    )) as LegacyToken;
+    const legacyToken = await (
+      await ethers.getContractFactory("LegacyToken")
+    ).deploy();
+    const factory = await deployAliceNetFactory(
+      adminSigner,
+      legacyToken.address
+    );
 
     // AToken
-    aToken = (await deployStaticWithFactory(
-      factory,
+    aToken = await ethers.getContractAt(
       "AToken",
-      "AToken",
-      undefined,
-      [legacyToken.address]
-    )) as AToken;
-
-    stakingContract = (await deployStaticWithFactory(
+      await factory.lookup(ethers.utils.formatBytes32String("AToken"))
+    );
+    stakingContract = (await deployUpgradeableWithFactory(
       factory,
       "HugeAccumulatorStaking",
       "PublicStaking"
     )) as HugeAccumulatorStaking;
-
-    await posFixtureSetup(factory, aToken, legacyToken);
+    await posFixtureSetup(factory, aToken);
     await aToken.approve(
       stakingContract.address,
       ethers.utils.parseUnits("100000", 18)
