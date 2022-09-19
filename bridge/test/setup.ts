@@ -15,11 +15,13 @@ import {
   AToken,
   ATokenBurner,
   ATokenMinter,
+  BridgePoolFactory,
   BToken,
   Distribution,
   Dynamics,
   ETHDKG,
   Foundation,
+  IBridgePool,
   InvalidTxConsumptionAccusation,
   LegacyToken,
   LiquidityProviderStaking,
@@ -172,7 +174,7 @@ export const createUsers = async (
   return users;
 };
 
-async function getContractAddressFromDeployedStaticEvent(
+export async function getContractAddressFromDeployedStaticEvent(
   tx: ContractTransaction
 ): Promise<string> {
   const eventSignature = "event DeployedStatic(address contractAddr)";
@@ -180,7 +182,7 @@ async function getContractAddressFromDeployedStaticEvent(
   return await getContractAddressFromEventLog(tx, eventSignature, eventName);
 }
 
-async function getContractAddressFromDeployedProxyEvent(
+export async function getContractAddressFromDeployedProxyEvent(
   tx: ContractTransaction
 ): Promise<string> {
   const eventSignature = "event DeployedProxy(address contractAddr)";
@@ -196,7 +198,7 @@ export async function getContractAddressFromDeployedRawEvent(
   return await getContractAddressFromEventLog(tx, eventSignature, eventName);
 }
 
-async function getContractAddressFromEventLog(
+export async function getContractAddressFromEventLog(
   tx: ContractTransaction,
   eventSignature: string,
   eventName: string
@@ -231,8 +233,10 @@ export const deployUpgradeableWithFactory = async (
   salt?: string,
   initCallData?: any[],
   constructorArgs: any[] = [],
-  saltType?: string
+  saltType?: string,
+  initialize?: boolean
 ): Promise<Contract> => {
+  if (initialize === undefined) initialize = true;
   const _Contract = await ethers.getContractFactory(contractName);
   let deployCode = _Contract.getDeployTransaction(...constructorArgs)
     .data as BytesLike;
@@ -270,7 +274,6 @@ export const deployUpgradeableWithFactory = async (
       saltBytes = getBytes32Salt(salt);
     }
   }
-
   const transaction2 = await factory.deployProxy(saltBytes);
   receipt = await ethers.provider.getTransactionReceipt(transaction2.hash);
   if (
@@ -282,16 +285,18 @@ export const deployUpgradeableWithFactory = async (
     );
   }
   let initCallDataBin = "0x";
-  try {
-    initCallDataBin = _Contract.interface.encodeFunctionData(
-      "initialize",
-      initCallData
-    );
-  } catch (error) {
-    if (!(error as Error).message.includes("no matching function")) {
-      console.warn(
-        `Error deploying contract ${contractName} couldn't get initialize arguments: ${error}`
+  if (initialize) {
+    try {
+      initCallDataBin = _Contract.interface.encodeFunctionData(
+        "initialize",
+        initCallData
       );
+    } catch (error) {
+      if (!(error as Error).message.includes("no matching function")) {
+        console.warn(
+          `Error deploying contract ${contractName} couldn't get initialize arguments: ${error}`
+        );
+      }
     }
   }
   await factory.upgradeProxy(saltBytes, logicAddr, initCallDataBin);
@@ -530,6 +535,24 @@ export const getFixture = async (
     "ATokenBurner"
   )) as ATokenBurner;
 
+  const localERC20BridgePoolV1 = (await deployUpgradeableWithFactory(
+    factory,
+    "LocalERC20BridgePoolV1Mock",
+    getBridgePoolSalt("LocalERC20", 1),
+    undefined,
+    undefined,
+    undefined,
+    false
+  )) as IBridgePool;
+
+  const bridgePoolFactory = (await deployUpgradeableWithFactory(
+    factory,
+    "BridgePoolFactory",
+    "BridgePoolFactory",
+    undefined,
+    [1337]
+  )) as BridgePoolFactory;
+
   const invalidTxConsumptionAccusation = (await deployUpgradeableWithFactory(
     factory,
     "InvalidTxConsumptionAccusation",
@@ -581,6 +604,8 @@ export const getFixture = async (
     snapshots,
     ethdkg,
     factory,
+    localERC20BridgePoolV1,
+    bridgePoolFactory,
     namedSigners,
     aTokenMinter,
     aTokenBurner,
@@ -694,4 +719,16 @@ export const getReceiptForFailedTransaction = async (
     }
   }
   return receipt;
+};
+
+export const getBridgePoolSalt = (id: string, version: number): string => {
+  return ethers.utils.keccak256(
+    ethers.utils.solidityPack(
+      ["bytes32", "bytes32"],
+      [
+        ethers.utils.solidityKeccak256(["string"], [id]),
+        ethers.utils.solidityKeccak256(["uint16"], [version]),
+      ]
+    )
+  );
 };
