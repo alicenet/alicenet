@@ -289,7 +289,6 @@ abstract contract ImmutableLiquidityProviderStaking is ImmutableFactory {
     }
 }
 
-
 abstract contract ImmutableLocalERC721BridgePoolV1 is ImmutableFactory {
     address private immutable _localERC721BridgePoolV1;
     error OnlyLocalERC721BridgePoolV1(address sender, address expected);
