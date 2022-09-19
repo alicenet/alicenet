@@ -289,59 +289,6 @@ abstract contract ImmutableLiquidityProviderStaking is ImmutableFactory {
     }
 }
 
-abstract contract ImmutableLocalERC1155BridgePoolV1 is ImmutableFactory {
-    address private immutable _localERC1155BridgePoolV1;
-    error OnlyLocalERC1155BridgePoolV1(address sender, address expected);
-
-    modifier onlyLocalERC1155BridgePoolV1() {
-        if (msg.sender != _localERC1155BridgePoolV1) {
-            revert OnlyLocalERC1155BridgePoolV1(msg.sender, _localERC1155BridgePoolV1);
-        }
-        _;
-    }
-
-    constructor() {
-        _localERC1155BridgePoolV1 = getMetamorphicContractAddress(
-            0x4c6f63616c45524331313535427269646765506f6f6c56310000000000000000,
-            _factoryAddress()
-        );
-    }
-
-    function _localERC1155BridgePoolV1Address() internal view returns (address) {
-        return _localERC1155BridgePoolV1;
-    }
-
-    function _saltForLocalERC1155BridgePoolV1() internal pure returns (bytes32) {
-        return 0x4c6f63616c45524331313535427269646765506f6f6c56310000000000000000;
-    }
-}
-
-abstract contract ImmutableLocalERC20BridgePoolV1 is ImmutableFactory {
-    address private immutable _localERC20BridgePoolV1;
-    error OnlyLocalERC20BridgePoolV1(address sender, address expected);
-
-    modifier onlyLocalERC20BridgePoolV1() {
-        if (msg.sender != _localERC20BridgePoolV1) {
-            revert OnlyLocalERC20BridgePoolV1(msg.sender, _localERC20BridgePoolV1);
-        }
-        _;
-    }
-
-    constructor() {
-        _localERC20BridgePoolV1 = getMetamorphicContractAddress(
-            0x4c6f63616c4552433230427269646765506f6f6c563100000000000000000000,
-            _factoryAddress()
-        );
-    }
-
-    function _localERC20BridgePoolV1Address() internal view returns (address) {
-        return _localERC20BridgePoolV1;
-    }
-
-    function _saltForLocalERC20BridgePoolV1() internal pure returns (bytes32) {
-        return 0x4c6f63616c4552433230427269646765506f6f6c563100000000000000000000;
-    }
-}
 
 abstract contract ImmutableLocalERC721BridgePoolV1 is ImmutableFactory {
     address private immutable _localERC721BridgePoolV1;
