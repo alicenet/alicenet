@@ -1,4 +1,3 @@
-import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { BigNumber, BigNumberish, ContractTransaction } from "ethers";
 import { ethers } from "hardhat";
 import {
@@ -623,9 +622,7 @@ export const startAtDistributeShares = async (
   }
 ): Promise<[ETHDKG, ValidatorPoolMock | ValidatorPool, number]> => {
   const { ethdkg, validatorPool } =
-    typeof contracts !== "undefined"
-      ? contracts
-      : await loadFixture(deployFixture);
+    typeof contracts !== "undefined" ? contracts : await deployFixture();
   // add validators
   if ((<ValidatorPoolMock>validatorPool).isMock) {
     await addValidators(validatorPool, validators);
