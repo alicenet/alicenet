@@ -1,3 +1,4 @@
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { BigNumber } from "ethers";
 import { ethers, expect } from "hardhat";
 import { getFixture, getValidatorEthAccount } from "../../setup";
@@ -13,9 +14,13 @@ import {
   startAtDistributeShares,
 } from "../setup";
 
+function deployFixture() {
+  return getFixture(true);
+}
+
 describe("ETHDKG: Distribute Shares", () => {
   it("does not let distribute shares before Distribute Share Phase is open", async function () {
-    const { ethdkg, validatorPool } = await getFixture(true);
+    const { ethdkg, validatorPool } = await loadFixture(deployFixture);
 
     const expectedNonce = 1;
 

@@ -1,3 +1,4 @@
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
 import { getFixture, getValidatorEthAccount } from "../../setup";
@@ -11,8 +12,12 @@ import {
 } from "../setup";
 
 describe("ETHDKG: Registration Open", () => {
+  function deployFixture() {
+    return getFixture(true);
+  }
+
   it("does not let registrations before ETHDKG Registration is open", async function () {
-    const { ethdkg, validatorPool } = await getFixture(true);
+    const { ethdkg, validatorPool } = await loadFixture(deployFixture);
 
     // add validators
     await addValidators(validatorPool, validators4);
@@ -42,7 +47,7 @@ describe("ETHDKG: Registration Open", () => {
   });
 
   it("does not let validators to register more than once", async function () {
-    const { ethdkg, validatorPool } = await getFixture(true);
+    const { ethdkg, validatorPool } = await loadFixture(deployFixture);
 
     // add validators
     await addValidators(validatorPool, validators4);
@@ -81,7 +86,7 @@ describe("ETHDKG: Registration Open", () => {
   });
 
   it("does not let validators to register with an incorrect key", async function () {
-    const { ethdkg, validatorPool } = await getFixture(true);
+    const { ethdkg, validatorPool } = await loadFixture(deployFixture);
 
     // add validators
     await addValidators(validatorPool, validators4);
@@ -117,7 +122,7 @@ describe("ETHDKG: Registration Open", () => {
   });
 
   it("does not let non-validators to register", async function () {
-    const { ethdkg, validatorPool } = await getFixture(true);
+    const { ethdkg, validatorPool } = await loadFixture(deployFixture);
 
     // add validators
     await addValidators(validatorPool, validators4);

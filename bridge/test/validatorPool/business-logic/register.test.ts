@@ -1,3 +1,4 @@
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BigNumber, ContractTransaction, Signer } from "ethers";
 import { ethers } from "hardhat";
@@ -30,13 +31,28 @@ describe("ValidatorPool: Registration logic", async () => {
   let stakingTokenIds: BigNumber[];
   const dummyAddress = "0x000000000000000000000000000000000000dEaD";
 
+  async function deployFixture() {
+    const fixture = await getFixture(false, true, true);
+    const [admin, , ,] = fixture.namedSigners;
+    const adminSigner = await getValidatorEthAccount(admin.address);
+    const validators = await createValidators(fixture, validatorsSnapshots);
+    const stakingTokenIds = await stakeValidators(fixture, validators);
+    const stakeAmount = (
+      await fixture.validatorPool.getStakeAmount()
+    ).toBigInt();
+    return {
+      fixture,
+      stakeAmount,
+      validators,
+      stakingTokenIds,
+      admin,
+      adminSigner,
+    };
+  }
+
   beforeEach(async function () {
-    fixture = await getFixture(false, true, true);
-    [admin, , ,] = fixture.namedSigners;
-    adminSigner = await getValidatorEthAccount(admin.address);
-    validators = await createValidators(fixture, validatorsSnapshots);
-    stakingTokenIds = await stakeValidators(fixture, validators);
-    stakeAmount = (await fixture.validatorPool.getStakeAmount()).toBigInt();
+    ({ fixture, stakeAmount, validators, stakingTokenIds, admin, adminSigner } =
+      await loadFixture(deployFixture));
   });
 
   it("Should not allow registering validators if the PublicStaking position doesn’t have enough Tokens staked", async function () {
