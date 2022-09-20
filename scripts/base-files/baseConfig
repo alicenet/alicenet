@@ -1,4 +1,4 @@
-logging = "main=trace,ethereum=info,consensus=info"
+logging = "main=info,ethereum=info,consensus=info"
 
 [loglevel]
 blockchain = "debug"

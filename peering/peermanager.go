@@ -510,7 +510,6 @@ func (ps *PeerManager) discoDialBootnode() {
 		if err != nil {
 			utils.DebugTrace(ps.logger, err)
 		}
-
 		// add all peers as inactive
 		for i := 0; i < len(peers); i++ {
 			p := peers[i]
