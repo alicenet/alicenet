@@ -75,6 +75,28 @@ func (ht *headerTrie) GetProof(txn *badger.Txn, rootHash, root []byte, height ui
 	return included, mpbytes, nil
 }
 
+func (ht *headerTrie) GetTransactionProof(txn *badger.Txn, rootHash, txHash []byte) (*MerkleProof, []byte, error) {
+	tr := trie.NewSMT(rootHash, crypto.Hasher, dbprefix.PrefixBlockHeaderTrie)
+	bitmap, auditPath, proofHeight, included, proofKey, proofVal, err := tr.MerkleProofCompressed(txn, txHash)
+	if err != nil {
+		return nil, nil, err
+	}
+	mproof := &MerkleProof{
+		Included:   included,
+		KeyHeight:  proofHeight,
+		Key:        txHash,
+		ProofKey:   proofKey,
+		ProofValue: proofVal,
+		Bitmap:     bitmap,
+		Path:       auditPath,
+	}
+	mpbytes, err := mproof.MarshalBinary()
+	if err != nil {
+		return nil, nil, err
+	}
+	return mproof, mpbytes, nil
+}
+
 func (ht *headerTrie) Get(txn *badger.Txn, rootHash []byte, height uint32) ([]byte, error) {
 	tr := trie.NewSMT(rootHash, crypto.Hasher, dbprefix.PrefixBlockHeaderTrie)
 	heightBytes := utils.MarshalUint32(height)

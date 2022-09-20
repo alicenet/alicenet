@@ -147,7 +147,7 @@ func PersistentTxHash(txn *badger.Txn, b *objs.Tx) (*trie.SMT, []byte, error) {
 		keys = append(keys, id)
 		values = append(values, hsh)
 	}
-	for i, _ := range keys {
+	for i := range keys {
 		log.Printf("TxHash Key: %x\n", keys[i])
 		log.Printf("TxHash Value: %x\n", values[i])
 	}
@@ -760,6 +760,8 @@ func TestGenerateAccusations(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	// done so far
+
 	log.Printf("\n\n ========Creating the merkle proof for the TxHASHSMT ==========")
 	bitmap, auditPath, proofHeight, included, proofKey, proofVal, err = txHashSMT.MerkleProofCompressed(newTxn, tx2UTXOID[0])
 	if err != nil {
@@ -780,6 +782,7 @@ func TestGenerateAccusations(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	// not yet here
 	preImageBin, err := tx2.Vin[0].TXInLinker.TXInPreImage.MarshalBinary()
 	if err != nil {
 		t.Fatal(err)

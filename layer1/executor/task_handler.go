@@ -2,10 +2,12 @@ package executor
 
 import (
 	"context"
+	"encoding/gob"
 
 	"github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/layer1"
 	"github.com/alicenet/alicenet/layer1/executor/tasks"
+	"github.com/alicenet/alicenet/layer1/executor/tasks/accusations"
 	monitorInterfaces "github.com/alicenet/alicenet/layer1/monitor/interfaces"
 	"github.com/alicenet/alicenet/layer1/transaction"
 	"github.com/alicenet/alicenet/logging"
@@ -43,6 +45,9 @@ func NewTaskHandler(database *db.Database, eth layer1.Client, contracts layer1.A
 		closeMainContext: cf,
 		requestChannel:   requestChan,
 	}
+
+	// register gob types
+	gob.Register(&accusations.InvalidUTXOConsumptionAccusationTask{})
 
 	return handler, nil
 }
