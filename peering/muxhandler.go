@@ -4,14 +4,13 @@ import (
 	"net"
 	"sync"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/interfaces"
 	"github.com/alicenet/alicenet/logging"
 	pb "github.com/alicenet/alicenet/proto"
 	"github.com/alicenet/alicenet/types"
 	"github.com/alicenet/alicenet/utils"
+	"github.com/sirupsen/logrus"
 )
 
 // MuxHandler allows a P2PMuxConn to be converted into a bidirectional grpc

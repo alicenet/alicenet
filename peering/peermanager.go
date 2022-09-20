@@ -8,8 +8,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/interfaces"
 	"github.com/alicenet/alicenet/logging"
@@ -17,6 +15,7 @@ import (
 	"github.com/alicenet/alicenet/transport"
 	"github.com/alicenet/alicenet/types"
 	"github.com/alicenet/alicenet/utils"
+	"github.com/sirupsen/logrus"
 )
 
 // PeerManager is a self contained system for management of peering.

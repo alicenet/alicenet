@@ -1,9 +1,8 @@
 package peering
 
 import (
-	"github.com/sirupsen/logrus"
-
 	"github.com/alicenet/alicenet/interfaces"
+	"github.com/sirupsen/logrus"
 )
 
 type p2PClient struct {
