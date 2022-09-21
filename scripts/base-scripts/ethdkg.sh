@@ -16,6 +16,6 @@ if [[ -z "${FACTORY_ADDRESS}" ]]; then
     fi
 fi
 
-npx hardhat --network "$NETWORK" --show-stack-traces initializeEthdkg --factory-address "$FACTORY_ADDRESS"
+npx hardhat --network "$NETWORK" --show-stack-traces initialize-ethdkg --factory-address "$FACTORY_ADDRESS"
 
 cd "$CURRENT_WD"
