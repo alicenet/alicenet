@@ -384,8 +384,7 @@ func (eth *Client) IsAccessible() bool {
 	if err == nil && block != nil {
 		return true
 	}
-
-	eth.logger.Debug("IsEthereumAccessible()...false")
+	eth.logger.WithError(err).Warning("IsEthereumAccessible()...false")
 	return false
 }
 

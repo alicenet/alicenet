@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"github.com/alicenet/alicenet/cmd/ethkey"
 	"io/ioutil"
 	"os"
 	"reflect"
@@ -10,6 +9,7 @@ import (
 	"time"
 
 	"github.com/alicenet/alicenet/cmd/bootnode"
+	"github.com/alicenet/alicenet/cmd/ethkey"
 	"github.com/alicenet/alicenet/cmd/firewalld"
 	"github.com/alicenet/alicenet/cmd/node"
 	"github.com/alicenet/alicenet/cmd/utils"
@@ -47,7 +47,9 @@ func runner(commandRun func(*cobra.Command, []string)) func(*cobra.Command, []st
 			if logLevel == "" {
 				logLevel = "info"
 			}
-			logger.Infof("Setting log level for '%v' to '%v'", logName, logLevel)
+			if logLevel != "info" {
+				logger.Infof("Setting log level for '%v' to '%v'", logName, logLevel)
+			}
 			setLogger(logName, logLevel)
 		}
 		// backwards compatibility
@@ -282,7 +284,7 @@ func main() {
 				logger.Warnf("Reading file failed:%q", err)
 			}
 		} else {
-			logger.Warnf("Opening file failed:%q", err)
+			logger.Debugf("Opening file failed: %q", err)
 		}
 
 		/* The logic here feels backwards to me but it isn't.
