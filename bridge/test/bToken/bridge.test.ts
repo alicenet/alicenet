@@ -141,7 +141,6 @@ describe("Testing BToken bridge methods", async () => {
     const tx = await fixture.bToken
       .connect(user)
       .depositTokensOnBridges(_poolVersion, encodedDepositCallData);
-    console.log(ethsFromBurning);
     expectedState.Balances.bToken.user -= BigInt(bTokenFee);
     expectedState.Balances.eth.user -= getEthConsumedAsGas(await tx.wait());
     expectedState.Balances.bToken.totalSupply -= BigInt(bTokenFee);
@@ -163,62 +162,6 @@ describe("Testing BToken bridge methods", async () => {
         .connect(user)
         .depositTokensOnBridges(_poolVersion, encodedDepositCallData)
     ).to.be.revertedWith("ERC20: burn amount exceeds balance");
-  });
-
-  it("Should deposit tokens into the updated bridge", async () => {
-    // new fee on v2
-    const newBTokenFee = 5000;
-    await deployUpgradeableWithFactory(
-      fixture.factory,
-      "BridgeRouterMock",
-      getBridgeRouterSalt(2),
-      undefined,
-      [newBTokenFee]
-    );
-    const _poolVersion = 2;
-    expectedState = await getState(fixture);
-    ethsFromBurning = await fixture.bToken.getLatestEthFromBTokensBurn(
-      newBTokenFee
-    );
-    let tx = await fixture.bToken
-      .connect(user)
-      .depositTokensOnBridges(_poolVersion, encodedDepositCallData);
-
-    expectedState.Balances.bToken.user -= BigInt(newBTokenFee);
-    expectedState.Balances.eth.user -= getEthConsumedAsGas(await tx.wait());
-    expectedState.Balances.bToken.totalSupply -= BigInt(newBTokenFee);
-    expectedState.Balances.bToken.poolBalance -= ethsFromBurning.toBigInt();
-    expect(await getState(fixture)).to.be.deep.equal(expectedState);
-
-    // should be still able to deposit on the old bridge
-    const _oldPoolVersion = 1;
-    expectedState = await getState(fixture);
-    ethsFromBurning = await fixture.bToken.getLatestEthFromBTokensBurn(
-      bTokenFee
-    );
-    tx = await fixture.bToken
-      .connect(user)
-      .depositTokensOnBridges(_oldPoolVersion, encodedDepositCallData);
-    expectedState.Balances.bToken.user -= BigInt(bTokenFee);
-    expectedState.Balances.eth.user -= getEthConsumedAsGas(await tx.wait());
-    expectedState.Balances.bToken.totalSupply -= BigInt(bTokenFee);
-    expectedState.Balances.bToken.poolBalance -= ethsFromBurning.toBigInt();
-    expect(await getState(fixture)).to.be.deep.equal(expectedState);
-  });
-
-  it("Should not deposit BTokens into an inexistent bridge router version", async () => {
-    expectedState = await getState(fixture);
-    const _poolVersion = 2; // inexistent version
-    const expectedErrAddress = await fixture.factory.lookup(
-      getBridgeRouterSalt(2)
-    );
-    await expect(
-      fixture.bToken
-        .connect(user)
-        .depositTokensOnBridges(_poolVersion, encodedDepositCallData)
-    )
-      .to.be.revertedWithCustomError(fixture.bToken, "InexistentRouterContract")
-      .withArgs(expectedErrAddress);
   });
 
   it("Should not deposit tokens into the bridge when insufficient eth fee is sent", async () => {

@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT-open-group
 pragma solidity ^0.8.16;
 
-import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "contracts/utils/ImmutableAuth.sol";
 import "contracts/interfaces/IStakingToken.sol";
@@ -11,12 +10,10 @@ import "contracts/libraries/errors/StakingTokenErrors.sol";
  * @notice This is the ERC20 implementation of the staking token used by the
  * AliceNet layer2 dapp.
  *
- * @custom:salt AToken
- * @custom:deploy-type deployStatic
  */
 contract AToken is
     IStakingToken,
-    ERC20Upgradeable,
+    ERC20,
     ImmutableFactory,
     ImmutableATokenMinter,
     ImmutableATokenBurner
@@ -28,18 +25,13 @@ contract AToken is
     bool internal _hasEarlyStageEnded;
 
     constructor(address legacyToken_)
+        ERC20("AliceNet Staking Token", "ALCA")
         ImmutableFactory(msg.sender)
         ImmutableATokenMinter()
         ImmutableATokenBurner()
     {
         _legacyToken = legacyToken_;
-    }
-
-    function initialize() public onlyFactory initializer {
-        if (totalSupply() == 0) {
-            __ERC20_init("AliceNet Staking Token", "ALCA");
-            _mint(msg.sender, _INITIAL_MINT_AMOUNT);
-        }
+        _mint(msg.sender, _INITIAL_MINT_AMOUNT);
     }
 
     /**

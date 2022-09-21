@@ -12,10 +12,18 @@ import (
 
 // IAliceNetFactoryTransactor ...
 type IAliceNetFactoryTransactor interface {
+	// AddNewExternalContract is a paid mutator transaction binding the contract method 0x6973694c.
+	//
+	// Solidity: function addNewExternalContract(bytes32 salt_, address newContractAddress_) returns()
+	AddNewExternalContract(opts *bind.TransactOpts, salt_ [32]byte, newContractAddress_ common.Address) (*types.Transaction, error)
 	// CallAny is a paid mutator transaction binding the contract method 0x12e6bf6a.
 	//
 	// Solidity: function callAny(address target_, uint256 value_, bytes cdata_) payable returns()
 	CallAny(opts *bind.TransactOpts, target_ common.Address, value_ *big.Int, cdata_ []byte) (*types.Transaction, error)
+	// DelegateCallAny is a paid mutator transaction binding the contract method 0x4713ee7a.
+	//
+	// Solidity: function delegateCallAny(address target_, bytes cdata_) payable returns()
+	DelegateCallAny(opts *bind.TransactOpts, target_ common.Address, cdata_ []byte) (*types.Transaction, error)
 	// DeployCreate is a paid mutator transaction binding the contract method 0x27fe1822.
 	//
 	// Solidity: function deployCreate(bytes deployCode_) returns(address contractAddr)
@@ -28,14 +36,6 @@ type IAliceNetFactoryTransactor interface {
 	//
 	// Solidity: function deployProxy(bytes32 salt_) returns(address contractAddr)
 	DeployProxy(opts *bind.TransactOpts, salt_ [32]byte) (*types.Transaction, error)
-	// DeployStatic is a paid mutator transaction binding the contract method 0xfa481da5.
-	//
-	// Solidity: function deployStatic(bytes32 salt_, bytes initCallData_) returns(address contractAddr)
-	DeployStatic(opts *bind.TransactOpts, salt_ [32]byte, initCallData_ []byte) (*types.Transaction, error)
-	// DeployTemplate is a paid mutator transaction binding the contract method 0x17cff2c5.
-	//
-	// Solidity: function deployTemplate(bytes deployCode_) returns(address contractAddr)
-	DeployTemplate(opts *bind.TransactOpts, deployCode_ []byte) (*types.Transaction, error)
 	// InitializeContract is a paid mutator transaction binding the contract method 0xe1d7a8e4.
 	//
 	// Solidity: function initializeContract(address contract_, bytes initCallData_) returns()
