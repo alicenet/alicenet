@@ -117,7 +117,12 @@ task(
     const network = hre.network.name;
     await updateDefaultFactoryData(network, factoryData, taskArgs.outputFolder);
     await showState(
-      `Deployed: ${ALICENET_FACTORY}, at address: ${factory.address}, with ${gasCost} gas`
+      `Deployed ${ALICENET_FACTORY} at address: ${factory.address}, gasCost: ${gasCost}`
+    );
+    await showState(
+      `Deployed ALCA at address: ${await factory.lookup(
+        hre.ethers.utils.formatBytes32String("AToken")
+      )}, gasCost: ${gasCost}`
     );
     return factoryData;
   });

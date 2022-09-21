@@ -1,5 +1,5 @@
 #!/bin/bash
-set -ex
+set -e
 
 NETWORK=${1:-"dev"}
 CURRENT_WD=$PWD
