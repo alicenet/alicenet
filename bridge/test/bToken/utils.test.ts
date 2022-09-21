@@ -11,25 +11,6 @@ describe("Testing BToken Utils methods", async () => {
     showState("Initial", await getState(fixture));
   });
 
-  it("Should not allow initialize more than once", async () => {
-    await expect(
-      fixture.factory.callAny(
-        fixture.bToken.address,
-        0,
-        fixture.bToken.interface.encodeFunctionData("initialize")
-      )
-    ).to.revertedWith("Initializable: contract is already initialized");
-  });
-
-  it("Only factory should be allowed to call initialize", async () => {
-    const bToken = await (await ethers.getContractFactory("BToken")).deploy();
-    const [, user] = await ethers.getSigners();
-    await expect(bToken.connect(user).initialize()).to.revertedWithCustomError(
-      bToken,
-      "OnlyFactory"
-    );
-  });
-
   it("Should calculate correct bounding curves", async () => {
     let eth = 10000;
     let bTokens = await fixture.bToken.getLatestMintedBTokensFromEth(

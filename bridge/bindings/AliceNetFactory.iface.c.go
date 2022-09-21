@@ -15,6 +15,14 @@ type IAliceNetFactoryCaller interface {
 	//
 	// Solidity: function contracts() view returns(bytes32[] contracts_)
 	Contracts(opts *bind.CallOpts) ([][32]byte, error)
+	// GetATokenAddress is a free data retrieval call binding the contract method 0x82899756.
+	//
+	// Solidity: function getATokenAddress() view returns(address)
+	GetATokenAddress(opts *bind.CallOpts) (common.Address, error)
+	// GetATokenCreationCodeHash is a free data retrieval call binding the contract method 0xf08ed586.
+	//
+	// Solidity: function getATokenCreationCodeHash() view returns(bytes32)
+	GetATokenCreationCodeHash(opts *bind.CallOpts) ([32]byte, error)
 	// GetImplementation is a free data retrieval call binding the contract method 0xaaf10f42.
 	//
 	// Solidity: function getImplementation() view returns(address)
@@ -29,7 +37,7 @@ type IAliceNetFactoryCaller interface {
 	GetNumContracts(opts *bind.CallOpts) (*big.Int, error)
 	// Lookup is a free data retrieval call binding the contract method 0xf39ec1f7.
 	//
-	// Solidity: function lookup(bytes32 salt_) view returns(address addr)
+	// Solidity: function lookup(bytes32 salt_) view returns(address)
 	Lookup(opts *bind.CallOpts, salt_ [32]byte) (common.Address, error)
 	// Owner is a free data retrieval call binding the contract method 0x8da5cb5b.
 	//

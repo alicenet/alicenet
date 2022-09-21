@@ -106,6 +106,15 @@ type firewalldConfig struct {
 	SocketFile string
 }
 
+type ethKeyConfig struct {
+	PasswordFile    string
+	Json            bool
+	PrivateKey      string
+	LightKDF        bool
+	Private         bool
+	NewPasswordFile string
+}
+
 type configuration struct {
 	ConfigurationFileName string
 	LoggingLevels         string // backwards compatibility
@@ -118,6 +127,7 @@ type configuration struct {
 	Firewalld             firewalldConfig
 	Chain                 chainConfig
 	BootNode              bootnodeConfig
+	EthKey                ethKeyConfig
 	Version               string
 }
 
