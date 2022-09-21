@@ -1,3 +1,4 @@
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { ethers } from "hardhat";
 import { AToken, HugeAccumulatorStaking } from "../../../typechain-types";
@@ -27,7 +28,7 @@ describe("PublicStaking: Accumulator Overflow", async () => {
   const numberUsers: number = 2;
   let users: SignerWithAddress[] = [];
 
-  beforeEach(async function () {
+  async function deployFixture() {
     const [adminSigner] = await ethers.getSigners();
     await preFixtureSetup();
     const legacyToken = await (
@@ -39,21 +40,22 @@ describe("PublicStaking: Accumulator Overflow", async () => {
     );
 
     // AToken
-    aToken = await ethers.getContractAt(
+    const aToken = await ethers.getContractAt(
       "AToken",
       await factory.lookup(ethers.utils.formatBytes32String("AToken"))
     );
-    stakingContract = (await deployUpgradeableWithFactory(
+    const stakingContract = (await deployUpgradeableWithFactory(
       factory,
       "HugeAccumulatorStaking",
       "PublicStaking"
     )) as HugeAccumulatorStaking;
     await posFixtureSetup(factory, aToken);
+
     await aToken.approve(
       stakingContract.address,
       ethers.utils.parseUnits("100000", 18)
     );
-    users = await createUsers(numberUsers);
+    const users = await createUsers(numberUsers);
     const baseAmount = ethers.utils.parseUnits("100", 0).toBigInt();
     for (let i = 0; i < numberUsers; i++) {
       await aToken.transfer(await users[i].getAddress(), baseAmount);
@@ -62,6 +64,12 @@ describe("PublicStaking: Accumulator Overflow", async () => {
         .approve(stakingContract.address, baseAmount);
     }
     await mineBlocks(2n);
+
+    return { factory, stakingContract, aToken, users };
+  }
+
+  beforeEach(async function () {
+    ({ stakingContract, aToken, users } = await loadFixture(deployFixture));
   });
 
   it("Collect Tokens and ETH with overflow in the accumulators", async function () {

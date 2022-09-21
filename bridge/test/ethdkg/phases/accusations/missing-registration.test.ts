@@ -1,3 +1,4 @@
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { ethers } from "hardhat";
 import {
   getFixture,
@@ -18,9 +19,13 @@ import {
   registerValidators,
 } from "../../setup";
 
+function deployFixture() {
+  return getFixture(true);
+}
+
 describe("ETHDKG: Missing registration Accusation", () => {
   it("allows accusation of all missing validators after ETHDKG registration", async function () {
-    const { ethdkg, validatorPool } = await getFixture(true);
+    const { ethdkg, validatorPool } = await loadFixture(deployFixture);
 
     const expectedNonce = 1;
 
@@ -60,7 +65,7 @@ describe("ETHDKG: Missing registration Accusation", () => {
   });
 
   it("allows accusation of some missing validators after ETHDKG registration", async function () {
-    const { ethdkg, validatorPool } = await getFixture(true);
+    const { ethdkg, validatorPool } = await loadFixture(deployFixture);
 
     const expectedNonce = 1;
 
@@ -99,7 +104,7 @@ describe("ETHDKG: Missing registration Accusation", () => {
   // MISSING REGISTRATION ACCUSATION TESTS
 
   it("won't let non-registration accusations to take place while ETHDKG registration is open", async function () {
-    const { ethdkg, validatorPool } = await getFixture(true);
+    const { ethdkg, validatorPool } = await loadFixture(deployFixture);
 
     const ETHDKGAccusations = await ethers.getContractAt(
       "ETHDKGAccusations",
@@ -146,7 +151,7 @@ describe("ETHDKG: Missing registration Accusation", () => {
   });
 
   it("should not allow validators to proceed to next phase if 2 out of 4 did not register and the phase has finished", async function () {
-    const { ethdkg, validatorPool } = await getFixture(true);
+    const { ethdkg, validatorPool } = await loadFixture(deployFixture);
 
     const expectedNonce = 1;
 
@@ -196,7 +201,7 @@ describe("ETHDKG: Missing registration Accusation", () => {
   });
 
   it("should not allow validators who did not register in time to register on the accusation phase", async function () {
-    const { ethdkg, validatorPool } = await getFixture(true);
+    const { ethdkg, validatorPool } = await loadFixture(deployFixture);
 
     const expectedNonce = 1;
 
@@ -243,7 +248,7 @@ describe("ETHDKG: Missing registration Accusation", () => {
   });
 
   it("should not allow validators who did not register in time to distribute shares", async function () {
-    const { ethdkg, validatorPool } = await getFixture(true);
+    const { ethdkg, validatorPool } = await loadFixture(deployFixture);
 
     const expectedNonce = 1;
 
@@ -294,7 +299,7 @@ describe("ETHDKG: Missing registration Accusation", () => {
   });
 
   it("should not allow accusation of validators that registered in ETHDKG", async function () {
-    const { ethdkg, validatorPool } = await getFixture(true);
+    const { ethdkg, validatorPool } = await loadFixture(deployFixture);
 
     const ETHDKGAccusations = await ethers.getContractAt(
       "ETHDKGAccusations",
@@ -334,7 +339,7 @@ describe("ETHDKG: Missing registration Accusation", () => {
   });
 
   it("should not allow accusation of non-existent validators in ETHDKG", async function () {
-    const { ethdkg, validatorPool } = await getFixture(true);
+    const { ethdkg, validatorPool } = await loadFixture(deployFixture);
 
     const ETHDKGAccusations = await ethers.getContractAt(
       "ETHDKGAccusations",
@@ -370,7 +375,7 @@ describe("ETHDKG: Missing registration Accusation", () => {
   });
 
   it("should not allow accusations after the accusation window", async function () {
-    const { ethdkg, validatorPool } = await getFixture(true);
+    const { ethdkg, validatorPool } = await loadFixture(deployFixture);
 
     const ETHDKGAccusations = await ethers.getContractAt(
       "ETHDKGAccusations",
@@ -424,7 +429,7 @@ describe("ETHDKG: Missing registration Accusation", () => {
   });
 
   it("should not allow accusations of non-existent validators along with existent", async function () {
-    const { ethdkg, validatorPool } = await getFixture(true);
+    const { ethdkg, validatorPool } = await loadFixture(deployFixture);
 
     const ETHDKGAccusations = await ethers.getContractAt(
       "ETHDKGAccusations",
@@ -468,7 +473,7 @@ describe("ETHDKG: Missing registration Accusation", () => {
   it("should not move to ShareDistribution phase when only 2 out of 4 validators have participated", async function () {
     // Accuse 1 participant that didn't participate and wait the window to expire and try to go to the next phase after accusation
 
-    const { ethdkg, validatorPool } = await getFixture(true);
+    const { ethdkg, validatorPool } = await loadFixture(deployFixture);
 
     const expectedNonce = 1;
 
@@ -527,7 +532,7 @@ describe("ETHDKG: Missing registration Accusation", () => {
   });
 
   it("should move to ShareDistribution phase when all non-participant validators have been accused and #validators >= _minValidators", async function () {
-    const { ethdkg, validatorPool } = await getFixture(true);
+    const { ethdkg, validatorPool } = await loadFixture(deployFixture);
 
     const expectedNonce = 1;
 
@@ -595,7 +600,7 @@ describe("ETHDKG: Missing registration Accusation", () => {
   });
 
   it("should not allow double accusation for missing registration", async function () {
-    const { ethdkg, validatorPool } = await getFixture(true);
+    const { ethdkg, validatorPool } = await loadFixture(deployFixture);
 
     const ETHDKGAccusations = await ethers.getContractAt(
       "ETHDKGAccusations",

@@ -1,3 +1,4 @@
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { BigNumber, Signer } from "ethers";
 import { ethers } from "hardhat";
 import { expect } from "../../chai-setup";
@@ -17,6 +18,10 @@ import {
   stakeValidators,
 } from "../setup";
 
+function deployFixture() {
+  return getFixture(false, true, true);
+}
+
 describe("ValidatorPool: Unregistration logic", async () => {
   let fixture: Fixture;
   let stakeAmount: bigint;
@@ -25,7 +30,7 @@ describe("ValidatorPool: Unregistration logic", async () => {
   let adminSigner: Signer;
 
   beforeEach(async function () {
-    fixture = await getFixture(false, true, true);
+    fixture = await loadFixture(deployFixture);
     stakeAmount = (await fixture.validatorPool.getStakeAmount()).toBigInt();
     validators = await createValidators(fixture, validatorsSnapshots);
     stakingTokenIds = await stakeValidators(fixture, validators);

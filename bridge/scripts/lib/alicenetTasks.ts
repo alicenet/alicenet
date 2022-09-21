@@ -418,7 +418,7 @@ task("register-validators", "registers validators")
     false
   )
   .setAction(async (taskArgs, hre) => {
-    console.log("registerValidators", taskArgs.addresses);
+    console.log("\nRegistering Validators\n", taskArgs.addresses);
     const factory = await hre.ethers.getContractAt(
       "AliceNetFactory",
       taskArgs.factoryAddress
@@ -445,25 +445,12 @@ task("register-validators", "registers validators")
       hre
     );
     const validatorAddresses: string[] = taskArgs.addresses;
-    console.log(validatorAddresses);
-    // Make sure that admin is the named account at position 0
-    const [admin] = await hre.ethers.getSigners();
-    console.log(`Admin address: ${admin.address}`);
 
     if (taskArgs.test) {
       await hre.network.provider.send("hardhat_mine", [
         hre.ethers.utils.hexValue(3),
       ]);
     }
-
-    const validatorPool = await hre.ethers.getContractAt(
-      "ValidatorPool",
-      await factory.lookup(
-        hre.ethers.utils.formatBytes32String("ValidatorPool")
-      )
-    );
-    console.log(`validatorPool Address: ${validatorPool.address}`);
-    console.log("Staking validators");
     let tx = await stakeValidators(
       validatorAddresses.length,
       factory.address,
@@ -518,8 +505,6 @@ task("register-validators", "registers validators")
       0,
       regValidatorsCallData
     );
-    console.log(tokenIds);
-    console.log("Registering validators");
     tx = await factory.multiCall(
       [...approveTokens, regValidators],
       await getGasPrices(hre)
@@ -531,8 +516,6 @@ task("register-validators", "registers validators")
     } else {
       await tx.wait(3);
     }
-
-    console.log("done");
   });
 
 task("unregister-validators", "unregister validators")
@@ -546,7 +529,7 @@ task("unregister-validators", "unregister validators")
     false
   )
   .setAction(async (taskArgs, hre) => {
-    console.log("unregisterValidators", taskArgs.addresses);
+    console.log("Unregistering Validators\n", taskArgs.addresses);
     const factory = await hre.ethers.getContractAt(
       "AliceNetFactory",
       taskArgs.factoryAddress
@@ -584,7 +567,6 @@ task("unregister-validators", "unregister validators")
     if (recpt.status !== 1) {
       throw new Error(`Receipt indicates failure: ${recpt}`);
     }
-    console.log("Done");
   });
 
 task("ethdkg-input", "calculate the initializeETHDKG selector").setAction(
@@ -835,7 +817,7 @@ task("initialize-ethdkg", "Start the ethdkg process")
     );
 
     console.log("Initializing ETHDKG");
-    await (
+    const recpt = await (
       await factory
         .connect(adminSigner)
         .callAny(
@@ -844,7 +826,7 @@ task("initialize-ethdkg", "Start the ethdkg process")
           validatorPool.interface.encodeFunctionData("initializeETHDKG")
         )
     ).wait(3);
-    console.log("Done");
+    console.log("ETHDKG trigger at block number:" + recpt.blockNumber);
   });
 
 task("transfer-eth", "transfers eth from default account to receiver")
@@ -1022,7 +1004,7 @@ task(
       [taskArgs.blockNum]
     );
     console.log(
-      `Setting the setMinimumIntervalBetweenSnapshots to ${taskArgs.blockNum}`
+      `\nSetting the setMinimumIntervalBetweenSnapshots to ${taskArgs.blockNum}`
     );
     const rept = await (
       await factory.connect(adminSigner).callAny(snapshots.address, 0, input)
@@ -1030,7 +1012,6 @@ task(
     if (rept.status !== 1) {
       throw new Error(`Receipt indicates failure: ${rept}`);
     }
-    console.log("Done");
   });
 
 task("get-eth-balance", "gets Ethereum balance of account")
@@ -1201,6 +1182,7 @@ task("fund-validators", "manually put 100 eth in each validator account")
     "./../scripts/generated/config"
   )
   .setAction(async (taskArgs, hre) => {
+    console.log("\nFunding validators");
     const signers = await hre.ethers.getSigners();
     const configPath = taskArgs.configPath;
     let validatorConfigs: Array<string> = [];
@@ -1225,9 +1207,9 @@ task("fund-validators", "manually put 100 eth in each validator account")
         });
         await txResponse.wait();
         console.log(
-          `account ${account} has ${await hre.ethers.provider.getBalance(
+          `account ${account} now has ${await hre.ethers.provider.getBalance(
             account
-          )}`
+          )} ether`
         );
       }
     }

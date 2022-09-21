@@ -1,3 +1,4 @@
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { ethers } from "hardhat";
 import { StakingDescriptorMock } from "../../typechain-types";
 import { expect } from "../chai-setup";
@@ -5,12 +6,17 @@ import { expect } from "../chai-setup";
 describe("stakingDescriptor: Tests stakingDescriptor methods", async () => {
   let stakingDescriptor: StakingDescriptorMock;
 
-  beforeEach(async function () {
+  async function deployFixture() {
     const stakingDescriptorFactory = await ethers.getContractFactory(
       "StakingDescriptorMock"
     );
-    stakingDescriptor = await stakingDescriptorFactory.deploy();
+    const stakingDescriptor = await stakingDescriptorFactory.deploy();
     await stakingDescriptor.deployed();
+    return { stakingDescriptor };
+  }
+
+  beforeEach(async function () {
+    ({ stakingDescriptor } = await loadFixture(deployFixture));
   });
 
   it("Should return correct token uri", async function () {
