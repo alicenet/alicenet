@@ -505,8 +505,6 @@ task("registerValidators", "registers validators")
       0,
       regValidatorsCallData
     );
-    console.log(tokenIds);
-    console.log("Registering validators");
     tx = await factory.multiCall(
       [...approveTokens, regValidators],
       await getGasPrices(hre)
