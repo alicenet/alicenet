@@ -37,7 +37,7 @@ type AliceNetFactoryBaseMultiCallArgs struct {
 
 // AliceNetFactoryMetaData contains all meta data concerning the AliceNetFactory contract.
 var AliceNetFactoryMetaData = &bind.MetaData{
-	ABI: "[{\"inputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"inputs\":[],\"name\":\"CodeSizeZero\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"Unauthorized\",\"type\":\"error\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"bytes32\",\"name\":\"salt\",\"type\":\"bytes32\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"contractAddr\",\"type\":\"address\"}],\"name\":\"Deployed\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"contractAddr\",\"type\":\"address\"}],\"name\":\"DeployedProxy\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"contractAddr\",\"type\":\"address\"}],\"name\":\"DeployedRaw\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"contractAddr\",\"type\":\"address\"}],\"name\":\"DeployedStatic\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"contractAddr\",\"type\":\"address\"}],\"name\":\"DeployedTemplate\",\"type\":\"event\"},{\"stateMutability\":\"nonpayable\",\"type\":\"fallback\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"target_\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"value_\",\"type\":\"uint256\"},{\"internalType\":\"bytes\",\"name\":\"cdata_\",\"type\":\"bytes\"}],\"name\":\"callAny\",\"outputs\":[],\"stateMutability\":\"payable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"contracts\",\"outputs\":[{\"internalType\":\"bytes32[]\",\"name\":\"contracts_\",\"type\":\"bytes32[]\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes\",\"name\":\"deployCode_\",\"type\":\"bytes\"}],\"name\":\"deployCreate\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"contractAddr\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"value_\",\"type\":\"uint256\"},{\"internalType\":\"bytes32\",\"name\":\"salt_\",\"type\":\"bytes32\"},{\"internalType\":\"bytes\",\"name\":\"deployCode_\",\"type\":\"bytes\"}],\"name\":\"deployCreate2\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"contractAddr\",\"type\":\"address\"}],\"stateMutability\":\"payable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"salt_\",\"type\":\"bytes32\"}],\"name\":\"deployProxy\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"contractAddr\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"salt_\",\"type\":\"bytes32\"},{\"internalType\":\"bytes\",\"name\":\"initCallData_\",\"type\":\"bytes\"}],\"name\":\"deployStatic\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"contractAddr\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes\",\"name\":\"deployCode_\",\"type\":\"bytes\"}],\"name\":\"deployTemplate\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"contractAddr\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getImplementation\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"_salt\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"_factory\",\"type\":\"address\"}],\"name\":\"getMetamorphicContractAddress\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getNumContracts\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"_salt\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"_bridgeRouter\",\"type\":\"address\"}],\"name\":\"getStaticPoolContractAddress\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"contract_\",\"type\":\"address\"},{\"internalType\":\"bytes\",\"name\":\"initCallData_\",\"type\":\"bytes\"}],\"name\":\"initializeContract\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"salt_\",\"type\":\"bytes32\"}],\"name\":\"lookup\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"addr\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"components\":[{\"internalType\":\"address\",\"name\":\"target\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"value\",\"type\":\"uint256\"},{\"internalType\":\"bytes\",\"name\":\"data\",\"type\":\"bytes\"}],\"internalType\":\"structAliceNetFactoryBase.MultiCallArgs[]\",\"name\":\"cdata_\",\"type\":\"tuple[]\"}],\"name\":\"multiCall\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"owner\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"owner_\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"newImplementationAddress_\",\"type\":\"address\"}],\"name\":\"setImplementation\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"newOwner_\",\"type\":\"address\"}],\"name\":\"setOwner\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"salt_\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"newImpl_\",\"type\":\"address\"},{\"internalType\":\"bytes\",\"name\":\"initCallData_\",\"type\":\"bytes\"}],\"name\":\"upgradeProxy\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]",
+	ABI: "[{\"inputs\":[{\"internalType\":\"address\",\"name\":\"legacyToken_\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"inputs\":[],\"name\":\"CodeSizeZero\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"SaltAlreadyInUse\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"Unauthorized\",\"type\":\"error\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"bytes32\",\"name\":\"salt\",\"type\":\"bytes32\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"contractAddr\",\"type\":\"address\"}],\"name\":\"Deployed\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"contractAddr\",\"type\":\"address\"}],\"name\":\"DeployedProxy\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"contractAddr\",\"type\":\"address\"}],\"name\":\"DeployedRaw\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"contractAddr\",\"type\":\"address\"}],\"name\":\"DeployedStatic\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"contractAddr\",\"type\":\"address\"}],\"name\":\"DeployedTemplate\",\"type\":\"event\"},{\"stateMutability\":\"nonpayable\",\"type\":\"fallback\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"salt_\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"newContractAddress_\",\"type\":\"address\"}],\"name\":\"addNewExternalContract\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"target_\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"value_\",\"type\":\"uint256\"},{\"internalType\":\"bytes\",\"name\":\"cdata_\",\"type\":\"bytes\"}],\"name\":\"callAny\",\"outputs\":[],\"stateMutability\":\"payable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"contracts\",\"outputs\":[{\"internalType\":\"bytes32[]\",\"name\":\"contracts_\",\"type\":\"bytes32[]\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"target_\",\"type\":\"address\"},{\"internalType\":\"bytes\",\"name\":\"cdata_\",\"type\":\"bytes\"}],\"name\":\"delegateCallAny\",\"outputs\":[],\"stateMutability\":\"payable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes\",\"name\":\"deployCode_\",\"type\":\"bytes\"}],\"name\":\"deployCreate\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"contractAddr\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"value_\",\"type\":\"uint256\"},{\"internalType\":\"bytes32\",\"name\":\"salt_\",\"type\":\"bytes32\"},{\"internalType\":\"bytes\",\"name\":\"deployCode_\",\"type\":\"bytes\"}],\"name\":\"deployCreate2\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"contractAddr\",\"type\":\"address\"}],\"stateMutability\":\"payable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"salt_\",\"type\":\"bytes32\"}],\"name\":\"deployProxy\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"contractAddr\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getATokenAddress\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getATokenCreationCodeHash\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getImplementation\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"_salt\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"_factory\",\"type\":\"address\"}],\"name\":\"getMetamorphicContractAddress\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getNumContracts\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"_salt\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"_bridgeRouter\",\"type\":\"address\"}],\"name\":\"getStaticPoolContractAddress\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"contract_\",\"type\":\"address\"},{\"internalType\":\"bytes\",\"name\":\"initCallData_\",\"type\":\"bytes\"}],\"name\":\"initializeContract\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"salt_\",\"type\":\"bytes32\"}],\"name\":\"lookup\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"components\":[{\"internalType\":\"address\",\"name\":\"target\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"value\",\"type\":\"uint256\"},{\"internalType\":\"bytes\",\"name\":\"data\",\"type\":\"bytes\"}],\"internalType\":\"structAliceNetFactoryBase.MultiCallArgs[]\",\"name\":\"cdata_\",\"type\":\"tuple[]\"}],\"name\":\"multiCall\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"owner\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"owner_\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"newImplementationAddress_\",\"type\":\"address\"}],\"name\":\"setImplementation\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"newOwner_\",\"type\":\"address\"}],\"name\":\"setOwner\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"salt_\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"newImpl_\",\"type\":\"address\"},{\"internalType\":\"bytes\",\"name\":\"initCallData_\",\"type\":\"bytes\"}],\"name\":\"upgradeProxy\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]",
 }
 
 // AliceNetFactoryABI is the input ABI used to generate the binding from.
@@ -217,6 +217,68 @@ func (_AliceNetFactory *AliceNetFactoryCallerSession) Contracts() ([][32]byte, e
 	return _AliceNetFactory.Contract.Contracts(&_AliceNetFactory.CallOpts)
 }
 
+// GetATokenAddress is a free data retrieval call binding the contract method 0x82899756.
+//
+// Solidity: function getATokenAddress() view returns(address)
+func (_AliceNetFactory *AliceNetFactoryCaller) GetATokenAddress(opts *bind.CallOpts) (common.Address, error) {
+	var out []interface{}
+	err := _AliceNetFactory.contract.Call(opts, &out, "getATokenAddress")
+
+	if err != nil {
+		return *new(common.Address), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(common.Address)).(*common.Address)
+
+	return out0, err
+
+}
+
+// GetATokenAddress is a free data retrieval call binding the contract method 0x82899756.
+//
+// Solidity: function getATokenAddress() view returns(address)
+func (_AliceNetFactory *AliceNetFactorySession) GetATokenAddress() (common.Address, error) {
+	return _AliceNetFactory.Contract.GetATokenAddress(&_AliceNetFactory.CallOpts)
+}
+
+// GetATokenAddress is a free data retrieval call binding the contract method 0x82899756.
+//
+// Solidity: function getATokenAddress() view returns(address)
+func (_AliceNetFactory *AliceNetFactoryCallerSession) GetATokenAddress() (common.Address, error) {
+	return _AliceNetFactory.Contract.GetATokenAddress(&_AliceNetFactory.CallOpts)
+}
+
+// GetATokenCreationCodeHash is a free data retrieval call binding the contract method 0xf08ed586.
+//
+// Solidity: function getATokenCreationCodeHash() view returns(bytes32)
+func (_AliceNetFactory *AliceNetFactoryCaller) GetATokenCreationCodeHash(opts *bind.CallOpts) ([32]byte, error) {
+	var out []interface{}
+	err := _AliceNetFactory.contract.Call(opts, &out, "getATokenCreationCodeHash")
+
+	if err != nil {
+		return *new([32]byte), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new([32]byte)).(*[32]byte)
+
+	return out0, err
+
+}
+
+// GetATokenCreationCodeHash is a free data retrieval call binding the contract method 0xf08ed586.
+//
+// Solidity: function getATokenCreationCodeHash() view returns(bytes32)
+func (_AliceNetFactory *AliceNetFactorySession) GetATokenCreationCodeHash() ([32]byte, error) {
+	return _AliceNetFactory.Contract.GetATokenCreationCodeHash(&_AliceNetFactory.CallOpts)
+}
+
+// GetATokenCreationCodeHash is a free data retrieval call binding the contract method 0xf08ed586.
+//
+// Solidity: function getATokenCreationCodeHash() view returns(bytes32)
+func (_AliceNetFactory *AliceNetFactoryCallerSession) GetATokenCreationCodeHash() ([32]byte, error) {
+	return _AliceNetFactory.Contract.GetATokenCreationCodeHash(&_AliceNetFactory.CallOpts)
+}
+
 // GetImplementation is a free data retrieval call binding the contract method 0xaaf10f42.
 //
 // Solidity: function getImplementation() view returns(address)
@@ -343,7 +405,7 @@ func (_AliceNetFactory *AliceNetFactoryCallerSession) GetStaticPoolContractAddre
 
 // Lookup is a free data retrieval call binding the contract method 0xf39ec1f7.
 //
-// Solidity: function lookup(bytes32 salt_) view returns(address addr)
+// Solidity: function lookup(bytes32 salt_) view returns(address)
 func (_AliceNetFactory *AliceNetFactoryCaller) Lookup(opts *bind.CallOpts, salt_ [32]byte) (common.Address, error) {
 	var out []interface{}
 	err := _AliceNetFactory.contract.Call(opts, &out, "lookup", salt_)
@@ -360,14 +422,14 @@ func (_AliceNetFactory *AliceNetFactoryCaller) Lookup(opts *bind.CallOpts, salt_
 
 // Lookup is a free data retrieval call binding the contract method 0xf39ec1f7.
 //
-// Solidity: function lookup(bytes32 salt_) view returns(address addr)
+// Solidity: function lookup(bytes32 salt_) view returns(address)
 func (_AliceNetFactory *AliceNetFactorySession) Lookup(salt_ [32]byte) (common.Address, error) {
 	return _AliceNetFactory.Contract.Lookup(&_AliceNetFactory.CallOpts, salt_)
 }
 
 // Lookup is a free data retrieval call binding the contract method 0xf39ec1f7.
 //
-// Solidity: function lookup(bytes32 salt_) view returns(address addr)
+// Solidity: function lookup(bytes32 salt_) view returns(address)
 func (_AliceNetFactory *AliceNetFactoryCallerSession) Lookup(salt_ [32]byte) (common.Address, error) {
 	return _AliceNetFactory.Contract.Lookup(&_AliceNetFactory.CallOpts, salt_)
 }
@@ -403,6 +465,27 @@ func (_AliceNetFactory *AliceNetFactoryCallerSession) Owner() (common.Address, e
 	return _AliceNetFactory.Contract.Owner(&_AliceNetFactory.CallOpts)
 }
 
+// AddNewExternalContract is a paid mutator transaction binding the contract method 0x6973694c.
+//
+// Solidity: function addNewExternalContract(bytes32 salt_, address newContractAddress_) returns()
+func (_AliceNetFactory *AliceNetFactoryTransactor) AddNewExternalContract(opts *bind.TransactOpts, salt_ [32]byte, newContractAddress_ common.Address) (*types.Transaction, error) {
+	return _AliceNetFactory.contract.Transact(opts, "addNewExternalContract", salt_, newContractAddress_)
+}
+
+// AddNewExternalContract is a paid mutator transaction binding the contract method 0x6973694c.
+//
+// Solidity: function addNewExternalContract(bytes32 salt_, address newContractAddress_) returns()
+func (_AliceNetFactory *AliceNetFactorySession) AddNewExternalContract(salt_ [32]byte, newContractAddress_ common.Address) (*types.Transaction, error) {
+	return _AliceNetFactory.Contract.AddNewExternalContract(&_AliceNetFactory.TransactOpts, salt_, newContractAddress_)
+}
+
+// AddNewExternalContract is a paid mutator transaction binding the contract method 0x6973694c.
+//
+// Solidity: function addNewExternalContract(bytes32 salt_, address newContractAddress_) returns()
+func (_AliceNetFactory *AliceNetFactoryTransactorSession) AddNewExternalContract(salt_ [32]byte, newContractAddress_ common.Address) (*types.Transaction, error) {
+	return _AliceNetFactory.Contract.AddNewExternalContract(&_AliceNetFactory.TransactOpts, salt_, newContractAddress_)
+}
+
 // CallAny is a paid mutator transaction binding the contract method 0x12e6bf6a.
 //
 // Solidity: function callAny(address target_, uint256 value_, bytes cdata_) payable returns()
@@ -422,6 +505,27 @@ func (_AliceNetFactory *AliceNetFactorySession) CallAny(target_ common.Address, 
 // Solidity: function callAny(address target_, uint256 value_, bytes cdata_) payable returns()
 func (_AliceNetFactory *AliceNetFactoryTransactorSession) CallAny(target_ common.Address, value_ *big.Int, cdata_ []byte) (*types.Transaction, error) {
 	return _AliceNetFactory.Contract.CallAny(&_AliceNetFactory.TransactOpts, target_, value_, cdata_)
+}
+
+// DelegateCallAny is a paid mutator transaction binding the contract method 0x4713ee7a.
+//
+// Solidity: function delegateCallAny(address target_, bytes cdata_) payable returns()
+func (_AliceNetFactory *AliceNetFactoryTransactor) DelegateCallAny(opts *bind.TransactOpts, target_ common.Address, cdata_ []byte) (*types.Transaction, error) {
+	return _AliceNetFactory.contract.Transact(opts, "delegateCallAny", target_, cdata_)
+}
+
+// DelegateCallAny is a paid mutator transaction binding the contract method 0x4713ee7a.
+//
+// Solidity: function delegateCallAny(address target_, bytes cdata_) payable returns()
+func (_AliceNetFactory *AliceNetFactorySession) DelegateCallAny(target_ common.Address, cdata_ []byte) (*types.Transaction, error) {
+	return _AliceNetFactory.Contract.DelegateCallAny(&_AliceNetFactory.TransactOpts, target_, cdata_)
+}
+
+// DelegateCallAny is a paid mutator transaction binding the contract method 0x4713ee7a.
+//
+// Solidity: function delegateCallAny(address target_, bytes cdata_) payable returns()
+func (_AliceNetFactory *AliceNetFactoryTransactorSession) DelegateCallAny(target_ common.Address, cdata_ []byte) (*types.Transaction, error) {
+	return _AliceNetFactory.Contract.DelegateCallAny(&_AliceNetFactory.TransactOpts, target_, cdata_)
 }
 
 // DeployCreate is a paid mutator transaction binding the contract method 0x27fe1822.
@@ -485,48 +589,6 @@ func (_AliceNetFactory *AliceNetFactorySession) DeployProxy(salt_ [32]byte) (*ty
 // Solidity: function deployProxy(bytes32 salt_) returns(address contractAddr)
 func (_AliceNetFactory *AliceNetFactoryTransactorSession) DeployProxy(salt_ [32]byte) (*types.Transaction, error) {
 	return _AliceNetFactory.Contract.DeployProxy(&_AliceNetFactory.TransactOpts, salt_)
-}
-
-// DeployStatic is a paid mutator transaction binding the contract method 0xfa481da5.
-//
-// Solidity: function deployStatic(bytes32 salt_, bytes initCallData_) returns(address contractAddr)
-func (_AliceNetFactory *AliceNetFactoryTransactor) DeployStatic(opts *bind.TransactOpts, salt_ [32]byte, initCallData_ []byte) (*types.Transaction, error) {
-	return _AliceNetFactory.contract.Transact(opts, "deployStatic", salt_, initCallData_)
-}
-
-// DeployStatic is a paid mutator transaction binding the contract method 0xfa481da5.
-//
-// Solidity: function deployStatic(bytes32 salt_, bytes initCallData_) returns(address contractAddr)
-func (_AliceNetFactory *AliceNetFactorySession) DeployStatic(salt_ [32]byte, initCallData_ []byte) (*types.Transaction, error) {
-	return _AliceNetFactory.Contract.DeployStatic(&_AliceNetFactory.TransactOpts, salt_, initCallData_)
-}
-
-// DeployStatic is a paid mutator transaction binding the contract method 0xfa481da5.
-//
-// Solidity: function deployStatic(bytes32 salt_, bytes initCallData_) returns(address contractAddr)
-func (_AliceNetFactory *AliceNetFactoryTransactorSession) DeployStatic(salt_ [32]byte, initCallData_ []byte) (*types.Transaction, error) {
-	return _AliceNetFactory.Contract.DeployStatic(&_AliceNetFactory.TransactOpts, salt_, initCallData_)
-}
-
-// DeployTemplate is a paid mutator transaction binding the contract method 0x17cff2c5.
-//
-// Solidity: function deployTemplate(bytes deployCode_) returns(address contractAddr)
-func (_AliceNetFactory *AliceNetFactoryTransactor) DeployTemplate(opts *bind.TransactOpts, deployCode_ []byte) (*types.Transaction, error) {
-	return _AliceNetFactory.contract.Transact(opts, "deployTemplate", deployCode_)
-}
-
-// DeployTemplate is a paid mutator transaction binding the contract method 0x17cff2c5.
-//
-// Solidity: function deployTemplate(bytes deployCode_) returns(address contractAddr)
-func (_AliceNetFactory *AliceNetFactorySession) DeployTemplate(deployCode_ []byte) (*types.Transaction, error) {
-	return _AliceNetFactory.Contract.DeployTemplate(&_AliceNetFactory.TransactOpts, deployCode_)
-}
-
-// DeployTemplate is a paid mutator transaction binding the contract method 0x17cff2c5.
-//
-// Solidity: function deployTemplate(bytes deployCode_) returns(address contractAddr)
-func (_AliceNetFactory *AliceNetFactoryTransactorSession) DeployTemplate(deployCode_ []byte) (*types.Transaction, error) {
-	return _AliceNetFactory.Contract.DeployTemplate(&_AliceNetFactory.TransactOpts, deployCode_)
 }
 
 // InitializeContract is a paid mutator transaction binding the contract method 0xe1d7a8e4.

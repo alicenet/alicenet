@@ -308,8 +308,12 @@ export const deployUpgradeableWithFactory = async (
 
 export async function deployAliceNetFactoryAndBridgePoolFactory(): Promise<BaseFixture> {
   const factory = await deployFactory();
-  deployUpgradeableWithFactory(factory, "BridgePoolFactory", "BridgePoolFactory", )
-  return {factory}
+  deployUpgradeableWithFactory(
+    factory,
+    "BridgePoolFactory",
+    "BridgePoolFactory"
+  );
+  return { factory };
 }
 
 export const deployFactoryAndBaseTokens = async (
