@@ -11,6 +11,7 @@ import { task, types } from "hardhat/config";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 // import { ValidatorPool } from "../../typechain-types";
 import axios from "axios";
+import { getGasPrices } from "./alicenetFactoryTasks";
 import { DEFAULT_CONFIG_OUTPUT_DIR } from "./constants";
 import { readDeploymentArgs } from "./deployment/deploymentConfigUtil";
 export type MultiCallArgsStruct = {
@@ -30,19 +31,6 @@ export async function getTokenIdFromTx(ethers: any, tx: ContractTransaction) {
   const receipt = await tx.wait();
   const log = iface.parseLog(receipt.logs[2]);
   return log.args[2];
-}
-
-async function waitBlocks(waitingBlocks: number, hre: any) {
-  let constBlock = await hre.ethers.provider.getBlockNumber();
-  const expectedBlock = constBlock + waitingBlocks;
-  console.log(
-    `Current block: ${constBlock} Waiting for ${waitingBlocks} blocks to be mined!`
-  );
-  while (constBlock < expectedBlock) {
-    constBlock = await hre.ethers.provider.getBlockNumber();
-    console.log(`Current block: ${constBlock}`);
-    await delay(10000);
-  }
 }
 
 task(
@@ -78,7 +66,7 @@ task(
       taskArgs.deploymentArgsTemplatePath
     );
 
-    const expectedContract = "contracts/AToken.sol:AToken";
+    const expectedContract = "contracts/AliceNetFactory.sol:AliceNetFactory";
     const expectedField = "legacyToken_";
     if (deploymentConfig.constructor[expectedContract] === undefined) {
       throw new Error(
@@ -92,12 +80,11 @@ task(
     console.log(`Admin address: ${admin.address}`);
 
     const legacyToken = await (
-      await hre.ethers.getContractFactory("LegacyToken")
-    )
-      .connect(admin)
-      .deploy();
+      await (await hre.ethers.getContractFactory("LegacyToken"))
+        .connect(admin)
+        .deploy()
+    ).deployed();
 
-    await (await legacyToken.connect(admin).initialize()).wait();
     console.log(
       `Minted ${await legacyToken.balanceOf(admin.address)} tokens for user: ${
         admin.address
@@ -112,6 +99,7 @@ task(
     const data = toml.stringify(deploymentConfig);
     fs.writeFileSync(taskArgs.outputFolder + "/deploymentArgsTemplate", data);
   });
+
 task("create-local-seed-node", "start and syncs a node with mainnet")
   .addOptionalParam(
     "configPath",
@@ -236,7 +224,6 @@ task(
   "deploy-state-migration-contract",
   "Deploy state migration contract and run migrations"
 )
-  .addParam("oldFactoryAddress", "the previous factory address")
   .addParam(
     "factoryAddress",
     "the default factory address from factoryState will be used if not set"
@@ -260,10 +247,6 @@ task(
       "AliceNetFactory",
       taskArgs.factoryAddress
     );
-    const oldFactory = await hre.ethers.getContractAt(
-      "AliceNetFactory",
-      taskArgs.oldFactoryAddress
-    );
     const alcaAddress = await factoryLookupAddress(
       factory.address,
       "AToken",
@@ -279,11 +262,6 @@ task(
       "ValidatorPool",
       hre
     );
-    const oldSnapshotAddress = await factoryLookupAddress(
-      oldFactory.address,
-      "Snapshots",
-      hre
-    );
     const snapshotAddress = await factoryLookupAddress(
       factory.address,
       "Snapshots",
@@ -294,21 +272,22 @@ task(
       "ETHDKG",
       hre
     );
-    const oldEthDKGAddress = await factoryLookupAddress(
-      oldFactory.address,
-      "ETHDKG",
-      hre
-    );
     const tokenIds: Array<BigNumber> = [];
-    const ethdkg = await hre.ethers.getContractAt("ETHDKG", ethDKGAddress);
-    const oldSnapshots = await hre.ethers.getContractAt(
-      "Snapshots",
-      oldSnapshotAddress
-    );
-    const epoch = await oldSnapshots.getEpoch();
-    const masterPublicKey = await ethdkg
-      .attach(oldEthDKGAddress)
-      .getMasterPublicKey();
+    const epoch = BigNumber.from(101);
+    const masterPublicKey = [
+      BigNumber.from(
+        "19973864405227474494428046886218960395017286398286997273859673757240376592503"
+      ),
+      BigNumber.from(
+        "3666564623138203565215945530726129772754495167220101411282198856069539995091"
+      ),
+      BigNumber.from(
+        "16839568499509318396654065605910525620620734593528167444141729662886794883267"
+      ),
+      BigNumber.from(
+        "4238394038888761339041070176707923282936512397513542246905279490862584218353"
+      ),
+    ];
     console.log("Master Public Key: " + masterPublicKey);
     const validatorAccounts = [
       "0xb80d6653f7e5b80dbbe8d0aa9f61b5d72e8028ad",
@@ -318,12 +297,12 @@ task(
     ];
 
     const blockClaims: Array<string> = [
-      "0x000000000100040015000000007401000d00000002010000190000000201000025000000020100003100000002010000567a6aa5522088975d39fe74b589abfc5d50c53b788773e6977f62ec87fc603dc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470e8c0a9185e8460d02b4d4e80d3f48df4570ace5ef1f647cc36c28babaf7202c5ee41278d43b21b03fef8e113f5b812179079e21fd13cc004b879cd6081edc0e7",
-      "0x000000000100040015000000007801000d00000002010000190000000201000025000000020100003100000002010000503ea4b5bdcc147db926fda86c32d756c7fd95a6a8282b2ea6dbffb091a789f1c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470fd78371b4c51bf875319aeb303c1e92597b58739ffeb3965ce9064c20c505f206d852686d811c92d7bc7d975a166b59202905d0597530d15b781fe530b94cf57",
-      "0x000000000100040015000000007c01000d000000020100001900000002010000250000000201000031000000020100001658dfb41b10604aad6325e15f9a914b1df38cad213ed98564588f47a48a2b36c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470f8c8e67b32e4e26b13ce0c35c0d0b09b19dab3079ea7e69376f9ee7f596dac76d63c3d11a2cfed48ac943ff92611d5ff3799d842333c492274d8757509d87e50",
       "0x000000000100040015000000008001000d00000002010000190000000201000025000000020100003100000002010000417e8cd8049656c9e1b2cbf90ae9dcc7fa1d70f2aaea7df7a2a4cfcd8b4a02a8c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a4702a5187985e08d03011645d5072d0aadb9b50eafb0014ad93cbc8a2c869a4139054ef9bd198da2c45c75bbecd8062d39451112d53cf60c02b48f144778f40b1b5",
       "0x000000000100040015000000008401000d0000000201000019000000020100002500000002010000310000000201000034003720c36c4406bd8fd6cb7b6f9ec3877dcdffb08e74058e54f07015e89e99c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a4703139e7a7362b5e743a2013b7f33d360530c5195a402693f74c78200e90afcef57f9e10df3d7cf622c1f2497043de80d3abf4450d05355571d732c1ea47987432",
       "0x000000000100040015000000008801000d000000020100001900000002010000250000000201000031000000020100007be9eda53b983d0fa3e17f6f8f051b658e165f39b1eb27da02eafa09467f76f8c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470b28d67ca4ba36e663354920c301f855eb83703445d503c80183ee877041bd05b9936d9df3a955c09140093ea74a33151249848b964d0bb579e24377535b56316",
+      "0x000000000100040015000000008c01000d00000002010000190000000201000025000000020100003100000002010000a9272bb0fd1998d2c98d8c449efe48f9dca1fe7d5c59b15e13aa1844e07a0aedc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a4704b4c04b0bacc06565ec44607848f4c16f7bc9b5bcf2a0622d0200f7d4e57f663735108c50c69dc004a21f95c1787b9109fba494481e504d8d87a4133b8b5057d",
+      "0x000000000100040015000000009001000d00000002010000190000000201000025000000020100003100000002010000b11dfff48b9cd76b85e669f10e4cb8e64ab7d5f6a44d3aab1747c49b16626620c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a4708925a50edd15ded4b0076b2d682aba6cabdf9b3682005254082b808b6eeefb4782fd2260282b659817b3f6e725e13f743cfbda9c27b34271e4a003607c743144",
+      "0x000000000100040015000000009401000d0000000201000019000000020100002500000002010000310000000201000072e4379e7ab07923d3047755c3eee288116d911f7ff92532e6faaff39f4b4b58c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470c9e957c9edde4dc5e9766a1ec7524d412b456e0fcaba46d1f41d262768806b0827def5d9058edfb39cb9025033c0a3855d5c3de0850b52a446f907a7231ee744",
     ];
     const validatorShares: Array<Array<string>> = [
       [
@@ -356,7 +335,7 @@ task(
       taskArgs.skipFirstTransaction === undefined ||
       taskArgs.skipFirstTransaction === false
     ) {
-      console.log("Minting and staking ALCA!");
+      console.log("Staking Atoken!");
       const contractTx = await stakeValidators(
         4,
         taskArgs.factoryAddress,
@@ -380,11 +359,10 @@ task(
           tokenIds.push(BigNumber.from(BigInt(event.topics[3])));
         }
       }
-      console.log(tokenIds);
-      await waitBlocks(3, hre);
+      console.log("minted the following tokens: ", tokenIds);
     }
 
-    console.log("register and migrate state");
+    console.log("registering and migrating state");
     const ethHeight = await hre.ethers.provider.getBlockNumber();
     const validatorIndexes = [1, 2, 3, 4];
     const contractTx = await migrateSnapshotsAndValidators(
@@ -403,30 +381,29 @@ task(
       groupSignatures,
       hre
     );
+    console.log("finished migration");
     await contractTx.wait(8);
-
-    await waitBlocks(3, hre);
   });
 async function getGroupSignatures(epoch: BigNumber) {
-  let start = BigNumber.from(0);
+  let start = BigNumber.from(1);
   const bufferSize = BigNumber.from(5);
   const groupSignatures: Array<string> = [];
-  if (epoch > bufferSize) {
+  if (epoch.gt(bufferSize)) {
     start = epoch.sub(bufferSize);
   }
-  console.log(epoch);
-  console.log(start);
-  console.log(start.lt(epoch));
+  console.log("epoch: ", epoch);
+  console.log("epoch start: ", start);
+  console.log("is epoch start less than epoch: ", start.lt(epoch));
   for (let i = start; i.lte(epoch); i = i.add(1)) {
     const height = i.mul(1024);
-    console.log(height);
+    console.log("retrieved alicenet height from rpc request: ", height);
     const response = await axios.post(
       "https://edge.alice.net/v1/get-block-header",
       { Height: height.toString() }
     );
     groupSignatures.push("0x" + response.data.BlockHeader.SigGroup);
   }
-  console.log(groupSignatures);
+  console.log("snapshot group signatures: ", groupSignatures);
   return groupSignatures;
 }
 
@@ -543,9 +520,10 @@ task("register-validators", "registers validators")
     );
     console.log(tokenIds);
     console.log("Registering validators");
-    tx = await factory.multiCall([...approveTokens, regValidators], {
-      gasLimit: 30000000,
-    });
+    tx = await factory.multiCall(
+      [...approveTokens, regValidators],
+      await getGasPrices(hre)
+    );
     if (taskArgs.test) {
       await hre.network.provider.send("hardhat_mine", [
         hre.ethers.utils.hexValue(3),
@@ -745,6 +723,94 @@ task(
         .connect(adminSigner)
         .callAny(validatorPool.address, 0, input)
     ).wait();
+  });
+
+task(
+  "change-interval-to-evict-validators",
+  "Task to change the interval to evict validators from the validator pool in case of no snapshots"
+)
+  .addParam(
+    "interval",
+    "The block internal without snapshots to evict validators from the validator pool"
+  )
+  .addParam(
+    "factoryAddress",
+    "the default factory address from factoryState will be used if not set"
+  )
+  .setAction(async (taskArgs, hre) => {
+    const { ethers } = hre;
+    const [admin] = await ethers.getSigners();
+    const adminSigner = await ethers.getSigner(admin.address);
+    const factory = await ethers.getContractAt(
+      "AliceNetFactory",
+      taskArgs.factoryAddress
+    );
+    const validatorPool = await hre.ethers.getContractAt(
+      "ValidatorPool",
+      await factory.lookup(
+        hre.ethers.utils.formatBytes32String("ValidatorPool")
+      )
+    );
+    const input = validatorPool.interface.encodeFunctionData(
+      "setMaxIntervalWithoutSnapshots",
+      [taskArgs.interval]
+    );
+    await (
+      await factory
+        .connect(adminSigner)
+        .callAny(validatorPool.address, 0, input)
+    ).wait();
+  });
+
+task(
+  "unregister-all-validators",
+  "Task to unregister all validators (in case of pause-consensus-on-arbitrary-height)"
+)
+  .addParam(
+    "factoryAddress",
+    "the default factory address from factoryState will be used if not set"
+  )
+  .setAction(async (taskArgs, hre) => {
+    const { ethers } = hre;
+    const [admin] = await ethers.getSigners();
+    const adminSigner = await ethers.getSigner(admin.address);
+    const factory = await ethers.getContractAt(
+      "AliceNetFactory",
+      taskArgs.factoryAddress
+    );
+    const validatorPool = await hre.ethers.getContractAt(
+      "ValidatorPool",
+      await factory.lookup(
+        hre.ethers.utils.formatBytes32String("ValidatorPool")
+      )
+    );
+    const input = validatorPool.interface.encodeFunctionData(
+      "unregisterAllValidators"
+    );
+    await (
+      await factory
+        .connect(adminSigner)
+        .callAny(validatorPool.address, 0, input)
+    ).wait();
+  });
+
+task(
+  "lookup-contract-address",
+  "Task to get address of contract deployed by AliceNet factory"
+)
+  .addParam(
+    "factoryAddress",
+    "the default factory address from factoryState will be used if not set"
+  )
+  .addParam("salt", "contract salt, usually the contract name")
+  .setAction(async (taskArgs, hre) => {
+    const factory = await hre.ethers.getContractAt(
+      "AliceNetFactory",
+      taskArgs.factoryAddress
+    );
+    console.log(
+      await factory.lookup(hre.ethers.utils.formatBytes32String(taskArgs.salt))
+    );
   });
 
 task("initialize-ethdkg", "Start the ethdkg process")
@@ -1379,9 +1445,10 @@ export async function stakeValidators(
     ]);
     stakeNFT.push(encodeMultiCallArgs(publicStakingAddress, 0, stakeToken));
   }
-  return factory.multiCall([approveAToken, ...stakeNFT], {
-    gasLimit: 30000000,
-  });
+  return factory.multiCall(
+    [approveAToken, ...stakeNFT],
+    await getGasPrices(hre)
+  );
 }
 
 export async function migrateSnapshotsAndValidators(
@@ -1469,7 +1536,7 @@ export async function migrateSnapshotsAndValidators(
   );
   return factory.multiCall(
     [...approveTokens, registerValidators, migrateValidators, migrateSnapshots],
-    { gasLimit: 30000000 }
+    await getGasPrices(hre)
   );
 }
 

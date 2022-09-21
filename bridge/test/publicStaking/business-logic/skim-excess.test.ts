@@ -3,13 +3,12 @@ import { ethers } from "hardhat";
 import {
   AliceNetFactory,
   AToken,
-  LegacyToken,
   PublicStaking,
 } from "../../../typechain-types";
 import {
   createUsers,
   deployAliceNetFactory,
-  deployStaticWithFactory,
+  deployUpgradeableWithFactory,
   factoryCallAny,
   getMetamorphicAddress,
   mineBlocks,
@@ -37,37 +36,36 @@ describe("PublicStaking: Skim excess of tokens", async () => {
   beforeEach(async function () {
     const [adminSigner] = await ethers.getSigners();
     await preFixtureSetup();
-    factory = await deployAliceNetFactory(adminSigner);
+
+    etherExcess = ethers.utils.parseEther("100").toBigInt();
+
+    const legacyToken = await (
+      await ethers.getContractFactory("LegacyToken")
+    ).deploy();
+
+    factory = await deployAliceNetFactory(adminSigner, legacyToken.address);
+
+    // AToken
+    aToken = await ethers.getContractAt(
+      "AToken",
+      await factory.lookup(ethers.utils.formatBytes32String("AToken"))
+    );
 
     const publicStakingAddress = getMetamorphicAddress(
       factory.address,
       "PublicStaking"
     );
-    etherExcess = ethers.utils.parseEther("100").toBigInt();
-
-    const legacyToken = (await deployStaticWithFactory(
-      factory,
-      "LegacyToken"
-    )) as LegacyToken;
-    // AToken
-    aToken = (await deployStaticWithFactory(
-      factory,
-      "AToken",
-      "AToken",
-      undefined,
-      [legacyToken.address]
-    )) as AToken;
     // transferring ether before contract deployment to get eth excess
     await adminSigner.sendTransaction({
       to: publicStakingAddress,
       value: etherExcess,
     });
-    stakingContract = (await deployStaticWithFactory(
+    stakingContract = (await deployUpgradeableWithFactory(
       factory,
       "PublicStaking",
       "PublicStaking"
     )) as PublicStaking;
-    await posFixtureSetup(factory, aToken, legacyToken);
+    await posFixtureSetup(factory, aToken);
     tokenExcess = ethers.utils.parseUnits("100", 18).toBigInt();
     await aToken.approve(
       stakingContract.address,
