@@ -1,3 +1,4 @@
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { ethers } from "hardhat";
 import { expect } from "../chai-setup";
@@ -13,7 +14,7 @@ describe("PublicStaking: Testing StakeNFT Access Control", async () => {
   let adminSigner: SignerWithAddress;
 
   beforeEach(async function () {
-    fixture = await getBaseTokensFixture();
+    fixture = await loadFixture(getBaseTokensFixture);
     [adminSigner, notAdminSigner] = await ethers.getSigners();
   });
 

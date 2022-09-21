@@ -1,3 +1,4 @@
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { ethers } from "hardhat";
 import { CryptoLibraryWrapper } from "../../typechain-types";
 import { expect } from "../chai-setup";
@@ -7,10 +8,16 @@ describe("CryptoLibrary: Validate Signature", () => {
   let crypto: CryptoLibraryWrapper;
   const amountRuns = 100;
 
-  before(async () => {
-    crypto = await (
+  async function deployFixture() {
+    const crypto = await (
       await ethers.getContractFactory("CryptoLibraryWrapper")
     ).deploy();
+    await crypto.deployed();
+    return { crypto };
+  }
+
+  before(async () => {
+    ({ crypto } = await loadFixture(deployFixture));
   });
 
   it("Validate Signature", async function () {

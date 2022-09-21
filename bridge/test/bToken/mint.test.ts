@@ -1,3 +1,4 @@
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
@@ -17,7 +18,7 @@ describe("Testing BToken Minting methods", async () => {
   const minBTokens = 0;
 
   beforeEach(async function () {
-    fixture = await getFixture();
+    fixture = await loadFixture(getFixture);
     const signers = await ethers.getSigners();
     [admin, user, user2] = signers;
     showState("Initial", await getState(fixture));

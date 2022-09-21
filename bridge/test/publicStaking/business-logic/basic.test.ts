@@ -1,3 +1,4 @@
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BytesLike } from "ethers";
 import { ethers, network } from "hardhat";
@@ -15,12 +16,19 @@ describe("PublicStaking: Basics", async () => {
   let otherSigner: SignerWithAddress;
   let blockNumber: bigint;
 
-  beforeEach(async function () {
-    fixture = await getBaseTokensFixture();
-    [adminSigner, otherSigner] = await ethers.getSigners();
+  async function deployFixture() {
+    const fixture = await getBaseTokensFixture();
+    const [adminSigner, otherSigner] = await ethers.getSigners();
     await fixture.aToken.approve(fixture.publicStaking.address, 1000);
     const tx = await fixture.publicStaking.connect(adminSigner).mint(1000);
-    blockNumber = BigInt(tx.blockNumber as number);
+    const blockNumber = BigInt(tx.blockNumber as number);
+    return { fixture, adminSigner, otherSigner, blockNumber };
+  }
+
+  beforeEach(async function () {
+    ({ fixture, adminSigner, otherSigner, blockNumber } = await loadFixture(
+      deployFixture
+    ));
   });
 
   it("Should not allow initialize more than once", async () => {

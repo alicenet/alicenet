@@ -1,3 +1,4 @@
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
@@ -29,14 +30,15 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
   let users: SignerWithAddress[];
   const numberUsers = 3;
   let admin: SignerWithAddress;
-  beforeEach(async function () {
-    fixture = await getBaseTokensFixture();
-    [admin] = await ethers.getSigners();
+
+  async function deployFixture() {
+    const fixture = await getBaseTokensFixture();
+    const [admin] = await ethers.getSigners();
     await fixture.aToken.approve(
       fixture.publicStaking.address,
       ethers.utils.parseUnits("100000", 18)
     );
-    users = await createUsers(numberUsers);
+    const users = await createUsers(numberUsers);
     const baseAmount = ethers.utils.parseUnits("100", 18).toBigInt();
     for (let i = 0; i < numberUsers; i++) {
       await fixture.aToken.transfer(await users[i].getAddress(), baseAmount);
@@ -45,6 +47,11 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
         .approve(fixture.publicStaking.address, baseAmount);
     }
     await mineBlocks(2n);
+    return { fixture, users, admin };
+  }
+
+  beforeEach(async function () {
+    ({ fixture, users, admin } = await loadFixture(deployFixture));
   });
 
   it("Shouldn't allow to collect funds before time", async function () {
