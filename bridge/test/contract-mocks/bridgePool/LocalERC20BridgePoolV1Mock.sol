@@ -13,7 +13,7 @@ import "contracts/libraries/parsers/BClaimsParserLibrary.sol";
 import "contracts/utils/ERC20SafeTransfer.sol";
 
 /// @custom:salt LocalERC20BridgePoolV1Mock
-/// @custom:deploy-type deployStatic
+/// @custom:deploy-type deployUpgradeable
 
 contract LocalERC20BridgePoolV1Mock is
     IBridgePool,

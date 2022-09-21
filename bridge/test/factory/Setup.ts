@@ -204,32 +204,6 @@ export function getSalt() {
   return ethers.utils.formatBytes32String(Salt.toString());
 }
 
-export async function getDeployTemplateArgs(contractName: string) {
-  const contract = await ethers.getContractFactory(contractName);
-  const deployByteCode = contract.getDeployTransaction();
-  return deployByteCode.data as BytesLike;
-}
-
-export type DeployStaticArgs = {
-  salt: string;
-  initCallData: string;
-};
-
-export async function getDeployStaticArgs(
-  contractName: string,
-  argsArray: Array<any>
-) {
-  const contract = await ethers.getContractFactory(contractName);
-  const ret: DeployStaticArgs = {
-    salt: getSalt(),
-    initCallData: contract.interface.encodeFunctionData(
-      "initialize",
-      argsArray
-    ),
-  };
-  return ret;
-}
-
 export async function checkMockInit(target: string, initVal: number) {
   const mockFactory = await ethers.getContractFactory(MOCK);
   const mock = mockFactory.attach(target);
@@ -239,8 +213,10 @@ export async function checkMockInit(target: string, initVal: number) {
 
 export async function deployFactory() {
   const factoryBase = await ethers.getContractFactory(ALICENET_FACTORY);
+  const legacyTokenBase = await ethers.getContractFactory("LegacyToken");
+  const legacyToken = await legacyTokenBase.deploy();
   // deploy the factory with its address as a constructor input
-  const factory = await factoryBase.deploy();
+  const factory = await factoryBase.deploy(legacyToken.address);
   return factory;
 }
 

@@ -26,7 +26,7 @@ abstract contract BridgePoolFactoryBase is ImmutableFactory {
     /**
      * @notice returns bytecode for a Minimal Proxy (EIP-1167) that routes to BridgePool implementation
      */
-    fallback() external {
+    fallback() external payable {
         address implementation_ = _implementation;
         assembly {
             let ptr := mload(0x40)

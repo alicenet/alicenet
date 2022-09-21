@@ -3,6 +3,7 @@
 pragma solidity ^0.8.11;
 
 import "contracts/utils/DeterministicAddress.sol";
+import "contracts/interfaces/IAliceNetFactory.sol";
 
 abstract contract ImmutableFactory is DeterministicAddress {
     address private immutable _factory;
@@ -36,10 +37,7 @@ abstract contract ImmutableAToken is ImmutableFactory {
     }
 
     constructor() {
-        _aToken = getMetamorphicContractAddress(
-            0x41546f6b656e0000000000000000000000000000000000000000000000000000,
-            _factoryAddress()
-        );
+        _aToken = IAliceNetFactory(_factoryAddress()).lookup(_saltForAToken());
     }
 
     function _aTokenAddress() internal view returns (address) {
@@ -48,6 +46,30 @@ abstract contract ImmutableAToken is ImmutableFactory {
 
     function _saltForAToken() internal pure returns (bytes32) {
         return 0x41546f6b656e0000000000000000000000000000000000000000000000000000;
+    }
+}
+
+abstract contract ImmutableBToken is ImmutableFactory {
+    address private immutable _bToken;
+    error OnlyBToken(address sender, address expected);
+
+    modifier onlyBToken() {
+        if (msg.sender != _bToken) {
+            revert OnlyBToken(msg.sender, _bToken);
+        }
+        _;
+    }
+
+    constructor() {
+        _bToken = IAliceNetFactory(_factoryAddress()).lookup(_saltForBToken());
+    }
+
+    function _bTokenAddress() internal view returns (address) {
+        return _bToken;
+    }
+
+    function _saltForBToken() internal pure returns (bytes32) {
+        return 0x42546f6b656e0000000000000000000000000000000000000000000000000000;
     }
 }
 
@@ -105,30 +127,57 @@ abstract contract ImmutableATokenMinter is ImmutableFactory {
     }
 }
 
-abstract contract ImmutableBToken is ImmutableFactory {
-    address private immutable _bToken;
-    error OnlyBToken(address sender, address expected);
+abstract contract ImmutableBridgePoolFactory is ImmutableFactory {
+    address private immutable _bridgePoolFactory;
+    error OnlyBridgePoolFactory(address sender, address expected);
 
-    modifier onlyBToken() {
-        if (msg.sender != _bToken) {
-            revert OnlyBToken(msg.sender, _bToken);
+    modifier onlyBridgePoolFactory() {
+        if (msg.sender != _bridgePoolFactory) {
+            revert OnlyBridgePoolFactory(msg.sender, _bridgePoolFactory);
         }
         _;
     }
 
     constructor() {
-        _bToken = getMetamorphicContractAddress(
-            0x42546f6b656e0000000000000000000000000000000000000000000000000000,
+        _bridgePoolFactory = getMetamorphicContractAddress(
+            0x427269646765506f6f6c466163746f7279000000000000000000000000000000,
             _factoryAddress()
         );
     }
 
-    function _bTokenAddress() internal view returns (address) {
-        return _bToken;
+    function _bridgePoolFactoryAddress() internal view returns (address) {
+        return _bridgePoolFactory;
     }
 
-    function _saltForBToken() internal pure returns (bytes32) {
-        return 0x42546f6b656e0000000000000000000000000000000000000000000000000000;
+    function _saltForBridgePoolFactory() internal pure returns (bytes32) {
+        return 0x427269646765506f6f6c466163746f7279000000000000000000000000000000;
+    }
+}
+
+abstract contract ImmutableBridgeRouter is ImmutableFactory {
+    address private immutable _bridgeRouter;
+    error OnlyBridgeRouter(address sender, address expected);
+
+    modifier onlyBridgeRouter() {
+        if (msg.sender != _bridgeRouter) {
+            revert OnlyBridgeRouter(msg.sender, _bridgeRouter);
+        }
+        _;
+    }
+
+    constructor() {
+        _bridgeRouter = getMetamorphicContractAddress(
+            0xa4c282a597c549d47c7eb184be62b5714edde2189c3893d7d3c305ff482371b7,
+            _factoryAddress()
+        );
+    }
+
+    function _bridgeRouterAddress() internal view returns (address) {
+        return _bridgeRouter;
+    }
+
+    function _saltForBridgeRouter() internal pure returns (bytes32) {
+        return 0xa4c282a597c549d47c7eb184be62b5714edde2189c3893d7d3c305ff482371b7;
     }
 }
 

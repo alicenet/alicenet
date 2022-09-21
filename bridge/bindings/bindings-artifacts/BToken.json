@@ -1,6 +1,12 @@
 [
   {
-    "inputs": [],
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "centralBridgeRouterAddress_",
+        "type": "address"
+      }
+    ],
     "stateMutability": "nonpayable",
     "type": "constructor"
   },
@@ -18,6 +24,11 @@
       }
     ],
     "name": "BurnAmountExceedsSupply",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "CannotSetRouterToZeroAddress",
     "type": "error"
   },
   {
@@ -71,17 +82,6 @@
       }
     ],
     "name": "EthTransferFailed",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "contractAddr",
-        "type": "address"
-      }
-    ],
-    "name": "InexistentRouterContract",
     "type": "error"
   },
   {
@@ -299,19 +299,6 @@
     "anonymous": false,
     "inputs": [
       {
-        "indexed": false,
-        "internalType": "uint8",
-        "name": "version",
-        "type": "uint8"
-      }
-    ],
-    "name": "Initialized",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
         "indexed": true,
         "internalType": "address",
         "name": "from",
@@ -522,13 +509,13 @@
   {
     "inputs": [
       {
-        "internalType": "uint16",
-        "name": "bridgeVersion",
-        "type": "uint16"
+        "internalType": "uint8",
+        "name": "routerVersion_",
+        "type": "uint8"
       },
       {
         "internalType": "bytes",
-        "name": "data",
+        "name": "data_",
         "type": "bytes"
       }
     ],
@@ -567,6 +554,19 @@
       }
     ],
     "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getCentralBridgeRouterAddress",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -873,13 +873,6 @@
         "type": "bool"
       }
     ],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "initialize",
-    "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
   },
