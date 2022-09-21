@@ -67,9 +67,9 @@ func detectInvalidUTXOConsumption(rs *objs.RoundState, lrs *lstate.RoundStates, 
 						return err
 					}
 
+					// check utxo id against state tree
 					mProof, _, err := db.GetTransactionProof(txn, utxoID)
 
-					// check utxo id against state tree
 					if err != nil {
 						logger.Warnf("error getting transaction proof: %v", err)
 						return err
@@ -124,8 +124,18 @@ func detectInvalidUTXOConsumption(rs *objs.RoundState, lrs *lstate.RoundStates, 
 							logger.Warnf("error marshalling merkel proof against tx root: %v", err)
 							return err
 						}
+
 						// proofs[2] = proofOfInclusionTxHash - ProofOfInclusionTxHash against the target hash from ProofInclusionTxRoot
-						getTxHashProof(txn, tx, utxoID)
+						mTxHashProof, err := getTxHashProof(txn, tx, utxoID)
+						if err != nil {
+							logger.Warnf("error getting merkel hash against tx root: %v", err)
+							return err
+						}
+						proofs[2], err = mTxHashProof.MarshalBinary()
+						if err != nil {
+							logger.Warnf("error marshalling merkel proof against tx hash: %v", err)
+							return err
+						}
 
 						accusation = accusations.NewInvalidUTXOConsumptionAccusationTask(
 							pClaimsBin,
@@ -213,10 +223,13 @@ func getStateMerkleProofs(txn *badger.Txn, utxoID []byte, logger *logrus.Logger)
 	return mproof, nil
 }
 
-func getTxRootMerkleProofs(txn *badger.Txn, txHash []byte, db *db.Database) (*db.MerkleProof, error) {
-	newTxn := db.DB().NewTransaction(true)
+func getTxRootMerkleProofs(txn *badger.Txn, txHash []byte, consDB *db.Database) (*db.MerkleProof, error) {
+	newTxn := consDB.DB().NewTransaction(true)
 	defer newTxn.Discard()
 	txRootSMT, _, err := MakePersistentTxRoot(newTxn, [][]byte{txHash})
+	if err != nil {
+		return nil, err
+	}
 	bitmap, auditPath, proofHeight, included, proofKey, proofVal, err := txRootSMT.MerkleProofCompressed(txn, txHash)
 	if err != nil {
 		return nil, err
