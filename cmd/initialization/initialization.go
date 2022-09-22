@@ -6,7 +6,7 @@ import (
 
 	"github.com/alicenet/alicenet/config"
 	"github.com/alicenet/alicenet/logging"
-	toml "github.com/pelletier/go-toml"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -83,17 +83,11 @@ func initializeFilesAndFolders(cmd *cobra.Command, args []string) {
 		err := os.MkdirAll(path, 0o700)
 		if err != nil {
 			logger.WithError(err).Error("Failed to create path: ", path)
-			// remove the root folder and its subfolders then exit
-			err := os.RemoveAll(alicenetPath)
-			if err != nil {
-				logger.WithError(err).Error("Failed to remove path: ", alicenetPath)
-				logger.Fatal("Please remove the root folder and its subfolders manually")
-			}
-			logger.Fatal("Exiting")
+			removePath(logger, alicenetPath)
 		}
 	}
 
-	config := &config.RootSerializableConfiguration{
+	configObj := &config.RootConfiguration{
 		Logging: config.LoggingConfig{
 			Consensus: "info",
 		},
@@ -137,21 +131,28 @@ func initializeFilesAndFolders(cmd *cobra.Command, args []string) {
 			SymmetricKey:    "<SOME_SUPER_FANCY_SECRET_THAT_WILL_BE_HASHED>",
 		},
 	}
-	b, err := toml.Marshal(config)
+	configBytes, err := config.CreateTOML(configObj)
 	if err != nil {
-		logger.WithError(err).Fatal("Failed to marshal config")
+		logger.WithError(err).Error("Failed to marshal config")
+		removePath(logger, alicenetPath)
 	}
 
 	// create config.toml file as text file in environment folder
-	configFile, err := os.Create(configPath)
+	err = os.WriteFile(configPath, configBytes, 0600)
 	if err != nil {
-		logger.Error("Error creating config.toml file: ", err)
-		os.Exit(1)
+		logger.WithError(err).Error("Error creating config.toml file")
+		removePath(logger, alicenetPath)
 	}
 
-	// write config.toml file
-	configFile.Write(b)
-	configFile.Close()
-
 	logger.Info("Created config file")
+}
+
+// removePath removes the root folder and its sub-folders then exit
+func removePath(logger *logrus.Entry, alicenetPath string) {
+	err := os.RemoveAll(alicenetPath)
+	if err != nil {
+		logger.WithError(err).Error("Failed to remove path: ", alicenetPath)
+		logger.Fatal("Please remove the root folder and its sub-folders manually")
+	}
+	logger.Fatal("Exiting")
 }
