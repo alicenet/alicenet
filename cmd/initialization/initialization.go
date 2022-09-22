@@ -15,10 +15,10 @@ var Command = cobra.Command{
 	Use:   "init",
 	Short: "Initialize the files/folders required for running the alicenet client",
 	Long:  "Initialize the files/folders required for running the alicenet client",
-	Run:   initialiseFilesAndFolders,
+	Run:   initializeFilesAndFolders,
 }
 
-func initialiseFilesAndFolders(cmd *cobra.Command, args []string) {
+func initializeFilesAndFolders(cmd *cobra.Command, args []string) {
 	logger := logging.GetLogger("init").WithField("Component", cmd.Use)
 
 	rootPath := config.Configuration.Initialization.Path
@@ -56,7 +56,7 @@ func initialiseFilesAndFolders(cmd *cobra.Command, args []string) {
 	keysPath := path.Join(keystoresPath, "/keys")
 	configPath := path.Join(envPath, "/config.toml")
 
-	paths := []string{alicenetPath, envPath, stateDBPath, transactionDBPath, monitorDBPath, keystoresPath, keysPath}
+	paths := []string{envPath, stateDBPath, transactionDBPath, monitorDBPath, keystoresPath, keysPath}
 
 	// loop through the paths checking to see if they exist and exit if any of them do
 	for _, path := range paths {
