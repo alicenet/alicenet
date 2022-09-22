@@ -23,7 +23,7 @@ if [[ -z "${FACTORY_ADDRESS}" ]]; then
     exit 1
 fi
 
-npx hardhat --network "$NETWORK" --show-stack-traces unregisterValidators --factory-address "$FACTORY_ADDRESS" $ADDRESSES
+npx hardhat --network "$NETWORK" --show-stack-traces unregister-validators --factory-address "$FACTORY_ADDRESS" $ADDRESSES
 
 
 cd "$CURRENT_WD"
