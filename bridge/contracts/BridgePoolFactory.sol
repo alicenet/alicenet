@@ -9,13 +9,7 @@ import "contracts/libraries/factory/BridgePoolFactoryBase.sol";
 contract BridgePoolFactory is BridgePoolFactoryBase {
     constructor(uint256 chainID_) BridgePoolFactoryBase(chainID_) {}
 
-    /**
-     * @dev enables or disables public pool deployment
-     **/
-    function togglePublicPoolDeployment() public onlyFactory {
-        _togglePublicPoolDeployment();
-    }
-
+    
     /**
      * @notice Deploys a new bridge to pass tokens to our chain from the specified ERC contract.
      * The pools are created as thin proxies (EIP1167) routing to versioned implementations identified by corresponding salt.
@@ -23,14 +17,25 @@ contract BridgePoolFactory is BridgePoolFactoryBase {
      * @param ercContract_ address of ERC20 source token contract
      * @param implementationVersion_ version of BridgePool implementation to use
      */
-    function deployNewLocalPool(
+    function deployNewNativePool(
         uint8 tokenType_,
         address ercContract_,
         uint16 implementationVersion_
     ) public onlyFactoryOrPublicPoolDeploymentEnabled {
-        _deployNewLocalPool(tokenType_, ercContract_, implementationVersion_);
+        _deployNewNativePool(tokenType_, ercContract_, implementationVersion_);
+    }
+    
+     function deployPoolLogic(uint8 tokenType_, uint256 chainId_, uint16 version_, uint256 value_, bytes calldata deployCode_) public onlyFactory returns(address){
+        return _deployPoolLogic(tokenType_, chainId_, version_, value_, deployCode_);
     }
 
+    /**
+     * @dev enables or disables public pool deployment
+     **/
+    function togglePublicPoolDeployment() public onlyFactory {
+        _togglePublicPoolDeployment();
+    }
+    
     /**
      * @notice calculates salt for a BridgePool contract based on ERC contract's address, tokenType, chainID and version_
      * @param tokenContractAddr_ address of ERC Token contract
@@ -45,6 +50,6 @@ contract BridgePoolFactory is BridgePoolFactoryBase {
         uint256 chainID_,
         uint16 version_
     ) public pure returns (bytes32) {
-        return _getBridgePoolSalt(tokenContractAddr_, tokenType_, chainID_, version_);
+        return BridgePoolAddressUtil._getBridgePoolSalt(tokenContractAddr_, tokenType_, chainID_, version_);
     }
 }

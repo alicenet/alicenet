@@ -2,15 +2,20 @@
 pragma solidity ^0.8.16;
 
 library BridgePoolAddressUtil {
+    enum TokenType {
+        ERC20,
+        ERC721,
+        ERC1155
+    }
     /**
      * @notice calculates salt for a BridgePool contract based on ERC contract's address, tokenType, chainID and version_
      * @param tokenContractAddr_ address of ERC contract of BridgePool
-     * @param tokenType_ type of token (1=ERC20, 2=ERC721)
+     * @param tokenType_ type of token (0=ERC20, 1=ERC721, 2=ERC1155)
      * @param version_ version of the implementation
      * @param chainID_ chain ID
      * @return calculated calculated salt
      */
-    function getBridgePoolSalt(
+    function _getBridgePoolSalt(
         address tokenContractAddr_,
         uint8 tokenType_,
         uint256 chainID_,
