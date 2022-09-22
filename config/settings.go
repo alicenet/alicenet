@@ -34,11 +34,11 @@ type EthKeyConfig struct {
 type ChainConfig struct {
 	ID                    int    `toml:"id" comment:"AliceNet ChainID that corresponds to the AliceNet Network that you are trying to connect."`
 	StateDbPath           string `toml:"stateDB" comment:"Path to the location where to save the state database. The state database is responsible for storing the AliceNet blockchain data (blocks, validator's data). Store this database in a safe location. If this database is deleted, the node will re-sync with its peers from scratch. DON'T DELETE THIS DATABASE IF YOU ARE RUNNING A VALIDATOR NODE!!! If this database is deleted and you are running a validator node, the validator's data will be permanently deleted and the node will not be able to proceed with its work as a validator, even after a re-sync. Therefore, you may be susceptible to a slashing event"`
-	StateDbInMemory       bool   `toml:"stateDBInMemory"`
+	StateDbInMemory       bool   `toml:"stateDBInMemory" comment:"Flag to save the state database only on memory. USE ONLY RECOMMENDED TO SET TRUE FOR TESTING PURPOSES."`
 	TransactionDbPath     string `toml:"transactionDB" comment:"Path to the location where to save the transaction database. The transaction database is responsible for storing the AliceNet blockchain data (transactions). Store this database in a safe location. If this database is deleted, the node will re-sync all transactions with its peers."`
-	TransactionDbInMemory bool   `toml:"transactionDBInMemory"`
+	TransactionDbInMemory bool   `toml:"transactionDBInMemory" comment:"Flag to save the transaction database only on memory. USE ONLY RECOMMENDED TO SET TRUE FOR TESTING PURPOSES."`
 	MonitorDbPath         string `toml:"monitorDB" comment:"Path to the location where to save the monitor database. The monitor database is responsible for storing the (events, tasks, receipts) coming from layer 1 blockchains that AliceNet is anchored with. Store this database in a safe location. If this database is deleted, the node will replay all events by querying the layer1 chains using the information provided below."`
-	MonitorDbInMemory     bool   `toml:"monitorDBInMemory" comment:"Flags to save any of the databases above only on memory. USE ONLY RECOMMENDED TO SET TRUE FOR TESTING PURPOSES."`
+	MonitorDbInMemory     bool   `toml:"monitorDBInMemory" comment:"Flag to save the monitor database only on memory. USE ONLY RECOMMENDED TO SET TRUE FOR TESTING PURPOSES."`
 }
 
 type EthereumConfig struct {
@@ -57,7 +57,7 @@ type EthereumConfig struct {
 type TransportConfig struct {
 	Size                       int           `toml:",omitempty"`
 	Timeout                    time.Duration `toml:",omitempty"`
-	OriginLimit                int           `toml:"originLimit" comment:"Maximum number of peers that we can retrieve from the bootnode?"`
+	OriginLimit                int           `toml:"originLimit" comment:"Maximum number of peers that we can connect from a same ip."`
 	PeerLimitMin               int           `toml:"peerLimitMin" comment:"Minimum number of peers that you wish to be connect with, before trying to attempt to download blockchain data and participate in consensus."`
 	PeerLimitMax               int           `toml:"peerLimitMax" comment:"Maximum number of peers that you wish to be connected with. Upper bound to limit bandwidth shared with the peers."`
 	FirewallMode               bool          `toml:",omitempty"`
@@ -82,8 +82,8 @@ type UtilsConfig struct {
 type ValidatorConfig struct {
 	Repl            bool   `toml:",omitempty"`
 	RewardAccount   string `toml:"rewardAccount" comment:"Address of the AliceNet account used to do transactions in the AliceNet network."`
-	RewardCurveSpec int    `toml:"rewardCurveSpec" comment:"Type of elliptic curve used to generate the AliceNet address. 1: secp256k1 (same as ethereum), 2: BN128"`
-	SymmetricKey    string `toml:"symmetricKey"`
+	RewardCurveSpec int    `toml:"rewardCurveSpec" comment:"Type of elliptic curve used to generate the AliceNet address. Only secp256k1 supported at the moment."`
+	SymmetricKey    string `toml:"symmetricKey" comment:"Passphrase that will be used to encrypt private keys in the database."`
 }
 
 type LoggingConfig struct {

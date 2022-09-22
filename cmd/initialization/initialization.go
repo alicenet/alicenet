@@ -27,6 +27,12 @@ func initializeFilesAndFolders(cmd *cobra.Command, args []string) {
 	if rootPath == "" {
 		logger.Info("No path specified - defaulting to home directory")
 		rootPath = os.Getenv("HOME")
+	} else if rootPath == "./" || rootPath == "." {
+		var err error
+		rootPath, err = os.Getwd()
+		if err != nil {
+			logger.WithError(err).Fatalf("Could not determine absolute path for: %v", rootPath)
+		}
 	}
 
 	if network == "" {
@@ -47,14 +53,14 @@ func initializeFilesAndFolders(cmd *cobra.Command, args []string) {
 	logger.Info("Initializing AliceNet configuration files and folders...")
 
 	// alicenet related paths and files
-	alicenetPath := path.Join(rootPath, "/alicenet")
-	envPath := path.Join(alicenetPath, "/", network)
-	stateDBPath := path.Join(envPath, "/stateDB")
-	transactionDBPath := path.Join(envPath, "/transactionDB")
-	monitorDBPath := path.Join(envPath, "/monitorDB")
-	keystoresPath := path.Join(envPath, "/keystores")
-	keysPath := path.Join(keystoresPath, "/keys")
-	configPath := path.Join(envPath, "/config.toml")
+	alicenetPath := path.Join(rootPath, ".alicenet")
+	envPath := path.Join(alicenetPath, network)
+	stateDBPath := path.Join(envPath, "stateDB")
+	transactionDBPath := path.Join(envPath, "transactionDB")
+	monitorDBPath := path.Join(envPath, "monitorDB")
+	keystoresPath := path.Join(envPath, "keystores")
+	keysPath := path.Join(keystoresPath, "keys")
+	configPath := path.Join(envPath, "config.toml")
 
 	paths := []string{envPath, stateDBPath, transactionDBPath, monitorDBPath, keystoresPath, keysPath}
 
@@ -104,7 +110,7 @@ func initializeFilesAndFolders(cmd *cobra.Command, args []string) {
 			UPnP:                       false,
 			PrivateKey:                 "<16_BYTES_TRANSPORT_PRIVATE_KEY>",
 			BootNodeAddresses:          "<BOOTNODE_ADDRESS>",
-			OriginLimit:                50,
+			OriginLimit:                3,
 			LocalStateListeningAddress: "0.0.0.0:8883",
 			P2PListeningAddress:        "0.0.0.0:4342",
 			PeerLimitMax:               24,
@@ -147,5 +153,5 @@ func initializeFilesAndFolders(cmd *cobra.Command, args []string) {
 	configFile.Write(b)
 	configFile.Close()
 
-	logger.Info("created config file")
+	logger.Info("Created config file")
 }
