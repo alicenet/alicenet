@@ -2,6 +2,7 @@ package initialization
 
 import (
 	"os"
+	"path"
 
 	"github.com/alicenet/alicenet/config"
 	"github.com/alicenet/alicenet/logging"
@@ -20,12 +21,12 @@ var Command = cobra.Command{
 func initialiseFilesAndFolders(cmd *cobra.Command, args []string) {
 	logger := logging.GetLogger("init").WithField("Component", cmd.Use)
 
-	path := config.Configuration.Initialization.Path
+	rootPath := config.Configuration.Initialization.Path
 	network := config.Configuration.Initialization.Network
 
-	if path == "" {
+	if rootPath == "" {
 		logger.Info("No path specified - defaulting to home directory")
-		path = os.Getenv("HOME")
+		rootPath = os.Getenv("HOME")
 	}
 
 	if network == "" {
@@ -46,14 +47,14 @@ func initialiseFilesAndFolders(cmd *cobra.Command, args []string) {
 	logger.Info("Initializing AliceNet configuration files and folders...")
 
 	// alicenet related paths and files
-	alicenetPath := path + "/alicenet"
-	envPath := alicenetPath + "/" + network
-	stateDBPath := envPath + "/stateDB"
-	transactionDBPath := envPath + "/transactionDB"
-	monitorDBPath := envPath + "/monitorDB"
-	keystoresPath := envPath + "/keystores"
-	keysPath := keystoresPath + "/keys"
-	configPath := envPath + "/config.toml"
+	alicenetPath := path.Join(rootPath, "/alicenet")
+	envPath := path.Join(alicenetPath, "/", network)
+	stateDBPath := path.Join(envPath, "/stateDB")
+	transactionDBPath := path.Join(envPath, "/transactionDB")
+	monitorDBPath := path.Join(envPath, "/monitorDB")
+	keystoresPath := path.Join(envPath, "/keystores")
+	keysPath := path.Join(keystoresPath, "/keys")
+	configPath := path.Join(envPath, "/config.toml")
 
 	paths := []string{alicenetPath, envPath, stateDBPath, transactionDBPath, monitorDBPath, keystoresPath, keysPath}
 
@@ -114,7 +115,7 @@ func initialiseFilesAndFolders(cmd *cobra.Command, args []string) {
 			EndpointMinimumPeers:     1,
 			DefaultAccount:           "<0xETHEREUM_ADDRESS>",
 			Keystore:                 keystoresPath,
-			PassCodes:                keystoresPath + "/passcodes.txt",
+			PassCodes:                path.Join(keystoresPath, "/passcodes.txt"),
 			FactoryAddress:           "<0xFACTORY_ETHEREUM_ADDRESS>",
 			StartingBlock:            0,
 			ProcessingBlockBatchSize: 1_000,
@@ -147,6 +148,4 @@ func initialiseFilesAndFolders(cmd *cobra.Command, args []string) {
 	configFile.Close()
 
 	logger.Info("created config file")
-
-	os.Exit(0)
 }
