@@ -21,7 +21,7 @@ if [[ -z "${FACTORY_ADDRESS}" ]]; then
     exit 1
 fi
 
-npx hardhat --network "$NETWORK" --show-stack-traces scheduleMaintenance --factory-address "$FACTORY_ADDRESS"
+npx hardhat --network "$NETWORK" --show-stack-traces schedule-maintenance --factory-address "$FACTORY_ADDRESS"
 
 
 cd "$CURRENT_WD"
