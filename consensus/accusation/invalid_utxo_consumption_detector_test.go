@@ -2,8 +2,6 @@ package accusation
 
 import (
 	"context"
-	"github.com/alicenet/alicenet/consensus/lstate"
-	"github.com/dgraph-io/badger/v2"
 	"testing"
 
 	"github.com/alicenet/alicenet/consensus/db"
@@ -33,34 +31,13 @@ func setupInvalidUTXOConsumptionAccusationTest(t *testing.T) *db.Database {
 	return db
 }
 
-// TestNoMultipleProposalBehavior tests no bad behavior detected
 func TestNoInvalidUTXOConsumptionBehavior(t *testing.T) {
+	//crypto.GetAccount(senderPubkey)
+
 	consDB := setupInvalidUTXOConsumptionAccusationTest(t)
-	_ = GenerateAccusationsForInvalidUTXO(t, consDB)
-	sstore := lstate.New(consDB)
+	rs := GenerateAccusationsForInvalidUTXO(t, consDB)
+	task, found := detectInvalidUTXOConsumption(rs, nil, consDB)
 
-	err := consDB.View(func(txn *badger.Txn) error {
-		//os, err := consDB.GetOwnState(txn)
-		//if err != nil {
-		//	return err
-		//}
-		//
-		//rs, err := consDB.GetCurrentRoundState(txn, os.VAddr)
-		//if err != nil {
-		//	return err
-		//}
-
-		rss, err := sstore.LoadLocalState(txn)
-		if err != nil {
-			return err
-		}
-
-		//assert.NotNil(t, os)
-		//assert.NotNil(t, rs)
-		assert.NotNil(t, rss)
-		return nil
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.False(t, found)
+	assert.Nil(t, task)
 }

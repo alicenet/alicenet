@@ -59,100 +59,96 @@ func detectInvalidUTXOConsumption(rs *objs.RoundState, lrs *lstate.RoundStates, 
 			// }
 			var vins []*aobjs.TXIn = tx.Vin
 
-			err = db.View(func(txn *badger.Txn) error {
-				for _, vin := range vins {
-					utxoID, err := vin.UTXOID()
-					if err != nil {
-						logger.Warnf("error getting utxoID: %v", err)
-						return err
-					}
-
-					// check utxo id against state tree
-					mProof, _, err := db.GetTransactionProof(txn, utxoID)
-
-					if err != nil {
-						logger.Warnf("error getting transaction proof: %v", err)
-						return err
-					}
-
-					// if exists: continue, all is fine
-					// else: get proof of exclusion - BOOM
-					if !mProof.Included {
-						pClaimsBin, err := rs.Proposal.PClaims.MarshalBinary()
-						if err != nil {
-							logger.Warnf("error marshalling PClaims: %v", err)
-							return err
-						}
-						//rs.Proposal.Signature
-						bClaimsBin, err := rs.Proposal.PClaims.BClaims.MarshalBinary()
-						if err != nil {
-							logger.Warnf("error marshalling BClaims: %v", err)
-							return err
-						}
-
-						// TXInPreImage
-						txInPreImageBin, err := vin.TXInLinker.TXInPreImage.MarshalBinary()
-						if err != nil {
-							logger.Warnf("error marshalling TXInPreImage: %v", err)
-							return err
-						}
-
-						var proofs [3][]byte
-						proofs[0] = nil
-						proofs[1] = nil
-						proofs[2] = nil
-						// proofs[0] = proofAgainstStateRoot
-						mStateRootProof, err := getStateMerkleProofs(txn, utxoID, logger)
-						if err != nil {
-							logger.Warnf("error getting merkel proof against state root: %v", err)
-							return err
-						}
-						proofs[0], err = mStateRootProof.MarshalBinary()
-						if err != nil {
-							logger.Warnf("error marshalling merkel proof against state root: %v", err)
-							return err
-						}
-
-						// proofs[1] = proofInclusionTxRoot - ProofInclusionTxRoot against PClaims.BClaims.TxRoot.
-						mTxRootProof, err := getTxRootMerkleProofs(txn, txHash, db)
-						if err != nil {
-							logger.Warnf("error getting merkel proof against tx root: %v", err)
-							return err
-						}
-						proofs[1], err = mTxRootProof.MarshalBinary()
-						if err != nil {
-							logger.Warnf("error marshalling merkel proof against tx root: %v", err)
-							return err
-						}
-
-						// proofs[2] = proofOfInclusionTxHash - ProofOfInclusionTxHash against the target hash from ProofInclusionTxRoot
-						mTxHashProof, err := getTxHashProof(txn, tx, utxoID)
-						if err != nil {
-							logger.Warnf("error getting merkel hash against tx root: %v", err)
-							return err
-						}
-						proofs[2], err = mTxHashProof.MarshalBinary()
-						if err != nil {
-							logger.Warnf("error marshalling merkel proof against tx hash: %v", err)
-							return err
-						}
-
-						accusation = accusations.NewInvalidUTXOConsumptionAccusationTask(
-							pClaimsBin,
-							rs.Proposal.Signature,
-							bClaimsBin,
-							rs.Proposal.PClaims.RCert.SigGroup,
-							txInPreImageBin,
-							proofs,
-						)
-
-						return nil
-					}
-
+			for _, vin := range vins {
+				utxoID, err := vin.UTXOID()
+				if err != nil {
+					logger.Warnf("error getting utxoID: %v", err)
+					return err
 				}
 
-				return nil
-			})
+				// check utxo id against state tree
+				mProof, _, err := db.GetTransactionProof(txn, utxoID)
+
+				if err != nil {
+					logger.Warnf("error getting transaction proof: %v", err)
+					return err
+				}
+
+				// if exists: continue, all is fine
+				// else: get proof of exclusion - BOOM
+				if !mProof.Included {
+					pClaimsBin, err := rs.Proposal.PClaims.MarshalBinary()
+					if err != nil {
+						logger.Warnf("error marshalling PClaims: %v", err)
+						return err
+					}
+					//rs.Proposal.Signature
+					bClaimsBin, err := rs.Proposal.PClaims.BClaims.MarshalBinary()
+					if err != nil {
+						logger.Warnf("error marshalling BClaims: %v", err)
+						return err
+					}
+
+					// TXInPreImage
+					txInPreImageBin, err := vin.TXInLinker.TXInPreImage.MarshalBinary()
+					if err != nil {
+						logger.Warnf("error marshalling TXInPreImage: %v", err)
+						return err
+					}
+
+					var proofs [3][]byte
+					proofs[0] = nil
+					proofs[1] = nil
+					proofs[2] = nil
+					// proofs[0] = proofAgainstStateRoot
+					mStateRootProof, err := getStateMerkleProofs(txn, utxoID, logger)
+					if err != nil {
+						logger.Warnf("error getting merkel proof against state root: %v", err)
+						return err
+					}
+					proofs[0], err = mStateRootProof.MarshalBinary()
+					if err != nil {
+						logger.Warnf("error marshalling merkel proof against state root: %v", err)
+						return err
+					}
+
+					// proofs[1] = proofInclusionTxRoot - ProofInclusionTxRoot against PClaims.BClaims.TxRoot.
+					mTxRootProof, err := getTxRootMerkleProofs(txn, txHash, db)
+					if err != nil {
+						logger.Warnf("error getting merkel proof against tx root: %v", err)
+						return err
+					}
+					proofs[1], err = mTxRootProof.MarshalBinary()
+					if err != nil {
+						logger.Warnf("error marshalling merkel proof against tx root: %v", err)
+						return err
+					}
+
+					// proofs[2] = proofOfInclusionTxHash - ProofOfInclusionTxHash against the target hash from ProofInclusionTxRoot
+					mTxHashProof, err := getTxHashProof(txn, tx, utxoID)
+					if err != nil {
+						logger.Warnf("error getting merkel hash against tx root: %v", err)
+						return err
+					}
+					proofs[2], err = mTxHashProof.MarshalBinary()
+					if err != nil {
+						logger.Warnf("error marshalling merkel proof against tx hash: %v", err)
+						return err
+					}
+
+					accusation = accusations.NewInvalidUTXOConsumptionAccusationTask(
+						pClaimsBin,
+						rs.Proposal.Signature,
+						bClaimsBin,
+						rs.Proposal.PClaims.RCert.SigGroup,
+						txInPreImageBin,
+						proofs,
+					)
+
+					return nil
+				}
+
+			}
 
 			if err != nil {
 				logger.Warnf("error processing vins: %v", err)
