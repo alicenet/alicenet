@@ -6,7 +6,9 @@ import (
 
 	"github.com/alicenet/alicenet/config"
 	"github.com/alicenet/alicenet/logging"
-	toml "github.com/pelletier/go-toml"
+	"path"
+
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -15,20 +17,24 @@ var Command = cobra.Command{
 	Use:   "init",
 	Short: "Initialize the files/folders required for running the alicenet client",
 	Long:  "Initialize the files/folders required for running the alicenet client",
-	Run:   initialiseFilesAndFolders,
+	Run:   initializeFilesAndFolders,
 }
 
-const passcodesFile = "/passcodes.txt"
-
-func initialiseFilesAndFolders(cmd *cobra.Command, args []string) {
+func initializeFilesAndFolders(cmd *cobra.Command, args []string) {
 	logger := logging.GetLogger("init").WithField("Component", cmd.Use)
 
-	path := config.Configuration.Initialization.Path
+	rootPath := config.Configuration.Initialization.Path
 	network := config.Configuration.Initialization.Network
 
-	if path == "" {
+	if rootPath == "" {
 		logger.Info("No path specified - defaulting to home directory")
-		path = os.Getenv("HOME")
+		rootPath = os.Getenv("HOME")
+	} else if rootPath == "./" || rootPath == "." {
+		var err error
+		rootPath, err = os.Getwd()
+		if err != nil {
+			logger.WithError(err).Fatalf("Could not determine absolute path for: %v", rootPath)
+		}
 	}
 
 	if network == "" {
@@ -49,16 +55,16 @@ func initialiseFilesAndFolders(cmd *cobra.Command, args []string) {
 	logger.Info("Initializing AliceNet configuration files and folders...")
 
 	// alicenet related paths and files
-	alicenetPath := path + "/alicenet"
-	envPath := alicenetPath + "/" + network
-	stateDBPath := envPath + "/stateDB"
-	transactionDBPath := envPath + "/transactionDB"
-	monitorDBPath := envPath + "/monitorDB"
-	keystoresPath := envPath + "/keystores"
-	keysPath := keystoresPath + "/keys"
-	configPath := envPath + "/config.toml"
+	alicenetPath := path.Join(rootPath, ".alicenet")
+	envPath := path.Join(alicenetPath, network)
+	stateDBPath := path.Join(envPath, "stateDB")
+	transactionDBPath := path.Join(envPath, "transactionDB")
+	monitorDBPath := path.Join(envPath, "monitorDB")
+	keystoresPath := path.Join(envPath, "keystores")
+	keysPath := path.Join(keystoresPath, "keys")
+	configPath := path.Join(envPath, "config.toml")
 
-	paths := []string{alicenetPath, envPath, stateDBPath, transactionDBPath, monitorDBPath, keystoresPath, keysPath}
+	paths := []string{envPath, stateDBPath, transactionDBPath, monitorDBPath, keystoresPath, keysPath}
 
 	// loop through the paths checking to see if they exist and exit if any of them do
 	for _, path := range paths {
@@ -79,13 +85,7 @@ func initialiseFilesAndFolders(cmd *cobra.Command, args []string) {
 		err := os.MkdirAll(path, 0o700)
 		if err != nil {
 			logger.WithError(err).Error("Failed to create path: ", path)
-			// remove the root folder and its subfolders then exit
-			err := os.RemoveAll(alicenetPath)
-			if err != nil {
-				logger.WithError(err).Error("Failed to remove path: ", alicenetPath)
-				logger.Fatal("Please remove the root folder and its subfolders manually")
-			}
-			logger.Fatal("Exiting")
+			removePath(logger, alicenetPath)
 		}
 	}
 
@@ -110,7 +110,7 @@ func initialiseFilesAndFolders(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	config := &config.RootSerializableConfiguration{
+	configObj := &config.RootConfiguration{
 		Logging: config.LoggingConfig{
 			Consensus: "info",
 		},
@@ -127,7 +127,7 @@ func initialiseFilesAndFolders(cmd *cobra.Command, args []string) {
 			UPnP:                       false,
 			PrivateKey:                 "<16_BYTES_TRANSPORT_PRIVATE_KEY>",
 			BootNodeAddresses:          "<BOOTNODE_ADDRESS>",
-			OriginLimit:                50,
+			OriginLimit:                3,
 			LocalStateListeningAddress: "0.0.0.0:8883",
 			P2PListeningAddress:        "0.0.0.0:4342",
 			PeerLimitMax:               24,
@@ -138,7 +138,7 @@ func initialiseFilesAndFolders(cmd *cobra.Command, args []string) {
 			EndpointMinimumPeers:     1,
 			DefaultAccount:           defaultAccount,
 			Keystore:                 keystoresPath,
-			PassCodes:                keystoresPath + passcodesFile,
+			PassCodes:                path.Join(keystoresPath, "/passcodes.txt"),
 			FactoryAddress:           "<0xFACTORY_ETHEREUM_ADDRESS>",
 			StartingBlock:            0,
 			ProcessingBlockBatchSize: 1_000,
@@ -154,29 +154,29 @@ func initialiseFilesAndFolders(cmd *cobra.Command, args []string) {
 			SymmetricKey:    "<SOME_SUPER_FANCY_SECRET_THAT_WILL_BE_HASHED>",
 		},
 	}
-	b, err := toml.Marshal(config)
+
+	configBytes, err := config.CreateTOML(configObj)
 	if err != nil {
-		logger.WithError(err).Fatal("Failed to marshal config")
+		logger.WithError(err).Error("Failed to marshal config")
+		removePath(logger, alicenetPath)
 	}
 
 	// create config.toml file as text file in environment folder
-	configFile, err := os.Create(configPath)
+	err = os.WriteFile(configPath, configBytes, 0600)
 	if err != nil {
-		logger.Error("Error creating config.toml file: ", err)
-		os.Exit(1)
+		logger.WithError(err).Error("Error creating config.toml file")
+		removePath(logger, alicenetPath)
 	}
 
-	// write config.toml file
-	_, err = configFile.Write(b)
-	if err != nil {
-		logger.WithError(err).Fatal("Failed to write to file")
-	}
-	err = configFile.Close()
-	if err != nil {
-		logger.WithError(err).Fatal("Failed to close the file")
-	}
+	logger.Info("Created config file")
+}
 
-	logger.Info("created config file")
-
-	os.Exit(0)
+// removePath removes the root folder and its sub-folders then exit
+func removePath(logger *logrus.Entry, alicenetPath string) {
+	err := os.RemoveAll(alicenetPath)
+	if err != nil {
+		logger.WithError(err).Error("Failed to remove path: ", alicenetPath)
+		logger.Fatal("Please remove the root folder and its sub-folders manually")
+	}
+	logger.Fatal("Exiting")
 }

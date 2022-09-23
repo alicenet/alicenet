@@ -1,4 +1,4 @@
-[[constructor."contracts/AToken.sol:AToken"]]
+[[constructor."contracts/AliceNetFactory.sol:AliceNetFactory"]]
 legacyToken_ = "0x546f99f244b7b58b855330ae0e2bc1b30b41302f"
 
 [[constructor."contracts/Distribution.sol:Distribution"]]

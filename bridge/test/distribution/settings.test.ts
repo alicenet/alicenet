@@ -1,38 +1,70 @@
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { BigNumber } from "ethers";
+import { BigNumber, BytesLike, ContractTransaction } from "ethers";
 import { ethers, expect } from "hardhat";
+import { AliceNetFactory } from "../../typechain-types";
 import { getState, showState } from "../bToken/setup";
-import { Fixture, getFixture } from "../setup";
+import {
+  Fixture,
+  getContractAddressFromDeployedRawEvent,
+  getFixture,
+} from "../setup";
+
+export const deployDistributionViaFactory = async (
+  factory: AliceNetFactory,
+  validatorStakingSplit_: number,
+  publicStakingSplit_: number,
+  liquidityProviderStakingSplit_: number,
+  protocolFeeSplit_: number
+) => {
+  const deployData = (
+    await ethers.getContractFactory("Distribution")
+  ).getDeployTransaction(
+    validatorStakingSplit_,
+    publicStakingSplit_,
+    liquidityProviderStakingSplit_,
+    protocolFeeSplit_
+  ).data as BytesLike;
+  return factory.deployCreate(deployData);
+};
+
+export const getDistributionAddress = async (
+  transaction: ContractTransaction
+) => {
+  const distributionAddress = await getContractAddressFromDeployedRawEvent(
+    transaction
+  );
+  return distributionAddress;
+};
 
 describe("Testing splits settings update", async () => {
   let fixture: Fixture;
   let admin: SignerWithAddress;
 
   beforeEach(async function () {
-    fixture = await getFixture();
+    fixture = await loadFixture(getFixture);
     [admin] = await ethers.getSigners();
     showState("Initial", await getState(fixture));
   });
 
   it("Should fail to set splits greater than one unit", async () => {
     await expect(
-      (await ethers.getContractFactory("Distribution")).deploy(333, 333, 333, 2)
-    ).to.be.revertedWithCustomError(fixture.distribution, `SplitValueSumError`);
+      deployDistributionViaFactory(fixture.factory, 333, 333, 333, 2)
+    ).to.be.reverted;
   });
 
   it("Should fail to set all splits to 0", async () => {
-    await expect(
-      (await ethers.getContractFactory("Distribution")).deploy(0, 0, 0, 0)
-    ).to.be.revertedWithCustomError(fixture.distribution, `SplitValueSumError`);
+    await expect(deployDistributionViaFactory(fixture.factory, 0, 0, 0, 0)).to
+      .be.reverted;
   });
 
   it("Should set some splits to 0 on a new deployment", async () => {
-    const newDistribution = await (
-      await ethers.getContractFactory("Distribution")
-    ).deploy(0, 0, 1000, 0);
+    const newDistribution = await getDistributionAddress(
+      await deployDistributionViaFactory(fixture.factory, 0, 0, 1000, 0)
+    );
     await fixture.factory.upgradeProxy(
       ethers.utils.formatBytes32String("Distribution"),
-      newDistribution.address,
+      newDistribution,
       "0x"
     );
     expect(await fixture.distribution.getSplits()).to.be.deep.equals([
@@ -50,12 +82,12 @@ describe("Testing splits settings update", async () => {
       BigNumber.from(332),
       BigNumber.from(4),
     ]);
-    const newDistribution = await (
-      await ethers.getContractFactory("Distribution")
-    ).deploy(300, 300, 300, 100);
+    const newDistribution = await getDistributionAddress(
+      await deployDistributionViaFactory(fixture.factory, 300, 300, 300, 100)
+    );
     await fixture.factory.upgradeProxy(
       ethers.utils.formatBytes32String("Distribution"),
-      newDistribution.address,
+      newDistribution,
       "0x"
     );
     expect(await fixture.distribution.getSplits()).to.be.deep.equals([

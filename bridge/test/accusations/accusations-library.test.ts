@@ -1,3 +1,4 @@
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { assert } from "chai";
 import { ethers } from "hardhat";
 import { AccusationsLibraryMock } from "../../typechain-types";
@@ -6,12 +7,11 @@ import {
   generateSigAndPClaims0,
   generateSigAndPClaims1,
 } from "./accusations-test-helpers";
-
 describe("AccusationsLibrary: Tests AccusationsLibrary methods", async () => {
   let accusation: AccusationsLibraryMock;
 
   beforeEach(async function () {
-    accusation = await deployLibrary();
+    accusation = await loadFixture(deployLibrary);
   });
 
   describe("recoverSigner:", async () => {

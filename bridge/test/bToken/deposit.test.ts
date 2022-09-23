@@ -1,3 +1,4 @@
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
@@ -17,7 +18,7 @@ describe("Testing BToken Deposit methods", async () => {
   let bTokenDeposit: BigNumber;
 
   beforeEach(async function () {
-    fixture = await getFixture();
+    fixture = await loadFixture(getFixture);
     [admin, user] = await ethers.getSigners();
     showState("Initial", await getState(fixture));
     ethIn = ethers.utils.parseEther(eth.toString());

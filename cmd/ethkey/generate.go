@@ -27,9 +27,9 @@ type outputGenerate struct {
 	AddressEIP55 string
 }
 
-// Command is the cobra.Command specifically for generating an ethereum key and address.
-var Command = cobra.Command{
-	Use:   "generate-ethkey",
+// Generate is the cobra.Command specifically for generating an ethereum key and address.
+var Generate = cobra.Command{
+	Use:   "ethkey-generate",
 	Short: "Generate a new keyfile",
 	Long:  "Generate a new keyfile with an ethereum address and private key",
 	Run:   generate,
@@ -39,12 +39,12 @@ func generate(cmd *cobra.Command, args []string) {
 	logger := logging.GetLogger("ethkey").WithField("method", "generate")
 
 	// Check if keyfile path given and make sure it doesn't already exist.
-	keyfilepath := defaultKeyfileName
-	if len(args) > 0 && args[0] != "" {
-		keyfilepath = args[0]
+	keyFilePath := defaultKeyfileName
+	if kfp, ok := getKeyfilePath(args); ok {
+		keyFilePath = kfp
 	}
-	if _, err := os.Stat(keyfilepath); err == nil {
-		logger.Fatalf("Keyfile already exists at %s.", keyfilepath)
+	if _, err := os.Stat(keyFilePath); err == nil {
+		logger.Fatalf("Keyfile already exists at %s.", keyFilePath)
 	} else if !os.IsNotExist(err) {
 		logger.Fatalf("Error checking if keyfile exists: %v", err)
 	}
@@ -55,11 +55,11 @@ func generate(cmd *cobra.Command, args []string) {
 	}
 
 	// Store the file to disk.
-	if err := os.MkdirAll(filepath.Dir(keyfilepath), 0700); err != nil {
-		logger.Fatalf("Could not create directory %s", filepath.Dir(keyfilepath))
+	if err := os.MkdirAll(filepath.Dir(keyFilePath), 0700); err != nil {
+		logger.Fatalf("Could not create directory %s", filepath.Dir(keyFilePath))
 	}
-	if err := os.WriteFile(keyfilepath, keyjson, 0600); err != nil {
-		logger.Fatalf("Failed to write keyfile to %s: %v", keyfilepath, err)
+	if err := os.WriteFile(keyFilePath, keyjson, 0600); err != nil {
+		logger.Fatalf("Failed to write keyfile to %s: %v", keyFilePath, err)
 	}
 
 	// Output some information.
