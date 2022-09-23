@@ -21,7 +21,6 @@ import {
   Dynamics,
   ETHDKG,
   Foundation,
-  IBridgePool,
   InvalidTxConsumptionAccusation,
   LegacyToken,
   LiquidityProviderStaking,
@@ -546,22 +545,10 @@ export const getFixture = async (
     "ATokenBurner"
   )) as ATokenBurner;
 
-  const localERC20BridgePoolV1 = (await deployUpgradeableWithFactory(
-    factory,
-    "LocalERC20BridgePoolV1Mock",
-    getBridgePoolSalt("LocalERC20", 1),
-    undefined,
-    undefined,
-    undefined,
-    false
-  )) as IBridgePool;
-
   const bridgePoolFactory = (await deployUpgradeableWithFactory(
     factory,
     "BridgePoolFactory",
-    "BridgePoolFactory",
-    undefined,
-    [1337]
+    "BridgePoolFactory"
   )) as BridgePoolFactory;
 
   const invalidTxConsumptionAccusation = (await deployUpgradeableWithFactory(
@@ -615,7 +602,6 @@ export const getFixture = async (
     snapshots,
     ethdkg,
     factory,
-    localERC20BridgePoolV1,
     bridgePoolFactory,
     namedSigners,
     aTokenMinter,

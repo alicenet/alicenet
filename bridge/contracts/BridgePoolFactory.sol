@@ -7,9 +7,8 @@ import "contracts/libraries/factory/BridgePoolFactoryBase.sol";
 /// @custom:salt BridgePoolFactory
 /// @custom:deploy-type deployUpgradeable
 contract BridgePoolFactory is BridgePoolFactoryBase {
-    constructor(uint256 chainID_) BridgePoolFactoryBase(chainID_) {}
+    constructor() BridgePoolFactoryBase() {}
 
-    
     /**
      * @notice Deploys a new bridge to pass tokens to our chain from the specified ERC contract.
      * The pools are created as thin proxies (EIP1167) routing to versioned implementations identified by corresponding salt.
@@ -24,8 +23,14 @@ contract BridgePoolFactory is BridgePoolFactoryBase {
     ) public onlyFactoryOrPublicPoolDeploymentEnabled {
         _deployNewNativePool(tokenType_, ercContract_, implementationVersion_);
     }
-    
-     function deployPoolLogic(uint8 tokenType_, uint256 chainId_, uint16 version_, uint256 value_, bytes calldata deployCode_) public onlyFactory returns(address){
+
+    function deployPoolLogic(
+        uint8 tokenType_,
+        uint256 chainId_,
+        uint16 version_,
+        uint256 value_,
+        bytes calldata deployCode_
+    ) public onlyFactory returns (address) {
         return _deployPoolLogic(tokenType_, chainId_, version_, value_, deployCode_);
     }
 
@@ -35,7 +40,7 @@ contract BridgePoolFactory is BridgePoolFactoryBase {
     function togglePublicPoolDeployment() public onlyFactory {
         _togglePublicPoolDeployment();
     }
-    
+
     /**
      * @notice calculates salt for a BridgePool contract based on ERC contract's address, tokenType, chainID and version_
      * @param tokenContractAddr_ address of ERC Token contract
@@ -50,6 +55,12 @@ contract BridgePoolFactory is BridgePoolFactoryBase {
         uint256 chainID_,
         uint16 version_
     ) public pure returns (bytes32) {
-        return BridgePoolAddressUtil._getBridgePoolSalt(tokenContractAddr_, tokenType_, chainID_, version_);
+        return
+            BridgePoolAddressUtil._getBridgePoolSalt(
+                tokenContractAddr_,
+                tokenType_,
+                chainID_,
+                version_
+            );
     }
 }

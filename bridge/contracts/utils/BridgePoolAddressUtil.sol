@@ -7,6 +7,7 @@ library BridgePoolAddressUtil {
         ERC721,
         ERC1155
     }
+
     /**
      * @notice calculates salt for a BridgePool contract based on ERC contract's address, tokenType, chainID and version_
      * @param tokenContractAddr_ address of ERC contract of BridgePool
