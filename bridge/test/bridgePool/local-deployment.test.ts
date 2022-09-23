@@ -1,9 +1,13 @@
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { ethers } from "hardhat";
 import { expect } from "../chai-setup";
 import {
+  callFunctionAndGetReturnValues,
   factoryCallAny,
   factoryCallAnyFixture,
   Fixture,
+  getBridgePoolSalt,
   getFixture,
 } from "../setup";
 const bridgePoolTokenType = 0;
@@ -12,26 +16,33 @@ const bridgePoolValue = 0;
 const bridgePoolDeployCode = "0x38585839386009f3"; // UNIVERSAL_DEPLOY_CODE
 
 let fixture: Fixture;
+let admin: SignerWithAddress;
 const bridgePoolVersion = 1;
 const unexistentBridgePoolVersion = 11;
 
-describe("Testing BridgePool Factory", async () => {
-  beforeEach(async () => {
-    fixture = await getFixture(true, true, false);
-    await factoryCallAny(
-      fixture.factory,
-      fixture.bridgePoolFactory,
-      "deployPoolLogic",
-      [
-        bridgePoolTokenType,
-        bridgePoolChainId,
-        bridgePoolVersion,
-        bridgePoolValue,
-        bridgePoolDeployCode,
-      ]
-    );
-  });
+async function deployFixture() {
+  const fixture = await getFixture(true, true, false);
+  const [admin] = await ethers.getSigners();
+  await factoryCallAny(
+    fixture.factory,
+    fixture.bridgePoolFactory,
+    "deployPoolLogic",
+    [
+      bridgePoolTokenType,
+      bridgePoolChainId,
+      bridgePoolVersion,
+      bridgePoolValue,
+      bridgePoolDeployCode,
+    ]
+  );
+  return { fixture, admin };
+}
 
+beforeEach(async function () {
+  ({ fixture, admin } = await loadFixture(deployFixture));
+});
+
+describe("Testing BridgePool Factory", async () => {
   it("Should deploy new BridgePool as factory even if public pool deployment is not enabled", async () => {
     await factoryCallAnyFixture(
       fixture,
@@ -121,5 +132,27 @@ describe("Testing BridgePool Factory", async () => {
         "PoolVersionNotSupported"
       )
       .withArgs(unexistentBridgePoolVersion);
+  });
+
+  it("Should get correct Bridge Pool Salt", async () => {
+    const [bridgePoolSalt] = await callFunctionAndGetReturnValues(
+      fixture.bridgePoolFactory,
+      "getBridgePoolSalt",
+      admin,
+      [
+        ethers.constants.AddressZero,
+        bridgePoolTokenType,
+        bridgePoolChainId,
+        bridgePoolVersion,
+      ]
+    );
+    expect(bridgePoolSalt).to.be.eq(
+      getBridgePoolSalt(
+        ethers.constants.AddressZero,
+        bridgePoolTokenType,
+        bridgePoolChainId,
+        bridgePoolVersion
+      )
+    );
   });
 });

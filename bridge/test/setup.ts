@@ -718,12 +718,19 @@ export const getReceiptForFailedTransaction = async (
   return receipt;
 };
 
-export const getBridgePoolSalt = (id: string, version: number): string => {
+export const getBridgePoolSalt = (
+  tokenContractAddr: string,
+  tokenType: number,
+  chainID: number,
+  version: number
+): string => {
   return ethers.utils.keccak256(
     ethers.utils.solidityPack(
-      ["bytes32", "bytes32"],
+      ["bytes32", "bytes32", "bytes32", "bytes32"],
       [
-        ethers.utils.solidityKeccak256(["string"], [id]),
+        ethers.utils.solidityKeccak256(["address"], [tokenContractAddr]),
+        ethers.utils.solidityKeccak256(["uint8"], [tokenType]),
+        ethers.utils.solidityKeccak256(["uint256"], [chainID]),
         ethers.utils.solidityKeccak256(["uint16"], [version]),
       ]
     )
