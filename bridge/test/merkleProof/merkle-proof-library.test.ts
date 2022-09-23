@@ -1,3 +1,4 @@
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { expect } from "chai";
 import { MockMerkleProofLibrary } from "../../typechain-types";
 import { deployLibrary } from "./setup";
@@ -23,8 +24,13 @@ const VALID_KEYHASH =
 describe("Testing Merkle Proof Library", async () => {
   let MerkleProofLibrary: MockMerkleProofLibrary;
 
+  async function deployFixture() {
+    const MerkleProofLibrary = await deployLibrary();
+    return { MerkleProofLibrary };
+  }
+
   beforeEach(async function () {
-    MerkleProofLibrary = await deployLibrary();
+    ({ MerkleProofLibrary } = await loadFixture(deployFixture));
   });
 
   describe("verifyNonInclusion:", async () => {

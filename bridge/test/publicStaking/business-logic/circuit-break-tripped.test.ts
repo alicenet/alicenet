@@ -1,3 +1,4 @@
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { ethers, expect } from "hardhat";
 import {
@@ -11,12 +12,19 @@ describe("PublicStaking: Call functions with Circuit Breaker tripped", async () 
   let notAdminSigner: SignerWithAddress;
   let adminSigner: SignerWithAddress;
 
-  beforeEach(async function () {
-    fixture = await getBaseTokensFixture();
-    [adminSigner, notAdminSigner] = await ethers.getSigners();
+  async function deployFixture() {
+    const fixture = await getBaseTokensFixture();
+    const [adminSigner, notAdminSigner] = await ethers.getSigners();
     await fixture.aToken.approve(fixture.publicStaking.address, 1000);
     await fixture.publicStaking.connect(adminSigner).mint(1000);
     await factoryCallAnyFixture(fixture, "publicStaking", "tripCB");
+    return { fixture, adminSigner, notAdminSigner };
+  }
+
+  beforeEach(async function () {
+    ({ fixture, adminSigner, notAdminSigner } = await loadFixture(
+      deployFixture
+    ));
   });
 
   describe("Users should not be able to:", async () => {

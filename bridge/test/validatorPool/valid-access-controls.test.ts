@@ -1,3 +1,4 @@
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { expect } from "hardhat";
 import {
   factoryCallAnyFixture,
@@ -8,13 +9,17 @@ import {
 import { validatorsSnapshots } from "../snapshots/assets/4-validators-snapshots-1";
 import { commitSnapshots, createValidators, stakeValidators } from "./setup";
 
+function deployFixture() {
+  return getFixture(false, true);
+}
+
 describe("ValidatorPool Access Control: An user with admin role should be able to:", async function () {
   let fixture: Fixture;
   const maxNumValidators = 5;
   const stakeAmount = 20000;
 
   beforeEach(async function () {
-    fixture = await getFixture(false, true);
+    fixture = await loadFixture(deployFixture);
   });
 
   it("Set a minimum stake", async function () {
@@ -119,7 +124,7 @@ describe("ValidatorPool Access Control: An user with admin role should not be ab
   let fixture: Fixture;
 
   beforeEach(async function () {
-    fixture = await getFixture(false, true);
+    fixture = await loadFixture(deployFixture);
   });
 
   it("Set Max Interval Without Snapshots to 0", async function () {

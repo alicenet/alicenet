@@ -20,14 +20,19 @@ import {
   DEPLOYMENT_LIST_FPATH,
   DEPLOY_CREATE,
   DEPLOY_PROXY,
-  DEPLOY_UPGRADEABLE_PROXY,
   INITIALIZER,
   MULTICALL_GAS_LIMIT,
-  MULTI_CALL_DEPLOY_PROXY,
   ONLY_PROXY,
   PROXY,
+  TASK_DEPLOY_CONTRACTS,
+  TASK_DEPLOY_CREATE,
+  TASK_DEPLOY_FACTORY,
+  TASK_DEPLOY_PROXY,
+  TASK_DEPLOY_UPGRADEABLE_PROXY,
+  TASK_FULL_MULTI_CALL_DEPLOY_PROXY,
+  TASK_MULTI_CALL_DEPLOY_PROXY,
+  TASK_UPGRADE_DEPLOYED_PROXY,
   UPGRADEABLE_DEPLOYMENT,
-  UPGRADE_DEPLOYED_PROXY,
   UPGRADE_PROXY,
 } from "./constants";
 import {
@@ -67,7 +72,7 @@ import {
 } from "./deployment/factoryStateUtil";
 
 task(
-  "getNetwork",
+  "get-network",
   "gets the current network being used from provider"
 ).setAction(async (taskArgs, hre) => {
   const network = hre.network.name;
@@ -75,7 +80,7 @@ task(
   return network;
 });
 
-task("getBytes32Salt", "gets the bytes32 version of salt from contract")
+task("get-bytes32-salt", "gets the bytes32 version of salt from contract")
   .addParam("contractName", "test contract")
   .setAction(async (taskArgs, hre) => {
     const salt = await getBytes32Salt(taskArgs.contractName, hre);
@@ -83,7 +88,7 @@ task("getBytes32Salt", "gets the bytes32 version of salt from contract")
   });
 
 task(
-  "deployFactory",
+  TASK_DEPLOY_FACTORY,
   "Deploys an instance of a factory contract specified by its name"
 )
   .addFlag("waitConfirmation", "wait 8 blocks between transactions")
@@ -117,13 +122,18 @@ task(
     const network = hre.network.name;
     await updateDefaultFactoryData(network, factoryData, taskArgs.outputFolder);
     await showState(
-      `Deployed: ${ALICENET_FACTORY}, at address: ${factory.address}, with ${gasCost} gas`
+      `Deployed ${ALICENET_FACTORY} at address: ${factory.address}, gasCost: ${gasCost}`
+    );
+    await showState(
+      `Deployed ALCA at address: ${await factory.lookup(
+        hre.ethers.utils.formatBytes32String("AToken")
+      )}, gasCost: ${gasCost}`
     );
     return factoryData;
   });
 
 task(
-  "generateDeploymentConfigs",
+  "generate-deployment-configs",
   "default list and arg template will be generated if all optional variables are not specified"
 )
   .addFlag("list", "flag to only generate deploy list")
@@ -209,7 +219,10 @@ task(
     }
   });
 
-task("deployContracts", "runs the initial deployment of all AliceNet contracts")
+task(
+  TASK_DEPLOY_CONTRACTS,
+  "runs the initial deployment of all AliceNet contracts"
+)
   .addFlag("waitConfirmation", "wait 8 blocks between transactions")
   .addFlag("verify", "try to automatically verify contracts on etherscan")
   .addOptionalParam(
@@ -229,7 +242,7 @@ task("deployContracts", "runs the initial deployment of all AliceNet contracts")
     // deploy the factory first
     let factoryAddress = taskArgs.factoryAddress;
     if (factoryAddress === undefined) {
-      const factoryData: FactoryData = await hre.run("deployFactory", {
+      const factoryData: FactoryData = await hre.run(TASK_DEPLOY_FACTORY, {
         outputFolder: taskArgs.outputFolder,
         verify: taskArgs.verify,
       });
@@ -256,14 +269,17 @@ task("deployContracts", "runs the initial deployment of all AliceNet contracts")
             taskArgs.outputFolder,
             taskArgs.verify
           );
-          proxyData = await hre.run("fullMultiCallDeployProxy", deployArgs);
+          proxyData = await hre.run(
+            TASK_FULL_MULTI_CALL_DEPLOY_PROXY,
+            deployArgs
+          );
           cumulativeGasUsed = cumulativeGasUsed.add(proxyData.gas);
           break;
         }
         case ONLY_PROXY: {
           const name = extractName(fullyQualifiedName);
           const salt: BytesLike = await getBytes32Salt(name, hre);
-          proxyData = await hre.run("deployProxy", {
+          proxyData = await hre.run(TASK_DEPLOY_PROXY, {
             factoryAddress,
             salt,
             waitConfirmation: taskArgs.waitConfirmation,
@@ -280,8 +296,8 @@ task("deployContracts", "runs the initial deployment of all AliceNet contracts")
   });
 
 task(
-  "fullMultiCallDeployProxy",
-  "Multicalls deployCreate, deployProxy, and upgradeProxy, if gas cost exceeds 10 million deployUpgradeableProxy will be used"
+  TASK_FULL_MULTI_CALL_DEPLOY_PROXY,
+  "Multicalls deploy-create, deploy-proxy, and upgrade-proxy, if gas cost exceeds 10 million deploy-upgradeable-proxy will be used"
 )
   .addFlag("waitConfirmation", "wait 8 blocks between transactions")
   .addFlag("verify", "try to automatically verify contracts on etherscan")
@@ -388,12 +404,12 @@ task(
       await updateProxyList(network, proxyData, taskArgs.outputFolder);
       return proxyData;
     } else {
-      return await hre.run(DEPLOY_UPGRADEABLE_PROXY, callArgs);
+      return await hre.run(TASK_DEPLOY_UPGRADEABLE_PROXY, callArgs);
     }
   });
 
 task(
-  DEPLOY_UPGRADEABLE_PROXY,
+  TASK_DEPLOY_UPGRADEABLE_PROXY,
   "deploys logic contract, proxy contract, and points the proxy to the logic contract"
 )
   .addFlag("waitConfirmation", "wait 8 blocks between transactions")
@@ -423,7 +439,7 @@ task(
     };
     // deploy create the logic contract
     const deployCreateData: DeployCreateData = await hre.run(
-      DEPLOY_CREATE,
+      TASK_DEPLOY_CREATE,
       callArgs
     );
     cumulativeGas = cumulativeGas.add(deployCreateData.gas);
@@ -436,7 +452,7 @@ task(
       outputFolder: taskArgs.outputFolder,
     };
     const proxyData: ProxyData = await hre.run(
-      MULTI_CALL_DEPLOY_PROXY,
+      TASK_MULTI_CALL_DEPLOY_PROXY,
       mcCallArgs
     );
     cumulativeGas = cumulativeGas.add(proxyData.gas);
@@ -448,7 +464,7 @@ task(
   });
 
 // factoryName param doesnt do anything right now
-task(DEPLOY_CREATE, "deploys a contract from the factory using create")
+task(TASK_DEPLOY_CREATE, "deploys a contract from the factory using create")
   .addFlag("waitConfirmation", "wait 8 blocks between transactions")
   .addParam("contractName", "logic contract name")
   .addParam(
@@ -511,7 +527,7 @@ task(DEPLOY_CREATE, "deploys a contract from the factory using create")
     }
   });
 
-task(DEPLOY_PROXY, "deploys a proxy from the factory")
+task(TASK_DEPLOY_PROXY, "deploys a proxy from the factory")
   .addFlag("waitConfirmation", "wait 8 blocks between transactions")
   .addParam(
     "salt",
@@ -545,7 +561,10 @@ task(DEPLOY_PROXY, "deploys a proxy from the factory")
     return proxyData;
   });
 
-task(UPGRADE_DEPLOYED_PROXY, "deploys a contract from the factory using create")
+task(
+  TASK_UPGRADE_DEPLOYED_PROXY,
+  "deploys a contract from the factory using create"
+)
   .addFlag("waitConfirmation", "wait 8 blocks between transactions")
   .addParam("contractName", "logic contract name")
   .addParam(
@@ -618,7 +637,7 @@ task(UPGRADE_DEPLOYED_PROXY, "deploys a contract from the factory using create")
  * deploys a proxy and upgrades it using multicall from factory
  * @returns a proxyData object with logic contract name, address and proxy salt, and address.
  */
-task("multiCallDeployProxy", "deploy and upgrade proxy with multicall")
+task("multi-call-deploy-proxy", "deploy and upgrade proxy with multicall")
   .addFlag("waitConfirmation", "wait 8 blocks between transactions")
   .addParam("contractName", "logic contract name")
   .addParam(
@@ -710,7 +729,7 @@ task("multiCallDeployProxy", "deploy and upgrade proxy with multicall")
   });
 
 task(
-  "multiCallUpgradeProxy",
+  "multi-call-upgrade-proxy",
   "multi call to deploy logic and upgrade proxy through factory"
 )
   .addFlag("waitConfirmation", "wait 8 blocks between transactions")
@@ -810,7 +829,7 @@ task(
 
 // Generate a json file with all deployment information
 task(
-  "generateContractsDescriptor",
+  "generate-contracts-descriptor",
   "Generates deploymentList.json file for faster contract deployment (requires deploymentList and deploymentArgsTemplate files to be already generated)"
 )
   .addOptionalParam(
@@ -884,7 +903,7 @@ task(
   });
 
 task(
-  "deployContractsFromDescriptor",
+  "deploy-contracts-from-descriptor",
   "Deploys ALL AliceNet contracts reading deploymentList.json"
 )
   .addOptionalParam(
@@ -912,7 +931,7 @@ task(
         "Could not find " +
         DEFAULT_CONFIG_OUTPUT_DIR +
         DEPLOYMENT_LIST_FPATH +
-        ".json file. It must be generated first with generateContractsDescriptor task";
+        ".json file. It must be generated first with generate-contracts-descriptor task";
       throw new Error(error);
     }
     const rawdata = fs.readFileSync(path);
@@ -928,7 +947,7 @@ task(
     // deploy the factory first
     let factoryAddress = taskArgs.factoryAddress;
     if (factoryAddress === undefined) {
-      const factoryData: FactoryData = await hre.run("deployFactory", {
+      const factoryData: FactoryData = await hre.run(TASK_DEPLOY_FACTORY, {
         outputFolder: taskArgs.outputFolder,
       });
       factoryAddress = factoryData.address;

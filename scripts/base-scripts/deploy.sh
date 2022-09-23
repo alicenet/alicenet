@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -ex
+set -e
 
 CURRENT_WD=$PWD
 BRIDGE_DIR=./bridge
@@ -9,14 +9,14 @@ NETWORK=${1:-"dev"}
 cd $BRIDGE_DIR
 
 # if on hardhat network this switches automine on to deploy faster
-npx hardhat setHardhatIntervalMining --network $NETWORK --enable-auto-mine
+npx hardhat set-local-environment-interval-mining --network $NETWORK --enable-auto-mine
 
 # Copy the deployList to the generated folder so we have deploymentList and deploymentArgsTemplate in the same folder
 cp ../scripts/base-files/deploymentList ../scripts/generated/deploymentList
 cp ../scripts/base-files/deploymentArgsTemplate ../scripts/generated/deploymentArgsTemplate
 
 
-npx hardhat --network "$NETWORK" --show-stack-traces deployContracts --input-folder ../scripts/generated
+npx hardhat --network "$NETWORK" --show-stack-traces deploy-contracts --input-folder ../scripts/generated
 addr="$(grep -Pzo "\[$NETWORK\]\ndefaultFactoryAddress = \".*\"\n" ../scripts/generated/factoryState | grep -a "defaultFactoryAddress = .*" | awk '{print $NF}')"
 
 export FACTORY_ADDRESS=$addr
@@ -34,7 +34,7 @@ cp ../scripts/base-files/owner.toml ../scripts/generated/owner.toml
 sed -e "s/factoryAddress = .*/factoryAddress = $FACTORY_ADDRESS/" "../scripts/generated/owner.toml" > "../scripts/generated/owner.toml".bk &&\
 mv "../scripts/generated/owner.toml".bk "../scripts/generated/owner.toml"
 # funds validator accounts
-npx hardhat fundValidators --network $NETWORK
+npx hardhat fund-validators --network $NETWORK
 cd $CURRENT_WD
 
 if [[ ! -z "${SKIP_REGISTRATION}" ]]; then
@@ -50,14 +50,14 @@ if [[ -z "${FACTORY_ADDRESS}" ]]; then
 fi
 
 cd $BRIDGE_DIR
-npx hardhat setHardhatIntervalMining --network $NETWORK --interval 1000
+npx hardhat set-local-environment-interval-mining --network $NETWORK --interval 1000
 cd $CURRENT_WD
 
 ./scripts/main.sh register
 
 cd $BRIDGE_DIR
-npx hardhat --network $NETWORK setMinEthereumBlocksPerSnapshot --factory-address $FACTORY_ADDRESS --block-num 10
-npx hardhat setHardhatIntervalMining --network $NETWORK
+npx hardhat --network $NETWORK set-min-ethereum-blocks-per-snapshot --factory-address $FACTORY_ADDRESS --block-num 10
+npx hardhat set-local-environment-interval-mining --network $NETWORK
 cd $CURRENT_WD
 
 if [[ -n "${AUTO_START_VALIDATORS}" ]]; then

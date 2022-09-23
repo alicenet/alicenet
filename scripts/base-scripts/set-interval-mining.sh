@@ -1,4 +1,4 @@
 #!/bin/sh
 
 
-npx hardhat setHardhatIntervalMining --network dev
+npx hardhat set-local-environment-interval-mining --network dev

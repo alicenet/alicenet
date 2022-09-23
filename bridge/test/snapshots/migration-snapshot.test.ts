@@ -1,3 +1,4 @@
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { ethers } from "hardhat";
 import {
@@ -21,9 +22,9 @@ describe("Snapshots: Migrate state", () => {
   let expectedBlockNumber: bigint;
   let admin: SignerWithAddress;
 
-  beforeEach(async function () {
-    fixture = await getFixture();
-    [admin] = fixture.namedSigners;
+  async function deployFixture() {
+    const fixture = await getFixture();
+    const [admin] = fixture.namedSigners;
     const validators = await createValidators(fixture, validatorsSnapshots);
     const stakingTokenIds = await stakeValidators(fixture, validators);
     const validatorsShares = [];
@@ -52,6 +53,11 @@ describe("Snapshots: Migrate state", () => {
       ]
     );
     expect(receipt.status).to.be.equals(1);
+    return { fixture, admin };
+  }
+
+  beforeEach(async function () {
+    ({ fixture, admin } = await loadFixture(deployFixture));
   });
 
   it("Should not be to do a migration of snapshots if not factory", async function () {

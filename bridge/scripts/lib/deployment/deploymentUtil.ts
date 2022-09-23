@@ -5,10 +5,6 @@ import {
   HardhatRuntimeEnvironment,
   RunTaskFunction,
 } from "hardhat/types";
-// import {
-//   AliceNetFactory,
-//   AliceNetFactory__factory,
-// } from "../../../typechain-types";
 import { getEventVar } from "../alicenetFactoryTasks";
 import { encodeMultiCallArgs } from "../alicenetTasks";
 import {
@@ -20,6 +16,8 @@ import {
   DEPLOY_PROXY,
   INITIALIZER,
   ONLY_PROXY,
+  TASK_DEPLOY_FACTORY,
+  TASK_DEPLOY_PROXY,
   UPGRADEABLE_DEPLOYMENT,
   UPGRADE_PROXY,
 } from "../constants";
@@ -114,7 +112,7 @@ export async function getContractDescriptor(
 }
 // function to deploy the factory
 export async function deployFactory(run: RunTaskFunction, usrPath?: string) {
-  return await run("deployFactory", { outputFolder: usrPath });
+  return await run(TASK_DEPLOY_FACTORY, { outputFolder: usrPath });
 }
 
 export async function getDeployMetaArgs(
@@ -491,7 +489,7 @@ export async function deployContractsMulticall(
             hre.ethers
           );
           const factoryAddress = factory.address;
-          proxyData = await hre.run("deployProxy", {
+          proxyData = await hre.run(TASK_DEPLOY_PROXY, {
             factoryAddress,
             salt,
           });
