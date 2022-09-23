@@ -42,11 +42,5 @@ abstract contract LocalERCBridgePoolBase is IBridgePool, ImmutableSnapshots {
     function withdraw(bytes memory bClaims, bytes memory proofOfInclusionAgainstHeaderRoot)
         public
         virtual
-    {
-        BClaimsParserLibrary.BClaims memory snapshotBClaims = Snapshots(_snapshotsAddress())
-            .getBlockClaimsFromLatestSnapshot();
-        MerkleProofParserLibrary.MerkleProof memory merkleProof = proofOfInclusionAgainstHeaderRoot
-            .extractMerkleProof();
-        merkleProof.verifyInclusion(snapshotBClaims.headerRoot);
-    }
+    {}
 }

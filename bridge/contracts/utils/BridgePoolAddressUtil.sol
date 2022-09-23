@@ -16,7 +16,7 @@ library BridgePoolAddressUtil {
      * @param chainID_ chain ID
      * @return calculated calculated salt
      */
-    function _getBridgePoolSalt(
+    function getBridgePoolSalt(
         address tokenContractAddr_,
         uint8 tokenType_,
         uint256 chainID_,

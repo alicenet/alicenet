@@ -56,7 +56,7 @@ contract BridgePoolFactory is BridgePoolFactoryBase {
         uint16 version_
     ) public pure returns (bytes32) {
         return
-            BridgePoolAddressUtil._getBridgePoolSalt(
+            BridgePoolAddressUtil.getBridgePoolSalt(
                 tokenContractAddr_,
                 tokenType_,
                 chainID_,

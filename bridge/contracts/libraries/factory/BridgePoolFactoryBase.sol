@@ -31,6 +31,22 @@ abstract contract BridgePoolFactoryBase is ImmutableFactory {
         _chainID = block.chainid;
     }
 
+    // NativeERC20V!
+    /**
+     * @notice returns bytecode for a Minimal Proxy (EIP-1167) that routes to BridgePool implementation
+     */
+    // solhint-disable-next-line
+    fallback() external {
+        address implementation_ = _implementation;
+        assembly {
+            let ptr := mload(0x40)
+            mstore(ptr, shl(176, 0x363d3d373d3d3d363d73)) //10
+            mstore(add(ptr, 10), shl(96, implementation_)) //20
+            mstore(add(ptr, 30), shl(136, 0x5af43d82803e903d91602b57fd5bf3)) //15
+            return(ptr, 45)
+        }
+    }
+
     function _deployPoolLogic(
         uint8 tokenType_,
         uint256 chainId_,
@@ -79,7 +95,7 @@ abstract contract BridgePoolFactoryBase is ImmutableFactory {
     ) internal {
         bool native = true;
         //calculate the unique salt for the bridge pool
-        bytes32 bridgePoolSalt = BridgePoolAddressUtil._getBridgePoolSalt(
+        bytes32 bridgePoolSalt = BridgePoolAddressUtil.getBridgePoolSalt(
             ercContract_,
             tokenType_,
             _chainID,
@@ -134,7 +150,7 @@ abstract contract BridgePoolFactoryBase is ImmutableFactory {
         uint8 tokenType_,
         uint16 version_,
         bool native_
-    ) internal view returns (string memory) {
+    ) internal pure returns (string memory) {
         string memory key;
         if (native_) {
             key = "Native";
@@ -150,20 +166,5 @@ abstract contract BridgePoolFactoryBase is ImmutableFactory {
         }
         key = string.concat(key, "V", Strings.toString(version_));
         return key;
-    }
-
-    // NativeERC20V!
-    /**
-     * @notice returns bytecode for a Minimal Proxy (EIP-1167) that routes to BridgePool implementation
-     */
-    fallback() external {
-        address implementation_ = _implementation;
-        assembly {
-            let ptr := mload(0x40)
-            mstore(ptr, shl(176, 0x363d3d373d3d3d363d73)) //10
-            mstore(add(ptr, 10), shl(96, implementation_)) //20
-            mstore(add(ptr, 30), shl(136, 0x5af43d82803e903d91602b57fd5bf3)) //15
-            return(ptr, 45)
-        }
     }
 }
