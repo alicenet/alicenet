@@ -1,4 +1,5 @@
-import { BigNumber, BigNumberish, Signer } from "ethers";
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
+import { BigNumber, BigNumberish } from "ethers";
 import { ethers } from "hardhat";
 import {
   PublicStaking,
@@ -14,7 +15,6 @@ import {
 
 describe("StakingPositionDescriptor: Tests StakingPositionDescriptor methods", async () => {
   let fixture: Fixture;
-  let adminSigner: Signer;
   let publicStaking: PublicStaking;
   let stakingPositionDescriptor: StakingPositionDescriptor;
   const stakeAmount = 20000;
@@ -25,14 +25,14 @@ describe("StakingPositionDescriptor: Tests StakingPositionDescriptor methods", a
   const lockTime = 1;
   let tokenId: BigNumberish;
 
-  beforeEach(async function () {
-    fixture = await getFixture(true, true);
+  async function deployFixture() {
+    const fixture = await getFixture(true, true);
 
     const [admin] = fixture.namedSigners;
-    adminSigner = await getValidatorEthAccount(admin.address);
+    const adminSigner = await getValidatorEthAccount(admin.address);
 
-    publicStaking = fixture.publicStaking;
-    stakingPositionDescriptor = fixture.stakingPositionDescriptor;
+    const publicStaking = fixture.publicStaking;
+    const stakingPositionDescriptor = fixture.stakingPositionDescriptor;
 
     await fixture.aToken.approve(
       fixture.publicStaking.address,
@@ -41,7 +41,19 @@ describe("StakingPositionDescriptor: Tests StakingPositionDescriptor methods", a
     const tx = await fixture.publicStaking
       .connect(adminSigner)
       .mintTo(admin.address, stakeAmountATokenWei, lockTime);
-    tokenId = await getTokenIdFromTx(tx);
+    const tokenId = await getTokenIdFromTx(tx);
+    return {
+      fixture,
+      adminSigner,
+      publicStaking,
+      stakingPositionDescriptor,
+      tokenId,
+    };
+  }
+
+  beforeEach(async function () {
+    ({ fixture, publicStaking, stakingPositionDescriptor, tokenId } =
+      await loadFixture(deployFixture));
   });
 
   it("Fails if token at id does not exist", async function () {

@@ -67,22 +67,6 @@ If you are linking a custom Deployment list file it must follow the following fo
  ]
 ```
 
-### Contract Factory CLI
-
-mass deployment run : npx hardhat generateDeployConfigs Specify constructor and initializer arguements in generated
-deployment arg run : npx hardhat DeployContracts
-
-incremental deployments variable mass deployment npx hardhat generateDeployconfigs
---output-name <filname> <contract1> <contract2>
-change all npx hardhat DeployContracts --list-path path --arg-file-path path single proxy deployment npx hardhat
-deployUpgradeableProxy --contract-name <name>
-single metamorphic deployment npx hardhat deployMetamorphic --contract-name <name>
-incremental updates upgrade proxy logic non multiCall npx hardhat deployCreate --contract-name logicContractName npx
-hardhat upgradeDeployedProxy --contract-name <name> --logic-address  
-multiCall npx hardhat multiCallUpgradeProxy --contractName <name>
-upgradeLock npx hardhat upgradeLock --contract-name <name>
-upgradeUnlock npx hardhat unlockUpgrade --contract-name <name>
-
 ### Golang code binding generation
 
 Once you reach this point you will now be able to compile and generate code bindings for all the contracts. In case you

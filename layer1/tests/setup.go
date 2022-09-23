@@ -227,7 +227,10 @@ func NewClientFixture(hardhat *Hardhat, finalityDelay uint64, numAccounts int, l
 		}
 		contracts = handlers.NewAllSmartContractsHandle(eth, common.HexToAddress(factoryAddress))
 		if registerValidators {
-			hardhat.RegisterValidators(factoryAddress, validatorsAddresses)
+			err = hardhat.RegisterValidators(factoryAddress, validatorsAddresses)
+			if err != nil {
+				panic(err)
+			}
 		}
 	}
 

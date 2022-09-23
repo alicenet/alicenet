@@ -16,7 +16,7 @@ PRE_CHECK() {
         exit 1
     fi
     # Check all required non builtins exist
-    COMMANDS=("ethkey" "jq" "hexdump")
+    COMMANDS=("jq" "hexdump")
     for c in ${COMMANDS[@]}; do
         if ! command -v $c &>/dev/null; then
             echo -e "$c is required, but not installed"

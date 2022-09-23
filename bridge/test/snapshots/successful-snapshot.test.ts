@@ -1,3 +1,4 @@
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
 import { Snapshots } from "../../typechain-types";
@@ -22,15 +23,21 @@ import {
 describe("Snapshots: With successful ETHDKG round completed", () => {
   let fixture: Fixture;
   let snapshots: Snapshots;
-  beforeEach(async function () {
-    fixture = await getFixture(true, false);
+
+  async function deployFixture() {
+    const fixture = await getFixture(true, false);
 
     await completeETHDKGRound(validatorsSnapshots1, {
       ethdkg: fixture.ethdkg,
       validatorPool: fixture.validatorPool,
     });
 
-    snapshots = fixture.snapshots as Snapshots;
+    const snapshots = fixture.snapshots as Snapshots;
+    return { fixture, snapshots };
+  }
+
+  beforeEach(async function () {
+    ({ fixture, snapshots } = await loadFixture(deployFixture));
   });
 
   it("Reverts when validator not elected to do snapshot", async function () {
@@ -127,6 +134,9 @@ describe("Snapshots: With successful ETHDKG round completed", () => {
       "0x888ea4bcd71f772f1af058866a2234d1d1b0967c67a5b9d82248f8ad8d8c144c";
     const expectedMasterPublicKeyHash =
       "0x381f9c36df7c05b341eaf3708d6d05d9343cdcbccaf5989da9880024a9a8a4d7";
+    await mineBlocks(
+      (await fixture.snapshots.getMinimumIntervalBetweenSnapshots()).toBigInt()
+    );
     await expect(
       snapshots
         .connect(

@@ -1,3 +1,4 @@
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
 import {
@@ -33,20 +34,23 @@ describe("PublicStaking: Skim excess of tokens", async () => {
   let etherExcess: bigint;
   let tokenExcess: bigint;
 
-  beforeEach(async function () {
+  async function deployFixture() {
     const [adminSigner] = await ethers.getSigners();
     await preFixtureSetup();
 
-    etherExcess = ethers.utils.parseEther("100").toBigInt();
+    const etherExcess = ethers.utils.parseEther("100").toBigInt();
 
     const legacyToken = await (
       await ethers.getContractFactory("LegacyToken")
     ).deploy();
 
-    factory = await deployAliceNetFactory(adminSigner, legacyToken.address);
+    const factory = await deployAliceNetFactory(
+      adminSigner,
+      legacyToken.address
+    );
 
     // AToken
-    aToken = await ethers.getContractAt(
+    const aToken = await ethers.getContractAt(
       "AToken",
       await factory.lookup(ethers.utils.formatBytes32String("AToken"))
     );
@@ -60,18 +64,30 @@ describe("PublicStaking: Skim excess of tokens", async () => {
       to: publicStakingAddress,
       value: etherExcess,
     });
-    stakingContract = (await deployUpgradeableWithFactory(
+    const stakingContract = (await deployUpgradeableWithFactory(
       factory,
       "PublicStaking",
       "PublicStaking"
     )) as PublicStaking;
     await posFixtureSetup(factory, aToken);
-    tokenExcess = ethers.utils.parseUnits("100", 18).toBigInt();
+    const tokenExcess = ethers.utils.parseUnits("100", 18).toBigInt();
     await aToken.approve(
       stakingContract.address,
       ethers.utils.parseUnits("1000000", 18)
     );
     await aToken.transfer(publicStakingAddress, tokenExcess);
+    return {
+      stakingContract,
+      aToken,
+      factory,
+      etherExcess,
+      tokenExcess,
+    };
+  }
+
+  beforeEach(async function () {
+    ({ stakingContract, aToken, factory, etherExcess, tokenExcess } =
+      await loadFixture(deployFixture));
   });
 
   it("Skim excess of token and ether", async function () {
