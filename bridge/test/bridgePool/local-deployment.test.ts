@@ -9,7 +9,7 @@ import {
 const bridgePoolTokenType = 0;
 const bridgePoolChainId = 1337;
 const bridgePoolValue = 0;
-const bridgePoolDeployCode = "0x38585839386009f3"; //UNIVERSAL_DEPLOY_CODE
+const bridgePoolDeployCode = "0x38585839386009f3"; // UNIVERSAL_DEPLOY_CODE
 
 let fixture: Fixture;
 const bridgePoolVersion = 1;

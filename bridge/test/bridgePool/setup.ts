@@ -25,29 +25,6 @@ export function getMockBlockClaimsForStateRoot(stateRoot: string) {
   );
 }
 
-export const headerRoot =
-  "0xd2a29ef9245ea33f1b47508646a26334c276d2a1ebd671c8439f48d8a2f235fb";
-export const mockBClaims = defaultAbiCoder.encode(
-  [
-    "tuple( uint32 chainId, uint32 height, uint32 txCount, bytes32 prevBlock, bytes32 txRoot, bytes32 stateRoot, bytes32 headerRoot)",
-  ],
-  [
-    {
-      chainId: 1,
-      height: 1,
-      txCount: 0,
-      prevBlock: ethers.constants.HashZero,
-      txRoot: ethers.constants.HashZero,
-      stateRoot: ethers.constants.HashZero,
-      headerRoot: headerRoot,
-    },
-  ]
-);
-
-export const blockHash = ethers.utils.keccak256(mockBClaims);
-export const blockHashMerkleProof =
-  "0x010003d97c1b45464c01481c8df20932ce3292c99e7d5e5df07f6e1ca639dedb05b42b0000000000000000000000000000000000000000000000000000000000000000323bfb4d198651454355911116e41425aa3668eec380c958f89bc3fe76c88ab500010003e0ad098365a75c471199ee17c3e53b26ab5e404ad6697dc3033c686d84479207c40de2b3c2e453811cc0f64df31de8864ca32742fee909b443660d9f20eb7f280e64abf1c51eedeef9d757bfce9edc3af361b304bdeedd321e343921c04f3b2005";
-
 export function getEncodedBurnedUTXO(
   userAddress: string,
   tokenId_: number,
