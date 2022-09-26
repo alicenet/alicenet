@@ -8,11 +8,7 @@ import "contracts/libraries/errors/CentralBridgeRouterErrors.sol";
 
 
 contract CentralBridgeRouter is ICentralBridgeRouter ,ImmutableFactory, ImmutableBToken {
-    struct RouterConfig {
-        address routerAddress;
-        bool notOnline;
-    }
-
+    
     // mapping of router version to data
     mapping(uint16 => RouterConfig) internal _routerConfig;
     uint256 internal _nonce;
@@ -20,7 +16,12 @@ contract CentralBridgeRouter is ICentralBridgeRouter ,ImmutableFactory, Immutabl
     uint16 internal _routerVersions;
 
     constructor() ImmutableFactory(msg.sender) {}
-
+    /**
+     * takes token deposit calls from ALCB and emits deposit events on token transfer completion
+     * @param msgSender_ address of account depositing tokens from
+     * @param poolVersion_ version of pool to deposit token on
+     * @param depositData_ abi encoded input data that describes the transaction
+     */
     function forwardDeposit(
         address msgSender_,
         uint16 poolVersion_,

@@ -6,6 +6,12 @@ interface ICentralBridgeRouter {
         EventData[] eventData;
         uint256 fee;
     }
+
+    struct RouterConfig {
+        address routerAddress;
+        bool notOnline;
+    }
+    
     struct EventData {
         bytes32[] topics;
         bytes logData;
