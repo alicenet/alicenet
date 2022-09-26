@@ -3,12 +3,15 @@ import { Contract } from "ethers";
 import { defaultAbiCoder } from "ethers/lib/utils";
 import { ethers } from "hardhat";
 import { IBridgePool } from "../../typechain-types";
+import { addValidators, getValidAccusationDataForNonExistentUTXO } from "../accusations/accusations-test-helpers";
 import { expect } from "../chai-setup";
 
 import { deployUpgradeableWithFactory, Fixture, getFixture } from "../setup";
 import {
   getEncodedBurnedUTXO,
   getMockBlockClaimsForStateRoot,
+  getWithdrawParameters,
+  getWithdrawParameters2,
   merkleProof,
   stateRoot,
   wrongMerkleProof,
@@ -21,6 +24,7 @@ let merkleProofLibraryErrors: Contract;
 let localERCBridgePoolBase: Contract;
 let encodedBurnedUTXO: string;
 let bridgePool: any;
+const withdrawParameters = getWithdrawParameters2();
 const tokenId = 0;
 const tokenAmount = 0;
 const encodedDepositParameters = defaultAbiCoder.encode(
@@ -73,10 +77,19 @@ describe("Testing Base BridgePool Deposit/Withdraw", async () => {
   });
 
   it("Should call a withdraw for amount specified on informed burned UTXO upon proof verification", async () => {
-    await localERCBridgePoolBase
+     await localERCBridgePoolBase
       .connect(user)
-      .withdraw(encodedBurnedUTXO, merkleProof);
+      .withdraw(withdrawParameters.bClaims, withdrawParameters.bClaimsSigGroup, withdrawParameters.txInPreImage, withdrawParameters.proofs);
   });
+
+  it.only("Should not call a withdraw for amount specified on informed burned UTXO upon proof verification", async () => {
+    await localERCBridgePoolBase
+     .connect(user)
+     .withdraw(withdrawParameters.bClaims, withdrawParameters.bClaimsSigGroup, withdrawParameters.txInPreImage, withdrawParameters.proofs);
+     await localERCBridgePoolBase
+     .connect(user)
+     .withdraw(withdrawParameters.bClaims, withdrawParameters.bClaimsSigGroup, withdrawParameters.txInPreImage, withdrawParameters.proofs);
+ });
 
   it("Should not call a withdraw for amount specified on informed burned UTXO with wrong merkle proof", async () => {
     await expect(

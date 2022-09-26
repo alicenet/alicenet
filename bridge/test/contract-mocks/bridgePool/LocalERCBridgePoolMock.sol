@@ -18,13 +18,21 @@ contract LocalERCBridgePoolMock is Initializable, LocalERCBridgePoolBase {
         super.deposit(msgSender, depositParameters_);
     }
 
+
     /// @notice Transfer tokens to sender upon a verificable proof of burn in sidechain
-    /// @param encodedBurnedUTXO encoded UTXO burned in sidechain
-    /// @param encodedMerkleProof merkle proof of burn
-    function withdraw(bytes memory encodedBurnedUTXO, bytes memory encodedMerkleProof)
+    /// @param _bClaims informed bClaims
+    /// @param _bClaimsSigGroup bClaims signature
+    /// @param _txInPreImage withdraw (burn) tx
+    /// @param _proofs inclusion proofs for StateRoot, TxRoot, TxHash and HeaderRoot
+    function withdraw(
+        bytes memory _bClaims,
+        bytes memory _bClaimsSigGroup,
+        bytes memory _txInPreImage,
+        bytes[4] memory _proofs
+    )
         public
         override
     {
-        super.withdraw(encodedBurnedUTXO, encodedMerkleProof);
+        super.withdraw(_bClaims, _bClaimsSigGroup, _txInPreImage,_proofs);
     }
 }

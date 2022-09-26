@@ -42,6 +42,26 @@ func makeDeposit(t *testing.T, s objs.Signer, chainID uint32, i int, value *uint
 	return vs
 }
 
+// Create block hash from bClaims
+func makeBlockHash(t *testing.T, i int) ([]byte, error) {
+	bClaims := &cobjs.BClaims{
+		ChainID:    uint32(1),
+		Height:     uint32(i + 1),
+		TxCount:    uint32(0),
+		PrevBlock:  make([]byte, constants.HashLen),
+		TxRoot:     make([]byte, constants.HashLen),
+		StateRoot:  make([]byte, constants.HashLen),
+		HeaderRoot: make([]byte, constants.HashLen),
+	}
+	binaryBClaims, err := bClaims.MarshalBinary()
+	blockHash := crypto.Hasher(binaryBClaims)
+	log.Printf("Block: %x\n", bClaims)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return blockHash, err
+}
+
 // Create transactions consuming deposits
 func makeTxs(t *testing.T, s objs.Signer, v *objs.ValueStore) *objs.Tx {
 	txIn, err := v.MakeTxIn()
@@ -109,6 +129,30 @@ func MakePersistentTxRoot(txn *badger.Txn, txHashes [][]byte) (*trie.SMT, []byte
 		return nil, nil, err
 	}
 	rootHash, err := smt.Update(txn, txHashesSorted, valuesSorted)
+	if err != nil {
+		return nil, nil, err
+	}
+	return smt, rootHash, nil
+}
+
+// Creates a persistent headerRoot Merkle Trie from a list of block hashes.
+func MakePersistentHeaderRoot(txn *badger.Txn, blockHashes [][]byte) (*trie.SMT, []byte, error) {
+	if len(blockHashes) == 0 {
+		return nil, crypto.Hasher([]byte{}), nil
+	}
+	values := [][]byte{}
+	for i := 0; i < len(blockHashes); i++ {
+		blockHash := blockHashes[i]
+		values = append(values, crypto.Hasher(blockHash))
+	}
+	// new in persistent smt
+	smt := trie.NewSMT(nil, trie.Hasher, func() []byte { return []byte("mtr") })
+	// smt update
+	blockHashesSorted, valuesSorted, err := utils.SortKVs(blockHashes, values)
+	if err != nil {
+		return nil, nil, err
+	}
+	rootHash, err := smt.Update(txn, blockHashesSorted, valuesSorted)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -276,9 +320,8 @@ func makeTransfer(t *testing.T, sender objs.Signer, receiver objs.Signer, transf
 
 // Generate a block (bclaims) and append it to the chain (list of linked
 // BClaims). This function is used to build the blockchain used by the tests.
-func GenerateBlock(chain []*cobjs.BClaims, stateRoot []byte, txHshLst [][]byte) ([]*cobjs.BClaims, error) {
+func GenerateBlock(chain []*cobjs.BClaims, stateRoot []byte, txHshLst [][]byte, headerRoot []byte) ([]*cobjs.BClaims, error) {
 	var prevBlock []byte
-	var headerRoot []byte
 	if len(chain) == 0 {
 		chain = []*cobjs.BClaims{}
 		prevBlock = crypto.Hasher([]byte("foo"))
@@ -289,7 +332,6 @@ func GenerateBlock(chain []*cobjs.BClaims, stateRoot []byte, txHshLst [][]byte) 
 			return nil, err
 		}
 		prevBlock = _prevBlock
-		headerRoot = crypto.Hasher([]byte("")) // todo: how to generate the block smt
 	}
 	txRoot, err := cobjs.MakeTxRoot(txHshLst) // generating the smt root
 	log.Printf("txRoot height: (%d): %x\n", len(chain)+1, txRoot)
@@ -588,8 +630,20 @@ func TestGenerateAccusations(t *testing.T) {
 	// }
 	// /////////////////////////////////////////////
 
+	// Create SMT, root and proof with some blockhashes
+	var blockHshLst [][]byte
+	for i := uint64(0); i < 5; i++ {
+		blockHash, err := makeBlockHash(t, int(i))
+		if err != nil {
+			t.Fatal(err)
+		}
+		log.Printf("Block hash: %x", blockHash)
+		blockHshLst = append(blockHshLst, blockHash)
+	}
+	headerRootSMT, headerRoot, err := MakePersistentHeaderRoot(db.NewTransaction(true), blockHshLst) // generating the smt root
+
 	// Generating block 1
-	chain, err := GenerateBlock(nil, stateRoot, txHshLst)
+	chain, err := GenerateBlock(nil, stateRoot, txHshLst, headerRoot)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -676,7 +730,8 @@ func TestGenerateAccusations(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	chain, err = GenerateBlock(chain, stateRoot, [][]byte{txHash2})
+	// Generating block 2
+	chain, err = GenerateBlock(chain, stateRoot, [][]byte{txHash2}, headerRoot)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -722,7 +777,11 @@ func TestGenerateAccusations(t *testing.T) {
 	}
 
 	pClaimsBin, err := pclms.MarshalBinary()
-	log.Printf("PClaims Block 2:\n%x\n\n", pClaimsBin)
+	bClaimsBin, err := chain[1].MarshalBinary()
+	log.Printf("PClaims Block 2 :\n%x\n\n", pclms.BClaims.TxRoot)
+	log.Printf("PClaims Block 2 bin:\n%x\n\n", pClaimsBin)
+	log.Printf("BClaims Block 2:\n%x\n\n", chain[1])
+	log.Printf("BClaims Block 2 bin :\n%x\n\n", bClaimsBin)
 	prop := &cobjs.Proposal{
 		PClaims:  pclms,
 		TxHshLst: [][]byte{txHash2},
@@ -790,4 +849,24 @@ func TestGenerateAccusations(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	log.Println(" ======== Creating the merkle proof for the HeaderRoot =====")
+	log.Printf("Header Root: %x\n", headerRoot)
+	bitmap, auditPath, proofHeight, included, proofKey, proofVal, err = headerRootSMT.MerkleProofCompressed(newTxn, blockHshLst[0])
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = CreateMerkleProof(
+		included,
+		proofHeight,
+		blockHshLst[0],
+		proofKey,
+		proofVal,
+		bitmap,
+		auditPath,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 }
