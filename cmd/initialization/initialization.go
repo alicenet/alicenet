@@ -1,7 +1,9 @@
 package initialization
 
 import (
+	"fmt"
 	"github.com/alicenet/alicenet/cmd/ethkey"
+	"github.com/ethereum/go-ethereum/console/prompt"
 	"os"
 
 	"github.com/alicenet/alicenet/config"
@@ -19,6 +21,12 @@ var Command = cobra.Command{
 	Long:  "Initialize the files/folders required for running the alicenet client",
 	Run:   initializeFilesAndFolders,
 }
+
+const (
+	passcodesFile  = "/passcodes.txt"
+	factoryAddress = "0x758a3B3D8958d3794F2Def31e943Cdc449bB2FB9"
+	startingBlock  = 15540020
+)
 
 func initializeFilesAndFolders(cmd *cobra.Command, args []string) {
 	logger := logging.GetLogger("init").WithField("Component", cmd.Use)
@@ -90,9 +98,18 @@ func initializeFilesAndFolders(cmd *cobra.Command, args []string) {
 	}
 
 	// create the keyfile if cancelling flag not specified
+	var err error
 	defaultAccount := "<0xETHEREUM_ADDRESS>"
-	if !config.Configuration.Initialization.DontGenerateEthkey {
-		keyJSON, key, passphrase, err := ethkey.GenerateKeyFile(logger)
+	generatePrivateKey := true
+	if !config.Configuration.Initialization.GenerateKeys {
+		generatePrivateKey, err = ethkey.ReadYesOrNoAnswer("Do you wish to create your address and private key? Yes/no: ")
+		if err != nil {
+			logger.Fatalf(err.Error())
+		}
+	}
+
+	if generatePrivateKey {
+		keyJSON, key, passphrase, err := ethkey.GenerateKeyFile(config.Configuration.Initialization.GenerateKeys, logger)
 		if err != nil {
 			logger.Fatalf(err.Error())
 		}
@@ -103,10 +120,51 @@ func initializeFilesAndFolders(cmd *cobra.Command, args []string) {
 			logger.Fatalf("Failed to write keyfile to %s: %v", keyFilePath, err)
 		}
 
-		passphraseData := []byte(key.Address.Hex() + "=" + passphrase)
-		passphraseFilePath := keystoresPath + passcodesFile
-		if err := os.WriteFile(passphraseFilePath, passphraseData, 0600); err != nil {
-			logger.Fatalf("Failed to write passphrase to %s: %v", passphraseFilePath, err)
+		fmt.Println("The following Ethereum address was generated and saved as your default account: ", key.Address.Hex())
+		fmt.Println("Your private key is stored to: ", keyFilePath, ". Please maintain this file secure in order to protect your assets")
+
+		savePasscodesFile, err := ethkey.ReadYesOrNoAnswer("Do you wish to store the password in a file? Yes/no: ")
+		if err != nil {
+			logger.Fatalf(err.Error())
+		}
+
+		if savePasscodesFile {
+			passphraseData := []byte(key.Address.Hex() + "=" + passphrase)
+			passphraseFilePath := keystoresPath + passcodesFile
+			if err := os.WriteFile(passphraseFilePath, passphraseData, 0600); err != nil {
+				logger.Fatalf("Failed to write passphrase to %s: %v", passphraseFilePath, err)
+			}
+			fmt.Println("The password that was used to generate the private key is stored to: ", passphraseFilePath, ". Please maintain this file secure in order to protect your assets")
+		}
+	}
+
+	transportPrivateKey := "<16_BYTES_TRANSPORT_PRIVATE_KEY>"
+	tpk, err := ethkey.GenerateRandomString(16)
+	if err != nil {
+		logger.Fatalf("Failed to generate Transport.PrivateKey with error %v", err)
+	}
+	transportPrivateKey = tpk
+
+	validatorSymmetricKey := "<SOME_SUPER_FANCY_SECRET_THAT_WILL_BE_HASHED>"
+	vspk, err := ethkey.GenerateRandomString(32)
+	if err != nil {
+		logger.Fatalf("Failed to generate Transport.PrivateKey with error %v", err)
+	}
+	validatorSymmetricKey = vspk
+
+	ethereumEndpointURL := "<ETHEREUM_ENDPOINT_URL>"
+	if config.Configuration.Ethereum.Endpoint == "" {
+		saveEthereumEndpoint, err := ethkey.ReadYesOrNoAnswer("Do you wish to enter Ethereum endpoint? Yes/no: ")
+		if err != nil {
+			logger.Fatalf(err.Error())
+		}
+
+		if saveEthereumEndpoint {
+			ee, err := prompt.Stdin.PromptPassword("Please enter Ethereum endpoint: ")
+			if err != nil {
+				logger.Fatalf(err.Error())
+			}
+			ethereumEndpointURL = ee
 		}
 	}
 
@@ -125,7 +183,7 @@ func initializeFilesAndFolders(cmd *cobra.Command, args []string) {
 		},
 		Transport: config.TransportConfig{
 			UPnP:                       false,
-			PrivateKey:                 "<16_BYTES_TRANSPORT_PRIVATE_KEY>",
+			PrivateKey:                 transportPrivateKey,
 			BootNodeAddresses:          "<BOOTNODE_ADDRESS>",
 			OriginLimit:                3,
 			LocalStateListeningAddress: "0.0.0.0:8883",
@@ -134,13 +192,13 @@ func initializeFilesAndFolders(cmd *cobra.Command, args []string) {
 			PeerLimitMin:               3,
 		},
 		Ethereum: config.EthereumConfig{
-			Endpoint:                 "<ETHEREUM_ENDPOINT_URL>",
+			Endpoint:                 ethereumEndpointURL,
 			EndpointMinimumPeers:     1,
 			DefaultAccount:           defaultAccount,
 			Keystore:                 keystoresPath,
 			PassCodes:                path.Join(keystoresPath, "/passcodes.txt"),
-			FactoryAddress:           "<0xFACTORY_ETHEREUM_ADDRESS>",
-			StartingBlock:            0,
+			FactoryAddress:           factoryAddress,
+			StartingBlock:            startingBlock,
 			ProcessingBlockBatchSize: 1_000,
 			TxMaxGasFeeAllowedInGwei: 500,
 			TxMetricsDisplay:         false,
@@ -149,9 +207,7 @@ func initializeFilesAndFolders(cmd *cobra.Command, args []string) {
 			Status: true,
 		},
 		Validator: config.ValidatorConfig{
-			RewardCurveSpec: 1,
-			RewardAccount:   "0x<ALICENET_ADDRESS>",
-			SymmetricKey:    "<SOME_SUPER_FANCY_SECRET_THAT_WILL_BE_HASHED>",
+			SymmetricKey: validatorSymmetricKey,
 		},
 	}
 

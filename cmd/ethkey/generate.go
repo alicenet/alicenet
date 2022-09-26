@@ -2,20 +2,17 @@ package ethkey
 
 import (
 	"crypto/ecdsa"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/alicenet/alicenet/config"
 	"github.com/alicenet/alicenet/logging"
 	"github.com/ethereum/go-ethereum/accounts/keystore"
-	"github.com/ethereum/go-ethereum/cmd/utils"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"os"
 	"path/filepath"
-	"strings"
 )
 
 const (
@@ -49,7 +46,7 @@ func generate(cmd *cobra.Command, args []string) {
 		logger.Fatalf("Error checking if keyfile exists: %v", err)
 	}
 
-	keyjson, key, _, err := GenerateKeyFile(logger)
+	keyjson, key, _, err := GenerateKeyFile(false, logger)
 	if err != nil {
 		logger.Fatalf(err.Error())
 	}
@@ -73,7 +70,7 @@ func generate(cmd *cobra.Command, args []string) {
 	}
 }
 
-func GenerateKeyFile(logger *logrus.Entry) ([]byte, *keystore.Key, string, error) {
+func GenerateKeyFile(generateRandomPass bool, logger *logrus.Entry) ([]byte, *keystore.Key, string, error) {
 	var privateKey *ecdsa.PrivateKey
 	var err error
 	if file := config.Configuration.EthKey.PrivateKey; file != "" {
@@ -102,7 +99,7 @@ func GenerateKeyFile(logger *logrus.Entry) ([]byte, *keystore.Key, string, error
 	}
 
 	// Encrypt key with passphrase.
-	passphrase := getPassphrase(true, logger)
+	passphrase := getPassphrase(generateRandomPass, true, logger)
 	scryptN, scryptP := keystore.StandardScryptN, keystore.StandardScryptP
 	if config.Configuration.EthKey.LightKDF {
 		scryptN, scryptP = keystore.LightScryptN, keystore.LightScryptP
@@ -113,33 +110,4 @@ func GenerateKeyFile(logger *logrus.Entry) ([]byte, *keystore.Key, string, error
 	}
 
 	return keyjson, key, passphrase, nil
-}
-
-// getPassphrase obtains a passphrase given by the user.  It first checks the
-// --passfile command line flag and ultimately prompts the user for a
-// passphrase.
-func getPassphrase(confirmation bool, logger *logrus.Entry) string {
-	// Look for the --passwordfile flag.
-	passphraseFile := config.Configuration.EthKey.PasswordFile
-	if passphraseFile != "" {
-		content, err := os.ReadFile(passphraseFile)
-		if err != nil {
-			logger.Fatalf("Failed to read password file '%s': %v",
-				passphraseFile, err)
-		}
-		return strings.TrimRight(string(content), "\r\n")
-	}
-
-	// Otherwise prompt the user for the passphrase.
-	return utils.GetPassPhrase("", confirmation)
-}
-
-// mustPrintJSON prints the JSON encoding of the given object and
-// exits the program with an error message when the marshaling fails.
-func mustPrintJSON(jsonObject interface{}, logger *logrus.Entry) {
-	str, err := json.MarshalIndent(jsonObject, "", "  ")
-	if err != nil {
-		logger.Fatalf("Failed to marshal JSON object: %v", err)
-	}
-	fmt.Println(string(str))
 }
