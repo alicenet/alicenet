@@ -13,7 +13,6 @@ contract CentralBridgeRouter is ImmutableFactory, ImmutableBToken {
 
     // mapping of router version to data
     mapping(uint16 => RouterConfig) internal _routerConfig;
-    uint16 internal constant _POOL_VERSION = 1;
     uint256 internal _nonce;
     //tracker to track number of deployed router versions
     uint16 internal _routerVersions;
@@ -71,7 +70,8 @@ contract CentralBridgeRouter is ImmutableFactory, ImmutableBToken {
 
     function getRouterAddress(uint16 routerVersion_) public view returns (address routerAddress) {
         RouterConfig memory config = _routerConfig[routerVersion_];
-        if (config.routerAddress == address(0)) routerAddress = config.routerAddress;
+        if (config.routerAddress == address(0)) revert CentralBridgeRouterErrors.InvalidPoolVersion(routerVersion_);
+        routerAddress = config.routerAddress;
     }
 
     function _emitDepositEvent(bytes32[] memory topics_, bytes memory eventData_) internal {
