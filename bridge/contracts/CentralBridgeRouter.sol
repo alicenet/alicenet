@@ -73,7 +73,7 @@ contract CentralBridgeRouter is ImmutableFactory, ImmutableBToken {
     }
 
     function disableRouter(uint16 routerVersion_) public onlyFactory {
-        if (_routerConfig[routerVersion_].notOnline){
+        if (_routerConfig[routerVersion_].notOnline) {
             revert CentralBridgeRouterErrors.RouterOffline(routerVersion_);
         }
         _routerConfig[routerVersion_].notOnline = true;
