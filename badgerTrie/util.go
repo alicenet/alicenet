@@ -10,8 +10,8 @@ import (
 	"crypto/rand"
 	"sort"
 
-	"github.com/MadBase/MadNet/constants"
-	"github.com/MadBase/MadNet/crypto"
+	"github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/crypto"
 )
 
 var (
@@ -49,7 +49,6 @@ func GetFreshDataUnsorted(size, length int) [][]byte {
 		}
 		data = append(data, Hasher(key)[:length])
 	}
-	//sort.Sort(DataArray(data))
 	return data
 }
 

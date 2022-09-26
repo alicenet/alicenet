@@ -2,11 +2,18 @@ import { BigNumber, BigNumberish, ContractTransaction } from "ethers";
 import { ethers } from "hardhat";
 import {
   ETHDKG,
+  ETHDKGAccusations,
+  ETHDKGPhases,
   ValidatorPool,
   ValidatorPoolMock,
 } from "../../typechain-types";
 import { assert, expect } from "../chai-setup";
-import { getFixture, getValidatorEthAccount, mineBlocks } from "../setup";
+import {
+  getFixture,
+  getReceiptForFailedTransaction,
+  getValidatorEthAccount,
+  mineBlocks,
+} from "../setup";
 
 export const PLACEHOLDER_ADDRESS = "0x0000000000000000000000000000000000000000";
 
@@ -167,7 +174,7 @@ export const assertEventValidatorMemberAdded = async (
   gpkj: [BigNumberish, BigNumberish, BigNumberish, BigNumberish],
   logsPos: number = 0
 ) => {
-  const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
+  const receipt = await tx.wait();
   const intrface = new ethers.utils.Interface([
     "event ValidatorMemberAdded(address account, uint256 index, uint256 nonce, uint256 epoch, uint256 share0, uint256 share1, uint256 share2, uint256 share3)",
   ]);
@@ -489,12 +496,28 @@ export const submitMasterPublicKey = async (
   expect(await ethdkg.getNumParticipants()).to.eq(0);
   await assertETHDKGPhase(ethdkg, Phase.GPKJSubmission);
   // The other validators should fail
+
   for (const validator of validators) {
-    await expect(
-      ethdkg
-        .connect(await getValidatorEthAccount(validator))
-        .submitMasterPublicKey(validator.mpk)
-    ).to.be.revertedWith("143");
+    const txPromise = ethdkg
+      .connect(await getValidatorEthAccount(validator))
+      .submitMasterPublicKey(validator.mpk);
+    const [
+      ethDKGPhases,
+      ,
+      expectedBlockNumber,
+      expectedCurrentPhase,
+      phaseStartBlock,
+      phaseLength,
+    ] = await getInfoForIncorrectPhaseCustomError(txPromise, ethdkg);
+    await expect(txPromise)
+      .to.be.revertedWithCustomError(ethDKGPhases, `IncorrectPhase`)
+      .withArgs(expectedCurrentPhase, expectedBlockNumber, [
+        [
+          Phase.MPKSubmission,
+          phaseStartBlock,
+          phaseStartBlock.add(phaseLength),
+        ],
+      ]);
   }
 };
 
@@ -564,13 +587,32 @@ export const completeETHDKG = async (
   await assertETHDKGPhase(ethdkg, Phase.Completion);
   // The other validators should fail
   for (const validator of validators) {
-    await expect(
-      ethdkg
-        .connect(await getValidatorEthAccount(validator))
-        .submitMasterPublicKey(validator.mpk)
-    ).to.be.revertedWith("143");
+    const txPromise = ethdkg
+      .connect(await getValidatorEthAccount(validator))
+      .submitMasterPublicKey(validator.mpk);
+    const [
+      ethDKGPhases,
+      ,
+      expectedBlockNumber,
+      expectedCurrentPhase,
+      phaseStartBlock,
+      phaseLength,
+    ] = await getInfoForIncorrectPhaseCustomError(txPromise, ethdkg);
+    await expect(txPromise)
+      .to.be.revertedWithCustomError(ethDKGPhases, `IncorrectPhase`)
+      .withArgs(expectedCurrentPhase, expectedBlockNumber, [
+        [
+          Phase.MPKSubmission,
+          phaseStartBlock,
+          phaseStartBlock.add(phaseLength),
+        ],
+      ]);
   }
 };
+
+function deployFixture() {
+  return getFixture(true);
+}
 
 export const startAtDistributeShares = async (
   validators: ValidatorRawData[],
@@ -580,7 +622,7 @@ export const startAtDistributeShares = async (
   }
 ): Promise<[ETHDKG, ValidatorPoolMock | ValidatorPool, number]> => {
   const { ethdkg, validatorPool } =
-    typeof contracts !== "undefined" ? contracts : await getFixture(true);
+    typeof contracts !== "undefined" ? contracts : await deployFixture();
   // add validators
   if ((<ValidatorPoolMock>validatorPool).isMock) {
     await addValidators(validatorPool, validators);
@@ -712,5 +754,33 @@ export const completeETHDKGRound = async (
     expectedNonce,
     _expectedEpoch,
     _expectedAliceNetHeight,
+  ];
+};
+export const getInfoForIncorrectPhaseCustomError = async (
+  txPromise: any,
+  ethdkg: ETHDKG
+): Promise<
+  [ETHDKGPhases, ETHDKGAccusations, BigNumber, BigNumber, BigNumber, BigNumber]
+> => {
+  const ethdkgAccusationsContract = await ethers.getContractAt(
+    "ETHDKGAccusations",
+    ethdkg.address
+  );
+  const ethDKGPhases = await ethers.getContractAt(
+    "ETHDKGPhases",
+    ethdkg.address
+  );
+  const expectedBlockNumber = (await getReceiptForFailedTransaction(txPromise))
+    .blockNumber;
+  const expectedCurrentPhase = await ethdkg.getETHDKGPhase();
+  const phaseStartBlock = await ethdkg.getPhaseStartBlock();
+  const phaseLength = await ethdkg.getPhaseLength();
+  return [
+    ethDKGPhases,
+    ethdkgAccusationsContract,
+    BigNumber.from(expectedBlockNumber),
+    BigNumber.from(expectedCurrentPhase),
+    phaseStartBlock,
+    phaseLength,
   ];
 };

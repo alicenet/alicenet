@@ -1,9 +1,10 @@
 package lstate
 
 import (
-	"github.com/MadBase/MadNet/consensus/db"
-	"github.com/MadBase/MadNet/consensus/objs"
 	"github.com/dgraph-io/badger/v2"
+
+	"github.com/alicenet/alicenet/consensus/db"
+	"github.com/alicenet/alicenet/consensus/objs"
 )
 
 type Store struct {
@@ -12,6 +13,13 @@ type Store struct {
 
 func (ss *Store) Init(database *db.Database) {
 	ss.database = database
+}
+
+// New Store wrapping a Database.
+func New(database *db.Database) *Store {
+	return &Store{
+		database: database,
+	}
 }
 
 func (ss *Store) LoadLocalState(txn *badger.Txn) (*RoundStates, error) {
@@ -130,7 +138,7 @@ func (ss *Store) WriteState(txn *badger.Txn, rs *RoundStates) error {
 }
 
 // GetDropData ...
-func (ss *Store) GetDropData(txn *badger.Txn) (isValidator bool, isSync bool, chainID uint32, height uint32, round uint32, err error) {
+func (ss *Store) GetDropData(txn *badger.Txn) (isValidator, isSync bool, chainID, height, round uint32, err error) {
 	ownState, err := ss.database.GetOwnState(txn)
 	if err != nil {
 		return isValidator, isSync, chainID, height, round, err
@@ -171,67 +179,63 @@ func (ss *Store) GetGossipValues(txn *badger.Txn) (*objs.Proposal, *objs.PreVote
 	var nh *objs.NextHeight
 	var err error
 
-	err = ss.database.View(func(txn *badger.Txn) error {
-
-		p, err = ss.database.GetBroadcastProposal(txn)
-		if err != nil {
-			if err != badger.ErrKeyNotFound {
-				return err
-			}
-			p = nil
+	p, err = ss.database.GetBroadcastProposal(txn)
+	if err != nil {
+		if err != badger.ErrKeyNotFound {
+			return p, pv, pvn, pc, pcn, nr, nh, err
 		}
+		p = nil
+	}
 
-		pv, err = ss.database.GetBroadcastPreVote(txn)
-		if err != nil {
-			if err != badger.ErrKeyNotFound {
-				return err
-			}
-			pv = nil
+	pv, err = ss.database.GetBroadcastPreVote(txn)
+	if err != nil {
+		if err != badger.ErrKeyNotFound {
+			return p, pv, pvn, pc, pcn, nr, nh, err
 		}
+		pv = nil
+	}
 
-		pvn, err = ss.database.GetBroadcastPreVoteNil(txn)
-		if err != nil {
-			if err != badger.ErrKeyNotFound {
-				return err
-			}
-			pvn = nil
+	pvn, err = ss.database.GetBroadcastPreVoteNil(txn)
+	if err != nil {
+		if err != badger.ErrKeyNotFound {
+			return p, pv, pvn, pc, pcn, nr, nh, err
 		}
+		pvn = nil
+	}
 
-		pc, err = ss.database.GetBroadcastPreCommit(txn)
-		if err != nil {
-			if err != badger.ErrKeyNotFound {
-				return err
-			}
-			pc = nil
+	pc, err = ss.database.GetBroadcastPreCommit(txn)
+	if err != nil {
+		if err != badger.ErrKeyNotFound {
+			return p, pv, pvn, pc, pcn, nr, nh, err
 		}
+		pc = nil
+	}
 
-		pcn, err = ss.database.GetBroadcastPreCommitNil(txn)
-		if err != nil {
-			if err != badger.ErrKeyNotFound {
-				return err
-			}
-			pcn = nil
+	pcn, err = ss.database.GetBroadcastPreCommitNil(txn)
+	if err != nil {
+		if err != badger.ErrKeyNotFound {
+			return p, pv, pvn, pc, pcn, nr, nh, err
 		}
+		pcn = nil
+	}
 
-		nr, err = ss.database.GetBroadcastNextRound(txn)
-		if err != nil {
-			if err != badger.ErrKeyNotFound {
-				return err
-			}
-			nr = nil
+	nr, err = ss.database.GetBroadcastNextRound(txn)
+	if err != nil {
+		if err != badger.ErrKeyNotFound {
+			return p, pv, pvn, pc, pcn, nr, nh, err
 		}
+		nr = nil
+	}
 
-		nh, err = ss.database.GetBroadcastNextHeight(txn)
-		if err != nil {
-			if err != badger.ErrKeyNotFound {
-				return err
-			}
-			nh = nil
+	nh, err = ss.database.GetBroadcastNextHeight(txn)
+	if err != nil {
+		if err != badger.ErrKeyNotFound {
+			return p, pv, pvn, pc, pcn, nr, nh, err
 		}
+		nh = nil
+	}
 
-		return nil
-	})
-	return p, pv, pvn, pc, pcn, nr, nh, err
+	return p, pv, pvn, pc, pcn, nr, nh, nil
 }
 
 func (ss *Store) GetSyncToBH(txn *badger.Txn) (*objs.BlockHeader, error) {

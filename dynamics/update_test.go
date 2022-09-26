@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/MadBase/MadNet/constants"
+	"github.com/alicenet/alicenet/constants"
 )
 
 func TestUpdateGet(t *testing.T) {
@@ -338,24 +338,6 @@ func TestConvertFieldToType(t *testing.T) {
 	}
 	if uType != ValueStoreValidVersionType {
 		t.Fatal("Incorrect UpdateType (9)")
-	}
-
-	field = "atomicSwapFee"
-	uType, err = convertFieldToType(field)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if uType != AtomicSwapFeeType {
-		t.Fatal("Incorrect UpdateType (10)")
-	}
-
-	field = "atomicSwapValidStopEpoch"
-	uType, err = convertFieldToType(field)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if uType != AtomicSwapValidStopEpochType {
-		t.Fatal("Incorrect UpdateType (11)")
 	}
 
 	field = "dataStoreEpochFee"

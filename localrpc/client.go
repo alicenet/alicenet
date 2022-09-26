@@ -9,12 +9,13 @@ import (
 	"sync"
 	"time"
 
-	aobjs "github.com/MadBase/MadNet/application/objs"
-	"github.com/MadBase/MadNet/application/objs/uint256"
-	"github.com/MadBase/MadNet/consensus/objs"
-	"github.com/MadBase/MadNet/constants"
-	pb "github.com/MadBase/MadNet/proto"
 	"google.golang.org/grpc"
+
+	aobjs "github.com/alicenet/alicenet/application/objs"
+	"github.com/alicenet/alicenet/application/objs/uint256"
+	"github.com/alicenet/alicenet/consensus/objs"
+	"github.com/alicenet/alicenet/constants"
+	pb "github.com/alicenet/alicenet/proto"
 )
 
 // Client is a wrapper around the gRPC local state server. This wrapper
@@ -37,7 +38,7 @@ type Client struct {
 	isConnected bool
 }
 
-// Connect establishes communication between the client and the server
+// Connect establishes communication between the client and the server.
 func (lrpc *Client) Connect(ctx context.Context) error {
 	err := func() error {
 		fmt.Println("connecting")
@@ -114,7 +115,7 @@ func (lrpc *Client) contextGuard(ctx context.Context) (context.Context, func()) 
 	return ctx, func() {}
 }
 
-// GetBlockHeader allows a caller to request a BlockHeader by height
+// GetBlockHeader allows a caller to request a BlockHeader by height.
 func (lrpc *Client) GetBlockHeader(ctx context.Context, height uint32) (*objs.BlockHeader, error) {
 	if err := lrpc.entrancyGuard(); err != nil {
 		return nil, err
@@ -138,7 +139,7 @@ func (lrpc *Client) GetBlockHeader(ctx context.Context, height uint32) (*objs.Bl
 	return bh, nil
 }
 
-// GetBlockNumber returns the current block number
+// GetBlockNumber returns the current block number.
 func (lrpc *Client) GetBlockNumber(ctx context.Context) (uint32, error) {
 	if err := lrpc.entrancyGuard(); err != nil {
 		return 0, err
@@ -156,7 +157,7 @@ func (lrpc *Client) GetBlockNumber(ctx context.Context) (uint32, error) {
 	return data, nil
 }
 
-// GetEpochNumber returns the current epoch number
+// GetEpochNumber returns the current epoch number.
 func (lrpc *Client) GetEpochNumber(ctx context.Context) (uint32, error) {
 	if err := lrpc.entrancyGuard(); err != nil {
 		return 0, err
@@ -174,7 +175,7 @@ func (lrpc *Client) GetEpochNumber(ctx context.Context) (uint32, error) {
 	return data, nil
 }
 
-// SendTransaction allows the caller to inject a tx into the pending tx pool
+// SendTransaction allows the caller to inject a tx into the pending tx pool.
 func (lrpc *Client) SendTransaction(ctx context.Context, tx *aobjs.Tx) ([]byte, error) {
 	if err := lrpc.entrancyGuard(); err != nil {
 		return nil, err
@@ -197,7 +198,7 @@ func (lrpc *Client) SendTransaction(ctx context.Context, tx *aobjs.Tx) ([]byte, 
 }
 
 // GetValueForOwner allows a caller to receive a list of UTXOs that are
-// controlled by the named account
+// controlled by the named account.
 func (lrpc *Client) GetValueForOwner(ctx context.Context, curveSpec constants.CurveSpec, account []byte, minValue *uint256.Uint256) ([][]byte, *uint256.Uint256, error) {
 	if err := lrpc.entrancyGuard(); err != nil {
 		return nil, nil, err
@@ -231,7 +232,7 @@ func (lrpc *Client) GetValueForOwner(ctx context.Context, curveSpec constants.Cu
 	return d, v, nil
 }
 
-// GetUTXO allows the caller to request UTXOs by ID
+// GetUTXO allows the caller to request UTXOs by ID.
 func (lrpc *Client) GetUTXO(ctx context.Context, utxoIDs [][]byte) (aobjs.Vout, error) {
 	if err := lrpc.entrancyGuard(); err != nil {
 		return nil, err
@@ -286,7 +287,7 @@ func (lrpc *Client) GetMinedTransaction(ctx context.Context, txHash []byte) (*ao
 }
 
 // GetPendingTransaction allows a caller to inspect the Pending Tx Pool to see
-// if a tx is present
+// if a tx is present.
 func (lrpc *Client) GetPendingTransaction(ctx context.Context, txHash []byte) (*aobjs.Tx, error) {
 	if err := lrpc.entrancyGuard(); err != nil {
 		return nil, err
@@ -309,8 +310,8 @@ func (lrpc *Client) GetPendingTransaction(ctx context.Context, txHash []byte) (*
 	return tx, nil
 }
 
-// GetData returns only the data stored in a datastore
-func (lrpc *Client) GetData(ctx context.Context, curveSpec constants.CurveSpec, account []byte, index []byte) ([]byte, error) {
+// GetData returns only the state stored in a datastore.
+func (lrpc *Client) GetData(ctx context.Context, curveSpec constants.CurveSpec, account, index []byte) ([]byte, error) {
 	if err := lrpc.entrancyGuard(); err != nil {
 		return nil, err
 	}
@@ -338,7 +339,7 @@ func (lrpc *Client) GetData(ctx context.Context, curveSpec constants.CurveSpec, 
 // so that all datastores may be observed. It also allows the query of a single
 // datastore by setting the num param to 1 and the startIndex param to the
 // target index of the desired datastore
-// It returns a list of tuples of the form ( <utxoID>, <index> )
+// It returns a list of tuples of the form ( <utxoID>, <index> ).
 func (lrpc *Client) PaginateDataStoreUTXOByOwner(ctx context.Context, curveSpec constants.CurveSpec, account []byte, num uint8, startIndex []byte) ([]*aobjs.PaginationResponse, error) {
 	if err := lrpc.entrancyGuard(); err != nil {
 		return nil, err
@@ -375,7 +376,7 @@ func (lrpc *Client) PaginateDataStoreUTXOByOwner(ctx context.Context, curveSpec 
 	return result, nil
 }
 
-// GetBlockHeightForTx returns the block height at which a tx was mined
+// GetBlockHeightForTx returns the block height at which a tx was mined.
 func (lrpc *Client) GetBlockHeightForTx(ctx context.Context, txHash []byte) (uint32, error) {
 	if err := lrpc.entrancyGuard(); err != nil {
 		return 0, err
@@ -394,7 +395,7 @@ func (lrpc *Client) GetBlockHeightForTx(ctx context.Context, txHash []byte) (uin
 	return resp.BlockHeight, nil
 }
 
-// TODO: Not tested and may not work
+// TODO: Not tested and may not work.
 func (lrpc *Client) GetTxFees(ctx context.Context) ([]string, error) {
 	if err := lrpc.entrancyGuard(); err != nil {
 		return nil, err

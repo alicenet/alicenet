@@ -1,3 +1,5 @@
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BigNumber, Signer } from "ethers";
 import { ethers } from "hardhat";
 import { expect } from "../../chai-setup";
@@ -23,15 +25,31 @@ describe("ValidatorPool: Claiming logic", async () => {
   let stakeAmount: bigint;
   let validators: string[];
   let stakingTokenIds: BigNumber[];
+  let admin: SignerWithAddress;
   let adminSigner: Signer;
 
-  beforeEach(async function () {
-    fixture = await getFixture(false, true, true);
+  async function deployFixture() {
+    const fixture = await getFixture(false, true, true);
     const [admin, , ,] = fixture.namedSigners;
-    adminSigner = await getValidatorEthAccount(admin.address);
-    validators = await createValidators(fixture, validatorsSnapshots);
-    stakingTokenIds = await stakeValidators(fixture, validators);
-    stakeAmount = (await fixture.validatorPool.getStakeAmount()).toBigInt();
+    const adminSigner = await getValidatorEthAccount(admin.address);
+    const validators = await createValidators(fixture, validatorsSnapshots);
+    const stakingTokenIds = await stakeValidators(fixture, validators);
+    const stakeAmount = (
+      await fixture.validatorPool.getStakeAmount()
+    ).toBigInt();
+    return {
+      fixture,
+      stakeAmount,
+      validators,
+      stakingTokenIds,
+      admin,
+      adminSigner,
+    };
+  }
+
+  beforeEach(async function () {
+    ({ fixture, stakeAmount, validators, stakingTokenIds, admin, adminSigner } =
+      await loadFixture(deployFixture));
   });
 
   it("Should successfully claim exiting NFT positions of all validators", async function () {
@@ -174,7 +192,10 @@ describe("ValidatorPool: Claiming logic", async () => {
         fixture.validatorPool
           .connect(await getValidatorEthAccount(validator))
           .claimExitingNFTPosition()
-      ).to.be.revertedWith("813");
+      ).to.be.revertedWithCustomError(
+        fixture.validatorPool,
+        "WaitingPeriodNotMet"
+      );
     }
   });
 
@@ -195,6 +216,11 @@ describe("ValidatorPool: Claiming logic", async () => {
     await commitSnapshots(fixture, 4);
     await expect(
       fixture.validatorPool.connect(adminSigner).claimExitingNFTPosition()
-    ).to.be.revertedWith("812");
+    )
+      .to.be.revertedWithCustomError(
+        fixture.validatorPool,
+        "SenderNotInExitingQueue"
+      )
+      .withArgs(admin.address);
   });
 });

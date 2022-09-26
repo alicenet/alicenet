@@ -3,7 +3,8 @@ package objs
 import (
 	"testing"
 
-	"github.com/MadBase/MadNet/crypto"
+	"github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/crypto"
 )
 
 func TestNextRound(t *testing.T) {
@@ -69,5 +70,74 @@ func TestNextRound(t *testing.T) {
 	err = nr2.ValidateSignatures(secpVal, bnVal)
 	if err != nil {
 		t.Fatal(err)
+	}
+
+	nrcBytes, err := nr2.NRClaims.MarshalBinary()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	nrcl := &NRClaims{}
+	err = nrcl.UnmarshalBinary(nrcBytes)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	nrcl.RClaims.Height++
+	nrclBytes, err := nrcl.MarshalBinary()
+	if err != nil {
+		t.Fatal(err)
+	}
+	nrcErr := &NRClaims{}
+	err = nrcErr.UnmarshalBinary(nrclBytes)
+	if err == nil {
+		t.Fatal("Should have raised error (1)")
+	}
+
+	nrcl.RClaims.Height--
+	nrcl.RClaims.Round++
+	nrclBytes, err = nrcl.MarshalBinary()
+	if err != nil {
+		t.Fatal(err)
+	}
+	nrcErr = &NRClaims{}
+	err = nrcErr.UnmarshalBinary(nrclBytes)
+	if err == nil {
+		t.Fatal("Should have raised error (2)")
+	}
+
+	nrcl.RClaims.Round--
+	nrcl.RClaims.ChainID++
+	nrclBytes, err = nrcl.MarshalBinary()
+	if err != nil {
+		t.Fatal("Should have raised error (3)")
+	}
+	nrcErr = &NRClaims{}
+	err = nrcErr.UnmarshalBinary(nrclBytes)
+	if err == nil {
+		t.Fatal("Should have raised error (4)")
+	}
+
+	nrcl.RClaims.ChainID--
+	nrcl.RClaims.PrevBlock = make([]byte, constants.HashLen)
+	nrclBytes, err = nrcl.MarshalBinary()
+	if err != nil {
+		t.Fatal("Should have raised error (5)")
+	}
+	nrcErr = &NRClaims{}
+	err = nrcErr.UnmarshalBinary(nrclBytes)
+	if err == nil {
+		t.Fatal("Should have raised error (6)")
+	}
+
+	nrcl.RClaims.PrevBlock = []byte{1, 2, 3}
+	nrclBytes, err = nrcl.MarshalBinary()
+	if err != nil {
+		t.Fatal("Should have raised error (7)")
+	}
+	nrcErr = &NRClaims{}
+	err = nrcErr.UnmarshalBinary(nrclBytes)
+	if err == nil {
+		t.Fatal("Should have raised error (8)")
 	}
 }

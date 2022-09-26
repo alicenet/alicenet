@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"encoding/hex"
 
-	"github.com/MadBase/MadNet/constants"
-	"github.com/MadBase/MadNet/errorz"
-	"github.com/MadBase/MadNet/utils"
+	"github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/errorz"
+	"github.com/alicenet/alicenet/utils"
 )
 
 // RoundStateHistoricKey ...
@@ -18,7 +18,7 @@ type RoundStateHistoricKey struct {
 }
 
 // MarshalBinary takes the RoundStateHistoricKey object and returns
-// the canonical byte slice
+// the canonical byte slice.
 func (b *RoundStateHistoricKey) MarshalBinary() ([]byte, error) {
 	if b == nil {
 		return nil, errorz.ErrInvalid{}.New("RoundStateHistoricKey.MarshalBinary; rshk not initialized")
@@ -49,7 +49,7 @@ func (b *RoundStateHistoricKey) MarshalBinary() ([]byte, error) {
 }
 
 // UnmarshalBinary takes a byte slice and returns the corresponding
-// RoundStateHistoricKey object
+// RoundStateHistoricKey object.
 func (b *RoundStateHistoricKey) UnmarshalBinary(data []byte) error {
 	if b == nil {
 		return errorz.ErrInvalid{}.New("RoundStateHistoricKey.UnmarshalBinary; rshk not initialized")

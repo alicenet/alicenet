@@ -1,9 +1,10 @@
 package indexer
 
 import (
-	"github.com/MadBase/MadNet/constants"
-	"github.com/MadBase/MadNet/utils"
 	"github.com/dgraph-io/badger/v2"
+
+	"github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/utils"
 )
 
 /*
@@ -22,7 +23,7 @@ func NewExpSizeIndex(p, pp prefixFunc) *ExpSizeIndex {
 }
 
 // ExpSizeIndex creates an index that allows objects to be dropped
-// by epoch
+// by epoch.
 type ExpSizeIndex struct {
 	prefix    prefixFunc
 	refPrefix prefixFunc
@@ -32,12 +33,12 @@ type ExpSizeIndexKey struct {
 	key []byte
 }
 
-// MarshalBinary returns the byte slice for the key object
+// MarshalBinary returns the byte slice for the key object.
 func (esik *ExpSizeIndexKey) MarshalBinary() []byte {
 	return utils.CopySlice(esik.key)
 }
 
-// UnmarshalBinary takes in a byte slice to set the key object
+// UnmarshalBinary takes in a byte slice to set the key object.
 func (esik *ExpSizeIndexKey) UnmarshalBinary(data []byte) {
 	esik.key = utils.CopySlice(data)
 }
@@ -46,12 +47,12 @@ type ExpSizeIndexRefKey struct {
 	refkey []byte
 }
 
-// MarshalBinary returns the byte slice for the key object
+// MarshalBinary returns the byte slice for the key object.
 func (esirk *ExpSizeIndexRefKey) MarshalBinary() []byte {
 	return utils.CopySlice(esirk.refkey)
 }
 
-// UnmarshalBinary takes in a byte slice to set the key object
+// UnmarshalBinary takes in a byte slice to set the key object.
 func (esirk *ExpSizeIndexRefKey) UnmarshalBinary(data []byte) {
 	esirk.refkey = utils.CopySlice(data)
 }
@@ -94,7 +95,7 @@ func (esi *ExpSizeIndex) Drop(txn *badger.Txn, utxoID []byte) error {
 	return utils.DeleteValue(txn, key)
 }
 
-func (esi *ExpSizeIndex) GetExpiredObjects(txn *badger.Txn, epoch uint32, maxBytes uint32, maxObjects int) ([][]byte, uint32) {
+func (esi *ExpSizeIndex) GetExpiredObjects(txn *badger.Txn, epoch, maxBytes uint32, maxObjects int) ([][]byte, uint32) {
 	result := [][]byte{}
 	byteCount := uint32(0)
 	objCount := 0
@@ -128,7 +129,7 @@ func (esi *ExpSizeIndex) GetExpiredObjects(txn *badger.Txn, epoch uint32, maxByt
 	return result, remainingBytes
 }
 
-func (esi *ExpSizeIndex) makeKey(epoch uint32, size uint32, utxoID []byte) *ExpSizeIndexKey {
+func (esi *ExpSizeIndex) makeKey(epoch, size uint32, utxoID []byte) *ExpSizeIndexKey {
 	utxoIDCopy := utils.CopySlice(utxoID)
 	key := []byte{}
 	key = append(key, esi.prefix()...)
@@ -153,7 +154,7 @@ func (esi *ExpSizeIndex) makeRefKey(utxoID []byte) *ExpSizeIndexRefKey {
 	return esiRefKey
 }
 
-func (esi *ExpSizeIndex) makeRefValue(epoch uint32, size uint32) []byte {
+func (esi *ExpSizeIndex) makeRefValue(epoch, size uint32) []byte {
 	epochBytes := utils.MarshalUint32(epoch)
 	sizeInv := constants.MaxUint32 - size
 	sizeInvBytes := utils.MarshalUint32(sizeInv)

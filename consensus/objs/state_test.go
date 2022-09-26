@@ -3,9 +3,12 @@ package objs
 import (
 	"math/big"
 	"testing"
+	"time"
 
-	"github.com/MadBase/MadNet/crypto"
-	bn256 "github.com/MadBase/MadNet/crypto/bn256/cloudflare"
+	"github.com/stretchr/testify/assert"
+
+	"github.com/alicenet/alicenet/crypto"
+	bn256 "github.com/alicenet/alicenet/crypto/bn256/cloudflare"
 )
 
 const (
@@ -18,10 +21,49 @@ func TestState(t *testing.T) {
 	_ = bnShares
 	vs := makeValidatorSet(1, groupk, secpSigners, bnSigners)
 	_ = vs
-	height := uint32(1)
+	height := uint32(2)
 	round := uint32(1)
 	prevBlock := crypto.Hasher([]byte("0"))
-	buildRound(t, bnSigners, bnShares, secpSigners, height, round, prevBlock)
+	_, pr1, _, _, _, _, nrl, _, _ := buildRound(t, bnSigners, bnShares, secpSigners, height, round, prevBlock)
+
+	cert, err := nrl.MakeRoundCert(bnSigners[0], bnShares)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = cert.ValidateSignature(&crypto.BNGroupValidator{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ovs := OwnValidatingState{
+		ValidValue:  pr1[0],
+		LockedValue: pr1[0],
+	}
+
+	ovs.SetRoundStarted()
+	ovs.SetPreCommitStepStarted()
+	ovs.SetPreVoteStepStarted()
+
+	ptoExpired := ovs.PTOExpired(100 * time.Second)
+	assert.False(t, ptoExpired)
+	pvtoExpired := ovs.PVTOExpired(100 * time.Second)
+	assert.False(t, pvtoExpired)
+	pctoExpired := ovs.PCTOExpired(100 * time.Second)
+	assert.True(t, pctoExpired)
+	dbrnrExpired := ovs.DBRNRExpired(100 * time.Second)
+	assert.True(t, dbrnrExpired)
+
+	bn, err := ovs.MarshalBinary()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ovs2 := &OwnValidatingState{}
+	err = ovs2.UnmarshalBinary(bn)
+	if err != nil {
+		t.Fatal(err)
+	}
 }
 
 func makeSecpSigner(seed []byte) (*crypto.Secp256k1Signer, []byte) {
@@ -34,7 +76,7 @@ func makeSecpSigner(seed []byte) (*crypto.Secp256k1Signer, []byte) {
 	return secpSigner, secpKey
 }
 
-func buildRound(t *testing.T, bnSigners []*crypto.BNGroupSigner, groupShares [][]byte, secpSigners []*crypto.Secp256k1Signer, height uint32, round uint32, prevBlock []byte) (*BlockHeader, []*Proposal, PreVoteList, []*PreVoteNil, PreCommitList, []*PreCommitNil, NextRoundList, NextHeightList, *BlockHeader) {
+func buildRound(t *testing.T, bnSigners []*crypto.BNGroupSigner, groupShares [][]byte, secpSigners []*crypto.Secp256k1Signer, height, round uint32, prevBlock []byte) (*BlockHeader, []*Proposal, PreVoteList, []*PreVoteNil, PreCommitList, []*PreCommitNil, NextRoundList, NextHeightList, *BlockHeader) {
 	pl := []*Proposal{}
 	pvl := PreVoteList{}
 	pvnl := []*PreVoteNil{}
@@ -137,6 +179,13 @@ func buildRound(t *testing.T, bnSigners []*crypto.BNGroupSigner, groupShares [][
 			TxHshLst: [][]byte{},
 			BClaims:  bc,
 		}
+		ppsl, err := bheader.MakeDeadBlockRoundProposal(rc, crypto.Hasher([]byte{}))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if ppsl == nil {
+			t.Fatal("invalid Dead Block Round proposal")
+		}
 		bhsh, err := bheader.BlockHash()
 		if err != nil {
 			t.Fatal(err)
@@ -161,12 +210,28 @@ func buildRound(t *testing.T, bnSigners []*crypto.BNGroupSigner, groupShares [][
 		if err != nil {
 			t.Fatal(err)
 		}
+
+		ppsl, err := pvl.GetProposal()
+		if err != nil {
+			t.Fatal(err)
+		}
+		if ppsl == nil {
+			t.Fatal("invalid proposal")
+		}
 		pcl = append(pcl, pcc)
 	}
 	for i := 0; i < len(secpSigners); i++ {
 		nh, err := pcl.MakeNextHeight(secpSigners[i], bnSigners[i])
 		if err != nil {
 			t.Fatal(err)
+		}
+
+		ppsl, err := pcl.GetProposal()
+		if err != nil {
+			t.Fatal(err)
+		}
+		if ppsl == nil {
+			t.Fatal("invalid proposal")
 		}
 		nhl = append(nhl, nh)
 	}

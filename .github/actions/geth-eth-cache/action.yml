@@ -1,0 +1,35 @@
+name: "Setup geth, ethkey and its cache"
+description: "Setup geth, ethkey and its cache"
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/setup-go@v3
+      with:
+        go-version-file: go.mod
+    - uses: actions/cache@v3
+      id: geth-eth-cache
+      with:
+        path: |
+          /usr/local/bin/geth
+          /usr/local/bin/ethkey
+        key: ${{ runner.os }}-geth-ethkey
+    - name: Check out ethereum repo for ethkey
+      if: steps.geth-eth-cache.outputs.cache-hit != 'true'
+      uses: actions/checkout@master
+      with:
+        repository: ethereum/go-ethereum
+        path: "./go-ethereum"
+    - name: Install geth and ethkey
+      if: steps.geth-eth-cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        REPO_PATH=$(pwd)
+        cd go-ethereum
+        sudo apt install make gcc
+        make all
+        cd  /usr/local/bin
+        mv $REPO_PATH/go-ethereum/build/bin/ethkey /usr/local/bin
+        cd $REPO_PATH
+        sudo add-apt-repository -y ppa:ethereum/ethereum
+        sudo apt-get update
+        sudo apt-get install -y ethereum

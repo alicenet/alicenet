@@ -4,13 +4,14 @@ import (
 	"net"
 	"sync"
 
-	"github.com/MadBase/MadNet/constants"
-	"github.com/MadBase/MadNet/interfaces"
-	"github.com/MadBase/MadNet/logging"
-	pb "github.com/MadBase/MadNet/proto"
-	"github.com/MadBase/MadNet/types"
-	"github.com/MadBase/MadNet/utils"
 	"github.com/sirupsen/logrus"
+
+	"github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/interfaces"
+	"github.com/alicenet/alicenet/logging"
+	pb "github.com/alicenet/alicenet/proto"
+	"github.com/alicenet/alicenet/types"
+	"github.com/alicenet/alicenet/utils"
 )
 
 // MuxHandler allows a P2PMuxConn to be converted into a bidirectional grpc
@@ -55,14 +56,14 @@ func (rpcm *MuxHandler) HandleConnection(conn interfaces.P2PMuxConn) (interfaces
 }
 
 func (rpcm *MuxHandler) gRPCserverHandler(conn interfaces.P2PMuxConn) (interfaces.P2PClient, error) {
-	//bind a client
+	// bind a client
 	rpcclientconn, err := rpcm.ch.HandleConnection(conn.ClientConn())
 	if err != nil {
 		utils.DebugTrace(rpcm.logger, err)
 		return nil, err
 	}
 	client := pb.NewP2PClient(rpcclientconn)
-	//submit connection to server
+	// submit connection to server
 	err = rpcm.sh.HandleConnection(conn.ServerConn())
 	if err != nil {
 		utils.DebugTrace(rpcm.logger, err)
@@ -78,13 +79,13 @@ func (rpcm *MuxHandler) gRPCserverHandler(conn interfaces.P2PMuxConn) (interface
 }
 
 func (rpcm *MuxHandler) gRPCclientHandler(conn interfaces.P2PMuxConn) (interfaces.P2PClient, error) {
-	//submit connection to server
+	// submit connection to server
 	err := rpcm.sh.HandleConnection(conn.ServerConn())
 	if err != nil {
 		utils.DebugTrace(rpcm.logger, err)
 		return nil, err
 	}
-	//bind a client
+	// bind a client
 	rpcclientconn, err := rpcm.ch.HandleConnection(conn.ClientConn())
 	if err != nil {
 		utils.DebugTrace(rpcm.logger, err)

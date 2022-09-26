@@ -1,11 +1,12 @@
 package dslinker
 
 import (
-	mdefs "github.com/MadBase/MadNet/application/objs/capn"
-	"github.com/MadBase/MadNet/constants"
-	"github.com/MadBase/MadNet/errorz"
-	"github.com/MadBase/MadNet/utils"
 	capnp "github.com/MadBase/go-capnproto2/v2"
+
+	mdefs "github.com/alicenet/alicenet/application/objs/capn"
+	"github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/errorz"
+	"github.com/alicenet/alicenet/utils"
 )
 
 // Marshal will marshal the DSLinker object.
@@ -40,7 +41,7 @@ func Unmarshal(data []byte) (mdefs.DSLinker, error) {
 	return obj, nil
 }
 
-// Validate will validate the DSLinker object
+// Validate will validate the DSLinker object.
 func Validate(v mdefs.DSLinker) error {
 	if !v.HasDSPreImage() {
 		return errorz.ErrInvalid{}.New("dslinker capn obj does not have DSPreImage")

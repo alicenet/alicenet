@@ -4,17 +4,17 @@ import (
 	"context"
 	"time"
 
-	"github.com/MadBase/MadNet/constants/dbprefix"
-	"github.com/MadBase/MadNet/errorz"
-
-	"github.com/MadBase/MadNet/application/db"
-	"github.com/MadBase/MadNet/application/objs"
-	index "github.com/MadBase/MadNet/application/pendingtx/pendingindex"
-	"github.com/MadBase/MadNet/constants"
-	"github.com/MadBase/MadNet/logging"
-	"github.com/MadBase/MadNet/utils"
 	"github.com/dgraph-io/badger/v2"
 	"github.com/sirupsen/logrus"
+
+	"github.com/alicenet/alicenet/application/db"
+	"github.com/alicenet/alicenet/application/objs"
+	index "github.com/alicenet/alicenet/application/pendingtx/pendingindex"
+	"github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/constants/dbprefix"
+	"github.com/alicenet/alicenet/errorz"
+	"github.com/alicenet/alicenet/logging"
+	"github.com/alicenet/alicenet/utils"
 )
 
 type utxoHandler interface {
@@ -26,7 +26,7 @@ type depositHandler interface {
 	Get(txn *badger.Txn, utxoIDs [][]byte) ([]*objs.TXOut, [][]byte, []*objs.TXOut, error)
 }
 
-// NewPendingTxHandler creates a new Handler object
+// NewPendingTxHandler creates a new Handler object.
 func NewPendingTxHandler(db *badger.DB) *Handler {
 	return &Handler{
 		indexer: index.NewPendingTxIndexer(),
@@ -35,7 +35,7 @@ func NewPendingTxHandler(db *badger.DB) *Handler {
 	}
 }
 
-// Handler is the object that acts as the pending tx pool
+// Handler is the object that acts as the pending tx pool.
 type Handler struct {
 	indexer        *index.PendingTxIndexer
 	db             *badger.DB
@@ -89,7 +89,7 @@ func (pt *Handler) Add(txnState *badger.Txn, txs []*objs.Tx, currentHeight uint3
 	})
 }
 
-// Delete removes a list of txHashes from the tx pool
+// Delete removes a list of txHashes from the tx pool.
 func (pt *Handler) Delete(txnState *badger.Txn, txHashes [][]byte) error {
 	var txHash []byte
 	return pt.db.Update(func(txn *badger.Txn) error {
@@ -105,7 +105,7 @@ func (pt *Handler) Delete(txnState *badger.Txn, txHashes [][]byte) error {
 }
 
 // Get returns a list of txs based on txHashes and a list of all txHashes that
-// could not be found
+// could not be found.
 func (pt *Handler) Get(txnState *badger.Txn, currentHeight uint32, txHashes [][]byte) ([]*objs.Tx, [][]byte, error) {
 	var txs []*objs.Tx
 	var missing [][]byte
@@ -135,7 +135,7 @@ func (pt *Handler) Get(txnState *badger.Txn, currentHeight uint32, txHashes [][]
 }
 
 // Contains returns a list of missing transactions when a list of tx hashes is
-// passed in
+// passed in.
 func (pt *Handler) Contains(txnState *badger.Txn, currentHeight uint32, txHashes [][]byte) ([][]byte, error) {
 	_, missing, err := pt.Get(txnState, currentHeight, txHashes)
 	if err != nil {
@@ -147,7 +147,7 @@ func (pt *Handler) Contains(txnState *badger.Txn, currentHeight uint32, txHashes
 
 // DeleteMined removes all specified transactions from the pool as well as any
 // other transactions that reference a consumed UTXO from the set of passed in
-// transactions
+// transactions.
 func (pt *Handler) DeleteMined(txnState *badger.Txn, currentHeight uint32, txHashes [][]byte) error {
 	var txHash []byte
 	return pt.db.Update(func(txn *badger.Txn) error {
@@ -193,7 +193,7 @@ func (pt *Handler) DeleteMined(txnState *badger.Txn, currentHeight uint32, txHas
 
 // GetTxsForProposal returns an set of txs that are mutually exclusive with
 // respect to the consumed UTXOs. This is used to genrete new proposals.
-func (pt *Handler) GetTxsForProposal(txnState *badger.Txn, ctx context.Context, currentHeight uint32, maxBytes uint32, tx *objs.Tx) (objs.TxVec, uint32, error) {
+func (pt *Handler) GetTxsForProposal(txnState *badger.Txn, ctx context.Context, currentHeight, maxBytes uint32, tx *objs.Tx) (objs.TxVec, uint32, error) {
 	var utxos objs.TxVec
 	var err error
 	utxos, maxBytes, err = pt.getTxsInternal(txnState, ctx, currentHeight, maxBytes, tx, false)
@@ -206,7 +206,7 @@ func (pt *Handler) GetTxsForProposal(txnState *badger.Txn, ctx context.Context, 
 
 // GetTxsForGossip returns the oldest non-expired and non-consumed txs from the
 // tx pool. These txs may be conflicting in terms of consumed UTXOS.
-func (pt *Handler) GetTxsForGossip(txnState *badger.Txn, ctx context.Context, currentHeight uint32, maxBytes uint32) ([]*objs.Tx, error) {
+func (pt *Handler) GetTxsForGossip(txnState *badger.Txn, ctx context.Context, currentHeight, maxBytes uint32) ([]*objs.Tx, error) {
 	utxos, _, err := pt.getTxsInternal(txnState, ctx, currentHeight, maxBytes, nil, true)
 	if err != nil {
 		utils.DebugTrace(pt.logger, err)
@@ -220,7 +220,7 @@ func (pt *Handler) GetTxsForGossip(txnState *badger.Txn, ctx context.Context, cu
 /////////PRIVATE METHODS////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-func (pt *Handler) getTxsInternal(txnState *badger.Txn, ctx context.Context, currentHeight uint32, maxBytes uint32, tx *objs.Tx, allowConflict bool) ([]*objs.Tx, uint32, error) {
+func (pt *Handler) getTxsInternal(txnState *badger.Txn, ctx context.Context, currentHeight, maxBytes uint32, tx *objs.Tx, allowConflict bool) ([]*objs.Tx, uint32, error) {
 	txs := objs.TxVec{}
 	if tx != nil {
 		txs = append(txs, tx)
@@ -252,6 +252,9 @@ func (pt *Handler) getTxsInternal(txnState *badger.Txn, ctx context.Context, cur
 					utils.DebugTrace(pt.logger, err)
 					continue
 				}
+				if tx == nil {
+					continue
+				}
 				if ok := pt.checkSize(maxBytes, byteCount); !ok {
 					break
 				}
@@ -271,41 +274,21 @@ func (pt *Handler) getTxsInternal(txnState *badger.Txn, ctx context.Context, cur
 					continue
 				}
 				txs = append(txs, tx)
-				if !allowConflict {
+				if !allowConflict && len(txs) > 1 {
 					if _, err := txs.ValidateUnique(nil); err != nil {
 						txs = txs[0 : len(txs)-1]
 						continue
 					}
-				}
-				if !allowConflict {
 					if _, err := txs.ValidateDataStoreIndexes(nil); err != nil {
+						txs = txs[0 : len(txs)-1]
+						continue
+					}
+					if err := pt.checkIsValid(txnState, txs, currentHeight); err != nil {
 						txs = txs[0 : len(txs)-1]
 						continue
 					}
 				}
 				byteCount += constants.HashLen
-			}
-			if !allowConflict {
-				for {
-					if len(txs) == 0 {
-						break
-					}
-					if len(txs) == 1 {
-						break
-					}
-					if err := pt.checkIsValid(txnState, txs, currentHeight); err != nil {
-						if len(txs) == 2 {
-							txs = objs.TxVec{txs[0]}
-							break
-						}
-						if len(txs) >= 3 {
-							txs = objs.TxVec{txs[0]}
-							txs = append(txs, txs[2:]...)
-						}
-						continue
-					}
-					break
-				}
 			}
 			return nil
 		}()
@@ -344,7 +327,7 @@ func (pt *Handler) getTxsInternal(txnState *badger.Txn, ctx context.Context, cur
 	return out, remainingBytes, err
 }
 
-func (pt *Handler) checkSize(maxBytes uint32, byteCount uint32) bool {
+func (pt *Handler) checkSize(maxBytes, byteCount uint32) bool {
 	return byteCount+constants.HashLen <= maxBytes
 }
 
@@ -586,7 +569,7 @@ func (pt *Handler) makePendingTxCooldownKey(txHash []byte) []byte {
 	return key
 }
 
-// Drop deletes all data from the pending tx pool
+// Drop deletes all data from the pending tx pool.
 func (pt *Handler) Drop() error {
 	return pt.db.DropAll()
 }

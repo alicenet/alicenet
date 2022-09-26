@@ -6,21 +6,21 @@ import (
 	"math/big"
 	"strings"
 
-	"github.com/MadBase/MadNet/constants"
-	"github.com/MadBase/MadNet/errorz"
-	"github.com/MadBase/MadNet/utils"
-
 	"github.com/holiman/uint256"
+
+	"github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/errorz"
+	"github.com/alicenet/alicenet/utils"
 )
 
 // TODO: clone a little bit and confirm no nil pointer deferences
 
-// Uint256 is an unsigned 256-bit integer
+// Uint256 is an unsigned 256-bit integer.
 type Uint256 struct {
 	val *uint256.Int
 }
 
-// MarshalBinary marshals Uint256 to a byte slice
+// MarshalBinary marshals Uint256 to a byte slice.
 func (u *Uint256) MarshalBinary() ([]byte, error) {
 	if u == nil || u.val == nil {
 		return nil, errorz.ErrInvalid{}.New("Error in Uint256.MarshalBinary: nil object")
@@ -29,7 +29,7 @@ func (u *Uint256) MarshalBinary() ([]byte, error) {
 	return buf[:], nil
 }
 
-// UnmarshalBinary unmarshals a byte slice to a Uint256 object
+// UnmarshalBinary unmarshals a byte slice to a Uint256 object.
 func (u *Uint256) UnmarshalBinary(data []byte) error {
 	if u == nil {
 		return errorz.ErrInvalid{}.New("Error in Uint256.UnmarshalBinary: nil object")
@@ -48,7 +48,7 @@ func (u *Uint256) UnmarshalBinary(data []byte) error {
 	return nil
 }
 
-// MarshalString returns 64 hex-encoded string of Uint256 object
+// MarshalString returns 64 hex-encoded string of Uint256 object.
 func (u *Uint256) MarshalString() (string, error) {
 	b, err := u.MarshalBinary()
 	if err != nil {
@@ -57,7 +57,7 @@ func (u *Uint256) MarshalString() (string, error) {
 	return hex.EncodeToString(b), nil
 }
 
-// UnmarshalString marshals hex-encoded string to Uint256 object
+// UnmarshalString marshals hex-encoded string to Uint256 object.
 func (u *Uint256) UnmarshalString(s string) error {
 	if len(s) > 64 {
 		return errorz.ErrInvalid{}.New("Error in Uint256.UnmarshalString: string too long")
@@ -73,7 +73,7 @@ func (u *Uint256) UnmarshalString(s string) error {
 	return u.UnmarshalBinary(b)
 }
 
-// String returns the result of MarshalString
+// String returns the result of MarshalString.
 func (u *Uint256) String() string {
 	_, err := u.MarshalString()
 	if err != nil {
@@ -104,7 +104,7 @@ func (u *Uint256) ToUint32Array() ([8]uint32, error) {
 	return z, nil
 }
 
-// FromUint32Array takes in an array of uint32 objects and make a Uint256
+// FromUint32Array takes in an array of uint32 objects and make a Uint256.
 func (u *Uint256) FromUint32Array(z [8]uint32) error {
 	b := make([]byte, 32)
 	copy(b[0:4], utils.MarshalUint32(z[7]))
@@ -118,7 +118,7 @@ func (u *Uint256) FromUint32Array(z [8]uint32) error {
 	return u.UnmarshalBinary(b)
 }
 
-// Clone returns a copy of u; will panic if u == nil
+// Clone returns a copy of u; will panic if u == nil.
 func (u *Uint256) Clone() *Uint256 {
 	if u.val == nil {
 		u.val = &uint256.Int{}
@@ -129,7 +129,7 @@ func (u *Uint256) Clone() *Uint256 {
 	return v
 }
 
-// FromBigInt converts big.Int into Uint256
+// FromBigInt converts big.Int into Uint256.
 func (u *Uint256) FromBigInt(a *big.Int) (*Uint256, error) {
 	if a == nil {
 		return nil, errorz.ErrInvalid{}.New("Error in Uint256.FromBigInt: nil arg")
@@ -146,7 +146,7 @@ func (u *Uint256) FromBigInt(a *big.Int) (*Uint256, error) {
 	return u.Clone(), nil
 }
 
-// ToBigInt converts Uint256 into big.Int
+// ToBigInt converts Uint256 into big.Int.
 func (u *Uint256) ToBigInt() (*big.Int, error) {
 	buf, err := u.MarshalBinary()
 	if err != nil {
@@ -156,7 +156,7 @@ func (u *Uint256) ToBigInt() (*big.Int, error) {
 	return a, nil
 }
 
-// FromUint64 converts a uint64 into Uint256
+// FromUint64 converts a uint64 into Uint256.
 func (u *Uint256) FromUint64(a uint64) (*Uint256, error) {
 	buf := utils.MarshalUint64(a)
 	err := u.UnmarshalBinary(buf)
@@ -167,7 +167,7 @@ func (u *Uint256) FromUint64(a uint64) (*Uint256, error) {
 }
 
 // ToUint64 returns the lowest 64 bits of u and an error if
-// the operation overflows
+// the operation overflows.
 func (u *Uint256) ToUint64() (uint64, error) {
 	if u == nil {
 		return uint64(0), errorz.ErrInvalid{}.New("Error in Uint256.ToUint64: not initialized")
@@ -183,7 +183,7 @@ func (u *Uint256) ToUint64() (uint64, error) {
 }
 
 // ToUint32 returns the lowest 32 bits of u and an error if
-// the operation overflows
+// the operation overflows.
 func (u *Uint256) ToUint32() (uint32, error) {
 	if u == nil {
 		return uint32(0), errorz.ErrInvalid{}.New("Error in Uint256.ToUint32: not initialized")
@@ -198,7 +198,7 @@ func (u *Uint256) ToUint32() (uint32, error) {
 	return uint32(u64), nil
 }
 
-// Add returns u == a + b and returns an error on overflow
+// Add returns u == a + b and returns an error on overflow.
 func (u *Uint256) Add(a, b *Uint256) (*Uint256, error) {
 	if u == nil {
 		return nil, errorz.ErrInvalid{}.New("Error in Uint256.Add: not initialized")
@@ -218,7 +218,7 @@ func (u *Uint256) Add(a, b *Uint256) (*Uint256, error) {
 	return z, nil
 }
 
-// AddMod returns u == a + b mod m
+// AddMod returns u == a + b mod m.
 func (u *Uint256) AddMod(a, b, m *Uint256) (*Uint256, error) {
 	if u == nil {
 		return nil, errorz.ErrInvalid{}.New("Error in Uint256.AddMod: not initialized")
@@ -236,7 +236,7 @@ func (u *Uint256) AddMod(a, b, m *Uint256) (*Uint256, error) {
 	return u.Clone(), nil
 }
 
-// Sub returns u == a - b and returns an error on overflow
+// Sub returns u == a - b and returns an error on overflow.
 func (u *Uint256) Sub(a, b *Uint256) (*Uint256, error) {
 	if u == nil {
 		return nil, errorz.ErrInvalid{}.New("Error in Uint256.Sub: not initialized")
@@ -256,7 +256,7 @@ func (u *Uint256) Sub(a, b *Uint256) (*Uint256, error) {
 	return z, nil
 }
 
-// Mul returns u == a * b and returns an error on overflow
+// Mul returns u == a * b and returns an error on overflow.
 func (u *Uint256) Mul(a, b *Uint256) (*Uint256, error) {
 	if u == nil {
 		return nil, errorz.ErrInvalid{}.New("Error in Uint256.Mul: not initialized")
@@ -276,7 +276,7 @@ func (u *Uint256) Mul(a, b *Uint256) (*Uint256, error) {
 	return z, nil
 }
 
-// MulMod returns u == a * b mod m
+// MulMod returns u == a * b mod m.
 func (u *Uint256) MulMod(a, b, m *Uint256) (*Uint256, error) {
 	if u == nil {
 		return nil, errorz.ErrInvalid{}.New("Error in Uint256.MulMod: not initialized")
@@ -294,7 +294,7 @@ func (u *Uint256) MulMod(a, b, m *Uint256) (*Uint256, error) {
 	return u.Clone(), nil
 }
 
-// Div returns u == a / b
+// Div returns u == a / b.
 func (u *Uint256) Div(a, b *Uint256) (*Uint256, error) {
 	if u == nil {
 		return nil, errorz.ErrInvalid{}.New("Error in Uint256.Div: not initialized")
@@ -312,7 +312,7 @@ func (u *Uint256) Div(a, b *Uint256) (*Uint256, error) {
 	return u.Clone(), nil
 }
 
-// Mod returns u == a mod m
+// Mod returns u == a mod m.
 func (u *Uint256) Mod(a, m *Uint256) (*Uint256, error) {
 	if u == nil {
 		return nil, errorz.ErrInvalid{}.New("Error in Uint256.Mod: not initialized")
@@ -330,7 +330,7 @@ func (u *Uint256) Mod(a, m *Uint256) (*Uint256, error) {
 	return u.Clone(), nil
 }
 
-// Gt returns u > a
+// Gt returns u > a.
 func (u *Uint256) Gt(a *Uint256) bool {
 	if u.val == nil {
 		u.val = &uint256.Int{}
@@ -338,7 +338,7 @@ func (u *Uint256) Gt(a *Uint256) bool {
 	return u.val.Gt(a.val)
 }
 
-// Gte returns u >= a
+// Gte returns u >= a.
 func (u *Uint256) Gte(a *Uint256) bool {
 	if u.val == nil {
 		u.val = &uint256.Int{}
@@ -346,7 +346,7 @@ func (u *Uint256) Gte(a *Uint256) bool {
 	return u.Gt(a) || u.Eq(a)
 }
 
-// Lt returns u < a
+// Lt returns u < a.
 func (u *Uint256) Lt(a *Uint256) bool {
 	if u.val == nil {
 		u.val = &uint256.Int{}
@@ -354,7 +354,7 @@ func (u *Uint256) Lt(a *Uint256) bool {
 	return u.val.Lt(a.val)
 }
 
-// Lte returns u <= a
+// Lte returns u <= a.
 func (u *Uint256) Lte(a *Uint256) bool {
 	if u.val == nil {
 		u.val = &uint256.Int{}
@@ -362,7 +362,7 @@ func (u *Uint256) Lte(a *Uint256) bool {
 	return u.Lt(a) || u.Eq(a)
 }
 
-// Eq returns u == a
+// Eq returns u == a.
 func (u *Uint256) Eq(a *Uint256) bool {
 	if u.val == nil {
 		u.val = &uint256.Int{}
@@ -370,7 +370,7 @@ func (u *Uint256) Eq(a *Uint256) bool {
 	return u.val.Eq(a.val)
 }
 
-// Cmp returns 1 if u > a, 0 if u == a, and -1 if u < a
+// Cmp returns 1 if u > a, 0 if u == a, and -1 if u < a.
 func (u *Uint256) Cmp(a *Uint256) int {
 	if u.val == nil {
 		u.val = &uint256.Int{}
@@ -378,7 +378,7 @@ func (u *Uint256) Cmp(a *Uint256) int {
 	return u.val.Cmp(a.val)
 }
 
-// SetOne sets u to 1
+// SetOne sets u to 1.
 func (u *Uint256) SetOne() *Uint256 {
 	if u.val == nil {
 		u.val = &uint256.Int{}
@@ -387,7 +387,7 @@ func (u *Uint256) SetOne() *Uint256 {
 	return u.Clone()
 }
 
-// SetZero sets u to 0
+// SetZero sets u to 0.
 func (u *Uint256) SetZero() *Uint256 {
 	if u.val == nil {
 		u.val = &uint256.Int{}
@@ -396,48 +396,44 @@ func (u *Uint256) SetZero() *Uint256 {
 	return u.Clone()
 }
 
-// IsZero determines if u is 0
+// IsZero determines if u is 0.
 func (u *Uint256) IsZero() bool {
 	if u.val == nil {
 		u.val = &uint256.Int{}
 	}
-	z := new(Uint256).SetZero()
-	if u.Eq(z) {
-		return true
-	}
-	return false
+	return u.val.IsZero()
 }
 
-// DSPIMinDeposit returns constants.DSPIMinDeposit as Uint256
+// DSPIMinDeposit returns constants.DSPIMinDeposit as Uint256.
 func DSPIMinDeposit() *Uint256 {
 	u, _ := new(Uint256).FromUint64(uint64(constants.DSPIMinDeposit))
 	return u
 }
 
-// BaseDatasizeConst returns constants.BaseDatasizeConst as Uint256
+// BaseDatasizeConst returns constants.BaseDatasizeConst as Uint256.
 func BaseDatasizeConst() *Uint256 {
 	u, _ := new(Uint256).FromUint64(uint64(constants.BaseDatasizeConst))
 	return u
 }
 
-// Zero returns the Uint256 zero
+// Zero returns the Uint256 zero.
 func Zero() *Uint256 {
 	return new(Uint256).SetZero()
 }
 
-// One returns the Uint256 one
+// One returns the Uint256 one.
 func One() *Uint256 {
 	return new(Uint256).SetOne()
 }
 
-// Two returns the Uint256 two
+// Two returns the Uint256 two.
 func Two() *Uint256 {
 	u := &Uint256{}
 	_, _ = u.FromUint64(2)
 	return u
 }
 
-// Max returns the maximum value
+// Max returns the maximum value.
 func Max() *Uint256 {
 	const uint64max uint64 = 1<<64 - 1
 	return &Uint256{val: &uint256.Int{uint64max, uint64max, uint64max, uint64max}}

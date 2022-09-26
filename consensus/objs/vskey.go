@@ -1,8 +1,8 @@
 package objs
 
 import (
-	"github.com/MadBase/MadNet/errorz"
-	"github.com/MadBase/MadNet/utils"
+	"github.com/alicenet/alicenet/errorz"
+	"github.com/alicenet/alicenet/utils"
 )
 
 // ValidatorSetKey ...
@@ -12,13 +12,13 @@ type ValidatorSetKey struct {
 }
 
 // UnmarshalBinary takes a byte slice and returns the corresponding
-// ValidatorSetKey object
+// ValidatorSetKey object.
 func (b *ValidatorSetKey) UnmarshalBinary(data []byte) error {
 	if b == nil {
 		return errorz.ErrInvalid{}.New("ValidatorSetKey.UnmarshalBinary; vsk not initialized")
 	}
 	if len(data) != 6 {
-		return errorz.ErrInvalid{}.New("ValidatorSetKey.UnmarshalBinary; incorrect data length")
+		return errorz.ErrInvalid{}.New("ValidatorSetKey.UnmarshalBinary; incorrect state length")
 	}
 	b.Prefix = utils.CopySlice(data[0:2])
 	nb, _ := utils.UnmarshalUint32(data[2:6])
@@ -30,7 +30,7 @@ func (b *ValidatorSetKey) UnmarshalBinary(data []byte) error {
 }
 
 // MarshalBinary takes the ValidatorSetKey object and returns the canonical
-// byte slice
+// byte slice.
 func (b *ValidatorSetKey) MarshalBinary() ([]byte, error) {
 	if b == nil {
 		return nil, errorz.ErrInvalid{}.New("ValidatorSetKey.MarshalBinary; vsk not initialized")

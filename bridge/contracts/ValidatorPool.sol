@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT-open-group
-pragma solidity ^0.8.11;
+pragma solidity ^0.8.16;
 
 import "contracts/interfaces/IStakingNFT.sol";
 import "contracts/interfaces/IERC20Transferable.sol";
@@ -18,10 +18,17 @@ import "contracts/interfaces/IERC20Transferable.sol";
 import "contracts/interfaces/IStakingNFT.sol";
 import "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import {ValidatorPoolErrorCodes} from "contracts/libraries/errorCodes/ValidatorPoolErrorCodes.sol";
+import "contracts/libraries/errors/ValidatorPoolErrors.sol";
 
-/// @custom:salt ValidatorPool
-/// @custom:deploy-type deployUpgradeable
+/**
+ * @notice ValidatorPool is the contract responsible for interfacing and
+ * handling all the logic for the AliceNet validators.
+ * This contract interacts mainly with the validatorStaking, Snapshots and
+ * Ethdkg contracts.
+ *
+ * @custom:salt ValidatorPool
+ * @custom:deploy-type deployUpgradeable
+ */
 contract ValidatorPool is
     Initializable,
     ValidatorPoolStorage,
@@ -33,11 +40,13 @@ contract ValidatorPool is
 {
     using CustomEnumerableMaps for ValidatorDataMap;
 
+    /**
+     * Modifier to guarantee that only a validator is calling a function.
+     */
     modifier onlyValidator() {
-        require(
-            _isValidator(msg.sender),
-            string(abi.encodePacked(ValidatorPoolErrorCodes.VALIDATORPOOL_CALLER_NOT_VALIDATOR))
-        );
+        if (!_isValidator(msg.sender)) {
+            revert ValidatorPoolErrors.CallerNotValidator(msg.sender);
+        }
         _;
     }
 
@@ -53,42 +62,73 @@ contract ValidatorPool is
         _;
     }
 
+    /**
+     * Modifier to make sure that the AliceNet consensus is not running.
+     */
     modifier assertNotConsensusRunning() {
-        require(
-            !_isConsensusRunning,
-            string(abi.encodePacked(ValidatorPoolErrorCodes.VALIDATORPOOL_CONSENSUS_RUNNING))
-        );
+        if (_isConsensusRunning) {
+            revert ValidatorPoolErrors.ConsensusRunning();
+        }
         _;
     }
 
+    /**
+     * Modifier to make sure that an ETHDKG round is not running.
+     */
     modifier assertNotETHDKGRunning() {
-        require(
-            !IETHDKG(_ethdkgAddress()).isETHDKGRunning(),
-            string(abi.encodePacked(ValidatorPoolErrorCodes.VALIDATORPOOL_ETHDKG_ROUND_RUNNING))
-        );
+        if (IETHDKG(_ethdkgAddress()).isETHDKGRunning()) {
+            revert ValidatorPoolErrors.ETHDKGRoundRunning();
+        }
         _;
+    }
+
+    /**
+     * Modifier to make sure that the validatorPool doesn't held any asserts during
+     * operations that send asserts to accounts.
+     */
+    modifier balanceShouldNotChange() {
+        uint256 balanceBeforeToken = IERC20Transferable(_aTokenAddress()).balanceOf(address(this));
+        uint256 balanceBeforeEth = address(this).balance;
+        _;
+        if (balanceBeforeToken != IERC20Transferable(_aTokenAddress()).balanceOf(address(this))) {
+            revert ValidatorPoolErrors.TokenBalanceChangedDuringOperation();
+        }
+        if (balanceBeforeEth != address(this).balance) {
+            revert ValidatorPoolErrors.EthBalanceChangedDuringOperation();
+        }
     }
 
     constructor() ValidatorPoolStorage() {}
 
+    /**
+     * @dev only the staking contracts are allowed to send ethereum to this
+     * contract. However, the ether is forward to other accounts in the same
+     * transaction.
+     */
     receive() external payable {
-        require(
-            msg.sender == _validatorStakingAddress() || msg.sender == _publicStakingAddress(),
-            string(abi.encodePacked(ValidatorPoolErrorCodes.VALIDATORPOOL_ONLY_CONTRACTS_ALLOWED))
-        );
+        if (msg.sender != _validatorStakingAddress() && msg.sender != _publicStakingAddress()) {
+            revert ValidatorPoolErrors.OnlyStakingContractsAllowed();
+        }
     }
 
     function initialize(
         uint256 stakeAmount_,
         uint256 maxNumValidators_,
-        uint256 disputerReward_
+        uint256 disputerReward_,
+        uint256 maxIntervalWithoutSnapshots_
     ) public onlyFactory initializer {
         _stakeAmount = stakeAmount_;
         _maxNumValidators = maxNumValidators_;
         _disputerReward = disputerReward_;
+        _maxIntervalWithoutSnapshots = maxIntervalWithoutSnapshots_;
     }
 
-    function setStakeAmount(uint256 stakeAmount_) public onlyFactoryOrValidatorVault {
+    /**
+     * Sets the minimum stake amount to become a validator. Can only be called by
+     * the contract factory.
+     * @param stakeAmount_ the new minimum stake amount to become a validator.
+     */
+    function setStakeAmount(uint256 stakeAmount_) public onlyFactory {
         require(
             stakeAmount_ > 0,
             string(abi.encodePacked(ValidatorPoolErrorCodes.VALIDATORPOOL_INVALID_STAKE_AMOUNT))
@@ -96,23 +136,72 @@ contract ValidatorPool is
         _stakeAmount = stakeAmount_;
     }
 
+    /**
+     * Sets the max interval without snapshot. If the interval has passed, all the
+     * validators can be kicked by the factory. Can only be called by
+     * the contract factory.
+     * @param maxIntervalWithoutSnapshots The new max interval without snapshot.
+     */
+    function setMaxIntervalWithoutSnapshots(uint256 maxIntervalWithoutSnapshots)
+        public
+        onlyFactory
+    {
+        if (maxIntervalWithoutSnapshots == 0) {
+            revert ValidatorPoolErrors.MaxIntervalWithoutSnapshotsMustBeNonZero();
+        }
+        _maxIntervalWithoutSnapshots = maxIntervalWithoutSnapshots;
+    }
+
+    /**
+     * Sets the max number of validators that we can have on AliceNet. Can only be
+     * called by the contract factory.
+     * @param maxNumValidators_ The new maximum number of validators.
+     */
     function setMaxNumValidators(uint256 maxNumValidators_) public onlyFactory {
+        if (maxNumValidators_ < _validators.length()) {
+            revert ValidatorPoolErrors.MaxNumValidatorsIsTooLow(
+                maxNumValidators_,
+                _validators.length()
+            );
+        }
         _maxNumValidators = maxNumValidators_;
     }
 
+    /**
+     * Sets the amount of AToken that a person valid accusing a validator will gain
+     * as reward. Can only be called by the contract factory.
+     * @param disputerReward_ the new reward amount.
+     */
     function setDisputerReward(uint256 disputerReward_) public onlyFactory {
         _disputerReward = disputerReward_;
     }
 
+    /**
+     * Sets the ip location of a validator. Only a validator can register its
+     * location.
+     *  @param ip_ the validator's ip address.
+     */
     function setLocation(string calldata ip_) public onlyValidator {
         _ipLocations[msg.sender] = ip_;
     }
 
+    /**
+     * Schedule a maintenance window to change validators. The maintenance window
+     * will cause AliceNet consensus to halt on the next snapshot, allowing the safe
+     * change (exit and entry) of validators. Can only be called by the factory.
+     */
     function scheduleMaintenance() public onlyFactory {
         _isMaintenanceScheduled = true;
         emit MaintenanceScheduled();
     }
 
+    /**
+     * Initialize a new ETHDKG ceremony, where the validators can create a master
+     * Private and public key to be used to participate on the aliceNet consensus
+     * and mine blocks. This function can only be called by the factory and requires
+     * that no ETHDKG round is running and the consensus is stopped on the AliceNet
+     * network.
+     */
     function initializeETHDKG()
         public
         onlyFactory
@@ -122,80 +211,111 @@ contract ValidatorPool is
         IETHDKG(_ethdkgAddress()).initializeETHDKG();
     }
 
+    /**
+     * Callback function to be called by the ETHDKG contract to correctly set the
+     * consensus running and maintenance flags. Can only be called by the ETHDKG
+     * contract.
+     */
     function completeETHDKG() public onlyETHDKG {
         _isMaintenanceScheduled = false;
         _isConsensusRunning = true;
     }
 
-    // todo: check async in AliceNet
+    /**
+     * Callback function to be called by the snapshots contract to correctly set the
+     * consensus flag. Can only be called by the snapshots contract.
+     */
     function pauseConsensus() public onlySnapshots {
         _isConsensusRunning = false;
     }
 
+    /**
+     * Function to "pause" the AliceNet consensus flag in the smart contract if the
+     * consensus is halted on the side chain. Consensus will be halted on the side
+     * chain if not snapshot is committed by the validators in a certain amount of
+     * time. Setting the `_isConsensusRunning ` flag, forcefully enables the factory
+     * to change the validators without having to wait for a snapshot.
+     */
     function pauseConsensusOnArbitraryHeight(uint256 aliceNetHeight_) public onlyFactory {
-        require(
-            block.number >
-                ISnapshots(_snapshotsAddress()).getCommittedHeightFromLatestSnapshot() +
-                    MAX_INTERVAL_WITHOUT_SNAPSHOTS,
-            string(
-                abi.encodePacked(ValidatorPoolErrorCodes.VALIDATORPOOL_MIN_BLOCK_INTERVAL_NOT_MET)
-            )
-        );
+        uint256 targetBlockNumber = ISnapshots(_snapshotsAddress())
+            .getCommittedHeightFromLatestSnapshot() + _maxIntervalWithoutSnapshots;
+        if (block.number <= targetBlockNumber) {
+            revert ValidatorPoolErrors.MinimumBlockIntervalNotMet(block.number, targetBlockNumber);
+        }
         _isConsensusRunning = false;
         IETHDKG(_ethdkgAddress()).setCustomAliceNetHeight(aliceNetHeight_);
     }
 
+    /**
+     * Function that allows the factory to register a set of validators. In order to
+     * register a validator, a Public staking position of amount greater the
+     * `stakeAmount` should be consumed. As a result of becoming a validator, the
+     * registered address will have the right to collect the profits for a validator
+     * staking position held by this contract after it has successfully participated
+     * on an ETHDKG ceremony. This function can only be called by the factory and as
+     * requirements the AliceNetConsensus and ETHDKG round should not be running.
+     * @param validators_ array of addresses that will be added as validators.
+     * @param stakerTokenIDs_ array of public staking positions that will be
+     * consumed to register the validators.
+     */
     function registerValidators(address[] memory validators_, uint256[] memory stakerTokenIDs_)
         public
         onlyFactory
         assertNotETHDKGRunning
         assertNotConsensusRunning
     {
-        require(
-            validators_.length + _validators.length() <= _maxNumValidators,
-            string(abi.encodePacked(ValidatorPoolErrorCodes.VALIDATORPOOL_MAX_VALIDATORS_MET))
-        );
-        require(
-            validators_.length == stakerTokenIDs_.length,
-            string(
-                abi.encodePacked(
-                    ValidatorPoolErrorCodes.VALIDATORPOOL_REGISTRATION_PARAMETER_LENGTH_MISMATCH
-                )
-            )
-        );
+        if (validators_.length + _validators.length() > _maxNumValidators) {
+            revert ValidatorPoolErrors.NotEnoughValidatorSlotsAvailable(
+                validators_.length,
+                _maxNumValidators - _validators.length()
+            );
+        }
+        if (validators_.length != stakerTokenIDs_.length) {
+            revert ValidatorPoolErrors.RegistrationParameterLengthMismatch(
+                validators_.length,
+                stakerTokenIDs_.length
+            );
+        }
 
         for (uint256 i = 0; i < validators_.length; i++) {
-            require(
-                msg.sender == IERC721(_publicStakingAddress()).ownerOf(stakerTokenIDs_[i]),
-                string(
-                    abi.encodePacked(
-                        ValidatorPoolErrorCodes.VALIDATORPOOL_FACTORY_SHOULD_OWN_POSITION
-                    )
-                )
-            );
+            if (msg.sender != IERC721(_publicStakingAddress()).ownerOf(stakerTokenIDs_[i])) {
+                revert ValidatorPoolErrors.SenderShouldOwnPosition(stakerTokenIDs_[i]);
+            }
             _registerValidator(validators_[i], stakerTokenIDs_[i]);
         }
     }
 
+    /**
+     * Function that allows the factory to unregister validators. Unregistered
+     * validators will be able to get the stake amount of the original public
+     * position consumed on registration back as another public staking position by
+     * calling the `claimExitingNFTPosition` after X amount of epochs has passed.
+     * This function can only be called by the factory and as requirements the
+     * AliceNetConsensus and ETHDKG round should not be running.
+     * @param validators_ the array of validators to be unregistered.
+     */
     function unregisterValidators(address[] memory validators_)
         public
         onlyFactory
         assertNotETHDKGRunning
         assertNotConsensusRunning
     {
-        require(
-            validators_.length <= _validators.length(),
-            string(
-                abi.encodePacked(
-                    ValidatorPoolErrorCodes.VALIDATORPOOL_VALIDATORS_GREATER_THAN_AVAILABLE
-                )
-            )
-        );
+        if (validators_.length > _validators.length()) {
+            revert ValidatorPoolErrors.LengthGreaterThanAvailableValidators(
+                validators_.length,
+                _validators.length()
+            );
+        }
         for (uint256 i = 0; i < validators_.length; i++) {
             _unregisterValidator(validators_[i]);
         }
     }
 
+    /**
+     * Same as unregisterValidators but unregister all validators at once. This
+     * function can only be called by the factory and as requirements the
+     * AliceNetConsensus and ETHDKG round should not be running.
+     */
     function unregisterAllValidators()
         public
         onlyFactory
@@ -208,22 +328,19 @@ contract ValidatorPool is
         }
     }
 
+    /**
+     * Function that allows an address registered as validator to collect the
+     * profits of "its" entitled validator staking position.
+     */
     function collectProfits()
         public
         onlyValidator
+        balanceShouldNotChange
         returns (uint256 payoutEth, uint256 payoutToken)
     {
-        require(
-            _isConsensusRunning,
-            string(
-                abi.encodePacked(
-                    ValidatorPoolErrorCodes.VALIDATORPOOL_PROFITS_ONLY_CLAIMABLE_DURING_CONSENSUS
-                )
-            )
-        );
-
-        uint256 balanceBeforeToken = IERC20Transferable(_aTokenAddress()).balanceOf(address(this));
-        uint256 balanceBeforeEth = address(this).balance;
+        if (!_isConsensusRunning) {
+            revert ValidatorPoolErrors.ProfitsOnlyClaimableWhileConsensusRunning();
+        }
 
         uint256 validatorTokenID = _validators.get(msg.sender)._tokenID;
         payoutEth = IStakingNFT(_validatorStakingAddress()).collectEthTo(
@@ -235,30 +352,22 @@ contract ValidatorPool is
             validatorTokenID
         );
 
-        require(
-            balanceBeforeToken == IERC20Transferable(_aTokenAddress()).balanceOf(address(this)),
-            string(abi.encodePacked(ValidatorPoolErrorCodes.VALIDATORPOOL_TOKEN_BALANCE_CHANGED))
-        );
-        require(
-            balanceBeforeEth == address(this).balance,
-            string(abi.encodePacked(ValidatorPoolErrorCodes.VALIDATORPOOL_ETH_BALANCE_CHANGED))
-        );
-
         return (payoutEth, payoutToken);
     }
 
+    /**
+     * Function that allows an unregistered validator to claim the registered staked
+     * amount as public staking position after the waiting period in epochs has
+     * passed.
+     */
     function claimExitingNFTPosition() public returns (uint256) {
         ExitingValidatorData memory data = _exitingValidatorsData[msg.sender];
-        require(
-            data._freeAfter > 0,
-            string(
-                abi.encodePacked(ValidatorPoolErrorCodes.VALIDATORPOOL_SENDER_NOT_IN_EXITING_QUEUE)
-            )
-        );
-        require(
-            ISnapshots(_snapshotsAddress()).getEpoch() > data._freeAfter,
-            string(abi.encodePacked(ValidatorPoolErrorCodes.VALIDATORPOOL_WAITING_PERIOD_NOT_MET))
-        );
+        if (data._freeAfter == 0) {
+            revert ValidatorPoolErrors.SenderNotInExitingQueue(msg.sender);
+        }
+        if (ISnapshots(_snapshotsAddress()).getEpoch() <= data._freeAfter) {
+            revert ValidatorPoolErrors.WaitingPeriodNotMet();
+        }
 
         _removeExitingQueueData(msg.sender);
 
@@ -273,17 +382,14 @@ contract ValidatorPool is
         return data._tokenID;
     }
 
-    function majorSlash(address dishonestValidator_, address disputer_) public onlyETHDKG {
-        require(
-            _isAccusable(dishonestValidator_),
-            string(
-                abi.encodePacked(
-                    ValidatorPoolErrorCodes.VALIDATORPOOL_DISHONEST_VALIDATOR_NOT_ACCUSABLE
-                )
-            )
-        );
-        uint256 balanceBeforeToken = IERC20Transferable(_aTokenAddress()).balanceOf(address(this));
-        uint256 balanceBeforeEth = address(this).balance;
+    function majorSlash(address dishonestValidator_, address disputer_)
+        public
+        onlyETHDKG
+        balanceShouldNotChange
+    {
+        if (!_isAccusable(dishonestValidator_)) {
+            revert ValidatorPoolErrors.AddressNotAccusable(dishonestValidator_);
+        }
 
         (uint256 minerShares, uint256 payoutEth, uint256 payoutToken) = _slash(dishonestValidator_);
         // deciding which state to clean based if the accusable person was a active validator or was
@@ -301,30 +407,17 @@ contract ValidatorPool is
         // position was burned + the disputerReward
         _transferEthAndTokens(disputer_, payoutEth, payoutToken);
 
-        require(
-            balanceBeforeToken == IERC20Transferable(_aTokenAddress()).balanceOf(address(this)),
-            string(abi.encodePacked(ValidatorPoolErrorCodes.VALIDATORPOOL_TOKEN_BALANCE_CHANGED))
-        );
-        require(
-            balanceBeforeEth == address(this).balance,
-            string(abi.encodePacked(ValidatorPoolErrorCodes.VALIDATORPOOL_ETH_BALANCE_CHANGED))
-        );
-
         emit ValidatorMajorSlashed(dishonestValidator_);
     }
 
-    function minorSlash(address dishonestValidator_, address disputer_) public onlyETHDKG {
-        require(
-            _isAccusable(dishonestValidator_),
-            string(
-                abi.encodePacked(
-                    ValidatorPoolErrorCodes.VALIDATORPOOL_DISHONEST_VALIDATOR_NOT_ACCUSABLE
-                )
-            )
-        );
-        uint256 balanceBeforeToken = IERC20Transferable(_aTokenAddress()).balanceOf(address(this));
-        uint256 balanceBeforeEth = address(this).balance;
-
+    function minorSlash(address dishonestValidator_, address disputer_)
+        public
+        onlyETHDKG
+        balanceShouldNotChange
+    {
+        if (!_isAccusable(dishonestValidator_)) {
+            revert ValidatorPoolErrors.AddressNotAccusable(dishonestValidator_);
+        }
         (uint256 minerShares, uint256 payoutEth, uint256 payoutToken) = _slash(dishonestValidator_);
         uint256 stakeTokenID;
         // In case there's not enough shares to create a new PublicStaking position, state is just
@@ -340,16 +433,6 @@ contract ValidatorPool is
             }
         }
         _transferEthAndTokens(disputer_, payoutEth, payoutToken);
-
-        require(
-            balanceBeforeToken == IERC20Transferable(_aTokenAddress()).balanceOf(address(this)),
-            string(abi.encodePacked(ValidatorPoolErrorCodes.VALIDATORPOOL_TOKEN_BALANCE_CHANGED))
-        );
-        require(
-            balanceBeforeEth == address(this).balance,
-            string(abi.encodePacked(ValidatorPoolErrorCodes.VALIDATORPOOL_ETH_BALANCE_CHANGED))
-        );
-
         emit ValidatorMinorSlashed(dishonestValidator_, stakeTokenID);
     }
 
@@ -379,6 +462,14 @@ contract ValidatorPool is
         return _stakeAmount;
     }
 
+    function getMaxIntervalWithoutSnapshots()
+        public
+        view
+        returns (uint256 maxIntervalWithoutSnapshots)
+    {
+        return _maxIntervalWithoutSnapshots;
+    }
+
     function getMaxNumValidators() public view returns (uint256) {
         return _maxNumValidators;
     }
@@ -396,18 +487,16 @@ contract ValidatorPool is
     }
 
     function getValidator(uint256 index_) public view returns (address) {
-        require(
-            index_ < _validators.length(),
-            string(abi.encodePacked(ValidatorPoolErrorCodes.VALIDATORPOOL_INVALID_INDEX))
-        );
+        if (index_ >= _validators.length()) {
+            revert ValidatorPoolErrors.InvalidIndex(index_);
+        }
         return _validators.at(index_)._address;
     }
 
     function getValidatorData(uint256 index_) public view returns (ValidatorData memory) {
-        require(
-            index_ < _validators.length(),
-            string(abi.encodePacked(ValidatorPoolErrorCodes.VALIDATORPOOL_INVALID_INDEX))
-        );
+        if (index_ >= _validators.length()) {
+            revert ValidatorPoolErrors.InvalidIndex(index_);
+        }
         return _validators.at(index_);
     }
 
@@ -496,25 +585,20 @@ contract ValidatorPool is
 
     function _registerValidator(address validator_, uint256 stakerTokenID_)
         internal
+        balanceShouldNotChange
         returns (
             uint256 validatorTokenID,
             uint256 payoutEth,
             uint256 payoutToken
         )
     {
-        require(
-            _validators.length() <= _maxNumValidators,
-            string(abi.encodePacked(ValidatorPoolErrorCodes.VALIDATORPOOL_MAX_VALIDATORS_MET))
-        );
-        require(
-            !_isAccusable(validator_),
-            string(
-                abi.encodePacked(ValidatorPoolErrorCodes.VALIDATORPOOL_ADDRESS_ALREADY_VALIDATOR)
-            )
-        );
+        if (_validators.length() >= _maxNumValidators) {
+            revert ValidatorPoolErrors.NotEnoughValidatorSlotsAvailable(1, 0);
+        }
+        if (_isAccusable(validator_)) {
+            revert ValidatorPoolErrors.AddressAlreadyValidator(validator_);
+        }
 
-        uint256 balanceBeforeToken = IERC20Transferable(_aTokenAddress()).balanceOf(address(this));
-        uint256 balanceBeforeEth = address(this).balance;
         (validatorTokenID, payoutEth, payoutToken) = _swapPublicStakingForValidatorStaking(
             msg.sender,
             stakerTokenID_
@@ -524,33 +608,21 @@ contract ValidatorPool is
         // transfer back any profit that was available for the PublicStaking position by the time that we
         // burned it
         _transferEthAndTokens(validator_, payoutEth, payoutToken);
-        require(
-            balanceBeforeToken == IERC20Transferable(_aTokenAddress()).balanceOf(address(this)),
-            string(abi.encodePacked(ValidatorPoolErrorCodes.VALIDATORPOOL_TOKEN_BALANCE_CHANGED))
-        );
-        require(
-            balanceBeforeEth == address(this).balance,
-            string(abi.encodePacked(ValidatorPoolErrorCodes.VALIDATORPOOL_ETH_BALANCE_CHANGED))
-        );
-
         emit ValidatorJoined(validator_, validatorTokenID);
     }
 
     function _unregisterValidator(address validator_)
         internal
+        balanceShouldNotChange
         returns (
             uint256 stakeTokenID,
             uint256 payoutEth,
             uint256 payoutToken
         )
     {
-        require(
-            _isValidator(validator_),
-            string(abi.encodePacked(ValidatorPoolErrorCodes.VALIDATORPOOL_ADDRESS_NOT_VALIDATOR))
-        );
-
-        uint256 balanceBeforeToken = IERC20Transferable(_aTokenAddress()).balanceOf(address(this));
-        uint256 balanceBeforeEth = address(this).balance;
+        if (!_isValidator(validator_)) {
+            revert ValidatorPoolErrors.AddressNotValidator(validator_);
+        }
         (stakeTokenID, payoutEth, payoutToken) = _swapValidatorStakingForPublicStaking(validator_);
 
         _moveToExitingQueue(validator_, stakeTokenID);
@@ -558,15 +630,6 @@ contract ValidatorPool is
         // transfer back any profit that was available for the PublicStaking position by the time that we
         // burned it
         _transferEthAndTokens(validator_, payoutEth, payoutToken);
-        require(
-            balanceBeforeToken == IERC20Transferable(_aTokenAddress()).balanceOf(address(this)),
-            string(abi.encodePacked(ValidatorPoolErrorCodes.VALIDATORPOOL_TOKEN_BALANCE_CHANGED))
-        );
-        require(
-            balanceBeforeEth == address(this).balance,
-            string(abi.encodePacked(ValidatorPoolErrorCodes.VALIDATORPOOL_ETH_BALANCE_CHANGED))
-        );
-
         emit ValidatorLeft(validator_, stakeTokenID);
     }
 
@@ -582,14 +645,9 @@ contract ValidatorPool is
             stakerTokenID_
         );
         uint256 stakeAmount = _stakeAmount;
-        require(
-            stakeShares >= stakeAmount,
-            string(
-                abi.encodePacked(
-                    ValidatorPoolErrorCodes.VALIDATORPOOL_INSUFFICIENT_FUNDS_IN_STAKE_POSITION
-                )
-            )
-        );
+        if (stakeShares < stakeAmount) {
+            revert ValidatorPoolErrors.InsufficientFundsInStakePosition(stakeShares, stakeAmount);
+        }
         IERC721Transferable(_publicStakingAddress()).safeTransferFrom(
             to_,
             address(this),
@@ -600,10 +658,9 @@ contract ValidatorPool is
         // Subtracting the shares from PublicStaking profit. The shares will be used to mint the new
         // ValidatorPosition
         //payoutToken should always have the minerShares in it!
-        require(
-            payoutToken >= stakeShares,
-            string(abi.encodePacked(ValidatorPoolErrorCodes.VALIDATORPOOL_PAYOUT_TOO_LOW))
-        );
+        if (payoutToken < stakeShares) {
+            revert ValidatorPoolErrors.PayoutTooLow();
+        }
         payoutToken -= stakeAmount;
 
         uint256 realStakeAmount = 1;
@@ -631,10 +688,9 @@ contract ValidatorPool is
             uint256 payoutToken
         ) = _burnValidatorStakingPosition(validator_);
         //payoutToken should always have the minerShares in it!
-        require(
-            payoutToken >= minerShares,
-            string(abi.encodePacked(ValidatorPoolErrorCodes.VALIDATORPOOL_PAYOUT_TOO_LOW))
-        );
+        if (payoutToken < minerShares) {
+            revert ValidatorPoolErrors.PayoutTooLow();
+        }
         payoutToken -= minerShares;
 
         uint256 stakeTokenID = _mintPublicStakingPosition(minerShares);
@@ -717,10 +773,9 @@ contract ValidatorPool is
             uint256 payoutToken
         )
     {
-        require(
-            _isAccusable(dishonestValidator_),
-            string(abi.encodePacked(ValidatorPoolErrorCodes.VALIDATORPOOL_ADDRESS_NOT_ACCUSABLE))
-        );
+        if (!_isAccusable(dishonestValidator_)) {
+            revert ValidatorPoolErrors.AddressNotAccusable(dishonestValidator_);
+        }
         // If the user accused is a valid validator, we should burn is validatorStaking position,
         // otherwise we burn the user's PublicStaking in the exiting line
         if (_isValidator(dishonestValidator_)) {
@@ -741,10 +796,9 @@ contract ValidatorPool is
             minerShares = 0;
         }
         //payoutToken should always have the minerShares in it!
-        require(
-            payoutToken >= minerShares,
-            string(abi.encodePacked(ValidatorPoolErrorCodes.VALIDATORPOOL_PAYOUT_TOO_LOW))
-        );
+        if (payoutToken < minerShares) {
+            revert ValidatorPoolErrors.PayoutTooLow();
+        }
         payoutToken -= minerShares;
     }
 

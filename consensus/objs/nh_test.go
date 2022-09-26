@@ -3,7 +3,7 @@ package objs
 import (
 	"testing"
 
-	"github.com/MadBase/MadNet/crypto"
+	"github.com/alicenet/alicenet/crypto"
 )
 
 func TestNextHeight(t *testing.T) {
@@ -121,6 +121,15 @@ func TestNextHeight(t *testing.T) {
 		t.Fatal(err)
 	}
 	err = nh2.ValidateSignatures(secpVal, bnVal)
+	if err != nil {
+		t.Fatal(err)
+	}
+	nhcbytes, err := nh.NHClaims.MarshalBinary()
+	if err != nil {
+		t.Fatal(err)
+	}
+	nhc := nh2.NHClaims
+	err = nhc.UnmarshalBinary(nhcbytes)
 	if err != nil {
 		t.Fatal(err)
 	}

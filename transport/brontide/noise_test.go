@@ -11,8 +11,8 @@ import (
 	"testing"
 	"testing/iotest"
 
-	"github.com/MadBase/MadNet/crypto/secp256k1"
-	"github.com/MadBase/MadNet/types"
+	"github.com/alicenet/alicenet/crypto/secp256k1"
+	"github.com/alicenet/alicenet/types"
 )
 
 const (
@@ -200,11 +200,11 @@ func TestConcurrentHandshakes(t *testing.T) {
 		// connect to the listener.
 		remotePriv, err := secp256k1.NewPrivateKey(secp256k1.S256())
 		if err != nil {
-			t.Fatalf("unable to generate private key: %v", err)
+			panic(fmt.Errorf("unable to create remote privkey: %v", err))
 		}
 		remoteConn, err := Dial(remotePriv, testProtocol, testProtoVer, testChainID, 9001, netAddr, net.Dial)
 		if err != nil {
-			t.Errorf("Error in concurrent dial: %v", err)
+			panic(fmt.Errorf("Error in concurrent dial: %v", err))
 		}
 		connChan <- maybeNetConn{remoteConn, err}
 	}()
@@ -345,7 +345,7 @@ func TestBolt0008TestVectors(t *testing.T) {
 	responderPriv, responderPub := secp256k1.PrivKeyFromBytes(secp256k1.S256(),
 		responderKeyBytes)
 
-	// With the initiator's key data parsed, we'll now define a custom
+	// With the initiator's key state parsed, we'll now define a custom
 	// EphemeralGenerator function for the state machine to ensure that the
 	// initiator and responder both generate the ephemeral public key
 	// defined within the test vectors.
@@ -718,8 +718,8 @@ func testFlush(t *testing.T, test flushTest, b *Machine, w io.Writer) {
 // n bytes. The method asserts that the returned error matches expErr and that
 // the number of bytes written by Flush matches expN.
 func assertFlush(t *testing.T, b *Machine, w io.Writer, n int64, expN int,
-	expErr error) {
-
+	expErr error,
+) {
 	t.Helper()
 
 	if n >= 0 {

@@ -427,9 +427,6 @@ func TestNodeSetEpochsBad3(t *testing.T) {
 		t.Fatal("prevNode should be Valid")
 	}
 	nextNode := &Node{}
-	if nextNode == nil {
-		t.Fatal("nextNode should not be nil")
-	}
 	err := node.SetEpochs(prevNode, nextNode)
 	if err == nil {
 		t.Fatal("Should have raised error")
@@ -483,9 +480,6 @@ func TestNodeSetEpochsBad5(t *testing.T) {
 	prevNode := &Node{}
 	if prevNode.IsValid() {
 		t.Fatal("prevNode should not be valid")
-	}
-	if prevNode == nil {
-		t.Fatal("prevNode should not be nil")
 	}
 	nextNode := &Node{}
 	err := node.SetEpochs(prevNode, nextNode)

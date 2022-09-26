@@ -3,11 +3,12 @@ package objs
 import (
 	"bytes"
 
-	mdefs "github.com/MadBase/MadNet/consensus/objs/capn"
-	"github.com/MadBase/MadNet/consensus/objs/vset"
-	"github.com/MadBase/MadNet/errorz"
-	"github.com/MadBase/MadNet/utils"
 	capnp "github.com/MadBase/go-capnproto2/v2"
+
+	mdefs "github.com/alicenet/alicenet/consensus/objs/capn"
+	"github.com/alicenet/alicenet/consensus/objs/vset"
+	"github.com/alicenet/alicenet/errorz"
+	"github.com/alicenet/alicenet/utils"
 )
 
 // ValidatorSet ...
@@ -23,7 +24,7 @@ type ValidatorSet struct {
 }
 
 // UnmarshalBinary takes a byte slice and returns the corresponding
-// ValidatorSet object
+// ValidatorSet object.
 func (b *ValidatorSet) UnmarshalBinary(data []byte) error {
 	if b == nil {
 		return errorz.ErrInvalid{}.New("ValidatorSet.UnmarshalBinary; vs not initialized")
@@ -36,7 +37,7 @@ func (b *ValidatorSet) UnmarshalBinary(data []byte) error {
 	return b.UnmarshalCapn(bh)
 }
 
-// UnmarshalCapn unmarshals the capnproto definition of the object
+// UnmarshalCapn unmarshals the capnproto definition of the object.
 func (b *ValidatorSet) UnmarshalCapn(bh mdefs.ValidatorSet) error {
 	if b == nil {
 		return errorz.ErrInvalid{}.New("ValidatorSet.UnmarshalCapn; vs not initialized")
@@ -73,7 +74,7 @@ func (b *ValidatorSet) UnmarshalCapn(bh mdefs.ValidatorSet) error {
 }
 
 // MarshalBinary takes the ValidatorSet object and returns the canonical
-// byte slice
+// byte slice.
 func (b *ValidatorSet) MarshalBinary() ([]byte, error) {
 	if b == nil {
 		return nil, errorz.ErrInvalid{}.New("ValidatorSet.MarshalBinary; vs not initialized")
@@ -89,7 +90,7 @@ func (b *ValidatorSet) MarshalBinary() ([]byte, error) {
 	return vset.Marshal(bh)
 }
 
-// MarshalCapn marshals the object into its capnproto definition
+// MarshalCapn marshals the object into its capnproto definition.
 func (b *ValidatorSet) MarshalCapn(seg *capnp.Segment) (mdefs.ValidatorSet, error) {
 	if b == nil {
 		return mdefs.ValidatorSet{}, errorz.ErrInvalid{}.New("ValidatorSet.MarshalCapn; vs not initialized")
@@ -154,7 +155,7 @@ func (b *ValidatorSet) VAddrIdx(vAddr []byte) (bool, int) {
 	return ok, idx
 }
 
-func (b *ValidatorSet) IsValidTriplet(vAddr []byte, groupShare []byte, groupKey []byte) bool {
+func (b *ValidatorSet) IsValidTriplet(vAddr, groupShare, groupKey []byte) bool {
 	if !bytes.Equal(groupKey, b.GroupKey) {
 		return false
 	}
@@ -172,7 +173,7 @@ func (b *ValidatorSet) IsValidTriplet(vAddr []byte, groupShare []byte, groupKey 
 	return true
 }
 
-func (b *ValidatorSet) IsValidTuple(vAddr []byte, groupKey []byte) bool {
+func (b *ValidatorSet) IsValidTuple(vAddr, groupKey []byte) bool {
 	if !bytes.Equal(groupKey, b.GroupKey) {
 		return false
 	}

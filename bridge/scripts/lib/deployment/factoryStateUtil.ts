@@ -71,13 +71,13 @@ async function writeFactoryState(
   usrPath?: string
 ) {
   if (process.env.silencer === undefined || process.env.silencer === "false") {
-    const path =
+    const filePath =
       usrPath === undefined
         ? FACTORY_STATE_PATH
         : usrPath.replace(/\/+$/, "") + "/factoryState";
     let factoryStateConfig;
-    if (fs.existsSync(path)) {
-      factoryStateConfig = await readFactoryState(path);
+    if (fs.existsSync(filePath)) {
+      factoryStateConfig = await readFactoryState(usrPath);
       factoryStateConfig[network] =
         factoryStateConfig[network] === undefined
           ? {}
@@ -91,7 +91,7 @@ async function writeFactoryState(
       };
     }
     const data = toml.stringify(factoryStateConfig);
-    fs.writeFileSync(path, data);
+    fs.writeFileSync(filePath, data);
   }
 }
 
@@ -156,7 +156,41 @@ export async function updateList(
     if (data.receipt !== undefined) {
       data.receipt = undefined;
     }
-    // write new data to config file
+    // write new state to config file
     await writeFactoryState(network, fieldName, output, usrPath);
+  }
+}
+
+export async function getATokenMinterAddress(network: string) {
+  // fetch whats in the factory config file
+  const config = await readFactoryState(FACTORY_STATE_PATH);
+  let proxies = config[network].proxies;
+  for (let i = 0; i < proxies.length; i++) {
+    let name = proxies[i].logicName;
+    if (name === "ATokenMinter") {
+      return proxies[i].proxyAddress;
+    }
+  }
+}
+
+export async function getBTokenAddress(network: string) {
+  const config = await readFactoryState(FACTORY_STATE_PATH);
+  let staticContracts = config[network].staticContracts;
+  for (let i = 0; i < staticContracts.length; i++) {
+    let name = staticContracts[i].templateName;
+    if (name === "BToken") {
+      return staticContracts[i].metaAddress;
+    }
+  }
+}
+
+export async function getATokenAddress(network: string) {
+  const config = await readFactoryState(FACTORY_STATE_PATH);
+  let staticContracts = config[network].staticContracts;
+  for (let i = 0; i < staticContracts.length; i++) {
+    let name = staticContracts[i].templateName;
+    if (name === "AToken") {
+      return staticContracts[i].metaAddress;
+    }
   }
 }

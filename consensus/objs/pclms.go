@@ -3,10 +3,11 @@ package objs
 import (
 	"bytes"
 
-	mdefs "github.com/MadBase/MadNet/consensus/objs/capn"
-	"github.com/MadBase/MadNet/consensus/objs/pclaims"
-	"github.com/MadBase/MadNet/errorz"
 	capnp "github.com/MadBase/go-capnproto2/v2"
+
+	mdefs "github.com/alicenet/alicenet/consensus/objs/capn"
+	"github.com/alicenet/alicenet/consensus/objs/pclaims"
+	"github.com/alicenet/alicenet/errorz"
 )
 
 // PClaims ...
@@ -16,7 +17,7 @@ type PClaims struct {
 }
 
 // UnmarshalBinary takes a byte slice and returns the corresponding
-// PClaims object
+// PClaims object.
 func (b *PClaims) UnmarshalBinary(data []byte) error {
 	if b == nil {
 		return errorz.ErrInvalid{}.New("PClaims.UnmarshalBinary; pclaims not initialized")
@@ -29,7 +30,7 @@ func (b *PClaims) UnmarshalBinary(data []byte) error {
 	return b.UnmarshalCapn(bh)
 }
 
-// UnmarshalCapn unmarshals the capnproto definition of the object
+// UnmarshalCapn unmarshals the capnproto definition of the object.
 func (b *PClaims) UnmarshalCapn(bh mdefs.PClaims) error {
 	if b == nil {
 		return errorz.ErrInvalid{}.New("PClaims.UnmarshalCapn; pclaims not initialized")
@@ -61,7 +62,7 @@ func (b *PClaims) UnmarshalCapn(bh mdefs.PClaims) error {
 }
 
 // MarshalBinary takes the PClaims object and returns the canonical
-// byte slice
+// byte slice.
 func (b *PClaims) MarshalBinary() ([]byte, error) {
 	if b == nil {
 		return nil, errorz.ErrInvalid{}.New("PClaims.MarshalBinary; pclaims not initialized")
@@ -74,7 +75,7 @@ func (b *PClaims) MarshalBinary() ([]byte, error) {
 	return pclaims.Marshal(bh)
 }
 
-// MarshalCapn marshals the object into its capnproto definition
+// MarshalCapn marshals the object into its capnproto definition.
 func (b *PClaims) MarshalCapn(seg *capnp.Segment) (mdefs.PClaims, error) {
 	if b == nil {
 		return mdefs.PClaims{}, errorz.ErrInvalid{}.New("PClaims.MarshalCapn; pclaims not initialized")

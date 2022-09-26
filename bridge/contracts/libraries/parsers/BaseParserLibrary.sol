@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: MIT-open-group
-pragma solidity ^0.8.11;
+pragma solidity ^0.8.16;
 
-import {
-    BaseParserLibraryErrorCodes
-} from "contracts/libraries/errorCodes/BaseParserLibraryErrorCodes.sol";
+import "contracts/libraries/errors/BaseParserLibraryErrors.sol";
 
 library BaseParserLibrary {
     // Size of a word, in bytes.
@@ -12,23 +10,18 @@ library BaseParserLibrary {
     uint256 internal constant _BYTES_HEADER_SIZE = 32;
 
     /// @notice Extracts a uint32 from a little endian bytes array.
-    /// @param src the binary data
-    /// @param offset place inside `src` to start reading data from
+    /// @param src the binary state
+    /// @param offset place inside `src` to start reading state from
     /// @return val a uint32
     /// @dev ~559 gas
     function extractUInt32(bytes memory src, uint256 offset) internal pure returns (uint32 val) {
-        require(
-            offset + 4 > offset,
-            string(
-                abi.encodePacked(
-                    BaseParserLibraryErrorCodes.BASEPARSERLIB_OFFSET_PARAMETER_OVERFLOW
-                )
-            )
-        );
-        require(
-            src.length >= offset + 4,
-            string(abi.encodePacked(BaseParserLibraryErrorCodes.BASEPARSERLIB_OFFSET_OUT_OF_BOUNDS))
-        );
+        if (offset + 4 <= offset) {
+            revert BaseParserLibraryErrors.OffsetParameterOverflow(offset);
+        }
+
+        if (offset + 4 > src.length) {
+            revert BaseParserLibraryErrors.OffsetOutOfBounds(offset + 4, src.length);
+        }
 
         assembly {
             val := shr(sub(256, 32), mload(add(add(src, 0x20), offset)))
@@ -43,27 +36,18 @@ library BaseParserLibrary {
     }
 
     /// @notice Extracts a uint16 from a little endian bytes array.
-    /// @param src the binary data
-    /// @param offset place inside `src` to start reading data from
+    /// @param src the binary state
+    /// @param offset place inside `src` to start reading state from
     /// @return val a uint16
     /// @dev ~204 gas
     function extractUInt16(bytes memory src, uint256 offset) internal pure returns (uint16 val) {
-        require(
-            offset + 2 > offset,
-            string(
-                abi.encodePacked(
-                    BaseParserLibraryErrorCodes.BASEPARSERLIB_LE_UINT16_OFFSET_PARAMETER_OVERFLOW
-                )
-            )
-        );
-        require(
-            src.length >= offset + 2,
-            string(
-                abi.encodePacked(
-                    BaseParserLibraryErrorCodes.BASEPARSERLIB_LE_UINT16_OFFSET_OUT_OF_BOUNDS
-                )
-            )
-        );
+        if (offset + 2 <= offset) {
+            revert BaseParserLibraryErrors.LEUint16OffsetParameterOverflow(offset);
+        }
+
+        if (offset + 2 > src.length) {
+            revert BaseParserLibraryErrors.LEUint16OffsetOutOfBounds(offset + 2, src.length);
+        }
 
         assembly {
             val := shr(sub(256, 16), mload(add(add(src, 0x20), offset)))
@@ -72,8 +56,8 @@ library BaseParserLibrary {
     }
 
     /// @notice Extracts a uint16 from a big endian bytes array.
-    /// @param src the binary data
-    /// @param offset place inside `src` to start reading data from
+    /// @param src the binary state
+    /// @param offset place inside `src` to start reading state from
     /// @return val a uint16
     /// @dev ~204 gas
     function extractUInt16FromBigEndian(bytes memory src, uint256 offset)
@@ -81,22 +65,13 @@ library BaseParserLibrary {
         pure
         returns (uint16 val)
     {
-        require(
-            offset + 2 > offset,
-            string(
-                abi.encodePacked(
-                    BaseParserLibraryErrorCodes.BASEPARSERLIB_BE_UINT16_OFFSET_PARAMETER_OVERFLOW
-                )
-            )
-        );
-        require(
-            src.length >= offset + 2,
-            string(
-                abi.encodePacked(
-                    BaseParserLibraryErrorCodes.BASEPARSERLIB_BE_UINT16_OFFSET_OUT_OF_BOUNDS
-                )
-            )
-        );
+        if (offset + 2 <= offset) {
+            revert BaseParserLibraryErrors.BEUint16OffsetParameterOverflow(offset);
+        }
+
+        if (offset + 2 > src.length) {
+            revert BaseParserLibraryErrors.BEUint16OffsetOutOfBounds(offset + 2, src.length);
+        }
 
         assembly {
             val := and(shr(sub(256, 16), mload(add(add(src, 0x20), offset))), 0xffff)
@@ -104,27 +79,19 @@ library BaseParserLibrary {
     }
 
     /// @notice Extracts a bool from a bytes array.
-    /// @param src the binary data
-    /// @param offset place inside `src` to start reading data from
+    /// @param src the binary state
+    /// @param offset place inside `src` to start reading state from
     /// @return a bool
     /// @dev ~204 gas
     function extractBool(bytes memory src, uint256 offset) internal pure returns (bool) {
-        require(
-            offset + 1 > offset,
-            string(
-                abi.encodePacked(
-                    BaseParserLibraryErrorCodes.BASEPARSERLIB_BOOL_OFFSET_PARAMETER_OVERFLOW
-                )
-            )
-        );
-        require(
-            src.length >= offset + 1,
-            string(
-                abi.encodePacked(
-                    BaseParserLibraryErrorCodes.BASEPARSERLIB_BOOL_OFFSET_OUT_OF_BOUNDS
-                )
-            )
-        );
+        if (offset + 1 <= offset) {
+            revert BaseParserLibraryErrors.BooleanOffsetParameterOverflow(offset);
+        }
+
+        if (offset + 1 > src.length) {
+            revert BaseParserLibraryErrors.BooleanOffsetOutOfBounds(offset + 1, src.length);
+        }
+
         uint256 val;
         assembly {
             val := shr(sub(256, 8), mload(add(add(src, 0x20), offset)))
@@ -134,27 +101,18 @@ library BaseParserLibrary {
     }
 
     /// @notice Extracts a uint256 from a little endian bytes array.
-    /// @param src the binary data
-    /// @param offset place inside `src` to start reading data from
+    /// @param src the binary state
+    /// @param offset place inside `src` to start reading state from
     /// @return val a uint256
     /// @dev ~5155 gas
     function extractUInt256(bytes memory src, uint256 offset) internal pure returns (uint256 val) {
-        require(
-            offset + 31 > offset,
-            string(
-                abi.encodePacked(
-                    BaseParserLibraryErrorCodes.BASEPARSERLIB_LE_UINT256_OFFSET_PARAMETER_OVERFLOW
-                )
-            )
-        );
-        require(
-            src.length > offset + 31,
-            string(
-                abi.encodePacked(
-                    BaseParserLibraryErrorCodes.BASEPARSERLIB_LE_UINT256_OFFSET_OUT_OF_BOUNDS
-                )
-            )
-        );
+        if (offset + 32 <= offset) {
+            revert BaseParserLibraryErrors.LEUint256OffsetParameterOverflow(offset);
+        }
+
+        if (offset + 32 > src.length) {
+            revert BaseParserLibraryErrors.LEUint256OffsetOutOfBounds(offset + 32, src.length);
+        }
 
         assembly {
             val := mload(add(add(src, 0x20), offset))
@@ -162,8 +120,8 @@ library BaseParserLibrary {
     }
 
     /// @notice Extracts a uint256 from a big endian bytes array.
-    /// @param src the binary data
-    /// @param offset place inside `src` to start reading data from
+    /// @param src the binary state
+    /// @param offset place inside `src` to start reading state from
     /// @return val a uint256
     /// @dev ~1400 gas
     function extractUInt256FromBigEndian(bytes memory src, uint256 offset)
@@ -171,22 +129,13 @@ library BaseParserLibrary {
         pure
         returns (uint256 val)
     {
-        require(
-            offset + 31 > offset,
-            string(
-                abi.encodePacked(
-                    BaseParserLibraryErrorCodes.BASEPARSERLIB_BE_UINT256_OFFSET_PARAMETER_OVERFLOW
-                )
-            )
-        );
-        require(
-            src.length > offset + 31,
-            string(
-                abi.encodePacked(
-                    BaseParserLibraryErrorCodes.BASEPARSERLIB_BE_UINT256_OFFSET_OUT_OF_BOUNDS
-                )
-            )
-        );
+        if (offset + 32 <= offset) {
+            revert BaseParserLibraryErrors.BEUint256OffsetParameterOverflow(offset);
+        }
+
+        if (offset + 32 > src.length) {
+            revert BaseParserLibraryErrors.BEUint256OffsetOutOfBounds(offset + 32, src.length);
+        }
 
         uint256 srcDataPointer;
         uint32 val0 = 0;
@@ -286,7 +235,7 @@ library BaseParserLibrary {
     }
 
     /// @notice Reverts a bytes array. Can be used to convert an array from little endian to big endian and vice-versa.
-    /// @param orig the binary data
+    /// @param orig the binary state
     /// @return reversed the reverted bytes array
     /// @dev ~13832 gas
     function reverse(bytes memory orig) internal pure returns (bytes memory reversed) {
@@ -299,7 +248,7 @@ library BaseParserLibrary {
     /// @notice Copy 'len' bytes from memory address 'src', to address 'dest'. This function does not check the or destination, it only copies the bytes.
     /// @param src the pointer to the source
     /// @param dest the pointer to the destination
-    /// @param len the len of data to be copied
+    /// @param len the len of state to be copied
     function copy(
         uint256 src,
         uint256 dest,
@@ -326,7 +275,7 @@ library BaseParserLibrary {
         }
     }
 
-    /// @notice Returns a memory pointer to the data portion of the provided bytes array.
+    /// @notice Returns a memory pointer to the state portion of the provided bytes array.
     /// @param bts the bytes array to get a pointer from
     /// @return addr the pointer to the `bts` bytes array
     function dataPtr(bytes memory bts) internal pure returns (uint256 addr) {
@@ -346,22 +295,17 @@ library BaseParserLibrary {
         uint256 offset,
         uint256 howManyBytes
     ) internal pure returns (bytes memory out) {
-        require(
-            offset + howManyBytes >= offset,
-            string(
-                abi.encodePacked(
-                    BaseParserLibraryErrorCodes.BASEPARSERLIB_BYTES_OFFSET_PARAMETER_OVERFLOW
-                )
-            )
-        );
-        require(
-            src.length >= offset + howManyBytes,
-            string(
-                abi.encodePacked(
-                    BaseParserLibraryErrorCodes.BASEPARSERLIB_BYTES_OFFSET_OUT_OF_BOUNDS
-                )
-            )
-        );
+        if (offset + howManyBytes < offset) {
+            revert BaseParserLibraryErrors.BytesOffsetParameterOverflow(offset);
+        }
+
+        if (offset + howManyBytes > src.length) {
+            revert BaseParserLibraryErrors.BytesOffsetOutOfBounds(
+                offset + howManyBytes,
+                src.length
+            );
+        }
+
         out = new bytes(howManyBytes);
         uint256 start;
 
@@ -375,25 +319,17 @@ library BaseParserLibrary {
     /// @notice Extracts a bytes32 extracted from `src`'s `offset` forward.
     /// @param src the source bytes array to extract from
     /// @param offset where to start extracting from
-    /// @return out the bytes32 data extracted from `src`
+    /// @return out the bytes32 state extracted from `src`
     /// @dev ~439 gas
     function extractBytes32(bytes memory src, uint256 offset) internal pure returns (bytes32 out) {
-        require(
-            offset + 32 > offset,
-            string(
-                abi.encodePacked(
-                    BaseParserLibraryErrorCodes.BASEPARSERLIB_BYTES32_OFFSET_PARAMETER_OVERFLOW
-                )
-            )
-        );
-        require(
-            src.length >= (offset + 32),
-            string(
-                abi.encodePacked(
-                    BaseParserLibraryErrorCodes.BASEPARSERLIB_BYTES32_OFFSET_OUT_OF_BOUNDS
-                )
-            )
-        );
+        if (offset + 32 <= offset) {
+            revert BaseParserLibraryErrors.Bytes32OffsetParameterOverflow(offset);
+        }
+
+        if (offset + 32 > src.length) {
+            revert BaseParserLibraryErrors.Bytes32OffsetOutOfBounds(offset + 32, src.length);
+        }
+
         assembly {
             out := mload(add(add(src, _BYTES_HEADER_SIZE), offset))
         }

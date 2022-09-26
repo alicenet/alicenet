@@ -1,11 +1,14 @@
+import "@nomicfoundation/hardhat-chai-matchers";
 import "@nomiclabs/hardhat-ethers";
+import "@nomiclabs/hardhat-etherscan";
 import "@nomiclabs/hardhat-truffle5";
-import "@nomiclabs/hardhat-waffle";
 import "@typechain/hardhat";
 import "hardhat-abi-exporter";
 import "hardhat-contract-sizer";
 import "hardhat-deploy";
 import "hardhat-gas-reporter";
+import "hardhat-log-remover";
+import "hardhat-storage-layout";
 import { HardhatUserConfig, task } from "hardhat/config";
 import os from "os";
 import "solidity-coverage";
@@ -27,6 +30,14 @@ task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
     console.log(account.address);
   }
 });
+
+task(
+  "storage-check",
+  "Prints contracts storage information",
+  async (taskArgs, hre) => {
+    await hre.storageLayout.export();
+  }
+);
 
 const config: HardhatUserConfig = {
   namedAccounts: {
@@ -52,6 +63,8 @@ const config: HardhatUserConfig = {
       gasPrice: "auto",
       accounts: [
         "0x6aea45ee1273170fb525da34015e4f20ba39fe792f486ba74020bcacc9badfc1",
+        "0x8de84c4eb40a9d32804ebc4005075eed5d64efc92ba26b6ec04d399f5a9b7bd1",
+        "0x65a81057728efda8858d5d53094a093203d35cb7437d16f7635594788517bdd2",
       ],
       gasMultiplier: 2,
     },
@@ -63,6 +76,32 @@ const config: HardhatUserConfig = {
       accounts: [
         process.env.TESTNET_PK
           ? process.env.TESTNET_PK
+          : "0x0000000000000000000000000000000000000000000000000000000000000000",
+      ],
+    },
+    goerli: {
+      url: process.env.GOERLI_ENDPOINT
+        ? process.env.GOERLI_ENDPOINT
+        : "http://127.0.0.1:8545",
+      gas: "auto",
+      gasMultiplier: 2,
+      gasPrice: "auto",
+      accounts: [
+        process.env.GOERLI_PK
+          ? process.env.GOERLI_PK
+          : "0x0000000000000000000000000000000000000000000000000000000000000000",
+      ],
+    },
+    mainnet: {
+      url: process.env.MAINNET_ENDPOINT
+        ? process.env.MAINNET_ENDPOINT
+        : "http://127.0.0.1:8545",
+      gas: "auto",
+      gasMultiplier: 2,
+      gasPrice: "auto",
+      accounts: [
+        process.env.MAINNET_PK
+          ? process.env.MAINNET_PK
           : "0x0000000000000000000000000000000000000000000000000000000000000000",
       ],
     },
@@ -182,14 +221,24 @@ const config: HardhatUserConfig = {
       ],
     },
   },
+  etherscan: {
+    apiKey: process.env.ETHERSCAN_API_KEY
+      ? process.env.ETHERSCAN_API_KEY
+      : "0000000000000000000000000000000000",
+  },
   solidity: {
     compilers: [
       {
-        version: "0.8.13",
+        version: "0.8.16",
         settings: {
           outputSelection: {
             "*": {
-              "*": ["metadata", "evm.bytecode", "evm.bytecode.sourceMap"],
+              "*": [
+                "metadata",
+                "evm.bytecode",
+                "evm.bytecode.sourceMap",
+                "storageLayout",
+              ],
               "": [
                 "ast", // Enable the AST output of every single file.
               ],
@@ -232,7 +281,7 @@ const config: HardhatUserConfig = {
     excludeContracts: ["*.t.sol"],
   },
   mocha: {
-    timeout: 120000,
+    timeout: 240000,
     jobs: os.cpus().length / 2 > 1 ? os.cpus().length / 2 : 1,
   },
 
@@ -251,6 +300,7 @@ const config: HardhatUserConfig = {
       "PublicStaking",
       "ValidatorStaking",
       "Governance",
+      "Dynamics",
     ],
     except: [
       "I[A-Z].*",
@@ -258,6 +308,7 @@ const config: HardhatUserConfig = {
       ".*Mock",
       ".*Base",
       ".*Storage",
+      ".*Error",
       "ETHDKGAccusations",
       "ETHDKGPhases",
     ],

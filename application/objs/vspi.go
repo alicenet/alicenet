@@ -1,16 +1,17 @@
 package objs
 
 import (
-	mdefs "github.com/MadBase/MadNet/application/objs/capn"
-	"github.com/MadBase/MadNet/application/objs/uint256"
-	"github.com/MadBase/MadNet/application/objs/vspreimage"
-	"github.com/MadBase/MadNet/crypto"
-	"github.com/MadBase/MadNet/errorz"
-	"github.com/MadBase/MadNet/utils"
 	capnp "github.com/MadBase/go-capnproto2/v2"
+
+	mdefs "github.com/alicenet/alicenet/application/objs/capn"
+	"github.com/alicenet/alicenet/application/objs/uint256"
+	"github.com/alicenet/alicenet/application/objs/vspreimage"
+	"github.com/alicenet/alicenet/crypto"
+	"github.com/alicenet/alicenet/errorz"
+	"github.com/alicenet/alicenet/utils"
 )
 
-// VSPreImage is a value store preimage
+// VSPreImage is a value store preimage.
 type VSPreImage struct {
 	ChainID  uint32
 	Value    *uint256.Uint256
@@ -22,7 +23,7 @@ type VSPreImage struct {
 }
 
 // UnmarshalBinary takes a byte slice and returns the corresponding
-// VSPreImage object
+// VSPreImage object.
 func (b *VSPreImage) UnmarshalBinary(data []byte) error {
 	if b == nil {
 		return errorz.ErrInvalid{}.New("vspi.unmarshalBinary: vspi not initialized")
@@ -35,7 +36,7 @@ func (b *VSPreImage) UnmarshalBinary(data []byte) error {
 }
 
 // MarshalBinary takes the VSPreImage object and returns the canonical
-// byte slice
+// byte slice.
 func (b *VSPreImage) MarshalBinary() ([]byte, error) {
 	if b == nil {
 		return nil, errorz.ErrInvalid{}.New("vspi.marshalBinary: vspi not initialized")
@@ -47,7 +48,7 @@ func (b *VSPreImage) MarshalBinary() ([]byte, error) {
 	return vspreimage.Marshal(bc)
 }
 
-// UnmarshalCapn unmarshals the capnproto definition of the object
+// UnmarshalCapn unmarshals the capnproto definition of the object.
 func (b *VSPreImage) UnmarshalCapn(bc mdefs.VSPreImage) error {
 	if err := vspreimage.Validate(bc); err != nil {
 		return err
@@ -92,7 +93,7 @@ func (b *VSPreImage) UnmarshalCapn(bc mdefs.VSPreImage) error {
 	return nil
 }
 
-// MarshalCapn marshals the object into its capnproto definition
+// MarshalCapn marshals the object into its capnproto definition.
 func (b *VSPreImage) MarshalCapn(seg *capnp.Segment) (mdefs.VSPreImage, error) {
 	if b == nil {
 		return mdefs.VSPreImage{}, errorz.ErrInvalid{}.New("vspi.marshalCapn: vspi not initialized")
@@ -151,7 +152,7 @@ func (b *VSPreImage) MarshalCapn(seg *capnp.Segment) (mdefs.VSPreImage, error) {
 	return bc, nil
 }
 
-// PreHash calculates the PreHash of the object
+// PreHash calculates the PreHash of the object.
 func (b *VSPreImage) PreHash() ([]byte, error) {
 	if b == nil {
 		return nil, errorz.ErrInvalid{}.New("vspi.preHash: vspi not initialized")
@@ -168,7 +169,7 @@ func (b *VSPreImage) PreHash() ([]byte, error) {
 	return utils.CopySlice(b.preHash), nil
 }
 
-// ValidateSignature validates the signature for VSPreImage
+// ValidateSignature validates the signature for VSPreImage.
 func (b *VSPreImage) ValidateSignature(msg []byte, sig *ValueStoreSignature) error {
 	if b == nil {
 		return errorz.ErrInvalid{}.New("vspi.validateSignature: vspi not initialized")

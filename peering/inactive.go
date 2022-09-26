@@ -5,10 +5,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/MadBase/MadNet/interfaces"
+	"github.com/alicenet/alicenet/interfaces"
 )
 
-// inactivePeerStore tracks inactive peers
+// inactivePeerStore tracks inactive peers.
 type inactivePeerStore struct {
 	sync.RWMutex
 	// map of peer p2p addr and time last added
@@ -20,14 +20,14 @@ type inactivePeerStore struct {
 	closeOnce sync.Once
 }
 
-// close the store
+// close the store.
 func (ps *inactivePeerStore) close() {
 	ps.closeOnce.Do(func() {
 		close(ps.closeChan)
 	})
 }
 
-// add a peer to the store
+// add a peer to the store.
 func (ps *inactivePeerStore) add(c interfaces.NodeAddr) {
 	ps.Lock()
 	defer ps.Unlock()
@@ -37,7 +37,7 @@ func (ps *inactivePeerStore) add(c interfaces.NodeAddr) {
 	}
 }
 
-// delete a peer
+// delete a peer.
 func (ps *inactivePeerStore) del(c interfaces.NodeAddr) {
 	ps.Lock()
 	defer ps.Unlock()
@@ -48,7 +48,7 @@ func (ps *inactivePeerStore) del(c interfaces.NodeAddr) {
 	}
 }
 
-// delete a peer
+// delete a peer.
 func (ps *inactivePeerStore) backoff(c interfaces.NodeAddr) {
 	pid := makePid()
 	ps.cooldown[c.Identity()] = pid
@@ -68,7 +68,7 @@ func (ps *inactivePeerStore) backoff(c interfaces.NodeAddr) {
 }
 
 // get a random peer and remove it from the store
-// use this method for getting peers to dial
+// use this method for getting peers to dial.
 func (ps *inactivePeerStore) randomPop() (interfaces.NodeAddr, bool) {
 	ps.Lock()
 	defer ps.Unlock()
@@ -92,7 +92,7 @@ func (ps *inactivePeerStore) randomPop() (interfaces.NodeAddr, bool) {
 }
 
 // get a random peer. intended to provide random peers when a remote
-// peer performs a discovery dial against the local node
+// peer performs a discovery dial against the local node.
 func (ps *inactivePeerStore) random() (string, bool) {
 	ps.RLock()
 	defer ps.RUnlock()

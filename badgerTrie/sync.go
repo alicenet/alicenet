@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"fmt"
 
-	"github.com/MadBase/MadNet/errorz"
+	"github.com/alicenet/alicenet/errorz"
 	"github.com/dgraph-io/badger/v2"
 )
 

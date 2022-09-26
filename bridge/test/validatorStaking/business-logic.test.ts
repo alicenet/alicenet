@@ -1,3 +1,4 @@
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BigNumberish } from "ethers";
 import { ethers } from "hardhat";
@@ -12,14 +13,26 @@ describe("ValidatorStaking: Tests ValidatorStaking Business Logic methods", asyn
   let amount: BigNumberish;
   let validatorPool: ValidatorPoolMock;
 
-  beforeEach(async function () {
-    fixture = await getFixture(true, true);
+  async function deployFixture() {
+    const fixture = await getFixture(true, true);
     const [admin, notAdmin] = fixture.namedSigners;
-    adminSigner = await ethers.getSigner(admin.address);
-    notAdminSigner = await ethers.getSigner(notAdmin.address);
-    validatorPool = fixture.validatorPool as ValidatorPoolMock;
-    amount = await validatorPool.getStakeAmount();
+    const adminSigner = await ethers.getSigner(admin.address);
+    const notAdminSigner = await ethers.getSigner(notAdmin.address);
+    const validatorPool = fixture.validatorPool as ValidatorPoolMock;
+    const amount = await validatorPool.getStakeAmount();
     await fixture.aToken.approve(validatorPool.address, amount);
+    return {
+      fixture,
+      adminSigner,
+      notAdminSigner,
+      validatorPool,
+      amount,
+    };
+  }
+
+  beforeEach(async function () {
+    ({ fixture, adminSigner, notAdminSigner, validatorPool, amount } =
+      await loadFixture(deployFixture));
   });
 
   it("Should mint a token and sender should be the payer and owner", async function () {
@@ -130,30 +143,28 @@ describe("ValidatorStaking: Tests ValidatorStaking Business Logic methods", asyn
       `<text x='10' y='100'>Accumulator (Token): ${positionData.accumulatorToken.toString()}</text></svg>`;
 
     const tokenUriJson =
-      `{"name":"AliceNet Staked token for position #1", ` +
-      `"description":"This NFT represents a staked position on AliceNet.` +
-      `\\nThe owner of this NFT can modify or redeem the position.` +
-      `\\n Shares: ${positionData.shares.toString()}` +
-      `\\nFree After: ${positionData.freeAfter.toString()}` +
-      `\\nWithdraw Free After: ${positionData.withdrawFreeAfter.toString()}` +
-      `\\nAccumulator Eth: ${positionData.accumulatorEth.toString()}` +
-      `\\nAccumulator Token: ${positionData.accumulatorToken.toString()}` +
-      `\\nToken ID: ${tokenId.toString()}", ` +
-      `"image": "data:image/svg+xml;base64,${btoa(svg)}"}`;
+      `{"name":"AliceNet Staked Token For Position #${tokenId.toString()}",` +
+      ` "description":"This NFT represents a staked position on AliceNet. The owner of this NFT can modify or redeem the position.",` +
+      ` "attributes": [` +
+      `{"trait_type": "Shares", "value": "${positionData.shares.toString()}"},` +
+      `{"trait_type": "Free After", "value": "${positionData.freeAfter.toString()}"},` +
+      `{"trait_type": "Withdraw Free After", "value": "${positionData.withdrawFreeAfter.toString()}"},` +
+      `{"trait_type": "Accumulator Eth", "value": "${positionData.accumulatorEth.toString()}"},` +
+      `{"trait_type": "Accumulator Token", "value": "${positionData.accumulatorToken.toString()}"},` +
+      `{"trait_type": "Token ID", "value": "${tokenId.toString()}"}` +
+      `], "image_data": "data:image/svg+xml;base64,${btoa(svg)}"}`;
 
-    const expectedTokenUriData = `data:application/json;base64,${btoa(
-      tokenUriJson
-    )}`;
+    const expectedTokenUriData = `data:application/json;utf8,${tokenUriJson}`;
 
     const tokenUri = await fixture.validatorStaking.tokenURI(tokenId);
 
     const parsedJson = JSON.parse(
-      atob(tokenUri.replace("data:application/json;base64,", ""))
+      tokenUri.replace("data:application/json;utf8,", "")
     );
 
-    await expect(tokenUri).to.be.equal(expectedTokenUriData);
-    await expect(
-      atob(parsedJson.image.replace("data:image/svg+xml;base64,", ""))
+    expect(tokenUri).to.be.equal(expectedTokenUriData);
+    expect(
+      atob(parsedJson.image_data.replace("data:image/svg+xml;base64,", ""))
     ).to.be.equal(svg);
   });
 });

@@ -1,8 +1,8 @@
 package objs
 
 import (
-	"github.com/MadBase/MadNet/errorz"
-	"github.com/MadBase/MadNet/utils"
+	"github.com/alicenet/alicenet/errorz"
+	"github.com/alicenet/alicenet/utils"
 )
 
 // StagedBlockHeaderKey ...
@@ -12,13 +12,13 @@ type StagedBlockHeaderKey struct {
 }
 
 // UnmarshalBinary takes a byte slice and returns the corresponding
-// StagedBlockHeaderKey object
+// StagedBlockHeaderKey object.
 func (b *StagedBlockHeaderKey) UnmarshalBinary(data []byte) error {
 	if b == nil {
 		return errorz.ErrInvalid{}.New("StagedBlockHeaderKey.UnmarshalBinary; sbhk not initialized")
 	}
 	if len(data) != 6 {
-		return errorz.ErrInvalid{}.New("StagedBlockHeaderKey.UnmarshalBinary; incorrect data length")
+		return errorz.ErrInvalid{}.New("StagedBlockHeaderKey.UnmarshalBinary; incorrect state length")
 	}
 	b.Prefix = utils.CopySlice(data[0:2])
 	b.Key = utils.CopySlice(data[2:])
@@ -26,7 +26,7 @@ func (b *StagedBlockHeaderKey) UnmarshalBinary(data []byte) error {
 }
 
 // MarshalBinary takes the StagedBlockHeaderKey object and returns the canonical
-// byte slice
+// byte slice.
 func (b *StagedBlockHeaderKey) MarshalBinary() ([]byte, error) {
 	if b == nil {
 		return nil, errorz.ErrInvalid{}.New("StagedBlockHeaderKey.MarshalBinary; sbhk not initialized")

@@ -7,19 +7,18 @@ import (
 	"sync"
 	"time"
 
-	"github.com/MadBase/MadNet/consensus/appmock"
-	"github.com/MadBase/MadNet/consensus/db"
-	"github.com/MadBase/MadNet/consensus/objs"
-	"github.com/MadBase/MadNet/constants"
-	"github.com/MadBase/MadNet/crypto"
-	"github.com/MadBase/MadNet/dynamics"
-	"github.com/MadBase/MadNet/errorz"
-	"github.com/MadBase/MadNet/interfaces"
-	"github.com/MadBase/MadNet/ipc"
-	"github.com/MadBase/MadNet/logging"
-	"github.com/MadBase/MadNet/utils"
 	"github.com/dgraph-io/badger/v2"
 	"github.com/sirupsen/logrus"
+
+	"github.com/alicenet/alicenet/consensus/db"
+	"github.com/alicenet/alicenet/consensus/objs"
+	"github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/crypto"
+	"github.com/alicenet/alicenet/dynamics"
+	"github.com/alicenet/alicenet/errorz"
+	"github.com/alicenet/alicenet/interfaces"
+	"github.com/alicenet/alicenet/logging"
+	"github.com/alicenet/alicenet/utils"
 )
 
 // Todo: Retry logic on snapshot submission; this will cause deadlock
@@ -43,14 +42,13 @@ type Handlers struct {
 	logger      *logrus.Logger
 	ethAcct     []byte
 	ethPubk     []byte
-	appHandler  appmock.Application
+	appHandler  interfaces.Application
 	storage     dynamics.StorageGetter
 	ReceiveLock chan interfaces.Lockable
-	ipcServer   *ipc.Server
 }
 
-// Init creates all fields and binds external services
-func (ah *Handlers) Init(chainID uint32, database *db.Database, secret []byte, appHandler appmock.Application, ethPubk []byte, storage dynamics.StorageGetter, ipcs *ipc.Server) {
+// Init creates all fields and binds external services.
+func (ah *Handlers) Init(chainID uint32, database *db.Database, secret []byte, appHandler interfaces.Application, ethPubk []byte, storage dynamics.StorageGetter) {
 	ctx := context.Background()
 	subCtx, cancelFunc := context.WithCancel(ctx)
 	ah.ctx = subCtx
@@ -64,10 +62,9 @@ func (ah *Handlers) Init(chainID uint32, database *db.Database, secret []byte, a
 	ah.ethAcct = crypto.GetAccount(ethPubk)
 	ah.ReceiveLock = make(chan interfaces.Lockable)
 	ah.storage = storage
-	ah.ipcServer = ipcs
 }
 
-// Close shuts down all workers
+// Close shuts down all workers.
 func (ah *Handlers) Close() {
 	ah.closeOnce.Do(func() {
 		ah.cancelFunc()
@@ -85,7 +82,7 @@ func (ah *Handlers) getLock() (interfaces.Lockable, bool) {
 
 // AddValidatorSet adds a validator set to the db
 // This function also creates the first block and initializes
-// the genesis state when the first validator set is written
+// the genesis state when the first validator set is written.
 func (ah *Handlers) AddValidatorSet(v *objs.ValidatorSet) error {
 	mutex, ok := ah.getLock()
 	if !ok {
@@ -95,7 +92,7 @@ func (ah *Handlers) AddValidatorSet(v *objs.ValidatorSet) error {
 	defer mutex.Unlock()
 	return ah.database.Update(func(txn *badger.Txn) error {
 		// Checking if we can exit earlier (mainly when reconstructing the chain
-		// from ethereum data)
+		// from ethereum state)
 		{
 			height := uint32(1)
 			if v.NotBefore >= 1 {
@@ -147,7 +144,7 @@ func (ah *Handlers) AddValidatorSet(v *objs.ValidatorSet) error {
 // AddValidatorSetEdgecase adds a validator set to the db if we have the
 // expected block at the height 'v.NotBefore-1' (e.g syncing from the ethereum
 // data). Otherwise, it will mark the change to happen in the future once we
-// have the required block
+// have the required block.
 func (ah *Handlers) AddValidatorSetEdgecase(txn *badger.Txn, v *objs.ValidatorSet) error {
 	bh, err := ah.database.GetCommittedBlockHeader(txn, v.NotBefore-1)
 	if err != nil {
@@ -183,23 +180,30 @@ func (ah *Handlers) AddValidatorSetEdgecase(txn *badger.Txn, v *objs.ValidatorSe
 	return nil
 }
 
-// AddSnapshot stores a snapshot to the database
+// AddSnapshot stores a snapshot to the database.
 func (ah *Handlers) AddSnapshot(bh *objs.BlockHeader, safeToProceedConsensus bool) error {
-	ah.logger.Debugf("inside adminHandler.AddSnapshot")
+	logger := ah.logger.WithFields(
+		logrus.Fields{
+			"method":                 "AddSnapshot",
+			"snapshotHeight":         bh.BClaims.Height,
+			"safeToProceedConsensus": safeToProceedConsensus,
+		},
+	)
 	mutex, ok := ah.getLock()
 	if !ok {
 		return errors.New("could not get adminHandler lock")
 	}
 	mutex.Lock()
 	defer mutex.Unlock()
+	logger.Info("Saving a received snapshot into the database")
 	err := ah.database.Update(func(txn *badger.Txn) error {
 		safeToProceed, err := ah.database.GetSafeToProceed(txn, bh.BClaims.Height+1)
 		if err != nil {
 			utils.DebugTrace(ah.logger, err)
 			return err
 		}
+		logger.Debug("Checking if is safe to proceed")
 		if !safeToProceed {
-			ah.logger.Debugf("Did validators change in the previous epoch:%v Setting is safe to proceed for height %d to: %v", !safeToProceedConsensus, bh.BClaims.Height+1, safeToProceedConsensus)
 			// set that it's safe to proceed to the next block
 			if err := ah.database.SetSafeToProceed(txn, bh.BClaims.Height+1, safeToProceedConsensus); err != nil {
 				utils.DebugTrace(ah.logger, err)
@@ -219,7 +223,7 @@ func (ah *Handlers) AddSnapshot(bh *objs.BlockHeader, safeToProceedConsensus boo
 		utils.DebugTrace(ah.logger, err)
 		return err
 	}
-	ah.logger.Debugf("successfully saved state on adminHandler.AddSnapshot")
+	logger.Debug("successfully saved snapshot")
 	return nil
 }
 
@@ -245,21 +249,21 @@ func (ah *Handlers) UpdateDynamicStorage(txn *badger.Txn, key, value string, epo
 	return nil
 }
 
-// IsInitialized returns if the database has been initialized yet
+// IsInitialized returns if the database has been initialized yet.
 func (ah *Handlers) IsInitialized() bool {
 	ah.RLock()
 	defer ah.RUnlock()
 	return ah.isInit
 }
 
-// IsSynchronized returns if the ethereum BC has been/is synchronized
+// IsSynchronized returns if the ethereum BC has been/is synchronized.
 func (ah *Handlers) IsSynchronized() bool {
 	ah.RLock()
 	defer ah.RUnlock()
 	return ah.isSync
 }
 
-// SetSynchronized allows the BC monitor to set the sync state for ethereum
+// SetSynchronized allows the BC monitor to set the sync state for ethereum.
 func (ah *Handlers) SetSynchronized(v bool) {
 	ah.Lock()
 	defer ah.Unlock()
@@ -268,14 +272,15 @@ func (ah *Handlers) SetSynchronized(v bool) {
 
 // RegisterSnapshotCallback allows a callback to be registered that will be called on snapshot blocks being
 // added to the local db.
-func (ah *Handlers) RegisterSnapshotCallback(fn func(bh *objs.BlockHeader) error) {
+func (ah *Handlers) RegisterSnapshotCallback(fn func(bh *objs.BlockHeader, numOfValidators, validatorIndex int) error) {
 	wrapper := func(v []byte) error {
 		bh := &objs.BlockHeader{}
 		err := bh.UnmarshalBinary(v)
 		if err != nil {
 			return err
 		}
-		isValidator := false
+		validatorIndex := -1
+		numOfValidators := 0
 		var syncToBH, maxBHSeen *objs.BlockHeader
 		err = ah.database.View(func(txn *badger.Txn) error {
 			vs, err := ah.database.GetValidatorSet(txn, bh.BClaims.Height)
@@ -289,7 +294,10 @@ func (ah *Handlers) RegisterSnapshotCallback(fn func(bh *objs.BlockHeader) error
 			for i := 0; i < len(vs.Validators); i++ {
 				val := vs.Validators[i]
 				if bytes.Equal(val.VAddr, os.VAddr) {
-					isValidator = true
+					// the validator`s index will be used on the snapshots smart contract to decide
+					// if a validator was elected or not to do the snapshot.
+					validatorIndex = i
+					numOfValidators = len(vs.Validators)
 					break
 				}
 			}
@@ -300,14 +308,14 @@ func (ah *Handlers) RegisterSnapshotCallback(fn func(bh *objs.BlockHeader) error
 		if err != nil {
 			return err
 		}
-		if !isValidator {
+		if validatorIndex == -1 {
 			return nil
 		}
 		if maxBHSeen.BClaims.Height-syncToBH.BClaims.Height >= constants.EpochLength {
 			return nil
 		}
 		if bh.BClaims.Height%constants.EpochLength == 0 {
-			return fn(bh)
+			return fn(bh, numOfValidators, validatorIndex)
 		}
 		return nil
 	}
@@ -315,7 +323,7 @@ func (ah *Handlers) RegisterSnapshotCallback(fn func(bh *objs.BlockHeader) error
 }
 
 // AddPrivateKey stores a private key from an EthDKG run into an encrypted
-// keystore in the DB
+// keystore in the DB.
 func (ah *Handlers) AddPrivateKey(pk []byte, curveSpec constants.CurveSpec) error {
 	mutex, ok := ah.getLock()
 	if !ok {
@@ -382,7 +390,7 @@ func (ah *Handlers) AddPrivateKey(pk []byte, curveSpec constants.CurveSpec) erro
 	return nil
 }
 
-// GetPrivK returns an decrypted private key from an EthDKG run to the caller
+// GetPrivK returns an decrypted private key from an EthDKG run to the caller.
 func (ah *Handlers) GetPrivK(name []byte) ([]byte, error) {
 	var privk []byte
 	err := ah.database.View(func(txn *badger.Txn) error {
@@ -404,7 +412,7 @@ func (ah *Handlers) GetPrivK(name []byte) ([]byte, error) {
 }
 
 // GetKey allows the admin handler to act as a key resolver for decrypting
-// stored private keys
+// stored private keys.
 func (ah *Handlers) GetKey(kid []byte) ([]byte, error) {
 	out := make([]byte, len(ah.secret))
 	copy(out[:], ah.secret)
@@ -412,7 +420,7 @@ func (ah *Handlers) GetKey(kid []byte) ([]byte, error) {
 }
 
 // InitializationMonitor polls the database for the existence of a snapshot
-// It sets IsInitialized when one is found and returns
+// It sets IsInitialized when one is found and returns.
 func (ah *Handlers) InitializationMonitor(closeChan <-chan struct{}) {
 	ah.logger.Debug("InitializationMonitor loop starting")
 	fn := func() {
@@ -507,7 +515,7 @@ func (ah *Handlers) epochBoundaryValidator(txn *badger.Txn, v *objs.ValidatorSet
 	return nil
 }
 
-// Re-Initializes our own Round State object
+// Re-Initializes our own Round State object.
 func (ah *Handlers) initOwnRoundState(txn *badger.Txn, v *objs.ValidatorSet, rcert *objs.RCert) error {
 	rs, err := ah.database.GetCurrentRoundState(txn, ah.ethAcct)
 	if err != nil {
@@ -532,7 +540,7 @@ func (ah *Handlers) initOwnRoundState(txn *badger.Txn, v *objs.ValidatorSet, rce
 	return nil
 }
 
-// Re-Initializes all the validators Round State objects
+// Re-Initializes all the validators Round State objects.
 func (ah *Handlers) initValidatorsRoundState(txn *badger.Txn, v *objs.ValidatorSet, rcert *objs.RCert) (bool, error) {
 	isValidator := false
 	for i := 0; i < len(v.Validators); i++ {
@@ -567,7 +575,7 @@ func (ah *Handlers) initValidatorsRoundState(txn *badger.Txn, v *objs.ValidatorS
 	return isValidator, nil
 }
 
-// Init the validators DB and objects
+// Init the validators DB and objects.
 func (ah *Handlers) initDB(txn *badger.Txn, v *objs.ValidatorSet) (*objs.BlockHeader, error) {
 	stateRoot, err := ah.appHandler.ApplyState(txn, ah.chainID, 1, nil)
 	if err != nil {

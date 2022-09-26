@@ -1,7 +1,9 @@
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
+import { expect } from "chai";
+import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
 import {
   BaseTokensFixture,
-  expect,
   getBaseTokensFixture,
   mineBlocks,
 } from "../../setup";
@@ -10,7 +12,7 @@ describe("PublicStaking: Reentrancy tests", async () => {
   let fixture: BaseTokensFixture;
 
   beforeEach(async function () {
-    fixture = await getBaseTokensFixture();
+    fixture = await loadFixture(getBaseTokensFixture);
   });
 
   it("Should not allow reentrancy in the CollectEth", async function () {
@@ -145,9 +147,17 @@ describe("PublicStaking: Reentrancy tests", async () => {
     const tokenID = 1;
     await reentrantLoopBurnAccount.setTokenID(tokenID);
 
-    await expect(reentrantLoopBurnAccount.burn(tokenID)).to.be.rejectedWith(
-      "EthSafeTransfer: Transfer failed."
+    const reentrantLoopBurnAccountAddress = reentrantLoopBurnAccount.address;
+    const expectedEthTransferAmount = BigNumber.from(
+      ethers.utils.parseEther("500")
     );
+    await expect(reentrantLoopBurnAccount.burn(tokenID))
+      .to.be.revertedWithCustomError(fixture.publicStaking, "EthTransferFailed")
+      .withArgs(
+        fixture.publicStaking.address,
+        reentrantLoopBurnAccountAddress,
+        expectedEthTransferAmount
+      );
   });
 
   it("Should not allow reentrancy when burning a position with finite loop", async function () {
@@ -179,10 +189,18 @@ describe("PublicStaking: Reentrancy tests", async () => {
     });
     const tokenID = 1;
     await reentrantFiniteBurnAccount.setTokenID(tokenID);
-
-    await expect(reentrantFiniteBurnAccount.burn(tokenID)).to.be.rejectedWith(
-      "EthSafeTransfer: Transfer failed."
+    const reentrantFiniteBurnAccountAddress =
+      reentrantFiniteBurnAccount.address;
+    const expectedEthTransferAmount = BigNumber.from(
+      ethers.utils.parseEther("500")
     );
+    await expect(reentrantFiniteBurnAccount.burn(tokenID))
+      .to.be.revertedWithCustomError(fixture.publicStaking, "EthTransferFailed")
+      .withArgs(
+        fixture.publicStaking.address,
+        reentrantFiniteBurnAccountAddress,
+        expectedEthTransferAmount
+      );
   });
 
   it("Should not allow burn reentrancy after transferring a NFT position", async function () {
@@ -218,13 +236,22 @@ describe("PublicStaking: Reentrancy tests", async () => {
 
     const [adminSigner] = await ethers.getSigners();
 
+    const expectedEthTransferAmount = BigNumber.from(
+      ethers.utils.parseEther("500")
+    );
     await expect(
       fixture.publicStaking["safeTransferFrom(address,address,uint256)"](
         adminSigner.address,
         reentrantLoopBurnERC721ReceiverAccount.address,
         tokenID
       )
-    ).to.be.rejectedWith("EthSafeTransfer: Transfer failed.");
+    )
+      .to.be.revertedWithCustomError(fixture.publicStaking, "EthTransferFailed")
+      .withArgs(
+        fixture.publicStaking.address,
+        reentrantLoopBurnERC721ReceiverAccount.address,
+        expectedEthTransferAmount
+      );
   });
 
   it("Should not allow burn reentrancy after transferring a NFT position finite loop", async function () {
@@ -262,13 +289,22 @@ describe("PublicStaking: Reentrancy tests", async () => {
 
     const [adminSigner] = await ethers.getSigners();
 
+    const expectedEthTransferAmount = BigNumber.from(
+      ethers.utils.parseEther("500")
+    );
     await expect(
       fixture.publicStaking["safeTransferFrom(address,address,uint256)"](
         adminSigner.address,
         reentrantFiniteBurnERC721ReceiverAccount.address,
         tokenID
       )
-    ).to.be.rejectedWith("EthSafeTransfer: Transfer failed.");
+    )
+      .to.be.revertedWithCustomError(fixture.publicStaking, "EthTransferFailed")
+      .withArgs(
+        fixture.publicStaking.address,
+        reentrantFiniteBurnERC721ReceiverAccount.address,
+        expectedEthTransferAmount
+      );
   });
 
   it("Should not allow collect reentrancy after transferring a NFT position", async function () {

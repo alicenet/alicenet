@@ -5,29 +5,27 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/MadBase/MadNet/constants"
-	"github.com/MadBase/MadNet/crypto"
-	"github.com/MadBase/MadNet/errorz"
-
-	"github.com/MadBase/MadNet/consensus/appmock"
-
-	"github.com/MadBase/MadNet/consensus/objs"
-	"github.com/MadBase/MadNet/interfaces"
-	"github.com/MadBase/MadNet/logging"
-	"github.com/MadBase/MadNet/utils"
 	"github.com/dgraph-io/badger/v2"
 	"github.com/sirupsen/logrus"
+
+	"github.com/alicenet/alicenet/consensus/objs"
+	"github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/crypto"
+	"github.com/alicenet/alicenet/errorz"
+	"github.com/alicenet/alicenet/interfaces"
+	"github.com/alicenet/alicenet/logging"
+	"github.com/alicenet/alicenet/utils"
 )
 
 type DMan struct {
 	downloadActor *RootActor
 	database      databaseView
-	appHandler    appmock.Application
+	appHandler    interfaces.Application
 	bnVal         *crypto.BNGroupValidator
 	logger        *logrus.Logger
 }
 
-func (dm *DMan) Init(database databaseView, app appmock.Application, reqBus reqBusView) {
+func (dm *DMan) Init(database databaseView, app interfaces.Application, reqBus reqBusView) {
 	dm.logger = logging.GetLogger(constants.LoggerDMan)
 	dm.database = database
 	dm.appHandler = app
@@ -38,7 +36,9 @@ func (dm *DMan) Init(database databaseView, app appmock.Application, reqBus reqB
 		database,
 	}
 	dm.downloadActor = &RootActor{}
-	dm.downloadActor.Init(dm.logger, proxy)
+	if err := dm.downloadActor.Init(dm.logger, proxy); err != nil {
+		dm.logger.Panic(err)
+	}
 }
 
 func (dm *DMan) Start() {
@@ -152,8 +152,8 @@ func (dm *DMan) GetTxs(txn *badger.Txn, height, round uint32, txLst [][]byte) ([
 // SyncOneBH syncs one blockheader and its transactions
 // the initialization of prevBH from SyncToBH implies SyncToBH must be updated to
 // the canonical bh before we begin unless we are syncing from a height gt the
-// canonical bh
-func (dm *DMan) SyncOneBH(txn *badger.Txn, syncToBH *objs.BlockHeader, maxBHSeen *objs.BlockHeader, validatorSet *objs.ValidatorSet) ([]interfaces.Transaction, *objs.BlockHeader, bool, error) {
+// canonical bh.
+func (dm *DMan) SyncOneBH(txn *badger.Txn, syncToBH, maxBHSeen *objs.BlockHeader, validatorSet *objs.ValidatorSet) ([]interfaces.Transaction, *objs.BlockHeader, bool, error) {
 	targetHeight := syncToBH.BClaims.Height + 1
 
 	currentHeight := dm.downloadActor.ba.getHeight()

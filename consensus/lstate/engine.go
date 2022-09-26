@@ -5,22 +5,22 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
 
-	"github.com/MadBase/MadNet/consensus/admin"
-	"github.com/MadBase/MadNet/consensus/appmock"
-	"github.com/MadBase/MadNet/consensus/db"
-	"github.com/MadBase/MadNet/consensus/dman"
-	"github.com/MadBase/MadNet/consensus/objs"
-	"github.com/MadBase/MadNet/consensus/request"
-	"github.com/MadBase/MadNet/constants"
-	"github.com/MadBase/MadNet/crypto"
-	"github.com/MadBase/MadNet/dynamics"
-	"github.com/MadBase/MadNet/errorz"
-	"github.com/MadBase/MadNet/logging"
-	"github.com/MadBase/MadNet/utils"
 	"github.com/dgraph-io/badger/v2"
 	"github.com/sirupsen/logrus"
+
+	"github.com/alicenet/alicenet/consensus/admin"
+	"github.com/alicenet/alicenet/consensus/db"
+	"github.com/alicenet/alicenet/consensus/dman"
+	"github.com/alicenet/alicenet/consensus/objs"
+	"github.com/alicenet/alicenet/consensus/request"
+	"github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/crypto"
+	"github.com/alicenet/alicenet/dynamics"
+	"github.com/alicenet/alicenet/errorz"
+	"github.com/alicenet/alicenet/interfaces"
+	"github.com/alicenet/alicenet/logging"
+	"github.com/alicenet/alicenet/utils"
 )
 
 // Engine is the consensus algorithm parent object.
@@ -32,7 +32,7 @@ type Engine struct {
 	sstore   *Store
 
 	RequestBus *request.Client
-	appHandler appmock.Application
+	appHandler interfaces.Application
 
 	logger     *logrus.Logger
 	secpSigner *crypto.Secp256k1Signer
@@ -47,12 +47,11 @@ type Engine struct {
 
 	storage dynamics.StorageGetter
 
-	dm           *dman.DMan
-	notSafeTimer time.Time
+	dm *dman.DMan
 }
 
-// Init will initialize the Consensus Engine and all sub modules
-func (ce *Engine) Init(database *db.Database, dm *dman.DMan, app appmock.Application, signer *crypto.Secp256k1Signer, adminHandlers *admin.Handlers, publicKey []byte, rbusClient *request.Client, storage dynamics.StorageGetter) {
+// Init will initialize the Consensus Engine and all sub modules.
+func (ce *Engine) Init(database *db.Database, dm *dman.DMan, app interfaces.Application, signer *crypto.Secp256k1Signer, adminHandlers *admin.Handlers, publicKey []byte, rbusClient *request.Client, storage dynamics.StorageGetter) {
 	background := context.Background()
 	ctx, cf := context.WithCancel(background)
 	ce.cancelCtx = cf
@@ -78,7 +77,7 @@ func (ce *Engine) Init(database *db.Database, dm *dman.DMan, app appmock.Applica
 	ce.fastSync.Init(database, storage)
 }
 
-// Status updates the status of the consensus engine
+// Status updates the status of the consensus engine.
 func (ce *Engine) Status(status map[string]interface{}) (map[string]interface{}, error) {
 	var rs *RoundStates
 	err := ce.database.View(func(txn *badger.Txn) error {
@@ -108,7 +107,7 @@ func (ce *Engine) Status(status map[string]interface{}) (map[string]interface{},
 	return status, nil
 }
 
-// UpdateLocalState updates the local state of the consensus engine
+// UpdateLocalState updates the local state of the consensus engine.
 func (ce *Engine) UpdateLocalState() (bool, error) {
 	isSync := true
 	updateLocalState := true
@@ -126,13 +125,10 @@ func (ce *Engine) UpdateLocalState() (bool, error) {
 				return err
 			}
 			if !safe {
-				bh, _ := ce.database.GetCommittedBlockHeader(txn, bHeight)
-				ce.database.SetCommittedBlockHeader(txn, bh)
-				utils.DebugTrace(ce.logger, nil, "not safe")
+				utils.DebugTrace(ce.logger, nil, "Waiting snapshot completion")
 				updateLocalState = false
 			} else {
-				// if it's safe to proceed, we update ownState with the latest
-				// data
+				// if it's safe to proceed, we update ownState with the latest state
 				ownState, err := ce.database.GetOwnState(txn)
 				if err != nil {
 					return err
@@ -221,23 +217,23 @@ func (ce *Engine) UpdateLocalState() (bool, error) {
 // This changes state for local node
 // order of ops is as follows:
 //
-//  check for height jump
-//  check for dead block round round jump
-//  follow dead block round next round if signed by self
-//  follow f+1 other dead block round next round messages
-//  do own next height if in dead block round
-//  follow a next height from any round in the same height as us
-//      this is safe due to how we count next heights to filter
-//      dead block round
-//  follow a round jump to any non dead block round
-//  do a possible next round in same round
-//  do a possible precommit/pendingnext in same round
-//  do a possible precommit/pendingnext in same round
-//  do a possible prevote/pendingprecommit in same round
-//  do a possible prevotenil/pendingprecommit in same round
-//  do a possible pending prevote
-//  do a possible do a proposal if not already proposed and is proposer
-//  do nothing if not any of above is true
+//	check for height jump
+//	check for dead block round round jump
+//	follow dead block round next round if signed by self
+//	follow f+1 other dead block round next round messages
+//	do own next height if in dead block round
+//	follow a next height from any round in the same height as us
+//	    this is safe due to how we count next heights to filter
+//	    dead block round
+//	follow a round jump to any non dead block round
+//	do a possible next round in same round
+//	do a possible precommit/pendingnext in same round
+//	do a possible precommit/pendingnext in same round
+//	do a possible prevote/pendingprecommit in same round
+//	do a possible prevotenil/pendingprecommit in same round
+//	do a possible pending prevote
+//	do a possible do a proposal if not already proposed and is proposer
+//	do nothing if not any of above is true
 func (ce *Engine) updateLocalStateInternal(txn *badger.Txn, rs *RoundStates) (bool, error) {
 	os := rs.OwnRoundState()
 
@@ -497,7 +493,7 @@ func (ce *Engine) updateLocalStateInternal(txn *badger.Txn, rs *RoundStates) (bo
 	return true, nil
 }
 
-// Sync attempts to synchronize the local state of consensus engine
+// Sync attempts to synchronize the local state of consensus engine.
 func (ce *Engine) Sync() (bool, error) {
 	// see if sync is done
 	// if yes exit
@@ -634,7 +630,7 @@ func (ce *Engine) Sync() (bool, error) {
 
 // Updates the loaded objects with information that were not applied in the past
 // due to the lack of information (e.g a new validator set that was received for
-// a block that was not committed to the db yet)
+// a block that was not committed to the db yet).
 func (ce *Engine) updateLoadedObjects(txn *badger.Txn, vs *objs.ValidatorSet, ownState *objs.OwnState, ownValidatingState *objs.OwnValidatingState) (bool, error) {
 	ok := true
 	// Checks if we have a new validator set to be applied to this height

@@ -5,11 +5,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/MadBase/MadNet/consensus/objs"
-	"github.com/MadBase/MadNet/constants"
-	"github.com/MadBase/MadNet/utils"
 	"github.com/dgraph-io/badger/v2"
 	"github.com/sirupsen/logrus"
+
+	"github.com/alicenet/alicenet/consensus/objs"
+	"github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/utils"
 )
 
 type Txn struct {
@@ -56,8 +57,14 @@ func (db *rawDataBase) Sync() error {
 }
 
 func (db *rawDataBase) GarbageCollect() error {
-	db.db.RunValueLogGC(constants.BadgerDiscardRatio)
-	db.db.RunValueLogGC(constants.BadgerDiscardRatio)
+	err := db.db.RunValueLogGC(constants.BadgerDiscardRatio)
+	if utils.HandleBadgerErrors(err) != nil {
+		return err
+	}
+	err = db.db.RunValueLogGC(constants.BadgerDiscardRatio)
+	if utils.HandleBadgerErrors(err) != nil {
+		return err
+	}
 	return nil
 }
 
@@ -65,7 +72,7 @@ func (db *rawDataBase) DropPrefix(k []byte) error {
 	return db.db.DropPrefix(k)
 }
 
-// subscribe to prefix is used to form the proposal subscription
+// subscribe to prefix is used to form the proposal subscription.
 func (db *rawDataBase) subscribeToPrefix(ctx context.Context, prefix []byte, cb func([]byte) error) {
 	fn := func(kvs *badger.KVList) error {
 		for i := 0; i < len(kvs.Kv); i++ {
@@ -92,7 +99,7 @@ func (db *rawDataBase) getValue(txn *badger.Txn, key []byte) ([]byte, error) {
 	return utils.GetValue(txn, key)
 }
 
-func (db *rawDataBase) SetValue(txn *badger.Txn, key []byte, value []byte) error {
+func (db *rawDataBase) SetValue(txn *badger.Txn, key, value []byte) error {
 	return utils.SetValue(txn, key, value)
 }
 

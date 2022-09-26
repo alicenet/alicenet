@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/MadBase/MadNet/application/objs/uint256"
+	"github.com/alicenet/alicenet/application/objs/uint256"
 )
 
 func getTestingStruct() PaginationToken {
@@ -32,7 +32,6 @@ func TestUnMarshalInvalid(t *testing.T) {
 	if err := p.UnmarshalBinary(b); err == nil {
 		t.Fatal("Should raise an error when called with invalid LastPaginatedType")
 	}
-
 }
 
 func TestMarshalTransitivity(t *testing.T) {

@@ -3,12 +3,12 @@ package transport
 import (
 	"encoding/hex"
 
-	"github.com/MadBase/MadNet/crypto/secp256k1"
+	"github.com/alicenet/alicenet/crypto/secp256k1"
 )
 
 // NewTransportPrivateKey returns a new transport private key as a hex string.
 // This key is used for the creation of an authenticated and encrypted stream
-// of data between peers.
+// of state between peers.
 func NewTransportPrivateKey() (string, error) {
 	privateKey, err := newTransportPrivateKey()
 	if err != nil {

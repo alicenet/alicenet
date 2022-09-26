@@ -17,11 +17,13 @@ func (e *ErrConsensus) IsLocal() bool {
 	return e.isLocal
 }
 
+//nolint:errcheck
 func (e *ErrConsensus) Wrap(err error) *ErrConsensus {
 	e.Err.Wrap(err) // call method of embedded Err
 	return e        // but return own reference to enable chaining
 }
 
+//nolint:errcheck
 func (e *ErrConsensus) Trace(i ...interface{}) *ErrConsensus {
 	e.Err.trace(1, i...) // call method of embedded Err
 	return e             // but return own reference to enable chaining

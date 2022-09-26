@@ -4,11 +4,10 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/MadBase/MadNet/crypto"
+	"github.com/alicenet/alicenet/crypto"
 )
 
-type mockKeyResolver struct {
-}
+type mockKeyResolver struct{}
 
 func (m *mockKeyResolver) GetKey(kid []byte) ([]byte, error) {
 	_ = kid

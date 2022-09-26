@@ -8,35 +8,38 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/MadBase/MadNet/application"
-	"github.com/MadBase/MadNet/application/objs"
-	"github.com/MadBase/MadNet/application/objs/uint256"
-	"github.com/MadBase/MadNet/consensus/db"
-	"github.com/MadBase/MadNet/consensus/gossip"
-	"github.com/MadBase/MadNet/consensus/lstate"
-	"github.com/MadBase/MadNet/constants"
-	"github.com/MadBase/MadNet/crypto"
-	"github.com/MadBase/MadNet/dynamics"
-	"github.com/MadBase/MadNet/logging"
-	pb "github.com/MadBase/MadNet/proto"
-	"github.com/MadBase/MadNet/utils"
 	"github.com/dgraph-io/badger/v2"
 	"github.com/sirupsen/logrus"
+
+	"github.com/alicenet/alicenet/application"
+	"github.com/alicenet/alicenet/application/objs"
+	"github.com/alicenet/alicenet/application/objs/uint256"
+	"github.com/alicenet/alicenet/consensus/db"
+	"github.com/alicenet/alicenet/consensus/gossip"
+	"github.com/alicenet/alicenet/consensus/lstate"
+	"github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/crypto"
+	"github.com/alicenet/alicenet/dynamics"
+	"github.com/alicenet/alicenet/logging"
+	pb "github.com/alicenet/alicenet/proto"
+	"github.com/alicenet/alicenet/utils"
 )
 
-var _ pb.LocalStateGetBlockHeaderHandler = (*Handlers)(nil)
-var _ pb.LocalStateGetPendingTransactionHandler = (*Handlers)(nil)
-var _ pb.LocalStateGetRoundStateForValidatorHandler = (*Handlers)(nil)
-var _ pb.LocalStateGetValidatorSetHandler = (*Handlers)(nil)
-var _ pb.LocalStateGetBlockNumberHandler = (*Handlers)(nil)
-var _ pb.LocalStateGetChainIDHandler = (*Handlers)(nil)
-var _ pb.LocalStateGetEpochNumberHandler = (*Handlers)(nil)
-var _ pb.LocalStateSendTransactionHandler = (*Handlers)(nil)
-var _ pb.LocalStateGetDataHandler = (*Handlers)(nil)
-var _ pb.LocalStateGetMinedTransactionHandler = (*Handlers)(nil)
-var _ pb.LocalStateGetValueForOwnerHandler = (*Handlers)(nil)
-var _ pb.LocalStateIterateNameSpaceHandler = (*Handlers)(nil)
-var _ pb.LocalStateGetUTXOHandler = (*Handlers)(nil)
+var (
+	_ pb.LocalStateGetBlockHeaderHandler            = (*Handlers)(nil)
+	_ pb.LocalStateGetPendingTransactionHandler     = (*Handlers)(nil)
+	_ pb.LocalStateGetRoundStateForValidatorHandler = (*Handlers)(nil)
+	_ pb.LocalStateGetValidatorSetHandler           = (*Handlers)(nil)
+	_ pb.LocalStateGetBlockNumberHandler            = (*Handlers)(nil)
+	_ pb.LocalStateGetChainIDHandler                = (*Handlers)(nil)
+	_ pb.LocalStateGetEpochNumberHandler            = (*Handlers)(nil)
+	_ pb.LocalStateSendTransactionHandler           = (*Handlers)(nil)
+	_ pb.LocalStateGetDataHandler                   = (*Handlers)(nil)
+	_ pb.LocalStateGetMinedTransactionHandler       = (*Handlers)(nil)
+	_ pb.LocalStateGetValueForOwnerHandler          = (*Handlers)(nil)
+	_ pb.LocalStateIterateNameSpaceHandler          = (*Handlers)(nil)
+	_ pb.LocalStateGetUTXOHandler                   = (*Handlers)(nil)
+)
 
 func (srpc *Handlers) notReady() error {
 	if srpc.safe() {
@@ -73,7 +76,7 @@ type Handlers struct {
 	safecount   uint32
 }
 
-// Init will initialize the Consensus Engine and all sub modules
+// Init will initialize the Consensus Engine and all sub modules.
 func (srpc *Handlers) Init(database *db.Database, app *application.Application, gh *gossip.Handlers, pubk []byte, safe func() bool, storage dynamics.StorageGetter) {
 	background := context.Background()
 	ctx, cf := context.WithCancel(background)
@@ -102,10 +105,7 @@ func (srpc *Handlers) Stop() {
 }
 
 func (srpc *Handlers) safe() bool {
-	if srpc.safecount == 0 {
-		return false
-	}
-	return true
+	return srpc.safecount != 0
 }
 
 func (srpc *Handlers) SafeMonitor() {
@@ -124,13 +124,13 @@ func (srpc *Handlers) SafeMonitor() {
 				srpc.safecount++
 			}
 		}
-		if srpc.safecount > 7 { //todo:HUNTER MOVE INTO SYNCHRONIZER FOR ERROR PROPOGATION
+		if srpc.safecount > 7 { // todo:HUNTER MOVE INTO SYNCHRONIZER FOR ERROR PROPAGATION
 			panic("localRPC handler impossible state")
 		}
 	}
 }
 
-// HandleLocalStateGetPendingTransaction handles the get pending tx request
+// HandleLocalStateGetPendingTransaction handles the get pending tx request.
 func (srpc *Handlers) HandleLocalStateGetPendingTransaction(ctx context.Context, req *pb.PendingTransactionRequest) (*pb.PendingTransactionResponse, error) {
 	if err := srpc.notReady(); err != nil {
 		return nil, err
@@ -160,7 +160,7 @@ func (srpc *Handlers) HandleLocalStateGetPendingTransaction(ctx context.Context,
 		if len(missing) == 0 && len(txi) == 1 {
 			tmp, ok := txi[0].(*objs.Tx)
 			if !ok {
-				return errors.New("server fault - data invalid for requested value")
+				return errors.New("server fault - state invalid for requested value")
 			}
 			tx = tmp
 		} else {
@@ -593,7 +593,7 @@ func (srpc *Handlers) HandleLocalStateGetMinedTransaction(ctx context.Context, r
 		if len(missing) == 0 && len(txi) == 1 {
 			tmp, ok := txi[0].(*objs.Tx)
 			if !ok {
-				return errors.New("server fault - data invalid for requested value")
+				return errors.New("server fault - state invalid for requested value")
 			}
 			tx = tmp
 		} else {
@@ -731,16 +731,10 @@ func (srpc *Handlers) HandleLocalStateGetFees(ctx context.Context, req *pb.FeeRe
 	if err != nil {
 		return nil, err
 	}
-	asFee := sg.GetAtomicSwapFee()
-	asfs, err := bigIntToString(asFee)
-	if err != nil {
-		return nil, err
-	}
 	result := &pb.FeeResponse{
 		MinTxFee:      txfs,
 		ValueStoreFee: vsfs,
 		DataStoreFee:  dsfs,
-		AtomicSwapFee: asfs,
 	}
 
 	return result, nil

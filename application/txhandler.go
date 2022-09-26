@@ -2,24 +2,25 @@ package application
 
 import (
 	"context"
+	"strings"
 	"time"
 
-	"github.com/MadBase/MadNet/errorz"
-	"github.com/MadBase/MadNet/utils"
-
-	"github.com/MadBase/MadNet/application/deposit"
-	"github.com/MadBase/MadNet/application/minedtx"
-	"github.com/MadBase/MadNet/application/objs"
-	"github.com/MadBase/MadNet/application/objs/uint256"
-	"github.com/MadBase/MadNet/application/pendingtx"
-	"github.com/MadBase/MadNet/application/utxohandler"
-	"github.com/MadBase/MadNet/application/wrapper"
-	trie "github.com/MadBase/MadNet/badgerTrie"
-	consensusdb "github.com/MadBase/MadNet/consensus/db"
-	"github.com/MadBase/MadNet/constants"
-	"github.com/MadBase/MadNet/constants/dbprefix"
 	"github.com/dgraph-io/badger/v2"
 	"github.com/sirupsen/logrus"
+
+	"github.com/alicenet/alicenet/application/deposit"
+	"github.com/alicenet/alicenet/application/minedtx"
+	"github.com/alicenet/alicenet/application/objs"
+	"github.com/alicenet/alicenet/application/objs/uint256"
+	"github.com/alicenet/alicenet/application/pendingtx"
+	"github.com/alicenet/alicenet/application/utxohandler"
+	"github.com/alicenet/alicenet/application/wrapper"
+	trie "github.com/alicenet/alicenet/badgerTrie"
+	consensusdb "github.com/alicenet/alicenet/consensus/db"
+	"github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/constants/dbprefix"
+	"github.com/alicenet/alicenet/errorz"
+	"github.com/alicenet/alicenet/utils"
 )
 
 // TODO SET UP PRUNING
@@ -39,7 +40,12 @@ func (tm *txHandler) GetTxsForGossip(txnState *badger.Txn, currentHeight uint32)
 	ctx := context.Background()
 	subCtx, cf := context.WithTimeout(ctx, 100*time.Millisecond)
 	defer cf()
-	utxos, err := tm.pTxHdlr.GetTxsForGossip(txnState, subCtx, currentHeight, tm.storage.GetMaxBytes())
+	maxBytes, err := tm.storage.GetMaxBytes()
+	if err != nil {
+		utils.DebugTrace(tm.logger, err)
+		return nil, err
+	}
+	utxos, err := tm.pTxHdlr.GetTxsForGossip(txnState, subCtx, currentHeight, maxBytes)
 	if err != nil {
 		utils.DebugTrace(tm.logger, err)
 		return nil, err
@@ -65,7 +71,7 @@ func (tm *txHandler) IsValid(txn *badger.Txn, tx []*objs.Tx, currentHeight uint3
 	return vout, nil
 }
 
-func (tm *txHandler) ApplyState(txn *badger.Txn, chainID uint32, height uint32, tx []*objs.Tx) ([]byte, error) {
+func (tm *txHandler) ApplyState(txn *badger.Txn, chainID, height uint32, tx []*objs.Tx) ([]byte, error) {
 	if len(tx) == 0 {
 		hsh, err := tm.uHdlr.ApplyState(txn, tx, height)
 		if err != nil {
@@ -109,7 +115,7 @@ func (tm *txHandler) ApplyState(txn *badger.Txn, chainID uint32, height uint32, 
 	return rootHash, nil
 }
 
-func (tm *txHandler) GetTxsForProposal(txn *badger.Txn, chainID uint32, height uint32, curveSpec constants.CurveSpec, signer objs.Signer, maxBytes uint32) (objs.TxVec, []byte, error) {
+func (tm *txHandler) GetTxsForProposal(txn *badger.Txn, chainID, height uint32, curveSpec constants.CurveSpec, signer objs.Signer, maxBytes uint32) (objs.TxVec, []byte, error) {
 	ctx := context.Background()
 	subCtx, cf := context.WithTimeout(ctx, 1*time.Second)
 	defer cf()
@@ -136,8 +142,10 @@ func (tm *txHandler) GetTxsForProposal(txn *badger.Txn, chainID uint32, height u
 			return nil, nil, err
 		}
 		if err := tm.PendingTxAdd(txn, chainID, height, []*objs.Tx{tx}); err != nil {
-			utils.DebugTrace(tm.logger, err)
-			return nil, nil, err
+			if !strings.Contains(err.Error(), "duplicate") {
+				utils.DebugTrace(tm.logger, err)
+				return nil, nil, err
+			}
 		}
 	}
 	txs, _, err := tm.pTxHdlr.GetTxsForProposal(txn, subCtx, height, maxBytes, tx)
@@ -194,7 +202,7 @@ func (tm *txHandler) GetStateRootForProposal(txn *badger.Txn, tx []*objs.Tx) ([]
 //Data Getters/Setters/RPC methods//////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-func (tm *txHandler) PendingTxAdd(txn *badger.Txn, chainID uint32, height uint32, tx []*objs.Tx) error {
+func (tm *txHandler) PendingTxAdd(txn *badger.Txn, chainID, height uint32, tx []*objs.Tx) error {
 	txs := objs.TxVec(tx)
 	if err := txs.PreValidatePending(chainID); err != nil {
 		utils.DebugTrace(tm.logger, err)
@@ -383,7 +391,7 @@ func (tm *txHandler) GetHeightForTx(txn *badger.Txn, txHash []byte) (uint32, err
 	return tm.mTxHdlr.GetHeightForTx(txn, txHash)
 }
 
-func (tm *txHandler) StoreSnapShotNode(txn *badger.Txn, batch []byte, root []byte, layer int) ([][]byte, int, []trie.LeafNode, error) {
+func (tm *txHandler) StoreSnapShotNode(txn *badger.Txn, batch, root []byte, layer int) ([][]byte, int, []trie.LeafNode, error) {
 	return tm.uHdlr.StoreSnapShotNode(txn, batch, root, layer)
 }
 
@@ -395,7 +403,7 @@ func (tm *txHandler) GetSnapShotNode(txn *badger.Txn, height uint32, key []byte)
 	return tm.uHdlr.GetSnapShotNode(txn, height, key)
 }
 
-func (tm *txHandler) StoreSnapShotStateData(txn *badger.Txn, key []byte, value []byte, data []byte) error {
+func (tm *txHandler) StoreSnapShotStateData(txn *badger.Txn, key, value, data []byte) error {
 	return tm.uHdlr.StoreSnapShotStateData(txn, key, value, data)
 }
 

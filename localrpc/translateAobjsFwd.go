@@ -3,8 +3,8 @@ package localrpc
 import (
 	"errors"
 
-	from "github.com/MadBase/MadNet/application/objs"
-	to "github.com/MadBase/MadNet/proto"
+	from "github.com/alicenet/alicenet/application/objs"
+	to "github.com/alicenet/alicenet/proto"
 )
 
 func ForwardTranslateDataStore(f *from.DataStore) (*to.DataStore, error) {
@@ -85,39 +85,6 @@ func ForwardTranslateVSPreImage(f *from.VSPreImage) (*to.VSPreImage, error) {
 	return t, nil
 }
 
-func ForwardTranslateASPreImage(f *from.ASPreImage) (*to.ASPreImage, error) {
-	t := &to.ASPreImage{}
-	if f == nil {
-		return nil, errors.New("object of type ASPreImage should not be nil")
-	}
-	_, err := f.MarshalBinary()
-	if err != nil {
-		return nil, err
-	}
-	t.ChainID = f.ChainID
-	t.Exp = f.Exp
-	t.IssuedAt = f.IssuedAt
-	if f.Owner != nil {
-		ownerBytes, err := f.Owner.MarshalBinary()
-		if err != nil {
-			return nil, err
-		}
-		newOwner := ForwardTranslateByte(ownerBytes)
-
-		t.Owner = newOwner
-	}
-	t.TXOutIdx = f.TXOutIdx
-	t.Value, err = f.Value.MarshalString()
-	if err != nil {
-		return nil, err
-	}
-	t.Fee, err = f.Fee.MarshalString()
-	if err != nil {
-		return nil, err
-	}
-	return t, nil
-}
-
 func ForwardTranslateTXInLinker(f *from.TXInLinker) (*to.TXInLinker, error) {
 	t := &to.TXInLinker{}
 	if f == nil {
@@ -143,18 +110,6 @@ func ForwardTranslateTXOut(f *from.TXOut) (*to.TXOut, error) {
 	}
 
 	switch {
-	case f.HasAtomicSwap():
-		obj, err := f.AtomicSwap()
-		if err != nil {
-			return nil, err
-		}
-		newObj, err := ForwardTranslateAtomicSwap(obj)
-		if err != nil {
-			return nil, err
-		}
-		tt := &to.TXOut_AtomicSwap{AtomicSwap: newObj}
-		t := &to.TXOut{Utxo: tt}
-		return t, nil
 	case f.HasValueStore():
 		obj, err := f.ValueStore()
 		if err != nil {
@@ -211,25 +166,6 @@ func ForwardTranslateTx(f *from.Tx) (*to.Tx, error) {
 	if err != nil {
 		return nil, err
 	}
-	return t, nil
-}
-
-func ForwardTranslateAtomicSwap(f *from.AtomicSwap) (*to.AtomicSwap, error) {
-	t := &to.AtomicSwap{}
-	if f == nil {
-		return nil, errors.New("atomicSwap object should not be nil")
-	}
-
-	if f.ASPreImage != nil {
-		newASPreImage, err := ForwardTranslateASPreImage(f.ASPreImage)
-		if err != nil {
-			return nil, err
-		}
-		t.ASPreImage = newASPreImage
-	}
-	newTxHash := ForwardTranslateByte(f.TxHash)
-
-	t.TxHash = newTxHash
 	return t, nil
 }
 

@@ -1,0 +1,18 @@
+version: v1
+deps:
+  - buf.build/googleapis/googleapis
+lint:
+  use:
+    - DEFAULT
+    - COMMENTS
+    - PACKAGE_NO_IMPORT_CYCLE
+  ignore:
+    - proto/bootnode.proto
+    - proto/aobjs.proto
+    - proto/cobjs.proto
+    - proto/localstate.proto
+    - proto/localstatetypes.proto
+    - proto/p2p.proto
+breaking:
+  use:
+    - FILE

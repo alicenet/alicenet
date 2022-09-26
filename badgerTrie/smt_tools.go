@@ -10,8 +10,8 @@ package trie
 import (
 	"bytes"
 
-	"github.com/MadBase/MadNet/constants"
-	"github.com/MadBase/MadNet/utils"
+	"github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/utils"
 	"github.com/dgraph-io/badger/v2"
 )
 
@@ -89,7 +89,7 @@ func (s *SMT) SnapShot(txn *badger.Txn, snapShotPrefix func() []byte) (*SMT, err
 	return newsmt, nil
 }
 
-// Drop will drop all data associated with this trie from the database.
+// Drop will drop all state associated with this trie from the database.
 func (s *SMT) Drop(bDB *badger.DB) error {
 	return s.db.drop(bDB)
 }

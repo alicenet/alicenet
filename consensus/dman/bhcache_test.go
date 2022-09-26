@@ -1,12 +1,16 @@
+//go:build flakes
+
 package dman
 
 import (
 	"reflect"
 	"testing"
 
-	"github.com/MadBase/MadNet/consensus/objs"
-	"github.com/MadBase/MadNet/constants"
-	"github.com/MadBase/MadNet/crypto"
+	"github.com/stretchr/testify/assert"
+
+	"github.com/alicenet/alicenet/consensus/objs"
+	"github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/crypto"
 )
 
 func goodBH() *objs.BlockHeader {
@@ -45,7 +49,10 @@ func badBH() *objs.BlockHeader {
 
 func emptyCache() *bHCache {
 	bhc := &bHCache{}
-	bhc.Init()
+	err := bhc.Init()
+	if err != nil {
+		panic(err)
+	}
 	return bhc
 }
 
@@ -94,7 +101,8 @@ func Test_bHCache_Contains(t *testing.T) {
 	}
 
 	newCache := emptyCache()
-	newCache.Add(goodBH())
+	err := newCache.Add(goodBH())
+	assert.Nil(t, err)
 
 	tests := []struct {
 		name string
@@ -120,10 +128,12 @@ func Test_bHCache_Get(t *testing.T) {
 	}
 
 	newCache := emptyCache()
-	newCache.Add(goodBH())
+	err := newCache.Add(goodBH())
+	assert.Nil(t, err)
 
 	badCache := emptyCache()
-	badCache.Add(badBH())
+	err = badCache.Add(badBH())
+	assert.Nil(t, err)
 
 	tests := []struct {
 		name  string
@@ -151,13 +161,15 @@ func Test_bHCache_Get(t *testing.T) {
 
 func Test_bHCache_Del(t *testing.T) {
 	newCache := emptyCache()
-	newCache.Add(goodBH())
+	err := newCache.Add(goodBH())
+	assert.Nil(t, err)
 	newCache.Del(1)
 }
 
 func Test_bHCache_DropBeforeHeight(t *testing.T) {
 	newCache := emptyCache()
-	newCache.Add(goodBH())
+	err := newCache.Add(goodBH())
+	assert.Nil(t, err)
 	newCache.DropBeforeHeight(1)
 	newCache.DropBeforeHeight(257)
 }

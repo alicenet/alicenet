@@ -2,12 +2,12 @@ package indexer
 
 import (
 	"bytes"
-	"io/ioutil"
-	"os"
 	"testing"
 
-	"github.com/MadBase/MadNet/crypto"
 	"github.com/dgraph-io/badger/v2"
+
+	"github.com/alicenet/alicenet/crypto"
+	"github.com/alicenet/alicenet/internal/testing/environment"
 )
 
 func makeHeightIdxIndex() *HeightIdxIndex {
@@ -22,28 +22,15 @@ func makeHeightIdxIndex() *HeightIdxIndex {
 }
 
 func TestHeightIdxIndexAdd(t *testing.T) {
-	dir, err := ioutil.TempDir("", "badger-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}()
-	opts := badger.DefaultOptions(dir)
-	db, err := badger.Open(opts)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer db.Close()
+	t.Parallel()
+	db := environment.SetupBadgerDatabase(t)
 
 	index := makeHeightIdxIndex()
 	txHash := crypto.Hasher([]byte("utxoID"))
 	height := uint32(1234)
 	idx := uint32(25519)
 
-	err = db.Update(func(txn *badger.Txn) error {
+	err := db.Update(func(txn *badger.Txn) error {
 		err := index.Add(txn, txHash, height, idx)
 		if err != nil {
 			t.Fatal(err)
@@ -56,28 +43,15 @@ func TestHeightIdxIndexAdd(t *testing.T) {
 }
 
 func TestHeightIdxIndexDelete(t *testing.T) {
-	dir, err := ioutil.TempDir("", "badger-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}()
-	opts := badger.DefaultOptions(dir)
-	db, err := badger.Open(opts)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer db.Close()
+	t.Parallel()
+	db := environment.SetupBadgerDatabase(t)
 
 	index := makeHeightIdxIndex()
 	txHash := crypto.Hasher([]byte("utxoID"))
 	height := uint32(1234)
 	idx := uint32(25519)
 
-	err = db.Update(func(txn *badger.Txn) error {
+	err := db.Update(func(txn *badger.Txn) error {
 		err := index.Delete(txn, txHash)
 		if err == nil {
 			t.Fatal("Should raise an error")
@@ -104,28 +78,15 @@ func TestHeightIdxIndexDelete(t *testing.T) {
 }
 
 func TestHeightIdxIndexGetHeightIdx(t *testing.T) {
-	dir, err := ioutil.TempDir("", "badger-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}()
-	opts := badger.DefaultOptions(dir)
-	db, err := badger.Open(opts)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer db.Close()
+	t.Parallel()
+	db := environment.SetupBadgerDatabase(t)
 
 	index := makeHeightIdxIndex()
 	txHash := crypto.Hasher([]byte("utxoID"))
 	height := uint32(1234)
 	idx := uint32(25519)
 
-	err = db.Update(func(txn *badger.Txn) error {
+	err := db.Update(func(txn *badger.Txn) error {
 		_, _, err := index.GetHeightIdx(txn, txHash)
 		if err == nil {
 			// txHash does not exist
@@ -159,28 +120,15 @@ func TestHeightIdxIndexGetHeightIdx(t *testing.T) {
 }
 
 func TestHeightIdxIndexGetTxHashFromHeightIdx(t *testing.T) {
-	dir, err := ioutil.TempDir("", "badger-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}()
-	opts := badger.DefaultOptions(dir)
-	db, err := badger.Open(opts)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer db.Close()
+	t.Parallel()
+	db := environment.SetupBadgerDatabase(t)
 
 	index := makeHeightIdxIndex()
 	txHash := crypto.Hasher([]byte("utxoID"))
 	height := uint32(1234)
 	idx := uint32(25519)
 
-	err = db.Update(func(txn *badger.Txn) error {
+	err := db.Update(func(txn *badger.Txn) error {
 		_, err := index.GetTxHashFromHeightIdx(txn, height, idx)
 		if err == nil {
 			// txHash does not exist
@@ -211,24 +159,10 @@ func TestHeightIdxIndexGetTxHashFromHeightIdx(t *testing.T) {
 }
 
 func TestHeightIdxIndexgetHeightIdx(t *testing.T) {
-	dir, err := ioutil.TempDir("", "badger-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}()
-	opts := badger.DefaultOptions(dir)
-	db, err := badger.Open(opts)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer db.Close()
+	t.Parallel()
 
 	index := makeHeightIdxIndex()
-	//txHash := crypto.Hasher([]byte("utxoID"))
+	// txHash := crypto.Hasher([]byte("utxoID"))
 	heightTrue := uint32(1234)
 	idxTrue := uint32(25519)
 

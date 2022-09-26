@@ -1,0 +1,14 @@
+{
+  "coverage-gutters.coverageBaseDir": "bridge/coverage/**",
+  "coverage-gutters.coverageReportFileName": "bridge/coverage/**/index.html",
+  "coverage-gutters.partialGutterIconPathLight": "rgba(163, 149, 0, 0.4)",
+  "coverage-gutters.partialGutterIconPathDark": "rgba(163, 149, 0, 0.4)",
+  "coverage-gutters.noGutterIconPathLight": "rgba(163, 149, 0, 0.4)",
+  "coverage-gutters.coverageFileNames": [
+    "lcov.info",
+    "cov.xml",
+    "coverage.xml",
+    "jacoco.xml",
+    "coverage.cobertura.xml"
+  ]
+}

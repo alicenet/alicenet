@@ -1,8 +1,10 @@
 local-geth/*
 
 # output files
-/madnet
+/alicenet
+/alicerace
 /mngen
+dist/
 **/__debug_bin
 **/*.log
 *.exe
@@ -24,12 +26,5 @@ local-geth/*
 
 # generated files
 scripts/generated
-localstate.swagger.json
-**/swagger-bindata/bindata.go
-**/*.pb.go
-**/*.capnp.go
-**/*.pb.gw.go
-**/*_mngen.go
-**/*_mngen_test.go
 node_modules/
-**/package-lock.json
+legacy/V1

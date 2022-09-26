@@ -19,6 +19,6 @@ func MakeTrace(atDepth int) string {
 		return ""
 	}
 
-	fileparts := strings.SplitN(frame.File, "Madnet", 2)
+	fileparts := strings.SplitN(frame.File, "alicenet", 2)
 	return fileparts[len(fileparts)-1] + ":" + strconv.Itoa(frame.Line)
 }

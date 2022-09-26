@@ -2,114 +2,99 @@ syntax = "proto3";
 
 package proto;
 
-option go_package = "/;proto";
-
 // Protobuf message implementation for struct Proposal
 message Proposal {
-	PClaims PClaims = 1;
-	string Signature = 2;
-	repeated string TxHshLst = 3;
+  PClaims PClaims = 1;
+  string Signature = 2;
+  repeated string TxHshLst = 3;
 }
-
 
 // Protobuf message implementation for struct PreVoteNil
 message PreVoteNil {
-	RCert RCert = 1;
-	string Signature = 2;
+  RCert RCert = 1;
+  string Signature = 2;
 }
-
 
 // Protobuf message implementation for struct PreCommitNil
 message PreCommitNil {
-	RCert RCert = 1;
-	string Signature = 2;
+  RCert RCert = 1;
+  string Signature = 2;
 }
-
 
 // Protobuf message implementation for struct RCert
 message RCert {
-	RClaims RClaims = 1;
-	string SigGroup = 2;
+  RClaims RClaims = 1;
+  string SigGroup = 2;
 }
-
 
 // Protobuf message implementation for struct NRClaims
 message NRClaims {
-	RCert RCert = 1;
-	RClaims RClaims = 2;
-	string SigShare = 3;
-	string GroupShare = 4;
+  RCert RCert = 1;
+  RClaims RClaims = 2;
+  string SigShare = 3;
+  string GroupShare = 4;
 }
-
 
 // Protobuf message implementation for struct RClaims
 message RClaims {
-	uint32 ChainID = 1;
-	uint32 Height = 2;
-	uint32 Round = 3;
-	string PrevBlock = 4;
+  uint32 ChainID = 1;
+  uint32 Height = 2;
+  uint32 Round = 3;
+  string PrevBlock = 4;
 }
-
 
 // Protobuf message implementation for struct BlockHeader
 message BlockHeader {
-	BClaims BClaims = 1;
-	string SigGroup = 2;
-	repeated string TxHshLst = 3;
+  BClaims BClaims = 1;
+  string SigGroup = 2;
+  repeated string TxHshLst = 3;
 }
-
 
 // Protobuf message implementation for struct BClaims
 message BClaims {
-	uint32 ChainID = 1;
-	uint32 Height = 2;
-	uint32 TxCount = 3;
-	string PrevBlock = 4;
-	string TxRoot = 5;
-	string StateRoot = 6;
-	string HeaderRoot = 7;
+  uint32 ChainID = 1;
+  uint32 Height = 2;
+  uint32 TxCount = 3;
+  string PrevBlock = 4;
+  string TxRoot = 5;
+  string StateRoot = 6;
+  string HeaderRoot = 7;
 }
-
 
 // Protobuf message implementation for struct PreVote
 message PreVote {
-	Proposal Proposal = 1;
-	string Signature = 2;
+  Proposal Proposal = 1;
+  string Signature = 2;
 }
-
 
 // Protobuf message implementation for struct PClaims
 message PClaims {
-	BClaims BClaims = 1;
-	RCert RCert = 2;
+  BClaims BClaims = 1;
+  RCert RCert = 2;
 }
-
 
 // Protobuf message implementation for struct PreCommit
 message PreCommit {
-	Proposal Proposal = 1;
-	string Signature = 2;
-	repeated string PreVotes = 3;
+  Proposal Proposal = 1;
+  string Signature = 2;
+  repeated string PreVotes = 3;
 }
-
 
 // Protobuf message implementation for struct NextHeight
 message NextHeight {
-	NHClaims NHClaims = 1;
-	string Signature = 2;
-	repeated string PreCommits = 3;
+  NHClaims NHClaims = 1;
+  string Signature = 2;
+  repeated string PreCommits = 3;
 }
-
 
 // Protobuf message implementation for struct NHClaims
 message NHClaims {
-	Proposal Proposal = 1;
-	string SigShare = 2;
+  Proposal Proposal = 1;
+  string SigShare = 2;
 }
-
 
 // Protobuf message implementation for struct NextRound
 message NextRound {
-	NRClaims NRClaims = 1;
-	string Signature = 2;
+  NRClaims NRClaims = 1;
+  string Signature = 2;
 }

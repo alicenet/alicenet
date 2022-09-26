@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"io"
 	"net"
-	"os"
+	"path"
 	"sync"
 	"testing"
 
-	"github.com/MadBase/MadNet/cmd/firewalld/lib"
-	"github.com/MadBase/MadNet/cmd/firewalld/mock"
-	"github.com/MadBase/MadNet/utils/testutils"
+	"github.com/alicenet/alicenet/cmd/firewalld/lib"
+	"github.com/alicenet/alicenet/cmd/firewalld/mock"
+	"github.com/alicenet/alicenet/test/testutils"
 	"github.com/sirupsen/logrus/hooks/test"
 )
 
@@ -80,8 +80,8 @@ func newTestServer(address string) (getMsg func() []mock.Msg, write func([]byte)
 }
 
 func TestSocket(t *testing.T) {
-	socketFile := testutils.SocketFileName()
-	defer os.Remove(socketFile)
+	dir := t.TempDir()
+	socketFile := path.Join(dir, "socket")
 	getMsgs, write, end := newTestServer(socketFile)
 	im := mock.NewImplementation()
 
@@ -95,7 +95,10 @@ func TestSocket(t *testing.T) {
 			return fmt.Errorf("Unexpected messages: %v", msgs)
 		}
 
-		write([]byte(`{"jsonrpc":"2.0","id":"sub","result":{"Addrs":["11.22.33.44:5555","22.33.44.55:6666","33.44.55.66:7777"],"Seq":0}}`))
+		err := write([]byte(`{"jsonrpc":"2.0","id":"sub","result":{"Addrs":["11.22.33.44:5555","22.33.44.55:6666","33.44.55.66:7777"],"Seq":0}}`))
+		if err != nil {
+			return fmt.Errorf("Error writing: %v", err)
+		}
 		var calls mock.Calls
 		testutils.WaitUntil(func() bool { calls = im.Calls(); return len(calls.Update) >= 1 })
 
@@ -111,7 +114,10 @@ func TestSocket(t *testing.T) {
 		}
 
 		im.GetRet = mock.GetRet{Ret: lib.NewAddresSet([]string{"22.33.44.55:6666"})}
-		write([]byte(`{"jsonrpc":"2.0","id":"sub","result":{"Addrs":["11.22.33.44:5555","22.33.44.55:6666","33.44.55.66:7777"],"Seq":0}}`))
+		err = write([]byte(`{"jsonrpc":"2.0","id":"sub","result":{"Addrs":["11.22.33.44:5555","22.33.44.55:6666","33.44.55.66:7777"],"Seq":0}}`))
+		if err != nil {
+			return fmt.Errorf("Error writing: %v", err)
+		}
 		testutils.WaitUntil(func() bool { calls = im.Calls(); return len(calls.Update) >= 2 })
 
 		if calls.Get != 2 {

@@ -1,9 +1,10 @@
 package db
 
 import (
-	"github.com/MadBase/MadNet/application/objs"
-	"github.com/MadBase/MadNet/utils"
 	"github.com/dgraph-io/badger/v2"
+
+	"github.com/alicenet/alicenet/application/objs"
+	"github.com/alicenet/alicenet/utils"
 )
 
 // SetUTXO will set a UTXO in the database.

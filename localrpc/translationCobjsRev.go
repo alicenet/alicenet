@@ -3,9 +3,9 @@ package localrpc
 import (
 	"encoding/hex"
 
-	to "github.com/MadBase/MadNet/consensus/objs"
-	from "github.com/MadBase/MadNet/proto"
-	"github.com/MadBase/MadNet/utils"
+	to "github.com/alicenet/alicenet/consensus/objs"
+	from "github.com/alicenet/alicenet/proto"
+	"github.com/alicenet/alicenet/utils"
 )
 
 func ReverseTranslateBlockHeader(f *from.BlockHeader) (*to.BlockHeader, error) {

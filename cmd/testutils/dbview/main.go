@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/MadBase/MadNet/consensus/db"
-	"github.com/MadBase/MadNet/consensus/objs"
-	mnutils "github.com/MadBase/MadNet/utils"
+	"github.com/alicenet/alicenet/consensus/db"
+	"github.com/alicenet/alicenet/consensus/objs"
+	mnutils "github.com/alicenet/alicenet/utils"
 	"github.com/dgraph-io/badger/v2"
 )
 
@@ -60,7 +60,7 @@ func main() {
 			if err != nil {
 				panic(err)
 			}
-			fmt.Println("Snapshot Block Header %x", bh)
+			fmt.Printf("Snapshot Block Header %#v\n", bh)
 		case "GetSnapshotByHeight":
 			hb, ok := new(big.Int).SetString(*height, 10)
 			if !ok {

@@ -1,3 +1,4 @@
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
@@ -21,7 +22,7 @@ describe("PublicStaking: Mint and Burn", async () => {
   let adminSigner: SignerWithAddress;
 
   beforeEach(async function () {
-    fixture = await getBaseTokensFixture();
+    fixture = await loadFixture(getBaseTokensFixture);
     [adminSigner, notAdminSigner] = await ethers.getSigners();
   });
 
@@ -79,9 +80,12 @@ describe("PublicStaking: Mint and Burn", async () => {
     const tx = await fixture.publicStaking.connect(adminSigner).mint(1000);
     const tokenID = await getTokenIdFromTx(tx);
     await mineBlocks(2n);
-    await expect(
-      fixture.publicStaking.connect(notAdminSigner).burn(tokenID)
-    ).to.revertedWith("600");
+    await expect(fixture.publicStaking.connect(notAdminSigner).burn(tokenID))
+      .to.be.revertedWithCustomError(
+        fixture.publicStaking,
+        "CallerNotTokenOwner"
+      )
+      .withArgs(notAdminSigner.address);
   });
 
   it("Should not allow to burn a position before time", async function () {
@@ -92,7 +96,10 @@ describe("PublicStaking: Mint and Burn", async () => {
     const tokenID = await getTokenIdFromTx(tx);
     await expect(
       fixture.publicStaking.connect(adminSigner).burn(tokenID)
-    ).to.revertedWith("606");
+    ).to.be.revertedWithCustomError(
+      fixture.publicStaking,
+      "FreeAfterTimeNotReached"
+    );
   });
 
   it("Should not allow to burn same position more than once", async function () {
@@ -106,7 +113,7 @@ describe("PublicStaking: Mint and Burn", async () => {
     await mineBlocks(2n);
     await expect(
       fixture.publicStaking.connect(adminSigner).burn(tokenID)
-    ).to.be.rejectedWith("ERC721: owner query for nonexistent token");
+    ).to.be.rejectedWith("ERC721: invalid token ID");
   });
 
   describe("Mint stakeNFT and", async () => {
@@ -217,7 +224,10 @@ describe("PublicStaking: Mint and Burn", async () => {
     it("Should not allow burn a NFT position before time", async function () {
       await expect(
         fixture.publicStaking.connect(notAdminSigner).burn(tokenID)
-      ).to.be.rejectedWith("606");
+      ).to.be.revertedWithCustomError(
+        fixture.publicStaking,
+        "FreeAfterTimeNotReached"
+      );
     });
 
     it("Burn a NFT position", async function () {

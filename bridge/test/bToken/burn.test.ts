@@ -1,15 +1,15 @@
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
 import { expect } from "../chai-setup";
 import { callFunctionAndGetReturnValues, Fixture, getFixture } from "../setup";
-import { format, getState, state } from "./setup";
+import { getEthConsumedAsGas, getState, state } from "./setup";
 
 describe("Testing BToken Burning methods", async () => {
   let admin: SignerWithAddress;
   let user: SignerWithAddress;
   let expectedState: state;
-  let eths: BigNumber;
   let fixture: Fixture;
   const eth = 40;
   let ethIn: BigNumber;
@@ -17,18 +17,26 @@ describe("Testing BToken Burning methods", async () => {
   const minBTokens = 0;
   const marketSpread = 4;
 
-  beforeEach(async function () {
-    fixture = await getFixture();
+  async function deployFixture() {
+    const fixture = await getFixture();
     const signers = await ethers.getSigners();
-    [admin, user] = signers;
-    ethIn = ethers.utils.parseEther(eth.toString());
-    [bTokens] = await callFunctionAndGetReturnValues(
+    const [admin, user] = signers;
+    const ethIn = ethers.utils.parseEther(eth.toString());
+    const [bTokens] = await callFunctionAndGetReturnValues(
       fixture.bToken,
       "mint",
       user,
       [minBTokens],
       ethIn
     );
+    return { fixture, admin, user, ethIn, bTokens };
+  }
+
+  beforeEach(async function () {
+    ({ fixture, admin, user, ethIn, bTokens } = await loadFixture(
+      deployFixture
+    ));
+
     expectedState = await getState(fixture);
   });
 
@@ -36,38 +44,36 @@ describe("Testing BToken Burning methods", async () => {
     const remaining = ethers.utils.parseUnits("100").toBigInt();
     let burnQuantity = BigNumber.from(bTokens).sub(remaining).toBigInt();
     expectedState = await getState(fixture);
-    [eths] = await callFunctionAndGetReturnValues(
+    const [eths, tx] = await callFunctionAndGetReturnValues(
       fixture.bToken,
       "burn",
       user,
       [burnQuantity, 0]
     );
-    let roundedEths = format(eths);
-    expect(bTokens).to.be.equal(BigInt("3990217121585928137263"));
-    expect(eths).to.be.equal(BigInt("9749391845405398553"));
+    expect(bTokens).to.be.equal(BigInt("4020217121585928137263"));
+    expect(eths).to.be.equal(BigInt("9751261920046697614"));
     expectedState.Balances.bToken.user -= burnQuantity;
-    expectedState.Balances.eth.user += roundedEths;
+    expectedState.Balances.eth.user += eths.toBigInt();
     expectedState.Balances.bToken.poolBalance -= eths.toBigInt();
     expectedState.Balances.bToken.totalSupply -= burnQuantity;
     expectedState.Balances.eth.bToken -= eths.toBigInt();
-    // await fixture.bToken.connect(user).burn(burnQuantity, 0);
+    expectedState.Balances.eth.user -= getEthConsumedAsGas(await tx.wait());
     expect(await getState(fixture)).to.be.deep.equal(expectedState);
     burnQuantity = remaining;
     expectedState = await getState(fixture);
-    [eths] = await callFunctionAndGetReturnValues(
+    const [eths2, tx2] = await callFunctionAndGetReturnValues(
       fixture.bToken,
       "burn",
       user,
       [burnQuantity, 0]
     );
-    roundedEths = format(eths);
-    expect(eths).to.be.equal(BigInt("250608154594601447"));
+    expect(eths).to.be.equal(BigInt("9751261920046697614"));
     expectedState.Balances.bToken.user -= burnQuantity;
-    expectedState.Balances.eth.user += roundedEths;
-    expectedState.Balances.bToken.poolBalance -= eths.toBigInt();
+    expectedState.Balances.eth.user += eths2.toBigInt();
+    expectedState.Balances.bToken.poolBalance -= eths2.toBigInt();
     expectedState.Balances.bToken.totalSupply -= burnQuantity;
-    expectedState.Balances.eth.bToken -= eths.toBigInt();
-    // await fixture.bToken.connect(user).burn(remaining, 0);
+    expectedState.Balances.eth.bToken -= eths2.toBigInt();
+    expectedState.Balances.eth.user -= getEthConsumedAsGas(await tx2.wait());
     expect(await getState(fixture)).to.be.deep.equal(expectedState);
   });
 
@@ -83,15 +89,15 @@ describe("Testing BToken Burning methods", async () => {
     );
     const burnQuantity = bTokens.toBigInt();
     expectedState = await getState(fixture);
-    [eths] = await callFunctionAndGetReturnValues(
+    const [eths, tx] = await callFunctionAndGetReturnValues(
       fixture.bToken,
       "burn",
       user,
       [burnQuantity, 0]
     );
-    const roundedEths = format(eths);
     expectedState.Balances.bToken.user -= burnQuantity;
-    expectedState.Balances.eth.user += roundedEths;
+    expectedState.Balances.eth.user += eths.toBigInt();
+    expectedState.Balances.eth.user -= getEthConsumedAsGas(await tx.wait());
     expectedState.Balances.bToken.poolBalance -= eths.toBigInt();
     expectedState.Balances.bToken.totalSupply -= burnQuantity;
     expectedState.Balances.eth.bToken -= eths.toBigInt();
@@ -101,9 +107,10 @@ describe("Testing BToken Burning methods", async () => {
   it("Should fail to burn more than possible", async () => {
     // Try to burn one more than minted
     const burnQuantity = BigNumber.from(bTokens).add(1);
-    await expect(
-      fixture.bToken.connect(user).burn(burnQuantity, 0)
-    ).to.be.revertedWith("311");
+
+    await expect(fixture.bToken.connect(user).burn(burnQuantity, 0))
+      .to.be.revertedWithCustomError(fixture.bToken, `BurnAmountExceedsSupply`)
+      .withArgs(burnQuantity, bTokens);
   });
 
   it("Should fail to burn 0 tokens", async () => {
@@ -112,9 +119,10 @@ describe("Testing BToken Burning methods", async () => {
     await fixture.bToken.connect(user).mint(minBTokens, {
       value: ethers.utils.parseEther(eth.toString()),
     });
-    await expect(
-      fixture.bToken.connect(user).burn(burnQuantity, 0)
-    ).to.be.revertedWith("302");
+
+    await expect(fixture.bToken.connect(user).burn(burnQuantity, 0))
+      .to.be.revertedWithCustomError(fixture.bToken, `InvalidBurnAmount`)
+      .withArgs(burnQuantity);
   });
 
   it("Should burn to an address", async () => {
@@ -122,39 +130,44 @@ describe("Testing BToken Burning methods", async () => {
     // Round eths to avoid consumed gas on state comparison
     expectedState = await getState(fixture);
     // Eths to receive
-    [eths] = await callFunctionAndGetReturnValues(
+    const [eths, tx] = await callFunctionAndGetReturnValues(
       fixture.bToken,
       "burnTo",
       user,
       [admin.address, burnQuantity, 0]
     );
-    const roundedEths = format(eths);
     expectedState.Balances.bToken.user -= burnQuantity.toBigInt();
-    expectedState.Balances.eth.admin += roundedEths;
+    expectedState.Balances.eth.admin += eths.toBigInt();
     expectedState.Balances.bToken.poolBalance -= eths.toBigInt();
     expectedState.Balances.bToken.totalSupply -= burnQuantity.toBigInt();
     expectedState.Balances.eth.bToken -= eths.toBigInt();
+    expectedState.Balances.eth.user -= getEthConsumedAsGas(await tx.wait());
     expect(await getState(fixture)).to.be.deep.equal(expectedState);
   });
 
   it("Should fail to burn to an address more than possible", async () => {
     // Try to burn one more than minted
     const burnQuantity = BigNumber.from(bTokens).add(1);
-    await expect(
-      fixture.bToken.connect(user).burnTo(admin.address, burnQuantity, 0)
-    ).to.be.revertedWith("311");
+
+    await expect(fixture.bToken.connect(user).burn(burnQuantity, 0))
+      .to.be.revertedWithCustomError(fixture.bToken, `BurnAmountExceedsSupply`)
+      .withArgs(burnQuantity, bTokens);
   });
 
   it("Should fail to burn 0 tokens to an address", async () => {
     const burnQuantity = 0;
+
     await expect(
       fixture.bToken.connect(user).burnTo(admin.address, burnQuantity, 0)
-    ).to.be.revertedWith("302");
+    )
+      .to.be.revertedWithCustomError(fixture.bToken, `InvalidBurnAmount`)
+      .withArgs(burnQuantity);
   });
 
   it("Should fail to burn without fulfilling min eth amount", async () => {
     const minEth = ethIn.add(1);
     const burnQuantity = bTokens;
+
     await expect(
       fixture.bToken
         .connect(user)
@@ -163,23 +176,28 @@ describe("Testing BToken Burning methods", async () => {
           burnQuantity,
           ethers.utils.parseEther(minEth.toString())
         )
-    ).to.be.revertedWith("309");
+    )
+      .to.be.revertedWithCustomError(fixture.bToken, `MinimumBurnNotMet`)
+      .withArgs(
+        "10000000000000000000",
+        ethers.utils.parseEther(minEth.toString())
+      );
   });
 
   it("Should burn and keep market spread", async () => {
     const burnQuantity = bTokens;
-    // Eths to receive
-    [eths] = await callFunctionAndGetReturnValues(
+    const [eths, tx] = await callFunctionAndGetReturnValues(
       fixture.bToken,
       "burn",
       user,
       [burnQuantity, 0]
     );
     expectedState.Balances.bToken.user -= burnQuantity.toBigInt();
-    expectedState.Balances.eth.user += eth / marketSpread;
+    expectedState.Balances.eth.user += ethIn.div(marketSpread).toBigInt();
     expectedState.Balances.bToken.poolBalance -= eths.toBigInt();
     expectedState.Balances.bToken.totalSupply -= burnQuantity.toBigInt();
     expectedState.Balances.eth.bToken -= eths.toBigInt();
+    expectedState.Balances.eth.user -= getEthConsumedAsGas(await tx.wait());
     expect(await getState(fixture)).to.be.deep.equal(expectedState);
   });
 
@@ -195,21 +213,19 @@ describe("Testing BToken Burning methods", async () => {
       );
       const burnQuantity = bTokens.toBigInt();
       expectedState = await getState(fixture);
-      // Eths to receive
-      expectedState = await getState(fixture);
-      [eths] = await callFunctionAndGetReturnValues(
+      const [eths, tx] = await callFunctionAndGetReturnValues(
         fixture.bToken,
         "burn",
         user,
         [burnQuantity, 0]
       );
       // Round eths to avoid consumed gas on state comparison
-      const roundedEths = format(eths);
       expectedState.Balances.bToken.user -= burnQuantity;
-      expectedState.Balances.eth.user += roundedEths;
+      expectedState.Balances.eth.user += eths.toBigInt();
       expectedState.Balances.bToken.poolBalance -= eths.toBigInt();
       expectedState.Balances.bToken.totalSupply -= burnQuantity;
       expectedState.Balances.eth.bToken -= eths.toBigInt();
+      expectedState.Balances.eth.user -= getEthConsumedAsGas(await tx.wait());
       expect(await getState(fixture)).to.be.deep.equal(expectedState);
     }
   });
@@ -219,12 +235,10 @@ describe("Testing BToken Burning methods", async () => {
     expectedState = await getState(fixture);
     // Eths to receive
     expectedState = await getState(fixture);
-    [eths] = await callFunctionAndGetReturnValues(
-      fixture.bToken,
-      "burn",
-      user,
-      [burnQuantity, 0]
-    );
+    await callFunctionAndGetReturnValues(fixture.bToken, "burn", user, [
+      burnQuantity,
+      0,
+    ]);
     expect(await fixture.bToken.totalSupply()).to.be.equal(0);
   });
 

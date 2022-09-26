@@ -1,10 +1,11 @@
 package objs
 
 import (
-	mdefs "github.com/MadBase/MadNet/consensus/objs/capn"
-	"github.com/MadBase/MadNet/consensus/objs/ostate"
-	"github.com/MadBase/MadNet/errorz"
 	capnp "github.com/MadBase/go-capnproto2/v2"
+
+	mdefs "github.com/alicenet/alicenet/consensus/objs/capn"
+	"github.com/alicenet/alicenet/consensus/objs/ostate"
+	"github.com/alicenet/alicenet/errorz"
 )
 
 // OwnState ...
@@ -18,7 +19,7 @@ type OwnState struct {
 }
 
 // UnmarshalBinary takes a byte slice and returns the corresponding
-// OwnState object
+// OwnState object.
 func (b *OwnState) UnmarshalBinary(data []byte) error {
 	if b == nil {
 		return errorz.ErrInvalid{}.New("OwnState.UnmarshalBinary; os not initialized")
@@ -31,7 +32,7 @@ func (b *OwnState) UnmarshalBinary(data []byte) error {
 	return b.UnmarshalCapn(bh)
 }
 
-// UnmarshalCapn unmarshals the capnproto definition of the object
+// UnmarshalCapn unmarshals the capnproto definition of the object.
 func (b *OwnState) UnmarshalCapn(bh mdefs.OwnState) error {
 	if b == nil {
 		return errorz.ErrInvalid{}.New("OwnState.UnmarshalCapn; os not initialized")
@@ -66,7 +67,7 @@ func (b *OwnState) UnmarshalCapn(bh mdefs.OwnState) error {
 }
 
 // MarshalBinary takes the OwnState object and returns the canonical
-// byte slice
+// byte slice.
 func (b *OwnState) MarshalBinary() ([]byte, error) {
 	if b == nil {
 		return nil, errorz.ErrInvalid{}.New("OwnState.MarshalBinary; os not initialized")
@@ -79,7 +80,7 @@ func (b *OwnState) MarshalBinary() ([]byte, error) {
 	return ostate.Marshal(bh)
 }
 
-// MarshalCapn marshals the object into its capnproto definition
+// MarshalCapn marshals the object into its capnproto definition.
 func (b *OwnState) MarshalCapn(seg *capnp.Segment) (mdefs.OwnState, error) {
 	if b == nil {
 		return mdefs.OwnState{}, errorz.ErrInvalid{}.New("OwnState.MarshalCapn; os not initialized")
@@ -145,7 +146,7 @@ func (b *OwnState) MarshalCapn(seg *capnp.Segment) (mdefs.OwnState, error) {
 	return bh, nil
 }
 
-// Copy creates a copy of OwnState
+// Copy creates a copy of OwnState.
 func (b *OwnState) Copy() (*OwnState, error) {
 	bdat, err := b.MarshalBinary()
 	if err != nil {
@@ -159,7 +160,7 @@ func (b *OwnState) Copy() (*OwnState, error) {
 	return nobj, nil
 }
 
-// IsSync returns true if we are synced to the current block height
+// IsSync returns true if we are synced to the current block height.
 func (b *OwnState) IsSync() bool {
 	if b == nil {
 		return false

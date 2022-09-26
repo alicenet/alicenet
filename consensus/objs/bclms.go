@@ -1,11 +1,12 @@
 package objs
 
 import (
-	"github.com/MadBase/MadNet/consensus/objs/bclaims"
-	mdefs "github.com/MadBase/MadNet/consensus/objs/capn"
-	"github.com/MadBase/MadNet/crypto"
-	"github.com/MadBase/MadNet/errorz"
 	capnp "github.com/MadBase/go-capnproto2/v2"
+
+	"github.com/alicenet/alicenet/consensus/objs/bclaims"
+	mdefs "github.com/alicenet/alicenet/consensus/objs/capn"
+	"github.com/alicenet/alicenet/crypto"
+	"github.com/alicenet/alicenet/errorz"
 )
 
 // BClaims ...
@@ -20,7 +21,7 @@ type BClaims struct {
 }
 
 // UnmarshalBinary takes a byte slice and returns the corresponding
-// BClaims object
+// BClaims object.
 func (b *BClaims) UnmarshalBinary(data []byte) error {
 	if b == nil {
 		return errorz.ErrInvalid{}.New("BClaims.UnmarshalBinary; bclaims not initialized")
@@ -34,7 +35,7 @@ func (b *BClaims) UnmarshalBinary(data []byte) error {
 }
 
 // MarshalBinary takes the BClaims object and returns the canonical
-// byte slice
+// byte slice.
 func (b *BClaims) MarshalBinary() ([]byte, error) {
 	if b == nil {
 		return nil, errorz.ErrInvalid{}.New("BClaims.MarshalBinary; bclaims not initialized")
@@ -53,7 +54,7 @@ func (b *BClaims) MarshalBinary() ([]byte, error) {
 	return bclaims.Marshal(bc)
 }
 
-// UnmarshalCapn unmarshals the capnproto definition of the object
+// UnmarshalCapn unmarshals the capnproto definition of the object.
 func (b *BClaims) UnmarshalCapn(bc mdefs.BClaims) error {
 	if b == nil {
 		return errorz.ErrInvalid{}.New("BClaims.UnmarshalCapn; bclaims not initialized")
@@ -78,7 +79,7 @@ func (b *BClaims) UnmarshalCapn(bc mdefs.BClaims) error {
 	return nil
 }
 
-// MarshalCapn marshals the object into its capnproto definition
+// MarshalCapn marshals the object into its capnproto definition.
 func (b *BClaims) MarshalCapn(seg *capnp.Segment) (mdefs.BClaims, error) {
 	if b == nil {
 		return mdefs.BClaims{}, errorz.ErrInvalid{}.New("BClaims.MarshalCapn; bclaims not initialized")
@@ -123,7 +124,7 @@ func (b *BClaims) MarshalCapn(seg *capnp.Segment) (mdefs.BClaims, error) {
 	return bc, nil
 }
 
-// BlockHash returns the BlockHash of BClaims
+// BlockHash returns the BlockHash of BClaims.
 func (b *BClaims) BlockHash() ([]byte, error) {
 	can, err := b.MarshalBinary()
 	if err != nil {

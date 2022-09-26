@@ -2,9 +2,11 @@ package transport
 
 import (
 	"testing"
+	"time"
 
-	"github.com/MadBase/MadNet/interfaces"
 	"github.com/sirupsen/logrus"
+
+	"github.com/alicenet/alicenet/interfaces"
 )
 
 func TestTransportfail(t *testing.T) {
@@ -21,14 +23,14 @@ func TestTransportfail(t *testing.T) {
 	}
 	nodePrivKey2Hex := serializeTransportPrivateKey(nodePrivKey2)
 
-	transport1, err := NewP2PTransport(logger, testCID, nodePrivKey1Hex, t1Port, t1Host)
+	transport1, err := NewP2PTransport(logger, testCID, nodePrivKey1Hex, 3004, t1Host)
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer transport1.Close()
 	nodeAddr1 := transport1.NodeAddr()
 
-	transport2, err := NewP2PTransport(logger, testCIDFail, nodePrivKey2Hex, t2Port, t2Host)
+	transport2, err := NewP2PTransport(logger, testCIDFail, nodePrivKey2Hex, 4004, t2Host)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -43,8 +45,14 @@ func TestTransportfail(t *testing.T) {
 	go accept2(transport2, complete3)
 
 	<-complete1
-	<-complete2
 	<-complete3
+
+	select {
+	case <-complete2:
+		t.Error("<- Complete 2 should not happen")
+	case <-time.After(testWaitForClose):
+		t.Logf("<- Complete 2 did not happened")
+	}
 }
 
 func dialer2(t *testing.T, transport interfaces.P2PTransport, addr interfaces.NodeAddr, complete chan struct{}) {

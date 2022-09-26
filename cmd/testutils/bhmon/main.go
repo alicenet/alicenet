@@ -7,8 +7,8 @@ import (
 
 	"time"
 
-	"github.com/MadBase/MadNet/consensus/objs"
-	"github.com/MadBase/MadNet/localrpc"
+	"github.com/alicenet/alicenet/consensus/objs"
+	"github.com/alicenet/alicenet/localrpc"
 )
 
 func main() {

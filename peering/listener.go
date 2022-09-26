@@ -6,8 +6,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/MadBase/MadNet/interfaces"
 	"github.com/sirupsen/logrus"
+
+	"github.com/alicenet/alicenet/interfaces"
 )
 
 var _ interfaces.RPCListener = (*Listener)(nil)
@@ -26,7 +27,7 @@ type Listener struct {
 
 // NewConnection allows a P2PConn to be injected into the Listener
 // such that the goroutine calling Accept will recv the P2PConn as
-// a net.Conn
+// a net.Conn.
 func (rpcl *Listener) NewConnection(conn interfaces.P2PConn) error {
 	select {
 	case rpcl.listenConn <- conn:
@@ -38,7 +39,7 @@ func (rpcl *Listener) NewConnection(conn interfaces.P2PConn) error {
 	}
 }
 
-// Addr allows Listener to implement net.Listener interface
+// Addr allows Listener to implement net.Listener interface.
 func (rpcl *Listener) Addr() net.Addr {
 	return rpcl.addr
 }

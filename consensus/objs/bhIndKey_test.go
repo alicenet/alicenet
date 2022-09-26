@@ -3,7 +3,7 @@ package objs
 import (
 	"testing"
 
-	"github.com/MadBase/MadNet/constants"
+	"github.com/alicenet/alicenet/constants"
 )
 
 func TestBlockHeaderHashIndexKey(t *testing.T) {

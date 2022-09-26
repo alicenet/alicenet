@@ -4,22 +4,24 @@ import (
 	"context"
 	"sync"
 
-	"github.com/MadBase/MadNet/constants"
-	"github.com/MadBase/MadNet/dynamics"
-
-	"github.com/MadBase/MadNet/consensus/db"
-	"github.com/MadBase/MadNet/interfaces"
-	"github.com/MadBase/MadNet/logging"
-	pb "github.com/MadBase/MadNet/proto"
 	"github.com/dgraph-io/badger/v2"
 	"github.com/sirupsen/logrus"
+
+	"github.com/alicenet/alicenet/consensus/db"
+	"github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/dynamics"
+	"github.com/alicenet/alicenet/interfaces"
+	"github.com/alicenet/alicenet/logging"
+	pb "github.com/alicenet/alicenet/proto"
 )
 
-var _ pb.P2PGetMinedTxsHandler = (*Handler)(nil)
-var _ pb.P2PGetPendingTxsHandler = (*Handler)(nil)
-var _ pb.P2PGetBlockHeadersHandler = (*Handler)(nil)
-var _ pb.P2PGetSnapShotNodeHandler = (*Handler)(nil)
-var _ pb.P2PGetSnapShotStateDataHandler = (*Handler)(nil)
+var (
+	_ pb.P2PGetMinedTxsHandler          = (*Handler)(nil)
+	_ pb.P2PGetPendingTxsHandler        = (*Handler)(nil)
+	_ pb.P2PGetBlockHeadersHandler      = (*Handler)(nil)
+	_ pb.P2PGetSnapShotNodeHandler      = (*Handler)(nil)
+	_ pb.P2PGetSnapShotStateDataHandler = (*Handler)(nil)
+)
 
 type appHandler interface {
 	PendingTxGet(txn *badger.Txn, height uint32, txHash [][]byte) ([]interfaces.Transaction, [][]byte, error)
@@ -29,7 +31,7 @@ type appHandler interface {
 }
 
 // Handler serves incoming requests and handles routing of outgoing
-// requests for data from the consensus system.
+// requests for state from the consensus system.
 type Handler struct {
 	wg        sync.WaitGroup
 	ctx       context.Context
@@ -40,7 +42,7 @@ type Handler struct {
 	storage   dynamics.StorageGetter
 }
 
-// Init initializes the object
+// Init initializes the object.
 func (rb *Handler) Init(database *db.Database, app appHandler, storage dynamics.StorageGetter) {
 	rb.logger = logging.GetLogger(constants.LoggerConsensus)
 	background := context.Background()
@@ -53,23 +55,23 @@ func (rb *Handler) Init(database *db.Database, app appHandler, storage dynamics.
 	rb.storage = storage
 }
 
-// Done will trInger when both of the gossip busses have stopped
+// Done will trInger when both of the gossip busses have stopped.
 func (rb *Handler) Done() <-chan struct{} {
 	rb.wg.Wait()
 	return rb.ctx.Done()
 }
 
-// Start will start the gossip busses
+// Start will start the gossip busses.
 func (rb *Handler) Start() {
-	//do nothing
+	// do nothing
 }
 
-// Exit will kill the gossip busses
+// Exit will kill the gossip busses.
 func (rb *Handler) Exit() {
 	rb.cancelCtx()
 }
 
-//HandleP2PStatus serves status message from P2P protocol
+// HandleP2PStatus serves status message from P2P protocol.
 func (rb *Handler) HandleP2PStatus(ctx context.Context, r *pb.StatusRequest) (*pb.StatusResponse, error) {
 	select {
 	case <-ctx.Done():
@@ -90,14 +92,13 @@ func (rb *Handler) HandleP2PStatus(ctx context.Context, r *pb.StatusRequest) (*p
 		resp.MaxBlockHeightSeen = os.MaxBHSeen.BClaims.Height
 		return nil
 	})
-
 	if err != nil {
 		return nil, err
 	}
 	return &resp, nil
 }
 
-//HandleP2PGetBlockHeaders serves block headers
+// HandleP2PGetBlockHeaders serves block headers.
 func (rb *Handler) HandleP2PGetBlockHeaders(ctx context.Context, r *pb.GetBlockHeadersRequest) (*pb.GetBlockHeadersResponse, error) {
 	select {
 	case <-ctx.Done():
@@ -132,7 +133,7 @@ func (rb *Handler) HandleP2PGetBlockHeaders(ctx context.Context, r *pb.GetBlockH
 	return resp, nil
 }
 
-// HandleP2PGetPendingTxs serves pending txs
+// HandleP2PGetPendingTxs serves pending txs.
 func (rb *Handler) HandleP2PGetPendingTxs(ctx context.Context, r *pb.GetPendingTxsRequest) (*pb.GetPendingTxsResponse, error) {
 	select {
 	case <-ctx.Done():
@@ -146,7 +147,7 @@ func (rb *Handler) HandleP2PGetPendingTxs(ctx context.Context, r *pb.GetPendingT
 		var err error
 		txi, _, err := rb.app.PendingTxGet(txn, 1, r.TxHashes)
 		if err != nil {
-			return nil
+			return err
 		}
 		for _, tx := range txi {
 			txb, err := tx.MarshalBinary()
@@ -202,7 +203,7 @@ func (rb *Handler) HandleP2PGetMinedTxs(ctx context.Context, r *pb.GetMinedTxsRe
 	return resp, nil
 }
 
-// HandleP2PGetSnapShotHdrNode serves nodes of the Header Trie to the caller
+// HandleP2PGetSnapShotHdrNode serves nodes of the Header Trie to the caller.
 func (rb *Handler) HandleP2PGetSnapShotNode(ctx context.Context, r *pb.GetSnapShotNodeRequest) (*pb.GetSnapShotNodeResponse, error) {
 	select {
 	case <-ctx.Done():
@@ -227,7 +228,7 @@ func (rb *Handler) HandleP2PGetSnapShotNode(ctx context.Context, r *pb.GetSnapSh
 	return resp, nil
 }
 
-// HandleP2PGetSnapShotHdrNode serves nodes of the State Trie to the caller
+// HandleP2PGetSnapShotHdrNode serves nodes of the State Trie to the caller.
 func (rb *Handler) HandleP2PGetSnapShotHdrNode(ctx context.Context, r *pb.GetSnapShotHdrNodeRequest) (*pb.GetSnapShotHdrNodeResponse, error) {
 	select {
 	case <-ctx.Done():
@@ -252,7 +253,7 @@ func (rb *Handler) HandleP2PGetSnapShotHdrNode(ctx context.Context, r *pb.GetSna
 	return resp, nil
 }
 
-// HandleP2PGetSnapShotStateData serves UTXOs based on State Trie hash data
+// HandleP2PGetSnapShotStateData serves UTXOs based on State Trie hash state.
 func (rb *Handler) HandleP2PGetSnapShotStateData(ctx context.Context, r *pb.GetSnapShotStateDataRequest) (*pb.GetSnapShotStateDataResponse, error) {
 	select {
 	case <-ctx.Done():

@@ -5,9 +5,9 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/MadBase/MadNet/application/objs/uint256"
-	"github.com/MadBase/MadNet/constants"
-	"github.com/MadBase/MadNet/crypto"
+	"github.com/alicenet/alicenet/application/objs/uint256"
+	"github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/crypto"
 )
 
 func makeSecpSigner(privk []byte) *crypto.Secp256k1Signer {
@@ -523,7 +523,7 @@ func TestDeposit(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	//ds.DSLinker.DSPreImage.Deposit = ds.DSLinker.DSPreImage.Deposit - 1
+	// ds.DSLinker.DSPreImage.Deposit = ds.DSLinker.DSPreImage.Deposit - 1
 	ds.DSLinker.DSPreImage.Deposit = badValue1
 	err = ds.DSLinker.DSPreImage.ValidateDeposit()
 	if err == nil {
@@ -535,7 +535,7 @@ func TestDeposit(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	//ds.DSLinker.DSPreImage.Deposit = ds.DSLinker.DSPreImage.Deposit + 2
+	// ds.DSLinker.DSPreImage.Deposit = ds.DSLinker.DSPreImage.Deposit + 2
 	ds.DSLinker.DSPreImage.Deposit = badValue2
 	err = ds.DSLinker.DSPreImage.ValidateDeposit()
 	if err == nil {
@@ -1120,8 +1120,8 @@ func TestDSIsExpired(t *testing.T) {
 }
 
 func TestDSValidateFee(t *testing.T) {
-	msg := makeMockStorageGetter()
-	storage := makeStorage(msg)
+	msg := MakeMockStorageGetter()
+	storage := MakeStorage(msg)
 
 	utxo := &TXOut{}
 	err := utxo.dataStore.ValidateFee(storage)
@@ -1162,7 +1162,7 @@ func TestDSValidateFee(t *testing.T) {
 	// Set perEpochFee to 1, raising an error
 	perEpochFee32 := uint32(1)
 	msg.SetDataStoreEpochFee(big.NewInt(int64(perEpochFee32)))
-	storage = makeStorage(msg)
+	storage = MakeStorage(msg)
 	err = ds.ValidateFee(storage)
 	if err == nil {
 		t.Fatal("Should have raised an error (4)")

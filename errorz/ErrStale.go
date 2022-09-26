@@ -14,11 +14,13 @@ func (e *ErrStale) Error() string {
 	return "the object is stale: " + e.Err.Error()
 }
 
+//nolint:errcheck
 func (e *ErrStale) Wrap(err error) *ErrStale {
 	e.Err.Wrap(err) // call method of embedded Err
 	return e        // but return own reference to enable chaining
 }
 
+//nolint:errcheck
 func (e *ErrStale) Trace(i ...interface{}) *ErrStale {
 	e.Err.trace(1, i...) // call method of embedded Err
 	return e             // but return own reference to enable chaining

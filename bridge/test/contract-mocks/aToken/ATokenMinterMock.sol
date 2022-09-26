@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: MIT-open-group
-pragma solidity ^0.8.11;
+pragma solidity ^0.8.16;
 
-import "contracts/interfaces/IAToken.sol";
+
 import "contracts/interfaces/IValidatorVault.sol";
+import "contracts/interfaces/IStakingToken.sol";
 import "contracts/utils/ImmutableAuth.sol";
 
 contract ATokenMinterMock is ImmutableAToken, ImmutableValidatorVault {
@@ -15,7 +16,7 @@ contract ATokenMinterMock is ImmutableAToken, ImmutableValidatorVault {
             dilutionAdjustment
         );
 
-        IAToken(_aTokenAddress()).externalMint(to, amount + adjustmentPrice);
+        IStakingToken(_aTokenAddress()).externalMint(to, amount + adjustmentPrice);
 
         IValidatorVault(_validatorVaultAddress()).depositDilutionAdjustment(adjustmentPrice);
     }

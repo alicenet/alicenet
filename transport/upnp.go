@@ -43,7 +43,7 @@ func (u *UPnPMapper) Start() {
 	}
 	u.gateway = d
 
-	err = u.gateway.Forward(u.port, "Requested by MadNet")
+	err = u.gateway.Forward(u.port, "Requested by AliceNet")
 	if err != nil {
 		u.logger.WithError(err).Error("UPnP forward failed")
 		return

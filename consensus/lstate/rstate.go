@@ -4,10 +4,11 @@ import (
 	"bytes"
 	"errors"
 
-	"github.com/MadBase/MadNet/consensus/objs"
-	"github.com/MadBase/MadNet/crypto"
-	"github.com/MadBase/MadNet/errorz"
-	"github.com/MadBase/MadNet/utils"
+	"github.com/alicenet/alicenet/consensus/objs"
+	"github.com/alicenet/alicenet/crypto"
+	"github.com/alicenet/alicenet/errorz"
+	"github.com/alicenet/alicenet/logging"
+	"github.com/alicenet/alicenet/utils"
 )
 
 type RoundStates struct {
@@ -213,13 +214,18 @@ func (r *RoundStates) SetPreCommitNil(pcn *objs.PreCommitNil) error {
 }
 
 func (r *RoundStates) SetNextHeight(pc *objs.NextHeight) error {
-	r.SetProposal(pc.NHClaims.Proposal)
+	if err := r.SetProposal(pc.NHClaims.Proposal); err != nil {
+		utils.DebugTrace(logging.GetLogger("consensus"), err)
+		var expectedErr *errorz.ErrStale
+		if !errors.As(err, &expectedErr) {
+			return err
+		}
+	}
 	rs := r.GetRoundState(pc.Voter)
 	if rs == nil {
 		return errorz.ErrInvalid{}.New("rs nil in nh")
 	}
-	_, err := rs.SetNextHeight(pc)
-	if err != nil {
+	if _, err := rs.SetNextHeight(pc); err != nil {
 		return err
 	}
 	return nil

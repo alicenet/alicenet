@@ -3,21 +3,22 @@ package request
 import (
 	"context"
 
-	"github.com/MadBase/MadNet/consensus/objs"
-	"github.com/MadBase/MadNet/constants"
-	"github.com/MadBase/MadNet/crypto"
-	"github.com/MadBase/MadNet/dynamics"
-	"github.com/MadBase/MadNet/errorz"
-	"github.com/MadBase/MadNet/logging"
-	"github.com/MadBase/MadNet/middleware"
-	pb "github.com/MadBase/MadNet/proto"
-	"github.com/MadBase/MadNet/utils"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
+
+	"github.com/alicenet/alicenet/consensus/objs"
+	"github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/crypto"
+	"github.com/alicenet/alicenet/dynamics"
+	"github.com/alicenet/alicenet/errorz"
+	"github.com/alicenet/alicenet/logging"
+	"github.com/alicenet/alicenet/middleware"
+	pb "github.com/alicenet/alicenet/proto"
+	"github.com/alicenet/alicenet/utils"
 )
 
 // Client serves incoming requests and handles routing of outgoing
-// requests for data from the consensus system.
+// requests for state from the consensus system.
 type Client struct {
 	client   pb.P2PClient
 	logger   *logrus.Logger
@@ -26,7 +27,7 @@ type Client struct {
 	storage  dynamics.StorageGetter
 }
 
-// Init initializes the object
+// Init initializes the object.
 func (rb *Client) Init(client pb.P2PClient, storage dynamics.StorageGetter) {
 	rb.logger = logging.GetLogger(constants.LoggerConsensus)
 	rb.client = client
@@ -36,7 +37,7 @@ func (rb *Client) Init(client pb.P2PClient, storage dynamics.StorageGetter) {
 }
 
 // RequestP2PGetSnapShotNode implements the client for the P2P method
-// GetSnapShotNode
+// GetSnapShotNode.
 func (rb *Client) RequestP2PGetSnapShotNode(ctx context.Context, height uint32, key []byte, opts ...grpc.CallOption) ([]byte, error) {
 	req := &pb.GetSnapShotNodeRequest{
 		Height:   height,
@@ -57,7 +58,7 @@ func (rb *Client) RequestP2PGetSnapShotNode(ctx context.Context, height uint32, 
 }
 
 // RequestP2PGetSnapShotHdrNode implements the client for the P2P method
-// GetSnapShotHdrNode
+// GetSnapShotHdrNode.
 func (rb *Client) RequestP2PGetSnapShotHdrNode(ctx context.Context, key []byte, opts ...grpc.CallOption) ([]byte, error) {
 	req := &pb.GetSnapShotHdrNodeRequest{
 		NodeHash: key,
@@ -77,7 +78,7 @@ func (rb *Client) RequestP2PGetSnapShotHdrNode(ctx context.Context, key []byte, 
 }
 
 // RequestP2PGetBlockHeaders implements the client for the P2P method
-// GetBlockHeaders
+// GetBlockHeaders.
 func (rb *Client) RequestP2PGetBlockHeaders(ctx context.Context, blockNums []uint32, opts ...grpc.CallOption) ([]*objs.BlockHeader, error) {
 	req := &pb.GetBlockHeadersRequest{
 		BlockNumbers: blockNums,
@@ -112,7 +113,7 @@ func (rb *Client) RequestP2PGetBlockHeaders(ctx context.Context, blockNums []uin
 }
 
 // RequestP2PGetPendingTx implements the client for the P2P method
-// GetPendingTx
+// GetPendingTx.
 func (rb *Client) RequestP2PGetPendingTx(ctx context.Context, txHashes [][]byte, opts ...grpc.CallOption) ([][]byte, error) {
 	req := &pb.GetPendingTxsRequest{
 		TxHashes: txHashes,
@@ -137,7 +138,7 @@ func (rb *Client) RequestP2PGetPendingTx(ctx context.Context, txHashes [][]byte,
 }
 
 // RequestP2PGetMinedTxs implements the client for the P2P method
-// GetMinedTxs
+// GetMinedTxs.
 func (rb *Client) RequestP2PGetMinedTxs(ctx context.Context, txHashes [][]byte, opts ...grpc.CallOption) ([][]byte, error) {
 	req := &pb.GetMinedTxsRequest{
 		TxHashes: txHashes,
@@ -157,7 +158,7 @@ func (rb *Client) RequestP2PGetMinedTxs(ctx context.Context, txHashes [][]byte, 
 }
 
 // RequestP2PGetSnapShotStateData implements the client for the P2P method
-// GetSnapShotStateData
+// GetSnapShotStateData.
 func (rb *Client) RequestP2PGetSnapShotStateData(ctx context.Context, key []byte, opts ...grpc.CallOption) ([]byte, error) {
 	req := &pb.GetSnapShotStateDataRequest{
 		Key: key,

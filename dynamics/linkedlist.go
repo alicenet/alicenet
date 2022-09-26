@@ -1,8 +1,8 @@
 package dynamics
 
 import (
-	"github.com/MadBase/MadNet/constants/dbprefix"
-	"github.com/MadBase/MadNet/utils"
+	"github.com/alicenet/alicenet/constants/dbprefix"
+	"github.com/alicenet/alicenet/utils"
 )
 
 // LinkedList is a doubly linked list which will store nodes corresponding
@@ -52,10 +52,7 @@ func (ll *LinkedList) Unmarshal(v []byte) error {
 
 // IsValid returns true if LinkedList is valid
 func (ll *LinkedList) IsValid() bool {
-	if ll.epochLastUpdated == 0 {
-		return false
-	}
-	return true
+	return ll.epochLastUpdated != 0
 }
 
 // CreateLinkedList creates the first node in a LinkedList.

@@ -1,13 +1,15 @@
 // SPDX-License-Identifier: MIT-open-group
-pragma solidity ^0.8.11;
+pragma solidity ^0.8.16;
 
 import "contracts/interfaces/ISnapshots.sol";
 import "contracts/interfaces/IValidatorPool.sol";
 import "contracts/utils/ImmutableAuth.sol";
 import "contracts/libraries/parsers/BClaimsParserLibrary.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "contracts/interfaces/IDynamics.sol";
 
-contract SnapshotsMock is Initializable, ImmutableValidatorPool, ISnapshots {
+contract SnapshotsMock is Initializable, ImmutableValidatorPool, ISnapshots, ImmutableDynamics {
+    error onlyAdminAllowed();
     uint32 internal _epoch;
     uint32 internal _epochLength;
 
@@ -25,7 +27,9 @@ contract SnapshotsMock is Initializable, ImmutableValidatorPool, ISnapshots {
     uint256 internal _minimumIntervalBetweenSnapshots;
 
     modifier onlyAdmin() {
-        require(msg.sender == _admin, "Snapshots: Only admin allowed!");
+        if (msg.sender != _admin) {
+            revert onlyAdminAllowed();
+        }
         _;
     }
 
@@ -85,6 +89,8 @@ contract SnapshotsMock is Initializable, ImmutableValidatorPool, ISnapshots {
         );
         _epoch++;
         _snapshots[_epoch] = Snapshot(block.number, blockClaims);
+        IDynamics(_dynamicsAddress()).updateHead(_epoch);
+
         return true;
     }
 
@@ -201,6 +207,27 @@ contract SnapshotsMock is Initializable, ImmutableValidatorPool, ISnapshots {
         blocksSinceDesperation;
         blsig;
         desperationFactor;
+        return true;
+    }
+
+    function checkBClaimsSignature(bytes calldata groupSignature_, bytes calldata bClaims_)
+        public
+        pure
+        returns (bool)
+    {
+        groupSignature_;
+        bClaims_;
+        return true;
+    }
+
+    function isValidatorElectedToPerformSnapshot(
+        address validator,
+        uint256 lastSnapshotCommittedAt,
+        bytes32 groupSignatureHash
+    ) public pure returns (bool) {
+        validator;
+        lastSnapshotCommittedAt;
+        groupSignatureHash;
         return true;
     }
 }

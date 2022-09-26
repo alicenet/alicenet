@@ -2,15 +2,16 @@ package indexer
 
 import (
 	"bytes"
-	"io/ioutil"
-	"os"
+	"fmt"
 	"testing"
 
-	"github.com/MadBase/MadNet/application/objs"
-	trie "github.com/MadBase/MadNet/badgerTrie"
-	"github.com/MadBase/MadNet/constants"
-	"github.com/MadBase/MadNet/crypto"
 	"github.com/dgraph-io/badger/v2"
+
+	"github.com/alicenet/alicenet/application/objs"
+	trie "github.com/alicenet/alicenet/badgerTrie"
+	"github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/crypto"
+	"github.com/alicenet/alicenet/internal/testing/environment"
 )
 
 func makeOwner() *objs.Owner {
@@ -37,42 +38,91 @@ func makeDataIndex() *DataIndex {
 	return index
 }
 
+// Create n entries, return pag entries.
 func TestDataIndexAdd(t *testing.T) {
-	dir, err := ioutil.TempDir("", "badger-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}()
-	opts := badger.DefaultOptions(dir)
-	db, err := badger.Open(opts)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer db.Close()
+	t.Parallel()
+	db := environment.SetupBadgerDatabase(t)
 
 	index := makeDataIndex()
-	owner := &objs.Owner{}
-	utxoID := crypto.Hasher([]byte("utxoID"))
-	dataIndex := trie.Hasher([]byte("dataIndex"))
+	owner := makeOwner()
+	n := 20
+	pag := 13
+	insertedEntries := make([]*objs.PaginationResponse, n)
 
-	err = db.Update(func(txn *badger.Txn) error {
-		// Add value
-		err := index.Add(txn, utxoID, owner, dataIndex)
-		if err == nil {
-			t.Fatal("Should raise an error (1)")
+	for i := 0; i < n; i++ {
+		utxoID := crypto.Hasher([]byte(fmt.Sprintf("utxoID%d", i)))
+		dataIndex := trie.Hasher([]byte(fmt.Sprintf("dataIndex%d", i)))
+		insertedEntries[i] = &objs.PaginationResponse{
+			UTXOID: utxoID,
+			Index:  dataIndex,
+		}
+
+		err := db.Update(func(txn *badger.Txn) error {
+			err := index.Add(txn, utxoID, owner, dataIndex)
+			if err != nil {
+				t.Fatal(err)
+			}
+			val, err := index.Contains(txn, owner, dataIndex)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !val {
+				// Value should be present
+				t.Fatal("Should be present")
+			}
+			return nil
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	startIndex := make([]byte, 0)
+	exclude := make(map[string]bool)
+	err := db.View(func(txn *badger.Txn) error {
+		response, err := index.PaginateDataStores(txn, owner, pag, startIndex, exclude)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if len(response) != pag {
+			t.Fatal("Wrong response length")
+		}
+
+		found := 0
+		for _, entry := range response {
+			_, ok := exclude[string(entry.UTXOID)]
+			if !ok {
+				t.Fatal("Exclude should contain UTXOID")
+			}
+
+			for i := 0; i < n; i++ {
+				if bytes.Equal(insertedEntries[i].Index, entry.Index) && bytes.Equal(insertedEntries[i].UTXOID, entry.UTXOID) {
+					found++
+				}
+			}
+		}
+
+		if found != pag {
+			t.Fatal("Wrong items in the response")
 		}
 		return nil
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
+}
 
-	owner = makeOwner()
-	err = db.Update(func(txn *badger.Txn) error {
+func TestDataIndexAddFastSync(t *testing.T) {
+	t.Parallel()
+	db := environment.SetupBadgerDatabase(t)
+
+	index := makeDataIndex()
+	owner := makeOwner()
+	utxoID := crypto.Hasher([]byte("utxoID"))
+	dataIndex := trie.Hasher([]byte("dataIndex"))
+
+	err := db.Update(func(txn *badger.Txn) error {
 		err := index.Add(txn, utxoID, owner, dataIndex)
 		if err != nil {
 			t.Fatal(err)
@@ -92,9 +142,9 @@ func TestDataIndexAdd(t *testing.T) {
 	}
 
 	err = db.Update(func(txn *badger.Txn) error {
-		err := index.Add(txn, utxoID, owner, dataIndex)
-		if err == nil {
-			t.Fatal("Should raise an error (2)")
+		err := index.AddFastSync(txn, utxoID, owner, dataIndex)
+		if err != nil {
+			t.Fatal("Override shouldn't raise an error")
 		}
 		return nil
 	})
@@ -104,28 +154,15 @@ func TestDataIndexAdd(t *testing.T) {
 }
 
 func TestDataIndexContains(t *testing.T) {
-	dir, err := ioutil.TempDir("", "badger-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}()
-	opts := badger.DefaultOptions(dir)
-	db, err := badger.Open(opts)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer db.Close()
+	t.Parallel()
+	db := environment.SetupBadgerDatabase(t)
 
 	index := makeDataIndex()
 	owner := &objs.Owner{}
 	utxoID := crypto.Hasher([]byte("utxoID"))
 	dataIndex := trie.Hasher([]byte("dataIndex"))
 
-	err = db.Update(func(txn *badger.Txn) error {
+	err := db.Update(func(txn *badger.Txn) error {
 		_, err := index.Contains(txn, owner, utxoID)
 		if err == nil {
 			t.Fatal("Should have raised error")
@@ -179,28 +216,15 @@ func TestDataIndexContains(t *testing.T) {
 }
 
 func TestDataIndexDrop(t *testing.T) {
-	dir, err := ioutil.TempDir("", "badger-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}()
-	opts := badger.DefaultOptions(dir)
-	db, err := badger.Open(opts)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer db.Close()
+	t.Parallel()
+	db := environment.SetupBadgerDatabase(t)
 
 	index := makeDataIndex()
 	owner := makeOwner()
 	utxoID := crypto.Hasher([]byte("utxoID"))
 	dataIndex := trie.Hasher([]byte("dataIndex"))
 
-	err = db.Update(func(txn *badger.Txn) error {
+	err := db.Update(func(txn *badger.Txn) error {
 		err := index.Drop(txn, utxoID)
 		if err == nil {
 			// Value not present
@@ -224,28 +248,15 @@ func TestDataIndexDrop(t *testing.T) {
 }
 
 func TestDataIndexGetUTXOID(t *testing.T) {
-	dir, err := ioutil.TempDir("", "badger-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}()
-	opts := badger.DefaultOptions(dir)
-	db, err := badger.Open(opts)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer db.Close()
+	t.Parallel()
+	db := environment.SetupBadgerDatabase(t)
 
 	index := makeDataIndex()
 	owner := &objs.Owner{}
 	dataIndex := make([]byte, constants.HashLen)
 	dataIndex[0] = 1
 	dataIndex[constants.HashLen-1] = 1
-	err = db.Update(func(txn *badger.Txn) error {
+	err := db.Update(func(txn *badger.Txn) error {
 		_, err := index.GetUTXOID(txn, owner, dataIndex)
 		if err == nil {
 			// Invalid owner
@@ -271,25 +282,11 @@ func TestDataIndexGetUTXOID(t *testing.T) {
 }
 
 func TestDataIndexMakeIterKey(t *testing.T) {
-	dir, err := ioutil.TempDir("", "badger-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}()
-	opts := badger.DefaultOptions(dir)
-	db, err := badger.Open(opts)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer db.Close()
+	t.Parallel()
 
 	index := makeDataIndex()
 	owner := &objs.Owner{}
-	_, err = index.makeIterKey(owner)
+	_, err := index.makeIterKey(owner)
 	if err == nil {
 		t.Fatal("Should have raised error")
 	}
@@ -312,28 +309,14 @@ func TestDataIndexMakeIterKey(t *testing.T) {
 }
 
 func TestDataIndexMakeKey(t *testing.T) {
-	dir, err := ioutil.TempDir("", "badger-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}()
-	opts := badger.DefaultOptions(dir)
-	db, err := badger.Open(opts)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer db.Close()
+	t.Parallel()
 
 	index := makeDataIndex()
 	owner := &objs.Owner{}
 	dataIndex := make([]byte, constants.HashLen)
 	dataIndex[0] = 1
 	dataIndex[constants.HashLen-1] = 1
-	_, err = index.makeKey(owner, dataIndex)
+	_, err := index.makeKey(owner, dataIndex)
 	if err == nil {
 		t.Fatal("Should have raised error")
 	}
@@ -358,21 +341,7 @@ func TestDataIndexMakeKey(t *testing.T) {
 }
 
 func TestDataIndexMakeRefKey(t *testing.T) {
-	dir, err := ioutil.TempDir("", "badger-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}()
-	opts := badger.DefaultOptions(dir)
-	db, err := badger.Open(opts)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer db.Close()
+	t.Parallel()
 
 	index := makeDataIndex()
 	utxoID := make([]byte, constants.HashLen)
@@ -390,32 +359,55 @@ func TestDataIndexMakeRefKey(t *testing.T) {
 	}
 }
 
-func TestDataIndexKey(t *testing.T) {
-	/* TODO FIX
-	  diKey := &DataIndexKey{}
-		keyTrue := crypto.Hasher([]byte("key"))
-		diKey.key = keyTrue
-		key := diKey.MarshalBinary()
-		if !bytes.Equal(key, keyTrue) {
-			t.Fatal("keys do not match (1)")
-		}
-		diKey2 := &DataIndexKey{}
-		diKey2.UnmarshalBinary(key)
-		if !bytes.Equal(diKey.key, diKey2.key) {
-			t.Fatal("keys do not match (2)")
-		}
+func TestDataIndexPaginateDataStores(t *testing.T) {
+	t.Parallel()
+	db := environment.SetupBadgerDatabase(t)
 
-		diRefkey := &DataIndexRefKey{}
-		refkeyTrue := crypto.Hasher([]byte("refkey"))
-		diRefkey.refkey = refkeyTrue
-		refkey := diRefkey.MarshalBinary()
-		if !bytes.Equal(refkey, refkeyTrue) {
-			t.Fatal("refkeys do not match (1)")
+	index := makeDataIndex()
+	owner := &objs.Owner{}
+	utxoID := crypto.Hasher([]byte("utxoID"))
+	dataIndex := trie.Hasher([]byte("dataIndex"))
+
+	err := db.Update(func(txn *badger.Txn) error {
+		// Add value
+		err := index.Add(txn, utxoID, owner, dataIndex)
+		if err == nil {
+			t.Fatal("Should raise an error (1)")
 		}
-		diRefkey2 := &DataIndexRefKey{}
-		diRefkey2.UnmarshalBinary(refkey)
-		if !bytes.Equal(diRefkey.refkey, diRefkey2.refkey) {
-			t.Fatal("refkeys do not match (2)")
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	owner = makeOwner()
+	err = db.Update(func(txn *badger.Txn) error {
+		err := index.Add(txn, utxoID, owner, dataIndex)
+		if err != nil {
+			t.Fatal(err)
 		}
-	*/
+		val, err := index.Contains(txn, owner, dataIndex)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !val {
+			// Value should be present
+			t.Fatal("Should be present")
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = db.Update(func(txn *badger.Txn) error {
+		err := index.Add(txn, utxoID, owner, dataIndex)
+		if err == nil {
+			t.Fatal("Should raise an error (2)")
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
 }

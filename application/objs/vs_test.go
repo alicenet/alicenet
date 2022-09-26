@@ -5,9 +5,11 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/MadBase/MadNet/application/objs/uint256"
-	"github.com/MadBase/MadNet/constants"
-	"github.com/MadBase/MadNet/crypto"
+	"github.com/stretchr/testify/assert"
+
+	"github.com/alicenet/alicenet/application/objs/uint256"
+	"github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/crypto"
 )
 
 func TestValueStoreGood(t *testing.T) {
@@ -744,7 +746,8 @@ func TestValueStoreSign(t *testing.T) {
 
 	acctBad := make([]byte, constants.OwnerLen)
 	onrBad := &Owner{}
-	onrBad.New(acctBad, constants.CurveSecp256k1)
+	err = onrBad.New(acctBad, constants.CurveSecp256k1)
+	assert.Nil(t, err)
 	if err := onrBad.Validate(); err != nil {
 		t.Fatal(err)
 	}
@@ -770,7 +773,8 @@ func TestValueStoreSign(t *testing.T) {
 	}
 	acct := crypto.GetAccount(pk)
 	onr := &Owner{}
-	onr.New(acct, constants.CurveSecp256k1)
+	err = onr.New(acct, constants.CurveSecp256k1)
+	assert.Nil(t, err)
 	if err := onr.Validate(); err != nil {
 		t.Fatal(err)
 	}
@@ -831,7 +835,8 @@ func TestValueStoreValidateSignature(t *testing.T) {
 	}
 	acct := crypto.GetAccount(pk)
 	onr := &Owner{}
-	onr.New(acct, constants.CurveSecp256k1)
+	err = onr.New(acct, constants.CurveSecp256k1)
+	assert.Nil(t, err)
 	if err := onr.Validate(); err != nil {
 		t.Fatal(err)
 	}
@@ -886,8 +891,8 @@ func TestValueStoreMakeTxIn(t *testing.T) {
 }
 
 func TestValueStoreValidateFee(t *testing.T) {
-	msg := makeMockStorageGetter()
-	storage := makeStorage(msg)
+	msg := MakeMockStorageGetter()
+	storage := MakeStorage(msg)
 
 	utxo := &TXOut{}
 	err := utxo.valueStore.ValidateFee(storage)
@@ -910,7 +915,7 @@ func TestValueStoreValidateFee(t *testing.T) {
 
 	vsFee := big.NewInt(1)
 	msg.SetValueStoreFee(vsFee)
-	storage = makeStorage(msg)
+	storage = MakeStorage(msg)
 	err = vs.ValidateFee(storage)
 	if err == nil {
 		t.Fatal("Should have raised error (3)")

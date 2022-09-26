@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/MadBase/MadNet/constants"
-	"github.com/MadBase/MadNet/crypto"
-	"github.com/MadBase/MadNet/utils"
+	"github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/crypto"
+	"github.com/alicenet/alicenet/utils"
 )
 
 func TestMakeUTXOID(t *testing.T) {
@@ -129,33 +129,6 @@ func TestExtractCurveSpec(t *testing.T) {
 	}
 	if cs != curveSpec {
 		t.Fatal("CurveSpecs do not match")
-	}
-	if len(val) != 1 {
-		t.Fatal("Incorrect return length")
-	}
-	if uint8(val[0]) != signal {
-		t.Fatal("Returned values do not match")
-	}
-}
-
-func TestExtractSignerRole(t *testing.T) {
-	owner := make([]byte, 0)
-	_, _, err := extractSignerRole(owner)
-	if err == nil {
-		t.Fatal("Should have raised error")
-	}
-
-	owner2 := make([]byte, 2)
-	signerRole := PrimarySignerRole
-	owner2[0] = uint8(signerRole)
-	signal := uint8(255)
-	owner2[1] = signal
-	sr, val, err := extractSignerRole(owner2)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if sr != signerRole {
-		t.Fatal("SignerRoles do not match")
 	}
 	if len(val) != 1 {
 		t.Fatal("Incorrect return length")

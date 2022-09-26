@@ -1,18 +1,18 @@
 package objs
 
 import (
-	"github.com/MadBase/MadNet/constants"
-	"github.com/MadBase/MadNet/errorz"
-	"github.com/MadBase/MadNet/utils"
+	"github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/errorz"
+	"github.com/alicenet/alicenet/utils"
 )
 
-// Owner contains information related to a general owner object
+// Owner contains information related to a general owner object.
 type Owner struct {
 	CurveSpec constants.CurveSpec
 	Account   []byte
 }
 
-// New makes a new Owner
+// New makes a new Owner.
 func (onr *Owner) New(acct []byte, curveSpec constants.CurveSpec) error {
 	if onr == nil {
 		return errorz.ErrInvalid{}.New("owner.new; owner not initialized")
@@ -27,30 +27,7 @@ func (onr *Owner) New(acct []byte, curveSpec constants.CurveSpec) error {
 	return nil
 }
 
-// NewFromAtomicSwapOwner makes a new Owner from an AtomicSwapOwner
-// (PrimaryOwner)
-func (onr *Owner) NewFromAtomicSwapOwner(aso *AtomicSwapOwner) error {
-	if onr == nil {
-		return errorz.ErrInvalid{}.New("owner.newFromAtomicSwapOwner; owner not initialized")
-	}
-	if err := aso.Validate(); err != nil {
-		return err
-	}
-	return onr.New(aso.PrimaryOwner.Account, aso.PrimaryOwner.CurveSpec)
-}
-
-// NewFromAtomicSwapSubOwner makes a new Owner from an AtomicSwapSubOwner
-func (onr *Owner) NewFromAtomicSwapSubOwner(asso *AtomicSwapSubOwner) error {
-	if onr == nil {
-		return errorz.ErrInvalid{}.New("owner.newFromAtomicSwapSubOwner; owner not initialized")
-	}
-	if err := asso.Validate(); err != nil {
-		return err
-	}
-	return onr.New(asso.Account, asso.CurveSpec)
-}
-
-// NewFromDataStoreOwner makes a new Owner from a DataStoreOwner
+// NewFromDataStoreOwner makes a new Owner from a DataStoreOwner.
 func (onr *Owner) NewFromDataStoreOwner(dso *DataStoreOwner) error {
 	if onr == nil {
 		return errorz.ErrInvalid{}.New("owner.newFromDataStoreOwner; owner not initialized")
@@ -61,7 +38,7 @@ func (onr *Owner) NewFromDataStoreOwner(dso *DataStoreOwner) error {
 	return onr.New(dso.Account, dso.CurveSpec)
 }
 
-// NewFromValueStoreOwner makes a new Owner from a ValueStoreOwner
+// NewFromValueStoreOwner makes a new Owner from a ValueStoreOwner.
 func (onr *Owner) NewFromValueStoreOwner(vso *ValueStoreOwner) error {
 	if onr == nil {
 		return errorz.ErrInvalid{}.New("owner.newFromValueStoreOwner; owner not initialized")
@@ -73,7 +50,7 @@ func (onr *Owner) NewFromValueStoreOwner(vso *ValueStoreOwner) error {
 }
 
 // MarshalBinary takes the Owner object and returns the canonical
-// byte slice
+// byte slice.
 func (onr *Owner) MarshalBinary() ([]byte, error) {
 	if err := onr.Validate(); err != nil {
 		return nil, err
@@ -84,7 +61,7 @@ func (onr *Owner) MarshalBinary() ([]byte, error) {
 	return owner, nil
 }
 
-// Validate validates the Owner object
+// Validate validates the Owner object.
 func (onr *Owner) Validate() error {
 	if onr == nil {
 		return errorz.ErrInvalid{}.New("owner.validate; owner not initialized")
@@ -99,7 +76,7 @@ func (onr *Owner) Validate() error {
 }
 
 // UnmarshalBinary takes a byte slice and returns the corresponding
-// Owner object
+// Owner object.
 func (onr *Owner) UnmarshalBinary(o []byte) error {
 	if onr == nil {
 		return errorz.ErrInvalid{}.New("owner.unmarshalBinary; owner not initialized")

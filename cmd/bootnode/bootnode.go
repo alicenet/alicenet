@@ -6,13 +6,13 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/MadBase/MadNet/config"
-	"github.com/MadBase/MadNet/interfaces"
-	"github.com/MadBase/MadNet/logging"
-	"github.com/MadBase/MadNet/peering"
-	pb "github.com/MadBase/MadNet/proto"
-	"github.com/MadBase/MadNet/transport"
-	"github.com/MadBase/MadNet/types"
+	"github.com/alicenet/alicenet/config"
+	"github.com/alicenet/alicenet/interfaces"
+	"github.com/alicenet/alicenet/logging"
+	"github.com/alicenet/alicenet/peering"
+	pb "github.com/alicenet/alicenet/proto"
+	"github.com/alicenet/alicenet/transport"
+	"github.com/alicenet/alicenet/types"
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -84,6 +84,7 @@ type Server struct {
 }
 
 // KnownNodes returns a set of recently seen peers when the bootnode is connected to
+//
 //goland:noinspection GoUnusedParameter
 func (bn *Server) KnownNodes(ctx context.Context, r *pb.BootNodeRequest) (*pb.BootNodeResponse, error) {
 	// get the identity of the caller
@@ -158,7 +159,7 @@ func acceptLoop(log *logrus.Logger, transport interfaces.P2PTransport, handler *
 			return
 		}
 		// bind the connection to serve the request
-		go handler.HandleConnection(conn)
+		go handler.HandleConnection(conn) //nolint:errcheck
 		// force drop the connection after 10 seconds
 		go forceCleanup(conn)
 	}

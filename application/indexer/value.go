@@ -1,11 +1,12 @@
 package indexer
 
 import (
-	"github.com/MadBase/MadNet/application/objs"
-	"github.com/MadBase/MadNet/application/objs/uint256"
-	"github.com/MadBase/MadNet/constants"
-	"github.com/MadBase/MadNet/utils"
 	"github.com/dgraph-io/badger/v2"
+
+	"github.com/alicenet/alicenet/application/objs"
+	"github.com/alicenet/alicenet/application/objs/uint256"
+	"github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/utils"
 )
 
 /*
@@ -27,7 +28,7 @@ func NewValueIndex(p, pp prefixFunc) *ValueIndex {
 }
 
 // ValueIndex creates an index that allows objects to be dropped
-// by epoch
+// by epoch.
 type ValueIndex struct {
 	prefix    prefixFunc
 	refPrefix prefixFunc
@@ -49,17 +50,17 @@ type ValueIndexRefKey struct {
 	refkey []byte
 }
 
-// MarshalBinary returns the byte slice for the key object
+// MarshalBinary returns the byte slice for the key object.
 func (virk *ValueIndexRefKey) MarshalBinary() []byte {
 	return utils.CopySlice(virk.refkey)
 }
 
-// UnmarshalBinary takes in a byte slice to set the key object
+// UnmarshalBinary takes in a byte slice to set the key object.
 func (virk *ValueIndexRefKey) UnmarshalBinary(data []byte) {
 	virk.refkey = utils.CopySlice(data)
 }
 
-// Add adds an item to the list
+// Add adds an item to the list.
 func (vi *ValueIndex) Add(txn *badger.Txn, utxoID []byte, owner *objs.Owner, valueOrig *uint256.Uint256) error {
 	valueClone := valueOrig.Clone()
 	viKey, err := vi.makeKey(owner, valueClone.Clone(), utxoID)
@@ -80,7 +81,7 @@ func (vi *ValueIndex) Add(txn *badger.Txn, utxoID []byte, owner *objs.Owner, val
 	return utils.SetValue(txn, key, utils.CopySlice(utxoID))
 }
 
-// Drop returns a list of all txHashes that should be dropped
+// Drop returns a list of all txHashes that should be dropped.
 func (vi *ValueIndex) Drop(txn *badger.Txn, utxoID []byte) error {
 	utxoIDCopy := utils.CopySlice(utxoID)
 	viRefKey := vi.makeRefKey(utxoIDCopy)

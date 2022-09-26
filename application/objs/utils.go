@@ -1,10 +1,10 @@
 package objs
 
 import (
-	"github.com/MadBase/MadNet/constants"
-	"github.com/MadBase/MadNet/crypto"
-	"github.com/MadBase/MadNet/errorz"
-	"github.com/MadBase/MadNet/utils"
+	"github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/crypto"
+	"github.com/alicenet/alicenet/errorz"
+	"github.com/alicenet/alicenet/utils"
 )
 
 // MakeUTXOID will create the UTXOID for a utxo given a transaction hash and
@@ -58,13 +58,6 @@ func extractCurveSpec(owner []byte) (constants.CurveSpec, []byte, error) {
 		return 0, nil, errorz.ErrInvalid{}.New("extractCurveSpec; extraction failed")
 	}
 	return constants.CurveSpec(owner[0]), utils.CopySlice(owner[1:]), nil
-}
-
-func extractSignerRole(owner []byte) (SignerRole, []byte, error) {
-	if len(owner) < 1 {
-		return 0, nil, errorz.ErrInvalid{}.New("extractSignerRole; extraction failed")
-	}
-	return SignerRole(owner[0]), utils.CopySlice(owner[1:]), nil
 }
 
 func extractAccount(owner []byte) ([]byte, []byte, error) {

@@ -4,7 +4,7 @@ import (
 	"errors"
 	"math/big"
 
-	"github.com/MadBase/MadNet/crypto/bn256/cloudflare"
+	"github.com/alicenet/alicenet/crypto/bn256/cloudflare"
 )
 
 // numBytes specifies the number of bytes in a GFp object
@@ -13,8 +13,8 @@ const numBytes = 32
 // ErrNotUint256 occurs when we work with a uint with more than 256 bits
 var ErrNotUint256 = errors.New("big.Ints are not at most 256-bit unsigned integers")
 
-// ErrInvalidData occurs data is invalid
-var ErrInvalidData = errors.New("invalid data")
+// ErrInvalidData occurs state is invalid
+var ErrInvalidData = errors.New("invalid state")
 
 // MarshalBigInt converts a 256-bit uint into a byte slice.
 func MarshalBigInt(x *big.Int) ([]byte, error) {

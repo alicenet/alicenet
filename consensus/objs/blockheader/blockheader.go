@@ -1,9 +1,10 @@
 package blockheader
 
 import (
-	mdefs "github.com/MadBase/MadNet/consensus/objs/capn"
-	"github.com/MadBase/MadNet/errorz"
 	capnp "github.com/MadBase/go-capnproto2/v2"
+
+	mdefs "github.com/alicenet/alicenet/consensus/objs/capn"
+	"github.com/alicenet/alicenet/errorz"
 )
 
 // Marshal will marshal the BlockHeader object.
@@ -37,7 +38,7 @@ func Unmarshal(data []byte) (mdefs.BlockHeader, error) {
 	return obj, nil
 }
 
-// Validate will validate the BlockHeader object
+// Validate will validate the BlockHeader object.
 func Validate(p mdefs.BlockHeader) error {
 	if !p.IsValid() {
 		return errorz.ErrInvalid{}.New("blockheader capn obj is not valid")

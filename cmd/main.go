@@ -8,16 +8,25 @@ import (
 	"strings"
 	"time"
 
-	"github.com/MadBase/MadNet/cmd/bootnode"
-	"github.com/MadBase/MadNet/cmd/firewalld"
-	"github.com/MadBase/MadNet/cmd/utils"
-	"github.com/MadBase/MadNet/cmd/validator"
-	"github.com/MadBase/MadNet/config"
-	"github.com/MadBase/MadNet/logging"
+	"github.com/alicenet/alicenet/cmd/bootnode"
+	"github.com/alicenet/alicenet/cmd/ethkey"
+	"github.com/alicenet/alicenet/cmd/firewalld"
+	"github.com/alicenet/alicenet/cmd/initialization"
+	"github.com/alicenet/alicenet/cmd/node"
+	"github.com/alicenet/alicenet/cmd/utils"
+	"github.com/alicenet/alicenet/config"
+	"github.com/alicenet/alicenet/logging"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
+)
+
+// Variables set by goreleaser process: https://goreleaser.com/cookbooks/using-main.version.
+var (
+	// Version from git tag.
+	version               = "dev"
+	defaultConfigLocation = "/.alicenet/mainnet/config.toml"
 )
 
 type option struct {
@@ -27,7 +36,7 @@ type option struct {
 	value interface{}
 }
 
-// Runner wraps a cobra command's Run() and sets up loggers first
+// Runner wraps a cobra command's Run() and sets up loggers first.
 func runner(commandRun func(*cobra.Command, []string)) func(*cobra.Command, []string) {
 	logger := logging.GetLogger("main")
 	return func(a *cobra.Command, b []string) {
@@ -39,7 +48,9 @@ func runner(commandRun func(*cobra.Command, []string)) func(*cobra.Command, []st
 			if logLevel == "" {
 				logLevel = "info"
 			}
-			logger.Infof("Setting log level for '%v' to '%v'", logName, logLevel)
+			if logLevel != "info" {
+				logger.Infof("Setting log level for '%v' to '%v'", logName, logLevel)
+			}
 			setLogger(logName, logLevel)
 		}
 		// backwards compatibility
@@ -55,13 +66,14 @@ func runner(commandRun func(*cobra.Command, []string)) func(*cobra.Command, []st
 			}
 		}
 		commandRun(a, b)
-
 	}
 }
 
 func setLogger(name string, level string) {
 	lgr := logging.GetLogger(name)
 	switch level {
+	case "trace":
+		lgr.SetLevel(logrus.TraceLevel)
 	case "debug":
 		lgr.SetLevel(logrus.DebugLevel)
 	case "info":
@@ -70,6 +82,10 @@ func setLogger(name string, level string) {
 		lgr.SetLevel(logrus.WarnLevel)
 	case "error":
 		lgr.SetLevel(logrus.ErrorLevel)
+	case "fatal":
+		lgr.SetLevel(logrus.FatalLevel)
+	case "panic":
+		lgr.SetLevel(logrus.PanicLevel)
 	default:
 		lgr.SetLevel(logrus.InfoLevel)
 	}
@@ -79,18 +95,21 @@ func main() {
 	logger := logging.GetLogger("main")
 	logger.SetLevel(logrus.InfoLevel)
 
+	config.Configuration.Version = version
+
 	// Root for all commands
 	rootCommand := cobra.Command{
-		Use:   "madnet",
-		Short: "Short description of madnet",
-		Long:  "This is a not so long description for madnet"}
+		Use:   "alicenet",
+		Short: "Short description of alicenet",
+		Long:  "This is a not so long description for alicenet",
+	}
 
 	// All the configuration options available. Used for command line and config file.
 	options := map[*cobra.Command][]*option{
 		&rootCommand: {
 			{"config", "c", "Name of config file", &config.Configuration.ConfigurationFileName},
 			{"logging", "", "", &config.Configuration.LoggingLevels},
-			{"loglevel.madnet", "", "", &config.Configuration.Logging.Madnet},
+			{"loglevel.alicenet", "", "", &config.Configuration.Logging.AliceNet},
 			{"loglevel.consensus", "", "", &config.Configuration.Logging.Consensus},
 			{"loglevel.transport", "", "", &config.Configuration.Logging.Transport},
 			{"loglevel.app", "", "", &config.Configuration.Logging.App},
@@ -124,25 +143,15 @@ func main() {
 			{"chain.monitorDB", "", "", &config.Configuration.Chain.MonitorDbPath},
 			{"chain.monitorDBInMemory", "", "", &config.Configuration.Chain.MonitorDbInMemory},
 			{"ethereum.endpoint", "", "", &config.Configuration.Ethereum.Endpoint},
-			{"ethereum.endpointPeers", "", "Minimum peers required", &config.Configuration.Ethereum.EndpointMinimumPeers},
+			{"ethereum.endpointMinimumPeers", "", "Minimum peers required", &config.Configuration.Ethereum.EndpointMinimumPeers},
 			{"ethereum.keystore", "", "", &config.Configuration.Ethereum.Keystore},
-			{"ethereum.timeout", "", "", &config.Configuration.Ethereum.Timeout},
-			{"ethereum.testEther", "", "", &config.Configuration.Ethereum.TestEther},
-			{"ethereum.deployAccount", "", "", &config.Configuration.Ethereum.DeployAccount},
 			{"ethereum.defaultAccount", "", "", &config.Configuration.Ethereum.DefaultAccount},
-			{"ethereum.finalityDelay", "", "Number blocks before we consider a block final", &config.Configuration.Ethereum.FinalityDelay},
-			{"ethereum.retryCount", "", "Number of times to retry an Ethereum operation", &config.Configuration.Ethereum.RetryCount},
-			{"ethereum.retryDelay", "", "Delay between retry attempts", &config.Configuration.Ethereum.RetryDelay},
-			{"ethereum.passcodes", "", "Passcodes for keystore", &config.Configuration.Ethereum.Passcodes},
+			{"ethereum.passCodes", "", "PassCodes for keystore", &config.Configuration.Ethereum.PassCodes},
 			{"ethereum.startingBlock", "", "The first block we care about", &config.Configuration.Ethereum.StartingBlock},
-			{"ethereum.registryAddress", "", "", &config.Configuration.Ethereum.RegistryAddress},
-			{"ethereum.txFeePercentageToIncrease", "", "", &config.Configuration.Ethereum.TxFeePercentageToIncrease},
-			{"ethereum.txMaxFeeThresholdInGwei", "", "", &config.Configuration.Ethereum.TxMaxFeeThresholdInGwei},
-			{"ethereum.txCheckFrequency", "", "", &config.Configuration.Ethereum.TxCheckFrequency},
-			{"ethereum.txTimeoutForReplacement", "", "", &config.Configuration.Ethereum.TxTimeoutForReplacement},
-			{"monitor.batchSize", "", "", &config.Configuration.Monitor.BatchSize},
-			{"monitor.interval", "", "", &config.Configuration.Monitor.Interval},
-			{"monitor.timeout", "", "", &config.Configuration.Monitor.Timeout},
+			{"ethereum.factoryAddress", "", "", &config.Configuration.Ethereum.FactoryAddress},
+			{"ethereum.txMaxGasFeeAllowedInGwei", "", "", &config.Configuration.Ethereum.TxMaxGasFeeAllowedInGwei},
+			{"ethereum.txMetricsDisplay", "", "", &config.Configuration.Ethereum.TxMetricsDisplay},
+			{"ethereum.processingBlockBatchSize", "", "", &config.Configuration.Ethereum.ProcessingBlockBatchSize},
 			{"transport.peerLimitMin", "", "", &config.Configuration.Transport.PeerLimitMin},
 			{"transport.peerLimitMax", "", "", &config.Configuration.Transport.PeerLimitMax},
 			{"transport.privateKey", "", "", &config.Configuration.Transport.PrivateKey},
@@ -150,7 +159,6 @@ func main() {
 			{"transport.whitelist", "", "", &config.Configuration.Transport.Whitelist},
 			{"transport.bootnodeAddresses", "", "", &config.Configuration.Transport.BootNodeAddresses},
 			{"transport.p2pListeningAddress", "", "", &config.Configuration.Transport.P2PListeningAddress},
-			{"transport.discoveryListeningAddress", "", "", &config.Configuration.Transport.DiscoveryListeningAddress},
 			{"transport.upnp", "", "", &config.Configuration.Transport.UPnP},
 			{"transport.localStateListeningAddress", "", "", &config.Configuration.Transport.LocalStateListeningAddress},
 			{"transport.timeout", "", "", &config.Configuration.Transport.Timeout},
@@ -161,40 +169,61 @@ func main() {
 		},
 
 		&utils.Command: {
-			{"utils.status", "", "", &config.Configuration.Utils.Status}},
+			{"utils.status", "", "", &config.Configuration.Utils.Status},
+		},
 
-		&utils.EthdkgCommand:  {},
 		&utils.SendWeiCommand: {},
 
 		&bootnode.Command: {
 			{"bootnode.listeningAddress", "", "", &config.Configuration.BootNode.ListeningAddress},
-			{"bootnode.cacheSize", "", "", &config.Configuration.BootNode.CacheSize}},
+			{"bootnode.cacheSize", "", "", &config.Configuration.BootNode.CacheSize},
+		},
 
 		&firewalld.Command: {},
 
-		&validator.Command: {
+		&node.Command: {
 			{"validator.rewardAccount", "", "", &config.Configuration.Validator.RewardAccount},
-			{"validator.rewardCurveSpec", "", "", &config.Configuration.Validator.RewardCurveSpec}},
+			{"validator.rewardCurveSpec", "", "", &config.Configuration.Validator.RewardCurveSpec},
+		},
 
-		// &deploy.Command: {
-		// 	{"deploy.migrations", "", "", &config.Configuration.Deploy.Migrations},
-		// 	{"deploy.testMigrations", "", "", &config.Configuration.Deploy.TestMigrations}},
+		&ethkey.Generate: {
+			{"ethkey.passwordfile", "", "the file that contains the password for the keyfile", &config.Configuration.EthKey.PasswordFile},
+			{"ethkey.json", "", "output JSON instead of human-readable format", &config.Configuration.EthKey.Json},
+			{"ethkey.privatekey", "", "file containing a raw private key to encrypt", &config.Configuration.EthKey.PrivateKey},
+			{"ethkey.lightkdf", "", "use less secure scrypt parameters", &config.Configuration.EthKey.LightKDF},
+		},
+
+		&ethkey.Inspect: {
+			{"ethkey.passwordfile", "", "the file that contains the password for the keyfile", &config.Configuration.EthKey.PasswordFile},
+			{"ethkey.json", "", "output JSON instead of human-readable format", &config.Configuration.EthKey.Json},
+			{"ethkey.private", "", "include the private key in the output", &config.Configuration.EthKey.Private},
+		},
+
+		&ethkey.ChangePassword: {
+			{"ethkey.passwordfile", "", "the file that contains the password for the keyfile", &config.Configuration.EthKey.PasswordFile},
+			{"ethkey.newpasswordfile", "", "the file that contains the new password for the keyfile", &config.Configuration.EthKey.NewPasswordFile},
+		},
+		&initialization.Command: {
+			{"initialization.path", "p", "Path to save the files/folders", &config.Configuration.Initialization.Path},
+			{"initialization.network", "n", "Network environment to use (testnet, mainnet)", &config.Configuration.Initialization.Network},
+		},
 	}
 
 	// Establish command hierarchy
 	hierarchy := map[*cobra.Command]*cobra.Command{
-		&firewalld.Command: &rootCommand,
-		&bootnode.Command:  &rootCommand,
-		&validator.Command: &rootCommand,
-		// &deploy.Command:              &rootCommand,
-		&utils.Command:        &rootCommand,
-		&utils.EthdkgCommand:  &utils.Command,
-		&utils.SendWeiCommand: &utils.Command,
+		&firewalld.Command:      &rootCommand,
+		&bootnode.Command:       &rootCommand,
+		&node.Command:           &rootCommand,
+		&ethkey.Generate:        &rootCommand,
+		&ethkey.Inspect:         &rootCommand,
+		&ethkey.ChangePassword:  &rootCommand,
+		&utils.Command:          &rootCommand,
+		&utils.SendWeiCommand:   &utils.Command,
+		&initialization.Command: &rootCommand,
 	}
 
 	// Convert option abstraction into concrete settings for Cobra and Viper
 	for c := range options {
-
 		cFlags := c.PersistentFlags() // just a convenience thing
 
 		if c.Run != nil {
@@ -208,7 +237,6 @@ func main() {
 
 		var defaultStringArray []string
 		for _, o := range options[c] {
-
 			typeOfPtr := reflect.TypeOf(o.value)
 			if typeOfPtr.Kind() != reflect.Ptr {
 				logger.Fatalf("Option value for %v should be supplied as a pointer.", o.name)
@@ -242,9 +270,11 @@ func main() {
 		}
 	}
 
+	// If none command and option are present, the `node` command with the default --config option will be executed.
+	setDefaultCommandIfNonePresent(&node.Command, logger)
+
 	// This has to be registered prior to root command execute. Cobra executes this first thing when executing.
 	cobra.OnInitialize(func() {
-
 		// Read the config file
 		file, err := os.Open(config.Configuration.ConfigurationFileName)
 		if err == nil {
@@ -260,7 +290,7 @@ func main() {
 				logger.Warnf("Reading file failed:%q", err)
 			}
 		} else {
-			logger.Warnf("Opening file failed:%q", err)
+			logger.Debugf("Opening file failed: %q", err)
 		}
 
 		/* The logic here feels backwards to me but it isn't.
@@ -270,7 +300,14 @@ func main() {
 		for cmd := range options {
 			// Find all the flags
 			cmd.Flags().VisitAll(func(flag *pflag.Flag) {
-				flag.Value.Set(viper.GetString(flag.Name))
+				// -help defined by pflag internals and will not parse correctly.
+				if flag.Name == "help" {
+					return
+				}
+				err := flag.Value.Set(viper.GetString(flag.Name))
+				if err != nil {
+					logger.Warnf("Setting flag %q failed:%q", flag.Name, err)
+				}
 			})
 		}
 
@@ -278,6 +315,29 @@ func main() {
 	})
 
 	// Really start application here
-	rootCommand.Execute()
-	logger.Debugf("main() -- Configuration:%q", config.Configuration.Ethereum)
+	err := rootCommand.Execute()
+	if err != nil {
+		logger.Fatalf("Execute() failed:%q", err)
+	}
+	logger.Debugf("main() -- Configuration:%v", config.Configuration.Ethereum)
+}
+
+// setDefaultCommandIfNonePresent to be able to run a node if none command is present.
+func setDefaultCommandIfNonePresent(defaultCommand *cobra.Command, logger *logrus.Logger) {
+	if len(os.Args) != 1 {
+		return
+	}
+
+	// Adding the `node` command to args.
+	os.Args = append([]string{os.Args[0], defaultCommand.Use})
+
+	// Setting te default --config location if it is not present in command options.
+	if config.Configuration.ConfigurationFileName == "" {
+		homeDirectory, err := os.UserHomeDir()
+		if err != nil {
+			logger.Fatalf("failed to obtain user's home directory with error: %v", err)
+		}
+
+		config.Configuration.ConfigurationFileName = homeDirectory + defaultConfigLocation
+	}
 }

@@ -1,7 +1,7 @@
 package dynamics
 
 import (
-	"github.com/MadBase/MadNet/utils"
+	"github.com/alicenet/alicenet/utils"
 )
 
 // Node contains necessary information about RawStorage;

@@ -1,3 +1,4 @@
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { BigNumber, ContractTransaction, Signer } from "ethers";
 import { ethers } from "hardhat";
 import { expect } from "../../chai-setup";
@@ -26,13 +27,28 @@ describe("ValidatorPool: Slashing logic", async () => {
   let stakingTokenIds: BigNumber[];
   let stakeAmount: bigint;
 
-  beforeEach(async () => {
-    fixture = await getFixture(false, true, true);
+  async function deployFixture() {
+    const fixture = await getFixture(false, true, true);
     const [admin, , ,] = fixture.namedSigners;
-    adminSigner = await getValidatorEthAccount(admin.address);
-    validators = await createValidators(fixture, validatorsSnapshots);
-    stakingTokenIds = await stakeValidators(fixture, validators);
-    stakeAmount = (await fixture.validatorPool.getStakeAmount()).toBigInt();
+    const adminSigner = await getValidatorEthAccount(admin.address);
+    const validators = await createValidators(fixture, validatorsSnapshots);
+    const stakingTokenIds = await stakeValidators(fixture, validators);
+    const stakeAmount = (
+      await fixture.validatorPool.getStakeAmount()
+    ).toBigInt();
+
+    return {
+      fixture,
+      adminSigner,
+      validators,
+      stakingTokenIds,
+      stakeAmount,
+    };
+  }
+
+  beforeEach(async () => {
+    ({ fixture, adminSigner, validators, stakingTokenIds, stakeAmount } =
+      await loadFixture(deployFixture));
   });
 
   it("Minor slash a validator", async function () {
@@ -540,9 +556,12 @@ describe("ValidatorPool: Slashing logic", async () => {
       expectedState,
       "Failed checking state after major slashing!"
     );
-    await expect(
-      ethdkg.majorSlash(validators[0], validators[1])
-    ).to.be.revertedWith("814");
+    await expect(ethdkg.majorSlash(validators[0], validators[1]))
+      .to.be.revertedWithCustomError(
+        fixture.validatorPool,
+        "AddressNotAccusable"
+      )
+      .withArgs(ethers.utils.getAddress(validators[0]));
   });
 
   it("Should not allow major/minor slash a person that it's not a validator", async function () {
@@ -562,11 +581,21 @@ describe("ValidatorPool: Slashing logic", async () => {
     );
     await expect(
       ethdkg.majorSlash(await adminSigner.getAddress(), validators[1])
-    ).to.be.revertedWith("814");
+    )
+      .to.be.revertedWithCustomError(
+        fixture.validatorPool,
+        "AddressNotAccusable"
+      )
+      .withArgs(await adminSigner.getAddress());
 
     await expect(
       ethdkg.minorSlash(await adminSigner.getAddress(), validators[1])
-    ).to.be.revertedWith("814");
+    )
+      .to.be.revertedWithCustomError(
+        fixture.validatorPool,
+        "AddressNotAccusable"
+      )
+      .withArgs(await adminSigner.getAddress());
   });
 
   it("Major slash a validator with disputer reward greater than stake Amount", async function () {
@@ -706,9 +735,12 @@ describe("ValidatorPool: Slashing logic", async () => {
       expectedState,
       `Failed on final minor slashing`
     );
-    await expect(ethdkg.minorSlash(infringer, disputer)).to.be.revertedWith(
-      "814"
-    );
+    await expect(ethdkg.minorSlash(infringer, disputer))
+      .to.be.revertedWithCustomError(
+        fixture.validatorPool,
+        "AddressNotAccusable"
+      )
+      .withArgs(ethers.utils.getAddress(infringer));
   });
 
   it("Minor slash a validator with reward equals to the staking amount", async function () {

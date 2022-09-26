@@ -4,23 +4,23 @@ import (
 	"bytes"
 	"fmt"
 
-	"github.com/MadBase/MadNet/errorz"
-
-	mdefs "github.com/MadBase/MadNet/application/objs/capn"
-	"github.com/MadBase/MadNet/application/objs/tx"
-	"github.com/MadBase/MadNet/application/objs/uint256"
-	"github.com/MadBase/MadNet/application/wrapper"
-	trie "github.com/MadBase/MadNet/badgerTrie"
-	"github.com/MadBase/MadNet/constants"
-	"github.com/MadBase/MadNet/crypto"
-	"github.com/MadBase/MadNet/interfaces"
-	"github.com/MadBase/MadNet/utils"
 	capnp "github.com/MadBase/go-capnproto2/v2"
+
+	mdefs "github.com/alicenet/alicenet/application/objs/capn"
+	"github.com/alicenet/alicenet/application/objs/tx"
+	"github.com/alicenet/alicenet/application/objs/uint256"
+	"github.com/alicenet/alicenet/application/wrapper"
+	trie "github.com/alicenet/alicenet/badgerTrie"
+	"github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/crypto"
+	"github.com/alicenet/alicenet/errorz"
+	"github.com/alicenet/alicenet/interfaces"
+	"github.com/alicenet/alicenet/utils"
 )
 
 var _ interfaces.Transaction = (*Tx)(nil)
 
-// Tx is a transaction object
+// Tx is a transaction object.
 type Tx struct {
 	Vin  Vin
 	Vout Vout
@@ -30,7 +30,7 @@ type Tx struct {
 }
 
 // UnmarshalBinary takes a byte slice and returns the corresponding
-// Tx object
+// Tx object.
 func (b *Tx) UnmarshalBinary(data []byte) error {
 	if b == nil {
 		return errorz.ErrInvalid{}.New("tx.unmarshalBinary: tx not initialized")
@@ -43,7 +43,7 @@ func (b *Tx) UnmarshalBinary(data []byte) error {
 }
 
 // MarshalBinary takes the Tx object and returns the canonical
-// byte slice
+// byte slice.
 func (b *Tx) MarshalBinary() ([]byte, error) {
 	if b == nil {
 		return nil, errorz.ErrInvalid{}.New("tx.marshalBinary: tx not initialized")
@@ -64,7 +64,7 @@ func (b *Tx) MarshalBinary() ([]byte, error) {
 	return tx.Marshal(bc)
 }
 
-// UnmarshalCapn unmarshals the capnproto definition of the object
+// UnmarshalCapn unmarshals the capnproto definition of the object.
 func (b *Tx) UnmarshalCapn(bc mdefs.Tx) error {
 	if b == nil {
 		return errorz.ErrInvalid{}.New("tx.unmarshalCapn: tx not initialized")
@@ -119,7 +119,7 @@ func (b *Tx) UnmarshalCapn(bc mdefs.Tx) error {
 	return nil
 }
 
-// MarshalCapn marshals the object into its capnproto definition
+// MarshalCapn marshals the object into its capnproto definition.
 func (b *Tx) MarshalCapn(seg *capnp.Segment) (mdefs.Tx, error) {
 	if b == nil {
 		return mdefs.Tx{}, errorz.ErrInvalid{}.New("tx.marshalCapn: tx not initialized")
@@ -192,7 +192,7 @@ func (b *Tx) MarshalCapn(seg *capnp.Segment) (mdefs.Tx, error) {
 	return bc, nil
 }
 
-// ValidateUnique checks that all inputs and outputs are unique
+// ValidateUnique checks that all inputs and outputs are unique.
 func (b *Tx) ValidateUnique(opset map[string]bool) (map[string]bool, error) {
 	if b == nil {
 		return nil, errorz.ErrInvalid{}.New("tx.validateUnique: tx not initialized")
@@ -226,7 +226,7 @@ func (b *Tx) ValidateUnique(opset map[string]bool) (map[string]bool, error) {
 }
 
 // ValidateDataStoreIndexes ensures there are no duplicate output indices
-// for DataStore objects
+// for DataStore objects.
 func (b *Tx) ValidateDataStoreIndexes(opset map[string]bool) (map[string]bool, error) {
 	if b == nil {
 		return nil, errorz.ErrInvalid{}.New("tx.validateDataStoreIndexes: tx not initialized")
@@ -266,7 +266,7 @@ func (b *Tx) ValidateDataStoreIndexes(opset map[string]bool) (map[string]bool, e
 	return opset, nil
 }
 
-// ValidateTxHash validates the txHash is correct on all objects
+// ValidateTxHash validates the txHash is correct on all objects.
 func (b *Tx) ValidateTxHash() error {
 	if b == nil {
 		return errorz.ErrInvalid{}.New("tx.validateTxHash: tx not initialized")
@@ -299,7 +299,7 @@ func (b *Tx) ValidateTxHash() error {
 	return nil
 }
 
-// TxHash calculates the TxHash of the transaction
+// TxHash calculates the TxHash of the transaction.
 func (b *Tx) TxHash() ([]byte, error) {
 	if b == nil {
 		return nil, errorz.ErrInvalid{}.New("tx.txHash: tx not initialized")
@@ -356,7 +356,7 @@ func (b *Tx) TxHash() ([]byte, error) {
 	return utils.CopySlice(b.txHash), nil
 }
 
-// SetTxHash calculates the TxHash and sets it on all UTXOs and TXIns
+// SetTxHash calculates the TxHash and sets it on all UTXOs and TXIns.
 func (b *Tx) SetTxHash() error {
 	if b == nil {
 		return errorz.ErrInvalid{}.New("tx.setTxHash: tx not initialized")
@@ -381,7 +381,7 @@ func (b *Tx) SetTxHash() error {
 	return nil
 }
 
-// ConsumedPreHash returns the list of PreHashs from Vin
+// ConsumedPreHash returns the list of PreHashs from Vin.
 func (b *Tx) ConsumedPreHash() ([][]byte, error) {
 	if b == nil {
 		return nil, errorz.ErrInvalid{}.New("tx.consumedPreHash: tx not initialized")
@@ -392,7 +392,7 @@ func (b *Tx) ConsumedPreHash() ([][]byte, error) {
 	return b.Vin.PreHash()
 }
 
-// ConsumedUTXOID returns the list of UTXOIDs from Vin
+// ConsumedUTXOID returns the list of UTXOIDs from Vin.
 func (b *Tx) ConsumedUTXOID() ([][]byte, error) {
 	if b == nil {
 		return nil, errorz.ErrInvalid{}.New("tx.consumedUTXOID: tx not initialized")
@@ -403,12 +403,12 @@ func (b *Tx) ConsumedUTXOID() ([][]byte, error) {
 	return b.Vin.UTXOID()
 }
 
-// ConsumedIsDeposit returns the list of IsDeposit bools from Vin
+// ConsumedIsDeposit returns the list of IsDeposit bools from Vin.
 func (b *Tx) ConsumedIsDeposit() []bool {
 	return b.Vin.IsDeposit()
 }
 
-// GeneratedUTXOID returns the list of UTXOIDs from Vout
+// GeneratedUTXOID returns the list of UTXOIDs from Vout.
 func (b *Tx) GeneratedUTXOID() ([][]byte, error) {
 	if b == nil {
 		return nil, errorz.ErrInvalid{}.New("tx.generatedUTXOID: tx not initialized")
@@ -419,7 +419,7 @@ func (b *Tx) GeneratedUTXOID() ([][]byte, error) {
 	return b.Vout.UTXOID()
 }
 
-// GeneratedPreHash returns the list of PreHashs from Vout
+// GeneratedPreHash returns the list of PreHashs from Vout.
 func (b *Tx) GeneratedPreHash() ([][]byte, error) {
 	if b == nil {
 		return nil, errorz.ErrInvalid{}.New("tx.generatedPreHash: tx not initialized")
@@ -430,7 +430,7 @@ func (b *Tx) GeneratedPreHash() ([][]byte, error) {
 	return b.Vout.PreHash()
 }
 
-// ValidateSignature validates the signatures of the objects
+// ValidateSignature validates the signatures of the objects.
 func (b *Tx) ValidateSignature(currentHeight uint32, refUTXOs Vout) error {
 	if b == nil {
 		return errorz.ErrInvalid{}.New("tx.validateSignature: tx not initialized")
@@ -441,7 +441,7 @@ func (b *Tx) ValidateSignature(currentHeight uint32, refUTXOs Vout) error {
 	return refUTXOs.ValidateSignature(currentHeight, b.Vin)
 }
 
-// ValidatePreSignature validates the presignatures of the objects
+// ValidatePreSignature validates the presignatures of the objects.
 func (b *Tx) ValidatePreSignature() error {
 	if b == nil {
 		return errorz.ErrInvalid{}.New("tx.validatePreSignature: tx not initialized")
@@ -487,7 +487,7 @@ func (b *Tx) ValidateFees(currentHeight uint32, refUTXOs Vout, storage *wrapper.
 
 // ValidateEqualVinVout checks the following
 // calc sum on inputs from utxos and currentHeight
-// sum inputs must equal sum outputs plus fee
+// sum inputs must equal sum outputs plus fee.
 func (b *Tx) ValidateEqualVinVout(currentHeight uint32, refUTXOs Vout) error {
 	if b == nil {
 		return errorz.ErrInvalid{}.New("tx.validateEqualVinVout: tx not initialized")
@@ -529,7 +529,7 @@ func (b *Tx) ValidateEqualVinVout(currentHeight uint32, refUTXOs Vout) error {
 	return errorz.ErrInvalid{}.New(fmt.Sprintf("tx.validateEqualVinVout: input value does not match output value: IN:%v  vs  OUT+FEE:%v", valueIn, valueOutPlusFee))
 }
 
-// ValidateChainID validates that all elements have the correct ChainID
+// ValidateChainID validates that all elements have the correct ChainID.
 func (b *Tx) ValidateChainID(chainID uint32) error {
 	if b == nil {
 		return errorz.ErrInvalid{}.New("tx.validateChainID: tx not initialized")
@@ -788,5 +788,5 @@ func (b *Tx) IsCleanupTx(currentHeight uint32, refUTXOs Vout) bool {
 	return true
 }
 
-// XXXIsTx allows compile time type checking for transaction interfaces
+// XXXIsTx allows compile time type checking for transaction interfaces.
 func (b *Tx) XXXIsTx() {}

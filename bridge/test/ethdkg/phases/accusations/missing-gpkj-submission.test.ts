@@ -1,9 +1,11 @@
+import { ethers } from "hardhat";
 import { getValidatorEthAccount } from "../../../setup";
 import { validators4 } from "../../assets/4-validators-successful-case";
 import {
   assertETHDKGPhase,
   endCurrentPhase,
   expect,
+  getInfoForIncorrectPhaseCustomError,
   Phase,
   startAtGPKJ,
   submitValidatorsGPKJ,
@@ -36,11 +38,27 @@ describe("ETHDKG: Accuse participant of not submitting GPKj", () => {
 
     // should not allow to finish ethdkg
     await endCurrentPhase(ethdkg);
-    await expect(
-      ethdkg
-        .connect(await getValidatorEthAccount(validators4[0].address))
-        .complete()
-    ).to.be.revertedWith("148");
+    const txPromise = ethdkg
+      .connect(await getValidatorEthAccount(validators4[0].address))
+      .complete();
+    const [
+      ethDKGPhases,
+      ,
+      expectedBlockNumber,
+      expectedCurrentPhase,
+      phaseStartBlock,
+      phaseLength,
+    ] = await getInfoForIncorrectPhaseCustomError(txPromise, ethdkg);
+
+    await expect(txPromise)
+      .to.be.revertedWithCustomError(ethDKGPhases, `IncorrectPhase`)
+      .withArgs(expectedCurrentPhase, expectedBlockNumber, [
+        [
+          Phase.DisputeGPKJSubmission,
+          phaseStartBlock.add(phaseLength),
+          phaseStartBlock.add(phaseLength.mul(2)),
+        ],
+      ]);
   });
 
   it("allows accusation of missing validators one at a time", async () => {
@@ -95,11 +113,27 @@ describe("ETHDKG: Accuse participant of not submitting GPKj", () => {
     await endCurrentPhase(ethdkg);
 
     // should not allow to finish ethdkg
-    await expect(
-      ethdkg
-        .connect(await getValidatorEthAccount(validators4[0].address))
-        .complete()
-    ).to.be.revertedWith("148");
+    const txPromise = ethdkg
+      .connect(await getValidatorEthAccount(validators4[0].address))
+      .complete();
+    const [
+      ethDKGPhases,
+      ,
+      expectedBlockNumber,
+      expectedCurrentPhase,
+      phaseStartBlock,
+      phaseLength,
+    ] = await getInfoForIncorrectPhaseCustomError(txPromise, ethdkg);
+
+    await expect(txPromise)
+      .to.be.revertedWithCustomError(ethDKGPhases, `IncorrectPhase`)
+      .withArgs(expectedCurrentPhase, expectedBlockNumber, [
+        [
+          Phase.DisputeGPKJSubmission,
+          phaseStartBlock.add(phaseLength),
+          phaseStartBlock.add(phaseLength.mul(2)),
+        ],
+      ]);
 
     await assertETHDKGPhase(ethdkg, Phase.GPKJSubmission);
   });
@@ -110,9 +144,26 @@ describe("ETHDKG: Accuse participant of not submitting GPKj", () => {
     await assertETHDKGPhase(ethdkg, Phase.GPKJSubmission);
 
     // accuse one validator only
-    await expect(
-      ethdkg.accuseParticipantDidNotSubmitGPKJ([validators4[1].address])
-    ).to.be.revertedWith("118");
+    const txPromise = ethdkg.accuseParticipantDidNotSubmitGPKJ([
+      validators4[1].address,
+    ]);
+    const [
+      ,
+      ETHDKGAccusations,
+      expectedBlockNumber,
+      expectedCurrentPhase,
+      phaseStartBlock,
+      phaseLength,
+    ] = await getInfoForIncorrectPhaseCustomError(txPromise, ethdkg);
+    await expect(txPromise)
+      .to.be.revertedWithCustomError(ETHDKGAccusations, `IncorrectPhase`)
+      .withArgs(expectedCurrentPhase, expectedBlockNumber, [
+        [
+          Phase.GPKJSubmission,
+          phaseStartBlock.add(phaseLength),
+          phaseStartBlock.add(phaseLength.mul(2)),
+        ],
+      ]);
   });
 
   it("should not allow GPKj submission after the GPKj submission phase", async () => {
@@ -131,15 +182,30 @@ describe("ETHDKG: Accuse participant of not submitting GPKj", () => {
     await endCurrentPhase(ethdkg);
     await assertETHDKGPhase(ethdkg, Phase.GPKJSubmission);
 
-    await expect(
-      submitValidatorsGPKJ(
-        ethdkg,
-        validatorPool,
-        validators4.slice(1, 2),
-        expectedNonce,
-        0
-      )
-    ).to.be.revertedWith("145");
+    const txPromise = submitValidatorsGPKJ(
+      ethdkg,
+      validatorPool,
+      validators4.slice(1, 2),
+      expectedNonce,
+      0
+    );
+    const [
+      ethDKGPhases,
+      ,
+      expectedBlockNumber,
+      expectedCurrentPhase,
+      phaseStartBlock,
+      phaseLength,
+    ] = await getInfoForIncorrectPhaseCustomError(txPromise, ethdkg);
+    await expect(txPromise)
+      .to.be.revertedWithCustomError(ethDKGPhases, `IncorrectPhase`)
+      .withArgs(expectedCurrentPhase, expectedBlockNumber, [
+        [
+          Phase.GPKJSubmission,
+          phaseStartBlock,
+          phaseStartBlock.add(phaseLength),
+        ],
+      ]);
 
     await assertETHDKGPhase(ethdkg, Phase.GPKJSubmission);
   });
@@ -161,11 +227,27 @@ describe("ETHDKG: Accuse participant of not submitting GPKj", () => {
     await assertETHDKGPhase(ethdkg, Phase.GPKJSubmission);
 
     // should not allow finishing ethdkg
-    await expect(
-      ethdkg
-        .connect(await getValidatorEthAccount(validators4[1].address))
-        .complete()
-    ).to.be.revertedWith("148");
+    const txPromise = ethdkg
+      .connect(await getValidatorEthAccount(validators4[1].address))
+      .complete();
+    const [
+      ethDKGPhases,
+      ,
+      expectedBlockNumber,
+      expectedCurrentPhase,
+      phaseStartBlock,
+      phaseLength,
+    ] = await getInfoForIncorrectPhaseCustomError(txPromise, ethdkg);
+
+    await expect(txPromise)
+      .to.be.revertedWithCustomError(ethDKGPhases, `IncorrectPhase`)
+      .withArgs(expectedCurrentPhase, expectedBlockNumber, [
+        [
+          Phase.DisputeGPKJSubmission,
+          phaseStartBlock.add(phaseLength),
+          phaseStartBlock.add(phaseLength.mul(2)),
+        ],
+      ]);
 
     await assertETHDKGPhase(ethdkg, Phase.GPKJSubmission);
   });
@@ -186,10 +268,20 @@ describe("ETHDKG: Accuse participant of not submitting GPKj", () => {
     await endCurrentPhase(ethdkg);
     await assertETHDKGPhase(ethdkg, Phase.GPKJSubmission);
 
+    const ETHDKGAccusations = await ethers.getContractAt(
+      "ETHDKGAccusations",
+      ethdkg.address
+    );
+
     // accuse
     await expect(
       ethdkg.accuseParticipantDidNotSubmitGPKJ([validators4[0].address])
-    ).to.be.revertedWith("120");
+    )
+      .to.be.revertedWithCustomError(
+        ETHDKGAccusations,
+        `AccusedDidNotParticipateInGPKJSubmission`
+      )
+      .withArgs(ethers.utils.getAddress(validators4[0].address));
 
     expect(await ethdkg.getBadParticipants()).to.equal(0);
 
@@ -212,12 +304,16 @@ describe("ETHDKG: Accuse participant of not submitting GPKj", () => {
     await endCurrentPhase(ethdkg);
     await assertETHDKGPhase(ethdkg, Phase.GPKJSubmission);
 
+    const ETHDKGAccusations = await ethers.getContractAt(
+      "ETHDKGAccusations",
+      ethdkg.address
+    );
+
     // accuse
-    await expect(
-      ethdkg.accuseParticipantDidNotSubmitGPKJ([
-        "0x26D3D8Ab74D62C26f1ACc220dA1646411c9880Ac",
-      ])
-    ).to.be.revertedWith("104");
+    const accusedAddress = "0x26D3D8Ab74D62C26f1ACc220dA1646411c9880Ac";
+    await expect(ethdkg.accuseParticipantDidNotSubmitGPKJ([accusedAddress]))
+      .to.be.revertedWithCustomError(ETHDKGAccusations, `AccusedNotValidator`)
+      .withArgs(ethers.utils.getAddress(accusedAddress));
 
     expect(await ethdkg.getBadParticipants()).to.equal(0);
 
@@ -241,9 +337,26 @@ describe("ETHDKG: Accuse participant of not submitting GPKj", () => {
     await assertETHDKGPhase(ethdkg, Phase.GPKJSubmission);
 
     // accuse
-    await expect(
-      ethdkg.accuseParticipantDidNotSubmitGPKJ([validators4[1].address])
-    ).to.be.revertedWith("118");
+    const txPromise = ethdkg.accuseParticipantDidNotSubmitGPKJ([
+      validators4[1].address,
+    ]);
+    const [
+      ,
+      ETHDKGAccusations,
+      expectedBlockNumber,
+      expectedCurrentPhase,
+      phaseStartBlock,
+      phaseLength,
+    ] = await getInfoForIncorrectPhaseCustomError(txPromise, ethdkg);
+    await expect(txPromise)
+      .to.be.revertedWithCustomError(ETHDKGAccusations, `IncorrectPhase`)
+      .withArgs(expectedCurrentPhase, expectedBlockNumber, [
+        [
+          Phase.GPKJSubmission,
+          phaseStartBlock.add(phaseLength),
+          phaseStartBlock.add(phaseLength.mul(2)),
+        ],
+      ]);
 
     expect(await ethdkg.getBadParticipants()).to.equal(0);
 
@@ -263,6 +376,10 @@ describe("ETHDKG: Accuse participant of not submitting GPKj", () => {
       0
     );
 
+    const ETHDKGAccusations = await ethers.getContractAt(
+      "ETHDKGAccusations",
+      ethdkg.address
+    );
     await endCurrentPhase(ethdkg);
     await assertETHDKGPhase(ethdkg, Phase.GPKJSubmission);
 
@@ -270,9 +387,12 @@ describe("ETHDKG: Accuse participant of not submitting GPKj", () => {
     const addresses = validators4.map((v) => v.address);
     addresses.push("0x26D3D8Ab74D62C26f1ACc220dA1646411c9880Ac");
 
-    await expect(
-      ethdkg.accuseParticipantDidNotSubmitGPKJ(addresses)
-    ).to.be.revertedWith("120");
+    await expect(ethdkg.accuseParticipantDidNotSubmitGPKJ(addresses))
+      .to.be.revertedWithCustomError(
+        ETHDKGAccusations,
+        `AccusedDidNotParticipateInGPKJSubmission`
+      )
+      .withArgs(ethers.utils.getAddress(validators4[0].address));
 
     expect(await ethdkg.getBadParticipants()).to.equal(0);
 
@@ -284,6 +404,10 @@ describe("ETHDKG: Accuse participant of not submitting GPKj", () => {
       validators4
     );
 
+    const ETHDKGAccusations = await ethers.getContractAt(
+      "ETHDKGAccusations",
+      ethdkg.address
+    );
     await submitValidatorsGPKJ(
       ethdkg,
       validatorPool,
@@ -302,7 +426,9 @@ describe("ETHDKG: Accuse participant of not submitting GPKj", () => {
 
     await expect(
       ethdkg.accuseParticipantDidNotSubmitGPKJ([validators4[1].address])
-    ).to.be.revertedWith("104");
+    )
+      .to.be.revertedWithCustomError(ETHDKGAccusations, `AccusedNotValidator`)
+      .withArgs(ethers.utils.getAddress(validators4[1].address));
 
     expect(await ethdkg.getBadParticipants()).to.equal(1);
 

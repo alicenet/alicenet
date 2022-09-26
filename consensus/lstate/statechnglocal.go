@@ -4,13 +4,14 @@ import (
 	"bytes"
 	"errors"
 
-	"github.com/MadBase/MadNet/consensus/objs"
-	"github.com/MadBase/MadNet/constants"
-	"github.com/MadBase/MadNet/crypto"
-	"github.com/MadBase/MadNet/errorz"
-	"github.com/MadBase/MadNet/interfaces"
-	"github.com/MadBase/MadNet/utils"
 	"github.com/dgraph-io/badger/v2"
+
+	"github.com/alicenet/alicenet/consensus/objs"
+	"github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/crypto"
+	"github.com/alicenet/alicenet/errorz"
+	"github.com/alicenet/alicenet/interfaces"
+	"github.com/alicenet/alicenet/utils"
 )
 
 // These are the step handlers. They figure out how to take an action based on
@@ -27,7 +28,7 @@ func (ce *Engine) doPendingProposalStep(txn *badger.Txn, rs *RoundStates) error 
 		return nil
 	}
 	// if not locked or valid form new proposal
-	if !rs.LockedValueCurrent() && !rs.ValidValueCurrent() { //00 case
+	if !rs.LockedValueCurrent() && !rs.ValidValueCurrent() { // 00 case
 		if err := ce.castNewProposalValue(txn, rs); err != nil {
 			utils.DebugTrace(ce.logger, err)
 			return err
@@ -35,7 +36,7 @@ func (ce *Engine) doPendingProposalStep(txn *badger.Txn, rs *RoundStates) error 
 		return nil
 	}
 	// if not locked but valid known, propose valid value
-	if !rs.LockedValueCurrent() && rs.ValidValueCurrent() { //01 case
+	if !rs.LockedValueCurrent() && rs.ValidValueCurrent() { // 01 case
 		if err := ce.castProposalFromValue(txn, rs, rs.ValidValue()); err != nil {
 			utils.DebugTrace(ce.logger, err)
 			return err
@@ -43,8 +44,8 @@ func (ce *Engine) doPendingProposalStep(txn *badger.Txn, rs *RoundStates) error 
 		return nil
 	}
 	// if locked, propose locked
-	//10
-	//11 case
+	// 10
+	// 11 case
 	if err := ce.castProposalFromValue(txn, rs, rs.LockedValue()); err != nil {
 		utils.DebugTrace(ce.logger, err)
 		return err
@@ -111,7 +112,7 @@ func (ce *Engine) doPendingPreVoteStep(txn *badger.Txn, rs *RoundStates) error {
 		// if we are not locked and there is no known valid value
 		// check if the proposed value is valid, and if so
 		// prevote this value
-		//00 case
+		// 00 case
 		if !rs.LockedValueCurrent() && !rs.ValidValueCurrent() {
 			txs, _, err := ce.dm.GetTxs(txn, p.PClaims.BClaims.Height, rs.round, p.TxHshLst)
 			if err == nil {
@@ -139,7 +140,7 @@ func (ce *Engine) doPendingPreVoteStep(txn *badger.Txn, rs *RoundStates) error {
 		}
 		// if we are locked on a valid value, only prevote the value if it is equal
 		// to the lock
-		//01 case
+		// 01 case
 		if !rs.LockedValueCurrent() && rs.ValidValueCurrent() {
 			if err := ce.castPreVoteWithLock(txn, rs, rs.ValidValue(), p); err != nil {
 				utils.DebugTrace(ce.logger, err)
@@ -149,8 +150,8 @@ func (ce *Engine) doPendingPreVoteStep(txn *badger.Txn, rs *RoundStates) error {
 		}
 		// if we are locked on a locked value, only prevote the value if it is equal
 		// to the lock
-		//10 case
-		//11 case
+		// 10 case
+		// 11 case
 		if err := ce.castPreVoteWithLock(txn, rs, rs.LockedValue(), p); err != nil {
 			utils.DebugTrace(ce.logger, err)
 			return err
@@ -279,11 +280,9 @@ func (ce *Engine) doPendingPreCommit(txn *badger.Txn, rs *RoundStates) error {
 	// clear consensus if the total votes is
 	// greater than threshold
 	if rcert.RClaims.Round != constants.DEADBLOCKROUND {
-		if len(pvl)+len(pvnl) >= rs.GetCurrentThreshold() {
-			if err := ce.castPreCommitNil(txn, rs); err != nil {
-				utils.DebugTrace(ce.logger, err)
-				return err
-			}
+		if err := ce.castPreCommitNil(txn, rs); err != nil {
+			utils.DebugTrace(ce.logger, err)
+			return err
 		}
 	}
 	// threshold not met as of yet

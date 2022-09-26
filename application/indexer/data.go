@@ -3,21 +3,21 @@ package indexer
 import (
 	"bytes"
 
-	"github.com/MadBase/MadNet/errorz"
-
-	"github.com/MadBase/MadNet/application/objs"
-	"github.com/MadBase/MadNet/constants"
-	"github.com/MadBase/MadNet/utils"
 	"github.com/dgraph-io/badger/v2"
+
+	"github.com/alicenet/alicenet/application/objs"
+	"github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/errorz"
+	"github.com/alicenet/alicenet/utils"
 )
 
-// NewDataIndex creates a new dataIndex object
+// NewDataIndex creates a new dataIndex object.
 func NewDataIndex(p, pp prefixFunc) *DataIndex {
 	return &DataIndex{p, pp}
 }
 
 // DataIndex creates an index that allows datastores to be indexed by the
-// specified owner and index of the datastore
+// specified owner and index of the datastore.
 type DataIndex struct {
 	prefix    prefixFunc
 	refPrefix prefixFunc
@@ -29,7 +29,7 @@ type DataIndexKey struct {
 	index  []byte
 }
 
-// MarshalBinary returns the byte slice for the key object
+// MarshalBinary returns the byte slice for the key object.
 func (dik *DataIndexKey) MarshalBinary() []byte {
 	key := []byte{}
 	key = append(key, dik.prefix...)
@@ -38,7 +38,7 @@ func (dik *DataIndexKey) MarshalBinary() []byte {
 	return utils.CopySlice(key)
 }
 
-// UnmarshalBinary takes in a byte slice to set the key object
+// UnmarshalBinary takes in a byte slice to set the key object.
 func (dik *DataIndexKey) UnmarshalBinary(data []byte) {
 	dik.prefix = utils.CopySlice(data[0:2])
 	dik.owner = utils.CopySlice(data[2 : 2+constants.OwnerLen+1])
@@ -49,23 +49,23 @@ type DataIndexRefKey struct {
 	refkey []byte
 }
 
-// MarshalBinary returns the byte slice for the key object
+// MarshalBinary returns the byte slice for the key object.
 func (dirk *DataIndexRefKey) MarshalBinary() []byte {
 	return utils.CopySlice(dirk.refkey)
 }
 
-// UnmarshalBinary takes in a byte slice to set the key object
+// UnmarshalBinary takes in a byte slice to set the key object.
 func (dirk *DataIndexRefKey) UnmarshalBinary(data []byte) {
 	dirk.refkey = utils.CopySlice(data)
 }
 
-// Add adds an item to the index
+// Add adds an item to the index.
 func (di *DataIndex) Add(txn *badger.Txn, utxoID []byte, owner *objs.Owner, dataIndex []byte) error {
 	return di.addInternal(txn, utxoID, owner, dataIndex, false)
 }
 
 // AddFastSync adds an item to the index and overwrites previous data
-// if it is present
+// if it is present.
 func (di *DataIndex) AddFastSync(txn *badger.Txn, utxoID []byte, owner *objs.Owner, dataIndex []byte) error {
 	return di.addInternal(txn, utxoID, owner, dataIndex, true)
 }
@@ -84,7 +84,7 @@ func (di *DataIndex) addInternal(txn *badger.Txn, utxoID []byte, owner *objs.Own
 	return di.addInternalNoOverwrite(txn, key, utxoIDCopy)
 }
 
-func (di *DataIndex) addInternalNoOverwrite(txn *badger.Txn, dik []byte, utxoID []byte) error {
+func (di *DataIndex) addInternalNoOverwrite(txn *badger.Txn, dik, utxoID []byte) error {
 	_, err := utils.GetValue(txn, dik)
 	if err == nil {
 		return errorz.ErrInvalid{}.New("dataIndex.addInternalNoOverwrite; index conflict")
@@ -101,7 +101,7 @@ func (di *DataIndex) addInternalNoOverwrite(txn *badger.Txn, dik []byte, utxoID 
 	return err
 }
 
-func (di *DataIndex) addInternalOverwrite(txn *badger.Txn, dik []byte, utxoID []byte) error {
+func (di *DataIndex) addInternalOverwrite(txn *badger.Txn, dik, utxoID []byte) error {
 	oldUtxoID, err := utils.GetValue(txn, dik)
 	if err != nil {
 		if err != badger.ErrKeyNotFound {
@@ -126,7 +126,7 @@ func (di *DataIndex) addInternalOverwrite(txn *badger.Txn, dik []byte, utxoID []
 	return utils.SetValue(txn, utils.CopySlice(dik), utils.CopySlice(utxoID))
 }
 
-// Contains determines whether or not the value at dataIndex is present
+// Contains determines whether or not the value at dataIndex is present.
 func (di *DataIndex) Contains(txn *badger.Txn, owner *objs.Owner, dataIndex []byte) (bool, error) {
 	dataIndexCopy := utils.CopySlice(dataIndex)
 	diKey, err := di.makeKey(owner, dataIndexCopy)
@@ -144,7 +144,7 @@ func (di *DataIndex) Contains(txn *badger.Txn, owner *objs.Owner, dataIndex []by
 	return true, nil
 }
 
-// Drop removes a utxoID from the index
+// Drop removes a utxoID from the index.
 func (di *DataIndex) Drop(txn *badger.Txn, utxoID []byte) error {
 	utxoIDCopy := utils.CopySlice(utxoID)
 	diRefKey := di.makeRefKey(utxoIDCopy)
@@ -159,7 +159,7 @@ func (di *DataIndex) Drop(txn *badger.Txn, utxoID []byte) error {
 	return utils.DeleteValue(txn, totalDataIndex)
 }
 
-// GetUTXOID returns the UTXOID of a datastore based on owner and index
+// GetUTXOID returns the UTXOID of a datastore based on owner and index.
 func (di *DataIndex) GetUTXOID(txn *badger.Txn, owner *objs.Owner, dataIndex []byte) ([]byte, error) {
 	dataIndexCopy := utils.CopySlice(dataIndex)
 	diKey, err := di.makeKey(owner, dataIndexCopy)
@@ -170,7 +170,7 @@ func (di *DataIndex) GetUTXOID(txn *badger.Txn, owner *objs.Owner, dataIndex []b
 	return utils.GetValue(txn, key)
 }
 
-// PaginateDataStores returns utxoIDs for owner below specified num
+// PaginateDataStores returns utxoIDs for owner below specified num.
 func (di *DataIndex) PaginateDataStores(txn *badger.Txn, owner *objs.Owner, num int, startIndex []byte, exclude map[string]bool) ([]*objs.PaginationResponse, error) {
 	if len(startIndex) == 0 {
 		startIndex = make([]byte, constants.HashLen)

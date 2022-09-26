@@ -1,14 +1,11 @@
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { ethers } from "hardhat";
-import {
-  AToken,
-  HugeAccumulatorStaking,
-  LegacyToken,
-} from "../../../typechain-types";
+import { AToken, HugeAccumulatorStaking } from "../../../typechain-types";
 import {
   createUsers,
   deployAliceNetFactory,
-  deployStaticWithFactory,
+  deployUpgradeableWithFactory,
   mineBlocks,
   posFixtureSetup,
   preFixtureSetup,
@@ -31,37 +28,34 @@ describe("PublicStaking: Accumulator Overflow", async () => {
   const numberUsers: number = 2;
   let users: SignerWithAddress[] = [];
 
-  beforeEach(async function () {
+  async function deployFixture() {
     const [adminSigner] = await ethers.getSigners();
     await preFixtureSetup();
-    const factory = await deployAliceNetFactory(adminSigner);
-
-    const legacyToken = (await deployStaticWithFactory(
-      factory,
-      "LegacyToken"
-    )) as LegacyToken;
+    const legacyToken = await (
+      await ethers.getContractFactory("LegacyToken")
+    ).deploy();
+    const factory = await deployAliceNetFactory(
+      adminSigner,
+      legacyToken.address
+    );
 
     // AToken
-    aToken = (await deployStaticWithFactory(
-      factory,
+    const aToken = await ethers.getContractAt(
       "AToken",
-      "AToken",
-      undefined,
-      [legacyToken.address]
-    )) as AToken;
-
-    stakingContract = (await deployStaticWithFactory(
+      await factory.lookup(ethers.utils.formatBytes32String("AToken"))
+    );
+    const stakingContract = (await deployUpgradeableWithFactory(
       factory,
       "HugeAccumulatorStaking",
       "PublicStaking"
     )) as HugeAccumulatorStaking;
+    await posFixtureSetup(factory, aToken);
 
-    await posFixtureSetup(factory, aToken, legacyToken);
     await aToken.approve(
       stakingContract.address,
       ethers.utils.parseUnits("100000", 18)
     );
-    users = await createUsers(numberUsers);
+    const users = await createUsers(numberUsers);
     const baseAmount = ethers.utils.parseUnits("100", 0).toBigInt();
     for (let i = 0; i < numberUsers; i++) {
       await aToken.transfer(await users[i].getAddress(), baseAmount);
@@ -70,6 +64,12 @@ describe("PublicStaking: Accumulator Overflow", async () => {
         .approve(stakingContract.address, baseAmount);
     }
     await mineBlocks(2n);
+
+    return { factory, stakingContract, aToken, users };
+  }
+
+  beforeEach(async function () {
+    ({ stakingContract, aToken, users } = await loadFixture(deployFixture));
   });
 
   it("Collect Tokens and ETH with overflow in the accumulators", async function () {
@@ -181,7 +181,7 @@ describe("PublicStaking: Accumulator Overflow", async () => {
         users,
         tokensID,
         expectedState,
-        "After collect token 1-" + i
+        "After collect Token 1 - " + i
       );
       await collectEthCheckAndUpdateState(
         stakingContract,
@@ -191,7 +191,7 @@ describe("PublicStaking: Accumulator Overflow", async () => {
         users,
         tokensID,
         expectedState,
-        "After collect Eth 1-" + i
+        "After collect Eth 1 - " + i
       );
     }
 
@@ -228,7 +228,7 @@ describe("PublicStaking: Accumulator Overflow", async () => {
         users,
         tokensID,
         expectedState,
-        "After collect token 2-" + i
+        "After collect token 2 - " + i
       );
       await collectEthCheckAndUpdateState(
         stakingContract,
@@ -238,7 +238,7 @@ describe("PublicStaking: Accumulator Overflow", async () => {
         users,
         tokensID,
         expectedState,
-        "After collect Eth 2-" + i
+        "After collect Eth 2 - " + i
       );
     }
   });

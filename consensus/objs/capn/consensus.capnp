@@ -1,7 +1,7 @@
 using Go = import "/go.capnp";
 @0x85d3acc39d94e0f8;
 $Go.package("capn");
-$Go.import("github.com/MadBase/MadNet/consenus/capn");
+$Go.import("github.com/alicenet/alicenet/consenus/capn");
 
 const defaultRound :UInt32 = 0;
 const defaultHeight :UInt32 = 0;

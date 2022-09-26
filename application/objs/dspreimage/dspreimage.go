@@ -3,12 +3,13 @@ package dspreimage
 import (
 	"bytes"
 
-	mdefs "github.com/MadBase/MadNet/application/objs/capn"
-	"github.com/MadBase/MadNet/application/objs/uint256"
-	"github.com/MadBase/MadNet/constants"
-	"github.com/MadBase/MadNet/errorz"
-	"github.com/MadBase/MadNet/utils"
 	capnp "github.com/MadBase/go-capnproto2/v2"
+
+	mdefs "github.com/alicenet/alicenet/application/objs/capn"
+	"github.com/alicenet/alicenet/application/objs/uint256"
+	"github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/errorz"
+	"github.com/alicenet/alicenet/utils"
 )
 
 // Marshal will marshal the DSPreImage object.
@@ -43,7 +44,7 @@ func Unmarshal(data []byte) (mdefs.DSPreImage, error) {
 	return obj, nil
 }
 
-// Validate will validate the DSPreImage object
+// Validate will validate the DSPreImage object.
 func Validate(v mdefs.DSPreImage) error {
 	if v.ChainID() < 1 {
 		return errorz.ErrInvalid{}.New("dspreimage capn obj is not valid; invalid ChainID")

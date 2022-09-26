@@ -1,3 +1,4 @@
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { ethers } from "hardhat";
 import { Snapshots } from "../../typechain-types";
 import { expect } from "../chai-setup";
@@ -24,7 +25,7 @@ describe("Snapshots: With successful ETHDKG round completed and validatorPool", 
     let expectedEpoch = 1;
     let expectedHeight = validSnapshot1024.height as number;
     let expectedSafeToProceedConsensus = false;
-    const fixture = await getFixture();
+    const fixture = await loadFixture(getFixture);
     const snapshots = fixture.snapshots as Snapshots;
     const validators = await createValidators(fixture, validatorsSnapshots1);
     const stakingTokenIds = await stakeValidators(fixture, validators);
@@ -47,6 +48,7 @@ describe("Snapshots: With successful ETHDKG round completed and validatorPool", 
     await mineBlocks(
       (await fixture.snapshots.getMinimumIntervalBetweenSnapshots()).toBigInt()
     );
+
     await expect(
       snapshots
         .connect(await getValidatorEthAccount(validatorsSnapshots1[0]))
@@ -59,8 +61,11 @@ describe("Snapshots: With successful ETHDKG round completed and validatorPool", 
         expectedHeight,
         ethers.utils.getAddress(validatorsSnapshots1[0].address),
         expectedSafeToProceedConsensus,
-        validSnapshot1024.GroupSignature
+        validSnapshot1024.GroupSignatureDeserialized?.[0],
+        validSnapshot1024.GroupSignatureDeserialized?.[1],
+        validSnapshot1024.BClaimsDeserialized
       );
+
     await factoryCallAnyFixture(
       fixture,
       "validatorPool",
@@ -107,7 +112,9 @@ describe("Snapshots: With successful ETHDKG round completed and validatorPool", 
         expectedHeight,
         ethers.utils.getAddress(validatorsSnapshots2[0].address),
         expectedSafeToProceedConsensus,
-        validSnapshot2048.GroupSignature
+        validSnapshot2048.GroupSignatureDeserialized?.[0],
+        validSnapshot2048.GroupSignatureDeserialized?.[1],
+        validSnapshot2048.BClaimsDeserialized
       );
   });
 });

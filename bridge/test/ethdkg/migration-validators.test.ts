@@ -1,4 +1,7 @@
-import { BigNumberish, ethers } from "ethers";
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
+import { BigNumberish } from "ethers";
+import { ethers } from "hardhat";
 import {
   signedData,
   validatorsSnapshots,
@@ -22,6 +25,7 @@ import { completeETHDKGRound } from "./setup";
 
 describe("Ethdkg: Migrate state", () => {
   let fixture: Fixture;
+  let admin: SignerWithAddress;
   let validatorsAddress: string[];
   let validatorsShares: [
     BigNumberish,
@@ -30,14 +34,21 @@ describe("Ethdkg: Migrate state", () => {
     BigNumberish
   ][];
 
-  beforeEach(async function () {
-    fixture = await getFixture();
-    validatorsAddress = [];
-    validatorsShares = [];
+  async function deployFixture() {
+    const fixture = await getFixture();
+    const [admin] = await ethers.getSigners();
+    const validatorsAddress = [];
+    const validatorsShares = [];
     for (let i = 0; i < validatorsSnapshots.length; i++) {
       validatorsAddress.push(validatorsSnapshots[i].address);
       validatorsShares.push(validatorsSnapshots[i].gpkj);
     }
+    return { fixture, admin, validatorsAddress, validatorsShares };
+  }
+
+  beforeEach(async function () {
+    ({ fixture, admin, validatorsAddress, validatorsShares } =
+      await loadFixture(deployFixture));
   });
 
   it("Should not be to do a migration of validators if not factory", async function () {
@@ -52,14 +63,17 @@ describe("Ethdkg: Migrate state", () => {
         100,
         validatorsSnapshots[0].mpk
       )
-    ).to.be.revertedWith("2000");
+    )
+      .to.be.revertedWithCustomError(fixture.bToken, `OnlyFactory`)
+      .withArgs(admin.address, fixture.factory.address);
   });
 
-  it("Should not be to do a migration with mismatch data length", async function () {
+  it("Should not be to do a migration with mismatch state length", async function () {
+    const validatorIndexes = [1, 2, 3];
     await expect(
       factoryCallAny(fixture.factory, fixture.ethdkg, "migrateValidators", [
         validatorsAddress,
-        [1, 2, 3],
+        validatorIndexes,
         validatorsShares,
         validatorsSnapshots.length,
         0,
@@ -67,11 +81,21 @@ describe("Ethdkg: Migrate state", () => {
         100,
         validatorsSnapshots[0].mpk,
       ])
-    ).to.be.revertedWith("152");
+    )
+      .to.be.revertedWithCustomError(
+        fixture.ethdkg,
+        "MigrationInputDataMismatch"
+      )
+      .withArgs(
+        validatorsAddress.length,
+        validatorIndexes.length,
+        validatorsShares.length
+      );
+    const correctValidatorIndexes = [1, 2, 3, 4];
     await expect(
       factoryCallAny(fixture.factory, fixture.ethdkg, "migrateValidators", [
         validatorsAddress,
-        [1, 2, 3, 4],
+        correctValidatorIndexes,
         validatorsShares.slice(0, 3),
         validatorsSnapshots.length,
         0,
@@ -79,11 +103,16 @@ describe("Ethdkg: Migrate state", () => {
         100,
         validatorsSnapshots[0].mpk,
       ])
-    ).to.be.revertedWith("152");
+    )
+      .to.be.revertedWithCustomError(
+        fixture.ethdkg,
+        "MigrationInputDataMismatch"
+      )
+      .withArgs(validatorsAddress.length, correctValidatorIndexes.length, 3);
     await expect(
       factoryCallAny(fixture.factory, fixture.ethdkg, "migrateValidators", [
         validatorsAddress.slice(0, 3),
-        [1, 2, 3, 4],
+        correctValidatorIndexes,
         validatorsShares,
         validatorsSnapshots.length,
         0,
@@ -91,7 +120,12 @@ describe("Ethdkg: Migrate state", () => {
         100,
         validatorsSnapshots[0].mpk,
       ])
-    ).to.be.revertedWith("152");
+    )
+      .to.be.revertedWithCustomError(
+        fixture.ethdkg,
+        "MigrationInputDataMismatch"
+      )
+      .withArgs(3, correctValidatorIndexes.length, validatorsShares.length);
   });
 
   it("Factory should be able to migrate validators", async function () {
@@ -146,7 +180,7 @@ describe("Ethdkg: Migrate state", () => {
         0,
         fixture.validatorPool.interface.encodeFunctionData("initializeETHDKG")
       )
-    ).to.be.revertedWith("801");
+    ).to.be.revertedWithCustomError(fixture.validatorPool, "ConsensusRunning");
   });
 
   it("Should not be able to run more than 1 migration", async function () {
@@ -191,7 +225,12 @@ describe("Ethdkg: Migrate state", () => {
           validatorsSnapshots[0].mpk,
         ])
       )
-    ).to.be.revertedWith("151");
+    )
+      .to.be.revertedWithCustomError(
+        fixture.ethdkg,
+        "MigrationRequiresZeroNonce"
+      )
+      .withArgs(1);
   });
 
   it("Change validators after migration with scheduling maintenance + snapshots", async function () {
@@ -260,7 +299,9 @@ describe("Ethdkg: Migrate state", () => {
         expectedHeight,
         ethers.utils.getAddress(validatorsSnapshots2[1].address),
         expectedSafeToProceedConsensus,
-        validSnapshot2048.GroupSignature
+        validSnapshot2048.GroupSignatureDeserialized?.[0],
+        validSnapshot2048.GroupSignatureDeserialized?.[1],
+        validSnapshot2048.BClaimsDeserialized
       );
 
     // unregister validators and register news
@@ -300,6 +341,7 @@ describe("Ethdkg: Migrate state", () => {
     expectedEpoch = 3;
     expectedHeight = 3072;
     expectedSafeToProceedConsensus = true;
+
     await expect(
       fixture.snapshots
         .connect(await getValidatorEthAccount(validatorsSnapshots[1]))
@@ -312,7 +354,25 @@ describe("Ethdkg: Migrate state", () => {
         expectedHeight,
         ethers.utils.getAddress(validatorsSnapshots[1].address),
         expectedSafeToProceedConsensus,
-        signedData[2].GroupSignature
+        [
+          "0x0062cd4187d44be6f7977e5cbfc18066c3d5029bc6ab1e0ae5b1dd20a691fc6d",
+          "0x08648a63a6690c930265e93c86ec421d6a7ca06504c6b9509640cbd794a1459a",
+          "0x0a0837516f6bdc0ff9fd69776b2d7928432958b31551d10e921cc261f290b23c",
+          "0x06ce5812bf9f76f2dc04d272dd2e0ff8d2424d1e9f19c22da1ad5d2294463428",
+        ],
+        [
+          "0x0413ba20de19c18c75e268419c3f6fd86cc4d9a75e3b1127ce180ed93b95bff6",
+          "0x09401a3cf161c59e5e34e0da23593f556c9f834e90264a474933fd8235202b0c",
+        ],
+        [
+          expectedChainId,
+          expectedHeight,
+          0,
+          "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
+          "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
+          "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
+          "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
+        ]
       );
   });
 
@@ -376,7 +436,25 @@ describe("Ethdkg: Migrate state", () => {
         expectedHeight,
         ethers.utils.getAddress(validatorsSnapshots[1].address),
         expectedSafeToProceedConsensus,
-        signedData[1].GroupSignature
+        [
+          "0x0062cd4187d44be6f7977e5cbfc18066c3d5029bc6ab1e0ae5b1dd20a691fc6d",
+          "0x08648a63a6690c930265e93c86ec421d6a7ca06504c6b9509640cbd794a1459a",
+          "0x0a0837516f6bdc0ff9fd69776b2d7928432958b31551d10e921cc261f290b23c",
+          "0x06ce5812bf9f76f2dc04d272dd2e0ff8d2424d1e9f19c22da1ad5d2294463428",
+        ],
+        [
+          "0x2a060cf960125afbb506d17644798a7e5c877e9e82b6bf426b7287d543ed59e0",
+          "0x09d52226e77e1bf3321bff5320989ee80f27a564d25bc4daaf4bb0640c73d7b0",
+        ],
+        [
+          expectedChainId,
+          expectedHeight,
+          0,
+          "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
+          "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
+          "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
+          "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
+        ]
       );
 
     await factoryCallAnyFixture(fixture, "validatorPool", "initializeETHDKG");
@@ -411,7 +489,25 @@ describe("Ethdkg: Migrate state", () => {
         expectedHeight,
         ethers.utils.getAddress(validatorsSnapshots[1].address),
         expectedSafeToProceedConsensus,
-        signedData[2].GroupSignature
+        [
+          "0x0062cd4187d44be6f7977e5cbfc18066c3d5029bc6ab1e0ae5b1dd20a691fc6d",
+          "0x08648a63a6690c930265e93c86ec421d6a7ca06504c6b9509640cbd794a1459a",
+          "0x0a0837516f6bdc0ff9fd69776b2d7928432958b31551d10e921cc261f290b23c",
+          "0x06ce5812bf9f76f2dc04d272dd2e0ff8d2424d1e9f19c22da1ad5d2294463428",
+        ],
+        [
+          "0x0413ba20de19c18c75e268419c3f6fd86cc4d9a75e3b1127ce180ed93b95bff6",
+          "0x09401a3cf161c59e5e34e0da23593f556c9f834e90264a474933fd8235202b0c",
+        ],
+        [
+          expectedChainId,
+          expectedHeight,
+          0,
+          "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
+          "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
+          "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
+          "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
+        ]
       );
   });
 });

@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/MadBase/MadNet/consensus/db"
-	"github.com/MadBase/MadNet/consensus/objs"
-	mnutils "github.com/MadBase/MadNet/utils"
+	"github.com/alicenet/alicenet/consensus/db"
+	"github.com/alicenet/alicenet/consensus/objs"
+	mnutils "github.com/alicenet/alicenet/utils"
 	"github.com/dgraph-io/badger/v2"
 )
 
@@ -133,18 +133,22 @@ func rsFn(rs *objs.RoundState) *objs.RoundState {
 	return rsin
 }
 
+//nolint:unused,deadcode
 func PrefixOwnValidatingState() []byte {
 	return []byte("aa")
 }
 
+//nolint:unused,deadcode
 func PrefixCurrentRoundState() []byte {
 	return []byte("ab")
 }
 
+//nolint:unused,deadcode
 func PrefixHistoricRoundState() []byte {
 	return []byte("ac")
 }
 
+//nolint:unused,deadcode
 func printBH(bh *objs.BlockHeader) {
 	fmt.Printf("   CHAINID: %v\n", bh.BClaims.ChainID)
 	fmt.Printf("    HEIGHT: %v\n", bh.BClaims.Height)

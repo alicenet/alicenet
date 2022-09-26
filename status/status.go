@@ -5,13 +5,14 @@ import (
 	"sync"
 	"time"
 
-	"github.com/MadBase/MadNet/blockchain/monitor"
-	"github.com/MadBase/MadNet/consensus/admin"
-	"github.com/MadBase/MadNet/consensus/lstate"
-	"github.com/MadBase/MadNet/constants"
-	"github.com/MadBase/MadNet/logging"
-	"github.com/MadBase/MadNet/peering"
 	"github.com/sirupsen/logrus"
+
+	"github.com/alicenet/alicenet/consensus/admin"
+	"github.com/alicenet/alicenet/consensus/lstate"
+	"github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/layer1/monitor"
+	"github.com/alicenet/alicenet/logging"
+	"github.com/alicenet/alicenet/peering"
 )
 
 // Logger is a status logging object. This object aggregates state summaries
@@ -28,7 +29,7 @@ type Logger struct {
 	mon       monitor.Monitor
 }
 
-// Init initalizes the object
+// Init initializes the object.
 func (sl *Logger) Init(ce *lstate.Engine, pm *peering.PeerManager, ad *admin.Handlers, mon monitor.Monitor) {
 	sl.log = logging.GetLogger(constants.StatusLogger)
 	sl.ce = ce
@@ -40,7 +41,7 @@ func (sl *Logger) Init(ce *lstate.Engine, pm *peering.PeerManager, ad *admin.Han
 	sl.wg = sync.WaitGroup{}
 }
 
-// Close closes the object
+// Close closes the object.
 func (sl *Logger) Close() {
 	sl.closeOnce.Do(func() {
 		sl.Lock()
@@ -50,7 +51,7 @@ func (sl *Logger) Close() {
 	})
 }
 
-// Run starts a locking loop that will print status logs
+// Run starts a locking loop that will print status logs.
 func (sl *Logger) Run() {
 	sl.Lock()
 	select {

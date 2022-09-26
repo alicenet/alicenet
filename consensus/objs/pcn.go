@@ -1,12 +1,13 @@
 package objs
 
 import (
-	mdefs "github.com/MadBase/MadNet/consensus/objs/capn"
-	"github.com/MadBase/MadNet/consensus/objs/precommitnil"
-	"github.com/MadBase/MadNet/crypto"
-	"github.com/MadBase/MadNet/errorz"
-	"github.com/MadBase/MadNet/utils"
 	capnp "github.com/MadBase/go-capnproto2/v2"
+
+	mdefs "github.com/alicenet/alicenet/consensus/objs/capn"
+	"github.com/alicenet/alicenet/consensus/objs/precommitnil"
+	"github.com/alicenet/alicenet/crypto"
+	"github.com/alicenet/alicenet/errorz"
+	"github.com/alicenet/alicenet/utils"
 )
 
 // PreCommitNil ...
@@ -19,7 +20,7 @@ type PreCommitNil struct {
 }
 
 // UnmarshalBinary takes a byte slice and returns the corresponding
-// PreCommitNil object
+// PreCommitNil object.
 func (b *PreCommitNil) UnmarshalBinary(data []byte) error {
 	if b == nil {
 		return errorz.ErrInvalid{}.New("PreCommitNil.UnmarshalBinary; pcn not initialized")
@@ -32,7 +33,7 @@ func (b *PreCommitNil) UnmarshalBinary(data []byte) error {
 	return b.UnmarshalCapn(bh)
 }
 
-// UnmarshalCapn unmarshals the capnproto definition of the object
+// UnmarshalCapn unmarshals the capnproto definition of the object.
 func (b *PreCommitNil) UnmarshalCapn(bh mdefs.PreCommitNil) error {
 	if b == nil {
 		return errorz.ErrInvalid{}.New("PreCommitNil.UnmarshalCapn; pcn not initialized")
@@ -51,7 +52,7 @@ func (b *PreCommitNil) UnmarshalCapn(bh mdefs.PreCommitNil) error {
 }
 
 // MarshalBinary takes the PreCommitNil object and returns the canonical
-// byte slice
+// byte slice.
 func (b *PreCommitNil) MarshalBinary() ([]byte, error) {
 	if b == nil {
 		return nil, errorz.ErrInvalid{}.New("PreCommitNil.MarshalBinary; pcn not initialized")
@@ -64,7 +65,7 @@ func (b *PreCommitNil) MarshalBinary() ([]byte, error) {
 	return precommitnil.Marshal(bh)
 }
 
-// MarshalCapn marshals the object into its capnproto definition
+// MarshalCapn marshals the object into its capnproto definition.
 func (b *PreCommitNil) MarshalCapn(seg *capnp.Segment) (mdefs.PreCommitNil, error) {
 	if b == nil {
 		return mdefs.PreCommitNil{}, errorz.ErrInvalid{}.New("PreCommitNil.MarshalCapn; pcn not initialized")

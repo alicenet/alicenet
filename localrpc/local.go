@@ -2,22 +2,22 @@ package localrpc
 
 import (
 	"context"
+	"embed"
 	"net"
 	"net/http"
 	"strings"
 	"sync"
 
-	"github.com/MadBase/MadNet/constants"
-	"github.com/MadBase/MadNet/interfaces"
-	bindata "github.com/MadBase/MadNet/localrpc/swagger-bindata"
-	pb "github.com/MadBase/MadNet/proto"
-	assetfs "github.com/elazarl/go-bindata-assetfs"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/rs/cors"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 	"google.golang.org/grpc"
+
+	"github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/interfaces"
+	pb "github.com/alicenet/alicenet/proto"
 )
 
 // Handler binds a Listener to a grpc server and sets up a RESTful API based on
@@ -31,6 +31,9 @@ type Handler struct {
 	log        *logrus.Logger
 	closeOnce  sync.Once
 }
+
+//go:embed swagger/*
+var swagger embed.FS
 
 // Close will shutdown the server handler.
 func (rpch *Handler) Close() error {
@@ -62,14 +65,11 @@ func NewStateServerHandler(logger *logrus.Logger, addr string, service interface
 	mux := http.NewServeMux()
 
 	// setup the swagger-ui fileserver using the embedded assets
-	fileServer := http.FileServer(&assetfs.AssetFS{
-		Asset:    bindata.Asset,
-		AssetDir: bindata.AssetDir,
-	})
+	fileServer := http.FileServer(http.FS(swagger))
 
 	// register the swagger fs handler with the server
 	prefix := "/swagger/"
-	mux.Handle(prefix, http.StripPrefix(prefix, fileServer))
+	mux.Handle(prefix, fileServer)
 	// add redirect to file server
 	mux.HandleFunc("/swagger.json", serveSwagger)
 
@@ -82,7 +82,7 @@ func NewStateServerHandler(logger *logrus.Logger, addr string, service interface
 	// assign the cors enabled grpc mux as a handler for the default route of sever mux
 	mux.Handle("/", cmux)
 
-	//create a context for grpc
+	// create a context for grpc
 	ctx := context.Background()
 	subCtx, cf := context.WithCancel(ctx)
 	// register state handler against http server
@@ -131,5 +131,5 @@ func grpcHandlerFunc(grpcServer *grpc.Server, otherHandler http.Handler) http.Ha
 }
 
 func serveSwagger(w http.ResponseWriter, r *http.Request) {
-	http.Redirect(w, r, "swagger/swagger.json", http.StatusMovedPermanently)
+	http.Redirect(w, r, "swagger/alicenet.swagger.json", http.StatusMovedPermanently)
 }

@@ -10,21 +10,21 @@
 // return the logs
 import { BytesLike, ContractReceipt } from "ethers";
 import { artifacts, ethers } from "hardhat";
-import { AliceNetFactory } from "../../typechain-types";
-import { CONTRACT_ADDR, DEPLOYED_RAW } from "./constants";
+import { encodeMultiCallArgs } from "./alicenetTasks";
+import { ALICENET_FACTORY, CONTRACT_ADDR, DEPLOYED_RAW } from "./constants";
 const defaultFactoryName = "AliceNetFactory";
 const DeployedRawEvent = "DeployedRaw";
 const contractAddrVar = "contractAddr";
 const DeployedProxyEvent = "DeployedProxy";
-const deployedStaticEvent = "DeployedStatic";
-const deployedTemplateEvent = "DeployedTemplate";
 export async function deployUpgradeable(
   contractName: string,
   factoryAddress: string,
   constructorArgs: Array<string>
 ) {
-  const AliceNetFactory = await ethers.getContractFactory(defaultFactoryName);
-  const factory = await AliceNetFactory.attach(factoryAddress);
+  const factory = await ethers.getContractAt(
+    defaultFactoryName,
+    factoryAddress
+  );
   // get an instance of the logic contract interface
   const logicFactory = await ethers.getContractFactory(contractName);
   // get the deployment bytecode from the interface
@@ -50,13 +50,13 @@ export async function deployUpgradeable(
     if (proxySalt !== undefined) {
       // multicall deployProxy. upgradeProxy
       const multiCallArgs = await getDeployUpgradeableMultiCallArgs(
-        defaultFactoryName,
+        factory.address,
         res.proxySalt,
         res.logicAddress
       );
       txResponse = await factory.multiCall(multiCallArgs);
       receipt = await txResponse.wait();
-      res.proxyAddress = await getEventVar(
+      res.proxyAddress = getEventVar(
         receipt,
         DeployedProxyEvent,
         contractAddrVar
@@ -102,39 +102,6 @@ export async function upgradeProxy(
   return res;
 }
 
-export async function deployStatic(
-  contractName: string,
-  factoryAddress: string
-) {
-  const AliceNetFactory = await ethers.getContractFactory(defaultFactoryName);
-  const logicContract = await ethers.getContractFactory(contractName);
-  const factory: AliceNetFactory = AliceNetFactory.attach(factoryAddress);
-  const deployBCode = logicContract.bytecode;
-  let txResponse = await factory.deployTemplate(deployBCode);
-  let receipt = await txResponse.wait();
-  const templateAddress: BytesLike = getEventVar(
-    receipt,
-    deployedTemplateEvent,
-    contractAddrVar
-  );
-  const metaSalt = await getSalt(contractName);
-  if (typeof metaSalt === "undefined") {
-    throw new Error(`Couldn't get the salt for: ${contractName}`);
-  }
-  txResponse = await factory.deployStatic(metaSalt, "0x");
-  receipt = await txResponse.wait();
-  const metaAddress: string = getEventVar(
-    receipt,
-    deployedStaticEvent,
-    contractAddrVar
-  );
-  return {
-    templateAddress,
-    metaSalt,
-    metaAddress,
-  };
-}
-
 async function getFullyQualifiedName(contractName: string) {
   const artifactPaths = await artifacts.getAllFullyQualifiedNames();
   for (let i = 0; i < artifactPaths.length; i++) {
@@ -150,12 +117,12 @@ function extractPath(qualifiedName: string) {
 }
 
 async function getDeployUpgradeableMultiCallArgs(
-  factoryName: string,
+  factoryAddress: string,
   Salt: BytesLike,
   logicAddress: BytesLike,
   initCallData?: BytesLike
 ) {
-  const factoryBase = await ethers.getContractFactory(factoryName);
+  const factoryBase = await ethers.getContractFactory(ALICENET_FACTORY);
   const deployProxy: BytesLike = factoryBase.interface.encodeFunctionData(
     "deployProxy",
     [Salt]
@@ -173,7 +140,10 @@ async function getDeployUpgradeableMultiCallArgs(
           "0x",
         ]);
 
-  return [deployProxy, upgradeProxy];
+  return [
+    encodeMultiCallArgs(factoryAddress, 0, deployProxy),
+    encodeMultiCallArgs(factoryAddress, 0, upgradeProxy),
+  ];
 }
 
 export async function getSalt(contractName: string) {

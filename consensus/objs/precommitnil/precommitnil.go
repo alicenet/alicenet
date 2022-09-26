@@ -1,9 +1,10 @@
 package precommitnil
 
 import (
-	mdefs "github.com/MadBase/MadNet/consensus/objs/capn"
-	"github.com/MadBase/MadNet/errorz"
 	capnp "github.com/MadBase/go-capnproto2/v2"
+
+	mdefs "github.com/alicenet/alicenet/consensus/objs/capn"
+	"github.com/alicenet/alicenet/errorz"
 )
 
 // Marshal will marshal the PreCommitNil object.
@@ -37,7 +38,7 @@ func Unmarshal(data []byte) (mdefs.PreCommitNil, error) {
 	return obj, nil
 }
 
-// Validate will validate the PreCommitNil object
+// Validate will validate the PreCommitNil object.
 func Validate(p mdefs.PreCommitNil) error {
 	if !p.IsValid() {
 		return errorz.ErrInvalid{}.New("pcn capn obj is not valid")

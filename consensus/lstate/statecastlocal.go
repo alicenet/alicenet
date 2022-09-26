@@ -1,11 +1,12 @@
 package lstate
 
 import (
-	"github.com/MadBase/MadNet/consensus/objs"
-	"github.com/MadBase/MadNet/constants"
-	"github.com/MadBase/MadNet/crypto"
-	"github.com/MadBase/MadNet/utils"
 	"github.com/dgraph-io/badger/v2"
+
+	"github.com/alicenet/alicenet/consensus/objs"
+	"github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/crypto"
+	"github.com/alicenet/alicenet/utils"
 )
 
 // These are intermediate handlers. Once the step handlers have decided on how
@@ -126,7 +127,7 @@ func (ce *Engine) castProposalFromValue(txn *badger.Txn, rs *RoundStates, prop *
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-func (ce *Engine) castPreVoteWithLock(txn *badger.Txn, rs *RoundStates, lock *objs.Proposal, p *objs.Proposal) error {
+func (ce *Engine) castPreVoteWithLock(txn *badger.Txn, rs *RoundStates, lock, p *objs.Proposal) error {
 	if !rs.IsCurrentValidator() {
 		return nil
 	}

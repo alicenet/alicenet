@@ -1,13 +1,16 @@
+//go:build flakes
+
 package dman
 
 import (
 	"testing"
 
-	"github.com/MadBase/MadNet/interfaces"
+	"github.com/stretchr/testify/assert"
+
+	"github.com/alicenet/alicenet/interfaces"
 )
 
-type testingTxMarshaller struct {
-}
+type testingTxMarshaller struct{}
 
 func (tm *testingTxMarshaller) MarshalTx(tx interfaces.Transaction) ([]byte, error) {
 	return tx.TxHash()
@@ -20,7 +23,10 @@ func (tm *testingTxMarshaller) UnmarshalTx(tx []byte) (interfaces.Transaction, e
 func makeCache() *txCache {
 	txc := &txCache{}
 	t := &testingTxMarshaller{}
-	txc.Init(t)
+	err := txc.Init(t)
+	if err != nil {
+		panic(err)
+	}
 	return txc
 }
 
@@ -32,7 +38,8 @@ func Test_txCache_Get(t *testing.T) {
 	txc := makeCache()
 	tx := makeTx(nil)
 	h, _ := tx.TxHash()
-	txc.Add(1, tx)
+	err := txc.Add(1, tx)
+	assert.Nil(t, err)
 	if !txc.Contains(h) {
 		t.Fatal("test failed")
 	}
@@ -40,7 +47,6 @@ func Test_txCache_Get(t *testing.T) {
 	if !ok {
 		t.Fatal("not found in get")
 	}
-
 }
 
 func Test_txCache_GetHeight(t *testing.T) {
@@ -49,8 +55,10 @@ func Test_txCache_GetHeight(t *testing.T) {
 	tx2 := makeTx([]byte("foo"))
 	h1, _ := tx1.TxHash()
 	h2, _ := tx2.TxHash()
-	txc.Add(1, tx1)
-	txc.Add(2, tx2)
+	err := txc.Add(1, tx1)
+	assert.Nil(t, err)
+	err = txc.Add(2, tx2)
+	assert.Nil(t, err)
 	txs1, _ := txc.GetHeight(1)
 	if len(txs1) != 1 {
 		for hash, rh := range txc.rcache {
@@ -80,14 +88,14 @@ func Test_txCache_GetHeight(t *testing.T) {
 	if len(txs3) > 2 {
 		t.Fatal("3: found in get")
 	}
-
 }
 
 func Test_txCache_Del(t *testing.T) {
 	txc := makeCache()
 	tx := makeTx(nil)
 	h, _ := tx.TxHash()
-	txc.Add(1, tx)
+	err := txc.Add(1, tx)
+	assert.Nil(t, err)
 	txc.Del(h)
 }
 
@@ -95,8 +103,10 @@ func Test_txCache_DropBeforeHeight(t *testing.T) {
 	txc := makeCache()
 	tx1 := makeTx([]byte("bar"))
 	tx2 := makeTx([]byte("foo"))
-	txc.Add(1, tx1)
-	txc.Add(2, tx2)
+	err := txc.Add(1, tx1)
+	assert.Nil(t, err)
+	err = txc.Add(2, tx2)
+	assert.Nil(t, err)
 	txc.DropBeforeHeight(1)
 	txc.DropBeforeHeight(257)
 }

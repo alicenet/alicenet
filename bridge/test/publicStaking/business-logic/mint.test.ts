@@ -1,3 +1,4 @@
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
@@ -18,7 +19,7 @@ describe("PublicStaking: Only Mint", async () => {
   let adminSigner: SignerWithAddress;
 
   beforeEach(async function () {
-    fixture = await getBaseTokensFixture();
+    fixture = await loadFixture(getBaseTokensFixture);
     [adminSigner, notAdminSigner] = await ethers.getSigners();
   });
 
@@ -27,6 +28,10 @@ describe("PublicStaking: Only Mint", async () => {
     const tx = await fixture.publicStaking.connect(adminSigner).mint(1000);
     const blockNumber = BigInt(tx.blockNumber as number);
     const tokenID = await getTokenIdFromTx(tx);
+    expect(tokenID).to.be.equal(1);
+    expect(await fixture.publicStaking.getLatestMintedPositionID()).to.be.equal(
+      1
+    );
     await assertPositions(
       fixture.publicStaking,
       tokenID,
@@ -40,10 +45,14 @@ describe("PublicStaking: Only Mint", async () => {
 
   it("Mint many NFT positions for a user", async function () {
     await fixture.aToken.approve(fixture.publicStaking.address, 1000);
-    for (let i = 0; i < 10; i++) {
+    for (let i = 1; i <= 10; i++) {
       const tx = await fixture.publicStaking.connect(adminSigner).mint(100);
       const blockNumber = BigInt(tx.blockNumber as number);
       const tokenID = await getTokenIdFromTx(tx);
+      expect(tokenID).to.be.equal(i);
+      expect(
+        await fixture.publicStaking.getLatestMintedPositionID()
+      ).to.be.equal(i);
       await assertPositions(
         fixture.publicStaking,
         tokenID,
@@ -87,7 +96,10 @@ describe("PublicStaking: Only Mint", async () => {
   it("Should not be able to mint NFT position with more tokens than will ever exist", async function () {
     await expect(
       fixture.publicStaking.connect(adminSigner).mint(2n ** 224n)
-    ).to.revertedWith("605");
+    ).to.be.revertedWithCustomError(
+      fixture.publicStaking,
+      "MintAmountExceedsMaximumSupply"
+    );
   });
 
   it("Should not be able to mintTo a NFT position with more tokens than will ever exist", async function () {
@@ -95,7 +107,10 @@ describe("PublicStaking: Only Mint", async () => {
       fixture.publicStaking
         .connect(adminSigner)
         .mintTo(notAdminSigner.address, 2n ** 224n, 1)
-    ).to.revertedWith("605");
+    ).to.be.revertedWithCustomError(
+      fixture.publicStaking,
+      "MintAmountExceedsMaximumSupply"
+    );
   });
 
   it("MintTo a NFT position to another user without lock", async function () {
@@ -105,6 +120,10 @@ describe("PublicStaking: Only Mint", async () => {
       .mintTo(notAdminSigner.address, 1000, 0);
     const blockNumber = BigInt(tx.blockNumber as number);
     const tokenID = await getTokenIdFromTx(tx);
+    expect(tokenID).to.be.equal(1);
+    expect(await fixture.publicStaking.getLatestMintedPositionID()).to.be.equal(
+      1
+    );
     await assertPositions(
       fixture.publicStaking,
       tokenID,
@@ -123,6 +142,10 @@ describe("PublicStaking: Only Mint", async () => {
       .mintTo(notAdminSigner.address, 1000, 10);
     const blockNumber = BigInt(tx.blockNumber as number);
     const tokenID = await getTokenIdFromTx(tx);
+    expect(tokenID).to.be.equal(1);
+    expect(await fixture.publicStaking.getLatestMintedPositionID()).to.be.equal(
+      1
+    );
     const expectedPosition = newPosition(
       1000n,
       blockNumber + 10n,
@@ -151,6 +174,9 @@ describe("PublicStaking: Only Mint", async () => {
           1000,
           (await fixture.publicStaking.getMaxMintLock()).toBigInt() + 1n
         )
-    ).to.revertedWith("602");
+    ).to.be.revertedWithCustomError(
+      fixture.publicStaking,
+      "LockDurationGreaterThanMintLock"
+    );
   });
 });

@@ -1,9 +1,10 @@
 package nrclaims
 
 import (
-	mdefs "github.com/MadBase/MadNet/consensus/objs/capn"
-	"github.com/MadBase/MadNet/errorz"
 	capnp "github.com/MadBase/go-capnproto2/v2"
+
+	mdefs "github.com/alicenet/alicenet/consensus/objs/capn"
+	"github.com/alicenet/alicenet/errorz"
 )
 
 // Marshal will marshal the NRClaims object.
@@ -37,7 +38,7 @@ func Unmarshal(data []byte) (mdefs.NRClaims, error) {
 	return obj, nil
 }
 
-// Validate will validate the NRClaims object
+// Validate will validate the NRClaims object.
 func Validate(p mdefs.NRClaims) error {
 	if !p.IsValid() {
 		return errorz.ErrInvalid{}.New("nrclaims capn obj is not valid")

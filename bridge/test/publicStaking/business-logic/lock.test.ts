@@ -1,3 +1,4 @@
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { ethers } from "hardhat";
 import { expect } from "../../chai-setup";
@@ -14,12 +15,19 @@ describe("PublicStaking: Lock and LockWithdrawal", async () => {
   let notAdminSigner: SignerWithAddress;
   let tokenID: number;
 
-  beforeEach(async function () {
-    fixture = await getBaseTokensFixture();
-    [adminSigner, notAdminSigner] = await ethers.getSigners();
+  async function deployFixture() {
+    const fixture = await getBaseTokensFixture();
+    const [adminSigner, notAdminSigner] = await ethers.getSigners();
     await fixture.aToken.approve(fixture.publicStaking.address, 1000);
     const tx = await fixture.publicStaking.connect(adminSigner).mint(1000);
-    tokenID = await getTokenIdFromTx(tx);
+    const tokenID = await getTokenIdFromTx(tx);
+    return { fixture, adminSigner, notAdminSigner, tokenID };
+  }
+
+  beforeEach(async function () {
+    ({ fixture, adminSigner, notAdminSigner, tokenID } = await loadFixture(
+      deployFixture
+    ));
   });
 
   describe("PublicStaking: BurnLock a position", async () => {
@@ -42,7 +50,10 @@ describe("PublicStaking: Lock and LockWithdrawal", async () => {
       await fixture.publicStaking.lockOwnPosition(tokenID, 10n);
       await expect(
         fixture.publicStaking.connect(adminSigner).burn(tokenID)
-      ).to.revertedWith("606");
+      ).to.be.revertedWithCustomError(
+        fixture.publicStaking,
+        "FreeAfterTimeNotReached"
+      );
     });
 
     it("Should not allow to lock a not owned position", async function () {
@@ -50,7 +61,12 @@ describe("PublicStaking: Lock and LockWithdrawal", async () => {
         fixture.publicStaking
           .connect(notAdminSigner)
           .lockOwnPosition(tokenID, 10n)
-      ).to.revertedWith("600");
+      )
+        .to.be.revertedWithCustomError(
+          fixture.publicStaking,
+          "CallerNotTokenOwner"
+        )
+        .withArgs(notAdminSigner.address);
     });
 
     it("Should not allow to lock a position with a value greater than _MAX_MINT_LOCK", async function () {
@@ -59,14 +75,17 @@ describe("PublicStaking: Lock and LockWithdrawal", async () => {
         fixture.publicStaking
           .connect(adminSigner)
           .lockOwnPosition(tokenID, 172801n)
-      ).to.revertedWith("601");
+      ).to.be.revertedWithCustomError(
+        fixture.publicStaking,
+        "LockDurationGreaterThanGovernanceLock"
+      );
     });
 
     it("Should not be able to lock a non-existing position!", async function () {
       await mineBlocks(3n);
       await expect(
         fixture.publicStaking.connect(adminSigner).lockOwnPosition(1000, 10n)
-      ).to.revertedWith("ERC721: owner query for nonexistent token");
+      ).to.revertedWith("ERC721: invalid token ID");
     });
   });
 
@@ -85,23 +104,35 @@ describe("PublicStaking: Lock and LockWithdrawal", async () => {
       await fixture.publicStaking.lockWithdraw(tokenID, 10n);
       await expect(
         fixture.publicStaking.collectEth(tokenID)
-      ).to.be.rejectedWith("603");
+      ).to.be.revertedWithCustomError(
+        fixture.publicStaking,
+        "LockDurationWithdrawTimeNotReached"
+      );
       await expect(
         fixture.publicStaking.collectToken(tokenID)
-      ).to.be.rejectedWith("603");
+      ).to.be.revertedWithCustomError(
+        fixture.publicStaking,
+        "LockDurationWithdrawTimeNotReached"
+      );
       await expect(
         fixture.publicStaking.collectEthTo(adminSigner.address, tokenID)
-      ).to.be.rejectedWith("603");
+      ).to.be.revertedWithCustomError(
+        fixture.publicStaking,
+        "LockDurationWithdrawTimeNotReached"
+      );
       await expect(
         fixture.publicStaking.collectTokenTo(adminSigner.address, tokenID)
-      ).to.be.rejectedWith("603");
+      ).to.be.revertedWithCustomError(
+        fixture.publicStaking,
+        "LockDurationWithdrawTimeNotReached"
+      );
     });
 
     it("Should not be able to withdrawalLock a non-existing position!", async function () {
       await mineBlocks(3n);
       await expect(
         fixture.publicStaking.connect(adminSigner).lockWithdraw(1000, 10n)
-      ).to.revertedWith("ERC721: owner query for nonexistent token");
+      ).to.revertedWith("ERC721: invalid token ID");
     });
 
     it("Should not allow to withdrawalLock a position with a value greater than _MAX_MINT_LOCK", async function () {
@@ -110,7 +141,10 @@ describe("PublicStaking: Lock and LockWithdrawal", async () => {
         fixture.publicStaking
           .connect(adminSigner)
           .lockWithdraw(tokenID, 172801n)
-      ).to.revertedWith("601");
+      ).to.be.revertedWithCustomError(
+        fixture.publicStaking,
+        "LockDurationGreaterThanGovernanceLock"
+      );
     });
 
     it("Should not allow to burn a locked position without waiting", async function () {
@@ -118,13 +152,21 @@ describe("PublicStaking: Lock and LockWithdrawal", async () => {
       await fixture.publicStaking.lockWithdraw(tokenID, 10n);
       await expect(
         fixture.publicStaking.connect(adminSigner).burn(tokenID)
-      ).to.revertedWith("606");
+      ).to.be.revertedWithCustomError(
+        fixture.publicStaking,
+        "FreeAfterTimeNotReached"
+      );
     });
 
     it("Should not allow to lock a not owned position", async function () {
       await expect(
         fixture.publicStaking.connect(notAdminSigner).lockWithdraw(tokenID, 10n)
-      ).to.revertedWith("600");
+      )
+        .to.be.revertedWithCustomError(
+          fixture.publicStaking,
+          "CallerNotTokenOwner"
+        )
+        .withArgs(notAdminSigner.address);
     });
   });
   describe("PublicStaking: BurnLock and withdrawalLock a position", async () => {
@@ -150,19 +192,34 @@ describe("PublicStaking: Lock and LockWithdrawal", async () => {
       await fixture.publicStaking.lockWithdraw(tokenID, 10n);
       await expect(
         fixture.publicStaking.collectEth(tokenID)
-      ).to.be.rejectedWith("603");
+      ).to.be.revertedWithCustomError(
+        fixture.publicStaking,
+        "LockDurationWithdrawTimeNotReached"
+      );
       await expect(
         fixture.publicStaking.collectToken(tokenID)
-      ).to.be.rejectedWith("603");
+      ).to.be.revertedWithCustomError(
+        fixture.publicStaking,
+        "LockDurationWithdrawTimeNotReached"
+      );
       await expect(
         fixture.publicStaking.collectEthTo(adminSigner.address, tokenID)
-      ).to.be.rejectedWith("603");
+      ).to.be.revertedWithCustomError(
+        fixture.publicStaking,
+        "LockDurationWithdrawTimeNotReached"
+      );
       await expect(
         fixture.publicStaking.collectTokenTo(adminSigner.address, tokenID)
-      ).to.be.rejectedWith("603");
+      ).to.be.revertedWithCustomError(
+        fixture.publicStaking,
+        "LockDurationWithdrawTimeNotReached"
+      );
       await expect(
         fixture.publicStaking.connect(adminSigner).burn(tokenID)
-      ).to.revertedWith("606");
+      ).to.be.revertedWithCustomError(
+        fixture.publicStaking,
+        "FreeAfterTimeNotReached"
+      );
     });
   });
 });

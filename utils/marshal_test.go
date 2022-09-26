@@ -2,10 +2,9 @@ package utils
 
 import (
 	"bytes"
-
-	"github.com/MadBase/MadNet/constants"
-
 	"testing"
+
+	"github.com/alicenet/alicenet/constants"
 )
 
 func TestMarshalUint16(t *testing.T) {
@@ -76,7 +75,6 @@ func TestMarshalUint32(t *testing.T) {
 	}
 	if z != zUn {
 		t.Fatal("UnmarshalUint32 fail: 0")
-
 	}
 
 	maxUint32 := constants.MaxUint32

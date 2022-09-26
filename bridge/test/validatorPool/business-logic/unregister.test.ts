@@ -1,3 +1,4 @@
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { BigNumber, Signer } from "ethers";
 import { ethers } from "hardhat";
 import { expect } from "../../chai-setup";
@@ -17,6 +18,10 @@ import {
   stakeValidators,
 } from "../setup";
 
+function deployFixture() {
+  return getFixture(false, true, true);
+}
+
 describe("ValidatorPool: Unregistration logic", async () => {
   let fixture: Fixture;
   let stakeAmount: bigint;
@@ -25,7 +30,7 @@ describe("ValidatorPool: Unregistration logic", async () => {
   let adminSigner: Signer;
 
   beforeEach(async function () {
-    fixture = await getFixture(false, true, true);
+    fixture = await loadFixture(deployFixture);
     stakeAmount = (await fixture.validatorPool.getStakeAmount()).toBigInt();
     validators = await createValidators(fixture, validatorsSnapshots);
     stakingTokenIds = await stakeValidators(fixture, validators);
@@ -48,7 +53,12 @@ describe("ValidatorPool: Unregistration logic", async () => {
       factoryCallAnyFixture(fixture, "validatorPool", "unregisterValidators", [
         newValidators,
       ])
-    ).to.be.revertedWith("817");
+    )
+      .to.be.revertedWithCustomError(
+        fixture.validatorPool,
+        "AddressNotValidator"
+      )
+      .withArgs(ethers.utils.getAddress(newValidators[1]));
   });
 
   it("Should not allow unregistering if consensus or an ETHDKG round is running", async function () {
@@ -64,7 +74,10 @@ describe("ValidatorPool: Unregistration logic", async () => {
       factoryCallAnyFixture(fixture, "validatorPool", "unregisterValidators", [
         validators,
       ])
-    ).to.be.revertedWith("802");
+    ).to.be.revertedWithCustomError(
+      fixture.validatorPool,
+      "ETHDKGRoundRunning"
+    );
     await completeETHDKGRound(validatorsSnapshots, {
       ethdkg: fixture.ethdkg,
       validatorPool: fixture.validatorPool,
@@ -73,7 +86,7 @@ describe("ValidatorPool: Unregistration logic", async () => {
       factoryCallAnyFixture(fixture, "validatorPool", "unregisterValidators", [
         validators,
       ])
-    ).to.be.revertedWith("801");
+    ).to.be.revertedWithCustomError(fixture.validatorPool, "ConsensusRunning");
   });
 
   it("Should not allow unregistering more addresses that in the pool", async function () {
@@ -90,7 +103,12 @@ describe("ValidatorPool: Unregistration logic", async () => {
       factoryCallAnyFixture(fixture, "validatorPool", "unregisterValidators", [
         validators,
       ])
-    ).to.be.revertedWith("808");
+    )
+      .to.be.revertedWithCustomError(
+        fixture.validatorPool,
+        "LengthGreaterThanAvailableValidators"
+      )
+      .withArgs(5, 4);
   });
 
   it("Should not allow registering an address that was unregistered and didn’t claim is publicStaking position", async function () {
@@ -114,7 +132,12 @@ describe("ValidatorPool: Unregistration logic", async () => {
         validators,
         newPublicStakingIds,
       ])
-    ).to.be.revertedWith("816");
+    )
+      .to.be.revertedWithCustomError(
+        fixture.validatorPool,
+        "AddressAlreadyValidator"
+      )
+      .withArgs(ethers.utils.getAddress(validators[0]));
   });
 
   it("Should successfully unregister validators if all conditions are met", async function () {

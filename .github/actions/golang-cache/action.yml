@@ -1,14 +1,9 @@
-name: 'Setup golang and its cache'
-description: 'Setup golang and its cache'
+name: "Setup golang and its cache"
+description: "Setup golang and its cache"
 runs:
   using: "composite"
   steps:
     - uses: actions/setup-go@v3
       with:
-        go-version: 1.18
-    - uses: actions/cache@v3
-      with:
-        path: |
-          ~/.cache/go-build
-          ~/go/pkg/mod
-        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        go-version-file: ./go.mod
+        cache: true

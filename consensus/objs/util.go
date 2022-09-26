@@ -5,11 +5,11 @@ import (
 	"encoding/binary"
 	"fmt"
 
-	trie "github.com/MadBase/MadNet/badgerTrie"
-	"github.com/MadBase/MadNet/constants"
-	"github.com/MadBase/MadNet/crypto"
-	"github.com/MadBase/MadNet/errorz"
-	"github.com/MadBase/MadNet/utils"
+	trie "github.com/alicenet/alicenet/badgerTrie"
+	"github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/crypto"
+	"github.com/alicenet/alicenet/errorz"
+	"github.com/alicenet/alicenet/utils"
 )
 
 // ExtractHR extracts the Height and Round from an interface;
@@ -164,20 +164,24 @@ func ExtractRCert(any interface{}) *RCert {
 
 // RelateHR relates Height and Round between objects.
 // Simply:
-//		if a is before b, return -1
-//		if a is after b, return 1
-//		if a equals b, return 0
+//
+//	if a is before b, return -1
+//	if a is after b, return 1
+//	if a equals b, return 0
 //
 // More explicitly, we extract the height and round from objects a and b.
 //
 // If (aHeight == bHeight) && (aRound == bRound)
-//		return 0
+//
+//	return 0
 //
 // If (aHeight < bHeight) || ((aHeight == bHeight) && (aRound < bRound))
-//		return -1
+//
+//	return -1
 //
 // If (aHeight > bHeight) || ((aHeight == bHeight) && (aRound > bRound))
-//		return 1
+//
+//	return 1
 func RelateHR(a, b interface{}) int {
 	ah, ar := ExtractHR(a)
 	bh, br := ExtractHR(b)
@@ -201,13 +205,16 @@ func RelateHR(a, b interface{}) int {
 // RelateH relates Height between objects
 //
 // If aHeight == bHeight
-//		return 0
+//
+//	return 0
 //
 // If aHeight < bHeight
-//		return -1
+//
+//	return -1
 //
 // If aHeight > bHeight
-//		return 1
+//
+//	return 1
 func RelateH(a, b interface{}) int {
 	if a == nil && b != nil {
 		return -1
@@ -226,7 +233,7 @@ func RelateH(a, b interface{}) int {
 	return 1
 }
 
-// BClaimsEqual determines if two objects have equal BClaims objects
+// BClaimsEqual determines if two objects have equal BClaims objects.
 func BClaimsEqual(a, b interface{}) (bool, error) {
 	ab := ExtractBClaims(a)
 	bb := ExtractBClaims(b)
@@ -263,20 +270,20 @@ func ExtractBClaims(any interface{}) *BClaims {
 	}
 }
 
-// PrevBlockEqual determines if objects agree on the previous block
+// PrevBlockEqual determines if objects agree on the previous block.
 func PrevBlockEqual(a, b interface{}) bool {
 	ab := ExtractRCert(a)
 	bb := ExtractRCert(b)
 	return bytes.Equal(ab.RClaims.PrevBlock, bb.RClaims.PrevBlock)
 }
 
-// IsDeadBlockRound determines if an object is for the DeadBlockRound
+// IsDeadBlockRound determines if an object is for the DeadBlockRound.
 func IsDeadBlockRound(any interface{}) bool {
 	_, r := ExtractHR(any)
 	return r == constants.DEADBLOCKROUND
 }
 
-// MakeTxRoot creates a txRootHsh from a list of transaction hashes
+// MakeTxRoot creates a txRootHsh from a list of transaction hashes.
 func MakeTxRoot(txHashes [][]byte) ([]byte, error) {
 	if len(txHashes) == 0 {
 		return crypto.Hasher([]byte{}), nil
@@ -304,12 +311,12 @@ func MakeTxRoot(txHashes [][]byte) ([]byte, error) {
 }
 
 // GetProposerIdx will return the index of the proposer of this round
-// from the list of validators
-func GetProposerIdx(numv int, height uint32, round uint32) uint8 {
+// from the list of validators.
+func GetProposerIdx(numv int, height, round uint32) uint8 {
 	return uint8(int(height+round-1) % numv)
 }
 
-// SplitBlob separates a blob of fixed size data types into a slice of slices
+// SplitBlob separates a blob of fixed size state types into a slice of slices.
 func SplitBlob(s []byte, blen int) ([][]byte, error) {
 	if blen <= 0 {
 		return [][]byte{}, errorz.ErrInvalid{}.New("SplitBlob; blen <= 0")
@@ -325,14 +332,14 @@ func SplitBlob(s []byte, blen int) ([][]byte, error) {
 	return buf, nil
 }
 
-// SplitSignatures splits signatures by chopping up a blob of data into byte slices by length.
+// SplitSignatures splits signatures by chopping up a blob of state into byte slices by length.
 // return an error if the length is not correct. IE the total length
 // is not a multiple of expected length for a single element of type.
 func SplitSignatures(s []byte) ([][]byte, error) {
 	return SplitBlob(s, constants.CurveSecp256k1SigLen)
 }
 
-// SplitHashes splits hashes by chopping up a blob of data into byte slices by length.
+// SplitHashes splits hashes by chopping up a blob of state into byte slices by length.
 // return an error if the length is not correct. IE the total length
 // is not a multiple of expected length for a single element of type.
 func SplitHashes(s []byte) ([][]byte, error) {

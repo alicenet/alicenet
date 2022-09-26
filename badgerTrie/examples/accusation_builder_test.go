@@ -11,16 +11,16 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/MadBase/MadNet/application/objs"
-	"github.com/MadBase/MadNet/application/objs/uint256"
-	utxo "github.com/MadBase/MadNet/application/utxohandler"
-	trie "github.com/MadBase/MadNet/badgerTrie"
-	"github.com/MadBase/MadNet/consensus/db"
-	cobjs "github.com/MadBase/MadNet/consensus/objs"
-	"github.com/MadBase/MadNet/constants"
-	"github.com/MadBase/MadNet/crypto"
-	"github.com/MadBase/MadNet/errorz"
-	"github.com/MadBase/MadNet/utils"
+	"github.com/alicenet/alicenet/application/objs"
+	"github.com/alicenet/alicenet/application/objs/uint256"
+	utxo "github.com/alicenet/alicenet/application/utxohandler"
+	trie "github.com/alicenet/alicenet/badgerTrie"
+	"github.com/alicenet/alicenet/consensus/db"
+	cobjs "github.com/alicenet/alicenet/consensus/objs"
+	"github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/crypto"
+	"github.com/alicenet/alicenet/errorz"
+	"github.com/alicenet/alicenet/utils"
 	"github.com/dgraph-io/badger/v2"
 )
 
@@ -77,6 +77,7 @@ func makeTxs(t *testing.T, s objs.Signer, v *objs.ValueStore) *objs.Tx {
 	if err != nil {
 		t.Fatal(err)
 	}
+	tx.Fee = new(uint256.Uint256).SetZero()
 	tx.Vout = append(tx.Vout, newUTXO)
 	err = tx.SetTxHash()
 	if err != nil {
@@ -264,6 +265,7 @@ func makeTransfer(t *testing.T, sender objs.Signer, receiver objs.Signer, transf
 	if err != nil {
 		t.Fatal(err)
 	}
+	tx.Fee = new(uint256.Uint256).SetZero()
 	tx.Vout = append(tx.Vout, newUTXOSender, newUTXOReceiver)
 	err = tx.SetTxHash() // <- compute the root from the TxHash smt
 	if err != nil {
@@ -328,26 +330,26 @@ func testMerkleProofDeserialization(mpbytes []byte, mproof *db.MerkleProof) erro
 		return err
 	}
 	if mp1.Included != mproof.Included {
-		errors.New(fmt.Sprintf("bad height: %t Expected: %t", mp1.Included, mproof.Included))
+		return errors.New(fmt.Sprintf("bad height: %t Expected: %t", mp1.Included, mproof.Included))
 	}
 	if mp1.KeyHeight != mproof.KeyHeight {
-		errors.New(fmt.Sprintf("bad height: %d Expected: %d", mp1.KeyHeight, mproof.KeyHeight))
+		return errors.New(fmt.Sprintf("bad height: %d Expected: %d", mp1.KeyHeight, mproof.KeyHeight))
 	}
 	if !bytes.Equal(mp1.Key, mproof.Key) {
-		errors.New(fmt.Sprintf("bad Key: %x Expected %x", mp1.Key, mproof.Key))
+		return errors.New(fmt.Sprintf("bad Key: %x Expected %x", mp1.Key, mproof.Key))
 	}
 	if !bytes.Equal(mp1.ProofKey, mproof.ProofKey) {
-		errors.New(fmt.Sprintf("bad ProofKey: %x Expected: %x", mp1.ProofKey, mproof.ProofKey))
+		return errors.New(fmt.Sprintf("bad ProofKey: %x Expected: %x", mp1.ProofKey, mproof.ProofKey))
 	}
 	if !bytes.Equal(mp1.ProofValue, mproof.ProofValue) {
-		errors.New(fmt.Sprintf("bad Next: %x Expected: %x", mp1.ProofValue, mproof.ProofValue))
+		return errors.New(fmt.Sprintf("bad Next: %x Expected: %x", mp1.ProofValue, mproof.ProofValue))
 	}
 	if !bytes.Equal(mp1.Bitmap, mproof.Bitmap) {
-		errors.New(fmt.Sprintf("bad Bitmap: %x Expected: %x", mp1.Bitmap, mproof.Bitmap))
+		return errors.New(fmt.Sprintf("bad Bitmap: %x Expected: %x", mp1.Bitmap, mproof.Bitmap))
 	}
 	for i := 0; i < len(mproof.Path); i++ {
 		if !bytes.Equal(mp1.Path[i], mproof.Path[i]) {
-			errors.New(fmt.Sprintf("bad Path: %s Expected: %x", mp1.Path[i], mproof.Path[i]))
+			return errors.New(fmt.Sprintf("bad Path: %s Expected: %x", mp1.Path[i], mproof.Path[i]))
 		}
 	}
 	return nil

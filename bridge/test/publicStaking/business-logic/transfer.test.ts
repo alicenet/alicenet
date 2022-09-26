@@ -1,3 +1,4 @@
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { ethers } from "hardhat";
 import { ERC721ReceiverAccount } from "../../../typechain-types";
@@ -10,14 +11,20 @@ describe("PublicStaking: NFT transfer", async () => {
   let notAdminSigner: SignerWithAddress;
   let erc721ReceiverContract: ERC721ReceiverAccount;
 
-  beforeEach(async function () {
-    fixture = await getBaseTokensFixture();
-    [adminSigner, notAdminSigner] = await ethers.getSigners();
+  async function deployFixture() {
+    const fixture = await getBaseTokensFixture();
+    const [adminSigner, notAdminSigner] = await ethers.getSigners();
     await fixture.aToken.approve(fixture.publicStaking.address, 2000);
     await fixture.publicStaking.connect(adminSigner).mint(1000);
-    erc721ReceiverContract = await (
+    const erc721ReceiverContract = await (
       await ethers.getContractFactory("ERC721ReceiverAccount")
     ).deploy();
+    return { fixture, adminSigner, notAdminSigner, erc721ReceiverContract };
+  }
+
+  beforeEach(async function () {
+    ({ fixture, adminSigner, notAdminSigner, erc721ReceiverContract } =
+      await loadFixture(deployFixture));
   });
 
   it("Safe transfer Staking NFT position to user", async function () {
@@ -143,7 +150,7 @@ describe("PublicStaking: NFT transfer", async () => {
       fixture.publicStaking
         .connect(notAdminSigner)
         .transferFrom(adminSigner.address, notAdminSigner.address, 2)
-    ).to.be.revertedWith("ERC721: transfer caller is not owner nor approved");
+    ).to.be.revertedWith("ERC721: caller is not token owner nor approved");
   });
 
   it("Approval for all should be able to safe transfer Staking NFT position", async function () {
@@ -236,12 +243,12 @@ describe("PublicStaking: NFT transfer", async () => {
           notAdminSigner.address,
           1
         )
-    ).to.be.rejectedWith("ERC721: transfer caller is not owner nor approved");
+    ).to.be.rejectedWith("ERC721: caller is not token owner nor approved");
     await expect(
       fixture.publicStaking
         .connect(notAdminSigner)
         .transferFrom(adminSigner.address, notAdminSigner.address, 1)
-    ).to.be.rejectedWith("ERC721: transfer caller is not owner nor approved");
+    ).to.be.rejectedWith("ERC721: caller is not token owner nor approved");
   });
 
   it("Shouldn't allow safe transfer NFT to a contract that doesn't implement ERC721Receiver interface", async function () {
@@ -263,39 +270,69 @@ describe("PublicStaking: NFT transfer", async () => {
       );
     });
     it("Old owner shouldn't be able to lock or withdrawalLock position", async function () {
-      await expect(
-        fixture.publicStaking.lockOwnPosition(1, 100)
-      ).to.be.rejectedWith("600");
+      await expect(fixture.publicStaking.lockOwnPosition(1, 100))
+        .to.be.revertedWithCustomError(
+          fixture.publicStaking,
+          "CallerNotTokenOwner"
+        )
+        .withArgs(adminSigner.address);
 
-      await expect(
-        fixture.publicStaking.lockWithdraw(1, 100)
-      ).to.be.rejectedWith("600");
+      await expect(fixture.publicStaking.lockWithdraw(1, 100))
+        .to.be.revertedWithCustomError(
+          fixture.publicStaking,
+          "CallerNotTokenOwner"
+        )
+        .withArgs(adminSigner.address);
     });
 
     it("Old owner shouldn't be able to burn or burnTo position", async function () {
-      await expect(fixture.publicStaking.burn(1)).to.be.rejectedWith("600");
+      await expect(fixture.publicStaking.burn(1))
+        .to.be.revertedWithCustomError(
+          fixture.publicStaking,
+          "CallerNotTokenOwner"
+        )
+        .withArgs(adminSigner.address);
 
-      await expect(
-        fixture.publicStaking.burnTo(notAdminSigner.address, 1)
-      ).to.be.rejectedWith("600");
+      await expect(fixture.publicStaking.burnTo(notAdminSigner.address, 1))
+        .to.be.revertedWithCustomError(
+          fixture.publicStaking,
+          "CallerNotTokenOwner"
+        )
+        .withArgs(adminSigner.address);
     });
 
     it("Old owner shouldn't be able to collect profits position", async function () {
-      await expect(fixture.publicStaking.collectEth(1)).to.be.rejectedWith(
-        "600"
-      );
+      await expect(fixture.publicStaking.collectEth(1))
+        .to.be.revertedWithCustomError(
+          fixture.publicStaking,
+          "CallerNotTokenOwner"
+        )
+        .withArgs(adminSigner.address);
 
       await expect(
         fixture.publicStaking.collectEthTo(notAdminSigner.address, 1)
-      ).to.be.rejectedWith("600");
+      )
+        .to.be.revertedWithCustomError(
+          fixture.publicStaking,
+          "CallerNotTokenOwner"
+        )
+        .withArgs(adminSigner.address);
 
-      await expect(fixture.publicStaking.collectToken(1)).to.be.rejectedWith(
-        "600"
-      );
+      await expect(fixture.publicStaking.collectToken(1))
+        .to.be.revertedWithCustomError(
+          fixture.publicStaking,
+          "CallerNotTokenOwner"
+        )
+        .withArgs(adminSigner.address);
 
       await expect(
         fixture.publicStaking.collectTokenTo(notAdminSigner.address, 1)
-      ).to.be.rejectedWith("600");
+      )
+        .to.be.revertedWithCustomError(
+          fixture.publicStaking,
+          "CallerNotTokenOwner"
+        )
+        .withArgs(adminSigner.address);
     });
 
     it("New owner should be able to lock or withdrawalLock position", async function () {

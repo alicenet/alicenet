@@ -8,7 +8,7 @@ import {
 } from "ethers";
 import { ethers } from "hardhat";
 import { ALICENET_FACTORY, END_POINT, MOCK } from "../../scripts/lib/constants";
-import { AliceNetFactory } from "../../typechain-types/AliceNetFactory";
+import { AliceNetFactory } from "../../typechain-types/contracts/AliceNetFactory";
 
 export async function getAccounts() {
   const signers = await ethers.getSigners();
@@ -81,9 +81,7 @@ export async function proxyMockLogicTest(
   await txResponse.wait();
   await expectTxSuccess(txResponse);
   const txRes = factory.upgradeProxy(salt, endPointAddr, "0x");
-  await expect(txRes).to.be.revertedWith(
-    "reverted with an unrecognized custom error"
-  );
+  await expect(txRes).to.be.reverted;
   // unlock the proxy
   txResponse = await mockProxy.unlock();
   await txResponse.wait();
@@ -206,55 +204,19 @@ export function getSalt() {
   return ethers.utils.formatBytes32String(Salt.toString());
 }
 
-export async function getDeployTemplateArgs(contractName: string) {
-  const contract = await ethers.getContractFactory(contractName);
-  const deployByteCode = contract.getDeployTransaction();
-  return deployByteCode.data as BytesLike;
-}
-
-export type DeployStaticArgs = {
-  salt: string;
-  initCallData: string;
-};
-
-export async function getDeployStaticArgs(
-  contractName: string,
-  argsArray: Array<any>
-) {
-  const contract = await ethers.getContractFactory(contractName);
-  const ret: DeployStaticArgs = {
-    salt: getSalt(),
-    initCallData: contract.interface.encodeFunctionData(
-      "initialize",
-      argsArray
-    ),
-  };
-  return ret;
-}
-
 export async function checkMockInit(target: string, initVal: number) {
   const mockFactory = await ethers.getContractFactory(MOCK);
-  const mock = await mockFactory.attach(target);
+  const mock = mockFactory.attach(target);
   const i = await mock.getImut();
   expect(i.toNumber()).to.equal(initVal);
 }
 
 export async function deployFactory() {
   const factoryBase = await ethers.getContractFactory(ALICENET_FACTORY);
-  const accounts = await getAccounts();
-  const firstOwner = accounts[0];
-  // gets the initial transaction count for the address
-  const transactionCount = await ethers.provider.getTransactionCount(
-    firstOwner
-  );
-  // pre calculate the address of the factory contract
-  const futureFactoryAddress = ethers.utils.getContractAddress({
-    from: firstOwner,
-    nonce: transactionCount,
-  });
+  const legacyTokenBase = await ethers.getContractFactory("LegacyToken");
+  const legacyToken = await legacyTokenBase.deploy();
   // deploy the factory with its address as a constructor input
-  const factory = await factoryBase.deploy(futureFactoryAddress);
-  expect(factory.address).to.equal(futureFactoryAddress);
+  const factory = await factoryBase.deploy(legacyToken.address);
   return factory;
 }
 
@@ -266,7 +228,7 @@ export async function deployCreate2Initable(
   const txResponse = await factory.deployCreate2(
     0,
     salt,
-    mockInitFactory.bytecode
+    mockInitFactory.getDeployTransaction().data as BytesLike
   );
   return txResponse;
 }

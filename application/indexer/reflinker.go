@@ -1,8 +1,9 @@
 package indexer
 
 import (
-	"github.com/MadBase/MadNet/utils"
 	"github.com/dgraph-io/badger/v2"
+
+	"github.com/alicenet/alicenet/utils"
 )
 
 /*
@@ -52,12 +53,12 @@ type RefLinkerRefKey struct {
 	refkey []byte
 }
 
-// MarshalBinary returns the byte slice for the key object
+// MarshalBinary returns the byte slice for the key object.
 func (rlrk *RefLinkerRefKey) MarshalBinary() []byte {
 	return utils.CopySlice(rlrk.refkey)
 }
 
-// UnmarshalBinary takes in a byte slice to set the key object
+// UnmarshalBinary takes in a byte slice to set the key object.
 func (rlrk *RefLinkerRefKey) UnmarshalBinary(data []byte) {
 	rlrk.refkey = utils.CopySlice(data)
 }
@@ -66,12 +67,12 @@ type RefLinkerRevRefKey struct {
 	revrefkey []byte
 }
 
-// MarshalBinary returns the byte slice for the key object
+// MarshalBinary returns the byte slice for the key object.
 func (rlrrk *RefLinkerRevRefKey) MarshalBinary() []byte {
 	return utils.CopySlice(rlrrk.revrefkey)
 }
 
-// UnmarshalBinary takes in a byte slice to set the key object
+// UnmarshalBinary takes in a byte slice to set the key object.
 func (rlrrk *RefLinkerRevRefKey) UnmarshalBinary(data []byte) {
 	rlrrk.revrefkey = utils.CopySlice(data)
 }
@@ -234,7 +235,7 @@ func (rl *RefLinker) Delete(txn *badger.Txn, txHash []byte) error {
 	return nil
 }
 
-func (rl *RefLinker) makeRefKey(txHash []byte, utxoID []byte) *RefLinkerRefKey {
+func (rl *RefLinker) makeRefKey(txHash, utxoID []byte) *RefLinkerRefKey {
 	refKey := []byte{}
 	refKey = append(refKey, rl.prefixRef()...)
 	refKey = append(refKey, utils.CopySlice(txHash)...)
@@ -244,7 +245,7 @@ func (rl *RefLinker) makeRefKey(txHash []byte, utxoID []byte) *RefLinkerRefKey {
 	return rlRefKey
 }
 
-func (rl *RefLinker) makeRevRefKey(txHash []byte, utxoID []byte) *RefLinkerRevRefKey {
+func (rl *RefLinker) makeRevRefKey(txHash, utxoID []byte) *RefLinkerRevRefKey {
 	revRefKey := []byte{}
 	revRefKey = append(revRefKey, rl.prefixRevRef()...)
 	revRefKey = append(revRefKey, utils.CopySlice(utxoID)...)

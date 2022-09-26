@@ -7,15 +7,17 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/MadBase/MadNet/crypto/secp256k1"
-	"github.com/MadBase/MadNet/interfaces"
-	"github.com/MadBase/MadNet/transport/brontide"
-	"github.com/MadBase/MadNet/types"
+	"github.com/alicenet/alicenet/crypto/secp256k1"
+	"github.com/alicenet/alicenet/interfaces"
+	"github.com/alicenet/alicenet/transport/brontide"
+	"github.com/alicenet/alicenet/types"
 )
 
-var _ net.Addr = (*NodeAddr)(nil)
-var _ interfaces.NodeAddr = (*NodeAddr)(nil)
-var _ error = (*ErrInvalidNetworkAddress)(nil)
+var (
+	_ net.Addr            = (*NodeAddr)(nil)
+	_ interfaces.NodeAddr = (*NodeAddr)(nil)
+	_ error               = (*ErrInvalidNetworkAddress)(nil)
+)
 
 // ErrInvalidNetworkAddress allows us to handle complicated errors
 // where additional information is required.
@@ -81,7 +83,7 @@ func (pad *NodeAddr) ChainID() types.ChainIdentifier {
 	return pad.chainID
 }
 
-// Host returns the host of the NodeAddr
+// Host returns the host of the NodeAddr.
 func (pad *NodeAddr) Host() string {
 	return pad.host
 }
@@ -100,12 +102,13 @@ func (pad *NodeAddr) ChainIdentifier() types.ChainIdentifier {
 // ToBTCNetAddr converts the address into the format brontide expects.
 // This function is not part of the interface definition of
 // a NodeAddr so that these assumptions remain isolated to the
-// transport package
+// transport package.
 func (pad *NodeAddr) toBTCNetAddr() *brontide.NetAddress {
 	return &brontide.NetAddress{
 		Address: &addr{
 			network: pad.Network(),
-			address: net.JoinHostPort(pad.host, strconv.Itoa(pad.port))},
+			address: net.JoinHostPort(pad.host, strconv.Itoa(pad.port)),
+		},
 		IdentityKey: pad.identity,
 	}
 }
@@ -114,7 +117,7 @@ func (pad *NodeAddr) toBTCNetAddr() *brontide.NetAddress {
 // The network should ALWAYS be `tcp` due to the use of brontide.
 // The address MUST be formatted as follows:
 // <8 hex characters>|<66 hex characters>@host:port
-// <chainIdentifier>|<hex PublicKey>@host:port
+// <chainIdentifier>|<hex PublicKey>@host:port.
 func NewNodeAddr(address string) (interfaces.NodeAddr, error) {
 	chainID, pubkeyhexstring, nodeAddr, err := splitNetworkAddress(address)
 	if err != nil {
@@ -151,19 +154,19 @@ func NewNodeAddr(address string) (interfaces.NodeAddr, error) {
 	}, nil
 }
 
-// Serializes a public key to a lower case hex encoded string
+// Serializes a public key to a lower case hex encoded string.
 func pubkeyToIdent(pubk *secp256k1.PublicKey) string {
 	p := pubk.SerializeCompressed()
 	return fmt.Sprintf("%x", p)
 }
 
-// Formats a node address given the proper inputs
-func formatNodeAddr(cid types.ChainIdentifier, ident string, host string, port int) string {
+// Formats a node address given the proper inputs.
+func formatNodeAddr(cid types.ChainIdentifier, ident, host string, port int) string {
 	addr := net.JoinHostPort(host, strconv.Itoa(port))
 	return fmt.Sprintf("%s%s%s%s%s", uint32ToHexString(uint32(cid)), chainSeparator, ident, addressSeparator, addr)
 }
 
-// RandomNodeAddr returns a random NodeAddr for peer discovery lookups
+// RandomNodeAddr returns a random NodeAddr for peer discovery lookups.
 func RandomNodeAddr() (interfaces.NodeAddr, error) {
 	privk, err := newTransportPrivateKey()
 	if err != nil {
@@ -179,7 +182,7 @@ func RandomNodeAddr() (interfaces.NodeAddr, error) {
 // returns them as <ChainIdentifier>, <hex encoded pubkey>, <address>, <discoveryPort>
 // the last returned values of <address> may be split to host and port using
 // net.SplitHostPort
-// the first <address> is the discovery address, the second is the NodeAddr
+// the first <address> is the discovery address, the second is the NodeAddr.
 func splitNetworkAddress(address string) (uint32, string, string, error) {
 	parts := strings.Split(address, chainSeparator)
 	if len(parts) != 2 {

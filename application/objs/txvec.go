@@ -1,15 +1,15 @@
 package objs
 
 import (
-	"github.com/MadBase/MadNet/application/wrapper"
-	"github.com/MadBase/MadNet/constants"
+	"github.com/alicenet/alicenet/application/wrapper"
+	"github.com/alicenet/alicenet/constants"
 )
 
-// TxVec is a vector of transactions Tx
+// TxVec is a vector of transactions Tx.
 type TxVec []*Tx
 
 // MarshalBinary takes the TxVec object and returns the canonical
-// byte slice
+// byte slice.
 func (txv TxVec) MarshalBinary() ([][]byte, error) {
 	out := [][]byte{}
 	for i := 0; i < len(txv); i++ {
@@ -22,7 +22,7 @@ func (txv TxVec) MarshalBinary() ([][]byte, error) {
 	return out, nil
 }
 
-// ValidateUnique checks that all inputs and outputs are unique
+// ValidateUnique checks that all inputs and outputs are unique.
 func (txv TxVec) ValidateUnique(exclSet map[string]bool) (map[string]bool, error) {
 	if exclSet == nil {
 		exclSet = make(map[string]bool)
@@ -52,7 +52,7 @@ func (txv TxVec) ValidateDataStoreIndexes(exclSet map[string]bool) (map[string]b
 	return exclSet, nil
 }
 
-// ValidateChainID validates the chain ID in all transactions
+// ValidateChainID validates the chain ID in all transactions.
 func (txv TxVec) ValidateChainID(chainID uint32) error {
 	for i := 0; i < len(txv); i++ {
 		err := txv[i].ValidateChainID(chainID)
@@ -102,7 +102,7 @@ func (txv TxVec) Validate(currentHeight uint32, consumedUTXOs Vout, storage *wra
 	return nil
 }
 
-// ConsumedUTXOID returns the list of consumed UTXOIDs in TxVec
+// ConsumedUTXOID returns the list of consumed UTXOIDs in TxVec.
 func (txv TxVec) ConsumedUTXOID() ([][]byte, error) {
 	consumed := [][]byte{}
 	for i := 0; i < len(txv); i++ {
@@ -115,7 +115,7 @@ func (txv TxVec) ConsumedUTXOID() ([][]byte, error) {
 	return consumed, nil
 }
 
-// ConsumedPreHash returns the list of consumed PreHashs from TxVec
+// ConsumedPreHash returns the list of consumed PreHashs from TxVec.
 func (txv TxVec) ConsumedPreHash() ([][]byte, error) {
 	consumed := [][]byte{}
 	for i := 0; i < len(txv); i++ {
@@ -128,7 +128,7 @@ func (txv TxVec) ConsumedPreHash() ([][]byte, error) {
 	return consumed, nil
 }
 
-// ConsumedTxIns returns list of TxIns consumed by TxVec
+// ConsumedTxIns returns list of TxIns consumed by TxVec.
 func (txv TxVec) ConsumedTxIns() (Vin, error) {
 	consumed := Vin{}
 	for i := 0; i < len(txv); i++ {
@@ -137,7 +137,7 @@ func (txv TxVec) ConsumedTxIns() (Vin, error) {
 	return consumed, nil
 }
 
-// TxHash returns the list of TxHashs from TxVec
+// TxHash returns the list of TxHashs from TxVec.
 func (txv TxVec) TxHash() ([][]byte, error) {
 	txhashs := [][]byte{}
 	for i := 0; i < len(txv); i++ {
@@ -151,7 +151,7 @@ func (txv TxVec) TxHash() ([][]byte, error) {
 }
 
 // ConsumedIsDeposit returns list of bools to specify which Txs in txv
-// are deposits
+// are deposits.
 func (txv TxVec) ConsumedIsDeposit() []bool {
 	consumed := []bool{}
 	for i := 0; i < len(txv); i++ {
@@ -161,7 +161,7 @@ func (txv TxVec) ConsumedIsDeposit() []bool {
 	return consumed
 }
 
-// GeneratedUTXOs returns list of TXOuts from Txs in txv
+// GeneratedUTXOs returns list of TXOuts from Txs in txv.
 func (txv TxVec) GeneratedUTXOs() (Vout, error) {
 	gen := Vout{}
 	for i := 0; i < len(txv); i++ {
@@ -171,7 +171,7 @@ func (txv TxVec) GeneratedUTXOs() (Vout, error) {
 	return gen, nil
 }
 
-// GeneratedPreHash returns list of PreHashs for Tx in txv
+// GeneratedPreHash returns list of PreHashs for Tx in txv.
 func (txv TxVec) GeneratedPreHash() ([][]byte, error) {
 	gen := [][]byte{}
 	for i := 0; i < len(txv); i++ {
@@ -184,7 +184,7 @@ func (txv TxVec) GeneratedPreHash() ([][]byte, error) {
 	return gen, nil
 }
 
-// GeneratedUTXOID returns list of UTXOIDs for Tx in txv
+// GeneratedUTXOID returns list of UTXOIDs for Tx in txv.
 func (txv TxVec) GeneratedUTXOID() ([][]byte, error) {
 	gen := [][]byte{}
 	for i := 0; i < len(txv); i++ {
@@ -198,7 +198,7 @@ func (txv TxVec) GeneratedUTXOID() ([][]byte, error) {
 }
 
 // ConsumedPreHashOnlyDeposits returns list of PreHashs from txv only for
-// transactions which are deposits
+// transactions which are deposits.
 func (txv TxVec) ConsumedPreHashOnlyDeposits() ([][]byte, error) {
 	consumed := [][]byte{}
 	for i := 0; i < len(txv); i++ {
@@ -218,7 +218,7 @@ func (txv TxVec) ConsumedPreHashOnlyDeposits() ([][]byte, error) {
 }
 
 // ConsumedUTXOIDOnlyDeposits returns list of UTXOIDs from txv only for
-// transactions which are deposits
+// transactions which are deposits.
 func (txv TxVec) ConsumedUTXOIDOnlyDeposits() ([][]byte, error) {
 	consumed := [][]byte{}
 	for i := 0; i < len(txv); i++ {
@@ -238,7 +238,7 @@ func (txv TxVec) ConsumedUTXOIDOnlyDeposits() ([][]byte, error) {
 }
 
 // ConsumedUTXOIDNoDeposits returns list of UTXOIDs from txv only for
-// transactions which are not deposits
+// transactions which are not deposits.
 func (txv TxVec) ConsumedUTXOIDNoDeposits() ([][]byte, error) {
 	consumed := [][]byte{}
 	for i := 0; i < len(txv); i++ {

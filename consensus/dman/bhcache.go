@@ -4,8 +4,8 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/MadBase/MadNet/consensus/objs"
-	"github.com/MadBase/MadNet/utils"
+	"github.com/alicenet/alicenet/consensus/objs"
+	"github.com/alicenet/alicenet/utils"
 )
 
 type bHCache struct {

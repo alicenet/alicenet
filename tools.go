@@ -1,18 +1,19 @@
 //go:build tools
 
-package MadNet
+package alicenet
 
 // This file tracks tool dependencies.
 // This is so that "go mod tidy" doesnt remove deps that we actually use for generate commands.
 // It will not actually be compiled due to the build tag used above.
 
+//go:generate go run github.com/bufbuild/buf/cmd/buf generate
+
 import (
 	_ "github.com/MadBase/go-capnproto2/v2/capnpc-go"
-	_ "github.com/elazarl/go-bindata-assetfs"
-	_ "github.com/go-bindata/go-bindata/v3"
-	_ "github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway"
-	_ "github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2"
+	_ "github.com/bufbuild/buf/cmd/buf"
+	_ "github.com/derision-test/go-mockgen/cmd/go-mockgen"
+	_ "github.com/ethereum/go-ethereum/cmd/abigen"
+	_ "github.com/ethereum/go-ethereum/cmd/geth"
 	_ "github.com/vburenin/ifacemaker"
-	_ "google.golang.org/grpc/cmd/protoc-gen-go-grpc"
-	_ "google.golang.org/protobuf/cmd/protoc-gen-go"
+	_ "golang.org/x/tools/cmd/goimports"
 )

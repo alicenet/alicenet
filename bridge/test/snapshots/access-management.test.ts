@@ -1,4 +1,7 @@
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { Signer } from "ethers";
+import { ethers } from "hardhat";
 import { expect } from "../chai-setup";
 import {
   factoryCallAnyFixture,
@@ -7,16 +10,45 @@ import {
   getValidatorEthAccount,
 } from "../setup";
 
+async function deployFixture() {
+  const fixture = await getFixture(true, false);
+  const [admin, , , , , randomer] = fixture.namedSigners;
+  const adminSigner = await getValidatorEthAccount(admin.address);
+  const randomerSigner = await getValidatorEthAccount(randomer.address);
+  return { fixture, admin, randomer, adminSigner, randomerSigner };
+}
+
 describe("Snapshots: Access control methods", () => {
   let fixture: Fixture;
+
+  let randomer: SignerWithAddress;
   let adminSigner: Signer;
   let randomerSigner: Signer;
 
   beforeEach(async function () {
-    fixture = await getFixture(true, false);
-    const [admin, , , , , randomer] = fixture.namedSigners;
-    adminSigner = await getValidatorEthAccount(admin.address);
-    randomerSigner = await getValidatorEthAccount(randomer.address);
+    ({ fixture, randomer, adminSigner, randomerSigner } = await loadFixture(
+      deployFixture
+    ));
+  });
+
+  it("Should not allow initialize more than once", async () => {
+    await expect(
+      fixture.factory.callAny(
+        fixture.snapshots.address,
+        0,
+        fixture.snapshots.interface.encodeFunctionData("initialize", [1, 2])
+      )
+    ).to.revertedWith("Initializable: contract is already initialized");
+  });
+
+  it("Only factory should be allowed to call initialize", async () => {
+    const snapshots = await (
+      await ethers.getContractFactory("Snapshots")
+    ).deploy(1, 2);
+    const [, user] = await ethers.getSigners();
+    await expect(
+      snapshots.connect(user).initialize(1, 2)
+    ).to.revertedWithCustomError(snapshots, "OnlyFactory");
   });
 
   it("GetEpochLength returns 1024", async function () {
@@ -32,7 +64,9 @@ describe("Snapshots: Access control methods", () => {
       fixture.snapshots
         .connect(randomerSigner)
         .setSnapshotDesperationDelay(expectedDelay)
-    ).to.be.revertedWith("2000");
+    )
+      .to.be.revertedWithCustomError(fixture.bToken, `OnlyFactory`)
+      .withArgs(randomer.address, fixture.factory.address);
   });
 
   it("Allows setSnapshotDesperationDelay from admin address", async function () {
@@ -54,7 +88,9 @@ describe("Snapshots: Access control methods", () => {
       fixture.snapshots
         .connect(randomerSigner)
         .setSnapshotDesperationFactor(expectedFactor)
-    ).to.be.revertedWith("2000");
+    )
+      .to.be.revertedWithCustomError(fixture.bToken, `OnlyFactory`)
+      .withArgs(randomer.address, fixture.factory.address);
   });
 
   it("Allows setSnapshotDesperationFactor from admin address", async function () {

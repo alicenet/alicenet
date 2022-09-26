@@ -7,13 +7,14 @@ import (
 )
 
 // ErrWouldBlock is an error that indicates a WithNoBlocking request failed
-// due to blocking
+// due to blocking.
 var ErrWouldBlock = errors.New("would block")
 
 type backpressureCallOption struct {
 	*grpc.EmptyCallOption
 }
 
+//nolint:unused
 func (pm *backpressureCallOption) pushback() {}
 
 // WithNoBlocking generates a grpc.CallOption that is honored by the methods

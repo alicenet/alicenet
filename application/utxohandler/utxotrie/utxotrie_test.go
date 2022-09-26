@@ -7,7 +7,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/MadBase/MadNet/crypto"
+	"github.com/alicenet/alicenet/crypto"
 	"github.com/dgraph-io/badger/v2"
 )
 

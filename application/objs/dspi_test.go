@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/MadBase/MadNet/application/objs/uint256"
-	"github.com/MadBase/MadNet/constants"
-	"github.com/MadBase/MadNet/crypto"
+	"github.com/alicenet/alicenet/application/objs/uint256"
+	"github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/crypto"
 )
 
 func TestDSPreImageGood(t *testing.T) {
@@ -1121,6 +1121,7 @@ func TestRewardDepositEquationGood2(t *testing.T) {
 		t.Fatal("Invalid remainder for epoch =", epochFinal)
 	}
 }
+
 func TestRewardDepositEquationBad(t *testing.T) {
 	dataSize := uint32(1)
 	numEpochs := uint32(3)

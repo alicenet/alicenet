@@ -1,6 +1,6 @@
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { ethers } from "hardhat";
-import { expect } from "../../chai-setup";
+import { ethers, expect } from "hardhat";
 import {
   BaseTokensFixture,
   factoryCallAnyFixture,
@@ -12,51 +12,79 @@ describe("PublicStaking: Call functions with Circuit Breaker tripped", async () 
   let notAdminSigner: SignerWithAddress;
   let adminSigner: SignerWithAddress;
 
-  beforeEach(async function () {
-    fixture = await getBaseTokensFixture();
-    [adminSigner, notAdminSigner] = await ethers.getSigners();
+  async function deployFixture() {
+    const fixture = await getBaseTokensFixture();
+    const [adminSigner, notAdminSigner] = await ethers.getSigners();
     await fixture.aToken.approve(fixture.publicStaking.address, 1000);
     await fixture.publicStaking.connect(adminSigner).mint(1000);
     await factoryCallAnyFixture(fixture, "publicStaking", "tripCB");
+    return { fixture, adminSigner, notAdminSigner };
+  }
+
+  beforeEach(async function () {
+    ({ fixture, adminSigner, notAdminSigner } = await loadFixture(
+      deployFixture
+    ));
   });
 
   describe("Users should not be able to:", async () => {
     it("Lock Position", async function () {
       await expect(
         fixture.publicStaking.lockPosition(adminSigner.address, 1, 1)
-      ).to.be.rejectedWith("500");
+      ).to.be.revertedWithCustomError(
+        fixture.publicStaking,
+        `CircuitBreakerOpened`
+      );
     });
     it("Lock Own Position", async function () {
       await expect(
         fixture.publicStaking.lockOwnPosition(1, 1)
-      ).to.be.rejectedWith("500");
+      ).to.be.revertedWithCustomError(
+        fixture.publicStaking,
+        `CircuitBreakerOpened`
+      );
     });
     it("Lock Withdraw", async function () {
-      await expect(fixture.publicStaking.lockWithdraw(1, 1)).to.be.rejectedWith(
-        "500"
+      await expect(
+        fixture.publicStaking.lockWithdraw(1, 1)
+      ).to.be.revertedWithCustomError(
+        fixture.publicStaking,
+        `CircuitBreakerOpened`
       );
     });
     it("DepositToken", async function () {
       await expect(
         fixture.publicStaking.depositToken(42, 10)
-      ).to.be.rejectedWith("500");
+      ).to.be.revertedWithCustomError(
+        fixture.publicStaking,
+        `CircuitBreakerOpened`
+      );
     });
     it("DepositEth", async function () {
       await expect(
         fixture.publicStaking.connect(adminSigner).depositEth(42, { value: 10 })
-      ).to.be.rejectedWith("500");
+      ).to.be.revertedWithCustomError(
+        fixture.publicStaking,
+        `CircuitBreakerOpened`
+      );
     });
     it("Mint", async function () {
       await expect(
         fixture.publicStaking.connect(adminSigner).mint(100)
-      ).to.be.rejectedWith("500");
+      ).to.be.revertedWithCustomError(
+        fixture.publicStaking,
+        `CircuitBreakerOpened`
+      );
     });
     it("MintTo", async function () {
       await expect(
         fixture.publicStaking
           .connect(adminSigner)
           .mintTo(notAdminSigner.address, 100, 1)
-      ).to.be.rejectedWith("500");
+      ).to.be.revertedWithCustomError(
+        fixture.publicStaking,
+        `CircuitBreakerOpened`
+      );
     });
   });
   describe("Users should be able to:", async () => {

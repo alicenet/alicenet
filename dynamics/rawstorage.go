@@ -27,9 +27,6 @@ type RawStorage struct {
 	ValueStoreFee          *big.Int `json:"valueStoreFee,omitempty"`
 	ValueStoreValidVersion uint32   `json:"valueStoreValidVersion,omitempty"`
 
-	AtomicSwapFee            *big.Int `json:"atomicSwapFee,omitempty"`
-	AtomicSwapValidStopEpoch uint32   `json:"atomicSwapValidStopEpoch,omitempty"`
-
 	DataStoreEpochFee     *big.Int `json:"dataStoreEpochFee,omitempty"`
 	DataStoreValidVersion uint32   `json:"dataStoreValidVersion,omitempty"`
 }
@@ -70,10 +67,7 @@ func (rs *RawStorage) Copy() (*RawStorage, error) {
 // IsValid returns true if we can successfully make a copy
 func (rs *RawStorage) IsValid() bool {
 	_, err := rs.Copy()
-	if err != nil {
-		return false
-	}
-	return true
+	return err == nil
 }
 
 // UpdateValue updates the field with the appropriate value.
@@ -149,23 +143,6 @@ func (rs *RawStorage) UpdateValue(update Updater) error {
 			return err
 		}
 		rs.SetValueStoreValidVersion(v)
-	case AtomicSwapFeeType:
-		// *big.Int
-		v, err := stringToBigInt(value)
-		if err != nil {
-			return err
-		}
-		err = rs.SetAtomicSwapFee(v)
-		if err != nil {
-			return err
-		}
-	case AtomicSwapValidStopEpochType:
-		// uint32
-		v, err := stringToUint32(value)
-		if err != nil {
-			return err
-		}
-		rs.SetAtomicSwapValidStopEpoch(v)
 	case DataStoreEpochFeeType:
 		// *big.Int
 		v, err := stringToBigInt(value)
@@ -204,7 +181,6 @@ func (rs *RawStorage) standardParameters() {
 	rs.MsgTimeout = msgTimeout
 
 	// Application initial parameters
-	rs.AtomicSwapFee = new(big.Int).Set(atomicSwapFee)
 	rs.DataStoreEpochFee = new(big.Int).Set(dataStoreEpochFee)
 	rs.ValueStoreFee = new(big.Int).Set(valueStoreFee)
 	rs.MinTxFee = new(big.Int).Set(minTxFee)
@@ -381,45 +357,12 @@ func (rs *RawStorage) SetValueStoreValidVersion(value uint32) {
 	rs.ValueStoreValidVersion = value
 }
 
-// GetAtomicSwapFee returns the minimun AtomicSwap burned fee
-func (rs *RawStorage) GetAtomicSwapFee() *big.Int {
-	if rs.AtomicSwapFee == nil {
-		rs.AtomicSwapFee = new(big.Int)
-	}
-	return rs.AtomicSwapFee
-}
-
-// SetAtomicSwapFee sets the minimun AtomicSwap burned fee
-func (rs *RawStorage) SetAtomicSwapFee(value *big.Int) error {
-	if value == nil {
-		return ErrInvalidValue
-	}
-	if rs.AtomicSwapFee == nil {
-		rs.AtomicSwapFee = new(big.Int)
-	}
-	if value.Sign() < 0 {
-		return ErrInvalidValue
-	}
-	rs.AtomicSwapFee.Set(value)
-	return nil
-}
-
-// GetAtomicSwapValidStopEpoch returns the valid version of AtomicSwap
-func (rs *RawStorage) GetAtomicSwapValidStopEpoch() uint32 {
-	return rs.AtomicSwapValidStopEpoch
-}
-
-// SetAtomicSwapValidStopEpoch sets the valid version of AtomicSwap
-func (rs *RawStorage) SetAtomicSwapValidStopEpoch(value uint32) {
-	rs.AtomicSwapValidStopEpoch = value
-}
-
 // GetDataStoreValidVersion returns the valid version of DataStore
 func (rs *RawStorage) GetDataStoreValidVersion() uint32 {
 	return rs.DataStoreValidVersion
 }
 
-// SetDataStoreValidVersion sets the valid version of AtomicSwap
+// SetDataStoreValidVersion sets the valid version of DataStore
 func (rs *RawStorage) SetDataStoreValidVersion(value uint32) {
 	rs.DataStoreValidVersion = value
 }

@@ -3,7 +3,7 @@ package objs
 import (
 	"testing"
 
-	"github.com/MadBase/MadNet/crypto"
+	"github.com/alicenet/alicenet/crypto"
 )
 
 func TestPreCommit(t *testing.T) {
@@ -101,5 +101,14 @@ func TestPreCommit(t *testing.T) {
 	err = pc2.ValidateSignatures(secpVal, bnVal)
 	if err != nil {
 		t.Fatal(err)
+	}
+
+	preVotes, err := pc2.MakeImplPreVotes()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(preVotes) != 2 {
+		t.Fatal("invalid preVotes length")
 	}
 }

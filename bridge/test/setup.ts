@@ -16,10 +16,14 @@ import {
   ATokenBurner,
   ATokenMinter,
   BToken,
+  Distribution,
+  Dynamics,
   ETHDKG,
   Foundation,
+  InvalidTxConsumptionAccusation,
   LegacyToken,
   LiquidityProviderStaking,
+  MultipleProposalAccusation,
   PublicStaking,
   Snapshots,
   SnapshotsMock,
@@ -45,6 +49,19 @@ export interface Snapshot {
   GroupSignature: string;
   height: BigNumberish;
   validatorIndex: number;
+  GroupSignatureDeserialized?: [
+    [string, string, string, string],
+    [string, string]
+  ];
+  BClaimsDeserialized?: [
+    number,
+    number,
+    number,
+    string,
+    string,
+    string,
+    string
+  ];
 }
 
 export interface BaseFixture {
@@ -60,12 +77,17 @@ export interface BaseTokensFixture extends BaseFixture {
 }
 
 export interface Fixture extends BaseTokensFixture {
+  aTokenMinter: ATokenMinter;
   validatorStaking: ValidatorStaking;
   validatorPool: ValidatorPool | ValidatorPoolMock;
   snapshots: Snapshots | SnapshotsMock;
   ethdkg: ETHDKG;
   stakingPositionDescriptor: StakingPositionDescriptor;
   namedSigners: SignerWithAddress[];
+  invalidTxConsumptionAccusation: InvalidTxConsumptionAccusation;
+  multipleProposalAccusation: MultipleProposalAccusation;
+  distribution: Distribution;
+  dynamics: Dynamics;
 }
 
 /**
@@ -87,6 +109,10 @@ export const mineBlocks = async (nBlocks: bigint) => {
       ethers.utils.hexValue(nBlocks),
     ]);
   }
+  const hre = await require("hardhat");
+  if (hre.__SOLIDITY_COVERAGE_RUNNING === true) {
+    await network.provider.send("hardhat_setNextBlockBaseFeePerGas", ["0x1"]);
+  }
 };
 
 export const getBlockByNumber = async () => {
@@ -103,16 +129,17 @@ export const getPendingTransactions = async () => {
 export const getValidatorEthAccount = async (
   validator: ValidatorRawData | string
 ): Promise<Signer> => {
+  const hre = await require("hardhat");
+  const amount = hre.__SOLIDITY_COVERAGE_RUNNING === true ? "100000" : "10";
+  const signers = await await ethers.getSigners();
   if (typeof validator === "string") {
     return ethers.getSigner(validator);
   } else {
     const balance = await ethers.provider.getBalance(validator.address);
     if (balance.eq(0)) {
-      await (
-        await ethers.getSigners()
-      )[0].sendTransaction({
+      signers[0].sendTransaction({
         to: validator.address,
-        value: ethers.utils.parseEther("10"),
+        value: ethers.utils.parseEther(amount),
       });
     }
     if (typeof validator.privateKey !== "undefined") {
@@ -126,16 +153,18 @@ export const createUsers = async (
   numberOfUsers: number,
   createWithNoFunds: boolean = false
 ): Promise<SignerWithAddress[]> => {
+  const hre: any = await require("hardhat");
   const users: SignerWithAddress[] = [];
   const admin = (await ethers.getSigners())[0];
   for (let i = 0; i < numberOfUsers; i++) {
-    const user = new Wallet(ethers.utils.randomBytes(64), ethers.provider);
+    const user = new Wallet(Wallet.createRandom(), ethers.provider);
     if (!createWithNoFunds) {
       const balance = await ethers.provider.getBalance(user.address);
       if (balance.eq(0)) {
+        const value = hre.__SOLIDITY_COVERAGE_RUNNING ? "1000000" : "1";
         await admin.sendTransaction({
           to: user.address,
-          value: ethers.utils.parseEther("1"),
+          value: ethers.utils.parseEther(value),
         });
       }
     }
@@ -160,7 +189,7 @@ async function getContractAddressFromDeployedProxyEvent(
   return await getContractAddressFromEventLog(tx, eventSignature, eventName);
 }
 
-async function getContractAddressFromDeployedRawEvent(
+export async function getContractAddressFromDeployedRawEvent(
   tx: ContractTransaction
 ): Promise<string> {
   const eventSignature = "event DeployedRaw(address contractAddr)";
@@ -197,106 +226,70 @@ function getBytes32Salt(contractName: string) {
   return ethers.utils.formatBytes32String(contractName);
 }
 
-export const deployStaticWithFactory = async (
+export const deployUpgradeableWithFactory = async (
   factory: AliceNetFactory,
   contractName: string,
   salt?: string,
   initCallData?: any[],
-  constructorArgs: any[] = []
+  constructorArgs: any[] = [],
+  saltType?: string
 ): Promise<Contract> => {
   const _Contract = await ethers.getContractFactory(contractName);
-  const contractTx = await factory.deployTemplate(
-    _Contract.getDeployTransaction(...constructorArgs).data as BytesLike
-  );
-  let receipt = await ethers.provider.getTransactionReceipt(contractTx.hash);
-  if (receipt.gasUsed.gt(10_000_000)) {
+  let deployCode = _Contract.getDeployTransaction(...constructorArgs)
+    .data as BytesLike;
+  const hre: any = await require("hardhat");
+  const transaction = await factory.deployCreate(deployCode);
+  let receipt = await ethers.provider.getTransactionReceipt(transaction.hash);
+  if (
+    receipt.gasUsed.gt(10_000_000) &&
+    hre.__SOLIDITY_COVERAGE_RUNNING !== true
+  ) {
     throw new Error(
       `Contract deployment size:${receipt.gasUsed} is greater than 10 million`
     );
   }
 
-  let initCallDataBin;
+  const logicAddr = await getContractAddressFromDeployedRawEvent(transaction);
+  let saltBytes;
+
+  if (saltType) {
+    saltBytes = ethers.utils.keccak256(
+      ethers.utils
+        .keccak256(getBytes32Salt(salt === undefined ? contractName : salt))
+        .concat(
+          ethers.utils
+            .keccak256(ethers.utils.formatBytes32String(saltType))
+            .slice(2)
+        )
+    );
+  } else {
+    if (salt === undefined) {
+      saltBytes = getBytes32Salt(contractName);
+    } else if (salt.startsWith("0x")) {
+      saltBytes = salt;
+    } else {
+      saltBytes = getBytes32Salt(salt);
+    }
+  }
+
+  const transaction2 = await factory.deployProxy(saltBytes);
+  receipt = await ethers.provider.getTransactionReceipt(transaction2.hash);
+  if (
+    receipt.gasUsed.gt(10_000_000) &&
+    hre.__SOLIDITY_COVERAGE_RUNNING !== true
+  ) {
+    throw new Error(
+      `Contract deployment size:${receipt.gasUsed} is greater than 10 million`
+    );
+  }
+  let initCallDataBin = "0x";
   try {
     initCallDataBin = _Contract.interface.encodeFunctionData(
       "initialize",
       initCallData
     );
   } catch (error) {
-    console.log(
-      `Warning couldnt get init call data for contract: ${contractName}`
-    );
-    console.log(error);
-    initCallDataBin = "0x";
-  }
-  let saltBytes;
-  if (salt === undefined) {
-    saltBytes = getBytes32Salt(contractName);
-  } else {
-    saltBytes = getBytes32Salt(salt);
-  }
-  const tx = await factory.deployStatic(saltBytes, initCallDataBin);
-  receipt = await ethers.provider.getTransactionReceipt(tx.hash);
-  if (receipt.gasUsed.gt(10_000_000)) {
-    throw new Error(
-      `Contract deployment size:${receipt.gasUsed} is greater than 10 million`
-    );
-  }
-
-  return _Contract.attach(await getContractAddressFromDeployedStaticEvent(tx));
-};
-
-export const deployUpgradeableWithFactory = async (
-  factory: AliceNetFactory,
-  contractName: string,
-  salt?: string,
-  initCallData?: any[],
-  constructorArgs: any[] = []
-): Promise<Contract> => {
-  const _Contract = await ethers.getContractFactory(contractName);
-  let deployCode: BytesLike;
-
-  const contractTx = await factory.deployTemplate(
-    (deployCode = _Contract.getDeployTransaction(...constructorArgs)
-      .data as BytesLike)
-  );
-
-  let receipt = await ethers.provider.getTransactionReceipt(contractTx.hash);
-  if (receipt.gasUsed.gt(10_000_000)) {
-    throw new Error(
-      `Contract deployment size:${receipt.gasUsed} is greater than 10 million`
-    );
-  }
-  const transaction = await factory.deployCreate(deployCode);
-  receipt = await ethers.provider.getTransactionReceipt(transaction.hash);
-  if (receipt.gasUsed.gt(10_000_000)) {
-    throw new Error(
-      `Contract deployment size:${receipt.gasUsed} is greater than 10 million`
-    );
-  }
-  const logicAddr = await getContractAddressFromDeployedRawEvent(transaction);
-  let saltBytes;
-  if (salt === undefined) {
-    saltBytes = getBytes32Salt(contractName);
-  } else {
-    saltBytes = getBytes32Salt(salt);
-  }
-
-  const transaction2 = await factory.deployProxy(saltBytes);
-  receipt = await ethers.provider.getTransactionReceipt(transaction2.hash);
-  if (receipt.gasUsed.gt(10_000_000)) {
-    throw new Error(
-      `Contract deployment size:${receipt.gasUsed} is greater than 10 million`
-    );
-  }
-
-  let initCallDataBin = "0x";
-  if (initCallData !== undefined) {
-    try {
-      initCallDataBin = _Contract.interface.encodeFunctionData(
-        "initialize",
-        initCallData
-      );
-    } catch (error) {
+    if (!(error as Error).message.includes("no matching function")) {
       console.warn(
         `Error deploying contract ${contractName} couldn't get initialize arguments: ${error}`
       );
@@ -311,24 +304,36 @@ export const deployUpgradeableWithFactory = async (
 export const deployFactoryAndBaseTokens = async (
   admin: SignerWithAddress
 ): Promise<BaseTokensFixture> => {
-  const factory = await deployAliceNetFactory(admin);
-
   // LegacyToken
-  const legacyToken = (await deployStaticWithFactory(
-    factory,
-    "LegacyToken"
-  )) as LegacyToken;
-
-  const aToken = (await deployStaticWithFactory(
-    factory,
+  const legacyToken = await (
+    await ethers.getContractFactory("LegacyToken")
+  ).deploy();
+  const factory = await deployAliceNetFactory(admin, legacyToken.address);
+  //   AToken is deployed on the factory constructor
+  const aToken = await ethers.getContractAt(
     "AToken",
-    "AToken",
-    undefined,
-    [legacyToken.address]
-  )) as AToken;
+    await factory.lookup(ethers.utils.formatBytes32String("AToken"))
+  );
 
   // BToken
-  const bToken = (await deployStaticWithFactory(factory, "BToken")) as BToken;
+  const centralRouter = await (
+    await ethers.getContractFactory("CentralBridgeRouterMock")
+  ).deploy(1000);
+  const deployData = (
+    await ethers.getContractFactory("BToken")
+  ).getDeployTransaction(centralRouter.address).data as BytesLike;
+  const bTokenSalt = ethers.utils.formatBytes32String("BToken");
+  const transaction = await factory.deployCreate2(0, bTokenSalt, deployData);
+  const bTokenAddress = await getContractAddressFromDeployedRawEvent(
+    transaction
+  );
+  // registering in the factory.lookup
+  await factory.addNewExternalContract(bTokenSalt, bTokenAddress);
+  // finally attach BToken to the address of the deployed contract above
+  const bToken = await ethers.getContractAt(
+    "BToken",
+    await factory.lookup(bTokenSalt)
+  );
 
   // PublicStaking
   const publicStaking = (await deployUpgradeableWithFactory(
@@ -348,17 +353,11 @@ export const deployFactoryAndBaseTokens = async (
 };
 
 export const deployAliceNetFactory = async (
-  admin: SignerWithAddress
+  admin: SignerWithAddress,
+  legacyTokenAddress_: string
 ): Promise<AliceNetFactory> => {
-  const txCount = await ethers.provider.getTransactionCount(admin.address);
-  // calculate the factory address for the constructor arg
-  const futureFactoryAddress = ethers.utils.getContractAddress({
-    from: admin.address,
-    nonce: txCount,
-  });
-
   const Factory = await ethers.getContractFactory("AliceNetFactory");
-  const factory = await Factory.deploy(futureFactoryAddress);
+  const factory = await Factory.deploy(legacyTokenAddress_);
   await factory.deployed();
   return factory;
 };
@@ -368,48 +367,25 @@ export const preFixtureSetup = async () => {
   // hardhat is not being able to estimate correctly the tx gas due to the massive bytes array
   // being sent as input to the function (the contract bytecode), so we need to increase the block
   // gas limit temporally in order to deploy the template
-  await network.provider.send("evm_setBlockGasLimit", ["0x3000000000000000"]);
+  const hre = await require("hardhat");
+  if (hre.__SOLIDITY_COVERAGE_RUNNING !== true) {
+    await network.provider.send("evm_setBlockGasLimit", ["0x3000000000000000"]);
+  }
 };
 
 export const posFixtureSetup = async (
   factory: AliceNetFactory,
-  aToken: AToken,
-  legacyToken: LegacyToken
+  aToken: AToken
 ) => {
   // finish workaround, putting the blockgas limit to the previous value 30_000_000
-  await network.provider.send("evm_setBlockGasLimit", ["0x1C9C380"]);
+  const hre = await require("hardhat");
+  if (hre.__SOLIDITY_COVERAGE_RUNNING !== true) {
+    await network.provider.send("evm_setBlockGasLimit", ["0x1C9C380"]);
+  }
+  await network.provider.send("hardhat_setNextBlockBaseFeePerGas", ["0x1"]);
   const [admin] = await ethers.getSigners();
-  // transferring some part of the legacy token from the factory to the admin
-  await factory.callAny(
-    legacyToken.address,
-    0,
-    aToken.interface.encodeFunctionData("transfer", [
-      admin.address,
-      ethers.utils.parseEther("100000000"),
-    ])
-  );
-  // migrating the rest of the legacy tokens to fresh new Atokens
-  await factory.callAny(
-    legacyToken.address,
-    0,
-    aToken.interface.encodeFunctionData("approve", [
-      aToken.address,
-      ethers.utils.parseEther("100000000"),
-    ])
-  );
-  await factory.callAny(
-    aToken.address,
-    0,
-    aToken.interface.encodeFunctionData("allowMigration")
-  );
-  await factory.callAny(
-    aToken.address,
-    0,
-    aToken.interface.encodeFunctionData("migrate", [
-      ethers.utils.parseEther("100000000"),
-    ])
-  );
-  // transferring those Atokens to the admin
+
+  // transferring those ATokens to the admin
   await factory.callAny(
     aToken.address,
     0,
@@ -425,7 +401,7 @@ export const getBaseTokensFixture = async (): Promise<BaseTokensFixture> => {
   const [admin] = await ethers.getSigners();
   // AToken
   const fixture = await deployFactoryAndBaseTokens(admin);
-  await posFixtureSetup(fixture.factory, fixture.aToken, fixture.legacyToken);
+  await posFixtureSetup(fixture.factory, fixture.aToken);
   return fixture;
 };
 
@@ -440,7 +416,6 @@ export const getFixture = async (
   // Deploy the base tokens
   const { factory, aToken, bToken, legacyToken, publicStaking } =
     await deployFactoryAndBaseTokens(admin);
-
   // ValidatorStaking is not considered a base token since is only used by validators
   const validatorStaking = (await deployUpgradeableWithFactory(
     factory,
@@ -448,7 +423,6 @@ export const getFixture = async (
     "ValidatorStaking",
     []
   )) as ValidatorStaking;
-
   // LiquidityProviderStaking
   const liquidityProviderStaking = (await deployUpgradeableWithFactory(
     factory,
@@ -456,14 +430,12 @@ export const getFixture = async (
     "LiquidityProviderStaking",
     []
   )) as LiquidityProviderStaking;
-
   // Foundation
   const foundation = (await deployUpgradeableWithFactory(
     factory,
     "Foundation",
     undefined
   )) as Foundation;
-
   let validatorPool;
   if (typeof mockValidatorPool !== "undefined" && mockValidatorPool) {
     // ValidatorPoolMock
@@ -482,6 +454,7 @@ export const getFixture = async (
         ethers.utils.parseUnits("20000", 18),
         10,
         ethers.utils.parseUnits("3", 18),
+        8192,
       ]
     )) as ValidatorPool;
   }
@@ -547,14 +520,57 @@ export const getFixture = async (
     "ATokenMinter",
     "ATokenMinter"
   )) as ATokenMinter;
+  const mintToFactory = aTokenMinter.interface.encodeFunctionData("mint", [
+    factory.address,
+    ethers.utils.parseEther("100000000"),
+  ]);
+  const txResponse = await factory.callAny(
+    aTokenMinter.address,
+    0,
+    mintToFactory
+  );
+  await txResponse.wait();
   const aTokenBurner = (await deployUpgradeableWithFactory(
     factory,
     "ATokenBurner",
     "ATokenBurner"
   )) as ATokenBurner;
 
-  await posFixtureSetup(factory, aToken, legacyToken);
+  const invalidTxConsumptionAccusation = (await deployUpgradeableWithFactory(
+    factory,
+    "InvalidTxConsumptionAccusation",
+    "InvalidTxConsumptionAccusation",
+    undefined,
+    undefined,
+    "Accusation"
+  )) as InvalidTxConsumptionAccusation;
 
+  const multipleProposalAccusation = (await deployUpgradeableWithFactory(
+    factory,
+    "MultipleProposalAccusation",
+    "MultipleProposalAccusation",
+    undefined,
+    undefined,
+    "Accusation"
+  )) as MultipleProposalAccusation;
+
+  // distribution contract for distributing BTokens yields
+  const distribution = (await deployUpgradeableWithFactory(
+    factory,
+    "Distribution",
+    undefined,
+    undefined,
+    [332, 332, 332, 4]
+  )) as Distribution;
+
+  const dynamics = (await deployUpgradeableWithFactory(
+    factory,
+    "Dynamics",
+    "Dynamics",
+    []
+  )) as Dynamics;
+
+  await posFixtureSetup(factory, aToken);
   const blockNumber = BigInt(await ethers.provider.getBlockNumber());
   const phaseLength = (await ethdkg.getPhaseLength()).toBigInt();
   if (phaseLength >= blockNumber) {
@@ -577,6 +593,10 @@ export const getFixture = async (
     liquidityProviderStaking,
     foundation,
     stakingPositionDescriptor,
+    invalidTxConsumptionAccusation,
+    multipleProposalAccusation,
+    distribution,
+    dynamics,
     validatorVault,
   };
 };
@@ -616,23 +636,6 @@ export async function factoryCallAny(
   const txResponse = await factory.callAny(
     contract.address,
     0,
-    contract.interface.encodeFunctionData(functionName, args)
-  );
-  const receipt = await txResponse.wait();
-  return receipt;
-}
-
-export async function delegateFactoryCallAny(
-  factory: AliceNetFactory,
-  contract: Contract,
-  functionName: string,
-  args?: Array<any>
-) {
-  if (args === undefined) {
-    args = [];
-  }
-  const txResponse = await factory.delegateCallAny(
-    contract.address,
     contract.interface.encodeFunctionData(functionName, args)
   );
   const receipt = await txResponse.wait();
@@ -680,4 +683,22 @@ export const getMetamorphicAddress = (
     ethers.utils.formatBytes32String(salt),
     ethers.utils.keccak256(initCode)
   );
+};
+
+export const getReceiptForFailedTransaction = async (
+  tx: Promise<any>
+): Promise<any> => {
+  let receipt: any;
+  try {
+    await tx;
+  } catch (error: any) {
+    receipt = await ethers.provider.getTransactionReceipt(
+      error.transactionHash
+    );
+
+    if (receipt === null) {
+      throw new Error(`Transaction ${error.transactionHash} failed`);
+    }
+  }
+  return receipt;
 };

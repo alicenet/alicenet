@@ -1,8 +1,9 @@
 package indexer
 
 import (
-	"github.com/MadBase/MadNet/utils"
 	"github.com/dgraph-io/badger/v2"
+
+	"github.com/alicenet/alicenet/utils"
 )
 
 func NewEpochConstrainedIndex(p, pp prefixFunc) *EpochConstrainedList {
@@ -10,7 +11,7 @@ func NewEpochConstrainedIndex(p, pp prefixFunc) *EpochConstrainedList {
 }
 
 // EpochConstrainedList creates an index that allows objects to be dropped
-// by epoch
+// by epoch.
 type EpochConstrainedList struct {
 	prefix    prefixFunc
 	refPrefix prefixFunc
@@ -20,12 +21,12 @@ type EpochConstrainedListKey struct {
 	key []byte
 }
 
-// MarshalBinary returns the byte slice for the key object
+// MarshalBinary returns the byte slice for the key object.
 func (eclk *EpochConstrainedListKey) MarshalBinary() []byte {
 	return utils.CopySlice(eclk.key)
 }
 
-// UnmarshalBinary takes in a byte slice to set the key object
+// UnmarshalBinary takes in a byte slice to set the key object.
 func (eclk *EpochConstrainedListKey) UnmarshalBinary(data []byte) {
 	eclk.key = utils.CopySlice(data)
 }
@@ -34,17 +35,17 @@ type EpochConstrainedListRefKey struct {
 	refkey []byte
 }
 
-// MarshalBinary returns the byte slice for the key object
+// MarshalBinary returns the byte slice for the key object.
 func (eclrk *EpochConstrainedListRefKey) MarshalBinary() []byte {
 	return utils.CopySlice(eclrk.refkey)
 }
 
-// UnmarshalBinary takes in a byte slice to set the key object
+// UnmarshalBinary takes in a byte slice to set the key object.
 func (eclrk *EpochConstrainedListRefKey) UnmarshalBinary(data []byte) {
 	eclrk.refkey = utils.CopySlice(data)
 }
 
-// Append adds an item to the list
+// Append adds an item to the list.
 func (ecl *EpochConstrainedList) Append(txn *badger.Txn, epoch uint32, txHash []byte) error {
 	txHashCopy := utils.CopySlice(txHash)
 	eclKey := ecl.makeKey(epoch, txHashCopy)
@@ -59,7 +60,7 @@ func (ecl *EpochConstrainedList) Append(txn *badger.Txn, epoch uint32, txHash []
 	return utils.SetValue(txn, key, []byte{})
 }
 
-// DropBefore returns a list of all txHashes that should be dropped
+// DropBefore returns a list of all txHashes that should be dropped.
 func (ecl *EpochConstrainedList) DropBefore(txn *badger.Txn, epoch uint32) ([][]byte, error) {
 	dropKeys := [][]byte{}
 	dropHashes := [][]byte{}

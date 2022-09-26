@@ -1,4 +1,10 @@
-import { getFixture, getValidatorEthAccount } from "../../../setup";
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
+import { ethers } from "hardhat";
+import {
+  getFixture,
+  getReceiptForFailedTransaction,
+  getValidatorEthAccount,
+} from "../../../setup";
 import { validators10 } from "../../assets/10-validators-successful-case";
 import { validators4 } from "../../assets/4-validators-successful-case";
 import {
@@ -7,14 +13,19 @@ import {
   endCurrentAccusationPhase,
   endCurrentPhase,
   expect,
+  getInfoForIncorrectPhaseCustomError,
   initializeETHDKG,
   Phase,
   registerValidators,
 } from "../../setup";
 
+function deployFixture() {
+  return getFixture(true);
+}
+
 describe("ETHDKG: Missing registration Accusation", () => {
   it("allows accusation of all missing validators after ETHDKG registration", async function () {
-    const { ethdkg, validatorPool } = await getFixture(true);
+    const { ethdkg, validatorPool } = await loadFixture(deployFixture);
 
     const expectedNonce = 1;
 
@@ -54,7 +65,7 @@ describe("ETHDKG: Missing registration Accusation", () => {
   });
 
   it("allows accusation of some missing validators after ETHDKG registration", async function () {
-    const { ethdkg, validatorPool } = await getFixture(true);
+    const { ethdkg, validatorPool } = await loadFixture(deployFixture);
 
     const expectedNonce = 1;
 
@@ -93,8 +104,12 @@ describe("ETHDKG: Missing registration Accusation", () => {
   // MISSING REGISTRATION ACCUSATION TESTS
 
   it("won't let non-registration accusations to take place while ETHDKG registration is open", async function () {
-    const { ethdkg, validatorPool } = await getFixture(true);
+    const { ethdkg, validatorPool } = await loadFixture(deployFixture);
 
+    const ETHDKGAccusations = await ethers.getContractAt(
+      "ETHDKGAccusations",
+      ethdkg.address
+    );
     const expectedNonce = 1;
 
     // add validators
@@ -112,15 +127,31 @@ describe("ETHDKG: Missing registration Accusation", () => {
       expectedNonce
     );
 
-    await expect(
-      ethdkg.accuseParticipantNotRegistered([validators4[2].address])
-    ).to.be.revertedWith("103");
+    const txPromise = ethdkg.accuseParticipantNotRegistered([
+      validators4[2].address,
+    ]);
+    const expectedBlockNumber = (
+      await getReceiptForFailedTransaction(txPromise)
+    ).blockNumber;
+    const expectedCurrentPhase = await ethdkg.getETHDKGPhase();
+    const phaseStartBlock = await ethdkg.getPhaseStartBlock();
+    const phaseLength = await ethdkg.getPhaseLength();
+
+    await expect(txPromise)
+      .to.be.revertedWithCustomError(ETHDKGAccusations, `IncorrectPhase`)
+      .withArgs(expectedCurrentPhase, expectedBlockNumber, [
+        [
+          Phase.RegistrationOpen,
+          phaseStartBlock.add(phaseLength),
+          phaseStartBlock.add(phaseLength.mul(2)),
+        ],
+      ]);
     expect(await ethdkg.getBadParticipants()).to.equal(0);
     await assertETHDKGPhase(ethdkg, Phase.RegistrationOpen);
   });
 
   it("should not allow validators to proceed to next phase if 2 out of 4 did not register and the phase has finished", async function () {
-    const { ethdkg, validatorPool } = await getFixture(true);
+    const { ethdkg, validatorPool } = await loadFixture(deployFixture);
 
     const expectedNonce = 1;
 
@@ -144,18 +175,33 @@ describe("ETHDKG: Missing registration Accusation", () => {
 
     // validator0 should not be able to distribute shares
     const signer0 = await getValidatorEthAccount(validators4[0].address);
-    await expect(
-      ethdkg
-        .connect(signer0)
-        .distributeShares(
-          validators4[0].encryptedShares,
-          validators4[0].commitments
-        )
-    ).to.be.rejectedWith("133");
+    const txPromise = ethdkg
+      .connect(signer0)
+      .distributeShares(
+        validators4[0].encryptedShares,
+        validators4[0].commitments
+      );
+    const [
+      ethDKGPhases,
+      ,
+      expectedBlockNumber,
+      expectedCurrentPhase,
+      phaseStartBlock,
+      phaseLength,
+    ] = await getInfoForIncorrectPhaseCustomError(txPromise, ethdkg);
+    await expect(txPromise)
+      .to.be.revertedWithCustomError(ethDKGPhases, `IncorrectPhase`)
+      .withArgs(expectedCurrentPhase, expectedBlockNumber, [
+        [
+          Phase.ShareDistribution,
+          phaseStartBlock,
+          phaseStartBlock.add(phaseLength),
+        ],
+      ]);
   });
 
   it("should not allow validators who did not register in time to register on the accusation phase", async function () {
-    const { ethdkg, validatorPool } = await getFixture(true);
+    const { ethdkg, validatorPool } = await loadFixture(deployFixture);
 
     const expectedNonce = 1;
 
@@ -178,13 +224,32 @@ describe("ETHDKG: Missing registration Accusation", () => {
     await endCurrentPhase(ethdkg);
 
     const signer2 = await getValidatorEthAccount(validators4[2].address);
-    await expect(
-      ethdkg.connect(signer2).register(validators4[2].aliceNetPublicKey)
-    ).to.be.revertedWith("128");
+
+    const txPromise = ethdkg
+      .connect(signer2)
+      .register(validators4[2].aliceNetPublicKey);
+    const [
+      ethDKGPhases,
+      ,
+      expectedBlockNumber,
+      expectedCurrentPhase,
+      phaseStartBlock,
+      phaseLength,
+    ] = await getInfoForIncorrectPhaseCustomError(txPromise, ethdkg);
+    await expect(txPromise)
+      .to.be.revertedWithCustomError(ethDKGPhases, `IncorrectPhase`)
+      .withArgs(expectedCurrentPhase, expectedBlockNumber, [
+        [
+          Phase.RegistrationOpen,
+          phaseStartBlock,
+          phaseStartBlock.add(phaseLength),
+        ],
+      ]);
   });
 
   it("should not allow validators who did not register in time to distribute shares", async function () {
-    const { ethdkg, validatorPool } = await getFixture(true);
+    const { ethdkg, validatorPool } = await loadFixture(deployFixture);
+
     const expectedNonce = 1;
 
     // add validators
@@ -207,18 +272,39 @@ describe("ETHDKG: Missing registration Accusation", () => {
 
     // validator2 should not be able to distribute shares
     const signer2 = await getValidatorEthAccount(validators4[2].address);
-    await expect(
-      ethdkg
-        .connect(signer2)
-        .distributeShares(
-          validators4[0].encryptedShares,
-          validators4[0].commitments
-        )
-    ).to.be.rejectedWith("133");
+
+    const txPromise = ethdkg
+      .connect(signer2)
+      .distributeShares(
+        validators4[0].encryptedShares,
+        validators4[0].commitments
+      );
+    const [
+      ethDKGPhases,
+      ,
+      expectedBlockNumber,
+      expectedCurrentPhase,
+      phaseStartBlock,
+      phaseLength,
+    ] = await getInfoForIncorrectPhaseCustomError(txPromise, ethdkg);
+    await expect(txPromise)
+      .to.be.revertedWithCustomError(ethDKGPhases, `IncorrectPhase`)
+      .withArgs(expectedCurrentPhase, expectedBlockNumber, [
+        [
+          Phase.ShareDistribution,
+          phaseStartBlock,
+          phaseStartBlock.add(phaseLength),
+        ],
+      ]);
   });
 
   it("should not allow accusation of validators that registered in ETHDKG", async function () {
-    const { ethdkg, validatorPool } = await getFixture(true);
+    const { ethdkg, validatorPool } = await loadFixture(deployFixture);
+
+    const ETHDKGAccusations = await ethers.getContractAt(
+      "ETHDKGAccusations",
+      ethdkg.address
+    );
     const expectedNonce = 1;
 
     // add validators
@@ -242,13 +328,23 @@ describe("ETHDKG: Missing registration Accusation", () => {
     // accuse a participant validator
     await expect(
       ethdkg.accuseParticipantNotRegistered([validators4[0].address])
-    ).to.be.rejectedWith("105");
+    )
+      .to.be.revertedWithCustomError(
+        ETHDKGAccusations,
+        `AccusedParticipatingInRound`
+      )
+      .withArgs(ethers.utils.getAddress(validators4[0].address));
 
     expect(await ethdkg.getBadParticipants()).to.equal(0);
   });
 
   it("should not allow accusation of non-existent validators in ETHDKG", async function () {
-    const { ethdkg, validatorPool } = await getFixture(true);
+    const { ethdkg, validatorPool } = await loadFixture(deployFixture);
+
+    const ETHDKGAccusations = await ethers.getContractAt(
+      "ETHDKGAccusations",
+      ethdkg.address
+    );
     const expectedNonce = 1;
 
     // add validators
@@ -270,17 +366,21 @@ describe("ETHDKG: Missing registration Accusation", () => {
     await endCurrentPhase(ethdkg);
 
     // accuse a non-existent validator
-    await expect(
-      ethdkg.accuseParticipantNotRegistered([
-        "0x26D3D8Ab74D62C26f1ACc220dA1646411c9880Ac",
-      ])
-    ).to.be.rejectedWith("104");
+    const accusedAddress = "0x26D3D8Ab74D62C26f1ACc220dA1646411c9880Ac";
+    await expect(ethdkg.accuseParticipantNotRegistered([accusedAddress]))
+      .to.be.revertedWithCustomError(ETHDKGAccusations, `AccusedNotValidator`)
+      .withArgs(ethers.utils.getAddress(accusedAddress));
 
     expect(await ethdkg.getBadParticipants()).to.equal(0);
   });
 
   it("should not allow accusations after the accusation window", async function () {
-    const { ethdkg, validatorPool } = await getFixture(true);
+    const { ethdkg, validatorPool } = await loadFixture(deployFixture);
+
+    const ETHDKGAccusations = await ethers.getContractAt(
+      "ETHDKGAccusations",
+      ethdkg.address
+    );
     const expectedNonce = 1;
 
     // add validators
@@ -304,16 +404,37 @@ describe("ETHDKG: Missing registration Accusation", () => {
     // move to the end of RegistrationAccusation phase
     await endCurrentAccusationPhase(ethdkg);
 
+    const txPromise = ethdkg.accuseParticipantNotRegistered([
+      validators4[2].address,
+    ]);
+    const expectedBlockNumber = (
+      await getReceiptForFailedTransaction(txPromise)
+    ).blockNumber;
+    const expectedCurrentPhase = await ethdkg.getETHDKGPhase();
+    const phaseStartBlock = await ethdkg.getPhaseStartBlock();
+    const phaseLength = await ethdkg.getPhaseLength();
+
     // accuse a non-participant validator
-    await expect(
-      ethdkg.accuseParticipantNotRegistered([validators4[2].address])
-    ).to.be.rejectedWith("103");
+    await expect(txPromise)
+      .to.be.revertedWithCustomError(ETHDKGAccusations, `IncorrectPhase`)
+      .withArgs(expectedCurrentPhase, expectedBlockNumber, [
+        [
+          Phase.RegistrationOpen,
+          phaseStartBlock.add(phaseLength),
+          phaseStartBlock.add(phaseLength.mul(2)),
+        ],
+      ]);
 
     expect(await ethdkg.getBadParticipants()).to.equal(0);
   });
 
   it("should not allow accusations of non-existent validators along with existent", async function () {
-    const { ethdkg, validatorPool } = await getFixture(true);
+    const { ethdkg, validatorPool } = await loadFixture(deployFixture);
+
+    const ETHDKGAccusations = await ethers.getContractAt(
+      "ETHDKGAccusations",
+      ethdkg.address
+    );
     const expectedNonce = 1;
 
     // add validators
@@ -335,13 +456,16 @@ describe("ETHDKG: Missing registration Accusation", () => {
     await endCurrentPhase(ethdkg);
 
     // accuse a participant validator
+    const accusedAddress = "0x26D3D8Ab74D62C26f1ACc220dA1646411c9880Ac";
     await expect(
       ethdkg.accuseParticipantNotRegistered([
         validators4[2].address,
         validators4[3].address,
-        "0x26D3D8Ab74D62C26f1ACc220dA1646411c9880Ac",
+        accusedAddress,
       ])
-    ).to.be.rejectedWith("104");
+    )
+      .to.be.revertedWithCustomError(ETHDKGAccusations, `AccusedNotValidator`)
+      .withArgs(ethers.utils.getAddress(accusedAddress));
 
     expect(await ethdkg.getBadParticipants()).to.equal(0);
   });
@@ -349,7 +473,8 @@ describe("ETHDKG: Missing registration Accusation", () => {
   it("should not move to ShareDistribution phase when only 2 out of 4 validators have participated", async function () {
     // Accuse 1 participant that didn't participate and wait the window to expire and try to go to the next phase after accusation
 
-    const { ethdkg, validatorPool } = await getFixture(true);
+    const { ethdkg, validatorPool } = await loadFixture(deployFixture);
+
     const expectedNonce = 1;
 
     // add validators
@@ -379,20 +504,36 @@ describe("ETHDKG: Missing registration Accusation", () => {
     await endCurrentAccusationPhase(ethdkg);
 
     // try to move into Distribute Shares phase
-    await expect(
-      ethdkg
-        .connect(await getValidatorEthAccount(validators4[0].address))
-        .distributeShares(
-          validators4[0].encryptedShares,
-          validators4[0].commitments
-        )
-    ).to.be.rejectedWith("133");
+    const txPromise = ethdkg
+      .connect(await getValidatorEthAccount(validators4[0].address))
+      .distributeShares(
+        validators4[0].encryptedShares,
+        validators4[0].commitments
+      );
+    const [
+      ethDKGPhases,
+      ,
+      expectedBlockNumber,
+      expectedCurrentPhase,
+      phaseStartBlock,
+      phaseLength,
+    ] = await getInfoForIncorrectPhaseCustomError(txPromise, ethdkg);
+    await expect(txPromise)
+      .to.be.revertedWithCustomError(ethDKGPhases, `IncorrectPhase`)
+      .withArgs(expectedCurrentPhase, expectedBlockNumber, [
+        [
+          Phase.ShareDistribution,
+          phaseStartBlock,
+          phaseStartBlock.add(phaseLength),
+        ],
+      ]);
 
     await assertETHDKGPhase(ethdkg, Phase.RegistrationOpen);
   });
 
   it("should move to ShareDistribution phase when all non-participant validators have been accused and #validators >= _minValidators", async function () {
-    const { ethdkg, validatorPool } = await getFixture(true);
+    const { ethdkg, validatorPool } = await loadFixture(deployFixture);
+
     const expectedNonce = 1;
 
     // validator 11
@@ -431,20 +572,40 @@ describe("ETHDKG: Missing registration Accusation", () => {
     await assertETHDKGPhase(ethdkg, Phase.RegistrationOpen);
 
     // try distributing shares
-    await expect(
-      ethdkg
-        .connect(await getValidatorEthAccount(validators10[0].address))
-        .distributeShares(
-          validators10[0].encryptedShares,
-          validators10[0].commitments
-        )
-    ).to.be.revertedWith("133");
+    const txPromise = ethdkg
+      .connect(await getValidatorEthAccount(validators10[0].address))
+      .distributeShares(
+        validators10[0].encryptedShares,
+        validators10[0].commitments
+      );
+    const [
+      ethDKGPhases,
+      ,
+      expectedBlockNumber,
+      expectedCurrentPhase,
+      phaseStartBlock,
+      phaseLength,
+    ] = await getInfoForIncorrectPhaseCustomError(txPromise, ethdkg);
+    await expect(txPromise)
+      .to.be.revertedWithCustomError(ethDKGPhases, `IncorrectPhase`)
+      .withArgs(expectedCurrentPhase, expectedBlockNumber, [
+        [
+          Phase.ShareDistribution,
+          phaseStartBlock,
+          phaseStartBlock.add(phaseLength),
+        ],
+      ]);
 
     await assertETHDKGPhase(ethdkg, Phase.RegistrationOpen);
   });
 
   it("should not allow double accusation for missing registration", async function () {
-    const { ethdkg, validatorPool } = await getFixture(true);
+    const { ethdkg, validatorPool } = await loadFixture(deployFixture);
+
+    const ETHDKGAccusations = await ethers.getContractAt(
+      "ETHDKGAccusations",
+      ethdkg.address
+    );
     const expectedNonce = 1;
 
     // add validators
@@ -471,7 +632,9 @@ describe("ETHDKG: Missing registration Accusation", () => {
         validators4[2].address,
         validators4[2].address,
       ])
-    ).to.be.rejectedWith("104");
+    )
+      .to.be.revertedWithCustomError(ETHDKGAccusations, `AccusedNotValidator`)
+      .withArgs(ethers.utils.getAddress(validators4[2].address));
 
     await assertETHDKGPhase(ethdkg, Phase.RegistrationOpen);
   });

@@ -3,8 +3,8 @@ package objs
 import (
 	"fmt"
 
-	"github.com/MadBase/MadNet/application/objs/uint256"
-	"github.com/MadBase/MadNet/errorz"
+	"github.com/alicenet/alicenet/application/objs/uint256"
+	"github.com/alicenet/alicenet/errorz"
 )
 
 type PaginationToken struct {
@@ -21,7 +21,7 @@ const (
 )
 
 // UnmarshalBinary takes a byte slice and returns the corresponding
-// PaginationToken object
+// PaginationToken object.
 func (pt *PaginationToken) UnmarshalBinary(data []byte) error {
 	if pt == nil {
 		return errorz.ErrInvalid{}.New("pt.unmarshalBinary; pt not initialized")
@@ -34,7 +34,10 @@ func (pt *PaginationToken) UnmarshalBinary(data []byte) error {
 	pt.LastPaginatedType = LastPaginatedType(data[0])
 
 	TotalValue := &uint256.Uint256{}
-	TotalValue.UnmarshalBinary(data[1:33])
+	err := TotalValue.UnmarshalBinary(data[1:33])
+	if err != nil {
+		return err
+	}
 	pt.TotalValue = TotalValue
 
 	pt.LastKey = make([]byte, 0, 96)
@@ -44,7 +47,7 @@ func (pt *PaginationToken) UnmarshalBinary(data []byte) error {
 }
 
 // MarshalBinary takes the PaginationToken object and returns the canonical
-// byte slice
+// byte slice.
 func (pt *PaginationToken) MarshalBinary() ([]byte, error) {
 	if pt == nil {
 		return nil, errorz.ErrInvalid{}.New("pt.marshalBinary; pt not initialized")

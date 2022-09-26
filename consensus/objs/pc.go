@@ -3,12 +3,13 @@ package objs
 import (
 	"bytes"
 
-	mdefs "github.com/MadBase/MadNet/consensus/objs/capn"
-	"github.com/MadBase/MadNet/consensus/objs/precommit"
-	"github.com/MadBase/MadNet/crypto"
-	"github.com/MadBase/MadNet/errorz"
-	"github.com/MadBase/MadNet/utils"
 	capnp "github.com/MadBase/go-capnproto2/v2"
+
+	mdefs "github.com/alicenet/alicenet/consensus/objs/capn"
+	"github.com/alicenet/alicenet/consensus/objs/precommit"
+	"github.com/alicenet/alicenet/crypto"
+	"github.com/alicenet/alicenet/errorz"
+	"github.com/alicenet/alicenet/utils"
 )
 
 // PreCommit ...
@@ -24,7 +25,7 @@ type PreCommit struct {
 }
 
 // UnmarshalBinary takes a byte slice and returns the corresponding
-// PreCommit object
+// PreCommit object.
 func (b *PreCommit) UnmarshalBinary(data []byte) error {
 	if b == nil {
 		return errorz.ErrInvalid{}.New("PreCommit.UnmarshalBinary; pc not initialized")
@@ -37,7 +38,7 @@ func (b *PreCommit) UnmarshalBinary(data []byte) error {
 	return b.UnmarshalCapn(bh)
 }
 
-// UnmarshalCapn unmarshals the capnproto definition of the object
+// UnmarshalCapn unmarshals the capnproto definition of the object.
 func (b *PreCommit) UnmarshalCapn(bh mdefs.PreCommit) error {
 	if b == nil {
 		return errorz.ErrInvalid{}.New("PreCommit.UnmarshalCapn; pc not initialized")
@@ -62,7 +63,7 @@ func (b *PreCommit) UnmarshalCapn(bh mdefs.PreCommit) error {
 }
 
 // MarshalBinary takes the PreCommit object and returns the canonical
-// byte slice
+// byte slice.
 func (b *PreCommit) MarshalBinary() ([]byte, error) {
 	if b == nil {
 		return nil, errorz.ErrInvalid{}.New("PreCommit.MarshalBinary; pc not initialized")
@@ -75,7 +76,7 @@ func (b *PreCommit) MarshalBinary() ([]byte, error) {
 	return precommit.Marshal(bh)
 }
 
-// MarshalCapn marshals the object into its capnproto definition
+// MarshalCapn marshals the object into its capnproto definition.
 func (b *PreCommit) MarshalCapn(seg *capnp.Segment) (mdefs.PreCommit, error) {
 	if b == nil {
 		return mdefs.PreCommit{}, errorz.ErrInvalid{}.New("PreCommit.MarshalCapn; pc not initialized")

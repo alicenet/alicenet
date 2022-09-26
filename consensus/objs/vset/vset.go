@@ -1,9 +1,10 @@
 package vset
 
 import (
-	mdefs "github.com/MadBase/MadNet/consensus/objs/capn"
-	"github.com/MadBase/MadNet/errorz"
 	capnp "github.com/MadBase/go-capnproto2/v2"
+
+	mdefs "github.com/alicenet/alicenet/consensus/objs/capn"
+	"github.com/alicenet/alicenet/errorz"
 )
 
 // Marshal will marshal the ValidatorSet object.
@@ -37,7 +38,7 @@ func Unmarshal(data []byte) (mdefs.ValidatorSet, error) {
 	return obj, nil
 }
 
-// Validate will validate the ValidatorSet object
+// Validate will validate the ValidatorSet object.
 func Validate(p mdefs.ValidatorSet) error {
 	if !p.IsValid() {
 		return errorz.ErrInvalid{}.New("validatorset capn obj is not valid")

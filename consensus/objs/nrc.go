@@ -3,11 +3,12 @@ package objs
 import (
 	"bytes"
 
-	mdefs "github.com/MadBase/MadNet/consensus/objs/capn"
-	"github.com/MadBase/MadNet/consensus/objs/nrclaims"
-	"github.com/MadBase/MadNet/crypto"
-	"github.com/MadBase/MadNet/errorz"
 	capnp "github.com/MadBase/go-capnproto2/v2"
+
+	mdefs "github.com/alicenet/alicenet/consensus/objs/capn"
+	"github.com/alicenet/alicenet/consensus/objs/nrclaims"
+	"github.com/alicenet/alicenet/crypto"
+	"github.com/alicenet/alicenet/errorz"
 )
 
 // NRClaims ...
@@ -20,7 +21,7 @@ type NRClaims struct {
 }
 
 // UnmarshalBinary takes a byte slice and returns the corresponding
-// NRClaims object
+// NRClaims object.
 func (b *NRClaims) UnmarshalBinary(data []byte) error {
 	if b == nil {
 		return errorz.ErrInvalid{}.New("NRClaims.UnmarshalBinary; nrclaims not initialized")
@@ -33,7 +34,7 @@ func (b *NRClaims) UnmarshalBinary(data []byte) error {
 	return b.UnmarshalCapn(bh)
 }
 
-// UnmarshalCapn unmarshals the capnproto definition of the object
+// UnmarshalCapn unmarshals the capnproto definition of the object.
 func (b *NRClaims) UnmarshalCapn(bh mdefs.NRClaims) error {
 	if b == nil {
 		return errorz.ErrInvalid{}.New("NRClaims.UnmarshalCapn; nrclaims not initialized")
@@ -69,7 +70,7 @@ func (b *NRClaims) UnmarshalCapn(bh mdefs.NRClaims) error {
 }
 
 // MarshalBinary takes the NRClaims object and returns the canonical
-// byte slice
+// byte slice.
 func (b *NRClaims) MarshalBinary() ([]byte, error) {
 	if b == nil {
 		return nil, errorz.ErrInvalid{}.New("NRClaims.MarshalBinary; nrclaims not initialized")
@@ -82,7 +83,7 @@ func (b *NRClaims) MarshalBinary() ([]byte, error) {
 	return nrclaims.Marshal(bh)
 }
 
-// MarshalCapn marshals the object into its capnproto definition
+// MarshalCapn marshals the object into its capnproto definition.
 func (b *NRClaims) MarshalCapn(seg *capnp.Segment) (mdefs.NRClaims, error) {
 	if b == nil {
 		return mdefs.NRClaims{}, errorz.ErrInvalid{}.New("NRClaims.MarshalCapn; nrclaims not initialized")

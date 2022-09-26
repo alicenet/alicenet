@@ -3,38 +3,25 @@ package indexer
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
-	"os"
 	"testing"
 
-	"github.com/MadBase/MadNet/application/objs"
-	"github.com/MadBase/MadNet/application/objs/uint256"
-	trie "github.com/MadBase/MadNet/badgerTrie"
-	"github.com/MadBase/MadNet/constants"
-	"github.com/MadBase/MadNet/utils"
 	"github.com/dgraph-io/badger/v2"
+
+	"github.com/alicenet/alicenet/application/objs"
+	"github.com/alicenet/alicenet/application/objs/uint256"
+	trie "github.com/alicenet/alicenet/badgerTrie"
+	"github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/internal/testing/environment"
+	"github.com/alicenet/alicenet/utils"
 )
 
 func TestRefCounter(t *testing.T) {
-	dir, err := ioutil.TempDir("", "badger-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}()
-	opts := badger.DefaultOptions(dir)
-	db, err := badger.Open(opts)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer db.Close()
+	t.Parallel()
+	db := environment.SetupBadgerDatabase(t)
 
 	hash := trie.Hasher([]byte("foo"))
 	rc := &RefCounter{func() []byte { return []byte("aa") }}
-	err = db.Update(func(txn *badger.Txn) error {
+	err := db.Update(func(txn *badger.Txn) error {
 		for i := 1; i < 100; i++ {
 			v, err := rc.Increment(txn, hash)
 			if err != nil {
@@ -83,28 +70,15 @@ func TestRefCounter(t *testing.T) {
 }
 
 func TestEPC(t *testing.T) {
-	dir, err := ioutil.TempDir("", "badger-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}()
-	opts := badger.DefaultOptions(dir)
-	db, err := badger.Open(opts)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer db.Close()
+	t.Parallel()
+	db := environment.SetupBadgerDatabase(t)
 
 	epc := &EpochConstrainedList{func() []byte { return []byte("aa") }, func() []byte { return []byte("ab") }}
 	txHash1 := trie.Hasher([]byte("foo"))
 	epoch1 := uint32(1)
 	txHash2 := trie.Hasher([]byte("bar"))
 	epoch2 := uint32(2)
-	err = db.Update(func(txn *badger.Txn) error {
+	err := db.Update(func(txn *badger.Txn) error {
 		eclTx1Key := epc.makeKey(epoch1, txHash1)
 		tx1Key := eclTx1Key.MarshalBinary()
 		err := epc.Append(txn, epoch1, txHash1)
@@ -159,27 +133,14 @@ func TestEPC(t *testing.T) {
 }
 
 func TestIOI(t *testing.T) {
-	dir, err := ioutil.TempDir("", "badger-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}()
-	opts := badger.DefaultOptions(dir)
-	db, err := badger.Open(opts)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer db.Close()
+	t.Parallel()
+	db := environment.SetupBadgerDatabase(t)
 
 	ioi := &InsertionOrderIndexer{func() []byte { return []byte("aa") }, func() []byte { return []byte("ab") }}
 	txHash1 := trie.Hasher([]byte("foo"))
 	txHash2 := trie.Hasher([]byte("bar"))
 	txHash3 := trie.Hasher([]byte("baz"))
-	err = db.Update(func(txn *badger.Txn) error {
+	err := db.Update(func(txn *badger.Txn) error {
 		ioiIdxKey, ioiRevIdxKey, err := ioi.makeIndexKeys(txHash1)
 		if err != nil {
 			t.Fatal(err)
@@ -271,21 +232,8 @@ func TestIOI(t *testing.T) {
 }
 
 func TestRefLinker(t *testing.T) {
-	dir, err := ioutil.TempDir("", "badger-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}()
-	opts := badger.DefaultOptions(dir)
-	db, err := badger.Open(opts)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer db.Close()
+	t.Parallel()
+	db := environment.SetupBadgerDatabase(t)
 
 	prefix1 := func() []byte {
 		return []byte("za")
@@ -328,7 +276,7 @@ func TestRefLinker(t *testing.T) {
 	utxoIDs4 = append(utxoIDs4, trie.Hasher([]byte("i")))
 
 	rl := NewRefLinkerIndex(prefix1, prefix2, prefix3)
-	err = db.Update(func(txn *badger.Txn) error {
+	err := db.Update(func(txn *badger.Txn) error {
 		_, _, err := rl.Add(txn, txHash1, utxoIDs1)
 		if err != nil {
 			t.Fatal(err)
@@ -370,21 +318,8 @@ func TestRefLinker(t *testing.T) {
 }
 
 func TestRefLinkerEvict(t *testing.T) {
-	dir, err := ioutil.TempDir("", "badger-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}()
-	opts := badger.DefaultOptions(dir)
-	db, err := badger.Open(opts)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer db.Close()
+	t.Parallel()
+	db := environment.SetupBadgerDatabase(t)
 
 	prefix1 := func() []byte {
 		return []byte("za")
@@ -427,7 +362,7 @@ func TestRefLinkerEvict(t *testing.T) {
 	utxoIDs4 = append(utxoIDs4, trie.Hasher([]byte("c")))
 
 	rl := NewRefLinkerIndex(prefix1, prefix2, prefix3)
-	err = db.Update(func(txn *badger.Txn) error {
+	err := db.Update(func(txn *badger.Txn) error {
 		_, _, err := rl.Add(txn, txHash1, utxoIDs1)
 		if err != nil {
 			t.Fatal(err)
@@ -468,21 +403,8 @@ func TestRefLinkerEvict(t *testing.T) {
 }
 
 func TestHeightIdx(t *testing.T) {
-	dir, err := ioutil.TempDir("", "badger-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}()
-	opts := badger.DefaultOptions(dir)
-	db, err := badger.Open(opts)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer db.Close()
+	t.Parallel()
+	db := environment.SetupBadgerDatabase(t)
 
 	prefix1 := func() []byte {
 		return []byte("za")
@@ -510,7 +432,7 @@ func TestHeightIdx(t *testing.T) {
 	height4 := uint32(2)
 	idx4 := uint32(2)
 
-	err = db.Update(func(txn *badger.Txn) error {
+	err := db.Update(func(txn *badger.Txn) error {
 		err := index.Add(txn, txHash1, height1, idx1)
 		if err != nil {
 			t.Fatal(err)
@@ -564,21 +486,8 @@ func TestHeightIdx(t *testing.T) {
 }
 
 func TestExpSizeIndex(t *testing.T) {
-	dir, err := ioutil.TempDir("", "badger-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}()
-	opts := badger.DefaultOptions(dir)
-	db, err := badger.Open(opts)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer db.Close()
+	t.Parallel()
+	db := environment.SetupBadgerDatabase(t)
 
 	prefix1 := func() []byte {
 		return []byte("za")
@@ -606,7 +515,7 @@ func TestExpSizeIndex(t *testing.T) {
 	epoch4 := uint32(2)
 	size4 := uint32(2)
 
-	err = db.Update(func(txn *badger.Txn) error {
+	err := db.Update(func(txn *badger.Txn) error {
 		err := index.Add(txn, epoch1, txHash1, size1)
 		if err != nil {
 			t.Fatal(err)
@@ -660,21 +569,8 @@ func TestExpSizeIndex(t *testing.T) {
 }
 
 func TestDataIndex(t *testing.T) {
-	dir, err := ioutil.TempDir("", "badger-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}()
-	opts := badger.DefaultOptions(dir)
-	db, err := badger.Open(opts)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer db.Close()
+	t.Parallel()
+	db := environment.SetupBadgerDatabase(t)
 
 	prefix1 := func() []byte {
 		return []byte("za")
@@ -689,7 +585,7 @@ func TestDataIndex(t *testing.T) {
 	utxoID := trie.Hasher([]byte("foo"))
 	acct := trie.Hasher([]byte("bar"))[12:]
 	owner := &objs.Owner{}
-	err = owner.New(acct, constants.CurveSecp256k1)
+	err := owner.New(acct, constants.CurveSecp256k1)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -723,21 +619,8 @@ func TestDataIndex(t *testing.T) {
 }
 
 func TestValueIndex(t *testing.T) {
-	dir, err := ioutil.TempDir("", "badger-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}()
-	opts := badger.DefaultOptions(dir)
-	db, err := badger.Open(opts)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer db.Close()
+	t.Parallel()
+	db := environment.SetupBadgerDatabase(t)
 
 	prefix1 := func() []byte {
 		return []byte("za")
@@ -747,12 +630,10 @@ func TestValueIndex(t *testing.T) {
 		return []byte("zb")
 	}
 	index := NewValueIndex(prefix1, prefix2)
-	//value1 := &uint256.Uint256{}
 	value1, err := new(uint256.Uint256).FromUint64(1)
 	if err != nil {
 		t.Fatal(err)
 	}
-	//value5 := &uint256.Uint256{}
 	value5, err := new(uint256.Uint256).FromUint64(5)
 	if err != nil {
 		t.Fatal(err)

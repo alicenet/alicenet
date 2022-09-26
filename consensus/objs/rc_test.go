@@ -4,13 +4,13 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/MadBase/MadNet/constants"
-	"github.com/MadBase/MadNet/crypto"
+	"github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/crypto"
 )
 
 func TestRCert(t *testing.T) {
 	bnVal := &crypto.BNGroupValidator{}
-	//secpVal := &crypto.Secp256k1Validator{}
+	// secpVal := &crypto.Secp256k1Validator{}
 	bclaimsList, txHashListList, err := generateChain(3)
 	if err != nil {
 		t.Fatal(err)

@@ -1,35 +1,26 @@
 name: Alicenet CI
 
 on:
+  workflow_dispatch:
   push:
-    branches: [ main, candidate ]
+    branches: [main]
   pull_request:
-    branches: [ main, candidate ]
-
-env:
-  NODE_VERSION: 16.x
+    branches: [main]
 
 concurrency:
   group: ${{ github.ref }}
   cancel-in-progress: true
 
+defaults:
+  run:
+    shell: bash
+
 jobs:
-
-  solidity-build:
-    runs-on: ubuntu-20.04
-    defaults:
-      run:
-        working-directory: ./bridge
-    steps:
-    - uses: actions/checkout@v3
-    - uses: ./.github/actions/node-cache
-
-  solidity-unit-tests:
-    runs-on: ubuntu-20.04
+  node-unit-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
     strategy:
       matrix:
-        # when adding a new test folder to the smart contracts make sure to
-        # name it starting with 0-9 or A-Z
         include:
           - test-group: "[0-9a-dA-D]"
           - test-group: "[eE]"
@@ -42,94 +33,177 @@ jobs:
           - test-group: "[f-qF-Q]"
           - test-group: "[r-sR-S]"
           - test-group: "[t-zT-Z]"
-
-    needs: solidity-build
     defaults:
       run:
         working-directory: ./bridge
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/node-cache
+      - uses: actions/setup-node@v3
+        with:
+          node-version-file: "bridge/.nvmrc"
+          cache: "npm"
+          cache-dependency-path: bridge/package-lock.json
+      - run: npm ci
+      - run: npm run clean
+      - run: npm run compile
       - uses: ./.github/actions/solidity-tests
         with:
           test-group: ${{ matrix.test-group }}
           sub-filter-include: ${{ matrix.sub-filter-include }}
           sub-filter-exclude: ${{ matrix.sub-filter-exclude }}
 
-  solidity-linter:
-    runs-on: ubuntu-20.04
-    needs: solidity-build
+  node-coverage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
     defaults:
       run:
         working-directory: ./bridge
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/node-cache
-      - run: npm run lint-solidity
+      - uses: actions/setup-node@v3
+        with:
+          node-version-file: "bridge/.nvmrc"
+          cache: "npm"
+          cache-dependency-path: bridge/package-lock.json
+      - run: npm ci
+      - run: npm run clean
+      - run: npm run compile
+      - run: npx hardhat coverage --solcoverjs ./.solcover.ts
+        env:
+          NODE_OPTIONS: "--max_old_space_size=4096"
+      - uses: codecov/codecov-action@v3
+        with:
+          files: ./bridge/coverage.json
+          verbose: true
 
-  typescript-linter:
-    runs-on: ubuntu-20.04
-    needs: solidity-build
+  node-lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
     defaults:
       run:
         working-directory: ./bridge
-        shell: bash
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/node-cache
-      - run: npm run clean && npm run compile && npm run typechain
+      - uses: actions/setup-node@v3
+        with:
+          node-version-file: "bridge/.nvmrc"
+          cache: "npm"
+          cache-dependency-path: bridge/package-lock.json
+      - run: npm ci
+      - run: npm run clean
+      - run: npm run compile
+      - run: npm run typechain
+      - run: npm run lint-solidity
       - run: npm run lint
 
-  golang-build:
-    runs-on: ${{ matrix.os }}
-    needs: solidity-build
-    strategy:
-      matrix:
-        os: [ubuntu-20.04]
+  go-lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/alicenet-config
-      - run: make build
-      - name: Upload a Build Artifact
-        uses: actions/upload-artifact@v3.0.0
+      - uses: actions/setup-go@v3
         with:
-          name: alicenet-${{ github.head_ref || github.ref_name }}-${{ matrix.os }}
-          path: ./madnet
+          go-version-file: ./go.mod
+          cache: true
+      - uses: golangci/golangci-lint-action@v3
 
-  golang-vet:
-    runs-on: ubuntu-20.04
-    needs: golang-build
-    continue-on-error: true
-    steps:
-      - uses: actions/checkout@v3
-      - uses: ./.github/actions/alicenet-config
-      - run: go vet ./...
-
-  golang-linter:
-    runs-on: ubuntu-20.04
-    needs: golang-build
-    continue-on-error: true
-    steps:
-      - uses: actions/checkout@v3
-      - uses: ./.github/actions/alicenet-config
-      - name: golangci-lint
-        uses: golangci/golangci-lint-action@v3
-
-  golang-unit-tests:
+  go-unit-tests:
     runs-on: ${{ matrix.os }}
-    needs: golang-build
     strategy:
       matrix:
-        os: [ubuntu-20.04]
+        os: [ubuntu-latest]
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/alicenet-config
-      # tool to format the test output
+      - run: go build ./...
       - name: Set up gotestfmt
         run: go install github.com/haveyoudebuggedit/gotestfmt/v2/cmd/gotestfmt@latest
-      # Run tests with nice formatting. Save the original log in /tmp/gotest.log
-      # packages where the tests are stuck: ["blockchain", "badgerTrie", "consensus", "transport"]
-      - name: Run tests
+      - name: Run unit tests
+        timeout-minutes: 20
         run: |
           set -euo pipefail
-          go test -json -v $(go list ./... | grep -Ev '/blockchain|/badgerTrie|/consensus|/transport|/testutils') 2>&1 | tee /tmp/gotest.log | gotestfmt
+          go test -race -json -covermode=atomic -coverpkg ./... -coverprofile=coverage.out ./... 2>&1 | tee /tmp/gotest.log | gotestfmt
+      - uses: codecov/codecov-action@v3
+        with:
+          files: ./coverage.out
+          verbose: true
+
+  go-integration-tests:
+    runs-on: ${{ matrix.os }}
+    needs: go-unit-tests
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        test-cmd: [
+            # github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestShareDistribution_Group_1,
+            # github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestShareDistribution_Group_2,
+            # github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestShareDistribution_Group_3,
+            # github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestRegisterTask_Group_1,
+            # github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestRegisterTask_Group_2,
+            # github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestRegisterTask_Group_3,
+            # github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestMPKSubmission_Group_1,
+            # github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestMPKSubmission_Group_2,
+            # github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestKeyShareSubmission,
+            # github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestGPKjSubmission_Group_1,
+            # github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestGPKjSubmission_Group_2,
+            # github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestDisputeShareDistributionTask_Group_1,
+            # github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestDisputeMissingShareDistributionTask_Group_1,
+            # github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestDisputeMissingRegistrationTask_Group_1,
+            # github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestDisputeMissingKeySharesTask,
+            # github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestDisputeMissingGPKjTask_Group_1,
+            # github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestGPKjDispute,
+            # github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests -run TestCompletion_Group_1,
+            github.com/alicenet/alicenet/layer1/ethereum/tests,
+            github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state,
+          ]
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version-file: "bridge/.nvmrc"
+          cache: "npm"
+          cache-dependency-path: bridge/package-lock.json
+      - run: npm --prefix bridge/ ci
+      - run: npm --prefix bridge/ run compile
+      - uses: ./.github/actions/alicenet-config
+      - name: Set up gotestfmt
+        run: go install github.com/haveyoudebuggedit/gotestfmt/v2/cmd/gotestfmt@latest
+      - name: Run tests ${{ matrix.test-cmd }}
+        timeout-minutes: 45
+        env:
+          ENABLE_SCRIPT_LOG: "true"
+        run: |
+          set -euo pipefail
+          ./scripts/main.sh init 5
+          go test -tags=integration -race -json -covermode=atomic -coverpkg ./... -coverprofile=coverage.out -timeout=30m ${{ matrix.test-cmd }} 2>&1 | tee /tmp/gotest.log | gotestfmt
+      - uses: codecov/codecov-action@v3
+        with:
+          files: ./coverage.out
+          verbose: true
+
+  goreleaser:
+    runs-on: ubuntu-latest
+    if: ${{ github.actor != 'dependabot[bot]' }}
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - run: git fetch --force --tags
+      - uses: actions/setup-go@v3
+        with:
+          go-version-file: ./go.mod
+          cache: true
+      - name: Import GPG key
+        id: import_gpg
+        uses: crazy-max/ghaction-import-gpg@v5
+        with:
+          gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
+          passphrase: ${{ secrets.GPG_PASSPHRASE }}
+      - uses: goreleaser/goreleaser-action@v3
+        with:
+          args: release --snapshot --rm-dist
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GPG_FINGERPRINT: ${{ steps.import_gpg.outputs.fingerprint }}
