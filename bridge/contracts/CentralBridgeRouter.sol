@@ -44,9 +44,13 @@ contract CentralBridgeRouter is ICentralBridgeRouter ,ImmutableFactory, Immutabl
             returnDataBytes,
             (DepositReturnData)
         );
-        returnData.logData = abi.encode(returnData.logData, _nonce);
-        _emitDepositEvent(returnData.topics, returnData.logData);
-        _nonce += 1;
+        uint256 nonce = _nonce;
+        for(uint256 i =0; i < returnData.eventData.length; i++){
+            returnData.eventData[i].logData = abi.encode(returnData.eventData[i].logData, nonce);
+            _emitDepositEvent(returnData.eventData[i].topics, returnData.eventData[i].logData);
+            nonce += 1;
+        }
+        _nonce = nonce;
         fee = returnData.fee;
     }
 

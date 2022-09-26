@@ -3,11 +3,14 @@ pragma solidity ^0.8.16;
 
 interface ICentralBridgeRouter {
     struct DepositReturnData {
-        bytes32[] topics;
-        bytes logData;
+        EventData[] eventData;
         uint256 fee;
     }
-
+    struct EventData {
+        bytes32[] topics;
+        bytes logData;
+    }
+    
     function forwardDeposit(
         address msgSender_,
         uint16 poolVersion_,
