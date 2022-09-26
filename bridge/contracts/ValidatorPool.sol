@@ -561,7 +561,7 @@ contract ValidatorPool is
         )
     {
         (shares, freeAfter, withdrawFreeAfter, accumulatorEth, accumulatorToken) = IStakingNFT(
-            _publicStakingAddress()
+            _validatorStakingAddress()
         ).getPosition(tokenID);
 
         // adding the amount that is locked in the vault
