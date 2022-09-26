@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT-open-group
 pragma solidity ^0.8.16;
 
-
 import "contracts/interfaces/IValidatorVault.sol";
 import "contracts/interfaces/IStakingToken.sol";
 import "contracts/utils/ImmutableAuth.sol";

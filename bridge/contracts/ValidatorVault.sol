@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: MIT-open-group
-pragma solidity ^0.8.11;
+pragma solidity ^0.8.16;
 
 import "./utils/ImmutableAuth.sol";
 import "contracts/utils/ERC20SafeTransfer.sol";
 import "contracts/utils/EthSafeTransfer.sol";
 import "contracts/interfaces/IValidatorPool.sol";
+import "contracts/libraries/errors/ValidatorVaultErrors.sol";
 
 /// @custom:salt ValidatorVault
 /// @custom:deploy-type deployUpgradeable
@@ -39,12 +40,13 @@ contract ValidatorVault is
 
         _safeTransferFromERC20(IERC20Transferable(_aTokenAddress()), msg.sender, adjustmentAmount_);
 
-        // we transfer the whole amount that was sent to this contract, but only keep track of the amount
-        // that is perfectly divisible by the number of validators staked at the moment. The excess can be
-        // retrieved via skimExcess function
+        // we transfer the whole amount that was sent to this contract, but only keep
+        // track of the amount that is perfectly divisible by the number of validators
+        // staked at the moment. The excess can be retrieved via skimExcess function.
         totalReserve += totalAdjustmentAmount;
         globalAccumulator += userAdjustmentAmount;
-        // update minimum amount to become a validator to take into account the AToken dilution
+        // update minimum amount to become a validator to take into account the ALCA
+        // dilution
         uint256 stakeAmount = IValidatorPool(_validatorPoolAddress()).getStakeAmount();
         stakeAmount += userAdjustmentAmount;
         IValidatorPool(_validatorPoolAddress()).setStakeAmount(stakeAmount);
@@ -64,28 +66,29 @@ contract ValidatorVault is
         return userVault._amount;
     }
 
-    /// skimExcessEth will send to the address passed as to_ any amount of Eth held by this contract that
-    /// is not tracked. This function allows the Admin role to refund any Eth sent to this contract in
-    /// error by a user. This method can not return any funds sent to the contract via the depositEth
-    /// method. This function should only be necessary if a user somehow manages to accidentally
-    /// selfDestruct a contract with this contract as the recipient.
+    /// skimExcessEth will send to the address passed as to_ any amount of Eth held
+    /// by this contract that is not tracked. This function allows the Admin role to
+    /// refund any Eth sent to this contract in error by a user. This function should
+    /// only be necessary if a user somehow manages to accidentally selfDestruct a
+    /// contract with this contract as the recipient.
     function skimExcessEth(address to_) public onlyFactory returns (uint256 excess) {
         excess = address(this).balance;
         _safeTransferEth(to_, excess);
         return excess;
     }
 
-    /// skimExcessToken will send to the address passed as to_ any amount of AToken held by this contract
-    /// that is not tracked. This function allows the Admin role to refund any AToken sent to this
-    /// contract in error by a user.
+    /// skimExcessToken will send to the address passed as to_ any amount of ALCA
+    /// held by this contract that is not tracked. This function allows the Admin
+    /// role to refund any ALCA sent to this contract in error by a user.
     function skimExcessToken(address to_) public onlyFactory returns (uint256 excess) {
         IERC20Transferable aToken = IERC20Transferable(_aTokenAddress());
         uint256 balance = aToken.balanceOf(address(this));
-        require(
-            balance >= totalReserve,
-            "The balance of the contract is less then the tracked reserve!"
-        );
-        excess = balance - totalReserve;
+        if (balance < totalReserve) {
+            revert ValidatorVaultErrors.NotEnoughExcess();
+        }
+        unchecked {
+            excess = balance - totalReserve;
+        }
         _safeTransferERC20(aToken, to_, excess);
         return excess;
     }
@@ -125,7 +128,8 @@ contract ValidatorVault is
         if (numValidators == 0) {
             return (0, 0);
         }
-        // the adjustmentAmount should be equally divisible by the number of validators staked at the moment
+        // the adjustmentAmount should be equally divisible by the number of validators
+        // staked at the moment
         userAdjustmentAmount = (adjustmentAmount_ / numValidators);
     }
 
@@ -140,7 +144,8 @@ contract ValidatorVault is
         // handling a 'possible' overflow in the global accumulator
         if (userVault._accumulator > _globalAccumulator) {
             deltaAccumulator = type(uint256).max - userVault._accumulator;
-            deltaAccumulator += _globalAccumulator;
+            // +1 for the overflow to happen on the type(uint256).max
+            deltaAccumulator += _globalAccumulator + 1;
         } else {
             deltaAccumulator = _globalAccumulator - userVault._accumulator;
         }

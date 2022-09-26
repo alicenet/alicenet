@@ -39102,6 +39102,10 @@ type MockIValidatorPool struct {
 	// GetValidatorDataFunc is an instance of a mock function object
 	// controlling the behavior of the method GetValidatorData.
 	GetValidatorDataFunc *IValidatorPoolGetValidatorDataFunc
+	// GetValidatorStakingPositionFunc is an instance of a mock function
+	// object controlling the behavior of the method
+	// GetValidatorStakingPosition.
+	GetValidatorStakingPositionFunc *IValidatorPoolGetValidatorStakingPositionFunc
 	// GetValidatorsAddressesFunc is an instance of a mock function object
 	// controlling the behavior of the method GetValidatorsAddresses.
 	GetValidatorsAddressesFunc *IValidatorPoolGetValidatorsAddressesFunc
@@ -39328,6 +39332,17 @@ func NewMockIValidatorPool() *MockIValidatorPool {
 		},
 		GetValidatorDataFunc: &IValidatorPoolGetValidatorDataFunc{
 			defaultHook: func(*bind.CallOpts, *big.Int) (r0 bindings.ValidatorData, r1 error) {
+				return
+			},
+		},
+		GetValidatorStakingPositionFunc: &IValidatorPoolGetValidatorStakingPositionFunc{
+			defaultHook: func(*bind.CallOpts, *big.Int) (r0 struct {
+				Shares            *big.Int
+				FreeAfter         *big.Int
+				WithdrawFreeAfter *big.Int
+				AccumulatorEth    *big.Int
+				AccumulatorToken  *big.Int
+			}, r1 error) {
 				return
 			},
 		},
@@ -39633,6 +39648,17 @@ func NewStrictMockIValidatorPool() *MockIValidatorPool {
 				panic("unexpected invocation of MockIValidatorPool.GetValidatorData")
 			},
 		},
+		GetValidatorStakingPositionFunc: &IValidatorPoolGetValidatorStakingPositionFunc{
+			defaultHook: func(*bind.CallOpts, *big.Int) (struct {
+				Shares            *big.Int
+				FreeAfter         *big.Int
+				WithdrawFreeAfter *big.Int
+				AccumulatorEth    *big.Int
+				AccumulatorToken  *big.Int
+			}, error) {
+				panic("unexpected invocation of MockIValidatorPool.GetValidatorStakingPosition")
+			},
+		},
 		GetValidatorsAddressesFunc: &IValidatorPoolGetValidatorsAddressesFunc{
 			defaultHook: func(*bind.CallOpts) ([]common.Address, error) {
 				panic("unexpected invocation of MockIValidatorPool.GetValidatorsAddresses")
@@ -39897,6 +39923,9 @@ func NewMockIValidatorPoolFrom(i bindings.IValidatorPool) *MockIValidatorPool {
 		},
 		GetValidatorDataFunc: &IValidatorPoolGetValidatorDataFunc{
 			defaultHook: i.GetValidatorData,
+		},
+		GetValidatorStakingPositionFunc: &IValidatorPoolGetValidatorStakingPositionFunc{
+			defaultHook: i.GetValidatorStakingPosition,
 		},
 		GetValidatorsAddressesFunc: &IValidatorPoolGetValidatorsAddressesFunc{
 			defaultHook: i.GetValidatorsAddresses,
@@ -42087,6 +42116,184 @@ func (c IValidatorPoolGetValidatorDataFuncCall) Args() []interface{} {
 // Results returns an interface slice containing the results of this
 // invocation.
 func (c IValidatorPoolGetValidatorDataFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
+}
+
+// IValidatorPoolGetValidatorStakingPositionFunc describes the behavior when
+// the GetValidatorStakingPosition method of the parent MockIValidatorPool
+// instance is invoked.
+type IValidatorPoolGetValidatorStakingPositionFunc struct {
+	defaultHook func(*bind.CallOpts, *big.Int) (struct {
+		Shares            *big.Int
+		FreeAfter         *big.Int
+		WithdrawFreeAfter *big.Int
+		AccumulatorEth    *big.Int
+		AccumulatorToken  *big.Int
+	}, error)
+	hooks []func(*bind.CallOpts, *big.Int) (struct {
+		Shares            *big.Int
+		FreeAfter         *big.Int
+		WithdrawFreeAfter *big.Int
+		AccumulatorEth    *big.Int
+		AccumulatorToken  *big.Int
+	}, error)
+	history []IValidatorPoolGetValidatorStakingPositionFuncCall
+	mutex   sync.Mutex
+}
+
+// GetValidatorStakingPosition delegates to the next hook function in the
+// queue and stores the parameter and result values of this invocation.
+func (m *MockIValidatorPool) GetValidatorStakingPosition(v0 *bind.CallOpts, v1 *big.Int) (struct {
+	Shares            *big.Int
+	FreeAfter         *big.Int
+	WithdrawFreeAfter *big.Int
+	AccumulatorEth    *big.Int
+	AccumulatorToken  *big.Int
+}, error) {
+	r0, r1 := m.GetValidatorStakingPositionFunc.nextHook()(v0, v1)
+	m.GetValidatorStakingPositionFunc.appendCall(IValidatorPoolGetValidatorStakingPositionFuncCall{v0, v1, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the
+// GetValidatorStakingPosition method of the parent MockIValidatorPool
+// instance is invoked and the hook queue is empty.
+func (f *IValidatorPoolGetValidatorStakingPositionFunc) SetDefaultHook(hook func(*bind.CallOpts, *big.Int) (struct {
+	Shares            *big.Int
+	FreeAfter         *big.Int
+	WithdrawFreeAfter *big.Int
+	AccumulatorEth    *big.Int
+	AccumulatorToken  *big.Int
+}, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// GetValidatorStakingPosition method of the parent MockIValidatorPool
+// instance invokes the hook at the front of the queue and discards it.
+// After the queue is empty, the default hook function is invoked for any
+// future action.
+func (f *IValidatorPoolGetValidatorStakingPositionFunc) PushHook(hook func(*bind.CallOpts, *big.Int) (struct {
+	Shares            *big.Int
+	FreeAfter         *big.Int
+	WithdrawFreeAfter *big.Int
+	AccumulatorEth    *big.Int
+	AccumulatorToken  *big.Int
+}, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *IValidatorPoolGetValidatorStakingPositionFunc) SetDefaultReturn(r0 struct {
+	Shares            *big.Int
+	FreeAfter         *big.Int
+	WithdrawFreeAfter *big.Int
+	AccumulatorEth    *big.Int
+	AccumulatorToken  *big.Int
+}, r1 error) {
+	f.SetDefaultHook(func(*bind.CallOpts, *big.Int) (struct {
+		Shares            *big.Int
+		FreeAfter         *big.Int
+		WithdrawFreeAfter *big.Int
+		AccumulatorEth    *big.Int
+		AccumulatorToken  *big.Int
+	}, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *IValidatorPoolGetValidatorStakingPositionFunc) PushReturn(r0 struct {
+	Shares            *big.Int
+	FreeAfter         *big.Int
+	WithdrawFreeAfter *big.Int
+	AccumulatorEth    *big.Int
+	AccumulatorToken  *big.Int
+}, r1 error) {
+	f.PushHook(func(*bind.CallOpts, *big.Int) (struct {
+		Shares            *big.Int
+		FreeAfter         *big.Int
+		WithdrawFreeAfter *big.Int
+		AccumulatorEth    *big.Int
+		AccumulatorToken  *big.Int
+	}, error) {
+		return r0, r1
+	})
+}
+
+func (f *IValidatorPoolGetValidatorStakingPositionFunc) nextHook() func(*bind.CallOpts, *big.Int) (struct {
+	Shares            *big.Int
+	FreeAfter         *big.Int
+	WithdrawFreeAfter *big.Int
+	AccumulatorEth    *big.Int
+	AccumulatorToken  *big.Int
+}, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *IValidatorPoolGetValidatorStakingPositionFunc) appendCall(r0 IValidatorPoolGetValidatorStakingPositionFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of
+// IValidatorPoolGetValidatorStakingPositionFuncCall objects describing the
+// invocations of this function.
+func (f *IValidatorPoolGetValidatorStakingPositionFunc) History() []IValidatorPoolGetValidatorStakingPositionFuncCall {
+	f.mutex.Lock()
+	history := make([]IValidatorPoolGetValidatorStakingPositionFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// IValidatorPoolGetValidatorStakingPositionFuncCall is an object that
+// describes an invocation of method GetValidatorStakingPosition on an
+// instance of MockIValidatorPool.
+type IValidatorPoolGetValidatorStakingPositionFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 *bind.CallOpts
+	// Arg1 is the value of the 2nd argument passed to this method
+	// invocation.
+	Arg1 *big.Int
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 struct {
+		Shares            *big.Int
+		FreeAfter         *big.Int
+		WithdrawFreeAfter *big.Int
+		AccumulatorEth    *big.Int
+		AccumulatorToken  *big.Int
+	}
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c IValidatorPoolGetValidatorStakingPositionFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0, c.Arg1}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c IValidatorPoolGetValidatorStakingPositionFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 

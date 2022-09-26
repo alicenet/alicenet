@@ -453,12 +453,12 @@ abstract contract ImmutableValidatorStaking is ImmutableFactory {
 
 abstract contract ImmutableValidatorVault is ImmutableFactory {
     address private immutable _validatorVault;
+    error OnlyValidatorVault(address sender, address expected);
 
     modifier onlyValidatorVault() {
-        require(
-            msg.sender == _validatorVault,
-            string(abi.encodePacked(ImmutableAuthErrorCodes.IMMUTEABLEAUTH_ONLY_VALIDATORVAULT))
-        );
+        if (msg.sender != _validatorVault) {
+            revert OnlyValidatorVault(msg.sender, _validatorVault);
+        }
         _;
     }
 

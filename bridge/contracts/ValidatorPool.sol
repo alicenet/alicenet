@@ -51,14 +51,9 @@ contract ValidatorPool is
     }
 
     modifier onlyFactoryOrValidatorVault() {
-        require(
-            msg.sender == _factoryAddress() || msg.sender == _validatorVaultAddress(),
-            string(
-                abi.encodePacked(
-                    ValidatorPoolErrorCodes.VALIDATORPOOL_CALLER_NOT_FACTORY_NOR_VALIDATOR_VAULT
-                )
-            )
-        );
+        if (msg.sender != _factoryAddress() && msg.sender != _validatorVaultAddress()) {
+            revert ValidatorPoolErrors.OnlyFactoryOrValidatorVaultAllowed();
+        }
         _;
     }
 
@@ -128,11 +123,10 @@ contract ValidatorPool is
      * the contract factory.
      * @param stakeAmount_ the new minimum stake amount to become a validator.
      */
-    function setStakeAmount(uint256 stakeAmount_) public onlyFactory {
-        require(
-            stakeAmount_ > 0,
-            string(abi.encodePacked(ValidatorPoolErrorCodes.VALIDATORPOOL_INVALID_STAKE_AMOUNT))
-        );
+    function setStakeAmount(uint256 stakeAmount_) public onlyFactoryOrValidatorVault {
+        if (stakeAmount_ == 0) {
+            revert ValidatorPoolErrors.StakeAmountMustBeNonZero();
+        }
         _stakeAmount = stakeAmount_;
     }
 

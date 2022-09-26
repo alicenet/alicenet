@@ -27,4 +27,6 @@ library ValidatorPoolErrors {
     error AddressNotValidator(address addr);
     error PayoutTooLow();
     error InsufficientFundsInStakePosition(uint256 stakeAmount, uint256 minimumRequiredAmount);
+    error OnlyFactoryOrValidatorVaultAllowed();
+    error StakeAmountMustBeNonZero();
 }

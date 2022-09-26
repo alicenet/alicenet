@@ -224,6 +224,7 @@ var FunctionMapping = map[[4]byte]string{
 	{114, 37, 128, 182}:  "ValidatorPool.getStakeAmount()",
 	{181, 216, 150, 39}:  "ValidatorPool.getValidator(uint256)",
 	{192, 149, 20, 81}:   "ValidatorPool.getValidatorData(uint256)",
+	{4, 81, 61, 69}:      "ValidatorPool.getValidatorStakingPosition(uint256)",
 	{156, 125, 137, 97}:  "ValidatorPool.getValidatorsAddresses()",
 	{39, 73, 130, 64}:    "ValidatorPool.getValidatorsCount()",
 	{96, 162, 218, 68}:   "ValidatorPool.initialize(uint256,uint256,uint256,uint256)",

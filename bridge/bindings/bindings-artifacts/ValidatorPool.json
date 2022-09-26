@@ -276,6 +276,11 @@
     "type": "error"
   },
   {
+    "inputs": [],
+    "name": "OnlyFactoryOrValidatorVaultAllowed",
+    "type": "error"
+  },
+  {
     "inputs": [
       {
         "internalType": "address",
@@ -329,6 +334,22 @@
     "type": "error"
   },
   {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "sender",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "expected",
+        "type": "address"
+      }
+    ],
+    "name": "OnlyValidatorVault",
+    "type": "error"
+  },
+  {
     "inputs": [],
     "name": "PayoutTooLow",
     "type": "error"
@@ -374,6 +395,11 @@
       }
     ],
     "name": "SenderShouldOwnPosition",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "StakeAmountMustBeNonZero",
     "type": "error"
   },
   {
@@ -698,6 +724,45 @@
         "internalType": "struct ValidatorData",
         "name": "",
         "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "tokenID",
+        "type": "uint256"
+      }
+    ],
+    "name": "getValidatorStakingPosition",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "shares",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "freeAfter",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "withdrawFreeAfter",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "accumulatorEth",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "accumulatorToken",
+        "type": "uint256"
       }
     ],
     "stateMutability": "view",
