@@ -379,7 +379,7 @@ func RewardDepositEquation(deposit *uint256.Uint256, dataSize32, epochInitial, e
 //
 // The simple equation is
 //
-//	deposit = (dataSize + BaseDatasizeConst) * (2 + numEpochs)
+//		deposit = (dataSize + BaseDatasizeConst) * (2 + numEpochs)
 func BaseDepositEquation(dataSize32, numEpochs32 uint32) (*uint256.Uint256, error) {
 	if dataSize32 > constants.MaxDataStoreSize {
 		// dataSize is too large so we do not perform any checks
@@ -397,7 +397,7 @@ func BaseDepositEquation(dataSize32, numEpochs32 uint32) (*uint256.Uint256, erro
 //
 // The simple equation is
 //
-//	numEpochs = (deposit / (dataSize + BaseDatasizeConst)) - 2
+// 		numEpochs = (deposit / (dataSize + BaseDatasizeConst)) - 2
 //
 // We have additional checks to ensure there is no integer overflow.
 func NumEpochsEquation(dataSize32 uint32, deposit *uint256.Uint256) (uint32, error) {
