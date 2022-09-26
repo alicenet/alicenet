@@ -727,6 +727,9 @@ contract ValidatorPool is
         uint256 vaultAmount = IValidatorVault(_validatorVaultAddress()).withdrawStake(
             validatorTokenID
         );
+        // since minerShares is included in the payoutToken variable we need to sum the
+        // vault amount in both variables. Miner shares will be deducted from payout
+        // token in the higher level functions.
         minerShares += vaultAmount;
         payoutToken += vaultAmount;
     }
