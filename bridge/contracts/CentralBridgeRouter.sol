@@ -48,7 +48,7 @@ contract CentralBridgeRouter is ImmutableFactory, ImmutableBToken {
 
     function addRouter(address newRouterAddress_) public onlyFactory {
         uint16 version = _routerVersions + 1;
-        _routerConfig[version] = RouterConfig(newRouterAddress_, true);
+        _routerConfig[version] = RouterConfig(newRouterAddress_, false);
         //update routerVersions tracker
         _routerVersions = version;
     }
