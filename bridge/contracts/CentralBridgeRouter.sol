@@ -3,9 +3,11 @@ pragma solidity ^0.8.16;
 
 import "contracts/utils/ImmutableAuth.sol";
 import "contracts/interfaces/IBridgePoolRouter.sol";
+import "contracts/interfaces/ICentralBridgeRouter.sol";
 import "contracts/libraries/errors/CentralBridgeRouterErrors.sol";
 
-contract CentralBridgeRouter is ImmutableFactory, ImmutableBToken {
+
+contract CentralBridgeRouter is ICentralBridgeRouter ,ImmutableFactory, ImmutableBToken {
     struct RouterConfig {
         address routerAddress;
         bool notOnline;
@@ -38,11 +40,13 @@ contract CentralBridgeRouter is ImmutableFactory, ImmutableBToken {
             msgSender_,
             depositData_
         );
-        IBridgePoolRouter.DepositReturnData memory returnData = abi.decode(
+        DepositReturnData memory returnData = abi.decode(
             returnDataBytes,
-            (IBridgePoolRouter.DepositReturnData)
+            (DepositReturnData)
         );
+        returnData.logData = abi.encode(returnData.logData, _nonce);
         _emitDepositEvent(returnData.topics, returnData.logData);
+        _nonce += 1;
         fee = returnData.fee;
     }
 
