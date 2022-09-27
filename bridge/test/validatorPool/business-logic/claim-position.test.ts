@@ -1,3 +1,4 @@
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BigNumber, Signer } from "ethers";
 import { ethers } from "hardhat";
@@ -27,13 +28,28 @@ describe("ValidatorPool: Claiming logic", async () => {
   let admin: SignerWithAddress;
   let adminSigner: Signer;
 
+  async function deployFixture() {
+    const fixture = await getFixture(false, true, true);
+    const [admin, , ,] = fixture.namedSigners;
+    const adminSigner = await getValidatorEthAccount(admin.address);
+    const validators = await createValidators(fixture, validatorsSnapshots);
+    const stakingTokenIds = await stakeValidators(fixture, validators);
+    const stakeAmount = (
+      await fixture.validatorPool.getStakeAmount()
+    ).toBigInt();
+    return {
+      fixture,
+      stakeAmount,
+      validators,
+      stakingTokenIds,
+      admin,
+      adminSigner,
+    };
+  }
+
   beforeEach(async function () {
-    fixture = await getFixture(false, true, true);
-    [admin, , ,] = fixture.namedSigners;
-    adminSigner = await getValidatorEthAccount(admin.address);
-    validators = await createValidators(fixture, validatorsSnapshots);
-    stakingTokenIds = await stakeValidators(fixture, validators);
-    stakeAmount = (await fixture.validatorPool.getStakeAmount()).toBigInt();
+    ({ fixture, stakeAmount, validators, stakingTokenIds, admin, adminSigner } =
+      await loadFixture(deployFixture));
   });
 
   it("Should successfully claim exiting NFT positions of all validators", async function () {

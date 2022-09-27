@@ -1,3 +1,4 @@
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { assert, expect } from "chai";
 import { InvalidTxConsumptionAccusation } from "../../typechain-types";
 import { Fixture, getFixture } from "../setup";
@@ -9,14 +10,16 @@ import {
   getValidAccusationDataForNonExistentUTXOChainId2,
   getValidAccusationDataForNonExistentUTXOWithInvalidHeight,
 } from "./accusations-test-helpers";
-
 describe("InvalidTxConsumptionAccusation: Tests InvalidTxConsumptionAccusation methods", async () => {
   let fixture: Fixture;
 
   let accusation: InvalidTxConsumptionAccusation;
+  function deployFixture() {
+    return getFixture(true, true);
+  }
 
   beforeEach(async function () {
-    fixture = await getFixture(true, true);
+    fixture = await loadFixture(deployFixture);
 
     accusation = fixture.invalidTxConsumptionAccusation;
   });

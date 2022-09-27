@@ -1,3 +1,4 @@
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { BigNumber, BytesLike } from "ethers";
 import { ethers, network } from "hardhat";
 import {
@@ -11,7 +12,7 @@ describe("Contract Initialization", () => {
   let fixture: Fixture;
 
   beforeEach(async function () {
-    fixture = await getFixture();
+    fixture = await loadFixture(getFixture);
   });
 
   it("Should not allow initialize more than once", async () => {

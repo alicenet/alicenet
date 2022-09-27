@@ -1,14 +1,21 @@
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
 import { SnapshotsRingBufferMock } from "../../typechain-types";
 import { signedData1 } from "../snapshots/assets/4-validators-snapshots-100-Group1";
 describe("Ring Buffer Library", async () => {
   let ringBuffer: SnapshotsRingBufferMock;
-  beforeEach(async () => {
+
+  async function deployFixture() {
     const ringBufferBase = await ethers.getContractFactory(
       "SnapshotsRingBufferMock"
     );
-    ringBuffer = await ringBufferBase.deploy();
+    const ringBuffer = await ringBufferBase.deploy();
+    return { ringBuffer };
+  }
+
+  beforeEach(async () => {
+    ({ ringBuffer } = await loadFixture(deployFixture));
   });
 
   it("sets the epoch", async () => {
