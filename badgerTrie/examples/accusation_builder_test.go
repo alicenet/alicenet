@@ -637,7 +637,6 @@ func TestGenerateAccusations(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		log.Printf("Block hash: %x", blockHash)
 		blockHshLst = append(blockHshLst, blockHash)
 	}
 	headerRootSMT, headerRoot, err := MakePersistentHeaderRoot(db.NewTransaction(true), blockHshLst) // generating the smt root

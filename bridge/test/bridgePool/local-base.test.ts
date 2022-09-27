@@ -1,30 +1,24 @@
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { Contract } from "ethers";
 import { defaultAbiCoder } from "ethers/lib/utils";
 import { ethers } from "hardhat";
-import { IBridgePool } from "../../typechain-types";
-import { addValidators, getValidAccusationDataForNonExistentUTXO } from "../accusations/accusations-test-helpers";
 import { expect } from "../chai-setup";
 
 import { deployUpgradeableWithFactory, Fixture, getFixture } from "../setup";
 import {
-  getEncodedBurnedUTXO,
-  getMockBlockClaimsForStateRoot,
-  getWithdrawParameters,
-  getWithdrawParameters2,
-  merkleProof,
-  stateRoot,
-  wrongMerkleProof,
+  getMockBlockClaimsForSnapshot,
+  proofs,
+  txInPreImage,
+  wrongProofs,
 } from "./setup";
 
 let fixture: Fixture;
 let user: SignerWithAddress;
 let user2: SignerWithAddress;
 let merkleProofLibraryErrors: Contract;
-let localERCBridgePoolBase: Contract;
-let encodedBurnedUTXO: string;
-let bridgePool: any;
-const withdrawParameters = getWithdrawParameters2();
+let localERCBridgePool: Contract;
+let localERCBridgePoolBaseErrors: Contract;
 const tokenId = 0;
 const tokenAmount = 0;
 const encodedDepositParameters = defaultAbiCoder.encode(
@@ -36,99 +30,77 @@ const encodedDepositParameters = defaultAbiCoder.encode(
     },
   ]
 );
+const encodedMockBlockClaims = getMockBlockClaimsForSnapshot();
+
+async function deployFixture() {
+  fixture = await getFixture(true, true, false);
+  [, user, user2] = await ethers.getSigners();
+  // Take a mock snapshot
+  await fixture.snapshots.snapshot(Buffer.from("0x0"), encodedMockBlockClaims);
+  merkleProofLibraryErrors = await (
+    await (await ethers.getContractFactory("MerkleProofLibraryErrors")).deploy()
+  ).deployed();
+  localERCBridgePoolBaseErrors = await (
+    await (
+      await ethers.getContractFactory("LocalERCBridgePoolBaseErrors")
+    ).deploy()
+  ).deployed();
+  localERCBridgePool = await deployUpgradeableWithFactory(
+    fixture.factory,
+    "LocalERCBridgePoolMock",
+    "LocalERCBridgePoolMock",
+    undefined,
+    undefined,
+    undefined,
+    false
+  );
+
+  return {
+    fixture,
+    user,
+    user2,
+    merkleProofLibraryErrors,
+    localERCBridgePool,
+    localERCBridgePoolBaseErrors,
+  };
+}
+
+beforeEach(async function () {
+  ({
+    fixture,
+    user,
+    user2,
+    merkleProofLibraryErrors,
+    localERCBridgePool,
+    localERCBridgePoolBaseErrors,
+  } = await loadFixture(deployFixture));
+});
 
 describe("Testing Base BridgePool Deposit/Withdraw", async () => {
-  beforeEach(async () => {
-    [, user, user2] = await ethers.getSigners();
-    fixture = await getFixture(true, true, false);
-    const encodedMockBlockClaims = getMockBlockClaimsForStateRoot(stateRoot);
-    // Take a mock snapshot
-    await fixture.snapshots.snapshot(
-      Buffer.from("0x0"),
-      encodedMockBlockClaims
-    );
-    merkleProofLibraryErrors = await (
-      await (
-        await ethers.getContractFactory("MerkleProofLibraryErrors")
-      ).deploy()
-    ).deployed();
-    localERCBridgePoolBase = await deployUpgradeableWithFactory(
-      fixture.factory,
-      "LocalERCBridgePoolMock",
-      "LocalERCBridgePoolMock",
-      undefined,
-      undefined,
-      undefined,
-      false
-    );
-    encodedBurnedUTXO = getEncodedBurnedUTXO(
-      user.address,
-      tokenId,
-      tokenAmount
-    );
-    bridgePool = localERCBridgePoolBase as IBridgePool;
-  });
-
   it("Should call a deposit", async () => {
-    await localERCBridgePoolBase.deposit(
-      user.address,
-      encodedDepositParameters
+    await localERCBridgePool.deposit(user.address, encodedDepositParameters);
+  });
+
+  it("Should call a withdraw upon proofs verification", async () => {
+    await localERCBridgePool.connect(user).withdraw(txInPreImage, proofs);
+  });
+
+  it("Should not call a withdraw on an already withdrawn UTXO upon proofs verification", async () => {
+    await localERCBridgePool.connect(user).withdraw(txInPreImage, proofs);
+    await expect(
+      localERCBridgePool.connect(user).withdraw(txInPreImage, proofs)
+    ).to.be.revertedWithCustomError(
+      localERCBridgePoolBaseErrors,
+      "UTXOAlreadyWithdrawn"
     );
   });
 
-  it("Should call a withdraw for amount specified on informed burned UTXO upon proof verification", async () => {
-     await localERCBridgePoolBase
-      .connect(user)
-      .withdraw(withdrawParameters.bClaims, withdrawParameters.bClaimsSigGroup, withdrawParameters.txInPreImage, withdrawParameters.proofs);
-  });
-
-  it.only("Should not call a withdraw for amount specified on informed burned UTXO upon proof verification", async () => {
-    await localERCBridgePoolBase
-     .connect(user)
-     .withdraw(withdrawParameters.bClaims, withdrawParameters.bClaimsSigGroup, withdrawParameters.txInPreImage, withdrawParameters.proofs);
-     await localERCBridgePoolBase
-     .connect(user)
-     .withdraw(withdrawParameters.bClaims, withdrawParameters.bClaimsSigGroup, withdrawParameters.txInPreImage, withdrawParameters.proofs);
- });
-
-  it("Should not call a withdraw for amount specified on informed burned UTXO with wrong merkle proof", async () => {
+  it("Should not call a withdraw with wrong proof", async () => {
     await expect(
-      localERCBridgePoolBase
-        .connect(user)
-        .withdraw(encodedBurnedUTXO, wrongMerkleProof)
+      localERCBridgePool.connect(user).withdraw(txInPreImage, wrongProofs)
     ).to.be.revertedWithCustomError(
       merkleProofLibraryErrors,
       "ProofDoesNotMatchTrieRoot"
-    );
-  });
-
-  it("Should not call a withdraw for amount specified on informed burned UTXO with wrong root", async () => {
-    const wrongStateRoot =
-      "0x0000000000000000000000000000000000000000000000000000000000000000";
-    const encodedMockBlockClaims =
-      getMockBlockClaimsForStateRoot(wrongStateRoot);
-    await fixture.snapshots.snapshot(
-      Buffer.from("0x0"),
-      encodedMockBlockClaims
-    );
-    await expect(
-      localERCBridgePoolBase
-        .connect(user)
-        .withdraw(encodedBurnedUTXO, merkleProof)
-    ).to.be.revertedWithCustomError(
-      merkleProofLibraryErrors,
-      "ProofDoesNotMatchTrieRoot"
-    );
-  });
-
-  it("Should not call a withdraw to an address that is not the owner in informed burned UTXO", async () => {
-    await expect(
-      localERCBridgePoolBase
-        .connect(user2)
-        .withdraw(encodedBurnedUTXO, merkleProof)
-    ).to.be.revertedWithCustomError(
-      bridgePool,
-      "ReceiverIsNotOwnerOnProofOfBurnUTXO"
     );
   });
 });
