@@ -34,7 +34,7 @@ abstract contract AliceNetFactoryBase is DeterministicAddress, ProxyUpgrader {
     address private _implementation;
 
     address private immutable _proxyTemplate;
-    // address private immutable _ERC20LocalPoolClone;
+
     bytes8 private constant _UNIVERSAL_DEPLOY_CODE = 0x38585839386009f3;
 
     mapping(bytes32 => ContractInfo) internal _externalContractRegistry;
@@ -69,7 +69,6 @@ abstract contract AliceNetFactoryBase is DeterministicAddress, ProxyUpgrader {
             type(Proxy).creationCode,
             bytes32(uint256(uint160(address(this))))
         );
-
         //variable to store the address created from create(the location of the proxy template contract)
         address addr;
         assembly {
@@ -82,7 +81,6 @@ abstract contract AliceNetFactoryBase is DeterministicAddress, ProxyUpgrader {
                 revert(0x00, returndatasize())
             }
         }
-        // abi.encodePacked(_UNIVERSAL_DEPLOY_CODE, 0x363d3d373d3d3d363d73)
         //State var that stores the proxyTemplate address
         _proxyTemplate = addr;
         //State var that stores the _owner address

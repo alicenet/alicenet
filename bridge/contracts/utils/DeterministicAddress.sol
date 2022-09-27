@@ -26,5 +26,4 @@ abstract contract DeterministicAddress {
                 )
             );
     }
-
 }
