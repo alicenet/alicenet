@@ -35,9 +35,31 @@ func TestNoInvalidUTXOConsumptionBehavior(t *testing.T) {
 	//crypto.GetAccount(senderPubkey)
 
 	consDB := setupInvalidUTXOConsumptionAccusationTest(t)
-	rs := GenerateAccusationsForInvalidUTXO(t, consDB)
+	rs := GenerateNoInvalidUTXOAccusationScenario(t, consDB)
 	task, found := detectInvalidUTXOConsumption(rs, nil, consDB)
 
 	assert.False(t, found)
 	assert.Nil(t, task)
 }
+
+func TestInvalidUTXOConsumptionBehavior(t *testing.T) {
+	//crypto.GetAccount(senderPubkey)
+
+	consDB := setupInvalidUTXOConsumptionAccusationTest(t)
+	rs := GenerateNonExistentUTXOAccusationScenario(t, consDB)
+	task, found := detectInvalidUTXOConsumption(rs, nil, consDB)
+
+	assert.True(t, found)
+	assert.NotNil(t, task)
+}
+
+// func TestAlreadySpentDepositBehavior(t *testing.T) {
+// 	//crypto.GetAccount(senderPubkey)
+
+// 	consDB := setupInvalidUTXOConsumptionAccusationTest(t)
+// 	rs := GenerateAlreadySpentDepositAccusationScenario(t, consDB)
+// 	task, found := detectInvalidUTXOConsumption(rs, nil, consDB)
+
+// 	assert.True(t, found)
+// 	assert.NotNil(t, task)
+// }

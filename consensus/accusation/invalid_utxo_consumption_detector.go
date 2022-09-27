@@ -53,10 +53,6 @@ func detectInvalidUTXOConsumption(rs *objs.RoundState, lrs *lstate.RoundStates, 
 				return err
 			}
 
-			// utxoIDs, err := tx.Vin.UTXOID()
-			// if err != nil {
-			// 	return err
-			// }
 			var vins []*aobjs.TXIn = tx.Vin
 
 			for _, vin := range vins {
@@ -66,17 +62,15 @@ func detectInvalidUTXOConsumption(rs *objs.RoundState, lrs *lstate.RoundStates, 
 					return err
 				}
 
-				// check utxo id against state tree
-				mProof, _, err := db.GetTransactionProof(txn, utxoID)
-
+				mStateRootProof, err := getStateMerkleProofs(txn, utxoID, logger)
 				if err != nil {
-					logger.Warnf("error getting transaction proof: %v", err)
+					logger.Warnf("error getting merkel proof against state root: %v", err)
 					return err
 				}
 
-				// if exists: continue, all is fine
-				// else: get proof of exclusion - BOOM
-				if !mProof.Included {
+				// if utxoID is included in state trie then continue bc all is fine
+				// else generate proof of non-inclusion and accuse
+				if !mStateRootProof.Included {
 					pClaimsBin, err := rs.Proposal.PClaims.MarshalBinary()
 					if err != nil {
 						logger.Warnf("error marshalling PClaims: %v", err)
@@ -97,15 +91,8 @@ func detectInvalidUTXOConsumption(rs *objs.RoundState, lrs *lstate.RoundStates, 
 					}
 
 					var proofs [3][]byte
-					proofs[0] = nil
-					proofs[1] = nil
-					proofs[2] = nil
+
 					// proofs[0] = proofAgainstStateRoot
-					mStateRootProof, err := getStateMerkleProofs(txn, utxoID, logger)
-					if err != nil {
-						logger.Warnf("error getting merkel proof against state root: %v", err)
-						return err
-					}
 					proofs[0], err = mStateRootProof.MarshalBinary()
 					if err != nil {
 						logger.Warnf("error marshalling merkel proof against state root: %v", err)
@@ -136,6 +123,7 @@ func detectInvalidUTXOConsumption(rs *objs.RoundState, lrs *lstate.RoundStates, 
 						return err
 					}
 
+					// prepare accusation task
 					accusation = accusations.NewInvalidUTXOConsumptionAccusationTask(
 						pClaimsBin,
 						rs.Proposal.Signature,
@@ -147,7 +135,6 @@ func detectInvalidUTXOConsumption(rs *objs.RoundState, lrs *lstate.RoundStates, 
 
 					return nil
 				}
-
 			}
 
 			if err != nil {
@@ -159,9 +146,8 @@ func detectInvalidUTXOConsumption(rs *objs.RoundState, lrs *lstate.RoundStates, 
 		})
 
 		if err != nil {
-			logger.Warnf("error processing vins: %v", err)
-			// todo: continue or exit checking?
-			// continue
+			logger.Warnf("error processing txHashes: %v", err)
+			// continue and find what we can
 		}
 	}
 

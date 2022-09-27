@@ -569,19 +569,6 @@ func (db *Database) GetCommittedBlockHeaderWithProof(txn *badger.Txn, root []byt
 	return hdr, proof, nil
 }
 
-func (db *Database) GetTransactionProof(txn *badger.Txn, txHash []byte) (*MerkleProof, []byte, error) {
-	rootHash, err := db.GetHeaderRootForProposal(txn)
-	if err != nil {
-		if err != badger.ErrKeyNotFound {
-			return nil, nil, err
-		}
-		rootHash = nil
-	}
-
-	return db.trie.GetTransactionProof(txn, rootHash, txHash)
-
-}
-
 func (db *Database) GetCommittedBlockHeader(txn *badger.Txn, height uint32) (*objs.BlockHeader, error) {
 	key, err := db.makeCommittedBlockHeaderKey(height)
 	if err != nil {
