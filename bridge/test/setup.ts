@@ -34,7 +34,6 @@ import {
   ValidatorStaking,
 } from "../typechain-types";
 import { ValidatorRawData } from "./ethdkg/setup";
-import { deployFactory } from "./factory/Setup";
 
 export const PLACEHOLDER_ADDRESS = "0x0000000000000000000000000000000000000000";
 
