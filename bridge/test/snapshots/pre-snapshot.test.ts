@@ -1,3 +1,4 @@
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { Signer } from "ethers";
 import { ethers } from "hardhat";
@@ -12,9 +13,7 @@ import { validatorsSnapshots } from "./assets/4-validators-snapshots-1";
 
 describe("Snapshots: Tests Snapshots methods", () => {
   let fixture: Fixture;
-  let admin: SignerWithAddress;
   let randomUser: SignerWithAddress;
-  let adminSigner: Signer;
   let randomSigner: Signer;
   const stakeAmount = 20000;
   const stakeAmountATokenWei = ethers.utils.parseUnits(
@@ -22,16 +21,14 @@ describe("Snapshots: Tests Snapshots methods", () => {
     18
   );
   const lockTime = 1;
-  let validators: any[];
-  let stakingTokenIds: any[];
 
-  beforeEach(async function () {
-    validators = [];
-    stakingTokenIds = [];
-    fixture = await getFixture(true, false);
-    [admin, , , , , randomUser] = fixture.namedSigners;
-    adminSigner = await getValidatorEthAccount(admin.address);
-    randomSigner = await getValidatorEthAccount(randomUser.address);
+  async function deployFixture() {
+    const validators = [];
+    const stakingTokenIds = [];
+    const fixture = await getFixture(true, false);
+    const [admin, , , , , randomUser] = fixture.namedSigners;
+    const adminSigner = await getValidatorEthAccount(admin.address);
+    const randomSigner = await getValidatorEthAccount(randomUser.address);
 
     for (const validator of validatorsSnapshots) {
       validators.push(validator.address);
@@ -60,6 +57,20 @@ describe("Snapshots: Tests Snapshots methods", () => {
     await fixture.validatorPool
       .connect(adminSigner)
       .registerValidators(validators, stakingTokenIds);
+
+    return {
+      fixture,
+      admin,
+      randomUser,
+      adminSigner,
+      randomSigner,
+      validators,
+      stakingTokenIds,
+    };
+  }
+
+  beforeEach(async function () {
+    ({ fixture, randomUser, randomSigner } = await loadFixture(deployFixture));
   });
 
   it("Does not allow snapshot if sender is not validator", async function () {

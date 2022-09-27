@@ -1,3 +1,4 @@
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BigNumber, BytesLike, ContractTransaction } from "ethers";
 import { ethers, expect } from "hardhat";
@@ -41,7 +42,7 @@ describe("Testing splits settings update", async () => {
   let admin: SignerWithAddress;
 
   beforeEach(async function () {
-    fixture = await getFixture();
+    fixture = await loadFixture(getFixture);
     [admin] = await ethers.getSigners();
     showState("Initial", await getState(fixture));
   });

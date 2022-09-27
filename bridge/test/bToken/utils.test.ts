@@ -1,3 +1,4 @@
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { ethers } from "hardhat";
 import { expect } from "../chai-setup";
 import { Fixture, getFixture } from "../setup";
@@ -7,7 +8,7 @@ describe("Testing BToken Utils methods", async () => {
   let fixture: Fixture;
 
   beforeEach(async function () {
-    fixture = await getFixture();
+    fixture = await loadFixture(getFixture);
     showState("Initial", await getState(fixture));
   });
 

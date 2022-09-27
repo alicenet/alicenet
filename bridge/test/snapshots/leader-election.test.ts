@@ -1,3 +1,4 @@
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { expect } from "chai";
 import { Snapshots } from "../../typechain-types/contracts/Snapshots";
 import { getFixture } from "../setup";
@@ -12,7 +13,7 @@ describe("Snapshots: MayValidatorSnapshot", () => {
   let mayValidatorSnapshot: Snapshots["mayValidatorSnapshot"];
 
   before(async () => {
-    const fixture = await getFixture();
+    const fixture = await loadFixture(getFixture);
     mayValidatorSnapshot = fixture.snapshots.mayValidatorSnapshot;
   });
 

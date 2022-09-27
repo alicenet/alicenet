@@ -610,6 +610,10 @@ export const completeETHDKG = async (
   }
 };
 
+function deployFixture() {
+  return getFixture(true);
+}
+
 export const startAtDistributeShares = async (
   validators: ValidatorRawData[],
   contracts?: {
@@ -618,7 +622,7 @@ export const startAtDistributeShares = async (
   }
 ): Promise<[ETHDKG, ValidatorPoolMock | ValidatorPool, number]> => {
   const { ethdkg, validatorPool } =
-    typeof contracts !== "undefined" ? contracts : await getFixture(true);
+    typeof contracts !== "undefined" ? contracts : await deployFixture();
   // add validators
   if ((<ValidatorPoolMock>validatorPool).isMock) {
     await addValidators(validatorPool, validators);

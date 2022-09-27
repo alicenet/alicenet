@@ -1,3 +1,4 @@
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { ethers } from "hardhat";
 import { ERC721ReceiverAccount } from "../../../typechain-types";
@@ -10,14 +11,20 @@ describe("PublicStaking: NFT transfer", async () => {
   let notAdminSigner: SignerWithAddress;
   let erc721ReceiverContract: ERC721ReceiverAccount;
 
-  beforeEach(async function () {
-    fixture = await getBaseTokensFixture();
-    [adminSigner, notAdminSigner] = await ethers.getSigners();
+  async function deployFixture() {
+    const fixture = await getBaseTokensFixture();
+    const [adminSigner, notAdminSigner] = await ethers.getSigners();
     await fixture.aToken.approve(fixture.publicStaking.address, 2000);
     await fixture.publicStaking.connect(adminSigner).mint(1000);
-    erc721ReceiverContract = await (
+    const erc721ReceiverContract = await (
       await ethers.getContractFactory("ERC721ReceiverAccount")
     ).deploy();
+    return { fixture, adminSigner, notAdminSigner, erc721ReceiverContract };
+  }
+
+  beforeEach(async function () {
+    ({ fixture, adminSigner, notAdminSigner, erc721ReceiverContract } =
+      await loadFixture(deployFixture));
   });
 
   it("Safe transfer Staking NFT position to user", async function () {

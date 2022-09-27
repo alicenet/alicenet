@@ -1,3 +1,4 @@
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BigNumberish } from "ethers";
 import { ethers } from "hardhat";
@@ -12,14 +13,26 @@ describe("ValidatorStaking: Tests ValidatorStaking Business Logic methods", asyn
   let amount: BigNumberish;
   let validatorPool: ValidatorPoolMock;
 
-  beforeEach(async function () {
-    fixture = await getFixture(true, true);
+  async function deployFixture() {
+    const fixture = await getFixture(true, true);
     const [admin, notAdmin] = fixture.namedSigners;
-    adminSigner = await ethers.getSigner(admin.address);
-    notAdminSigner = await ethers.getSigner(notAdmin.address);
-    validatorPool = fixture.validatorPool as ValidatorPoolMock;
-    amount = await validatorPool.getStakeAmount();
+    const adminSigner = await ethers.getSigner(admin.address);
+    const notAdminSigner = await ethers.getSigner(notAdmin.address);
+    const validatorPool = fixture.validatorPool as ValidatorPoolMock;
+    const amount = await validatorPool.getStakeAmount();
     await fixture.aToken.approve(validatorPool.address, amount);
+    return {
+      fixture,
+      adminSigner,
+      notAdminSigner,
+      validatorPool,
+      amount,
+    };
+  }
+
+  beforeEach(async function () {
+    ({ fixture, adminSigner, notAdminSigner, validatorPool, amount } =
+      await loadFixture(deployFixture));
   });
 
   it("Should mint a token and sender should be the payer and owner", async function () {
