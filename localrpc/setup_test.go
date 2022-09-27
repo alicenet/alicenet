@@ -129,8 +129,6 @@ func TestMain(m *testing.M) {
 		}
 	}()
 
-	go storage.Start()
-
 	consSync.Start()
 
 	time.Sleep(1 * time.Second)

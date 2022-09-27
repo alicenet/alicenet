@@ -69,7 +69,7 @@ func TestGetSetNode(t *testing.T) {
 	node.prevEpoch = 1
 	node.thisEpoch = 1
 	node.nextEpoch = 1
-	node.rawStorage = &RawStorage{}
+	node.dynamicValues = &DynamicValues{}
 	err = db.SetNode(nil, node)
 	if err != nil {
 		t.Fatal(err)
@@ -108,7 +108,7 @@ func TestGetSetLinkedList(t *testing.T) {
 		t.Fatal("Should have raised error (1)")
 	}
 
-	ll.epochLastUpdated = 1
+	ll.currentValue = 1
 	err = db.SetLinkedList(nil, ll)
 	if err != nil {
 		t.Fatal(err)

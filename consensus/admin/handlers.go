@@ -217,6 +217,14 @@ func (ah *Handlers) AddSnapshot(bh *objs.BlockHeader, safeToProceedConsensus boo
 				return err
 			}
 		}
+
+		// check and update the new dynamic values
+		err = ah.storage.LoadStorage(txn, utils.Epoch(bh.BClaims.Height))
+		if err != nil {
+			utils.DebugTrace(ah.logger, err)
+			return err
+		}
+
 		return nil
 	})
 	if err != nil {
@@ -228,23 +236,25 @@ func (ah *Handlers) AddSnapshot(bh *objs.BlockHeader, safeToProceedConsensus boo
 }
 
 // UpdateDynamicStorage updates dynamic storage values.
-func (ah *Handlers) UpdateDynamicStorage(txn *badger.Txn, key, value string, epoch uint32) error {
+func (ah *Handlers) UpdateDynamicStorage(value []byte, epoch uint32) error {
 	mutex, ok := ah.getLock()
 	if !ok {
-		return nil
+		return errors.New("could not get adminHandler lock")
 	}
 	mutex.Lock()
 	defer mutex.Unlock()
 
-	update, err := dynamics.NewUpdate(key, value, epoch)
+	update := dynamics.NewUpdate(value, epoch)
+	err := ah.database.Update(func(txn *badger.Txn) error {
+		err := ah.storage.UpdateStorage(txn, update)
+		if err != nil {
+			utils.DebugTrace(ah.logger, err)
+			return err
+		}
+		return nil
+	})
 	if err != nil {
-		utils.DebugTrace(ah.logger, err)
-		return err
-	}
-	err = ah.storage.UpdateStorage(txn, update)
-	if err != nil {
-		utils.DebugTrace(ah.logger, err)
-		return err
+		panic(err)
 	}
 	return nil
 }

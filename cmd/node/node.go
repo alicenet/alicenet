@@ -340,8 +340,6 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	//LAUNCH ALL SERVICE GOROUTINES///////////////////////////////////////////////
 	//////////////////////////////////////////////////////////////////////////////
 
-	go storage.Start()
-
 	go statusLogger.Run()
 	defer statusLogger.Close()
 

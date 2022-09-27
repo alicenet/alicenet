@@ -31,7 +31,7 @@ type DynamicValues struct {
 	ProposalTimeout         time.Duration
 	PreVoteTimeout          time.Duration
 	PreCommitTimeout        time.Duration
-	MaxBlockSize            uint64
+	MaxBlockSize            uint32
 	DataStoreFee            *big.Int
 	ValueStoreFee           *big.Int
 	MinScaledTransactionFee *big.Int
@@ -61,6 +61,8 @@ func DecodeDynamicValues(data []byte) (*DynamicValues, error) {
 		return nil, &ErrInvalidDynamicValue{"preCommitTimeout", err.Error()}
 	}
 
+	// maxBlockSize can be converted to uint32, since the smart contract will
+	// enforce max value lest than < max(uint32)
 	maxBlockSize, err := decodeUInt64WithArbitraryLength(data[12:16])
 	if err != nil {
 		return nil, &ErrInvalidDynamicValue{"maxBlockSize", err.Error()}
@@ -75,7 +77,7 @@ func DecodeDynamicValues(data []byte) (*DynamicValues, error) {
 		proposalTimeout,
 		preVoteTimeout,
 		preCommitTimeout,
-		maxBlockSize,
+		uint32(maxBlockSize),
 		dataStoreFee,
 		valueStoreFee,
 		minScaledTransactionFee,
@@ -138,12 +140,12 @@ func (dv *DynamicValues) IsValid() bool {
 }
 
 // GetMaxBlockSize returns the maximum allowed bytes in a block
-func (dv *DynamicValues) GetMaxBlockSize() uint64 {
+func (dv *DynamicValues) GetMaxBlockSize() uint32 {
 	return dv.MaxBlockSize
 }
 
 // GetMaxProposalSize returns the maximum size of bytes allowed in a proposal
-func (dv *DynamicValues) GetMaxProposalSize() uint64 {
+func (dv *DynamicValues) GetMaxProposalSize() uint32 {
 	// proposal size as it stands today is equal to the block size
 	return dv.MaxBlockSize
 }
@@ -198,21 +200,6 @@ func (dv *DynamicValues) GetValueStoreFee() *big.Int {
 		dv.ValueStoreFee = new(big.Int)
 	}
 	return dv.ValueStoreFee
-}
-
-// GetValueStoreValidVersion returns the valid version of ValueStore
-func (rs *DynamicValues) GetValueStoreValidVersion() uint32 {
-	return uint32(V1)
-}
-
-// GetDataStoreValidVersion returns the valid version of DataStore
-func (rs *DynamicValues) GetDataStoreValidVersion() uint32 {
-	return uint32(V1)
-}
-
-// GetTxValidVersion returns the valid version of tx
-func (rs *DynamicValues) GetTxValidVersion() uint32 {
-	return uint32(V1)
 }
 
 func decodeUInt32WithArbitraryLength(data []byte) (uint32, error) {

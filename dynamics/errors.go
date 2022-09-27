@@ -9,8 +9,8 @@ import (
 
 var (
 	// ErrDynamicValueNilPointer is an error which results from a
-	// RawStorage struct which has not been initialized.
-	ErrDynamicValueNilPointer = errors.New("invalid RawStorage: nil pointer")
+	// DynamicValues struct which has not been initialized.
+	ErrDynamicValueNilPointer = errors.New("invalid DynamicValues: nil pointer")
 
 	// ErrZeroEpoch is an error which is raised whenever the epoch is given
 	// as zero; there is no zero epoch.
@@ -25,7 +25,7 @@ var (
 	ErrKeyNotPresent = badger.ErrKeyNotFound
 
 	// ErrInvalidUpdateValue is an error which is returned when the state
-	// for updating rawStorage is invalid.
+	// for updating dynamicValues is invalid.
 	ErrInvalidUpdateValue = errors.New("invalid update value for storage")
 
 	// ErrInvalidValue is an error which is returned when the value is invalid.

@@ -22,12 +22,12 @@ func NewStorage(storageInter dynamics.StorageGetter) *Storage {
 // GetMaxBytes returns MaxBytes
 func (s *Storage) GetMaxBytes() (uint32, error) {
 	if s == nil {
-		return 0, errorz.ErrInvalid{}.New("storage.GetAtomicSwapFee; struct not initialized")
+		return 0, errorz.ErrInvalid{}.New("storage.MaxBlockSize; struct not initialized")
 	}
 	if s.storage == nil {
-		return 0, errorz.ErrInvalid{}.New("storage.GetAtomicSwapFee; storage not initialized")
+		return 0, errorz.ErrInvalid{}.New("storage.MaxBlockSize; storage not initialized")
 	}
-	return s.storage.GetMaxBytes(), nil
+	return s.storage.GetMaxBlockSize(), nil
 }
 
 // GetDataStoreEpochFee returns the per-epoch fee of DataStore
@@ -38,7 +38,7 @@ func (s *Storage) GetDataStoreEpochFee() (*uint256.Uint256, error) {
 	if s.storage == nil {
 		return nil, errorz.ErrInvalid{}.New("storage.GetDataStoreEpochFee; storage not initialized")
 	}
-	fee := s.storage.GetDataStoreEpochFee()
+	fee := s.storage.GetDataStoreFee()
 	feeUint256 := &uint256.Uint256{}
 	_, err := feeUint256.FromBigInt(fee)
 	if err != nil {
@@ -72,7 +72,7 @@ func (s *Storage) GetMinTxFee() (*uint256.Uint256, error) {
 	if s.storage == nil {
 		return nil, errorz.ErrInvalid{}.New("storage.GetMinTxFee; storage not initialized")
 	}
-	fee := s.storage.GetMinTxFee()
+	fee := s.storage.GetMinScaledTransactionFee()
 	feeUint256 := &uint256.Uint256{}
 	_, err := feeUint256.FromBigInt(fee)
 	if err != nil {

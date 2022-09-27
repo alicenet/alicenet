@@ -13,6 +13,7 @@ import (
 type AdminHandler interface {
 	AddPrivateKey([]byte, constants.CurveSpec) error
 	AddSnapshot(header *objs.BlockHeader, safeToProceedConsensus bool) error
+	UpdateDynamicStorage(value []byte, epoch uint32) error
 	AddValidatorSet(*objs.ValidatorSet) error
 	RegisterSnapshotCallback(func(*objs.BlockHeader, int, int) error)
 	SetSynchronized(v bool)

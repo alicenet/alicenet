@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	InitialMaxBlockSize     uint64        = 3000000
+	InitialMaxBlockSize     uint32        = 3000000
 	InitialProposalTimeout  time.Duration = 4 * time.Second
 	InitialPreVoteTimeout   time.Duration = 3 * time.Second
 	InitialPreCommitTimeout time.Duration = 3 * time.Second

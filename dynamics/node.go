@@ -4,19 +4,37 @@ import (
 	"github.com/alicenet/alicenet/utils"
 )
 
-// Node contains necessary information about RawStorage;
+// Node contains necessary information about DynamicValues;
 // it also points to the epoch of the previous node and next node
 // in the doubly linked list.
 type Node struct {
-	thisEpoch  uint32
-	prevEpoch  uint32
-	nextEpoch  uint32
-	rawStorage *RawStorage
+	thisEpoch     uint32
+	prevEpoch     uint32
+	nextEpoch     uint32
+	dynamicValues *DynamicValues
+}
+
+// CreateNode creates a unlinked node.
+func CreateNode(epoch uint32, dv *DynamicValues) (*Node, error) {
+	if epoch == 0 {
+		return nil, ErrZeroEpoch
+	}
+	dvCopy, err := dv.Copy()
+	if err != nil {
+		return nil, err
+	}
+	node := &Node{
+		thisEpoch:     epoch,
+		prevEpoch:     0,
+		nextEpoch:     0,
+		dynamicValues: dvCopy,
+	}
+	return node, nil
 }
 
 // Marshal marshals a Node
 func (n *Node) Marshal() ([]byte, error) {
-	rsBytes, err := n.rawStorage.Marshal()
+	dvBytes, err := n.dynamicValues.Marshal()
 	if err != nil {
 		return nil, err
 	}
@@ -27,7 +45,7 @@ func (n *Node) Marshal() ([]byte, error) {
 	v = append(v, teBytes...)
 	v = append(v, peBytes...)
 	v = append(v, neBytes...)
-	v = append(v, rsBytes...)
+	v = append(v, dvBytes...)
 	return v, nil
 }
 
@@ -42,8 +60,8 @@ func (n *Node) Unmarshal(v []byte) error {
 	n.thisEpoch = thisEpoch
 	n.prevEpoch = prevEpoch
 	n.nextEpoch = nextEpoch
-	n.rawStorage = &RawStorage{}
-	err := n.rawStorage.Unmarshal(v[12:])
+	n.dynamicValues = &DynamicValues{}
+	err := n.dynamicValues.Unmarshal(v[12:])
 	if err != nil {
 		return err
 	}
@@ -55,31 +73,15 @@ func (n *Node) IsValid() bool {
 	if n == nil {
 		return false
 	}
-	if n.thisEpoch == 0 || n.prevEpoch == 0 || n.nextEpoch == 0 {
+	if n.thisEpoch == 0 {
 		// node has not set values; invalid
 		return false
 	}
-	if n.prevEpoch > n.thisEpoch || n.thisEpoch > n.nextEpoch {
+	if n.prevEpoch > n.thisEpoch || (n.nextEpoch != 0 && n.thisEpoch > n.nextEpoch) {
 		// node has not been correctly defined; invalid
 		return false
 	}
-	if !n.rawStorage.IsValid() {
-		return false
-	}
-	return true
-}
-
-// IsPreValid returns true if Node is ready to be added to database
-// but prevEpoch and nextEpoch are not yet set
-func (n *Node) IsPreValid() bool {
-	if n == nil {
-		return false
-	}
-	if n.thisEpoch == 0 || n.prevEpoch != 0 || n.nextEpoch != 0 {
-		// Only thisEpoch should be set; invalid
-		return false
-	}
-	if !n.rawStorage.IsValid() {
+	if !n.dynamicValues.IsValid() {
 		return false
 	}
 	return true
@@ -101,9 +103,6 @@ func (n *Node) Copy() (*Node, error) {
 
 // SetEpochs sets n.prevEpoch and n.nextEpoch.
 func (n *Node) SetEpochs(prevNode *Node, nextNode *Node) error {
-	if !n.IsPreValid() {
-		return ErrInvalid
-	}
 	if prevNode.IsValid() && nextNode.IsValid() && prevNode.thisEpoch < n.thisEpoch && n.thisEpoch < nextNode.thisEpoch {
 		// In this setting, we want to add a new node in between prevNode and nextNode
 		//
@@ -119,8 +118,8 @@ func (n *Node) SetEpochs(prevNode *Node, nextNode *Node) error {
 		nextNode.prevEpoch = n.thisEpoch
 		return nil
 	}
-	if prevNode.IsValid() && nextNode == nil && prevNode.thisEpoch < n.thisEpoch && prevNode.IsHead() {
-		// n is the new Head
+	if prevNode.IsValid() && nextNode == nil && prevNode.thisEpoch < n.thisEpoch && prevNode.IsTail() {
+		// n is the new tail
 		// Update prevNode.nextEpoch
 		prevNode.nextEpoch = n.thisEpoch
 		// Update epochs for n;
@@ -132,25 +131,25 @@ func (n *Node) SetEpochs(prevNode *Node, nextNode *Node) error {
 	return ErrInvalid
 }
 
-// IsHead returns true if Node is end of linked list;
-// in this case, n.nextEpoch == n.thisEpoch
+// IsHead returns true if Node is begging of linked list;
+// in this case, n.prevEpoch == n.thisEpoch
 func (n *Node) IsHead() bool {
 	if !n.IsValid() {
 		return false
 	}
-	if n.thisEpoch == n.nextEpoch {
+	if n.prevEpoch == 0 {
 		return true
 	}
 	return false
 }
 
-// IsTail returns true if Node is beginning of linked list;
-// in this case, n.prevEpoch == n.thisEpoch
+// IsTail returns true if Node is end of linked list;
+// in this case, n.nextEpoch == n.thisEpoch
 func (n *Node) IsTail() bool {
 	if !n.IsValid() {
 		return false
 	}
-	if n.thisEpoch == n.prevEpoch {
+	if n.nextEpoch == 0 {
 		return true
 	}
 	return false

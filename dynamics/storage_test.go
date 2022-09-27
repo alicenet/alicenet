@@ -51,20 +51,20 @@ func TestStorageInit1(t *testing.T) {
 	}
 	s.Start()
 
-	rs := &RawStorage{}
+	rs := &DynamicValues{}
 	rs.standardParameters()
 	rsBytes, err := rs.Marshal()
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	// Check rawStorage == standardParameters
-	storageRSBytes, err := s.rawStorage.Marshal()
+	// Check dynamicValues == standardParameters
+	storageRSBytes, err := s.dynamicValues.Marshal()
 	if err != nil {
 		t.Fatal(err)
 	}
 	if !bytes.Equal(rsBytes, storageRSBytes) {
-		t.Fatal("rawStorage values do not match")
+		t.Fatal("dynamicValues values do not match")
 	}
 }
 
@@ -215,7 +215,7 @@ func TestStorageLoadStorageGood1(t *testing.T) {
 	s := initializeStorage()
 	epoch := uint32(25519)
 
-	rsTrue := &RawStorage{}
+	rsTrue := &DynamicValues{}
 	rsTrue.standardParameters()
 	rsTrueBytes, err := rsTrue.Marshal()
 	if err != nil {
@@ -226,12 +226,12 @@ func TestStorageLoadStorageGood1(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	rsBytes, err := s.rawStorage.Marshal()
+	rsBytes, err := s.dynamicValues.Marshal()
 	if err != nil {
 		t.Fatal(err)
 	}
 	if !bytes.Equal(rsBytes, rsTrueBytes) {
-		t.Fatal("rawStorage values do not match")
+		t.Fatal("dynamicValues values do not match")
 	}
 }
 
@@ -240,7 +240,7 @@ func TestStorageLoadStorageGood2(t *testing.T) {
 	s := initializeStorageWithFirstNode()
 	epoch := uint32(25519)
 
-	rsTrue := &RawStorage{}
+	rsTrue := &DynamicValues{}
 	rsTrue.standardParameters()
 	rsTrueBytes, err := rsTrue.Marshal()
 	if err != nil {
@@ -251,12 +251,12 @@ func TestStorageLoadStorageGood2(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	rsBytes, err := s.rawStorage.Marshal()
+	rsBytes, err := s.dynamicValues.Marshal()
 	if err != nil {
 		t.Fatal(err)
 	}
 	if !bytes.Equal(rsBytes, rsTrueBytes) {
-		t.Fatal("rawStorage values do not match")
+		t.Fatal("dynamicValues values do not match")
 	}
 }
 
@@ -271,10 +271,10 @@ func TestStorageLoadStorageBad1(t *testing.T) {
 	}
 }
 
-// Test success of loadRawStorage.
-func TestStorageLoadRawStorageGood1(t *testing.T) {
+// Test success of loadDynamicValues.
+func TestStorageLoadDynamicValuesGood1(t *testing.T) {
 	s := initializeStorageWithFirstNode()
-	rsTrue := &RawStorage{}
+	rsTrue := &DynamicValues{}
 	rsTrue.standardParameters()
 	rsTrueBytes, err := rsTrue.Marshal()
 	if err != nil {
@@ -283,7 +283,7 @@ func TestStorageLoadRawStorageGood1(t *testing.T) {
 
 	// We attempt to load an epoch from an empty database;
 	// this should raise an error.
-	rs, err := s.loadRawStorage(nil, 1)
+	rs, err := s.loadDynamicValues(nil, 1)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -292,14 +292,14 @@ func TestStorageLoadRawStorageGood1(t *testing.T) {
 		t.Fatal(err)
 	}
 	if !bytes.Equal(rsBytes, rsTrueBytes) {
-		t.Fatal("RawStorage values do not match")
+		t.Fatal("DynamicValues values do not match")
 	}
 }
 
-// Test success of loadRawStorage again
-func TestStorageLoadRawStorageGood2(t *testing.T) {
+// Test success of loadDynamicValues again
+func TestStorageLoadDynamicValuesGood2(t *testing.T) {
 	s := initializeStorageWithFirstNode()
-	rsTrue := &RawStorage{}
+	rsTrue := &DynamicValues{}
 	rsTrue.standardParameters()
 	rsTrueBytes, err := rsTrue.Marshal()
 	if err != nil {
@@ -320,7 +320,7 @@ func TestStorageLoadRawStorageGood2(t *testing.T) {
 
 	// We attempt to load an epoch from an empty database;
 	// this should raise an error.
-	rs, err := s.loadRawStorage(nil, 1)
+	rs, err := s.loadDynamicValues(nil, 1)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -329,26 +329,26 @@ func TestStorageLoadRawStorageGood2(t *testing.T) {
 		t.Fatal(err)
 	}
 	if !bytes.Equal(rsBytes, rsTrueBytes) {
-		t.Fatal("RawStorage values do not match")
+		t.Fatal("DynamicValues values do not match")
 	}
 }
 
-// Test failure of loadRawStorage.
+// Test failure of loadDynamicValues.
 // We raise an error for attempting to load epoch 0
-func TestStorageLoadRawStorageBad1(t *testing.T) {
+func TestStorageLoadDynamicValuesBad1(t *testing.T) {
 	s := initializeStorageWithFirstNode()
 
 	// We attempt to load an epoch from an empty database;
 	// this should raise an error.
-	_, err := s.loadRawStorage(nil, 0)
+	_, err := s.loadDynamicValues(nil, 0)
 	if !errors.Is(err, ErrZeroEpoch) {
 		t.Fatal("Should have raised ErrZeroEpoch")
 	}
 }
 
-// Test failure of loadRawStorage.
+// Test failure of loadDynamicValues.
 // We raise an error for not having LinkedList present.
-func TestStorageLoadRawStorageBad2(t *testing.T) {
+func TestStorageLoadDynamicValuesBad2(t *testing.T) {
 	storageLogger := newLogger()
 	database := initializeDB()
 	s := &Storage{}
@@ -359,19 +359,19 @@ func TestStorageLoadRawStorageBad2(t *testing.T) {
 
 	// We attempt to load an epoch from an empty database;
 	// this should raise an error.
-	_, err := s.loadRawStorage(nil, 1)
+	_, err := s.loadDynamicValues(nil, 1)
 	if !errors.Is(err, ErrKeyNotPresent) {
 		t.Fatal("Should have raised ErrKeyNotPresent")
 	}
 }
 
-// Test failure of loadRawStorage again.
+// Test failure of loadDynamicValues again.
 // It should not be possible to reach this configuration.
 func TestStorageLoadStorageBad3(t *testing.T) {
 	storageLogger := newLogger()
 	database := initializeDB()
 	ll := &LinkedList{
-		epochLastUpdated: 1,
+		currentValue: 1,
 	}
 	err := database.SetLinkedList(nil, ll)
 	if err != nil {
@@ -385,7 +385,7 @@ func TestStorageLoadStorageBad3(t *testing.T) {
 	s.Start()
 	// We attempt to load an epoch from an empty database (without nodes but LinkedList set);
 	// this should raise an error.
-	_, err = s.loadRawStorage(nil, 1)
+	_, err = s.loadDynamicValues(nil, 1)
 	if err == nil {
 		t.Fatal("Should have raised error")
 	}
@@ -401,7 +401,7 @@ func TestStorageAddNodeHeadGood(t *testing.T) {
 	}
 
 	newEpoch := epoch + 1
-	rsNew := &RawStorage{}
+	rsNew := &DynamicValues{}
 	rsNew.standardParameters()
 	rsBytes, err := rsNew.Marshal()
 	if err != nil {
@@ -410,8 +410,8 @@ func TestStorageAddNodeHeadGood(t *testing.T) {
 	newMaxBytes := uint32(1234567)
 	rsNew.SetMaxBytes(newMaxBytes)
 	node := &Node{
-		thisEpoch:  newEpoch,
-		rawStorage: rsNew,
+		thisEpoch:     newEpoch,
+		dynamicValues: rsNew,
 	}
 	if !node.IsPreValid() {
 		t.Fatal("node should be prevalid")
@@ -433,7 +433,7 @@ func TestStorageAddNodeHeadGood(t *testing.T) {
 	if origNode.prevEpoch != epoch || origNode.thisEpoch != epoch || origNode.nextEpoch != newEpoch {
 		t.Fatal("origNode invalid (1)")
 	}
-	rsOrigBytes, err := origNode.rawStorage.Marshal()
+	rsOrigBytes, err := origNode.dynamicValues.Marshal()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -448,7 +448,7 @@ func TestStorageAddNodeHeadGood(t *testing.T) {
 	if retNode.prevEpoch != epoch || retNode.thisEpoch != newEpoch || retNode.nextEpoch != newEpoch {
 		t.Fatal("retNode invalid (1)")
 	}
-	retBytes, err := retNode.rawStorage.Marshal()
+	retBytes, err := retNode.dynamicValues.Marshal()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -490,10 +490,10 @@ func TestStorageAddNodeHeadBad2(t *testing.T) {
 		t.Fatal("headNode should be valid")
 	}
 
-	rs := &RawStorage{}
+	rs := &DynamicValues{}
 	node := &Node{
-		thisEpoch:  1,
-		rawStorage: rs,
+		thisEpoch:     1,
+		dynamicValues: rs,
 	}
 	if !node.IsPreValid() {
 		t.Fatal("node should be prevalid")
@@ -523,17 +523,17 @@ func TestStorageAddNodeSplitGood(t *testing.T) {
 	}
 
 	// Set up nextnode
-	rs := &RawStorage{}
+	rs := &DynamicValues{}
 	rs.standardParameters()
 	rsBytes, err := rs.Marshal()
 	if err != nil {
 		t.Fatal(err)
 	}
 	nextNode := &Node{
-		prevEpoch:  first,
-		thisEpoch:  last,
-		nextEpoch:  last,
-		rawStorage: rs,
+		prevEpoch:     first,
+		thisEpoch:     last,
+		nextEpoch:     last,
+		dynamicValues: rs,
 	}
 	if !nextNode.IsValid() {
 		t.Fatal("nextNode should be valid")
@@ -555,8 +555,8 @@ func TestStorageAddNodeSplitGood(t *testing.T) {
 	}
 	newEpoch := uint32(5)
 	node := &Node{
-		thisEpoch:  newEpoch,
-		rawStorage: rsNew,
+		thisEpoch:     newEpoch,
+		dynamicValues: rsNew,
 	}
 	if !node.IsPreValid() {
 		t.Fatal("node should be preValid")
@@ -575,7 +575,7 @@ func TestStorageAddNodeSplitGood(t *testing.T) {
 	if firstNode.prevEpoch != first || firstNode.thisEpoch != first || firstNode.nextEpoch != newEpoch {
 		t.Fatal("firstNode invalid (1)")
 	}
-	retBytes, err := firstNode.rawStorage.Marshal()
+	retBytes, err := firstNode.dynamicValues.Marshal()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -590,7 +590,7 @@ func TestStorageAddNodeSplitGood(t *testing.T) {
 	if middleNode.prevEpoch != first || middleNode.thisEpoch != newEpoch || middleNode.nextEpoch != last {
 		t.Fatal("middleNode invalid (1)")
 	}
-	retBytes, err = middleNode.rawStorage.Marshal()
+	retBytes, err = middleNode.dynamicValues.Marshal()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -605,7 +605,7 @@ func TestStorageAddNodeSplitGood(t *testing.T) {
 	if lastNode.prevEpoch != newEpoch || lastNode.thisEpoch != last || lastNode.nextEpoch != last {
 		t.Fatal("lastNode invalid (1)")
 	}
-	retBytes, err = lastNode.rawStorage.Marshal()
+	retBytes, err = lastNode.dynamicValues.Marshal()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -632,13 +632,13 @@ func TestStorageAddNodeSplitBad1(t *testing.T) {
 	}
 
 	// Set up nodes
-	rs := &RawStorage{}
+	rs := &DynamicValues{}
 	rs.standardParameters()
 	nextNode := &Node{
-		prevEpoch:  first,
-		thisEpoch:  last,
-		nextEpoch:  last,
-		rawStorage: rs,
+		prevEpoch:     first,
+		thisEpoch:     last,
+		nextEpoch:     last,
+		dynamicValues: rs,
 	}
 	if !nextNode.IsValid() {
 		t.Fatal("nextNode should be valid")
@@ -674,13 +674,13 @@ func TestStorageAddNodeSplitBad2(t *testing.T) {
 	}
 
 	// Set up nodes
-	rs := &RawStorage{}
+	rs := &DynamicValues{}
 	rs.standardParameters()
 	nextNode := &Node{
-		prevEpoch:  first,
-		thisEpoch:  last,
-		nextEpoch:  last,
-		rawStorage: rs,
+		prevEpoch:     first,
+		thisEpoch:     last,
+		nextEpoch:     last,
+		dynamicValues: rs,
 	}
 	if !nextNode.IsValid() {
 		t.Fatal("nextNode should be valid")
@@ -697,8 +697,8 @@ func TestStorageAddNodeSplitBad2(t *testing.T) {
 	rsNew.MaxBytes = 123456
 	newEpoch := uint32(100)
 	node := &Node{
-		thisEpoch:  newEpoch,
-		rawStorage: rsNew,
+		thisEpoch:     newEpoch,
+		dynamicValues: rsNew,
 	}
 	if !node.IsPreValid() {
 		t.Fatal("node should be preValid")
@@ -714,7 +714,7 @@ func TestStorageAddNodeSplitBad2(t *testing.T) {
 func TestStorageAddNodeGood1(t *testing.T) {
 	origEpoch := uint32(1)
 	s := initializeStorageWithFirstNode()
-	rs := &RawStorage{}
+	rs := &DynamicValues{}
 	rs.standardParameters()
 	rsStandardBytes, err := rs.Marshal()
 	if err != nil {
@@ -724,10 +724,10 @@ func TestStorageAddNodeGood1(t *testing.T) {
 	rs.MaxBytes = newMaxBytes
 	epoch := uint32(10)
 	newNode := &Node{
-		prevEpoch:  0,
-		thisEpoch:  epoch,
-		nextEpoch:  0,
-		rawStorage: rs,
+		prevEpoch:     0,
+		thisEpoch:     epoch,
+		nextEpoch:     0,
+		dynamicValues: rs,
 	}
 	err = s.addNode(nil, newNode)
 	if err != nil {
@@ -752,7 +752,7 @@ func TestStorageAddNodeGood1(t *testing.T) {
 	if origNode.nextEpoch != epoch {
 		t.Fatal("origNode.nextEpoch is invalid")
 	}
-	retRS, err := origNode.rawStorage.Copy()
+	retRS, err := origNode.dynamicValues.Copy()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -761,7 +761,7 @@ func TestStorageAddNodeGood1(t *testing.T) {
 		t.Fatal(err)
 	}
 	if !bytes.Equal(retRSBytes, rsStandardBytes) {
-		t.Fatal("invalid RawStorage")
+		t.Fatal("invalid DynamicValues")
 	}
 
 	addedNode, err := s.database.GetNode(nil, epoch)
@@ -777,7 +777,7 @@ func TestStorageAddNodeGood1(t *testing.T) {
 	if addedNode.nextEpoch != epoch {
 		t.Fatal("addedNode.nextEpoch is invalid")
 	}
-	retRS, err = addedNode.rawStorage.Copy()
+	retRS, err = addedNode.dynamicValues.Copy()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -786,7 +786,7 @@ func TestStorageAddNodeGood1(t *testing.T) {
 		t.Fatal(err)
 	}
 	if !bytes.Equal(retRSBytes, rsNewBytes) {
-		t.Fatal("invalid RawStorage (2)")
+		t.Fatal("invalid DynamicValues (2)")
 	}
 }
 
@@ -794,7 +794,7 @@ func TestStorageAddNodeGood1(t *testing.T) {
 func TestStorageAddNodeGood2(t *testing.T) {
 	origEpoch := uint32(1)
 	s := initializeStorageWithFirstNode()
-	rs := &RawStorage{}
+	rs := &DynamicValues{}
 	rs.standardParameters()
 	rsStandardBytes, err := rs.Marshal()
 	if err != nil {
@@ -802,10 +802,10 @@ func TestStorageAddNodeGood2(t *testing.T) {
 	}
 	newEpoch := uint32(100)
 	newNode := &Node{
-		prevEpoch:  0,
-		thisEpoch:  newEpoch,
-		nextEpoch:  0,
-		rawStorage: rs,
+		prevEpoch:     0,
+		thisEpoch:     newEpoch,
+		nextEpoch:     0,
+		dynamicValues: rs,
 	}
 	err = s.addNode(nil, newNode)
 	if err != nil {
@@ -816,10 +816,10 @@ func TestStorageAddNodeGood2(t *testing.T) {
 	newMaxBytes := uint32(12345689)
 	rs.SetMaxBytes(newMaxBytes)
 	newNode2 := &Node{
-		prevEpoch:  0,
-		thisEpoch:  newEpoch2,
-		nextEpoch:  0,
-		rawStorage: rs,
+		prevEpoch:     0,
+		thisEpoch:     newEpoch2,
+		nextEpoch:     0,
+		dynamicValues: rs,
 	}
 	err = s.addNode(nil, newNode2)
 	if err != nil {
@@ -844,7 +844,7 @@ func TestStorageAddNodeGood2(t *testing.T) {
 	if origNode.nextEpoch != newEpoch2 {
 		t.Fatal("origNode.nextEpoch is invalid")
 	}
-	retRS, err := origNode.rawStorage.Copy()
+	retRS, err := origNode.dynamicValues.Copy()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -853,7 +853,7 @@ func TestStorageAddNodeGood2(t *testing.T) {
 		t.Fatal(err)
 	}
 	if !bytes.Equal(retRSBytes, rsStandardBytes) {
-		t.Fatal("invalid RawStorage")
+		t.Fatal("invalid DynamicValues")
 	}
 
 	addedNode, err := s.database.GetNode(nil, newEpoch)
@@ -869,7 +869,7 @@ func TestStorageAddNodeGood2(t *testing.T) {
 	if addedNode.nextEpoch != newEpoch {
 		t.Fatal("addedNode.nextEpoch is invalid")
 	}
-	retRS, err = addedNode.rawStorage.Copy()
+	retRS, err = addedNode.dynamicValues.Copy()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -878,7 +878,7 @@ func TestStorageAddNodeGood2(t *testing.T) {
 		t.Fatal(err)
 	}
 	if !bytes.Equal(retRSBytes, rsStandardBytes) {
-		t.Fatal("invalid RawStorage (2)")
+		t.Fatal("invalid DynamicValues (2)")
 	}
 
 	addedNode2, err := s.database.GetNode(nil, newEpoch2)
@@ -894,7 +894,7 @@ func TestStorageAddNodeGood2(t *testing.T) {
 	if addedNode2.nextEpoch != newEpoch {
 		t.Fatal("addedNode2.nextEpoch is invalid")
 	}
-	retRS, err = addedNode2.rawStorage.Copy()
+	retRS, err = addedNode2.dynamicValues.Copy()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -903,18 +903,18 @@ func TestStorageAddNodeGood2(t *testing.T) {
 		t.Fatal(err)
 	}
 	if !bytes.Equal(retRSBytes, rsNewBytes) {
-		t.Fatal("invalid RawStorage (3)")
+		t.Fatal("invalid DynamicValues (3)")
 	}
 }
 
 func TestStorageAddNodeBad1(t *testing.T) {
 	s := initializeStorage()
-	rs := &RawStorage{}
+	rs := &DynamicValues{}
 	newNode := &Node{
-		prevEpoch:  0,
-		thisEpoch:  0,
-		nextEpoch:  0,
-		rawStorage: rs,
+		prevEpoch:     0,
+		thisEpoch:     0,
+		nextEpoch:     0,
+		dynamicValues: rs,
 	}
 	err := s.addNode(nil, newNode)
 	if err == nil {
@@ -924,12 +924,12 @@ func TestStorageAddNodeBad1(t *testing.T) {
 
 func TestStorageAddNodeBad2(t *testing.T) {
 	s := initializeStorage()
-	rs := &RawStorage{}
+	rs := &DynamicValues{}
 	newNode := &Node{
-		prevEpoch:  0,
-		thisEpoch:  1,
-		nextEpoch:  0,
-		rawStorage: rs,
+		prevEpoch:     0,
+		thisEpoch:     1,
+		nextEpoch:     0,
+		dynamicValues: rs,
 	}
 	err := s.addNode(nil, newNode)
 	if err == nil {
@@ -939,12 +939,12 @@ func TestStorageAddNodeBad2(t *testing.T) {
 
 func TestStorageAddNodeBad3(t *testing.T) {
 	s := initializeStorageWithFirstNode()
-	rs := &RawStorage{}
+	rs := &DynamicValues{}
 	newNode := &Node{
-		prevEpoch:  0,
-		thisEpoch:  1,
-		nextEpoch:  0,
-		rawStorage: rs,
+		prevEpoch:     0,
+		thisEpoch:     1,
+		nextEpoch:     0,
+		dynamicValues: rs,
 	}
 	err := s.addNode(nil, newNode)
 	if err == nil {
@@ -954,12 +954,12 @@ func TestStorageAddNodeBad3(t *testing.T) {
 
 func TestStorageAddNodeBad4(t *testing.T) {
 	s := initializeStorageWithFirstNode()
-	rs := &RawStorage{}
+	rs := &DynamicValues{}
 	newNode := &Node{
-		prevEpoch:  0,
-		thisEpoch:  257,
-		nextEpoch:  0,
-		rawStorage: rs,
+		prevEpoch:     0,
+		thisEpoch:     257,
+		nextEpoch:     0,
+		dynamicValues: rs,
 	}
 	err := s.addNode(nil, newNode)
 	if err != nil {
@@ -967,10 +967,10 @@ func TestStorageAddNodeBad4(t *testing.T) {
 	}
 
 	newNode2 := &Node{
-		prevEpoch:  0,
-		thisEpoch:  1,
-		nextEpoch:  0,
-		rawStorage: rs,
+		prevEpoch:     0,
+		thisEpoch:     1,
+		nextEpoch:     0,
+		dynamicValues: rs,
 	}
 	err = s.addNode(nil, newNode2)
 	if err == nil {
@@ -980,12 +980,12 @@ func TestStorageAddNodeBad4(t *testing.T) {
 
 func TestStorageAddNodeBad5(t *testing.T) {
 	s := initializeStorageWithFirstNode()
-	rs := &RawStorage{}
+	rs := &DynamicValues{}
 	newNode := &Node{
-		prevEpoch:  0,
-		thisEpoch:  257,
-		nextEpoch:  0,
-		rawStorage: rs,
+		prevEpoch:     0,
+		thisEpoch:     257,
+		nextEpoch:     0,
+		dynamicValues: rs,
 	}
 	err := s.addNode(nil, newNode)
 	if err != nil {
@@ -993,10 +993,10 @@ func TestStorageAddNodeBad5(t *testing.T) {
 	}
 
 	newNode2 := &Node{
-		prevEpoch:  0,
-		thisEpoch:  25519,
-		nextEpoch:  0,
-		rawStorage: rs,
+		prevEpoch:     0,
+		thisEpoch:     25519,
+		nextEpoch:     0,
+		dynamicValues: rs,
 	}
 	err = s.addNode(nil, newNode2)
 	if err != nil {
@@ -1004,10 +1004,10 @@ func TestStorageAddNodeBad5(t *testing.T) {
 	}
 
 	newNode3 := &Node{
-		prevEpoch:  0,
-		thisEpoch:  1,
-		nextEpoch:  0,
-		rawStorage: rs,
+		prevEpoch:     0,
+		thisEpoch:     1,
+		nextEpoch:     0,
+		dynamicValues: rs,
 	}
 	err = s.addNode(nil, newNode3)
 	if err == nil {
@@ -1023,12 +1023,12 @@ func TestStorageAddNodeBad6(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	rs := &RawStorage{}
+	rs := &DynamicValues{}
 	newNode := &Node{
-		prevEpoch:  0,
-		thisEpoch:  1,
-		nextEpoch:  0,
-		rawStorage: rs,
+		prevEpoch:     0,
+		thisEpoch:     1,
+		nextEpoch:     0,
+		dynamicValues: rs,
 	}
 	err = s.addNode(nil, newNode)
 	if err == nil {
@@ -1068,7 +1068,7 @@ func TestStorageUpdateStorageGood1(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	rs := &RawStorage{}
+	rs := &DynamicValues{}
 	rs.standardParameters()
 	i, err := strconv.Atoi(value)
 	if err != nil {
@@ -1085,7 +1085,7 @@ func TestStorageUpdateStorageGood1(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	retRS, err := s.rawStorage.Copy()
+	retRS, err := s.dynamicValues.Copy()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1097,7 +1097,7 @@ func TestStorageUpdateStorageGood1(t *testing.T) {
 	if !bytes.Equal(rsBytes, retRSBytes) {
 		t.Log(string(rsBytes))
 		t.Log(string(retRSBytes))
-		t.Fatal("invalid RawStorage")
+		t.Fatal("invalid DynamicValues")
 	}
 }
 
@@ -1116,7 +1116,7 @@ func TestStorageUpdateStorageGood2(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	rs := &RawStorage{}
+	rs := &DynamicValues{}
 	rs.standardParameters()
 	i, err := strconv.Atoi(value)
 	if err != nil {
@@ -1132,7 +1132,7 @@ func TestStorageUpdateStorageGood2(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	retRS, err := s.rawStorage.Copy()
+	retRS, err := s.dynamicValues.Copy()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1144,7 +1144,7 @@ func TestStorageUpdateStorageGood2(t *testing.T) {
 	if !bytes.Equal(rsBytes, retRSBytes) {
 		t.Log(string(rsBytes))
 		t.Log(string(retRSBytes))
-		t.Fatal("invalid RawStorage")
+		t.Fatal("invalid DynamicValues")
 	}
 }
 
@@ -1154,13 +1154,13 @@ func TestStorageUpdateStorageGood3(t *testing.T) {
 
 	// Add another epoch in the future
 	epoch2 := uint32(25519)
-	rs2 := &RawStorage{}
+	rs2 := &DynamicValues{}
 	rs2.standardParameters()
 	newPropTO := 13 * time.Second
 	rs2.SetProposalStepTimeout(newPropTO)
 	node2 := &Node{
-		thisEpoch:  epoch2,
-		rawStorage: rs2,
+		thisEpoch:     epoch2,
+		dynamicValues: rs2,
 	}
 	err := s.addNode(nil, node2)
 	if err != nil {
@@ -1179,7 +1179,7 @@ func TestStorageUpdateStorageGood3(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	rsTrue := &RawStorage{}
+	rsTrue := &DynamicValues{}
 	rsTrue.standardParameters()
 	newMaxBytesInt, err := strconv.Atoi(value)
 	if err != nil {
@@ -1196,7 +1196,7 @@ func TestStorageUpdateStorageGood3(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	retRS, err := s.rawStorage.Copy()
+	retRS, err := s.dynamicValues.Copy()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1207,10 +1207,10 @@ func TestStorageUpdateStorageGood3(t *testing.T) {
 	if !bytes.Equal(rsTrueBytes, retRSBytes) {
 		t.Log(string(rsTrueBytes))
 		t.Log(string(retRSBytes))
-		t.Fatal("invalid RawStorage (1)")
+		t.Fatal("invalid DynamicValues (1)")
 	}
 
-	rsTrue2 := &RawStorage{}
+	rsTrue2 := &DynamicValues{}
 	rsTrue2.standardParameters()
 	rsTrue2.SetMaxBytes(uint32(newMaxBytesInt))
 	rsTrue2.SetProposalStepTimeout(newPropTO)
@@ -1224,7 +1224,7 @@ func TestStorageUpdateStorageGood3(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	retRS, err = s.rawStorage.Copy()
+	retRS, err = s.dynamicValues.Copy()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1235,7 +1235,7 @@ func TestStorageUpdateStorageGood3(t *testing.T) {
 	if !bytes.Equal(rsTrue2Bytes, retRSBytes) {
 		t.Log(string(rsTrue2Bytes))
 		t.Log(string(retRSBytes))
-		t.Fatal("invalid RawStorage (2)")
+		t.Fatal("invalid DynamicValues (2)")
 	}
 }
 
@@ -1297,11 +1297,11 @@ func TestStorageUpdateStorageValueBad3(t *testing.T) {
 // Attempt to perform invalid update in between two valid storage values
 func TestStorageUpdateStorageValueBad4(t *testing.T) {
 	s := initializeStorageWithFirstNode()
-	rs := &RawStorage{}
+	rs := &DynamicValues{}
 	rs.standardParameters()
 	node := &Node{
-		thisEpoch:  25519,
-		rawStorage: rs,
+		thisEpoch:     25519,
+		dynamicValues: rs,
 	}
 
 	err := s.addNode(nil, node)

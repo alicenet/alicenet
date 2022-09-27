@@ -78,7 +78,7 @@ func TestStorageInitialisedReturnsExpectedMaxBytes(t *testing.T) {
 	msg := mocks.NewMockStorageGetter()
 	s := NewStorage(msg)
 	expectedMaxBytes := uint32(123)
-	msg.GetMaxBytesFunc.SetDefaultReturn(expectedMaxBytes)
+	msg.GetMaxBlockSizeFunc.SetDefaultReturn(expectedMaxBytes)
 
 	fee, err := s.GetMaxBytes()
 	assert.NoError(t, err)
@@ -93,7 +93,7 @@ func TestStorageInitialisedReturnsExpectedDataStoreEpochFee(t *testing.T) {
 	expectedFeeUint256 := &uint256.Uint256{}
 	_, err := expectedFeeUint256.FromBigInt(expectedFee)
 	assert.NoError(t, err)
-	msg.GetDataStoreEpochFeeFunc.SetDefaultReturn(expectedFee)
+	msg.GetDataStoreFeeFunc.SetDefaultReturn(expectedFee)
 
 	fee, err := s.GetDataStoreEpochFee()
 	assert.NoError(t, err)
@@ -125,7 +125,7 @@ func TestStorageInitialisedReturnsExpectedMinTxFee(t *testing.T) {
 	_, err := expectedFeeUint256.FromBigInt(expectedFee)
 	assert.NoError(t, err)
 
-	msg.GetMinTxFeeFunc.SetDefaultReturn(expectedFee)
+	msg.GetMinScaledTransactionFeeFunc.SetDefaultReturn(expectedFee)
 
 	fee, err := s.GetMinTxFee()
 	assert.NoError(t, err)

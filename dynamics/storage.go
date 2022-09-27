@@ -2,6 +2,7 @@ package dynamics
 
 import (
 	"errors"
+	"fmt"
 	"math/big"
 	"sync"
 	"time"
@@ -15,29 +16,26 @@ import (
 var _ StorageGetter = (*Storage)(nil)
 
 /*
-PROPOSAL ON CHAIN
-PROPOSAL GETS VOTED ON
-IF PROPOSAL PASSES IT BECOMES ACTIVE IN FUTURE ( EPOCH OF ACTIVE > EPOCH OF FINAL VOTE + 1 )
-WHEN PROPOSAL PASSES AN EVENT IS EMITTED FROM THE GOVERNANCE CONTRACT
-THIS EVENT IS OBSERVED BY THE NODES
-THE NODES FETCH THE NEW VALUES AND STORE IN THE DATABASE FOR FUTURE USE
-ON THE EPOCH BOUNDARY OF NOT ACTIVE TO ACTIVE, THE STORAGE STRUCT MUST BE UPDATED IN MEMORY FROM
- THE VALUES STORED IN THE DB
-*/
+ * PROPOSAL ON CHAIN PROPOSAL GETS VOTED ON IF PROPOSAL PASSES IT BECOMES ACTIVE
+ * IN FUTURE ( EPOCH OF ACTIVE > EPOCH OF FINAL VOTE + 2 ) WHEN PROPOSAL PASSES
+ * AND ITS EXECUTED AN EVENT IS EMITTED FROM THE DYNAMICS CONTRACT THIS EVENT IS
+ * OBSERVED BY THE NODES THE NODES FETCH THE NEW VALUES AND STORE IN THE
+ * DATABASE FOR FUTURE USE ON THE EPOCH BOUNDARY OF NOT ACTIVE TO ACTIVE, THE
+ * STORAGE STRUCT MUST BE UPDATED IN MEMORY FROM THE VALUES STORED IN THE DB
+ */
 
-// Dynamics contains the list of "constants" which may be changed
-// dynamically to reflect protocol updates.
-// The point is that these values are essentially constant but may be changed
-// in future.
+// Dynamics contains the list of "constants" which may be changed dynamically to
+// reflect protocol updates. The point is that these values are essentially
+// constant but may be changed in future.
 
-// StorageGetter is the interface that all Storage structs must match
-// to be valid. These will be used to store the constants which may change
-// each epoch as governance determines.
+// StorageGetter is the interface that all Storage structs must match to be
+// valid. These will be used to store the constants which may change each epoch
+// as governance determines.
 //
 //go:generate go-mockgen -f -i StorageGetter -o mocks/storage.mockgen.go .
 type StorageGetter interface {
-	GetMaxBlockSize() uint64
-	GetMaxProposalSize() uint64
+	GetMaxBlockSize() uint32
+	GetMaxProposalSize() uint32
 	GetProposalTimeout() time.Duration
 	GetPreVoteTimeout() time.Duration
 	GetPreCommitTimeout() time.Duration
@@ -46,10 +44,6 @@ type StorageGetter interface {
 	GetMinScaledTransactionFee() *big.Int
 	GetDataStoreFee() *big.Int
 	GetValueStoreFee() *big.Int
-	GetValueStoreValidVersion() uint32
-	GetDataStoreValidVersion() uint32
-	GetTxValidVersion() uint32
-
 	UpdateStorage(*badger.Txn, Updater) error
 	LoadStorage(*badger.Txn, uint32) error
 }
@@ -57,11 +51,11 @@ type StorageGetter interface {
 // Storage is the struct which will implement the StorageGetter interface.
 type Storage struct {
 	sync.RWMutex
-	database   *Database
-	startChan  chan struct{}
-	startOnce  sync.Once
-	rawStorage *DynamicValues
-	logger     *logrus.Logger
+	database      *Database
+	startChan     chan struct{}
+	startOnce     sync.Once
+	dynamicValues *DynamicValues
+	logger        *logrus.Logger
 }
 
 // Init initializes the Storage structure.
@@ -74,266 +68,229 @@ func (s *Storage) Init(rawDB rawDataBase, logger *logrus.Logger) error {
 
 	// initialize logger
 	s.logger = logger
-	return nil
-}
 
-// Start allows normal operations to begin. This MUST be called after Init
-// and can only be called once.
-func (s *Storage) Start() {
-	s.Lock()
-	defer s.Unlock()
-
-	s.startOnce.Do(func() {
-		s.rawStorage = DynamicValuesWithStandardValues()
-		close(s.startChan)
-	})
-}
-
-// UpdateStorage updates the database to include changes that must be made
-// to the database
-func (s *Storage) UpdateStorage(txn *badger.Txn, update Updater) error {
-	<-s.startChan
-
-	s.Lock()
-	defer s.Unlock()
-
-	// Need to add code to check if initialization has been performed;
-	// that is, is this the first call to UpdateStorage?
-	_, err := s.database.GetLinkedList(txn)
-	if err != nil {
-		if !errors.Is(err, ErrKeyNotPresent) {
-			utils.DebugTrace(s.logger, err)
-			return err
-		}
-		dv := DynamicValuesWithStandardValues()
-		node, ll, err := CreateLinkedList(1, dv)
+	// check if already have a linked list stored in our database
+	err := s.database.rawDB.View(func(txn *badger.Txn) error {
+		linkedList, err := s.database.GetLinkedList(txn)
 		if err != nil {
 			utils.DebugTrace(s.logger, err)
 			return err
 		}
-		err = s.database.SetLinkedList(txn, ll)
+
+		currentNode, err := s.database.GetNode(txn, linkedList.GetEpochLastUpdated())
 		if err != nil {
 			utils.DebugTrace(s.logger, err)
 			return err
 		}
-		err = s.database.SetNode(txn, node)
-		if err != nil {
-			utils.DebugTrace(s.logger, err)
-			return err
-		}
-	}
 
-	err = s.updateStorageValue(txn, update)
-	if err != nil {
-		utils.DebugTrace(s.logger, err)
-		return err
-	}
-	return nil
-}
-
-// updateStorageValue updates the stored RawStorage values.
-//
-// We start at the Head of LinkedList and find the farthest point
-// at which we need to update nodes.
-// Once we find the beginning, we iterate forward and update all forward nodes.
-func (s *Storage) updateStorageValue(txn *badger.Txn, update Updater) error {
-	<-s.startChan
-
-	epoch := update.Epoch()
-	ll, err := s.database.GetLinkedList(txn)
-	if err != nil {
-		utils.DebugTrace(s.logger, err)
-		return err
-	}
-	elu := ll.GetEpochLastUpdated()
-	iterNode, err := s.database.GetNode(txn, elu)
-	if err != nil {
-		utils.DebugTrace(s.logger, err)
-		return err
-	}
-
-	// firstNode denotes where we will begin looping forward
-	// including the updated value;
-	// this will not be used when we have a new Head
-	firstNode := &Node{}
-	// duplicateNode is used when we will copy values from the previous node
-	// and then updating it to form a new node
-	duplicateNode := &Node{}
-	// newHead denotes if we need to update the Head of the LinkedList;
-	// that is, if we need to update EpochLastUpdated
-	newHead := false
-	// addNode denotes whether we must add a node.
-	// This will not occur if our update is on another node,
-	// which could happen if multiple updates occur on one epoch.
-	addNode := true
-
-	// Loop backwards through the LinkedList to find firstNode and duplicateNode
-	for {
-		if epoch >= iterNode.thisEpoch {
-			// We will use
-			//
-			// I = iterNode
-			// U = updateNode
-			// F = firstNode
-			// D = duplicateNode
-			// H = Head
-			//
-			// in our diagrams below.
-			//
-			// the update occurs in the current range
-			if epoch == iterNode.thisEpoch {
-				// the update occurs on a node; we do not need to add a node
-				//
-				//                         U
-				//	                       F
-				//	                       I
-				// |---|---|---|---|---|---|---|---|---|---|---|---|
-				firstNode, err = iterNode.Copy()
-				if err != nil {
-					utils.DebugTrace(s.logger, err)
-					return err
-				}
-				addNode = false
-			} else {
-				// epoch > iterNode.thisEpoch
-				if iterNode.IsHead() {
-					// we will add a new node further in the future;
-					// there will be no iteration.
-					//
-					//	       H
-					//	       D
-					//	       I               U
-					// |---|---|---|---|---|---|---|---|---|---|---|---|
-					newHead = true
-				} else {
-					// we start iterating at the node ahead.
-					//
-					//	       D
-					//	       I               U               F
-					// |---|---|---|---|---|---|---|---|---|---|---|---|
-					firstNode, err = s.database.GetNode(txn, iterNode.nextEpoch)
-					if err != nil {
-						utils.DebugTrace(s.logger, err)
-						return err
-					}
-				}
-				duplicateNode, err = iterNode.Copy()
-				if err != nil {
-					utils.DebugTrace(s.logger, err)
-					return err
-				}
-			}
-			break
-		}
-		// If we have reached the tail node, then we do not have a node
-		// for this specific epoch; we raise an error.
-		if iterNode.IsTail() {
-			// We cannot add an update before the first node
-			return ErrInvalidUpdateValue
-		}
-		// We proceed backward in the linked list of nodes
-		prevEpoch := iterNode.prevEpoch
-		iterNode, err = s.database.GetNode(txn, prevEpoch)
-		if err != nil {
-			utils.DebugTrace(s.logger, err)
-			return err
-		}
-	}
-
-	if addNode {
-		// We need to add a new node, so we prepare
-		node := &Node{
-			thisEpoch: epoch,
-		}
-		// We compute the correct RawStorage value
-		// We grab the RawStorage from duplicateNode and then update the value.
-		rs, err := duplicateNode.rawStorage.Copy()
-		if err != nil {
-			utils.DebugTrace(s.logger, err)
-			return err
-		}
-		err = rs.UpdateValue(update)
-		if err != nil {
-			utils.DebugTrace(s.logger, err)
-			return err
-		}
-		node.rawStorage = rs
-		// We add the node to the database
-		err = s.addNode(txn, node)
-		if err != nil {
-			utils.DebugTrace(s.logger, err)
-			return err
-		}
-	}
-
-	if newHead {
-		// We added a new Head, so we need to store this information
-		// before we exit.
-		err = ll.SetEpochLastUpdated(epoch)
-		if err != nil {
-			utils.DebugTrace(s.logger, err)
-			return err
-		}
-		err = s.database.SetLinkedList(txn, ll)
+		s.dynamicValues, err = currentNode.dynamicValues.Copy()
 		if err != nil {
 			utils.DebugTrace(s.logger, err)
 			return err
 		}
 		return nil
+	})
+	// if err == nil, dynamicValues was set and the linked list exists, it means
+	// that we can allow requests to this service. Otherwise, we will need to wait
+	// for an event to create and set the linked list and s.dynamicValues
+	if err == nil {
+		s.startOnce.Do(func() {
+			close(s.startChan)
+		})
+	}
+	return nil
+}
+
+// UpdateStorage updates the database to include changes that must be made to
+// the database. This function also initializes the database, the linked list
+// and closes the start channel. The dynamic service is only allowed to return
+// values after the first node has been added to the list.
+func (s *Storage) UpdateStorage(txn *badger.Txn, update Updater) error {
+	s.Lock()
+	defer s.Unlock()
+
+	newDynamicValue, err := DecodeDynamicValues(update.Value())
+	if err != nil {
+		return err
 	}
 
-	// We now iterate forward from firstNode and update all the nodes
-	// to reflect the new values.
-	iterNode, err = firstNode.Copy()
+	linkedList, err := s.database.GetLinkedList(txn)
+	if err != nil {
+		if !errors.Is(err, ErrKeyNotPresent) {
+			utils.DebugTrace(s.logger, err)
+			return err
+		}
+		// Creates linked list in case it doesn't exist already and update
+		// s.DynamicsValue
+		s.createLinkedList(txn, update.Epoch(), newDynamicValue)
+		if err != nil {
+			return err
+		}
+		s.startOnce.Do(func() {
+			close(s.startChan)
+		})
+		return nil
+	}
+
+	err = s.addNode(txn, linkedList, update.Epoch(), newDynamicValue)
 	if err != nil {
 		utils.DebugTrace(s.logger, err)
 		return err
 	}
 
-	for {
-		err = iterNode.rawStorage.UpdateValue(update)
-		if err != nil {
-			utils.DebugTrace(s.logger, err)
-			return err
-		}
-		err = s.database.SetNode(txn, iterNode)
-		if err != nil {
-			utils.DebugTrace(s.logger, err)
-			return err
-		}
-		if iterNode.IsHead() {
-			break
-		}
-		nextEpoch := iterNode.nextEpoch
-		iterNode, err = s.database.GetNode(txn, nextEpoch)
-		if err != nil {
-			utils.DebugTrace(s.logger, err)
-			return err
-		}
-	}
-
 	return nil
 }
 
-// LoadStorage updates RawStorage to the correct value defined by the epoch.
-//
-// We will attempt to load the correct storage struct.
-// If we receive ErrKeyNotPresent, then we return RawStorage
-// with the standard parameters.
-//
-// We use Lock and Unlock rather than RLock and RUnlock because
-// we modify Storage.
+// LoadStorage updates DynamicValues to the correct value defined by the epoch.
+// We will attempt to load the correct storage struct. If we receive
+// ErrKeyNotPresent, then we return DynamicValues with the standard parameters.
+// We use Lock and Unlock rather than RLock and RUnlock because we modify
+// Storage.
 func (s *Storage) LoadStorage(txn *badger.Txn, epoch uint32) error {
 	<-s.startChan
 
 	s.Lock()
 	defer s.Unlock()
-	rs, err := s.loadStorage(txn, epoch)
+
+	err := s.loadDynamicValues(txn, epoch)
 	if err != nil {
 		utils.DebugTrace(s.logger, err)
 		return err
 	}
-	s.rawStorage, err = rs.Copy()
+
+	return nil
+}
+
+// GetDynamicValueInThePast gets a dynamic value in the past for accusations purposes.
+func (s *Storage) GetDynamicValueInThePast(txn *badger.Txn, epoch uint32) (*DynamicValues, error) {
+	<-s.startChan
+
+	s.Lock()
+	defer s.Unlock()
+
+	return s.getDynamicValueInThePast(txn, epoch)
+}
+
+// GetMaxBlockSize returns the maximum allowed bytes
+func (s *Storage) GetMaxBlockSize() uint32 {
+	<-s.startChan
+
+	s.RLock()
+	defer s.RUnlock()
+	return s.dynamicValues.GetMaxBlockSize()
+}
+
+// GetMaxProposalSize returns the maximum size of bytes allowed in a proposal
+func (s *Storage) GetMaxProposalSize() uint32 {
+	<-s.startChan
+
+	s.RLock()
+	defer s.RUnlock()
+	return s.dynamicValues.GetMaxProposalSize()
+}
+
+// GetProposalStepTimeout returns the proposal step timeout
+func (s *Storage) GetProposalTimeout() time.Duration {
+	<-s.startChan
+
+	s.RLock()
+	defer s.RUnlock()
+	return s.dynamicValues.GetProposalTimeout()
+}
+
+// GetPreVoteStepTimeout returns the prevote step timeout
+func (s *Storage) GetPreVoteTimeout() time.Duration {
+	<-s.startChan
+
+	s.RLock()
+	defer s.RUnlock()
+	return s.dynamicValues.GetPreVoteTimeout()
+}
+
+// GetPreCommitStepTimeout returns the precommit step timeout
+func (s *Storage) GetPreCommitTimeout() time.Duration {
+	<-s.startChan
+
+	s.RLock()
+	defer s.RUnlock()
+	return s.dynamicValues.GetPreCommitTimeout()
+}
+
+// GetDeadBlockRoundNextRoundTimeout returns the timeout required before
+// moving into the DeadBlockRound
+func (s *Storage) GetDeadBlockRoundNextRoundTimeout() time.Duration {
+	<-s.startChan
+
+	s.RLock()
+	defer s.RUnlock()
+	return s.dynamicValues.GetDeadBlockRoundNextRoundTimeout()
+}
+
+// GetDownloadTimeout returns the timeout for downloads
+func (s *Storage) GetDownloadTimeout() time.Duration {
+	<-s.startChan
+
+	s.RLock()
+	defer s.RUnlock()
+	return s.dynamicValues.GetDownloadTimeout()
+}
+
+// GetMinTxFee returns the minimum transaction fee.
+func (s *Storage) GetMinScaledTransactionFee() *big.Int {
+	<-s.startChan
+
+	s.RLock()
+	defer s.RUnlock()
+	return s.dynamicValues.GetMinScaledTransactionFee()
+}
+
+// GetValueStoreFee returns the transaction fee for ValueStore
+func (s *Storage) GetValueStoreFee() *big.Int {
+	<-s.startChan
+
+	s.RLock()
+	defer s.RUnlock()
+	return s.dynamicValues.GetValueStoreFee()
+}
+
+// GetDataStoreFee returns the DataStore fee per epoch
+func (s *Storage) GetDataStoreFee() *big.Int {
+	<-s.startChan
+
+	s.RLock()
+	defer s.RUnlock()
+	return s.dynamicValues.GetDataStoreFee()
+}
+
+// createLinkedList creates the linked list and store a DynamicValue for epoch 1
+// as the first node. This function also update s.DynamicValues.
+func (s *Storage) createLinkedList(txn *badger.Txn, epoch uint32, newDynamicValue *DynamicValues) error {
+	if epoch != 1 {
+		return errors.New(
+			fmt.Sprintf(
+				"Expected to store first dynamic value at epoch 1 got %v epoch instead!"+
+					"Make sure to sync from correct ethereum start block!",
+				epoch,
+			),
+		)
+	}
+	node, linkedList, err := CreateLinkedList(epoch, newDynamicValue)
+	if err != nil {
+		utils.DebugTrace(s.logger, err)
+		return err
+	}
+	err = s.database.SetLinkedList(txn, linkedList)
+	if err != nil {
+		utils.DebugTrace(s.logger, err)
+		return err
+	}
+	err = s.database.SetNode(txn, node)
+	if err != nil {
+		utils.DebugTrace(s.logger, err)
+		return err
+	}
+	// finally assign the value to memory
+	s.dynamicValues, err = newDynamicValue.Copy()
 	if err != nil {
 		utils.DebugTrace(s.logger, err)
 		return err
@@ -341,60 +298,133 @@ func (s *Storage) LoadStorage(txn *badger.Txn, epoch uint32) error {
 	return nil
 }
 
-// loadStorage wraps loadRawStorage and ensures that a valid RawStorage
-// value is returned if possible.
-//
-// When loadStorage is called by other functions, we should only need
-// those functions to have RLock and RUnlock because we do not modify Storage.
-func (s *Storage) loadStorage(txn *badger.Txn, epoch uint32) (*RawStorage, error) {
-	rs, err := s.loadRawStorage(txn, epoch)
+// addNode adds an additional node to the database. This node can only be added
+// after the tail (latest node).
+func (s *Storage) addNode(txn *badger.Txn, linkedList *LinkedList, epoch uint32, newDynamicValue *DynamicValues) error {
+	newTailNode, err := CreateNode(epoch, newDynamicValue)
 	if err != nil {
-		if !errors.Is(err, ErrKeyNotPresent) {
-			utils.DebugTrace(s.logger, err)
-			return nil, err
-		}
-		rs = &RawStorage{}
-		rs.standardParameters()
+		return err
 	}
-	return rs, nil
+	prevTailNode, err := s.database.GetNode(txn, linkedList.GetMostFutureUpdate())
+	if err != nil {
+		utils.DebugTrace(s.logger, err)
+		return err
+	}
+	if !prevTailNode.IsValid() {
+		return ErrInvalid
+	}
+	// node to be added is strictly ahead of most future node
+	if !prevTailNode.IsTail() || newTailNode.thisEpoch <= prevTailNode.thisEpoch {
+		return ErrInvalid
+	}
+	err = newTailNode.SetEpochs(prevTailNode, nil)
+	if err != nil {
+		utils.DebugTrace(s.logger, err)
+		return err
+	}
+	// Store the nodes after changes have been made
+	err = s.database.SetNode(txn, prevTailNode)
+	if err != nil {
+		utils.DebugTrace(s.logger, err)
+		return err
+	}
+	err = s.database.SetNode(txn, newTailNode)
+	if err != nil {
+		utils.DebugTrace(s.logger, err)
+		return err
+	}
+	// Update EpochLastUpdated
+	err = linkedList.SetMostFutureUpdate(newTailNode.thisEpoch)
+	if err != nil {
+		utils.DebugTrace(s.logger, err)
+		return err
+	}
+	err = s.database.SetLinkedList(txn, linkedList)
+	if err != nil {
+		utils.DebugTrace(s.logger, err)
+		return err
+	}
+	return nil
 }
 
-// loadRawStorage looks for the appropriate RawStorage value in the database
-// and returns that value.
-//
-// We start at the most updated epoch and proceed backwards until we arrive
-// at the node with
-//
-//	epoch >= node.thisEpoch
-func (s *Storage) loadRawStorage(txn *badger.Txn, epoch uint32) (*RawStorage, error) {
+// loadDynamicValues looks for the appropriate DynamicValues value in the
+// database and returns that value.
+func (s *Storage) loadDynamicValues(txn *badger.Txn, epoch uint32) error {
+	if epoch == 0 {
+		return ErrZeroEpoch
+	}
+	linkedList, err := s.database.GetLinkedList(txn)
+	if err != nil {
+		utils.DebugTrace(s.logger, err)
+		return err
+	}
+
+	currentNode, err := s.database.GetNode(txn, linkedList.GetEpochLastUpdated())
+	if err != nil {
+		utils.DebugTrace(s.logger, err)
+		return err
+	}
+
+	// if the currentNode is tail or the epoch for the next update is not reached
+	// yet, we return
+	if currentNode.IsTail() || epoch < currentNode.nextEpoch {
+		return nil
+	}
+
+	nextNode, err := s.database.GetNode(txn, currentNode.nextEpoch)
+	if err != nil {
+		utils.DebugTrace(s.logger, err)
+		return err
+	}
+
+	err = linkedList.SetEpochLastUpdated(currentNode.nextEpoch)
+	if err != nil {
+		utils.DebugTrace(s.logger, err)
+		return err
+	}
+
+	err = s.database.SetLinkedList(txn, linkedList)
+	if err != nil {
+		utils.DebugTrace(s.logger, err)
+		return err
+	}
+	s.dynamicValues, err = nextNode.dynamicValues.Copy()
+	if err != nil {
+		utils.DebugTrace(s.logger, err)
+		return err
+	}
+	return nil
+}
+
+// getDynamicValueInThePast gets a dynamic value in the past for accusations purposes.
+func (s *Storage) getDynamicValueInThePast(txn *badger.Txn, epoch uint32) (*DynamicValues, error) {
 	if epoch == 0 {
 		return nil, ErrZeroEpoch
 	}
-	ll, err := s.database.GetLinkedList(txn)
-	if err != nil {
-		utils.DebugTrace(s.logger, err)
-		return nil, err
-	}
-	elu := ll.GetEpochLastUpdated()
-	currentNode, err := s.database.GetNode(txn, elu)
+	linkedList, err := s.database.GetLinkedList(txn)
 	if err != nil {
 		utils.DebugTrace(s.logger, err)
 		return nil, err
 	}
 
+	currentNode, err := s.database.GetNode(txn, linkedList.GetEpochLastUpdated())
+	if err != nil {
+		utils.DebugTrace(s.logger, err)
+		return nil, err
+	}
 	// Loop backwards through the LinkedList
 	for {
 		if epoch >= currentNode.thisEpoch {
-			rs, err := currentNode.rawStorage.Copy()
+			dv, err := currentNode.dynamicValues.Copy()
 			if err != nil {
 				utils.DebugTrace(s.logger, err)
 				return nil, err
 			}
-			return rs, nil
+			return dv, nil
 		}
-		// If we have reached the tail node, then we do not have a node
+		// If we have reached the head node, then we do not have a node
 		// for this specific epoch; we raise an error.
-		if currentNode.IsTail() {
+		if currentNode.IsHead() {
 			utils.DebugTrace(s.logger, ErrInvalid)
 			return nil, ErrInvalid
 		}
@@ -406,282 +436,4 @@ func (s *Storage) loadRawStorage(txn *badger.Txn, epoch uint32) (*RawStorage, er
 			return nil, err
 		}
 	}
-}
-
-// addNode adds an additional node to the database.
-// This node can be added anywhere.
-// If the node is added at the head, then LinkedList must be updated
-// to reflect this change.
-func (s *Storage) addNode(txn *badger.Txn, node *Node) error {
-	<-s.startChan
-
-	// Ensure node.rawStorage and node.thisEpoch are valid;
-	// other parameters should not be set.
-	// This ensure that node.thisEpoch != 0
-	if !node.IsPreValid() {
-		return ErrInvalid
-	}
-
-	// Get LinkedList and Head
-	ll, err := s.database.GetLinkedList(txn)
-	if err != nil {
-		utils.DebugTrace(s.logger, err)
-		return err
-	}
-	elu := ll.GetEpochLastUpdated()
-	currentNode, err := s.database.GetNode(txn, elu)
-	if err != nil {
-		utils.DebugTrace(s.logger, err)
-		return err
-	}
-
-	if node.thisEpoch > currentNode.thisEpoch {
-		// node to be added is strictly ahead of ELU
-		err = s.addNodeHead(txn, node, currentNode)
-		if err != nil {
-			utils.DebugTrace(s.logger, err)
-			return err
-		}
-		return nil
-	}
-
-	if node.thisEpoch == currentNode.thisEpoch {
-		// Node is already present; raise error
-		return ErrInvalid
-	}
-
-	if currentNode.IsTail() {
-		// The first node is always at epoch 1;
-		// we cannot add a node before that.
-		return ErrInvalid
-	}
-
-	// prevNode := &Node{}
-
-	// Loop backwards through the LinkedList
-	for {
-		// Get previous node
-		prevNode, err := s.database.GetNode(txn, currentNode.prevEpoch)
-		if err != nil {
-			utils.DebugTrace(s.logger, err)
-			return err
-		}
-		if prevNode.thisEpoch < node.thisEpoch && node.thisEpoch < currentNode.thisEpoch {
-			// We need to add node in between prevNode and currentNode
-			err = s.addNodeSplit(txn, node, prevNode, currentNode)
-			if err != nil {
-				utils.DebugTrace(s.logger, err)
-				return err
-			}
-			return nil
-		}
-		if node.thisEpoch == prevNode.thisEpoch {
-			// Node is already present; raise error
-			return ErrInvalid
-		}
-		if prevNode.IsTail() {
-			// The first node is always at epoch 1;
-			// we cannot add a node before that.
-			return ErrInvalid
-		}
-		currentNode, err = prevNode.Copy()
-		if err != nil {
-			utils.DebugTrace(s.logger, err)
-			return err
-		}
-	}
-}
-
-func (s *Storage) addNodeHead(txn *badger.Txn, node, headNode *Node) error {
-	if !node.IsPreValid() || !headNode.IsValid() {
-		return ErrInvalid
-	}
-	if !headNode.IsHead() || node.thisEpoch <= headNode.thisEpoch {
-		// We require headNode to be head and node.thisEpoch < headNode.thisEpoch
-		return ErrInvalid
-	}
-	err := node.SetEpochs(headNode, nil)
-	if err != nil {
-		utils.DebugTrace(s.logger, err)
-		return err
-	}
-	// Store the nodes after changes have been made
-	err = s.database.SetNode(txn, headNode)
-	if err != nil {
-		utils.DebugTrace(s.logger, err)
-		return err
-	}
-	err = s.database.SetNode(txn, node)
-	if err != nil {
-		utils.DebugTrace(s.logger, err)
-		return err
-	}
-
-	// Update EpochLastUpdated
-	ll, err := s.database.GetLinkedList(txn)
-	if err != nil {
-		utils.DebugTrace(s.logger, err)
-		return err
-	}
-	// We need to update EpochLastUpdated
-	err = ll.SetEpochLastUpdated(node.thisEpoch)
-	if err != nil {
-		utils.DebugTrace(s.logger, err)
-		return err
-	}
-	err = s.database.SetLinkedList(txn, ll)
-	if err != nil {
-		utils.DebugTrace(s.logger, err)
-		return err
-	}
-	return nil
-}
-
-func (s *Storage) addNodeSplit(txn *badger.Txn, node, prevNode, nextNode *Node) error {
-	if !node.IsPreValid() || !prevNode.IsValid() || !nextNode.IsValid() {
-		return ErrInvalid
-	}
-	if (prevNode.thisEpoch >= node.thisEpoch) || (node.thisEpoch >= nextNode.thisEpoch) {
-		return ErrInvalid
-	}
-	err := node.SetEpochs(prevNode, nextNode)
-	if err != nil {
-		utils.DebugTrace(s.logger, err)
-		return err
-	}
-	// Store the nodes after changes have been made
-	err = s.database.SetNode(txn, prevNode)
-	if err != nil {
-		utils.DebugTrace(s.logger, err)
-		return err
-	}
-	err = s.database.SetNode(txn, nextNode)
-	if err != nil {
-		utils.DebugTrace(s.logger, err)
-		return err
-	}
-	err = s.database.SetNode(txn, node)
-	if err != nil {
-		utils.DebugTrace(s.logger, err)
-		return err
-	}
-	return nil
-}
-
-// GetMaxBytes returns the maximum allowed bytes
-func (s *Storage) GetMaxBytes() uint32 {
-	<-s.startChan
-
-	s.RLock()
-	defer s.RUnlock()
-	return uint32(s.rawStorage.GetMaxBlockSize())
-}
-
-// GetMaxProposalSize returns the maximum size of bytes allowed in a proposal
-func (s *Storage) GetMaxProposalSize() uint32 {
-	<-s.startChan
-
-	s.RLock()
-	defer s.RUnlock()
-	return uint32(s.rawStorage.GetMaxProposalSize())
-}
-
-// GetProposalStepTimeout returns the proposal step timeout
-func (s *Storage) GetProposalTimeout() time.Duration {
-	<-s.startChan
-
-	s.RLock()
-	defer s.RUnlock()
-	return s.rawStorage.GetProposalTimeout()
-}
-
-// GetPreVoteStepTimeout returns the prevote step timeout
-func (s *Storage) GetPreVoteTimeout() time.Duration {
-	<-s.startChan
-
-	s.RLock()
-	defer s.RUnlock()
-	return s.rawStorage.GetPreVoteTimeout()
-}
-
-// GetPreCommitStepTimeout returns the precommit step timeout
-func (s *Storage) GetPreCommitTimeout() time.Duration {
-	<-s.startChan
-
-	s.RLock()
-	defer s.RUnlock()
-	return s.rawStorage.GetPreCommitTimeout()
-}
-
-// GetDeadBlockRoundNextRoundTimeout returns the timeout required before
-// moving into the DeadBlockRound
-func (s *Storage) GetDeadBlockRoundNextRoundTimeout() time.Duration {
-	<-s.startChan
-
-	s.RLock()
-	defer s.RUnlock()
-	return s.rawStorage.GetDeadBlockRoundNextRoundTimeout()
-}
-
-// GetDownloadTimeout returns the timeout for downloads
-func (s *Storage) GetDownloadTimeout() time.Duration {
-	<-s.startChan
-
-	s.RLock()
-	defer s.RUnlock()
-	return s.rawStorage.GetDownloadTimeout()
-}
-
-// GetMinTxFee returns the minimum transaction fee.
-func (s *Storage) GetMinScaledTransactionFee() *big.Int {
-	<-s.startChan
-
-	s.RLock()
-	defer s.RUnlock()
-	return s.rawStorage.GetMinScaledTransactionFee()
-}
-
-// GetTxValidVersion returns the transaction valid version
-func (s *Storage) GetTxValidVersion() uint32 {
-	<-s.startChan
-
-	s.RLock()
-	defer s.RUnlock()
-	return s.rawStorage.GetTxValidVersion()
-}
-
-// GetValueStoreFee returns the transaction fee for ValueStore
-func (s *Storage) GetValueStoreFee() *big.Int {
-	<-s.startChan
-
-	s.RLock()
-	defer s.RUnlock()
-	return s.rawStorage.GetValueStoreFee()
-}
-
-// GetValueStoreValidVersion returns the ValueStore valid version
-func (s *Storage) GetValueStoreValidVersion() uint32 {
-	<-s.startChan
-
-	s.RLock()
-	defer s.RUnlock()
-	return s.rawStorage.GetValueStoreValidVersion()
-}
-
-// GetDataStoreEpochFee returns the DataStore fee per epoch
-func (s *Storage) GetDataStoreEpochFee() *big.Int {
-	<-s.startChan
-
-	s.RLock()
-	defer s.RUnlock()
-	return s.rawStorage.GetDataStoreFee()
-}
-
-// GetDataStoreValidVersion returns the DataStore valid version
-func (s *Storage) GetDataStoreValidVersion() uint32 {
-	<-s.startChan
-
-	s.RLock()
-	defer s.RUnlock()
-	return s.rawStorage.GetDataStoreValidVersion()
 }

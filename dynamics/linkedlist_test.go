@@ -45,7 +45,7 @@ func TestLinkedListMarshal(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if ll.epochLastUpdated != 0 {
+	if ll.currentValue != 0 {
 		t.Fatal("Should have raised error (3)")
 	}
 
@@ -54,7 +54,7 @@ func TestLinkedListMarshal(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if ll.epochLastUpdated != constants.MaxUint32 {
+	if ll.currentValue != constants.MaxUint32 {
 		t.Fatal("Invalid LinkedList (1)")
 	}
 
@@ -99,7 +99,7 @@ func TestCreateLinkedList(t *testing.T) {
 		t.Fatal("Should have raised error (2)")
 	}
 
-	rs := &RawStorage{}
+	rs := &DynamicValues{}
 	rs.standardParameters()
 	node, linkedlist, err := CreateLinkedList(epoch, rs)
 	if err != nil {
@@ -114,7 +114,7 @@ func TestCreateLinkedList(t *testing.T) {
 	if node.nextEpoch != epoch {
 		t.Fatal("invalid nextEpoch")
 	}
-	if linkedlist.epochLastUpdated != epoch {
+	if linkedlist.currentValue != epoch {
 		t.Fatal("invalid epochLastUpdated")
 	}
 }

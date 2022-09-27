@@ -715,18 +715,17 @@ func (srpc *Handlers) HandleLocalStateGetFees(ctx context.Context, req *pb.FeeRe
 	}
 
 	sg := srpc.Storage
-	txFee := sg.GetMinTxFee()
+	txFee := sg.GetMinScaledTransactionFee()
 	txfs, err := bigIntToString(txFee)
 	if err != nil {
 		return nil, err
 	}
-
 	vsFee := sg.GetValueStoreFee()
 	vsfs, err := bigIntToString(vsFee)
 	if err != nil {
 		return nil, err
 	}
-	dsFee := sg.GetDataStoreEpochFee()
+	dsFee := sg.GetDataStoreFee()
 	dsfs, err := bigIntToString(dsFee)
 	if err != nil {
 		return nil, err

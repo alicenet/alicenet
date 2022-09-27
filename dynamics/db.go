@@ -3,6 +3,7 @@ package dynamics
 import (
 	"sync"
 
+	"github.com/alicenet/alicenet/constants/dbprefix"
 	"github.com/dgraph-io/badger/v2"
 	"github.com/sirupsen/logrus"
 )
@@ -73,12 +74,8 @@ func (db *Database) SetLinkedList(txn *badger.Txn, ll *LinkedList) error {
 		return ErrInvalid
 	}
 	value := ll.Marshal()
-	llKey := makeLinkedListKey()
-	key, err := llKey.Marshal()
-	if err != nil {
-		return err
-	}
-	err = db.rawDB.SetValue(txn, key, value)
+	llKey := dbprefix.PrefixStorageLinkedListKey()
+	err := db.rawDB.SetValue(txn, llKey, value)
 	if err != nil {
 		return err
 	}
@@ -87,12 +84,8 @@ func (db *Database) SetLinkedList(txn *badger.Txn, ll *LinkedList) error {
 
 // GetLinkedList retrieves LinkedList from the database
 func (db *Database) GetLinkedList(txn *badger.Txn) (*LinkedList, error) {
-	llKey := makeLinkedListKey()
-	key, err := llKey.Marshal()
-	if err != nil {
-		return nil, err
-	}
-	v, err := db.rawDB.GetValue(txn, key)
+	llKey := dbprefix.PrefixStorageLinkedListKey()
+	v, err := db.rawDB.GetValue(txn, llKey)
 	if err != nil {
 		return nil, err
 	}
