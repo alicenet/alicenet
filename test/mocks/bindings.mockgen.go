@@ -57,10 +57,6 @@ type MockIAToken struct {
 	// object controlling the behavior of the method
 	// GetMetamorphicContractAddress.
 	GetMetamorphicContractAddressFunc *IATokenGetMetamorphicContractAddressFunc
-	// GetStaticPoolContractAddressFunc is an instance of a mock function
-	// object controlling the behavior of the method
-	// GetStaticPoolContractAddress.
-	GetStaticPoolContractAddressFunc *IATokenGetStaticPoolContractAddressFunc
 	// IncreaseAllowanceFunc is an instance of a mock function object
 	// controlling the behavior of the method IncreaseAllowance.
 	IncreaseAllowanceFunc *IATokenIncreaseAllowanceFunc
@@ -161,11 +157,6 @@ func NewMockIAToken() *MockIAToken {
 			},
 		},
 		GetMetamorphicContractAddressFunc: &IATokenGetMetamorphicContractAddressFunc{
-			defaultHook: func(*bind.CallOpts, [32]byte, common.Address) (r0 common.Address, r1 error) {
-				return
-			},
-		},
-		GetStaticPoolContractAddressFunc: &IATokenGetStaticPoolContractAddressFunc{
 			defaultHook: func(*bind.CallOpts, [32]byte, common.Address) (r0 common.Address, r1 error) {
 				return
 			},
@@ -297,11 +288,6 @@ func NewStrictMockIAToken() *MockIAToken {
 				panic("unexpected invocation of MockIAToken.GetMetamorphicContractAddress")
 			},
 		},
-		GetStaticPoolContractAddressFunc: &IATokenGetStaticPoolContractAddressFunc{
-			defaultHook: func(*bind.CallOpts, [32]byte, common.Address) (common.Address, error) {
-				panic("unexpected invocation of MockIAToken.GetStaticPoolContractAddress")
-			},
-		},
 		IncreaseAllowanceFunc: &IATokenIncreaseAllowanceFunc{
 			defaultHook: func(*bind.TransactOpts, common.Address, *big.Int) (*types.Transaction, error) {
 				panic("unexpected invocation of MockIAToken.IncreaseAllowance")
@@ -402,9 +388,6 @@ func NewMockIATokenFrom(i bindings.IAToken) *MockIAToken {
 		},
 		GetMetamorphicContractAddressFunc: &IATokenGetMetamorphicContractAddressFunc{
 			defaultHook: i.GetMetamorphicContractAddress,
-		},
-		GetStaticPoolContractAddressFunc: &IATokenGetStaticPoolContractAddressFunc{
-			defaultHook: i.GetStaticPoolContractAddress,
 		},
 		IncreaseAllowanceFunc: &IATokenIncreaseAllowanceFunc{
 			defaultHook: i.IncreaseAllowance,
@@ -1861,120 +1844,6 @@ func (c IATokenGetMetamorphicContractAddressFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
-// IATokenGetStaticPoolContractAddressFunc describes the behavior when the
-// GetStaticPoolContractAddress method of the parent MockIAToken instance is
-// invoked.
-type IATokenGetStaticPoolContractAddressFunc struct {
-	defaultHook func(*bind.CallOpts, [32]byte, common.Address) (common.Address, error)
-	hooks       []func(*bind.CallOpts, [32]byte, common.Address) (common.Address, error)
-	history     []IATokenGetStaticPoolContractAddressFuncCall
-	mutex       sync.Mutex
-}
-
-// GetStaticPoolContractAddress delegates to the next hook function in the
-// queue and stores the parameter and result values of this invocation.
-func (m *MockIAToken) GetStaticPoolContractAddress(v0 *bind.CallOpts, v1 [32]byte, v2 common.Address) (common.Address, error) {
-	r0, r1 := m.GetStaticPoolContractAddressFunc.nextHook()(v0, v1, v2)
-	m.GetStaticPoolContractAddressFunc.appendCall(IATokenGetStaticPoolContractAddressFuncCall{v0, v1, v2, r0, r1})
-	return r0, r1
-}
-
-// SetDefaultHook sets function that is called when the
-// GetStaticPoolContractAddress method of the parent MockIAToken instance is
-// invoked and the hook queue is empty.
-func (f *IATokenGetStaticPoolContractAddressFunc) SetDefaultHook(hook func(*bind.CallOpts, [32]byte, common.Address) (common.Address, error)) {
-	f.defaultHook = hook
-}
-
-// PushHook adds a function to the end of hook queue. Each invocation of the
-// GetStaticPoolContractAddress method of the parent MockIAToken instance
-// invokes the hook at the front of the queue and discards it. After the
-// queue is empty, the default hook function is invoked for any future
-// action.
-func (f *IATokenGetStaticPoolContractAddressFunc) PushHook(hook func(*bind.CallOpts, [32]byte, common.Address) (common.Address, error)) {
-	f.mutex.Lock()
-	f.hooks = append(f.hooks, hook)
-	f.mutex.Unlock()
-}
-
-// SetDefaultReturn calls SetDefaultHook with a function that returns the
-// given values.
-func (f *IATokenGetStaticPoolContractAddressFunc) SetDefaultReturn(r0 common.Address, r1 error) {
-	f.SetDefaultHook(func(*bind.CallOpts, [32]byte, common.Address) (common.Address, error) {
-		return r0, r1
-	})
-}
-
-// PushReturn calls PushHook with a function that returns the given values.
-func (f *IATokenGetStaticPoolContractAddressFunc) PushReturn(r0 common.Address, r1 error) {
-	f.PushHook(func(*bind.CallOpts, [32]byte, common.Address) (common.Address, error) {
-		return r0, r1
-	})
-}
-
-func (f *IATokenGetStaticPoolContractAddressFunc) nextHook() func(*bind.CallOpts, [32]byte, common.Address) (common.Address, error) {
-	f.mutex.Lock()
-	defer f.mutex.Unlock()
-
-	if len(f.hooks) == 0 {
-		return f.defaultHook
-	}
-
-	hook := f.hooks[0]
-	f.hooks = f.hooks[1:]
-	return hook
-}
-
-func (f *IATokenGetStaticPoolContractAddressFunc) appendCall(r0 IATokenGetStaticPoolContractAddressFuncCall) {
-	f.mutex.Lock()
-	f.history = append(f.history, r0)
-	f.mutex.Unlock()
-}
-
-// History returns a sequence of IATokenGetStaticPoolContractAddressFuncCall
-// objects describing the invocations of this function.
-func (f *IATokenGetStaticPoolContractAddressFunc) History() []IATokenGetStaticPoolContractAddressFuncCall {
-	f.mutex.Lock()
-	history := make([]IATokenGetStaticPoolContractAddressFuncCall, len(f.history))
-	copy(history, f.history)
-	f.mutex.Unlock()
-
-	return history
-}
-
-// IATokenGetStaticPoolContractAddressFuncCall is an object that describes
-// an invocation of method GetStaticPoolContractAddress on an instance of
-// MockIAToken.
-type IATokenGetStaticPoolContractAddressFuncCall struct {
-	// Arg0 is the value of the 1st argument passed to this method
-	// invocation.
-	Arg0 *bind.CallOpts
-	// Arg1 is the value of the 2nd argument passed to this method
-	// invocation.
-	Arg1 [32]byte
-	// Arg2 is the value of the 3rd argument passed to this method
-	// invocation.
-	Arg2 common.Address
-	// Result0 is the value of the 1st result returned from this method
-	// invocation.
-	Result0 common.Address
-	// Result1 is the value of the 2nd result returned from this method
-	// invocation.
-	Result1 error
-}
-
-// Args returns an interface slice containing the arguments of this
-// invocation.
-func (c IATokenGetStaticPoolContractAddressFuncCall) Args() []interface{} {
-	return []interface{}{c.Arg0, c.Arg1, c.Arg2}
-}
-
-// Results returns an interface slice containing the results of this
-// invocation.
-func (c IATokenGetStaticPoolContractAddressFuncCall) Results() []interface{} {
-	return []interface{}{c.Result0, c.Result1}
-}
-
 // IATokenIncreaseAllowanceFunc describes the behavior when the
 // IncreaseAllowance method of the parent MockIAToken instance is invoked.
 type IATokenIncreaseAllowanceFunc struct {
@@ -3228,10 +3097,6 @@ type MockIAliceNetFactory struct {
 	// GetNumContractsFunc is an instance of a mock function object
 	// controlling the behavior of the method GetNumContracts.
 	GetNumContractsFunc *IAliceNetFactoryGetNumContractsFunc
-	// GetStaticPoolContractAddressFunc is an instance of a mock function
-	// object controlling the behavior of the method
-	// GetStaticPoolContractAddress.
-	GetStaticPoolContractAddressFunc *IAliceNetFactoryGetStaticPoolContractAddressFunc
 	// InitializeContractFunc is an instance of a mock function object
 	// controlling the behavior of the method InitializeContract.
 	InitializeContractFunc *IAliceNetFactoryInitializeContractFunc
@@ -3377,11 +3242,6 @@ func NewMockIAliceNetFactory() *MockIAliceNetFactory {
 		},
 		GetNumContractsFunc: &IAliceNetFactoryGetNumContractsFunc{
 			defaultHook: func(*bind.CallOpts) (r0 *big.Int, r1 error) {
-				return
-			},
-		},
-		GetStaticPoolContractAddressFunc: &IAliceNetFactoryGetStaticPoolContractAddressFunc{
-			defaultHook: func(*bind.CallOpts, [32]byte, common.Address) (r0 common.Address, r1 error) {
 				return
 			},
 		},
@@ -3567,11 +3427,6 @@ func NewStrictMockIAliceNetFactory() *MockIAliceNetFactory {
 				panic("unexpected invocation of MockIAliceNetFactory.GetNumContracts")
 			},
 		},
-		GetStaticPoolContractAddressFunc: &IAliceNetFactoryGetStaticPoolContractAddressFunc{
-			defaultHook: func(*bind.CallOpts, [32]byte, common.Address) (common.Address, error) {
-				panic("unexpected invocation of MockIAliceNetFactory.GetStaticPoolContractAddress")
-			},
-		},
 		InitializeContractFunc: &IAliceNetFactoryInitializeContractFunc{
 			defaultHook: func(*bind.TransactOpts, common.Address, []byte) (*types.Transaction, error) {
 				panic("unexpected invocation of MockIAliceNetFactory.InitializeContract")
@@ -3718,9 +3573,6 @@ func NewMockIAliceNetFactoryFrom(i bindings.IAliceNetFactory) *MockIAliceNetFact
 		},
 		GetNumContractsFunc: &IAliceNetFactoryGetNumContractsFunc{
 			defaultHook: i.GetNumContracts,
-		},
-		GetStaticPoolContractAddressFunc: &IAliceNetFactoryGetStaticPoolContractAddressFunc{
-			defaultHook: i.GetStaticPoolContractAddress,
 		},
 		InitializeContractFunc: &IAliceNetFactoryInitializeContractFunc{
 			defaultHook: i.InitializeContract,
@@ -5755,121 +5607,6 @@ func (c IAliceNetFactoryGetNumContractsFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
-// IAliceNetFactoryGetStaticPoolContractAddressFunc describes the behavior
-// when the GetStaticPoolContractAddress method of the parent
-// MockIAliceNetFactory instance is invoked.
-type IAliceNetFactoryGetStaticPoolContractAddressFunc struct {
-	defaultHook func(*bind.CallOpts, [32]byte, common.Address) (common.Address, error)
-	hooks       []func(*bind.CallOpts, [32]byte, common.Address) (common.Address, error)
-	history     []IAliceNetFactoryGetStaticPoolContractAddressFuncCall
-	mutex       sync.Mutex
-}
-
-// GetStaticPoolContractAddress delegates to the next hook function in the
-// queue and stores the parameter and result values of this invocation.
-func (m *MockIAliceNetFactory) GetStaticPoolContractAddress(v0 *bind.CallOpts, v1 [32]byte, v2 common.Address) (common.Address, error) {
-	r0, r1 := m.GetStaticPoolContractAddressFunc.nextHook()(v0, v1, v2)
-	m.GetStaticPoolContractAddressFunc.appendCall(IAliceNetFactoryGetStaticPoolContractAddressFuncCall{v0, v1, v2, r0, r1})
-	return r0, r1
-}
-
-// SetDefaultHook sets function that is called when the
-// GetStaticPoolContractAddress method of the parent MockIAliceNetFactory
-// instance is invoked and the hook queue is empty.
-func (f *IAliceNetFactoryGetStaticPoolContractAddressFunc) SetDefaultHook(hook func(*bind.CallOpts, [32]byte, common.Address) (common.Address, error)) {
-	f.defaultHook = hook
-}
-
-// PushHook adds a function to the end of hook queue. Each invocation of the
-// GetStaticPoolContractAddress method of the parent MockIAliceNetFactory
-// instance invokes the hook at the front of the queue and discards it.
-// After the queue is empty, the default hook function is invoked for any
-// future action.
-func (f *IAliceNetFactoryGetStaticPoolContractAddressFunc) PushHook(hook func(*bind.CallOpts, [32]byte, common.Address) (common.Address, error)) {
-	f.mutex.Lock()
-	f.hooks = append(f.hooks, hook)
-	f.mutex.Unlock()
-}
-
-// SetDefaultReturn calls SetDefaultHook with a function that returns the
-// given values.
-func (f *IAliceNetFactoryGetStaticPoolContractAddressFunc) SetDefaultReturn(r0 common.Address, r1 error) {
-	f.SetDefaultHook(func(*bind.CallOpts, [32]byte, common.Address) (common.Address, error) {
-		return r0, r1
-	})
-}
-
-// PushReturn calls PushHook with a function that returns the given values.
-func (f *IAliceNetFactoryGetStaticPoolContractAddressFunc) PushReturn(r0 common.Address, r1 error) {
-	f.PushHook(func(*bind.CallOpts, [32]byte, common.Address) (common.Address, error) {
-		return r0, r1
-	})
-}
-
-func (f *IAliceNetFactoryGetStaticPoolContractAddressFunc) nextHook() func(*bind.CallOpts, [32]byte, common.Address) (common.Address, error) {
-	f.mutex.Lock()
-	defer f.mutex.Unlock()
-
-	if len(f.hooks) == 0 {
-		return f.defaultHook
-	}
-
-	hook := f.hooks[0]
-	f.hooks = f.hooks[1:]
-	return hook
-}
-
-func (f *IAliceNetFactoryGetStaticPoolContractAddressFunc) appendCall(r0 IAliceNetFactoryGetStaticPoolContractAddressFuncCall) {
-	f.mutex.Lock()
-	f.history = append(f.history, r0)
-	f.mutex.Unlock()
-}
-
-// History returns a sequence of
-// IAliceNetFactoryGetStaticPoolContractAddressFuncCall objects describing
-// the invocations of this function.
-func (f *IAliceNetFactoryGetStaticPoolContractAddressFunc) History() []IAliceNetFactoryGetStaticPoolContractAddressFuncCall {
-	f.mutex.Lock()
-	history := make([]IAliceNetFactoryGetStaticPoolContractAddressFuncCall, len(f.history))
-	copy(history, f.history)
-	f.mutex.Unlock()
-
-	return history
-}
-
-// IAliceNetFactoryGetStaticPoolContractAddressFuncCall is an object that
-// describes an invocation of method GetStaticPoolContractAddress on an
-// instance of MockIAliceNetFactory.
-type IAliceNetFactoryGetStaticPoolContractAddressFuncCall struct {
-	// Arg0 is the value of the 1st argument passed to this method
-	// invocation.
-	Arg0 *bind.CallOpts
-	// Arg1 is the value of the 2nd argument passed to this method
-	// invocation.
-	Arg1 [32]byte
-	// Arg2 is the value of the 3rd argument passed to this method
-	// invocation.
-	Arg2 common.Address
-	// Result0 is the value of the 1st result returned from this method
-	// invocation.
-	Result0 common.Address
-	// Result1 is the value of the 2nd result returned from this method
-	// invocation.
-	Result1 error
-}
-
-// Args returns an interface slice containing the arguments of this
-// invocation.
-func (c IAliceNetFactoryGetStaticPoolContractAddressFuncCall) Args() []interface{} {
-	return []interface{}{c.Arg0, c.Arg1, c.Arg2}
-}
-
-// Results returns an interface slice containing the results of this
-// invocation.
-func (c IAliceNetFactoryGetStaticPoolContractAddressFuncCall) Results() []interface{} {
-	return []interface{}{c.Result0, c.Result1}
-}
-
 // IAliceNetFactoryInitializeContractFunc describes the behavior when the
 // InitializeContract method of the parent MockIAliceNetFactory instance is
 // invoked.
@@ -7821,10 +7558,6 @@ type MockIBToken struct {
 	// GetPoolBalanceFunc is an instance of a mock function object
 	// controlling the behavior of the method GetPoolBalance.
 	GetPoolBalanceFunc *IBTokenGetPoolBalanceFunc
-	// GetStaticPoolContractAddressFunc is an instance of a mock function
-	// object controlling the behavior of the method
-	// GetStaticPoolContractAddress.
-	GetStaticPoolContractAddressFunc *IBTokenGetStaticPoolContractAddressFunc
 	// GetTotalBTokensDepositedFunc is an instance of a mock function object
 	// controlling the behavior of the method GetTotalBTokensDeposited.
 	GetTotalBTokensDepositedFunc *IBTokenGetTotalBTokensDepositedFunc
@@ -8012,11 +7745,6 @@ func NewMockIBToken() *MockIBToken {
 		},
 		GetPoolBalanceFunc: &IBTokenGetPoolBalanceFunc{
 			defaultHook: func(*bind.CallOpts) (r0 *big.Int, r1 error) {
-				return
-			},
-		},
-		GetStaticPoolContractAddressFunc: &IBTokenGetStaticPoolContractAddressFunc{
-			defaultHook: func(*bind.CallOpts, [32]byte, common.Address) (r0 common.Address, r1 error) {
 				return
 			},
 		},
@@ -8247,11 +7975,6 @@ func NewStrictMockIBToken() *MockIBToken {
 				panic("unexpected invocation of MockIBToken.GetPoolBalance")
 			},
 		},
-		GetStaticPoolContractAddressFunc: &IBTokenGetStaticPoolContractAddressFunc{
-			defaultHook: func(*bind.CallOpts, [32]byte, common.Address) (common.Address, error) {
-				panic("unexpected invocation of MockIBToken.GetStaticPoolContractAddress")
-			},
-		},
 		GetTotalBTokensDepositedFunc: &IBTokenGetTotalBTokensDepositedFunc{
 			defaultHook: func(*bind.CallOpts) (*big.Int, error) {
 				panic("unexpected invocation of MockIBToken.GetTotalBTokensDeposited")
@@ -8426,9 +8149,6 @@ func NewMockIBTokenFrom(i bindings.IBToken) *MockIBToken {
 		},
 		GetPoolBalanceFunc: &IBTokenGetPoolBalanceFunc{
 			defaultHook: i.GetPoolBalance,
-		},
-		GetStaticPoolContractAddressFunc: &IBTokenGetStaticPoolContractAddressFunc{
-			defaultHook: i.GetStaticPoolContractAddress,
 		},
 		GetTotalBTokensDepositedFunc: &IBTokenGetTotalBTokensDepositedFunc{
 			defaultHook: i.GetTotalBTokensDeposited,
@@ -11346,120 +11066,6 @@ func (c IBTokenGetPoolBalanceFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
-// IBTokenGetStaticPoolContractAddressFunc describes the behavior when the
-// GetStaticPoolContractAddress method of the parent MockIBToken instance is
-// invoked.
-type IBTokenGetStaticPoolContractAddressFunc struct {
-	defaultHook func(*bind.CallOpts, [32]byte, common.Address) (common.Address, error)
-	hooks       []func(*bind.CallOpts, [32]byte, common.Address) (common.Address, error)
-	history     []IBTokenGetStaticPoolContractAddressFuncCall
-	mutex       sync.Mutex
-}
-
-// GetStaticPoolContractAddress delegates to the next hook function in the
-// queue and stores the parameter and result values of this invocation.
-func (m *MockIBToken) GetStaticPoolContractAddress(v0 *bind.CallOpts, v1 [32]byte, v2 common.Address) (common.Address, error) {
-	r0, r1 := m.GetStaticPoolContractAddressFunc.nextHook()(v0, v1, v2)
-	m.GetStaticPoolContractAddressFunc.appendCall(IBTokenGetStaticPoolContractAddressFuncCall{v0, v1, v2, r0, r1})
-	return r0, r1
-}
-
-// SetDefaultHook sets function that is called when the
-// GetStaticPoolContractAddress method of the parent MockIBToken instance is
-// invoked and the hook queue is empty.
-func (f *IBTokenGetStaticPoolContractAddressFunc) SetDefaultHook(hook func(*bind.CallOpts, [32]byte, common.Address) (common.Address, error)) {
-	f.defaultHook = hook
-}
-
-// PushHook adds a function to the end of hook queue. Each invocation of the
-// GetStaticPoolContractAddress method of the parent MockIBToken instance
-// invokes the hook at the front of the queue and discards it. After the
-// queue is empty, the default hook function is invoked for any future
-// action.
-func (f *IBTokenGetStaticPoolContractAddressFunc) PushHook(hook func(*bind.CallOpts, [32]byte, common.Address) (common.Address, error)) {
-	f.mutex.Lock()
-	f.hooks = append(f.hooks, hook)
-	f.mutex.Unlock()
-}
-
-// SetDefaultReturn calls SetDefaultHook with a function that returns the
-// given values.
-func (f *IBTokenGetStaticPoolContractAddressFunc) SetDefaultReturn(r0 common.Address, r1 error) {
-	f.SetDefaultHook(func(*bind.CallOpts, [32]byte, common.Address) (common.Address, error) {
-		return r0, r1
-	})
-}
-
-// PushReturn calls PushHook with a function that returns the given values.
-func (f *IBTokenGetStaticPoolContractAddressFunc) PushReturn(r0 common.Address, r1 error) {
-	f.PushHook(func(*bind.CallOpts, [32]byte, common.Address) (common.Address, error) {
-		return r0, r1
-	})
-}
-
-func (f *IBTokenGetStaticPoolContractAddressFunc) nextHook() func(*bind.CallOpts, [32]byte, common.Address) (common.Address, error) {
-	f.mutex.Lock()
-	defer f.mutex.Unlock()
-
-	if len(f.hooks) == 0 {
-		return f.defaultHook
-	}
-
-	hook := f.hooks[0]
-	f.hooks = f.hooks[1:]
-	return hook
-}
-
-func (f *IBTokenGetStaticPoolContractAddressFunc) appendCall(r0 IBTokenGetStaticPoolContractAddressFuncCall) {
-	f.mutex.Lock()
-	f.history = append(f.history, r0)
-	f.mutex.Unlock()
-}
-
-// History returns a sequence of IBTokenGetStaticPoolContractAddressFuncCall
-// objects describing the invocations of this function.
-func (f *IBTokenGetStaticPoolContractAddressFunc) History() []IBTokenGetStaticPoolContractAddressFuncCall {
-	f.mutex.Lock()
-	history := make([]IBTokenGetStaticPoolContractAddressFuncCall, len(f.history))
-	copy(history, f.history)
-	f.mutex.Unlock()
-
-	return history
-}
-
-// IBTokenGetStaticPoolContractAddressFuncCall is an object that describes
-// an invocation of method GetStaticPoolContractAddress on an instance of
-// MockIBToken.
-type IBTokenGetStaticPoolContractAddressFuncCall struct {
-	// Arg0 is the value of the 1st argument passed to this method
-	// invocation.
-	Arg0 *bind.CallOpts
-	// Arg1 is the value of the 2nd argument passed to this method
-	// invocation.
-	Arg1 [32]byte
-	// Arg2 is the value of the 3rd argument passed to this method
-	// invocation.
-	Arg2 common.Address
-	// Result0 is the value of the 1st result returned from this method
-	// invocation.
-	Result0 common.Address
-	// Result1 is the value of the 2nd result returned from this method
-	// invocation.
-	Result1 error
-}
-
-// Args returns an interface slice containing the arguments of this
-// invocation.
-func (c IBTokenGetStaticPoolContractAddressFuncCall) Args() []interface{} {
-	return []interface{}{c.Arg0, c.Arg1, c.Arg2}
-}
-
-// Results returns an interface slice containing the results of this
-// invocation.
-func (c IBTokenGetStaticPoolContractAddressFuncCall) Results() []interface{} {
-	return []interface{}{c.Result0, c.Result1}
-}
-
 // IBTokenGetTotalBTokensDepositedFunc describes the behavior when the
 // GetTotalBTokensDeposited method of the parent MockIBToken instance is
 // invoked.
@@ -13481,10 +13087,6 @@ type MockIDynamics struct {
 	// GetPreviousDynamicValuesFunc is an instance of a mock function object
 	// controlling the behavior of the method GetPreviousDynamicValues.
 	GetPreviousDynamicValuesFunc *IDynamicsGetPreviousDynamicValuesFunc
-	// GetStaticPoolContractAddressFunc is an instance of a mock function
-	// object controlling the behavior of the method
-	// GetStaticPoolContractAddress.
-	GetStaticPoolContractAddressFunc *IDynamicsGetStaticPoolContractAddressFunc
 	// InitializeFunc is an instance of a mock function object controlling
 	// the behavior of the method Initialize.
 	InitializeFunc *IDynamicsInitializeFunc
@@ -13612,11 +13214,6 @@ func NewMockIDynamics() *MockIDynamics {
 		},
 		GetPreviousDynamicValuesFunc: &IDynamicsGetPreviousDynamicValuesFunc{
 			defaultHook: func(*bind.CallOpts, *big.Int) (r0 bindings.DynamicValues, r1 error) {
-				return
-			},
-		},
-		GetStaticPoolContractAddressFunc: &IDynamicsGetStaticPoolContractAddressFunc{
-			defaultHook: func(*bind.CallOpts, [32]byte, common.Address) (r0 common.Address, r1 error) {
 				return
 			},
 		},
@@ -13772,11 +13369,6 @@ func NewStrictMockIDynamics() *MockIDynamics {
 				panic("unexpected invocation of MockIDynamics.GetPreviousDynamicValues")
 			},
 		},
-		GetStaticPoolContractAddressFunc: &IDynamicsGetStaticPoolContractAddressFunc{
-			defaultHook: func(*bind.CallOpts, [32]byte, common.Address) (common.Address, error) {
-				panic("unexpected invocation of MockIDynamics.GetStaticPoolContractAddress")
-			},
-		},
 		InitializeFunc: &IDynamicsInitializeFunc{
 			defaultHook: func(*bind.TransactOpts) (*types.Transaction, error) {
 				panic("unexpected invocation of MockIDynamics.Initialize")
@@ -13898,9 +13490,6 @@ func NewMockIDynamicsFrom(i bindings.IDynamics) *MockIDynamics {
 		},
 		GetPreviousDynamicValuesFunc: &IDynamicsGetPreviousDynamicValuesFunc{
 			defaultHook: i.GetPreviousDynamicValues,
-		},
-		GetStaticPoolContractAddressFunc: &IDynamicsGetStaticPoolContractAddressFunc{
-			defaultHook: i.GetStaticPoolContractAddress,
 		},
 		InitializeFunc: &IDynamicsInitializeFunc{
 			defaultHook: i.Initialize,
@@ -15580,121 +15169,6 @@ func (c IDynamicsGetPreviousDynamicValuesFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
-// IDynamicsGetStaticPoolContractAddressFunc describes the behavior when the
-// GetStaticPoolContractAddress method of the parent MockIDynamics instance
-// is invoked.
-type IDynamicsGetStaticPoolContractAddressFunc struct {
-	defaultHook func(*bind.CallOpts, [32]byte, common.Address) (common.Address, error)
-	hooks       []func(*bind.CallOpts, [32]byte, common.Address) (common.Address, error)
-	history     []IDynamicsGetStaticPoolContractAddressFuncCall
-	mutex       sync.Mutex
-}
-
-// GetStaticPoolContractAddress delegates to the next hook function in the
-// queue and stores the parameter and result values of this invocation.
-func (m *MockIDynamics) GetStaticPoolContractAddress(v0 *bind.CallOpts, v1 [32]byte, v2 common.Address) (common.Address, error) {
-	r0, r1 := m.GetStaticPoolContractAddressFunc.nextHook()(v0, v1, v2)
-	m.GetStaticPoolContractAddressFunc.appendCall(IDynamicsGetStaticPoolContractAddressFuncCall{v0, v1, v2, r0, r1})
-	return r0, r1
-}
-
-// SetDefaultHook sets function that is called when the
-// GetStaticPoolContractAddress method of the parent MockIDynamics instance
-// is invoked and the hook queue is empty.
-func (f *IDynamicsGetStaticPoolContractAddressFunc) SetDefaultHook(hook func(*bind.CallOpts, [32]byte, common.Address) (common.Address, error)) {
-	f.defaultHook = hook
-}
-
-// PushHook adds a function to the end of hook queue. Each invocation of the
-// GetStaticPoolContractAddress method of the parent MockIDynamics instance
-// invokes the hook at the front of the queue and discards it. After the
-// queue is empty, the default hook function is invoked for any future
-// action.
-func (f *IDynamicsGetStaticPoolContractAddressFunc) PushHook(hook func(*bind.CallOpts, [32]byte, common.Address) (common.Address, error)) {
-	f.mutex.Lock()
-	f.hooks = append(f.hooks, hook)
-	f.mutex.Unlock()
-}
-
-// SetDefaultReturn calls SetDefaultHook with a function that returns the
-// given values.
-func (f *IDynamicsGetStaticPoolContractAddressFunc) SetDefaultReturn(r0 common.Address, r1 error) {
-	f.SetDefaultHook(func(*bind.CallOpts, [32]byte, common.Address) (common.Address, error) {
-		return r0, r1
-	})
-}
-
-// PushReturn calls PushHook with a function that returns the given values.
-func (f *IDynamicsGetStaticPoolContractAddressFunc) PushReturn(r0 common.Address, r1 error) {
-	f.PushHook(func(*bind.CallOpts, [32]byte, common.Address) (common.Address, error) {
-		return r0, r1
-	})
-}
-
-func (f *IDynamicsGetStaticPoolContractAddressFunc) nextHook() func(*bind.CallOpts, [32]byte, common.Address) (common.Address, error) {
-	f.mutex.Lock()
-	defer f.mutex.Unlock()
-
-	if len(f.hooks) == 0 {
-		return f.defaultHook
-	}
-
-	hook := f.hooks[0]
-	f.hooks = f.hooks[1:]
-	return hook
-}
-
-func (f *IDynamicsGetStaticPoolContractAddressFunc) appendCall(r0 IDynamicsGetStaticPoolContractAddressFuncCall) {
-	f.mutex.Lock()
-	f.history = append(f.history, r0)
-	f.mutex.Unlock()
-}
-
-// History returns a sequence of
-// IDynamicsGetStaticPoolContractAddressFuncCall objects describing the
-// invocations of this function.
-func (f *IDynamicsGetStaticPoolContractAddressFunc) History() []IDynamicsGetStaticPoolContractAddressFuncCall {
-	f.mutex.Lock()
-	history := make([]IDynamicsGetStaticPoolContractAddressFuncCall, len(f.history))
-	copy(history, f.history)
-	f.mutex.Unlock()
-
-	return history
-}
-
-// IDynamicsGetStaticPoolContractAddressFuncCall is an object that describes
-// an invocation of method GetStaticPoolContractAddress on an instance of
-// MockIDynamics.
-type IDynamicsGetStaticPoolContractAddressFuncCall struct {
-	// Arg0 is the value of the 1st argument passed to this method
-	// invocation.
-	Arg0 *bind.CallOpts
-	// Arg1 is the value of the 2nd argument passed to this method
-	// invocation.
-	Arg1 [32]byte
-	// Arg2 is the value of the 3rd argument passed to this method
-	// invocation.
-	Arg2 common.Address
-	// Result0 is the value of the 1st result returned from this method
-	// invocation.
-	Result0 common.Address
-	// Result1 is the value of the 2nd result returned from this method
-	// invocation.
-	Result1 error
-}
-
-// Args returns an interface slice containing the arguments of this
-// invocation.
-func (c IDynamicsGetStaticPoolContractAddressFuncCall) Args() []interface{} {
-	return []interface{}{c.Arg0, c.Arg1, c.Arg2}
-}
-
-// Results returns an interface slice containing the results of this
-// invocation.
-func (c IDynamicsGetStaticPoolContractAddressFuncCall) Results() []interface{} {
-	return []interface{}{c.Result0, c.Result1}
-}
-
 // IDynamicsInitializeFunc describes the behavior when the Initialize method
 // of the parent MockIDynamics instance is invoked.
 type IDynamicsInitializeFunc struct {
@@ -17358,10 +16832,6 @@ type MockIETHDKG struct {
 	// GetPhaseStartBlockFunc is an instance of a mock function object
 	// controlling the behavior of the method GetPhaseStartBlock.
 	GetPhaseStartBlockFunc *IETHDKGGetPhaseStartBlockFunc
-	// GetStaticPoolContractAddressFunc is an instance of a mock function
-	// object controlling the behavior of the method
-	// GetStaticPoolContractAddress.
-	GetStaticPoolContractAddressFunc *IETHDKGGetStaticPoolContractAddressFunc
 	// InitializeFunc is an instance of a mock function object controlling
 	// the behavior of the method Initialize.
 	InitializeFunc *IETHDKGInitializeFunc
@@ -17661,11 +17131,6 @@ func NewMockIETHDKG() *MockIETHDKG {
 		},
 		GetPhaseStartBlockFunc: &IETHDKGGetPhaseStartBlockFunc{
 			defaultHook: func(*bind.CallOpts) (r0 *big.Int, r1 error) {
-				return
-			},
-		},
-		GetStaticPoolContractAddressFunc: &IETHDKGGetStaticPoolContractAddressFunc{
-			defaultHook: func(*bind.CallOpts, [32]byte, common.Address) (r0 common.Address, r1 error) {
 				return
 			},
 		},
@@ -18036,11 +17501,6 @@ func NewStrictMockIETHDKG() *MockIETHDKG {
 				panic("unexpected invocation of MockIETHDKG.GetPhaseStartBlock")
 			},
 		},
-		GetStaticPoolContractAddressFunc: &IETHDKGGetStaticPoolContractAddressFunc{
-			defaultHook: func(*bind.CallOpts, [32]byte, common.Address) (common.Address, error) {
-				panic("unexpected invocation of MockIETHDKG.GetStaticPoolContractAddress")
-			},
-		},
 		InitializeFunc: &IETHDKGInitializeFunc{
 			defaultHook: func(*bind.TransactOpts, *big.Int, *big.Int) (*types.Transaction, error) {
 				panic("unexpected invocation of MockIETHDKG.Initialize")
@@ -18339,9 +17799,6 @@ func NewMockIETHDKGFrom(i bindings.IETHDKG) *MockIETHDKG {
 		},
 		GetPhaseStartBlockFunc: &IETHDKGGetPhaseStartBlockFunc{
 			defaultHook: i.GetPhaseStartBlock,
-		},
-		GetStaticPoolContractAddressFunc: &IETHDKGGetStaticPoolContractAddressFunc{
-			defaultHook: i.GetStaticPoolContractAddress,
 		},
 		InitializeFunc: &IETHDKGInitializeFunc{
 			defaultHook: i.Initialize,
@@ -22157,120 +21614,6 @@ func (c IETHDKGGetPhaseStartBlockFuncCall) Args() []interface{} {
 // Results returns an interface slice containing the results of this
 // invocation.
 func (c IETHDKGGetPhaseStartBlockFuncCall) Results() []interface{} {
-	return []interface{}{c.Result0, c.Result1}
-}
-
-// IETHDKGGetStaticPoolContractAddressFunc describes the behavior when the
-// GetStaticPoolContractAddress method of the parent MockIETHDKG instance is
-// invoked.
-type IETHDKGGetStaticPoolContractAddressFunc struct {
-	defaultHook func(*bind.CallOpts, [32]byte, common.Address) (common.Address, error)
-	hooks       []func(*bind.CallOpts, [32]byte, common.Address) (common.Address, error)
-	history     []IETHDKGGetStaticPoolContractAddressFuncCall
-	mutex       sync.Mutex
-}
-
-// GetStaticPoolContractAddress delegates to the next hook function in the
-// queue and stores the parameter and result values of this invocation.
-func (m *MockIETHDKG) GetStaticPoolContractAddress(v0 *bind.CallOpts, v1 [32]byte, v2 common.Address) (common.Address, error) {
-	r0, r1 := m.GetStaticPoolContractAddressFunc.nextHook()(v0, v1, v2)
-	m.GetStaticPoolContractAddressFunc.appendCall(IETHDKGGetStaticPoolContractAddressFuncCall{v0, v1, v2, r0, r1})
-	return r0, r1
-}
-
-// SetDefaultHook sets function that is called when the
-// GetStaticPoolContractAddress method of the parent MockIETHDKG instance is
-// invoked and the hook queue is empty.
-func (f *IETHDKGGetStaticPoolContractAddressFunc) SetDefaultHook(hook func(*bind.CallOpts, [32]byte, common.Address) (common.Address, error)) {
-	f.defaultHook = hook
-}
-
-// PushHook adds a function to the end of hook queue. Each invocation of the
-// GetStaticPoolContractAddress method of the parent MockIETHDKG instance
-// invokes the hook at the front of the queue and discards it. After the
-// queue is empty, the default hook function is invoked for any future
-// action.
-func (f *IETHDKGGetStaticPoolContractAddressFunc) PushHook(hook func(*bind.CallOpts, [32]byte, common.Address) (common.Address, error)) {
-	f.mutex.Lock()
-	f.hooks = append(f.hooks, hook)
-	f.mutex.Unlock()
-}
-
-// SetDefaultReturn calls SetDefaultHook with a function that returns the
-// given values.
-func (f *IETHDKGGetStaticPoolContractAddressFunc) SetDefaultReturn(r0 common.Address, r1 error) {
-	f.SetDefaultHook(func(*bind.CallOpts, [32]byte, common.Address) (common.Address, error) {
-		return r0, r1
-	})
-}
-
-// PushReturn calls PushHook with a function that returns the given values.
-func (f *IETHDKGGetStaticPoolContractAddressFunc) PushReturn(r0 common.Address, r1 error) {
-	f.PushHook(func(*bind.CallOpts, [32]byte, common.Address) (common.Address, error) {
-		return r0, r1
-	})
-}
-
-func (f *IETHDKGGetStaticPoolContractAddressFunc) nextHook() func(*bind.CallOpts, [32]byte, common.Address) (common.Address, error) {
-	f.mutex.Lock()
-	defer f.mutex.Unlock()
-
-	if len(f.hooks) == 0 {
-		return f.defaultHook
-	}
-
-	hook := f.hooks[0]
-	f.hooks = f.hooks[1:]
-	return hook
-}
-
-func (f *IETHDKGGetStaticPoolContractAddressFunc) appendCall(r0 IETHDKGGetStaticPoolContractAddressFuncCall) {
-	f.mutex.Lock()
-	f.history = append(f.history, r0)
-	f.mutex.Unlock()
-}
-
-// History returns a sequence of IETHDKGGetStaticPoolContractAddressFuncCall
-// objects describing the invocations of this function.
-func (f *IETHDKGGetStaticPoolContractAddressFunc) History() []IETHDKGGetStaticPoolContractAddressFuncCall {
-	f.mutex.Lock()
-	history := make([]IETHDKGGetStaticPoolContractAddressFuncCall, len(f.history))
-	copy(history, f.history)
-	f.mutex.Unlock()
-
-	return history
-}
-
-// IETHDKGGetStaticPoolContractAddressFuncCall is an object that describes
-// an invocation of method GetStaticPoolContractAddress on an instance of
-// MockIETHDKG.
-type IETHDKGGetStaticPoolContractAddressFuncCall struct {
-	// Arg0 is the value of the 1st argument passed to this method
-	// invocation.
-	Arg0 *bind.CallOpts
-	// Arg1 is the value of the 2nd argument passed to this method
-	// invocation.
-	Arg1 [32]byte
-	// Arg2 is the value of the 3rd argument passed to this method
-	// invocation.
-	Arg2 common.Address
-	// Result0 is the value of the 1st result returned from this method
-	// invocation.
-	Result0 common.Address
-	// Result1 is the value of the 2nd result returned from this method
-	// invocation.
-	Result1 error
-}
-
-// Args returns an interface slice containing the arguments of this
-// invocation.
-func (c IETHDKGGetStaticPoolContractAddressFuncCall) Args() []interface{} {
-	return []interface{}{c.Arg0, c.Arg1, c.Arg2}
-}
-
-// Results returns an interface slice containing the results of this
-// invocation.
-func (c IETHDKGGetStaticPoolContractAddressFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
@@ -27439,10 +26782,6 @@ type MockIPublicStaking struct {
 	// GetPositionFunc is an instance of a mock function object controlling
 	// the behavior of the method GetPosition.
 	GetPositionFunc *IPublicStakingGetPositionFunc
-	// GetStaticPoolContractAddressFunc is an instance of a mock function
-	// object controlling the behavior of the method
-	// GetStaticPoolContractAddress.
-	GetStaticPoolContractAddressFunc *IPublicStakingGetStaticPoolContractAddressFunc
 	// GetTokenAccumulatorFunc is an instance of a mock function object
 	// controlling the behavior of the method GetTokenAccumulator.
 	GetTokenAccumulatorFunc *IPublicStakingGetTokenAccumulatorFunc
@@ -27702,11 +27041,6 @@ func NewMockIPublicStaking() *MockIPublicStaking {
 				AccumulatorEth    *big.Int
 				AccumulatorToken  *big.Int
 			}, r1 error) {
-				return
-			},
-		},
-		GetStaticPoolContractAddressFunc: &IPublicStakingGetStaticPoolContractAddressFunc{
-			defaultHook: func(*bind.CallOpts, [32]byte, common.Address) (r0 common.Address, r1 error) {
 				return
 			},
 		},
@@ -28044,11 +27378,6 @@ func NewStrictMockIPublicStaking() *MockIPublicStaking {
 				panic("unexpected invocation of MockIPublicStaking.GetPosition")
 			},
 		},
-		GetStaticPoolContractAddressFunc: &IPublicStakingGetStaticPoolContractAddressFunc{
-			defaultHook: func(*bind.CallOpts, [32]byte, common.Address) (common.Address, error) {
-				panic("unexpected invocation of MockIPublicStaking.GetStaticPoolContractAddress")
-			},
-		},
 		GetTokenAccumulatorFunc: &IPublicStakingGetTokenAccumulatorFunc{
 			defaultHook: func(*bind.CallOpts) (struct {
 				Accumulator *big.Int
@@ -28316,9 +27645,6 @@ func NewMockIPublicStakingFrom(i bindings.IPublicStaking) *MockIPublicStaking {
 		},
 		GetPositionFunc: &IPublicStakingGetPositionFunc{
 			defaultHook: i.GetPosition,
-		},
-		GetStaticPoolContractAddressFunc: &IPublicStakingGetStaticPoolContractAddressFunc{
-			defaultHook: i.GetStaticPoolContractAddress,
 		},
 		GetTokenAccumulatorFunc: &IPublicStakingGetTokenAccumulatorFunc{
 			defaultHook: i.GetTokenAccumulator,
@@ -31712,121 +31038,6 @@ func (c IPublicStakingGetPositionFuncCall) Args() []interface{} {
 // Results returns an interface slice containing the results of this
 // invocation.
 func (c IPublicStakingGetPositionFuncCall) Results() []interface{} {
-	return []interface{}{c.Result0, c.Result1}
-}
-
-// IPublicStakingGetStaticPoolContractAddressFunc describes the behavior
-// when the GetStaticPoolContractAddress method of the parent
-// MockIPublicStaking instance is invoked.
-type IPublicStakingGetStaticPoolContractAddressFunc struct {
-	defaultHook func(*bind.CallOpts, [32]byte, common.Address) (common.Address, error)
-	hooks       []func(*bind.CallOpts, [32]byte, common.Address) (common.Address, error)
-	history     []IPublicStakingGetStaticPoolContractAddressFuncCall
-	mutex       sync.Mutex
-}
-
-// GetStaticPoolContractAddress delegates to the next hook function in the
-// queue and stores the parameter and result values of this invocation.
-func (m *MockIPublicStaking) GetStaticPoolContractAddress(v0 *bind.CallOpts, v1 [32]byte, v2 common.Address) (common.Address, error) {
-	r0, r1 := m.GetStaticPoolContractAddressFunc.nextHook()(v0, v1, v2)
-	m.GetStaticPoolContractAddressFunc.appendCall(IPublicStakingGetStaticPoolContractAddressFuncCall{v0, v1, v2, r0, r1})
-	return r0, r1
-}
-
-// SetDefaultHook sets function that is called when the
-// GetStaticPoolContractAddress method of the parent MockIPublicStaking
-// instance is invoked and the hook queue is empty.
-func (f *IPublicStakingGetStaticPoolContractAddressFunc) SetDefaultHook(hook func(*bind.CallOpts, [32]byte, common.Address) (common.Address, error)) {
-	f.defaultHook = hook
-}
-
-// PushHook adds a function to the end of hook queue. Each invocation of the
-// GetStaticPoolContractAddress method of the parent MockIPublicStaking
-// instance invokes the hook at the front of the queue and discards it.
-// After the queue is empty, the default hook function is invoked for any
-// future action.
-func (f *IPublicStakingGetStaticPoolContractAddressFunc) PushHook(hook func(*bind.CallOpts, [32]byte, common.Address) (common.Address, error)) {
-	f.mutex.Lock()
-	f.hooks = append(f.hooks, hook)
-	f.mutex.Unlock()
-}
-
-// SetDefaultReturn calls SetDefaultHook with a function that returns the
-// given values.
-func (f *IPublicStakingGetStaticPoolContractAddressFunc) SetDefaultReturn(r0 common.Address, r1 error) {
-	f.SetDefaultHook(func(*bind.CallOpts, [32]byte, common.Address) (common.Address, error) {
-		return r0, r1
-	})
-}
-
-// PushReturn calls PushHook with a function that returns the given values.
-func (f *IPublicStakingGetStaticPoolContractAddressFunc) PushReturn(r0 common.Address, r1 error) {
-	f.PushHook(func(*bind.CallOpts, [32]byte, common.Address) (common.Address, error) {
-		return r0, r1
-	})
-}
-
-func (f *IPublicStakingGetStaticPoolContractAddressFunc) nextHook() func(*bind.CallOpts, [32]byte, common.Address) (common.Address, error) {
-	f.mutex.Lock()
-	defer f.mutex.Unlock()
-
-	if len(f.hooks) == 0 {
-		return f.defaultHook
-	}
-
-	hook := f.hooks[0]
-	f.hooks = f.hooks[1:]
-	return hook
-}
-
-func (f *IPublicStakingGetStaticPoolContractAddressFunc) appendCall(r0 IPublicStakingGetStaticPoolContractAddressFuncCall) {
-	f.mutex.Lock()
-	f.history = append(f.history, r0)
-	f.mutex.Unlock()
-}
-
-// History returns a sequence of
-// IPublicStakingGetStaticPoolContractAddressFuncCall objects describing the
-// invocations of this function.
-func (f *IPublicStakingGetStaticPoolContractAddressFunc) History() []IPublicStakingGetStaticPoolContractAddressFuncCall {
-	f.mutex.Lock()
-	history := make([]IPublicStakingGetStaticPoolContractAddressFuncCall, len(f.history))
-	copy(history, f.history)
-	f.mutex.Unlock()
-
-	return history
-}
-
-// IPublicStakingGetStaticPoolContractAddressFuncCall is an object that
-// describes an invocation of method GetStaticPoolContractAddress on an
-// instance of MockIPublicStaking.
-type IPublicStakingGetStaticPoolContractAddressFuncCall struct {
-	// Arg0 is the value of the 1st argument passed to this method
-	// invocation.
-	Arg0 *bind.CallOpts
-	// Arg1 is the value of the 2nd argument passed to this method
-	// invocation.
-	Arg1 [32]byte
-	// Arg2 is the value of the 3rd argument passed to this method
-	// invocation.
-	Arg2 common.Address
-	// Result0 is the value of the 1st result returned from this method
-	// invocation.
-	Result0 common.Address
-	// Result1 is the value of the 2nd result returned from this method
-	// invocation.
-	Result1 error
-}
-
-// Args returns an interface slice containing the arguments of this
-// invocation.
-func (c IPublicStakingGetStaticPoolContractAddressFuncCall) Args() []interface{} {
-	return []interface{}{c.Arg0, c.Arg1, c.Arg2}
-}
-
-// Results returns an interface slice containing the results of this
-// invocation.
-func (c IPublicStakingGetStaticPoolContractAddressFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
@@ -35691,10 +34902,6 @@ type MockISnapshots struct {
 	// object controlling the behavior of the method
 	// GetSnapshotDesperationFactor.
 	GetSnapshotDesperationFactorFunc *ISnapshotsGetSnapshotDesperationFactorFunc
-	// GetStaticPoolContractAddressFunc is an instance of a mock function
-	// object controlling the behavior of the method
-	// GetStaticPoolContractAddress.
-	GetStaticPoolContractAddressFunc *ISnapshotsGetStaticPoolContractAddressFunc
 	// InitializeFunc is an instance of a mock function object controlling
 	// the behavior of the method Initialize.
 	InitializeFunc *ISnapshotsInitializeFunc
@@ -35843,11 +35050,6 @@ func NewMockISnapshots() *MockISnapshots {
 		},
 		GetSnapshotDesperationFactorFunc: &ISnapshotsGetSnapshotDesperationFactorFunc{
 			defaultHook: func(*bind.CallOpts) (r0 *big.Int, r1 error) {
-				return
-			},
-		},
-		GetStaticPoolContractAddressFunc: &ISnapshotsGetStaticPoolContractAddressFunc{
-			defaultHook: func(*bind.CallOpts, [32]byte, common.Address) (r0 common.Address, r1 error) {
 				return
 			},
 		},
@@ -36023,11 +35225,6 @@ func NewStrictMockISnapshots() *MockISnapshots {
 				panic("unexpected invocation of MockISnapshots.GetSnapshotDesperationFactor")
 			},
 		},
-		GetStaticPoolContractAddressFunc: &ISnapshotsGetStaticPoolContractAddressFunc{
-			defaultHook: func(*bind.CallOpts, [32]byte, common.Address) (common.Address, error) {
-				panic("unexpected invocation of MockISnapshots.GetStaticPoolContractAddress")
-			},
-		},
 		InitializeFunc: &ISnapshotsInitializeFunc{
 			defaultHook: func(*bind.TransactOpts, uint32, uint32) (*types.Transaction, error) {
 				panic("unexpected invocation of MockISnapshots.Initialize")
@@ -36157,9 +35354,6 @@ func NewMockISnapshotsFrom(i bindings.ISnapshots) *MockISnapshots {
 		},
 		GetSnapshotDesperationFactorFunc: &ISnapshotsGetSnapshotDesperationFactorFunc{
 			defaultHook: i.GetSnapshotDesperationFactor,
-		},
-		GetStaticPoolContractAddressFunc: &ISnapshotsGetStaticPoolContractAddressFunc{
-			defaultHook: i.GetStaticPoolContractAddress,
 		},
 		InitializeFunc: &ISnapshotsInitializeFunc{
 			defaultHook: i.Initialize,
@@ -38498,121 +37692,6 @@ func (c ISnapshotsGetSnapshotDesperationFactorFuncCall) Results() []interface{} 
 	return []interface{}{c.Result0, c.Result1}
 }
 
-// ISnapshotsGetStaticPoolContractAddressFunc describes the behavior when
-// the GetStaticPoolContractAddress method of the parent MockISnapshots
-// instance is invoked.
-type ISnapshotsGetStaticPoolContractAddressFunc struct {
-	defaultHook func(*bind.CallOpts, [32]byte, common.Address) (common.Address, error)
-	hooks       []func(*bind.CallOpts, [32]byte, common.Address) (common.Address, error)
-	history     []ISnapshotsGetStaticPoolContractAddressFuncCall
-	mutex       sync.Mutex
-}
-
-// GetStaticPoolContractAddress delegates to the next hook function in the
-// queue and stores the parameter and result values of this invocation.
-func (m *MockISnapshots) GetStaticPoolContractAddress(v0 *bind.CallOpts, v1 [32]byte, v2 common.Address) (common.Address, error) {
-	r0, r1 := m.GetStaticPoolContractAddressFunc.nextHook()(v0, v1, v2)
-	m.GetStaticPoolContractAddressFunc.appendCall(ISnapshotsGetStaticPoolContractAddressFuncCall{v0, v1, v2, r0, r1})
-	return r0, r1
-}
-
-// SetDefaultHook sets function that is called when the
-// GetStaticPoolContractAddress method of the parent MockISnapshots instance
-// is invoked and the hook queue is empty.
-func (f *ISnapshotsGetStaticPoolContractAddressFunc) SetDefaultHook(hook func(*bind.CallOpts, [32]byte, common.Address) (common.Address, error)) {
-	f.defaultHook = hook
-}
-
-// PushHook adds a function to the end of hook queue. Each invocation of the
-// GetStaticPoolContractAddress method of the parent MockISnapshots instance
-// invokes the hook at the front of the queue and discards it. After the
-// queue is empty, the default hook function is invoked for any future
-// action.
-func (f *ISnapshotsGetStaticPoolContractAddressFunc) PushHook(hook func(*bind.CallOpts, [32]byte, common.Address) (common.Address, error)) {
-	f.mutex.Lock()
-	f.hooks = append(f.hooks, hook)
-	f.mutex.Unlock()
-}
-
-// SetDefaultReturn calls SetDefaultHook with a function that returns the
-// given values.
-func (f *ISnapshotsGetStaticPoolContractAddressFunc) SetDefaultReturn(r0 common.Address, r1 error) {
-	f.SetDefaultHook(func(*bind.CallOpts, [32]byte, common.Address) (common.Address, error) {
-		return r0, r1
-	})
-}
-
-// PushReturn calls PushHook with a function that returns the given values.
-func (f *ISnapshotsGetStaticPoolContractAddressFunc) PushReturn(r0 common.Address, r1 error) {
-	f.PushHook(func(*bind.CallOpts, [32]byte, common.Address) (common.Address, error) {
-		return r0, r1
-	})
-}
-
-func (f *ISnapshotsGetStaticPoolContractAddressFunc) nextHook() func(*bind.CallOpts, [32]byte, common.Address) (common.Address, error) {
-	f.mutex.Lock()
-	defer f.mutex.Unlock()
-
-	if len(f.hooks) == 0 {
-		return f.defaultHook
-	}
-
-	hook := f.hooks[0]
-	f.hooks = f.hooks[1:]
-	return hook
-}
-
-func (f *ISnapshotsGetStaticPoolContractAddressFunc) appendCall(r0 ISnapshotsGetStaticPoolContractAddressFuncCall) {
-	f.mutex.Lock()
-	f.history = append(f.history, r0)
-	f.mutex.Unlock()
-}
-
-// History returns a sequence of
-// ISnapshotsGetStaticPoolContractAddressFuncCall objects describing the
-// invocations of this function.
-func (f *ISnapshotsGetStaticPoolContractAddressFunc) History() []ISnapshotsGetStaticPoolContractAddressFuncCall {
-	f.mutex.Lock()
-	history := make([]ISnapshotsGetStaticPoolContractAddressFuncCall, len(f.history))
-	copy(history, f.history)
-	f.mutex.Unlock()
-
-	return history
-}
-
-// ISnapshotsGetStaticPoolContractAddressFuncCall is an object that
-// describes an invocation of method GetStaticPoolContractAddress on an
-// instance of MockISnapshots.
-type ISnapshotsGetStaticPoolContractAddressFuncCall struct {
-	// Arg0 is the value of the 1st argument passed to this method
-	// invocation.
-	Arg0 *bind.CallOpts
-	// Arg1 is the value of the 2nd argument passed to this method
-	// invocation.
-	Arg1 [32]byte
-	// Arg2 is the value of the 3rd argument passed to this method
-	// invocation.
-	Arg2 common.Address
-	// Result0 is the value of the 1st result returned from this method
-	// invocation.
-	Result0 common.Address
-	// Result1 is the value of the 2nd result returned from this method
-	// invocation.
-	Result1 error
-}
-
-// Args returns an interface slice containing the arguments of this
-// invocation.
-func (c ISnapshotsGetStaticPoolContractAddressFuncCall) Args() []interface{} {
-	return []interface{}{c.Arg0, c.Arg1, c.Arg2}
-}
-
-// Results returns an interface slice containing the results of this
-// invocation.
-func (c ISnapshotsGetStaticPoolContractAddressFuncCall) Results() []interface{} {
-	return []interface{}{c.Result0, c.Result1}
-}
-
 // ISnapshotsInitializeFunc describes the behavior when the Initialize
 // method of the parent MockISnapshots instance is invoked.
 type ISnapshotsInitializeFunc struct {
@@ -40017,10 +39096,6 @@ type MockIValidatorPool struct {
 	// GetStakeAmountFunc is an instance of a mock function object
 	// controlling the behavior of the method GetStakeAmount.
 	GetStakeAmountFunc *IValidatorPoolGetStakeAmountFunc
-	// GetStaticPoolContractAddressFunc is an instance of a mock function
-	// object controlling the behavior of the method
-	// GetStaticPoolContractAddress.
-	GetStaticPoolContractAddressFunc *IValidatorPoolGetStaticPoolContractAddressFunc
 	// GetValidatorFunc is an instance of a mock function object controlling
 	// the behavior of the method GetValidator.
 	GetValidatorFunc *IValidatorPoolGetValidatorFunc
@@ -40243,11 +39318,6 @@ func NewMockIValidatorPool() *MockIValidatorPool {
 		},
 		GetStakeAmountFunc: &IValidatorPoolGetStakeAmountFunc{
 			defaultHook: func(*bind.CallOpts) (r0 *big.Int, r1 error) {
-				return
-			},
-		},
-		GetStaticPoolContractAddressFunc: &IValidatorPoolGetStaticPoolContractAddressFunc{
-			defaultHook: func(*bind.CallOpts, [32]byte, common.Address) (r0 common.Address, r1 error) {
 				return
 			},
 		},
@@ -40553,11 +39623,6 @@ func NewStrictMockIValidatorPool() *MockIValidatorPool {
 				panic("unexpected invocation of MockIValidatorPool.GetStakeAmount")
 			},
 		},
-		GetStaticPoolContractAddressFunc: &IValidatorPoolGetStaticPoolContractAddressFunc{
-			defaultHook: func(*bind.CallOpts, [32]byte, common.Address) (common.Address, error) {
-				panic("unexpected invocation of MockIValidatorPool.GetStaticPoolContractAddress")
-			},
-		},
 		GetValidatorFunc: &IValidatorPoolGetValidatorFunc{
 			defaultHook: func(*bind.CallOpts, *big.Int) (common.Address, error) {
 				panic("unexpected invocation of MockIValidatorPool.GetValidator")
@@ -40826,9 +39891,6 @@ func NewMockIValidatorPoolFrom(i bindings.IValidatorPool) *MockIValidatorPool {
 		},
 		GetStakeAmountFunc: &IValidatorPoolGetStakeAmountFunc{
 			defaultHook: i.GetStakeAmount,
-		},
-		GetStaticPoolContractAddressFunc: &IValidatorPoolGetStaticPoolContractAddressFunc{
-			defaultHook: i.GetStaticPoolContractAddress,
 		},
 		GetValidatorFunc: &IValidatorPoolGetValidatorFunc{
 			defaultHook: i.GetValidator,
@@ -42807,121 +41869,6 @@ func (c IValidatorPoolGetStakeAmountFuncCall) Args() []interface{} {
 // Results returns an interface slice containing the results of this
 // invocation.
 func (c IValidatorPoolGetStakeAmountFuncCall) Results() []interface{} {
-	return []interface{}{c.Result0, c.Result1}
-}
-
-// IValidatorPoolGetStaticPoolContractAddressFunc describes the behavior
-// when the GetStaticPoolContractAddress method of the parent
-// MockIValidatorPool instance is invoked.
-type IValidatorPoolGetStaticPoolContractAddressFunc struct {
-	defaultHook func(*bind.CallOpts, [32]byte, common.Address) (common.Address, error)
-	hooks       []func(*bind.CallOpts, [32]byte, common.Address) (common.Address, error)
-	history     []IValidatorPoolGetStaticPoolContractAddressFuncCall
-	mutex       sync.Mutex
-}
-
-// GetStaticPoolContractAddress delegates to the next hook function in the
-// queue and stores the parameter and result values of this invocation.
-func (m *MockIValidatorPool) GetStaticPoolContractAddress(v0 *bind.CallOpts, v1 [32]byte, v2 common.Address) (common.Address, error) {
-	r0, r1 := m.GetStaticPoolContractAddressFunc.nextHook()(v0, v1, v2)
-	m.GetStaticPoolContractAddressFunc.appendCall(IValidatorPoolGetStaticPoolContractAddressFuncCall{v0, v1, v2, r0, r1})
-	return r0, r1
-}
-
-// SetDefaultHook sets function that is called when the
-// GetStaticPoolContractAddress method of the parent MockIValidatorPool
-// instance is invoked and the hook queue is empty.
-func (f *IValidatorPoolGetStaticPoolContractAddressFunc) SetDefaultHook(hook func(*bind.CallOpts, [32]byte, common.Address) (common.Address, error)) {
-	f.defaultHook = hook
-}
-
-// PushHook adds a function to the end of hook queue. Each invocation of the
-// GetStaticPoolContractAddress method of the parent MockIValidatorPool
-// instance invokes the hook at the front of the queue and discards it.
-// After the queue is empty, the default hook function is invoked for any
-// future action.
-func (f *IValidatorPoolGetStaticPoolContractAddressFunc) PushHook(hook func(*bind.CallOpts, [32]byte, common.Address) (common.Address, error)) {
-	f.mutex.Lock()
-	f.hooks = append(f.hooks, hook)
-	f.mutex.Unlock()
-}
-
-// SetDefaultReturn calls SetDefaultHook with a function that returns the
-// given values.
-func (f *IValidatorPoolGetStaticPoolContractAddressFunc) SetDefaultReturn(r0 common.Address, r1 error) {
-	f.SetDefaultHook(func(*bind.CallOpts, [32]byte, common.Address) (common.Address, error) {
-		return r0, r1
-	})
-}
-
-// PushReturn calls PushHook with a function that returns the given values.
-func (f *IValidatorPoolGetStaticPoolContractAddressFunc) PushReturn(r0 common.Address, r1 error) {
-	f.PushHook(func(*bind.CallOpts, [32]byte, common.Address) (common.Address, error) {
-		return r0, r1
-	})
-}
-
-func (f *IValidatorPoolGetStaticPoolContractAddressFunc) nextHook() func(*bind.CallOpts, [32]byte, common.Address) (common.Address, error) {
-	f.mutex.Lock()
-	defer f.mutex.Unlock()
-
-	if len(f.hooks) == 0 {
-		return f.defaultHook
-	}
-
-	hook := f.hooks[0]
-	f.hooks = f.hooks[1:]
-	return hook
-}
-
-func (f *IValidatorPoolGetStaticPoolContractAddressFunc) appendCall(r0 IValidatorPoolGetStaticPoolContractAddressFuncCall) {
-	f.mutex.Lock()
-	f.history = append(f.history, r0)
-	f.mutex.Unlock()
-}
-
-// History returns a sequence of
-// IValidatorPoolGetStaticPoolContractAddressFuncCall objects describing the
-// invocations of this function.
-func (f *IValidatorPoolGetStaticPoolContractAddressFunc) History() []IValidatorPoolGetStaticPoolContractAddressFuncCall {
-	f.mutex.Lock()
-	history := make([]IValidatorPoolGetStaticPoolContractAddressFuncCall, len(f.history))
-	copy(history, f.history)
-	f.mutex.Unlock()
-
-	return history
-}
-
-// IValidatorPoolGetStaticPoolContractAddressFuncCall is an object that
-// describes an invocation of method GetStaticPoolContractAddress on an
-// instance of MockIValidatorPool.
-type IValidatorPoolGetStaticPoolContractAddressFuncCall struct {
-	// Arg0 is the value of the 1st argument passed to this method
-	// invocation.
-	Arg0 *bind.CallOpts
-	// Arg1 is the value of the 2nd argument passed to this method
-	// invocation.
-	Arg1 [32]byte
-	// Arg2 is the value of the 3rd argument passed to this method
-	// invocation.
-	Arg2 common.Address
-	// Result0 is the value of the 1st result returned from this method
-	// invocation.
-	Result0 common.Address
-	// Result1 is the value of the 2nd result returned from this method
-	// invocation.
-	Result1 error
-}
-
-// Args returns an interface slice containing the arguments of this
-// invocation.
-func (c IValidatorPoolGetStaticPoolContractAddressFuncCall) Args() []interface{} {
-	return []interface{}{c.Arg0, c.Arg1, c.Arg2}
-}
-
-// Results returns an interface slice containing the results of this
-// invocation.
-func (c IValidatorPoolGetStaticPoolContractAddressFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
@@ -47650,10 +46597,6 @@ type MockIValidatorStaking struct {
 	// GetPositionFunc is an instance of a mock function object controlling
 	// the behavior of the method GetPosition.
 	GetPositionFunc *IValidatorStakingGetPositionFunc
-	// GetStaticPoolContractAddressFunc is an instance of a mock function
-	// object controlling the behavior of the method
-	// GetStaticPoolContractAddress.
-	GetStaticPoolContractAddressFunc *IValidatorStakingGetStaticPoolContractAddressFunc
 	// GetTokenAccumulatorFunc is an instance of a mock function object
 	// controlling the behavior of the method GetTokenAccumulator.
 	GetTokenAccumulatorFunc *IValidatorStakingGetTokenAccumulatorFunc
@@ -47914,11 +46857,6 @@ func NewMockIValidatorStaking() *MockIValidatorStaking {
 				AccumulatorEth    *big.Int
 				AccumulatorToken  *big.Int
 			}, r1 error) {
-				return
-			},
-		},
-		GetStaticPoolContractAddressFunc: &IValidatorStakingGetStaticPoolContractAddressFunc{
-			defaultHook: func(*bind.CallOpts, [32]byte, common.Address) (r0 common.Address, r1 error) {
 				return
 			},
 		},
@@ -48257,11 +47195,6 @@ func NewStrictMockIValidatorStaking() *MockIValidatorStaking {
 				panic("unexpected invocation of MockIValidatorStaking.GetPosition")
 			},
 		},
-		GetStaticPoolContractAddressFunc: &IValidatorStakingGetStaticPoolContractAddressFunc{
-			defaultHook: func(*bind.CallOpts, [32]byte, common.Address) (common.Address, error) {
-				panic("unexpected invocation of MockIValidatorStaking.GetStaticPoolContractAddress")
-			},
-		},
 		GetTokenAccumulatorFunc: &IValidatorStakingGetTokenAccumulatorFunc{
 			defaultHook: func(*bind.CallOpts) (struct {
 				Accumulator *big.Int
@@ -48529,9 +47462,6 @@ func NewMockIValidatorStakingFrom(i bindings.IValidatorStaking) *MockIValidatorS
 		},
 		GetPositionFunc: &IValidatorStakingGetPositionFunc{
 			defaultHook: i.GetPosition,
-		},
-		GetStaticPoolContractAddressFunc: &IValidatorStakingGetStaticPoolContractAddressFunc{
-			defaultHook: i.GetStaticPoolContractAddress,
 		},
 		GetTokenAccumulatorFunc: &IValidatorStakingGetTokenAccumulatorFunc{
 			defaultHook: i.GetTokenAccumulator,
@@ -51949,121 +50879,6 @@ func (c IValidatorStakingGetPositionFuncCall) Args() []interface{} {
 // Results returns an interface slice containing the results of this
 // invocation.
 func (c IValidatorStakingGetPositionFuncCall) Results() []interface{} {
-	return []interface{}{c.Result0, c.Result1}
-}
-
-// IValidatorStakingGetStaticPoolContractAddressFunc describes the behavior
-// when the GetStaticPoolContractAddress method of the parent
-// MockIValidatorStaking instance is invoked.
-type IValidatorStakingGetStaticPoolContractAddressFunc struct {
-	defaultHook func(*bind.CallOpts, [32]byte, common.Address) (common.Address, error)
-	hooks       []func(*bind.CallOpts, [32]byte, common.Address) (common.Address, error)
-	history     []IValidatorStakingGetStaticPoolContractAddressFuncCall
-	mutex       sync.Mutex
-}
-
-// GetStaticPoolContractAddress delegates to the next hook function in the
-// queue and stores the parameter and result values of this invocation.
-func (m *MockIValidatorStaking) GetStaticPoolContractAddress(v0 *bind.CallOpts, v1 [32]byte, v2 common.Address) (common.Address, error) {
-	r0, r1 := m.GetStaticPoolContractAddressFunc.nextHook()(v0, v1, v2)
-	m.GetStaticPoolContractAddressFunc.appendCall(IValidatorStakingGetStaticPoolContractAddressFuncCall{v0, v1, v2, r0, r1})
-	return r0, r1
-}
-
-// SetDefaultHook sets function that is called when the
-// GetStaticPoolContractAddress method of the parent MockIValidatorStaking
-// instance is invoked and the hook queue is empty.
-func (f *IValidatorStakingGetStaticPoolContractAddressFunc) SetDefaultHook(hook func(*bind.CallOpts, [32]byte, common.Address) (common.Address, error)) {
-	f.defaultHook = hook
-}
-
-// PushHook adds a function to the end of hook queue. Each invocation of the
-// GetStaticPoolContractAddress method of the parent MockIValidatorStaking
-// instance invokes the hook at the front of the queue and discards it.
-// After the queue is empty, the default hook function is invoked for any
-// future action.
-func (f *IValidatorStakingGetStaticPoolContractAddressFunc) PushHook(hook func(*bind.CallOpts, [32]byte, common.Address) (common.Address, error)) {
-	f.mutex.Lock()
-	f.hooks = append(f.hooks, hook)
-	f.mutex.Unlock()
-}
-
-// SetDefaultReturn calls SetDefaultHook with a function that returns the
-// given values.
-func (f *IValidatorStakingGetStaticPoolContractAddressFunc) SetDefaultReturn(r0 common.Address, r1 error) {
-	f.SetDefaultHook(func(*bind.CallOpts, [32]byte, common.Address) (common.Address, error) {
-		return r0, r1
-	})
-}
-
-// PushReturn calls PushHook with a function that returns the given values.
-func (f *IValidatorStakingGetStaticPoolContractAddressFunc) PushReturn(r0 common.Address, r1 error) {
-	f.PushHook(func(*bind.CallOpts, [32]byte, common.Address) (common.Address, error) {
-		return r0, r1
-	})
-}
-
-func (f *IValidatorStakingGetStaticPoolContractAddressFunc) nextHook() func(*bind.CallOpts, [32]byte, common.Address) (common.Address, error) {
-	f.mutex.Lock()
-	defer f.mutex.Unlock()
-
-	if len(f.hooks) == 0 {
-		return f.defaultHook
-	}
-
-	hook := f.hooks[0]
-	f.hooks = f.hooks[1:]
-	return hook
-}
-
-func (f *IValidatorStakingGetStaticPoolContractAddressFunc) appendCall(r0 IValidatorStakingGetStaticPoolContractAddressFuncCall) {
-	f.mutex.Lock()
-	f.history = append(f.history, r0)
-	f.mutex.Unlock()
-}
-
-// History returns a sequence of
-// IValidatorStakingGetStaticPoolContractAddressFuncCall objects describing
-// the invocations of this function.
-func (f *IValidatorStakingGetStaticPoolContractAddressFunc) History() []IValidatorStakingGetStaticPoolContractAddressFuncCall {
-	f.mutex.Lock()
-	history := make([]IValidatorStakingGetStaticPoolContractAddressFuncCall, len(f.history))
-	copy(history, f.history)
-	f.mutex.Unlock()
-
-	return history
-}
-
-// IValidatorStakingGetStaticPoolContractAddressFuncCall is an object that
-// describes an invocation of method GetStaticPoolContractAddress on an
-// instance of MockIValidatorStaking.
-type IValidatorStakingGetStaticPoolContractAddressFuncCall struct {
-	// Arg0 is the value of the 1st argument passed to this method
-	// invocation.
-	Arg0 *bind.CallOpts
-	// Arg1 is the value of the 2nd argument passed to this method
-	// invocation.
-	Arg1 [32]byte
-	// Arg2 is the value of the 3rd argument passed to this method
-	// invocation.
-	Arg2 common.Address
-	// Result0 is the value of the 1st result returned from this method
-	// invocation.
-	Result0 common.Address
-	// Result1 is the value of the 2nd result returned from this method
-	// invocation.
-	Result1 error
-}
-
-// Args returns an interface slice containing the arguments of this
-// invocation.
-func (c IValidatorStakingGetStaticPoolContractAddressFuncCall) Args() []interface{} {
-	return []interface{}{c.Arg0, c.Arg1, c.Arg2}
-}
-
-// Results returns an interface slice containing the results of this
-// invocation.
-func (c IValidatorStakingGetStaticPoolContractAddressFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 

@@ -30,7 +30,7 @@ var (
 
 // ATokenBurnerMetaData contains all meta data concerning the ATokenBurner contract.
 var ATokenBurnerMetaData = &bind.MetaData{
-	ABI: "[{\"inputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"expected\",\"type\":\"address\"}],\"name\":\"OnlyAToken\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"expected\",\"type\":\"address\"}],\"name\":\"OnlyFactory\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"from_\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"amount_\",\"type\":\"uint256\"}],\"name\":\"burn\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"_salt\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"_factory\",\"type\":\"address\"}],\"name\":\"getMetamorphicContractAddress\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"_salt\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"_bridgeRouter\",\"type\":\"address\"}],\"name\":\"getStaticPoolContractAddress\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"pure\",\"type\":\"function\"}]",
+	ABI: "[{\"inputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"expected\",\"type\":\"address\"}],\"name\":\"OnlyAToken\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"expected\",\"type\":\"address\"}],\"name\":\"OnlyFactory\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"from_\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"amount_\",\"type\":\"uint256\"}],\"name\":\"burn\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"_salt\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"_factory\",\"type\":\"address\"}],\"name\":\"getMetamorphicContractAddress\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"pure\",\"type\":\"function\"}]",
 }
 
 // ATokenBurnerABI is the input ABI used to generate the binding from.
@@ -208,37 +208,6 @@ func (_ATokenBurner *ATokenBurnerSession) GetMetamorphicContractAddress(_salt [3
 // Solidity: function getMetamorphicContractAddress(bytes32 _salt, address _factory) pure returns(address)
 func (_ATokenBurner *ATokenBurnerCallerSession) GetMetamorphicContractAddress(_salt [32]byte, _factory common.Address) (common.Address, error) {
 	return _ATokenBurner.Contract.GetMetamorphicContractAddress(&_ATokenBurner.CallOpts, _salt, _factory)
-}
-
-// GetStaticPoolContractAddress is a free data retrieval call binding the contract method 0x0ffd7a81.
-//
-// Solidity: function getStaticPoolContractAddress(bytes32 _salt, address _bridgeRouter) pure returns(address)
-func (_ATokenBurner *ATokenBurnerCaller) GetStaticPoolContractAddress(opts *bind.CallOpts, _salt [32]byte, _bridgeRouter common.Address) (common.Address, error) {
-	var out []interface{}
-	err := _ATokenBurner.contract.Call(opts, &out, "getStaticPoolContractAddress", _salt, _bridgeRouter)
-
-	if err != nil {
-		return *new(common.Address), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new(common.Address)).(*common.Address)
-
-	return out0, err
-
-}
-
-// GetStaticPoolContractAddress is a free data retrieval call binding the contract method 0x0ffd7a81.
-//
-// Solidity: function getStaticPoolContractAddress(bytes32 _salt, address _bridgeRouter) pure returns(address)
-func (_ATokenBurner *ATokenBurnerSession) GetStaticPoolContractAddress(_salt [32]byte, _bridgeRouter common.Address) (common.Address, error) {
-	return _ATokenBurner.Contract.GetStaticPoolContractAddress(&_ATokenBurner.CallOpts, _salt, _bridgeRouter)
-}
-
-// GetStaticPoolContractAddress is a free data retrieval call binding the contract method 0x0ffd7a81.
-//
-// Solidity: function getStaticPoolContractAddress(bytes32 _salt, address _bridgeRouter) pure returns(address)
-func (_ATokenBurner *ATokenBurnerCallerSession) GetStaticPoolContractAddress(_salt [32]byte, _bridgeRouter common.Address) (common.Address, error) {
-	return _ATokenBurner.Contract.GetStaticPoolContractAddress(&_ATokenBurner.CallOpts, _salt, _bridgeRouter)
 }
 
 // Burn is a paid mutator transaction binding the contract method 0x9dc29fac.

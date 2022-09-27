@@ -47,10 +47,6 @@ type IValidatorPoolCaller interface {
 	//
 	// Solidity: function getStakeAmount() view returns(uint256)
 	GetStakeAmount(opts *bind.CallOpts) (*big.Int, error)
-	// GetStaticPoolContractAddress is a free data retrieval call binding the contract method 0x0ffd7a81.
-	//
-	// Solidity: function getStaticPoolContractAddress(bytes32 _salt, address _bridgeRouter) pure returns(address)
-	GetStaticPoolContractAddress(opts *bind.CallOpts, _salt [32]byte, _bridgeRouter common.Address) (common.Address, error)
 	// GetValidator is a free data retrieval call binding the contract method 0xb5d89627.
 	//
 	// Solidity: function getValidator(uint256 index_) view returns(address)

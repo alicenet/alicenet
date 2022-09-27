@@ -67,10 +67,6 @@ type IETHDKGCaller interface {
 	//
 	// Solidity: function getPhaseStartBlock() view returns(uint256)
 	GetPhaseStartBlock(opts *bind.CallOpts) (*big.Int, error)
-	// GetStaticPoolContractAddress is a free data retrieval call binding the contract method 0x0ffd7a81.
-	//
-	// Solidity: function getStaticPoolContractAddress(bytes32 _salt, address _bridgeRouter) pure returns(address)
-	GetStaticPoolContractAddress(opts *bind.CallOpts, _salt [32]byte, _bridgeRouter common.Address) (common.Address, error)
 	// IsETHDKGCompleted is a free data retrieval call binding the contract method 0x2b7c6724.
 	//
 	// Solidity: function isETHDKGCompleted() view returns(bool)

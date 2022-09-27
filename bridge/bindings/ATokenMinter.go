@@ -30,7 +30,7 @@ var (
 
 // ATokenMinterMetaData contains all meta data concerning the ATokenMinter contract.
 var ATokenMinterMetaData = &bind.MetaData{
-	ABI: "[{\"inputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"expected\",\"type\":\"address\"}],\"name\":\"OnlyAToken\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"expected\",\"type\":\"address\"}],\"name\":\"OnlyFactory\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"_salt\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"_factory\",\"type\":\"address\"}],\"name\":\"getMetamorphicContractAddress\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"_salt\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"_bridgeRouter\",\"type\":\"address\"}],\"name\":\"getStaticPoolContractAddress\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"to_\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"amount_\",\"type\":\"uint256\"}],\"name\":\"mint\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]",
+	ABI: "[{\"inputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"expected\",\"type\":\"address\"}],\"name\":\"OnlyAToken\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"expected\",\"type\":\"address\"}],\"name\":\"OnlyFactory\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"_salt\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"_factory\",\"type\":\"address\"}],\"name\":\"getMetamorphicContractAddress\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"to_\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"amount_\",\"type\":\"uint256\"}],\"name\":\"mint\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]",
 }
 
 // ATokenMinterABI is the input ABI used to generate the binding from.
@@ -208,37 +208,6 @@ func (_ATokenMinter *ATokenMinterSession) GetMetamorphicContractAddress(_salt [3
 // Solidity: function getMetamorphicContractAddress(bytes32 _salt, address _factory) pure returns(address)
 func (_ATokenMinter *ATokenMinterCallerSession) GetMetamorphicContractAddress(_salt [32]byte, _factory common.Address) (common.Address, error) {
 	return _ATokenMinter.Contract.GetMetamorphicContractAddress(&_ATokenMinter.CallOpts, _salt, _factory)
-}
-
-// GetStaticPoolContractAddress is a free data retrieval call binding the contract method 0x0ffd7a81.
-//
-// Solidity: function getStaticPoolContractAddress(bytes32 _salt, address _bridgeRouter) pure returns(address)
-func (_ATokenMinter *ATokenMinterCaller) GetStaticPoolContractAddress(opts *bind.CallOpts, _salt [32]byte, _bridgeRouter common.Address) (common.Address, error) {
-	var out []interface{}
-	err := _ATokenMinter.contract.Call(opts, &out, "getStaticPoolContractAddress", _salt, _bridgeRouter)
-
-	if err != nil {
-		return *new(common.Address), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new(common.Address)).(*common.Address)
-
-	return out0, err
-
-}
-
-// GetStaticPoolContractAddress is a free data retrieval call binding the contract method 0x0ffd7a81.
-//
-// Solidity: function getStaticPoolContractAddress(bytes32 _salt, address _bridgeRouter) pure returns(address)
-func (_ATokenMinter *ATokenMinterSession) GetStaticPoolContractAddress(_salt [32]byte, _bridgeRouter common.Address) (common.Address, error) {
-	return _ATokenMinter.Contract.GetStaticPoolContractAddress(&_ATokenMinter.CallOpts, _salt, _bridgeRouter)
-}
-
-// GetStaticPoolContractAddress is a free data retrieval call binding the contract method 0x0ffd7a81.
-//
-// Solidity: function getStaticPoolContractAddress(bytes32 _salt, address _bridgeRouter) pure returns(address)
-func (_ATokenMinter *ATokenMinterCallerSession) GetStaticPoolContractAddress(_salt [32]byte, _bridgeRouter common.Address) (common.Address, error) {
-	return _ATokenMinter.Contract.GetStaticPoolContractAddress(&_ATokenMinter.CallOpts, _salt, _bridgeRouter)
 }
 
 // Mint is a paid mutator transaction binding the contract method 0x40c10f19.
