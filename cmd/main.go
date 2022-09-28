@@ -201,10 +201,10 @@ func main() {
 			{"ethkey.newpasswordfile", "", "the file that contains the new password for the keyfile", &config.Configuration.EthKey.NewPasswordFile},
 		},
 		&initialization.Command: {
-			{"initialization.path", "p", "path to save the files/folders", &config.Configuration.Initialization.Path},
-			{"initialization.network", "n", "network environment to use (testnet, mainnet)", &config.Configuration.Initialization.Network},
-			{"initialization.generateKeys", "", "generates the private key using random password", &config.Configuration.Initialization.GenerateKeys},
-			{"initialization.ethereumEndpoint", "", "ethereum endpoint that will be used to communicate with the chain", &config.Configuration.Ethereum.Endpoint},
+			{"init.path", "p", "path to save the files/folders", &config.Configuration.Initialization.Path},
+			{"init.network", "n", "network environment to use (testnet, mainnet)", &config.Configuration.Initialization.Network},
+			{"init.generateKeys", "", "generates the private key using random password", &config.Configuration.Initialization.GenerateKeys},
+			{"init.ethereumEndpoint", "", "ethereum endpoint that will be used to communicate with the chain", &config.Configuration.Ethereum.Endpoint},
 		},
 	}
 

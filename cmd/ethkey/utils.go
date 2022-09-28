@@ -1,6 +1,7 @@
 package ethkey
 
 import (
+	"bufio"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -123,18 +124,36 @@ func getKeyfilePath(args []string) (string, bool) {
 	return args[0], true
 }
 
-func ReadYesOrNoAnswer(question string) (bool, error) {
+func ReadYesOrNoAnswer(message string) (bool, error) {
 	var result bool
-	answer, err := prompt.Stdin.PromptPassword(question)
+
+	input, err := ReadInput(message)
 	if err != nil {
 		return false, err
 	}
 
-	if answer == "" || answer == "y" || answer == "Y" || answer == "yes" || answer == "Yes" || answer == "YES" {
+	input = strings.TrimSuffix(input, "\n")
+	if err != nil {
+		return false, err
+	}
+
+	if input == "" || input == "y" || input == "Y" || input == "yes" || input == "Yes" || input == "YES" {
 		result = true
-	} else if answer != "n" && answer != "N" && answer != "no" && answer != "No" && answer != "NO" {
-		return false, errors.New(fmt.Sprintf("You entered a wrong answer: %s. Aborting execution", answer))
+	} else if input != "n" && input != "N" && input != "no" && input != "No" && input != "NO" {
+		return false, errors.New(fmt.Sprintf("You entered a wrong answer: %s. Aborting execution", input))
 	}
 
 	return result, nil
+}
+
+func ReadInput(message string) (string, error) {
+	fmt.Print(message)
+
+	reader := bufio.NewReader(os.Stdin)
+	input, err := reader.ReadString('\n')
+	if err != nil {
+		return "", err
+	}
+
+	return input, nil
 }

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/ethereum/go-ethereum/console/prompt"
 	"io/ioutil"
 	"math/big"
 	"os"
@@ -200,31 +201,34 @@ func (eth *Client) loadPassCodes(filePath string) error {
 	file, err := os.Open(filePath)
 	if err != nil {
 		logger.Errorf("Failed to open passCode file \"%v\": %s", filePath, err)
-		return err
 	}
 	defer file.Close()
 
-	scanner := bufio.NewScanner(file)
-	scanner.Split(bufio.ScanLines)
-	for scanner.Scan() {
-		line := strings.TrimSpace(scanner.Text())
-		if !strings.HasPrefix(line, "#") {
-			components := strings.Split(line, "=")
-			if len(components) == 2 {
-				address := common.HexToAddress(strings.TrimSpace(components[0]))
-				passCode := strings.TrimSpace(components[1])
-				accountInfo, present := eth.accounts[address]
-				if present {
-					accountInfo.passCode = passCode
-					eth.accounts[address] = accountInfo
-				} else {
-					logger.Warnf(
-						"Couldn't attach passCode! Could not find a valid account for address %v",
-						address.Hex(),
-					)
+	passCodes := make(map[string]string)
+	if file != nil {
+		scanner := bufio.NewScanner(file)
+		scanner.Split(bufio.ScanLines)
+		for scanner.Scan() {
+			line := strings.TrimSpace(scanner.Text())
+			if !strings.HasPrefix(line, "#") {
+				components := strings.Split(line, "=")
+				if len(components) == 2 {
+					passCodes[strings.TrimSpace(components[0])] = strings.TrimSpace(components[1])
 				}
 			}
 		}
+	}
+
+	for addr, accountInfo := range eth.accounts {
+		passCode, present := passCodes[addr.Hex()]
+		if !present {
+			passCode, err = prompt.Stdin.PromptPassword(fmt.Sprintf("Please provide the passCode for this address %s: ", addr.Hex()))
+			if err != nil {
+				return err
+			}
+		}
+		accountInfo.passCode = passCode
+		eth.accounts[addr] = accountInfo
 	}
 
 	return nil

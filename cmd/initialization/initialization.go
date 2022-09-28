@@ -3,7 +3,6 @@ package initialization
 import (
 	"fmt"
 	"github.com/alicenet/alicenet/cmd/ethkey"
-	"github.com/ethereum/go-ethereum/console/prompt"
 	"os"
 
 	"github.com/alicenet/alicenet/config"
@@ -23,9 +22,9 @@ var Command = cobra.Command{
 }
 
 const (
-	passcodesFile  = "/passcodes.txt"
-	factoryAddress = "0x758a3B3D8958d3794F2Def31e943Cdc449bB2FB9"
-	startingBlock  = 15540020
+	passcodesFile         = "/passcodes.txt"
+	mainNetFactoryAddress = "0x758a3B3D8958d3794F2Def31e943Cdc449bB2FB9"
+	mainNetStartingBlock  = 15540020
 )
 
 func initializeFilesAndFolders(cmd *cobra.Command, args []string) {
@@ -51,11 +50,17 @@ func initializeFilesAndFolders(cmd *cobra.Command, args []string) {
 	}
 
 	var chainId int
+	var startingBlock uint64
+	var factoryAddress string
 	switch network {
 	case "testnet":
 		chainId = 42
+		startingBlock = 0
+		factoryAddress = "<0xFACTORY_ETHEREUM_ADDRESS>"
 	case "mainnet":
 		chainId = 21
+		startingBlock = mainNetStartingBlock
+		factoryAddress = mainNetFactoryAddress
 	default:
 		logger.Fatal("Invalid network specified - must be either testnet or mainnet")
 	}
@@ -120,8 +125,8 @@ func initializeFilesAndFolders(cmd *cobra.Command, args []string) {
 			logger.Fatalf("Failed to write keyfile to %s: %v", keyFilePath, err)
 		}
 
-		fmt.Println("The following Ethereum address was generated and saved as your default account: ", key.Address.Hex())
-		fmt.Println("Your private key is stored to: ", keyFilePath, ". Please maintain this file secure in order to protect your assets")
+		fmt.Printf("The following Ethereum address was generated and saved as your default account: %s.\n", key.Address.Hex())
+		fmt.Printf("Your private key is stored in: %s. Please maintain this file secure in order to protect your assets.\n", keyFilePath)
 
 		savePasscodesFile, err := ethkey.ReadYesOrNoAnswer("Do you wish to store the password in a file? Yes/no: ")
 		if err != nil {
@@ -134,12 +139,14 @@ func initializeFilesAndFolders(cmd *cobra.Command, args []string) {
 			if err := os.WriteFile(passphraseFilePath, passphraseData, 0600); err != nil {
 				logger.Fatalf("Failed to write passphrase to %s: %v", passphraseFilePath, err)
 			}
-			fmt.Println("The password that was used to generate the private key is stored to: ", passphraseFilePath, ". Please maintain this file secure in order to protect your assets")
+			fmt.Printf("The password that was used to generate the private key is stored in: %s. Please maintain this file secure in order to protect your assets.\n", passphraseFilePath)
 		}
+	} else {
+		fmt.Printf("In order to configure your node properly, please save your private key to the following path %s using your address as file name.\n", keysPath)
 	}
 
 	transportPrivateKey := "<16_BYTES_TRANSPORT_PRIVATE_KEY>"
-	tpk, err := ethkey.GenerateRandomString(16)
+	tpk, err := ethkey.GenerateRandomString(24)
 	if err != nil {
 		logger.Fatalf("Failed to generate Transport.PrivateKey with error %v", err)
 	}
@@ -148,7 +155,7 @@ func initializeFilesAndFolders(cmd *cobra.Command, args []string) {
 	validatorSymmetricKey := "<SOME_SUPER_FANCY_SECRET_THAT_WILL_BE_HASHED>"
 	vspk, err := ethkey.GenerateRandomString(32)
 	if err != nil {
-		logger.Fatalf("Failed to generate Transport.PrivateKey with error %v", err)
+		logger.Fatalf("Failed to generate Validator.SymmetricKey with error %v", err)
 	}
 	validatorSymmetricKey = vspk
 
@@ -160,11 +167,13 @@ func initializeFilesAndFolders(cmd *cobra.Command, args []string) {
 		}
 
 		if saveEthereumEndpoint {
-			ee, err := prompt.Stdin.PromptPassword("Please enter Ethereum endpoint: ")
+			ee, err := ethkey.ReadInput("Please enter Ethereum endpoint: ")
 			if err != nil {
 				logger.Fatalf(err.Error())
 			}
 			ethereumEndpointURL = ee
+		} else {
+			fmt.Println(fmt.Sprintf("In order to configure your node properly, please save the Ethereum endpoint to the following file %s.", configPath))
 		}
 	}
 
@@ -195,7 +204,7 @@ func initializeFilesAndFolders(cmd *cobra.Command, args []string) {
 			Endpoint:                 ethereumEndpointURL,
 			EndpointMinimumPeers:     1,
 			DefaultAccount:           defaultAccount,
-			Keystore:                 keystoresPath,
+			Keystore:                 keysPath,
 			PassCodes:                path.Join(keystoresPath, "/passcodes.txt"),
 			FactoryAddress:           factoryAddress,
 			StartingBlock:            startingBlock,
