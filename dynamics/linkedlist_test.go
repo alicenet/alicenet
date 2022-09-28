@@ -5,28 +5,7 @@ import (
 	"testing"
 
 	"github.com/alicenet/alicenet/constants"
-	"github.com/alicenet/alicenet/constants/dbprefix"
 )
-
-func TestLinkedListMakeKeys(t *testing.T) {
-	llk := makeLinkedListKey()
-	if llk.epoch != 0 {
-		t.Fatal("epoch should be 0")
-	}
-	if !bytes.Equal(llk.prefix, dbprefix.PrefixStorageNodeKey()) {
-		t.Fatal("prefixes do not match")
-	}
-	llkBytes, err := llk.Marshal()
-	if err != nil {
-		t.Fatal(err)
-	}
-	llkTrue := []byte{}
-	llkTrue = append(llkTrue, dbprefix.PrefixStorageNodeKey()...)
-	llkTrue = append(llkTrue, 0, 0, 0, 0)
-	if !bytes.Equal(llkBytes, llkTrue) {
-		t.Fatal("marshalled bytes do not match")
-	}
-}
 
 func TestLinkedListMarshal(t *testing.T) {
 	ll := &LinkedList{}
@@ -49,12 +28,19 @@ func TestLinkedListMarshal(t *testing.T) {
 		t.Fatal("Should have raised error (3)")
 	}
 
-	v := []byte{255, 255, 255, 255}
+	if ll.tail != 0 {
+		t.Fatal("Should have raised error (4)")
+	}
+
+	v := []byte{255, 255, 255, 255, 255, 255, 255, 255}
 	err = ll.Unmarshal(v)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if ll.currentValue != constants.MaxUint32 {
+		t.Fatal("Invalid LinkedList (1)")
+	}
+	if ll.tail != constants.MaxUint32 {
 		t.Fatal("Invalid LinkedList (1)")
 	}
 
@@ -84,6 +70,16 @@ func TestLinkedListGetSet(t *testing.T) {
 	if !ll.IsValid() {
 		t.Fatal("LinkedList should be valid")
 	}
+
+	mfu := uint32(123457)
+	err = ll.SetMostFutureUpdate(mfu)
+	if err != nil {
+		t.Fatal(err)
+	}
+	retMfu := ll.GetMostFutureUpdate()
+	if retMfu != mfu {
+		t.Fatal("Invalid EpochLastUpdated")
+	}
 }
 
 func TestCreateLinkedList(t *testing.T) {
@@ -99,22 +95,24 @@ func TestCreateLinkedList(t *testing.T) {
 		t.Fatal("Should have raised error (2)")
 	}
 
-	rs := &DynamicValues{}
-	rs.standardParameters()
-	node, linkedlist, err := CreateLinkedList(epoch, rs)
+	dv := GetStandardDynamicValue()
+	node, linkedlist, err := CreateLinkedList(epoch, dv)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if node.thisEpoch != epoch {
 		t.Fatal("invalid thisEpoch")
 	}
-	if node.prevEpoch != epoch {
+	if node.prevEpoch != 0 {
 		t.Fatal("invalid prevEpoch")
 	}
-	if node.nextEpoch != epoch {
+	if node.nextEpoch != 0 {
 		t.Fatal("invalid nextEpoch")
 	}
 	if linkedlist.currentValue != epoch {
-		t.Fatal("invalid epochLastUpdated")
+		t.Fatal("invalid currentValue")
+	}
+	if linkedlist.tail != epoch {
+		t.Fatal("invalid currentValue")
 	}
 }

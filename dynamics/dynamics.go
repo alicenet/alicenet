@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/utils"
 	"github.com/dgraph-io/badger/v2"
 	"github.com/sirupsen/logrus"
@@ -55,7 +56,7 @@ type Storage struct {
 	database      *Database
 	startChan     chan struct{}
 	startOnce     sync.Once
-	dynamicValues *DynamicValues
+	DynamicValues *DynamicValues
 	logger        *logrus.Logger
 }
 
@@ -84,7 +85,7 @@ func (s *Storage) Init(rawDB rawDataBase, logger *logrus.Logger) error {
 			return err
 		}
 
-		s.dynamicValues, err = currentNode.dynamicValues.Copy()
+		s.DynamicValues, err = currentNode.dynamicValues.Copy()
 		if err != nil {
 			utils.DebugTrace(s.logger, err)
 			return err
@@ -116,6 +117,8 @@ func (s *Storage) ChangeDynamicValues(txn *badger.Txn, epoch uint32, rawDynamics
 		return err
 	}
 
+	s.logger.Infof("Adding dynamic values %+v for epoch %v", *newDynamicValue, epoch)
+
 	linkedList, err := s.database.GetLinkedList(txn)
 	if err != nil {
 		if !errors.Is(err, ErrKeyNotPresent) {
@@ -124,7 +127,7 @@ func (s *Storage) ChangeDynamicValues(txn *badger.Txn, epoch uint32, rawDynamics
 		}
 		// Creates linked list in case it doesn't exist already and update
 		// s.DynamicsValue
-		s.createLinkedList(txn, epoch, newDynamicValue)
+		err := s.createLinkedList(txn, epoch, newDynamicValue)
 		if err != nil {
 			return err
 		}
@@ -179,7 +182,7 @@ func (s *Storage) GetMaxBlockSize() uint32 {
 
 	s.RLock()
 	defer s.RUnlock()
-	return s.dynamicValues.GetMaxBlockSize()
+	return s.DynamicValues.GetMaxBlockSize()
 }
 
 // GetMaxProposalSize returns the maximum size of bytes allowed in a proposal
@@ -188,7 +191,7 @@ func (s *Storage) GetMaxProposalSize() uint32 {
 
 	s.RLock()
 	defer s.RUnlock()
-	return s.dynamicValues.GetMaxProposalSize()
+	return s.DynamicValues.GetMaxProposalSize()
 }
 
 // GetProposalStepTimeout returns the proposal step timeout
@@ -197,7 +200,7 @@ func (s *Storage) GetProposalTimeout() time.Duration {
 
 	s.RLock()
 	defer s.RUnlock()
-	return s.dynamicValues.GetProposalTimeout()
+	return s.DynamicValues.GetProposalTimeout()
 }
 
 // GetPreVoteStepTimeout returns the prevote step timeout
@@ -206,7 +209,7 @@ func (s *Storage) GetPreVoteTimeout() time.Duration {
 
 	s.RLock()
 	defer s.RUnlock()
-	return s.dynamicValues.GetPreVoteTimeout()
+	return s.DynamicValues.GetPreVoteTimeout()
 }
 
 // GetPreCommitStepTimeout returns the precommit step timeout
@@ -215,7 +218,7 @@ func (s *Storage) GetPreCommitTimeout() time.Duration {
 
 	s.RLock()
 	defer s.RUnlock()
-	return s.dynamicValues.GetPreCommitTimeout()
+	return s.DynamicValues.GetPreCommitTimeout()
 }
 
 // GetDeadBlockRoundNextRoundTimeout returns the timeout required before
@@ -225,7 +228,7 @@ func (s *Storage) GetDeadBlockRoundNextRoundTimeout() time.Duration {
 
 	s.RLock()
 	defer s.RUnlock()
-	return s.dynamicValues.GetDeadBlockRoundNextRoundTimeout()
+	return s.DynamicValues.GetDeadBlockRoundNextRoundTimeout()
 }
 
 // GetDownloadTimeout returns the timeout for downloads
@@ -234,7 +237,7 @@ func (s *Storage) GetDownloadTimeout() time.Duration {
 
 	s.RLock()
 	defer s.RUnlock()
-	return s.dynamicValues.GetDownloadTimeout()
+	return s.DynamicValues.GetDownloadTimeout()
 }
 
 // GetMinTxFee returns the minimum transaction fee.
@@ -243,7 +246,7 @@ func (s *Storage) GetMinScaledTransactionFee() *big.Int {
 
 	s.RLock()
 	defer s.RUnlock()
-	return s.dynamicValues.GetMinScaledTransactionFee()
+	return s.DynamicValues.GetMinScaledTransactionFee()
 }
 
 // GetValueStoreFee returns the transaction fee for ValueStore
@@ -252,7 +255,7 @@ func (s *Storage) GetValueStoreFee() *big.Int {
 
 	s.RLock()
 	defer s.RUnlock()
-	return s.dynamicValues.GetValueStoreFee()
+	return s.DynamicValues.GetValueStoreFee()
 }
 
 // GetDataStoreFee returns the DataStore fee per epoch
@@ -261,7 +264,7 @@ func (s *Storage) GetDataStoreFee() *big.Int {
 
 	s.RLock()
 	defer s.RUnlock()
-	return s.dynamicValues.GetDataStoreFee()
+	return s.DynamicValues.GetDataStoreFee()
 }
 
 // createLinkedList creates the linked list and store a DynamicValue for epoch 1
@@ -292,7 +295,7 @@ func (s *Storage) createLinkedList(txn *badger.Txn, epoch uint32, newDynamicValu
 		return err
 	}
 	// finally assign the value to memory
-	s.dynamicValues, err = newDynamicValue.Copy()
+	s.DynamicValues, err = newDynamicValue.Copy()
 	if err != nil {
 		utils.DebugTrace(s.logger, err)
 		return err
@@ -390,11 +393,16 @@ func (s *Storage) loadDynamicValues(txn *badger.Txn, epoch uint32) error {
 		utils.DebugTrace(s.logger, err)
 		return err
 	}
-	s.dynamicValues, err = nextNode.dynamicValues.Copy()
+	s.DynamicValues, err = nextNode.dynamicValues.Copy()
 	if err != nil {
 		utils.DebugTrace(s.logger, err)
 		return err
 	}
+	s.logger.Infof(
+		"Dynamic values updated. New dynamic values %+v will be valid after block %v",
+		*s.DynamicValues,
+		epoch*constants.EpochLength+1,
+	)
 	return nil
 }
 

@@ -19,8 +19,8 @@ func NewStorage(storageInter dynamics.StorageGetter) *Storage {
 	return storage
 }
 
-// GetMaxBytes returns MaxBytes
-func (s *Storage) GetMaxBytes() (uint32, error) {
+// GetMaxBlockSize returns MaxBytes
+func (s *Storage) GetMaxBlockSize() (uint32, error) {
 	if s == nil {
 		return 0, errorz.ErrInvalid{}.New("storage.MaxBlockSize; struct not initialized")
 	}
@@ -30,8 +30,8 @@ func (s *Storage) GetMaxBytes() (uint32, error) {
 	return s.storage.GetMaxBlockSize(), nil
 }
 
-// GetDataStoreEpochFee returns the per-epoch fee of DataStore
-func (s *Storage) GetDataStoreEpochFee() (*uint256.Uint256, error) {
+// GetDataStoreFee returns the per-epoch fee of DataStore
+func (s *Storage) GetDataStoreFee() (*uint256.Uint256, error) {
 	if s == nil {
 		return nil, errorz.ErrInvalid{}.New("storage.GetDataStoreEpochFee; struct not initialized")
 	}
@@ -64,8 +64,8 @@ func (s *Storage) GetValueStoreFee() (*uint256.Uint256, error) {
 	return feeUint256, nil
 }
 
-// GetMinTxFee returns the minimum TxFee.
-func (s *Storage) GetMinTxFee() (*uint256.Uint256, error) {
+// GetMinScaledTransactionFee returns the minimum TxFee.
+func (s *Storage) GetMinScaledTransactionFee() (*uint256.Uint256, error) {
 	if s == nil {
 		return nil, errorz.ErrInvalid{}.New("storage.GetMinTxFee; struct not initialized")
 	}

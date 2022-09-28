@@ -44,27 +44,18 @@ func TestNodeMakeKeys(t *testing.T) {
 	if !bytes.Equal(nkBytes, nkTrue) {
 		t.Fatal("invalid marshalling")
 	}
-
-	llk := makeLinkedListKey()
-	if llk.epoch != 0 {
-		t.Fatal("epoch should be 0")
-	}
-	if !bytes.Equal(nk.prefix, dbprefix.PrefixStorageNodeKey()) {
-		t.Fatal("prefixes do not match (2)")
-	}
 }
 
 func TestNodeMarshal(t *testing.T) {
 	node := &Node{}
 	_, err := node.Marshal()
 	if err == nil {
-		t.Fatal("Should have raied error (1)")
+		t.Fatal("Should have raised error (1)")
 	}
 
 	epoch := uint32(1)
-	rs := &DynamicValues{}
-	rs.standardParameters()
-	node, _, err = CreateLinkedList(epoch, rs)
+	dv := GetStandardDynamicValue()
+	node, _, err = CreateLinkedList(epoch, dv)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -87,16 +78,16 @@ func TestNodeMarshal(t *testing.T) {
 	if node.nextEpoch != node2.nextEpoch {
 		t.Fatal("invalid nextEpoch")
 	}
-	rsBytes, err := node.dynamicValues.Marshal()
+	dvBytes, err := node.dynamicValues.Marshal()
 	if err != nil {
 		t.Fatal(err)
 	}
-	rs2Bytes, err := node2.dynamicValues.Marshal()
+	dv2Bytes, err := node2.dynamicValues.Marshal()
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !bytes.Equal(rsBytes, rs2Bytes) {
-		t.Fatal("invalid RawStroage")
+	if !bytes.Equal(dvBytes, dv2Bytes) {
+		t.Fatal("invalid Dynamic Value")
 	}
 
 	v := []byte{}
@@ -189,66 +180,21 @@ func TestNodeIsValid(t *testing.T) {
 	}
 }
 
-func TestNodeIsPreValid(t *testing.T) {
-	wNode := &wNode{}
-	if wNode.node.IsPreValid() {
-		t.Fatal("Node should not be prevalid (0)")
-	}
-
-	node := &Node{}
-	if node.IsPreValid() {
-		t.Fatal("Node should not be prevalid (1)")
-	}
-
-	node.prevEpoch = 0
-	node.thisEpoch = 0
-	node.nextEpoch = 0
-	if node.IsPreValid() {
-		t.Fatal("Node should not be prevalid (2)")
-	}
-
-	node.prevEpoch = 1
-	node.thisEpoch = 1
-	node.nextEpoch = 0
-	if node.IsPreValid() {
-		t.Fatal("Node should not be prevalid (3)")
-	}
-
-	node.prevEpoch = 0
-	node.thisEpoch = 1
-	node.nextEpoch = 1
-	if node.IsPreValid() {
-		t.Fatal("Node should not be prevalid (4)")
-	}
-
-	node.prevEpoch = 0
-	node.thisEpoch = 1
-	node.nextEpoch = 0
-	if node.IsPreValid() {
-		t.Fatal("Node should not be prevalid (5)")
-	}
-
-	node.dynamicValues = &DynamicValues{}
-	if !node.IsPreValid() {
-		t.Fatal("Node should be prevalid")
-	}
-}
-
 func TestNodeIsHead(t *testing.T) {
 	node := &Node{}
 	if node.IsHead() {
 		t.Fatal("Node invalid; should be false")
 	}
 
-	node.prevEpoch = 1
+	node.prevEpoch = 0
+	node.nextEpoch = 0
 	node.thisEpoch = 1
-	node.nextEpoch = 1
 	node.dynamicValues = &DynamicValues{}
 	if !node.IsHead() {
 		t.Fatal("Should be Head")
 	}
 
-	node.nextEpoch = 2
+	node.prevEpoch = 2
 	if node.IsHead() {
 		t.Fatal("Should not be Head")
 	}
@@ -260,9 +206,9 @@ func TestNodeIsTail(t *testing.T) {
 		t.Fatal("Node invalid; should be false")
 	}
 
-	node.prevEpoch = 1
+	node.prevEpoch = 0
+	node.nextEpoch = 0
 	node.thisEpoch = 1
-	node.nextEpoch = 1
 	node.dynamicValues = &DynamicValues{}
 	if !node.IsTail() {
 		t.Fatal("Should be Tail")
@@ -277,23 +223,19 @@ func TestNodeIsTail(t *testing.T) {
 
 // SetNode with prevNode at Head
 func TestNodeSetEpochsGood1(t *testing.T) {
-	rs := &DynamicValues{}
-	rs.standardParameters()
+	dv := GetStandardDynamicValue()
 	nodeEpoch := uint32(25519)
 	node := &Node{
 		prevEpoch:     0,
 		thisEpoch:     nodeEpoch,
 		nextEpoch:     0,
-		dynamicValues: rs,
+		dynamicValues: dv,
 	}
-	if !node.IsPreValid() {
-		t.Fatal("node should be preValid")
-	}
-	rsNew, err := rs.Copy()
+	dvsNew, err := dv.Copy()
 	if err != nil {
 		t.Fatal(err)
 	}
-	rsNew.MaxBytes = 1234567890
+	dvsNew.MaxBlockSize = 1234567890
 	first := uint32(1)
 	last := uint32(257)
 	prevEpoch := last
@@ -301,7 +243,7 @@ func TestNodeSetEpochsGood1(t *testing.T) {
 		prevEpoch:     first,
 		thisEpoch:     prevEpoch,
 		nextEpoch:     last,
-		dynamicValues: rsNew,
+		dynamicValues: dvsNew,
 	}
 	if !prevNode.IsValid() {
 		t.Fatal("prevNode should be Valid")
@@ -337,8 +279,7 @@ func TestNodeSetEpochsGood1(t *testing.T) {
 
 // SetNode in between prevNode and nextNode
 func TestNodeSetEpochsGood2(t *testing.T) {
-	rs := &DynamicValues{}
-	rs.standardParameters()
+	rs := GetStandardDynamicValue()
 	nodeEpoch := uint32(25519)
 	node := &Node{
 		prevEpoch:     0,
@@ -346,15 +287,12 @@ func TestNodeSetEpochsGood2(t *testing.T) {
 		nextEpoch:     0,
 		dynamicValues: rs,
 	}
-	if !node.IsPreValid() {
-		t.Fatal("node should be preValid")
-	}
 
 	rsNew, err := rs.Copy()
 	if err != nil {
 		t.Fatal(err)
 	}
-	rsNew.MaxBytes = 1234567890
+	rsNew.MaxBlockSize = 1234567890
 
 	first := uint32(1)
 	last := uint32(1234567890)
@@ -432,16 +370,12 @@ func TestNodeSetEpochsBad1(t *testing.T) {
 
 // We should raise error for prevNode being invalid
 func TestNodeSetEpochsBad2(t *testing.T) {
-	rs := &DynamicValues{}
-	rs.standardParameters()
+	rs := GetStandardDynamicValue()
 	node := &Node{
 		prevEpoch:     0,
 		thisEpoch:     25519,
 		nextEpoch:     0,
 		dynamicValues: rs,
-	}
-	if !node.IsPreValid() {
-		t.Fatal("node should be preValid")
 	}
 	prevNode := &Node{}
 	if prevNode.IsValid() {
@@ -455,16 +389,12 @@ func TestNodeSetEpochsBad2(t *testing.T) {
 
 // We should raise error for nextNode not nil
 func TestNodeSetEpochsBad3(t *testing.T) {
-	rs := &DynamicValues{}
-	rs.standardParameters()
+	rs := GetStandardDynamicValue()
 	node := &Node{
 		prevEpoch:     0,
 		thisEpoch:     25519,
 		nextEpoch:     0,
 		dynamicValues: rs,
-	}
-	if !node.IsPreValid() {
-		t.Fatal("node should be preValid")
 	}
 	prevNode := &Node{
 		prevEpoch:     1,
@@ -484,16 +414,12 @@ func TestNodeSetEpochsBad3(t *testing.T) {
 
 // We should raise error for prevNode.thisEpoch >= node.thisEpoch
 func TestNodeSetEpochsBad4(t *testing.T) {
-	rs := &DynamicValues{}
-	rs.standardParameters()
+	rs := GetStandardDynamicValue()
 	node := &Node{
 		prevEpoch:     0,
 		thisEpoch:     25519,
 		nextEpoch:     0,
 		dynamicValues: rs,
-	}
-	if !node.IsPreValid() {
-		t.Fatal("node should be preValid")
 	}
 	prevNode := &Node{
 		prevEpoch:     1,
@@ -515,16 +441,12 @@ func TestNodeSetEpochsBad4(t *testing.T) {
 
 // We should raise error for prevNode not nil
 func TestNodeSetEpochsBad5(t *testing.T) {
-	rs := &DynamicValues{}
-	rs.standardParameters()
+	rs := GetStandardDynamicValue()
 	node := &Node{
 		prevEpoch:     0,
 		thisEpoch:     25519,
 		nextEpoch:     0,
 		dynamicValues: rs,
-	}
-	if !node.IsPreValid() {
-		t.Fatal("node should be preValid")
 	}
 	prevNode := &Node{}
 	if prevNode.IsValid() {
@@ -539,8 +461,7 @@ func TestNodeSetEpochsBad5(t *testing.T) {
 
 // We should raise error for prevNode not nil
 func TestNodeSetEpochsBad6(t *testing.T) {
-	rs := &DynamicValues{}
-	rs.standardParameters()
+	rs := GetStandardDynamicValue()
 	node := &Node{
 		prevEpoch:     0,
 		thisEpoch:     25519,
@@ -559,8 +480,7 @@ func TestNodeSetEpochsBad6(t *testing.T) {
 
 // We should raise error for prevNode not nil
 func TestNodeSetEpochsBad7(t *testing.T) {
-	rs := &DynamicValues{}
-	rs.standardParameters()
+	rs := GetStandardDynamicValue()
 	node := &Node{
 		prevEpoch:     0,
 		thisEpoch:     25519,
@@ -571,7 +491,7 @@ func TestNodeSetEpochsBad7(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	rsNew.MaxBytes = 1234567890
+	rsNew.MaxBlockSize = 1234567890
 	nextNode := &Node{
 		prevEpoch:     1,
 		thisEpoch:     257,
@@ -592,8 +512,7 @@ func TestNodeSetEpochsBad7(t *testing.T) {
 
 // We should raise error for prevNode not nil
 func TestNodeSetEpochsBad8(t *testing.T) {
-	rs := &DynamicValues{}
-	rs.standardParameters()
+	rs := GetStandardDynamicValue()
 	node := &Node{
 		prevEpoch:     0,
 		thisEpoch:     25519,
@@ -604,7 +523,7 @@ func TestNodeSetEpochsBad8(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	rsNew.MaxBytes = 1234567890
+	rsNew.MaxBlockSize = 1234567890
 	nextNode := &Node{
 		prevEpoch:     1,
 		thisEpoch:     123456,

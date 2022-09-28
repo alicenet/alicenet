@@ -2,13 +2,15 @@ package dynamics
 
 import (
 	"bytes"
+	"encoding/hex"
 	"errors"
+	"math/big"
 	"strconv"
 	"testing"
 	"time"
 )
 
-func initializeStorage() *Storage {
+func InitializeStorage() *Storage {
 	storageLogger := newLogger()
 	mock := &MockRawDB{}
 	mock.rawDB = make(map[string]string)
@@ -18,24 +20,61 @@ func initializeStorage() *Storage {
 	if err != nil {
 		panic(err)
 	}
-	s.Start()
+
 	return s
 }
 
-func initializeStorageWithFirstNode() *Storage {
-	s := initializeStorage()
-	field := "maxBytes"
-	value := "3000000"
+func InitializeStorageWithFirstNode() *Storage {
+	s := InitializeStorage()
 	epoch := uint32(1)
-	update, err := NewUpdate(field, value, epoch)
+	data, err := hex.DecodeString("000000000000000000000000002dc6c000000000000000000000000000000000000000000000000000000000000000")
 	if err != nil {
 		panic(err)
 	}
-	err = s.UpdateStorage(nil, update)
+	err = s.ChangeDynamicValues(nil, epoch, data)
 	if err != nil {
 		panic(err)
 	}
 	return s
+}
+
+func InitializeStorageWithStandardNode() *Storage {
+	storageLogger := newLogger()
+	mock := &MockRawDB{}
+	mock.rawDB = make(map[string]string)
+
+	s := &Storage{}
+	err := s.Init(mock, storageLogger)
+	if err != nil {
+		panic(err)
+	}
+
+	err = s.ChangeDynamicValues(nil, 1, GetStandardDynamicValueRaw())
+	if err != nil {
+		panic(err)
+	}
+	return s
+
+}
+
+func GetStandardDynamicValue() *DynamicValues {
+	data, err := hex.DecodeString("00000fa000000bb800000bb8002dc6c000000000000000000000000000000000000000000000000000000000000000")
+	if err != nil {
+		panic(err)
+	}
+	dv, err := DecodeDynamicValues(data)
+	if err != nil {
+		panic(err)
+	}
+	return dv
+}
+
+func GetStandardDynamicValueRaw() []byte {
+	data, err := hex.DecodeString("00000fa000000bb800000bb8002dc6c000000000000000000000000000000000000000000000000000000000000000")
+	if err != nil {
+		panic(err)
+	}
+	return data
 }
 
 // Test Storage Init with nothing initialized
@@ -49,21 +88,19 @@ func TestStorageInit1(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	s.Start()
 
-	rs := &DynamicValues{}
-	rs.standardParameters()
-	rsBytes, err := rs.Marshal()
+	dv := GetStandardDynamicValue()
+	dvBytes, err := dv.Marshal()
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// Check dynamicValues == standardParameters
-	storageRSBytes, err := s.dynamicValues.Marshal()
+	storageRSBytes, err := s.DynamicValues.Marshal()
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !bytes.Equal(rsBytes, storageRSBytes) {
+	if !bytes.Equal(dvBytes, storageRSBytes) {
 		t.Fatal("dynamicValues values do not match")
 	}
 }
@@ -78,10 +115,12 @@ func TestStorageStartGood(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	s.Start()
+
+	s.ChangeDynamicValues(nil, 1, GetStandardDynamicValueRaw())
+
 }
 
-// Test ensures we panic when running Start before Init.
+// Test ensures we panic when trying to add a value before Init.
 // This happens from attempting to close a closed channel.
 func TestStorageStartFail(t *testing.T) {
 	s := &Storage{}
@@ -90,158 +129,102 @@ func TestStorageStartFail(t *testing.T) {
 			t.Fatal("Should panic")
 		}
 	}()
-	s.Start()
+	s.ChangeDynamicValues(nil, 1, GetStandardDynamicValueRaw())
 }
 
 // Test ensures storage has is initialized to the correct values.
 func TestStorageInitialized(t *testing.T) {
-	s := initializeStorage()
+	s := InitializeStorageWithStandardNode()
 
-	maxBytesReturned := s.GetMaxBytes()
-	if maxBytesReturned != maxBytes {
+	InitialMaxBlockSize := uint32(30000)
+	InitialProposalTimeout := time.Duration(4000 * time.Millisecond)
+	InitialPreVoteTimeout := time.Duration(3000 * time.Millisecond)
+	InitialPreCommitTimeout := time.Duration(3000 * time.Millisecond)
+
+	maxBytesReturned := s.GetMaxBlockSize()
+	if maxBytesReturned != InitialMaxBlockSize {
 		t.Fatal("Incorrect MaxBytes")
 	}
 
 	maxProposalSizeReturned := s.GetMaxProposalSize()
-	if maxProposalSizeReturned != maxProposalSize {
+	if maxProposalSizeReturned != InitialMaxBlockSize {
 		t.Fatal("Incorrect MaxProposalSize")
 	}
 
-	srvrMsgTimeoutReturned := s.GetSrvrMsgTimeout()
-	if srvrMsgTimeoutReturned != srvrMsgTimeout {
-		t.Fatal("Incorrect srvrMsgTimeout")
+	proposalTimeoutReturned := s.GetProposalTimeout()
+	if proposalTimeoutReturned != InitialProposalTimeout {
+		t.Fatal("Incorrect proposalTO")
 	}
 
-	msgTimeoutReturned := s.GetMsgTimeout()
-	if msgTimeoutReturned != msgTimeout {
-		t.Fatal("Incorrect msgTimeout")
+	preVoteTimeoutReturned := s.GetPreVoteTimeout()
+	if preVoteTimeoutReturned != InitialPreVoteTimeout {
+		t.Fatal("Incorrect preVoteTO")
 	}
 
-	proposalStepTimeoutReturned := s.GetProposalStepTimeout()
-	if proposalStepTimeoutReturned != proposalStepTO {
-		t.Fatal("Incorrect proposalStepTO")
-	}
-
-	preVoteStepTimeoutReturned := s.GetPreVoteStepTimeout()
-	if preVoteStepTimeoutReturned != preVoteStepTO {
-		t.Fatal("Incorrect preVoteStepTO")
-	}
-
-	preCommitStepTimeoutReturned := s.GetPreCommitStepTimeout()
-	if preCommitStepTimeoutReturned != preCommitStepTO {
+	preCommitTimeoutReturned := s.GetPreCommitTimeout()
+	if preCommitTimeoutReturned != InitialPreCommitTimeout {
 		t.Fatal("Incorrect preCommitStepTO")
 	}
 
 	deadBlockRoundNextRoundTimeoutReturned := s.GetDeadBlockRoundNextRoundTimeout()
+	sum := InitialProposalTimeout + InitialPreVoteTimeout + InitialPreCommitTimeout
+	dBRNRTO := (5 * sum) / 2
 	if deadBlockRoundNextRoundTimeoutReturned != dBRNRTO {
 		t.Fatal("Incorrect deadBlockRoundNextRoundTimeout")
 	}
 
 	downloadTimeoutReturned := s.GetDownloadTimeout()
-	if downloadTimeoutReturned != downloadTO {
+	if downloadTimeoutReturned != sum {
 		t.Fatal("Incorrect downloadTimeout")
 	}
 
-	minTxFeeReturned := s.GetMinTxFee()
-	if minTxFeeReturned.Cmp(minTxFee) != 0 {
+	minTxFeeReturned := s.GetMinScaledTransactionFee()
+	if minTxFeeReturned.Cmp(new(big.Int).SetInt64(0)) != 0 {
 		t.Fatal("Incorrect minTxFee")
 	}
 
-	txValidVersion := s.GetTxValidVersion()
-	if txValidVersion != 0 {
-		t.Fatal("Incorrect txValidVersion")
-	}
-
 	vsFeeReturned := s.GetValueStoreFee()
-	if vsFeeReturned.Cmp(valueStoreFee) != 0 {
+	if vsFeeReturned.Cmp(new(big.Int).SetInt64(0)) != 0 {
 		t.Fatal("Incorrect valueStoreFee")
 	}
 
-	vsValidVersion := s.GetValueStoreValidVersion()
-	if vsValidVersion != 0 {
-		t.Fatal("Incorrect valueStoreValidVersion")
-	}
-
-	dsEpochFeeReturned := s.GetDataStoreEpochFee()
-	if dsEpochFeeReturned.Cmp(dataStoreEpochFee) != 0 {
+	dsEpochFeeReturned := s.GetDataStoreFee()
+	if dsEpochFeeReturned.Cmp(new(big.Int).SetInt64(0)) != 0 {
 		t.Fatal("Incorrect dataStoreEpochFee")
 	}
 
-	dsValidVersion := s.GetDataStoreValidVersion()
-	if dsValidVersion != 0 {
-		t.Fatal("Incorrect dataStoreValidVersion")
-	}
-}
-
-func TestStorageCheckUpdate(t *testing.T) {
-	fieldBad := "invalid"
-	valueBad := "invalid"
-	epochGood := uint32(25519)
-	_, err := NewUpdate(fieldBad, valueBad, epochGood)
-	if err == nil {
-		t.Fatal("Should have raised error (1)")
-	}
-
-	fieldGood := "maxBytes"
-	valueGood := "1234567890"
-	update, err := NewUpdate(fieldGood, valueGood, epochGood)
-	if err != nil {
-		t.Fatal(err)
-	}
-	err = checkUpdate(update)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	epochBad := uint32(0)
-	update, err = NewUpdate(fieldGood, valueGood, epochBad)
-	if err != nil {
-		t.Fatal(err)
-	}
-	err = checkUpdate(update)
-	if !errors.Is(err, ErrInvalidUpdateValue) {
-		t.Fatal("Should have raised error (2)")
-	}
-
-	update = &Update{epoch: 1}
-	err = checkUpdate(update)
-	if !errors.Is(err, ErrInvalidUpdateValue) {
-		t.Fatal("Should have raised error (3)")
-	}
 }
 
 // Test success of LoadStorage
 func TestStorageLoadStorageGood1(t *testing.T) {
-	s := initializeStorage()
+	s := InitializeStorageWithStandardNode()
 	epoch := uint32(25519)
 
-	rsTrue := &DynamicValues{}
-	rsTrue.standardParameters()
-	rsTrueBytes, err := rsTrue.Marshal()
+	dvTrue := GetStandardDynamicValue()
+	rsTrueBytes, err := dvTrue.Marshal()
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	err = s.LoadStorage(nil, epoch)
+	err = s.UpdateCurrentDynamicValue(nil, epoch)
 	if err != nil {
 		t.Fatal(err)
 	}
-	rsBytes, err := s.dynamicValues.Marshal()
+	dvBytes, err := s.DynamicValues.Marshal()
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !bytes.Equal(rsBytes, rsTrueBytes) {
+	if !bytes.Equal(dvBytes, rsTrueBytes) {
 		t.Fatal("dynamicValues values do not match")
 	}
 }
 
 // Test success of LoadStorage again
 func TestStorageLoadStorageGood2(t *testing.T) {
-	s := initializeStorageWithFirstNode()
+	s := InitializeStorageWithFirstNode()
 	epoch := uint32(25519)
 
-	rsTrue := &DynamicValues{}
-	rsTrue.standardParameters()
+	rsTrue := GetStandardDynamicValue()
 	rsTrueBytes, err := rsTrue.Marshal()
 	if err != nil {
 		t.Fatal(err)
@@ -251,7 +234,7 @@ func TestStorageLoadStorageGood2(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	rsBytes, err := s.dynamicValues.Marshal()
+	rsBytes, err := s.DynamicValues.Marshal()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -262,7 +245,7 @@ func TestStorageLoadStorageGood2(t *testing.T) {
 
 // Test failure of LoadStorage
 func TestStorageLoadStorageBad1(t *testing.T) {
-	s := initializeStorage()
+	s := InitializeStorage()
 	// We attempt to load the zero epoch;
 	// this should raise an error.
 	err := s.LoadStorage(nil, 0)
@@ -273,9 +256,8 @@ func TestStorageLoadStorageBad1(t *testing.T) {
 
 // Test success of loadDynamicValues.
 func TestStorageLoadDynamicValuesGood1(t *testing.T) {
-	s := initializeStorageWithFirstNode()
-	rsTrue := &DynamicValues{}
-	rsTrue.standardParameters()
+	s := InitializeStorageWithFirstNode()
+	rsTrue := GetStandardDynamicValue()
 	rsTrueBytes, err := rsTrue.Marshal()
 	if err != nil {
 		t.Fatal(err)
@@ -298,9 +280,8 @@ func TestStorageLoadDynamicValuesGood1(t *testing.T) {
 
 // Test success of loadDynamicValues again
 func TestStorageLoadDynamicValuesGood2(t *testing.T) {
-	s := initializeStorageWithFirstNode()
-	rsTrue := &DynamicValues{}
-	rsTrue.standardParameters()
+	s := InitializeStorageWithFirstNode()
+	rsTrue := GetStandardDynamicValue()
 	rsTrueBytes, err := rsTrue.Marshal()
 	if err != nil {
 		t.Fatal(err)
@@ -336,7 +317,7 @@ func TestStorageLoadDynamicValuesGood2(t *testing.T) {
 // Test failure of loadDynamicValues.
 // We raise an error for attempting to load epoch 0
 func TestStorageLoadDynamicValuesBad1(t *testing.T) {
-	s := initializeStorageWithFirstNode()
+	s := InitializeStorageWithFirstNode()
 
 	// We attempt to load an epoch from an empty database;
 	// this should raise an error.
@@ -355,7 +336,6 @@ func TestStorageLoadDynamicValuesBad2(t *testing.T) {
 	s.startChan = make(chan struct{})
 	s.database = database
 	s.logger = storageLogger
-	s.Start()
 
 	// We attempt to load an epoch from an empty database;
 	// this should raise an error.
@@ -382,7 +362,7 @@ func TestStorageLoadStorageBad3(t *testing.T) {
 	s.startChan = make(chan struct{})
 	s.database = database
 	s.logger = storageLogger
-	s.Start()
+
 	// We attempt to load an epoch from an empty database (without nodes but LinkedList set);
 	// this should raise an error.
 	_, err = s.loadDynamicValues(nil, 1)
@@ -393,7 +373,7 @@ func TestStorageLoadStorageBad3(t *testing.T) {
 
 func TestStorageAddNodeHeadGood(t *testing.T) {
 	// Initialize storage and have standard node at epoch 1
-	s := initializeStorageWithFirstNode()
+	s := InitializeStorageWithFirstNode()
 	epoch := uint32(1)
 	headNode, err := s.database.GetNode(nil, epoch)
 	if err != nil {
@@ -459,7 +439,7 @@ func TestStorageAddNodeHeadGood(t *testing.T) {
 
 func TestStorageAddNodeHeadBad1(t *testing.T) {
 	origEpoch := uint32(1)
-	s := initializeStorageWithFirstNode()
+	s := InitializeStorageWithFirstNode()
 	headNode, err := s.database.GetNode(nil, origEpoch)
 	if err != nil {
 		t.Fatal(err)
@@ -481,7 +461,7 @@ func TestStorageAddNodeHeadBad1(t *testing.T) {
 
 func TestStorageAddNodeHeadBad2(t *testing.T) {
 	origEpoch := uint32(1)
-	s := initializeStorageWithFirstNode()
+	s := InitializeStorageWithFirstNode()
 	headNode, err := s.database.GetNode(nil, origEpoch)
 	if err != nil {
 		t.Fatal(err)
@@ -507,7 +487,7 @@ func TestStorageAddNodeHeadBad2(t *testing.T) {
 
 func TestStorageAddNodeSplitGood(t *testing.T) {
 	first := uint32(1)
-	s := initializeStorageWithFirstNode()
+	s := InitializeStorageWithFirstNode()
 	prevNode, err := s.database.GetNode(nil, first)
 	if err != nil {
 		t.Fatal(err)
@@ -616,7 +596,7 @@ func TestStorageAddNodeSplitGood(t *testing.T) {
 
 func TestStorageAddNodeSplitBad1(t *testing.T) {
 	first := uint32(1)
-	s := initializeStorageWithFirstNode()
+	s := InitializeStorageWithFirstNode()
 	prevNode, err := s.database.GetNode(nil, first)
 	if err != nil {
 		t.Fatal(err)
@@ -658,7 +638,7 @@ func TestStorageAddNodeSplitBad1(t *testing.T) {
 
 func TestStorageAddNodeSplitBad2(t *testing.T) {
 	first := uint32(1)
-	s := initializeStorageWithFirstNode()
+	s := InitializeStorageWithFirstNode()
 	prevNode, err := s.database.GetNode(nil, first)
 	if err != nil {
 		t.Fatal(err)
@@ -713,7 +693,7 @@ func TestStorageAddNodeSplitBad2(t *testing.T) {
 // Test addNode when adding to Head
 func TestStorageAddNodeGood1(t *testing.T) {
 	origEpoch := uint32(1)
-	s := initializeStorageWithFirstNode()
+	s := InitializeStorageWithFirstNode()
 	rs := &DynamicValues{}
 	rs.standardParameters()
 	rsStandardBytes, err := rs.Marshal()
@@ -793,7 +773,7 @@ func TestStorageAddNodeGood1(t *testing.T) {
 // Test addNode when adding to Head and then in between
 func TestStorageAddNodeGood2(t *testing.T) {
 	origEpoch := uint32(1)
-	s := initializeStorageWithFirstNode()
+	s := InitializeStorageWithFirstNode()
 	rs := &DynamicValues{}
 	rs.standardParameters()
 	rsStandardBytes, err := rs.Marshal()
@@ -908,7 +888,7 @@ func TestStorageAddNodeGood2(t *testing.T) {
 }
 
 func TestStorageAddNodeBad1(t *testing.T) {
-	s := initializeStorage()
+	s := InitializeStorage()
 	rs := &DynamicValues{}
 	newNode := &Node{
 		prevEpoch:     0,
@@ -923,7 +903,7 @@ func TestStorageAddNodeBad1(t *testing.T) {
 }
 
 func TestStorageAddNodeBad2(t *testing.T) {
-	s := initializeStorage()
+	s := InitializeStorage()
 	rs := &DynamicValues{}
 	newNode := &Node{
 		prevEpoch:     0,
@@ -938,7 +918,7 @@ func TestStorageAddNodeBad2(t *testing.T) {
 }
 
 func TestStorageAddNodeBad3(t *testing.T) {
-	s := initializeStorageWithFirstNode()
+	s := InitializeStorageWithFirstNode()
 	rs := &DynamicValues{}
 	newNode := &Node{
 		prevEpoch:     0,
@@ -953,7 +933,7 @@ func TestStorageAddNodeBad3(t *testing.T) {
 }
 
 func TestStorageAddNodeBad4(t *testing.T) {
-	s := initializeStorageWithFirstNode()
+	s := InitializeStorageWithFirstNode()
 	rs := &DynamicValues{}
 	newNode := &Node{
 		prevEpoch:     0,
@@ -979,7 +959,7 @@ func TestStorageAddNodeBad4(t *testing.T) {
 }
 
 func TestStorageAddNodeBad5(t *testing.T) {
-	s := initializeStorageWithFirstNode()
+	s := InitializeStorageWithFirstNode()
 	rs := &DynamicValues{}
 	newNode := &Node{
 		prevEpoch:     0,
@@ -1016,7 +996,7 @@ func TestStorageAddNodeBad5(t *testing.T) {
 }
 
 func TestStorageAddNodeBad6(t *testing.T) {
-	s := initializeStorage()
+	s := InitializeStorage()
 	ll := &LinkedList{25519}
 	err := s.database.SetLinkedList(nil, ll)
 	if err != nil {
@@ -1038,7 +1018,7 @@ func TestStorageAddNodeBad6(t *testing.T) {
 
 // Test failure of UpdateStorage
 func TestStorageUpdateStorageBad(t *testing.T) {
-	s := initializeStorage()
+	s := InitializeStorage()
 	epoch := uint32(25519)
 	field := "invalid"
 	value := ""
@@ -1055,7 +1035,7 @@ func TestStorageUpdateStorageBad(t *testing.T) {
 
 // Test success of UpdateStorage
 func TestStorageUpdateStorageGood1(t *testing.T) {
-	s := initializeStorage()
+	s := InitializeStorage()
 	epoch := uint32(1)
 	field := "maxBytes"
 	value := "123456789"
@@ -1085,7 +1065,7 @@ func TestStorageUpdateStorageGood1(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	retRS, err := s.dynamicValues.Copy()
+	retRS, err := s.DynamicValues.Copy()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1103,7 +1083,7 @@ func TestStorageUpdateStorageGood1(t *testing.T) {
 
 // Test success of UpdateStorage
 func TestStorageUpdateStorageGood2(t *testing.T) {
-	s := initializeStorage()
+	s := InitializeStorage()
 	epoch := uint32(25519)
 	field := "maxBytes"
 	value := "123456789"
@@ -1132,7 +1112,7 @@ func TestStorageUpdateStorageGood2(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	retRS, err := s.dynamicValues.Copy()
+	retRS, err := s.DynamicValues.Copy()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1150,7 +1130,7 @@ func TestStorageUpdateStorageGood2(t *testing.T) {
 
 // Test success of UpdateStorage
 func TestStorageUpdateStorageGood3(t *testing.T) {
-	s := initializeStorageWithFirstNode()
+	s := InitializeStorageWithFirstNode()
 
 	// Add another epoch in the future
 	epoch2 := uint32(25519)
@@ -1179,8 +1159,7 @@ func TestStorageUpdateStorageGood3(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	rsTrue := &DynamicValues{}
-	rsTrue.standardParameters()
+	rsTrue := GetStandardDynamicValue()
 	newMaxBytesInt, err := strconv.Atoi(value)
 	if err != nil {
 		t.Fatal(err)
@@ -1196,7 +1175,7 @@ func TestStorageUpdateStorageGood3(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	retRS, err := s.dynamicValues.Copy()
+	retRS, err := s.DynamicValues.Copy()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1224,7 +1203,7 @@ func TestStorageUpdateStorageGood3(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	retRS, err = s.dynamicValues.Copy()
+	retRS, err = s.DynamicValues.Copy()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1242,7 +1221,7 @@ func TestStorageUpdateStorageGood3(t *testing.T) {
 // Test failure of UpdateStorageValue
 // Attempt to perform invalid update at future epoch
 func TestStorageUpdateStorageValueBad1(t *testing.T) {
-	s := initializeStorage()
+	s := InitializeStorage()
 	epoch := uint32(25519)
 	field := "invalid"
 	value := ""
@@ -1260,7 +1239,7 @@ func TestStorageUpdateStorageValueBad1(t *testing.T) {
 // Test failure of UpdateStorageValue
 // Attempt to perform invalid update at current epoch
 func TestStorageUpdateStorageValueBad2(t *testing.T) {
-	s := initializeStorage()
+	s := InitializeStorage()
 	epoch := uint32(1)
 	field := "invalid"
 	value := ""
@@ -1278,7 +1257,7 @@ func TestStorageUpdateStorageValueBad2(t *testing.T) {
 // Test failure of UpdateStorageValue
 // Attempt to perform invalid update at previous epoch
 func TestStorageUpdateStorageValueBad3(t *testing.T) {
-	s := initializeStorage()
+	s := InitializeStorage()
 	epoch := uint32(1)
 	field := "invalid"
 	value := ""
@@ -1296,7 +1275,7 @@ func TestStorageUpdateStorageValueBad3(t *testing.T) {
 // Test failure of UpdateStorageValue
 // Attempt to perform invalid update in between two valid storage values
 func TestStorageUpdateStorageValueBad4(t *testing.T) {
-	s := initializeStorageWithFirstNode()
+	s := InitializeStorageWithFirstNode()
 	rs := &DynamicValues{}
 	rs.standardParameters()
 	node := &Node{
@@ -1324,7 +1303,7 @@ func TestStorageUpdateStorageValueBad4(t *testing.T) {
 }
 
 func TestStorageGetMinTxFee(t *testing.T) {
-	s := initializeStorageWithFirstNode()
+	s := InitializeStorageWithFirstNode()
 	txFee := s.GetMinTxFee()
 	if txFee.Cmp(minTxFee) != 0 {
 		t.Fatal("txFee incorrect")
@@ -1361,7 +1340,7 @@ func TestStorageGetMinTxFee(t *testing.T) {
 }
 
 func TestStorageGetDataStoreEpochFee(t *testing.T) {
-	s := initializeStorageWithFirstNode()
+	s := InitializeStorageWithFirstNode()
 	dsEpochFee := s.GetDataStoreEpochFee()
 	if dsEpochFee.Cmp(dataStoreEpochFee) != 0 {
 		t.Fatal("dsEpochFee incorrect")
@@ -1395,7 +1374,7 @@ func TestStorageGetDataStoreEpochFee(t *testing.T) {
 }
 
 func TestStorageGetValueStoreFee(t *testing.T) {
-	s := initializeStorageWithFirstNode()
+	s := InitializeStorageWithFirstNode()
 	vsFee := s.GetValueStoreFee()
 	if vsFee.Cmp(valueStoreFee) != 0 {
 		t.Fatal("vsFee incorrect")

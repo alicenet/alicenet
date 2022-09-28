@@ -8,7 +8,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/alicenet/alicenet/constants"
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/assert"
 )
@@ -72,7 +71,7 @@ func TestDynamicValuesCopy(t *testing.T) {
 	}
 
 	// Copy DynamicValues with parameters
-	dv1.standardParameters()
+	dv1 = &DynamicValues{EncoderVersion: 0, ProposalTimeout: 3000, MaxBlockSize: 30000}
 	dv2, err = dv1.Copy()
 	if err != nil {
 		t.Fatal(err)
@@ -114,32 +113,43 @@ func TestDynamicValuesCopy(t *testing.T) {
 	}
 }
 
-func TestDynamicValuesStandardParameters(t *testing.T) {
-	dv := &DynamicValues{}
-	dv.standardParameters()
+func TestDynamicValuesParameters(t *testing.T) {
+
+	InitialMaxBlockSize := uint32(30000)
+	InitialProposalTimeout := time.Duration(4000 * time.Millisecond)
+	InitialPreVoteTimeout := time.Duration(3000 * time.Millisecond)
+	InitialPreCommitTimeout := time.Duration(3000 * time.Millisecond)
+
+	dv := &DynamicValues{
+		EncoderVersion:   0,
+		ProposalTimeout:  InitialProposalTimeout,
+		PreVoteTimeout:   InitialPreVoteTimeout,
+		PreCommitTimeout: InitialPreCommitTimeout,
+		MaxBlockSize:     InitialMaxBlockSize,
+	}
 
 	retMaxBytes := dv.GetMaxBlockSize()
-	if retMaxBytes != constants.InitialMaxBlockSize {
+	if retMaxBytes != InitialMaxBlockSize {
 		t.Fatal("Should be equal (1)")
 	}
 
 	retMaxProposalSize := dv.GetMaxProposalSize()
-	if retMaxProposalSize != constants.InitialMaxBlockSize {
+	if retMaxProposalSize != InitialMaxBlockSize {
 		t.Fatal("Should be equal (2)")
 	}
 
 	retProposalTimeout := dv.GetProposalTimeout()
-	if retProposalTimeout != constants.InitialProposalTimeout {
+	if retProposalTimeout != InitialProposalTimeout {
 		t.Fatal("Should be equal (5)")
 	}
 
 	retPreVoteTimeout := dv.GetPreVoteTimeout()
-	if retPreVoteTimeout != constants.InitialPreVoteTimeout {
+	if retPreVoteTimeout != InitialPreVoteTimeout {
 		t.Fatal("Should be equal (6)")
 	}
 
 	retPreCommitTimeout := dv.GetPreCommitTimeout()
-	if retPreCommitTimeout != constants.InitialPreCommitTimeout {
+	if retPreCommitTimeout != InitialPreCommitTimeout {
 		t.Fatal("Should be equal (7)")
 	}
 	sum := retProposalTimeout + retPreVoteTimeout + retPreCommitTimeout

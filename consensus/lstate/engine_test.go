@@ -21,8 +21,10 @@ import (
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/crypto"
 	"github.com/alicenet/alicenet/dynamics"
+	dMocks "github.com/alicenet/alicenet/dynamics/mocks"
 	"github.com/alicenet/alicenet/logging"
 	"github.com/alicenet/alicenet/proto"
+	"github.com/alicenet/alicenet/test/mocks"
 	"github.com/alicenet/alicenet/utils"
 )
 
@@ -1333,7 +1335,7 @@ func initEngine(t *testing.T, txs []*appObjs.Tx) *Engine {
 	}
 
 	adminBus := initAdminBus(t, logger, engineDb)
-	storage := appObjs.MakeMockStorageGetter()
+	storage := dMocks.NewMockStorageGetter()
 	reqBusViewMock := &dman.ReqBusViewMock{}
 	dMan := &dman.DMan{}
 	dMan.Init(engineDb, app, reqBusViewMock)
@@ -1356,7 +1358,7 @@ func initAdminBus(t *testing.T, logger *logrus.Logger, db *db.Database) *admin.H
 
 func initStorage(t *testing.T, logger *logrus.Logger) *dynamics.Storage {
 	s := &dynamics.Storage{}
-	err := s.Init(&dynamics.MockRawDB{}, logger)
+	err := s.Init(mocks.NewTestDB(), logger)
 	if err != nil {
 		t.Fatal(err)
 	}

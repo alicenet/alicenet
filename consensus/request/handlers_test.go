@@ -7,11 +7,6 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/dgraph-io/badger/v2"
-	"github.com/sirupsen/logrus"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
-
 	appObjs "github.com/alicenet/alicenet/application/objs"
 	"github.com/alicenet/alicenet/application/objs/uint256"
 	"github.com/alicenet/alicenet/consensus/db"
@@ -23,6 +18,10 @@ import (
 	"github.com/alicenet/alicenet/interfaces"
 	"github.com/alicenet/alicenet/proto"
 	"github.com/alicenet/alicenet/utils"
+	"github.com/dgraph-io/badger/v2"
+	"github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 type HandlerMock struct {
@@ -102,7 +101,6 @@ func initHandler(t *testing.T, done <-chan struct{}) *Handler {
 	if err != nil {
 		panic(err)
 	}
-	storage.Start()
 
 	handler := &Handler{}
 	handler.Init(database, appMock, storage)
