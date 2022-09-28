@@ -20,29 +20,47 @@ let admin: SignerWithAddress;
 const bridgePoolVersion = 1;
 const unexistentBridgePoolVersion = 11;
 
-async function deployFixture() {
-  const fixture = await getFixture(true, true, false);
-  const [admin] = await ethers.getSigners();
-  await factoryCallAny(
-    fixture.factory,
-    fixture.bridgePoolFactory,
-    "deployPoolLogic",
-    [
-      bridgePoolTokenType,
-      bridgePoolChainId,
-      bridgePoolVersion,
-      bridgePoolValue,
-      bridgePoolDeployCode,
-    ]
-  );
-  return { fixture, admin };
-}
-
-beforeEach(async function () {
-  ({ fixture, admin } = await loadFixture(deployFixture));
-});
-
 describe("Testing BridgePool Factory", async () => {
+  async function deployFixture() {
+    const fixture = await getFixture(true, true, false);
+    const [admin] = await ethers.getSigners();
+    await factoryCallAny(
+      fixture.factory,
+      fixture.bridgePoolFactory,
+      "deployPoolLogic",
+      [
+        bridgePoolTokenType,
+        bridgePoolChainId,
+        bridgePoolVersion,
+        bridgePoolValue,
+        bridgePoolDeployCode,
+      ]
+    );
+    return { fixture, admin };
+  }
+
+  beforeEach(async function () {
+    ({ fixture, admin } = await loadFixture(deployFixture));
+  });
+
+  it("Should fail to enable public pool deploying without impersonating factory", async () => {
+    await expect(
+      fixture.bridgePoolFactory.togglePublicPoolDeployment()
+    ).to.be.revertedWithCustomError(fixture.bridgePoolFactory, "OnlyFactory");
+  });
+
+  it.only("Should fail to deploy pool logic without impersonating factory", async () => {
+    await expect(
+      fixture.bridgePoolFactory.deployPoolLogic(
+        bridgePoolTokenType,
+        bridgePoolChainId,
+        bridgePoolVersion,
+        bridgePoolValue,
+        bridgePoolDeployCode
+      )
+    ).to.be.revertedWithCustomError(fixture.bridgePoolFactory, "OnlyFactory");
+  });
+
   it("Should deploy new BridgePool as factory even if public pool deployment is not enabled", async () => {
     await factoryCallAnyFixture(
       fixture,
