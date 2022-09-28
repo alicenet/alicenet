@@ -49,7 +49,7 @@ describe("Testing BridgePool Factory", async () => {
     ).to.be.revertedWithCustomError(fixture.bridgePoolFactory, "OnlyFactory");
   });
 
-  it.only("Should fail to deploy pool logic without impersonating factory", async () => {
+  it("Should fail to deploy pool logic without impersonating factory", async () => {
     await expect(
       fixture.bridgePoolFactory.deployPoolLogic(
         bridgePoolTokenType,
