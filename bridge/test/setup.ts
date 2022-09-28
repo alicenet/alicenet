@@ -15,6 +15,7 @@ import {
   AToken,
   ATokenBurner,
   ATokenMinter,
+  ATokenMinterMock,
   BToken,
   Distribution,
   Dynamics,
@@ -77,7 +78,7 @@ export interface BaseTokensFixture extends BaseFixture {
 }
 
 export interface Fixture extends BaseTokensFixture {
-  aTokenMinter: ATokenMinter;
+  aTokenMinter: ATokenMinter | ATokenMinterMock;
   validatorStaking: ValidatorStaking;
   validatorPool: ValidatorPool | ValidatorPoolMock;
   snapshots: Snapshots | SnapshotsMock;
@@ -88,6 +89,7 @@ export interface Fixture extends BaseTokensFixture {
   multipleProposalAccusation: MultipleProposalAccusation;
   distribution: Distribution;
   dynamics: Dynamics;
+  validatorVault: ValidatorVault;
 }
 
 /**
@@ -408,7 +410,8 @@ export const getBaseTokensFixture = async (): Promise<BaseTokensFixture> => {
 export const getFixture = async (
   mockValidatorPool?: boolean,
   mockSnapshots?: boolean,
-  mockETHDKG?: boolean
+  mockETHDKG?: boolean,
+  mockATokenMinter?: boolean
 ): Promise<Fixture> => {
   await preFixtureSetup();
   const namedSigners = await ethers.getSigners();
@@ -515,11 +518,23 @@ export const getFixture = async (
     )) as Snapshots;
   }
 
-  const aTokenMinter = (await deployUpgradeableWithFactory(
-    factory,
-    "ATokenMinter",
-    "ATokenMinter"
-  )) as ATokenMinter;
+  let aTokenMinter;
+  if (typeof mockATokenMinter !== "undefined" && mockATokenMinter) {
+    // ATokenMinterMock
+    aTokenMinter = (await deployUpgradeableWithFactory(
+      factory,
+      "ATokenMinterMock",
+      "ATokenMinter"
+    )) as ATokenMinter;
+  } else {
+    // ATokenMinter
+    aTokenMinter = (await deployUpgradeableWithFactory(
+      factory,
+      "ATokenMinter",
+      "ATokenMinter"
+    )) as ATokenMinter;
+  }
+
   const mintToFactory = aTokenMinter.interface.encodeFunctionData("mint", [
     factory.address,
     ethers.utils.parseEther("100000000"),
