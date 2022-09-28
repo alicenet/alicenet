@@ -31,7 +31,6 @@ describe("Testing BridgePool Factory", async () => {
       [
         bridgePoolTokenType,
         bridgePoolChainId,
-        bridgePoolVersion,
         bridgePoolValue,
         bridgePoolDeployCode,
       ]
@@ -54,7 +53,6 @@ describe("Testing BridgePool Factory", async () => {
       fixture.bridgePoolFactory.deployPoolLogic(
         bridgePoolTokenType,
         bridgePoolChainId,
-        bridgePoolVersion,
         bridgePoolValue,
         bridgePoolDeployCode
       )

@@ -24,14 +24,20 @@ contract BridgePoolFactory is BridgePoolFactoryBase {
         _deployNewNativePool(tokenType_, ercContract_, implementationVersion_);
     }
 
+    /**
+     * @notice deploys logic for bridge pools and stores it in a logicAddresses mapping
+     * @param tokenType_ type of token (1=ERC20, 2=ERC721)
+     * @param chainId_ address of ERC20 source token contract
+     * @param value_ amount of eth to send to the contract on creation
+     * @param deployCode_ logic contract deployment bytecode
+     */
     function deployPoolLogic(
         uint8 tokenType_,
         uint256 chainId_,
-        uint16 version_,
         uint256 value_,
         bytes calldata deployCode_
     ) public onlyFactory returns (address) {
-        return _deployPoolLogic(tokenType_, chainId_, version_, value_, deployCode_);
+        return _deployPoolLogic(tokenType_, chainId_, value_, deployCode_);
     }
 
     /**
