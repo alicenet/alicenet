@@ -23,7 +23,7 @@ abstract contract BridgePoolFactoryBase is ImmutableFactory {
     address internal _implementation;
     mapping(string => address) internal _logicAddresses;
     //mapping of native and external pools to mapping of pool types to most recent version of logic
-    mapping(PoolType => mapping(TokenType => uint16)) logicVersionsDeployed_;
+    mapping(PoolType => mapping(TokenType => uint16)) internal _logicVersionsDeployed;
     event BridgePoolCreated(address poolAddress, address token);
 
     modifier onlyFactoryOrPublicPoolDeploymentEnabled() {
@@ -52,6 +52,18 @@ abstract contract BridgePoolFactoryBase is ImmutableFactory {
             return(ptr, 45)
         }
     }
+    /**
+     * @notice returns the most recent version of the pool logic
+     * @param chainId_ native chainID of the token ie 1 for ethereum erc20
+     * @param tokenType_ type of token 0 for ERC20 1 for ERC721 and 2 for ERC1155
+     */
+    function getLatestPoolLogicVersion(uint256 chainId_, uint8 tokenType_) public view returns (uint16) {
+        if (chainId_ != _chainID) {
+            return _logicVersionsDeployed[PoolType.EXTERNAL][TokenType(tokenType_)];
+        } else {
+            return _logicVersionsDeployed[PoolType.NATIVE][TokenType(tokenType_)];
+        }
+     }
 
     function _deployPoolLogic(
         uint8 tokenType_,
@@ -74,11 +86,11 @@ abstract contract BridgePoolFactoryBase is ImmutableFactory {
         }
         if (chainId_ != _chainID) {
             native = false;
-            version = logicVersionsDeployed_[PoolType.EXTERNAL][TokenType(tokenType_)] + 1;
-            logicVersionsDeployed_[PoolType.EXTERNAL][TokenType(tokenType_)] = version;
+            version = _logicVersionsDeployed[PoolType.EXTERNAL][TokenType(tokenType_)] + 1;
+            _logicVersionsDeployed[PoolType.EXTERNAL][TokenType(tokenType_)] = version;
         } else {
-            version = logicVersionsDeployed_[PoolType.NATIVE][TokenType(tokenType_)] + 1;
-            logicVersionsDeployed_[PoolType.NATIVE][TokenType(tokenType_)] = version;
+            version = _logicVersionsDeployed[PoolType.NATIVE][TokenType(tokenType_)] + 1;
+            _logicVersionsDeployed[PoolType.NATIVE][TokenType(tokenType_)] = version;
         }
         _logicAddresses[_getImplementationAddressKey(tokenType_, version, native)] = addr;
         return addr;
@@ -148,8 +160,6 @@ abstract contract BridgePoolFactoryBase is ImmutableFactory {
         }
         return contractAddr;
     }
-
-    function getLatestPoolLogicVersion() public view returns (uint16) {}
 
     /**
      * @notice calculates salt for a BridgePool implementation contract based on tokenType and version
