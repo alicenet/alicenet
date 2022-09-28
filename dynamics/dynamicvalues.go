@@ -6,7 +6,6 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/utils"
 )
 
@@ -84,20 +83,6 @@ func DecodeDynamicValues(data []byte) (*DynamicValues, error) {
 	}
 
 	return dynamicValuesV1, nil
-}
-
-// DynamicValuesWithStandardValues initializes and return a DynamicValues struct
-// with the standard (original) parameters for the system.
-func DynamicValuesWithStandardValues() *DynamicValues {
-	return &DynamicValues{
-		MaxBlockSize:            constants.InitialMaxBlockSize,
-		ProposalTimeout:         constants.InitialProposalTimeout,
-		PreVoteTimeout:          constants.InitialPreVoteTimeout,
-		PreCommitTimeout:        constants.InitialPreCommitTimeout,
-		DataStoreFee:            new(big.Int).Set(constants.InitialDataStoreFee),
-		ValueStoreFee:           new(big.Int).Set(constants.InitialValueStoreFee),
-		MinScaledTransactionFee: new(big.Int).Set(constants.InitialMinScaledTransactionFee),
-	}
 }
 
 // Marshal performs json.Marshal on the DynamicValuesV1 struct.
