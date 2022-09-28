@@ -135,7 +135,7 @@ describe("Testing Base BridgePool Deposit/Withdraw", async () => {
     );
   });
 
-  it("Should not call a withdraw if chainId in UTXO does not match chainId in snapsht's claims", async () => {
+  it("Should not call a withdraw if chainId in UTXO does not match chainId in snapshot's claims", async () => {
     await expect(
       nativeERCBridgePool
         .connect(utxoOwnerSigner)
@@ -143,7 +143,7 @@ describe("Testing Base BridgePool Deposit/Withdraw", async () => {
     ).to.be.revertedWithCustomError(accusationsErrors, "ChainIdDoesNotMatch");
   });
 
-  it("Should not call a withdraw with wrong proof", async () => {
+  it("Should not call a withdraw if UTXOID in UTXO does not match UTXOID in proof", async () => {
     await expect(
       nativeERCBridgePool
         .connect(utxoOwnerSigner)
