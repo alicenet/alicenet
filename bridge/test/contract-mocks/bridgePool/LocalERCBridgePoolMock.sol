@@ -13,7 +13,19 @@ contract LocalERCBridgePoolMock is Initializable, LocalERCBridgePoolBase {
         super.deposit(msgSender, depositParameters_);
     }
 
-    function withdraw(bytes memory _txInPreImage, bytes[4] memory _proofs) public override {
-        super.withdraw(_txInPreImage, _proofs);
+    function withdraw(bytes memory vsPreImage_, bytes[4] memory proofs_)
+        public
+        override
+        returns (
+            bytes32,
+            address,
+            uint256
+        )
+    {
+        (bytes32 computedUTXOID, address account, uint256 value) = super.withdraw(
+            vsPreImage_,
+            proofs_
+        );
+        return (computedUTXOID, account, value);
     }
 }

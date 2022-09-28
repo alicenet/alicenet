@@ -8,4 +8,5 @@ library LocalERCBridgePoolBaseErrors {
     error UTXODoesnotMatch(bytes32 proofAgainstStateRootKey, bytes32 proofOfInclusionTxHashKey);
     error SignatureVerificationFailed();
     error UTXOAlreadyWithdrawn(bytes32 computedUTXOID);
+    error UTXOAccountDifferentThanReceiver(address utxoAccount, address msgSender);
 }

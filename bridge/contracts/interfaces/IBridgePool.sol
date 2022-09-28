@@ -6,5 +6,11 @@ interface IBridgePool {
 
     function deposit(address msgSender, bytes calldata depositParameters) external;
 
-    function withdraw(bytes memory _txInPreImage, bytes[4] memory _proofs) external;
+    function withdraw(bytes memory _txInPreImage, bytes[4] memory _proofs)
+        external
+        returns (
+            bytes32,
+            address,
+            uint256
+        );
 }

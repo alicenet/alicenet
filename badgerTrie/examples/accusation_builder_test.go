@@ -584,6 +584,7 @@ func TestGenerateAccusations(t *testing.T) {
 			t.Fatal(err)
 		}
 		_, _ = value.FromBigInt(tmp)
+
 		deposits = append(deposits, makeDeposit(t, signer, 1, int(i), value)) // created pre-image object
 		txs = append(txs, makeTxs(t, signer, deposits[i]))
 		txHash, err := txs[i].TxHash()
@@ -598,7 +599,6 @@ func TestGenerateAccusations(t *testing.T) {
 		txHshLst = append(txHshLst, txHash)
 		txHshSMTs = append(txHshSMTs, smtTxHsh)
 	}
-
 	newTxn := db.NewTransaction(true)
 
 	var stateRoot []byte
@@ -839,10 +839,23 @@ func TestGenerateAccusations(t *testing.T) {
 		t.Fatal(err)
 	}
 	preImageBin, err := tx2.Vin[0].TXInLinker.TXInPreImage.MarshalBinary()
-	if err != nil {
-		t.Fatal(err)
-	}
-	log.Printf("\n\n ======== TxIn Preimage hash: ======= \n%x\n\n", preImageBin)
+
+	vsImageBin, err := tx2.Vout[0].MarshalBinary()
+	txOutIdx_, err := tx2.Vout[0].TxOutIdx()
+	chainId_, err := tx2.Vout[0].ChainID()
+	value_, err := tx2.Vout[0].Value()
+	h := fmt.Sprintf("%x", value_)
+	genericOwner_, err := tx2.Vout[0].GenericOwner()
+	utxoId_, err := tx2.Vout[0].UTXOID()
+	log.Printf("\n\n ======== VS Preimage bin: ======= \n%x\n", vsImageBin)
+	log.Printf("VS Preimage txOutIdx : %x\n", txOutIdx_)
+	log.Printf("VS Preimage chainId : %x\n", chainId_)
+	log.Printf("VS Preimage value : %x\n%d\n%s\n", value_, value_, h)
+	log.Printf("VS Preimage genericOwner : %x\n", genericOwner_)
+	log.Printf("VS Preimage utxoId : %x\n", utxoId_)
+	log.Println("=========")
+
+	log.Printf("\n\n ======== TxIn Preimage bin: ======= \n%x\n\n", preImageBin)
 	log.Println("=========")
 	log.Printf("The transaction Root persisted Block 2: %x\n", txRoot2)
 	if err != nil {

@@ -7,6 +7,7 @@ import { expect } from "../chai-setup";
 
 import { deployUpgradeableWithFactory, Fixture, getFixture } from "../setup";
 import {
+  getImpersonatedSigner,
   getMockBlockClaimsForSnapshot,
   proofs,
   txInPreImage,
@@ -16,6 +17,7 @@ import {
 let fixture: Fixture;
 let user: SignerWithAddress;
 let user2: SignerWithAddress;
+let utxoOwnerSigner: SignerWithAddress;
 let merkleProofLibraryErrors: Contract;
 let localERCBridgePool: Contract;
 let localERCBridgePoolBaseErrors: Contract;
@@ -54,6 +56,9 @@ async function deployFixture() {
     undefined,
     false
   );
+  utxoOwnerSigner = await getImpersonatedSigner(
+    "0x38e959391dd8598ae80d5d6d114a7822a09d313a"
+  );
 
   return {
     fixture,
@@ -82,13 +87,17 @@ describe("Testing Base BridgePool Deposit/Withdraw", async () => {
   });
 
   it("Should call a withdraw upon proofs verification", async () => {
-    await localERCBridgePool.connect(user).withdraw(txInPreImage, proofs);
+    await localERCBridgePool
+      .connect(utxoOwnerSigner)
+      .withdraw(txInPreImage, proofs);
   });
 
   it("Should not call a withdraw on an already withdrawn UTXO upon proofs verification", async () => {
-    await localERCBridgePool.connect(user).withdraw(txInPreImage, proofs);
+    await localERCBridgePool
+      .connect(utxoOwnerSigner)
+      .withdraw(txInPreImage, proofs);
     await expect(
-      localERCBridgePool.connect(user).withdraw(txInPreImage, proofs)
+      localERCBridgePool.connect(utxoOwnerSigner).withdraw(txInPreImage, proofs)
     ).to.be.revertedWithCustomError(
       localERCBridgePoolBaseErrors,
       "UTXOAlreadyWithdrawn"

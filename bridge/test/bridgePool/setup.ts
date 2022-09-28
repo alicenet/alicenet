@@ -29,7 +29,9 @@ export const proofs: [BytesLike, BytesLike, BytesLike, BytesLike] = [
   "0x010003d97c1b45464c01481c8df20932ce3292c99e7d5e5df07f6e1ca639dedb05b42b0000000000000000000000000000000000000000000000000000000000000000323bfb4d198651454355911116e41425aa3668eec380c958f89bc3fe76c88ab500010003e0ad098365a75c471199ee17c3e53b26ab5e404ad6697dc3033c686d84479207c40de2b3c2e453811cc0f64df31de8864ca32742fee909b443660d9f20eb7f280e64abf1c51eedeef9d757bfce9edc3af361b304bdeedd321e343921c04f3b2005",
 ];
 export const txInPreImage =
-  "0x0000000001000100010000000000000001000000020100007b802d223569d7b75cec992b1b028b0c2092d950d992b11187f11ee568c469bd";
+  // vsPreImage "0x0000000001000100010000000000000000000000000002000400000001000100150000000201000001000000feffffff01000000b2000000010138e959391dd8598ae80d5d6d114a7822a09d313a0000b4aec67f3220a8bcdee78d4aaec6ea419171e3db9c27c65d70cc85d60e07a3f7";
+  // replaced original txHash 0400000001000100150000000201000001000000feffffff01000000b2000000 with required for test: 7b802d223569d7b75cec992b1b028b0c2092d950d992b11187f11ee568c469bd
+  "0x0000000001000100010000000000000000000000000002007b802d223569d7b75cec992b1b028b0c2092d950d992b11187f11ee568c469bd010138e959391dd8598ae80d5d6d114a7822a09d313a0000b4aec67f3220a8bcdee78d4aaec6ea419171e3db9c27c65d70cc85d60e07a3f7";
 
 export const wrongProofs: [BytesLike, BytesLike, BytesLike, BytesLike] = [
   // proofOfInclusionStateRootCapnProto
@@ -84,21 +86,17 @@ export const getMetamorphicContractAddress = (
   );
 };
 
-export const getSimulatedBridgeRouter = async (
-  factoryAddress: string
+export const getImpersonatedSigner = async (
+  addressToImpersonate: string
 ): Promise<any> => {
-  const bridgeRouterAddress = await getMetamorphicContractAddress(
-    "BridgeRouter",
-    factoryAddress
-  );
   const [admin] = await ethers.getSigners();
   await admin.sendTransaction({
-    to: bridgeRouterAddress,
+    to: addressToImpersonate,
     value: ethers.utils.parseEther("1"),
   });
   await hre.network.provider.request({
     method: "hardhat_impersonateAccount",
-    params: [bridgeRouterAddress],
+    params: [addressToImpersonate],
   });
-  return ethers.provider.getSigner(bridgeRouterAddress);
+  return ethers.provider.getSigner(addressToImpersonate);
 };
