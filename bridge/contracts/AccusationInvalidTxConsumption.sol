@@ -13,7 +13,7 @@ import "contracts/utils/ImmutableAuth.sol";
 import "contracts/utils/AccusationsLibrary.sol";
 import "contracts/libraries/errors/AccusationsErrors.sol";
 
-/// @custom:salt InvalidTxConsumptionAccusation
+/// @custom:deploy-type deployUpgradeable
 /// @custom:role Accusation
 contract AccusationInvalidTxConsumption is
     ImmutableFactory,
@@ -134,6 +134,22 @@ contract AccusationInvalidTxConsumption is
             MerkleProofLibrary.verifyNonInclusion(proofAgainstStateRoot, bClaims.stateRoot);
         }
 
+        // deterministic accusation ID
+        bytes32 id = keccak256(abi.encodePacked(
+            signerAccount,
+            pClaims.rCert.rClaims.chainId,
+            pClaims.rCert.rClaims.height,
+            pClaims.rCert.rClaims.round,
+            PRE_SALT
+        ));
+
+        // check if this accusation ID has already been submitted
+        if (_accusations[id]) {
+            revert AccusationsErrors.AccusationAlreadySubmitted(id);
+        }
+
+        _accusations[id] = true;
+
         // burn the validator's tokens
         IValidatorPool(_validatorPoolAddress()).majorSlash(signerAccount, msg.sender, PRE_SALT);
 
@@ -162,5 +178,12 @@ contract AccusationInvalidTxConsumption is
         ) {
             revert AccusationsErrors.SignatureVerificationFailed();
         }
+    }
+
+    /// @notice This function tells whether an accusation ID has already been submitted or not.
+    /// @param id_ The deterministic accusation ID
+    /// @return true if the ID has already been submitted, false otherwise
+    function isAccused(bytes32 id_) public view returns (bool) {
+        return _accusations[id_];
     }
 }

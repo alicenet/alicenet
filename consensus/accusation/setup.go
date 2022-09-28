@@ -1,13 +1,11 @@
-package main
+package accusation
 
 import (
 	"bytes"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"math/big"
-	"os"
 	"strconv"
 	"testing"
 
@@ -92,7 +90,7 @@ func makeTxs(t *testing.T, s objs.Signer, v *objs.ValueStore) *objs.Tx {
 
 // Creates a persistent TxRoot Merkle Trie from a list of transactions. This
 // function is necessary since this Trie only lives on memory normally.
-func MakePersistentTxRoot(txn *badger.Txn, txHashes [][]byte) (*trie.SMT, []byte, error) {
+func _MakePersistentTxRoot(txn *badger.Txn, txHashes [][]byte) (*trie.SMT, []byte, error) {
 	if len(txHashes) == 0 {
 		return nil, crypto.Hasher([]byte{}), nil
 	}
@@ -117,7 +115,7 @@ func MakePersistentTxRoot(txn *badger.Txn, txHashes [][]byte) (*trie.SMT, []byte
 
 // Creates a persistent TxHash Merkle Trie from a transaction. This function is
 // necessary since this Trie only lives on memory normally.
-func PersistentTxHash(txn *badger.Txn, b *objs.Tx) (*trie.SMT, []byte, error) {
+func _PersistentTxHash(txn *badger.Txn, b *objs.Tx) (*trie.SMT, []byte, error) {
 	if b == nil {
 		return nil, nil, errorz.ErrInvalid{}.New("tx not initialized in txHash")
 	}
@@ -271,6 +269,12 @@ func makeTransfer(t *testing.T, sender objs.Signer, receiver objs.Signer, transf
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	err = newValueStoreSender.Sign(tx.Vin[0], sender)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	return tx
 }
 
@@ -420,7 +424,7 @@ func getAllStateMerkleProofs(hndlr *utxo.UTXOHandler, txs []*objs.Tx) func(txn *
 }
 
 // Get the proof of Inclusion or Exclusion of a certain UTXOID in the state Trie.
-func getStateMerkleProofs(hndlr *utxo.UTXOHandler, txs []*objs.Tx, utxoID []byte) func(txn *badger.Txn) error {
+func _getStateMerkleProofs(hndlr *utxo.UTXOHandler, txs []*objs.Tx, utxoID []byte) func(txn *badger.Txn) error {
 	fn := func(txn *badger.Txn) error {
 		stateTrie, err := hndlr.GetTrie().GetCurrentTrie(txn)
 		if err != nil {
@@ -485,43 +489,29 @@ func CreateMerkleProof(included bool, proofHeight int, key []byte, proofKey []by
 	return mproof, nil
 }
 
-// Main Test function to generate the accusations
-func TestGenerateAccusations(t *testing.T) {
-	////////////////// Database setup ////////////////
-	log.Println("Starting the generation of accusation test objects")
-	dir, err := ioutil.TempDir("", "badger-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}()
-	opts := badger.DefaultOptions(dir)
-	db, err := badger.Open(opts)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer db.Close()
-
+// Main function to generate the accusations
+func GenerateNoInvalidUTXOAccusationScenario(t *testing.T, consDB *db.Database) *cobjs.RoundState {
 	//////////////////////////////////////////////////////////////////////////////
 	//////////////////////////////////////////////////////////////////////////////
 	signer := &crypto.Secp256k1Signer{}
-	err = signer.SetPrivk(crypto.Hasher([]byte("secret")))
-
+	err := signer.SetPrivk(crypto.Hasher([]byte("secret")))
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	pubKeySigner, err := signer.Pubkey()
+	if err != nil {
+		t.Fatal(err)
+	}
+	addressSigner := crypto.Hasher(pubKeySigner)[:20]
 
 	signer2 := &crypto.Secp256k1Signer{}
 	err = signer2.SetPrivk(crypto.Hasher([]byte("secret2")))
-
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	hndlr := utxo.NewUTXOHandler(db)
+	hndlr := utxo.NewUTXOHandler(consDB.DB())
 	err = hndlr.Init(1)
 	if err != nil {
 		t.Fatal(err)
@@ -535,20 +525,21 @@ func TestGenerateAccusations(t *testing.T) {
 	var txHshLst [][]byte
 	var txHshSMTs []*trie.SMT
 	for i := uint64(0); i < 5; i++ {
-		newTxn := db.NewTransaction(true)
+		newTxn := consDB.DB().NewTransaction(true)
 		value := &uint256.Uint256{}
 		tmp, ok := new(big.Int).SetString("ffffffff", 16)
 		if !ok {
 			t.Fatal(err)
 		}
 		_, _ = value.FromBigInt(tmp)
+		//todo: change chainID
 		deposits = append(deposits, makeDeposit(t, signer, 1, int(i), value)) // created pre-image object
 		txs = append(txs, makeTxs(t, signer, deposits[i]))
 		txHash, err := txs[i].TxHash()
 		if err != nil {
 			t.Fatal(err)
 		}
-		smtTxHsh, _, err := PersistentTxHash(newTxn, txs[i])
+		smtTxHsh, _, err := _PersistentTxHash(newTxn, txs[i])
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -557,10 +548,10 @@ func TestGenerateAccusations(t *testing.T) {
 		txHshSMTs = append(txHshSMTs, smtTxHsh)
 	}
 
-	newTxn := db.NewTransaction(true)
+	newTxn := consDB.DB().NewTransaction(true)
 
 	var stateRoot []byte
-	err = db.Update(func(txn *badger.Txn) error {
+	err = consDB.DB().Update(func(txn *badger.Txn) error {
 		stateRoot, err = hndlr.ApplyState(txn, txs, 1)
 		if err != nil {
 			t.Fatal(err)
@@ -572,7 +563,7 @@ func TestGenerateAccusations(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = db.Update(getAllStateMerkleProofs(hndlr, txs))
+	err = consDB.DB().Update(getAllStateMerkleProofs(hndlr, txs))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -594,7 +585,7 @@ func TestGenerateAccusations(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	newTxn = db.NewTransaction(true)
+	newTxn = consDB.DB().NewTransaction(true)
 	_, txRoot, err := MakePersistentTxRoot(newTxn, txHshLst) // generating the smt root
 	log.Printf("The transaction Root persisted: %x\n", txRoot)
 	if err != nil {
@@ -666,7 +657,8 @@ func TestGenerateAccusations(t *testing.T) {
 		t.Fatal(err)
 	}
 	log.Printf("TX2 OUT UTXOID: %x", tx2UTXOID2)
-	txHashSMT, _, err := PersistentTxHash(newTxn, tx2)
+	//txHashSMT, _, err := _PersistentTxHash(newTxn, tx2)
+	_, _, err = _PersistentTxHash(newTxn, tx2)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -716,6 +708,15 @@ func TestGenerateAccusations(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	//save commited BH
+	err = consDB.Update(func(txn *badger.Txn) error {
+		err := consDB.SetCommittedBlockHeader(txn, bh)
+		return err
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	pclms := &cobjs.PClaims{
 		BClaims: chain[1],
 		RCert:   rcert,
@@ -726,6 +727,7 @@ func TestGenerateAccusations(t *testing.T) {
 	prop := &cobjs.Proposal{
 		PClaims:  pclms,
 		TxHshLst: [][]byte{txHash2},
+		Proposer: addressSigner,
 	}
 	err = prop.Sign(signer)
 	if err != nil {
@@ -735,62 +737,415 @@ func TestGenerateAccusations(t *testing.T) {
 	bclaimsBin, err := chain[0].MarshalBinary()
 	log.Printf("BClaim block 1:\n%x\n\n", bclaimsBin)
 	log.Printf("SigGrup Block 1:\n%x\n\n", rcert.SigGroup)
-	log.Printf("\n\n ======== Creating the Merkle proof for the StateTrie =======")
-	err = db.Update(getStateMerkleProofs(hndlr, []*objs.Tx{tx2}, tx2UTXOID[0]))
+
+	rs := &cobjs.RoundState{
+		Proposal: prop,
+	}
+
+	err = consDB.Update(func(txn *badger.Txn) error {
+		tx2Binary, err := tx2.MarshalBinary()
+		if err != nil {
+			return err
+		}
+
+		err = consDB.SetTxCacheItem(txn, rs.Proposal.PClaims.BClaims.Height, txHash2, tx2Binary)
+		return err
+	})
+
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	txRootSMT, txRoot2, err := MakePersistentTxRoot(db.NewTransaction(true), [][]byte{txHash2}) // generating the smt root
-	log.Println(" ======== Creating the merkle proof for the TxHASHROOT =====")
-	bitmap, auditPath, proofHeight, included, proofKey, proofVal, err := txRootSMT.MerkleProofCompressed(newTxn, txHash2)
-	if err != nil {
-		t.Fatal(err)
-	}
-	_, err = CreateMerkleProof(
-		included,
-		proofHeight,
-		txHash2,
-		proofKey,
-		proofVal,
-		bitmap,
-		auditPath,
-	)
+	return rs
+
+	//log.Printf("\n\n ======== Creating the Merkle proof for the StateTrie =======")
+	//err = consDB.DB().Update(_getStateMerkleProofs(hndlr, []*objs.Tx{tx2}, tx2UTXOID[0]))
+	//if err != nil {
+	//	t.Fatal(err)
+	//}
+	//
+	//txRootSMT, txRoot2, err := MakePersistentTxRoot(consDB.DB().NewTransaction(true), [][]byte{txHash2}) // generating the smt root
+	//log.Println(" ======== Creating the merkle proof for the TxHASHROOT =====")
+	//bitmap, auditPath, proofHeight, included, proofKey, proofVal, err := txRootSMT.MerkleProofCompressed(newTxn, txHash2)
+	//if err != nil {
+	//	t.Fatal(err)
+	//}
+	//_, err = CreateMerkleProof(
+	//	included,
+	//	proofHeight,
+	//	txHash2,
+	//	proofKey,
+	//	proofVal,
+	//	bitmap,
+	//	auditPath,
+	//)
+	//if err != nil {
+	//	t.Fatal(err)
+	//}
+	//
+	//// done so far
+	//
+	//log.Printf("\n\n ========Creating the merkle proof for the TxHASHSMT ==========")
+	//bitmap, auditPath, proofHeight, included, proofKey, proofVal, err = txHashSMT.MerkleProofCompressed(newTxn, tx2UTXOID[0])
+	//if err != nil {
+	//	t.Fatal(err)
+	//}
+	//if err != nil {
+	//	t.Fatal(err)
+	//}
+	//_, err = CreateMerkleProof(
+	//	included,
+	//	proofHeight,
+	//	tx2UTXOID[0],
+	//	proofKey,
+	//	proofVal,
+	//	bitmap,
+	//	auditPath,
+	//)
+	//if err != nil {
+	//	t.Fatal(err)
+	//}
+	//// not yet here
+	//preImageBin, err := tx2.Vin[0].TXInLinker.TXInPreImage.MarshalBinary()
+	//if err != nil {
+	//	t.Fatal(err)
+	//}
+	//log.Printf("\n\n ======== TxIn Preimage hash: ======= \n%x\n\n", preImageBin)
+	//log.Println("=========")
+	//log.Printf("The transaction Root persisted Block 2: %x\n", txRoot2)
+	//if err != nil {
+	//	t.Fatal(err)
+	//}
+	//
+	//return txHash2
+}
+
+func GenerateNonExistentUTXOAccusationScenario(t *testing.T, consDB *db.Database) *cobjs.RoundState {
+	//////////////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////////////
+	signer := &crypto.Secp256k1Signer{}
+	err := signer.SetPrivk(crypto.Hasher([]byte("secret")))
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	// done so far
+	pubKeySigner, err := signer.Pubkey()
+	if err != nil {
+		t.Fatal(err)
+	}
+	addressSigner := crypto.Hasher(pubKeySigner)[:20]
 
-	log.Printf("\n\n ========Creating the merkle proof for the TxHASHSMT ==========")
-	bitmap, auditPath, proofHeight, included, proofKey, proofVal, err = txHashSMT.MerkleProofCompressed(newTxn, tx2UTXOID[0])
+	signer2 := &crypto.Secp256k1Signer{}
+	err = signer2.SetPrivk(crypto.Hasher([]byte("secret2")))
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	hndlr := utxo.NewUTXOHandler(consDB.DB())
+	err = hndlr.Init(1)
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = CreateMerkleProof(
-		included,
-		proofHeight,
-		tx2UTXOID[0],
-		proofKey,
-		proofVal,
-		bitmap,
-		auditPath,
-	)
+
+	///////// Block 1 ////////////
+	log.Println("Block 1:")
+	// Creating First UTXO
+	var txs []*objs.Tx
+	var deposits []*objs.ValueStore
+	var txHshLst [][]byte
+	var txHshSMTs []*trie.SMT
+	for i := uint64(0); i < 5; i++ {
+		newTxn := consDB.DB().NewTransaction(true)
+		value := &uint256.Uint256{}
+		tmp, ok := new(big.Int).SetString("ffffffff", 16)
+		if !ok {
+			t.Fatal(err)
+		}
+		_, _ = value.FromBigInt(tmp)
+		//todo: change chainID
+		deposits = append(deposits, makeDeposit(t, signer, 1, int(i), value)) // created pre-image object
+		txs = append(txs, makeTxs(t, signer, deposits[i]))
+		txHash, err := txs[i].TxHash()
+		if err != nil {
+			t.Fatal(err)
+		}
+		smtTxHsh, _, err := _PersistentTxHash(newTxn, txs[i])
+		if err != nil {
+			t.Fatal(err)
+		}
+		log.Printf("Tx hash (%d): %x", i, txHash)
+		txHshLst = append(txHshLst, txHash)
+		txHshSMTs = append(txHshSMTs, smtTxHsh)
+	}
+
+	newTxn := consDB.DB().NewTransaction(true)
+
+	var stateRoot []byte
+	err = consDB.DB().Update(func(txn *badger.Txn) error {
+		stateRoot, err = hndlr.ApplyState(txn, txs, 1)
+		if err != nil {
+			t.Fatal(err)
+		}
+		log.Printf("stateRoot: %x\n", stateRoot)
+		return nil
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
-	// not yet here
-	preImageBin, err := tx2.Vin[0].TXInLinker.TXInPreImage.MarshalBinary()
+
+	err = consDB.DB().Update(getAllStateMerkleProofs(hndlr, txs))
 	if err != nil {
 		t.Fatal(err)
 	}
-	log.Printf("\n\n ======== TxIn Preimage hash: ======= \n%x\n\n", preImageBin)
-	log.Println("=========")
-	log.Printf("The transaction Root persisted Block 2: %x\n", txRoot2)
+
+	// // USE TO GENERATE Merkle proofs with an arbitrary key against the stateTrie trie
+	// utxoID, err := hex.DecodeString("0000000000000000000000000000000000000000000000000000000000000030")
+	// if err != nil {
+	// 	t.Fatal(err)
+	// }
+	// err = db.Update(getStateMerkleProofs(hndlr, txs, utxoID))
+	// if err != nil {
+	// 	t.Fatal(err)
+	// }
+	// /////////////////////////////////////////////
+
+	// Generating block 1
+	chain, err := GenerateBlock(nil, stateRoot, txHshLst)
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	newTxn = consDB.DB().NewTransaction(true)
+	_, txRoot, err := MakePersistentTxRoot(newTxn, txHshLst) // generating the smt root
+	log.Printf("The transaction Root persisted: %x\n", txRoot)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// /////////////////////////////////////////////
+	// // USE to generate an arbitrary merkle proof against a txRoot trie
+	// transactionIncluded, err := hex.DecodeString("77338383edde4a7477f32549672ce24ff2800d7b61bf71cac09fab6e9b008495")
+	// if err != nil {
+	// 	t.Fatal(err)
+	// }
+	// bitmap, auditPath, proofHeight, included, proofKey, proofVal, err := smtTxRoot.MerkleProofCompressed(newTxn, transactionIncluded)
+	// if err != nil {
+	// 	t.Fatal(err)
+	// }
+	// _, err = CreateMerkleProof(
+	// 	included,
+	// 	proofHeight,
+	// 	transactionIncluded,
+	// 	proofKey,
+	// 	proofVal,
+	// 	bitmap,
+	// 	auditPath,
+	// )
+	// if err != nil {
+	// 	t.Fatal(err)
+	// }
+	// /////////////////////////////////////////////
+
+	////////// Block 2 /////////////
+	// this is consuming utxo generated on block 1
+	log.Println("\n\n\n ========== Block 2: =============")
+	value := &uint256.Uint256{}
+	_, _ = value.FromUint64(100000000)
+
+	// ////////////////// Generating accusations against invalid transactions ///////
+	// /////////////// Consuming a non existing UTXO
+	signerPubKey, err := signer.Pubkey()
+	if err != nil {
+		t.Fatal(err)
+	}
+	nonExistingUTXO, err := createNewUTXO(1, value, signerPubKey, crypto.Hasher([]byte("lol")), 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	tx2 := makeTransfer(t, signer, signer2, 1, nonExistingUTXO)
+	/////////////////////////////////////////////////////////
+
+	////////////// Consuming a deposit that was already spent
+	//tx2 := makeTxs(t, signer, deposits[0])
+	//////////////////////////////////////////////////////////
+
+	// /////////////// Consuming a deposit that doesn't exist before /////
+	// // todo:
+	// /////
+
+	// // /////////////// Consuming a valid UTXO
+	//tx2 := makeTransfer(t, signer, signer2, 1, txs[0].Vout[0])
+	// // //////////////////////////////////////////////////////////
+
+	txHash2, err := tx2.TxHash()
+	if err != nil {
+		t.Fatal(err)
+	}
+	log.Printf("Tx hash: %x", txHash2)
+	tx2UTXOID2, err := tx2.Vout.UTXOID()
+	if err != nil {
+		t.Fatal(err)
+	}
+	log.Printf("TX2 OUT UTXOID: %x", tx2UTXOID2)
+	//txHashSMT, _, err := _PersistentTxHash(newTxn, tx2)
+	_, _, err = _PersistentTxHash(newTxn, tx2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	tx2UTXOID, err := tx2.Vin.UTXOID()
+	log.Printf("Vin UTXO ID: %x\n", tx2UTXOID[0])
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	chain, err = GenerateBlock(chain, stateRoot, [][]byte{txHash2})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	//////////// Generating cobjs.BClaims and PClaims ////////////////////
+
+	bnVal := &crypto.BNGroupValidator{}
+	if err != nil {
+		t.Fatal(err)
+	}
+	bclaims := chain[0]
+	bhsh, err := bclaims.BlockHash()
+	if err != nil {
+		t.Fatal(err)
+	}
+	gk := &crypto.BNGroupSigner{}
+	gk.SetPrivk(crypto.Hasher([]byte("secret")))
+	sig, err := gk.Sign(bhsh)
+	if err != nil {
+		t.Fatal(err)
+	}
+	bh := &cobjs.BlockHeader{
+		BClaims:  bclaims,
+		SigGroup: sig,
+		TxHshLst: txHshLst,
+	}
+	err = bh.ValidateSignatures(bnVal)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rcert, err := bh.GetRCert()
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = rcert.ValidateSignature(bnVal)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	//save commited BH
+	err = consDB.Update(func(txn *badger.Txn) error {
+		err := consDB.SetCommittedBlockHeader(txn, bh)
+		return err
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	pclms := &cobjs.PClaims{
+		BClaims: chain[1],
+		RCert:   rcert,
+	}
+
+	pClaimsBin, err := pclms.MarshalBinary()
+	log.Printf("PClaims Block 2:\n%x\n\n", pClaimsBin)
+	prop := &cobjs.Proposal{
+		PClaims:  pclms,
+		TxHshLst: [][]byte{txHash2},
+		Proposer: addressSigner,
+	}
+	err = prop.Sign(signer)
+	if err != nil {
+		t.Fatal(err)
+	}
+	log.Printf("Sig PClaims Block 2:\n%x\n\n", prop.Signature)
+	bclaimsBin, err := chain[0].MarshalBinary()
+	log.Printf("BClaim block 1:\n%x\n\n", bclaimsBin)
+	log.Printf("SigGrup Block 1:\n%x\n\n", rcert.SigGroup)
+
+	rs := &cobjs.RoundState{
+		Proposal: prop,
+	}
+
+	err = consDB.Update(func(txn *badger.Txn) error {
+		tx2Binary, err := tx2.MarshalBinary()
+		if err != nil {
+			return err
+		}
+
+		err = consDB.SetTxCacheItem(txn, rs.Proposal.PClaims.BClaims.Height, txHash2, tx2Binary)
+		return err
+	})
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return rs
+
+	//log.Printf("\n\n ======== Creating the Merkle proof for the StateTrie =======")
+	//err = consDB.DB().Update(_getStateMerkleProofs(hndlr, []*objs.Tx{tx2}, tx2UTXOID[0]))
+	//if err != nil {
+	//	t.Fatal(err)
+	//}
+	//
+	//txRootSMT, txRoot2, err := MakePersistentTxRoot(consDB.DB().NewTransaction(true), [][]byte{txHash2}) // generating the smt root
+	//log.Println(" ======== Creating the merkle proof for the TxHASHROOT =====")
+	//bitmap, auditPath, proofHeight, included, proofKey, proofVal, err := txRootSMT.MerkleProofCompressed(newTxn, txHash2)
+	//if err != nil {
+	//	t.Fatal(err)
+	//}
+	//_, err = CreateMerkleProof(
+	//	included,
+	//	proofHeight,
+	//	txHash2,
+	//	proofKey,
+	//	proofVal,
+	//	bitmap,
+	//	auditPath,
+	//)
+	//if err != nil {
+	//	t.Fatal(err)
+	//}
+	//
+	//// done so far
+	//
+	//log.Printf("\n\n ========Creating the merkle proof for the TxHASHSMT ==========")
+	//bitmap, auditPath, proofHeight, included, proofKey, proofVal, err = txHashSMT.MerkleProofCompressed(newTxn, tx2UTXOID[0])
+	//if err != nil {
+	//	t.Fatal(err)
+	//}
+	//if err != nil {
+	//	t.Fatal(err)
+	//}
+	//_, err = CreateMerkleProof(
+	//	included,
+	//	proofHeight,
+	//	tx2UTXOID[0],
+	//	proofKey,
+	//	proofVal,
+	//	bitmap,
+	//	auditPath,
+	//)
+	//if err != nil {
+	//	t.Fatal(err)
+	//}
+	//// not yet here
+	//preImageBin, err := tx2.Vin[0].TXInLinker.TXInPreImage.MarshalBinary()
+	//if err != nil {
+	//	t.Fatal(err)
+	//}
+	//log.Printf("\n\n ======== TxIn Preimage hash: ======= \n%x\n\n", preImageBin)
+	//log.Println("=========")
+	//log.Printf("The transaction Root persisted Block 2: %x\n", txRoot2)
+	//if err != nil {
+	//	t.Fatal(err)
+	//}
+	//
+	//return txHash2
 }
