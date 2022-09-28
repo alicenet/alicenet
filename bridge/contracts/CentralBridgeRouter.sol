@@ -6,9 +6,7 @@ import "contracts/interfaces/IBridgePoolRouter.sol";
 import "contracts/interfaces/ICentralBridgeRouter.sol";
 import "contracts/libraries/errors/CentralBridgeRouterErrors.sol";
 
-
-contract CentralBridgeRouter is ICentralBridgeRouter ,ImmutableFactory, ImmutableBToken {
-    
+contract CentralBridgeRouter is ICentralBridgeRouter, ImmutableFactory, ImmutableBToken {
     // mapping of router version to data
     mapping(uint16 => RouterConfig) internal _routerConfig;
     uint256 internal _nonce;
@@ -16,6 +14,7 @@ contract CentralBridgeRouter is ICentralBridgeRouter ,ImmutableFactory, Immutabl
     uint16 internal _routerVersions;
 
     constructor() ImmutableFactory(msg.sender) {}
+
     /**
      * takes token deposit calls from ALCB and emits deposit events on token transfer completion
      * @param msgSender_ address of account depositing tokens from
@@ -41,12 +40,9 @@ contract CentralBridgeRouter is ICentralBridgeRouter ,ImmutableFactory, Immutabl
             msgSender_,
             depositData_
         );
-        DepositReturnData memory returnData = abi.decode(
-            returnDataBytes,
-            (DepositReturnData)
-        );
+        DepositReturnData memory returnData = abi.decode(returnDataBytes, (DepositReturnData));
         uint256 nonce = _nonce;
-        for(uint256 i =0; i < returnData.eventData.length; i++){
+        for (uint256 i = 0; i < returnData.eventData.length; i++) {
             returnData.eventData[i].logData = abi.encode(returnData.eventData[i].logData, nonce);
             _emitDepositEvent(returnData.eventData[i].topics, returnData.eventData[i].logData);
             nonce += 1;
@@ -95,7 +91,8 @@ contract CentralBridgeRouter is ICentralBridgeRouter ,ImmutableFactory, Immutabl
      */
     function getRouterAddress(uint16 routerVersion_) public view returns (address routerAddress) {
         RouterConfig memory config = _routerConfig[routerVersion_];
-        if (config.routerAddress == address(0)) revert CentralBridgeRouterErrors.InvalidPoolVersion(routerVersion_);
+        if (config.routerAddress == address(0))
+            revert CentralBridgeRouterErrors.InvalidPoolVersion(routerVersion_);
         routerAddress = config.routerAddress;
     }
 

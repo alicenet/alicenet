@@ -11,12 +11,12 @@ interface ICentralBridgeRouter {
         address routerAddress;
         bool notOnline;
     }
-    
+
     struct EventData {
         bytes32[] topics;
         bytes logData;
     }
-    
+
     function forwardDeposit(
         address msgSender_,
         uint16 poolVersion_,
