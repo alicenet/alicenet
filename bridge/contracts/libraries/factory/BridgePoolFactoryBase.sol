@@ -52,18 +52,23 @@ abstract contract BridgePoolFactoryBase is ImmutableFactory {
             return(ptr, 45)
         }
     }
+
     /**
      * @notice returns the most recent version of the pool logic
      * @param chainId_ native chainID of the token ie 1 for ethereum erc20
      * @param tokenType_ type of token 0 for ERC20 1 for ERC721 and 2 for ERC1155
      */
-    function getLatestPoolLogicVersion(uint256 chainId_, uint8 tokenType_) public view returns (uint16) {
+    function getLatestPoolLogicVersion(uint256 chainId_, uint8 tokenType_)
+        public
+        view
+        returns (uint16)
+    {
         if (chainId_ != _chainID) {
             return _logicVersionsDeployed[PoolType.EXTERNAL][TokenType(tokenType_)];
         } else {
             return _logicVersionsDeployed[PoolType.NATIVE][TokenType(tokenType_)];
         }
-     }
+    }
 
     function _deployPoolLogic(
         uint8 tokenType_,
