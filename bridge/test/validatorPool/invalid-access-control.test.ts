@@ -103,9 +103,10 @@ describe("ValidatorPool Access Control: An user without admin role should not be
   it("Set stake Amount", async function () {
     await expect(
       fixture.validatorPool.connect(notAdmin1Signer).setStakeAmount(1)
-    )
-      .to.be.revertedWithCustomError(fixture.validatorPool, `OnlyFactory`)
-      .withArgs(notAdmin1.address, fixture.factory.address);
+    ).to.be.revertedWithCustomError(
+      fixture.validatorPool,
+      `OnlyFactoryOrValidatorVaultAllowed`
+    );
   });
 
   it("Initialize ETHDKG", async function () {
