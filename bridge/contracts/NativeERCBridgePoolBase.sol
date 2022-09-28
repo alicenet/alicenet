@@ -3,7 +3,7 @@ pragma solidity ^0.8.16;
 import "contracts/interfaces/IBridgePool.sol";
 import "contracts/utils/ImmutableAuth.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "contracts/libraries/errors/LocalERCBridgePoolBaseErrors.sol";
+import "contracts/libraries/errors/NativeERCBridgePoolBaseErrors.sol";
 import "contracts/utils/AccusationsLibrary.sol";
 import "contracts/libraries/errors/AccusationsErrors.sol";
 import "contracts/libraries/parsers/MerkleProofParserLibrary.sol";
@@ -12,9 +12,9 @@ import "contracts/libraries/parsers/PClaimsParserLibrary.sol";
 import "contracts/utils/MerkleProofLibrary.sol";
 import "contracts/Snapshots.sol";
 
-/// @custom:salt LocalERCBridgePoolBase
+/// @custom:salt NativeERCBridgePoolBase
 /// @custom:deploy-type deployUpgradeable
-abstract contract LocalERCBridgePoolBase is IBridgePool, ImmutableSnapshots {
+abstract contract NativeERCBridgePoolBase is IBridgePool, ImmutableSnapshots {
     using MerkleProofParserLibrary for bytes;
     using MerkleProofLibrary for MerkleProofParserLibrary.MerkleProof;
 
@@ -93,6 +93,7 @@ abstract contract LocalERCBridgePoolBase is IBridgePool, ImmutableSnapshots {
             vsPreImage.txHash,
             vsPreImage.txOutIdx
         );
+
         if (computedUTXOID != proofAgainstStateRoot.key) {
             revert AccusationsErrors.MerkleProofKeyDoesNotMatchUTXOIDBeingSpent(
                 computedUTXOID,
@@ -101,13 +102,13 @@ abstract contract LocalERCBridgePoolBase is IBridgePool, ImmutableSnapshots {
         }
         MerkleProofLibrary.verifyInclusion(proofAgainstStateRoot, bClaims.stateRoot);
         if (vsPreImage.account != msg.sender) {
-            revert LocalERCBridgePoolBaseErrors.UTXOAccountDifferentThanReceiver(
+            revert NativeERCBridgePoolBaseErrors.UTXOAccountDoesNotMatchReceiver(
                 vsPreImage.account,
                 msg.sender
             );
         }
         if (_consumedUTXOIDs[computedUTXOID] == true) {
-            revert LocalERCBridgePoolBaseErrors.UTXOAlreadyWithdrawn(computedUTXOID);
+            revert NativeERCBridgePoolBaseErrors.UTXOAlreadyWithdrawn(computedUTXOID);
         }
         _consumedUTXOIDs[computedUTXOID] = true;
         return (computedUTXOID, vsPreImage.account, vsPreImage.value);

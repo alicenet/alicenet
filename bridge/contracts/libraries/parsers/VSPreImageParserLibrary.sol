@@ -10,8 +10,8 @@ library VSPreImageParserLibrary {
         uint32 txOutIdx;
         uint32 chainId;
         uint256 value;
-        uint8 ValueStoreSVA;
-        uint8 CurveSecp256k1;
+        uint8 valueStoreSVA;
+        uint8 curveSecp256k1;
         address account;
         bytes32 txHash;
     }

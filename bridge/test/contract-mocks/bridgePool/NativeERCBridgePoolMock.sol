@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT-open-group
 pragma solidity ^0.8.16;
-import "contracts/LocalERCBridgePoolBase.sol";
+import "contracts/NativeERCBridgePoolBase.sol";
 
-contract LocalERCBridgePoolMock is Initializable, LocalERCBridgePoolBase {
+contract NativeERCBridgePoolMock is Initializable, NativeERCBridgePoolBase {
     address internal _ercContract;
 
     function initialize(address ercContract_) public onlyFactory initializer {
