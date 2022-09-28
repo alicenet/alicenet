@@ -149,9 +149,7 @@ abstract contract BridgePoolFactoryBase is ImmutableFactory {
         return contractAddr;
     }
 
-    function getLatestPoolLogicVersion() public view returns(uint16) {
-
-    }
+    function getLatestPoolLogicVersion() public view returns (uint16) {}
 
     /**
      * @notice calculates salt for a BridgePool implementation contract based on tokenType and version
