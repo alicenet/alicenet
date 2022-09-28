@@ -159,8 +159,8 @@ func initializeFilesAndFolders(cmd *cobra.Command, args []string) {
 	}
 	validatorSymmetricKey = vspk
 
-	ethereumEndpointURL := "<ETHEREUM_ENDPOINT_URL>"
-	if config.Configuration.Ethereum.Endpoint == "" {
+	ethereumEndpointURL := config.Configuration.Ethereum.Endpoint
+	if ethereumEndpointURL == "" {
 		saveEthereumEndpoint, err := ethkey.ReadYesOrNoAnswer("Do you wish to enter Ethereum endpoint? Yes/no: ")
 		if err != nil {
 			logger.Fatalf(err.Error())
@@ -173,6 +173,7 @@ func initializeFilesAndFolders(cmd *cobra.Command, args []string) {
 			}
 			ethereumEndpointURL = ee
 		} else {
+			ethereumEndpointURL = "<ETHEREUM_ENDPOINT_URL>"
 			fmt.Println(fmt.Sprintf("In order to configure your node properly, please save the Ethereum endpoint to the following file %s.", configPath))
 		}
 	}
