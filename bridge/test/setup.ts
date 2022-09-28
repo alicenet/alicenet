@@ -15,7 +15,6 @@ import {
   AToken,
   ATokenBurner,
   ATokenMinter,
-  BridgePoolFactory,
   BToken,
   Distribution,
   Dynamics,
@@ -530,12 +529,6 @@ export const getFixture = async (
     "ATokenBurner"
   )) as ATokenBurner;
 
-  const bridgePoolFactory = (await deployUpgradeableWithFactory(
-    factory,
-    "BridgePoolFactory",
-    "BridgePoolFactory"
-  )) as BridgePoolFactory;
-
   const invalidTxConsumptionAccusation = (await deployUpgradeableWithFactory(
     factory,
     "InvalidTxConsumptionAccusation",
@@ -587,7 +580,6 @@ export const getFixture = async (
     snapshots,
     ethdkg,
     factory,
-    bridgePoolFactory,
     namedSigners,
     aTokenMinter,
     aTokenBurner,

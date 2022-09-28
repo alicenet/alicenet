@@ -1,29 +1,47 @@
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { ethers } from "hardhat";
+import { BridgePoolFactory } from "../../typechain-types/contracts/BridgePoolFactory";
 import { expect } from "../chai-setup";
 import {
+  BaseTokensFixture,
   callFunctionAndGetReturnValues,
+  deployFactoryAndBaseTokens,
+  deployUpgradeableWithFactory,
   factoryCallAny,
   factoryCallAnyFixture,
-  Fixture,
   getBridgePoolSalt,
-  getFixture,
+  preFixtureSetup,
 } from "../setup";
 const bridgePoolTokenType = 0;
+
 const bridgePoolChainId = 1337;
 const bridgePoolValue = 0;
 const bridgePoolDeployCode = "0x38585839386009f3"; // UNIVERSAL_DEPLOY_CODE
-
-let fixture: Fixture;
+interface BridgePoolFactoryFixture extends BaseTokensFixture {
+  bridgePoolFactory: BridgePoolFactory;
+}
+let fixture: BridgePoolFactoryFixture;
 let admin: SignerWithAddress;
 const bridgePoolVersion = 1;
 const unexistentBridgePoolVersion = 11;
 
 describe("Testing BridgePool Factory", async () => {
   async function deployFixture() {
-    const fixture = await getFixture(true, true, false);
+    await preFixtureSetup();
     const [admin] = await ethers.getSigners();
+
+    const baseTokenFixture = await deployFactoryAndBaseTokens(admin);
+    const bridgePoolFactory = (await deployUpgradeableWithFactory(
+      baseTokenFixture.factory,
+      "BridgePoolFactory",
+      "BridgePoolFactory"
+    )) as BridgePoolFactory;
+    const fixture: BridgePoolFactoryFixture = {
+      ...baseTokenFixture,
+      bridgePoolFactory,
+    };
+
     await factoryCallAny(
       fixture.factory,
       fixture.bridgePoolFactory,
@@ -170,5 +188,20 @@ describe("Testing BridgePool Factory", async () => {
         bridgePoolVersion
       )
     );
+  });
+
+  it("Should get latest pool logic version for ERC20 native", async () => {
+    const latestNativeERC20Version =
+      await fixture.bridgePoolFactory.getLatestPoolLogicVersion(
+        bridgePoolChainId,
+        0
+      );
+    expect(latestNativeERC20Version).to.eq(bridgePoolVersion);
+  });
+
+  it("Should get latest pool logic version for ERC20 external", async () => {
+    const latestNativeERC20Version =
+      await fixture.bridgePoolFactory.getLatestPoolLogicVersion(1, 0);
+    expect(latestNativeERC20Version).to.eq(0);
   });
 });
