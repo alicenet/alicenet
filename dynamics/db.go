@@ -8,6 +8,13 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+type rawDataBase interface {
+	GetValue(txn *badger.Txn, key []byte) ([]byte, error)
+	SetValue(txn *badger.Txn, key []byte, value []byte) error
+	Update(func(txn *badger.Txn) error) error
+	View(func(txn *badger.Txn) error) error
+}
+
 // Database is an abstraction for object storage
 type Database struct {
 	sync.Mutex

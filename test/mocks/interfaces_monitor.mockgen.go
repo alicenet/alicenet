@@ -218,7 +218,7 @@ func NewMockAdminHandler() *MockAdminHandler {
 			},
 		},
 		UpdateDynamicStorageFunc: &AdminHandlerUpdateDynamicStorageFunc{
-			defaultHook: func([]byte, uint32) (r0 error) {
+			defaultHook: func(uint32, []byte) (r0 error) {
 				return
 			},
 		},
@@ -260,7 +260,7 @@ func NewStrictMockAdminHandler() *MockAdminHandler {
 			},
 		},
 		UpdateDynamicStorageFunc: &AdminHandlerUpdateDynamicStorageFunc{
-			defaultHook: func([]byte, uint32) error {
+			defaultHook: func(uint32, []byte) error {
 				panic("unexpected invocation of MockAdminHandler.UpdateDynamicStorage")
 			},
 		},
@@ -915,15 +915,15 @@ func (c AdminHandlerSetSynchronizedFuncCall) Results() []interface{} {
 // UpdateDynamicStorage method of the parent MockAdminHandler instance is
 // invoked.
 type AdminHandlerUpdateDynamicStorageFunc struct {
-	defaultHook func([]byte, uint32) error
-	hooks       []func([]byte, uint32) error
+	defaultHook func(uint32, []byte) error
+	hooks       []func(uint32, []byte) error
 	history     []AdminHandlerUpdateDynamicStorageFuncCall
 	mutex       sync.Mutex
 }
 
 // UpdateDynamicStorage delegates to the next hook function in the queue and
 // stores the parameter and result values of this invocation.
-func (m *MockAdminHandler) UpdateDynamicStorage(v0 []byte, v1 uint32) error {
+func (m *MockAdminHandler) UpdateDynamicStorage(v0 uint32, v1 []byte) error {
 	r0 := m.UpdateDynamicStorageFunc.nextHook()(v0, v1)
 	m.UpdateDynamicStorageFunc.appendCall(AdminHandlerUpdateDynamicStorageFuncCall{v0, v1, r0})
 	return r0
@@ -932,7 +932,7 @@ func (m *MockAdminHandler) UpdateDynamicStorage(v0 []byte, v1 uint32) error {
 // SetDefaultHook sets function that is called when the UpdateDynamicStorage
 // method of the parent MockAdminHandler instance is invoked and the hook
 // queue is empty.
-func (f *AdminHandlerUpdateDynamicStorageFunc) SetDefaultHook(hook func([]byte, uint32) error) {
+func (f *AdminHandlerUpdateDynamicStorageFunc) SetDefaultHook(hook func(uint32, []byte) error) {
 	f.defaultHook = hook
 }
 
@@ -941,7 +941,7 @@ func (f *AdminHandlerUpdateDynamicStorageFunc) SetDefaultHook(hook func([]byte, 
 // invokes the hook at the front of the queue and discards it. After the
 // queue is empty, the default hook function is invoked for any future
 // action.
-func (f *AdminHandlerUpdateDynamicStorageFunc) PushHook(hook func([]byte, uint32) error) {
+func (f *AdminHandlerUpdateDynamicStorageFunc) PushHook(hook func(uint32, []byte) error) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -950,19 +950,19 @@ func (f *AdminHandlerUpdateDynamicStorageFunc) PushHook(hook func([]byte, uint32
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
 func (f *AdminHandlerUpdateDynamicStorageFunc) SetDefaultReturn(r0 error) {
-	f.SetDefaultHook(func([]byte, uint32) error {
+	f.SetDefaultHook(func(uint32, []byte) error {
 		return r0
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
 func (f *AdminHandlerUpdateDynamicStorageFunc) PushReturn(r0 error) {
-	f.PushHook(func([]byte, uint32) error {
+	f.PushHook(func(uint32, []byte) error {
 		return r0
 	})
 }
 
-func (f *AdminHandlerUpdateDynamicStorageFunc) nextHook() func([]byte, uint32) error {
+func (f *AdminHandlerUpdateDynamicStorageFunc) nextHook() func(uint32, []byte) error {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -998,10 +998,10 @@ func (f *AdminHandlerUpdateDynamicStorageFunc) History() []AdminHandlerUpdateDyn
 type AdminHandlerUpdateDynamicStorageFuncCall struct {
 	// Arg0 is the value of the 1st argument passed to this method
 	// invocation.
-	Arg0 []byte
+	Arg0 uint32
 	// Arg1 is the value of the 2nd argument passed to this method
 	// invocation.
-	Arg1 uint32
+	Arg1 []byte
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
 	Result0 error

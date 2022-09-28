@@ -27,7 +27,7 @@ func ProcessDynamicValueChanged(contracts layer1.AllSmartContracts, logger *logr
 		"Value": fmt.Sprintf("0x%x", event.RawDynamicValues),
 	})
 
-	err = adminHandler.UpdateDynamicStorage(event.RawDynamicValues, uint32(event.Epoch.Uint64()))
+	err = adminHandler.UpdateDynamicStorage(uint32(event.Epoch.Uint64()), event.RawDynamicValues)
 	if err != nil {
 		return err
 	}

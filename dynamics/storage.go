@@ -44,8 +44,9 @@ type StorageGetter interface {
 	GetMinScaledTransactionFee() *big.Int
 	GetDataStoreFee() *big.Int
 	GetValueStoreFee() *big.Int
-	UpdateStorage(*badger.Txn, Updater) error
-	LoadStorage(*badger.Txn, uint32) error
+	ChangeDynamicValues(txn *badger.Txn, epoch uint32, rawDynamics []byte) error
+	UpdateCurrentDynamicValue(*badger.Txn, uint32) error
+	GetDynamicValueInThePast(txn *badger.Txn, epoch uint32) (*DynamicValues, error)
 }
 
 // Storage is the struct which will implement the StorageGetter interface.
@@ -101,15 +102,16 @@ func (s *Storage) Init(rawDB rawDataBase, logger *logrus.Logger) error {
 	return nil
 }
 
-// UpdateStorage updates the database to include changes that must be made to
-// the database. This function also initializes the database, the linked list
-// and closes the start channel. The dynamic service is only allowed to return
-// values after the first node has been added to the list.
-func (s *Storage) UpdateStorage(txn *badger.Txn, update Updater) error {
+// ChangeDynamicValues adds new dynamic values to the linked list to be future
+// changed. In case the linked list in empty, this function initializes the
+// database, the linked list and closes the start channel. The dynamic service
+// is only allowed to return values after the first node has been added to the
+// list.
+func (s *Storage) ChangeDynamicValues(txn *badger.Txn, epoch uint32, rawDynamics []byte) error {
 	s.Lock()
 	defer s.Unlock()
 
-	newDynamicValue, err := DecodeDynamicValues(update.Value())
+	newDynamicValue, err := DecodeDynamicValues(rawDynamics)
 	if err != nil {
 		return err
 	}
@@ -122,7 +124,7 @@ func (s *Storage) UpdateStorage(txn *badger.Txn, update Updater) error {
 		}
 		// Creates linked list in case it doesn't exist already and update
 		// s.DynamicsValue
-		s.createLinkedList(txn, update.Epoch(), newDynamicValue)
+		s.createLinkedList(txn, epoch, newDynamicValue)
 		if err != nil {
 			return err
 		}
@@ -132,7 +134,7 @@ func (s *Storage) UpdateStorage(txn *badger.Txn, update Updater) error {
 		return nil
 	}
 
-	err = s.addNode(txn, linkedList, update.Epoch(), newDynamicValue)
+	err = s.addNode(txn, linkedList, epoch, newDynamicValue)
 	if err != nil {
 		utils.DebugTrace(s.logger, err)
 		return err
@@ -146,7 +148,7 @@ func (s *Storage) UpdateStorage(txn *badger.Txn, update Updater) error {
 // ErrKeyNotPresent, then we return DynamicValues with the standard parameters.
 // We use Lock and Unlock rather than RLock and RUnlock because we modify
 // Storage.
-func (s *Storage) LoadStorage(txn *badger.Txn, epoch uint32) error {
+func (s *Storage) UpdateCurrentDynamicValue(txn *badger.Txn, epoch uint32) error {
 	<-s.startChan
 
 	s.Lock()

@@ -82,7 +82,7 @@ func (msg *MockStorageGetter) GetMaxTxVectorLength() int {
 	return 128
 }
 
-func (msg *MockStorageGetter) UpdateStorage(txn *badger.Txn, update dynamics.Updater) error {
+func (msg *MockStorageGetter) UpdateStorage(txn *badger.Txn, epoch uint32, rawDynamics []byte) error {
 	return nil
 }
 
