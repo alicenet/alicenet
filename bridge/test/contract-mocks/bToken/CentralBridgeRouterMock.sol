@@ -25,14 +25,14 @@ contract CentralBridgeRouterMock {
         _fee = fee_;
     }
 
-    function routeDeposit(
-        address account,
-        uint8 version,
-        bytes calldata data
+    function forwardDeposit(
+        address msgSender_,
+        uint16 poolVersion_,
+        bytes calldata depositData_
     ) external returns (uint256) {
-        account = account;
-        data = data;
-        version = version;
+        msgSender_ = msgSender_;
+        poolVersion_ = poolVersion_;
+        depositData_ = depositData_;
         _dummy = 0;
         return _fee;
     }
