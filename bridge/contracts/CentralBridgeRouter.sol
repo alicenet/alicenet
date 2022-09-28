@@ -55,6 +55,10 @@ contract CentralBridgeRouter is ICentralBridgeRouter ,ImmutableFactory, Immutabl
         fee = returnData.fee;
     }
 
+    /**
+     * adds a new router to the routerConfig mapping
+     * @param newRouterAddress_ address of the new router being added
+     */
     function addRouter(address newRouterAddress_) public onlyFactory {
         uint16 version = _routerVersions + 1;
         _routerConfig[version] = RouterConfig(newRouterAddress_, false);
@@ -62,6 +66,10 @@ contract CentralBridgeRouter is ICentralBridgeRouter ,ImmutableFactory, Immutabl
         _routerVersions = version;
     }
 
+    /**
+     * allows factory to disable deposits to routers
+     * @param routerVersion_ version of router to disable
+     */
     function disableRouter(uint16 routerVersion_) public onlyFactory {
         RouterConfig memory config = _routerConfig[routerVersion_];
         if (config.notOnline) {
@@ -73,10 +81,18 @@ contract CentralBridgeRouter is ICentralBridgeRouter ,ImmutableFactory, Immutabl
         _routerConfig[routerVersion_].notOnline = true;
     }
 
+    /**
+     * getter function for retrieving number of existing routers
+     */
     function getRouterCount() public view returns (uint16) {
         return _routerVersions;
     }
 
+    /**
+     * getter function for getting address of online versioned router
+     * @param routerVersion_ version of router to query
+     * @return routerAddress address of versioned router
+     */
     function getRouterAddress(uint16 routerVersion_) public view returns (address routerAddress) {
         RouterConfig memory config = _routerConfig[routerVersion_];
         if (config.routerAddress == address(0)) revert CentralBridgeRouterErrors.InvalidPoolVersion(routerVersion_);
