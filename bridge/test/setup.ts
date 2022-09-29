@@ -283,18 +283,18 @@ export const deployUpgradeableWithFactory = async (
   }
 
   let initCallDataBin = "0x";
-    try {
-      initCallDataBin = _Contract.interface.encodeFunctionData(
-        "initialize",
-        initCallData
+  try {
+    initCallDataBin = _Contract.interface.encodeFunctionData(
+      "initialize",
+      initCallData
+    );
+  } catch (error) {
+    if (!(error as Error).message.includes("no matching function")) {
+      console.warn(
+        `Error deploying contract ${contractName} couldn't get initialize arguments: ${error}`
       );
-    } catch (error) {
-      if (!(error as Error).message.includes("no matching function")) {
-        console.warn(
-          `Error deploying contract ${contractName} couldn't get initialize arguments: ${error}`
-        );
-      }
     }
+  }
   await factory.upgradeProxy(saltBytes, logicAddr, initCallDataBin);
   return _Contract.attach(
     await getContractAddressFromDeployedProxyEvent(transaction2)
