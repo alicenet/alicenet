@@ -10,6 +10,7 @@ import "contracts/utils/CustomEnumerableMaps.sol";
 import "contracts/utils/DeterministicAddress.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "contracts/libraries/errors/ValidatorPoolErrors.sol";
+import "contracts/interfaces/IValidatorVault.sol";
 
 contract ValidatorPoolMock is
     Initializable,
@@ -18,7 +19,8 @@ contract ValidatorPoolMock is
     ImmutableSnapshots,
     ImmutableETHDKG,
     ImmutableValidatorStaking,
-    ImmutableAToken
+    ImmutableAToken,
+    ImmutableValidatorVault
 {
     using CustomEnumerableMaps for ValidatorDataMap;
     error OnlyAdminAllowed();
@@ -162,6 +164,15 @@ contract ValidatorPoolMock is
     {
         stakerTokenIDs;
         _registerValidators(validators);
+    }
+
+    function depositStake(uint256 validatorTokenID, uint256 stakeAmount) public {
+        IERC20Transferable(_aTokenAddress()).approve(_validatorVaultAddress(), stakeAmount);
+        IValidatorVault(_validatorVaultAddress()).depositStake(validatorTokenID, stakeAmount);
+    }
+
+    function withdrawStake(uint256 stakePosition_) public returns (uint256) {
+        return IValidatorVault(_validatorVaultAddress()).withdrawStake(stakePosition_);
     }
 
     function isValidator(address participant) public view returns (bool) {

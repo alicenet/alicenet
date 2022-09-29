@@ -1,42 +1,30 @@
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
-import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { BigNumber, Signer } from "ethers";
-import { ethers } from "hardhat";
-import { ATokenMinterMock } from "../../typechain-types";
+import { BigNumber } from "ethers";
+import { ATokenMinterMock, ValidatorPoolMock } from "../../typechain-types";
 import { expect } from "../chai-setup";
 
 import {
   factoryCallAnyFixture,
   Fixture,
   getFixture,
-  getValidatorEthAccount,
   mineBlocks,
 } from "../setup";
 import { validatorsSnapshots } from "../snapshots/assets/4-validators-snapshots-1";
 import { createValidators, stakeValidators } from "../validatorPool/setup";
 describe("ValidatorVault: Testing Business Logic", async () => {
   let fixture: Fixture;
-  let notAdminSigner: SignerWithAddress;
-  let notAdminValidator: Signer;
+
   let stakeAmount: bigint;
-  let validators: string[];
+
   let stakingTokenIds: BigNumber[];
-  let adminSigner: SignerWithAddress;
-  let adminValidator: Signer;
 
   describe("With no validators registered", async () => {
     async function deployFixture() {
-      const fixture = await getFixture(false, true, false, true);
-      const [, notAdmin] = fixture.namedSigners;
-      const notAdminSigner = await ethers.getSigner(notAdmin.address);
-      return {
-        fixture,
-        notAdminSigner,
-      };
+      return await getFixture(true, true, false, true);
     }
 
     beforeEach(async function () {
-      ({ fixture, notAdminSigner } = await loadFixture(deployFixture));
+      fixture = await loadFixture(deployFixture);
     });
 
     describe("Public functions", async () => {
@@ -76,6 +64,85 @@ describe("ValidatorVault: Testing Business Logic", async () => {
         aTokenMinterMock.depositDilutionAdjustment(adjustmentAmount)
       ).to.revertedWith("ERC20: transfer amount exceeds balance");
     });
+
+    describe("Stake management", async () => {
+      it("depositStake should transfer tokens from validator pool to validator vault", async function () {
+        const stakePosition = 1;
+        const amount = 1000;
+
+        const aTokenMinterMock = fixture.aTokenMinter as ATokenMinterMock;
+        await aTokenMinterMock.mint(fixture.validatorPool.address, amount);
+
+        const validatorVaultBalanceBefore = await fixture.aToken.balanceOf(
+          fixture.validatorVault.address
+        );
+        const validatorPoolBalanceBefore = await fixture.aToken.balanceOf(
+          fixture.validatorPool.address
+        );
+        const validatorPoolMock = fixture.validatorPool as ValidatorPoolMock;
+
+        validatorPoolMock.depositStake(stakePosition, amount);
+
+        const validatorVaultBalanceAfter = await fixture.aToken.balanceOf(
+          fixture.validatorVault.address
+        );
+        const validatorPoolBalanceAfter = await fixture.aToken.balanceOf(
+          fixture.validatorPool.address
+        );
+        const stakedAmount = await fixture.validatorVault.estimateStakedAmount(
+          stakePosition
+        );
+
+        expect(stakedAmount).to.equal(amount);
+
+        expect(validatorVaultBalanceAfter).to.equal(
+          validatorVaultBalanceBefore.add(amount)
+        );
+
+        expect(validatorPoolBalanceAfter).to.equal(
+          validatorPoolBalanceBefore.sub(amount)
+        );
+      });
+
+      it("withdrawStake should transfer tokens from validator vault to validator pool", async function () {
+        const stakePosition = 1;
+        const amount = 1000;
+
+        const aTokenMinterMock = fixture.aTokenMinter as ATokenMinterMock;
+        await aTokenMinterMock.mint(fixture.validatorPool.address, amount);
+
+        const validatorPoolMock = fixture.validatorPool as ValidatorPoolMock;
+        validatorPoolMock.depositStake(stakePosition, amount);
+        const validatorVaultBalanceBefore = await fixture.aToken.balanceOf(
+          fixture.validatorVault.address
+        );
+        const validatorPoolBalanceBefore = await fixture.aToken.balanceOf(
+          fixture.validatorPool.address
+        );
+
+        validatorPoolMock.withdrawStake(stakePosition);
+        const validatorVaultBalanceAfter = await fixture.aToken.balanceOf(
+          fixture.validatorVault.address
+        );
+        const validatorPoolBalanceAfter = await fixture.aToken.balanceOf(
+          fixture.validatorPool.address
+        );
+
+        const stakedAmount = await fixture.validatorVault.estimateStakedAmount(
+          stakePosition
+        );
+
+        expect(stakedAmount).to.equal(0);
+
+        expect(validatorVaultBalanceAfter).to.equal(
+          validatorVaultBalanceBefore.sub(amount)
+        );
+
+        expect(validatorPoolBalanceAfter).to.equal(
+          validatorPoolBalanceBefore.add(amount)
+        );
+      });
+    });
   });
 
   describe("With validators registered", async () => {
@@ -84,11 +151,6 @@ describe("ValidatorVault: Testing Business Logic", async () => {
 
     async function deployFixture() {
       const fixture = await getFixture(false, true, false, true);
-      const [admin, notAdmin, ,] = fixture.namedSigners;
-      const adminSigner = await ethers.getSigner(admin.address);
-      const adminValidator = await getValidatorEthAccount(admin.address);
-      const notAdminValidator = await getValidatorEthAccount(notAdmin.address);
-      const notAdminSigner = await ethers.getSigner(notAdmin.address);
       const validators = await createValidators(fixture, validatorsSnapshots);
       const stakingTokenIds = await stakeValidators(fixture, validators);
       const stakeAmount = (
@@ -108,26 +170,14 @@ describe("ValidatorVault: Testing Business Logic", async () => {
       return {
         fixture,
         stakeAmount,
-        validators,
         stakingTokenIds,
-        adminSigner,
-        adminValidator,
-        notAdminSigner,
-        notAdminValidator,
       };
     }
 
     beforeEach(async function () {
-      ({
-        fixture,
-        stakeAmount,
-        validators,
-        stakingTokenIds,
-        adminSigner,
-        adminValidator,
-        notAdminSigner,
-        notAdminValidator,
-      } = await loadFixture(deployFixture));
+      ({ fixture, stakeAmount, stakingTokenIds } = await loadFixture(
+        deployFixture
+      ));
     });
 
     describe("Token dilution", async () => {
