@@ -24,8 +24,9 @@ type Database struct {
 
 // SetNode stores Node in the database
 func (db *Database) SetNode(txn *badger.Txn, node *Node) error {
-	if !node.IsValid() {
-		return ErrInvalidNode
+	err := node.Validate()
+	if err != nil {
+		return err
 	}
 	nodeKey, err := makeNodeKey(node.thisEpoch)
 	if err != nil {
@@ -65,8 +66,9 @@ func (db *Database) GetNode(txn *badger.Txn, epoch uint32) (*Node, error) {
 	if err != nil {
 		return nil, err
 	}
-	if !node.IsValid() {
-		return nil, ErrInvalidNode
+	err = node.Validate()
+	if err != nil {
+		return nil, err
 	}
 	return node, nil
 }

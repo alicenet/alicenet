@@ -1,6 +1,7 @@
 package dynamics
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"math/big"
@@ -110,6 +111,15 @@ func (dv *DynamicValues) Copy() (*DynamicValues, error) {
 	if err != nil {
 		return nil, err
 	}
+	// checking if the value is not an empty struct
+	zeros := &DynamicValues{}
+	zerosByte, err := zeros.Marshal()
+	if err != nil {
+		return nil, err
+	}
+	if bytes.Equal(dvBytes, zerosByte) {
+		return nil, ErrValueIsEmpty
+	}
 	c := &DynamicValues{}
 	err = c.Unmarshal(dvBytes)
 	if err != nil {
@@ -119,9 +129,9 @@ func (dv *DynamicValues) Copy() (*DynamicValues, error) {
 }
 
 // IsValid returns true if we can successfully make a copy
-func (dv *DynamicValues) IsValid() bool {
+func (dv *DynamicValues) Validate() error {
 	_, err := dv.Copy()
-	return err == nil
+	return err
 }
 
 // GetMaxBlockSize returns the maximum allowed bytes in a block

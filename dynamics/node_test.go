@@ -7,9 +7,11 @@ import (
 
 	"github.com/alicenet/alicenet/constants/dbprefix"
 	"github.com/alicenet/alicenet/utils"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestNodeMakeKeys(t *testing.T) {
+	t.Parallel()
 	epoch := uint32(0)
 	_, err := makeNodeKey(epoch)
 	if !errors.Is(err, ErrZeroEpoch) {
@@ -47,6 +49,7 @@ func TestNodeMakeKeys(t *testing.T) {
 }
 
 func TestNodeMarshal(t *testing.T) {
+	t.Parallel()
 	node := &Node{}
 	_, err := node.Marshal()
 	if err == nil {
@@ -54,7 +57,7 @@ func TestNodeMarshal(t *testing.T) {
 	}
 
 	epoch := uint32(1)
-	dv := GetStandardDynamicValue()
+	_, dv := GetStandardDynamicValue()
 	node, _, err = CreateLinkedList(epoch, dv)
 	if err != nil {
 		t.Fatal(err)
@@ -110,6 +113,7 @@ func TestNodeMarshal(t *testing.T) {
 }
 
 func TestNodeCopy(t *testing.T) {
+	t.Parallel()
 	n := &Node{}
 	_, err := n.Copy()
 	if err == nil {
@@ -143,53 +147,66 @@ type wNode struct {
 }
 
 func TestNodeIsValid(t *testing.T) {
+	t.Parallel()
 	wNode := &wNode{}
-	if wNode.node.IsValid() {
+	err := wNode.node.Validate()
+	if !errors.Is(err, ErrNodeValueNilPointer) {
 		t.Fatal("Node should not be valid (0)")
 	}
 
 	node := &Node{}
-	if node.IsValid() {
+	err = node.Validate()
+	if !errors.Is(err, ErrZeroEpoch) {
 		t.Fatal("Node should not be valid (1)")
 	}
 
 	node.prevEpoch = 3
 	node.thisEpoch = 2
 	node.nextEpoch = 3
-	if node.IsValid() {
+	err = node.Validate()
+	expectedErr := &ErrInvalidNode{}
+	if !errors.As(err, &expectedErr) {
 		t.Fatal("Node should not be valid (2)")
 	}
 
 	node.prevEpoch = 1
 	node.thisEpoch = 3
 	node.nextEpoch = 2
-	if node.IsValid() {
-		t.Fatal("Node should not be valid (3)")
+	err = node.Validate()
+	if !errors.As(err, &expectedErr) {
+		t.Fatalf("Node should not be valid (3):%v", err)
 	}
 
 	node.prevEpoch = 1
 	node.thisEpoch = 2
 	node.nextEpoch = 3
-	if node.IsValid() {
+	err = node.Validate()
+	if !errors.Is(err, ErrDynamicValueNilPointer) {
 		t.Fatal("Node should not be valid (4)")
 	}
 
 	node.dynamicValues = &DynamicValues{}
-	if !node.IsValid() {
-		t.Fatal("Node should be valid")
+	err = node.Validate()
+	if !errors.Is(err, ErrValueIsEmpty) {
+		t.Fatalf("Node should not be valid (5): %v", err)
 	}
+	// valid node
+
+	node.prevEpoch = 1
+	node.thisEpoch = 2
+	node.nextEpoch = 3
+	_, node.dynamicValues = GetDynamicValueWithFees()
+	err = node.Validate()
+	assert.Nil(t, err)
 }
 
 func TestNodeIsHead(t *testing.T) {
+	t.Parallel()
 	node := &Node{}
-	if node.IsHead() {
-		t.Fatal("Node invalid; should be false")
-	}
-
 	node.prevEpoch = 0
 	node.nextEpoch = 0
 	node.thisEpoch = 1
-	node.dynamicValues = &DynamicValues{}
+	_, node.dynamicValues = GetDynamicValueWithFees()
 	if !node.IsHead() {
 		t.Fatal("Should be Head")
 	}
@@ -201,21 +218,18 @@ func TestNodeIsHead(t *testing.T) {
 }
 
 func TestNodeIsTail(t *testing.T) {
+	t.Parallel()
 	node := &Node{}
-	if node.IsTail() {
-		t.Fatal("Node invalid; should be false")
-	}
-
 	node.prevEpoch = 0
 	node.nextEpoch = 0
 	node.thisEpoch = 1
-	node.dynamicValues = &DynamicValues{}
+	_, node.dynamicValues = GetDynamicValueWithFees()
 	if !node.IsTail() {
 		t.Fatal("Should be Tail")
 	}
 
 	node.thisEpoch = 2
-	node.nextEpoch = 2
+	node.nextEpoch = 3
 	if node.IsTail() {
 		t.Fatal("Should not be Tail")
 	}
@@ -223,7 +237,8 @@ func TestNodeIsTail(t *testing.T) {
 
 // SetNode with prevNode at Head
 func TestNodeSetEpochsGood1(t *testing.T) {
-	dv := GetStandardDynamicValue()
+	t.Parallel()
+	_, dv := GetStandardDynamicValue()
 	nodeEpoch := uint32(25519)
 	node := &Node{
 		prevEpoch:     0,
@@ -241,11 +256,12 @@ func TestNodeSetEpochsGood1(t *testing.T) {
 	prevEpoch := last
 	prevNode := &Node{
 		prevEpoch:     first,
-		thisEpoch:     prevEpoch,
-		nextEpoch:     last,
+		thisEpoch:     last,
+		nextEpoch:     0,
 		dynamicValues: dvsNew,
 	}
-	if !prevNode.IsValid() {
+	err = prevNode.Validate()
+	if err != nil {
 		t.Fatal("prevNode should be Valid")
 	}
 	if prevNode.thisEpoch >= node.thisEpoch {
@@ -272,14 +288,15 @@ func TestNodeSetEpochsGood1(t *testing.T) {
 	if node.thisEpoch != nodeEpoch {
 		t.Fatal("node.thisEpoch is incorrect")
 	}
-	if node.nextEpoch != nodeEpoch {
-		t.Fatal("node.nextEpoch is incorrect; it does not point to self")
+	if node.nextEpoch != 0 {
+		t.Fatal("node.nextEpoch is incorrect; it does not point to zero")
 	}
 }
 
 // SetNode in between prevNode and nextNode
 func TestNodeSetEpochsGood2(t *testing.T) {
-	rs := GetStandardDynamicValue()
+	t.Parallel()
+	_, rs := GetStandardDynamicValue()
 	nodeEpoch := uint32(25519)
 	node := &Node{
 		prevEpoch:     0,
@@ -297,12 +314,13 @@ func TestNodeSetEpochsGood2(t *testing.T) {
 	first := uint32(1)
 	last := uint32(1234567890)
 	prevNode := &Node{
-		prevEpoch:     first,
+		prevEpoch:     0,
 		thisEpoch:     first,
 		nextEpoch:     last,
 		dynamicValues: rsNew,
 	}
-	if !prevNode.IsValid() {
+	err = prevNode.Validate()
+	if err != nil {
 		t.Fatal("prevNode should be Valid")
 	}
 	if node.thisEpoch < prevNode.thisEpoch {
@@ -312,10 +330,11 @@ func TestNodeSetEpochsGood2(t *testing.T) {
 	nextNode := &Node{
 		prevEpoch:     first,
 		thisEpoch:     last,
-		nextEpoch:     last,
+		nextEpoch:     0,
 		dynamicValues: rsNew,
 	}
-	if !nextNode.IsValid() {
+	err = nextNode.Validate()
+	if err != nil {
 		t.Fatal("nextNode should be Valid")
 	}
 	if node.thisEpoch >= nextNode.thisEpoch {
@@ -328,7 +347,7 @@ func TestNodeSetEpochsGood2(t *testing.T) {
 	}
 
 	// Now need to confirm all epochs are good.
-	if prevNode.prevEpoch != first {
+	if prevNode.prevEpoch != 0 {
 		t.Fatal("nextNode.prevEpoch is incorrect")
 	}
 	if prevNode.thisEpoch != first {
@@ -354,59 +373,77 @@ func TestNodeSetEpochsGood2(t *testing.T) {
 	if nextNode.thisEpoch != last {
 		t.Fatal("nextNode.thisEpoch is incorrect")
 	}
-	if nextNode.nextEpoch != last {
+	if nextNode.nextEpoch != 0 {
 		t.Fatal("nextNode.nextEpoch is incorrect")
 	}
 }
 
-// We should raise an error when having node not PreValid
+// We should raise an error when having node not Valid
 func TestNodeSetEpochsBad1(t *testing.T) {
+	t.Parallel()
 	node := &Node{}
 	err := node.SetEpochs(nil, nil)
-	if err == nil {
-		t.Fatal("Should have raised error")
+	if !errors.Is(err, ErrNodeValueNilPointer) {
+		t.Fatalf("Should have raised error: got %v", err)
 	}
 }
 
 // We should raise error for prevNode being invalid
 func TestNodeSetEpochsBad2(t *testing.T) {
-	rs := GetStandardDynamicValue()
+	t.Parallel()
+	_, rs := GetStandardDynamicValue()
 	node := &Node{
 		prevEpoch:     0,
 		thisEpoch:     25519,
 		nextEpoch:     0,
 		dynamicValues: rs,
 	}
-	prevNode := &Node{}
-	if prevNode.IsValid() {
-		t.Fatal("prevNode should not be valid")
+	// prevEpoch is greater than nextEpoch
+	prevNode := &Node{
+		prevEpoch:     2,
+		thisEpoch:     50,
+		nextEpoch:     1,
+		dynamicValues: rs,
 	}
-	err := node.SetEpochs(prevNode, nil)
-	if err == nil {
-		t.Fatal("Should have raised error")
+	err := prevNode.Validate()
+	expectedErr := &ErrInvalidNode{}
+	if !errors.As(err, &expectedErr) {
+		t.Fatalf("prev node should not be valid: %v", err)
+	}
+	// trying invalid prev node
+	err = node.SetEpochs(prevNode, nil)
+	if !errors.As(err, &expectedErr) {
+		t.Fatalf("prev node should not be valid(2) %v", err)
+	}
+	// trying empty node
+	err = node.SetEpochs(&Node{}, nil)
+	if !errors.Is(err, ErrZeroEpoch) {
+		t.Fatalf("prev node should not be valid(3) %v", err)
 	}
 }
 
 // We should raise error for nextNode not nil
 func TestNodeSetEpochsBad3(t *testing.T) {
-	rs := GetStandardDynamicValue()
+	t.Parallel()
+	_, dv := GetStandardDynamicValue()
 	node := &Node{
 		prevEpoch:     0,
 		thisEpoch:     25519,
 		nextEpoch:     0,
-		dynamicValues: rs,
+		dynamicValues: dv,
 	}
 	prevNode := &Node{
 		prevEpoch:     1,
 		thisEpoch:     257,
 		nextEpoch:     123456789,
-		dynamicValues: rs,
+		dynamicValues: dv,
 	}
-	if !prevNode.IsValid() {
-		t.Fatal("prevNode should be Valid")
+	err := prevNode.Validate()
+	if err != nil {
+		t.Fatalf("prev node should be valid: %v", err)
 	}
 	nextNode := &Node{}
-	err := node.SetEpochs(prevNode, nextNode)
+	err = node.SetEpochs(prevNode, nextNode)
 	if err == nil {
 		t.Fatal("Should have raised error")
 	}
@@ -414,7 +451,8 @@ func TestNodeSetEpochsBad3(t *testing.T) {
 
 // We should raise error for prevNode.thisEpoch >= node.thisEpoch
 func TestNodeSetEpochsBad4(t *testing.T) {
-	rs := GetStandardDynamicValue()
+	t.Parallel()
+	_, rs := GetStandardDynamicValue()
 	node := &Node{
 		prevEpoch:     0,
 		thisEpoch:     25519,
@@ -427,13 +465,37 @@ func TestNodeSetEpochsBad4(t *testing.T) {
 		nextEpoch:     123456789,
 		dynamicValues: rs,
 	}
-	if !prevNode.IsValid() {
+	err := prevNode.Validate()
+	if err != nil {
 		t.Fatal("prevNode should be Valid")
 	}
-	if prevNode.thisEpoch < node.thisEpoch {
-		t.Fatal("Should have prevNode.thisEpoch >= node.thisEpoch")
+	// should not be able to overwrite a node
+	err = node.SetEpochs(prevNode, nil)
+	if err == nil {
+		t.Fatal("Should have raised error")
 	}
-	err := node.SetEpochs(prevNode, nil)
+
+	// node is not tail
+	prevNode2 := &Node{
+		prevEpoch:     1,
+		thisEpoch:     25518,
+		nextEpoch:     123456789,
+		dynamicValues: rs,
+	}
+	// should not be able to overwrite a node
+	err = node.SetEpochs(prevNode2, nil)
+	if err == nil {
+		t.Fatal("Should have raised error")
+	}
+
+	prevNode3 := &Node{
+		prevEpoch:     1,
+		thisEpoch:     25520,
+		nextEpoch:     0,
+		dynamicValues: rs,
+	}
+	// should not be able to overwrite a node
+	err = node.SetEpochs(prevNode3, nil)
 	if err == nil {
 		t.Fatal("Should have raised error")
 	}
@@ -441,7 +503,8 @@ func TestNodeSetEpochsBad4(t *testing.T) {
 
 // We should raise error for prevNode not nil
 func TestNodeSetEpochsBad5(t *testing.T) {
-	rs := GetStandardDynamicValue()
+	t.Parallel()
+	_, rs := GetStandardDynamicValue()
 	node := &Node{
 		prevEpoch:     0,
 		thisEpoch:     25519,
@@ -449,11 +512,12 @@ func TestNodeSetEpochsBad5(t *testing.T) {
 		dynamicValues: rs,
 	}
 	prevNode := &Node{}
-	if prevNode.IsValid() {
+	err := prevNode.Validate()
+	if err == nil {
 		t.Fatal("prevNode should not be valid")
 	}
 	nextNode := &Node{}
-	err := node.SetEpochs(prevNode, nextNode)
+	err = node.SetEpochs(prevNode, nextNode)
 	if err == nil {
 		t.Fatal("Should have raised error")
 	}
@@ -461,7 +525,8 @@ func TestNodeSetEpochsBad5(t *testing.T) {
 
 // We should raise error for prevNode not nil
 func TestNodeSetEpochsBad6(t *testing.T) {
-	rs := GetStandardDynamicValue()
+	t.Parallel()
+	_, rs := GetStandardDynamicValue()
 	node := &Node{
 		prevEpoch:     0,
 		thisEpoch:     25519,
@@ -469,10 +534,11 @@ func TestNodeSetEpochsBad6(t *testing.T) {
 		dynamicValues: rs,
 	}
 	nextNode := &Node{}
-	if nextNode.IsValid() {
+	err := nextNode.Validate()
+	if err == nil {
 		t.Fatal("nextNode should not be valid")
 	}
-	err := node.SetEpochs(nil, nextNode)
+	err = node.SetEpochs(nil, nextNode)
 	if err == nil {
 		t.Fatal("Should have raised error")
 	}
@@ -480,7 +546,8 @@ func TestNodeSetEpochsBad6(t *testing.T) {
 
 // We should raise error for prevNode not nil
 func TestNodeSetEpochsBad7(t *testing.T) {
-	rs := GetStandardDynamicValue()
+	t.Parallel()
+	_, rs := GetStandardDynamicValue()
 	node := &Node{
 		prevEpoch:     0,
 		thisEpoch:     25519,
@@ -492,27 +559,30 @@ func TestNodeSetEpochsBad7(t *testing.T) {
 		t.Fatal(err)
 	}
 	rsNew.MaxBlockSize = 1234567890
-	nextNode := &Node{
+	prevNode := &Node{
 		prevEpoch:     1,
 		thisEpoch:     257,
-		nextEpoch:     123456789,
+		nextEpoch:     25519,
 		dynamicValues: rsNew,
 	}
-	if !nextNode.IsValid() {
-		t.Fatal("nextNode should not be valid")
+	nextNode := &Node{
+		prevEpoch:     257,
+		thisEpoch:     25518,
+		nextEpoch:     0,
+		dynamicValues: rsNew,
 	}
 	if node.thisEpoch < nextNode.thisEpoch {
 		t.Fatal("We should not have node.thisEpoch >= nextNode.thisEpoch to raise error")
 	}
-	err = node.SetEpochs(nil, nextNode)
+	err = node.SetEpochs(prevNode, nextNode)
 	if err == nil {
 		t.Fatal("Should have raised error")
 	}
 }
 
-// We should raise error for prevNode not nil
 func TestNodeSetEpochsBad8(t *testing.T) {
-	rs := GetStandardDynamicValue()
+	t.Parallel()
+	_, rs := GetStandardDynamicValue()
 	node := &Node{
 		prevEpoch:     0,
 		thisEpoch:     25519,
@@ -530,8 +600,9 @@ func TestNodeSetEpochsBad8(t *testing.T) {
 		nextEpoch:     123456789,
 		dynamicValues: rsNew,
 	}
-	if !nextNode.IsValid() {
-		t.Fatal("nextNode should not be valid")
+	err = nextNode.Validate()
+	if err != nil {
+		t.Fatal("nextNode should be valid")
 	}
 	if node.thisEpoch >= nextNode.thisEpoch {
 		t.Fatal("We should have node.thisEpoch >= nextNode.thisEpoch")

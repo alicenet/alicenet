@@ -13,6 +13,7 @@ import (
 )
 
 func TestDynamicValuesMarshal(t *testing.T) {
+	t.Parallel()
 	dv := &DynamicValues{}
 	_, err := dv.Marshal()
 	if err != nil {
@@ -26,6 +27,7 @@ func TestDynamicValuesMarshal(t *testing.T) {
 }
 
 func TestDynamicValuesUnmarshal(t *testing.T) {
+	t.Parallel()
 	dv := &DynamicValues{}
 	v, err := dv.Marshal()
 	if err != nil {
@@ -52,22 +54,12 @@ func TestDynamicValuesUnmarshal(t *testing.T) {
 }
 
 func TestDynamicValuesCopy(t *testing.T) {
-	// Copy empty DynamicValues
+	t.Parallel()
+	// Copy empty DynamicValues should fail
 	dv1 := &DynamicValues{}
 	dv2, err := dv1.Copy()
-	if err != nil {
+	if err == nil {
 		t.Fatal(err)
-	}
-	dv1Bytes, err := dv1.Marshal()
-	if err != nil {
-		t.Fatal(err)
-	}
-	dv2Bytes, err := dv2.Marshal()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !bytes.Equal(dv1Bytes, dv2Bytes) {
-		t.Fatal("Should have equal bytes (1)")
 	}
 
 	// Copy DynamicValues with parameters
@@ -76,11 +68,11 @@ func TestDynamicValuesCopy(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	dv1Bytes, err = dv1.Marshal()
+	dv1Bytes, err := dv1.Marshal()
 	if err != nil {
 		t.Fatal(err)
 	}
-	dv2Bytes, err = dv2.Marshal()
+	dv2Bytes, err := dv2.Marshal()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -114,7 +106,7 @@ func TestDynamicValuesCopy(t *testing.T) {
 }
 
 func TestDynamicValuesParameters(t *testing.T) {
-
+	t.Parallel()
 	InitialMaxBlockSize := uint32(30000)
 	InitialProposalTimeout := time.Duration(4000 * time.Millisecond)
 	InitialPreVoteTimeout := time.Duration(3000 * time.Millisecond)
@@ -166,6 +158,7 @@ func TestDynamicValuesParameters(t *testing.T) {
 }
 
 func TestDecodeDynamicValuesV1(t *testing.T) {
+	t.Parallel()
 	maxUint128, ok := new(big.Int).SetString("340282366920938463463374607431768211455", 10)
 	assert.True(t, ok)
 	randUint128, ok := new(big.Int).SetString("253455453978969546304077282559958826669", 10)

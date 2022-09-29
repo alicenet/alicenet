@@ -101,22 +101,18 @@ func (n *Node) Unmarshal(v []byte) error {
 }
 
 // IsValid returns true if Node is valid
-func (n *Node) IsValid() bool {
+func (n *Node) Validate() error {
 	if n == nil {
-		return false
+		return ErrNodeValueNilPointer
 	}
 	if n.thisEpoch == 0 {
 		// node has not set values; invalid
-		return false
+		return ErrZeroEpoch
 	}
-	if n.prevEpoch > n.thisEpoch || (n.nextEpoch != 0 && n.thisEpoch > n.nextEpoch) {
-		// node has not been correctly defined; invalid
-		return false
+	if n.prevEpoch >= n.thisEpoch || (n.nextEpoch != 0 && n.thisEpoch >= n.nextEpoch) {
+		return &ErrInvalidNode{n}
 	}
-	if !n.dynamicValues.IsValid() {
-		return false
-	}
-	return true
+	return n.dynamicValues.Validate()
 }
 
 // Copy makes a copy of Node
@@ -135,40 +131,48 @@ func (n *Node) Copy() (*Node, error) {
 
 // SetEpochs sets n.prevEpoch and n.nextEpoch.
 func (n *Node) SetEpochs(prevNode *Node, nextNode *Node) error {
-	if prevNode.IsValid() && nextNode.IsValid() && prevNode.thisEpoch < n.thisEpoch && n.thisEpoch < nextNode.thisEpoch {
-		// In this setting, we want to add a new node in between prevNode and nextNode
-		//
-		// Update prevNode;
-		// must point forward to n
-		prevNode.nextEpoch = n.thisEpoch
-		// Update epochs for n;
-		// must point backward to prevNode and forward to nextNode
-		n.prevEpoch = prevNode.thisEpoch
-		n.nextEpoch = nextNode.thisEpoch
-		// Update  nextNode;
-		// must point backward to n
-		nextNode.prevEpoch = n.thisEpoch
-		return nil
+	if err := prevNode.Validate(); err != nil {
+		return err
 	}
-	if prevNode.IsValid() && nextNode == nil && prevNode.thisEpoch < n.thisEpoch && prevNode.IsTail() {
-		// n is the new tail
-		// Update prevNode.nextEpoch
-		prevNode.nextEpoch = n.thisEpoch
-		// Update epochs for n;
-		// must point backward to prevNode and forward to self
-		n.prevEpoch = prevNode.thisEpoch
-		n.nextEpoch = n.thisEpoch
-		return nil
+
+	if nextNode != nil {
+		if err := nextNode.Validate(); err != nil {
+			return err
+		}
+		if prevNode.thisEpoch < n.thisEpoch && n.thisEpoch < nextNode.thisEpoch {
+			// In this setting, we want to add a new node in between prevNode and nextNode
+			//
+			// Update prevNode;
+			// must point forward to n
+			prevNode.nextEpoch = n.thisEpoch
+			// Update epochs for n;
+			// must point backward to prevNode and forward to nextNode
+			n.prevEpoch = prevNode.thisEpoch
+			n.nextEpoch = nextNode.thisEpoch
+			// Update  nextNode;
+			// must point backward to n
+			nextNode.prevEpoch = n.thisEpoch
+			return nil
+		}
+	} else {
+		if prevNode.thisEpoch < n.thisEpoch && prevNode.IsTail() {
+			// n is the new tail
+			// Update prevNode.nextEpoch
+			prevNode.nextEpoch = n.thisEpoch
+			// Update epochs for n;
+			// must point backward to prevNode and forward to zero
+			n.prevEpoch = prevNode.thisEpoch
+			n.nextEpoch = 0
+			return nil
+		}
 	}
+
 	return ErrInvalid
 }
 
 // IsHead returns true if Node is begging of linked list;
 // in this case, n.prevEpoch == n.thisEpoch
 func (n *Node) IsHead() bool {
-	if !n.IsValid() {
-		return false
-	}
 	if n.prevEpoch == 0 {
 		return true
 	}
@@ -178,9 +182,6 @@ func (n *Node) IsHead() bool {
 // IsTail returns true if Node is end of linked list;
 // in this case, n.nextEpoch == n.thisEpoch
 func (n *Node) IsTail() bool {
-	if !n.IsValid() {
-		return false
-	}
 	if n.nextEpoch == 0 {
 		return true
 	}

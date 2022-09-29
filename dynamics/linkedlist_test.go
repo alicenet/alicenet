@@ -8,6 +8,7 @@ import (
 )
 
 func TestLinkedListMarshal(t *testing.T) {
+	t.Parallel()
 	ll := &LinkedList{}
 	if ll.IsValid() {
 		t.Fatal("Should not have valid LinkedList")
@@ -19,7 +20,7 @@ func TestLinkedListMarshal(t *testing.T) {
 		t.Fatal("Should have raised error (2)")
 	}
 
-	invalidBytes2 := make([]byte, 4)
+	invalidBytes2 := make([]byte, 8)
 	err = ll.Unmarshal(invalidBytes2)
 	if err != nil {
 		t.Fatal(err)
@@ -51,6 +52,7 @@ func TestLinkedListMarshal(t *testing.T) {
 }
 
 func TestLinkedListGetSet(t *testing.T) {
+	t.Parallel()
 	ll := &LinkedList{}
 	err := ll.SetEpochLastUpdated(0)
 	if err == nil {
@@ -83,6 +85,7 @@ func TestLinkedListGetSet(t *testing.T) {
 }
 
 func TestCreateLinkedList(t *testing.T) {
+	t.Parallel()
 	epoch := uint32(0)
 	_, _, err := CreateLinkedList(epoch, nil)
 	if err == nil {
@@ -95,7 +98,7 @@ func TestCreateLinkedList(t *testing.T) {
 		t.Fatal("Should have raised error (2)")
 	}
 
-	dv := GetStandardDynamicValue()
+	_, dv := GetStandardDynamicValue()
 	node, linkedlist, err := CreateLinkedList(epoch, dv)
 	if err != nil {
 		t.Fatal(err)

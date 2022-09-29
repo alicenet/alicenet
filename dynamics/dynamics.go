@@ -308,6 +308,7 @@ func (s *Storage) createLinkedList(txn *badger.Txn, epoch uint32, newDynamicValu
 func (s *Storage) addNode(txn *badger.Txn, linkedList *LinkedList, epoch uint32, newDynamicValue *DynamicValues) error {
 	newTailNode, err := CreateNode(epoch, newDynamicValue)
 	if err != nil {
+		utils.DebugTrace(s.logger, err)
 		return err
 	}
 	prevTailNode, err := s.database.GetNode(txn, linkedList.GetMostFutureUpdate())
@@ -315,18 +316,37 @@ func (s *Storage) addNode(txn *badger.Txn, linkedList *LinkedList, epoch uint32,
 		utils.DebugTrace(s.logger, err)
 		return err
 	}
-	if !prevTailNode.IsValid() {
-		return ErrInvalid
+
+	if !prevTailNode.IsTail() {
+		utils.DebugTrace(s.logger, err)
+		return ErrInvalidPrevNode
 	}
+
 	// node to be added is strictly ahead of most future node
-	if !prevTailNode.IsTail() || newTailNode.thisEpoch <= prevTailNode.thisEpoch {
-		return ErrInvalid
+	if newTailNode.thisEpoch <= prevTailNode.thisEpoch {
+		utils.DebugTrace(s.logger, err)
+		return &ErrInvalidNode{newTailNode}
 	}
+
 	err = newTailNode.SetEpochs(prevTailNode, nil)
 	if err != nil {
 		utils.DebugTrace(s.logger, err)
 		return err
 	}
+
+	// validating nodes after the link's update
+	err = prevTailNode.Validate()
+	if err != nil {
+		utils.DebugTrace(s.logger, err)
+		return err
+	}
+
+	err = newTailNode.Validate()
+	if err != nil {
+		utils.DebugTrace(s.logger, err)
+		return err
+	}
+
 	// Store the nodes after changes have been made
 	err = s.database.SetNode(txn, prevTailNode)
 	if err != nil {
@@ -399,7 +419,7 @@ func (s *Storage) loadDynamicValues(txn *badger.Txn, epoch uint32) error {
 		return err
 	}
 	s.logger.Infof(
-		"Dynamic values updated. New dynamic values %+v will be valid after block %v",
+		"Dynamic values updated. New dynamic values %+v will be valid starting on the block %v",
 		*s.DynamicValues,
 		epoch*constants.EpochLength+1,
 	)

@@ -53,7 +53,7 @@ func (ll *LinkedList) Marshal() []byte {
 // Unmarshal unmarshals LinkedList
 func (ll *LinkedList) Unmarshal(v []byte) error {
 	if len(v) != 8 {
-		return ErrInvalidNode
+		return ErrInvalidLinkedList
 	}
 	head, err := utils.UnmarshalUint32(v[0:4])
 	if err != nil {
