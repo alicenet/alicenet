@@ -281,19 +281,20 @@ export const deployUpgradeableWithFactory = async (
       `Contract deployment size:${receipt.gasUsed} is greater than 10 million`
     );
   }
+
   let initCallDataBin = "0x";
-  try {
-    initCallDataBin = _Contract.interface.encodeFunctionData(
-      "initialize",
-      initCallData
-    );
-  } catch (error) {
-    if (!(error as Error).message.includes("no matching function")) {
-      console.warn(
-        `Error deploying contract ${contractName} couldn't get initialize arguments: ${error}`
+    try {
+      initCallDataBin = _Contract.interface.encodeFunctionData(
+        "initialize",
+        initCallData
       );
+    } catch (error) {
+      if (!(error as Error).message.includes("no matching function")) {
+        console.warn(
+          `Error deploying contract ${contractName} couldn't get initialize arguments: ${error}`
+        );
+      }
     }
-  }
   await factory.upgradeProxy(saltBytes, logicAddr, initCallDataBin);
   return _Contract.attach(
     await getContractAddressFromDeployedProxyEvent(transaction2)
@@ -564,18 +565,6 @@ export const getFixture = async (
     []
   )) as Dynamics;
 
-  const erc20Mock = await (
-    await (await ethers.getContractFactory("ERC20Mock")).deploy()
-  ).deployed();
-
-  const localERC20BridgePoolV1 = await deployUpgradeableWithFactory(
-    factory,
-    "LocalERC20BridgePoolV1",
-    "LocalERC20BridgePoolV1",
-    [erc20Mock.address],
-    []
-  );
-
   await posFixtureSetup(factory, aToken, legacyToken);
   const blockNumber = BigInt(await ethers.provider.getBlockNumber());
   const phaseLength = (await ethdkg.getPhaseLength()).toBigInt();
@@ -592,9 +581,7 @@ export const getFixture = async (
     validatorPool,
     snapshots,
     ethdkg,
-    erc20Mock,
     factory,
-    localERC20BridgePoolV1,
     namedSigners,
     aTokenMinter,
     aTokenBurner,
