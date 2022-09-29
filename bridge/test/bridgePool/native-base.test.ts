@@ -46,6 +46,11 @@ describe("Testing Base BridgePool Deposit/Withdraw", async () => {
       Buffer.from("0x0"),
       encodedMockBlockClaims
     );
+    nativeERCBridgePoolBaseErrors = await (
+      await (
+        await ethers.getContractFactory("NativeERCBridgePoolBaseErrors")
+      ).deploy()
+    ).deployed();
     merkleProofLibraryErrors = await (
       await (
         await ethers.getContractFactory("MerkleProofLibraryErrors")
@@ -53,11 +58,6 @@ describe("Testing Base BridgePool Deposit/Withdraw", async () => {
     ).deployed();
     accusationsErrors = await (
       await (await ethers.getContractFactory("AccusationsErrors")).deploy()
-    ).deployed();
-    nativeERCBridgePoolBaseErrors = await (
-      await (
-        await ethers.getContractFactory("NativeERCBridgePoolBaseErrors")
-      ).deploy()
     ).deployed();
     nativeERCBridgePool = await deployUpgradeableWithFactory(
       fixture.factory,

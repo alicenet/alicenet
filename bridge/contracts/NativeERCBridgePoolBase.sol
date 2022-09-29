@@ -71,6 +71,9 @@ abstract contract NativeERCBridgePoolBase is ImmutableSnapshots {
         return proofAgainstStateRoot;
     }
 
+    /// @notice Obtains trasfer data upon UTXO verification
+    /// @param _vsPreImage burned UTXO
+    /// @param proofAgainstStateRoot Proof of inclusion of UTXO in the stateTrie
     function getValidatedTransferData(
         bytes memory _vsPreImage,
         MerkleProofParserLibrary.MerkleProof memory proofAgainstStateRoot
