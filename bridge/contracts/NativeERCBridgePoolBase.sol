@@ -14,7 +14,7 @@ import "contracts/Snapshots.sol";
 
 /// @custom:salt NativeERCBridgePoolBase
 /// @custom:deploy-type deployUpgradeable
-abstract contract NativeERCBridgePoolBase is IBridgePool, ImmutableSnapshots {
+abstract contract NativeERCBridgePoolBase is ImmutableSnapshots {
     using MerkleProofParserLibrary for bytes;
     using MerkleProofLibrary for MerkleProofParserLibrary.MerkleProof;
 
@@ -27,49 +27,40 @@ abstract contract NativeERCBridgePoolBase is IBridgePool, ImmutableSnapshots {
 
     constructor() ImmutableFactory(msg.sender) {}
 
-    /// @notice Preforms previous required tasks for depositing
-    /// @param msgSender The address of ERC sender
-    /// @param depositParameters encoded deposit parameters (ERC20:tokenAmount, ERC721:tokenId or ERC1155:tokenAmount+tokenId)
-    function deposit(address msgSender, bytes calldata depositParameters) public virtual {}
-
-    /// @notice Performs previous tasks required for withdrawal
-    /// @param _vsPreImage burned UTXO's VSPreImage
+    /// @notice Verify withdraw proofs
     /// @param _proofs an array of merkle proof structs in the following order:
-    /// proof against StateRoot: Proof of inclusion of UTXO in the stateTrie
+    /// proof of inclusion in StateRoot: Proof of inclusion of UTXO in the stateTrie
     /// proof of inclusion in TXRoot: Proof of inclusion of the transaction included in the txRoot trie.
     /// proof of inclusion in TXHash: Proof of inclusion of txOut in the txHash trie
     /// proof of inclusion in HeaderRoot: Proof of inclusion of the block header in the header trie
-    function withdraw(bytes memory _vsPreImage, bytes[4] memory _proofs)
+    function verifyProofs(bytes[4] memory _proofs)
         public
-        virtual
-        returns (
-            bytes32,
-            address,
-            uint256
-        )
+        returns (MerkleProofParserLibrary.MerkleProof memory)
     {
         BClaimsParserLibrary.BClaims memory bClaims = Snapshots(_snapshotsAddress())
             .getBlockClaimsFromLatestSnapshot();
 
-        // Validate ProofInclusionTxRoot against BClaims.HeaderRoot.
+        // Validate proofInclusionHeaderRoot against bClaims.headerRoot.
         MerkleProofParserLibrary.MerkleProof
             memory proofInclusionHeaderRoot = MerkleProofParserLibrary.extractMerkleProof(
                 _proofs[3]
             );
         MerkleProofLibrary.verifyInclusion(proofInclusionHeaderRoot, bClaims.headerRoot);
 
-        // Validate ProofInclusionTxRoot against BClaims.TxRoot.
+        // Validate proofInclusionTxRoot against bClaims.txRoot.
         MerkleProofParserLibrary.MerkleProof memory proofInclusionTxRoot = MerkleProofParserLibrary
             .extractMerkleProof(_proofs[1]);
         MerkleProofLibrary.verifyInclusion(proofInclusionTxRoot, bClaims.txRoot);
 
-        // Validate ProofOfInclusionTxHash against the target hash from ProofInclusionTxRoot.
+        // Validate proofOfInclusionTxHash against the target hash from proofInclusionTxRoot.
         MerkleProofParserLibrary.MerkleProof
             memory proofOfInclusionTxHash = MerkleProofParserLibrary.extractMerkleProof(_proofs[2]);
         MerkleProofLibrary.verifyInclusion(proofOfInclusionTxHash, proofInclusionTxRoot.key);
 
+        // Validate proofOfInclusionTxHash against bClaims.stateRoot.
         MerkleProofParserLibrary.MerkleProof memory proofAgainstStateRoot = MerkleProofParserLibrary
             .extractMerkleProof(_proofs[0]);
+        MerkleProofLibrary.verifyInclusion(proofAgainstStateRoot, bClaims.stateRoot);
 
         if (proofAgainstStateRoot.key != proofOfInclusionTxHash.key) {
             revert AccusationsErrors.UTXODoesnotMatch(
@@ -77,7 +68,20 @@ abstract contract NativeERCBridgePoolBase is IBridgePool, ImmutableSnapshots {
                 proofOfInclusionTxHash.key
             );
         }
+        return proofAgainstStateRoot;
+    }
 
+    function getValidatedTransferData(
+        bytes memory _vsPreImage,
+        MerkleProofParserLibrary.MerkleProof memory proofAgainstStateRoot
+    )
+        public
+        returns (
+            bytes32,
+            address,
+            uint256
+        )
+    {
         VSPreImageParserLibrary.VSPreImage memory vsPreImage = VSPreImageParserLibrary
             .extractVSPreImage(_vsPreImage);
 
@@ -100,7 +104,6 @@ abstract contract NativeERCBridgePoolBase is IBridgePool, ImmutableSnapshots {
                 proofAgainstStateRoot.key
             );
         }
-        MerkleProofLibrary.verifyInclusion(proofAgainstStateRoot, bClaims.stateRoot);
         if (vsPreImage.account != msg.sender) {
             revert NativeERCBridgePoolBaseErrors.UTXOAccountDoesNotMatchReceiver(
                 vsPreImage.account,

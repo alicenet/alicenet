@@ -23,14 +23,14 @@ library VSPreImageParserLibrary {
     uint256 internal constant _CAPNPROTO_HEADER_SIZE = 8;
 
     /// @notice This function is for deserializing the VSPreImage struct from an defined
-    ///         location inside a binary blob. 
+    ///         location inside a binary blob.
     /// @param src Binary state containing a TXInPreImage serialized struct without CapnProto headers
     function extractVSPreImage(bytes memory src) internal view returns (VSPreImage memory) {
         return extractInnerVSPreImage(src, _CAPNPROTO_HEADER_SIZE);
     }
 
     /// @notice This function is for deserializing the VSPreImage struct from an defined
-    ///         location inside a binary blob. 
+    ///         location inside a binary blob.
     /// @param src Binary state containing a TXInPreImage serialized struct without CapnProto headers
     /// @param dataOffset offset to start reading the VSPreImage state from inside src
     /// @return vsPreImage a VSPreImage struct
