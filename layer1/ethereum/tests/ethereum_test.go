@@ -83,17 +83,6 @@ func TestEthereum_NewEthereumEndpoint(t *testing.T) {
 			},
 		},
 		{
-			name: "Create new ethereum endpoint failing with passCode file not found",
-			args: args{"", "", "", "", false, 0, 500, 0},
-			want: false,
-			wantErr: func(t assert.TestingT, err error, i ...interface{}) bool {
-				if !strings.Contains(err.Error(), "no such file or directory") {
-					t.Errorf("Failing test with an unexpected error %v", err)
-				}
-				return true
-			},
-		},
-		{
 			name: "Create new ethereum endpoint failing with specified account not found",
 			args: args{"", fixture.KeyStorePath, fixture.PassCodePath, "", false, 0, 500, 0},
 			want: false,
