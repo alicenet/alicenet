@@ -38,12 +38,12 @@ contract NativeERC20BridgePoolV1 is
     }
 
     function withdraw(bytes memory vsPreImage, bytes[4] memory proofs) public {
-        MerkleProofParserLibrary.MerkleProof memory proofAgainstStateRoot = super.verifyProofs(
+        MerkleProofParserLibrary.MerkleProof memory proofInclusionStateRoot = super._verifyProofs(
             proofs
         );
-        (, address account, uint256 value) = super.getValidatedTransferData(
+        (address account, uint256 value) = super._getValidatedTransferData(
             vsPreImage,
-            proofAgainstStateRoot
+            proofInclusionStateRoot
         );
         _safeTransferERC20(IERC20Transferable(_erc20Contract), account, value);
     }

@@ -29,7 +29,6 @@ let bridgeRouter: any;
 let initialUserBalance: any;
 let initialBridgePoolBalance: any;
 let merkleProofLibraryErrors: any;
-let accusationsErrors: Contract;
 let nativeERC20BridgePoolV1: Contract;
 let nativeERCBridgePoolBaseErrors: Contract;
 let erc20Mock: Contract;
@@ -64,9 +63,6 @@ describe("Testing BridgePool Deposit/Withdraw for tokenType ERC20", async () => 
       await (
         await ethers.getContractFactory("MerkleProofLibraryErrors")
       ).deploy()
-    ).deployed();
-    accusationsErrors = await (
-      await (await ethers.getContractFactory("AccusationsErrors")).deploy()
     ).deployed();
     erc20Mock = await (
       await (await ethers.getContractFactory("ERC20Mock")).deploy()
@@ -175,7 +171,10 @@ describe("Testing BridgePool Deposit/Withdraw for tokenType ERC20", async () => 
       nativeERC20BridgePoolV1
         .connect(utxoOwnerSigner)
         .withdraw(wrongChainIdVSPreImage, proofs)
-    ).to.be.revertedWithCustomError(accusationsErrors, "ChainIdDoesNotMatch");
+    ).to.be.revertedWithCustomError(
+      nativeERCBridgePoolBaseErrors,
+      "ChainIdDoesNotMatch"
+    );
   });
 
   it("Should not make a withdraw if UTXOID in UTXO does not match UTXOID in proof", async () => {
@@ -184,8 +183,8 @@ describe("Testing BridgePool Deposit/Withdraw for tokenType ERC20", async () => 
         .connect(utxoOwnerSigner)
         .withdraw(wrongUTXOIDVSPreImage, proofs)
     ).to.be.revertedWithCustomError(
-      accusationsErrors,
-      "MerkleProofKeyDoesNotMatchUTXOIDBeingSpent"
+      nativeERCBridgePoolBaseErrors,
+      "MerkleProofKeyDoesNotMatchUTXOID"
     );
   });
 });
