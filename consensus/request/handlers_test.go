@@ -14,12 +14,11 @@ import (
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/crypto"
 	bn256 "github.com/alicenet/alicenet/crypto/bn256/cloudflare"
-	"github.com/alicenet/alicenet/dynamics"
+	dMocks "github.com/alicenet/alicenet/dynamics/mocks"
 	"github.com/alicenet/alicenet/interfaces"
 	"github.com/alicenet/alicenet/proto"
 	"github.com/alicenet/alicenet/utils"
 	"github.com/dgraph-io/badger/v2"
-	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -48,43 +47,6 @@ func (h *HandlerMock) GetSnapShotStateData(txn *badger.Txn, key []byte) ([]byte,
 	return args.Get(0).([]byte), args.Error(1)
 }
 
-type mockRawDB struct {
-	rawDB map[string]string
-}
-
-func (m *mockRawDB) GetValue(txn *badger.Txn, key []byte) ([]byte, error) {
-	strValue, ok := m.rawDB[string(key)]
-	if !ok {
-		return nil, errors.New("key not present")
-	}
-	value := []byte(strValue)
-	return value, nil
-}
-
-func (m *mockRawDB) SetValue(txn *badger.Txn, key, value []byte) error {
-	strValue := string(value)
-	m.rawDB[string(key)] = strValue
-	return nil
-}
-
-func (m *mockRawDB) DeleteValue(key []byte) error {
-	strKey := string(key)
-	_, ok := m.rawDB[strKey]
-	if !ok {
-		return errors.New("key not present")
-	}
-	delete(m.rawDB, strKey)
-	return nil
-}
-
-func (m *mockRawDB) View(fn func(txn *badger.Txn) error) error {
-	return fn(nil)
-}
-
-func (m *mockRawDB) Update(fn func(txn *badger.Txn) error) error {
-	return fn(nil)
-}
-
 func initHandler(t *testing.T, done <-chan struct{}) *Handler {
 	rawDb, err := utils.OpenBadger(done, "", true)
 	assert.Nil(t, err)
@@ -92,23 +54,18 @@ func initHandler(t *testing.T, done <-chan struct{}) *Handler {
 	database.Init(rawDb)
 
 	appMock := &HandlerMock{}
-	logger := logrus.New()
-
-	mockRawDB := &mockRawDB{}
-	mockRawDB.rawDB = make(map[string]string)
-	storage := &dynamics.Storage{}
-	err = storage.Init(mockRawDB, logger)
-	if err != nil {
-		panic(err)
-	}
+	mocks := dMocks.NewMockStorageGetter()
+	mocks.GetMaxBlockSizeFunc.SetDefaultReturn(3_000_000)
+	mocks.GetMaxProposalSizeFunc.SetDefaultReturn(3_000_000)
 
 	handler := &Handler{}
-	handler.Init(database, appMock, storage)
+	handler.Init(database, appMock, mocks)
 
 	return handler
 }
 
 func TestHandler_HandleP2PStatus_Ok(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	hndlr := initHandler(t, ctx.Done())
 	os := createOwnState(t)
@@ -129,6 +86,7 @@ func TestHandler_HandleP2PStatus_Ok(t *testing.T) {
 }
 
 func TestHandler_HandleP2PStatus_Error(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	hndlr := initHandler(t, ctx.Done())
 
@@ -138,6 +96,7 @@ func TestHandler_HandleP2PStatus_Error(t *testing.T) {
 }
 
 func TestHandler_HandleP2PGetBlockHeaders_Ok(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	hndlr := initHandler(t, ctx.Done())
 	bh := createBlockHeader(t, 1)
@@ -159,6 +118,7 @@ func TestHandler_HandleP2PGetBlockHeaders_Ok(t *testing.T) {
 }
 
 func TestHandler_HandleP2PGetBlockHeaders_Error(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	hndlr := initHandler(t, ctx.Done())
 
@@ -168,6 +128,7 @@ func TestHandler_HandleP2PGetBlockHeaders_Error(t *testing.T) {
 }
 
 func TestHandler_HandleP2PGetPendingTxs_Ok(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	hndlr := initHandler(t, ctx.Done())
 
@@ -182,6 +143,7 @@ func TestHandler_HandleP2PGetPendingTxs_Ok(t *testing.T) {
 }
 
 func TestHandler_HandleP2PGetPendingTxs_Error(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	hndlr := initHandler(t, ctx.Done())
 
@@ -195,6 +157,7 @@ func TestHandler_HandleP2PGetPendingTxs_Error(t *testing.T) {
 }
 
 func TestHandler_HandleP2PGetMinedTxs_Ok(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	hndlr := initHandler(t, ctx.Done())
 
@@ -209,6 +172,7 @@ func TestHandler_HandleP2PGetMinedTxs_Ok(t *testing.T) {
 }
 
 func TestHandler_HandleP2PGetMinedTxs_Error(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	hndlr := initHandler(t, ctx.Done())
 
@@ -222,6 +186,7 @@ func TestHandler_HandleP2PGetMinedTxs_Error(t *testing.T) {
 }
 
 func TestHandler_HandleP2PGetSnapShotNodes_Ok(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	hndlr := initHandler(t, ctx.Done())
 
@@ -235,6 +200,7 @@ func TestHandler_HandleP2PGetSnapShotNodes_Ok(t *testing.T) {
 }
 
 func TestHandler_HandleP2PGetSnapShotNodes_Error(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	hndlr := initHandler(t, ctx.Done())
 
@@ -248,6 +214,7 @@ func TestHandler_HandleP2PGetSnapShotNodes_Error(t *testing.T) {
 }
 
 func TestHandler_HandleP2PGetSnapShotHdrNode_Ok(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	hndlr := initHandler(t, ctx.Done())
 
@@ -257,6 +224,7 @@ func TestHandler_HandleP2PGetSnapShotHdrNode_Ok(t *testing.T) {
 }
 
 func TestHandler_HandleP2PGetSnapShotStateData_Ok(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	hndlr := initHandler(t, ctx.Done())
 
@@ -270,6 +238,7 @@ func TestHandler_HandleP2PGetSnapShotStateData_Ok(t *testing.T) {
 }
 
 func TestHandler_HandleP2PGetSnapShotStateData_Error(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	hndlr := initHandler(t, ctx.Done())
 

@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io/ioutil"
+	"math/big"
 	"os"
 	"strconv"
 	"sync"
@@ -132,17 +133,15 @@ func TestMain(m *testing.M) {
 	consSync.Start()
 
 	time.Sleep(1 * time.Second)
-	tx1Value = 6
-	tx2Value = 8
-	tx3Value = 10
+	fee := storage.GetValueStoreFee()
 
-	utxoTx1IDs, account, consumedTx1Hash = insertTestUTXO(tx1Value)
-	utxoTx2IDs, account, consumedTx2Hash = insertTestUTXO(tx2Value)
-	utxoTx3IDs, account, consumedTx3Hash = insertTestUTXO(tx3Value)
+	utxoTx1IDs, account, consumedTx1Hash = insertTestUTXO(getTxValues(1), fee)
+	utxoTx2IDs, account, consumedTx2Hash = insertTestUTXO(getTxValues(2), fee)
+	utxoTx3IDs, account, consumedTx3Hash = insertTestUTXO(getTxValues(3), fee)
 
-	tx1, tx1Hash, tx1Signature = getTransactionRequest(consumedTx1Hash, crypto.GetAccount(pubKey), tx1Value)
-	tx2, tx2Hash, tx2Signature = getTransactionRequest(consumedTx2Hash, crypto.GetAccount(pubKey), tx2Value)
-	tx3, tx3Hash, tx3Signature = getTransactionRequest(consumedTx3Hash, crypto.GetAccount(pubKey), tx3Value)
+	tx1, tx1Hash, tx1Signature = getTransactionRequest(consumedTx1Hash, crypto.GetAccount(pubKey), getTxValues(1))
+	tx2, tx2Hash, tx2Signature = getTransactionRequest(consumedTx2Hash, crypto.GetAccount(pubKey), getTxValues(2))
+	tx3, tx3Hash, tx3Signature = getTransactionRequest(consumedTx3Hash, crypto.GetAccount(pubKey), getTxValues(3))
 
 	// Start tests after validator is running
 	exitVal := m.Run()
@@ -239,6 +238,21 @@ func validatorNode() {
 		panic(err)
 	}
 
+	if storage.DynamicValues == nil {
+		// add the node to the db in case is not already present
+		err = consDB.Update(func(txn *badger.Txn) error {
+			// dynamics with fees
+			data, err := hex.DecodeString("00000fa000000bb800000bb8002dc6c00000000000000bb80000000000000bb800000000000000000000000000000fa0")
+			if err != nil {
+				panic(err)
+			}
+			return storage.ChangeDynamicValues(txn, 1, data)
+		})
+		if err != nil {
+			panic(err)
+		}
+	}
+
 	localStateHandler = &Handlers{}
 
 	// Initialize consensus
@@ -269,6 +283,22 @@ func validatorNode() {
 
 }
 
+func getValueStoreFee() *uint256.Uint256 {
+	value, err := new(uint256.Uint256).FromUint64(storage.GetValueStoreFee().Uint64())
+	if err != nil {
+		panic(err)
+	}
+	return value
+}
+
+func getMinTxFee() *uint256.Uint256 {
+	value, err := new(uint256.Uint256).FromUint64(storage.GetMinScaledTransactionFee().Uint64())
+	if err != nil {
+		panic(err)
+	}
+	return value
+}
+
 func getTransactionRequest(ConsumedTxHash, account []byte, val uint64) (tx_ *proto.TransactionData, TxHash, TXSignature []byte) {
 	pubKey, _ := signer.Pubkey()
 	value_, _ := new(uint256.Uint256).FromUint64(1)
@@ -292,17 +322,21 @@ func getTransactionRequest(ConsumedTxHash, account []byte, val uint64) (tx_ *pro
 				CurveSpec: constants.CurveSecp256k1,
 				Account:   account,
 			},
-			Fee: vsFee,
+			Fee: getValueStoreFee(),
 		},
 		TxHash: make([]byte, 32),
 	}
 	tx = &objs.Tx{}
 	tx.Vin = []*objs.TXIn{txin}
-	expectedOutput, err := new(uint256.Uint256).FromUint64(2)
+	expectedOutput, err := new(uint256.Uint256).FromUint64(val)
 	if err != nil {
 		panic(err)
 	}
-	expectedOutput, err = new(uint256.Uint256).Sub(expectedOutput, vsFee)
+	expectedOutput, err = new(uint256.Uint256).Sub(expectedOutput, getValueStoreFee())
+	if err != nil {
+		panic(err)
+	}
+	expectedOutput, err = new(uint256.Uint256).Sub(expectedOutput, getMinTxFee())
 	if err != nil {
 		panic(err)
 	}
@@ -311,7 +345,7 @@ func getTransactionRequest(ConsumedTxHash, account []byte, val uint64) (tx_ *pro
 			ChainID:  chainID,
 			Value:    expectedOutput,
 			TXOutIdx: 0,
-			Fee:      vsFee,
+			Fee:      getValueStoreFee(),
 			Owner: &objs.ValueStoreOwner{
 				SVA:       objs.ValueStoreSVA,
 				CurveSpec: constants.CurveSecp256k1,
@@ -323,7 +357,7 @@ func getTransactionRequest(ConsumedTxHash, account []byte, val uint64) (tx_ *pro
 	newUTXO := &objs.TXOut{}
 	err = newUTXO.NewValueStore(newValueStore)
 	tx.Vout = append(tx.Vout, newUTXO)
-	tx.Fee, _ = new(uint256.Uint256).FromUint64(val - 2)
+	tx.Fee = getMinTxFee()
 	err = tx.SetTxHash()
 	err = v.Sign(tx.Vin[0], signer)
 	hash, _ = tx.TxHash()
@@ -364,8 +398,7 @@ func getTransactionRequest(ConsumedTxHash, account []byte, val uint64) (tx_ *pro
 			Fee: tx.Fee.String(),
 		},
 	}
-	/* 	fmt.Println(transactionData)
-	 */return transactionData, hash, signature
+	return transactionData, hash, signature
 }
 
 func getSignerData() (*crypto.Secp256k1Signer, []byte) {
@@ -470,7 +503,7 @@ func initLocalStateServer(localStateHandler *Handlers) *Handler {
 	return localStateServer
 }
 
-func insertTestUTXO(value_ uint64) ([][]byte, []byte, []byte) {
+func insertTestUTXO(value_ uint64, fee_ *big.Int) ([][]byte, []byte, []byte) {
 	accountAddress := crypto.GetAccount(pubKey)
 	owner := &objs.ValueStoreOwner{
 		SVA:       objs.ValueStoreSVA,
@@ -482,18 +515,26 @@ func insertTestUTXO(value_ uint64) ([][]byte, []byte, []byte) {
 	if err != nil {
 		fmt.Printf("could not create utxo handler %v \n", err)
 	}
-	value, _ := new(uint256.Uint256).FromUint64(value_)
+	value, err := new(uint256.Uint256).FromUint64(value_)
+	if err != nil {
+		panic(err)
+	}
+	fee, err := new(uint256.Uint256).FromBigInt(fee_)
+	if err != nil {
+		panic(err)
+	}
 	vs := &objs.ValueStore{
 		VSPreImage: &objs.VSPreImage{
 			TXOutIdx: constants.MaxUint32,
 			Value:    value,
 			ChainID:  uint32(config.Configuration.Chain.ID),
 			Owner:    owner,
+			Fee:      fee,
 		},
 		TxHash: utils.ForceSliceToLength([]byte(strconv.Itoa(1)), constants.HashLen),
 	}
 	utxoDep := &objs.TXOut{}
-	err := utxoDep.NewValueStore(vs)
+	err = utxoDep.NewValueStore(vs)
 	if err != nil {
 		fmt.Printf("could not create utxo %v \n", err)
 	}
@@ -536,7 +577,7 @@ func makeTxs(s objs.Signer, v *objs.ValueStore) (*objs.Tx, []byte) {
 			ChainID:  chainID,
 			Value:    value,
 			TXOutIdx: 0,
-			Fee:      new(uint256.Uint256).SetZero(),
+			Fee:      v.VSPreImage.Fee,
 			Owner: &objs.ValueStoreOwner{
 				SVA:       objs.ValueStoreSVA,
 				CurveSpec: constants.CurveSecp256k1,
@@ -561,4 +602,17 @@ func makeTxs(s objs.Signer, v *objs.ValueStore) (*objs.Tx, []byte) {
 		fmt.Printf("Could not create Txs %v \n", err)
 	}
 	return tx, tx.Vin[0].TXInLinker.TxHash
+}
+
+func getTxValues(index uint32) uint64 {
+	switch index {
+	case 1:
+		return 8000
+	case 2:
+		return 12000
+	case 3:
+		return 16000
+	default:
+		panic(fmt.Sprintf("Invalid index: %d", index))
+	}
 }

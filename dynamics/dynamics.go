@@ -318,18 +318,21 @@ func (s *Storage) addNode(txn *badger.Txn, linkedList *LinkedList, epoch uint32,
 	}
 
 	if !prevTailNode.IsTail() {
+		s.logger.Error("Previous node is not tail")
 		utils.DebugTrace(s.logger, err)
 		return ErrInvalidPrevNode
 	}
 
 	// node to be added is strictly ahead of most future node
 	if newTailNode.thisEpoch <= prevTailNode.thisEpoch {
+		s.logger.Errorf("New tail node: %+v is older than current tail: %+v", newTailNode, prevTailNode)
 		utils.DebugTrace(s.logger, err)
 		return &ErrInvalidNode{newTailNode}
 	}
 
 	err = newTailNode.SetEpochs(prevTailNode, nil)
 	if err != nil {
+		s.logger.Error("Error setting epochs")
 		utils.DebugTrace(s.logger, err)
 		return err
 	}
@@ -337,12 +340,14 @@ func (s *Storage) addNode(txn *badger.Txn, linkedList *LinkedList, epoch uint32,
 	// validating nodes after the link's update
 	err = prevTailNode.Validate()
 	if err != nil {
+		s.logger.Error("Error validating previous node after link update")
 		utils.DebugTrace(s.logger, err)
 		return err
 	}
 
 	err = newTailNode.Validate()
 	if err != nil {
+		s.logger.Error("Error validating new node after link update")
 		utils.DebugTrace(s.logger, err)
 		return err
 	}
@@ -350,22 +355,26 @@ func (s *Storage) addNode(txn *badger.Txn, linkedList *LinkedList, epoch uint32,
 	// Store the nodes after changes have been made
 	err = s.database.SetNode(txn, prevTailNode)
 	if err != nil {
+		s.logger.Error("Error on saving previous node on database")
 		utils.DebugTrace(s.logger, err)
 		return err
 	}
 	err = s.database.SetNode(txn, newTailNode)
 	if err != nil {
+		s.logger.Error("Error on saving new node on database")
 		utils.DebugTrace(s.logger, err)
 		return err
 	}
 	// Update EpochLastUpdated
 	err = linkedList.SetMostFutureUpdate(newTailNode.thisEpoch)
 	if err != nil {
+		s.logger.Error("Error setting the most future node on the linked list")
 		utils.DebugTrace(s.logger, err)
 		return err
 	}
 	err = s.database.SetLinkedList(txn, linkedList)
 	if err != nil {
+		s.logger.Error("Error saving linked list on the database")
 		utils.DebugTrace(s.logger, err)
 		return err
 	}
