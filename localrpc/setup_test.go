@@ -53,7 +53,6 @@ var (
 	tx1Hash, tx2Hash, tx3Hash                         []byte
 	consumedTx1Hash, consumedTx2Hash, consumedTx3Hash []byte
 	utxoTx1IDs, utxoTx2IDs, utxoTx3IDs                [][]byte
-	tx1Value, tx2Value, tx3Value                      uint64
 	tx1Signature, tx2Signature, tx3Signature          []byte
 )
 
