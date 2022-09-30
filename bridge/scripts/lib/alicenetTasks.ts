@@ -776,6 +776,108 @@ task(
     ).wait();
   });
 
+task("change-dynamic-value", "Change a certain dynamic value")
+  .addParam("factoryAddress", "the alicenet factory address")
+  .addOptionalParam(
+    "relativeEpoch",
+    "How many epochs from the value will be updated on the side chain"
+  )
+  .addOptionalParam("maxBlockSize", "new max block size value")
+  .addOptionalParam("proposalTimeout", "new proposal Timeout value")
+  .addOptionalParam("preVoteTimeout", "new preVote Timeout value")
+  .addOptionalParam("preCommitTimeout", "new preCommit Timeout value")
+  .addOptionalParam("dataStoreFee", "new preVote Timeout value")
+  .addOptionalParam("valueStoreFee", "new preVote Timeout value")
+  .addOptionalParam(
+    "minScaledTransactionFee",
+    "new minScaledTransaction fee value"
+  )
+  .setAction(async (taskArgs, hre) => {
+    const { ethers } = hre;
+    const [admin] = await ethers.getSigners();
+    const adminSigner = await ethers.getSigner(admin.address);
+    const factory = await ethers.getContractAt(
+      "AliceNetFactory",
+      taskArgs.factoryAddress
+    );
+    const dynamics = await hre.ethers.getContractAt(
+      "Dynamics",
+      await factory.lookup(hre.ethers.utils.formatBytes32String("Dynamics"))
+    );
+    const currentValue = await dynamics.getLatestDynamicValues();
+    const newValue = { ...currentValue };
+
+    newValue.maxBlockSize =
+      taskArgs.maxBlockSize !== undefined
+        ? taskArgs.maxBlockSize
+        : currentValue.maxBlockSize;
+
+    newValue.proposalTimeout =
+      taskArgs.proposalTimeout !== undefined
+        ? taskArgs.proposalTimeout
+        : currentValue.proposalTimeout;
+
+    newValue.preVoteTimeout =
+      taskArgs.preVoteTimeout !== undefined
+        ? taskArgs.preVoteTimeout
+        : currentValue.preVoteTimeout;
+
+    newValue.preCommitTimeout =
+      taskArgs.preCommitTimeout !== undefined
+        ? taskArgs.preCommitTimeout
+        : currentValue.preCommitTimeout;
+
+    newValue.dataStoreFee =
+      taskArgs.dataStoreFee !== undefined
+        ? taskArgs.dataStoreFee
+        : currentValue.dataStoreFee;
+
+    newValue.valueStoreFee =
+      taskArgs.valueStoreFee !== undefined
+        ? taskArgs.valueStoreFee
+        : currentValue.valueStoreFee;
+
+    newValue.minScaledTransactionFee =
+      taskArgs.minScaledTransactionFee !== undefined
+        ? taskArgs.minScaledTransactionFee
+        : currentValue.minScaledTransactionFee;
+
+    let epoch;
+    if (taskArgs.epoch !== undefined && taskArgs.epoch >= 2) {
+      epoch = taskArgs.relativeEpoch;
+    } else {
+      epoch = 2;
+      console.log(
+        `Epoch not sent ot it's less than minimum epoch allowed. Changing value to 2 epochs.`
+      );
+    }
+
+    const input = dynamics.interface.encodeFunctionData("changeDynamicValues", [
+      epoch,
+      newValue,
+    ]);
+    await (
+      await factory.connect(adminSigner).callAny(dynamics.address, 0, input)
+    ).wait(8);
+
+    const allKeys = Object.keys(currentValue);
+    const allValues = Object.values(newValue);
+    const keys: string[] = [];
+    const newValuesArray = [];
+    for (let i = 0; i < allKeys.length; i++) {
+      if (isNaN(parseFloat(allKeys[i]))) {
+        keys.push(allKeys[i]);
+        newValuesArray.push(allValues[i]);
+      }
+    }
+
+    for (let i = 0; i < currentValue.length; i++) {
+      console.log(
+        `Changed dynamics value ${keys[i]} from ${currentValue[i]} to ${newValuesArray[i]}`
+      );
+    }
+  });
+
 task(
   "lookup-contract-address",
   "Task to get address of contract deployed by AliceNet factory"
