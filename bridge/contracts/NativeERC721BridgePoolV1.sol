@@ -1,35 +1,31 @@
 // SPDX-License-Identifier: MIT-open-group
 pragma solidity ^0.8.16;
+
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
 import "contracts/interfaces/IERC721Transferable.sol";
-import "contracts/LocalERCBridgePoolBase.sol";
+import "contracts/NativeERCBridgePoolBase.sol";
 import "contracts/utils/ImmutableAuth.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
-/// @custom:salt LocalERC721BridgePoolV1
-/// @custom:deploy-type deployStatic
-contract LocalERC721BridgePoolV1 is
-    ERC721Holder,
-    LocalERCBridgePoolBase,
+/// @custom:salt NativeERC721BridgePoolV1
+/// @custom:deploy-type deployUpgradeable
+contract NativeERC721BridgePoolV1 is
     Initializable,
-    ImmutableBridgeRouter
+    ImmutableBridgeRouter,
+    ERC721Holder,
+    NativeERCBridgePoolBase
 {
     address internal _erc721Contract;
 
-    function initialize(address erc721Contract_) public onlyFactory initializer {
-        _erc721Contract = erc721Contract_;
+    function initialize(address erc20Contract_) public onlyFactory initializer {
+        _erc721Contract = erc20Contract_;
     }
 
     /// @notice Transfer tokens from sender and emit a "Deposited" event for minting correspondent tokens in sidechain
     /// @param msgSender The address of ERC sender
     /// @param depositParameters_ encoded deposit parameters (ERC20:tokenAmount, ERC721:tokenId or ERC1155:tokenAmount+tokenId)
-    function deposit(address msgSender, bytes calldata depositParameters_)
-        public
-        override
-        onlyBridgeRouter
-    {
-        super.deposit(msgSender, depositParameters_);
+    function deposit(address msgSender, bytes calldata depositParameters_) public onlyBridgeRouter {
         DepositParameters memory _depositParameters = abi.decode(
             depositParameters_,
             (DepositParameters)
@@ -41,19 +37,18 @@ contract LocalERC721BridgePoolV1 is
         );
     }
 
-    /// @notice Transfer tokens to sender upon a verificable proof of burn in sidechain
-    /// @param encodedMerkleProof The merkle proof
-    /// @param encodedBurnedUTXO The burned UTXO in sidechain
-    function withdraw(bytes memory encodedBurnedUTXO, bytes memory encodedMerkleProof)
-        public
-        override
-    {
-        super.withdraw(encodedBurnedUTXO, encodedMerkleProof);
-        UTXO memory burnedUTXO = abi.decode(encodedBurnedUTXO, (UTXO));
+    function withdraw(bytes memory vsPreImage, bytes[4] memory proofs) public {
+        MerkleProofParserLibrary.MerkleProof memory proofInclusionStateRoot = super._verifyProofs(
+            proofs
+        );
+        (address account, uint256 value) = super._getValidatedTransferData(
+            vsPreImage,
+            proofInclusionStateRoot
+        );
         IERC721Transferable(_erc721Contract).safeTransferFrom(
             address(this),
-            msg.sender,
-            burnedUTXO.tokenId
+            account,
+            value
         );
     }
 }
