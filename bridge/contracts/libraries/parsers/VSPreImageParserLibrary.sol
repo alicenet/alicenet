@@ -24,19 +24,19 @@ library VSPreImageParserLibrary {
 
     /// @notice This function is for deserializing the VSPreImage struct from an defined
     ///         location inside a binary blob.
-    /// @param src Binary state containing a TXInPreImage serialized struct without CapnProto headers
-    function extractVSPreImage(bytes memory src) internal view returns (VSPreImage memory) {
+    /// @param src Binary state containing a VSPreImage serialized struct without CapnProto headers
+    function extractVSPreImage(bytes memory src) internal pure returns (VSPreImage memory) {
         return extractInnerVSPreImage(src, _CAPNPROTO_HEADER_SIZE);
     }
 
     /// @notice This function is for deserializing the VSPreImage struct from an defined
     ///         location inside a binary blob.
-    /// @param src Binary state containing a TXInPreImage serialized struct without CapnProto headers
+    /// @param src Binary state containing a VSPreImage serialized struct without CapnProto headers
     /// @param dataOffset offset to start reading the VSPreImage state from inside src
     /// @return vsPreImage a VSPreImage struct
     function extractInnerVSPreImage(bytes memory src, uint256 dataOffset)
         internal
-        view
+        pure
         returns (VSPreImage memory vsPreImage)
     {
         if (dataOffset + _VS_PRE_IMAGE_SIZE <= dataOffset) {
