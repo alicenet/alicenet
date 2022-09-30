@@ -7,6 +7,15 @@ import (
 // LinkedList is a doubly linked list which will store nodes corresponding to
 // changes to dynamic parameters. We store the latest epoch which has been
 // updated and the most future epoch (tail).
+//
+// The linked list can be represented as follows:
+// H = Head (the first node that was added to the linked list)
+// C = Current Node (node that has the dynamic parameters currently valid)
+// T = Tail (the most future node that has values to be updated)
+//
+// H           C                                   T
+// |---|---|---|---|---|---|---|---|---|---|---|---|
+// 1    ...   100             ...                 2000
 type LinkedList struct {
 	currentValue uint32
 	tail         uint32
