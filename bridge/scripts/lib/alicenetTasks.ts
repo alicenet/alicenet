@@ -848,7 +848,7 @@ task("change-dynamic-value", "Change a certain dynamic value")
     } else {
       epoch = 2;
       console.log(
-        `Epoch not sent ot it's less than minimum epoch allowed. Changing value to 2 epochs.`
+        `Epoch not sent ot it's less than minimum epoch allowed. Scheduling changes in 2 epochs from now.`
       );
     }
 
@@ -857,7 +857,9 @@ task("change-dynamic-value", "Change a certain dynamic value")
       newValue,
     ]);
     await (
-      await factory.connect(adminSigner).callAny(dynamics.address, 0, input)
+      await factory
+        .connect(adminSigner)
+        .callAny(dynamics.address, 0, input, await getGasPrices(hre))
     ).wait(8);
 
     const allKeys = Object.keys(currentValue);
