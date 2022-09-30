@@ -18,10 +18,8 @@ import {
 
 let fixture: Fixture;
 let user: SignerWithAddress;
-let user2: SignerWithAddress;
 let utxoOwnerSigner: SignerWithAddress;
 let merkleProofLibraryErrors: Contract;
-let accusationsErrors: Contract;
 let nativeERCBridgePool: Contract;
 let nativeERCBridgePoolBaseErrors: Contract;
 const tokenId = 0;
@@ -40,7 +38,7 @@ const encodedMockBlockClaims = getMockBlockClaimsForSnapshot();
 describe("Testing Base BridgePool Deposit/Withdraw", async () => {
   async function deployFixture() {
     fixture = await getFixture(true, true, false);
-    [, user, user2] = await ethers.getSigners();
+    [, user] = await ethers.getSigners();
     // Take a mock snapshot
     await fixture.snapshots.snapshot(
       Buffer.from("0x0"),
@@ -56,9 +54,6 @@ describe("Testing Base BridgePool Deposit/Withdraw", async () => {
         await ethers.getContractFactory("MerkleProofLibraryErrors")
       ).deploy()
     ).deployed();
-    accusationsErrors = await (
-      await (await ethers.getContractFactory("AccusationsErrors")).deploy()
-    ).deployed();
     nativeERCBridgePool = await deployUpgradeableWithFactory(
       fixture.factory,
       "NativeERCBridgePoolMock",
@@ -71,26 +66,10 @@ describe("Testing Base BridgePool Deposit/Withdraw", async () => {
     utxoOwnerSigner = await getImpersonatedSigner(
       "0x38e959391dd8598ae80d5d6d114a7822a09d313a"
     );
-
-    return {
-      fixture,
-      user,
-      user2,
-      merkleProofLibraryErrors,
-      nativeERCBridgePool,
-      nativeERCBridgePoolBaseErrors,
-    };
   }
 
   beforeEach(async function () {
-    ({
-      fixture,
-      user,
-      user2,
-      merkleProofLibraryErrors,
-      nativeERCBridgePool,
-      nativeERCBridgePoolBaseErrors,
-    } = await loadFixture(deployFixture));
+    await loadFixture(deployFixture);
   });
 
   it("Should call a deposit", async () => {
@@ -140,7 +119,10 @@ describe("Testing Base BridgePool Deposit/Withdraw", async () => {
       nativeERCBridgePool
         .connect(utxoOwnerSigner)
         .withdraw(wrongChainIdVSPreImage, proofs)
-    ).to.be.revertedWithCustomError(accusationsErrors, "ChainIdDoesNotMatch");
+    ).to.be.revertedWithCustomError(
+      nativeERCBridgePoolBaseErrors,
+      "ChainIdDoesNotMatch"
+    );
   });
 
   it("Should not call a withdraw if UTXOID in UTXO does not match UTXOID in proof", async () => {
@@ -149,8 +131,8 @@ describe("Testing Base BridgePool Deposit/Withdraw", async () => {
         .connect(utxoOwnerSigner)
         .withdraw(wrongUTXOIDVSPreImage, proofs)
     ).to.be.revertedWithCustomError(
-      accusationsErrors,
-      "MerkleProofKeyDoesNotMatchUTXOIDBeingSpent"
+      nativeERCBridgePoolBaseErrors,
+      "MerkleProofKeyDoesNotMatchUTXOID"
     );
   });
 });

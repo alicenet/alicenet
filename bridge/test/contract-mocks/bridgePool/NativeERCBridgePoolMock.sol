@@ -12,9 +12,7 @@ contract NativeERCBridgePoolMock is Initializable, NativeERCBridgePoolBase {
     function deposit(address msgSender, bytes calldata depositParameters_) public {}
 
     function withdraw(bytes memory vsPreImage, bytes[4] memory proofs) public {
-        MerkleProofParserLibrary.MerkleProof memory proofAgainstStateRoot = super.verifyProofs(
-            proofs
-        );
-        super.getValidatedTransferData(vsPreImage, proofAgainstStateRoot);
+        MerkleProofParserLibrary.MerkleProof memory proofAgainstStateRoot = _verifyProofs(proofs);
+        _getValidatedTransferData(vsPreImage, proofAgainstStateRoot);
     }
 }
