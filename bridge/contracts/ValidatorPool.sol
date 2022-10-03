@@ -7,6 +7,7 @@ import "contracts/interfaces/IERC721Transferable.sol";
 import "contracts/interfaces/ISnapshots.sol";
 import "contracts/interfaces/IETHDKG.sol";
 import "contracts/interfaces/IValidatorPool.sol";
+import "contracts/interfaces/IValidatorVault.sol";
 import "contracts/utils/EthSafeTransfer.sol";
 import "contracts/utils/ERC20SafeTransfer.sol";
 import "contracts/utils/MagicValue.sol";
@@ -45,6 +46,13 @@ contract ValidatorPool is
     modifier onlyValidator() {
         if (!_isValidator(msg.sender)) {
             revert ValidatorPoolErrors.CallerNotValidator(msg.sender);
+        }
+        _;
+    }
+
+    modifier onlyFactoryOrValidatorVault() {
+        if (msg.sender != _factoryAddress() && msg.sender != _validatorVaultAddress()) {
+            revert ValidatorPoolErrors.OnlyFactoryOrValidatorVaultAllowed();
         }
         _;
     }
@@ -115,7 +123,10 @@ contract ValidatorPool is
      * the contract factory.
      * @param stakeAmount_ the new minimum stake amount to become a validator.
      */
-    function setStakeAmount(uint256 stakeAmount_) public onlyFactory {
+    function setStakeAmount(uint256 stakeAmount_) public onlyFactoryOrValidatorVault {
+        if (stakeAmount_ == 0) {
+            revert ValidatorPoolErrors.StakeAmountMustBeNonZero();
+        }
         _stakeAmount = stakeAmount_;
     }
 
@@ -538,6 +549,25 @@ contract ValidatorPool is
         return _isConsensusRunning;
     }
 
+    function getValidatorStakingPosition(uint256 tokenID)
+        public
+        view
+        returns (
+            uint256 shares,
+            uint256 freeAfter,
+            uint256 withdrawFreeAfter,
+            uint256 accumulatorEth,
+            uint256 accumulatorToken
+        )
+    {
+        (shares, freeAfter, withdrawFreeAfter, accumulatorEth, accumulatorToken) = IStakingNFT(
+            _validatorStakingAddress()
+        ).getPosition(tokenID);
+
+        // adding the amount that is locked in the vault
+        shares += IValidatorVault(_validatorVaultAddress()).estimateStakedAmount(tokenID);
+    }
+
     function _transferEthAndTokens(
         address to_,
         uint256 payoutEth_,
@@ -627,7 +657,13 @@ contract ValidatorPool is
         }
         payoutToken -= stakeAmount;
 
-        validatorTokenID = _mintValidatorStakingPosition(stakeAmount);
+        uint256 realStakeAmount = 1;
+        stakeAmount -= realStakeAmount;
+        // mint the position with only 1 aTokenWei
+        validatorTokenID = _mintValidatorStakingPosition(realStakeAmount);
+        // deposit the rest in the vault
+        IERC20Transferable(_aTokenAddress()).approve(_validatorVaultAddress(), stakeAmount);
+        IValidatorVault(_validatorVaultAddress()).depositStake(validatorTokenID, stakeAmount);
 
         return (validatorTokenID, payoutEth, payoutToken);
     }
@@ -687,6 +723,15 @@ contract ValidatorPool is
             validatorTokenID,
             _validatorStakingAddress()
         );
+        // get the locked amount in the vault
+        uint256 vaultAmount = IValidatorVault(_validatorVaultAddress()).withdrawStake(
+            validatorTokenID
+        );
+        // since minerShares is included in the payoutToken variable we need to sum the
+        // vault amount in both variables. Miner shares will be deducted from payout
+        // token in the higher level functions.
+        minerShares += vaultAmount;
+        payoutToken += vaultAmount;
     }
 
     function _burnExitingPublicStakingPosition(address validator_)

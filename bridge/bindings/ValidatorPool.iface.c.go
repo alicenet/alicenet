@@ -55,6 +55,16 @@ type IValidatorPoolCaller interface {
 	//
 	// Solidity: function getValidatorData(uint256 index_) view returns((address,uint256))
 	GetValidatorData(opts *bind.CallOpts, index_ *big.Int) (ValidatorData, error)
+	// GetValidatorStakingPosition is a free data retrieval call binding the contract method 0x04513d45.
+	//
+	// Solidity: function getValidatorStakingPosition(uint256 tokenID) view returns(uint256 shares, uint256 freeAfter, uint256 withdrawFreeAfter, uint256 accumulatorEth, uint256 accumulatorToken)
+	GetValidatorStakingPosition(opts *bind.CallOpts, tokenID *big.Int) (struct {
+		Shares            *big.Int
+		FreeAfter         *big.Int
+		WithdrawFreeAfter *big.Int
+		AccumulatorEth    *big.Int
+		AccumulatorToken  *big.Int
+	}, error)
 	// GetValidatorsAddresses is a free data retrieval call binding the contract method 0x9c7d8961.
 	//
 	// Solidity: function getValidatorsAddresses() view returns(address[])

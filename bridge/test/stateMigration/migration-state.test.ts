@@ -345,10 +345,10 @@ describe("State Migration: Migrate state", () => {
       throw new Error("migration tx failed");
     }
 
-    let ethLog = 45;
-    for (let i = 0; i < receipt.events.length; i++) {
+    let ethLog = 0;
+    for (let i = 0; i < receipt.logs.length; i++) {
       if (
-        receipt.events[i].topics[0] ===
+        receipt.logs[i].topics[0].toLowerCase() ===
         "0x09b90b08bbc3dbe22e9d2a0bc9c2c7614c7511cd0ad72177727a1e762115bf06"
       ) {
         ethLog = i;

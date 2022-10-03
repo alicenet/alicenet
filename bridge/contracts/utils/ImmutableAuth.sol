@@ -451,6 +451,33 @@ abstract contract ImmutableValidatorStaking is ImmutableFactory {
     }
 }
 
+abstract contract ImmutableValidatorVault is ImmutableFactory {
+    address private immutable _validatorVault;
+    error OnlyValidatorVault(address sender, address expected);
+
+    modifier onlyValidatorVault() {
+        if (msg.sender != _validatorVault) {
+            revert OnlyValidatorVault(msg.sender, _validatorVault);
+        }
+        _;
+    }
+
+    constructor() {
+        _validatorVault = getMetamorphicContractAddress(
+            0x56616c696461746f725661756c74000000000000000000000000000000000000,
+            _factoryAddress()
+        );
+    }
+
+    function _validatorVaultAddress() internal view returns (address) {
+        return _validatorVault;
+    }
+
+    function _saltForValidatorVault() internal pure returns (bytes32) {
+        return 0x56616c696461746f725661756c74000000000000000000000000000000000000;
+    }
+}
+
 abstract contract ImmutableETHDKGAccusations is ImmutableFactory {
     address private immutable _ethdkgAccusations;
     error OnlyETHDKGAccusations(address sender, address expected);

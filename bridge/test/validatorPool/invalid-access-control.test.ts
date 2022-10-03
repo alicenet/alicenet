@@ -54,7 +54,6 @@ describe("ValidatorPool Access Control: An user without admin role should not be
   let notAdmin1: SignerWithAddress;
   let notAdmin1Signer: SignerWithAddress;
   const maxNumValidators = 5;
-  const stakeAmount = 20000;
   const validators: any[] = [];
   const stakingTokenIds: any[] = [];
 
@@ -66,10 +65,11 @@ describe("ValidatorPool Access Control: An user without admin role should not be
 
   it("Set a minimum stake", async function () {
     await expect(
-      fixture.validatorPool.connect(notAdmin1Signer).setStakeAmount(stakeAmount)
-    )
-      .to.be.revertedWithCustomError(fixture.validatorPool, `OnlyFactory`)
-      .withArgs(notAdmin1.address, fixture.factory.address);
+      fixture.validatorPool.connect(notAdmin1Signer).setStakeAmount(1000n)
+    ).to.be.revertedWithCustomError(
+      fixture.validatorPool,
+      `OnlyFactoryOrValidatorVaultAllowed`
+    );
   });
 
   it("Set a maximum number of validators", async function () {
@@ -103,9 +103,10 @@ describe("ValidatorPool Access Control: An user without admin role should not be
   it("Set stake Amount", async function () {
     await expect(
       fixture.validatorPool.connect(notAdmin1Signer).setStakeAmount(1)
-    )
-      .to.be.revertedWithCustomError(fixture.validatorPool, `OnlyFactory`)
-      .withArgs(notAdmin1.address, fixture.factory.address);
+    ).to.be.revertedWithCustomError(
+      fixture.validatorPool,
+      `OnlyFactoryOrValidatorVaultAllowed`
+    );
   });
 
   it("Initialize ETHDKG", async function () {

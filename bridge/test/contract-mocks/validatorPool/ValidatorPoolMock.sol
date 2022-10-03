@@ -10,6 +10,7 @@ import "contracts/utils/CustomEnumerableMaps.sol";
 import "contracts/utils/DeterministicAddress.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "contracts/libraries/errors/ValidatorPoolErrors.sol";
+import "contracts/interfaces/IValidatorVault.sol";
 
 contract ValidatorPoolMock is
     Initializable,
@@ -18,7 +19,8 @@ contract ValidatorPoolMock is
     ImmutableSnapshots,
     ImmutableETHDKG,
     ImmutableValidatorStaking,
-    ImmutableAToken
+    ImmutableAToken,
+    ImmutableValidatorVault
 {
     using CustomEnumerableMaps for ValidatorDataMap;
     error OnlyAdminAllowed();
@@ -164,6 +166,15 @@ contract ValidatorPoolMock is
         _registerValidators(validators);
     }
 
+    function depositStake(uint256 validatorTokenID, uint256 stakeAmount) public {
+        IERC20Transferable(_aTokenAddress()).approve(_validatorVaultAddress(), stakeAmount);
+        IValidatorVault(_validatorVaultAddress()).depositStake(validatorTokenID, stakeAmount);
+    }
+
+    function withdrawStake(uint256 stakePosition_) public returns (uint256) {
+        return IValidatorVault(_validatorVaultAddress()).withdrawStake(stakePosition_);
+    }
+
     function isValidator(address participant) public view returns (bool) {
         return _isValidator(participant);
     }
@@ -182,6 +193,20 @@ contract ValidatorPoolMock is
 
     function getValidatorsCount() public view returns (uint256) {
         return _validators.length();
+    }
+
+    function getValidatorStakingPosition(uint256 tokenID)
+        public
+        view
+        returns (
+            uint256 shares,
+            uint256 freeAfter,
+            uint256 withdrawFreeAfter,
+            uint256 accumulatorEth,
+            uint256 accumulatorToken
+        )
+    {
+        return IStakingNFT(_validatorStakingAddress()).getPosition(tokenID);
     }
 
     function getValidator(uint256 index_) public view returns (address) {
