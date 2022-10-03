@@ -848,7 +848,7 @@ task("change-dynamic-value", "Change a certain dynamic value")
     } else {
       epoch = 2;
       console.log(
-        `Epoch not sent ot it's less than minimum epoch allowed. Scheduling changes in 2 epochs from now.`
+        `Epoch not sent or it's less than minimum epoch allowed, therefore scheduling changes in 2 epochs from now.`
       );
     }
 
