@@ -149,6 +149,12 @@ func (ce *Engine) UpdateLocalState() (bool, error) {
 		if err != nil {
 			return err
 		}
+		// check and update the new dynamic values
+		err = ce.storage.UpdateCurrentDynamicValue(txn, utils.Epoch(rHeight))
+		if err != nil {
+			utils.DebugTrace(ce.logger, err)
+			return err
+		}
 		vs, err := ce.database.GetValidatorSet(txn, rHeight)
 		if err != nil {
 			return err
@@ -530,6 +536,12 @@ func (ce *Engine) Sync() (bool, error) {
 				return err
 			}
 			return nil
+		}
+		// check and update the new dynamic values
+		err = ce.storage.UpdateCurrentDynamicValue(txn, utils.Epoch(rs.OwnState.SyncToBH.BClaims.Height+1))
+		if err != nil {
+			utils.DebugTrace(ce.logger, err)
+			return err
 		}
 		// begin handling logic
 		if rs.OwnState.MaxBHSeen.BClaims.Height == rs.OwnState.SyncToBH.BClaims.Height {

@@ -218,13 +218,6 @@ func (ah *Handlers) AddSnapshot(bh *objs.BlockHeader, safeToProceedConsensus boo
 			}
 		}
 
-		// check and update the new dynamic values
-		err = ah.storage.UpdateCurrentDynamicValue(txn, utils.Epoch(bh.BClaims.Height))
-		if err != nil {
-			utils.DebugTrace(ah.logger, err)
-			return err
-		}
-
 		return nil
 	})
 	if err != nil {

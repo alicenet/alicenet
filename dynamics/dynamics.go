@@ -399,9 +399,9 @@ func (s *Storage) loadDynamicValues(txn *badger.Txn, epoch uint32) error {
 		return err
 	}
 
-	// if the currentNode is tail or the epoch for the next update is not reached
-	// yet, we return
-	if currentNode.IsTail() || epoch < currentNode.nextEpoch {
+	// if the currentNode is tail or the epoch for the next update is not over yet,
+	// we return
+	if currentNode.IsTail() || epoch <= currentNode.nextEpoch {
 		return nil
 	}
 
