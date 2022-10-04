@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"runtime"
 	"sync"
+	"time"
 
 	"github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/consensus/lstate"
@@ -20,7 +21,7 @@ import (
 )
 
 // a function that returns an Accusation interface object when found, and a bool indicating if an accusation has been found (true) or not (false)
-type detector = func(rs *objs.RoundState, lrs *lstate.RoundStates, db *db.Database) (tasks.Task, bool)
+type detector = func(rs *objs.RoundState, lrs *lstate.RoundStates, consDB *db.Database) (tasks.Task, bool)
 
 // rsCacheStruct caches a validator's roundState height, round and hash to avoid checking accusations unless anything changes
 type rsCacheStruct struct {
@@ -30,7 +31,7 @@ type rsCacheStruct struct {
 }
 
 // DidChange returns true if the local round state has changed since the last time it was checked
-func (r *rsCacheStruct) DidChange(rs *objs.RoundState) (bool, error) {
+func (r rsCacheStruct) DidChange(rs *objs.RoundState) (bool, error) {
 	rsHash, err := rs.Hash()
 	if err != nil {
 		return false, err
@@ -51,10 +52,11 @@ func (r *rsCacheStruct) DidChange(rs *objs.RoundState) (bool, error) {
 // workers can process it, offloading the synchronizer loop.
 type Manager struct {
 	logger                        *logrus.Logger
-	detectionPipeline             []detector                           // the pipeline of detector functions
-	database                      *db.Database                         // the database to store detected accusations
-	sstore                        *lstate.Store                        // the state store to get round states from
-	rsCache                       map[string]*rsCacheStruct            // cache of validator's roundState height, round and hash to avoid checking accusations unless anything changes
+	detectionPipeline             []detector    // the pipeline of detector functions
+	consDB                        *db.Database  // the database to store detected accusations
+	sstore                        *lstate.Store // the state store to get round states from
+	validators                    map[string]bool
+	rsCache                       map[string]rsCacheStruct             // cache of validator's roundState height, round and hash to avoid checking accusations unless anything changes
 	rsCacheLock                   sync.Mutex                           // this is currently being used by workers when interacting with rsCache
 	workQ                         chan *lstate.RoundStates             // queue where new roundStates are pushed to be checked for malicious behavior by workers
 	accusationQ                   chan tasks.Task                      // queue where identified accusations are pushed by workers to be further processed
@@ -70,18 +72,20 @@ type Manager struct {
 func NewManager(database *db.Database, sstore *lstate.Store, taskHandler executor.TaskHandler, logger *logrus.Logger) *Manager {
 	detectors := make([]detector, 0)
 
-	m := &Manager{}
-	m.detectionPipeline = detectors
-	m.database = database
-	m.logger = logger
-	m.sstore = sstore
-	m.rsCache = make(map[string]*rsCacheStruct)
-	m.workQ = make(chan *lstate.RoundStates, 1)
-	m.accusationQ = make(chan tasks.Task, 1)
-	m.unpersistedCreatedAccusations = make([]tasks.Task, 0)
-	m.runningAccusations = make(map[string]*executor.HandlerResponse)
-	m.wg = &sync.WaitGroup{}
-	m.taskHandler = taskHandler
+	m := &Manager{
+		detectionPipeline:             detectors,
+		consDB:                        database,
+		logger:                        logger,
+		sstore:                        sstore,
+		rsCache:                       make(map[string]rsCacheStruct),
+		workQ:                         make(chan *lstate.RoundStates, 1), // todo: improve this
+		accusationQ:                   make(chan tasks.Task, 1),
+		unpersistedCreatedAccusations: make([]tasks.Task, 0),
+		runningAccusations:            make(map[string]*executor.HandlerResponse),
+		wg:                            &sync.WaitGroup{},
+		taskHandler:                   taskHandler,
+	}
+
 	m.ctx, m.cancelCtx = context.WithCancel(context.Background())
 
 	return m
@@ -108,6 +112,7 @@ func (m *Manager) StopWorkers() {
 
 // runWorker is the main worker function to processes workQ roundStates
 func (m *Manager) runWorker() {
+	cleanupTimer := time.After(1 * time.Minute)
 	for {
 		select {
 		case <-m.ctx.Done():
@@ -117,6 +122,9 @@ func (m *Manager) runWorker() {
 			if err != nil {
 				m.logger.Errorf("failed to process LRS: %v", err)
 			}
+		case <-cleanupTimer:
+			m.cleanupValidatorCache()
+			cleanupTimer = time.After(1 * time.Minute)
 		}
 	}
 }
@@ -126,7 +134,7 @@ func (m *Manager) runWorker() {
 func (m *Manager) Poll() error {
 	// load local RoundStates
 	var lrs *lstate.RoundStates
-	err := m.database.View(func(txn *badger.Txn) error {
+	err := m.consDB.View(func(txn *badger.Txn) error {
 		rss, err := m.sstore.LoadLocalState(txn)
 		if err != nil {
 			return err
@@ -177,13 +185,13 @@ func (m *Manager) persistCreatedAccusations() {
 		persistedIdx := make([]int, 0)
 		for i, acc := range m.unpersistedCreatedAccusations {
 			// persist the accusation into the database
-			err := m.database.Update(func(txn *badger.Txn) error {
+			err := m.consDB.Update(func(txn *badger.Txn) error {
 				var id [32]byte = utils.HexToBytes32(acc.GetId())
 				data, err := marshaller.GobMarshalBinary(acc)
 				if err != nil {
 					return err
 				}
-				return m.database.SetAccusationRaw(txn, id, data)
+				return m.consDB.SetAccusationRaw(txn, id, data)
 			})
 			if err != nil {
 				m.logger.Errorf("AccusationManager failed to save accusation into DB: %v", err)
@@ -207,8 +215,8 @@ func (m *Manager) scheduleAccusations() error {
 	var err error
 
 	// first retrieve all the current accusations from the database
-	err = m.database.View(func(txn *badger.Txn) error {
-		rawAccusations, err = m.database.GetAccusations(txn)
+	err = m.consDB.View(func(txn *badger.Txn) error {
+		rawAccusations, err = m.consDB.GetAccusations(txn)
 		if err != nil {
 			return err
 		}
@@ -263,9 +271,9 @@ func (m *Manager) handleCompletedAccusations() error {
 			}
 
 			// delete the accusation from the database
-			err = m.database.Update(func(txn *badger.Txn) error {
+			err = m.consDB.Update(func(txn *badger.Txn) error {
 				var id [32]byte = utils.HexToBytes32(accusationId)
-				return m.database.DeleteAccusation(txn, id)
+				return m.consDB.DeleteAccusation(txn, id)
 			})
 			if err != nil {
 				m.logger.Warnf("AccusationManager failed to delete accusation from DB: %v", err)
@@ -297,9 +305,6 @@ func (m *Manager) processLRS(lrs *lstate.RoundStates) (bool, error) {
 	currentValidators := make(map[string]bool)
 	hadUpdates := false
 
-	m.rsCacheLock.Lock()
-	defer m.rsCacheLock.Unlock()
-
 	for _, v := range lrs.ValidatorSet.Validators {
 		rs := lrs.GetRoundState(v.VAddr)
 		if rs == nil {
@@ -320,57 +325,74 @@ func (m *Manager) processLRS(lrs *lstate.RoundStates) (bool, error) {
 		updated := false
 		currentValidators[valAddress] = true
 
-		//m.rsCacheLock.RLock()
-		rsCacheEntry, isCached := m.rsCache[valAddress]
-		//m.rsCacheLock.RUnlock()
+		hadUpdates, err := func() (bool, error) {
+			m.rsCacheLock.Lock()
+			defer m.rsCacheLock.Unlock()
+			rsCacheEntry, isCached := m.rsCache[valAddress]
 
-		if isCached {
-			// validator exists in cache, let's check if there are changes in its roundState
-			var err error
-			updated, err = rsCacheEntry.DidChange(rs)
-			if err != nil {
-				return hadUpdates, err
+			if isCached {
+				// validator exists in cache, let's check if there are changes in its roundState
+				var err error
+				updated, err = rsCacheEntry.DidChange(rs)
+				if err != nil {
+					return hadUpdates, err
+				}
+			} else {
+				updated = true
+				rsCacheEntry = rsCacheStruct{
+					// data will be populated down below
+				}
 			}
-		} else {
-			updated = true
-			rsCacheEntry = &rsCacheStruct{
-				// data will be populated down below
+
+			if updated {
+				hadUpdates = true
+				// m.logger.WithFields(logrus.Fields{
+				// 	"lrs.height":              lrs.Height(),
+				// 	"lrs.round":               lrs.Round(),
+				// 	"rs.RCert.RClaims.Height": rs.RCert.RClaims.Height,
+				// 	"rs.RCert.RClaims.Round":  rs.RCert.RClaims.Round,
+				// 	"vAddr":                   valAddress,
+				// }).Debug("AccusationManager: processing roundState")
+
+				go m.findAccusation(rs, lrs)
+
+				// update rsCache
+				rsCacheEntry.height = rs.RCert.RClaims.Height
+				rsCacheEntry.round = rs.RCert.RClaims.Round
+				rsHash, err := rs.Hash()
+				if err != nil {
+					return hadUpdates, err
+				}
+				rsCacheEntry.rsHash = rsHash
+				m.rsCache[valAddress] = rsCacheEntry
 			}
-		}
 
-		if updated {
-			hadUpdates = true
-			// m.logger.WithFields(logrus.Fields{
-			// 	"lrs.height":              lrs.Height(),
-			// 	"lrs.round":               lrs.Round(),
-			// 	"rs.RCert.RClaims.Height": rs.RCert.RClaims.Height,
-			// 	"rs.RCert.RClaims.Round":  rs.RCert.RClaims.Round,
-			// 	"vAddr":                   valAddress,
-			// }).Debug("AccusationManager: processing roundState")
+			return hadUpdates, nil
+		}()
 
-			m.findAccusation(rs, lrs)
-
-			// update rsCache
-			rsCacheEntry.height = rs.RCert.RClaims.Height
-			rsCacheEntry.round = rs.RCert.RClaims.Round
-			rsHash, err := rs.Hash()
-			if err != nil {
-				return hadUpdates, err
-			}
-			rsCacheEntry.rsHash = rsHash
-			// m.rsCacheLock.Lock()
-			m.rsCache[valAddress] = rsCacheEntry
-			//m.rsCacheLock.Unlock()
+		if err != nil {
+			return hadUpdates, err
 		}
 	}
 
+	m.rsCacheLock.Lock()
+	m.validators = currentValidators
+	m.rsCacheLock.Unlock()
+
+	return hadUpdates, nil
+}
+
+func (m *Manager) cleanupValidatorCache() {
+
+	m.rsCacheLock.Lock()
+	defer m.rsCacheLock.Unlock()
+
 	// remove validators from cache that are not in the current validatorSet,
 	// ensuring the cache is not growing indefinitely with old validators
-	//m.rsCacheLock.Lock()
 	toDelete := make([]string, 0)
 	// iterate over the cache and keep track of validators not in the current validatorSet
 	for vAddr := range m.rsCache {
-		if _, ok := currentValidators[vAddr]; !ok {
+		if _, ok := m.validators[vAddr]; !ok {
 			toDelete = append(toDelete, vAddr)
 		}
 	}
@@ -379,15 +401,12 @@ func (m *Manager) processLRS(lrs *lstate.RoundStates) (bool, error) {
 	for _, vAddr := range toDelete {
 		delete(m.rsCache, vAddr)
 	}
-	//m.rsCacheLock.Unlock()
-
-	return hadUpdates, nil
 }
 
 // findAccusation checks if there is an accusation for a certain roundState and if so, sends it for further processing. the Poll() method will receive this accusation and schedule the accusation task in the TaskHandler
 func (m *Manager) findAccusation(rs *objs.RoundState, lrs *lstate.RoundStates) {
 	for _, detector := range m.detectionPipeline {
-		accusation, found := detector(rs, lrs, m.database)
+		accusation, found := detector(rs, lrs, m.consDB)
 		if found {
 			m.accusationQ <- accusation
 			break // we can stop looking for more accusations on this RoundState as soon as one is found
