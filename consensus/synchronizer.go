@@ -9,6 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/alicenet/alicenet/application"
+	"github.com/alicenet/alicenet/config"
 	"github.com/alicenet/alicenet/consensus/accusation"
 	"github.com/alicenet/alicenet/consensus/admin"
 	"github.com/alicenet/alicenet/consensus/db"
@@ -533,19 +534,21 @@ func (s *Synchronizer) setupLoops() {
 		go s.loop(tdbgcLoopConfig)
 	}
 
-	accusationManagerLoopConfig := newLoopConfig().
-		withName("AccusationManagerLoop").
-		withFn(s.accusationMan.Poll).
-		withFreq(100 * time.Millisecond).
-		withDelayOnConditionFailure(100 * time.Millisecond).
-		withLockFreeCondition(s.isNotClosing).
-		withLockFreeCondition(s.initialized.isSet).
-		withLockFreeCondition(s.ethSyncDone.isSet).
-		withLockFreeCondition(s.madSyncDone.isSet).
-		withLockFreeCondition(s.peerMinThresh.isSet).
-		withLock().
-		withLockedCondition(s.isNotClosing).
-		withLockedCondition(s.madSyncDone.isSet)
-	s.wg.Add(1)
-	go s.loop(accusationManagerLoopConfig)
+	if config.Configuration.Accusations.Enabled {
+		accusationManagerLoopConfig := newLoopConfig().
+			withName("AccusationManagerLoop").
+			withFn(s.accusationMan.Poll).
+			withFreq(100 * time.Millisecond).
+			withDelayOnConditionFailure(100 * time.Millisecond).
+			withLockFreeCondition(s.isNotClosing).
+			withLockFreeCondition(s.initialized.isSet).
+			withLockFreeCondition(s.ethSyncDone.isSet).
+			withLockFreeCondition(s.madSyncDone.isSet).
+			withLockFreeCondition(s.peerMinThresh.isSet).
+			withLock().
+			withLockedCondition(s.isNotClosing).
+			withLockedCondition(s.madSyncDone.isSet)
+		s.wg.Add(1)
+		go s.loop(accusationManagerLoopConfig)
+	}
 }

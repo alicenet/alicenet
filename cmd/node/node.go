@@ -377,8 +377,10 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	go consGossipHandlers.Start()
 	defer consGossipHandlers.Close()
 
-	go accusationManager.StartWorkers()
-	defer accusationManager.StopWorkers()
+	if config.Configuration.Accusations.Enabled {
+		go accusationManager.StartWorkers()
+		defer accusationManager.StopWorkers()
+	}
 
 	//////////////////////////////////////////////////////////////////////////////
 	//SETUP SHUTDOWN MONITORING///////////////////////////////////////////////////

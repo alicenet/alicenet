@@ -113,6 +113,10 @@ type ethKeyConfig struct {
 	LightKDF     bool
 }
 
+type accusationsConfig struct {
+	Enabled bool
+}
+
 type configuration struct {
 	ConfigurationFileName string
 	LoggingLevels         string // backwards compatibility
@@ -126,6 +130,7 @@ type configuration struct {
 	Chain                 chainConfig
 	BootNode              bootnodeConfig
 	EthKey                ethKeyConfig
+	Accusations           accusationsConfig
 	Version               string
 }
 

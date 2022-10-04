@@ -2,12 +2,13 @@ package main
 
 import (
 	"bytes"
-	"github.com/alicenet/alicenet/cmd/ethkey"
-	"io/ioutil"
+	"io"
 	"os"
 	"reflect"
 	"strings"
 	"time"
+
+	"github.com/alicenet/alicenet/cmd/ethkey"
 
 	"github.com/alicenet/alicenet/cmd/bootnode"
 	"github.com/alicenet/alicenet/cmd/firewalld"
@@ -163,6 +164,7 @@ func main() {
 			{"transport.firewallHost", "", "", &config.Configuration.Transport.FirewallHost},
 			{"firewalld.enabled", "", "", &config.Configuration.Firewalld.Enabled},
 			{"firewalld.socketFile", "", "", &config.Configuration.Firewalld.SocketFile},
+			{"accusations.enabled", "", "", &config.Configuration.Accusations.Enabled},
 		},
 
 		&utils.Command: {
@@ -257,7 +259,7 @@ func main() {
 		// Read the config file
 		file, err := os.Open(config.Configuration.ConfigurationFileName)
 		if err == nil {
-			bs, err := ioutil.ReadAll(file)
+			bs, err := io.ReadAll(file)
 			if err == nil {
 				reader := bytes.NewReader(bs)
 				viper.SetConfigType("toml") // TODO: Set config type based on file extension. Viper supports more than toml.
@@ -308,7 +310,7 @@ func setDefaultCommandIfNonePresent(defaultCommand *cobra.Command, logger *logru
 	}
 
 	// Adding the `node` command to args.
-	os.Args = append([]string{os.Args[0], defaultCommand.Use})
+	os.Args = []string{os.Args[0], defaultCommand.Use}
 
 	// Setting te default --config location if it is not present in command options.
 	if config.Configuration.ConfigurationFileName == "" {
