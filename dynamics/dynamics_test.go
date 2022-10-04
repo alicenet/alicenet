@@ -32,17 +32,18 @@ func UpdateCurrentDynamicValue(s *Storage, epoch uint32) {
 	}
 }
 
-func GetDynamicValueInThePast(s *Storage, epoch uint32) *DynamicValues {
+func GetDynamicValueInThePast(s *Storage, epoch uint32) (uint32, *DynamicValues) {
 	var value *DynamicValues
+	var executionEpoch uint32
 	err := s.database.rawDB.Update(func(txn *badger.Txn) error {
 		var err error
-		value, err = s.GetDynamicValueInThePast(txn, epoch)
+		executionEpoch, value, err = s.GetDynamicValueInThePast(txn, epoch)
 		return err
 	})
 	if err != nil {
 		panic(err)
 	}
-	return value
+	return executionEpoch, value
 }
 
 func InitializeStorage() *Storage {
@@ -354,7 +355,7 @@ func TestStorageUpdateCurrentDynamicValueWithChange(t *testing.T) {
 	ChangeDynamicValues(s, epoch, newValueRaw)
 
 	// after we reached that epoch values should be updated
-	UpdateCurrentDynamicValue(s, epoch)
+	UpdateCurrentDynamicValue(s, epoch+1)
 
 	dvBytes, err = s.DynamicValues.Marshal()
 	if err != nil {
@@ -382,22 +383,27 @@ func TestStorageUpdateCurrentDynamicValueWithALotOfUpdates(t *testing.T) {
 	// check the value before
 	assert.Equal(t, s.GetMaxBlockSize(), expectedValue)
 	for i := uint8(0); i < 10; i++ {
-		// now update the value one by one
+		// value should not change at the boundary
 		UpdateCurrentDynamicValue(s, epoch+uint32(i*10))
+		// check the value after
+		assert.Equal(t, s.GetMaxBlockSize(), expectedValue)
+
+		// executing again with a epoch after the boundary, the value should change
+		UpdateCurrentDynamicValue(s, epoch+uint32(i*10)+1)
 		expectedValue++
 		// check the value after
 		assert.Equal(t, s.GetMaxBlockSize(), expectedValue)
 
-		//executing again with the same epoch should not change the value
-		UpdateCurrentDynamicValue(s, epoch+uint32(i*10))
-		// check the value after
-		assert.Equal(t, s.GetMaxBlockSize(), expectedValue)
-
-		//executing again with a epoch that has no update should be ok
+		//executing again with the same previous epoch should not change the value
 		UpdateCurrentDynamicValue(s, epoch+uint32(i*10)+1)
 		// check the value after
 		assert.Equal(t, s.GetMaxBlockSize(), expectedValue)
 	}
+	// a value way in the future, should be able to update the last valid dynamic
+	// value in 1 iteration
+	UpdateCurrentDynamicValue(s, epoch+100000)
+	// check the value after
+	assert.Equal(t, s.GetMaxBlockSize(), uint32(3_000_010))
 }
 
 // Test failure of UpdateCurrentDynamicValue
@@ -462,7 +468,7 @@ func TestGetValuesInThePast(t *testing.T) {
 		ChangeDynamicValues(s, epoch+uint32(i*10), newValueRawWithFee)
 		assert.Equal(t, s.GetMaxBlockSize(), expectedValue)
 		// now update the values
-		UpdateCurrentDynamicValue(s, epoch+uint32(i*10))
+		UpdateCurrentDynamicValue(s, epoch+uint32(i*10)+1)
 		expectedValue++
 		// check the value after
 		assert.Equal(t, s.GetMaxBlockSize(), expectedValue)
@@ -471,24 +477,24 @@ func TestGetValuesInThePast(t *testing.T) {
 	//  get values in the past
 	expectedValue = uint32(3_000_000)
 	// get the value of first epoch
-	dv := GetDynamicValueInThePast(s, 1)
+	_, dv := GetDynamicValueInThePast(s, 1)
 	assert.Equal(t, dv.GetMaxBlockSize(), expectedValue)
 
 	// before the first update
-	dv = GetDynamicValueInThePast(s, 254)
+	_, dv = GetDynamicValueInThePast(s, 254)
 	assert.Equal(t, dv.GetMaxBlockSize(), expectedValue)
 
 	for i := uint8(0); i < 10; i++ {
 		// before the update
-		dv = GetDynamicValueInThePast(s, epoch+uint32(i*10)-5)
+		_, dv = GetDynamicValueInThePast(s, epoch+uint32(i*10)-5)
 		assert.Equal(t, dv.GetMaxBlockSize(), expectedValue)
 		expectedValue++
-		dv := GetDynamicValueInThePast(s, epoch+uint32(i*10))
+		_, dv := GetDynamicValueInThePast(s, epoch+uint32(i*10))
 		assert.Equal(t, dv.GetMaxBlockSize(), expectedValue)
 	}
 
 	// get value way in the future
-	dv = GetDynamicValueInThePast(s, 254000)
+	_, dv = GetDynamicValueInThePast(s, 254000)
 	assert.Equal(t, dv.GetMaxBlockSize(), expectedValue)
 }
 
@@ -497,7 +503,7 @@ func TestValueInThePastBad1(t *testing.T) {
 	t.Parallel()
 	s := InitializeStorageWithFirstNode()
 	err := s.database.rawDB.Update(func(txn *badger.Txn) error {
-		_, err := s.getDynamicValueInThePast(txn, 0)
+		_, _, err := s.getDynamicValueInThePast(txn, 0)
 		return err
 	})
 	if !errors.Is(err, ErrZeroEpoch) {

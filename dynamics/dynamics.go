@@ -47,7 +47,7 @@ type StorageGetter interface {
 	GetValueStoreFee() *big.Int
 	ChangeDynamicValues(txn *badger.Txn, epoch uint32, rawDynamics []byte) error
 	UpdateCurrentDynamicValue(*badger.Txn, uint32) error
-	GetDynamicValueInThePast(txn *badger.Txn, epoch uint32) (*DynamicValues, error)
+	GetDynamicValueInThePast(txn *badger.Txn, epoch uint32) (uint32, *DynamicValues, error)
 }
 
 // Storage is the struct which will implement the StorageGetter interface.
@@ -167,7 +167,7 @@ func (s *Storage) UpdateCurrentDynamicValue(txn *badger.Txn, epoch uint32) error
 }
 
 // GetDynamicValueInThePast gets a dynamic value in the past for accusations purposes.
-func (s *Storage) GetDynamicValueInThePast(txn *badger.Txn, epoch uint32) (*DynamicValues, error) {
+func (s *Storage) GetDynamicValueInThePast(txn *badger.Txn, epoch uint32) (uint32, *DynamicValues, error) {
 	<-s.startChan
 
 	s.Lock()
@@ -405,13 +405,20 @@ func (s *Storage) loadDynamicValues(txn *badger.Txn, epoch uint32) error {
 		return nil
 	}
 
-	nextNode, err := s.database.GetNode(txn, currentNode.nextEpoch)
+	tailNode, err := s.database.GetNode(txn, linkedList.GetMostFutureUpdate())
 	if err != nil {
 		utils.DebugTrace(s.logger, err)
 		return err
 	}
 
-	err = linkedList.SetEpochLastUpdated(currentNode.nextEpoch)
+	// iterate from the latest node to find which is the latest valid dynamic value
+	executionEpoch, nextDynamicValue, err := s.iterateBackwardFromNode(txn, epoch, tailNode)
+	if err != nil {
+		utils.DebugTrace(s.logger, err)
+		return err
+	}
+
+	err = linkedList.SetEpochLastUpdated(executionEpoch)
 	if err != nil {
 		utils.DebugTrace(s.logger, err)
 		return err
@@ -422,7 +429,7 @@ func (s *Storage) loadDynamicValues(txn *badger.Txn, epoch uint32) error {
 		utils.DebugTrace(s.logger, err)
 		return err
 	}
-	s.DynamicValues, err = nextNode.dynamicValues.Copy()
+	s.DynamicValues, err = nextDynamicValue.Copy()
 	if err != nil {
 		utils.DebugTrace(s.logger, err)
 		return err
@@ -436,43 +443,48 @@ func (s *Storage) loadDynamicValues(txn *badger.Txn, epoch uint32) error {
 }
 
 // getDynamicValueInThePast gets a dynamic value in the past for accusations purposes.
-func (s *Storage) getDynamicValueInThePast(txn *badger.Txn, epoch uint32) (*DynamicValues, error) {
+func (s *Storage) getDynamicValueInThePast(txn *badger.Txn, epoch uint32) (uint32, *DynamicValues, error) {
 	if epoch == 0 {
-		return nil, ErrZeroEpoch
+		return 0, nil, ErrZeroEpoch
 	}
 	linkedList, err := s.database.GetLinkedList(txn)
 	if err != nil {
 		utils.DebugTrace(s.logger, err)
-		return nil, err
+		return 0, nil, err
 	}
 
 	currentNode, err := s.database.GetNode(txn, linkedList.GetEpochLastUpdated())
 	if err != nil {
 		utils.DebugTrace(s.logger, err)
-		return nil, err
+		return 0, nil, err
 	}
-	// Loop backwards through the LinkedList
+	return s.iterateBackwardFromNode(txn, epoch, currentNode)
+}
+
+// iterateBackwardFromNode loops backwards through the LinkedList
+func (s *Storage) iterateBackwardFromNode(txn *badger.Txn, epoch uint32, currentNode *Node) (uint32, *DynamicValues, error) {
+	var err error
 	for {
 		if epoch >= currentNode.thisEpoch {
 			dv, err := currentNode.dynamicValues.Copy()
 			if err != nil {
 				utils.DebugTrace(s.logger, err)
-				return nil, err
+				return 0, nil, err
 			}
-			return dv, nil
+			return currentNode.thisEpoch, dv, nil
 		}
 		// If we have reached the head node, then we do not have a node
 		// for this specific epoch; we raise an error.
 		if currentNode.IsHead() {
 			utils.DebugTrace(s.logger, ErrInvalid)
-			return nil, ErrInvalid
+			return 0, nil, ErrInvalid
 		}
 		// We proceed backward in the linked list of nodes
 		prevEpoch := currentNode.prevEpoch
 		currentNode, err = s.database.GetNode(txn, prevEpoch)
 		if err != nil {
 			utils.DebugTrace(s.logger, err)
-			return nil, err
+			return 0, nil, err
 		}
 	}
 }
