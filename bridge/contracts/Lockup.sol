@@ -1,166 +1,10 @@
 // SPDX-License-Identifier: MIT-open-group
 pragma solidity ^0.8.16;
 
-interface IStakingToken {
-    function transferFrom(
-        address sender,
-        address recipient,
-        uint256 amount
-    ) external returns (bool);
-
-    function transfer(address recipient, uint256 amount) external returns (bool);
-
-    function balanceOf(address acct) external view returns (uint256 balance);
-}
-
-interface IStakingNFT {
-    function ownerOf(uint256 _tokenId) external view returns (address);
-
-    function transferFrom(
-        address _from,
-        address _to,
-        uint256 _tokenId
-    ) external payable;
-
-    function mint(uint256 amount_) external returns (uint256 tokenID);
-
-    function mintTo(
-        address to_,
-        uint256 amount_,
-        uint256 lockDuration_
-    ) external returns (uint256 tokenID);
-
-    function burn(uint256 tokenID_) external returns (uint256 payoutEth, uint256 payoutAToken);
-
-    function burnTo(address to_, uint256 tokenID_)
-        external
-        returns (uint256 payoutEth, uint256 payoutAToken);
-
-    function collectAllProfits(uint256 tokenID_)
-        external
-        returns (uint256 payoutToken, uint256 payoutEth);
-
-    function getPosition(uint256 tokenID_)
-        external
-        view
-        returns (
-            uint256 shares,
-            uint256 freeAfter,
-            uint256 withdrawFreeAfter,
-            uint256 accumulatorEth,
-            uint256 accumulatorToken
-        );
-}
-
-// holds all Eth that is part of reserved amount of rewards
-// on base positions
-// holds all AToken that is part of reserved amount of rewards
-// on base positions
-contract RewardPool {
-    error CallerNotLocking();
-    error CallerNotLockingOrBonus();
-    error EthSendFailure();
-
-    uint256 internal constant _unitOne = 10 ^ 18;
-
-    uint256 _tokenBalance;
-    uint256 _ethBalance;
-    IStakingToken internal immutable _alca;
-    address internal immutable _locking;
-    BonusPool internal immutable _bonusPool;
-
-    constructor(address alca_) {
-        BonusPool bp = new BonusPool(msg.sender);
-        _bonusPool = bp;
-        _locking = msg.sender;
-        IStakingToken st = IStakingToken(alca_);
-        _alca = st;
-    }
-
-    modifier onlyLocking() {
-        if (msg.sender != _locking) {
-            revert CallerNotLocking();
-        }
-        _;
-    }
-
-    modifier onlyLockingOrBonus() {
-        // must protect increment of token balance
-        if (msg.sender != _locking && msg.sender != address(_bonusPool)) {
-            revert CallerNotLocking();
-        }
-        _;
-    }
-
-    function tokenBalance() public view returns (uint256) {
-        return _tokenBalance;
-    }
-
-    function ethBalance() public view returns(uint256) {
-        return _ethBalance;
-    }
-
-    function deposit(uint256 numTokens_) public payable onlyLockingOrBonus {
-        _tokenBalance += numTokens_;
-        _ethBalance += msg.value;
-    }
-
-    function payout(uint256 total_, uint256 shares_) public onlyLocking returns (uint256, uint256) {
-        uint256 pe = (_ethBalance * shares_ * _unitOne) / (_unitOne * total_);
-        uint256 pt = (_tokenBalance * shares_ * _unitOne) / (_unitOne * total_);
-        _alca.transfer(_locking, pt);
-        _safeSendEth(payable(_locking), pe);
-        return (pt, pe);
-    }
-
-    function _safeSendEth(address payable acct_, uint256 val_) internal {
-        if (val_ == 0) {
-            return;
-        }
-        bool ok;
-        (ok, ) = acct_.call{value: val_}("");
-        if (!ok) {
-            revert EthSendFailure();
-        }
-    }
-}
-
-// holds all AToken that is held in escrow for locking bonuses
-contract BonusPool {
-    // holds in a single staked position that is owned locally
-    // determines payouts from _totalLocked on Locking
-    // for each token locked at termination
-
-    error EthSendFailure();
-    address internal immutable _factory; // can be brought in from locking via reward and into here
-    uint256 public constant tokenWeiPerToken = 1; // one token 10^-18 per token not valid but placeholder
-    uint256 internal constant _unitOne = 10 ^ 18;
-
-    constructor(address factory_) {
-        _factory = factory_;
-    }
-
-    // func terminate
-    // reap underlying position and all profits
-    // take in total staked and tokenPerToken
-    // calc percent of position owed to Locking
-    // calc percent reward owed to Locking
-    // send eth and tokens to Reward
-    // invoke mintTo factory on remaining ALCA
-    // send remaining eth to factory
-    // self destruct
-
-    function _safeSendEth(address payable acct_, uint256 val_) internal {
-        if (val_ == 0) {
-            return;
-        }
-        bool ok;
-        (ok, ) = acct_.call{value: val_}("");
-        if (!ok) {
-            revert EthSendFailure();
-        }
-    }
-}
+import "contracts/interfaces/IStakingToken.sol";
+import "contracts/interfaces/IStakingNFT.sol";
+import "contracts/BonusPool.sol";
+import "contracts/RewardPool.sol";
 
 // TODO PREVENT ACCEPTING POSITIONS THAT HAVE WITHDRAW LOCK ENFORCED ON PROFITS
 // UNLESS THEY ARE LESS THAN THE LOCKING DURATION AWAY OR THIS WILL CAUSE A
@@ -462,11 +306,20 @@ contract Locking {
         uint256 tokenID = tokenOf(msg.sender);
         uint256 shares = _getNumShares(tokenID);
         uint256 localTotalLocked = _totalLocked;
+        //decrement the totalLocked counter
+        localTotalLocked -= shares;
         // TODO UPDATE ALL MAPPINGS LOCALLY BEFORE EXTERNAL INTERACTIONS
-        _tokenOf[msg.sender] = 0;
+        //update the global variable with new totalLocked value
+        _totalLocked = localTotalLocked;
+        //delete tokenID from iterable tokenID mapping
+        _delTokenID(tokenID);
+        delete(_tokenOf[msg.sender]);
+        delete(_ownerOf[tokenID]);
         (payoutToken, payoutEth) = _rewardPool.payout(localTotalLocked, shares);
         // dist shares
+        
         // xfer token back to user
+        // _publicStaking.
     }
 
     function _lock(uint256 tokenID_, address tokenOwner_) internal onlyPreLock {

@@ -1,7 +1,15 @@
 // SPDX-License-Identifier: MIT-open-group
 pragma solidity ^0.8.16;
-
 interface IStakingNFT {
+    
+    function transferFrom(
+        address _from,
+        address _to,
+        uint256 _tokenId
+    ) external;
+
+    function ownerOf(uint256 tokenId_) external view returns (address);
+
     function skimExcessEth(address to_) external returns (uint256 excess);
 
     function skimExcessToken(address to_) external returns (uint256 excess);
@@ -60,7 +68,7 @@ interface IStakingNFT {
             uint256 accumulatorEth,
             uint256 accumulatorToken
         );
-
+    
     function getTotalShares() external view returns (uint256);
 
     function getTotalReserveEth() external view returns (uint256);
@@ -86,4 +94,5 @@ interface IStakingNFT {
     function getMaxMintLock() external pure returns (uint256);
 
     function getMaxGovernanceLock() external pure returns (uint256);
+
 }

@@ -1,3 +1,8 @@
+// SPDX-License-Identifier: MIT-open-group
+pragma solidity ^0.8.16;
+
+import "contracts/interfaces/IStakingToken.sol";
+import "contracts/BonusPool.sol";
 // holds all Eth that is part of reserved amount of rewards
 // on base positions
 // holds all AToken that is part of reserved amount of rewards
@@ -10,6 +15,7 @@ contract RewardPool {
     uint256 internal constant _unitOne = 10 ^ 18;
 
     uint256 _tokenBalance;
+    uint256 _ethBalance;
     IStakingToken internal immutable _alca;
     address internal immutable _locking;
     BonusPool internal immutable _bonusPool;
@@ -41,12 +47,17 @@ contract RewardPool {
         return _tokenBalance;
     }
 
+    function ethBalance() public view returns(uint256) {
+        return _ethBalance;
+    }
+
     function deposit(uint256 numTokens_) public payable onlyLockingOrBonus {
         _tokenBalance += numTokens_;
+        _ethBalance += msg.value;
     }
 
     function payout(uint256 total_, uint256 shares_) public onlyLocking returns (uint256, uint256) {
-        uint256 pe = (address(this).balance * shares_ * _unitOne) / (_unitOne * total_);
+        uint256 pe = (_ethBalance * shares_ * _unitOne) / (_unitOne * total_);
         uint256 pt = (_tokenBalance * shares_ * _unitOne) / (_unitOne * total_);
         _alca.transfer(_locking, pt);
         _safeSendEth(payable(_locking), pe);
@@ -61,15 +72,6 @@ contract RewardPool {
         (ok, ) = acct_.call{value: val_}("");
         if (!ok) {
             revert EthSendFailure();
-        }
-    }
-
-    // should not be needed, but I am paranoid
-    function forceBalanceCheck() public {
-        uint256 bal = _alca.balanceOf(address(this));
-        uint256 localTokenBalance = _tokenBalance;
-        if (localTokenBalance != bal) {
-            _tokenBalance = bal;
         }
     }
 }
