@@ -117,7 +117,11 @@ func (s *Storage) ChangeDynamicValues(txn *badger.Txn, epoch uint32, rawDynamics
 		return err
 	}
 
-	s.logger.Infof("Adding dynamic values %+v to change on block %v", *newDynamicValue, epoch*constants.EpochLength+1)
+	if epoch == 1 {
+		s.logger.Infof("Adding initial dynamic values %+v to start on block %v", *newDynamicValue, 1)
+	} else {
+		s.logger.Infof("Adding dynamic values %+v to change on block %v", *newDynamicValue, epoch*constants.EpochLength+1)
+	}
 
 	linkedList, err := s.database.GetLinkedList(txn)
 	if err != nil {
