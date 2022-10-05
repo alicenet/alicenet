@@ -406,6 +406,41 @@ func TestStorageUpdateCurrentDynamicValueWithALotOfUpdates(t *testing.T) {
 	assert.Equal(t, s.GetMaxBlockSize(), uint32(3_000_010))
 }
 
+func TestStorageUpdateCurrentDynamicValueWithALotOfUpdatesInSequence(t *testing.T) {
+	t.Parallel()
+	s := InitializeStorageWithStandardNode()
+
+	epoch := uint32(255)
+
+	newValueRawWithFee, _ := GetDynamicValueWithFees()
+	for i := uint8(0); i < 10; i++ {
+		// changing the last byte of the value of max block size
+		newValueRawWithFee[15]++
+		// adding the new node
+		ChangeDynamicValues(s, epoch+uint32(i), newValueRawWithFee)
+	}
+	expectedValue := uint32(3_000_000)
+	// check the value before
+	assert.Equal(t, s.GetMaxBlockSize(), expectedValue)
+	for i := uint8(0); i < 10; i++ {
+		// value should not change at the boundary
+		UpdateCurrentDynamicValue(s, epoch+uint32(i))
+		// check the value after
+		assert.Equal(t, s.GetMaxBlockSize(), expectedValue)
+
+		// executing again with a epoch after the boundary, the value should change
+		UpdateCurrentDynamicValue(s, epoch+uint32(i)+1)
+		expectedValue++
+		// check the value after
+		assert.Equal(t, s.GetMaxBlockSize(), expectedValue)
+
+		//executing again with the same previous epoch should not change the value
+		UpdateCurrentDynamicValue(s, epoch+uint32(i)+1)
+		// check the value after
+		assert.Equal(t, s.GetMaxBlockSize(), expectedValue)
+	}
+}
+
 // Test failure of UpdateCurrentDynamicValue
 func TestStorageUpdateCurrentDynamicValueBad1(t *testing.T) {
 	t.Parallel()
@@ -477,20 +512,25 @@ func TestGetValuesInThePast(t *testing.T) {
 	//  get values in the past
 	expectedValue = uint32(3_000_000)
 	// get the value of first epoch
-	_, dv := GetDynamicValueInThePast(s, 1)
+	executionEpoch, dv := GetDynamicValueInThePast(s, 1)
 	assert.Equal(t, dv.GetMaxBlockSize(), expectedValue)
+	// should be the height of the head node
+	assert.Equal(t, executionEpoch, uint32(1))
 
 	// before the first update
 	_, dv = GetDynamicValueInThePast(s, 254)
 	assert.Equal(t, dv.GetMaxBlockSize(), expectedValue)
+	// should be the height of the head node
+	assert.Equal(t, executionEpoch, uint32(1))
 
 	for i := uint8(0); i < 10; i++ {
 		// before the update
 		_, dv = GetDynamicValueInThePast(s, epoch+uint32(i*10)-5)
 		assert.Equal(t, dv.GetMaxBlockSize(), expectedValue)
 		expectedValue++
-		_, dv := GetDynamicValueInThePast(s, epoch+uint32(i*10))
+		executionEpoch, dv = GetDynamicValueInThePast(s, epoch+uint32(i*10)+1)
 		assert.Equal(t, dv.GetMaxBlockSize(), expectedValue)
+		assert.Equal(t, executionEpoch, epoch+uint32(i*10))
 	}
 
 	// get value way in the future

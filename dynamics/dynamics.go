@@ -117,7 +117,7 @@ func (s *Storage) ChangeDynamicValues(txn *badger.Txn, epoch uint32, rawDynamics
 		return err
 	}
 
-	s.logger.Infof("Adding dynamic values %+v for epoch %v", *newDynamicValue, epoch)
+	s.logger.Infof("Adding dynamic values %+v to change on block %v", *newDynamicValue, epoch*constants.EpochLength+1)
 
 	linkedList, err := s.database.GetLinkedList(txn)
 	if err != nil {
@@ -435,9 +435,8 @@ func (s *Storage) loadDynamicValues(txn *badger.Txn, epoch uint32) error {
 		return err
 	}
 	s.logger.Infof(
-		"Dynamic values updated. New dynamic values %+v will be valid starting on the block %v",
+		"Dynamic values updated to %+v",
 		*s.DynamicValues,
-		epoch*constants.EpochLength+1,
 	)
 	return nil
 }
@@ -446,6 +445,27 @@ func (s *Storage) loadDynamicValues(txn *badger.Txn, epoch uint32) error {
 func (s *Storage) getDynamicValueInThePast(txn *badger.Txn, epoch uint32) (uint32, *DynamicValues, error) {
 	if epoch == 0 {
 		return 0, nil, ErrZeroEpoch
+	}
+	// if epoch is 1, return the dynamic value at the head of the linked list
+	// (always epoch 1). The first epoch is an edge case. Normally, a value for
+	// dynamics is set at the end of epoch, e.g dynamic value for epoch 10 will be
+	// valid after the first block of the next epoch 11 (block 10241, assuming epoch
+	// length 1024). However, since we didn't have a value before, the head of the
+	// linked list is added to the epoch 1, making its dynamic value valid from the
+	// whole epoch 1 until at least the end of epoch 2 (block 1 to 2048, assuming
+	// epoch length 1024).
+	if epoch == 1 {
+		headNode, err := s.database.GetNode(txn, epoch)
+		if err != nil {
+			utils.DebugTrace(s.logger, err)
+			return 0, nil, err
+		}
+		dv, err := headNode.dynamicValues.Copy()
+		if err != nil {
+			utils.DebugTrace(s.logger, err)
+			return 0, nil, err
+		}
+		return epoch, dv, nil
 	}
 	linkedList, err := s.database.GetLinkedList(txn)
 	if err != nil {
@@ -465,7 +485,7 @@ func (s *Storage) getDynamicValueInThePast(txn *badger.Txn, epoch uint32) (uint3
 func (s *Storage) iterateBackwardFromNode(txn *badger.Txn, epoch uint32, currentNode *Node) (uint32, *DynamicValues, error) {
 	var err error
 	for {
-		if epoch >= currentNode.thisEpoch {
+		if epoch > currentNode.thisEpoch {
 			dv, err := currentNode.dynamicValues.Copy()
 			if err != nil {
 				utils.DebugTrace(s.logger, err)
