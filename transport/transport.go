@@ -1,6 +1,8 @@
 package transport
 
 import (
+	"github.com/btcsuite/btcd/btcec/v2"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"net"
 	"sync"
 
@@ -9,9 +11,9 @@ import (
 	"github.com/alicenet/alicenet/config"
 	"github.com/alicenet/alicenet/crypto/secp256k1"
 	"github.com/alicenet/alicenet/interfaces"
-	"github.com/alicenet/alicenet/transport/brontide"
 	"github.com/alicenet/alicenet/types"
 	"github.com/alicenet/alicenet/utils"
+	"github.com/lightningnetwork/lnd/brontide"
 )
 
 var _ interfaces.P2PTransport = (*P2PTransport)(nil)
@@ -165,6 +167,13 @@ func (pt *P2PTransport) Accept() (interfaces.P2PConn, error) {
 // NewP2PTransport returns a transport object. This object is both a server
 // and a client.
 func NewP2PTransport(logger *logrus.Logger, cid types.ChainIdentifier, privateKeyHex string, port int, host string) (interfaces.P2PTransport, error) {
+	privateKeyBytes, err := hexutil.Decode(privateKeyHex)
+	if err != nil {
+		return nil, err
+	}
+
+	privateKey, publicKey := btcec.PrivKeyFromBytes(privateKeyBytes)
+
 	localPrivateKey, err := deserializeTransportPrivateKey(privateKeyHex)
 	if err != nil {
 		return nil, err

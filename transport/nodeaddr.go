@@ -4,13 +4,13 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/alicenet/alicenet/config"
+	"github.com/lightningnetwork/lnd/lnwire"
 	"net"
 	"strconv"
 	"strings"
 
 	"github.com/alicenet/alicenet/crypto/secp256k1"
 	"github.com/alicenet/alicenet/interfaces"
-	"github.com/alicenet/alicenet/transport/brontide"
 	"github.com/alicenet/alicenet/types"
 )
 
@@ -104,8 +104,8 @@ func (pad *NodeAddr) ChainIdentifier() types.ChainIdentifier {
 // This function is not part of the interface definition of
 // a NodeAddr so that these assumptions remain isolated to the
 // transport package.
-func (pad *NodeAddr) toBTCNetAddr() *brontide.NetAddress {
-	return &brontide.NetAddress{
+func (pad *NodeAddr) toBTCNetAddr() *lnwire.NetAddress {
+	return &lnwire.NetAddress{
 		Address: &addr{
 			network: pad.Network(),
 			address: net.JoinHostPort(pad.host, strconv.Itoa(pad.port)),
