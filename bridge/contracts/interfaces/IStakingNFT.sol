@@ -2,14 +2,6 @@
 pragma solidity ^0.8.16;
 interface IStakingNFT {
     
-    function transferFrom(
-        address _from,
-        address _to,
-        uint256 _tokenId
-    ) external;
-
-    function ownerOf(uint256 tokenId_) external view returns (address);
-
     function skimExcessEth(address to_) external returns (uint256 excess);
 
     function skimExcessToken(address to_) external returns (uint256 excess);
