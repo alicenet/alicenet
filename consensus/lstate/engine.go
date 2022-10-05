@@ -537,7 +537,9 @@ func (ce *Engine) Sync() (bool, error) {
 			}
 			return nil
 		}
-		// check and update the new dynamic values
+		// check and update the new dynamic values;
+		// rs.OwnState.SyncToBH.BClaims.Height+1 since we are going to try to download
+		// and validate the next bl0ck after SyncToBH
 		err = ce.storage.UpdateCurrentDynamicValue(txn, utils.Epoch(rs.OwnState.SyncToBH.BClaims.Height+1))
 		if err != nil {
 			utils.DebugTrace(ce.logger, err)
