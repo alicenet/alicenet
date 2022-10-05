@@ -1,14 +1,13 @@
 package transport
 
 import (
-	"github.com/btcsuite/btcd/btcec/v2"
-	"github.com/ethereum/go-ethereum/common/hexutil"
+	"fmt"
 	"net"
 	"sync"
+	"time"
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/alicenet/alicenet/config"
 	"github.com/alicenet/alicenet/crypto/secp256k1"
 	"github.com/alicenet/alicenet/interfaces"
 	"github.com/alicenet/alicenet/types"
@@ -23,6 +22,12 @@ var _ interfaces.P2PTransport = (*P2PTransport)(nil)
 const (
 	tcpNetwork   string             = "tcp"
 	protoVersion types.ProtoVersion = 1
+
+	// handshakeReadTimeout is a read timeout that will be enforced when
+	// waiting for state payloads during the various acts of Brontide. If
+	// the remote party fails to deliver the proper payload within this
+	// time frame, then we'll fail the connection.
+	handshakeReadTimeout = time.Second * 5
 )
 
 // P2PTransport wraps the brontide library in native types.
@@ -71,35 +76,95 @@ func (pt *P2PTransport) Dial(addr interfaces.NodeAddr, protocol types.Protocol) 
 	// convert to raw type for access to non-interface methods
 	remoteAddr := addr.(*NodeAddr)
 	// convert p2pAddr into the expected format for brontide
-	btcAddr := remoteAddr.toBTCNetAddr()
+	btcAddr, err := remoteAddr.toBTCNetAddr()
+	if err != nil {
+		return nil, err
+	}
 	// run the authentication and encryption handshake
-	bconn, err := brontide.Dial(pt.localPrivateKey,
-		protocol,
-		protoVersion,
-		pt.localNodeAddr.ChainID(),
-		pt.localNodeAddr.Port(),
+	privateKey := convertCryptoPrivateKey2KeychainPrivateKey(pt.localPrivateKey)
+	bconn, err := brontide.Dial(privateKey,
+		//protocol,
+		//protoVersion,
+		//pt.localNodeAddr.ChainID(),
+		//pt.localNodeAddr.Port(),
 		btcAddr,
-		func(network, address string) (net.Conn, error) {
+		10*time.Second,
+		func(network, address string, timeout time.Duration) (net.Conn, error) {
 			return net.Dial(network, addr.String())
 		})
 	if err != nil {
 		return nil, err
 	}
-	// convert from brontide connection into P2PConn
+
+	// todo: do other handshakes here
+	if err := selfInitiatedChainIdentifierHandshake(bconn, pt.localNodeAddr.ChainID()); err != nil {
+		bconn.Close()
+		return nil, err
+	}
+
+	if err := bconn.SetReadDeadline(time.Now().Add(handshakeReadTimeout)); err != nil {
+		bconn.Close()
+		return nil, err
+	}
+	remoteP2PPort, err := selfInitiatedPortHandshake(bconn, pt.localNodeAddr.Port())
+	if err != nil {
+		bconn.Close()
+		return nil, err
+	}
+
+	if err := bconn.SetReadDeadline(time.Now().Add(handshakeReadTimeout)); err != nil {
+		bconn.Close()
+		return nil, err
+	}
+	remoteVersion, err := selfInitiatedVersionHandshake(bconn, protoVersion)
+	if err != nil {
+		bconn.Close()
+		return nil, err
+	}
+
+	if err := writeUint32(bconn, uint32(protocol)); err != nil {
+		bconn.Close()
+		return nil, err
+	}
+
+	// We'll reset the deadline as it's no longer critical beyond the
+	// initial handshake.
+	err = bconn.SetReadDeadline(time.Time{})
+	if err != nil {
+		bconn.Close()
+		return nil, err
+	}
+
+	// b.P2PPort = remoteP2PPort
+	//b.Version = types.ProtoVersion(remoteVersion)
+	//b.Protocol = protocol
+
+	publicKey, err := convertDecredSecpPubKey2CryptoSecpPubKey(bconn.RemotePub())
+	if err != nil {
+		return nil, err
+	}
+
+	// todo: move it to a more appropriate place
+	closeChan := make(chan struct{})
+	go func() {
+		<-closeChan
+		bconn.Close()
+	}()
+
 	return &P2PConn{
 		nodeAddr: &NodeAddr{
 			host:     addr.Host(),
-			port:     bconn.P2PPort,
+			port:     remoteP2PPort,
 			chainID:  pt.localNodeAddr.ChainID(),
-			identity: bconn.RemotePub(),
+			identity: publicKey,
 		},
 		Conn:         bconn,
 		logger:       pt.logger,
 		initiator:    types.SelfInitiatedConnection,
-		protocol:     bconn.Protocol,
-		protoVersion: bconn.Version,
+		protocol:     protocol,
+		protoVersion: types.ProtoVersion(remoteVersion),
 		cleanupfn:    func() {},
-		closeChan:    bconn.CloseChan(),
+		closeChan:    closeChan,
 	}, nil
 }
 
@@ -114,21 +179,129 @@ func (pt *P2PTransport) handleConnection(bconn *brontide.Conn) interfaces.P2PCon
 		}
 		return nil
 	}
+
+	publicKey, err := convertDecredSecpPubKey2CryptoSecpPubKey(bconn.RemotePub())
+	if err != nil {
+		utils.DebugTrace(pt.logger, err)
+		if err := bconn.Close(); err != nil {
+			utils.DebugTrace(pt.logger, err)
+		}
+		return nil
+	}
+
+	// todo: do other handshakes here
+
+	// The following handshakes extend brontide to perform additional information
+	// exchange.
+	if err := bconn.SetReadDeadline(time.Now().Add(handshakeReadTimeout)); err != nil {
+		utils.DebugTrace(pt.logger, err)
+		err2 := bconn.Close()
+		if err2 != nil {
+			utils.DebugTrace(pt.logger, err2)
+		}
+		return nil
+	}
+	if err := peerInitiatedChainIdentifierHandshake(bconn, pt.localNodeAddr.ChainID()); err != nil {
+		utils.DebugTrace(pt.logger, err)
+		err2 := bconn.Close()
+		if err2 != nil {
+			utils.DebugTrace(pt.logger, err2)
+		}
+		return nil
+	}
+
+	if err := bconn.SetReadDeadline(time.Now().Add(handshakeReadTimeout)); err != nil {
+		utils.DebugTrace(pt.logger, err)
+		err2 := bconn.Close()
+		if err2 != nil {
+			utils.DebugTrace(pt.logger, err2)
+		}
+		return nil
+	}
+	remoteP2PPort, err := peerInitiatedPortHandshake(bconn, pt.localNodeAddr.Port())
+	if err != nil {
+		utils.DebugTrace(pt.logger, err)
+		err2 := bconn.Close()
+		if err2 != nil {
+			utils.DebugTrace(pt.logger, err2)
+		}
+		return nil
+	}
+
+	if err := bconn.SetReadDeadline(time.Now().Add(handshakeReadTimeout)); err != nil {
+		utils.DebugTrace(pt.logger, err)
+		err2 := bconn.Close()
+		if err2 != nil {
+			utils.DebugTrace(pt.logger, err2)
+		}
+		return nil
+	}
+	remoteVersion, err := peerInitiatedVersionHandshake(bconn, protoVersion)
+	if err != nil {
+		utils.DebugTrace(pt.logger, err)
+		err2 := bconn.Close()
+		if err2 != nil {
+			utils.DebugTrace(pt.logger, err2)
+		}
+		return nil
+	}
+
+	if err := bconn.SetReadDeadline(time.Now().Add(handshakeReadTimeout)); err != nil {
+		utils.DebugTrace(pt.logger, err)
+		err2 := bconn.Close()
+		if err2 != nil {
+			utils.DebugTrace(pt.logger, err2)
+		}
+		return nil
+	}
+	protocol, err := readUint32(bconn)
+	if err != nil {
+		utils.DebugTrace(pt.logger, err)
+		err2 := bconn.Close()
+		if err2 != nil {
+			utils.DebugTrace(pt.logger, err2)
+		}
+		return nil
+	}
+
+	// reset read deadline
+	if err := bconn.SetReadDeadline(time.Time{}); err != nil {
+		utils.DebugTrace(pt.logger, err)
+		err2 := bconn.Close()
+		if err2 != nil {
+			utils.DebugTrace(pt.logger, err2)
+		}
+		return nil
+	}
+
+	// brontideConn.P2PPort = remoteP2PPort
+	// brontideConn.Version = types.ProtoVersion(remoteVersion)
+	// brontideConn.Protocol = types.Protocol(protocol)
+
+	//go l.postHandshake(bconn)
+
+	// todo: move it to a more appropriate place
+	closeChan := make(chan struct{})
+	go func() {
+		<-closeChan
+		bconn.Close()
+	}()
+
 	// turn the brontide conn into a p2PConn
 	return &P2PConn{
 		nodeAddr: &NodeAddr{
 			host:     host,
-			port:     bconn.P2PPort,
+			port:     remoteP2PPort,
 			chainID:  pt.localNodeAddr.ChainID(),
-			identity: bconn.RemotePub(),
+			identity: publicKey,
 		},
 		Conn:         bconn,
 		logger:       pt.logger,
 		initiator:    types.PeerInitiatedConnection,
-		protocol:     bconn.Protocol,
-		protoVersion: bconn.Version,
+		protocol:     types.Protocol(protocol),
+		protoVersion: types.ProtoVersion(remoteVersion),
 		cleanupfn:    func() {},
-		closeChan:    bconn.CloseChan(),
+		closeChan:    closeChan,
 	}
 }
 
@@ -144,35 +317,31 @@ func (pt *P2PTransport) Accept() (interfaces.P2PConn, error) {
 		}
 		conn, err := pt.listener.Accept()
 		if err != nil {
-			if err == brontide.ErrBrontideClose {
-				err2 := pt.Close()
-				if err2 != nil {
-					utils.DebugTrace(pt.logger, err2)
-				}
-				return nil, ErrListenerClosed
+			err2 := pt.Close()
+			if err2 != nil {
+				utils.DebugTrace(pt.logger, err2)
 			}
-			if err == brontide.ErrReject {
-				continue
-			}
-			utils.DebugTrace(pt.logger, err)
 			return nil, err
 		}
 		if conn == nil {
 			continue
 		}
-		return pt.handleConnection(conn), nil
+
+		bconn := conn.(*brontide.Conn)
+
+		return pt.handleConnection(bconn), nil
 	}
 }
 
 // NewP2PTransport returns a transport object. This object is both a server
 // and a client.
 func NewP2PTransport(logger *logrus.Logger, cid types.ChainIdentifier, privateKeyHex string, port int, host string) (interfaces.P2PTransport, error) {
-	privateKeyBytes, err := hexutil.Decode(privateKeyHex)
-	if err != nil {
-		return nil, err
-	}
+	// privateKeyBytes, err := hexutil.Decode(privateKeyHex)
+	// if err != nil {
+	// 	return nil, err
+	// }
 
-	privateKey, publicKey := btcec.PrivKeyFromBytes(privateKeyBytes)
+	//privateKey, publicKey := btcec.PrivKeyFromBytes(privateKeyBytes)
 
 	localPrivateKey, err := deserializeTransportPrivateKey(privateKeyHex)
 	if err != nil {
@@ -186,20 +355,22 @@ func NewP2PTransport(logger *logrus.Logger, cid types.ChainIdentifier, privateKe
 		chainID:  cid,
 	}
 
-	var mc int
-	var mp int
-	if config.Configuration.Transport.OriginLimit <= 0 {
-		mc = 3
-	} else {
-		mc = config.Configuration.Transport.OriginLimit
-	}
-	if config.Configuration.Transport.PeerLimitMax <= 0 {
-		mp = 16
-	} else {
-		mp = config.Configuration.Transport.PeerLimitMax
-	}
+	keychainPrivateKey := convertCryptoPrivateKey2KeychainPrivateKey(localPrivateKey)
 
-	listener, err := brontide.NewListener(localPrivateKey, host, port, protoVersion, cid, mp, 1, mc)
+	// var mc int
+	// var mp int
+	// if config.Configuration.Transport.OriginLimit <= 0 {
+	// 	mc = 3
+	// } else {
+	// 	mc = config.Configuration.Transport.OriginLimit
+	// }
+	// if config.Configuration.Transport.PeerLimitMax <= 0 {
+	// 	mp = 16
+	// } else {
+	// 	mp = config.Configuration.Transport.PeerLimitMax
+	// }
+
+	listener, err := brontide.NewListener(keychainPrivateKey, fmt.Sprintf("%v:%v", host, port))
 	if err != nil {
 		return nil, err
 	}
