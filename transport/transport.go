@@ -147,8 +147,11 @@ func (pt *P2PTransport) Dial(addr interfaces.NodeAddr, protocol types.Protocol) 
 	// todo: move it to a more appropriate place
 	closeChan := make(chan struct{})
 	go func() {
+		pt.logger.Warn("waiting connection close from custom Dial.CloseChan 1")
 		<-closeChan
-		bconn.Close()
+		pt.logger.Warn("closing peer connection with custom Dial.CloseChan 2")
+		//bconn.Close()
+		//pt.logger.Warn("closing peer connection with custom Dial.CloseChan 3")
 	}()
 
 	return &P2PConn{
@@ -158,12 +161,12 @@ func (pt *P2PTransport) Dial(addr interfaces.NodeAddr, protocol types.Protocol) 
 			chainID:  pt.localNodeAddr.ChainID(),
 			identity: publicKey,
 		},
-		Conn:         bconn,
+		conn:         bconn,
 		logger:       pt.logger,
 		initiator:    types.SelfInitiatedConnection,
 		protocol:     protocol,
 		protoVersion: types.ProtoVersion(remoteVersion),
-		cleanupfn:    func() {},
+		cleanupfn:    func() { close(closeChan) },
 		closeChan:    closeChan,
 	}, nil
 }
@@ -278,13 +281,44 @@ func (pt *P2PTransport) handleConnection(bconn *brontide.Conn) interfaces.P2PCon
 	// brontideConn.Version = types.ProtoVersion(remoteVersion)
 	// brontideConn.Protocol = types.Protocol(protocol)
 
-	//go l.postHandshake(bconn)
+	// // get pubkey for limit pubkey tracking
+	// pubk := string(bconn.RemotePub().SerializeCompressed())
+
+	// // guard logic for pubkey limit tracking
+	// if pt.numConnectionsbyPubkey[pubk] >= pt.pubkeyLimit {
+	// 	err := bconn.Close()
+	// 	if err != nil {
+	// 		utils.DebugTrace(pt.logger, err)
+	// 	}
+	// 	return nil
+	// }
+
+	// // increment host counter
+	// pt.numConnectionsbyPubkey[pubk]++
+
+	// // if guard logic passes create cleanup fn closure
+	// bconn.wrapClose(func() error {
+	// 	pt.Lock()
+	// 	defer pt.Unlock()
+	// 	// decrement the origin counter if the total is gt zero
+	// 	// this is a protection against any unseen race
+	// 	if pt.numConnectionsbyPubkey[pubk] > 0 {
+	// 		pt.numConnectionsbyPubkey[pubk]--
+	// 		if pt.numConnectionsbyPubkey[pubk] == 0 {
+	// 			delete(pt.numConnectionsbyPubkey, pubk)
+	// 		}
+	// 	}
+	// 	return nil
+	// })
 
 	// todo: move it to a more appropriate place
 	closeChan := make(chan struct{})
 	go func() {
+		pt.logger.Warn("waiting connection close from custom handleConnection.CloseChan 1")
 		<-closeChan
-		bconn.Close()
+		pt.logger.Warn("closing peer connection with custom handleConnection.CloseChan 2")
+		//bconn.Close()
+		//pt.logger.Warn("closing peer connection with custom handleConnection.CloseChan 3")
 	}()
 
 	// turn the brontide conn into a p2PConn
@@ -295,12 +329,12 @@ func (pt *P2PTransport) handleConnection(bconn *brontide.Conn) interfaces.P2PCon
 			chainID:  pt.localNodeAddr.ChainID(),
 			identity: publicKey,
 		},
-		Conn:         bconn,
+		conn:         bconn,
 		logger:       pt.logger,
 		initiator:    types.PeerInitiatedConnection,
 		protocol:     types.Protocol(protocol),
 		protoVersion: types.ProtoVersion(remoteVersion),
-		cleanupfn:    func() {},
+		cleanupfn:    func() { close(closeChan) },
 		closeChan:    closeChan,
 	}
 }

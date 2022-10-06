@@ -101,7 +101,7 @@ func (pmx *P2PMux) serverMux(ctx context.Context, conn interfaces.P2PConn) (inte
 			return
 		}
 		clientp2pconn := &P2PConn{
-			Conn:         clientConn,
+			conn:         clientConn,
 			logger:       mlog,
 			nodeAddr:     conn.NodeAddr(),
 			protocol:     conn.Protocol(),
@@ -112,7 +112,7 @@ func (pmx *P2PMux) serverMux(ctx context.Context, conn interfaces.P2PConn) (inte
 			cleanupfn:    func() {},
 		}
 		serverp2pconn := &P2PConn{
-			Conn:         serverConn,
+			conn:         serverConn,
 			logger:       mlog,
 			nodeAddr:     conn.NodeAddr(),
 			protocol:     conn.Protocol(),
@@ -178,7 +178,7 @@ func (pmx *P2PMux) clientMux(ctx context.Context, conn interfaces.P2PConn) (inte
 			return
 		}
 		clientp2pconn := &P2PConn{
-			Conn:         clientConn,
+			conn:         clientConn,
 			initiator:    conn.Initiator(),
 			logger:       mlog,
 			protoVersion: conn.ProtoVersion(),
@@ -188,7 +188,7 @@ func (pmx *P2PMux) clientMux(ctx context.Context, conn interfaces.P2PConn) (inte
 			cleanupfn:    func() {},
 		}
 		serverp2pconn := &P2PConn{
-			Conn:         serverConn,
+			conn:         serverConn,
 			protoVersion: conn.ProtoVersion(),
 			logger:       mlog,
 			initiator:    conn.Initiator(),

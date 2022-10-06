@@ -3,6 +3,7 @@ package transport
 import (
 	"net"
 	"sync"
+	"time"
 
 	"github.com/hashicorp/yamux"
 	"github.com/sirupsen/logrus"
@@ -22,7 +23,7 @@ var (
 // objects of this system should accept as the connection object for network
 // communications.
 type P2PConn struct {
-	net.Conn
+	conn         net.Conn
 	logger       *logrus.Logger
 	protocol     types.Protocol
 	protoVersion types.ProtoVersion
@@ -32,6 +33,35 @@ type P2PConn struct {
 	closeChan    <-chan struct{}
 	cleanupfn    func()
 	session      *yamux.Session
+}
+
+// implementation of net.Conn interface
+
+func (pc *P2PConn) LocalAddr() net.Addr {
+	return pc.conn.LocalAddr()
+}
+
+func (pc *P2PConn) Read(b []byte) (n int, err error) {
+	return pc.conn.Read(b)
+}
+
+func (pc *P2PConn) SetDeadline(t time.Time) error {
+	return pc.conn.SetDeadline(t)
+}
+
+func (pc *P2PConn) SetWriteDeadline(t time.Time) error {
+	return pc.conn.SetWriteDeadline(t)
+}
+
+func (pc *P2PConn) Write(b []byte) (n int, err error) {
+	return pc.conn.Write(b)
+}
+
+// SetReadDeadline sets the deadline for future Read calls
+// and any currently-blocked Read call.
+// A zero value for t means Read will not time out.
+func (pc *P2PConn) SetReadDeadline(t time.Time) error {
+	return pc.conn.SetReadDeadline(t)
 }
 
 // CloseChan closes channel.
@@ -47,7 +77,7 @@ func (pc *P2PConn) Close() error {
 
 func (pc *P2PConn) close() {
 	pc.cleanupfn()
-	err := pc.Conn.Close()
+	err := pc.conn.Close()
 	if err != nil {
 		utils.DebugTrace(pc.logger, err)
 	}
