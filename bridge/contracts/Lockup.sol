@@ -5,6 +5,7 @@ import "contracts/interfaces/IStakingToken.sol";
 import "contracts/interfaces/IStakingNFT.sol";
 import "contracts/BonusPool.sol";
 import "contracts/RewardPool.sol";
+import "contracts/utils/ImmutableAuth.sol";
 
 // TODO PREVENT ACCEPTING POSITIONS THAT HAVE WITHDRAW LOCK ENFORCED ON PROFITS
 // UNLESS THEY ARE LESS THAN THE LOCKING DURATION AWAY OR THIS WILL CAUSE A
@@ -43,7 +44,7 @@ import "contracts/RewardPool.sol";
 //          ONLY METHOD ALLOWED IS THE AGGREGATEPROFITS METHOD CALL
 //          SHOULD PAYOUT PROPORTIONATE REWARDS IN FULL TO CALLERS OF UNLOCK
 //          SHOULD TRANSFER BACK TO CALLER POSSESSION OF STAKED POSITION NFT DURING METHOD UNLOCK
-contract Locking {
+contract Locking is  ImmutablePublicStaking {
     event EarlyExit(address to_, uint256 tokenID_);
     event NewLockup(address from_, uint256 tokenID_);
 
@@ -61,6 +62,7 @@ contract Locking {
     error PostLockStateRequired();
     error PayoutUnsafe();
     error AddressHasNotPositionLinked();
+    error PositionWithdrawFreeAfterGreaterThanLockPeriod(uint256 withdrawFreeAfter, uint256 endBlock);
 
     uint8 internal constant _statePrelock = 0;
     uint8 internal constant _stateInLock = 1;
@@ -124,7 +126,7 @@ contract Locking {
         address publicStaking_,
         uint256 startBlock_,
         uint256 lockDuration_
-    ) {
+    ) ImmutablePublicStaking() {
         // give infinite approval to bonuspool for alca
         _publicStaking = IStakingNFT(publicStaking_);
         RewardPool rp = new RewardPool(alca_);
@@ -180,6 +182,7 @@ contract Locking {
 
     function lockFromApproval(uint256 tokenID_) public onlyPreLock {
         _unclaimedOrRevert(tokenID_);
+        _withdrawLockLessThanEndBlockOrRevert(tokenID_);
         _lock(tokenID_, msg.sender);
         // interact last
         _publicStaking.transferFrom(msg.sender, address(this), tokenID_);
@@ -190,6 +193,7 @@ contract Locking {
     function lockFromTransfer(uint256 tokenID_, address tokenOwner_) public onlyPreLock {
         _unclaimedOrRevert(tokenID_);
         _lockingOwnsOrRevert(tokenID_);
+        _withdrawLockLessThanEndBlockOrRevert(tokenID_);
         _lock(tokenID_, tokenOwner_);
     }
 
@@ -467,7 +471,7 @@ contract Locking {
             revert ContractDoesNotOwnTokenID(tokenID_);
         }
     }
-
+    
     function _unclaimedOrRevert(uint256 tokenID_) internal view {
         if (ownerOf(tokenID_) == address(0)) {
             revert TokenIDAlreadyClaimed(tokenID_);
@@ -486,7 +490,12 @@ contract Locking {
             revert MultipleLocksFromSingleAccount(tid);
         }
     }
-
+    function _withdrawLockLessThanEndBlockOrRevert(uint256 tokenId_) internal view {
+        (,,uint256 withdrawFreeAfter,,) = IStakingNFT.getPosition(tokenId_);
+        if (withdrawFreeAfter > endBlock){
+            revert PositionWithdrawFreeAfterGreaterThanLockPeriod(withdrawFreeAfter, endBlock);
+        }
+    }
     function _getState() internal view returns (uint8) {
         if (block.number < startBlock) {
             return _statePrelock;
@@ -496,4 +505,6 @@ contract Locking {
         }
         return _statePostLock;
     }
+
+
 }
