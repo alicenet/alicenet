@@ -123,12 +123,11 @@ contract Locking is  ImmutablePublicStaking {
 
     constructor(
         address alca_,
-        address publicStaking_,
         uint256 startBlock_,
         uint256 lockDuration_
-    ) ImmutablePublicStaking() {
+    ) ImmutableFactory(msg.sender) ImmutablePublicStaking() {
         // give infinite approval to bonuspool for alca
-        _publicStaking = IStakingNFT(publicStaking_);
+        _publicStaking = IStakingNFT(_publicStakingAddress());
         RewardPool rp = new RewardPool(alca_);
         _rewardPool = rp;
         IStakingToken st = IStakingToken(alca_);
@@ -471,7 +470,7 @@ contract Locking is  ImmutablePublicStaking {
             revert ContractDoesNotOwnTokenID(tokenID_);
         }
     }
-    
+
     function _unclaimedOrRevert(uint256 tokenID_) internal view {
         if (ownerOf(tokenID_) == address(0)) {
             revert TokenIDAlreadyClaimed(tokenID_);
