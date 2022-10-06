@@ -16,6 +16,7 @@ import {
   ATokenBurner,
   ATokenMinter,
   BToken,
+  CentralBridgeRouter,
   Distribution,
   Dynamics,
   ETHDKG,
@@ -315,24 +316,21 @@ export const deployFactoryAndBaseTokens = async (
   );
 
   // BToken
-  const centralRouter = await (
-    await ethers.getContractFactory("CentralBridgeRouterMock")
-  ).deploy(1000);
-  const deployData = (
-    await ethers.getContractFactory("BToken")
-  ).getDeployTransaction(centralRouter.address).data as BytesLike;
-  const bTokenSalt = ethers.utils.formatBytes32String("BToken");
-  const transaction = await factory.deployCreate2(0, bTokenSalt, deployData);
-  const bTokenAddress = await getContractAddressFromDeployedRawEvent(
-    transaction
+  const centralBridgeRouterAddress = await getCreate2Address(
+    //Need the central router address first for BToken
+    factory.address,
+    "CentralBridgeRouter"
   );
-  // registering in the factory.lookup
-  await factory.addNewExternalContract(bTokenSalt, bTokenAddress);
-  // finally attach BToken to the address of the deployed contract above
-  const bToken = await ethers.getContractAt(
-    "BToken",
-    await factory.lookup(bTokenSalt)
-  );
+  const bToken = (await deployCreate2WithFactory(factory, "BToken", [
+    centralBridgeRouterAddress,
+  ])) as BToken;
+
+  // CentralBridgeRouter
+  const centralBridgeRouter = (await deployCreate2WithFactory(
+    factory,
+    "CentralBridgeRouter",
+    []
+  )) as CentralBridgeRouter;
 
   // PublicStaking
   const publicStaking = (await deployUpgradeableWithFactory(
@@ -348,6 +346,7 @@ export const deployFactoryAndBaseTokens = async (
     bToken,
     legacyToken,
     publicStaking,
+    centralBridgeRouter,
   };
 };
 
@@ -694,4 +693,70 @@ export const getReceiptForFailedTransaction = async (
     }
   }
   return receipt;
+};
+
+export const getCreate2Address = async (
+  factoryAddress: string,
+  contractName: string
+): Promise<string> => {
+  const contractFactory = await ethers.getContractFactory(contractName);
+  const create2Address = ethers.utils.getCreate2Address(
+    factoryAddress,
+    ethers.utils.formatBytes32String(contractName),
+    ethers.utils.keccak256(contractFactory.bytecode)
+  );
+  return create2Address;
+};
+
+export const deployCreate2WithFactory = async (
+  factory: Contract,
+  contractName: string,
+  constructorArgs: any[] = []
+): Promise<Contract> => {
+  const contractDeployData = (
+    await ethers.getContractFactory(contractName)
+  ).getDeployTransaction(...constructorArgs).data as BytesLike;
+  const contractSalt = ethers.utils.formatBytes32String(contractName);
+  const contractTransaction = await factory.deployCreate2(
+    0,
+    contractSalt,
+    contractDeployData
+  );
+  const contractAddress = await getContractAddressFromDeployedRawEvent(
+    contractTransaction
+  );
+  // registering in the factory.lookup
+  await factory.addNewExternalContract(contractSalt, contractAddress);
+  // finally attach contract to the address of the deployed contract above
+  const contract = await ethers.getContractAt(
+    contractName,
+    await factory.lookup(contractSalt)
+  );
+  return contract;
+};
+
+export const getTopicData = async (
+  txResponse: ContractTransaction,
+  topic: string
+): Promise<String> => {
+  let result: any;
+  const receipt = await txResponse.wait();
+  if (receipt.events !== undefined) {
+    const events = receipt.events;
+    for (let i = 0; i < events.length; i++) {
+      // look for the topic
+      if (events[i].topics !== undefined) {
+        const topics = events[i].topics;
+        for (let j = 0; j < topics.length; j++) {
+          if (topics[j] == topic) {
+            const data = events[i].data;
+            return data;
+          }
+        }
+      } else {
+        throw new Error(`failed to extract topics from log`);
+      }
+    }
+  }
+  throw new Error(`failed to find topic: ${topic} in log`);
 };

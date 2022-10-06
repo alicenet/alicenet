@@ -43,7 +43,10 @@ contract CentralBridgeRouter is ICentralBridgeRouter, ImmutableFactory, Immutabl
         DepositReturnData memory returnData = abi.decode(returnDataBytes, (DepositReturnData));
         uint256 nonce = _nonce;
         for (uint256 i = 0; i < returnData.eventData.length; i++) {
-            returnData.eventData[i].logData = abi.encode(returnData.eventData[i].logData, nonce);
+            returnData.eventData[i].logData = abi.encodePacked(
+                returnData.eventData[i].logData,
+                nonce
+            );
             _emitDepositEvent(returnData.eventData[i].topics, returnData.eventData[i].logData);
             nonce += 1;
         }
@@ -68,6 +71,8 @@ contract CentralBridgeRouter is ICentralBridgeRouter, ImmutableFactory, Immutabl
      */
     function disableRouter(uint16 routerVersion_) public onlyFactory {
         RouterConfig memory config = _routerConfig[routerVersion_];
+        if (config.routerAddress == address(0))
+            revert CentralBridgeRouterErrors.InvalidPoolVersion(routerVersion_);
         if (config.notOnline) {
             revert CentralBridgeRouterErrors.DisabledPoolVersion(
                 routerVersion_,

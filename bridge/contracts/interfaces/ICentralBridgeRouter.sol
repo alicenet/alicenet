@@ -2,6 +2,11 @@
 pragma solidity ^0.8.16;
 
 interface ICentralBridgeRouter {
+    struct EventData {
+        bytes32[] topics;
+        bytes logData;
+    }
+
     struct DepositReturnData {
         EventData[] eventData;
         uint256 fee;
@@ -10,11 +15,6 @@ interface ICentralBridgeRouter {
     struct RouterConfig {
         address routerAddress;
         bool notOnline;
-    }
-
-    struct EventData {
-        bytes32[] topics;
-        bytes logData;
     }
 
     function forwardDeposit(
