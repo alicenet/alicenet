@@ -1,10 +1,7 @@
 // SPDX-License-Identifier: MIT-open-group
 pragma solidity ^0.8.16;
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 interface IStakingToken {
-
-    
     function migrate(uint256 amount) external;
 
     function finishEarlyStage() external;

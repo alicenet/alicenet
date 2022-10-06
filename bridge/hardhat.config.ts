@@ -6,7 +6,6 @@ import "@typechain/hardhat";
 import "hardhat-abi-exporter";
 import "hardhat-contract-sizer";
 import "hardhat-deploy";
-import "hardhat-docgen";
 import "hardhat-gas-reporter";
 import "hardhat-log-remover";
 import "hardhat-storage-layout";

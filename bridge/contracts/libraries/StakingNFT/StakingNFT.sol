@@ -66,7 +66,7 @@ abstract contract StakingNFT is
         _safeTransferEth(to_, excess);
         return excess;
     }
-    // function transferFrom()
+
     /// skimExcessToken will send to the address passed as to_ any amount of
     /// AToken held by this contract that is not tracked by the Accumulator
     /// system. This function allows the Admin role to refund any AToken sent to
@@ -78,7 +78,7 @@ abstract contract StakingNFT is
         _safeTransferERC20(aToken, to_, excess);
         return excess;
     }
- 
+
     /// lockPosition is called by governance system when a governance
     /// vote is cast. This function will lock the specified Position for up to
     /// _MAX_GOVERNANCE_LOCK. This method may only be called by the governance
