@@ -1,32 +1,26 @@
 // SPDX-License-Identifier: MIT-open-group
 pragma solidity ^0.8.16;
 
-import "contracts/interfaces/IStakingToken.sol";
+import "contracts/interfaces/IStakingNFT.sol";
 import "contracts/BonusPool.sol";
-// holds all Eth that is part of reserved amount of rewards
-// on base positions
-// holds all AToken that is part of reserved amount of rewards
-// on base positions
-contract RewardPool {
+import "contracts/utils/EthSafeTransfer.sol";
+import "contracts/utils/ERC20SafeTransfer.sol";
+import "contracts/utils/ImmutableAuth.sol";
+
+/**
+ * @notice RewardPool holds all ether and ALCA that is part of reserved amount
+ * of rewards on base positions.
+ */
+contract RewardPool is EthSafeTransfer, ERC20SafeTransfer {
     error CallerNotLocking();
     error CallerNotLockingOrBonus();
-    error EthSendFailure();
 
-    uint256 internal constant _unitOne = 10 ^ 18;
-
-    uint256 _tokenBalance;
-    uint256 _ethBalance;
-    IStakingToken internal immutable _alca;
+    uint256 internal constant _UNIT_ONE = 10 ^ 18;
+    address internal immutable _alca;
     address internal immutable _locking;
-    BonusPool internal immutable _bonusPool;
-
-    constructor(address alca_) {
-        BonusPool bp = new BonusPool(msg.sender);
-        _bonusPool = bp;
-        _locking = msg.sender;
-        IStakingToken st = IStakingToken(alca_);
-        _alca = st;
-    }
+    address internal immutable _bonusPool;
+    uint256 internal _ethReserve;
+    uint256 internal _tokenReserve;
 
     modifier onlyLocking() {
         if (msg.sender != _locking) {
@@ -43,35 +37,38 @@ contract RewardPool {
         _;
     }
 
-    function tokenBalance() public view returns (uint256) {
-        return _tokenBalance;
+    constructor(address alca_, address aliceNetFactory_) {
+        _bonusPool = address(new BonusPool(aliceNetFactory_));
+        _locking = msg.sender;
+        _alca = alca_;
     }
 
-    function ethBalance() public view returns(uint256) {
-        return _ethBalance;
+    function getBonusPoolAddress() public view returns (address) {
+        return _bonusPool;
+    }
+
+    function getLockingAddress() public view returns (address) {
+        return _locking;
+    }
+
+    function getTokenReserve() public view returns (uint256) {
+        return _tokenReserve;
+    }
+
+    function getEthReserve() public view returns (uint256) {
+        return _ethReserve;
     }
 
     function deposit(uint256 numTokens_) public payable onlyLockingOrBonus {
-        _tokenBalance += numTokens_;
-        _ethBalance += msg.value;
+        _tokenReserve += numTokens_;
+        _ethReserve += msg.value;
     }
 
     function payout(uint256 total_, uint256 shares_) public onlyLocking returns (uint256, uint256) {
-        uint256 pe = (_ethBalance * shares_ * _unitOne) / (_unitOne * total_);
-        uint256 pt = (_tokenBalance * shares_ * _unitOne) / (_unitOne * total_);
-        _alca.transfer(_locking, pt);
-        _safeSendEth(payable(_locking), pe);
-        return (pt, pe);
-    }
-
-    function _safeSendEth(address payable acct_, uint256 val_) internal {
-        if (val_ == 0) {
-            return;
-        }
-        bool ok;
-        (ok, ) = acct_.call{value: val_}("");
-        if (!ok) {
-            revert EthSendFailure();
-        }
+        uint256 proportionalEth = (_ethReserve * shares_ * _UNIT_ONE) / (_UNIT_ONE * total_);
+        uint256 proportionalTokens = (_tokenReserve * shares_ * _UNIT_ONE) / (_UNIT_ONE * total_);
+        _safeTransferERC20(IERC20Transferable(_alca), _locking, proportionalTokens);
+        _safeTransferEth(payable(_locking), proportionalEth);
+        return (proportionalTokens, proportionalEth);
     }
 }

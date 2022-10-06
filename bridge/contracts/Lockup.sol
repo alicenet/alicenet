@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: MIT-open-group
 pragma solidity ^0.8.16;
 
-import "contracts/interfaces/IStakingToken.sol";
-import "contracts/interfaces/IStakingNFT.sol";
-import "contracts/BonusPool.sol";
+import "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
+import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "contracts/interfaces/IERC721Transferable.sol";
 import "contracts/RewardPool.sol";
 import "contracts/utils/ImmutableAuth.sol";
 
@@ -18,14 +19,14 @@ import "contracts/utils/ImmutableAuth.sol";
 //
 // STATE MODEL
 //
-// PRELOCK  
+// PRELOCK
 //          INITIAL STATE AT DEPLOY
 //          ENROLLMENT PERIOD OF CONTRACT
 //          THIS IS THE ONLY PHASE IN WHICH NEW LOCKED POSITIONS MAY BE FORMED
 //          CAN NOT USE FINAL PAYOUT METHODS
 //          REWARDS ARE ALLOWED TO BE COLLECTED 80/20 SPLIT
 //
-// INLOCK 
+// INLOCK
 //          TRANSITION VIA BLOCK NUMBER
 //          REWARDS ARE ALLOWED TO BE COLLECTED 80/20 SPLIT
 //          NO NEW NEW POSITIONS
@@ -38,19 +39,25 @@ import "contracts/utils/ImmutableAuth.sol";
 //          NO PARTIAL WITHDRAWS
 //          CAN NOT USE FINAL PAYOUT METHODS
 //          REWARDS ARE NOT ALLOWED TO BE COLLECTED
+//          ONLY METHOD ALLOWED IS THE AGGREGATEPROFITS METHOD CALL
 //
 // POSTLOCK PAYOUTSAFE
 //          TRANSITION VIA COMPLETION OF AGGREGATEPROFITS METHOD CALLS
-//          ONLY METHOD ALLOWED IS THE AGGREGATEPROFITS METHOD CALL
 //          SHOULD PAYOUT PROPORTIONATE REWARDS IN FULL TO CALLERS OF UNLOCK
 //          SHOULD TRANSFER BACK TO CALLER POSSESSION OF STAKED POSITION NFT DURING METHOD UNLOCK
-contract Locking is  ImmutablePublicStaking {
+contract Locking is
+    ImmutablePublicStaking,
+    ImmutableAToken,
+    ERC20SafeTransfer,
+    EthSafeTransfer,
+    ERC721Holder
+{
     event EarlyExit(address to_, uint256 tokenID_);
     event NewLockup(address from_, uint256 tokenID_);
 
     error ContractDoesNotOwnTokenID(uint256 tokenID_);
     error TokenIDAlreadyClaimed(uint256 tokenID_);
-    error MultipleLocksFromSingleAccount(uint256 exisingTokenID_);
+    error MultipleLocksFromSingleAccount(uint256 exitingTokenID_);
     error EthSendFailure();
     error TokenSendFailure();
     error InsufficientALCAForEarlyExit();
@@ -62,96 +69,89 @@ contract Locking is  ImmutablePublicStaking {
     error PostLockStateRequired();
     error PayoutUnsafe();
     error AddressHasNotPositionLinked();
-    error PositionWithdrawFreeAfterGreaterThanLockPeriod(uint256 withdrawFreeAfter, uint256 endBlock);
+    error PositionWithdrawFreeAfterGreaterThanLockPeriod(
+        uint256 withdrawFreeAfter,
+        uint256 endBlock
+    );
+    error InvalidStartingBlock();
 
-    uint8 internal constant _statePrelock = 0;
-    uint8 internal constant _stateInLock = 1;
-    uint8 internal constant _statePostLock = 2;
+    enum State {
+        PreLock,
+        InLock,
+        PostLock
+    }
 
-    uint256 internal constant _unitOne = 10 ^ 18;
-    uint256 internal constant _fractionReserved = _unitOne / 5;
+    uint256 internal constant _UNIT_ONE = 10 ^ 18;
+    uint256 internal constant _FRACTION_RESERVED = _UNIT_ONE / 5;
 
-    // TODO: replace with immut lib where possible
-    IStakingNFT internal immutable _publicStaking;
-    RewardPool internal immutable _rewardPool;
-    IStakingToken internal immutable _alca;
+    address internal immutable _rewardPool;
+    address internal immutable _bonusPool;
+    // block on which lock starts
+    uint256 internal immutable _startBlock;
+    // block on which lock ends
+    uint256 internal immutable _endBlock;
 
-    // Total Locked describes the total number of ALCA
-    // in this contract. Since no accumulators are used
-    // this is tracked to allow proportionate payouts.
+    // Total Locked describes the total number of ALCA in this contract. Since no
+    // accumulators are used this is tracked to allow proportionate payouts.
     uint256 internal _totalLocked;
 
-    // _ownerOf tracks who is the owner of a tokenID
-    // locked in this contract
+    // _ownerOf tracks who is the owner of a tokenID locked in this contract
     mapping(uint256 => address) internal _ownerOf;
-    // _tokenOf is the inverse of ownerOf and returns the
-    // owner given the tokenID
+    // _tokenOf is the inverse of ownerOf and returns the owner given the tokenID
     // users are only allowed 1 position per account
     mapping(address => uint256) internal _tokenOf;
-    
-    // maps and index to a tokenID for iterable counting
-    // stop iterating when token id is zero
-    // must use tail insert to delete or else pagination will
-    // end early
+    // maps and index to a tokenID for iterable counting stop iterating when token
+    // id is zero must use tail insert to delete or else pagination will end early
     mapping(uint256 => uint256) internal _tokenIDs;
     // lookup index by ID
     mapping(uint256 => uint256) internal _reverseTokenIDs;
     // tracks the number of tokenIDs this contract holds
     uint256 internal _lenTokenIDs;
-
     // payout amounts for all users to prevent the
     mapping(address => uint256) public rewardEth;
-    // send of tokens from blocking mass exit
-    // only written in post lock unsafe payout phase
-    // only read during final cash out by users
+    // send of tokens from blocking mass exit only written in post lock unsafe
+    // payout phase only read during final cash out by users
     mapping(address => uint256) public rewardTokens;
 
-    // block on which lock starts
-    uint256 public immutable startBlock;
-    // block on which lock ends
-    uint256 public immutable endBlock;
-
-    // determines if payout logic may be triggered
-    // all profits must be collected for all accounts
-    // first
+    // determines if payout logic may be triggered all profits must be collected for
+    // all accounts first
     bool public payoutSafe;
 
-    // offset for pagination of token profits
-    // stored here so many people may call in
-    // parellel and still do useful work
+    // offset for pagination of token profits stored here so many people may call in
+    // parallel and still do useful work
     uint256 internal _tokenIDOffset;
 
-    constructor(
-        address alca_,
-        uint256 startBlock_,
-        uint256 lockDuration_
-    ) ImmutableFactory(msg.sender) ImmutablePublicStaking() {
-        // give infinite approval to bonuspool for alca
-        _publicStaking = IStakingNFT(_publicStakingAddress());
-        RewardPool rp = new RewardPool(alca_);
-        _rewardPool = rp;
-        IStakingToken st = IStakingToken(alca_);
-        _alca = st;
-        startBlock = startBlock_;
-        endBlock = startBlock_ + lockDuration_;
+    constructor(uint256 startBlock_, uint256 lockDuration_)
+        ImmutableFactory(msg.sender)
+        ImmutablePublicStaking()
+        ImmutableAToken()
+    {
+        RewardPool rewardPool_ = new RewardPool(_aTokenAddress(), _factoryAddress());
+        _rewardPool = address(rewardPool_);
+        _bonusPool = rewardPool_.getBonusPoolAddress();
+        if (startBlock_ < block.number) {
+            revert InvalidStartingBlock();
+        }
+        _startBlock = startBlock_;
+        _endBlock = startBlock_ + lockDuration_;
     }
 
     modifier onlyPreLock() {
-        if (_getState() != _statePrelock) {
+        if (_getState() != State.PreLock) {
             revert PreLockStateRequired();
         }
         _;
     }
 
     modifier onlyPostLock() {
-        if (_getState() != _statePostLock) {
+        if (_getState() != State.PostLock) {
             revert PostLockStateRequired();
         }
         _;
     }
 
     modifier onlyBeforePostLock() {
-        if (_getState() == _statePostLock) {
+        if (_getState() != State.InLock) {
             revert PostLockStateNotAllowed();
         }
         _;
@@ -184,7 +184,11 @@ contract Locking is  ImmutablePublicStaking {
         _withdrawLockLessThanEndBlockOrRevert(tokenID_);
         _lock(tokenID_, msg.sender);
         // interact last
-        _publicStaking.transferFrom(msg.sender, address(this), tokenID_);
+        IERC721Transferable(_publicStakingAddress()).safeTransferFrom(
+            msg.sender,
+            address(this),
+            tokenID_
+        );
         // check as post condition
         _lockingOwnsOrRevert(tokenID_);
     }
@@ -224,7 +228,7 @@ contract Locking is  ImmutablePublicStaking {
             revert InsufficientALCAForEarlyExit();
         }
         // burn the existing position
-        (payoutEth, payoutAToken) = _publicStaking.burn(tokenID);
+        (payoutEth, payoutAToken) = IStakingNFT(_publicStakingAddress()).burn(tokenID);
 
         // blank old record
         _ownerOf[tokenID] = address(0);
@@ -235,7 +239,7 @@ contract Locking is  ImmutablePublicStaking {
         if (exitValue_ < shares) {
             // burn profits contain staked position... so sub it out
             payoutAToken = payoutAToken - shares;
-            newTokenID = _publicStaking.mint(remainingShares);
+            newTokenID = IStakingNFT(_publicStakingAddress()).mint(remainingShares);
             // set new records
             _ownerOf[newTokenID] = msg.sender;
             _replaceTokenID(tokenID, newTokenID);
@@ -259,7 +263,7 @@ contract Locking is  ImmutablePublicStaking {
     // contract from which they must claim?
     function aggregateProfits() public onlyPayoutUnSafe onlyPostLock {
         // get some gas cost tracking setup
-        uint256 gasStart = _gas();
+        uint256 gasStart = gasleft();
         uint256 gasLoop;
         // start index where we left off plus one
         uint256 i = _tokenIDOffset + 1;
@@ -282,7 +286,7 @@ contract Locking is  ImmutablePublicStaking {
             address payable acct = ownerOf(tokenID);
             _collectAllProfits(acct, tokenID);
             {
-                uint256 gasrem = _gas();
+                uint256 gasrem = gasleft();
                 if (gasLoop == 0) {
                     // RECORD GAS ITERATION ESTIMATE IF NOT DONE
                     gasLoop = gasStart - gasrem;
@@ -308,21 +312,27 @@ contract Locking is  ImmutablePublicStaking {
     {
         uint256 tokenID = tokenOf(msg.sender);
         uint256 shares = _getNumShares(tokenID);
-        uint256 localTotalLocked = _totalLocked;
-        //decrement the totalLocked counter
-        localTotalLocked -= shares;
         // TODO UPDATE ALL MAPPINGS LOCALLY BEFORE EXTERNAL INTERACTIONS
-        //update the global variable with new totalLocked value
-        _totalLocked = localTotalLocked;
+
         //delete tokenID from iterable tokenID mapping
         _delTokenID(tokenID);
-        delete(_tokenOf[msg.sender]);
-        delete(_ownerOf[tokenID]);
-        (payoutToken, payoutEth) = _rewardPool.payout(localTotalLocked, shares);
-        // dist shares
-        
-        // xfer token back to user
-        // _publicStaking.
+        delete (_tokenOf[msg.sender]);
+        delete (_ownerOf[tokenID]);
+        (payoutToken, payoutEth) = RewardPool(_rewardPool).payout(_totalLocked, shares);
+        _transferEthAndTokens(msg.sender, payoutEth, payoutToken);
+        IERC721Transferable(_publicStakingAddress()).safeTransferFrom(
+            address(this),
+            msg.sender,
+            tokenID
+        );
+    }
+
+    function getEnrollmentStartBlock() public view returns (uint256) {
+        return _startBlock;
+    }
+
+    function getEnrollmentEndBlock() public view returns (uint256) {
+        return _endBlock;
     }
 
     function _lock(uint256 tokenID_, address tokenOwner_) internal onlyPreLock {
@@ -335,14 +345,14 @@ contract Locking is  ImmutablePublicStaking {
     }
 
     function _getNumShares(uint256 tokenID_) internal view returns (uint256 shares) {
-        (shares, , , , ) = _publicStaking.getPosition(tokenID_);
+        (shares, , , , ) = IStakingNFT(_publicStakingAddress()).getPosition(tokenID_);
     }
 
     function _collectAllProfits(address payable acct_, uint256 tokenID_)
         internal
         returns (uint256 payoutToken, uint256 payoutEth)
     {
-        (payoutToken, payoutEth) = _publicStaking.collectAllProfits(tokenID_);
+        (payoutToken, payoutEth) = IStakingNFT(_publicStakingAddress()).collectAllProfits(tokenID_);
         return _distributeAllProfits(acct_, payoutToken, payoutEth);
     }
 
@@ -351,32 +361,32 @@ contract Locking is  ImmutablePublicStaking {
         uint256 payoutAToken_,
         uint256 payoutEth_
     ) internal returns (uint256 usrPayoutToken, uint256 usrPayoutEth) {
-        uint8 state = _getState();
+        State state = _getState();
         bool localPayoutSafe = payoutSafe;
         usrPayoutEth = payoutEth_;
         usrPayoutToken = payoutAToken_;
-        if (localPayoutSafe && state == _statePostLock) {
+        if (localPayoutSafe && state == State.PostLock) {
             // case of we are sending out final pay based on request
             // just pay all
             usrPayoutEth += rewardEth[acct_];
             usrPayoutToken += rewardTokens[acct_];
             rewardEth[acct_] = 0;
             rewardTokens[acct_] = 0;
-            _safeSendToken(acct_, usrPayoutToken);
-            _safeSendEth(acct_, usrPayoutEth);
-             return (usrPayoutToken, usrPayoutEth);
+            _safeTransferERC20(IERC20Transferable(_aTokenAddress()), acct_, usrPayoutToken);
+            _safeTransferEth(acct_, usrPayoutEth);
+            return (usrPayoutToken, usrPayoutEth);
         }
         // implies !payoutSafe and state one of [preLock, inLock]
         // hold back reserves and fund over deltas
-        uint256 reservedEth = (payoutEth_ * _fractionReserved) / _unitOne;
+        uint256 reservedEth = (payoutEth_ * _FRACTION_RESERVED) / _UNIT_ONE;
         usrPayoutEth = payoutEth_ - reservedEth;
-        uint256 reservedToken = (payoutAToken_ * _fractionReserved) / _unitOne;
+        uint256 reservedToken = (payoutAToken_ * _FRACTION_RESERVED) / _UNIT_ONE;
         usrPayoutToken = payoutAToken_ - reservedToken;
         // send tokens to reward pool
-        _safeSendToken(address(_rewardPool), reservedToken);
-        _rewardPool.deposit{value: reservedEth}(reservedToken); //todo send eth here reservedEth
+        _safeTransferERC20(IERC20Transferable(_aTokenAddress()), _rewardPool, reservedToken);
+        RewardPool(_rewardPool).deposit{value: reservedEth}(reservedToken);
         // either store to map or send to user
-        if (!localPayoutSafe && state == _statePostLock) {
+        if (!localPayoutSafe && state == State.PostLock) {
             // we should not send here and should instead track to local mapping
             // as otherwise a single bad user could block exit operations for all
             // other users by making the send to thier account fail via a contract
@@ -384,31 +394,18 @@ contract Locking is  ImmutablePublicStaking {
             rewardTokens[acct_] += usrPayoutToken;
             return (usrPayoutToken, usrPayoutEth);
         } else {
-            _safeSendEth(acct_, usrPayoutEth);
-            _safeSendToken(acct_, usrPayoutToken);
+            _transferEthAndTokens(acct_, usrPayoutEth, usrPayoutToken);
         }
         return (usrPayoutToken, usrPayoutEth);
     }
 
-    function _safeSendToken(address acct_, uint256 val_) internal {
-        if (val_ == 0) {
-            return;
-        }
-        bool ok = _alca.transfer(acct_, val_);
-        if (!ok) {
-            revert TokenSendFailure();
-        }
-    }
-
-    function _safeSendEth(address payable acct_, uint256 val_) internal {
-        if (val_ == 0) {
-            return;
-        }
-        bool ok;
-        (ok, ) = acct_.call{value: val_}("");
-        if (!ok) {
-            revert EthSendFailure();
-        }
+    function _transferEthAndTokens(
+        address to_,
+        uint256 payoutEth_,
+        uint256 payoutToken_
+    ) internal {
+        _safeTransferERC20(IERC20Transferable(_aTokenAddress()), to_, payoutToken_);
+        _safeTransferEth(to_, payoutEth_);
     }
 
     function _payableSender() internal view returns (address payable) {
@@ -459,26 +456,20 @@ contract Locking is  ImmutablePublicStaking {
         _replaceTokenID(tokenID_, tailTokenID);
     }
 
-    function _gas() internal view returns (uint256 remains) {
-        assembly {
-            remains := gas()
-        }
-    }
-
     function _lockingOwnsOrRevert(uint256 tokenID_) internal view {
-        if (_publicStaking.ownerOf(tokenID_) != address(this)) {
+        if (IERC721(_publicStakingAddress()).ownerOf(tokenID_) != address(this)) {
             revert ContractDoesNotOwnTokenID(tokenID_);
         }
     }
 
     function _unclaimedOrRevert(uint256 tokenID_) internal view {
-        if (ownerOf(tokenID_) == address(0)) {
+        if (ownerOf(tokenID_) != address(0)) {
             revert TokenIDAlreadyClaimed(tokenID_);
         }
     }
 
     function _claimedOrRevert(uint256 tokenID_) internal view {
-        if (ownerOf(tokenID_) != address(0)) {
+        if (ownerOf(tokenID_) == address(0)) {
             revert AddressHasNotPositionLinked();
         }
     }
@@ -489,21 +480,23 @@ contract Locking is  ImmutablePublicStaking {
             revert MultipleLocksFromSingleAccount(tid);
         }
     }
+
     function _withdrawLockLessThanEndBlockOrRevert(uint256 tokenId_) internal view {
-        (,,uint256 withdrawFreeAfter,,) = IStakingNFT.getPosition(tokenId_);
-        if (withdrawFreeAfter > endBlock){
-            revert PositionWithdrawFreeAfterGreaterThanLockPeriod(withdrawFreeAfter, endBlock);
+        (, , uint256 withdrawFreeAfter, , ) = IStakingNFT(_publicStakingAddress()).getPosition(
+            tokenId_
+        );
+        if (withdrawFreeAfter > _endBlock) {
+            revert PositionWithdrawFreeAfterGreaterThanLockPeriod(withdrawFreeAfter, _endBlock);
         }
     }
-    function _getState() internal view returns (uint8) {
-        if (block.number < startBlock) {
-            return _statePrelock;
+
+    function _getState() internal view returns (State) {
+        if (block.number < _startBlock) {
+            return State.PreLock;
         }
-        if (block.number < endBlock) {
-            return _stateInLock;
+        if (block.number < _endBlock) {
+            return State.InLock;
         }
-        return _statePostLock;
+        return State.PostLock;
     }
-
-
 }
