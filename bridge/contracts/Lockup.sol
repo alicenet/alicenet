@@ -5,8 +5,10 @@ import "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "contracts/interfaces/IERC721Transferable.sol";
+import "contracts/interfaces/IStakingNFT.sol";
 import "contracts/RewardPool.sol";
 import "contracts/utils/ImmutableAuth.sol";
+import "contracts/libraries/lockup/AccessControlled.sol";
 
 // TODO PREVENT ACCEPTING POSITIONS THAT HAVE WITHDRAW LOCK ENFORCED ON PROFITS
 // UNLESS THEY ARE LESS THAN THE LOCKING DURATION AWAY OR THIS WILL CAUSE A
@@ -45,7 +47,7 @@ import "contracts/utils/ImmutableAuth.sol";
 //          TRANSITION VIA COMPLETION OF AGGREGATEPROFITS METHOD CALLS
 //          SHOULD PAYOUT PROPORTIONATE REWARDS IN FULL TO CALLERS OF UNLOCK
 //          SHOULD TRANSFER BACK TO CALLER POSSESSION OF STAKED POSITION NFT DURING METHOD UNLOCK
-contract Locking is
+contract Lockup is
     ImmutablePublicStaking,
     ImmutableAToken,
     ERC20SafeTransfer,
@@ -64,6 +66,7 @@ contract Locking is
     error RegistrationOver();
     error LockupOver();
     error UserHasNoPosition();
+    error NoRewardsToClaim()
     error PreLockStateRequired();
     error PostLockStateNotAllowed();
     error PostLockStateRequired();
@@ -121,12 +124,16 @@ contract Locking is
     // parallel and still do useful work
     uint256 internal _tokenIDOffset;
 
-    constructor(uint256 startBlock_, uint256 lockDuration_)
-        ImmutableFactory(msg.sender)
-        ImmutablePublicStaking()
-        ImmutableAToken()
-    {
-        RewardPool rewardPool_ = new RewardPool(_aTokenAddress(), _factoryAddress());
+    constructor(
+        uint256 startBlock_,
+        uint256 lockDuration_,
+        uint256 totalBonusAmount_
+    ) ImmutableFactory(msg.sender) ImmutablePublicStaking() ImmutableAToken() {
+        RewardPool rewardPool_ = new RewardPool(
+            _aTokenAddress(),
+            _factoryAddress(),
+            totalBonusAmount_
+        );
         _rewardPool = address(rewardPool_);
         _bonusPool = rewardPool_.getBonusPoolAddress();
         if (startBlock_ < block.number) {
@@ -310,15 +317,16 @@ contract Locking is
         onlyPayoutSafe
         returns (uint256 payoutToken, uint256 payoutEth)
     {
+        // todo require that position exists!
         uint256 tokenID = tokenOf(msg.sender);
         uint256 shares = _getNumShares(tokenID);
         // TODO UPDATE ALL MAPPINGS LOCALLY BEFORE EXTERNAL INTERACTIONS
-
+        isLastPosition = _lenTokenIDs == 1;
         //delete tokenID from iterable tokenID mapping
         _delTokenID(tokenID);
         delete (_tokenOf[msg.sender]);
         delete (_ownerOf[tokenID]);
-        (payoutToken, payoutEth) = RewardPool(_rewardPool).payout(_totalLocked, shares);
+        (payoutToken, payoutEth) = RewardPool(_rewardPool).payout(_totalLocked, shares, isLastPosition);
         _transferEthAndTokens(msg.sender, payoutEth, payoutToken);
         IERC721Transferable(_publicStakingAddress()).safeTransferFrom(
             address(this),
@@ -389,7 +397,7 @@ contract Locking is
         if (!localPayoutSafe && state == State.PostLock) {
             // we should not send here and should instead track to local mapping
             // as otherwise a single bad user could block exit operations for all
-            // other users by making the send to thier account fail via a contract
+            // other users by making the send to their account fail via a contract
             rewardEth[acct_] += usrPayoutEth;
             rewardTokens[acct_] += usrPayoutToken;
             return (usrPayoutToken, usrPayoutEth);
@@ -397,6 +405,37 @@ contract Locking is
             _transferEthAndTokens(acct_, usrPayoutEth, usrPayoutToken);
         }
         return (usrPayoutToken, usrPayoutEth);
+    }
+
+    function claimAllProfits() public {
+        uint256 usrPayoutEth = rewardEth[msg.sender];
+        uint256 usrPayoutToken = rewardTokens[msg.sender];
+        if(usrPayoutEth == 0) revert NoRewardsToClaim();
+        if(usrPayoutToken == 0) revert NoRewardsToClaim();
+        rewardEth[msg.sender] = 0;
+        rewardTokens[msg.sender] = 0;
+        _safeTransferERC20(IERC20Transferable(_aTokenAddress()), msg.sender, usrPayoutToken);
+        _safeTransferEth(msg.sender, usrPayoutEth);
+    }
+    function claimEthProfits() public {
+        uint256 usrPayoutEth = rewardEth[msg.sender];
+        if(usrPayoutEth == 0) revert NoRewardsToClaim();
+        rewardEth[msg.sender] = 0;
+        _safeTransferEth(msg.sender, usrPayoutEth);
+    }
+    function claimTokenProfits() public {
+        uint256 usrPayoutToken = rewardTokens[msg.sender];
+        if(usrPayoutToken == 0) revert NoRewardsToClaim();
+        rewardTokens[msg.sender] = 0;
+        _safeTransferERC20(IERC20Transferable(_aTokenAddress()), msg.sender, usrPayoutToken);
+    }
+
+    function getEthRewardBalance() public view returns (uint256) {
+        return rewardEth[msg.sender];
+    }
+
+    function getTokenRewardBalance() public view returns (uint256) {
+        return rewardTokens[msg.sender];
     }
 
     function _transferEthAndTokens(
