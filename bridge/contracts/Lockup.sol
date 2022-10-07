@@ -414,31 +414,6 @@ contract Lockup is
         return (usrPayoutToken, usrPayoutEth);
     }
 
-    function claimAllProfits() public {
-        uint256 usrPayoutEth = rewardEth[msg.sender];
-        uint256 usrPayoutToken = rewardTokens[msg.sender];
-        if (usrPayoutEth == 0) revert NoRewardsToClaim();
-        if (usrPayoutToken == 0) revert NoRewardsToClaim();
-        rewardEth[msg.sender] = 0;
-        rewardTokens[msg.sender] = 0;
-        _safeTransferERC20(IERC20Transferable(_aTokenAddress()), msg.sender, usrPayoutToken);
-        _safeTransferEth(msg.sender, usrPayoutEth);
-    }
-
-    function claimEthProfits() public {
-        uint256 usrPayoutEth = rewardEth[msg.sender];
-        if (usrPayoutEth == 0) revert NoRewardsToClaim();
-        rewardEth[msg.sender] = 0;
-        _safeTransferEth(msg.sender, usrPayoutEth);
-    }
-
-    function claimTokenProfits() public {
-        uint256 usrPayoutToken = rewardTokens[msg.sender];
-        if (usrPayoutToken == 0) revert NoRewardsToClaim();
-        rewardTokens[msg.sender] = 0;
-        _safeTransferERC20(IERC20Transferable(_aTokenAddress()), msg.sender, usrPayoutToken);
-    }
-
     function getEthRewardBalance() public view returns (uint256) {
         return rewardEth[msg.sender];
     }
