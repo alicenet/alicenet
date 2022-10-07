@@ -1,3 +1,12 @@
+// The bn256 package holds everything related to the `bn256` elliptic curve
+// (sometimes called `alt_bn128`) used in Ethereum.
+// It defines an bilinear pairing associated with an elliptic curve
+// over a finite field with a 256-bit prime;
+// the actual curve definition is in the cloudflare package,
+// and the code here consists of useful helper functions.
+// Although originally designed to provide 128 bits of security,
+// recent developments in factoring algorithms have reduced this security
+// to approximately 100 bits.
 package bn256
 
 import (

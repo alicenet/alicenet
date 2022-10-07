@@ -1,3 +1,7 @@
+// The secp256k1 package holds everything related to the `secp256k1`
+// elliptic curve. This is the elliptic curve used by Ethereum
+// and Bitcoin for digital signatures. The code wraps the `secp256k1`
+// code from Ethereum.
 package secp256k1
 
 import (

@@ -1,3 +1,4 @@
+// The constants package holds all global constants used in AliceNet.
 package constants
 
 import "time"

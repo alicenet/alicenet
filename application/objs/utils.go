@@ -1,3 +1,5 @@
+// The objs package stores the object definitions for the application package.
+// This includes the validation logic for transactions and UTXOs.
 package objs
 
 import (
