@@ -60,7 +60,7 @@ contract RewardPool is AccessControlled, EthSafeTransfer, ERC20SafeTransfer {
     ) public onlyLockup returns (uint256, uint256) {
         uint256 proportionalEth;
         uint256 proportionalTokens;
-        // last position gets gets any remainder left on this contract
+        // last position gets any remainder left on this contract
         if (isLastPosition) {
             proportionalEth = address(this).balance;
             proportionalTokens = IERC20(_alca).balanceOf(address(this));

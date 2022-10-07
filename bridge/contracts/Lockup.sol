@@ -66,11 +66,12 @@ contract Lockup is
     error RegistrationOver();
     error LockupOver();
     error UserHasNoPosition();
-    error NoRewardsToClaim()
+    error NoRewardsToClaim();
     error PreLockStateRequired();
     error PostLockStateNotAllowed();
     error PostLockStateRequired();
     error PayoutUnsafe();
+    error PayoutSafe();
     error AddressHasNotPositionLinked();
     error PositionWithdrawFreeAfterGreaterThanLockPeriod(
         uint256 withdrawFreeAfter,
@@ -84,44 +85,49 @@ contract Lockup is
         PostLock
     }
 
-    uint256 internal constant _UNIT_ONE = 10 ^ 18;
-    uint256 internal constant _FRACTION_RESERVED = _UNIT_ONE / 5;
-
+    uint256 internal constant _SCALING_FACTOR = 10 ^ 18;
+    uint256 internal constant _FRACTION_RESERVED = _SCALING_FACTOR / 5;
+    // rewardPool contract address
     address internal immutable _rewardPool;
+    // bonusPool contract address
     address internal immutable _bonusPool;
     // block on which lock starts
     uint256 internal immutable _startBlock;
     // block on which lock ends
     uint256 internal immutable _endBlock;
-
     // Total Locked describes the total number of ALCA in this contract. Since no
     // accumulators are used this is tracked to allow proportionate payouts.
     uint256 internal _totalLocked;
-
     // _ownerOf tracks who is the owner of a tokenID locked in this contract
+    // mapping(tokenID -> owner).
     mapping(uint256 => address) internal _ownerOf;
     // _tokenOf is the inverse of ownerOf and returns the owner given the tokenID
-    // users are only allowed 1 position per account
+    // users are only allowed 1 position per account, mapping (owner -> tokenID).
     mapping(address => uint256) internal _tokenOf;
-    // maps and index to a tokenID for iterable counting stop iterating when token
-    // id is zero must use tail insert to delete or else pagination will end early
-    mapping(uint256 => uint256) internal _tokenIDs;
-    // lookup index by ID
-    mapping(uint256 => uint256) internal _reverseTokenIDs;
-    // tracks the number of tokenIDs this contract holds
-    uint256 internal _lenTokenIDs;
-    // payout amounts for all users to prevent the
-    mapping(address => uint256) public rewardEth;
-    // send of tokens from blocking mass exit only written in post lock unsafe
-    // payout phase only read during final cash out by users
-    mapping(address => uint256) public rewardTokens;
 
-    // determines if payout logic may be triggered all profits must be collected for
-    // all accounts first
+    // maps and index to a tokenID for iterable counting i.e mapping (index ->
+    // tokenID). Stop iterating when token id is zero. Must use tail insert to
+    // delete or else pagination will end early.
+    mapping(uint256 => uint256) internal _tokenIDs;
+    // lookup index by ID (tokenID -> index).
+    mapping(uint256 => uint256) internal _reverseTokenIDs;
+    // tracks the number of tokenIDs this contract holds.
+    uint256 internal _lenTokenIDs;
+
+    // support mapping to keep track all the ethereum owed to user to be
+    // redistributed in the postLock phase during safe mode.
+    mapping(address => uint256) public rewardEth;
+    // support mapping to keep track all the token owed to user to be
+    // redistributed in the postLock phase during safe mode.
+    mapping(address => uint256) public rewardTokens;
+    // Flag to determine if we are in the postLock phase safe or unsafe, i.e if
+    // users are allowed to withdrawal or not. All profits need to be collect by all
+    // positions before setting the safe mode.
     bool public payoutSafe;
 
-    // offset for pagination of token profits stored here so many people may call in
-    // parallel and still do useful work
+    // offset for pagination when collecting the profits in the postLock unsafe
+    // phase. Many people may call aggregateProfits until all rewards has been
+    // collected.
     uint256 internal _tokenIDOffset;
 
     constructor(
@@ -172,8 +178,8 @@ contract Lockup is
     }
 
     modifier onlyPayoutUnSafe() {
-        if (!payoutSafe) {
-            revert PayoutUnsafe();
+        if (payoutSafe) {
+            revert PayoutSafe();
         }
         _;
     }
@@ -321,12 +327,16 @@ contract Lockup is
         uint256 tokenID = tokenOf(msg.sender);
         uint256 shares = _getNumShares(tokenID);
         // TODO UPDATE ALL MAPPINGS LOCALLY BEFORE EXTERNAL INTERACTIONS
-        isLastPosition = _lenTokenIDs == 1;
+        bool isLastPosition = _lenTokenIDs == 1;
         //delete tokenID from iterable tokenID mapping
         _delTokenID(tokenID);
         delete (_tokenOf[msg.sender]);
         delete (_ownerOf[tokenID]);
-        (payoutToken, payoutEth) = RewardPool(_rewardPool).payout(_totalLocked, shares, isLastPosition);
+        (payoutToken, payoutEth) = RewardPool(_rewardPool).payout(
+            _totalLocked,
+            shares,
+            isLastPosition
+        );
         _transferEthAndTokens(msg.sender, payoutEth, payoutToken);
         IERC721Transferable(_publicStakingAddress()).safeTransferFrom(
             address(this),
@@ -386,9 +396,9 @@ contract Lockup is
         }
         // implies !payoutSafe and state one of [preLock, inLock]
         // hold back reserves and fund over deltas
-        uint256 reservedEth = (payoutEth_ * _FRACTION_RESERVED) / _UNIT_ONE;
+        uint256 reservedEth = (payoutEth_ * _FRACTION_RESERVED) / _SCALING_FACTOR;
         usrPayoutEth = payoutEth_ - reservedEth;
-        uint256 reservedToken = (payoutAToken_ * _FRACTION_RESERVED) / _UNIT_ONE;
+        uint256 reservedToken = (payoutAToken_ * _FRACTION_RESERVED) / _SCALING_FACTOR;
         usrPayoutToken = payoutAToken_ - reservedToken;
         // send tokens to reward pool
         _safeTransferERC20(IERC20Transferable(_aTokenAddress()), _rewardPool, reservedToken);
@@ -410,22 +420,24 @@ contract Lockup is
     function claimAllProfits() public {
         uint256 usrPayoutEth = rewardEth[msg.sender];
         uint256 usrPayoutToken = rewardTokens[msg.sender];
-        if(usrPayoutEth == 0) revert NoRewardsToClaim();
-        if(usrPayoutToken == 0) revert NoRewardsToClaim();
+        if (usrPayoutEth == 0) revert NoRewardsToClaim();
+        if (usrPayoutToken == 0) revert NoRewardsToClaim();
         rewardEth[msg.sender] = 0;
         rewardTokens[msg.sender] = 0;
         _safeTransferERC20(IERC20Transferable(_aTokenAddress()), msg.sender, usrPayoutToken);
         _safeTransferEth(msg.sender, usrPayoutEth);
     }
+
     function claimEthProfits() public {
         uint256 usrPayoutEth = rewardEth[msg.sender];
-        if(usrPayoutEth == 0) revert NoRewardsToClaim();
+        if (usrPayoutEth == 0) revert NoRewardsToClaim();
         rewardEth[msg.sender] = 0;
         _safeTransferEth(msg.sender, usrPayoutEth);
     }
+
     function claimTokenProfits() public {
         uint256 usrPayoutToken = rewardTokens[msg.sender];
-        if(usrPayoutToken == 0) revert NoRewardsToClaim();
+        if (usrPayoutToken == 0) revert NoRewardsToClaim();
         rewardTokens[msg.sender] = 0;
         _safeTransferERC20(IERC20Transferable(_aTokenAddress()), msg.sender, usrPayoutToken);
     }
