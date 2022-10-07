@@ -10,11 +10,10 @@ import "contracts/RewardPool.sol";
 import "contracts/utils/ImmutableAuth.sol";
 import "contracts/libraries/lockup/AccessControlled.sol";
 
-// TODO PREVENT ACCEPTING POSITIONS THAT HAVE WITHDRAW LOCK ENFORCED ON PROFITS
 // UNLESS THEY ARE LESS THAN THE LOCKING DURATION AWAY OR THIS WILL CAUSE A
 // FAILURE IN THE EXIT LOGIC
 //
-//ASSUMPTIONS:
+// ASSUMPTIONS:
 // NO LOCAL ACCUMULATORS
 // ONLY ONE POSITION PER ACCOUNT
 // EARLY EXIT ALLOWED WITH PENALTY
@@ -27,6 +26,7 @@ import "contracts/libraries/lockup/AccessControlled.sol";
 //          THIS IS THE ONLY PHASE IN WHICH NEW LOCKED POSITIONS MAY BE FORMED
 //          CAN NOT USE FINAL PAYOUT METHODS
 //          REWARDS ARE ALLOWED TO BE COLLECTED 80/20 SPLIT
+//          PARTIAL WITHDRAW ALLOWED
 //
 // INLOCK
 //          TRANSITION VIA BLOCK NUMBER
@@ -58,11 +58,12 @@ contract Lockup is
     event NewLockup(address from_, uint256 tokenID_);
 
     error ContractDoesNotOwnTokenID(uint256 tokenID_);
+    error AddressAlreadyLockedUp();
     error TokenIDAlreadyClaimed(uint256 tokenID_);
     error MultipleLocksFromSingleAccount(uint256 exitingTokenID_);
     error EthSendFailure();
     error TokenSendFailure();
-    error InsufficientALCAForEarlyExit();
+    error InsufficientBalanceForEarlyExit(uint256 exitValue, uint256 currentBalance);
     error RegistrationOver();
     error LockupOver();
     error UserHasNoPosition();
@@ -73,10 +74,7 @@ contract Lockup is
     error PayoutUnsafe();
     error PayoutSafe();
     error AddressHasNotPositionLinked();
-    error PositionWithdrawFreeAfterGreaterThanLockPeriod(
-        uint256 withdrawFreeAfter,
-        uint256 endBlock
-    );
+    error InvalidPositionWithdrawPeriod(uint256 withdrawFreeAfter, uint256 endBlock);
     error InvalidStartingBlock();
 
     enum State {
@@ -95,9 +93,10 @@ contract Lockup is
     uint256 internal immutable _startBlock;
     // block on which lock ends
     uint256 internal immutable _endBlock;
-    // Total Locked describes the total number of ALCA in this contract. Since no
-    // accumulators are used this is tracked to allow proportionate payouts.
-    uint256 internal _totalLocked;
+    // Total Locked describes the total number of ALCA locked in this contract.
+    // Since no accumulators are used this is tracked to allow proportionate
+    // payouts.
+    uint256 internal _totalSharesLocked;
     // _ownerOf tracks who is the owner of a tokenID locked in this contract
     // mapping(tokenID -> owner).
     mapping(uint256 => address) internal _ownerOf;
@@ -105,9 +104,9 @@ contract Lockup is
     // users are only allowed 1 position per account, mapping (owner -> tokenID).
     mapping(address => uint256) internal _tokenOf;
 
-    // maps and index to a tokenID for iterable counting i.e mapping (index ->
-    // tokenID). Stop iterating when token id is zero. Must use tail insert to
-    // delete or else pagination will end early.
+    // maps and index to a tokenID for iterable counting i.e (index ->  tokenID).
+    // Stop iterating when token id is zero. Must use tail insert to delete or else
+    // pagination will end early.
     mapping(uint256 => uint256) internal _tokenIDs;
     // lookup index by ID (tokenID -> index).
     mapping(uint256 => uint256) internal _reverseTokenIDs;
@@ -164,7 +163,7 @@ contract Lockup is
     }
 
     modifier onlyBeforePostLock() {
-        if (_getState() != State.InLock) {
+        if (_getState() == State.PostLock) {
             revert PostLockStateNotAllowed();
         }
         _;
@@ -184,17 +183,8 @@ contract Lockup is
         _;
     }
 
-    function ownerOf(uint256 tokenID_) public view returns (address payable) {
-        return payable(_ownerOf[tokenID_]);
-    }
-
-    function tokenOf(address acct_) public view returns (uint256) {
-        return _tokenOf[acct_];
-    }
-
     function lockFromApproval(uint256 tokenID_) public onlyPreLock {
-        _unclaimedOrRevert(tokenID_);
-        _withdrawLockLessThanEndBlockOrRevert(tokenID_);
+        _validateEntry(tokenID_);
         _lock(tokenID_, msg.sender);
         // interact last
         IERC721Transferable(_publicStakingAddress()).safeTransferFrom(
@@ -203,13 +193,12 @@ contract Lockup is
             tokenID_
         );
         // check as post condition
-        _lockingOwnsOrRevert(tokenID_);
+        _checkTokenTransfer(tokenID_);
     }
 
     function lockFromTransfer(uint256 tokenID_, address tokenOwner_) public onlyPreLock {
-        _unclaimedOrRevert(tokenID_);
-        _lockingOwnsOrRevert(tokenID_);
-        _withdrawLockLessThanEndBlockOrRevert(tokenID_);
+        _validateEntry(tokenID_);
+        _checkTokenTransfer(tokenID_);
         _lock(tokenID_, tokenOwner_);
     }
 
@@ -218,30 +207,22 @@ contract Lockup is
         onlyBeforePostLock
         returns (uint256 payoutAToken, uint256 payoutEth)
     {
-        uint256 tokenID = tokenOf(msg.sender);
-        if (tokenID == 0) {
-            revert UserHasNoPosition();
-        }
-        return _collectAllProfits(_payableSender(), tokenID);
+        return _collectAllProfits(_payableSender(), _validateAndGetTokenId());
     }
 
-    function unlockEarly(uint256 exitValue_)
+    function unlockEarly(uint256 exitValue_, bool restakeExit_)
         public
         onlyBeforePostLock
-        returns (uint256 payoutEth, uint256 payoutAToken)
+        returns (uint256 payoutEth, uint256 payoutToken)
     {
-        // get tokenID of caller
-        uint256 tokenID = tokenOf(msg.sender);
-        if (tokenID == 0) {
-            revert UserHasNoPosition();
-        }
+        uint256 tokenID = _validateAndGetTokenId();
         // get the number of shares and check validity
         uint256 shares = _getNumShares(tokenID);
-        if (shares < exitValue_) {
-            revert InsufficientALCAForEarlyExit();
+        if (exitValue_ > shares) {
+            revert InsufficientBalanceForEarlyExit(exitValue_, shares);
         }
         // burn the existing position
-        (payoutEth, payoutAToken) = IStakingNFT(_publicStakingAddress()).burn(tokenID);
+        (payoutEth, payoutToken) = IStakingNFT(_publicStakingAddress()).burn(tokenID);
 
         // blank old record
         _ownerOf[tokenID] = address(0);
@@ -249,15 +230,15 @@ contract Lockup is
         uint256 newTokenID;
         // find shares delta and mint new position
         uint256 remainingShares = shares - exitValue_;
-        if (exitValue_ < shares) {
+        if (remainingShares > 0) {
             // burn profits contain staked position... so sub it out
-            payoutAToken = payoutAToken - shares;
+            payoutToken = payoutToken - shares;
             newTokenID = IStakingNFT(_publicStakingAddress()).mint(remainingShares);
             // set new records
             _ownerOf[newTokenID] = msg.sender;
             _replaceTokenID(tokenID, newTokenID);
         } else {
-            _delTokenID(tokenID);
+            _removeTokenID(tokenID);
             // set new records
             // TODO ENSURE WE ACCOUNT FOR STAKED POSITION DIFFERENT THAN
             // REWARDS
@@ -265,8 +246,8 @@ contract Lockup is
         // safe because newTokenId is zero if shares == exitValue
         _tokenOf[msg.sender] = newTokenID;
         // cleanup total shares and payout profits less reserve
-        _totalLocked -= exitValue_;
-        _distributeAllProfits(_payableSender(), payoutAToken, payoutEth);
+        _totalSharesLocked -= exitValue_;
+        _distributeAllProfits(_payableSender(), payoutToken, payoutEth, exitValue_, restakeExit_);
     }
 
     // we must iterate all positions and dump profits before we are able to
@@ -296,7 +277,7 @@ contract Lockup is
                     break;
                 }
             }
-            address payable acct = ownerOf(tokenID);
+            address payable acct = _getOwnerOf(tokenID);
             _collectAllProfits(acct, tokenID);
             {
                 uint256 gasrem = gasleft();
@@ -323,17 +304,15 @@ contract Lockup is
         onlyPayoutSafe
         returns (uint256 payoutToken, uint256 payoutEth)
     {
-        // todo require that position exists!
-        uint256 tokenID = tokenOf(msg.sender);
+        uint256 tokenID = _getTokenOf(msg.sender);
         uint256 shares = _getNumShares(tokenID);
-        // TODO UPDATE ALL MAPPINGS LOCALLY BEFORE EXTERNAL INTERACTIONS
         bool isLastPosition = _lenTokenIDs == 1;
         //delete tokenID from iterable tokenID mapping
-        _delTokenID(tokenID);
+        _removeTokenID(tokenID);
         delete (_tokenOf[msg.sender]);
         delete (_ownerOf[tokenID]);
         (payoutToken, payoutEth) = RewardPool(_rewardPool).payout(
-            _totalLocked,
+            _totalSharesLocked,
             shares,
             isLastPosition
         );
@@ -345,6 +324,14 @@ contract Lockup is
         );
     }
 
+    function ownerOf(uint256 tokenID_) public view returns (address payable) {
+        return _getOwnerOf(tokenID_);
+    }
+
+    function tokenOf(address acct_) public view returns (uint256) {
+        return _getTokenOf(acct_);
+    }
+
     function getEnrollmentStartBlock() public view returns (uint256) {
         return _startBlock;
     }
@@ -353,9 +340,9 @@ contract Lockup is
         return _endBlock;
     }
 
-    function _lock(uint256 tokenID_, address tokenOwner_) internal onlyPreLock {
-        uint256 shares = _getNumShares(tokenID_);
-        _totalLocked += shares;
+    function _lock(uint256 tokenID_, address tokenOwner_) internal {
+        uint256 shares = _verifyPositionAndGetShares(tokenID_);
+        _totalSharesLocked += shares;
         _tokenOf[tokenOwner_] = tokenID_;
         _ownerOf[tokenID_] = tokenOwner_;
         _newTokenID(tokenID_);
@@ -371,18 +358,20 @@ contract Lockup is
         returns (uint256 payoutToken, uint256 payoutEth)
     {
         (payoutToken, payoutEth) = IStakingNFT(_publicStakingAddress()).collectAllProfits(tokenID_);
-        return _distributeAllProfits(acct_, payoutToken, payoutEth);
+        return _distributeAllProfits(acct_, payoutToken, payoutEth, 0, false);
     }
 
     function _distributeAllProfits(
         address payable acct_,
-        uint256 payoutAToken_,
-        uint256 payoutEth_
+        uint256 payoutToken_,
+        uint256 payoutEth_,
+        uint256 additionalTokens,
+        bool stakeExit
     ) internal returns (uint256 usrPayoutToken, uint256 usrPayoutEth) {
         State state = _getState();
         bool localPayoutSafe = payoutSafe;
         usrPayoutEth = payoutEth_;
-        usrPayoutToken = payoutAToken_;
+        usrPayoutToken = payoutToken_;
         if (localPayoutSafe && state == State.PostLock) {
             // case of we are sending out final pay based on request
             // just pay all
@@ -398,8 +387,8 @@ contract Lockup is
         // hold back reserves and fund over deltas
         uint256 reservedEth = (payoutEth_ * _FRACTION_RESERVED) / _SCALING_FACTOR;
         usrPayoutEth = payoutEth_ - reservedEth;
-        uint256 reservedToken = (payoutAToken_ * _FRACTION_RESERVED) / _SCALING_FACTOR;
-        usrPayoutToken = payoutAToken_ - reservedToken;
+        uint256 reservedToken = (payoutToken_ * _FRACTION_RESERVED) / _SCALING_FACTOR;
+        usrPayoutToken = payoutToken_ - reservedToken;
         // send tokens to reward pool
         _safeTransferERC20(IERC20Transferable(_aTokenAddress()), _rewardPool, reservedToken);
         RewardPool(_rewardPool).deposit{value: reservedEth}(reservedToken);
@@ -412,7 +401,15 @@ contract Lockup is
             rewardTokens[acct_] += usrPayoutToken;
             return (usrPayoutToken, usrPayoutEth);
         } else {
-            _transferEthAndTokens(acct_, usrPayoutEth, usrPayoutToken);
+            // adding any additional token that should be sent to the user (e.g shares from
+            // burned position on early exit)
+            usrPayoutToken += additionalTokens;
+            if (stakeExit) {
+                IStakingNFT(_publicStakingAddress()).mintTo(acct_, usrPayoutToken, 0);
+            } else {
+                _safeTransferERC20(IERC20Transferable(_aTokenAddress()), acct_, usrPayoutToken);
+            }
+            _safeTransferEth(acct_, usrPayoutEth);
         }
         return (usrPayoutToken, usrPayoutEth);
     }
@@ -482,12 +479,12 @@ contract Lockup is
         _reverseTokenIDs[newID_] = index;
     }
 
-    function _delTokenID(uint256 tokenID_) internal {
-        uint256 tlen = _lenTokenIDs;
-        if (tlen == 0) {
+    function _removeTokenID(uint256 tokenID_) internal {
+        uint256 initialLen = _lenTokenIDs;
+        if (initialLen == 0) {
             return;
         }
-        if (tlen == 1) {
+        if (initialLen == 1) {
             uint256 index = _reverseTokenIDs[tokenID_];
             _reverseTokenIDs[tokenID_] = 0;
             _tokenIDs[index] = 0;
@@ -495,50 +492,58 @@ contract Lockup is
             return;
         }
         // pop the tail
-        uint256 tailTokenID = _tokenIDs[tlen];
-        _tokenIDs[tlen] = 0;
-        _reverseTokenIDs[tailTokenID] = 0;
-        _lenTokenIDs -= 1;
+        uint256 tailTokenID = _tokenIDs[initialLen];
+        _tokenIDs[initialLen] = 0;
+        _lenTokenIDs = initialLen - 1;
         if (tailTokenID == tokenID_) {
             // element was tail, so we are done
+            _reverseTokenIDs[tailTokenID] = 0;
             return;
         }
         // use swap logic to re-insert tail over other position
         _replaceTokenID(tokenID_, tailTokenID);
     }
 
-    function _lockingOwnsOrRevert(uint256 tokenID_) internal view {
+    function _checkTokenTransfer(uint256 tokenID_) internal view {
         if (IERC721(_publicStakingAddress()).ownerOf(tokenID_) != address(this)) {
             revert ContractDoesNotOwnTokenID(tokenID_);
         }
     }
 
-    function _unclaimedOrRevert(uint256 tokenID_) internal view {
-        if (ownerOf(tokenID_) != address(0)) {
+    function _validateEntry(uint256 tokenID_) internal view {
+        if (_getOwnerOf(tokenID_) != address(0)) {
             revert TokenIDAlreadyClaimed(tokenID_);
+        }
+        if (_getTokenOf(msg.sender) != 0) {
+            revert AddressAlreadyLockedUp();
         }
     }
 
+    function _validateAndGetTokenId() internal view returns (uint256) {
+        // get tokenID of caller
+        uint256 tokenID = _getTokenOf(msg.sender);
+        if (tokenID == 0) {
+            revert UserHasNoPosition();
+        }
+        return tokenID;
+    }
+
     function _claimedOrRevert(uint256 tokenID_) internal view {
-        if (ownerOf(tokenID_) == address(0)) {
+        if (_getOwnerOf(tokenID_) == address(0)) {
             revert AddressHasNotPositionLinked();
         }
     }
 
-    function _noTokenIDOrRevert(address acct_) internal view {
-        uint256 tid = tokenOf(acct_);
-        if (tid != 0) {
-            revert MultipleLocksFromSingleAccount(tid);
+    // Gets the shares of position and checks if a position exists and if we can collect the
+    // profits after the _endBlock.
+    function _verifyPositionAndGetShares(uint256 tokenId_) internal view returns (uint256) {
+        // get position fails if the position doesn't exists!
+        (uint256 shares, , uint256 withdrawFreeAfter, , ) = IStakingNFT(_publicStakingAddress())
+            .getPosition(tokenId_);
+        if (withdrawFreeAfter >= _endBlock) {
+            revert InvalidPositionWithdrawPeriod(withdrawFreeAfter, _endBlock);
         }
-    }
-
-    function _withdrawLockLessThanEndBlockOrRevert(uint256 tokenId_) internal view {
-        (, , uint256 withdrawFreeAfter, , ) = IStakingNFT(_publicStakingAddress()).getPosition(
-            tokenId_
-        );
-        if (withdrawFreeAfter > _endBlock) {
-            revert PositionWithdrawFreeAfterGreaterThanLockPeriod(withdrawFreeAfter, _endBlock);
-        }
+        return shares;
     }
 
     function _getState() internal view returns (State) {
@@ -549,5 +554,13 @@ contract Lockup is
             return State.InLock;
         }
         return State.PostLock;
+    }
+
+    function _getOwnerOf(uint256 tokenID_) internal view returns (address payable) {
+        return payable(_ownerOf[tokenID_]);
+    }
+
+    function _getTokenOf(address acct_) internal view returns (uint256) {
+        return _tokenOf[acct_];
     }
 }

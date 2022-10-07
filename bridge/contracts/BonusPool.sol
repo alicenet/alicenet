@@ -79,6 +79,7 @@ contract BonusPool is
         _tokenID = IStakingNFT(_publicStakingAddress()).mint(totalBonusAmount);
     }
 
+    // todo: Hunter double check this.
     function setBonusRate(uint256 totalLocked) public onlyLockup {
         if (_bonusRate != 0) {
             revert BonusRateAlreadySet();
