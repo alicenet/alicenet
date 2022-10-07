@@ -1,7 +1,8 @@
-package brontide
+package transport
 
 import (
 	"errors"
+	"github.com/lightningnetwork/lnd/brontide"
 	"io"
 	"net"
 	"strconv"
@@ -32,12 +33,12 @@ func (c *connCloseWrapper) Close() error {
 	return c.closeFN()
 }
 
-// Listener is an implementation of a net.Conn which executes an authenticated
+// BrontideListenerWrapper is an implementation of a net.Conn which executes an authenticated
 // key exchange and message encryption protocol dubbed "Machine" after
 // initial connection acceptance. See the Machine struct for additional
 // details w.r.t the handshake and encryption scheme used within the
 // connection.
-type Listener struct {
+type BrontideListenerWrapper struct {
 	sync.Mutex
 	logger *logrus.Logger
 
@@ -63,7 +64,7 @@ type Listener struct {
 
 // NewListener returns a new net.Listener which enforces the Brontide scheme
 // during both initial connection establishment and state transfer.
-func NewListener(localStatic *secp256k1.PrivateKey, host string, port int, protoVersion types.ProtoVersion, chainID types.ChainIdentifier, totalLimit, pubkeyLimit, originLimit int) (*Listener, error) {
+func NewListener(localStatic *secp256k1.PrivateKey, host string, port int, protoVersion types.ProtoVersion, chainID types.ChainIdentifier, totalLimit, pubkeyLimit, originLimit int) (*BrontideListenerWrapper, error) {
 	listenAddr := net.JoinHostPort(host, strconv.Itoa(port))
 
 	addr, err := net.ResolveTCPAddr("tcp", listenAddr)
@@ -76,7 +77,7 @@ func NewListener(localStatic *secp256k1.PrivateKey, host string, port int, proto
 		return nil, err
 	}
 
-	brontideListener := &Listener{
+	brontideListener := &BrontideListenerWrapper{
 		localStatic:            localStatic,
 		tcp:                    l,
 		logger:                 logging.GetLogger(constants.LoggerTransport),
@@ -108,7 +109,7 @@ func rejectedConnErr(err error, remoteAddr string) error {
 // defaultHandshakes will be active at any given time.
 //
 // NOTE: This method must be run as a goroutine.
-func (l *Listener) listen() {
+func (l *BrontideListenerWrapper) listen() {
 	for {
 		select {
 		case <-l.quit:
@@ -132,7 +133,7 @@ func (l *Listener) listen() {
 }
 
 // preHandshake limits by connections by remote host.
-func (l *Listener) preHandshake(conn net.Conn) {
+func (l *BrontideListenerWrapper) preHandshake(conn net.Conn) {
 	l.Lock()
 	defer l.Unlock()
 
@@ -184,7 +185,7 @@ func (l *Listener) preHandshake(conn net.Conn) {
 	go l.doHandshake(c)
 }
 
-func (l *Listener) postHandshake(conn *Conn) {
+func (l *BrontideListenerWrapper) postHandshake(conn *Conn) {
 	l.Lock()
 	defer l.Unlock()
 
@@ -225,7 +226,7 @@ func (l *Listener) postHandshake(conn *Conn) {
 // doHandshake asynchronously performs the brontide handshake, so that it does
 // not block the main accept loop. This prevents peers that delay writing to the
 // connection from block other connection attempts.
-func (l *Listener) doHandshake(conn net.Conn) {
+func (l *BrontideListenerWrapper) doHandshake(conn net.Conn) {
 	select {
 	case <-l.quit:
 		return
@@ -236,7 +237,7 @@ func (l *Listener) doHandshake(conn net.Conn) {
 
 	brontideConn := &Conn{
 		conn:      conn,
-		noise:     NewBrontideMachine(false, l.localStatic, nil),
+		noise:     brontide.NewBrontideMachine(false, l.localStatic, nil),
 		closeChan: make(chan struct{}),
 		closeOnce: sync.Once{},
 		closeFn:   conn.Close,
@@ -473,7 +474,7 @@ type maybeConn struct {
 }
 
 // acceptConn returns a connection that successfully performed a handshake.
-func (l *Listener) acceptConn(conn *Conn) {
+func (l *BrontideListenerWrapper) acceptConn(conn *Conn) {
 	select {
 	case l.conns <- maybeConn{conn: conn}:
 	case <-l.quit:
@@ -481,7 +482,7 @@ func (l *Listener) acceptConn(conn *Conn) {
 }
 
 // rejectConn logs any errors encountered during connection or handshake.
-func (l *Listener) rejectConn(err error) {
+func (l *BrontideListenerWrapper) rejectConn(err error) {
 	select {
 	case l.conns <- maybeConn{err: err}:
 		utils.DebugTrace(l.logger, err)
@@ -496,7 +497,7 @@ func (l *Listener) rejectConn(err error) {
 // our static public key.
 //
 // Part of the net.Listener interface.
-func (l *Listener) Accept() (*Conn, error) {
+func (l *BrontideListenerWrapper) Accept() (*Conn, error) {
 	select {
 	case result := <-l.conns:
 		return result.conn, result.err
@@ -509,7 +510,7 @@ func (l *Listener) Accept() (*Conn, error) {
 // and return errors.
 //
 // Part of the net.Listener interface.
-func (l *Listener) Close() error {
+func (l *BrontideListenerWrapper) Close() error {
 	select {
 	case <-l.quit:
 	default:
@@ -521,6 +522,6 @@ func (l *Listener) Close() error {
 // Addr returns the listener's network address.
 //
 // Part of the net.Listener interface.
-func (l *Listener) Addr() net.Addr {
+func (l *BrontideListenerWrapper) Addr() net.Addr {
 	return l.tcp.Addr()
 }

@@ -1,7 +1,7 @@
 package transport
 
 import (
-	"fmt"
+	"github.com/alicenet/alicenet/config"
 	"net"
 	"sync"
 	"time"
@@ -80,94 +80,23 @@ func (pt *P2PTransport) Dial(addr interfaces.NodeAddr, protocol types.Protocol) 
 	if err != nil {
 		return nil, err
 	}
-	// run the authentication and encryption handshake
-	privateKey := convertCryptoPrivateKey2KeychainPrivateKey(pt.localPrivateKey)
-	bconn, err := brontide.Dial(privateKey,
-		//protocol,
-		//protoVersion,
-		//pt.localNodeAddr.ChainID(),
-		//pt.localNodeAddr.Port(),
-		btcAddr,
-		10*time.Second,
-		func(network, address string, timeout time.Duration) (net.Conn, error) {
-			return net.Dial(network, addr.String())
-		})
-	if err != nil {
-		return nil, err
-	}
 
-	// todo: do other handshakes here
-	if err := selfInitiatedChainIdentifierHandshake(bconn, pt.localNodeAddr.ChainID()); err != nil {
-		bconn.Close()
-		return nil, err
-	}
-
-	if err := bconn.SetReadDeadline(time.Now().Add(handshakeReadTimeout)); err != nil {
-		bconn.Close()
-		return nil, err
-	}
-	remoteP2PPort, err := selfInitiatedPortHandshake(bconn, pt.localNodeAddr.Port())
-	if err != nil {
-		bconn.Close()
-		return nil, err
-	}
-
-	if err := bconn.SetReadDeadline(time.Now().Add(handshakeReadTimeout)); err != nil {
-		bconn.Close()
-		return nil, err
-	}
-	remoteVersion, err := selfInitiatedVersionHandshake(bconn, protoVersion)
-	if err != nil {
-		bconn.Close()
-		return nil, err
-	}
-
-	if err := writeUint32(bconn, uint32(protocol)); err != nil {
-		bconn.Close()
-		return nil, err
-	}
-
-	// We'll reset the deadline as it's no longer critical beyond the
-	// initial handshake.
-	err = bconn.SetReadDeadline(time.Time{})
-	if err != nil {
-		bconn.Close()
-		return nil, err
-	}
-
-	// b.P2PPort = remoteP2PPort
-	//b.Version = types.ProtoVersion(remoteVersion)
-	//b.Protocol = protocol
-
-	publicKey, err := convertDecredSecpPubKey2CryptoSecpPubKey(bconn.RemotePub())
-	if err != nil {
-		return nil, err
-	}
-
-	// todo: move it to a more appropriate place
-	closeChan := make(chan struct{})
-	go func() {
-		pt.logger.Warn("waiting connection close from custom Dial.CloseChan 1")
-		<-closeChan
-		pt.logger.Warn("closing peer connection with custom Dial.CloseChan 2")
-		//bconn.Close()
-		//pt.logger.Warn("closing peer connection with custom Dial.CloseChan 3")
-	}()
+	bconn, err := Dial(addr, btcAddr, pt.localPrivateKey, pt.NodeAddr().ChainID(), pt.NodeAddr().Port(), protocol)
 
 	return &P2PConn{
 		nodeAddr: &NodeAddr{
 			host:     addr.Host(),
-			port:     remoteP2PPort,
+			port:     bconn.P2PPort,
 			chainID:  pt.localNodeAddr.ChainID(),
-			identity: publicKey,
+			identity: bconn.publicKey,
 		},
-		conn:         bconn,
+		Conn:         bconn,
 		logger:       pt.logger,
 		initiator:    types.SelfInitiatedConnection,
-		protocol:     protocol,
-		protoVersion: types.ProtoVersion(remoteVersion),
-		cleanupfn:    func() { close(closeChan) },
-		closeChan:    closeChan,
+		protocol:     bconn.Protocol,
+		protoVersion: bconn.Version,
+		cleanupfn:    func() {},
+		closeChan:    bconn.CloseChan(),
 	}, nil
 }
 
@@ -329,7 +258,7 @@ func (pt *P2PTransport) handleConnection(bconn *brontide.Conn) interfaces.P2PCon
 			chainID:  pt.localNodeAddr.ChainID(),
 			identity: publicKey,
 		},
-		conn:         bconn,
+		Conn:         bconn,
 		logger:       pt.logger,
 		initiator:    types.PeerInitiatedConnection,
 		protocol:     types.Protocol(protocol),
@@ -389,24 +318,17 @@ func NewP2PTransport(logger *logrus.Logger, cid types.ChainIdentifier, privateKe
 		chainID:  cid,
 	}
 
-	keychainPrivateKey := convertCryptoPrivateKey2KeychainPrivateKey(localPrivateKey)
-
-	// var mc int
-	// var mp int
-	// if config.Configuration.Transport.OriginLimit <= 0 {
-	// 	mc = 3
-	// } else {
-	// 	mc = config.Configuration.Transport.OriginLimit
-	// }
-	// if config.Configuration.Transport.PeerLimitMax <= 0 {
-	// 	mp = 16
-	// } else {
-	// 	mp = config.Configuration.Transport.PeerLimitMax
-	// }
-
-	listener, err := brontide.NewListener(keychainPrivateKey, fmt.Sprintf("%v:%v", host, port))
-	if err != nil {
-		return nil, err
+	var mc int
+	var mp int
+	if config.Configuration.Transport.OriginLimit <= 0 {
+		mc = 3
+	} else {
+		mc = config.Configuration.Transport.OriginLimit
+	}
+	if config.Configuration.Transport.PeerLimitMax <= 0 {
+		mp = 16
+	} else {
+		mp = config.Configuration.Transport.PeerLimitMax
 	}
 
 	transport := &P2PTransport{
