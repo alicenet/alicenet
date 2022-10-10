@@ -29,7 +29,7 @@ require (
 	golang.org/x/sys v0.0.0-20220818161305-2296e01440c6
 	golang.org/x/tools v0.1.12
 	google.golang.org/genproto v0.0.0-20220822174746-9e6da59bd2fc
-	google.golang.org/grpc v1.49.0
+	google.golang.org/grpc v1.50.0
 	google.golang.org/protobuf v1.28.1
 )
 
