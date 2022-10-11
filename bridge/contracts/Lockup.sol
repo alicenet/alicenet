@@ -83,7 +83,7 @@ contract Lockup is
         PostLock
     }
 
-    uint256 internal constant _SCALING_FACTOR = 10 ^ 18;
+    uint256 internal constant _SCALING_FACTOR = 10**18;
     uint256 internal constant _FRACTION_RESERVED = _SCALING_FACTOR / 5;
     // rewardPool contract address
     address internal immutable _rewardPool;
@@ -210,7 +210,7 @@ contract Lockup is
         return _collectAllProfits(_payableSender(), _validateAndGetTokenId());
     }
 
-    function unlockEarly(uint256 exitValue_, bool restakeExit_)
+    function unlockEarly(uint256 exitValue_, bool stakeExit_)
         public
         onlyBeforePostLock
         returns (uint256 payoutEth, uint256 payoutToken)
@@ -223,7 +223,6 @@ contract Lockup is
         }
         // burn the existing position
         (payoutEth, payoutToken) = IStakingNFT(_publicStakingAddress()).burn(tokenID);
-
         // blank old record
         _ownerOf[tokenID] = address(0);
         // create placeholder
@@ -247,7 +246,7 @@ contract Lockup is
         _tokenOf[msg.sender] = newTokenID;
         // cleanup total shares and payout profits less reserve
         _totalSharesLocked -= exitValue_;
-        _distributeAllProfits(_payableSender(), payoutToken, payoutEth, exitValue_, restakeExit_);
+        _distributeAllProfits(_payableSender(), payoutToken, payoutEth, exitValue_, stakeExit_);
     }
 
     // we must iterate all positions and dump profits before we are able to
@@ -367,51 +366,50 @@ contract Lockup is
         uint256 payoutEth_,
         uint256 additionalTokens,
         bool stakeExit
-    ) internal returns (uint256 usrPayoutToken, uint256 usrPayoutEth) {
+    ) internal returns (uint256 userPayoutToken, uint256 userPayoutEth) {
         State state = _getState();
         bool localPayoutSafe = payoutSafe;
-        usrPayoutEth = payoutEth_;
-        usrPayoutToken = payoutToken_;
+        userPayoutEth = payoutEth_;
+        userPayoutToken = payoutToken_;
         if (localPayoutSafe && state == State.PostLock) {
             // case of we are sending out final pay based on request
             // just pay all
-            usrPayoutEth += rewardEth[acct_];
-            usrPayoutToken += rewardTokens[acct_];
+            userPayoutEth += rewardEth[acct_];
+            userPayoutToken += rewardTokens[acct_];
             rewardEth[acct_] = 0;
             rewardTokens[acct_] = 0;
-            _safeTransferERC20(IERC20Transferable(_aTokenAddress()), acct_, usrPayoutToken);
-            _safeTransferEth(acct_, usrPayoutEth);
-            return (usrPayoutToken, usrPayoutEth);
+            _transferEthAndTokens(acct_, userPayoutEth, userPayoutToken);
+            return (userPayoutToken, userPayoutEth);
         }
         // implies !payoutSafe and state one of [preLock, inLock]
         // hold back reserves and fund over deltas
-        uint256 reservedEth = (payoutEth_ * _FRACTION_RESERVED) / _SCALING_FACTOR;
-        usrPayoutEth = payoutEth_ - reservedEth;
-        uint256 reservedToken = (payoutToken_ * _FRACTION_RESERVED) / _SCALING_FACTOR;
-        usrPayoutToken = payoutToken_ - reservedToken;
+        (uint256 reservedEth, uint256 reservedToken) = _computeReservedAmount(
+            payoutEth_,
+            payoutToken_
+        );
+        userPayoutEth -= reservedEth;
+        userPayoutToken -= reservedToken;
         // send tokens to reward pool
-        _safeTransferERC20(IERC20Transferable(_aTokenAddress()), _rewardPool, reservedToken);
-        RewardPool(_rewardPool).deposit{value: reservedEth}(reservedToken);
+        _depositFundsInRewardPool(reservedEth, reservedToken);
         // either store to map or send to user
         if (!localPayoutSafe && state == State.PostLock) {
             // we should not send here and should instead track to local mapping
             // as otherwise a single bad user could block exit operations for all
             // other users by making the send to their account fail via a contract
-            rewardEth[acct_] += usrPayoutEth;
-            rewardTokens[acct_] += usrPayoutToken;
-            return (usrPayoutToken, usrPayoutEth);
-        } else {
-            // adding any additional token that should be sent to the user (e.g shares from
-            // burned position on early exit)
-            usrPayoutToken += additionalTokens;
-            if (stakeExit) {
-                IStakingNFT(_publicStakingAddress()).mintTo(acct_, usrPayoutToken, 0);
-            } else {
-                _safeTransferERC20(IERC20Transferable(_aTokenAddress()), acct_, usrPayoutToken);
-            }
-            _safeTransferEth(acct_, usrPayoutEth);
+            rewardEth[acct_] += userPayoutEth;
+            rewardTokens[acct_] += userPayoutToken;
+            return (userPayoutToken, userPayoutEth);
         }
-        return (usrPayoutToken, usrPayoutEth);
+        // adding any additional token that should be sent to the user (e.g shares from
+        // burned position on early exit)
+        userPayoutToken += additionalTokens;
+        if (stakeExit) {
+            IStakingNFT(_publicStakingAddress()).mintTo(acct_, userPayoutToken, 0);
+        } else {
+            _safeTransferERC20(IERC20Transferable(_aTokenAddress()), acct_, userPayoutToken);
+        }
+        _safeTransferEth(acct_, userPayoutEth);
+        return (userPayoutToken, userPayoutEth);
     }
 
     function getEthRewardBalance() public view returns (uint256) {
@@ -429,15 +427,6 @@ contract Lockup is
     ) internal {
         _safeTransferERC20(IERC20Transferable(_aTokenAddress()), to_, payoutToken_);
         _safeTransferEth(to_, payoutEth_);
-    }
-
-    function _payableSender() internal view returns (address payable) {
-        return payable(msg.sender);
-    }
-
-    function _getTokenIDAtIndex(uint256 index_) internal view returns (uint256 tokenID, bool ok) {
-        tokenID = _tokenIDs[index_];
-        return (tokenID, tokenID > 0);
     }
 
     function _newTokenID(uint256 tokenID_) internal {
@@ -477,6 +466,20 @@ contract Lockup is
         }
         // use swap logic to re-insert tail over other position
         _replaceTokenID(tokenID_, tailTokenID);
+    }
+
+    function _depositFundsInRewardPool(uint256 reservedEth_, uint256 reservedToken_) internal {
+        _safeTransferERC20(IERC20Transferable(_aTokenAddress()), _rewardPool, reservedToken_);
+        RewardPool(_rewardPool).deposit{value: reservedEth_}(reservedToken_);
+    }
+
+    function _payableSender() internal view returns (address payable) {
+        return payable(msg.sender);
+    }
+
+    function _getTokenIDAtIndex(uint256 index_) internal view returns (uint256 tokenID, bool ok) {
+        tokenID = _tokenIDs[index_];
+        return (tokenID, tokenID > 0);
     }
 
     function _checkTokenTransfer(uint256 tokenID_) internal view {
@@ -537,5 +540,14 @@ contract Lockup is
 
     function _getTokenOf(address acct_) internal view returns (uint256) {
         return _tokenOf[acct_];
+    }
+
+    function _computeReservedAmount(uint256 payoutEth_, uint256 payoutToken_)
+        internal
+        pure
+        returns (uint256 reservedEth, uint256 reservedToken)
+    {
+        reservedEth = (payoutEth_ * _FRACTION_RESERVED) / _SCALING_FACTOR;
+        reservedToken = (payoutToken_ * _FRACTION_RESERVED) / _SCALING_FACTOR;
     }
 }
