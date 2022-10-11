@@ -134,13 +134,13 @@ contract Lockup is
         uint256 lockDuration_,
         uint256 totalBonusAmount_
     ) ImmutableFactory(msg.sender) ImmutablePublicStaking() ImmutableAToken() {
-        RewardPool rewardPool_ = new RewardPool(
+        RewardPool rewardPool = new RewardPool(
             _aTokenAddress(),
             _factoryAddress(),
             totalBonusAmount_
         );
-        _rewardPool = address(rewardPool_);
-        _bonusPool = rewardPool_.getBonusPoolAddress();
+        _rewardPool = address(rewardPool);
+        _bonusPool = rewardPool.getBonusPoolAddress();
         if (startBlock_ < block.number) {
             revert InvalidStartingBlock();
         }
@@ -337,6 +337,18 @@ contract Lockup is
         return _endBlock;
     }
 
+    function getEthRewardBalance() public view returns (uint256) {
+        return rewardEth[msg.sender];
+    }
+
+    function getTokenRewardBalance() public view returns (uint256) {
+        return rewardTokens[msg.sender];
+    }
+
+    function getRewardPoolAddress() public view returns (address) {
+        return _rewardPool;
+    }
+
     function _lock(uint256 tokenID_, address tokenOwner_) internal {
         uint256 shares = _verifyPositionAndGetShares(tokenID_);
         _totalSharesLocked += shares;
@@ -408,14 +420,6 @@ contract Lockup is
         }
         _safeTransferEth(acct_, userPayoutEth);
         return (userPayoutToken, userPayoutEth);
-    }
-
-    function getEthRewardBalance() public view returns (uint256) {
-        return rewardEth[msg.sender];
-    }
-
-    function getTokenRewardBalance() public view returns (uint256) {
-        return rewardTokens[msg.sender];
     }
 
     function _transferEthAndTokens(
