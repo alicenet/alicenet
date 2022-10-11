@@ -605,6 +605,30 @@
         "type": "uint256"
       }
     ],
+    "name": "estimateAllProfits",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "payoutEth",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "payoutToken",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "tokenID_",
+        "type": "uint256"
+      }
+    ],
     "name": "estimateEthCollection",
     "outputs": [
       {

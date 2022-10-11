@@ -32,22 +32,6 @@ contract RewardPool is AccessControlled, EthSafeTransfer, ERC20SafeTransfer {
         _alca = alca_;
     }
 
-    function getBonusPoolAddress() public view returns (address) {
-        return _getBonusPoolAddress();
-    }
-
-    function getLockupContractAddress() public view returns (address) {
-        return _getLockupContractAddress();
-    }
-
-    function getTokenReserve() public view returns (uint256) {
-        return _tokenReserve;
-    }
-
-    function getEthReserve() public view returns (uint256) {
-        return _ethReserve;
-    }
-
     function deposit(uint256 numTokens_) public payable onlyLockupOrBonus {
         _tokenReserve += numTokens_;
         _ethReserve += msg.value;
@@ -71,6 +55,22 @@ contract RewardPool is AccessControlled, EthSafeTransfer, ERC20SafeTransfer {
         _safeTransferERC20(IERC20Transferable(_alca), _lockupContract, proportionalTokens);
         _safeTransferEth(payable(_lockupContract), proportionalEth);
         return (proportionalTokens, proportionalEth);
+    }
+
+    function getBonusPoolAddress() public view returns (address) {
+        return _getBonusPoolAddress();
+    }
+
+    function getLockupContractAddress() public view returns (address) {
+        return _getLockupContractAddress();
+    }
+
+    function getTokenReserve() public view returns (uint256) {
+        return _tokenReserve;
+    }
+
+    function getEthReserve() public view returns (uint256) {
+        return _ethReserve;
     }
 
     function _getLockupContractAddress() internal view override returns (address) {
