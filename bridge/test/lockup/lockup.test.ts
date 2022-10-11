@@ -1,12 +1,13 @@
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
+import { expect } from "chai";
 import { BigNumber, BytesLike } from "ethers";
 import { ethers } from "hardhat";
 import { CONTRACT_ADDR, DEPLOYED_RAW } from "../../scripts/lib/constants";
 import { BonusPool, Lockup, RewardPool } from "../../typechain-types";
 import { factory } from "../../typechain-types/contracts/libraries";
 import { getEventVar } from "../factory/Setup";
-import { BaseTokensFixture, deployFactoryAndBaseTokens, preFixtureSetup } from "../setup";
+import { BaseTokensFixture, deployFactoryAndBaseTokens, posFixtureSetup, preFixtureSetup } from "../setup";
 
 const startBlock = 100;
 const lockDuration = 100;
@@ -31,6 +32,7 @@ async function deployFixture() {
     DEPLOYED_RAW,
     CONTRACT_ADDR
   );
+  await posFixtureSetup(fixture.factory, fixture.aToken);
   const lockup = await ethers.getContractAt("Lockup", lockupAddress);
   //get the address of the reward pool from the lockup contract
   const rewardPoolAddress = await lockup.getRewardPoolAddress();
@@ -42,16 +44,18 @@ async function deployFixture() {
   const bonusPoolAddress = await rewardPool.getBonusPoolAddress();
   const bonusPool = await ethers.getContractAt("BonusPool", bonusPoolAddress);
   let tokenIDs = []
+  console.log(await fixture.aToken.balanceOf(signers[0].address))
+  console.log(await fixture.aToken.balanceOf(fixture.factory.address))
   for(let i = 1; i < 6; i++){
     //transfer 100 ALCA from admin to users
-    let txResponse = await fixture.aToken.transfer(signers[i].address, stakedAmount);
+    let txResponse = await fixture.aToken.connect(signers[0]).transfer(signers[i].address, stakedAmount);
     await txResponse.wait();
     //stake the tokens
     txResponse = await fixture.aToken.connect(signers[i]).increaseAllowance(fixture.publicStaking.address, stakedAmount)
     await txResponse.wait()
     txResponse = await fixture.publicStaking.connect(signers[i]).mint(stakedAmount)
     const tokenID = await fixture.publicStaking.tokenOfOwnerByIndex(signers[i].address, 0)
-    tokenIDs.push(tokenID)
+    tokenIDs[i] = tokenID
   }
   
   return {
@@ -81,9 +85,16 @@ describe("lockup", async () => {
 
   describe("lockFromApproval",async () => {
     it("approves transfer of nft to lockup, calls lockFromApproval in prelock phase",async () => {
-      console.log(await ethers.provider.getBlockNumber())
+      const account = accounts[1]
+      const tokenID = stakedTokenIDs[1]
+      // console.log(await ethers.provider.getBlockNumber())
       //account 1 calls the public staking contract to approve lockup 
-      // fixture.publicStaking.connect()
+      let txResponse = await fixture.publicStaking.connect(account).approve(fixture.lockup.address, tokenID);
+      await txResponse.wait()
+      console.log(await fixture.publicStaking.ownerOf(tokenID))
+      console.log(account.address)
+      //call lock from approval
+      await expect(fixture.lockup.connect(account).lockFromApproval(tokenID)).to.emit(fixture.publicStaking, "Transfer").withArgs(account.address, fixture.lockup.address, tokenID)
     })
   })
 
