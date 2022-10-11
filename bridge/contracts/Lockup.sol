@@ -223,6 +223,8 @@ contract Lockup is
         }
         // burn the existing position
         (payoutEth, payoutToken) = IStakingNFT(_publicStakingAddress()).burn(tokenID);
+        // separating alca reward from alca shares
+        payoutToken -= shares;
         // blank old record
         _ownerOf[tokenID] = address(0);
         // create placeholder
@@ -231,22 +233,18 @@ contract Lockup is
         uint256 remainingShares = shares - exitValue_;
         if (remainingShares > 0) {
             // burn profits contain staked position... so sub it out
-            payoutToken = payoutToken - shares;
             newTokenID = IStakingNFT(_publicStakingAddress()).mint(remainingShares);
             // set new records
             _ownerOf[newTokenID] = msg.sender;
             _replaceTokenID(tokenID, newTokenID);
         } else {
             _removeTokenID(tokenID);
-            // set new records
-            // TODO ENSURE WE ACCOUNT FOR STAKED POSITION DIFFERENT THAN
-            // REWARDS
         }
         // safe because newTokenId is zero if shares == exitValue
         _tokenOf[msg.sender] = newTokenID;
         // cleanup total shares and payout profits less reserve
         _totalSharesLocked -= exitValue_;
-        _distributeAllProfits(_payableSender(), payoutToken, payoutEth, exitValue_, stakeExit_);
+        _distributeAllProfits(_payableSender(), payoutEth, payoutToken, exitValue_, stakeExit_);
     }
 
     // we must iterate all positions and dump profits before we are able to
@@ -357,13 +355,13 @@ contract Lockup is
         returns (uint256 payoutToken, uint256 payoutEth)
     {
         (payoutToken, payoutEth) = IStakingNFT(_publicStakingAddress()).collectAllProfits(tokenID_);
-        return _distributeAllProfits(acct_, payoutToken, payoutEth, 0, false);
+        return _distributeAllProfits(acct_, payoutEth, payoutToken, 0, false);
     }
 
     function _distributeAllProfits(
         address payable acct_,
-        uint256 payoutToken_,
         uint256 payoutEth_,
+        uint256 payoutToken_,
         uint256 additionalTokens,
         bool stakeExit
     ) internal returns (uint256 userPayoutToken, uint256 userPayoutEth) {
@@ -393,9 +391,9 @@ contract Lockup is
         _depositFundsInRewardPool(reservedEth, reservedToken);
         // either store to map or send to user
         if (!localPayoutSafe && state == State.PostLock) {
-            // we should not send here and should instead track to local mapping
-            // as otherwise a single bad user could block exit operations for all
-            // other users by making the send to their account fail via a contract
+            // we should not send here and should instead track to local mapping as
+            // otherwise a single bad user could block exit operations for all other users
+            // by making the send to their account fail via a contract
             rewardEth[acct_] += userPayoutEth;
             rewardTokens[acct_] += userPayoutToken;
             return (userPayoutToken, userPayoutEth);
