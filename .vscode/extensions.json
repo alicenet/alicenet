@@ -4,9 +4,9 @@
     "golang.go",
     "ms-azuretools.vscode-docker",
     "eg2.vscode-npm-script",
-    "tintinweb.solidity-visual-auditor",
-    "eamodio.gitlens",
-    "ryanluker.vscode-coverage-gutters",
-    "NomicFoundation.hardhat-solidity"
+		"tintinweb.solidity-visual-auditor",
+		"eamodio.gitlens",
+		"ryanluker.vscode-coverage-gutters",
+		"NomicFoundation.hardhat-solidity"
   ]
 }
