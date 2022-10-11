@@ -26,6 +26,8 @@ contract BonusPool is
     AccessControlled,
     MagicEthTransfer
 {
+    event BonusPositionCreated(uint256 tokenID);
+
     error BonusTokenAlreadyCreated();
     error BonusRateAlreadySet();
     error NotEnoughALCAToStake(uint256 currentBalance, uint256 expectedAmount);
@@ -76,7 +78,9 @@ contract BonusPool is
         if (_stakeAmount < totalBonusAmount) {
             revert NotEnoughALCAToStake(_stakeAmount, totalBonusAmount);
         }
-        _tokenID = IStakingNFT(_publicStakingAddress()).mint(totalBonusAmount);
+        uint256 tokenID = IStakingNFT(_publicStakingAddress()).mint(totalBonusAmount);
+        _tokenID = tokenID;
+        emit BonusPositionCreated(_tokenID);
     }
 
     // todo: Hunter double check this.
@@ -95,26 +99,24 @@ contract BonusPool is
     function estimateBonusAmountWithReward(uint256 currentSharesLocked, uint256 shares)
         public
         view
-        returns (uint256 estimatedTokenReward, uint256 estimatedEthReward)
+        returns (
+            uint256,
+            uint256,
+            uint256
+        )
     {
-        uint256 estimatedPayoutEth = IStakingNFT(_publicStakingAddress()).estimateEthCollection(
-            _tokenID
-        );
+        (uint256 estimatedPayoutEth, uint256 estimatedPayoutToken) = IStakingNFT(
+            _publicStakingAddress()
+        ).estimateAllProfits(_tokenID);
 
-        uint256 estimatedPayoutToken = IStakingNFT(_publicStakingAddress()).estimateTokenCollection(
-            _tokenID
-        );
-
-        (, uint256 bonusRewardToken, uint256 bonusRewardEth) = _computeProportions(
+        (, uint256 bonusRewardEth, uint256 bonusRewardToken) = _computeProportions(
             currentSharesLocked,
             estimatedPayoutEth,
             estimatedPayoutToken
         );
 
         uint256 userProportion = (shares * _SCALING_FACTOR) / currentSharesLocked;
-        estimatedTokenReward = (shares * _bonusRate) / _SCALING_FACTOR;
-        estimatedTokenReward += (userProportion * bonusRewardToken) / _SCALING_FACTOR;
-        estimatedEthReward = (userProportion * bonusRewardEth) / _SCALING_FACTOR;
+        return _computeBonusByProportions(userProportion, shares, bonusRewardToken, bonusRewardEth);
     }
 
     function terminate(uint256 finalSharesLocked) public onlyLockup {
@@ -129,8 +131,8 @@ contract BonusPool is
 
         (
             uint256 bonusShares,
-            uint256 bonusRewardToken,
-            uint256 bonusRewardEth
+            uint256 bonusRewardEth,
+            uint256 bonusRewardToken
         ) = _computeProportions(finalSharesLocked, payoutEth, payoutToken);
 
         _safeTransferERC20(
@@ -143,20 +145,42 @@ contract BonusPool is
             bonusShares + bonusRewardToken
         );
 
-        // send the left overs of ALCA to the aliceNetFactory contract.
-        _safeTransferERC20(
-            IERC20Transferable(_aTokenAddress()),
-            _factoryAddress(),
-            IERC20(_aTokenAddress()).balanceOf(address(this))
-        );
-
-        // send the left overs of ether to the foundation contract.
-        _safeTransferEthWithMagic(IMagicEthTransfer(_foundationAddress()), address(this).balance);
-        // todo: self destruct?
+        uint256 tokenBalance = IERC20(_aTokenAddress()).balanceOf(address(this));
+        uint256 ethBalance = address(this).balance;
+        if (tokenBalance > 0) {
+            // send the left overs of ALCA to the aliceNetFactory contract.
+            _safeTransferERC20(
+                IERC20Transferable(_aTokenAddress()),
+                _factoryAddress(),
+                IERC20(_aTokenAddress()).balanceOf(address(this))
+            );
+        }
+        if (ethBalance > 0) {
+            // send the left overs of ether to the foundation contract.
+            _safeTransferEthWithMagic(IMagicEthTransfer(_foundationAddress()), ethBalance);
+        }
     }
 
     function _computeProportions(
         uint256 currentSharesLocked,
+        uint256 payoutEth,
+        uint256 payoutToken
+    )
+        internal
+        view
+        returns (
+            uint256,
+            uint256,
+            uint256
+        )
+    {
+        uint256 proportion = (currentSharesLocked * _SCALING_FACTOR) / _originalSharesLocked;
+        return _computeBonusByProportions(proportion, currentSharesLocked, payoutEth, payoutToken);
+    }
+
+    function _computeBonusByProportions(
+        uint256 proportion,
+        uint256 shares,
         uint256 payoutEth,
         uint256 payoutToken
     )
@@ -168,12 +192,11 @@ contract BonusPool is
             uint256 bonusRewardToken
         )
     {
-        uint256 scaledStakedProportion = (currentSharesLocked * _SCALING_FACTOR) /
-            _originalSharesLocked;
-        // mathematical equivalent to:  (scaledStakedProportion * finalSharesLocked) / _SCALING_FACTOR
-        bonusShares = (_bonusRate * currentSharesLocked) / _SCALING_FACTOR;
-        bonusRewardToken = (scaledStakedProportion * payoutToken) / _SCALING_FACTOR;
-        bonusRewardEth = (scaledStakedProportion * payoutEth) / _SCALING_FACTOR;
+        // mathematical equivalent to:
+        // (scaledStakedProportion * finalSharesLocked) / _SCALING_FACTOR
+        bonusShares = (_bonusRate * shares) / _SCALING_FACTOR;
+        bonusRewardEth = (proportion * payoutEth) / _SCALING_FACTOR;
+        bonusRewardToken = (proportion * payoutToken) / _SCALING_FACTOR;
     }
 
     function _getLockupContractAddress() internal view override returns (address) {

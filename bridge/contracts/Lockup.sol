@@ -7,6 +7,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "contracts/interfaces/IERC721Transferable.sol";
 import "contracts/interfaces/IStakingNFT.sol";
 import "contracts/RewardPool.sol";
+import "contracts/BonusPool.sol";
 import "contracts/utils/ImmutableAuth.sol";
 import "contracts/libraries/lockup/AccessControlled.sol";
 
@@ -262,6 +263,8 @@ contract Lockup is
                 // if we get here, iteration of array is done and we can move on with life and set
                 // payoutSafe since all payouts have been recorded
                 payoutSafe = true;
+                // burn the bonus Position and send the bonus to the rewardPool contract
+                BonusPool(_bonusPool).terminate(_totalSharesLocked);
                 break;
             }
             address payable acct = _getOwnerOf(tokenID);
@@ -282,6 +285,22 @@ contract Lockup is
         }
         _tokenIDOffset = i;
     }
+
+    /*
+    initial State:
+        state = PostLock
+        payoutSafe = true
+        _tokenOf (address -> TokenID) = {user1:10, user2:20, user3:30, user4:40, user5:50}
+        _ownerOf (TokenID -> address) = {10:user1, 20:user2, 30:user3, 40:user4, 50:user5}
+        _tokenIDs (index -> TokenID) = {1:10, 2:20, 3:30, 4:40, 5:50}
+        _reverseTokenIDs (TokenID -> index) = {10:1, 20:2, 30:3, 40:4, 50:5}
+        rewardEth (address => uint256) = {user1:0.8ether, user2:1.6ether, user3:2.4ether, user4:3.2ether, user5:4ether}
+        rewardTokens (address => uint256) = {user1:0.8m, user2:1.6m, user3:2.4m, user4:3.2m, user5:4m}
+
+    example 1:
+        user 1 wants to
+
+     */
 
     function unlock()
         public

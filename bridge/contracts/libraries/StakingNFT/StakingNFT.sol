@@ -297,6 +297,19 @@ abstract contract StakingNFT is
         return payout;
     }
 
+    /// estimateAllProfits returns the amount of AToken a tokenID may withdraw
+    function estimateAllProfits(uint256 tokenID_)
+        public
+        view
+        onlyIfTokenExists(tokenID_)
+        returns (uint256 payoutEth, uint256 payoutToken)
+    {
+        Position memory p = _positions[tokenID_];
+        uint256 shares = _shares;
+        (, , , payoutToken) = _collect(shares, _tokenState, p, p.accumulatorToken);
+        (, , , payoutEth) = _collect(shares, _ethState, p, p.accumulatorEth);
+    }
+
     /// estimateExcessToken returns the amount of AToken that is held in the
     /// name of this contract. The value returned is the value that would be
     /// returned by a call to skimExcessToken.
