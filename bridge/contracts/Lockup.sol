@@ -247,49 +247,37 @@ contract Lockup is
         _distributeAllProfits(_payableSender(), payoutEth, payoutToken, exitValue_, stakeExit_);
     }
 
-    // we must iterate all positions and dump profits before we are able to
-    // allow withdraws. There is an admin over-ride in case we get stuck
-    // in a bad position, but this still needs to be fixed also since it
-    // could be used to attack this thing... maybe worth while to do a payout
-    // contract from which they must claim?
+    /// @notice aggregateProfits iterate alls positions and dump profits before allowing withdraws.
     function aggregateProfits() public onlyPayoutUnSafe onlyPostLock {
         // get some gas cost tracking setup
         uint256 gasStart = gasleft();
         uint256 gasLoop;
         // start index where we left off plus one
         uint256 i = _tokenIDOffset + 1;
-        // scary for loop... but it will exit when one of following is true
-        // the gas remaining is less than 5x the estimated per iteration cost
-        // the iterator is done
+        // for loop that will exit when one of following is true the gas remaining is
+        // less than 5x the estimated per iteration cost or the iterator is done
         for (; ; i++) {
-            uint256 tokenID;
-            {
-                bool ok;
-                (tokenID, ok) = _getTokenIDAtIndex(i);
-                if (!ok) {
-                    // if we get here, iteration of array is dene
-                    // we can move on with life and set payoutSafe
-                    // since all payouts have been recorded
-                    payoutSafe = true;
-                    break;
-                }
+            (uint256 tokenID, bool ok) = _getTokenIDAtIndex(i);
+            if (!ok) {
+                // if we get here, iteration of array is done and we can move on with life and set
+                // payoutSafe since all payouts have been recorded
+                payoutSafe = true;
+                break;
             }
             address payable acct = _getOwnerOf(tokenID);
             _collectAllProfits(acct, tokenID);
-            {
-                uint256 gasrem = gasleft();
-                if (gasLoop == 0) {
-                    // RECORD GAS ITERATION ESTIMATE IF NOT DONE
-                    gasLoop = gasStart - gasrem;
-                    // GIVE 5X MULTI ON IT TO ENSURE EVEN AN
-                    // OVERPRICED ELEMENT BY 2X THE NORMAL COST WILL STILL PASS
-                    gasLoop = 5 * gasLoop;
-                    // ACCOUNTS FOR STATE WRITES ON EXIT
-                    gasLoop = gasLoop + 10000;
-                } else if (gasrem <= gasLoop) {
-                    // IF WE ARE BELOW CUTOFF BREAK
-                    break;
-                }
+            uint256 gasRem = gasleft();
+            if (gasLoop == 0) {
+                // record gas iteration estimate if not done
+                gasLoop = gasStart - gasRem;
+                // give 5x multi on it to ensure even an overpriced element by 2x the normal
+                // cost will still pass
+                gasLoop = 5 * gasLoop;
+                // accounts for state writes on exit
+                gasLoop = gasLoop + 10000;
+            } else if (gasRem <= gasLoop) {
+                // if we are below cutoff break
+                break;
             }
         }
         _tokenIDOffset = i;
