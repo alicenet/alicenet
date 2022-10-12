@@ -34,7 +34,7 @@ abstract contract AliceNetFactoryBase is DeterministicAddress, ProxyUpgrader {
     address private _implementation;
 
     address private immutable _proxyTemplate;
-
+    /// @dev more details here https://github.com/alicenet/alicenet/wiki/Metamorphic-Proxy-Contract
     bytes8 private constant _UNIVERSAL_DEPLOY_CODE = 0x38585839386009f3;
 
     mapping(bytes32 => ContractInfo) internal _externalContractRegistry;

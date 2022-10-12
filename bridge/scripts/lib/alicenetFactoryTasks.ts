@@ -69,6 +69,7 @@ import {
   ProxyData,
   updateDefaultFactoryData,
   updateDeployCreateList,
+  updateExternalContractList,
   updateProxyList,
 } from "./deployment/factoryStateUtil";
 
@@ -292,7 +293,12 @@ task(
           const name = extractName(fullyQualifiedName);
           const salt: BytesLike = await getBytes32Salt(name, hre);
           deployArgs = await getDeployCreateArgs(fullyQualifiedName, factoryAddress, artifacts, taskArgs.waitConfirmation, undefined, undefined, undefined, true)
-          await hre.run(TASK_DEPLOY_CREATE, deployArgs);
+          const deployCreateData = await hre.run(TASK_DEPLOY_CREATE, deployArgs);
+          cumulativeGasUsed = cumulativeGasUsed.add(deployCreateData.gas);
+          const factory = await hre.ethers.getContractAt("AliceNetFactory", factoryAddress)
+          const txResponse = await factory.addNewExternalContract(salt, deployCreateData.address)
+          const receipt = await txResponse.wait();
+          cumulativeGasUsed = cumulativeGasUsed.add(receipt.gasUsed);
           break;
         }
         default: {
@@ -532,6 +538,11 @@ task(TASK_DEPLOY_CREATE, "deploys a contract from the factory using create")
         await showState(
           `[DEBUG ONLY, DONT USE THIS ADDRESS IN THE SIDE CHAIN, USE THE PROXY INSTEAD!] Deployed logic for ${taskArgs.contractName} contract at: ${deployCreateData.address}, gas: ${receipt.gasUsed}`
         );
+      } else {
+        await showState(
+          `Deployed ${deployCreateData.name} at ${deployCreateData.address}, gasCost: ${deployCreateData.gas}`
+        );
+        await updateExternalContractList(network, deployCreateData, taskArgs.outputFolder);
       }
       deployCreateData.receipt = receipt;
       return deployCreateData;
