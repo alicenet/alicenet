@@ -1,4 +1,4 @@
-// This dynamics package allows certain parameters to change periodically
+// Package dynamics allows certain parameters to change periodically
 // on epoch boundaries. The idea is that eventually these parameters
 // will be controlled by the governance system.
 //

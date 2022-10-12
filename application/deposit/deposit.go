@@ -1,7 +1,6 @@
-// The deposit package handles deposits from Ethereum.
-// Special care is required with deposits because the validity of deposits
-// *must* come from outside the system;
-// in this case, they come from Ethereum.
+// Package deposit handles deposits from an Ethereum chain. Special care is required
+// with deposits because the validity of deposits *must* come from outside the
+// system; in this case, they come from Ethereum.
 package deposit
 
 import (

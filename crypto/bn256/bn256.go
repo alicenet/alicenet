@@ -1,4 +1,4 @@
-// The bn256 package holds everything related to the `bn256` elliptic curve
+// Package bn256 holds everything related to the `bn256` elliptic curve
 // (sometimes called `alt_bn128`) used in Ethereum.
 // It defines an bilinear pairing associated with an elliptic curve
 // over a finite field with a 256-bit prime;
