@@ -74,7 +74,7 @@ contract Lockup is
     error PostLockStateRequired();
     error PayoutUnsafe();
     error PayoutSafe();
-    error AddressHasNotPositionLinked();
+    error TokenIDNotLocked(uint256 tokenID_);
     error InvalidPositionWithdrawPeriod(uint256 withdrawFreeAfter, uint256 endBlock);
     error InvalidStartingBlock();
 
@@ -356,6 +356,39 @@ contract Lockup is
         return _rewardPool;
     }
 
+    function getBonusPoolAddress() public view returns (address) {
+        return _bonusPool;
+    }
+
+    function getReservedAmount(uint256 amount_) public pure returns (uint256) {
+        return (amount_ * _FRACTION_RESERVED) / _SCALING_FACTOR;
+    }
+
+    function estimateProfits(uint256 tokenID_)
+        public
+        view
+        returns (uint256 payoutEth, uint256 payoutToken)
+    {
+        // check if the position owned by this contract
+        _verifyLockedPosition(tokenID_);
+        (payoutEth, payoutToken) = IStakingNFT(_publicStakingAddress()).estimateAllProfits(
+            tokenID_
+        );
+        (uint256 reserveEth, uint256 reserveToken) = _computeReservedAmount(payoutEth, payoutToken);
+        payoutEth -= reserveEth;
+        payoutToken -= reserveToken;
+    }
+
+    function estimateFinalProfitAfterUnlock(uint256 tokenID_)
+        public
+        view
+        returns (uint256 payoutEth, uint256 payoutToken)
+    {
+        // check if the position owned by this contract
+        _verifyLockedPosition(tokenID_);
+        //TODO: finish implementing this
+    }
+
     function _lock(uint256 tokenID_, address tokenOwner_) internal {
         uint256 shares = _verifyPositionAndGetShares(tokenID_);
         _totalSharesLocked += shares;
@@ -515,9 +548,9 @@ contract Lockup is
         return tokenID;
     }
 
-    function _claimedOrRevert(uint256 tokenID_) internal view {
+    function _verifyLockedPosition(uint256 tokenID_) internal view {
         if (_getOwnerOf(tokenID_) == address(0)) {
-            revert AddressHasNotPositionLinked();
+            revert TokenIDNotLocked(tokenID_);
         }
     }
 
