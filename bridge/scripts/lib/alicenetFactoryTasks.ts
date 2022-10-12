@@ -291,7 +291,7 @@ task(
         case DEPLOY_CREATE: {
           const name = extractName(fullyQualifiedName);
           const salt: BytesLike = await getBytes32Salt(name, hre);
-          deployArgs = await getDeployCreateArgs(fullyQualifiedName, factoryAddress, artifacts, taskArgs.waitConfirmation)
+          deployArgs = await getDeployCreateArgs(fullyQualifiedName, factoryAddress, artifacts, taskArgs.waitConfirmation, undefined, undefined, undefined, true)
           await hre.run(TASK_DEPLOY_CREATE, deployArgs);
           break;
         }
