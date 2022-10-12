@@ -296,7 +296,7 @@ task(
           const deployCreateData = await hre.run(TASK_DEPLOY_CREATE, deployArgs);
           cumulativeGasUsed = cumulativeGasUsed.add(deployCreateData.gas);
           const factory = await hre.ethers.getContractAt("AliceNetFactory", factoryAddress)
-          const txResponse = await factory.addNewExternalContract(salt, deployCreateData.address)
+          const txResponse = await factory.addNewExternalContract(salt, deployCreateData.address, await getGasPrices(hre))
           const receipt = await txResponse.wait();
           cumulativeGasUsed = cumulativeGasUsed.add(receipt.gasUsed);
           break;
