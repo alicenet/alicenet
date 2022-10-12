@@ -185,7 +185,6 @@ contract Lockup is
     }
 
     function lockFromApproval(uint256 tokenID_) public onlyPreLock {
-        //TODO determine if necesary cant get to failure cases
         _validateEntry(tokenID_);
         _lock(tokenID_, msg.sender);
         // interact last
