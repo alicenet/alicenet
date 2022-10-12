@@ -48,6 +48,9 @@ import "contracts/libraries/lockup/AccessControlled.sol";
 //          TRANSITION VIA COMPLETION OF AGGREGATEPROFITS METHOD CALLS
 //          SHOULD PAYOUT PROPORTIONATE REWARDS IN FULL TO CALLERS OF UNLOCK
 //          SHOULD TRANSFER BACK TO CALLER POSSESSION OF STAKED POSITION NFT DURING METHOD UNLOCK
+
+/// @custom:salt Lockup
+/// @custom:deploy-type deployCreate
 contract Lockup is
     ImmutablePublicStaking,
     ImmutableAToken,

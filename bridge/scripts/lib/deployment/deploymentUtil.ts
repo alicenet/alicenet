@@ -59,6 +59,7 @@ export type DeployArgs = {
   constructorArgs?: any;
   outputFolder?: string;
   verify?: boolean;
+  standAlone?:boolean;
 };
 
 export type Args = {
@@ -192,6 +193,40 @@ export async function getDeployUpgradeableProxyArgs(
     constructorArgs: constructorArgs,
     outputFolder: outputFolder,
     verify: verify,
+  };
+}
+
+export async function getDeployCreateArgs(
+  fullyQualifiedName: string,
+  factoryAddress: string,
+  artifacts: Artifacts,
+  waitConfirmation?: boolean,
+  inputFolder?: string,
+  outputFolder?: string,
+  verify?: boolean,
+  standAlone?:boolean
+): Promise<DeployArgs> {
+  let initCallData;
+  const initAble = await isInitializable(fullyQualifiedName, artifacts);
+  if (initAble) {
+    const initializerArgs = await getDeploymentInitializerArgs(
+      fullyQualifiedName,
+      inputFolder
+    );
+    initCallData = await getEncodedInitCallData(initializerArgs);
+  }
+  const hasConArgs = await hasConstructorArgs(fullyQualifiedName, artifacts);
+  const constructorArgs = hasConArgs
+    ? await getDeploymentConstructorArgs(fullyQualifiedName, inputFolder)
+    : undefined;
+  return {
+    contractName: extractName(fullyQualifiedName),
+    waitConfirmation: waitConfirmation,
+    factoryAddress: factoryAddress,
+    constructorArgs: constructorArgs,
+    outputFolder: outputFolder,
+    verify: verify,
+    standAlone: standAlone,
   };
 }
 

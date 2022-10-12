@@ -8,6 +8,7 @@ deploymentList = [
   "contracts/Governance.sol:Governance",
   "contracts/InvalidTxConsumptionAccusation.sol:InvalidTxConsumptionAccusation",
   "contracts/LiquidityProviderStaking.sol:LiquidityProviderStaking",
+  "contracts/Lockup.sol:Lockup",
   "contracts/MultipleProposalAccusation.sol:MultipleProposalAccusation",
   "contracts/PublicStaking.sol:PublicStaking",
   "contracts/Snapshots.sol:Snapshots",
