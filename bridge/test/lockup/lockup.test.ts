@@ -130,18 +130,17 @@ describe("lockup", async () => {
       ).to.be.revertedWithCustomError(fixture.lockup, "AddressAlreadyLockedUp");
     });
 
-    // it("attempts to lockup a tokenID that is already claimed", async () => {
-    //   let account1 = accounts[1];
-    //   let account2 = accounts[2];
-    //   let tokenId1 = stakedTokenIDs[1];
-    //   let tokenId2 = stakedTokenIDs[2];
-    //   //acct 1 locks tokenid1
-    //   let txResponse = await lockStakedNFT(fixture, account1, tokenId1);
-    //   await txResponse.wait()
-    //   //account 2 attempts to lock tokenId1
-    //   await lockStakedNFT(fixture, account1, tokenId1);
-
-    // })
+    it("attempts to lockup a tokenID that is already claimed", async () => {
+      let account1 = accounts[1];
+      let tokenId1 = stakedTokenIDs[1];
+      //acct 1 locks tokenid1
+      let txResponse = await lockStakedNFT(fixture, account1, tokenId1);
+      await txResponse.wait();
+      //account 2 attempts to lock tokenId1
+      await expect(lockStakedNFT(fixture, account1, tokenId1, false))
+        .to.be.revertedWithCustomError(fixture.lockup, "TokenIDAlreadyClaimed")
+        .withArgs(tokenId1);
+    });
 
     it("attempts to lockup a tokenID after the lockup period", async () => {
       // get the current block
@@ -199,12 +198,15 @@ describe("lockup", async () => {
 async function lockStakedNFT(
   fixture: Fixture,
   account: SignerWithAddress,
-  tokenID: BigNumber
+  tokenID: BigNumber,
+  approve: boolean = true
 ): Promise<ContractTransaction> {
-  const txResponse = await fixture.publicStaking
-    .connect(account)
-    .approve(fixture.lockup.address, tokenID);
-  await txResponse.wait();
+  if (approve) {
+    const txResponse = await fixture.publicStaking
+      .connect(account)
+      .approve(fixture.lockup.address, tokenID);
+    await txResponse.wait();
+  }
   return fixture.lockup.connect(account).lockFromApproval(tokenID);
 }
 
