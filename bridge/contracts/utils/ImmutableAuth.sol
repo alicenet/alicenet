@@ -544,11 +544,9 @@ abstract contract ImmutableCentralBridgeRouter is ImmutableFactory {
     }
 
     constructor() {
-        _centralBridgeRouter = getMetamorphicContractAddress(
-            0x43656e7472616c427269646765526f7574657200000000000000000000000000,
-            _factoryAddress()
+        _centralBridgeRouter = IAliceNetFactory(_factoryAddress()).lookup(
+            _saltForCentralBridgeRouter()
         );
-        // _centralBridgeRouter = IAliceNetFactory(_factoryAddress()).lookup(_saltForBToken());
     }
 
     function _centralBridgeRouterAddress() internal view returns (address) {

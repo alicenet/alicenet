@@ -13,7 +13,18 @@ contract CentralBridgeRouter is ICentralBridgeRouter, ImmutableFactory, Immutabl
     //tracker to track number of deployed router versions
     uint16 internal _routerVersions;
 
-    constructor() ImmutableFactory(msg.sender) {}
+    event DepositedERCToken(
+        address ercContract,
+        uint8 destinationAccountType, // 1 for secp256k1, 2 for bn128
+        address destinationAccount, //account to deposit the tokens to in alicenet
+        uint8 ercType,
+        uint256 number, // If fungible, this is the amount. If non-fungible, this is the id
+        uint256 chainID,
+        uint16 poolVersion,
+        uint256 nonce
+    );
+
+    constructor() ImmutableFactory(msg.sender) ImmutableBToken() {}
 
     /**
      * takes token deposit calls from ALCB and emits deposit events on token transfer completion
@@ -143,9 +154,9 @@ contract CentralBridgeRouter is ICentralBridgeRouter, ImmutableFactory, Immutabl
         }
     }
 
-    function _isValidVersion(uint16 version_) internal view returns (bool) {
+    /*     function _isValidVersion(uint16 version_) internal view returns (bool) {
         RouterConfig memory config = _routerConfig[version_];
         if (config.routerAddress == address(0) || config.notOnline) return false;
         return true;
-    }
+    } */
 }

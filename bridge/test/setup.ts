@@ -9,14 +9,13 @@ import {
   Wallet,
 } from "ethers";
 import { isHexString } from "ethers/lib/utils";
-import { ethers, network } from "hardhat";
+import hre, { ethers, network } from "hardhat";
 import {
   AliceNetFactory,
   AToken,
   ATokenBurner,
   ATokenMinter,
   BToken,
-  CentralBridgeRouter,
   Distribution,
   Dynamics,
   ETHDKG,
@@ -29,6 +28,7 @@ import {
   Snapshots,
   SnapshotsMock,
   StakingPositionDescriptor,
+  TestUtils,
   ValidatorPool,
   ValidatorPoolMock,
   ValidatorStaking,
@@ -90,12 +90,16 @@ export interface Fixture extends BaseTokensFixture {
   dynamics: Dynamics;
 }
 
+export interface TestUtilsFixture {
+  testUtils: TestUtils;
+}
+
 /**
  * Shuffles array in place. ES6 version
  * https://stackoverflow.com/questions/6274339/how-can-i-shuffle-an-array/6274381#6274381
  * @param {Array} a items An array containing the items.
  */
-export function shuffle(a: ValidatorRawData[]) {
+export function shuffle(a: ValidatorRawData[]): ValidatorRawData[] {
   for (let i = a.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [a[i], a[j]] = [a[j], a[i]];
@@ -315,22 +319,20 @@ export const deployFactoryAndBaseTokens = async (
     await factory.lookup(ethers.utils.formatBytes32String("AToken"))
   );
 
+  const centralBridgeRouterFactory = await ethers.getContractFactory(
+    "CentralBridgeRouter"
+  );
+
   // BToken
   const centralBridgeRouterAddress = await getCreate2Address(
     //Need the central router address first for BToken
     factory.address,
-    "CentralBridgeRouter"
+    "CentralBridgeRouter",
+    centralBridgeRouterFactory.bytecode
   );
   const bToken = (await deployCreate2WithFactory(factory, "BToken", [
     centralBridgeRouterAddress,
   ])) as BToken;
-
-  // CentralBridgeRouter
-  const centralBridgeRouter = (await deployCreate2WithFactory(
-    factory,
-    "CentralBridgeRouter",
-    []
-  )) as CentralBridgeRouter;
 
   // PublicStaking
   const publicStaking = (await deployUpgradeableWithFactory(
@@ -346,7 +348,6 @@ export const deployFactoryAndBaseTokens = async (
     bToken,
     legacyToken,
     publicStaking,
-    centralBridgeRouter,
   };
 };
 
@@ -697,13 +698,14 @@ export const getReceiptForFailedTransaction = async (
 
 export const getCreate2Address = async (
   factoryAddress: string,
-  contractName: string
+  contractName: string,
+  deployTX: BytesLike
 ): Promise<string> => {
   const contractFactory = await ethers.getContractFactory(contractName);
   const create2Address = ethers.utils.getCreate2Address(
     factoryAddress,
     ethers.utils.formatBytes32String(contractName),
-    ethers.utils.keccak256(contractFactory.bytecode)
+    ethers.utils.keccak256(deployTX)
   );
   return create2Address;
 };
@@ -735,28 +737,27 @@ export const deployCreate2WithFactory = async (
   return contract;
 };
 
-export const getTopicData = async (
-  txResponse: ContractTransaction,
-  topic: string
-): Promise<String> => {
-  let result: any;
-  const receipt = await txResponse.wait();
-  if (receipt.events !== undefined) {
-    const events = receipt.events;
-    for (let i = 0; i < events.length; i++) {
-      // look for the topic
-      if (events[i].topics !== undefined) {
-        const topics = events[i].topics;
-        for (let j = 0; j < topics.length; j++) {
-          if (topics[j] == topic) {
-            const data = events[i].data;
-            return data;
-          }
-        }
-      } else {
-        throw new Error(`failed to extract topics from log`);
-      }
-    }
-  }
-  throw new Error(`failed to find topic: ${topic} in log`);
+export const getTestUtilsFixture = async (): Promise<TestUtilsFixture> => {
+  const testUtilsFactory = await ethers.getContractFactory("TestUtils");
+  const testUtils = await testUtilsFactory.deploy();
+  return { testUtils };
+};
+
+export const getImpersonatedSigner = async (
+  addressToImpersonate: string
+): Promise<any> => {
+  const [admin] = await ethers.getSigners();
+  const testUtils = await (
+    await (await ethers.getContractFactory("TestUtils")).deploy()
+  ).deployed();
+  await admin.sendTransaction({
+    to: testUtils.address,
+    value: ethers.utils.parseEther("1"),
+  });
+  await testUtils.payUnpayable(addressToImpersonate);
+  await hre.network.provider.request({
+    method: "hardhat_impersonateAccount",
+    params: [addressToImpersonate],
+  });
+  return ethers.provider.getSigner(addressToImpersonate);
 };

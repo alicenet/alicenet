@@ -3,7 +3,6 @@ pragma solidity ^0.8.16;
 
 import "contracts/utils/ImmutableAuth.sol";
 import "contracts/interfaces/ICentralBridgeRouter.sol";
-import "hardhat/console.sol";
 
 contract BridgeRouterV1Mock is ImmutableCentralBridgeRouter {
     struct EventData {
@@ -47,15 +46,13 @@ contract BridgeRouterV1Mock is ImmutableCentralBridgeRouter {
     function routeDeposit(address msgSender_, bytes memory data_)
         public
         view
-        returns (
-            //  onlyCentralBridgeRouter
-            bytes memory
-        )
+        onlyCentralBridgeRouter
+        returns (bytes memory)
     {
-        uint256 depositNumber = abi.decode(data_, (uint256)); // we use depositNumber as size for the topics array
         msgSender_ = msgSender_;
-        bytes32[] memory topics = new bytes32[](depositNumber);
         EventData[] memory eventData = new EventData[](1);
+        DepositCallData memory receivedDepositData = abi.decode(data_, (DepositCallData));
+        bytes32[] memory topics = new bytes32[](receivedDepositData.number);
         topics[0] = DepositedERCToken.selector;
         eventData[0] = EventData({topics: topics, logData: data_});
         DepositReturnData memory depositReturnData = DepositReturnData({
