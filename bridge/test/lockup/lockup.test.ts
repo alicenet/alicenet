@@ -2,7 +2,7 @@ import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
 import { BigNumber, BytesLike, ContractTransaction } from "ethers";
-import { ethers } from "hardhat";
+import hre, { ethers, network } from "hardhat";
 import { CONTRACT_ADDR, DEPLOYED_RAW } from "../../scripts/lib/constants";
 import { BonusPool, Lockup, RewardPool } from "../../typechain-types";
 import { getEventVar } from "../factory/Setup";
@@ -13,6 +13,12 @@ import {
   posFixtureSetup,
   preFixtureSetup,
 } from "../setup";
+import {
+  getEthConsumedAsGas,
+  getImpersonatedSigner,
+  getState,
+  showState,
+} from "./setup";
 
 interface Fixture extends BaseTokensFixture {
   lockup: Lockup;
@@ -21,9 +27,17 @@ interface Fixture extends BaseTokensFixture {
 }
 
 const startBlock = 100;
-const lockDuration = 100;
-const stakedAmount = ethers.utils.parseEther("100");
+const lockDuration = 2;
+const stakedAmount = ethers.utils.parseEther("100").toBigInt();
 const totalBonusAmount = ethers.utils.parseEther("10000");
+
+const alcaRewards = ethers.utils.parseEther("1000000");
+const ethRewards = ethers.utils.parseEther("10");
+let rewardPoolAddress: any;
+let asFactory: SignerWithAddress;
+let asBonusPool: SignerWithAddress;
+const numberOfLockingUsers = 5;
+const unlockEarlyRewardPercentage = 80;
 
 async function deployFixture() {
   await preFixtureSetup();
@@ -46,7 +60,7 @@ async function deployFixture() {
   await posFixtureSetup(fixture.factory, fixture.aToken);
   const lockup = await ethers.getContractAt("Lockup", lockupAddress);
   // get the address of the reward pool from the lockup contract
-  const rewardPoolAddress = await lockup.getRewardPoolAddress();
+  rewardPoolAddress = await lockup.getRewardPoolAddress();
   const rewardPool = await ethers.getContractAt(
     "RewardPool",
     rewardPoolAddress
@@ -55,7 +69,7 @@ async function deployFixture() {
   const bonusPoolAddress = await rewardPool.getBonusPoolAddress();
   const bonusPool = await ethers.getContractAt("BonusPool", bonusPoolAddress);
   const tokenIDs = [];
-  for (let i = 1; i < 6; i++) {
+  for (let i = 1; i <= numberOfLockingUsers; i++) {
     // transfer 100 ALCA from admin to users
     let txResponse = await fixture.aToken
       .connect(signers[0])
@@ -75,6 +89,8 @@ async function deployFixture() {
     );
     tokenIDs[i] = tokenID;
   }
+  asFactory = await getImpersonatedSigner(fixture.factory.address);
+  asBonusPool = await getImpersonatedSigner(bonusPoolAddress);
 
   return {
     fixture: {
@@ -184,14 +200,177 @@ describe("lockup", async () => {
     it("attempts to collect before postLock phase", async () => {});
   });
 
-  describe("unlockEarly", async () => {});
+  describe("unlockEarly", async () => {
+    it("attempts to totally unlock early with no rewards", async () => {
+      showState("Initial State with staked position", await getState(fixture));
+      await lockStakedNFT(fixture, accounts[1], stakedTokenIDs[1]);
+      showState("After Locking", await getState(fixture));
+      let expectedState = await getState(fixture);
+      const tx = await fixture.lockup
+        .connect(accounts[1])
+        .unlockEarly(stakedAmount, false);
+      // Expected state definition
+      expectedState.user1.balances.eth -= getEthConsumedAsGas(await tx.wait());
+      expectedState.user1.balances.alca += stakedAmount;
+      expectedState.user1.lockup.tokenOf = ethers.constants.Zero.toBigInt();
+      expectedState.user1.lockup.ownerOf = ethers.constants.AddressZero;
+      expect(await getState(fixture)).to.be.deep.equal(expectedState);
+      showState("After Unlocking Early", await getState(fixture));
+    });
+
+    it("attempts to totally unlock early with ALCA rewards", async () => {
+      showState("Initial State with staked position", await getState(fixture));
+      await lockStakedNFT(fixture, accounts[1], stakedTokenIDs[1]);
+      await fixture.aToken
+        .connect(accounts[0])
+        .increaseAllowance(fixture.publicStaking.address, alcaRewards);
+      await fixture.publicStaking
+        .connect(accounts[0])
+        .depositToken(42, alcaRewards);
+      showState("After Locking", await getState(fixture));
+      let expectedState = await getState(fixture);
+      const tx = await fixture.lockup
+        .connect(accounts[1])
+        .unlockEarly(stakedAmount, false);
+      // Expected state definition
+      expectedState.user1.balances.eth -= getEthConsumedAsGas(await tx.wait());
+      expectedState.user1.balances.alca += stakedAmount;
+      expectedState.user1.balances.alca += alcaRewards
+        .div(numberOfLockingUsers)
+        .mul(unlockEarlyRewardPercentage)
+        .div(100)
+        .toBigInt();
+      expectedState.user1.lockup.tokenOf = ethers.constants.Zero.toBigInt();
+      expectedState.user1.lockup.ownerOf = ethers.constants.AddressZero;
+      expect(await getState(fixture)).to.be.deep.equal(expectedState);
+      showState("After Unlocking Early", await getState(fixture));
+    });
+
+    it.only("attempts to totally unlock early with ALCA and ETH rewards", async () => {
+      showState("Initial State with staked position", await getState(fixture));
+      await lockStakedNFT(fixture, accounts[1], stakedTokenIDs[1]);
+      await fixture.aToken
+        .connect(accounts[0])
+        .increaseAllowance(fixture.publicStaking.address, alcaRewards);
+      await fixture.publicStaking
+        .connect(accounts[0])
+        .depositEth(42,{value : ethRewards});
+      await fixture.publicStaking
+        .connect(accounts[0])
+        .depositToken(42, alcaRewards);
+      showState("After Locking", await getState(fixture));
+      let expectedState = await getState(fixture);
+      const tx = await fixture.lockup
+        .connect(accounts[1])
+        .unlockEarly(stakedAmount, false);
+      // Expected state definition
+      expectedState.user1.balances.eth -= getEthConsumedAsGas(await tx.wait());
+      expectedState.user1.balances.alca += stakedAmount;
+      expectedState.user1.balances.alca += alcaRewards
+        .div(numberOfLockingUsers)
+        .mul(unlockEarlyRewardPercentage)
+        .div(100)
+        .toBigInt();
+      expectedState.user1.balances.eth += ethRewards
+        .div(numberOfLockingUsers)
+        .mul(unlockEarlyRewardPercentage)
+        .div(100)
+        .toBigInt();
+      expectedState.user1.lockup.tokenOf = ethers.constants.Zero.toBigInt();
+      expectedState.user1.lockup.ownerOf = ethers.constants.AddressZero;
+      expect(await getState(fixture)).to.be.deep.equal(expectedState);
+      showState("After Unlocking Early", await getState(fixture));
+    });
+
+    it.only("attempts to partially unlock early with ALCA and ETH rewards", async () => {
+      showState("Initial State with staked position", await getState(fixture));
+      await lockStakedNFT(fixture, accounts[1], stakedTokenIDs[1]);
+      await fixture.aToken
+        .connect(accounts[0])
+        .increaseAllowance(fixture.publicStaking.address, alcaRewards);
+      await fixture.publicStaking
+        .connect(accounts[0])
+        .depositEth(42,{value : ethRewards});
+      await fixture.publicStaking
+        .connect(accounts[0])
+        .depositToken(42, alcaRewards);
+      showState("After Locking", await getState(fixture));
+      let expectedState = await getState(fixture);
+      const tx = await fixture.lockup
+        .connect(accounts[1])
+        .unlockEarly(stakedAmount, false);
+      // Expected state definition
+      expectedState.user1.balances.eth -= getEthConsumedAsGas(await tx.wait());
+      expectedState.user1.balances.alca += stakedAmount;
+      expectedState.user1.balances.alca += alcaRewards
+        .div(numberOfLockingUsers)
+        .mul(unlockEarlyRewardPercentage)
+        .div(100)
+        .toBigInt();
+      expectedState.user1.balances.eth += ethRewards
+        .div(numberOfLockingUsers)
+        .mul(unlockEarlyRewardPercentage)
+        .div(100)
+        .toBigInt();
+      expectedState.user1.lockup.tokenOf = ethers.constants.Zero.toBigInt();
+      expectedState.user1.lockup.ownerOf = ethers.constants.AddressZero;
+      expect(await getState(fixture)).to.be.deep.equal(expectedState);
+      showState("After Unlocking Early", await getState(fixture));
+    });
+
+  });
 
   describe("aggregateProfits", async () => {});
 
-  describe("unlock", async () => {});
+  describe("unlock", async () => {
+  });
 
   describe("getter functions", async () => {
     before(async () => {});
+
+    it("should get locking enrollment start block", async () => {
+      expect(await fixture.lockup.getEnrollmentStartBlock()).to.be.equal(
+        startBlock
+      );
+    });
+
+    it("should get locking enrollment end block", async () => {
+      expect(await fixture.lockup.getEnrollmentEndBlock()).to.be.equal(
+        startBlock + lockDuration
+      );
+    });
+
+    it("should get caller eth rewards upon totally early unlocking", async () => {
+      showState("Initial State with staked position", await getState(fixture));
+      await lockStakedNFT(fixture, accounts[1], stakedTokenIDs[1]);
+      showState("After Locking", await getState(fixture));
+      await fixture.lockup
+        .connect(accounts[1])
+        .unlockEarly(stakedAmount, false);
+      showState("After Unlocking Early", await getState(fixture));
+      expect(
+        await fixture.lockup.connect(accounts[1]).getEthRewardBalance()
+      ).to.be.equal(0);
+    });
+
+    it("should get caller token rewards upon totally early unlocking", async () => {
+      showState("Initial State with staked position", await getState(fixture));
+      await lockStakedNFT(fixture, accounts[1], stakedTokenIDs[1]);
+      showState("After Locking", await getState(fixture));
+      await fixture.lockup
+        .connect(accounts[1])
+        .unlockEarly(stakedAmount, false);
+      showState("After Unlocking Early", await getState(fixture));
+      expect(
+        await fixture.lockup.connect(accounts[1]).getTokenRewardBalance()
+      ).to.be.equal(0);
+    });
+
+    it("should get reward pool address", async () => {
+      expect(await fixture.lockup.getRewardPoolAddress()).to.be.equal(
+        rewardPoolAddress
+      );
+    });
   });
 });
 

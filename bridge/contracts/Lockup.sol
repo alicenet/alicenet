@@ -151,6 +151,7 @@ contract Lockup is
         _startBlock = startBlock_;
         _endBlock = startBlock_ + lockDuration_;
     }
+    receive () external payable{}
 
     modifier onlyPreLock() {
         if (_getState() != State.PreLock) {
