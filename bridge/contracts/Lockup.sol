@@ -61,6 +61,7 @@ contract Lockup is
     event EarlyExit(address to_, uint256 tokenID_);
     event NewLockup(address from_, uint256 tokenID_);
 
+    error OnlyStakingNFTAllowed();
     error ContractDoesNotOwnTokenID(uint256 tokenID_);
     error AddressAlreadyLockedUp();
     error TokenIDAlreadyClaimed(uint256 tokenID_);
@@ -187,23 +188,34 @@ contract Lockup is
         _;
     }
 
-    function lockFromApproval(uint256 tokenID_) public onlyPreLock {
-        _validateEntry(tokenID_);
-        _lock(tokenID_, msg.sender);
-        // interact last
+    function onERC721Received(
+        address,
+        address from_,
+        uint256 tokenID_,
+        bytes memory
+    ) public override onlyPreLock returns (bytes4) {
+        if (msg.sender != _publicStakingAddress()) {
+            revert OnlyStakingNFTAllowed();
+        }
+
+        _lockFromTransfer(tokenID_, from_);
+        return this.onERC721Received.selector;
+    }
+
+    function lockFromApproval(uint256 tokenID_) public {
+        // msg.sender already approved transfer, so contract can can safeTransfer to itself;
+        // by doing this onERC721Received is called as part of the chain of transfer methods
+        // hence the checks run from within onERC721Received will run
+
         IERC721Transferable(_publicStakingAddress()).safeTransferFrom(
             msg.sender,
             address(this),
             tokenID_
         );
-        // check as post condition
-        _checkTokenTransfer(tokenID_);
     }
 
     function lockFromTransfer(uint256 tokenID_, address tokenOwner_) public onlyPreLock {
-        _validateEntry(tokenID_);
-        _checkTokenTransfer(tokenID_);
-        _lock(tokenID_, tokenOwner_);
+        _lockFromTransfer(tokenID_, tokenOwner_);
     }
 
     function collectAllProfits()
@@ -392,6 +404,12 @@ contract Lockup is
         //TODO: finish implementing this
     }
 
+    function _lockFromTransfer(uint256 tokenID_, address tokenOwner_) internal {
+        _validateEntry(tokenID_, tokenOwner_);
+        _checkTokenTransfer(tokenID_);
+        _lock(tokenID_, tokenOwner_);
+    }
+
     function _lock(uint256 tokenID_, address tokenOwner_) internal {
         uint256 shares = _verifyPositionAndGetShares(tokenID_);
         _totalSharesLocked += shares;
@@ -533,11 +551,11 @@ contract Lockup is
         }
     }
 
-    function _validateEntry(uint256 tokenID_) internal view {
+    function _validateEntry(uint256 tokenID_, address sender_) internal view {
         if (_getOwnerOf(tokenID_) != address(0)) {
             revert TokenIDAlreadyClaimed(tokenID_);
         }
-        if (_getTokenOf(msg.sender) != 0) {
+        if (_getTokenOf(sender_) != 0) {
             revert AddressAlreadyLockedUp();
         }
     }

@@ -137,18 +137,14 @@ describe("lockup", async () => {
       let txResponse = await lockStakedNFT(fixture, account1, tokenId1);
       await txResponse.wait();
       //account 2 attempts to lock tokenId1
-      await expect(lockStakedNFT(fixture, account1, tokenId1, false))
+      await expect(lockFromTransfer(fixture, account1, tokenId1))
         .to.be.revertedWithCustomError(fixture.lockup, "TokenIDAlreadyClaimed")
         .withArgs(tokenId1);
     });
 
     it("attempts to lockup a tokenID after the lockup period", async () => {
-      // get the current block
-      const currentBlock = await ethers.provider.getBlockNumber();
-      if (currentBlock < startBlock) {
-        const blockDelta = startBlock - currentBlock;
-        await mineBlocks(BigInt(blockDelta));
-      }
+      await ensureBlockIsAtLeast(startBlock);
+
       const account1 = accounts[1];
       const tokenId1 = stakedTokenIDs[1];
       await expect(
@@ -157,8 +153,46 @@ describe("lockup", async () => {
     });
   });
 
-  describe("lockFromTransfer", async () => {});
+  describe("lockFromTransfer", async () => {
+    it("succeeds when transfer approved and in prelock phase", async () => {
+      const account = accounts[1];
+      const tokenID = stakedTokenIDs[1];
+      await approveStakingTokenTransfer(fixture, account, tokenID);
 
+      await (
+        await fixture.publicStaking
+          .connect(account)
+          .transferFrom(account.address, fixture.lockup.address, tokenID)
+      ).wait();
+
+      await expect(lockFromTransfer(fixture, account, tokenID))
+        .to.emit(fixture.lockup, "NewLockup")
+        .withArgs(account.address, tokenID);
+    });
+
+    it("reverts if token not owned by Lockup contract", async () => {
+      const account1 = accounts[1];
+      const tokenId1 = stakedTokenIDs[1];
+
+      await expect(
+        lockFromTransfer(fixture, account1, tokenId1)
+      ).to.be.revertedWithCustomError(
+        fixture.lockup,
+        "ContractDoesNotOwnTokenID"
+      );
+    });
+
+    it("reverts if called when state is not in PreLock", async () => {
+      await ensureBlockIsAtLeast(startBlock);
+
+      const account1 = accounts[1];
+      const tokenId1 = stakedTokenIDs[1];
+
+      await expect(
+        lockFromTransfer(fixture, account1, tokenId1)
+      ).to.be.revertedWithCustomError(fixture.lockup, "PreLockStateRequired");
+    });
+  });
   describe("collectAllProfits", async () => {
     it("collects all profits", async () => {
       const account1 = accounts[1];
@@ -210,6 +244,26 @@ async function lockStakedNFT(
   return fixture.lockup.connect(account).lockFromApproval(tokenID);
 }
 
+async function lockFromTransfer(
+  fixture: Fixture,
+  account: SignerWithAddress,
+  tokenID: BigNumber
+): Promise<ContractTransaction> {
+  return fixture.lockup
+    .connect(account)
+    .lockFromTransfer(tokenID, account.address);
+}
+
+async function approveStakingTokenTransfer(
+  fixture: Fixture,
+  account: SignerWithAddress,
+  tokenID: BigNumber
+): Promise<ContractTransaction> {
+  return fixture.publicStaking
+    .connect(account)
+    .approve(fixture.lockup.address, tokenID);
+}
+
 async function mintBtoken(
   fixture: Fixture,
   account: SignerWithAddress,
@@ -222,4 +276,12 @@ async function mintBtoken(
     btokenAmount
   );
   return fixture.bToken.connect(account).mint(amount, { value: eth });
+}
+
+async function ensureBlockIsAtLeast(targetBlock: number): Promise<void> {
+  const currentBlock = await ethers.provider.getBlockNumber();
+  if (currentBlock < targetBlock) {
+    const blockDelta = targetBlock - currentBlock;
+    await mineBlocks(BigInt(blockDelta));
+  }
 }
