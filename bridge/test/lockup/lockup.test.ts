@@ -2,7 +2,7 @@ import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
 import { BigNumber, BytesLike, ContractTransaction } from "ethers";
-import hre, { ethers, network } from "hardhat";
+import { ethers } from "hardhat";
 import { CONTRACT_ADDR, DEPLOYED_RAW } from "../../scripts/lib/constants";
 import { BonusPool, Lockup, RewardPool } from "../../typechain-types";
 import { getEventVar } from "../factory/Setup";
@@ -118,9 +118,14 @@ describe("lockup", async () => {
     it("approves transfer of nft to lockup, calls lockFromApproval in prelock phase", async () => {
       const account = accounts[1];
       const tokenID = stakedTokenIDs[1];
+
       await expect(lockStakedNFT(fixture, account, tokenID))
-        .to.emit(fixture.publicStaking, "Transfer")
-        .withArgs(account.address, fixture.lockup.address, tokenID);
+        .to.emit(fixture.lockup, "NewLockup")
+        .withArgs(account.address, tokenID);
+
+      expect(await fixture.publicStaking.ownerOf(tokenID)).to.equal(
+        fixture.lockup.address
+      );
     });
 
     // it("attempts to lockup someone elses tokenID",async () => {
@@ -173,7 +178,6 @@ describe("lockup", async () => {
     it("succeeds when transfer approved and in prelock phase", async () => {
       const account = accounts[1];
       const tokenID = stakedTokenIDs[1];
-      await approveStakingTokenTransfer(fixture, account, tokenID);
 
       await (
         await fixture.publicStaking
@@ -184,6 +188,57 @@ describe("lockup", async () => {
       await expect(lockFromTransfer(fixture, account, tokenID))
         .to.emit(fixture.lockup, "NewLockup")
         .withArgs(account.address, tokenID);
+
+      expect(await fixture.publicStaking.ownerOf(tokenID)).to.equal(
+        fixture.lockup.address
+      );
+    });
+
+    it("reverts when token id already claimed", async () => {
+      const account = accounts[1];
+      const tokenID = stakedTokenIDs[1];
+
+      await (
+        await fixture.publicStaking
+          .connect(account)
+          .transferFrom(account.address, fixture.lockup.address, tokenID)
+      ).wait();
+
+      await (await lockFromTransfer(fixture, account, tokenID)).wait();
+
+      await expect(lockFromTransfer(fixture, account, tokenID))
+        .to.be.revertedWithCustomError(fixture.lockup, "TokenIDAlreadyClaimed")
+        .withArgs(tokenID);
+    });
+
+    it("reverts when attempts to lockup 2 tokenID with 1 account", async () => {
+      const account1 = accounts[1];
+      const account2 = accounts[2];
+      const tokenId1 = stakedTokenIDs[1];
+      const tokenId2 = stakedTokenIDs[2];
+      // give account 1 extra token
+      await (
+        await fixture.publicStaking
+          .connect(account2)
+          .transferFrom(account2.address, account1.address, tokenId2)
+      ).wait();
+
+      await (
+        await fixture.publicStaking
+          .connect(account1)
+          .transferFrom(account1.address, fixture.lockup.address, tokenId1)
+      ).wait();
+      await (
+        await fixture.publicStaking
+          .connect(account1)
+          .transferFrom(account1.address, fixture.lockup.address, tokenId2)
+      ).wait();
+
+      await (await lockFromTransfer(fixture, account1, tokenId1)).wait();
+
+      await expect(
+        lockFromTransfer(fixture, account1, tokenId2)
+      ).to.be.revertedWithCustomError(fixture.lockup, "AddressAlreadyLockedUp");
     });
 
     it("reverts if token not owned by Lockup contract", async () => {
@@ -209,6 +264,114 @@ describe("lockup", async () => {
       ).to.be.revertedWithCustomError(fixture.lockup, "PreLockStateRequired");
     });
   });
+
+  describe("safe transfer to contract", async () => {
+    it("succeeds when safe transfer in prelock phase", async () => {
+      const account = accounts[1];
+      const tokenID = stakedTokenIDs[1];
+
+      await expect(
+        fixture.publicStaking
+          .connect(account)
+          ["safeTransferFrom(address,address,uint256)"](
+            account.address,
+            fixture.lockup.address,
+            tokenID
+          )
+      )
+        .to.emit(fixture.lockup, "NewLockup")
+        .withArgs(account.address, tokenID);
+
+      expect(await fixture.publicStaking.ownerOf(tokenID)).to.equal(
+        fixture.lockup.address
+      );
+    });
+    it("succeeds when safe transfer 2 in prelock phase", async () => {
+      const account = accounts[1];
+      const tokenID = stakedTokenIDs[1];
+
+      await expect(
+        fixture.publicStaking
+          .connect(account)
+          ["safeTransferFrom(address,address,uint256,bytes)"](
+            account.address,
+            fixture.lockup.address,
+            tokenID,
+            "0x"
+          )
+      )
+        .to.emit(fixture.lockup, "NewLockup")
+        .withArgs(account.address, tokenID);
+
+      expect(await fixture.publicStaking.ownerOf(tokenID)).to.equal(
+        fixture.lockup.address
+      );
+    });
+    it("reverts if onERC721Received called directly", async () => {
+      const account1 = accounts[1];
+      const tokenId1 = stakedTokenIDs[1];
+
+      await expect(
+        fixture.lockup.onERC721Received(
+          account1.address,
+          account1.address,
+          tokenId1,
+          "0x"
+        )
+      ).to.be.revertedWithCustomError(fixture.lockup, "OnlyStakingNFTAllowed");
+    });
+
+    it("reverts when attempts to lockup 2 tokenID with 1 account", async () => {
+      const account1 = accounts[1];
+      const account2 = accounts[2];
+      const tokenId1 = stakedTokenIDs[1];
+      const tokenId2 = stakedTokenIDs[2];
+      // give account 1 extra token
+      await (
+        await fixture.publicStaking
+          .connect(account2)
+          .transferFrom(account2.address, account1.address, tokenId2)
+      ).wait();
+
+      await (
+        await fixture.publicStaking
+          .connect(account1)
+          ["safeTransferFrom(address,address,uint256)"](
+            account1.address,
+            fixture.lockup.address,
+            tokenId1
+          )
+      ).wait();
+
+      await expect(
+        fixture.publicStaking
+          .connect(account1)
+          ["safeTransferFrom(address,address,uint256)"](
+            account1.address,
+            fixture.lockup.address,
+            tokenId2
+          )
+      ).to.be.revertedWithCustomError(fixture.lockup, "AddressAlreadyLockedUp");
+    });
+
+    it("reverts if called when state is not in PreLock", async () => {
+      await ensureBlockIsAtLeast(startBlock);
+
+      const account = accounts[1];
+      const tokenID = stakedTokenIDs[1];
+
+      await expect(
+        fixture.publicStaking
+          .connect(account)
+          ["safeTransferFrom(address,address,uint256)"](
+            account.address,
+            fixture.lockup.address,
+            tokenID
+          )
+      ).to.be.revertedWithCustomError(fixture.lockup, "PreLockStateRequired");
+    });
+  });
+
   describe("collectAllProfits", async () => {
     it("collects all profits", async () => {
       const account1 = accounts[1];
@@ -280,7 +443,7 @@ describe("lockup", async () => {
       showState("After Unlocking Early", await getState(fixture));
     });
 
-    it.only("attempts to totally unlock early with ALCA and ETH rewards", async () => {
+    it("attempts to totally unlock early with ALCA and ETH rewards", async () => {
       showState("Initial State with staked position", await getState(fixture));
       await lockStakedNFT(fixture, accounts[1], stakedTokenIDs[1]);
       await fixture.aToken
@@ -288,7 +451,7 @@ describe("lockup", async () => {
         .increaseAllowance(fixture.publicStaking.address, alcaRewards);
       await fixture.publicStaking
         .connect(accounts[0])
-        .depositEth(42,{value : ethRewards});
+        .depositEth(42, { value: ethRewards });
       await fixture.publicStaking
         .connect(accounts[0])
         .depositToken(42, alcaRewards);
@@ -316,7 +479,7 @@ describe("lockup", async () => {
       showState("After Unlocking Early", await getState(fixture));
     });
 
-    it.only("attempts to partially unlock early with ALCA and ETH rewards", async () => {
+    it("attempts to partially unlock early with ALCA and ETH rewards", async () => {
       showState("Initial State with staked position", await getState(fixture));
       await lockStakedNFT(fixture, accounts[1], stakedTokenIDs[1]);
       await fixture.aToken
@@ -324,7 +487,7 @@ describe("lockup", async () => {
         .increaseAllowance(fixture.publicStaking.address, alcaRewards);
       await fixture.publicStaking
         .connect(accounts[0])
-        .depositEth(42,{value : ethRewards});
+        .depositEth(42, { value: ethRewards });
       await fixture.publicStaking
         .connect(accounts[0])
         .depositToken(42, alcaRewards);
@@ -351,13 +514,11 @@ describe("lockup", async () => {
       expect(await getState(fixture)).to.be.deep.equal(expectedState);
       showState("After Unlocking Early", await getState(fixture));
     });
-
   });
 
   describe("aggregateProfits", async () => {});
 
-  describe("unlock", async () => {
-  });
+  describe("unlock", async () => {});
 
   describe("getter functions", async () => {
     before(async () => {});
