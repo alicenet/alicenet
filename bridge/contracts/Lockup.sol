@@ -61,6 +61,7 @@ contract Lockup is
     event EarlyExit(address to_, uint256 tokenID_);
     event NewLockup(address from_, uint256 tokenID_);
 
+    error AddressNotAllowedToSendEther();
     error OnlyStakingNFTAllowed();
     error ContractDoesNotOwnTokenID(uint256 tokenID_);
     error AddressAlreadyLockedUp();
@@ -88,8 +89,8 @@ contract Lockup is
         PostLock
     }
 
-    uint256 internal constant _SCALING_FACTOR = 10**18;
-    uint256 internal constant _FRACTION_RESERVED = _SCALING_FACTOR / 5;
+    uint256 public constant _SCALING_FACTOR = 10**18;
+    uint256 public constant _FRACTION_RESERVED = _SCALING_FACTOR / 5;
     // rewardPool contract address
     address internal immutable _rewardPool;
     // bonusPool contract address
@@ -120,10 +121,10 @@ contract Lockup is
 
     // support mapping to keep track all the ethereum owed to user to be
     // redistributed in the postLock phase during safe mode.
-    mapping(address => uint256) public rewardEth;
+    mapping(address => uint256) internal rewardEth;
     // support mapping to keep track all the token owed to user to be
     // redistributed in the postLock phase during safe mode.
-    mapping(address => uint256) public rewardTokens;
+    mapping(address => uint256) internal rewardTokens;
     // Flag to determine if we are in the postLock phase safe or unsafe, i.e if
     // users are allowed to withdrawal or not. All profits need to be collect by all
     // positions before setting the safe mode.
@@ -152,7 +153,12 @@ contract Lockup is
         _startBlock = startBlock_;
         _endBlock = startBlock_ + lockDuration_;
     }
-    receive () external payable{}
+
+    receive() external payable {
+        if (msg.sender != _publicStakingAddress() && msg.sender != _rewardPool) {
+            revert AddressNotAllowedToSendEther();
+        }
+    }
 
     modifier onlyPreLock() {
         if (_getState() != State.PreLock) {
@@ -271,8 +277,8 @@ contract Lockup is
         uint256 gasLoop;
         // start index where we left off plus one
         uint256 i = _tokenIDOffset + 1;
-        // for loop that will exit when one of following is true the gas remaining is
-        // less than 5x the estimated per iteration cost or the iterator is done
+        // for loop that will exit when one of following is true the gas remaining is less than 5x
+        // the estimated per iteration cost or the iterator is done
         for (; ; i++) {
             (uint256 tokenID, bool ok) = _getTokenIDAtIndex(i);
             if (!ok) {
@@ -302,29 +308,13 @@ contract Lockup is
         _tokenIDOffset = i;
     }
 
-    /*
-    initial State:
-        state = PostLock
-        payoutSafe = true
-        _tokenOf (address -> TokenID) = {user1:10, user2:20, user3:30, user4:40, user5:50}
-        _ownerOf (TokenID -> address) = {10:user1, 20:user2, 30:user3, 40:user4, 50:user5}
-        _tokenIDs (index -> TokenID) = {1:10, 2:20, 3:30, 4:40, 5:50}
-        _reverseTokenIDs (TokenID -> index) = {10:1, 20:2, 30:3, 40:4, 50:5}
-        rewardEth (address => uint256) = {user1:0.8ether, user2:1.6ether, user3:2.4ether, user4:3.2ether, user5:4ether}
-        rewardTokens (address => uint256) = {user1:0.8m, user2:1.6m, user3:2.4m, user4:3.2m, user5:4m}
-
-    example 1:
-        user 1 wants to
-
-     */
-
     function unlock()
         public
         onlyPostLock
         onlyPayoutSafe
         returns (uint256 payoutToken, uint256 payoutEth)
     {
-        uint256 tokenID = _getTokenOf(msg.sender);
+        uint256 tokenID = _validateAndGetTokenId();
         uint256 shares = _getNumShares(tokenID);
         bool isLastPosition = _lenTokenIDs == 1;
         //delete tokenID from iterable tokenID mapping
@@ -336,7 +326,7 @@ contract Lockup is
             shares,
             isLastPosition
         );
-        _transferEthAndTokens(msg.sender, payoutEth, payoutToken);
+        _distributeAllProfits(_payableSender(), payoutEth, payoutToken, 0, false);
         IERC721Transferable(_publicStakingAddress()).safeTransferFrom(
             address(this),
             msg.sender,
@@ -360,12 +350,8 @@ contract Lockup is
         return _endBlock;
     }
 
-    function getEthRewardBalance() public view returns (uint256) {
-        return rewardEth[msg.sender];
-    }
-
-    function getTokenRewardBalance() public view returns (uint256) {
-        return rewardTokens[msg.sender];
+    function getTemporaryRewardBalance(address user_) public view returns (uint256, uint256) {
+        return (rewardEth[user_], rewardTokens[user_]);
     }
 
     function getRewardPoolAddress() public view returns (address) {
@@ -374,6 +360,10 @@ contract Lockup is
 
     function getBonusPoolAddress() public view returns (address) {
         return _bonusPool;
+    }
+
+    function getTotalSharesLocked() public view returns (uint256) {
+        return _totalSharesLocked;
     }
 
     function getReservedAmount(uint256 amount_) public pure returns (uint256) {
@@ -395,14 +385,29 @@ contract Lockup is
         payoutToken -= reserveToken;
     }
 
-    function estimateFinalProfitAfterUnlock(uint256 tokenID_)
+    // todo: set when we allow to call this function based on the approach used to compute bonus
+    // rate
+    function estimateFinalBonusWithProfits(uint256 tokenID_)
         public
         view
-        returns (uint256 payoutEth, uint256 payoutToken)
+        returns (
+            uint256 bonusShares,
+            uint256 payoutEth,
+            uint256 payoutToken
+        )
     {
         // check if the position owned by this contract
         _verifyLockedPosition(tokenID_);
-        //TODO: finish implementing this
+        uint256 shares = _getNumShares(tokenID_);
+        uint256 currentSharesLocked = _totalSharesLocked;
+        uint256 bonusEthProfit;
+        uint256 bonusTokenProfit;
+        (bonusShares, bonusEthProfit, bonusTokenProfit) = BonusPool(_bonusPool)
+            .estimateBonusAmountWithReward(currentSharesLocked, shares);
+        (uint256 rewardEthProfit, uint256 rewardTokenProfit) = RewardPool(_rewardPool)
+            .estimateRewards(currentSharesLocked, shares);
+        payoutEth = bonusEthProfit + rewardEthProfit;
+        payoutToken = bonusTokenProfit + rewardTokenProfit;
     }
 
     function _lockFromTransfer(uint256 tokenID_, address tokenOwner_) internal {
