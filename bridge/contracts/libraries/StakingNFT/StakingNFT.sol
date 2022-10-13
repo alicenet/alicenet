@@ -226,7 +226,7 @@ abstract contract StakingNFT is
     /// this function must be the owner of the tokenID.
     function collectAllProfits(uint256 tokenID_)
         public
-        returns (uint256 payoutToken, uint256 payoutEth)
+        returns (uint256 payoutEth, uint256 payoutToken)
     {
         payoutToken = _collectTokenTo(msg.sender, tokenID_);
         payoutEth = _collectEthTo(msg.sender, tokenID_);
@@ -248,7 +248,7 @@ abstract contract StakingNFT is
     /// `to_` address. The caller of this function must be the owner of the tokenID.
     function collectAllProfitsTo(address to_, uint256 tokenID_)
         public
-        returns (uint256 payoutToken, uint256 payoutEth)
+        returns (uint256 payoutEth, uint256 payoutToken)
     {
         payoutToken = _collectTokenTo(to_, tokenID_);
         payoutEth = _collectEthTo(to_, tokenID_);
@@ -306,8 +306,8 @@ abstract contract StakingNFT is
     {
         Position memory p = _positions[tokenID_];
         uint256 shares = _shares;
-        (, , , payoutToken) = _collect(shares, _tokenState, p, p.accumulatorToken);
         (, , , payoutEth) = _collect(shares, _ethState, p, p.accumulatorEth);
+        (, , , payoutToken) = _collect(shares, _tokenState, p, p.accumulatorToken);
     }
 
     /// estimateExcessToken returns the amount of AToken that is held in the

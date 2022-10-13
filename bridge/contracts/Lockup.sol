@@ -50,7 +50,7 @@ import "contracts/libraries/lockup/AccessControlled.sol";
 //          SHOULD TRANSFER BACK TO CALLER POSSESSION OF STAKED POSITION NFT DURING METHOD UNLOCK
 
 /// @custom:salt Lockup
-/// @custom:deploy-type deployCreate
+/// @custom:deploy-type deployUpgradeable
 contract Lockup is
     ImmutablePublicStaking,
     ImmutableAToken,
@@ -228,7 +228,7 @@ contract Lockup is
     function collectAllProfits()
         public
         onlyBeforePostLock
-        returns (uint256 payoutAToken, uint256 payoutEth)
+        returns (uint256 payoutEth, uint256 payoutAToken)
     {
         return _collectAllProfits(_payableSender(), _validateAndGetTokenId());
     }
@@ -312,7 +312,7 @@ contract Lockup is
         public
         onlyPostLock
         onlyPayoutSafe
-        returns (uint256 payoutToken, uint256 payoutEth)
+        returns (uint256 payoutEth, uint256 payoutToken)
     {
         uint256 tokenID = _validateAndGetTokenId();
         uint256 shares = _getNumShares(tokenID);
@@ -326,7 +326,13 @@ contract Lockup is
             shares,
             isLastPosition
         );
-        _distributeAllProfits(_payableSender(), payoutEth, payoutToken, 0, false);
+        (payoutEth, payoutToken) = _distributeAllProfits(
+            _payableSender(),
+            payoutEth,
+            payoutToken,
+            0,
+            false
+        );
         IERC721Transferable(_publicStakingAddress()).safeTransferFrom(
             address(this),
             msg.sender,
@@ -431,9 +437,9 @@ contract Lockup is
 
     function _collectAllProfits(address payable acct_, uint256 tokenID_)
         internal
-        returns (uint256 payoutToken, uint256 payoutEth)
+        returns (uint256 payoutEth, uint256 payoutToken)
     {
-        (payoutToken, payoutEth) = IStakingNFT(_publicStakingAddress()).collectAllProfits(tokenID_);
+        (payoutEth, payoutToken) = IStakingNFT(_publicStakingAddress()).collectAllProfits(tokenID_);
         return _distributeAllProfits(acct_, payoutEth, payoutToken, 0, false);
     }
 
@@ -443,7 +449,7 @@ contract Lockup is
         uint256 payoutToken_,
         uint256 additionalTokens,
         bool stakeExit
-    ) internal returns (uint256 userPayoutToken, uint256 userPayoutEth) {
+    ) internal returns (uint256 userPayoutEth, uint256 userPayoutToken) {
         State state = _getState();
         bool localPayoutSafe = payoutSafe;
         userPayoutEth = payoutEth_;
