@@ -14,7 +14,7 @@ See the [GitHub help guide](https://docs.github.com/en/issues/tracking-your-work
 
 Please don't create issues for any security vulnerabilities. Instead, we would appreciate it if you reported them through our vulnerability disclosure form. This allows us to distribute a fix before the vulnerability is exploited.
 
-Additionally, if you believe that you've discovered a security vulnerability, you might qualify for our bug bounty program. Visit our [website](https://www.alice.net/) or our [discord server](https://discord.gg/bkhW2KUWDu) for details.
+Additionally, if you believe that you've discovered a security vulnerability, you might qualify for our bug bounty program. Visit our [website](https://www.alice.net/) or our [discord server](https://discord.gg/8esBWyr8h3) for details.
 
 ## Contributions
 
