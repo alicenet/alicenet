@@ -6,12 +6,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	testutils "github.com/alicenet/alicenet/layer1/executor/tasks/tests/utils"
-	"github.com/stretchr/testify/require"
 	"math/big"
 	"os"
 	"strings"
 	"testing"
+
+	testutils "github.com/alicenet/alicenet/layer1/executor/tasks/tests/utils"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/accounts/abi"
@@ -712,7 +713,7 @@ func CompleteEthDkgCeremony(t *testing.T, numValidators int) (*tests.ClientFixtu
 		for j := 0; j < numValidators; j++ {
 			disputeGPKjTask := suite.DisputeGPKjTasks[idx][j]
 
-			err := disputeGPKjTask.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "disputeGPKjTask", "task-id", nil)
+			err := disputeGPKjTask.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "disputeGPKjTask", "task-id", 0, 0, false, nil, nil)
 			assert.Nil(t, err)
 			err = disputeGPKjTask.Prepare(ctx)
 			assert.Nil(t, err)
@@ -734,7 +735,7 @@ func CompleteEthDkgCeremony(t *testing.T, numValidators int) (*tests.ClientFixtu
 	for idx := 0; idx < numValidators; idx++ {
 		completionTask := suite.CompletionTasks[idx]
 
-		err := completionTask.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "CompletionTask", "task-id", nil)
+		err := completionTask.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "CompletionTask", "task-id", 0, 0, false, nil, nil)
 		assert.Nil(t, err)
 		err = completionTask.Prepare(ctx)
 		assert.Nil(t, err)
