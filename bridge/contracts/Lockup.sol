@@ -6,10 +6,12 @@ import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "contracts/interfaces/IERC721Transferable.sol";
 import "contracts/interfaces/IStakingNFT.sol";
-import "contracts/RewardPool.sol";
-import "contracts/BonusPool.sol";
-import "contracts/utils/ImmutableAuth.sol";
 import "contracts/libraries/lockup/AccessControlled.sol";
+import "contracts/utils/ImmutableAuth.sol";
+import "contracts/utils/EthSafeTransfer.sol";
+import "contracts/utils/ERC20SafeTransfer.sol";
+import "contracts/BonusPool.sol";
+import "contracts/RewardPool.sol";
 
 /**
  * @notice This contract locks up publicStaking position for a certain period. The position is
@@ -330,7 +332,7 @@ contract Lockup is
         _tokenIDOffset = i;
     }
 
-    function unlock(bool stakeExit_)
+    function unlock(address to_, bool stakeExit_)
         public
         onlyPostLock
         onlyPayoutSafe
@@ -350,7 +352,7 @@ contract Lockup is
         (uint256 aggregatedEth, uint256 aggregatedToken) = _withdrawalAggregatedAmount(msg.sender);
         payoutEth += aggregatedEth;
         payoutToken += aggregatedToken;
-        _transferEthAndTokensWithReStake(msg.sender, payoutEth, payoutToken, stakeExit_);
+        _transferEthAndTokensWithReStake(to_, payoutEth, payoutToken, stakeExit_);
     }
 
     function ownerOf(uint256 tokenID_) public view returns (address payable) {
