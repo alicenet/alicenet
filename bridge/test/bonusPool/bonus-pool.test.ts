@@ -80,6 +80,46 @@ describe("BonusPool", async () => {
         fixture.rewardPoolAddress
       );
     });
+
+    it("SCALING_FACTOR returns expected value", async () => {
+      expect(await fixture.bonusPool.SCALING_FACTOR()).to.equal(
+        BigNumber.from("1000000000000000000")
+      );
+    });
+
+    it("getOriginalSharesLocked returns 0 before bonus rate set", async () => {
+      expect(await fixture.bonusPool.getOriginalSharesLocked()).to.equal(0);
+    });
+
+    it("getOriginalSharesLocked returns correct value once bonus rate set", async () => {
+      const initialTotalLocked = 1234;
+      await (
+        await fixture.bonusPool
+          .connect(fixture.mockLockupSigner)
+          .setBonusRate(initialTotalLocked)
+      ).wait();
+
+      expect(await fixture.bonusPool.getOriginalSharesLocked()).to.equal(
+        initialTotalLocked
+      );
+    });
+
+    it("getScaledBonusRate returns 0 before bonus rate set", async () => {
+      expect(await fixture.bonusPool.getScaledBonusRate()).to.equal(0);
+    });
+
+    it("getScaledBonusRate returns correct value once bonus rate set", async () => {
+      const initialTotalLocked = 1234;
+      await setBonusRate(fixture, initialTotalLocked);
+
+      const expectedBonusRate = fixture.totalBonusAmount
+        .mul(await fixture.bonusPool.SCALING_FACTOR())
+        .div(initialTotalLocked);
+
+      expect(await fixture.bonusPool.getScaledBonusRate()).to.equal(
+        expectedBonusRate
+      );
+    });
   });
 
   describe("createBonusStakedPosition", async () => {
@@ -152,6 +192,7 @@ describe("BonusPool", async () => {
       );
     });
   });
+
   describe("setBonusRate", async () => {
     it("Reverts if called from non lockup address", async () => {
       const initialTotalLocked = 1234;
@@ -168,6 +209,7 @@ describe("BonusPool", async () => {
           .setBonusRate(initialTotalLocked)
       ).to.not.be.reverted;
     });
+
     it("Reverts if called from lockup address when bonus already set", async () => {
       const initialTotalLocked = 1234;
       await (
@@ -183,4 +225,147 @@ describe("BonusPool", async () => {
       ).to.be.revertedWithCustomError(fixture.bonusPool, "BonusRateAlreadySet");
     });
   });
+
+  describe("estimateBonusAmount", async () => {
+    it("Returns expected amount based on set bonus rate", async () => {
+      // set bonus rate
+      const initialTotalLocked = 8000;
+      await setBonusRate(fixture, initialTotalLocked);
+
+      const shares = BigNumber.from(4000);
+      const expectedEstimatedBonusAmount = shares
+        .mul(await fixture.bonusPool.getScaledBonusRate())
+        .div(await fixture.bonusPool.SCALING_FACTOR());
+
+      const estimatedBonusAmount = await fixture.bonusPool.estimateBonusAmount(
+        shares
+      );
+
+      expect(estimatedBonusAmount).to.equal(expectedEstimatedBonusAmount);
+    });
+  });
+
+  describe("estimateBonusAmountWithReward", async () => {
+    it("reverts if bonus token not minted", async () => {
+      const currentSharesLocked = BigNumber.from(8000);
+      const userSharesLocked = BigNumber.from(4000);
+
+      await expect(
+        fixture.bonusPool.estimateBonusAmountWithReward(
+          currentSharesLocked,
+          userSharesLocked
+        )
+      ).to.be.revertedWithCustomError(
+        fixture.bonusPool,
+        "BonusTokenNotCreated"
+      );
+    });
+
+    it("Returns expected amount based on set bonus rate", async () => {
+      const tokenId = await mintBonusPosition(accounts, fixture);
+      // set bonus rate
+      const initialTotalLocked = 8000;
+      await setBonusRate(fixture, initialTotalLocked);
+      const scalingFactor = await fixture.bonusPool.SCALING_FACTOR();
+      const bonusRate = await fixture.bonusPool.getScaledBonusRate();
+
+      const currentSharesLocked = BigNumber.from(8000);
+      const userSharesLocked = BigNumber.from(4000);
+      const proportion = currentSharesLocked
+        .mul(scalingFactor)
+        .div(initialTotalLocked);
+      const userProportion = userSharesLocked
+        .mul(scalingFactor)
+        .div(currentSharesLocked);
+
+      const [estimatedPayoutEth, estimatedPayoutToken] =
+        await fixture.publicStaking.estimateAllProfits(tokenId);
+
+      console.log("estimatedPayoutEth", estimatedPayoutEth.toString());
+      console.log("estimatedPayoutToken", estimatedPayoutToken.toString());
+
+      const totalExpectedBonusRewardEth = proportion
+        .mul(estimatedPayoutEth)
+        .div(scalingFactor);
+      const totalExpectedBonusRewardToken = proportion
+        .mul(estimatedPayoutToken)
+        .div(scalingFactor);
+
+      const expectedUserBonusShares = bonusRate
+        .mul(userSharesLocked)
+        .div(scalingFactor);
+      const userExpectedBonusRewardEth = userProportion
+        .mul(totalExpectedBonusRewardEth)
+        .div(scalingFactor);
+      const userExpectedBonusRewardToken = userProportion
+        .mul(totalExpectedBonusRewardToken)
+        .div(scalingFactor);
+
+      const [bonusShares, bonusRewardEth, bonusRewardToken] =
+        await fixture.bonusPool.estimateBonusAmountWithReward(
+          currentSharesLocked,
+          userSharesLocked
+        );
+
+      expect(bonusShares).to.equal(expectedUserBonusShares);
+      expect(bonusRewardEth).to.equal(userExpectedBonusRewardEth);
+      expect(bonusRewardToken).to.equal(userExpectedBonusRewardToken);
+    });
+  });
+
+  describe("terminate", async () => {
+    it("Reverts if called from non lockup address", async () => {
+      const finalSharesLocked = 1234;
+      await expect(
+        fixture.bonusPool.connect(accounts[1]).terminate(finalSharesLocked)
+      ).to.be.revertedWithCustomError(fixture.bonusPool, "CallerNotLockup");
+    });
+
+    it("Reverts if bonus NFT is not created", async () => {
+      const finalSharesLocked = 1234;
+      await expect(
+        fixture.bonusPool
+          .connect(fixture.mockLockupSigner)
+          .terminate(finalSharesLocked)
+      ).to.be.revertedWithCustomError(
+        fixture.bonusPool,
+        "BonusTokenNotCreated"
+      );
+    });
+  });
 });
+
+async function mintBonusPosition(
+  accounts: SignerWithAddress[],
+  fixture: Fixture
+) {
+  const exactStakeAmount = fixture.totalBonusAmount;
+  await (
+    await fixture.aToken
+      .connect(accounts[0])
+      .transfer(fixture.bonusPool.address, exactStakeAmount)
+  ).wait();
+
+  const receipt = await (
+    await fixture.bonusPool
+      .connect(fixture.mockFactorySigner)
+      .createBonusStakedPosition()
+  ).wait();
+
+  const createdEvent = receipt.events?.find(
+    (event) => event.event === "BonusPositionCreated"
+  );
+
+  return createdEvent?.args?.tokenID;
+}
+
+async function setBonusRate(
+  fixture: Fixture,
+  initialTotalLocked: number
+): Promise<void> {
+  await (
+    await fixture.bonusPool
+      .connect(fixture.mockLockupSigner)
+      .setBonusRate(initialTotalLocked)
+  ).wait();
+}
