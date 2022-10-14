@@ -1,10 +1,10 @@
 package events
 
 import (
+	"context"
 	"fmt"
-
 	"github.com/alicenet/alicenet/layer1"
-	"github.com/alicenet/alicenet/layer1/executor/tasks"
+	"github.com/alicenet/alicenet/layer1/executor"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dynamics"
 	"github.com/alicenet/alicenet/layer1/monitor/objects"
 	"github.com/alicenet/alicenet/utils"
@@ -31,7 +31,7 @@ func ProcessDynamicValueChanged(contracts layer1.AllSmartContracts, logger *logr
 	return nil
 }
 
-func ProcessNewAliceNetNodeVersionAvailable(contracts layer1.AllSmartContracts, logger *logrus.Entry, log types.Log, monState *objects.MonitorState, taskRequestChan chan<- tasks.TaskRequest) error {
+func ProcessNewAliceNetNodeVersionAvailable(contracts layer1.AllSmartContracts, logger *logrus.Entry, log types.Log, monState *objects.MonitorState, taskHandler executor.TaskHandler) error {
 	logger = logger.WithField("method", "ProcessNewAliceNetNodeVersionAvailable")
 	logger.Info("Processing new AliceNet node version...")
 
@@ -51,7 +51,10 @@ func ProcessNewAliceNetNodeVersionAvailable(contracts layer1.AllSmartContracts, 
 	logger.Info("New AliceNet node version available!")
 
 	// Killing previous task
-	taskRequestChan <- tasks.NewKillTaskRequest(&dynamics.CanonicalVersionCheckTask{})
+	_, err = taskHandler.KillTaskByType(context.Background(), &dynamics.CanonicalVersionCheckTask{})
+	if err != nil {
+		return err
+	}
 
 	// If any element of the new Version is greater, schedule the task
 	newMajorIsGreater, newMinorIsGreater, newPatchIsGreater, _, err := utils.CompareCanonicalVersion(event.Version)
@@ -61,7 +64,10 @@ func ProcessNewAliceNetNodeVersionAvailable(contracts layer1.AllSmartContracts, 
 
 	if newMajorIsGreater || newMinorIsGreater || newPatchIsGreater {
 		// Scheduling task with the new Canonical Version
-		taskRequestChan <- tasks.NewScheduleTaskRequest(dynamics.NewVersionCheckTask(event.Version))
+		_, err = taskHandler.ScheduleTask(context.Background(), dynamics.NewVersionCheckTask(event.Version), "")
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -71,8 +77,6 @@ func ProcessNewCanonicalAliceNetNodeVersion(
 	contracts layer1.AllSmartContracts,
 	logger *logrus.Entry,
 	log types.Log,
-	monState *objects.MonitorState,
-	taskRequestChan chan<- tasks.TaskRequest,
 	exitFunc func(),
 ) error {
 	logger = logger.WithField("method", "ProcessNewCanonicalAliceNetNodeVersion")
