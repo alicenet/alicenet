@@ -81,12 +81,15 @@ contract BonusPool is
         if (_tokenID != 0) {
             revert BonusTokenAlreadyCreated();
         }
+        IERC20 alca = IERC20(_aTokenAddress());
         //get the total balance of ALCA owned by bonus pool as stake amount
-        uint256 _stakeAmount = IERC20(_aTokenAddress()).balanceOf(address(this));
+        uint256 _stakeAmount = alca.balanceOf(address(this));
         uint256 totalBonusAmount = _totalBonusAmount;
         if (_stakeAmount < totalBonusAmount) {
             revert NotEnoughALCAToStake(_stakeAmount, totalBonusAmount);
         }
+        // approve the staking contract to transfer the ALCA
+        alca.approve(_publicStakingAddress(), totalBonusAmount);
         uint256 tokenID = IStakingNFT(_publicStakingAddress()).mint(totalBonusAmount);
         _tokenID = tokenID;
         emit BonusPositionCreated(_tokenID);
