@@ -1,3 +1,4 @@
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { expect } from "chai";
 import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
@@ -11,7 +12,7 @@ describe("PublicStaking: Reentrancy tests", async () => {
   let fixture: BaseTokensFixture;
 
   beforeEach(async function () {
-    fixture = await getBaseTokensFixture();
+    fixture = await loadFixture(getBaseTokensFixture);
   });
 
   it("Should not allow reentrancy in the CollectEth", async function () {

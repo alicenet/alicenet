@@ -384,8 +384,7 @@ func (eth *Client) IsAccessible() bool {
 	if err == nil && block != nil {
 		return true
 	}
-
-	eth.logger.Debug("IsEthereumAccessible()...false")
+	eth.logger.WithError(err).Warning("IsEthereumAccessible()...false")
 	return false
 }
 
@@ -470,7 +469,7 @@ func (eth *Client) EndpointInSync(ctx context.Context) (bool, uint32, error) {
 func (eth *Client) GetEvents(ctx context.Context, firstBlock, lastBlock uint64, addresses []common.Address) ([]types.Log, error) {
 	logger := eth.logger
 
-	logger.Debugf("...GetEvents(firstBlock:%v,lastBlock:%v,addresses:%x)", firstBlock, lastBlock, addresses)
+	logger.Tracef("...GetEvents(firstBlock:%v,lastBlock:%v,addresses:%x)", firstBlock, lastBlock, addresses)
 
 	query := ethereum.FilterQuery{
 		FromBlock: new(big.Int).SetUint64(firstBlock),
@@ -485,9 +484,9 @@ func (eth *Client) GetEvents(ctx context.Context, firstBlock, lastBlock uint64, 
 	}
 
 	for idx, log := range logs {
-		logger.Debugf("Log[%v] Block[%v]:%v", idx, log.BlockNumber, log)
+		logger.Tracef("Log[%v] Block[%v]:%v", idx, log.BlockNumber, log)
 		for idx, hash := range log.Topics {
-			logger.Debugf("Hash[%v]:%x", idx, hash)
+			logger.Tracef("Hash[%v]:%x", idx, hash)
 		}
 	}
 

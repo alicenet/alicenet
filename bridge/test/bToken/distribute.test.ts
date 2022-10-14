@@ -1,3 +1,4 @@
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { BigNumber, BytesLike } from "ethers";
 import { ethers } from "hardhat";
 import { expect } from "../chai-setup";
@@ -66,7 +67,7 @@ describe("Testing BToken Distribution methods", async () => {
   let ethIn: BigNumber;
 
   beforeEach(async function () {
-    fixture = await getFixture();
+    fixture = await loadFixture(getFixture);
     showState("Initial", await getState(fixture));
     ethIn = ethers.utils.parseEther(eth.toString());
   });

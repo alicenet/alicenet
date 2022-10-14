@@ -21,12 +21,14 @@
         "go.goroot": "/usr/local/go"
       },
       "extensions": [
-        "golang.Go",
-        "ms-azuretools.vscode-docker",
-        "eg2.vscode-npm-script",
-        "tintinweb.solidity-visual-auditor",
-        "eamodio.gitlens"
-      ]
+		"golang.Go",
+		"ms-azuretools.vscode-docker",
+		"eg2.vscode-npm-script",
+		"tintinweb.solidity-visual-auditor",
+		"eamodio.gitlens",
+		"ryanluker.vscode-coverage-gutters",
+		"NomicFoundation.hardhat-solidity"
+	]
     }
   },
   "remoteUser": "vscode"

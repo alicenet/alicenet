@@ -1,3 +1,4 @@
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
 import {
@@ -14,7 +15,7 @@ describe("State Migration: Migrate state", () => {
   let fixture: Fixture;
 
   beforeEach(async function () {
-    fixture = await getFixture();
+    fixture = await loadFixture(getFixture);
   });
 
   it("Should migrate using special migration contract", async function () {

@@ -9,9 +9,11 @@ import (
 	"time"
 
 	"github.com/alicenet/alicenet/cmd/bootnode"
+	"github.com/alicenet/alicenet/cmd/ethkey"
 	"github.com/alicenet/alicenet/cmd/firewalld"
+	"github.com/alicenet/alicenet/cmd/initialization"
+	"github.com/alicenet/alicenet/cmd/node"
 	"github.com/alicenet/alicenet/cmd/utils"
-	"github.com/alicenet/alicenet/cmd/validator"
 	"github.com/alicenet/alicenet/config"
 	"github.com/alicenet/alicenet/logging"
 	"github.com/sirupsen/logrus"
@@ -23,7 +25,8 @@ import (
 // Variables set by goreleaser process: https://goreleaser.com/cookbooks/using-main.version.
 var (
 	// Version from git tag.
-	version = "dev"
+	version               = "dev"
+	defaultConfigLocation = "/.alicenet/mainnet/config.toml"
 )
 
 type option struct {
@@ -45,7 +48,9 @@ func runner(commandRun func(*cobra.Command, []string)) func(*cobra.Command, []st
 			if logLevel == "" {
 				logLevel = "info"
 			}
-			logger.Infof("Setting log level for '%v' to '%v'", logName, logLevel)
+			if logLevel != "info" {
+				logger.Infof("Setting log level for '%v' to '%v'", logName, logLevel)
+			}
 			setLogger(logName, logLevel)
 		}
 		// backwards compatibility
@@ -146,8 +151,7 @@ func main() {
 			{"ethereum.factoryAddress", "", "", &config.Configuration.Ethereum.FactoryAddress},
 			{"ethereum.txMaxGasFeeAllowedInGwei", "", "", &config.Configuration.Ethereum.TxMaxGasFeeAllowedInGwei},
 			{"ethereum.txMetricsDisplay", "", "", &config.Configuration.Ethereum.TxMetricsDisplay},
-			{"monitor.batchSize", "", "", &config.Configuration.Monitor.BatchSize},
-			{"monitor.interval", "", "", &config.Configuration.Monitor.Interval},
+			{"ethereum.processingBlockBatchSize", "", "", &config.Configuration.Ethereum.ProcessingBlockBatchSize},
 			{"transport.peerLimitMin", "", "", &config.Configuration.Transport.PeerLimitMin},
 			{"transport.peerLimitMax", "", "", &config.Configuration.Transport.PeerLimitMax},
 			{"transport.privateKey", "", "", &config.Configuration.Transport.PrivateKey},
@@ -155,7 +159,6 @@ func main() {
 			{"transport.whitelist", "", "", &config.Configuration.Transport.Whitelist},
 			{"transport.bootnodeAddresses", "", "", &config.Configuration.Transport.BootNodeAddresses},
 			{"transport.p2pListeningAddress", "", "", &config.Configuration.Transport.P2PListeningAddress},
-			{"transport.discoveryListeningAddress", "", "", &config.Configuration.Transport.DiscoveryListeningAddress},
 			{"transport.upnp", "", "", &config.Configuration.Transport.UPnP},
 			{"transport.localStateListeningAddress", "", "", &config.Configuration.Transport.LocalStateListeningAddress},
 			{"transport.timeout", "", "", &config.Configuration.Transport.Timeout},
@@ -178,19 +181,45 @@ func main() {
 
 		&firewalld.Command: {},
 
-		&validator.Command: {
+		&node.Command: {
 			{"validator.rewardAccount", "", "", &config.Configuration.Validator.RewardAccount},
 			{"validator.rewardCurveSpec", "", "", &config.Configuration.Validator.RewardCurveSpec},
+		},
+
+		&ethkey.Generate: {
+			{"ethkey.passwordfile", "", "the file that contains the password for the keyfile", &config.Configuration.EthKey.PasswordFile},
+			{"ethkey.json", "", "output JSON instead of human-readable format", &config.Configuration.EthKey.Json},
+			{"ethkey.privatekey", "", "file containing a raw private key to encrypt", &config.Configuration.EthKey.PrivateKey},
+			{"ethkey.lightkdf", "", "use less secure scrypt parameters", &config.Configuration.EthKey.LightKDF},
+		},
+
+		&ethkey.Inspect: {
+			{"ethkey.passwordfile", "", "the file that contains the password for the keyfile", &config.Configuration.EthKey.PasswordFile},
+			{"ethkey.json", "", "output JSON instead of human-readable format", &config.Configuration.EthKey.Json},
+			{"ethkey.private", "", "include the private key in the output", &config.Configuration.EthKey.Private},
+		},
+
+		&ethkey.ChangePassword: {
+			{"ethkey.passwordfile", "", "the file that contains the password for the keyfile", &config.Configuration.EthKey.PasswordFile},
+			{"ethkey.newpasswordfile", "", "the file that contains the new password for the keyfile", &config.Configuration.EthKey.NewPasswordFile},
+		},
+		&initialization.Command: {
+			{"initialization.path", "p", "Path to save the files/folders", &config.Configuration.Initialization.Path},
+			{"initialization.network", "n", "Network environment to use (testnet, mainnet)", &config.Configuration.Initialization.Network},
 		},
 	}
 
 	// Establish command hierarchy
 	hierarchy := map[*cobra.Command]*cobra.Command{
-		&firewalld.Command:    &rootCommand,
-		&bootnode.Command:     &rootCommand,
-		&validator.Command:    &rootCommand,
-		&utils.Command:        &rootCommand,
-		&utils.SendWeiCommand: &utils.Command,
+		&firewalld.Command:      &rootCommand,
+		&bootnode.Command:       &rootCommand,
+		&node.Command:           &rootCommand,
+		&ethkey.Generate:        &rootCommand,
+		&ethkey.Inspect:         &rootCommand,
+		&ethkey.ChangePassword:  &rootCommand,
+		&utils.Command:          &rootCommand,
+		&utils.SendWeiCommand:   &utils.Command,
+		&initialization.Command: &rootCommand,
 	}
 
 	// Convert option abstraction into concrete settings for Cobra and Viper
@@ -241,6 +270,9 @@ func main() {
 		}
 	}
 
+	// If none command and option are present, the `node` command with the default --config option will be executed.
+	setDefaultCommandIfNonePresent(&node.Command, logger)
+
 	// This has to be registered prior to root command execute. Cobra executes this first thing when executing.
 	cobra.OnInitialize(func() {
 		// Read the config file
@@ -258,7 +290,7 @@ func main() {
 				logger.Warnf("Reading file failed:%q", err)
 			}
 		} else {
-			logger.Warnf("Opening file failed:%q", err)
+			logger.Debugf("Opening file failed: %q", err)
 		}
 
 		/* The logic here feels backwards to me but it isn't.
@@ -288,4 +320,24 @@ func main() {
 		logger.Fatalf("Execute() failed:%q", err)
 	}
 	logger.Debugf("main() -- Configuration:%v", config.Configuration.Ethereum)
+}
+
+// setDefaultCommandIfNonePresent to be able to run a node if none command is present.
+func setDefaultCommandIfNonePresent(defaultCommand *cobra.Command, logger *logrus.Logger) {
+	if len(os.Args) != 1 {
+		return
+	}
+
+	// Adding the `node` command to args.
+	os.Args = append([]string{os.Args[0], defaultCommand.Use})
+
+	// Setting te default --config location if it is not present in command options.
+	if config.Configuration.ConfigurationFileName == "" {
+		homeDirectory, err := os.UserHomeDir()
+		if err != nil {
+			logger.Fatalf("failed to obtain user's home directory with error: %v", err)
+		}
+
+		config.Configuration.ConfigurationFileName = homeDirectory + defaultConfigLocation
+	}
 }

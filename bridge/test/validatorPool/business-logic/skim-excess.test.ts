@@ -1,3 +1,4 @@
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { Signer } from "ethers";
 import { ethers } from "hardhat";
@@ -16,10 +17,20 @@ describe("ValidatorPool: Skim excess of ETH and Tokens", async () => {
   let fixture: Fixture;
   let adminSigner: Signer;
   let admin: SignerWithAddress;
+
+  async function deployFixture() {
+    const fixture = await getFixture(false, true, true);
+    const [admin, , ,] = fixture.namedSigners;
+    const adminSigner = await getValidatorEthAccount(admin.address);
+    return {
+      fixture,
+      adminSigner,
+      admin,
+    };
+  }
+
   beforeEach(async () => {
-    fixture = await getFixture(false, true, true);
-    [admin, , ,] = fixture.namedSigners;
-    adminSigner = await getValidatorEthAccount(admin.address);
+    ({ fixture, adminSigner, admin } = await loadFixture(deployFixture));
   });
 
   it("Factory should be able to skim excess of tokens eth sent to contract", async function () {

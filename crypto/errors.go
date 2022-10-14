@@ -1,3 +1,4 @@
+// Package crypto contains all code related to cryptography for AliceNet.
 package crypto
 
 import "errors"

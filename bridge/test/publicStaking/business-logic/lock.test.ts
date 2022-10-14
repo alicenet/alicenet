@@ -1,3 +1,4 @@
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { ethers } from "hardhat";
 import { expect } from "../../chai-setup";
@@ -14,12 +15,19 @@ describe("PublicStaking: Lock and LockWithdrawal", async () => {
   let notAdminSigner: SignerWithAddress;
   let tokenID: number;
 
-  beforeEach(async function () {
-    fixture = await getBaseTokensFixture();
-    [adminSigner, notAdminSigner] = await ethers.getSigners();
+  async function deployFixture() {
+    const fixture = await getBaseTokensFixture();
+    const [adminSigner, notAdminSigner] = await ethers.getSigners();
     await fixture.aToken.approve(fixture.publicStaking.address, 1000);
     const tx = await fixture.publicStaking.connect(adminSigner).mint(1000);
-    tokenID = await getTokenIdFromTx(tx);
+    const tokenID = await getTokenIdFromTx(tx);
+    return { fixture, adminSigner, notAdminSigner, tokenID };
+  }
+
+  beforeEach(async function () {
+    ({ fixture, adminSigner, notAdminSigner, tokenID } = await loadFixture(
+      deployFixture
+    ));
   });
 
   describe("PublicStaking: BurnLock a position", async () => {
