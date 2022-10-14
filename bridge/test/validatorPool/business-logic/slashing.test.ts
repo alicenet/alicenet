@@ -1,3 +1,4 @@
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { BigNumber, ContractTransaction, Signer } from "ethers";
 import { ethers } from "hardhat";
 import { expect } from "../../chai-setup";
@@ -26,13 +27,28 @@ describe("ValidatorPool: Slashing logic", async () => {
   let stakingTokenIds: BigNumber[];
   let stakeAmount: bigint;
 
-  beforeEach(async () => {
-    fixture = await getFixture(false, true, true);
+  async function deployFixture() {
+    const fixture = await getFixture(false, true, true);
     const [admin, , ,] = fixture.namedSigners;
-    adminSigner = await getValidatorEthAccount(admin.address);
-    validators = await createValidators(fixture, validatorsSnapshots);
-    stakingTokenIds = await stakeValidators(fixture, validators);
-    stakeAmount = (await fixture.validatorPool.getStakeAmount()).toBigInt();
+    const adminSigner = await getValidatorEthAccount(admin.address);
+    const validators = await createValidators(fixture, validatorsSnapshots);
+    const stakingTokenIds = await stakeValidators(fixture, validators);
+    const stakeAmount = (
+      await fixture.validatorPool.getStakeAmount()
+    ).toBigInt();
+
+    return {
+      fixture,
+      adminSigner,
+      validators,
+      stakingTokenIds,
+      stakeAmount,
+    };
+  }
+
+  beforeEach(async () => {
+    ({ fixture, adminSigner, validators, stakingTokenIds, stakeAmount } =
+      await loadFixture(deployFixture));
   });
 
   it("Minor slash a validator", async function () {

@@ -1,3 +1,4 @@
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
@@ -18,7 +19,7 @@ describe("PublicStaking: Only Mint", async () => {
   let adminSigner: SignerWithAddress;
 
   beforeEach(async function () {
-    fixture = await getBaseTokensFixture();
+    fixture = await loadFixture(getBaseTokensFixture);
     [adminSigner, notAdminSigner] = await ethers.getSigners();
   });
 

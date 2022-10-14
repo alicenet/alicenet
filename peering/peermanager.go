@@ -473,6 +473,7 @@ func (ps *PeerManager) getPeersActive() {
 		for i := 0; i < len(resp.Peers); i++ {
 			p, err := (*transport.NodeAddr).Unmarshal(nil, resp.Peers[i])
 			if err != nil {
+				ps.logger.WithError(err).Warningf("couldnt unmarshal node address %s", resp.Peers[i])
 				continue
 			}
 			if ps.isMe(p) {
@@ -581,6 +582,7 @@ func (ps *PeerManager) bootNodeProtocol(nodeAddr interfaces.NodeAddr) ([]interfa
 	for i := 0; i < len(resp.Peers); i++ {
 		p, err := (*transport.NodeAddr).Unmarshal(nil, resp.Peers[i])
 		if err != nil {
+			ps.logger.WithError(err).Warningf("couldnt unmarshal node address %s", resp.Peers[i])
 			continue
 		}
 		peerlist = append(peerlist, p)
