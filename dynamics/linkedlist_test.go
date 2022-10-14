@@ -5,30 +5,10 @@ import (
 	"testing"
 
 	"github.com/alicenet/alicenet/constants"
-	"github.com/alicenet/alicenet/constants/dbprefix"
 )
 
-func TestLinkedListMakeKeys(t *testing.T) {
-	llk := makeLinkedListKey()
-	if llk.epoch != 0 {
-		t.Fatal("epoch should be 0")
-	}
-	if !bytes.Equal(llk.prefix, dbprefix.PrefixStorageNodeKey()) {
-		t.Fatal("prefixes do not match")
-	}
-	llkBytes, err := llk.Marshal()
-	if err != nil {
-		t.Fatal(err)
-	}
-	llkTrue := []byte{}
-	llkTrue = append(llkTrue, dbprefix.PrefixStorageNodeKey()...)
-	llkTrue = append(llkTrue, 0, 0, 0, 0)
-	if !bytes.Equal(llkBytes, llkTrue) {
-		t.Fatal("marshalled bytes do not match")
-	}
-}
-
 func TestLinkedListMarshal(t *testing.T) {
+	t.Parallel()
 	ll := &LinkedList{}
 	if ll.IsValid() {
 		t.Fatal("Should not have valid LinkedList")
@@ -40,21 +20,28 @@ func TestLinkedListMarshal(t *testing.T) {
 		t.Fatal("Should have raised error (2)")
 	}
 
-	invalidBytes2 := make([]byte, 4)
+	invalidBytes2 := make([]byte, 8)
 	err = ll.Unmarshal(invalidBytes2)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if ll.epochLastUpdated != 0 {
+	if ll.currentValue != 0 {
 		t.Fatal("Should have raised error (3)")
 	}
 
-	v := []byte{255, 255, 255, 255}
+	if ll.tail != 0 {
+		t.Fatal("Should have raised error (4)")
+	}
+
+	v := []byte{255, 255, 255, 255, 255, 255, 255, 255}
 	err = ll.Unmarshal(v)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if ll.epochLastUpdated != constants.MaxUint32 {
+	if ll.currentValue != constants.MaxUint32 {
+		t.Fatal("Invalid LinkedList (1)")
+	}
+	if ll.tail != constants.MaxUint32 {
 		t.Fatal("Invalid LinkedList (1)")
 	}
 
@@ -65,6 +52,7 @@ func TestLinkedListMarshal(t *testing.T) {
 }
 
 func TestLinkedListGetSet(t *testing.T) {
+	t.Parallel()
 	ll := &LinkedList{}
 	err := ll.SetEpochLastUpdated(0)
 	if err == nil {
@@ -84,9 +72,20 @@ func TestLinkedListGetSet(t *testing.T) {
 	if !ll.IsValid() {
 		t.Fatal("LinkedList should be valid")
 	}
+
+	mfu := uint32(123457)
+	err = ll.SetMostFutureUpdate(mfu)
+	if err != nil {
+		t.Fatal(err)
+	}
+	retMfu := ll.GetMostFutureUpdate()
+	if retMfu != mfu {
+		t.Fatal("Invalid EpochLastUpdated")
+	}
 }
 
 func TestCreateLinkedList(t *testing.T) {
+	t.Parallel()
 	epoch := uint32(0)
 	_, _, err := CreateLinkedList(epoch, nil)
 	if err == nil {
@@ -99,22 +98,24 @@ func TestCreateLinkedList(t *testing.T) {
 		t.Fatal("Should have raised error (2)")
 	}
 
-	rs := &RawStorage{}
-	rs.standardParameters()
-	node, linkedlist, err := CreateLinkedList(epoch, rs)
+	_, dv := GetStandardDynamicValue()
+	node, linkedlist, err := CreateLinkedList(epoch, dv)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if node.thisEpoch != epoch {
 		t.Fatal("invalid thisEpoch")
 	}
-	if node.prevEpoch != epoch {
+	if node.prevEpoch != 0 {
 		t.Fatal("invalid prevEpoch")
 	}
-	if node.nextEpoch != epoch {
+	if node.nextEpoch != 0 {
 		t.Fatal("invalid nextEpoch")
 	}
-	if linkedlist.epochLastUpdated != epoch {
-		t.Fatal("invalid epochLastUpdated")
+	if linkedlist.currentValue != epoch {
+		t.Fatal("invalid currentValue")
+	}
+	if linkedlist.tail != epoch {
+		t.Fatal("invalid currentValue")
 	}
 }
