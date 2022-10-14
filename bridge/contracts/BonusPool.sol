@@ -28,7 +28,7 @@ contract BonusPool is
     MagicEthTransfer
 {
     event BonusPositionCreated(uint256 tokenID);
-
+    error BonusTokenNotCreated();
     error BonusTokenAlreadyCreated();
     error BonusRateAlreadySet();
     error NotEnoughALCAToStake(uint256 currentBalance, uint256 expectedAmount);
@@ -147,6 +147,9 @@ contract BonusPool is
             uint256
         )
     {
+        if (_tokenID == 0) {
+            revert BonusTokenNotCreated();
+        }
         (uint256 estimatedPayoutEth, uint256 estimatedPayoutToken) = IStakingNFT(
             _publicStakingAddress()
         ).estimateAllProfits(_tokenID);
@@ -179,6 +182,9 @@ contract BonusPool is
     /// locked until the end.
     /// @param finalSharesLocked_ The final amount of shares locked up in the lockup contract.
     function terminate(uint256 finalSharesLocked_) public onlyLockup {
+        if (_tokenID == 0) {
+            revert BonusTokenNotCreated();
+        }
         // burn the nft to collect all profits.
         (uint256 payoutEth, uint256 payoutToken) = IStakingNFT(_publicStakingAddress()).burn(
             _tokenID
