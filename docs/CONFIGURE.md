@@ -1,3 +1,0 @@
-# How to configure and run your node
-
-In progress ...

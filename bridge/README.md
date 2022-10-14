@@ -6,11 +6,11 @@ All the main contracts deployed by AliceNet are available into `./contracts`. In
 
 ## Requirements
 
-All the requisites necessary to run smart contracts are covered on the [Building from source](../docs/BUILD.md) documentation.
+All the requisites necessary to run smart contracts are covered on the [Building from source](https://github.com/alicenet/alicenet/wiki/Dev:-Building) documentation.
 
 ## Testing
 
-Check the [Testing Documentation](../docs/TESTING.md) for more information on how to run the unit tests for the smart contracts.
+Check the [Testing Documentation](https://github.com/alicenet/alicenet/wiki/Dev:-Testing) for more information on how to run the unit tests for the smart contracts.
 
 ## HARDHAT
 

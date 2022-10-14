@@ -16,7 +16,7 @@ To learn more, check out our official [website](https://www.alice.net/) and join
 
 The first step to run an AliceNet blockchain node is to get an AliceNet binary.
 
-Pre-compiled binaries are available in our [release page](https://github.com/alicenet/alicenet/releases) and instructions on how to build the binary from the source code, can be found in the [Building from Source](./docs/BUILD.md) documentation.
+Pre-compiled binaries are available in our [release page](https://github.com/alicenet/alicenet/releases) and instructions on how to build the binary from the source code, can be found in the [Building from Source](https://github.com/alicenet/alicenet/wiki/Dev%3A-Building) documentation.
 
 Once you have an AliceNet binary, see the documentation [How to configure and run your node](./docs/CONFIGURE.md) to run your own node against one of AliceNet's networks and check out our official [wallet](https://github.com/alicenet/wallet) to unlock the full potential of your AliceNet node.
 

@@ -26,4 +26,4 @@ Be sure that an issue describes the problem you're fixing, or documents the desi
 
 Also, read and follow our [Code of Conduct](CODE_OF_CONDUCT.md) to help us maintain the AliceNet development community a healthy environment.
 
-Finally, check the [Forking and submitting your development work](./docs/CREATING_PR.md) to get your work ready for submission.
+Finally, check the [Forking and submitting your development work](https://github.com/alicenet/alicenet/wiki/Dev%3A-Creating-a-new-PR) to get your work ready for submission.
