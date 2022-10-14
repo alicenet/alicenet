@@ -11,46 +11,31 @@ import "contracts/BonusPool.sol";
 import "contracts/utils/ImmutableAuth.sol";
 import "contracts/libraries/lockup/AccessControlled.sol";
 
-// UNLESS THEY ARE LESS THAN THE LOCKING DURATION AWAY OR THIS WILL CAUSE A
-// FAILURE IN THE EXIT LOGIC
-//
-// ASSUMPTIONS:
-// NO LOCAL ACCUMULATORS
-// ONLY ONE POSITION PER ACCOUNT
-// EARLY EXIT ALLOWED WITH PENALTY
-//
-// STATE MODEL
-//
-// PRELOCK
-//          INITIAL STATE AT DEPLOY
-//          ENROLLMENT PERIOD OF CONTRACT
-//          THIS IS THE ONLY PHASE IN WHICH NEW LOCKED POSITIONS MAY BE FORMED
-//          CAN NOT USE FINAL PAYOUT METHODS
-//          REWARDS ARE ALLOWED TO BE COLLECTED 80/20 SPLIT
-//          PARTIAL WITHDRAW ALLOWED
-//
-// INLOCK
-//          TRANSITION VIA BLOCK NUMBER
-//          REWARDS ARE ALLOWED TO BE COLLECTED 80/20 SPLIT
-//          NO NEW NEW POSITIONS
-//          PARTIAL WITHDRAW ALLOWED
-//          CAN NOT USE FINAL PAYOUT METHODS
-//
-// POSTLOCK PAYOUTUNSAFE
-//          TRANSITION VIA BLOCK NUMBER
-//          NO NEW ENROLLMENTS
-//          NO PARTIAL WITHDRAWS
-//          CAN NOT USE FINAL PAYOUT METHODS
-//          REWARDS ARE NOT ALLOWED TO BE COLLECTED
-//          ONLY METHOD ALLOWED IS THE AGGREGATEPROFITS METHOD CALL
-//
-// POSTLOCK PAYOUTSAFE
-//          TRANSITION VIA COMPLETION OF AGGREGATEPROFITS METHOD CALLS
-//          SHOULD PAYOUT PROPORTIONATE REWARDS IN FULL TO CALLERS OF UNLOCK
-//          SHOULD TRANSFER BACK TO CALLER POSSESSION OF STAKED POSITION NFT DURING METHOD UNLOCK
+/**
+ * @notice This contract locks up publicStaking position for a certain period. The position is
+ *  transferred to this contract, and the original owner is entitled to collect profits, and unlock
+ *  the position. If the position was kept locked until the end of the locking period, the original
+ *  owner will be able to get the original position back, plus any profits gained by the position
+ *  (e.g from ALCB sale) + a bonus amount based on the amount of shares of the public staking
+ *  position.
+ *
+ *  Original owner will be able to collect profits from the position normally during the locking
+ *  period. However, a certain percentage will be held by the contract and only distributed after the
+ *  locking period has finished and the user unlocks.
+ *
+ *  Original owner will be able to unlock position (partially or fully) before the locking period has
+ *  finished. The owner will able to decide which will be the amount unlocked earlier (called
+ *  exitAmount). In case of full exit (exitAmount == positionShares), the owner will not get the
+ *  percentage of profits of that position that are held by this contract and he will not receive any
+ *  bonus amount. In case, of partial exit (exitAmount < positionShares), the owner will be loosing
+ *  only the profits + bonus relative to the exiting amount.
+ *
+ *
+ * @dev deployed by the AliceNetFactory contract
+ */
 
 /// @custom:salt Lockup
-/// @custom:deploy-type deployUpgradeable
+/// @custom:deploy-type deployCreate
 contract Lockup is
     ImmutablePublicStaking,
     ImmutableAToken,
@@ -67,14 +52,8 @@ contract Lockup is
     error ContractDoesNotOwnTokenID(uint256 tokenID_);
     error AddressAlreadyLockedUp();
     error TokenIDAlreadyClaimed(uint256 tokenID_);
-    error MultipleLocksFromSingleAccount(uint256 exitingTokenID_);
-    error EthSendFailure();
-    error TokenSendFailure();
     error InsufficientBalanceForEarlyExit(uint256 exitValue, uint256 currentBalance);
-    error RegistrationOver();
-    error LockupOver();
     error UserHasNoPosition();
-    error NoRewardsToClaim();
     error PreLockStateRequired();
     error PostLockStateNotAllowed();
     error PostLockStateRequired();
@@ -155,6 +134,7 @@ contract Lockup is
         _endBlock = startBlock_ + lockDuration_;
     }
 
+    /// @dev only publicStaking and rewardPool are allowed to send ether to this contract
     receive() external payable {
         if (msg.sender != _publicStakingAddress() && msg.sender != _rewardPool) {
             revert AddressNotAllowedToSendEther();
@@ -196,6 +176,15 @@ contract Lockup is
         _;
     }
 
+    /// @notice callback function called by the ERC721.safeTransfer. On safe transfer of
+    /// publicStaking positions to this contract, it will be performing checks and in case everything
+    /// is fine, that position will be locked in name of the original owner that performed the
+    /// transfer
+    /// @dev publicStaking positions can only be safe transferred to this contract on PreLock phase
+    /// (enrollment phase)
+    /// @param from_ original owner of the publicStaking Position. The position will locked for this
+    /// address
+    /// @param tokenID_ The publicStaking tokenID that will be locked up
     function onERC721Received(
         address,
         address from_,
@@ -210,11 +199,13 @@ contract Lockup is
         return this.onERC721Received.selector;
     }
 
+    /// @notice transfer and locks a pre-approved publicStaking position to this contract
+    /// @dev can only be called at PreLock phase (enrollment phase)
+    /// @param tokenID_ The publicStaking tokenID that will be locked up
     function lockFromApproval(uint256 tokenID_) public {
-        // msg.sender already approved transfer, so contract can can safeTransfer to itself;
-        // by doing this onERC721Received is called as part of the chain of transfer methods
-        // hence the checks run from within onERC721Received will run
-
+        // msg.sender already approved transfer, so contract can safeTransfer to itself; by doing
+        // this onERC721Received is called as part of the chain of transfer methods hence the checks
+        // run from within onERC721Received
         IERC721Transferable(_publicStakingAddress()).safeTransferFrom(
             msg.sender,
             address(this),
@@ -222,18 +213,46 @@ contract Lockup is
         );
     }
 
+    /// @notice locks a position that was already transferred to this contract without using
+    /// safeTransfer. WARNING: SHOULD ONLY BE USED FROM SMART CONTRACT THAT TRANSFERS A POSITION AND
+    /// CALL THIS METHOD RIGHT IN SEQUENCE
+    /// @dev can only be called at PreLock phase (enrollment phase)
+    /// @param tokenID_ The publicStaking tokenID that will be locked up
+    /// @param tokenOwner_ The address that will be used as the user entitled to that position
     function lockFromTransfer(uint256 tokenID_, address tokenOwner_) public onlyPreLock {
         _lockFromTransfer(tokenID_, tokenOwner_);
     }
 
+    /// @notice collects all profits from a position locked up by this contract. Only a certain
+    /// amount of the profits will be sent, the rest will held by the contract and released at the
+    /// final unlock.
+    /// @dev can only be called if the PostLock phase has not began
+    /// @dev can only be called by position's entitled owner
+    /// @return payoutEth the amount of eth that was sent to user
+    /// @return payoutToken the amount of ALCA that was sent to user
     function collectAllProfits()
         public
         onlyBeforePostLock
-        returns (uint256 payoutEth, uint256 payoutAToken)
+        returns (uint256 payoutEth, uint256 payoutToken)
     {
         return _collectAllProfits(_payableSender(), _validateAndGetTokenId());
     }
 
+    /// @notice function to partially or fully unlock a locked position. The entitled owner will
+    /// able to decide which will be the amount unlocked earlier (exitValue_). In case of full exit
+    /// (exitValue_ == positionShares), the owner will not get the percentage of profits of that
+    /// position that are held by this contract and he will not receive any bonus amount. In case, of
+    /// partial exit (exitValue_< positionShares), the owner will be loosing only the profits + bonus
+    /// relative to the exiting amount. The owner may choose via stakeExit_ boolean if the ALCA will be
+    /// sent a new publicStaking position or as ALCA directly to his address.
+    /// @dev can only be called if the PostLock phase has not began
+    /// @dev can only be called by position's entitled owner
+    /// @param exitValue_ The amount in which the user wants to unlock earlier
+    /// @param stakeExit_ Flag to decide the ALCA will be sent directly or staked as new
+    /// publicStaking position
+    /// @return payoutEth the amount of eth that was sent to user discounting the reserved amount
+    /// @return payoutToken the amount of ALCA discounting the reserved amount that was sent or
+    /// staked as new position to the user
     function unlockEarly(uint256 exitValue_, bool stakeExit_)
         public
         onlyBeforePostLock
@@ -256,6 +275,8 @@ contract Lockup is
         // find shares delta and mint new position
         uint256 remainingShares = shares - exitValue_;
         if (remainingShares > 0) {
+            // approve the transfer of ALCA in order to mint the publicStaking position
+            IERC20(_aTokenAddress()).approve(_publicStakingAddress(), remainingShares);
             // burn profits contain staked position... so sub it out
             newTokenID = IStakingNFT(_publicStakingAddress()).mint(remainingShares);
             // set new records
@@ -309,7 +330,7 @@ contract Lockup is
         _tokenIDOffset = i;
     }
 
-    function unlock(address to_, bool stakeExit_)
+    function unlock(bool stakeExit_)
         public
         onlyPostLock
         onlyPayoutSafe
@@ -329,7 +350,7 @@ contract Lockup is
         (uint256 aggregatedEth, uint256 aggregatedToken) = _withdrawalAggregatedAmount(msg.sender);
         payoutEth += aggregatedEth;
         payoutToken += aggregatedToken;
-        _transferEthAndTokensWithReStake(to_, payoutEth, payoutToken, stakeExit_);
+        _transferEthAndTokensWithReStake(msg.sender, payoutEth, payoutToken, stakeExit_);
     }
 
     function ownerOf(uint256 tokenID_) public view returns (address payable) {
@@ -524,6 +545,7 @@ contract Lockup is
         bool stakeExit_
     ) internal {
         if (stakeExit_) {
+            IERC20(_aTokenAddress()).approve(_publicStakingAddress(), payoutToken_);
             IStakingNFT(_publicStakingAddress()).mintTo(to_, payoutToken_, 0);
         } else {
             _safeTransferERC20(IERC20Transferable(_aTokenAddress()), to_, payoutToken_);
