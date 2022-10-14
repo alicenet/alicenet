@@ -5,6 +5,11 @@ ignore:
   - "**/*.mockgen.go"
 coverage:
   status:
+    project:
+      default:
+        target: auto
+        threshold: 2%
     patch:
       default:
-        target: 50%
+        target: auto
+        threshold: 2%
