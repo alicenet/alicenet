@@ -93,11 +93,7 @@ describe("BonusPool", async () => {
 
     it("getOriginalSharesLocked returns correct value once bonus rate set", async () => {
       const initialTotalLocked = 1234;
-      await (
-        await fixture.bonusPool
-          .connect(fixture.mockLockupSigner)
-          .setBonusRate(initialTotalLocked)
-      ).wait();
+      await setBonusRate(fixture, initialTotalLocked);
 
       expect(await fixture.bonusPool.getOriginalSharesLocked()).to.equal(
         initialTotalLocked
@@ -263,6 +259,13 @@ describe("BonusPool", async () => {
 
     it("Returns expected amount based on set bonus rate", async () => {
       const tokenId = await mintBonusPosition(accounts, fixture);
+
+      const alcaRewards = ethers.utils.parseEther("1000000");
+      const ethRewards = ethers.utils.parseEther("10");
+
+      await depositEthForStakingRewards(accounts, fixture, ethRewards);
+      await depositTokensForStakingRewards(accounts, fixture, alcaRewards);
+
       // set bonus rate
       const initialTotalLocked = 8000;
       await setBonusRate(fixture, initialTotalLocked);
@@ -271,7 +274,7 @@ describe("BonusPool", async () => {
 
       const currentSharesLocked = BigNumber.from(8000);
       const userSharesLocked = BigNumber.from(4000);
-      const proportion = currentSharesLocked
+      const overallProportion = currentSharesLocked
         .mul(scalingFactor)
         .div(initialTotalLocked);
       const userProportion = userSharesLocked
@@ -284,10 +287,10 @@ describe("BonusPool", async () => {
       console.log("estimatedPayoutEth", estimatedPayoutEth.toString());
       console.log("estimatedPayoutToken", estimatedPayoutToken.toString());
 
-      const totalExpectedBonusRewardEth = proportion
+      const totalExpectedBonusRewardEth = overallProportion
         .mul(estimatedPayoutEth)
         .div(scalingFactor);
-      const totalExpectedBonusRewardToken = proportion
+      const totalExpectedBonusRewardToken = overallProportion
         .mul(estimatedPayoutToken)
         .div(scalingFactor);
 
@@ -308,8 +311,14 @@ describe("BonusPool", async () => {
         );
 
       expect(bonusShares).to.equal(expectedUserBonusShares);
-      expect(bonusRewardEth).to.equal(userExpectedBonusRewardEth);
-      expect(bonusRewardToken).to.equal(userExpectedBonusRewardToken);
+      expect(bonusRewardEth).to.equal(
+        userExpectedBonusRewardEth,
+        "bonusRewardEth are not equal"
+      );
+      expect(bonusRewardToken).to.equal(
+        userExpectedBonusRewardToken,
+        "bonusRewardToken are not equal"
+      );
     });
   });
 
@@ -332,6 +341,8 @@ describe("BonusPool", async () => {
         "BonusTokenNotCreated"
       );
     });
+
+    it("Succeeds when called from lockup contract and distributes bonus eth/tokens to reward pool", async () => {});
   });
 });
 
@@ -367,5 +378,33 @@ async function setBonusRate(
     await fixture.bonusPool
       .connect(fixture.mockLockupSigner)
       .setBonusRate(initialTotalLocked)
+  ).wait();
+}
+
+async function depositEthForStakingRewards(
+  accounts: SignerWithAddress[],
+  fixture: Fixture,
+  eth: BigNumber
+): Promise<void> {
+  await (
+    await fixture.publicStaking
+      .connect(accounts[0])
+      .depositEth(42, { value: eth })
+  ).wait();
+}
+
+async function depositTokensForStakingRewards(
+  accounts: SignerWithAddress[],
+  fixture: Fixture,
+  alca: BigNumber
+): Promise<void> {
+  await (
+    await fixture.aToken
+      .connect(accounts[0])
+      .increaseAllowance(fixture.publicStaking.address, alca)
+  ).wait();
+
+  await (
+    await fixture.publicStaking.connect(accounts[0]).depositToken(42, alca)
   ).wait();
 }
