@@ -15,7 +15,6 @@ npx hardhat set-local-environment-interval-mining --network $NETWORK --enable-au
 cp ../scripts/base-files/deploymentList ../scripts/generated/deploymentList
 cp ../scripts/base-files/deploymentArgsTemplate ../scripts/generated/deploymentArgsTemplate
 
-
 npx hardhat --network "$NETWORK" --show-stack-traces deploy-contracts --input-folder ../scripts/generated
 addr="$(grep -Pzo "\[$NETWORK\]\ndefaultFactoryAddress = \".*\"\n" ../scripts/generated/factoryState | grep -a "defaultFactoryAddress = .*" | awk '{print $NF}')"
 
@@ -26,13 +25,13 @@ if [[ -z "${FACTORY_ADDRESS}" ]]; then
 fi
 
 for filePath in $(ls ../scripts/generated/config | xargs); do
-    sed -e "s/factoryAddress = .*/factoryAddress = $FACTORY_ADDRESS/" "../scripts/generated/config/$filePath" > "../scripts/generated/config/$filePath".bk &&\
-    mv "../scripts/generated/config/$filePath".bk "../scripts/generated/config/$filePath"
+    sed -e "s/factoryAddress = .*/factoryAddress = $FACTORY_ADDRESS/" "../scripts/generated/config/$filePath" >"../scripts/generated/config/$filePath".bk &&
+        mv "../scripts/generated/config/$filePath".bk "../scripts/generated/config/$filePath"
 done
 
 cp ../scripts/base-files/owner.toml ../scripts/generated/owner.toml
-sed -e "s/factoryAddress = .*/factoryAddress = $FACTORY_ADDRESS/" "../scripts/generated/owner.toml" > "../scripts/generated/owner.toml".bk &&\
-mv "../scripts/generated/owner.toml".bk "../scripts/generated/owner.toml"
+sed -e "s/factoryAddress = .*/factoryAddress = $FACTORY_ADDRESS/" "../scripts/generated/owner.toml" >"../scripts/generated/owner.toml".bk &&
+    mv "../scripts/generated/owner.toml".bk "../scripts/generated/owner.toml"
 # funds validator accounts
 npx hardhat fund-validators --network $NETWORK
 cd $CURRENT_WD
@@ -50,6 +49,9 @@ if [[ -z "${FACTORY_ADDRESS}" ]]; then
 fi
 
 cd $BRIDGE_DIR
+echo
+# deploy ALCB
+npx hardhat --network $NETWORK deploy-alcb --factory-address ${FACTORY_ADDRESS}
 npx hardhat set-local-environment-interval-mining --network $NETWORK --interval 1000
 cd $CURRENT_WD
 

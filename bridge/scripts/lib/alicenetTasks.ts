@@ -11,8 +11,12 @@ import { task, types } from "hardhat/config";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 // import { ValidatorPool } from "../../typechain-types";
 import axios from "axios";
-import { getGasPrices } from "./alicenetFactoryTasks";
-import { DEFAULT_CONFIG_OUTPUT_DIR } from "./constants";
+import { getEventVar, getGasPrices } from "./alicenetFactoryTasks";
+import {
+  CONTRACT_ADDR,
+  DEFAULT_CONFIG_OUTPUT_DIR,
+  DEPLOYED_RAW,
+} from "./constants";
 import { readDeploymentArgs } from "./deployment/deploymentConfigUtil";
 export type MultiCallArgsStruct = {
   target: string;
@@ -1462,6 +1466,29 @@ task("update-alicenet-node-version", "Set the Canonical AliceNet Node Version")
       throw new Error(`Receipt indicates failure: ${rept}`);
     }
     console.log("Done");
+  });
+
+task("deploy-alcb", "Task to deploy ALCB")
+  .addParam(
+    "factoryAddress",
+    "the default factory address from factoryState will be used if not set"
+  )
+  .setAction(async (taskArgs, hre) => {
+    const factory = await hre.ethers.getContractAt(
+      "AliceNetFactory",
+      taskArgs.factoryAddress
+    );
+    const ALCB_BASE = await hre.ethers.getContractFactory("BToken");
+    const deploymentCode = ALCB_BASE.getDeployTransaction(factory.address)
+      .data as BytesLike;
+    const tx = await factory.deployCreate(deploymentCode);
+    const receipt = await tx.wait();
+    const alcbAddress = getEventVar(receipt, DEPLOYED_RAW, CONTRACT_ADDR);
+    console.log("ALCB/BToken address: ", alcbAddress);
+    await factory.addNewExternalContract(
+      hre.ethers.utils.formatBytes32String("BToken"),
+      alcbAddress
+    );
   });
 
 async function mintATokenTo(

@@ -1,3 +1,4 @@
+// Package utxohandler holds indexers and storage involving UTXOs.
 package utxohandler
 
 import (
