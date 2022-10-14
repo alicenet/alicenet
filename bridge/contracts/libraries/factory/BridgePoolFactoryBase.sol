@@ -135,7 +135,6 @@ abstract contract BridgePoolFactoryBase is ImmutableFactory {
         ];
         _implementation = implementation;
         //check if the logic exists for the specified pool
-        //TODO determin if this step is still necessary
         uint256 implementationSize;
         assembly {
             implementationSize := extcodesize(implementation)
