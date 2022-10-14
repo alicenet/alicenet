@@ -61,6 +61,7 @@ contract Lockup is
     event EarlyExit(address to_, uint256 tokenID_);
     event NewLockup(address from_, uint256 tokenID_);
 
+    error BonusRateNotSetImpossibleToDetermineProfits();
     error AddressNotAllowedToSendEther();
     error OnlyStakingNFTAllowed();
     error ContractDoesNotOwnTokenID(uint256 tokenID_);
@@ -89,8 +90,8 @@ contract Lockup is
         PostLock
     }
 
-    uint256 public constant _SCALING_FACTOR = 10**18;
-    uint256 public constant _FRACTION_RESERVED = _SCALING_FACTOR / 5;
+    uint256 public constant SCALING_FACTOR = 10**18;
+    uint256 public constant FRACTION_RESERVED = SCALING_FACTOR / 5;
     // rewardPool contract address
     address internal immutable _rewardPool;
     // bonusPool contract address
@@ -121,10 +122,10 @@ contract Lockup is
 
     // support mapping to keep track all the ethereum owed to user to be
     // redistributed in the postLock phase during safe mode.
-    mapping(address => uint256) internal rewardEth;
+    mapping(address => uint256) internal _rewardEth;
     // support mapping to keep track all the token owed to user to be
     // redistributed in the postLock phase during safe mode.
-    mapping(address => uint256) internal rewardTokens;
+    mapping(address => uint256) internal _rewardTokens;
     // Flag to determine if we are in the postLock phase safe or unsafe, i.e if
     // users are allowed to withdrawal or not. All profits need to be collect by all
     // positions before setting the safe mode.
@@ -308,7 +309,7 @@ contract Lockup is
         _tokenIDOffset = i;
     }
 
-    function unlock()
+    function unlock(address to_, bool stakeExit_)
         public
         onlyPostLock
         onlyPayoutSafe
@@ -317,27 +318,18 @@ contract Lockup is
         uint256 tokenID = _validateAndGetTokenId();
         uint256 shares = _getNumShares(tokenID);
         bool isLastPosition = _lenTokenIDs == 1;
-        //delete tokenID from iterable tokenID mapping
-        _removeTokenID(tokenID);
-        delete (_tokenOf[msg.sender]);
-        delete (_ownerOf[tokenID]);
-        (payoutToken, payoutEth) = RewardPool(_rewardPool).payout(
-            _totalSharesLocked,
-            shares,
-            isLastPosition
-        );
-        (payoutEth, payoutToken) = _distributeAllProfits(
-            _payableSender(),
-            payoutEth,
-            payoutToken,
-            0,
-            false
-        );
-        IERC721Transferable(_publicStakingAddress()).safeTransferFrom(
-            address(this),
-            msg.sender,
-            tokenID
-        );
+
+        (payoutEth, payoutToken) = _burnLockedPosition(tokenID, msg.sender);
+
+        (uint256 accumulatedRewardEth, uint256 accumulatedRewardToken) = RewardPool(_rewardPool)
+            .payout(_totalSharesLocked, shares, isLastPosition);
+        payoutEth += accumulatedRewardEth;
+        payoutToken += accumulatedRewardToken;
+
+        (uint256 aggregatedEth, uint256 aggregatedToken) = _withdrawalAggregatedAmount(msg.sender);
+        payoutEth += aggregatedEth;
+        payoutToken += aggregatedToken;
+        _transferEthAndTokensWithReStake(to_, payoutEth, payoutToken, stakeExit_);
     }
 
     function ownerOf(uint256 tokenID_) public view returns (address payable) {
@@ -357,7 +349,7 @@ contract Lockup is
     }
 
     function getTemporaryRewardBalance(address user_) public view returns (uint256, uint256) {
-        return (rewardEth[user_], rewardTokens[user_]);
+        return _getTemporaryRewardBalance(user_);
     }
 
     function getRewardPoolAddress() public view returns (address) {
@@ -373,7 +365,7 @@ contract Lockup is
     }
 
     function getReservedAmount(uint256 amount_) public pure returns (uint256) {
-        return (amount_ * _FRACTION_RESERVED) / _SCALING_FACTOR;
+        return (amount_ * FRACTION_RESERVED) / SCALING_FACTOR;
     }
 
     function estimateProfits(uint256 tokenID_)
@@ -391,29 +383,50 @@ contract Lockup is
         payoutToken -= reserveToken;
     }
 
-    // todo: set when we allow to call this function based on the approach used to compute bonus
-    // rate
+    function getState() public view returns (State) {
+        return _getState();
+    }
+
     function estimateFinalBonusWithProfits(uint256 tokenID_)
         public
         view
         returns (
+            uint256 positionShares_,
             uint256 bonusShares,
             uint256 payoutEth,
             uint256 payoutToken
         )
     {
+        if (BonusPool(_bonusPool).getScaledBonusRate() == 0) {
+            revert BonusRateNotSetImpossibleToDetermineProfits();
+        }
         // check if the position owned by this contract
         _verifyLockedPosition(tokenID_);
-        uint256 shares = _getNumShares(tokenID_);
+        positionShares_ = _getNumShares(tokenID_);
         uint256 currentSharesLocked = _totalSharesLocked;
         uint256 bonusEthProfit;
         uint256 bonusTokenProfit;
+        // get the bonus amount + any profit from the bonus staked position
         (bonusShares, bonusEthProfit, bonusTokenProfit) = BonusPool(_bonusPool)
-            .estimateBonusAmountWithReward(currentSharesLocked, shares);
+            .estimateBonusAmountWithReward(currentSharesLocked, positionShares_);
+
+        // get the commutative rewards held in the rewardPool so far
         (uint256 rewardEthProfit, uint256 rewardTokenProfit) = RewardPool(_rewardPool)
-            .estimateRewards(currentSharesLocked, shares);
-        payoutEth = bonusEthProfit + rewardEthProfit;
-        payoutToken = bonusTokenProfit + rewardTokenProfit;
+            .estimateRewards(currentSharesLocked, positionShares_);
+
+        // get any profit held by the position itself
+        (uint256 positionEthProfit, uint256 positionTokenProfit) = IStakingNFT(
+            _publicStakingAddress()
+        ).estimateAllProfits(tokenID_);
+
+        // get any eth and token held by this contract as result of the call to the aggregateProfit
+        // function
+        (uint256 aggregatedEth, uint256 aggregatedTokens) = _getTemporaryRewardBalance(
+            _getOwnerOf(tokenID_)
+        );
+
+        payoutEth = bonusEthProfit + rewardEthProfit + positionEthProfit + aggregatedEth;
+        payoutToken = bonusTokenProfit + rewardTokenProfit + positionTokenProfit + aggregatedTokens;
     }
 
     function _lockFromTransfer(uint256 tokenID_, address tokenOwner_) internal {
@@ -429,6 +442,30 @@ contract Lockup is
         _ownerOf[tokenID_] = tokenOwner_;
         _newTokenID(tokenID_);
         emit NewLockup(tokenOwner_, tokenID_);
+    }
+
+    function _burnLockedPosition(uint256 tokenID_, address tokenOwner_)
+        internal
+        returns (uint256 payoutEth, uint256 payoutToken)
+    {
+        // burn the old position
+        (payoutEth, payoutToken) = IStakingNFT(_publicStakingAddress()).burn(tokenID_);
+        //delete tokenID_ from iterable tokenID mapping
+        _removeTokenID(tokenID_);
+        delete (_tokenOf[tokenOwner_]);
+        delete (_ownerOf[tokenID_]);
+    }
+
+    function _withdrawalAggregatedAmount(address account_)
+        internal
+        returns (uint256 payoutEth, uint256 payoutToken)
+    {
+        // case of we are sending out final pay based on request
+        // just pay all
+        payoutEth = _rewardEth[account_];
+        payoutToken = _rewardTokens[account_];
+        _rewardEth[account_] = 0;
+        _rewardTokens[account_] = 0;
     }
 
     function _getNumShares(uint256 tokenID_) internal view returns (uint256 shares) {
@@ -448,22 +485,12 @@ contract Lockup is
         uint256 payoutEth_,
         uint256 payoutToken_,
         uint256 additionalTokens,
-        bool stakeExit
+        bool stakeExit_
     ) internal returns (uint256 userPayoutEth, uint256 userPayoutToken) {
         State state = _getState();
         bool localPayoutSafe = payoutSafe;
         userPayoutEth = payoutEth_;
         userPayoutToken = payoutToken_;
-        if (localPayoutSafe && state == State.PostLock) {
-            // case of we are sending out final pay based on request
-            // just pay all
-            userPayoutEth += rewardEth[acct_];
-            userPayoutToken += rewardTokens[acct_];
-            rewardEth[acct_] = 0;
-            rewardTokens[acct_] = 0;
-            _transferEthAndTokens(acct_, userPayoutEth, userPayoutToken);
-            return (userPayoutToken, userPayoutEth);
-        }
         // implies !payoutSafe and state one of [preLock, inLock]
         // hold back reserves and fund over deltas
         (uint256 reservedEth, uint256 reservedToken) = _computeReservedAmount(
@@ -479,28 +506,28 @@ contract Lockup is
             // we should not send here and should instead track to local mapping as
             // otherwise a single bad user could block exit operations for all other users
             // by making the send to their account fail via a contract
-            rewardEth[acct_] += userPayoutEth;
-            rewardTokens[acct_] += userPayoutToken;
-            return (userPayoutToken, userPayoutEth);
+            _rewardEth[acct_] += userPayoutEth;
+            _rewardTokens[acct_] += userPayoutToken;
+            return (userPayoutEth, userPayoutToken);
         }
         // adding any additional token that should be sent to the user (e.g shares from
         // burned position on early exit)
         userPayoutToken += additionalTokens;
-        if (stakeExit) {
-            IStakingNFT(_publicStakingAddress()).mintTo(acct_, userPayoutToken, 0);
-        } else {
-            _safeTransferERC20(IERC20Transferable(_aTokenAddress()), acct_, userPayoutToken);
-        }
-        _safeTransferEth(acct_, userPayoutEth);
-        return (userPayoutToken, userPayoutEth);
+        _transferEthAndTokensWithReStake(acct_, userPayoutEth, userPayoutToken, stakeExit_);
+        return (userPayoutEth, userPayoutToken);
     }
 
-    function _transferEthAndTokens(
+    function _transferEthAndTokensWithReStake(
         address to_,
         uint256 payoutEth_,
-        uint256 payoutToken_
+        uint256 payoutToken_,
+        bool stakeExit_
     ) internal {
-        _safeTransferERC20(IERC20Transferable(_aTokenAddress()), to_, payoutToken_);
+        if (stakeExit_) {
+            IStakingNFT(_publicStakingAddress()).mintTo(to_, payoutToken_, 0);
+        } else {
+            _safeTransferERC20(IERC20Transferable(_aTokenAddress()), to_, payoutToken_);
+        }
         _safeTransferEth(to_, payoutEth_);
     }
 
@@ -617,12 +644,16 @@ contract Lockup is
         return _tokenOf[acct_];
     }
 
+    function _getTemporaryRewardBalance(address user_) internal view returns (uint256, uint256) {
+        return (_rewardEth[user_], _rewardTokens[user_]);
+    }
+
     function _computeReservedAmount(uint256 payoutEth_, uint256 payoutToken_)
         internal
         pure
         returns (uint256 reservedEth, uint256 reservedToken)
     {
-        reservedEth = (payoutEth_ * _FRACTION_RESERVED) / _SCALING_FACTOR;
-        reservedToken = (payoutToken_ * _FRACTION_RESERVED) / _SCALING_FACTOR;
+        reservedEth = (payoutEth_ * FRACTION_RESERVED) / SCALING_FACTOR;
+        reservedToken = (payoutToken_ * FRACTION_RESERVED) / SCALING_FACTOR;
     }
 }

@@ -33,7 +33,7 @@ contract BonusPool is
     error BonusRateAlreadySet();
     error NotEnoughALCAToStake(uint256 currentBalance, uint256 expectedAmount);
 
-    uint256 internal constant _SCALING_FACTOR = 10**18;
+    uint256 public constant SCALING_FACTOR = 10**18;
     uint256 internal immutable _totalBonusAmount;
     address internal immutable _lockupContract;
     address internal immutable _rewardPool;
@@ -59,18 +59,6 @@ contract BonusPool is
         _totalBonusAmount = totalBonusAmount_;
         _lockupContract = lockupContract_;
         _rewardPool = rewardPool_;
-    }
-
-    /// @notice gets the lockup contract address
-    /// @return the lockup contract address
-    function getLockupContractAddress() public view returns (address) {
-        return _getLockupContractAddress();
-    }
-
-    /// @notice gets the rewardPool contract address
-    /// @return the rewardPool contract address
-    function getRewardPoolAddress() public view returns (address) {
-        return _getRewardPoolAddress();
     }
 
     /// @notice function that creates/mint a publicStaking position with an amount that will be
@@ -100,15 +88,48 @@ contract BonusPool is
         if (_bonusRate != 0) {
             revert BonusRateAlreadySet();
         }
-        _bonusRate = (_totalBonusAmount * _SCALING_FACTOR) / initialTotalLocked_;
+        _bonusRate = (_totalBonusAmount * SCALING_FACTOR) / initialTotalLocked_;
         _originalSharesLocked = initialTotalLocked_;
+    }
+
+    /// @notice gets the lockup contract address
+    /// @return the lockup contract address
+    function getLockupContractAddress() public view returns (address) {
+        return _getLockupContractAddress();
+    }
+
+    /// @notice gets the rewardPool contract address
+    /// @return the rewardPool contract address
+    function getRewardPoolAddress() public view returns (address) {
+        return _getRewardPoolAddress();
+    }
+
+    /// @notice gets the original amount of ALCA that was used to compute the _bonusRate
+    /// @return the original amount of ALCA that was used to compute the _bonusRate
+    function getOriginalSharesLocked() public view returns (uint256) {
+        return _originalSharesLocked;
+    }
+
+    /// @notice gets the scaled bonusRate, rate in which the shares will be multiplied to determine
+    /// the bonus amount owed by a position
+    /// @dev the _bonusRate has a scaling factor built in, since it can be less than 0, to get its
+    /// real value with decimal points, divide it by the SCALING_FACTOR
+    /// @return the scaled Bonus Rate
+    function getScaledBonusRate() public view returns (uint256) {
+        return _bonusRate;
+    }
+
+    /// @notice gets the tokenID of the publicStaking position that has the whole bonus amount
+    /// @return the tokenID of the publicStaking position that has the whole bonus amount
+    function getBonusStakedPosition() public view returns (uint256) {
+        return _tokenID;
     }
 
     /// @notice estimate the amount of bonus that a position will get based on its shares
     /// @param shares_ the number of shares of a position
     /// @return the bonus amount
     function estimateBonusAmount(uint256 shares_) public view returns (uint256) {
-        return (shares_ * _bonusRate) / _SCALING_FACTOR;
+        return (shares_ * _bonusRate) / SCALING_FACTOR;
     }
 
     /// @notice estimates a user's bonus amount + bonus position profits.
@@ -141,7 +162,7 @@ contract BonusPool is
 
         // compute what will be amount that a user will receive from the amount that will be sent to
         // the reward contract.
-        uint256 userProportion = (userShares_ * _SCALING_FACTOR) / currentSharesLocked_;
+        uint256 userProportion = (userShares_ * SCALING_FACTOR) / currentSharesLocked_;
         return
             _computeBonusByProportions(
                 userProportion,
@@ -212,7 +233,7 @@ contract BonusPool is
             uint256
         )
     {
-        uint256 proportion = (currentSharesLocked_ * _SCALING_FACTOR) / _originalSharesLocked;
+        uint256 proportion = (currentSharesLocked_ * SCALING_FACTOR) / _originalSharesLocked;
         return
             _computeBonusByProportions(proportion, currentSharesLocked_, payoutEth_, payoutToken_);
     }
@@ -233,9 +254,9 @@ contract BonusPool is
     {
         // mathematical equivalent to:
         // (proportion * shares) / _SCALING_FACTOR
-        bonusShares = (_bonusRate * shares_) / _SCALING_FACTOR;
-        bonusRewardEth = (proportion_ * payoutEth_) / _SCALING_FACTOR;
-        bonusRewardToken = (proportion_ * payoutToken_) / _SCALING_FACTOR;
+        bonusShares = (_bonusRate * shares_) / SCALING_FACTOR;
+        bonusRewardEth = (proportion_ * payoutEth_) / SCALING_FACTOR;
+        bonusRewardToken = (proportion_ * payoutToken_) / SCALING_FACTOR;
     }
 
     function _getLockupContractAddress() internal view override returns (address) {
