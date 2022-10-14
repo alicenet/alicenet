@@ -98,32 +98,12 @@ describe("Testing BridgePool Factory", async () => {
     );
     expect(salt).to.eq(expectedSalt);
     const bridgePoolAddress =
-      await fixture.bridgePoolFactory.getBridgePoolAddress(salt);
+      await fixture.bridgePoolFactory.lookupBridgePoolAddress(salt);
     const expectedAddress = calculateBridgePoolAddress(
       fixture.bridgePoolFactory.address,
       salt
     );
     expect(bridgePoolAddress).to.eq(expectedAddress);
-  });
-
-  it("attempts to get address on nonexistent pool", async () => {
-    const salt = await fixture.bridgePoolFactory.getBridgePoolSalt(
-      ethers.constants.AddressZero,
-      0,
-      1337,
-      1
-    );
-    const expectedAddress = calculateBridgePoolAddress(
-      fixture.bridgePoolFactory.address,
-      salt
-    );
-    const txResponse = fixture.bridgePoolFactory.getBridgePoolAddress(salt);
-    await expect(txResponse)
-      .to.be.revertedWithCustomError(
-        fixture.bridgePoolFactory,
-        "PoolDoesNotExist"
-      )
-      .withArgs(expectedAddress);
   });
 
   it("Should not deploy new BridgePool as user if public pool deployment is not enabled", async () => {

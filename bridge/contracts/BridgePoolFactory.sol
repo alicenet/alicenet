@@ -52,17 +52,12 @@ contract BridgePoolFactory is BridgePoolFactoryBase {
      * @param bridgePoolSalt_ bytes32 salt associated with the pool, calculated with getBridgePoolSalt
      * @return poolAddress calculated calculated bridgePool Address
      */
-    function getBridgePoolAddress(bytes32 bridgePoolSalt_)
+    function lookupBridgePoolAddress(bytes32 bridgePoolSalt_)
         public
         view
         returns (address poolAddress)
     {
         poolAddress = BridgePoolAddressUtil.getBridgePoolAddress(bridgePoolSalt_, address(this));
-        if (poolExists[poolAddress]) {
-            return poolAddress;
-        } else {
-            revert BridgePoolFactoryErrors.PoolDoesNotExist(poolAddress);
-        }
     }
 
     /**
