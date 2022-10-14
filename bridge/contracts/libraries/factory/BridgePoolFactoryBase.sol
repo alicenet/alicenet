@@ -24,8 +24,9 @@ abstract contract BridgePoolFactoryBase is ImmutableFactory {
     mapping(string => address) internal _logicAddresses;
     //mapping of native and external pools to mapping of pool types to most recent version of logic
     mapping(PoolType => mapping(TokenType => uint16)) internal _logicVersionsDeployed;
+    //existing pools
+    mapping(address => bool) public poolExists;
     event BridgePoolCreated(address poolAddress, address token);
-
     modifier onlyFactoryOrPublicPoolDeploymentEnabled() {
         if (msg.sender != _factoryAddress() && !publicPoolDeploymentEnabled) {
             revert BridgePoolFactoryErrors.PublicPoolDeploymentTemporallyDisabled();
@@ -163,6 +164,7 @@ abstract contract BridgePoolFactoryBase is ImmutableFactory {
         if (contractSize == 0) {
             revert BridgePoolFactoryErrors.StaticPoolDeploymentFailed(salt_);
         }
+        poolExists[contractAddr] = true;
         return contractAddr;
     }
 

@@ -48,6 +48,24 @@ contract BridgePoolFactory is BridgePoolFactoryBase {
     }
 
     /**
+     * @notice calculates bridge pool address with associated bytes32 salt
+     * @param bridgePoolSalt_ bytes32 salt associated with the pool, calculated with getBridgePoolSalt
+     * @return poolAddress calculated calculated bridgePool Address
+     */
+    function getBridgePoolAddress(bytes32 bridgePoolSalt_)
+        public
+        view
+        returns (address poolAddress)
+    {
+        poolAddress = BridgePoolAddressUtil.getBridgePoolAddress(bridgePoolSalt_, address(this));
+        if (poolExists[poolAddress]) {
+            return poolAddress;
+        } else {
+            revert BridgePoolFactoryErrors.PoolDoesNotExist(poolAddress);
+        }
+    }
+
+    /**
      * @notice calculates salt for a BridgePool contract based on ERC contract's address, tokenType, chainID and version_
      * @param tokenContractAddr_ address of ERC Token contract
      * @param tokenType_ type of token (1=ERC20, 2=ERC721)

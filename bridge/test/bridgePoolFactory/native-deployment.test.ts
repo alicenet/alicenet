@@ -84,6 +84,46 @@ describe("Testing BridgePool Factory", async () => {
       "deployNewNativePool",
       [bridgePoolTokenType, ethers.constants.AddressZero, bridgePoolVersion]
     );
+    const salt = await fixture.bridgePoolFactory.getBridgePoolSalt(
+      ethers.constants.AddressZero,
+      0,
+      1337,
+      1
+    );
+    const expectedSalt = calculateBridgePoolSalt(
+      ethers.constants.AddressZero,
+      0,
+      1337,
+      1
+    );
+    expect(salt).to.eq(expectedSalt);
+    const bridgePoolAddress =
+      await fixture.bridgePoolFactory.getBridgePoolAddress(salt);
+    const expectedAddress = calculateBridgePoolAddress(
+      fixture.bridgePoolFactory.address,
+      salt
+    );
+    expect(bridgePoolAddress).to.eq(expectedAddress);
+  });
+
+  it("attempts to get address on nonexistent pool", async () => {
+    const salt = await fixture.bridgePoolFactory.getBridgePoolSalt(
+      ethers.constants.AddressZero,
+      0,
+      1337,
+      1
+    );
+    const expectedAddress = calculateBridgePoolAddress(
+      fixture.bridgePoolFactory.address,
+      salt
+    );
+    const txResponse = fixture.bridgePoolFactory.getBridgePoolAddress(salt);
+    await expect(txResponse)
+      .to.be.revertedWithCustomError(
+        fixture.bridgePoolFactory,
+        "PoolDoesNotExist"
+      )
+      .withArgs(expectedAddress);
   });
 
   it("Should not deploy new BridgePool as user if public pool deployment is not enabled", async () => {
@@ -205,3 +245,41 @@ describe("Testing BridgePool Factory", async () => {
     expect(latestNativeERC20Version).to.eq(0);
   });
 });
+
+export const calculateBridgePoolSalt = (
+  tokenContractAddress: string,
+  tokenType: number,
+  chainID: number,
+  version: number
+): string => {
+  const addr: string = ethers.utils
+    .keccak256(tokenContractAddress)
+    .substring(2);
+  const type: string = ethers.utils
+    .keccak256(ethers.utils.hexlify(tokenType))
+    .substring(2);
+  let chainId: string = ethers.utils.hexZeroPad(
+    ethers.utils.hexlify(chainID),
+    32
+  );
+  chainId = ethers.utils.keccak256(chainId).substring(2);
+  let versionhash: string = ethers.utils.hexZeroPad(
+    ethers.utils.hexlify(version),
+    2
+  );
+  versionhash = ethers.utils.keccak256(versionhash).substring(2);
+  const preSalt: string = "0x" + addr + type + chainId + versionhash;
+  return ethers.utils.keccak256(preSalt);
+};
+
+export const calculateBridgePoolAddress = (
+  factoryAddress: string,
+  salt: string
+): string => {
+  const initCode = "0x5880818283335afa3d82833e3d82f3";
+  return ethers.utils.getCreate2Address(
+    factoryAddress,
+    salt,
+    ethers.utils.keccak256(initCode)
+  );
+};
