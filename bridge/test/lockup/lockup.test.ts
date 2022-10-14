@@ -152,12 +152,12 @@ describe("lockup", async () => {
     });
 
     it("attempts to lockup a tokenID that is already claimed", async () => {
-      let account1 = accounts[1];
-      let tokenId1 = stakedTokenIDs[1];
-      //acct 1 locks tokenid1
-      let txResponse = await lockStakedNFT(fixture, account1, tokenId1);
+      const account1 = accounts[1];
+      const tokenId1 = stakedTokenIDs[1];
+      // acct 1 locks tokenid1
+      const txResponse = await lockStakedNFT(fixture, account1, tokenId1);
       await txResponse.wait();
-      //account 2 attempts to lock tokenId1
+      // account 2 attempts to lock tokenId1
       await expect(lockFromTransfer(fixture, account1, tokenId1))
         .to.be.revertedWithCustomError(fixture.lockup, "TokenIDAlreadyClaimed")
         .withArgs(tokenId1);
@@ -402,7 +402,7 @@ describe("lockup", async () => {
       showState("Initial State with staked position", await getState(fixture));
       await lockStakedNFT(fixture, accounts[1], stakedTokenIDs[1]);
       showState("After Locking", await getState(fixture));
-      let expectedState = await getState(fixture);
+      const expectedState = await getState(fixture);
       const tx = await fixture.lockup
         .connect(accounts[1])
         .unlockEarly(stakedAmount, false);
@@ -425,7 +425,7 @@ describe("lockup", async () => {
         .connect(accounts[0])
         .depositToken(42, alcaRewards);
       showState("After Locking", await getState(fixture));
-      let expectedState = await getState(fixture);
+      const expectedState = await getState(fixture);
       const tx = await fixture.lockup
         .connect(accounts[1])
         .unlockEarly(stakedAmount, false);
@@ -456,7 +456,7 @@ describe("lockup", async () => {
         .connect(accounts[0])
         .depositToken(42, alcaRewards);
       showState("After Locking", await getState(fixture));
-      let expectedState = await getState(fixture);
+      const expectedState = await getState(fixture);
       const tx = await fixture.lockup
         .connect(accounts[1])
         .unlockEarly(stakedAmount, false);
@@ -492,7 +492,7 @@ describe("lockup", async () => {
         .connect(accounts[0])
         .depositToken(42, alcaRewards);
       showState("After Locking", await getState(fixture));
-      let expectedState = await getState(fixture);
+      const expectedState = await getState(fixture);
       const tx = await fixture.lockup
         .connect(accounts[1])
         .unlockEarly(stakedAmount, false);

@@ -292,11 +292,30 @@ task(
         case DEPLOY_CREATE: {
           const name = extractName(fullyQualifiedName);
           const salt: BytesLike = await getBytes32Salt(name, hre);
-          deployArgs = await getDeployCreateArgs(fullyQualifiedName, factoryAddress, artifacts, taskArgs.waitConfirmation, undefined, undefined, undefined, true)
-          const deployCreateData = await hre.run(TASK_DEPLOY_CREATE, deployArgs);
+          deployArgs = await getDeployCreateArgs(
+            fullyQualifiedName,
+            factoryAddress,
+            artifacts,
+            taskArgs.waitConfirmation,
+            undefined,
+            undefined,
+            undefined,
+            true
+          );
+          const deployCreateData = await hre.run(
+            TASK_DEPLOY_CREATE,
+            deployArgs
+          );
           cumulativeGasUsed = cumulativeGasUsed.add(deployCreateData.gas);
-          const factory = await hre.ethers.getContractAt("AliceNetFactory", factoryAddress)
-          const txResponse = await factory.addNewExternalContract(salt, deployCreateData.address, await getGasPrices(hre))
+          const factory = await hre.ethers.getContractAt(
+            "AliceNetFactory",
+            factoryAddress
+          );
+          const txResponse = await factory.addNewExternalContract(
+            salt,
+            deployCreateData.address,
+            await getGasPrices(hre)
+          );
           const receipt = await txResponse.wait();
           cumulativeGasUsed = cumulativeGasUsed.add(receipt.gasUsed);
           break;
@@ -479,7 +498,10 @@ task(
 
 // factoryName param doesnt do anything right now
 task(TASK_DEPLOY_CREATE, "deploys a contract from the factory using create")
-  .addFlag("standAlone", "flag to specify that this is not a template for a proxy")
+  .addFlag(
+    "standAlone",
+    "flag to specify that this is not a template for a proxy"
+  )
   .addFlag("verify", "try to automatically verify contracts on etherscan")
   .addFlag("waitConfirmation", "wait 8 blocks between transactions")
   .addParam("contractName", "logic contract name")
@@ -534,7 +556,7 @@ task(TASK_DEPLOY_CREATE, "deploys a contract from the factory using create")
         deployCreateData,
         taskArgs.outputFolder
       );
-      if(taskArgs.standAlone !== true){
+      if (taskArgs.standAlone !== true) {
         await showState(
           `[DEBUG ONLY, DONT USE THIS ADDRESS IN THE SIDE CHAIN, USE THE PROXY INSTEAD!] Deployed logic for ${taskArgs.contractName} contract at: ${deployCreateData.address}, gas: ${receipt.gasUsed}`
         );
@@ -542,7 +564,11 @@ task(TASK_DEPLOY_CREATE, "deploys a contract from the factory using create")
         await showState(
           `Deployed ${deployCreateData.name} at ${deployCreateData.address}, gasCost: ${deployCreateData.gas}`
         );
-        await updateExternalContractList(network, deployCreateData, taskArgs.outputFolder);
+        await updateExternalContractList(
+          network,
+          deployCreateData,
+          taskArgs.outputFolder
+        );
       }
       deployCreateData.receipt = receipt;
       return deployCreateData;
