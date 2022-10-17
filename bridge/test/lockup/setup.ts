@@ -1,59 +1,141 @@
-import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { ContractReceipt } from "ethers/lib/ethers";
+import { BigNumber, ContractReceipt } from "ethers/lib/ethers";
 import hre, { ethers } from "hardhat";
 import { BaseTokensFixture, Fixture } from "../setup";
 
-let admin: SignerWithAddress;
-let user1: SignerWithAddress;
-let user2: SignerWithAddress;
-
-export interface Balances {
-  alca: bigint;
-  eth: bigint;
+interface UserDistribution {
+  owner: string;
+  tokenID: number;
+  shares: string;
+  percentageFromTotal: number;
+  profitETH: string;
+  profitALCA: string;
 }
 
-export interface Lockup {
+interface UsersDistribution {
+  [key: string]: UserDistribution;
+}
+export interface Distribution {
+  profitETH: string;
+  profitALCA: string;
+  users: UsersDistribution;
+}
+interface UserState {
+  alca: bigint;
+  eth: bigint;
   tokenOf: bigint;
   ownerOf: string;
   ethRewards: bigint;
   tokenRewards: bigint;
 }
 
-export interface LockState {
-  balances: Balances;
-  lockup: Lockup;
+interface UsersState {
+  [key: string]: UserState;
+}
+
+interface ContractState {
+  alca: bigint;
+  eth: bigint;
+}
+interface ContractsState {
+  [key: string]: ContractState;
 }
 
 export interface State {
-  lockupContract: Balances;
-  user1: LockState;
+  contracts: ContractsState;
+  users: UsersState;
 }
 
+export const numberOfLockingUsers = 5;
+
 export async function getState(fixture: Fixture | BaseTokensFixture) {
-  [, user1] = await ethers.getSigners();
+  const signers = await ethers.getSigners();
   const state: State = {
-    lockupContract: {
-      alca: (await fixture.aToken.balanceOf(fixture.lockup.address)).toBigInt(),
-      eth: (
-        await ethers.provider.getBalance(fixture.lockup.address)
-      ).toBigInt(),
-    },
-    user1: {
-      balances: {
-        alca: (await fixture.aToken.balanceOf(user1.address)).toBigInt(),
-        eth: (await ethers.provider.getBalance(user1.address)).toBigInt(),
-      },
+    contracts: {
       lockup: {
-        tokenOf: (await fixture.lockup.tokenOf(user1.address)).toBigInt(),
+        alca: (
+          await fixture.aToken.balanceOf(fixture.lockup.address)
+        ).toBigInt(),
+        eth: (
+          await ethers.provider.getBalance(fixture.lockup.address)
+        ).toBigInt(),
+      },
+      publicStaking: {
+        alca: (
+          await fixture.aToken.balanceOf(fixture.publicStaking.address)
+        ).toBigInt(),
+        eth: (
+          await ethers.provider.getBalance(fixture.publicStaking.address)
+        ).toBigInt(),
+      },
+      factory: {
+        alca: (
+          await fixture.aToken.balanceOf(fixture.factory.address)
+        ).toBigInt(),
+        eth: (
+          await ethers.provider.getBalance(fixture.factory.address)
+        ).toBigInt(),
+      },
+      bonusPool: {
+        alca: (
+          await fixture.aToken.balanceOf(fixture.bonusPool.address)
+        ).toBigInt(),
+        eth: (
+          await ethers.provider.getBalance(fixture.bonusPool.address)
+        ).toBigInt(),
+      },
+    },
+    users: {
+      user1: {
+        alca: (await fixture.aToken.balanceOf(signers[1].address)).toBigInt(),
+        eth: (await ethers.provider.getBalance(signers[1].address)).toBigInt(),
+        tokenOf: (await fixture.lockup.tokenOf(signers[1].address)).toBigInt(),
         ownerOf: await fixture.lockup.ownerOf(
-          await fixture.lockup.tokenOf(user1.address)
+          await fixture.lockup.tokenOf(signers[1].address)
         ),
-        ethRewards: (
-          await fixture.lockup.connect(user1.address).getEthRewardBalance()
-        ).toBigInt(),
-        tokenRewards: (
-          await fixture.lockup.connect(user1.address).getTokenRewardBalance()
-        ).toBigInt(),
+        ethRewards: BigNumber.from(0).toBigInt(),
+        tokenRewards: BigNumber.from(0).toBigInt(),
+      },
+      user2: {
+        alca: (await fixture.aToken.balanceOf(signers[2].address)).toBigInt(),
+        eth: (await ethers.provider.getBalance(signers[2].address)).toBigInt(),
+        tokenOf: (await fixture.lockup.tokenOf(signers[2].address)).toBigInt(),
+        ownerOf: await fixture.lockup.ownerOf(
+          await fixture.lockup.tokenOf(signers[2].address)
+        ),
+        ethRewards: BigNumber.from(0).toBigInt(),
+        tokenRewards: BigNumber.from(0).toBigInt(),
+      },
+
+      user3: {
+        alca: (await fixture.aToken.balanceOf(signers[3].address)).toBigInt(),
+        eth: (await ethers.provider.getBalance(signers[3].address)).toBigInt(),
+        tokenOf: (await fixture.lockup.tokenOf(signers[3].address)).toBigInt(),
+        ownerOf: await fixture.lockup.ownerOf(
+          await fixture.lockup.tokenOf(signers[3].address)
+        ),
+        ethRewards: BigNumber.from(0).toBigInt(),
+        tokenRewards: BigNumber.from(0).toBigInt(),
+      },
+
+      user4: {
+        alca: (await fixture.aToken.balanceOf(signers[4].address)).toBigInt(),
+        eth: (await ethers.provider.getBalance(signers[4].address)).toBigInt(),
+        tokenOf: (await fixture.lockup.tokenOf(signers[4].address)).toBigInt(),
+        ownerOf: await fixture.lockup.ownerOf(
+          await fixture.lockup.tokenOf(signers[4].address)
+        ),
+        ethRewards: BigNumber.from(0).toBigInt(),
+        tokenRewards: BigNumber.from(0).toBigInt(),
+      },
+      user5: {
+        alca: (await fixture.aToken.balanceOf(signers[5].address)).toBigInt(),
+        eth: (await ethers.provider.getBalance(signers[5].address)).toBigInt(),
+        tokenOf: (await fixture.lockup.tokenOf(signers[5].address)).toBigInt(),
+        ownerOf: await fixture.lockup.ownerOf(
+          await fixture.lockup.tokenOf(signers[5].address)
+        ),
+        ethRewards: BigNumber.from(0).toBigInt(),
+        tokenRewards: BigNumber.from(0).toBigInt(),
       },
     },
   };

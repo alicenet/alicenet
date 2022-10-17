@@ -13,12 +13,7 @@ import {
   posFixtureSetup,
   preFixtureSetup,
 } from "../setup";
-import {
-  getEthConsumedAsGas,
-  getImpersonatedSigner,
-  getState,
-  showState,
-} from "./setup";
+import { getState, showState } from "./setup";
 
 interface Fixture extends BaseTokensFixture {
   lockup: Lockup;
@@ -31,13 +26,8 @@ const lockDuration = 2;
 const stakedAmount = ethers.utils.parseEther("100").toBigInt();
 const totalBonusAmount = ethers.utils.parseEther("10000");
 
-const alcaRewards = ethers.utils.parseEther("1000000");
-const ethRewards = ethers.utils.parseEther("10");
 let rewardPoolAddress: any;
-let asFactory: SignerWithAddress;
-let asBonusPool: SignerWithAddress;
 const numberOfLockingUsers = 5;
-const unlockEarlyRewardPercentage = 80;
 
 async function deployFixture() {
   await preFixtureSetup();
@@ -89,9 +79,6 @@ async function deployFixture() {
     );
     tokenIDs[i] = tokenID;
   }
-  asFactory = await getImpersonatedSigner(fixture.factory.address);
-  asBonusPool = await getImpersonatedSigner(bonusPoolAddress);
-
   return {
     fixture: {
       ...fixture,
@@ -397,125 +384,6 @@ describe("lockup", async () => {
     it("attempts to collect before postLock phase", async () => {});
   });
 
-  describe("unlockEarly", async () => {
-    it("attempts to totally unlock early with no rewards", async () => {
-      showState("Initial State with staked position", await getState(fixture));
-      await lockStakedNFT(fixture, accounts[1], stakedTokenIDs[1]);
-      showState("After Locking", await getState(fixture));
-      const expectedState = await getState(fixture);
-      const tx = await fixture.lockup
-        .connect(accounts[1])
-        .unlockEarly(stakedAmount, false);
-      // Expected state definition
-      expectedState.user1.balances.eth -= getEthConsumedAsGas(await tx.wait());
-      expectedState.user1.balances.alca += stakedAmount;
-      expectedState.user1.lockup.tokenOf = ethers.constants.Zero.toBigInt();
-      expectedState.user1.lockup.ownerOf = ethers.constants.AddressZero;
-      expect(await getState(fixture)).to.be.deep.equal(expectedState);
-      showState("After Unlocking Early", await getState(fixture));
-    });
-
-    it("attempts to totally unlock early with ALCA rewards", async () => {
-      showState("Initial State with staked position", await getState(fixture));
-      await lockStakedNFT(fixture, accounts[1], stakedTokenIDs[1]);
-      await fixture.aToken
-        .connect(accounts[0])
-        .increaseAllowance(fixture.publicStaking.address, alcaRewards);
-      await fixture.publicStaking
-        .connect(accounts[0])
-        .depositToken(42, alcaRewards);
-      showState("After Locking", await getState(fixture));
-      const expectedState = await getState(fixture);
-      const tx = await fixture.lockup
-        .connect(accounts[1])
-        .unlockEarly(stakedAmount, false);
-      // Expected state definition
-      expectedState.user1.balances.eth -= getEthConsumedAsGas(await tx.wait());
-      expectedState.user1.balances.alca += stakedAmount;
-      expectedState.user1.balances.alca += alcaRewards
-        .div(numberOfLockingUsers)
-        .mul(unlockEarlyRewardPercentage)
-        .div(100)
-        .toBigInt();
-      expectedState.user1.lockup.tokenOf = ethers.constants.Zero.toBigInt();
-      expectedState.user1.lockup.ownerOf = ethers.constants.AddressZero;
-      expect(await getState(fixture)).to.be.deep.equal(expectedState);
-      showState("After Unlocking Early", await getState(fixture));
-    });
-
-    it("attempts to totally unlock early with ALCA and ETH rewards", async () => {
-      showState("Initial State with staked position", await getState(fixture));
-      await lockStakedNFT(fixture, accounts[1], stakedTokenIDs[1]);
-      await fixture.aToken
-        .connect(accounts[0])
-        .increaseAllowance(fixture.publicStaking.address, alcaRewards);
-      await fixture.publicStaking
-        .connect(accounts[0])
-        .depositEth(42, { value: ethRewards });
-      await fixture.publicStaking
-        .connect(accounts[0])
-        .depositToken(42, alcaRewards);
-      showState("After Locking", await getState(fixture));
-      const expectedState = await getState(fixture);
-      const tx = await fixture.lockup
-        .connect(accounts[1])
-        .unlockEarly(stakedAmount, false);
-      // Expected state definition
-      expectedState.user1.balances.eth -= getEthConsumedAsGas(await tx.wait());
-      expectedState.user1.balances.alca += stakedAmount;
-      expectedState.user1.balances.alca += alcaRewards
-        .div(numberOfLockingUsers)
-        .mul(unlockEarlyRewardPercentage)
-        .div(100)
-        .toBigInt();
-      expectedState.user1.balances.eth += ethRewards
-        .div(numberOfLockingUsers)
-        .mul(unlockEarlyRewardPercentage)
-        .div(100)
-        .toBigInt();
-      expectedState.user1.lockup.tokenOf = ethers.constants.Zero.toBigInt();
-      expectedState.user1.lockup.ownerOf = ethers.constants.AddressZero;
-      expect(await getState(fixture)).to.be.deep.equal(expectedState);
-      showState("After Unlocking Early", await getState(fixture));
-    });
-
-    it("attempts to partially unlock early with ALCA and ETH rewards", async () => {
-      showState("Initial State with staked position", await getState(fixture));
-      await lockStakedNFT(fixture, accounts[1], stakedTokenIDs[1]);
-      await fixture.aToken
-        .connect(accounts[0])
-        .increaseAllowance(fixture.publicStaking.address, alcaRewards);
-      await fixture.publicStaking
-        .connect(accounts[0])
-        .depositEth(42, { value: ethRewards });
-      await fixture.publicStaking
-        .connect(accounts[0])
-        .depositToken(42, alcaRewards);
-      showState("After Locking", await getState(fixture));
-      const expectedState = await getState(fixture);
-      const tx = await fixture.lockup
-        .connect(accounts[1])
-        .unlockEarly(stakedAmount, false);
-      // Expected state definition
-      expectedState.user1.balances.eth -= getEthConsumedAsGas(await tx.wait());
-      expectedState.user1.balances.alca += stakedAmount;
-      expectedState.user1.balances.alca += alcaRewards
-        .div(numberOfLockingUsers)
-        .mul(unlockEarlyRewardPercentage)
-        .div(100)
-        .toBigInt();
-      expectedState.user1.balances.eth += ethRewards
-        .div(numberOfLockingUsers)
-        .mul(unlockEarlyRewardPercentage)
-        .div(100)
-        .toBigInt();
-      expectedState.user1.lockup.tokenOf = ethers.constants.Zero.toBigInt();
-      expectedState.user1.lockup.ownerOf = ethers.constants.AddressZero;
-      expect(await getState(fixture)).to.be.deep.equal(expectedState);
-      showState("After Unlocking Early", await getState(fixture));
-    });
-  });
-
   describe("aggregateProfits", async () => {});
 
   describe("unlock", async () => {});
@@ -544,20 +412,9 @@ describe("lockup", async () => {
         .unlockEarly(stakedAmount, false);
       showState("After Unlocking Early", await getState(fixture));
       expect(
-        await fixture.lockup.connect(accounts[1]).getEthRewardBalance()
-      ).to.be.equal(0);
-    });
-
-    it("should get caller token rewards upon totally early unlocking", async () => {
-      showState("Initial State with staked position", await getState(fixture));
-      await lockStakedNFT(fixture, accounts[1], stakedTokenIDs[1]);
-      showState("After Locking", await getState(fixture));
-      await fixture.lockup
-        .connect(accounts[1])
-        .unlockEarly(stakedAmount, false);
-      showState("After Unlocking Early", await getState(fixture));
-      expect(
-        await fixture.lockup.connect(accounts[1]).getTokenRewardBalance()
+        await fixture.lockup
+          .connect(accounts[1])
+          .getTemporaryRewardBalance(accounts[1].address)
       ).to.be.equal(0);
     });
 
@@ -592,16 +449,6 @@ async function lockFromTransfer(
   return fixture.lockup
     .connect(account)
     .lockFromTransfer(tokenID, account.address);
-}
-
-async function approveStakingTokenTransfer(
-  fixture: Fixture,
-  account: SignerWithAddress,
-  tokenID: BigNumber
-): Promise<ContractTransaction> {
-  return fixture.publicStaking
-    .connect(account)
-    .approve(fixture.lockup.address, tokenID);
 }
 
 async function mintBtoken(

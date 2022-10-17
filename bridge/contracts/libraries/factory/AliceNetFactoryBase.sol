@@ -106,7 +106,6 @@ abstract contract AliceNetFactoryBase is DeterministicAddress, ProxyUpgrader {
         _implementation = newImplementationAddress_;
     }
 
-
     /**
      * @dev Sets the new owner
      * @param newOwner_: address of the new owner

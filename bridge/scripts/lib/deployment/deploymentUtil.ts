@@ -59,7 +59,7 @@ export type DeployArgs = {
   constructorArgs?: any;
   outputFolder?: string;
   verify?: boolean;
-  standAlone?:boolean;
+  standAlone?: boolean;
 };
 
 export type Args = {
@@ -204,7 +204,7 @@ export async function getDeployCreateArgs(
   inputFolder?: string,
   outputFolder?: string,
   verify?: boolean,
-  standAlone?:boolean
+  standAlone?: boolean
 ): Promise<DeployArgs> {
   let initCallData;
   const initAble = await isInitializable(fullyQualifiedName, artifacts);

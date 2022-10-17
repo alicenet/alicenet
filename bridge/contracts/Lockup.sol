@@ -65,11 +65,17 @@ contract Lockup is
     error TokenIDNotLocked(uint256 tokenID_);
     error InvalidPositionWithdrawPeriod(uint256 withdrawFreeAfter, uint256 endBlock);
     error InvalidStartingBlock();
+    error InLockStateRequired();
 
     enum State {
         PreLock,
         InLock,
         PostLock
+    }
+
+    struct LockedShares {
+        uint128 currentTotal;
+        uint128 originalTotal;
     }
 
     uint256 public constant SCALING_FACTOR = 10**18;
@@ -85,7 +91,7 @@ contract Lockup is
     // Total Locked describes the total number of ALCA locked in this contract.
     // Since no accumulators are used this is tracked to allow proportionate
     // payouts.
-    uint256 internal _totalSharesLocked;
+    LockedShares internal _totalSharesLocked;
     // _ownerOf tracks who is the owner of a tokenID locked in this contract
     // mapping(tokenID -> owner).
     mapping(uint256 => address) internal _ownerOf;
@@ -175,6 +181,13 @@ contract Lockup is
     modifier onlyPayoutUnSafe() {
         if (payoutSafe) {
             revert PayoutSafe();
+        }
+        _;
+    }
+
+    modifier onlyInLock() {
+        if (_getState() != State.InLock) {
+            revert InLockStateRequired();
         }
         _;
     }
@@ -290,8 +303,13 @@ contract Lockup is
         }
         // safe because newTokenId is zero if shares == exitValue
         _tokenOf[msg.sender] = newTokenID;
+        LockedShares memory totalSharesLocked = _totalSharesLocked;
+        if (_getState() == State.InLock && totalSharesLocked.originalTotal == 0) {
+            totalSharesLocked.originalTotal = totalSharesLocked.currentTotal;
+        }
         // cleanup total shares and payout profits less reserve
-        _totalSharesLocked -= exitValue_;
+        totalSharesLocked.currentTotal -= uint128(exitValue_);
+        _totalSharesLocked = totalSharesLocked;
         _distributeAllProfits(_payableSender(), payoutEth, payoutToken, exitValue_, stakeExit_);
     }
 
@@ -311,7 +329,7 @@ contract Lockup is
                 // payoutSafe since all payouts have been recorded
                 payoutSafe = true;
                 // burn the bonus Position and send the bonus to the rewardPool contract
-                BonusPool(_bonusPool).terminate(_totalSharesLocked);
+                BonusPool(payable(_bonusPool)).terminate(_getOriginalLockedShares());
                 break;
             }
             address payable acct = _getOwnerOf(tokenID);
@@ -346,7 +364,7 @@ contract Lockup is
         (payoutEth, payoutToken) = _burnLockedPosition(tokenID, msg.sender);
 
         (uint256 accumulatedRewardEth, uint256 accumulatedRewardToken) = RewardPool(_rewardPool)
-            .payout(_totalSharesLocked, shares, isLastPosition);
+            .payout(_totalSharesLocked.currentTotal, shares, isLastPosition);
         payoutEth += accumulatedRewardEth;
         payoutToken += accumulatedRewardToken;
 
@@ -364,11 +382,11 @@ contract Lockup is
         return _getTokenOf(acct_);
     }
 
-    function getEnrollmentStartBlock() public view returns (uint256) {
+    function getLockupStartBlock() public view returns (uint256) {
         return _startBlock;
     }
 
-    function getEnrollmentEndBlock() public view returns (uint256) {
+    function getLockupEndBlock() public view returns (uint256) {
         return _endBlock;
     }
 
@@ -384,8 +402,12 @@ contract Lockup is
         return _bonusPool;
     }
 
-    function getTotalSharesLocked() public view returns (uint256) {
-        return _totalSharesLocked;
+    function getTotalCurrentSharesLocked() public view returns (uint256) {
+        return _totalSharesLocked.currentTotal;
+    }
+
+    function getOriginalLockedShares() public view returns (uint256) {
+        return _getOriginalLockedShares();
     }
 
     function getReservedAmount(uint256 amount_) public pure returns (uint256) {
@@ -421,17 +443,17 @@ contract Lockup is
             uint256 payoutToken
         )
     {
-        if (BonusPool(_bonusPool).getScaledBonusRate() == 0) {
+        if (BonusPool(payable(_bonusPool)).getScaledBonusRate() == 0) {
             revert BonusRateNotSetImpossibleToDetermineProfits();
         }
         // check if the position owned by this contract
         _verifyLockedPosition(tokenID_);
         positionShares_ = _getNumShares(tokenID_);
-        uint256 currentSharesLocked = _totalSharesLocked;
+        uint256 currentSharesLocked = _totalSharesLocked.currentTotal;
         uint256 bonusEthProfit;
         uint256 bonusTokenProfit;
         // get the bonus amount + any profit from the bonus staked position
-        (bonusShares, bonusEthProfit, bonusTokenProfit) = BonusPool(_bonusPool)
+        (bonusShares, bonusEthProfit, bonusTokenProfit) = BonusPool(payable(_bonusPool))
             .estimateBonusAmountWithReward(currentSharesLocked, positionShares_);
 
         // get the commutative rewards held in the rewardPool so far
@@ -461,7 +483,7 @@ contract Lockup is
 
     function _lock(uint256 tokenID_, address tokenOwner_) internal {
         uint256 shares = _verifyPositionAndGetShares(tokenID_);
-        _totalSharesLocked += shares;
+        _totalSharesLocked.currentTotal += uint128(shares);
         _tokenOf[tokenOwner_] = tokenID_;
         _ownerOf[tokenID_] = tokenOwner_;
         _newTokenID(tokenID_);
@@ -613,6 +635,14 @@ contract Lockup is
         if (IERC721(_publicStakingAddress()).ownerOf(tokenID_) != address(this)) {
             revert ContractDoesNotOwnTokenID(tokenID_);
         }
+    }
+
+    function _getOriginalLockedShares() internal view returns (uint256) {
+        LockedShares memory totalSharesLocked = _totalSharesLocked;
+        return
+            totalSharesLocked.originalTotal != 0
+                ? totalSharesLocked.originalTotal
+                : totalSharesLocked.currentTotal;
     }
 
     function _validateEntry(uint256 tokenID_, address sender_) internal view {
