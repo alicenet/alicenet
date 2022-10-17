@@ -112,10 +112,7 @@ abstract contract AliceNetFactoryBase is DeterministicAddress, ProxyUpgrader {
      * @param newContractAddress_: address of the contract to be added to registry
      */
     function addNewExternalContract(bytes32 salt_, address newContractAddress_) public onlyOwner {
-        if (_externalContractRegistry[salt_].exist) {
-            revert AliceNetFactoryBaseErrors.SaltAlreadyInUse();
-        }
-        _externalContractRegistry[salt_] = ContractInfo(true, newContractAddress_);
+        _addNewExternalContract(salt_, newContractAddress_);
     }
 
     /**
@@ -339,6 +336,14 @@ abstract contract AliceNetFactoryBase is DeterministicAddress, ProxyUpgrader {
         __upgrade(proxy, newImpl_);
         assert(IProxy(proxy).getImplementationAddress() == newImpl_);
         _initializeContract(proxy, initCallData_);
+    }
+
+    /// Internal function to add a new address and "pseudo" salt to the externalContractRegistry
+    function _addNewExternalContract(bytes32 salt_, address newContractAddress_) public onlyOwner {
+        if (_externalContractRegistry[salt_].exist) {
+            revert AliceNetFactoryBaseErrors.SaltAlreadyInUse();
+        }
+        _externalContractRegistry[salt_] = ContractInfo(true, newContractAddress_);
     }
 
     /**

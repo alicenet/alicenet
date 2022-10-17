@@ -12,7 +12,6 @@ import "contracts/utils/ERC20SafeTransfer.sol";
 import "contracts/utils/ImmutableAuth.sol";
 import "contracts/Lockup.sol";
 
-/// @custom:salt StakingRouterV1
 /// @custom:deploy-type deployCreate
 /// @custom:deploy-group lockup
 /// @custom:deploy-group-index 1

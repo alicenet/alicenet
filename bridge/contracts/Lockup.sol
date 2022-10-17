@@ -36,7 +36,6 @@ import "contracts/RewardPool.sol";
  * @dev deployed by the AliceNetFactory contract
  */
 
-/// @custom:salt Lockup
 /// @custom:deploy-type deployCreate
 /// @custom:deploy-group lockup
 /// @custom:deploy-group-index 1
