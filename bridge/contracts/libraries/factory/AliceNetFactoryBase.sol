@@ -106,14 +106,6 @@ abstract contract AliceNetFactoryBase is DeterministicAddress, ProxyUpgrader {
         _implementation = newImplementationAddress_;
     }
 
-    /**
-     * @dev Add a new address and "pseudo" salt to the externalContractRegistry
-     * @param salt_: salt to be used to retrieve the contract
-     * @param newContractAddress_: address of the contract to be added to registry
-     */
-    function addNewExternalContract(bytes32 salt_, address newContractAddress_) public onlyOwner {
-        _addNewExternalContract(salt_, newContractAddress_);
-    }
 
     /**
      * @dev Sets the new owner
@@ -257,10 +249,9 @@ abstract contract AliceNetFactoryBase is DeterministicAddress, ProxyUpgrader {
             contractAddr := create2(value_, basePtr, sub(ptr, basePtr), salt_)
         }
         _codeSizeZeroRevert(uint160(contractAddr) != 0);
-        //record the contract salt to the _contracts array for lookup
-        _contracts.push(salt_);
+        //record the contract salt to external contract array
+        _addNewExternalContract(salt_, contractAddr);
         emit DeployedRaw(contractAddr);
-        return contractAddr;
     }
 
     /**
@@ -339,10 +330,11 @@ abstract contract AliceNetFactoryBase is DeterministicAddress, ProxyUpgrader {
     }
 
     /// Internal function to add a new address and "pseudo" salt to the externalContractRegistry
-    function _addNewExternalContract(bytes32 salt_, address newContractAddress_) public onlyOwner {
+    function _addNewExternalContract(bytes32 salt_, address newContractAddress_) internal {
         if (_externalContractRegistry[salt_].exist) {
             revert AliceNetFactoryBaseErrors.SaltAlreadyInUse();
         }
+        _contracts.push(salt_);
         _externalContractRegistry[salt_] = ContractInfo(true, newContractAddress_);
     }
 

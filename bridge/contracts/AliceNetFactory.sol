@@ -80,8 +80,8 @@ contract AliceNetFactory is AliceNetFactoryBase {
     }
 
     /**
-     * @notice allows the owner to deploy raw contracts through the factory using
-     * non-deterministic address generation and add the external register
+     * @notice allows the owner to deploy contracts through the factory using
+     * non-deterministic address generation and record the address to external contract mapping
      * @param deployCode_ Hex encoded state with the deployment code of the contract to be deployed +
      * constructors' args (if any)
      * @param salt_ salt used to determine the final determinist address for the deployed contract
@@ -95,6 +95,15 @@ contract AliceNetFactory is AliceNetFactoryBase {
         address newContractAddress = _deployCreate(deployCode_);
         _addNewExternalContract(salt_, newContractAddress);
         return newContractAddress;
+    }
+
+    /**
+     * @dev Add a new address and "pseudo" salt to the externalContractRegistry
+     * @param salt_: salt to be used to retrieve the contract
+     * @param newContractAddress_: address of the contract to be added to registry
+     */
+    function addNewExternalContract(bytes32 salt_, address newContractAddress_) public onlyOwner {
+        _addNewExternalContract(salt_, newContractAddress_);
     }
 
     /**
