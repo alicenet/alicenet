@@ -152,8 +152,8 @@ contract BonusPool is
             _computeBonusByProportions(
                 userProportion,
                 userShares_,
-                bonusRewardToken,
-                bonusRewardEth
+                bonusRewardEth,
+                bonusRewardToken
             );
     }
 

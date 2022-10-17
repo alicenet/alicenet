@@ -322,12 +322,8 @@ export const deployFactoryAndBaseTokens = async (
     await ethers.getContractFactory("BToken")
   ).getDeployTransaction(centralRouter.address).data as BytesLike;
   const bTokenSalt = ethers.utils.formatBytes32String("BToken");
-  const transaction = await factory.deployCreate2(0, bTokenSalt, deployData);
-  const bTokenAddress = await getContractAddressFromDeployedRawEvent(
-    transaction
-  );
-  // registering in the factory.lookup
-  await factory.addNewExternalContract(bTokenSalt, bTokenAddress);
+  await factory.deployCreate2(0, bTokenSalt, deployData);
+
   // finally attach BToken to the address of the deployed contract above
   const bToken = await ethers.getContractAt(
     "BToken",
