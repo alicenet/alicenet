@@ -4,6 +4,7 @@ pragma solidity ^0.8.16;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "contracts/interfaces/IERC721Transferable.sol";
+import "contracts/interfaces/IAliceNetFactory.sol";
 import "contracts/interfaces/IStakingNFT.sol";
 import "contracts/interfaces/IStakingToken.sol";
 import "contracts/utils/EthSafeTransfer.sol";
@@ -11,6 +12,10 @@ import "contracts/utils/ERC20SafeTransfer.sol";
 import "contracts/utils/ImmutableAuth.sol";
 import "contracts/Lockup.sol";
 
+/// @custom:salt StakingRouterV1
+/// @custom:deploy-type deployCreate
+/// @custom:deploy-group lockup
+/// @custom:deploy-group-index 1
 contract StakingRouterV1 is
     ImmutablePublicStaking,
     ImmutableAToken,
@@ -19,16 +24,14 @@ contract StakingRouterV1 is
 {
     error InvalidStakingAmount(uint256 stakingAmount, uint256 migratedAmount);
 
+    bytes32 internal constant _LOCKUP_SALT =
+        0x4c6f636b75700000000000000000000000000000000000000000000000000000;
     address internal immutable _legacyToken;
     address internal immutable _lockupContract;
 
-    constructor(address lockupContract_)
-        ImmutableFactory(msg.sender)
-        ImmutablePublicStaking()
-        ImmutableAToken()
-    {
+    constructor() ImmutableFactory(msg.sender) ImmutablePublicStaking() ImmutableAToken() {
         _legacyToken = IStakingToken(_aTokenAddress()).getLegacyTokenAddress();
-        _lockupContract = lockupContract_;
+        _lockupContract = IAliceNetFactory(_factoryAddress()).lookup(_LOCKUP_SALT);
     }
 
     /// @notice Migrates an amount of legacy token (MADToken) to ALCA tokens and stake them in the
@@ -44,7 +47,7 @@ contract StakingRouterV1 is
     ) public {
         uint256 migratedAmount = _migrate(address(this), migrationAmount_);
         _verifyAndSendAnyRemainder(to_, migratedAmount, stakingAmount_);
-        _stake(to_, migratedAmount);
+        _stake(to_, stakingAmount_);
     }
 
     /// @notice Migrates an amount of legacy token (MADToken) to ALCA tokens, stake them in the

@@ -38,6 +38,8 @@ import "contracts/RewardPool.sol";
 
 /// @custom:salt Lockup
 /// @custom:deploy-type deployCreate
+/// @custom:deploy-group lockup
+/// @custom:deploy-group-index 1
 contract Lockup is
     ImmutablePublicStaking,
     ImmutableAToken,
