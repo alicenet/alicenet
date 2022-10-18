@@ -9,11 +9,18 @@ import {
   BaseTokensFixture,
   deployFactoryAndBaseTokens,
   deployUpgradeableWithFactory,
-  mineBlocks,
   posFixtureSetup,
   preFixtureSetup,
 } from "../setup";
-import { getImpersonatedSigner } from "./setup";
+import {
+  calculateTerminationProfits,
+  depositEthForStakingRewards,
+  depositEthToAddress,
+  depositTokensForStakingRewards,
+  ensureBlockIsAtLeast,
+  getImpersonatedSigner,
+  mintBonusPosition,
+} from "./setup";
 
 interface Fixture extends BaseTokensFixture {
   bonusPool: BonusPool;
@@ -63,8 +70,13 @@ async function deployFixture() {
   const alcaRewards = ethers.utils.parseEther("1000000");
   const ethRewards = ethers.utils.parseEther("10");
 
-  await depositEthForStakingRewards(signers, fixture, ethRewards);
-  await depositTokensForStakingRewards(signers, fixture, alcaRewards);
+  await depositEthForStakingRewards(signers, fixture.publicStaking, ethRewards);
+  await depositTokensForStakingRewards(
+    signers,
+    fixture.aToken,
+    fixture.publicStaking,
+    alcaRewards
+  );
 
   return {
     fixture: {
@@ -205,7 +217,13 @@ describe("BonusPool", async () => {
     });
 
     it("Reverts if called before minted bonus stake free after time not reached", async () => {
-      await mintBonusPosition(accounts, fixture);
+      await mintBonusPosition(
+        accounts,
+        fixture.totalBonusAmount,
+        fixture.aToken,
+        fixture.bonusPool,
+        fixture.mockFactorySigner
+      );
       const originalTotalSharesLocked = BigNumber.from(8000);
       const finalTotalSharesLocked = BigNumber.from(8000);
 
@@ -223,7 +241,13 @@ describe("BonusPool", async () => {
       let tokenId: BigNumber;
 
       beforeEach(async () => {
-        tokenId = await mintBonusPosition(accounts, fixture);
+        tokenId = await mintBonusPosition(
+          accounts,
+          fixture.totalBonusAmount,
+          fixture.aToken,
+          fixture.bonusPool,
+          fixture.mockFactorySigner
+        );
       });
 
       it("Reverts if original shares locked is 0", async () => {
@@ -281,7 +305,8 @@ describe("BonusPool", async () => {
             finalTotalSharesLocked,
             originalTotalSharesLocked,
             tokenId,
-            fixture
+            fixture.bonusPool,
+            fixture.publicStaking
           );
 
         await (
@@ -358,7 +383,8 @@ describe("BonusPool", async () => {
           finalTotalSharesLocked,
           originalTotalSharesLocked,
           tokenId,
-          fixture
+          fixture.bonusPool,
+          fixture.publicStaking
         );
 
         await (
@@ -409,111 +435,3 @@ describe("BonusPool", async () => {
     });
   });
 });
-
-async function mintBonusPosition(
-  accounts: SignerWithAddress[],
-  fixture: Fixture
-) {
-  const exactStakeAmount = fixture.totalBonusAmount;
-  await (
-    await fixture.aToken
-      .connect(accounts[0])
-      .transfer(fixture.bonusPool.address, exactStakeAmount)
-  ).wait();
-
-  const receipt = await (
-    await fixture.bonusPool
-      .connect(fixture.mockFactorySigner)
-      .createBonusStakedPosition()
-  ).wait();
-
-  const createdEvent = receipt.events?.find(
-    (event) => event.event === "BonusPositionCreated"
-  );
-
-  return createdEvent?.args?.tokenID;
-}
-
-async function depositEthForStakingRewards(
-  accounts: SignerWithAddress[],
-  fixture: BaseTokensFixture,
-  eth: BigNumber
-): Promise<void> {
-  await (
-    await fixture.publicStaking
-      .connect(accounts[0])
-      .depositEth(42, { value: eth })
-  ).wait();
-}
-
-async function depositTokensForStakingRewards(
-  accounts: SignerWithAddress[],
-  fixture: BaseTokensFixture,
-  alca: BigNumber
-): Promise<void> {
-  await (
-    await fixture.aToken
-      .connect(accounts[0])
-      .increaseAllowance(fixture.publicStaking.address, alca)
-  ).wait();
-
-  await (
-    await fixture.publicStaking.connect(accounts[0]).depositToken(42, alca)
-  ).wait();
-}
-
-async function calculateTerminationProfits(
-  finalTotalSharesLocked: BigNumber,
-  originalTotalSharesLocked: BigNumber,
-  tokenId: BigNumber,
-  fixture: Fixture
-): Promise<[BigNumber, BigNumber, BigNumber, BigNumber, BigNumber]> {
-  const scalingFactor = await fixture.bonusPool.SCALING_FACTOR();
-  const bonusRate = await fixture.bonusPool.getScaledBonusRate(
-    originalTotalSharesLocked
-  );
-  const overallProportion = finalTotalSharesLocked
-    .mul(scalingFactor)
-    .div(originalTotalSharesLocked);
-
-  // estimate all profits does not include the original stake amount, hence no need to subtract it here
-  const [estimatedPayoutEth, estimatedPayoutToken] =
-    await fixture.publicStaking.estimateAllProfits(tokenId);
-
-  const expectedBonusShares = bonusRate
-    .mul(finalTotalSharesLocked)
-    .div(scalingFactor);
-  const expectedBonusRewardEth = overallProportion
-    .mul(estimatedPayoutEth)
-    .div(scalingFactor);
-  const expectedBonusRewardToken = overallProportion
-    .mul(estimatedPayoutToken)
-    .div(scalingFactor);
-
-  return [
-    estimatedPayoutEth,
-    estimatedPayoutToken,
-    expectedBonusShares,
-    expectedBonusRewardEth,
-    expectedBonusRewardToken.add(expectedBonusShares),
-  ];
-}
-
-async function ensureBlockIsAtLeast(targetBlock: number): Promise<void> {
-  const currentBlock = await ethers.provider.getBlockNumber();
-  if (currentBlock < targetBlock) {
-    const blockDelta = targetBlock - currentBlock;
-    await mineBlocks(BigInt(blockDelta));
-  }
-}
-
-async function depositEthToAddress(
-  accountFrom: SignerWithAddress,
-  accountTo: string,
-  eth: BigNumber
-): Promise<void> {
-  await accountFrom.sendTransaction({
-    to: accountTo,
-    value: eth,
-  });
-}

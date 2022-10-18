@@ -12,7 +12,13 @@ import {
   posFixtureSetup,
   preFixtureSetup,
 } from "../setup";
-import { getImpersonatedSigner } from "./setup";
+import {
+  calculateUserProfits,
+  depositEthForStakingRewards,
+  depositTokensForStakingRewards,
+  getImpersonatedSigner,
+  mintBonusPosition,
+} from "./setup";
 
 interface Fixture extends BaseTokensFixture {
   bonusPool: BonusPool;
@@ -96,7 +102,13 @@ describe("BonusPool", async () => {
     });
 
     it("getBonusStakedPosition returns token id of staked position", async () => {
-      const tokenId = await mintBonusPosition(accounts, fixture);
+      const tokenId = await mintBonusPosition(
+        accounts,
+        fixture.totalBonusAmount,
+        fixture.aToken,
+        fixture.bonusPool,
+        fixture.mockFactorySigner
+      );
       expect(await fixture.bonusPool.getBonusStakedPosition()).to.equal(
         tokenId
       );
@@ -134,13 +146,28 @@ describe("BonusPool", async () => {
     });
 
     it("Returns expected amount based on bonus rate", async () => {
-      const tokenId = await mintBonusPosition(accounts, fixture);
+      const tokenId = await mintBonusPosition(
+        accounts,
+        fixture.totalBonusAmount,
+        fixture.aToken,
+        fixture.bonusPool,
+        fixture.mockFactorySigner
+      );
 
       const alcaRewards = ethers.utils.parseEther("1000000");
       const ethRewards = ethers.utils.parseEther("10");
 
-      await depositEthForStakingRewards(accounts, fixture, ethRewards);
-      await depositTokensForStakingRewards(accounts, fixture, alcaRewards);
+      await depositEthForStakingRewards(
+        accounts,
+        fixture.publicStaking,
+        ethRewards
+      );
+      await depositTokensForStakingRewards(
+        accounts,
+        fixture.aToken,
+        fixture.publicStaking,
+        alcaRewards
+      );
 
       const initialTotalLocked = BigNumber.from(8000);
       const currentSharesLocked = BigNumber.from(8000);
@@ -155,7 +182,8 @@ describe("BonusPool", async () => {
         currentSharesLocked,
         initialTotalLocked,
         tokenId,
-        fixture
+        fixture.bonusPool,
+        fixture.publicStaking
       );
 
       const [bonusShares, bonusRewardEth, bonusRewardToken] =
@@ -177,100 +205,3 @@ describe("BonusPool", async () => {
     });
   });
 });
-
-async function mintBonusPosition(
-  accounts: SignerWithAddress[],
-  fixture: Fixture
-) {
-  const exactStakeAmount = fixture.totalBonusAmount;
-  await (
-    await fixture.aToken
-      .connect(accounts[0])
-      .transfer(fixture.bonusPool.address, exactStakeAmount)
-  ).wait();
-
-  const receipt = await (
-    await fixture.bonusPool
-      .connect(fixture.mockFactorySigner)
-      .createBonusStakedPosition()
-  ).wait();
-
-  const createdEvent = receipt.events?.find(
-    (event) => event.event === "BonusPositionCreated"
-  );
-
-  return createdEvent?.args?.tokenID;
-}
-
-async function depositEthForStakingRewards(
-  accounts: SignerWithAddress[],
-  fixture: Fixture,
-  eth: BigNumber
-): Promise<void> {
-  await (
-    await fixture.publicStaking
-      .connect(accounts[0])
-      .depositEth(42, { value: eth })
-  ).wait();
-}
-
-async function depositTokensForStakingRewards(
-  accounts: SignerWithAddress[],
-  fixture: Fixture,
-  alca: BigNumber
-): Promise<void> {
-  await (
-    await fixture.aToken
-      .connect(accounts[0])
-      .increaseAllowance(fixture.publicStaking.address, alca)
-  ).wait();
-
-  await (
-    await fixture.publicStaking.connect(accounts[0]).depositToken(42, alca)
-  ).wait();
-}
-
-async function calculateUserProfits(
-  userSharesLocked: BigNumber,
-  currentTotalSharesLocked: BigNumber,
-  originalTotalSharesLocked: BigNumber,
-  tokenId: BigNumber,
-  fixture: Fixture
-): Promise<[BigNumber, BigNumber, BigNumber]> {
-  const scalingFactor = await fixture.bonusPool.SCALING_FACTOR();
-  const bonusRate = await fixture.bonusPool.getScaledBonusRate(
-    originalTotalSharesLocked
-  );
-  const overallProportion = currentTotalSharesLocked
-    .mul(scalingFactor)
-    .div(originalTotalSharesLocked);
-  const userProportion = userSharesLocked
-    .mul(scalingFactor)
-    .div(currentTotalSharesLocked);
-
-  const [estimatedPayoutEth, estimatedPayoutToken] =
-    await fixture.publicStaking.estimateAllProfits(tokenId);
-
-  const totalExpectedBonusRewardEth = overallProportion
-    .mul(estimatedPayoutEth)
-    .div(scalingFactor);
-  const totalExpectedBonusRewardToken = overallProportion
-    .mul(estimatedPayoutToken)
-    .div(scalingFactor);
-
-  const expectedUserBonusShares = bonusRate
-    .mul(userSharesLocked)
-    .div(scalingFactor);
-  const userExpectedBonusRewardEth = userProportion
-    .mul(totalExpectedBonusRewardEth)
-    .div(scalingFactor);
-  const userExpectedBonusRewardToken = userProportion
-    .mul(totalExpectedBonusRewardToken)
-    .div(scalingFactor);
-
-  return [
-    expectedUserBonusShares,
-    userExpectedBonusRewardEth,
-    userExpectedBonusRewardToken,
-  ];
-}
