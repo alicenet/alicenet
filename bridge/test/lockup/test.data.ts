@@ -110,8 +110,6 @@ export const Distribution2: Distribution = {
   },
 };
 
-
-
 export const example1 = [
   {
     owner: "user1",

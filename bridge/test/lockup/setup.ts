@@ -1,11 +1,34 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { BigNumber, BytesLike, ContractReceipt, ContractTransaction } from "ethers/lib/ethers";
+import {
+  BigNumber,
+  BytesLike,
+  ContractReceipt,
+  ContractTransaction,
+} from "ethers/lib/ethers";
 import hre, { ethers, expect } from "hardhat";
-import { getEventVar } from "../factory/Setup";
-import { BaseTokensFixture, deployFactoryAndBaseTokens, Fixture, posFixtureSetup, preFixtureSetup } from "../setup";
-import { Distribution1, Distribution2 } from "./test.data";
 import { CONTRACT_ADDR, DEPLOYED_RAW } from "../../scripts/lib/constants";
+import { contracts } from "../../typechain-types";
+import { getEventVar } from "../factory/Setup";
+import {
+  BaseTokensFixture,
+  deployFactoryAndBaseTokens,
+  Fixture,
+  mineBlocks,
+  posFixtureSetup,
+  preFixtureSetup,
+} from "../setup";
+import { Distribution1 } from "./test.data";
 
+export const numberOfLockingUsers = 5;
+export const stakedAmount = ethers.utils.parseEther("100000000").toBigInt();
+export const totalBonusAmount = ethers.utils.parseEther("2000000");
+export const startBlock = 100;
+export const lockDuration = 100;
+export const LockupStates = {
+  PreLock: 0,
+  InLock: 1,
+  PostLock: 2,
+};
 
 interface UserDistribution {
   owner: string;
@@ -50,110 +73,47 @@ export interface State {
   users: UsersState;
 }
 
-export const numberOfLockingUsers = 5;
-
 export async function getState(fixture: Fixture | BaseTokensFixture) {
   const signers = await ethers.getSigners();
+  const contracts = [fixture.lockup, fixture.publicStaking, fixture.bonusPool, fixture.factory]
+  const contractNames = ["lockup", "publicStaking", "bonusPool", "factory"]
+  const contractsState: ContractsState ={}
+  const usersState: UsersState ={}
+  for (let i = 0; i < contracts.length; i++) {
+    contractsState[contractNames[i]] =  {
+      alca: (
+        await fixture.aToken.balanceOf(contracts[i].address)
+      ).toBigInt(),
+      eth: (
+        await ethers.provider.getBalance(contracts[i].address)
+      ).toBigInt()
+    }
+  }
+  for (let i = 1; i <= numberOfLockingUsers; i++) {
+    usersState["user"+i] = {
+      alca: (await fixture.aToken.balanceOf(signers[i].address)).toBigInt(),
+      eth: (await ethers.provider.getBalance(signers[i].address)).toBigInt(),
+      tokenOf: (await fixture.lockup.tokenOf(signers[i].address)).toBigInt(),
+      ownerOf: await fixture.lockup.ownerOf(
+        await fixture.lockup.tokenOf(signers[i].address)
+      ),
+      ethRewards: BigNumber.from(0).toBigInt(),
+      tokenRewards: BigNumber.from(0).toBigInt(),
+    }
+  }
+  usersState["bonusPool"] = {
+    alca: (await fixture.aToken.balanceOf(fixture.bonusPool.address)).toBigInt(),
+    eth: (await ethers.provider.getBalance(fixture.bonusPool.address)).toBigInt(),
+    tokenOf: (await fixture.lockup.tokenOf(fixture.bonusPool.address)).toBigInt(),
+    ownerOf: await fixture.lockup.ownerOf(
+      await fixture.lockup.tokenOf(fixture.bonusPool.address)
+    ),
+    ethRewards: BigNumber.from(0).toBigInt(),
+    tokenRewards: BigNumber.from(0).toBigInt(),
+  }
   const state: State = {
-    contracts: {
-      lockup: {
-        alca: (
-          await fixture.aToken.balanceOf(fixture.lockup.address)
-        ).toBigInt(),
-        eth: (
-          await ethers.provider.getBalance(fixture.lockup.address)
-        ).toBigInt(),
-      },
-      publicStaking: {
-        alca: (
-          await fixture.aToken.balanceOf(fixture.publicStaking.address)
-        ).toBigInt(),
-        eth: (
-          await ethers.provider.getBalance(fixture.publicStaking.address)
-        ).toBigInt(),
-      },
-      factory: {
-        alca: (
-          await fixture.aToken.balanceOf(fixture.factory.address)
-        ).toBigInt(),
-        eth: (
-          await ethers.provider.getBalance(fixture.factory.address)
-        ).toBigInt(),
-      },
-      bonusPool: {
-        alca: (
-          await fixture.aToken.balanceOf(fixture.bonusPool.address)
-        ).toBigInt(),
-        eth: (
-          await ethers.provider.getBalance(fixture.bonusPool.address)
-        ).toBigInt(),
-      },
-    },
-    users: {
-      user1: {
-        alca: (await fixture.aToken.balanceOf(signers[1].address)).toBigInt(),
-        eth: (await ethers.provider.getBalance(signers[1].address)).toBigInt(),
-        tokenOf: (await fixture.lockup.tokenOf(signers[1].address)).toBigInt(),
-        ownerOf: await fixture.lockup.ownerOf(
-          await fixture.lockup.tokenOf(signers[1].address)
-        ),
-        ethRewards: BigNumber.from(0).toBigInt(),
-        tokenRewards: BigNumber.from(0).toBigInt(),
-      },
-      user2: {
-        alca: (await fixture.aToken.balanceOf(signers[2].address)).toBigInt(),
-        eth: (await ethers.provider.getBalance(signers[2].address)).toBigInt(),
-        tokenOf: (await fixture.lockup.tokenOf(signers[2].address)).toBigInt(),
-        ownerOf: await fixture.lockup.ownerOf(
-          await fixture.lockup.tokenOf(signers[2].address)
-        ),
-        ethRewards: BigNumber.from(0).toBigInt(),
-        tokenRewards: BigNumber.from(0).toBigInt(),
-      },
-
-      user3: {
-        alca: (await fixture.aToken.balanceOf(signers[3].address)).toBigInt(),
-        eth: (await ethers.provider.getBalance(signers[3].address)).toBigInt(),
-        tokenOf: (await fixture.lockup.tokenOf(signers[3].address)).toBigInt(),
-        ownerOf: await fixture.lockup.ownerOf(
-          await fixture.lockup.tokenOf(signers[3].address)
-        ),
-        ethRewards: BigNumber.from(0).toBigInt(),
-        tokenRewards: BigNumber.from(0).toBigInt(),
-      },
-
-      user4: {
-        alca: (await fixture.aToken.balanceOf(signers[4].address)).toBigInt(),
-        eth: (await ethers.provider.getBalance(signers[4].address)).toBigInt(),
-        tokenOf: (await fixture.lockup.tokenOf(signers[4].address)).toBigInt(),
-        ownerOf: await fixture.lockup.ownerOf(
-          await fixture.lockup.tokenOf(signers[4].address)
-        ),
-        ethRewards: BigNumber.from(0).toBigInt(),
-        tokenRewards: BigNumber.from(0).toBigInt(),
-      },
-      user5: {
-        alca: (await fixture.aToken.balanceOf(signers[5].address)).toBigInt(),
-        eth: (await ethers.provider.getBalance(signers[5].address)).toBigInt(),
-        tokenOf: (await fixture.lockup.tokenOf(signers[5].address)).toBigInt(),
-        ownerOf: await fixture.lockup.ownerOf(
-          await fixture.lockup.tokenOf(signers[5].address)
-        ),
-        ethRewards: BigNumber.from(0).toBigInt(),
-        tokenRewards: BigNumber.from(0).toBigInt(),
-      },
-      user6: {
-        alca: (await fixture.aToken.balanceOf(fixture.bonusPool.address)).toBigInt(),
-        eth: (await ethers.provider.getBalance(fixture.bonusPool.address)).toBigInt(),
-        tokenOf: (await fixture.lockup.tokenOf(fixture.bonusPool.address)).toBigInt(),
-        ownerOf: await fixture.lockup.ownerOf(
-          await fixture.lockup.tokenOf(fixture.bonusPool.address)
-        ),
-        ethRewards: BigNumber.from(0).toBigInt(),
-        tokenRewards: BigNumber.from(0).toBigInt(),
-      },
-
-    },
+    contracts: contractsState,
+    users: usersState,
   };
   return state;
 }
@@ -193,19 +153,18 @@ export const example = {
   distribution: Distribution1,
 };
 
-export const stakedAmount = ethers.utils.parseEther("100000000").toBigInt();
-export const totalBonusAmount = ethers.utils.parseEther("2000000");
-const startBlock = 100;
-const lockDuration = 2;
-
-export async function deployLockupContract(baseTokensFixture: BaseTokensFixture) {
+export async function deployLockupContract(
+  baseTokensFixture: BaseTokensFixture
+) {
   const lockupBase = await ethers.getContractFactory("Lockup");
   const lockupDeployCode = lockupBase.getDeployTransaction(
     startBlock,
     lockDuration,
     totalBonusAmount
   ).data as BytesLike;
-  const txResponse = await baseTokensFixture.factory.deployCreate(lockupDeployCode);
+  const txResponse = await baseTokensFixture.factory.deployCreate(
+    lockupDeployCode
+  );
   // get the address from the event
   const lockupAddress = await getEventVar(
     txResponse,
@@ -216,8 +175,11 @@ export async function deployLockupContract(baseTokensFixture: BaseTokensFixture)
   return await ethers.getContractAt("Lockup", lockupAddress);
 }
 
-
-export async function getSimulatedStakingPositions(fixture: BaseTokensFixture, signers: SignerWithAddress[], numberOfUsers: number) {
+export async function getSimulatedStakingPositions(
+  fixture: BaseTokensFixture,
+  signers: SignerWithAddress[],
+  numberOfUsers: number
+) {
   const tokenIDs = [];
   const asFactory = await getImpersonatedSigner(fixture.factory.address);
   await fixture.aToken
@@ -242,7 +204,6 @@ export async function getSimulatedStakingPositions(fixture: BaseTokensFixture, s
         0
       );
       tokenIDs[index] = tokenID;
-
     } else {
       if (i % 2 === 0) {
         // for the rest stake 1M if even
@@ -274,9 +235,9 @@ export async function deployFixture() {
   await preFixtureSetup();
 
   const signers = await ethers.getSigners();
-  
+
   const baseTokensFixture = await deployFactoryAndBaseTokens(signers[0]);
-  const lockup = await deployLockupContract(baseTokensFixture)
+  const lockup = await deployLockupContract(baseTokensFixture);
   // get the address of the reward pool from the lockup contract
   const rewardPoolAddress = await lockup.getRewardPoolAddress();
   const rewardPool = await ethers.getContractAt(
@@ -286,17 +247,22 @@ export async function deployFixture() {
   // get the address of the bonus pool from the reward pool contract
   const bonusPoolAddress = await rewardPool.getBonusPoolAddress();
   const bonusPool = await ethers.getContractAt("BonusPool", bonusPoolAddress);
-  const asFactory = await getImpersonatedSigner(baseTokensFixture.factory.address);
-  const asPublicStaking = await getImpersonatedSigner(baseTokensFixture.publicStaking.address);
-  const asRewardPool = await getImpersonatedSigner(rewardPoolAddress);
+  const factorySigner = await getImpersonatedSigner(
+    baseTokensFixture.factory.address
+  );
+  const pblicStakingSigner = await getImpersonatedSigner(
+    baseTokensFixture.publicStaking.address
+  );
+  const rewardPoolSigner = await getImpersonatedSigner(rewardPoolAddress);
   const fixture = {
     ...baseTokensFixture,
     rewardPool,
     lockup,
     bonusPool,
-    asFactory,
-    asPublicStaking
-  }
+    factorySigner,
+    pblicStakingSigner,
+    rewardPoolSigner,
+  };
   const tokenIDs = await getSimulatedStakingPositions(fixture, signers, 5);
   expect(
     (await fixture.publicStaking.getTotalShares()).toBigInt()
@@ -306,13 +272,16 @@ export async function deployFixture() {
     fixture,
     accounts: signers,
     stakedTokenIDs: tokenIDs,
-    asFactory: asFactory,
-    asPublicStaking: asPublicStaking,
-    asRewardPool: asRewardPool
+    asFactory: factorySigner,
+    asPublicStaking: pblicStakingSigner,
+    asRewardPool: rewardPoolSigner,
   };
 }
 
-export async function distributeProfits(fixture: BaseTokensFixture, admin: SignerWithAddress) {
+export async function distributeProfits(
+  fixture: BaseTokensFixture,
+  admin: SignerWithAddress
+) {
   await fixture.aToken
     .connect(admin)
     .increaseAllowance(
@@ -324,10 +293,7 @@ export async function distributeProfits(fixture: BaseTokensFixture, admin: Signe
   });
   await fixture.publicStaking
     .connect(admin)
-    .depositToken(
-      42,
-      ethers.utils.parseEther(example.distribution.profitALCA)
-    );
+    .depositToken(42, ethers.utils.parseEther(example.distribution.profitALCA));
 }
 
 export async function lockStakedNFT(
@@ -343,4 +309,20 @@ export async function lockStakedNFT(
     await txResponse.wait();
   }
   return fixture.lockup.connect(account).lockFromApproval(tokenID);
+}
+
+export async function jumpToInlockState(fixture: BaseTokensFixture) {
+  const blocksToMine = (await fixture.lockup.getLockupStartBlock())
+    .sub(await ethers.provider.getBlockNumber())
+    .toBigInt();
+  await mineBlocks(blocksToMine + 1n);
+  expect(await fixture.lockup.getState()).to.be.equals(LockupStates.InLock);
+}
+
+export async function jumpToPostLockState(fixture: BaseTokensFixture) {
+  const blocksToMine = (await fixture.lockup.getLockupEndBlock())
+    .sub(await ethers.provider.getBlockNumber())
+    .toBigInt();
+  await mineBlocks(blocksToMine + 1n);
+  expect(await fixture.lockup.getState()).to.be.equals(LockupStates.PostLock);
 }
