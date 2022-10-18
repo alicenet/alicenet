@@ -26,7 +26,7 @@ func TestDisputeMissingKeySharesTask_FourUnsubmittedKeyShare_DoWork_Success(t *t
 	for idx := 0; idx < n; idx++ {
 		disputeMissingKeyshareTask := suite.DisputeMissingKeyshareTasks[idx]
 
-		err := disputeMissingKeyshareTask.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "DisputeMissingKeyshareTask", "task-id", disputeMissingKeyshareTask.Start, disputeMissingKeyshareTask.End, false, nil, nil)
+		err := disputeMissingKeyshareTask.Initialize(suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "DisputeMissingKeyshareTask", "task-id", disputeMissingKeyshareTask.Start, disputeMissingKeyshareTask.End, false, nil, nil)
 		assert.Nil(t, err)
 
 		err = disputeMissingKeyshareTask.Prepare(ctx)
@@ -71,7 +71,7 @@ func TestDisputeMissingKeySharesTask_NoUnSubmittedKeyShare(t *testing.T) {
 	// Do dispute missing key share task
 	for idx := 0; idx < n; idx++ {
 		disputeMissingKeyshareTask := suite.DisputeMissingKeyshareTasks[idx]
-		err := disputeMissingKeyshareTask.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "disputeMissingKeyshareTask", "task-id", disputeMissingKeyshareTask.Start, disputeMissingKeyshareTask.End, false, nil, nil)
+		err := disputeMissingKeyshareTask.Initialize(suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "disputeMissingKeyshareTask", "task-id", disputeMissingKeyshareTask.Start, disputeMissingKeyshareTask.End, false, nil, nil)
 		assert.Nil(t, err)
 		err = disputeMissingKeyshareTask.Prepare(ctx)
 		assert.Nil(t, err)

@@ -28,7 +28,7 @@ func TestCanonicalVersionCheckTask_ShouldExecute_False(t *testing.T) {
 	logger := logging.GetLogger("test").WithField("", "")
 
 	task := NewVersionCheckTask(localVersion)
-	err = task.Initialize(ctx, nil, nil, logger, nil, nil, "", "", 1, 10, false, nil, nil)
+	err = task.Initialize(nil, logger, nil, nil, "", "", 1, 10, false, nil, nil)
 	assert.Nil(t, err)
 	taskErr := task.Prepare(ctx)
 	assert.Nil(t, taskErr)
@@ -48,7 +48,7 @@ func TestCanonicalVersionCheckTask_Execute_PatchOutdated(t *testing.T) {
 	outdatedPatchVersion := localVersion
 	outdatedPatchVersion.Patch++
 	task := NewVersionCheckTask(outdatedPatchVersion)
-	err = task.Initialize(ctx, nil, nil, logger, nil, nil, "", "", 1, 10, false, nil, nil)
+	err = task.Initialize(nil, logger, nil, nil, "", "", 1, 10, false, nil, nil)
 	assert.Nil(t, err)
 	shouldExecute, taskErr := task.ShouldExecute(ctx)
 	assert.Nil(t, taskErr)
@@ -70,7 +70,7 @@ func TestCanonicalVersionCheckTask_Execute_MinorOutdated(t *testing.T) {
 	outdatedMinorVersion := localVersion
 	outdatedMinorVersion.Minor++
 	task := NewVersionCheckTask(outdatedMinorVersion)
-	err = task.Initialize(ctx, nil, nil, logger, nil, nil, "", "", 1, 10, false, nil, nil)
+	err = task.Initialize(nil, logger, nil, nil, "", "", 1, 10, false, nil, nil)
 	assert.Nil(t, err)
 	shouldExecute, taskErr := task.ShouldExecute(ctx)
 	assert.Nil(t, taskErr)
@@ -92,7 +92,7 @@ func TestCanonicalVersionCheckTask_Execute_MajorOutdated(t *testing.T) {
 	outdatedMajorVersion := localVersion
 	outdatedMajorVersion.Major++
 	task := NewVersionCheckTask(outdatedMajorVersion)
-	err = task.Initialize(ctx, nil, nil, logger, nil, nil, "", "", 1, 10, false, nil, nil)
+	err = task.Initialize(nil, logger, nil, nil, "", "", 1, 10, false, nil, nil)
 	assert.Nil(t, err)
 	shouldExecute, taskErr := task.ShouldExecute(ctx)
 	assert.Nil(t, taskErr)
