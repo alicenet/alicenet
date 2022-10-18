@@ -14,7 +14,7 @@ import axios from "axios";
 import { getEventVar, getGasPrices } from "./alicenetFactoryTasks";
 import {
   CONTRACT_ADDR,
-  DEFAULT_CONFIG_OUTPUT_DIR,
+  DEFAULT_CONFIG_DIR,
   DEPLOYED_RAW,
 } from "./constants";
 import { readDeploymentArgs } from "./deployment/deploymentConfigUtil";
@@ -44,7 +44,7 @@ task(
   .addOptionalParam(
     "deploymentArgsTemplatePath",
     "path of the deploymentArgsTemplate file",
-    DEFAULT_CONFIG_OUTPUT_DIR + "/deploymentArgsTemplate"
+    DEFAULT_CONFIG_DIR + "/deploymentArgsTemplate"
   )
   .addOptionalParam(
     "outputFolder",
