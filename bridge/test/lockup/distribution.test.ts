@@ -1,30 +1,18 @@
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { assert, expect } from "chai";
-import { BigNumber, BytesLike } from "ethers";
+import { assert } from "chai";
+import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
-import { CONTRACT_ADDR, DEPLOYED_RAW } from "../../scripts/lib/constants";
 import { BonusPool, Lockup, RewardPool } from "../../typechain-types";
-import { getEventVar } from "../factory/Setup";
+import { BaseTokensFixture } from "../setup";
 import {
-  BaseTokensFixture,
-  deployFactoryAndBaseTokens,
-  posFixtureSetup,
-  preFixtureSetup,
-} from "../setup";
-import {
+  deployFixture,
+  distributeProfits,
+  example,
   getEthConsumedAsGas,
-  getImpersonatedSigner,
-  getSimulatedStakingPositions,
   getState,
   numberOfLockingUsers,
   showState,
-  example,
-  totalBonusAmount,
-  stakedAmount,
-  deployLockupContract,
-  deployFixture,
-  distributeProfits
 } from "./setup";
 
 interface Fixture extends BaseTokensFixture {
@@ -32,10 +20,6 @@ interface Fixture extends BaseTokensFixture {
   rewardPool: RewardPool;
   bonusPool: BonusPool;
 }
-
-let rewardPoolAddress: any;
-let asFactory: SignerWithAddress;
-
 
 describe("Testing Staking Distribution", async () => {
   let fixture: Fixture;
@@ -93,11 +77,11 @@ describe("Testing Staking Distribution", async () => {
     const expectedState = await getState(fixture);
     await distributeProfits(fixture, accounts[0]);
     expectedState.contracts.publicStaking.eth += ethers.utils
-    .parseEther(example.distribution.profitETH)
-    .toBigInt();
-  expectedState.contracts.publicStaking.alca += ethers.utils
-    .parseEther(example.distribution.profitALCA)
-    .toBigInt();
+      .parseEther(example.distribution.profitETH)
+      .toBigInt();
+    expectedState.contracts.publicStaking.alca += ethers.utils
+      .parseEther(example.distribution.profitALCA)
+      .toBigInt();
     showState("After distribution 1", await getState(fixture));
     for (let i = 1; i <= numberOfLockingUsers; i++) {
       const user = ("user" + i) as string;
@@ -151,5 +135,3 @@ describe("Testing Staking Distribution", async () => {
     assert.deepEqual(await getState(fixture), expectedState);
   });
 });
-
-
