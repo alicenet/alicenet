@@ -59,6 +59,12 @@ contract BonusPool is
         _rewardPool = rewardPool_;
     }
 
+    receive() external payable {
+        if (msg.sender != _publicStakingAddress()) {
+            revert AddressNotAllowedToSendEther();
+        }
+    }
+
     /// @notice function that creates/mint a publicStaking position with an amount that will be
     /// redistributed as bonus at the end of the lockup period. The amount of ALCA has to be
     /// transferred before calling this function.
@@ -261,11 +267,5 @@ contract BonusPool is
 
     function _getRewardPoolAddress() internal view override returns (address) {
         return _rewardPool;
-    }
-
-    receive() external payable {
-        if (msg.sender != _publicStakingAddress()) {
-            revert AddressNotAllowedToSendEther();
-        }
     }
 }
