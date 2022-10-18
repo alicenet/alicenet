@@ -1,3 +1,4 @@
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { ethers } from "hardhat";
 import { expect, Fixture, getFixture } from "../setup";
@@ -12,35 +13,23 @@ describe("Testing AToken", async () => {
   let fixture: Fixture;
   const scaleFactor = 10_000_000_000_000_000_000_000_000_000n;
   const multiplier = 15_555_555_555_555_555_555_555_555_555n;
-  beforeEach(async function () {
-    fixture = await getFixture();
-    [, user, user2] = await ethers.getSigners();
+
+  async function deployFixture() {
+    const fixture = await getFixture();
+    const [, user, user2] = await ethers.getSigners();
     await init(fixture);
+    return { fixture, user, user2 };
+  }
+
+  beforeEach(async function () {
+    ({ fixture, user, user2 } = await loadFixture(deployFixture));
+
     expectedState = await getState(fixture);
   });
 
   describe("Testing Migrate operation", async () => {
-    it("Should not allow initialize more than once", async () => {
-      await expect(
-        fixture.factory.callAny(
-          fixture.aToken.address,
-          0,
-          fixture.aToken.interface.encodeFunctionData("initialize")
-        )
-      ).to.revertedWith("Initializable: contract is already initialized");
-    });
-
-    it("Only factory should be allowed to call initialize", async () => {
-      const aToken = await (
-        await ethers.getContractFactory("AToken")
-      ).deploy(user.address);
-      await expect(
-        aToken.connect(user2).initialize()
-      ).to.revertedWithCustomError(aToken, "OnlyFactory");
-    });
-
     it("Only factory should be allowed to call finishEarlyStage", async () => {
-      await expect(fixture.aToken.connect(user2).initialize())
+      await expect(fixture.aToken.connect(user2).finishEarlyStage())
         .to.revertedWithCustomError(fixture.aToken, "OnlyFactory")
         .withArgs(user2.address, fixture.factory.address);
     });

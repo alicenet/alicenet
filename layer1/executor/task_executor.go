@@ -382,7 +382,7 @@ func (te *TaskExecutor) loadState() error {
 
 }
 
-// sleepOrClose sleeps a certain amount of time.
+// sleepOrExit sleeps a certain amount of time.
 // It fails in case the task is closed.
 func (te *TaskExecutor) sleepOrExit(task tasks.Task, delay time.Duration) error {
 	select {

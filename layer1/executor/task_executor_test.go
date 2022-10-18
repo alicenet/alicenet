@@ -471,7 +471,6 @@ func Test_TaskExecutor_ShouldExecuteFalse(t *testing.T) {
 	task.ShouldExecuteFunc.SetDefaultReturn(false, nil)
 
 	executor.handleTaskExecution(task, "", "123", 1, 10, false, nil, db, executor.logger, client, mocks.NewMockAllSmartContracts(), taskRespChan)
-
 	mockrequire.CalledOnce(t, task.InitializeFunc)
 	mockrequire.CalledOnce(t, task.ShouldExecuteFunc)
 	mockrequire.CalledOnceWith(t, task.FinishFunc, mockrequire.Values(nil))

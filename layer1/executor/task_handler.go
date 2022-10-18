@@ -24,7 +24,6 @@ type Handler struct {
 
 // NewTaskHandler creates a new Handler instance.
 func NewTaskHandler(database *db.Database, eth layer1.Client, contracts layer1.AllSmartContracts, adminHandler monitorInterfaces.AdminHandler, txWatcher transaction.Watcher) (TaskHandler, error) {
-	// Setup tasks scheduler
 	requestChan := make(chan managerRequest, tasks.ManagerBufferSize)
 	logger := logging.GetLogger("tasks")
 

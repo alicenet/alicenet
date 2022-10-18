@@ -1,3 +1,4 @@
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { ethers } from "hardhat";
 import { StakingSVGMock } from "../../typechain-types";
 import { expect } from "../chai-setup";
@@ -5,10 +6,15 @@ import { expect } from "../chai-setup";
 describe("StakingSVG: Tests StakingSVG library methods", async () => {
   let stakingNFTSVG: StakingSVGMock;
 
-  beforeEach(async function () {
+  async function deployFixture() {
     const StakingSVGFactory = await ethers.getContractFactory("StakingSVGMock");
-    stakingNFTSVG = await StakingSVGFactory.deploy();
+    const stakingNFTSVG = await StakingSVGFactory.deploy();
     await stakingNFTSVG.deployed();
+    return { stakingNFTSVG };
+  }
+
+  beforeEach(async function () {
+    ({ stakingNFTSVG } = await loadFixture(deployFixture));
   });
 
   it("Should return correct token uri", async function () {

@@ -169,7 +169,6 @@ func TestTasksHandlerAndManager_ScheduleAndKillById_RunningTask(t *testing.T) {
 	handler, client, contracts, _, acc := getTaskHandler(t, true)
 	client.GetFinalizedHeightFunc.SetDefaultReturn(12, nil)
 	handler.Start()
-
 	dkgState := state.NewDkgState(acc)
 	dkgState.OnRegistrationOpened(
 		10,

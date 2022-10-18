@@ -5,6 +5,7 @@ import (
 	"github.com/alicenet/alicenet/layer1"
 	"github.com/alicenet/alicenet/layer1/executor"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dynamics"
+	monInterfaces "github.com/alicenet/alicenet/layer1/monitor/interfaces"
 	"github.com/alicenet/alicenet/layer1/monitor/objects"
 	"github.com/alicenet/alicenet/utils"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -12,7 +13,7 @@ import (
 )
 
 // ProcessDynamicValueChanged handles a dynamic value updating coming from our smart contract.
-func ProcessDynamicValueChanged(contracts layer1.AllSmartContracts, logger *logrus.Entry, log types.Log) error {
+func ProcessDynamicValueChanged(contracts layer1.AllSmartContracts, logger *logrus.Entry, log types.Log, adminHandler monInterfaces.AdminHandler) error {
 	logger.Info("ProcessDynamicValueChanged() ...")
 
 	event, err := contracts.EthereumContracts().Dynamics().ParseDynamicValueChanged(log)
@@ -24,9 +25,13 @@ func ProcessDynamicValueChanged(contracts layer1.AllSmartContracts, logger *logr
 		"Epoch": event.Epoch.Uint64(),
 		"Value": fmt.Sprintf("0x%x", event.RawDynamicValues),
 	})
-	// TODO; decode and add the dynamic value in here
-	logger.Infof("Value updated")
 
+	err = adminHandler.UpdateDynamicStorage(uint32(event.Epoch.Uint64()), event.RawDynamicValues)
+	if err != nil {
+		return err
+	}
+
+	logger.Info("Value updated")
 	return nil
 }
 

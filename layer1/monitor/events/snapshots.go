@@ -79,7 +79,7 @@ func ProcessSnapshotTaken(contracts layer1.AllSmartContracts, logger *logrus.Ent
 	return nil
 }
 
-// ProcessSnapshotTaken handles receiving snapshots.
+// ProcessSnapshotTakenOld handles receiving snapshots.
 func ProcessSnapshotTakenOld(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, log types.Log, adminHandler monInterfaces.AdminHandler, taskHandler executor.TaskHandler) error {
 	logger.Info("ProcessSnapshotTakenOld() ...")
 
