@@ -126,7 +126,7 @@ contract Lockup is
     uint256 internal _tokenIDOffset;
 
     constructor(
-        uint256 startBlock_,
+        uint256 enrollmentPeriod_,
         uint256 lockDuration_,
         uint256 totalBonusAmount_
     ) ImmutableFactory(msg.sender) ImmutablePublicStaking() ImmutableAToken() {
@@ -137,11 +137,8 @@ contract Lockup is
         );
         _rewardPool = address(rewardPool);
         _bonusPool = rewardPool.getBonusPoolAddress();
-        if (startBlock_ < block.number) {
-            revert InvalidStartingBlock();
-        }
-        _startBlock = startBlock_;
-        _endBlock = startBlock_ + lockDuration_;
+        _startBlock = block.number + enrollmentPeriod_ ;        
+        _endBlock = _startBlock + lockDuration_;
     }
 
     /// @dev only publicStaking and rewardPool are allowed to send ether to this contract

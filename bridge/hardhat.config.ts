@@ -16,6 +16,7 @@ import "./scripts/generateImmutableAuth";
 import "./scripts/lib/alicenetFactoryTasks";
 import "./scripts/lib/alicenetTasks";
 import "./scripts/lib/gogogen";
+import "hardhat/config";
 require("dotenv").config();
 
 /**

@@ -1,5 +1,5 @@
 [[constructor."contracts/AliceNetFactory.sol:AliceNetFactory"]]
-legacyToken_ = "0x546f99f244b7b58b855330ae0e2bc1b30b41302f"
+legacyToken_ = "0xc19EB874B11465B5aA61a045770c93247b28e506"
 
 [[constructor."contracts/Distribution.sol:Distribution"]]
 validatorStakingSplit_ = "332"
@@ -14,10 +14,10 @@ liquidityProviderStakingSplit_ = "332"
 protocolFeeSplit_ = "4"
 
 [[constructor."contracts/Lockup.sol:Lockup"]]
-startBlock_ = "1024"
+enrollmentPeriod_ = "1000"
 
 [[constructor."contracts/Lockup.sol:Lockup"]]
-lockDuration_ = "4000"
+lockDuration_ = "6000"
 
 [[constructor."contracts/Lockup.sol:Lockup"]]
 totalBonusAmount_ = "2000000"

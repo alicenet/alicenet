@@ -10,7 +10,7 @@ import { encodeMultiCallArgs } from "../alicenetTasks";
 import {
   ALICENET_FACTORY,
   CONTRACT_ADDR,
-  DEFAULT_CONFIG_OUTPUT_DIR,
+  DEFAULT_CONFIG_DIR,
   DEPLOYED_PROXY,
   DEPLOY_CREATE,
   DEPLOY_PROXY,
@@ -41,7 +41,7 @@ export interface DeploymentArgs {
 export type DeployProxyMCArgs = {
   contractName: string;
   logicAddress: string;
-  waitConfirmation?: boolean;
+  waitConfirmation?: number;
   factoryAddress?: string;
   initCallData?: BytesLike;
   outputFolder?: string;
@@ -54,7 +54,7 @@ export type MultiCallArgsStruct = {
 export type DeployArgs = {
   contractName: string;
   factoryAddress: string;
-  waitConfirmation?: boolean;
+  waitConfirmation?: number;
   initCallData?: string;
   constructorArgs?: any;
   outputFolder?: string;
@@ -118,7 +118,7 @@ export async function deployFactory(run: RunTaskFunction, usrPath?: string) {
 
 export async function getDeployMetaArgs(
   fullyQualifiedName: string,
-  waitConfirmation: boolean,
+  waitConfirmation: number,
   factoryAddress: string,
   artifacts: Artifacts,
   inputFolder?: string,
@@ -167,7 +167,7 @@ export async function getDeployUpgradeableProxyArgs(
   fullyQualifiedName: string,
   factoryAddress: string,
   artifacts: Artifacts,
-  waitConfirmation?: boolean,
+  waitConfirmation?: number,
   inputFolder?: string,
   outputFolder?: string,
   verify?: boolean
@@ -200,7 +200,7 @@ export async function getDeployCreateArgs(
   fullyQualifiedName: string,
   factoryAddress: string,
   artifacts: Artifacts,
-  waitConfirmation?: boolean,
+  waitConfirmation?: number,
   inputFolder?: string,
   outputFolder?: string,
   verify?: boolean,
@@ -321,7 +321,7 @@ export async function getDeploymentConstructorArgs(
   // get the deployment args
   const path =
     configDirPath === undefined
-      ? DEFAULT_CONFIG_OUTPUT_DIR + "/deploymentArgsTemplate"
+      ? DEFAULT_CONFIG_DIR + "/deploymentArgsTemplate"
       : configDirPath + "/deploymentArgsTemplate";
   const deploymentConfig: any = await readDeploymentArgs(path);
   if (deploymentConfig !== undefined) {
@@ -359,7 +359,7 @@ export async function getDeploymentInitializerArgs(
   let output: Array<string> | undefined;
   const path =
     configDirPath === undefined
-      ? DEFAULT_CONFIG_OUTPUT_DIR + "/deploymentArgsTemplate"
+      ? DEFAULT_CONFIG_DIR + "/deploymentArgsTemplate"
       : configDirPath + "/deploymentArgsTemplate";
   const deploymentConfig: any = await readDeploymentArgs(path);
   if (deploymentConfig !== undefined) {
