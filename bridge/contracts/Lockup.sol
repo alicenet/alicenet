@@ -391,6 +391,18 @@ contract Lockup is
         return _getTokenOf(acct_);
     }
 
+    function getCurrentNumberOfLockedPositions() public view returns (uint256) {
+        return _lenTokenIDs;
+    }
+
+    function getPositionByIndex(uint256 index_) public view returns (uint256) {
+        return _tokenIDs[index_];
+    }
+
+    function getIndexByTokenId(uint256 tokenID_) public view returns (uint256) {
+        return _reverseTokenIDs[tokenID_];
+    }
+
     function getLockupStartBlock() public view returns (uint256) {
         return _startBlock;
     }
