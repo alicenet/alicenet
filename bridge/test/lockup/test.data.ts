@@ -1,6 +1,6 @@
 import { Distribution } from "./setup";
 
-const Distribution1: Distribution = {
+export const Distribution1: Distribution = {
   profitALCA: "500000",
   profitETH: "50",
   users: {
@@ -55,7 +55,7 @@ const Distribution1: Distribution = {
   },
 };
 
-const Distribution2: Distribution = {
+export const Distribution2: Distribution = {
   profitALCA: "500000",
   profitETH: "50",
   users: {
@@ -99,7 +99,7 @@ const Distribution2: Distribution = {
       profitETH: "1",
       profitALCA: "10000",
     },
-    bonusPool: {
+    user6: {
       owner: "bonusPool",
       tokenID: 51,
       shares: "2000000",
@@ -110,11 +110,7 @@ const Distribution2: Distribution = {
   },
 };
 
-export const example = {
-  totalStakedALCA: 100000000,
-  distribution1: Distribution1,
-  distribution2: Distribution2,
-};
+
 
 export const example1 = [
   {
