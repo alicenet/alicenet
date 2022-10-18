@@ -14,7 +14,7 @@ liquidityProviderStakingSplit_ = "332"
 protocolFeeSplit_ = "4"
 
 [[constructor."contracts/Lockup.sol:Lockup"]]
-startBlock_ = "7791700"
+enrollmentPeriod_ = "1000"
 
 [[constructor."contracts/Lockup.sol:Lockup"]]
 lockDuration_ = "6000"
