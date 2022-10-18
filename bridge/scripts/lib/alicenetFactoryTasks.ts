@@ -96,8 +96,8 @@ task(
   TASK_DEPLOY_FACTORY,
   "Deploys an instance of a factory contract specified by its name"
 )
-  .addFlag("waitConfirmation", "wait 8 blocks between transactions")
   .addFlag("verify", "try to automatically verify contracts on etherscan")
+  .addOptionalParam("waitConfirmation", "wait 8 blocks between transactions", 8, types.int)
   .addOptionalParam("outputFolder", "output folder path to save factoryState")
   .setAction(async (taskArgs, hre) => {
     const waitBlocks = taskArgs.waitConfirmation === true ? 8 : undefined;
@@ -241,6 +241,7 @@ task(
       const factoryData: FactoryData = await hre.run(TASK_DEPLOY_FACTORY, {
         outputFolder: taskArgs.outputFolder,
         verify: taskArgs.verify,
+        waitConfirmation: taskArgs.waitConfirmation
       });
       factoryAddress = factoryData.address;
       cumulativeGasUsed = cumulativeGasUsed.add(factoryData.gas);
@@ -581,15 +582,13 @@ task(TASK_DEPLOY_CREATE, "deploys a contract from the factory using create")
   )
   .setAction(async (taskArgs, hre) => {
     const waitBlocks = taskArgs.waitConfirmation;
-    const factoryBase = await hre.ethers.getContractFactory(ALICENET_FACTORY);
     // get a factory instance connected to the factory a
-    const factory = factoryBase.attach(taskArgs.factoryAddress);
-    const logicContract: ContractFactory = await hre.ethers.getContractFactory(
+    const factory = await hre.ethers.getContractAt("AliceNetFactory", taskArgs.factoryAddress);
+    const logicContract: any = await hre.ethers.getContractFactory(
       taskArgs.contractName
-    );
+    );    
     //if not constructor ars is provide and empty array is used to indicate no constructor args
     const constructorArgs = taskArgs.constructorArgs === undefined ? [] : taskArgs.constructorArgs;
-
     // encode deployBcode, 
     const deployTx = logicContract.getDeployTransaction(...constructorArgs);
     if (hre.network.name === "hardhat") {
