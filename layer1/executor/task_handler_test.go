@@ -509,24 +509,3 @@ func TestTasksHandlerAndManager_SendNilResponseAndCloseRequestChan(t *testing.T)
 	<-time.After(100 * time.Millisecond)
 	require.Equal(t, 0, getScheduleLen(t, handler.manager))
 }
-
-func TestTasksHandlerAndManager_CloseResponseChan(t *testing.T) {
-	handler, _, _, _, _ := getTaskHandler(t, true)
-	handler.Start()
-	handler.manager.responseChan.close()
-	<-time.After(100 * time.Millisecond)
-
-	task := snapshots.NewSnapshotTask(0, 5, 1)
-	taskId := uuid.New().String()
-	resp, err := handler.ScheduleTask(task, taskId)
-	require.NotNil(t, err)
-	require.Equal(t, tasks.ErrTaskExecutionMechanismClosed, err)
-	require.Nil(t, resp)
-	require.Equal(t, 0, getScheduleLen(t, handler.manager))
-
-	select {
-	case <-handler.CloseChan():
-	case <-time.After(1 * time.Second):
-		t.Fatal("handler didnt close in time")
-	}
-}
