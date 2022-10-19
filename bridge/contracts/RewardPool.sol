@@ -21,6 +21,8 @@ contract RewardPool is AccessControlled, EthSafeTransfer, ERC20SafeTransfer {
     uint256 internal _ethReserve;
     uint256 internal _tokenReserve;
 
+    error InvalidTotalSharesValue();
+
     constructor(
         address alca_,
         address aliceNetFactory_,
@@ -54,6 +56,10 @@ contract RewardPool is AccessControlled, EthSafeTransfer, ERC20SafeTransfer {
         uint256 userShares_,
         bool isLastPosition_
     ) public onlyLockup returns (uint256 proportionalEth, uint256 proportionalTokens) {
+        if (totalShares_ == 0 || userShares_ > totalShares_) {
+            revert InvalidTotalSharesValue();
+        }
+
         // last position gets any remainder left on this contract
         if (isLastPosition_) {
             proportionalEth = address(this).balance;

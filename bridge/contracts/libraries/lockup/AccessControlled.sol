@@ -18,7 +18,7 @@ abstract contract AccessControlled {
             msg.sender != _getLockupContractAddress() &&
             msg.sender != address(_getBonusPoolAddress())
         ) {
-            revert CallerNotLockup();
+            revert CallerNotLockupOrBonus();
         }
         _;
     }
