@@ -155,5 +155,7 @@ func ReadInput(message string) (string, error) {
 		return "", err
 	}
 
+	input = strings.TrimSpace(input)
+
 	return input, nil
 }

@@ -114,6 +114,26 @@ func TestEthereum_NewEthereumEndpoint(t *testing.T) {
 			},
 		},
 		{
+			name: "Create new ethereum endpoint without passcodes",
+			args: args{
+				eth.GetEndpoint(),
+				fixture.KeyStorePath,
+				"",
+				eth.GetDefaultAccount().Address.Hex(),
+				true,
+				0,
+				500,
+				0,
+			},
+			want: false,
+			wantErr: func(t assert.TestingT, err error, i ...interface{}) bool {
+				if err == nil {
+					t.Errorf("This test should have raised an error")
+				}
+				return true
+			},
+		},
+		{
 			name: "Create new ethereum endpoint returning Client struct",
 			args: args{
 				eth.GetEndpoint(),
