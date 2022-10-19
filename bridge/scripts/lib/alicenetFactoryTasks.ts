@@ -267,7 +267,7 @@ task(
       const deployType = await getDeployType(fullyQualifiedName, artifacts);
       switch (deployType) {
         case UPGRADEABLE_DEPLOYMENT: {
-          //get the constructorArgs From the input folder specified
+          // get the constructorArgs From the input folder specified
           deployArgs = await getDeployUpgradeableProxyArgs(
             fullyQualifiedName,
             factoryAddress,
@@ -296,7 +296,6 @@ task(
           break;
         }
         case DEPLOY_CREATE: {
-          const name = extractName(fullyQualifiedName);
           deployArgs = await getDeployCreateArgs(
             fullyQualifiedName,
             factoryAddress,
@@ -707,7 +706,10 @@ task(TASK_DEPLOY_PROXY, "deploys a proxy from the factory")
   )
   .setAction(async (taskArgs, hre) => {
     const waitBlocks = taskArgs.waitConfirmation;
-    const factory = await hre.ethers.getContractAt(ALICENET_FACTORY, taskArgs.factoryAddress);
+    const factory = await hre.ethers.getContractAt(
+      ALICENET_FACTORY,
+      taskArgs.factoryAddress
+    );
     const txResponse = await factory.deployProxy(
       taskArgs.salt,
       await getGasPrices(hre)
@@ -1346,4 +1348,3 @@ export async function verifyContract(
   }
   return result;
 }
-

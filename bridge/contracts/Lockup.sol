@@ -137,7 +137,7 @@ contract Lockup is
         );
         _rewardPool = address(rewardPool);
         _bonusPool = rewardPool.getBonusPoolAddress();
-        _startBlock = block.number + enrollmentPeriod_;
+        _startBlock = block.number + enrollmentPeriod_ ;
         _endBlock = _startBlock + lockDuration_;
     }
 
