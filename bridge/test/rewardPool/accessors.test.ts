@@ -127,8 +127,20 @@ describe("RewardPool - public accessors", async () => {
       expect(proportionTokens).to.equal(expectedProportionTokens);
     });
 
-    it("estimateRewards returns correct share proportions", async () => {
+    it("estimateRewards reverts if total shares less than user shares", async () => {
       const totalShares = BigNumber.from(100);
+      const userShares = BigNumber.from(101);
+
+      await expect(
+        fixture.rewardPool.estimateRewards(totalShares, userShares)
+      ).to.be.revertedWithCustomError(
+        fixture.rewardPool,
+        "InvalidTotalSharesValue"
+      );
+    });
+
+    it("estimateRewards reverts if total shares is 0", async () => {
+      const totalShares = BigNumber.from(0);
       const userShares = BigNumber.from(101);
 
       await expect(
