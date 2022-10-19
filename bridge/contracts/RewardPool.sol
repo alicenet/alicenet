@@ -106,6 +106,9 @@ contract RewardPool is AccessControlled, EthSafeTransfer, ERC20SafeTransfer {
         view
         returns (uint256 proportionalEth, uint256 proportionalTokens)
     {
+        if (totalShares_ == 0 || userShares_ > totalShares_) {
+            revert InvalidTotalSharesValue();
+        }
         return _computeProportions(totalShares_, userShares_);
     }
 

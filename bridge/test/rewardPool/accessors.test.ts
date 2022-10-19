@@ -113,10 +113,7 @@ describe("RewardPool - public accessors", async () => {
     it("estimateRewards returns correct share proportions", async () => {
       const totalShares = BigNumber.from(100);
       const userShares = BigNumber.from(10);
-      // const expectedProportionEth = ethAmount.mul(userShares).div(totalShares);
-      // const expectedProportionTokens = tokenAmount
-      //   .mul(userShares)
-      //   .div(totalShares);
+
       const [expectedProportionEth, expectedProportionTokens] =
         calculateExpectedProportions(
           ethAmount,
@@ -128,6 +125,18 @@ describe("RewardPool - public accessors", async () => {
         await fixture.rewardPool.estimateRewards(totalShares, userShares);
       expect(proportionEth).to.equal(expectedProportionEth);
       expect(proportionTokens).to.equal(expectedProportionTokens);
+    });
+
+    it("estimateRewards returns correct share proportions", async () => {
+      const totalShares = BigNumber.from(100);
+      const userShares = BigNumber.from(101);
+
+      await expect(
+        fixture.rewardPool.estimateRewards(totalShares, userShares)
+      ).to.be.revertedWithCustomError(
+        fixture.rewardPool,
+        "InvalidTotalSharesValue"
+      );
     });
   });
 });
