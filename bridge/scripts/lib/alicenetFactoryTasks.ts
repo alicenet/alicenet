@@ -707,8 +707,7 @@ task(TASK_DEPLOY_PROXY, "deploys a proxy from the factory")
   )
   .setAction(async (taskArgs, hre) => {
     const waitBlocks = taskArgs.waitConfirmation;
-    const factoryBase = await hre.ethers.getContractFactory(ALICENET_FACTORY);
-    const factory = factoryBase.attach(taskArgs.factoryAddress);
+    const factory = await hre.ethers.getContractAt(ALICENET_FACTORY, taskArgs.factoryAddress);
     const txResponse = await factory.deployProxy(
       taskArgs.salt,
       await getGasPrices(hre)
@@ -1347,3 +1346,4 @@ export async function verifyContract(
   }
   return result;
 }
+
