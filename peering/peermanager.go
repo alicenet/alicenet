@@ -295,6 +295,10 @@ func (ps *PeerManager) handleDisc(conn interfaces.P2PConn) {
 		ps.Lock()
 		defer ps.Unlock()
 		if !ps.active.contains(conn.NodeAddr()) {
+			ps.logger.WithFields(logrus.Fields{
+				"nodeAddrHost": conn.NodeAddr().Host(),
+				"nodeAddrPort": conn.NodeAddr().Port(),
+			}).Warn("Adding inactive peer handleDisc")
 			ps.inactive.add(conn.NodeAddr())
 		}
 	}()
@@ -332,6 +336,10 @@ func (ps *PeerManager) handleP2P(conn interfaces.P2PConn) {
 		ps.Lock()
 		defer ps.Unlock()
 		ps.active.add(client)
+		ps.logger.WithFields(logrus.Fields{
+			"nodeAddrHost": client.NodeAddr().Host(),
+			"nodeAddrPort": client.NodeAddr().Port(),
+		}).Warn("deleting inactive peer handleP2P")
 		ps.inactive.del(client.NodeAddr())
 		ps.gossipMap[key] = gossipChan
 		ps.gossipTxMap[key] = gossipTxChan
@@ -483,6 +491,10 @@ func (ps *PeerManager) getPeersActive() {
 				ps.Lock()
 				defer ps.Unlock()
 				if !ps.active.contains(p) {
+					ps.logger.WithFields(logrus.Fields{
+						"nodeAddrHost": p.Host(),
+						"nodeAddrPort": p.Port(),
+					}).Warn("Adding inactive peer getPeersActive")
 					ps.inactive.add(p)
 				}
 			}()
@@ -520,6 +532,10 @@ func (ps *PeerManager) discoDialBootnode() {
 				ps.Lock()
 				defer ps.Unlock()
 				if !ps.active.contains(p) {
+					ps.logger.WithFields(logrus.Fields{
+						"nodeAddrHost": p.Host(),
+						"nodeAddrPort": p.Port(),
+					}).Warn("Adding inactive peer discoDialBootnode")
 					ps.inactive.add(p)
 				}
 			}()

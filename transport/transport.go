@@ -8,6 +8,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/alicenet/alicenet/config"
 	"github.com/alicenet/alicenet/crypto/secp256k1"
 	"github.com/alicenet/alicenet/interfaces"
 	"github.com/alicenet/alicenet/types"
@@ -44,6 +45,14 @@ type P2PTransport struct {
 	closeChan chan struct{}
 	// this is the sync once used to protect the close methods
 	closeOnce sync.Once
+
+	// connection limiting
+	mutex                  sync.Mutex
+	numConnectionsbyIP     map[string]int
+	numConnectionsbyPubkey map[string]int
+	totalLimit             int
+	originLimit            int
+	pubkeyLimit            int
 }
 
 // Close will close all loops in this object and any
@@ -146,13 +155,6 @@ func (pt *P2PTransport) Dial(addr interfaces.NodeAddr, protocol types.Protocol) 
 
 	// todo: move it to a more appropriate place
 	closeChan := make(chan struct{})
-	go func() {
-		pt.logger.Warn("waiting connection close from custom Dial.CloseChan 1")
-		<-closeChan
-		pt.logger.Warn("closing peer connection with custom Dial.CloseChan 2")
-		//bconn.Close()
-		//pt.logger.Warn("closing peer connection with custom Dial.CloseChan 3")
-	}()
 
 	return &P2PConn{
 		nodeAddr: &NodeAddr{
@@ -171,26 +173,66 @@ func (pt *P2PTransport) Dial(addr interfaces.NodeAddr, protocol types.Protocol) 
 	}, nil
 }
 
-// This method handles type conversions.
-func (pt *P2PTransport) handleConnection(bconn *brontide.Conn) interfaces.P2PConn {
-	// form a p2PAddr for the remote peer
-	host, _, err := net.SplitHostPort(bconn.RemoteAddr().String())
-	if err != nil {
-		utils.DebugTrace(pt.logger, err)
-		if err := bconn.Close(); err != nil {
+func (pt *P2PTransport) doPreAliceNetHandshake(bconn *brontide.Conn) interfaces.P2PConn {
+	pt.mutex.Lock()
+
+	// bypass origin limiting if not a tcp conn
+	addr, ok := bconn.RemoteAddr().(*net.TCPAddr)
+	if !ok {
+		pt.mutex.Unlock()
+		return pt.doAliceNetHandshake(bconn, func() {})
+	}
+
+	// guard logic for total connections
+	if len(pt.numConnectionsbyIP) >= pt.totalLimit {
+		err := bconn.Close()
+		if err != nil {
 			utils.DebugTrace(pt.logger, err)
 		}
+		pt.mutex.Unlock()
 		return nil
 	}
 
-	publicKey, err := convertDecredSecpPubKey2CryptoSecpPubKey(bconn.RemotePub())
-	if err != nil {
-		utils.DebugTrace(pt.logger, err)
-		if err := bconn.Close(); err != nil {
+	// get host for origin limit tracking
+	host := addr.IP.String()
+	// guard logic for origin limit tracking
+	if pt.numConnectionsbyIP[host] >= pt.originLimit {
+		err := bconn.Close()
+		if err != nil {
 			utils.DebugTrace(pt.logger, err)
 		}
+		pt.mutex.Unlock()
 		return nil
 	}
+
+	// increment host counter
+	pt.numConnectionsbyIP[host]++
+	// create cleanup fn closure
+	closeFn := func() {
+		pt.logger.WithFields(logrus.Fields{
+			"host": host,
+		}).Warn("P2PConn.closeFn()")
+
+		pt.mutex.Lock()
+		defer pt.mutex.Unlock()
+		// decrement the origin counter
+		if pt.numConnectionsbyIP[host] > 0 {
+			pt.numConnectionsbyIP[host]--
+			if pt.numConnectionsbyIP[host] == 0 {
+				delete(pt.numConnectionsbyIP, host)
+			}
+		}
+		// return bconn.Close()
+	}
+
+	pt.mutex.Unlock()
+
+	// hand off wrapper as the conn
+	return pt.doAliceNetHandshake(bconn, closeFn)
+}
+
+// This method handles type conversions.
+func (pt *P2PTransport) doAliceNetHandshake(bconn *brontide.Conn, closeFn func()) interfaces.P2PConn {
 
 	// todo: do other handshakes here
 
@@ -202,6 +244,7 @@ func (pt *P2PTransport) handleConnection(bconn *brontide.Conn) interfaces.P2PCon
 		if err2 != nil {
 			utils.DebugTrace(pt.logger, err2)
 		}
+		closeFn()
 		return nil
 	}
 	if err := peerInitiatedChainIdentifierHandshake(bconn, pt.localNodeAddr.ChainID()); err != nil {
@@ -210,6 +253,7 @@ func (pt *P2PTransport) handleConnection(bconn *brontide.Conn) interfaces.P2PCon
 		if err2 != nil {
 			utils.DebugTrace(pt.logger, err2)
 		}
+		closeFn()
 		return nil
 	}
 
@@ -219,6 +263,7 @@ func (pt *P2PTransport) handleConnection(bconn *brontide.Conn) interfaces.P2PCon
 		if err2 != nil {
 			utils.DebugTrace(pt.logger, err2)
 		}
+		closeFn()
 		return nil
 	}
 	remoteP2PPort, err := peerInitiatedPortHandshake(bconn, pt.localNodeAddr.Port())
@@ -228,6 +273,7 @@ func (pt *P2PTransport) handleConnection(bconn *brontide.Conn) interfaces.P2PCon
 		if err2 != nil {
 			utils.DebugTrace(pt.logger, err2)
 		}
+		closeFn()
 		return nil
 	}
 
@@ -237,6 +283,7 @@ func (pt *P2PTransport) handleConnection(bconn *brontide.Conn) interfaces.P2PCon
 		if err2 != nil {
 			utils.DebugTrace(pt.logger, err2)
 		}
+		closeFn()
 		return nil
 	}
 	remoteVersion, err := peerInitiatedVersionHandshake(bconn, protoVersion)
@@ -246,6 +293,7 @@ func (pt *P2PTransport) handleConnection(bconn *brontide.Conn) interfaces.P2PCon
 		if err2 != nil {
 			utils.DebugTrace(pt.logger, err2)
 		}
+		closeFn()
 		return nil
 	}
 
@@ -255,6 +303,7 @@ func (pt *P2PTransport) handleConnection(bconn *brontide.Conn) interfaces.P2PCon
 		if err2 != nil {
 			utils.DebugTrace(pt.logger, err2)
 		}
+		closeFn()
 		return nil
 	}
 	protocol, err := readUint32(bconn)
@@ -264,6 +313,7 @@ func (pt *P2PTransport) handleConnection(bconn *brontide.Conn) interfaces.P2PCon
 		if err2 != nil {
 			utils.DebugTrace(pt.logger, err2)
 		}
+		closeFn()
 		return nil
 	}
 
@@ -274,6 +324,7 @@ func (pt *P2PTransport) handleConnection(bconn *brontide.Conn) interfaces.P2PCon
 		if err2 != nil {
 			utils.DebugTrace(pt.logger, err2)
 		}
+		closeFn()
 		return nil
 	}
 
@@ -281,45 +332,76 @@ func (pt *P2PTransport) handleConnection(bconn *brontide.Conn) interfaces.P2PCon
 	// brontideConn.Version = types.ProtoVersion(remoteVersion)
 	// brontideConn.Protocol = types.Protocol(protocol)
 
-	// // get pubkey for limit pubkey tracking
-	// pubk := string(bconn.RemotePub().SerializeCompressed())
+	// form a p2PAddr for the remote peer
+	host, _, err := net.SplitHostPort(bconn.RemoteAddr().String())
+	if err != nil {
+		utils.DebugTrace(pt.logger, err)
+		if err := bconn.Close(); err != nil {
+			utils.DebugTrace(pt.logger, err)
+		}
+		closeFn()
+		return nil
+	}
 
-	// // guard logic for pubkey limit tracking
-	// if pt.numConnectionsbyPubkey[pubk] >= pt.pubkeyLimit {
-	// 	err := bconn.Close()
-	// 	if err != nil {
-	// 		utils.DebugTrace(pt.logger, err)
-	// 	}
-	// 	return nil
-	// }
+	publicKey, err := convertDecredSecpPubKey2CryptoSecpPubKey(bconn.RemotePub())
+	if err != nil {
+		utils.DebugTrace(pt.logger, err)
+		if err := bconn.Close(); err != nil {
+			utils.DebugTrace(pt.logger, err)
+		}
+		closeFn()
+		return nil
+	}
 
-	// // increment host counter
-	// pt.numConnectionsbyPubkey[pubk]++
+	// post handshake
 
-	// // if guard logic passes create cleanup fn closure
-	// bconn.wrapClose(func() error {
-	// 	pt.Lock()
-	// 	defer pt.Unlock()
-	// 	// decrement the origin counter if the total is gt zero
-	// 	// this is a protection against any unseen race
-	// 	if pt.numConnectionsbyPubkey[pubk] > 0 {
-	// 		pt.numConnectionsbyPubkey[pubk]--
-	// 		if pt.numConnectionsbyPubkey[pubk] == 0 {
-	// 			delete(pt.numConnectionsbyPubkey, pubk)
-	// 		}
-	// 	}
-	// 	return nil
-	// })
+	// get pubkey for limit pubkey tracking
+	pubk := string(bconn.RemotePub().SerializeCompressed())
 
-	// todo: move it to a more appropriate place
+	pt.mutex.Lock()
+	defer pt.mutex.Unlock()
+
+	// guard logic for pubkey limit tracking
+	if pt.numConnectionsbyPubkey[pubk] >= pt.pubkeyLimit {
+		err := bconn.Close()
+		if err != nil {
+			utils.DebugTrace(pt.logger, err)
+		}
+		closeFn()
+		return nil
+	}
+
+	// increment host counter
+	pt.numConnectionsbyPubkey[pubk]++
+
+	// if guard logic passes create cleanup fn closure
 	closeChan := make(chan struct{})
-	go func() {
-		pt.logger.Warn("waiting connection close from custom handleConnection.CloseChan 1")
-		<-closeChan
-		pt.logger.Warn("closing peer connection with custom handleConnection.CloseChan 2")
-		//bconn.Close()
-		//pt.logger.Warn("closing peer connection with custom handleConnection.CloseChan 3")
-	}()
+	cleanupFn := func() {
+		pt.logger.WithFields(logrus.Fields{
+			"host": bconn.RemoteAddr().String(),
+		}).Warn("P2PConn.cleanUpFn() start")
+
+		pt.mutex.Lock()
+
+		// decrement the origin counter if the total is gt zero
+		// this is a protection against any unseen race
+		if pt.numConnectionsbyPubkey[pubk] > 0 {
+			pt.numConnectionsbyPubkey[pubk]--
+			if pt.numConnectionsbyPubkey[pubk] == 0 {
+				delete(pt.numConnectionsbyPubkey, pubk)
+			}
+		}
+
+		pt.mutex.Unlock()
+
+		closeFn()
+
+		pt.logger.WithFields(logrus.Fields{
+			"host": bconn.RemoteAddr().String(),
+		}).Warn("P2PConn.cleanUpFn() closing closeChan")
+
+		close(closeChan)
+	}
 
 	// turn the brontide conn into a p2PConn
 	return &P2PConn{
@@ -334,7 +416,7 @@ func (pt *P2PTransport) handleConnection(bconn *brontide.Conn) interfaces.P2PCon
 		initiator:    types.PeerInitiatedConnection,
 		protocol:     types.Protocol(protocol),
 		protoVersion: types.ProtoVersion(remoteVersion),
-		cleanupfn:    func() { close(closeChan) },
+		cleanupfn:    cleanupFn,
 		closeChan:    closeChan,
 	}
 }
@@ -363,7 +445,8 @@ func (pt *P2PTransport) Accept() (interfaces.P2PConn, error) {
 
 		bconn := conn.(*brontide.Conn)
 
-		return pt.handleConnection(bconn), nil
+		// return pt.handleConnection(bconn), nil
+		return pt.doPreAliceNetHandshake(bconn), nil
 	}
 }
 
@@ -391,18 +474,18 @@ func NewP2PTransport(logger *logrus.Logger, cid types.ChainIdentifier, privateKe
 
 	keychainPrivateKey := convertCryptoPrivateKey2KeychainPrivateKey(localPrivateKey)
 
-	// var mc int
-	// var mp int
-	// if config.Configuration.Transport.OriginLimit <= 0 {
-	// 	mc = 3
-	// } else {
-	// 	mc = config.Configuration.Transport.OriginLimit
-	// }
-	// if config.Configuration.Transport.PeerLimitMax <= 0 {
-	// 	mp = 16
-	// } else {
-	// 	mp = config.Configuration.Transport.PeerLimitMax
-	// }
+	var mc int
+	var mp int
+	if config.Configuration.Transport.OriginLimit <= 0 {
+		mc = 3
+	} else {
+		mc = config.Configuration.Transport.OriginLimit
+	}
+	if config.Configuration.Transport.PeerLimitMax <= 0 {
+		mp = 16
+	} else {
+		mp = config.Configuration.Transport.PeerLimitMax
+	}
 
 	listener, err := brontide.NewListener(keychainPrivateKey, fmt.Sprintf("%v:%v", host, port))
 	if err != nil {
@@ -410,11 +493,16 @@ func NewP2PTransport(logger *logrus.Logger, cid types.ChainIdentifier, privateKe
 	}
 
 	transport := &P2PTransport{
-		logger:          logger,
-		localNodeAddr:   localNodeAddr,
-		localPrivateKey: localPrivateKey,
-		listener:        listener,
-		closeChan:       make(chan struct{}),
+		logger:                 logger,
+		localNodeAddr:          localNodeAddr,
+		localPrivateKey:        localPrivateKey,
+		listener:               listener,
+		closeChan:              make(chan struct{}),
+		totalLimit:             mp,
+		pubkeyLimit:            1,
+		originLimit:            mc,
+		numConnectionsbyIP:     make(map[string]int),
+		numConnectionsbyPubkey: make(map[string]int),
 	}
 	return transport, nil
 }
