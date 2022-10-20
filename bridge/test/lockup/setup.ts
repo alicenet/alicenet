@@ -7,7 +7,6 @@ import {
 } from "ethers/lib/ethers";
 import hre, { ethers, expect } from "hardhat";
 import { CONTRACT_ADDR, DEPLOYED_RAW } from "../../scripts/lib/constants";
-import { contracts } from "../../typechain-types";
 import { getEventVar } from "../factory/Setup";
 import {
   BaseTokensFixture,
@@ -47,6 +46,26 @@ export interface Distribution {
   profitALCA: string;
   users: UsersDistribution;
 }
+
+export interface UnlockUser {
+  tokenID: number;
+  shares: number;
+  percentageFromTotalLockup: number;
+  bonusSharesALCA: number;
+  bonusProfitEth: number;
+  bonusProfitALCA: number;
+  rewardHeldEth: number;
+  rewardHeldALCA: number;
+  lockupAggregatedEth: number;
+  lockupAggregatedALCA: number;
+  totalEarnedEth: string;
+  totalEarnedALCA: string;
+}
+
+export interface UnlockState {
+  [key: string]: UnlockUser;
+}
+
 interface UserState {
   alca: bigint;
   eth: bigint;
@@ -75,22 +94,30 @@ export interface State {
 
 export async function getState(fixture: Fixture | BaseTokensFixture) {
   const signers = await ethers.getSigners();
-  const contracts = [fixture.lockup, fixture.publicStaking, fixture.bonusPool, fixture.factory]
-  const contractNames = ["lockup", "publicStaking", "bonusPool", "factory"]
-  const contractsState: ContractsState ={}
-  const usersState: UsersState ={}
+  const contracts = [
+    fixture.lockup,
+    fixture.publicStaking,
+    fixture.bonusPool,
+    fixture.factory,
+    fixture.rewardPool,
+  ];
+  const contractNames = [
+    "lockup",
+    "publicStaking",
+    "bonusPool",
+    "factory",
+    "rewardPool",
+  ];
+  const contractsState: ContractsState = {};
+  const usersState: UsersState = {};
   for (let i = 0; i < contracts.length; i++) {
-    contractsState[contractNames[i]] =  {
-      alca: (
-        await fixture.aToken.balanceOf(contracts[i].address)
-      ).toBigInt(),
-      eth: (
-        await ethers.provider.getBalance(contracts[i].address)
-      ).toBigInt()
-    }
+    contractsState[contractNames[i]] = {
+      alca: (await fixture.aToken.balanceOf(contracts[i].address)).toBigInt(),
+      eth: (await ethers.provider.getBalance(contracts[i].address)).toBigInt(),
+    };
   }
   for (let i = 1; i <= numberOfLockingUsers; i++) {
-    usersState["user"+i] = {
+    usersState["user" + i] = {
       alca: (await fixture.aToken.balanceOf(signers[i].address)).toBigInt(),
       eth: (await ethers.provider.getBalance(signers[i].address)).toBigInt(),
       tokenOf: (await fixture.lockup.tokenOf(signers[i].address)).toBigInt(),
@@ -99,18 +126,24 @@ export async function getState(fixture: Fixture | BaseTokensFixture) {
       ),
       ethRewards: BigNumber.from(0).toBigInt(),
       tokenRewards: BigNumber.from(0).toBigInt(),
-    }
+    };
   }
-  usersState["bonusPool"] = {
-    alca: (await fixture.aToken.balanceOf(fixture.bonusPool.address)).toBigInt(),
-    eth: (await ethers.provider.getBalance(fixture.bonusPool.address)).toBigInt(),
-    tokenOf: (await fixture.lockup.tokenOf(fixture.bonusPool.address)).toBigInt(),
+  usersState.bonusPool = {
+    alca: (
+      await fixture.aToken.balanceOf(fixture.bonusPool.address)
+    ).toBigInt(),
+    eth: (
+      await ethers.provider.getBalance(fixture.bonusPool.address)
+    ).toBigInt(),
+    tokenOf: (
+      await fixture.lockup.tokenOf(fixture.bonusPool.address)
+    ).toBigInt(),
     ownerOf: await fixture.lockup.ownerOf(
       await fixture.lockup.tokenOf(fixture.bonusPool.address)
     ),
     ethRewards: BigNumber.from(0).toBigInt(),
     tokenRewards: BigNumber.from(0).toBigInt(),
-  }
+  };
   const state: State = {
     contracts: contractsState,
     users: usersState,

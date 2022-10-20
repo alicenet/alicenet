@@ -134,11 +134,12 @@ contract BonusPool is
         )
     {
         if (_tokenID == 0) {
-            revert BonusTokenNotCreated();
+            return (0, 0, 0);
         }
         if (originalSharesLocked_ == 0 || currentSharesLocked_ > originalSharesLocked_) {
             revert InvalidOriginalSharesValue();
         }
+
         (uint256 estimatedPayoutEth, uint256 estimatedPayoutToken) = IStakingNFT(
             _publicStakingAddress()
         ).estimateAllProfits(_tokenID);
@@ -188,6 +189,8 @@ contract BonusPool is
         (uint256 payoutEth, uint256 payoutToken) = IStakingNFT(_publicStakingAddress()).burn(
             _tokenID
         );
+        // restarting the _tokenID
+        _tokenID = 0;
 
         // we subtract the shares amount from payoutToken to have the final amount of ALCA yield
         // gained by the bonus position

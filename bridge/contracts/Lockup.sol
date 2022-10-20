@@ -137,7 +137,7 @@ contract Lockup is
         );
         _rewardPool = address(rewardPool);
         _bonusPool = rewardPool.getBonusPoolAddress();
-        _startBlock = block.number + enrollmentPeriod_ ;        
+        _startBlock = block.number + enrollmentPeriod_;
         _endBlock = _startBlock + lockDuration_;
     }
 
@@ -479,20 +479,23 @@ contract Lockup is
         // get the commutative rewards held in the rewardPool so far
         (uint256 rewardEthProfit, uint256 rewardTokenProfit) = RewardPool(_rewardPool)
             .estimateRewards(currentSharesLocked, positionShares_);
+        payoutEth += rewardEthProfit;
+        payoutToken += rewardTokenProfit;
 
         // get any profit held by the position itself
         (uint256 positionEthProfit, uint256 positionTokenProfit) = IStakingNFT(
             _publicStakingAddress()
         ).estimateAllProfits(tokenID_);
+        payoutEth += positionEthProfit;
+        payoutToken += positionTokenProfit;
 
         // get any eth and token held by this contract as result of the call to the aggregateProfit
         // function
         (uint256 aggregatedEth, uint256 aggregatedTokens) = _getTemporaryRewardBalance(
             _getOwnerOf(tokenID_)
         );
-
-        payoutEth = rewardEthProfit + positionEthProfit + aggregatedEth;
-        payoutToken = rewardTokenProfit + positionTokenProfit + aggregatedTokens;
+        payoutEth += aggregatedEth;
+        payoutToken += aggregatedTokens;
     }
 
     function _lockFromTransfer(uint256 tokenID_, address tokenOwner_) internal {
