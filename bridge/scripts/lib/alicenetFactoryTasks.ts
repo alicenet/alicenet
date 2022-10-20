@@ -2,13 +2,12 @@ import toml from "@iarna/toml";
 import {
   BigNumber,
   BytesLike,
-  ContractFactory,
   ContractReceipt,
   ContractTransaction,
 } from "ethers";
 import fs from "fs";
 import { task, types } from "hardhat/config";
-import { CLIArgumentType, HardhatRuntimeEnvironment } from "hardhat/types";
+import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { encodeMultiCallArgs } from "./alicenetTasks";
 import {
   ALICENET_FACTORY,
@@ -97,7 +96,12 @@ task(
   "Deploys an instance of a factory contract specified by its name"
 )
   .addFlag("verify", "try to automatically verify contracts on etherscan")
-  .addOptionalParam("waitConfirmation", "wait 8 blocks between transactions", 8, types.int)
+  .addOptionalParam(
+    "waitConfirmation",
+    "wait 8 blocks between transactions",
+    8,
+    types.int
+  )
   .addOptionalParam("outputFolder", "output folder path to save factoryState")
   .setAction(async (taskArgs, hre) => {
     const waitBlocks = taskArgs.waitConfirmation === true ? 8 : undefined;
@@ -155,7 +159,7 @@ task(
   )
   .setAction(async (taskArgs, hre) => {
     await checkUserDirPath(taskArgs.outputFolder);
-    const path = taskArgs.outputFolder
+    const path = taskArgs.outputFolder;
     let deploymentList: DeploymentList;
     let deploymentArgs: DeploymentArgs = {
       constructor: {},
@@ -163,9 +167,7 @@ task(
     };
     let list: Array<string>;
     // no custom path and list input/ writes arg template in default scripts/base-files/deploymentArgs
-    if (
-      taskArgs.contractNames === undefined
-    ) {
+    if (taskArgs.contractNames === undefined) {
       // create the default list
       // setting list name will specify default configs
       const contracts = await getAllContracts(hre.artifacts);
@@ -173,9 +175,7 @@ task(
       list = await transformDeploymentList(deploymentList);
       deploymentArgs = await generateDeployArgTemplate(list, hre.artifacts);
     } // user defined path and list
-    else if (
-      taskArgs.contractNames !== undefined
-    ) {
+    else if (taskArgs.contractNames !== undefined) {
       // create deploy list and deployment arg with the specified output path
       const nameList: Array<string> = taskArgs.contractNames;
       const contracts: Array<string> = [];
@@ -217,19 +217,29 @@ task(
   TASK_DEPLOY_CONTRACTS,
   "runs the initial deployment of all AliceNet contracts"
 )
-.addFlag("verify", "try to automatically verify contracts on etherscan")
-.addOptionalParam(
-  "factoryAddress",
-  "specify if a factory is already deployed, if not specified a new factory will be deployed"
+  .addFlag("verify", "try to automatically verify contracts on etherscan")
+  .addOptionalParam(
+    "factoryAddress",
+    "specify if a factory is already deployed, if not specified a new factory will be deployed"
   )
-.addOptionalParam("waitConfirmation", "wait 8 blocks between transactions", 8, types.int)
-.addOptionalParam(
+  .addOptionalParam(
+    "waitConfirmation",
+    "wait 8 blocks between transactions",
+    8,
+    types.int
+  )
+  .addOptionalParam(
     "inputFolder",
     "path to location containing deploymentArgsTemplate, and deploymentList",
     DEFAULT_CONFIG_DIR,
     types.string
   )
-  .addOptionalParam("outputFolder", "output folder path to save factory state", DEFAULT_FACTORY_STATE_OUTPUT_DIR, types.string)
+  .addOptionalParam(
+    "outputFolder",
+    "output folder path to save factory state",
+    DEFAULT_FACTORY_STATE_OUTPUT_DIR,
+    types.string
+  )
   .setAction(async (taskArgs, hre) => {
     let cumulativeGasUsed = BigNumber.from("0");
     await checkUserDirPath(taskArgs.outputFolder);
@@ -241,7 +251,7 @@ task(
       const factoryData: FactoryData = await hre.run(TASK_DEPLOY_FACTORY, {
         outputFolder: taskArgs.outputFolder,
         verify: taskArgs.verify,
-        waitConfirmation: taskArgs.waitConfirmation
+        waitConfirmation: taskArgs.waitConfirmation,
       });
       factoryAddress = factoryData.address;
       cumulativeGasUsed = cumulativeGasUsed.add(factoryData.gas);
@@ -316,13 +326,18 @@ task(
   TASK_FULL_MULTI_CALL_DEPLOY_PROXY,
   "Multicalls deploy-create, deploy-proxy, and upgrade-proxy, if gas cost exceeds 10 million deploy-upgradeable-proxy will be used"
 )
-.addFlag("verify", "try to automatically verify contracts on etherscan")
-.addParam("contractName", "Name of logic contract to point the proxy at")
-.addParam(
-  "factoryAddress",
-  "address of factory contract to deploy the contract with"
+  .addFlag("verify", "try to automatically verify contracts on etherscan")
+  .addParam("contractName", "Name of logic contract to point the proxy at")
+  .addParam(
+    "factoryAddress",
+    "address of factory contract to deploy the contract with"
   )
-  .addOptionalParam("waitConfirmation", "wait 8 blocks between transactions", 8, types.int)
+  .addOptionalParam(
+    "waitConfirmation",
+    "wait 8 blocks between transactions",
+    8,
+    types.int
+  )
   .addOptionalParam(
     "initCallData",
     "input initCallData args in a string list, eg: --initCallData 'arg1, arg2'"
@@ -330,7 +345,7 @@ task(
   .addOptionalParam("outputFolder", "output folder path to save factory state")
   .addOptionalVariadicPositionalParam("constructorArgs", "")
   .setAction(async (taskArgs, hre) => {
-    const waitBlocks = taskArgs.waitConfirmation
+    const waitBlocks = taskArgs.waitConfirmation;
     const network = hre.network.name;
     const callArgs: DeployArgs = {
       contractName: taskArgs.contractName,
@@ -430,7 +445,6 @@ task(
   TASK_DEPLOY_UPGRADEABLE_PROXY,
   "deploys logic contract, proxy contract, and points the proxy to the logic contract"
 )
-  
   .addParam(
     "contractName",
     "Name of logic contract to point the proxy at",
@@ -442,10 +456,14 @@ task(
   )
   .addOptionalParam(
     "initCallData",
-    "input initCallData args in a string list, eg: --initCallData 'arg1, arg2'",
-    
+    "input initCallData args in a string list, eg: --initCallData 'arg1, arg2'"
   )
-  .addOptionalParam("waitConfirmation", "wait 8 blocks between transactions", 8, types.int)
+  .addOptionalParam(
+    "waitConfirmation",
+    "wait 8 blocks between transactions",
+    8,
+    types.int
+  )
   .addOptionalParam("outputFolder", "output folder path to save factory state")
   .addOptionalVariadicPositionalParam("constructorArgs", "constructor argfu")
   .setAction(async (taskArgs, hre) => {
@@ -453,7 +471,7 @@ task(
     // uses the factory Data and logic contractName and returns deploybytecode and any constructor args attached
     const callArgs: DeployArgs = {
       contractName: taskArgs.contractName,
-      waitConfirmation:taskArgs.waitConfirmation,
+      waitConfirmation: taskArgs.waitConfirmation,
       factoryAddress: taskArgs.factoryAddress,
       constructorArgs: taskArgs.constructorArgs,
       outputFolder: taskArgs.outputFolder,
@@ -496,8 +514,18 @@ task(TASK_DEPLOY_CREATE, "deploys a contract from the factory using create")
     "factoryAddress",
     "the default factory address from factoryState will be used if not set"
   )
-  .addOptionalParam("waitConfirmation", "wait 8 blocks between transactions", 8, types.int)
-  .addOptionalParam("outputFolder", "output folder path to save factory state", DEFAULT_FACTORY_STATE_OUTPUT_DIR, types.string)
+  .addOptionalParam(
+    "waitConfirmation",
+    "wait 8 blocks between transactions",
+    8,
+    types.int
+  )
+  .addOptionalParam(
+    "outputFolder",
+    "output folder path to save factory state",
+    DEFAULT_FACTORY_STATE_OUTPUT_DIR,
+    types.string
+  )
   .addOptionalVariadicPositionalParam(
     "constructorArgs",
     "array that holds all arguments for constructor"
@@ -567,15 +595,28 @@ task(TASK_DEPLOY_CREATE, "deploys a contract from the factory using create")
     }
   });
 
-  task(TASK_DEPLOY_CREATE_AND_REGISTER, "deploys a contract from the factory using create and records the address to the external contract mapping for lookup, for deploying contracts outside of deterministic address")
-  .addFlag("verify", "try to automatically verify contracts on etherscan", )
+task(
+  TASK_DEPLOY_CREATE_AND_REGISTER,
+  "deploys a contract from the factory using create and records the address to the external contract mapping for lookup, for deploying contracts outside of deterministic address"
+)
+  .addFlag("verify", "try to automatically verify contracts on etherscan")
   .addParam("contractName", "logic contract name")
   .addParam(
     "factoryAddress",
     "the default factory address from factoryState will be used if not set"
   )
-  .addOptionalParam("waitConfirmation", "wait 8 blocks between transactions", 8, types.int)
-  .addOptionalParam("outputFolder", "output folder path to save factory state", DEFAULT_FACTORY_STATE_OUTPUT_DIR, types.string)
+  .addOptionalParam(
+    "waitConfirmation",
+    "wait 8 blocks between transactions",
+    8,
+    types.int
+  )
+  .addOptionalParam(
+    "outputFolder",
+    "output folder path to save factory state",
+    DEFAULT_FACTORY_STATE_OUTPUT_DIR,
+    types.string
+  )
   .addOptionalVariadicPositionalParam(
     "constructorArgs",
     "array that holds all arguments for constructor, defaults to empty array"
@@ -583,13 +624,17 @@ task(TASK_DEPLOY_CREATE, "deploys a contract from the factory using create")
   .setAction(async (taskArgs, hre) => {
     const waitBlocks = taskArgs.waitConfirmation;
     // get a factory instance connected to the factory a
-    const factory = await hre.ethers.getContractAt("AliceNetFactory", taskArgs.factoryAddress);
+    const factory = await hre.ethers.getContractAt(
+      "AliceNetFactory",
+      taskArgs.factoryAddress
+    );
     const logicContract: any = await hre.ethers.getContractFactory(
       taskArgs.contractName
-    );    
+    );
     //if not constructor ars is provide and empty array is used to indicate no constructor args
-    const constructorArgs = taskArgs.constructorArgs === undefined ? [] : taskArgs.constructorArgs;
-    // encode deployBcode, 
+    const constructorArgs =
+      taskArgs.constructorArgs === undefined ? [] : taskArgs.constructorArgs;
+    // encode deployBcode,
     const deployTx = logicContract.getDeployTransaction(...constructorArgs);
     if (hre.network.name === "hardhat") {
       // hardhat is not being able to estimate correctly the tx gas due to the massive bytes array
@@ -646,7 +691,6 @@ task(TASK_DEPLOY_CREATE, "deploys a contract from the factory using create")
   });
 
 task(TASK_DEPLOY_PROXY, "deploys a proxy from the factory")
-  
   .addParam(
     "salt",
     "salt used to specify logicContract and proxy address calculation"
@@ -655,7 +699,12 @@ task(TASK_DEPLOY_PROXY, "deploys a proxy from the factory")
     "factoryAddress",
     "the default factory address from factoryState will be used if not set"
   )
-  .addOptionalParam("waitConfirmation", "wait 8 blocks between transactions", 8, types.int)
+  .addOptionalParam(
+    "waitConfirmation",
+    "wait 8 blocks between transactions",
+    8,
+    types.int
+  )
   .setAction(async (taskArgs, hre) => {
     const waitBlocks = taskArgs.waitConfirmation;
     const factoryBase = await hre.ethers.getContractFactory(ALICENET_FACTORY);
@@ -693,12 +742,22 @@ task(
     "factoryAddress",
     "address of factory contract to deploy the contract with"
   )
-  .addOptionalParam("waitConfirmation", "wait 8 blocks between transactions", 8, types.int)
+  .addOptionalParam(
+    "waitConfirmation",
+    "wait 8 blocks between transactions",
+    8,
+    types.int
+  )
   .addOptionalParam(
     "initCallData",
     "input initCallData args in a string list, eg: --initCallData 'arg1, arg2'"
   )
-  .addOptionalParam("outputFolder", "output folder path to save factory state", DEFAULT_FACTORY_STATE_OUTPUT_DIR, types.string)
+  .addOptionalParam(
+    "outputFolder",
+    "output folder path to save factory state",
+    DEFAULT_FACTORY_STATE_OUTPUT_DIR,
+    types.string
+  )
   .setAction(async (taskArgs, hre) => {
     const waitBlocks = taskArgs.waitConfirmation;
     const network = hre.network.name;
@@ -771,7 +830,12 @@ task("multi-call-deploy-proxy", "deploy and upgrade proxy with multicall")
     "initCallData",
     "input initCallData args in a string list, eg: --initCallData 'arg1, arg2'"
   )
-  .addOptionalParam("outputFolder", "output folder path to save factory state", DEFAULT_FACTORY_STATE_OUTPUT_DIR, types.string)
+  .addOptionalParam(
+    "outputFolder",
+    "output folder path to save factory state",
+    DEFAULT_FACTORY_STATE_OUTPUT_DIR,
+    types.string
+  )
   .addOptionalParam(
     "salt",
     "unique salt for specifying proxy defaults to salt specified in logic contract"

@@ -9,6 +9,7 @@ import "hardhat-deploy";
 import "hardhat-gas-reporter";
 import "hardhat-log-remover";
 import "hardhat-storage-layout";
+import "hardhat/config";
 import { HardhatUserConfig, task } from "hardhat/config";
 import os from "os";
 import "solidity-coverage";
@@ -16,7 +17,6 @@ import "./scripts/generateImmutableAuth";
 import "./scripts/lib/alicenetFactoryTasks";
 import "./scripts/lib/alicenetTasks";
 import "./scripts/lib/gogogen";
-import "hardhat/config";
 require("dotenv").config();
 
 /**
