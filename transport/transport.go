@@ -153,7 +153,7 @@ func (pt *P2PTransport) Dial(addr interfaces.NodeAddr, protocol types.Protocol) 
 			chainID:  pt.localNodeAddr.ChainID(),
 			identity: publicKey,
 		},
-		conn:         bconn,
+		Conn:         bconn,
 		logger:       pt.logger,
 		initiator:    types.SelfInitiatedConnection,
 		protocol:     protocol,
@@ -200,10 +200,6 @@ func (pt *P2PTransport) doAliceNetPreHandshake(bconn *brontide.Conn) interfaces.
 	pt.numConnectionsbyIP[host]++
 	// create cleanup fn closure
 	closeFn := func() {
-		pt.logger.WithFields(logrus.Fields{
-			"host": host,
-		}).Warn("P2PConn.closeFn()")
-
 		pt.mutex.Lock()
 		defer pt.mutex.Unlock()
 		// decrement the origin counter
@@ -360,10 +356,6 @@ func (pt *P2PTransport) doAliceNetHandshake(bconn *brontide.Conn, closeFn func()
 	// if guard logic passes create cleanup fn closure
 	closeChan := make(chan struct{})
 	cleanupFn := func() {
-		pt.logger.WithFields(logrus.Fields{
-			"host": bconn.RemoteAddr().String(),
-		}).Warn("P2PConn.cleanUpFn() start")
-
 		pt.mutex.Lock()
 
 		// decrement the origin counter if the total is gt zero
@@ -378,11 +370,6 @@ func (pt *P2PTransport) doAliceNetHandshake(bconn *brontide.Conn, closeFn func()
 		pt.mutex.Unlock()
 
 		closeFn()
-
-		pt.logger.WithFields(logrus.Fields{
-			"host": bconn.RemoteAddr().String(),
-		}).Warn("P2PConn.cleanUpFn() closing closeChan")
-
 		close(closeChan)
 	}
 
@@ -394,7 +381,7 @@ func (pt *P2PTransport) doAliceNetHandshake(bconn *brontide.Conn, closeFn func()
 			chainID:  pt.localNodeAddr.ChainID(),
 			identity: publicKey,
 		},
-		conn:         bconn,
+		Conn:         bconn,
 		logger:       pt.logger,
 		initiator:    types.PeerInitiatedConnection,
 		protocol:     types.Protocol(protocol),

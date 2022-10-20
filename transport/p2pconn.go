@@ -1,12 +1,10 @@
 package transport
 
 import (
-	"net"
-	"sync"
-	"time"
-
 	"github.com/hashicorp/yamux"
 	"github.com/sirupsen/logrus"
+	"net"
+	"sync"
 
 	"github.com/alicenet/alicenet/interfaces"
 	"github.com/alicenet/alicenet/types"
@@ -23,7 +21,7 @@ var (
 // objects of this system should accept as the connection object for network
 // communications.
 type P2PConn struct {
-	conn         net.Conn
+	net.Conn
 	logger       *logrus.Logger
 	protocol     types.Protocol
 	protoVersion types.ProtoVersion
@@ -33,38 +31,6 @@ type P2PConn struct {
 	closeChan    <-chan struct{}
 	cleanupfn    func()
 	session      *yamux.Session
-}
-
-// LocalAddr implementation of net.Conn interface
-func (pc *P2PConn) LocalAddr() net.Addr {
-	return pc.conn.LocalAddr()
-}
-
-// Read implementation of net.Conn interface
-func (pc *P2PConn) Read(b []byte) (n int, err error) {
-	return pc.conn.Read(b)
-}
-
-// SetDeadline implementation of net.Conn interface
-func (pc *P2PConn) SetDeadline(t time.Time) error {
-	return pc.conn.SetDeadline(t)
-}
-
-// SetWriteDeadline implementation of net.Conn interface
-func (pc *P2PConn) SetWriteDeadline(t time.Time) error {
-	return pc.conn.SetWriteDeadline(t)
-}
-
-// Write implementation of net.Conn interface
-func (pc *P2PConn) Write(b []byte) (n int, err error) {
-	return pc.conn.Write(b)
-}
-
-// SetReadDeadline sets the deadline for future Read calls
-// and any currently-blocked Read call.
-// A zero value for t means Read will not time out.
-func (pc *P2PConn) SetReadDeadline(t time.Time) error {
-	return pc.conn.SetReadDeadline(t)
 }
 
 // CloseChan closes channel.
@@ -80,7 +46,7 @@ func (pc *P2PConn) Close() error {
 
 func (pc *P2PConn) close() {
 	pc.cleanupfn()
-	err := pc.conn.Close()
+	err := pc.Conn.Close()
 	if err != nil {
 		utils.DebugTrace(pc.logger, err)
 	}
