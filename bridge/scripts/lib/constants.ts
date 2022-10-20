@@ -1,4 +1,5 @@
 import "process";
+export const STAKING_ROUTER_V1 = "StakingRouterV1";
 export const MULTICALL_GAS_LIMIT = "10000000";
 export const DEPLOYMENT_LIST_FPATH = "/deploymentList";
 export const DEPLOYMENT_ARGS_TEMPLATE_FPATH = "/deploymentArgsTemplate";

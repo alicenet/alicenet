@@ -3,8 +3,9 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
 import { BigNumber, BytesLike, ContractTransaction } from "ethers";
 import { ethers } from "hardhat";
-import { CONTRACT_ADDR, DEPLOYED_RAW } from "../../scripts/lib/constants";
-import { BonusPool, Lockup, RewardPool } from "../../typechain-types";
+import { deployCreateAndRegister } from "../../scripts/lib/alicenetFactory";
+import { CONTRACT_ADDR, DEPLOYED_RAW, STAKING_ROUTER_V1 } from "../../scripts/lib/constants";
+import { BonusPool, Lockup, RewardPool, StakingRouterV1 } from "../../typechain-types";
 import { getEventVar } from "../factory/Setup";
 import {
   BaseTokensFixture,
@@ -13,12 +14,13 @@ import {
   posFixtureSetup,
   preFixtureSetup,
 } from "../setup";
-HardhatRuntimeEnvironment.ethers: typeof import("/home/zj/work/alicenet/bridge/node_modules/ethers/lib/ethers") & HardhatEthersHelpers
+
 
 interface Fixture extends BaseTokensFixture {
   lockup: Lockup;
   rewardPool: RewardPool;
   bonusPool: BonusPool;
+  stakingRouterV1: StakingRouterV1;
 }
 
 const startBlock = 100;
@@ -52,8 +54,8 @@ async function deployFixture() {
     //deploy staking router
     const stakingRouterBase = await ethers.getContractFactory("StakingRouterV1")
     const stakingRouterDeployCode = stakingRouterBase.getDeployTransaction().data as BytesLike
-    contractName = ethers.utils.formatBytes32String("StakingRouterV1")
-    txResponse = await fixture.factory.deployCreateAndRegister(stakingRouterDeployCode, contractName);
+    contractName = ethers.utils.formatBytes32String(STAKING_ROUTER_V1)
+    txResponse = await deployCreateAndRegister(STAKING_ROUTER_V1, fixture.factory.address, ethers, [])
     // get the address from the event
     const stakingRouterAddress = await getEventVar(
       txResponse,
@@ -71,6 +73,8 @@ async function deployFixture() {
     // get the address of the bonus pool from the reward pool contract
     const bonusPoolAddress = await rewardPool.getBonusPoolAddress();
     const bonusPool = await ethers.getContractAt("BonusPool", bonusPoolAddress);
+    //connect and instance of the staking router 
+    const stakingRouterV1 = await ethers.getContractAt(STAKING_ROUTER_V1, stakingRouterAddress);
     const tokenIDs = [];
     for (let i = 1; i <= numberOfLockingUsers; i++) {
       // transfer 100 ALCA from admin to users
@@ -98,9 +102,20 @@ async function deployFixture() {
         rewardPool,
         lockup,
         bonusPool,
+        stakingRouterV1,
       },
       accounts: signers,
       stakedTokenIDs: tokenIDs,
     };
   }
   
+  describe("StakingRouterV1",async () => {
+    let fixture: Fixture
+    let accounts: SignerWithAddress[]
+    let stakedTokenIDs: BigNumber[] 
+    beforeEach(async () => {
+        ({fixture, accounts, stakedTokenIDs} = await loadFixture(deployFixture))
+    })
+
+    it("migrate")
+  })
