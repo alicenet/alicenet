@@ -72,7 +72,7 @@ export async function deployUpgradeable(
 
 }
 
-export async function deployCreateAndRegister(contractName:string, factoryAddress: string, ethers:Ethers, constructorArgs: Array<any>, overrides?: Overrides & { from?: PromiseOrValue<string> }): Promise<ContractTransaction>{
+export async function deployCreateAndRegister(contractName:string, factoryAddress: string, ethers:Ethers, constructorArgs: string[], overrides?: Overrides & { from?: PromiseOrValue<string> }): Promise<ContractTransaction>{
     // get a factory instance connected to the factory a
     const factory = await ethers.getContractAt(ALICENET_FACTORY, factoryAddress
     );
@@ -81,7 +81,11 @@ export async function deployCreateAndRegister(contractName:string, factoryAddres
     // encode deployBcode,
     const deployTxData = logicContract.getDeployTransaction(...constructorArgs).data as BytesLike;
     const contractNameByts32 = ethers.utils.formatBytes32String(contractName) 
-    return factory.deployCreateAndRegister(deployTxData, contractNameByts32, overrides);
+    if(overrides !== undefined){
+      return factory.deployCreateAndRegister(deployTxData, contractNameByts32, overrides);
+    } else{
+      return factory.deployCreateAndRegister(deployTxData, contractNameByts32);
+    }
 }
 
 export async function upgradeProxy(

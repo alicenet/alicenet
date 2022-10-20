@@ -44,7 +44,7 @@ contract StakingRouterV1 is
         uint256 migrationAmount_,
         uint256 stakingAmount_
     ) public {
-        uint256 migratedAmount = _migrate(address(this), migrationAmount_);
+        uint256 migratedAmount = _migrate(msg.sender, migrationAmount_);
         _verifyAndSendAnyRemainder(to_, migratedAmount, stakingAmount_);
         _stake(to_, stakingAmount_);
     }
@@ -87,10 +87,10 @@ contract StakingRouterV1 is
         return _legacyToken;
     }
 
-    function _migrate(address to_, uint256 amount_) internal returns (uint256 migratedAmount_) {
-        _safeTransferFromERC20(IERC20Transferable(_legacyToken), address(this), amount_);
+    function _migrate(address from_, uint256 amount_) internal returns (uint256 migratedAmount_) {
+        _safeTransferFromERC20(IERC20Transferable(_legacyToken), from_, amount_);
         IERC20(_legacyToken).approve(_aTokenAddress(), amount_);
-        migratedAmount_ = IStakingToken(_aTokenAddress()).migrateTo(to_, amount_);
+        migratedAmount_ = IStakingToken(_aTokenAddress()).migrateTo(address(this), amount_);
     }
 
     function _stake(address to_, uint256 stakingAmount_) internal returns (uint256 tokenID_) {

@@ -27,7 +27,7 @@ const startBlock = 100;
 const lockDuration = 2;
 const stakedAmount = ethers.utils.parseEther("100").toBigInt();
 const totalBonusAmount = ethers.utils.parseEther("10000");
-
+const migrationAmount = ethers.utils.parseEther("100");
 let rewardPoolAddress: any;
 const numberOfLockingUsers = 5;
 
@@ -53,9 +53,8 @@ async function deployFixture() {
     );
     //deploy staking router
     const stakingRouterBase = await ethers.getContractFactory("StakingRouterV1")
-    const stakingRouterDeployCode = stakingRouterBase.getDeployTransaction().data as BytesLike
     contractName = ethers.utils.formatBytes32String(STAKING_ROUTER_V1)
-    txResponse = await deployCreateAndRegister(STAKING_ROUTER_V1, fixture.factory.address, ethers, [])
+    txResponse = await deployCreateAndRegister(STAKING_ROUTER_V1, fixture.factory.address, ethers, [], undefined)
     // get the address from the event
     const stakingRouterAddress = await getEventVar(
       txResponse,
@@ -75,27 +74,7 @@ async function deployFixture() {
     const bonusPool = await ethers.getContractAt("BonusPool", bonusPoolAddress);
     //connect and instance of the staking router 
     const stakingRouterV1 = await ethers.getContractAt(STAKING_ROUTER_V1, stakingRouterAddress);
-    const tokenIDs = [];
-    for (let i = 1; i <= numberOfLockingUsers; i++) {
-      // transfer 100 ALCA from admin to users
-      let txResponse = await fixture.aToken
-        .connect(signers[0])
-        .transfer(signers[i].address, stakedAmount);
-      await txResponse.wait();
-      // stake the tokens
-      txResponse = await fixture.aToken
-        .connect(signers[i])
-        .increaseAllowance(fixture.publicStaking.address, stakedAmount);
-      await txResponse.wait();
-      txResponse = await fixture.publicStaking
-        .connect(signers[i])
-        .mint(stakedAmount);
-      const tokenID = await fixture.publicStaking.tokenOfOwnerByIndex(
-        signers[i].address,
-        0
-      );
-      tokenIDs[i] = tokenID;
-    }
+
     return {
       fixture: {
         ...fixture,
@@ -105,17 +84,25 @@ async function deployFixture() {
         stakingRouterV1,
       },
       accounts: signers,
-      stakedTokenIDs: tokenIDs,
     };
   }
   
   describe("StakingRouterV1",async () => {
     let fixture: Fixture
     let accounts: SignerWithAddress[]
-    let stakedTokenIDs: BigNumber[] 
     beforeEach(async () => {
-        ({fixture, accounts, stakedTokenIDs} = await loadFixture(deployFixture))
+        ({fixture, accounts} = await loadFixture(deployFixture))
     })
 
-    it("migrate")
+    describe("migrateand stake",async () => {
+        it("successsfully migrate Madtoken and stakes",async () => {
+            const tokenOwner = accounts[1];
+            let txResponse = await fixture.legacyToken.increaseAllowance(fixture.stakingRouterV1.address, migrationAmount)
+            await txResponse.wait();
+            txResponse = await fixture.stakingRouterV1.migrateAndStake(tokenOwner.address, migrationAmount, stakedAmount)
+            const tokenID = await fixture.publicStaking.tokenOfOwnerByIndex(tokenOwner.address, 0)
+            const position = await fixture.publicStaking.getPosition(tokenID)
+            console.log(position)
+        })
+    })
   })

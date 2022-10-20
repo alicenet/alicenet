@@ -629,7 +629,9 @@ task(
         "0x3000000000000000",
       ]);
     }
-    const txResponse = await deployCreateAndRegister(taskArgs.contractName, taskArgs.factoryAddress, hre.ethers, taskArgs.constructorArgs, await getGasPrices(hre));
+    const constructorArgs =
+      taskArgs.constructorArgs === undefined ? [] : taskArgs.constructorArgs;
+    const txResponse = await deployCreateAndRegister(taskArgs.contractName, taskArgs.factoryAddress, hre.ethers, constructorArgs, await getGasPrices(hre));
     const receipt = await txResponse.wait(waitBlocks);
     const deployCreateData: DeployCreateData = {
       name: taskArgs.contractName,
