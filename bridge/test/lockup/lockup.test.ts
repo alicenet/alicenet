@@ -40,7 +40,8 @@ async function deployFixture() {
     lockDuration,
     totalBonusAmount
   ).data as BytesLike;
-  const txResponse = await fixture.factory.deployCreate(lockupDeployCode);
+  const contractName = ethers.utils.formatBytes32String("Lockup")
+    const txResponse = await fixture.factory.deployCreateAndRegister(lockupDeployCode, contractName);
   // get the address from the event
   const lockupAddress = await getEventVar(
     txResponse,

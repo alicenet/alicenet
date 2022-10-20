@@ -112,8 +112,8 @@ export async function getContractDescriptor(
   };
 }
 // function to deploy the factory
-export async function deployFactory(run: RunTaskFunction, usrPath?: string) {
-  return await run(TASK_DEPLOY_FACTORY, { outputFolder: usrPath });
+export async function deployFactory(run: RunTaskFunction, usrPath?: string, waitConfirmation?:number) {
+  return await run(TASK_DEPLOY_FACTORY, { outputFolder: usrPath, waitConfirmation:waitConfirmation });
 }
 
 export async function getDeployMetaArgs(
@@ -160,7 +160,7 @@ export async function getFactoryDeploymentArgs(
   const hasConArgs = await hasConstructorArgs(fullyQualifiedName, artifacts);
   const constructorArgs = hasConArgs
     ? await getDeploymentConstructorArgs(fullyQualifiedName, inputFolder)
-    : undefined;
+    : [];
   return constructorArgs;
 }
 export async function getDeployUpgradeableProxyArgs(

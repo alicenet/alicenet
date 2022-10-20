@@ -8,6 +8,7 @@ import {
 import fs from "fs";
 import { task, types } from "hardhat/config";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
+import { deployCreateAndRegister, deployFactory, getEventVar, getMetamorphicAddress, getSalt } from "./alicenetFactory";
 import { encodeMultiCallArgs } from "./alicenetTasks";
 import {
   ALICENET_FACTORY,
@@ -63,6 +64,7 @@ import {
   getDeployUpgradeableMultiCallArgs,
   getDeployUpgradeableProxyArgs,
   getFactoryDeploymentArgs,
+  getFullyQualifiedName,
   isInitializable,
 } from "./deployment/deploymentUtil";
 import {
@@ -87,7 +89,7 @@ task(
 task("get-bytes32-salt", "gets the bytes32 version of salt from contract")
   .addParam("contractName", "test contract")
   .setAction(async (taskArgs, hre) => {
-    const salt = await getBytes32Salt(taskArgs.contractName, hre);
+    const salt = await getSalt(taskArgs.contractName, hre.artifacts, hre.ethers);
     await showState(salt);
   });
 
@@ -98,31 +100,27 @@ task(
   .addFlag("verify", "try to automatically verify contracts on etherscan")
   .addOptionalParam(
     "waitConfirmation",
-    "wait 8 blocks between transactions",
-    8,
+    "wait specified number of blocks between transactions",
+    0,
     types.int
   )
   .addOptionalParam("outputFolder", "output folder path to save factoryState")
+  .addOptionalVariadicPositionalParam("constructorArgs")
   .setAction(async (taskArgs, hre) => {
-    const waitBlocks = taskArgs.waitConfirmation === true ? 8 : undefined;
     await checkUserDirPath(taskArgs.outputFolder);
     const factoryBase = await hre.ethers.getContractFactory(ALICENET_FACTORY);
-    let constructorArgs = await getFactoryDeploymentArgs(hre.artifacts);
-    constructorArgs = constructorArgs === undefined ? [] : constructorArgs;
-    const accounts = await getAccounts(hre);
+    let constructorArgs = taskArgs.constructorArgs === undefined ? await getFactoryDeploymentArgs(hre.artifacts) : taskArgs.constructorArgs;
+    const signers = await hre.ethers.getSigners();
     // calculate the factory address for the constructor arg
     const deployTX = factoryBase.getDeployTransaction(constructorArgs[0]);
     const gasCost = await hre.ethers.provider.estimateGas(deployTX);
     // deploys the factory
-    const factory = await factoryBase.deploy(
-      constructorArgs[0],
-      await getGasPrices(hre)
-    );
-    await factory.deployTransaction.wait(waitBlocks);
+    const factory = await deployFactory(constructorArgs, hre.ethers, signers[0], await getGasPrices(hre) )
+    await factory.deployTransaction.wait(taskArgs.waitConfirmation);
     // record the state in a json file to be used in other tasks
     const factoryData: FactoryData = {
       address: factory.address,
-      owner: accounts[0],
+      owner: signers[0].address,
       gas: gasCost,
     };
     if (taskArgs.verify) {
@@ -224,8 +222,8 @@ task(
   )
   .addOptionalParam(
     "waitConfirmation",
-    "wait 8 blocks between transactions",
-    8,
+    "wait specified number of blocks between transactions",
+    0,
     types.int
   )
   .addOptionalParam(
@@ -286,7 +284,7 @@ task(
         }
         case ONLY_PROXY: {
           const name = extractName(fullyQualifiedName);
-          const salt: BytesLike = await getBytes32Salt(name, hre);
+          const salt: BytesLike = await getSalt(name, hre.artifacts, hre.ethers );
           proxyData = await hre.run(TASK_DEPLOY_PROXY, {
             factoryAddress,
             salt,
@@ -295,6 +293,7 @@ task(
           cumulativeGasUsed = cumulativeGasUsed.add(proxyData.gas);
           break;
         }
+        
         case DEPLOY_CREATE: {
           deployArgs = await getDeployCreateArgs(
             fullyQualifiedName,
@@ -333,8 +332,8 @@ task(
   )
   .addOptionalParam(
     "waitConfirmation",
-    "wait 8 blocks between transactions",
-    8,
+    "wait specified number of blocks between transactions",
+    0,
     types.int
   )
   .addOptionalParam(
@@ -366,7 +365,7 @@ task(
         : taskArgs.initCallData.replace(/\s+/g, "").split(",");
     const fullname = (await getFullyQualifiedName(
       taskArgs.contractName,
-      hre
+      hre.artifacts
     )) as string;
     const isInitable = await isInitializable(fullname, hre.artifacts);
     const initCallData = isInitable
@@ -374,7 +373,7 @@ task(
       : "0x";
     // factory interface pointed to deployed factory contract
     // get the 32byte salt from logic contract file
-    const salt: BytesLike = await getBytes32Salt(taskArgs.contractName, hre);
+    const salt: BytesLike = await getSalt(taskArgs.contractName, hre.artifacts, hre.ethers);
     const constructorArgs =
       taskArgs.constructorArgs === undefined ? [] : taskArgs.constructorArgs;
     // encode deployBcode
@@ -459,8 +458,8 @@ task(
   )
   .addOptionalParam(
     "waitConfirmation",
-    "wait 8 blocks between transactions",
-    8,
+    "wait specified number of blocks between transactions",
+    0,
     types.int
   )
   .addOptionalParam("outputFolder", "output folder path to save factory state")
@@ -515,8 +514,8 @@ task(TASK_DEPLOY_CREATE, "deploys a contract from the factory using create")
   )
   .addOptionalParam(
     "waitConfirmation",
-    "wait 8 blocks between transactions",
-    8,
+    "wait specified number of blocks between transactions",
+    0,
     types.int
   )
   .addOptionalParam(
@@ -606,8 +605,8 @@ task(
   )
   .addOptionalParam(
     "waitConfirmation",
-    "wait 8 blocks between transactions",
-    8,
+    "wait specified number of blocks between transactions",
+    0,
     types.int
   )
   .addOptionalParam(
@@ -622,19 +621,6 @@ task(
   )
   .setAction(async (taskArgs, hre) => {
     const waitBlocks = taskArgs.waitConfirmation;
-    // get a factory instance connected to the factory a
-    const factory = await hre.ethers.getContractAt(
-      "AliceNetFactory",
-      taskArgs.factoryAddress
-    );
-    const logicContract: any = await hre.ethers.getContractFactory(
-      taskArgs.contractName
-    );
-    //if not constructor ars is provide and empty array is used to indicate no constructor args
-    const constructorArgs =
-      taskArgs.constructorArgs === undefined ? [] : taskArgs.constructorArgs;
-    // encode deployBcode,
-    const deployTx = logicContract.getDeployTransaction(...constructorArgs);
     if (hre.network.name === "hardhat") {
       // hardhat is not being able to estimate correctly the tx gas due to the massive bytes array
       // being sent as input to the function (the contract bytecode), so we need to increase the block
@@ -643,50 +629,40 @@ task(
         "0x3000000000000000",
       ]);
     }
-    if (deployTx.data !== undefined) {
-      const txResponse = await factory.deployCreateAndRegister(
-        deployTx.data,
-        hre.ethers.utils.formatBytes32String(taskArgs.contractName),
-        await getGasPrices(hre)
+    const txResponse = await deployCreateAndRegister(taskArgs.contractName, taskArgs.factoryAddress, hre.ethers, taskArgs.constructorArgs, await getGasPrices(hre));
+    const receipt = await txResponse.wait(waitBlocks);
+    const deployCreateData: DeployCreateData = {
+      name: taskArgs.contractName,
+      address: getEventVar(receipt, DEPLOYED_RAW, CONTRACT_ADDR),
+      factoryAddress: taskArgs.factoryAddress,
+      gas: receipt.gasUsed,
+      constructorArgs: taskArgs?.constructorArgs,
+    };
+    const network = hre.network.name;
+    if (taskArgs.verify) {
+      await verifyContract(hre, taskArgs.factoryAddress, taskArgs.constructorArgs);
+    }
+    await updateDeployCreateList(
+      network,
+      deployCreateData,
+      taskArgs.outputFolder
+    );
+    if (taskArgs.standAlone !== true) {
+      await showState(
+        `[DEBUG ONLY, DONT USE THIS ADDRESS IN THE SIDE CHAIN, USE THE PROXY INSTEAD!] Deployed logic for ${taskArgs.contractName} contract at: ${deployCreateData.address}, gas: ${receipt.gasUsed}`
       );
-      const receipt = await txResponse.wait(waitBlocks);
-      const deployCreateData: DeployCreateData = {
-        name: taskArgs.contractName,
-        address: getEventVar(receipt, DEPLOYED_RAW, CONTRACT_ADDR),
-        factoryAddress: taskArgs.factoryAddress,
-        gas: receipt.gasUsed,
-        constructorArgs: taskArgs?.constructorArgs,
-      };
-      const network = hre.network.name;
-      if (taskArgs.verify) {
-        await verifyContract(hre, factory.address, constructorArgs);
-      }
-      await updateDeployCreateList(
+    } else {
+      await showState(
+        `Deployed ${deployCreateData.name} at ${deployCreateData.address}, gasCost: ${deployCreateData.gas}`
+      );
+      await updateExternalContractList(
         network,
         deployCreateData,
         taskArgs.outputFolder
       );
-      if (taskArgs.standAlone !== true) {
-        await showState(
-          `[DEBUG ONLY, DONT USE THIS ADDRESS IN THE SIDE CHAIN, USE THE PROXY INSTEAD!] Deployed logic for ${taskArgs.contractName} contract at: ${deployCreateData.address}, gas: ${receipt.gasUsed}`
-        );
-      } else {
-        await showState(
-          `Deployed ${deployCreateData.name} at ${deployCreateData.address}, gasCost: ${deployCreateData.gas}`
-        );
-        await updateExternalContractList(
-          network,
-          deployCreateData,
-          taskArgs.outputFolder
-        );
-      }
-      deployCreateData.receipt = receipt;
-      return deployCreateData;
-    } else {
-      throw new Error(
-        `failed to get deployment bytecode for ${taskArgs.contractName}`
-      );
     }
+    deployCreateData.receipt = receipt;
+    return deployCreateData;
   });
 
 task(TASK_DEPLOY_PROXY, "deploys a proxy from the factory")
@@ -700,8 +676,8 @@ task(TASK_DEPLOY_PROXY, "deploys a proxy from the factory")
   )
   .addOptionalParam(
     "waitConfirmation",
-    "wait 8 blocks between transactions",
-    8,
+    "wait specified number of blocks between transactions",
+    0,
     types.int
   )
   .setAction(async (taskArgs, hre) => {
@@ -745,8 +721,8 @@ task(
   )
   .addOptionalParam(
     "waitConfirmation",
-    "wait 8 blocks between transactions",
-    8,
+    "wait specified number of blocks between transactions",
+    0,
     types.int
   )
   .addOptionalParam(
@@ -764,7 +740,7 @@ task(
     const network = hre.network.name;
     const factoryBase = await hre.ethers.getContractFactory(ALICENET_FACTORY);
     // grab the salt from the logic contract
-    const Salt = await getBytes32Salt(taskArgs.contractName, hre);
+    const Salt = await getSalt(taskArgs.contractName, hre.artifacts, hre.ethers);
     // get logic contract interface
     const logicFactory: any = await hre.ethers.getContractFactory(
       taskArgs.contractName
@@ -775,7 +751,7 @@ task(
         : taskArgs.initCallData.replace(/\s+/g, "").split(",");
     const fullname = (await getFullyQualifiedName(
       taskArgs.contractName,
-      hre
+      hre.artifacts
     )) as string;
     const isInitable = await isInitializable(fullname, hre.artifacts);
     const initCallData = isInitable
@@ -791,7 +767,7 @@ task(
     const receipt = await txResponse.wait(waitBlocks);
     // Data to return to the main task
     const proxyData: ProxyData = {
-      proxyAddress: getMetamorphicAddress(taskArgs.factoryAddress, Salt, hre),
+      proxyAddress: getMetamorphicAddress(taskArgs.factoryAddress, Salt, hre.ethers),
       salt: Salt,
       logicName: taskArgs.contractName,
       logicAddress: taskArgs.logicAddress,
@@ -817,7 +793,7 @@ task(
  * @returns a proxyData object with logic contract name, address and proxy salt, and address.
  */
 task("multi-call-deploy-proxy", "deploy and upgrade proxy with multicall")
-  .addFlag("waitConfirmation", "wait 8 blocks between transactions")
+  
   .addParam("contractName", "logic contract name")
   .addParam(
     "logicAddress",
@@ -838,11 +814,16 @@ task("multi-call-deploy-proxy", "deploy and upgrade proxy with multicall")
     types.string
   )
   .addOptionalParam(
+    "waitConfirmation",
+    "wait specified number of blocks between transactions",
+    0,
+    types.int
+  )
+  .addOptionalParam(
     "salt",
     "unique salt for specifying proxy defaults to salt specified in logic contract"
   )
   .setAction(async (taskArgs, hre) => {
-    const waitBlocks = taskArgs.waitConfirmation === true ? 8 : undefined;
     const network = hre.network.name;
     const factoryBase = await hre.ethers.getContractFactory(ALICENET_FACTORY);
     const factory = factoryBase.attach(taskArgs.factoryAddress);
@@ -855,7 +836,7 @@ task("multi-call-deploy-proxy", "deploy and upgrade proxy with multicall")
         : taskArgs.initCallData.replace(/\s+/g, "").split(",");
     const fullname = (await getFullyQualifiedName(
       taskArgs.contractName,
-      hre
+      hre.artifacts
     )) as string;
     const isInitable = await isInitializable(fullname, hre.artifacts);
     const initCallData = isInitable
@@ -865,7 +846,7 @@ task("multi-call-deploy-proxy", "deploy and upgrade proxy with multicall")
     // get the 32byte salt from logic contract file
     const salt: BytesLike =
       taskArgs.salt === undefined
-        ? await getBytes32Salt(taskArgs.contractName, hre)
+        ? await getSalt(taskArgs.contractName, hre.artifacts, hre.ethers)
         : hre.ethers.utils.formatBytes32String(taskArgs.salt);
     // encode the deployProxy function call with Salt as arg
     const deployProxyCallData: BytesLike =
@@ -895,7 +876,7 @@ task("multi-call-deploy-proxy", "deploy and upgrade proxy with multicall")
       multiCallArgs,
       await getGasPrices(hre)
     );
-    const receipt = await txResponse.wait(waitBlocks);
+    const receipt = await txResponse.wait(taskArgs.waitConfirmation);
     // Data to return to the main task
     const proxyData: ProxyData = {
       factoryAddress: taskArgs.factoryAddress,
@@ -916,7 +897,6 @@ task(
   "multi-call-upgrade-proxy",
   "multi call to deploy logic and upgrade proxy through factory"
 )
-  .addFlag("waitConfirmation", "wait 8 blocks between transactions")
   .addParam("contractName", "logic contract name")
   .addParam(
     "factoryAddress",
@@ -930,9 +910,14 @@ task(
     "salt",
     "unique salt for specifying proxy defaults to salt specified in logic contract"
   )
+  .addOptionalParam(
+    "waitConfirmation",
+    "wait specified number of blocks between transactions",
+    0,
+    types.int
+  )
   .addOptionalVariadicPositionalParam("constructorArgs")
   .setAction(async (taskArgs, hre) => {
-    const waitBlocks = taskArgs.waitConfirmation === true ? 8 : undefined;
     const factoryBase = await hre.ethers.getContractFactory(ALICENET_FACTORY);
     const factory = factoryBase.attach(taskArgs.factoryAddress);
     const logicFactory: any = await hre.ethers.getContractFactory(
@@ -944,7 +929,7 @@ task(
         : taskArgs.initCallData.replace(/\s+/g, "").split(",");
     const fullname = (await getFullyQualifiedName(
       taskArgs.contractName,
-      hre
+      hre.artifacts
     )) as string;
     const isInitable = await isInitializable(fullname, hre.artifacts);
     const initCallData = isInitable
@@ -959,7 +944,7 @@ task(
     );
     const salt: string =
       taskArgs.salt === undefined
-        ? await getBytes32Salt(taskArgs.contractName, hre)
+        ? await getSalt(taskArgs.contractName, hre.artifacts, hre.ethers)
         : hre.ethers.utils.formatBytes32String(taskArgs.salt);
     const txCount = await hre.ethers.provider.getTransactionCount(
       factory.address
@@ -976,7 +961,7 @@ task(
     const proxyAddress = getMetamorphicAddress(
       taskArgs.factoryAddress,
       salt,
-      hre
+      hre.ethers
     );
     const proxyContract = await PROXY_FACTORY.attach(proxyAddress);
     const oldImpl = await proxyContract.getImplementationAddress();
@@ -994,7 +979,7 @@ task(
       [deployCreate, upgradeProxy],
       await getGasPrices(hre)
     );
-    const receipt = await txResponse.wait(waitBlocks);
+    const receipt = await txResponse.wait(taskArgs.waitConfirmation);
     await showState(
       `Updating logic for the ${taskArgs.contractName} proxy at ${proxyAddress} from ${oldImpl} to ${implAddress}, gasCost: ${receipt.gasUsed}`
     );
@@ -1175,124 +1160,6 @@ async function getAccounts(hre: HardhatRuntimeEnvironment) {
     accounts.push(signer.address);
   }
   return accounts;
-}
-
-async function getFullyQualifiedName(
-  contractName: string,
-  hre: HardhatRuntimeEnvironment
-) {
-  const contractArtifact = await hre.artifacts.readArtifact(contractName);
-  const path = contractArtifact.sourceName;
-  return path + ":" + contractName;
-}
-/**
- * @description returns everything on the left side of the :
- * ie: src/proxy/Proxy.sol:Mock => src/proxy/Proxy.sol
- * @param qualifiedName the relative path of the contract file + ":" + name of contract
- * @returns the relative path of the contract
- */
-function extractPath(qualifiedName: string) {
-  return qualifiedName.split(":")[0];
-}
-
-/**
- * @description goes through the receipt from the
- * transaction and extract the specified event name and variable
- * @param receipt tx object returned from the tran
- * @param eventName
- * @param varName
- * @returns
- */
-export function getEventVar(
-  receipt: ContractReceipt,
-  eventName: string,
-  varName: string
-) {
-  let result = "0x";
-  if (receipt.events !== undefined) {
-    const events = receipt.events;
-    for (let i = 0; i < events.length; i++) {
-      // look for the event
-      if (events[i].event === eventName) {
-        if (events[i].args !== undefined) {
-          const args = events[i].args;
-          // extract the deployed mock logic contract address from the event
-          result = args !== undefined ? args[varName] : undefined;
-          if (result !== undefined) {
-            return result;
-          }
-        } else {
-          throw new Error(
-            `failed to extract ${varName} from event: ${eventName}`
-          );
-        }
-      }
-    }
-  }
-  throw new Error(`failed to find event: ${eventName}`);
-}
-/**
- * @description extracts the value specified by custom:salt from the contracts artifacts
- * buildInfo
- * @param contractName the name of the contract to get the salt for
- * @param hre hardhat runtime environment
- * @returns the string version of salt specified by custom:salt
- *  NatSpec tag in the contract
- */
-async function getSalt(
-  contractName: string,
-  hre: HardhatRuntimeEnvironment
-): Promise<string> {
-  const qualifiedName: any = await getFullyQualifiedName(contractName, hre);
-  const buildInfo = await hre.artifacts.getBuildInfo(qualifiedName);
-  let contractOutput: any;
-  let devdoc: any;
-  let salt: string = "";
-  if (buildInfo !== undefined) {
-    const path = extractPath(qualifiedName);
-    contractOutput = buildInfo.output.contracts[path][contractName];
-    devdoc = contractOutput.devdoc;
-    salt = devdoc["custom:salt"];
-    return salt;
-  } else {
-    console.error("missing salt");
-  }
-  return salt;
-}
-
-/**
- * @description gets the salt from the contract natspec tag and converts it to bytes32
- * @param contractName the name of the contract to get the salt for
- * @param hre hardhat runtime environment
- * @returns the string that represents the 32Bytes version
- * of the salt specified by custom:salt
- */
-export async function getBytes32Salt(
-  contractName: string,
-  hre: HardhatRuntimeEnvironment
-) {
-  const salt: string = await getSalt(contractName, hre);
-  return hre.ethers.utils.formatBytes32String(salt);
-}
-
-/**
- *
- * @param factoryAddress address of the factory that deployed the contract
- * @param salt value specified by custom:salt in the contrac
- * @param hre hardhat runtime environment
- * @returns returns the address of the metamorphic contract
- */
-function getMetamorphicAddress(
-  factoryAddress: string,
-  salt: string,
-  hre: HardhatRuntimeEnvironment
-) {
-  const initCode = "0x6020363636335afa1536363636515af43d36363e3d36f3";
-  return hre.ethers.utils.getCreate2Address(
-    factoryAddress,
-    salt,
-    hre.ethers.utils.keccak256(initCode)
-  );
 }
 
 export const showState = async (message: string): Promise<void> => {
