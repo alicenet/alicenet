@@ -92,10 +92,6 @@ func (pt *P2PTransport) Dial(addr interfaces.NodeAddr, protocol types.Protocol) 
 	// run the authentication and encryption handshake
 	privateKey := convertCryptoPrivateKey2KeychainPrivateKey(pt.localPrivateKey)
 	bconn, err := brontide.Dial(privateKey,
-		//protocol,
-		//protoVersion,
-		//pt.localNodeAddr.ChainID(),
-		//pt.localNodeAddr.Port(),
 		btcAddr,
 		10*time.Second,
 		func(network, address string, timeout time.Duration) (net.Conn, error) {
@@ -105,7 +101,7 @@ func (pt *P2PTransport) Dial(addr interfaces.NodeAddr, protocol types.Protocol) 
 		return nil, err
 	}
 
-	// todo: do other handshakes here
+	// custom handshakes
 	if err := selfInitiatedChainIdentifierHandshake(bconn, pt.localNodeAddr.ChainID()); err != nil {
 		bconn.Close()
 		return nil, err
@@ -144,18 +140,12 @@ func (pt *P2PTransport) Dial(addr interfaces.NodeAddr, protocol types.Protocol) 
 		return nil, err
 	}
 
-	// b.P2PPort = remoteP2PPort
-	//b.Version = types.ProtoVersion(remoteVersion)
-	//b.Protocol = protocol
-
 	publicKey, err := convertDecredSecpPubKey2CryptoSecpPubKey(bconn.RemotePub())
 	if err != nil {
 		return nil, err
 	}
 
-	// todo: move it to a more appropriate place
 	closeChan := make(chan struct{})
-
 	return &P2PConn{
 		nodeAddr: &NodeAddr{
 			host:     addr.Host(),
@@ -173,7 +163,8 @@ func (pt *P2PTransport) Dial(addr interfaces.NodeAddr, protocol types.Protocol) 
 	}, nil
 }
 
-func (pt *P2PTransport) doPreAliceNetHandshake(bconn *brontide.Conn) interfaces.P2PConn {
+// doAliceNetPreHandshake in order to administrate the connection limits and cleanups
+func (pt *P2PTransport) doAliceNetPreHandshake(bconn *brontide.Conn) interfaces.P2PConn {
 	pt.mutex.Lock()
 
 	// bypass origin limiting if not a tcp conn
@@ -222,7 +213,6 @@ func (pt *P2PTransport) doPreAliceNetHandshake(bconn *brontide.Conn) interfaces.
 				delete(pt.numConnectionsbyIP, host)
 			}
 		}
-		// return bconn.Close()
 	}
 
 	pt.mutex.Unlock()
@@ -231,11 +221,8 @@ func (pt *P2PTransport) doPreAliceNetHandshake(bconn *brontide.Conn) interfaces.
 	return pt.doAliceNetHandshake(bconn, closeFn)
 }
 
-// This method handles type conversions.
+// doAliceNetHandshake with additional custom handshakes and keep track of connections and limits
 func (pt *P2PTransport) doAliceNetHandshake(bconn *brontide.Conn, closeFn func()) interfaces.P2PConn {
-
-	// todo: do other handshakes here
-
 	// The following handshakes extend brontide to perform additional information
 	// exchange.
 	if err := bconn.SetReadDeadline(time.Now().Add(handshakeReadTimeout)); err != nil {
@@ -327,10 +314,6 @@ func (pt *P2PTransport) doAliceNetHandshake(bconn *brontide.Conn, closeFn func()
 		closeFn()
 		return nil
 	}
-
-	// brontideConn.P2PPort = remoteP2PPort
-	// brontideConn.Version = types.ProtoVersion(remoteVersion)
-	// brontideConn.Protocol = types.Protocol(protocol)
 
 	// form a p2PAddr for the remote peer
 	host, _, err := net.SplitHostPort(bconn.RemoteAddr().String())
@@ -445,21 +428,13 @@ func (pt *P2PTransport) Accept() (interfaces.P2PConn, error) {
 
 		bconn := conn.(*brontide.Conn)
 
-		// return pt.handleConnection(bconn), nil
-		return pt.doPreAliceNetHandshake(bconn), nil
+		return pt.doAliceNetPreHandshake(bconn), nil
 	}
 }
 
 // NewP2PTransport returns a transport object. This object is both a server
 // and a client.
 func NewP2PTransport(logger *logrus.Logger, cid types.ChainIdentifier, privateKeyHex string, port int, host string) (interfaces.P2PTransport, error) {
-	// privateKeyBytes, err := hexutil.Decode(privateKeyHex)
-	// if err != nil {
-	// 	return nil, err
-	// }
-
-	//privateKey, publicKey := btcec.PrivKeyFromBytes(privateKeyBytes)
-
 	localPrivateKey, err := deserializeTransportPrivateKey(privateKeyHex)
 	if err != nil {
 		return nil, err

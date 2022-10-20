@@ -35,24 +35,27 @@ type P2PConn struct {
 	session      *yamux.Session
 }
 
-// implementation of net.Conn interface
-
+// LocalAddr implementation of net.Conn interface
 func (pc *P2PConn) LocalAddr() net.Addr {
 	return pc.conn.LocalAddr()
 }
 
+// Read implementation of net.Conn interface
 func (pc *P2PConn) Read(b []byte) (n int, err error) {
 	return pc.conn.Read(b)
 }
 
+// SetDeadline implementation of net.Conn interface
 func (pc *P2PConn) SetDeadline(t time.Time) error {
 	return pc.conn.SetDeadline(t)
 }
 
+// SetWriteDeadline implementation of net.Conn interface
 func (pc *P2PConn) SetWriteDeadline(t time.Time) error {
 	return pc.conn.SetWriteDeadline(t)
 }
 
+// Write implementation of net.Conn interface
 func (pc *P2PConn) Write(b []byte) (n int, err error) {
 	return pc.conn.Write(b)
 }
