@@ -60,6 +60,8 @@ type Storage struct {
 	logger        *logrus.Logger
 }
 
+var _ StorageGetter = &Storage{}
+
 // Init initializes the Storage structure.
 func (s *Storage) Init(rawDB rawDataBase, logger *logrus.Logger) error {
 	// initialize channel
