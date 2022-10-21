@@ -112,8 +112,15 @@ export async function getContractDescriptor(
   };
 }
 // function to deploy the factory
-export async function deployFactory(run: RunTaskFunction, usrPath?: string, waitConfirmation?:number) {
-  return await run(TASK_DEPLOY_FACTORY, { outputFolder: usrPath, waitConfirmation:waitConfirmation });
+export async function deployFactory(
+  run: RunTaskFunction,
+  usrPath?: string,
+  waitConfirmation?: number
+) {
+  return await run(TASK_DEPLOY_FACTORY, {
+    outputFolder: usrPath,
+    waitConfirmation: waitConfirmation,
+  });
 }
 
 export async function getDeployMetaArgs(

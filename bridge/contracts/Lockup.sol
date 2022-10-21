@@ -49,7 +49,6 @@ contract Lockup is
     event EarlyExit(address to_, uint256 tokenID_);
     event NewLockup(address from_, uint256 tokenID_);
 
-    error BonusRateNotSetImpossibleToDetermineProfits();
     error AddressNotAllowedToSendEther();
     error OnlyStakingNFTAllowed();
     error ContractDoesNotOwnTokenID(uint256 tokenID_);
@@ -65,7 +64,6 @@ contract Lockup is
     error PayoutSafe();
     error TokenIDNotLocked(uint256 tokenID_);
     error InvalidPositionWithdrawPeriod(uint256 withdrawFreeAfter, uint256 endBlock);
-    error InvalidStartingBlock();
     error InLockStateRequired();
 
     enum State {
@@ -137,7 +135,7 @@ contract Lockup is
         );
         _rewardPool = address(rewardPool);
         _bonusPool = rewardPool.getBonusPoolAddress();
-        _startBlock = block.number + enrollmentPeriod_ ;
+        _startBlock = block.number + enrollmentPeriod_;
         _endBlock = _startBlock + lockDuration_;
     }
 
@@ -315,7 +313,14 @@ contract Lockup is
         // cleanup total shares and payout profits less reserve
         totalSharesLocked.currentTotal -= uint128(exitValue_);
         _totalSharesLocked = totalSharesLocked;
-        _distributeAllProfits(_payableSender(), payoutEth, payoutToken, exitValue_, stakeExit_);
+        (payoutEth, payoutToken) = _distributeAllProfits(
+            _payableSender(),
+            payoutEth,
+            payoutToken,
+            exitValue_,
+            stakeExit_
+        );
+        emit EarlyExit(msg.sender, tokenID);
     }
 
     /// @notice aggregateProfits iterate alls positions and dump profits before allowing withdraws.
@@ -357,6 +362,15 @@ contract Lockup is
         _tokenIDOffset = i;
     }
 
+    /// @notice unlocks a locked position and collect all kind of profits (bonus shares, held
+    /// rewards etc). Can only be called after the locking period has finished and {aggregateProfits}
+    /// has been executed for positions. Can only be called by the user entitled to a position
+    /// (address that locked a position).
+    /// @param to_ destination address were the profits, shares will be sent
+    /// @param stakeExit_ boolean flag indicating if the ALCA should be returned directly or staked
+    /// into a new publicStaking position.
+    /// @return payoutEth the ether amount deposited to an address after unlock
+    /// @return payoutToken the ALCA amount staked or sent to an address after unlock
     function unlock(address to_, bool stakeExit_)
         public
         onlyPostLock
@@ -380,59 +394,117 @@ contract Lockup is
         _transferEthAndTokensWithReStake(to_, payoutEth, payoutToken, stakeExit_);
     }
 
+    /// @notice gets the address that is entitled to unlock/collect profits for a position. I.e the
+    /// address that locked this position into this contract.
+    /// @param tokenID_ the position Id to retrieve the owner
+    /// @return the owner address of a position. Returns 0 if a position is not locked into this
+    /// contract
     function ownerOf(uint256 tokenID_) public view returns (address payable) {
         return _getOwnerOf(tokenID_);
     }
 
+    /// @notice gets the positionID that an address is entitled to unlock/collect profits. I.e
+    /// position that an address locked into this contract.
+    /// @param acct_ address to retrieve a position (tokenID)
+    /// @return the position ID (tokenID) of the position that the address locked into this
+    /// contract. If an address doesn't possess any locked position in this contract, this function
+    /// returns 0
     function tokenOf(address acct_) public view returns (uint256) {
         return _getTokenOf(acct_);
     }
 
+    /// @notice gets the total number of positions locked into this contract. Can be used with
+    /// {getIndexByTokenId} and {getPositionByIndex} to get all publicStaking positions held by this
+    /// contract.
+    /// @return the total number of positions locked into this contract
     function getCurrentNumberOfLockedPositions() public view returns (uint256) {
         return _lenTokenIDs;
     }
 
+    /// @notice gets the position referenced by an index in the enumerable mapping implemented by
+    /// this contract. Can be used {getIndexByTokenId} to get all positions IDs locked by this
+    /// contract.
+    /// @param index_ the index to get the positionID
+    /// @return the tokenId referenced by an index the enumerable mapping (indexes start at 1). If
+    /// the index doesn't exists this function returns 0
     function getPositionByIndex(uint256 index_) public view returns (uint256) {
         return _tokenIDs[index_];
     }
 
+    /// @notice gets the index of a position in the enumerable mapping implemented by this contract.
+    /// Can be used {getPositionByIndex} to get all positions IDs locked by this contract.
+    /// @param tokenID_ the position ID to get index for
+    /// @return the index of a position in the enumerable mapping (indexes start at 1). If the
+    /// tokenID is not locked into this contract this function returns 0
     function getIndexByTokenId(uint256 tokenID_) public view returns (uint256) {
         return _reverseTokenIDs[tokenID_];
     }
 
+    /// @notice gets the ethereum block where the locking period will start. This block is also
+    /// when the enrollment period will finish. I.e after this block we don't allow new positions to
+    /// be locked.
+    /// @return the ethereum block where the locking period will start
     function getLockupStartBlock() public view returns (uint256) {
         return _startBlock;
     }
 
+    /// @notice gets the ethereum block where the locking period will end. After this block
+    /// aggregateProfit has to be called to enable the unlock period.
+    /// @return the ethereum block where the locking period will end
     function getLockupEndBlock() public view returns (uint256) {
         return _endBlock;
     }
 
+    /// @notice gets the ether and ALCA balance owed to a user after aggregateProfit has been
+    /// called. This funds are send after final unlock.
+    /// @return user ether balance held by this contract
+    /// @return user ALCA balance held by this contract
     function getTemporaryRewardBalance(address user_) public view returns (uint256, uint256) {
         return _getTemporaryRewardBalance(user_);
     }
 
+    /// @notice gets the RewardPool contract address
+    /// @return the reward pool contract address
     function getRewardPoolAddress() public view returns (address) {
         return _rewardPool;
     }
 
+    /// @notice gets the bonusPool contract address
+    /// @return the bonusPool contract address
     function getBonusPoolAddress() public view returns (address) {
         return _bonusPool;
     }
 
+    /// @notice gets the current amount of ALCA that is locked in this contract, after all early exits
+    /// @return the amount of ALCA that is currently locked in this contract
     function getTotalCurrentSharesLocked() public view returns (uint256) {
         return _totalSharesLocked.currentTotal;
     }
 
+    /// @notice gets the total amount of ALCA that were originally locked at this contract (after
+    /// the enrollment period has finished), i.e the total shares before any unlock early.
+    /// @return the total amount of ALCA that were originally locked at this contract
     function getOriginalLockedShares() public view returns (uint256) {
         (, uint256 originalSharesLocked) = _getLockedShares();
         return originalSharesLocked;
     }
 
-    function getReservedAmount(uint256 amount_) public pure returns (uint256) {
-        return (amount_ * FRACTION_RESERVED) / SCALING_FACTOR;
+    /// @notice return the percentage amount that is held from the locked positions
+    /// @dev this value is scaled by 100. Therefore the values are from 0-100%
+    /// @return the percentage amount that is held from the locked positions
+    function getReservedPercentage() public pure returns (uint256) {
+        return (100 * FRACTION_RESERVED) / SCALING_FACTOR;
     }
 
+    /// @notice gets the current state of the lockup (preLock, InLock, PostLock)
+    /// @return the current state of the lockup contract
+    function getState() public view returns (State) {
+        return _getState();
+    }
+
+    /// @notice estimate the (liquid) income that can be collected from locked positions via
+    /// {collectAllProfits}
+    /// @dev this functions deducts the reserved amount that is sent to rewardPool contract
     function estimateProfits(uint256 tokenID_)
         public
         view
@@ -446,10 +518,6 @@ contract Lockup is
         (uint256 reserveEth, uint256 reserveToken) = _computeReservedAmount(payoutEth, payoutToken);
         payoutEth -= reserveEth;
         payoutToken -= reserveToken;
-    }
-
-    function getState() public view returns (State) {
-        return _getState();
     }
 
     function estimateFinalBonusWithProfits(uint256 tokenID_)

@@ -1,29 +1,45 @@
-
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { BytesLike, ContractReceipt, ContractTransaction, Overrides } from "ethers";
-import {Artifacts, HardhatEthersHelpers } from "hardhat/types";
+import {
+  BytesLike,
+  ContractReceipt,
+  ContractTransaction,
+  Overrides,
+} from "ethers";
+import { Artifacts, HardhatEthersHelpers } from "hardhat/types";
 import { AliceNetFactory } from "../../typechain-types";
 import { PromiseOrValue } from "../../typechain-types/common";
 import { encodeMultiCallArgs } from "./alicenetTasks";
-import { ALICENET_FACTORY, CONTRACT_ADDR, DEPLOYED_PROXY, DEPLOYED_RAW } from "./constants";
+import {
+  ALICENET_FACTORY,
+  CONTRACT_ADDR,
+  DEPLOYED_PROXY,
+  DEPLOYED_RAW,
+} from "./constants";
 type Ethers = typeof import("../../node_modules/ethers/lib/ethers") &
   HardhatEthersHelpers;
 
-export async function deployFactory(constructorArgs:any[], ethers:Ethers, signers: SignerWithAddress, overrides?: Overrides & { from?: PromiseOrValue<string> }):Promise<AliceNetFactory>{
-  return await ethers.deployContract(ALICENET_FACTORY, constructorArgs, signers, overrides) as AliceNetFactory
+export async function deployFactory(
+  constructorArgs: any[],
+  ethers: Ethers,
+  signers: SignerWithAddress,
+  overrides?: Overrides & { from?: PromiseOrValue<string> }
+): Promise<AliceNetFactory> {
+  return (await ethers.deployContract(
+    ALICENET_FACTORY,
+    constructorArgs,
+    signers,
+    overrides
+  )) as AliceNetFactory;
 }
 
 export async function deployUpgradeable(
   contractName: string,
   factoryAddress: string,
-  ethers:Ethers,
-  artifacts:Artifacts,
-  constructorArgs: Array<string>,
+  ethers: Ethers,
+  artifacts: Artifacts,
+  constructorArgs: Array<string>
 ) {
-  const factory = await ethers.getContractAt(
-    ALICENET_FACTORY,
-    factoryAddress
-  );
+  const factory = await ethers.getContractAt(ALICENET_FACTORY, factoryAddress);
   // get an instance of the logic contract interface
   const logicFactory = await ethers.getContractFactory(contractName);
   // get the deployment bytecode from the interface
@@ -56,11 +72,7 @@ export async function deployUpgradeable(
       );
       txResponse = await factory.multiCall(multiCallArgs);
       receipt = await txResponse.wait();
-      res.proxyAddress = getEventVar(
-        receipt,
-        DEPLOYED_PROXY,
-        CONTRACT_ADDR
-      );
+      res.proxyAddress = getEventVar(receipt, DEPLOYED_PROXY, CONTRACT_ADDR);
       return res;
     } else {
       console.error(`${contractName} contract missing salt`);
@@ -69,23 +81,32 @@ export async function deployUpgradeable(
   } else {
     throw new Error(`failed to get contract bytecode for ${contractName}`);
   }
-
 }
 
-export async function deployCreateAndRegister(contractName:string, factoryAddress: string, ethers:Ethers, constructorArgs: string[], overrides?: Overrides & { from?: PromiseOrValue<string> }): Promise<ContractTransaction>{
-    // get a factory instance connected to the factory a
-    const factory = await ethers.getContractAt(ALICENET_FACTORY, factoryAddress
+export async function deployCreateAndRegister(
+  contractName: string,
+  factoryAddress: string,
+  ethers: Ethers,
+  constructorArgs: string[],
+  overrides?: Overrides & { from?: PromiseOrValue<string> }
+): Promise<ContractTransaction> {
+  // get a factory instance connected to the factory a
+  const factory = await ethers.getContractAt(ALICENET_FACTORY, factoryAddress);
+  const logicContract: any = await ethers.getContractFactory(contractName);
+  // if not constructor ars is provide and empty array is used to indicate no constructor args
+  // encode deployBcode,
+  const deployTxData = logicContract.getDeployTransaction(...constructorArgs)
+    .data as BytesLike;
+  const contractNameByts32 = ethers.utils.formatBytes32String(contractName);
+  if (overrides !== undefined) {
+    return factory.deployCreateAndRegister(
+      deployTxData,
+      contractNameByts32,
+      overrides
     );
-    const logicContract: any = await ethers.getContractFactory(contractName);
-    // if not constructor ars is provide and empty array is used to indicate no constructor args
-    // encode deployBcode,
-    const deployTxData = logicContract.getDeployTransaction(...constructorArgs).data as BytesLike;
-    const contractNameByts32 = ethers.utils.formatBytes32String(contractName) 
-    if(overrides !== undefined){
-      return factory.deployCreateAndRegister(deployTxData, contractNameByts32, overrides);
-    } else{
-      return factory.deployCreateAndRegister(deployTxData, contractNameByts32);
-    }
+  } else {
+    return factory.deployCreateAndRegister(deployTxData, contractNameByts32);
+  }
 }
 
 export async function upgradeProxy(
@@ -121,7 +142,10 @@ export async function upgradeProxy(
   return res;
 }
 
-async function getFullyQualifiedName(contractName: string, artifacts: Artifacts) {
+async function getFullyQualifiedName(
+  contractName: string,
+  artifacts: Artifacts
+) {
   const artifactPaths = await artifacts.getAllFullyQualifiedNames();
   for (let i = 0; i < artifactPaths.length; i++) {
     if (artifactPaths[i].split(":")[1] === contractName) {
@@ -176,24 +200,30 @@ async function getDeployUpgradeableMultiCallArgs(
  * @param contractName name of the contract
  * @param artifacts artifacts object from hardhat artifacts
  * @param ethers ethersjs object
- * @returns bytes32 formatted salt 
+ * @returns bytes32 formatted salt
  */
-export async function getSalt(contractName: string, artifacts: Artifacts, ethers: Ethers):Promise<string> {
-  const qualifiedName: any = await getFullyQualifiedName(contractName, artifacts);
+export async function getSalt(
+  contractName: string,
+  artifacts: Artifacts,
+  ethers: Ethers
+): Promise<string> {
+  const qualifiedName: any = await getFullyQualifiedName(
+    contractName,
+    artifacts
+  );
   const buildInfo = await artifacts.getBuildInfo(qualifiedName);
   let contractOutput: any;
   let devdoc: any;
   let salt;
-  if(buildInfo === undefined){
+  if (buildInfo === undefined) {
     throw new Error("Missing custom:salt");
   }
   const path = extractPath(qualifiedName);
   contractOutput = buildInfo?.output.contracts[path][contractName];
   devdoc = contractOutput.devdoc;
-  salt = devdoc["custom:salt"];  
+  salt = devdoc["custom:salt"];
   return ethers.utils.formatBytes32String(salt);
 }
-
 
 /**
  * @description goes through the receipt from the
@@ -203,7 +233,7 @@ export async function getSalt(contractName: string, artifacts: Artifacts, ethers
  * @param varName
  * @returns
  */
- export function getEventVar(
+export function getEventVar(
   receipt: ContractReceipt,
   eventName: string,
   varName: string
@@ -233,13 +263,13 @@ export async function getSalt(contractName: string, artifacts: Artifacts, ethers
 }
 
 /**
- * 
+ *
  * @param factoryAddress address of the factory that deployed the contract
  * @param salt value specified by custom:salt in the contrac
  * @param ethers ethersjs object
  * @returns returns the address of the metamorphic contract deployed with the following metamorphic code "0x6020363636335afa1536363636515af43d36363e3d36f3"
  */
- export function getMetamorphicAddress(
+export function getMetamorphicAddress(
   factoryAddress: string,
   salt: string,
   ethers: Ethers
