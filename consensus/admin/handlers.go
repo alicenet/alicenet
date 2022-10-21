@@ -217,6 +217,7 @@ func (ah *Handlers) AddSnapshot(bh *objs.BlockHeader, safeToProceedConsensus boo
 				return err
 			}
 		}
+
 		return nil
 	})
 	if err != nil {
@@ -228,23 +229,24 @@ func (ah *Handlers) AddSnapshot(bh *objs.BlockHeader, safeToProceedConsensus boo
 }
 
 // UpdateDynamicStorage updates dynamic storage values.
-func (ah *Handlers) UpdateDynamicStorage(txn *badger.Txn, key, value string, epoch uint32) error {
+func (ah *Handlers) UpdateDynamicStorage(epoch uint32, rawDynamics []byte) error {
 	mutex, ok := ah.getLock()
 	if !ok {
-		return nil
+		return errors.New("could not get adminHandler lock")
 	}
 	mutex.Lock()
 	defer mutex.Unlock()
 
-	update, err := dynamics.NewUpdate(key, value, epoch)
+	err := ah.database.Update(func(txn *badger.Txn) error {
+		err := ah.storage.ChangeDynamicValues(txn, epoch, rawDynamics)
+		if err != nil {
+			utils.DebugTrace(ah.logger, err)
+			return err
+		}
+		return nil
+	})
 	if err != nil {
-		utils.DebugTrace(ah.logger, err)
-		return err
-	}
-	err = ah.storage.UpdateStorage(txn, update)
-	if err != nil {
-		utils.DebugTrace(ah.logger, err)
-		return err
+		panic(err)
 	}
 	return nil
 }

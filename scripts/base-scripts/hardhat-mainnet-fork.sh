@@ -15,7 +15,7 @@ echo $aliceNetBlocknum
 #npx hardhat node --fork https://eth-mainnet.alchemyapi.io/v2/uhLzz4c430rgAJG6UKGLzaRrnLCkkl2o --fork-block-number 14542800 --show-stack-traces &&
 
 #turn on impersonating
-# npx hardhat enable-hardhat-impersonate --account 0xb9670e38d560c5662f0832cacaac3282ecffddb1 --network dev &&
+# npx hardhat enable-local-environment-impersonate --account 0xb9670e38d560c5662f0832cacaac3282ecffddb1 --network dev &&
 #mine 9000 blocks
 # npx hardhat mine-num-blocks --num-blocks 9000 --network dev &&
 #pause validator at

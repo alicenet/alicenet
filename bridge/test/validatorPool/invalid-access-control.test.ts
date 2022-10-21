@@ -1,14 +1,20 @@
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { ethers } from "hardhat";
+import { BytesLike } from "ethers";
+import { ethers, network } from "hardhat";
 import { ValidatorPool } from "../../typechain-types";
 import { expect } from "../chai-setup";
-import { Fixture, getFixture } from "../setup";
+import {
+  Fixture,
+  getContractAddressFromDeployedRawEvent,
+  getFixture,
+} from "../setup";
 
 describe("Initialization", async function () {
   let fixture: Fixture;
 
   beforeEach(async function () {
-    fixture = await getFixture();
+    fixture = await loadFixture(getFixture);
   });
 
   it("Should not allow initialize more than once", async () => {
@@ -25,9 +31,17 @@ describe("Initialization", async function () {
   });
 
   it("Only factory should be allowed to call initialize", async () => {
-    const validatorPool = await (
+    const deployData = (
       await ethers.getContractFactory("ValidatorPool")
-    ).deploy();
+    ).getDeployTransaction().data as BytesLike;
+    await network.provider.send("evm_setBlockGasLimit", ["0x3000000000000000"]);
+    const publicStakingAddress = await getContractAddressFromDeployedRawEvent(
+      await fixture.factory.deployCreate(deployData)
+    );
+    const validatorPool = await ethers.getContractAt(
+      "ValidatorPool",
+      publicStakingAddress
+    );
     const [, user] = await ethers.getSigners();
     await expect(
       validatorPool.connect(user).initialize(1, 2, 3, 4)
@@ -45,7 +59,7 @@ describe("ValidatorPool Access Control: An user without admin role should not be
   const stakingTokenIds: any[] = [];
 
   beforeEach(async function () {
-    fixture = await getFixture();
+    fixture = await loadFixture(getFixture);
     [, notAdmin1, , ,] = fixture.namedSigners;
     notAdmin1Signer = await ethers.getSigner(notAdmin1.address);
   });

@@ -1,3 +1,4 @@
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { assert, expect } from "chai";
 import { AccusationMultipleProposal } from "../../typechain-types";
 import { Fixture, getFixture } from "../setup";
@@ -15,8 +16,12 @@ describe("AccusationMultipleProposal: Tests AccusationMultipleProposal methods",
 
   let accusation: AccusationMultipleProposal;
 
+  function deployFixture() {
+    return getFixture(true, true);
+  }
+
   beforeEach(async function () {
-    fixture = await getFixture(true, true);
+    fixture = await loadFixture(deployFixture);
 
     accusation = fixture.accusationMultipleProposal;
   });

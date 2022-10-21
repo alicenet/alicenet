@@ -1,3 +1,4 @@
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
@@ -101,7 +102,7 @@ describe("Testing BToken conversion functions", async () => {
   let admin: SignerWithAddress;
 
   beforeEach(async function () {
-    fixture = await getFixture();
+    fixture = await loadFixture(getFixture);
     const signers = await ethers.getSigners();
     [admin] = signers;
   });

@@ -263,7 +263,7 @@ func SetupEventMap(em *objects.EventMap, cdb, monDB *db.Database, adminHandler m
 
 	if err := em.Register(dynamicValueChangedEvent.ID.String(), dynamicValueChangedEvent.Name,
 		func(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
-			return ProcessDynamicValueChanged(contracts, logger, log)
+			return ProcessDynamicValueChanged(contracts, logger, log, adminHandler)
 		}); err != nil {
 		return err
 	}

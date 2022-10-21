@@ -1,3 +1,4 @@
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
 import { MockSigmoid } from "../../typechain-types";
@@ -5,9 +6,15 @@ import { expect } from "../chai-setup";
 
 describe("Sigmoid unit tests", async () => {
   let sigmoid: MockSigmoid;
-  beforeEach(async () => {
+
+  async function deployFixture() {
     const sigmoidFactory = await ethers.getContractFactory("MockSigmoid");
-    sigmoid = await sigmoidFactory.deploy();
+    const sigmoid = await sigmoidFactory.deploy();
+    return { sigmoid };
+  }
+
+  beforeEach(async () => {
+    ({ sigmoid } = await loadFixture(deployFixture));
   });
 
   describe("Integer Square Root Tests", async () => {

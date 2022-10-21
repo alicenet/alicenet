@@ -1,3 +1,4 @@
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { BigNumber, Signer } from "ethers";
 import { ethers, network } from "hardhat";
 import { expect } from "../../chai-setup";
@@ -25,12 +26,24 @@ describe("ValidatorPool: Consensus dependent logic ", async () => {
   let validators: string[];
   let stakingTokenIds: BigNumber[];
 
-  beforeEach(async function () {
-    fixture = await getFixture(false, true, false);
+  async function deployFixture() {
+    const fixture = await getFixture(false, true, false);
     const [admin, , ,] = fixture.namedSigners;
-    adminSigner = await getValidatorEthAccount(admin.address);
-    validators = await createValidators(fixture, validatorsSnapshots);
-    stakingTokenIds = await stakeValidators(fixture, validators);
+    const adminSigner = await getValidatorEthAccount(admin.address);
+    const validators = await createValidators(fixture, validatorsSnapshots);
+    const stakingTokenIds = await stakeValidators(fixture, validators);
+    return {
+      fixture,
+      validators,
+      stakingTokenIds,
+      adminSigner,
+    };
+  }
+
+  beforeEach(async function () {
+    ({ fixture, validators, stakingTokenIds, adminSigner } = await loadFixture(
+      deployFixture
+    ));
   });
 
   it("Initialize ETHDKG", async function () {

@@ -1,3 +1,6 @@
+// Package application contains logic related to determining valid changes to the
+// current state. This involves ensuring that submitted transactions are valid and
+// ordering them appropriately for inclusion.
 package application
 
 import (

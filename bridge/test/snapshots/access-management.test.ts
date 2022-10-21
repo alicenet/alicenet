@@ -1,3 +1,4 @@
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { Signer } from "ethers";
 import { ethers } from "hardhat";
@@ -9,18 +10,25 @@ import {
   getValidatorEthAccount,
 } from "../setup";
 
+async function deployFixture() {
+  const fixture = await getFixture(true, false);
+  const [admin, , , , , randomer] = fixture.namedSigners;
+  const adminSigner = await getValidatorEthAccount(admin.address);
+  const randomerSigner = await getValidatorEthAccount(randomer.address);
+  return { fixture, admin, randomer, adminSigner, randomerSigner };
+}
+
 describe("Snapshots: Access control methods", () => {
   let fixture: Fixture;
-  let admin: SignerWithAddress;
+
   let randomer: SignerWithAddress;
   let adminSigner: Signer;
   let randomerSigner: Signer;
 
   beforeEach(async function () {
-    fixture = await getFixture(true, false);
-    [admin, , , , , randomer] = fixture.namedSigners;
-    adminSigner = await getValidatorEthAccount(admin.address);
-    randomerSigner = await getValidatorEthAccount(randomer.address);
+    ({ fixture, randomer, adminSigner, randomerSigner } = await loadFixture(
+      deployFixture
+    ));
   });
 
   it("Should not allow initialize more than once", async () => {

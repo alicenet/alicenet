@@ -32,10 +32,10 @@ type IBTokenTransactor interface {
 	//
 	// Solidity: function deposit(uint8 accountType_, address to_, uint256 amount_) returns(uint256)
 	Deposit(opts *bind.TransactOpts, accountType_ uint8, to_ common.Address, amount_ *big.Int) (*types.Transaction, error)
-	// DepositTokensOnBridges is a paid mutator transaction binding the contract method 0xddeae0b3.
+	// DepositTokensOnBridges is a paid mutator transaction binding the contract method 0xc4602af3.
 	//
-	// Solidity: function depositTokensOnBridges(uint16 bridgeVersion, bytes data) payable returns()
-	DepositTokensOnBridges(opts *bind.TransactOpts, bridgeVersion uint16, data []byte) (*types.Transaction, error)
+	// Solidity: function depositTokensOnBridges(uint8 routerVersion_, bytes data_) payable returns()
+	DepositTokensOnBridges(opts *bind.TransactOpts, routerVersion_ uint8, data_ []byte) (*types.Transaction, error)
 	// DestroyBTokens is a paid mutator transaction binding the contract method 0x2dc6b024.
 	//
 	// Solidity: function destroyBTokens(uint256 numBTK_) returns(bool)
@@ -48,10 +48,6 @@ type IBTokenTransactor interface {
 	//
 	// Solidity: function increaseAllowance(address spender, uint256 addedValue) returns(bool)
 	IncreaseAllowance(opts *bind.TransactOpts, spender common.Address, addedValue *big.Int) (*types.Transaction, error)
-	// Initialize is a paid mutator transaction binding the contract method 0x8129fc1c.
-	//
-	// Solidity: function initialize() returns()
-	Initialize(opts *bind.TransactOpts) (*types.Transaction, error)
 	// Mint is a paid mutator transaction binding the contract method 0xa0712d68.
 	//
 	// Solidity: function mint(uint256 minBTK_) payable returns(uint256 numBTK)
