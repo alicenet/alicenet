@@ -3,6 +3,7 @@ package node
 import (
 	"context"
 	"fmt"
+	"github.com/alicenet/alicenet/layer1/handlers"
 	"math/big"
 	"os"
 	"os/signal"
@@ -344,8 +345,6 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	//////////////////////////////////////////////////////////////////////////////
 	//LAUNCH ALL SERVICE GOROUTINES///////////////////////////////////////////////
 	//////////////////////////////////////////////////////////////////////////////
-
-	go storage.Start()
 
 	go statusLogger.Run()
 	defer statusLogger.Close()

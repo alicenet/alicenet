@@ -6,8 +6,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
-
 	"github.com/alicenet/alicenet/application/objs"
 	"github.com/alicenet/alicenet/config"
 	"github.com/alicenet/alicenet/consensus/admin"
@@ -15,7 +13,9 @@ import (
 	"github.com/alicenet/alicenet/consensus/gossip"
 	"github.com/alicenet/alicenet/constants"
 	mncrypto "github.com/alicenet/alicenet/crypto"
+	"github.com/alicenet/alicenet/dynamics/mocks"
 	"github.com/alicenet/alicenet/utils"
+	"github.com/stretchr/testify/assert"
 )
 
 const (
@@ -43,7 +43,7 @@ func TestSynchronizer_InitAndStart(t *testing.T) {
 	assert.Nil(t, err)
 
 	consAdminHandlers := &admin.Handlers{}
-	consAdminHandlers.Init(1, database, mncrypto.Hasher([]byte(config.Configuration.Validator.SymmetricKey)), nil, make([]byte, constants.HashLen), objs.MakeMockStorageGetter())
+	consAdminHandlers.Init(1, database, mncrypto.Hasher([]byte(config.Configuration.Validator.SymmetricKey)), nil, make([]byte, constants.HashLen), mocks.NewMockStorageGetter())
 
 	sync := &Synchronizer{}
 	sync.Init(nil, nil, tdb, nil, &gossip.Handlers{}, nil, nil, nil, consAdminHandlers, nil, nil, objs.MakeMockStorageGetter())
@@ -70,7 +70,7 @@ func TestSynchronizer_loopWithFn(t *testing.T) {
 	database.Init(rawDb)
 
 	consAdminHandlers := &admin.Handlers{}
-	consAdminHandlers.Init(1, database, mncrypto.Hasher([]byte(config.Configuration.Validator.SymmetricKey)), nil, make([]byte, constants.HashLen), objs.MakeMockStorageGetter())
+	consAdminHandlers.Init(1, database, mncrypto.Hasher([]byte(config.Configuration.Validator.SymmetricKey)), nil, make([]byte, constants.HashLen), mocks.NewMockStorageGetter())
 
 	sync := &Synchronizer{}
 	sync.Init(nil, nil, nil, nil, &gossip.Handlers{}, nil, nil, nil, consAdminHandlers, nil, nil, objs.MakeMockStorageGetter())
@@ -116,7 +116,7 @@ func TestSynchronizer_loopWithFn2(t *testing.T) {
 	database.Init(rawDb)
 
 	consAdminHandlers := &admin.Handlers{}
-	consAdminHandlers.Init(1, database, mncrypto.Hasher([]byte(config.Configuration.Validator.SymmetricKey)), nil, make([]byte, constants.HashLen), objs.MakeMockStorageGetter())
+	consAdminHandlers.Init(1, database, mncrypto.Hasher([]byte(config.Configuration.Validator.SymmetricKey)), nil, make([]byte, constants.HashLen), mocks.NewMockStorageGetter())
 
 	sync := &Synchronizer{}
 	sync.Init(nil, nil, nil, nil, &gossip.Handlers{}, nil, nil, nil, consAdminHandlers, nil, nil, objs.MakeMockStorageGetter())
@@ -162,7 +162,7 @@ func TestSynchronizer_loopWithLockedCondition(t *testing.T) {
 	database.Init(rawDb)
 
 	consAdminHandlers := &admin.Handlers{}
-	consAdminHandlers.Init(1, database, mncrypto.Hasher([]byte(config.Configuration.Validator.SymmetricKey)), nil, make([]byte, constants.HashLen), objs.MakeMockStorageGetter())
+	consAdminHandlers.Init(1, database, mncrypto.Hasher([]byte(config.Configuration.Validator.SymmetricKey)), nil, make([]byte, constants.HashLen), mocks.NewMockStorageGetter())
 
 	sync := &Synchronizer{}
 	sync.Init(nil, nil, nil, nil, &gossip.Handlers{}, nil, nil, nil, consAdminHandlers, nil, nil, objs.MakeMockStorageGetter())
@@ -206,7 +206,7 @@ func TestSynchronizer_SafeOk(t *testing.T) {
 	database.Init(rawDb)
 
 	consAdminHandlers := &admin.Handlers{}
-	consAdminHandlers.Init(1, database, mncrypto.Hasher([]byte(config.Configuration.Validator.SymmetricKey)), nil, make([]byte, constants.HashLen), objs.MakeMockStorageGetter())
+	consAdminHandlers.Init(1, database, mncrypto.Hasher([]byte(config.Configuration.Validator.SymmetricKey)), nil, make([]byte, constants.HashLen), mocks.NewMockStorageGetter())
 
 	sync := &Synchronizer{}
 	sync.Init(nil, nil, nil, nil, &gossip.Handlers{}, nil, nil, nil, consAdminHandlers, nil, nil, objs.MakeMockStorageGetter())

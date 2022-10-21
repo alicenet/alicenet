@@ -122,12 +122,16 @@ func PrefixStagedBlockHeaderKey() []byte {
 	return []byte("a3")
 }
 
-func PrefixRawStorageKey() []byte {
+func PrefixDynamicValuesKey() []byte {
 	return []byte("a4")
 }
 
 func PrefixStorageNodeKey() []byte {
 	return []byte("a5")
+}
+
+func PrefixStorageLinkedListKey() []byte {
+	return []byte("a6")
 }
 
 func PrefixPendingNodeKeyCount() []byte {

@@ -11,6 +11,9 @@ import (
 	"strings"
 	"testing"
 
+	testutils "github.com/alicenet/alicenet/layer1/executor/tasks/tests/utils"
+	"github.com/stretchr/testify/require"
+
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -26,14 +29,13 @@ import (
 	"github.com/alicenet/alicenet/layer1"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
-	testutils "github.com/alicenet/alicenet/layer1/executor/tasks/dkg/tests/utils"
 	"github.com/alicenet/alicenet/layer1/monitor/events"
 	"github.com/alicenet/alicenet/layer1/monitor/objects"
 	"github.com/alicenet/alicenet/layer1/tests"
 	"github.com/alicenet/alicenet/layer1/transaction"
 	"github.com/alicenet/alicenet/logging"
 	"github.com/alicenet/alicenet/test/mocks"
-	gUtils "github.com/alicenet/alicenet/utils"
+	"github.com/alicenet/alicenet/utils"
 )
 
 var HardHat *tests.Hardhat
@@ -68,7 +70,7 @@ func setupEthereum(t *testing.T, n int) *tests.ClientFixture {
 	return fixture
 }
 
-type TestSuite struct {
+type EthDkgTestSuite struct {
 	Eth                          layer1.Client
 	DKGStatesDbs                 []*db.Database
 	regTasks                     []*dkg.RegisterTask
@@ -168,7 +170,7 @@ func InitializeETHDKG(fixture *tests.ClientFixture, callOpts *bind.TransactOpts,
 	return txn, rcpt, nil
 }
 
-func StartFromRegistrationOpenPhase(t *testing.T, fixture *tests.ClientFixture, unregisteredValidators int, phaseLength uint16) *TestSuite {
+func StartFromRegistrationOpenPhase(t *testing.T, fixture *tests.ClientFixture, unregisteredValidators int, phaseLength uint16) *EthDkgTestSuite {
 	eth := fixture.Client
 	ctx := context.Background()
 	owner := eth.GetDefaultAccount()
@@ -298,7 +300,7 @@ func StartFromRegistrationOpenPhase(t *testing.T, fixture *tests.ClientFixture, 
 		tests.AdvanceTo(eth, dkgState.PhaseStart+dkgState.PhaseLength)
 	}
 
-	return &TestSuite{
+	return &EthDkgTestSuite{
 		Eth:                          eth,
 		DKGStatesDbs:                 dkgStatesDbs,
 		regTasks:                     regTasks,
@@ -309,7 +311,7 @@ func StartFromRegistrationOpenPhase(t *testing.T, fixture *tests.ClientFixture, 
 	}
 }
 
-func StartFromShareDistributionPhase(t *testing.T, fixture *tests.ClientFixture, undistributedSharesIdx, badSharesIdx []int, phaseLength uint16) *TestSuite {
+func StartFromShareDistributionPhase(t *testing.T, fixture *tests.ClientFixture, undistributedSharesIdx []int, badSharesIdx []int, phaseLength uint16) *EthDkgTestSuite {
 	suite := StartFromRegistrationOpenPhase(t, fixture, 0, phaseLength)
 	ctx := context.Background()
 	logger := logging.GetLogger("test").WithField("Validator", "")
@@ -431,7 +433,7 @@ func StartFromShareDistributionPhase(t *testing.T, fixture *tests.ClientFixture,
 	return suite
 }
 
-func StartFromKeyShareSubmissionPhase(t *testing.T, fixture *tests.ClientFixture, undistributedShares int, phaseLength uint16) *TestSuite {
+func StartFromKeyShareSubmissionPhase(t *testing.T, fixture *tests.ClientFixture, undistributedShares int, phaseLength uint16) *EthDkgTestSuite {
 	suite := StartFromShareDistributionPhase(t, fixture, []int{}, []int{}, phaseLength)
 	ctx := context.Background()
 	logger := logging.GetLogger("test").WithField("Validator", "")
@@ -514,7 +516,7 @@ func StartFromKeyShareSubmissionPhase(t *testing.T, fixture *tests.ClientFixture
 	return suite
 }
 
-func StartFromMPKSubmissionPhase(t *testing.T, fixture *tests.ClientFixture, phaseLength uint16) *TestSuite {
+func StartFromMPKSubmissionPhase(t *testing.T, fixture *tests.ClientFixture, phaseLength uint16) *EthDkgTestSuite {
 	suite := StartFromKeyShareSubmissionPhase(t, fixture, 0, phaseLength)
 	ctx := context.Background()
 	logger := logging.GetLogger("test").WithField("Validator", "")
@@ -531,7 +533,7 @@ func StartFromMPKSubmissionPhase(t *testing.T, fixture *tests.ClientFixture, pha
 
 		dkgState, err := state.GetDkgState(suite.DKGStatesDbs[idx])
 		assert.Nil(t, err)
-		amILeading, err := gUtils.AmILeading(
+		amILeading, err := utils.AmILeading(
 			suite.Eth,
 			ctx,
 			logger,
@@ -582,7 +584,7 @@ func StartFromMPKSubmissionPhase(t *testing.T, fixture *tests.ClientFixture, pha
 	return suite
 }
 
-func StartFromGPKjPhase(t *testing.T, fixture *tests.ClientFixture, undistributedGPKjIdx, badGPKjIdx []int, phaseLength uint16) *TestSuite {
+func StartFromGPKjPhase(t *testing.T, fixture *tests.ClientFixture, undistributedGPKjIdx []int, badGPKjIdx []int, phaseLength uint16) *EthDkgTestSuite {
 	suite := StartFromMPKSubmissionPhase(t, fixture, phaseLength)
 	ctx := context.Background()
 	logger := logging.GetLogger("test").WithField("Validator", "")
@@ -689,17 +691,92 @@ func StartFromGPKjPhase(t *testing.T, fixture *tests.ClientFixture, undistribute
 	return suite
 }
 
-func StartFromCompletion(t *testing.T, fixture *tests.ClientFixture, phaseLength uint16) *TestSuite {
-	suite := StartFromGPKjPhase(t, fixture, []int{}, []int{}, phaseLength)
+func CompleteEthDkgCeremony(t *testing.T, numValidators int) (*tests.ClientFixture, *EthDkgTestSuite) {
+	fixture := setupEthereum(t, numValidators)
+	suite := StartFromGPKjPhase(t, fixture, []int{}, []int{}, 100)
+	ctx := context.Background()
+
+	monState := objects.NewMonitorState()
+	accounts := suite.Eth.GetKnownAccounts()
+	for idx := 0; idx < numValidators; idx++ {
+		monState.PotentialValidators[accounts[idx].Address] = objects.PotentialValidator{
+			Account: accounts[idx].Address,
+		}
+	}
+
+	for idx := 0; idx < numValidators; idx++ {
+		err := monState.PersistState(suite.DKGStatesDbs[idx])
+		assert.Nil(t, err)
+	}
+
+	for idx := 0; idx < numValidators; idx++ {
+		for j := 0; j < numValidators; j++ {
+			disputeGPKjTask := suite.DisputeGPKjTasks[idx][j]
+
+			err := disputeGPKjTask.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "disputeGPKjTask", "task-id", 0, 0, false, nil, nil)
+			assert.Nil(t, err)
+			err = disputeGPKjTask.Prepare(ctx)
+			assert.Nil(t, err)
+
+			shouldExecute, err := disputeGPKjTask.ShouldExecute(ctx)
+			assert.Nil(t, err)
+			assert.True(t, shouldExecute)
+
+			txn, taskError := disputeGPKjTask.Execute(ctx)
+			assert.Nil(t, taskError)
+			assert.Nil(t, txn)
+		}
+	}
+
 	dkgState, err := state.GetDkgState(suite.DKGStatesDbs[0])
 	assert.Nil(t, err)
-	// move to Completion phase
-	tests.AdvanceTo(suite.Eth, suite.CompletionTasks[0].Start+dkgState.ConfirmationLength)
+	tests.AdvanceTo(suite.Eth, dkgState.PhaseStart+dkgState.PhaseLength)
 
-	return suite
+	for idx := 0; idx < numValidators; idx++ {
+		completionTask := suite.CompletionTasks[idx]
+
+		err := completionTask.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "CompletionTask", "task-id", 0, 0, false, nil, nil)
+		assert.Nil(t, err)
+		err = completionTask.Prepare(ctx)
+		assert.Nil(t, err)
+
+		dkgState, err := state.GetDkgState(suite.DKGStatesDbs[idx])
+		assert.Nil(t, err)
+
+		shouldExecute, err := completionTask.ShouldExecute(ctx)
+		assert.Nil(t, err)
+		if shouldExecute {
+			txn, taskError := completionTask.Execute(ctx)
+			amILeading, err := utils.AmILeading(
+				suite.Eth,
+				ctx,
+				fixture.Logger,
+				int(completionTask.GetStart()),
+				completionTask.StartBlockHash[:],
+				numValidators,
+				// we need -1 since ethdkg indexes start at 1 while leader election expect index starting at 0.
+				dkgState.Index-1,
+				constants.ETHDKGDesperationFactor,
+				constants.ETHDKGDesperationDelay,
+			)
+			assert.Nil(t, err)
+			if amILeading {
+				assert.Nil(t, taskError)
+				rcptResponse, err := fixture.Watcher.Subscribe(ctx, txn, nil)
+				assert.Nil(t, err)
+				tests.WaitGroupReceipts(t, suite.Eth, []transaction.ReceiptResponse{rcptResponse})
+			} else {
+				assert.Nil(t, txn)
+				require.NotNil(t, taskError)
+				assert.True(t, taskError.IsRecoverable())
+			}
+		}
+	}
+
+	return fixture, suite
 }
 
-func RegisterPotentialValidatorOnMonitor(t *testing.T, suite *TestSuite, accounts []accounts.Account) {
+func RegisterPotentialValidatorOnMonitor(t *testing.T, suite *EthDkgTestSuite, accounts []accounts.Account) {
 	monState := objects.NewMonitorState()
 	for idx := 0; idx < len(accounts); idx++ {
 		monState.PotentialValidators[accounts[idx].Address] = objects.PotentialValidator{
@@ -713,7 +790,7 @@ func RegisterPotentialValidatorOnMonitor(t *testing.T, suite *TestSuite, account
 	}
 }
 
-func CheckBadValidators(t *testing.T, badValidators []int, suite *TestSuite, contracts layer1.AllSmartContracts) {
+func CheckBadValidators(t *testing.T, badValidators []int, suite *EthDkgTestSuite, contracts layer1.AllSmartContracts) {
 	for _, badId := range badValidators {
 		dkgState, err := state.GetDkgState(suite.DKGStatesDbs[badId])
 		assert.Nil(t, err)

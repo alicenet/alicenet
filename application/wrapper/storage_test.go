@@ -12,7 +12,7 @@ import (
 func TestStorageGetMaxBytesFailsWhenNotInitialised(t *testing.T) {
 	t.Parallel()
 	s := make([]*Storage, 1)
-	fee, err := s[0].GetMaxBytes()
+	fee, err := s[0].GetMaxBlockSize()
 	assert.Error(t, err)
 	assert.Zero(t, fee)
 }
@@ -20,7 +20,7 @@ func TestStorageGetMaxBytesFailsWhenNotInitialised(t *testing.T) {
 func TestStorageGetDataStoreEpochFeeFailsWhenNotInitialised(t *testing.T) {
 	t.Parallel()
 	s := make([]*Storage, 1)
-	fee, err := s[0].GetDataStoreEpochFee()
+	fee, err := s[0].GetDataStoreFee()
 	assert.Error(t, err)
 	assert.Nil(t, fee)
 }
@@ -36,7 +36,7 @@ func TestStorageGetValueStoreFeeFailsWhenNotInitialised(t *testing.T) {
 func TestStorageGetMinTxFeeFailsWhenNotInitialised(t *testing.T) {
 	t.Parallel()
 	s := make([]*Storage, 1)
-	fee, err := s[0].GetMinTxFee()
+	fee, err := s[0].GetMinScaledTransactionFee()
 	assert.Error(t, err)
 	assert.Nil(t, fee)
 }
@@ -44,7 +44,7 @@ func TestStorageGetMinTxFeeFailsWhenNotInitialised(t *testing.T) {
 func TestStorageWithoutStorageGetterGetMaxBytesFails(t *testing.T) {
 	t.Parallel()
 	s := &Storage{}
-	fee, err := s.GetMaxBytes()
+	fee, err := s.GetMaxBlockSize()
 	assert.Error(t, err)
 	assert.Zero(t, fee)
 }
@@ -52,7 +52,7 @@ func TestStorageWithoutStorageGetterGetMaxBytesFails(t *testing.T) {
 func TestStorageWithoutStorageGetterGetDataStoreEpochFeeFails(t *testing.T) {
 	t.Parallel()
 	s := &Storage{}
-	fee, err := s.GetDataStoreEpochFee()
+	fee, err := s.GetDataStoreFee()
 	assert.Error(t, err)
 	assert.Nil(t, fee)
 }
@@ -68,7 +68,7 @@ func TestStorageWithoutStorageGetterGetValueStoreFeeFails(t *testing.T) {
 func TestStorageWithoutStorageGetterGetMinTxFeeFails(t *testing.T) {
 	t.Parallel()
 	s := &Storage{}
-	fee, err := s.GetMinTxFee()
+	fee, err := s.GetMinScaledTransactionFee()
 	assert.Error(t, err)
 	assert.Nil(t, fee)
 }
@@ -78,9 +78,9 @@ func TestStorageInitialisedReturnsExpectedMaxBytes(t *testing.T) {
 	msg := mocks.NewMockStorageGetter()
 	s := NewStorage(msg)
 	expectedMaxBytes := uint32(123)
-	msg.GetMaxBytesFunc.SetDefaultReturn(expectedMaxBytes)
+	msg.GetMaxBlockSizeFunc.SetDefaultReturn(expectedMaxBytes)
 
-	fee, err := s.GetMaxBytes()
+	fee, err := s.GetMaxBlockSize()
 	assert.NoError(t, err)
 	assert.Equal(t, expectedMaxBytes, fee)
 }
@@ -93,9 +93,9 @@ func TestStorageInitialisedReturnsExpectedDataStoreEpochFee(t *testing.T) {
 	expectedFeeUint256 := &uint256.Uint256{}
 	_, err := expectedFeeUint256.FromBigInt(expectedFee)
 	assert.NoError(t, err)
-	msg.GetDataStoreEpochFeeFunc.SetDefaultReturn(expectedFee)
+	msg.GetDataStoreFeeFunc.SetDefaultReturn(expectedFee)
 
-	fee, err := s.GetDataStoreEpochFee()
+	fee, err := s.GetDataStoreFee()
 	assert.NoError(t, err)
 	assert.Equal(t, expectedFeeUint256, fee)
 }
@@ -125,9 +125,9 @@ func TestStorageInitialisedReturnsExpectedMinTxFee(t *testing.T) {
 	_, err := expectedFeeUint256.FromBigInt(expectedFee)
 	assert.NoError(t, err)
 
-	msg.GetMinTxFeeFunc.SetDefaultReturn(expectedFee)
+	msg.GetMinScaledTransactionFeeFunc.SetDefaultReturn(expectedFee)
 
-	fee, err := s.GetMinTxFee()
+	fee, err := s.GetMinScaledTransactionFee()
 	assert.NoError(t, err)
 	assert.Equal(t, expectedFeeUint256, fee)
 }

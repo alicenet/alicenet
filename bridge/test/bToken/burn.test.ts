@@ -1,3 +1,4 @@
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
@@ -16,18 +17,26 @@ describe("Testing BToken Burning methods", async () => {
   const minBTokens = 0;
   const marketSpread = 4;
 
-  beforeEach(async function () {
-    fixture = await getFixture();
+  async function deployFixture() {
+    const fixture = await getFixture();
     const signers = await ethers.getSigners();
-    [admin, user] = signers;
-    ethIn = ethers.utils.parseEther(eth.toString());
-    [bTokens] = await callFunctionAndGetReturnValues(
+    const [admin, user] = signers;
+    const ethIn = ethers.utils.parseEther(eth.toString());
+    const [bTokens] = await callFunctionAndGetReturnValues(
       fixture.bToken,
       "mint",
       user,
       [minBTokens],
       ethIn
     );
+    return { fixture, admin, user, ethIn, bTokens };
+  }
+
+  beforeEach(async function () {
+    ({ fixture, admin, user, ethIn, bTokens } = await loadFixture(
+      deployFixture
+    ));
+
     expectedState = await getState(fixture);
   });
 
