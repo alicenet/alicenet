@@ -11,7 +11,8 @@ import { task, types } from "hardhat/config";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 // import { ValidatorPool } from "../../typechain-types";
 import axios from "axios";
-import { getEventVar, getGasPrices } from "./alicenetFactoryTasks";
+import { getEventVar } from "./alicenetFactory";
+import { getGasPrices } from "./alicenetFactoryTasks";
 import { CONTRACT_ADDR, DEFAULT_CONFIG_DIR, DEPLOYED_RAW } from "./constants";
 import { readDeploymentArgs } from "./deployment/deploymentConfigUtil";
 export type MultiCallArgsStruct = {
