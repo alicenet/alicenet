@@ -1076,10 +1076,16 @@ async function getSalt(
     contractOutput = buildInfo.output.contracts[path][contractName];
     devdoc = contractOutput.devdoc;
     if (devdoc["custom:role"] !== undefined) {
-      let type_ = devdoc["custom:role"];
-      let role = hre.ethers.utils.solidityKeccak256(["string"], [type_]);
-      let contractHash = hre.ethers.utils.solidityKeccak256(["string"], [contractName]);
-      salt = hre.ethers.utils.solidityKeccak256(["bytes32", "bytes32"], [contractHash, role]);
+      const type_ = devdoc["custom:role"];
+      const role = hre.ethers.utils.solidityKeccak256(["string"], [type_]);
+      const contractHash = hre.ethers.utils.solidityKeccak256(
+        ["string"],
+        [contractName]
+      );
+      salt = hre.ethers.utils.solidityKeccak256(
+        ["bytes32", "bytes32"],
+        [contractHash, role]
+      );
       return salt;
     }
     salt = devdoc["custom:salt"];

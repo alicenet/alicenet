@@ -1,5 +1,6 @@
 import { BytesLike } from "ethers";
-import { artifacts, ethers, run } from "hardhat";
+import hre, { ethers, run } from "hardhat";
+import { getBytes32Salt } from "../../scripts/lib/alicenetFactoryTasks";
 import {
   MOCK,
   MOCK_INITIALIZABLE,
@@ -14,10 +15,7 @@ import {
   TASK_MULTI_CALL_UPGRADE_PROXY,
   TASK_UPGRADE_DEPLOYED_PROXY,
 } from "../../scripts/lib/constants";
-import {
-  deployFactory,
-  getBytes32Salt,
-} from "../../scripts/lib/deployment/deploymentUtil";
+import { deployFactory } from "../../scripts/lib/deployment/deploymentUtil";
 import {
   DeployCreateData,
   FactoryData,
@@ -83,7 +81,7 @@ describe("Cli tasks", async () => {
       MOCK_INITIALIZABLE,
       factoryData.address
     );
-    const salt = await getBytes32Salt(MOCK_INITIALIZABLE, artifacts, ethers);
+    const salt = await getBytes32Salt(MOCK_INITIALIZABLE, hre);
     const expectedProxyAddress = getMetamorphicAddress(
       factoryData.address,
       salt
@@ -108,7 +106,7 @@ describe("Cli tasks", async () => {
       MOCK_INITIALIZABLE,
       factoryData.address
     );
-    const salt = await getBytes32Salt(MOCK_INITIALIZABLE, artifacts, ethers);
+    const salt = await getBytes32Salt(MOCK_INITIALIZABLE, hre);
     const expectedProxyAddress = getMetamorphicAddress(
       factoryData.address,
       salt
@@ -140,7 +138,7 @@ describe("Cli tasks", async () => {
       undefined,
       ["2", "s"]
     );
-    const salt = await getBytes32Salt(MOCK, artifacts, ethers);
+    const salt = await getBytes32Salt(MOCK, hre);
     const expectedProxyAddress = getMetamorphicAddress(
       factoryData.address,
       salt

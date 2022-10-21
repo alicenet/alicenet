@@ -1,7 +1,7 @@
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BytesLike } from "ethers";
-import { ethers, network } from "hardhat";
+import hre, { ethers, network } from "hardhat";
 import { ValidatorPool } from "../../typechain-types";
 import { expect } from "../chai-setup";
 import {
@@ -201,22 +201,62 @@ describe("ValidatorPool Access Control: An user without admin role should not be
   });
 
   it("Major slash a validator", async function () {
+    const accusationKeccak = hre.ethers.utils.solidityKeccak256(
+      ["string"],
+      ["Accusation"]
+    );
+    const salt = hre.ethers.utils.solidityKeccak256(
+      ["bytes32", "bytes32"],
+      [
+        "0x0000000000000000000000000000000000000000000000000000000000000000",
+        accusationKeccak,
+      ]
+    );
+    const expectedAddress = await fixture.factory.lookup(salt);
+
     await expect(
       fixture.validatorPool
         .connect(notAdmin1Signer)
-        .majorSlash(notAdmin1Signer.address, notAdmin1Signer.address, "0")
+        .majorSlash(
+          notAdmin1Signer.address,
+          notAdmin1Signer.address,
+          "0x0000000000000000000000000000000000000000000000000000000000000000"
+        )
     )
-      .to.be.revertedWithCustomError(fixture.validatorPool, `OnlyETHDKG`)
-      .withArgs(notAdmin1.address, fixture.ethdkg.address);
+      .to.be.revertedWithCustomError(
+        fixture.validatorPool,
+        `NotAllowedToAccuse`
+      )
+      .withArgs(notAdmin1.address, expectedAddress, fixture.ethdkg.address);
   });
 
   it("Minor slash a validator", async function () {
+    const accusationKeccak = hre.ethers.utils.solidityKeccak256(
+      ["string"],
+      ["Accusation"]
+    );
+    const salt = hre.ethers.utils.solidityKeccak256(
+      ["bytes32", "bytes32"],
+      [
+        "0x0000000000000000000000000000000000000000000000000000000000000000",
+        accusationKeccak,
+      ]
+    );
+    const expectedAddress = await fixture.factory.lookup(salt);
+
     await expect(
       fixture.validatorPool
         .connect(notAdmin1Signer)
-        .minorSlash(notAdmin1Signer.address, notAdmin1Signer.address, "0")
+        .minorSlash(
+          notAdmin1Signer.address,
+          notAdmin1Signer.address,
+          "0x0000000000000000000000000000000000000000000000000000000000000000"
+        )
     )
-      .to.be.revertedWithCustomError(fixture.validatorPool, `OnlyETHDKG`)
-      .withArgs(notAdmin1.address, fixture.ethdkg.address);
+      .to.be.revertedWithCustomError(
+        fixture.validatorPool,
+        `NotAllowedToAccuse`
+      )
+      .withArgs(notAdmin1.address, expectedAddress, fixture.ethdkg.address);
   });
 });

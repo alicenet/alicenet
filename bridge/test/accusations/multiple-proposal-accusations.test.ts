@@ -35,14 +35,13 @@ describe("AccusationMultipleProposal: Tests AccusationMultipleProposal methods",
 
       await addValidators(fixture.validatorPool, [signerAccount0]);
 
-      await (await accusation.accuseMultipleProposal(
-        sig0,
-        pClaims0,
-        sig1,
-        pClaims1
-      )).wait();
+      await (
+        await accusation.accuseMultipleProposal(sig0, pClaims0, sig1, pClaims1)
+      ).wait();
 
-      const isValidator = await fixture.validatorPool.isValidator(signerAccount0);
+      const isValidator = await fixture.validatorPool.isValidator(
+        signerAccount0
+      );
       assert.equal(isValidator, false);
     });
 
@@ -53,7 +52,10 @@ describe("AccusationMultipleProposal: Tests AccusationMultipleProposal methods",
       await expect(
         accusation.accuseMultipleProposal(sig0, pClaims0, sig1, pClaims1)
       )
-        .to.be.revertedWithCustomError(accusation, "SignerNotValidValidator")
+        .to.be.revertedWithCustomError(
+          fixture.validatorPool,
+          "AddressNotAccusable"
+        )
         .withArgs(signerAccount0);
     });
 
