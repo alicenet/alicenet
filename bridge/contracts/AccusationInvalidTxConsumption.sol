@@ -22,7 +22,8 @@ contract AccusationInvalidTxConsumption is
     ImmutableValidatorPool
 {
     // this is the keccak256 of "AccusationInvalidTxConsumption"
-    bytes32 constant public PRE_SALT = 0xf40095839ea6635a5869735bd0c363085cb0ebd561e0f361f826103b958c27e5;
+    bytes32 public constant PRE_SALT =
+        0xf40095839ea6635a5869735bd0c363085cb0ebd561e0f361f826103b958c27e5;
     mapping(bytes32 => bool) internal _accusations;
 
     constructor()

@@ -27,5 +27,9 @@ library ValidatorPoolErrors {
     error AddressNotValidator(address addr);
     error PayoutTooLow();
     error InsufficientFundsInStakePosition(uint256 stakeAmount, uint256 minimumRequiredAmount);
-    error NotAllowedToAccuse(address accuserAddress, address accusationAddress, address ethdkgAddress);
+    error NotAllowedToAccuse(
+        address accuserAddress,
+        address accusationAddress,
+        address ethdkgAddress
+    );
 }
