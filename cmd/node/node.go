@@ -3,7 +3,6 @@ package node
 import (
 	"context"
 	"fmt"
-	"github.com/alicenet/alicenet/layer1/handlers"
 	"math/big"
 	"os"
 	"os/signal"

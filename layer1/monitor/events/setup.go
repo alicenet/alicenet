@@ -2,7 +2,6 @@ package events
 
 import (
 	"fmt"
-	"github.com/alicenet/alicenet/layer1/executor"
 	"strings"
 
 	"github.com/alicenet/alicenet/layer1/executor"
