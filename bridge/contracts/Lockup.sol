@@ -323,7 +323,14 @@ contract Lockup is
         emit EarlyExit(msg.sender, tokenID);
     }
 
-    /// @notice aggregateProfits iterate alls positions and dump profits before allowing withdraws.
+    /// @notice aggregateProfits iterate alls locked positions and collect their profits before
+    /// allowing withdraws/unlocks. This step is necessary to make sure that the correct reserved
+    /// amount is in the rewardPool before allowing unlocks. This function will not send any ether or
+    /// ALCA to users, since this can be very dangerous (specially on a loop). Instead all the
+    /// assets that are not sent to the rewardPool are held in the lockup contract, and the right
+    /// balance is stored per position owner. All the value will be send to the owner address at the
+    /// call of the `{unlock()}` function. This function can only be called after the locking period
+    /// has finished. Anyone can call this function.
     function aggregateProfits() public onlyPayoutUnSafe onlyPostLock {
         // get some gas cost tracking setup
         uint256 gasStart = gasleft();
@@ -365,7 +372,8 @@ contract Lockup is
     /// @notice unlocks a locked position and collect all kind of profits (bonus shares, held
     /// rewards etc). Can only be called after the locking period has finished and {aggregateProfits}
     /// has been executed for positions. Can only be called by the user entitled to a position
-    /// (address that locked a position).
+    /// (address that locked a position). This function can only be called after the locking period
+    /// has finished and {aggregateProfits()} has been executed for all locked positions.
     /// @param to_ destination address were the profits, shares will be sent
     /// @param stakeExit_ boolean flag indicating if the ALCA should be returned directly or staked
     /// into a new publicStaking position.
@@ -526,15 +534,25 @@ contract Lockup is
         payoutToken -= reserveToken;
     }
 
+    /// @notice function to try to estimate the final amount of ALCA and ether that a locked
+    /// position will receive at the end of locking period. This function is just an approximation,
+    /// the real amount can differ especially as user's collect profits in the middle of the locking
+    /// period. This function will be more accurate after the locking period has finished and
+    /// aggregateProfits has been executed for all lockedPositions.
+    /// @dev this function is just an approximation, the real amount can differ!
+    /// @param tokenID_ The token to check for the final profits.
+    /// @return positionShares_ the positions ALCA shares
+    /// @return bonusShares_ the bonus shares (ALCA) that the position will receive
+    /// @return payoutEth_ the ether amount that the position will receive as profit
+    /// @return payoutToken_ the ALCA amount that the position will receive as profit
     function estimateFinalBonusWithProfits(uint256 tokenID_)
         public
         view
-        excludePreLock
         returns (
             uint256 positionShares_,
-            uint256 bonusShares,
-            uint256 payoutEth,
-            uint256 payoutToken
+            uint256 bonusShares_,
+            uint256 payoutEth_,
+            uint256 payoutToken_
         )
     {
         // check if the position owned by this contract
@@ -542,34 +560,45 @@ contract Lockup is
         positionShares_ = _getNumShares(tokenID_);
 
         (uint256 currentSharesLocked, uint256 originalSharesLocked) = _getLockedShares();
-        // get the bonus amount + any profit from the bonus staked position
-        (bonusShares, payoutEth, payoutToken) = BonusPool(payable(_bonusPool))
-            .estimateBonusAmountWithReward(
-                currentSharesLocked,
-                originalSharesLocked,
-                positionShares_
-            );
 
-        // get the commutative rewards held in the rewardPool so far
+        // bonusPool shares and profits are only computed after the preLock phase has finished
+        if (_getState() == State.PreLock) {
+            // get the bonus amount + any profit from the bonus staked position
+            (bonusShares_, payoutEth_, payoutToken_) = BonusPool(payable(_bonusPool))
+                .estimateBonusAmountWithReward(
+                    currentSharesLocked,
+                    originalSharesLocked,
+                    positionShares_
+                );
+        }
+
+        // get the cumulative rewards held in the rewardPool so far. The amount returned by this
+        // call is not precise, since only some users may have been collected until this point. This
+        // call becomes accurate only after the aggregateProfits() has been called for all
+        // positions.
         (uint256 rewardEthProfit, uint256 rewardTokenProfit) = RewardPool(_rewardPool)
             .estimateRewards(currentSharesLocked, positionShares_);
-        payoutEth += rewardEthProfit;
-        payoutToken += rewardTokenProfit;
+        payoutEth_ += rewardEthProfit;
+        payoutToken_ += rewardTokenProfit;
 
-        // get any profit held by the position itself
+        // get any future profit that will held in the rewardPool for this position
         (uint256 positionEthProfit, uint256 positionTokenProfit) = IStakingNFT(
             _publicStakingAddress()
         ).estimateAllProfits(tokenID_);
-        payoutEth += positionEthProfit;
-        payoutToken += positionTokenProfit;
+        (uint256 reservedEth, uint256 reservedToken) = _computeReservedAmount(
+            positionEthProfit,
+            positionTokenProfit
+        );
+        payoutEth_ += reservedEth;
+        payoutToken_ += reservedToken;
 
         // get any eth and token held by this contract as result of the call to the aggregateProfit
         // function
         (uint256 aggregatedEth, uint256 aggregatedTokens) = _getTemporaryRewardBalance(
             _getOwnerOf(tokenID_)
         );
-        payoutEth += aggregatedEth;
-        payoutToken += aggregatedTokens;
+        payoutEth_ += aggregatedEth;
+        payoutToken_ += aggregatedTokens;
     }
 
     function _lockFromTransfer(uint256 tokenID_, address tokenOwner_) internal {
@@ -603,8 +632,7 @@ contract Lockup is
         internal
         returns (uint256 payoutEth, uint256 payoutToken)
     {
-        // case of we are sending out final pay based on request
-        // just pay all
+        // case of we are sending out final pay based on request just pay all
         payoutEth = _rewardEth[account_];
         payoutToken = _rewardTokens[account_];
         _rewardEth[account_] = 0;
@@ -634,8 +662,6 @@ contract Lockup is
         bool localPayoutSafe = payoutSafe;
         userPayoutEth = payoutEth_;
         userPayoutToken = payoutToken_;
-        // implies !payoutSafe and state one of [preLock, inLock]
-        // hold back reserves and fund over deltas
         (uint256 reservedEth, uint256 reservedToken) = _computeReservedAmount(
             payoutEth_,
             payoutToken_
@@ -644,7 +670,8 @@ contract Lockup is
         userPayoutToken -= reservedToken;
         // send tokens to reward pool
         _depositFundsInRewardPool(reservedEth, reservedToken);
-        // either store to map or send to user
+        // in case this is being called by {aggregateProfits()} we don't send any asset to the
+        // users, we just store the owed amounts on state
         if (!localPayoutSafe && state == State.PostLock) {
             // we should not send here and should instead track to local mapping as
             // otherwise a single bad user could block exit operations for all other users
