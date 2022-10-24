@@ -87,7 +87,7 @@ export async function deployCreateAndRegister(
   contractName: string,
   factoryAddress: string,
   ethers: Ethers,
-  constructorArgs: string[],
+  constructorArgs: any[],
   overrides?: Overrides & { from?: PromiseOrValue<string> }
 ): Promise<ContractTransaction> {
   // get a factory instance connected to the factory a
