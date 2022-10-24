@@ -580,17 +580,19 @@ contract Lockup is
             .estimateRewards(currentSharesLocked, positionShares_);
         payoutEth_ += rewardEthProfit;
         payoutToken_ += rewardTokenProfit;
-
-        // get any future profit that will held in the rewardPool for this position
-        (uint256 positionEthProfit, uint256 positionTokenProfit) = IStakingNFT(
-            _publicStakingAddress()
-        ).estimateAllProfits(tokenID_);
-        (uint256 reservedEth, uint256 reservedToken) = _computeReservedAmount(
-            positionEthProfit,
-            positionTokenProfit
-        );
-        payoutEth_ += reservedEth;
-        payoutToken_ += reservedToken;
+        // avoiding stack too deep error
+        {
+            // get any future profit that will held in the rewardPool for this position
+            (uint256 positionEthProfit, uint256 positionTokenProfit) = IStakingNFT(
+                _publicStakingAddress()
+            ).estimateAllProfits(tokenID_);
+            (uint256 reservedEth, uint256 reservedToken) = _computeReservedAmount(
+                positionEthProfit,
+                positionTokenProfit
+            );
+            payoutEth_ += reservedEth;
+            payoutToken_ += reservedToken;
+        }
 
         // get any eth and token held by this contract as result of the call to the aggregateProfit
         // function

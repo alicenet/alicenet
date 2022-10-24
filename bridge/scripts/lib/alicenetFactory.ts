@@ -120,7 +120,7 @@ export async function upgradeProxy(
   const factory = factoryBase.attach(factoryAddress);
   const logicContractFactory = await ethers.getContractFactory(contractName);
   let deployBCode: BytesLike;
-  if (typeof constructorArgs !== undefined && constructorArgs.length >= 0) {
+  if (typeof constructorArgs !== "undefined" && constructorArgs.length >= 0) {
     deployBCode = logicContractFactory.getDeployTransaction(...constructorArgs)
       .data as BytesLike;
   } else {
@@ -212,16 +212,13 @@ export async function getSalt(
     artifacts
   );
   const buildInfo = await artifacts.getBuildInfo(qualifiedName);
-  let contractOutput: any;
-  let devdoc: any;
-  let salt;
   if (buildInfo === undefined) {
     throw new Error("Missing custom:salt");
   }
   const path = extractPath(qualifiedName);
-  contractOutput = buildInfo?.output.contracts[path][contractName];
-  devdoc = contractOutput.devdoc;
-  salt = devdoc["custom:salt"];
+  const contractOutput: any = buildInfo?.output.contracts[path][contractName];
+  const devdoc: any = contractOutput.devdoc;
+  const salt = devdoc["custom:salt"];
   return ethers.utils.formatBytes32String(salt);
 }
 

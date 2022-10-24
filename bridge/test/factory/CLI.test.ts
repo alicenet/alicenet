@@ -282,7 +282,7 @@ export async function cliDeployFactory(
 ) {
   return await run(TASK_DEPLOY_FACTORY, {
     outputFolder,
-    constructorArgs: constructorArgs,
+    constructorArgs,
     waitConfirmation: 0,
   });
 }

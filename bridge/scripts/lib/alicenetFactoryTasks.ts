@@ -119,7 +119,7 @@ task(
   .setAction(async (taskArgs, hre) => {
     await checkUserDirPath(taskArgs.outputFolder);
     const factoryBase = await hre.ethers.getContractFactory(ALICENET_FACTORY);
-    let constructorArgs =
+    const constructorArgs =
       taskArgs.constructorArgs === undefined
         ? await getFactoryDeploymentArgs(hre.artifacts)
         : taskArgs.constructorArgs;
@@ -1196,15 +1196,6 @@ async function checkUserDirPath(path: string) {
       throw new Error("outputFolder path should be to a directory not a file");
     }
   }
-}
-
-async function getAccounts(hre: HardhatRuntimeEnvironment) {
-  const signers = await hre.ethers.getSigners();
-  const accounts: string[] = [];
-  for (const signer of signers) {
-    accounts.push(signer.address);
-  }
-  return accounts;
 }
 
 export const showState = async (message: string): Promise<void> => {

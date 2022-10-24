@@ -48,7 +48,7 @@ async function deployFixture() {
     lockDuration,
     totalBonusAmount
   ).data as BytesLike;
-  //deploy Lockup
+  // deploy Lockup
   let contractName = ethers.utils.formatBytes32String("Lockup");
   let txResponse = await fixture.factory.deployCreateAndRegister(
     lockupDeployCode,
@@ -60,7 +60,7 @@ async function deployFixture() {
     DEPLOYED_RAW,
     CONTRACT_ADDR
   );
-  //deploy staking router
+  // deploy staking router
   const stakingRouterBase = await ethers.getContractFactory("StakingRouterV1");
   contractName = ethers.utils.formatBytes32String(STAKING_ROUTER_V1);
   txResponse = await deployCreateAndRegister(
@@ -87,7 +87,7 @@ async function deployFixture() {
   // get the address of the bonus pool from the reward pool contract
   const bonusPoolAddress = await rewardPool.getBonusPoolAddress();
   const bonusPool = await ethers.getContractAt("BonusPool", bonusPoolAddress);
-  //connect and instance of the staking router
+  // connect and instance of the staking router
   const stakingRouterV1 = await ethers.getContractAt(
     STAKING_ROUTER_V1,
     stakingRouterAddress
