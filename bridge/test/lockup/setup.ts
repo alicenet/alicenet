@@ -6,12 +6,13 @@ import {
   ContractTransaction,
 } from "ethers/lib/ethers";
 import hre, { ethers, expect } from "hardhat";
-import { CONTRACT_ADDR, DEPLOYED_RAW } from "../../scripts/lib/constants";
+import { deployCreateAndRegister } from "../../scripts/lib/alicenetFactory";
+import { CONTRACT_ADDR, DEPLOYED_RAW, LOCK_UP } from "../../scripts/lib/constants";
+import { BonusPool, Lockup, RewardPool } from "../../typechain-types";
 import { getEventVar } from "../factory/Setup";
 import {
   BaseTokensFixture,
   deployFactoryAndBaseTokens,
-  Fixture,
   mineBlocks,
   posFixtureSetup,
   preFixtureSetup,
@@ -40,6 +41,11 @@ export const profitALCA = ethers.utils.parseEther(
   example.distribution.profitALCA
 );
 
+interface Fixture extends BaseTokensFixture {
+  lockup: Lockup;
+  rewardPool: RewardPool;
+  bonusPool: BonusPool;
+}
 interface UserDistribution {
   owner: string;
   tokenID: number;
@@ -83,6 +89,8 @@ interface UsersState {
     tokenId: bigint;
     tokenOwner: string;
     position: bigint;
+    rewardEth?: bigint;
+    rewardToken?: bigint;
   };
 }
 
@@ -162,6 +170,7 @@ export async function getState(
     }
   }
   for (let i = 1; i <= numberOfLockingUsers; i++) {
+    const [rewardEth, rewardALCA] = await fixture.lockup.getTemporaryRewardBalance(signers[i].address)
     usersState["user" + i] = {
       address: signers[i].address,
       alca: (await fixture.aToken.balanceOf(signers[i].address)).toBigInt(),
@@ -175,6 +184,8 @@ export async function getState(
           await fixture.lockup.tokenOf(signers[i].address)
         )
       ).toBigInt(),
+      rewardEth: rewardEth.toBigInt(),
+      rewardToken: rewardALCA.toBigInt()
     };
   }
   usersState.bonusPool = {
@@ -263,15 +274,7 @@ export const getImpersonatedSigner = async (
 export async function deployLockupContract(
   baseTokensFixture: BaseTokensFixture
 ) {
-  const lockupBase = await ethers.getContractFactory("Lockup");
-  const lockupDeployCode = lockupBase.getDeployTransaction(
-    startBlock,
-    lockDuration,
-    totalBonusAmount
-  ).data as BytesLike;
-  const txResponse = await baseTokensFixture.factory.deployCreate(
-    lockupDeployCode
-  );
+  const txResponse = await deployCreateAndRegister(LOCK_UP, baseTokensFixture.factory.address, ethers, [startBlock, lockDuration, totalBonusAmount])
   // get the address from the event
   const lockupAddress = await getEventVar(
     txResponse,
@@ -279,7 +282,7 @@ export async function deployLockupContract(
     CONTRACT_ADDR
   );
   await posFixtureSetup(baseTokensFixture.factory, baseTokensFixture.aToken);
-  return await ethers.getContractAt("Lockup", lockupAddress);
+  return await ethers.getContractAt(LOCK_UP, lockupAddress);
 }
 
 export async function getSimulatedStakingPositions(
