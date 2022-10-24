@@ -1,3 +1,4 @@
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { assert, expect } from "chai";
 import { AccusationMultipleProposal } from "../../typechain-types";
 import { Fixture, getFixture } from "../setup";
@@ -15,8 +16,12 @@ describe("AccusationMultipleProposal: Tests AccusationMultipleProposal methods",
 
   let accusation: AccusationMultipleProposal;
 
+  function deployFixture() {
+    return getFixture(true, true);
+  }
+
   beforeEach(async function () {
-    fixture = await getFixture(true, true);
+    fixture = await loadFixture(deployFixture);
 
     accusation = fixture.accusationMultipleProposal;
   });
@@ -30,14 +35,13 @@ describe("AccusationMultipleProposal: Tests AccusationMultipleProposal methods",
 
       await addValidators(fixture.validatorPool, [signerAccount0]);
 
-      await (await accusation.accuseMultipleProposal(
-        sig0,
-        pClaims0,
-        sig1,
-        pClaims1
-      )).wait();
+      await (
+        await accusation.accuseMultipleProposal(sig0, pClaims0, sig1, pClaims1)
+      ).wait();
 
-      const isValidator = await fixture.validatorPool.isValidator(signerAccount0);
+      const isValidator = await fixture.validatorPool.isValidator(
+        signerAccount0
+      );
       assert.equal(isValidator, false);
     });
 
@@ -48,7 +52,10 @@ describe("AccusationMultipleProposal: Tests AccusationMultipleProposal methods",
       await expect(
         accusation.accuseMultipleProposal(sig0, pClaims0, sig1, pClaims1)
       )
-        .to.be.revertedWithCustomError(accusation, "SignerNotValidValidator")
+        .to.be.revertedWithCustomError(
+          fixture.validatorPool,
+          "AddressNotAccusable"
+        )
         .withArgs(signerAccount0);
     });
 

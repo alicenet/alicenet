@@ -1,3 +1,4 @@
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { assert, expect } from "chai";
 import { AccusationInvalidTxConsumption } from "../../typechain-types";
 import { Fixture, getFixture } from "../setup";
@@ -14,9 +15,12 @@ describe("AccusationInvalidTxConsumption: Tests AccusationInvalidTxConsumption m
   let fixture: Fixture;
 
   let accusation: AccusationInvalidTxConsumption;
+  function deployFixture() {
+    return getFixture(true, true);
+  }
 
   beforeEach(async function () {
-    fixture = await getFixture(true, true);
+    fixture = await loadFixture(deployFixture);
 
     accusation = fixture.accusationInvalidTxConsumption;
   });
@@ -34,16 +38,20 @@ describe("AccusationInvalidTxConsumption: Tests AccusationInvalidTxConsumption m
         proofs,
       } = getValidAccusationDataForNonExistentUTXO();
 
-      await (await accusation.accuseInvalidTransactionConsumption(
-        pClaims,
-        pClaimsSig,
-        bClaims,
-        bClaimsSigGroup,
-        txInPreImage,
-        proofs
-      )).wait();
+      await (
+        await accusation.accuseInvalidTransactionConsumption(
+          pClaims,
+          pClaimsSig,
+          bClaims,
+          bClaimsSigGroup,
+          txInPreImage,
+          proofs
+        )
+      ).wait();
 
-      const isValidator = await fixture.validatorPool.isValidator(signerAccount0);
+      const isValidator = await fixture.validatorPool.isValidator(
+        signerAccount0
+      );
       assert.equal(isValidator, false);
     });
 

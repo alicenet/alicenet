@@ -1,15 +1,15 @@
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
 import {
   AliceNetFactory,
   AToken,
-  LegacyToken,
   PublicStaking,
 } from "../../../typechain-types";
 import {
   createUsers,
   deployAliceNetFactory,
-  deployStaticWithFactory,
+  deployUpgradeableWithFactory,
   factoryCallAny,
   getMetamorphicAddress,
   mineBlocks,
@@ -34,46 +34,60 @@ describe("PublicStaking: Skim excess of tokens", async () => {
   let etherExcess: bigint;
   let tokenExcess: bigint;
 
-  beforeEach(async function () {
+  async function deployFixture() {
     const [adminSigner] = await ethers.getSigners();
     await preFixtureSetup();
-    factory = await deployAliceNetFactory(adminSigner);
+
+    const etherExcess = ethers.utils.parseEther("100").toBigInt();
+
+    const legacyToken = await (
+      await ethers.getContractFactory("LegacyToken")
+    ).deploy();
+
+    const factory = await deployAliceNetFactory(
+      adminSigner,
+      legacyToken.address
+    );
+
+    // AToken
+    const aToken = await ethers.getContractAt(
+      "AToken",
+      await factory.lookup(ethers.utils.formatBytes32String("AToken"))
+    );
 
     const publicStakingAddress = getMetamorphicAddress(
       factory.address,
       "PublicStaking"
     );
-    etherExcess = ethers.utils.parseEther("100").toBigInt();
-
-    const legacyToken = (await deployStaticWithFactory(
-      factory,
-      "LegacyToken"
-    )) as LegacyToken;
-    // AToken
-    aToken = (await deployStaticWithFactory(
-      factory,
-      "AToken",
-      "AToken",
-      undefined,
-      [legacyToken.address]
-    )) as AToken;
     // transferring ether before contract deployment to get eth excess
     await adminSigner.sendTransaction({
       to: publicStakingAddress,
       value: etherExcess,
     });
-    stakingContract = (await deployStaticWithFactory(
+    const stakingContract = (await deployUpgradeableWithFactory(
       factory,
       "PublicStaking",
       "PublicStaking"
     )) as PublicStaking;
-    await posFixtureSetup(factory, aToken, legacyToken);
-    tokenExcess = ethers.utils.parseUnits("100", 18).toBigInt();
+    await posFixtureSetup(factory, aToken);
+    const tokenExcess = ethers.utils.parseUnits("100", 18).toBigInt();
     await aToken.approve(
       stakingContract.address,
       ethers.utils.parseUnits("1000000", 18)
     );
     await aToken.transfer(publicStakingAddress, tokenExcess);
+    return {
+      stakingContract,
+      aToken,
+      factory,
+      etherExcess,
+      tokenExcess,
+    };
+  }
+
+  beforeEach(async function () {
+    ({ stakingContract, aToken, factory, etherExcess, tokenExcess } =
+      await loadFixture(deployFixture));
   });
 
   it("Skim excess of token and ether", async function () {

@@ -475,7 +475,7 @@ func (b *Tx) ValidateFees(currentHeight uint32, refUTXOs Vout, storage *wrapper.
 		return err
 	}
 	// Ensure Fee is above minimum
-	minTxFee, err := storage.GetMinTxFee()
+	minTxFee, err := storage.GetMinScaledTransactionFee()
 	if err != nil {
 		return err
 	}

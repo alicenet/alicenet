@@ -1,12 +1,16 @@
 package transport
 
 import (
+	"github.com/alicenet/alicenet/config"
+	"github.com/alicenet/alicenet/types"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func TestNodeAddr(t *testing.T) {
+	chaindID := 4444
+	config.Configuration.Chain.ID = chaindID
 	tkey, err := newTransportPrivateKey()
 	if err != nil {
 		t.Fatal(err)
@@ -16,7 +20,7 @@ func TestNodeAddr(t *testing.T) {
 		host:     "127.0.0.1",
 		port:     3000,
 		identity: pubk,
-		chainID:  4444,
+		chainID:  types.ChainIdentifier(chaindID),
 	}
 	p2pAddr := addr.P2PAddr()
 	addr2if, err := NewNodeAddr(p2pAddr)

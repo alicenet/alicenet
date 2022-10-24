@@ -1,3 +1,4 @@
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { getValidatorEthAccount } from "../../setup";
 import { validators4 } from "../assets/4-validators-successful-case";
 import {
@@ -13,9 +14,13 @@ import {
 } from "../setup";
 
 describe("ETHDKG: ETHDKG Completion", () => {
+  function deployFixture() {
+    return startAtGPKJ(validators4);
+  }
+
   it("should not allow completion until after the DisputeGPKj phase", async () => {
-    const [ethdkg, validatorPool, expectedNonce] = await startAtGPKJ(
-      validators4
+    const [ethdkg, validatorPool, expectedNonce] = await loadFixture(
+      deployFixture
     );
 
     await assertETHDKGPhase(ethdkg, Phase.GPKJSubmission);
@@ -68,8 +73,8 @@ describe("ETHDKG: ETHDKG Completion", () => {
   });
 
   it("should not allow non-validators to complete ETHDKG", async () => {
-    const [ethdkg, validatorPool, expectedNonce] = await startAtGPKJ(
-      validators4
+    const [ethdkg, validatorPool, expectedNonce] = await loadFixture(
+      deployFixture
     );
     const txPromise = ethdkg
       .connect(await getValidatorEthAccount(validators4[0].address))
@@ -115,8 +120,8 @@ describe("ETHDKG: ETHDKG Completion", () => {
   });
 
   it("should not allow double completion of ETHDKG", async () => {
-    const [ethdkg, validatorPool, expectedNonce] = await startAtGPKJ(
-      validators4
+    const [ethdkg, validatorPool, expectedNonce] = await loadFixture(
+      deployFixture
     );
 
     await assertETHDKGPhase(ethdkg, Phase.GPKJSubmission);
@@ -191,8 +196,8 @@ describe("ETHDKG: ETHDKG Completion", () => {
   });
 
   it("should not allow validators to participate in previous phases", async () => {
-    const [ethdkg, validatorPool, expectedNonce] = await startAtGPKJ(
-      validators4
+    const [ethdkg, validatorPool, expectedNonce] = await loadFixture(
+      deployFixture
     );
 
     await assertETHDKGPhase(ethdkg, Phase.GPKJSubmission);

@@ -53,10 +53,16 @@ contract ValidatorPool is
      * Modifier to guarantee that only ETHDKG or Accusations are calling a function.
      */
     modifier onlyETHDKGAndAccusations(bytes32 preSalt) {
-        bytes32 computedSalt = keccak256(abi.encodePacked(preSalt , keccak256(abi.encodePacked("Accusation"))));
+        bytes32 computedSalt = keccak256(
+            abi.encodePacked(preSalt, keccak256(abi.encodePacked("Accusation")))
+        );
         address computedAddr = getMetamorphicContractAddress(computedSalt, _factoryAddress());
         if (msg.sender != computedAddr && msg.sender != _ethdkgAddress()) {
-            revert ValidatorPoolErrors.NotAllowedToAccuse(msg.sender, computedAddr, _ethdkgAddress());
+            revert ValidatorPoolErrors.NotAllowedToAccuse(
+                msg.sender,
+                computedAddr,
+                _ethdkgAddress()
+            );
         }
         _;
     }
@@ -377,11 +383,11 @@ contract ValidatorPool is
         return data._tokenID;
     }
 
-    function majorSlash(address dishonestValidator_, address disputer_, bytes32 preSalt_)
-        public
-        onlyETHDKGAndAccusations(preSalt_)
-        balanceShouldNotChange
-    {
+    function majorSlash(
+        address dishonestValidator_,
+        address disputer_,
+        bytes32 preSalt_
+    ) public onlyETHDKGAndAccusations(preSalt_) balanceShouldNotChange {
         if (!_isAccusable(dishonestValidator_)) {
             revert ValidatorPoolErrors.AddressNotAccusable(dishonestValidator_);
         }
@@ -405,11 +411,11 @@ contract ValidatorPool is
         emit ValidatorMajorSlashed(dishonestValidator_);
     }
 
-    function minorSlash(address dishonestValidator_, address disputer_, bytes32 preSalt_)
-        public
-        onlyETHDKGAndAccusations(preSalt_)
-        balanceShouldNotChange
-    {
+    function minorSlash(
+        address dishonestValidator_,
+        address disputer_,
+        bytes32 preSalt_
+    ) public onlyETHDKGAndAccusations(preSalt_) balanceShouldNotChange {
         if (!_isAccusable(dishonestValidator_)) {
             revert ValidatorPoolErrors.AddressNotAccusable(dishonestValidator_);
         }

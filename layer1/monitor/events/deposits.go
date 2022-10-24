@@ -41,6 +41,7 @@ func ProcessDepositReceived(eth layer1.Client, contracts layer1.AllSmartContract
 	})
 
 	if err != nil {
+		logger.WithError(err).Warn("Got an error when processing deposit!")
 		e := errorz.ErrInvalid{}.New("")
 		if !errors.As(err, &e) {
 			return err
