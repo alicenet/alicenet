@@ -703,6 +703,51 @@ task(
   });
 
 task(
+  "create-bonus-pool-position",
+  "Transfer and stake the ALCA that will be used to pay the bonus shares to the users that lock a position"
+)
+  .addParam("factoryAddress", "the AliceNet factory address")
+  .addParam(
+    "bonusAmount",
+    "the amount of ALCA that will transferred and staked as bonus"
+  )
+  .setAction(async (taskArgs, hre) => {
+    const { ethers } = hre;
+    const factory = await ethers.getContractAt(
+      "AliceNetFactory",
+      taskArgs.factoryAddress
+    );
+    const lockup = await ethers.getContractAt(
+      "Lockup",
+      await factory.lookup(ethers.utils.formatBytes32String("Lockup"))
+    );
+    const bonusPool = await ethers.getContractAt(
+      "BonusPool",
+      await lockup.getBonusPoolAddress()
+    );
+    const alca = await ethers.getContractAt(
+      "AToken",
+      await factory.lookup(ethers.utils.formatBytes32String("AToken"))
+    );
+    const transferCall = encodeMultiCallArgs(
+      alca.address,
+      0,
+      alca.interface.encodeFunctionData("transfer", [
+        bonusPool.address,
+        ethers.utils.parseEther(taskArgs.bonusAmount),
+      ])
+    );
+    const createBonusStakeCall = encodeMultiCallArgs(
+      bonusPool.address,
+      0,
+      bonusPool.interface.encodeFunctionData("createBonusStakedPosition")
+    );
+    await (
+      await factory.multiCall([transferCall, createBonusStakeCall])
+    ).wait(8);
+  });
+
+task(
   "pause-ethdkg-arbitrary-height",
   "Forcing consensus to stop on block number defined by --input"
 )
