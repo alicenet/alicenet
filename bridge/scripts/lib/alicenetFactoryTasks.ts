@@ -124,13 +124,14 @@ task(
     types.int
   )
   .addOptionalParam("outputFolder", "output folder path to save factoryState")
+  .addOptionalParam("inputFolder", "input folder path for deploymentArgsTemplate")
   .addOptionalVariadicPositionalParam("constructorArgs")
   .setAction(async (taskArgs, hre) => {
     await checkUserDirPath(taskArgs.outputFolder);
     const factoryBase = await hre.ethers.getContractFactory(ALICENET_FACTORY);
     const constructorArgs =
       taskArgs.constructorArgs === undefined
-        ? await getFactoryDeploymentArgs(hre.artifacts)
+        ? await getFactoryDeploymentArgs(hre.artifacts, taskArgs.inputFolder)
         : taskArgs.constructorArgs;
     const signers = await hre.ethers.getSigners();
     // calculate the factory address for the constructor arg
@@ -274,6 +275,7 @@ task(
     let factoryAddress = taskArgs.factoryAddress;
     if (factoryAddress === undefined) {
       const factoryData: FactoryData = await hre.run(TASK_DEPLOY_FACTORY, {
+        inputFolder: taskArgs.inputFolder,
         outputFolder: taskArgs.outputFolder,
         verify: taskArgs.verify,
         waitConfirmation: taskArgs.waitConfirmation,
@@ -331,7 +333,7 @@ task(
             factoryAddress,
             artifacts,
             taskArgs.waitConfirmation,
-            undefined,
+            taskArgs.inputFolder,
             undefined,
             undefined,
             true
@@ -1172,6 +1174,7 @@ task(
     if (factoryAddress === undefined) {
       const factoryData: FactoryData = await hre.run(TASK_DEPLOY_FACTORY, {
         outputFolder: taskArgs.outputFolder,
+        inputFolder: taskArgs.inputFolder
       });
       factoryAddress = factoryData.address;
       cumulativeGasUsed = cumulativeGasUsed.add(factoryData.gas);
