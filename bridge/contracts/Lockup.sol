@@ -502,6 +502,12 @@ contract Lockup is
         return _getState();
     }
 
+    /// @notice gets the fraction of the amount that is reserved to reward pool
+    /// @return the calculated reserved amount
+    function getReservedAmount(uint256 amount_) public pure returns (uint256) {
+        return (amount_ * FRACTION_RESERVED) / SCALING_FACTOR;
+    }
+
     /// @notice estimate the (liquid) income that can be collected from locked positions via
     /// {collectAllProfits}
     /// @dev this functions deducts the reserved amount that is sent to rewardPool contract

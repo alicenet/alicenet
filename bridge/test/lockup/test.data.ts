@@ -382,3 +382,62 @@ export const example4: UnlockState = {
     totalEarnedALCA: "1111333333333333333333333",
   },
 };
+
+const unlockEarly = [
+  {
+    owner: "user1",
+    tokenID: "10",
+    shares: "10000000",
+    "% final lockup": "0",
+    "RewardPool % ether": "0",
+    "RewardPool % ALCA": "0",
+    "Final Shares": "0",
+  },
+  {
+    owner: "user2",
+    tokenID: "20",
+    shares: "5000000",
+    "% final lockup": "0.5",
+    "RewardPool % ether": "2",
+    "RewardPool % ALCA": "520000",
+    "Final Shares": "5000000",
+  },
+  {
+    owner: "user3",
+    tokenID: "30",
+    shares: "2500000",
+    "% final lockup": "0.25",
+    "RewardPool % ether": "1",
+    "RewardPool % ALCA": "260000",
+    "Final Shares": "2500000",
+  },
+  {
+    owner: "user4",
+    tokenID: "40",
+    shares: "1500000",
+    "% final lockup": "0.15",
+    "RewardPool % ether": "0.6",
+    "RewardPool % ALCA": "156000",
+    "Final Shares": "1500000",
+  },
+  {
+    owner: "user5",
+    tokenID: "50",
+    shares: "1000000",
+    "% final lockup": "0.1",
+    "RewardPool % ether": "0.4",
+    "RewardPool % ALCA": "104000",
+    "Final Shares": "1000000",
+  },
+  {
+    owner: "Total",
+    shares: "20000000",
+    "RewardPool % ether": "4",
+    "RewardPool % ALCA": "1040000",
+    "Final Shares": "10000000",
+  },
+];
+
+export const expectedResults = {
+  unlockEarly,
+};
