@@ -134,6 +134,10 @@ func PrefixStorageLinkedListKey() []byte {
 	return []byte("a6")
 }
 
+func PrefixAccusation() []byte {
+	return []byte("a7")
+}
+
 func PrefixPendingNodeKeyCount() []byte {
 	return []byte("Ay")
 }
@@ -156,8 +160,4 @@ func PrefixCommittedBlockHeaderCount() []byte {
 
 func PrefixValidatorSetPostApplication() []byte {
 	return []byte("ZZ")
-}
-
-func PrefixAccusation() []byte {
-	return []byte("a6")
 }
