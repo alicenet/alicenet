@@ -83,15 +83,6 @@ import {
   updateProxyList,
 } from "./deployment/factoryStateUtil";
 
-
-task("allow-migration", "Sets the AToken migration = true")
-    .addParam("factoryAddress", "address of the factory deploying the contract")
-    .setAction(async (taskArgs, hre) => {
-        try {
-            await allowMigration(hre, taskArgs.factoryAddress);
-        } catch (error) { }
-    });
-
 task(
   "get-network",
   "gets the current network being used from provider"
@@ -124,13 +115,14 @@ task(
     types.int
   )
   .addOptionalParam("outputFolder", "output folder path to save factoryState")
+  .addOptionalParam("inputFolder", "input folder path for deploymentArgsTemplate")
   .addOptionalVariadicPositionalParam("constructorArgs")
   .setAction(async (taskArgs, hre) => {
     await checkUserDirPath(taskArgs.outputFolder);
     const factoryBase = await hre.ethers.getContractFactory(ALICENET_FACTORY);
     const constructorArgs =
       taskArgs.constructorArgs === undefined
-        ? await getFactoryDeploymentArgs(hre.artifacts)
+        ? await getFactoryDeploymentArgs(hre.artifacts, taskArgs.inputFolder)
         : taskArgs.constructorArgs;
     const signers = await hre.ethers.getSigners();
     // calculate the factory address for the constructor arg
@@ -274,6 +266,7 @@ task(
     let factoryAddress = taskArgs.factoryAddress;
     if (factoryAddress === undefined) {
       const factoryData: FactoryData = await hre.run(TASK_DEPLOY_FACTORY, {
+        inputFolder: taskArgs.inputFolder,
         outputFolder: taskArgs.outputFolder,
         verify: taskArgs.verify,
         waitConfirmation: taskArgs.waitConfirmation,
@@ -331,7 +324,7 @@ task(
             factoryAddress,
             artifacts,
             taskArgs.waitConfirmation,
-            undefined,
+            taskArgs.inputFolder,
             undefined,
             undefined,
             true
@@ -1172,6 +1165,7 @@ task(
     if (factoryAddress === undefined) {
       const factoryData: FactoryData = await hre.run(TASK_DEPLOY_FACTORY, {
         outputFolder: taskArgs.outputFolder,
+        inputFolder: taskArgs.inputFolder
       });
       factoryAddress = factoryData.address;
       cumulativeGasUsed = cumulativeGasUsed.add(factoryData.gas);
@@ -1193,27 +1187,6 @@ task(
     console.log(`total gas used: ${cumulativeGasUsed.toString()}`);
   });
 
-  async function allowMigration(
-    hre: HardhatRuntimeEnvironment,
-    factoryAddress: string,
-): Promise<true> {
-    const factory = await hre.ethers.getContractAt(
-        "AliceNetFactory",
-        factoryAddress
-    );
-    const [admin] = await hre.ethers.getSigners();
-    const aTokenAddress = await factory.callStatic.lookup(
-        hre.ethers.utils.formatBytes32String("AToken")
-    );
-    const aToken = await hre.ethers.getContractAt(
-        "AToken",
-        aTokenAddress
-    )
-    const calldata = aToken.interface.encodeFunctionData("allowMigration");
-    let tx = await factory.connect(admin).callAny(aTokenAddress, 0, calldata);
-    await tx.wait();
-    return true;
-}
 async function checkUserDirPath(path: string) {
   if (path !== undefined) {
     if (!fs.existsSync(path)) {
