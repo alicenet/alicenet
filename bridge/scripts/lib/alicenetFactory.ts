@@ -21,15 +21,12 @@ type Ethers = typeof import("../../node_modules/ethers/lib/ethers") &
 export async function deployFactory(
   constructorArgs: any[],
   ethers: Ethers,
-  signers: SignerWithAddress,
   overrides?: Overrides & { from?: PromiseOrValue<string> }
 ): Promise<AliceNetFactory> {
-  return (await ethers.deployContract(
-    ALICENET_FACTORY,
-    constructorArgs,
-    signers,
-    overrides
-  )) as AliceNetFactory;
+  const factoryBase = await ethers.getContractFactory(ALICENET_FACTORY)
+  return factoryBase.deploy(ALICENET_FACTORY,
+    ...constructorArgs,
+    overrides)
 }
 
 export async function deployUpgradeable(
