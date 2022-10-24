@@ -116,12 +116,6 @@ describe("Testing Lockup Access Control", async () => {
 
   describe("Testing excludePreLock functions", async () => {
     it("attempts to use estimateFinalBonusWithProfits", async () => {
-      expect(await fixture.lockup.getState()).to.be.equals(
-        LockupStates.PreLock
-      );
-      await expect(
-        fixture.lockup.estimateFinalBonusWithProfits(0)
-      ).to.be.revertedWithCustomError(fixture.lockup, "PreLockStateNotAllowed");
       await jumpToInlockState(fixture);
       await expect(
         fixture.lockup.estimateFinalBonusWithProfits(0)

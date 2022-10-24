@@ -218,9 +218,12 @@ describe("Testing Unlock", async () => {
       expectedState.users[user].alca += BigNumber.from(
         example1[user].totalEarnedALCA
       ).toBigInt();
-      expectedState.users[user].tokenOf = ethers.constants.Zero.toBigInt();
-      expectedState.users[user].ownerOf = ethers.constants.AddressZero;
+      expectedState.users[user].tokenId = ethers.constants.Zero.toBigInt();
+      expectedState.users[user].tokenOwner = ethers.constants.AddressZero;
     }
+    // all positions should have been unlocked
+    expectedState.contracts.lockup.lockedPositions = 0n;
+    expectedState.lockupPositions = {};
     // lockup should has to be distributed all the assets
     expectedState.contracts.lockup.alca = 0n;
     expectedState.contracts.lockup.eth = 0n;
@@ -281,9 +284,12 @@ describe("Testing Unlock", async () => {
       expectedState.users[user].alca += BigNumber.from(
         example2[user].totalEarnedALCA
       ).toBigInt();
-      expectedState.users[user].tokenOf = ethers.constants.Zero.toBigInt();
-      expectedState.users[user].ownerOf = ethers.constants.AddressZero;
+      expectedState.users[user].tokenId = ethers.constants.Zero.toBigInt();
+      expectedState.users[user].tokenOwner = ethers.constants.AddressZero;
     }
+    // all positions should have been unlocked
+    expectedState.contracts.lockup.lockedPositions = 0n;
+    expectedState.lockupPositions = {};
     // lockup should have to be distributed all the assets
     expectedState.contracts.lockup.alca = 0n;
     expectedState.contracts.lockup.eth = 0n;
@@ -368,9 +374,12 @@ describe("Testing Unlock", async () => {
         (expectedState.users[user].eth / 100n) * 100n;
       expectedState.users[user].alca =
         (expectedState.users[user].alca / 100n) * 100n;
-      expectedState.users[user].tokenOf = ethers.constants.Zero.toBigInt();
-      expectedState.users[user].ownerOf = ethers.constants.AddressZero;
+      expectedState.users[user].tokenId = ethers.constants.Zero.toBigInt();
+      expectedState.users[user].tokenOwner = ethers.constants.AddressZero;
     }
+    // all positions should have been unlocked
+    expectedState.contracts.lockup.lockedPositions = 0n;
+    expectedState.lockupPositions = {};
     // lockup should has to be distributed all the assets
     expectedState.contracts.lockup.alca = 0n;
     expectedState.contracts.lockup.eth = 0n;
@@ -453,9 +462,12 @@ describe("Testing Unlock", async () => {
         (expectedState.users[user].eth / 10n) * 10n;
       expectedState.users[user].alca =
         (expectedState.users[user].alca / 10n) * 10n;
-      expectedState.users[user].tokenOf = ethers.constants.Zero.toBigInt();
-      expectedState.users[user].ownerOf = ethers.constants.AddressZero;
+      expectedState.users[user].tokenId = ethers.constants.Zero.toBigInt();
+      expectedState.users[user].tokenOwner = ethers.constants.AddressZero;
     }
+    // all positions should have been unlocked
+    expectedState.contracts.lockup.lockedPositions = 0n;
+    expectedState.lockupPositions = {};
     // lockup should have to be distributed all the assets
     expectedState.contracts.lockup.alca = 0n;
     expectedState.contracts.lockup.eth = 0n;
@@ -507,9 +519,12 @@ describe("Testing Unlock", async () => {
       expectedState.contracts.publicStaking.alca += BigNumber.from(
         example1[user].totalEarnedALCA
       ).toBigInt();
-      expectedState.users[user].tokenOf = ethers.constants.Zero.toBigInt();
-      expectedState.users[user].ownerOf = ethers.constants.AddressZero;
+      expectedState.users[user].tokenId = ethers.constants.Zero.toBigInt();
+      expectedState.users[user].tokenOwner = ethers.constants.AddressZero;
     }
+    // all positions should have been unlocked
+    expectedState.contracts.lockup.lockedPositions = 0n;
+    expectedState.lockupPositions = {};
     // lockup should has to be distributed all the assets
     expectedState.contracts.lockup.alca = 0n;
     expectedState.contracts.lockup.eth = 0n;

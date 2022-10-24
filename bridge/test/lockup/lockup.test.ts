@@ -21,7 +21,7 @@ interface Fixture extends BaseTokensFixture {
   bonusPool: BonusPool;
 }
 
-const startBlock = 100;
+let startBlock = 100;
 const lockDuration = 2;
 const stakedAmount = ethers.utils.parseEther("100").toBigInt();
 const totalBonusAmount = ethers.utils.parseEther("10000");
@@ -51,6 +51,7 @@ async function deployFixture() {
     DEPLOYED_RAW,
     CONTRACT_ADDR
   );
+  startBlock += txResponse.blockNumber as number;
   await posFixtureSetup(fixture.factory, fixture.aToken);
   const lockup = await ethers.getContractAt("Lockup", lockupAddress);
   // get the address of the reward pool from the lockup contract
@@ -118,12 +119,6 @@ describe("lockup", async () => {
         fixture.lockup.address
       );
     });
-
-    // it("attempts to lockup someone elses tokenID",async () => {
-    //   const account = accounts[1]
-    //   const tokenID = stakedTokenIDs[2];
-    //   await lockStakedNFT(fixture, account, tokenID)
-    // })
 
     it("attempts to lockup 2 tokenID with 1 account", async () => {
       const account1 = accounts[1];
@@ -362,35 +357,6 @@ describe("lockup", async () => {
       ).to.be.revertedWithCustomError(fixture.lockup, "PreLockStateRequired");
     });
   });
-
-  describe("collectAllProfits", async () => {
-    it("collects all profits", async () => {
-      const account1 = accounts[1];
-      const initalACLABalance = await fixture.aToken.balanceOf(
-        account1.address
-      );
-      const initalEthBalance = await ethers.provider.getBalance(
-        account1.address
-      );
-      const txResponse = await mintBtoken(fixture, accounts[0], "1000");
-      await txResponse.wait();
-      // txResponse = await fixture.lockup.connect(account1).collectAllProfits()
-      const currentACLABalance = await fixture.aToken.balanceOf(
-        account1.address
-      );
-      const currentEthBalance = await ethers.provider.getBalance(
-        account1.address
-      );
-      console.log(initalACLABalance, initalEthBalance);
-      console.log(currentACLABalance, currentEthBalance);
-    });
-
-    it("attempts to collect before postLock phase", async () => {});
-  });
-
-  describe("aggregateProfits", async () => {});
-
-  describe("unlock", async () => {});
 
   describe("getter functions", async () => {
     before(async () => {});
