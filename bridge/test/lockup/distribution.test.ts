@@ -12,6 +12,8 @@ import {
   getEthConsumedAsGas,
   getState,
   numberOfLockingUsers,
+  profitALCA,
+  profitETH,
   showState,
 } from "./setup";
 
@@ -32,23 +34,11 @@ describe("Testing Staking Distribution", async () => {
 
   it("attempts to distribute a first round", async () => {
     showState("Initial distribution", await getState(fixture));
-    await fixture.aToken
-      .connect(accounts[0])
-      .increaseAllowance(
-        fixture.publicStaking.address,
-        ethers.utils.parseEther(example.distribution.profitALCA)
-      );
-    await fixture.publicStaking.connect(accounts[0]).depositEth(42, {
-      value: ethers.utils.parseEther(example.distribution.profitETH),
-    });
-    await fixture.publicStaking
-      .connect(accounts[0])
-      .depositToken(
-        42,
-        ethers.utils.parseEther(example.distribution.profitALCA)
-      );
-    showState("After distribution 1", await getState(fixture));
     const expectedState = await getState(fixture);
+    await distributeProfits(fixture, accounts[0], profitETH, profitALCA);
+    expectedState.contracts.publicStaking.eth += profitETH.toBigInt();
+    expectedState.contracts.publicStaking.alca += profitALCA.toBigInt();
+    showState("After distribution 1", await getState(fixture));
     for (let i = 1; i <= numberOfLockingUsers; i++) {
       const user = ("user" + i) as string;
       const tx = await fixture.publicStaking
@@ -75,13 +65,9 @@ describe("Testing Staking Distribution", async () => {
   it("attempts to distribute a second round (v2)", async () => {
     showState("Initial distribution", await getState(fixture));
     const expectedState = await getState(fixture);
-    await distributeProfits(fixture, accounts[0]);
-    expectedState.contracts.publicStaking.eth += ethers.utils
-      .parseEther(example.distribution.profitETH)
-      .toBigInt();
-    expectedState.contracts.publicStaking.alca += ethers.utils
-      .parseEther(example.distribution.profitALCA)
-      .toBigInt();
+    await distributeProfits(fixture, accounts[0], profitETH, profitALCA);
+    expectedState.contracts.publicStaking.eth += profitETH.toBigInt();
+    expectedState.contracts.publicStaking.alca += profitALCA.toBigInt();
     showState("After distribution 1", await getState(fixture));
     for (let i = 1; i <= numberOfLockingUsers; i++) {
       const user = ("user" + i) as string;
@@ -104,13 +90,9 @@ describe("Testing Staking Distribution", async () => {
     }
     showState("After collect 1", await getState(fixture));
     assert.deepEqual(await getState(fixture), expectedState);
-    await distributeProfits(fixture, accounts[0]);
-    expectedState.contracts.publicStaking.eth += ethers.utils
-      .parseEther(example.distribution.profitETH)
-      .toBigInt();
-    expectedState.contracts.publicStaking.alca += ethers.utils
-      .parseEther(example.distribution.profitALCA)
-      .toBigInt();
+    await distributeProfits(fixture, accounts[0], profitETH, profitALCA);
+    expectedState.contracts.publicStaking.eth += profitETH.toBigInt();
+    expectedState.contracts.publicStaking.alca += profitALCA.toBigInt();
     showState("After distribution 2", await getState(fixture));
     for (let i = 1; i <= numberOfLockingUsers; i++) {
       const user = ("user" + i) as string;
