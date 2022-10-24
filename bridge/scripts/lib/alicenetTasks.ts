@@ -673,6 +673,36 @@ task("schedule-maintenance", "Calls schedule Maintenance")
   });
 
 task(
+  "aggregate-lockup-profits",
+  "Aggregate the profits of the locked positions in the lockup contract"
+)
+  .addParam("factoryAddress", "the AliceNet factory address")
+  .addFlag(
+    "onlyOnce",
+    "only execute aggregateProfits once instead of executing" +
+      " it until is safe to unlock (very gas consuming)"
+  )
+  .setAction(async (taskArgs, hre) => {
+    const { ethers } = hre;
+    const factory = await ethers.getContractAt(
+      "AliceNetFactory",
+      taskArgs.factoryAddress
+    );
+    const lockup = await ethers.getContractAt(
+      "Lockup",
+      await factory.lookup(ethers.utils.formatBytes32String("Lockup"))
+    );
+    let safeToUnlock = await lockup.payoutSafe();
+    while (!safeToUnlock) {
+      await (await lockup.aggregateProfits()).wait(8);
+      safeToUnlock = await lockup.payoutSafe();
+      console.log("Is safe to unlock: " + safeToUnlock);
+      if (taskArgs.onlyOnce) break;
+    }
+    console.log("Done!");
+  });
+
+task(
   "pause-ethdkg-arbitrary-height",
   "Forcing consensus to stop on block number defined by --input"
 )
