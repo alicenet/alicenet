@@ -124,7 +124,7 @@ describe("Testing Dutch Auction", async () => {
     );
   });
 
-  it("Simulates a 30 days run ", async () => {
+  it("should get right prices for the first 30 days", async () => {
     for (let day = 1; day <= 30; day++) {
       expect(await dutchAuction.getPrice()).to.be.equal(
         dailyExpectedPriceFirstMonth[day - 1]

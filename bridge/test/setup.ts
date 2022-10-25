@@ -666,7 +666,7 @@ export async function callFunctionAndGetReturnValues(
   }
 }
 
-export const MetamorphicAddress = (
+export const getMetamorphicAddress = (
   factoryAddress: string,
   salt: string
 ): string => {
