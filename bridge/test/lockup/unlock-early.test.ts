@@ -73,7 +73,7 @@ describe("Testing Unlock Early", async () => {
         userShares,
         50
       );
-      // new lockup position is created for user's remaining stakes
+      // new lockup position is created for user's remaining staking balance
       const newPositionId = (
         await fixture.publicStaking.getLatestMintedPositionID()
       )
@@ -128,7 +128,7 @@ describe("Testing Unlock Early", async () => {
         userShares,
         50
       );
-      // new lockup position is created for user's remaining stakes
+      // new lockup position is created for user's remaining staking balance
       const newPositionId = (
         await fixture.publicStaking.getLatestMintedPositionID()
       )
@@ -186,7 +186,7 @@ describe("Testing Unlock Early", async () => {
         userShares,
         50
       );
-      // new lockup position is created for user's remaining stakes
+      // new lockup position is created for user's remaining staking balance
       const newPositionId = (
         await fixture.publicStaking.getLatestMintedPositionID()
       )

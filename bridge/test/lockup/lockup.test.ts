@@ -358,45 +358,6 @@ describe("lockup", async () => {
     });
   });
 
-  describe("getter functions", async () => {
-    before(async () => {});
-
-    it("should get locking enrollment start block", async () => {
-      expect(await fixture.lockup.getLockupStartBlock()).to.be.equal(
-        startBlock
-      );
-    });
-
-    it("should get locking enrollment end block", async () => {
-      expect(await fixture.lockup.getLockupEndBlock()).to.be.equal(
-        startBlock + lockDuration
-      );
-    });
-
-    // TODO revisit this test
-    it("should get caller eth rewards upon totally early unlocking", async () => {
-      showState("Initial State with staked position", await getState(fixture));
-      await lockStakedNFT(fixture, accounts[1], stakedTokenIDs[1]);
-      showState("After Locking", await getState(fixture));
-      await fixture.lockup
-        .connect(accounts[1])
-        .unlockEarly(stakedAmount, false);
-      showState("After Unlocking Early", await getState(fixture));
-      const [ethRewards, aclRewards] = await fixture.lockup
-        .connect(accounts[1])
-        .getTemporaryRewardBalance(accounts[1].address);
-      expect(ethRewards).to.be.equal(BigNumber.from(0));
-      expect(aclRewards).to.be.equal(BigNumber.from(0));
-    });
-
-    it("should get reward pool address", async () => {
-      expect(await fixture.lockup.getRewardPoolAddress()).to.be.equal(
-        rewardPoolAddress
-      );
-    });
-  });
-});
-
 async function lockStakedNFT(
   fixture: Fixture,
   account: SignerWithAddress,

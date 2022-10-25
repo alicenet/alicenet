@@ -22,8 +22,10 @@ import { Distribution1 } from "./test.data";
 export const numberOfLockingUsers = 5;
 export const stakedAmount = ethers.utils.parseEther("100000000").toBigInt();
 export const totalBonusAmount = ethers.utils.parseEther("2000000");
-export const startBlock = 100;
-export const lockDuration = 100;
+export const startBlock:number = 100;
+export const lockDuration:number = 100;
+export let blockNumberAtLockupDeployment:number = 0
+export let asFactory:string
 export const LockupStates = {
   PreLock: 0,
   InLock: 1,
@@ -291,7 +293,7 @@ export async function getSimulatedStakingPositions(
   numberOfUsers: number
 ) {
   const tokenIDs = [];
-  const asFactory = await getImpersonatedSigner(fixture.factory.address);
+  asFactory = await getImpersonatedSigner(fixture.factory.address);
   await fixture.aToken
     .connect(signers[0])
     .increaseAllowance(fixture.publicStaking.address, stakedAmount);
@@ -345,6 +347,7 @@ export async function deployFixture() {
   await preFixtureSetup();
   const signers = await ethers.getSigners();
   const baseTokensFixture = await deployFactoryAndBaseTokens(signers[0]);
+  blockNumberAtLockupDeployment= await ethers.provider.getBlockNumber();
   const lockup = await deployLockupContract(baseTokensFixture);
   // get the address of the reward pool from the lockup contract
   const rewardPoolAddress = await lockup.getRewardPoolAddress();
