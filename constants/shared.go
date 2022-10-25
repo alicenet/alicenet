@@ -1,3 +1,4 @@
+// Package constants holds all global constants used in AliceNet.
 package constants
 
 import "time"
@@ -117,6 +118,7 @@ var ValidLoggers []string = []string{
 	"services",
 	"settings",
 	"validator",
+	"node",
 	"muxhandler",
 	"bootnode",
 	"p2pmux",
@@ -127,4 +129,6 @@ var ValidLoggers []string = []string{
 	"transaction",
 	"tasks",
 	"staterecover",
+	"ethkey",
+	"init",
 }

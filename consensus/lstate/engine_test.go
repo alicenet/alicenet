@@ -2,13 +2,9 @@ package lstate
 
 import (
 	"context"
+	"encoding/hex"
 	"testing"
 	"time"
-
-	"github.com/dgraph-io/badger/v2"
-	"github.com/sirupsen/logrus"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 
 	appObjs "github.com/alicenet/alicenet/application/objs"
 	"github.com/alicenet/alicenet/config"
@@ -21,9 +17,15 @@ import (
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/crypto"
 	"github.com/alicenet/alicenet/dynamics"
+	dMocks "github.com/alicenet/alicenet/dynamics/mocks"
 	"github.com/alicenet/alicenet/logging"
 	"github.com/alicenet/alicenet/proto"
+	"github.com/alicenet/alicenet/test/mocks"
 	"github.com/alicenet/alicenet/utils"
+	"github.com/dgraph-io/badger/v2"
+	"github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 func TestEngine_Status_Ok(t *testing.T) {
@@ -1333,7 +1335,7 @@ func initEngine(t *testing.T, txs []*appObjs.Tx) *Engine {
 	}
 
 	adminBus := initAdminBus(t, logger, engineDb)
-	storage := appObjs.MakeMockStorageGetter()
+	storage := dMocks.NewMockStorageGetter()
 	reqBusViewMock := &dman.ReqBusViewMock{}
 	dMan := &dman.DMan{}
 	dMan.Init(engineDb, app, reqBusViewMock)
@@ -1354,12 +1356,22 @@ func initAdminBus(t *testing.T, logger *logrus.Logger, db *db.Database) *admin.H
 	return handler
 }
 
-func initStorage(t *testing.T, logger *logrus.Logger) *dynamics.Storage {
+func initStorage(t *testing.T, logger *logrus.Logger) dynamics.StorageGetter {
+	db := mocks.NewTestDB()
 	s := &dynamics.Storage{}
-	err := s.Init(&dynamics.MockRawDB{}, logger)
-	if err != nil {
-		t.Fatal(err)
+	if err := s.Init(db, logger); err != nil {
+		panic(err)
 	}
-
+	err := db.Update(func(txn *badger.Txn) error {
+		// dynamics with fees
+		data, err := hex.DecodeString("00000fa000000bb800000bb8002dc6c00000000000000bb80000000000000bb800000000000000000000000000000fa0")
+		if err != nil {
+			panic(err)
+		}
+		return s.ChangeDynamicValues(txn, 1, data)
+	})
+	if err != nil {
+		panic(err)
+	}
 	return s
 }

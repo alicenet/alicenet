@@ -1,7 +1,13 @@
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { ethers } from "hardhat";
+import { BytesLike } from "ethers";
+import { ethers, network } from "hardhat";
 import { expect } from "../../chai-setup";
-import { BaseTokensFixture, getBaseTokensFixture } from "../../setup";
+import {
+  BaseTokensFixture,
+  getBaseTokensFixture,
+  getContractAddressFromDeployedRawEvent,
+} from "../../setup";
 import { getPosition, newPosition } from "../setup";
 
 describe("PublicStaking: Basics", async () => {
@@ -10,12 +16,19 @@ describe("PublicStaking: Basics", async () => {
   let otherSigner: SignerWithAddress;
   let blockNumber: bigint;
 
-  beforeEach(async function () {
-    fixture = await getBaseTokensFixture();
-    [adminSigner, otherSigner] = await ethers.getSigners();
+  async function deployFixture() {
+    const fixture = await getBaseTokensFixture();
+    const [adminSigner, otherSigner] = await ethers.getSigners();
     await fixture.aToken.approve(fixture.publicStaking.address, 1000);
     const tx = await fixture.publicStaking.connect(adminSigner).mint(1000);
-    blockNumber = BigInt(tx.blockNumber as number);
+    const blockNumber = BigInt(tx.blockNumber as number);
+    return { fixture, adminSigner, otherSigner, blockNumber };
+  }
+
+  beforeEach(async function () {
+    ({ fixture, adminSigner, otherSigner, blockNumber } = await loadFixture(
+      deployFixture
+    ));
   });
 
   it("Should not allow initialize more than once", async () => {
@@ -29,9 +42,17 @@ describe("PublicStaking: Basics", async () => {
   });
 
   it("Only factory should be allowed to call initialize", async () => {
-    const publicStaking = await (
+    const deployData = (
       await ethers.getContractFactory("PublicStaking")
-    ).deploy();
+    ).getDeployTransaction().data as BytesLike;
+    await network.provider.send("evm_setBlockGasLimit", ["0x3000000000000000"]);
+    const publicStakingAddress = await getContractAddressFromDeployedRawEvent(
+      await fixture.factory.deployCreate(deployData)
+    );
+    const publicStaking = await ethers.getContractAt(
+      "PublicStaking",
+      publicStakingAddress
+    );
     const [, user] = await ethers.getSigners();
     await expect(
       publicStaking.connect(user).initialize()

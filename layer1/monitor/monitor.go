@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/alicenet/alicenet/layer1/executor"
 	"strings"
 	"sync"
 	"time"
@@ -19,7 +20,6 @@ import (
 	"github.com/alicenet/alicenet/consensus/objs"
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/layer1"
-	"github.com/alicenet/alicenet/layer1/executor/tasks"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/snapshots"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/snapshots/state"
 	"github.com/alicenet/alicenet/layer1/monitor/events"
@@ -55,8 +55,8 @@ type monitor struct {
 	State                *objects.MonitorState
 	batchSize            uint64
 
-	// for communication with the TasksScheduler
-	taskRequestChan chan<- tasks.TaskRequest
+	//for communication with the TasksScheduler
+	taskHandler executor.TaskHandler
 }
 
 // NewMonitor creates a new Monitor.
@@ -70,7 +70,7 @@ func NewMonitor(cdb *db.Database,
 	tickInterval time.Duration,
 	batchSize uint64,
 	chainId uint32,
-	taskRequestChan chan<- tasks.TaskRequest,
+	taskHandler executor.TaskHandler,
 ) (*monitor, error) {
 	logger := logging.GetLogger("monitor").WithFields(logrus.Fields{
 		"Interval": tickInterval.String(),
@@ -92,11 +92,11 @@ func NewMonitor(cdb *db.Database,
 		closeOnce:            sync.Once{},
 		statusChan:           make(chan string, 1),
 		batchSize:            batchSize,
-		taskRequestChan:      taskRequestChan,
+		taskHandler:          taskHandler,
 	}
 
 	eventMap := objects.NewEventMap()
-	err := events.SetupEventMap(eventMap, cdb, monDB, adminHandler, depositHandler, taskRequestChan, mon.Close, chainId)
+	err := events.SetupEventMap(eventMap, cdb, monDB, adminHandler, depositHandler, taskHandler, mon.Close, chainId)
 	if err != nil {
 		return nil, err
 	}
@@ -105,7 +105,7 @@ func NewMonitor(cdb *db.Database,
 
 	adminHandler.RegisterSnapshotCallback(func(bh *objs.BlockHeader, numOfValidators, validatorIndex int) error {
 		logger.Info("Entering snapshot callback")
-		return PersistSnapshot(eth, bh, numOfValidators, validatorIndex, taskRequestChan, monDB)
+		return PersistSnapshot(eth, bh, numOfValidators, validatorIndex, taskHandler, monDB)
 	})
 
 	return mon, nil
@@ -372,8 +372,8 @@ func ProcessEvents(eth layer1.Client, contracts layer1.AllSmartContracts, monito
 	return currentBlock, nil
 }
 
-// PersistSnapshot should be registered as a callback and be kicked off automatically by badger when appropriate.
-func PersistSnapshot(eth layer1.Client, bh *objs.BlockHeader, numOfValidators, validatorIndex int, taskRequestChan chan<- tasks.TaskRequest, monDB *db.Database) error {
+// PersistSnapshot should be registered as a callback and be kicked off automatically by badger when appropriate
+func PersistSnapshot(eth layer1.Client, bh *objs.BlockHeader, numOfValidators int, validatorIndex int, taskHandler executor.TaskHandler, monDB *db.Database) error {
 	if bh == nil {
 		return errors.New("invalid blockHeader for snapshot")
 	}
@@ -389,11 +389,14 @@ func PersistSnapshot(eth layer1.Client, bh *objs.BlockHeader, numOfValidators, v
 	}
 
 	// kill any snapshot task that might be running
-	taskRequestChan <- tasks.NewKillTaskRequest(&snapshots.SnapshotTask{})
+	ctx := context.Background()
+	_, err = taskHandler.KillTaskByType(ctx, &snapshots.SnapshotTask{})
+	if err != nil {
+		return err
+	}
 
-	taskRequestChan <- tasks.NewScheduleTaskRequest(snapshots.NewSnapshotTask(uint64(bh.BClaims.Height), numOfValidators, validatorIndex))
-
-	return nil
+	_, err = taskHandler.ScheduleTask(ctx, snapshots.NewSnapshotTask(uint64(bh.BClaims.Height), numOfValidators, validatorIndex), "")
+	return err
 }
 
 // TODO: Remove from request hot path use memory cache

@@ -1,3 +1,4 @@
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BigNumberish } from "ethers";
 import { ethers } from "hardhat";
@@ -33,15 +34,21 @@ describe("Ethdkg: Migrate state", () => {
     BigNumberish
   ][];
 
-  beforeEach(async function () {
-    fixture = await getFixture();
-    [admin] = await ethers.getSigners();
-    validatorsAddress = [];
-    validatorsShares = [];
+  async function deployFixture() {
+    const fixture = await getFixture();
+    const [admin] = await ethers.getSigners();
+    const validatorsAddress = [];
+    const validatorsShares = [];
     for (let i = 0; i < validatorsSnapshots.length; i++) {
       validatorsAddress.push(validatorsSnapshots[i].address);
       validatorsShares.push(validatorsSnapshots[i].gpkj);
     }
+    return { fixture, admin, validatorsAddress, validatorsShares };
+  }
+
+  beforeEach(async function () {
+    ({ fixture, admin, validatorsAddress, validatorsShares } =
+      await loadFixture(deployFixture));
   });
 
   it("Should not be to do a migration of validators if not factory", async function () {

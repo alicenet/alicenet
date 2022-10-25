@@ -1,3 +1,4 @@
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
@@ -11,24 +12,33 @@ describe("Testing BToken Destroy methods", async () => {
   let expectedState: state;
   let fixture: Fixture;
   const eth = 40;
-  let ethForMinting: BigNumber;
   let bTokens: BigNumber;
   const minBTokens = 0;
   let ethsFromBurning: BigNumber;
 
-  beforeEach(async function () {
-    fixture = await getFixture();
+  async function deployFixture() {
+    const fixture = await getFixture();
     const signers = await ethers.getSigners();
-    [admin, user] = signers;
-    ethForMinting = ethers.utils.parseEther(eth.toString());
-    [bTokens] = await callFunctionAndGetReturnValues(
+    const [admin, user] = signers;
+    const ethForMinting = ethers.utils.parseEther(eth.toString());
+    const [bTokens] = await callFunctionAndGetReturnValues(
       fixture.bToken,
       "mint",
       user,
       [minBTokens],
       ethForMinting
     );
-    ethsFromBurning = await fixture.bToken.getLatestEthFromBTokensBurn(bTokens);
+    const ethsFromBurning = await fixture.bToken.getLatestEthFromBTokensBurn(
+      bTokens
+    );
+    return { fixture, admin, user, ethForMinting, bTokens, ethsFromBurning };
+  }
+
+  beforeEach(async function () {
+    ({ fixture, admin, user, bTokens, ethsFromBurning } = await loadFixture(
+      deployFixture
+    ));
+
     showState("Initial", await getState(fixture));
   });
 

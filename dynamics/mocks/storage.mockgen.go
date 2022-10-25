@@ -15,12 +15,12 @@ import (
 // (from the package github.com/alicenet/alicenet/dynamics) used for unit
 // testing.
 type MockStorageGetter struct {
-	// GetDataStoreEpochFeeFunc is an instance of a mock function object
-	// controlling the behavior of the method GetDataStoreEpochFee.
-	GetDataStoreEpochFeeFunc *StorageGetterGetDataStoreEpochFeeFunc
-	// GetDataStoreValidVersionFunc is an instance of a mock function object
-	// controlling the behavior of the method GetDataStoreValidVersion.
-	GetDataStoreValidVersionFunc *StorageGetterGetDataStoreValidVersionFunc
+	// ChangeDynamicValuesFunc is an instance of a mock function object
+	// controlling the behavior of the method ChangeDynamicValues.
+	ChangeDynamicValuesFunc *StorageGetterChangeDynamicValuesFunc
+	// GetDataStoreFeeFunc is an instance of a mock function object
+	// controlling the behavior of the method GetDataStoreFee.
+	GetDataStoreFeeFunc *StorageGetterGetDataStoreFeeFunc
 	// GetDeadBlockRoundNextRoundTimeoutFunc is an instance of a mock
 	// function object controlling the behavior of the method
 	// GetDeadBlockRoundNextRoundTimeout.
@@ -28,59 +28,48 @@ type MockStorageGetter struct {
 	// GetDownloadTimeoutFunc is an instance of a mock function object
 	// controlling the behavior of the method GetDownloadTimeout.
 	GetDownloadTimeoutFunc *StorageGetterGetDownloadTimeoutFunc
-	// GetMaxBytesFunc is an instance of a mock function object controlling
-	// the behavior of the method GetMaxBytes.
-	GetMaxBytesFunc *StorageGetterGetMaxBytesFunc
+	// GetDynamicValueInThePastFunc is an instance of a mock function object
+	// controlling the behavior of the method GetDynamicValueInThePast.
+	GetDynamicValueInThePastFunc *StorageGetterGetDynamicValueInThePastFunc
+	// GetMaxBlockSizeFunc is an instance of a mock function object
+	// controlling the behavior of the method GetMaxBlockSize.
+	GetMaxBlockSizeFunc *StorageGetterGetMaxBlockSizeFunc
 	// GetMaxProposalSizeFunc is an instance of a mock function object
 	// controlling the behavior of the method GetMaxProposalSize.
 	GetMaxProposalSizeFunc *StorageGetterGetMaxProposalSizeFunc
-	// GetMinTxFeeFunc is an instance of a mock function object controlling
-	// the behavior of the method GetMinTxFee.
-	GetMinTxFeeFunc *StorageGetterGetMinTxFeeFunc
-	// GetMsgTimeoutFunc is an instance of a mock function object
-	// controlling the behavior of the method GetMsgTimeout.
-	GetMsgTimeoutFunc *StorageGetterGetMsgTimeoutFunc
-	// GetPreCommitStepTimeoutFunc is an instance of a mock function object
-	// controlling the behavior of the method GetPreCommitStepTimeout.
-	GetPreCommitStepTimeoutFunc *StorageGetterGetPreCommitStepTimeoutFunc
-	// GetPreVoteStepTimeoutFunc is an instance of a mock function object
-	// controlling the behavior of the method GetPreVoteStepTimeout.
-	GetPreVoteStepTimeoutFunc *StorageGetterGetPreVoteStepTimeoutFunc
-	// GetProposalStepTimeoutFunc is an instance of a mock function object
-	// controlling the behavior of the method GetProposalStepTimeout.
-	GetProposalStepTimeoutFunc *StorageGetterGetProposalStepTimeoutFunc
-	// GetSrvrMsgTimeoutFunc is an instance of a mock function object
-	// controlling the behavior of the method GetSrvrMsgTimeout.
-	GetSrvrMsgTimeoutFunc *StorageGetterGetSrvrMsgTimeoutFunc
-	// GetTxValidVersionFunc is an instance of a mock function object
-	// controlling the behavior of the method GetTxValidVersion.
-	GetTxValidVersionFunc *StorageGetterGetTxValidVersionFunc
+	// GetMinScaledTransactionFeeFunc is an instance of a mock function
+	// object controlling the behavior of the method
+	// GetMinScaledTransactionFee.
+	GetMinScaledTransactionFeeFunc *StorageGetterGetMinScaledTransactionFeeFunc
+	// GetPreCommitTimeoutFunc is an instance of a mock function object
+	// controlling the behavior of the method GetPreCommitTimeout.
+	GetPreCommitTimeoutFunc *StorageGetterGetPreCommitTimeoutFunc
+	// GetPreVoteTimeoutFunc is an instance of a mock function object
+	// controlling the behavior of the method GetPreVoteTimeout.
+	GetPreVoteTimeoutFunc *StorageGetterGetPreVoteTimeoutFunc
+	// GetProposalTimeoutFunc is an instance of a mock function object
+	// controlling the behavior of the method GetProposalTimeout.
+	GetProposalTimeoutFunc *StorageGetterGetProposalTimeoutFunc
 	// GetValueStoreFeeFunc is an instance of a mock function object
 	// controlling the behavior of the method GetValueStoreFee.
 	GetValueStoreFeeFunc *StorageGetterGetValueStoreFeeFunc
-	// GetValueStoreValidVersionFunc is an instance of a mock function
+	// UpdateCurrentDynamicValueFunc is an instance of a mock function
 	// object controlling the behavior of the method
-	// GetValueStoreValidVersion.
-	GetValueStoreValidVersionFunc *StorageGetterGetValueStoreValidVersionFunc
-	// LoadStorageFunc is an instance of a mock function object controlling
-	// the behavior of the method LoadStorage.
-	LoadStorageFunc *StorageGetterLoadStorageFunc
-	// UpdateStorageFunc is an instance of a mock function object
-	// controlling the behavior of the method UpdateStorage.
-	UpdateStorageFunc *StorageGetterUpdateStorageFunc
+	// UpdateCurrentDynamicValue.
+	UpdateCurrentDynamicValueFunc *StorageGetterUpdateCurrentDynamicValueFunc
 }
 
 // NewMockStorageGetter creates a new mock of the StorageGetter interface.
 // All methods return zero values for all results, unless overwritten.
 func NewMockStorageGetter() *MockStorageGetter {
 	return &MockStorageGetter{
-		GetDataStoreEpochFeeFunc: &StorageGetterGetDataStoreEpochFeeFunc{
-			defaultHook: func() (r0 *big.Int) {
+		ChangeDynamicValuesFunc: &StorageGetterChangeDynamicValuesFunc{
+			defaultHook: func(*v2.Txn, uint32, []byte) (r0 error) {
 				return
 			},
 		},
-		GetDataStoreValidVersionFunc: &StorageGetterGetDataStoreValidVersionFunc{
-			defaultHook: func() (r0 uint32) {
+		GetDataStoreFeeFunc: &StorageGetterGetDataStoreFeeFunc{
+			defaultHook: func() (r0 *big.Int) {
 				return
 			},
 		},
@@ -94,7 +83,12 @@ func NewMockStorageGetter() *MockStorageGetter {
 				return
 			},
 		},
-		GetMaxBytesFunc: &StorageGetterGetMaxBytesFunc{
+		GetDynamicValueInThePastFunc: &StorageGetterGetDynamicValueInThePastFunc{
+			defaultHook: func(*v2.Txn, uint32) (r0 uint32, r1 *dynamics.DynamicValues, r2 error) {
+				return
+			},
+		},
+		GetMaxBlockSizeFunc: &StorageGetterGetMaxBlockSizeFunc{
 			defaultHook: func() (r0 uint32) {
 				return
 			},
@@ -104,38 +98,23 @@ func NewMockStorageGetter() *MockStorageGetter {
 				return
 			},
 		},
-		GetMinTxFeeFunc: &StorageGetterGetMinTxFeeFunc{
+		GetMinScaledTransactionFeeFunc: &StorageGetterGetMinScaledTransactionFeeFunc{
 			defaultHook: func() (r0 *big.Int) {
 				return
 			},
 		},
-		GetMsgTimeoutFunc: &StorageGetterGetMsgTimeoutFunc{
+		GetPreCommitTimeoutFunc: &StorageGetterGetPreCommitTimeoutFunc{
 			defaultHook: func() (r0 time.Duration) {
 				return
 			},
 		},
-		GetPreCommitStepTimeoutFunc: &StorageGetterGetPreCommitStepTimeoutFunc{
+		GetPreVoteTimeoutFunc: &StorageGetterGetPreVoteTimeoutFunc{
 			defaultHook: func() (r0 time.Duration) {
 				return
 			},
 		},
-		GetPreVoteStepTimeoutFunc: &StorageGetterGetPreVoteStepTimeoutFunc{
+		GetProposalTimeoutFunc: &StorageGetterGetProposalTimeoutFunc{
 			defaultHook: func() (r0 time.Duration) {
-				return
-			},
-		},
-		GetProposalStepTimeoutFunc: &StorageGetterGetProposalStepTimeoutFunc{
-			defaultHook: func() (r0 time.Duration) {
-				return
-			},
-		},
-		GetSrvrMsgTimeoutFunc: &StorageGetterGetSrvrMsgTimeoutFunc{
-			defaultHook: func() (r0 time.Duration) {
-				return
-			},
-		},
-		GetTxValidVersionFunc: &StorageGetterGetTxValidVersionFunc{
-			defaultHook: func() (r0 uint32) {
 				return
 			},
 		},
@@ -144,18 +123,8 @@ func NewMockStorageGetter() *MockStorageGetter {
 				return
 			},
 		},
-		GetValueStoreValidVersionFunc: &StorageGetterGetValueStoreValidVersionFunc{
-			defaultHook: func() (r0 uint32) {
-				return
-			},
-		},
-		LoadStorageFunc: &StorageGetterLoadStorageFunc{
+		UpdateCurrentDynamicValueFunc: &StorageGetterUpdateCurrentDynamicValueFunc{
 			defaultHook: func(*v2.Txn, uint32) (r0 error) {
-				return
-			},
-		},
-		UpdateStorageFunc: &StorageGetterUpdateStorageFunc{
-			defaultHook: func(*v2.Txn, dynamics.Updater) (r0 error) {
 				return
 			},
 		},
@@ -166,14 +135,14 @@ func NewMockStorageGetter() *MockStorageGetter {
 // interface. All methods panic on invocation, unless overwritten.
 func NewStrictMockStorageGetter() *MockStorageGetter {
 	return &MockStorageGetter{
-		GetDataStoreEpochFeeFunc: &StorageGetterGetDataStoreEpochFeeFunc{
-			defaultHook: func() *big.Int {
-				panic("unexpected invocation of MockStorageGetter.GetDataStoreEpochFee")
+		ChangeDynamicValuesFunc: &StorageGetterChangeDynamicValuesFunc{
+			defaultHook: func(*v2.Txn, uint32, []byte) error {
+				panic("unexpected invocation of MockStorageGetter.ChangeDynamicValues")
 			},
 		},
-		GetDataStoreValidVersionFunc: &StorageGetterGetDataStoreValidVersionFunc{
-			defaultHook: func() uint32 {
-				panic("unexpected invocation of MockStorageGetter.GetDataStoreValidVersion")
+		GetDataStoreFeeFunc: &StorageGetterGetDataStoreFeeFunc{
+			defaultHook: func() *big.Int {
+				panic("unexpected invocation of MockStorageGetter.GetDataStoreFee")
 			},
 		},
 		GetDeadBlockRoundNextRoundTimeoutFunc: &StorageGetterGetDeadBlockRoundNextRoundTimeoutFunc{
@@ -186,9 +155,14 @@ func NewStrictMockStorageGetter() *MockStorageGetter {
 				panic("unexpected invocation of MockStorageGetter.GetDownloadTimeout")
 			},
 		},
-		GetMaxBytesFunc: &StorageGetterGetMaxBytesFunc{
+		GetDynamicValueInThePastFunc: &StorageGetterGetDynamicValueInThePastFunc{
+			defaultHook: func(*v2.Txn, uint32) (uint32, *dynamics.DynamicValues, error) {
+				panic("unexpected invocation of MockStorageGetter.GetDynamicValueInThePast")
+			},
+		},
+		GetMaxBlockSizeFunc: &StorageGetterGetMaxBlockSizeFunc{
 			defaultHook: func() uint32 {
-				panic("unexpected invocation of MockStorageGetter.GetMaxBytes")
+				panic("unexpected invocation of MockStorageGetter.GetMaxBlockSize")
 			},
 		},
 		GetMaxProposalSizeFunc: &StorageGetterGetMaxProposalSizeFunc{
@@ -196,39 +170,24 @@ func NewStrictMockStorageGetter() *MockStorageGetter {
 				panic("unexpected invocation of MockStorageGetter.GetMaxProposalSize")
 			},
 		},
-		GetMinTxFeeFunc: &StorageGetterGetMinTxFeeFunc{
+		GetMinScaledTransactionFeeFunc: &StorageGetterGetMinScaledTransactionFeeFunc{
 			defaultHook: func() *big.Int {
-				panic("unexpected invocation of MockStorageGetter.GetMinTxFee")
+				panic("unexpected invocation of MockStorageGetter.GetMinScaledTransactionFee")
 			},
 		},
-		GetMsgTimeoutFunc: &StorageGetterGetMsgTimeoutFunc{
+		GetPreCommitTimeoutFunc: &StorageGetterGetPreCommitTimeoutFunc{
 			defaultHook: func() time.Duration {
-				panic("unexpected invocation of MockStorageGetter.GetMsgTimeout")
+				panic("unexpected invocation of MockStorageGetter.GetPreCommitTimeout")
 			},
 		},
-		GetPreCommitStepTimeoutFunc: &StorageGetterGetPreCommitStepTimeoutFunc{
+		GetPreVoteTimeoutFunc: &StorageGetterGetPreVoteTimeoutFunc{
 			defaultHook: func() time.Duration {
-				panic("unexpected invocation of MockStorageGetter.GetPreCommitStepTimeout")
+				panic("unexpected invocation of MockStorageGetter.GetPreVoteTimeout")
 			},
 		},
-		GetPreVoteStepTimeoutFunc: &StorageGetterGetPreVoteStepTimeoutFunc{
+		GetProposalTimeoutFunc: &StorageGetterGetProposalTimeoutFunc{
 			defaultHook: func() time.Duration {
-				panic("unexpected invocation of MockStorageGetter.GetPreVoteStepTimeout")
-			},
-		},
-		GetProposalStepTimeoutFunc: &StorageGetterGetProposalStepTimeoutFunc{
-			defaultHook: func() time.Duration {
-				panic("unexpected invocation of MockStorageGetter.GetProposalStepTimeout")
-			},
-		},
-		GetSrvrMsgTimeoutFunc: &StorageGetterGetSrvrMsgTimeoutFunc{
-			defaultHook: func() time.Duration {
-				panic("unexpected invocation of MockStorageGetter.GetSrvrMsgTimeout")
-			},
-		},
-		GetTxValidVersionFunc: &StorageGetterGetTxValidVersionFunc{
-			defaultHook: func() uint32 {
-				panic("unexpected invocation of MockStorageGetter.GetTxValidVersion")
+				panic("unexpected invocation of MockStorageGetter.GetProposalTimeout")
 			},
 		},
 		GetValueStoreFeeFunc: &StorageGetterGetValueStoreFeeFunc{
@@ -236,19 +195,9 @@ func NewStrictMockStorageGetter() *MockStorageGetter {
 				panic("unexpected invocation of MockStorageGetter.GetValueStoreFee")
 			},
 		},
-		GetValueStoreValidVersionFunc: &StorageGetterGetValueStoreValidVersionFunc{
-			defaultHook: func() uint32 {
-				panic("unexpected invocation of MockStorageGetter.GetValueStoreValidVersion")
-			},
-		},
-		LoadStorageFunc: &StorageGetterLoadStorageFunc{
+		UpdateCurrentDynamicValueFunc: &StorageGetterUpdateCurrentDynamicValueFunc{
 			defaultHook: func(*v2.Txn, uint32) error {
-				panic("unexpected invocation of MockStorageGetter.LoadStorage")
-			},
-		},
-		UpdateStorageFunc: &StorageGetterUpdateStorageFunc{
-			defaultHook: func(*v2.Txn, dynamics.Updater) error {
-				panic("unexpected invocation of MockStorageGetter.UpdateStorage")
+				panic("unexpected invocation of MockStorageGetter.UpdateCurrentDynamicValue")
 			},
 		},
 	}
@@ -259,11 +208,11 @@ func NewStrictMockStorageGetter() *MockStorageGetter {
 // overwritten.
 func NewMockStorageGetterFrom(i dynamics.StorageGetter) *MockStorageGetter {
 	return &MockStorageGetter{
-		GetDataStoreEpochFeeFunc: &StorageGetterGetDataStoreEpochFeeFunc{
-			defaultHook: i.GetDataStoreEpochFee,
+		ChangeDynamicValuesFunc: &StorageGetterChangeDynamicValuesFunc{
+			defaultHook: i.ChangeDynamicValues,
 		},
-		GetDataStoreValidVersionFunc: &StorageGetterGetDataStoreValidVersionFunc{
-			defaultHook: i.GetDataStoreValidVersion,
+		GetDataStoreFeeFunc: &StorageGetterGetDataStoreFeeFunc{
+			defaultHook: i.GetDataStoreFee,
 		},
 		GetDeadBlockRoundNextRoundTimeoutFunc: &StorageGetterGetDeadBlockRoundNextRoundTimeoutFunc{
 			defaultHook: i.GetDeadBlockRoundNextRoundTimeout,
@@ -271,79 +220,67 @@ func NewMockStorageGetterFrom(i dynamics.StorageGetter) *MockStorageGetter {
 		GetDownloadTimeoutFunc: &StorageGetterGetDownloadTimeoutFunc{
 			defaultHook: i.GetDownloadTimeout,
 		},
-		GetMaxBytesFunc: &StorageGetterGetMaxBytesFunc{
-			defaultHook: i.GetMaxBytes,
+		GetDynamicValueInThePastFunc: &StorageGetterGetDynamicValueInThePastFunc{
+			defaultHook: i.GetDynamicValueInThePast,
+		},
+		GetMaxBlockSizeFunc: &StorageGetterGetMaxBlockSizeFunc{
+			defaultHook: i.GetMaxBlockSize,
 		},
 		GetMaxProposalSizeFunc: &StorageGetterGetMaxProposalSizeFunc{
 			defaultHook: i.GetMaxProposalSize,
 		},
-		GetMinTxFeeFunc: &StorageGetterGetMinTxFeeFunc{
-			defaultHook: i.GetMinTxFee,
+		GetMinScaledTransactionFeeFunc: &StorageGetterGetMinScaledTransactionFeeFunc{
+			defaultHook: i.GetMinScaledTransactionFee,
 		},
-		GetMsgTimeoutFunc: &StorageGetterGetMsgTimeoutFunc{
-			defaultHook: i.GetMsgTimeout,
+		GetPreCommitTimeoutFunc: &StorageGetterGetPreCommitTimeoutFunc{
+			defaultHook: i.GetPreCommitTimeout,
 		},
-		GetPreCommitStepTimeoutFunc: &StorageGetterGetPreCommitStepTimeoutFunc{
-			defaultHook: i.GetPreCommitStepTimeout,
+		GetPreVoteTimeoutFunc: &StorageGetterGetPreVoteTimeoutFunc{
+			defaultHook: i.GetPreVoteTimeout,
 		},
-		GetPreVoteStepTimeoutFunc: &StorageGetterGetPreVoteStepTimeoutFunc{
-			defaultHook: i.GetPreVoteStepTimeout,
-		},
-		GetProposalStepTimeoutFunc: &StorageGetterGetProposalStepTimeoutFunc{
-			defaultHook: i.GetProposalStepTimeout,
-		},
-		GetSrvrMsgTimeoutFunc: &StorageGetterGetSrvrMsgTimeoutFunc{
-			defaultHook: i.GetSrvrMsgTimeout,
-		},
-		GetTxValidVersionFunc: &StorageGetterGetTxValidVersionFunc{
-			defaultHook: i.GetTxValidVersion,
+		GetProposalTimeoutFunc: &StorageGetterGetProposalTimeoutFunc{
+			defaultHook: i.GetProposalTimeout,
 		},
 		GetValueStoreFeeFunc: &StorageGetterGetValueStoreFeeFunc{
 			defaultHook: i.GetValueStoreFee,
 		},
-		GetValueStoreValidVersionFunc: &StorageGetterGetValueStoreValidVersionFunc{
-			defaultHook: i.GetValueStoreValidVersion,
-		},
-		LoadStorageFunc: &StorageGetterLoadStorageFunc{
-			defaultHook: i.LoadStorage,
-		},
-		UpdateStorageFunc: &StorageGetterUpdateStorageFunc{
-			defaultHook: i.UpdateStorage,
+		UpdateCurrentDynamicValueFunc: &StorageGetterUpdateCurrentDynamicValueFunc{
+			defaultHook: i.UpdateCurrentDynamicValue,
 		},
 	}
 }
 
-// StorageGetterGetDataStoreEpochFeeFunc describes the behavior when the
-// GetDataStoreEpochFee method of the parent MockStorageGetter instance is
+// StorageGetterChangeDynamicValuesFunc describes the behavior when the
+// ChangeDynamicValues method of the parent MockStorageGetter instance is
 // invoked.
-type StorageGetterGetDataStoreEpochFeeFunc struct {
-	defaultHook func() *big.Int
-	hooks       []func() *big.Int
-	history     []StorageGetterGetDataStoreEpochFeeFuncCall
+type StorageGetterChangeDynamicValuesFunc struct {
+	defaultHook func(*v2.Txn, uint32, []byte) error
+	hooks       []func(*v2.Txn, uint32, []byte) error
+	history     []StorageGetterChangeDynamicValuesFuncCall
 	mutex       sync.Mutex
 }
 
-// GetDataStoreEpochFee delegates to the next hook function in the queue and
+// ChangeDynamicValues delegates to the next hook function in the queue and
 // stores the parameter and result values of this invocation.
-func (m *MockStorageGetter) GetDataStoreEpochFee() *big.Int {
-	r0 := m.GetDataStoreEpochFeeFunc.nextHook()()
-	m.GetDataStoreEpochFeeFunc.appendCall(StorageGetterGetDataStoreEpochFeeFuncCall{r0})
+func (m *MockStorageGetter) ChangeDynamicValues(v0 *v2.Txn, v1 uint32, v2 []byte) error {
+	r0 := m.ChangeDynamicValuesFunc.nextHook()(v0, v1, v2)
+	m.ChangeDynamicValuesFunc.appendCall(StorageGetterChangeDynamicValuesFuncCall{v0, v1, v2, r0})
 	return r0
 }
 
-// SetDefaultHook sets function that is called when the GetDataStoreEpochFee
+// SetDefaultHook sets function that is called when the ChangeDynamicValues
 // method of the parent MockStorageGetter instance is invoked and the hook
 // queue is empty.
-func (f *StorageGetterGetDataStoreEpochFeeFunc) SetDefaultHook(hook func() *big.Int) {
+func (f *StorageGetterChangeDynamicValuesFunc) SetDefaultHook(hook func(*v2.Txn, uint32, []byte) error) {
 	f.defaultHook = hook
 }
 
 // PushHook adds a function to the end of hook queue. Each invocation of the
-// GetDataStoreEpochFee method of the parent MockStorageGetter instance
+// ChangeDynamicValues method of the parent MockStorageGetter instance
 // invokes the hook at the front of the queue and discards it. After the
 // queue is empty, the default hook function is invoked for any future
 // action.
-func (f *StorageGetterGetDataStoreEpochFeeFunc) PushHook(hook func() *big.Int) {
+func (f *StorageGetterChangeDynamicValuesFunc) PushHook(hook func(*v2.Txn, uint32, []byte) error) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -351,20 +288,20 @@ func (f *StorageGetterGetDataStoreEpochFeeFunc) PushHook(hook func() *big.Int) {
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *StorageGetterGetDataStoreEpochFeeFunc) SetDefaultReturn(r0 *big.Int) {
-	f.SetDefaultHook(func() *big.Int {
+func (f *StorageGetterChangeDynamicValuesFunc) SetDefaultReturn(r0 error) {
+	f.SetDefaultHook(func(*v2.Txn, uint32, []byte) error {
 		return r0
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *StorageGetterGetDataStoreEpochFeeFunc) PushReturn(r0 *big.Int) {
-	f.PushHook(func() *big.Int {
+func (f *StorageGetterChangeDynamicValuesFunc) PushReturn(r0 error) {
+	f.PushHook(func(*v2.Txn, uint32, []byte) error {
 		return r0
 	})
 }
 
-func (f *StorageGetterGetDataStoreEpochFeeFunc) nextHook() func() *big.Int {
+func (f *StorageGetterChangeDynamicValuesFunc) nextHook() func(*v2.Txn, uint32, []byte) error {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -377,27 +314,136 @@ func (f *StorageGetterGetDataStoreEpochFeeFunc) nextHook() func() *big.Int {
 	return hook
 }
 
-func (f *StorageGetterGetDataStoreEpochFeeFunc) appendCall(r0 StorageGetterGetDataStoreEpochFeeFuncCall) {
+func (f *StorageGetterChangeDynamicValuesFunc) appendCall(r0 StorageGetterChangeDynamicValuesFuncCall) {
 	f.mutex.Lock()
 	f.history = append(f.history, r0)
 	f.mutex.Unlock()
 }
 
-// History returns a sequence of StorageGetterGetDataStoreEpochFeeFuncCall
+// History returns a sequence of StorageGetterChangeDynamicValuesFuncCall
 // objects describing the invocations of this function.
-func (f *StorageGetterGetDataStoreEpochFeeFunc) History() []StorageGetterGetDataStoreEpochFeeFuncCall {
+func (f *StorageGetterChangeDynamicValuesFunc) History() []StorageGetterChangeDynamicValuesFuncCall {
 	f.mutex.Lock()
-	history := make([]StorageGetterGetDataStoreEpochFeeFuncCall, len(f.history))
+	history := make([]StorageGetterChangeDynamicValuesFuncCall, len(f.history))
 	copy(history, f.history)
 	f.mutex.Unlock()
 
 	return history
 }
 
-// StorageGetterGetDataStoreEpochFeeFuncCall is an object that describes an
-// invocation of method GetDataStoreEpochFee on an instance of
+// StorageGetterChangeDynamicValuesFuncCall is an object that describes an
+// invocation of method ChangeDynamicValues on an instance of
 // MockStorageGetter.
-type StorageGetterGetDataStoreEpochFeeFuncCall struct {
+type StorageGetterChangeDynamicValuesFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 *v2.Txn
+	// Arg1 is the value of the 2nd argument passed to this method
+	// invocation.
+	Arg1 uint32
+	// Arg2 is the value of the 3rd argument passed to this method
+	// invocation.
+	Arg2 []byte
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c StorageGetterChangeDynamicValuesFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0, c.Arg1, c.Arg2}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c StorageGetterChangeDynamicValuesFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0}
+}
+
+// StorageGetterGetDataStoreFeeFunc describes the behavior when the
+// GetDataStoreFee method of the parent MockStorageGetter instance is
+// invoked.
+type StorageGetterGetDataStoreFeeFunc struct {
+	defaultHook func() *big.Int
+	hooks       []func() *big.Int
+	history     []StorageGetterGetDataStoreFeeFuncCall
+	mutex       sync.Mutex
+}
+
+// GetDataStoreFee delegates to the next hook function in the queue and
+// stores the parameter and result values of this invocation.
+func (m *MockStorageGetter) GetDataStoreFee() *big.Int {
+	r0 := m.GetDataStoreFeeFunc.nextHook()()
+	m.GetDataStoreFeeFunc.appendCall(StorageGetterGetDataStoreFeeFuncCall{r0})
+	return r0
+}
+
+// SetDefaultHook sets function that is called when the GetDataStoreFee
+// method of the parent MockStorageGetter instance is invoked and the hook
+// queue is empty.
+func (f *StorageGetterGetDataStoreFeeFunc) SetDefaultHook(hook func() *big.Int) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// GetDataStoreFee method of the parent MockStorageGetter instance invokes
+// the hook at the front of the queue and discards it. After the queue is
+// empty, the default hook function is invoked for any future action.
+func (f *StorageGetterGetDataStoreFeeFunc) PushHook(hook func() *big.Int) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *StorageGetterGetDataStoreFeeFunc) SetDefaultReturn(r0 *big.Int) {
+	f.SetDefaultHook(func() *big.Int {
+		return r0
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *StorageGetterGetDataStoreFeeFunc) PushReturn(r0 *big.Int) {
+	f.PushHook(func() *big.Int {
+		return r0
+	})
+}
+
+func (f *StorageGetterGetDataStoreFeeFunc) nextHook() func() *big.Int {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *StorageGetterGetDataStoreFeeFunc) appendCall(r0 StorageGetterGetDataStoreFeeFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of StorageGetterGetDataStoreFeeFuncCall
+// objects describing the invocations of this function.
+func (f *StorageGetterGetDataStoreFeeFunc) History() []StorageGetterGetDataStoreFeeFuncCall {
+	f.mutex.Lock()
+	history := make([]StorageGetterGetDataStoreFeeFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// StorageGetterGetDataStoreFeeFuncCall is an object that describes an
+// invocation of method GetDataStoreFee on an instance of MockStorageGetter.
+type StorageGetterGetDataStoreFeeFuncCall struct {
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
 	Result0 *big.Int
@@ -405,116 +451,13 @@ type StorageGetterGetDataStoreEpochFeeFuncCall struct {
 
 // Args returns an interface slice containing the arguments of this
 // invocation.
-func (c StorageGetterGetDataStoreEpochFeeFuncCall) Args() []interface{} {
+func (c StorageGetterGetDataStoreFeeFuncCall) Args() []interface{} {
 	return []interface{}{}
 }
 
 // Results returns an interface slice containing the results of this
 // invocation.
-func (c StorageGetterGetDataStoreEpochFeeFuncCall) Results() []interface{} {
-	return []interface{}{c.Result0}
-}
-
-// StorageGetterGetDataStoreValidVersionFunc describes the behavior when the
-// GetDataStoreValidVersion method of the parent MockStorageGetter instance
-// is invoked.
-type StorageGetterGetDataStoreValidVersionFunc struct {
-	defaultHook func() uint32
-	hooks       []func() uint32
-	history     []StorageGetterGetDataStoreValidVersionFuncCall
-	mutex       sync.Mutex
-}
-
-// GetDataStoreValidVersion delegates to the next hook function in the queue
-// and stores the parameter and result values of this invocation.
-func (m *MockStorageGetter) GetDataStoreValidVersion() uint32 {
-	r0 := m.GetDataStoreValidVersionFunc.nextHook()()
-	m.GetDataStoreValidVersionFunc.appendCall(StorageGetterGetDataStoreValidVersionFuncCall{r0})
-	return r0
-}
-
-// SetDefaultHook sets function that is called when the
-// GetDataStoreValidVersion method of the parent MockStorageGetter instance
-// is invoked and the hook queue is empty.
-func (f *StorageGetterGetDataStoreValidVersionFunc) SetDefaultHook(hook func() uint32) {
-	f.defaultHook = hook
-}
-
-// PushHook adds a function to the end of hook queue. Each invocation of the
-// GetDataStoreValidVersion method of the parent MockStorageGetter instance
-// invokes the hook at the front of the queue and discards it. After the
-// queue is empty, the default hook function is invoked for any future
-// action.
-func (f *StorageGetterGetDataStoreValidVersionFunc) PushHook(hook func() uint32) {
-	f.mutex.Lock()
-	f.hooks = append(f.hooks, hook)
-	f.mutex.Unlock()
-}
-
-// SetDefaultReturn calls SetDefaultHook with a function that returns the
-// given values.
-func (f *StorageGetterGetDataStoreValidVersionFunc) SetDefaultReturn(r0 uint32) {
-	f.SetDefaultHook(func() uint32 {
-		return r0
-	})
-}
-
-// PushReturn calls PushHook with a function that returns the given values.
-func (f *StorageGetterGetDataStoreValidVersionFunc) PushReturn(r0 uint32) {
-	f.PushHook(func() uint32 {
-		return r0
-	})
-}
-
-func (f *StorageGetterGetDataStoreValidVersionFunc) nextHook() func() uint32 {
-	f.mutex.Lock()
-	defer f.mutex.Unlock()
-
-	if len(f.hooks) == 0 {
-		return f.defaultHook
-	}
-
-	hook := f.hooks[0]
-	f.hooks = f.hooks[1:]
-	return hook
-}
-
-func (f *StorageGetterGetDataStoreValidVersionFunc) appendCall(r0 StorageGetterGetDataStoreValidVersionFuncCall) {
-	f.mutex.Lock()
-	f.history = append(f.history, r0)
-	f.mutex.Unlock()
-}
-
-// History returns a sequence of
-// StorageGetterGetDataStoreValidVersionFuncCall objects describing the
-// invocations of this function.
-func (f *StorageGetterGetDataStoreValidVersionFunc) History() []StorageGetterGetDataStoreValidVersionFuncCall {
-	f.mutex.Lock()
-	history := make([]StorageGetterGetDataStoreValidVersionFuncCall, len(f.history))
-	copy(history, f.history)
-	f.mutex.Unlock()
-
-	return history
-}
-
-// StorageGetterGetDataStoreValidVersionFuncCall is an object that describes
-// an invocation of method GetDataStoreValidVersion on an instance of
-// MockStorageGetter.
-type StorageGetterGetDataStoreValidVersionFuncCall struct {
-	// Result0 is the value of the 1st result returned from this method
-	// invocation.
-	Result0 uint32
-}
-
-// Args returns an interface slice containing the arguments of this
-// invocation.
-func (c StorageGetterGetDataStoreValidVersionFuncCall) Args() []interface{} {
-	return []interface{}{}
-}
-
-// Results returns an interface slice containing the results of this
-// invocation.
-func (c StorageGetterGetDataStoreValidVersionFuncCall) Results() []interface{} {
+func (c StorageGetterGetDataStoreFeeFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0}
 }
 
@@ -723,35 +666,37 @@ func (c StorageGetterGetDownloadTimeoutFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0}
 }
 
-// StorageGetterGetMaxBytesFunc describes the behavior when the GetMaxBytes
-// method of the parent MockStorageGetter instance is invoked.
-type StorageGetterGetMaxBytesFunc struct {
-	defaultHook func() uint32
-	hooks       []func() uint32
-	history     []StorageGetterGetMaxBytesFuncCall
+// StorageGetterGetDynamicValueInThePastFunc describes the behavior when the
+// GetDynamicValueInThePast method of the parent MockStorageGetter instance
+// is invoked.
+type StorageGetterGetDynamicValueInThePastFunc struct {
+	defaultHook func(*v2.Txn, uint32) (uint32, *dynamics.DynamicValues, error)
+	hooks       []func(*v2.Txn, uint32) (uint32, *dynamics.DynamicValues, error)
+	history     []StorageGetterGetDynamicValueInThePastFuncCall
 	mutex       sync.Mutex
 }
 
-// GetMaxBytes delegates to the next hook function in the queue and stores
-// the parameter and result values of this invocation.
-func (m *MockStorageGetter) GetMaxBytes() uint32 {
-	r0 := m.GetMaxBytesFunc.nextHook()()
-	m.GetMaxBytesFunc.appendCall(StorageGetterGetMaxBytesFuncCall{r0})
-	return r0
+// GetDynamicValueInThePast delegates to the next hook function in the queue
+// and stores the parameter and result values of this invocation.
+func (m *MockStorageGetter) GetDynamicValueInThePast(v0 *v2.Txn, v1 uint32) (uint32, *dynamics.DynamicValues, error) {
+	r0, r1, r2 := m.GetDynamicValueInThePastFunc.nextHook()(v0, v1)
+	m.GetDynamicValueInThePastFunc.appendCall(StorageGetterGetDynamicValueInThePastFuncCall{v0, v1, r0, r1, r2})
+	return r0, r1, r2
 }
 
-// SetDefaultHook sets function that is called when the GetMaxBytes method
-// of the parent MockStorageGetter instance is invoked and the hook queue is
-// empty.
-func (f *StorageGetterGetMaxBytesFunc) SetDefaultHook(hook func() uint32) {
+// SetDefaultHook sets function that is called when the
+// GetDynamicValueInThePast method of the parent MockStorageGetter instance
+// is invoked and the hook queue is empty.
+func (f *StorageGetterGetDynamicValueInThePastFunc) SetDefaultHook(hook func(*v2.Txn, uint32) (uint32, *dynamics.DynamicValues, error)) {
 	f.defaultHook = hook
 }
 
 // PushHook adds a function to the end of hook queue. Each invocation of the
-// GetMaxBytes method of the parent MockStorageGetter instance invokes the
-// hook at the front of the queue and discards it. After the queue is empty,
-// the default hook function is invoked for any future action.
-func (f *StorageGetterGetMaxBytesFunc) PushHook(hook func() uint32) {
+// GetDynamicValueInThePast method of the parent MockStorageGetter instance
+// invokes the hook at the front of the queue and discards it. After the
+// queue is empty, the default hook function is invoked for any future
+// action.
+func (f *StorageGetterGetDynamicValueInThePastFunc) PushHook(hook func(*v2.Txn, uint32) (uint32, *dynamics.DynamicValues, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -759,20 +704,20 @@ func (f *StorageGetterGetMaxBytesFunc) PushHook(hook func() uint32) {
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *StorageGetterGetMaxBytesFunc) SetDefaultReturn(r0 uint32) {
-	f.SetDefaultHook(func() uint32 {
-		return r0
+func (f *StorageGetterGetDynamicValueInThePastFunc) SetDefaultReturn(r0 uint32, r1 *dynamics.DynamicValues, r2 error) {
+	f.SetDefaultHook(func(*v2.Txn, uint32) (uint32, *dynamics.DynamicValues, error) {
+		return r0, r1, r2
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *StorageGetterGetMaxBytesFunc) PushReturn(r0 uint32) {
-	f.PushHook(func() uint32 {
-		return r0
+func (f *StorageGetterGetDynamicValueInThePastFunc) PushReturn(r0 uint32, r1 *dynamics.DynamicValues, r2 error) {
+	f.PushHook(func(*v2.Txn, uint32) (uint32, *dynamics.DynamicValues, error) {
+		return r0, r1, r2
 	})
 }
 
-func (f *StorageGetterGetMaxBytesFunc) nextHook() func() uint32 {
+func (f *StorageGetterGetDynamicValueInThePastFunc) nextHook() func(*v2.Txn, uint32) (uint32, *dynamics.DynamicValues, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -785,26 +730,140 @@ func (f *StorageGetterGetMaxBytesFunc) nextHook() func() uint32 {
 	return hook
 }
 
-func (f *StorageGetterGetMaxBytesFunc) appendCall(r0 StorageGetterGetMaxBytesFuncCall) {
+func (f *StorageGetterGetDynamicValueInThePastFunc) appendCall(r0 StorageGetterGetDynamicValueInThePastFuncCall) {
 	f.mutex.Lock()
 	f.history = append(f.history, r0)
 	f.mutex.Unlock()
 }
 
-// History returns a sequence of StorageGetterGetMaxBytesFuncCall objects
-// describing the invocations of this function.
-func (f *StorageGetterGetMaxBytesFunc) History() []StorageGetterGetMaxBytesFuncCall {
+// History returns a sequence of
+// StorageGetterGetDynamicValueInThePastFuncCall objects describing the
+// invocations of this function.
+func (f *StorageGetterGetDynamicValueInThePastFunc) History() []StorageGetterGetDynamicValueInThePastFuncCall {
 	f.mutex.Lock()
-	history := make([]StorageGetterGetMaxBytesFuncCall, len(f.history))
+	history := make([]StorageGetterGetDynamicValueInThePastFuncCall, len(f.history))
 	copy(history, f.history)
 	f.mutex.Unlock()
 
 	return history
 }
 
-// StorageGetterGetMaxBytesFuncCall is an object that describes an
-// invocation of method GetMaxBytes on an instance of MockStorageGetter.
-type StorageGetterGetMaxBytesFuncCall struct {
+// StorageGetterGetDynamicValueInThePastFuncCall is an object that describes
+// an invocation of method GetDynamicValueInThePast on an instance of
+// MockStorageGetter.
+type StorageGetterGetDynamicValueInThePastFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 *v2.Txn
+	// Arg1 is the value of the 2nd argument passed to this method
+	// invocation.
+	Arg1 uint32
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 uint32
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 *dynamics.DynamicValues
+	// Result2 is the value of the 3rd result returned from this method
+	// invocation.
+	Result2 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c StorageGetterGetDynamicValueInThePastFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0, c.Arg1}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c StorageGetterGetDynamicValueInThePastFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1, c.Result2}
+}
+
+// StorageGetterGetMaxBlockSizeFunc describes the behavior when the
+// GetMaxBlockSize method of the parent MockStorageGetter instance is
+// invoked.
+type StorageGetterGetMaxBlockSizeFunc struct {
+	defaultHook func() uint32
+	hooks       []func() uint32
+	history     []StorageGetterGetMaxBlockSizeFuncCall
+	mutex       sync.Mutex
+}
+
+// GetMaxBlockSize delegates to the next hook function in the queue and
+// stores the parameter and result values of this invocation.
+func (m *MockStorageGetter) GetMaxBlockSize() uint32 {
+	r0 := m.GetMaxBlockSizeFunc.nextHook()()
+	m.GetMaxBlockSizeFunc.appendCall(StorageGetterGetMaxBlockSizeFuncCall{r0})
+	return r0
+}
+
+// SetDefaultHook sets function that is called when the GetMaxBlockSize
+// method of the parent MockStorageGetter instance is invoked and the hook
+// queue is empty.
+func (f *StorageGetterGetMaxBlockSizeFunc) SetDefaultHook(hook func() uint32) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// GetMaxBlockSize method of the parent MockStorageGetter instance invokes
+// the hook at the front of the queue and discards it. After the queue is
+// empty, the default hook function is invoked for any future action.
+func (f *StorageGetterGetMaxBlockSizeFunc) PushHook(hook func() uint32) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *StorageGetterGetMaxBlockSizeFunc) SetDefaultReturn(r0 uint32) {
+	f.SetDefaultHook(func() uint32 {
+		return r0
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *StorageGetterGetMaxBlockSizeFunc) PushReturn(r0 uint32) {
+	f.PushHook(func() uint32 {
+		return r0
+	})
+}
+
+func (f *StorageGetterGetMaxBlockSizeFunc) nextHook() func() uint32 {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *StorageGetterGetMaxBlockSizeFunc) appendCall(r0 StorageGetterGetMaxBlockSizeFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of StorageGetterGetMaxBlockSizeFuncCall
+// objects describing the invocations of this function.
+func (f *StorageGetterGetMaxBlockSizeFunc) History() []StorageGetterGetMaxBlockSizeFuncCall {
+	f.mutex.Lock()
+	history := make([]StorageGetterGetMaxBlockSizeFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// StorageGetterGetMaxBlockSizeFuncCall is an object that describes an
+// invocation of method GetMaxBlockSize on an instance of MockStorageGetter.
+type StorageGetterGetMaxBlockSizeFuncCall struct {
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
 	Result0 uint32
@@ -812,13 +871,13 @@ type StorageGetterGetMaxBytesFuncCall struct {
 
 // Args returns an interface slice containing the arguments of this
 // invocation.
-func (c StorageGetterGetMaxBytesFuncCall) Args() []interface{} {
+func (c StorageGetterGetMaxBlockSizeFuncCall) Args() []interface{} {
 	return []interface{}{}
 }
 
 // Results returns an interface slice containing the results of this
 // invocation.
-func (c StorageGetterGetMaxBytesFuncCall) Results() []interface{} {
+func (c StorageGetterGetMaxBlockSizeFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0}
 }
 
@@ -924,35 +983,37 @@ func (c StorageGetterGetMaxProposalSizeFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0}
 }
 
-// StorageGetterGetMinTxFeeFunc describes the behavior when the GetMinTxFee
-// method of the parent MockStorageGetter instance is invoked.
-type StorageGetterGetMinTxFeeFunc struct {
+// StorageGetterGetMinScaledTransactionFeeFunc describes the behavior when
+// the GetMinScaledTransactionFee method of the parent MockStorageGetter
+// instance is invoked.
+type StorageGetterGetMinScaledTransactionFeeFunc struct {
 	defaultHook func() *big.Int
 	hooks       []func() *big.Int
-	history     []StorageGetterGetMinTxFeeFuncCall
+	history     []StorageGetterGetMinScaledTransactionFeeFuncCall
 	mutex       sync.Mutex
 }
 
-// GetMinTxFee delegates to the next hook function in the queue and stores
-// the parameter and result values of this invocation.
-func (m *MockStorageGetter) GetMinTxFee() *big.Int {
-	r0 := m.GetMinTxFeeFunc.nextHook()()
-	m.GetMinTxFeeFunc.appendCall(StorageGetterGetMinTxFeeFuncCall{r0})
+// GetMinScaledTransactionFee delegates to the next hook function in the
+// queue and stores the parameter and result values of this invocation.
+func (m *MockStorageGetter) GetMinScaledTransactionFee() *big.Int {
+	r0 := m.GetMinScaledTransactionFeeFunc.nextHook()()
+	m.GetMinScaledTransactionFeeFunc.appendCall(StorageGetterGetMinScaledTransactionFeeFuncCall{r0})
 	return r0
 }
 
-// SetDefaultHook sets function that is called when the GetMinTxFee method
-// of the parent MockStorageGetter instance is invoked and the hook queue is
-// empty.
-func (f *StorageGetterGetMinTxFeeFunc) SetDefaultHook(hook func() *big.Int) {
+// SetDefaultHook sets function that is called when the
+// GetMinScaledTransactionFee method of the parent MockStorageGetter
+// instance is invoked and the hook queue is empty.
+func (f *StorageGetterGetMinScaledTransactionFeeFunc) SetDefaultHook(hook func() *big.Int) {
 	f.defaultHook = hook
 }
 
 // PushHook adds a function to the end of hook queue. Each invocation of the
-// GetMinTxFee method of the parent MockStorageGetter instance invokes the
-// hook at the front of the queue and discards it. After the queue is empty,
-// the default hook function is invoked for any future action.
-func (f *StorageGetterGetMinTxFeeFunc) PushHook(hook func() *big.Int) {
+// GetMinScaledTransactionFee method of the parent MockStorageGetter
+// instance invokes the hook at the front of the queue and discards it.
+// After the queue is empty, the default hook function is invoked for any
+// future action.
+func (f *StorageGetterGetMinScaledTransactionFeeFunc) PushHook(hook func() *big.Int) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -960,20 +1021,20 @@ func (f *StorageGetterGetMinTxFeeFunc) PushHook(hook func() *big.Int) {
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *StorageGetterGetMinTxFeeFunc) SetDefaultReturn(r0 *big.Int) {
+func (f *StorageGetterGetMinScaledTransactionFeeFunc) SetDefaultReturn(r0 *big.Int) {
 	f.SetDefaultHook(func() *big.Int {
 		return r0
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *StorageGetterGetMinTxFeeFunc) PushReturn(r0 *big.Int) {
+func (f *StorageGetterGetMinScaledTransactionFeeFunc) PushReturn(r0 *big.Int) {
 	f.PushHook(func() *big.Int {
 		return r0
 	})
 }
 
-func (f *StorageGetterGetMinTxFeeFunc) nextHook() func() *big.Int {
+func (f *StorageGetterGetMinScaledTransactionFeeFunc) nextHook() func() *big.Int {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -986,26 +1047,28 @@ func (f *StorageGetterGetMinTxFeeFunc) nextHook() func() *big.Int {
 	return hook
 }
 
-func (f *StorageGetterGetMinTxFeeFunc) appendCall(r0 StorageGetterGetMinTxFeeFuncCall) {
+func (f *StorageGetterGetMinScaledTransactionFeeFunc) appendCall(r0 StorageGetterGetMinScaledTransactionFeeFuncCall) {
 	f.mutex.Lock()
 	f.history = append(f.history, r0)
 	f.mutex.Unlock()
 }
 
-// History returns a sequence of StorageGetterGetMinTxFeeFuncCall objects
-// describing the invocations of this function.
-func (f *StorageGetterGetMinTxFeeFunc) History() []StorageGetterGetMinTxFeeFuncCall {
+// History returns a sequence of
+// StorageGetterGetMinScaledTransactionFeeFuncCall objects describing the
+// invocations of this function.
+func (f *StorageGetterGetMinScaledTransactionFeeFunc) History() []StorageGetterGetMinScaledTransactionFeeFuncCall {
 	f.mutex.Lock()
-	history := make([]StorageGetterGetMinTxFeeFuncCall, len(f.history))
+	history := make([]StorageGetterGetMinScaledTransactionFeeFuncCall, len(f.history))
 	copy(history, f.history)
 	f.mutex.Unlock()
 
 	return history
 }
 
-// StorageGetterGetMinTxFeeFuncCall is an object that describes an
-// invocation of method GetMinTxFee on an instance of MockStorageGetter.
-type StorageGetterGetMinTxFeeFuncCall struct {
+// StorageGetterGetMinScaledTransactionFeeFuncCall is an object that
+// describes an invocation of method GetMinScaledTransactionFee on an
+// instance of MockStorageGetter.
+type StorageGetterGetMinScaledTransactionFeeFuncCall struct {
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
 	Result0 *big.Int
@@ -1013,452 +1076,47 @@ type StorageGetterGetMinTxFeeFuncCall struct {
 
 // Args returns an interface slice containing the arguments of this
 // invocation.
-func (c StorageGetterGetMinTxFeeFuncCall) Args() []interface{} {
+func (c StorageGetterGetMinScaledTransactionFeeFuncCall) Args() []interface{} {
 	return []interface{}{}
 }
 
 // Results returns an interface slice containing the results of this
 // invocation.
-func (c StorageGetterGetMinTxFeeFuncCall) Results() []interface{} {
+func (c StorageGetterGetMinScaledTransactionFeeFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0}
 }
 
-// StorageGetterGetMsgTimeoutFunc describes the behavior when the
-// GetMsgTimeout method of the parent MockStorageGetter instance is invoked.
-type StorageGetterGetMsgTimeoutFunc struct {
-	defaultHook func() time.Duration
-	hooks       []func() time.Duration
-	history     []StorageGetterGetMsgTimeoutFuncCall
-	mutex       sync.Mutex
-}
-
-// GetMsgTimeout delegates to the next hook function in the queue and stores
-// the parameter and result values of this invocation.
-func (m *MockStorageGetter) GetMsgTimeout() time.Duration {
-	r0 := m.GetMsgTimeoutFunc.nextHook()()
-	m.GetMsgTimeoutFunc.appendCall(StorageGetterGetMsgTimeoutFuncCall{r0})
-	return r0
-}
-
-// SetDefaultHook sets function that is called when the GetMsgTimeout method
-// of the parent MockStorageGetter instance is invoked and the hook queue is
-// empty.
-func (f *StorageGetterGetMsgTimeoutFunc) SetDefaultHook(hook func() time.Duration) {
-	f.defaultHook = hook
-}
-
-// PushHook adds a function to the end of hook queue. Each invocation of the
-// GetMsgTimeout method of the parent MockStorageGetter instance invokes the
-// hook at the front of the queue and discards it. After the queue is empty,
-// the default hook function is invoked for any future action.
-func (f *StorageGetterGetMsgTimeoutFunc) PushHook(hook func() time.Duration) {
-	f.mutex.Lock()
-	f.hooks = append(f.hooks, hook)
-	f.mutex.Unlock()
-}
-
-// SetDefaultReturn calls SetDefaultHook with a function that returns the
-// given values.
-func (f *StorageGetterGetMsgTimeoutFunc) SetDefaultReturn(r0 time.Duration) {
-	f.SetDefaultHook(func() time.Duration {
-		return r0
-	})
-}
-
-// PushReturn calls PushHook with a function that returns the given values.
-func (f *StorageGetterGetMsgTimeoutFunc) PushReturn(r0 time.Duration) {
-	f.PushHook(func() time.Duration {
-		return r0
-	})
-}
-
-func (f *StorageGetterGetMsgTimeoutFunc) nextHook() func() time.Duration {
-	f.mutex.Lock()
-	defer f.mutex.Unlock()
-
-	if len(f.hooks) == 0 {
-		return f.defaultHook
-	}
-
-	hook := f.hooks[0]
-	f.hooks = f.hooks[1:]
-	return hook
-}
-
-func (f *StorageGetterGetMsgTimeoutFunc) appendCall(r0 StorageGetterGetMsgTimeoutFuncCall) {
-	f.mutex.Lock()
-	f.history = append(f.history, r0)
-	f.mutex.Unlock()
-}
-
-// History returns a sequence of StorageGetterGetMsgTimeoutFuncCall objects
-// describing the invocations of this function.
-func (f *StorageGetterGetMsgTimeoutFunc) History() []StorageGetterGetMsgTimeoutFuncCall {
-	f.mutex.Lock()
-	history := make([]StorageGetterGetMsgTimeoutFuncCall, len(f.history))
-	copy(history, f.history)
-	f.mutex.Unlock()
-
-	return history
-}
-
-// StorageGetterGetMsgTimeoutFuncCall is an object that describes an
-// invocation of method GetMsgTimeout on an instance of MockStorageGetter.
-type StorageGetterGetMsgTimeoutFuncCall struct {
-	// Result0 is the value of the 1st result returned from this method
-	// invocation.
-	Result0 time.Duration
-}
-
-// Args returns an interface slice containing the arguments of this
-// invocation.
-func (c StorageGetterGetMsgTimeoutFuncCall) Args() []interface{} {
-	return []interface{}{}
-}
-
-// Results returns an interface slice containing the results of this
-// invocation.
-func (c StorageGetterGetMsgTimeoutFuncCall) Results() []interface{} {
-	return []interface{}{c.Result0}
-}
-
-// StorageGetterGetPreCommitStepTimeoutFunc describes the behavior when the
-// GetPreCommitStepTimeout method of the parent MockStorageGetter instance
-// is invoked.
-type StorageGetterGetPreCommitStepTimeoutFunc struct {
-	defaultHook func() time.Duration
-	hooks       []func() time.Duration
-	history     []StorageGetterGetPreCommitStepTimeoutFuncCall
-	mutex       sync.Mutex
-}
-
-// GetPreCommitStepTimeout delegates to the next hook function in the queue
-// and stores the parameter and result values of this invocation.
-func (m *MockStorageGetter) GetPreCommitStepTimeout() time.Duration {
-	r0 := m.GetPreCommitStepTimeoutFunc.nextHook()()
-	m.GetPreCommitStepTimeoutFunc.appendCall(StorageGetterGetPreCommitStepTimeoutFuncCall{r0})
-	return r0
-}
-
-// SetDefaultHook sets function that is called when the
-// GetPreCommitStepTimeout method of the parent MockStorageGetter instance
-// is invoked and the hook queue is empty.
-func (f *StorageGetterGetPreCommitStepTimeoutFunc) SetDefaultHook(hook func() time.Duration) {
-	f.defaultHook = hook
-}
-
-// PushHook adds a function to the end of hook queue. Each invocation of the
-// GetPreCommitStepTimeout method of the parent MockStorageGetter instance
-// invokes the hook at the front of the queue and discards it. After the
-// queue is empty, the default hook function is invoked for any future
-// action.
-func (f *StorageGetterGetPreCommitStepTimeoutFunc) PushHook(hook func() time.Duration) {
-	f.mutex.Lock()
-	f.hooks = append(f.hooks, hook)
-	f.mutex.Unlock()
-}
-
-// SetDefaultReturn calls SetDefaultHook with a function that returns the
-// given values.
-func (f *StorageGetterGetPreCommitStepTimeoutFunc) SetDefaultReturn(r0 time.Duration) {
-	f.SetDefaultHook(func() time.Duration {
-		return r0
-	})
-}
-
-// PushReturn calls PushHook with a function that returns the given values.
-func (f *StorageGetterGetPreCommitStepTimeoutFunc) PushReturn(r0 time.Duration) {
-	f.PushHook(func() time.Duration {
-		return r0
-	})
-}
-
-func (f *StorageGetterGetPreCommitStepTimeoutFunc) nextHook() func() time.Duration {
-	f.mutex.Lock()
-	defer f.mutex.Unlock()
-
-	if len(f.hooks) == 0 {
-		return f.defaultHook
-	}
-
-	hook := f.hooks[0]
-	f.hooks = f.hooks[1:]
-	return hook
-}
-
-func (f *StorageGetterGetPreCommitStepTimeoutFunc) appendCall(r0 StorageGetterGetPreCommitStepTimeoutFuncCall) {
-	f.mutex.Lock()
-	f.history = append(f.history, r0)
-	f.mutex.Unlock()
-}
-
-// History returns a sequence of
-// StorageGetterGetPreCommitStepTimeoutFuncCall objects describing the
-// invocations of this function.
-func (f *StorageGetterGetPreCommitStepTimeoutFunc) History() []StorageGetterGetPreCommitStepTimeoutFuncCall {
-	f.mutex.Lock()
-	history := make([]StorageGetterGetPreCommitStepTimeoutFuncCall, len(f.history))
-	copy(history, f.history)
-	f.mutex.Unlock()
-
-	return history
-}
-
-// StorageGetterGetPreCommitStepTimeoutFuncCall is an object that describes
-// an invocation of method GetPreCommitStepTimeout on an instance of
-// MockStorageGetter.
-type StorageGetterGetPreCommitStepTimeoutFuncCall struct {
-	// Result0 is the value of the 1st result returned from this method
-	// invocation.
-	Result0 time.Duration
-}
-
-// Args returns an interface slice containing the arguments of this
-// invocation.
-func (c StorageGetterGetPreCommitStepTimeoutFuncCall) Args() []interface{} {
-	return []interface{}{}
-}
-
-// Results returns an interface slice containing the results of this
-// invocation.
-func (c StorageGetterGetPreCommitStepTimeoutFuncCall) Results() []interface{} {
-	return []interface{}{c.Result0}
-}
-
-// StorageGetterGetPreVoteStepTimeoutFunc describes the behavior when the
-// GetPreVoteStepTimeout method of the parent MockStorageGetter instance is
+// StorageGetterGetPreCommitTimeoutFunc describes the behavior when the
+// GetPreCommitTimeout method of the parent MockStorageGetter instance is
 // invoked.
-type StorageGetterGetPreVoteStepTimeoutFunc struct {
+type StorageGetterGetPreCommitTimeoutFunc struct {
 	defaultHook func() time.Duration
 	hooks       []func() time.Duration
-	history     []StorageGetterGetPreVoteStepTimeoutFuncCall
+	history     []StorageGetterGetPreCommitTimeoutFuncCall
 	mutex       sync.Mutex
 }
 
-// GetPreVoteStepTimeout delegates to the next hook function in the queue
-// and stores the parameter and result values of this invocation.
-func (m *MockStorageGetter) GetPreVoteStepTimeout() time.Duration {
-	r0 := m.GetPreVoteStepTimeoutFunc.nextHook()()
-	m.GetPreVoteStepTimeoutFunc.appendCall(StorageGetterGetPreVoteStepTimeoutFuncCall{r0})
-	return r0
-}
-
-// SetDefaultHook sets function that is called when the
-// GetPreVoteStepTimeout method of the parent MockStorageGetter instance is
-// invoked and the hook queue is empty.
-func (f *StorageGetterGetPreVoteStepTimeoutFunc) SetDefaultHook(hook func() time.Duration) {
-	f.defaultHook = hook
-}
-
-// PushHook adds a function to the end of hook queue. Each invocation of the
-// GetPreVoteStepTimeout method of the parent MockStorageGetter instance
-// invokes the hook at the front of the queue and discards it. After the
-// queue is empty, the default hook function is invoked for any future
-// action.
-func (f *StorageGetterGetPreVoteStepTimeoutFunc) PushHook(hook func() time.Duration) {
-	f.mutex.Lock()
-	f.hooks = append(f.hooks, hook)
-	f.mutex.Unlock()
-}
-
-// SetDefaultReturn calls SetDefaultHook with a function that returns the
-// given values.
-func (f *StorageGetterGetPreVoteStepTimeoutFunc) SetDefaultReturn(r0 time.Duration) {
-	f.SetDefaultHook(func() time.Duration {
-		return r0
-	})
-}
-
-// PushReturn calls PushHook with a function that returns the given values.
-func (f *StorageGetterGetPreVoteStepTimeoutFunc) PushReturn(r0 time.Duration) {
-	f.PushHook(func() time.Duration {
-		return r0
-	})
-}
-
-func (f *StorageGetterGetPreVoteStepTimeoutFunc) nextHook() func() time.Duration {
-	f.mutex.Lock()
-	defer f.mutex.Unlock()
-
-	if len(f.hooks) == 0 {
-		return f.defaultHook
-	}
-
-	hook := f.hooks[0]
-	f.hooks = f.hooks[1:]
-	return hook
-}
-
-func (f *StorageGetterGetPreVoteStepTimeoutFunc) appendCall(r0 StorageGetterGetPreVoteStepTimeoutFuncCall) {
-	f.mutex.Lock()
-	f.history = append(f.history, r0)
-	f.mutex.Unlock()
-}
-
-// History returns a sequence of StorageGetterGetPreVoteStepTimeoutFuncCall
-// objects describing the invocations of this function.
-func (f *StorageGetterGetPreVoteStepTimeoutFunc) History() []StorageGetterGetPreVoteStepTimeoutFuncCall {
-	f.mutex.Lock()
-	history := make([]StorageGetterGetPreVoteStepTimeoutFuncCall, len(f.history))
-	copy(history, f.history)
-	f.mutex.Unlock()
-
-	return history
-}
-
-// StorageGetterGetPreVoteStepTimeoutFuncCall is an object that describes an
-// invocation of method GetPreVoteStepTimeout on an instance of
-// MockStorageGetter.
-type StorageGetterGetPreVoteStepTimeoutFuncCall struct {
-	// Result0 is the value of the 1st result returned from this method
-	// invocation.
-	Result0 time.Duration
-}
-
-// Args returns an interface slice containing the arguments of this
-// invocation.
-func (c StorageGetterGetPreVoteStepTimeoutFuncCall) Args() []interface{} {
-	return []interface{}{}
-}
-
-// Results returns an interface slice containing the results of this
-// invocation.
-func (c StorageGetterGetPreVoteStepTimeoutFuncCall) Results() []interface{} {
-	return []interface{}{c.Result0}
-}
-
-// StorageGetterGetProposalStepTimeoutFunc describes the behavior when the
-// GetProposalStepTimeout method of the parent MockStorageGetter instance is
-// invoked.
-type StorageGetterGetProposalStepTimeoutFunc struct {
-	defaultHook func() time.Duration
-	hooks       []func() time.Duration
-	history     []StorageGetterGetProposalStepTimeoutFuncCall
-	mutex       sync.Mutex
-}
-
-// GetProposalStepTimeout delegates to the next hook function in the queue
-// and stores the parameter and result values of this invocation.
-func (m *MockStorageGetter) GetProposalStepTimeout() time.Duration {
-	r0 := m.GetProposalStepTimeoutFunc.nextHook()()
-	m.GetProposalStepTimeoutFunc.appendCall(StorageGetterGetProposalStepTimeoutFuncCall{r0})
-	return r0
-}
-
-// SetDefaultHook sets function that is called when the
-// GetProposalStepTimeout method of the parent MockStorageGetter instance is
-// invoked and the hook queue is empty.
-func (f *StorageGetterGetProposalStepTimeoutFunc) SetDefaultHook(hook func() time.Duration) {
-	f.defaultHook = hook
-}
-
-// PushHook adds a function to the end of hook queue. Each invocation of the
-// GetProposalStepTimeout method of the parent MockStorageGetter instance
-// invokes the hook at the front of the queue and discards it. After the
-// queue is empty, the default hook function is invoked for any future
-// action.
-func (f *StorageGetterGetProposalStepTimeoutFunc) PushHook(hook func() time.Duration) {
-	f.mutex.Lock()
-	f.hooks = append(f.hooks, hook)
-	f.mutex.Unlock()
-}
-
-// SetDefaultReturn calls SetDefaultHook with a function that returns the
-// given values.
-func (f *StorageGetterGetProposalStepTimeoutFunc) SetDefaultReturn(r0 time.Duration) {
-	f.SetDefaultHook(func() time.Duration {
-		return r0
-	})
-}
-
-// PushReturn calls PushHook with a function that returns the given values.
-func (f *StorageGetterGetProposalStepTimeoutFunc) PushReturn(r0 time.Duration) {
-	f.PushHook(func() time.Duration {
-		return r0
-	})
-}
-
-func (f *StorageGetterGetProposalStepTimeoutFunc) nextHook() func() time.Duration {
-	f.mutex.Lock()
-	defer f.mutex.Unlock()
-
-	if len(f.hooks) == 0 {
-		return f.defaultHook
-	}
-
-	hook := f.hooks[0]
-	f.hooks = f.hooks[1:]
-	return hook
-}
-
-func (f *StorageGetterGetProposalStepTimeoutFunc) appendCall(r0 StorageGetterGetProposalStepTimeoutFuncCall) {
-	f.mutex.Lock()
-	f.history = append(f.history, r0)
-	f.mutex.Unlock()
-}
-
-// History returns a sequence of StorageGetterGetProposalStepTimeoutFuncCall
-// objects describing the invocations of this function.
-func (f *StorageGetterGetProposalStepTimeoutFunc) History() []StorageGetterGetProposalStepTimeoutFuncCall {
-	f.mutex.Lock()
-	history := make([]StorageGetterGetProposalStepTimeoutFuncCall, len(f.history))
-	copy(history, f.history)
-	f.mutex.Unlock()
-
-	return history
-}
-
-// StorageGetterGetProposalStepTimeoutFuncCall is an object that describes
-// an invocation of method GetProposalStepTimeout on an instance of
-// MockStorageGetter.
-type StorageGetterGetProposalStepTimeoutFuncCall struct {
-	// Result0 is the value of the 1st result returned from this method
-	// invocation.
-	Result0 time.Duration
-}
-
-// Args returns an interface slice containing the arguments of this
-// invocation.
-func (c StorageGetterGetProposalStepTimeoutFuncCall) Args() []interface{} {
-	return []interface{}{}
-}
-
-// Results returns an interface slice containing the results of this
-// invocation.
-func (c StorageGetterGetProposalStepTimeoutFuncCall) Results() []interface{} {
-	return []interface{}{c.Result0}
-}
-
-// StorageGetterGetSrvrMsgTimeoutFunc describes the behavior when the
-// GetSrvrMsgTimeout method of the parent MockStorageGetter instance is
-// invoked.
-type StorageGetterGetSrvrMsgTimeoutFunc struct {
-	defaultHook func() time.Duration
-	hooks       []func() time.Duration
-	history     []StorageGetterGetSrvrMsgTimeoutFuncCall
-	mutex       sync.Mutex
-}
-
-// GetSrvrMsgTimeout delegates to the next hook function in the queue and
+// GetPreCommitTimeout delegates to the next hook function in the queue and
 // stores the parameter and result values of this invocation.
-func (m *MockStorageGetter) GetSrvrMsgTimeout() time.Duration {
-	r0 := m.GetSrvrMsgTimeoutFunc.nextHook()()
-	m.GetSrvrMsgTimeoutFunc.appendCall(StorageGetterGetSrvrMsgTimeoutFuncCall{r0})
+func (m *MockStorageGetter) GetPreCommitTimeout() time.Duration {
+	r0 := m.GetPreCommitTimeoutFunc.nextHook()()
+	m.GetPreCommitTimeoutFunc.appendCall(StorageGetterGetPreCommitTimeoutFuncCall{r0})
 	return r0
 }
 
-// SetDefaultHook sets function that is called when the GetSrvrMsgTimeout
+// SetDefaultHook sets function that is called when the GetPreCommitTimeout
 // method of the parent MockStorageGetter instance is invoked and the hook
 // queue is empty.
-func (f *StorageGetterGetSrvrMsgTimeoutFunc) SetDefaultHook(hook func() time.Duration) {
+func (f *StorageGetterGetPreCommitTimeoutFunc) SetDefaultHook(hook func() time.Duration) {
 	f.defaultHook = hook
 }
 
 // PushHook adds a function to the end of hook queue. Each invocation of the
-// GetSrvrMsgTimeout method of the parent MockStorageGetter instance invokes
-// the hook at the front of the queue and discards it. After the queue is
-// empty, the default hook function is invoked for any future action.
-func (f *StorageGetterGetSrvrMsgTimeoutFunc) PushHook(hook func() time.Duration) {
+// GetPreCommitTimeout method of the parent MockStorageGetter instance
+// invokes the hook at the front of the queue and discards it. After the
+// queue is empty, the default hook function is invoked for any future
+// action.
+func (f *StorageGetterGetPreCommitTimeoutFunc) PushHook(hook func() time.Duration) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -1466,20 +1124,20 @@ func (f *StorageGetterGetSrvrMsgTimeoutFunc) PushHook(hook func() time.Duration)
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *StorageGetterGetSrvrMsgTimeoutFunc) SetDefaultReturn(r0 time.Duration) {
+func (f *StorageGetterGetPreCommitTimeoutFunc) SetDefaultReturn(r0 time.Duration) {
 	f.SetDefaultHook(func() time.Duration {
 		return r0
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *StorageGetterGetSrvrMsgTimeoutFunc) PushReturn(r0 time.Duration) {
+func (f *StorageGetterGetPreCommitTimeoutFunc) PushReturn(r0 time.Duration) {
 	f.PushHook(func() time.Duration {
 		return r0
 	})
 }
 
-func (f *StorageGetterGetSrvrMsgTimeoutFunc) nextHook() func() time.Duration {
+func (f *StorageGetterGetPreCommitTimeoutFunc) nextHook() func() time.Duration {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -1492,27 +1150,27 @@ func (f *StorageGetterGetSrvrMsgTimeoutFunc) nextHook() func() time.Duration {
 	return hook
 }
 
-func (f *StorageGetterGetSrvrMsgTimeoutFunc) appendCall(r0 StorageGetterGetSrvrMsgTimeoutFuncCall) {
+func (f *StorageGetterGetPreCommitTimeoutFunc) appendCall(r0 StorageGetterGetPreCommitTimeoutFuncCall) {
 	f.mutex.Lock()
 	f.history = append(f.history, r0)
 	f.mutex.Unlock()
 }
 
-// History returns a sequence of StorageGetterGetSrvrMsgTimeoutFuncCall
+// History returns a sequence of StorageGetterGetPreCommitTimeoutFuncCall
 // objects describing the invocations of this function.
-func (f *StorageGetterGetSrvrMsgTimeoutFunc) History() []StorageGetterGetSrvrMsgTimeoutFuncCall {
+func (f *StorageGetterGetPreCommitTimeoutFunc) History() []StorageGetterGetPreCommitTimeoutFuncCall {
 	f.mutex.Lock()
-	history := make([]StorageGetterGetSrvrMsgTimeoutFuncCall, len(f.history))
+	history := make([]StorageGetterGetPreCommitTimeoutFuncCall, len(f.history))
 	copy(history, f.history)
 	f.mutex.Unlock()
 
 	return history
 }
 
-// StorageGetterGetSrvrMsgTimeoutFuncCall is an object that describes an
-// invocation of method GetSrvrMsgTimeout on an instance of
+// StorageGetterGetPreCommitTimeoutFuncCall is an object that describes an
+// invocation of method GetPreCommitTimeout on an instance of
 // MockStorageGetter.
-type StorageGetterGetSrvrMsgTimeoutFuncCall struct {
+type StorageGetterGetPreCommitTimeoutFuncCall struct {
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
 	Result0 time.Duration
@@ -1520,46 +1178,46 @@ type StorageGetterGetSrvrMsgTimeoutFuncCall struct {
 
 // Args returns an interface slice containing the arguments of this
 // invocation.
-func (c StorageGetterGetSrvrMsgTimeoutFuncCall) Args() []interface{} {
+func (c StorageGetterGetPreCommitTimeoutFuncCall) Args() []interface{} {
 	return []interface{}{}
 }
 
 // Results returns an interface slice containing the results of this
 // invocation.
-func (c StorageGetterGetSrvrMsgTimeoutFuncCall) Results() []interface{} {
+func (c StorageGetterGetPreCommitTimeoutFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0}
 }
 
-// StorageGetterGetTxValidVersionFunc describes the behavior when the
-// GetTxValidVersion method of the parent MockStorageGetter instance is
+// StorageGetterGetPreVoteTimeoutFunc describes the behavior when the
+// GetPreVoteTimeout method of the parent MockStorageGetter instance is
 // invoked.
-type StorageGetterGetTxValidVersionFunc struct {
-	defaultHook func() uint32
-	hooks       []func() uint32
-	history     []StorageGetterGetTxValidVersionFuncCall
+type StorageGetterGetPreVoteTimeoutFunc struct {
+	defaultHook func() time.Duration
+	hooks       []func() time.Duration
+	history     []StorageGetterGetPreVoteTimeoutFuncCall
 	mutex       sync.Mutex
 }
 
-// GetTxValidVersion delegates to the next hook function in the queue and
+// GetPreVoteTimeout delegates to the next hook function in the queue and
 // stores the parameter and result values of this invocation.
-func (m *MockStorageGetter) GetTxValidVersion() uint32 {
-	r0 := m.GetTxValidVersionFunc.nextHook()()
-	m.GetTxValidVersionFunc.appendCall(StorageGetterGetTxValidVersionFuncCall{r0})
+func (m *MockStorageGetter) GetPreVoteTimeout() time.Duration {
+	r0 := m.GetPreVoteTimeoutFunc.nextHook()()
+	m.GetPreVoteTimeoutFunc.appendCall(StorageGetterGetPreVoteTimeoutFuncCall{r0})
 	return r0
 }
 
-// SetDefaultHook sets function that is called when the GetTxValidVersion
+// SetDefaultHook sets function that is called when the GetPreVoteTimeout
 // method of the parent MockStorageGetter instance is invoked and the hook
 // queue is empty.
-func (f *StorageGetterGetTxValidVersionFunc) SetDefaultHook(hook func() uint32) {
+func (f *StorageGetterGetPreVoteTimeoutFunc) SetDefaultHook(hook func() time.Duration) {
 	f.defaultHook = hook
 }
 
 // PushHook adds a function to the end of hook queue. Each invocation of the
-// GetTxValidVersion method of the parent MockStorageGetter instance invokes
+// GetPreVoteTimeout method of the parent MockStorageGetter instance invokes
 // the hook at the front of the queue and discards it. After the queue is
 // empty, the default hook function is invoked for any future action.
-func (f *StorageGetterGetTxValidVersionFunc) PushHook(hook func() uint32) {
+func (f *StorageGetterGetPreVoteTimeoutFunc) PushHook(hook func() time.Duration) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -1567,20 +1225,20 @@ func (f *StorageGetterGetTxValidVersionFunc) PushHook(hook func() uint32) {
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *StorageGetterGetTxValidVersionFunc) SetDefaultReturn(r0 uint32) {
-	f.SetDefaultHook(func() uint32 {
+func (f *StorageGetterGetPreVoteTimeoutFunc) SetDefaultReturn(r0 time.Duration) {
+	f.SetDefaultHook(func() time.Duration {
 		return r0
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *StorageGetterGetTxValidVersionFunc) PushReturn(r0 uint32) {
-	f.PushHook(func() uint32 {
+func (f *StorageGetterGetPreVoteTimeoutFunc) PushReturn(r0 time.Duration) {
+	f.PushHook(func() time.Duration {
 		return r0
 	})
 }
 
-func (f *StorageGetterGetTxValidVersionFunc) nextHook() func() uint32 {
+func (f *StorageGetterGetPreVoteTimeoutFunc) nextHook() func() time.Duration {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -1593,41 +1251,143 @@ func (f *StorageGetterGetTxValidVersionFunc) nextHook() func() uint32 {
 	return hook
 }
 
-func (f *StorageGetterGetTxValidVersionFunc) appendCall(r0 StorageGetterGetTxValidVersionFuncCall) {
+func (f *StorageGetterGetPreVoteTimeoutFunc) appendCall(r0 StorageGetterGetPreVoteTimeoutFuncCall) {
 	f.mutex.Lock()
 	f.history = append(f.history, r0)
 	f.mutex.Unlock()
 }
 
-// History returns a sequence of StorageGetterGetTxValidVersionFuncCall
+// History returns a sequence of StorageGetterGetPreVoteTimeoutFuncCall
 // objects describing the invocations of this function.
-func (f *StorageGetterGetTxValidVersionFunc) History() []StorageGetterGetTxValidVersionFuncCall {
+func (f *StorageGetterGetPreVoteTimeoutFunc) History() []StorageGetterGetPreVoteTimeoutFuncCall {
 	f.mutex.Lock()
-	history := make([]StorageGetterGetTxValidVersionFuncCall, len(f.history))
+	history := make([]StorageGetterGetPreVoteTimeoutFuncCall, len(f.history))
 	copy(history, f.history)
 	f.mutex.Unlock()
 
 	return history
 }
 
-// StorageGetterGetTxValidVersionFuncCall is an object that describes an
-// invocation of method GetTxValidVersion on an instance of
+// StorageGetterGetPreVoteTimeoutFuncCall is an object that describes an
+// invocation of method GetPreVoteTimeout on an instance of
 // MockStorageGetter.
-type StorageGetterGetTxValidVersionFuncCall struct {
+type StorageGetterGetPreVoteTimeoutFuncCall struct {
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 uint32
+	Result0 time.Duration
 }
 
 // Args returns an interface slice containing the arguments of this
 // invocation.
-func (c StorageGetterGetTxValidVersionFuncCall) Args() []interface{} {
+func (c StorageGetterGetPreVoteTimeoutFuncCall) Args() []interface{} {
 	return []interface{}{}
 }
 
 // Results returns an interface slice containing the results of this
 // invocation.
-func (c StorageGetterGetTxValidVersionFuncCall) Results() []interface{} {
+func (c StorageGetterGetPreVoteTimeoutFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0}
+}
+
+// StorageGetterGetProposalTimeoutFunc describes the behavior when the
+// GetProposalTimeout method of the parent MockStorageGetter instance is
+// invoked.
+type StorageGetterGetProposalTimeoutFunc struct {
+	defaultHook func() time.Duration
+	hooks       []func() time.Duration
+	history     []StorageGetterGetProposalTimeoutFuncCall
+	mutex       sync.Mutex
+}
+
+// GetProposalTimeout delegates to the next hook function in the queue and
+// stores the parameter and result values of this invocation.
+func (m *MockStorageGetter) GetProposalTimeout() time.Duration {
+	r0 := m.GetProposalTimeoutFunc.nextHook()()
+	m.GetProposalTimeoutFunc.appendCall(StorageGetterGetProposalTimeoutFuncCall{r0})
+	return r0
+}
+
+// SetDefaultHook sets function that is called when the GetProposalTimeout
+// method of the parent MockStorageGetter instance is invoked and the hook
+// queue is empty.
+func (f *StorageGetterGetProposalTimeoutFunc) SetDefaultHook(hook func() time.Duration) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// GetProposalTimeout method of the parent MockStorageGetter instance
+// invokes the hook at the front of the queue and discards it. After the
+// queue is empty, the default hook function is invoked for any future
+// action.
+func (f *StorageGetterGetProposalTimeoutFunc) PushHook(hook func() time.Duration) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *StorageGetterGetProposalTimeoutFunc) SetDefaultReturn(r0 time.Duration) {
+	f.SetDefaultHook(func() time.Duration {
+		return r0
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *StorageGetterGetProposalTimeoutFunc) PushReturn(r0 time.Duration) {
+	f.PushHook(func() time.Duration {
+		return r0
+	})
+}
+
+func (f *StorageGetterGetProposalTimeoutFunc) nextHook() func() time.Duration {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *StorageGetterGetProposalTimeoutFunc) appendCall(r0 StorageGetterGetProposalTimeoutFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of StorageGetterGetProposalTimeoutFuncCall
+// objects describing the invocations of this function.
+func (f *StorageGetterGetProposalTimeoutFunc) History() []StorageGetterGetProposalTimeoutFuncCall {
+	f.mutex.Lock()
+	history := make([]StorageGetterGetProposalTimeoutFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// StorageGetterGetProposalTimeoutFuncCall is an object that describes an
+// invocation of method GetProposalTimeout on an instance of
+// MockStorageGetter.
+type StorageGetterGetProposalTimeoutFuncCall struct {
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 time.Duration
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c StorageGetterGetProposalTimeoutFuncCall) Args() []interface{} {
+	return []interface{}{}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c StorageGetterGetProposalTimeoutFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0}
 }
 
@@ -1732,37 +1492,37 @@ func (c StorageGetterGetValueStoreFeeFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0}
 }
 
-// StorageGetterGetValueStoreValidVersionFunc describes the behavior when
-// the GetValueStoreValidVersion method of the parent MockStorageGetter
+// StorageGetterUpdateCurrentDynamicValueFunc describes the behavior when
+// the UpdateCurrentDynamicValue method of the parent MockStorageGetter
 // instance is invoked.
-type StorageGetterGetValueStoreValidVersionFunc struct {
-	defaultHook func() uint32
-	hooks       []func() uint32
-	history     []StorageGetterGetValueStoreValidVersionFuncCall
+type StorageGetterUpdateCurrentDynamicValueFunc struct {
+	defaultHook func(*v2.Txn, uint32) error
+	hooks       []func(*v2.Txn, uint32) error
+	history     []StorageGetterUpdateCurrentDynamicValueFuncCall
 	mutex       sync.Mutex
 }
 
-// GetValueStoreValidVersion delegates to the next hook function in the
+// UpdateCurrentDynamicValue delegates to the next hook function in the
 // queue and stores the parameter and result values of this invocation.
-func (m *MockStorageGetter) GetValueStoreValidVersion() uint32 {
-	r0 := m.GetValueStoreValidVersionFunc.nextHook()()
-	m.GetValueStoreValidVersionFunc.appendCall(StorageGetterGetValueStoreValidVersionFuncCall{r0})
+func (m *MockStorageGetter) UpdateCurrentDynamicValue(v0 *v2.Txn, v1 uint32) error {
+	r0 := m.UpdateCurrentDynamicValueFunc.nextHook()(v0, v1)
+	m.UpdateCurrentDynamicValueFunc.appendCall(StorageGetterUpdateCurrentDynamicValueFuncCall{v0, v1, r0})
 	return r0
 }
 
 // SetDefaultHook sets function that is called when the
-// GetValueStoreValidVersion method of the parent MockStorageGetter instance
+// UpdateCurrentDynamicValue method of the parent MockStorageGetter instance
 // is invoked and the hook queue is empty.
-func (f *StorageGetterGetValueStoreValidVersionFunc) SetDefaultHook(hook func() uint32) {
+func (f *StorageGetterUpdateCurrentDynamicValueFunc) SetDefaultHook(hook func(*v2.Txn, uint32) error) {
 	f.defaultHook = hook
 }
 
 // PushHook adds a function to the end of hook queue. Each invocation of the
-// GetValueStoreValidVersion method of the parent MockStorageGetter instance
+// UpdateCurrentDynamicValue method of the parent MockStorageGetter instance
 // invokes the hook at the front of the queue and discards it. After the
 // queue is empty, the default hook function is invoked for any future
 // action.
-func (f *StorageGetterGetValueStoreValidVersionFunc) PushHook(hook func() uint32) {
+func (f *StorageGetterUpdateCurrentDynamicValueFunc) PushHook(hook func(*v2.Txn, uint32) error) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -1770,121 +1530,20 @@ func (f *StorageGetterGetValueStoreValidVersionFunc) PushHook(hook func() uint32
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *StorageGetterGetValueStoreValidVersionFunc) SetDefaultReturn(r0 uint32) {
-	f.SetDefaultHook(func() uint32 {
-		return r0
-	})
-}
-
-// PushReturn calls PushHook with a function that returns the given values.
-func (f *StorageGetterGetValueStoreValidVersionFunc) PushReturn(r0 uint32) {
-	f.PushHook(func() uint32 {
-		return r0
-	})
-}
-
-func (f *StorageGetterGetValueStoreValidVersionFunc) nextHook() func() uint32 {
-	f.mutex.Lock()
-	defer f.mutex.Unlock()
-
-	if len(f.hooks) == 0 {
-		return f.defaultHook
-	}
-
-	hook := f.hooks[0]
-	f.hooks = f.hooks[1:]
-	return hook
-}
-
-func (f *StorageGetterGetValueStoreValidVersionFunc) appendCall(r0 StorageGetterGetValueStoreValidVersionFuncCall) {
-	f.mutex.Lock()
-	f.history = append(f.history, r0)
-	f.mutex.Unlock()
-}
-
-// History returns a sequence of
-// StorageGetterGetValueStoreValidVersionFuncCall objects describing the
-// invocations of this function.
-func (f *StorageGetterGetValueStoreValidVersionFunc) History() []StorageGetterGetValueStoreValidVersionFuncCall {
-	f.mutex.Lock()
-	history := make([]StorageGetterGetValueStoreValidVersionFuncCall, len(f.history))
-	copy(history, f.history)
-	f.mutex.Unlock()
-
-	return history
-}
-
-// StorageGetterGetValueStoreValidVersionFuncCall is an object that
-// describes an invocation of method GetValueStoreValidVersion on an
-// instance of MockStorageGetter.
-type StorageGetterGetValueStoreValidVersionFuncCall struct {
-	// Result0 is the value of the 1st result returned from this method
-	// invocation.
-	Result0 uint32
-}
-
-// Args returns an interface slice containing the arguments of this
-// invocation.
-func (c StorageGetterGetValueStoreValidVersionFuncCall) Args() []interface{} {
-	return []interface{}{}
-}
-
-// Results returns an interface slice containing the results of this
-// invocation.
-func (c StorageGetterGetValueStoreValidVersionFuncCall) Results() []interface{} {
-	return []interface{}{c.Result0}
-}
-
-// StorageGetterLoadStorageFunc describes the behavior when the LoadStorage
-// method of the parent MockStorageGetter instance is invoked.
-type StorageGetterLoadStorageFunc struct {
-	defaultHook func(*v2.Txn, uint32) error
-	hooks       []func(*v2.Txn, uint32) error
-	history     []StorageGetterLoadStorageFuncCall
-	mutex       sync.Mutex
-}
-
-// LoadStorage delegates to the next hook function in the queue and stores
-// the parameter and result values of this invocation.
-func (m *MockStorageGetter) LoadStorage(v0 *v2.Txn, v1 uint32) error {
-	r0 := m.LoadStorageFunc.nextHook()(v0, v1)
-	m.LoadStorageFunc.appendCall(StorageGetterLoadStorageFuncCall{v0, v1, r0})
-	return r0
-}
-
-// SetDefaultHook sets function that is called when the LoadStorage method
-// of the parent MockStorageGetter instance is invoked and the hook queue is
-// empty.
-func (f *StorageGetterLoadStorageFunc) SetDefaultHook(hook func(*v2.Txn, uint32) error) {
-	f.defaultHook = hook
-}
-
-// PushHook adds a function to the end of hook queue. Each invocation of the
-// LoadStorage method of the parent MockStorageGetter instance invokes the
-// hook at the front of the queue and discards it. After the queue is empty,
-// the default hook function is invoked for any future action.
-func (f *StorageGetterLoadStorageFunc) PushHook(hook func(*v2.Txn, uint32) error) {
-	f.mutex.Lock()
-	f.hooks = append(f.hooks, hook)
-	f.mutex.Unlock()
-}
-
-// SetDefaultReturn calls SetDefaultHook with a function that returns the
-// given values.
-func (f *StorageGetterLoadStorageFunc) SetDefaultReturn(r0 error) {
+func (f *StorageGetterUpdateCurrentDynamicValueFunc) SetDefaultReturn(r0 error) {
 	f.SetDefaultHook(func(*v2.Txn, uint32) error {
 		return r0
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *StorageGetterLoadStorageFunc) PushReturn(r0 error) {
+func (f *StorageGetterUpdateCurrentDynamicValueFunc) PushReturn(r0 error) {
 	f.PushHook(func(*v2.Txn, uint32) error {
 		return r0
 	})
 }
 
-func (f *StorageGetterLoadStorageFunc) nextHook() func(*v2.Txn, uint32) error {
+func (f *StorageGetterUpdateCurrentDynamicValueFunc) nextHook() func(*v2.Txn, uint32) error {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -1897,26 +1556,28 @@ func (f *StorageGetterLoadStorageFunc) nextHook() func(*v2.Txn, uint32) error {
 	return hook
 }
 
-func (f *StorageGetterLoadStorageFunc) appendCall(r0 StorageGetterLoadStorageFuncCall) {
+func (f *StorageGetterUpdateCurrentDynamicValueFunc) appendCall(r0 StorageGetterUpdateCurrentDynamicValueFuncCall) {
 	f.mutex.Lock()
 	f.history = append(f.history, r0)
 	f.mutex.Unlock()
 }
 
-// History returns a sequence of StorageGetterLoadStorageFuncCall objects
-// describing the invocations of this function.
-func (f *StorageGetterLoadStorageFunc) History() []StorageGetterLoadStorageFuncCall {
+// History returns a sequence of
+// StorageGetterUpdateCurrentDynamicValueFuncCall objects describing the
+// invocations of this function.
+func (f *StorageGetterUpdateCurrentDynamicValueFunc) History() []StorageGetterUpdateCurrentDynamicValueFuncCall {
 	f.mutex.Lock()
-	history := make([]StorageGetterLoadStorageFuncCall, len(f.history))
+	history := make([]StorageGetterUpdateCurrentDynamicValueFuncCall, len(f.history))
 	copy(history, f.history)
 	f.mutex.Unlock()
 
 	return history
 }
 
-// StorageGetterLoadStorageFuncCall is an object that describes an
-// invocation of method LoadStorage on an instance of MockStorageGetter.
-type StorageGetterLoadStorageFuncCall struct {
+// StorageGetterUpdateCurrentDynamicValueFuncCall is an object that
+// describes an invocation of method UpdateCurrentDynamicValue on an
+// instance of MockStorageGetter.
+type StorageGetterUpdateCurrentDynamicValueFuncCall struct {
 	// Arg0 is the value of the 1st argument passed to this method
 	// invocation.
 	Arg0 *v2.Txn
@@ -1930,117 +1591,12 @@ type StorageGetterLoadStorageFuncCall struct {
 
 // Args returns an interface slice containing the arguments of this
 // invocation.
-func (c StorageGetterLoadStorageFuncCall) Args() []interface{} {
+func (c StorageGetterUpdateCurrentDynamicValueFuncCall) Args() []interface{} {
 	return []interface{}{c.Arg0, c.Arg1}
 }
 
 // Results returns an interface slice containing the results of this
 // invocation.
-func (c StorageGetterLoadStorageFuncCall) Results() []interface{} {
-	return []interface{}{c.Result0}
-}
-
-// StorageGetterUpdateStorageFunc describes the behavior when the
-// UpdateStorage method of the parent MockStorageGetter instance is invoked.
-type StorageGetterUpdateStorageFunc struct {
-	defaultHook func(*v2.Txn, dynamics.Updater) error
-	hooks       []func(*v2.Txn, dynamics.Updater) error
-	history     []StorageGetterUpdateStorageFuncCall
-	mutex       sync.Mutex
-}
-
-// UpdateStorage delegates to the next hook function in the queue and stores
-// the parameter and result values of this invocation.
-func (m *MockStorageGetter) UpdateStorage(v0 *v2.Txn, v1 dynamics.Updater) error {
-	r0 := m.UpdateStorageFunc.nextHook()(v0, v1)
-	m.UpdateStorageFunc.appendCall(StorageGetterUpdateStorageFuncCall{v0, v1, r0})
-	return r0
-}
-
-// SetDefaultHook sets function that is called when the UpdateStorage method
-// of the parent MockStorageGetter instance is invoked and the hook queue is
-// empty.
-func (f *StorageGetterUpdateStorageFunc) SetDefaultHook(hook func(*v2.Txn, dynamics.Updater) error) {
-	f.defaultHook = hook
-}
-
-// PushHook adds a function to the end of hook queue. Each invocation of the
-// UpdateStorage method of the parent MockStorageGetter instance invokes the
-// hook at the front of the queue and discards it. After the queue is empty,
-// the default hook function is invoked for any future action.
-func (f *StorageGetterUpdateStorageFunc) PushHook(hook func(*v2.Txn, dynamics.Updater) error) {
-	f.mutex.Lock()
-	f.hooks = append(f.hooks, hook)
-	f.mutex.Unlock()
-}
-
-// SetDefaultReturn calls SetDefaultHook with a function that returns the
-// given values.
-func (f *StorageGetterUpdateStorageFunc) SetDefaultReturn(r0 error) {
-	f.SetDefaultHook(func(*v2.Txn, dynamics.Updater) error {
-		return r0
-	})
-}
-
-// PushReturn calls PushHook with a function that returns the given values.
-func (f *StorageGetterUpdateStorageFunc) PushReturn(r0 error) {
-	f.PushHook(func(*v2.Txn, dynamics.Updater) error {
-		return r0
-	})
-}
-
-func (f *StorageGetterUpdateStorageFunc) nextHook() func(*v2.Txn, dynamics.Updater) error {
-	f.mutex.Lock()
-	defer f.mutex.Unlock()
-
-	if len(f.hooks) == 0 {
-		return f.defaultHook
-	}
-
-	hook := f.hooks[0]
-	f.hooks = f.hooks[1:]
-	return hook
-}
-
-func (f *StorageGetterUpdateStorageFunc) appendCall(r0 StorageGetterUpdateStorageFuncCall) {
-	f.mutex.Lock()
-	f.history = append(f.history, r0)
-	f.mutex.Unlock()
-}
-
-// History returns a sequence of StorageGetterUpdateStorageFuncCall objects
-// describing the invocations of this function.
-func (f *StorageGetterUpdateStorageFunc) History() []StorageGetterUpdateStorageFuncCall {
-	f.mutex.Lock()
-	history := make([]StorageGetterUpdateStorageFuncCall, len(f.history))
-	copy(history, f.history)
-	f.mutex.Unlock()
-
-	return history
-}
-
-// StorageGetterUpdateStorageFuncCall is an object that describes an
-// invocation of method UpdateStorage on an instance of MockStorageGetter.
-type StorageGetterUpdateStorageFuncCall struct {
-	// Arg0 is the value of the 1st argument passed to this method
-	// invocation.
-	Arg0 *v2.Txn
-	// Arg1 is the value of the 2nd argument passed to this method
-	// invocation.
-	Arg1 dynamics.Updater
-	// Result0 is the value of the 1st result returned from this method
-	// invocation.
-	Result0 error
-}
-
-// Args returns an interface slice containing the arguments of this
-// invocation.
-func (c StorageGetterUpdateStorageFuncCall) Args() []interface{} {
-	return []interface{}{c.Arg0, c.Arg1}
-}
-
-// Results returns an interface slice containing the results of this
-// invocation.
-func (c StorageGetterUpdateStorageFuncCall) Results() []interface{} {
+func (c StorageGetterUpdateCurrentDynamicValueFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0}
 }

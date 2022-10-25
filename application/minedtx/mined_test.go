@@ -2,6 +2,7 @@ package minedtx
 
 import (
 	"bytes"
+	"math/big"
 	"math/rand"
 	"testing"
 
@@ -9,11 +10,23 @@ import (
 
 	"github.com/alicenet/alicenet/application/objs"
 	"github.com/alicenet/alicenet/application/objs/uint256"
+	"github.com/alicenet/alicenet/application/wrapper"
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/constants/dbprefix"
 	"github.com/alicenet/alicenet/crypto"
+	"github.com/alicenet/alicenet/dynamics/mocks"
 	"github.com/alicenet/alicenet/internal/testing/environment"
 )
+
+func makeWrapperStorageMock() *wrapper.Storage {
+	mocks := mocks.NewMockStorageGetter()
+	mocks.GetDataStoreFeeFunc.SetDefaultReturn(new(big.Int).SetInt64(0))
+	mocks.GetValueStoreFeeFunc.SetDefaultReturn(new(big.Int).SetInt64(0))
+	mocks.GetMaxBlockSizeFunc.SetDefaultReturn(0)
+	mocks.GetMaxProposalSizeFunc.SetDefaultReturn(0)
+	mocks.GetMinScaledTransactionFeeFunc.SetDefaultReturn(new(big.Int).SetInt64(0))
+	return wrapper.NewStorage(mocks)
+}
 
 func testingOwner(t *testing.T) objs.Signer {
 	t.Helper()
@@ -172,8 +185,7 @@ func TestMined(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	msg := makeMockStorageGetter()
-	storage := makeStorage(msg)
+	storage := makeWrapperStorageMock()
 
 	ownerSigner := testingOwner(t)
 	consumedUTXOs, tx := makeTxInitial(t, ownerSigner)
@@ -269,8 +281,7 @@ func TestMinedDelete(t *testing.T) {
 	ownerSigner := testingOwner(t)
 	consumedUTXOs, tx := makeTxInitial(t, ownerSigner)
 
-	msg := makeMockStorageGetter()
-	storage := makeStorage(msg)
+	storage := makeWrapperStorageMock()
 
 	_, err := tx.Validate(nil, 1, consumedUTXOs, storage)
 	if err != nil {
@@ -318,8 +329,7 @@ func TestMinedGet(t *testing.T) {
 	ownerSigner := testingOwner(t)
 	consumedUTXOs, tx := makeTxInitial(t, ownerSigner)
 
-	msg := makeMockStorageGetter()
-	storage := makeStorage(msg)
+	storage := makeWrapperStorageMock()
 
 	_, err := tx.Validate(nil, 1, consumedUTXOs, storage)
 	if err != nil {
@@ -387,8 +397,7 @@ func TestMinedGetHeightForTx(t *testing.T) {
 	ownerSigner := testingOwner(t)
 	consumedUTXOs, tx := makeTxInitial(t, ownerSigner)
 
-	msg := makeMockStorageGetter()
-	storage := makeStorage(msg)
+	storage := makeWrapperStorageMock()
 
 	_, err := tx.Validate(nil, 1, consumedUTXOs, storage)
 	if err != nil {
@@ -440,8 +449,7 @@ func TestMinedGetOneInternal(t *testing.T) {
 	ownerSigner := testingOwner(t)
 	consumedUTXOs, tx := makeTxInitial(t, ownerSigner)
 
-	msg := makeMockStorageGetter()
-	storage := makeStorage(msg)
+	storage := makeWrapperStorageMock()
 
 	_, err := tx.Validate(nil, 1, consumedUTXOs, storage)
 	if err != nil {
@@ -501,8 +509,7 @@ func TestMinedAddOneInternal(t *testing.T) {
 	ownerSigner := testingOwner(t)
 	consumedUTXOs, tx := makeTxInitial(t, ownerSigner)
 
-	msg := makeMockStorageGetter()
-	storage := makeStorage(msg)
+	storage := makeWrapperStorageMock()
 
 	_, err := tx.Validate(nil, 1, consumedUTXOs, storage)
 	if err != nil {

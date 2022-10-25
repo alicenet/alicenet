@@ -1,23 +1,22 @@
 package events
 
 import (
+	"context"
 	"math/big"
-
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/sirupsen/logrus"
 
 	"github.com/alicenet/alicenet/consensus/objs"
 	"github.com/alicenet/alicenet/crypto/bn256"
 	"github.com/alicenet/alicenet/layer1"
-	"github.com/alicenet/alicenet/layer1/executor/tasks"
+	"github.com/alicenet/alicenet/layer1/executor"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/snapshots"
 	monInterfaces "github.com/alicenet/alicenet/layer1/monitor/interfaces"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/sirupsen/logrus"
 )
 
-// ProcessSnapshotTaken handles receiving snapshots.
-func ProcessSnapshotTaken(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, log types.Log, adminHandler monInterfaces.AdminHandler, taskRequestChan chan<- tasks.TaskRequest) error {
-	logger = logger.WithField("method", "ProcessSnapshotTaken")
-	logger.Info("Processing snapshots...")
+// ProcessSnapshotTaken handles receiving snapshots
+func ProcessSnapshotTaken(contracts layer1.AllSmartContracts, logger *logrus.Entry, log types.Log, adminHandler monInterfaces.AdminHandler, taskHandler executor.TaskHandler) error {
+	logger.Info("ProcessSnapshotTaken() ...")
 
 	c := contracts.EthereumContracts()
 
@@ -73,13 +72,16 @@ func ProcessSnapshotTaken(eth layer1.Client, contracts layer1.AllSmartContracts,
 	}
 
 	// kill any task that might still be trying to do this snapshot
-	taskRequestChan <- tasks.NewKillTaskRequest(&snapshots.SnapshotTask{})
+	_, err = taskHandler.KillTaskByType(context.Background(), &snapshots.SnapshotTask{})
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
 
 // ProcessSnapshotTaken handles receiving snapshots.
-func ProcessSnapshotTakenOld(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, log types.Log, adminHandler monInterfaces.AdminHandler, taskRequestChan chan<- tasks.TaskRequest) error {
+func ProcessSnapshotTakenOld(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, log types.Log, adminHandler monInterfaces.AdminHandler, taskHandler executor.TaskHandler) error {
 	logger.Info("ProcessSnapshotTakenOld() ...")
 
 	c := contracts.EthereumContracts()
@@ -138,7 +140,10 @@ func ProcessSnapshotTakenOld(eth layer1.Client, contracts layer1.AllSmartContrac
 	}
 
 	// kill any task that might still be trying to do this snapshot
-	taskRequestChan <- tasks.NewKillTaskRequest(&snapshots.SnapshotTask{})
+	_, err = taskHandler.KillTaskByType(context.Background(), &snapshots.SnapshotTask{})
+	if err != nil {
+		return err
+	}
 
 	return nil
 }

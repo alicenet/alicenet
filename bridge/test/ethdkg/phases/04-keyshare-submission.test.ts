@@ -1,3 +1,4 @@
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { BigNumberish } from "ethers";
 import { ethers, expect } from "hardhat";
 import { getValidatorEthAccount } from "../../setup";
@@ -13,6 +14,10 @@ import {
 } from "../setup";
 
 describe("ETHDKG: Submit Key share", () => {
+  function deployFixture() {
+    return startAtSubmitKeyShares(validators4);
+  }
+
   it("should not allow submission of key shares when not in KeyShareSubmission phase", async () => {
     const [ethdkg, validatorPool, expectedNonce] =
       await startAtDistributeShares(validators4);
@@ -55,8 +60,8 @@ describe("ETHDKG: Submit Key share", () => {
   });
 
   it("should allow submission of key shares", async function () {
-    const [ethdkg, validatorPool, expectedNonce] = await startAtSubmitKeyShares(
-      validators4
+    const [ethdkg, validatorPool, expectedNonce] = await loadFixture(
+      deployFixture
     );
     // Submit the Key shares for all validators
     await submitValidatorsKeyShares(
@@ -69,7 +74,7 @@ describe("ETHDKG: Submit Key share", () => {
   });
 
   it("should not allow non-validator to submit key shares", async function () {
-    const [ethdkg, ,] = await startAtSubmitKeyShares(validators4);
+    const [ethdkg, ,] = await loadFixture(deployFixture);
 
     // a non-validator tries to submit the Key shares
     const validator11 = "0x23EA3Bad9115d436190851cF4C49C1032fA7579A";
@@ -108,8 +113,8 @@ describe("ETHDKG: Submit Key share", () => {
   });
 
   it("should not allow multiple submission of key shares by the same validator", async function () {
-    const [ethdkg, validatorPool, expectedNonce] = await startAtSubmitKeyShares(
-      validators4
+    const [ethdkg, validatorPool, expectedNonce] = await loadFixture(
+      deployFixture
     );
     // Submit the Key shares for all validators
     await submitValidatorsKeyShares(
@@ -140,7 +145,7 @@ describe("ETHDKG: Submit Key share", () => {
   });
 
   it("should not allow submission of key shares with empty input state", async function () {
-    const [ethdkg, ,] = await startAtSubmitKeyShares(validators4);
+    const [ethdkg, ,] = await loadFixture(deployFixture);
 
     const ethDKGPhases = await ethers.getContractAt(
       "ETHDKGPhases",

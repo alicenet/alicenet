@@ -34,7 +34,7 @@ interface IUtilityToken {
 
     function destroyBTokens(uint256 numBTK_) external returns (bool);
 
-    function depositTokensOnBridges(uint16 bridgeVersion, bytes calldata data) external payable;
+    function depositTokensOnBridges(uint8 routerVersion_, bytes calldata data_) external payable;
 
     function burn(uint256 amount_, uint256 minEth_) external returns (uint256 numEth);
 
