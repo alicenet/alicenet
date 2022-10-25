@@ -35,7 +35,6 @@ const stakedAmount = ethers.utils.parseEther("100").toBigInt();
 const totalBonusAmount = ethers.utils.parseEther("10000");
 const migrationAmount = ethers.utils.parseEther("100");
 let rewardPoolAddress: any;
-const numberOfLockingUsers = 5;
 
 async function deployFixture() {
   await preFixtureSetup();
@@ -61,7 +60,7 @@ async function deployFixture() {
     CONTRACT_ADDR
   );
   // deploy staking router
-  const stakingRouterBase = await ethers.getContractFactory("StakingRouterV1");
+  await ethers.getContractFactory("StakingRouterV1");
   contractName = ethers.utils.formatBytes32String(STAKING_ROUTER_V1);
   txResponse = await deployCreateAndRegister(
     STAKING_ROUTER_V1,
@@ -129,8 +128,7 @@ describe("StakingRouterV1", async () => {
         tokenOwner.address,
         0
       );
-      const position = await fixture.publicStaking.getPosition(tokenID);
-      console.log(position);
+      await fixture.publicStaking.getPosition(tokenID);
     });
   });
 });

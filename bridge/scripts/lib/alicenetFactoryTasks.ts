@@ -115,12 +115,15 @@ task(
     types.int
   )
   .addOptionalParam("outputFolder", "output folder path to save factoryState")
-  .addOptionalParam("inputFolder", "input folder path for deploymentArgsTemplate")
+  .addOptionalParam(
+    "inputFolder",
+    "input folder path for deploymentArgsTemplate"
+  )
   .addOptionalVariadicPositionalParam("constructorArgs")
   .setAction(async (taskArgs, hre) => {
     await checkUserDirPath(taskArgs.outputFolder);
     const factoryBase = await hre.ethers.getContractFactory(ALICENET_FACTORY);
-    const constructorArgs =
+    const constructorArgs: string[] =
       taskArgs.constructorArgs === undefined
         ? await getFactoryDeploymentArgs(hre.artifacts, taskArgs.inputFolder)
         : taskArgs.constructorArgs;
@@ -130,9 +133,8 @@ task(
     const gasCost = await hre.ethers.provider.estimateGas(deployTX);
     // deploys the factory
     const factory = await deployFactory(
-      constructorArgs,
+      constructorArgs[0],
       hre.ethers,
-      signers[0],
       await getGasPrices(hre)
     );
     await factory.deployTransaction.wait(taskArgs.waitConfirmation);
@@ -1165,7 +1167,7 @@ task(
     if (factoryAddress === undefined) {
       const factoryData: FactoryData = await hre.run(TASK_DEPLOY_FACTORY, {
         outputFolder: taskArgs.outputFolder,
-        inputFolder: taskArgs.inputFolder
+        inputFolder: taskArgs.inputFolder,
       });
       factoryAddress = factoryData.address;
       cumulativeGasUsed = cumulativeGasUsed.add(factoryData.gas);

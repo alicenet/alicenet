@@ -1,4 +1,3 @@
-import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import {
   BytesLike,
   ContractReceipt,
@@ -19,14 +18,12 @@ type Ethers = typeof import("../../node_modules/ethers/lib/ethers") &
   HardhatEthersHelpers;
 
 export async function deployFactory(
-  constructorArgs: any[],
+  constructorArgs: string,
   ethers: Ethers,
   overrides?: Overrides & { from?: PromiseOrValue<string> }
 ): Promise<AliceNetFactory> {
-  const factoryBase = await ethers.getContractFactory(ALICENET_FACTORY)
-  return factoryBase.deploy(ALICENET_FACTORY,
-    ...constructorArgs,
-    overrides)
+  const factoryBase = await ethers.getContractFactory(ALICENET_FACTORY);
+  return factoryBase.deploy(constructorArgs, overrides);
 }
 
 export async function deployUpgradeable(

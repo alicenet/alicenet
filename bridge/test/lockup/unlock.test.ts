@@ -220,6 +220,8 @@ describe("Testing Unlock", async () => {
       ).toBigInt();
       expectedState.users[user].tokenId = ethers.constants.Zero.toBigInt();
       expectedState.users[user].tokenOwner = ethers.constants.AddressZero;
+      expectedState.users[user].rewardEth = 0n;
+      expectedState.users[user].rewardToken = 0n;
     }
     // all positions should have been unlocked
     expectedState.contracts.lockup.lockedPositions = 0n;
@@ -286,6 +288,8 @@ describe("Testing Unlock", async () => {
       ).toBigInt();
       expectedState.users[user].tokenId = ethers.constants.Zero.toBigInt();
       expectedState.users[user].tokenOwner = ethers.constants.AddressZero;
+      expectedState.users[user].rewardEth = 0n;
+      expectedState.users[user].rewardToken = 0n;
     }
     // all positions should have been unlocked
     expectedState.contracts.lockup.lockedPositions = 0n;
@@ -376,6 +380,8 @@ describe("Testing Unlock", async () => {
         (expectedState.users[user].alca / 100n) * 100n;
       expectedState.users[user].tokenId = ethers.constants.Zero.toBigInt();
       expectedState.users[user].tokenOwner = ethers.constants.AddressZero;
+      expectedState.users[user].rewardEth = 0n;
+      expectedState.users[user].rewardToken = 0n;
     }
     // all positions should have been unlocked
     expectedState.contracts.lockup.lockedPositions = 0n;
@@ -464,6 +470,8 @@ describe("Testing Unlock", async () => {
         (expectedState.users[user].alca / 10n) * 10n;
       expectedState.users[user].tokenId = ethers.constants.Zero.toBigInt();
       expectedState.users[user].tokenOwner = ethers.constants.AddressZero;
+      expectedState.users[user].rewardEth = 0n;
+      expectedState.users[user].rewardToken = 0n;
     }
     // all positions should have been unlocked
     expectedState.contracts.lockup.lockedPositions = 0n;
@@ -521,6 +529,8 @@ describe("Testing Unlock", async () => {
       ).toBigInt();
       expectedState.users[user].tokenId = ethers.constants.Zero.toBigInt();
       expectedState.users[user].tokenOwner = ethers.constants.AddressZero;
+      expectedState.users[user].rewardEth = 0n;
+      expectedState.users[user].rewardToken = 0n;
     }
     // all positions should have been unlocked
     expectedState.contracts.lockup.lockedPositions = 0n;

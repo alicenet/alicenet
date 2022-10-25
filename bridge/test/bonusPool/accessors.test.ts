@@ -128,23 +128,6 @@ describe("BonusPool", async () => {
   });
 
   describe("estimateBonusAmountWithReward", async () => {
-    it("reverts if bonus token not minted", async () => {
-      const initialTotalLocked = BigNumber.from(8000);
-      const currentSharesLocked = BigNumber.from(8000);
-      const userSharesLocked = BigNumber.from(4000);
-
-      await expect(
-        fixture.bonusPool.estimateBonusAmountWithReward(
-          currentSharesLocked,
-          initialTotalLocked,
-          userSharesLocked
-        )
-      ).to.be.revertedWithCustomError(
-        fixture.bonusPool,
-        "BonusTokenNotCreated"
-      );
-    });
-
     it("Returns expected amount based on bonus rate", async () => {
       const tokenId = await mintBonusPosition(
         accounts,

@@ -13,7 +13,6 @@ import {
   posFixtureSetup,
   preFixtureSetup,
 } from "../setup";
-import { getState, showState } from "./setup";
 
 interface Fixture extends BaseTokensFixture {
   lockup: Lockup;
@@ -358,49 +357,36 @@ describe("lockup", async () => {
     });
   });
 
-async function lockStakedNFT(
-  fixture: Fixture,
-  account: SignerWithAddress,
-  tokenID: BigNumber,
-  approve: boolean = true
-): Promise<ContractTransaction> {
-  if (approve) {
-    const txResponse = await fixture.publicStaking
+  async function lockStakedNFT(
+    fixture: Fixture,
+    account: SignerWithAddress,
+    tokenID: BigNumber,
+    approve: boolean = true
+  ): Promise<ContractTransaction> {
+    if (approve) {
+      const txResponse = await fixture.publicStaking
+        .connect(account)
+        .approve(fixture.lockup.address, tokenID);
+      await txResponse.wait();
+    }
+    return fixture.lockup.connect(account).lockFromApproval(tokenID);
+  }
+
+  async function lockFromTransfer(
+    fixture: Fixture,
+    account: SignerWithAddress,
+    tokenID: BigNumber
+  ): Promise<ContractTransaction> {
+    return fixture.lockup
       .connect(account)
-      .approve(fixture.lockup.address, tokenID);
-    await txResponse.wait();
+      .lockFromTransfer(tokenID, account.address);
   }
-  return fixture.lockup.connect(account).lockFromApproval(tokenID);
-}
 
-async function lockFromTransfer(
-  fixture: Fixture,
-  account: SignerWithAddress,
-  tokenID: BigNumber
-): Promise<ContractTransaction> {
-  return fixture.lockup
-    .connect(account)
-    .lockFromTransfer(tokenID, account.address);
-}
-
-async function mintBtoken(
-  fixture: Fixture,
-  account: SignerWithAddress,
-  amount: string
-): Promise<ContractTransaction> {
-  const btokenAmount = ethers.utils.parseEther(amount);
-  const totalBToken = await fixture.bToken.totalSupply();
-  const eth = await fixture.bToken.getEthToMintBTokens(
-    totalBToken,
-    btokenAmount
-  );
-  return fixture.bToken.connect(account).mint(amount, { value: eth });
-}
-
-async function ensureBlockIsAtLeast(targetBlock: number): Promise<void> {
-  const currentBlock = await ethers.provider.getBlockNumber();
-  if (currentBlock < targetBlock) {
-    const blockDelta = targetBlock - currentBlock;
-    await mineBlocks(BigInt(blockDelta));
+  async function ensureBlockIsAtLeast(targetBlock: number): Promise<void> {
+    const currentBlock = await ethers.provider.getBlockNumber();
+    if (currentBlock < targetBlock) {
+      const blockDelta = targetBlock - currentBlock;
+      await mineBlocks(BigInt(blockDelta));
+    }
   }
-}
+});
