@@ -1,6 +1,5 @@
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { expect } from "chai";
-import { BigNumber } from "ethers";
 import { ethers, network } from "hardhat";
 import { DutchAuction } from "../../typechain-types";
 import { PromiseOrValue } from "../../typechain-types/common";
@@ -32,9 +31,6 @@ const EXPECTED_PRICE_BLOCK_THREE = ethers.utils.parseEther(
 const EXPECTED_PRICE_BLOCK_FOUR = ethers.utils.parseEther(
   "9937.357456279809220985"
 );
-const startPrice = BigNumber.from("1000000000000000000000000");
-const decay = 16;
-const scaleParameter = 100;
 const dailyExpectedPriceFirstMonth = [
   "10000950400000000000000",
   "979815755677368833202",
@@ -82,9 +78,7 @@ async function deployFixture() {
   dutchAuction = (await deployUpgradeableWithFactory(
     fixture.factory,
     "DutchAuction",
-    "DutchAuction",
-    undefined,
-    [startPrice, decay, scaleParameter]
+    "DutchAuction"
   )) as DutchAuction;
   return { fixture, dutchAuction };
 }
