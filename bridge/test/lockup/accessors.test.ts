@@ -206,22 +206,25 @@ describe("Lockup - public accessors", async () => {
     });
   });
 
-  describe("payoutSafe", async () => {
-    it("returns false before profits have been agreggated", async () => {
-      expect(await fixture.lockup.payoutSafe()).to.be.equal(false);
-    });
-
-    it("returns true after profits have been agreggated", async () => {
-      // todo - add test
-    });
-  });
-
   describe("with positions locked", async () => {
     beforeEach(async () => {
       // lock the positions
       for (let i = 1; i <= numberOfLockingUsers; i++) {
         await lockStakedNFT(fixture, accounts[i], stakedTokenIDs[i]);
       }
+    });
+
+    describe("payoutSafe", async () => {
+      it("returns false before profits have been agreggated", async () => {
+        expect(await fixture.lockup.payoutSafe()).to.be.equal(false);
+      });
+
+      it("returns true after profits have been agreggated", async () => {
+        await createBonusStakedPosition(fixture, accounts[0]);
+        await jumpToPostLockState(fixture);
+        await fixture.lockup.aggregateProfits();
+        expect(await fixture.lockup.payoutSafe()).to.be.equal(true);
+      });
     });
 
     it("ownerOf returns correct owner of token", async () => {
@@ -281,18 +284,7 @@ describe("Lockup - public accessors", async () => {
     describe("with funds to distribute", async () => {
       beforeEach(async () => {
         await distributeProfits(fixture, accounts[0], profitETH, profitALCA);
-        await (
-          await fixture.aToken
-            .connect(accounts[0])
-            .transfer(
-              fixture.bonusPool.address,
-              BigNumber.from("10000000000000000000000")
-            )
-        ).wait();
-
-        await fixture.bonusPool
-          .connect(fixture.mockFactorySigner)
-          .createBonusStakedPosition();
+        await createBonusStakedPosition(fixture, accounts[0]);
         await jumpToPostLockState(fixture);
         await fixture.lockup.aggregateProfits();
       });
@@ -335,7 +327,9 @@ describe("Lockup - public accessors", async () => {
         }
       });
 
-      it("estimateFinalBonusWithProfits returns amounts that can be collected from locked positions", async () => {});
+      it("estimateFinalBonusWithProfits returns amounts that can be collected from locked positions", async () => {
+        // todo: add test for this
+      });
     });
   });
 });
@@ -353,4 +347,22 @@ async function lockStakedNFT(
       tokenID,
       "0x"
     );
+}
+
+async function createBonusStakedPosition(
+  fixture: Fixture,
+  account: SignerWithAddress
+) {
+  await (
+    await fixture.aToken
+      .connect(account)
+      .transfer(
+        fixture.bonusPool.address,
+        BigNumber.from("10000000000000000000000")
+      )
+  ).wait();
+
+  await fixture.bonusPool
+    .connect(fixture.mockFactorySigner)
+    .createBonusStakedPosition();
 }
