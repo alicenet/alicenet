@@ -11,6 +11,7 @@ import {
   example,
   getEthConsumedAsGas,
   getState,
+  getUserLockingInfo,
   lockStakedNFT,
   numberOfLockingUsers,
   profitALCA,
@@ -67,7 +68,7 @@ describe("Testing Unlock Early", async () => {
       const userShares = ethers.utils.parseEther(
         example.distribution.users[user].shares
       );
-      const userUnlockInfo = await getUserUnlockInfo(
+      const userUnlockInfo = await getUserLockingInfo(
         fixture,
         unlockingEarlyUsers[userId],
         userShares,
@@ -122,7 +123,65 @@ describe("Testing Unlock Early", async () => {
       const userShares = ethers.utils.parseEther(
         example.distribution.users[user].shares
       );
-      const userUnlockInfo = await getUserUnlockInfo(
+      const userUnlockInfo = await getUserLockingInfo(
+        fixture,
+        unlockingEarlyUsers[userId],
+        userShares,
+        50
+      );
+      // new lockup position is created for user's remaining staking balance
+      const newPositionId = (
+        await fixture.publicStaking.getLatestMintedPositionID()
+      )
+        .add(1)
+        .toBigInt();
+      expectedState.lockupPositions[userUnlockInfo.index.toString()].index =
+        userUnlockInfo.index.toBigInt();
+      expectedState.lockupPositions[userUnlockInfo.index.toString()].owner =
+        userUnlockInfo.owner.address;
+      expectedState.lockupPositions[userUnlockInfo.index.toString()].tokenId =
+        newPositionId;
+      // new position is assigned to user
+      expectedState.users[user].tokenId = newPositionId;
+      expectedState.users[user].tokenOwner = userUnlockInfo.owner.address;
+      // user only earns free ETH from staking since unlocked ALCA is re-staked
+      expectedState.contracts.publicStaking.eth -= userUnlockInfo.profitETHUser;
+      expectedState.users[user].eth += userUnlockInfo.profitETHUser;
+      // user's reserved ETH goes to reward pool
+      expectedState.users[user].eth -= userUnlockInfo.reservedProfitETHUser;
+      expectedState.contracts.rewardPool.eth +=
+        userUnlockInfo.reservedProfitETHUser;
+      // staking's reserved ALCA goes to reward pool
+      expectedState.contracts.publicStaking.alca -=
+        userUnlockInfo.reservedProfitALCAUser;
+      expectedState.contracts.rewardPool.alca +=
+        userUnlockInfo.reservedProfitALCAUser;
+      // proceed to unlock early
+      const tx = await fixture.lockup
+        .connect(userUnlockInfo.owner)
+        .unlockEarly(userUnlockInfo.exitAmount, true);
+      // account for used gas
+      expectedState.users[user].eth -= getEthConsumedAsGas(await tx.wait());
+    }
+    showState(
+      "After Unlock early",
+      await getState(fixture, lastStakingPosition)
+    );
+    assert.deepEqual(await getState(fixture), expectedState);
+  });
+
+  it.only("should unlock-early two users for 50% of initial position re-staking unlocked shares", async () => {
+    const lastStakingPosition = (
+      await fixture.publicStaking.getLatestMintedPositionID()
+    ).toNumber();
+    const expectedState = await getState(fixture, lastStakingPosition);
+    const unlockingEarlyUsers = [4,5];
+    for (let userId = 0; userId < unlockingEarlyUsers.length; userId++) {
+      const user = "user" + unlockingEarlyUsers[userId];
+      const userShares = ethers.utils.parseEther(
+        example.distribution.users[user].shares
+      );
+      const userUnlockInfo = await getUserLockingInfo(
         fixture,
         unlockingEarlyUsers[userId],
         userShares,
@@ -180,7 +239,7 @@ describe("Testing Unlock Early", async () => {
       const userShares = ethers.utils.parseEther(
         example.distribution.users[user].shares
       );
-      let userUnlockInfo = await getUserUnlockInfo(
+      let userUnlockInfo = await getUserLockingInfo(
         fixture,
         unlockingEarlyUsers[userId],
         userShares,
@@ -226,7 +285,7 @@ describe("Testing Unlock Early", async () => {
       assert.deepEqual(await getState(fixture), expectedState);
       // fast forward to staking free after
       await mineBlocks(90n);
-      userUnlockInfo = await getUserUnlockInfo(
+      userUnlockInfo = await getUserLockingInfo(
         fixture,
         unlockingEarlyUsers[userId],
         userShares.div(2),
@@ -280,7 +339,7 @@ describe("Testing Unlock Early", async () => {
       const userShares = ethers.utils.parseEther(
         example.distribution.users[user].shares
       );
-      const userUnlockInfo = await getUserUnlockInfo(
+      const userUnlockInfo = await getUserLockingInfo(
         fixture,
         unlockingEarlyUsers[userId],
         userShares,
@@ -345,7 +404,7 @@ describe("Testing Unlock Early", async () => {
       const userShares = ethers.utils.parseEther(
         example.distribution.users[user].shares
       );
-      const userUnlockInfo = await getUserUnlockInfo(
+      const userUnlockInfo = await getUserLockingInfo(
         fixture,
         unlockingEarlyUsers[i],
         userShares,
@@ -395,36 +454,3 @@ describe("Testing Unlock Early", async () => {
   });
 });
 
-async function getUserUnlockInfo(
-  fixture: Fixture,
-  userId: number,
-  userShares: BigNumber,
-  percentageOfUnlock: number
-) {
-  const totalShares = await fixture.publicStaking.getTotalShares();
-  const signers = await ethers.getSigners();
-  const owner_ = signers[userId];
-  const tokenId = await fixture.lockup.tokenOf(owner_.address);
-  const index_ = await fixture.lockup.getIndexByTokenId(tokenId);
-  const exitAmount_ = userShares.div(100).mul(percentageOfUnlock).toBigInt();
-  const profitALCAUser_ = profitALCA
-    .mul(userShares)
-    .div(totalShares)
-    .toBigInt();
-  const profitETHUser_ = profitETH.mul(userShares).div(totalShares).toBigInt();
-  const reservedProfitALCAUser_ = (
-    await fixture.lockup.getReservedAmount(profitALCAUser_)
-  ).toBigInt();
-  const reservedProfitETHUser_ = (
-    await fixture.lockup.getReservedAmount(profitETHUser_)
-  ).toBigInt();
-  return {
-    exitAmount: exitAmount_,
-    profitALCAUser: profitALCAUser_,
-    reservedProfitALCAUser: reservedProfitALCAUser_,
-    profitETHUser: profitETHUser_,
-    reservedProfitETHUser: reservedProfitETHUser_,
-    index: index_,
-    owner: owner_,
-  };
-}

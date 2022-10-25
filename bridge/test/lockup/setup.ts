@@ -238,7 +238,7 @@ export async function getState(
     };
   }
 
-  const state: State = {
+  const state: State = { 
     contracts: contractsState,
     users: usersState,
     lockupPositions: positionsState,
@@ -439,4 +439,38 @@ export async function jumpToPostLockState(fixture: BaseTokensFixture) {
     .toBigInt();
   await mineBlocks(blocksToMine + 1n);
   expect(await fixture.lockup.getState()).to.be.equals(LockupStates.PostLock);
+}
+
+export async function getUserLockingInfo(
+  fixture: Fixture,
+  userId: number,
+  userShares: BigNumber,
+  percentageOfUnlock: number
+) {
+  const totalShares = await fixture.publicStaking.getTotalShares();
+  const signers = await ethers.getSigners();
+  const owner_ = signers[userId];
+  const tokenId = await fixture.lockup.tokenOf(owner_.address);
+  const index_ = await fixture.lockup.getIndexByTokenId(tokenId);
+  const exitAmount_ = userShares.div(100).mul(percentageOfUnlock).toBigInt();
+  const profitALCAUser_ = profitALCA
+    .mul(userShares)
+    .div(totalShares)
+    .toBigInt();
+  const profitETHUser_ = profitETH.mul(userShares).div(totalShares).toBigInt();
+  const reservedProfitALCAUser_ = (
+    await fixture.lockup.getReservedAmount(profitALCAUser_)
+  ).toBigInt();
+  const reservedProfitETHUser_ = (
+    await fixture.lockup.getReservedAmount(profitETHUser_)
+  ).toBigInt();
+  return {
+    exitAmount: exitAmount_,
+    profitALCAUser: profitALCAUser_,
+    reservedProfitALCAUser: reservedProfitALCAUser_,
+    profitETHUser: profitETHUser_,
+    reservedProfitETHUser: reservedProfitETHUser_,
+    index: index_,
+    owner: owner_,
+  };
 }

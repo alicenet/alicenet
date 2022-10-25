@@ -25,7 +25,7 @@ interface Fixture extends BaseTokensFixture {
   bonusPool: BonusPool;
 }
 
-describe("getter functions", async () => {
+describe("Testing getter functions", async () => {
   let fixture: Fixture;
   let accounts: SignerWithAddress[];
   let stakedTokenIDs: BigNumber[];
