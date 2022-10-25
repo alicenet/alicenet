@@ -3,6 +3,8 @@ import {
   BigNumber,
   ContractReceipt,
   ContractTransaction,
+  Signer,
+  Wallet,
 } from "ethers/lib/ethers";
 import hre, { ethers, expect } from "hardhat";
 import { deployCreateAndRegister } from "../../scripts/lib/alicenetFactory";
@@ -25,10 +27,8 @@ import { Distribution1 } from "./test.data";
 export const numberOfLockingUsers = 5;
 export const stakedAmount = ethers.utils.parseEther("100000000").toBigInt();
 export const totalBonusAmount = ethers.utils.parseEther("2000000");
-export const startBlock: number = 100;
-export const lockDuration: number = 100;
-export let blockNumberAtLockupDeployment: number = 0;
-export let asFactory: string;
+export const ENROLLMENT_PERIOD = 100;
+export const lockDuration = 100;
 export const LockupStates = {
   PreLock: 0,
   InLock: 1,
@@ -230,11 +230,11 @@ export async function getState(
 
   const stakingsState: StakingPositionsState = {};
   for (let i = stakingInitialPosition + 1; i <= lastMintedPosition; i++) {
-    const [position2Shares, , ,] = await fixture.publicStaking.getPosition(
-      lastMintedPosition
+    const [positionShares, , ,] = await fixture.publicStaking.getPosition(
+      i
     );
     stakingsState[i] = {
-      shares: position2Shares.toBigInt(),
+      shares: positionShares.toBigInt(),
     };
   }
 
@@ -274,18 +274,14 @@ export const getImpersonatedSigner = async (
     method: "hardhat_impersonateAccount",
     params: [addressToImpersonate],
   });
-  return ethers.provider.getSigner(addressToImpersonate);
+  return ethers.getImpersonatedSigner(addressToImpersonate);
 };
 
 export async function deployLockupContract(
-  baseTokensFixture: BaseTokensFixture
+  baseTokensFixture: BaseTokensFixture,
+  enrollmentPeriod: number = ENROLLMENT_PERIOD
 ) {
-  const txResponse = await deployCreateAndRegister(
-    LOCK_UP,
-    baseTokensFixture.factory.address,
-    ethers,
-    [startBlock, lockDuration, totalBonusAmount]
-  );
+  const txResponse = await deployCreateAndRegister(LOCK_UP, baseTokensFixture.factory.address, ethers, [enrollmentPeriod, lockDuration, totalBonusAmount])
   // get the address from the event
   const lockupAddress = await getEventVar(
     txResponse,
@@ -302,7 +298,7 @@ export async function getSimulatedStakingPositions(
   numberOfUsers: number
 ) {
   const tokenIDs = [];
-  asFactory = await getImpersonatedSigner(fixture.factory.address);
+  let asFactory = await getImpersonatedSigner(fixture.factory.address);
   await fixture.aToken
     .connect(signers[0])
     .increaseAllowance(fixture.publicStaking.address, stakedAmount);
@@ -356,7 +352,7 @@ export async function deployFixture() {
   await preFixtureSetup();
   const signers = await ethers.getSigners();
   const baseTokensFixture = await deployFactoryAndBaseTokens(signers[0]);
-  blockNumberAtLockupDeployment = await ethers.provider.getBlockNumber();
+  const blockNumberAtLockupDeployment = await ethers.provider.getBlockNumber();
   const lockup = await deployLockupContract(baseTokensFixture);
   // get the address of the reward pool from the lockup contract
   const rewardPoolAddress = await lockup.getRewardPoolAddress();
@@ -415,8 +411,8 @@ export async function distributeProfits(
 }
 
 export async function lockStakedNFT(
-  fixture: BaseTokensFixture,
-  account: SignerWithAddress,
+  fixture: Fixture,
+  account: Wallet | SignerWithAddress,
   tokenID: BigNumber,
   approve: boolean = true
 ): Promise<ContractTransaction> {
