@@ -212,7 +212,7 @@ func SetupEventMap(em *objects.EventMap, cdb, monDB *db.Database, adminHandler m
 	}
 
 	processValidatorMinorSlashedFunc := func(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
-		return ProcessValidatorMinorSlashed(eth, contracts, logger, state, log)
+		return ProcessValidatorMinorSlashed(eth, contracts, cdb, logger, state, log)
 	}
 	if err := em.Register(validatorMinorSlashedEvent.ID.String(), validatorMinorSlashedEvent.Name, processValidatorMinorSlashedFunc); err != nil {
 		panic(fmt.Sprintf("couldn't register validator minor slashed event:%v", err))
@@ -225,7 +225,7 @@ func SetupEventMap(em *objects.EventMap, cdb, monDB *db.Database, adminHandler m
 	}
 
 	processValidatorMajorSlashedFunc := func(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
-		return ProcessValidatorMajorSlashed(eth, contracts, logger, state, log)
+		return ProcessValidatorMajorSlashed(eth, contracts, cdb, logger, state, log)
 	}
 	if err := em.Register(validatorMajorSlashedEvent.ID.String(), validatorMajorSlashedEvent.Name, processValidatorMajorSlashedFunc); err != nil {
 		panic(err)

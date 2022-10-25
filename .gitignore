@@ -28,3 +28,4 @@ dist/
 scripts/generated
 node_modules/
 legacy/V1
+bkp/

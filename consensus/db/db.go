@@ -1973,6 +1973,67 @@ func (db *Database) DeleteAccusation(txn *badger.Txn, id [32]byte) error {
 	return nil
 }
 
+/**
+* Evicted validators.
+ */
+
+func (db *Database) makeEvictedValidatorKey(groupKey, address []byte) ([]byte, error) {
+	key := &objs.EvictedValidatorKey{
+		Prefix:   dbprefix.PrefixEvitedValidator(),
+		GroupKey: groupKey,
+		VAddress: address,
+	}
+	return key.MarshalBinary()
+}
+
+func (db *Database) makeEvictedValidatorGroupIterKey(groupKey []byte) ([]byte, error) {
+	key := &objs.EvictedValidatorKey{
+		Prefix:   dbprefix.PrefixEvitedValidator(),
+		GroupKey: groupKey,
+	}
+	return key.MakeGroupIterKey()
+}
+
+func (db *Database) SetEvictedValidator(txn *badger.Txn, groupKey, address []byte) error {
+	key, err := db.makeEvictedValidatorKey(groupKey, address)
+	if err != nil {
+		return err
+	}
+	//db.logger.Warnf("about to persist evicted validator")
+	err = db.rawDB.SetEvictedValidator(txn, key, address)
+	//db.logger.Warnf("maybe persisted evicted validator: %v", err)
+	if err != nil {
+		utils.DebugTrace(db.logger, err)
+		return err
+	}
+	//db.logger.Warnf("persisted evicted validator")
+	return nil
+}
+
+func (db *Database) GetEvictedValidatorsByGroupKey(txn *badger.Txn, groupKey []byte) ([][]byte, error) {
+	prefix, err := db.makeEvictedValidatorGroupIterKey(groupKey)
+	if err != nil {
+		return nil, err
+	}
+	opts := badger.DefaultIteratorOptions
+	opts.PrefetchValues = true
+	opts.PrefetchSize = 100
+	it := txn.NewIterator(opts)
+	defer it.Close()
+	evictedValidatorAddresses := make([][]byte, 0)
+	for it.Seek(prefix); it.ValidForPrefix(prefix); it.Next() {
+		item := it.Item()
+		evictedValidatorAddress, err := item.ValueCopy(nil)
+		if err != nil {
+			return nil, err
+		}
+
+		evictedValidatorAddresses = append(evictedValidatorAddresses, evictedValidatorAddress)
+	}
+
+	return evictedValidatorAddresses, nil
+}
+
 // PendingHdrLeafIter
 type PendingHdrLeafIter struct {
 	it        *badger.Iterator

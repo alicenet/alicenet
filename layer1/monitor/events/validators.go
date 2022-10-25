@@ -7,6 +7,7 @@ import (
 	"math/big"
 	"strings"
 
+	"github.com/dgraph-io/badger/v2"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/sirupsen/logrus"
@@ -202,7 +203,7 @@ func ProcessValidatorLeft(eth layer1.Client, contracts layer1.AllSmartContracts,
 }
 
 // ProcessValidatorMajorSlashed handles the Major Slash event.
-func ProcessValidatorMajorSlashed(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+func ProcessValidatorMajorSlashed(eth layer1.Client, contracts layer1.AllSmartContracts, consDB *db.Database, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
 	event, err := contracts.EthereumContracts().ValidatorPool().ParseValidatorMajorSlashed(log)
 	if err != nil {
 		return err
@@ -217,11 +218,23 @@ func ProcessValidatorMajorSlashed(eth layer1.Client, contracts layer1.AllSmartCo
 	}
 	logger.Info("ValidatorMajorSlashed")
 
+	// persist this evicted validator
+	err = consDB.Update(func(txn *badger.Txn) error {
+		os, err := consDB.GetOwnState(txn)
+		if err != nil {
+			return err
+		}
+		return consDB.SetEvictedValidator(txn, os.GroupKey, event.Account.Bytes())
+	})
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
 // ProcessValidatorMinorSlashed handles the Minor Slash event.
-func ProcessValidatorMinorSlashed(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+func ProcessValidatorMinorSlashed(eth layer1.Client, contracts layer1.AllSmartContracts, consDB *db.Database, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
 	event, err := contracts.EthereumContracts().ValidatorPool().ParseValidatorMinorSlashed(log)
 	if err != nil {
 		return err
@@ -236,6 +249,18 @@ func ProcessValidatorMinorSlashed(eth layer1.Client, contracts layer1.AllSmartCo
 		return err
 	}
 	logger.Infof("ValidatorMinorSlashed")
+
+	// persist this evicted validator
+	err = consDB.Update(func(txn *badger.Txn) error {
+		os, err := consDB.GetOwnState(txn)
+		if err != nil {
+			return err
+		}
+		return consDB.SetEvictedValidator(txn, os.GroupKey, event.Account.Bytes())
+	})
+	if err != nil {
+		return err
+	}
 
 	return nil
 }

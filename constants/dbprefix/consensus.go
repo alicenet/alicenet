@@ -138,6 +138,10 @@ func PrefixAccusation() []byte {
 	return []byte("a7")
 }
 
+func PrefixEvitedValidator() []byte {
+	return []byte("a8")
+}
+
 func PrefixPendingNodeKeyCount() []byte {
 	return []byte("Ay")
 }
