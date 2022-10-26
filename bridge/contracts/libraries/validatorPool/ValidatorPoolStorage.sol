@@ -49,6 +49,9 @@ abstract contract ValidatorPoolStorage is
     // Mapping to keep track of the active validators IPs.
     mapping(address => string) internal _ipLocations;
 
+    // boolean flag indicating whether a validator was slashed
+    bool internal _wereValidatorsSlashed;
+
     constructor()
         ImmutableFactory(msg.sender)
         ImmutableSnapshots()
