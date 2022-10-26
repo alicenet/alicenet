@@ -37,20 +37,20 @@ describe("Testing Collect", async () => {
     for (let i = 1; i <= numberOfLockingUsers; i++) {
       await lockStakedNFT(fixture, accounts[i], stakedTokenIDs[i]);
     }
-    showState("After Locking", await getState(fixture, 0));
-    const expectedState = await getState(fixture, 0);
+    showState("After Locking", await getState(fixture));
+    const expectedState = await getState(fixture);
 
     await distributeProfits(fixture, accounts[0], profitETH, profitALCA);
     expectedState.contracts.publicStaking.eth += profitETH.toBigInt();
     expectedState.contracts.publicStaking.alca += profitALCA.toBigInt();
-    showState("After Distribution", await getState(fixture, 0));
-    assert.deepEqual(await getState(fixture, 0), expectedState);
+    showState("After Distribution", await getState(fixture));
+    assert.deepEqual(await getState(fixture), expectedState);
   });
 
-  it("should collect for user without other user previous unlocking", async () => {
+  it("should collect for user without previous unlocking of another user", async () => {
     for (let i = 1; i <= numberOfLockingUsers; i++) {
       const userLockingInfo = await getUserLockingInfo(fixture, i);
-      const expectedState = await getState(fixture, 0);
+      const expectedState = await getState(fixture);
       const tx = await fixture.lockup.connect(accounts[i]).collectAllProfits();
       // user receives free unlocked staking amounts
       expectedState.contracts.publicStaking.alca -=
@@ -68,16 +68,16 @@ describe("Testing Collect", async () => {
         userLockingInfo.reservedProfitALCAUser;
       expectedState.contracts.rewardPool.alca +=
         userLockingInfo.reservedProfitALCAUser;
-      showState("After Collecting", await getState(fixture, 0));
+      showState("After Collecting", await getState(fixture));
       // account for used gas
       expectedState.users["user" + i].eth -= getEthConsumedAsGas(
         await tx.wait()
       );
-      assert.deepEqual(await getState(fixture, 0), expectedState);
+      assert.deepEqual(await getState(fixture), expectedState);
     }
   });
 
-  it.skip("should collect for user with other user previous unlocking", async () => {
+  it.skip("should collect for user with previous unlocking of other user", async () => {
     const userShares = ethers.utils.parseEther(
       example.distribution.users.user1.shares
     );
@@ -111,7 +111,7 @@ describe("Testing Collect", async () => {
     }
   });
 
-  it("should not collect for user with user previous unlocking", async () => {
+  it("should not collect for user with previous unlocking of the same user ", async () => {
     for (let i = 1; i <= numberOfLockingUsers; i++) {
       const userLockingInfo = await getUserLockingInfo(fixture, i);
       const exitAmount = userLockingInfo.userShares;

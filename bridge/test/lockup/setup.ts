@@ -127,11 +127,7 @@ export interface State {
   stakingPositions: StakingPositionsState;
 }
 
-export async function getState(
-  fixture: Fixture | BaseTokensFixture,
-  stakingInitialPosition?: number,
-  stakingFinalPosition?: number
-) {
+export async function getState(fixture: Fixture | BaseTokensFixture) {
   const signers = await ethers.getSigners();
   const contracts = [
     fixture.lockup,
@@ -149,13 +145,6 @@ export async function getState(
   ];
   const contractsState: ContractsState = {};
   const usersState: UsersState = {};
-  const lastMintedPosition = (
-    await fixture.publicStaking.getLatestMintedPositionID()
-  ).toNumber();
-  if (stakingInitialPosition === undefined)
-    stakingInitialPosition = lastMintedPosition;
-  if (stakingFinalPosition === undefined)
-    stakingFinalPosition = lastMintedPosition;
   for (let i = 0; i < contracts.length; i++) {
     if (contractNames[i] === "lockup")
       contractsState[contractNames[i]] = {
@@ -234,7 +223,7 @@ export async function getState(
   for (let i = 1; i <= numberOfLockingUsers; i++) {
     const owner = signers[i].address;
     const tokenId = (await fixture.lockup.tokenOf(owner)).toBigInt();
-    if (tokenId !== 0) {
+    if (tokenId !== 0n) {
       const [positionShares, , ,] = await fixture.publicStaking.getPosition(
         tokenId
       );
