@@ -220,9 +220,9 @@ describe("Lockup - public accessors", async () => {
       });
     });
 
-    describe("getOriginalLockedShares", async () => {
+    describe("getTotalSharesLocked", async () => {
       it("returns correct amount of shares", async () => {
-        expect(await fixture.lockup.getOriginalLockedShares()).to.be.equal(
+        expect(await fixture.lockup.getTotalSharesLocked()).to.be.equal(
           originalLockedAmount
         );
       });
@@ -242,22 +242,6 @@ describe("Lockup - public accessors", async () => {
 
         expect(await fixture.lockup.getTotalSharesLocked()).to.be.equal(
           expectedShareAmountUpdated
-        );
-      });
-
-      it("returns original amount of shares when positions unlock when in InLock state", async () => {
-        await jumpToInlockState(fixture);
-
-        const numberOfPositionsToUnlock = 2;
-        for (let i = 1; i <= numberOfPositionsToUnlock; i++) {
-          const user = "user" + i;
-          await fixture.lockup
-            .connect(accounts[i])
-            .unlockEarly(Distribution1.users[user].shares, false);
-        }
-
-        expect(await fixture.lockup.getOriginalLockedShares()).to.be.equal(
-          originalLockedAmount
         );
       });
     });
@@ -318,6 +302,10 @@ describe("Lockup - public accessors", async () => {
           expect(payoutEth).to.equal(expectedPayoutEth);
           expect(payoutToken).to.equal(expectedPayoutToken);
         }
+      });
+
+      describe("estimateFinalBonusWithProfits", async () => {
+        
       });
     });
   });
