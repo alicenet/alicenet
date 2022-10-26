@@ -17,6 +17,7 @@ import { getEventVar } from "../factory/Setup";
 import {
   BaseTokensFixture,
   deployFactoryAndBaseTokens,
+  deployUpgradeableWithFactory,
   mineBlocks,
   posFixtureSetup,
   preFixtureSetup,
@@ -26,6 +27,9 @@ import { Distribution1 } from "./test.data";
 export const numberOfLockingUsers = 5;
 export const stakedAmount = ethers.utils.parseEther("100000000").toBigInt();
 export const totalBonusAmount = ethers.utils.parseEther("2000000");
+export const originalLockedAmount = ethers.utils
+  .parseEther("20000000")
+  .toBigInt();
 export const ENROLLMENT_PERIOD = 100;
 export const lockDuration = 100;
 export const LockupStates = {
@@ -297,8 +301,13 @@ export async function deployLockupContract(
     DEPLOYED_RAW,
     CONTRACT_ADDR
   );
+  const lockupStartBlock =
+    (txResponse.blockNumber as number) + ENROLLMENT_PERIOD;
   await posFixtureSetup(baseTokensFixture.factory, baseTokensFixture.aToken);
-  return await ethers.getContractAt(LOCK_UP, lockupAddress);
+  return {
+    lockup: await ethers.getContractAt(LOCK_UP, lockupAddress),
+    lockupStartBlock,
+  };
 }
 
 export async function getSimulatedStakingPositions(
@@ -357,11 +366,20 @@ export async function getSimulatedStakingPositions(
   return tokenIDs;
 }
 
-export async function deployFixture() {
+export async function deployFixture(impersonateLockup: boolean = true) {
   await preFixtureSetup();
   const signers = await ethers.getSigners();
   const baseTokensFixture = await deployFactoryAndBaseTokens(signers[0]);
-  const lockup = await deployLockupContract(baseTokensFixture);
+  // deploying foundation so terminate doesn't fail
+  await deployUpgradeableWithFactory(
+    baseTokensFixture.factory,
+    "Foundation",
+    undefined
+  );
+  await ethers.provider.getBlockNumber();
+  const { lockup, lockupStartBlock } = await deployLockupContract(
+    baseTokensFixture
+  );
   // get the address of the reward pool from the lockup contract
   const rewardPoolAddress = await lockup.getRewardPoolAddress();
   const rewardPool = await ethers.getContractAt(
@@ -377,7 +395,10 @@ export async function deployFixture() {
   const pblicStakingSigner = await getImpersonatedSigner(
     baseTokensFixture.publicStaking.address
   );
-  const rewardPoolSigner = await getImpersonatedSigner(rewardPoolAddress);
+  let rewardPoolSigner;
+  if (impersonateLockup) {
+    rewardPoolSigner = await getImpersonatedSigner(rewardPoolAddress);
+  }
   const fixture = {
     ...baseTokensFixture,
     rewardPool,
@@ -386,7 +407,9 @@ export async function deployFixture() {
     factorySigner,
     pblicStakingSigner,
     rewardPoolSigner,
+    lockupStartBlock,
   };
+
   const tokenIDs = await getSimulatedStakingPositions(fixture, signers, 5);
   expect(
     (await fixture.publicStaking.getTotalShares()).toBigInt()

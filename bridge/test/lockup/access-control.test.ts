@@ -72,6 +72,14 @@ describe("Testing Lockup Access Control", async () => {
             []
           )
       ).to.be.revertedWith("ERC721: invalid token ID");
+      await expect(
+        fixture.lockup.onERC721Received(
+          ethers.constants.AddressZero,
+          ethers.constants.AddressZero,
+          0,
+          []
+        )
+      ).to.be.revertedWithCustomError(fixture.lockup, "OnlyStakingNFTAllowed");
       await jumpToInlockState(fixture);
       await expect(
         fixture.lockup
@@ -112,23 +120,50 @@ describe("Testing Lockup Access Control", async () => {
         fixture.lockup.lockFromTransfer(0, ethers.constants.AddressZero)
       ).to.be.revertedWithCustomError(fixture.lockup, "PreLockStateRequired");
     });
-  });
 
-  describe("Testing excludePreLock functions", async () => {
-    it("attempts to use estimateFinalBonusWithProfits", async () => {
+    it("attempts to use lockFromApproval", async () => {
+      // minted a position with tokenID1
+      await fixture.publicStaking.mint(1000);
+      const tokenID = 1;
+      await fixture.publicStaking.approve(fixture.lockup.address, tokenID);
+      expect(await fixture.lockup.getState()).to.be.equals(
+        LockupStates.PreLock
+      );
       await jumpToInlockState(fixture);
       await expect(
-        fixture.lockup.estimateFinalBonusWithProfits(0)
-      ).to.be.revertedWithCustomError(fixture.lockup, "TokenIDNotLocked");
+        fixture.lockup.lockFromApproval(tokenID)
+      ).to.be.revertedWithCustomError(fixture.lockup, "PreLockStateRequired");
       await jumpToPostLockState(fixture);
       await expect(
-        fixture.lockup.estimateFinalBonusWithProfits(0)
-      ).to.be.revertedWithCustomError(fixture.lockup, "TokenIDNotLocked");
+        fixture.lockup.lockFromApproval(tokenID)
+      ).to.be.revertedWithCustomError(fixture.lockup, "PreLockStateRequired");
+    });
+  });
+
+  describe("Testing excludePostLock functions", async () => {
+    it("attempts to use collectAllProfits", async () => {
+      await jumpToPostLockState(fixture);
+      await expect(
+        fixture.lockup.collectAllProfits()
+      ).to.be.revertedWithCustomError(
+        fixture.lockup,
+        "PostLockStateNotAllowed"
+      );
+    });
+    it("attempts to unlock early", async () => {
+      await jumpToPostLockState(fixture);
+      await expect(
+        fixture.lockup.unlockEarly(1000, false)
+      ).to.be.revertedWithCustomError(
+        fixture.lockup,
+        "PostLockStateNotAllowed"
+      );
     });
   });
 
   describe("Testing onlyPostLock functions", async () => {
     it("attempts to use aggregateProfits", async () => {
+      await lockStakedNFT(fixture, accounts[1], stakedTokenIDs[1]);
       expect(await fixture.lockup.getState()).to.be.equals(
         LockupStates.PreLock
       );
@@ -140,12 +175,10 @@ describe("Testing Lockup Access Control", async () => {
         fixture.lockup.aggregateProfits()
       ).to.be.revertedWithCustomError(fixture.lockup, "PostLockStateRequired");
       await jumpToPostLockState(fixture);
+      await fixture.lockup.aggregateProfits();
       await expect(
         fixture.lockup.aggregateProfits()
-      ).to.be.revertedWithCustomError(
-        fixture.bonusPool,
-        "InvalidOriginalSharesValue"
-      );
+      ).to.be.revertedWithCustomError(fixture.lockup, "PayoutSafe");
     });
 
     it("attempts to use unlock", async () => {

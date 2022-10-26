@@ -1,27 +1,23 @@
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
-import { BigNumber, BytesLike, ContractTransaction } from "ethers";
+import { BigNumber, ContractTransaction } from "ethers";
 import { ethers } from "hardhat";
-import { CONTRACT_ADDR, DEPLOYED_RAW } from "../../scripts/lib/constants";
 import { BonusPool, Lockup, RewardPool } from "../../typechain-types";
-import { getEventVar } from "../factory/Setup";
+import { BaseTokensFixture } from "../setup";
 import {
-  BaseTokensFixture,
-  deployFactoryAndBaseTokens,
-  posFixtureSetup,
-  preFixtureSetup,
-} from "../setup";
-import {
+  deployFixture,
   distributeProfits,
-  ensureBlockIsAtLeast,
-  getImpersonatedSigner,
   jumpToInlockState,
   jumpToPostLockState,
+  lockDuration,
   LockupStates,
+  numberOfLockingUsers,
+  originalLockedAmount,
   profitALCA,
   profitETH,
 } from "./setup";
+import { Distribution1 } from "./test.data";
 
 interface Fixture extends BaseTokensFixture {
   lockup: Lockup;
@@ -31,95 +27,8 @@ interface Fixture extends BaseTokensFixture {
   mockFactorySigner: SignerWithAddress;
 }
 
-const enrollmentPeriod = 100;
-const lockDuration = 10;
-const stakedAmount = ethers.utils.parseEther("100").toBigInt();
-const totalBonusAmount = ethers.utils.parseEther("10000");
-
-let rewardPoolAddress: any;
-const numberOfLockingUsers = 5;
-
-async function deployFixture() {
-  await preFixtureSetup();
-  const signers = await ethers.getSigners();
-  const fixture = await deployFactoryAndBaseTokens(signers[0]);
-  // deploy lockup contract
-  const lockupBase = await ethers.getContractFactory("Lockup");
-  const lockupDeployCode = lockupBase.getDeployTransaction(
-    enrollmentPeriod,
-    lockDuration,
-    totalBonusAmount
-  ).data as BytesLike;
-  const contractName = ethers.utils.formatBytes32String("Lockup");
-  const txResponse = await fixture.factory.deployCreateAndRegister(
-    lockupDeployCode,
-    contractName
-  );
-
-  // get block number from tx
-  const tx = await txResponse.wait();
-  const blockNumber = tx.blockNumber;
-
-  const lockupStartBlock = blockNumber + enrollmentPeriod;
-  // get the address from the event
-  const lockupAddress = await getEventVar(
-    txResponse,
-    DEPLOYED_RAW,
-    CONTRACT_ADDR
-  );
-  await posFixtureSetup(fixture.factory, fixture.aToken);
-  const lockup = await ethers.getContractAt("Lockup", lockupAddress);
-  // get the address of the reward pool from the lockup contract
-  rewardPoolAddress = await lockup.getRewardPoolAddress();
-  const rewardPool = await ethers.getContractAt(
-    "RewardPool",
-    rewardPoolAddress
-  );
-  // get the address of the bonus pool from the reward pool contract
-  const bonusPoolAddress = await rewardPool.getBonusPoolAddress();
-  const bonusPool = await ethers.getContractAt("BonusPool", bonusPoolAddress);
-  const asFactory = await getImpersonatedSigner(fixture.factory.address);
-
-  const tokenIDs = [];
-  for (let i = 1; i <= numberOfLockingUsers; i++) {
-    // transfer 100 ALCA from admin to users
-    let txResponse = await fixture.aToken
-      .connect(signers[0])
-      .transfer(signers[i].address, stakedAmount);
-    await txResponse.wait();
-    // stake the tokens
-    txResponse = await fixture.aToken
-      .connect(signers[i])
-      .increaseAllowance(fixture.publicStaking.address, stakedAmount);
-    await txResponse.wait();
-    txResponse = await fixture.publicStaking
-      .connect(signers[i])
-      .mint(stakedAmount);
-    const tokenID = await fixture.publicStaking.tokenOfOwnerByIndex(
-      signers[i].address,
-      0
-    );
-    tokenIDs[i] = tokenID;
-  }
-
-  return {
-    fixture: {
-      ...fixture,
-      rewardPool,
-      lockup,
-      bonusPool,
-      lockupStartBlock,
-      mockFactorySigner: asFactory,
-    },
-    accounts: signers,
-    stakedTokenIDs: tokenIDs,
-  };
-}
-
 describe("Lockup - public accessors", async () => {
-  // let admin: SignerWithAddress;
-
-  let fixture: Fixture;
+  let fixture: any;
   let accounts: SignerWithAddress[];
   let stakedTokenIDs: BigNumber[];
   beforeEach(async () => {
@@ -142,7 +51,7 @@ describe("Lockup - public accessors", async () => {
 
   it("getRewardPoolAddress returns correct reward pool address", async () => {
     expect(await fixture.lockup.getRewardPoolAddress()).to.be.equal(
-      rewardPoolAddress
+      fixture.rewardPool.address
     );
   });
 
@@ -195,20 +104,12 @@ describe("Lockup - public accessors", async () => {
     });
 
     it("returns InLock state when lockup start block reached", async () => {
-      const lockupStartBlock = await (
-        await fixture.lockup.getLockupStartBlock()
-      ).toNumber();
-      await ensureBlockIsAtLeast(lockupStartBlock);
-
+      await jumpToInlockState(fixture);
       expect(await fixture.lockup.getState()).to.be.equal(LockupStates.InLock);
     });
 
     it("returns PostLock state when lockup end block reached", async () => {
-      const lockupEndBlock = await (
-        await fixture.lockup.getLockupEndBlock()
-      ).toNumber();
-      await ensureBlockIsAtLeast(lockupEndBlock);
-
+      await jumpToPostLockState(fixture);
       expect(await fixture.lockup.getState()).to.be.equal(
         LockupStates.PostLock
       );
@@ -224,12 +125,11 @@ describe("Lockup - public accessors", async () => {
     });
 
     describe("payoutSafe", async () => {
-      it("returns false before profits have been agreggated", async () => {
+      it("returns false before profits have been aggregated", async () => {
         expect(await fixture.lockup.payoutSafe()).to.be.equal(false);
       });
 
-      it("returns true after profits have been agreggated", async () => {
-        await createBonusStakedPosition(fixture, accounts[0]);
+      it("returns true after profits have been aggregated", async () => {
         await jumpToPostLockState(fixture);
         await fixture.lockup.aggregateProfits();
         expect(await fixture.lockup.payoutSafe()).to.be.equal(true);
@@ -262,7 +162,9 @@ describe("Lockup - public accessors", async () => {
     it("getIndexByTokenId returns correct index for token id", async () => {
       for (let i = 1; i <= numberOfLockingUsers; i++) {
         const tokenID = stakedTokenIDs[i];
-        expect(await fixture.lockup.getIndexByTokenId(tokenID)).to.equal(i);
+        expect(await fixture.lockup.getIndexByTokenId(tokenID)).to.equal(
+          BigNumber.from(i)
+        );
       }
     });
 
@@ -274,7 +176,6 @@ describe("Lockup - public accessors", async () => {
       });
 
       it("updates amount when positions unlock", async () => {
-        await createBonusStakedPosition(fixture, accounts[0]);
         await jumpToPostLockState(fixture);
         await fixture.lockup.aggregateProfits();
 
@@ -293,8 +194,7 @@ describe("Lockup - public accessors", async () => {
 
     describe("getTotalCurrentSharesLocked", async () => {
       it("returns correct amount of shares", async () => {
-        const expectedShareAmount =
-          stakedAmount * BigNumber.from(numberOfLockingUsers).toBigInt();
+        const expectedShareAmount = originalLockedAmount;
 
         expect(await fixture.lockup.getTotalCurrentSharesLocked()).to.be.equal(
           expectedShareAmount
@@ -305,16 +205,14 @@ describe("Lockup - public accessors", async () => {
         await jumpToInlockState(fixture);
 
         const numberOfPositionsToUnlock = 2;
+        let expectedShareAmount = originalLockedAmount;
         for (let i = 1; i <= numberOfPositionsToUnlock; i++) {
+          const user = "user" + i;
           await fixture.lockup
             .connect(accounts[i])
-            .unlockEarly(stakedAmount, false);
+            .unlockEarly(Distribution1.users[user].shares, false);
+          expectedShareAmount -= BigInt(Distribution1.users[user].shares);
         }
-        const expectedShareAmount =
-          stakedAmount *
-          BigNumber.from(
-            numberOfLockingUsers - numberOfPositionsToUnlock
-          ).toBigInt();
 
         expect(await fixture.lockup.getTotalCurrentSharesLocked()).to.be.equal(
           expectedShareAmount
@@ -323,29 +221,26 @@ describe("Lockup - public accessors", async () => {
     });
 
     describe("getOriginalLockedShares", async () => {
-      const expectedOriginalShareAmount =
-        stakedAmount * BigNumber.from(numberOfLockingUsers).toBigInt();
-
       it("returns correct amount of shares", async () => {
         expect(await fixture.lockup.getOriginalLockedShares()).to.be.equal(
-          expectedOriginalShareAmount
+          originalLockedAmount
         );
       });
 
       it("returns updated amount of shares when positions unlock when in PreLock state", async () => {
         const numberOfPositionsToUnlock = 2;
+        let expectedShareAmountUpdated = originalLockedAmount;
         for (let i = 1; i <= numberOfPositionsToUnlock; i++) {
+          const user = "user" + i;
           await fixture.lockup
             .connect(accounts[i])
-            .unlockEarly(stakedAmount, false);
+            .unlockEarly(Distribution1.users[user].shares, false);
+          expectedShareAmountUpdated -= BigInt(
+            Distribution1.users[user].shares
+          );
         }
-        const expectedShareAmountUpdated =
-          stakedAmount *
-          BigNumber.from(
-            numberOfLockingUsers - numberOfPositionsToUnlock
-          ).toBigInt();
 
-        expect(await fixture.lockup.getOriginalLockedShares()).to.be.equal(
+        expect(await fixture.lockup.getTotalCurrentSharesLocked()).to.be.equal(
           expectedShareAmountUpdated
         );
       });
@@ -355,13 +250,14 @@ describe("Lockup - public accessors", async () => {
 
         const numberOfPositionsToUnlock = 2;
         for (let i = 1; i <= numberOfPositionsToUnlock; i++) {
+          const user = "user" + i;
           await fixture.lockup
             .connect(accounts[i])
-            .unlockEarly(stakedAmount, false);
+            .unlockEarly(Distribution1.users[user].shares, false);
         }
 
         expect(await fixture.lockup.getOriginalLockedShares()).to.be.equal(
-          expectedOriginalShareAmount
+          originalLockedAmount
         );
       });
     });
@@ -369,17 +265,23 @@ describe("Lockup - public accessors", async () => {
     describe("with funds to distribute", async () => {
       beforeEach(async () => {
         await distributeProfits(fixture, accounts[0], profitETH, profitALCA);
-        await createBonusStakedPosition(fixture, accounts[0]);
         await jumpToPostLockState(fixture);
         await fixture.lockup.aggregateProfits();
       });
 
       it("getTemporaryRewardBalance returns correct reward balances of eth and tokens", async () => {
-        const expectedRewardEth = BigNumber.from("8000000000000000000");
-        const expectedRewardAlca = BigNumber.from("80000000000000000000000");
         for (let i = 1; i <= numberOfLockingUsers; i++) {
+          const user = "user" + i;
+          // get 80% of the value
+          const expectedRewardEth = ethers.utils
+            .parseEther(Distribution1.users[user].profitETH)
+            .mul(4)
+            .div(5);
+          const expectedRewardAlca = ethers.utils
+            .parseEther(Distribution1.users[user].profitALCA)
+            .mul(4)
+            .div(5);
           const account = accounts[i];
-
           const [payoutEth, payoutToken] =
             await fixture.lockup.getTemporaryRewardBalance(account.address);
           expect(payoutEth).to.equal(expectedRewardEth);
@@ -412,12 +314,40 @@ describe("Lockup - public accessors", async () => {
         }
       });
 
-      it("estimateFinalBonusWithProfits when in PreLock returns amounts from locked positions with bonus", async () => {
-        // todo: add test for this
+      it("getPositionByIndex returns correct token id", async () => {
+        for (let i = 1; i <= numberOfLockingUsers; i++) {
+          const tokenID = stakedTokenIDs[i];
+          expect(await fixture.lockup.getPositionByIndex(i)).to.equal(tokenID);
+        }
       });
 
-      it("estimateFinalBonusWithProfits after PreLock state returns amounts from locked positions without bonus", async () => {
-        // todo: add test for this
+      it("getIndexByTokenId returns correct index for token id", async () => {
+        for (let i = 1; i <= numberOfLockingUsers; i++) {
+          const tokenID = stakedTokenIDs[i];
+          expect(await fixture.lockup.getIndexByTokenId(tokenID)).to.equal(
+            BigNumber.from(i)
+          );
+        }
+      });
+
+      it("getCurrentNumberOfLockedPositions returns correct number of locked positions", async () => {
+        expect(
+          await fixture.lockup.getCurrentNumberOfLockedPositions()
+        ).to.equal(numberOfLockingUsers);
+      });
+
+      it("getTotalCurrentSharesLocked should return correct amount of shares", async () => {
+        const expectedShareAmount = originalLockedAmount;
+
+        expect(await fixture.lockup.getTotalCurrentSharesLocked()).to.be.equal(
+          expectedShareAmount
+        );
+      });
+
+      it("getOriginalLockedShares should return correct amount of shares", async () => {
+        expect(await fixture.lockup.getOriginalLockedShares()).to.be.equal(
+          originalLockedAmount
+        );
       });
     });
   });
@@ -436,22 +366,4 @@ async function lockStakedNFT(
       tokenID,
       "0x"
     );
-}
-
-async function createBonusStakedPosition(
-  fixture: Fixture,
-  account: SignerWithAddress
-) {
-  await (
-    await fixture.aToken
-      .connect(account)
-      .transfer(
-        fixture.bonusPool.address,
-        BigNumber.from("10000000000000000000000")
-      )
-  ).wait();
-
-  await fixture.bonusPool
-    .connect(fixture.mockFactorySigner)
-    .createBonusStakedPosition();
 }
