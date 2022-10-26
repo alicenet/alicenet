@@ -151,7 +151,7 @@ contract BonusPool is
             payoutToken
         );
 
-        RewardPool(_getRewardPoolAddress()).deposit{value: payoutToken}(payoutEth);
+        RewardPool(_getRewardPoolAddress()).deposit{value: payoutEth}(payoutToken);
     }
 
     function _getLockupContractAddress() internal view override returns (address) {
