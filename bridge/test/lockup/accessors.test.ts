@@ -272,15 +272,21 @@ describe("Lockup - public accessors", async () => {
       it("getTemporaryRewardBalance returns correct reward balances of eth and tokens", async () => {
         for (let i = 1; i <= numberOfLockingUsers; i++) {
           const user = "user" + i;
-          // get 80% of the value
           const expectedRewardEth = ethers.utils
             .parseEther(Distribution1.users[user].profitETH)
-            .mul(4)
-            .div(5);
+            .sub(
+              await fixture.lockup.getReservedAmount(
+                ethers.utils.parseEther(Distribution1.users[user].profitETH)
+              )
+            );
+
           const expectedRewardAlca = ethers.utils
             .parseEther(Distribution1.users[user].profitALCA)
-            .mul(4)
-            .div(5);
+            .sub(
+              await fixture.lockup.getReservedAmount(
+                ethers.utils.parseEther(Distribution1.users[user].profitALCA)
+              )
+            );
           const account = accounts[i];
           const [payoutEth, payoutToken] =
             await fixture.lockup.getTemporaryRewardBalance(account.address);
@@ -312,42 +318,6 @@ describe("Lockup - public accessors", async () => {
           expect(payoutEth).to.equal(expectedPayoutEth);
           expect(payoutToken).to.equal(expectedPayoutToken);
         }
-      });
-
-      it("getPositionByIndex returns correct token id", async () => {
-        for (let i = 1; i <= numberOfLockingUsers; i++) {
-          const tokenID = stakedTokenIDs[i];
-          expect(await fixture.lockup.getPositionByIndex(i)).to.equal(tokenID);
-        }
-      });
-
-      it("getIndexByTokenId returns correct index for token id", async () => {
-        for (let i = 1; i <= numberOfLockingUsers; i++) {
-          const tokenID = stakedTokenIDs[i];
-          expect(await fixture.lockup.getIndexByTokenId(tokenID)).to.equal(
-            BigNumber.from(i)
-          );
-        }
-      });
-
-      it("getCurrentNumberOfLockedPositions returns correct number of locked positions", async () => {
-        expect(
-          await fixture.lockup.getCurrentNumberOfLockedPositions()
-        ).to.equal(numberOfLockingUsers);
-      });
-
-      it("getTotalCurrentSharesLocked should return correct amount of shares", async () => {
-        const expectedShareAmount = originalLockedAmount;
-
-        expect(await fixture.lockup.getTotalCurrentSharesLocked()).to.be.equal(
-          expectedShareAmount
-        );
-      });
-
-      it("getOriginalLockedShares should return correct amount of shares", async () => {
-        expect(await fixture.lockup.getOriginalLockedShares()).to.be.equal(
-          originalLockedAmount
-        );
       });
     });
   });
