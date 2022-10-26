@@ -32,8 +32,7 @@ describe("Testing Staking Distribution", async () => {
       const txResponse = await lockStakedNFT(
         fixture,
         accounts[i],
-        stakedTokenIDs[i],
-        true
+        stakedTokenIDs[i]
       );
       await txResponse.wait();
       const tokenID = await fixture.lockup.tokenOf(accounts[i].address);
@@ -108,5 +107,5 @@ export async function generateLockedPosition(
     recipient.address,
     0
   );
-  await lockStakedNFT(fixture, recipient, tokenID, true);
+  await lockStakedNFT(fixture, recipient, tokenID);
 }

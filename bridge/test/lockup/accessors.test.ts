@@ -1,16 +1,15 @@
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
-import { BigNumber, ContractTransaction } from "ethers";
+import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
-import { BonusPool, Lockup, RewardPool } from "../../typechain-types";
-import { BaseTokensFixture } from "../setup";
 import {
   deployFixture,
   distributeProfits,
   jumpToInlockState,
   jumpToPostLockState,
   lockDuration,
+  lockStakedNFT,
   LockupStates,
   numberOfLockingUsers,
   originalLockedAmount,
@@ -18,14 +17,6 @@ import {
   profitETH,
 } from "./setup";
 import { Distribution1 } from "./test.data";
-
-interface Fixture extends BaseTokensFixture {
-  lockup: Lockup;
-  rewardPool: RewardPool;
-  bonusPool: BonusPool;
-  lockupStartBlock: number;
-  mockFactorySigner: SignerWithAddress;
-}
 
 describe("Lockup - public accessors", async () => {
   let fixture: any;
@@ -303,25 +294,6 @@ describe("Lockup - public accessors", async () => {
           expect(payoutToken).to.equal(expectedPayoutToken);
         }
       });
-
-      describe("estimateFinalBonusWithProfits", async () => {
-        
-      });
     });
   });
 });
-
-async function lockStakedNFT(
-  fixture: Fixture,
-  account: SignerWithAddress,
-  tokenID: BigNumber
-): Promise<ContractTransaction> {
-  return fixture.publicStaking
-    .connect(account)
-    ["safeTransferFrom(address,address,uint256,bytes)"](
-      account.address,
-      fixture.lockup.address,
-      tokenID,
-      "0x"
-    );
-}

@@ -316,7 +316,8 @@ export async function deployLockupContract(
 export async function getSimulatedStakingPositions(
   fixture: BaseTokensFixture,
   signers: SignerWithAddress[],
-  numberOfUsers: number
+  numberOfUsers: number,
+  createBonusPosition: boolean = true
 ) {
   const tokenIDs = [];
   const asFactory = await getImpersonatedSigner(fixture.factory.address);
@@ -356,23 +357,27 @@ export async function getSimulatedStakingPositions(
       }
     }
   }
-  await fixture.bonusPool.connect(asFactory).createBonusStakedPosition();
+  createBonusPosition &&
+    (await fixture.bonusPool.connect(asFactory).createBonusStakedPosition());
   const leftOver =
     stakedAmount - (await fixture.publicStaking.getTotalShares()).toBigInt();
   await fixture.publicStaking
     .connect(signers[0])
     .mintTo(signers[0].address, leftOver, 0);
-  tokenIDs[tokenIDs.length] = await fixture.publicStaking.tokenOfOwnerByIndex(
-    fixture.bonusPool.address,
-    0
-  );
+  if (createBonusPosition) {
+    tokenIDs[tokenIDs.length] = await fixture.publicStaking.tokenOfOwnerByIndex(
+      fixture.bonusPool.address,
+      0
+    );
+  }
+
   return tokenIDs;
 }
 
 export async function deployFixtureWithoutImpersonatingFactory() {
   return deployFixture(undefined, false, true);
 }
-export async function deployFixtureForAggregateProfits(){
+export async function deployFixtureForAggregateProfits() {
   return deployFixture(1000, true, false);
 }
 export async function deployFixtureWithoutStaking() {
@@ -382,7 +387,8 @@ export async function deployFixtureWithoutStaking() {
 export async function deployFixture(
   enrollementPeriod: number = ENROLLMENT_PERIOD,
   impersonateLockup: boolean = true,
-  simulateStakedPosition: boolean = true
+  simulateStakedPosition: boolean = true,
+  createBonusPosition: boolean = true
 ) {
   await preFixtureSetup();
   const signers = await ethers.getSigners();
@@ -395,7 +401,8 @@ export async function deployFixture(
   );
   await ethers.provider.getBlockNumber();
   const { lockup, lockupStartBlock } = await deployLockupContract(
-    baseTokensFixture, enrollementPeriod
+    baseTokensFixture,
+    enrollementPeriod
   );
   // get the address of the reward pool from the lockup contract
   const rewardPoolAddress = await lockup.getRewardPoolAddress();
@@ -426,7 +433,12 @@ export async function deployFixture(
   let tokenIDs: BigNumber[] = [];
   rewardPoolSigner = await getImpersonatedSigner(rewardPoolAddress);
   if (simulateStakedPosition) {
-    tokenIDs = await getSimulatedStakingPositions(fixture, signers, 5);
+    tokenIDs = await getSimulatedStakingPositions(
+      fixture,
+      signers,
+      5,
+      createBonusPosition
+    );
     expect(
       (await fixture.publicStaking.getTotalShares()).toBigInt()
     ).to.be.equals(stakedAmount);
@@ -461,16 +473,16 @@ export async function distributeProfits(
 export async function lockStakedNFT(
   fixture: Fixture,
   account: Wallet | SignerWithAddress,
-  tokenID: BigNumber,
-  approve: boolean = true
+  tokenID: BigNumber
 ): Promise<ContractTransaction> {
-  if (approve) {
-    const txResponse = await fixture.publicStaking
-      .connect(account)
-      .approve(fixture.lockup.address, tokenID);
-    await txResponse.wait();
-  }
-  return fixture.lockup.connect(account).lockFromApproval(tokenID);
+  return fixture.publicStaking
+    .connect(account)
+    ["safeTransferFrom(address,address,uint256,bytes)"](
+      account.address,
+      fixture.lockup.address,
+      tokenID,
+      "0x"
+    );
 }
 
 export async function jumpToInlockState(fixture: BaseTokensFixture) {
@@ -487,6 +499,14 @@ export async function jumpToPostLockState(fixture: BaseTokensFixture) {
     .toBigInt();
   await mineBlocks(blocksToMine + 1n);
   expect(await fixture.lockup.getState()).to.be.equals(LockupStates.PostLock);
+}
+
+export async function ensureBlockIsAtLeast(targetBlock: number): Promise<void> {
+  const currentBlock = await ethers.provider.getBlockNumber();
+  if (currentBlock < targetBlock) {
+    const blockDelta = targetBlock - currentBlock;
+    await mineBlocks(BigInt(blockDelta));
+  }
 }
 
 export async function getUserLockingInfo(fixture: Fixture, userId: number) {
