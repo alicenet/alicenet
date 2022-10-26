@@ -49,7 +49,7 @@ export const profitALCA = ethers.utils.parseEther(
   example.distribution.profitALCA
 );
 
-interface Fixture extends BaseTokensFixture {
+export interface Fixture extends BaseTokensFixture {
   lockup: Lockup;
   rewardPool: RewardPool;
   bonusPool: BonusPool;
