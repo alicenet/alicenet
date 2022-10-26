@@ -4,17 +4,13 @@ import { expect } from "chai";
 import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
 import {
-  deployFixture,
+  deployFixtureWithoutBonusPosition,
   distributeProfits,
   lockStakedNFT,
   profitALCA,
   profitETH,
 } from "./setup";
 import { Distribution1 } from "./test.data";
-
-async function deployFixtureWithoutBonusPosition() {
-  return deployFixture(true, false);
-}
 
 describe("estimateFinalBonusWithProfits", async () => {
   let fixture: any;

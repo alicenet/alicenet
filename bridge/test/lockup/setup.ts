@@ -384,6 +384,10 @@ export async function deployFixtureWithoutStaking() {
   return deployFixture(undefined, true, false);
 }
 
+export async function deployFixtureWithoutBonusPosition() {
+  return deployFixture(undefined, true, true, false);
+}
+
 export async function deployFixture(
   enrollementPeriod: number = ENROLLMENT_PERIOD,
   impersonateLockup: boolean = true,
