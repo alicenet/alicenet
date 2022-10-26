@@ -14,9 +14,11 @@ import {
 } from "../setup";
 import {
   distributeProfits,
+  ensureBlockIsAtLeast,
   getImpersonatedSigner,
   jumpToInlockState,
   jumpToPostLockState,
+  LockupStates,
   profitALCA,
   profitETH,
 } from "./setup";
@@ -30,7 +32,7 @@ interface Fixture extends BaseTokensFixture {
 }
 
 const enrollmentPeriod = 100;
-const lockDuration = 2;
+const lockDuration = 10;
 const stakedAmount = ethers.utils.parseEther("100").toBigInt();
 const totalBonusAmount = ethers.utils.parseEther("10000");
 
@@ -189,20 +191,27 @@ describe("Lockup - public accessors", async () => {
 
   describe("getState", async () => {
     it("returns PreLock state when in PreLock", async () => {
-      const expectedState = 0; // PreLock
-      expect(await fixture.lockup.getState()).to.be.equal(expectedState);
+      expect(await fixture.lockup.getState()).to.be.equal(LockupStates.PreLock);
     });
 
-    it("returns InLock state when in InLock", async () => {
-      await jumpToInlockState(fixture);
-      const expectedState = 1; // InLock
-      expect(await fixture.lockup.getState()).to.be.equal(expectedState);
+    it("returns InLock state when lockup start block reached", async () => {
+      const lockupStartBlock = await (
+        await fixture.lockup.getLockupStartBlock()
+      ).toNumber();
+      await ensureBlockIsAtLeast(lockupStartBlock);
+
+      expect(await fixture.lockup.getState()).to.be.equal(LockupStates.InLock);
     });
 
-    it("returns PostLock state when in PostLock", async () => {
-      await jumpToPostLockState(fixture);
-      const expectedState = 2; // PostLock
-      expect(await fixture.lockup.getState()).to.be.equal(expectedState);
+    it("returns PostLock state when lockup end block reached", async () => {
+      const lockupEndBlock = await (
+        await fixture.lockup.getLockupEndBlock()
+      ).toNumber();
+      await ensureBlockIsAtLeast(lockupEndBlock);
+
+      expect(await fixture.lockup.getState()).to.be.equal(
+        LockupStates.PostLock
+      );
     });
   });
 
@@ -253,32 +262,108 @@ describe("Lockup - public accessors", async () => {
     it("getIndexByTokenId returns correct index for token id", async () => {
       for (let i = 1; i <= numberOfLockingUsers; i++) {
         const tokenID = stakedTokenIDs[i];
-        expect(await fixture.lockup.getPositionByIndex(tokenID)).to.equal(i);
+        expect(await fixture.lockup.getIndexByTokenId(tokenID)).to.equal(i);
       }
     });
 
-    it("getCurrentNumberOfLockedPositions returns correct number of locked positions", async () => {
-      expect(await fixture.lockup.getCurrentNumberOfLockedPositions()).to.equal(
-        numberOfLockingUsers
-      );
+    describe("getCurrentNumberOfLockedPositions", async () => {
+      it("returns correct number of locked positions", async () => {
+        expect(
+          await fixture.lockup.getCurrentNumberOfLockedPositions()
+        ).to.equal(numberOfLockingUsers);
+      });
+
+      it("updates amount when positions unlock", async () => {
+        await createBonusStakedPosition(fixture, accounts[0]);
+        await jumpToPostLockState(fixture);
+        await fixture.lockup.aggregateProfits();
+
+        const numberOfPositionsToUnlock = 2;
+        for (let i = 1; i <= numberOfPositionsToUnlock; i++) {
+          await fixture.lockup
+            .connect(accounts[i])
+            .unlock(accounts[i].address, false);
+        }
+
+        expect(
+          await fixture.lockup.getCurrentNumberOfLockedPositions()
+        ).to.be.equal(numberOfLockingUsers - numberOfPositionsToUnlock);
+      });
     });
 
-    it("getTotalCurrentSharesLocked returns correct amount of shares", async () => {
-      const expectedShareAmount =
-        stakedAmount * BigNumber.from(numberOfLockingUsers).toBigInt();
+    describe("getTotalCurrentSharesLocked", async () => {
+      it("returns correct amount of shares", async () => {
+        const expectedShareAmount =
+          stakedAmount * BigNumber.from(numberOfLockingUsers).toBigInt();
 
-      expect(await fixture.lockup.getTotalCurrentSharesLocked()).to.be.equal(
-        expectedShareAmount
-      );
+        expect(await fixture.lockup.getTotalCurrentSharesLocked()).to.be.equal(
+          expectedShareAmount
+        );
+      });
+
+      it("returns updated amount of shares if positions unlock", async () => {
+        await jumpToInlockState(fixture);
+
+        const numberOfPositionsToUnlock = 2;
+        for (let i = 1; i <= numberOfPositionsToUnlock; i++) {
+          await fixture.lockup
+            .connect(accounts[i])
+            .unlockEarly(stakedAmount, false);
+        }
+        const expectedShareAmount =
+          stakedAmount *
+          BigNumber.from(
+            numberOfLockingUsers - numberOfPositionsToUnlock
+          ).toBigInt();
+
+        expect(await fixture.lockup.getTotalCurrentSharesLocked()).to.be.equal(
+          expectedShareAmount
+        );
+      });
     });
 
-    it("getOriginalLockedShares returns correct amount of shares", async () => {
-      const expectedShareAmount =
+    describe("getOriginalLockedShares", async () => {
+      const expectedOriginalShareAmount =
         stakedAmount * BigNumber.from(numberOfLockingUsers).toBigInt();
 
-      expect(await fixture.lockup.getOriginalLockedShares()).to.be.equal(
-        expectedShareAmount
-      );
+      it("returns correct amount of shares", async () => {
+        expect(await fixture.lockup.getOriginalLockedShares()).to.be.equal(
+          expectedOriginalShareAmount
+        );
+      });
+
+      it("returns updated amount of shares when positions unlock when in PreLock state", async () => {
+        const numberOfPositionsToUnlock = 2;
+        for (let i = 1; i <= numberOfPositionsToUnlock; i++) {
+          await fixture.lockup
+            .connect(accounts[i])
+            .unlockEarly(stakedAmount, false);
+        }
+        const expectedShareAmountUpdated =
+          stakedAmount *
+          BigNumber.from(
+            numberOfLockingUsers - numberOfPositionsToUnlock
+          ).toBigInt();
+
+        expect(await fixture.lockup.getOriginalLockedShares()).to.be.equal(
+          expectedShareAmountUpdated
+        );
+      });
+
+      it("returns original amount of shares when positions unlock when in InLock state", async () => {
+        await jumpToInlockState(fixture);
+
+        const numberOfPositionsToUnlock = 2;
+        for (let i = 1; i <= numberOfPositionsToUnlock; i++) {
+          await fixture.lockup
+            .connect(accounts[i])
+            .unlockEarly(stakedAmount, false);
+        }
+
+        expect(await fixture.lockup.getOriginalLockedShares()).to.be.equal(
+          expectedOriginalShareAmount
+        );
+      });
     });
 
     describe("with funds to distribute", async () => {
@@ -327,7 +412,11 @@ describe("Lockup - public accessors", async () => {
         }
       });
 
-      it("estimateFinalBonusWithProfits returns amounts that can be collected from locked positions", async () => {
+      it("estimateFinalBonusWithProfits when in PreLock returns amounts from locked positions with bonus", async () => {
+        // todo: add test for this
+      });
+
+      it("estimateFinalBonusWithProfits after PreLock state returns amounts from locked positions without bonus", async () => {
         // todo: add test for this
       });
     });
