@@ -3,7 +3,6 @@ import {
   BigNumber,
   ContractReceipt,
   ContractTransaction,
-  Signer,
   Wallet,
 } from "ethers/lib/ethers";
 import hre, { ethers, expect } from "hardhat";
@@ -235,14 +234,14 @@ export async function getState(
   for (let i = 1; i <= numberOfLockingUsers; i++) {
     const owner = signers[i].address;
     const tokenId = (await fixture.lockup.tokenOf(owner)).toBigInt();
-    if(tokenId!=0){
-    const [positionShares, , ,] = await fixture.publicStaking.getPosition(
-      tokenId
-    );
-    stakingsState["user" + i] = {
-      shares: positionShares.toBigInt(),
-    };
-  }
+    if (tokenId !== 0) {
+      const [positionShares, , ,] = await fixture.publicStaking.getPosition(
+        tokenId
+      );
+      stakingsState["user" + i] = {
+        shares: positionShares.toBigInt(),
+      };
+    }
   }
 
   const state: State = {
@@ -255,9 +254,12 @@ export async function getState(
 }
 
 (BigInt.prototype as any).toJSON = function () {
-    const dotString =  this.toString().split( /(?=(?:\d{18})+(?:\.|$))/g )[0]
-    const commaString =  dotString.toString().split( /(?=(?:\d{3})+(?:\.|$))/g ).join( "," );
-    return commaString;
+  const dotString = this.toString().split(/(?=(?:\d{18})+(?:\.|$))/g)[0];
+  const commaString = dotString
+    .toString()
+    .split(/(?=(?:\d{3})+(?:\.|$))/g)
+    .join(",");
+  return commaString;
 };
 
 export function showState(title: string, state: State) {
@@ -294,7 +296,12 @@ export async function deployLockupContract(
   baseTokensFixture: BaseTokensFixture,
   enrollmentPeriod: number = ENROLLMENT_PERIOD
 ) {
-  const txResponse = await deployCreateAndRegister(LOCK_UP, baseTokensFixture.factory.address, ethers, [enrollmentPeriod, lockDuration, totalBonusAmount])
+  const txResponse = await deployCreateAndRegister(
+    LOCK_UP,
+    baseTokensFixture.factory.address,
+    ethers,
+    [enrollmentPeriod, lockDuration, totalBonusAmount]
+  );
   // get the address from the event
   const lockupAddress = await getEventVar(
     txResponse,
@@ -311,7 +318,7 @@ export async function getSimulatedStakingPositions(
   numberOfUsers: number
 ) {
   const tokenIDs = [];
-  let asFactory = await getImpersonatedSigner(fixture.factory.address);
+  const asFactory = await getImpersonatedSigner(fixture.factory.address);
   await fixture.aToken
     .connect(signers[0])
     .increaseAllowance(fixture.publicStaking.address, stakedAmount);
@@ -365,7 +372,6 @@ export async function deployFixture() {
   await preFixtureSetup();
   const signers = await ethers.getSigners();
   const baseTokensFixture = await deployFactoryAndBaseTokens(signers[0]);
-  const blockNumberAtLockupDeployment = await ethers.provider.getBlockNumber();
   const lockup = await deployLockupContract(baseTokensFixture);
   // get the address of the reward pool from the lockup contract
   const rewardPoolAddress = await lockup.getRewardPoolAddress();
@@ -454,23 +460,20 @@ export async function jumpToPostLockState(fixture: BaseTokensFixture) {
   expect(await fixture.lockup.getState()).to.be.equals(LockupStates.PostLock);
 }
 
-export async function getUserLockingInfo(
-  fixture: Fixture,
-  userId: number,
-) {
+export async function getUserLockingInfo(fixture: Fixture, userId: number) {
   const totalShares = await fixture.publicStaking.getTotalShares();
   const signers = await ethers.getSigners();
   const owner_ = signers[userId];
   const tokenId = await fixture.lockup.tokenOf(owner_.address);
   const index_ = await fixture.lockup.getIndexByTokenId(tokenId);
-  const userShares = ethers.utils.parseEther(
-    example.distribution.users["user"+userId].shares
-  ).toBigInt();
+  const userShares_ = ethers.utils
+    .parseEther(example.distribution.users["user" + userId].shares)
+    .toBigInt();
   const profitALCAUser_ = profitALCA
-    .mul(userShares)
+    .mul(userShares_)
     .div(totalShares)
     .toBigInt();
-  const profitETHUser_ = profitETH.mul(userShares).div(totalShares).toBigInt();
+  const profitETHUser_ = profitETH.mul(userShares_).div(totalShares).toBigInt();
   const reservedProfitALCAUser_ = (
     await fixture.lockup.getReservedAmount(profitALCAUser_)
   ).toBigInt();
@@ -478,7 +481,7 @@ export async function getUserLockingInfo(
     await fixture.lockup.getReservedAmount(profitETHUser_)
   ).toBigInt();
   return {
-    userShares: userShares,
+    userShares: userShares_,
     profitALCAUser: profitALCAUser_,
     reservedProfitALCAUser: reservedProfitALCAUser_,
     profitETHUser: profitETHUser_,

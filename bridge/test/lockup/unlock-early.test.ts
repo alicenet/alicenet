@@ -65,14 +65,11 @@ describe("Testing Unlock Early", async () => {
     const unlockingEarlyUsers = [2];
     for (let userId = 0; userId < unlockingEarlyUsers.length; userId++) {
       const user = "user" + unlockingEarlyUsers[userId];
-      const userShares = ethers.utils.parseEther(
-        example.distribution.users[user].shares
-      );
       const userLockingInfo = await getUserLockingInfo(
         fixture,
-        unlockingEarlyUsers[userId],
+        unlockingEarlyUsers[userId]
       );
-      const exitAmount = userLockingInfo.userShares / 2n
+      const exitAmount = userLockingInfo.userShares / 2n;
 
       // new lockup position is created for user's remaining staking balance
       const newPositionId = (
@@ -92,10 +89,12 @@ describe("Testing Unlock Early", async () => {
       expectedState.contracts.publicStaking.alca -=
         userLockingInfo.profitALCAUser;
       expectedState.users[user].alca += userLockingInfo.profitALCAUser;
-      expectedState.contracts.publicStaking.eth -= userLockingInfo.profitETHUser;
+      expectedState.contracts.publicStaking.eth -=
+        userLockingInfo.profitETHUser;
       expectedState.users[user].eth += userLockingInfo.profitETHUser;
       // staking position is updated with remaining shares
-      expectedState.stakingPositions[user].shares = userLockingInfo.userShares - exitAmount;
+      expectedState.stakingPositions[user].shares =
+        userLockingInfo.userShares - exitAmount;
       // user and staking reserved ALCA and ETH go to reward pool
       expectedState.users[user].alca -= userLockingInfo.reservedProfitALCAUser;
       expectedState.users[user].eth -= userLockingInfo.reservedProfitETHUser;
@@ -124,9 +123,9 @@ describe("Testing Unlock Early", async () => {
       const user = "user" + unlockingEarlyUsers[userId];
       const userLockingInfo = await getUserLockingInfo(
         fixture,
-        unlockingEarlyUsers[userId],
+        unlockingEarlyUsers[userId]
       );
-      const exitAmount = userLockingInfo.userShares / 2n
+      const exitAmount = userLockingInfo.userShares / 2n;
       // new lockup position is created for user's remaining staking balance
       const newPositionId = (
         await fixture.publicStaking.getLatestMintedPositionID()
@@ -143,9 +142,11 @@ describe("Testing Unlock Early", async () => {
       expectedState.users[user].tokenId = newPositionId;
       expectedState.users[user].tokenOwner = userLockingInfo.owner.address;
       // staking position is updated with remaining shares
-      expectedState.stakingPositions[user].shares = userLockingInfo.userShares - exitAmount;
+      expectedState.stakingPositions[user].shares =
+        userLockingInfo.userShares - exitAmount;
       // user only earns free ETH from staking since unlocked ALCA is re-staked
-      expectedState.contracts.publicStaking.eth -= userLockingInfo.profitETHUser;
+      expectedState.contracts.publicStaking.eth -=
+        userLockingInfo.profitETHUser;
       expectedState.users[user].eth += userLockingInfo.profitETHUser;
       // user's reserved ETH goes to reward pool
       expectedState.users[user].eth -= userLockingInfo.reservedProfitETHUser;
@@ -178,14 +179,11 @@ describe("Testing Unlock Early", async () => {
     const unlockingEarlyUsers = [4, 5];
     for (let userId = 0; userId < unlockingEarlyUsers.length; userId++) {
       const user = "user" + unlockingEarlyUsers[userId];
-      const userShares = ethers.utils.parseEther(
-        example.distribution.users[user].shares
-      );
       const userLockingInfo = await getUserLockingInfo(
         fixture,
-        unlockingEarlyUsers[userId],
+        unlockingEarlyUsers[userId]
       );
-      const exitAmount = userLockingInfo.userShares / 2n
+      const exitAmount = userLockingInfo.userShares / 2n;
       // new lockup position is created for user's remaining staking balance
       const newPositionId = (
         await fixture.publicStaking.getLatestMintedPositionID()
@@ -202,9 +200,11 @@ describe("Testing Unlock Early", async () => {
       expectedState.users[user].tokenId = newPositionId;
       expectedState.users[user].tokenOwner = userLockingInfo.owner.address;
       // staking position is updated with remaining shares
-      expectedState.stakingPositions[user].shares = userLockingInfo.userShares - exitAmount;
+      expectedState.stakingPositions[user].shares =
+        userLockingInfo.userShares - exitAmount;
       // user only earns free ETH from staking since unlocked ALCA is re-staked
-      expectedState.contracts.publicStaking.eth -= userLockingInfo.profitETHUser;
+      expectedState.contracts.publicStaking.eth -=
+        userLockingInfo.profitETHUser;
       expectedState.users[user].eth += userLockingInfo.profitETHUser;
       // user's reserved ETH goes to reward pool
       expectedState.users[user].eth -= userLockingInfo.reservedProfitETHUser;
@@ -222,11 +222,11 @@ describe("Testing Unlock Early", async () => {
       // account for used gas
       expectedState.users[user].eth -= getEthConsumedAsGas(await tx.wait());
       showState(
-        "After Unlock early user: "+user,
+        "After Unlock early user: " + user,
         await getState(fixture, lastStakingPosition)
       );
       assert.deepEqual(await getState(fixture), expectedState);
-      }
+    }
   });
 
   it("should unlock-early user for 100% of initial position in two phases (50%+50%) re-staking unlocked shares", async () => {
@@ -237,14 +237,11 @@ describe("Testing Unlock Early", async () => {
     const unlockingEarlyUsers = [2];
     for (let userId = 0; userId < unlockingEarlyUsers.length; userId++) {
       const user = "user" + unlockingEarlyUsers[userId];
-      const userShares = ethers.utils.parseEther(
-        example.distribution.users[user].shares
-      );
       let userLockingInfo = await getUserLockingInfo(
         fixture,
-        unlockingEarlyUsers[userId],
+        unlockingEarlyUsers[userId]
       );
-      let exitAmount = userLockingInfo.userShares / 2n
+      let exitAmount = userLockingInfo.userShares / 2n;
       // new lockup position is created for user's remaining staking balance
       const newPositionId = (
         await fixture.publicStaking.getLatestMintedPositionID()
@@ -258,12 +255,14 @@ describe("Testing Unlock Early", async () => {
       expectedState.lockupPositions[userLockingInfo.index.toString()].owner =
         userLockingInfo.owner.address;
       // staking position is updated with remaining shares
-      expectedState.stakingPositions[user].shares = userLockingInfo.userShares - exitAmount;
+      expectedState.stakingPositions[user].shares =
+        userLockingInfo.userShares - exitAmount;
       // new position is assigned to user
       expectedState.users[user].tokenId = newPositionId;
       expectedState.users[user].tokenOwner = userLockingInfo.owner.address;
       // user only earns free ETH from staking since unlocked ALCA is re-staked
-      expectedState.contracts.publicStaking.eth -= userLockingInfo.profitETHUser;
+      expectedState.contracts.publicStaking.eth -=
+        userLockingInfo.profitETHUser;
       expectedState.users[user].eth += userLockingInfo.profitETHUser;
       // user's reserved ETH goes to reward pool
       expectedState.users[user].eth -= userLockingInfo.reservedProfitETHUser;
@@ -289,9 +288,9 @@ describe("Testing Unlock Early", async () => {
       await mineBlocks(90n);
       userLockingInfo = await getUserLockingInfo(
         fixture,
-        unlockingEarlyUsers[userId],
+        unlockingEarlyUsers[userId]
       );
-      exitAmount = userLockingInfo.userShares / 2n
+      exitAmount = userLockingInfo.userShares / 2n;
       /*       // user only earns free ETH since ALCA is re-staked
             expectedState.contracts.publicStaking.eth -= userLockingInfo.profitETHUser;
             expectedState.users[user].eth += userLockingInfo.profitETHUser */
@@ -339,14 +338,11 @@ describe("Testing Unlock Early", async () => {
     const unlockingEarlyUsers = [3];
     for (let userId = 0; userId < unlockingEarlyUsers.length; userId++) {
       const user = "user" + unlockingEarlyUsers[userId];
-      const userShares = ethers.utils.parseEther(
-        example.distribution.users[user].shares
-      );
       const userLockingInfo = await getUserLockingInfo(
         fixture,
-        unlockingEarlyUsers[userId],
+        unlockingEarlyUsers[userId]
       );
-      const exitAmount = userLockingInfo.userShares
+      const exitAmount = userLockingInfo.userShares;
       // user receives unlocked shares
       expectedState.contracts.publicStaking.alca -= exitAmount;
       expectedState.users[user].alca += exitAmount;
@@ -354,7 +350,8 @@ describe("Testing Unlock Early", async () => {
       expectedState.contracts.publicStaking.alca -=
         userLockingInfo.profitALCAUser;
       expectedState.users[user].alca += userLockingInfo.profitALCAUser;
-      expectedState.contracts.publicStaking.eth -= userLockingInfo.profitETHUser;
+      expectedState.contracts.publicStaking.eth -=
+        userLockingInfo.profitETHUser;
       expectedState.users[user].eth += userLockingInfo.profitETHUser;
       // user looses lockup position
       expectedState.users[user].tokenId = ethers.constants.Zero.toBigInt();
@@ -405,16 +402,14 @@ describe("Testing Unlock Early", async () => {
     const unlockingEarlyUsers = [3];
     for (let userId = 0; userId < unlockingEarlyUsers.length; userId++) {
       const user = "user" + unlockingEarlyUsers[userId];
-      const userShares = ethers.utils.parseEther(
-        example.distribution.users[user].shares
-      );
       const userLockingInfo = await getUserLockingInfo(
         fixture,
-        unlockingEarlyUsers[userId],
+        unlockingEarlyUsers[userId]
       );
-      const exitAmount = userLockingInfo.userShares
+      const exitAmount = userLockingInfo.userShares;
       // user only earns free ETH since ALCA is re-staked
-      expectedState.contracts.publicStaking.eth -= userLockingInfo.profitETHUser;
+      expectedState.contracts.publicStaking.eth -=
+        userLockingInfo.profitETHUser;
       expectedState.users[user].eth += userLockingInfo.profitETHUser;
       // user's reserved ETH goes to reward pool
       expectedState.users[user].eth -= userLockingInfo.reservedProfitETHUser;
@@ -458,4 +453,3 @@ describe("Testing Unlock Early", async () => {
     assert.deepEqual(await getState(fixture), expectedState);
   });
 });
-
