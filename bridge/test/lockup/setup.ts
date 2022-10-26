@@ -370,14 +370,17 @@ export async function getSimulatedStakingPositions(
 }
 
 export async function deployFixtureWithoutImpersonatingFactory() {
-  return deployFixture(false, true);
+  return deployFixture(undefined, false, true);
 }
-
+export async function deployFixtureForAggregateProfits(){
+  return deployFixture(1000, true, false);
+}
 export async function deployFixtureWithoutStaking() {
-  return deployFixture(true, false);
+  return deployFixture(undefined, true, false);
 }
 
 export async function deployFixture(
+  enrollementPeriod: number = ENROLLMENT_PERIOD,
   impersonateLockup: boolean = true,
   simulateStakedPosition: boolean = true
 ) {
@@ -392,7 +395,7 @@ export async function deployFixture(
   );
   await ethers.provider.getBlockNumber();
   const { lockup, lockupStartBlock } = await deployLockupContract(
-    baseTokensFixture
+    baseTokensFixture, enrollementPeriod
   );
   // get the address of the reward pool from the lockup contract
   const rewardPoolAddress = await lockup.getRewardPoolAddress();
