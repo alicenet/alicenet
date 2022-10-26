@@ -114,10 +114,7 @@ describe("Testing Unlock Early", async () => {
   });
 
   it("should unlock-early user for 50% of initial position re-staking unlocked shares", async () => {
-    const lastStakingPosition = (
-      await fixture.publicStaking.getLatestMintedPositionID()
-    ).toNumber();
-    const expectedState = await getState(fixture, lastStakingPosition);
+    const expectedState = await getState(fixture);
     const unlockingEarlyUsers = [2];
     for (let userId = 0; userId < unlockingEarlyUsers.length; userId++) {
       const user = "user" + unlockingEarlyUsers[userId];
@@ -164,18 +161,12 @@ describe("Testing Unlock Early", async () => {
       // account for used gas
       expectedState.users[user].eth -= getEthConsumedAsGas(await tx.wait());
     }
-    showState(
-      "After Unlock early",
-      await getState(fixture, lastStakingPosition)
-    );
+    showState("After Unlock early", await getState(fixture));
     assert.deepEqual(await getState(fixture), expectedState);
   });
 
   it.skip("should unlock-early two users for 50% of initial position re-staking unlocked shares", async () => {
-    const lastStakingPosition = (
-      await fixture.publicStaking.getLatestMintedPositionID()
-    ).toNumber();
-    const expectedState = await getState(fixture, lastStakingPosition);
+    const expectedState = await getState(fixture);
     const unlockingEarlyUsers = [4, 5];
     for (let userId = 0; userId < unlockingEarlyUsers.length; userId++) {
       const user = "user" + unlockingEarlyUsers[userId];
@@ -221,19 +212,13 @@ describe("Testing Unlock Early", async () => {
         .unlockEarly(exitAmount, true);
       // account for used gas
       expectedState.users[user].eth -= getEthConsumedAsGas(await tx.wait());
-      showState(
-        "After Unlock early user: " + user,
-        await getState(fixture, lastStakingPosition)
-      );
+      showState("After Unlock early user: " + user, await getState(fixture));
       assert.deepEqual(await getState(fixture), expectedState);
     }
   });
 
   it("should unlock-early user for 100% of initial position in two phases (50%+50%) re-staking unlocked shares", async () => {
-    const lastStakingPosition = (
-      await fixture.publicStaking.getLatestMintedPositionID()
-    ).toNumber();
-    const expectedState = await getState(fixture, lastStakingPosition);
+    const expectedState = await getState(fixture);
     const unlockingEarlyUsers = [2];
     for (let userId = 0; userId < unlockingEarlyUsers.length; userId++) {
       const user = "user" + unlockingEarlyUsers[userId];
@@ -279,10 +264,7 @@ describe("Testing Unlock Early", async () => {
         .unlockEarly(exitAmount, true);
       // account for used gas
       expectedState.users[user].eth -= getEthConsumedAsGas(await tx1.wait());
-      showState(
-        "After Unlock early phase 1",
-        await getState(fixture, lastStakingPosition)
-      );
+      showState("After Unlock early phase 1", await getState(fixture));
       assert.deepEqual(await getState(fixture), expectedState);
       // fast forward to staking free after
       await mineBlocks(90n);
@@ -332,9 +314,6 @@ describe("Testing Unlock Early", async () => {
 
   it("should unlock-early user for 100% of initial position without re-staking unlocked shares", async () => {
     const expectedState = await getState(fixture);
-    const lastStakingPosition = (
-      await fixture.publicStaking.getLatestMintedPositionID()
-    ).toNumber();
     const unlockingEarlyUsers = [3];
     for (let userId = 0; userId < unlockingEarlyUsers.length; userId++) {
       const user = "user" + unlockingEarlyUsers[userId];
@@ -387,18 +366,12 @@ describe("Testing Unlock Early", async () => {
       expectedState.contracts.lockup.lockedPositions -= BigInt(
         unlockingEarlyUsers.length
       );
-    showState(
-      "After Unlock early",
-      await getState(fixture, lastStakingPosition)
-    );
+    showState("After Unlock early", await getState(fixture));
     assert.deepEqual(await getState(fixture), expectedState);
   });
 
   it("should unlock-early user for 100% of initial position re-staking unlocked shares", async () => {
     const expectedState = await getState(fixture);
-    const lastStakingPosition = (
-      await fixture.publicStaking.getLatestMintedPositionID()
-    ).toNumber();
     const unlockingEarlyUsers = [3];
     for (let userId = 0; userId < unlockingEarlyUsers.length; userId++) {
       const user = "user" + unlockingEarlyUsers[userId];
@@ -446,10 +419,7 @@ describe("Testing Unlock Early", async () => {
       expectedState.contracts.lockup.lockedPositions -= BigInt(
         unlockingEarlyUsers.length
       );
-    showState(
-      "After Unlock early",
-      await getState(fixture, lastStakingPosition)
-    );
+    showState("After Unlock early", await getState(fixture));
     assert.deepEqual(await getState(fixture), expectedState);
   });
 });
