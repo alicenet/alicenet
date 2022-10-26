@@ -416,14 +416,11 @@ export async function deployFixture(
   if (impersonateLockup) {
     rewardPoolSigner = await getImpersonatedSigner(rewardPoolAddress);
   }
-  const fixture = {
+  const fixture: Fixture = {
     ...baseTokensFixture,
     rewardPool,
     lockup,
     bonusPool,
-    factorySigner,
-    pblicStakingSigner,
-    rewardPoolSigner,
     lockupStartBlock,
   };
   let tokenIDs: BigNumber[] = [];
