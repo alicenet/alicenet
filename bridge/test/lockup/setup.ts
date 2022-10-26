@@ -130,7 +130,8 @@ export interface State {
 
 export async function getState(
   fixture: Fixture | BaseTokensFixture,
-  stakingInitialPosition?: number
+  stakingInitialPosition?: number,
+  stakingFinalPosition?: number
 ) {
   const signers = await ethers.getSigners();
   const contracts = [
@@ -154,6 +155,8 @@ export async function getState(
   ).toNumber();
   if (stakingInitialPosition === undefined)
     stakingInitialPosition = lastMintedPosition;
+  if (stakingFinalPosition === undefined)
+    stakingFinalPosition = lastMintedPosition;
   for (let i = 0; i < contracts.length; i++) {
     if (contractNames[i] === "lockup")
       contractsState[contractNames[i]] = {
@@ -229,16 +232,20 @@ export async function getState(
   }
 
   const stakingsState: StakingPositionsState = {};
-  for (let i = stakingInitialPosition + 1; i <= lastMintedPosition; i++) {
+  for (let i = 1; i <= numberOfLockingUsers; i++) {
+    const owner = signers[i].address;
+    const tokenId = (await fixture.lockup.tokenOf(owner)).toBigInt();
+    if(tokenId!=0){
     const [positionShares, , ,] = await fixture.publicStaking.getPosition(
-      i
+      tokenId
     );
-    stakingsState[i] = {
+    stakingsState["user" + i] = {
       shares: positionShares.toBigInt(),
     };
   }
+  }
 
-  const state: State = { 
+  const state: State = {
     contracts: contractsState,
     users: usersState,
     lockupPositions: positionsState,
@@ -247,10 +254,16 @@ export async function getState(
   return state;
 }
 
+(BigInt.prototype as any).toJSON = function () {
+    const dotString =  this.toString().split( /(?=(?:\d{18})+(?:\.|$))/g )[0]
+    const commaString =  dotString.toString().split( /(?=(?:\d{3})+(?:\.|$))/g ).join( "," );
+    return commaString;
+};
+
 export function showState(title: string, state: State) {
   if (process.env.npm_config_detailed === "true") {
     // execute "npm --detailed=true test" to see this output
-    console.log(title, state);
+    console.log(title, JSON.parse(JSON.stringify(state, null, 2)));
   }
 }
 
@@ -444,15 +457,15 @@ export async function jumpToPostLockState(fixture: BaseTokensFixture) {
 export async function getUserLockingInfo(
   fixture: Fixture,
   userId: number,
-  userShares: BigNumber,
-  percentageOfUnlock: number
 ) {
   const totalShares = await fixture.publicStaking.getTotalShares();
   const signers = await ethers.getSigners();
   const owner_ = signers[userId];
   const tokenId = await fixture.lockup.tokenOf(owner_.address);
   const index_ = await fixture.lockup.getIndexByTokenId(tokenId);
-  const exitAmount_ = userShares.div(100).mul(percentageOfUnlock).toBigInt();
+  const userShares = ethers.utils.parseEther(
+    example.distribution.users["user"+userId].shares
+  ).toBigInt();
   const profitALCAUser_ = profitALCA
     .mul(userShares)
     .div(totalShares)
@@ -465,7 +478,7 @@ export async function getUserLockingInfo(
     await fixture.lockup.getReservedAmount(profitETHUser_)
   ).toBigInt();
   return {
-    exitAmount: exitAmount_,
+    userShares: userShares,
     profitALCAUser: profitALCAUser_,
     reservedProfitALCAUser: reservedProfitALCAUser_,
     profitETHUser: profitETHUser_,
