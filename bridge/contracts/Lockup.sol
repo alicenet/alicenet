@@ -72,11 +72,6 @@ contract Lockup is
         PostLock
     }
 
-    struct LockedShares {
-        uint128 currentTotal;
-        uint128 originalTotal;
-    }
-
     uint256 public constant SCALING_FACTOR = 10**18;
     uint256 public constant FRACTION_RESERVED = SCALING_FACTOR / 5;
     // rewardPool contract address
@@ -90,7 +85,7 @@ contract Lockup is
     // Total Locked describes the total number of ALCA locked in this contract.
     // Since no accumulators are used this is tracked to allow proportionate
     // payouts.
-    LockedShares internal _totalSharesLocked;
+    uint256 internal _totalSharesLocked;
     // _ownerOf tracks who is the owner of a tokenID locked in this contract
     // mapping(tokenID -> owner).
     mapping(uint256 => address) internal _ownerOf;
@@ -306,13 +301,7 @@ contract Lockup is
         }
         // safe because newTokenId is zero if shares == exitValue
         _tokenOf[msg.sender] = newTokenID;
-        LockedShares memory totalSharesLocked = _totalSharesLocked;
-        if (_getState() == State.InLock && totalSharesLocked.originalTotal == 0) {
-            totalSharesLocked.originalTotal = totalSharesLocked.currentTotal;
-        }
-        // cleanup total shares and payout profits less reserve
-        totalSharesLocked.currentTotal -= uint128(exitValue_);
-        _totalSharesLocked = totalSharesLocked;
+        _totalSharesLocked -= exitValue_;
         (payoutEth, payoutToken) = _distributeAllProfits(
             _payableSender(),
             payoutEth,
@@ -345,9 +334,8 @@ contract Lockup is
                 // if we get here, iteration of array is done and we can move on with life and set
                 // payoutSafe since all payouts have been recorded
                 payoutSafe = true;
-                (uint256 currentSharesLocked, uint256 originalSharesLocked) = _getLockedShares();
                 // burn the bonus Position and send the bonus to the rewardPool contract
-                BonusPool(payable(_bonusPool)).terminate(currentSharesLocked, originalSharesLocked);
+                BonusPool(payable(_bonusPool)).terminate();
                 break;
             }
             address payable acct = _getOwnerOf(tokenID);
@@ -392,7 +380,7 @@ contract Lockup is
         (payoutEth, payoutToken) = _burnLockedPosition(tokenID, msg.sender);
 
         (uint256 accumulatedRewardEth, uint256 accumulatedRewardToken) = RewardPool(_rewardPool)
-            .payout(_totalSharesLocked.currentTotal, shares, isLastPosition);
+            .payout(_totalSharesLocked, shares, isLastPosition);
         payoutEth += accumulatedRewardEth;
         payoutToken += accumulatedRewardToken;
 
@@ -485,16 +473,8 @@ contract Lockup is
 
     /// @notice gets the current amount of ALCA that is locked in this contract, after all early exits
     /// @return the amount of ALCA that is currently locked in this contract
-    function getTotalCurrentSharesLocked() public view returns (uint256) {
-        return _totalSharesLocked.currentTotal;
-    }
-
-    /// @notice gets the total amount of ALCA that were originally locked at this contract (after
-    /// the enrollment period has finished), i.e the total shares before any unlock early.
-    /// @return the total amount of ALCA that were originally locked at this contract
-    function getOriginalLockedShares() public view returns (uint256) {
-        (, uint256 originalSharesLocked) = _getLockedShares();
-        return originalSharesLocked;
+    function getCurrentLockedShares() public view returns (uint256) {
+        return _totalSharesLocked;
     }
 
     /// @notice return the percentage amount that is held from the locked positions
@@ -542,7 +522,6 @@ contract Lockup is
     /// @dev this function is just an approximation, the real amount can differ!
     /// @param tokenID_ The token to check for the final profits.
     /// @return positionShares_ the positions ALCA shares
-    /// @return bonusShares_ the bonus shares (ALCA) that the position will receive
     /// @return payoutEth_ the ether amount that the position will receive as profit
     /// @return payoutToken_ the ALCA amount that the position will receive as profit
     function estimateFinalBonusWithProfits(uint256 tokenID_)
@@ -550,7 +529,6 @@ contract Lockup is
         view
         returns (
             uint256 positionShares_,
-            uint256 bonusShares_,
             uint256 payoutEth_,
             uint256 payoutToken_
         )
@@ -559,18 +537,13 @@ contract Lockup is
         _verifyLockedPosition(tokenID_);
         positionShares_ = _getNumShares(tokenID_);
 
-        (uint256 currentSharesLocked, uint256 originalSharesLocked) = _getLockedShares();
+        uint256 currentSharesLocked = _totalSharesLocked;
 
-        // bonusPool shares and profits are only computed after the preLock phase has finished
-        if (_getState() == State.PreLock) {
-            // get the bonus amount + any profit from the bonus staked position
-            (bonusShares_, payoutEth_, payoutToken_) = BonusPool(payable(_bonusPool))
-                .estimateBonusAmountWithReward(
-                    currentSharesLocked,
-                    originalSharesLocked,
-                    positionShares_
-                );
-        }
+        // get the bonus amount + any profit from the bonus staked position
+        (payoutEth_, payoutToken_) = BonusPool(payable(_bonusPool)).estimateBonusAmountWithReward(
+            currentSharesLocked,
+            positionShares_
+        );
 
         // get the cumulative rewards held in the rewardPool so far. The amount returned by this
         // call is not precise, since only some users may have been collected until this point. This
@@ -580,19 +553,17 @@ contract Lockup is
             .estimateRewards(currentSharesLocked, positionShares_);
         payoutEth_ += rewardEthProfit;
         payoutToken_ += rewardTokenProfit;
-        // avoiding stack too deep error
-        {
-            // get any future profit that will held in the rewardPool for this position
-            (uint256 positionEthProfit, uint256 positionTokenProfit) = IStakingNFT(
-                _publicStakingAddress()
-            ).estimateAllProfits(tokenID_);
-            (uint256 reservedEth, uint256 reservedToken) = _computeReservedAmount(
-                positionEthProfit,
-                positionTokenProfit
-            );
-            payoutEth_ += reservedEth;
-            payoutToken_ += reservedToken;
-        }
+
+        // get any future profit that will held in the rewardPool for this position
+        (uint256 positionEthProfit, uint256 positionTokenProfit) = IStakingNFT(
+            _publicStakingAddress()
+        ).estimateAllProfits(tokenID_);
+        (uint256 reservedEth, uint256 reservedToken) = _computeReservedAmount(
+            positionEthProfit,
+            positionTokenProfit
+        );
+        payoutEth_ += reservedEth;
+        payoutToken_ += reservedToken;
 
         // get any eth and token held by this contract as result of the call to the aggregateProfit
         // function
@@ -611,7 +582,7 @@ contract Lockup is
 
     function _lock(uint256 tokenID_, address tokenOwner_) internal {
         uint256 shares = _verifyPositionAndGetShares(tokenID_);
-        _totalSharesLocked.currentTotal += uint128(shares);
+        _totalSharesLocked += shares;
         _tokenOf[tokenOwner_] = tokenID_;
         _ownerOf[tokenID_] = tokenOwner_;
         _newTokenID(tokenID_);
@@ -761,16 +732,6 @@ contract Lockup is
         if (IERC721(_publicStakingAddress()).ownerOf(tokenID_) != address(this)) {
             revert ContractDoesNotOwnTokenID(tokenID_);
         }
-    }
-
-    function _getLockedShares() internal view returns (uint256, uint256) {
-        LockedShares memory totalSharesLocked = _totalSharesLocked;
-        return (
-            totalSharesLocked.currentTotal,
-            totalSharesLocked.originalTotal != 0
-                ? totalSharesLocked.originalTotal
-                : totalSharesLocked.currentTotal
-        );
     }
 
     function _validateEntry(uint256 tokenID_, address sender_) internal view {

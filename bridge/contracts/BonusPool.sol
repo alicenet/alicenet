@@ -99,15 +99,6 @@ contract BonusPool is
         return _getRewardPoolAddress();
     }
 
-    /// @notice gets the scaled bonusRate, rate in which the shares will be multiplied to determine
-    /// the bonus amount owed by a position
-    /// @dev the _bonusRate has a scaling factor built in, since it can be less than 0, to get its
-    /// real value with decimal points, divide it by the SCALING_FACTOR
-    /// @return the scaled Bonus Rate
-    function getScaledBonusRate(uint256 originalSharesLocked_) public view returns (uint256) {
-        return _getBonusRate(originalSharesLocked_);
-    }
-
     /// @notice gets the tokenID of the publicStaking position that has the whole bonus amount
     /// @return the tokenID of the publicStaking position that has the whole bonus amount
     function getBonusStakedPosition() public view returns (uint256) {
@@ -115,75 +106,37 @@ contract BonusPool is
     }
 
     /// @notice estimates a user's bonus amount + bonus position profits.
-    /// @dev a user profit can be determined by:
-    /// (currentLockedShares/expectedLockedShares * userShares/currentLockedShares) * profit
     /// @param currentSharesLocked_ The current number of shares locked in the lockup contract
     /// @param userShares_ The amount of shares that a user locked-up.
-    /// @return The estimated amount of ALCA bonus , ether profits and ALCA profits
-    function estimateBonusAmountWithReward(
-        uint256 currentSharesLocked_,
-        uint256 originalSharesLocked_,
-        uint256 userShares_
-    )
+    /// @return bonusRewardEth the estimated amount ether profits for a user
+    /// @return bonusRewardToken the estimated amount ALCA profits for a user
+    function estimateBonusAmountWithReward(uint256 currentSharesLocked_, uint256 userShares_)
         public
         view
-        returns (
-            uint256,
-            uint256,
-            uint256
-        )
+        returns (uint256 bonusRewardEth, uint256 bonusRewardToken)
     {
         if (_tokenID == 0) {
-            return (0, 0, 0);
-        }
-        if (originalSharesLocked_ == 0 || currentSharesLocked_ > originalSharesLocked_) {
-            revert InvalidOriginalSharesValue();
+            return (0, 0);
         }
 
         (uint256 estimatedPayoutEth, uint256 estimatedPayoutToken) = IStakingNFT(
             _publicStakingAddress()
         ).estimateAllProfits(_tokenID);
 
-        // computing the proportion of reward that will be sent to the rewardPool based on the
-        // number of expected users that locked-up versus the current number of users that still
-        // have positions locked.
-        uint256 proportion = (currentSharesLocked_ * SCALING_FACTOR) / originalSharesLocked_;
-        (, uint256 bonusRewardEth, uint256 bonusRewardToken) = _computeBonusByProportions(
-            originalSharesLocked_,
-            proportion,
-            currentSharesLocked_,
-            estimatedPayoutEth,
-            estimatedPayoutToken
-        );
+        (uint256 shares, , , , ) = IStakingNFT(_publicStakingAddress()).getPosition(_tokenID);
+        estimatedPayoutToken += shares;
 
-        // compute what will be amount that a user will receive from the amount that will be sent to
-        // the reward contract.
-        uint256 userProportion = (userShares_ * SCALING_FACTOR) / currentSharesLocked_;
-        return
-            _computeBonusByProportions(
-                originalSharesLocked_,
-                userProportion,
-                userShares_,
-                bonusRewardEth,
-                bonusRewardToken
-            );
+        // compute what will be the amount that a user will receive from the amount that will be
+        // sent to the reward contract.
+        bonusRewardEth = (estimatedPayoutEth * userShares_) / currentSharesLocked_;
+        bonusRewardToken = (estimatedPayoutToken * userShares_) / currentSharesLocked_;
     }
 
     /// @notice Burns that bonus staked position, and send the bonus amount of shares + profits to
     /// the rewardPool contract, so users can collect.
-    /// @dev The amount sent to the rewardPool contract is determined by the initial amount of
-    /// users that locked their positions versus the final amount of users that kept their position
-    /// locked until the end.
-    /// @param finalSharesLocked_ The final amount of shares locked up in the lockup contract.
-    function terminate(uint256 finalSharesLocked_, uint256 originalSharesLocked_)
-        public
-        onlyLockup
-    {
+    function terminate() public onlyLockup {
         if (_tokenID == 0) {
             revert BonusTokenNotCreated();
-        }
-        if (originalSharesLocked_ == 0 || finalSharesLocked_ > originalSharesLocked_) {
-            revert InvalidOriginalSharesValue();
         }
         // burn the nft to collect all profits.
         (uint256 payoutEth, uint256 payoutToken) = IStakingNFT(_publicStakingAddress()).burn(
@@ -192,72 +145,13 @@ contract BonusPool is
         // restarting the _tokenID
         _tokenID = 0;
 
-        // we subtract the shares amount from payoutToken to have the final amount of ALCA yield
-        // gained by the bonus position
-        payoutToken -= _totalBonusAmount;
-        uint256 proportion = (finalSharesLocked_ * SCALING_FACTOR) / originalSharesLocked_;
-        (
-            uint256 bonusShares,
-            uint256 bonusRewardEth,
-            uint256 bonusRewardToken
-        ) = _computeBonusByProportions(
-                originalSharesLocked_,
-                proportion,
-                finalSharesLocked_,
-                payoutEth,
-                payoutToken
-            );
-
         _safeTransferERC20(
             IERC20Transferable(_aTokenAddress()),
             _getRewardPoolAddress(),
-            bonusShares + bonusRewardToken
+            payoutToken
         );
 
-        RewardPool(_getRewardPoolAddress()).deposit{value: bonusRewardEth}(
-            bonusShares + bonusRewardToken
-        );
-
-        uint256 tokenBalance = IERC20(_aTokenAddress()).balanceOf(address(this));
-        uint256 ethBalance = address(this).balance;
-        if (tokenBalance > 0) {
-            // send the left overs of ALCA to the aliceNetFactory contract.
-            _safeTransferERC20(
-                IERC20Transferable(_aTokenAddress()),
-                _factoryAddress(),
-                IERC20(_aTokenAddress()).balanceOf(address(this))
-            );
-        }
-        if (ethBalance > 0) {
-            // send the left overs of ether to the foundation contract.
-            _safeTransferEthWithMagic(IMagicEthTransfer(_foundationAddress()), ethBalance);
-        }
-    }
-
-    function _computeBonusByProportions(
-        uint256 originalShares_,
-        uint256 proportion_,
-        uint256 shares_,
-        uint256 payoutEth_,
-        uint256 payoutToken_
-    )
-        internal
-        view
-        returns (
-            uint256 bonusShares,
-            uint256 bonusRewardEth,
-            uint256 bonusRewardToken
-        )
-    {
-        // mathematical equivalent to:
-        // (proportion * shares) / _SCALING_FACTOR
-        bonusShares = (_getBonusRate(originalShares_) * shares_) / SCALING_FACTOR;
-        bonusRewardEth = (proportion_ * payoutEth_) / SCALING_FACTOR;
-        bonusRewardToken = (proportion_ * payoutToken_) / SCALING_FACTOR;
-    }
-
-    function _getBonusRate(uint256 originalTotalLocked_) internal view returns (uint256) {
-        return (_totalBonusAmount * SCALING_FACTOR) / originalTotalLocked_;
+        RewardPool(_getRewardPoolAddress()).deposit{value: payoutToken}(payoutEth);
     }
 
     function _getLockupContractAddress() internal view override returns (address) {

@@ -192,11 +192,11 @@ describe("Lockup - public accessors", async () => {
       });
     });
 
-    describe("getTotalCurrentSharesLocked", async () => {
+    describe("getCurrentLockedShares", async () => {
       it("returns correct amount of shares", async () => {
         const expectedShareAmount = originalLockedAmount;
 
-        expect(await fixture.lockup.getTotalCurrentSharesLocked()).to.be.equal(
+        expect(await fixture.lockup.getCurrentLockedShares()).to.be.equal(
           expectedShareAmount
         );
       });
@@ -214,7 +214,7 @@ describe("Lockup - public accessors", async () => {
           expectedShareAmount -= BigInt(Distribution1.users[user].shares);
         }
 
-        expect(await fixture.lockup.getTotalCurrentSharesLocked()).to.be.equal(
+        expect(await fixture.lockup.getCurrentLockedShares()).to.be.equal(
           expectedShareAmount
         );
       });
@@ -240,7 +240,7 @@ describe("Lockup - public accessors", async () => {
           );
         }
 
-        expect(await fixture.lockup.getTotalCurrentSharesLocked()).to.be.equal(
+        expect(await fixture.lockup.getCurrentLockedShares()).to.be.equal(
           expectedShareAmountUpdated
         );
       });
@@ -336,10 +336,10 @@ describe("Lockup - public accessors", async () => {
         ).to.equal(numberOfLockingUsers);
       });
 
-      it("getTotalCurrentSharesLocked should return correct amount of shares", async () => {
+      it("getCurrentLockedShares should return correct amount of shares", async () => {
         const expectedShareAmount = originalLockedAmount;
 
-        expect(await fixture.lockup.getTotalCurrentSharesLocked()).to.be.equal(
+        expect(await fixture.lockup.getCurrentLockedShares()).to.be.equal(
           expectedShareAmount
         );
       });
