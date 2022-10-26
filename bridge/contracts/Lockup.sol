@@ -473,7 +473,7 @@ contract Lockup is
 
     /// @notice gets the current amount of ALCA that is locked in this contract, after all early exits
     /// @return the amount of ALCA that is currently locked in this contract
-    function getCurrentLockedShares() public view returns (uint256) {
+    function getTotalSharesLocked() public view returns (uint256) {
         return _totalSharesLocked;
     }
 
