@@ -172,19 +172,17 @@ export async function getState(fixture: Fixture | BaseTokensFixture) {
   for (let i = 1; i <= numberOfLockingUsers; i++) {
     const [rewardEth, rewardALCA] =
       await fixture.lockup.getTemporaryRewardBalance(signers[i].address);
+    const tokenID = await fixture.lockup.tokenOf(signers[i].address);
+    const position = await fixture.publicStaking.getPosition(tokenID);
     usersState["user" + i] = {
       address: signers[i].address,
       alca: (await fixture.aToken.balanceOf(signers[i].address)).toBigInt(),
       eth: (await ethers.provider.getBalance(signers[i].address)).toBigInt(),
-      tokenId: (await fixture.lockup.tokenOf(signers[i].address)).toBigInt(),
+      tokenId: tokenID,
       tokenOwner: await fixture.lockup.ownerOf(
         await fixture.lockup.tokenOf(signers[i].address)
       ),
-      position: (
-        await fixture.lockup.getPositionByIndex(
-          await fixture.lockup.tokenOf(signers[i].address)
-        )
-      ).toBigInt(),
+      position: position.shares.toBigInt(),
       rewardEth: rewardEth.toBigInt(),
       rewardToken: rewardALCA.toBigInt(),
     };
@@ -261,7 +259,12 @@ export function showState(title: string, state: State) {
     console.log(title, JSON.parse(JSON.stringify(state, null, 2)));
   }
 }
-
+export function showVariable(title: string, data: any) {
+  if (process.env.npm_config_detailed === "true") {
+    // execute "npm --detailed=true test" to see this output
+    console.log(title, data);
+  }
+}
 export const getEthConsumedAsGas = (receipt: ContractReceipt): bigint => {
   return receipt.cumulativeGasUsed.mul(receipt.effectiveGasPrice).toBigInt();
 };
@@ -366,7 +369,18 @@ export async function getSimulatedStakingPositions(
   return tokenIDs;
 }
 
-export async function deployFixture(impersonateLockup: boolean = true) {
+export async function deployFixtureWithoutImpersonatingFactory() {
+  return deployFixture(false, true);
+}
+
+export async function deployFixtureWithoutStaking() {
+  return deployFixture(true, false);
+}
+
+export async function deployFixture(
+  impersonateLockup: boolean = true,
+  simulateStakedPosition: boolean = true
+) {
   await preFixtureSetup();
   const signers = await ethers.getSigners();
   const baseTokensFixture = await deployFactoryAndBaseTokens(signers[0]);
@@ -409,11 +423,14 @@ export async function deployFixture(impersonateLockup: boolean = true) {
     rewardPoolSigner,
     lockupStartBlock,
   };
-
-  const tokenIDs = await getSimulatedStakingPositions(fixture, signers, 5);
-  expect(
-    (await fixture.publicStaking.getTotalShares()).toBigInt()
-  ).to.be.equals(stakedAmount);
+  let tokenIDs: BigNumber[] = [];
+  rewardPoolSigner = await getImpersonatedSigner(rewardPoolAddress);
+  if (simulateStakedPosition) {
+    tokenIDs = await getSimulatedStakingPositions(fixture, signers, 5);
+    expect(
+      (await fixture.publicStaking.getTotalShares()).toBigInt()
+    ).to.be.equals(stakedAmount);
+  }
   return {
     fixture,
     accounts: signers,
