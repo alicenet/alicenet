@@ -65,8 +65,7 @@ describe("Testing Staking Distribution", async () => {
     const currentState = await getState(fixture);
     console.log(currentState);
     const totalLockupReward = currentState.contracts.lockup.alca;
-    const totalSharesLocked =
-      await fixture.lockup.getTotalCurrentSharesLocked();
+    const totalSharesLocked = await fixture.lockup.getTotalSharesLocked();
     assert.deepEqual(await getState(fixture), expectedState);
   });
   it("creates 100 positions in 100 accounts", async () => {
