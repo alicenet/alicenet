@@ -62,7 +62,7 @@ async function distributeProfits(fixture: Fixture, admin: SignerWithAddress) {
 }
 
 async function deployFixtureWithoutImpersonate() {
-  return deployFixture(false);
+  return deployFixture(undefined, false);
 }
 
 describe("Testing Unlock", async () => {

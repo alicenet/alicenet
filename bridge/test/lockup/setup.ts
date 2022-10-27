@@ -172,17 +172,19 @@ export async function getState(fixture: Fixture | BaseTokensFixture) {
   for (let i = 1; i <= numberOfLockingUsers; i++) {
     const [rewardEth, rewardALCA] =
       await fixture.lockup.getTemporaryRewardBalance(signers[i].address);
-    const tokenID = await fixture.lockup.tokenOf(signers[i].address);
-    const position = await fixture.publicStaking.getPosition(tokenID);
     usersState["user" + i] = {
       address: signers[i].address,
       alca: (await fixture.aToken.balanceOf(signers[i].address)).toBigInt(),
       eth: (await ethers.provider.getBalance(signers[i].address)).toBigInt(),
-      tokenId: tokenID,
+      tokenId: (await fixture.lockup.tokenOf(signers[i].address)).toBigInt(),
       tokenOwner: await fixture.lockup.ownerOf(
         await fixture.lockup.tokenOf(signers[i].address)
       ),
-      position: position.shares.toBigInt(),
+      position: (
+        await fixture.lockup.getPositionByIndex(
+          await fixture.lockup.tokenOf(signers[i].address)
+        )
+      ).toBigInt(),
       rewardEth: rewardEth.toBigInt(),
       rewardToken: rewardALCA.toBigInt(),
     };
