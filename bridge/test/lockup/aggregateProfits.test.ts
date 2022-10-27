@@ -45,7 +45,6 @@ describe("Testing Staking Distribution", async () => {
         stakedTokenIDs[i]
       );
       await txResponse.wait();
-      await fixture.lockup.tokenOf(accounts[i].address);
     }
 
     let currentState = await getState(fixture);
