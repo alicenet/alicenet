@@ -514,17 +514,19 @@ contract Lockup is
         payoutToken -= reserveToken;
     }
 
-    /// @notice function to try to estimate the final amount of ALCA and ether that a locked
-    /// position will receive at the end of locking period. This function is just an approximation,
+    /// @notice function to estimate the final amount of ALCA and ether that a locked
+    /// position will receive at the end of the locking period. Depending on the preciseEstimation_ flag this function can be an imprecise approximation,
     /// the real amount can differ especially as user's collect profits in the middle of the locking
-    /// period. This function will be more accurate after the locking period has finished and
-    /// aggregateProfits has been executed for all lockedPositions.
-    /// @dev this function is just an approximation, the real amount can differ!
+    /// period. Passing preciseEstimation_ as true will give a precise estimate since all profits are aggregated in a loop,
+    /// hence is optional as it can be expensive if called as part of a smart contract transaction that alters state. After the locking
+    /// period has finished and aggregateProfits has been executed for all locked positions the estimate will also be accurate.
+    /// @dev this function is just an approximation when preciseEstimation_ is false, the real amount can differ!
     /// @param tokenID_ The token to check for the final profits.
+    /// @param preciseEstimation_ whether to use the precise estimation or the approximation (precise is expensive due to looping so use wisely)
     /// @return positionShares_ the positions ALCA shares
     /// @return payoutEth_ the ether amount that the position will receive as profit
     /// @return payoutToken_ the ALCA amount that the position will receive as profit
-    function estimateFinalBonusWithProfits(uint256 tokenID_)
+    function estimateFinalBonusWithProfits(uint256 tokenID_, bool preciseEstimation_)
         public
         view
         returns (
@@ -545,23 +547,36 @@ contract Lockup is
             positionShares_
         );
 
-        // get the cumulative rewards held in the rewardPool so far. The amount returned by this
-        // call is not precise, since only some users may have been collected until this point. This
-        // call becomes accurate only after the aggregateProfits() has been called for all
-        // positions.
+        //  get the cumulative rewards held in the rewardPool so far. In the case that
+        // aggregateProfits has not been ran, the amount returned by this call may not be precise,
+        // since only some users may have been collected until this point, in which case
+        // preciseEstimation_ can be passed as true to get a precise estimate.
         (uint256 rewardEthProfit, uint256 rewardTokenProfit) = RewardPool(_rewardPool)
             .estimateRewards(currentSharesLocked, positionShares_);
         payoutEth_ += rewardEthProfit;
         payoutToken_ += rewardTokenProfit;
 
-        // get any future profit that will held in the rewardPool for this position
-        (uint256 positionEthProfit, uint256 positionTokenProfit) = IStakingNFT(
-            _publicStakingAddress()
-        ).estimateAllProfits(tokenID_);
-        (uint256 reservedEth, uint256 reservedToken) = _computeReservedAmount(
-            positionEthProfit,
-            positionTokenProfit
-        );
+        uint256 reservedEth;
+        uint256 reservedToken;
+
+        // if aggregateProfits has been called (indicated by the payoutSafe flag), this calculation is not needed
+        if (preciseEstimation_ && !payoutSafe) {
+            // get this positions share based on all user profits aggregated (NOTE: precise but expensive due to the loop)
+            (reservedEth, reservedToken) = _estimateUserAggregatedProfits(
+                positionShares_,
+                currentSharesLocked
+            );
+        } else {
+            // get any future profit that will be held in the rewardPool for this position
+            (uint256 positionEthProfit, uint256 positionTokenProfit) = IStakingNFT(
+                _publicStakingAddress()
+            ).estimateAllProfits(tokenID_);
+            (reservedEth, reservedToken) = _computeReservedAmount(
+                positionEthProfit,
+                positionTokenProfit
+            );
+        }
+
         payoutEth_ += reservedEth;
         payoutToken_ += reservedToken;
 
@@ -717,6 +732,35 @@ contract Lockup is
     function _depositFundsInRewardPool(uint256 reservedEth_, uint256 reservedToken_) internal {
         _safeTransferERC20(IERC20Transferable(_aTokenAddress()), _rewardPool, reservedToken_);
         RewardPool(_rewardPool).deposit{value: reservedEth_}(reservedToken_);
+    }
+
+    function _estimateTotalAggregatedProfits()
+        internal
+        view
+        returns (uint256 payoutEth, uint256 payoutToken)
+    {
+        for (uint256 i = 1; i <= _lenTokenIDs; i++) {
+            (uint256 tokenID, ) = _getTokenIDAtIndex(i);
+            (uint256 stakingProfitEth, uint256 stakingProfitToken) = IStakingNFT(
+                _publicStakingAddress()
+            ).estimateAllProfits(tokenID);
+            (uint256 reserveEth, uint256 reserveToken) = _computeReservedAmount(
+                stakingProfitEth,
+                stakingProfitToken
+            );
+            payoutEth += reserveEth;
+            payoutToken += reserveToken;
+        }
+    }
+
+    function _estimateUserAggregatedProfits(uint256 userShares_, uint256 totalShares_)
+        internal
+        view
+        returns (uint256 payoutEth, uint256 payoutToken)
+    {
+        (payoutEth, payoutToken) = _estimateTotalAggregatedProfits();
+        payoutEth = (payoutEth * userShares_) / totalShares_;
+        payoutToken = (payoutToken * userShares_) / totalShares_;
     }
 
     function _payableSender() internal view returns (address payable) {
