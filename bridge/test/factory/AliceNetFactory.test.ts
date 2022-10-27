@@ -12,6 +12,7 @@ import {
   PROXY,
   UTILS,
 } from "../../scripts/lib/constants";
+import { AliceNetFactory } from "../../typechain-types";
 import {
   checkMockInit,
   deployCreate2Initable as deployCreate2Initializable,
@@ -26,79 +27,122 @@ describe("AliceNet Contract Factory", () => {
   let firstOwner: string;
   let firstDelegator: string;
   let accounts: Array<string> = [];
+  let factory: AliceNetFactory
   beforeEach(async () => {
     process.env.silencer = "true";
     accounts = await getAccounts();
     firstOwner = accounts[0];
     firstDelegator = accounts[2];
+    factory = await loadFixture(deployFactory);
   });
 
-  it("set owner", async () => {
-    const factory = await loadFixture(deployFactory);
-    // sets the second account as owner
-    expect(await factory.owner()).to.equal(firstOwner);
-    await factory.setOwner(accounts[1]);
-    expect(await factory.owner()).to.equal(accounts[1]);
+  describe("set and get owner", () => {
+    it("set owner", async () => { 
+      // sets the second account as owner
+      expect(await factory.owner()).to.equal(firstOwner);
+      await factory.setOwner(accounts[1]);
+      expect(await factory.owner()).to.equal(accounts[1]);
+    });
+    it("get owner", async () => {
+      const owner = await factory.owner();
+      expect(owner).to.equal(firstOwner);
+    });
   });
+
   describe("external contract deployment tests", () => {
+    it("deploys a mock contract with deployCreateAndRegister", async () => {
+      const salt = ethers.utils.formatBytes32String("test");
+      const mockFactory = await ethers.getContractFactory(MOCK);
+      const mockDeployBytecode = mockFactory.getDeployTransaction(2, "s").data as BytesLike;
+      const expectedMockAddressBeforeDeploy = getMetamorphicAddress(factory.address, salt);
+      const actualMockAddressBeforeDeploy = await factory.lookup(salt);
+      expect(actualMockAddressBeforeDeploy).to.equal(expectedMockAddressBeforeDeploy);
+      const tx = await factory.deployCreateAndRegister(mockDeployBytecode, salt);
+      const expectedMockAddress = await getEventVar(
+        tx,
+        DEPLOYED_RAW,
+        CONTRACT_ADDR
+      );
+      await tx.wait();
+      const actualLookupAddress = await factory.lookup(salt);
+      expect(actualLookupAddress).to.equal(expectedMockAddress);
+    });
     
+    it("attempts to deployCreateAndRegister as firstDelegator", async () => {
+      const salt = ethers.utils.formatBytes32String("test");
+      const mockFactory = await ethers.getContractFactory(MOCK);
+      const mockDeployBytecode = mockFactory.getDeployTransaction(2, "s").data as BytesLike;
+      await expect(
+        factory.connect(ethers.provider.getSigner(firstDelegator)).deployCreateAndRegister(mockDeployBytecode, salt)
+      ).to.be.revertedWithCustomError(factory, "Unauthorized");
+    });
+
+    it("attempts to deploy 2 contracts with the same salt", async () => {
+      const salt = ethers.utils.formatBytes32String("test");
+      const mockFactory = await ethers.getContractFactory(MOCK);
+      const mockDeployBytecode = mockFactory.getDeployTransaction(2, "s").data as BytesLike;
+      const tx = await factory.deployCreateAndRegister(mockDeployBytecode, salt);
+      const expectedMockAddress = await getEventVar(
+        tx,
+        DEPLOYED_RAW,
+        CONTRACT_ADDR
+      );
+      await tx.wait();
+      const actualLookupAddress = await factory.lookup(salt);
+      expect(actualLookupAddress).to.equal(expectedMockAddress);
+      await expect(factory.deployCreateAndRegister(mockDeployBytecode, salt)).to.be.revertedWithCustomError(factory, "SaltAlreadyInUse").withArgs(salt);
+    });
+
   });
-  it("adds a new external contract to the externalContractRegistry with salt", async () => {
-    const factory = await loadFixture(deployFactory);
-    const salt = ethers.utils.formatBytes32String("test");
-    const mockEndPointBase = await ethers.getContractFactory("MockEndPoint");
-    const mockEndPoint = await mockEndPointBase.deploy();
-    const lookupBefore = await factory.lookup(salt);
-    const txResponse = await factory.addNewExternalContract(
-      salt,
-      mockEndPoint.address
-    );
-    await txResponse.wait();
-    const lookupAfter = await factory.lookup(salt);
-    expect(lookupBefore).to.not.equal(lookupAfter);
-    expect(lookupAfter).to.equal(mockEndPoint.address);
+  describe("addNewExternalContract tests", async () => {
+    it("deploys a contract from an eoa and records the address to the externalContractRegistry with salt", async () => {
+      const salt = ethers.utils.formatBytes32String("test");
+      const mockEndPointBase = await ethers.getContractFactory("MockEndPoint");
+      const mockEndPoint = await mockEndPointBase.deploy();
+      const lookupBefore = await factory.lookup(salt);
+      const txResponse = await factory.addNewExternalContract(
+        salt,
+        mockEndPoint.address
+      );
+      await txResponse.wait();
+      const lookupAfter = await factory.lookup(salt);
+      expect(lookupBefore).to.not.equal(lookupAfter);
+      expect(lookupAfter).to.equal(mockEndPoint.address);
+    });
+    it("attempts to add a eoa address as a contract", async () => {
+      const salt = ethers.utils.formatBytes32String("test");
+      await expect(
+        factory.addNewExternalContract(salt, firstOwner)
+      ).to.be.revertedWithCustomError(factory, "CodeSizeZero");
+    });
+    
+    it("attempts to add external contract as non owner", async () => {
+      const salt = ethers.utils.formatBytes32String("test");
+      const mockEndPointBase = await ethers.getContractFactory("MockEndPoint");
+      const mockEndPoint = await mockEndPointBase.deploy();
+      const signers = await ethers.getSigners();
+      const txResponse = factory
+        .connect(signers[1])
+        .addNewExternalContract(salt, mockEndPoint.address);
+      await expect(txResponse).to.be.revertedWithCustomError(
+        factory,
+        "Unauthorized"
+      );
+    });
+    it("should not allow changing address of registered salt", async () => {
+      const salt = ethers.utils.formatBytes32String("test");
+      const mockEndPointBase = await ethers.getContractFactory("MockEndPoint");
+      const mockEndPoint = await mockEndPointBase.deploy();
+      let txResponse = factory.addNewExternalContract(salt, mockEndPoint.address);
+      await (await txResponse).wait();
+      const mockEndPoint2 = await mockEndPointBase.deploy();
+      txResponse = factory.addNewExternalContract(salt, mockEndPoint2.address);
+      await expect(txResponse).to.be.revertedWithCustomError(
+        factory,
+        "SaltAlreadyInUse"
+      );
+    });
   });
-
-  it("onlyOwner should be able add to add new external contract", async () => {
-    const factory = await loadFixture(deployFactory);
-    const salt = ethers.utils.formatBytes32String("test");
-    const mockEndPointBase = await ethers.getContractFactory("MockEndPoint");
-    const mockEndPoint = await mockEndPointBase.deploy();
-    const signers = await ethers.getSigners();
-    const txResponse = factory
-      .connect(signers[1])
-      .addNewExternalContract(salt, mockEndPoint.address);
-    await expect(txResponse).to.be.revertedWithCustomError(
-      factory,
-      "Unauthorized"
-    );
-  });
-
-  it("should not allow changing address of registered salt", async () => {
-    const factory = await loadFixture(deployFactory);
-    const salt = ethers.utils.formatBytes32String("test");
-    const mockEndPointBase = await ethers.getContractFactory("MockEndPoint");
-    const mockEndPoint = await mockEndPointBase.deploy();
-    let txResponse = factory.addNewExternalContract(salt, mockEndPoint.address);
-    await (await txResponse).wait();
-    const mockEndPoint2 = await mockEndPointBase.deploy();
-    txResponse = factory.addNewExternalContract(salt, mockEndPoint2.address);
-    await expect(txResponse).to.be.revertedWithCustomError(
-      factory,
-      "SaltAlreadyInUse"
-    );
-  });
-
-  it("get owner", async () => {
-    const factory = await loadFixture(deployFactory);
-    const owner = await factory.owner();
-    expect(owner).to.equal(firstOwner);
-  });
-
-  
-
-
-
 
   describe("deployProxy test",async () => {
     it("deployproxy", async () => {
@@ -141,13 +185,8 @@ describe("AliceNet Contract Factory", () => {
         factory.deployProxy(Salt, { from: firstDelegator })
       ).to.be.revertedWithCustomError(factory, `Unauthorized`);
     });
-  })
+  });
 
-  
-  
-
-  
-  
   describe("deployCreate tests", () => {
     it("deploycreate mock logic contract with factory", async () => {
       const factory = await loadFixture(deployFactory);
@@ -253,6 +292,7 @@ describe("AliceNet Contract Factory", () => {
         `Unauthorized`
       );
     });
+
     it("should not allow deploycreate mock logic contract with unauthorized account", async () => {
       let factory = await loadFixture(deployFactory);
       // use the ethers Mock contract abstraction to generate the deploy transaction state
@@ -299,6 +339,7 @@ describe("AliceNet Contract Factory", () => {
       await checkMockInit(mockInitAddr, 2);
     });
   })
+
   it("deploys a initializable contract and uses callany to intialize", async () => {
     const factory = await loadFixture(deployFactory);
     const salt = getSalt();
@@ -320,7 +361,6 @@ describe("AliceNet Contract Factory", () => {
     await checkMockInit(mockInitAddr, 2);
   });
 
-  
   describe("delegateCallAny tests", async () => {
     it("delegatecallany access control", async () => {
       const factory = await loadFixture(deployFactory);
@@ -357,6 +397,7 @@ describe("AliceNet Contract Factory", () => {
       owner = await factory.owner();
       expect(owner).to.equal(accounts[0]);
     });
+
     it("deploys a mock contract, calls payMe from factory with delegateCallAny", async () => {
       const factory = await loadFixture(deployFactory);
       const mockFactory = await ethers.getContractFactory(MOCK);

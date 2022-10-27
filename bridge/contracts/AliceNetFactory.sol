@@ -103,6 +103,8 @@ contract AliceNetFactory is AliceNetFactoryBase {
      * @param newContractAddress_: address of the contract to be added to registry
      */
     function addNewExternalContract(bytes32 salt_, address newContractAddress_) public onlyOwner {
+        bool ok = _extCodeSize(newContractAddress_) != 0;
+        _codeSizeZeroRevert(ok);
         _addNewExternalContract(salt_, newContractAddress_);
     }
 
