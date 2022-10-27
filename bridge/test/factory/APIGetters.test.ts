@@ -29,7 +29,13 @@ describe("AliceNetfactory API test", async () => {
   });
 
   it("deploy Upgradeable", async () => {
-    const res = await deployUpgradeable(MOCK, factory.address, ethers, artifacts, ["2", "s"]);
+    const res = await deployUpgradeable(
+      MOCK,
+      factory.address,
+      ethers,
+      artifacts,
+      ["2", "s"]
+    );
     const Proxy = await ethers.getContractFactory(PROXY);
     const proxy = Proxy.attach(res.proxyAddress);
     expect(await proxy.getImplementationAddress()).to.be.equal(
@@ -43,13 +49,22 @@ describe("AliceNetfactory API test", async () => {
   });
 
   it("upgrade deployment", async () => {
-    const res = await deployUpgradeable(MOCK, factory.address, ethers, artifacts, ["2", "s"]);
+    const res = await deployUpgradeable(
+      MOCK,
+      factory.address,
+      ethers,
+      artifacts,
+      ["2", "s"]
+    );
     const proxy = await ethers.getContractAt(PROXY, res.proxyAddress);
     expect(await proxy.getImplementationAddress()).to.be.equal(
       res.logicAddress
     );
     assert(res !== undefined, "Couldn't deploy upgradable contract");
-    const res2 = await upgradeProxy(MOCK, factory.address, ethers, artifacts, ["2", "s"]);
+    const res2 = await upgradeProxy(MOCK, factory.address, ethers, artifacts, [
+      "2",
+      "s",
+    ]);
     expect(await proxy.getImplementationAddress()).to.be.equal(
       res2.logicAddress
     );
