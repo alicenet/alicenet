@@ -144,13 +144,11 @@ contract BonusPool is
         );
         // restarting the _tokenID
         _tokenID = 0;
-
         _safeTransferERC20(
             IERC20Transferable(_aTokenAddress()),
             _getRewardPoolAddress(),
             payoutToken
         );
-
         RewardPool(_getRewardPoolAddress()).deposit{value: payoutEth}(payoutToken);
     }
 

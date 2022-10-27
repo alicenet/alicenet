@@ -187,6 +187,7 @@ export async function getState(fixture: Fixture | BaseTokensFixture) {
       rewardToken: rewardALCA.toBigInt(),
     };
   }
+
   usersState.bonusPool = {
     address: fixture.bonusPool.address,
     alca: (
@@ -314,7 +315,7 @@ export async function deployLockupContract(
 }
 
 export async function getSimulatedStakingPositions(
-  fixture: BaseTokensFixture,
+  fixture: Fixture,
   signers: SignerWithAddress[],
   numberOfUsers: number,
   createBonusPosition: boolean = true
@@ -378,7 +379,7 @@ export async function deployFixtureWithoutImpersonatingFactory() {
   return deployFixture(undefined, false, true);
 }
 export async function deployFixtureForAggregateProfits() {
-  return deployFixture(1000, true, false);
+  return deployFixture(1000, false, false, false, false, false);
 }
 export async function deployFixtureWithoutStaking() {
   return deployFixture(undefined, true, false);
@@ -392,7 +393,9 @@ export async function deployFixture(
   enrollementPeriod: number = ENROLLMENT_PERIOD,
   impersonateLockup: boolean = true,
   simulateStakedPosition: boolean = true,
-  createBonusPosition: boolean = true
+  createBonusPosition: boolean = true,
+  impersonateRewardPool: boolean = true,
+  impersonatePublicStaking: boolean = true
 ) {
   await preFixtureSetup();
   const signers = await ethers.getSigners();
@@ -420,9 +423,12 @@ export async function deployFixture(
   const factorySigner = await getImpersonatedSigner(
     baseTokensFixture.factory.address
   );
-  const pblicStakingSigner = await getImpersonatedSigner(
-    baseTokensFixture.publicStaking.address
-  );
+  let pblicStakingSigner;
+  if (impersonatePublicStaking) {
+    pblicStakingSigner = await getImpersonatedSigner(
+      baseTokensFixture.publicStaking.address
+    );
+  }
   let rewardPoolSigner;
   if (impersonateLockup) {
     rewardPoolSigner = await getImpersonatedSigner(rewardPoolAddress);
@@ -435,7 +441,9 @@ export async function deployFixture(
     lockupStartBlock,
   };
   let tokenIDs: BigNumber[] = [];
-  rewardPoolSigner = await getImpersonatedSigner(rewardPoolAddress);
+  if (impersonateRewardPool) {
+    rewardPoolSigner = await getImpersonatedSigner(rewardPoolAddress);
+  }
   if (simulateStakedPosition) {
     tokenIDs = await getSimulatedStakingPositions(
       fixture,
