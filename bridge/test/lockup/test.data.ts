@@ -200,8 +200,8 @@ export const example2: UnlockState = {
     rewardHeldALCA: 10000,
     lockupAggregatedEth: 4,
     lockupAggregatedALCA: 40000,
-    totalEarnedEth: "6000000000000000000",
-    totalEarnedALCA: "5560000000000000000000000",
+    totalEarnedEth: "6500000000000000000",
+    totalEarnedALCA: "6065000000000000000000000",
   },
   user3: {
     tokenID: 30,
@@ -214,8 +214,8 @@ export const example2: UnlockState = {
     rewardHeldALCA: 5000,
     lockupAggregatedEth: 2,
     lockupAggregatedALCA: 20000,
-    totalEarnedEth: "3000000000000000000",
-    totalEarnedALCA: "2780000000000000000000000",
+    totalEarnedEth: "3250000000000000000",
+    totalEarnedALCA: "3032500000000000000000000",
   },
   user4: {
     tokenID: 40,
@@ -228,8 +228,8 @@ export const example2: UnlockState = {
     rewardHeldALCA: 3000,
     lockupAggregatedEth: 1.2,
     lockupAggregatedALCA: 12000,
-    totalEarnedEth: "1800000000000000000",
-    totalEarnedALCA: "1668000000000000000000000",
+    totalEarnedEth: "1950000000000000000",
+    totalEarnedALCA: "1819500000000000000000000",
   },
   user5: {
     tokenID: 50,
@@ -242,8 +242,8 @@ export const example2: UnlockState = {
     rewardHeldALCA: 2000,
     lockupAggregatedEth: 0.8,
     lockupAggregatedALCA: 8000,
-    totalEarnedEth: "1200000000000000000",
-    totalEarnedALCA: "1112000000000000000000000",
+    totalEarnedEth: "1300000000000000000",
+    totalEarnedALCA: "1213000000000000000000000",
   },
 };
 /**
@@ -261,8 +261,8 @@ export const example3: UnlockState = {
     rewardHeldALCA: 20000,
     lockupAggregatedEth: 8,
     lockupAggregatedALCA: 80000,
-    totalEarnedEth: "11142857142857142857",
-    totalEarnedALCA: "11111428571428571428571428",
+    totalEarnedEth: "11285714285714285714",
+    totalEarnedALCA: "11255714285714285714285714",
   },
   user2: {
     tokenID: 20,
@@ -275,8 +275,8 @@ export const example3: UnlockState = {
     rewardHeldALCA: 10000,
     lockupAggregatedEth: 4,
     lockupAggregatedALCA: 40000,
-    totalEarnedEth: "5571428571428571428",
-    totalEarnedALCA: "5555714285714285714285714",
+    totalEarnedEth: "5642857142857142857",
+    totalEarnedALCA: "5627857142857142857142857",
   },
   user3: {
     tokenID: 30,
@@ -289,22 +289,8 @@ export const example3: UnlockState = {
     rewardHeldALCA: 5000,
     lockupAggregatedEth: 2,
     lockupAggregatedALCA: 20000,
-    totalEarnedEth: "2785714285714285714",
-    totalEarnedALCA: "2777857142857142857142857",
-  },
-  user4: {
-    tokenID: 30,
-    shares: 2500000,
-    percentageFromTotalLockup: 0.125,
-    bonusSharesALCA: 250000,
-    bonusProfitEth: 0.25,
-    bonusProfitALCA: 2500,
-    rewardHeldEth: 0.5,
-    rewardHeldALCA: 5000,
-    lockupAggregatedEth: 2,
-    lockupAggregatedALCA: 20000,
-    totalEarnedEth: "2785714285714285714",
-    totalEarnedALCA: "2777857142857142857142857",
+    totalEarnedEth: "2821428571428571428",
+    totalEarnedALCA: "2813928571428571428571428",
   },
 };
 /**
@@ -322,8 +308,8 @@ export const example4: UnlockState = {
     rewardHeldALCA: 15000,
     lockupAggregatedEth: 8.5,
     lockupAggregatedALCA: 85000,
-    totalEarnedEth: "3666666666666666666", // earned from lockup contract after unlock
-    totalEarnedALCA: "10601666666666666666666666",
+    totalEarnedEth: "3833333333333333333", // earned from lockup contract after unlock
+    totalEarnedALCA: "10770000000000000000000000",
   },
   user2: {
     tokenID: 20,
@@ -336,8 +322,8 @@ export const example4: UnlockState = {
     rewardHeldALCA: 10000,
     lockupAggregatedEth: 4,
     lockupAggregatedALCA: 40000,
-    totalEarnedEth: "5666666666666666666",
-    totalEarnedALCA: "5556666666666666666666666",
+    totalEarnedEth: "5833333333333333333",
+    totalEarnedALCA: "5725000000000000000000000",
   },
   user3: {
     tokenID: 30,
@@ -350,8 +336,8 @@ export const example4: UnlockState = {
     rewardHeldALCA: 5000,
     lockupAggregatedEth: 2,
     lockupAggregatedALCA: 20000,
-    totalEarnedEth: "2833333333333333333",
-    totalEarnedALCA: "2778333333333333333333333",
+    totalEarnedEth: "2916666666666666666",
+    totalEarnedALCA: "2862500000000000000000000",
   },
   user4: {
     tokenID: 40,
@@ -364,8 +350,8 @@ export const example4: UnlockState = {
     rewardHeldALCA: 3000,
     lockupAggregatedEth: 1.2,
     lockupAggregatedALCA: 12000,
-    totalEarnedEth: "1700000000000000000",
-    totalEarnedALCA: "1667000000000000000000000",
+    totalEarnedEth: "1750000000000000000",
+    totalEarnedALCA: "1717500000000000000000000",
   },
   user5: {
     tokenID: 50,
@@ -378,8 +364,8 @@ export const example4: UnlockState = {
     rewardHeldALCA: 2000,
     lockupAggregatedEth: 0.8,
     lockupAggregatedALCA: 8000,
-    totalEarnedEth: "1133333333333333333",
-    totalEarnedALCA: "1111333333333333333333333",
+    totalEarnedEth: "1166666666666666666",
+    totalEarnedALCA: "1145000000000000000000000",
   },
 };
 

@@ -3,11 +3,12 @@ pragma solidity ^0.8.16;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "contracts/interfaces/IStakingNFT.sol";
+import "contracts/libraries/lockup/AccessControlled.sol";
+import "contracts/libraries/errors/LockupErrors.sol";
 import "contracts/BonusPool.sol";
 import "contracts/utils/EthSafeTransfer.sol";
 import "contracts/utils/ERC20SafeTransfer.sol";
 import "contracts/utils/ImmutableAuth.sol";
-import "contracts/libraries/lockup/AccessControlled.sol";
 
 /**
  * @notice RewardPool holds all ether and ALCA that is part of reserved amount
@@ -20,8 +21,6 @@ contract RewardPool is AccessControlled, EthSafeTransfer, ERC20SafeTransfer {
     address internal immutable _bonusPool;
     uint256 internal _ethReserve;
     uint256 internal _tokenReserve;
-
-    error InvalidTotalSharesValue();
 
     constructor(
         address alca_,
@@ -57,7 +56,7 @@ contract RewardPool is AccessControlled, EthSafeTransfer, ERC20SafeTransfer {
         bool isLastPosition_
     ) public onlyLockup returns (uint256 proportionalEth, uint256 proportionalTokens) {
         if (totalShares_ == 0 || userShares_ > totalShares_) {
-            revert InvalidTotalSharesValue();
+            revert LockupErrors.InvalidTotalSharesValue();
         }
 
         // last position gets any remainder left on this contract
@@ -107,7 +106,7 @@ contract RewardPool is AccessControlled, EthSafeTransfer, ERC20SafeTransfer {
         returns (uint256 proportionalEth, uint256 proportionalTokens)
     {
         if (totalShares_ == 0 || userShares_ > totalShares_) {
-            revert InvalidTotalSharesValue();
+            revert LockupErrors.InvalidTotalSharesValue();
         }
         return _computeProportions(totalShares_, userShares_);
     }

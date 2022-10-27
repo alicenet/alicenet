@@ -39,13 +39,13 @@ describe("Testing Staking Distribution", async () => {
       true
     );
     for (let i = 1; i <= numberOfLockingUsers; i++) {
-      let txResponse = await lockStakedNFT(
+      const txResponse = await lockStakedNFT(
         fixture,
         accounts[i],
         stakedTokenIDs[i]
       );
       await txResponse.wait();
-      const tokenID = await fixture.lockup.tokenOf(accounts[i].address);
+      await fixture.lockup.tokenOf(accounts[i].address);
     }
 
     let currentState = await getState(fixture);
@@ -60,12 +60,12 @@ describe("Testing Staking Distribution", async () => {
     await distributeProfits(fixture, accounts[0], profitETH, profitALCA);
     currentState = await getState(fixture);
     showState("state after distribute profit", currentState);
-    let expectedState = await getState(fixture);
+    const expectedState = await getState(fixture);
     currentState = await getState(fixture);
     showState("state after distribute profit", currentState);
     const [bonusEth, bonusToken] =
       await fixture.bonusPool.estimateBonusAmountWithReward(1, 1);
-    let txResponse = await fixture.lockup.aggregateProfits({
+    const txResponse = await fixture.lockup.aggregateProfits({
       gasLimit: 10000000,
     });
     await txResponse.wait();
@@ -74,7 +74,7 @@ describe("Testing Staking Distribution", async () => {
     expect(expectedState.contracts.lockup.lockedPositions).to.eq(
       BigInt(numberOfLockingUsers)
     );
-    //update the bonus pool balance
+    // update the bonus pool balance
     let lockupEthBalance = BigInt(0);
     let lockupALCABalanca = BigInt(0);
     let rewardPoolEthBalance = BigInt(0);
@@ -93,7 +93,7 @@ describe("Testing Staking Distribution", async () => {
       rewardPoolEthBalance += expectedETH - expectedETHReward;
       lockupEthBalance += expectedETHReward;
       lockupALCABalanca += expectedALCAReward;
-      //accumulate lockup contract balances
+      // accumulate lockup contract balances
       expectedState.users[user].rewardToken = expectedALCAReward;
       expectedState.users[user].rewardEth = expectedETHReward;
     }
@@ -106,22 +106,22 @@ describe("Testing Staking Distribution", async () => {
     // const totalLockupReward = currentState.contracts.lockup.alca
     // TODO update test to reflect new bonus splits
 
-    expectedState.contracts["lockup"]["alca"] = lockupALCABalanca;
-    expectedState.contracts["lockup"]["eth"] = lockupEthBalance;
-    expectedState.contracts["rewardPool"]["alca"] += rewardPoolALCABalance;
-    expectedState.contracts["rewardPool"]["eth"] += rewardPoolEthBalance;
+    expectedState.contracts.lockup.alca = lockupALCABalanca;
+    expectedState.contracts.lockup.eth = lockupEthBalance;
+    expectedState.contracts.rewardPool.alca += rewardPoolALCABalance;
+    expectedState.contracts.rewardPool.eth += rewardPoolEthBalance;
     showState("final expected state", expectedState);
     assert.deepEqual(await getState(fixture), expectedState);
   });
 
   it("attempt to call aggregate profit without a staked bonus position", async () => {
     const approvalAmount = ethers.utils.parseEther("200000000");
-    //approve public staking to spend account 1 alca
-    let txResponse = await fixture.aToken
+    // approve public staking to spend account 1 alca
+    const txResponse = await fixture.aToken
       .connect(accounts[0])
       .increaseAllowance(fixture.publicStaking.address, approvalAmount);
     await txResponse.wait();
-    //mint one position and lock
+    // mint one position and lock
     await generateLockedPosition(fixture, accounts, accounts[1]);
     await distributeProfits(fixture, accounts[0], profitETH, profitALCA);
     await jumpToPostLockState(fixture);
@@ -133,7 +133,7 @@ describe("Testing Staking Distribution", async () => {
 
   it("creates 100 positions in 100 accounts", async () => {
     const approvalAmount = ethers.utils.parseEther("200000000");
-    //approve public staking to spend account 1 alca
+    // approve public staking to spend account 1 alca
     let txResponse = await fixture.aToken
       .connect(accounts[0])
       .increaseAllowance(fixture.publicStaking.address, approvalAmount);
@@ -146,15 +146,15 @@ describe("Testing Staking Distribution", async () => {
       .connect(asFactory)
       .createBonusStakedPosition();
     await txResponse.wait();
-    //mint 100 positions to 100 random accounts
-    let transactions: Promise<ContractTransaction>[] = [];
-    let addresses: string[] = [];
+    // mint 100 positions to 100 random accounts
+    const transactions: Promise<ContractTransaction>[] = [];
+    const addresses: string[] = [];
     for (let i = 0; i <= 100; i++) {
-      //make a random acount
+      // make a random acount
       const randomAccount = ethers.Wallet.createRandom();
       addresses.push(randomAccount.address);
       const recipient = await getImpersonatedSigner(randomAccount.address);
-      //stake random account
+      // stake random account
       transactions.push(generateLockedPosition(fixture, accounts, recipient));
     }
     for (let i = 0; i < transactions.length; i++) {
@@ -171,10 +171,10 @@ describe("Testing Staking Distribution", async () => {
     const payoutState = await fixture.lockup.payoutSafe();
     expect(payoutState).to.eq(false);
     // showState("after first aggregate", currentState);
-    let lockupALCABalance = await fixture.aToken.balanceOf(
+    const lockupALCABalance = await fixture.aToken.balanceOf(
       fixture.lockup.address
     );
-    let lockupEthBalance = await ethers.provider.getBalance(
+    const lockupEthBalance = await ethers.provider.getBalance(
       fixture.lockup.address
     );
     const expectedALCA = ethers.utils.parseEther(
@@ -186,13 +186,13 @@ describe("Testing Staking Distribution", async () => {
     expect(lockupEthBalance).to.be.lessThan(expectedETH);
     txResponse = await fixture.lockup.aggregateProfits({ gasLimit: 6000000 });
     await txResponse.wait();
-    //check if the last position got paid
+    // check if the last position got paid
     const [ethbal, alcabal] = await fixture.lockup.getTemporaryRewardBalance(
       addresses[99]
     );
     expect(ethbal.toBigInt()).to.be.greaterThan(BigInt(0));
     expect(alcabal.toBigInt()).to.be.greaterThan(BigInt(0));
-    //check if bonus pool balances zero out
+    // check if bonus pool balances zero out
   });
 });
 
@@ -201,7 +201,6 @@ export async function generateLockedPosition(
   signers: SignerWithAddress[],
   recipient: SignerWithAddress
 ) {
-  let transactions: Promise<ContractTransaction>[] = [];
   // stake a random amount between 1 and 11 million
   const randomAmount = (Math.random() * 11 + 1) * 100000;
   const stakedAmount = await ethers.utils.parseEther(randomAmount.toString(10));

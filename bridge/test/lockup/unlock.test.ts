@@ -7,6 +7,7 @@ import { BonusPool, Lockup, RewardPool } from "../../typechain-types";
 import { BaseTokensFixture } from "../setup";
 import {
   deployFixture,
+  ENROLLMENT_PERIOD,
   getEthConsumedAsGas,
   getState,
   jumpToInlockState,
@@ -62,7 +63,7 @@ async function distributeProfits(fixture: Fixture, admin: SignerWithAddress) {
 }
 
 async function deployFixtureWithoutImpersonate() {
-  return deployFixture(undefined, false);
+  return deployFixture(ENROLLMENT_PERIOD, false, true, true, false, false);
 }
 
 describe("Testing Unlock", async () => {

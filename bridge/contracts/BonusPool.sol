@@ -8,6 +8,7 @@ import "contracts/utils/ERC20SafeTransfer.sol";
 import "contracts/utils/MagicEthTransfer.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "contracts/interfaces/IStakingNFT.sol";
+import "contracts/libraries/errors/LockupErrors.sol";
 import "contracts/libraries/lockup/AccessControlled.sol";
 import "contracts/RewardPool.sol";
 import "contracts/Lockup.sol";
@@ -28,18 +29,13 @@ contract BonusPool is
     AccessControlled,
     MagicEthTransfer
 {
-    event BonusPositionCreated(uint256 tokenID);
-    error BonusTokenNotCreated();
-    error BonusTokenAlreadyCreated();
-    error BonusRateAlreadySet();
-    error NotEnoughALCAToStake(uint256 currentBalance, uint256 expectedAmount);
-    error AddressNotAllowedToSendEther();
-
     uint256 internal immutable _totalBonusAmount;
     address internal immutable _lockupContract;
     address internal immutable _rewardPool;
     // tokenID of the position created to hold the amount that will be redistributed as bonus
     uint256 internal _tokenID;
+
+    event BonusPositionCreated(uint256 tokenID);
 
     constructor(
         address aliceNetFactory_,
@@ -59,7 +55,7 @@ contract BonusPool is
 
     receive() external payable {
         if (msg.sender != _publicStakingAddress()) {
-            revert AddressNotAllowedToSendEther();
+            revert LockupErrors.AddressNotAllowedToSendEther();
         }
     }
 
@@ -69,20 +65,40 @@ contract BonusPool is
     /// @dev can be only called by the AliceNet factory
     function createBonusStakedPosition() public onlyFactory {
         if (_tokenID != 0) {
-            revert BonusTokenAlreadyCreated();
+            revert LockupErrors.BonusTokenAlreadyCreated();
         }
         IERC20 alca = IERC20(_aTokenAddress());
         //get the total balance of ALCA owned by bonus pool as stake amount
         uint256 _stakeAmount = alca.balanceOf(address(this));
         uint256 totalBonusAmount = _totalBonusAmount;
         if (_stakeAmount < totalBonusAmount) {
-            revert NotEnoughALCAToStake(_stakeAmount, totalBonusAmount);
+            revert LockupErrors.NotEnoughALCAToStake(_stakeAmount, totalBonusAmount);
         }
         // approve the staking contract to transfer the ALCA
         alca.approve(_publicStakingAddress(), totalBonusAmount);
         uint256 tokenID = IStakingNFT(_publicStakingAddress()).mint(totalBonusAmount);
         _tokenID = tokenID;
         emit BonusPositionCreated(_tokenID);
+    }
+
+    /// @notice Burns that bonus staked position, and send the bonus amount of shares + profits to
+    /// the rewardPool contract, so users can collect.
+    function terminate() public onlyLockup {
+        if (_tokenID == 0) {
+            revert LockupErrors.BonusTokenNotCreated();
+        }
+        // burn the nft to collect all profits.
+        (uint256 payoutEth, uint256 payoutToken) = IStakingNFT(_publicStakingAddress()).burn(
+            _tokenID
+        );
+        // restarting the _tokenID
+        _tokenID = 0;
+        _safeTransferERC20(
+            IERC20Transferable(_aTokenAddress()),
+            _getRewardPoolAddress(),
+            payoutToken
+        );
+        RewardPool(_getRewardPoolAddress()).deposit{value: payoutEth}(payoutToken);
     }
 
     /// @notice gets the lockup contract address
@@ -128,26 +144,6 @@ contract BonusPool is
         // sent to the reward contract.
         bonusRewardEth = (estimatedPayoutEth * userShares_) / currentSharesLocked_;
         bonusRewardToken = (estimatedPayoutToken * userShares_) / currentSharesLocked_;
-    }
-
-    /// @notice Burns that bonus staked position, and send the bonus amount of shares + profits to
-    /// the rewardPool contract, so users can collect.
-    function terminate() public onlyLockup {
-        if (_tokenID == 0) {
-            revert BonusTokenNotCreated();
-        }
-        // burn the nft to collect all profits.
-        (uint256 payoutEth, uint256 payoutToken) = IStakingNFT(_publicStakingAddress()).burn(
-            _tokenID
-        );
-        // restarting the _tokenID
-        _tokenID = 0;
-        _safeTransferERC20(
-            IERC20Transferable(_aTokenAddress()),
-            _getRewardPoolAddress(),
-            payoutToken
-        );
-        RewardPool(_getRewardPoolAddress()).deposit{value: payoutEth}(payoutToken);
     }
 
     function _getLockupContractAddress() internal view override returns (address) {

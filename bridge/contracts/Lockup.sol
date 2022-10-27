@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "contracts/interfaces/IERC721Transferable.sol";
 import "contracts/interfaces/IStakingNFT.sol";
+import "contracts/libraries/errors/LockupErrors.sol";
 import "contracts/libraries/lockup/AccessControlled.sol";
 import "contracts/utils/ImmutableAuth.sol";
 import "contracts/utils/EthSafeTransfer.sol";
@@ -46,26 +47,6 @@ contract Lockup is
     EthSafeTransfer,
     ERC721Holder
 {
-    event EarlyExit(address to_, uint256 tokenID_);
-    event NewLockup(address from_, uint256 tokenID_);
-
-    error AddressNotAllowedToSendEther();
-    error OnlyStakingNFTAllowed();
-    error ContractDoesNotOwnTokenID(uint256 tokenID_);
-    error AddressAlreadyLockedUp();
-    error TokenIDAlreadyClaimed(uint256 tokenID_);
-    error InsufficientBalanceForEarlyExit(uint256 exitValue, uint256 currentBalance);
-    error UserHasNoPosition();
-    error PreLockStateRequired();
-    error PreLockStateNotAllowed();
-    error PostLockStateNotAllowed();
-    error PostLockStateRequired();
-    error PayoutUnsafe();
-    error PayoutSafe();
-    error TokenIDNotLocked(uint256 tokenID_);
-    error InvalidPositionWithdrawPeriod(uint256 withdrawFreeAfter, uint256 endBlock);
-    error InLockStateRequired();
-
     enum State {
         PreLock,
         InLock,
@@ -118,6 +99,58 @@ contract Lockup is
     // collected.
     uint256 internal _tokenIDOffset;
 
+    event EarlyExit(address to_, uint256 tokenID_);
+    event NewLockup(address from_, uint256 tokenID_);
+
+    modifier onlyPreLock() {
+        if (_getState() != State.PreLock) {
+            revert LockupErrors.PreLockStateRequired();
+        }
+        _;
+    }
+
+    modifier excludePreLock() {
+        if (_getState() == State.PreLock) {
+            revert LockupErrors.PreLockStateNotAllowed();
+        }
+        _;
+    }
+
+    modifier onlyPostLock() {
+        if (_getState() != State.PostLock) {
+            revert LockupErrors.PostLockStateRequired();
+        }
+        _;
+    }
+
+    modifier excludePostLock() {
+        if (_getState() == State.PostLock) {
+            revert LockupErrors.PostLockStateNotAllowed();
+        }
+        _;
+    }
+
+    modifier onlyPayoutSafe() {
+        if (!payoutSafe) {
+            revert LockupErrors.PayoutUnsafe();
+        }
+        _;
+    }
+
+    modifier onlyPayoutUnSafe() {
+        if (payoutSafe) {
+            revert LockupErrors.PayoutSafe();
+        }
+        _;
+    }
+
+    modifier onlyInLock() {
+        if (_getState() != State.InLock) {
+            revert LockupErrors.InLockStateRequired();
+        }
+        _;
+    }
+
     constructor(
         uint256 enrollmentPeriod_,
         uint256 lockDuration_,
@@ -137,57 +170,8 @@ contract Lockup is
     /// @dev only publicStaking and rewardPool are allowed to send ether to this contract
     receive() external payable {
         if (msg.sender != _publicStakingAddress() && msg.sender != _rewardPool) {
-            revert AddressNotAllowedToSendEther();
+            revert LockupErrors.AddressNotAllowedToSendEther();
         }
-    }
-
-    modifier onlyPreLock() {
-        if (_getState() != State.PreLock) {
-            revert PreLockStateRequired();
-        }
-        _;
-    }
-
-    modifier excludePreLock() {
-        if (_getState() == State.PreLock) {
-            revert PreLockStateNotAllowed();
-        }
-        _;
-    }
-
-    modifier onlyPostLock() {
-        if (_getState() != State.PostLock) {
-            revert PostLockStateRequired();
-        }
-        _;
-    }
-
-    modifier excludePostLock() {
-        if (_getState() == State.PostLock) {
-            revert PostLockStateNotAllowed();
-        }
-        _;
-    }
-
-    modifier onlyPayoutSafe() {
-        if (!payoutSafe) {
-            revert PayoutUnsafe();
-        }
-        _;
-    }
-
-    modifier onlyPayoutUnSafe() {
-        if (payoutSafe) {
-            revert PayoutSafe();
-        }
-        _;
-    }
-
-    modifier onlyInLock() {
-        if (_getState() != State.InLock) {
-            revert InLockStateRequired();
-        }
-        _;
     }
 
     /// @notice callback function called by the ERC721.safeTransfer. On safe transfer of
@@ -206,7 +190,7 @@ contract Lockup is
         bytes memory
     ) public override onlyPreLock returns (bytes4) {
         if (msg.sender != _publicStakingAddress()) {
-            revert OnlyStakingNFTAllowed();
+            revert LockupErrors.OnlyStakingNFTAllowed();
         }
 
         _lockFromTransfer(tokenID_, from_);
@@ -276,7 +260,7 @@ contract Lockup is
         // get the number of shares and check validity
         uint256 shares = _getNumShares(tokenID);
         if (exitValue_ > shares) {
-            revert InsufficientBalanceForEarlyExit(exitValue_, shares);
+            revert LockupErrors.InsufficientBalanceForEarlyExit(exitValue_, shares);
         }
         // burn the existing position
         (payoutEth, payoutToken) = IStakingNFT(_publicStakingAddress()).burn(tokenID);
@@ -477,23 +461,10 @@ contract Lockup is
         return _totalSharesLocked;
     }
 
-    /// @notice return the percentage amount that is held from the locked positions
-    /// @dev this value is scaled by 100. Therefore the values are from 0-100%
-    /// @return the percentage amount that is held from the locked positions
-    function getReservedPercentage() public pure returns (uint256) {
-        return (100 * FRACTION_RESERVED) / SCALING_FACTOR;
-    }
-
     /// @notice gets the current state of the lockup (preLock, InLock, PostLock)
     /// @return the current state of the lockup contract
     function getState() public view returns (State) {
         return _getState();
-    }
-
-    /// @notice gets the fraction of the amount that is reserved to reward pool
-    /// @return the calculated reserved amount
-    function getReservedAmount(uint256 amount_) public pure returns (uint256) {
-        return (amount_ * FRACTION_RESERVED) / SCALING_FACTOR;
     }
 
     /// @notice estimate the (liquid) income that can be collected from locked positions via
@@ -589,6 +560,19 @@ contract Lockup is
         payoutToken_ += aggregatedTokens;
     }
 
+    /// @notice return the percentage amount that is held from the locked positions
+    /// @dev this value is scaled by 100. Therefore the values are from 0-100%
+    /// @return the percentage amount that is held from the locked positions
+    function getReservedPercentage() public pure returns (uint256) {
+        return (100 * FRACTION_RESERVED) / SCALING_FACTOR;
+    }
+
+    /// @notice gets the fraction of the amount that is reserved to reward pool
+    /// @return the calculated reserved amount
+    function getReservedAmount(uint256 amount_) public pure returns (uint256) {
+        return (amount_ * FRACTION_RESERVED) / SCALING_FACTOR;
+    }
+
     function _lockFromTransfer(uint256 tokenID_, address tokenOwner_) internal {
         _validateEntry(tokenID_, tokenOwner_);
         _checkTokenTransfer(tokenID_);
@@ -625,10 +609,6 @@ contract Lockup is
         payoutToken = _rewardTokens[account_];
         _rewardEth[account_] = 0;
         _rewardTokens[account_] = 0;
-    }
-
-    function _getNumShares(uint256 tokenID_) internal view returns (uint256 shares) {
-        (shares, , , , ) = IStakingNFT(_publicStakingAddress()).getPosition(tokenID_);
     }
 
     function _collectAllProfits(address payable acct_, uint256 tokenID_)
@@ -734,6 +714,10 @@ contract Lockup is
         RewardPool(_rewardPool).deposit{value: reservedEth_}(reservedToken_);
     }
 
+    function _getNumShares(uint256 tokenID_) internal view returns (uint256 shares) {
+        (shares, , , , ) = IStakingNFT(_publicStakingAddress()).getPosition(tokenID_);
+    }
+
     function _estimateTotalAggregatedProfits()
         internal
         view
@@ -774,16 +758,16 @@ contract Lockup is
 
     function _checkTokenTransfer(uint256 tokenID_) internal view {
         if (IERC721(_publicStakingAddress()).ownerOf(tokenID_) != address(this)) {
-            revert ContractDoesNotOwnTokenID(tokenID_);
+            revert LockupErrors.ContractDoesNotOwnTokenID(tokenID_);
         }
     }
 
     function _validateEntry(uint256 tokenID_, address sender_) internal view {
         if (_getOwnerOf(tokenID_) != address(0)) {
-            revert TokenIDAlreadyClaimed(tokenID_);
+            revert LockupErrors.TokenIDAlreadyClaimed(tokenID_);
         }
         if (_getTokenOf(sender_) != 0) {
-            revert AddressAlreadyLockedUp();
+            revert LockupErrors.AddressAlreadyLockedUp();
         }
     }
 
@@ -791,14 +775,14 @@ contract Lockup is
         // get tokenID of caller
         uint256 tokenID = _getTokenOf(msg.sender);
         if (tokenID == 0) {
-            revert UserHasNoPosition();
+            revert LockupErrors.UserHasNoPosition();
         }
         return tokenID;
     }
 
     function _verifyLockedPosition(uint256 tokenID_) internal view {
         if (_getOwnerOf(tokenID_) == address(0)) {
-            revert TokenIDNotLocked(tokenID_);
+            revert LockupErrors.TokenIDNotLocked(tokenID_);
         }
     }
 
@@ -809,7 +793,7 @@ contract Lockup is
         (uint256 shares, , uint256 withdrawFreeAfter, , ) = IStakingNFT(_publicStakingAddress())
             .getPosition(tokenId_);
         if (withdrawFreeAfter >= _endBlock) {
-            revert InvalidPositionWithdrawPeriod(withdrawFreeAfter, _endBlock);
+            revert LockupErrors.InvalidPositionWithdrawPeriod(withdrawFreeAfter, _endBlock);
         }
         return shares;
     }
