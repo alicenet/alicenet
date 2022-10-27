@@ -164,9 +164,9 @@ export async function updateList(
 export async function getATokenMinterAddress(network: string) {
   // fetch whats in the factory config file
   const config = await readFactoryState(FACTORY_STATE_PATH);
-  let proxies = config[network].proxies;
+  const proxies = config[network].proxies;
   for (let i = 0; i < proxies.length; i++) {
-    let name = proxies[i].logicName;
+    const name = proxies[i].logicName;
     if (name === "ATokenMinter") {
       return proxies[i].proxyAddress;
     }
@@ -175,9 +175,9 @@ export async function getATokenMinterAddress(network: string) {
 
 export async function getBTokenAddress(network: string) {
   const config = await readFactoryState(FACTORY_STATE_PATH);
-  let staticContracts = config[network].staticContracts;
+  const staticContracts = config[network].staticContracts;
   for (let i = 0; i < staticContracts.length; i++) {
-    let name = staticContracts[i].templateName;
+    const name = staticContracts[i].templateName;
     if (name === "BToken") {
       return staticContracts[i].metaAddress;
     }
@@ -186,9 +186,9 @@ export async function getBTokenAddress(network: string) {
 
 export async function getATokenAddress(network: string) {
   const config = await readFactoryState(FACTORY_STATE_PATH);
-  let staticContracts = config[network].staticContracts;
+  const staticContracts = config[network].staticContracts;
   for (let i = 0; i < staticContracts.length; i++) {
-    let name = staticContracts[i].templateName;
+    const name = staticContracts[i].templateName;
     if (name === "AToken") {
       return staticContracts[i].metaAddress;
     }

@@ -20,13 +20,13 @@ task("generate-immutable-auth-contract", "Generate contracts")
     undefined
   )
   .setAction(async ({ input, output }, hre) => {
-    let contractNameSaltMap = [];
+    const contractNameSaltMap = [];
     let immutableContract = "";
     let contracts;
 
     if (input === undefined) {
       const allContracts = await getAllContracts(hre.artifacts);
-      let deploymentList = await getSortedDeployList(
+      const deploymentList = await getSortedDeployList(
         allContracts,
         hre.artifacts
       );
@@ -37,23 +37,23 @@ task("generate-immutable-auth-contract", "Generate contracts")
 
     for (let i = 0; i < contracts.length; i++) {
       const fullyQualifiedName = contracts[i];
-      let contractName = fullyQualifiedName.split(":")[1];
-      let salt = await getSalt(contractName, hre);
+      const contractName = fullyQualifiedName.split(":")[1];
+      const salt = await getSalt(contractName, hre);
       contractNameSaltMap.push([contractName, salt]);
     }
 
     immutableContract += templateImmutableFactory;
     for (const contractNameSalt of contractNameSaltMap) {
-      let name = contractNameSalt[0];
-      let salt = contractNameSalt[1];
-      let c = new Contract(name, salt);
+      const name = contractNameSalt[0];
+      const salt = contractNameSalt[1];
+      const c = new Contract(name, salt);
       immutableContract += templateContract(c);
     }
 
     if (output === undefined) {
       output = "contracts/utils/";
     } else {
-      checkUserDirPath(output);
+      await checkUserDirPath(output);
     }
     fs.writeFileSync(output + "ImmutableAuth.sol", immutableContract);
   });
