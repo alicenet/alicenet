@@ -136,7 +136,7 @@ export const getValidatorEthAccount = async (
   } else {
     const balance = await ethers.provider.getBalance(validator.address);
     if (balance.eq(0)) {
-      signers[0].sendTransaction({
+      await signers[0].sendTransaction({
         to: validator.address,
         value: ethers.utils.parseEther(amount),
       });
@@ -171,14 +171,6 @@ export const createUsers = async (
   }
   return users;
 };
-
-async function getContractAddressFromDeployedStaticEvent(
-  tx: ContractTransaction
-): Promise<string> {
-  const eventSignature = "event DeployedStatic(address contractAddr)";
-  const eventName = "DeployedStatic";
-  return await getContractAddressFromEventLog(tx, eventSignature, eventName);
-}
 
 async function getContractAddressFromDeployedProxyEvent(
   tx: ContractTransaction
@@ -234,7 +226,7 @@ export const deployUpgradeableWithFactory = async (
   saltType?: string
 ): Promise<Contract> => {
   const _Contract = await ethers.getContractFactory(contractName);
-  let deployCode = _Contract.getDeployTransaction(...constructorArgs)
+  const deployCode = _Contract.getDeployTransaction(...constructorArgs)
     .data as BytesLike;
   const hre: any = await require("hardhat");
   const transaction = await factory.deployCreate(deployCode);
