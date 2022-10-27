@@ -7,7 +7,7 @@
   "scripts": {
     "typechain": "hardhat typechain",
     "lint-solidity": "solhint 'contracts/**/*.sol' 'test/**/*.sol'",
-    "lint": "eslint test/**/*.ts scripts/**/*.ts",
+    "lint": "eslint 'test/**/*.ts' 'scripts/**/*.ts' --fix",
     "test": "hardhat test --show-stack-traces",
     "test-parallel": "npm run test -- --parallel",
     "format": "prettier --write ../",
