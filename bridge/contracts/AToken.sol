@@ -38,15 +38,17 @@ contract AToken is
      * Migrates an amount of legacy token (MADToken) to ALCA tokens
      * @param amount the amount of legacy token to migrate.
      */
-    function migrate(uint256 amount) public {
-        uint256 balanceBefore = IERC20(_legacyToken).balanceOf(address(this));
-        IERC20(_legacyToken).transferFrom(msg.sender, address(this), amount);
-        uint256 balanceAfter = IERC20(_legacyToken).balanceOf(address(this));
-        if (balanceAfter <= balanceBefore) {
-            revert StakingTokenErrors.InvalidConversionAmount();
-        }
-        uint256 balanceDiff = balanceAfter - balanceBefore;
-        _mint(msg.sender, _convert(balanceDiff));
+    function migrate(uint256 amount) public returns (uint256) {
+        return _migrate(msg.sender, amount);
+    }
+
+    /**
+     * Migrates an amount of legacy token (MADToken) to ALCA tokens to a certain address
+     * @param to the address that will receive the alca tokens
+     * @param amount the amount of legacy token to migrate.
+     */
+    function migrateTo(address to, uint256 amount) public returns (uint256) {
+        return _migrate(to, amount);
     }
 
     /**
@@ -90,6 +92,18 @@ contract AToken is
      * @return the amount converted to ALCA*/
     function convert(uint256 amount) public view returns (uint256) {
         return _convert(amount);
+    }
+
+    function _migrate(address to, uint256 amount) internal returns (uint256 convertedAmount) {
+        uint256 balanceBefore = IERC20(_legacyToken).balanceOf(address(this));
+        IERC20(_legacyToken).transferFrom(msg.sender, address(this), amount);
+        uint256 balanceAfter = IERC20(_legacyToken).balanceOf(address(this));
+        if (balanceAfter <= balanceBefore) {
+            revert StakingTokenErrors.InvalidConversionAmount();
+        }
+        uint256 balanceDiff = balanceAfter - balanceBefore;
+        convertedAmount = _convert(balanceDiff);
+        _mint(to, convertedAmount);
     }
 
     // Internal function to finish the early stage multiplier.
