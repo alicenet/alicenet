@@ -596,12 +596,10 @@ describe("AliceNet Contract Factory", () => {
 
     it("get AToken Address from lookup", async () => {
       const salt = ethers.utils.formatBytes32String("AToken");
+      let aTokenAddress = await factory.lookup(salt)
+      let aToken = await ethers.getContractAt("AToken", aTokenAddress)
+      const legacyToken = await aToken.getLegacyTokenAddress();
       const atokenBase = await ethers.getContractFactory("AToken");
-      const signers = await ethers.getSigners();
-      const legacyToken = ethers.utils.getContractAddress({
-        from: signers[0].address,
-        nonce: 0,
-      });
       const aTokenDeployCode = atokenBase.getDeployTransaction(legacyToken)
         .data as BytesLike;
       const atokenHash = ethers.utils.keccak256(aTokenDeployCode);
@@ -610,7 +608,7 @@ describe("AliceNet Contract Factory", () => {
         salt,
         atokenHash
       );
-      const aTokenAddress = await factory.lookup(salt);
+      aTokenAddress = await factory.lookup(salt);
       expect(aTokenAddress).to.equal(expectedATokenAddress);
     });
   });
