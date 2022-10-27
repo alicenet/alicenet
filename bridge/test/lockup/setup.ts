@@ -113,6 +113,7 @@ interface LockupPositionsState {
 interface StakingPositionsState {
   [key: string]: {
     shares: bigint;
+    tokenId: bigint;
   };
 }
 
@@ -227,13 +228,14 @@ export async function getState(fixture: Fixture | BaseTokensFixture) {
   const stakingsState: StakingPositionsState = {};
   for (let i = 1; i <= numberOfLockingUsers; i++) {
     const owner = signers[i].address;
-    const tokenId = (await fixture.lockup.tokenOf(owner)).toBigInt();
-    if (tokenId !== 0n) {
+    const tokenId_ = (await fixture.lockup.tokenOf(owner)).toBigInt();
+    if (tokenId_ !== 0n) {
       const [positionShares, , ,] = await fixture.publicStaking.getPosition(
-        tokenId
+        tokenId_
       );
       stakingsState["user" + i] = {
         shares: positionShares.toBigInt(),
+        tokenId: tokenId_,
       };
     }
   }
@@ -527,29 +529,45 @@ export async function getUserLockingInfo(fixture: Fixture, userId: number) {
   const totalShares = await fixture.publicStaking.getTotalShares();
   const signers = await ethers.getSigners();
   const owner_ = signers[userId];
-  const tokenId = await fixture.lockup.tokenOf(owner_.address);
-  const index_ = await fixture.lockup.getIndexByTokenId(tokenId);
-  const userShares_ = ethers.utils
-    .parseEther(example.distribution.users["user" + userId].shares)
-    .toBigInt();
+  const tokenId_ = await fixture.lockup.tokenOf(owner_.address);
+  const index_ = await fixture.lockup.getIndexByTokenId(tokenId_);
+  const userInitialShares_ = ethers.utils.parseEther(
+    example.distribution.users["user" + userId].shares
+  );
+  const [userCurrentShares, , , ,] = await fixture.publicStaking.getPosition(
+    tokenId_
+  );
   const profitALCAUser_ = profitALCA
-    .mul(userShares_)
+    .mul(userCurrentShares)
     .div(totalShares)
     .toBigInt();
-  const profitETHUser_ = profitETH.mul(userShares_).div(totalShares).toBigInt();
+  const [estimatePayoutEth_, estimatePayoutALCA_] =
+    await fixture.lockup.estimateProfits(tokenId_);
+  const profitETHUser_ = profitETH
+    .mul(userCurrentShares)
+    .div(totalShares)
+    .toBigInt();
   const reservedProfitALCAUser_ = (
     await fixture.lockup.getReservedAmount(profitALCAUser_)
   ).toBigInt();
   const reservedProfitETHUser_ = (
     await fixture.lockup.getReservedAmount(profitETHUser_)
   ).toBigInt();
+  const freeProfitALCAUser_ = profitALCAUser_ - reservedProfitALCAUser_;
+  const freeProfitETHUser_ = profitETHUser_ - reservedProfitETHUser_;
   return {
-    userShares: userShares_,
+    userInitialShares: userInitialShares_.toBigInt(),
+    userCurrentShares: userCurrentShares.toBigInt(),
     profitALCAUser: profitALCAUser_,
     reservedProfitALCAUser: reservedProfitALCAUser_,
     profitETHUser: profitETHUser_,
     reservedProfitETHUser: reservedProfitETHUser_,
     index: index_,
+    tokenId: tokenId_.toBigInt(),
+    estimatePayoutEth: estimatePayoutEth_.toBigInt(),
+    estimatePayoutALCA: estimatePayoutALCA_.toBigInt(),
+    freeProfitALCAUser: freeProfitALCAUser_,
+    freeProfitETHUser: freeProfitETHUser_,
     owner: owner_,
   };
 }
