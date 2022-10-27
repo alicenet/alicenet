@@ -27,7 +27,7 @@ describe("AliceNet Contract Factory", () => {
   let firstOwner: string;
   let firstDelegator: string;
   let accounts: Array<string> = [];
-  let factory: AliceNetFactory
+  let factory: AliceNetFactory;
   beforeEach(async () => {
     process.env.silencer = "true";
     accounts = await getAccounts();
@@ -37,7 +37,7 @@ describe("AliceNet Contract Factory", () => {
   });
 
   describe("set and get owner", () => {
-    it("set owner", async () => { 
+    it("set owner", async () => {
       // sets the second account as owner
       expect(await factory.owner()).to.equal(firstOwner);
       await factory.setOwner(accounts[1]);
@@ -53,11 +53,20 @@ describe("AliceNet Contract Factory", () => {
     it("deploys a mock contract with deployCreateAndRegister", async () => {
       const salt = ethers.utils.formatBytes32String("test");
       const mockFactory = await ethers.getContractFactory(MOCK);
-      const mockDeployBytecode = mockFactory.getDeployTransaction(2, "s").data as BytesLike;
-      const expectedMockAddressBeforeDeploy = getMetamorphicAddress(factory.address, salt);
+      const mockDeployBytecode = mockFactory.getDeployTransaction(2, "s")
+        .data as BytesLike;
+      const expectedMockAddressBeforeDeploy = getMetamorphicAddress(
+        factory.address,
+        salt
+      );
       const actualMockAddressBeforeDeploy = await factory.lookup(salt);
-      expect(actualMockAddressBeforeDeploy).to.equal(expectedMockAddressBeforeDeploy);
-      const tx = await factory.deployCreateAndRegister(mockDeployBytecode, salt);
+      expect(actualMockAddressBeforeDeploy).to.equal(
+        expectedMockAddressBeforeDeploy
+      );
+      const tx = await factory.deployCreateAndRegister(
+        mockDeployBytecode,
+        salt
+      );
       const expectedMockAddress = await getEventVar(
         tx,
         DEPLOYED_RAW,
@@ -67,21 +76,28 @@ describe("AliceNet Contract Factory", () => {
       const actualLookupAddress = await factory.lookup(salt);
       expect(actualLookupAddress).to.equal(expectedMockAddress);
     });
-    
+
     it("attempts to deployCreateAndRegister as firstDelegator", async () => {
       const salt = ethers.utils.formatBytes32String("test");
       const mockFactory = await ethers.getContractFactory(MOCK);
-      const mockDeployBytecode = mockFactory.getDeployTransaction(2, "s").data as BytesLike;
+      const mockDeployBytecode = mockFactory.getDeployTransaction(2, "s")
+        .data as BytesLike;
       await expect(
-        factory.connect(ethers.provider.getSigner(firstDelegator)).deployCreateAndRegister(mockDeployBytecode, salt)
+        factory
+          .connect(ethers.provider.getSigner(firstDelegator))
+          .deployCreateAndRegister(mockDeployBytecode, salt)
       ).to.be.revertedWithCustomError(factory, "Unauthorized");
     });
 
     it("attempts to deploy 2 contracts with the same salt", async () => {
       const salt = ethers.utils.formatBytes32String("test");
       const mockFactory = await ethers.getContractFactory(MOCK);
-      const mockDeployBytecode = mockFactory.getDeployTransaction(2, "s").data as BytesLike;
-      const tx = await factory.deployCreateAndRegister(mockDeployBytecode, salt);
+      const mockDeployBytecode = mockFactory.getDeployTransaction(2, "s")
+        .data as BytesLike;
+      const tx = await factory.deployCreateAndRegister(
+        mockDeployBytecode,
+        salt
+      );
       const expectedMockAddress = await getEventVar(
         tx,
         DEPLOYED_RAW,
@@ -90,9 +106,10 @@ describe("AliceNet Contract Factory", () => {
       await tx.wait();
       const actualLookupAddress = await factory.lookup(salt);
       expect(actualLookupAddress).to.equal(expectedMockAddress);
-      await expect(factory.deployCreateAndRegister(mockDeployBytecode, salt)).to.be.revertedWithCustomError(factory, "SaltAlreadyInUse").withArgs(salt);
+      await expect(factory.deployCreateAndRegister(mockDeployBytecode, salt))
+        .to.be.revertedWithCustomError(factory, "SaltAlreadyInUse")
+        .withArgs(salt);
     });
-
   });
   describe("addNewExternalContract tests", async () => {
     it("deploys a contract from an eoa and records the address to the externalContractRegistry with salt", async () => {
@@ -115,7 +132,7 @@ describe("AliceNet Contract Factory", () => {
         factory.addNewExternalContract(salt, firstOwner)
       ).to.be.revertedWithCustomError(factory, "CodeSizeZero");
     });
-    
+
     it("attempts to add external contract as non owner", async () => {
       const salt = ethers.utils.formatBytes32String("test");
       const mockEndPointBase = await ethers.getContractFactory("MockEndPoint");
@@ -133,7 +150,10 @@ describe("AliceNet Contract Factory", () => {
       const salt = ethers.utils.formatBytes32String("test");
       const mockEndPointBase = await ethers.getContractFactory("MockEndPoint");
       const mockEndPoint = await mockEndPointBase.deploy();
-      let txResponse = factory.addNewExternalContract(salt, mockEndPoint.address);
+      let txResponse = factory.addNewExternalContract(
+        salt,
+        mockEndPoint.address
+      );
       await (await txResponse).wait();
       const mockEndPoint2 = await mockEndPointBase.deploy();
       txResponse = factory.addNewExternalContract(salt, mockEndPoint2.address);
@@ -144,7 +164,7 @@ describe("AliceNet Contract Factory", () => {
     });
   });
 
-  describe("deployProxy test",async () => {
+  describe("deployProxy test", async () => {
     it("deployproxy", async () => {
       const UtilsBase = await ethers.getContractFactory(UTILS);
       const utils = await UtilsBase.deploy();
@@ -152,7 +172,10 @@ describe("AliceNet Contract Factory", () => {
       const proxyBase = await artifacts.require(PROXY);
       const proxySalt = getSalt();
       // the calculated proxy address
-      const expectedProxyAddr = getMetamorphicAddress(factory.address, proxySalt);
+      const expectedProxyAddr = getMetamorphicAddress(
+        factory.address,
+        proxySalt
+      );
       // deploy the proxy through the factory
       const txResponse = await factory.deployProxy(proxySalt);
       // check if transaction succeeds
@@ -180,7 +203,7 @@ describe("AliceNet Contract Factory", () => {
       let factory = await loadFixture(deployFactory);
       factory = factoryBase.attach(factory.address);
       const Salt = getSalt();
-  
+
       await expect(
         factory.deployProxy(Salt, { from: firstDelegator })
       ).to.be.revertedWithCustomError(factory, `Unauthorized`);
@@ -249,14 +272,18 @@ describe("AliceNet Contract Factory", () => {
       await expect(txRes).to.be.reverted;
       txResponse = await proxyMock.unlock();
       await expectTxSuccess(txResponse);
-      txResponse = await factory.upgradeProxy(proxySalt, endPoint.address, "0x");
+      txResponse = await factory.upgradeProxy(
+        proxySalt,
+        endPoint.address,
+        "0x"
+      );
       await expectTxSuccess(txResponse);
     });
     // fail on bad code
     it("should not allow deploycreate with bad code", async () => {
       const factory = await loadFixture(deployFactory);
       const txResponse = factory.deployCreate("0x6000");
-  
+
       await expect(txResponse).to.be.revertedWithCustomError(
         factory,
         `CodeSizeZero`
@@ -306,13 +333,12 @@ describe("AliceNet Contract Factory", () => {
       ).connect(signers[2]);
       factory = factoryBase.attach(factory.address);
       const txResponse = factory.deployCreate(deployTx.data as BytesLike);
-  
+
       await expect(txResponse).to.be.revertedWithCustomError(
         factory,
         `Unauthorized`
       );
     });
-
   });
 
   describe("deployCreate2 tests", () => {
@@ -338,7 +364,7 @@ describe("AliceNet Contract Factory", () => {
       await expectTxSuccess(txResponse);
       await checkMockInit(mockInitAddr, 2);
     });
-  })
+  });
 
   it("deploys a initializable contract and uses callany to intialize", async () => {
     const factory = await loadFixture(deployFactory);
@@ -409,7 +435,7 @@ describe("AliceNet Contract Factory", () => {
       expect(await ethers.provider.getBalance(factory.address)).to.equal(2);
     });
   });
-  
+
   describe("proxy upgrade tests", async () => {
     it("upgrade proxy to point to mock address with the factory", async () => {
       const factory = await loadFixture(deployFactory);
@@ -425,7 +451,7 @@ describe("AliceNet Contract Factory", () => {
       );
       await expectTxSuccess(txResponse);
     });
-    
+
     it("should not allow unauthorized account to update proxy to point to other address ", async () => {
       let factory = await loadFixture(deployFactory);
       const mockFactory = await ethers.getContractFactory(MOCK);
@@ -445,7 +471,7 @@ describe("AliceNet Contract Factory", () => {
       ).connect(signers[2]);
       factory = factoryBase.attach(factory.address);
       // console.log("UPGRADE PROXY GASUSED: ", txResponse["receipt"]["gasUsed"]);
-  
+
       await expect(
         factory.upgradeProxy(proxySalt, mockContract.address, "0x", {
           from: firstDelegator,
@@ -540,7 +566,8 @@ describe("AliceNet Contract Factory", () => {
       await expectTxSuccess(txResponse);
       const proxyFactory = await ethers.getContractFactory("Proxy");
       const proxy = proxyFactory.attach(proxyAddr);
-      const proxyImplAddress = await proxy.callStatic.getImplementationAddress();
+      const proxyImplAddress =
+        await proxy.callStatic.getImplementationAddress();
       expect(proxyImplAddress).to.equal(endPointLockable.address);
       const proxyContract = endPointLockableFactory.attach(proxy.address);
       const lockResponse = await proxyContract.upgradeLock();
@@ -549,7 +576,6 @@ describe("AliceNet Contract Factory", () => {
       await expect(factory.upgradeProxy(salt, endPoint.address, "0x")).to.be
         .reverted;
     });
-
   });
 
   it("deploys a mock contract, calls payMe from factory with callAny", async () => {
