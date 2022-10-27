@@ -95,7 +95,7 @@ func NewMonitor(cdb *db.Database,
 	}
 
 	eventMap := objects.NewEventMap()
-	err := events.SetupEventMap(eventMap, cdb, monDB, adminHandler, depositHandler, taskHandler, mon.Close, chainId)
+	err := events.SetupEventMap(eventMap, cdb, monDB, eth, adminHandler, depositHandler, taskHandler, mon.Close, chainId)
 	if err != nil {
 		return nil, err
 	}

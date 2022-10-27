@@ -79,13 +79,13 @@ func GetDynamicsEvents() map[string]abi.Event {
 	return snapshotsABI.Events
 }
 
-func RegisterETHDKGEvents(em *objects.EventMap, monDB *db.Database, adminHandler monInterfaces.AdminHandler, taskHandler executor.TaskHandler) {
+func RegisterETHDKGEvents(em *objects.EventMap, consDB, monDB *db.Database, adminHandler monInterfaces.AdminHandler, taskHandler executor.TaskHandler) {
 	ethDkgEvents := GetETHDKGEvents()
 
 	eventProcessorMap := make(map[string]objects.EventProcessor)
 
 	eventProcessorMap["RegistrationOpened"] = func(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
-		return ProcessRegistrationOpened(eth, contracts, logger, log, state, monDB, taskHandler)
+		return ProcessRegistrationOpened(eth, contracts, logger, log, state, consDB, monDB, taskHandler)
 	}
 	eventProcessorMap["AddressRegistered"] = func(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
 		return ProcessAddressRegistered(contracts, logger, log, monDB)
@@ -132,8 +132,8 @@ func RegisterETHDKGEvents(em *objects.EventMap, monDB *db.Database, adminHandler
 	}
 }
 
-func SetupEventMap(em *objects.EventMap, cdb, monDB *db.Database, adminHandler monInterfaces.AdminHandler, depositHandler monInterfaces.DepositHandler, taskHandler executor.TaskHandler, exitFunc func(), chainID uint32) error {
-	RegisterETHDKGEvents(em, monDB, adminHandler, taskHandler)
+func SetupEventMap(em *objects.EventMap, cdb, monDB *db.Database, eth layer1.Client, adminHandler monInterfaces.AdminHandler, depositHandler monInterfaces.DepositHandler, taskHandler executor.TaskHandler, exitFunc func(), chainID uint32) error {
+	RegisterETHDKGEvents(em, cdb, monDB, adminHandler, taskHandler)
 
 	// MadByte.DepositReceived
 	mbEvents := GetBTokenEvents()
@@ -158,7 +158,7 @@ func SetupEventMap(em *objects.EventMap, cdb, monDB *db.Database, adminHandler m
 
 	if err := em.Register(snapshotTakenEvent.ID.String(), snapshotTakenEvent.Name,
 		func(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
-			return ProcessSnapshotTaken(contracts, logger, log, adminHandler, taskHandler)
+			return ProcessSnapshotTaken(contracts, cdb, eth, logger, log, adminHandler, taskHandler)
 		}); err != nil {
 		return err
 	}

@@ -1994,6 +1994,13 @@ func (db *Database) makeEvictedValidatorGroupIterKey(groupKey []byte) ([]byte, e
 	return key.MakeGroupIterKey()
 }
 
+func (db *Database) makeEvictedValidatorsKey() ([]byte, error) {
+	key := &objs.EvictedValidatorKey{
+		Prefix: dbprefix.PrefixEvitedValidator(),
+	}
+	return key.MakeIterKey()
+}
+
 func (db *Database) SetEvictedValidator(txn *badger.Txn, groupKey, address []byte) error {
 	key, err := db.makeEvictedValidatorKey(groupKey, address)
 	if err != nil {
@@ -2032,6 +2039,34 @@ func (db *Database) GetEvictedValidatorsByGroupKey(txn *badger.Txn, groupKey []b
 	}
 
 	return evictedValidatorAddresses, nil
+}
+
+func (db *Database) DeleteAllEvictedValidators(txn *badger.Txn) error {
+	prefix, err := db.makeEvictedValidatorsKey()
+	if err != nil {
+		return err
+	}
+	opts := badger.DefaultIteratorOptions
+	opts.PrefetchValues = true
+	opts.PrefetchSize = 100
+	it := txn.NewIterator(opts)
+	keys := [][]byte{}
+	defer it.Close()
+	for it.Seek(prefix); it.ValidForPrefix(prefix); it.Next() {
+		item := it.Item()
+		k := item.KeyCopy(nil)
+		keys = append(keys, k)
+	}
+
+	for i := 0; i < len(keys); i++ {
+		k := keys[i]
+		err := utils.DeleteValue(txn, utils.CopySlice(k))
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // PendingHdrLeafIter

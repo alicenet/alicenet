@@ -233,6 +233,11 @@
     "type": "error"
   },
   {
+    "inputs": [],
+    "name": "NotAllowedToInitializeETHDKG",
+    "type": "error"
+  },
+  {
     "inputs": [
       {
         "internalType": "uint256",

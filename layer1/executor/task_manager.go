@@ -705,6 +705,7 @@ func getTaskRegistry() *marshaller.TypeRegistry {
 	tr.RegisterInstanceType(&dkg.KeyShareSubmissionTask{})
 	tr.RegisterInstanceType(&dkg.MPKSubmissionTask{})
 	tr.RegisterInstanceType(&dkg.RegisterTask{})
+	tr.RegisterInstanceType(&dkg.InitializeTask{})
 	tr.RegisterInstanceType(&dkg.DisputeMissingRegistrationTask{})
 	tr.RegisterInstanceType(&dkg.ShareDistributionTask{})
 	tr.RegisterInstanceType(&snapshots.SnapshotTask{})

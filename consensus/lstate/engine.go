@@ -319,45 +319,6 @@ func (ce *Engine) updateLocalStateInternal(txn *badger.Txn, rs *RoundStates) (bo
 		return len(FH) == 0, nil
 	}
 
-	// Below this line node must be a validator to proceed
-
-	// todo: check if current Proposer is already evicted, and if so:
-	// call doRoundJump() or doNextRoundStep()
-	if rs.IsValidatorEvicted(rs.GetValidProposer()) {
-
-		ce.logger.WithFields(logrus.Fields{
-			"badVAddress": fmt.Sprintf("0x%x", rs.GetValidProposer()),
-		}).Warn("bad validator is supposed to propose. jumping round")
-
-		// err := ce.doPreVoteNilStep(txn, rs)
-		// if err != nil {
-		// 	utils.DebugTrace(ce.logger, err)
-		// 	return false, err
-		// }
-		// return true, nil
-
-		// err := ce.doNextRoundStep(txn, rs)
-		// if err != nil {
-		// 	utils.DebugTrace(ce.logger, err)
-		// 	return false, err
-		// }
-		// return true, nil
-
-		// err := ce.doPreCommitNilStep(txn, rs)
-		// if err != nil {
-		// 	utils.DebugTrace(ce.logger, err)
-		// 	return false, err
-		// }
-		// return true, nil
-
-		err := ce.castNextRound(txn, rs)
-		if err != nil {
-			utils.DebugTrace(ce.logger, err)
-			return false, err
-		}
-		return true, nil
-	}
-
 	// if we have voted for the next round in round preceding the
 	// dead block round, goto do next round step
 	if rs.OwnRoundState().NextRound != nil {
