@@ -94,85 +94,34 @@ export async function mintBonusPosition(
 }
 
 export async function calculateTerminationProfits(
-  finalTotalSharesLocked: BigNumber,
-  originalTotalSharesLocked: BigNumber,
   tokenId: BigNumber,
-  bonusPool: BonusPool,
   publicStaking: PublicStaking
-): Promise<[BigNumber, BigNumber, BigNumber, BigNumber, BigNumber]> {
-  const scalingFactor = await bonusPool.SCALING_FACTOR();
-  const bonusRate = await bonusPool.getScaledBonusRate(
-    originalTotalSharesLocked
-  );
-  const overallProportion = finalTotalSharesLocked
-    .mul(scalingFactor)
-    .div(originalTotalSharesLocked);
-
-  // estimate all profits does not include the original stake amount, hence no need to subtract it here
+): Promise<[BigNumber, BigNumber]> {
   const [estimatedPayoutEth, estimatedPayoutToken] =
     await publicStaking.estimateAllProfits(tokenId);
+  const [shares, , , ,] = await publicStaking.getPosition(tokenId);
 
-  const expectedBonusShares = bonusRate
-    .mul(finalTotalSharesLocked)
-    .div(scalingFactor);
-  const expectedBonusRewardEth = overallProportion
-    .mul(estimatedPayoutEth)
-    .div(scalingFactor);
-  const expectedBonusRewardToken = overallProportion
-    .mul(estimatedPayoutToken)
-    .div(scalingFactor);
-
-  return [
-    estimatedPayoutEth,
-    estimatedPayoutToken,
-    expectedBonusShares,
-    expectedBonusRewardEth,
-    expectedBonusRewardToken.add(expectedBonusShares),
-  ];
+  return [estimatedPayoutEth, estimatedPayoutToken.add(shares)];
 }
 
 export async function calculateUserProfits(
   userSharesLocked: BigNumber,
   currentTotalSharesLocked: BigNumber,
-  originalTotalSharesLocked: BigNumber,
   tokenId: BigNumber,
-  bonusPool: BonusPool,
   publicStaking: PublicStaking
-): Promise<[BigNumber, BigNumber, BigNumber]> {
-  const scalingFactor = await bonusPool.SCALING_FACTOR();
-  const bonusRate = await bonusPool.getScaledBonusRate(
-    originalTotalSharesLocked
-  );
-  const overallProportion = currentTotalSharesLocked
-    .mul(scalingFactor)
-    .div(originalTotalSharesLocked);
-  const userProportion = userSharesLocked
-    .mul(scalingFactor)
-    .div(currentTotalSharesLocked);
-
+): Promise<[BigNumber, BigNumber]> {
   const [estimatedPayoutEth, estimatedPayoutToken] =
     await publicStaking.estimateAllProfits(tokenId);
+  const [shares, , , ,] = await publicStaking.getPosition(tokenId);
 
-  const totalExpectedBonusRewardEth = overallProportion
-    .mul(estimatedPayoutEth)
-    .div(scalingFactor);
-  const totalExpectedBonusRewardToken = overallProportion
-    .mul(estimatedPayoutToken)
-    .div(scalingFactor);
-
-  const expectedUserBonusShares = bonusRate
+  const userExpectedBonusRewardEth = estimatedPayoutEth
     .mul(userSharesLocked)
-    .div(scalingFactor);
-  const userExpectedBonusRewardEth = userProportion
-    .mul(totalExpectedBonusRewardEth)
-    .div(scalingFactor);
-  const userExpectedBonusRewardToken = userProportion
-    .mul(totalExpectedBonusRewardToken)
-    .div(scalingFactor);
+    .div(currentTotalSharesLocked);
 
-  return [
-    expectedUserBonusShares,
-    userExpectedBonusRewardEth,
-    userExpectedBonusRewardToken,
-  ];
+  const userExpectedBonusRewardToken = estimatedPayoutToken
+    .add(shares)
+    .mul(userSharesLocked)
+    .div(currentTotalSharesLocked);
+
+  return [userExpectedBonusRewardEth, userExpectedBonusRewardToken];
 }

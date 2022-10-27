@@ -88,12 +88,8 @@ describe("BonusPool", async () => {
 
   describe("terminate", async () => {
     it("Reverts if called from non lockup address", async () => {
-      const initialTotalLocked = 1234;
-      const finalSharesLocked = 1234;
       await expect(
-        fixture.bonusPool
-          .connect(accounts[1])
-          .terminate(finalSharesLocked, initialTotalLocked)
+        fixture.bonusPool.connect(accounts[1]).terminate()
       ).to.be.revertedWithCustomError(fixture.bonusPool, "CallerNotLockup");
     });
   });

@@ -204,12 +204,8 @@ describe("BonusPool", async () => {
 
   describe("terminate", async () => {
     it("Reverts if bonus NFT is not created", async () => {
-      const initialTotalLocked = 1234;
-      const finalSharesLocked = 1234;
       await expect(
-        fixture.bonusPool
-          .connect(fixture.mockLockupSigner)
-          .terminate(finalSharesLocked, initialTotalLocked)
+        fixture.bonusPool.connect(fixture.mockLockupSigner).terminate()
       ).to.be.revertedWithCustomError(
         fixture.bonusPool,
         "BonusTokenNotCreated"
@@ -224,13 +220,9 @@ describe("BonusPool", async () => {
         fixture.bonusPool,
         fixture.mockFactorySigner
       );
-      const originalTotalSharesLocked = BigNumber.from(8000);
-      const finalTotalSharesLocked = BigNumber.from(8000);
 
       await expect(
-        fixture.bonusPool
-          .connect(fixture.mockLockupSigner)
-          .terminate(finalTotalSharesLocked, originalTotalSharesLocked)
+        fixture.bonusPool.connect(fixture.mockLockupSigner).terminate()
       ).to.be.revertedWithCustomError(
         fixture.publicStaking,
         "FreeAfterTimeNotReached"
@@ -250,41 +242,15 @@ describe("BonusPool", async () => {
         );
       });
 
-      it("Reverts if original shares locked is 0", async () => {
-        const originalTotalSharesLocked = 0;
-        const finalSharesLocked = 1234;
-        await expect(
-          fixture.bonusPool
-            .connect(fixture.mockLockupSigner)
-            .terminate(finalSharesLocked, originalTotalSharesLocked)
-        ).to.be.revertedWithCustomError(
-          fixture.bonusPool,
-          "InvalidOriginalSharesValue"
-        );
-      });
-
-      it("Reverts if original shares locked less that final shares locked", async () => {
-        const originalTotalSharesLocked = 1233;
-        const finalSharesLocked = 1234;
-        await expect(
-          fixture.bonusPool
-            .connect(fixture.mockLockupSigner)
-            .terminate(finalSharesLocked, originalTotalSharesLocked)
-        ).to.be.revertedWithCustomError(
-          fixture.bonusPool,
-          "InvalidOriginalSharesValue"
-        );
-      });
-
-      it("Distributes all bonus eth/tokens to reward pool when final total equals original total", async () => {
-        const originalTotalSharesLocked = BigNumber.from(8000);
-        const finalTotalSharesLocked = BigNumber.from(8000);
-
+      it("Distributes all bonus eth/tokens to reward pool", async () => {
         const [, freeAfter, , , ,] = await fixture.publicStaking.getPosition(
           tokenId
         );
 
         await ensureBlockIsAtLeast(freeAfter.toNumber() + 1);
+
+        const [expectedBonusRewardEth, expectedBonusRewardToken] =
+          await calculateTerminationProfits(tokenId, fixture.publicStaking);
 
         const rewardPoolEthBalanceBefore = await ethers.provider.getBalance(
           fixture.rewardPoolAddress
@@ -293,26 +259,8 @@ describe("BonusPool", async () => {
           fixture.rewardPoolAddress
         );
 
-        const foundationEthBalanceBefore = await ethers.provider.getBalance(
-          fixture.foundation.address
-        );
-        const factoryTokenBalanceBefore = await fixture.aToken.balanceOf(
-          fixture.factory.address
-        );
-
-        const [, , , expectedBonusRewardEth, expectedBonusRewardToken] =
-          await calculateTerminationProfits(
-            finalTotalSharesLocked,
-            originalTotalSharesLocked,
-            tokenId,
-            fixture.bonusPool,
-            fixture.publicStaking
-          );
-
         await (
-          await fixture.bonusPool
-            .connect(fixture.mockLockupSigner)
-            .terminate(finalTotalSharesLocked, originalTotalSharesLocked)
+          await fixture.bonusPool.connect(fixture.mockLockupSigner).terminate()
         ).wait();
 
         const rewardPoolEthBalanceAfter = await ethers.provider.getBalance(
@@ -329,108 +277,8 @@ describe("BonusPool", async () => {
           rewardPoolTokenBalanceBefore
         );
 
-        const foundationEthBalanceAfter = await ethers.provider.getBalance(
-          fixture.foundation.address
-        );
-        const factoryTokenBalanceAfter = await fixture.aToken.balanceOf(
-          fixture.factory.address
-        );
-
-        const foundationEthDiff = foundationEthBalanceAfter.sub(
-          foundationEthBalanceBefore
-        );
-        const factoryTokenDiff = factoryTokenBalanceAfter.sub(
-          factoryTokenBalanceBefore
-        );
-
         expect(rewardEthDiff).to.equal(expectedBonusRewardEth);
         expect(rewardTokenDiff).to.equal(expectedBonusRewardToken);
-        expect(foundationEthDiff).to.equal(BigNumber.from(0));
-        expect(factoryTokenDiff).to.equal(BigNumber.from(0));
-      });
-
-      it("Distributes remaining tokens to factory and remaining eth to foundation when final shares less than original", async () => {
-        const originalTotalSharesLocked = BigNumber.from(8000);
-        const finalTotalSharesLocked = BigNumber.from(7000);
-
-        const [, freeAfter, , , ,] = await fixture.publicStaking.getPosition(
-          tokenId
-        );
-
-        await ensureBlockIsAtLeast(freeAfter.toNumber() + 1);
-
-        const rewardPoolEthBalanceBefore = await ethers.provider.getBalance(
-          fixture.rewardPoolAddress
-        );
-        const rewardPoolTokenBalanceBefore = await fixture.aToken.balanceOf(
-          fixture.rewardPoolAddress
-        );
-
-        const foundationEthBalanceBefore = await ethers.provider.getBalance(
-          fixture.foundation.address
-        );
-        const factoryTokenBalanceBefore = await fixture.aToken.balanceOf(
-          fixture.factory.address
-        );
-
-        const [
-          estimatedPayoutEth,
-          estimatedPayoutToken,
-          ,
-          expectedBonusRewardEth,
-          expectedBonusRewardToken,
-        ] = await calculateTerminationProfits(
-          finalTotalSharesLocked,
-          originalTotalSharesLocked,
-          tokenId,
-          fixture.bonusPool,
-          fixture.publicStaking
-        );
-
-        await (
-          await fixture.bonusPool
-            .connect(fixture.mockLockupSigner)
-            .terminate(finalTotalSharesLocked, originalTotalSharesLocked)
-        ).wait();
-
-        const rewardPoolEthBalanceAfter = await ethers.provider.getBalance(
-          fixture.rewardPoolAddress
-        );
-        const rewardPoolTokenBalanceAfter = await fixture.aToken.balanceOf(
-          fixture.rewardPoolAddress
-        );
-
-        const rewardEthDiff = rewardPoolEthBalanceAfter.sub(
-          rewardPoolEthBalanceBefore
-        );
-        const rewardTokenDiff = rewardPoolTokenBalanceAfter.sub(
-          rewardPoolTokenBalanceBefore
-        );
-
-        const foundationEthBalanceAfter = await ethers.provider.getBalance(
-          fixture.foundation.address
-        );
-        const factoryTokenBalanceAfter = await fixture.aToken.balanceOf(
-          fixture.factory.address
-        );
-
-        const foundationEthDiff = foundationEthBalanceAfter.sub(
-          foundationEthBalanceBefore
-        );
-        const factoryTokenDiff = factoryTokenBalanceAfter.sub(
-          factoryTokenBalanceBefore
-        );
-
-        expect(rewardEthDiff).to.equal(expectedBonusRewardEth);
-        expect(rewardTokenDiff).to.equal(expectedBonusRewardToken);
-        expect(foundationEthDiff).to.equal(
-          estimatedPayoutEth.sub(expectedBonusRewardEth)
-        );
-        expect(factoryTokenDiff).to.equal(
-          estimatedPayoutToken
-            .add(fixture.totalBonusAmount)
-            .sub(expectedBonusRewardToken)
-        );
       });
     });
   });

@@ -32,11 +32,9 @@ contract BonusPool is
     error BonusTokenNotCreated();
     error BonusTokenAlreadyCreated();
     error BonusRateAlreadySet();
-    error InvalidOriginalSharesValue();
     error NotEnoughALCAToStake(uint256 currentBalance, uint256 expectedAmount);
     error AddressNotAllowedToSendEther();
 
-    uint256 public constant SCALING_FACTOR = 10**18;
     uint256 internal immutable _totalBonusAmount;
     address internal immutable _lockupContract;
     address internal immutable _rewardPool;

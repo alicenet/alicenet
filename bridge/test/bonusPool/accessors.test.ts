@@ -95,12 +95,6 @@ describe("BonusPool", async () => {
       );
     });
 
-    it("SCALING_FACTOR returns expected value", async () => {
-      expect(await fixture.bonusPool.SCALING_FACTOR()).to.equal(
-        BigNumber.from("1000000000000000000")
-      );
-    });
-
     it("getBonusStakedPosition returns token id of staked position", async () => {
       const tokenId = await mintBonusPosition(
         accounts,
@@ -112,18 +106,6 @@ describe("BonusPool", async () => {
       expect(await fixture.bonusPool.getBonusStakedPosition()).to.equal(
         tokenId
       );
-    });
-
-    it("getScaledBonusRate returns correct value once bonus rate set", async () => {
-      const initialTotalLocked = 1234;
-
-      const expectedBonusRate = fixture.totalBonusAmount
-        .mul(await fixture.bonusPool.SCALING_FACTOR())
-        .div(initialTotalLocked);
-
-      expect(
-        await fixture.bonusPool.getScaledBonusRate(initialTotalLocked)
-      ).to.equal(expectedBonusRate);
     });
   });
 
@@ -152,31 +134,23 @@ describe("BonusPool", async () => {
         alcaRewards
       );
 
-      const initialTotalLocked = BigNumber.from(8000);
       const currentSharesLocked = BigNumber.from(8000);
       const userSharesLocked = BigNumber.from(4000);
 
-      const [
-        expectedUserBonusShares,
-        userExpectedBonusRewardEth,
-        userExpectedBonusRewardToken,
-      ] = await calculateUserProfits(
-        userSharesLocked,
-        currentSharesLocked,
-        initialTotalLocked,
-        tokenId,
-        fixture.bonusPool,
-        fixture.publicStaking
-      );
+      const [userExpectedBonusRewardEth, userExpectedBonusRewardToken] =
+        await calculateUserProfits(
+          userSharesLocked,
+          currentSharesLocked,
+          tokenId,
+          fixture.publicStaking
+        );
 
-      const [bonusShares, bonusRewardEth, bonusRewardToken] =
+      const [bonusRewardEth, bonusRewardToken] =
         await fixture.bonusPool.estimateBonusAmountWithReward(
           currentSharesLocked,
-          initialTotalLocked,
           userSharesLocked
         );
 
-      expect(bonusShares).to.equal(expectedUserBonusShares);
       expect(bonusRewardEth).to.equal(
         userExpectedBonusRewardEth,
         "bonusRewardEth are not equal"
