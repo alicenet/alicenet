@@ -596,8 +596,8 @@ describe("AliceNet Contract Factory", () => {
 
     it("get AToken Address from lookup", async () => {
       const salt = ethers.utils.formatBytes32String("AToken");
-      let aTokenAddress = await factory.lookup(salt)
-      let aToken = await ethers.getContractAt("AToken", aTokenAddress)
+      let aTokenAddress = await factory.lookup(salt);
+      const aToken = await ethers.getContractAt("AToken", aTokenAddress);
       const legacyToken = await aToken.getLegacyTokenAddress();
       const atokenBase = await ethers.getContractFactory("AToken");
       const aTokenDeployCode = atokenBase.getDeployTransaction(legacyToken)
