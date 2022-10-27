@@ -134,7 +134,7 @@ contract AliceNetFactory is AliceNetFactoryBase {
     }
 
     /**
-     * @dev initializeContract allows the owner/delegator to initialize contracts deployed via factory
+     * @dev initializeContract allows the owner to initialize contracts deployed via factory
      * @param contract_ address of the contract that will be initialized
      * @param initCallData_ Hex encoded initialization function signature + parameters to initialize the
      * deployed contract
@@ -144,7 +144,7 @@ contract AliceNetFactory is AliceNetFactoryBase {
     }
 
     /**
-     * @dev multiCall allows EOA to make multiple function calls within a single transaction
+     * @dev multiCall allows owner to make multiple function calls within a single transaction
      * impersonating the factory
      * @param cdata_: array of hex encoded state with the function calls (function signature + arguments)
      */

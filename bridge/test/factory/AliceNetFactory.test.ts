@@ -1,5 +1,6 @@
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { BytesLike, ContractFactory } from "ethers";
+import { getContractAddress } from "ethers/lib/utils";
 import { artifacts, ethers, expect } from "hardhat";
 import {
   ALICENET_FACTORY,
@@ -576,6 +577,36 @@ describe("AliceNet Contract Factory", () => {
       await expect(factory.upgradeProxy(salt, endPoint.address, "0x")).to.be
         .reverted;
     });
+  });
+
+  describe("lookup tests", async () => {
+    it("should return the correct proxy address", async () => {
+      const salt = getSalt();
+      const expectedProxyAddr = getMetamorphicAddress(factory.address, salt);
+      let txResponse = await factory.deployProxy(salt);
+      await expectTxSuccess(txResponse);
+      const proxyAddr = await getEventVar(
+        txResponse,
+        DEPLOYED_PROXY,
+        CONTRACT_ADDR
+      );
+      expect(proxyAddr).to.equal(expectedProxyAddr);
+      const proxyAddrFromLookup = await factory.lookup(salt);
+      expect(proxyAddrFromLookup).to.equal(proxyAddr);
+    });
+    
+    it("get AToken Address from lookup", async () => {
+      const salt = ethers.utils.formatBytes32String("AToken");
+      const atokenBase = await ethers.getContractFactory("AToken");
+      let signers = await ethers.getSigners();
+      const legacyToken = ethers.utils.getContractAddress({from: signers[0].address, nonce: 0})
+      const aTokenDeployCode = atokenBase.getDeployTransaction(legacyToken).data as BytesLike;
+      const atokenHash = ethers.utils.keccak256(aTokenDeployCode);
+      let expectedATokenAddress = ethers.utils.getCreate2Address(factory.address, salt, atokenHash);
+      const aTokenAddress = await factory.lookup(salt);
+      expect(aTokenAddress).to.equal(expectedATokenAddress);      
+    });
+
   });
 
   it("deploys a mock contract, calls payMe from factory with callAny", async () => {
