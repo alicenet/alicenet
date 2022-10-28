@@ -460,7 +460,7 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
     // compute payout
     let diffAccum = tokenStateAccum - userPosition.accumulatorToken.toBigInt();
     let payoutEst = diffAccum * sharesPerUser;
-    if (totalShares == userPosition.shares.toBigInt()) {
+    if (totalShares === userPosition.shares.toBigInt()) {
       payoutEst += tokenStateSlush;
       tokenStateSlush = 0n;
     }
@@ -517,9 +517,9 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
     let numUsers = 2;
     for (let i = 0; i < numUsers; i++) {
       // Perform slushSkim
-      let totalSharesBN = await fixture.publicStaking.getTotalShares();
-      let totalShares = totalSharesBN.toBigInt();
-      let deltaAccum = tokenStateSlush / totalShares;
+      const totalSharesBN = await fixture.publicStaking.getTotalShares();
+      const totalShares = totalSharesBN.toBigInt();
+      const deltaAccum = tokenStateSlush / totalShares;
       tokenStateSlush -= deltaAccum * totalShares;
       tokenStateAccum += deltaAccum;
       // get position info
@@ -530,10 +530,10 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
         [tokensID[i]]
       );
       // compute payout
-      let diffAccum =
+      const diffAccum =
         tokenStateAccum - userPosition.accumulatorToken.toBigInt();
       let payoutEst = diffAccum * sharesPerUser;
-      if (totalShares == userPosition.shares.toBigInt()) {
+      if (totalShares === userPosition.shares.toBigInt()) {
         payoutEst += tokenStateSlush;
         tokenStateSlush = 0n;
       }
@@ -591,9 +591,9 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
     numUsers = 3;
     for (let i = 0; i < numUsers; i++) {
       // Perform slushSkim
-      let totalSharesBN = await fixture.publicStaking.getTotalShares();
-      let totalShares = totalSharesBN.toBigInt();
-      let deltaAccum = tokenStateSlush / totalShares;
+      const totalSharesBN = await fixture.publicStaking.getTotalShares();
+      const totalShares = totalSharesBN.toBigInt();
+      const deltaAccum = tokenStateSlush / totalShares;
       tokenStateSlush -= deltaAccum * totalShares;
       tokenStateAccum += deltaAccum;
       // get position info
@@ -604,10 +604,10 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
         [tokensID[i]]
       );
       // compute payout
-      let diffAccum =
+      const diffAccum =
         tokenStateAccum - userPosition.accumulatorToken.toBigInt();
       let payoutEst = diffAccum * sharesPerUser;
-      if (totalShares == userPosition.shares.toBigInt()) {
+      if (totalShares === userPosition.shares.toBigInt()) {
         payoutEst += tokenStateSlush;
         tokenStateSlush = 0n;
       }
@@ -648,9 +648,9 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
     // only 2 users collect
     for (let i = 0; i < 2; i++) {
       // Perform slushSkim
-      let totalSharesBN = await fixture.publicStaking.getTotalShares();
-      let totalShares = totalSharesBN.toBigInt();
-      let deltaAccum = tokenStateSlush / totalShares;
+      const totalSharesBN = await fixture.publicStaking.getTotalShares();
+      const totalShares = totalSharesBN.toBigInt();
+      const deltaAccum = tokenStateSlush / totalShares;
       tokenStateSlush -= deltaAccum * totalShares;
       tokenStateAccum += deltaAccum;
       // get position info
@@ -661,10 +661,10 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
         [tokensID[i]]
       );
       // compute payout
-      let diffAccum =
+      const diffAccum =
         tokenStateAccum - userPosition.accumulatorToken.toBigInt();
       let payoutEst = diffAccum * sharesPerUser;
-      if (totalShares == userPosition.shares.toBigInt()) {
+      if (totalShares === userPosition.shares.toBigInt()) {
         payoutEst += tokenStateSlush;
         tokenStateSlush = 0n;
       }
@@ -702,9 +702,9 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
     // All users collect this time, we expect the last user witch didn't withdrawal last time to get more
     for (let i = 0; i < numUsers; i++) {
       // Perform slushSkim
-      let totalSharesBN = await fixture.publicStaking.getTotalShares();
-      let totalShares = totalSharesBN.toBigInt();
-      let deltaAccum = tokenStateSlush / totalShares;
+      const totalSharesBN = await fixture.publicStaking.getTotalShares();
+      const totalShares = totalSharesBN.toBigInt();
+      const deltaAccum = tokenStateSlush / totalShares;
       tokenStateSlush -= deltaAccum * totalShares;
       tokenStateAccum += deltaAccum;
       // get position info
@@ -715,10 +715,10 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
         [tokensID[i]]
       );
       // compute payout
-      let diffAccum =
+      const diffAccum =
         tokenStateAccum - userPosition.accumulatorToken.toBigInt();
       let payoutEst = diffAccum * sharesPerUser;
-      if (totalShares == userPosition.shares.toBigInt()) {
+      if (totalShares === userPosition.shares.toBigInt()) {
         payoutEst += tokenStateSlush;
         tokenStateSlush = 0n;
       }
@@ -775,7 +775,7 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
     // compute payout token
     diffAccum = tokenStateAccum - userPosition.accumulatorToken.toBigInt();
     payoutEst = diffAccum * sharesPerUser;
-    if (totalShares == userPosition.shares.toBigInt()) {
+    if (totalShares === userPosition.shares.toBigInt()) {
       payoutEst += tokenStateSlush;
       tokenStateSlush = 0n;
     }
@@ -787,7 +787,7 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
     // compute payout eth
     let diffAccumEth = ethStateAccum - userPosition.accumulatorEth.toBigInt();
     let payoutEstEth = diffAccumEth * sharesPerUser;
-    if (totalShares == userPosition.shares.toBigInt()) {
+    if (totalShares === userPosition.shares.toBigInt()) {
       payoutEstEth += ethStateSlush;
       ethStateSlush = 0n;
     }
@@ -831,7 +831,7 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
     // compute payout token
     diffAccum = tokenStateAccum - userPosition.accumulatorToken.toBigInt();
     payoutEst = diffAccum * sharesPerUser;
-    if (totalShares == userPosition.shares.toBigInt()) {
+    if (totalShares === userPosition.shares.toBigInt()) {
       payoutEst += tokenStateSlush;
       tokenStateSlush = 0n;
     }
@@ -843,7 +843,7 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
     // compute payout eth
     diffAccumEth = ethStateAccum - userPosition.accumulatorEth.toBigInt();
     payoutEstEth = diffAccumEth * sharesPerUser;
-    if (totalShares == userPosition.shares.toBigInt()) {
+    if (totalShares === userPosition.shares.toBigInt()) {
       payoutEstEth += ethStateSlush;
       ethStateSlush = 0n;
     }
@@ -886,7 +886,7 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
     // compute payout token
     diffAccum = tokenStateAccum - userPosition.accumulatorToken.toBigInt();
     payoutEst = diffAccum * sharesPerUser;
-    if (totalShares == userPosition.shares.toBigInt()) {
+    if (totalShares === userPosition.shares.toBigInt()) {
       payoutEst += tokenStateSlush;
       tokenStateSlush = 0n;
     }
@@ -898,7 +898,7 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
     // compute payout eth
     diffAccumEth = ethStateAccum - userPosition.accumulatorEth.toBigInt();
     payoutEstEth = diffAccumEth * sharesPerUser;
-    if (totalShares == userPosition.shares.toBigInt()) {
+    if (totalShares === userPosition.shares.toBigInt()) {
       payoutEstEth += ethStateSlush;
       ethStateSlush = 0n;
     }

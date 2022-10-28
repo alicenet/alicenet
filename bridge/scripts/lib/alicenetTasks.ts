@@ -11,8 +11,12 @@ import { task, types } from "hardhat/config";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 // import { ValidatorPool } from "../../typechain-types";
 import axios from "axios";
-import { getGasPrices } from "./alicenetFactoryTasks";
-import { DEFAULT_CONFIG_OUTPUT_DIR } from "./constants";
+import { getEventVar, getGasPrices } from "./alicenetFactoryTasks";
+import {
+  CONTRACT_ADDR,
+  DEFAULT_CONFIG_OUTPUT_DIR,
+  DEPLOYED_RAW,
+} from "./constants";
 import { readDeploymentArgs } from "./deployment/deploymentConfigUtil";
 export type MultiCallArgsStruct = {
   target: string;
@@ -776,6 +780,110 @@ task(
     ).wait();
   });
 
+task("change-dynamic-value", "Change a certain dynamic value")
+  .addParam("factoryAddress", "the alicenet factory address")
+  .addOptionalParam(
+    "relativeEpoch",
+    "How many epochs from the value will be updated on the side chain"
+  )
+  .addOptionalParam("maxBlockSize", "new max block size value")
+  .addOptionalParam("proposalTimeout", "new proposal Timeout value")
+  .addOptionalParam("preVoteTimeout", "new preVote Timeout value")
+  .addOptionalParam("preCommitTimeout", "new preCommit Timeout value")
+  .addOptionalParam("dataStoreFee", "new preVote Timeout value")
+  .addOptionalParam("valueStoreFee", "new preVote Timeout value")
+  .addOptionalParam(
+    "minScaledTransactionFee",
+    "new minScaledTransaction fee value"
+  )
+  .setAction(async (taskArgs, hre) => {
+    const { ethers } = hre;
+    const [admin] = await ethers.getSigners();
+    const adminSigner = await ethers.getSigner(admin.address);
+    const factory = await ethers.getContractAt(
+      "AliceNetFactory",
+      taskArgs.factoryAddress
+    );
+    const dynamics = await hre.ethers.getContractAt(
+      "Dynamics",
+      await factory.lookup(hre.ethers.utils.formatBytes32String("Dynamics"))
+    );
+    const currentValue = await dynamics.getLatestDynamicValues();
+    const newValue = { ...currentValue };
+
+    newValue.maxBlockSize =
+      taskArgs.maxBlockSize !== undefined
+        ? taskArgs.maxBlockSize
+        : currentValue.maxBlockSize;
+
+    newValue.proposalTimeout =
+      taskArgs.proposalTimeout !== undefined
+        ? taskArgs.proposalTimeout
+        : currentValue.proposalTimeout;
+
+    newValue.preVoteTimeout =
+      taskArgs.preVoteTimeout !== undefined
+        ? taskArgs.preVoteTimeout
+        : currentValue.preVoteTimeout;
+
+    newValue.preCommitTimeout =
+      taskArgs.preCommitTimeout !== undefined
+        ? taskArgs.preCommitTimeout
+        : currentValue.preCommitTimeout;
+
+    newValue.dataStoreFee =
+      taskArgs.dataStoreFee !== undefined
+        ? taskArgs.dataStoreFee
+        : currentValue.dataStoreFee;
+
+    newValue.valueStoreFee =
+      taskArgs.valueStoreFee !== undefined
+        ? taskArgs.valueStoreFee
+        : currentValue.valueStoreFee;
+
+    newValue.minScaledTransactionFee =
+      taskArgs.minScaledTransactionFee !== undefined
+        ? taskArgs.minScaledTransactionFee
+        : currentValue.minScaledTransactionFee;
+
+    let epoch;
+    if (taskArgs.relativeEpoch !== undefined && taskArgs.relativeEpoch >= 2) {
+      epoch = taskArgs.relativeEpoch;
+    } else {
+      epoch = 2;
+      console.log(
+        `Epoch not sent or it's less than minimum epoch allowed, therefore scheduling changes in 2 epochs from now.`
+      );
+    }
+
+    const input = dynamics.interface.encodeFunctionData("changeDynamicValues", [
+      epoch,
+      newValue,
+    ]);
+    await (
+      await factory
+        .connect(adminSigner)
+        .callAny(dynamics.address, 0, input, await getGasPrices(hre))
+    ).wait(8);
+
+    const allKeys = Object.keys(currentValue);
+    const allValues = Object.values(newValue);
+    const keys: string[] = [];
+    const newValuesArray = [];
+    for (let i = 0; i < allKeys.length; i++) {
+      if (isNaN(parseFloat(allKeys[i]))) {
+        keys.push(allKeys[i]);
+        newValuesArray.push(allValues[i]);
+      }
+    }
+
+    for (let i = 0; i < currentValue.length; i++) {
+      console.log(
+        `Changed dynamics value ${keys[i]} from ${currentValue[i]} to ${newValuesArray[i]}`
+      );
+    }
+  });
+
 task(
   "lookup-contract-address",
   "Task to get address of contract deployed by AliceNet factory"
@@ -1358,6 +1466,29 @@ task("update-alicenet-node-version", "Set the Canonical AliceNet Node Version")
       throw new Error(`Receipt indicates failure: ${rept}`);
     }
     console.log("Done");
+  });
+
+task("deploy-alcb", "Task to deploy ALCB")
+  .addParam(
+    "factoryAddress",
+    "the default factory address from factoryState will be used if not set"
+  )
+  .setAction(async (taskArgs, hre) => {
+    const factory = await hre.ethers.getContractAt(
+      "AliceNetFactory",
+      taskArgs.factoryAddress
+    );
+    const ALCB_BASE = await hre.ethers.getContractFactory("BToken");
+    const deploymentCode = ALCB_BASE.getDeployTransaction(factory.address)
+      .data as BytesLike;
+    const tx = await factory.deployCreate(deploymentCode);
+    const receipt = await tx.wait();
+    const alcbAddress = getEventVar(receipt, DEPLOYED_RAW, CONTRACT_ADDR);
+    console.log("ALCB/BToken address: ", alcbAddress);
+    await factory.addNewExternalContract(
+      hre.ethers.utils.formatBytes32String("BToken"),
+      alcbAddress
+    );
   });
 
 async function mintATokenTo(

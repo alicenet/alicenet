@@ -1,10 +1,20 @@
+codecov:
+  notify:
+    after_n_builds: 4
 ignore:
   - "bridge/bindings/**"
   - "cmd/**"
   - "proto/**"
   - "**/*.mockgen.go"
+comment:
+  after_n_builds: 4
 coverage:
   status:
+    project:
+      default:
+        target: auto
+        threshold: 2%
     patch:
       default:
-        target: 50%
+        target: auto
+        threshold: 2%
