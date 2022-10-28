@@ -3,4 +3,5 @@ pragma solidity ^0.8.16;
 
 library StakingTokenErrors {
     error InvalidConversionAmount();
+    error InvalidAddress();
 }
