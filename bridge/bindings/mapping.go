@@ -33,6 +33,7 @@ var FunctionMapping = map[[4]byte]string{
 	{71, 19, 238, 122}:   "AliceNetFactory.delegateCallAny(address,bytes)",
 	{39, 254, 24, 34}:    "AliceNetFactory.deployCreate(bytes)",
 	{86, 242, 167, 97}:   "AliceNetFactory.deployCreate2(uint256,bytes32,bytes)",
+	{197, 108, 169, 237}: "AliceNetFactory.deployCreateAndRegister(bytes,bytes32)",
 	{57, 202, 180, 114}:  "AliceNetFactory.deployProxy(bytes32)",
 	{130, 137, 151, 86}:  "AliceNetFactory.getATokenAddress()",
 	{240, 142, 213, 134}: "AliceNetFactory.getATokenCreationCodeHash()",

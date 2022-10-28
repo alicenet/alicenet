@@ -3059,6 +3059,9 @@ type MockIAliceNetFactory struct {
 	// DeployCreate2Func is an instance of a mock function object
 	// controlling the behavior of the method DeployCreate2.
 	DeployCreate2Func *IAliceNetFactoryDeployCreate2Func
+	// DeployCreateAndRegisterFunc is an instance of a mock function object
+	// controlling the behavior of the method DeployCreateAndRegister.
+	DeployCreateAndRegisterFunc *IAliceNetFactoryDeployCreateAndRegisterFunc
 	// DeployProxyFunc is an instance of a mock function object controlling
 	// the behavior of the method DeployProxy.
 	DeployProxyFunc *IAliceNetFactoryDeployProxyFunc
@@ -3182,6 +3185,11 @@ func NewMockIAliceNetFactory() *MockIAliceNetFactory {
 		},
 		DeployCreate2Func: &IAliceNetFactoryDeployCreate2Func{
 			defaultHook: func(*bind.TransactOpts, *big.Int, [32]byte, []byte) (r0 *types.Transaction, r1 error) {
+				return
+			},
+		},
+		DeployCreateAndRegisterFunc: &IAliceNetFactoryDeployCreateAndRegisterFunc{
+			defaultHook: func(*bind.TransactOpts, []byte, [32]byte) (r0 *types.Transaction, r1 error) {
 				return
 			},
 		},
@@ -3367,6 +3375,11 @@ func NewStrictMockIAliceNetFactory() *MockIAliceNetFactory {
 				panic("unexpected invocation of MockIAliceNetFactory.DeployCreate2")
 			},
 		},
+		DeployCreateAndRegisterFunc: &IAliceNetFactoryDeployCreateAndRegisterFunc{
+			defaultHook: func(*bind.TransactOpts, []byte, [32]byte) (*types.Transaction, error) {
+				panic("unexpected invocation of MockIAliceNetFactory.DeployCreateAndRegister")
+			},
+		},
 		DeployProxyFunc: &IAliceNetFactoryDeployProxyFunc{
 			defaultHook: func(*bind.TransactOpts, [32]byte) (*types.Transaction, error) {
 				panic("unexpected invocation of MockIAliceNetFactory.DeployProxy")
@@ -3537,6 +3550,9 @@ func NewMockIAliceNetFactoryFrom(i bindings.IAliceNetFactory) *MockIAliceNetFact
 		},
 		DeployCreate2Func: &IAliceNetFactoryDeployCreate2Func{
 			defaultHook: i.DeployCreate2,
+		},
+		DeployCreateAndRegisterFunc: &IAliceNetFactoryDeployCreateAndRegisterFunc{
+			defaultHook: i.DeployCreateAndRegister,
 		},
 		DeployProxyFunc: &IAliceNetFactoryDeployProxyFunc{
 			defaultHook: i.DeployProxy,
@@ -4298,6 +4314,121 @@ func (c IAliceNetFactoryDeployCreate2FuncCall) Args() []interface{} {
 // Results returns an interface slice containing the results of this
 // invocation.
 func (c IAliceNetFactoryDeployCreate2FuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
+}
+
+// IAliceNetFactoryDeployCreateAndRegisterFunc describes the behavior when
+// the DeployCreateAndRegister method of the parent MockIAliceNetFactory
+// instance is invoked.
+type IAliceNetFactoryDeployCreateAndRegisterFunc struct {
+	defaultHook func(*bind.TransactOpts, []byte, [32]byte) (*types.Transaction, error)
+	hooks       []func(*bind.TransactOpts, []byte, [32]byte) (*types.Transaction, error)
+	history     []IAliceNetFactoryDeployCreateAndRegisterFuncCall
+	mutex       sync.Mutex
+}
+
+// DeployCreateAndRegister delegates to the next hook function in the queue
+// and stores the parameter and result values of this invocation.
+func (m *MockIAliceNetFactory) DeployCreateAndRegister(v0 *bind.TransactOpts, v1 []byte, v2 [32]byte) (*types.Transaction, error) {
+	r0, r1 := m.DeployCreateAndRegisterFunc.nextHook()(v0, v1, v2)
+	m.DeployCreateAndRegisterFunc.appendCall(IAliceNetFactoryDeployCreateAndRegisterFuncCall{v0, v1, v2, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the
+// DeployCreateAndRegister method of the parent MockIAliceNetFactory
+// instance is invoked and the hook queue is empty.
+func (f *IAliceNetFactoryDeployCreateAndRegisterFunc) SetDefaultHook(hook func(*bind.TransactOpts, []byte, [32]byte) (*types.Transaction, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// DeployCreateAndRegister method of the parent MockIAliceNetFactory
+// instance invokes the hook at the front of the queue and discards it.
+// After the queue is empty, the default hook function is invoked for any
+// future action.
+func (f *IAliceNetFactoryDeployCreateAndRegisterFunc) PushHook(hook func(*bind.TransactOpts, []byte, [32]byte) (*types.Transaction, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *IAliceNetFactoryDeployCreateAndRegisterFunc) SetDefaultReturn(r0 *types.Transaction, r1 error) {
+	f.SetDefaultHook(func(*bind.TransactOpts, []byte, [32]byte) (*types.Transaction, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *IAliceNetFactoryDeployCreateAndRegisterFunc) PushReturn(r0 *types.Transaction, r1 error) {
+	f.PushHook(func(*bind.TransactOpts, []byte, [32]byte) (*types.Transaction, error) {
+		return r0, r1
+	})
+}
+
+func (f *IAliceNetFactoryDeployCreateAndRegisterFunc) nextHook() func(*bind.TransactOpts, []byte, [32]byte) (*types.Transaction, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *IAliceNetFactoryDeployCreateAndRegisterFunc) appendCall(r0 IAliceNetFactoryDeployCreateAndRegisterFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of
+// IAliceNetFactoryDeployCreateAndRegisterFuncCall objects describing the
+// invocations of this function.
+func (f *IAliceNetFactoryDeployCreateAndRegisterFunc) History() []IAliceNetFactoryDeployCreateAndRegisterFuncCall {
+	f.mutex.Lock()
+	history := make([]IAliceNetFactoryDeployCreateAndRegisterFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// IAliceNetFactoryDeployCreateAndRegisterFuncCall is an object that
+// describes an invocation of method DeployCreateAndRegister on an instance
+// of MockIAliceNetFactory.
+type IAliceNetFactoryDeployCreateAndRegisterFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 *bind.TransactOpts
+	// Arg1 is the value of the 2nd argument passed to this method
+	// invocation.
+	Arg1 []byte
+	// Arg2 is the value of the 3rd argument passed to this method
+	// invocation.
+	Arg2 [32]byte
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 *types.Transaction
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c IAliceNetFactoryDeployCreateAndRegisterFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0, c.Arg1, c.Arg2}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c IAliceNetFactoryDeployCreateAndRegisterFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
