@@ -31,9 +31,7 @@ interface Fixture extends BaseTokensFixture {
 
 const startBlock = 100;
 const lockDuration = 2;
-const stakedAmount = ethers.utils.parseEther("100").toBigInt();
 const totalBonusAmount = ethers.utils.parseEther("10000");
-const migrationAmount = ethers.utils.parseEther("100");
 let rewardPoolAddress: any;
 
 async function deployFixture() {

@@ -314,7 +314,7 @@ export const deployFactoryAndBaseTokens = async (
     await ethers.getContractFactory("BToken")
   ).getDeployTransaction(centralRouter.address).data as BytesLike;
   const bTokenSalt = ethers.utils.formatBytes32String("BToken");
-  await factory.deployCreate2(0, bTokenSalt, deployData);
+  await factory.deployCreateAndRegister(deployData, bTokenSalt);
 
   // finally attach BToken to the address of the deployed contract above
   const bToken = await ethers.getContractAt(
