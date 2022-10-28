@@ -10,6 +10,7 @@ import {
   DeploymentArgs,
   extractName,
   extractPath,
+  getFullyQualifiedName,
 } from "./deploymentUtil";
 
 export async function writeDeploymentArgs(
@@ -33,7 +34,10 @@ export async function generateDeployArgTemplate(
     constructor: {},
     initializer: {},
   };
-  for (const contract of list) {
+  const factoryName = await getFullyQualifiedName("AliceNetFactory", artifacts);
+  const contracts = [factoryName, ...list];
+  for (const contract of contracts) {
+    console.log(contract);
     // check each contract for a constructor and
     const cArgs: Array<ArgData> = await getConstructorArgsABI(
       contract,

@@ -5,12 +5,12 @@ import {
   HardhatRuntimeEnvironment,
   RunTaskFunction,
 } from "hardhat/types";
-import { getEventVar } from "../alicenetFactoryTasks";
+import { getEventVar } from "../alicenetFactory";
 import { encodeMultiCallArgs } from "../alicenetTasks";
 import {
   ALICENET_FACTORY,
   CONTRACT_ADDR,
-  DEFAULT_CONFIG_OUTPUT_DIR,
+  DEFAULT_CONFIG_DIR,
   DEPLOYED_PROXY,
   DEPLOY_CREATE,
   DEPLOY_PROXY,
@@ -40,7 +40,7 @@ export interface DeploymentArgs {
 export type DeployProxyMCArgs = {
   contractName: string;
   logicAddress: string;
-  waitConfirmation?: boolean;
+  waitConfirmation?: number;
   factoryAddress?: string;
   initCallData?: BytesLike;
   outputFolder?: string;
@@ -53,11 +53,12 @@ export type MultiCallArgsStruct = {
 export type DeployArgs = {
   contractName: string;
   factoryAddress: string;
-  waitConfirmation?: boolean;
+  waitConfirmation?: number;
   initCallData?: string;
   constructorArgs?: any;
   outputFolder?: string;
   verify?: boolean;
+  standAlone?: boolean;
 };
 
 export type Args = {
@@ -110,13 +111,20 @@ export async function getContractDescriptor(
   };
 }
 // function to deploy the factory
-export async function deployFactory(run: RunTaskFunction, usrPath?: string) {
-  return await run(TASK_DEPLOY_FACTORY, { outputFolder: usrPath });
+export async function deployFactory(
+  run: RunTaskFunction,
+  usrPath?: string,
+  waitConfirmation?: number
+) {
+  return await run(TASK_DEPLOY_FACTORY, {
+    outputFolder: usrPath,
+    waitConfirmation,
+  });
 }
 
 export async function getDeployMetaArgs(
   fullyQualifiedName: string,
-  waitConfirmation: boolean,
+  waitConfirmation: number,
   factoryAddress: string,
   artifacts: Artifacts,
   inputFolder?: string,
@@ -158,14 +166,14 @@ export async function getFactoryDeploymentArgs(
   const hasConArgs = await hasConstructorArgs(fullyQualifiedName, artifacts);
   const constructorArgs = hasConArgs
     ? await getDeploymentConstructorArgs(fullyQualifiedName, inputFolder)
-    : undefined;
+    : [];
   return constructorArgs;
 }
 export async function getDeployUpgradeableProxyArgs(
   fullyQualifiedName: string,
   factoryAddress: string,
   artifacts: Artifacts,
-  waitConfirmation?: boolean,
+  waitConfirmation?: number,
   inputFolder?: string,
   outputFolder?: string,
   verify?: boolean
@@ -191,6 +199,41 @@ export async function getDeployUpgradeableProxyArgs(
     constructorArgs,
     outputFolder,
     verify,
+  };
+}
+
+export async function getDeployCreateArgs(
+  fullyQualifiedName: string,
+  factoryAddress: string,
+  artifacts: Artifacts,
+  waitConfirmation?: number,
+  inputFolder?: string,
+  outputFolder?: string,
+  verify?: boolean,
+  standAlone?: boolean
+): Promise<DeployArgs> {
+  let initCallData;
+  const initAble = await isInitializable(fullyQualifiedName, artifacts);
+  if (initAble) {
+    const initializerArgs = await getDeploymentInitializerArgs(
+      fullyQualifiedName,
+      inputFolder
+    );
+    initCallData = await getEncodedInitCallData(initializerArgs);
+  }
+  const hasConArgs = await hasConstructorArgs(fullyQualifiedName, artifacts);
+  const constructorArgs = hasConArgs
+    ? await getDeploymentConstructorArgs(fullyQualifiedName, inputFolder)
+    : undefined;
+  return {
+    contractName: extractName(fullyQualifiedName),
+    waitConfirmation,
+    factoryAddress,
+    initCallData,
+    constructorArgs,
+    outputFolder,
+    verify,
+    standAlone,
   };
 }
 
@@ -285,7 +328,7 @@ export async function getDeploymentConstructorArgs(
   // get the deployment args
   const path =
     configDirPath === undefined
-      ? DEFAULT_CONFIG_OUTPUT_DIR + "/deploymentArgsTemplate"
+      ? DEFAULT_CONFIG_DIR + "/deploymentArgsTemplate"
       : configDirPath + "/deploymentArgsTemplate";
   const deploymentConfig: any = await readDeploymentArgs(path);
   if (deploymentConfig !== undefined) {
@@ -323,7 +366,7 @@ export async function getDeploymentInitializerArgs(
   let output: Array<string> | undefined;
   const path =
     configDirPath === undefined
-      ? DEFAULT_CONFIG_OUTPUT_DIR + "/deploymentArgsTemplate"
+      ? DEFAULT_CONFIG_DIR + "/deploymentArgsTemplate"
       : configDirPath + "/deploymentArgsTemplate";
   const deploymentConfig: any = await readDeploymentArgs(path);
   if (deploymentConfig !== undefined) {
@@ -452,14 +495,12 @@ export async function deployContractsMulticall(
 ) {
   const factoryBase = await hre.ethers.getContractFactory(ALICENET_FACTORY);
   const factory = factoryBase.attach(factoryAddr);
-  const multiCallArgsArray = [];
-
   for (let i = 0; i < contracts.length; i++) {
     const contract = contracts[i];
-
     const deployType = contract.deployType;
     switch (deployType) {
       case UPGRADEABLE_DEPLOYMENT: {
+        const multiCallArgsArray = [];
         const [deployCreate, deployProxy, upgradeProxy] =
           await getDeployUpgradeableMultiCallArgs(
             contract,
@@ -494,5 +535,4 @@ export async function deployContractsMulticall(
       }
     }
   }
-  return multiCallArgsArray;
 }

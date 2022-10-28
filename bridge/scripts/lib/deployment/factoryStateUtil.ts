@@ -133,6 +133,14 @@ export async function updateProxyList(
   await updateList(network, "proxies", data, usrPath);
 }
 
+export async function updateExternalContractList(
+  network: string,
+  data: DeployCreateData,
+  usrPath?: string
+) {
+  await updateList(network, "external", data, usrPath);
+}
+
 export async function updateMetaList(
   network: string,
   data: MetaContractData,
