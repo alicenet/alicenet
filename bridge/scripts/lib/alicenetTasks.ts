@@ -1398,7 +1398,7 @@ task("fund-validators", "manually put 100 eth in each validator account")
 function getValidatorAccount(path: string): string {
   const data = fs.readFileSync(path);
   const config: any = toml.parse(data.toString());
-  return config.validator.rewardAccount;
+  return config.ethereum.defaultAccount;
 }
 
 task("get-gas-cost", "gets the current gas cost")

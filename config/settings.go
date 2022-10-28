@@ -12,8 +12,9 @@ import (
 )
 
 type InitConfig struct {
-	Path    string
-	Network string
+	Path         string
+	Network      string
+	GenerateKeys bool
 }
 
 type BootnodeConfig struct {
@@ -71,10 +72,8 @@ type UtilsConfig struct {
 }
 
 type ValidatorConfig struct {
-	Repl            bool
-	RewardAccount   string
-	RewardCurveSpec int
-	SymmetricKey    string
+	Repl         bool
+	SymmetricKey string
 }
 
 type LoggingConfig struct {
