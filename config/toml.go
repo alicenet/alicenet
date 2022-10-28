@@ -185,14 +185,6 @@ upnp = {{ .Transport.UPnP }}
 # OPTIONAL: Only necessary if you plan to run a validator node.
 [validator]
 
-# Address of the AliceNet account used to do transactions in the AliceNet
-# network.
-rewardAccount = "{{ .Validator.RewardAccount }}"
-
-# Type of elliptic curve used to generate the AliceNet address. Only secp256k1
-# supported at the moment (option 1).
-rewardCurveSpec = {{ .Validator.RewardCurveSpec }}
-
 # Passphrase that will be used to encrypt private keys in the database.
 symmetricKey = "{{ .Validator.SymmetricKey }}"
 

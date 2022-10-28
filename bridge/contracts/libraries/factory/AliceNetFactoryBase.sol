@@ -102,7 +102,7 @@ abstract contract AliceNetFactoryBase is DeterministicAddress, ProxyUpgrader {
     }
 
     /**
-     * @dev Sets the new owner
+     * @dev Allows the owner of the factory to transfer ownership to a new address, for transitioning to decentralization
      * @param newOwner_: address of the new owner
      */
     function setOwner(address newOwner_) public onlyOwner {
@@ -243,8 +243,6 @@ abstract contract AliceNetFactoryBase is DeterministicAddress, ProxyUpgrader {
             contractAddr := create2(value_, basePtr, sub(ptr, basePtr), salt_)
         }
         _codeSizeZeroRevert(uint160(contractAddr) != 0);
-        //record the contract salt to external contract array
-        _addNewExternalContract(salt_, contractAddr);
         emit DeployedRaw(contractAddr);
     }
 
