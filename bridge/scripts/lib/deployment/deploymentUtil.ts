@@ -212,14 +212,13 @@ export async function getDeployCreateArgs(
   verify?: boolean,
   standAlone?: boolean
 ): Promise<DeployArgs> {
-  let initCallData;
   const initAble = await isInitializable(fullyQualifiedName, artifacts);
   if (initAble) {
     const initializerArgs = await getDeploymentInitializerArgs(
       fullyQualifiedName,
       inputFolder
     );
-    initCallData = await getEncodedInitCallData(initializerArgs);
+    await getEncodedInitCallData(initializerArgs);
   }
   const hasConArgs = await hasConstructorArgs(fullyQualifiedName, artifacts);
   const constructorArgs = hasConArgs
@@ -229,7 +228,6 @@ export async function getDeployCreateArgs(
     contractName: extractName(fullyQualifiedName),
     waitConfirmation,
     factoryAddress,
-    initCallData,
     constructorArgs,
     outputFolder,
     verify,
