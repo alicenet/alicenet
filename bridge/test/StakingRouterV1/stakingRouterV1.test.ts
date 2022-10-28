@@ -1,5 +1,6 @@
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
+import { expect } from "chai";
 import { BytesLike } from "ethers";
 import { ethers } from "hardhat";
 import { deployCreateAndRegister } from "../../scripts/lib/alicenetFactory";
@@ -21,12 +22,14 @@ import {
   posFixtureSetup,
   preFixtureSetup,
 } from "../setup";
+import { getImpersonatedSigner } from "./setup";
 
 interface Fixture extends BaseTokensFixture {
   lockup: Lockup;
   rewardPool: RewardPool;
   bonusPool: BonusPool;
   stakingRouterV1: StakingRouterV1;
+  mockFactorySigner: SignerWithAddress;
 }
 
 const startBlock = 100;
@@ -91,6 +94,7 @@ async function deployFixture() {
     STAKING_ROUTER_V1,
     stakingRouterAddress
   );
+  const asFactory = await getImpersonatedSigner(fixture.factory.address);
 
   return {
     fixture: {
@@ -99,6 +103,7 @@ async function deployFixture() {
       lockup,
       bonusPool,
       stakingRouterV1,
+      mockFactorySigner: asFactory,
     },
     accounts: signers,
   };
@@ -111,24 +116,197 @@ describe("StakingRouterV1", async () => {
     ({ fixture, accounts } = await loadFixture(deployFixture));
   });
 
-  describe("migrateand stake", async () => {
-    it("successsfully migrate Madtoken and stakes", async () => {
+  describe("migrateAndStake", async () => {
+    it("reverts if stakingAmount is greater than migratedAmount", async () => {
+      const shortMigrationAmount = stakedAmount - 1n;
+      // ensure no bonus tokens are minted
+      await fixture.aToken
+        .connect(fixture.mockFactorySigner)
+        .finishEarlyStage();
+      await (
+        await fixture.legacyToken.increaseAllowance(
+          fixture.stakingRouterV1.address,
+          migrationAmount
+        )
+      ).wait();
+
       const tokenOwner = accounts[1];
-      let txResponse = await fixture.legacyToken.increaseAllowance(
-        fixture.stakingRouterV1.address,
-        migrationAmount
+      await expect(
+        fixture.stakingRouterV1.migrateAndStake(
+          tokenOwner.address,
+          shortMigrationAmount,
+          stakedAmount
+        )
+      )
+        .to.be.revertedWithCustomError(
+          fixture.stakingRouterV1,
+          "InvalidStakingAmount"
+        )
+        .withArgs(stakedAmount, shortMigrationAmount);
+    });
+
+    it("successfully migrates legacy token from sender, stakes amount and transfers position to address specified and remainder to sender", async () => {
+      const sender = accounts[0];
+      const recipient = accounts[1];
+      const expectedMigrationAmountAfterConversion = await (
+        await fixture.aToken.convert(migrationAmount)
+      ).toBigInt();
+
+      const expectedRemainder =
+        expectedMigrationAmountAfterConversion - stakedAmount;
+
+      const balanceOfSenderBefore = await fixture.legacyToken.balanceOf(
+        sender.address
       );
-      await txResponse.wait();
-      txResponse = await fixture.stakingRouterV1.migrateAndStake(
-        tokenOwner.address,
-        migrationAmount,
-        stakedAmount
+      expect(await fixture.aToken.balanceOf(recipient.address)).to.equal(0);
+
+      expect(
+        await fixture.publicStaking.balanceOf(recipient.address)
+      ).to.be.equal(0);
+      await (
+        await fixture.legacyToken
+          .connect(sender)
+          .increaseAllowance(fixture.stakingRouterV1.address, migrationAmount)
+      ).wait();
+
+      await expect(
+        fixture.stakingRouterV1
+          .connect(sender)
+          .migrateAndStake(recipient.address, migrationAmount, stakedAmount)
+      ).to.not.be.reverted;
+
+      expect(await fixture.legacyToken.balanceOf(sender.address)).to.be.equal(
+        balanceOfSenderBefore.sub(migrationAmount)
       );
+      expect(await fixture.aToken.balanceOf(recipient.address)).to.be.equal(
+        expectedRemainder
+      );
+      expect(
+        await fixture.publicStaking.balanceOf(recipient.address)
+      ).to.be.equal(1);
+
       const tokenID = await fixture.publicStaking.tokenOfOwnerByIndex(
-        tokenOwner.address,
+        recipient.address,
         0
       );
-      await fixture.publicStaking.getPosition(tokenID);
+      const [shares, , , , ,] = await fixture.publicStaking.getPosition(
+        tokenID
+      );
+
+      expect(shares).to.be.equal(stakedAmount);
+    });
+  });
+
+  describe("migrateStakeAndLock", async () => {
+    it("reverts if stakingAmount is greater than migratedAmount", async () => {
+      const shortMigrationAmount = stakedAmount - 1n;
+      // ensure no bonus tokens are minted
+      await fixture.aToken
+        .connect(fixture.mockFactorySigner)
+        .finishEarlyStage();
+      await (
+        await fixture.legacyToken.increaseAllowance(
+          fixture.stakingRouterV1.address,
+          migrationAmount
+        )
+      ).wait();
+
+      const tokenOwner = accounts[1];
+      await expect(
+        fixture.stakingRouterV1.migrateStakeAndLock(
+          tokenOwner.address,
+          shortMigrationAmount,
+          stakedAmount
+        )
+      )
+        .to.be.revertedWithCustomError(
+          fixture.stakingRouterV1,
+          "InvalidStakingAmount"
+        )
+        .withArgs(stakedAmount, shortMigrationAmount);
+    });
+
+    it("successfully migrates legacy token from sender, stakes amount, locks stake and transfers position to address specified and remainder to sender", async () => {
+      const sender = accounts[0];
+      const recipient = accounts[1];
+      const expectedMigrationAmountAfterConversion = await (
+        await fixture.aToken.convert(migrationAmount)
+      ).toBigInt();
+
+      const expectedRemainder =
+        expectedMigrationAmountAfterConversion - stakedAmount;
+
+      const balanceOfSenderBefore = await fixture.legacyToken.balanceOf(
+        sender.address
+      );
+      expect(await fixture.aToken.balanceOf(recipient.address)).to.equal(0);
+
+      expect(await fixture.lockup.tokenOf(recipient.address)).to.be.equal(0);
+      await (
+        await fixture.legacyToken
+          .connect(sender)
+          .increaseAllowance(fixture.stakingRouterV1.address, migrationAmount)
+      ).wait();
+
+      await expect(
+        fixture.stakingRouterV1
+          .connect(sender)
+          .migrateStakeAndLock(recipient.address, migrationAmount, stakedAmount)
+      ).to.not.be.reverted;
+
+      expect(await fixture.legacyToken.balanceOf(sender.address)).to.be.equal(
+        balanceOfSenderBefore.sub(migrationAmount)
+      );
+      expect(await fixture.aToken.balanceOf(recipient.address)).to.be.equal(
+        expectedRemainder
+      );
+      const tokenID = await fixture.lockup.tokenOf(recipient.address);
+      expect(tokenID).to.not.be.equal(0);
+
+      const [shares, , , , ,] = await fixture.publicStaking.getPosition(
+        tokenID
+      );
+
+      expect(shares).to.be.equal(stakedAmount);
+    });
+  });
+
+  describe("stakeAndLock", async () => {
+    it("successfully stakes amount from sender and transfers position to specified account", async () => {
+      const sender = accounts[0];
+      const recipient = accounts[1];
+
+      const balanceOfSenderBefore = await fixture.aToken.balanceOf(
+        sender.address
+      );
+      expect(await fixture.aToken.balanceOf(recipient.address)).to.equal(0);
+
+      expect(await fixture.lockup.tokenOf(recipient.address)).to.be.equal(0);
+
+      await (
+        await fixture.aToken
+          .connect(sender)
+          .increaseAllowance(fixture.stakingRouterV1.address, stakedAmount)
+      ).wait();
+
+      await expect(
+        fixture.stakingRouterV1
+          .connect(sender)
+          .stakeAndLock(recipient.address, stakedAmount)
+      ).to.not.be.reverted;
+
+      expect(await fixture.aToken.balanceOf(sender.address)).to.be.equal(
+        balanceOfSenderBefore.sub(stakedAmount)
+      );
+
+      const tokenID = await fixture.lockup.tokenOf(recipient.address);
+      expect(tokenID).to.not.be.equal(0);
+
+      const [shares, , , , ,] = await fixture.publicStaking.getPosition(
+        tokenID
+      );
+
+      expect(shares).to.be.equal(stakedAmount);
     });
   });
 });

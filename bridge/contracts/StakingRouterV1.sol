@@ -60,7 +60,7 @@ contract StakingRouterV1 is
         uint256 migrationAmount_,
         uint256 stakingAmount_
     ) public {
-        uint256 migratedAmount = _migrate(address(this), migrationAmount_);
+        uint256 migratedAmount = _migrate(msg.sender, migrationAmount_);
         _verifyAndSendAnyRemainder(to_, migratedAmount, stakingAmount_);
         // mint the position directly to the lockup contract
         uint256 tokenID = _stake(_lockupContract, stakingAmount_);
@@ -74,7 +74,7 @@ contract StakingRouterV1 is
     /// @param to_ the address that will own the locked position
     /// @param stakingAmount_ the amount of ALCA that will staked
     function stakeAndLock(address to_, uint256 stakingAmount_) public {
-        _safeTransferFromERC20(IERC20Transferable(_aTokenAddress()), address(this), stakingAmount_);
+        _safeTransferFromERC20(IERC20Transferable(_aTokenAddress()), msg.sender, stakingAmount_);
         // mint the position directly to the lockup contract
         uint256 tokenID = _stake(_lockupContract, stakingAmount_);
         // right in sequence claim the minted position
