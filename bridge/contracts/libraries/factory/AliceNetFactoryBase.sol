@@ -248,8 +248,6 @@ abstract contract AliceNetFactoryBase is DeterministicAddress, ProxyUpgrader {
             contractAddr := create2(value_, basePtr, sub(ptr, basePtr), salt_)
         }
         _codeSizeZeroRevert(uint160(contractAddr) != 0);
-        //record the contract salt to external contract array
-        _addNewExternalContract(salt_, contractAddr);
         emit DeployedRaw(contractAddr);
     }
 
