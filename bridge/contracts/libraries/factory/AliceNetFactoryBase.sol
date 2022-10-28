@@ -13,11 +13,6 @@ abstract contract AliceNetFactoryBase is DeterministicAddress, ProxyUpgrader {
         bytes data;
     }
 
-    struct ContractInfo {
-        bool exist;
-        address logicAddr;
-    }
-
     /**
     @dev owner role for privileged access to functions
     */
@@ -37,7 +32,7 @@ abstract contract AliceNetFactoryBase is DeterministicAddress, ProxyUpgrader {
     /// @dev more details here https://github.com/alicenet/alicenet/wiki/Metamorphic-Proxy-Contract
     bytes8 private constant _UNIVERSAL_DEPLOY_CODE = 0x38585839386009f3;
 
-    mapping(bytes32 => ContractInfo) internal _externalContractRegistry;
+    mapping(bytes32 => address) internal _externalContractRegistry;
 
     /**
      *@dev events that notify of contract deployment
@@ -328,11 +323,11 @@ abstract contract AliceNetFactoryBase is DeterministicAddress, ProxyUpgrader {
 
     /// Internal function to add a new address and "pseudo" salt to the externalContractRegistry
     function _addNewExternalContract(bytes32 salt_, address newContractAddress_) internal {
-        if (_externalContractRegistry[salt_].exist) {
+        if (_externalContractRegistry[salt_] != address(0)) {
             revert AliceNetFactoryBaseErrors.SaltAlreadyInUse(salt_);
         }
         _contracts.push(salt_);
-        _externalContractRegistry[salt_] = ContractInfo(true, newContractAddress_);
+        _externalContractRegistry[salt_] = newContractAddress_;
     }
 
     /**
@@ -348,9 +343,9 @@ abstract contract AliceNetFactoryBase is DeterministicAddress, ProxyUpgrader {
     //lookup allows anyone interacting with the contract to get the address of contract specified by its salt_
     function _lookup(bytes32 salt_) internal view returns (address) {
         // check if the salt belongs to any address in the external contract registry (contracts deployed outside the factory)
-        ContractInfo memory contractInfo = _externalContractRegistry[salt_];
-        if (contractInfo.exist) {
-            return contractInfo.logicAddr;
+        address contractInfo = _externalContractRegistry[salt_];
+        if (contractInfo != address(0)) {
+            return contractInfo;
         }
         return getMetamorphicContractAddress(salt_, address(this));
     }
