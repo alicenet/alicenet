@@ -5,9 +5,13 @@ import { defaultAbiCoder } from "ethers/lib/utils";
 import { ethers } from "hardhat";
 import { expect } from "../chai-setup";
 
-import { deployUpgradeableWithFactory, Fixture, getFixture } from "../setup";
 import {
+  deployUpgradeableWithFactory,
+  Fixture,
+  getFixture,
   getImpersonatedSigner,
+} from "../setup";
+import {
   getMockBlockClaimsForSnapshot,
   proofs,
   vsPreImage,
@@ -22,6 +26,7 @@ let utxoOwnerSigner: SignerWithAddress;
 let merkleProofLibraryErrors: Contract;
 let nativeERCBridgePool: Contract;
 let nativeERCBridgePoolBaseErrors: Contract;
+let asBridgeRouter: any;
 const tokenId = 0;
 const tokenAmount = 0;
 const encodedDepositParameters = defaultAbiCoder.encode(
@@ -63,9 +68,17 @@ describe("Testing Base BridgePool Deposit/Withdraw", async () => {
       undefined,
       false
     );
+    const bridgeRouter = await deployUpgradeableWithFactory(
+      fixture.factory,
+      "BridgeRouterMock",
+      "BridgeRouter",
+      undefined,
+      [1000]
+    );
     utxoOwnerSigner = await getImpersonatedSigner(
       "0x38e959391dd8598ae80d5d6d114a7822a09d313a"
     );
+    asBridgeRouter = await getImpersonatedSigner(bridgeRouter.address);
   }
 
   beforeEach(async function () {
@@ -73,7 +86,9 @@ describe("Testing Base BridgePool Deposit/Withdraw", async () => {
   });
 
   it("Should call a deposit", async () => {
-    await nativeERCBridgePool.deposit(user.address, encodedDepositParameters);
+    await nativeERCBridgePool
+      .connect(asBridgeRouter)
+      .deposit(user.address, encodedDepositParameters);
   });
 
   it("Should call a withdraw upon proofs verification", async () => {

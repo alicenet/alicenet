@@ -1,5 +1,5 @@
 import { BytesLike, defaultAbiCoder } from "ethers/lib/utils";
-import hre, { ethers } from "hardhat";
+import { ethers } from "hardhat";
 
 // The following values can be obtained from accusation_builder_test.go execution
 export const txRoot =
@@ -74,50 +74,3 @@ export function getMockBlockClaimsForSnapshot() {
     [1, 0, 0, ethers.constants.HashZero, txRoot, stateRoot, headerRoot]
   );
 }
-
-export const getBridgePoolMetamorphicAddress = (
-  factoryAddress: string,
-  salt: string
-): string => {
-  const initCode = "0x6020363636335afa1536363636515af43d36363e3d36f3";
-  return ethers.utils.getCreate2Address(
-    factoryAddress,
-    salt,
-    ethers.utils.keccak256(initCode)
-  );
-};
-
-export const getMetamorphicContractAddress = (
-  contractName: string,
-  factoryAddress: string
-): string => {
-  const metamorphicContractBytecodeHash_ =
-    "0x1c0bf703a3415cada9785e89e9d70314c3111ae7d8e04f33bb42eb1d264088be";
-  const salt = ethers.utils.formatBytes32String(contractName);
-  return (
-    "0x" +
-    ethers.utils
-      .keccak256(
-        ethers.utils.solidityPack(
-          ["bytes1", "address", "bytes32", "bytes32"],
-          ["0xff", factoryAddress, salt, metamorphicContractBytecodeHash_]
-        )
-      )
-      .slice(-40)
-  );
-};
-
-export const getImpersonatedSigner = async (
-  addressToImpersonate: string
-): Promise<any> => {
-  const [admin] = await ethers.getSigners();
-  await admin.sendTransaction({
-    to: addressToImpersonate,
-    value: ethers.utils.parseEther("1"),
-  });
-  await hre.network.provider.request({
-    method: "hardhat_impersonateAccount",
-    params: [addressToImpersonate],
-  });
-  return ethers.provider.getSigner(addressToImpersonate);
-};
