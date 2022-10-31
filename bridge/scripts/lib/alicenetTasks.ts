@@ -1,25 +1,20 @@
 import toml from "@iarna/toml";
 import { spawn } from "child_process";
-import {
-  BigNumber,
-  BigNumberish,
-  BytesLike,
-  ContractTransaction,
-} from "ethers";
+import { BigNumber, BytesLike, ContractTransaction } from "ethers";
 import fs from "fs";
 import { task, types } from "hardhat/config";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 // import { ValidatorPool } from "../../typechain-types";
 import axios from "axios";
-import { getEventVar } from "./alicenetFactory";
+import {
+  encodeMultiCallArgs,
+  getEventVar,
+  MultiCallArgsStruct,
+} from "./alicenetFactory";
 import { getGasPrices } from "./alicenetFactoryTasks";
 import { CONTRACT_ADDR, DEFAULT_CONFIG_DIR, DEPLOYED_RAW } from "./constants";
 import { readDeploymentArgs } from "./deployment/deploymentConfigUtil";
-export type MultiCallArgsStruct = {
-  target: string;
-  value: BigNumberish;
-  data: BytesLike;
-};
+
 function delay(milliseconds: number) {
   return new Promise((resolve) => setTimeout(resolve, milliseconds));
 }
@@ -1586,18 +1581,6 @@ async function mintATokenTo(
   return factory.callAny(aTokenMinterAddr, 0, calldata, { nonce });
 }
 
-export function encodeMultiCallArgs(
-  targetAddress: string,
-  value: BigNumberish,
-  callData: BytesLike
-): MultiCallArgsStruct {
-  const output: MultiCallArgsStruct = {
-    target: targetAddress,
-    value,
-    data: callData,
-  };
-  return output;
-}
 export async function stakeValidators(
   numValidators: number,
   factoryAddress: string,
