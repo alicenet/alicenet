@@ -13,7 +13,11 @@ import "contracts/Snapshots.sol";
 
 /// @custom:salt NativeERCBridgePoolBase
 /// @custom:deploy-type deployUpgradeable
-abstract contract NativeERCBridgePoolBase is ImmutableSnapshots {
+abstract contract NativeERCBridgePoolBase is
+    ImmutableSnapshots,
+    ImmutableBridgeRouter,
+    IBridgePool
+{
     using MerkleProofParserLibrary for bytes;
     using MerkleProofLibrary for MerkleProofParserLibrary.MerkleProof;
 
@@ -26,6 +30,26 @@ abstract contract NativeERCBridgePoolBase is ImmutableSnapshots {
 
     constructor() ImmutableFactory(msg.sender) {}
 
+    /// @notice Transfer tokens from sender 
+    /// @param msgSender The address of ERC sender
+    /// @param depositParameters_ encoded deposit parameters (ERC20:tokenAmount, ERC721:tokenId or ERC1155:tokenAmount+tokenId)
+    function deposit(address msgSender, bytes calldata depositParameters_)
+        public
+        virtual
+        override
+        onlyBridgeRouter
+    {}
+
+    function withdraw(bytes memory vsPreImage, bytes[4] memory proofs)
+        public
+        virtual
+        override
+        returns (address account, uint256 value)
+    {
+        MerkleProofParserLibrary.MerkleProof memory proofInclusionStateRoot = _verifyProofs(proofs);
+        (account, value) = _getValidatedTransferData(vsPreImage, proofInclusionStateRoot);
+    }
+
     /// @notice Obtains trasfer data upon UTXO verification
     /// @param _vsPreImage burned UTXO
     /// @param proofInclusionStateRoot Proof of inclusion of UTXO in the stateTrie
@@ -35,19 +59,16 @@ abstract contract NativeERCBridgePoolBase is ImmutableSnapshots {
     ) internal returns (address, uint256) {
         VSPreImageParserLibrary.VSPreImage memory vsPreImage = VSPreImageParserLibrary
             .extractVSPreImage(_vsPreImage);
-
         if (vsPreImage.chainId != ISnapshots(_snapshotsAddress()).getChainId()) {
             revert NativeERCBridgePoolBaseErrors.ChainIdDoesNotMatch(
                 vsPreImage.chainId,
                 ISnapshots(_snapshotsAddress()).getChainId()
             );
         }
-
         bytes32 computedUTXOID = AccusationsLibrary.computeUTXOID(
             vsPreImage.txHash,
             vsPreImage.txOutIdx
         );
-
         if (computedUTXOID != proofInclusionStateRoot.key) {
             revert NativeERCBridgePoolBaseErrors.MerkleProofKeyDoesNotMatchUTXOID(
                 computedUTXOID,
@@ -80,31 +101,26 @@ abstract contract NativeERCBridgePoolBase is ImmutableSnapshots {
     {
         BClaimsParserLibrary.BClaims memory bClaims = Snapshots(_snapshotsAddress())
             .getBlockClaimsFromLatestSnapshot();
-
         // Validate proofInclusionHeaderRoot against bClaims.headerRoot.
         MerkleProofParserLibrary.MerkleProof
             memory proofInclusionHeaderRoot = MerkleProofParserLibrary.extractMerkleProof(
                 _proofs[3]
             );
         MerkleProofLibrary.verifyInclusion(proofInclusionHeaderRoot, bClaims.headerRoot);
-
         // Validate proofInclusionTxRoot against bClaims.txRoot.
         MerkleProofParserLibrary.MerkleProof memory proofInclusionTxRoot = MerkleProofParserLibrary
             .extractMerkleProof(_proofs[1]);
         MerkleProofLibrary.verifyInclusion(proofInclusionTxRoot, bClaims.txRoot);
-
         // Validate proofOfInclusionTxHash against the target hash from proofInclusionTxRoot.
         MerkleProofParserLibrary.MerkleProof
             memory proofOfInclusionTxHash = MerkleProofParserLibrary.extractMerkleProof(_proofs[2]);
         MerkleProofLibrary.verifyInclusion(proofOfInclusionTxHash, proofInclusionTxRoot.key);
-
         // Validate proofOfInclusionTxHash against bClaims.stateRoot.
         MerkleProofParserLibrary.MerkleProof
             memory proofInclusionStateRoot = MerkleProofParserLibrary.extractMerkleProof(
                 _proofs[0]
             );
         MerkleProofLibrary.verifyInclusion(proofInclusionStateRoot, bClaims.stateRoot);
-
         if (proofInclusionStateRoot.key != proofOfInclusionTxHash.key) {
             revert NativeERCBridgePoolBaseErrors.UTXODoesnotMatch(
                 proofInclusionStateRoot.key,
