@@ -19,6 +19,13 @@ type IPublicStakingCaller interface {
 	//
 	// Solidity: function circuitBreakerState() view returns(bool)
 	CircuitBreakerState(opts *bind.CallOpts) (bool, error)
+	// EstimateAllProfits is a free data retrieval call binding the contract method 0x4fc8638f.
+	//
+	// Solidity: function estimateAllProfits(uint256 tokenID_) view returns(uint256 payoutEth, uint256 payoutToken)
+	EstimateAllProfits(opts *bind.CallOpts, tokenID_ *big.Int) (struct {
+		PayoutEth   *big.Int
+		PayoutToken *big.Int
+	}, error)
 	// EstimateEthCollection is a free data retrieval call binding the contract method 0x20ea0d48.
 	//
 	// Solidity: function estimateEthCollection(uint256 tokenID_) view returns(uint256 payout)
