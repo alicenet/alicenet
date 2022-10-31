@@ -12,6 +12,11 @@
   },
   {
     "inputs": [],
+    "name": "InvalidAddress",
+    "type": "error"
+  },
+  {
+    "inputs": [],
     "name": "InvalidConversionAmount",
     "type": "error"
   },
