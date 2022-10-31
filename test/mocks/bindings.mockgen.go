@@ -63,6 +63,9 @@ type MockIAToken struct {
 	// MigrateFunc is an instance of a mock function object controlling the
 	// behavior of the method Migrate.
 	MigrateFunc *IATokenMigrateFunc
+	// MigrateToFunc is an instance of a mock function object controlling
+	// the behavior of the method MigrateTo.
+	MigrateToFunc *IATokenMigrateToFunc
 	// NameFunc is an instance of a mock function object controlling the
 	// behavior of the method Name.
 	NameFunc *IATokenNameFunc
@@ -168,6 +171,11 @@ func NewMockIAToken() *MockIAToken {
 		},
 		MigrateFunc: &IATokenMigrateFunc{
 			defaultHook: func(*bind.TransactOpts, *big.Int) (r0 *types.Transaction, r1 error) {
+				return
+			},
+		},
+		MigrateToFunc: &IATokenMigrateToFunc{
+			defaultHook: func(*bind.TransactOpts, common.Address, *big.Int) (r0 *types.Transaction, r1 error) {
 				return
 			},
 		},
@@ -298,6 +306,11 @@ func NewStrictMockIAToken() *MockIAToken {
 				panic("unexpected invocation of MockIAToken.Migrate")
 			},
 		},
+		MigrateToFunc: &IATokenMigrateToFunc{
+			defaultHook: func(*bind.TransactOpts, common.Address, *big.Int) (*types.Transaction, error) {
+				panic("unexpected invocation of MockIAToken.MigrateTo")
+			},
+		},
 		NameFunc: &IATokenNameFunc{
 			defaultHook: func(*bind.CallOpts) (string, error) {
 				panic("unexpected invocation of MockIAToken.Name")
@@ -394,6 +407,9 @@ func NewMockIATokenFrom(i bindings.IAToken) *MockIAToken {
 		},
 		MigrateFunc: &IATokenMigrateFunc{
 			defaultHook: i.Migrate,
+		},
+		MigrateToFunc: &IATokenMigrateToFunc{
+			defaultHook: i.MigrateTo,
 		},
 		NameFunc: &IATokenNameFunc{
 			defaultHook: i.Name,
@@ -2059,6 +2075,116 @@ func (c IATokenMigrateFuncCall) Args() []interface{} {
 // Results returns an interface slice containing the results of this
 // invocation.
 func (c IATokenMigrateFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
+}
+
+// IATokenMigrateToFunc describes the behavior when the MigrateTo method of
+// the parent MockIAToken instance is invoked.
+type IATokenMigrateToFunc struct {
+	defaultHook func(*bind.TransactOpts, common.Address, *big.Int) (*types.Transaction, error)
+	hooks       []func(*bind.TransactOpts, common.Address, *big.Int) (*types.Transaction, error)
+	history     []IATokenMigrateToFuncCall
+	mutex       sync.Mutex
+}
+
+// MigrateTo delegates to the next hook function in the queue and stores the
+// parameter and result values of this invocation.
+func (m *MockIAToken) MigrateTo(v0 *bind.TransactOpts, v1 common.Address, v2 *big.Int) (*types.Transaction, error) {
+	r0, r1 := m.MigrateToFunc.nextHook()(v0, v1, v2)
+	m.MigrateToFunc.appendCall(IATokenMigrateToFuncCall{v0, v1, v2, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the MigrateTo method of
+// the parent MockIAToken instance is invoked and the hook queue is empty.
+func (f *IATokenMigrateToFunc) SetDefaultHook(hook func(*bind.TransactOpts, common.Address, *big.Int) (*types.Transaction, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// MigrateTo method of the parent MockIAToken instance invokes the hook at
+// the front of the queue and discards it. After the queue is empty, the
+// default hook function is invoked for any future action.
+func (f *IATokenMigrateToFunc) PushHook(hook func(*bind.TransactOpts, common.Address, *big.Int) (*types.Transaction, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *IATokenMigrateToFunc) SetDefaultReturn(r0 *types.Transaction, r1 error) {
+	f.SetDefaultHook(func(*bind.TransactOpts, common.Address, *big.Int) (*types.Transaction, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *IATokenMigrateToFunc) PushReturn(r0 *types.Transaction, r1 error) {
+	f.PushHook(func(*bind.TransactOpts, common.Address, *big.Int) (*types.Transaction, error) {
+		return r0, r1
+	})
+}
+
+func (f *IATokenMigrateToFunc) nextHook() func(*bind.TransactOpts, common.Address, *big.Int) (*types.Transaction, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *IATokenMigrateToFunc) appendCall(r0 IATokenMigrateToFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of IATokenMigrateToFuncCall objects describing
+// the invocations of this function.
+func (f *IATokenMigrateToFunc) History() []IATokenMigrateToFuncCall {
+	f.mutex.Lock()
+	history := make([]IATokenMigrateToFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// IATokenMigrateToFuncCall is an object that describes an invocation of
+// method MigrateTo on an instance of MockIAToken.
+type IATokenMigrateToFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 *bind.TransactOpts
+	// Arg1 is the value of the 2nd argument passed to this method
+	// invocation.
+	Arg1 common.Address
+	// Arg2 is the value of the 3rd argument passed to this method
+	// invocation.
+	Arg2 *big.Int
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 *types.Transaction
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c IATokenMigrateToFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0, c.Arg1, c.Arg2}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c IATokenMigrateToFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 

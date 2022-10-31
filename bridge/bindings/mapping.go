@@ -18,6 +18,7 @@ var FunctionMapping = map[[4]byte]string{
 	{134, 83, 164, 101}:  "AToken.getMetamorphicContractAddress(bytes32,address)",
 	{57, 80, 147, 81}:    "AToken.increaseAllowance(address,uint256)",
 	{69, 75, 6, 8}:       "AToken.migrate(uint256)",
+	{13, 33, 61, 49}:     "AToken.migrateTo(address,uint256)",
 	{6, 253, 222, 3}:     "AToken.name()",
 	{149, 216, 155, 65}:  "AToken.symbol()",
 	{24, 22, 13, 221}:    "AToken.totalSupply()",
