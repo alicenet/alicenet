@@ -96,10 +96,7 @@ export async function getContractDescriptor(
   );
   return {
     name: contractName,
-    fullyQualifiedName: await getFullyQualifiedName(
-      contractName,
-      hre.artifacts
-    ),
+    fullyQualifiedName: fullyQualifiedName,
     deployGroup: await getDeployGroup(fullyQualifiedName, hre.artifacts),
     deployGroupIndex: parseInt(
       await getDeployGroupIndex(fullyQualifiedName, hre.artifacts),
@@ -486,6 +483,54 @@ export async function getDeployUpgradeableMultiCallArgs(
   );
   const multiCallArgs = [deployCreate, deployProxy, upgradeProxy];
   return multiCallArgs;
+}
+
+export async function getGasPrices(hre: HardhatRuntimeEnvironment) {
+  // get the latest block
+  const latestBlock = await hre.ethers.provider.getBlock("latest");
+  // get the previous basefee from the latest block
+  const _blockBaseFee = latestBlock.baseFeePerGas;
+  if (_blockBaseFee === undefined || _blockBaseFee === null) {
+    throw new Error("undefined block base fee per gas");
+  }
+  const blockBaseFee = _blockBaseFee.toBigInt();
+  // miner tip
+  let maxPriorityFeePerGas: bigint;
+  const network = await hre.ethers.provider.getNetwork();
+  const minValue = hre.ethers.utils.parseUnits("2.0", "gwei").toBigInt();
+  if (network.chainId === 1337) {
+    maxPriorityFeePerGas = minValue;
+  } else {
+    maxPriorityFeePerGas = BigInt(
+      await hre.network.provider.send("eth_maxPriorityFeePerGas")
+    );
+  }
+  maxPriorityFeePerGas = (maxPriorityFeePerGas * 125n) / 100n;
+  maxPriorityFeePerGas =
+    maxPriorityFeePerGas < minValue ? minValue : maxPriorityFeePerGas;
+  const maxFeePerGas = 2n * blockBaseFee + maxPriorityFeePerGas;
+  return { maxPriorityFeePerGas, maxFeePerGas };
+}
+
+export async function verifyContract(
+  hre: HardhatRuntimeEnvironment,
+  deployedContractAddress: string,
+  constructorArgs: Array<any>
+) {
+  let result;
+  try {
+    result = await hre.run("verify", {
+      network: hre.network.name,
+      address: deployedContractAddress,
+      constructorArgsParams: constructorArgs,
+    });
+  } catch (error) {
+    console.log(
+      `Failed to automatically verify ${deployedContractAddress} please do it manually!`
+    );
+    console.log(error);
+  }
+  return result;
 }
 
 export async function deployContractsMulticall(

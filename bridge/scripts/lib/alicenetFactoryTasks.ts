@@ -1,19 +1,15 @@
 import toml from "@iarna/toml";
-import {
-  BigNumber,
-  BytesLike,
-  ContractReceipt,
-  ContractTransaction,
-} from "ethers";
+import { BigNumber, BytesLike, ContractFactory } from "ethers";
 import fs from "fs";
 import { task, types } from "hardhat/config";
-import { HardhatRuntimeEnvironment } from "hardhat/types";
 import {
   deployCreateAndRegister,
   deployFactory,
   getEventVar,
   getMetamorphicAddress,
   getSalt,
+  multiCallDeployUpgradeable,
+  multiCallUpgradeProxy,
 } from "./alicenetFactory";
 import { encodeMultiCallArgs } from "./alicenetTasks";
 import {
@@ -29,15 +25,12 @@ import {
   DEPLOY_CREATE,
   DEPLOY_PROXY,
   INITIALIZER,
-  MULTICALL_GAS_LIMIT,
   ONLY_PROXY,
-  PROXY,
   TASK_DEPLOY_CONTRACTS,
   TASK_DEPLOY_CREATE,
   TASK_DEPLOY_CREATE_AND_REGISTER,
   TASK_DEPLOY_FACTORY,
   TASK_DEPLOY_PROXY,
-  TASK_DEPLOY_UPGRADEABLE_PROXY,
   TASK_FULL_MULTI_CALL_DEPLOY_PROXY,
   TASK_MULTI_CALL_DEPLOY_PROXY,
   TASK_UPGRADE_DEPLOYED_PROXY,
@@ -62,16 +55,16 @@ import {
   DeployProxyMCArgs,
   extractName,
   getAllContracts,
-  getContractDescriptor,
   getDeployCreateArgs,
   getDeployGroup,
   getDeployGroupIndex,
   getDeployType,
-  getDeployUpgradeableMultiCallArgs,
   getDeployUpgradeableProxyArgs,
   getFactoryDeploymentArgs,
   getFullyQualifiedName,
+  getGasPrices,
   isInitializable,
+  verifyContract,
 } from "./deployment/deploymentUtil";
 import {
   DeployCreateData,
@@ -347,7 +340,7 @@ task(
   });
 
 task(
-  TASK_FULL_MULTI_CALL_DEPLOY_PROXY,
+  "multicall-deploy-upgradeable",
   "Multicalls deploy-create, deploy-proxy, and upgrade-proxy, if gas cost exceeds 10 million deploy-upgradeable-proxy will be used"
 )
   .addFlag("verify", "try to automatically verify contracts on etherscan")
@@ -370,6 +363,9 @@ task(
   .addOptionalVariadicPositionalParam("constructorArgs", "")
   .setAction(async (taskArgs, hre) => {
     const waitBlocks = taskArgs.waitConfirmation;
+    const implementationBase = (await hre.ethers.getContractFactory(
+      taskArgs.contractName
+    )) as ContractFactory;
     const network = hre.network.name;
     const callArgs: DeployArgs = {
       contractName: taskArgs.contractName,
@@ -379,12 +375,10 @@ task(
       outputFolder: taskArgs.outputFolder,
       constructorArgs: taskArgs.constructorArgs,
     };
-    const factoryBase = await hre.ethers.getContractFactory(ALICENET_FACTORY);
-    const factory = factoryBase.attach(taskArgs.factoryAddress);
-    const logicFactory: any = await hre.ethers.getContractFactory(
-      taskArgs.contractName
+    const factory = await hre.ethers.getContractAt(
+      "AliceNetFactory",
+      taskArgs.factoryAddress
     );
-
     const initArgs =
       taskArgs.initCallData === undefined
         ? []
@@ -393,12 +387,10 @@ task(
       taskArgs.contractName,
       hre.artifacts
     )) as string;
-    const isInitable = await isInitializable(fullname, hre.artifacts);
-    const initCallData = isInitable
-      ? logicFactory.interface.encodeFunctionData(INITIALIZER, initArgs)
+
+    const initCallData = (await isInitializable(fullname, hre.artifacts))
+      ? implementationBase.interface.encodeFunctionData(INITIALIZER, initArgs)
       : "0x";
-    // factory interface pointed to deployed factory contract
-    // get the 32byte salt from logic contract file
     const salt: BytesLike = await getSalt(
       taskArgs.contractName,
       hre.artifacts,
@@ -415,62 +407,43 @@ task(
         "0x3000000000000000",
       ]);
     }
-    // get the multi call arguements as [deployProxy, upgradeProxy]
-    const contractDescriptor = await getContractDescriptor(
-      taskArgs.contractName,
+    let txResponse = await multiCallDeployUpgradeable(
+      implementationBase,
+      factory,
+      hre.ethers,
+      initCallData,
       constructorArgs,
-      initArgs,
-      hre
+      salt,
+      await getGasPrices(hre)
     );
-    const multiCallArgs = await getDeployUpgradeableMultiCallArgs(
-      contractDescriptor,
-      hre,
-      factory.address,
-      initCallData
+    let receipt = await txResponse.wait(waitBlocks);
+    const deployedLogicAddress = getEventVar(
+      receipt,
+      DEPLOYED_RAW,
+      CONTRACT_ADDR
     );
-    const estimatedMultiCallGas = await factory.estimateGas.multiCall(
-      multiCallArgs
-    );
-    let txResponse: ContractTransaction;
-    let receipt: ContractReceipt;
-
-    if (estimatedMultiCallGas.lt(BigNumber.from(MULTICALL_GAS_LIMIT))) {
-      // send the multicall transaction with deployProxy and upgradeProxy
-      txResponse = await factory.multiCall(
-        multiCallArgs,
-        await getGasPrices(hre)
-      );
-      receipt = await txResponse.wait(waitBlocks);
-      const deployedLogicAddress = getEventVar(
-        receipt,
-        DEPLOYED_RAW,
-        CONTRACT_ADDR
-      );
-      if (taskArgs.verify) {
-        await verifyContract(hre, deployedLogicAddress, constructorArgs);
-      }
-      const proxyData: ProxyData = {
-        factoryAddress: taskArgs.factoryAddress,
-        logicName: taskArgs.contractName,
-        logicAddress: deployedLogicAddress,
-        salt,
-        proxyAddress: getEventVar(receipt, DEPLOYED_PROXY, CONTRACT_ADDR),
-        gas: receipt.gasUsed,
-        receipt,
-        initCallData,
-      };
-      await showState(
-        `Deployed ${proxyData.logicName} with proxy at ${proxyData.proxyAddress}, gasCost: ${proxyData.gas}`
-      );
-      await updateProxyList(network, proxyData, taskArgs.outputFolder);
-      return proxyData;
-    } else {
-      return await hre.run(TASK_DEPLOY_UPGRADEABLE_PROXY, callArgs);
+    if (taskArgs.verify) {
+      await verifyContract(hre, deployedLogicAddress, constructorArgs);
     }
+    const proxyData: ProxyData = {
+      factoryAddress: taskArgs.factoryAddress,
+      logicName: taskArgs.contractName,
+      logicAddress: deployedLogicAddress,
+      salt,
+      proxyAddress: getEventVar(receipt, DEPLOYED_PROXY, CONTRACT_ADDR),
+      gas: receipt.gasUsed,
+      receipt,
+      initCallData,
+    };
+    await showState(
+      `Deployed ${proxyData.logicName} with proxy at ${proxyData.proxyAddress}, gasCost: ${proxyData.gas}`
+    );
+    await updateProxyList(network, proxyData, taskArgs.outputFolder);
+    return proxyData;
   });
 
 task(
-  TASK_DEPLOY_UPGRADEABLE_PROXY,
+  "deploy-upgradeable-proxy",
   "deploys logic contract, proxy contract, and points the proxy to the logic contract"
 )
   .addParam(
@@ -952,12 +925,10 @@ task(
     "address of factory contract to deploy the contract with"
   )
   .addOptionalParam(
-    "initCallData",
-    "input initCallData args in a string list, eg: --initCallData 'arg1, arg2'"
-  )
-  .addOptionalParam(
-    "salt",
-    "unique salt for specifying proxy defaults to salt specified in logic contract"
+    "inputFolder",
+    "path to location containing deploymentArgsTemplate, and deploymentList",
+    DEFAULT_CONFIG_DIR,
+    types.string
   )
   .addOptionalParam(
     "waitConfirmation",
@@ -967,66 +938,29 @@ task(
   )
   .addOptionalVariadicPositionalParam("constructorArgs")
   .setAction(async (taskArgs, hre) => {
-    const factoryBase = await hre.ethers.getContractFactory(ALICENET_FACTORY);
-    const factory = factoryBase.attach(taskArgs.factoryAddress);
-    const logicFactory: any = await hre.ethers.getContractFactory(
-      taskArgs.contractName
+    const factory = await hre.ethers.getContractAt(
+      "AliceNetFactory",
+      taskArgs.factoryAddress
     );
-    const initArgs =
-      taskArgs.initCallData === undefined
-        ? []
-        : taskArgs.initCallData.replace(/\s+/g, "").split(",");
     const fullname = (await getFullyQualifiedName(
       taskArgs.contractName,
       hre.artifacts
     )) as string;
-    const isInitable = await isInitializable(fullname, hre.artifacts);
-    const initCallData = isInitable
-      ? logicFactory.interface.encodeFunctionData(INITIALIZER, initArgs)
-      : "0x";
-    const deployTx = logicFactory.getDeployTransaction(
-      ...taskArgs.constructorArgs
-    );
-    const deployCreateCallData = factoryBase.interface.encodeFunctionData(
-      DEPLOY_CREATE,
-      [deployTx.data]
-    );
-    const salt: string =
-      taskArgs.salt === undefined
-        ? await getSalt(taskArgs.contractName, hre.artifacts, hre.ethers)
-        : hre.ethers.utils.formatBytes32String(taskArgs.salt);
-    const txCount = await hre.ethers.provider.getTransactionCount(
-      factory.address
-    );
-    const implAddress = hre.ethers.utils.getContractAddress({
-      from: factory.address,
-      nonce: txCount,
-    });
-    const upgradeProxyCallData = factoryBase.interface.encodeFunctionData(
-      UPGRADE_PROXY,
-      [salt, implAddress, initCallData]
-    );
-    const PROXY_FACTORY = await hre.ethers.getContractFactory(PROXY);
-    const proxyAddress = getMetamorphicAddress(
-      taskArgs.factoryAddress,
-      salt,
-      hre.ethers
-    );
-    const proxyContract = await PROXY_FACTORY.attach(proxyAddress);
-    const oldImpl = await proxyContract.getImplementationAddress();
-    const deployCreate = await encodeMultiCallArgs(
-      factory.address,
-      0,
-      deployCreateCallData
-    );
-    const upgradeProxy = await encodeMultiCallArgs(
-      factory.address,
-      0,
-      upgradeProxyCallData
-    );
-    const txResponse = await factory.multiCall(
-      [deployCreate, upgradeProxy],
-      await getGasPrices(hre)
+    const initializable = await isInitializable(fullname, hre.artifacts);
+    const initArgs =
+      taskArgs.initCallData === undefined
+        ? []
+        : taskArgs.initCallData.replace(/\s+/g, "").split(",");
+    if (initializable && initArgs.length === 0) {
+      throw new Error("initializable contract must have init args");
+    }
+
+    const txResponse = await multiCallUpgradeProxy(
+      taskArgs.contractName,
+      factory,
+      hre.ethers,
+      initArgs,
+      taskArgs.constructorArgs
     );
     const receipt = await txResponse.wait(taskArgs.waitConfirmation);
     await showState(
@@ -1208,51 +1142,3 @@ export const showState = async (message: string): Promise<void> => {
     console.log(message);
   }
 };
-
-export async function getGasPrices(hre: HardhatRuntimeEnvironment) {
-  // get the latest block
-  const latestBlock = await hre.ethers.provider.getBlock("latest");
-  // get the previous basefee from the latest block
-  const _blockBaseFee = latestBlock.baseFeePerGas;
-  if (_blockBaseFee === undefined || _blockBaseFee === null) {
-    throw new Error("undefined block base fee per gas");
-  }
-  const blockBaseFee = _blockBaseFee.toBigInt();
-  // miner tip
-  let maxPriorityFeePerGas: bigint;
-  const network = await hre.ethers.provider.getNetwork();
-  const minValue = hre.ethers.utils.parseUnits("2.0", "gwei").toBigInt();
-  if (network.chainId === 1337) {
-    maxPriorityFeePerGas = minValue;
-  } else {
-    maxPriorityFeePerGas = BigInt(
-      await hre.network.provider.send("eth_maxPriorityFeePerGas")
-    );
-  }
-  maxPriorityFeePerGas = (maxPriorityFeePerGas * 125n) / 100n;
-  maxPriorityFeePerGas =
-    maxPriorityFeePerGas < minValue ? minValue : maxPriorityFeePerGas;
-  const maxFeePerGas = 2n * blockBaseFee + maxPriorityFeePerGas;
-  return { maxPriorityFeePerGas, maxFeePerGas };
-}
-
-export async function verifyContract(
-  hre: HardhatRuntimeEnvironment,
-  deployedContractAddress: string,
-  constructorArgs: Array<any>
-) {
-  let result;
-  try {
-    result = await hre.run("verify", {
-      network: hre.network.name,
-      address: deployedContractAddress,
-      constructorArgsParams: constructorArgs,
-    });
-  } catch (error) {
-    console.log(
-      `Failed to automatically verify ${deployedContractAddress} please do it manually!`
-    );
-    console.log(error);
-  }
-  return result;
-}
