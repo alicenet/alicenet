@@ -60,8 +60,54 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
       .connect(users[0])
       .mint(sharesPerUser);
     const tokenID = await getTokenIdFromTx(tx);
+    await fixture.publicStaking.connect(users[0]).lockWithdraw(tokenID, 1000);
     await expect(
       fixture.publicStaking.connect(users[0]).collectEth(tokenID)
+    ).to.be.revertedWithCustomError(
+      fixture.publicStaking,
+      "LockDurationWithdrawTimeNotReached"
+    );
+    await expect(
+      fixture.publicStaking.connect(users[0]).collectToken(tokenID)
+    ).to.be.revertedWithCustomError(
+      fixture.publicStaking,
+      "LockDurationWithdrawTimeNotReached"
+    );
+    await expect(
+      fixture.publicStaking.connect(users[0]).collectAllProfits(tokenID)
+    ).to.be.revertedWithCustomError(
+      fixture.publicStaking,
+      "LockDurationWithdrawTimeNotReached"
+    );
+  });
+
+  it("Shouldn't allow to collectTo funds before time", async function () {
+    const sharesPerUser = 100n;
+    const tx = await fixture.publicStaking
+      .connect(users[0])
+      .mint(sharesPerUser);
+    const tokenID = await getTokenIdFromTx(tx);
+    await fixture.publicStaking.connect(users[0]).lockWithdraw(tokenID, 1000);
+    await expect(
+      fixture.publicStaking
+        .connect(users[0])
+        .collectEthTo(users[1].address, tokenID)
+    ).to.be.revertedWithCustomError(
+      fixture.publicStaking,
+      "LockDurationWithdrawTimeNotReached"
+    );
+    await expect(
+      fixture.publicStaking
+        .connect(users[0])
+        .collectTokenTo(users[1].address, tokenID)
+    ).to.be.revertedWithCustomError(
+      fixture.publicStaking,
+      "LockDurationWithdrawTimeNotReached"
+    );
+    await expect(
+      fixture.publicStaking
+        .connect(users[0])
+        .collectAllProfitsTo(users[1].address, tokenID)
     ).to.be.revertedWithCustomError(
       fixture.publicStaking,
       "LockDurationWithdrawTimeNotReached"
@@ -86,6 +132,42 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
         "CallerNotTokenOwner"
       )
       .withArgs(admin.address);
+    await expect(fixture.publicStaking.collectAllProfits(tokenID))
+      .to.be.revertedWithCustomError(
+        fixture.publicStaking,
+        "CallerNotTokenOwner"
+      )
+      .withArgs(admin.address);
+  });
+
+  it("Shouldn't allow to collectTo funds for not owned position", async function () {
+    const sharesPerUser = 100n;
+    const tx = await fixture.publicStaking
+      .connect(users[0])
+      .mint(sharesPerUser);
+    const tokenID = await getTokenIdFromTx(tx);
+    await expect(fixture.publicStaking.collectEthTo(users[1].address, tokenID))
+      .to.be.revertedWithCustomError(
+        fixture.publicStaking,
+        "CallerNotTokenOwner"
+      )
+      .withArgs(admin.address);
+    await expect(
+      fixture.publicStaking.collectTokenTo(users[1].address, tokenID)
+    )
+      .to.be.revertedWithCustomError(
+        fixture.publicStaking,
+        "CallerNotTokenOwner"
+      )
+      .withArgs(admin.address);
+    await expect(
+      fixture.publicStaking.collectAllProfitsTo(users[1].address, tokenID)
+    )
+      .to.be.revertedWithCustomError(
+        fixture.publicStaking,
+        "CallerNotTokenOwner"
+      )
+      .withArgs(admin.address);
   });
 
   it("Anyone can estimate profits for a position", async function () {
@@ -97,6 +179,7 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
     // Non user tries to estimate the profit of a non owned position
     await fixture.publicStaking.estimateEthCollection(tokenID);
     await fixture.publicStaking.estimateTokenCollection(tokenID);
+    await fixture.publicStaking.estimateAllProfits(tokenID);
   });
 
   it("Shouldn't allow to collect funds for non-existing position", async function () {
@@ -106,6 +189,21 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
     await expect(fixture.publicStaking.collectToken(100)).to.revertedWith(
       "ERC721: invalid token ID"
     );
+    await expect(fixture.publicStaking.collectAllProfits(100)).to.revertedWith(
+      "ERC721: invalid token ID"
+    );
+  });
+
+  it("Shouldn't allow to collectTo funds for non-existing position", async function () {
+    await expect(
+      fixture.publicStaking.collectEthTo(users[1].address, 100)
+    ).to.revertedWith("ERC721: invalid token ID");
+    await expect(
+      fixture.publicStaking.collectTokenTo(users[1].address, 100)
+    ).to.revertedWith("ERC721: invalid token ID");
+    await expect(
+      fixture.publicStaking.collectAllProfitsTo(users[1].address, 100)
+    ).to.revertedWith("ERC721: invalid token ID");
   });
 
   it("Shouldn't allow to estimate funds for non-existing position", async function () {
@@ -116,6 +214,9 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
       .to.be.revertedWithCustomError(fixture.publicStaking, "InvalidTokenId")
       .withArgs(nonExistingTokenId);
     await expect(fixture.publicStaking.estimateTokenCollection(100))
+      .to.be.revertedWithCustomError(fixture.publicStaking, "InvalidTokenId")
+      .withArgs(nonExistingTokenId);
+    await expect(fixture.publicStaking.estimateAllProfits(100))
       .to.be.revertedWithCustomError(fixture.publicStaking, "InvalidTokenId")
       .withArgs(nonExistingTokenId);
   });
@@ -329,6 +430,74 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
         tokensID,
         expectedState,
         "After collectTo 1 Eth"
+      );
+
+      // only the destination user has to have received the profit
+      expect(
+        (await ethers.provider.getBalance(users[1].address)).toBigInt()
+      ).to.be.equals(
+        balanceBeforeDestination + amountDeposited,
+        "Expected ETH not met for destination address"
+      );
+    });
+
+    it("collect all profits after estimateAllProfits", async function () {
+      await mintPositionCheckAndUpdateState(
+        fixture.publicStaking,
+        fixture.aToken,
+        sharesPerUser,
+        0,
+        users,
+        tokensID,
+        expectedState,
+        "After mint 1"
+      );
+
+      // deposit and collect only with 1 user
+      const amountDeposited = ethers.utils.parseUnits("50", 18).toBigInt();
+      await depositTokensCheckAndUpdateState(
+        fixture.publicStaking,
+        fixture.aToken,
+        amountDeposited,
+        users,
+        tokensID,
+        expectedState,
+        "After deposit 1"
+      );
+
+      await depositEthCheckAndUpdateState(
+        fixture.publicStaking,
+        fixture.aToken,
+        amountDeposited,
+        users,
+        tokensID,
+        expectedState,
+        "After deposit 1 Eth"
+      );
+
+      const balanceBeforeDestination = (
+        await ethers.provider.getBalance(users[1].address)
+      ).toBigInt();
+
+      const [expectedEth, expectedToken] =
+        await fixture.publicStaking.estimateAllProfits(1);
+      // since we only have one user, it should have gotten all amount deposited
+      expect(expectedEth).to.be.equals(amountDeposited);
+      expect(expectedToken).to.be.equals(amountDeposited);
+
+      const destUserIndex = 1;
+      const fromUserIndex = 0;
+      await collectAllProfitsToCheckAndUpdateState(
+        fixture.publicStaking,
+        fixture.aToken,
+        amountDeposited,
+        amountDeposited,
+        fromUserIndex,
+        destUserIndex,
+        users,
+        tokensID,
+        expectedState,
+        "After collectAllProfitsTo 1"
       );
 
       // only the destination user has to have received the profit

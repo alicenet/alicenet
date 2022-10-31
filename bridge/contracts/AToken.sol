@@ -48,6 +48,9 @@ contract AToken is
      * @param amount the amount of legacy token to migrate.
      */
     function migrateTo(address to, uint256 amount) public returns (uint256) {
+        if (to == address(0)) {
+            revert StakingTokenErrors.InvalidAddress();
+        }
         return _migrate(to, amount);
     }
 

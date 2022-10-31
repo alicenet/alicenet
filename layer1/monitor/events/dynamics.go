@@ -1,7 +1,6 @@
 package events
 
 import (
-	"context"
 	"fmt"
 	"github.com/alicenet/alicenet/layer1"
 	"github.com/alicenet/alicenet/layer1/executor"
@@ -56,7 +55,7 @@ func ProcessNewAliceNetNodeVersionAvailable(contracts layer1.AllSmartContracts, 
 	logger.Info("New AliceNet node version available!")
 
 	// Killing previous task
-	_, err = taskHandler.KillTaskByType(context.Background(), &dynamics.CanonicalVersionCheckTask{})
+	_, err = taskHandler.KillTaskByType(&dynamics.CanonicalVersionCheckTask{})
 	if err != nil {
 		return err
 	}
@@ -69,7 +68,7 @@ func ProcessNewAliceNetNodeVersionAvailable(contracts layer1.AllSmartContracts, 
 
 	if newMajorIsGreater || newMinorIsGreater || newPatchIsGreater {
 		// Scheduling task with the new Canonical Version
-		_, err = taskHandler.ScheduleTask(context.Background(), dynamics.NewVersionCheckTask(event.Version), "")
+		_, err = taskHandler.ScheduleTask(dynamics.NewVersionCheckTask(event.Version), "")
 		if err != nil {
 			return err
 		}
