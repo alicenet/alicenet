@@ -34,7 +34,7 @@ abstract contract AliceNetFactoryBase is DeterministicAddress, ProxyUpgrader {
     address private _implementation;
 
     address private immutable _proxyTemplate;
-
+    /// @dev more details here https://github.com/alicenet/alicenet/wiki/Metamorphic-Proxy-Contract
     bytes8 private constant _UNIVERSAL_DEPLOY_CODE = 0x38585839386009f3;
 
     mapping(bytes32 => ContractInfo) internal _externalContractRegistry;
@@ -107,19 +107,7 @@ abstract contract AliceNetFactoryBase is DeterministicAddress, ProxyUpgrader {
     }
 
     /**
-     * @dev Add a new address and "pseudo" salt to the externalContractRegistry
-     * @param salt_: salt to be used to retrieve the contract
-     * @param newContractAddress_: address of the contract to be added to registry
-     */
-    function addNewExternalContract(bytes32 salt_, address newContractAddress_) public onlyOwner {
-        if (_externalContractRegistry[salt_].exist) {
-            revert AliceNetFactoryBaseErrors.SaltAlreadyInUse();
-        }
-        _externalContractRegistry[salt_] = ContractInfo(true, newContractAddress_);
-    }
-
-    /**
-     * @dev Sets the new owner
+     * @dev Allows the owner of the factory to transfer ownership to a new address, for transitioning to decentralization
      * @param newOwner_: address of the new owner
      */
     function setOwner(address newOwner_) public onlyOwner {
@@ -260,10 +248,7 @@ abstract contract AliceNetFactoryBase is DeterministicAddress, ProxyUpgrader {
             contractAddr := create2(value_, basePtr, sub(ptr, basePtr), salt_)
         }
         _codeSizeZeroRevert(uint160(contractAddr) != 0);
-        //record the contract salt to the _contracts array for lookup
-        _contracts.push(salt_);
         emit DeployedRaw(contractAddr);
-        return contractAddr;
     }
 
     /**
@@ -339,6 +324,15 @@ abstract contract AliceNetFactoryBase is DeterministicAddress, ProxyUpgrader {
         __upgrade(proxy, newImpl_);
         assert(IProxy(proxy).getImplementationAddress() == newImpl_);
         _initializeContract(proxy, initCallData_);
+    }
+
+    /// Internal function to add a new address and "pseudo" salt to the externalContractRegistry
+    function _addNewExternalContract(bytes32 salt_, address newContractAddress_) internal {
+        if (_externalContractRegistry[salt_].exist) {
+            revert AliceNetFactoryBaseErrors.SaltAlreadyInUse(salt_);
+        }
+        _contracts.push(salt_);
+        _externalContractRegistry[salt_] = ContractInfo(true, newContractAddress_);
     }
 
     /**
