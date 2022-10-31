@@ -14,6 +14,7 @@ import {
   DEPLOYED_PROXY,
   DEPLOYED_RAW,
 } from "./constants";
+import { isInitializable } from "./deployment/deploymentUtil";
 type Ethers = typeof import("../../node_modules/ethers/lib/ethers") &
   HardhatEthersHelpers;
 
@@ -25,6 +26,20 @@ export async function deployFactory(
   const factoryBase = await ethers.getContractFactory(ALICENET_FACTORY);
   return factoryBase.deploy(constructorArgs, overrides);
 }
+
+//upgradeProxy
+export async function multiCallUpgradeProxy(contractName:string, factoryAddress:string,  ethers: Ethers, artifact: Artifacts, constructorArgs: any[] = [], waitConfirmation: number = 0, initArgs?: any, salt?:string){
+  const fullName = await getFullyQualifiedName(contractName, artifact);
+  const factory = await ethers.getContractAt(ALICENET_FACTORY, factoryAddress);
+  const logicBase = await ethers.getContractFactory(contractName);
+  //parse deploy args
+  initArgs = initArgs === undefined
+  ? []
+  : initArgs.replace(/\s+/g, "").split(",");
+  const initializable = await isInitializable(fullName, artifact);
+  const initCallData = initializable ? logicBase.interface.encodeFunctionData("initialize", initArgs) : "0x";
+  const deployTx = logicBase.getDeployTransaction()
+} 
 
 export async function deployUpgradeable(
   contractName: string,
@@ -139,14 +154,13 @@ export async function upgradeProxy(
 async function getFullyQualifiedName(
   contractName: string,
   artifacts: Artifacts
-) {
+): Promise<string> {
   const artifactPaths = await artifacts.getAllFullyQualifiedNames();
-  for (let i = 0; i < artifactPaths.length; i++) {
-    if (artifactPaths[i].split(":")[1] === contractName) {
-      return String(artifactPaths[i]);
-    }
+  const fullName = artifactPaths.find((path) => path.endsWith(contractName));
+  if (fullName === undefined) {
+    throw new Error(`contract ${contractName} not found`);
   }
-  return undefined;
+  return fullName;
 }
 
 /**
