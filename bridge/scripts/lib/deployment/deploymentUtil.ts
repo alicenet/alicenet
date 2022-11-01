@@ -27,10 +27,10 @@ type Ethers = typeof import("../../../node_modules/ethers/lib/ethers") &
   HardhatEthersHelpers;
 
 export interface ArgData {
-  [key: string]: string;
+  [key: string]: string | number | boolean | BigNumberish | BytesLike | ArrayLike<string | number | boolean | BigNumberish | BytesLike>;
 }
 export interface ContractArgs {
-  [key: string]: Array<ArgData>;
+  [key: string]: ArgData;
 }
 export interface DeploymentArgs {
   constructor: ContractArgs;
@@ -83,6 +83,22 @@ export interface ContractDescriptor {
   constructorArgs: Array<any>;
   initializerArgs: Array<any>;
 }
+
+export interface DeploymentConfig {
+  name : string
+  fullyQualifiedName : string
+  salt: string
+  deployGroup : string
+  deployGroupIndex : string
+  deployType : string
+  constructorArgs : ArgData
+  initializerArgs : ArgData
+}
+
+export interface DeploymentConfigWrapper {
+[key:string]:DeploymentConfig  
+}
+
 
 export async function getContractDescriptor(
   contractName: string,
@@ -166,6 +182,7 @@ export async function getFactoryDeploymentArgs(
     : [];
   return constructorArgs;
 }
+
 export async function getDeployUpgradeableProxyArgs(
   fullyQualifiedName: string,
   factoryAddress: string,
@@ -321,7 +338,7 @@ export async function getDeploymentConstructorArgs(
   fullName: string,
   configDirPath?: string
 ) {
-  let output: Array<string> = [];
+  let output: Array<ArgData> = [];
   // get the deployment args
   const path =
     configDirPath === undefined
@@ -345,12 +362,10 @@ export async function getDeploymentConstructorArgs(
   return output;
 }
 
-export function extractArgs(input: Array<ArgData>) {
-  const output: Array<string> = [];
-  for (let i = 0; i < input.length; i++) {
-    const argName = Object.keys(input[i])[0];
-    const argData = input[i];
-    output.push(argData[argName]);
+export function extractArgs(input: ArgData) {
+  const output: Array<any> = [];
+  for (const key in input) {
+    output.push(input[key]);
   }
   return output;
 }

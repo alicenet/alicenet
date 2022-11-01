@@ -52,6 +52,9 @@ import {
   DeployArgs,
   deployContractsMulticall,
   DeploymentArgs,
+  DeploymentConfig,
+  DeploymentConfigArgs,
+  DeploymentConfigWrapper,
   DeployProxyMCArgs,
   extractName,
   getAllContracts,
@@ -173,9 +176,8 @@ task(
     await checkUserDirPath(taskArgs.outputFolder);
     const path = taskArgs.outputFolder;
     let deploymentList: DeploymentList;
-    let deploymentArgs: DeploymentArgs = {
-      constructor: {},
-      initializer: {},
+    let deploymentArgs: DeploymentConfigWrapper = {
+      
     };
     let list: Array<string>;
     // no custom path and list input/ writes arg template in default scripts/base-files/deploymentArgs
@@ -185,7 +187,7 @@ task(
       const contracts = await getAllContracts(hre.artifacts);
       deploymentList = await getSortedDeployList(contracts, hre.artifacts);
       list = await transformDeploymentList(deploymentList);
-      deploymentArgs = await generateDeployArgTemplate(list, hre.artifacts);
+      deploymentArgs = await generateDeployArgTemplate(list, hre.artifacts, hre.ethers);
     } // user defined path and list
     else if (taskArgs.contractNames !== undefined) {
       // create deploy list and deployment arg with the specified output path
@@ -200,7 +202,7 @@ task(
       }
       deploymentList = await getSortedDeployList(contracts, hre.artifacts);
       list = await transformDeploymentList(deploymentList);
-      deploymentArgs = await generateDeployArgTemplate(list, hre.artifacts);
+      deploymentArgs = await generateDeployArgTemplate(list, hre.artifacts, hre.ethers);
     } // user defined path, default list
     else {
       throw new Error(
