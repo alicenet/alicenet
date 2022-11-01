@@ -326,7 +326,7 @@ func (b *DataStore) ValidateFee(storage *wrapper.Storage) error {
 	if err != nil {
 		return err
 	}
-	perEpochFee, err := storage.GetDataStoreEpochFee()
+	perEpochFee, err := storage.GetDataStoreFee()
 	if err != nil {
 		return err
 	}

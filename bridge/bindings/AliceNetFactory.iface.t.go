@@ -32,6 +32,10 @@ type IAliceNetFactoryTransactor interface {
 	//
 	// Solidity: function deployCreate2(uint256 value_, bytes32 salt_, bytes deployCode_) payable returns(address contractAddr)
 	DeployCreate2(opts *bind.TransactOpts, value_ *big.Int, salt_ [32]byte, deployCode_ []byte) (*types.Transaction, error)
+	// DeployCreateAndRegister is a paid mutator transaction binding the contract method 0xc56ca9ed.
+	//
+	// Solidity: function deployCreateAndRegister(bytes deployCode_, bytes32 salt_) returns(address contractAddr)
+	DeployCreateAndRegister(opts *bind.TransactOpts, deployCode_ []byte, salt_ [32]byte) (*types.Transaction, error)
 	// DeployProxy is a paid mutator transaction binding the contract method 0x39cab472.
 	//
 	// Solidity: function deployProxy(bytes32 salt_) returns(address contractAddr)

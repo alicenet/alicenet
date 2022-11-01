@@ -11,8 +11,9 @@ import { task, types } from "hardhat/config";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 // import { ValidatorPool } from "../../typechain-types";
 import axios from "axios";
+import { getEventVar } from "./alicenetFactory";
 import { getGasPrices } from "./alicenetFactoryTasks";
-import { DEFAULT_CONFIG_OUTPUT_DIR } from "./constants";
+import { CONTRACT_ADDR, DEFAULT_CONFIG_DIR, DEPLOYED_RAW } from "./constants";
 import { readDeploymentArgs } from "./deployment/deploymentConfigUtil";
 export type MultiCallArgsStruct = {
   target: string;
@@ -40,7 +41,7 @@ task(
   .addOptionalParam(
     "deploymentArgsTemplatePath",
     "path of the deploymentArgsTemplate file",
-    DEFAULT_CONFIG_OUTPUT_DIR + "/deploymentArgsTemplate"
+    DEFAULT_CONFIG_DIR + "/deploymentArgsTemplate"
   )
   .addOptionalParam(
     "outputFolder",
@@ -672,6 +673,81 @@ task("schedule-maintenance", "Calls schedule Maintenance")
   });
 
 task(
+  "aggregate-lockup-profits",
+  "Aggregate the profits of the locked positions in the lockup contract"
+)
+  .addParam("factoryAddress", "the AliceNet factory address")
+  .addFlag(
+    "onlyOnce",
+    "only execute aggregateProfits once instead of executing" +
+      " it until is safe to unlock (very gas consuming)"
+  )
+  .setAction(async (taskArgs, hre) => {
+    const { ethers } = hre;
+    const factory = await ethers.getContractAt(
+      "AliceNetFactory",
+      taskArgs.factoryAddress
+    );
+    const lockup = await ethers.getContractAt(
+      "Lockup",
+      await factory.lookup(ethers.utils.formatBytes32String("Lockup"))
+    );
+    let safeToUnlock = await lockup.payoutSafe();
+    while (!safeToUnlock) {
+      await (await lockup.aggregateProfits()).wait(8);
+      safeToUnlock = await lockup.payoutSafe();
+      console.log("Is safe to unlock: " + safeToUnlock);
+      if (taskArgs.onlyOnce) break;
+    }
+    console.log("Done!");
+  });
+
+task(
+  "create-bonus-pool-position",
+  "Transfer and stake the ALCA that will be used to pay the bonus shares to the users that lock a position"
+)
+  .addParam("factoryAddress", "the AliceNet factory address")
+  .addParam(
+    "bonusAmount",
+    "the amount of ALCA that will transferred and staked as bonus"
+  )
+  .setAction(async (taskArgs, hre) => {
+    const { ethers } = hre;
+    const factory = await ethers.getContractAt(
+      "AliceNetFactory",
+      taskArgs.factoryAddress
+    );
+    const lockup = await ethers.getContractAt(
+      "Lockup",
+      await factory.lookup(ethers.utils.formatBytes32String("Lockup"))
+    );
+    const bonusPool = await ethers.getContractAt(
+      "BonusPool",
+      await lockup.getBonusPoolAddress()
+    );
+    const alca = await ethers.getContractAt(
+      "AToken",
+      await factory.lookup(ethers.utils.formatBytes32String("AToken"))
+    );
+    const transferCall = encodeMultiCallArgs(
+      alca.address,
+      0,
+      alca.interface.encodeFunctionData("transfer", [
+        bonusPool.address,
+        ethers.utils.parseEther(taskArgs.bonusAmount),
+      ])
+    );
+    const createBonusStakeCall = encodeMultiCallArgs(
+      bonusPool.address,
+      0,
+      bonusPool.interface.encodeFunctionData("createBonusStakedPosition")
+    );
+    await (
+      await factory.multiCall([transferCall, createBonusStakeCall])
+    ).wait(8);
+  });
+
+task(
   "pause-ethdkg-arbitrary-height",
   "Forcing consensus to stop on block number defined by --input"
 )
@@ -774,6 +850,110 @@ task(
         .connect(adminSigner)
         .callAny(validatorPool.address, 0, input)
     ).wait();
+  });
+
+task("change-dynamic-value", "Change a certain dynamic value")
+  .addParam("factoryAddress", "the alicenet factory address")
+  .addOptionalParam(
+    "relativeEpoch",
+    "How many epochs from the value will be updated on the side chain"
+  )
+  .addOptionalParam("maxBlockSize", "new max block size value")
+  .addOptionalParam("proposalTimeout", "new proposal Timeout value")
+  .addOptionalParam("preVoteTimeout", "new preVote Timeout value")
+  .addOptionalParam("preCommitTimeout", "new preCommit Timeout value")
+  .addOptionalParam("dataStoreFee", "new preVote Timeout value")
+  .addOptionalParam("valueStoreFee", "new preVote Timeout value")
+  .addOptionalParam(
+    "minScaledTransactionFee",
+    "new minScaledTransaction fee value"
+  )
+  .setAction(async (taskArgs, hre) => {
+    const { ethers } = hre;
+    const [admin] = await ethers.getSigners();
+    const adminSigner = await ethers.getSigner(admin.address);
+    const factory = await ethers.getContractAt(
+      "AliceNetFactory",
+      taskArgs.factoryAddress
+    );
+    const dynamics = await hre.ethers.getContractAt(
+      "Dynamics",
+      await factory.lookup(hre.ethers.utils.formatBytes32String("Dynamics"))
+    );
+    const currentValue = await dynamics.getLatestDynamicValues();
+    const newValue = { ...currentValue };
+
+    newValue.maxBlockSize =
+      taskArgs.maxBlockSize !== undefined
+        ? taskArgs.maxBlockSize
+        : currentValue.maxBlockSize;
+
+    newValue.proposalTimeout =
+      taskArgs.proposalTimeout !== undefined
+        ? taskArgs.proposalTimeout
+        : currentValue.proposalTimeout;
+
+    newValue.preVoteTimeout =
+      taskArgs.preVoteTimeout !== undefined
+        ? taskArgs.preVoteTimeout
+        : currentValue.preVoteTimeout;
+
+    newValue.preCommitTimeout =
+      taskArgs.preCommitTimeout !== undefined
+        ? taskArgs.preCommitTimeout
+        : currentValue.preCommitTimeout;
+
+    newValue.dataStoreFee =
+      taskArgs.dataStoreFee !== undefined
+        ? taskArgs.dataStoreFee
+        : currentValue.dataStoreFee;
+
+    newValue.valueStoreFee =
+      taskArgs.valueStoreFee !== undefined
+        ? taskArgs.valueStoreFee
+        : currentValue.valueStoreFee;
+
+    newValue.minScaledTransactionFee =
+      taskArgs.minScaledTransactionFee !== undefined
+        ? taskArgs.minScaledTransactionFee
+        : currentValue.minScaledTransactionFee;
+
+    let epoch;
+    if (taskArgs.relativeEpoch !== undefined && taskArgs.relativeEpoch >= 2) {
+      epoch = taskArgs.relativeEpoch;
+    } else {
+      epoch = 2;
+      console.log(
+        `Epoch not sent or it's less than minimum epoch allowed, therefore scheduling changes in 2 epochs from now.`
+      );
+    }
+
+    const input = dynamics.interface.encodeFunctionData("changeDynamicValues", [
+      epoch,
+      newValue,
+    ]);
+    await (
+      await factory
+        .connect(adminSigner)
+        .callAny(dynamics.address, 0, input, await getGasPrices(hre))
+    ).wait(8);
+
+    const allKeys = Object.keys(currentValue);
+    const allValues = Object.values(newValue);
+    const keys: string[] = [];
+    const newValuesArray = [];
+    for (let i = 0; i < allKeys.length; i++) {
+      if (isNaN(parseFloat(allKeys[i]))) {
+        keys.push(allKeys[i]);
+        newValuesArray.push(allValues[i]);
+      }
+    }
+
+    for (let i = 0; i < currentValue.length; i++) {
+      console.log(
+        `Changed dynamics value ${keys[i]} from ${currentValue[i]} to ${newValuesArray[i]}`
+      );
+    }
   });
 
 task(
@@ -1218,7 +1398,7 @@ task("fund-validators", "manually put 100 eth in each validator account")
 function getValidatorAccount(path: string): string {
   const data = fs.readFileSync(path);
   const config: any = toml.parse(data.toString());
-  return config.validator.rewardAccount;
+  return config.ethereum.defaultAccount;
 }
 
 task("get-gas-cost", "gets the current gas cost")
@@ -1358,6 +1538,29 @@ task("update-alicenet-node-version", "Set the Canonical AliceNet Node Version")
       throw new Error(`Receipt indicates failure: ${rept}`);
     }
     console.log("Done");
+  });
+
+task("deploy-alcb", "Task to deploy ALCB")
+  .addParam(
+    "factoryAddress",
+    "the default factory address from factoryState will be used if not set"
+  )
+  .setAction(async (taskArgs, hre) => {
+    const factory = await hre.ethers.getContractAt(
+      "AliceNetFactory",
+      taskArgs.factoryAddress
+    );
+    const ALCB_BASE = await hre.ethers.getContractFactory("BToken");
+    const deploymentCode = ALCB_BASE.getDeployTransaction(factory.address)
+      .data as BytesLike;
+    const tx = await factory.deployCreate(deploymentCode);
+    const receipt = await tx.wait();
+    const alcbAddress = getEventVar(receipt, DEPLOYED_RAW, CONTRACT_ADDR);
+    console.log("ALCB/BToken address: ", alcbAddress);
+    await factory.addNewExternalContract(
+      hre.ethers.utils.formatBytes32String("BToken"),
+      alcbAddress
+    );
   });
 
 async function mintATokenTo(

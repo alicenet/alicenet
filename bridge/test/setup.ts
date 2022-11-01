@@ -136,7 +136,7 @@ export const getValidatorEthAccount = async (
   } else {
     const balance = await ethers.provider.getBalance(validator.address);
     if (balance.eq(0)) {
-      signers[0].sendTransaction({
+      await signers[0].sendTransaction({
         to: validator.address,
         value: ethers.utils.parseEther(amount),
       });
@@ -234,7 +234,7 @@ export const deployUpgradeableWithFactory = async (
   saltType?: string
 ): Promise<Contract> => {
   const _Contract = await ethers.getContractFactory(contractName);
-  let deployCode = _Contract.getDeployTransaction(...constructorArgs)
+  const deployCode = _Contract.getDeployTransaction(...constructorArgs)
     .data as BytesLike;
   const hre: any = await require("hardhat");
   const transaction = await factory.deployCreate(deployCode);
@@ -321,12 +321,7 @@ export const deployFactoryAndBaseTokens = async (
     await ethers.getContractFactory("BToken")
   ).getDeployTransaction(centralRouter.address).data as BytesLike;
   const bTokenSalt = ethers.utils.formatBytes32String("BToken");
-  const transaction = await factory.deployCreate2(0, bTokenSalt, deployData);
-  const bTokenAddress = await getContractAddressFromDeployedRawEvent(
-    transaction
-  );
-  // registering in the factory.lookup
-  await factory.addNewExternalContract(bTokenSalt, bTokenAddress);
+  await factory.deployCreateAndRegister(deployData, bTokenSalt);
   // finally attach BToken to the address of the deployed contract above
   const bToken = await ethers.getContractAt(
     "BToken",

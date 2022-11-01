@@ -2,12 +2,14 @@ package ethkey
 
 import (
 	"crypto/ecdsa"
+	"errors"
 	"fmt"
 	"github.com/alicenet/alicenet/config"
 	"github.com/alicenet/alicenet/logging"
 	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"os"
 	"path/filepath"
@@ -44,42 +46,9 @@ func generate(cmd *cobra.Command, args []string) {
 		logger.Fatalf("Error checking if keyfile exists: %v", err)
 	}
 
-	var privateKey *ecdsa.PrivateKey
-	var err error
-	if file := config.Configuration.EthKey.PrivateKey; file != "" {
-		// Load private key from file.
-		privateKey, err = crypto.LoadECDSA(file)
-		if err != nil {
-			logger.Fatalf("Can't load private key: %v", err)
-		}
-	} else {
-		// If not loaded, generate random.
-		privateKey, err = crypto.GenerateKey()
-		if err != nil {
-			logger.Fatalf("Failed to generate random private key: %v", err)
-		}
-	}
-
-	// Create the keyfile object with a random UUID.
-	UUID, err := uuid.NewRandom()
+	keyjson, key, _, err := GenerateKeyFile(false, logger)
 	if err != nil {
-		logger.Fatalf("Failed to generate random uuid: %v", err)
-	}
-	key := &keystore.Key{
-		Id:         UUID,
-		Address:    crypto.PubkeyToAddress(privateKey.PublicKey),
-		PrivateKey: privateKey,
-	}
-
-	// Encrypt key with passphrase.
-	passphrase := getPassphrase(true, logger)
-	scryptN, scryptP := keystore.StandardScryptN, keystore.StandardScryptP
-	if config.Configuration.EthKey.LightKDF {
-		scryptN, scryptP = keystore.LightScryptN, keystore.LightScryptP
-	}
-	keyjson, err := keystore.EncryptKey(key, passphrase, scryptN, scryptP)
-	if err != nil {
-		logger.Fatalf("Error encrypting key: %v", err)
+		logger.Fatalf(err.Error())
 	}
 
 	// Store the file to disk.
@@ -99,4 +68,46 @@ func generate(cmd *cobra.Command, args []string) {
 	} else {
 		fmt.Println("Address:", out.Address)
 	}
+}
+
+func GenerateKeyFile(generateRandomPass bool, logger *logrus.Entry) ([]byte, *keystore.Key, string, error) {
+	var privateKey *ecdsa.PrivateKey
+	var err error
+	if file := config.Configuration.EthKey.PrivateKey; file != "" {
+		// Load private key from file.
+		privateKey, err = crypto.LoadECDSA(file)
+		if err != nil {
+			return nil, nil, "", errors.New(fmt.Sprintf("Can't load private key: %v", err))
+		}
+	} else {
+		// If not loaded, generate random.
+		privateKey, err = crypto.GenerateKey()
+		if err != nil {
+			return nil, nil, "", errors.New(fmt.Sprintf("Failed to generate random private key: %v", err))
+		}
+	}
+
+	// Create the keyfile object with a random UUID.
+	UUID, err := uuid.NewRandom()
+	if err != nil {
+		return nil, nil, "", errors.New(fmt.Sprintf("Failed to generate random uuid: %v", err))
+	}
+	key := &keystore.Key{
+		Id:         UUID,
+		Address:    crypto.PubkeyToAddress(privateKey.PublicKey),
+		PrivateKey: privateKey,
+	}
+
+	// Encrypt key with passphrase.
+	passphrase := getPassphrase(generateRandomPass, true, logger)
+	scryptN, scryptP := keystore.StandardScryptN, keystore.StandardScryptP
+	if config.Configuration.EthKey.LightKDF {
+		scryptN, scryptP = keystore.LightScryptN, keystore.LightScryptP
+	}
+	keyjson, err := keystore.EncryptKey(key, passphrase, scryptN, scryptP)
+	if err != nil {
+		return nil, nil, "", errors.New(fmt.Sprintf("Error encrypting key: %v", err))
+	}
+
+	return keyjson, key, passphrase, nil
 }

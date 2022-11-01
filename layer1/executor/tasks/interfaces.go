@@ -2,44 +2,45 @@ package tasks
 
 import (
 	"context"
-
-	"github.com/dgraph-io/badger/v2"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/sirupsen/logrus"
-
 	"github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/layer1"
 	"github.com/alicenet/alicenet/layer1/transaction"
+	"github.com/dgraph-io/badger/v2"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/sirupsen/logrus"
 )
 
-// Task the interface requirements of a task.
+// Task to be implemented by every task to be used by TaskHandler.
 type Task interface {
-	Initialize(ctx context.Context, cancelFunc context.CancelFunc, database *db.Database, logger *logrus.Entry, eth layer1.Client, contracts layer1.AllSmartContracts, name, id string, taskResponseChan TaskResponseChan) error
+	Lock()
+	Unlock()
+	Initialize(database *db.Database, logger *logrus.Entry, eth layer1.Client, contracts layer1.AllSmartContracts, name string, id string, start uint64, end uint64, allowMultiExecution bool, subscribeOptions *transaction.SubscribeOptions, taskResponseChan InternalTaskResponseChan) error
 	Prepare(ctx context.Context) *TaskErr
 	Execute(ctx context.Context) (*types.Transaction, *TaskErr)
 	ShouldExecute(ctx context.Context) (bool, *TaskErr)
-	WasKilled() bool
 	Finish(err error)
-	Close()
+	Kill()
+	KillChan() <-chan struct{}
+	WasKilled() bool
 	GetId() string
 	GetStart() uint64
 	GetEnd() uint64
 	GetName() string
 	GetAllowMultiExecution() bool
 	GetSubscribeOptions() *transaction.SubscribeOptions
-	GetCtx() context.Context
 	GetClient() layer1.Client
 	GetContractsHandler() layer1.AllSmartContracts
 	GetLogger() *logrus.Entry
 }
 
-// TaskState the interface requirements of a task state.
+// TaskState to be implemented by every task for persistence.
 type TaskState interface {
 	PersistState(txn *badger.Txn) error
 	LoadState(txn *badger.Txn) error
 }
 
-// TaskResponseChan the interface requirements of a task response chan.
-type TaskResponseChan interface {
-	Add(TaskResponse)
+// InternalTaskResponseChan to be implemented by a response channel used
+// for communication between the TaskManager and TaskExecutor.
+type InternalTaskResponseChan interface {
+	Add(id string, err error)
 }

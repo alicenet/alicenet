@@ -23,7 +23,7 @@ func TestDisputeMissingRegistrationTask_Group_1_DoTaskSuccessOneParticipantAccus
 
 	var receiptResponses []transaction.ReceiptResponse
 	for idx := 0; idx < n; idx++ {
-		err := suite.DispMissingRegTasks[idx].Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "DisputeMissingRegistrationTask", "task-id", nil)
+		err := suite.DispMissingRegTasks[idx].Initialize(suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "DisputeMissingRegistrationTask", "task-id", suite.DispMissingRegTasks[idx].Start, suite.DispMissingRegTasks[idx].End, false, nil, nil)
 		assert.Nil(t, err)
 
 		err = suite.DispMissingRegTasks[idx].Prepare(ctx)
@@ -69,7 +69,7 @@ func TestDisputeMissingRegistrationTask_Group_1_DoTaskSuccessThreeParticipantAcc
 
 	var receiptResponses []transaction.ReceiptResponse
 	for idx := 0; idx < n; idx++ {
-		err := suite.DispMissingRegTasks[idx].Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "DisputeMissingRegistrationTask", "task-id", nil)
+		err := suite.DispMissingRegTasks[idx].Initialize(suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "DisputeMissingRegistrationTask", "task-id", suite.DispMissingRegTasks[idx].Start, suite.DispMissingRegTasks[idx].End, false, nil, nil)
 		assert.Nil(t, err)
 
 		err = suite.DispMissingRegTasks[idx].Prepare(ctx)
@@ -115,7 +115,7 @@ func TestDisputeMissingRegistrationTask_Group_1_DoTaskSuccessAllParticipantsAreB
 
 	var receiptResponses []transaction.ReceiptResponse
 	for idx := 0; idx < n; idx++ {
-		err := suite.DispMissingRegTasks[idx].Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "DisputeMissingRegistrationTask", "task-id", nil)
+		err := suite.DispMissingRegTasks[idx].Initialize(suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "DisputeMissingRegistrationTask", "task-id", suite.DispMissingRegTasks[idx].Start, suite.DispMissingRegTasks[idx].End, false, nil, nil)
 		assert.Nil(t, err)
 
 		err = suite.DispMissingRegTasks[idx].Prepare(ctx)

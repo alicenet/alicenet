@@ -56,6 +56,29 @@ describe("Testing AToken", async () => {
       expect(currentState).to.be.deep.eq(expectedState);
     });
 
+    it("Should migrateTo with multiplier", async function () {
+      await fixture.legacyToken
+        .connect(user)
+        .approve(fixture.aToken.address, amount);
+      // static call to get the return and check
+      const expectedReturnValue = await fixture.aToken
+        .connect(user)
+        .callStatic.migrateTo(user2.address, amount);
+      await fixture.aToken.connect(user).migrateTo(user2.address, amount);
+      expectedState.Balances.legacyToken.user -= amount;
+      const expectedAmount = (amount * multiplier) / scaleFactor;
+      expect((await fixture.aToken.convert(amount)).toBigInt()).to.be.equal(
+        expectedAmount
+      );
+      expect(expectedReturnValue).to.be.equal(expectedAmount);
+      expectedState.Balances.legacyToken.aToken += amount;
+      currentState = await getState(fixture);
+      expect(currentState).to.be.deep.eq(expectedState);
+      expect(await fixture.aToken.balanceOf(user2.address)).to.be.equal(
+        expectedAmount
+      );
+    });
+
     it("Mint with and without multiplier", async () => {
       // user minting with multiplier in the earlier stage
       await fixture.legacyToken
@@ -116,12 +139,27 @@ describe("Testing AToken", async () => {
       ).to.be.revertedWith("ERC20: insufficient allowance");
     });
 
+    it("Should not allow migrateTo without approval", async function () {
+      await expect(
+        fixture.aToken.connect(user).migrateTo(user.address, amount)
+      ).to.be.revertedWith("ERC20: insufficient allowance");
+    });
+
     it("Should not allow migrate user legacy tokens without token", async function () {
       await fixture.legacyToken
         .connect(user2)
         .approve(fixture.aToken.address, amount);
       await expect(
         fixture.aToken.connect(user2).migrate(amount)
+      ).to.be.revertedWith("ERC20: transfer amount exceeds balance");
+    });
+
+    it("Should not allow migrateTo without token", async function () {
+      await fixture.legacyToken
+        .connect(user2)
+        .approve(fixture.aToken.address, amount);
+      await expect(
+        fixture.aToken.connect(user2).migrateTo(user2.address, amount)
       ).to.be.revertedWith("ERC20: transfer amount exceeds balance");
     });
 
@@ -135,6 +173,27 @@ describe("Testing AToken", async () => {
         fixture.aToken,
         "InvalidConversionAmount"
       );
+    });
+
+    it("Should not allow migrateTo with 0 token", async function () {
+      await fixture.legacyToken
+        .connect(user2)
+        .approve(fixture.aToken.address, amount);
+      await expect(
+        fixture.aToken.connect(user2).migrateTo(user2.address, 0)
+      ).to.be.revertedWithCustomError(
+        fixture.aToken,
+        "InvalidConversionAmount"
+      );
+    });
+
+    it("Should not allow migrateTo to address(0)", async function () {
+      await fixture.legacyToken
+        .connect(user2)
+        .approve(fixture.aToken.address, amount);
+      await expect(
+        fixture.aToken.connect(user2).migrateTo(ethers.constants.AddressZero, 0)
+      ).to.be.revertedWithCustomError(fixture.aToken, "InvalidAddress");
     });
 
     it("should convert the full amount of legacy", async () => {

@@ -54,6 +54,7 @@ func main() {
 		[]byte("a3"),
 		[]byte("a4"),
 		[]byte("a5"),
+		[]byte("a6"),
 		[]byte("Ay"),
 		[]byte("Az"),
 		[]byte("A1"),
