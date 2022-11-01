@@ -30,7 +30,7 @@ abstract contract NativeERCBridgePoolBase is
 
     constructor() ImmutableFactory(msg.sender) {}
 
-    /// @notice Transfer tokens from sender and emit a "Deposited" event for minting correspondent tokens in sidechain
+    /// @notice Transfer tokens from sender
     /// @param msgSender The address of ERC sender
     /// @param depositParameters_ encoded deposit parameters (ERC20:tokenAmount, ERC721:tokenId or ERC1155:tokenAmount+tokenId)
     function deposit(address msgSender, bytes calldata depositParameters_)
@@ -40,6 +40,9 @@ abstract contract NativeERCBridgePoolBase is
         onlyBridgeRouter
     {}
 
+    /// @notice Transfer tokens to sender upon proofs verification
+    /// @param vsPreImage burned UTXO in chain
+    /// @param proofs Proofs of inclusion of burned UTXO
     function withdraw(bytes memory vsPreImage, bytes[4] memory proofs)
         public
         virtual
@@ -47,11 +50,7 @@ abstract contract NativeERCBridgePoolBase is
         returns (address account, uint256 value)
     {
         MerkleProofParserLibrary.MerkleProof memory proofInclusionStateRoot = _verifyProofs(proofs);
-        (address account, uint256 value) = _getValidatedTransferData(
-            vsPreImage,
-            proofInclusionStateRoot
-        );
-        return (account, value);
+        (account, value) = _getValidatedTransferData(vsPreImage, proofInclusionStateRoot);
     }
 
     /// @notice Obtains trasfer data upon UTXO verification
@@ -124,13 +123,13 @@ abstract contract NativeERCBridgePoolBase is
             memory proofInclusionStateRoot = MerkleProofParserLibrary.extractMerkleProof(
                 _proofs[0]
             );
-        MerkleProofLibrary.verifyInclusion(proofInclusionStateRoot, bClaims.stateRoot);
         if (proofInclusionStateRoot.key != proofOfInclusionTxHash.key) {
             revert NativeERCBridgePoolBaseErrors.UTXODoesnotMatch(
                 proofInclusionStateRoot.key,
                 proofOfInclusionTxHash.key
             );
         }
+        MerkleProofLibrary.verifyInclusion(proofInclusionStateRoot, bClaims.stateRoot);
         return proofInclusionStateRoot;
     }
 }

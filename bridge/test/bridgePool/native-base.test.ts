@@ -18,6 +18,7 @@ import {
   wrongChainIdVSPreImage,
   wrongProofs,
   wrongUTXOIDVSPreImage,
+  wrongUTXOProofs,
 } from "./setup";
 
 let fixture: Fixture;
@@ -148,6 +149,17 @@ describe("Testing Base BridgePool Deposit/Withdraw", async () => {
     ).to.be.revertedWithCustomError(
       nativeERCBridgePoolBaseErrors,
       "MerkleProofKeyDoesNotMatchUTXOID"
+    );
+  });
+
+  it("Should not call a withdraw if state key does not match txhash key", async () => {
+    await expect(
+      nativeERCBridgePool
+        .connect(utxoOwnerSigner)
+        .withdraw(vsPreImage, wrongUTXOProofs)
+    ).to.be.revertedWithCustomError(
+      nativeERCBridgePoolBaseErrors,
+      "UTXODoesnotMatch"
     );
   });
 });
