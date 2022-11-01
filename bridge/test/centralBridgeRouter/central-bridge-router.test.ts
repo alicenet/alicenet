@@ -139,6 +139,18 @@ describe("Testing Central Bridge Router", async () => {
         "InvalidPoolVersion"
       );
     });
+    it("Should not disable a disabled router", async () => {
+      await centralBridgeRouter
+        .connect(asFactory)
+        .addRouter(bridgeRouter.address);
+      await centralBridgeRouter.connect(asFactory).disableRouter(1);
+      await expect(
+        centralBridgeRouter.connect(asFactory).disableRouter(1)
+      ).to.be.revertedWithCustomError(
+        centralBridgeRouterErrors,
+        "DisabledPoolVersion"
+      );
+    });
 
     it("Should not route call to a disabled router", async () => {
       await centralBridgeRouter
