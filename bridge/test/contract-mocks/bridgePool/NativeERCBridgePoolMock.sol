@@ -18,7 +18,6 @@ contract NativeERCBridgePoolMock is Initializable, NativeERCBridgePoolBase {
         override
         returns (address account, uint256 value)
     {
-        (address account, uint256 value) = super.withdraw(vsPreImage, proofs);
-        return (account, value);
+        (account, value) = super.withdraw(vsPreImage, proofs);
     }
 }
