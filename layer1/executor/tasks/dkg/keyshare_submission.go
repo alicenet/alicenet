@@ -33,7 +33,7 @@ func (t *KeyShareSubmissionTask) Prepare(ctx context.Context) *tasks.TaskErr {
 	logger := t.GetLogger().WithField("method", "Prepare()")
 	logger.Debug("preparing task")
 
-	dkgState, err := state.GetDkgState(t.GetDB())
+	dkgState, err := state.GetDkgState(t.GetMonDB())
 	if err != nil {
 		return tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorDuringPreparation, err), false)
 	}
@@ -57,7 +57,7 @@ func (t *KeyShareSubmissionTask) Prepare(ctx context.Context) *tasks.TaskErr {
 		dkgState.Participants[defaultAddr].KeyShareG1CorrectnessProofs = g1Proof
 		dkgState.Participants[defaultAddr].KeyShareG2s = g2KeyShare
 
-		err = state.SaveDkgState(t.GetDB(), dkgState)
+		err = state.SaveDkgState(t.GetMonDB(), dkgState)
 		if err != nil {
 			return tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorDuringPreparation, err), false)
 		}
@@ -73,7 +73,7 @@ func (t *KeyShareSubmissionTask) Execute(ctx context.Context) (*types.Transactio
 	logger := t.GetLogger().WithField("method", "Execute()")
 	logger.Debug("initiate execution")
 
-	dkgState, err := state.GetDkgState(t.GetDB())
+	dkgState, err := state.GetDkgState(t.GetMonDB())
 	if err != nil {
 		return nil, tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorLoadingDkgState, err), false)
 	}
@@ -112,7 +112,7 @@ func (t *KeyShareSubmissionTask) ShouldExecute(ctx context.Context) (bool, *task
 	logger := t.GetLogger().WithField("method", "ShouldExecute()")
 	logger.Debug("should execute task")
 
-	dkgState, err := state.GetDkgState(t.GetDB())
+	dkgState, err := state.GetDkgState(t.GetMonDB())
 	if err != nil {
 		return false, tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorLoadingDkgState, err), false)
 	}

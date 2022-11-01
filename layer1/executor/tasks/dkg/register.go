@@ -37,7 +37,7 @@ func (t *RegisterTask) Prepare(ctx context.Context) *tasks.TaskErr {
 	logger := t.GetLogger().WithField("method", "Prepare()")
 	logger.Debugf("preparing task")
 
-	dkgState, err := state.GetDkgState(t.GetDB())
+	dkgState, err := state.GetDkgState(t.GetMonDB())
 	if err != nil {
 		return tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorDuringPreparation, err), false)
 	}
@@ -54,7 +54,7 @@ func (t *RegisterTask) Prepare(ctx context.Context) *tasks.TaskErr {
 		dkgState.TransportPrivateKey = priv
 		dkgState.TransportPublicKey = pub
 
-		err = state.SaveDkgState(t.GetDB(), dkgState)
+		err = state.SaveDkgState(t.GetMonDB(), dkgState)
 		if err != nil {
 			return tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorDuringPreparation, err), false)
 		}
@@ -76,7 +76,7 @@ func (t *RegisterTask) Execute(ctx context.Context) (*types.Transaction, *tasks.
 		return nil, tasks.NewTaskErr(fmt.Sprintf("failed to get current height : %v", err), true)
 	}
 
-	dkgState, err := state.GetDkgState(t.GetDB())
+	dkgState, err := state.GetDkgState(t.GetMonDB())
 	if err != nil {
 		return nil, tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorLoadingDkgState, err), false)
 	}
@@ -103,7 +103,7 @@ func (t *RegisterTask) ShouldExecute(ctx context.Context) (bool, *tasks.TaskErr)
 	logger := t.GetLogger().WithField("method", "ShouldExecute()")
 	logger.Debug("should execute task")
 
-	dkgState, err := state.GetDkgState(t.GetDB())
+	dkgState, err := state.GetDkgState(t.GetMonDB())
 	if err != nil {
 		return false, tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorLoadingDkgState, err), false)
 	}

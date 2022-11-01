@@ -3,6 +3,7 @@ package dkg
 import (
 	"context"
 	"fmt"
+	"github.com/alicenet/alicenet/constants"
 	"github.com/ethereum/go-ethereum/core/types"
 
 	"github.com/alicenet/alicenet/layer1/executor/tasks"
@@ -56,7 +57,7 @@ func (t *InitializeTask) ShouldExecute(ctx context.Context) (bool, *tasks.TaskEr
 	logger := t.GetLogger().WithField("method", "ShouldExecute()")
 	logger.Debug("should execute task")
 
-	dkgState, err := state.GetDkgState(t.GetDB())
+	dkgState, err := state.GetDkgState(t.GetMonDB())
 	if err != nil {
 		return false, tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorLoadingDkgState, err), false)
 	}
@@ -72,5 +73,14 @@ func (t *InitializeTask) ShouldExecute(ctx context.Context) (bool, *tasks.TaskEr
 		return false, tasks.NewTaskErr(fmt.Sprintf("failed to check ETHDKG running state %v", err), true)
 	}
 
-	return !isETHDKGRunning, nil
+	if isETHDKGRunning {
+		return false, nil
+	}
+
+	count, err := t.GetContractsHandler().EthereumContracts().ValidatorPool().GetValidatorsCount(callOpts)
+	if err != nil {
+		return false, tasks.NewTaskErr(fmt.Sprintf("failed to check validators count %v", err), true)
+	}
+
+	return count.Int64() >= constants.ETHDKGMinimumParticipants, nil
 }

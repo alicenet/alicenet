@@ -39,7 +39,7 @@ func (t *DisputeMissingShareDistributionTask) Execute(ctx context.Context) (*typ
 	logger := t.GetLogger().WithField("method", "Execute()")
 	logger.Debug("initiate execution")
 
-	dkgState, err := state.GetDkgState(t.GetDB())
+	dkgState, err := state.GetDkgState(t.GetMonDB())
 	if err != nil {
 		return nil, tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorLoadingDkgState, err), false)
 	}
@@ -74,7 +74,7 @@ func (t *DisputeMissingShareDistributionTask) ShouldExecute(ctx context.Context)
 	logger := t.GetLogger().WithField("method", "ShouldExecute()")
 	logger.Debug("should execute task")
 
-	dkgState, err := state.GetDkgState(t.GetDB())
+	dkgState, err := state.GetDkgState(t.GetMonDB())
 	if err != nil {
 		return false, tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorLoadingDkgState, err), false)
 	}
@@ -101,7 +101,7 @@ func (t *DisputeMissingShareDistributionTask) getAccusableParticipants(ctx conte
 	logger := t.GetLogger()
 	var accusableParticipants []common.Address
 
-	validators, err := utils.GetValidatorAddresses(t.GetDB(), logger)
+	validators, err := utils.GetValidatorAddresses(t.GetMonDB(), logger)
 	if err != nil {
 		return nil, fmt.Errorf(tasks.ErrorGettingValidators, err)
 	}

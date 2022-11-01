@@ -325,6 +325,5 @@ func (r *RoundStates) SetEvictedValidator(pAddr []byte) {
 }
 
 func (r *RoundStates) IsValidatorEvicted(pAddr []byte) bool {
-	//logging.GetLogger("accusations").Warnf("IsValidatorEvicted(0x%x): %v", pAddr, r.EvitedValidators[string(pAddr)])
 	return r.EvitedValidators[string(pAddr)]
 }

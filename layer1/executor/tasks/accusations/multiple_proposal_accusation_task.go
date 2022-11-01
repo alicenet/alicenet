@@ -3,6 +3,7 @@ package accusations
 import (
 	"context"
 	"fmt"
+	"github.com/dgraph-io/badger/v2"
 
 	"github.com/alicenet/alicenet/consensus/objs"
 	"github.com/alicenet/alicenet/layer1/executor/tasks"
@@ -17,23 +18,25 @@ type MultipleProposalAccusationTask struct {
 	// everything from here onwards are fields that are unique for this task. If
 	// a field is exposed it will be serialized, persisted and restored during
 	// eventual crashes.
-	Signature0 []byte
-	Proposal0  *objs.PClaims
-	Signature1 []byte
-	Proposal1  *objs.PClaims
+	Signature0   []byte
+	Proposal0    *objs.PClaims
+	Signature1   []byte
+	Proposal1    *objs.PClaims
+	ProposerAddr []byte
 }
 
 // asserting that MultipleProposalTask struct implements interface tasks.Task, all
 // tasks should conform to this interface
 var _ tasks.Task = &MultipleProposalAccusationTask{}
 
-func NewMultipleProposalAccusationTask(signature0 []byte, proposal0 *objs.PClaims, signature1 []byte, proposal1 *objs.PClaims) *MultipleProposalAccusationTask {
+func NewMultipleProposalAccusationTask(signature0 []byte, proposal0 *objs.PClaims, signature1 []byte, proposal1 *objs.PClaims, proposerAddr []byte) *MultipleProposalAccusationTask {
 	multipleProposalTask := &MultipleProposalAccusationTask{
-		BaseTask:   tasks.NewBaseTask(0, 0, true, nil),
-		Signature0: signature0,
-		Proposal0:  proposal0,
-		Signature1: signature1,
-		Proposal1:  proposal1,
+		BaseTask:     tasks.NewBaseTask(0, 0, true, nil),
+		Signature0:   signature0,
+		Proposal0:    proposal0,
+		Signature1:   signature1,
+		Proposal1:    proposal1,
+		ProposerAddr: proposerAddr,
 	}
 	return multipleProposalTask
 }
@@ -57,7 +60,7 @@ func (t *MultipleProposalAccusationTask) Prepare(ctx context.Context) *tasks.Tas
 	/*
 		// Get GetExampleState is an auxiliary function to retrieve the state from db
 		// and check errors. Check `layer1/executor/tasks/state/snapshots` for more information.
-		exampleState, err := state.GetExampleState(s.GetDB())
+		exampleState, err := state.GetExampleState(s.GetMonDB())
 		if err != nil {
 			return tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorDuringPreparation, err), false)
 		}
@@ -65,7 +68,7 @@ func (t *MultipleProposalAccusationTask) Prepare(ctx context.Context) *tasks.Tas
 		exampleState.Foo = 42
 		// SaveExampleState is an auxiliary function to save the state in the db
 		// and check errors. Check `layer1/executor/tasks/state/snapshots` task for more examples.
-		err = state.SaveExampleState(s.GetDB(), exampleState)
+		err = state.SaveExampleState(s.GetMonDB(), exampleState)
 		if err != nil {
 			return tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorDuringPreparation, err), false)
 		}
@@ -130,7 +133,6 @@ func (t *MultipleProposalAccusationTask) Execute(ctx context.Context) (*types.Tr
 // FUNCTION. ALWAYS MAKE SURE THAT THERE'S NO POSSIBILITY OF INFINITE LOOP THAT
 // DOESN'T CHECK THE CTX IN HERE.
 func (t *MultipleProposalAccusationTask) ShouldExecute(ctx context.Context) (bool, *tasks.TaskErr) {
-
 	client := t.GetClient()
 	// The GetCallOpts will retrieve the information in layer 1 smart contracts with
 	// a delay of FINALITY_BLOCKS. I.e, the information will be there after `X`
@@ -150,5 +152,24 @@ func (t *MultipleProposalAccusationTask) ShouldExecute(ctx context.Context) (boo
 
 	t.GetLogger().Infof("MultipleProposalAccusationTask: accusation \"0x%x\" done: %v", id, isAccused)
 
-	return !isAccused, nil
+	if isAccused {
+		return false, nil
+	}
+
+	isEvicted := false
+	err = t.GetConsDB().View(func(txn *badger.Txn) error {
+		isEvicted, err = t.GetConsDB().IsValidatorEvicted(txn, t.ProposerAddr)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		t.GetLogger().Infof("MultipleProposalAccusationTask: error checking IsValidatorEvicted: %v", err)
+		return false, tasks.NewTaskErr(fmt.Sprintf("MultipleProposalAccusationTask: error checking IsValidatorEvicted: %v", err), true)
+	}
+
+	return !isEvicted, nil
 }

@@ -1,6 +1,7 @@
 package db
 
 import (
+	"bytes"
 	"context"
 	"sync"
 
@@ -2039,6 +2040,26 @@ func (db *Database) GetEvictedValidatorsByGroupKey(txn *badger.Txn, groupKey []b
 	}
 
 	return evictedValidatorAddresses, nil
+}
+
+func (db *Database) IsValidatorEvicted(txn *badger.Txn, vAddr []byte) (bool, error) {
+	os, err := db.GetOwnState(txn)
+	if err != nil {
+		return false, err
+	}
+
+	evictedValidators, err := db.GetEvictedValidatorsByGroupKey(txn, os.GroupKey)
+	if err != nil {
+		return false, err
+	}
+
+	for _, evictedValidator := range evictedValidators {
+		if bytes.Equal(vAddr, evictedValidator) {
+			return true, nil
+		}
+	}
+
+	return false, nil
 }
 
 func (db *Database) DeleteAllEvictedValidators(txn *badger.Txn) error {

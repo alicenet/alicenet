@@ -14,8 +14,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-func detectMultipleProposal(rs *objs.RoundState, lrs *lstate.RoundStates, db *db.Database) (tasks.Task, bool) {
-
+func detectMultipleProposal(rs *objs.RoundState, lrs *lstate.RoundStates, consDB *db.Database) (tasks.Task, bool) {
 	// rs.Proposal and rs.ConflictingProposal should both not be nil
 	if rs.Proposal == nil || rs.ConflictingProposal == nil {
 		return nil, false
@@ -70,6 +69,7 @@ func detectMultipleProposal(rs *objs.RoundState, lrs *lstate.RoundStates, db *db
 		rs.Proposal.PClaims,
 		rs.ConflictingProposal.Signature,
 		rs.ConflictingProposal.PClaims,
+		rs.Proposal.Proposer,
 	)
 
 	// deterministic accusation ID

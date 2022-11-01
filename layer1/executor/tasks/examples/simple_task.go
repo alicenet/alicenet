@@ -53,7 +53,7 @@ func (t *SimpleExampleTask) Prepare(ctx context.Context) *tasks.TaskErr {
 		// Get GetExampleState is an auxiliary function to retrieve the state from db
 		// and check errors. Check `layer1/executor/tasks/state/snapshots` for more information.
 
-		exampleState, err := state.GetExampleState(t.GetDB())
+		exampleState, err := state.GetExampleState(t.GetMonDB())
 		if err != nil {
 			return tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorDuringPreparation, err), false)
 		}
@@ -65,7 +65,7 @@ func (t *SimpleExampleTask) Prepare(ctx context.Context) *tasks.TaskErr {
 		// SaveExampleState is an auxiliary function to save the state in the db
 		// and check errors. Check `layer1/executor/tasks/state/snapshots` task for more examples.
 
-		err = state.SaveExampleState(t.GetDB(), exampleState)
+		err = state.SaveExampleState(t.GetMonDB(), exampleState)
 		if err != nil {
 			return tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorDuringPreparation, err), false)
 		}
@@ -88,7 +88,7 @@ func (t *SimpleExampleTask) Execute(ctx context.Context) (*types.Transaction, *t
 
 	/*
 
-		exampleState, err := state.GetExampleState(t.GetDB())
+		exampleState, err := state.GetExampleState(t.GetMonDB())
 		if err != nil {
 			return nil, tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorLoadingDkgState, err), false)
 		}

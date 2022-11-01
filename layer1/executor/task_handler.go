@@ -25,7 +25,7 @@ type Handler struct {
 }
 
 // NewTaskHandler creates a new Handler instance.
-func NewTaskHandler(database *db.Database, eth layer1.Client, contracts layer1.AllSmartContracts, adminHandler monitorInterfaces.AdminHandler, txWatcher transaction.Watcher) (TaskHandler, error) {
+func NewTaskHandler(monDB, consDB *db.Database, eth layer1.Client, contracts layer1.AllSmartContracts, adminHandler monitorInterfaces.AdminHandler, txWatcher transaction.Watcher) (TaskHandler, error) {
 	// main context that will cancel all workers and go routines
 	mainCtx, cf := context.WithCancel(context.Background())
 
@@ -33,7 +33,7 @@ func NewTaskHandler(database *db.Database, eth layer1.Client, contracts layer1.A
 	requestChan := make(chan managerRequest, tasks.ManagerBufferSize)
 	logger := logging.GetLogger("tasks")
 
-	taskManager, err := newTaskManager(mainCtx, eth, contracts, database, logger.WithField("Component", "TaskManager"), adminHandler, requestChan, txWatcher)
+	taskManager, err := newTaskManager(mainCtx, eth, contracts, monDB, consDB, logger.WithField("Component", "TaskManager"), adminHandler, requestChan, txWatcher)
 	if err != nil {
 		cf()
 		return nil, err
