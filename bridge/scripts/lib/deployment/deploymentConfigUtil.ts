@@ -5,7 +5,14 @@ import {
   DEPLOYMENT_LIST_PATH,
   FACTORY_STATE_PATH,
 } from "../constants";
+import { DeploymentConfigWrapper } from "./deploymentUtil";
 
+export async function readDeploymentListConfig(
+  path: string
+): Promise<DeploymentConfigWrapper> {
+  path = path + "/deploymentArgsTemplate.json";
+  return await readJSON(path);
+}
 export async function readDeploymentList(usrPath?: string) {
   return await readTOML(DEPLOYMENT_LIST_PATH, usrPath);
 }
@@ -31,4 +38,9 @@ export async function readTOML(defaultPath: string, usrPath?: string) {
     outputObj = output;
   }
   return outputObj;
+}
+
+export async function readJSON(path: string) {
+  const rawData = fs.readFileSync(path);
+  return JSON.parse(rawData.toString("utf8"));
 }
