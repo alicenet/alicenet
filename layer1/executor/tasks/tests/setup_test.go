@@ -235,7 +235,7 @@ func StartFromRegistrationOpenPhase(t *testing.T, fixture *tests.ClientFixture, 
 		regTasks[idx] = regTask
 		dispMissingRegTasks[idx] = dispMissingRegTask
 
-		err = regTasks[idx].Initialize(ctx, nil, dkgDb, logger, eth, fixture.Contracts, "RegistrationTask", fmt.Sprintf("%v", idx), regTasks[idx].Start, regTasks[idx].End, false, nil, nil)
+		err = regTasks[idx].Initialize(dkgDb, logger, eth, fixture.Contracts, "RegistrationTask", fmt.Sprintf("%v", idx), regTasks[idx].Start, regTasks[idx].End, false, nil, nil)
 		assert.Nil(t, err)
 		err = regTasks[idx].Prepare(ctx)
 		assert.Nil(t, err)
@@ -343,7 +343,7 @@ func StartFromShareDistributionPhase(t *testing.T, fixture *tests.ClientFixture,
 
 		shareDistTask := suite.ShareDistTasks[idx]
 
-		err = shareDistTask.Initialize(ctx, nil, suite.DKGStatesDbs[idx], logger, suite.Eth, fixture.Contracts, "ShareDistributionTask", fmt.Sprintf("%v", idx), shareDistTask.Start, shareDistTask.End, false, nil, nil)
+		err = shareDistTask.Initialize(suite.DKGStatesDbs[idx], logger, suite.Eth, fixture.Contracts, "ShareDistributionTask", fmt.Sprintf("%v", idx), shareDistTask.Start, shareDistTask.End, false, nil, nil)
 		assert.Nil(t, err)
 		err = shareDistTask.Prepare(ctx)
 		assert.Nil(t, err)
@@ -450,7 +450,7 @@ func StartFromKeyShareSubmissionPhase(t *testing.T, fixture *tests.ClientFixture
 
 		keyshareSubmissionTask := suite.KeyshareSubmissionTasks[idx]
 
-		err := keyshareSubmissionTask.Initialize(ctx, nil, suite.DKGStatesDbs[idx], logger, suite.Eth, fixture.Contracts, "KeyShareSubmissionTask", fmt.Sprintf("%v", idx), keyshareSubmissionTask.Start, keyshareSubmissionTask.End, false, nil, nil)
+		err := keyshareSubmissionTask.Initialize(suite.DKGStatesDbs[idx], logger, suite.Eth, fixture.Contracts, "KeyShareSubmissionTask", fmt.Sprintf("%v", idx), keyshareSubmissionTask.Start, keyshareSubmissionTask.End, false, nil, nil)
 		assert.Nil(t, err)
 		err = keyshareSubmissionTask.Prepare(ctx)
 		assert.Nil(t, err)
@@ -526,7 +526,7 @@ func StartFromMPKSubmissionPhase(t *testing.T, fixture *tests.ClientFixture, pha
 	var receiptResponses []transaction.ReceiptResponse
 	for idx := 0; idx < numValidators; idx++ {
 		task := suite.MpkSubmissionTasks[idx]
-		err := task.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "MPKSubmissionTask", fmt.Sprintf("%v", idx), task.Start, task.End, false, nil, nil)
+		err := task.Initialize(suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "MPKSubmissionTask", fmt.Sprintf("%v", idx), task.Start, task.End, false, nil, nil)
 		assert.Nil(t, err)
 		err = task.Prepare(ctx)
 		assert.Nil(t, err)
@@ -607,7 +607,7 @@ func StartFromGPKjPhase(t *testing.T, fixture *tests.ClientFixture, undistribute
 
 		gpkjSubTask := suite.GpkjSubmissionTasks[idx]
 
-		err := gpkjSubTask.Initialize(ctx, nil, suite.DKGStatesDbs[idx], logger, suite.Eth, fixture.Contracts, "GPKjSubmissionTask", fmt.Sprintf("%v", idx), gpkjSubTask.Start, gpkjSubTask.End, false, nil, nil)
+		err := gpkjSubTask.Initialize(suite.DKGStatesDbs[idx], logger, suite.Eth, fixture.Contracts, "GPKjSubmissionTask", fmt.Sprintf("%v", idx), gpkjSubTask.Start, gpkjSubTask.End, false, nil, nil)
 		assert.Nil(t, err)
 		err = gpkjSubTask.Prepare(ctx)
 		assert.Nil(t, err)
@@ -713,7 +713,7 @@ func CompleteEthDkgCeremony(t *testing.T, numValidators int) (*tests.ClientFixtu
 		for j := 0; j < numValidators; j++ {
 			disputeGPKjTask := suite.DisputeGPKjTasks[idx][j]
 
-			err := disputeGPKjTask.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "disputeGPKjTask", "task-id", 0, 0, false, nil, nil)
+			err := disputeGPKjTask.Initialize(suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "disputeGPKjTask", "task-id", 0, 0, false, nil, nil)
 			assert.Nil(t, err)
 			err = disputeGPKjTask.Prepare(ctx)
 			assert.Nil(t, err)
@@ -735,7 +735,7 @@ func CompleteEthDkgCeremony(t *testing.T, numValidators int) (*tests.ClientFixtu
 	for idx := 0; idx < numValidators; idx++ {
 		completionTask := suite.CompletionTasks[idx]
 
-		err := completionTask.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "CompletionTask", "task-id", 0, 0, false, nil, nil)
+		err := completionTask.Initialize(suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "CompletionTask", "task-id", 0, 0, false, nil, nil)
 		assert.Nil(t, err)
 		err = completionTask.Prepare(ctx)
 		assert.Nil(t, err)

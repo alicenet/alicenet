@@ -1,10 +1,11 @@
 package tests
 
 import (
-	"github.com/alicenet/alicenet/layer1/executor"
-	execMocks "github.com/alicenet/alicenet/layer1/executor/mocks"
 	"strings"
 	"testing"
+
+	"github.com/alicenet/alicenet/layer1/executor"
+	execMocks "github.com/alicenet/alicenet/layer1/executor/mocks"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/stretchr/testify/assert"
@@ -18,11 +19,12 @@ import (
 
 func TestRegisteringETHDKGEvents(t *testing.T) {
 	var em *objects.EventMap = objects.NewEventMap()
-	db := mocks.NewTestDB()
+	consDB := mocks.NewTestDB()
+	monDB := mocks.NewTestDB()
 	var adminHandler interfaces.AdminHandler = mocks.NewMockAdminHandler()
 	var taskHandler executor.TaskHandler = execMocks.NewMockTaskHandler()
 
-	events.RegisterETHDKGEvents(em, db, adminHandler, taskHandler)
+	events.RegisterETHDKGEvents(em, consDB, monDB, adminHandler, taskHandler)
 
 	ethDkgABI, err := abi.JSON(strings.NewReader(bindings.ETHDKGMetaData.ABI))
 	if err != nil {

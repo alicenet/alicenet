@@ -295,6 +295,10 @@ func (ps *PeerManager) handleDisc(conn interfaces.P2PConn) {
 		ps.Lock()
 		defer ps.Unlock()
 		if !ps.active.contains(conn.NodeAddr()) {
+			ps.logger.WithFields(logrus.Fields{
+				"nodeAddrHost": conn.NodeAddr().Host(),
+				"nodeAddrPort": conn.NodeAddr().Port(),
+			}).Warn("Adding inactive peer handleDisc")
 			ps.inactive.add(conn.NodeAddr())
 		}
 	}()

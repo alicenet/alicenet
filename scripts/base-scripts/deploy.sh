@@ -15,7 +15,7 @@ npx hardhat set-local-environment-interval-mining --network $NETWORK --enable-au
 cp ../scripts/base-files/deploymentList ../scripts/generated/deploymentList
 cp ../scripts/base-files/deploymentArgsTemplate ../scripts/generated/deploymentArgsTemplate
 
-npx hardhat --network "$NETWORK" --show-stack-traces deploy-contracts --input-folder ../scripts/generated
+npx hardhat --network "$NETWORK" --show-stack-traces deploy-contracts --input-folder ../scripts/generated --wait-confirmation 1
 addr="$(grep -Pzo "\[$NETWORK\]\ndefaultFactoryAddress = \".*\"\n" ../scripts/generated/factoryState | grep -a "defaultFactoryAddress = .*" | awk '{print $NF}')"
 
 export FACTORY_ADDRESS=$addr
