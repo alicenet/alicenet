@@ -1,9 +1,6 @@
 package events
 
 import (
-	"context"
-	"github.com/dgraph-io/badger/v2"
-
 	"github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/layer1"
 	"github.com/alicenet/alicenet/layer1/executor"
@@ -12,6 +9,7 @@ import (
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
 	monitorInterfaces "github.com/alicenet/alicenet/layer1/monitor/interfaces"
 	"github.com/alicenet/alicenet/layer1/monitor/objects"
+	"github.com/dgraph-io/badger/v2"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -81,8 +79,7 @@ func ProcessRegistrationOpened(eth layer1.Client, contracts layer1.AllSmartContr
 		"TaskEnd":   registrationTask.GetEnd(),
 	}).Info("Scheduling NewRegisterTask")
 
-	ctx := context.Background()
-	if _, err = taskHandler.ScheduleTask(ctx, registrationTask, ""); err != nil {
+	if _, err = taskHandler.ScheduleTask(registrationTask, ""); err != nil {
 		return err
 	}
 
@@ -92,7 +89,7 @@ func ProcessRegistrationOpened(eth layer1.Client, contracts layer1.AllSmartContr
 		"TaskEnd":   disputeMissingRegistrationTask.GetEnd(),
 	}).Info("Scheduling NewDisputeRegistrationTask")
 
-	if _, err = taskHandler.ScheduleTask(ctx, disputeMissingRegistrationTask, ""); err != nil {
+	if _, err = taskHandler.ScheduleTask(disputeMissingRegistrationTask, ""); err != nil {
 		return err
 	}
 
@@ -189,11 +186,10 @@ func ProcessRegistrationComplete(contracts layer1.AllSmartContracts, logger *log
 	}
 
 	//Killing previous tasks
-	ctx := context.Background()
-	if _, err = taskHandler.KillTaskByType(ctx, &dkg.RegisterTask{}); err != nil {
+	if _, err = taskHandler.KillTaskByType(&dkg.RegisterTask{}); err != nil {
 		return err
 	}
-	if _, err = taskHandler.KillTaskByType(ctx, &dkg.DisputeMissingRegistrationTask{}); err != nil {
+	if _, err = taskHandler.KillTaskByType(&dkg.DisputeMissingRegistrationTask{}); err != nil {
 		return err
 	}
 
@@ -203,7 +199,7 @@ func ProcessRegistrationComplete(contracts layer1.AllSmartContracts, logger *log
 		"TaskEnd":   shareDistributionTask.GetEnd(),
 	}).Info("Scheduling NewShareDistributionTask")
 
-	if _, err = taskHandler.ScheduleTask(ctx, shareDistributionTask, ""); err != nil {
+	if _, err = taskHandler.ScheduleTask(shareDistributionTask, ""); err != nil {
 		return err
 	}
 
@@ -213,7 +209,7 @@ func ProcessRegistrationComplete(contracts layer1.AllSmartContracts, logger *log
 		"TaskEnd":   disputeMissingShareDistributionTask.GetEnd(),
 	}).Info("Scheduling NewDisputeParticipantDidNotDistributeSharesTask")
 
-	if _, err = taskHandler.ScheduleTask(ctx, disputeMissingShareDistributionTask, ""); err != nil {
+	if _, err = taskHandler.ScheduleTask(disputeMissingShareDistributionTask, ""); err != nil {
 		return err
 	}
 
@@ -224,7 +220,7 @@ func ProcessRegistrationComplete(contracts layer1.AllSmartContracts, logger *log
 			"TaskEnd":   disputeBadSharesTask.GetEnd(),
 			"Address":   disputeBadSharesTask.Address,
 		}).Info("Scheduling NewDisputeDistributeSharesTask")
-		if _, err = taskHandler.ScheduleTask(ctx, disputeBadSharesTask, ""); err != nil {
+		if _, err = taskHandler.ScheduleTask(disputeBadSharesTask, ""); err != nil {
 			return err
 		}
 	}
@@ -315,14 +311,13 @@ func ProcessShareDistributionComplete(contracts layer1.AllSmartContracts, logger
 	}
 
 	//Killing previous tasks
-	ctx := context.Background()
-	if _, err = taskHandler.KillTaskByType(ctx, &dkg.ShareDistributionTask{}); err != nil {
+	if _, err = taskHandler.KillTaskByType(&dkg.ShareDistributionTask{}); err != nil {
 		return err
 	}
-	if _, err = taskHandler.KillTaskByType(ctx, &dkg.DisputeMissingShareDistributionTask{}); err != nil {
+	if _, err = taskHandler.KillTaskByType(&dkg.DisputeMissingShareDistributionTask{}); err != nil {
 		return err
 	}
-	if _, err = taskHandler.KillTaskByType(ctx, &dkg.DisputeShareDistributionTask{}); err != nil {
+	if _, err = taskHandler.KillTaskByType(&dkg.DisputeShareDistributionTask{}); err != nil {
 		return err
 	}
 
@@ -333,7 +328,7 @@ func ProcessShareDistributionComplete(contracts layer1.AllSmartContracts, logger
 			"TaskEnd":   disputeShareDistributionTask.GetEnd(),
 			"Address":   disputeShareDistributionTask.Address,
 		}).Info("Scheduling NewDisputeShareDistributionTask")
-		if _, err = taskHandler.ScheduleTask(ctx, disputeShareDistributionTask, ""); err != nil {
+		if _, err = taskHandler.ScheduleTask(disputeShareDistributionTask, ""); err != nil {
 			return err
 		}
 	}
@@ -343,7 +338,7 @@ func ProcessShareDistributionComplete(contracts layer1.AllSmartContracts, logger
 		"TaskStart": keyShareSubmissionTask.GetStart(),
 		"TaskEnd":   keyShareSubmissionTask.GetEnd(),
 	}).Info("Scheduling NewKeyShareSubmissionTask")
-	if _, err = taskHandler.ScheduleTask(ctx, keyShareSubmissionTask, ""); err != nil {
+	if _, err = taskHandler.ScheduleTask(keyShareSubmissionTask, ""); err != nil {
 		return err
 	}
 
@@ -352,7 +347,7 @@ func ProcessShareDistributionComplete(contracts layer1.AllSmartContracts, logger
 		"TaskStart": disputeMissingKeySharesTask.GetStart(),
 		"TaskEnd":   disputeMissingKeySharesTask.GetEnd(),
 	}).Info("Scheduling NewDisputeMissingKeySharesTask")
-	if _, err = taskHandler.ScheduleTask(ctx, disputeMissingKeySharesTask, ""); err != nil {
+	if _, err = taskHandler.ScheduleTask(disputeMissingKeySharesTask, ""); err != nil {
 		return err
 	}
 
@@ -443,11 +438,10 @@ func ProcessKeyShareSubmissionComplete(contracts layer1.AllSmartContracts, logge
 	}
 
 	//Killing previous tasks
-	ctx := context.Background()
-	if _, err = taskHandler.KillTaskByType(ctx, &dkg.KeyShareSubmissionTask{}); err != nil {
+	if _, err = taskHandler.KillTaskByType(&dkg.KeyShareSubmissionTask{}); err != nil {
 		return err
 	}
-	if _, err = taskHandler.KillTaskByType(ctx, &dkg.DisputeMissingKeySharesTask{}); err != nil {
+	if _, err = taskHandler.KillTaskByType(&dkg.DisputeMissingKeySharesTask{}); err != nil {
 		return err
 	}
 
@@ -457,7 +451,7 @@ func ProcessKeyShareSubmissionComplete(contracts layer1.AllSmartContracts, logge
 		"TaskStart":   mpkSubmissionTask.GetStart(),
 		"TaskEnd":     mpkSubmissionTask.GetEnd(),
 	}).Info("Scheduling MPKSubmissionTask")
-	if _, err = taskHandler.ScheduleTask(ctx, mpkSubmissionTask, ""); err != nil {
+	if _, err = taskHandler.ScheduleTask(mpkSubmissionTask, ""); err != nil {
 		return err
 	}
 
@@ -510,8 +504,7 @@ func ProcessMPKSet(contracts layer1.AllSmartContracts, logger *logrus.Entry, log
 	}
 
 	//Killing previous tasks
-	ctx := context.Background()
-	if _, err = taskHandler.KillTaskByType(ctx, &dkg.MPKSubmissionTask{}); err != nil {
+	if _, err = taskHandler.KillTaskByType(&dkg.MPKSubmissionTask{}); err != nil {
 		return err
 	}
 
@@ -521,7 +514,7 @@ func ProcessMPKSet(contracts layer1.AllSmartContracts, logger *logrus.Entry, log
 		"TaskStart":   gpkjSubmissionTask.GetStart(),
 		"TaskEnd":     gpkjSubmissionTask.GetEnd(),
 	}).Info("Scheduling GPKJSubmissionTask")
-	if _, err = taskHandler.ScheduleTask(ctx, gpkjSubmissionTask, ""); err != nil {
+	if _, err = taskHandler.ScheduleTask(gpkjSubmissionTask, ""); err != nil {
 		return err
 	}
 
@@ -531,7 +524,7 @@ func ProcessMPKSet(contracts layer1.AllSmartContracts, logger *logrus.Entry, log
 		"TaskStart":   gpkjSubmissionTask.GetStart(),
 		"TaskEnd":     gpkjSubmissionTask.GetEnd(),
 	}).Info("Scheduling DisputeMissingGPKjTask")
-	if _, err = taskHandler.ScheduleTask(ctx, disputeMissingGPKjTask, ""); err != nil {
+	if _, err = taskHandler.ScheduleTask(disputeMissingGPKjTask, ""); err != nil {
 		return err
 	}
 
@@ -542,7 +535,7 @@ func ProcessMPKSet(contracts layer1.AllSmartContracts, logger *logrus.Entry, log
 			"TaskStart":   disputeGPKjTask.GetStart(),
 			"TaskEnd":     disputeGPKjTask.GetEnd(),
 		}).Info("Scheduling DisputeGPKjTask")
-		if _, err = taskHandler.ScheduleTask(ctx, disputeGPKjTask, ""); err != nil {
+		if _, err = taskHandler.ScheduleTask(disputeGPKjTask, ""); err != nil {
 			return err
 		}
 	}
@@ -595,14 +588,13 @@ func ProcessGPKJSubmissionComplete(contracts layer1.AllSmartContracts, logger *l
 	}
 
 	//Killing previous tasks
-	ctx := context.Background()
-	if _, err = taskHandler.KillTaskByType(ctx, &dkg.GPKjSubmissionTask{}); err != nil {
+	if _, err = taskHandler.KillTaskByType(&dkg.GPKjSubmissionTask{}); err != nil {
 		return err
 	}
-	if _, err = taskHandler.KillTaskByType(ctx, &dkg.DisputeMissingGPKjTask{}); err != nil {
+	if _, err = taskHandler.KillTaskByType(&dkg.DisputeMissingGPKjTask{}); err != nil {
 		return err
 	}
-	if _, err = taskHandler.KillTaskByType(ctx, &dkg.DisputeGPKjTask{}); err != nil {
+	if _, err = taskHandler.KillTaskByType(&dkg.DisputeGPKjTask{}); err != nil {
 		return err
 	}
 
@@ -614,7 +606,7 @@ func ProcessGPKJSubmissionComplete(contracts layer1.AllSmartContracts, logger *l
 			"TaskEnd":     disputeGPKjTask.GetEnd(),
 			"Address":     disputeGPKjTask.Address,
 		}).Info("Scheduling NewGPKJDisputeTask")
-		if _, err = taskHandler.ScheduleTask(ctx, disputeGPKjTask, ""); err != nil {
+		if _, err = taskHandler.ScheduleTask(disputeGPKjTask, ""); err != nil {
 			return err
 		}
 	}
@@ -625,7 +617,7 @@ func ProcessGPKJSubmissionComplete(contracts layer1.AllSmartContracts, logger *l
 		"TaskStart":   completionTask.GetStart(),
 		"TaskEnd":     completionTask.GetEnd(),
 	}).Info("Scheduling NewCompletionTask")
-	if _, err = taskHandler.ScheduleTask(ctx, completionTask, ""); err != nil {
+	if _, err = taskHandler.ScheduleTask(completionTask, ""); err != nil {
 		return err
 	}
 

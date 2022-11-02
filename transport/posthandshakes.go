@@ -1,4 +1,4 @@
-package brontide
+package transport
 
 import (
 	"errors"

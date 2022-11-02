@@ -2,10 +2,11 @@ package events
 
 import (
 	"context"
+	"math/big"
+
 	"github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg"
 	"github.com/dgraph-io/badger/v2"
-	"math/big"
 
 	"github.com/alicenet/alicenet/consensus/objs"
 	"github.com/alicenet/alicenet/crypto/bn256"
@@ -92,7 +93,7 @@ func ProcessSnapshotTaken(contracts layer1.AllSmartContracts, cdb *db.Database, 
 
 	if wereValidatorsEvicted {
 		ctx := context.Background()
-		resp, err := taskHandler.ScheduleTask(ctx, dkg.NewInitializeTask(), "")
+		resp, err := taskHandler.ScheduleTask(dkg.NewInitializeTask(), "")
 		if err != nil {
 			return err
 		}
@@ -104,7 +105,7 @@ func ProcessSnapshotTaken(contracts layer1.AllSmartContracts, cdb *db.Database, 
 	}
 
 	// kill any task that might still be trying to do this snapshot
-	_, err = taskHandler.KillTaskByType(context.Background(), &snapshots.SnapshotTask{})
+	_, err = taskHandler.KillTaskByType(&snapshots.SnapshotTask{})
 	if err != nil {
 		return err
 	}
@@ -172,7 +173,7 @@ func ProcessSnapshotTakenOld(eth layer1.Client, contracts layer1.AllSmartContrac
 	}
 
 	// kill any task that might still be trying to do this snapshot
-	_, err = taskHandler.KillTaskByType(context.Background(), &snapshots.SnapshotTask{})
+	_, err = taskHandler.KillTaskByType(&snapshots.SnapshotTask{})
 	if err != nil {
 		return err
 	}

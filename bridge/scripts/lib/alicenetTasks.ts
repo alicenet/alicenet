@@ -11,12 +11,9 @@ import { task, types } from "hardhat/config";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 // import { ValidatorPool } from "../../typechain-types";
 import axios from "axios";
-import { getEventVar, getGasPrices } from "./alicenetFactoryTasks";
-import {
-  CONTRACT_ADDR,
-  DEFAULT_CONFIG_OUTPUT_DIR,
-  DEPLOYED_RAW,
-} from "./constants";
+import { getEventVar } from "./alicenetFactory";
+import { getGasPrices } from "./alicenetFactoryTasks";
+import { CONTRACT_ADDR, DEFAULT_CONFIG_DIR, DEPLOYED_RAW } from "./constants";
 import { readDeploymentArgs } from "./deployment/deploymentConfigUtil";
 export type MultiCallArgsStruct = {
   target: string;
@@ -44,7 +41,7 @@ task(
   .addOptionalParam(
     "deploymentArgsTemplatePath",
     "path of the deploymentArgsTemplate file",
-    DEFAULT_CONFIG_OUTPUT_DIR + "/deploymentArgsTemplate"
+    DEFAULT_CONFIG_DIR + "/deploymentArgsTemplate"
   )
   .addOptionalParam(
     "outputFolder",
@@ -680,6 +677,81 @@ task("schedule-maintenance", "Calls schedule Maintenance")
         .connect(adminSigner)
         .callAny(validatorPool.address, 0, input)
     ).wait(3);
+  });
+
+task(
+  "aggregate-lockup-profits",
+  "Aggregate the profits of the locked positions in the lockup contract"
+)
+  .addParam("factoryAddress", "the AliceNet factory address")
+  .addFlag(
+    "onlyOnce",
+    "only execute aggregateProfits once instead of executing" +
+      " it until is safe to unlock (very gas consuming)"
+  )
+  .setAction(async (taskArgs, hre) => {
+    const { ethers } = hre;
+    const factory = await ethers.getContractAt(
+      "AliceNetFactory",
+      taskArgs.factoryAddress
+    );
+    const lockup = await ethers.getContractAt(
+      "Lockup",
+      await factory.lookup(ethers.utils.formatBytes32String("Lockup"))
+    );
+    let safeToUnlock = await lockup.payoutSafe();
+    while (!safeToUnlock) {
+      await (await lockup.aggregateProfits()).wait(8);
+      safeToUnlock = await lockup.payoutSafe();
+      console.log("Is safe to unlock: " + safeToUnlock);
+      if (taskArgs.onlyOnce) break;
+    }
+    console.log("Done!");
+  });
+
+task(
+  "create-bonus-pool-position",
+  "Transfer and stake the ALCA that will be used to pay the bonus shares to the users that lock a position"
+)
+  .addParam("factoryAddress", "the AliceNet factory address")
+  .addParam(
+    "bonusAmount",
+    "the amount of ALCA that will transferred and staked as bonus"
+  )
+  .setAction(async (taskArgs, hre) => {
+    const { ethers } = hre;
+    const factory = await ethers.getContractAt(
+      "AliceNetFactory",
+      taskArgs.factoryAddress
+    );
+    const lockup = await ethers.getContractAt(
+      "Lockup",
+      await factory.lookup(ethers.utils.formatBytes32String("Lockup"))
+    );
+    const bonusPool = await ethers.getContractAt(
+      "BonusPool",
+      await lockup.getBonusPoolAddress()
+    );
+    const alca = await ethers.getContractAt(
+      "AToken",
+      await factory.lookup(ethers.utils.formatBytes32String("AToken"))
+    );
+    const transferCall = encodeMultiCallArgs(
+      alca.address,
+      0,
+      alca.interface.encodeFunctionData("transfer", [
+        bonusPool.address,
+        ethers.utils.parseEther(taskArgs.bonusAmount),
+      ])
+    );
+    const createBonusStakeCall = encodeMultiCallArgs(
+      bonusPool.address,
+      0,
+      bonusPool.interface.encodeFunctionData("createBonusStakedPosition")
+    );
+    await (
+      await factory.multiCall([transferCall, createBonusStakeCall])
+    ).wait(8);
   });
 
 task(
@@ -1333,7 +1405,7 @@ task("fund-validators", "manually put 100 eth in each validator account")
 function getValidatorAccount(path: string): string {
   const data = fs.readFileSync(path);
   const config: any = toml.parse(data.toString());
-  return config.validator.rewardAccount;
+  return config.ethereum.defaultAccount;
 }
 
 task("get-gas-cost", "gets the current gas cost")

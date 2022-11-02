@@ -1,8 +1,8 @@
 package executor
 
 import (
-	"context"
 	"errors"
+	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/constants/dbprefix"
 	"github.com/alicenet/alicenet/utils"
 	"github.com/stretchr/testify/require"
@@ -10,6 +10,7 @@ import (
 	"math/big"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/layer1/executor/tasks"
@@ -82,8 +83,7 @@ func Test_TaskExecutor_HappyPath(t *testing.T) {
 	task.ShouldExecuteFunc.SetDefaultReturn(true, nil)
 	task.GetLoggerFunc.SetDefaultReturn(executor.logger)
 
-	mainCtx := context.Background()
-	executor.handleTaskExecution(mainCtx, task, "", "123", 1, 10, false, nil, db, executor.logger, client, mocks.NewMockAllSmartContracts(), taskRespChan)
+	executor.handleTaskExecution(task, "", "123", 1, 10, false, nil, db, executor.logger, client, mocks.NewMockAllSmartContracts(), taskRespChan)
 
 	mockrequire.CalledOnce(t, task.PrepareFunc)
 	mockrequire.CalledN(t, task.ExecuteFunc, 2)
@@ -122,8 +122,7 @@ func Test_TaskExecutor_TaskErrorRecoverable(t *testing.T) {
 	task.ShouldExecuteFunc.SetDefaultReturn(true, nil)
 	task.GetLoggerFunc.SetDefaultReturn(executor.logger)
 
-	mainCtx := context.Background()
-	executor.handleTaskExecution(mainCtx, task, "", "123", 1, 10, false, nil, db, executor.logger, client, mocks.NewMockAllSmartContracts(), taskRespChan)
+	executor.handleTaskExecution(task, "", "123", 1, 10, false, nil, db, executor.logger, client, mocks.NewMockAllSmartContracts(), taskRespChan)
 
 	mockrequire.CalledN(t, task.PrepareFunc, 2)
 	mockrequire.CalledOnce(t, task.ExecuteFunc)
@@ -151,8 +150,7 @@ func Test_TaskExecutor_UnrecoverableError(t *testing.T) {
 	taskErr := tasks.NewTaskErr("Unrecoverable error", false)
 
 	task.PrepareFunc.SetDefaultReturn(taskErr)
-	mainCtx := context.Background()
-	executor.handleTaskExecution(mainCtx, task, "", "123", 1, 10, false, nil, db, executor.logger, client, mocks.NewMockAllSmartContracts(), taskRespChan)
+	executor.handleTaskExecution(task, "", "123", 1, 10, false, nil, db, executor.logger, client, mocks.NewMockAllSmartContracts(), taskRespChan)
 
 	mockrequire.CalledOnce(t, task.PrepareFunc)
 	mockrequire.NotCalled(t, task.ExecuteFunc)
@@ -190,9 +188,8 @@ func Test_TaskExecutor_TaskInTasksExecutorTransactions(t *testing.T) {
 	taskId := "123"
 	task.GetIdFunc.SetDefaultReturn(taskId)
 
-	mainCtx := context.Background()
 	executor.TxsBackup[task.GetId()] = txn
-	executor.handleTaskExecution(mainCtx, task, "", taskId, 1, 10, false, nil, db, executor.logger, client, mocks.NewMockAllSmartContracts(), taskRespChan)
+	executor.handleTaskExecution(task, "", taskId, 1, 10, false, nil, db, executor.logger, client, mocks.NewMockAllSmartContracts(), taskRespChan)
 
 	mockrequire.NotCalled(t, task.PrepareFunc)
 	mockrequire.NotCalled(t, task.ExecuteFunc)
@@ -223,8 +220,7 @@ func Test_TaskExecutor_ExecuteWithErrors(t *testing.T) {
 	task.ShouldExecuteFunc.SetDefaultReturn(true, nil)
 	task.GetLoggerFunc.SetDefaultReturn(executor.logger)
 
-	mainCtx := context.Background()
-	executor.handleTaskExecution(mainCtx, task, "", "123", 1, 10, false, nil, db, executor.logger, client, mocks.NewMockAllSmartContracts(), taskRespChan)
+	executor.handleTaskExecution(task, "", "123", 1, 10, false, nil, db, executor.logger, client, mocks.NewMockAllSmartContracts(), taskRespChan)
 
 	mockrequire.CalledOnce(t, task.PrepareFunc)
 	mockrequire.CalledN(t, task.ExecuteFunc, 2)
@@ -272,8 +268,7 @@ func Test_TaskExecutor_ReceiptWithErrorAndFailure(t *testing.T) {
 	txWatcher.SubscribeFunc.PushReturn(receiptResponse, nil)
 	task.ShouldExecuteFunc.PushReturn(false, nil)
 
-	mainCtx := context.Background()
-	executor.handleTaskExecution(mainCtx, task, "", "123", 1, 10, false, nil, db, executor.logger, client, mocks.NewMockAllSmartContracts(), taskRespChan)
+	executor.handleTaskExecution(task, "", "123", 1, 10, false, nil, db, executor.logger, client, mocks.NewMockAllSmartContracts(), taskRespChan)
 
 	mockrequire.CalledOnce(t, task.PrepareFunc)
 	mockrequire.CalledN(t, task.ExecuteFunc, 3)
@@ -353,13 +348,12 @@ func Test_TaskExecutor_Recovering(t *testing.T) {
 	task.ShouldExecuteFunc.SetDefaultReturn(true, nil)
 	task.GetLoggerFunc.SetDefaultReturn(executor.logger)
 
-	mainCtx := context.Background()
-	executor.handleTaskExecution(mainCtx, task, "", "123", 1, 10, false, nil, db, executor.logger, client, mocks.NewMockAllSmartContracts(), taskRespChan)
+	executor.handleTaskExecution(task, "", "123", 1, 10, false, nil, db, executor.logger, client, mocks.NewMockAllSmartContracts(), taskRespChan)
 
 	assert.Equalf(t, 1, len(executor.TxsBackup), "Expected one transaction (stale status)")
 	executor, err = newTaskExecutor(txWatcher, db, logger.WithField("Component", "schedule"))
 	assert.Nil(t, err)
-	executor.handleTaskExecution(mainCtx, task, "", "123", 1, 10, false, nil, db, executor.logger, client, mocks.NewMockAllSmartContracts(), taskRespChan)
+	executor.handleTaskExecution(task, "", "123", 1, 10, false, nil, db, executor.logger, client, mocks.NewMockAllSmartContracts(), taskRespChan)
 
 	mockrequire.CalledOnce(t, task.PrepareFunc)
 	mockrequire.CalledOnce(t, task.ExecuteFunc)
@@ -390,8 +384,7 @@ func Test_TaskExecutor_TxFromBackupStale(t *testing.T) {
 	executor.TxsBackup[taskId] = txn
 	txWatcher.SubscribeFunc.PushReturn(receiptResponse, nil)
 
-	mainCtx := context.Background()
-	executor.handleTaskExecution(mainCtx, task, "", "123", 1, 10, false, nil, db, executor.logger, client, mocks.NewMockAllSmartContracts(), taskRespChan)
+	executor.handleTaskExecution(task, "", "123", 1, 10, false, nil, db, executor.logger, client, mocks.NewMockAllSmartContracts(), taskRespChan)
 
 	mockrequire.CalledOnce(t, txWatcher.SubscribeFunc, 1)
 	mockrequire.CalledOnceWith(t, task.FinishFunc, mockrequire.Values(&transaction.ErrTransactionStale{}))
@@ -427,14 +420,13 @@ func Test_TaskExecutor_InitError(t *testing.T) {
 	err := errors.New("init error")
 	task.InitializeFunc.SetDefaultReturn(err)
 
-	mainCtx := context.Background()
-	executor.handleTaskExecution(mainCtx, task, "", "123", 1, 10, false, nil, db, executor.logger, client, mocks.NewMockAllSmartContracts(), taskRespChan)
+	executor.handleTaskExecution(task, "", "123", 1, 10, false, nil, db, executor.logger, client, mocks.NewMockAllSmartContracts(), taskRespChan)
 
 	mockrequire.CalledOnce(t, task.InitializeFunc)
 	mockrequire.CalledOnceWith(t, task.FinishFunc, mockrequire.Values(err))
 }
 
-func Test_TaskExecutor_MainContextKilled(t *testing.T) {
+func Test_TaskExecutor_Close(t *testing.T) {
 	executor, client, db, taskRespChan, _ := getTaskExecutor(t)
 
 	taskId := "123"
@@ -443,12 +435,11 @@ func Test_TaskExecutor_MainContextKilled(t *testing.T) {
 	task.GetLoggerFunc.SetDefaultReturn(executor.logger)
 	task.InitializeFunc.SetDefaultReturn(nil)
 
-	mainCtx, cf := context.WithCancel(context.Background())
-	cf()
-	executor.handleTaskExecution(mainCtx, task, "", "123", 1, 10, false, nil, db, executor.logger, client, mocks.NewMockAllSmartContracts(), taskRespChan)
+	executor.close()
+	executor.handleTaskExecution(task, "", "123", 1, 10, false, nil, db, executor.logger, client, mocks.NewMockAllSmartContracts(), taskRespChan)
 
 	mockrequire.CalledOnce(t, task.InitializeFunc)
-	mockrequire.CalledOnceWith(t, task.FinishFunc, mockrequire.Values(context.Canceled))
+	mockrequire.CalledOnceWith(t, task.FinishFunc, mockrequire.Values(tasks.ErrTaskExecutionMechanismClosed))
 }
 
 func Test_TaskExecutor_ShouldExecuteError(t *testing.T) {
@@ -462,8 +453,7 @@ func Test_TaskExecutor_ShouldExecuteError(t *testing.T) {
 	task.InitializeFunc.SetDefaultReturn(nil)
 	task.ShouldExecuteFunc.SetDefaultReturn(false, err)
 
-	mainCtx := context.Background()
-	executor.handleTaskExecution(mainCtx, task, "", "123", 1, 10, false, nil, db, executor.logger, client, mocks.NewMockAllSmartContracts(), taskRespChan)
+	executor.handleTaskExecution(task, "", "123", 1, 10, false, nil, db, executor.logger, client, mocks.NewMockAllSmartContracts(), taskRespChan)
 
 	mockrequire.CalledOnce(t, task.InitializeFunc)
 	mockrequire.CalledOnce(t, task.ShouldExecuteFunc)
@@ -480,9 +470,7 @@ func Test_TaskExecutor_ShouldExecuteFalse(t *testing.T) {
 	task.InitializeFunc.SetDefaultReturn(nil)
 	task.ShouldExecuteFunc.SetDefaultReturn(false, nil)
 
-	mainCtx := context.Background()
-	executor.handleTaskExecution(mainCtx, task, "", "123", 1, 10, false, nil, db, executor.logger, client, mocks.NewMockAllSmartContracts(), taskRespChan)
-
+	executor.handleTaskExecution(task, "", "123", 1, 10, false, nil, db, executor.logger, client, mocks.NewMockAllSmartContracts(), taskRespChan)
 	mockrequire.CalledOnce(t, task.InitializeFunc)
 	mockrequire.CalledOnce(t, task.ShouldExecuteFunc)
 	mockrequire.CalledOnceWith(t, task.FinishFunc, mockrequire.Values(nil))
@@ -499,8 +487,7 @@ func Test_TaskExecutor_ExecuteWithoutTxn(t *testing.T) {
 	task.ShouldExecuteFunc.SetDefaultReturn(true, nil)
 	task.ExecuteFunc.SetDefaultReturn(nil, nil)
 
-	mainCtx := context.Background()
-	executor.handleTaskExecution(mainCtx, task, "", "123", 1, 10, false, nil, db, executor.logger, client, mocks.NewMockAllSmartContracts(), taskRespChan)
+	executor.handleTaskExecution(task, "", "123", 1, 10, false, nil, db, executor.logger, client, mocks.NewMockAllSmartContracts(), taskRespChan)
 
 	mockrequire.CalledOnce(t, task.InitializeFunc)
 	mockrequire.CalledOnce(t, task.ShouldExecuteFunc)
@@ -539,8 +526,7 @@ func Test_TaskExecutor_HasToExecuteError(t *testing.T) {
 	task.ShouldExecuteFunc.PushReturn(true, err)
 	task.GetLoggerFunc.SetDefaultReturn(executor.logger)
 
-	mainCtx := context.Background()
-	executor.handleTaskExecution(mainCtx, task, "", "123", 1, 10, false, nil, db, executor.logger, client, mocks.NewMockAllSmartContracts(), taskRespChan)
+	executor.handleTaskExecution(task, "", "123", 1, 10, false, nil, db, executor.logger, client, mocks.NewMockAllSmartContracts(), taskRespChan)
 
 	mockrequire.CalledOnce(t, task.PrepareFunc)
 	mockrequire.CalledN(t, task.ShouldExecuteFunc, 2)
@@ -560,12 +546,185 @@ func Test_TaskExecutor_ShouldExecuteRecoverableError(t *testing.T) {
 	task.ShouldExecuteFunc.SetDefaultReturn(false, err)
 	task.ExecuteFunc.SetDefaultReturn(nil, nil)
 
-	mainCtx := context.Background()
-	executor.handleTaskExecution(mainCtx, task, "", "123", 1, 10, false, nil, db, executor.logger, client, mocks.NewMockAllSmartContracts(), taskRespChan)
+	executor.handleTaskExecution(task, "", taskId, 1, 10, false, nil, db, executor.logger, client, mocks.NewMockAllSmartContracts(), taskRespChan)
 
 	mockrequire.CalledOnce(t, task.InitializeFunc)
 	mockrequire.CalledN(t, task.ShouldExecuteFunc, 10)
 	mockrequire.CalledOnceWith(t, task.FinishFunc, mockrequire.Values(nil))
+}
+
+func Test_TaskExecutor_KilledTask(t *testing.T) {
+	executor, client, db, taskRespChan, _ := getTaskExecutor(t)
+
+	taskId := "123"
+	task := taskMocks.NewMockTask()
+	task.GetIdFunc.SetDefaultReturn(taskId)
+	task.GetLoggerFunc.SetDefaultReturn(executor.logger)
+	task.InitializeFunc.SetDefaultReturn(nil)
+	task.WasKilledFunc.SetDefaultReturn(true)
+
+	executor.handleTaskExecution(task, "", taskId, 1, 10, false, nil, db, executor.logger, client, mocks.NewMockAllSmartContracts(), taskRespChan)
+	mockrequire.CalledOnce(t, task.InitializeFunc)
+	mockrequire.NotCalled(t, task.PrepareFunc)
+	mockrequire.NotCalled(t, task.ShouldExecuteFunc)
+	mockrequire.CalledOnceWith(t, task.FinishFunc, mockrequire.Values(tasks.ErrTaskKilled))
+}
+
+func Test_TaskExecutor_KilledTaskAfterRecoverableError(t *testing.T) {
+	executor, client, db, taskRespChan, _ := getTaskExecutor(t)
+
+	taskId := "123"
+	task := taskMocks.NewMockTask()
+	task.GetIdFunc.SetDefaultReturn(taskId)
+	task.GetLoggerFunc.SetDefaultReturn(executor.logger)
+	task.InitializeFunc.SetDefaultReturn(nil)
+	err := tasks.NewTaskErr("prepare error", true)
+	task.PrepareFunc.SetDefaultReturn(err)
+	task.WasKilledFunc.SetDefaultReturn(false)
+	killChan := make(chan struct{})
+	close(killChan)
+	task.KillChanFunc.SetDefaultReturn(killChan)
+
+	executor.handleTaskExecution(task, "", taskId, 1, 10, false, nil, db, executor.logger, client, mocks.NewMockAllSmartContracts(), taskRespChan)
+	mockrequire.CalledOnce(t, task.InitializeFunc)
+	mockrequire.CalledOnce(t, task.PrepareFunc)
+	mockrequire.NotCalled(t, task.ShouldExecuteFunc)
+	mockrequire.CalledOnceWith(t, task.FinishFunc, mockrequire.Values(tasks.ErrTaskKilled))
+}
+
+func Test_TaskExecutor_CloseExecutorAfter1stExecution(t *testing.T) {
+	executor, client, db, taskRespChan, _ := getTaskExecutor(t)
+
+	taskId := "123"
+	task := taskMocks.NewMockTask()
+	task.GetIdFunc.SetDefaultReturn(taskId)
+	task.GetLoggerFunc.SetDefaultReturn(executor.logger)
+	task.InitializeFunc.SetDefaultReturn(nil)
+	task.PrepareFunc.SetDefaultReturn(nil)
+	task.ShouldExecuteFunc.SetDefaultReturn(true, nil)
+	task.WasKilledFunc.SetDefaultReturn(false)
+	err := tasks.NewTaskErr("execute error", true)
+	task.ExecuteFunc.SetDefaultReturn(nil, err)
+
+	go func() {
+		delay := constants.MonitorRetryDelay - 1*time.Second
+		select {
+		case <-time.After(delay):
+		}
+		executor.close()
+	}()
+
+	executor.handleTaskExecution(task, "", taskId, 1, 10, false, nil, db, executor.logger, client, mocks.NewMockAllSmartContracts(), taskRespChan)
+	mockrequire.CalledOnce(t, task.InitializeFunc)
+	mockrequire.CalledOnce(t, task.PrepareFunc)
+	mockrequire.CalledOnce(t, task.ShouldExecuteFunc)
+	mockrequire.CalledOnce(t, task.ExecuteFunc)
+	mockrequire.CalledOnceWith(t, task.FinishFunc, mockrequire.Values(tasks.ErrTaskExecutionMechanismClosed))
+}
+
+func Test_TaskExecutor_BackupTxnTaskKilled(t *testing.T) {
+	executor, client, db, taskRespChan, txWatcher := getTaskExecutor(t)
+
+	receipt := &types.Receipt{
+		Status:      types.ReceiptStatusSuccessful,
+		BlockNumber: big.NewInt(20),
+	}
+
+	receiptResponse := mocks.NewMockReceiptResponse()
+	receiptResponse.IsReadyFunc.SetDefaultReturn(true)
+	receiptResponse.GetReceiptBlockingFunc.SetDefaultReturn(receipt, nil)
+
+	txWatcher.SubscribeFunc.SetDefaultReturn(receiptResponse, nil)
+
+	client.GetTransactionReceiptFunc.SetDefaultReturn(receipt, nil)
+
+	task := taskMocks.NewMockTask()
+	task.PrepareFunc.SetDefaultReturn(nil)
+	txn := types.NewTx(&types.LegacyTx{
+		Nonce:    1,
+		Value:    big.NewInt(1),
+		Gas:      1,
+		GasPrice: big.NewInt(1),
+		Data:     []byte{52, 66, 175, 92},
+	})
+	task.ShouldExecuteFunc.SetDefaultReturn(true, nil)
+	task.GetLoggerFunc.SetDefaultReturn(executor.logger)
+	taskId := "123"
+	task.GetIdFunc.SetDefaultReturn(taskId)
+	killChan := make(chan struct{})
+	close(killChan)
+	task.KillChanFunc.SetDefaultReturn(killChan)
+	task.WasKilledFunc.SetDefaultReturn(true)
+
+	executor.TxsBackup[task.GetId()] = txn
+	executor.handleTaskExecution(task, "", taskId, 1, 10, false, nil, db, executor.logger, client, mocks.NewMockAllSmartContracts(), taskRespChan)
+
+	mockrequire.CalledOnce(t, task.InitializeFunc)
+	mockrequire.NotCalled(t, task.PrepareFunc)
+	mockrequire.NotCalled(t, task.ExecuteFunc)
+	assert.Emptyf(t, executor.TxsBackup, "Expected transactions to be empty")
+}
+
+func Test_TaskExecutor_BackupTxnExecutorClosed(t *testing.T) {
+	executor, client, db, taskRespChan, txWatcher := getTaskExecutor(t)
+
+	receipt := &types.Receipt{
+		Status:      types.ReceiptStatusSuccessful,
+		BlockNumber: big.NewInt(20),
+	}
+
+	receiptResponse := mocks.NewMockReceiptResponse()
+	receiptResponse.IsReadyFunc.SetDefaultReturn(true)
+	receiptResponse.GetReceiptBlockingFunc.SetDefaultReturn(receipt, nil)
+
+	txWatcher.SubscribeFunc.SetDefaultReturn(receiptResponse, nil)
+
+	client.GetTransactionReceiptFunc.SetDefaultReturn(receipt, nil)
+
+	task := taskMocks.NewMockTask()
+	task.PrepareFunc.SetDefaultReturn(nil)
+	txn := types.NewTx(&types.LegacyTx{
+		Nonce:    1,
+		Value:    big.NewInt(1),
+		Gas:      1,
+		GasPrice: big.NewInt(1),
+		Data:     []byte{52, 66, 175, 92},
+	})
+	task.ShouldExecuteFunc.SetDefaultReturn(true, nil)
+	task.GetLoggerFunc.SetDefaultReturn(executor.logger)
+	taskId := "123"
+	task.GetIdFunc.SetDefaultReturn(taskId)
+	task.WasKilledFunc.SetDefaultReturn(false)
+
+	executor.TxsBackup[task.GetId()] = txn
+	executor.close()
+	executor.handleTaskExecution(task, "", taskId, 1, 10, false, nil, db, executor.logger, client, mocks.NewMockAllSmartContracts(), taskRespChan)
+
+	mockrequire.CalledOnce(t, task.InitializeFunc)
+	mockrequire.NotCalled(t, task.PrepareFunc)
+	mockrequire.NotCalled(t, task.ExecuteFunc)
+	mockrequire.CalledOnceWith(t, task.FinishFunc, mockrequire.Values(tasks.ErrTaskExecutionMechanismClosed))
+}
+
+func Test_TaskExecutor_ShouldExecuteKilledTask(t *testing.T) {
+	executor, client, db, taskRespChan, _ := getTaskExecutor(t)
+
+	taskId := "123"
+	task := taskMocks.NewMockTask()
+	task.GetIdFunc.SetDefaultReturn(taskId)
+	task.GetLoggerFunc.SetDefaultReturn(executor.logger)
+	task.InitializeFunc.SetDefaultReturn(nil)
+	task.PrepareFunc.SetDefaultReturn(nil)
+	task.ShouldExecuteFunc.SetDefaultReturn(true, nil)
+	task.WasKilledFunc.PushReturn(false)
+	task.WasKilledFunc.PushReturn(true)
+
+	executor.handleTaskExecution(task, "", taskId, 1, 10, false, nil, db, executor.logger, client, mocks.NewMockAllSmartContracts(), taskRespChan)
+	mockrequire.CalledOnce(t, task.InitializeFunc)
+	mockrequire.CalledOnce(t, task.PrepareFunc)
+	mockrequire.NotCalled(t, task.ShouldExecuteFunc)
+	mockrequire.NotCalled(t, task.ExecuteFunc)
+	mockrequire.CalledOnceWith(t, task.FinishFunc, mockrequire.Values(tasks.ErrTaskKilled))
 }
 
 func Test_TaskExecutor_PersistError(t *testing.T) {

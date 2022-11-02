@@ -2,7 +2,9 @@
 pragma solidity ^0.8.16;
 
 interface IStakingToken {
-    function migrate(uint256 amount) external;
+    function migrate(uint256 amount) external returns (uint256);
+
+    function migrateTo(address to, uint256 amount) external returns (uint256);
 
     function finishEarlyStage() external;
 

@@ -30,9 +30,8 @@ type BaseTask struct {
 	// Otherwise, the task will end at the specified block.
 	End              uint64                   `json:"end"`
 	isInitialized    bool                     `json:"-"`
-	wasKilled        bool                     `json:"-"`
-	ctx              context.Context          `json:"-"`
-	cancelFunc       context.CancelFunc       `json:"-"`
+	killChan         chan struct{}            `json:"-"`
+	killOnce         sync.Once                `json:"-"`
 	monDB            *db.Database             `json:"-"`
 	consDB           *db.Database             `json:"-"`
 	logger           *logrus.Entry            `json:"-"`
@@ -56,7 +55,7 @@ func NewBaseTask(start uint64, end uint64, allowMultiExecution bool, subscribeOp
 // Initialize initializes the task after its creation. It should be only called
 // by the task scheduler during task spawn as separated go routine. This
 // function all the parameters for task execution and control by the scheduler.
-func (bt *BaseTask) Initialize(ctx context.Context, cancelFunc context.CancelFunc, monDB, consDB *db.Database, logger *logrus.Entry, eth layer1.Client, contracts layer1.AllSmartContracts, name string, id string, start uint64, end uint64, allowMultiExecution bool, subscribeOptions *transaction.SubscribeOptions, taskResponseChan InternalTaskResponseChan) error {
+func (bt *BaseTask) Initialize(monDB, consDB *db.Database, logger *logrus.Entry, eth layer1.Client, contracts layer1.AllSmartContracts, name string, id string, start uint64, end uint64, allowMultiExecution bool, subscribeOptions *transaction.SubscribeOptions, taskResponseChan InternalTaskResponseChan) error {
 	bt.mutex.Lock()
 	defer bt.mutex.Unlock()
 	if bt.isInitialized {
@@ -75,8 +74,8 @@ func (bt *BaseTask) Initialize(ctx context.Context, cancelFunc context.CancelFun
 		subscribeOptionsClone := *subscribeOptions
 		bt.SubscribeOptions = &subscribeOptionsClone
 	}
-	bt.ctx = ctx
-	bt.cancelFunc = cancelFunc
+	bt.killChan = make(chan struct{})
+	bt.killOnce = sync.Once{}
 	bt.monDB = monDB
 	bt.consDB = consDB
 	bt.logger = logger
@@ -138,20 +137,6 @@ func (bt *BaseTask) GetSubscribeOptions() *transaction.SubscribeOptions {
 	return &subscribeOptionsClone
 }
 
-// GetCtx get the context to be used by a task.
-func (bt *BaseTask) GetCtx() context.Context {
-	bt.mutex.RLock()
-	defer bt.mutex.RUnlock()
-	return bt.ctx
-}
-
-// WasKilled returns true if the task was killed otherwise false.
-func (bt *BaseTask) WasKilled() bool {
-	bt.mutex.RLock()
-	defer bt.mutex.RUnlock()
-	return bt.wasKilled
-}
-
 // GetClient returns the layer1 client implemented by the task.
 func (bt *BaseTask) GetClient() layer1.Client {
 	bt.mutex.RLock()
@@ -188,15 +173,34 @@ func (bt *BaseTask) GetConsDB() *db.Database {
 	return bt.consDB
 }
 
-// Close closes a running task. It set a bool flag and call the cancelFunc in
-// case it's different from nil.
-func (bt *BaseTask) Close() {
+// Kill a running task. This only can be done once.
+func (bt *BaseTask) Kill() {
 	bt.mutex.Lock()
 	defer bt.mutex.Unlock()
-	if bt.cancelFunc != nil {
-		bt.cancelFunc()
+	bt.killOnce.Do(func() {
+		bt.logger.Warnf("Closing task %s-%s", bt.Name, bt.ID)
+		close(bt.killChan)
+	})
+}
+
+// KillChan returns a channel that is closed when the Task was
+// killed.
+func (bt *BaseTask) KillChan() <-chan struct{} {
+	bt.mutex.RLock()
+	defer bt.mutex.RUnlock()
+	return bt.killChan
+}
+
+// WasKilled return true if the task was killed.
+func (bt *BaseTask) WasKilled() bool {
+	bt.mutex.RLock()
+	defer bt.mutex.RUnlock()
+	select {
+	case <-bt.killChan:
+		return true
+	default:
+		return false
 	}
-	bt.wasKilled = true
 }
 
 // Finish executes the cleanup logic once a task finishes.
@@ -204,8 +208,8 @@ func (bt *BaseTask) Finish(err error) {
 	bt.mutex.Lock()
 	defer bt.mutex.Unlock()
 	if err != nil {
-		if errors.Is(err, context.Canceled) {
-			bt.logger.WithError(err).Debug("cancelling task execution, task was killed")
+		if errors.Is(err, context.Canceled) || errors.Is(err, ErrTaskKilled) || errors.Is(err, ErrTaskExecutionMechanismClosed) {
+			bt.logger.WithError(err).Debug("finishing task execution, it was aborted")
 		} else {
 			bt.logger.WithError(err).Error("got an error when executing task")
 		}

@@ -388,14 +388,16 @@ func PersistSnapshot(eth layer1.Client, bh *objs.BlockHeader, numOfValidators in
 	}
 
 	// kill any snapshot task that might be running
-	ctx := context.Background()
-	_, err = taskHandler.KillTaskByType(ctx, &snapshots.SnapshotTask{})
+	_, err = taskHandler.KillTaskByType(&snapshots.SnapshotTask{})
 	if err != nil {
 		return err
 	}
 
-	_, err = taskHandler.ScheduleTask(ctx, snapshots.NewSnapshotTask(uint64(bh.BClaims.Height), numOfValidators, validatorIndex), "")
-	return err
+	_, err = taskHandler.ScheduleTask(snapshots.NewSnapshotTask(uint64(bh.BClaims.Height), numOfValidators, validatorIndex), "")
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // TODO: Remove from request hot path use memory cache

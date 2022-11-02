@@ -17,6 +17,9 @@ type MockTaskHandler struct {
 	// CloseFunc is an instance of a mock function object controlling the
 	// behavior of the method Close.
 	CloseFunc *TaskHandlerCloseFunc
+	// CloseChanFunc is an instance of a mock function object controlling
+	// the behavior of the method CloseChan.
+	CloseChanFunc *TaskHandlerCloseChanFunc
 	// KillTaskByIdFunc is an instance of a mock function object controlling
 	// the behavior of the method KillTaskById.
 	KillTaskByIdFunc *TaskHandlerKillTaskByIdFunc
@@ -40,18 +43,23 @@ func NewMockTaskHandler() *MockTaskHandler {
 				return
 			},
 		},
+		CloseChanFunc: &TaskHandlerCloseChanFunc{
+			defaultHook: func() (r0 <-chan struct{}) {
+				return
+			},
+		},
 		KillTaskByIdFunc: &TaskHandlerKillTaskByIdFunc{
-			defaultHook: func(context.Context, string) (r0 *executor.HandlerResponse, r1 error) {
+			defaultHook: func(string) (r0 *executor.HandlerResponse, r1 error) {
 				return
 			},
 		},
 		KillTaskByTypeFunc: &TaskHandlerKillTaskByTypeFunc{
-			defaultHook: func(context.Context, tasks.Task) (r0 *executor.HandlerResponse, r1 error) {
+			defaultHook: func(tasks.Task) (r0 *executor.HandlerResponse, r1 error) {
 				return
 			},
 		},
 		ScheduleTaskFunc: &TaskHandlerScheduleTaskFunc{
-			defaultHook: func(context.Context, tasks.Task, string) (r0 *executor.HandlerResponse, r1 error) {
+			defaultHook: func(tasks.Task, string) (r0 *executor.HandlerResponse, r1 error) {
 				return
 			},
 		},
@@ -72,18 +80,23 @@ func NewStrictMockTaskHandler() *MockTaskHandler {
 				panic("unexpected invocation of MockTaskHandler.Close")
 			},
 		},
+		CloseChanFunc: &TaskHandlerCloseChanFunc{
+			defaultHook: func() <-chan struct{} {
+				panic("unexpected invocation of MockTaskHandler.CloseChan")
+			},
+		},
 		KillTaskByIdFunc: &TaskHandlerKillTaskByIdFunc{
-			defaultHook: func(context.Context, string) (*executor.HandlerResponse, error) {
+			defaultHook: func(string) (*executor.HandlerResponse, error) {
 				panic("unexpected invocation of MockTaskHandler.KillTaskById")
 			},
 		},
 		KillTaskByTypeFunc: &TaskHandlerKillTaskByTypeFunc{
-			defaultHook: func(context.Context, tasks.Task) (*executor.HandlerResponse, error) {
+			defaultHook: func(tasks.Task) (*executor.HandlerResponse, error) {
 				panic("unexpected invocation of MockTaskHandler.KillTaskByType")
 			},
 		},
 		ScheduleTaskFunc: &TaskHandlerScheduleTaskFunc{
-			defaultHook: func(context.Context, tasks.Task, string) (*executor.HandlerResponse, error) {
+			defaultHook: func(tasks.Task, string) (*executor.HandlerResponse, error) {
 				panic("unexpected invocation of MockTaskHandler.ScheduleTask")
 			},
 		},
@@ -102,6 +115,9 @@ func NewMockTaskHandlerFrom(i executor.TaskHandler) *MockTaskHandler {
 	return &MockTaskHandler{
 		CloseFunc: &TaskHandlerCloseFunc{
 			defaultHook: i.Close,
+		},
+		CloseChanFunc: &TaskHandlerCloseChanFunc{
+			defaultHook: i.CloseChan,
 		},
 		KillTaskByIdFunc: &TaskHandlerKillTaskByIdFunc{
 			defaultHook: i.KillTaskById,
@@ -212,27 +228,126 @@ func (c TaskHandlerCloseFuncCall) Results() []interface{} {
 	return []interface{}{}
 }
 
+// TaskHandlerCloseChanFunc describes the behavior when the CloseChan method
+// of the parent MockTaskHandler instance is invoked.
+type TaskHandlerCloseChanFunc struct {
+	defaultHook func() <-chan struct{}
+	hooks       []func() <-chan struct{}
+	history     []TaskHandlerCloseChanFuncCall
+	mutex       sync.Mutex
+}
+
+// CloseChan delegates to the next hook function in the queue and stores the
+// parameter and result values of this invocation.
+func (m *MockTaskHandler) CloseChan() <-chan struct{} {
+	r0 := m.CloseChanFunc.nextHook()()
+	m.CloseChanFunc.appendCall(TaskHandlerCloseChanFuncCall{r0})
+	return r0
+}
+
+// SetDefaultHook sets function that is called when the CloseChan method of
+// the parent MockTaskHandler instance is invoked and the hook queue is
+// empty.
+func (f *TaskHandlerCloseChanFunc) SetDefaultHook(hook func() <-chan struct{}) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// CloseChan method of the parent MockTaskHandler instance invokes the hook
+// at the front of the queue and discards it. After the queue is empty, the
+// default hook function is invoked for any future action.
+func (f *TaskHandlerCloseChanFunc) PushHook(hook func() <-chan struct{}) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *TaskHandlerCloseChanFunc) SetDefaultReturn(r0 <-chan struct{}) {
+	f.SetDefaultHook(func() <-chan struct{} {
+		return r0
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *TaskHandlerCloseChanFunc) PushReturn(r0 <-chan struct{}) {
+	f.PushHook(func() <-chan struct{} {
+		return r0
+	})
+}
+
+func (f *TaskHandlerCloseChanFunc) nextHook() func() <-chan struct{} {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *TaskHandlerCloseChanFunc) appendCall(r0 TaskHandlerCloseChanFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of TaskHandlerCloseChanFuncCall objects
+// describing the invocations of this function.
+func (f *TaskHandlerCloseChanFunc) History() []TaskHandlerCloseChanFuncCall {
+	f.mutex.Lock()
+	history := make([]TaskHandlerCloseChanFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// TaskHandlerCloseChanFuncCall is an object that describes an invocation of
+// method CloseChan on an instance of MockTaskHandler.
+type TaskHandlerCloseChanFuncCall struct {
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 <-chan struct{}
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c TaskHandlerCloseChanFuncCall) Args() []interface{} {
+	return []interface{}{}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c TaskHandlerCloseChanFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0}
+}
+
 // TaskHandlerKillTaskByIdFunc describes the behavior when the KillTaskById
 // method of the parent MockTaskHandler instance is invoked.
 type TaskHandlerKillTaskByIdFunc struct {
-	defaultHook func(context.Context, string) (*executor.HandlerResponse, error)
-	hooks       []func(context.Context, string) (*executor.HandlerResponse, error)
+	defaultHook func(string) (*executor.HandlerResponse, error)
+	hooks       []func(string) (*executor.HandlerResponse, error)
 	history     []TaskHandlerKillTaskByIdFuncCall
 	mutex       sync.Mutex
 }
 
 // KillTaskById delegates to the next hook function in the queue and stores
 // the parameter and result values of this invocation.
-func (m *MockTaskHandler) KillTaskById(v0 context.Context, v1 string) (*executor.HandlerResponse, error) {
-	r0, r1 := m.KillTaskByIdFunc.nextHook()(v0, v1)
-	m.KillTaskByIdFunc.appendCall(TaskHandlerKillTaskByIdFuncCall{v0, v1, r0, r1})
+func (m *MockTaskHandler) KillTaskById(v0 string) (*executor.HandlerResponse, error) {
+	r0, r1 := m.KillTaskByIdFunc.nextHook()(v0)
+	m.KillTaskByIdFunc.appendCall(TaskHandlerKillTaskByIdFuncCall{v0, r0, r1})
 	return r0, r1
 }
 
 // SetDefaultHook sets function that is called when the KillTaskById method
 // of the parent MockTaskHandler instance is invoked and the hook queue is
 // empty.
-func (f *TaskHandlerKillTaskByIdFunc) SetDefaultHook(hook func(context.Context, string) (*executor.HandlerResponse, error)) {
+func (f *TaskHandlerKillTaskByIdFunc) SetDefaultHook(hook func(string) (*executor.HandlerResponse, error)) {
 	f.defaultHook = hook
 }
 
@@ -240,7 +355,7 @@ func (f *TaskHandlerKillTaskByIdFunc) SetDefaultHook(hook func(context.Context, 
 // KillTaskById method of the parent MockTaskHandler instance invokes the
 // hook at the front of the queue and discards it. After the queue is empty,
 // the default hook function is invoked for any future action.
-func (f *TaskHandlerKillTaskByIdFunc) PushHook(hook func(context.Context, string) (*executor.HandlerResponse, error)) {
+func (f *TaskHandlerKillTaskByIdFunc) PushHook(hook func(string) (*executor.HandlerResponse, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -249,19 +364,19 @@ func (f *TaskHandlerKillTaskByIdFunc) PushHook(hook func(context.Context, string
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
 func (f *TaskHandlerKillTaskByIdFunc) SetDefaultReturn(r0 *executor.HandlerResponse, r1 error) {
-	f.SetDefaultHook(func(context.Context, string) (*executor.HandlerResponse, error) {
+	f.SetDefaultHook(func(string) (*executor.HandlerResponse, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
 func (f *TaskHandlerKillTaskByIdFunc) PushReturn(r0 *executor.HandlerResponse, r1 error) {
-	f.PushHook(func(context.Context, string) (*executor.HandlerResponse, error) {
+	f.PushHook(func(string) (*executor.HandlerResponse, error) {
 		return r0, r1
 	})
 }
 
-func (f *TaskHandlerKillTaskByIdFunc) nextHook() func(context.Context, string) (*executor.HandlerResponse, error) {
+func (f *TaskHandlerKillTaskByIdFunc) nextHook() func(string) (*executor.HandlerResponse, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -296,10 +411,7 @@ func (f *TaskHandlerKillTaskByIdFunc) History() []TaskHandlerKillTaskByIdFuncCal
 type TaskHandlerKillTaskByIdFuncCall struct {
 	// Arg0 is the value of the 1st argument passed to this method
 	// invocation.
-	Arg0 context.Context
-	// Arg1 is the value of the 2nd argument passed to this method
-	// invocation.
-	Arg1 string
+	Arg0 string
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
 	Result0 *executor.HandlerResponse
@@ -311,7 +423,7 @@ type TaskHandlerKillTaskByIdFuncCall struct {
 // Args returns an interface slice containing the arguments of this
 // invocation.
 func (c TaskHandlerKillTaskByIdFuncCall) Args() []interface{} {
-	return []interface{}{c.Arg0, c.Arg1}
+	return []interface{}{c.Arg0}
 }
 
 // Results returns an interface slice containing the results of this
@@ -323,24 +435,24 @@ func (c TaskHandlerKillTaskByIdFuncCall) Results() []interface{} {
 // TaskHandlerKillTaskByTypeFunc describes the behavior when the
 // KillTaskByType method of the parent MockTaskHandler instance is invoked.
 type TaskHandlerKillTaskByTypeFunc struct {
-	defaultHook func(context.Context, tasks.Task) (*executor.HandlerResponse, error)
-	hooks       []func(context.Context, tasks.Task) (*executor.HandlerResponse, error)
+	defaultHook func(tasks.Task) (*executor.HandlerResponse, error)
+	hooks       []func(tasks.Task) (*executor.HandlerResponse, error)
 	history     []TaskHandlerKillTaskByTypeFuncCall
 	mutex       sync.Mutex
 }
 
 // KillTaskByType delegates to the next hook function in the queue and
 // stores the parameter and result values of this invocation.
-func (m *MockTaskHandler) KillTaskByType(v0 context.Context, v1 tasks.Task) (*executor.HandlerResponse, error) {
-	r0, r1 := m.KillTaskByTypeFunc.nextHook()(v0, v1)
-	m.KillTaskByTypeFunc.appendCall(TaskHandlerKillTaskByTypeFuncCall{v0, v1, r0, r1})
+func (m *MockTaskHandler) KillTaskByType(v0 tasks.Task) (*executor.HandlerResponse, error) {
+	r0, r1 := m.KillTaskByTypeFunc.nextHook()(v0)
+	m.KillTaskByTypeFunc.appendCall(TaskHandlerKillTaskByTypeFuncCall{v0, r0, r1})
 	return r0, r1
 }
 
 // SetDefaultHook sets function that is called when the KillTaskByType
 // method of the parent MockTaskHandler instance is invoked and the hook
 // queue is empty.
-func (f *TaskHandlerKillTaskByTypeFunc) SetDefaultHook(hook func(context.Context, tasks.Task) (*executor.HandlerResponse, error)) {
+func (f *TaskHandlerKillTaskByTypeFunc) SetDefaultHook(hook func(tasks.Task) (*executor.HandlerResponse, error)) {
 	f.defaultHook = hook
 }
 
@@ -348,7 +460,7 @@ func (f *TaskHandlerKillTaskByTypeFunc) SetDefaultHook(hook func(context.Context
 // KillTaskByType method of the parent MockTaskHandler instance invokes the
 // hook at the front of the queue and discards it. After the queue is empty,
 // the default hook function is invoked for any future action.
-func (f *TaskHandlerKillTaskByTypeFunc) PushHook(hook func(context.Context, tasks.Task) (*executor.HandlerResponse, error)) {
+func (f *TaskHandlerKillTaskByTypeFunc) PushHook(hook func(tasks.Task) (*executor.HandlerResponse, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -357,19 +469,19 @@ func (f *TaskHandlerKillTaskByTypeFunc) PushHook(hook func(context.Context, task
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
 func (f *TaskHandlerKillTaskByTypeFunc) SetDefaultReturn(r0 *executor.HandlerResponse, r1 error) {
-	f.SetDefaultHook(func(context.Context, tasks.Task) (*executor.HandlerResponse, error) {
+	f.SetDefaultHook(func(tasks.Task) (*executor.HandlerResponse, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
 func (f *TaskHandlerKillTaskByTypeFunc) PushReturn(r0 *executor.HandlerResponse, r1 error) {
-	f.PushHook(func(context.Context, tasks.Task) (*executor.HandlerResponse, error) {
+	f.PushHook(func(tasks.Task) (*executor.HandlerResponse, error) {
 		return r0, r1
 	})
 }
 
-func (f *TaskHandlerKillTaskByTypeFunc) nextHook() func(context.Context, tasks.Task) (*executor.HandlerResponse, error) {
+func (f *TaskHandlerKillTaskByTypeFunc) nextHook() func(tasks.Task) (*executor.HandlerResponse, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -404,10 +516,7 @@ func (f *TaskHandlerKillTaskByTypeFunc) History() []TaskHandlerKillTaskByTypeFun
 type TaskHandlerKillTaskByTypeFuncCall struct {
 	// Arg0 is the value of the 1st argument passed to this method
 	// invocation.
-	Arg0 context.Context
-	// Arg1 is the value of the 2nd argument passed to this method
-	// invocation.
-	Arg1 tasks.Task
+	Arg0 tasks.Task
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
 	Result0 *executor.HandlerResponse
@@ -419,7 +528,7 @@ type TaskHandlerKillTaskByTypeFuncCall struct {
 // Args returns an interface slice containing the arguments of this
 // invocation.
 func (c TaskHandlerKillTaskByTypeFuncCall) Args() []interface{} {
-	return []interface{}{c.Arg0, c.Arg1}
+	return []interface{}{c.Arg0}
 }
 
 // Results returns an interface slice containing the results of this
@@ -431,24 +540,24 @@ func (c TaskHandlerKillTaskByTypeFuncCall) Results() []interface{} {
 // TaskHandlerScheduleTaskFunc describes the behavior when the ScheduleTask
 // method of the parent MockTaskHandler instance is invoked.
 type TaskHandlerScheduleTaskFunc struct {
-	defaultHook func(context.Context, tasks.Task, string) (*executor.HandlerResponse, error)
-	hooks       []func(context.Context, tasks.Task, string) (*executor.HandlerResponse, error)
+	defaultHook func(tasks.Task, string) (*executor.HandlerResponse, error)
+	hooks       []func(tasks.Task, string) (*executor.HandlerResponse, error)
 	history     []TaskHandlerScheduleTaskFuncCall
 	mutex       sync.Mutex
 }
 
 // ScheduleTask delegates to the next hook function in the queue and stores
 // the parameter and result values of this invocation.
-func (m *MockTaskHandler) ScheduleTask(v0 context.Context, v1 tasks.Task, v2 string) (*executor.HandlerResponse, error) {
-	r0, r1 := m.ScheduleTaskFunc.nextHook()(v0, v1, v2)
-	m.ScheduleTaskFunc.appendCall(TaskHandlerScheduleTaskFuncCall{v0, v1, v2, r0, r1})
+func (m *MockTaskHandler) ScheduleTask(v0 tasks.Task, v1 string) (*executor.HandlerResponse, error) {
+	r0, r1 := m.ScheduleTaskFunc.nextHook()(v0, v1)
+	m.ScheduleTaskFunc.appendCall(TaskHandlerScheduleTaskFuncCall{v0, v1, r0, r1})
 	return r0, r1
 }
 
 // SetDefaultHook sets function that is called when the ScheduleTask method
 // of the parent MockTaskHandler instance is invoked and the hook queue is
 // empty.
-func (f *TaskHandlerScheduleTaskFunc) SetDefaultHook(hook func(context.Context, tasks.Task, string) (*executor.HandlerResponse, error)) {
+func (f *TaskHandlerScheduleTaskFunc) SetDefaultHook(hook func(tasks.Task, string) (*executor.HandlerResponse, error)) {
 	f.defaultHook = hook
 }
 
@@ -456,7 +565,7 @@ func (f *TaskHandlerScheduleTaskFunc) SetDefaultHook(hook func(context.Context, 
 // ScheduleTask method of the parent MockTaskHandler instance invokes the
 // hook at the front of the queue and discards it. After the queue is empty,
 // the default hook function is invoked for any future action.
-func (f *TaskHandlerScheduleTaskFunc) PushHook(hook func(context.Context, tasks.Task, string) (*executor.HandlerResponse, error)) {
+func (f *TaskHandlerScheduleTaskFunc) PushHook(hook func(tasks.Task, string) (*executor.HandlerResponse, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -465,19 +574,19 @@ func (f *TaskHandlerScheduleTaskFunc) PushHook(hook func(context.Context, tasks.
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
 func (f *TaskHandlerScheduleTaskFunc) SetDefaultReturn(r0 *executor.HandlerResponse, r1 error) {
-	f.SetDefaultHook(func(context.Context, tasks.Task, string) (*executor.HandlerResponse, error) {
+	f.SetDefaultHook(func(tasks.Task, string) (*executor.HandlerResponse, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
 func (f *TaskHandlerScheduleTaskFunc) PushReturn(r0 *executor.HandlerResponse, r1 error) {
-	f.PushHook(func(context.Context, tasks.Task, string) (*executor.HandlerResponse, error) {
+	f.PushHook(func(tasks.Task, string) (*executor.HandlerResponse, error) {
 		return r0, r1
 	})
 }
 
-func (f *TaskHandlerScheduleTaskFunc) nextHook() func(context.Context, tasks.Task, string) (*executor.HandlerResponse, error) {
+func (f *TaskHandlerScheduleTaskFunc) nextHook() func(tasks.Task, string) (*executor.HandlerResponse, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -512,13 +621,10 @@ func (f *TaskHandlerScheduleTaskFunc) History() []TaskHandlerScheduleTaskFuncCal
 type TaskHandlerScheduleTaskFuncCall struct {
 	// Arg0 is the value of the 1st argument passed to this method
 	// invocation.
-	Arg0 context.Context
+	Arg0 tasks.Task
 	// Arg1 is the value of the 2nd argument passed to this method
 	// invocation.
-	Arg1 tasks.Task
-	// Arg2 is the value of the 3rd argument passed to this method
-	// invocation.
-	Arg2 string
+	Arg1 string
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
 	Result0 *executor.HandlerResponse
@@ -530,7 +636,7 @@ type TaskHandlerScheduleTaskFuncCall struct {
 // Args returns an interface slice containing the arguments of this
 // invocation.
 func (c TaskHandlerScheduleTaskFuncCall) Args() []interface{} {
-	return []interface{}{c.Arg0, c.Arg1, c.Arg2}
+	return []interface{}{c.Arg0, c.Arg1}
 }
 
 // Results returns an interface slice containing the results of this
