@@ -11,6 +11,7 @@ import "contracts/libraries/errors/AccusationsErrors.sol";
 
 /// @custom:deploy-type deployUpgradeable
 /// @custom:role Accusation
+/// @custom:salt AccusationMultipleProposal
 contract AccusationMultipleProposal is
     ImmutableFactory,
     ImmutableSnapshots,

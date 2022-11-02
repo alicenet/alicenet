@@ -15,6 +15,7 @@ import "contracts/libraries/errors/AccusationsErrors.sol";
 
 /// @custom:salt InvalidTxConsumptionAccusation
 /// @custom:role Accusation
+/// @custom:salt AccusationInvalidTxConsumption
 contract AccusationInvalidTxConsumption is
     ImmutableFactory,
     ImmutableSnapshots,
