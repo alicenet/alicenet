@@ -1,6 +1,6 @@
 import { BytesLike } from "ethers";
 import hre, { ethers, run } from "hardhat";
-import { getBytes32Salt } from "../../scripts/lib/alicenetFactoryTasks";
+import { getBytes32Salt } from "../../scripts/lib/alicenetFactory";
 import {
   MOCK,
   MOCK_INITIALIZABLE,

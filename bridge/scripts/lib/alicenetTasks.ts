@@ -506,17 +506,11 @@ task("register-validators", "registers validators")
       0,
       regValidatorsCallData
     );
-    console.log(tokenIds);
-    console.log("Registering validators");
-    if (hre.network.name === "hardhat") {
-      // hardhat is not being able to estimate correctly the tx gas due to the massive bytes array
-      // being sent as input to the function (the contract bytecode), so we need to increase the block
-      // gas limit temporally in order to deploy the template
-      await hre.network.provider.send("evm_setBlockGasLimit", [
-        "0x3000000000000000",
-      ]);
-    }
-    tx = await factory.multiCall([...approveTokens, regValidators]);
+
+    tx = await factory.multiCall(
+      [...approveTokens, regValidators],
+      await getGasPrices(hre)
+    );
     if (taskArgs.test) {
       await hre.network.provider.send("hardhat_mine", [
         hre.ethers.utils.hexValue(3),
@@ -1637,15 +1631,11 @@ export async function stakeValidators(
     ]);
     stakeNFT.push(encodeMultiCallArgs(publicStakingAddress, 0, stakeToken));
   }
-  if (hre.network.name === "hardhat") {
-    // hardhat is not being able to estimate correctly the tx gas due to the massive bytes array
-    // being sent as input to the function (the contract bytecode), so we need to increase the block
-    // gas limit temporally in order to deploy the template
-    await hre.network.provider.send("evm_setBlockGasLimit", [
-      "0x3000000000000000",
-    ]);
-  }
-  return factory.multiCall([approveAToken, ...stakeNFT]);
+
+  return factory.multiCall(
+    [approveAToken, ...stakeNFT],
+    await getGasPrices(hre)
+  );
 }
 
 export async function migrateSnapshotsAndValidators(
@@ -1731,20 +1721,11 @@ export async function migrateSnapshotsAndValidators(
     0,
     migrateSnapshotsCallData
   );
-  if (hre.network.name === "hardhat") {
-    // hardhat is not being able to estimate correctly the tx gas due to the massive bytes array
-    // being sent as input to the function (the contract bytecode), so we need to increase the block
-    // gas limit temporally in order to deploy the template
-    await hre.network.provider.send("evm_setBlockGasLimit", [
-      "0x3000000000000000",
-    ]);
-  }
-  return factory.multiCall([
-    ...approveTokens,
-    registerValidators,
-    migrateValidators,
-    migrateSnapshots,
-  ]);
+
+  return factory.multiCall(
+    [...approveTokens, registerValidators, migrateValidators, migrateSnapshots],
+    await getGasPrices(hre)
+  );
 }
 
 async function factoryLookupAddress(
