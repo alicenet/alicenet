@@ -99,9 +99,7 @@ func (ss *Store) LoadState(txn *badger.Txn, rcert *objs.RCert) (*RoundStates, er
 	}
 	rs.OwnValidatingState = ownValidatingState
 
-	// load currently evicted validators
 	evictedValidatorAddresses, err := ss.database.GetEvictedValidatorsByGroupKey(txn, groupKey)
-	//logging.GetLogger("accusations").Warnf("getting evicted validators. %v, 0x%x, groupKey: 0x%x", err, evictedValidatorAddresses, groupKey)
 	if err != nil {
 		return nil, err
 	}
@@ -151,10 +149,6 @@ func (ss *Store) WriteState(txn *badger.Txn, rs *RoundStates) error {
 	// persist currently evicted validators
 	for vAddr, isEvicted := range rs.EvitedValidators {
 		if isEvicted {
-			// logging.GetLogger("accusations").WithFields(logrus.Fields{
-			// 	"vAddr":    vAddr,
-			// 	"groupKey": rs.ValidatorSet.GroupKey,
-			// }).Warnf("persisting evicted validators in SStore")
 			err := ss.database.SetEvictedValidator(txn, rs.ValidatorSet.GroupKey, []byte(vAddr))
 			if err != nil {
 				return err

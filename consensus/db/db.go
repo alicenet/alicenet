@@ -2007,14 +2007,11 @@ func (db *Database) SetEvictedValidator(txn *badger.Txn, groupKey, address []byt
 	if err != nil {
 		return err
 	}
-	//db.logger.Warnf("about to persist evicted validator")
 	err = db.rawDB.SetEvictedValidator(txn, key, address)
-	//db.logger.Warnf("maybe persisted evicted validator: %v", err)
 	if err != nil {
 		utils.DebugTrace(db.logger, err)
 		return err
 	}
-	//db.logger.Warnf("persisted evicted validator")
 	return nil
 }
 
