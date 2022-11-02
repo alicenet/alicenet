@@ -2,6 +2,10 @@ package executor
 
 import (
 	"errors"
+	"github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/constants/dbprefix"
+	"github.com/alicenet/alicenet/utils"
+	"github.com/stretchr/testify/require"
 	"io/ioutil"
 	"math/big"
 	"os"
@@ -9,21 +13,17 @@ import (
 	"time"
 
 	"github.com/alicenet/alicenet/consensus/db"
-	"github.com/alicenet/alicenet/constants"
-	"github.com/alicenet/alicenet/constants/dbprefix"
 	"github.com/alicenet/alicenet/layer1/executor/tasks"
 	taskMocks "github.com/alicenet/alicenet/layer1/executor/tasks/mocks"
 	"github.com/alicenet/alicenet/layer1/transaction"
 	"github.com/alicenet/alicenet/logging"
 	"github.com/alicenet/alicenet/test/mocks"
-	"github.com/alicenet/alicenet/utils"
 	mockrequire "github.com/derision-test/go-mockgen/testutil/require"
 	"github.com/dgraph-io/badger/v2"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func getTaskExecutor(t *testing.T) (*TaskExecutor, *mocks.MockClient, *db.Database, *executorResponseChan, *mocks.MockWatcher) {

@@ -2,7 +2,6 @@ package executor
 
 import (
 	"context"
-
 	"github.com/alicenet/alicenet/layer1/executor/tasks"
 )
 
