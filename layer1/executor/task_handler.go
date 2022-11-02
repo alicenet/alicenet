@@ -1,6 +1,8 @@
 package executor
 
 import (
+	"sync"
+
 	"github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/layer1"
 	"github.com/alicenet/alicenet/layer1/executor/tasks"
@@ -9,7 +11,6 @@ import (
 	"github.com/alicenet/alicenet/logging"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
-	"sync"
 )
 
 var _ TaskHandler = &Handler{}
@@ -100,7 +101,7 @@ func (h *Handler) KillTaskById(id string) (*HandlerResponse, error) {
 	return req.response.listen(h.closeChan)
 }
 
-//waitForRequestProcessing or context deadline.
+// waitForRequestProcessing or context deadline.
 func (h *Handler) waitForRequestProcessing(req managerRequest) error {
 	// wait for request to be accepted
 	select {

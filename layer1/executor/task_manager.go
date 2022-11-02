@@ -4,25 +4,24 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg"
-	"github.com/alicenet/alicenet/layer1/executor/tasks/snapshots"
 	"reflect"
 	"strings"
 	"sync"
 	"time"
-
-	"github.com/dgraph-io/badger/v2"
-	"github.com/sirupsen/logrus"
 
 	"github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/constants/dbprefix"
 	"github.com/alicenet/alicenet/layer1"
 	"github.com/alicenet/alicenet/layer1/executor/marshaller"
 	"github.com/alicenet/alicenet/layer1/executor/tasks"
+	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg"
+	"github.com/alicenet/alicenet/layer1/executor/tasks/snapshots"
 	monitorInterfaces "github.com/alicenet/alicenet/layer1/monitor/interfaces"
 	"github.com/alicenet/alicenet/layer1/transaction"
 	"github.com/alicenet/alicenet/logging"
 	"github.com/alicenet/alicenet/utils"
+	"github.com/dgraph-io/badger/v2"
+	"github.com/sirupsen/logrus"
 )
 
 var _ TaskResponse = &HandlerResponse{}
@@ -103,7 +102,7 @@ func (tm *TaskManager) close() {
 
 // triggered when onError occurs during the execution.
 func (tm *TaskManager) onError(err error) error {
-	tm.logger.WithError(err).Errorf("An unercoverable error occured %v", err)
+	tm.logger.WithError(err).Errorf("An unrecoverable error occurred %v", err)
 	tm.close()
 
 	return err
