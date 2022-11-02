@@ -28,7 +28,8 @@ import (
 )
 
 func getTaskHandler(t *testing.T, doCleanup bool) (*Handler, *mocks.MockClient, *mocks.MockAllSmartContracts, *mocks.MockWatcher, accounts.Account) {
-	db := mocks.NewTestDB()
+	monDB := mocks.NewTestDB()
+	consDB := mocks.NewTestDB()
 	client := mocks.NewMockClient()
 	client.GetFinalizedHeightFunc.SetDefaultReturn(0, nil)
 	adminHandlers := mocks.NewMockAdminHandler()
@@ -44,7 +45,7 @@ func getTaskHandler(t *testing.T, doCleanup bool) (*Handler, *mocks.MockClient, 
 		},
 	}
 
-	taskHandler, err := NewTaskHandler(db, client, contracts, adminHandlers, txWatcher)
+	taskHandler, err := NewTaskHandler(monDB, consDB, client, contracts, adminHandlers, txWatcher)
 	require.Nil(t, err)
 
 	if doCleanup {
@@ -329,7 +330,7 @@ func TestTasksHandlerAndManager_ScheduleKillCloseAndRecover(t *testing.T) {
 	}
 
 	handler.Close()
-	newHandler, err := NewTaskHandler(handler.manager.monDB, handler.manager.eth, handler.manager.contracts, handler.manager.adminHandler, handler.manager.taskExecutor.txWatcher)
+	newHandler, err := NewTaskHandler(handler.manager.monDB, handler.manager.consDB, handler.manager.eth, handler.manager.contracts, handler.manager.adminHandler, handler.manager.taskExecutor.txWatcher)
 	recoveredTask := newHandler.(*Handler).manager.Schedule[taskId]
 	require.Equal(t, task.ID, recoveredTask.Id)
 	require.Equal(t, task.Name, recoveredTask.Name)
@@ -364,7 +365,7 @@ func TestTasksHandlerAndManager_ScheduleKillCloseAndRecover(t *testing.T) {
 	require.Equal(t, 0, getScheduleLen(t, newHandler.(*Handler).manager))
 
 	newHandler.Close()
-	newHandler2, err := NewTaskHandler(newHandler.(*Handler).manager.monDB, newHandler.(*Handler).manager.eth, newHandler.(*Handler).manager.contracts, newHandler.(*Handler).manager.adminHandler, newHandler.(*Handler).manager.taskExecutor.txWatcher)
+	newHandler2, err := NewTaskHandler(newHandler.(*Handler).manager.monDB, newHandler.(*Handler).manager.consDB, newHandler.(*Handler).manager.eth, newHandler.(*Handler).manager.contracts, newHandler.(*Handler).manager.adminHandler, newHandler.(*Handler).manager.taskExecutor.txWatcher)
 	require.Nil(t, err)
 	newHandler2.Start()
 
@@ -447,7 +448,7 @@ func TestTasksHandlerAndManager_ScheduleAndRecover_RunningSnapshotTask(t *testin
 	}
 
 	handler.Close()
-	newHandler, err := NewTaskHandler(handler.manager.monDB, handler.manager.eth, handler.manager.contracts, handler.manager.adminHandler, handler.manager.taskExecutor.txWatcher)
+	newHandler, err := NewTaskHandler(handler.manager.monDB, handler.manager.consDB, handler.manager.eth, handler.manager.contracts, handler.manager.adminHandler, handler.manager.taskExecutor.txWatcher)
 	recoveredTask := newHandler.(*Handler).manager.Schedule[taskId]
 	require.Equal(t, task.ID, recoveredTask.Id)
 	require.Equal(t, task.Name, recoveredTask.Name)
@@ -478,13 +479,14 @@ func TestTasksHandlerAndManager_ScheduleAndRecover_RunningSnapshotTask(t *testin
 
 func TestHandlerManagerAndExecutor_ErrorOnCreation(t *testing.T) {
 	t.Parallel()
-	db := mocks.NewTestDB()
+	monDB := mocks.NewTestDB()
+	consDB := mocks.NewTestDB()
 	client := mocks.NewMockClient()
 	adminHandlers := mocks.NewMockAdminHandler()
 	txWatcher := mocks.NewMockWatcher()
 	contracts := mocks.NewMockAllSmartContracts()
 
-	err := db.Update(func(txn *badger.Txn) error {
+	err := monDB.Update(func(txn *badger.Txn) error {
 		key := dbprefix.PrefixTaskExecutorState()
 		if err := utils.SetValue(txn, key, []byte("corrupted data")); err != nil {
 			return err
@@ -493,7 +495,7 @@ func TestHandlerManagerAndExecutor_ErrorOnCreation(t *testing.T) {
 	})
 	require.Nil(t, err)
 
-	taskHandler, err := NewTaskHandler(db, client, contracts, adminHandlers, txWatcher)
+	taskHandler, err := NewTaskHandler(monDB, consDB, client, contracts, adminHandlers, txWatcher)
 
 	require.Nil(t, taskHandler)
 	require.NotNil(t, err)
