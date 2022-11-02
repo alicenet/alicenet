@@ -9,14 +9,15 @@ import {
   deployUpgradeableWithFactory,
   Fixture,
   getFixture,
+  getImpersonatedSigner,
   getMetamorphicAddress,
 } from "../setup";
 import {
-  getImpersonatedSigner,
   getMockBlockClaimsForSnapshot,
   proofs,
   vsPreImage,
   wrongChainIdVSPreImage,
+  wrongKeyProofs,
   wrongProofs,
   wrongUTXOIDVSPreImage,
 } from "./setup";
@@ -185,6 +186,17 @@ describe("Testing BridgePool Deposit/Withdraw for tokenType ERC20", async () => 
     ).to.be.revertedWithCustomError(
       nativeERCBridgePoolBaseErrors,
       "MerkleProofKeyDoesNotMatchUTXOID"
+    );
+  });
+
+  it("Should not call a withdraw if state key does not match txhash key", async () => {
+    await expect(
+      nativeERC20BridgePoolV1
+        .connect(utxoOwnerSigner)
+        .withdraw(vsPreImage, wrongKeyProofs)
+    ).to.be.revertedWithCustomError(
+      nativeERCBridgePoolBaseErrors,
+      "UTXODoesnotMatch"
     );
   });
 });

@@ -1,5 +1,5 @@
 import { BytesLike, defaultAbiCoder } from "ethers/lib/utils";
-import hre, { ethers } from "hardhat";
+import { ethers } from "hardhat";
 
 // The following values can be obtained from accusation_builder_test.go execution
 export const txRoot =
@@ -36,6 +36,8 @@ export const wrongUTXOIDVSPreImage =
   "0x0000000001000100010000000000000000000000000002000400000001000100150000000201000001000000d992b11101000000b2000000010138e959391dd8598ae80d5d6d114a7822a09d313a0000b4aec67f3220a8bcdee78d4aaec6ea419171e3db9c27c65d70cc85d60e07a3f7";
 
 export const wrongChainIdVSPreImage =
+  // original vsPreImage "0x0000000001000100010000000000000000000000000002000400000001000100150000000201000001000000feffffff01000000b2000000010138e959391dd8598ae80d5d6d114a7822a09d313a0000b4aec67f3220a8bcdee78d4aaec6ea419171e3db9c27c65d70cc85d60e07a3f7";
+  // replaced original txHash 0400000001000100150000000201000001000000feffffff01000000b2000000 with required for test: 7b802d223569d7b75cec992b1b028b0c2092d950d992b11187f11ee568c469bd
   "0x0000000001000100020000000000000000000000000002007b802d223569d7b75cec992b1b028b0c2092d950d992b11187f11ee568c469bd010138e959391dd8598ae80d5d6d114a7822a09d313a0000b4aec67f3220a8bcdee78d4aaec6ea419171e3db9c27c65d70cc85d60e07a3f7";
 
 export const wrongProofs: [BytesLike, BytesLike, BytesLike, BytesLike] = [
@@ -66,44 +68,23 @@ export const wrongUTXOIDProofs: [BytesLike, BytesLike, BytesLike, BytesLike] = [
   "0x010003d97c1b45464c01481c8df20932ce3292c99e7d5e5df07f6e1ca639dedb05b42b0000000000000000000000000000000000000000000000000000000000000000323bfb4d198651454355911116e41425aa3668eec380c958f89bc3fe76c88ab500010003e0ad098365a75c471199ee17c3e53b26ab5e404ad6697dc3033c686d84479207c40de2b3c2e453811cc0f64df31de8864ca32742fee909b443660d9f20eb7f280e64abf1c51eedeef9d757bfce9edc3af361b304bdeedd321e343921c04f3b2005",
 ];
 
+export const wrongKeyProofs: [BytesLike, BytesLike, BytesLike, BytesLike] = [
+  // proofOfInclusionStateRootCapnProto
+  "0x010005b4aec67f3220a8bcdee78d4aaec6ea419171e3db9c27c65d70cc85d60e07a3f70000000000000000000000000000000000000000000000000000000000000000af469f3b9864a5132323df8bdd9cbd59ea728cd7525b65252133a5a02f1566ee00010003a8793650a7050ac58cf53ea792426b97212251673788bf0b4045d0bb5bdc3843aafb9eb5ced6edc2826e734abad6235c8cf638c812247fd38f04e7080d431933b9c6d6f24756341fde3e8055dd3a83743a94dddc122ab3f32a3db0c4749ff57bad",
+
+  // proofOfInclusionTXRootCapnProto
+  "0x010000b4aec67f3220a8bcdee78d4aaec6ea419171e3db9c27c65d70cc85d60e07a3f70000000000000000000000000000000000000000000000000000000000000000111c8c4c333349644418902917e1a334a6f270b8b585661a91165298792437ed0001000000",
+
+  // proofOfInclusionTXHashCapnProto
+  "0x010002cda80a6c60e1215c1882b25b4744bd9d95c1218a2fd17827ab809c68196fd9bf0000000000000000000000000000000000000000000000000000000000000000db3b45f6122fb536c80ace7701d8ade36fb508adf5296f12edfb1dfdbb242e0d00010002c042a165d6c097eb5ac77b72581c298f93375322fc57a03283891c2acc2ce66f8cb3dc4df7060209ffb1efa66f693ed888c15034398312231b51894f86343c2421",
+
+  // proofOfInclusionHeaderRootCapnProto
+  "0x010003d97c1b45464c01481c8df20932ce3292c99e7d5e5df07f6e1ca639dedb05b42b0000000000000000000000000000000000000000000000000000000000000000323bfb4d198651454355911116e41425aa3668eec380c958f89bc3fe76c88ab500010003e0ad098365a75c471199ee17c3e53b26ab5e404ad6697dc3033c686d84479207c40de2b3c2e453811cc0f64df31de8864ca32742fee909b443660d9f20eb7f280e64abf1c51eedeef9d757bfce9edc3af361b304bdeedd321e343921c04f3b2005",
+];
+
 export function getMockBlockClaimsForSnapshot() {
   return defaultAbiCoder.encode(
     ["uint32", "uint32", "uint32", "bytes32", "bytes32", "bytes32", "bytes32"],
     [1, 0, 0, ethers.constants.HashZero, txRoot, stateRoot, headerRoot]
   );
 }
-
-export const getMetamorphicContractAddress = (
-  contractName: string,
-  factoryAddress: string
-): string => {
-  const metamorphicContractBytecodeHash_ =
-    "0x1c0bf703a3415cada9785e89e9d70314c3111ae7d8e04f33bb42eb1d264088be";
-  const salt = ethers.utils.formatBytes32String(contractName);
-  return (
-    "0x" +
-    ethers.utils
-      .keccak256(
-        ethers.utils.solidityPack(
-          ["bytes1", "address", "bytes32", "bytes32"],
-          ["0xff", factoryAddress, salt, metamorphicContractBytecodeHash_]
-        )
-      )
-      .slice(-40)
-  );
-};
-
-export const getImpersonatedSigner = async (
-  addressToImpersonate: string
-): Promise<any> => {
-  const [admin] = await ethers.getSigners();
-  await admin.sendTransaction({
-    to: addressToImpersonate,
-    value: ethers.utils.parseEther("1"),
-  });
-  await hre.network.provider.request({
-    method: "hardhat_impersonateAccount",
-    params: [addressToImpersonate],
-  });
-  return ethers.provider.getSigner(addressToImpersonate);
-};

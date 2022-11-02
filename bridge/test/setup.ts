@@ -9,7 +9,7 @@ import {
   Wallet,
 } from "ethers";
 import { isHexString } from "ethers/lib/utils";
-import { ethers, network } from "hardhat";
+import hre, { ethers, network } from "hardhat";
 import {
   AliceNetFactory,
   AToken,
@@ -231,8 +231,10 @@ export const deployUpgradeableWithFactory = async (
   salt?: string,
   initCallData?: any[],
   constructorArgs: any[] = [],
-  saltType?: string
+  saltType?: string,
+  initialize?: boolean
 ): Promise<Contract> => {
+  if (initialize === undefined) initialize = true;
   const _Contract = await ethers.getContractFactory(contractName);
   let deployCode = _Contract.getDeployTransaction(...constructorArgs)
     .data as BytesLike;
@@ -281,18 +283,19 @@ export const deployUpgradeableWithFactory = async (
       `Contract deployment size:${receipt.gasUsed} is greater than 10 million`
     );
   }
-
   let initCallDataBin = "0x";
-  try {
-    initCallDataBin = _Contract.interface.encodeFunctionData(
-      "initialize",
-      initCallData
-    );
-  } catch (error) {
-    if (!(error as Error).message.includes("no matching function")) {
-      console.warn(
-        `Error deploying contract ${contractName} couldn't get initialize arguments: ${error}`
+  if (initialize) {
+    try {
+      initCallDataBin = _Contract.interface.encodeFunctionData(
+        "initialize",
+        initCallData
       );
+    } catch (error) {
+      if (!(error as Error).message.includes("no matching function")) {
+        console.warn(
+          `Error deploying contract ${contractName} couldn't get initialize arguments: ${error}`
+        );
+      }
     }
   }
   await factory.upgradeProxy(saltBytes, logicAddr, initCallDataBin);
@@ -565,7 +568,7 @@ export const getFixture = async (
     []
   )) as Dynamics;
 
-  await posFixtureSetup(factory, aToken, legacyToken);
+  await posFixtureSetup(factory, aToken);
   const blockNumber = BigInt(await ethers.provider.getBlockNumber());
   const phaseLength = (await ethdkg.getPhaseLength()).toBigInt();
   if (phaseLength >= blockNumber) {
@@ -695,4 +698,23 @@ export const getReceiptForFailedTransaction = async (
     }
   }
   return receipt;
+};
+
+export const getImpersonatedSigner = async (
+  addressToImpersonate: string
+): Promise<any> => {
+  const [admin] = await ethers.getSigners();
+  const testUtils = await (
+    await (await ethers.getContractFactory("TestUtils")).deploy()
+  ).deployed();
+  await admin.sendTransaction({
+    to: testUtils.address,
+    value: ethers.utils.parseEther("1"),
+  });
+  await testUtils.payUnpayable(addressToImpersonate);
+  await hre.network.provider.request({
+    method: "hardhat_impersonateAccount",
+    params: [addressToImpersonate],
+  });
+  return ethers.getImpersonatedSigner(addressToImpersonate);
 };
