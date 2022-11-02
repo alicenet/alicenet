@@ -312,7 +312,7 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	defer txWatcher.Close()
 
 	// Setup tasks scheduler
-	tasksHandler, err := executor.NewTaskHandler(monDB, eth, contractsHandler, consAdminHandlers, txWatcher)
+	tasksHandler, err := executor.NewTaskHandler(monDB, consDB, eth, contractsHandler, consAdminHandlers, txWatcher)
 	if err != nil {
 		panic(err)
 	}

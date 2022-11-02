@@ -147,7 +147,7 @@ func NewMockTask() *MockTask {
 			},
 		},
 		InitializeFunc: &TaskInitializeFunc{
-			defaultHook: func(context.Context, context.CancelFunc, *db.Database, *logrus.Entry, layer1.Client, layer1.AllSmartContracts, string, string, uint64, uint64, bool, *transaction.SubscribeOptions, tasks.InternalTaskResponseChan) (r0 error) {
+			defaultHook: func(context.Context, context.CancelFunc, *db.Database, *db.Database, *logrus.Entry, layer1.Client, layer1.AllSmartContracts, string, string, uint64, uint64, bool, *transaction.SubscribeOptions, tasks.InternalTaskResponseChan) (r0 error) {
 				return
 			},
 		},
@@ -249,7 +249,7 @@ func NewStrictMockTask() *MockTask {
 			},
 		},
 		InitializeFunc: &TaskInitializeFunc{
-			defaultHook: func(context.Context, context.CancelFunc, *db.Database, *logrus.Entry, layer1.Client, layer1.AllSmartContracts, string, string, uint64, uint64, bool, *transaction.SubscribeOptions, tasks.InternalTaskResponseChan) error {
+			defaultHook: func(context.Context, context.CancelFunc, *db.Database, *db.Database, *logrus.Entry, layer1.Client, layer1.AllSmartContracts, string, string, uint64, uint64, bool, *transaction.SubscribeOptions, tasks.InternalTaskResponseChan) error {
 				panic("unexpected invocation of MockTask.Initialize")
 			},
 		},
@@ -1627,23 +1627,23 @@ func (c TaskGetSubscribeOptionsFuncCall) Results() []interface{} {
 // TaskInitializeFunc describes the behavior when the Initialize method of
 // the parent MockTask instance is invoked.
 type TaskInitializeFunc struct {
-	defaultHook func(context.Context, context.CancelFunc, *db.Database, *logrus.Entry, layer1.Client, layer1.AllSmartContracts, string, string, uint64, uint64, bool, *transaction.SubscribeOptions, tasks.InternalTaskResponseChan) error
-	hooks       []func(context.Context, context.CancelFunc, *db.Database, *logrus.Entry, layer1.Client, layer1.AllSmartContracts, string, string, uint64, uint64, bool, *transaction.SubscribeOptions, tasks.InternalTaskResponseChan) error
+	defaultHook func(context.Context, context.CancelFunc, *db.Database, *db.Database, *logrus.Entry, layer1.Client, layer1.AllSmartContracts, string, string, uint64, uint64, bool, *transaction.SubscribeOptions, tasks.InternalTaskResponseChan) error
+	hooks       []func(context.Context, context.CancelFunc, *db.Database, *db.Database, *logrus.Entry, layer1.Client, layer1.AllSmartContracts, string, string, uint64, uint64, bool, *transaction.SubscribeOptions, tasks.InternalTaskResponseChan) error
 	history     []TaskInitializeFuncCall
 	mutex       sync.Mutex
 }
 
 // Initialize delegates to the next hook function in the queue and stores
 // the parameter and result values of this invocation.
-func (m *MockTask) Initialize(v0 context.Context, v1 context.CancelFunc, v2 *db.Database, v3 *logrus.Entry, v4 layer1.Client, v5 layer1.AllSmartContracts, v6 string, v7 string, v8 uint64, v9 uint64, v10 bool, v11 *transaction.SubscribeOptions, v12 tasks.InternalTaskResponseChan) error {
-	r0 := m.InitializeFunc.nextHook()(v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12)
-	m.InitializeFunc.appendCall(TaskInitializeFuncCall{v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, r0})
+func (m *MockTask) Initialize(v0 context.Context, v1 context.CancelFunc, v2 *db.Database, v3 *db.Database, v4 *logrus.Entry, v5 layer1.Client, v6 layer1.AllSmartContracts, v7 string, v8 string, v9 uint64, v10 uint64, v11 bool, v12 *transaction.SubscribeOptions, v13 tasks.InternalTaskResponseChan) error {
+	r0 := m.InitializeFunc.nextHook()(v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13)
+	m.InitializeFunc.appendCall(TaskInitializeFuncCall{v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, r0})
 	return r0
 }
 
 // SetDefaultHook sets function that is called when the Initialize method of
 // the parent MockTask instance is invoked and the hook queue is empty.
-func (f *TaskInitializeFunc) SetDefaultHook(hook func(context.Context, context.CancelFunc, *db.Database, *logrus.Entry, layer1.Client, layer1.AllSmartContracts, string, string, uint64, uint64, bool, *transaction.SubscribeOptions, tasks.InternalTaskResponseChan) error) {
+func (f *TaskInitializeFunc) SetDefaultHook(hook func(context.Context, context.CancelFunc, *db.Database, *db.Database, *logrus.Entry, layer1.Client, layer1.AllSmartContracts, string, string, uint64, uint64, bool, *transaction.SubscribeOptions, tasks.InternalTaskResponseChan) error) {
 	f.defaultHook = hook
 }
 
@@ -1651,7 +1651,7 @@ func (f *TaskInitializeFunc) SetDefaultHook(hook func(context.Context, context.C
 // Initialize method of the parent MockTask instance invokes the hook at the
 // front of the queue and discards it. After the queue is empty, the default
 // hook function is invoked for any future action.
-func (f *TaskInitializeFunc) PushHook(hook func(context.Context, context.CancelFunc, *db.Database, *logrus.Entry, layer1.Client, layer1.AllSmartContracts, string, string, uint64, uint64, bool, *transaction.SubscribeOptions, tasks.InternalTaskResponseChan) error) {
+func (f *TaskInitializeFunc) PushHook(hook func(context.Context, context.CancelFunc, *db.Database, *db.Database, *logrus.Entry, layer1.Client, layer1.AllSmartContracts, string, string, uint64, uint64, bool, *transaction.SubscribeOptions, tasks.InternalTaskResponseChan) error) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -1660,19 +1660,19 @@ func (f *TaskInitializeFunc) PushHook(hook func(context.Context, context.CancelF
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
 func (f *TaskInitializeFunc) SetDefaultReturn(r0 error) {
-	f.SetDefaultHook(func(context.Context, context.CancelFunc, *db.Database, *logrus.Entry, layer1.Client, layer1.AllSmartContracts, string, string, uint64, uint64, bool, *transaction.SubscribeOptions, tasks.InternalTaskResponseChan) error {
+	f.SetDefaultHook(func(context.Context, context.CancelFunc, *db.Database, *db.Database, *logrus.Entry, layer1.Client, layer1.AllSmartContracts, string, string, uint64, uint64, bool, *transaction.SubscribeOptions, tasks.InternalTaskResponseChan) error {
 		return r0
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
 func (f *TaskInitializeFunc) PushReturn(r0 error) {
-	f.PushHook(func(context.Context, context.CancelFunc, *db.Database, *logrus.Entry, layer1.Client, layer1.AllSmartContracts, string, string, uint64, uint64, bool, *transaction.SubscribeOptions, tasks.InternalTaskResponseChan) error {
+	f.PushHook(func(context.Context, context.CancelFunc, *db.Database, *db.Database, *logrus.Entry, layer1.Client, layer1.AllSmartContracts, string, string, uint64, uint64, bool, *transaction.SubscribeOptions, tasks.InternalTaskResponseChan) error {
 		return r0
 	})
 }
 
-func (f *TaskInitializeFunc) nextHook() func(context.Context, context.CancelFunc, *db.Database, *logrus.Entry, layer1.Client, layer1.AllSmartContracts, string, string, uint64, uint64, bool, *transaction.SubscribeOptions, tasks.InternalTaskResponseChan) error {
+func (f *TaskInitializeFunc) nextHook() func(context.Context, context.CancelFunc, *db.Database, *db.Database, *logrus.Entry, layer1.Client, layer1.AllSmartContracts, string, string, uint64, uint64, bool, *transaction.SubscribeOptions, tasks.InternalTaskResponseChan) error {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -1716,34 +1716,37 @@ type TaskInitializeFuncCall struct {
 	Arg2 *db.Database
 	// Arg3 is the value of the 4th argument passed to this method
 	// invocation.
-	Arg3 *logrus.Entry
+	Arg3 *db.Database
 	// Arg4 is the value of the 5th argument passed to this method
 	// invocation.
-	Arg4 layer1.Client
+	Arg4 *logrus.Entry
 	// Arg5 is the value of the 6th argument passed to this method
 	// invocation.
-	Arg5 layer1.AllSmartContracts
+	Arg5 layer1.Client
 	// Arg6 is the value of the 7th argument passed to this method
 	// invocation.
-	Arg6 string
+	Arg6 layer1.AllSmartContracts
 	// Arg7 is the value of the 8th argument passed to this method
 	// invocation.
 	Arg7 string
 	// Arg8 is the value of the 9th argument passed to this method
 	// invocation.
-	Arg8 uint64
+	Arg8 string
 	// Arg9 is the value of the 10th argument passed to this method
 	// invocation.
 	Arg9 uint64
 	// Arg10 is the value of the 11th argument passed to this method
 	// invocation.
-	Arg10 bool
+	Arg10 uint64
 	// Arg11 is the value of the 12th argument passed to this method
 	// invocation.
-	Arg11 *transaction.SubscribeOptions
+	Arg11 bool
 	// Arg12 is the value of the 13th argument passed to this method
 	// invocation.
-	Arg12 tasks.InternalTaskResponseChan
+	Arg12 *transaction.SubscribeOptions
+	// Arg13 is the value of the 14th argument passed to this method
+	// invocation.
+	Arg13 tasks.InternalTaskResponseChan
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
 	Result0 error
@@ -1752,7 +1755,7 @@ type TaskInitializeFuncCall struct {
 // Args returns an interface slice containing the arguments of this
 // invocation.
 func (c TaskInitializeFuncCall) Args() []interface{} {
-	return []interface{}{c.Arg0, c.Arg1, c.Arg2, c.Arg3, c.Arg4, c.Arg5, c.Arg6, c.Arg7, c.Arg8, c.Arg9, c.Arg10, c.Arg11, c.Arg12}
+	return []interface{}{c.Arg0, c.Arg1, c.Arg2, c.Arg3, c.Arg4, c.Arg5, c.Arg6, c.Arg7, c.Arg8, c.Arg9, c.Arg10, c.Arg11, c.Arg12, c.Arg13}
 }
 
 // Results returns an interface slice containing the results of this
