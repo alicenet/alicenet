@@ -2,9 +2,12 @@ package executor
 
 import (
 	"context"
+	"encoding/gob"
+
 	"github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/layer1"
 	"github.com/alicenet/alicenet/layer1/executor/tasks"
+	accusations "github.com/alicenet/alicenet/layer1/executor/tasks/accusations"
 	monitorInterfaces "github.com/alicenet/alicenet/layer1/monitor/interfaces"
 	"github.com/alicenet/alicenet/layer1/transaction"
 	"github.com/alicenet/alicenet/logging"
@@ -44,6 +47,7 @@ func NewTaskHandler(monDB, consDB *db.Database, eth layer1.Client, contracts lay
 	}
 
 	// register gob types
+	gob.Register(&accusations.MultipleProposalAccusationTask{})
 
 	return handler, nil
 }
