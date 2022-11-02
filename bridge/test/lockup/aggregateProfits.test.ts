@@ -131,6 +131,7 @@ describe("Testing Staking Distribution", async () => {
   });
 
   it("creates 100 positions in 100 accounts", async () => {
+    const numTxs = 100;
     const approvalAmount = ethers.utils.parseEther("200000000");
     // approve public staking to spend account 1 alca
     let txResponse = await fixture.aToken
@@ -145,23 +146,18 @@ describe("Testing Staking Distribution", async () => {
       .connect(asFactory)
       .createBonusStakedPosition();
     await txResponse.wait();
-    // mint 100 positions to 100 random accounts
+    // mint `numTxs` positions to `numTxs` random accounts
     const transactions: Promise<ContractTransaction>[] = [];
     const addresses: string[] = [];
-    for (let i = 0; i <= 100; i++) {
-      // make a random acount
+    for (let i = 0; i <= numTxs; i++) {
+      // make a random account
       const randomAccount = ethers.Wallet.createRandom();
       addresses.push(randomAccount.address);
       const recipient = await getImpersonatedSigner(randomAccount.address);
       // stake random account
       transactions.push(generateLockedPosition(fixture, accounts, recipient));
     }
-    for (let i = 0; i < transactions.length; i++) {
-      const txResponse = await transactions[i];
-      await txResponse.wait();
-    }
-    // let currentState = await getState(fixture)
-    // showState("after lockup", currentState)
+    await Promise.all(transactions);
     await distributeProfits(fixture, accounts[0], profitETH, profitALCA);
     await jumpToPostLockState(fixture);
     // call aggregate profit with 10 mil gas limit
@@ -183,15 +179,16 @@ describe("Testing Staking Distribution", async () => {
 
     expect(lockupALCABalance).to.be.lessThan(expectedALCA);
     expect(lockupEthBalance).to.be.lessThan(expectedETH);
-    txResponse = await fixture.lockup.aggregateProfits({ gasLimit: 6000000 });
-    await txResponse.wait();
+    while (!(await fixture.lockup.payoutSafe())) {
+      txResponse = await fixture.lockup.aggregateProfits({ gasLimit: 6000000 });
+      await txResponse.wait();
+    }
     // check if the last position got paid
     const [ethbal, alcabal] = await fixture.lockup.getTemporaryRewardBalance(
       addresses[99]
     );
     expect(ethbal.toBigInt()).to.be.greaterThan(BigInt(0));
     expect(alcabal.toBigInt()).to.be.greaterThan(BigInt(0));
-    // check if bonus pool balances zero out
   });
 });
 
