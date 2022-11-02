@@ -73,9 +73,9 @@ func (te *TaskExecutor) getTxBackup(uuid string) (*types.Transaction, bool) {
 }
 
 // handleTaskExecution It is basically an abstraction to handle the task execution in a separate process.
-func (te *TaskExecutor) handleTaskExecution(mainCtx context.Context, task tasks.Task, name string, taskId string, start uint64, end uint64, allowMultiExecution bool, subscribeOptions *transaction.SubscribeOptions, database *db.Database, logger *logrus.Entry, eth layer1.Client, contracts layer1.AllSmartContracts, taskResponseChan tasks.InternalTaskResponseChan) {
+func (te *TaskExecutor) handleTaskExecution(mainCtx context.Context, task tasks.Task, name string, taskId string, start uint64, end uint64, allowMultiExecution bool, subscribeOptions *transaction.SubscribeOptions, monDB, consDB *db.Database, logger *logrus.Entry, eth layer1.Client, contracts layer1.AllSmartContracts, taskResponseChan tasks.InternalTaskResponseChan) {
 	defer task.Close()
-	err := te.processTask(mainCtx, task, name, taskId, start, end, allowMultiExecution, subscribeOptions, database, logger, eth, contracts, taskResponseChan)
+	err := te.processTask(mainCtx, task, name, taskId, start, end, allowMultiExecution, subscribeOptions, monDB, consDB, logger, eth, contracts, taskResponseChan)
 	// Clean up in case the task was killed
 	if task.WasKilled() {
 		task.GetLogger().Trace("task was externally killed, removing tx backup")
@@ -85,11 +85,11 @@ func (te *TaskExecutor) handleTaskExecution(mainCtx context.Context, task tasks.
 }
 
 // processTask processes all the stages of the task execution.
-func (te *TaskExecutor) processTask(mainCtx context.Context, task tasks.Task, name string, taskId string, start uint64, end uint64, allowMultiExecution bool, subscribeOptions *transaction.SubscribeOptions, database *db.Database, logger *logrus.Entry, eth layer1.Client, contracts layer1.AllSmartContracts, taskResponseChan tasks.InternalTaskResponseChan) error {
+func (te *TaskExecutor) processTask(mainCtx context.Context, task tasks.Task, name string, taskId string, start uint64, end uint64, allowMultiExecution bool, subscribeOptions *transaction.SubscribeOptions, monDB, consDB *db.Database, logger *logrus.Entry, eth layer1.Client, contracts layer1.AllSmartContracts, taskResponseChan tasks.InternalTaskResponseChan) error {
 	taskCtx, cf := context.WithCancel(mainCtx)
 	defer cf()
 
-	err := task.Initialize(taskCtx, cf, database, logger, eth, contracts, name, taskId, start, end, allowMultiExecution, subscribeOptions, taskResponseChan)
+	err := task.Initialize(taskCtx, cf, monDB, consDB, logger, eth, contracts, name, taskId, start, end, allowMultiExecution, subscribeOptions, taskResponseChan)
 	if err != nil {
 		return err
 	}
@@ -292,7 +292,7 @@ func (te *TaskExecutor) persistState() error {
 
 	err = te.database.Update(func(txn *badger.Txn) error {
 		key := dbprefix.PrefixTaskExecutorState()
-		logger.WithField("Key", string(key)).Debug("Saving state in the database")
+		logger.WithField("Key", string(key)).Debug("Saving state in the monDB")
 		if err := utils.SetValue(txn, key, rawData); err != nil {
 			logger.Error("Failed to set Value")
 			return err
@@ -316,7 +316,7 @@ func (te *TaskExecutor) loadState() error {
 	logger := logging.GetLogger("staterecover").WithField("State", "task_executor")
 	if err := te.database.View(func(txn *badger.Txn) error {
 		key := dbprefix.PrefixTaskExecutorState()
-		logger.WithField("Key", string(key)).Debug("Loading state from database")
+		logger.WithField("Key", string(key)).Debug("Loading state from monDB")
 		rawData, err := utils.GetValue(txn, key)
 		if err != nil {
 			return err

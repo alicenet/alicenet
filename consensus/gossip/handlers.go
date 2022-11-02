@@ -7,6 +7,8 @@ import (
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"reflect"
+	"strings"
 	"time"
 
 	"github.com/alicenet/alicenet/consensus/db"
@@ -226,10 +228,18 @@ func (mb *Handlers) HandleP2PGossipProposal(ctx context.Context, msg *pb.GossipP
 		utils.DebugTrace(mb.logger, err)
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
+
 	if err := mb.shandlers.PreValidate(obj); err != nil {
 		utils.DebugTrace(mb.logger, err)
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
+
+	err = mb.isSenderEvicted(obj.Proposer, msg)
+	if err != nil {
+		utils.DebugTrace(mb.logger, err)
+		return nil, status.Error(codes.PermissionDenied, err.Error())
+	}
+
 	mutex, ok := mb.getLock(ctx)
 	if !ok {
 		return nil, status.Error(codes.Canceled, errorz.ErrClosing.Error())
@@ -264,10 +274,18 @@ func (mb *Handlers) HandleP2PGossipPreVote(ctx context.Context, msg *pb.GossipPr
 		utils.DebugTrace(mb.logger, err)
 		return ack, err
 	}
+
 	if err := mb.shandlers.PreValidate(obj); err != nil {
 		utils.DebugTrace(mb.logger, err)
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
+
+	err = mb.isSenderEvicted(obj.Voter, msg)
+	if err != nil {
+		utils.DebugTrace(mb.logger, err)
+		return nil, status.Error(codes.PermissionDenied, err.Error())
+	}
+
 	mutex, ok := mb.getLock(ctx)
 	if !ok {
 		return nil, status.Error(codes.Canceled, errorz.ErrClosing.Error())
@@ -302,10 +320,18 @@ func (mb *Handlers) HandleP2PGossipPreVoteNil(ctx context.Context, msg *pb.Gossi
 		utils.DebugTrace(mb.logger, err)
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
+
 	if err := mb.shandlers.PreValidate(obj); err != nil {
 		utils.DebugTrace(mb.logger, err)
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
+
+	err = mb.isSenderEvicted(obj.Voter, msg)
+	if err != nil {
+		utils.DebugTrace(mb.logger, err)
+		return nil, status.Error(codes.PermissionDenied, err.Error())
+	}
+
 	mutex, ok := mb.getLock(ctx)
 	if !ok {
 		return nil, status.Error(codes.Canceled, errorz.ErrClosing.Error())
@@ -340,10 +366,18 @@ func (mb *Handlers) HandleP2PGossipPreCommit(ctx context.Context, msg *pb.Gossip
 		utils.DebugTrace(mb.logger, err)
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
+
 	if err := mb.shandlers.PreValidate(obj); err != nil {
 		utils.DebugTrace(mb.logger, err)
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
+
+	err = mb.isSenderEvicted(obj.Voter, msg)
+	if err != nil {
+		utils.DebugTrace(mb.logger, err)
+		return nil, status.Error(codes.PermissionDenied, err.Error())
+	}
+
 	mutex, ok := mb.getLock(ctx)
 	if !ok {
 		return nil, status.Error(codes.Canceled, errorz.ErrClosing.Error())
@@ -378,10 +412,18 @@ func (mb *Handlers) HandleP2PGossipPreCommitNil(ctx context.Context, msg *pb.Gos
 		utils.DebugTrace(mb.logger, err)
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
+
 	if err := mb.shandlers.PreValidate(obj); err != nil {
 		utils.DebugTrace(mb.logger, err)
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
+
+	err = mb.isSenderEvicted(obj.Voter, msg)
+	if err != nil {
+		utils.DebugTrace(mb.logger, err)
+		return nil, status.Error(codes.PermissionDenied, err.Error())
+	}
+
 	mutex, ok := mb.getLock(ctx)
 	if !ok {
 		return nil, status.Error(codes.Canceled, errorz.ErrClosing.Error())
@@ -416,10 +458,18 @@ func (mb *Handlers) HandleP2PGossipNextRound(ctx context.Context, msg *pb.Gossip
 		utils.DebugTrace(mb.logger, err)
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
+
 	if err := mb.shandlers.PreValidate(obj); err != nil {
 		utils.DebugTrace(mb.logger, err)
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
+
+	err = mb.isSenderEvicted(obj.Voter, msg)
+	if err != nil {
+		utils.DebugTrace(mb.logger, err)
+		return nil, status.Error(codes.PermissionDenied, err.Error())
+	}
+
 	mutex, ok := mb.getLock(ctx)
 	if !ok {
 		return nil, status.Error(codes.Canceled, errorz.ErrClosing.Error())
@@ -454,10 +504,18 @@ func (mb *Handlers) HandleP2PGossipNextHeight(ctx context.Context, msg *pb.Gossi
 		utils.DebugTrace(mb.logger, err)
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
+
 	if err := mb.shandlers.PreValidate(obj); err != nil {
 		utils.DebugTrace(mb.logger, err)
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
+
+	err = mb.isSenderEvicted(obj.Voter, msg)
+	if err != nil {
+		utils.DebugTrace(mb.logger, err)
+		return nil, status.Error(codes.PermissionDenied, err.Error())
+	}
+
 	mutex, ok := mb.getLock(ctx)
 	if !ok {
 		return nil, status.Error(codes.Canceled, errorz.ErrClosing.Error())
@@ -476,6 +534,7 @@ func (mb *Handlers) HandleP2PGossipNextHeight(ctx context.Context, msg *pb.Gossi
 // sends this type of object to the local node over
 // the gossip protocol.
 func (mb *Handlers) HandleP2PGossipBlockHeader(ctx context.Context, msg *pb.GossipBlockHeaderMessage) (*pb.GossipBlockHeaderAck, error) {
+	//TODO: figure out if we need to filter the BlockHeader from evicted validator
 	select {
 	case <-mb.ctx.Done():
 		return nil, status.Error(codes.Canceled, errorz.ErrClosing.Error())
@@ -493,6 +552,7 @@ func (mb *Handlers) HandleP2PGossipBlockHeader(ctx context.Context, msg *pb.Goss
 		utils.DebugTrace(mb.logger, fmt.Errorf("BlockHeight:%d | SigGroup:%x | %q", obj.BClaims.Height, obj.SigGroup, err))
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
+
 	mutex, ok := mb.getLock(ctx)
 	if !ok {
 		return nil, status.Error(codes.Canceled, errorz.ErrClosing.Error())
@@ -504,4 +564,27 @@ func (mb *Handlers) HandleP2PGossipBlockHeader(ctx context.Context, msg *pb.Goss
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	return ack, nil
+}
+
+func (mb *Handlers) isSenderEvicted(vAddr []byte, obj any) error {
+	return mb.database.View(func(txn *badger.Txn) error {
+		rss, err := mb.sstore.LoadLocalState(txn)
+		if err != nil {
+			return err
+		}
+
+		if rss.IsValidatorEvicted(vAddr) {
+			objName := ""
+			objFullName := reflect.TypeOf(obj).String()
+			splitFullName := strings.Split(objFullName, ".")
+			if len(splitFullName) > 1 {
+				objName = splitFullName[len(splitFullName)-1]
+			} else {
+				objName = splitFullName[0]
+			}
+			return fmt.Errorf("received a %s from evicted validator 0x%x", objName, vAddr)
+		}
+
+		return nil
+	})
 }

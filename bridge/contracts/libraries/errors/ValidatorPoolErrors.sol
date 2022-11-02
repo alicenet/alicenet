@@ -32,4 +32,5 @@ library ValidatorPoolErrors {
         address accusationAddress,
         address ethdkgAddress
     );
+    error NotAllowedToInitializeETHDKG();
 }

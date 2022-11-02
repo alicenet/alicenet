@@ -203,12 +203,10 @@ contract ValidatorPool is
      * that no ETHDKG round is running and the consensus is stopped on the AliceNet
      * network.
      */
-    function initializeETHDKG()
-        public
-        onlyFactory
-        assertNotETHDKGRunning
-        assertNotConsensusRunning
-    {
+    function initializeETHDKG() public assertNotETHDKGRunning assertNotConsensusRunning {
+        if (msg.sender != _factoryAddress() && !_wereValidatorsSlashed) {
+            revert ValidatorPoolErrors.NotAllowedToInitializeETHDKG();
+        }
         IETHDKG(_ethdkgAddress()).initializeETHDKG();
     }
 
@@ -219,6 +217,7 @@ contract ValidatorPool is
      */
     function completeETHDKG() public onlyETHDKG {
         _isMaintenanceScheduled = false;
+        _wereValidatorsSlashed = false;
         _isConsensusRunning = true;
     }
 
@@ -408,6 +407,8 @@ contract ValidatorPool is
         // position was burned + the disputerReward
         _transferEthAndTokens(disputer_, payoutEth, payoutToken);
 
+        _isMaintenanceScheduled = true;
+        _wereValidatorsSlashed = true;
         emit ValidatorMajorSlashed(dishonestValidator_);
     }
 
@@ -434,6 +435,8 @@ contract ValidatorPool is
             }
         }
         _transferEthAndTokens(disputer_, payoutEth, payoutToken);
+        _isMaintenanceScheduled = true;
+        _wereValidatorsSlashed = true;
         emit ValidatorMinorSlashed(dishonestValidator_, stakeTokenID);
     }
 

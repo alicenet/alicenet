@@ -40,7 +40,7 @@ func (t *DisputeMissingGPKjTask) Execute(ctx context.Context) (*types.Transactio
 	logger := t.GetLogger().WithField("method", "Execute()")
 	logger.Debug("initiate execution")
 
-	dkgState, err := state.GetDkgState(t.GetDB())
+	dkgState, err := state.GetDkgState(t.GetMonDB())
 	if err != nil {
 		return nil, tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorLoadingDkgState, err), false)
 	}
@@ -74,7 +74,7 @@ func (t *DisputeMissingGPKjTask) ShouldExecute(ctx context.Context) (bool, *task
 	logger := t.GetLogger().WithField("method", "ShouldExecute()")
 	logger.Debug("should execute task")
 
-	dkgState, err := state.GetDkgState(t.GetDB())
+	dkgState, err := state.GetDkgState(t.GetMonDB())
 	if err != nil {
 		return false, tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorLoadingDkgState, err), false)
 	}
@@ -102,7 +102,7 @@ func (t *DisputeMissingGPKjTask) getAccusableParticipants(ctx context.Context, d
 
 	var accusableParticipants []common.Address
 
-	validators, err := utils.GetValidatorAddresses(t.GetDB(), logger)
+	validators, err := utils.GetValidatorAddresses(t.GetMonDB(), logger)
 	if err != nil {
 		return nil, fmt.Errorf(tasks.ErrorGettingValidators, err)
 	}

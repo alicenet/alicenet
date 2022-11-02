@@ -405,6 +405,29 @@ func (m *Manager) cleanupValidatorCache() {
 
 // findAccusation checks if there is an accusation for a certain roundState and if so, sends it for further processing. the Poll() method will receive this accusation and schedule the accusation task in the TaskHandler
 func (m *Manager) findAccusation(rs *objs.RoundState, lrs *lstate.RoundStates) {
+	if rs.Proposal == nil {
+		return
+	}
+
+	var err error
+	isEvicted := false
+	err = m.consDB.View(func(txn *badger.Txn) error {
+		isEvicted, err = m.consDB.IsValidatorEvicted(txn, rs.Proposal.Proposer)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		m.logger.Errorf("couldn't check if the validator %s was already evicted %v", string(rs.Proposal.Proposer[:]), err)
+	}
+
+	if isEvicted {
+		return
+	}
+
 	for _, detector := range m.detectionPipeline {
 		accusation, found := detector(rs, lrs, m.consDB)
 		if found {

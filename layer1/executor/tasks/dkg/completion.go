@@ -36,7 +36,7 @@ func (t *CompletionTask) Prepare(ctx context.Context) *tasks.TaskErr {
 	logger := t.GetLogger().WithField("method", "Prepare()")
 	logger.Debug("preparing task")
 
-	dkgState, err := state.GetDkgState(t.GetDB())
+	dkgState, err := state.GetDkgState(t.GetMonDB())
 	if err != nil {
 		return tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorLoadingDkgState, err), false)
 	}
@@ -61,7 +61,7 @@ func (t *CompletionTask) Execute(ctx context.Context) (*types.Transaction, *task
 	logger := t.GetLogger().WithField("method", "Execute()")
 	logger.Debug("initiate execution")
 
-	dkgState, err := state.GetDkgState(t.GetDB())
+	dkgState, err := state.GetDkgState(t.GetMonDB())
 	if err != nil {
 		return nil, tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorLoadingDkgState, err), false)
 	}

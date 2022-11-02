@@ -125,7 +125,7 @@ func (ce *Engine) UpdateLocalState() (bool, error) {
 				return err
 			}
 			if !safe {
-				utils.DebugTrace(ce.logger, nil, "Waiting snapshot completion")
+				utils.DebugTrace(ce.logger, nil, "It's not safe to proceed for consensus")
 				updateLocalState = false
 			} else {
 				// if it's safe to proceed, we update ownState with the latest state
@@ -318,8 +318,6 @@ func (ce *Engine) updateLocalStateInternal(txn *badger.Txn, rs *RoundStates) (bo
 		}
 		return len(FH) == 0, nil
 	}
-
-	// Below this line node must be a validator to proceed
 
 	// if we have voted for the next round in round preceding the
 	// dead block round, goto do next round step

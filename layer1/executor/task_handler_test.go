@@ -57,7 +57,7 @@ func getTaskHandler(t *testing.T, doCleanup bool) (*Handler, *mocks.MockClient, 
 // getTaskManagerCopy creates a copy of the manager from the DB without race
 // conditions.
 func getTaskManagerCopy(t *testing.T, manager *TaskManager) *TaskManager {
-	newManager := &TaskManager{Schedule: make(map[string]ManagerRequestInfo), Responses: make(map[string]ManagerResponseInfo), marshaller: getTaskRegistry(), database: manager.database}
+	newManager := &TaskManager{Schedule: make(map[string]ManagerRequestInfo), Responses: make(map[string]ManagerResponseInfo), marshaller: getTaskRegistry(), monDB: manager.monDB}
 	<-time.After(10 * time.Millisecond)
 	err := newManager.loadState()
 	if err != nil {
@@ -187,7 +187,7 @@ func TestTasksHandlerAndManager_ScheduleAndKillById_RunningTask(t *testing.T) {
 	publicKey := [2]*big.Int{big.NewInt(0), big.NewInt(0)}
 	dkgState.TransportPublicKey = publicKey
 
-	err := state.SaveDkgState(handler.manager.database, dkgState)
+	err := state.SaveDkgState(handler.manager.monDB, dkgState)
 	require.Nil(t, err)
 
 	ethDkgMock := mocks.NewMockIETHDKG()
@@ -299,7 +299,7 @@ func TestTasksHandlerAndManager_ScheduleKillCloseAndRecover(t *testing.T) {
 	publicKey := [2]*big.Int{big.NewInt(0), big.NewInt(0)}
 	dkgState.TransportPublicKey = publicKey
 
-	err := state.SaveDkgState(handler.manager.database, dkgState)
+	err := state.SaveDkgState(handler.manager.monDB, dkgState)
 	require.Nil(t, err)
 
 	ethDkgMock := mocks.NewMockIETHDKG()
@@ -341,7 +341,7 @@ func TestTasksHandlerAndManager_ScheduleKillCloseAndRecover(t *testing.T) {
 	}
 
 	handler.Close()
-	newHandler, err := NewTaskHandler(handler.manager.database, handler.manager.eth, handler.manager.contracts, handler.manager.adminHandler, handler.manager.taskExecutor.txWatcher)
+	newHandler, err := NewTaskHandler(handler.manager.monDB, handler.manager.eth, handler.manager.contracts, handler.manager.adminHandler, handler.manager.taskExecutor.txWatcher)
 	recoveredTask := newHandler.(*Handler).manager.Schedule[taskId]
 	require.Equal(t, task.ID, recoveredTask.Id)
 	require.Equal(t, task.Name, recoveredTask.Name)
@@ -376,7 +376,7 @@ func TestTasksHandlerAndManager_ScheduleKillCloseAndRecover(t *testing.T) {
 	require.Equal(t, 0, getScheduleLen(t, newHandler.(*Handler).manager))
 
 	newHandler.Close()
-	newHandler2, err := NewTaskHandler(newHandler.(*Handler).manager.database, newHandler.(*Handler).manager.eth, newHandler.(*Handler).manager.contracts, newHandler.(*Handler).manager.adminHandler, newHandler.(*Handler).manager.taskExecutor.txWatcher)
+	newHandler2, err := NewTaskHandler(newHandler.(*Handler).manager.monDB, newHandler.(*Handler).manager.eth, newHandler.(*Handler).manager.contracts, newHandler.(*Handler).manager.adminHandler, newHandler.(*Handler).manager.taskExecutor.txWatcher)
 	require.Nil(t, err)
 	newHandler2.Start()
 
@@ -398,7 +398,7 @@ func TestTasksHandlerAndManager_ScheduleKillCloseAndRecover(t *testing.T) {
 	require.Equal(t, ErrTaskKilledBeforeExecution, blockingResp)
 
 	newHandler2.Close()
-	handler.manager.database.DB().Close()
+	handler.manager.monDB.DB().Close()
 }
 
 func TestTasksHandlerAndManager_ScheduleAndRecover_RunningSnapshotTask(t *testing.T) {
@@ -425,7 +425,7 @@ func TestTasksHandlerAndManager_ScheduleAndRecover_RunningSnapshotTask(t *testin
 		Account:     acc,
 		BlockHeader: bh,
 	}
-	err := snapshotState.SaveSnapshotState(handler.manager.database, ssState)
+	err := snapshotState.SaveSnapshotState(handler.manager.monDB, ssState)
 	require.Nil(t, err)
 
 	ssContracts := mocks.NewMockISnapshots()
@@ -460,7 +460,7 @@ func TestTasksHandlerAndManager_ScheduleAndRecover_RunningSnapshotTask(t *testin
 	}
 
 	handler.Close()
-	newHandler, err := NewTaskHandler(handler.manager.database, handler.manager.eth, handler.manager.contracts, handler.manager.adminHandler, handler.manager.taskExecutor.txWatcher)
+	newHandler, err := NewTaskHandler(handler.manager.monDB, handler.manager.eth, handler.manager.contracts, handler.manager.adminHandler, handler.manager.taskExecutor.txWatcher)
 	recoveredTask := newHandler.(*Handler).manager.Schedule[taskId]
 	require.Equal(t, task.ID, recoveredTask.Id)
 	require.Equal(t, task.Name, recoveredTask.Name)

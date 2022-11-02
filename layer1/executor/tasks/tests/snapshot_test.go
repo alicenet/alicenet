@@ -92,7 +92,7 @@ func Test_SnapshotTask(t *testing.T) {
 		err = snapshotTask.Prepare(ctx)
 		assert.Nil(t, err)
 
-		snapshotState, err := state.GetSnapshotState(snapshotTask.GetDB())
+		snapshotState, err := state.GetSnapshotState(snapshotTask.GetMonDB())
 		assert.Nil(t, err)
 
 		shouldExecute, err := snapshotTask.ShouldExecute(ctx)
