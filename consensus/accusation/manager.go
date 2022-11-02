@@ -243,7 +243,7 @@ func (m *Manager) scheduleAccusations() error {
 		// schedule if not yet scheduled
 		if _, ok := m.runningAccusations[acc.GetId()]; !ok {
 			m.logger.Debugf("Scheduling accusation %s", acc.GetId())
-			resp, err := m.taskHandler.ScheduleTask(m.ctx, acc, acc.GetId())
+			resp, err := m.taskHandler.ScheduleTask(acc, acc.GetId())
 			if err != nil {
 				m.logger.Warnf("AccusationManager failed to schedule accusation: %v", err)
 				continue
