@@ -11,7 +11,8 @@ import {
 import { isHexString } from "ethers/lib/utils";
 import { ethers, network } from "hardhat";
 import {
-  Accusations,
+  AccusationInvalidTxConsumption,
+  AccusationMultipleProposal,
   AliceNetFactory,
   AToken,
   ATokenBurner,
@@ -21,10 +22,8 @@ import {
   Dynamics,
   ETHDKG,
   Foundation,
-  AccusationInvalidTxConsumption,
   LegacyToken,
   LiquidityProviderStaking,
-  AccusationMultipleProposal,
   PublicStaking,
   Snapshots,
   SnapshotsMock,
@@ -245,9 +244,15 @@ export const deployUpgradeableWithFactory = async (
   let saltBytes;
 
   if (role) {
-    let roleHash = hre.ethers.utils.solidityKeccak256(["string"], [role]);
-    let contractHash = hre.ethers.utils.solidityKeccak256(["string"], [contractName]);
-    saltBytes = hre.ethers.utils.solidityKeccak256(["bytes32", "bytes32"], [contractHash, roleHash]);
+    const roleHash = hre.ethers.utils.solidityKeccak256(["string"], [role]);
+    const contractHash = hre.ethers.utils.solidityKeccak256(
+      ["string"],
+      [contractName]
+    );
+    saltBytes = hre.ethers.utils.solidityKeccak256(
+      ["bytes32", "bytes32"],
+      [contractHash, roleHash]
+    );
   } else {
     if (salt === undefined) {
       saltBytes = getBytes32Salt(contractName);

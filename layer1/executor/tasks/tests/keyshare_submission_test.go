@@ -64,7 +64,7 @@ func TestKeyShareSubmission_Bad3(t *testing.T) {
 		assert.Nil(t, err)
 		keyshareSubmissionTask := suite.KeyshareSubmissionTasks[idx]
 
-		err = keyshareSubmissionTask.Initialize(suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "KeyShareSubmissionTask", "task-id", keyshareSubmissionTask.Start, keyshareSubmissionTask.End, false, nil, nil)
+		err = keyshareSubmissionTask.Initialize(suite.DKGStatesDbs[idx], nil, fixture.Logger, suite.Eth, fixture.Contracts, "KeyShareSubmissionTask", "task-id", keyshareSubmissionTask.Start, keyshareSubmissionTask.End, false, nil, nil)
 		assert.Nil(t, err)
 		err = keyshareSubmissionTask.Prepare(ctx)
 		assert.NotNil(t, err)
@@ -84,7 +84,7 @@ func TestKeyShareSubmission_Bad4(t *testing.T) {
 	// Do key share submission task
 	for idx := 0; idx < n; idx++ {
 		keyshareSubmissionTask := suite.KeyshareSubmissionTasks[idx]
-		err := keyshareSubmissionTask.Initialize(suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "KeyShareSubmissionTask", "task-id", keyshareSubmissionTask.Start, keyshareSubmissionTask.End, false, nil, nil)
+		err := keyshareSubmissionTask.Initialize(suite.DKGStatesDbs[idx], nil, fixture.Logger, suite.Eth, fixture.Contracts, "KeyShareSubmissionTask", "task-id", keyshareSubmissionTask.Start, keyshareSubmissionTask.End, false, nil, nil)
 		assert.Nil(t, err)
 		err = keyshareSubmissionTask.Prepare(ctx)
 		assert.Nil(t, err)

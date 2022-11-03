@@ -164,7 +164,7 @@ func TestManagerPollCache(t *testing.T) {
 	assert.True(t, hadUpdates)
 
 	// now poll again with the same data.
-	// this should not add a new RS to the workQ because it's been processed and cached already
+	// this should add the same LRS to the workQ
 	err = testProxy.manager.Poll()
 	assert.Nil(t, err)
 
@@ -531,20 +531,37 @@ func createRoundState(t *testing.T, os *objs.OwnState) *objs.RoundState {
 		t.Fatal(err)
 	}
 
+	rcert := &objs.RCert{
+		SigGroup: sig,
+		RClaims: &objs.RClaims{
+			ChainID:   1,
+			Height:    2,
+			PrevBlock: prevBlock,
+			Round:     1,
+		},
+	}
+
 	rs := &objs.RoundState{
 		VAddr:      os.VAddr, // change done
 		GroupKey:   groupKey,
 		GroupShare: bnKey,
 		GroupIdx:   127,
-		RCert: &objs.RCert{
-			SigGroup: sig,
-			RClaims: &objs.RClaims{
-				ChainID:   1,
-				Height:    2,
-				PrevBlock: prevBlock,
-				Round:     1,
+		Proposal: &objs.Proposal{
+			Proposer: os.VAddr,
+			PClaims: &objs.PClaims{
+				RCert: rcert,
+				BClaims: &objs.BClaims{
+					ChainID:    1,
+					Height:     2,
+					TxCount:    0,
+					PrevBlock:  prevBlock,
+					TxRoot:     crypto.Hasher([]byte("")),
+					StateRoot:  crypto.Hasher([]byte("")),
+					HeaderRoot: crypto.Hasher([]byte("")),
+				},
 			},
 		},
+		RCert: rcert,
 	}
 
 	return rs
@@ -592,6 +609,7 @@ func createOwnState(t *testing.T, length int) *objs.OwnState {
 		MaxBHSeen:         bh,
 		CanonicalSnapShot: bh,
 		PendingSnapShot:   bh,
+		GroupKey:          crypto.Hasher([]byte("")),
 	}
 }
 

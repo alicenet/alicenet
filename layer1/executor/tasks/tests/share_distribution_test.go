@@ -30,7 +30,7 @@ func TestShareDistribution_Group_1_Good(t *testing.T) {
 
 		shareDistributionTask := suite.ShareDistTasks[idx]
 
-		err := shareDistributionTask.Initialize(suite.DKGStatesDbs[idx], logger, suite.Eth, fixture.Contracts, "ShareDistributionTask", "task-id", shareDistributionTask.Start, shareDistributionTask.End, false, nil, nil)
+		err := shareDistributionTask.Initialize(suite.DKGStatesDbs[idx], nil, logger, suite.Eth, fixture.Contracts, "ShareDistributionTask", "task-id", shareDistributionTask.Start, shareDistributionTask.End, false, nil, nil)
 		assert.Nil(t, err)
 		err = shareDistributionTask.Prepare(ctx)
 		assert.Nil(t, err)
@@ -68,7 +68,7 @@ func TestShareDistribution_Group_1_Bad1(t *testing.T) {
 	badIdx := n - 2
 	for idx := 0; idx < n; idx++ {
 		task := suite.ShareDistTasks[idx]
-		err := task.Initialize(suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "ShareDistributionTask", "task-id", task.Start, task.End, false, nil, nil)
+		err := task.Initialize(suite.DKGStatesDbs[idx], nil, fixture.Logger, suite.Eth, fixture.Contracts, "ShareDistributionTask", "task-id", task.Start, task.End, false, nil, nil)
 		assert.Nil(t, err)
 		err = task.Prepare(ctx)
 		assert.Nil(t, err)
@@ -123,7 +123,7 @@ func TestShareDistribution_Group_1_Bad2(t *testing.T) {
 	badIdx := n - 1
 	for idx := 0; idx < n; idx++ {
 		task := suite.ShareDistTasks[idx]
-		err := task.Initialize(suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "ShareDistributionTask", "task-id", task.Start, task.End, false, nil, nil)
+		err := task.Initialize(suite.DKGStatesDbs[idx], nil, fixture.Logger, suite.Eth, fixture.Contracts, "ShareDistributionTask", "task-id", task.Start, task.End, false, nil, nil)
 		assert.Nil(t, err)
 		err = task.Prepare(ctx)
 		assert.Nil(t, err)
@@ -181,7 +181,7 @@ func TestShareDistribution_Group_2_Bad4(t *testing.T) {
 	badCommitmentIdx := n - 3
 	for idx := 0; idx < n; idx++ {
 		task := suite.ShareDistTasks[idx]
-		err := task.Initialize(suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "ShareDistributionTask", "task-id", task.Start, task.End, false, nil, nil)
+		err := task.Initialize(suite.DKGStatesDbs[idx], nil, fixture.Logger, suite.Eth, fixture.Contracts, "ShareDistributionTask", "task-id", task.Start, task.End, false, nil, nil)
 		assert.Nil(t, err)
 		err = task.Prepare(ctx)
 		assert.Nil(t, err)
@@ -222,7 +222,7 @@ func TestShareDistribution_Group_2_Bad5(t *testing.T) {
 	badShareIdx := n - 2
 	for idx := 0; idx < n; idx++ {
 		task := suite.ShareDistTasks[idx]
-		err := task.Initialize(suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "ShareDistributionTask", "task-id", task.Start, task.End, false, nil, nil)
+		err := task.Initialize(suite.DKGStatesDbs[idx], nil, fixture.Logger, suite.Eth, fixture.Contracts, "ShareDistributionTask", "task-id", task.Start, task.End, false, nil, nil)
 		assert.Nil(t, err)
 		err = task.Prepare(ctx)
 		assert.Nil(t, err)
@@ -266,7 +266,7 @@ func TestShareDistribution_Group_2_Bad6(t *testing.T) {
 	err := state.SaveDkgState(dkgDb, dkgState)
 	assert.Nil(t, err)
 	task := dkg.NewShareDistributionTask(dkgState.PhaseStart, dkgState.PhaseStart+dkgState.PhaseLength)
-	err = task.Initialize(dkgDb, fixture.Logger, eth, fixture.Contracts, "ShareDistributionTask", "task-id", task.Start, task.End, false, nil, nil)
+	err = task.Initialize(dkgDb, nil, fixture.Logger, eth, fixture.Contracts, "ShareDistributionTask", "task-id", task.Start, task.End, false, nil, nil)
 	assert.Nil(t, err)
 	err = task.Prepare(ctx)
 	assert.NotNil(t, err)
@@ -281,7 +281,7 @@ func TestShareDistribution_Group_3_ShouldRetryTrue(t *testing.T) {
 	// Do Share Distribution task
 	for idx := 0; idx < n; idx++ {
 		task := suite.ShareDistTasks[idx]
-		err := task.Initialize(suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "ShareDistributionTask", "task-id", task.Start, task.End, false, nil, nil)
+		err := task.Initialize(suite.DKGStatesDbs[idx], nil, fixture.Logger, suite.Eth, fixture.Contracts, "ShareDistributionTask", "task-id", task.Start, task.End, false, nil, nil)
 		assert.Nil(t, err)
 		err = task.Prepare(ctx)
 		assert.Nil(t, err)
@@ -301,7 +301,7 @@ func TestShareDistribution_Group_3_ShouldRetryFalse(t *testing.T) {
 	// Do Share Distribution task
 	for idx := 0; idx < n; idx++ {
 		task := suite.ShareDistTasks[idx]
-		err := task.Initialize(suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "ShareDistributionTask", "task-id", task.Start, task.End, false, nil, nil)
+		err := task.Initialize(suite.DKGStatesDbs[idx], nil, fixture.Logger, suite.Eth, fixture.Contracts, "ShareDistributionTask", "task-id", task.Start, task.End, false, nil, nil)
 		assert.Nil(t, err)
 		err = task.Prepare(ctx)
 		assert.Nil(t, err)

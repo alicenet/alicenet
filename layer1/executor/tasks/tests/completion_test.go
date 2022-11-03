@@ -43,7 +43,7 @@ func TestCompletion_Group_1_AllGood(t *testing.T) {
 		for j := 0; j < numValidators; j++ {
 			disputeGPKjTask := suite.DisputeGPKjTasks[idx][j]
 
-			err := disputeGPKjTask.Initialize(suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "disputeGPKjTask", "task-id", disputeGPKjTask.Start, disputeGPKjTask.End, false, nil, nil)
+			err := disputeGPKjTask.Initialize(suite.DKGStatesDbs[idx], nil, fixture.Logger, suite.Eth, fixture.Contracts, "disputeGPKjTask", "task-id", disputeGPKjTask.Start, disputeGPKjTask.End, false, nil, nil)
 			assert.Nil(t, err)
 			err = disputeGPKjTask.Prepare(ctx)
 			assert.Nil(t, err)
@@ -65,7 +65,7 @@ func TestCompletion_Group_1_AllGood(t *testing.T) {
 	for idx := 0; idx < numValidators; idx++ {
 		completionTask := suite.CompletionTasks[idx]
 
-		err := completionTask.Initialize(suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "CompletionTask", "task-id", completionTask.Start, completionTask.End, false, nil, nil)
+		err := completionTask.Initialize(suite.DKGStatesDbs[idx], nil, fixture.Logger, suite.Eth, fixture.Contracts, "CompletionTask", "task-id", completionTask.Start, completionTask.End, false, nil, nil)
 		assert.Nil(t, err)
 		err = completionTask.Prepare(ctx)
 		assert.Nil(t, err)
@@ -116,7 +116,7 @@ func TestCompletion_Group_1_Bad1(t *testing.T) {
 	tests.AdvanceTo(suite.Eth, dkgState.PhaseStart+dkgState.PhaseLength)
 
 	task := suite.CompletionTasks[0]
-	err = task.Initialize(suite.DKGStatesDbs[0], fixture.Logger, suite.Eth, fixture.Contracts, "CompletionTask", "task-id", task.Start, task.End, false, nil, nil)
+	err = task.Initialize(suite.DKGStatesDbs[0], nil, fixture.Logger, suite.Eth, fixture.Contracts, "CompletionTask", "task-id", task.Start, task.End, false, nil, nil)
 	assert.Nil(t, err)
 
 	err = task.Prepare(ctx)
@@ -136,7 +136,7 @@ func TestCompletion_Group_1_Bad2(t *testing.T) {
 	db := mocks.NewTestDB()
 	log := logging.GetLogger("test").WithField("test", "test")
 
-	err := task.Initialize(db, log, nil, nil, "", "", task.Start, task.End, false, nil, nil)
+	err := task.Initialize(db, nil, log, nil, nil, "", "", task.Start, task.End, false, nil, nil)
 	assert.Nil(t, err)
 
 	taskErr := task.Prepare(context.Background())
