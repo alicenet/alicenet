@@ -185,6 +185,10 @@ task(
   "deploy-contracts",
   "runs the initial deployment of all AliceNet contracts"
 )
+  .addFlag(
+    "skipChecks",
+    "skips initializer and constructor confirmation prompt"
+  )
   .addFlag("verify", "try to automatically verify contracts on etherscan")
   .addOptionalParam(
     "factoryAddress",
@@ -216,6 +220,10 @@ task(
   "deploy-upgradeable-proxy",
   "deploys logic contract, proxy contract, and points the proxy to the logic contract"
 )
+  .addFlag(
+    "skipChecks",
+    "skips initializer and constructor confirmation prompt"
+  )
   .addParam(
     "contractName",
     "Name of logic contract to point the proxy at",
@@ -349,6 +357,10 @@ task(
   "deploy-create-and-register",
   "deploys a contract from the factory using create and records the address to the external contract mapping for lookup, for deploying contracts outside of deterministic address"
 )
+  .addFlag(
+    "skipChecks",
+    "skips initializer and constructor confirmation prompt"
+  )
   .addFlag("verify", "try to automatically verify contracts on etherscan")
   .addParam("contractName", "logic contract name")
   .addParam(

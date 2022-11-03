@@ -271,7 +271,7 @@ export async function deployContractsTask(
           fullyQualifiedContractName,
           factory,
           undefined,
-          constructorArgs,
+          constructorArgObject,
           salt
         );
         cumulativeGasUsed = cumulativeGasUsed.add(deployCreateData.gas);
@@ -372,21 +372,35 @@ export async function deployUpgradeableProxyTask(
       "0x3000000000000000",
     ]);
   }
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-  });
-  const prompt = (query: any) =>
-    new Promise((resolve) => rl.question(query, resolve));
-  const answer = await prompt(
-    `Do you want to deploy ${contractName} with initArgs: ${JSON.stringify(
-      initializerArgObject
-    )}, constructorArgs: ${JSON.stringify(constructorArgObject)}? (y/n)`
-  );
-  if (answer === "n") {
-    exit();
+  let constructorDetails;
+  let initializerDetails;
+  if (constructorArgObject !== undefined) {
+    constructorDetails = JSON.stringify(constructorArgObject);
+  } else {
+    constructorDetails = constructorArgs;
   }
-  rl.close();
+  if (initializerArgObject !== undefined) {
+    initializerDetails = JSON.stringify(initializerArgObject);
+  } else {
+    initializerDetails = initializerArgs;
+  }
+  if (taskArgs.skipChecks !== true) {
+    const rl = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout,
+    });
+    const prompt = (query: any) =>
+      new Promise((resolve) => rl.question(query, resolve));
+    const answer = await prompt(
+      `Do you want to deploy ${contractName} with initArgs: ${JSON.stringify(
+        initializerArgObject
+      )}, constructorArgs: ${JSON.stringify(constructorArgObject)}? (y/n)`
+    );
+    if (answer === "n") {
+      exit();
+    }
+    rl.close();
+  }
   let txResponse = await deployUpgradeableGasSafe(
     contractName,
     factory,
@@ -429,7 +443,7 @@ export async function deployCreateAndRegisterTask(
   fullyQaulifiedContractName?: string,
   factory?: AliceNetFactory,
   implementationBase?: ContractFactory,
-  constructorArgs?: any[],
+  constructorArgsObject?: ArgData,
   salt?: string
 ) {
   factory =
@@ -459,7 +473,10 @@ export async function deployCreateAndRegisterTask(
             hre.ethers
           );
   }
-
+  let constructorArgs;
+  if (constructorArgsObject !== undefined) {
+    constructorArgs = Object.values(constructorArgsObject);
+  }
   if (await hasConstructorArgs(fullyQaulifiedContractName, hre.artifacts)) {
     constructorArgs =
       constructorArgs === undefined
@@ -479,19 +496,28 @@ export async function deployCreateAndRegisterTask(
       "0x3000000000000000",
     ]);
   }
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-  });
-  const prompt = (query: any) =>
-    new Promise((resolve) => rl.question(query, resolve));
-  const answer = await prompt(
-    `Do you want to deploy ${contractName} with constructorArgs: ${constructorArgs}, salt: ${salt}? (y/n)`
-  );
-  if (answer === "n") {
-    exit();
+  let constructorDetails;
+  if (constructorArgsObject !== undefined) {
+    constructorDetails = JSON.stringify(constructorArgsObject);
+  } else {
+    constructorDetails = constructorArgs;
   }
-  rl.close();
+  if (taskArgs.skipChecks !== true) {
+    const rl = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout,
+    });
+    const prompt = (query: any) =>
+      new Promise((resolve) => rl.question(query, resolve));
+    const answer = await prompt(
+      `Do you want to deploy ${contractName} with constructorArgs: ${constructorDetails}, salt: ${salt}? (y/n)`
+    );
+    if (answer === "n") {
+      exit();
+    }
+    rl.close();
+  }
+
   const txResponse = await deployCreateAndRegister(
     contractName,
     factory,
@@ -592,14 +618,6 @@ export async function multiCallDeployUpgradeableTask(taskArgs: any, hre: any) {
     taskArgs.contractName
   )) as ContractFactory;
   const network = hre.network.name;
-  const callArgs: DeployArgs = {
-    contractName: taskArgs.contractName,
-    waitConfirmation: waitBlocks,
-    factoryAddress: taskArgs.factoryAddress,
-    initCallData: taskArgs.initCallData,
-    outputFolder: taskArgs.outputFolder,
-    constructorArgs: taskArgs.constructorArgs,
-  };
   const factory = await hre.ethers.getContractAt(
     "AliceNetFactory",
     taskArgs.factoryAddress
