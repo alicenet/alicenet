@@ -1,44 +1,169 @@
-[[constructor."contracts/AliceNetFactory.sol:AliceNetFactory"]]
-legacyToken_ = "0x546f99f244b7b58b855330ae0e2bc1b30b41302f"
+["contracts/AliceNetFactory.sol:AliceNetFactory"]
+name = "AliceNetFactory"
+fullyQualifiedName = "contracts/AliceNetFactory.sol:AliceNetFactory"
+salt = ""
+initializerArgs = { }
 
-[[constructor."contracts/Distribution.sol:Distribution"]]
-validatorStakingSplit_ = "332"
+  ["contracts/AliceNetFactory.sol:AliceNetFactory".constructorArgs]
+  legacyToken_ = "UNDEFINED"
 
-[[constructor."contracts/Distribution.sol:Distribution"]]
-publicStakingSplit_ = "332"
+["contracts/ATokenBurner.sol:ATokenBurner"]
+name = "ATokenBurner"
+fullyQualifiedName = "contracts/ATokenBurner.sol:ATokenBurner"
+salt = "0x41546f6b656e4275726e65720000000000000000000000000000000000000000"
+deployType = "deployUpgradeable"
+constructorArgs = { }
+initializerArgs = { }
 
-[[constructor."contracts/Distribution.sol:Distribution"]]
-liquidityProviderStakingSplit_ = "332"
+["contracts/ATokenMinter.sol:ATokenMinter"]
+name = "ATokenMinter"
+fullyQualifiedName = "contracts/ATokenMinter.sol:ATokenMinter"
+salt = "0x41546f6b656e4d696e7465720000000000000000000000000000000000000000"
+deployType = "deployUpgradeable"
+constructorArgs = { }
+initializerArgs = { }
 
-[[constructor."contracts/Distribution.sol:Distribution"]]
-protocolFeeSplit_ = "4"
+["contracts/Distribution.sol:Distribution"]
+name = "Distribution"
+fullyQualifiedName = "contracts/Distribution.sol:Distribution"
+salt = "0x446973747269627574696f6e0000000000000000000000000000000000000000"
+deployType = "deployUpgradeable"
+initializerArgs = { }
 
-[[constructor."contracts/Snapshots.sol:Snapshots"]]
-chainID_ = "1337"
+  ["contracts/Distribution.sol:Distribution".constructorArgs]
+  validatorStakingSplit_ = "UNDEFINED"
+  publicStakingSplit_ = "UNDEFINED"
+  liquidityProviderStakingSplit_ = "UNDEFINED"
+  protocolFeeSplit_ = "UNDEFINED"
 
-[[constructor."contracts/Snapshots.sol:Snapshots"]]
-epochLength_ = "1024"
+["contracts/Dynamics.sol:Dynamics"]
+name = "Dynamics"
+fullyQualifiedName = "contracts/Dynamics.sol:Dynamics"
+salt = "0x44796e616d696373000000000000000000000000000000000000000000000000"
+deployType = "deployUpgradeable"
+constructorArgs = { }
+initializerArgs = { }
 
-[[initializer."contracts/Snapshots.sol:Snapshots"]]
-desperationDelay_ = "10"
+["contracts/Foundation.sol:Foundation"]
+name = "Foundation"
+fullyQualifiedName = "contracts/Foundation.sol:Foundation"
+salt = "0x466f756e646174696f6e00000000000000000000000000000000000000000000"
+deployType = "deployUpgradeable"
+constructorArgs = { }
+initializerArgs = { }
 
-[[initializer."contracts/Snapshots.sol:Snapshots"]]
-desperationFactor_ = "40"
+["contracts/Governance.sol:Governance"]
+name = "Governance"
+fullyQualifiedName = "contracts/Governance.sol:Governance"
+salt = "0x476f7665726e616e636500000000000000000000000000000000000000000000"
+deployType = "deployUpgradeable"
+constructorArgs = { }
+initializerArgs = { }
 
-[[initializer."contracts/ValidatorPool.sol:ValidatorPool"]]
-stakeAmount_ = "1"
+["contracts/InvalidTxConsumptionAccusation.sol:InvalidTxConsumptionAccusation"]
+name = "InvalidTxConsumptionAccusation"
+fullyQualifiedName = "contracts/InvalidTxConsumptionAccusation.sol:InvalidTxConsumptionAccusation"
+salt = "0x496e76616c69645478436f6e73756d7074696f6e41636375736174696f6e0000"
+deployType = "deployUpgradeable"
+constructorArgs = { }
+initializerArgs = { }
 
-[[initializer."contracts/ValidatorPool.sol:ValidatorPool"]]
-maxNumValidators_ = "10"
+["contracts/LiquidityProviderStaking.sol:LiquidityProviderStaking"]
+name = "LiquidityProviderStaking"
+fullyQualifiedName = "contracts/LiquidityProviderStaking.sol:LiquidityProviderStaking"
+salt = "0x4c697175696469747950726f76696465725374616b696e670000000000000000"
+deployType = "deployUpgradeable"
+constructorArgs = { }
+initializerArgs = { }
 
-[[initializer."contracts/ValidatorPool.sol:ValidatorPool"]]
-disputerReward_ = "1"
+["contracts/MultipleProposalAccusation.sol:MultipleProposalAccusation"]
+name = "MultipleProposalAccusation"
+fullyQualifiedName = "contracts/MultipleProposalAccusation.sol:MultipleProposalAccusation"
+salt = "0x4d756c7469706c6550726f706f73616c41636375736174696f6e000000000000"
+deployType = "deployUpgradeable"
+constructorArgs = { }
+initializerArgs = { }
 
-[[initializer."contracts/ValidatorPool.sol:ValidatorPool"]]
-maxIntervalWithoutSnapshots = "8192"
+["contracts/PublicStaking.sol:PublicStaking"]
+name = "PublicStaking"
+fullyQualifiedName = "contracts/PublicStaking.sol:PublicStaking"
+salt = "0x5075626c69635374616b696e6700000000000000000000000000000000000000"
+deployType = "deployUpgradeable"
+constructorArgs = { }
+initializerArgs = { }
 
-[[initializer."contracts/ETHDKG.sol:ETHDKG"]]
-phaseLength_ = "40"
+["contracts/Snapshots.sol:Snapshots"]
+name = "Snapshots"
+fullyQualifiedName = "contracts/Snapshots.sol:Snapshots"
+salt = "0x536e617073686f74730000000000000000000000000000000000000000000000"
+deployType = "deployUpgradeable"
 
-[[initializer."contracts/ETHDKG.sol:ETHDKG"]]
-confirmationLength_ = "6"
+  ["contracts/Snapshots.sol:Snapshots".constructorArgs]
+  chainID_ = "UNDEFINED"
+  epochLength_ = "UNDEFINED"
+
+  ["contracts/Snapshots.sol:Snapshots".initializerArgs]
+  desperationDelay_ = "UNDEFINED"
+  desperationFactor_ = "UNDEFINED"
+
+["contracts/StakingPositionDescriptor.sol:StakingPositionDescriptor"]
+name = "StakingPositionDescriptor"
+fullyQualifiedName = "contracts/StakingPositionDescriptor.sol:StakingPositionDescriptor"
+salt = "0x5374616b696e67506f736974696f6e44657363726970746f7200000000000000"
+deployType = "deployUpgradeable"
+constructorArgs = { }
+initializerArgs = { }
+
+["contracts/ValidatorPool.sol:ValidatorPool"]
+name = "ValidatorPool"
+fullyQualifiedName = "contracts/ValidatorPool.sol:ValidatorPool"
+salt = "0x56616c696461746f72506f6f6c00000000000000000000000000000000000000"
+deployType = "deployUpgradeable"
+constructorArgs = { }
+
+  ["contracts/ValidatorPool.sol:ValidatorPool".initializerArgs]
+  stakeAmount_ = "UNDEFINED"
+  maxNumValidators_ = "UNDEFINED"
+  disputerReward_ = "UNDEFINED"
+  maxIntervalWithoutSnapshots_ = "UNDEFINED"
+
+["contracts/ValidatorStaking.sol:ValidatorStaking"]
+name = "ValidatorStaking"
+fullyQualifiedName = "contracts/ValidatorStaking.sol:ValidatorStaking"
+salt = "0x56616c696461746f725374616b696e6700000000000000000000000000000000"
+deployType = "deployUpgradeable"
+constructorArgs = { }
+initializerArgs = { }
+
+["contracts/libraries/ethdkg/ETHDKGAccusations.sol:ETHDKGAccusations"]
+name = "ETHDKGAccusations"
+fullyQualifiedName = "contracts/libraries/ethdkg/ETHDKGAccusations.sol:ETHDKGAccusations"
+salt = "0x455448444b4741636375736174696f6e73000000000000000000000000000000"
+deployGroup = "ethdkg"
+deployGroupIndex = "0"
+deployType = "deployUpgradeable"
+constructorArgs = { }
+initializerArgs = { }
+
+["contracts/libraries/ethdkg/ETHDKGPhases.sol:ETHDKGPhases"]
+name = "ETHDKGPhases"
+fullyQualifiedName = "contracts/libraries/ethdkg/ETHDKGPhases.sol:ETHDKGPhases"
+salt = "0x455448444b475068617365730000000000000000000000000000000000000000"
+deployGroup = "ethdkg"
+deployGroupIndex = "1"
+deployType = "deployUpgradeable"
+constructorArgs = { }
+initializerArgs = { }
+
+["contracts/ETHDKG.sol:ETHDKG"]
+name = "ETHDKG"
+fullyQualifiedName = "contracts/ETHDKG.sol:ETHDKG"
+salt = "0x455448444b470000000000000000000000000000000000000000000000000000"
+deployGroup = "ethdkg"
+deployGroupIndex = "2"
+deployType = "deployUpgradeable"
+constructorArgs = { }
+
+  ["contracts/ETHDKG.sol:ETHDKG".initializerArgs]
+  phaseLength_ = "UNDEFINED"
+  confirmationLength_ = "UNDEFINED"

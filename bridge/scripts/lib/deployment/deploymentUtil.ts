@@ -1,33 +1,55 @@
 import { HardhatEthersHelpers } from "@nomiclabs/hardhat-ethers/types";
-import { BigNumberish, BytesLike, ContractFactory } from "ethers";
+import { BigNumber, BigNumberish, BytesLike, ContractFactory } from "ethers";
+import fs from "fs";
+import { Artifacts, HardhatRuntimeEnvironment } from "hardhat/types";
+import { AliceNetFactory } from "../../../typechain-types";
 import {
-  Artifacts,
-  HardhatRuntimeEnvironment,
-  RunTaskFunction,
-} from "hardhat/types";
-import { getEventVar } from "../alicenetFactory";
-import { encodeMultiCallArgs } from "../alicenetTasks";
+  deployCreateAndRegister,
+  deployFactory,
+  deployUpgradeableSafe,
+  encodeMultiCallArgs,
+  getEventVar,
+  multiCallDeployUpgradeable,
+} from "../alicenetFactory";
 import {
   ALICENET_FACTORY,
   CONTRACT_ADDR,
   DEFAULT_CONFIG_DIR,
   DEPLOYED_PROXY,
+  DEPLOYED_RAW,
   DEPLOY_CREATE,
   DEPLOY_PROXY,
   INITIALIZER,
   ONLY_PROXY,
-  TASK_DEPLOY_FACTORY,
   TASK_DEPLOY_PROXY,
   UPGRADEABLE_DEPLOYMENT,
   UPGRADE_PROXY,
 } from "../constants";
-import { readDeploymentArgs } from "./deploymentConfigUtil";
+import {
+  readDeploymentArgs,
+  readDeploymentListConfig,
+} from "./deploymentConfigUtil";
+import {
+  DeployCreateData,
+  FactoryData,
+  ProxyData,
+  updateDefaultFactoryData,
+  updateDeployCreateList,
+  updateExternalContractList,
+  updateProxyList,
+} from "./factoryStateUtil";
 
 type Ethers = typeof import("../../../node_modules/ethers/lib/ethers") &
   HardhatEthersHelpers;
 
 export interface ArgData {
-  [key: string]: string | number | boolean | BigNumberish | BytesLike | ArrayLike<string | number | boolean | BigNumberish | BytesLike>;
+  [key: string]:
+    | string
+    | number
+    | boolean
+    | BigNumberish
+    | BytesLike
+    | ArrayLike<string | number | boolean | BigNumberish | BytesLike>;
 }
 export interface ContractArgs {
   [key: string]: ArgData;
@@ -85,20 +107,19 @@ export interface ContractDescriptor {
 }
 
 export interface DeploymentConfig {
-  name : string
-  fullyQualifiedName : string
-  salt: string
-  deployGroup : string
-  deployGroupIndex : string
-  deployType : string
-  constructorArgs : ArgData
-  initializerArgs : ArgData
+  name: string;
+  fullyQualifiedName: string;
+  salt: string;
+  deployGroup: string;
+  deployGroupIndex: string;
+  deployType: string;
+  constructorArgs: ArgData;
+  initializerArgs: ArgData;
 }
 
 export interface DeploymentConfigWrapper {
-[key:string]:DeploymentConfig  
+  [key: string]: DeploymentConfig;
 }
-
 
 export async function getContractDescriptor(
   contractName: string,
@@ -123,16 +144,518 @@ export async function getContractDescriptor(
     initializerArgs,
   };
 }
-// function to deploy the factory
-export async function deployFactory(
-  run: RunTaskFunction,
-  usrPath?: string,
-  waitConfirmation?: number
+
+//AliceNet Factory Task Functions
+
+export async function deployFactoryTask(
+  taskArgs: any,
+  hre: HardhatRuntimeEnvironment,
+  constructorArgs?: Array<any>
 ) {
-  return await run(TASK_DEPLOY_FACTORY, {
-    outputFolder: usrPath,
-    waitConfirmation,
-  });
+  await checkUserDirPath(taskArgs.outputFolder);
+  const factoryBase = await hre.ethers.getContractFactory(ALICENET_FACTORY);
+  //if the user didnt specify constructor args, get from the default deployment config list
+
+  constructorArgs =
+    constructorArgs === undefined ? taskArgs.constructorArgs : constructorArgs;
+  if (constructorArgs === undefined) {
+    constructorArgs = [];
+  }
+  const signers = await hre.ethers.getSigners();
+  const deployTX = factoryBase.getDeployTransaction(constructorArgs[0]);
+  const gasCost = await hre.ethers.provider.estimateGas(deployTX);
+  // deploys the factory
+  const factory = await deployFactory(
+    constructorArgs[0],
+    hre.ethers,
+    factoryBase,
+    await getGasPrices(hre)
+  );
+  // wait for deployment confirmation
+  await factory.deployTransaction.wait(taskArgs.waitConfirmation);
+  // record the state in a json file to be used in other tasks
+  const factoryData: FactoryData = {
+    address: factory.address,
+    owner: signers[0].address,
+    gas: gasCost,
+  };
+  if (taskArgs.verify) {
+    await verifyContract(hre, factory.address, constructorArgs);
+  }
+  const network = hre.network.name;
+  await updateDefaultFactoryData(network, factoryData, taskArgs.outputFolder);
+  await showState(
+    `Deployed ${ALICENET_FACTORY} at address: ${factory.address}, gasCost: ${gasCost}`
+  );
+  await showState(
+    `Deployed ALCA at address: ${await factory.lookup(
+      hre.ethers.utils.formatBytes32String("AToken")
+    )}, gasCost: ${gasCost}`
+  );
+  return factoryData;
+}
+
+export async function deployContractsTask(
+  taskArgs: any,
+  hre: HardhatRuntimeEnvironment
+) {
+  let cumulativeGasUsed = BigNumber.from("0");
+  await checkUserDirPath(taskArgs.outputFolder);
+  const deploymentListConfig = await readDeploymentListConfig(
+    taskArgs.inputFolder
+  );
+  // setting listName undefined will use the default list
+  // deploy the factory first
+  const keys = Object.keys(deploymentListConfig);
+
+  let constructorArgs = [
+    deploymentListConfig[keys[0]].constructorArgs.legacyToken_,
+  ];
+  let factoryAddress = taskArgs.factoryAddress;
+  if (factoryAddress === undefined) {
+    const factoryData: FactoryData = await deployFactoryTask(
+      taskArgs,
+      hre,
+      constructorArgs
+    );
+    factoryAddress = factoryData.address;
+    cumulativeGasUsed = cumulativeGasUsed.add(factoryData.gas);
+  }
+  //connect an instance of the factory
+  const factory = await hre.ethers.getContractAt(
+    "AliceNetFactory",
+    factoryAddress
+  );
+
+  for (let fullyQualifiedContractName in deploymentListConfig) {
+    const deployType =
+      deploymentListConfig[fullyQualifiedContractName].deployType;
+    const salt = deploymentListConfig[fullyQualifiedContractName].salt;
+    const constructorArgObject =
+      deploymentListConfig[fullyQualifiedContractName].constructorArgs;
+    const constructorArgs = Object.values(constructorArgObject);
+    console.log(constructorArgs);
+    const initializerArgObject =
+      deploymentListConfig[fullyQualifiedContractName].initializerArgs;
+    const initializerArgs = Object.values(initializerArgObject);
+
+    switch (deployType) {
+      case UPGRADEABLE_DEPLOYMENT: {
+        const proxyData = await deployUpgradeableProxyTask(
+          taskArgs,
+          hre,
+          fullyQualifiedContractName,
+          factory,
+          undefined,
+          constructorArgs,
+          initializerArgs,
+          salt
+        );
+        cumulativeGasUsed = cumulativeGasUsed.add(proxyData.gas);
+        break;
+      }
+      case ONLY_PROXY: {
+        const proxyData = await deployOnlyProxyTask(
+          taskArgs,
+          hre,
+          factory,
+          fullyQualifiedContractName,
+          salt
+        );
+        cumulativeGasUsed = cumulativeGasUsed.add(proxyData.gas);
+        break;
+      }
+      case DEPLOY_CREATE: {
+        const deployCreateData = await deployCreateAndRegisterTask(
+          taskArgs,
+          hre,
+          fullyQualifiedContractName,
+          factory,
+          undefined,
+          constructorArgs,
+          salt
+        );
+        cumulativeGasUsed = cumulativeGasUsed.add(deployCreateData.gas);
+        break;
+      }
+      default: {
+        break;
+      }
+    }
+  }
+  console.log(`total gas used: ${cumulativeGasUsed.toString()}`);
+}
+export async function deployUpgradeableProxyTask(
+  taskArgs: any,
+  hre: HardhatRuntimeEnvironment,
+  fullyQaulifiedContractName?: string,
+  factory?: AliceNetFactory,
+  implementationBase?: ContractFactory,
+  constructorArgs?: any[],
+  initializerArgs?: any[],
+  salt?: string
+) {
+  const waitBlocks = taskArgs.waitConfirmation;
+  const contractName =
+    fullyQaulifiedContractName === undefined
+      ? taskArgs.contractName
+      : extractName(fullyQaulifiedContractName);
+  //if implementationBase is undefined, get it from the artifacts with the contract name
+  implementationBase =
+    implementationBase === undefined
+      ? ((await hre.ethers.getContractFactory(contractName)) as ContractFactory)
+      : implementationBase;
+
+  const network = hre.network.name;
+  //if an instance of the factory contract is not provided get it from ethers
+  factory =
+    factory === undefined
+      ? await hre.ethers.getContractAt(
+          "AliceNetFactory",
+          taskArgs.factoryAddress
+        )
+      : factory;
+  //if the fully qualified contract name is not provided, get it from the artifacts
+  fullyQaulifiedContractName =
+    fullyQaulifiedContractName === undefined
+      ? await getFullyQualifiedName(taskArgs.contractName, hre.artifacts)
+      : fullyQaulifiedContractName;
+  //parse constructor args
+  if (await hasConstructorArgs(fullyQaulifiedContractName, hre.artifacts)) {
+    constructorArgs =
+      constructorArgs === undefined
+        ? taskArgs.constructorArgs
+        : constructorArgs;
+    if (constructorArgs === undefined) {
+      throw new Error(`No constructor args provided for ${contractName}`);
+    }
+  } else {
+    constructorArgs = [];
+  }
+  let initCallData: string;
+  //if the contract is initializable check for taskArgs.initCallData
+  initCallData = (await isInitializable(
+    fullyQaulifiedContractName,
+    hre.artifacts
+  ))
+    ? implementationBase.interface.encodeFunctionData(
+        INITIALIZER,
+        (initializerArgs =
+          initializerArgs === undefined
+            ? taskArgs.initCallData.replace(/\s+/g, "").split(",")
+            : initializerArgs)
+      )
+    : "0x";
+
+  // if (await isInitializable(fullyQaulifiedContractName, hre.artifacts)) {
+  //   initArgs =
+  //     initializerArgs === undefined
+  //       ? taskArgs.initCallData.replace(/\s+/g, "").split(",")
+  //       : initializerArgs;
+  //   initCallData = implementationBase.interface.encodeFunctionData(
+  //     INITIALIZER,
+  //     initArgs
+  //   );
+  // } else {
+  //   initCallData = "0x";
+  // }
+  //if salt is not parsed, get it from the contract itself
+  salt =
+    salt === undefined
+      ? await getBytes32SaltFromContractNSTag(
+          taskArgs.contractName,
+          hre.artifacts,
+          hre.ethers
+        )
+      : salt;
+
+  if (hre.network.name === "hardhat") {
+    // hardhat is not being able to estimate correctly the tx gas due to the massive bytes array
+    // being sent as input to the function (the contract bytecode), so we need to increase the block
+    // gas limit temporally in order to deploy the template
+    await hre.network.provider.send("evm_setBlockGasLimit", [
+      "0x3000000000000000",
+    ]);
+  }
+  let txResponse = await deployUpgradeableSafe(
+    contractName,
+    factory,
+    hre.ethers,
+    initCallData,
+    constructorArgs,
+    salt,
+    waitBlocks,
+    await getGasPrices(hre)
+  );
+  let receipt = await txResponse.wait(waitBlocks);
+  const deployedLogicAddress = getEventVar(
+    receipt,
+    DEPLOYED_RAW,
+    CONTRACT_ADDR
+  );
+  if (taskArgs.verify) {
+    await verifyContract(hre, deployedLogicAddress, constructorArgs);
+  }
+  const proxyData: ProxyData = {
+    factoryAddress: taskArgs.factoryAddress,
+    logicName: taskArgs.contractName,
+    logicAddress: deployedLogicAddress,
+    salt,
+    proxyAddress: getEventVar(receipt, DEPLOYED_PROXY, CONTRACT_ADDR),
+    gas: receipt.gasUsed,
+    receipt,
+    initCallData,
+  };
+  await showState(
+    `Deployed ${proxyData.logicName} with proxy at ${proxyData.proxyAddress}, gasCost: ${proxyData.gas}`
+  );
+  await updateProxyList(network, proxyData, taskArgs.outputFolder);
+  return proxyData;
+}
+
+export async function deployCreateAndRegisterTask(
+  taskArgs: any,
+  hre: HardhatRuntimeEnvironment,
+  fullyQaulifiedContractName?: string,
+  factory?: AliceNetFactory,
+  implementationBase?: ContractFactory,
+  constructorArgs?: any[],
+  salt?: string
+) {
+  factory =
+    factory === undefined
+      ? await hre.ethers.getContractAt(
+          "AliceNetFactory",
+          taskArgs.factoryAddress
+        )
+      : factory;
+  const waitBlocks = taskArgs.waitConfirmation;
+  const contractName =
+    fullyQaulifiedContractName === undefined
+      ? taskArgs.contractName
+      : extractName(fullyQaulifiedContractName);
+
+  fullyQaulifiedContractName =
+    fullyQaulifiedContractName === undefined
+      ? await getFullyQualifiedName(contractName, hre.artifacts)
+      : fullyQaulifiedContractName;
+  if (salt === undefined) {
+    salt =
+      taskArgs.salt !== undefined
+        ? hre.ethers.utils.formatBytes32String(taskArgs.salt)
+        : await getBytes32SaltFromContractNSTag(
+            contractName,
+            hre.artifacts,
+            hre.ethers
+          );
+  }
+
+  if (await hasConstructorArgs(fullyQaulifiedContractName, hre.artifacts)) {
+    constructorArgs =
+      constructorArgs === undefined
+        ? taskArgs.constructorArgs
+        : constructorArgs;
+    if (constructorArgs === undefined) {
+      throw new Error(`No constructor args provided for ${contractName}`);
+    }
+  } else {
+    constructorArgs = [];
+  }
+  if (hre.network.name === "hardhat") {
+    // hardhat is not being able to estimate correctly the tx gas due to the massive bytes array
+    // being sent as input to the function (the contract bytecode), so we need to increase the block
+    // gas limit temporally in order to deploy the template
+    await hre.network.provider.send("evm_setBlockGasLimit", [
+      "0x3000000000000000",
+    ]);
+  }
+  const txResponse = await deployCreateAndRegister(
+    contractName,
+    factory,
+    hre.ethers,
+    constructorArgs,
+    salt,
+    await getGasPrices(hre)
+  );
+  const receipt = await txResponse.wait(waitBlocks);
+  const deployCreateData: DeployCreateData = {
+    name: taskArgs.contractName,
+    address: getEventVar(receipt, DEPLOYED_RAW, CONTRACT_ADDR),
+    factoryAddress: taskArgs.factoryAddress,
+    gas: receipt.gasUsed,
+    constructorArgs: taskArgs?.constructorArgs,
+  };
+  const network = hre.network.name;
+  if (taskArgs.verify) {
+    await verifyContract(hre, factory.address, constructorArgs);
+  }
+  await updateDeployCreateList(
+    network,
+    deployCreateData,
+    taskArgs.outputFolder
+  );
+  if (taskArgs.standAlone !== true) {
+    await showState(
+      `[DEBUG ONLY, DONT USE THIS ADDRESS IN THE SIDE CHAIN, USE THE PROXY INSTEAD!] Deployed logic for ${taskArgs.contractName} contract at: ${deployCreateData.address}, gas: ${receipt.gasUsed}`
+    );
+  } else {
+    await showState(
+      `Deployed ${deployCreateData.name} at ${deployCreateData.address}, gasCost: ${deployCreateData.gas}`
+    );
+    await updateExternalContractList(
+      network,
+      deployCreateData,
+      taskArgs.outputFolder
+    );
+  }
+  deployCreateData.receipt = receipt;
+  return deployCreateData;
+}
+
+export async function deployOnlyProxyTask(
+  taskArgs: any,
+  hre: HardhatRuntimeEnvironment,
+  factory?: AliceNetFactory,
+  fullyQaulifiedContractName?: string,
+  salt?: string
+) {
+  const waitBlocks = taskArgs.waitConfirmation;
+  factory =
+    factory === undefined
+      ? await hre.ethers.getContractAt(
+          "AliceNetFactory",
+          taskArgs.factoryAddress
+        )
+      : factory;
+  const contractName =
+    fullyQaulifiedContractName === undefined
+      ? taskArgs.contractName
+      : extractName(fullyQaulifiedContractName);
+
+  fullyQaulifiedContractName =
+    fullyQaulifiedContractName === undefined
+      ? await getFullyQualifiedName(contractName, hre.artifacts)
+      : fullyQaulifiedContractName;
+  if (salt === undefined) {
+    salt =
+      taskArgs.salt !== undefined
+        ? hre.ethers.utils.formatBytes32String(taskArgs.salt)
+        : await getBytes32SaltFromContractNSTag(
+            contractName,
+            hre.artifacts,
+            hre.ethers
+          );
+  }
+  const txResponse = await factory.deployProxy(salt, await getGasPrices(hre));
+  const receipt = await txResponse.wait(waitBlocks);
+  const proxyAddr = getEventVar(receipt, DEPLOYED_PROXY, CONTRACT_ADDR);
+  const proxyData: ProxyData = {
+    proxyAddress: proxyAddr,
+    salt: taskArgs.salt,
+    factoryAddress: taskArgs.factoryAddress,
+    gas: receipt.gasUsed,
+    receipt,
+  };
+
+  await showState(
+    `Deployed ${salt} proxy at ${proxyData.proxyAddress}, gasCost: ${proxyData.gas}`
+  );
+  return proxyData;
+}
+
+export async function multiCallDeployUpgradeableTask(taskArgs: any, hre: any) {
+  const waitBlocks = taskArgs.waitConfirmation;
+  const implementationBase = (await hre.ethers.getContractFactory(
+    taskArgs.contractName
+  )) as ContractFactory;
+  const network = hre.network.name;
+  const callArgs: DeployArgs = {
+    contractName: taskArgs.contractName,
+    waitConfirmation: waitBlocks,
+    factoryAddress: taskArgs.factoryAddress,
+    initCallData: taskArgs.initCallData,
+    outputFolder: taskArgs.outputFolder,
+    constructorArgs: taskArgs.constructorArgs,
+  };
+  const factory = await hre.ethers.getContractAt(
+    "AliceNetFactory",
+    taskArgs.factoryAddress
+  );
+  const initArgs =
+    taskArgs.initCallData === undefined
+      ? []
+      : taskArgs.initCallData.replace(/\s+/g, "").split(",");
+  const fullname = (await getFullyQualifiedName(
+    taskArgs.contractName,
+    hre.artifacts
+  )) as string;
+
+  const initCallData = (await isInitializable(fullname, hre.artifacts))
+    ? implementationBase.interface.encodeFunctionData(INITIALIZER, initArgs)
+    : "0x";
+  const salt: BytesLike = await getBytes32SaltFromContractNSTag(
+    taskArgs.contractName,
+    hre.artifacts,
+    hre.ethers
+  );
+  const constructorArgs =
+    taskArgs.constructorArgs === undefined ? [] : taskArgs.constructorArgs;
+  // encode deployBcode
+  if (hre.network.name === "hardhat") {
+    // hardhat is not being able to estimate correctly the tx gas due to the massive bytes array
+    // being sent as input to the function (the contract bytecode), so we need to increase the block
+    // gas limit temporally in order to deploy the template
+    await hre.network.provider.send("evm_setBlockGasLimit", [
+      "0x3000000000000000",
+    ]);
+  }
+  let txResponse = await multiCallDeployUpgradeable(
+    implementationBase,
+    factory,
+    hre.ethers,
+    initCallData,
+    constructorArgs,
+    salt,
+    await getGasPrices(hre)
+  );
+  let receipt = await txResponse.wait(waitBlocks);
+  const deployedLogicAddress = getEventVar(
+    receipt,
+    DEPLOYED_RAW,
+    CONTRACT_ADDR
+  );
+  if (taskArgs.verify) {
+    await verifyContract(hre, deployedLogicAddress, constructorArgs);
+  }
+  const proxyData: ProxyData = {
+    factoryAddress: taskArgs.factoryAddress,
+    logicName: taskArgs.contractName,
+    logicAddress: deployedLogicAddress,
+    salt,
+    proxyAddress: getEventVar(receipt, DEPLOYED_PROXY, CONTRACT_ADDR),
+    gas: receipt.gasUsed,
+    receipt,
+    initCallData,
+  };
+  await showState(
+    `Deployed ${proxyData.logicName} with proxy at ${proxyData.proxyAddress}, gasCost: ${proxyData.gas}`
+  );
+  await updateProxyList(network, proxyData, taskArgs.outputFolder);
+  return proxyData;
+}
+
+export async function checkUserDirPath(path: string) {
+  if (path !== undefined) {
+    if (!fs.existsSync(path)) {
+      console.log(
+        "Creating Folder at" + path + " since it didn't exist before!"
+      );
+      fs.mkdirSync(path);
+    }
+    if (fs.statSync(path).isFile()) {
+      throw new Error("outputFolder path should be to a directory not a file");
+    }
+  }
 }
 
 export async function getDeployMetaArgs(
@@ -168,6 +691,7 @@ export async function getDeployMetaArgs(
     verify,
   };
 }
+
 export async function getFactoryDeploymentArgs(
   artifacts: Artifacts,
   inputFolder?: string
@@ -394,6 +918,26 @@ export async function getDeploymentInitializerArgs(
   }
   return output;
 }
+/**
+ * @description gets the salt specified in the contracts head with a custom natspec tag @custom:salt
+ * @param contractName name of the contract
+ * @param artifacts artifacts object from hardhat artifacts
+ * @param ethers ethersjs object
+ * @returns bytes32 formatted salt
+ */
+export async function getBytes32SaltFromContractNSTag(
+  contractName: string,
+  artifacts: Artifacts,
+  ethers: Ethers,
+  fullyQualifiedName?: string
+): Promise<string> {
+  fullyQualifiedName =
+    fullyQualifiedName === undefined
+      ? await getFullyQualifiedName(contractName, artifacts)
+      : fullyQualifiedName;
+  const salt = await getSalt(fullyQualifiedName, artifacts);
+  return ethers.utils.formatBytes32String(salt);
+}
 
 export async function getSalt(fullName: string, artifacts: Artifacts) {
   return await getCustomNSTag(fullName, "salt", artifacts);
@@ -408,6 +952,7 @@ export async function getBytes32Salt(
   const salt: string = await getSalt(fullName, artifacts);
   return ethers.utils.formatBytes32String(salt);
 }
+
 export async function getFullyQualifiedName(
   contractName: string,
   artifacts: Artifacts
@@ -547,6 +1092,12 @@ export async function verifyContract(
   }
   return result;
 }
+
+export const showState = async (message: string): Promise<void> => {
+  if (process.env.silencer === undefined || process.env.silencer === "false") {
+    console.log(message);
+  }
+};
 
 export async function deployContractsMulticall(
   contracts: ContractDescriptor[],
