@@ -9,11 +9,12 @@ import {
   deployUpgradeableWithFactory,
   Fixture,
   getFixture,
-  getImpersonatedSigner
+  getImpersonatedSigner,
 } from "../setup";
 import {
   getMockBlockClaimsForSnapshot,
   proofs,
+  utxoOwner,
   vsPreImage,
   wrongChainIdVSPreImage,
   wrongKeyProofs,
@@ -64,7 +65,7 @@ describe("Testing Base BridgePool Deposit/Withdraw", async () => {
       fixture.factory,
       "NativeERCBridgePoolMock",
       "NativeERCBridgePoolMock",
-      undefined,
+      [ethers.constants.AddressZero],
       undefined,
       undefined
     );
@@ -75,9 +76,7 @@ describe("Testing Base BridgePool Deposit/Withdraw", async () => {
       undefined,
       [1000]
     );
-    utxoOwnerSigner = await getImpersonatedSigner(
-      "0x38e959391dd8598ae80d5d6d114a7822a09d313a"
-    );
+    utxoOwnerSigner = await getImpersonatedSigner(utxoOwner);
     asBridgeRouter = await getImpersonatedSigner(bridgeRouter.address);
   }
 
