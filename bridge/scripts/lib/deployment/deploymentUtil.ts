@@ -2,6 +2,8 @@ import { HardhatEthersHelpers } from "@nomiclabs/hardhat-ethers/types";
 import { BigNumber, BigNumberish, BytesLike, ContractFactory } from "ethers";
 import fs from "fs";
 import { Artifacts, HardhatRuntimeEnvironment } from "hardhat/types";
+import { exit } from "process";
+import readline from "readline";
 import { AliceNetFactory } from "../../../typechain-types";
 import {
   deployCreateAndRegister,
@@ -234,7 +236,6 @@ export async function deployContractsTask(
     const constructorArgObject =
       deploymentListConfig[fullyQualifiedContractName].constructorArgs;
     const constructorArgs = Object.values(constructorArgObject);
-    console.log(constructorArgs);
     const initializerArgObject =
       deploymentListConfig[fullyQualifiedContractName].initializerArgs;
     const initializerArgs = Object.values(initializerArgObject);
@@ -305,7 +306,6 @@ export async function deployUpgradeableProxyTask(
     implementationBase === undefined
       ? ((await hre.ethers.getContractFactory(contractName)) as ContractFactory)
       : implementationBase;
-
   const network = hre.network.name;
   //if an instance of the factory contract is not provided get it from ethers
   factory =
@@ -364,6 +364,18 @@ export async function deployUpgradeableProxyTask(
     await hre.network.provider.send("evm_setBlockGasLimit", [
       "0x3000000000000000",
     ]);
+  }
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+  const prompt = (query: any) =>
+    new Promise((resolve) => rl.question(query, resolve));
+  const answer = await prompt(
+    "`Do you want to deploy ${contractName} with initArgs: ${initializerArgs}, constructorArgs: ${constructorArgs}? (y/n)`"
+  );
+  if (answer === "n") {
+    exit();
   }
   let txResponse = await deployUpgradeableSafe(
     contractName,
@@ -457,6 +469,27 @@ export async function deployCreateAndRegisterTask(
       "0x3000000000000000",
     ]);
   }
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+  const prompt = (query: any) =>
+    new Promise((resolve) => rl.question(query, resolve));
+  const answer = await prompt(
+    `Do you want to deploy ${contractName} with constructorArgs: ${constructorArgs}, salt: ${salt}? (y/n)`
+  );
+  if (answer === "n") {
+    exit();
+  }
+  // await rl.question(
+  //   ,
+  //   (answer) => {
+  //     while (answer === undefined) {}
+  //     if (answer === "n") {
+  //       exit();
+  //     }
+  //   }
+  // );
   const txResponse = await deployCreateAndRegister(
     contractName,
     factory,

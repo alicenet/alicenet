@@ -28,7 +28,12 @@ export type MultiCallArgsStruct = {
   value: BigNumberish;
   data: BytesLike;
 };
-
+export class MultiCallGasError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "MultiCallGasError";
+  }
+}
 export async function deployFactory(
   constructorArgs: string,
   ethers: Ethers,
@@ -77,7 +82,7 @@ export async function multiCallDeployUpgradeable(
     multiCallArgs
   );
   if (estimatedMultiCallGas.gt(BigNumber.from(MULTICALL_GAS_LIMIT))) {
-    throw new Error(
+    throw new MultiCallGasError(
       `estimatedGasCost ${estimatedMultiCallGas.toString()} exceeds MULTICALL_GAS_LIMIT ${MULTICALL_GAS_LIMIT}`
     );
   }
@@ -298,18 +303,6 @@ export async function deployUpgradeableSafe(
   overrides?: Overrides & { from?: PromiseOrValue<string> }
 ) {
   const ImplementationBase = await ethers.getContractFactory(contractName);
-  const multiCallCallData = await encodeMultiCallDeployUpgradeableArgs(
-    ImplementationBase,
-    factory,
-    ethers,
-    initCallData,
-    constructorArgs,
-    salt
-  );
-  let estimatedGas = await factory.estimateGas.multiCall(
-    multiCallCallData,
-    overrides
-  );
   try {
     return await multiCallDeployUpgradeable(
       ImplementationBase,
@@ -321,16 +314,19 @@ export async function deployUpgradeableSafe(
       overrides
     );
   } catch (err) {
-    return deployUpgradeable(
-      contractName,
-      factory,
-      ethers,
-      initCallData,
-      constructorArgs,
-      salt,
-      waitConfirmantions,
-      overrides
-    );
+    if (err instanceof MultiCallGasError) {
+      return deployUpgradeable(
+        contractName,
+        factory,
+        ethers,
+        initCallData,
+        constructorArgs,
+        salt,
+        waitConfirmantions,
+        overrides
+      );
+    }
+    throw err;
   }
 }
 
