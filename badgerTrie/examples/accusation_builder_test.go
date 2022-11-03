@@ -777,10 +777,10 @@ func TestGenerateAccusations(t *testing.T) {
 
 	pClaimsBin, err := pclms.MarshalBinary()
 	bClaimsBin, err := chain[1].MarshalBinary()
-	log.Printf("PClaims Block 2 :\n%x\n\n", pclms.BClaims.TxRoot)
-	log.Printf("PClaims Block 2 bin:\n%x\n\n", pClaimsBin)
-	log.Printf("BClaims Block 2:\n%x\n\n", chain[1])
-	log.Printf("BClaims Block 2 bin :\n%x\n\n", bClaimsBin)
+	t.Logf("PClaims Block 2 :\n%x\n\n", pclms.BClaims.TxRoot)
+	t.Logf("PClaims Block 2 bin:\n%x\n\n", pClaimsBin)
+	t.Logf("BClaims Block 2:\n%x\n\n", chain[1])
+	t.Logf("BClaims Block 2 bin :\n%x\n\n", bClaimsBin)
 	prop := &cobjs.Proposal{
 		PClaims:  pclms,
 		TxHshLst: [][]byte{txHash2},
@@ -847,23 +847,21 @@ func TestGenerateAccusations(t *testing.T) {
 	h := fmt.Sprintf("%x", value_)
 	genericOwner_, err := tx2.Vout[0].GenericOwner()
 	utxoId_, err := tx2.Vout[0].UTXOID()
-	log.Printf("\n\n ======== VS Preimage bin: ======= \n%x\n", vsImageBin)
-	log.Printf("VS Preimage txOutIdx : %x\n", txOutIdx_)
-	log.Printf("VS Preimage chainId : %x\n", chainId_)
-	log.Printf("VS Preimage value : %x\n%d\n%s\n", value_, value_, h)
-	log.Printf("VS Preimage genericOwner : %x\n", genericOwner_)
-	log.Printf("VS Preimage utxoId : %x\n", utxoId_)
-	log.Println("=========")
+	t.Logf("\n\n ======== VS Preimage bin: ======= \n%x\n", vsImageBin)
+	t.Logf("VS Preimage txOutIdx : %x\n", txOutIdx_)
+	t.Logf("VS Preimage chainId : %x\n", chainId_)
+	t.Logf("VS Preimage value : %x\n%d\n%s\n", value_, value_, h)
+	t.Logf("VS Preimage genericOwner : %x\n", genericOwner_)
+	t.Logf("VS Preimage utxoId : %x\n", utxoId_)
 
-	log.Printf("\n\n ======== TxIn Preimage bin: ======= \n%x\n\n", preImageBin)
-	log.Println("=========")
-	log.Printf("The transaction Root persisted Block 2: %x\n", txRoot2)
+	t.Logf("\n\n ======== TxIn Preimage bin: ======= \n%x\n\n", preImageBin)
+	t.Logf("The transaction Root persisted Block 2: %x\n", txRoot2)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	log.Println(" ======== Creating the merkle proof for the HeaderRoot =====")
-	log.Printf("Header Root: %x\n", headerRoot)
+	t.Logf(" ======== Creating the merkle proof for the HeaderRoot =====")
+	t.Logf("Header Root: %x\n", headerRoot)
 	bitmap, auditPath, proofHeight, included, proofKey, proofVal, err = headerRootSMT.MerkleProofCompressed(newTxn, blockHshLst[0])
 	if err != nil {
 		t.Fatal(err)

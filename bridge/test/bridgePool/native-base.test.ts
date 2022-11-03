@@ -9,7 +9,7 @@ import {
   deployUpgradeableWithFactory,
   Fixture,
   getFixture,
-  getImpersonatedSigner,
+  getImpersonatedSigner
 } from "../setup";
 import {
   getMockBlockClaimsForSnapshot,
@@ -66,8 +66,7 @@ describe("Testing Base BridgePool Deposit/Withdraw", async () => {
       "NativeERCBridgePoolMock",
       undefined,
       undefined,
-      undefined,
-      false
+      undefined
     );
     const bridgeRouter = await deployUpgradeableWithFactory(
       fixture.factory,
