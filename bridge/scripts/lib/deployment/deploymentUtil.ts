@@ -8,7 +8,7 @@ import { AliceNetFactory } from "../../../typechain-types";
 import {
   deployCreateAndRegister,
   deployFactory,
-  deployUpgradeableSafe,
+  deployUpgradeableGasSafe,
   encodeMultiCallArgs,
   getEventVar,
   multiCallDeployUpgradeable,
@@ -387,7 +387,7 @@ export async function deployUpgradeableProxyTask(
     exit();
   }
   rl.close();
-  let txResponse = await deployUpgradeableSafe(
+  let txResponse = await deployUpgradeableGasSafe(
     contractName,
     factory,
     hre.ethers,

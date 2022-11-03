@@ -21,11 +21,7 @@ import {
   DEPLOYMENT_LIST_FPATH,
   DEPLOY_PROXY,
   INITIALIZER,
-  TASK_DEPLOY_CREATE,
-  TASK_DEPLOY_CREATE_AND_REGISTER,
   TASK_DEPLOY_FACTORY,
-  TASK_DEPLOY_PROXY,
-  TASK_UPGRADE_DEPLOYED_PROXY,
   UPGRADE_PROXY,
 } from "./constants";
 import {
@@ -55,7 +51,6 @@ import {
   getFullyQualifiedName,
   getGasPrices,
   isInitializable,
-  multiCallDeployUpgradeableTask,
   showState,
   verifyContract,
 } from "./deployment/deploymentUtil";
@@ -218,32 +213,6 @@ task(
   });
 
 task(
-  "multicall-deploy-upgradeable",
-  "Multicalls deploy-create, deploy-proxy, and upgrade-proxy, if gas cost exceeds 10 million deploy-upgradeable-proxy will be used"
-)
-  .addFlag("verify", "try to automatically verify contracts on etherscan")
-  .addParam("contractName", "Name of logic contract to point the proxy at")
-  .addParam(
-    "factoryAddress",
-    "address of factory contract to deploy the contract with"
-  )
-  .addOptionalParam(
-    "waitConfirmation",
-    "wait specified number of blocks between transactions",
-    0,
-    types.int
-  )
-  .addOptionalParam(
-    "initArgs",
-    "input initCallData args in a string list, eg: --initCallData 'arg1, arg2'"
-  )
-  .addOptionalParam("outputFolder", "output folder path to save factory state")
-  .addOptionalVariadicPositionalParam("constructorArgs", "")
-  .setAction(async (taskArgs, hre) => {
-    return multiCallDeployUpgradeableTask(taskArgs, hre);
-  });
-
-task(
   "deploy-upgradeable-proxy",
   "deploys logic contract, proxy contract, and points the proxy to the logic contract"
 )
@@ -284,7 +253,7 @@ task(
   });
 
 // factoryName param doesnt do anything right now
-task(TASK_DEPLOY_CREATE, "deploys a contract from the factory using create")
+task("deploy-create", "deploys a contract from the factory using create")
   .addFlag(
     "standAlone",
     "flag to specify that this is not a template for a proxy"
@@ -377,7 +346,7 @@ task(TASK_DEPLOY_CREATE, "deploys a contract from the factory using create")
   });
 
 task(
-  TASK_DEPLOY_CREATE_AND_REGISTER,
+  "deploy-create-and-register",
   "deploys a contract from the factory using create and records the address to the external contract mapping for lookup, for deploying contracts outside of deterministic address"
 )
   .addFlag("verify", "try to automatically verify contracts on etherscan")
@@ -406,7 +375,7 @@ task(
     return await deployCreateAndRegisterTask(taskArgs, hre);
   });
 
-task(TASK_DEPLOY_PROXY, "deploys a proxy from the factory")
+task("deploy-proxy", "deploys a proxy from the factory")
   .addParam(
     "salt",
     "salt used to specify logicContract and proxy address calculation"
@@ -426,7 +395,7 @@ task(TASK_DEPLOY_PROXY, "deploys a proxy from the factory")
   });
 
 task(
-  TASK_UPGRADE_DEPLOYED_PROXY,
+  "upgrade-deployed-proxy",
   "deploys a contract from the factory using create"
 )
   .addParam("contractName", "logic contract name")

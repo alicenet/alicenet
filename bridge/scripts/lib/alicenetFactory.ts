@@ -292,7 +292,7 @@ export async function calculateDeployCreateAddress(
   });
 }
 
-export async function deployUpgradeableSafe(
+export async function deployUpgradeableGasSafe(
   contractName: string,
   factory: AliceNetFactory,
   ethers: Ethers,
