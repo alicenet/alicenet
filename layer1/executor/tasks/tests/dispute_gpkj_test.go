@@ -28,7 +28,7 @@ func TestGPKjDispute_NoBadGPKj(t *testing.T) {
 		for j := 0; j < n; j++ {
 			disputeBadGPKjTask := suite.DisputeGPKjTasks[idx][j]
 
-			err := disputeBadGPKjTask.Initialize(suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "DisputeBadGPKjTask", "task-id", disputeBadGPKjTask.Start, disputeBadGPKjTask.End, false, nil, nil)
+			err := disputeBadGPKjTask.Initialize(suite.DKGStatesDbs[idx], nil, fixture.Logger, suite.Eth, fixture.Contracts, "DisputeBadGPKjTask", "task-id", disputeBadGPKjTask.Start, disputeBadGPKjTask.End, false, nil, nil)
 			assert.Nil(t, err)
 			err = disputeBadGPKjTask.Prepare(ctx)
 			assert.Nil(t, err)
@@ -81,7 +81,7 @@ func TestGPKjDispute_TwoInvalid(t *testing.T) {
 		for j := 0; j < n; j++ {
 			disputeBadGPKjTask := suite.DisputeGPKjTasks[idx][j]
 
-			err := disputeBadGPKjTask.Initialize(suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "DisputeBadGPKjTask", "task-id", disputeBadGPKjTask.Start, disputeBadGPKjTask.End, false, nil, nil)
+			err := disputeBadGPKjTask.Initialize(suite.DKGStatesDbs[idx], nil, fixture.Logger, suite.Eth, fixture.Contracts, "DisputeBadGPKjTask", "task-id", disputeBadGPKjTask.Start, disputeBadGPKjTask.End, false, nil, nil)
 			assert.Nil(t, err)
 			err = disputeBadGPKjTask.Prepare(ctx)
 			assert.Nil(t, err)
@@ -136,7 +136,7 @@ func TestGPKjDispute_FiveInvalid(t *testing.T) {
 		for j := 0; j < n; j++ {
 			disputeBadGPKjTask := suite.DisputeGPKjTasks[idx][j]
 
-			err := disputeBadGPKjTask.Initialize(suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "DisputeBadGPKjTask", "task-id", disputeBadGPKjTask.Start, disputeBadGPKjTask.End, false, nil, nil)
+			err := disputeBadGPKjTask.Initialize(suite.DKGStatesDbs[idx], nil, fixture.Logger, suite.Eth, fixture.Contracts, "DisputeBadGPKjTask", "task-id", disputeBadGPKjTask.Start, disputeBadGPKjTask.End, false, nil, nil)
 			assert.Nil(t, err)
 			err = disputeBadGPKjTask.Prepare(ctx)
 			assert.Nil(t, err)

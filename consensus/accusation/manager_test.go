@@ -47,6 +47,7 @@ func setupManagerTests(t *testing.T) *managerTestProxy {
 	rawConsensusDb, err := utils.OpenBadger(nodeCtx.Done(), "", true)
 	assert.Nil(t, err)
 	var closeDB func() = func() {
+		<-time.After(1 * time.Second)
 		err := rawConsensusDb.Close()
 		if err != nil {
 			t.Errorf("error closing rawConsensusDb: %v", err)
@@ -164,7 +165,7 @@ func TestManagerPollCache(t *testing.T) {
 	assert.True(t, hadUpdates)
 
 	// now poll again with the same data.
-	// this should not add a new RS to the workQ because it's been processed and cached already
+	// this should add the same LRS to the workQ
 	err = testProxy.manager.Poll()
 	assert.Nil(t, err)
 
@@ -258,7 +259,7 @@ func accuseAllRoundStates(rs *objs.RoundState, lrs *lstate.RoundStates, consDB *
 		BaseTask: tasks.NewBaseTask(0, 0, false, nil),
 		SomeData: "accusing all the things",
 	}
-	acc.ID = hex.EncodeToString(crypto.Hasher([]byte("some id")))
+	acc.ID = hex.EncodeToString(crypto.Hasher(rs.Proposal.Proposer))
 
 	return acc, true
 }
@@ -314,14 +315,14 @@ func TestManagerAccusable(t *testing.T) {
 	assert.Nil(t, err)
 
 	// wait for workers to process the accusation
-	time.Sleep(5 * time.Second)
+	time.Sleep(1 * time.Second)
 
 	// check if an accusation is inside the accusationQueue
 	receivedAcc := 0
 	var accusation tasks.Task
 	assert.Nil(t, accusation)
 
-	for receivedAcc < len(vs.Validators) { // all validators are being accused here
+	for receivedAcc == 0 { // one validator is being accused here
 		select {
 		case acc := <-testProxy.manager.accusationQ:
 			t.Logf("received acc: %#v", acc)
@@ -333,6 +334,8 @@ func TestManagerAccusable(t *testing.T) {
 			time.Sleep(100 * time.Millisecond)
 		}
 	}
+
+	assert.Equal(t, 1, receivedAcc)
 }
 
 // TestManagerPersistCreatedAccusations tests the persistence of created accusations
@@ -531,20 +534,37 @@ func createRoundState(t *testing.T, os *objs.OwnState) *objs.RoundState {
 		t.Fatal(err)
 	}
 
+	rcert := &objs.RCert{
+		SigGroup: sig,
+		RClaims: &objs.RClaims{
+			ChainID:   1,
+			Height:    2,
+			PrevBlock: prevBlock,
+			Round:     1,
+		},
+	}
+
 	rs := &objs.RoundState{
 		VAddr:      os.VAddr, // change done
 		GroupKey:   groupKey,
 		GroupShare: bnKey,
 		GroupIdx:   127,
-		RCert: &objs.RCert{
-			SigGroup: sig,
-			RClaims: &objs.RClaims{
-				ChainID:   1,
-				Height:    2,
-				PrevBlock: prevBlock,
-				Round:     1,
+		Proposal: &objs.Proposal{
+			Proposer: os.VAddr,
+			PClaims: &objs.PClaims{
+				RCert: rcert,
+				BClaims: &objs.BClaims{
+					ChainID:    1,
+					Height:     2,
+					TxCount:    0,
+					PrevBlock:  prevBlock,
+					TxRoot:     crypto.Hasher([]byte("")),
+					StateRoot:  crypto.Hasher([]byte("")),
+					HeaderRoot: crypto.Hasher([]byte("")),
+				},
 			},
 		},
+		RCert: rcert,
 	}
 
 	return rs
@@ -592,6 +612,7 @@ func createOwnState(t *testing.T, length int) *objs.OwnState {
 		MaxBHSeen:         bh,
 		CanonicalSnapShot: bh,
 		PendingSnapShot:   bh,
+		GroupKey:          crypto.Hasher([]byte("")),
 	}
 }
 

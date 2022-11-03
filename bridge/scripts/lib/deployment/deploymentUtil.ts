@@ -1,7 +1,6 @@
 import { BigNumberish, BytesLike, ContractFactory } from "ethers";
 import {
   Artifacts,
-  HardhatEthersHelpers,
   HardhatRuntimeEnvironment,
   RunTaskFunction,
 } from "hardhat/types";
@@ -23,8 +22,8 @@ import {
 } from "../constants";
 import { readDeploymentArgs } from "./deploymentConfigUtil";
 
-type Ethers = typeof import("../../../node_modules/ethers/lib/ethers") &
-  HardhatEthersHelpers;
+// type Ethers = typeof import("../../../node_modules/ethers/lib/ethers") &
+//  HardhatEthersHelpers;
 
 export interface ArgData {
   [key: string]: string;

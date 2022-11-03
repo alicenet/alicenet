@@ -313,6 +313,9 @@ func (m *Manager) processLRS(lrs *lstate.RoundStates) (bool, error) {
 			continue
 		}
 
+		// the RoundState object won't persis the Proposer and GroupKey because
+		// they can be computed from other fields, so we need to populate them.
+		// for the sake of efficiency, it is safe to copy these values then recomputing
 		if rs.Proposal != nil {
 			rs.Proposal.Proposer = utils.CopySlice(v.VAddr)
 			rs.Proposal.GroupKey = utils.CopySlice(lrs.ValidatorSet.GroupKey)
@@ -347,13 +350,6 @@ func (m *Manager) processLRS(lrs *lstate.RoundStates) (bool, error) {
 
 			if updated {
 				hadUpdates = true
-				// m.logger.WithFields(logrus.Fields{
-				// 	"lrs.height":              lrs.Height(),
-				// 	"lrs.round":               lrs.Round(),
-				// 	"rs.RCert.RClaims.Height": rs.RCert.RClaims.Height,
-				// 	"rs.RCert.RClaims.Round":  rs.RCert.RClaims.Round,
-				// 	"vAddr":                   valAddress,
-				// }).Debug("AccusationManager: processing roundState")
 
 				go m.findAccusation(rs, lrs)
 
@@ -383,6 +379,8 @@ func (m *Manager) processLRS(lrs *lstate.RoundStates) (bool, error) {
 	return hadUpdates, nil
 }
 
+// cleanupValidatorCache cleans the cache out of old validators. this is to avoid
+// the cache from growing indefinitely
 func (m *Manager) cleanupValidatorCache() {
 
 	m.rsCacheLock.Lock()
@@ -404,7 +402,9 @@ func (m *Manager) cleanupValidatorCache() {
 	}
 }
 
-// findAccusation checks if there is an accusation for a certain roundState and if so, sends it for further processing. the Poll() method will receive this accusation and schedule the accusation task in the TaskHandler
+// findAccusation checks if there is an accusation for a certain roundState
+// and if so, sends it for further processing. the Poll() method will receive
+// this accusation and schedule the accusation task in the TaskHandler
 func (m *Manager) findAccusation(rs *objs.RoundState, lrs *lstate.RoundStates) {
 	if rs.Proposal == nil {
 		return
@@ -420,7 +420,6 @@ func (m *Manager) findAccusation(rs *objs.RoundState, lrs *lstate.RoundStates) {
 
 		return nil
 	})
-
 	if err != nil {
 		m.logger.Errorf("couldn't check if the validator %s was already evicted %v", string(rs.Proposal.Proposer[:]), err)
 	}
