@@ -47,6 +47,7 @@ func setupManagerTests(t *testing.T) *managerTestProxy {
 	rawConsensusDb, err := utils.OpenBadger(nodeCtx.Done(), "", true)
 	assert.Nil(t, err)
 	var closeDB func() = func() {
+		<-time.After(1 * time.Second)
 		err := rawConsensusDb.Close()
 		if err != nil {
 			t.Errorf("error closing rawConsensusDb: %v", err)
@@ -258,7 +259,7 @@ func accuseAllRoundStates(rs *objs.RoundState, lrs *lstate.RoundStates, consDB *
 		BaseTask: tasks.NewBaseTask(0, 0, false, nil),
 		SomeData: "accusing all the things",
 	}
-	acc.ID = hex.EncodeToString(crypto.Hasher([]byte("some id")))
+	acc.ID = hex.EncodeToString(crypto.Hasher(rs.Proposal.Proposer))
 
 	return acc, true
 }
@@ -314,14 +315,14 @@ func TestManagerAccusable(t *testing.T) {
 	assert.Nil(t, err)
 
 	// wait for workers to process the accusation
-	time.Sleep(5 * time.Second)
+	time.Sleep(1 * time.Second)
 
 	// check if an accusation is inside the accusationQueue
 	receivedAcc := 0
 	var accusation tasks.Task
 	assert.Nil(t, accusation)
 
-	for receivedAcc < len(vs.Validators) { // all validators are being accused here
+	for receivedAcc == 0 { // one validator is being accused here
 		select {
 		case acc := <-testProxy.manager.accusationQ:
 			t.Logf("received acc: %#v", acc)
@@ -333,6 +334,8 @@ func TestManagerAccusable(t *testing.T) {
 			time.Sleep(100 * time.Millisecond)
 		}
 	}
+
+	assert.Equal(t, 1, receivedAcc)
 }
 
 // TestManagerPersistCreatedAccusations tests the persistence of created accusations
