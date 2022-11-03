@@ -235,10 +235,8 @@ export async function deployContractsTask(
     const salt = deploymentListConfig[fullyQualifiedContractName].salt;
     const constructorArgObject =
       deploymentListConfig[fullyQualifiedContractName].constructorArgs;
-    const constructorArgs = Object.values(constructorArgObject);
     const initializerArgObject =
       deploymentListConfig[fullyQualifiedContractName].initializerArgs;
-    const initializerArgs = Object.values(initializerArgObject);
 
     switch (deployType) {
       case UPGRADEABLE_DEPLOYMENT: {
@@ -248,8 +246,8 @@ export async function deployContractsTask(
           fullyQualifiedContractName,
           factory,
           undefined,
-          constructorArgs,
-          initializerArgs,
+          constructorArgObject,
+          initializerArgObject,
           salt
         );
         cumulativeGasUsed = cumulativeGasUsed.add(proxyData.gas);
@@ -292,10 +290,19 @@ export async function deployUpgradeableProxyTask(
   fullyQaulifiedContractName?: string,
   factory?: AliceNetFactory,
   implementationBase?: ContractFactory,
-  constructorArgs?: any[],
-  initializerArgs?: any[],
+  constructorArgObject?: ArgData,
+  initializerArgObject?: ArgData,
   salt?: string
 ) {
+  let constructorArgs;
+  let initializerArgs;
+  if (constructorArgObject !== undefined) {
+    constructorArgs = Object.values(constructorArgObject);
+  }
+  if (initializerArgObject !== undefined) {
+    initializerArgs = Object.values(initializerArgObject);
+  }
+
   const waitBlocks = taskArgs.waitConfirmation;
   const contractName =
     fullyQaulifiedContractName === undefined
@@ -372,7 +379,9 @@ export async function deployUpgradeableProxyTask(
   const prompt = (query: any) =>
     new Promise((resolve) => rl.question(query, resolve));
   const answer = await prompt(
-    `Do you want to deploy ${contractName} with initArgs: ${initializerArgs}, constructorArgs: ${constructorArgs}? (y/n)`
+    `Do you want to deploy ${contractName} with initArgs: ${JSON.stringify(
+      initializerArgObject
+    )}, constructorArgs: ${JSON.stringify(constructorArgObject)}? (y/n)`
   );
   if (answer === "n") {
     exit();
