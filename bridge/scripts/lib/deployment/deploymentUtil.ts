@@ -386,6 +386,7 @@ export async function deployUpgradeableProxyTask(
   if (answer === "n") {
     exit();
   }
+  rl.close();
   let txResponse = await deployUpgradeableSafe(
     contractName,
     factory,
@@ -490,7 +491,7 @@ export async function deployCreateAndRegisterTask(
   if (answer === "n") {
     exit();
   }
-
+  rl.close();
   const txResponse = await deployCreateAndRegister(
     contractName,
     factory,
