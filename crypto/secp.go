@@ -2,6 +2,7 @@ package crypto
 
 import (
 	"crypto/ecdsa"
+	"fmt"
 
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/utils"
@@ -63,7 +64,10 @@ func (secpv *Secp256k1Validator) Validate(msg []byte, sig []byte) ([]byte, error
 	hsh := Hasher(msg)
 	pubk, err := eth.SigToPub(hsh, sig)
 	if err != nil {
-		return nil, err
+		pubk, err = tryEthPersonalSign(msg, sig)
+		if err != nil {
+			return nil, err
+		}
 	}
 	pubkbytes := eth.FromECDSAPub(pubk)
 	return pubkbytes, nil
@@ -82,4 +86,20 @@ func (secpv *Secp256k1Validator) PubkeyFromSig(msg []byte, sig []byte) ([]byte, 
 	}
 	pubkbytes := eth.FromECDSAPub(pubk)
 	return pubkbytes, nil
+}
+
+func tryEthPersonalSign(msg []byte, sig []byte) (*ecdsa.PublicKey, error) {
+	ethMsg := []byte("\x19Ethereum Signed Message:\n" + fmt.Sprint(len(msg)))
+	ethMsg = append(ethMsg, msg...)
+	hsh := Hasher(ethMsg)
+	// https://github.com/ethereum/go-ethereum/blob/master/signer/core/signed_data.go#L263
+	if sig[64] != 27 && sig[64] != 28 {
+		return nil, fmt.Errorf("V is not {0,1,2,3} || {27, 28})")
+	}
+	sig[64] -= 27 // Transform yellow paper V from 27/28 to 0/1
+	pubk, err := eth.SigToPub(hsh, sig)
+	if err != nil {
+		return nil, err
+	}
+	return pubk, nil
 }

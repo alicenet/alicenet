@@ -26988,6 +26988,9 @@ type MockIPublicStaking struct {
 	// DepositTokenFunc is an instance of a mock function object controlling
 	// the behavior of the method DepositToken.
 	DepositTokenFunc *IPublicStakingDepositTokenFunc
+	// EstimateAllProfitsFunc is an instance of a mock function object
+	// controlling the behavior of the method EstimateAllProfits.
+	EstimateAllProfitsFunc *IPublicStakingEstimateAllProfitsFunc
 	// EstimateEthCollectionFunc is an instance of a mock function object
 	// controlling the behavior of the method EstimateEthCollection.
 	EstimateEthCollectionFunc *IPublicStakingEstimateEthCollectionFunc
@@ -27209,6 +27212,14 @@ func NewMockIPublicStaking() *MockIPublicStaking {
 		},
 		DepositTokenFunc: &IPublicStakingDepositTokenFunc{
 			defaultHook: func(*bind.TransactOpts, uint8, *big.Int) (r0 *types.Transaction, r1 error) {
+				return
+			},
+		},
+		EstimateAllProfitsFunc: &IPublicStakingEstimateAllProfitsFunc{
+			defaultHook: func(*bind.CallOpts, *big.Int) (r0 struct {
+				PayoutEth   *big.Int
+				PayoutToken *big.Int
+			}, r1 error) {
 				return
 			},
 		},
@@ -27546,6 +27557,14 @@ func NewStrictMockIPublicStaking() *MockIPublicStaking {
 				panic("unexpected invocation of MockIPublicStaking.DepositToken")
 			},
 		},
+		EstimateAllProfitsFunc: &IPublicStakingEstimateAllProfitsFunc{
+			defaultHook: func(*bind.CallOpts, *big.Int) (struct {
+				PayoutEth   *big.Int
+				PayoutToken *big.Int
+			}, error) {
+				panic("unexpected invocation of MockIPublicStaking.EstimateAllProfits")
+			},
+		},
 		EstimateEthCollectionFunc: &IPublicStakingEstimateEthCollectionFunc{
 			defaultHook: func(*bind.CallOpts, *big.Int) (*big.Int, error) {
 				panic("unexpected invocation of MockIPublicStaking.EstimateEthCollection")
@@ -27854,6 +27873,9 @@ func NewMockIPublicStakingFrom(i bindings.IPublicStaking) *MockIPublicStaking {
 		},
 		DepositTokenFunc: &IPublicStakingDepositTokenFunc{
 			defaultHook: i.DepositToken,
+		},
+		EstimateAllProfitsFunc: &IPublicStakingEstimateAllProfitsFunc{
+			defaultHook: i.EstimateAllProfits,
 		},
 		EstimateEthCollectionFunc: &IPublicStakingEstimateEthCollectionFunc{
 			defaultHook: i.EstimateEthCollection,
@@ -29434,6 +29456,150 @@ func (c IPublicStakingDepositTokenFuncCall) Args() []interface{} {
 // Results returns an interface slice containing the results of this
 // invocation.
 func (c IPublicStakingDepositTokenFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
+}
+
+// IPublicStakingEstimateAllProfitsFunc describes the behavior when the
+// EstimateAllProfits method of the parent MockIPublicStaking instance is
+// invoked.
+type IPublicStakingEstimateAllProfitsFunc struct {
+	defaultHook func(*bind.CallOpts, *big.Int) (struct {
+		PayoutEth   *big.Int
+		PayoutToken *big.Int
+	}, error)
+	hooks []func(*bind.CallOpts, *big.Int) (struct {
+		PayoutEth   *big.Int
+		PayoutToken *big.Int
+	}, error)
+	history []IPublicStakingEstimateAllProfitsFuncCall
+	mutex   sync.Mutex
+}
+
+// EstimateAllProfits delegates to the next hook function in the queue and
+// stores the parameter and result values of this invocation.
+func (m *MockIPublicStaking) EstimateAllProfits(v0 *bind.CallOpts, v1 *big.Int) (struct {
+	PayoutEth   *big.Int
+	PayoutToken *big.Int
+}, error) {
+	r0, r1 := m.EstimateAllProfitsFunc.nextHook()(v0, v1)
+	m.EstimateAllProfitsFunc.appendCall(IPublicStakingEstimateAllProfitsFuncCall{v0, v1, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the EstimateAllProfits
+// method of the parent MockIPublicStaking instance is invoked and the hook
+// queue is empty.
+func (f *IPublicStakingEstimateAllProfitsFunc) SetDefaultHook(hook func(*bind.CallOpts, *big.Int) (struct {
+	PayoutEth   *big.Int
+	PayoutToken *big.Int
+}, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// EstimateAllProfits method of the parent MockIPublicStaking instance
+// invokes the hook at the front of the queue and discards it. After the
+// queue is empty, the default hook function is invoked for any future
+// action.
+func (f *IPublicStakingEstimateAllProfitsFunc) PushHook(hook func(*bind.CallOpts, *big.Int) (struct {
+	PayoutEth   *big.Int
+	PayoutToken *big.Int
+}, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *IPublicStakingEstimateAllProfitsFunc) SetDefaultReturn(r0 struct {
+	PayoutEth   *big.Int
+	PayoutToken *big.Int
+}, r1 error) {
+	f.SetDefaultHook(func(*bind.CallOpts, *big.Int) (struct {
+		PayoutEth   *big.Int
+		PayoutToken *big.Int
+	}, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *IPublicStakingEstimateAllProfitsFunc) PushReturn(r0 struct {
+	PayoutEth   *big.Int
+	PayoutToken *big.Int
+}, r1 error) {
+	f.PushHook(func(*bind.CallOpts, *big.Int) (struct {
+		PayoutEth   *big.Int
+		PayoutToken *big.Int
+	}, error) {
+		return r0, r1
+	})
+}
+
+func (f *IPublicStakingEstimateAllProfitsFunc) nextHook() func(*bind.CallOpts, *big.Int) (struct {
+	PayoutEth   *big.Int
+	PayoutToken *big.Int
+}, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *IPublicStakingEstimateAllProfitsFunc) appendCall(r0 IPublicStakingEstimateAllProfitsFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of IPublicStakingEstimateAllProfitsFuncCall
+// objects describing the invocations of this function.
+func (f *IPublicStakingEstimateAllProfitsFunc) History() []IPublicStakingEstimateAllProfitsFuncCall {
+	f.mutex.Lock()
+	history := make([]IPublicStakingEstimateAllProfitsFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// IPublicStakingEstimateAllProfitsFuncCall is an object that describes an
+// invocation of method EstimateAllProfits on an instance of
+// MockIPublicStaking.
+type IPublicStakingEstimateAllProfitsFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 *bind.CallOpts
+	// Arg1 is the value of the 2nd argument passed to this method
+	// invocation.
+	Arg1 *big.Int
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 struct {
+		PayoutEth   *big.Int
+		PayoutToken *big.Int
+	}
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c IPublicStakingEstimateAllProfitsFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0, c.Arg1}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c IPublicStakingEstimateAllProfitsFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
@@ -46803,6 +46969,9 @@ type MockIValidatorStaking struct {
 	// DepositTokenFunc is an instance of a mock function object controlling
 	// the behavior of the method DepositToken.
 	DepositTokenFunc *IValidatorStakingDepositTokenFunc
+	// EstimateAllProfitsFunc is an instance of a mock function object
+	// controlling the behavior of the method EstimateAllProfits.
+	EstimateAllProfitsFunc *IValidatorStakingEstimateAllProfitsFunc
 	// EstimateEthCollectionFunc is an instance of a mock function object
 	// controlling the behavior of the method EstimateEthCollection.
 	EstimateEthCollectionFunc *IValidatorStakingEstimateEthCollectionFunc
@@ -47025,6 +47194,14 @@ func NewMockIValidatorStaking() *MockIValidatorStaking {
 		},
 		DepositTokenFunc: &IValidatorStakingDepositTokenFunc{
 			defaultHook: func(*bind.TransactOpts, uint8, *big.Int) (r0 *types.Transaction, r1 error) {
+				return
+			},
+		},
+		EstimateAllProfitsFunc: &IValidatorStakingEstimateAllProfitsFunc{
+			defaultHook: func(*bind.CallOpts, *big.Int) (r0 struct {
+				PayoutEth   *big.Int
+				PayoutToken *big.Int
+			}, r1 error) {
 				return
 			},
 		},
@@ -47363,6 +47540,14 @@ func NewStrictMockIValidatorStaking() *MockIValidatorStaking {
 				panic("unexpected invocation of MockIValidatorStaking.DepositToken")
 			},
 		},
+		EstimateAllProfitsFunc: &IValidatorStakingEstimateAllProfitsFunc{
+			defaultHook: func(*bind.CallOpts, *big.Int) (struct {
+				PayoutEth   *big.Int
+				PayoutToken *big.Int
+			}, error) {
+				panic("unexpected invocation of MockIValidatorStaking.EstimateAllProfits")
+			},
+		},
 		EstimateEthCollectionFunc: &IValidatorStakingEstimateEthCollectionFunc{
 			defaultHook: func(*bind.CallOpts, *big.Int) (*big.Int, error) {
 				panic("unexpected invocation of MockIValidatorStaking.EstimateEthCollection")
@@ -47671,6 +47856,9 @@ func NewMockIValidatorStakingFrom(i bindings.IValidatorStaking) *MockIValidatorS
 		},
 		DepositTokenFunc: &IValidatorStakingDepositTokenFunc{
 			defaultHook: i.DepositToken,
+		},
+		EstimateAllProfitsFunc: &IValidatorStakingEstimateAllProfitsFunc{
+			defaultHook: i.EstimateAllProfits,
 		},
 		EstimateEthCollectionFunc: &IValidatorStakingEstimateEthCollectionFunc{
 			defaultHook: i.EstimateEthCollection,
@@ -49263,6 +49451,150 @@ func (c IValidatorStakingDepositTokenFuncCall) Args() []interface{} {
 // Results returns an interface slice containing the results of this
 // invocation.
 func (c IValidatorStakingDepositTokenFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
+}
+
+// IValidatorStakingEstimateAllProfitsFunc describes the behavior when the
+// EstimateAllProfits method of the parent MockIValidatorStaking instance is
+// invoked.
+type IValidatorStakingEstimateAllProfitsFunc struct {
+	defaultHook func(*bind.CallOpts, *big.Int) (struct {
+		PayoutEth   *big.Int
+		PayoutToken *big.Int
+	}, error)
+	hooks []func(*bind.CallOpts, *big.Int) (struct {
+		PayoutEth   *big.Int
+		PayoutToken *big.Int
+	}, error)
+	history []IValidatorStakingEstimateAllProfitsFuncCall
+	mutex   sync.Mutex
+}
+
+// EstimateAllProfits delegates to the next hook function in the queue and
+// stores the parameter and result values of this invocation.
+func (m *MockIValidatorStaking) EstimateAllProfits(v0 *bind.CallOpts, v1 *big.Int) (struct {
+	PayoutEth   *big.Int
+	PayoutToken *big.Int
+}, error) {
+	r0, r1 := m.EstimateAllProfitsFunc.nextHook()(v0, v1)
+	m.EstimateAllProfitsFunc.appendCall(IValidatorStakingEstimateAllProfitsFuncCall{v0, v1, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the EstimateAllProfits
+// method of the parent MockIValidatorStaking instance is invoked and the
+// hook queue is empty.
+func (f *IValidatorStakingEstimateAllProfitsFunc) SetDefaultHook(hook func(*bind.CallOpts, *big.Int) (struct {
+	PayoutEth   *big.Int
+	PayoutToken *big.Int
+}, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// EstimateAllProfits method of the parent MockIValidatorStaking instance
+// invokes the hook at the front of the queue and discards it. After the
+// queue is empty, the default hook function is invoked for any future
+// action.
+func (f *IValidatorStakingEstimateAllProfitsFunc) PushHook(hook func(*bind.CallOpts, *big.Int) (struct {
+	PayoutEth   *big.Int
+	PayoutToken *big.Int
+}, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *IValidatorStakingEstimateAllProfitsFunc) SetDefaultReturn(r0 struct {
+	PayoutEth   *big.Int
+	PayoutToken *big.Int
+}, r1 error) {
+	f.SetDefaultHook(func(*bind.CallOpts, *big.Int) (struct {
+		PayoutEth   *big.Int
+		PayoutToken *big.Int
+	}, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *IValidatorStakingEstimateAllProfitsFunc) PushReturn(r0 struct {
+	PayoutEth   *big.Int
+	PayoutToken *big.Int
+}, r1 error) {
+	f.PushHook(func(*bind.CallOpts, *big.Int) (struct {
+		PayoutEth   *big.Int
+		PayoutToken *big.Int
+	}, error) {
+		return r0, r1
+	})
+}
+
+func (f *IValidatorStakingEstimateAllProfitsFunc) nextHook() func(*bind.CallOpts, *big.Int) (struct {
+	PayoutEth   *big.Int
+	PayoutToken *big.Int
+}, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *IValidatorStakingEstimateAllProfitsFunc) appendCall(r0 IValidatorStakingEstimateAllProfitsFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of IValidatorStakingEstimateAllProfitsFuncCall
+// objects describing the invocations of this function.
+func (f *IValidatorStakingEstimateAllProfitsFunc) History() []IValidatorStakingEstimateAllProfitsFuncCall {
+	f.mutex.Lock()
+	history := make([]IValidatorStakingEstimateAllProfitsFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// IValidatorStakingEstimateAllProfitsFuncCall is an object that describes
+// an invocation of method EstimateAllProfits on an instance of
+// MockIValidatorStaking.
+type IValidatorStakingEstimateAllProfitsFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 *bind.CallOpts
+	// Arg1 is the value of the 2nd argument passed to this method
+	// invocation.
+	Arg1 *big.Int
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 struct {
+		PayoutEth   *big.Int
+		PayoutToken *big.Int
+	}
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c IValidatorStakingEstimateAllProfitsFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0, c.Arg1}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c IValidatorStakingEstimateAllProfitsFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 

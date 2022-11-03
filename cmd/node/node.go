@@ -314,7 +314,7 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	}
 
 	monitorInterval := constants.MonitorInterval
-	mon, err := monitor.NewMonitor(consDB, monDB, consAdminHandlers, appDepositHandler, eth, contractsHandler, contractsHandler.EthereumContracts().GetAllAddresses(), monitorInterval, uint64(batchSize), uint32(config.Configuration.Chain.ID), tasksHandler)
+	mon, err := monitor.NewMonitor(consDB, monDB, consAdminHandlers, appDepositHandler, eth, contractsHandler, contractsHandler.EthereumContracts().GetAllAddresses(), monitorInterval, batchSize, uint32(config.Configuration.Chain.ID), tasksHandler)
 	if err != nil {
 		panic(err)
 	}
@@ -378,6 +378,7 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	case <-peerManager.CloseChan():
 	case <-consSync.CloseChan():
 	case <-mon.CloseChan():
+	case <-tasksHandler.CloseChan():
 	case <-signals:
 	}
 	go countSignals(logger, 5, signals)
