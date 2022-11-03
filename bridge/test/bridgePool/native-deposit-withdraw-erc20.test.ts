@@ -15,6 +15,7 @@ import {
 import {
   getMockBlockClaimsForSnapshot,
   proofs,
+  utxoOwner,
   vsPreImage,
   wrongChainIdVSPreImage,
   wrongKeyProofs,
@@ -77,9 +78,7 @@ describe("Testing BridgePool Deposit/Withdraw for tokenType ERC20", async () => 
       undefined,
       undefined
     );
-    utxoOwnerSigner = await getImpersonatedSigner(
-      "0x38e959391dd8598ae80d5d6d114a7822a09d313a"
-    );
+    utxoOwnerSigner = await getImpersonatedSigner(utxoOwner);
     utxoOwnerSignerAddress = await utxoOwnerSigner.getAddress();
 
     // Simulate a bridge router with some gas for transactions
