@@ -334,31 +334,19 @@ export async function deployUpgradeableProxyTask(
   }
   let initCallData: string;
   //if the contract is initializable check for taskArgs.initCallData
-  initCallData = (await isInitializable(
-    fullyQaulifiedContractName,
-    hre.artifacts
-  ))
-    ? implementationBase.interface.encodeFunctionData(
-        INITIALIZER,
-        (initializerArgs =
-          initializerArgs === undefined
-            ? taskArgs.initCallData.replace(/\s+/g, "").split(",")
-            : initializerArgs)
-      )
-    : "0x";
 
-  // if (await isInitializable(fullyQaulifiedContractName, hre.artifacts)) {
-  //   initArgs =
-  //     initializerArgs === undefined
-  //       ? taskArgs.initCallData.replace(/\s+/g, "").split(",")
-  //       : initializerArgs;
-  //   initCallData = implementationBase.interface.encodeFunctionData(
-  //     INITIALIZER,
-  //     initArgs
-  //   );
-  // } else {
-  //   initCallData = "0x";
-  // }
+  if (await isInitializable(fullyQaulifiedContractName, hre.artifacts)) {
+    const initArgs =
+      initializerArgs === undefined
+        ? taskArgs.initCallData.replace(/\s+/g, "").split(",")
+        : initializerArgs;
+    initCallData = implementationBase.interface.encodeFunctionData(
+      INITIALIZER,
+      initArgs
+    );
+  } else {
+    initCallData = "0x";
+  }
   //if salt is not parsed, get it from the contract itself
   salt =
     salt === undefined
@@ -397,8 +385,8 @@ export async function deployUpgradeableProxyTask(
     await verifyContract(hre, deployedLogicAddress, constructorArgs);
   }
   const proxyData: ProxyData = {
-    factoryAddress: taskArgs.factoryAddress,
-    logicName: taskArgs.contractName,
+    factoryAddress: factory.address,
+    logicName: contractName,
     logicAddress: deployedLogicAddress,
     salt,
     proxyAddress: getEventVar(receipt, DEPLOYED_PROXY, CONTRACT_ADDR),
@@ -551,8 +539,8 @@ export async function deployOnlyProxyTask(
   const proxyAddr = getEventVar(receipt, DEPLOYED_PROXY, CONTRACT_ADDR);
   const proxyData: ProxyData = {
     proxyAddress: proxyAddr,
-    salt: taskArgs.salt,
-    factoryAddress: taskArgs.factoryAddress,
+    salt: salt,
+    factoryAddress: factory.address,
     gas: receipt.gasUsed,
     receipt,
   };
