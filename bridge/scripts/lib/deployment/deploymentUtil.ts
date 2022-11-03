@@ -372,7 +372,7 @@ export async function deployUpgradeableProxyTask(
   const prompt = (query: any) =>
     new Promise((resolve) => rl.question(query, resolve));
   const answer = await prompt(
-    "`Do you want to deploy ${contractName} with initArgs: ${initializerArgs}, constructorArgs: ${constructorArgs}? (y/n)`"
+    `Do you want to deploy ${contractName} with initArgs: ${initializerArgs}, constructorArgs: ${constructorArgs}? (y/n)`
   );
   if (answer === "n") {
     exit();
@@ -481,15 +481,7 @@ export async function deployCreateAndRegisterTask(
   if (answer === "n") {
     exit();
   }
-  // await rl.question(
-  //   ,
-  //   (answer) => {
-  //     while (answer === undefined) {}
-  //     if (answer === "n") {
-  //       exit();
-  //     }
-  //   }
-  // );
+
   const txResponse = await deployCreateAndRegister(
     contractName,
     factory,
