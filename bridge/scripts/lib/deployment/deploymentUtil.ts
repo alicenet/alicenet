@@ -339,14 +339,7 @@ export async function deployUpgradeableProxyTask(
       initArgs
     );
   } catch (err: any) {
-    if (err.reason === "no matching function") {
-      if (taskArgs.skipChecks !== true) {
-        if (await isInitializable(fullyQaulifiedContractName, hre.artifacts)) {
-          throw new Error(
-            `Contract ${contractName} is initializable, but no initializer args provided`
-          );
-        }
-      }
+    if (err.reason === "no matching function" && err.value === "initialize") {
       initCallData = "0x";
     } else {
       throw err;
