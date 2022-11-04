@@ -284,7 +284,7 @@ func (m *Manager) handleCompletedAccusations() {
 					continue
 				}
 
-				// at this point it is certain that the error is badger.ErrKeyNotFound
+				// at this point it's certain that the error is badger.ErrKeyNotFound
 				// and so we can safely delete the accusation from the map,
 				// although this should not happen.
 			}
