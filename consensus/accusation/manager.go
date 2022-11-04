@@ -56,16 +56,16 @@ type Manager struct {
 	consDB                        *db.Database  // the database to store detected accusations
 	sstore                        *lstate.Store // the state store to get round states from
 	validators                    map[string]bool
-	rsCache                       map[string]rsCacheStruct             // cache of validator's roundState height, round and hash to avoid checking accusations unless anything changes
-	rsCacheLock                   sync.Mutex                           // this is currently being used by workers when interacting with rsCache
-	workQ                         chan *lstate.RoundStates             // queue where new roundStates are pushed to be checked for malicious behavior by workers
-	accusationQ                   chan tasks.Task                      // queue where identified accusations are pushed by workers to be further processed
-	unpersistedCreatedAccusations []tasks.Task                         // newly found accusations that where not persisted into DB
-	runningAccusations            map[string]*executor.HandlerResponse // accusations scheduled for execution and not yet completed. accusation.id -> response
-	wg                            *sync.WaitGroup                      // wait group to wait for workers to stop
-	ctx                           context.Context                      // the context to use for the task handler and go routines
-	cancelCtx                     context.CancelFunc                   // the cancel function to cancel the context
-	taskHandler                   executor.TaskHandler                 // the task handler to schedule accusation tasks against the smart contracts
+	rsCache                       map[string]rsCacheStruct         // cache of validator's roundState height, round and hash to avoid checking accusations unless anything changes
+	rsCacheLock                   sync.Mutex                       // this is currently being used by workers when interacting with rsCache
+	workQ                         chan *lstate.RoundStates         // queue where new roundStates are pushed to be checked for malicious behavior by workers
+	accusationQ                   chan tasks.Task                  // queue where identified accusations are pushed by workers to be further processed
+	unpersistedCreatedAccusations []tasks.Task                     // newly found accusations that where not persisted into DB
+	runningAccusations            map[string]executor.TaskResponse // accusations scheduled for execution and not yet completed. accusation.id -> response
+	wg                            *sync.WaitGroup                  // wait group to wait for workers to stop
+	ctx                           context.Context                  // the context to use for the task handler and go routines
+	cancelCtx                     context.CancelFunc               // the cancel function to cancel the context
+	taskHandler                   executor.TaskHandler             // the task handler to schedule accusation tasks against the smart contracts
 }
 
 // NewManager creates a new *Manager
@@ -77,11 +77,12 @@ func NewManager(database *db.Database, sstore *lstate.Store, taskHandler executo
 		consDB:                        database,
 		logger:                        logger,
 		sstore:                        sstore,
+		validators:                    make(map[string]bool),
 		rsCache:                       make(map[string]rsCacheStruct),
 		workQ:                         make(chan *lstate.RoundStates, 1), // todo: improve this
 		accusationQ:                   make(chan tasks.Task, 1),
 		unpersistedCreatedAccusations: make([]tasks.Task, 0),
-		runningAccusations:            make(map[string]*executor.HandlerResponse),
+		runningAccusations:            make(map[string]executor.TaskResponse),
 		wg:                            &sync.WaitGroup{},
 		taskHandler:                   taskHandler,
 	}
@@ -112,7 +113,7 @@ func (m *Manager) StopWorkers() {
 
 // runWorker is the main worker function to processes workQ roundStates
 func (m *Manager) runWorker() {
-	cleanupTimer := time.After(1 * time.Minute)
+	cleanupTimer := time.After(1 * time.Second)
 	for {
 		select {
 		case <-m.ctx.Done():
@@ -124,7 +125,7 @@ func (m *Manager) runWorker() {
 			}
 		case <-cleanupTimer:
 			m.cleanupValidatorCache()
-			cleanupTimer = time.After(1 * time.Minute)
+			cleanupTimer = time.After(1 * time.Second)
 		}
 	}
 }
@@ -175,7 +176,8 @@ func (m *Manager) Poll() error {
 		return err
 	}
 
-	return m.handleCompletedAccusations()
+	m.handleCompletedAccusations()
+	return nil
 }
 
 // persistCreatedAccusations persists the newly created accusations. If it
@@ -259,7 +261,7 @@ func (m *Manager) scheduleAccusations() error {
 // handleCompletedAccusations checks for the completion of the accusations that were scheduled in the Task Scheduler.
 // This function does not block while waiting for task completion. If an accusation task if completed,
 // it is then deleted from the database.
-func (m *Manager) handleCompletedAccusations() error {
+func (m *Manager) handleCompletedAccusations() {
 	// check for completed accusations in m.runningAccusations (HandlerResponse), and cleanup
 	// the m.runningAccusations map accordingly as well as the database
 	for accusationId, resp := range m.runningAccusations {
@@ -267,7 +269,7 @@ func (m *Manager) handleCompletedAccusations() error {
 			err := resp.GetResponseBlocking(m.ctx)
 			if err != nil {
 				m.logger.Warnf("AccusationManager got error response for accusation task: %v", err)
-				return err
+				continue
 			}
 
 			// delete the accusation from the database
@@ -291,8 +293,6 @@ func (m *Manager) handleCompletedAccusations() error {
 			delete(m.runningAccusations, accusationId)
 		}
 	}
-
-	return nil
 }
 
 // processLRS processes the local state of the blockchain. This function
