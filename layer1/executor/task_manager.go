@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/alicenet/alicenet/layer1/executor/tasks/accusations"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/snapshots"
 
@@ -715,5 +716,6 @@ func getTaskRegistry() *marshaller.TypeRegistry {
 	tr.RegisterInstanceType(&dkg.DisputeMissingRegistrationTask{})
 	tr.RegisterInstanceType(&dkg.ShareDistributionTask{})
 	tr.RegisterInstanceType(&snapshots.SnapshotTask{})
+	tr.RegisterInstanceType(&accusations.MultipleProposalAccusationTask{})
 	return tr
 }
