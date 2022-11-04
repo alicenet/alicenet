@@ -329,26 +329,30 @@ export async function deployUpgradeableProxyTask(
   constructorArgs =
     constructorArgs === undefined ? taskArgs.constructorArgs : constructorArgs;
   let initCallData: string;
-  //if the contract is initializable check for taskArgs.initCallData
-  if (initializerArgs !== undefined || taskArgs.initCallData !== undefined) {
-    const initArgs =
-      initializerArgs === undefined
-        ? taskArgs.initCallData.replace(/\s+/g, "").split(",")
-        : initializerArgs;
+  const initArgs =
+    initializerArgs === undefined
+      ? taskArgs.initCallData.replace(/\s+/g, "").split(",")
+      : initializerArgs;
+  try {
     initCallData = implementationBase.interface.encodeFunctionData(
       INITIALIZER,
       initArgs
     );
-  } else {
-    if (taskArgs.skipChecks !== true) {
-      if (await isInitializable(fullyQaulifiedContractName, hre.artifacts)) {
-        throw new Error(
-          `Contract ${contractName} is initializable, but no initializer args provided`
-        );
+  } catch (err: any) {
+    if (err.reason === "no matching function") {
+      if (taskArgs.skipChecks !== true) {
+        if (await isInitializable(fullyQaulifiedContractName, hre.artifacts)) {
+          throw new Error(
+            `Contract ${contractName} is initializable, but no initializer args provided`
+          );
+        }
       }
+      initCallData = "0x";
+    } else {
+      throw err;
     }
-    initCallData = "0x";
   }
+
   //if salt is not parsed, get it from the contract itself
   salt =
     salt === undefined
