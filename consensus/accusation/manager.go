@@ -43,7 +43,7 @@ func (r rsCacheStruct) DidChange(rs *objs.RoundState) (bool, error) {
 		nil
 }
 
-// Manager is responsible for checking validators' roundStates for malicious behavior and accuse them for such.
+// Manager is responsible for checking validatorsCache' roundStates for malicious behavior and accuse them for such.
 // It does so by processing each roundState through a pipeline of detetor functions until either an accusation is found or the pipeline is exhausted.
 // If an accusation is found, it is sent to the Scheduler/TaskManager to be processed further, e.g., invoke accusation smart contracts for these purposes.
 // The AccusationManager is responsible for persisting the accusations it creates, retrying persistence,
@@ -52,10 +52,10 @@ func (r rsCacheStruct) DidChange(rs *objs.RoundState) (bool, error) {
 // workers can process it, offloading the synchronizer loop.
 type Manager struct {
 	logger                        *logrus.Logger
-	detectionPipeline             []detector    // the pipeline of detector functions
-	consDB                        *db.Database  // the database to store detected accusations
-	sstore                        *lstate.Store // the state store to get round states from
-	validators                    map[string]bool
+	detectionPipeline             []detector                       // the pipeline of detector functions
+	consDB                        *db.Database                     // the database to store detected accusations
+	sstore                        *lstate.Store                    // the state store to get round states from
+	validatorsCache               map[string]bool                  // cache of current validators
 	rsCache                       map[string]rsCacheStruct         // cache of validator's roundState height, round and hash to avoid checking accusations unless anything changes
 	rsCacheLock                   sync.Mutex                       // this is currently being used by workers when interacting with rsCache
 	workQ                         chan *lstate.RoundStates         // queue where new roundStates are pushed to be checked for malicious behavior by workers
@@ -77,7 +77,7 @@ func NewManager(database *db.Database, sstore *lstate.Store, taskHandler executo
 		consDB:                        database,
 		logger:                        logger,
 		sstore:                        sstore,
-		validators:                    make(map[string]bool),
+		validatorsCache:               make(map[string]bool),
 		rsCache:                       make(map[string]rsCacheStruct),
 		workQ:                         make(chan *lstate.RoundStates, 1), // todo: improve this
 		accusationQ:                   make(chan tasks.Task, 1),
@@ -113,7 +113,7 @@ func (m *Manager) StopWorkers() {
 
 // runWorker is the main worker function to processes workQ roundStates
 func (m *Manager) runWorker() {
-	cleanupTimer := time.After(1 * time.Second)
+	cleanupTimer := time.After(1 * time.Minute)
 	for {
 		select {
 		case <-m.ctx.Done():
@@ -125,7 +125,7 @@ func (m *Manager) runWorker() {
 			}
 		case <-cleanupTimer:
 			m.cleanupValidatorCache()
-			cleanupTimer = time.After(1 * time.Second)
+			cleanupTimer = time.After(1 * time.Minute)
 		}
 	}
 }
@@ -301,7 +301,7 @@ func (m *Manager) handleCompletedAccusations() {
 // processing the same round states over and over again, it keeps a cache
 // of the last processed round states.
 func (m *Manager) processLRS(lrs *lstate.RoundStates) (bool, error) {
-	// keep track of new validators to clear the cache from old validators
+	// keep track of new validatorsCache to clear the cache from old validatorsCache
 	currentValidators := make(map[string]bool)
 	hadUpdates := false
 
@@ -372,30 +372,30 @@ func (m *Manager) processLRS(lrs *lstate.RoundStates) (bool, error) {
 	}
 
 	m.rsCacheLock.Lock()
-	m.validators = currentValidators
+	m.validatorsCache = currentValidators
 	m.rsCacheLock.Unlock()
 
 	return hadUpdates, nil
 }
 
-// cleanupValidatorCache cleans the cache out of old validators. this is to avoid
+// cleanupValidatorCache cleans the cache out of old validatorsCache. this is to avoid
 // the cache from growing indefinitely
 func (m *Manager) cleanupValidatorCache() {
 
 	m.rsCacheLock.Lock()
 	defer m.rsCacheLock.Unlock()
 
-	// remove validators from cache that are not in the current validatorSet,
-	// ensuring the cache is not growing indefinitely with old validators
+	// remove validatorsCache from cache that are not in the current validatorSet,
+	// ensuring the cache is not growing indefinitely with old validatorsCache
 	toDelete := make([]string, 0)
-	// iterate over the cache and keep track of validators not in the current validatorSet
+	// iterate over the cache and keep track of validatorsCache not in the current validatorSet
 	for vAddr := range m.rsCache {
-		if _, ok := m.validators[vAddr]; !ok {
+		if _, ok := m.validatorsCache[vAddr]; !ok {
 			toDelete = append(toDelete, vAddr)
 		}
 	}
 
-	// delete old validators from cache
+	// delete old validatorsCache from cache
 	for _, vAddr := range toDelete {
 		delete(m.rsCache, vAddr)
 	}

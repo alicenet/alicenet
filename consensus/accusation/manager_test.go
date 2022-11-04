@@ -436,6 +436,7 @@ func TestManagerPersistScheduledAccusations(t *testing.T) {
 	assert.Nil(t, err)
 }
 
+// TestCleanupValidatorsCache_Success for cleanup
 func TestCleanupValidatorsCache_Success(t *testing.T) {
 	testProxy := setupManagerTests(t)
 
@@ -445,9 +446,12 @@ func TestCleanupValidatorsCache_Success(t *testing.T) {
 	// start workers
 	testProxy.manager.StartWorkers()
 
-	<-time.After(2 * time.Second)
+	// wait for cleanup time (every 1 minute)
+	<-time.After(62 * time.Second)
 
-	assert.Len(t, testProxy.manager.validators, 0)
+	testProxy.manager.rsCacheLock.Lock()
+	defer testProxy.manager.rsCacheLock.Unlock()
+	assert.Len(t, testProxy.manager.validatorsCache, 0)
 	assert.Len(t, testProxy.manager.rsCache, 0)
 }
 

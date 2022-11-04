@@ -160,6 +160,13 @@ contract AccusationInvalidTxConsumption is
         return signerAccount;
     }
 
+    /// @notice This function tells whether an accusation ID has already been submitted or not.
+    /// @param id_ The deterministic accusation ID
+    /// @return true if the ID has already been submitted, false otherwise
+    function isAccused(bytes32 id_) public view returns (bool) {
+        return _accusations[id_];
+    }
+
     /// @notice This function verifies the signature group of a BClaims.
     /// @param bClaims_ the BClaims of the accusation
     /// @param bClaimsSigGroup_ the signature group of Pclaims
@@ -182,12 +189,5 @@ contract AccusationInvalidTxConsumption is
         ) {
             revert AccusationsErrors.SignatureVerificationFailed();
         }
-    }
-
-    /// @notice This function tells whether an accusation ID has already been submitted or not.
-    /// @param id_ The deterministic accusation ID
-    /// @return true if the ID has already been submitted, false otherwise
-    function isAccused(bytes32 id_) public view returns (bool) {
-        return _accusations[id_];
     }
 }
