@@ -506,6 +506,7 @@ task("register-validators", "registers validators")
       0,
       regValidatorsCallData
     );
+
     tx = await factory.multiCall(
       [...approveTokens, regValidators],
       await getGasPrices(hre)
@@ -1630,6 +1631,7 @@ export async function stakeValidators(
     ]);
     stakeNFT.push(encodeMultiCallArgs(publicStakingAddress, 0, stakeToken));
   }
+
   return factory.multiCall(
     [approveAToken, ...stakeNFT],
     await getGasPrices(hre)
@@ -1719,6 +1721,7 @@ export async function migrateSnapshotsAndValidators(
     0,
     migrateSnapshotsCallData
   );
+
   return factory.multiCall(
     [...approveTokens, registerValidators, migrateValidators, migrateSnapshots],
     await getGasPrices(hre)

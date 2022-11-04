@@ -13,15 +13,18 @@ import "contracts/utils/ImmutableAuth.sol";
 import "contracts/utils/AccusationsLibrary.sol";
 import "contracts/libraries/errors/AccusationsErrors.sol";
 
-/// @custom:salt-type Accusation
 /// @custom:salt InvalidTxConsumptionAccusation
-/// @custom:deploy-type deployUpgradeable
-contract InvalidTxConsumptionAccusation is
+/// @custom:role Accusation
+/// @custom:salt AccusationInvalidTxConsumption
+contract AccusationInvalidTxConsumption is
     ImmutableFactory,
     ImmutableSnapshots,
     ImmutableETHDKG,
     ImmutableValidatorPool
 {
+    // this is the keccak256 of "AccusationInvalidTxConsumption"
+    bytes32 public constant PRE_SALT =
+        0xf40095839ea6635a5869735bd0c363085cb0ebd561e0f361f826103b958c27e5;
     mapping(bytes32 => bool) internal _accusations;
 
     constructor()
@@ -32,30 +35,30 @@ contract InvalidTxConsumptionAccusation is
     {}
 
     /// @notice This function validates an accusation of non-existent utxo consumption, as well as invalid deposit consumption.
-    /// @param _pClaims the PClaims of the accusation
-    /// @param _pClaimsSig the signature of PClaims
-    /// @param _bClaims the BClaims of the accusation
-    /// @param _bClaimsSigGroup the signature group of BClaims
-    /// @param _txInPreImage the TXInPreImage consuming the invalid transaction
-    /// @param _proofs an array of merkle proof structs in the following order:
+    /// @param pClaims_ the PClaims of the accusation
+    /// @param pClaimsSig_ the signature of PClaims
+    /// @param bClaims_ the BClaims of the accusation
+    /// @param bClaimsSigGroup_ the signature group of BClaims
+    /// @param txInPreImage_ the TXInPreImage consuming the invalid transaction
+    /// @param proofs_ an array of merkle proof structs in the following order:
     /// proof against StateRoot: Proof of inclusion or exclusion of the deposit or UTXO in the stateTrie
     /// proof of inclusion in TXRoot: Proof of inclusion of the transaction that included the invalid input in the txRoot trie.
     /// proof of inclusion in TXHash: Proof of inclusion of the invalid input (txIn) in the txHash trie (transaction tested against the TxRoot).
     /// @return the address of the signer
     function accuseInvalidTransactionConsumption(
-        bytes memory _pClaims,
-        bytes memory _pClaimsSig,
-        bytes memory _bClaims,
-        bytes memory _bClaimsSigGroup,
-        bytes memory _txInPreImage,
-        bytes[3] memory _proofs
-    ) public view returns (address) {
+        bytes memory pClaims_,
+        bytes memory pClaimsSig_,
+        bytes memory bClaims_,
+        bytes memory bClaimsSigGroup_,
+        bytes memory txInPreImage_,
+        bytes[3] memory proofs_
+    ) public returns (address) {
         // Require that the previous block is signed by correct group key for validator set.
-        _verifySignatureGroup(_bClaims, _bClaimsSigGroup);
+        _verifySignatureGroup(bClaims_, bClaimsSigGroup_);
 
         // Require that height delta is 1.
-        BClaimsParserLibrary.BClaims memory bClaims = BClaimsParserLibrary.extractBClaims(_bClaims);
-        PClaimsParserLibrary.PClaims memory pClaims = PClaimsParserLibrary.extractPClaims(_pClaims);
+        BClaimsParserLibrary.BClaims memory bClaims = BClaimsParserLibrary.extractBClaims(bClaims_);
+        PClaimsParserLibrary.PClaims memory pClaims = PClaimsParserLibrary.extractPClaims(pClaims_);
 
         if (pClaims.bClaims.txCount == 0) {
             revert AccusationsErrors.NoTransactionInAccusedProposal();
@@ -77,7 +80,7 @@ contract InvalidTxConsumptionAccusation is
         }
 
         // Require that Proposal was signed by active validator.
-        address signerAccount = AccusationsLibrary.recoverMadNetSigner(_pClaimsSig, _pClaims);
+        address signerAccount = AccusationsLibrary.recoverMadNetSigner(pClaimsSig_, pClaims_);
 
         if (!IValidatorPool(_validatorPoolAddress()).isAccusable(signerAccount)) {
             revert AccusationsErrors.SignerNotValidValidator(signerAccount);
@@ -85,16 +88,16 @@ contract InvalidTxConsumptionAccusation is
 
         // Validate ProofInclusionTxRoot against PClaims.BClaims.TxRoot.
         MerkleProofParserLibrary.MerkleProof memory proofInclusionTxRoot = MerkleProofParserLibrary
-            .extractMerkleProof(_proofs[1]);
+            .extractMerkleProof(proofs_[1]);
         MerkleProofLibrary.verifyInclusion(proofInclusionTxRoot, pClaims.bClaims.txRoot);
 
         // Validate ProofOfInclusionTxHash against the target hash from ProofInclusionTxRoot.
         MerkleProofParserLibrary.MerkleProof
-            memory proofOfInclusionTxHash = MerkleProofParserLibrary.extractMerkleProof(_proofs[2]);
+            memory proofOfInclusionTxHash = MerkleProofParserLibrary.extractMerkleProof(proofs_[2]);
         MerkleProofLibrary.verifyInclusion(proofOfInclusionTxHash, proofInclusionTxRoot.key);
 
         MerkleProofParserLibrary.MerkleProof memory proofAgainstStateRoot = MerkleProofParserLibrary
-            .extractMerkleProof(_proofs[0]);
+            .extractMerkleProof(proofs_[0]);
         if (proofAgainstStateRoot.key != proofOfInclusionTxHash.key) {
             revert AccusationsErrors.UTXODoesnotMatch(
                 proofAgainstStateRoot.key,
@@ -103,7 +106,7 @@ contract InvalidTxConsumptionAccusation is
         }
 
         TXInPreImageParserLibrary.TXInPreImage memory txInPreImage = TXInPreImageParserLibrary
-            .extractTXInPreImage(_txInPreImage);
+            .extractTXInPreImage(txInPreImage_);
 
         // checking if we are consuming a deposit or an UTXO
         if (txInPreImage.consumedTxIdx == 0xFFFFFFFF) {
@@ -133,26 +136,53 @@ contract InvalidTxConsumptionAccusation is
             MerkleProofLibrary.verifyNonInclusion(proofAgainstStateRoot, bClaims.stateRoot);
         }
 
-        //todo burn the validator's tokens
+        // deterministic accusation ID
+        bytes32 id = keccak256(
+            abi.encodePacked(
+                signerAccount,
+                pClaims.rCert.rClaims.chainId,
+                pClaims.rCert.rClaims.height,
+                pClaims.rCert.rClaims.round,
+                PRE_SALT
+            )
+        );
+
+        // check if this accusation ID has already been submitted
+        if (_accusations[id]) {
+            revert AccusationsErrors.AccusationAlreadySubmitted(id);
+        }
+
+        _accusations[id] = true;
+
+        // burn the validator's tokens
+        IValidatorPool(_validatorPoolAddress()).majorSlash(signerAccount, msg.sender, PRE_SALT);
+
         return signerAccount;
     }
 
+    /// @notice This function tells whether an accusation ID has already been submitted or not.
+    /// @param id_ The deterministic accusation ID
+    /// @return true if the ID has already been submitted, false otherwise
+    function isAccused(bytes32 id_) public view returns (bool) {
+        return _accusations[id_];
+    }
+
     /// @notice This function verifies the signature group of a BClaims.
-    /// @param _bClaims the BClaims of the accusation
-    /// @param _bClaimsSigGroup the signature group of Pclaims
-    function _verifySignatureGroup(bytes memory _bClaims, bytes memory _bClaimsSigGroup)
+    /// @param bClaims_ the BClaims of the accusation
+    /// @param bClaimsSigGroup_ the signature group of Pclaims
+    function _verifySignatureGroup(bytes memory bClaims_, bytes memory bClaimsSigGroup_)
         internal
         view
     {
         uint256[4] memory publicKey;
         uint256[2] memory signature;
-        (publicKey, signature) = RCertParserLibrary.extractSigGroup(_bClaimsSigGroup, 0);
+        (publicKey, signature) = RCertParserLibrary.extractSigGroup(bClaimsSigGroup_, 0);
 
         // todo: check if the signature is equals to any of the previous master public key?
 
         if (
             !CryptoLibrary.verifySignatureASM(
-                abi.encodePacked(keccak256(_bClaims)),
+                abi.encodePacked(keccak256(bClaims_)),
                 signature,
                 publicKey
             )

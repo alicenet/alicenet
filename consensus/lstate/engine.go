@@ -96,7 +96,7 @@ func (ce *Engine) Status(status map[string]interface{}) (map[string]interface{},
 		return nil, err
 	}
 	if rs.OwnState.MaxBHSeen.BClaims.Height-rs.OwnState.SyncToBH.BClaims.Height < 2 {
-		status[constants.StatusBlkRnd] = fmt.Sprintf("%d/%d", rs.OwnState.SyncToBH.BClaims.Height, rs.OwnRoundState().RCert.RClaims.Round)
+		status[constants.StatusBlkRnd] = fmt.Sprintf("%d/%d", rs.OwnRoundState().RCert.RClaims.Height, rs.OwnRoundState().RCert.RClaims.Round)
 		status[constants.StatusBlkHsh] = fmt.Sprintf("%x..%x", bhsh[0:2], bhsh[len(bhsh)-2:])
 		status[constants.StatusTxCt] = rs.OwnState.SyncToBH.BClaims.TxCount
 		return status, nil
@@ -125,7 +125,7 @@ func (ce *Engine) UpdateLocalState() (bool, error) {
 				return err
 			}
 			if !safe {
-				utils.DebugTrace(ce.logger, nil, "Waiting snapshot completion")
+				utils.DebugTrace(ce.logger, nil, "It's not safe to proceed for consensus")
 				updateLocalState = false
 			} else {
 				// if it's safe to proceed, we update ownState with the latest state
@@ -318,8 +318,6 @@ func (ce *Engine) updateLocalStateInternal(txn *badger.Txn, rs *RoundStates) (bo
 		}
 		return len(FH) == 0, nil
 	}
-
-	// Below this line node must be a validator to proceed
 
 	// if we have voted for the next round in round preceding the
 	// dead block round, goto do next round step

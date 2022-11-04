@@ -1,9 +1,10 @@
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { assert, expect } from "chai";
-import { MultipleProposalAccusation } from "../../typechain-types";
+import { AccusationMultipleProposal } from "../../typechain-types";
 import { Fixture, getFixture } from "../setup";
 import {
   addValidators,
+  generateAccusationID,
   generateSigAndPClaims0,
   generateSigAndPClaims1,
   generateSigAndPClaimsDifferentChainId,
@@ -11,10 +12,10 @@ import {
   generateSigAndPClaimsDifferentRound,
 } from "./accusations-test-helpers";
 
-describe("MultipleProposalAccusation: Tests MultipleProposalAccusation methods", async () => {
+describe("AccusationMultipleProposal: Tests AccusationMultipleProposal methods", async () => {
   let fixture: Fixture;
 
-  let accusation: MultipleProposalAccusation;
+  let accusation: AccusationMultipleProposal;
 
   function deployFixture() {
     return getFixture(true, true);
@@ -23,7 +24,7 @@ describe("MultipleProposalAccusation: Tests MultipleProposalAccusation methods",
   beforeEach(async function () {
     fixture = await loadFixture(deployFixture);
 
-    accusation = fixture.multipleProposalAccusation;
+    accusation = fixture.accusationMultipleProposal;
   });
 
   describe("accuseMultipleProposal:", async () => {
@@ -35,14 +36,24 @@ describe("MultipleProposalAccusation: Tests MultipleProposalAccusation methods",
 
       await addValidators(fixture.validatorPool, [signerAccount0]);
 
-      const signer = await accusation.accuseMultipleProposal(
-        sig0,
-        pClaims0,
-        sig1,
-        pClaims1
-      );
+      await (
+        await accusation.accuseMultipleProposal(sig0, pClaims0, sig1, pClaims1)
+      ).wait();
 
-      assert.equal(signer, signerAccount0);
+      const isValidator = await fixture.validatorPool.isValidator(
+        signerAccount0
+      );
+      assert.equal(isValidator, false);
+
+      const id = generateAccusationID(
+        signerAccount0,
+        1,
+        2,
+        1,
+        "0x17287210c71008320429d4cce2075373f0b2c5217b507513fe4904fead741aad"
+      );
+      const isAccused = await accusation.isAccused(id);
+      assert.equal(isAccused, true);
     });
 
     it("reverts when signer is not valid", async function () {
@@ -52,7 +63,10 @@ describe("MultipleProposalAccusation: Tests MultipleProposalAccusation methods",
       await expect(
         accusation.accuseMultipleProposal(sig0, pClaims0, sig1, pClaims1)
       )
-        .to.be.revertedWithCustomError(accusation, "SignerNotValidValidator")
+        .to.be.revertedWithCustomError(
+          fixture.validatorPool,
+          "AddressNotAccusable"
+        )
         .withArgs(signerAccount0);
     });
 

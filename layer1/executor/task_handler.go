@@ -1,6 +1,8 @@
 package executor
 
 import (
+	"sync"
+
 	"github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/layer1"
 	"github.com/alicenet/alicenet/layer1/executor/tasks"
@@ -9,7 +11,6 @@ import (
 	"github.com/alicenet/alicenet/logging"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
-	"sync"
 )
 
 var _ TaskHandler = &Handler{}
@@ -23,11 +24,11 @@ type Handler struct {
 }
 
 // NewTaskHandler creates a new Handler instance.
-func NewTaskHandler(database *db.Database, eth layer1.Client, contracts layer1.AllSmartContracts, adminHandler monitorInterfaces.AdminHandler, txWatcher transaction.Watcher) (TaskHandler, error) {
+func NewTaskHandler(monDB, consDB *db.Database, eth layer1.Client, contracts layer1.AllSmartContracts, adminHandler monitorInterfaces.AdminHandler, txWatcher transaction.Watcher) (TaskHandler, error) {
 	requestChan := make(chan managerRequest, tasks.ManagerBufferSize)
 	logger := logging.GetLogger("tasks")
 
-	taskManager, err := newTaskManager(eth, contracts, database, logger.WithField("Component", "TaskManager"), adminHandler, requestChan, txWatcher)
+	taskManager, err := newTaskManager(eth, contracts, monDB, consDB, logger.WithField("Component", "TaskManager"), adminHandler, requestChan, txWatcher)
 	if err != nil {
 		return nil, err
 	}
@@ -39,6 +40,8 @@ func NewTaskHandler(database *db.Database, eth layer1.Client, contracts layer1.A
 		closeOnce:      sync.Once{},
 		requestChannel: requestChan,
 	}
+
+	// register gob types
 
 	return handler, nil
 }
@@ -100,7 +103,7 @@ func (h *Handler) KillTaskById(id string) (*HandlerResponse, error) {
 	return req.response.listen(h.closeChan)
 }
 
-//waitForRequestProcessing or context deadline.
+// waitForRequestProcessing or context deadline.
 func (h *Handler) waitForRequestProcessing(req managerRequest) error {
 	// wait for request to be accepted
 	select {

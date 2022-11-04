@@ -46,7 +46,7 @@ func (t *SnapshotTask) Prepare(ctx context.Context) *tasks.TaskErr {
 	)
 	logger.Debug("preparing task")
 
-	snapshotState, err := state.GetSnapshotState(t.GetDB())
+	snapshotState, err := state.GetSnapshotState(t.GetMonDB())
 	if err != nil {
 		return tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorDuringPreparation, err), false)
 	}
@@ -84,7 +84,7 @@ func (t *SnapshotTask) Prepare(ctx context.Context) *tasks.TaskErr {
 	snapshotState.DesperationFactor = int(desperationFactor.Int64())
 	snapshotState.RandomSeedHash = crypto.Keccak256(snapshotState.BlockHeader.SigGroup)
 
-	err = state.SaveSnapshotState(t.GetDB(), snapshotState)
+	err = state.SaveSnapshotState(t.GetMonDB(), snapshotState)
 	if err != nil {
 		return tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorDuringPreparation, err), false)
 	}
@@ -104,7 +104,7 @@ func (t *SnapshotTask) Execute(ctx context.Context) (*types.Transaction, *tasks.
 	)
 	logger.Debug("initiate execution")
 
-	snapshotState, err := state.GetSnapshotState(t.GetDB())
+	snapshotState, err := state.GetSnapshotState(t.GetMonDB())
 	if err != nil {
 		return nil, tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorLoadingDkgState, err), false)
 	}
@@ -156,7 +156,7 @@ func (t *SnapshotTask) ShouldExecute(ctx context.Context) (bool, *tasks.TaskErr)
 	)
 	logger.Debug("should execute task")
 
-	snapshotState, err := state.GetSnapshotState(t.GetDB())
+	snapshotState, err := state.GetSnapshotState(t.GetMonDB())
 	if err != nil {
 		return false, tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorLoadingDkgState, err), false)
 	}

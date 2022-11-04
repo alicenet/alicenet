@@ -87,12 +87,12 @@ func Test_SnapshotTask(t *testing.T) {
 	for idx := 0; idx < valCount; idx++ {
 		snapshotTask := snapshots.NewSnapshotTask(currentHeight, valCount, idx)
 
-		err := snapshotTask.Initialize(suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "snapshotTask", "task-id", 0, 0, false, nil, nil)
+		err := snapshotTask.Initialize(suite.DKGStatesDbs[idx], nil, fixture.Logger, suite.Eth, fixture.Contracts, "snapshotTask", "task-id", 0, 0, false, nil, nil)
 		assert.Nil(t, err)
 		err = snapshotTask.Prepare(ctx)
 		assert.Nil(t, err)
 
-		snapshotState, err := state.GetSnapshotState(snapshotTask.GetDB())
+		snapshotState, err := state.GetSnapshotState(snapshotTask.GetMonDB())
 		assert.Nil(t, err)
 
 		shouldExecute, err := snapshotTask.ShouldExecute(ctx)

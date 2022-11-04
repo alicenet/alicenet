@@ -9,6 +9,7 @@ import (
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
 	monitorInterfaces "github.com/alicenet/alicenet/layer1/monitor/interfaces"
 	"github.com/alicenet/alicenet/layer1/monitor/objects"
+	"github.com/dgraph-io/badger/v2"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -20,7 +21,7 @@ func isValidator(acct accounts.Account, state *objects.MonitorState) bool {
 	return present
 }
 
-func ProcessRegistrationOpened(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, log types.Log, monState *objects.MonitorState, monDB *db.Database, taskHandler executor.TaskHandler) error {
+func ProcessRegistrationOpened(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, log types.Log, monState *objects.MonitorState, consDB, monDB *db.Database, taskHandler executor.TaskHandler) error {
 	logEntry := logger.WithField("eventProcessor", "ProcessRegistrationOpened")
 	logEntry.Info("processing registration")
 	event, err := contracts.EthereumContracts().Ethdkg().ParseRegistrationOpened(log)
@@ -61,6 +62,15 @@ func ProcessRegistrationOpened(eth layer1.Client, contracts layer1.AllSmartContr
 	if !dkgState.IsValidator {
 		logEntry.Trace("not a validator, skipping task schedule")
 		return nil
+	}
+
+	err = consDB.Update(func(txn *badger.Txn) error {
+		err = consDB.DeleteAllEvictedValidators(txn)
+		return err
+	})
+
+	if err != nil {
+		return err
 	}
 
 	// schedule Registration

@@ -32,7 +32,8 @@ type BaseTask struct {
 	isInitialized    bool                     `json:"-"`
 	killChan         chan struct{}            `json:"-"`
 	killOnce         sync.Once                `json:"-"`
-	database         *db.Database             `json:"-"`
+	monDB            *db.Database             `json:"-"`
+	consDB           *db.Database             `json:"-"`
 	logger           *logrus.Entry            `json:"-"`
 	client           layer1.Client            `json:"-"`
 	contracts        layer1.AllSmartContracts `json:"-"`
@@ -54,7 +55,7 @@ func NewBaseTask(start uint64, end uint64, allowMultiExecution bool, subscribeOp
 // Initialize initializes the task after its creation. It should be only called
 // by the task scheduler during task spawn as separated go routine. This
 // function all the parameters for task execution and control by the scheduler.
-func (bt *BaseTask) Initialize(database *db.Database, logger *logrus.Entry, eth layer1.Client, contracts layer1.AllSmartContracts, name string, id string, start uint64, end uint64, allowMultiExecution bool, subscribeOptions *transaction.SubscribeOptions, taskResponseChan InternalTaskResponseChan) error {
+func (bt *BaseTask) Initialize(monDB, consDB *db.Database, logger *logrus.Entry, eth layer1.Client, contracts layer1.AllSmartContracts, name string, id string, start uint64, end uint64, allowMultiExecution bool, subscribeOptions *transaction.SubscribeOptions, taskResponseChan InternalTaskResponseChan) error {
 	bt.mutex.Lock()
 	defer bt.mutex.Unlock()
 	if bt.isInitialized {
@@ -75,7 +76,8 @@ func (bt *BaseTask) Initialize(database *db.Database, logger *logrus.Entry, eth 
 	}
 	bt.killChan = make(chan struct{})
 	bt.killOnce = sync.Once{}
-	bt.database = database
+	bt.monDB = monDB
+	bt.consDB = consDB
 	bt.logger = logger
 	bt.client = eth
 	bt.contracts = contracts
@@ -157,11 +159,18 @@ func (bt *BaseTask) GetLogger() *logrus.Entry {
 	return bt.logger
 }
 
-// GetDB returns the database where the task can save and load its state.
-func (bt *BaseTask) GetDB() *db.Database {
+// GetMonDB returns the monDB where the task can save and load its state.
+func (bt *BaseTask) GetMonDB() *db.Database {
 	bt.mutex.RLock()
 	defer bt.mutex.RUnlock()
-	return bt.database
+	return bt.monDB
+}
+
+// GetConsDB returns the consDB where the task can save and load its state.
+func (bt *BaseTask) GetConsDB() *db.Database {
+	bt.mutex.RLock()
+	defer bt.mutex.RUnlock()
+	return bt.consDB
 }
 
 // Kill a running task. This only can be done once.

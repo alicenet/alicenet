@@ -11,6 +11,8 @@ import {
 import { isHexString } from "ethers/lib/utils";
 import { ethers, network } from "hardhat";
 import {
+  AccusationInvalidTxConsumption,
+  AccusationMultipleProposal,
   AliceNetFactory,
   AToken,
   ATokenBurner,
@@ -20,10 +22,8 @@ import {
   Dynamics,
   ETHDKG,
   Foundation,
-  InvalidTxConsumptionAccusation,
   LegacyToken,
   LiquidityProviderStaking,
-  MultipleProposalAccusation,
   PublicStaking,
   Snapshots,
   SnapshotsMock,
@@ -83,8 +83,8 @@ export interface Fixture extends BaseTokensFixture {
   ethdkg: ETHDKG;
   stakingPositionDescriptor: StakingPositionDescriptor;
   namedSigners: SignerWithAddress[];
-  invalidTxConsumptionAccusation: InvalidTxConsumptionAccusation;
-  multipleProposalAccusation: MultipleProposalAccusation;
+  accusationInvalidTxConsumption: AccusationInvalidTxConsumption;
+  accusationMultipleProposal: AccusationMultipleProposal;
   distribution: Distribution;
   dynamics: Dynamics;
 }
@@ -223,7 +223,7 @@ export const deployUpgradeableWithFactory = async (
   salt?: string,
   initCallData?: any[],
   constructorArgs: any[] = [],
-  saltType?: string
+  role?: string
 ): Promise<Contract> => {
   const _Contract = await ethers.getContractFactory(contractName);
   const deployCode = _Contract.getDeployTransaction(...constructorArgs)
@@ -243,15 +243,15 @@ export const deployUpgradeableWithFactory = async (
   const logicAddr = await getContractAddressFromDeployedRawEvent(transaction);
   let saltBytes;
 
-  if (saltType) {
-    saltBytes = ethers.utils.keccak256(
-      ethers.utils
-        .keccak256(getBytes32Salt(salt === undefined ? contractName : salt))
-        .concat(
-          ethers.utils
-            .keccak256(ethers.utils.formatBytes32String(saltType))
-            .slice(2)
-        )
+  if (role) {
+    const roleHash = hre.ethers.utils.solidityKeccak256(["string"], [role]);
+    const contractHash = hre.ethers.utils.solidityKeccak256(
+      ["string"],
+      [contractName]
+    );
+    saltBytes = hre.ethers.utils.solidityKeccak256(
+      ["bytes32", "bytes32"],
+      [contractHash, roleHash]
     );
   } else {
     if (salt === undefined) {
@@ -517,23 +517,23 @@ export const getFixture = async (
     "ATokenBurner"
   )) as ATokenBurner;
 
-  const invalidTxConsumptionAccusation = (await deployUpgradeableWithFactory(
+  const accusationInvalidTxConsumption = (await deployUpgradeableWithFactory(
     factory,
-    "InvalidTxConsumptionAccusation",
-    "InvalidTxConsumptionAccusation",
+    "AccusationInvalidTxConsumption",
+    "AccusationInvalidTxConsumption",
     undefined,
     undefined,
     "Accusation"
-  )) as InvalidTxConsumptionAccusation;
+  )) as AccusationInvalidTxConsumption;
 
-  const multipleProposalAccusation = (await deployUpgradeableWithFactory(
+  const accusationMultipleProposal = (await deployUpgradeableWithFactory(
     factory,
-    "MultipleProposalAccusation",
-    "MultipleProposalAccusation",
+    "AccusationMultipleProposal",
+    "AccusationMultipleProposal",
     undefined,
     undefined,
     "Accusation"
-  )) as MultipleProposalAccusation;
+  )) as AccusationMultipleProposal;
 
   // distribution contract for distributing BTokens yields
   const distribution = (await deployUpgradeableWithFactory(
@@ -574,8 +574,8 @@ export const getFixture = async (
     liquidityProviderStaking,
     foundation,
     stakingPositionDescriptor,
-    invalidTxConsumptionAccusation,
-    multipleProposalAccusation,
+    accusationInvalidTxConsumption,
+    accusationMultipleProposal,
     distribution,
     dynamics,
   };

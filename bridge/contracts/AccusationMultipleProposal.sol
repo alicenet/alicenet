@@ -9,15 +9,18 @@ import "contracts/utils/ImmutableAuth.sol";
 import "contracts/utils/AccusationsLibrary.sol";
 import "contracts/libraries/errors/AccusationsErrors.sol";
 
-/// @custom:salt MultipleProposalAccusation
 /// @custom:deploy-type deployUpgradeable
-/// @custom:salt-type Accusation
-contract MultipleProposalAccusation is
+/// @custom:role Accusation
+/// @custom:salt AccusationMultipleProposal
+contract AccusationMultipleProposal is
     ImmutableFactory,
     ImmutableSnapshots,
     ImmutableETHDKG,
     ImmutableValidatorPool
 {
+    // this is the keccak256 of "AccusationMultipleProposal"
+    bytes32 public constant PRE_SALT =
+        0x17287210c71008320429d4cce2075373f0b2c5217b507513fe4904fead741aad;
     mapping(bytes32 => bool) internal _accusations;
 
     constructor()
@@ -28,35 +31,35 @@ contract MultipleProposalAccusation is
     {}
 
     /// @notice This function validates an accusation of multiple proposals.
-    /// @param _signature0 The signature of pclaims0
-    /// @param _pClaims0 The PClaims of the accusation
-    /// @param _signature1 The signature of pclaims1
-    /// @param _pClaims1 The PClaims of the accusation
+    /// @param signature0_ The signature of pclaims0
+    /// @param pClaims0_ The PClaims of the accusation
+    /// @param signature1_ The signature of pclaims1
+    /// @param pClaims1_ The PClaims of the accusation
     /// @return the address of the signer
     function accuseMultipleProposal(
-        bytes calldata _signature0,
-        bytes calldata _pClaims0,
-        bytes calldata _signature1,
-        bytes calldata _pClaims1
-    ) public view returns (address) {
+        bytes calldata signature0_,
+        bytes calldata pClaims0_,
+        bytes calldata signature1_,
+        bytes calldata pClaims1_
+    ) public returns (address) {
         // ecrecover sig0/1 and ensure both are valid and accounts are equal
-        address signerAccount0 = AccusationsLibrary.recoverMadNetSigner(_signature0, _pClaims0);
-        address signerAccount1 = AccusationsLibrary.recoverMadNetSigner(_signature1, _pClaims1);
+        address signerAccount0 = AccusationsLibrary.recoverMadNetSigner(signature0_, pClaims0_);
+        address signerAccount1 = AccusationsLibrary.recoverMadNetSigner(signature1_, pClaims1_);
 
         if (signerAccount0 != signerAccount1) {
             revert AccusationsErrors.SignersDoNotMatch(signerAccount0, signerAccount1);
         }
 
         // ensure the hashes of blob0/1 are different
-        if (keccak256(_pClaims0) == keccak256(_pClaims1)) {
+        if (keccak256(pClaims0_) == keccak256(pClaims1_)) {
             revert AccusationsErrors.PClaimsAreEqual();
         }
 
         PClaimsParserLibrary.PClaims memory pClaims0 = PClaimsParserLibrary.extractPClaims(
-            _pClaims0
+            pClaims0_
         );
         PClaimsParserLibrary.PClaims memory pClaims1 = PClaimsParserLibrary.extractPClaims(
-            _pClaims1
+            pClaims1_
         );
 
         // ensure the height of blob0/1 are equal using RCert sub object of PClaims
@@ -89,11 +92,34 @@ contract MultipleProposalAccusation is
             revert AccusationsErrors.InvalidChainId(pClaims0.rCert.rClaims.chainId, chainId);
         }
 
-        // ensure both accounts are applicable to a currently locked validator - Note<may be done in different layer?>
-        if (!IValidatorPool(_validatorPoolAddress()).isAccusable(signerAccount0)) {
-            revert AccusationsErrors.SignerNotValidValidator(signerAccount0);
+        // deterministic accusation ID
+        bytes32 id = keccak256(
+            abi.encodePacked(
+                signerAccount0,
+                pClaims0.rCert.rClaims.chainId,
+                pClaims0.rCert.rClaims.height,
+                pClaims0.rCert.rClaims.round,
+                PRE_SALT
+            )
+        );
+
+        // check if this accusation ID has already been submitted
+        if (_accusations[id]) {
+            revert AccusationsErrors.AccusationAlreadySubmitted(id);
         }
 
+        _accusations[id] = true;
+
+        // major slash this validator. Note: this method already checks if the dishonest validator (1st argument) is an accusable validator.
+        IValidatorPool(_validatorPoolAddress()).majorSlash(signerAccount0, msg.sender, PRE_SALT);
+
         return signerAccount0;
+    }
+
+    /// @notice This function tells whether an accusation ID has already been submitted or not.
+    /// @param id_ The deterministic accusation ID
+    /// @return true if the ID has already been submitted, false otherwise
+    function isAccused(bytes32 id_) public view returns (bool) {
+        return _accusations[id_];
     }
 }

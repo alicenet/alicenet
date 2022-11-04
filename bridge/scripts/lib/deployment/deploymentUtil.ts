@@ -1,11 +1,10 @@
-import { HardhatEthersHelpers } from "@nomiclabs/hardhat-ethers/types";
 import { BigNumberish, BytesLike, ContractFactory } from "ethers";
 import {
   Artifacts,
   HardhatRuntimeEnvironment,
   RunTaskFunction,
 } from "hardhat/types";
-import { getEventVar } from "../alicenetFactory";
+import { getBytes32Salt, getEventVar } from "../alicenetFactory";
 import { encodeMultiCallArgs } from "../alicenetTasks";
 import {
   ALICENET_FACTORY,
@@ -23,8 +22,8 @@ import {
 } from "../constants";
 import { readDeploymentArgs } from "./deploymentConfigUtil";
 
-type Ethers = typeof import("../../../node_modules/ethers/lib/ethers") &
-  HardhatEthersHelpers;
+// type Ethers = typeof import("../../../node_modules/ethers/lib/ethers") &
+//  HardhatEthersHelpers;
 
 export interface ArgData {
   [key: string]: string;
@@ -383,19 +382,6 @@ export async function getDeploymentInitializerArgs(
   return output;
 }
 
-export async function getSalt(fullName: string, artifacts: Artifacts) {
-  return await getCustomNSTag(fullName, "salt", artifacts);
-}
-
-export async function getBytes32Salt(
-  contractName: string,
-  artifacts: Artifacts,
-  ethers: Ethers
-) {
-  const fullName = await getFullyQualifiedName(contractName, artifacts);
-  const salt: string = await getSalt(fullName, artifacts);
-  return ethers.utils.formatBytes32String(salt);
-}
 export async function getFullyQualifiedName(
   contractName: string,
   artifacts: Artifacts
@@ -445,11 +431,7 @@ export async function getDeployUpgradeableMultiCallArgs(
       INITIALIZER,
       contractDescriptor.initializerArgs
     );
-  const salt = await getBytes32Salt(
-    contractDescriptor.name,
-    hre.artifacts,
-    hre.ethers
-  );
+  const salt = await getBytes32Salt(contractDescriptor.name, hre);
   const nonce = await hre.ethers.provider.getTransactionCount(factory.address);
   const logicAddress = hre.ethers.utils.getContractAddress({
     from: factory.address,
@@ -518,11 +500,7 @@ export async function deployContractsMulticall(
       }
       case ONLY_PROXY: {
         const name = extractName(contract.fullyQualifiedName);
-        const salt: BytesLike = await getBytes32Salt(
-          name,
-          hre.artifacts,
-          hre.ethers
-        );
+        const salt: BytesLike = await getBytes32Salt(name, hre);
         const factoryAddress = factory.address;
         await hre.run(TASK_DEPLOY_PROXY, {
           factoryAddress,

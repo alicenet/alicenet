@@ -113,7 +113,7 @@ func getMonitor(t *testing.T) (*monitor, executor.TaskHandler, *mocks.MockClient
 	contracts := mocks.NewMockAllSmartContracts()
 	contracts.EthereumContractsFunc.SetDefaultReturn(ethereumContracts)
 
-	tasksHandler, err := executor.NewTaskHandler(monDB, eth, contracts, adminHandler, txWatcher)
+	tasksHandler, err := executor.NewTaskHandler(monDB, nil, eth, contracts, adminHandler, txWatcher)
 	mon, err := NewMonitor(consDB, monDB, adminHandler, depositHandler, eth, contracts, contracts.EthereumContracts().GetAllAddresses(), 2*time.Second, 100, 42, tasksHandler)
 	assert.Nil(t, err)
 	EPOCH := uint32(1)

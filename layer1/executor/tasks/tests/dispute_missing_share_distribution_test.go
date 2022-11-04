@@ -25,7 +25,7 @@ func TestDisputeMissingShareDistributionTask_Group_1_ShouldAccuseOneValidatorWho
 	for idx := range accounts {
 		task := suite.DisputeMissingShareDistTasks[idx]
 
-		err := task.Initialize(suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "DisputeMissingShareDistributionTask", "task-id", task.Start, task.End, false, nil, nil)
+		err := task.Initialize(suite.DKGStatesDbs[idx], nil, fixture.Logger, suite.Eth, fixture.Contracts, "DisputeMissingShareDistributionTask", "task-id", task.Start, task.End, false, nil, nil)
 		assert.Nil(t, err)
 
 		err = task.Prepare(ctx)
@@ -75,7 +75,7 @@ func TestDisputeMissingShareDistributionTask_Group_1_ShouldAccuseAllValidatorsWh
 	for idx := range accounts {
 		task := suite.DisputeMissingShareDistTasks[idx]
 
-		err := task.Initialize(suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "DisputeMissingShareDistributionTask", "task-id", task.Start, task.End, false, nil, nil)
+		err := task.Initialize(suite.DKGStatesDbs[idx], nil, fixture.Logger, suite.Eth, fixture.Contracts, "DisputeMissingShareDistributionTask", "task-id", task.Start, task.End, false, nil, nil)
 		assert.Nil(t, err)
 
 		err = task.Prepare(ctx)
@@ -124,7 +124,7 @@ func TestDisputeMissingShareDistributionTask_Group_1_ShouldNotAccuseValidatorsWh
 	for idx := range accounts {
 		task := suite.DisputeMissingShareDistTasks[idx]
 
-		err := task.Initialize(suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "DisputeMissingShareDistributionTask", "task-id", task.Start, task.End, false, nil, nil)
+		err := task.Initialize(suite.DKGStatesDbs[idx], nil, fixture.Logger, suite.Eth, fixture.Contracts, "DisputeMissingShareDistributionTask", "task-id", task.Start, task.End, false, nil, nil)
 		assert.Nil(t, err)
 
 		err = task.Prepare(ctx)

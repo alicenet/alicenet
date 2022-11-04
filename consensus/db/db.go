@@ -1,7 +1,9 @@
 package db
 
 import (
+	"bytes"
 	"context"
+	"errors"
 	"sync"
 
 	"github.com/dgraph-io/badger/v2"
@@ -1885,6 +1887,208 @@ func (db *Database) GetPendingHdrLeafKeysIter(txn *badger.Txn) *PendingHdrLeafIt
 	return &PendingHdrLeafIter{it: it, prefixLen: len(prefix)}
 }
 
+// accusations
+
+func (db *Database) makeAccusationKey(id [32]byte) ([]byte, error) {
+	key := &objs.AccusationKey{
+		Prefix: dbprefix.PrefixAccusation(),
+		ID:     id,
+	}
+	return key.MarshalBinary()
+}
+
+func (db *Database) makeAccusationIterKey() ([]byte, error) {
+	key := &objs.AccusationKey{
+		Prefix: dbprefix.PrefixAccusation(),
+	}
+	return key.MakeIterKey()
+}
+
+func (db *Database) SetAccusationRaw(txn *badger.Txn, id [32]byte, data []byte) error {
+	key, err := db.makeAccusationKey(id)
+	if err != nil {
+		return err
+	}
+	err = db.rawDB.SetAccusationRaw(txn, key, data)
+	if err != nil {
+		utils.DebugTrace(db.logger, err)
+		return err
+	}
+	return nil
+}
+
+func (db *Database) GetAccusationRaw(txn *badger.Txn, id [32]byte) ([]byte, error) {
+	key, err := db.makeAccusationKey(id)
+	if err != nil {
+		return nil, err
+	}
+	result, err := db.rawDB.GetAccusationRaw(txn, key)
+	if err != nil {
+		utils.DebugTrace(db.logger, err)
+		return nil, err
+	}
+	return result, nil
+}
+
+func (db *Database) GetAccusations(txn *badger.Txn) ([][]byte, error) {
+	prefix, err := db.makeAccusationIterKey()
+	if err != nil {
+		return nil, err
+	}
+	opts := badger.DefaultIteratorOptions
+	opts.PrefetchValues = true
+	opts.PrefetchSize = 100
+	it := txn.NewIterator(opts)
+	defer it.Close()
+	accusations := make([][]byte, 0)
+	for it.Seek(prefix); it.ValidForPrefix(prefix); it.Next() {
+		item := it.Item()
+		accBytes, err := item.ValueCopy(nil)
+		if err != nil {
+			return nil, err
+		}
+
+		accusations = append(accusations, accBytes)
+	}
+
+	return accusations, nil
+}
+
+func (db *Database) DeleteAccusation(txn *badger.Txn, id [32]byte) error {
+	prefix, err := db.makeAccusationKey(id)
+	if err != nil {
+		return err
+	}
+	exist := true
+	_, err = utils.GetValue(txn, prefix)
+	if err != nil {
+		if !errors.Is(err, badger.ErrKeyNotFound) {
+			return err
+		}
+		exist = false
+	}
+	if exist {
+		if err := utils.DeleteValue(txn, prefix); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+/**
+* Evicted validators.
+ */
+
+func (db *Database) makeEvictedValidatorKey(groupKey, address []byte) ([]byte, error) {
+	key := &objs.EvictedValidatorKey{
+		Prefix:   dbprefix.PrefixEvitedValidator(),
+		GroupKey: groupKey,
+		VAddress: address,
+	}
+	return key.MarshalBinary()
+}
+
+func (db *Database) makeEvictedValidatorGroupIterKey(groupKey []byte) ([]byte, error) {
+	key := &objs.EvictedValidatorKey{
+		Prefix:   dbprefix.PrefixEvitedValidator(),
+		GroupKey: groupKey,
+	}
+	return key.MakeGroupIterKey()
+}
+
+func (db *Database) makeEvictedValidatorsKey() ([]byte, error) {
+	key := &objs.EvictedValidatorKey{
+		Prefix: dbprefix.PrefixEvitedValidator(),
+	}
+	return key.MakeIterKey()
+}
+
+func (db *Database) SetEvictedValidator(txn *badger.Txn, groupKey, address []byte) error {
+	key, err := db.makeEvictedValidatorKey(groupKey, address)
+	if err != nil {
+		return err
+	}
+	err = db.rawDB.SetEvictedValidator(txn, key, address)
+	if err != nil {
+		utils.DebugTrace(db.logger, err)
+		return err
+	}
+	return nil
+}
+
+func (db *Database) GetEvictedValidatorsByGroupKey(txn *badger.Txn, groupKey []byte) ([][]byte, error) {
+	prefix, err := db.makeEvictedValidatorGroupIterKey(groupKey)
+	if err != nil {
+		return nil, err
+	}
+	opts := badger.DefaultIteratorOptions
+	opts.PrefetchValues = true
+	opts.PrefetchSize = 100
+	it := txn.NewIterator(opts)
+	defer it.Close()
+	evictedValidatorAddresses := make([][]byte, 0)
+	for it.Seek(prefix); it.ValidForPrefix(prefix); it.Next() {
+		item := it.Item()
+		evictedValidatorAddress, err := item.ValueCopy(nil)
+		if err != nil {
+			return nil, err
+		}
+
+		evictedValidatorAddresses = append(evictedValidatorAddresses, evictedValidatorAddress)
+	}
+
+	return evictedValidatorAddresses, nil
+}
+
+func (db *Database) IsValidatorEvicted(txn *badger.Txn, vAddr []byte) (bool, error) {
+	os, err := db.GetOwnState(txn)
+	if err != nil {
+		return false, err
+	}
+
+	evictedValidators, err := db.GetEvictedValidatorsByGroupKey(txn, os.GroupKey)
+	if err != nil {
+		return false, err
+	}
+
+	for _, evictedValidator := range evictedValidators {
+		if bytes.Equal(vAddr, evictedValidator) {
+			return true, nil
+		}
+	}
+
+	return false, nil
+}
+
+func (db *Database) DeleteAllEvictedValidators(txn *badger.Txn) error {
+	prefix, err := db.makeEvictedValidatorsKey()
+	if err != nil {
+		return err
+	}
+	opts := badger.DefaultIteratorOptions
+	opts.PrefetchValues = true
+	opts.PrefetchSize = 100
+	it := txn.NewIterator(opts)
+	keys := [][]byte{}
+	defer it.Close()
+	for it.Seek(prefix); it.ValidForPrefix(prefix); it.Next() {
+		item := it.Item()
+		k := item.KeyCopy(nil)
+		keys = append(keys, k)
+	}
+
+	for i := 0; i < len(keys); i++ {
+		k := keys[i]
+		err := utils.DeleteValue(txn, utils.CopySlice(k))
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// PendingHdrLeafIter
 type PendingHdrLeafIter struct {
 	it        *badger.Iterator
 	prefixLen int

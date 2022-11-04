@@ -49,7 +49,7 @@ func (t *DisputeShareDistributionTask) Execute(ctx context.Context) (*types.Tran
 	logger := t.GetLogger().WithField("method", "Execute()").WithField("address", t.Address)
 	logger.Debug("initiate execution")
 
-	dkgState, err := state.GetDkgState(t.GetDB())
+	dkgState, err := state.GetDkgState(t.GetMonDB())
 	if err != nil {
 		return nil, tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorDuringPreparation, err), false)
 	}
@@ -58,7 +58,7 @@ func (t *DisputeShareDistributionTask) Execute(ctx context.Context) (*types.Tran
 		return nil, tasks.NewTaskErr("it's not DisputeShareDistribution or ShareDistribution phase", false)
 	}
 
-	isValidator, err := utils.IsValidator(t.GetDB(), logger, t.Address)
+	isValidator, err := utils.IsValidator(t.GetMonDB(), logger, t.Address)
 	if err != nil {
 		return nil, tasks.NewTaskErr(fmt.Sprintf(tasks.FailedGettingIsValidator, err), false)
 	}
@@ -143,7 +143,7 @@ func (t *DisputeShareDistributionTask) ShouldExecute(ctx context.Context) (bool,
 	logger := t.GetLogger().WithField("method", "ShouldExecute()").WithField("address", t.Address)
 	logger.Debug("should execute task")
 
-	dkgState, err := state.GetDkgState(t.GetDB())
+	dkgState, err := state.GetDkgState(t.GetMonDB())
 	if err != nil {
 		return false, tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorLoadingDkgState, err), false)
 	}
@@ -153,7 +153,7 @@ func (t *DisputeShareDistributionTask) ShouldExecute(ctx context.Context) (bool,
 		return false, nil
 	}
 
-	isValidator, err := utils.IsValidator(t.GetDB(), logger, t.Address)
+	isValidator, err := utils.IsValidator(t.GetMonDB(), logger, t.Address)
 	if err != nil {
 		return false, tasks.NewTaskErr(fmt.Sprintf(tasks.FailedGettingIsValidator, err), false)
 	}

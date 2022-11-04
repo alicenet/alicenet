@@ -1,19 +1,21 @@
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { assert, expect } from "chai";
-import { InvalidTxConsumptionAccusation } from "../../typechain-types";
+import { AccusationInvalidTxConsumption } from "../../typechain-types";
 import { Fixture, getFixture } from "../setup";
 import {
   addValidators,
+  generateAccusationID,
   getAccusationDataForNonExistentUTXOWithInvalidSigGroup,
   getInvalidAccusationDataWithSpendingValidDeposit,
   getValidAccusationDataForNonExistentUTXO,
   getValidAccusationDataForNonExistentUTXOChainId2,
   getValidAccusationDataForNonExistentUTXOWithInvalidHeight,
 } from "./accusations-test-helpers";
-describe("InvalidTxConsumptionAccusation: Tests InvalidTxConsumptionAccusation methods", async () => {
+
+describe("AccusationInvalidTxConsumption: Tests AccusationInvalidTxConsumption methods", async () => {
   let fixture: Fixture;
 
-  let accusation: InvalidTxConsumptionAccusation;
+  let accusation: AccusationInvalidTxConsumption;
   function deployFixture() {
     return getFixture(true, true);
   }
@@ -21,7 +23,7 @@ describe("InvalidTxConsumptionAccusation: Tests InvalidTxConsumptionAccusation m
   beforeEach(async function () {
     fixture = await loadFixture(deployFixture);
 
-    accusation = fixture.invalidTxConsumptionAccusation;
+    accusation = fixture.accusationInvalidTxConsumption;
   });
 
   describe("accuseInvalidTransactionConsumption:", async () => {
@@ -37,16 +39,31 @@ describe("InvalidTxConsumptionAccusation: Tests InvalidTxConsumptionAccusation m
         proofs,
       } = getValidAccusationDataForNonExistentUTXO();
 
-      const signer = await accusation.accuseInvalidTransactionConsumption(
-        pClaims,
-        pClaimsSig,
-        bClaims,
-        bClaimsSigGroup,
-        txInPreImage,
-        proofs
-      );
+      await (
+        await accusation.accuseInvalidTransactionConsumption(
+          pClaims,
+          pClaimsSig,
+          bClaims,
+          bClaimsSigGroup,
+          txInPreImage,
+          proofs
+        )
+      ).wait();
 
-      assert.equal(signer, signerAccount0);
+      const isValidator = await fixture.validatorPool.isValidator(
+        signerAccount0
+      );
+      assert.equal(isValidator, false);
+
+      const id = generateAccusationID(
+        signerAccount0,
+        1,
+        2,
+        1,
+        "0xf40095839ea6635a5869735bd0c363085cb0ebd561e0f361f826103b958c27e5"
+      );
+      const isAccused = await accusation.isAccused(id);
+      assert.equal(isAccused, true);
     });
 
     it("reverts with InvalidAccusation (ConsumptionOfValidDeposit)", async function () {

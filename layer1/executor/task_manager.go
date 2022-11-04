@@ -4,15 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg"
-	"github.com/alicenet/alicenet/layer1/executor/tasks/snapshots"
 	"reflect"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/dgraph-io/badger/v2"
-	"github.com/sirupsen/logrus"
+	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg"
+	"github.com/alicenet/alicenet/layer1/executor/tasks/snapshots"
 
 	"github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/constants/dbprefix"
@@ -23,6 +21,8 @@ import (
 	"github.com/alicenet/alicenet/layer1/transaction"
 	"github.com/alicenet/alicenet/logging"
 	"github.com/alicenet/alicenet/utils"
+	"github.com/dgraph-io/badger/v2"
+	"github.com/sirupsen/logrus"
 )
 
 var _ TaskResponse = &HandlerResponse{}
@@ -33,7 +33,8 @@ type TaskManager struct {
 	LastHeightSeen uint64                         `json:"lastHeightSeen"`
 	eth            layer1.Client                  `json:"-"`
 	contracts      layer1.AllSmartContracts       `json:"-"`
-	database       *db.Database                   `json:"-"`
+	monDB          *db.Database                   `json:"-"`
+	consDB         *db.Database                   `json:"-"`
 	adminHandler   monitorInterfaces.AdminHandler `json:"-"`
 	marshaller     *marshaller.TypeRegistry       `json:"-"`
 	closeChan      chan struct{}                  `json:"-"`
@@ -45,11 +46,12 @@ type TaskManager struct {
 }
 
 // newTaskManager creates a new TaskManager instance and recover the previous state from DB.
-func newTaskManager(eth layer1.Client, contracts layer1.AllSmartContracts, database *db.Database, logger *logrus.Entry, adminHandler monitorInterfaces.AdminHandler, requestChan <-chan managerRequest, txWatcher transaction.Watcher) (*TaskManager, error) {
+func newTaskManager(eth layer1.Client, contracts layer1.AllSmartContracts, monDB, consDB *db.Database, logger *logrus.Entry, adminHandler monitorInterfaces.AdminHandler, requestChan <-chan managerRequest, txWatcher transaction.Watcher) (*TaskManager, error) {
 	taskManager := &TaskManager{
 		Schedule:     make(map[string]ManagerRequestInfo),
 		Responses:    make(map[string]ManagerResponseInfo),
-		database:     database,
+		monDB:        monDB,
+		consDB:       consDB,
 		eth:          eth,
 		contracts:    contracts,
 		adminHandler: adminHandler,
@@ -69,7 +71,7 @@ func newTaskManager(eth layer1.Client, contracts layer1.AllSmartContracts, datab
 		}
 	}
 
-	tasksExecutor, err := newTaskExecutor(txWatcher, database, logger.WithField("Component", "TaskExecutor"))
+	tasksExecutor, err := newTaskExecutor(txWatcher, monDB, logger.WithField("Component", "TaskExecutor"))
 	if err != nil {
 		return nil, err
 	}
@@ -335,7 +337,7 @@ func (tm *TaskManager) startTasks(taskList []ManagerRequestInfo) error {
 				return tm.onError(tasks.ErrTaskExecutionMechanismClosed)
 			}
 
-			go tm.taskExecutor.handleTaskExecution(task.Task, task.Name, task.Id, task.Start, task.End, task.AllowMultiExecution, task.SubscribeOptions, tm.database, logEntry, tm.eth, tm.contracts, tm.responseChan)
+			go tm.taskExecutor.handleTaskExecution(task.Task, task.Name, task.Id, task.Start, task.End, task.AllowMultiExecution, task.SubscribeOptions, tm.monDB, tm.consDB, logEntry, tm.eth, tm.contracts, tm.responseChan)
 
 			task.InternalState = Running
 			tm.Schedule[task.Id] = task
@@ -509,7 +511,7 @@ func (tm *TaskManager) remove(id string) error {
 	return nil
 }
 
-// persistState TaskManager to database.
+// persistState TaskManager to monDB.
 func (tm *TaskManager) persistState() error {
 	logger := logging.GetLogger("staterecover").WithField("State", "manager")
 	rawData, err := json.Marshal(tm)
@@ -517,9 +519,9 @@ func (tm *TaskManager) persistState() error {
 		return tm.onError(err)
 	}
 
-	err = tm.database.Update(func(txn *badger.Txn) error {
+	err = tm.monDB.Update(func(txn *badger.Txn) error {
 		key := dbprefix.PrefixTaskManagerState()
-		logger.WithField("Key", string(key)).Debug("Saving state in the database")
+		logger.WithField("Key", string(key)).Debug("Saving state in the monDB")
 		if err := utils.SetValue(txn, key, rawData); err != nil {
 			logger.Error("Failed to set Value")
 			return err
@@ -530,7 +532,7 @@ func (tm *TaskManager) persistState() error {
 		return tm.onError(err)
 	}
 
-	if err := tm.database.Sync(); err != nil {
+	if err := tm.monDB.Sync(); err != nil {
 		logger.Error("Failed to set sync")
 		return tm.onError(err)
 	}
@@ -538,12 +540,12 @@ func (tm *TaskManager) persistState() error {
 	return nil
 }
 
-// loadState TaskManager from database.
+// loadState TaskManager from monDB.
 func (tm *TaskManager) loadState() error {
 	logger := logging.GetLogger("staterecover").WithField("State", "manager")
-	if err := tm.database.View(func(txn *badger.Txn) error {
+	if err := tm.monDB.View(func(txn *badger.Txn) error {
 		key := dbprefix.PrefixTaskManagerState()
-		logger.WithField("Key", string(key)).Debug("Loading state from database")
+		logger.WithField("Key", string(key)).Debug("Loading state from monDB")
 		rawData, err := utils.GetValue(txn, key)
 		if err != nil {
 			return err
@@ -560,7 +562,7 @@ func (tm *TaskManager) loadState() error {
 	}
 
 	// synchronizing db state to disk
-	if err := tm.database.Sync(); err != nil {
+	if err := tm.monDB.Sync(); err != nil {
 		logger.Error("Failed to set sync")
 		return err
 	}
@@ -709,6 +711,7 @@ func getTaskRegistry() *marshaller.TypeRegistry {
 	tr.RegisterInstanceType(&dkg.KeyShareSubmissionTask{})
 	tr.RegisterInstanceType(&dkg.MPKSubmissionTask{})
 	tr.RegisterInstanceType(&dkg.RegisterTask{})
+	tr.RegisterInstanceType(&dkg.InitializeTask{})
 	tr.RegisterInstanceType(&dkg.DisputeMissingRegistrationTask{})
 	tr.RegisterInstanceType(&dkg.ShareDistributionTask{})
 	tr.RegisterInstanceType(&snapshots.SnapshotTask{})

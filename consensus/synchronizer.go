@@ -9,6 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/alicenet/alicenet/application"
+	"github.com/alicenet/alicenet/consensus/accusation"
 	"github.com/alicenet/alicenet/consensus/admin"
 	"github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/consensus/evidence"
@@ -211,6 +212,7 @@ type Synchronizer struct {
 	appHandler      *application.Application
 	adminHandler    *admin.Handlers
 	peerMan         *peering.PeerManager
+	accusationMan   *accusation.Manager
 
 	initialized   *setOnceVar
 	peerMinThresh *remoteVar
@@ -220,8 +222,8 @@ type Synchronizer struct {
 	storage dynamics.StorageGetter
 }
 
-// Init initializes the struct.
-func (s *Synchronizer) Init(cdb *db.Database, mdb, tdb *badger.DB, gc *gossip.Client, gh *gossip.Handlers, ep *evidence.Pool, eng *lstate.Engine, app *application.Application, ah *admin.Handlers, pman *peering.PeerManager, storage dynamics.StorageGetter) {
+// Init initializes the struct
+func (s *Synchronizer) Init(cdb *db.Database, mdb *badger.DB, tdb *badger.DB, gc *gossip.Client, gh *gossip.Handlers, ep *evidence.Pool, eng *lstate.Engine, app *application.Application, ah *admin.Handlers, pman *peering.PeerManager, aman *accusation.Manager, storage dynamics.StorageGetter) {
 	s.logger = logging.GetLogger(constants.LoggerConsensus)
 	s.cdb = cdb
 	s.mdb = mdb
@@ -233,6 +235,7 @@ func (s *Synchronizer) Init(cdb *db.Database, mdb, tdb *badger.DB, gc *gossip.Cl
 	s.appHandler = app
 	s.adminHandler = ah
 	s.peerMan = pman
+	s.accusationMan = aman
 	s.wg = sync.WaitGroup{}
 	s.closeChan = make(chan struct{})
 	s.closeOnce = sync.Once{}
@@ -529,4 +532,20 @@ func (s *Synchronizer) setupLoops() {
 		s.wg.Add(1)
 		go s.loop(tdbgcLoopConfig)
 	}
+
+	accusationManagerLoopConfig := newLoopConfig().
+		withName("AccusationManagerLoop").
+		withFn(s.accusationMan.Poll).
+		withFreq(100 * time.Millisecond).
+		withDelayOnConditionFailure(100 * time.Millisecond).
+		withLockFreeCondition(s.isNotClosing).
+		withLockFreeCondition(s.initialized.isSet).
+		withLockFreeCondition(s.ethSyncDone.isSet).
+		withLockFreeCondition(s.madSyncDone.isSet).
+		withLockFreeCondition(s.peerMinThresh.isSet).
+		withLock().
+		withLockedCondition(s.isNotClosing).
+		withLockedCondition(s.madSyncDone.isSet)
+	s.wg.Add(1)
+	go s.loop(accusationManagerLoopConfig)
 }

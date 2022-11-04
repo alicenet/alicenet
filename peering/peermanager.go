@@ -487,10 +487,6 @@ func (ps *PeerManager) getPeersActive() {
 				ps.Lock()
 				defer ps.Unlock()
 				if !ps.active.contains(p) {
-					ps.logger.WithFields(logrus.Fields{
-						"nodeAddrHost": p.Host(),
-						"nodeAddrPort": p.Port(),
-					}).Warn("Adding inactive peer getPeersActive")
 					ps.inactive.add(p)
 				}
 			}()

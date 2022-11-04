@@ -6,6 +6,8 @@
 abigen --abi bindings/bindings-artifacts/AToken.json --pkg bindings --type AToken --out bindings/AToken.go
 abigen --abi bindings/bindings-artifacts/ATokenBurner.json --pkg bindings --type ATokenBurner --out bindings/ATokenBurner.go
 abigen --abi bindings/bindings-artifacts/ATokenMinter.json --pkg bindings --type ATokenMinter --out bindings/ATokenMinter.go
+abigen --abi bindings/bindings-artifacts/AccusationInvalidTxConsumption.json --pkg bindings --type AccusationInvalidTxConsumption --out bindings/AccusationInvalidTxConsumption.go
+abigen --abi bindings/bindings-artifacts/AccusationMultipleProposal.json --pkg bindings --type AccusationMultipleProposal --out bindings/AccusationMultipleProposal.go
 abigen --abi bindings/bindings-artifacts/AliceNetFactory.json --pkg bindings --type AliceNetFactory --out bindings/AliceNetFactory.go
 abigen --abi bindings/bindings-artifacts/BToken.json --pkg bindings --type BToken --out bindings/BToken.go
 abigen --abi bindings/bindings-artifacts/Dynamics.json --pkg bindings --type Dynamics --out bindings/Dynamics.go

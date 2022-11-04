@@ -5,21 +5,16 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/alicenet/alicenet/layer1/executor"
 	"strings"
 	"sync"
 	"time"
-
-	"github.com/dgraph-io/badger/v2"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/sirupsen/logrus"
 
 	"github.com/alicenet/alicenet/config"
 	"github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/consensus/objs"
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/layer1"
+	"github.com/alicenet/alicenet/layer1/executor"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/snapshots"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/snapshots/state"
 	"github.com/alicenet/alicenet/layer1/monitor/events"
@@ -27,6 +22,10 @@ import (
 	"github.com/alicenet/alicenet/layer1/monitor/objects"
 	"github.com/alicenet/alicenet/logging"
 	"github.com/alicenet/alicenet/utils"
+	"github.com/dgraph-io/badger/v2"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/sirupsen/logrus"
 )
 
 // Monitor describes required functionality to monitor Ethereum.
@@ -96,7 +95,7 @@ func NewMonitor(cdb *db.Database,
 	}
 
 	eventMap := objects.NewEventMap()
-	err := events.SetupEventMap(eventMap, cdb, monDB, adminHandler, depositHandler, taskHandler, mon.Close, chainId)
+	err := events.SetupEventMap(eventMap, cdb, monDB, eth, adminHandler, depositHandler, taskHandler, mon.Close, chainId)
 	if err != nil {
 		return nil, err
 	}

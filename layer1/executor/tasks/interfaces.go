@@ -2,6 +2,7 @@ package tasks
 
 import (
 	"context"
+
 	"github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/layer1"
 	"github.com/alicenet/alicenet/layer1/transaction"
@@ -14,7 +15,7 @@ import (
 type Task interface {
 	Lock()
 	Unlock()
-	Initialize(database *db.Database, logger *logrus.Entry, eth layer1.Client, contracts layer1.AllSmartContracts, name string, id string, start uint64, end uint64, allowMultiExecution bool, subscribeOptions *transaction.SubscribeOptions, taskResponseChan InternalTaskResponseChan) error
+	Initialize(monDB, consDB *db.Database, logger *logrus.Entry, eth layer1.Client, contracts layer1.AllSmartContracts, name string, id string, start uint64, end uint64, allowMultiExecution bool, subscribeOptions *transaction.SubscribeOptions, taskResponseChan InternalTaskResponseChan) error
 	Prepare(ctx context.Context) *TaskErr
 	Execute(ctx context.Context) (*types.Transaction, *TaskErr)
 	ShouldExecute(ctx context.Context) (bool, *TaskErr)

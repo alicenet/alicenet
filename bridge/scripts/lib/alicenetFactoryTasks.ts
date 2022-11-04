@@ -103,6 +103,17 @@ task("get-bytes32-salt", "gets the bytes32 version of salt from contract")
     await showState(salt);
   });
 
+task("getSalt", "gets the string version of salt from contract")
+  .addParam("contractName", "test contract")
+  .setAction(async (taskArgs, hre) => {
+    const salt = await getSalt(
+      taskArgs.contractName,
+      hre.artifacts,
+      hre.ethers
+    );
+    await showState(salt);
+  });
+
 task(
   TASK_DEPLOY_FACTORY,
   "Deploys an instance of a factory contract specified by its name"
@@ -1174,18 +1185,8 @@ task(
     }
     const factoryBase = await hre.ethers.getContractFactory(ALICENET_FACTORY);
     const factory = factoryBase.attach(factoryAddress);
-    const txCount = await hre.ethers.provider.getTransactionCount(
-      factory.address
-    );
     const contracts = json.contracts;
-    await deployContractsMulticall(
-      contracts,
-      hre,
-      factory.address,
-      txCount,
-      taskArgs.inputFolder,
-      taskArgs.outputFolder
-    );
+    await deployContractsMulticall(contracts, hre, factory.address);
     console.log(`total gas used: ${cumulativeGasUsed.toString()}`);
   });
 

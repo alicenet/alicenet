@@ -10,6 +10,7 @@ import (
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/errorz"
 	"github.com/alicenet/alicenet/utils"
+	"golang.org/x/crypto/blake2b"
 )
 
 var errConflict = errors.New("conflict vote")
@@ -339,6 +340,17 @@ func (b *RoundState) MarshalCapn(seg *capnp.Segment) (mdefs.RoundState, error) {
 	bh.SetImplicitPVN(b.ImplicitPVN)
 	bh.SetImplicitPCN(b.ImplicitPCN)
 	return bh, nil
+}
+
+func (b *RoundState) Hash() ([]byte, error) {
+	bh, err := b.MarshalBinary()
+	if err != nil {
+		return nil, err
+	}
+
+	// using blake2b because it's pretty fast
+	hash := blake2b.Sum256(bh)
+	return hash[:], nil
 }
 
 func (b *RoundState) Reset() {

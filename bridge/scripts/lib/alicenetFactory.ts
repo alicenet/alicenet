@@ -4,7 +4,11 @@ import {
   ContractTransaction,
   Overrides,
 } from "ethers";
-import { Artifacts, HardhatEthersHelpers } from "hardhat/types";
+import {
+  Artifacts,
+  HardhatEthersHelpers,
+  HardhatRuntimeEnvironment,
+} from "hardhat/types";
 import { AliceNetFactory } from "../../typechain-types";
 import { PromiseOrValue } from "../../typechain-types/common";
 import { encodeMultiCallArgs } from "./alicenetTasks";
@@ -271,4 +275,22 @@ export function getMetamorphicAddress(
     salt,
     ethers.utils.keccak256(initCode)
   );
+}
+
+/**
+ * @description gets the salt from the contract natspec tag and converts it to bytes32
+ * @param contractName the name of the contract to get the salt for
+ * @param hre hardhat runtime environment
+ * @returns the string that represents the 32Bytes version
+ * of the salt specified by custom:salt
+ */
+export async function getBytes32Salt(
+  contractName: string,
+  hre: HardhatRuntimeEnvironment
+) {
+  const salt: string = await getSalt(contractName, hre.artifacts, hre.ethers);
+  if (salt.startsWith("0x")) {
+    return salt;
+  }
+  return hre.ethers.utils.formatBytes32String(salt);
 }
