@@ -1,23 +1,19 @@
 import toml from "@iarna/toml";
-import { BigNumber, BytesLike } from "ethers";
+import { BigNumber } from "ethers";
 import fs from "fs";
 import { task, types } from "hardhat/config";
-import { getEventVar, getMetamorphicAddress } from "./alicenetFactory";
-import { encodeMultiCallArgs } from "./alicenetTasks";
+import { getEventVar } from "./alicenetFactory";
+import {} from "./alicenetTasks";
 import {
   ALICENET_FACTORY,
   CONTRACT_ADDR,
   DEFAULT_CONFIG_DIR,
   DEFAULT_FACTORY_STATE_OUTPUT_DIR,
-  DEPLOYED_PROXY,
   DEPLOYED_RAW,
   DEPLOYMENT_ARGS_TEMPLATE_FPATH,
   DEPLOYMENT_ARG_PATH,
   DEPLOYMENT_LIST_FPATH,
-  DEPLOY_PROXY,
-  INITIALIZER,
   TASK_DEPLOY_FACTORY,
-  UPGRADE_PROXY,
 } from "./constants";
 import {
   generateDeployArgTemplate,
@@ -44,9 +40,7 @@ import {
   getDeployGroup,
   getDeployGroupIndex,
   getDeployType,
-  getFullyQualifiedName,
   getGasPrices,
-  isInitializable,
   muiltiCallDeployImplementationAndUpgradeProxyTask,
   showState,
   verifyContract,
@@ -57,7 +51,6 @@ import {
   ProxyData,
   updateDeployCreateList,
   updateExternalContractList,
-  updateProxyList,
 } from "./deployment/factoryStateUtil";
 
 task(
@@ -401,203 +394,6 @@ task("deploy-proxy", "deploys a proxy from the factory")
   )
   .setAction(async (taskArgs, hre) => {
     return deployOnlyProxyTask(taskArgs, hre);
-  });
-
-task(
-  "upgrade-deployed-proxy",
-  "deploys a contract from the factory using create"
-)
-  .addParam("contractName", "logic contract name")
-  .addParam(
-    "logicAddress",
-    "address of the new logic contract to upgrade the proxy to"
-  )
-  .addParam(
-    "factoryAddress",
-    "address of factory contract to deploy the contract with"
-  )
-  .addOptionalParam(
-    "waitConfirmation",
-    "wait specified number of blocks between transactions",
-    0,
-    types.int
-  )
-  .addOptionalParam(
-    "initCallData",
-    "input initCallData args in a string list, eg: --initCallData 'arg1, arg2'"
-  )
-  .addOptionalParam(
-    "outputFolder",
-    "output folder path to save factory state",
-    DEFAULT_FACTORY_STATE_OUTPUT_DIR,
-    types.string
-  )
-  .setAction(async (taskArgs, hre) => {
-    const waitBlocks = taskArgs.waitConfirmation;
-    const network = hre.network.name;
-    const factoryBase = await hre.ethers.getContractFactory(ALICENET_FACTORY);
-    // grab the salt from the logic contract
-    const Salt = await getBytes32SaltFromContractNSTag(
-      taskArgs.contractName,
-      hre.artifacts,
-      hre.ethers
-    );
-    // get logic contract interface
-    const logicFactory: any = await hre.ethers.getContractFactory(
-      taskArgs.contractName
-    );
-    const initArgs =
-      taskArgs.initCallData === undefined
-        ? []
-        : taskArgs.initCallData.replace(/\s+/g, "").split(",");
-    const fullname = (await getFullyQualifiedName(
-      taskArgs.contractName,
-      hre.artifacts
-    )) as string;
-    const isInitable = await isInitializable(fullname, hre.artifacts);
-    const initCallData = isInitable
-      ? logicFactory.interface.encodeFunctionData(INITIALIZER, initArgs)
-      : "0x";
-    const factory = factoryBase.attach(taskArgs.factoryAddress);
-    const txResponse = await factory.upgradeProxy(
-      Salt,
-      taskArgs.logicAddress,
-      initCallData,
-      await getGasPrices(hre)
-    );
-    const receipt = await txResponse.wait(waitBlocks);
-    // Data to return to the main task
-    const proxyData: ProxyData = {
-      proxyAddress: getMetamorphicAddress(
-        taskArgs.factoryAddress,
-        Salt,
-        hre.ethers
-      ),
-      salt: Salt,
-      logicName: taskArgs.contractName,
-      logicAddress: taskArgs.logicAddress,
-      factoryAddress: taskArgs.factoryAddress,
-      gas: receipt.gasUsed.toNumber(),
-      receipt,
-      initCallData,
-    };
-    await showState(
-      `Updated logic with upgradeDeployedProxy for the
-      ${taskArgs.contractName}
-      contract at
-      ${proxyData.proxyAddress}
-      gas:
-      ${receipt.gasUsed}`
-    );
-    await updateProxyList(network, proxyData, taskArgs.outputFolder);
-    return proxyData;
-  });
-
-/**
- * deploys a proxy and upgrades it using multicall from factory
- * @returns a proxyData object with logic contract name, address and proxy salt, and address.
- */
-task("multi-call-deploy-proxy", "deploy and upgrade proxy with multicall")
-  .addParam("contractName", "logic contract name")
-  .addParam(
-    "logicAddress",
-    "Address of the logic contract to point the proxy to"
-  )
-  .addParam(
-    "factoryAddress",
-    "address of factory contract to deploy the contract with"
-  )
-  .addOptionalParam(
-    "initCallData",
-    "input initCallData args in a string list, eg: --initCallData 'arg1, arg2'"
-  )
-  .addOptionalParam(
-    "outputFolder",
-    "output folder path to save factory state",
-    DEFAULT_FACTORY_STATE_OUTPUT_DIR,
-    types.string
-  )
-  .addOptionalParam(
-    "waitConfirmation",
-    "wait specified number of blocks between transactions",
-    0,
-    types.int
-  )
-  .addOptionalParam(
-    "salt",
-    "unique salt for specifying proxy defaults to salt specified in logic contract"
-  )
-  .setAction(async (taskArgs, hre) => {
-    const network = hre.network.name;
-    const factoryBase = await hre.ethers.getContractFactory(ALICENET_FACTORY);
-    const factory = factoryBase.attach(taskArgs.factoryAddress);
-    const logicFactory: any = await hre.ethers.getContractFactory(
-      taskArgs.contractName
-    );
-    const initArgs =
-      taskArgs.initCallData === undefined
-        ? []
-        : taskArgs.initCallData.replace(/\s+/g, "").split(",");
-    const fullname = (await getFullyQualifiedName(
-      taskArgs.contractName,
-      hre.artifacts
-    )) as string;
-    const isInitable = await isInitializable(fullname, hre.artifacts);
-    const initCallData = isInitable
-      ? logicFactory.interface.encodeFunctionData(INITIALIZER, initArgs)
-      : "0x";
-    // factory interface pointed to deployed factory contract
-    // get the 32byte salt from logic contract file
-    const salt: BytesLike =
-      taskArgs.salt === undefined
-        ? await getBytes32SaltFromContractNSTag(
-            taskArgs.contractName,
-            hre.artifacts,
-            hre.ethers
-          )
-        : hre.ethers.utils.formatBytes32String(taskArgs.salt);
-    // encode the deployProxy function call with Salt as arg
-    const deployProxyCallData: BytesLike =
-      factoryBase.interface.encodeFunctionData(DEPLOY_PROXY, [salt]);
-    // encode upgrade proxy multicall
-    const upgradeProxyCallData: BytesLike =
-      factoryBase.interface.encodeFunctionData(UPGRADE_PROXY, [
-        salt,
-        taskArgs.logicAddress,
-        initCallData,
-      ]);
-    // get the multi call arguements as [deployProxy, upgradeProxy]
-
-    const deployProxy = encodeMultiCallArgs(
-      factory.address,
-      0,
-      deployProxyCallData
-    );
-    const upgradeProxy = encodeMultiCallArgs(
-      factory.address,
-      0,
-      upgradeProxyCallData
-    );
-    const multiCallArgs = [deployProxy, upgradeProxy];
-    // send the multicall transaction with deployProxy and upgradeProxy
-    const txResponse = await factory.multiCall(
-      multiCallArgs,
-      await getGasPrices(hre)
-    );
-    const receipt = await txResponse.wait(taskArgs.waitConfirmation);
-    // Data to return to the main task
-    const proxyData: ProxyData = {
-      factoryAddress: taskArgs.factoryAddress,
-      logicName: taskArgs.contractName,
-      logicAddress: taskArgs.logicAddress,
-      salt,
-      proxyAddress: getEventVar(receipt, DEPLOYED_PROXY, CONTRACT_ADDR),
-      gas: receipt.gasUsed.toNumber(),
-      receipt,
-      initCallData,
-    };
-    await updateProxyList(network, proxyData, taskArgs.outputFolder);
-    return proxyData;
   });
 
 task(
