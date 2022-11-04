@@ -122,12 +122,24 @@ func PrefixStagedBlockHeaderKey() []byte {
 	return []byte("a3")
 }
 
-func PrefixRawStorageKey() []byte {
+func PrefixDynamicValuesKey() []byte {
 	return []byte("a4")
 }
 
 func PrefixStorageNodeKey() []byte {
 	return []byte("a5")
+}
+
+func PrefixStorageLinkedListKey() []byte {
+	return []byte("a6")
+}
+
+func PrefixAccusation() []byte {
+	return []byte("a7")
+}
+
+func PrefixEvitedValidator() []byte {
+	return []byte("a8")
 }
 
 func PrefixPendingNodeKeyCount() []byte {
@@ -152,8 +164,4 @@ func PrefixCommittedBlockHeaderCount() []byte {
 
 func PrefixValidatorSetPostApplication() []byte {
 	return []byte("ZZ")
-}
-
-func PrefixAccusation() []byte {
-	return []byte("a6")
 }

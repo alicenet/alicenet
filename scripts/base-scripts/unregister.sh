@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -ex
+set -e
 
 NETWORK=${1:-"dev"}
 # ADDRESSES=$(ls ./scripts/generated/keystores/keys | grep -v '^0x546f99f244b' | xargs)
@@ -23,7 +23,7 @@ if [[ -z "${FACTORY_ADDRESS}" ]]; then
     exit 1
 fi
 
-npx hardhat --network "$NETWORK" --show-stack-traces unregisterValidators --factory-address "$FACTORY_ADDRESS" $ADDRESSES
+npx hardhat --network "$NETWORK" --show-stack-traces unregister-validators --factory-address "$FACTORY_ADDRESS" $ADDRESSES
 
 
 cd "$CURRENT_WD"

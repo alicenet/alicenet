@@ -15,6 +15,7 @@ import "contracts/libraries/errors/AccusationsErrors.sol";
 
 /// @custom:salt InvalidTxConsumptionAccusation
 /// @custom:role Accusation
+/// @custom:salt AccusationInvalidTxConsumption
 contract AccusationInvalidTxConsumption is
     ImmutableFactory,
     ImmutableSnapshots,
@@ -22,7 +23,8 @@ contract AccusationInvalidTxConsumption is
     ImmutableValidatorPool
 {
     // this is the keccak256 of "AccusationInvalidTxConsumption"
-    bytes32 constant public PRE_SALT = 0xf40095839ea6635a5869735bd0c363085cb0ebd561e0f361f826103b958c27e5;
+    bytes32 public constant PRE_SALT =
+        0xf40095839ea6635a5869735bd0c363085cb0ebd561e0f361f826103b958c27e5;
     mapping(bytes32 => bool) internal _accusations;
 
     constructor()
@@ -134,10 +136,35 @@ contract AccusationInvalidTxConsumption is
             MerkleProofLibrary.verifyNonInclusion(proofAgainstStateRoot, bClaims.stateRoot);
         }
 
+        // deterministic accusation ID
+        bytes32 id = keccak256(
+            abi.encodePacked(
+                signerAccount,
+                pClaims.rCert.rClaims.chainId,
+                pClaims.rCert.rClaims.height,
+                pClaims.rCert.rClaims.round,
+                PRE_SALT
+            )
+        );
+
+        // check if this accusation ID has already been submitted
+        if (_accusations[id]) {
+            revert AccusationsErrors.AccusationAlreadySubmitted(id);
+        }
+
+        _accusations[id] = true;
+
         // burn the validator's tokens
         IValidatorPool(_validatorPoolAddress()).majorSlash(signerAccount, msg.sender, PRE_SALT);
 
         return signerAccount;
+    }
+
+    /// @notice This function tells whether an accusation ID has already been submitted or not.
+    /// @param id_ The deterministic accusation ID
+    /// @return true if the ID has already been submitted, false otherwise
+    function isAccused(bytes32 id_) public view returns (bool) {
+        return _accusations[id_];
     }
 
     /// @notice This function verifies the signature group of a BClaims.

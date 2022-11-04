@@ -1,3 +1,4 @@
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
@@ -157,8 +158,12 @@ describe("Testing Dynamics methods", async () => {
   };
   let alicenetCurrentVersion: CanonicalVersionStructOutput;
 
+  function deployFixture() {
+    return getFixture(false, true, false);
+  }
+
   beforeEach(async function () {
-    fixture = await getFixture(false, true, false);
+    fixture = await loadFixture(deployFixture);
     const signers = await ethers.getSigners();
     [admin] = signers;
     alicenetCurrentVersion = {

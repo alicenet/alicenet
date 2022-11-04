@@ -18,6 +18,7 @@ type RoundStates struct {
 	ValidatorSet       *objs.ValidatorSet
 	OwnValidatingState *objs.OwnValidatingState
 	PeerStateMap       map[string]*objs.RoundState
+	EvitedValidators   map[string]bool
 }
 
 func (r *RoundStates) OwnRoundState() *objs.RoundState {
@@ -34,17 +35,25 @@ func (r *RoundStates) IsMe(vAddr []byte) bool {
 	return false
 }
 
+// LocalIsProposer tells if the local node/validator is supposed to propose
 func (r *RoundStates) LocalIsProposer() bool {
 	return r.IsProposerValid(r.OwnState.VAddr)
 }
 
+// IsProposerValid tells if a validator address is supposed to propose
 func (r *RoundStates) IsProposerValid(pAddr []byte) bool {
-	idx := objs.GetProposerIdx(len(r.ValidatorSet.Validators), r.height, r.round)
-	proposerValObj := r.ValidatorSet.Validators[idx]
-	vAddr := proposerValObj.VAddr
+	vAddr := r.GetValidProposer()
 	return bytes.Equal(vAddr, pAddr)
 }
 
+// GetValidProposer tells which validator is supposed to propose
+func (r *RoundStates) GetValidProposer() []byte {
+	idx := objs.GetProposerIdx(len(r.ValidatorSet.Validators), r.height, r.round)
+	proposerValObj := r.ValidatorSet.Validators[idx]
+	return proposerValObj.VAddr
+}
+
+// IsCurrentValidator tells if the current node/address is a validator
 func (r *RoundStates) IsCurrentValidator() bool {
 	vs := r.ValidatorSet
 	vsvvs := vs.ValidatorVAddrSet
@@ -309,4 +318,12 @@ func (r *RoundStates) LocalPreVoteCurrent() bool {
 
 func (r *RoundStates) LocalPreCommitCurrent() bool {
 	return r.OwnRoundState().PCCurrent(r.OwnRoundState().RCert)
+}
+
+func (r *RoundStates) SetEvictedValidator(pAddr []byte) {
+	r.EvitedValidators[string(pAddr)] = true
+}
+
+func (r *RoundStates) IsValidatorEvicted(pAddr []byte) bool {
+	return r.EvitedValidators[string(pAddr)]
 }

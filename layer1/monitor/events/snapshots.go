@@ -4,6 +4,10 @@ import (
 	"context"
 	"math/big"
 
+	"github.com/alicenet/alicenet/consensus/db"
+	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg"
+	"github.com/dgraph-io/badger/v2"
+
 	"github.com/alicenet/alicenet/consensus/objs"
 	"github.com/alicenet/alicenet/crypto/bn256"
 	"github.com/alicenet/alicenet/layer1"
@@ -15,7 +19,7 @@ import (
 )
 
 // ProcessSnapshotTaken handles receiving snapshots
-func ProcessSnapshotTaken(contracts layer1.AllSmartContracts, logger *logrus.Entry, log types.Log, adminHandler monInterfaces.AdminHandler, taskHandler executor.TaskHandler) error {
+func ProcessSnapshotTaken(contracts layer1.AllSmartContracts, cdb *db.Database, eth layer1.Client, logger *logrus.Entry, log types.Log, adminHandler monInterfaces.AdminHandler, taskHandler executor.TaskHandler) error {
 	logger.Info("ProcessSnapshotTaken() ...")
 
 	c := contracts.EthereumContracts()
@@ -71,8 +75,37 @@ func ProcessSnapshotTaken(contracts layer1.AllSmartContracts, logger *logrus.Ent
 		return err
 	}
 
+	wereValidatorsEvicted := false
+	err = cdb.View(func(txn *badger.Txn) error {
+		os, err := cdb.GetOwnState(txn)
+		if err != nil {
+			return err
+		}
+
+		evictedValidators, err := cdb.GetEvictedValidatorsByGroupKey(txn, os.GroupKey)
+		if err != nil {
+			return err
+		}
+
+		wereValidatorsEvicted = len(evictedValidators) > 0
+		return nil
+	})
+
+	if wereValidatorsEvicted {
+		ctx := context.Background()
+		resp, err := taskHandler.ScheduleTask(dkg.NewInitializeTask(), "")
+		if err != nil {
+			return err
+		}
+
+		err = resp.GetResponseBlocking(ctx)
+		if err != nil {
+			return err
+		}
+	}
+
 	// kill any task that might still be trying to do this snapshot
-	_, err = taskHandler.KillTaskByType(context.Background(), &snapshots.SnapshotTask{})
+	_, err = taskHandler.KillTaskByType(&snapshots.SnapshotTask{})
 	if err != nil {
 		return err
 	}
@@ -80,7 +113,7 @@ func ProcessSnapshotTaken(contracts layer1.AllSmartContracts, logger *logrus.Ent
 	return nil
 }
 
-// ProcessSnapshotTaken handles receiving snapshots.
+// ProcessSnapshotTakenOld handles receiving snapshots.
 func ProcessSnapshotTakenOld(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, log types.Log, adminHandler monInterfaces.AdminHandler, taskHandler executor.TaskHandler) error {
 	logger.Info("ProcessSnapshotTakenOld() ...")
 
@@ -140,7 +173,7 @@ func ProcessSnapshotTakenOld(eth layer1.Client, contracts layer1.AllSmartContrac
 	}
 
 	// kill any task that might still be trying to do this snapshot
-	_, err = taskHandler.KillTaskByType(context.Background(), &snapshots.SnapshotTask{})
+	_, err = taskHandler.KillTaskByType(&snapshots.SnapshotTask{})
 	if err != nil {
 		return err
 	}

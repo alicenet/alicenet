@@ -53,10 +53,16 @@ contract ValidatorPool is
      * Modifier to guarantee that only ETHDKG or Accusations are calling a function.
      */
     modifier onlyETHDKGAndAccusations(bytes32 preSalt) {
-        bytes32 computedSalt = keccak256(abi.encodePacked(preSalt , keccak256(abi.encodePacked("Accusation"))));
+        bytes32 computedSalt = keccak256(
+            abi.encodePacked(preSalt, keccak256(abi.encodePacked("Accusation")))
+        );
         address computedAddr = getMetamorphicContractAddress(computedSalt, _factoryAddress());
         if (msg.sender != computedAddr && msg.sender != _ethdkgAddress()) {
-            revert ValidatorPoolErrors.NotAllowedToAccuse(msg.sender, computedAddr, _ethdkgAddress());
+            revert ValidatorPoolErrors.NotAllowedToAccuse(
+                msg.sender,
+                computedAddr,
+                _ethdkgAddress()
+            );
         }
         _;
     }
@@ -197,12 +203,10 @@ contract ValidatorPool is
      * that no ETHDKG round is running and the consensus is stopped on the AliceNet
      * network.
      */
-    function initializeETHDKG()
-        public
-        onlyFactory
-        assertNotETHDKGRunning
-        assertNotConsensusRunning
-    {
+    function initializeETHDKG() public assertNotETHDKGRunning assertNotConsensusRunning {
+        if (msg.sender != _factoryAddress() && !_wereValidatorsSlashed) {
+            revert ValidatorPoolErrors.NotAllowedToInitializeETHDKG();
+        }
         IETHDKG(_ethdkgAddress()).initializeETHDKG();
     }
 
@@ -213,6 +217,7 @@ contract ValidatorPool is
      */
     function completeETHDKG() public onlyETHDKG {
         _isMaintenanceScheduled = false;
+        _wereValidatorsSlashed = false;
         _isConsensusRunning = true;
     }
 
@@ -377,11 +382,11 @@ contract ValidatorPool is
         return data._tokenID;
     }
 
-    function majorSlash(address dishonestValidator_, address disputer_, bytes32 preSalt_)
-        public
-        onlyETHDKGAndAccusations(preSalt_)
-        balanceShouldNotChange
-    {
+    function majorSlash(
+        address dishonestValidator_,
+        address disputer_,
+        bytes32 preSalt_
+    ) public onlyETHDKGAndAccusations(preSalt_) balanceShouldNotChange {
         if (!_isAccusable(dishonestValidator_)) {
             revert ValidatorPoolErrors.AddressNotAccusable(dishonestValidator_);
         }
@@ -402,14 +407,16 @@ contract ValidatorPool is
         // position was burned + the disputerReward
         _transferEthAndTokens(disputer_, payoutEth, payoutToken);
 
+        _isMaintenanceScheduled = true;
+        _wereValidatorsSlashed = true;
         emit ValidatorMajorSlashed(dishonestValidator_);
     }
 
-    function minorSlash(address dishonestValidator_, address disputer_, bytes32 preSalt_)
-        public
-        onlyETHDKGAndAccusations(preSalt_)
-        balanceShouldNotChange
-    {
+    function minorSlash(
+        address dishonestValidator_,
+        address disputer_,
+        bytes32 preSalt_
+    ) public onlyETHDKGAndAccusations(preSalt_) balanceShouldNotChange {
         if (!_isAccusable(dishonestValidator_)) {
             revert ValidatorPoolErrors.AddressNotAccusable(dishonestValidator_);
         }
@@ -428,6 +435,8 @@ contract ValidatorPool is
             }
         }
         _transferEthAndTokens(disputer_, payoutEth, payoutToken);
+        _isMaintenanceScheduled = true;
+        _wereValidatorsSlashed = true;
         emit ValidatorMinorSlashed(dishonestValidator_, stakeTokenID);
     }
 

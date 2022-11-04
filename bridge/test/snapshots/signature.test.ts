@@ -1,3 +1,4 @@
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { Snapshots } from "../../typechain-types";
 import { expect } from "../chai-setup";
 import { completeETHDKGRound } from "../ethdkg/setup";
@@ -11,15 +12,20 @@ import {
 describe("Snapshots: signature check algorithm", () => {
   let fixture: Fixture;
   let snapshots: Snapshots;
-  beforeEach(async function () {
-    fixture = await getFixture(true, false);
+
+  async function deployFixture() {
+    const fixture = await getFixture(true, false);
 
     await completeETHDKGRound(validatorsSnapshots1, {
       ethdkg: fixture.ethdkg,
       validatorPool: fixture.validatorPool,
     });
 
-    snapshots = fixture.snapshots as Snapshots;
+    const snapshots = fixture.snapshots as Snapshots;
+    return { fixture, snapshots };
+  }
+  beforeEach(async function () {
+    ({ fixture, snapshots } = await loadFixture(deployFixture));
   });
 
   it("Correctly check honest data", async function () {

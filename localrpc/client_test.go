@@ -2,7 +2,6 @@ package localrpc
 
 import (
 	"context"
-	"fmt"
 	"reflect"
 	"testing"
 
@@ -177,9 +176,9 @@ func TestClient_GetTxFees(t *testing.T) {
 				ctx: context.Background(),
 			},
 			want: []string{
-				fmt.Sprintf("%064d", 0),
-				fmt.Sprintf("%064d", 0),
-				fmt.Sprintf("%064d", 0),
+				"0000000000000000000000000000000000000000000000000000000000000fa0",
+				"0000000000000000000000000000000000000000000000000000000000000bb8",
+				"0000000000000000000000000000000000000000000000000000000000000bb8",
 			},
 		},
 	}

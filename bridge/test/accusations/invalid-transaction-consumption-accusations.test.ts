@@ -1,8 +1,10 @@
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { assert, expect } from "chai";
 import { AccusationInvalidTxConsumption } from "../../typechain-types";
 import { Fixture, getFixture } from "../setup";
 import {
   addValidators,
+  generateAccusationID,
   getAccusationDataForNonExistentUTXOWithInvalidSigGroup,
   getInvalidAccusationDataWithSpendingValidDeposit,
   getValidAccusationDataForNonExistentUTXO,
@@ -14,9 +16,12 @@ describe("AccusationInvalidTxConsumption: Tests AccusationInvalidTxConsumption m
   let fixture: Fixture;
 
   let accusation: AccusationInvalidTxConsumption;
+  function deployFixture() {
+    return getFixture(true, true);
+  }
 
   beforeEach(async function () {
-    fixture = await getFixture(true, true);
+    fixture = await loadFixture(deployFixture);
 
     accusation = fixture.accusationInvalidTxConsumption;
   });
@@ -34,17 +39,31 @@ describe("AccusationInvalidTxConsumption: Tests AccusationInvalidTxConsumption m
         proofs,
       } = getValidAccusationDataForNonExistentUTXO();
 
-      await (await accusation.accuseInvalidTransactionConsumption(
-        pClaims,
-        pClaimsSig,
-        bClaims,
-        bClaimsSigGroup,
-        txInPreImage,
-        proofs
-      )).wait();
+      await (
+        await accusation.accuseInvalidTransactionConsumption(
+          pClaims,
+          pClaimsSig,
+          bClaims,
+          bClaimsSigGroup,
+          txInPreImage,
+          proofs
+        )
+      ).wait();
 
-      const isValidator = await fixture.validatorPool.isValidator(signerAccount0);
+      const isValidator = await fixture.validatorPool.isValidator(
+        signerAccount0
+      );
       assert.equal(isValidator, false);
+
+      const id = generateAccusationID(
+        signerAccount0,
+        1,
+        2,
+        1,
+        "0xf40095839ea6635a5869735bd0c363085cb0ebd561e0f361f826103b958c27e5"
+      );
+      const isAccused = await accusation.isAccused(id);
+      assert.equal(isAccused, true);
     });
 
     it("reverts with InvalidAccusation (ConsumptionOfValidDeposit)", async function () {

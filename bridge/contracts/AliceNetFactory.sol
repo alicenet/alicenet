@@ -3,9 +3,17 @@ pragma solidity ^0.8.16;
 import "contracts/utils/DeterministicAddress.sol";
 import "contracts/Proxy.sol";
 import "contracts/libraries/factory/AliceNetFactoryBase.sol";
+import "contracts/AToken.sol";
 
-/// @custom:salt AliceNetFactory
 contract AliceNetFactory is AliceNetFactoryBase {
+    // AToken salt = Bytes32(AToken)
+    // AToken is the old ALCA name, salt kept to maintain compatibility
+    bytes32 internal constant _ATOKEN_SALT =
+        0x41546f6b656e0000000000000000000000000000000000000000000000000000;
+
+    bytes32 internal immutable _aTokenCreationCodeHash;
+    address internal immutable _aTokenAddress;
+
     /**
      * @dev The constructor encodes the proxy deploy byte code with the _UNIVERSAL_DEPLOY_CODE at the
      * head and the factory address at the tail, and deploys the proxy byte code using create OpCode.
@@ -14,7 +22,20 @@ contract AliceNetFactory is AliceNetFactoryBase {
      * constructor then sets proxyTemplate_ state var to the deployed proxy template address the deploy
      * account will be set as the first owner of the factory.
      */
-    constructor() AliceNetFactoryBase() {}
+    constructor(address legacyToken_) AliceNetFactoryBase() {
+        // Deploying ALCA
+        bytes memory creationCode = abi.encodePacked(
+            type(AToken).creationCode,
+            bytes32(uint256(uint160(legacyToken_)))
+        );
+        address aTokenAddress;
+        assembly {
+            aTokenAddress := create2(0, add(creationCode, 0x20), mload(creationCode), _ATOKEN_SALT)
+        }
+        _codeSizeZeroRevert((_extCodeSize(aTokenAddress) != 0));
+        _aTokenAddress = aTokenAddress;
+        _aTokenCreationCodeHash = keccak256(abi.encodePacked(creationCode));
+    }
 
     /**
      * @dev callAny allows EOA to call function impersonating the factory address
@@ -33,6 +54,17 @@ contract AliceNetFactory is AliceNetFactoryBase {
     }
 
     /**
+     * @dev delegateCallAny allows EOA to call a function in a contract without impersonating the factory
+     * @param target_: the address of the contract to be called
+     * @param cdata_: Hex encoded state with function signature + arguments of the target function to be called
+     */
+    function delegateCallAny(address target_, bytes calldata cdata_) public payable onlyOwner {
+        bytes memory cdata = cdata_;
+        _delegateCallAny(target_, cdata);
+        _returnAvailableData();
+    }
+
+    /**
      * @dev deployCreate allows the owner to deploy raw contracts through the factory using
      * non-deterministic address generation (create OpCode)
      * @param deployCode_ Hex encoded state with the deployment code of the contract to be deployed +
@@ -45,6 +77,34 @@ contract AliceNetFactory is AliceNetFactoryBase {
         returns (address contractAddr)
     {
         return _deployCreate(deployCode_);
+    }
+
+    /**
+     * @notice allows the owner to deploy contracts through the factory using
+     * non-deterministic address generation and record the address to external contract mapping
+     * @param deployCode_ Hex encoded state with the deployment code of the contract to be deployed +
+     * constructors' args (if any)
+     * @param salt_ salt used to determine the final determinist address for the deployed contract
+     * @return contractAddr the deployed contract address
+     */
+    function deployCreateAndRegister(bytes calldata deployCode_, bytes32 salt_)
+        public
+        onlyOwner
+        returns (address contractAddr)
+    {
+        address newContractAddress = _deployCreate(deployCode_);
+        _addNewExternalContract(salt_, newContractAddress);
+        return newContractAddress;
+    }
+
+    /**
+     * @dev Add a new address and "pseudo" salt to the externalContractRegistry
+     * @param salt_: salt to be used to retrieve the contract
+     * @param newContractAddress_: address of the contract to be added to registry
+     */
+    function addNewExternalContract(bytes32 salt_, address newContractAddress_) public onlyOwner {
+        _codeSizeZeroRevert(_extCodeSize(newContractAddress_) != 0);
+        _addNewExternalContract(salt_, newContractAddress_);
     }
 
     /**
@@ -73,37 +133,7 @@ contract AliceNetFactory is AliceNetFactoryBase {
     }
 
     /**
-     * @dev deployStatic finishes the deployment started with the deployTemplate of a contract with
-     * determinist address. This function call any initialize() function in the deployed contract
-     * in case the arguments are provided. Should be called after deployTemplate.
-     * @param salt_ salt used to determine the final determinist address for the deployed contract
-     * @param initCallData_ Hex encoded initialization function signature + parameters to initialize the deployed contract
-     * @return contractAddr the address of the deployed template contract
-     */
-    function deployStatic(bytes32 salt_, bytes calldata initCallData_)
-        public
-        onlyOwner
-        returns (address contractAddr)
-    {
-        contractAddr = _deployStatic(salt_, initCallData_);
-    }
-
-    /**
-     * @dev deployTemplate deploys a template contract with the universal code copy constructor that
-     * deploys the contract+constructorArgs defined in the deployCode_ as the contracts runtime code.
-     * @param deployCode_ Hex encoded state with the deploymentCode + (constructor args appended if any)
-     * @return contractAddr the address of the deployed template contract
-     */
-    function deployTemplate(bytes calldata deployCode_)
-        public
-        onlyOwner
-        returns (address contractAddr)
-    {
-        contractAddr = _deployTemplate(deployCode_);
-    }
-
-    /**
-     * @dev initializeContract allows the owner/delegator to initialize contracts deployed via factory
+     * @dev initializeContract allows the owner to initialize contracts deployed via factory
      * @param contract_ address of the contract that will be initialized
      * @param initCallData_ Hex encoded initialization function signature + parameters to initialize the
      * deployed contract
@@ -113,7 +143,7 @@ contract AliceNetFactory is AliceNetFactoryBase {
     }
 
     /**
-     * @dev multiCall allows EOA to make multiple function calls within a single transaction
+     * @dev multiCall allows owner to make multiple function calls within a single transaction
      * impersonating the factory
      * @param cdata_: array of hex encoded state with the function calls (function signature + arguments)
      */
@@ -134,5 +164,34 @@ contract AliceNetFactory is AliceNetFactoryBase {
         bytes calldata initCallData_
     ) public onlyOwner {
         _upgradeProxy(salt_, newImpl_, initCallData_);
+    }
+
+    /**
+     * @dev lookup allows anyone interacting with the contract to get the address of contract specified
+     * by its salt_
+     * @param salt_: Custom NatSpec tag @custom:salt at the top of the contract solidity file
+     */
+    function lookup(bytes32 salt_) public view override returns (address) {
+        // check if the salt belongs to one of the pre-defined contracts deployed during the factory deployment
+        if (salt_ == _ATOKEN_SALT) {
+            return _aTokenAddress;
+        }
+        return AliceNetFactoryBase._lookup(salt_);
+    }
+
+    /**
+     * @dev getter function for retrieving the hash of the AToken creation code.
+     * @return the hash of the AToken creation code.
+     */
+    function getATokenCreationCodeHash() public view returns (bytes32) {
+        return _aTokenCreationCodeHash;
+    }
+
+    /**
+     * @dev getter function for retrieving the address of the AToken contract.
+     * @return AToken address.
+     */
+    function getATokenAddress() public view returns (address) {
+        return _aTokenAddress;
     }
 }

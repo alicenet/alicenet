@@ -103,7 +103,11 @@ contract ValidatorPoolMock is
         return IStakingNFT(_validatorStakingAddress()).burnTo(to_, tokenID_);
     }
 
-    function minorSlash(address validator, address disputer, bytes32 preSalt_ ) public {
+    function minorSlash(
+        address validator,
+        address disputer,
+        bytes32 preSalt_
+    ) public {
         disputer; //no-op to suppress warning of not using disputer address
         preSalt_; //no-op to suppress warning of not using disputer address
         if (!isAccusable(validator)) {
@@ -112,7 +116,11 @@ contract ValidatorPoolMock is
         _removeValidator(validator);
     }
 
-    function majorSlash(address validator, address disputer, bytes32 preSalt_) public {
+    function majorSlash(
+        address validator,
+        address disputer,
+        bytes32 preSalt_
+    ) public {
         disputer; //no-op to suppress warning of not using disputer address
         preSalt_; //no-op to suppress warning of not using disputer address
         if (!isAccusable(validator)) {

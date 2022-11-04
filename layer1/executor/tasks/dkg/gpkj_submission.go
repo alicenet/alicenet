@@ -35,7 +35,7 @@ func (t *GPKjSubmissionTask) Prepare(ctx context.Context) *tasks.TaskErr {
 	logger := t.GetLogger().WithField("method", "Prepare()")
 	logger.Debug("preparing task")
 
-	dkgState, err := state.GetDkgState(t.GetDB())
+	dkgState, err := state.GetDkgState(t.GetMonDB())
 	if err != nil {
 		return tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorDuringPreparation, err), false)
 	}
@@ -74,7 +74,7 @@ func (t *GPKjSubmissionTask) Prepare(ctx context.Context) *tasks.TaskErr {
 			return tasks.NewTaskErr(fmt.Sprintf("error adding private key: %v", err), true)
 		}
 
-		err = state.SaveDkgState(t.GetDB(), dkgState)
+		err = state.SaveDkgState(t.GetMonDB(), dkgState)
 		if err != nil {
 			return tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorDuringPreparation, err), false)
 		}
@@ -90,7 +90,7 @@ func (t *GPKjSubmissionTask) Execute(ctx context.Context) (*types.Transaction, *
 	logger := t.GetLogger().WithField("method", "Execute()")
 	logger.Debug("initiate execution")
 
-	dkgState, err := state.GetDkgState(t.GetDB())
+	dkgState, err := state.GetDkgState(t.GetMonDB())
 	if err != nil {
 		return nil, tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorLoadingDkgState, err), false)
 	}
@@ -116,7 +116,7 @@ func (t *GPKjSubmissionTask) ShouldExecute(ctx context.Context) (bool, *tasks.Ta
 	logger := t.GetLogger().WithField("method", "ShouldExecute()")
 	logger.Debug("should execute task")
 
-	dkgState, err := state.GetDkgState(t.GetDB())
+	dkgState, err := state.GetDkgState(t.GetMonDB())
 	if err != nil {
 		return false, tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorLoadingDkgState, err), false)
 	}

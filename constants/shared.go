@@ -1,3 +1,4 @@
+// Package constants holds all global constants used in AliceNet.
 package constants
 
 import "time"
@@ -24,6 +25,9 @@ const (
 	// phases. The lower this factor is, the quicker more validators are elected as
 	// leaders.
 	ETHDKGDesperationFactor int = 8
+
+	// ETHDKGMinimumParticipants is the minimum amount of validators for the ETHDKG ceremony
+	ETHDKGMinimumParticipants int64 = 4
 )
 
 // CurveSpec specifies the particular elliptic curve we are dealing with.
@@ -130,4 +134,5 @@ var ValidLoggers []string = []string{
 	"staterecover",
 	"ethkey",
 	"accusations",
+	"init",
 }

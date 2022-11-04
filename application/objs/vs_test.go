@@ -891,8 +891,7 @@ func TestValueStoreMakeTxIn(t *testing.T) {
 }
 
 func TestValueStoreValidateFee(t *testing.T) {
-	msg := MakeMockStorageGetter()
-	storage := MakeStorage(msg)
+	storage := MakeWrapperStorageMock()
 
 	utxo := &TXOut{}
 	err := utxo.valueStore.ValidateFee(storage)
@@ -913,9 +912,7 @@ func TestValueStoreValidateFee(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	vsFee := big.NewInt(1)
-	msg.SetValueStoreFee(vsFee)
-	storage = MakeStorage(msg)
+	storage = MakeWrapperStorageMockWithValues(0, 1, 0, 0)
 	err = vs.ValidateFee(storage)
 	if err == nil {
 		t.Fatal("Should have raised error (3)")

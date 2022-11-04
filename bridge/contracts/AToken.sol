@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT-open-group
 pragma solidity ^0.8.16;
 
-import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "contracts/utils/ImmutableAuth.sol";
 import "contracts/interfaces/IStakingToken.sol";
@@ -11,12 +10,10 @@ import "contracts/libraries/errors/StakingTokenErrors.sol";
  * @notice This is the ERC20 implementation of the staking token used by the
  * AliceNet layer2 dapp.
  *
- * @custom:salt AToken
- * @custom:deploy-type deployStatic
  */
 contract AToken is
     IStakingToken,
-    ERC20Upgradeable,
+    ERC20,
     ImmutableFactory,
     ImmutableATokenMinter,
     ImmutableATokenBurner
@@ -28,33 +25,33 @@ contract AToken is
     bool internal _hasEarlyStageEnded;
 
     constructor(address legacyToken_)
+        ERC20("AliceNet Staking Token", "ALCA")
         ImmutableFactory(msg.sender)
         ImmutableATokenMinter()
         ImmutableATokenBurner()
     {
         _legacyToken = legacyToken_;
-    }
-
-    function initialize() public onlyFactory initializer {
-        if (totalSupply() == 0) {
-            __ERC20_init("AliceNet Staking Token", "ALCA");
-            _mint(msg.sender, _INITIAL_MINT_AMOUNT);
-        }
+        _mint(msg.sender, _INITIAL_MINT_AMOUNT);
     }
 
     /**
      * Migrates an amount of legacy token (MADToken) to ALCA tokens
      * @param amount the amount of legacy token to migrate.
      */
-    function migrate(uint256 amount) public {
-        uint256 balanceBefore = IERC20(_legacyToken).balanceOf(address(this));
-        IERC20(_legacyToken).transferFrom(msg.sender, address(this), amount);
-        uint256 balanceAfter = IERC20(_legacyToken).balanceOf(address(this));
-        if (balanceAfter <= balanceBefore) {
-            revert StakingTokenErrors.InvalidConversionAmount();
+    function migrate(uint256 amount) public returns (uint256) {
+        return _migrate(msg.sender, amount);
+    }
+
+    /**
+     * Migrates an amount of legacy token (MADToken) to ALCA tokens to a certain address
+     * @param to the address that will receive the alca tokens
+     * @param amount the amount of legacy token to migrate.
+     */
+    function migrateTo(address to, uint256 amount) public returns (uint256) {
+        if (to == address(0)) {
+            revert StakingTokenErrors.InvalidAddress();
         }
-        uint256 balanceDiff = balanceAfter - balanceBefore;
-        _mint(msg.sender, _convert(balanceDiff));
+        return _migrate(to, amount);
     }
 
     /**
@@ -98,6 +95,18 @@ contract AToken is
      * @return the amount converted to ALCA*/
     function convert(uint256 amount) public view returns (uint256) {
         return _convert(amount);
+    }
+
+    function _migrate(address to, uint256 amount) internal returns (uint256 convertedAmount) {
+        uint256 balanceBefore = IERC20(_legacyToken).balanceOf(address(this));
+        IERC20(_legacyToken).transferFrom(msg.sender, address(this), amount);
+        uint256 balanceAfter = IERC20(_legacyToken).balanceOf(address(this));
+        if (balanceAfter <= balanceBefore) {
+            revert StakingTokenErrors.InvalidConversionAmount();
+        }
+        uint256 balanceDiff = balanceAfter - balanceBefore;
+        convertedAmount = _convert(balanceDiff);
+        _mint(to, convertedAmount);
     }
 
     // Internal function to finish the early stage multiplier.

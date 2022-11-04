@@ -45,7 +45,11 @@ contract ETHDKGAccusations is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
 
             // this makes sure we cannot accuse someone twice because a minor fine will be enough to
             // evict the validator from the pool
-            IValidatorPool(_validatorPoolAddress()).minorSlash(dishonestAddresses[i], msg.sender, 0);
+            IValidatorPool(_validatorPoolAddress()).minorSlash(
+                dishonestAddresses[i],
+                msg.sender,
+                0
+            );
             badParticipants++;
         }
         _badParticipants = badParticipants;
@@ -92,7 +96,11 @@ contract ETHDKGAccusations is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
                 revert ETHDKGErrors.AccusedHasCommitments(dishonestAddresses[i]);
             }
 
-            IValidatorPool(_validatorPoolAddress()).minorSlash(dishonestAddresses[i], msg.sender, 0);
+            IValidatorPool(_validatorPoolAddress()).minorSlash(
+                dishonestAddresses[i],
+                msg.sender,
+                0
+            );
             badParticipants++;
         }
 
@@ -259,7 +267,11 @@ contract ETHDKGAccusations is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
             }
 
             // evict the validator that didn't submit his shares
-            IValidatorPool(_validatorPoolAddress()).minorSlash(dishonestAddresses[i], msg.sender, 0);
+            IValidatorPool(_validatorPoolAddress()).minorSlash(
+                dishonestAddresses[i],
+                msg.sender,
+                0
+            );
             badParticipants++;
         }
         _badParticipants = badParticipants;
@@ -306,7 +318,11 @@ contract ETHDKGAccusations is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
                 revert ETHDKGErrors.AccusedDistributedGPKJ(dishonestAddresses[i]);
             }
 
-            IValidatorPool(_validatorPoolAddress()).minorSlash(dishonestAddresses[i], msg.sender, 0);
+            IValidatorPool(_validatorPoolAddress()).minorSlash(
+                dishonestAddresses[i],
+                msg.sender,
+                0
+            );
             badParticipants++;
         }
 

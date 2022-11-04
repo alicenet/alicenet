@@ -52,7 +52,7 @@ contract ETHDKGMock is
     }
 
     function minorSlash(address validator, address accussator) external {
-        IValidatorPool(_validatorPoolAddress()).minorSlash(validator, accussator,0 );
+        IValidatorPool(_validatorPoolAddress()).minorSlash(validator, accussator, 0);
     }
 
     function majorSlash(address validator, address accussator) external {

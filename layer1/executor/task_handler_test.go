@@ -3,8 +3,13 @@ package executor
 import (
 	"context"
 	"errors"
+	"math/big"
+	"testing"
+	"time"
+
 	"github.com/alicenet/alicenet/bridge/bindings"
 	"github.com/alicenet/alicenet/consensus/objs"
+	"github.com/alicenet/alicenet/constants/dbprefix"
 	"github.com/alicenet/alicenet/crypto"
 	"github.com/alicenet/alicenet/layer1/executor/tasks"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg"
@@ -14,18 +19,17 @@ import (
 	snapshotState "github.com/alicenet/alicenet/layer1/executor/tasks/snapshots/state"
 	"github.com/alicenet/alicenet/layer1/transaction"
 	"github.com/alicenet/alicenet/test/mocks"
+	"github.com/alicenet/alicenet/utils"
 	"github.com/dgraph-io/badger/v2"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
-	"math/big"
-	"testing"
-	"time"
 )
 
 func getTaskHandler(t *testing.T, doCleanup bool) (*Handler, *mocks.MockClient, *mocks.MockAllSmartContracts, *mocks.MockWatcher, accounts.Account) {
-	db := mocks.NewTestDB()
+	monDB := mocks.NewTestDB()
+	consDB := mocks.NewTestDB()
 	client := mocks.NewMockClient()
 	client.GetFinalizedHeightFunc.SetDefaultReturn(0, nil)
 	adminHandlers := mocks.NewMockAdminHandler()
@@ -41,13 +45,12 @@ func getTaskHandler(t *testing.T, doCleanup bool) (*Handler, *mocks.MockClient, 
 		},
 	}
 
-	taskHandler, err := NewTaskHandler(db, client, contracts, adminHandlers, txWatcher)
+	taskHandler, err := NewTaskHandler(monDB, consDB, client, contracts, adminHandlers, txWatcher)
 	require.Nil(t, err)
 
 	if doCleanup {
 		t.Cleanup(func() {
 			taskHandler.Close()
-			db.DB().Close()
 		})
 	}
 
@@ -57,7 +60,7 @@ func getTaskHandler(t *testing.T, doCleanup bool) (*Handler, *mocks.MockClient, 
 // getTaskManagerCopy creates a copy of the manager from the DB without race
 // conditions.
 func getTaskManagerCopy(t *testing.T, manager *TaskManager) *TaskManager {
-	newManager := &TaskManager{Schedule: make(map[string]ManagerRequestInfo), Responses: make(map[string]ManagerResponseInfo), marshaller: getTaskRegistry(), database: manager.database}
+	newManager := &TaskManager{Schedule: make(map[string]ManagerRequestInfo), Responses: make(map[string]ManagerResponseInfo), marshaller: getTaskRegistry(), monDB: manager.monDB}
 	<-time.After(10 * time.Millisecond)
 	err := newManager.loadState()
 	if err != nil {
@@ -76,9 +79,8 @@ func TestTasksHandlerAndManager_Schedule_NilTask(t *testing.T) {
 	t.Parallel()
 	handler, _, _, _, _ := getTaskHandler(t, true)
 	handler.Start()
-	ctx := context.Background()
 
-	_, err := handler.ScheduleTask(ctx, nil, "")
+	_, err := handler.ScheduleTask(nil, "")
 	require.Equal(t, ErrTaskIsNil, err)
 	require.Equal(t, 0, getScheduleLen(t, handler.manager))
 }
@@ -87,9 +89,8 @@ func TestTasksHandlerAndManager_Schedule_NotRegisteredTask(t *testing.T) {
 	t.Parallel()
 	handler, _, _, _, _ := getTaskHandler(t, true)
 	handler.Start()
-	ctx := context.Background()
 
-	_, err := handler.ScheduleTask(ctx, taskMocks.NewMockTask(), "")
+	_, err := handler.ScheduleTask(taskMocks.NewMockTask(), "")
 	require.Equal(t, ErrTaskTypeNotInRegistry, err)
 	require.Equal(t, 0, getScheduleLen(t, handler.manager))
 }
@@ -97,23 +98,21 @@ func TestTasksHandlerAndManager_Schedule_NotRegisteredTask(t *testing.T) {
 func TestTasksHandlerAndManager_Schedule_WrongStartDate(t *testing.T) {
 	handler, _, _, _, _ := getTaskHandler(t, true)
 	handler.Start()
-	ctx := context.Background()
 
 	task := dkg.NewCompletionTask(2, 1)
-	_, err := handler.ScheduleTask(ctx, task, "")
+	_, err := handler.ScheduleTask(task, "")
 	require.Equal(t, ErrWrongParams, err)
 	require.Equal(t, 0, getScheduleLen(t, handler.manager))
 }
 
 func TestTasksHandlerAndManager_Schedule_WrongEndDate(t *testing.T) {
 	handler, client, _, _, _ := getTaskHandler(t, true)
-	ctx := context.Background()
 	client.GetFinalizedHeightFunc.SetDefaultReturn(12, nil)
 	handler.Start()
 	<-time.After(tasks.ManagerProcessingTime)
 
 	task := dkg.NewCompletionTask(2, 3)
-	_, err := handler.ScheduleTask(ctx, task, "")
+	_, err := handler.ScheduleTask(task, "")
 	require.Equal(t, ErrTaskExpired, err)
 	require.Equal(t, 0, getScheduleLen(t, handler.manager))
 }
@@ -122,14 +121,13 @@ func TestTasksHandlerAndManager_Schedule_MultiExecutionNotAllowed(t *testing.T) 
 	t.Parallel()
 	handler, _, _, _, _ := getTaskHandler(t, true)
 	handler.Start()
-	ctx := context.Background()
 
 	task := dkg.NewCompletionTask(10, 40)
-	resp, err := handler.ScheduleTask(ctx, task, "")
+	resp, err := handler.ScheduleTask(task, "")
 	require.Nil(t, err)
 	require.NotNil(t, resp)
 
-	_, err = handler.ScheduleTask(ctx, task, "")
+	_, err = handler.ScheduleTask(task, "")
 	require.Equal(t, ErrTaskNotAllowMultipleExecutions, err)
 	require.Equal(t, 1, getScheduleLen(t, handler.manager))
 }
@@ -138,9 +136,8 @@ func TestTasksHandlerAndManager_KillById_EmptyId(t *testing.T) {
 	t.Parallel()
 	handler, _, _, _, _ := getTaskHandler(t, true)
 	handler.Start()
-	ctx := context.Background()
 
-	_, err := handler.KillTaskById(ctx, "")
+	_, err := handler.KillTaskById("")
 	require.Equal(t, ErrTaskIdEmpty, err)
 }
 
@@ -148,25 +145,23 @@ func TestTasksHandlerAndManager_KillById_NotFound(t *testing.T) {
 	t.Parallel()
 	handler, _, _, _, _ := getTaskHandler(t, true)
 	handler.Start()
-	ctx := context.Background()
 
-	_, err := handler.KillTaskById(ctx, "123")
+	_, err := handler.KillTaskById("123")
 	require.Equal(t, ErrNotScheduled, err)
 }
 
 func TestTasksHandlerAndManager_ScheduleAndKillById(t *testing.T) {
 	handler, _, _, _, _ := getTaskHandler(t, true)
 	handler.Start()
-	ctx := context.Background()
 
 	task := dkg.NewCompletionTask(10, 40)
 	taskId := uuid.New().String()
-	resp, err := handler.ScheduleTask(ctx, task, taskId)
+	resp, err := handler.ScheduleTask(task, taskId)
 	require.Nil(t, err)
 	require.NotNil(t, resp)
 	require.Equal(t, 1, getScheduleLen(t, handler.manager))
 
-	_, err = handler.KillTaskById(ctx, taskId)
+	_, err = handler.KillTaskById(taskId)
 	require.Nil(t, err)
 	require.Equal(t, 0, getScheduleLen(t, handler.manager))
 }
@@ -175,8 +170,6 @@ func TestTasksHandlerAndManager_ScheduleAndKillById_RunningTask(t *testing.T) {
 	handler, client, contracts, _, acc := getTaskHandler(t, true)
 	client.GetFinalizedHeightFunc.SetDefaultReturn(12, nil)
 	handler.Start()
-	ctx := context.Background()
-
 	dkgState := state.NewDkgState(acc)
 	dkgState.OnRegistrationOpened(
 		10,
@@ -187,7 +180,7 @@ func TestTasksHandlerAndManager_ScheduleAndKillById_RunningTask(t *testing.T) {
 	publicKey := [2]*big.Int{big.NewInt(0), big.NewInt(0)}
 	dkgState.TransportPublicKey = publicKey
 
-	err := state.SaveDkgState(handler.manager.database, dkgState)
+	err := state.SaveDkgState(handler.manager.monDB, dkgState)
 	require.Nil(t, err)
 
 	ethDkgMock := mocks.NewMockIETHDKG()
@@ -205,7 +198,7 @@ func TestTasksHandlerAndManager_ScheduleAndKillById_RunningTask(t *testing.T) {
 
 	task := dkg.NewRegisterTask(10, 40)
 	taskId := uuid.New().String()
-	resp, err := handler.ScheduleTask(ctx, task, taskId)
+	resp, err := handler.ScheduleTask(task, taskId)
 	require.Nil(t, err)
 	require.NotNil(t, resp)
 	require.Equal(t, 1, getScheduleLen(t, handler.manager))
@@ -223,7 +216,7 @@ func TestTasksHandlerAndManager_ScheduleAndKillById_RunningTask(t *testing.T) {
 		isRunning = taskCopy.InternalState == Running
 	}
 
-	_, err = handler.KillTaskById(ctx, taskId)
+	_, err = handler.KillTaskById(taskId)
 	require.Nil(t, err)
 
 	failTime = time.After(tasks.ManagerProcessingTime)
@@ -235,50 +228,47 @@ func TestTasksHandlerAndManager_ScheduleAndKillById_RunningTask(t *testing.T) {
 		}
 	}
 
-	blockingResp := resp.GetResponseBlocking(ctx)
+	blockingResp := resp.GetResponseBlocking(context.Background())
 	require.NotNil(t, blockingResp)
-	require.Equal(t, context.Canceled, blockingResp)
+	require.Equal(t, tasks.ErrTaskKilled, blockingResp)
 	require.Equal(t, 0, getScheduleLen(t, handler.manager))
 }
 
 func TestTasksHandlerAndManager_KillByType_Nil(t *testing.T) {
 	handler, _, _, _, _ := getTaskHandler(t, true)
 	handler.Start()
-	ctx := context.Background()
 
-	_, err := handler.KillTaskByType(ctx, nil)
+	_, err := handler.KillTaskByType(nil)
 	require.Equal(t, ErrTaskIsNil, err)
 }
 
 func TestTasksHandlerAndManager_KillByType_NotInRegistry(t *testing.T) {
 	handler, _, _, _, _ := getTaskHandler(t, true)
 	handler.Start()
-	ctx := context.Background()
 
-	_, err := handler.KillTaskByType(ctx, taskMocks.NewMockTask())
+	_, err := handler.KillTaskByType(taskMocks.NewMockTask())
 	require.Equal(t, ErrTaskTypeNotInRegistry, err)
 }
 
 func TestTasksHandlerAndManager_ScheduleAndKillByType(t *testing.T) {
 	handler, _, _, _, _ := getTaskHandler(t, true)
 	handler.Start()
-	ctx := context.Background()
 
 	task1 := dkg.NewCompletionTask(10, 40)
 	task1.AllowMultiExecution = true
-	resp, err := handler.ScheduleTask(ctx, task1, "")
+	resp, err := handler.ScheduleTask(task1, "")
 	require.Nil(t, err)
 	require.NotNil(t, resp)
 	require.Equal(t, 1, getScheduleLen(t, handler.manager))
 
 	task2 := dkg.NewCompletionTask(10, 40)
 	task2.AllowMultiExecution = true
-	resp, err = handler.ScheduleTask(ctx, task1, "")
+	resp, err = handler.ScheduleTask(task1, "")
 	require.Nil(t, err)
 	require.NotNil(t, resp)
 	require.Equal(t, 2, getScheduleLen(t, handler.manager))
 
-	_, err = handler.KillTaskByType(ctx, &dkg.CompletionTask{})
+	_, err = handler.KillTaskByType(&dkg.CompletionTask{})
 	require.Nil(t, err)
 	require.Equal(t, 0, getScheduleLen(t, handler.manager))
 }
@@ -287,7 +277,6 @@ func TestTasksHandlerAndManager_ScheduleKillCloseAndRecover(t *testing.T) {
 	handler, client, contracts, _, acc := getTaskHandler(t, false)
 	handler.Start()
 	client.GetFinalizedHeightFunc.SetDefaultReturn(12, nil)
-	ctx := context.Background()
 
 	dkgState := state.NewDkgState(acc)
 	dkgState.OnRegistrationOpened(
@@ -299,7 +288,7 @@ func TestTasksHandlerAndManager_ScheduleKillCloseAndRecover(t *testing.T) {
 	publicKey := [2]*big.Int{big.NewInt(0), big.NewInt(0)}
 	dkgState.TransportPublicKey = publicKey
 
-	err := state.SaveDkgState(handler.manager.database, dkgState)
+	err := state.SaveDkgState(handler.manager.monDB, dkgState)
 	require.Nil(t, err)
 
 	ethDkgMock := mocks.NewMockIETHDKG()
@@ -322,7 +311,7 @@ func TestTasksHandlerAndManager_ScheduleKillCloseAndRecover(t *testing.T) {
 		MaxStaleBlocks:  14,
 	}
 	taskId := uuid.New().String()
-	resp, err := handler.ScheduleTask(ctx, task, taskId)
+	resp, err := handler.ScheduleTask(task, taskId)
 	require.Nil(t, err)
 	require.NotNil(t, resp)
 	require.Equal(t, 1, getScheduleLen(t, handler.manager))
@@ -341,7 +330,7 @@ func TestTasksHandlerAndManager_ScheduleKillCloseAndRecover(t *testing.T) {
 	}
 
 	handler.Close()
-	newHandler, err := NewTaskHandler(handler.manager.database, handler.manager.eth, handler.manager.contracts, handler.manager.adminHandler, handler.manager.taskExecutor.txWatcher)
+	newHandler, err := NewTaskHandler(handler.manager.monDB, handler.manager.consDB, handler.manager.eth, handler.manager.contracts, handler.manager.adminHandler, handler.manager.taskExecutor.txWatcher)
 	recoveredTask := newHandler.(*Handler).manager.Schedule[taskId]
 	require.Equal(t, task.ID, recoveredTask.Id)
 	require.Equal(t, task.Name, recoveredTask.Name)
@@ -353,12 +342,12 @@ func TestTasksHandlerAndManager_ScheduleKillCloseAndRecover(t *testing.T) {
 	require.Nil(t, err)
 	newHandler.Start()
 
-	resp, err = newHandler.ScheduleTask(ctx, task, taskId)
+	resp, err = newHandler.ScheduleTask(task, taskId)
 	require.Nil(t, err)
 	require.NotNil(t, resp)
 	require.Equal(t, 1, getScheduleLen(t, newHandler.(*Handler).manager))
 
-	_, err = newHandler.KillTaskById(ctx, taskId)
+	_, err = newHandler.KillTaskById(taskId)
 	require.Nil(t, err)
 
 	failTime = time.After(tasks.ManagerProcessingTime)
@@ -370,17 +359,17 @@ func TestTasksHandlerAndManager_ScheduleKillCloseAndRecover(t *testing.T) {
 		}
 	}
 
-	blockingResp := resp.GetResponseBlocking(ctx)
+	blockingResp := resp.GetResponseBlocking(context.Background())
 	require.NotNil(t, blockingResp)
 	require.Equal(t, ErrTaskKilledBeforeExecution, blockingResp)
 	require.Equal(t, 0, getScheduleLen(t, newHandler.(*Handler).manager))
 
 	newHandler.Close()
-	newHandler2, err := NewTaskHandler(newHandler.(*Handler).manager.database, newHandler.(*Handler).manager.eth, newHandler.(*Handler).manager.contracts, newHandler.(*Handler).manager.adminHandler, newHandler.(*Handler).manager.taskExecutor.txWatcher)
+	newHandler2, err := NewTaskHandler(newHandler.(*Handler).manager.monDB, newHandler.(*Handler).manager.consDB, newHandler.(*Handler).manager.eth, newHandler.(*Handler).manager.contracts, newHandler.(*Handler).manager.adminHandler, newHandler.(*Handler).manager.taskExecutor.txWatcher)
 	require.Nil(t, err)
 	newHandler2.Start()
 
-	resp, err = newHandler2.ScheduleTask(ctx, task, taskId)
+	resp, err = newHandler2.ScheduleTask(task, taskId)
 	require.Nil(t, err)
 	require.NotNil(t, resp)
 	require.Equal(t, 0, getScheduleLen(t, newHandler2.(*Handler).manager))
@@ -398,14 +387,13 @@ func TestTasksHandlerAndManager_ScheduleKillCloseAndRecover(t *testing.T) {
 	require.Equal(t, ErrTaskKilledBeforeExecution, blockingResp)
 
 	newHandler2.Close()
-	handler.manager.database.DB().Close()
+	handler.manager.monDB.DB().Close()
 }
 
 func TestTasksHandlerAndManager_ScheduleAndRecover_RunningSnapshotTask(t *testing.T) {
 	handler, client, contracts, _, acc := getTaskHandler(t, false)
 	client.GetFinalizedHeightFunc.SetDefaultReturn(12, nil)
 	handler.Start()
-	ctx := context.Background()
 
 	bh := &objs.BlockHeader{
 		BClaims: &objs.BClaims{
@@ -425,7 +413,7 @@ func TestTasksHandlerAndManager_ScheduleAndRecover_RunningSnapshotTask(t *testin
 		Account:     acc,
 		BlockHeader: bh,
 	}
-	err := snapshotState.SaveSnapshotState(handler.manager.database, ssState)
+	err := snapshotState.SaveSnapshotState(handler.manager.monDB, ssState)
 	require.Nil(t, err)
 
 	ssContracts := mocks.NewMockISnapshots()
@@ -441,7 +429,7 @@ func TestTasksHandlerAndManager_ScheduleAndRecover_RunningSnapshotTask(t *testin
 
 	task := snapshots.NewSnapshotTask(0, 5, 1)
 	taskId := uuid.New().String()
-	resp, err := handler.ScheduleTask(ctx, task, taskId)
+	resp, err := handler.ScheduleTask(task, taskId)
 	require.Nil(t, err)
 	require.NotNil(t, resp)
 	require.Equal(t, 1, getScheduleLen(t, handler.manager))
@@ -460,7 +448,7 @@ func TestTasksHandlerAndManager_ScheduleAndRecover_RunningSnapshotTask(t *testin
 	}
 
 	handler.Close()
-	newHandler, err := NewTaskHandler(handler.manager.database, handler.manager.eth, handler.manager.contracts, handler.manager.adminHandler, handler.manager.taskExecutor.txWatcher)
+	newHandler, err := NewTaskHandler(handler.manager.monDB, handler.manager.consDB, handler.manager.eth, handler.manager.contracts, handler.manager.adminHandler, handler.manager.taskExecutor.txWatcher)
 	recoveredTask := newHandler.(*Handler).manager.Schedule[taskId]
 	require.Equal(t, task.ID, recoveredTask.Id)
 	require.Equal(t, task.Name, recoveredTask.Name)
@@ -487,4 +475,39 @@ func TestTasksHandlerAndManager_ScheduleAndRecover_RunningSnapshotTask(t *testin
 	}
 
 	newHandler.Close()
+}
+
+func TestHandlerManagerAndExecutor_ErrorOnCreation(t *testing.T) {
+	t.Parallel()
+	monDB := mocks.NewTestDB()
+	consDB := mocks.NewTestDB()
+	client := mocks.NewMockClient()
+	adminHandlers := mocks.NewMockAdminHandler()
+	txWatcher := mocks.NewMockWatcher()
+	contracts := mocks.NewMockAllSmartContracts()
+
+	err := monDB.Update(func(txn *badger.Txn) error {
+		key := dbprefix.PrefixTaskExecutorState()
+		if err := utils.SetValue(txn, key, []byte("corrupted data")); err != nil {
+			return err
+		}
+		return nil
+	})
+	require.Nil(t, err)
+
+	taskHandler, err := NewTaskHandler(monDB, consDB, client, contracts, adminHandlers, txWatcher)
+
+	require.Nil(t, taskHandler)
+	require.NotNil(t, err)
+}
+
+func TestTasksHandlerAndManager_SendNilResponseAndCloseRequestChan(t *testing.T) {
+	handler, _, _, _, _ := getTaskHandler(t, true)
+	handler.Start()
+
+	task1 := dkg.NewCompletionTask(10, 40)
+	req := managerRequest{task: task1, id: "task-id", action: Schedule, response: nil}
+	handler.requestChannel <- req
+	<-time.After(100 * time.Millisecond)
+	require.Equal(t, 0, getScheduleLen(t, handler.manager))
 }

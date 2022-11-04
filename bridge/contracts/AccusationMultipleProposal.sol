@@ -11,6 +11,7 @@ import "contracts/libraries/errors/AccusationsErrors.sol";
 
 /// @custom:deploy-type deployUpgradeable
 /// @custom:role Accusation
+/// @custom:salt AccusationMultipleProposal
 contract AccusationMultipleProposal is
     ImmutableFactory,
     ImmutableSnapshots,
@@ -18,7 +19,8 @@ contract AccusationMultipleProposal is
     ImmutableValidatorPool
 {
     // this is the keccak256 of "AccusationMultipleProposal"
-    bytes32 constant public PRE_SALT = 0x17287210c71008320429d4cce2075373f0b2c5217b507513fe4904fead741aad;
+    bytes32 public constant PRE_SALT =
+        0x17287210c71008320429d4cce2075373f0b2c5217b507513fe4904fead741aad;
     mapping(bytes32 => bool) internal _accusations;
 
     constructor()
@@ -91,13 +93,15 @@ contract AccusationMultipleProposal is
         }
 
         // deterministic accusation ID
-        bytes32 id = keccak256(abi.encodePacked(
-            signerAccount0,
-            pClaims0.rCert.rClaims.chainId,
-            pClaims0.rCert.rClaims.height,
-            pClaims0.rCert.rClaims.round,
-            PRE_SALT
-        ));
+        bytes32 id = keccak256(
+            abi.encodePacked(
+                signerAccount0,
+                pClaims0.rCert.rClaims.chainId,
+                pClaims0.rCert.rClaims.height,
+                pClaims0.rCert.rClaims.round,
+                PRE_SALT
+            )
+        );
 
         // check if this accusation ID has already been submitted
         if (_accusations[id]) {

@@ -295,6 +295,10 @@ func (ps *PeerManager) handleDisc(conn interfaces.P2PConn) {
 		ps.Lock()
 		defer ps.Unlock()
 		if !ps.active.contains(conn.NodeAddr()) {
+			ps.logger.WithFields(logrus.Fields{
+				"nodeAddrHost": conn.NodeAddr().Host(),
+				"nodeAddrPort": conn.NodeAddr().Port(),
+			}).Warn("Adding inactive peer handleDisc")
 			ps.inactive.add(conn.NodeAddr())
 		}
 	}()
@@ -473,6 +477,7 @@ func (ps *PeerManager) getPeersActive() {
 		for i := 0; i < len(resp.Peers); i++ {
 			p, err := (*transport.NodeAddr).Unmarshal(nil, resp.Peers[i])
 			if err != nil {
+				ps.logger.WithError(err).Warningf("couldnt unmarshal node address %s", resp.Peers[i])
 				continue
 			}
 			if ps.isMe(p) {
@@ -581,6 +586,7 @@ func (ps *PeerManager) bootNodeProtocol(nodeAddr interfaces.NodeAddr) ([]interfa
 	for i := 0; i < len(resp.Peers); i++ {
 		p, err := (*transport.NodeAddr).Unmarshal(nil, resp.Peers[i])
 		if err != nil {
+			ps.logger.WithError(err).Warningf("couldnt unmarshal node address %s", resp.Peers[i])
 			continue
 		}
 		peerlist = append(peerlist, p)

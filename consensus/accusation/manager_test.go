@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/gob"
 	"encoding/hex"
+	"errors"
 	"math/big"
 	"strconv"
 	"testing"
@@ -47,6 +48,7 @@ func setupManagerTests(t *testing.T) *managerTestProxy {
 	rawConsensusDb, err := utils.OpenBadger(nodeCtx.Done(), "", true)
 	assert.Nil(t, err)
 	var closeDB func() = func() {
+		<-time.After(1 * time.Second)
 		err := rawConsensusDb.Close()
 		if err != nil {
 			t.Errorf("error closing rawConsensusDb: %v", err)
@@ -111,18 +113,18 @@ func TestManagerPollCache(t *testing.T) {
 	rs := createRoundState(t, os)
 	vs := createValidatorsSet(t, os, rs)
 
-	_ = testProxy.manager.database.Update(func(txn *badger.Txn) error {
-		err := testProxy.manager.database.SetOwnState(txn, os)
+	_ = testProxy.manager.consDB.Update(func(txn *badger.Txn) error {
+		err := testProxy.manager.consDB.SetOwnState(txn, os)
 		if err != nil {
 			t.Fatalf("Shouldn't have raised error: %v", err)
 		}
 
-		err = testProxy.manager.database.SetCurrentRoundState(txn, rs)
+		err = testProxy.manager.consDB.SetCurrentRoundState(txn, rs)
 		if err != nil {
 			t.Fatalf("Shouldn't have raised error: %v", err)
 		}
 
-		err = testProxy.manager.database.SetValidatorSet(txn, vs)
+		err = testProxy.manager.consDB.SetValidatorSet(txn, vs)
 		if err != nil {
 			t.Fatalf("Shouldn't have raised error: %v", err)
 		}
@@ -164,7 +166,7 @@ func TestManagerPollCache(t *testing.T) {
 	assert.True(t, hadUpdates)
 
 	// now poll again with the same data.
-	// this should not add a new RS to the workQ because it's been processed and cached already
+	// this should add the same LRS to the workQ
 	err = testProxy.manager.Poll()
 	assert.Nil(t, err)
 
@@ -188,10 +190,10 @@ func TestManagerPollCache(t *testing.T) {
 	assert.False(t, hadUpdates)
 
 	// check cache is invalidated by changing the RS object
-	_ = testProxy.manager.database.Update(func(txn *badger.Txn) error {
+	_ = testProxy.manager.consDB.Update(func(txn *badger.Txn) error {
 		rs.RCert.RClaims.Round = 2
 
-		err = testProxy.manager.database.SetCurrentRoundState(txn, rs)
+		err = testProxy.manager.consDB.SetCurrentRoundState(txn, rs)
 		if err != nil {
 			t.Fatalf("Shouldn't have raised error: %v", err)
 		}
@@ -253,12 +255,12 @@ func (t *mockAccusationTask) ShouldExecute(ctx context.Context) (bool, *tasks.Ta
 }
 
 // accuseAllRoundStates is a detector function that accuses all round states because it's a test
-func accuseAllRoundStates(rs *objs.RoundState, lrs *lstate.RoundStates, db *db.Database) (tasks.Task, bool) {
+func accuseAllRoundStates(rs *objs.RoundState, lrs *lstate.RoundStates, consDB *db.Database) (tasks.Task, bool) {
 	acc := &mockAccusationTask{
 		BaseTask: tasks.NewBaseTask(0, 0, false, nil),
 		SomeData: "accusing all the things",
 	}
-	acc.ID = hex.EncodeToString(crypto.Hasher([]byte("some id")))
+	acc.ID = hex.EncodeToString(crypto.Hasher(rs.Proposal.Proposer))
 
 	return acc, true
 }
@@ -284,18 +286,18 @@ func TestManagerAccusable(t *testing.T) {
 	rs := createRoundState(t, os)
 	vs := createValidatorsSet(t, os, rs)
 
-	_ = testProxy.manager.database.Update(func(txn *badger.Txn) error {
-		err := testProxy.manager.database.SetOwnState(txn, os)
+	_ = testProxy.manager.consDB.Update(func(txn *badger.Txn) error {
+		err := testProxy.manager.consDB.SetOwnState(txn, os)
 		if err != nil {
 			t.Fatalf("Shouldn't have raised error: %v", err)
 		}
 
-		err = testProxy.manager.database.SetCurrentRoundState(txn, rs)
+		err = testProxy.manager.consDB.SetCurrentRoundState(txn, rs)
 		if err != nil {
 			t.Fatalf("Shouldn't have raised error: %v", err)
 		}
 
-		err = testProxy.manager.database.SetValidatorSet(txn, vs)
+		err = testProxy.manager.consDB.SetValidatorSet(txn, vs)
 		if err != nil {
 			t.Fatalf("Shouldn't have raised error: %v", err)
 		}
@@ -314,14 +316,14 @@ func TestManagerAccusable(t *testing.T) {
 	assert.Nil(t, err)
 
 	// wait for workers to process the accusation
-	time.Sleep(5 * time.Second)
+	time.Sleep(1 * time.Second)
 
 	// check if an accusation is inside the accusationQueue
 	receivedAcc := 0
 	var accusation tasks.Task
 	assert.Nil(t, accusation)
 
-	for receivedAcc < len(vs.Validators) { // all validators are being accused here
+	for receivedAcc == 0 { // one validator is being accused here
 		select {
 		case acc := <-testProxy.manager.accusationQ:
 			t.Logf("received acc: %#v", acc)
@@ -333,6 +335,8 @@ func TestManagerAccusable(t *testing.T) {
 			time.Sleep(100 * time.Millisecond)
 		}
 	}
+
+	assert.Equal(t, 1, receivedAcc)
 }
 
 // TestManagerPersistCreatedAccusations tests the persistence of created accusations
@@ -362,20 +366,20 @@ func TestManagerPersistCreatedAccusations(t *testing.T) {
 
 	assert.Empty(t, testProxy.manager.unpersistedCreatedAccusations)
 
-	err := testProxy.manager.database.View(func(txn *badger.Txn) error {
+	err := testProxy.manager.consDB.View(func(txn *badger.Txn) error {
 		var id [32]byte
 		idBin, err := hex.DecodeString(accusation.GetId())
 		assert.Nil(t, err)
 		copy(id[:], idBin)
 
-		accRaw, err := testProxy.manager.database.GetAccusationRaw(txn, id)
+		accRaw, err := testProxy.manager.consDB.GetAccusationRaw(txn, id)
 		assert.Nil(t, err)
 		acc, err := marshaller.GobUnmarshalBinary(accRaw)
 		assert.Nil(t, err)
 
 		assert.Equal(t, acc.GetId(), accusation.GetId())
 
-		accs, err := testProxy.manager.database.GetAccusations(txn)
+		accs, err := testProxy.manager.consDB.GetAccusations(txn)
 		assert.Nil(t, err)
 		assert.Equal(t, 1, len(accs))
 
@@ -407,29 +411,120 @@ func TestManagerPersistScheduledAccusations(t *testing.T) {
 	accusationRaw, err := marshaller.GobMarshalBinary(accusation)
 	assert.Nil(t, err)
 
-	err = testProxy.manager.database.Update(func(txn *badger.Txn) error {
-		return testProxy.manager.database.SetAccusationRaw(txn, id, accusationRaw)
+	err = testProxy.manager.consDB.Update(func(txn *badger.Txn) error {
+		return testProxy.manager.consDB.SetAccusationRaw(txn, id, accusationRaw)
 	})
 	assert.Nil(t, err)
 
 	err = testProxy.manager.scheduleAccusations()
 	assert.Nil(t, err)
 
-	err = testProxy.manager.database.View(func(txn *badger.Txn) error {
-		accRaw, err := testProxy.manager.database.GetAccusationRaw(txn, id)
+	err = testProxy.manager.consDB.View(func(txn *badger.Txn) error {
+		accRaw, err := testProxy.manager.consDB.GetAccusationRaw(txn, id)
 		assert.Nil(t, err)
 		acc, err := marshaller.GobUnmarshalBinary(accRaw)
 		assert.Nil(t, err)
 
 		assert.Equal(t, acc.GetId(), accusation.GetId())
 
-		accs, err := testProxy.manager.database.GetAccusations(txn)
+		accs, err := testProxy.manager.consDB.GetAccusations(txn)
 		assert.Nil(t, err)
 		assert.Equal(t, 1, len(accs))
 
 		return nil
 	})
 	assert.Nil(t, err)
+}
+
+// TestCleanupValidatorsCache_Success for cleanup
+func TestCleanupValidatorsCache_Success(t *testing.T) {
+	testProxy := setupManagerTests(t)
+
+	vAddr := string(crypto.Hasher([]byte("val1")))
+	testProxy.manager.rsCache[vAddr] = rsCacheStruct{}
+
+	// start workers
+	testProxy.manager.StartWorkers()
+
+	// wait for cleanup time (every 1 minute)
+	<-time.After(62 * time.Second)
+
+	testProxy.manager.rsCacheLock.Lock()
+	defer testProxy.manager.rsCacheLock.Unlock()
+	assert.Len(t, testProxy.manager.validatorsCache, 0)
+	assert.Len(t, testProxy.manager.rsCache, 0)
+}
+
+// TestManagerCheckAccusationsReceipt interaction with TxWatcher
+func TestManagerCheckAccusationsReceipt(t *testing.T) {
+	testProxy := setupManagerTests(t)
+
+	// register mockAccusationTask in gob
+	gob.Register(&mockAccusationTask{})
+
+	// attach accuseAllRoundStates to the manager processing pipeline
+	testProxy.manager.detectionPipeline = append(testProxy.manager.detectionPipeline, accuseAllRoundStates)
+
+	// create a Persisted accusation and store in DB
+	accusation := &mockAccusationTask{
+		BaseTask: tasks.NewBaseTask(0, 0, true, nil),
+		SomeData: "accusing all the things",
+	}
+	accusation.ID = hex.EncodeToString(crypto.Hasher([]byte("some ID")))
+	var id [32]byte
+	idBin, err := hex.DecodeString(accusation.GetId())
+	assert.Nil(t, err)
+	copy(id[:], idBin)
+	accusationRaw, err := marshaller.GobMarshalBinary(accusation)
+	assert.Nil(t, err)
+
+	err = testProxy.manager.consDB.Update(func(txn *badger.Txn) error {
+		return testProxy.manager.consDB.SetAccusationRaw(txn, id, accusationRaw)
+	})
+	assert.Nil(t, err)
+
+	err = testProxy.manager.scheduleAccusations()
+	assert.Nil(t, err)
+
+	err = testProxy.manager.consDB.View(func(txn *badger.Txn) error {
+		accRaw, err := testProxy.manager.consDB.GetAccusationRaw(txn, id)
+		assert.Nil(t, err)
+		acc, err := marshaller.GobUnmarshalBinary(accRaw)
+		assert.Nil(t, err)
+
+		assert.Equal(t, acc.GetId(), accusation.GetId())
+
+		accs, err := testProxy.manager.consDB.GetAccusations(txn)
+		assert.Nil(t, err)
+		assert.Equal(t, 1, len(accs))
+
+		return nil
+	})
+	assert.Nil(t, err)
+
+	respMock1 := mocks.NewMockTaskResponse()
+	respMock1.IsReadyFunc.SetDefaultReturn(true)
+	respMock1.GetResponseBlockingFunc.SetDefaultReturn(errors.New("error"))
+
+	respMock2 := mocks.NewMockTaskResponse()
+	respMock2.IsReadyFunc.SetDefaultReturn(true)
+	respMock2.GetResponseBlockingFunc.SetDefaultReturn(nil)
+
+	testProxy.manager.runningAccusations = make(map[string]executor.TaskResponse)
+	testProxy.manager.runningAccusations["resp1"] = respMock1
+	testProxy.manager.runningAccusations["resp2"] = respMock2
+	assert.Len(t, testProxy.manager.runningAccusations, 2)
+
+	testProxy.manager.handleCompletedAccusations()
+	assert.Len(t, testProxy.manager.runningAccusations, 1)
+}
+
+func TestRsCacheStruct_DidChange_returnsError(t *testing.T) {
+	rsCacheStruct := rsCacheStruct{}
+	rs := &objs.RoundState{}
+	result, err := rsCacheStruct.DidChange(rs)
+	assert.False(t, result)
+	assert.NotNil(t, err)
 }
 
 func createValidatorsSet(t *testing.T, os *objs.OwnState, rs *objs.RoundState) *objs.ValidatorSet {
@@ -531,20 +626,37 @@ func createRoundState(t *testing.T, os *objs.OwnState) *objs.RoundState {
 		t.Fatal(err)
 	}
 
+	rcert := &objs.RCert{
+		SigGroup: sig,
+		RClaims: &objs.RClaims{
+			ChainID:   1,
+			Height:    2,
+			PrevBlock: prevBlock,
+			Round:     1,
+		},
+	}
+
 	rs := &objs.RoundState{
 		VAddr:      os.VAddr, // change done
 		GroupKey:   groupKey,
 		GroupShare: bnKey,
 		GroupIdx:   127,
-		RCert: &objs.RCert{
-			SigGroup: sig,
-			RClaims: &objs.RClaims{
-				ChainID:   1,
-				Height:    2,
-				PrevBlock: prevBlock,
-				Round:     1,
+		Proposal: &objs.Proposal{
+			Proposer: os.VAddr,
+			PClaims: &objs.PClaims{
+				RCert: rcert,
+				BClaims: &objs.BClaims{
+					ChainID:    1,
+					Height:     2,
+					TxCount:    0,
+					PrevBlock:  prevBlock,
+					TxRoot:     crypto.Hasher([]byte("")),
+					StateRoot:  crypto.Hasher([]byte("")),
+					HeaderRoot: crypto.Hasher([]byte("")),
+				},
 			},
 		},
+		RCert: rcert,
 	}
 
 	return rs
@@ -592,6 +704,7 @@ func createOwnState(t *testing.T, length int) *objs.OwnState {
 		MaxBHSeen:         bh,
 		CanonicalSnapShot: bh,
 		PendingSnapShot:   bh,
+		GroupKey:          crypto.Hasher([]byte("")),
 	}
 }
 

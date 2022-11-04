@@ -9,13 +9,14 @@ import (
 	"sync"
 	"time"
 
+	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg"
+	"github.com/alicenet/alicenet/layer1/executor/tasks/snapshots"
+
 	"github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/constants/dbprefix"
 	"github.com/alicenet/alicenet/layer1"
 	"github.com/alicenet/alicenet/layer1/executor/marshaller"
 	"github.com/alicenet/alicenet/layer1/executor/tasks"
-	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg"
-	"github.com/alicenet/alicenet/layer1/executor/tasks/snapshots"
 	monitorInterfaces "github.com/alicenet/alicenet/layer1/monitor/interfaces"
 	"github.com/alicenet/alicenet/layer1/transaction"
 	"github.com/alicenet/alicenet/logging"
@@ -30,10 +31,10 @@ type TaskManager struct {
 	Schedule       map[string]ManagerRequestInfo  `json:"schedule"`
 	Responses      map[string]ManagerResponseInfo `json:"responses"`
 	LastHeightSeen uint64                         `json:"lastHeightSeen"`
-	mainCtx        context.Context                `json:"-"`
 	eth            layer1.Client                  `json:"-"`
 	contracts      layer1.AllSmartContracts       `json:"-"`
-	database       *db.Database                   `json:"-"`
+	monDB          *db.Database                   `json:"-"`
+	consDB         *db.Database                   `json:"-"`
 	adminHandler   monitorInterfaces.AdminHandler `json:"-"`
 	marshaller     *marshaller.TypeRegistry       `json:"-"`
 	closeChan      chan struct{}                  `json:"-"`
@@ -45,12 +46,12 @@ type TaskManager struct {
 }
 
 // newTaskManager creates a new TaskManager instance and recover the previous state from DB.
-func newTaskManager(mainCtx context.Context, eth layer1.Client, contracts layer1.AllSmartContracts, database *db.Database, logger *logrus.Entry, adminHandler monitorInterfaces.AdminHandler, requestChan <-chan managerRequest, txWatcher transaction.Watcher) (*TaskManager, error) {
+func newTaskManager(eth layer1.Client, contracts layer1.AllSmartContracts, monDB, consDB *db.Database, logger *logrus.Entry, adminHandler monitorInterfaces.AdminHandler, requestChan <-chan managerRequest, txWatcher transaction.Watcher) (*TaskManager, error) {
 	taskManager := &TaskManager{
 		Schedule:     make(map[string]ManagerRequestInfo),
 		Responses:    make(map[string]ManagerResponseInfo),
-		mainCtx:      mainCtx,
-		database:     database,
+		monDB:        monDB,
+		consDB:       consDB,
 		eth:          eth,
 		contracts:    contracts,
 		adminHandler: adminHandler,
@@ -70,7 +71,7 @@ func newTaskManager(mainCtx context.Context, eth layer1.Client, contracts layer1
 		}
 	}
 
-	tasksExecutor, err := newTaskExecutor(txWatcher, database, logger.WithField("Component", "TaskExecutor"))
+	tasksExecutor, err := newTaskExecutor(txWatcher, monDB, logger.WithField("Component", "TaskExecutor"))
 	if err != nil {
 		return nil, err
 	}
@@ -96,9 +97,18 @@ func (tm *TaskManager) start() {
 func (tm *TaskManager) close() {
 	tm.closeOnce.Do(func() {
 		tm.logger.Warn("Closing task manager")
+		tm.taskExecutor.close()
 		close(tm.closeChan)
 		tm.responseChan.close()
 	})
+}
+
+// triggered when onError occurs during the execution.
+func (tm *TaskManager) onError(err error) error {
+	tm.logger.WithError(err).Errorf("An unercoverable error occured %v", err)
+	tm.close()
+
+	return err
 }
 
 // eventLoop where the interaction with all the pieces is developed.
@@ -113,31 +123,31 @@ func (tm *TaskManager) eventLoop() {
 
 		case taskRequest, ok := <-tm.requestChan:
 			if !ok {
-				tm.logger.Warnf("Received a request on a closed channel %v", taskRequest)
+				tm.onError(ErrReceivedRequestClosedChan)
 				return
 			}
 			if taskRequest.response == nil {
 				tm.logger.Warn("Received a request with nil response channel")
-				return
+				continue
 			}
 
 			response := &managerResponse{Err: nil}
 			switch taskRequest.action {
 			case KillByType:
-				err := tm.killTaskByType(tm.mainCtx, taskRequest.task)
+				err := tm.killTaskByType(taskRequest.task)
 				if err != nil {
 					tm.logger.WithError(err).Errorf("Failed to killTaskByType %v", taskRequest.task)
 					response.Err = err
 				}
 			case KillById:
-				err := tm.killTaskById(tm.mainCtx, taskRequest.id)
+				err := tm.killTaskById(taskRequest.id)
 				if err != nil {
 					tm.logger.WithError(err).Errorf("Failed to killTaskById %v", taskRequest.id)
 					response.Err = err
 				}
 			case Schedule:
 				tm.logger.Trace("received request for a task")
-				err, sharedResponse := tm.schedule(tm.mainCtx, taskRequest.task, taskRequest.id)
+				sharedResponse, err := tm.schedule(taskRequest.task, taskRequest.id)
 				if err != nil {
 					// if we are not synchronized, don't log expired task as errors, since we will
 					// be replaying the events from far way in the past
@@ -152,29 +162,23 @@ func (tm *TaskManager) eventLoop() {
 				}
 			}
 			taskRequest.response.sendResponse(response)
-			err := tm.persistState()
-			if err != nil {
-				tm.logger.WithError(err).Errorf("Failed to persist state %d on task request", tm.LastHeightSeen)
-			}
-
+			tm.persistState()
 		case taskResponse, ok := <-tm.responseChan.erChan:
 			if !ok {
-				tm.logger.Warnf("Received a taskResponse on a closed channel %v", taskResponse)
+				tm.onError(ErrReceivedResponseClosedChan)
 				return
 			}
 
 			tm.logger.Trace("received a task response")
-			err := tm.processTaskResponse(tm.mainCtx, taskResponse)
+			err := tm.processTaskResponse(taskResponse)
 			if err != nil {
 				tm.logger.WithError(err).Errorf("Failed to processTaskResponse %v", taskResponse)
+				continue
 			}
-			err = tm.persistState()
-			if err != nil {
-				tm.logger.WithError(err).Errorf("Failed to persist state %d on task response", tm.LastHeightSeen)
-			}
+			tm.persistState()
 		case <-processingTime:
 			tm.logger.Trace("processing latest height")
-			networkCtx, networkCf := context.WithTimeout(tm.mainCtx, tasks.ManagerNetworkTimeout)
+			networkCtx, networkCf := context.WithTimeout(context.Background(), tasks.ManagerNetworkTimeout)
 			height, err := tm.eth.GetFinalizedHeight(networkCtx)
 			networkCf()
 			if err != nil {
@@ -185,28 +189,28 @@ func (tm *TaskManager) eventLoop() {
 			tm.LastHeightSeen = height
 
 			toStart, expired := tm.findTasks()
-			err = tm.startTasks(tm.mainCtx, toStart)
+			err = tm.startTasks(toStart)
 			if err != nil {
 				tm.logger.WithError(err).Errorf("Failed to startTasks %d", tm.LastHeightSeen)
 			}
 			err = tm.persistState()
 			if err != nil {
-				tm.logger.WithError(err).Errorf("Failed to persist state after start tasks %d", tm.LastHeightSeen)
+				return
 			}
 
-			err = tm.killTasks(tm.mainCtx, expired)
+			err = tm.killTasks(expired)
 			if err != nil {
 				tm.logger.WithError(err).Errorf("Failed to killExpiredTasks %d", tm.LastHeightSeen)
 			}
 			err = tm.persistState()
 			if err != nil {
-				tm.logger.WithError(err).Errorf("Failed to persist after kill tasks state %d", tm.LastHeightSeen)
+				return
 			}
 
 			tm.cleanResponses()
 			err = tm.persistState()
 			if err != nil {
-				tm.logger.WithError(err).Errorf("Failed to persist after kill tasks state %d", tm.LastHeightSeen)
+				return
 			}
 			processingTime = time.After(tasks.ManagerProcessingTime)
 		}
@@ -214,41 +218,41 @@ func (tm *TaskManager) eventLoop() {
 }
 
 // schedule the task after its validation.
-func (tm *TaskManager) schedule(ctx context.Context, task tasks.Task, id string) (error, *HandlerResponse) {
+func (tm *TaskManager) schedule(task tasks.Task, id string) (*HandlerResponse, error) {
 	select {
-	case <-ctx.Done():
-		return ctx.Err(), nil
+	case <-tm.closeChan:
+		return nil, tasks.ErrTaskExecutionMechanismClosed
 	default:
 		if task == nil {
-			return ErrTaskIsNil, nil
+			return nil, ErrTaskIsNil
 		}
 
 		if id == "" {
-			return ErrTaskIdEmpty, nil
+			return nil, ErrTaskIdEmpty
 		}
 
 		if resp, exists := tm.Responses[id]; exists {
-			return nil, resp.HandlerResponse
+			return resp.HandlerResponse, nil
 		}
 
 		taskName, _, present := tm.marshaller.NameTypeIsPresent(task)
 		if !present {
-			return ErrTaskTypeNotInRegistry, nil
+			return nil, ErrTaskTypeNotInRegistry
 		}
 
 		start := task.GetStart()
 		end := task.GetEnd()
 
 		if start != 0 && end != 0 && start >= end {
-			return ErrWrongParams, nil
+			return nil, ErrWrongParams
 		}
 
 		if end != 0 && end <= tm.LastHeightSeen {
-			return ErrTaskExpired, nil
+			return nil, ErrTaskExpired
 		}
 
 		if !task.GetAllowMultiExecution() && len(tm.findTasksByName(taskName)) > 0 {
-			return ErrTaskNotAllowMultipleExecutions, nil
+			return nil, ErrTaskNotAllowMultipleExecutions
 		}
 
 		taskReq := ManagerRequestInfo{
@@ -271,15 +275,15 @@ func (tm *TaskManager) schedule(ctx context.Context, task tasks.Task, id string)
 		tm.Responses[id] = taskResp
 		getTaskLoggerComplete(tm.logger, taskReq).Debug("Received task request")
 
-		return nil, taskResp.HandlerResponse
+		return taskResp.HandlerResponse, nil
 	}
 }
 
 // processTaskResponse from the TaskExecutor and writes it to the HandlerResponse.
-func (tm *TaskManager) processTaskResponse(ctx context.Context, executorResponse ExecutorResponse) error {
+func (tm *TaskManager) processTaskResponse(executorResponse ExecutorResponse) error {
 	select {
-	case <-ctx.Done():
-		return ctx.Err()
+	case <-tm.closeChan:
+		return tasks.ErrTaskExecutionMechanismClosed
 	default:
 		logger := tm.logger
 		task, present := tm.Schedule[executorResponse.Id]
@@ -301,7 +305,7 @@ func (tm *TaskManager) processTaskResponse(ctx context.Context, executorResponse
 
 		logger = getTaskLoggerComplete(tm.logger, task)
 		if executorResponse.Err != nil {
-			if !errors.Is(executorResponse.Err, context.Canceled) {
+			if !errors.Is(executorResponse.Err, tasks.ErrTaskKilled) {
 				logger.Errorf("Task executed with error: %v", executorResponse.Err)
 			} else {
 				logger.Debug("Task got killed")
@@ -318,18 +322,22 @@ func (tm *TaskManager) processTaskResponse(ctx context.Context, executorResponse
 }
 
 // startTasks spawning a go routine to handle Task execution using the TaskExecutor.
-func (tm *TaskManager) startTasks(ctx context.Context, tasks []ManagerRequestInfo) error {
+func (tm *TaskManager) startTasks(taskList []ManagerRequestInfo) error {
 	select {
-	case <-ctx.Done():
-		return ctx.Err()
+	case <-tm.closeChan:
+		return tasks.ErrTaskExecutionMechanismClosed
 	default:
 		tm.logger.Debug("Looking for starting tasks")
-		for i := 0; i < len(tasks); i++ {
-			task := tasks[i]
+		for i := 0; i < len(taskList); i++ {
+			task := taskList[i]
 			logEntry := getTaskLoggerComplete(tm.logger, task)
 			logEntry.Info("task is about to start")
 
-			go tm.taskExecutor.handleTaskExecution(ctx, task.Task, task.Name, task.Id, task.Start, task.End, task.AllowMultiExecution, task.SubscribeOptions, tm.database, logEntry, tm.eth, tm.contracts, tm.responseChan)
+			if tm.taskExecutor.isClosed() {
+				return tm.onError(tasks.ErrTaskExecutionMechanismClosed)
+			}
+
+			go tm.taskExecutor.handleTaskExecution(task.Task, task.Name, task.Id, task.Start, task.End, task.AllowMultiExecution, task.SubscribeOptions, tm.monDB, tm.consDB, logEntry, tm.eth, tm.contracts, tm.responseChan)
 
 			task.InternalState = Running
 			tm.Schedule[task.Id] = task
@@ -341,10 +349,10 @@ func (tm *TaskManager) startTasks(ctx context.Context, tasks []ManagerRequestInf
 }
 
 // killTaskByType sends task to kill after the request validation.
-func (tm *TaskManager) killTaskByType(ctx context.Context, task tasks.Task) error {
+func (tm *TaskManager) killTaskByType(task tasks.Task) error {
 	select {
-	case <-ctx.Done():
-		return ctx.Err()
+	case <-tm.closeChan:
+		return tasks.ErrTaskExecutionMechanismClosed
 	default:
 		if task == nil {
 			return ErrTaskIsNil
@@ -356,15 +364,15 @@ func (tm *TaskManager) killTaskByType(ctx context.Context, task tasks.Task) erro
 		}
 
 		tm.logger.Tracef("received request to kill all tasks type: %v", taskName)
-		return tm.killTasks(ctx, tm.findTasksByName(taskName))
+		return tm.killTasks(tm.findTasksByName(taskName))
 	}
 }
 
 // killTaskById sends task to kill after the request validation.
-func (tm *TaskManager) killTaskById(ctx context.Context, id string) error {
+func (tm *TaskManager) killTaskById(id string) error {
 	select {
-	case <-ctx.Done():
-		return ctx.Err()
+	case <-tm.closeChan:
+		return tasks.ErrTaskExecutionMechanismClosed
 	default:
 		if id == "" {
 			return ErrTaskIdEmpty
@@ -381,13 +389,13 @@ func (tm *TaskManager) killTaskById(ctx context.Context, id string) error {
 }
 
 // iterates a list of Task to killTasks
-func (tm *TaskManager) killTasks(ctx context.Context, tasks []ManagerRequestInfo) error {
+func (tm *TaskManager) killTasks(taskList []ManagerRequestInfo) error {
 	select {
-	case <-ctx.Done():
-		return ctx.Err()
+	case <-tm.closeChan:
+		return tasks.ErrTaskExecutionMechanismClosed
 	default:
-		for i := 0; i < len(tasks); i++ {
-			task := tasks[i]
+		for i := 0; i < len(taskList); i++ {
+			task := taskList[i]
 			err := tm.killTask(task)
 			if err != nil {
 				return err
@@ -402,7 +410,7 @@ func (tm *TaskManager) killTasks(ctx context.Context, tasks []ManagerRequestInfo
 func (tm *TaskManager) killTask(task ManagerRequestInfo) error {
 	getTaskLoggerComplete(tm.logger, task).Info("Task is about to be killed")
 	if task.InternalState == Running {
-		task.Task.Close()
+		task.Task.Kill()
 		task.InternalState = Killed
 		task.killedAt = tm.LastHeightSeen
 		tm.Schedule[task.Id] = task
@@ -503,17 +511,17 @@ func (tm *TaskManager) remove(id string) error {
 	return nil
 }
 
-// persistState TaskManager to database.
+// persistState TaskManager to monDB.
 func (tm *TaskManager) persistState() error {
 	logger := logging.GetLogger("staterecover").WithField("State", "manager")
 	rawData, err := json.Marshal(tm)
 	if err != nil {
-		return err
+		return tm.onError(err)
 	}
 
-	err = tm.database.Update(func(txn *badger.Txn) error {
+	err = tm.monDB.Update(func(txn *badger.Txn) error {
 		key := dbprefix.PrefixTaskManagerState()
-		logger.WithField("Key", string(key)).Debug("Saving state in the database")
+		logger.WithField("Key", string(key)).Debug("Saving state in the monDB")
 		if err := utils.SetValue(txn, key, rawData); err != nil {
 			logger.Error("Failed to set Value")
 			return err
@@ -521,23 +529,23 @@ func (tm *TaskManager) persistState() error {
 		return nil
 	})
 	if err != nil {
-		return err
+		return tm.onError(err)
 	}
 
-	if err := tm.database.Sync(); err != nil {
+	if err := tm.monDB.Sync(); err != nil {
 		logger.Error("Failed to set sync")
-		return err
+		return tm.onError(err)
 	}
 
 	return nil
 }
 
-// loadState TaskManager from database.
+// loadState TaskManager from monDB.
 func (tm *TaskManager) loadState() error {
 	logger := logging.GetLogger("staterecover").WithField("State", "manager")
-	if err := tm.database.View(func(txn *badger.Txn) error {
+	if err := tm.monDB.View(func(txn *badger.Txn) error {
 		key := dbprefix.PrefixTaskManagerState()
-		logger.WithField("Key", string(key)).Debug("Loading state from database")
+		logger.WithField("Key", string(key)).Debug("Loading state from monDB")
 		rawData, err := utils.GetValue(txn, key)
 		if err != nil {
 			return err
@@ -554,7 +562,7 @@ func (tm *TaskManager) loadState() error {
 	}
 
 	// synchronizing db state to disk
-	if err := tm.database.Sync(); err != nil {
+	if err := tm.monDB.Sync(); err != nil {
 		logger.Error("Failed to set sync")
 		return err
 	}
@@ -576,7 +584,7 @@ func (tm *TaskManager) recoverState() error {
 			task.InternalState = NotStarted
 			tm.Schedule[task.Id] = task
 		} else if task.InternalState == Killed {
-			err := tm.remove(task.Id)
+			err = tm.remove(task.Id)
 			if err != nil {
 				return err
 			}
@@ -703,6 +711,7 @@ func getTaskRegistry() *marshaller.TypeRegistry {
 	tr.RegisterInstanceType(&dkg.KeyShareSubmissionTask{})
 	tr.RegisterInstanceType(&dkg.MPKSubmissionTask{})
 	tr.RegisterInstanceType(&dkg.RegisterTask{})
+	tr.RegisterInstanceType(&dkg.InitializeTask{})
 	tr.RegisterInstanceType(&dkg.DisputeMissingRegistrationTask{})
 	tr.RegisterInstanceType(&dkg.ShareDistributionTask{})
 	tr.RegisterInstanceType(&snapshots.SnapshotTask{})

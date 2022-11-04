@@ -36,9 +36,10 @@ func (ss *Store) LoadLocalState(txn *badger.Txn) (*RoundStates, error) {
 
 func (ss *Store) LoadState(txn *badger.Txn, rcert *objs.RCert) (*RoundStates, error) {
 	rs := &RoundStates{
-		height:       rcert.RClaims.Height,
-		round:        rcert.RClaims.Round,
-		PeerStateMap: make(map[string]*objs.RoundState),
+		height:           rcert.RClaims.Height,
+		round:            rcert.RClaims.Round,
+		PeerStateMap:     make(map[string]*objs.RoundState),
+		EvitedValidators: make(map[string]bool),
 	}
 	validatorSet, err := ss.database.GetValidatorSet(txn, rcert.RClaims.Height)
 	if err != nil {
@@ -97,6 +98,16 @@ func (ss *Store) LoadState(txn *badger.Txn, rcert *objs.RCert) (*RoundStates, er
 		}
 	}
 	rs.OwnValidatingState = ownValidatingState
+
+	evictedValidatorAddresses, err := ss.database.GetEvictedValidatorsByGroupKey(txn, groupKey)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, evictedValidatorAddress := range evictedValidatorAddresses {
+		rs.EvitedValidators[string(evictedValidatorAddress)] = true
+	}
+
 	return rs, nil
 }
 
@@ -134,6 +145,17 @@ func (ss *Store) WriteState(txn *badger.Txn, rs *RoundStates) error {
 			return err
 		}
 	}
+
+	// persist currently evicted validators
+	for vAddr, isEvicted := range rs.EvitedValidators {
+		if isEvicted {
+			err := ss.database.SetEvictedValidator(txn, rs.ValidatorSet.GroupKey, []byte(vAddr))
+			if err != nil {
+				return err
+			}
+		}
+	}
+
 	return nil
 }
 

@@ -16,7 +16,7 @@ PRE_CHECK() {
         exit 1
     fi
     # Check all required non builtins exist
-    COMMANDS=("ethkey" "jq" "hexdump")
+    COMMANDS=("jq" "hexdump")
     for c in ${COMMANDS[@]}; do
         if ! command -v $c &>/dev/null; then
             echo -e "$c is required, but not installed"
@@ -75,7 +75,7 @@ CREATE_CONFIGS() {
     CLEAN_UP
     # Loop through and create all essentail validator files
     for ((l = 1; l <= $1; l++)); do
-        ADDRESS=$(./alicenet generate-ethkey --ethkey.passwordfile ./scripts/base-files/passwordFile | cut -d' ' -f2)
+        ADDRESS=$(./alicenet ethkey-generate --ethkey.passwordfile ./scripts/base-files/passwordFile | cut -d' ' -f2)
         PK=$(hexdump -n 16 -e '4/4 "%08X" 1 "\n"' /dev/urandom)
         sed -e 's/defaultAccount = .*/defaultAccount = \"'"$ADDRESS"'\"/' ./scripts/base-files/baseConfig |
             sed -e 's/rewardAccount = .*/rewardAccount = \"'"$ADDRESS"'\"/' |
@@ -116,7 +116,7 @@ CREATE_EXTRA_NODES_CONFIGS() {
     CLEAN_UP_NODES
     # Loop through and create all essential validator files
     for ((l = 1; l <= $1; l++)); do
-        ADDRESS=$(./alicenet generate-ethkey --ethkey.passwordfile ./scripts/base-files/passwordFile | cut -d' ' -f2)
+        ADDRESS=$(./alicenet ethkey-generate --ethkey.passwordfile ./scripts/base-files/passwordFile | cut -d' ' -f2)
         PK=$(hexdump -n 16 -e '4/4 "%08X" 1 "\n"' /dev/urandom)
         sed -e 's/defaultAccount = .*/defaultAccount = \"'"$ADDRESS"'\"/' ./scripts/base-files/baseConfig |
             sed -e 's/rewardAccount = .*/rewardAccount = \"'"$ADDRESS"'\"/' |
@@ -274,7 +274,7 @@ clean)
     ;;
 *)
     echo -e "Unknown argument!"
-    echo -e "init # | init-extra-nodes # | geth | bootnode | deploy | validator # | node # | ethdkg | hardhat | stress-test | deposit | schedule-maintenance | unregister | list | status | clean"
+    echo -e "init # | init-extra-nodes # | geth | geth-resume | bootnode | deploy | validator # | node # | ethdkg | hardhat | stress-test | deposit | schedule-maintenance | unregister | list | status | clean"
     exit 1
     ;;
 esac

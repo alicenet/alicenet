@@ -79,13 +79,13 @@ func GetDynamicsEvents() map[string]abi.Event {
 	return snapshotsABI.Events
 }
 
-func RegisterETHDKGEvents(em *objects.EventMap, monDB *db.Database, adminHandler monInterfaces.AdminHandler, taskHandler executor.TaskHandler) {
+func RegisterETHDKGEvents(em *objects.EventMap, consDB, monDB *db.Database, adminHandler monInterfaces.AdminHandler, taskHandler executor.TaskHandler) {
 	ethDkgEvents := GetETHDKGEvents()
 
 	eventProcessorMap := make(map[string]objects.EventProcessor)
 
 	eventProcessorMap["RegistrationOpened"] = func(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
-		return ProcessRegistrationOpened(eth, contracts, logger, log, state, monDB, taskHandler)
+		return ProcessRegistrationOpened(eth, contracts, logger, log, state, consDB, monDB, taskHandler)
 	}
 	eventProcessorMap["AddressRegistered"] = func(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
 		return ProcessAddressRegistered(contracts, logger, log, monDB)
@@ -132,8 +132,8 @@ func RegisterETHDKGEvents(em *objects.EventMap, monDB *db.Database, adminHandler
 	}
 }
 
-func SetupEventMap(em *objects.EventMap, cdb, monDB *db.Database, adminHandler monInterfaces.AdminHandler, depositHandler monInterfaces.DepositHandler, taskHandler executor.TaskHandler, exitFunc func(), chainID uint32) error {
-	RegisterETHDKGEvents(em, monDB, adminHandler, taskHandler)
+func SetupEventMap(em *objects.EventMap, cdb, monDB *db.Database, eth layer1.Client, adminHandler monInterfaces.AdminHandler, depositHandler monInterfaces.DepositHandler, taskHandler executor.TaskHandler, exitFunc func(), chainID uint32) error {
+	RegisterETHDKGEvents(em, cdb, monDB, adminHandler, taskHandler)
 
 	// MadByte.DepositReceived
 	mbEvents := GetBTokenEvents()
@@ -158,7 +158,7 @@ func SetupEventMap(em *objects.EventMap, cdb, monDB *db.Database, adminHandler m
 
 	if err := em.Register(snapshotTakenEvent.ID.String(), snapshotTakenEvent.Name,
 		func(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
-			return ProcessSnapshotTaken(contracts, logger, log, adminHandler, taskHandler)
+			return ProcessSnapshotTaken(contracts, cdb, eth, logger, log, adminHandler, taskHandler)
 		}); err != nil {
 		return err
 	}
@@ -212,7 +212,7 @@ func SetupEventMap(em *objects.EventMap, cdb, monDB *db.Database, adminHandler m
 	}
 
 	processValidatorMinorSlashedFunc := func(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
-		return ProcessValidatorMinorSlashed(eth, contracts, logger, state, log)
+		return ProcessValidatorMinorSlashed(eth, contracts, cdb, logger, state, log)
 	}
 	if err := em.Register(validatorMinorSlashedEvent.ID.String(), validatorMinorSlashedEvent.Name, processValidatorMinorSlashedFunc); err != nil {
 		panic(fmt.Sprintf("couldn't register validator minor slashed event:%v", err))
@@ -225,7 +225,7 @@ func SetupEventMap(em *objects.EventMap, cdb, monDB *db.Database, adminHandler m
 	}
 
 	processValidatorMajorSlashedFunc := func(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
-		return ProcessValidatorMajorSlashed(eth, contracts, logger, state, log)
+		return ProcessValidatorMajorSlashed(eth, contracts, cdb, logger, state, log)
 	}
 	if err := em.Register(validatorMajorSlashedEvent.ID.String(), validatorMajorSlashedEvent.Name, processValidatorMajorSlashedFunc); err != nil {
 		panic(err)
@@ -263,7 +263,7 @@ func SetupEventMap(em *objects.EventMap, cdb, monDB *db.Database, adminHandler m
 
 	if err := em.Register(dynamicValueChangedEvent.ID.String(), dynamicValueChangedEvent.Name,
 		func(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
-			return ProcessDynamicValueChanged(contracts, logger, log)
+			return ProcessDynamicValueChanged(contracts, logger, log, adminHandler)
 		}); err != nil {
 		return err
 	}

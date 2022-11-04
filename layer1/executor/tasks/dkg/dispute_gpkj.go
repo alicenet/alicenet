@@ -48,7 +48,7 @@ func (t *DisputeGPKjTask) Execute(ctx context.Context) (*types.Transaction, *tas
 	logger := t.GetLogger().WithField("method", "Execute()").WithField("address", t.Address)
 	logger.Debug("initiate execution")
 
-	dkgState, err := state.GetDkgState(t.GetDB())
+	dkgState, err := state.GetDkgState(t.GetMonDB())
 	if err != nil {
 		return nil, tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorLoadingDkgState, err), false)
 	}
@@ -102,7 +102,7 @@ func (t *DisputeGPKjTask) ShouldExecute(ctx context.Context) (bool, *tasks.TaskE
 	logger := t.GetLogger().WithField("method", "ShouldExecute()").WithField("address", t.Address)
 	logger.Debug("should execute task")
 
-	dkgState, err := state.GetDkgState(t.GetDB())
+	dkgState, err := state.GetDkgState(t.GetMonDB())
 	if err != nil {
 		return false, tasks.NewTaskErr(fmt.Sprintf(tasks.ErrorLoadingDkgState, err), false)
 	}
@@ -112,7 +112,7 @@ func (t *DisputeGPKjTask) ShouldExecute(ctx context.Context) (bool, *tasks.TaskE
 		return false, nil
 	}
 
-	isValidator, err := utils.IsValidator(t.GetDB(), logger, t.Address)
+	isValidator, err := utils.IsValidator(t.GetMonDB(), logger, t.Address)
 	if err != nil {
 		return false, tasks.NewTaskErr(fmt.Sprintf(tasks.FailedGettingIsValidator, err), false)
 	}
@@ -147,7 +147,7 @@ func (t *DisputeGPKjTask) accuseDishonestValidator(ctx context.Context, logger *
 		return nil, tasks.NewTaskErr(fmt.Sprintf(tasks.FailedGettingTxnOpts, err), true)
 	}
 
-	isValidator, err := utils.IsValidator(t.GetDB(), logger, t.Address)
+	isValidator, err := utils.IsValidator(t.GetMonDB(), logger, t.Address)
 	if err != nil {
 		return nil, tasks.NewTaskErr(fmt.Sprintf(tasks.FailedGettingIsValidator, err), false)
 	}

@@ -8,10 +8,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/alicenet/alicenet/cmd/ethkey"
-
 	"github.com/alicenet/alicenet/cmd/bootnode"
+	"github.com/alicenet/alicenet/cmd/ethkey"
 	"github.com/alicenet/alicenet/cmd/firewalld"
+	"github.com/alicenet/alicenet/cmd/initialization"
 	"github.com/alicenet/alicenet/cmd/node"
 	"github.com/alicenet/alicenet/cmd/utils"
 	"github.com/alicenet/alicenet/config"
@@ -26,7 +26,7 @@ import (
 var (
 	// Version from git tag.
 	version               = "dev"
-	defaultConfigLocation = "/alicenet/mainnet/config.toml"
+	defaultConfigLocation = "/.alicenet/mainnet/config.toml"
 )
 
 type option struct {
@@ -48,7 +48,9 @@ func runner(commandRun func(*cobra.Command, []string)) func(*cobra.Command, []st
 			if logLevel == "" {
 				logLevel = "info"
 			}
-			logger.Infof("Setting log level for '%v' to '%v'", logName, logLevel)
+			if logLevel != "info" {
+				logger.Infof("Setting log level for '%v' to '%v'", logName, logLevel)
+			}
 			setLogger(logName, logLevel)
 		}
 		// backwards compatibility
@@ -180,27 +182,44 @@ func main() {
 
 		&firewalld.Command: {},
 
-		&node.Command: {
-			{"validator.rewardAccount", "", "", &config.Configuration.Validator.RewardAccount},
-			{"validator.rewardCurveSpec", "", "", &config.Configuration.Validator.RewardCurveSpec},
-		},
+		&node.Command: {},
 
-		&ethkey.Command: {
+		&ethkey.Generate: {
 			{"ethkey.passwordfile", "", "the file that contains the password for the keyfile", &config.Configuration.EthKey.PasswordFile},
 			{"ethkey.json", "", "output JSON instead of human-readable format", &config.Configuration.EthKey.Json},
 			{"ethkey.privatekey", "", "file containing a raw private key to encrypt", &config.Configuration.EthKey.PrivateKey},
 			{"ethkey.lightkdf", "", "use less secure scrypt parameters", &config.Configuration.EthKey.LightKDF},
 		},
+
+		&ethkey.Inspect: {
+			{"ethkey.passwordfile", "", "the file that contains the password for the keyfile", &config.Configuration.EthKey.PasswordFile},
+			{"ethkey.json", "", "output JSON instead of human-readable format", &config.Configuration.EthKey.Json},
+			{"ethkey.private", "", "include the private key in the output", &config.Configuration.EthKey.Private},
+		},
+
+		&ethkey.ChangePassword: {
+			{"ethkey.passwordfile", "", "the file that contains the password for the keyfile", &config.Configuration.EthKey.PasswordFile},
+			{"ethkey.newpasswordfile", "", "the file that contains the new password for the keyfile", &config.Configuration.EthKey.NewPasswordFile},
+		},
+		&initialization.Command: {
+			{"init.path", "p", "path to save the files/folders", &config.Configuration.Initialization.Path},
+			{"init.network", "n", "network environment to use (testnet, mainnet)", &config.Configuration.Initialization.Network},
+			{"init.generateKeys", "", "generates the private key using random password", &config.Configuration.Initialization.GenerateKeys},
+			{"init.ethereumEndpoint", "", "ethereum endpoint that will be used to communicate with the chain", &config.Configuration.Ethereum.Endpoint},
+		},
 	}
 
 	// Establish command hierarchy
 	hierarchy := map[*cobra.Command]*cobra.Command{
-		&firewalld.Command:    &rootCommand,
-		&bootnode.Command:     &rootCommand,
-		&node.Command:         &rootCommand,
-		&ethkey.Command:       &rootCommand,
-		&utils.Command:        &rootCommand,
-		&utils.SendWeiCommand: &utils.Command,
+		&firewalld.Command:      &rootCommand,
+		&bootnode.Command:       &rootCommand,
+		&node.Command:           &rootCommand,
+		&ethkey.Generate:        &rootCommand,
+		&ethkey.Inspect:         &rootCommand,
+		&ethkey.ChangePassword:  &rootCommand,
+		&utils.Command:          &rootCommand,
+		&utils.SendWeiCommand:   &utils.Command,
+		&initialization.Command: &rootCommand,
 	}
 
 	// Convert option abstraction into concrete settings for Cobra and Viper
@@ -271,7 +290,7 @@ func main() {
 				logger.Warnf("Reading file failed:%q", err)
 			}
 		} else {
-			logger.Warnf("Opening file failed:%q", err)
+			logger.Debugf("Opening file failed: %q", err)
 		}
 
 		/* The logic here feels backwards to me but it isn't.
