@@ -12,6 +12,7 @@ import {
   encodeMultiCallArgs,
   getEventVar,
   multiCallDeployUpgradeable,
+  multiCallUpgradeProxy,
 } from "../alicenetFactory";
 import {
   ALICENET_FACTORY,
@@ -302,7 +303,6 @@ export async function deployUpgradeableProxyTask(
   if (initializerArgObject !== undefined) {
     initializerArgs = Object.values(initializerArgObject);
   }
-
   const waitBlocks = taskArgs.waitConfirmation;
   const contractName =
     fullyQaulifiedContractName === undefined
@@ -313,7 +313,6 @@ export async function deployUpgradeableProxyTask(
     implementationBase === undefined
       ? ((await hre.ethers.getContractFactory(contractName)) as ContractFactory)
       : implementationBase;
-  const network = hre.network.name;
   //if an instance of the factory contract is not provided get it from ethers
   factory =
     factory === undefined
@@ -327,22 +326,11 @@ export async function deployUpgradeableProxyTask(
     fullyQaulifiedContractName === undefined
       ? await getFullyQualifiedName(taskArgs.contractName, hre.artifacts)
       : fullyQaulifiedContractName;
-  //parse constructor args
-  if (await hasConstructorArgs(fullyQaulifiedContractName, hre.artifacts)) {
-    constructorArgs =
-      constructorArgs === undefined
-        ? taskArgs.constructorArgs
-        : constructorArgs;
-    if (constructorArgs === undefined) {
-      throw new Error(`No constructor args provided for ${contractName}`);
-    }
-  } else {
-    constructorArgs = [];
-  }
+  constructorArgs =
+    constructorArgs === undefined ? taskArgs.constructorArgs : constructorArgs;
   let initCallData: string;
   //if the contract is initializable check for taskArgs.initCallData
-
-  if (await isInitializable(fullyQaulifiedContractName, hre.artifacts)) {
+  if (initializerArgs !== undefined || taskArgs.initCallData !== undefined) {
     const initArgs =
       initializerArgs === undefined
         ? taskArgs.initCallData.replace(/\s+/g, "").split(",")
@@ -352,6 +340,13 @@ export async function deployUpgradeableProxyTask(
       initArgs
     );
   } else {
+    if (taskArgs.skipChecks !== true) {
+      if (await isInitializable(fullyQaulifiedContractName, hre.artifacts)) {
+        throw new Error(
+          `Contract ${contractName} is initializable, but no initializer args provided`
+        );
+      }
+    }
     initCallData = "0x";
   }
   //if salt is not parsed, get it from the contract itself
@@ -385,21 +380,8 @@ export async function deployUpgradeableProxyTask(
     initializerDetails = initializerArgs;
   }
   if (taskArgs.skipChecks !== true) {
-    const rl = readline.createInterface({
-      input: process.stdin,
-      output: process.stdout,
-    });
-    const prompt = (query: any) =>
-      new Promise((resolve) => rl.question(query, resolve));
-    const answer = await prompt(
-      `Do you want to deploy ${contractName} with initArgs: ${JSON.stringify(
-        initializerArgObject
-      )}, constructorArgs: ${JSON.stringify(constructorArgObject)}? (y/n)`
-    );
-    if (answer === "n") {
-      exit();
-    }
-    rl.close();
+    const promptMessage = `Do you want to deploy ${contractName} with  constructor arguemnets: ${constructorDetails} initializer Args: ${initializerDetails}? (y/n)`;
+    await promptCheckDeploymentArgs(promptMessage);
   }
   let txResponse = await deployUpgradeableGasSafe(
     contractName,
@@ -433,7 +415,101 @@ export async function deployUpgradeableProxyTask(
   await showState(
     `Deployed ${proxyData.logicName} with proxy at ${proxyData.proxyAddress}, gasCost: ${proxyData.gas}`
   );
-  await updateProxyList(network, proxyData, taskArgs.outputFolder);
+  return proxyData;
+}
+
+export async function promptCheckDeploymentArgs(message: string) {
+  let missingInput = true;
+  let dynamicSuggestion = message;
+  const defaultSuggestion = dynamicSuggestion;
+  while (missingInput) {
+    const rl = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout,
+    });
+    const prompt = (query: any) =>
+      new Promise((resolve) => rl.question(query, resolve));
+    const answer = await prompt(dynamicSuggestion);
+    if (
+      answer === "y" ||
+      answer === "Y" ||
+      answer === "yes" ||
+      answer === "Yes" ||
+      answer === "YES"
+    ) {
+      break;
+    } else if (
+      answer === "n" ||
+      answer === "N" ||
+      answer === "no" ||
+      answer === "No" ||
+      answer === "NO"
+    ) {
+      exit();
+    } else {
+      if (dynamicSuggestion === defaultSuggestion) {
+        dynamicSuggestion =
+          "invalid input, enter one of the following: Y, y, yes, Yes, YES, N, n, no, No, NO";
+      }
+    }
+    rl.close();
+  }
+}
+
+export async function muiltiCallDeployImplementationAndUpgradeProxyTask(
+  taskArgs: any,
+  hre: HardhatRuntimeEnvironment
+) {
+  const contractName = taskArgs.contractName;
+  const factory = await hre.ethers.getContractAt(
+    "AliceNetFactory",
+    taskArgs.factoryAddress
+  );
+  const salt = await getBytes32SaltFromContractNSTag(
+    contractName,
+    hre.artifacts,
+    hre.ethers
+  );
+  const fullname = (await getFullyQualifiedName(
+    taskArgs.contractName,
+    hre.artifacts
+  )) as string;
+  const initializable = await isInitializable(fullname, hre.artifacts);
+  const initCallData =
+    taskArgs.initCallData === undefined
+      ? []
+      : taskArgs.initCallData.replace(/\s+/g, "").split(",");
+  if (initializable && initCallData.length === 0) {
+    throw new Error("initializable contract must have init args");
+  }
+  const txResponse = await multiCallUpgradeProxy(
+    contractName,
+    factory,
+    hre.ethers,
+    taskArgs.constructorArgs,
+    initCallData,
+    salt
+  );
+  const receipt = await txResponse.wait(taskArgs.waitConfirmation);
+  const implementationAddress = getEventVar(
+    receipt,
+    DEPLOYED_RAW,
+    CONTRACT_ADDR
+  );
+  const proxyAddress = getEventVar(receipt, DEPLOYED_PROXY, CONTRACT_ADDR);
+  await showState(
+    `Updating logic for the ${taskArgs.contractName} proxy at ${proxyAddress} to point to implementation at ${implementationAddress}, gasCost: ${receipt.gasUsed}`
+  );
+  const proxyData: ProxyData = {
+    factoryAddress: taskArgs.factoryAddress,
+    logicName: taskArgs.contractName,
+    logicAddress: taskArgs.logicAddress,
+    salt: salt,
+    proxyAddress,
+    gas: receipt.gasUsed.toNumber(),
+    receipt,
+    initCallData,
+  };
   return proxyData;
 }
 
@@ -503,21 +579,9 @@ export async function deployCreateAndRegisterTask(
     constructorDetails = constructorArgs;
   }
   if (taskArgs.skipChecks !== true) {
-    const rl = readline.createInterface({
-      input: process.stdin,
-      output: process.stdout,
-    });
-    const prompt = (query: any) =>
-      new Promise((resolve) => rl.question(query, resolve));
-    const answer = await prompt(
-      `Do you want to deploy ${contractName} with constructorArgs: ${constructorDetails}, salt: ${salt}? (y/n)`
-    );
-    if (answer === "n") {
-      exit();
-    }
-    rl.close();
+    const promptMessage = `Do you want to deploy ${contractName} with constructorArgs: ${constructorDetails}, salt: ${salt}? (y/n)`;
+    await promptCheckDeploymentArgs(promptMessage);
   }
-
   const txResponse = await deployCreateAndRegister(
     contractName,
     factory,

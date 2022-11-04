@@ -2,12 +2,7 @@ import toml from "@iarna/toml";
 import { BigNumber, BytesLike } from "ethers";
 import fs from "fs";
 import { task, types } from "hardhat/config";
-import {
-  getBytes32SaltFromContractNSTag,
-  getEventVar,
-  getMetamorphicAddress,
-  multiCallUpgradeProxy,
-} from "./alicenetFactory";
+import { getEventVar, getMetamorphicAddress } from "./alicenetFactory";
 import { encodeMultiCallArgs } from "./alicenetTasks";
 import {
   ALICENET_FACTORY,
@@ -45,12 +40,14 @@ import {
   deployOnlyProxyTask,
   deployUpgradeableProxyTask,
   getAllContracts,
+  getBytes32SaltFromContractNSTag,
   getDeployGroup,
   getDeployGroupIndex,
   getDeployType,
   getFullyQualifiedName,
   getGasPrices,
   isInitializable,
+  muiltiCallDeployImplementationAndUpgradeProxyTask,
   showState,
   verifyContract,
 } from "./deployment/deploymentUtil";
@@ -599,14 +596,13 @@ task("multi-call-deploy-proxy", "deploy and upgrade proxy with multicall")
       receipt,
       initCallData,
     };
-
     await updateProxyList(network, proxyData, taskArgs.outputFolder);
     return proxyData;
   });
 
 task(
   "multi-call-upgrade-proxy",
-  "multi call to deploy logic and upgrade proxy through factory"
+  "for upgrading existing proxy with new logic uses the factory multicall function to deployCreate logic and upgrade"
 )
   .addParam("contractName", "logic contract name")
   .addParam(
@@ -627,48 +623,10 @@ task(
   )
   .addOptionalVariadicPositionalParam("constructorArgs")
   .setAction(async (taskArgs, hre) => {
-    const factory = await hre.ethers.getContractAt(
-      "AliceNetFactory",
-      taskArgs.factoryAddress
+    return await muiltiCallDeployImplementationAndUpgradeProxyTask(
+      taskArgs,
+      hre
     );
-    const salt = await getBytes32SaltFromContractNSTag(taskArgs.contractName);
-    const fullname = (await getFullyQualifiedName(
-      taskArgs.contractName,
-      hre.artifacts
-    )) as string;
-    const initializable = await isInitializable(fullname, hre.artifacts);
-    const initArgs =
-      taskArgs.initCallData === undefined
-        ? []
-        : taskArgs.initCallData.replace(/\s+/g, "").split(",");
-    if (initializable && initArgs.length === 0) {
-      throw new Error("initializable contract must have init args");
-    }
-
-    const txResponse = await multiCallUpgradeProxy(
-      taskArgs.contractName,
-      factory,
-      hre.ethers,
-      initArgs,
-      taskArgs.constructorArgs
-    );
-
-    const receipt = await txResponse.wait(taskArgs.waitConfirmation);
-    // const proxyAddress = getEventVar(receipt, DEPLOYED_PROXY, CONTRACT_ADDR);
-    // await showState(
-    //   `Updating logic for the ${taskArgs.contractName} proxy at ${proxyAddress} from ${oldImpl} to ${implAddress}, gasCost: ${receipt.gasUsed}`
-    // );
-    // const proxyData: ProxyData = {
-    //   factoryAddress: taskArgs.factoryAddress,
-    //   logicName: taskArgs.contractName,
-    //   logicAddress: taskArgs.logicAddress,
-    //   salt: salt,
-    //   proxyAddress,
-    //   gas: receipt.gasUsed.toNumber(),
-    //   receipt,
-    //   initCallData,
-    // };
-    // return proxyData;
   });
 
 // Generate a json file with all deployment information

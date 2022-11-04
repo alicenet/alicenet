@@ -113,7 +113,7 @@ export async function multiCallDeployLogicDeployProxyUpgradeProxy(
   overrides?: Overrides & { from?: PromiseOrValue<string> }
 ): Promise<ContractTransaction> {
   const implementationBase = await ethers.getContractFactory(contractName);
-  const multiCallArgs = await encodeUpgradeProxyMultiCallArgs(
+  const multiCallArgs = await encodeMultiCallUpgradeProxyArgs(
     implementationBase,
     factory,
     ethers,
@@ -191,6 +191,38 @@ export async function encodeMultiCallDeployAndUpgradeProxyArgs(
   return [deployProxy, upgradeProxy];
 }
 /**
+ * @description multicall deployCreate and upgradeProxy
+ * @param contractName name of logic contract to deploy
+ * @param factory ethers connected instance of alicenet factory
+ * @param ethers ethers js object
+ * @param constructorArgs array of constructor arguments
+ * @param initCallData encoded init calldata, 0x if no initializer function
+ * @param salt salt used for deployCreate2 and to reference the proxy contract in lookup
+ * @param overrides transaction overrides
+ * @returns
+ */
+export async function multiCallUpgradeProxy(
+  contractName: string,
+  factory: AliceNetFactory,
+  ethers: Ethers,
+  constructorArgs: any[],
+  initCallData: string,
+  salt: string,
+  overrides?: Overrides & { from?: PromiseOrValue<string> }
+) {
+  const implementationBase = await ethers.getContractFactory(contractName);
+  const multiCallArgs = await encodeMultiCallUpgradeProxyArgs(
+    implementationBase,
+    factory,
+    ethers,
+    initCallData,
+    constructorArgs,
+    salt
+  );
+  return factory.multiCall(multiCallArgs, overrides);
+}
+
+/**
  * @description encodes the arguments for alicenet factory multicall to
  * deploy a logic contract with deploycreate,
  * deploy a proxy with deployProxy,
@@ -220,7 +252,7 @@ export async function encodeMultiCallDeployUpgradeableArgs(
     0,
     deployProxyCallData
   );
-  const [deployCreate, upgradeProxy] = await encodeUpgradeProxyMultiCallArgs(
+  const [deployCreate, upgradeProxy] = await encodeMultiCallUpgradeProxyArgs(
     implementationBase,
     factory,
     ethers,
@@ -230,11 +262,21 @@ export async function encodeMultiCallDeployUpgradeableArgs(
   );
   return [deployCreate, deployProxy, upgradeProxy];
 }
-export async function encodeUpgradeProxyMultiCallArgs(
+/**
+ * @decription encodes a multicall for deploying a logic contract with deployCreate, and upgradeProxy to point to the newly deployed implementation contract
+ * @param implementationBase ethers contract instance of the implementation contract
+ * @param factory connected instance of alicenetFactory
+ * @param ethers instance of hardhat ethers
+ * @param initCallData encoded call data for the initialize function of the implementation contract
+ * @param constructorArgs encoded constructor arguments
+ * @param salt bytes32 formatted salt used to deploy the proxy
+ * @returns
+ */
+export async function encodeMultiCallUpgradeProxyArgs(
   implementationBase: ContractFactory,
   factory: AliceNetFactory,
   ethers: Ethers,
-  initializationCallData: string,
+  initCallData: string,
   constructorArgs: any[] = [],
   salt: string
 ) {
@@ -249,10 +291,9 @@ export async function encodeUpgradeProxyMultiCallArgs(
     factory.address,
     ethers
   );
-
   const upgradeProxyCallData = factory.interface.encodeFunctionData(
     "upgradeProxy",
-    [salt, implementationContractAddress, initializationCallData]
+    [salt, implementationContractAddress, initCallData]
   );
   const deployCreate = encodeMultiCallArgs(
     factory.address,
@@ -266,6 +307,7 @@ export async function encodeUpgradeProxyMultiCallArgs(
   );
   return [deployCreate, upgradeProxy];
 }
+
 export function encodeMultiCallArgs(
   targetAddress: string,
   value: BigNumberish,
