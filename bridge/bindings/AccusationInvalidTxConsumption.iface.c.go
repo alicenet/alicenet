@@ -17,4 +17,8 @@ type IAccusationInvalidTxConsumptionCaller interface {
 	//
 	// Solidity: function getMetamorphicContractAddress(bytes32 _salt, address _factory) pure returns(address)
 	GetMetamorphicContractAddress(opts *bind.CallOpts, _salt [32]byte, _factory common.Address) (common.Address, error)
+	// IsAccused is a free data retrieval call binding the contract method 0x5e773967.
+	//
+	// Solidity: function isAccused(bytes32 id_) view returns(bool)
+	IsAccused(opts *bind.CallOpts, id_ [32]byte) (bool, error)
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/gob"
 	"encoding/hex"
+	"errors"
 	"math/big"
 	"strconv"
 	"testing"
@@ -433,6 +434,97 @@ func TestManagerPersistScheduledAccusations(t *testing.T) {
 		return nil
 	})
 	assert.Nil(t, err)
+}
+
+// TestCleanupValidatorsCache_Success for cleanup
+func TestCleanupValidatorsCache_Success(t *testing.T) {
+	testProxy := setupManagerTests(t)
+
+	vAddr := string(crypto.Hasher([]byte("val1")))
+	testProxy.manager.rsCache[vAddr] = rsCacheStruct{}
+
+	// start workers
+	testProxy.manager.StartWorkers()
+
+	// wait for cleanup time (every 1 minute)
+	<-time.After(62 * time.Second)
+
+	testProxy.manager.rsCacheLock.Lock()
+	defer testProxy.manager.rsCacheLock.Unlock()
+	assert.Len(t, testProxy.manager.validatorsCache, 0)
+	assert.Len(t, testProxy.manager.rsCache, 0)
+}
+
+// TestManagerCheckAccusationsReceipt interaction with TxWatcher
+func TestManagerCheckAccusationsReceipt(t *testing.T) {
+	testProxy := setupManagerTests(t)
+
+	// register mockAccusationTask in gob
+	gob.Register(&mockAccusationTask{})
+
+	// attach accuseAllRoundStates to the manager processing pipeline
+	testProxy.manager.detectionPipeline = append(testProxy.manager.detectionPipeline, accuseAllRoundStates)
+
+	// create a Persisted accusation and store in DB
+	accusation := &mockAccusationTask{
+		BaseTask: tasks.NewBaseTask(0, 0, true, nil),
+		SomeData: "accusing all the things",
+	}
+	accusation.ID = hex.EncodeToString(crypto.Hasher([]byte("some ID")))
+	var id [32]byte
+	idBin, err := hex.DecodeString(accusation.GetId())
+	assert.Nil(t, err)
+	copy(id[:], idBin)
+	accusationRaw, err := marshaller.GobMarshalBinary(accusation)
+	assert.Nil(t, err)
+
+	err = testProxy.manager.consDB.Update(func(txn *badger.Txn) error {
+		return testProxy.manager.consDB.SetAccusationRaw(txn, id, accusationRaw)
+	})
+	assert.Nil(t, err)
+
+	err = testProxy.manager.scheduleAccusations()
+	assert.Nil(t, err)
+
+	err = testProxy.manager.consDB.View(func(txn *badger.Txn) error {
+		accRaw, err := testProxy.manager.consDB.GetAccusationRaw(txn, id)
+		assert.Nil(t, err)
+		acc, err := marshaller.GobUnmarshalBinary(accRaw)
+		assert.Nil(t, err)
+
+		assert.Equal(t, acc.GetId(), accusation.GetId())
+
+		accs, err := testProxy.manager.consDB.GetAccusations(txn)
+		assert.Nil(t, err)
+		assert.Equal(t, 1, len(accs))
+
+		return nil
+	})
+	assert.Nil(t, err)
+
+	respMock1 := mocks.NewMockTaskResponse()
+	respMock1.IsReadyFunc.SetDefaultReturn(true)
+	respMock1.GetResponseBlockingFunc.SetDefaultReturn(errors.New("error"))
+
+	respMock2 := mocks.NewMockTaskResponse()
+	respMock2.IsReadyFunc.SetDefaultReturn(true)
+	respMock2.GetResponseBlockingFunc.SetDefaultReturn(nil)
+
+	testProxy.manager.runningAccusations = make(map[string]executor.TaskResponse)
+	testProxy.manager.runningAccusations["resp1"] = respMock1
+	testProxy.manager.runningAccusations["resp2"] = respMock2
+	assert.Len(t, testProxy.manager.runningAccusations, 2)
+
+	testProxy.manager.handleCompletedAccusations()
+	assert.Len(t, testProxy.manager.runningAccusations, 1)
+}
+
+func TestRsCacheStruct_DidChange_returnsError(t *testing.T) {
+	rsCacheStruct := rsCacheStruct{}
+	rs := &objs.RoundState{}
+	result, err := rsCacheStruct.DidChange(rs)
+	assert.False(t, result)
+	assert.NotNil(t, err)
 }
 
 func createValidatorsSet(t *testing.T, os *objs.OwnState, rs *objs.RoundState) *objs.ValidatorSet {

@@ -4,6 +4,7 @@ import { AccusationMultipleProposal } from "../../typechain-types";
 import { Fixture, getFixture } from "../setup";
 import {
   addValidators,
+  generateAccusationID,
   generateSigAndPClaims0,
   generateSigAndPClaims1,
   generateSigAndPClaimsDifferentChainId,
@@ -43,6 +44,16 @@ describe("AccusationMultipleProposal: Tests AccusationMultipleProposal methods",
         signerAccount0
       );
       assert.equal(isValidator, false);
+
+      const id = generateAccusationID(
+        signerAccount0,
+        1,
+        2,
+        1,
+        "0x17287210c71008320429d4cce2075373f0b2c5217b507513fe4904fead741aad"
+      );
+      const isAccused = await accusation.isAccused(id);
+      assert.equal(isAccused, true);
     });
 
     it("reverts when signer is not valid", async function () {

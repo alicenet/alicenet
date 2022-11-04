@@ -4,6 +4,7 @@ import { AccusationInvalidTxConsumption } from "../../typechain-types";
 import { Fixture, getFixture } from "../setup";
 import {
   addValidators,
+  generateAccusationID,
   getAccusationDataForNonExistentUTXOWithInvalidSigGroup,
   getInvalidAccusationDataWithSpendingValidDeposit,
   getValidAccusationDataForNonExistentUTXO,
@@ -53,6 +54,16 @@ describe("AccusationInvalidTxConsumption: Tests AccusationInvalidTxConsumption m
         signerAccount0
       );
       assert.equal(isValidator, false);
+
+      const id = generateAccusationID(
+        signerAccount0,
+        1,
+        2,
+        1,
+        "0xf40095839ea6635a5869735bd0c363085cb0ebd561e0f361f826103b958c27e5"
+      );
+      const isAccused = await accusation.isAccused(id);
+      assert.equal(isAccused, true);
     });
 
     it("reverts with InvalidAccusation (ConsumptionOfValidDeposit)", async function () {

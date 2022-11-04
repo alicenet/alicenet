@@ -496,3 +496,16 @@ export const addValidators = async (
     }
   }
 };
+
+export const generateAccusationID = (
+  validatorAddress: string,
+  chainId: number,
+  height: number,
+  round: number,
+  preSalt: string
+): string => {
+  return ethers.utils.solidityKeccak256(
+    ["address", "uint32", "uint32", "uint32", "bytes32"],
+    [validatorAddress, chainId, height, round, preSalt]
+  );
+};

@@ -43,7 +43,7 @@ func (r rsCacheStruct) DidChange(rs *objs.RoundState) (bool, error) {
 		nil
 }
 
-// Manager is responsible for checking validators' roundStates for malicious behavior and accuse them for such.
+// Manager is responsible for checking validatorsCache' roundStates for malicious behavior and accuse them for such.
 // It does so by processing each roundState through a pipeline of detetor functions until either an accusation is found or the pipeline is exhausted.
 // If an accusation is found, it is sent to the Scheduler/TaskManager to be processed further, e.g., invoke accusation smart contracts for these purposes.
 // The AccusationManager is responsible for persisting the accusations it creates, retrying persistence,
@@ -52,20 +52,20 @@ func (r rsCacheStruct) DidChange(rs *objs.RoundState) (bool, error) {
 // workers can process it, offloading the synchronizer loop.
 type Manager struct {
 	logger                        *logrus.Logger
-	detectionPipeline             []detector    // the pipeline of detector functions
-	consDB                        *db.Database  // the database to store detected accusations
-	sstore                        *lstate.Store // the state store to get round states from
-	validators                    map[string]bool
-	rsCache                       map[string]rsCacheStruct             // cache of validator's roundState height, round and hash to avoid checking accusations unless anything changes
-	rsCacheLock                   sync.Mutex                           // this is currently being used by workers when interacting with rsCache
-	workQ                         chan *lstate.RoundStates             // queue where new roundStates are pushed to be checked for malicious behavior by workers
-	accusationQ                   chan tasks.Task                      // queue where identified accusations are pushed by workers to be further processed
-	unpersistedCreatedAccusations []tasks.Task                         // newly found accusations that where not persisted into DB
-	runningAccusations            map[string]*executor.HandlerResponse // accusations scheduled for execution and not yet completed. accusation.id -> response
-	wg                            *sync.WaitGroup                      // wait group to wait for workers to stop
-	ctx                           context.Context                      // the context to use for the task handler and go routines
-	cancelCtx                     context.CancelFunc                   // the cancel function to cancel the context
-	taskHandler                   executor.TaskHandler                 // the task handler to schedule accusation tasks against the smart contracts
+	detectionPipeline             []detector                       // the pipeline of detector functions
+	consDB                        *db.Database                     // the database to store detected accusations
+	sstore                        *lstate.Store                    // the state store to get round states from
+	validatorsCache               map[string]bool                  // cache of current validators
+	rsCache                       map[string]rsCacheStruct         // cache of validator's roundState height, round and hash to avoid checking accusations unless anything changes
+	rsCacheLock                   sync.Mutex                       // this is currently being used by workers when interacting with rsCache
+	workQ                         chan *lstate.RoundStates         // queue where new roundStates are pushed to be checked for malicious behavior by workers
+	accusationQ                   chan tasks.Task                  // queue where identified accusations are pushed by workers to be further processed
+	unpersistedCreatedAccusations []tasks.Task                     // newly found accusations that where not persisted into DB
+	runningAccusations            map[string]executor.TaskResponse // accusations scheduled for execution and not yet completed. accusation.id -> response
+	wg                            *sync.WaitGroup                  // wait group to wait for workers to stop
+	ctx                           context.Context                  // the context to use for the task handler and go routines
+	cancelCtx                     context.CancelFunc               // the cancel function to cancel the context
+	taskHandler                   executor.TaskHandler             // the task handler to schedule accusation tasks against the smart contracts
 }
 
 // NewManager creates a new *Manager
@@ -78,11 +78,12 @@ func NewManager(database *db.Database, sstore *lstate.Store, taskHandler executo
 		consDB:                        database,
 		logger:                        logger,
 		sstore:                        sstore,
+		validatorsCache:               make(map[string]bool),
 		rsCache:                       make(map[string]rsCacheStruct),
 		workQ:                         make(chan *lstate.RoundStates, 1), // todo: improve this
 		accusationQ:                   make(chan tasks.Task, 1),
 		unpersistedCreatedAccusations: make([]tasks.Task, 0),
-		runningAccusations:            make(map[string]*executor.HandlerResponse),
+		runningAccusations:            make(map[string]executor.TaskResponse),
 		wg:                            &sync.WaitGroup{},
 		taskHandler:                   taskHandler,
 	}
@@ -176,7 +177,8 @@ func (m *Manager) Poll() error {
 		return err
 	}
 
-	return m.handleCompletedAccusations()
+	m.handleCompletedAccusations()
+	return nil
 }
 
 // persistCreatedAccusations persists the newly created accusations. If it
@@ -260,7 +262,7 @@ func (m *Manager) scheduleAccusations() error {
 // handleCompletedAccusations checks for the completion of the accusations that were scheduled in the Task Scheduler.
 // This function does not block while waiting for task completion. If an accusation task if completed,
 // it is then deleted from the database.
-func (m *Manager) handleCompletedAccusations() error {
+func (m *Manager) handleCompletedAccusations() {
 	// check for completed accusations in m.runningAccusations (HandlerResponse), and cleanup
 	// the m.runningAccusations map accordingly as well as the database
 	for accusationId, resp := range m.runningAccusations {
@@ -268,7 +270,7 @@ func (m *Manager) handleCompletedAccusations() error {
 			err := resp.GetResponseBlocking(m.ctx)
 			if err != nil {
 				m.logger.Warnf("AccusationManager got error response for accusation task: %v", err)
-				return err
+				continue
 			}
 
 			// delete the accusation from the database
@@ -283,7 +285,7 @@ func (m *Manager) handleCompletedAccusations() error {
 					continue
 				}
 
-				// at this point it is certain that the error is badger.ErrKeyNotFound
+				// at this point it's certain that the error is badger.ErrKeyNotFound
 				// and so we can safely delete the accusation from the map,
 				// although this should not happen.
 			}
@@ -292,8 +294,6 @@ func (m *Manager) handleCompletedAccusations() error {
 			delete(m.runningAccusations, accusationId)
 		}
 	}
-
-	return nil
 }
 
 // processLRS processes the local state of the blockchain. This function
@@ -302,7 +302,7 @@ func (m *Manager) handleCompletedAccusations() error {
 // processing the same round states over and over again, it keeps a cache
 // of the last processed round states.
 func (m *Manager) processLRS(lrs *lstate.RoundStates) (bool, error) {
-	// keep track of new validators to clear the cache from old validators
+	// keep track of new validatorsCache to clear the cache from old validatorsCache
 	currentValidators := make(map[string]bool)
 	hadUpdates := false
 
@@ -373,30 +373,30 @@ func (m *Manager) processLRS(lrs *lstate.RoundStates) (bool, error) {
 	}
 
 	m.rsCacheLock.Lock()
-	m.validators = currentValidators
+	m.validatorsCache = currentValidators
 	m.rsCacheLock.Unlock()
 
 	return hadUpdates, nil
 }
 
-// cleanupValidatorCache cleans the cache out of old validators. this is to avoid
+// cleanupValidatorCache cleans the cache out of old validatorsCache. this is to avoid
 // the cache from growing indefinitely
 func (m *Manager) cleanupValidatorCache() {
 
 	m.rsCacheLock.Lock()
 	defer m.rsCacheLock.Unlock()
 
-	// remove validators from cache that are not in the current validatorSet,
-	// ensuring the cache is not growing indefinitely with old validators
+	// remove validatorsCache from cache that are not in the current validatorSet,
+	// ensuring the cache is not growing indefinitely with old validatorsCache
 	toDelete := make([]string, 0)
-	// iterate over the cache and keep track of validators not in the current validatorSet
+	// iterate over the cache and keep track of validatorsCache not in the current validatorSet
 	for vAddr := range m.rsCache {
-		if _, ok := m.validators[vAddr]; !ok {
+		if _, ok := m.validatorsCache[vAddr]; !ok {
 			toDelete = append(toDelete, vAddr)
 		}
 	}
 
-	// delete old validators from cache
+	// delete old validatorsCache from cache
 	for _, vAddr := range toDelete {
 		delete(m.rsCache, vAddr)
 	}

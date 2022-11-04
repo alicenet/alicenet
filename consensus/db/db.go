@@ -3,6 +3,7 @@ package db
 import (
 	"bytes"
 	"context"
+	"errors"
 	"sync"
 
 	"github.com/dgraph-io/badger/v2"
@@ -1961,7 +1962,7 @@ func (db *Database) DeleteAccusation(txn *badger.Txn, id [32]byte) error {
 	exist := true
 	_, err = utils.GetValue(txn, prefix)
 	if err != nil {
-		if err != badger.ErrKeyNotFound {
+		if !errors.Is(err, badger.ErrKeyNotFound) {
 			return err
 		}
 		exist = false

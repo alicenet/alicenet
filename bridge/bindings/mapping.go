@@ -31,6 +31,7 @@ var FunctionMapping = map[[4]byte]string{
 	{154, 189, 131, 220}: "AccusationInvalidTxConsumption.PRE_SALT()",
 	{106, 228, 4, 87}:    "AccusationInvalidTxConsumption.accuseInvalidTransactionConsumption(bytes,bytes,bytes,bytes,bytes,bytes[3])",
 	{134, 83, 164, 101}:  "AccusationInvalidTxConsumption.getMetamorphicContractAddress(bytes32,address)",
+	{94, 119, 57, 103}:   "AccusationInvalidTxConsumption.isAccused(bytes32)",
 	{154, 189, 131, 220}: "AccusationMultipleProposal.PRE_SALT()",
 	{223, 217, 76, 249}:  "AccusationMultipleProposal.accuseMultipleProposal(bytes,bytes,bytes,bytes)",
 	{134, 83, 164, 101}:  "AccusationMultipleProposal.getMetamorphicContractAddress(bytes32,address)",
