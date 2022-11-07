@@ -100,14 +100,14 @@ export async function multiCallDeployUpgradeable(
 
 /**
  * @description multicall deployCreate and upgradeProxy, throws if gas exceeds 10 million
- * @param contractName name of logic contract to deploy
+ * @param implementationBase instance of the logic contract base
  * @param factory ethers connected instance of alicenet factory
  * @param ethers ethers js object
  * @param constructorArgs array of constructor arguments
  * @param initCallData encoded init calldata, 0x if no initializer function
- * @param salt salt used for deployCreate2 and to reference the proxy contract in lookup
+ * @param salt bytes32 formatted salt used for deployProxy and to reference the contract in lookup
  * @param overrides transaction overrides
- * @returns
+ * @returns a promise that resolves to the ContractTransaction
  */
 export async function multiCallUpgradeProxy(
   implementationBase: ContractFactory,
@@ -146,7 +146,7 @@ export async function multiCallUpgradeProxy(
  * @param logicAddress address of the logic contract already deployed
  * @param factory instance of deployed and connected alicenetFactory
  * @param salt bytes32 formatted salt used for deployCreate2 and to reference the contract in lookup
- * @param initCallData
+ * @param initCallData encoded init calldata, 0x if no initializer function
  * @returns
  */
 export async function multiCallDeployProxyAndUpgradeProxy(
@@ -362,8 +362,20 @@ export async function deployUpgradeableGasSafe(
     throw err;
   }
 }
-
-export async function deployLogicUpgradeProxyGasSafe(
+/**
+ * @description attempts to upgrade a proxy using a multicall deploycreate and upgradeProxy,
+ * if the gas is too high, it will deploy the implementation contract and upgrade the proxy with 2 separate calls
+ * @param contractName name of the contract to deploy
+ * @param factory connected instance of AliceNetFactory
+ * @param ethers instance of ethers js
+ * @param initCallData encoded inititalize call data
+ * @param constructorArgs constructor arguments (can only be used for immutable variables)
+ * @param salt bytes32 formatted salt used to deploy the proxy
+ * @param waitConfirmantions
+ * @param overrides
+ * @returns
+ */
+export async function upgradeProxyGasSafe(
   contractName: string,
   factory: AliceNetFactory,
   ethers: Ethers,
@@ -488,6 +500,17 @@ export async function deployCreateAndRegister(
   }
 }
 
+/**
+ * @description deploys logic contract with deployCreate, then upgradeProxy with the logic contract address
+ * @param implementationBase instance of the logic contract base object
+ * @param factory connected instance of AlicenetFactory
+ * @param initCallData encoded call data for the initialize function of the implementation contract
+ * @param constructorArgs constructor arguments for the implementation contract must only be used to set immutable variables
+ * @param salt bytes32 formatted salt used to deploy the proxy
+ * @param waitConfirmantion number of confirmations to wait after each tx
+ * @param overrides tx detail overrides
+ * @returns
+ */
 export async function upgradeProxy(
   implementationBase: ContractFactory,
   factory: AliceNetFactory,

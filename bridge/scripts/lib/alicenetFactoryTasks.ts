@@ -40,8 +40,8 @@ import {
   getDeployGroupIndex,
   getDeployType,
   getGasPrices,
-  muiltiCallDeployImplementationAndUpgradeProxyTask,
   showState,
+  upgradeProxyTask,
   verifyContract,
 } from "./deployment/deploymentUtil";
 import { DeployCreateData, FactoryData } from "./deployment/factoryStateUtil";
@@ -371,8 +371,8 @@ task(
   });
 
 task(
-  "multi-call-upgrade-proxy",
-  "for upgrading existing proxy with new logic uses the factory multicall function to deployCreate logic and upgrade"
+  "upgrade-proxy",
+  "for upgrading existing proxy with new logic uses factory multicall function to deployCreate logic and upgrade"
 )
   .addParam("contractName", "logic contract name")
   .addParam(
@@ -397,10 +397,7 @@ task(
   )
   .addOptionalVariadicPositionalParam("constructorArgs")
   .setAction(async (taskArgs, hre) => {
-    return await muiltiCallDeployImplementationAndUpgradeProxyTask(
-      taskArgs,
-      hre
-    );
+    return await upgradeProxyTask(taskArgs, hre);
   });
 
 // Generate a json file with all deployment information

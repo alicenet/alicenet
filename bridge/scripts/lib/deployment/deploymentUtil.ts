@@ -13,6 +13,7 @@ import {
   getEventVar,
   multiCallDeployUpgradeable,
   multiCallUpgradeProxy,
+  upgradeProxyGasSafe,
 } from "../alicenetFactory";
 import {
   ALICENET_FACTORY,
@@ -397,6 +398,90 @@ export async function deployUpgradeableProxyTask(
   await showState(
     `Deployed ${proxyData.logicName} with proxy at ${proxyData.proxyAddress}, gasCost: ${proxyData.gas}`
   );
+  return proxyData;
+}
+
+export async function upgradeProxyTask(
+  taskArgs: any,
+  hre: HardhatRuntimeEnvironment,
+  fullyQaulifiedContractName?: string,
+  factory?: AliceNetFactory,
+  implementationBase?: ContractFactory,
+  constructorArgObject?: ArgData,
+  initializerArgObject?: ArgData,
+  salt?: string
+) {
+  let contractName;
+  if (fullyQaulifiedContractName === undefined) {
+    contractName = taskArgs.contractName;
+  } else {
+    contractName = extractName(fullyQaulifiedContractName);
+  }
+  factory =
+    factory === undefined
+      ? await hre.ethers.getContractAt(
+          "AliceNetFactory",
+          taskArgs.factoryAddress
+        )
+      : factory;
+
+  implementationBase =
+    implementationBase === undefined
+      ? ((await hre.ethers.getContractFactory(contractName)) as ContractFactory)
+      : implementationBase;
+
+  if (salt === undefined) {
+    if (taskArgs.salt === undefined) {
+      salt = await getBytes32SaltFromContractNSTag(
+        contractName,
+        hre.artifacts,
+        hre.ethers
+      );
+    } else {
+      salt = taskArgs.salt as string;
+    }
+    salt = hre.ethers.utils.formatBytes32String(salt);
+  }
+  const initCallData: string = await encodeInitCallData(
+    taskArgs,
+    implementationBase,
+    taskArgs.initializerArgs
+  );
+  let txResponse = await upgradeProxyGasSafe(
+    contractName,
+    factory,
+    hre.ethers,
+    initCallData,
+    taskArgs.constructorArgs,
+    salt,
+    taskArgs.waitConfirmation,
+    await getGasPrices(hre)
+  );
+
+  const receipt = await txResponse.wait(taskArgs.waitConfirmation);
+  const implementationAddress = getEventVar(
+    receipt,
+    EVENT_DEPLOYED_RAW,
+    CONTRACT_ADDR
+  );
+  const proxyAddress = getEventVar(
+    receipt,
+    EVENT_DEPLOYED_PROXY,
+    CONTRACT_ADDR
+  );
+  await showState(
+    `Updating logic for the ${taskArgs.contractName} proxy at ${proxyAddress} to point to implementation at ${implementationAddress}, gasCost: ${receipt.gasUsed}`
+  );
+  const proxyData: ProxyData = {
+    factoryAddress: taskArgs.factoryAddress,
+    logicName: taskArgs.contractName,
+    logicAddress: taskArgs.logicAddress,
+    salt,
+    proxyAddress,
+    gas: receipt.gasUsed.toNumber(),
+    receipt,
+    initCallData,
+  };
   return proxyData;
 }
 
