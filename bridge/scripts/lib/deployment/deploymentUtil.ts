@@ -401,6 +401,65 @@ export async function deployUpgradeableProxyTask(
   return proxyData;
 }
 
+export async function muiltiCallDeployImplementationAndUpgradeProxyTask(
+  taskArgs: any,
+  hre: HardhatRuntimeEnvironment
+) {
+  const contractName = taskArgs.contractName;
+  const factory = await hre.ethers.getContractAt(
+    "AliceNetFactory",
+    taskArgs.factoryAddress
+  );
+  const implementationBase = await hre.ethers.getContractFactory(contractName);
+  const salt = await getBytes32SaltFromContractNSTag(
+    contractName,
+    hre.artifacts,
+    hre.ethers
+  );
+  const fullname = (await getFullyQualifiedName(
+    taskArgs.contractName,
+    hre.artifacts
+  )) as string;
+  let initCallData: string = await encodeInitCallData(
+    taskArgs,
+    implementationBase,
+    initializerArgs
+  );
+  const txResponse = await multiCallUpgradeProxy(
+    contractName,
+    factory,
+    hre.ethers,
+    taskArgs.constructorArgs,
+    initCallData,
+    salt
+  );
+  const receipt = await txResponse.wait(taskArgs.waitConfirmation);
+  const implementationAddress = getEventVar(
+    receipt,
+    EVENT_DEPLOYED_RAW,
+    CONTRACT_ADDR
+  );
+  const proxyAddress = getEventVar(
+    receipt,
+    EVENT_DEPLOYED_PROXY,
+    CONTRACT_ADDR
+  );
+  await showState(
+    `Updating logic for the ${taskArgs.contractName} proxy at ${proxyAddress} to point to implementation at ${implementationAddress}, gasCost: ${receipt.gasUsed}`
+  );
+  const proxyData: ProxyData = {
+    factoryAddress: taskArgs.factoryAddress,
+    logicName: taskArgs.contractName,
+    logicAddress: taskArgs.logicAddress,
+    salt: salt,
+    proxyAddress,
+    gas: receipt.gasUsed.toNumber(),
+    receipt,
+    initCallData,
+  };
+  return proxyData;
+}
+
 export async function encodeInitCallData(
   taskArgs: any,
   implementationBase: ContractFactory,
@@ -466,64 +525,6 @@ export async function promptCheckDeploymentArgs(message: string) {
     }
     rl.close();
   }
-}
-
-export async function muiltiCallDeployImplementationAndUpgradeProxyTask(
-  taskArgs: any,
-  hre: HardhatRuntimeEnvironment
-) {
-  const contractName = taskArgs.contractName;
-  const factory = await hre.ethers.getContractAt(
-    "AliceNetFactory",
-    taskArgs.factoryAddress
-  );
-  const salt = await getBytes32SaltFromContractNSTag(
-    contractName,
-    hre.artifacts,
-    hre.ethers
-  );
-  const fullname = (await getFullyQualifiedName(
-    taskArgs.contractName,
-    hre.artifacts
-  )) as string;
-  let initCallData: string = await encodeInitCallData(
-    taskArgs,
-    implementationBase,
-    initializerArgs
-  );
-  const txResponse = await multiCallUpgradeProxy(
-    contractName,
-    factory,
-    hre.ethers,
-    taskArgs.constructorArgs,
-    initCallData,
-    salt
-  );
-  const receipt = await txResponse.wait(taskArgs.waitConfirmation);
-  const implementationAddress = getEventVar(
-    receipt,
-    EVENT_DEPLOYED_RAW,
-    CONTRACT_ADDR
-  );
-  const proxyAddress = getEventVar(
-    receipt,
-    EVENT_DEPLOYED_PROXY,
-    CONTRACT_ADDR
-  );
-  await showState(
-    `Updating logic for the ${taskArgs.contractName} proxy at ${proxyAddress} to point to implementation at ${implementationAddress}, gasCost: ${receipt.gasUsed}`
-  );
-  const proxyData: ProxyData = {
-    factoryAddress: taskArgs.factoryAddress,
-    logicName: taskArgs.contractName,
-    logicAddress: taskArgs.logicAddress,
-    salt: salt,
-    proxyAddress,
-    gas: receipt.gasUsed.toNumber(),
-    receipt,
-    initCallData,
-  };
-  return proxyData;
 }
 
 export async function deployCreateAndRegisterTask(

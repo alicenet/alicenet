@@ -1,18 +1,13 @@
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { ethers } from "hardhat";
+import { HardhatRuntimeEnvironment } from "hardhat/types";
 import {
   deployUpgradeable,
   getEventVar,
   multiCallUpgradeProxy,
 } from "../../scripts/lib/alicenetFactory";
-import {
-  CONTRACT_ADDR,
-  DEPLOYED_PROXY,
-  DEPLOYED_RAW,
-  MOCK,
-  PROXY,
-  UTILS,
-} from "../../scripts/lib/constants";
+import { CONTRACT_ADDR, MOCK, PROXY, UTILS } from "../../scripts/lib/constants";
+import { getGasPrices } from "../../scripts/lib/deployment/deploymentUtil";
 import { AliceNetFactory, Utils } from "../../typechain-types";
 import { expect } from "../chai-setup";
 import { deployFactory } from "./Setup";
@@ -21,7 +16,7 @@ process.env.silencer = "true";
 describe("AliceNetfactory API test", async () => {
   let utilsContract: Utils;
   let factory: AliceNetFactory;
-
+  let hre: HardhatRuntimeEnvironment;
   async function deployFixture() {
     const utilsBase = await ethers.getContractFactory(UTILS);
     const utilsContract = await utilsBase.deploy();
@@ -30,6 +25,7 @@ describe("AliceNetfactory API test", async () => {
   }
 
   beforeEach(async () => {
+    hre = await require("hardhat");
     ({ utilsContract, factory } = await loadFixture(deployFixture));
 
     const cSize = await utilsContract.getCodeSize(factory.address);
@@ -42,7 +38,7 @@ describe("AliceNetfactory API test", async () => {
       "s",
     ]);
     const receipt = await txResponse.wait();
-    const proxyAddress = getEventVar(receipt, DEPLOYED_PROXY, CONTRACT_ADDR);
+    const proxyAddress = getEventVar(receipt, "deployedProxy", CONTRACT_ADDR);
 
     const proxy = await ethers.getContractAt(PROXY, proxyAddress);
     const implementationAddress = await proxy.getImplementationAddress();
@@ -53,32 +49,36 @@ describe("AliceNetfactory API test", async () => {
     expect(cSize.toNumber()).to.be.greaterThan(0);
   });
 
-  it("upgrade deployment", async () => {
+  it.only("upgrade deployment", async () => {
     let salt = ethers.utils.formatBytes32String(MOCK);
+    const logicContractBase = await ethers.getContractFactory(MOCK);
     let txResponse = await deployUpgradeable(
       MOCK,
       factory,
       ethers,
       "0x",
       ["2", "s"],
-      salt
+      salt,
+      1,
+      await getGasPrices(hre)
     );
     let receipt = await txResponse.wait();
-    const proxyAddress = getEventVar(receipt, DEPLOYED_PROXY, CONTRACT_ADDR);
+    const proxyAddress = getEventVar(receipt, "DeployedProxy", CONTRACT_ADDR);
     const proxy = await ethers.getContractAt(PROXY, proxyAddress);
     const implementationAddress = await proxy.getImplementationAddress();
     txResponse = await multiCallUpgradeProxy(
-      MOCK,
+      logicContractBase,
       factory,
       ethers,
-      ["2", "s"],
       "0x",
-      salt
+      ["2", "s"],
+      salt,
+      await getGasPrices(hre)
     );
     receipt = await txResponse.wait();
-    const expectedImplementationAddress = await getEventVar(
+    const expectedImplementationAddress = getEventVar(
       receipt,
-      DEPLOYED_RAW,
+      "deployedRaw",
       CONTRACT_ADDR
     );
     const newImplementationAddress = await proxy.getImplementationAddress();
