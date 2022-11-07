@@ -38,7 +38,7 @@ describe("AliceNetfactory API test", async () => {
       "s",
     ]);
     const receipt = await txResponse.wait();
-    const proxyAddress = getEventVar(receipt, "deployedProxy", CONTRACT_ADDR);
+    const proxyAddress = getEventVar(receipt, "DeployedProxy", CONTRACT_ADDR);
 
     const proxy = await ethers.getContractAt(PROXY, proxyAddress);
     const implementationAddress = await proxy.getImplementationAddress();
@@ -49,7 +49,7 @@ describe("AliceNetfactory API test", async () => {
     expect(cSize.toNumber()).to.be.greaterThan(0);
   });
 
-  it.only("upgrade deployment", async () => {
+  it("upgrade deployment", async () => {
     let salt = ethers.utils.formatBytes32String(MOCK);
     const logicContractBase = await ethers.getContractFactory(MOCK);
     let txResponse = await deployUpgradeable(
