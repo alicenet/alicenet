@@ -7,9 +7,6 @@ import {
 } from "../constants";
 import {
   ArgData,
-  ContractArgs,
-  DeploymentArgs,
-  DeploymentConfig,
   DeploymentConfigWrapper,
   extractName,
   extractPath,
@@ -32,7 +29,7 @@ export async function writeDeploymentArgs(
   fs.writeFileSync(path, data);
   // also write to json file
   const jsonData = JSON.stringify(deploymentArgs, null, 2);
-  fs.writeFileSync(path +  ".json", jsonData);
+  fs.writeFileSync(path + ".json", jsonData);
 }
 
 export async function generateDeployArgTemplate(
@@ -40,16 +37,19 @@ export async function generateDeployArgTemplate(
   artifacts: Artifacts,
   ethers: Ethers
 ): Promise<DeploymentConfigWrapper> {
-
   const deploymentArgs: DeploymentConfigWrapper = {};
   const factoryName = await getFullyQualifiedName("AliceNetFactory", artifacts);
   const contracts = [factoryName, ...list];
   for (const contract of contracts) {
     console.log(contract);
-    
-    const contractInfo = await extractFullContractInfo(contract, artifacts, ethers)
-    if(contractInfo !== undefined) {
-    deploymentArgs[contract] = contractInfo;
+
+    const contractInfo = await extractFullContractInfo(
+      contract,
+      artifacts,
+      ethers
+    );
+    if (contractInfo !== undefined) {
+      deploymentArgs[contract] = contractInfo;
     }
   }
   return deploymentArgs;
@@ -120,53 +120,50 @@ export async function extractFullContractInfo(
   artifacts: Artifacts,
   ethers: Ethers
 ) {
-
-  let constructorArgs : ArgData = {};
-  let initializerArgs : ArgData = {};
- 
+  let constructorArgs: ArgData = {};
+  let initializerArgs: ArgData = {};
 
   const buildInfo = await artifacts.getBuildInfo(fullName);
   if (buildInfo !== undefined) {
     const name = extractName(fullName);
     const path = extractPath(fullName);
     const info: any = buildInfo?.output.contracts[path][name];
-    
-    const methods = buildInfo.output.contracts[path][name].abi
+
+    const methods = buildInfo.output.contracts[path][name].abi;
     for (const method of methods) {
       if (method.type === "constructor" || method.name === "initialize") {
-        const args: ArgData = {}
+        const args: ArgData = {};
         for (const input of method.inputs) {
           args[input.name] = "UNDEFINED";
         }
-        
-        if( method.type === "constructor") {
-          constructorArgs = args
+
+        if (method.type === "constructor") {
+          constructorArgs = args;
         } else {
-          initializerArgs = args
+          initializerArgs = args;
         }
-        
-      } 
-      
+      }
     }
 
-  let salt = info.devdoc["custom:salt"] !== undefined ? ethers.utils.formatBytes32String(info.devdoc["custom:salt"]) : "";
-  const deployGroup  = info.devdoc["custom:deploy-group"]
-  const deployGroupIndex  = info.devdoc["custom:deploy-group-index"]
-  const deployType  = info.devdoc["custom:deploy-type"]
+    let salt =
+      info.devdoc["custom:salt"] !== undefined
+        ? ethers.utils.formatBytes32String(info.devdoc["custom:salt"])
+        : "";
+    const deployGroup = info.devdoc["custom:deploy-group"];
+    const deployGroupIndex = info.devdoc["custom:deploy-group-index"];
+    const deployType = info.devdoc["custom:deploy-type"];
     return {
-      name : name,
-  fullyQualifiedName : fullName,
-  salt,
-  deployGroup ,
-  deployGroupIndex ,
-  deployType ,
-  constructorArgs , 
-  initializerArgs ,
-
-    }
+      name: name,
+      fullyQualifiedName: fullName,
+      salt,
+      deployGroup,
+      deployGroupIndex,
+      deployType,
+      constructorArgs,
+      initializerArgs,
+    };
   }
 
- 
   return undefined;
 }
 

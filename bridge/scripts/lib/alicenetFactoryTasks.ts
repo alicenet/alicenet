@@ -349,7 +349,10 @@ task(
     return await deployCreateAndRegisterTask(taskArgs, hre);
   });
 
-task("deploy-proxy", "deploys a proxy from the factory, without implementation")
+task(
+  "deploy-only-proxy",
+  "deploys a proxy from the factory, without implementation"
+)
   .addParam(
     "salt",
     "salt used to specify logicContract and proxy address calculation"
@@ -376,6 +379,10 @@ task(
   .addParam(
     "factoryAddress",
     "address of factory contract to deploy the contract with"
+  )
+  .addOptionalParam(
+    "initializerArgs",
+    "input initializer args as comma separated string"
   )
   .addOptionalParam(
     "inputFolder",

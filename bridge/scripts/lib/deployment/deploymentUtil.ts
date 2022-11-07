@@ -257,7 +257,6 @@ export async function deployContractsTask(
           taskArgs,
           hre,
           factory,
-          fullyQualifiedContractName,
           salt
         );
         cumulativeGasUsed = cumulativeGasUsed.add(proxyData.gas);
@@ -410,27 +409,25 @@ export async function muiltiCallDeployImplementationAndUpgradeProxyTask(
     "AliceNetFactory",
     taskArgs.factoryAddress
   );
-  const implementationBase = await hre.ethers.getContractFactory(contractName);
+  const implementationBase = (await hre.ethers.getContractFactory(
+    contractName
+  )) as ContractFactory;
   const salt = await getBytes32SaltFromContractNSTag(
     contractName,
     hre.artifacts,
     hre.ethers
   );
-  const fullname = (await getFullyQualifiedName(
-    taskArgs.contractName,
-    hre.artifacts
-  )) as string;
   let initCallData: string = await encodeInitCallData(
     taskArgs,
     implementationBase,
-    initializerArgs
+    taskArgs.initializerArgs
   );
   const txResponse = await multiCallUpgradeProxy(
     contractName,
     factory,
     hre.ethers,
-    taskArgs.constructorArgs,
     initCallData,
+    taskArgs.constructorArgs,
     salt
   );
   const receipt = await txResponse.wait(taskArgs.waitConfirmation);
@@ -643,7 +640,6 @@ export async function deployOnlyProxyTask(
   taskArgs: any,
   hre: HardhatRuntimeEnvironment,
   factory?: AliceNetFactory,
-  fullyQaulifiedContractName?: string,
   salt?: string
 ) {
   const waitBlocks = taskArgs.waitConfirmation;
@@ -654,24 +650,11 @@ export async function deployOnlyProxyTask(
           taskArgs.factoryAddress
         )
       : factory;
-  const contractName =
-    fullyQaulifiedContractName === undefined
-      ? taskArgs.contractName
-      : extractName(fullyQaulifiedContractName);
-
-  fullyQaulifiedContractName =
-    fullyQaulifiedContractName === undefined
-      ? await getFullyQualifiedName(contractName, hre.artifacts)
-      : fullyQaulifiedContractName;
+  if (salt === undefined && taskArgs.salt !== undefined) {
+    salt = hre.ethers.utils.formatBytes32String(taskArgs.salt);
+  }
   if (salt === undefined) {
-    salt =
-      taskArgs.salt !== undefined
-        ? hre.ethers.utils.formatBytes32String(taskArgs.salt)
-        : await getBytes32SaltFromContractNSTag(
-            contractName,
-            hre.artifacts,
-            hre.ethers
-          );
+    throw new Error("No salt provided");
   }
   const txResponse = await factory.deployProxy(salt, await getGasPrices(hre));
   const receipt = await txResponse.wait(waitBlocks);

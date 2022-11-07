@@ -233,7 +233,7 @@ export async function deployCreate2Initable(
   return txResponse;
 }
 
-export function getMetamorphicAddress(factoryAddress: string, salt: string) {
+export function getMetamorphicAddress(factoryAddress: string, salt: BytesLike) {
   const initCode = "0x6020363636335afa1536363636515af43d36363e3d36f3";
   return ethers.utils.getCreate2Address(
     factoryAddress,
