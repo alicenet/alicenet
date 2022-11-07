@@ -50,7 +50,7 @@ describe("AliceNetfactory API test", async () => {
   });
 
   it("upgrade deployment", async () => {
-    let salt = ethers.utils.formatBytes32String(MOCK);
+    const salt = ethers.utils.formatBytes32String(MOCK);
     const logicContractBase = await ethers.getContractFactory(MOCK);
     let txResponse = await deployUpgradeable(
       MOCK,

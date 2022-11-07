@@ -134,7 +134,7 @@ export async function getContractDescriptor(
   );
   return {
     name: contractName,
-    fullyQualifiedName: fullyQualifiedName,
+    fullyQualifiedName,
     deployGroup: await getDeployGroup(fullyQualifiedName, hre.artifacts),
     deployGroupIndex: parseInt(
       await getDeployGroupIndex(fullyQualifiedName, hre.artifacts),
@@ -146,7 +146,7 @@ export async function getContractDescriptor(
   };
 }
 
-//AliceNet Factory Task Functions
+// AliceNet Factory Task Functions
 
 export async function deployFactoryTask(
   taskArgs: any,
@@ -155,7 +155,7 @@ export async function deployFactoryTask(
 ) {
   await checkUserDirPath(taskArgs.outputFolder);
   const factoryBase = await hre.ethers.getContractFactory(ALICENET_FACTORY);
-  //if the user didnt specify constructor args, get from the default deployment config list
+  // if the user didnt specify constructor args, get from the default deployment config list
 
   constructorArgs =
     constructorArgs === undefined ? taskArgs.constructorArgs : constructorArgs;
@@ -209,7 +209,7 @@ export async function deployContractsTask(
   // deploy the factory first
   const keys = Object.keys(deploymentListConfig);
 
-  let constructorArgs = [
+  const constructorArgs = [
     deploymentListConfig[keys[0]].constructorArgs.legacyToken_,
   ];
   let factoryAddress = taskArgs.factoryAddress;
@@ -222,13 +222,13 @@ export async function deployContractsTask(
     factoryAddress = factoryData.address;
     cumulativeGasUsed = cumulativeGasUsed.add(factoryData.gas);
   }
-  //connect an instance of the factory
+  // connect an instance of the factory
   const factory = await hre.ethers.getContractAt(
     "AliceNetFactory",
     factoryAddress
   );
 
-  for (let fullyQualifiedContractName in deploymentListConfig) {
+  for (const fullyQualifiedContractName in deploymentListConfig) {
     const deployType =
       deploymentListConfig[fullyQualifiedContractName].deployType;
     const salt = deploymentListConfig[fullyQualifiedContractName].salt;
@@ -305,12 +305,12 @@ export async function deployUpgradeableProxyTask(
     fullyQaulifiedContractName === undefined
       ? taskArgs.contractName
       : extractName(fullyQaulifiedContractName);
-  //if implementationBase is undefined, get it from the artifacts with the contract name
+  // if implementationBase is undefined, get it from the artifacts with the contract name
   implementationBase =
     implementationBase === undefined
       ? ((await hre.ethers.getContractFactory(contractName)) as ContractFactory)
       : implementationBase;
-  //if an instance of the factory contract is not provided get it from ethers
+  // if an instance of the factory contract is not provided get it from ethers
   factory =
     factory === undefined
       ? await hre.ethers.getContractAt(
@@ -318,20 +318,20 @@ export async function deployUpgradeableProxyTask(
           taskArgs.factoryAddress
         )
       : factory;
-  //if the fully qualified contract name is not provided, get it from the artifacts
+  // if the fully qualified contract name is not provided, get it from the artifacts
   fullyQaulifiedContractName =
     fullyQaulifiedContractName === undefined
       ? await getFullyQualifiedName(taskArgs.contractName, hre.artifacts)
       : fullyQaulifiedContractName;
   constructorArgs =
     constructorArgs === undefined ? taskArgs.constructorArgs : constructorArgs;
-  let initCallData: string = await encodeInitCallData(
+  const initCallData: string = await encodeInitCallData(
     taskArgs,
     implementationBase,
     initializerArgs
   );
 
-  //if salt is not parsed, get it from the contract itself
+  // if salt is not parsed, get it from the contract itself
   salt =
     salt === undefined
       ? await getBytes32SaltFromContractNSTag(
@@ -365,7 +365,7 @@ export async function deployUpgradeableProxyTask(
     const promptMessage = `Do you want to deploy ${contractName} with  constructor arguemnets: ${constructorDetails} initializer Args: ${initializerDetails}? (y/n)`;
     await promptCheckDeploymentArgs(promptMessage);
   }
-  let txResponse = await deployUpgradeableGasSafe(
+  const txResponse = await deployUpgradeableGasSafe(
     contractName,
     factory,
     hre.ethers,
@@ -375,7 +375,7 @@ export async function deployUpgradeableProxyTask(
     waitBlocks,
     await getGasPrices(hre)
   );
-  let receipt = await txResponse.wait(waitBlocks);
+  const receipt = await txResponse.wait(waitBlocks);
   const deployedLogicAddress = getEventVar(
     receipt,
     EVENT_DEPLOYED_RAW,
@@ -417,7 +417,7 @@ export async function muiltiCallDeployImplementationAndUpgradeProxyTask(
     hre.artifacts,
     hre.ethers
   );
-  let initCallData: string = await encodeInitCallData(
+  const initCallData: string = await encodeInitCallData(
     taskArgs,
     implementationBase,
     taskArgs.initializerArgs
@@ -448,7 +448,7 @@ export async function muiltiCallDeployImplementationAndUpgradeProxyTask(
     factoryAddress: taskArgs.factoryAddress,
     logicName: taskArgs.contractName,
     logicAddress: taskArgs.logicAddress,
-    salt: salt,
+    salt,
     proxyAddress,
     gas: receipt.gasUsed.toNumber(),
     receipt,
@@ -505,6 +505,7 @@ export async function promptCheckDeploymentArgs(message: string) {
       answer === "Yes" ||
       answer === "YES"
     ) {
+      missingInput = false;
       break;
     } else if (
       answer === "n" ||
@@ -513,6 +514,7 @@ export async function promptCheckDeploymentArgs(message: string) {
       answer === "No" ||
       answer === "NO"
     ) {
+      missingInput = false;
       exit();
     } else {
       if (dynamicSuggestion === defaultSuggestion) {
@@ -661,7 +663,7 @@ export async function deployOnlyProxyTask(
   const proxyAddr = getEventVar(receipt, EVENT_DEPLOYED_PROXY, CONTRACT_ADDR);
   const proxyData: ProxyData = {
     proxyAddress: proxyAddr,
-    salt: salt,
+    salt,
     factoryAddress: factory.address,
     gas: receipt.gasUsed,
     receipt,
@@ -714,7 +716,7 @@ export async function multiCallDeployUpgradeableTask(taskArgs: any, hre: any) {
       "0x3000000000000000",
     ]);
   }
-  let txResponse = await multiCallDeployUpgradeable(
+  const txResponse = await multiCallDeployUpgradeable(
     implementationBase,
     factory,
     hre.ethers,
@@ -723,7 +725,7 @@ export async function multiCallDeployUpgradeableTask(taskArgs: any, hre: any) {
     salt,
     await getGasPrices(hre)
   );
-  let receipt = await txResponse.wait(waitBlocks);
+  const receipt = await txResponse.wait(waitBlocks);
   const deployedLogicAddress = getEventVar(
     receipt,
     EVENT_DEPLOYED_RAW,

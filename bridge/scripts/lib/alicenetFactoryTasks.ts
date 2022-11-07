@@ -293,7 +293,6 @@ task("deploy-create", "deploys a contract from the factory using create")
         gas: receipt.gasUsed,
         constructorArgs: taskArgs?.constructorArgs,
       };
-      const network = hre.network.name;
       if (taskArgs.verify) {
         await verifyContract(hre, factory.address, constructorArgs);
       }
@@ -533,9 +532,6 @@ task(
     }
     const factoryBase = await hre.ethers.getContractFactory(ALICENET_FACTORY);
     const factory = factoryBase.attach(factoryAddress);
-    const txCount = await hre.ethers.provider.getTransactionCount(
-      factory.address
-    );
     const contracts = json.contracts;
     await deployContractsMulticall(contracts, hre, factory.address);
     console.log(`total gas used: ${cumulativeGasUsed.toString()}`);

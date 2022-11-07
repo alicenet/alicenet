@@ -145,7 +145,7 @@ export async function extractFullContractInfo(
       }
     }
 
-    let salt =
+    const salt =
       info.devdoc["custom:salt"] !== undefined
         ? ethers.utils.formatBytes32String(info.devdoc["custom:salt"])
         : "";
@@ -153,7 +153,7 @@ export async function extractFullContractInfo(
     const deployGroupIndex = info.devdoc["custom:deploy-group-index"];
     const deployType = info.devdoc["custom:deploy-type"];
     return {
-      name: name,
+      name,
       fullyQualifiedName: fullName,
       salt,
       deployGroup,

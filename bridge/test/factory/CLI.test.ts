@@ -40,7 +40,7 @@ describe("Cli tasks", () => {
       MOCK_INITIALIZABLE,
       proxyData.proxyAddress
     );
-    let initval = await mockInitializable.getImut();
+    const initval = await mockInitializable.getImut();
     const expectedProxyAddress = getMetamorphicAddress(
       factory.address,
       ethers.utils.formatBytes32String(MOCK_INITIALIZABLE)

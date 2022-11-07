@@ -7,10 +7,10 @@ import {
   ContractTransaction,
   Overrides,
 } from "ethers";
-import { Artifacts, HardhatEthersHelpers } from "hardhat/types";
+import { HardhatEthersHelpers } from "hardhat/types";
 import {
   AliceNetFactory,
-  AliceNetFactory__factory,
+  AliceNetFactory__factory as aliceNetFactoryBase,
 } from "../../typechain-types";
 import { PromiseOrValue } from "../../typechain-types/common";
 import {
@@ -36,7 +36,7 @@ export class MultiCallGasError extends Error {
 export async function deployFactory(
   constructorArgs: string,
   ethers: Ethers,
-  factoryBase?: AliceNetFactory__factory,
+  factoryBase?: aliceNetFactoryBase,
   overrides?: Overrides & { from?: PromiseOrValue<string> }
 ): Promise<AliceNetFactory> {
   factoryBase =
@@ -50,7 +50,7 @@ export async function deployFactory(
   }
 }
 
-//multicall deploy logic, proxy, and upgrade proxy
+// multicall deploy logic, proxy, and upgrade proxy
 /**
  * @description uses multicall to deploy logic contract with deployCreate, deploys proxy with deployProxy, and upgrades proxy with upgradeProxy
  * @dev since upgradeable contracts go through proxies, constructor args can only be used to set immutable variables
@@ -96,7 +96,7 @@ export async function multiCallDeployUpgradeable(
   }
 }
 
-//upgradeProxy
+// upgradeProxy
 
 /**
  * @description multicall deployCreate and upgradeProxy, throws if gas exceeds 10 million
@@ -439,14 +439,14 @@ export async function deployUpgradeable(
   waitConfirmantion: number = 0,
   overrides?: Overrides & { from?: PromiseOrValue<string> }
 ) {
-  let txResponse = await deployCreate(
+  const txResponse = await deployCreate(
     contractName,
     factory,
     ethers,
     constructorArgs,
     overrides
   );
-  let receipt = await txResponse.wait(waitConfirmantion);
+  const receipt = await txResponse.wait(waitConfirmantion);
   const implementationContractAddress = await getEventVar(
     receipt,
     "DeployedRaw",
@@ -454,7 +454,7 @@ export async function deployUpgradeable(
   );
   salt =
     salt.length === 0 ? ethers.utils.formatBytes32String(contractName) : salt;
-  //use mutlticall to deploy proxy and upgrade proxy
+  // use mutlticall to deploy proxy and upgrade proxy
   const multiCallArgs = await encodeMultiCallDeployProxyAndUpgradeProxyArgs(
     implementationContractAddress,
     factory,
@@ -506,7 +506,7 @@ export async function upgradeProxy(
   } else {
     txResponse = await factory.deployCreate(deployTxData, overrides);
   }
-  let receipt = await txResponse.wait(waitConfirmantion);
+  const receipt = await txResponse.wait(waitConfirmantion);
   const logicAddress = getEventVar(receipt, EVENT_DEPLOYED_RAW, CONTRACT_ADDR);
   // upgrade the proxy
   if (overrides === undefined) {
@@ -521,18 +521,6 @@ export async function upgradeProxy(
   }
 }
 
-async function getFullyQualifiedName(
-  contractName: string,
-  artifacts: Artifacts
-): Promise<string> {
-  const artifactPaths = await artifacts.getAllFullyQualifiedNames();
-  const fullName = artifactPaths.find((path) => path.endsWith(contractName));
-  if (fullName === undefined) {
-    throw new Error(`contract ${contractName} not found`);
-  }
-  return fullName;
-}
-
 /**
  * @description returns everything on the left side of the :
  * ie: src/proxy/Proxy.sol:Mock => src/proxy/Proxy.sol
@@ -541,37 +529,6 @@ async function getFullyQualifiedName(
  */
 export function extractPath(qualifiedName: string) {
   return qualifiedName.split(":")[0];
-}
-
-async function getDeployUpgradeableMultiCallArgs(
-  factoryAddress: string,
-  Salt: BytesLike,
-  logicAddress: BytesLike,
-  ethers: Ethers,
-  initCallData?: BytesLike
-) {
-  const factoryBase = await ethers.getContractFactory(ALICENET_FACTORY);
-  const deployProxy: BytesLike = factoryBase.interface.encodeFunctionData(
-    "deployProxy",
-    [Salt]
-  );
-  const upgradeProxy: BytesLike =
-    initCallData !== undefined
-      ? factoryBase.interface.encodeFunctionData("upgradeProxy", [
-          Salt,
-          logicAddress,
-          initCallData,
-        ])
-      : factoryBase.interface.encodeFunctionData("upgradeProxy", [
-          Salt,
-          logicAddress,
-          "0x",
-        ]);
-
-  return [
-    encodeMultiCallArgs(factoryAddress, 0, deployProxy),
-    encodeMultiCallArgs(factoryAddress, 0, upgradeProxy),
-  ];
 }
 
 /**
