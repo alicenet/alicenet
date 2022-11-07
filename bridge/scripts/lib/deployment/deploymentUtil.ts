@@ -6,6 +6,7 @@ import { exit } from "process";
 import readline from "readline";
 import { AliceNetFactory } from "../../../typechain-types";
 import {
+  deployCreate,
   deployCreateAndRegister,
   deployFactory,
   deployUpgradeableGasSafe,
@@ -401,6 +402,62 @@ export async function deployUpgradeableProxyTask(
     `Deployed ${proxyData.logicName} with proxy at ${proxyData.proxyAddress}, gasCost: ${proxyData.gas}`
   );
   return proxyData;
+}
+
+export async function deployCreateTask(
+  taskArgs: any,
+  hre: HardhatRuntimeEnvironment,
+  fullyQaulifiedContractName?: string,
+  factory?: AliceNetFactory,
+  implementationBase?: ContractFactory,
+  constructorArgObject?: ArgData
+) {
+  const waitBlocks = taskArgs.waitConfirmation;
+  let constructorArgs;
+  if (constructorArgObject !== undefined) {
+    constructorArgs = Object.values(constructorArgObject);
+  } else {
+    constructorArgs = taskArgs.constructorArgs;
+  }
+  const contractName =
+    fullyQaulifiedContractName === undefined
+      ? taskArgs.contractName
+      : extractName(fullyQaulifiedContractName);
+  factory =
+    factory === undefined
+      ? await hre.ethers.getContractAt(
+          "AliceNetFactory",
+          taskArgs.factoryAddress
+        )
+      : factory;
+  let txResponse = await deployCreate(
+    contractName,
+    factory,
+    hre.ethers,
+    constructorArgs
+  );
+  const receipt = await txResponse.wait(waitBlocks);
+  const deployCreateData: DeployCreateData = {
+    name: contractName,
+    address: getEventVar(receipt, EVENT_DEPLOYED_RAW, CONTRACT_ADDR),
+    factoryAddress: taskArgs.factoryAddress,
+    gas: receipt.gasUsed,
+    constructorArgs: taskArgs?.constructorArgs,
+  };
+  if (taskArgs.verify) {
+    await verifyContract(hre, factory.address, constructorArgs);
+  }
+  if (taskArgs.standAlone !== true) {
+    await showState(
+      `[DEBUG ONLY, DONT USE THIS ADDRESS IN THE SIDE CHAIN, USE THE PROXY INSTEAD!] Deployed logic for ${taskArgs.contractName} contract at: ${deployCreateData.address}, gas: ${receipt.gasUsed}`
+    );
+  } else {
+    await showState(
+      `Deployed ${deployCreateData.name} at ${deployCreateData.address}, gasCost: ${deployCreateData.gas}`
+    );
+  }
+  deployCreateData.receipt = receipt;
+  return deployCreateData;
 }
 
 export async function upgradeProxyTask(

@@ -2,17 +2,14 @@ import toml from "@iarna/toml";
 import { BigNumber } from "ethers";
 import fs from "fs";
 import { task, types } from "hardhat/config";
-import { getEventVar } from "./alicenetFactory";
 import {} from "./alicenetTasks";
 import {
   ALICENET_FACTORY,
-  CONTRACT_ADDR,
   DEFAULT_CONFIG_DIR,
   DEFAULT_FACTORY_STATE_OUTPUT_DIR,
   DEPLOYMENT_ARGS_TEMPLATE_FPATH,
   DEPLOYMENT_ARG_PATH,
   DEPLOYMENT_LIST_FPATH,
-  EVENT_DEPLOYED_RAW,
 } from "./constants";
 import {
   generateDeployArgTemplate,
@@ -30,6 +27,7 @@ import {
   deployContractsMulticall,
   deployContractsTask,
   deployCreateAndRegisterTask,
+  deployCreateTask,
   deployFactoryTask,
   DeploymentConfigWrapper,
   deployOnlyProxyTask,
@@ -39,12 +37,10 @@ import {
   getDeployGroup,
   getDeployGroupIndex,
   getDeployType,
-  getGasPrices,
   showState,
   upgradeProxyTask,
-  verifyContract,
 } from "./deployment/deploymentUtil";
-import { DeployCreateData, FactoryData } from "./deployment/factoryStateUtil";
+import { FactoryData } from "./deployment/factoryStateUtil";
 
 task(
   "get-network",
@@ -261,57 +257,7 @@ task("deploy-create", "deploys a contract from the factory using create")
     "array that holds all arguments for constructor"
   )
   .setAction(async (taskArgs, hre) => {
-    const waitBlocks = taskArgs.waitConfirmation;
-    const factoryBase = await hre.ethers.getContractFactory(ALICENET_FACTORY);
-    // get a factory instance connected to the factory a
-    const factory = factoryBase.attach(taskArgs.factoryAddress);
-    const logicContract: any = await hre.ethers.getContractFactory(
-      taskArgs.contractName
-    );
-    const constructorArgs =
-      taskArgs.constructorArgs === undefined ? [] : taskArgs.constructorArgs;
-    // encode deployBcode
-    const deployTx = logicContract.getDeployTransaction(...constructorArgs);
-    if (hre.network.name === "hardhat") {
-      // hardhat is not being able to estimate correctly the tx gas due to the massive bytes array
-      // being sent as input to the function (the contract bytecode), so we need to increase the block
-      // gas limit temporally in order to deploy the template
-      await hre.network.provider.send("evm_setBlockGasLimit", [
-        "0x3000000000000000",
-      ]);
-    }
-    if (deployTx.data !== undefined) {
-      const txResponse = await factory.deployCreate(
-        deployTx.data,
-        await getGasPrices(hre)
-      );
-      const receipt = await txResponse.wait(waitBlocks);
-      const deployCreateData: DeployCreateData = {
-        name: taskArgs.contractName,
-        address: getEventVar(receipt, EVENT_DEPLOYED_RAW, CONTRACT_ADDR),
-        factoryAddress: taskArgs.factoryAddress,
-        gas: receipt.gasUsed,
-        constructorArgs: taskArgs?.constructorArgs,
-      };
-      if (taskArgs.verify) {
-        await verifyContract(hre, factory.address, constructorArgs);
-      }
-      if (taskArgs.standAlone !== true) {
-        await showState(
-          `[DEBUG ONLY, DONT USE THIS ADDRESS IN THE SIDE CHAIN, USE THE PROXY INSTEAD!] Deployed logic for ${taskArgs.contractName} contract at: ${deployCreateData.address}, gas: ${receipt.gasUsed}`
-        );
-      } else {
-        await showState(
-          `Deployed ${deployCreateData.name} at ${deployCreateData.address}, gasCost: ${deployCreateData.gas}`
-        );
-      }
-      deployCreateData.receipt = receipt;
-      return deployCreateData;
-    } else {
-      throw new Error(
-        `failed to get deployment bytecode for ${taskArgs.contractName}`
-      );
-    }
+    return await deployCreateTask(taskArgs, hre);
   });
 
 task(
