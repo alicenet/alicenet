@@ -9,7 +9,7 @@ require (
 	github.com/derision-test/go-mockgen v1.3.6
 	github.com/dgraph-io/badger/v2 v2.2007.4
 	github.com/emicklei/proto v1.11.0
-	github.com/ethereum/go-ethereum v1.10.25
+	github.com/ethereum/go-ethereum v1.10.26
 	github.com/golang/mock v1.6.0
 	github.com/google/go-cmp v0.5.9
 	github.com/google/uuid v1.3.0
