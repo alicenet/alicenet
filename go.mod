@@ -5,6 +5,7 @@ go 1.19
 require (
 	github.com/MadBase/go-capnproto2/v2 v2.18.0-custom.1
 	github.com/bufbuild/buf v1.9.0
+	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.0.1
 	github.com/derision-test/go-mockgen v1.3.6
 	github.com/dgraph-io/badger/v2 v2.2007.4
 	github.com/emicklei/proto v1.11.0
@@ -17,8 +18,7 @@ require (
 	github.com/hashicorp/golang-lru v0.5.5-0.20210104140557-80c98217689d
 	github.com/hashicorp/yamux v0.0.0-20190923154419-df201c70410d
 	github.com/holiman/uint256 v1.2.1
-	github.com/lightningnetwork/lnd v0.15.1-beta.rc2
-	github.com/lightningnetwork/lnd/tor v1.1.0
+	github.com/lightningnetwork/lnd v0.15.4-beta
 	github.com/rs/cors v1.8.2
 	github.com/sirupsen/logrus v1.9.0
 	github.com/spf13/cobra v1.6.1
@@ -27,7 +27,6 @@ require (
 	github.com/stretchr/testify v1.8.1
 	github.com/vburenin/ifacemaker v1.2.0
 	gitlab.com/NebulousLabs/go-upnp v0.0.0-20210414172302-67b91c9a5c03
-	golang.org/x/crypto v0.1.0
 	golang.org/x/net v0.1.0
 	golang.org/x/sys v0.1.0
 	golang.org/x/tools v0.2.0
@@ -45,16 +44,16 @@ require (
 	github.com/alecthomas/kingpin v2.2.6+incompatible // indirect
 	github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751 // indirect
 	github.com/alecthomas/units v0.0.0-20211218093645-b94a6e3cc137 // indirect
-	github.com/btcsuite/btcd v0.23.1 // indirect
+	github.com/btcsuite/btcd v0.23.3 // indirect
 	github.com/btcsuite/btcd/btcec/v2 v2.2.1 // indirect
 	github.com/btcsuite/btcd/btcutil v1.1.2 // indirect
 	github.com/btcsuite/btcd/btcutil/psbt v1.1.5 // indirect
 	github.com/btcsuite/btcd/chaincfg/chainhash v1.0.1 // indirect
 	github.com/btcsuite/btclog v0.0.0-20170628155309-84c8d2346e9f // indirect
-	github.com/btcsuite/btcwallet v0.15.1 // indirect
-	github.com/btcsuite/btcwallet/wallet/txauthor v1.2.3 // indirect
+	github.com/btcsuite/btcwallet v0.16.1 // indirect
+	github.com/btcsuite/btcwallet/wallet/txauthor v1.3.2 // indirect
 	github.com/btcsuite/btcwallet/wallet/txrules v1.2.0 // indirect
-	github.com/btcsuite/btcwallet/wallet/txsizes v1.1.0 // indirect
+	github.com/btcsuite/btcwallet/wallet/txsizes v1.2.3 // indirect
 	github.com/btcsuite/btcwallet/walletdb v1.4.0 // indirect
 	github.com/btcsuite/btcwallet/wtxmgr v1.5.0 // indirect
 	github.com/btcsuite/go-socks v0.0.0-20170105172521-4720035b7bfd // indirect
@@ -70,7 +69,6 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/deckarep/golang-set v1.8.0 // indirect
 	github.com/decred/dcrd/crypto/blake256 v1.0.0 // indirect
-	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.0.1 // indirect
 	github.com/decred/dcrd/lru v1.0.0 // indirect
 	github.com/deepmap/oapi-codegen v1.8.2 // indirect
 	github.com/dgraph-io/ristretto v0.0.3-0.20200630154024-f66de99634de // indirect
@@ -89,6 +87,7 @@ require (
 	github.com/gballet/go-libpcsclite v0.0.0-20190607065134-2772fd86a8ff // indirect
 	github.com/go-chi/chi/v5 v5.0.7 // indirect
 	github.com/go-errors/errors v1.0.1 // indirect
+	github.com/go-logfmt/logfmt v0.5.0 // indirect
 	github.com/go-logr/logr v1.2.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-ole/go-ole v1.2.1 // indirect
@@ -115,6 +114,7 @@ require (
 	github.com/jdxcode/netrc v0.0.0-20210204082910-926c7f70242a // indirect
 	github.com/jedisct1/go-minisign v0.0.0-20190909160543-45766022959e // indirect
 	github.com/jessevdk/go-flags v1.5.0 // indirect
+	github.com/julienschmidt/httprouter v1.3.0 // indirect
 	github.com/karalabe/usb v0.0.2 // indirect
 	github.com/kkdai/bstream v1.0.0 // indirect
 	github.com/klauspost/compress v1.15.11 // indirect
@@ -125,6 +125,7 @@ require (
 	github.com/lightningnetwork/lnd/queue v1.1.0 // indirect
 	github.com/lightningnetwork/lnd/ticker v1.1.0 // indirect
 	github.com/lightningnetwork/lnd/tlv v1.0.3 // indirect
+	github.com/lightningnetwork/lnd/tor v1.1.0 // indirect
 	github.com/magiconair/properties v1.8.6 // indirect
 	github.com/mattn/go-colorable v0.1.12 // indirect
 	github.com/mattn/go-isatty v0.0.14 // indirect
@@ -175,6 +176,7 @@ require (
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.8.0 // indirect
 	go.uber.org/zap v1.23.0 // indirect
+	golang.org/x/crypto v0.1.0 // indirect
 	golang.org/x/mod v0.6.0 // indirect
 	golang.org/x/sync v0.0.0-20220929204114-8fcdb60fdcc0 // indirect
 	golang.org/x/term v0.1.0 // indirect
