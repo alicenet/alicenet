@@ -4,9 +4,9 @@ import { artifacts, ethers, expect } from "hardhat";
 import {
   ALICENET_FACTORY,
   CONTRACT_ADDR,
-  DEPLOYED_PROXY,
-  DEPLOYED_RAW,
   END_POINT,
+  EVENT_DEPLOYED_PROXY,
+  EVENT_DEPLOYED_RAW,
   MOCK,
   MOCK_INITIALIZABLE,
   PROXY,
@@ -69,7 +69,7 @@ describe("AliceNet Contract Factory", () => {
       );
       const expectedMockAddress = await getEventVar(
         tx,
-        DEPLOYED_RAW,
+        EVENT_DEPLOYED_RAW,
         CONTRACT_ADDR
       );
       await tx.wait();
@@ -100,7 +100,7 @@ describe("AliceNet Contract Factory", () => {
       );
       const expectedMockAddress = await getEventVar(
         tx,
-        DEPLOYED_RAW,
+        EVENT_DEPLOYED_RAW,
         CONTRACT_ADDR
       );
       await tx.wait();
@@ -183,7 +183,7 @@ describe("AliceNet Contract Factory", () => {
       // get the deployed proxy contract address fom the DeployedProxy event
       const proxyAddr = await await getEventVar(
         txResponse,
-        DEPLOYED_PROXY,
+        EVENT_DEPLOYED_PROXY,
         CONTRACT_ADDR
       );
       // check if the deployed contract address match the calculated address
@@ -227,7 +227,7 @@ describe("AliceNet Contract Factory", () => {
       await expectTxSuccess(txResponse);
       const dcMockAddress = await getEventVar(
         txResponse,
-        DEPLOYED_RAW,
+        EVENT_DEPLOYED_RAW,
         CONTRACT_ADDR
       );
       // calculate the deployed address
@@ -349,7 +349,7 @@ describe("AliceNet Contract Factory", () => {
       await expectTxSuccess(txResponse);
       const mockInitAddr = await await getEventVar(
         txResponse,
-        DEPLOYED_RAW,
+        EVENT_DEPLOYED_RAW,
         CONTRACT_ADDR
       );
       expect(mockInitAddr).to.not.be.equals(undefined);
@@ -373,7 +373,7 @@ describe("AliceNet Contract Factory", () => {
     await expectTxSuccess(txResponse);
     const mockInitAddr = await getEventVar(
       txResponse,
-      DEPLOYED_RAW,
+      EVENT_DEPLOYED_RAW,
       CONTRACT_ADDR
     );
     expect(mockInitAddr).to.not.be.equals(undefined);
@@ -492,7 +492,7 @@ describe("AliceNet Contract Factory", () => {
       await expectTxSuccess(txResponse);
       const proxyAddr = await getEventVar(
         txResponse,
-        DEPLOYED_PROXY,
+        EVENT_DEPLOYED_PROXY,
         CONTRACT_ADDR
       );
       expect(proxyAddr).to.equal(expectedProxyAddr);
@@ -522,7 +522,7 @@ describe("AliceNet Contract Factory", () => {
       await expectTxSuccess(txResponse);
       const proxyAddr = await getEventVar(
         txResponse,
-        DEPLOYED_PROXY,
+        EVENT_DEPLOYED_PROXY,
         CONTRACT_ADDR
       );
       expect(proxyAddr).to.equal(expectedProxyAddr);
@@ -554,7 +554,7 @@ describe("AliceNet Contract Factory", () => {
       await expectTxSuccess(txResponse);
       const proxyAddr = await getEventVar(
         txResponse,
-        DEPLOYED_PROXY,
+        EVENT_DEPLOYED_PROXY,
         CONTRACT_ADDR
       );
       expect(proxyAddr).to.equal(expectedProxyAddr);
@@ -586,7 +586,7 @@ describe("AliceNet Contract Factory", () => {
       await expectTxSuccess(txResponse);
       const proxyAddr = await getEventVar(
         txResponse,
-        DEPLOYED_PROXY,
+        EVENT_DEPLOYED_PROXY,
         CONTRACT_ADDR
       );
       expect(proxyAddr).to.equal(expectedProxyAddr);

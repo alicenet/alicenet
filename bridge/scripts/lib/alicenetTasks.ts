@@ -11,9 +11,13 @@ import {
   getEventVar,
   MultiCallArgsStruct,
 } from "./alicenetFactory";
-import { getGasPrices } from "./alicenetFactoryTasks";
-import { CONTRACT_ADDR, DEFAULT_CONFIG_DIR, DEPLOYED_RAW } from "./constants";
+import {
+  CONTRACT_ADDR,
+  DEFAULT_CONFIG_DIR,
+  EVENT_DEPLOYED_RAW,
+} from "./constants";
 import { readDeploymentArgs } from "./deployment/deploymentConfigUtil";
+import { getGasPrices } from "./deployment/deploymentUtil";
 
 function delay(milliseconds: number) {
   return new Promise((resolve) => setTimeout(resolve, milliseconds));
@@ -1550,7 +1554,7 @@ task("deploy-alcb", "Task to deploy ALCB")
       .data as BytesLike;
     const tx = await factory.deployCreate(deploymentCode);
     const receipt = await tx.wait();
-    const alcbAddress = getEventVar(receipt, DEPLOYED_RAW, CONTRACT_ADDR);
+    const alcbAddress = getEventVar(receipt, EVENT_DEPLOYED_RAW, CONTRACT_ADDR);
     console.log("ALCB/BToken address: ", alcbAddress);
     await factory.addNewExternalContract(
       hre.ethers.utils.formatBytes32String("BToken"),

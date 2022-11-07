@@ -18,15 +18,13 @@ import {
   ALICENET_FACTORY,
   CONTRACT_ADDR,
   DEFAULT_CONFIG_DIR,
-  DEPLOYED_PROXY,
-  DEPLOYED_RAW,
-  DEPLOY_CREATE,
-  DEPLOY_PROXY,
-  INITIALIZER,
+  EVENT_DEPLOYED_PROXY,
+  EVENT_DEPLOYED_RAW,
+  FUNCTION_DEPLOY_CREATE,
+  FUNCTION_INITIALIZE,
+  FUNCTION_UPGRADE_PROXY,
   ONLY_PROXY,
-  TASK_DEPLOY_PROXY,
   UPGRADEABLE_DEPLOYMENT,
-  UPGRADE_PROXY,
 } from "../constants";
 import {
   readDeploymentArgs,
@@ -265,7 +263,7 @@ export async function deployContractsTask(
         cumulativeGasUsed = cumulativeGasUsed.add(proxyData.gas);
         break;
       }
-      case DEPLOY_CREATE: {
+      case FUNCTION_DEPLOY_CREATE: {
         const deployCreateData = await deployCreateAndRegisterTask(
           taskArgs,
           hre,
@@ -335,7 +333,7 @@ export async function deployUpgradeableProxyTask(
       : initializerArgs;
   try {
     initCallData = implementationBase.interface.encodeFunctionData(
-      INITIALIZER,
+      FUNCTION_INITIALIZE,
       initArgs
     );
   } catch (err: any) {
@@ -393,7 +391,7 @@ export async function deployUpgradeableProxyTask(
   let receipt = await txResponse.wait(waitBlocks);
   const deployedLogicAddress = getEventVar(
     receipt,
-    DEPLOYED_RAW,
+    EVENT_DEPLOYED_RAW,
     CONTRACT_ADDR
   );
   if (taskArgs.verify) {
@@ -404,7 +402,7 @@ export async function deployUpgradeableProxyTask(
     logicName: contractName,
     logicAddress: deployedLogicAddress,
     salt,
-    proxyAddress: getEventVar(receipt, DEPLOYED_PROXY, CONTRACT_ADDR),
+    proxyAddress: getEventVar(receipt, EVENT_DEPLOYED_PROXY, CONTRACT_ADDR),
     gas: receipt.gasUsed,
     receipt,
     initCallData,
@@ -490,10 +488,14 @@ export async function muiltiCallDeployImplementationAndUpgradeProxyTask(
   const receipt = await txResponse.wait(taskArgs.waitConfirmation);
   const implementationAddress = getEventVar(
     receipt,
-    DEPLOYED_RAW,
+    EVENT_DEPLOYED_RAW,
     CONTRACT_ADDR
   );
-  const proxyAddress = getEventVar(receipt, DEPLOYED_PROXY, CONTRACT_ADDR);
+  const proxyAddress = getEventVar(
+    receipt,
+    EVENT_DEPLOYED_PROXY,
+    CONTRACT_ADDR
+  );
   await showState(
     `Updating logic for the ${taskArgs.contractName} proxy at ${proxyAddress} to point to implementation at ${implementationAddress}, gasCost: ${receipt.gasUsed}`
   );
@@ -590,7 +592,7 @@ export async function deployCreateAndRegisterTask(
   const receipt = await txResponse.wait(waitBlocks);
   const deployCreateData: DeployCreateData = {
     name: taskArgs.contractName,
-    address: getEventVar(receipt, DEPLOYED_RAW, CONTRACT_ADDR),
+    address: getEventVar(receipt, EVENT_DEPLOYED_RAW, CONTRACT_ADDR),
     factoryAddress: taskArgs.factoryAddress,
     gas: receipt.gasUsed,
     constructorArgs: taskArgs?.constructorArgs,
@@ -658,7 +660,7 @@ export async function deployOnlyProxyTask(
   }
   const txResponse = await factory.deployProxy(salt, await getGasPrices(hre));
   const receipt = await txResponse.wait(waitBlocks);
-  const proxyAddr = getEventVar(receipt, DEPLOYED_PROXY, CONTRACT_ADDR);
+  const proxyAddr = getEventVar(receipt, EVENT_DEPLOYED_PROXY, CONTRACT_ADDR);
   const proxyData: ProxyData = {
     proxyAddress: proxyAddr,
     salt: salt,
@@ -693,7 +695,10 @@ export async function multiCallDeployUpgradeableTask(taskArgs: any, hre: any) {
   )) as string;
 
   const initCallData = (await isInitializable(fullname, hre.artifacts))
-    ? implementationBase.interface.encodeFunctionData(INITIALIZER, initArgs)
+    ? implementationBase.interface.encodeFunctionData(
+        FUNCTION_INITIALIZE,
+        initArgs
+      )
     : "0x";
   const salt: BytesLike = await getBytes32SaltFromContractNSTag(
     taskArgs.contractName,
@@ -723,7 +728,7 @@ export async function multiCallDeployUpgradeableTask(taskArgs: any, hre: any) {
   let receipt = await txResponse.wait(waitBlocks);
   const deployedLogicAddress = getEventVar(
     receipt,
-    DEPLOYED_RAW,
+    EVENT_DEPLOYED_RAW,
     CONTRACT_ADDR
   );
   if (taskArgs.verify) {
@@ -734,7 +739,7 @@ export async function multiCallDeployUpgradeableTask(taskArgs: any, hre: any) {
     logicName: taskArgs.contractName,
     logicAddress: deployedLogicAddress,
     salt,
-    proxyAddress: getEventVar(receipt, DEPLOYED_PROXY, CONTRACT_ADDR),
+    proxyAddress: getEventVar(receipt, EVENT_DEPLOYED_PROXY, CONTRACT_ADDR),
     gas: receipt.gasUsed,
     receipt,
     initCallData,
@@ -886,7 +891,7 @@ export async function isInitializable(
   const name = extractName(fullyQualifiedName);
   const methods = buildInfo.output.contracts[path][name].abi;
   for (const method of methods) {
-    if (method.name === INITIALIZER) {
+    if (method.name === FUNCTION_INITIALIZE) {
       return true;
     }
   }
@@ -1101,7 +1106,7 @@ export async function getDeployUpgradeableMultiCallArgs(
   }
   if (contractDescriptor.initializerArgs.length > 0)
     initCallData = logicFactory.interface.encodeFunctionData(
-      INITIALIZER,
+      FUNCTION_INITIALIZE,
       contractDescriptor.initializerArgs
     );
   const salt = await getBytes32Salt(
@@ -1117,13 +1122,15 @@ export async function getDeployUpgradeableMultiCallArgs(
 
   // encode deploy create
   const deployCreateCallData: BytesLike =
-    factoryBase.interface.encodeFunctionData(DEPLOY_CREATE, [deployTxReq.data]);
+    factoryBase.interface.encodeFunctionData(FUNCTION_DEPLOY_CREATE, [
+      deployTxReq.data,
+    ]);
   // encode the deployProxy function call with Salt as arg
   const deployProxyCallData: BytesLike =
-    factoryBase.interface.encodeFunctionData(DEPLOY_PROXY, [salt]);
+    factoryBase.interface.encodeFunctionData("deployProxy", [salt]);
   // encode upgrade proxy multicall
   const upgradeProxyCallData: BytesLike =
-    factoryBase.interface.encodeFunctionData(UPGRADE_PROXY, [
+    factoryBase.interface.encodeFunctionData(FUNCTION_UPGRADE_PROXY, [
       salt,
       logicAddress,
       initCallData,
@@ -1225,7 +1232,11 @@ export async function deployContractsMulticall(
         multiCallArgsArray.push(upgradeProxy);
         const txResponse = await factory.multiCall(multiCallArgsArray);
         const receipt = await txResponse.wait();
-        const address = getEventVar(receipt, DEPLOYED_PROXY, CONTRACT_ADDR);
+        const address = getEventVar(
+          receipt,
+          EVENT_DEPLOYED_PROXY,
+          CONTRACT_ADDR
+        );
         console.log(contract.name, "deployed at:", address);
         break;
       }
@@ -1237,7 +1248,7 @@ export async function deployContractsMulticall(
           hre.ethers
         );
         const factoryAddress = factory.address;
-        await hre.run(TASK_DEPLOY_PROXY, {
+        await hre.run("deploy-proxy", {
           factoryAddress,
           salt,
         });

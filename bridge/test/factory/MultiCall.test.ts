@@ -1,12 +1,12 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
-import { encodeMultiCallArgs } from "../../scripts/lib/alicenetTasks";
+import { encodeMultiCallArgs } from "../../scripts/lib/alicenetFactory";
 import {
   ALICENET_FACTORY,
   CONTRACT_ADDR,
-  DEPLOYED_PROXY,
-  DEPLOYED_RAW,
   END_POINT,
+  EVENT_DEPLOYED_PROXY,
+  EVENT_DEPLOYED_RAW,
   MOCK,
 } from "../../scripts/lib/constants";
 import {
@@ -58,12 +58,12 @@ describe("Multicall deploy proxy", () => {
     ]);
     const mockLogicAddr = await getEventVar(
       txResponse,
-      DEPLOYED_RAW,
+      EVENT_DEPLOYED_RAW,
       CONTRACT_ADDR
     );
     const proxyAddr = await getEventVar(
       txResponse,
-      DEPLOYED_PROXY,
+      EVENT_DEPLOYED_PROXY,
       CONTRACT_ADDR
     );
     expect(mockLogicAddr).to.equal(expectedMockLogicAddr);

@@ -16,7 +16,7 @@ import { PromiseOrValue } from "../../typechain-types/common";
 import {
   ALICENET_FACTORY,
   CONTRACT_ADDR,
-  DEPLOYED_RAW,
+  EVENT_DEPLOYED_RAW,
   MULTICALL_GAS_LIMIT,
 } from "./constants";
 import { getBytes32SaltFromContractNSTag } from "./deployment/deploymentUtil";
@@ -455,7 +455,7 @@ export async function upgradeProxy(
   const txResponse = await factory.deployCreate(deployBCode);
   const receipt = await txResponse.wait();
   const res = {
-    logicAddress: await getEventVar(receipt, DEPLOYED_RAW, CONTRACT_ADDR),
+    logicAddress: await getEventVar(receipt, EVENT_DEPLOYED_RAW, CONTRACT_ADDR),
     proxySalt: await getBytes32SaltFromContractNSTag(
       contractName,
       artifacts,

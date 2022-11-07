@@ -9,11 +9,10 @@ import {
   CONTRACT_ADDR,
   DEFAULT_CONFIG_DIR,
   DEFAULT_FACTORY_STATE_OUTPUT_DIR,
-  DEPLOYED_RAW,
   DEPLOYMENT_ARGS_TEMPLATE_FPATH,
   DEPLOYMENT_ARG_PATH,
   DEPLOYMENT_LIST_FPATH,
-  TASK_DEPLOY_FACTORY,
+  EVENT_DEPLOYED_RAW,
 } from "./constants";
 import {
   generateDeployArgTemplate,
@@ -306,7 +305,7 @@ task("deploy-create", "deploys a contract from the factory using create")
       const receipt = await txResponse.wait(waitBlocks);
       const deployCreateData: DeployCreateData = {
         name: taskArgs.contractName,
-        address: getEventVar(receipt, DEPLOYED_RAW, CONTRACT_ADDR),
+        address: getEventVar(receipt, EVENT_DEPLOYED_RAW, CONTRACT_ADDR),
         factoryAddress: taskArgs.factoryAddress,
         gas: receipt.gasUsed,
         constructorArgs: taskArgs?.constructorArgs,
@@ -545,7 +544,7 @@ task(
     // deploy the factory first
     let factoryAddress = taskArgs.factoryAddress;
     if (factoryAddress === undefined) {
-      const factoryData: FactoryData = await hre.run(TASK_DEPLOY_FACTORY, {
+      const factoryData: FactoryData = await hre.run("deploy-factory", {
         outputFolder: taskArgs.outputFolder,
         inputFolder: taskArgs.inputFolder,
       });
