@@ -385,7 +385,18 @@ export async function deployCreate(
   ).data as BytesLike;
   return factory.deployCreate(deployTxData, overrides);
 }
-
+/**
+ *
+ * @param contractName name of the contract to deploy
+ * @param factory instance of deployed and connected alicenetFactory
+ * @param ethers ethers js object
+ * @param initCallData encoded call data for the initialize function of the implementation contract
+ * @param constructorArgs constructor arguments for the implementation contract
+ * @param salt bytes32 formatted salt used to deploy the proxy
+ * @param waitConfirmantion number of confirmations to wait for before returning the transaction
+ * @param overrides
+ * @returns
+ */
 export async function deployUpgradeable(
   contractName: string,
   factory: AliceNetFactory,

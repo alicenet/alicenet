@@ -326,23 +326,11 @@ export async function deployUpgradeableProxyTask(
       : fullyQaulifiedContractName;
   constructorArgs =
     constructorArgs === undefined ? taskArgs.constructorArgs : constructorArgs;
-  let initCallData: string;
-  const initArgs =
-    initializerArgs === undefined
-      ? taskArgs.initCallData.replace(/\s+/g, "").split(",")
-      : initializerArgs;
-  try {
-    initCallData = implementationBase.interface.encodeFunctionData(
-      FUNCTION_INITIALIZE,
-      initArgs
-    );
-  } catch (err: any) {
-    if (err.reason === "no matching function" && err.value === "initialize") {
-      initCallData = "0x";
-    } else {
-      throw err;
-    }
-  }
+  let initCallData: string = await encodeInitCallData(
+    taskArgs,
+    implementationBase,
+    initializerArgs
+  );
 
   //if salt is not parsed, get it from the contract itself
   salt =
@@ -413,8 +401,37 @@ export async function deployUpgradeableProxyTask(
   return proxyData;
 }
 
+export async function encodeInitCallData(
+  taskArgs: any,
+  implementationBase: ContractFactory,
+  initializerArgs?: any[]
+) {
+  if (initializerArgs === undefined) {
+    initializerArgs =
+      taskArgs.initCallData === undefined
+        ? []
+        : taskArgs.initCallData.replace(/\s+/g, "").split(",");
+  }
+  try {
+    return implementationBase.interface.encodeFunctionData(
+      "initialize",
+      initializerArgs
+    );
+  } catch (err: any) {
+    if (err.reason === "no matching function" && err.value === "initialize") {
+      return "0x";
+    } else {
+      throw err;
+    }
+  }
+}
+
 export async function promptCheckDeploymentArgs(message: string) {
   let missingInput = true;
+  if (process.env.silencer === "true") {
+    missingInput = false;
+  }
+
   let dynamicSuggestion = message;
   const defaultSuggestion = dynamicSuggestion;
   while (missingInput) {
@@ -469,14 +486,11 @@ export async function muiltiCallDeployImplementationAndUpgradeProxyTask(
     taskArgs.contractName,
     hre.artifacts
   )) as string;
-  const initializable = await isInitializable(fullname, hre.artifacts);
-  const initCallData =
-    taskArgs.initCallData === undefined
-      ? []
-      : taskArgs.initCallData.replace(/\s+/g, "").split(",");
-  if (initializable && initCallData.length === 0) {
-    throw new Error("initializable contract must have init args");
-  }
+  let initCallData: string = await encodeInitCallData(
+    taskArgs,
+    implementationBase,
+    initializerArgs
+  );
   const txResponse = await multiCallUpgradeProxy(
     contractName,
     factory,

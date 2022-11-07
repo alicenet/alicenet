@@ -1,12 +1,20 @@
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
-import { artifacts, ethers } from "hardhat";
+import { ethers } from "hardhat";
 import {
   deployUpgradeable,
-  upgradeProxy,
+  getEventVar,
+  multiCallUpgradeProxy,
 } from "../../scripts/lib/alicenetFactory";
-import { MOCK, PROXY, UTILS } from "../../scripts/lib/constants";
+import {
+  CONTRACT_ADDR,
+  DEPLOYED_PROXY,
+  DEPLOYED_RAW,
+  MOCK,
+  PROXY,
+  UTILS,
+} from "../../scripts/lib/constants";
 import { AliceNetFactory, Utils } from "../../typechain-types";
-import { assert, expect } from "../chai-setup";
+import { expect } from "../chai-setup";
 import { deployFactory } from "./Setup";
 process.env.silencer = "true";
 
@@ -29,48 +37,52 @@ describe("AliceNetfactory API test", async () => {
   });
 
   it("deploy Upgradeable", async () => {
-    const res = await deployUpgradeable(
-      MOCK,
-      factory.address,
-      ethers,
-      artifacts,
-      ["2", "s"]
-    );
-    const Proxy = await ethers.getContractFactory(PROXY);
-    const proxy = Proxy.attach(res.proxyAddress);
-    expect(await proxy.getImplementationAddress()).to.be.equal(
-      res.logicAddress
-    );
-    assert(res !== undefined, "Couldn't deploy upgradable contract");
-    let cSize = await utilsContract.getCodeSize(res.logicAddress);
+    const txResponse = await deployUpgradeable(MOCK, factory, ethers, "0x", [
+      "2",
+      "s",
+    ]);
+    const receipt = await txResponse.wait();
+    const proxyAddress = getEventVar(receipt, DEPLOYED_PROXY, CONTRACT_ADDR);
+
+    const proxy = await ethers.getContractAt(PROXY, proxyAddress);
+    const implementationAddress = await proxy.getImplementationAddress();
+    expect(implementationAddress).to.not.equal(ethers.constants.AddressZero);
+    let cSize = await utilsContract.getCodeSize(implementationAddress);
     expect(cSize.toNumber()).to.be.greaterThan(0);
-    cSize = await utilsContract.getCodeSize(res.proxyAddress);
+    cSize = await utilsContract.getCodeSize(proxyAddress);
     expect(cSize.toNumber()).to.be.greaterThan(0);
   });
 
   it("upgrade deployment", async () => {
-    const res = await deployUpgradeable(
+    let salt = ethers.utils.formatBytes32String(MOCK);
+    let txResponse = await deployUpgradeable(
       MOCK,
-      factory.address,
+      factory,
       ethers,
-      artifacts,
-      ["2", "s"]
+      "0x",
+      ["2", "s"],
+      salt
     );
-    const proxy = await ethers.getContractAt(PROXY, res.proxyAddress);
-    expect(await proxy.getImplementationAddress()).to.be.equal(
-      res.logicAddress
+    let receipt = await txResponse.wait();
+    const proxyAddress = getEventVar(receipt, DEPLOYED_PROXY, CONTRACT_ADDR);
+    const proxy = await ethers.getContractAt(PROXY, proxyAddress);
+    const implementationAddress = await proxy.getImplementationAddress();
+    txResponse = await multiCallUpgradeProxy(
+      MOCK,
+      factory,
+      ethers,
+      ["2", "s"],
+      "0x",
+      salt
     );
-    assert(res !== undefined, "Couldn't deploy upgradable contract");
-    const res2 = await upgradeProxy(MOCK, factory.address, ethers, artifacts, [
-      "2",
-      "s",
-    ]);
-    expect(await proxy.getImplementationAddress()).to.be.equal(
-      res2.logicAddress
+    receipt = await txResponse.wait();
+    const expectedImplementationAddress = await getEventVar(
+      receipt,
+      DEPLOYED_RAW,
+      CONTRACT_ADDR
     );
-    assert(
-      res2.logicAddress !== res.logicAddress,
-      "Logic address should be different after updateProxy!"
-    );
+    const newImplementationAddress = await proxy.getImplementationAddress();
+    expect(newImplementationAddress).to.not.equal(implementationAddress);
+    expect(newImplementationAddress).to.equal(expectedImplementationAddress);
   });
 });

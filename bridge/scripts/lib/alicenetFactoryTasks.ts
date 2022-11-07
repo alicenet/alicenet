@@ -44,13 +44,7 @@ import {
   showState,
   verifyContract,
 } from "./deployment/deploymentUtil";
-import {
-  DeployCreateData,
-  FactoryData,
-  ProxyData,
-  updateDeployCreateList,
-  updateExternalContractList,
-} from "./deployment/factoryStateUtil";
+import { DeployCreateData, FactoryData } from "./deployment/factoryStateUtil";
 
 task(
   "get-network",
@@ -235,18 +229,7 @@ task(
   .addOptionalParam("outputFolder", "output folder path to save factory state")
   .addOptionalVariadicPositionalParam("constructorArgs", "constructor argfu")
   .setAction(async (taskArgs, hre) => {
-    let cumulativeGas = BigNumber.from("0");
-
-    const proxyData: ProxyData = await deployUpgradeableProxyTask(
-      taskArgs,
-      hre
-    );
-    cumulativeGas = cumulativeGas.add(proxyData.gas);
-    proxyData.gas = cumulativeGas;
-    await showState(
-      `Deployed ${proxyData.logicName} with proxy at ${proxyData.proxyAddress}, gasCost: ${proxyData.gas}`
-    );
-    return proxyData;
+    return await deployUpgradeableProxyTask(taskArgs, hre);
   });
 
 // factoryName param doesnt do anything right now
@@ -314,11 +297,6 @@ task("deploy-create", "deploys a contract from the factory using create")
       if (taskArgs.verify) {
         await verifyContract(hre, factory.address, constructorArgs);
       }
-      await updateDeployCreateList(
-        network,
-        deployCreateData,
-        taskArgs.outputFolder
-      );
       if (taskArgs.standAlone !== true) {
         await showState(
           `[DEBUG ONLY, DONT USE THIS ADDRESS IN THE SIDE CHAIN, USE THE PROXY INSTEAD!] Deployed logic for ${taskArgs.contractName} contract at: ${deployCreateData.address}, gas: ${receipt.gasUsed}`
@@ -326,11 +304,6 @@ task("deploy-create", "deploys a contract from the factory using create")
       } else {
         await showState(
           `Deployed ${deployCreateData.name} at ${deployCreateData.address}, gasCost: ${deployCreateData.gas}`
-        );
-        await updateExternalContractList(
-          network,
-          deployCreateData,
-          taskArgs.outputFolder
         );
       }
       deployCreateData.receipt = receipt;
@@ -376,7 +349,7 @@ task(
     return await deployCreateAndRegisterTask(taskArgs, hre);
   });
 
-task("deploy-proxy", "deploys a proxy from the factory")
+task("deploy-proxy", "deploys a proxy from the factory, without implementation")
   .addParam(
     "salt",
     "salt used to specify logicContract and proxy address calculation"
