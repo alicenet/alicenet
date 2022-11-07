@@ -11,14 +11,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ethereum/go-ethereum/accounts"
-	"github.com/ethereum/go-ethereum/accounts/keystore"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/sirupsen/logrus"
-	"github.com/stretchr/testify/assert"
-
 	"github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/layer1"
 	"github.com/alicenet/alicenet/layer1/ethereum"
@@ -26,6 +18,13 @@ import (
 	"github.com/alicenet/alicenet/layer1/transaction"
 	"github.com/alicenet/alicenet/test/mocks"
 	"github.com/alicenet/alicenet/utils"
+	"github.com/ethereum/go-ethereum/accounts"
+	"github.com/ethereum/go-ethereum/accounts/keystore"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/assert"
 )
 
 // SetupPrivateKeys computes deterministic private keys for testing.
@@ -85,8 +84,9 @@ func CreateAccounts(unitTestDirectory string, numAccounts int) (string, string, 
 func InitializePrivateKeys(n int) []*ecdsa.PrivateKey {
 	_, pKey := GetAdminAccount()
 	privateKeys := []*ecdsa.PrivateKey{pKey}
-	privateKeys = append(privateKeys, SetupPrivateKeys(n-1)...)
-
+	if n > 1 {
+		privateKeys = append(privateKeys, SetupPrivateKeys(n-1)...)
+	}
 	return privateKeys
 }
 

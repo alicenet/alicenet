@@ -3,231 +3,67 @@ package main
 import (
 	"context"
 	"encoding/hex"
-	"errors"
 	"flag"
 	"fmt"
+	"math/big"
 	"os"
+	"os/signal"
 	"strconv"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 
 	aobjs "github.com/alicenet/alicenet/application/objs"
 	"github.com/alicenet/alicenet/application/objs/uint256"
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/crypto"
+	"github.com/alicenet/alicenet/layer1"
+	"github.com/alicenet/alicenet/layer1/ethereum"
+	"github.com/alicenet/alicenet/layer1/handlers"
+	"github.com/alicenet/alicenet/layer1/tests"
+	"github.com/alicenet/alicenet/layer1/transaction"
 	"github.com/alicenet/alicenet/localrpc"
-	"github.com/alicenet/alicenet/utils"
+	"github.com/alicenet/alicenet/logging"
+	"github.com/alicenet/alicenet/test/mocks"
+	"github.com/ethereum/go-ethereum/accounts"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/sirupsen/logrus"
 )
 
-var numEpochs uint32 = 1
-
-var errClosing = errors.New("closing")
-
-type worker struct {
-	f      *funder
-	client *localrpc.Client
-	signer aobjs.Signer
-	acct   []byte
-	idx    int
+type fees struct {
+	minTxFee      *uint256.Uint256
+	valueStoreFee *uint256.Uint256
+	dataStoreFee  *uint256.Uint256
 }
 
-func (w *worker) run(ctx context.Context) {
-	defer w.f.cf()
-	defer w.f.wg.Done()
-	time.Sleep(time.Second * time.Duration(1+w.idx%10))
-	for {
-		select {
-		case <-w.f.ctx.Done():
-			return
-		default:
-		}
-		fmt.Printf("Worker:%v gettingFunding\n", w.idx)
-		u, v, err := w.f.blockingGetFunding(ctx, w.client, w.f.getCurveSpec(w.signer), w.acct, uint256.One())
-		if err != nil {
-			fmt.Printf("Worker%v error at blockingGetFunding: %v\n", w.idx, err)
-			return
-		}
-		fmt.Printf("Worker:%v gotFunding: %v\n", w.idx, v)
-		select {
-		case <-w.f.ctx.Done():
-			return
-		default:
-		}
-		tx, err := w.f.setupTransaction(w.signer, w.acct, v, u, nil)
-		if err != nil {
-			fmt.Printf("Worker%v error at setupTransaction: %v\n", w.idx, err)
-			return
-		}
-		select {
-		case <-w.f.ctx.Done():
-			return
-		default:
-		}
-		fmt.Printf("Worker:%v sending Tx:\n", w.idx)
-		err = w.f.blockingSendTx(ctx, w.client, tx)
-		if err != nil {
-			fmt.Printf("Worker:%v error at blockingSendTx: %v\n", w.idx, err)
-			return
-		}
-	}
-}
-
-type funder struct {
-	ctx         context.Context
-	cf          func()
-	wg          sync.WaitGroup
-	signer      *crypto.Secp256k1Signer
-	client      *localrpc.Client
-	acct        []byte
-	numChildren int
-	children    []*worker
-	nodeList    []string
-	baseIdx     int
-}
-
-func (f *funder) doSpam(privk string, numChildren int, nodeList []string, baseIdx int) error {
-	f.numChildren = numChildren
-	f.baseIdx = baseIdx
-	f.nodeList = nodeList
-	ctx := context.Background()
-	subCtx, cf := context.WithCancel(ctx)
-	f.ctx = subCtx
-	f.cf = cf
-	defer f.cf()
-	f.wg = sync.WaitGroup{}
-	fmt.Printf("Funder setting up signing\n")
-	signer, acct, err := f.setupHexSigner(privk)
-	if err != nil {
-		fmt.Printf("Funder error at setupHexSigner: %v\n", err)
-		return err
-	}
-	f.signer = signer
-	f.acct = acct
-	fmt.Printf("Funder setting up client\n")
-	client, err := f.setupClient(ctx, 0)
-	if err != nil {
-		fmt.Printf("Funder error at setupClient: %v\n", err)
-		return err
-	}
-	f.client = client
-	fmt.Printf("Funder setting up children\n")
-	children, err := f.setupChildren(ctx, f.numChildren, f.baseIdx)
-	if err != nil {
-		fmt.Printf("Funder error at setupChildren: %v\n", err)
-		return err
-	}
-	f.children = children
-	fmt.Printf("Funder setting up funding\n")
-	//numStuff := &uint256.Uint256{}
-	numStuff, err := new(uint256.Uint256).FromUint64(uint64(len(children)))
-	if err != nil {
-		panic(err)
-	}
-	//utxos, value, err := f.blockingGetFunding(f.client, f.getCurveSpec(f.signer), f.acct, uint64(len(children)))
-	utxos, value, err := f.blockingGetFunding(ctx, f.client, f.getCurveSpec(f.signer), f.acct, numStuff)
-	if err != nil {
-		fmt.Printf("Funder error at blockingGetFunding: %v\n", err)
-		return err
-	}
-	fmt.Printf("Funder setting up tx\n")
-	tx, err := f.setupTransaction(f.signer, f.acct, value, utxos, f.children)
-	if err != nil {
-		fmt.Printf("Funder error at setupTransaction: %v\n", err)
-		return err
-	}
-	fmt.Printf("Funder setting up blockingSendTx\n")
-	if err := f.blockingSendTx(ctx, f.client, tx); err != nil {
-		fmt.Printf("Funder error at blockingSendTx: %v\n", err)
-		return err
+func sleepWithContext(ctx context.Context, sleepTime time.Duration) error {
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-time.After(sleepTime):
 	}
 	return nil
 }
 
-func (f *funder) init(privk string, numChildren int, nodeList []string, baseIdx int) error {
-	f.numChildren = numChildren
-	f.baseIdx = baseIdx
-	f.nodeList = nodeList
-	ctx := context.Background()
-	subCtx, cf := context.WithCancel(ctx)
-	f.ctx = subCtx
-	f.cf = cf
-	defer f.cf()
-	f.wg = sync.WaitGroup{}
-	fmt.Printf("Funder setting up signing\n")
-	signer, acct, err := f.setupHexSigner(privk)
-	if err != nil {
-		fmt.Printf("Funder error at setupHexSigner: %v\n", err)
-		return err
-	}
-	f.signer = signer
-	f.acct = acct
-	fmt.Printf("Funder setting up client\n")
-	client, err := f.setupClient(ctx, 0)
-	if err != nil {
-		fmt.Printf("Funder error at setupClient: %v\n", err)
-		return err
-	}
-	f.client = client
-	fmt.Printf("Funder setting up children\n")
-	children, err := f.setupChildren(ctx, f.numChildren, f.baseIdx)
-	if err != nil {
-		fmt.Printf("Funder error at setupChildren: %v\n", err)
-		return err
-	}
-	f.children = children
-	fmt.Printf("Funder setting up funding\n")
-	//numStuff := &uint256.Uint256{}
-	numStuff, err := new(uint256.Uint256).FromUint64(uint64(len(children)))
-	if err != nil {
-		panic(err)
-	}
-	//utxos, value, err := f.blockingGetFunding(f.client, f.getCurveSpec(f.signer), f.acct, uint64(len(children)))
-	utxos, value, err := f.blockingGetFunding(ctx, f.client, f.getCurveSpec(f.signer), f.acct, numStuff)
-	if err != nil {
-		fmt.Printf("Funder error at blockingGetFunding: %v\n", err)
-		return err
-	}
-	fmt.Printf("Funder setting up tx\n")
-	tx, err := f.setupTransaction(f.signer, f.acct, value, utxos, f.children)
-	if err != nil {
-		fmt.Printf("Funder error at setupTransaction: %v\n", err)
-		return err
-	}
-	fmt.Printf("Funder setting up blockingSendTx\n")
-	if err := f.blockingSendTx(ctx, f.client, tx); err != nil {
-		fmt.Printf("Funder error at blockingSendTx: %v\n", err)
-		return err
-	}
-	fmt.Printf("Funder starting children\n")
-	for _, c := range f.children {
-		f.wg.Add(1)
-		go c.run(ctx)
-	}
-	fmt.Printf("Funder waiting on close\n")
-	<-f.ctx.Done()
-	f.wg.Wait()
-	return nil
-}
-
-func (f *funder) setupClient(ctx context.Context, idx int) (*localrpc.Client, error) {
-	idx2 := idx % len(f.nodeList)
-	client := &localrpc.Client{Address: f.nodeList[idx2], TimeOut: constants.MsgTimeout}
+func setupRPCClient(ctx context.Context, rpcNodeList []string, idx int) (*localrpc.Client, error) {
+	idx2 := idx % len(rpcNodeList)
+	client := &localrpc.Client{Address: rpcNodeList[idx2], TimeOut: constants.MsgTimeout}
 	if err := client.Connect(ctx); err != nil {
 		return nil, err
 	}
 	return client, nil
 }
 
-func (f *funder) setupTestingSigner(i int) (aobjs.Signer, []byte, error) {
+func setupTestingSigner(i int) (aobjs.Signer, []byte, error) {
 	privk := crypto.Hasher([]byte(strconv.Itoa(i)))
 	if i%2 == 0 {
-		return f.setupSecpSigner(privk)
+		return setupSecpSigner(privk)
 	}
-	return f.setupBNSigner(privk)
+	return setupBNSigner(privk)
 }
 
-func (f *funder) setupBNSigner(privk []byte) (*crypto.BNSigner, []byte, error) {
+func setupBNSigner(privk []byte) (*crypto.BNSigner, []byte, error) {
 	signer := &crypto.BNSigner{}
 	err := signer.SetPrivk(privk)
 	if err != nil {
@@ -241,15 +77,15 @@ func (f *funder) setupBNSigner(privk []byte) (*crypto.BNSigner, []byte, error) {
 	return signer, acct, nil
 }
 
-func (f *funder) setupHexSigner(privk string) (*crypto.Secp256k1Signer, []byte, error) {
+func setupHexSigner(privk string) (*crypto.Secp256k1Signer, []byte, error) {
 	privkb, err := hex.DecodeString(privk)
 	if err != nil {
 		return nil, nil, err
 	}
-	return f.setupSecpSigner(privkb)
+	return setupSecpSigner(privkb)
 }
 
-func (f *funder) setupSecpSigner(privk []byte) (*crypto.Secp256k1Signer, []byte, error) {
+func setupSecpSigner(privk []byte) (*crypto.Secp256k1Signer, []byte, error) {
 	signer := &crypto.Secp256k1Signer{}
 	if err := signer.SetPrivk(privk); err != nil {
 		return nil, nil, err
@@ -262,14 +98,12 @@ func (f *funder) setupSecpSigner(privk []byte) (*crypto.Secp256k1Signer, []byte,
 	return signer, acct, nil
 }
 
-func (f *funder) getCurveSpec(s aobjs.Signer) constants.CurveSpec {
+func getCurveSpec(s aobjs.Signer) constants.CurveSpec {
 	curveSpec := constants.CurveSpec(0)
 	switch s.(type) {
 	case *crypto.Secp256k1Signer:
-		fmt.Println("secp")
 		curveSpec = constants.CurveSecp256k1
 	case *crypto.BNSigner:
-		fmt.Println("bn")
 		curveSpec = constants.CurveBN256Eth
 	default:
 		panic("invalid signer type")
@@ -277,43 +111,219 @@ func (f *funder) getCurveSpec(s aobjs.Signer) constants.CurveSpec {
 	return curveSpec
 }
 
-func (f *funder) setupTransaction(signer aobjs.Signer, ownerAcct []byte, consumedValue *uint256.Uint256, consumedUtxos aobjs.Vout, recipients []*worker) (*aobjs.Tx, error) {
-	feesString, err := f.client.GetTxFees(f.ctx)
+type worker struct {
+	f      *funder
+	logger *logrus.Entry
+	client *localrpc.Client
+	signer aobjs.Signer
+	acct   []byte
+	idx    int
+}
+
+func (w *worker) run(ctx context.Context) {
+	defer w.f.wg.Done()
+	for {
+		err := sleepWithContext(ctx, time.Second*time.Duration(1+w.idx%10))
+		if err != nil {
+			w.logger.Errorf("exiting context finished: %v", w.idx, err)
+			return
+		}
+		w.logger.Tracef("gettingFunding", w.idx)
+		u, v, err := w.f.blockingGetFunding(ctx, w.client, getCurveSpec(w.signer), w.acct, uint256.One())
+		if err != nil {
+			w.logger.Errorf("error at blockingGetFunding: %v", w.idx, err)
+			return
+		}
+		w.logger.Tracef("gotFunding: %v", w.idx, v)
+		tx, err := w.f.setupTransaction(w.signer, w.acct, v, u, nil)
+		if err != nil {
+			w.logger.Errorf("error at setupTransaction: %v", w.idx, err)
+			return
+		}
+		w.logger.Tracef("sending Tx:", w.idx)
+		err = w.f.blockingSendTx(ctx, w.client, tx)
+		if err != nil {
+			w.logger.Errorf("error at blockingSendTx: %v", w.idx, err)
+			return
+		}
+	}
+}
+
+type funder struct {
+	ctx          context.Context
+	wg           sync.WaitGroup
+	logger       *logrus.Entry
+	signer       *crypto.Secp256k1Signer
+	client       *localrpc.Client
+	chainID      uint32
+	acct         []byte
+	ethAcct      accounts.Account
+	ethClient    *ethereum.Client
+	ethContracts layer1.AllSmartContracts
+	ethTxWatcher *transaction.FrontWatcher
+	numChildren  int
+	children     []*worker
+	rpcNodeList  []string
+	baseIdx      int
+}
+
+func createNewFunder(
+	ctx context.Context,
+	logger *logrus.Entry,
+	ethClient *ethereum.Client,
+	ethAccount accounts.Account,
+	ethWatcher *transaction.FrontWatcher,
+	ethContracts layer1.AllSmartContracts,
+	nodeList []string,
+) (*funder, error) {
+
+	logger.Info("Funder setting up signing")
+	signer, acct, err := setupHexSigner(tests.TestAdminPrivateKey)
+	if err != nil {
+		logger.Errorf("Funder error at setupHexSigner: %v", err)
+		return nil, err
+	}
+	logger.Info("Funder setting up client")
+	client, err := setupRPCClient(ctx, nodeList, 0)
+	if err != nil {
+		logger.Errorf("Funder error at setupClient: %v", err)
+		return nil, err
+	}
+	blockHeader, err := client.GetBlockHeader(ctx, 1)
+	if err != nil {
+		panic(fmt.Sprintf("Failed to get block header and chain id: %v", err))
+	}
+	chainID := blockHeader.BClaims.ChainID
+
+	return &funder{
+		ctx:          ctx,
+		wg:           sync.WaitGroup{},
+		logger:       logger,
+		signer:       signer,
+		client:       client,
+		chainID:      chainID,
+		acct:         acct,
+		ethAcct:      ethAccount,
+		ethClient:    ethClient,
+		ethContracts: ethContracts,
+		ethTxWatcher: ethWatcher,
+		numChildren:  1,
+		children:     []*worker{},
+		rpcNodeList:  nodeList,
+		baseIdx:      100,
+	}, nil
+}
+
+func (f *funder) init(numChildren int) error {
+	children, err := f.setupChildren(f.ctx, numChildren, f.baseIdx)
+	if err != nil {
+		f.logger.Errorf("Funder error at setupChildren: %v", err)
+		return err
+	}
+	f.children = children
+	f.logger.Info("Funder setting up funding")
+	totalFunding, err := new(uint256.Uint256).FromUint64(uint64(len(children)))
 	if err != nil {
 		panic(err)
 	}
-	if len(feesString) != 4 {
+	utxos, value, err := f.blockingGetFunding(f.ctx, f.client, getCurveSpec(f.signer), f.acct, totalFunding)
+	if err != nil {
+		f.logger.Errorf("Funder error at blockingGetFunding: %v", err)
+		return err
+	}
+	f.logger.Info("Funder setting up tx")
+	tx, err := f.setupTransaction(f.signer, f.acct, value, utxos, f.children)
+	if err != nil {
+		f.logger.Errorf("Funder error at setupTransaction: %v", err)
+		return err
+	}
+	f.logger.Info("Funder setting up blockingSendTx")
+	if err := f.blockingSendTx(f.ctx, f.client, tx); err != nil {
+		f.logger.Errorf("Funder error at blockingSendTx: %v", err)
+		return err
+	}
+	f.logger.Info("Funder starting children")
+	for _, c := range f.children {
+		f.wg.Add(1)
+		go c.run(f.ctx)
+	}
+	f.logger.Info("Funder waiting on close")
+	<-f.ctx.Done()
+	f.wg.Wait()
+	return nil
+}
+
+func (f *funder) setupChildren(ctx context.Context, numChildren int, baseIdx int) ([]*worker, error) {
+	workers := []*worker{}
+	for i := 0; i < numChildren; i++ {
+		client, err := setupRPCClient(ctx, f.rpcNodeList, baseIdx+i)
+		if err != nil {
+			return nil, err
+		}
+		signer, acct, err := setupTestingSigner(baseIdx + i)
+		if err != nil {
+			return nil, err
+		}
+		logger := f.logger.WithFields(*&logrus.Fields{
+			"worker": baseIdx + i,
+		})
+		c := &worker{
+			f:      f,
+			logger: logger,
+			signer: signer,
+			acct:   acct,
+			client: client,
+			idx:    baseIdx + i,
+		}
+		workers = append(workers, c)
+	}
+	return workers, nil
+}
+
+func (f *funder) getTxFees() (*fees, error) {
+	feesString, err := f.client.GetTxFees(f.ctx)
+	if err != nil {
+		return nil, err
+	}
+	if len(feesString) != 3 {
 		panic("invalid fee response")
 	}
 	minTxFee := new(uint256.Uint256)
-	vsFee := new(uint256.Uint256)
-	//dsEpochFee := new(uint256.Uint256)
-	//asFee := new(uint256.Uint256)
 	err = minTxFee.UnmarshalString(feesString[0])
 	if err != nil {
-		panic(err)
+		panic(fmt.Sprintf("failed to decode minTx fee %v", err))
 	}
+	vsFee := new(uint256.Uint256)
 	err = vsFee.UnmarshalString(feesString[1])
 	if err != nil {
-		panic(err)
+		panic(fmt.Sprintf("failed to decode valueStoreTx fee %v", err))
 	}
-	//err = dsEpochFee.UnmarshalString(feesString[2])
-	//err = asFee.UnmarshalString(feesString[3])
+	dsFee := new(uint256.Uint256)
+	err = dsFee.UnmarshalString(feesString[1])
+	if err != nil {
+		panic(fmt.Sprintf("failed to decode dataStoreTx fee %v", err))
+	}
+	return &fees{minTxFee, vsFee, dsFee}, nil
+}
+
+func (f *funder) setupTransaction(
+	signer aobjs.Signer,
+	ownerAcct []byte,
+	consumedValue *uint256.Uint256,
+	consumedUtxos aobjs.Vout,
+	recipients []*worker,
+) (*aobjs.Tx, error) {
+	fees, err := f.getTxFees()
+	if err != nil {
+		return nil, err
+	}
 	tx := &aobjs.Tx{
 		Vin:  aobjs.Vin{},
 		Vout: aobjs.Vout{},
-		Fee:  minTxFee.Clone(),
+		Fee:  fees.minTxFee.Clone(),
 	}
-	chainID := uint32(42)
+	chainID := f.chainID
 	for _, utxo := range consumedUtxos {
-		consumedVS, err := utxo.ValueStore()
-		if err != nil {
-			return nil, err
-		}
-		chainID, err = consumedVS.ChainID()
-		if err != nil {
-			return nil, err
-		}
 		txIn, err := utxo.MakeTxIn()
 		if err != nil {
 			return nil, err
@@ -321,23 +331,23 @@ func (f *funder) setupTransaction(signer aobjs.Signer, ownerAcct []byte, consume
 		tx.Vin = append(tx.Vin, txIn)
 	}
 	// We include txFee here!
-	valueOut := minTxFee.Clone()
+	valueOut := fees.minTxFee.Clone()
 	for _, r := range recipients {
 		value := uint256.One()
 		newOwner := &aobjs.ValueStoreOwner{}
-		newOwner.New(r.acct, f.getCurveSpec(r.signer))
+		newOwner.New(r.acct, getCurveSpec(r.signer))
 		newValueStore := &aobjs.ValueStore{
 			VSPreImage: &aobjs.VSPreImage{
 				ChainID:  chainID,
 				Value:    value.Clone(),
 				Owner:    newOwner,
-				TXOutIdx: 0,
-				Fee:      vsFee.Clone(),
+				TXOutIdx: 0, //place holder for now
+				Fee:      fees.valueStoreFee.Clone(),
 			},
 			TxHash: make([]byte, constants.HashLen),
 		}
 		valuePlusFee := &uint256.Uint256{}
-		_, err := valuePlusFee.Add(value, vsFee)
+		_, err := valuePlusFee.Add(value, fees.valueStoreFee.Clone())
 		if err != nil {
 			panic(err)
 		}
@@ -358,30 +368,25 @@ func (f *funder) setupTransaction(signer aobjs.Signer, ownerAcct []byte, consume
 		if err != nil {
 			panic(err)
 		}
-		/*
-			// Previous code; keep because we may need it
-			newOwner := &aobjs.ValueStoreOwner{}
-			newOwner.New(ownerAcct, f.getCurveSpec(signer))
-			newValueStore := &aobjs.ValueStore{
-				VSPreImage: &aobjs.VSPreImage{
-					ChainID: chainID,
-					//Value:    consumedValue - valueOut,
-					Value:    diff,
-					Owner:    newOwner,
-					TXOutIdx: 0,
-					Fee:      vsFee.Clone(),
-				},
-				TxHash: make([]byte, constants.HashLen),
-			}
-			newUTXO := &aobjs.TXOut{}
-			newUTXO.NewValueStore(newValueStore)
-			tx.Vout = append(tx.Vout, newUTXO)
-		*/
-		// Add difference to TxFee
-		_, err = tx.Fee.Add(tx.Fee, diff)
+		diff, err = new(uint256.Uint256).Sub(diff, fees.valueStoreFee.Clone())
 		if err != nil {
 			panic(err)
 		}
+		newOwner := &aobjs.ValueStoreOwner{}
+		newOwner.New(ownerAcct, getCurveSpec(signer))
+		newValueStore := &aobjs.ValueStore{
+			VSPreImage: &aobjs.VSPreImage{
+				ChainID:  chainID,
+				Value:    diff,
+				Owner:    newOwner,
+				TXOutIdx: 0,
+				Fee:      fees.valueStoreFee.Clone().Clone(),
+			},
+			TxHash: make([]byte, constants.HashLen),
+		}
+		newUTXO := &aobjs.TXOut{}
+		newUTXO.NewValueStore(newValueStore)
+		tx.Vout = append(tx.Vout, newUTXO)
 	}
 	err = tx.SetTxHash()
 	if err != nil {
@@ -402,47 +407,218 @@ func (f *funder) setupTransaction(signer aobjs.Signer, ownerAcct []byte, consume
 	if err != nil {
 		return nil, err
 	}
-	fmt.Printf("TX SIZE: %v\n", len(txb))
+	f.logger.Infof("TX SIZE: %v", len(txb))
 	return tx, nil
 }
 
-func (f *funder) setupChildren(ctx context.Context, numChildren int, baseIdx int) ([]*worker, error) {
-	workers := []*worker{}
-	for i := 0; i < numChildren; i++ {
-		client, err := f.setupClient(ctx, baseIdx+i)
-		if err != nil {
-			return nil, err
-		}
-		signer, acct, err := f.setupTestingSigner(baseIdx + i)
-		if err != nil {
-			return nil, err
-		}
-		c := &worker{
-			f:      f,
-			signer: signer,
-			acct:   acct,
-			client: client,
-			idx:    baseIdx + i,
-		}
-		workers = append(workers, c)
+func (f *funder) setupDataStoreTransaction(
+	ctx context.Context,
+	signer aobjs.Signer,
+	ownerAcct []byte,
+	msg string,
+	ind string,
+	numEpochs uint32,
+) (*aobjs.Tx, error) {
+	fees, err := f.getTxFees()
+	if err != nil {
+		return nil, err
 	}
-	return workers, nil
+	index := crypto.Hasher([]byte(ind))
+	deposit, err := aobjs.BaseDepositEquation(uint32(len(msg)), numEpochs)
+	if err != nil {
+		return nil, err
+	}
+	consumedUtxos, consumedValue, err := f.blockingGetFunding(
+		ctx,
+		f.client,
+		getCurveSpec(f.signer),
+		f.acct,
+		deposit,
+	)
+	if err != nil {
+		panic(err)
+	}
+	if consumedValue.Lt(deposit) {
+		f.logger.Infof("ACCOUNT DOES NOT HAVE ENOUGH FUNDING: REQUIRES:%v    HAS:%v", deposit, consumedValue)
+		os.Exit(1)
+	}
+	tx := &aobjs.Tx{
+		Vin:  aobjs.Vin{},
+		Vout: aobjs.Vout{},
+		Fee:  fees.minTxFee.Clone(),
+	}
+	for _, utxo := range consumedUtxos {
+		txIn, err := utxo.MakeTxIn()
+		if err != nil {
+			return nil, err
+		}
+		tx.Vin = append(tx.Vin, txIn)
+	}
+	f.logger.Infof("THE LEN OF VIN %v ", len(tx.Vin))
+	valueOut := uint256.Zero()
+
+	en, err := f.client.GetEpochNumber(ctx)
+	if err != nil {
+		return nil, err
+	}
+	f.logger.Infof("REQUIRED DEPOSIT %v ", deposit)
+	_, err = valueOut.Add(valueOut, deposit)
+	if err != nil {
+		panic(err)
+	}
+	newOwner := &aobjs.DataStoreOwner{}
+	newOwner.New(ownerAcct, getCurveSpec(signer))
+	newDataStore := &aobjs.DataStore{
+		DSLinker: &aobjs.DSLinker{
+			DSPreImage: &aobjs.DSPreImage{
+				ChainID:  f.chainID,
+				Index:    index,
+				IssuedAt: en,
+				Deposit:  deposit,
+				RawData:  []byte(msg),
+				TXOutIdx: 0,
+				Owner:    newOwner,
+				Fee:      fees.dataStoreFee.Clone(),
+			},
+			TxHash: make([]byte, constants.HashLen),
+		},
+	}
+	eoe, err := newDataStore.EpochOfExpiration()
+	if err != nil {
+		return nil, err
+	}
+	f.logger.Infof("Consumed Next:%v    ValueOut:%v", consumedValue, valueOut)
+	f.logger.Infof("DS:  index:%x    deposit:%v    EpochOfExpire:%v    msg:%s", index, deposit, eoe, msg)
+	newUTXO := &aobjs.TXOut{}
+	err = newUTXO.NewDataStore(newDataStore)
+	if err != nil {
+		panic(err)
+	}
+	tx.Vout = append(tx.Vout, newUTXO)
+
+	f.logger.Infof("Consumed Next:%v    ValueOut:%v", consumedValue, valueOut)
+	if consumedValue.Gt(valueOut) {
+		diff, err := new(uint256.Uint256).Sub(consumedValue.Clone(), valueOut.Clone())
+		if err != nil {
+			panic(err)
+		}
+		newOwner := &aobjs.ValueStoreOwner{}
+		newOwner.New(ownerAcct, getCurveSpec(signer))
+		newValueStore := &aobjs.ValueStore{
+			VSPreImage: &aobjs.VSPreImage{
+				ChainID:  f.chainID,
+				Value:    diff,
+				Owner:    newOwner,
+				TXOutIdx: 0,
+				Fee:      fees.dataStoreFee.Clone(),
+			},
+			TxHash: make([]byte, constants.HashLen),
+		}
+		newUTXO := &aobjs.TXOut{}
+		err = newUTXO.NewValueStore(newValueStore)
+		if err != nil {
+			panic(err)
+		}
+		tx.Vout = append(tx.Vout, newUTXO)
+		//valueOut += diff
+		_, err = valueOut.Add(valueOut, diff)
+		if err != nil {
+			panic(err)
+		}
+	}
+	f.logger.Infof("Consumed Next:%v    ValueOut:%v", consumedValue, valueOut)
+	err = tx.Vout.SetTxOutIdx()
+	if err != nil {
+		panic(err)
+	}
+	f.logger.Infof("Consumed Next:%v    ValueOut:%v", consumedValue, valueOut)
+	err = tx.SetTxHash()
+	if err != nil {
+		panic(err)
+	}
+	for _, newUtxo := range tx.Vout {
+		switch {
+		case newUtxo.HasDataStore():
+			ds, err := newUtxo.DataStore()
+			if err != nil {
+				return nil, err
+			}
+			if err := ds.PreSign(signer); err != nil {
+				return nil, err
+			}
+		default:
+			continue
+		}
+	}
+	for idx, consumedUtxo := range consumedUtxos {
+		switch {
+		case consumedUtxo.HasValueStore():
+			consumedVS, err := consumedUtxo.ValueStore()
+			if err != nil {
+				return nil, err
+			}
+			txIn := tx.Vin[idx]
+			err = consumedVS.Sign(txIn, signer)
+			if err != nil {
+				panic(err)
+			}
+		case consumedUtxo.HasDataStore():
+			consumedDS, err := consumedUtxo.DataStore()
+			if err != nil {
+				return nil, err
+			}
+			txIn := tx.Vin[idx]
+			err = consumedDS.Sign(txIn, signer)
+			if err != nil {
+				panic(err)
+			}
+		}
+	}
+	f.logger.Infof("Consumed Next:%v    ValueOut:%v", consumedValue, valueOut)
+	txb, err := tx.MarshalBinary()
+	if err != nil {
+		return nil, err
+	}
+	f.logger.Infof("TX SIZE: %v", len(txb))
+	return tx, nil
+}
+
+func (f *funder) mintALCBDepositOnEthereum() {
+	txnOpts, err := f.ethClient.GetTransactionOpts(f.ctx, f.ethAcct)
+	if err != nil {
+		panic(fmt.Errorf("failed to get transaction options: %v", err))
+	}
+	// 1_000_000 ALCB (10**18)
+	depositAmount, ok := new(big.Int).SetString("1000000000000000000000000", 10)
+	if !ok {
+		panic("Could not generate deposit amount")
+	}
+	txn, err := f.ethContracts.EthereumContracts().BToken().VirtualMintDeposit(
+		txnOpts,
+		1,
+		f.ethAcct.Address,
+		depositAmount,
+	)
+	if err != nil {
+		panic(fmt.Errorf("Could not send deposit amount to ethereum %v", err))
+	}
+	f.ethTxWatcher.SubscribeAndWait(f.ctx, txn, nil)
 }
 
 func (f *funder) blockingGetFunding(ctx context.Context, client *localrpc.Client, curveSpec constants.CurveSpec, acct []byte, value *uint256.Uint256) (aobjs.Vout, *uint256.Uint256, error) {
 	for {
 		select {
 		case <-f.ctx.Done():
-			return nil, nil, errClosing
+			return nil, nil, ctx.Err()
 		case <-time.After(1 * time.Second):
 			utxoIDs, totalValue, err := client.GetValueForOwner(ctx, curveSpec, acct, value)
 			if err != nil {
-				fmt.Printf("Getting fund err: %v\n", err)
+				f.logger.Errorf("Getting fund err: %v", err)
 				continue
 			}
 			utxos, err := client.GetUTXO(ctx, utxoIDs)
 			if err != nil {
-				fmt.Printf("Getting UTXO err: %v\n", err)
+				f.logger.Errorf("Getting UTXO err: %v", err)
 				continue
 			}
 			if len(utxos) == 0 {
@@ -459,745 +635,176 @@ func (f *funder) blockingSendTx(ctx context.Context, client *localrpc.Client, tx
 		for i := 0; i < 3; i++ {
 			select {
 			case <-f.ctx.Done():
-				return nil
+				return ctx.Err()
 			case <-time.After(1 * time.Second):
 				if !sent {
 					_, err := client.SendTransaction(ctx, tx)
 					if err != nil {
-						fmt.Printf("Sending Tx: %x got err: %v\n", tx.Vin[0].TXInLinker.TxHash, err)
+						f.logger.Errorf("Sending Tx: %x got err: %v", tx.Vin[0].TXInLinker.TxHash, err)
 						continue
 					}
-					if err == nil {
-						fmt.Printf("Sending Tx: %x\n", tx.Vin[0].TXInLinker.TxHash)
-						sent = true
-					}
+					f.logger.Infof("Sending Tx: %x", tx.Vin[0].TXInLinker.TxHash)
+					sent = true
 				}
-				time.Sleep(1 * time.Second)
-				_, err := client.GetMinedTransaction(ctx, tx.Vin[0].TXInLinker.TxHash)
+				err := sleepWithContext(ctx, 1*time.Second)
+				if err != nil {
+					return err
+				}
+				_, err = client.GetMinedTransaction(ctx, tx.Vin[0].TXInLinker.TxHash)
 				if err == nil {
 					return nil
 				}
+				f.logger.Errorf("Checking mined Tx: %x got err: %v", tx.Vin[0].TXInLinker.TxHash, err)
 			}
 		}
-		time.Sleep(10 * time.Second)
-		_, err := client.GetPendingTransaction(ctx, tx.Vin[0].TXInLinker.TxHash)
+		err := sleepWithContext(ctx, 10*time.Second)
+		if err != nil {
+			return err
+		}
+		_, err = client.GetPendingTransaction(ctx, tx.Vin[0].TXInLinker.TxHash)
 		if err == nil {
 			continue
 		}
+		f.logger.Errorf("Pending Tx: %x got err: %v", tx.Vin[0].TXInLinker.TxHash, err)
 		_, err = client.GetMinedTransaction(ctx, tx.Vin[0].TXInLinker.TxHash)
 		if err == nil {
 			return nil
 		}
-		return nil
+		f.logger.Errorf("Checking mined Tx 2: %x got err: %v", tx.Vin[0].TXInLinker.TxHash, err)
 	}
-}
-
-func (f *funder) setupDataStoreMode(privk string, nodeList []string) error {
-	f.nodeList = nodeList
-	ctx := context.Background()
-	subCtx, cf := context.WithCancel(ctx)
-	f.ctx = subCtx
-	f.cf = cf
-	fmt.Printf("Funder setting up signing\n")
-	signer, acct, err := f.setupHexSigner(privk)
-	if err != nil {
-		fmt.Printf("Funder error at setupHexSigner: %v\n", err)
-		return err
-	}
-	f.signer = signer
-	f.acct = acct
-	fmt.Printf("Funder setting up client\n")
-	client, err := f.setupClient(ctx, 0)
-	if err != nil {
-		fmt.Printf("Funder error at setupClient: %v\n", err)
-		return err
-	}
-	f.client = client
-	return nil
-}
-
-func (f *funder) setupDataStoreTransaction(ctx context.Context, signer aobjs.Signer, ownerAcct []byte, msg string, ind string) (*aobjs.Tx, error) {
-	index := crypto.Hasher([]byte(ind))
-	deposit, err := aobjs.BaseDepositEquation(uint32(len(msg)), numEpochs)
-	if err != nil {
-		return nil, err
-	}
-	consumedUtxos, consumedValue, err := f.blockingGetFunding(ctx, f.client, f.getCurveSpec(f.signer), f.acct, deposit)
-	if err != nil {
-		panic(err)
-	}
-	if consumedValue.Lt(deposit) {
-		fmt.Printf("ACCOUNT DOES NOT HAVE ENOUGH FUNDING: REQUIRES:%v    HAS:%v\n", deposit, consumedValue)
-		os.Exit(1)
-	}
-	tx := &aobjs.Tx{
-		Vin:  aobjs.Vin{},
-		Vout: aobjs.Vout{},
-	}
-	chainID := uint32(42)
-	for _, utxo := range consumedUtxos {
-		consumedVS, err := utxo.ValueStore()
-		if err != nil {
-			return nil, err
-		}
-		fmt.Println(consumedVS.Value())
-		chainID, err = consumedVS.ChainID()
-		if err != nil {
-			return nil, err
-		}
-		txIn, err := utxo.MakeTxIn()
-		if err != nil {
-			return nil, err
-		}
-		tx.Vin = append(tx.Vin, txIn)
-	}
-	fmt.Printf("THE LEN OF VIN %v \n", len(tx.Vin))
-	valueOut := uint256.Zero()
-	{
-		en, err := f.client.GetEpochNumber(ctx)
-		if err != nil {
-			return nil, err
-		}
-		fmt.Printf("REQUIRED DEPOSIT %v \n", deposit)
-		//valueOut += deposit
-		_, err = valueOut.Add(valueOut, deposit)
-		if err != nil {
-			return nil, err
-		}
-		newOwner := &aobjs.DataStoreOwner{}
-		newOwner.New(ownerAcct, f.getCurveSpec(signer))
-		newDataStore := &aobjs.DataStore{
-			DSLinker: &aobjs.DSLinker{
-				DSPreImage: &aobjs.DSPreImage{
-					ChainID:  chainID,
-					Index:    index,
-					IssuedAt: en,
-					Deposit:  deposit,
-					RawData:  []byte(msg),
-					TXOutIdx: 0,
-					Owner:    newOwner,
-					Fee:      new(uint256.Uint256).SetZero(),
-				},
-				TxHash: make([]byte, constants.HashLen),
-			},
-		}
-		eoe, err := newDataStore.EpochOfExpiration()
-		if err != nil {
-			return nil, err
-		}
-		fmt.Printf("Consumed Next:%v    ValueOut:%v\n", consumedValue, valueOut)
-		fmt.Printf("DS:  index:%x    deposit:%v    EpochOfExpire:%v    msg:%s\n", index, deposit, eoe, msg)
-		newUTXO := &aobjs.TXOut{}
-		err = newUTXO.NewDataStore(newDataStore)
-		if err != nil {
-			panic(err)
-		}
-		tx.Vout = append(tx.Vout, newUTXO)
-	}
-	fmt.Printf("Consumed Next:%v    ValueOut:%v\n", consumedValue, valueOut)
-	if consumedValue.Gt(valueOut) {
-		diff, err := new(uint256.Uint256).Sub(consumedValue.Clone(), valueOut.Clone())
-		if err != nil {
-			panic(err)
-		}
-		newOwner := &aobjs.ValueStoreOwner{}
-		newOwner.New(ownerAcct, f.getCurveSpec(signer))
-		newValueStore := &aobjs.ValueStore{
-			VSPreImage: &aobjs.VSPreImage{
-				ChainID:  chainID,
-				Value:    diff,
-				Owner:    newOwner,
-				TXOutIdx: 0,
-				Fee:      new(uint256.Uint256).SetZero(),
-			},
-			TxHash: make([]byte, constants.HashLen),
-		}
-		newUTXO := &aobjs.TXOut{}
-		err = newUTXO.NewValueStore(newValueStore)
-		if err != nil {
-			panic(err)
-		}
-		tx.Vout = append(tx.Vout, newUTXO)
-		//valueOut += diff
-		_, err = valueOut.Add(valueOut, diff)
-		if err != nil {
-			panic(err)
-		}
-	}
-	fmt.Printf("Consumed Next:%v    ValueOut:%v\n", consumedValue, valueOut)
-	err = tx.Vout.SetTxOutIdx()
-	if err != nil {
-		panic(err)
-	}
-	fmt.Printf("Consumed Next:%v    ValueOut:%v\n", consumedValue, valueOut)
-	err = tx.SetTxHash()
-	if err != nil {
-		panic(err)
-	}
-	for _, newUtxo := range tx.Vout {
-		switch {
-		case newUtxo.HasDataStore():
-			ds, err := newUtxo.DataStore()
-			if err != nil {
-				return nil, err
-			}
-			if err := ds.PreSign(signer); err != nil {
-				return nil, err
-			}
-		default:
-			continue
-		}
-	}
-	for idx, consumedUtxo := range consumedUtxos {
-		switch {
-		case consumedUtxo.HasValueStore():
-			consumedVS, err := consumedUtxo.ValueStore()
-			if err != nil {
-				return nil, err
-			}
-			txIn := tx.Vin[idx]
-			err = consumedVS.Sign(txIn, signer)
-			if err != nil {
-				panic(err)
-			}
-		case consumedUtxo.HasDataStore():
-			consumedDS, err := consumedUtxo.DataStore()
-			if err != nil {
-				return nil, err
-			}
-			txIn := tx.Vin[idx]
-			err = consumedDS.Sign(txIn, signer)
-			if err != nil {
-				panic(err)
-			}
-		}
-	}
-	fmt.Printf("Consumed Next:%v    ValueOut:%v\n", consumedValue, valueOut)
-	txb, err := tx.MarshalBinary()
-	if err != nil {
-		return nil, err
-	}
-	fmt.Printf("TX SIZE: %v\n", len(txb))
-	return tx, nil
-}
-
-func (f *funder) setupDataStoreTransaction2(ctx context.Context, signer aobjs.Signer, ownerAcct []byte, msg string, ind string) (*aobjs.Tx, error) {
-	index := crypto.Hasher([]byte(ind))
-	deposit, err := aobjs.BaseDepositEquation(uint32(len(msg)), numEpochs)
-	if err != nil {
-		return nil, err
-	}
-
-	curveSpec := f.getCurveSpec(signer)
-
-	var ds *aobjs.TXOut
-	for {
-		resp, err := f.client.PaginateDataStoreUTXOByOwner(ctx, curveSpec, ownerAcct, 1, utils.CopySlice(index))
-		if err != nil {
-			fmt.Println(err)
-			time.Sleep(1 * time.Second)
-			continue
-		}
-		utxoIDs := [][]byte{}
-		for i := 0; i < len(resp); i++ {
-			utxoIDs = append(utxoIDs, resp[i].UTXOID)
-		}
-		if len(utxoIDs) != 1 {
-			time.Sleep(1 * time.Second)
-			continue
-		}
-
-		resp2, err := f.client.GetUTXO(ctx, utxoIDs)
-		if err != nil {
-			continue
-		}
-
-		if len(resp2) != 1 {
-			time.Sleep(1 * time.Second)
-			continue
-		} else {
-			ds = resp2[0]
-			break
-		}
-	}
-	bn, err := f.client.GetBlockNumber(ctx)
-	if err != nil {
-		return nil, err
-	}
-	v, err := ds.RemainingValue(bn) // + constants.EpochLength)
-	if err != nil {
-		return nil, err
-	}
-	depositClone := deposit.Clone()
-	valueNeeded, err := depositClone.Sub(depositClone, v)
-	if err != nil {
-		panic(err)
-	}
-
-	consumedUtxos, consumedValue, err := f.blockingGetFunding(ctx, f.client, f.getCurveSpec(f.signer), f.acct, valueNeeded)
-	if err != nil {
-		panic(err)
-	}
-	if consumedValue.Lt(valueNeeded) {
-		fmt.Printf("ACCOUNT DOES NOT HAVE ENOUGH FUNDING: REQUIRES:%v    HAS:%v\n", valueNeeded, consumedValue)
-	}
-
-	tx := &aobjs.Tx{
-		Vin:  aobjs.Vin{},
-		Vout: aobjs.Vout{},
-	}
-	chainID := uint32(42)
-	for _, utxo := range consumedUtxos {
-		consumedVS, err := utxo.ValueStore()
-		if err != nil {
-			return nil, err
-		}
-		fmt.Println(consumedVS.Value())
-		chainID, err = consumedVS.ChainID()
-		if err != nil {
-			return nil, err
-		}
-		txIn, err := utxo.MakeTxIn()
-		if err != nil {
-			return nil, err
-		}
-		tx.Vin = append(tx.Vin, txIn)
-	}
-
-	dsTxIn, err := ds.MakeTxIn()
-	if err != nil {
-		fmt.Print(err.Error())
-		os.Exit(1)
-	}
-	tx.Vin = append(tx.Vin, dsTxIn)
-	consumedUtxos = append(consumedUtxos, ds)
-	fmt.Printf("THE LEN OF VIN %v \n", len(tx.Vin))
-
-	_, err = consumedValue.Add(consumedValue, v)
-	if err != nil {
-		panic(err)
-	}
-	valueOut := uint256.Zero()
-	{
-		en, err := f.client.GetEpochNumber(ctx)
-		if err != nil {
-			return nil, err
-		}
-		fmt.Printf("REQUIRED DEPOSIT %v \n", deposit)
-		_, err = valueOut.Add(valueOut, deposit)
-		if err != nil {
-			panic(err)
-		}
-		newOwner := &aobjs.DataStoreOwner{}
-		newOwner.New(ownerAcct, f.getCurveSpec(signer))
-		newDataStore := &aobjs.DataStore{
-			DSLinker: &aobjs.DSLinker{
-				DSPreImage: &aobjs.DSPreImage{
-					ChainID:  chainID,
-					Index:    index,
-					IssuedAt: en, //+ 1,
-					Deposit:  deposit,
-					RawData:  []byte(msg),
-					TXOutIdx: 0,
-					Owner:    newOwner,
-					Fee:      new(uint256.Uint256).SetZero(),
-				},
-				TxHash: make([]byte, constants.HashLen),
-			},
-		}
-		eoe, err := newDataStore.EpochOfExpiration()
-		if err != nil {
-			return nil, err
-		}
-		fmt.Printf("Consumed Next:%v    ValueOut:%v\n", consumedValue, valueOut)
-		fmt.Printf("DS:  index:%x    deposit:%v    EpochOfExpire:%v    msg:%s\n", index, deposit, eoe, msg)
-		newUTXO := &aobjs.TXOut{}
-		err = newUTXO.NewDataStore(newDataStore)
-		if err != nil {
-			return nil, err
-		}
-		tx.Vout = append(tx.Vout, newUTXO)
-	}
-	fmt.Printf("Consumed Next:%v    ValueOut:%v\n", consumedValue, valueOut)
-	if consumedValue.Gt(valueOut) {
-		diff, err := new(uint256.Uint256).Sub(consumedValue.Clone(), valueOut.Clone())
-		if err != nil {
-			panic(err)
-		}
-		newOwner := &aobjs.ValueStoreOwner{}
-		newOwner.New(ownerAcct, f.getCurveSpec(signer))
-		newValueStore := &aobjs.ValueStore{
-			VSPreImage: &aobjs.VSPreImage{
-				ChainID:  chainID,
-				Value:    diff,
-				Owner:    newOwner,
-				TXOutIdx: 0,
-				Fee:      new(uint256.Uint256).SetZero(),
-			},
-			TxHash: make([]byte, constants.HashLen),
-		}
-		newUTXO := &aobjs.TXOut{}
-		err = newUTXO.NewValueStore(newValueStore)
-		if err != nil {
-			return nil, err
-		}
-		tx.Vout = append(tx.Vout, newUTXO)
-		_, err = valueOut.Add(valueOut, diff)
-		if err != nil {
-			panic(err)
-		}
-	}
-	fmt.Printf("Consumed Next:%v    ValueOut:%v\n", consumedValue, valueOut)
-	err = tx.Vout.SetTxOutIdx()
-	if err != nil {
-		return nil, err
-	}
-	fmt.Printf("Consumed Next:%v    ValueOut:%v\n", consumedValue, valueOut)
-	err = tx.SetTxHash()
-	if err != nil {
-		return nil, err
-	}
-	for _, newUtxo := range tx.Vout {
-		switch {
-		case newUtxo.HasDataStore():
-			ds, err := newUtxo.DataStore()
-			if err != nil {
-				return nil, err
-			}
-			if err := ds.PreSign(signer); err != nil {
-				return nil, err
-			}
-		default:
-			continue
-		}
-	}
-	for idx, consumedUtxo := range consumedUtxos {
-		switch {
-		case consumedUtxo.HasValueStore():
-			consumedVS, err := consumedUtxo.ValueStore()
-			if err != nil {
-				return nil, err
-			}
-			txIn := tx.Vin[idx]
-			err = consumedVS.Sign(txIn, signer)
-			if err != nil {
-				return nil, err
-			}
-		case consumedUtxo.HasDataStore():
-			consumedDS, err := consumedUtxo.DataStore()
-			if err != nil {
-				return nil, err
-			}
-			txIn := tx.Vin[idx]
-			err = consumedDS.Sign(txIn, signer)
-			if err != nil {
-				return nil, err
-			}
-		}
-	}
-	fmt.Printf("Consumed Next:%v    ValueOut:%v\n", consumedValue, valueOut)
-	_, err = f.client.GetBlockNumber(ctx)
-	if err != nil {
-		return nil, err
-	}
-	fmt.Printf("Consumed Next:%v    ValueOut:%v\n", consumedValue, valueOut)
-	txb, err := tx.MarshalBinary()
-	if err != nil {
-		return nil, err
-	}
-	fmt.Printf("TX SIZE: %v\n", len(txb))
-	return tx, nil
-}
-
-func (f *funder) setupDataStoreTransaction3(ctx context.Context, signer aobjs.Signer, ownerAcct []byte, msg string, ind string) (*aobjs.Tx, error) {
-	index := crypto.Hasher([]byte(ind))
-	deposit, err := aobjs.BaseDepositEquation(uint32(len(msg)), numEpochs)
-	if err != nil {
-		return nil, err
-	}
-
-	curveSpec := f.getCurveSpec(signer)
-
-	var ds *aobjs.TXOut
-	for {
-		resp, err := f.client.PaginateDataStoreUTXOByOwner(ctx, curveSpec, ownerAcct, 1, utils.CopySlice(index))
-		if err != nil {
-			fmt.Println(err)
-			time.Sleep(1 * time.Second)
-			continue
-		}
-		utxoIDs := [][]byte{}
-		for i := 0; i < len(resp); i++ {
-			utxoIDs = append(utxoIDs, resp[i].UTXOID)
-		}
-		if len(utxoIDs) != 1 {
-			time.Sleep(1 * time.Second)
-			continue
-		}
-
-		resp2, err := f.client.GetUTXO(ctx, utxoIDs)
-		if err != nil {
-			continue
-		}
-
-		if len(resp2) != 1 {
-			time.Sleep(1 * time.Second)
-			continue
-		} else {
-			ds = resp2[0]
-			break
-		}
-	}
-	bn, err := f.client.GetBlockNumber(ctx)
-	if err != nil {
-		return nil, err
-	}
-	v, err := ds.RemainingValue(bn + constants.EpochLength)
-	if err != nil {
-		return nil, err
-	}
-	depositClone := deposit.Clone()
-	valueNeeded, err := depositClone.Sub(depositClone, v)
-	if err != nil {
-		panic(err)
-	}
-
-	consumedUtxos, consumedValue, err := f.blockingGetFunding(ctx, f.client, f.getCurveSpec(f.signer), f.acct, valueNeeded)
-	if err != nil {
-		panic(err)
-	}
-	if consumedValue.Lt(valueNeeded) {
-		fmt.Printf("ACCOUNT DOES NOT HAVE ENOUGH FUNDING: REQUIRES:%v    HAS:%v\n", valueNeeded, consumedValue)
-	}
-
-	tx := &aobjs.Tx{
-		Vin:  aobjs.Vin{},
-		Vout: aobjs.Vout{},
-	}
-	chainID := uint32(42)
-	for _, utxo := range consumedUtxos {
-		consumedVS, err := utxo.ValueStore()
-		if err != nil {
-			return nil, err
-		}
-		fmt.Println(consumedVS.Value())
-		chainID, err = consumedVS.ChainID()
-		if err != nil {
-			return nil, err
-		}
-		txIn, err := utxo.MakeTxIn()
-		if err != nil {
-			return nil, err
-		}
-		tx.Vin = append(tx.Vin, txIn)
-	}
-
-	dsTxIn, err := ds.MakeTxIn()
-	if err != nil {
-		fmt.Print(err.Error())
-		os.Exit(1)
-	}
-	tx.Vin = append(tx.Vin, dsTxIn)
-	consumedUtxos = append(consumedUtxos, ds)
-	fmt.Printf("THE LEN OF VIN %v \n", len(tx.Vin))
-
-	_, err = consumedValue.Add(consumedValue, v)
-	if err != nil {
-		return nil, err
-	}
-	valueOut := uint256.Zero()
-	{
-		en, err := f.client.GetEpochNumber(ctx)
-		if err != nil {
-			return nil, err
-		}
-		fmt.Printf("REQUIRED DEPOSIT %v \n", deposit)
-		_, err = valueOut.Add(valueOut, deposit)
-		if err != nil {
-			return nil, err
-		}
-		newOwner := &aobjs.DataStoreOwner{}
-		newOwner.New(ownerAcct, f.getCurveSpec(signer))
-		newDataStore := &aobjs.DataStore{
-			DSLinker: &aobjs.DSLinker{
-				DSPreImage: &aobjs.DSPreImage{
-					ChainID:  chainID,
-					Index:    index,
-					IssuedAt: en + 1,
-					Deposit:  deposit,
-					RawData:  []byte(msg),
-					TXOutIdx: 0,
-					Owner:    newOwner,
-					Fee:      new(uint256.Uint256).SetZero(),
-				},
-				TxHash: make([]byte, constants.HashLen),
-			},
-		}
-		eoe, err := newDataStore.EpochOfExpiration()
-		if err != nil {
-			return nil, err
-		}
-		fmt.Printf("Consumed Next:%v    ValueOut:%v\n", consumedValue, valueOut)
-		fmt.Printf("DS:  index:%x    deposit:%v    EpochOfExpire:%v    msg:%s\n", index, deposit, eoe, msg)
-		newUTXO := &aobjs.TXOut{}
-		err = newUTXO.NewDataStore(newDataStore)
-		if err != nil {
-			return nil, err
-		}
-		tx.Vout = append(tx.Vout, newUTXO)
-	}
-	fmt.Printf("Consumed Next:%v    ValueOut:%v\n", consumedValue, valueOut)
-	if consumedValue.Gt(valueOut) {
-		diff, err := new(uint256.Uint256).Sub(consumedValue.Clone(), valueOut.Clone())
-		if err != nil {
-			panic(err)
-		}
-		newOwner := &aobjs.ValueStoreOwner{}
-		newOwner.New(ownerAcct, f.getCurveSpec(signer))
-		newValueStore := &aobjs.ValueStore{
-			VSPreImage: &aobjs.VSPreImage{
-				ChainID:  chainID,
-				Value:    diff,
-				Owner:    newOwner,
-				TXOutIdx: 0,
-				Fee:      new(uint256.Uint256).SetZero(),
-			},
-			TxHash: make([]byte, constants.HashLen),
-		}
-		newUTXO := &aobjs.TXOut{}
-		err = newUTXO.NewValueStore(newValueStore)
-		if err != nil {
-			return nil, err
-		}
-		tx.Vout = append(tx.Vout, newUTXO)
-		_, err = valueOut.Add(valueOut, diff)
-		if err != nil {
-			return nil, err
-		}
-	}
-	fmt.Printf("Consumed Next:%v    ValueOut:%v\n", consumedValue, valueOut)
-	err = tx.Vout.SetTxOutIdx()
-	if err != nil {
-		return nil, err
-	}
-	fmt.Printf("Consumed Next:%v    ValueOut:%v\n", consumedValue, valueOut)
-	err = tx.SetTxHash()
-	if err != nil {
-		return nil, err
-	}
-	for _, newUtxo := range tx.Vout {
-		switch {
-		case newUtxo.HasDataStore():
-			ds, err := newUtxo.DataStore()
-			if err != nil {
-				return nil, err
-			}
-			if err := ds.PreSign(signer); err != nil {
-				return nil, err
-			}
-		default:
-			continue
-		}
-	}
-	for idx, consumedUtxo := range consumedUtxos {
-		switch {
-		case consumedUtxo.HasValueStore():
-			consumedVS, err := consumedUtxo.ValueStore()
-			if err != nil {
-				return nil, err
-			}
-			txIn := tx.Vin[idx]
-			err = consumedVS.Sign(txIn, signer)
-			if err != nil {
-				return nil, err
-			}
-		case consumedUtxo.HasDataStore():
-			consumedDS, err := consumedUtxo.DataStore()
-			if err != nil {
-				return nil, err
-			}
-			txIn := tx.Vin[idx]
-			err = consumedDS.Sign(txIn, signer)
-			if err != nil {
-				return nil, err
-			}
-		}
-	}
-	fmt.Printf("Consumed Next:%v    ValueOut:%v\n", consumedValue, valueOut)
-	_, err = f.client.GetBlockNumber(ctx)
-	if err != nil {
-		return nil, err
-	}
-	fmt.Printf("Consumed Next:%v    ValueOut:%v\n", consumedValue, valueOut)
-	txb, err := tx.MarshalBinary()
-	if err != nil {
-		return nil, err
-	}
-	fmt.Printf("TX SIZE: %v\n", len(txb))
-	return tx, nil
 }
 
 func main() {
-	dPtr := flag.Bool("d", false, "DataStore mode.")
-	sPtr := flag.Bool("s", false, "Spam mode.")
-	nPtr := flag.Int("n", 100, "Number workers.")
-	bPtr := flag.Int("b", 100, "Base privk offset for workers. This should not overlap such that another test group is in same range.")
-	mPtr := flag.String("m", "", "Data to write to state store.")
-	iPtr := flag.String("i", "", "Index of data to write to state store.")
+	modePtr := flag.Uint(
+		"s",
+		0,
+		"0 for Spam mode (default mode) which sends a lot of dataStore and valueStore txs and"+
+			"1 for DataStore mode which inserts mode only send 3 data store transactions)",
+	)
+	workerNumberPtr := flag.Int("w", 100, "Number workers to send txs in the spam mode.")
+	dataPtr := flag.String("m", "", "Data to write to state store in case dataStore mode.")
+	dataIndexPtr := flag.String("i", "", "Index of data to write to state store in case dataStore mode.")
+	dataDurationPtr := flag.Uint("e", 10, "Number of epochs that a data store will be stored.")
+	ethereumEndPointPtr := flag.String(
+		"e",
+		"http://127.0.0.1:8545",
+		"Endpoint to connect with the layer 1 server. If not provided, defaults to 127.0.0.1:8545",
+	)
+	factoryAddressPtr := flag.String(
+		"f",
+		"0x0b1f9c2b7bed6db83295c7b5158e3806d67ec5bc",
+		"AliceNet Factory Address. If not provided, defaults to 0x0b1f9c2b7bed6db83295c7b5158e3806d67ec5bc",
+	)
 	flag.Parse()
-	datastoreMode := *dPtr
-	spamMode := *sPtr
-	privk := "6aea45ee1273170fb525da34015e4f20ba39fe792f486ba74020bcacc9badfc1"
-	nodeList := []string{"127.0.0.1:8887", "127.0.0.1:8888"}
-	if spamMode {
-		base := *bPtr
-		num := 63
-		for {
-			f := &funder{}
-			if err := f.doSpam(privk, num, nodeList, base); err != nil {
-				panic(err)
-			}
-			base = base + num + 1
-		}
+
+	if !strings.Contains(*ethereumEndPointPtr, "https://") && !strings.Contains(*ethereumEndPointPtr, "http://") {
+		panic("Incorrect endpoint. Endpoint should start with 'http://' or 'https://'")
 	}
-	f := &funder{}
-	ctx := context.Background()
-	if datastoreMode {
-		fmt.Println("Running in DataStore Mode")
-		if err := f.setupDataStoreMode(privk, nodeList); err != nil {
-			panic(err)
-		}
-		tx, err := f.setupDataStoreTransaction(ctx, f.signer, f.acct, *mPtr, *iPtr)
+	if *modePtr > 1 {
+		panic("Invalid mode, only 0 or 1 allowed!")
+	}
+	var logger *logrus.Entry
+	if *modePtr == 0 {
+		logger = logging.GetLogger("test").WithFields(logrus.Fields{
+			"workers":        *workerNumberPtr,
+			"factoryAddress": *factoryAddressPtr,
+			"ethereum":       *ethereumEndPointPtr,
+		})
+	} else {
+		logger = logging.GetLogger("test").WithFields(logrus.Fields{
+			"dataStoreIndex": *dataIndexPtr,
+			"initial data":   *dataPtr,
+		})
+	}
+
+	logger.Logger.SetLevel(logrus.DebugLevel)
+
+	spamMode := *modePtr == 0
+	nodeList := []string{
+		"127.0.0.1:8887",
+		"127.0.0.1:9884",
+		"127.0.0.1:9885",
+		"127.0.0.1:9886",
+	}
+
+	mainCtx, cf := context.WithCancel(context.Background())
+	defer cf()
+
+	tempDir, err := os.MkdirTemp("", "spammerdir")
+	if err != nil {
+		panic(fmt.Errorf("failed to create tmp dir: %v", err))
+	}
+	defer os.RemoveAll(tempDir)
+
+	recoverDB := mocks.NewTestDB()
+	defer recoverDB.DB().Close()
+
+	keyStorePath, passCodePath, accounts := tests.CreateAccounts(tempDir, 1)
+	eth, err := ethereum.NewClient(
+		*ethereumEndPointPtr,
+		keyStorePath,
+		passCodePath,
+		accounts[0].Address.String(),
+		false,
+		2,
+		500,
+		0,
+	)
+	if err != nil {
+		panic(fmt.Errorf("failed to create ethereum client: %v", err))
+	}
+	defer eth.Close()
+	contracts := handlers.NewAllSmartContractsHandle(eth, common.HexToAddress(*factoryAddressPtr))
+
+	watcher := transaction.WatcherFromNetwork(eth, recoverDB, false, constants.TxPollingTime)
+	defer watcher.Close()
+
+	funder, err := createNewFunder(mainCtx, logger, eth, accounts[0], watcher, contracts, nodeList)
+	if err != nil {
+		panic(err)
+	}
+
+	if spamMode {
+		logger.Info("Running in Spam Mode")
+		tx, err := funder.setupDataStoreTransaction(
+			mainCtx,
+			funder.signer,
+			funder.acct,
+			*dataPtr,
+			*dataIndexPtr,
+			uint32(*dataDurationPtr),
+		)
 		if err != nil {
 			panic(err)
 		}
-		err = f.blockingSendTx(ctx, f.client, tx)
-		if err != nil {
-			panic(err)
-		}
-		time.Sleep(5 * time.Second)
-		tx, err = f.setupDataStoreTransaction2(ctx, f.signer, f.acct, strings.Join([]string{*mPtr, "two"}, "-"), *iPtr)
-		if err != nil {
-			panic(err)
-		}
-		err = f.blockingSendTx(ctx, f.client, tx)
-		if err != nil {
-			panic(err)
-		}
-		time.Sleep(5 * time.Second)
-		tx, err = f.setupDataStoreTransaction3(ctx, f.signer, f.acct, strings.Join([]string{*mPtr, "three"}, "-"), *iPtr)
-		if err != nil {
-			panic(err)
-		}
-		err = f.blockingSendTx(ctx, f.client, tx)
+		err = funder.blockingSendTx(mainCtx, funder.client, tx)
 		if err != nil {
 			panic(err)
 		}
 	} else {
-		numChildren := *nPtr
-		baseIdx := *bPtr
-		if err := f.init(privk, numChildren, nodeList, baseIdx); err != nil {
+		tx, err := funder.setupDataStoreTransaction(
+			mainCtx,
+			funder.signer,
+			funder.acct,
+			*dataPtr,
+			*dataIndexPtr,
+			uint32(*dataDurationPtr),
+		)
+		if err != nil {
+			panic(err)
+		}
+		err = funder.blockingSendTx(mainCtx, funder.client, tx)
+		if err != nil {
 			panic(err)
 		}
 	}
+
+	signals := make(chan os.Signal, 1)
+	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
+
+	select {
+	case <-signals:
+		cf()
+	}
+	logger.Info("Exiting ...")
 }
