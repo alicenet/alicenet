@@ -14,7 +14,7 @@ require (
 	github.com/google/go-cmp v0.5.9
 	github.com/google/uuid v1.3.0
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
-	github.com/grpc-ecosystem/grpc-gateway/v2 v2.12.0
+	github.com/grpc-ecosystem/grpc-gateway/v2 v2.13.0
 	github.com/hashicorp/golang-lru v0.5.5-0.20210104140557-80c98217689d
 	github.com/hashicorp/yamux v0.0.0-20190923154419-df201c70410d
 	github.com/holiman/uint256 v1.2.1
@@ -30,7 +30,7 @@ require (
 	golang.org/x/net v0.1.0
 	golang.org/x/sys v0.1.0
 	golang.org/x/tools v0.2.0
-	google.golang.org/genproto v0.0.0-20221014213838-99cd37c6964a
+	google.golang.org/genproto v0.0.0-20221027153422-115e99e71e1c
 	google.golang.org/grpc v1.50.1
 	google.golang.org/protobuf v1.28.2-0.20220831092852-f930b1dc76e8
 )
