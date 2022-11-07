@@ -78,7 +78,7 @@ describe("AliceNetfactory API test", async () => {
     receipt = await txResponse.wait();
     const expectedImplementationAddress = getEventVar(
       receipt,
-      "deployedRaw",
+      "DeployedRaw",
       CONTRACT_ADDR
     );
     const newImplementationAddress = await proxy.getImplementationAddress();
