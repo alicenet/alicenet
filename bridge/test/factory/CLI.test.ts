@@ -56,8 +56,9 @@ describe("Cli tasks", () => {
         factoryAddress: factory.address,
       });
     } catch (error: any) {
-      expect(error.reason).to.equal("types/values length mismatch");
-      expect(error.code).to.equal("INVALID_ARGUMENT");
+      expect(error.message).to.equal(
+        "Cannot read properties of undefined (reading 'split')"
+      );
     }
   });
 

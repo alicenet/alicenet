@@ -12,7 +12,6 @@ import {
   encodeMultiCallArgs,
   getEventVar,
   multiCallDeployUpgradeable,
-  multiCallUpgradeProxy,
   upgradeProxyGasSafe,
 } from "../alicenetFactory";
 import {
@@ -297,9 +296,13 @@ export async function deployUpgradeableProxyTask(
   let initializerArgs;
   if (constructorArgObject !== undefined) {
     constructorArgs = Object.values(constructorArgObject);
+  } else {
+    constructorArgs = taskArgs.constructorArgs;
   }
   if (initializerArgObject !== undefined) {
     initializerArgs = Object.values(initializerArgObject);
+  } else {
+    initializerArgs = taskArgs.initCallData.split(",");
   }
   const waitBlocks = taskArgs.waitConfirmation;
   const contractName =
@@ -333,15 +336,14 @@ export async function deployUpgradeableProxyTask(
   );
 
   // if salt is not parsed, get it from the contract itself
-  salt =
-    salt === undefined
-      ? await getBytes32SaltFromContractNSTag(
-          taskArgs.contractName,
-          hre.artifacts,
-          hre.ethers
-        )
-      : salt;
-
+  if (salt === undefined) {
+    if (taskArgs.salt === undefined) {
+      salt = contractName as string;
+    } else {
+      salt = taskArgs.salt as string;
+    }
+    salt = hre.ethers.utils.formatBytes32String(salt);
+  }
   if (hre.network.name === "hardhat") {
     // hardhat is not being able to estimate correctly the tx gas due to the massive bytes array
     // being sent as input to the function (the contract bytecode), so we need to increase the block
@@ -417,6 +419,14 @@ export async function upgradeProxyTask(
   } else {
     contractName = extractName(fullyQaulifiedContractName);
   }
+  let constructorArgs;
+  let initializerArgs;
+  if (constructorArgObject !== undefined) {
+    constructorArgs = Object.values(constructorArgObject);
+  }
+  if (initializerArgObject !== undefined) {
+    initializerArgs = Object.values(initializerArgObject);
+  }
   factory =
     factory === undefined
       ? await hre.ethers.getContractAt(
@@ -432,11 +442,7 @@ export async function upgradeProxyTask(
 
   if (salt === undefined) {
     if (taskArgs.salt === undefined) {
-      salt = await getBytes32SaltFromContractNSTag(
-        contractName,
-        hre.artifacts,
-        hre.ethers
-      );
+      salt = contractName as string;
     } else {
       salt = taskArgs.salt as string;
     }
@@ -485,62 +491,62 @@ export async function upgradeProxyTask(
   return proxyData;
 }
 
-export async function muiltiCallDeployImplementationAndUpgradeProxyTask(
-  taskArgs: any,
-  hre: HardhatRuntimeEnvironment
-) {
-  const contractName = taskArgs.contractName;
-  const factory = await hre.ethers.getContractAt(
-    "AliceNetFactory",
-    taskArgs.factoryAddress
-  );
-  const implementationBase = (await hre.ethers.getContractFactory(
-    contractName
-  )) as ContractFactory;
-  const salt = await getBytes32SaltFromContractNSTag(
-    contractName,
-    hre.artifacts,
-    hre.ethers
-  );
-  const initCallData: string = await encodeInitCallData(
-    taskArgs,
-    implementationBase,
-    taskArgs.initializerArgs
-  );
-  const txResponse = await multiCallUpgradeProxy(
-    contractName,
-    factory,
-    hre.ethers,
-    initCallData,
-    taskArgs.constructorArgs,
-    salt
-  );
-  const receipt = await txResponse.wait(taskArgs.waitConfirmation);
-  const implementationAddress = getEventVar(
-    receipt,
-    EVENT_DEPLOYED_RAW,
-    CONTRACT_ADDR
-  );
-  const proxyAddress = getEventVar(
-    receipt,
-    EVENT_DEPLOYED_PROXY,
-    CONTRACT_ADDR
-  );
-  await showState(
-    `Updating logic for the ${taskArgs.contractName} proxy at ${proxyAddress} to point to implementation at ${implementationAddress}, gasCost: ${receipt.gasUsed}`
-  );
-  const proxyData: ProxyData = {
-    factoryAddress: taskArgs.factoryAddress,
-    logicName: taskArgs.contractName,
-    logicAddress: taskArgs.logicAddress,
-    salt,
-    proxyAddress,
-    gas: receipt.gasUsed.toNumber(),
-    receipt,
-    initCallData,
-  };
-  return proxyData;
-}
+// export async function muiltiCallDeployImplementationAndUpgradeProxyTask(
+//   taskArgs: any,
+//   hre: HardhatRuntimeEnvironment
+// ) {
+//   const contractName = taskArgs.contractName;
+//   const factory = await hre.ethers.getContractAt(
+//     "AliceNetFactory",
+//     taskArgs.factoryAddress
+//   );
+//   const implementationBase = (await hre.ethers.getContractFactory(
+//     contractName
+//   )) as ContractFactory;
+//   const salt = await getBytes32SaltFromContractNSTag(
+//     contractName,
+//     hre.artifacts,
+//     hre.ethers
+//   );
+//   const initCallData: string = await encodeInitCallData(
+//     taskArgs,
+//     implementationBase,
+//     taskArgs.initializerArgs
+//   );
+//   const txResponse = await multiCallUpgradeProxy(
+//     contractName,
+//     factory,
+//     hre.ethers,
+//     initCallData,
+//     taskArgs.constructorArgs,
+//     salt
+//   );
+//   const receipt = await txResponse.wait(taskArgs.waitConfirmation);
+//   const implementationAddress = getEventVar(
+//     receipt,
+//     EVENT_DEPLOYED_RAW,
+//     CONTRACT_ADDR
+//   );
+//   const proxyAddress = getEventVar(
+//     receipt,
+//     EVENT_DEPLOYED_PROXY,
+//     CONTRACT_ADDR
+//   );
+//   await showState(
+//     `Updating logic for the ${taskArgs.contractName} proxy at ${proxyAddress} to point to implementation at ${implementationAddress}, gasCost: ${receipt.gasUsed}`
+//   );
+//   const proxyData: ProxyData = {
+//     factoryAddress: taskArgs.factoryAddress,
+//     logicName: taskArgs.contractName,
+//     logicAddress: taskArgs.logicAddress,
+//     salt,
+//     proxyAddress,
+//     gas: receipt.gasUsed.toNumber(),
+//     receipt,
+//     initCallData,
+//   };
+//   return proxyData;
+// }
 
 export async function encodeInitCallData(
   taskArgs: any,
@@ -550,8 +556,8 @@ export async function encodeInitCallData(
   if (initializerArgs === undefined) {
     initializerArgs =
       taskArgs.initCallData === undefined
-        ? []
-        : taskArgs.initCallData.replace(/\s+/g, "").split(",");
+        ? ""
+        : taskArgs.initCallData.split(",");
   }
   try {
     return implementationBase.interface.encodeFunctionData(
