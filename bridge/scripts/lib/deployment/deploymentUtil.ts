@@ -430,7 +430,7 @@ export async function deployCreateTask(
           taskArgs.factoryAddress
         )
       : factory;
-  let txResponse = await deployCreate(
+  const txResponse = await deployCreate(
     contractName,
     factory,
     hre.ethers,
@@ -480,9 +480,13 @@ export async function upgradeProxyTask(
   let initializerArgs;
   if (constructorArgObject !== undefined) {
     constructorArgs = Object.values(constructorArgObject);
+  } else {
+    constructorArgs = taskArgs.constructorArgs;
   }
   if (initializerArgObject !== undefined) {
     initializerArgs = Object.values(initializerArgObject);
+  } else {
+    initializerArgs = taskArgs.initializerArgs.split(",");
   }
   factory =
     factory === undefined
@@ -508,14 +512,14 @@ export async function upgradeProxyTask(
   const initCallData: string = await encodeInitCallData(
     taskArgs,
     implementationBase,
-    taskArgs.initializerArgs
+    initializerArgs
   );
-  let txResponse = await upgradeProxyGasSafe(
+  const txResponse = await upgradeProxyGasSafe(
     contractName,
     factory,
     hre.ethers,
     initCallData,
-    taskArgs.constructorArgs,
+    constructorArgs,
     salt,
     taskArgs.waitConfirmation,
     await getGasPrices(hre)
@@ -537,8 +541,8 @@ export async function upgradeProxyTask(
   );
   const proxyData: ProxyData = {
     factoryAddress: taskArgs.factoryAddress,
-    logicName: taskArgs.contractName,
-    logicAddress: taskArgs.logicAddress,
+    logicName: contractName,
+    logicAddress: implementationAddress,
     salt,
     proxyAddress,
     gas: receipt.gasUsed.toNumber(),
