@@ -7,6 +7,7 @@ import readline from "readline";
 import { AliceNetFactory } from "../../../typechain-types";
 import {
   deployCreate,
+  deployCreate2,
   deployCreateAndRegister,
   deployFactory,
   deployUpgradeableGasSafe,
@@ -458,6 +459,77 @@ export async function deployCreateTask(
   }
   deployCreateData.receipt = receipt;
   return deployCreateData;
+}
+/**
+ *
+ * @param taskArgs
+ * @param hre
+ * @param fullyQaulifiedContractName
+ * @param factory
+ * @param implementationBase
+ * @param constructorArgObject object with constructor arguments
+ * @param salt bytes32 salt to be used for deployCreate2 address
+ * @returns
+ */
+export async function deployCreate2Task(
+  taskArgs: any,
+  hre: HardhatRuntimeEnvironment,
+  fullyQaulifiedContractName?: string,
+  factory?: AliceNetFactory,
+  constructorArgObject?: ArgData,
+  salt?: string
+) {
+  const waitBlocks = taskArgs.waitConfirmation;
+  let constructorArgs;
+  if (constructorArgObject !== undefined) {
+    constructorArgs = Object.values(constructorArgObject);
+  } else {
+    constructorArgs = taskArgs.constructorArgs;
+  }
+  salt =
+    salt === undefined
+      ? hre.ethers.utils.formatBytes32String(taskArgs.salt)
+      : salt;
+  const contractName =
+    fullyQaulifiedContractName === undefined
+      ? taskArgs.contractName
+      : extractName(fullyQaulifiedContractName);
+  factory =
+    factory === undefined
+      ? await hre.ethers.getContractAt(
+          "AliceNetFactory",
+          taskArgs.factoryAddress
+        )
+      : factory;
+  const txResponse = await deployCreate2(
+    contractName,
+    factory,
+    hre.ethers,
+    constructorArgs,
+    salt
+  );
+  const receipt = await txResponse.wait(waitBlocks);
+  const deployCreate2Data: any = {
+    name: contractName,
+    address: getEventVar(receipt, EVENT_DEPLOYED_RAW, CONTRACT_ADDR),
+    factoryAddress: taskArgs.factoryAddress,
+    gas: receipt.gasUsed,
+    constructorArgs: taskArgs?.constructorArgs,
+  };
+  if (taskArgs.verify) {
+    await verifyContract(hre, factory.address, constructorArgs);
+  }
+  if (taskArgs.standAlone !== true) {
+    await showState(
+      `[DEBUG ONLY, DONT USE THIS ADDRESS IN THE SIDE CHAIN, USE THE PROXY INSTEAD!] Deployed logic for ${taskArgs.contractName} contract at: ${deployCreate2Data.address}, gas: ${receipt.gasUsed}`
+    );
+  } else {
+    await showState(
+      `Deployed ${deployCreate2Data.name} at ${deployCreate2Data.address}, gasCost: ${deployCreate2Data.gas}`
+    );
+  }
+  deployCreate2Data.receipt = receipt;
+  return deployCreate2Data;
 }
 
 export async function upgradeProxyTask(

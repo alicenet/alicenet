@@ -26,6 +26,7 @@ import {
   checkUserDirPath,
   deployContractsMulticall,
   deployContractsTask,
+  deployCreate2Task,
   deployCreateAndRegisterTask,
   deployCreateTask,
   deployFactoryTask,
@@ -227,7 +228,38 @@ task(
   .setAction(async (taskArgs, hre) => {
     return await deployUpgradeableProxyTask(taskArgs, hre);
   });
-
+// factoryName param doesnt do anything right now
+task("deploy-create2", "deploys a contract from the factory using create")
+  .addFlag(
+    "standAlone",
+    "flag to specify that this is not a template for a proxy"
+  )
+  .addFlag("verify", "try to automatically verify contracts on etherscan")
+  .addParam("contractName", "logic contract name")
+  .addParam(
+    "factoryAddress",
+    "the default factory address from factoryState will be used if not set"
+  )
+  .addParam("salt", "salt for create2")
+  .addOptionalParam(
+    "waitConfirmation",
+    "wait specified number of blocks between transactions",
+    0,
+    types.int
+  )
+  .addOptionalParam(
+    "outputFolder",
+    "output folder path to save factory state",
+    DEFAULT_FACTORY_STATE_OUTPUT_DIR,
+    types.string
+  )
+  .addOptionalVariadicPositionalParam(
+    "constructorArgs",
+    "array that holds all arguments for constructor"
+  )
+  .setAction(async (taskArgs, hre) => {
+    return await deployCreate2Task(taskArgs, hre);
+  });
 // factoryName param doesnt do anything right now
 task("deploy-create", "deploys a contract from the factory using create")
   .addFlag(

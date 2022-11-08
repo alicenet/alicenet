@@ -429,6 +429,26 @@ export async function deployCreate(
     return await factory.deployCreate(deployTxData, overrides);
   }
 }
+
+export async function deployCreate2(
+  contractName: string,
+  factory: AliceNetFactory,
+  ethers: Ethers,
+  constructorArgs: any[] = [],
+  salt: string,
+  overrides?: Overrides & { from?: PromiseOrValue<string> }
+) {
+  const implementationBase = await ethers.getContractFactory(contractName);
+  const deployTxData = implementationBase.getDeployTransaction(
+    ...constructorArgs
+  ).data as BytesLike;
+  if (overrides === undefined) {
+    return await factory.deployCreate2(0, salt, deployTxData);
+  } else {
+    return await factory.deployCreate2(0, deployTxData, salt, overrides);
+  }
+}
+
 /**
  * @description deploys logic contract with deployCreate, then multiCalls deployProxy and upgradeProxy
  * @param contractName name of the contract to deploy
