@@ -3,6 +3,10 @@ package executor
 import (
 	"context"
 	"errors"
+	"math/big"
+	"testing"
+	"time"
+
 	"github.com/alicenet/alicenet/bridge/bindings"
 	"github.com/alicenet/alicenet/consensus/objs"
 	"github.com/alicenet/alicenet/constants/dbprefix"
@@ -21,9 +25,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
-	"math/big"
-	"testing"
-	"time"
 )
 
 func getTaskHandler(t *testing.T, doCleanup bool) (*Handler, *mocks.MockClient, *mocks.MockAllSmartContracts, *mocks.MockWatcher, accounts.Account) {
@@ -49,7 +50,6 @@ func getTaskHandler(t *testing.T, doCleanup bool) (*Handler, *mocks.MockClient, 
 	if doCleanup {
 		t.Cleanup(func() {
 			taskHandler.Close()
-			db.DB().Close()
 		})
 	}
 
