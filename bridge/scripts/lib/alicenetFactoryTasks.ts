@@ -84,7 +84,6 @@ task(
     // check constructorArgs length
     const legacyTokenAddress = taskArgs.legacyTokenAddress;
 
-
     return await deployFactoryTask(taskArgs, hre, legacyTokenAddress);
   });
 
