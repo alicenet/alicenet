@@ -34,7 +34,7 @@ export class MultiCallGasError extends Error {
   }
 }
 export async function deployFactory(
-  constructorArgs: string,
+  legacyTokenAddress: PromiseOrValue<string>,
   ethers: Ethers,
   factoryBase?: aliceNetFactoryBase,
   overrides?: Overrides & { from?: PromiseOrValue<string> }
@@ -44,9 +44,9 @@ export async function deployFactory(
       ? await ethers.getContractFactory(ALICENET_FACTORY)
       : factoryBase;
   if (overrides === undefined) {
-    return factoryBase.deploy(constructorArgs);
+    return factoryBase.deploy(legacyTokenAddress);
   } else {
-    return factoryBase.deploy(constructorArgs, overrides);
+    return factoryBase.deploy(legacyTokenAddress, overrides);
   }
 }
 

@@ -68,6 +68,7 @@ task(
   "Deploys an instance of a factory contract specified by its name"
 )
   .addFlag("verify", "try to automatically verify contracts on etherscan")
+  .addParam("legacyTokenAddress", "address of legacy token")
   .addOptionalParam(
     "waitConfirmation",
     "wait specified number of blocks between transactions",
@@ -79,9 +80,12 @@ task(
     "inputFolder",
     "input folder path for deploymentArgsTemplate"
   )
-  .addOptionalVariadicPositionalParam("constructorArgs")
   .setAction(async (taskArgs, hre) => {
-    return await deployFactoryTask(taskArgs, hre);
+    // check constructorArgs length
+    const legacyTokenAddress = taskArgs.legacyTokenAddress;
+
+
+    return await deployFactoryTask(taskArgs, hre, legacyTokenAddress);
   });
 
 task(
@@ -214,8 +218,8 @@ task(
     "address of factory contract to deploy the contract with"
   )
   .addOptionalParam(
-    "initCallData",
-    "input initCallData args in a string list, eg: --initCallData 'arg1, arg2'"
+    "initializerArgs",
+    "input initializer arguments as comma separated string values, eg: --initializerArgs 'arg1, arg2'"
   )
   .addOptionalParam(
     "waitConfirmation",
@@ -361,7 +365,7 @@ task(
   )
   .addOptionalParam(
     "initializerArgs",
-    "input initializer args as comma separated string"
+    "input initializer arguments as comma separated string values, eg: --initializerArgs 'arg1, arg2'"
   )
   .addOptionalParam(
     "inputFolder",

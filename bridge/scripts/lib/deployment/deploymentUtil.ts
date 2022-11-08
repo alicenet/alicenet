@@ -45,6 +45,13 @@ import {
 type Ethers = typeof import("../../../node_modules/ethers/lib/ethers") &
   HardhatEthersHelpers;
 
+export class InitializerArgsError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "InitializerArgsError";
+  }
+}
+
 export interface ArgData {
   [key: string]:
     | string
@@ -153,23 +160,19 @@ export async function getContractDescriptor(
 export async function deployFactoryTask(
   taskArgs: any,
   hre: HardhatRuntimeEnvironment,
-  constructorArgs?: Array<any>
+  legacyTokenAddress: string
 ) {
   await checkUserDirPath(taskArgs.outputFolder);
   const factoryBase = await hre.ethers.getContractFactory(ALICENET_FACTORY);
-  // if the user didnt specify constructor args, get from the default deployment config list
-
-  constructorArgs =
-    constructorArgs === undefined ? taskArgs.constructorArgs : constructorArgs;
-  if (constructorArgs === undefined) {
-    throw new Error("No constructor args provided");
+  if (!hre.ethers.utils.isAddress(legacyTokenAddress)) {
+    throw new Error("legacyTokenAddress is not an address");
   }
   const signers = await hre.ethers.getSigners();
-  const deployTX = factoryBase.getDeployTransaction(constructorArgs[0]);
+  const deployTX = factoryBase.getDeployTransaction(legacyTokenAddress);
   const gasCost = await hre.ethers.provider.estimateGas(deployTX);
   // deploys the factory
   const factory = await deployFactory(
-    constructorArgs[0],
+    legacyTokenAddress,
     hre.ethers,
     factoryBase,
     await getGasPrices(hre)
@@ -183,7 +186,7 @@ export async function deployFactoryTask(
     gas: gasCost,
   };
   if (taskArgs.verify) {
-    await verifyContract(hre, factory.address, constructorArgs);
+    await verifyContract(hre, factory.address, [legacyTokenAddress]);
   }
   const network = hre.network.name;
   await updateDefaultFactoryData(network, factoryData, taskArgs.outputFolder);
@@ -211,15 +214,14 @@ export async function deployContractsTask(
   // deploy the factory first
   const keys = Object.keys(deploymentListConfig);
 
-  const constructorArgs = [
-    deploymentListConfig[keys[0]].constructorArgs.legacyToken_,
-  ];
+  const legacyTokenAddress = deploymentListConfig[keys[0]].constructorArgs
+    .legacyToken_ as string;
   let factoryAddress = taskArgs.factoryAddress;
   if (factoryAddress === undefined) {
     const factoryData: FactoryData = await deployFactoryTask(
       taskArgs,
       hre,
-      constructorArgs
+      legacyTokenAddress
     );
     factoryAddress = factoryData.address;
     cumulativeGasUsed = cumulativeGasUsed.add(factoryData.gas);
@@ -299,12 +301,16 @@ export async function deployUpgradeableProxyTask(
   if (constructorArgObject !== undefined) {
     constructorArgs = Object.values(constructorArgObject);
   } else {
-    constructorArgs = taskArgs.constructorArgs;
+    constructorArgs =
+      taskArgs.constructorArgs !== undefined ? taskArgs.constructorArgs : [];
   }
   if (initializerArgObject !== undefined) {
     initializerArgs = Object.values(initializerArgObject);
   } else {
-    initializerArgs = taskArgs.initCallData.split(",");
+    initializerArgs =
+      taskArgs.initializerArgs !== undefined
+        ? taskArgs.initializerArgs.split(",")
+        : [];
   }
   const waitBlocks = taskArgs.waitConfirmation;
   const contractName =
@@ -624,73 +630,15 @@ export async function upgradeProxyTask(
   return proxyData;
 }
 
-// export async function muiltiCallDeployImplementationAndUpgradeProxyTask(
-//   taskArgs: any,
-//   hre: HardhatRuntimeEnvironment
-// ) {
-//   const contractName = taskArgs.contractName;
-//   const factory = await hre.ethers.getContractAt(
-//     "AliceNetFactory",
-//     taskArgs.factoryAddress
-//   );
-//   const implementationBase = (await hre.ethers.getContractFactory(
-//     contractName
-//   )) as ContractFactory;
-//   const salt = await getBytes32SaltFromContractNSTag(
-//     contractName,
-//     hre.artifacts,
-//     hre.ethers
-//   );
-//   const initCallData: string = await encodeInitCallData(
-//     taskArgs,
-//     implementationBase,
-//     taskArgs.initializerArgs
-//   );
-//   const txResponse = await multiCallUpgradeProxy(
-//     contractName,
-//     factory,
-//     hre.ethers,
-//     initCallData,
-//     taskArgs.constructorArgs,
-//     salt
-//   );
-//   const receipt = await txResponse.wait(taskArgs.waitConfirmation);
-//   const implementationAddress = getEventVar(
-//     receipt,
-//     EVENT_DEPLOYED_RAW,
-//     CONTRACT_ADDR
-//   );
-//   const proxyAddress = getEventVar(
-//     receipt,
-//     EVENT_DEPLOYED_PROXY,
-//     CONTRACT_ADDR
-//   );
-//   await showState(
-//     `Updating logic for the ${taskArgs.contractName} proxy at ${proxyAddress} to point to implementation at ${implementationAddress}, gasCost: ${receipt.gasUsed}`
-//   );
-//   const proxyData: ProxyData = {
-//     factoryAddress: taskArgs.factoryAddress,
-//     logicName: taskArgs.contractName,
-//     logicAddress: taskArgs.logicAddress,
-//     salt,
-//     proxyAddress,
-//     gas: receipt.gasUsed.toNumber(),
-//     receipt,
-//     initCallData,
-//   };
-//   return proxyData;
-// }
-
 export async function encodeInitCallData(
   taskArgs: any,
   implementationBase: ContractFactory,
   initializerArgs?: any[]
 ) {
   if (initializerArgs === undefined) {
-    initializerArgs =
-      taskArgs.initCallData === undefined
-        ? ""
-        : taskArgs.initCallData.split(",");
+    const initializerArgsString: string =
+      taskArgs.initializerArgs === undefined ? "" : taskArgs.initializerArgs;
+    initializerArgs = initializerArgsString.split(",");
   }
   try {
     return implementationBase.interface.encodeFunctionData(
@@ -700,6 +648,10 @@ export async function encodeInitCallData(
   } catch (err: any) {
     if (err.reason === "no matching function" && err.value === "initialize") {
       return "0x";
+    } else if (err.reason === "types/values length mismatch") {
+      throw new InitializerArgsError(
+        "Initializer args provided do not match the initializer function"
+      );
     } else {
       throw err;
     }
@@ -910,9 +862,9 @@ export async function multiCallDeployUpgradeableTask(taskArgs: any, hre: any) {
     taskArgs.factoryAddress
   );
   const initArgs =
-    taskArgs.initCallData === undefined
+    taskArgs.initializerArgs === undefined
       ? []
-      : taskArgs.initCallData.replace(/\s+/g, "").split(",");
+      : taskArgs.initializerArgs.replace(/\s+/g, "").split(",");
   const fullname = (await getFullyQualifiedName(
     taskArgs.contractName,
     hre.artifacts
