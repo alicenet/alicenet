@@ -9,7 +9,7 @@ import {
   Wallet,
 } from "ethers";
 import { isHexString } from "ethers/lib/utils";
-import { ethers, network } from "hardhat";
+import hre, { ethers, network } from "hardhat";
 import {
   AliceNetFactory,
   AToken,
@@ -564,19 +564,7 @@ export const getFixture = async (
     []
   )) as Dynamics;
 
-  const erc1155Mock = await (
-    await (await ethers.getContractFactory("ERC1155Mock")).deploy()
-  ).deployed();
-
-  const localERC1155BridgePoolV1 = await deployUpgradeableWithFactory(
-    factory,
-    "LocalERC1155BridgePoolV1",
-    "LocalERC1155BridgePoolV1",
-    [erc1155Mock.address],
-    []
-  );
-
-  await posFixtureSetup(factory, aToken, legacyToken);
+  await posFixtureSetup(factory, aToken);
   const blockNumber = BigInt(await ethers.provider.getBlockNumber());
   const phaseLength = (await ethdkg.getPhaseLength()).toBigInt();
   if (phaseLength >= blockNumber) {
@@ -592,9 +580,7 @@ export const getFixture = async (
     validatorPool,
     snapshots,
     ethdkg,
-    erc1155Mock,
     factory,
-    localERC1155BridgePoolV1,
     namedSigners,
     aTokenMinter,
     aTokenBurner,
@@ -708,4 +694,23 @@ export const getReceiptForFailedTransaction = async (
     }
   }
   return receipt;
+};
+
+export const getImpersonatedSigner = async (
+  addressToImpersonate: string
+): Promise<any> => {
+  const [admin] = await ethers.getSigners();
+  const testUtils = await (
+    await (await ethers.getContractFactory("TestUtils")).deploy()
+  ).deployed();
+  await admin.sendTransaction({
+    to: testUtils.address,
+    value: ethers.utils.parseEther("1"),
+  });
+  await testUtils.payUnpayable(addressToImpersonate);
+  await hre.network.provider.request({
+    method: "hardhat_impersonateAccount",
+    params: [addressToImpersonate],
+  });
+  return ethers.getImpersonatedSigner(addressToImpersonate);
 };
