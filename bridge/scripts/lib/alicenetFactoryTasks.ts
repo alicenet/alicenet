@@ -228,8 +228,9 @@ task(
   .setAction(async (taskArgs, hre) => {
     return await deployUpgradeableProxyTask(taskArgs, hre);
   });
+
 // factoryName param doesnt do anything right now
-task("deploy-create2", "deploys a contract from the factory using create")
+task("deploy-create2", "deploys a contract from the factory using create2")
   .addFlag(
     "standAlone",
     "flag to specify that this is not a template for a proxy"
@@ -260,6 +261,7 @@ task("deploy-create2", "deploys a contract from the factory using create")
   .setAction(async (taskArgs, hre) => {
     return await deployCreate2Task(taskArgs, hre);
   });
+
 // factoryName param doesnt do anything right now
 task("deploy-create", "deploys a contract from the factory using create")
   .addFlag(
