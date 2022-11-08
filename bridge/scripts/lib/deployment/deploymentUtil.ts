@@ -162,7 +162,7 @@ export async function deployFactoryTask(
   constructorArgs =
     constructorArgs === undefined ? taskArgs.constructorArgs : constructorArgs;
   if (constructorArgs === undefined) {
-    constructorArgs = [];
+    throw new Error("No constructor args provided");
   }
   const signers = await hre.ethers.getSigners();
   const deployTX = factoryBase.getDeployTransaction(constructorArgs[0]);
