@@ -18,6 +18,7 @@ contract DutchAuction is Initializable, ImmutableFactory, ImmutableValidatorPool
 
     constructor() ImmutableFactory(msg.sender) {}
 
+    //TODO add state checks and/or initializer guards
     function initialize() public {
         resetAuction();
     }
