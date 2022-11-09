@@ -7,11 +7,12 @@ import "contracts/interfaces/IBridgePool.sol";
 import "contracts/utils/BridgePoolAddressUtil.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 
-abstract contract BridgePoolFactoryBase is ImmutableFactory {
+abstract contract BridgePoolFactoryBaseERC777Mock is ImmutableFactory {
     enum TokenType {
         ERC20,
         ERC721,
-        ERC1155
+        ERC1155,
+        ERC777
     }
     enum PoolType {
         NATIVE,
@@ -192,6 +193,8 @@ abstract contract BridgePoolFactoryBase is ImmutableFactory {
             key = string.concat(key, "ERC721");
         } else if (tokenType_ == uint8(TokenType.ERC1155)) {
             key = string.concat(key, "ERC1155");
+        } else if (tokenType_ == uint8(TokenType.ERC777)) {
+            key = string.concat(key, "ERC777");
         }
         key = string.concat(key, "V", Strings.toString(version_));
         return key;

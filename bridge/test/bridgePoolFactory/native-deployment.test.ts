@@ -28,13 +28,14 @@ let fixture: BridgePoolFactoryFixture;
 let admin: SignerWithAddress;
 const bridgePoolVersion = 1;
 const unexistentBridgePoolVersion = 11;
+let baseTokenFixture: BaseTokensFixture;
 
 describe("Testing BridgePool Factory", async () => {
   async function deployFixture() {
     await preFixtureSetup();
     const [admin] = await ethers.getSigners();
 
-    const baseTokenFixture = await deployFactoryAndBaseTokens(admin);
+    baseTokenFixture = await deployFactoryAndBaseTokens(admin);
     const bridgePoolFactory = (await deployUpgradeableWithFactory(
       baseTokenFixture.factory,
       "BridgePoolFactory",
@@ -93,15 +94,15 @@ describe("Testing BridgePool Factory", async () => {
     );
     const salt = await fixture.bridgePoolFactory.getBridgePoolSalt(
       ethers.constants.AddressZero,
-      0,
-      1337,
-      1
+      bridgePoolTokenTypeERC20,
+      bridgePoolNativeChainId,
+      bridgePoolVersion
     );
     const expectedSalt = calculateBridgePoolSalt(
       ethers.constants.AddressZero,
-      0,
-      1337,
-      1
+      bridgePoolTokenTypeERC20,
+      bridgePoolNativeChainId,
+      bridgePoolVersion
     );
     expect(salt).to.eq(expectedSalt);
     const bridgePoolAddress =
@@ -233,18 +234,21 @@ describe("Testing BridgePool Factory", async () => {
     const latestNativeERC20Version =
       await fixture.bridgePoolFactory.getLatestPoolLogicVersion(
         bridgePoolNativeChainId,
-        0
+        bridgePoolTokenTypeERC20
       );
     expect(latestNativeERC20Version).to.eq(bridgePoolVersion);
   });
 
   it("Should get latest pool logic version for ERC20 external", async () => {
     const latestNativeERC20Version =
-      await fixture.bridgePoolFactory.getLatestPoolLogicVersion(1, 0);
+      await fixture.bridgePoolFactory.getLatestPoolLogicVersion(
+        bridgePoolExternalChainId,
+        bridgePoolTokenTypeERC20
+      );
     expect(latestNativeERC20Version).to.eq(0);
   });
 
-  it("Should failed to deploy with incorrect deploy code", async () => {
+  it("Should fail to deploy with incorrect deploy code", async () => {
     await expect(
       factoryCallAny(
         fixture.factory,
@@ -301,6 +305,61 @@ describe("Testing BridgePool Factory", async () => {
         bridgePoolExternalChainId,
         bridgePoolValue,
         bridgePoolDeployCode,
+      ]
+    );
+  });
+
+  it("Should deploy new BridgePool after adding new Token Type through Bridge Pool Factory Upgrade", async () => {
+    const bridgePoolTokenTypeERC777 = 3;
+    const bridgePoolFactory = (await deployUpgradeableWithFactory(
+      baseTokenFixture.factory,
+      "BridgePoolFactoryERC777Mock",
+      "BridgePoolFactoryERC777Mock"
+    )) as BridgePoolFactory;
+    const fixture: BridgePoolFactoryFixture = {
+      ...baseTokenFixture,
+      bridgePoolFactory,
+    };
+    await factoryCallAny(
+      fixture.factory,
+      fixture.bridgePoolFactory,
+      "deployPoolLogic",
+      [
+        bridgePoolTokenTypeERC20,
+        bridgePoolNativeChainId,
+        bridgePoolValue,
+        bridgePoolDeployCode,
+      ]
+    );
+    await factoryCallAnyFixture(
+      fixture,
+      "bridgePoolFactory",
+      "deployNewNativePool",
+      [
+        bridgePoolTokenTypeERC20,
+        ethers.constants.AddressZero,
+        bridgePoolVersion,
+      ]
+    );
+    await factoryCallAny(
+      fixture.factory,
+      fixture.bridgePoolFactory,
+      "deployPoolLogic",
+      [
+        bridgePoolTokenTypeERC777,
+        bridgePoolNativeChainId,
+        bridgePoolValue,
+        bridgePoolDeployCode,
+      ]
+    );
+    await factoryCallAnyFixture(
+      fixture,
+      "bridgePoolFactory",
+      "deployNewNativePool",
+      [
+        bridgePoolTokenTypeERC777,
+        ethers.constants.AddressZero,
+        bridgePoolVersion,
       ]
     );
   });
