@@ -1,3 +1,5 @@
+// Package minedtx handles processed transactions which have been included in
+// previous blocks.
 package minedtx
 
 import (

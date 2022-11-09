@@ -40,7 +40,7 @@ func inspect(cmd *cobra.Command, args []string) {
 	}
 
 	// Decrypt key with passphrase.
-	passphrase := getPassphrase(false, logger)
+	passphrase := getPassphrase(false, false, logger)
 	key, err := keystore.DecryptKey(keyJSON, passphrase)
 	if err != nil {
 		logger.Fatalf("Error decrypting key: %v", err)

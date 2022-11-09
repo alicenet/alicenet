@@ -34,7 +34,7 @@ func changePassword(cmd *cobra.Command, args []string) {
 	}
 
 	// Decrypt key with passphrase.
-	passphrase := getPassphrase(false, logger)
+	passphrase := getPassphrase(false, false, logger)
 	key, err := keystore.DecryptKey(keyjson, passphrase)
 	if err != nil {
 		logger.Fatalf("Error decrypting key: %v", err)

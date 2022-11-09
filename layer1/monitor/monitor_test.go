@@ -6,28 +6,28 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"math/big"
-	"testing"
-	"time"
-
 	"github.com/alicenet/alicenet/bridge/bindings"
+	"github.com/alicenet/alicenet/config"
 	"github.com/alicenet/alicenet/consensus/objs"
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/crypto"
-	"github.com/alicenet/alicenet/layer1/executor"
-	"github.com/alicenet/alicenet/layer1/executor/tasks"
-	ethdkgState "github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
-	snapshotState "github.com/alicenet/alicenet/layer1/executor/tasks/snapshots/state"
 	"github.com/alicenet/alicenet/layer1/monitor/events"
-	"github.com/alicenet/alicenet/layer1/monitor/objects"
-	"github.com/alicenet/alicenet/layer1/transaction"
-	"github.com/alicenet/alicenet/test/mocks"
 	"github.com/alicenet/alicenet/utils"
 	"github.com/dgraph-io/badger/v2"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/stretchr/testify/assert"
+	"math/big"
+	"testing"
+	"time"
+
+	"github.com/alicenet/alicenet/layer1/executor"
+	ethdkgState "github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
+	snapshotState "github.com/alicenet/alicenet/layer1/executor/tasks/snapshots/state"
+	"github.com/alicenet/alicenet/layer1/monitor/objects"
+	"github.com/alicenet/alicenet/layer1/transaction"
+	"github.com/alicenet/alicenet/test/mocks"
 )
 
 func createSharedKey(addr common.Address) [4]*big.Int {
@@ -65,7 +65,7 @@ func populateMonitor(monitorState *objects.MonitorState, EPOCH uint32) {
 	}
 }
 
-func getMonitor(t *testing.T) (*monitor, *executor.TasksScheduler, chan tasks.TaskRequest, *mocks.MockClient, *mocks.MockEthereumContracts, accounts.Account) {
+func getMonitor(t *testing.T) (*monitor, executor.TaskHandler, *mocks.MockClient, *mocks.MockEthereumContracts, accounts.Account) {
 	monDB := mocks.NewTestDB()
 	consDB := mocks.NewTestDB()
 	adminHandler := mocks.NewMockAdminHandler()
@@ -84,7 +84,6 @@ func getMonitor(t *testing.T) (*monitor, *executor.TasksScheduler, chan tasks.Ta
 	})
 	depositHandler := mocks.NewMockDepositHandler()
 	eth := mocks.NewMockClient()
-	tasksReqChan := make(chan tasks.TaskRequest, 10)
 	txWatcher := transaction.NewWatcher(eth, 12, monDB, false, constants.TxPollingTime)
 
 	account := accounts.Account{
@@ -114,26 +113,25 @@ func getMonitor(t *testing.T) (*monitor, *executor.TasksScheduler, chan tasks.Ta
 	contracts := mocks.NewMockAllSmartContracts()
 	contracts.EthereumContractsFunc.SetDefaultReturn(ethereumContracts)
 
-	tasksScheduler, err := executor.NewTasksScheduler(monDB, eth, contracts, adminHandler, tasksReqChan, txWatcher)
-	mon, err := NewMonitor(consDB, monDB, adminHandler, depositHandler, eth, contracts, []common.Address{}, 2*time.Second, 100, 42, tasksReqChan)
+	tasksHandler, err := executor.NewTaskHandler(monDB, eth, contracts, adminHandler, txWatcher)
+	mon, err := NewMonitor(consDB, monDB, adminHandler, depositHandler, eth, contracts, contracts.EthereumContracts().GetAllAddresses(), 2*time.Second, 100, 42, tasksHandler)
 	assert.Nil(t, err)
 	EPOCH := uint32(1)
 	populateMonitor(mon.State, EPOCH)
 
 	t.Cleanup(func() {
 		mon.Close()
-		tasksScheduler.Close()
-
-		<-time.After(15 * time.Millisecond)
-		close(tasksReqChan)
+		tasksHandler.Close()
+		monDB.DB().Close()
+		consDB.DB().Close()
 	})
 
-	return mon, tasksScheduler, tasksReqChan, eth, ethereumContracts, account
+	return mon, tasksHandler, eth, ethereumContracts, account
 }
 
 // Actual tests.
 func TestMonitorPersist(t *testing.T) {
-	mon, _, _, eth, _, _ := getMonitor(t)
+	mon, taskHandler, eth, _, _ := getMonitor(t)
 	raw, err := json.Marshal(mon)
 	assert.Nil(t, err)
 	t.Logf("Raw: %v", string(raw))
@@ -141,7 +139,7 @@ func TestMonitorPersist(t *testing.T) {
 	err = mon.State.PersistState(mon.db)
 	assert.Nil(t, err)
 
-	newMon, err := NewMonitor(mon.db, mon.db, mocks.NewMockAdminHandler(), mocks.NewMockDepositHandler(), eth, mocks.NewMockAllSmartContracts(), []common.Address{}, 10*time.Millisecond, 100, 42, make(chan tasks.TaskRequest, 10))
+	newMon, err := NewMonitor(mon.db, mon.db, mocks.NewMockAdminHandler(), mocks.NewMockDepositHandler(), eth, mon.contracts, mon.contracts.EthereumContracts().GetAllAddresses(), 10*time.Millisecond, 100, 42, taskHandler)
 	assert.Nil(t, err)
 
 	err = newMon.State.LoadState(mon.db)
@@ -153,10 +151,8 @@ func TestMonitorPersist(t *testing.T) {
 }
 
 func TestProcessRegistrationOpenedEvent(t *testing.T) {
-	mon, tasksScheduler, _, eth, _, defaultAcc := getMonitor(t)
-
-	err := tasksScheduler.Start()
-	assert.Nil(t, err)
+	mon, taskHandler, eth, _, defaultAcc := getMonitor(t)
+	taskHandler.Start()
 
 	mon.State.PotentialValidators[defaultAcc.Address] = objects.PotentialValidator{
 		Account: defaultAcc.Address,
@@ -173,7 +169,7 @@ func TestProcessRegistrationOpenedEvent(t *testing.T) {
 	eth.GetEventsFunc.SetDefaultReturn(nil, nil)
 	eth.GetEventsFunc.PushReturn(logs, nil)
 
-	err = mon.Start()
+	err := mon.Start()
 	assert.Nil(t, err)
 	maxTimeout := time.After(4500 * time.Millisecond)
 	for {
@@ -191,16 +187,14 @@ func TestProcessRegistrationOpenedEvent(t *testing.T) {
 			assert.Equal(t, ethdkgState.RegistrationOpen, dkgState.Phase)
 			break
 		}
-
 		<-time.After(100 * time.Millisecond)
 	}
 }
 
 func TestProcessNewAliceNetNodeVersionAvailableEvent(t *testing.T) {
-	mon, tasksScheduler, _, eth, contracts, defaultAcc := getMonitor(t)
-
-	err := tasksScheduler.Start()
-	assert.Nil(t, err)
+	config.Configuration.Version = "v2.1.6"
+	mon, taskHandler, eth, contracts, defaultAcc := getMonitor(t)
+	taskHandler.Start()
 
 	mon.State.PotentialValidators[defaultAcc.Address] = objects.PotentialValidator{
 		Account: defaultAcc.Address,
@@ -225,7 +219,7 @@ func TestProcessNewAliceNetNodeVersionAvailableEvent(t *testing.T) {
 	eth.GetEventsFunc.SetDefaultReturn(nil, nil)
 	eth.GetEventsFunc.PushReturn(logs, nil)
 
-	err = mon.Start()
+	err := mon.Start()
 	assert.Nil(t, err)
 	maxTimeout := time.After(4500 * time.Millisecond)
 	for {
@@ -253,8 +247,8 @@ func TestProcessNewAliceNetNodeVersionAvailableEvent(t *testing.T) {
 	}
 }
 
-func TestProcessSnapshotTakenEventWithOutdatedCanonicalVersion(t *testing.T) {
-	mon, _, _, eth, contracts, defaultAcc := getMonitor(t)
+func TestProcessSnapshotTakenEvent(t *testing.T) {
+	mon, _, eth, contracts, defaultAcc := getMonitor(t)
 
 	mon.State.PotentialValidators[defaultAcc.Address] = objects.PotentialValidator{
 		Account: defaultAcc.Address,
@@ -292,12 +286,6 @@ func TestProcessSnapshotTakenEventWithOutdatedCanonicalVersion(t *testing.T) {
 	snapshots.ParseSnapshotTakenFunc.SetDefaultReturn(snapshotTakenEvent, nil)
 	contracts.SnapshotsFunc.SetDefaultReturn(snapshots)
 
-	localVersion, _ := utils.GetLocalVersion()
-	localVersion.Major++
-	dynamics := mocks.NewMockIDynamics()
-	dynamics.GetLatestAliceNetVersionFunc.SetDefaultReturn(localVersion, nil)
-	contracts.DynamicsFunc.SetDefaultReturn(dynamics)
-
 	snapshotEvents := events.GetSnapshotEvents()
 	logs := []types.Log{
 		{Topics: []common.Hash{snapshotEvents["SnapshotTaken"].ID}},
@@ -309,7 +297,7 @@ func TestProcessSnapshotTakenEventWithOutdatedCanonicalVersion(t *testing.T) {
 
 	err := mon.Start()
 	assert.Nil(t, err)
-	maxTimeout := time.After(4500 * time.Millisecond)
+	maxTimeout := time.After(45000 * time.Millisecond)
 	for {
 		select {
 		case <-maxTimeout:
@@ -335,10 +323,9 @@ func TestProcessSnapshotTakenEventWithOutdatedCanonicalVersion(t *testing.T) {
 }
 
 func TestProcessProcessNewCanonicalAliceNetNodeVersion(t *testing.T) {
-	mon, tasksScheduler, _, eth, contracts, defaultAcc := getMonitor(t)
-
-	err := tasksScheduler.Start()
-	assert.Nil(t, err)
+	config.Configuration.Version = "v2.1.6"
+	mon, taskHandler, eth, contracts, defaultAcc := getMonitor(t)
+	taskHandler.Start()
 
 	mon.State.PotentialValidators[defaultAcc.Address] = objects.PotentialValidator{
 		Account: defaultAcc.Address,
@@ -363,7 +350,7 @@ func TestProcessProcessNewCanonicalAliceNetNodeVersion(t *testing.T) {
 	eth.GetEventsFunc.SetDefaultReturn(nil, nil)
 	eth.GetEventsFunc.PushReturn(logs, nil)
 
-	err = mon.Start()
+	err := mon.Start()
 	assert.Nil(t, err)
 	maxTimeout := time.After(4500 * time.Millisecond)
 	for {
@@ -377,12 +364,10 @@ func TestProcessProcessNewCanonicalAliceNetNodeVersion(t *testing.T) {
 }
 
 func TestPersistSnapshot(t *testing.T) {
-	mon, tasksScheduler, tasksReqChan, eth, _, _ := getMonitor(t)
+	mon, taskHandler, eth, _, _ := getMonitor(t)
 	eth.GetFinalizedHeightFunc.SetDefaultReturn(1, nil)
 
-	err := tasksScheduler.Start()
-	assert.Nil(t, err)
-
+	taskHandler.Start()
 	height := 10
 	bh := &objs.BlockHeader{
 		BClaims: &objs.BClaims{
@@ -397,7 +382,7 @@ func TestPersistSnapshot(t *testing.T) {
 		TxHshLst: [][]byte{},
 		SigGroup: make([]byte, 192),
 	}
-	err = PersistSnapshot(eth, bh, 10, 1, tasksReqChan, mon.db)
+	err := PersistSnapshot(eth, bh, 10, 1, taskHandler, mon.db)
 
 	state, err := snapshotState.GetSnapshotState(mon.db)
 	assert.Nil(t, err)

@@ -115,7 +115,7 @@ func (rb *Handler) HandleP2PGetBlockHeaders(ctx context.Context, r *pb.GetBlockH
 			if err != nil {
 				return err
 			}
-			if len(hdrbytes)+byteCount < int(rb.storage.GetMaxBytes()) {
+			if len(hdrbytes)+byteCount < int(rb.storage.GetMaxBlockSize()) {
 				byteCount = byteCount + len(hdrbytes)
 				hdrs = append(hdrs, hdrbytes)
 			} else {
