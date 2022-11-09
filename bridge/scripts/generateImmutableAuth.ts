@@ -1,45 +1,48 @@
 import fs from "fs";
 import { task } from "hardhat/config";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
+
 import {
-  getDeploymentList,
+  DeploymentConfigWrapper,
+  generateDeployConfigTemplate,
+  getAllContracts,
   getSortedDeployList,
-  transformDeploymentList,
-} from "./lib/deployment/deploymentListUtil";
-import { getAllContracts } from "./lib/deployment/deploymentUtil";
+  readDeploymentConfig,
+} from "./lib/deployment/deploymentUtil";
 
 task("generate-immutable-auth-contract", "Generate contracts")
-  .addOptionalParam(
-    "input",
-    "path to the folder containing the deploymentList file",
-    undefined
-  )
+  .addOptionalParam("configFile", "deployment config json file", undefined)
   .addOptionalParam(
     "output",
     "path to save the generated `ImmutableAuth.sol`",
     undefined
   )
-  .setAction(async ({ input, output }, hre) => {
+  .setAction(async ({ input: configFile, output }, hre) => {
     const contractNameSaltMap = [];
     let immutableContract = "";
-    let contracts;
+    let contracts: DeploymentConfigWrapper;
 
-    if (input === undefined) {
+    if (configFile === undefined) {
       const allContracts = await getAllContracts(hre.artifacts);
       const deploymentList = await getSortedDeployList(
         allContracts,
-        hre.artifacts
+        hre.artifacts,
+        hre.ethers
       );
-      contracts = await transformDeploymentList(deploymentList);
+      contracts = await generateDeployConfigTemplate(
+        deploymentList,
+        hre.artifacts,
+        hre.ethers
+      );
     } else {
-      contracts = await getDeploymentList(input);
+      contracts = await readDeploymentConfig(configFile);
     }
-
-    for (let i = 0; i < contracts.length; i++) {
-      const fullyQualifiedName = contracts[i];
-      const contractName = fullyQualifiedName.split(":")[1];
-      const salt = await getSalt(contractName, hre);
-      contractNameSaltMap.push([contractName, salt]);
+    for (let key in contracts) {
+      const contract = contracts[key];
+      const contractName = contract.name;
+      const salt = contract.salt;
+      contractName !== "AliceNetFactory" &&
+        contractNameSaltMap.push([contractName, salt]);
     }
 
     immutableContract += templateImmutableFactory;

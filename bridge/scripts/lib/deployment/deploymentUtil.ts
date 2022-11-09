@@ -1,5 +1,5 @@
 import { HardhatEthersHelpers } from "@nomiclabs/hardhat-ethers/types";
-import { BigNumber, BigNumberish, BytesLike, ContractFactory } from "ethers";
+import { BigNumber, BigNumberish, BytesLike, ContractFactory, ContractReceipt } from "ethers";
 import fs from "fs";
 import { Artifacts, HardhatRuntimeEnvironment } from "hardhat/types";
 import { exit } from "process";
@@ -11,7 +11,6 @@ import {
   deployCreateAndRegister,
   deployFactory,
   deployUpgradeableGasSafe,
-  encodeMultiCallArgs,
   getEventVar,
   multiCallDeployUpgradeable,
   upgradeProxyGasSafe,
@@ -19,28 +18,14 @@ import {
 import {
   ALICENET_FACTORY,
   CONTRACT_ADDR,
-  DEFAULT_CONFIG_DIR,
+  DEFAULT_CONFIG_FILE_PATH,
   EVENT_DEPLOYED_PROXY,
   EVENT_DEPLOYED_RAW,
   FUNCTION_DEPLOY_CREATE,
   FUNCTION_INITIALIZE,
-  FUNCTION_UPGRADE_PROXY,
   ONLY_PROXY,
   UPGRADEABLE_DEPLOYMENT,
 } from "../constants";
-import {
-  readDeploymentArgs,
-  readDeploymentListConfig,
-} from "./deploymentConfigUtil";
-import {
-  DeployCreateData,
-  FactoryData,
-  ProxyData,
-  updateDefaultFactoryData,
-  updateDeployCreateList,
-  updateExternalContractList,
-  updateProxyList,
-} from "./factoryStateUtil";
 
 type Ethers = typeof import("../../../node_modules/ethers/lib/ethers") &
   HardhatEthersHelpers;
@@ -69,43 +54,6 @@ export interface DeploymentArgs {
   initializer: ContractArgs;
 }
 
-export type DeployProxyMCArgs = {
-  contractName: string;
-  logicAddress: string;
-  waitConfirmation?: number;
-  factoryAddress?: string;
-  initCallData?: BytesLike;
-  outputFolder?: string;
-};
-export type MultiCallArgsStruct = {
-  target: string;
-  value: BigNumberish;
-  data: BytesLike;
-};
-export type DeployArgs = {
-  contractName: string;
-  factoryAddress: string;
-  waitConfirmation?: number;
-  initCallData?: string;
-  constructorArgs?: any;
-  outputFolder?: string;
-  verify?: boolean;
-  standAlone?: boolean;
-};
-
-export type Args = {
-  contractName: string;
-  factoryAddress?: string;
-  salt?: BytesLike;
-  initCallData?: string;
-  constructorArgs?: any;
-  outputFolder?: string;
-};
-export interface InitData {
-  constructorArgs: { [key: string]: any };
-  initializerArgs: { [key: string]: any };
-}
-
 export interface ContractDescriptor {
   name: string;
   fullyQualifiedName: string;
@@ -131,29 +79,56 @@ export interface DeploymentConfigWrapper {
   [key: string]: DeploymentConfig;
 }
 
-export async function getContractDescriptor(
-  contractName: string,
-  constructorArgs: Array<any>,
-  initializerArgs: Array<any>,
-  hre: HardhatRuntimeEnvironment
-): Promise<ContractDescriptor> {
-  const fullyQualifiedName = await getFullyQualifiedName(
-    contractName,
-    hre.artifacts
-  );
-  return {
-    name: contractName,
-    fullyQualifiedName,
-    deployGroup: await getDeployGroup(fullyQualifiedName, hre.artifacts),
-    deployGroupIndex: parseInt(
-      await getDeployGroupIndex(fullyQualifiedName, hre.artifacts),
-      10
-    ),
-    deployType: await getDeployType(fullyQualifiedName, hre.artifacts),
-    constructorArgs,
-    initializerArgs,
-  };
+export type DeploymentList = {
+  [key: string]: Array<DeploymentConfig>;
+};
+
+export type FactoryData = {
+  address: string;
+  owner?: string;
+  gas: BigNumber;
+};
+
+export type DeployCreateData = {
+  name: string;
+  address: string;
+  factoryAddress: string;
+  gas: BigNumber;
+  constructorArgs?: any;
+  receipt?: ContractReceipt;
+};
+export type MetaContractData = {
+  metaAddress: string;
+  salt: string;
+  templateName: string;
+  templateAddress: string;
+  factoryAddress: string;
+  gas: BigNumber;
+  initCallData: string;
+  receipt?: ContractReceipt;
+};
+export type TemplateData = {
+  name: string;
+  address: string;
+  factoryAddress: string;
+  gas: BigNumber;
+  receipt?: ContractReceipt;
+  constructorArgs?: string;
+};
+
+export interface FactoryConfig {
+  [key: string]: any;
 }
+export type ProxyData = {
+  proxyAddress: string;
+  salt: BytesLike;
+  logicName?: string;
+  logicAddress?: string;
+  factoryAddress: string;
+  gas: BigNumberish;
+  receipt?: ContractReceipt;
+  initCallData?: BytesLike;
+};
 
 // AliceNet Factory Task Functions
 
@@ -162,7 +137,6 @@ export async function deployFactoryTask(
   hre: HardhatRuntimeEnvironment,
   legacyTokenAddress: string
 ) {
-  await checkUserDirPath(taskArgs.outputFolder);
   const factoryBase = await hre.ethers.getContractFactory(ALICENET_FACTORY);
   if (!hre.ethers.utils.isAddress(legacyTokenAddress)) {
     throw new Error("legacyTokenAddress is not an address");
@@ -189,7 +163,7 @@ export async function deployFactoryTask(
     await verifyContract(hre, factory.address, [legacyTokenAddress]);
   }
   const network = hre.network.name;
-  await updateDefaultFactoryData(network, factoryData, taskArgs.outputFolder);
+
   await showState(
     `Deployed ${ALICENET_FACTORY} at address: ${factory.address}, gasCost: ${gasCost}`
   );
@@ -206,10 +180,8 @@ export async function deployContractsTask(
   hre: HardhatRuntimeEnvironment
 ) {
   let cumulativeGasUsed = BigNumber.from("0");
-  await checkUserDirPath(taskArgs.outputFolder);
-  const deploymentListConfig = await readDeploymentListConfig(
-    taskArgs.inputFolder
-  );
+
+  const deploymentListConfig = await readDeploymentConfig(taskArgs.configFile);
   // setting listName undefined will use the default list
   // deploy the factory first
   const keys = Object.keys(deploymentListConfig);
@@ -705,7 +677,7 @@ export async function promptCheckDeploymentArgs(message: string) {
 export async function deployCreateAndRegisterTask(
   taskArgs: any,
   hre: HardhatRuntimeEnvironment,
-  fullyQaulifiedContractName?: string,
+  fullyQualifiedContractName?: string,
   factory?: AliceNetFactory,
   implementationBase?: ContractFactory,
   constructorArgsObject?: ArgData,
@@ -720,14 +692,14 @@ export async function deployCreateAndRegisterTask(
       : factory;
   const waitBlocks = taskArgs.waitConfirmation;
   const contractName =
-    fullyQaulifiedContractName === undefined
+    fullyQualifiedContractName === undefined
       ? taskArgs.contractName
-      : extractName(fullyQaulifiedContractName);
+      : extractName(fullyQualifiedContractName);
 
-  fullyQaulifiedContractName =
-    fullyQaulifiedContractName === undefined
+  fullyQualifiedContractName =
+    fullyQualifiedContractName === undefined
       ? await getFullyQualifiedName(contractName, hre.artifacts)
-      : fullyQaulifiedContractName;
+      : fullyQualifiedContractName;
   if (salt === undefined) {
     salt =
       taskArgs.salt !== undefined
@@ -742,7 +714,7 @@ export async function deployCreateAndRegisterTask(
   if (constructorArgsObject !== undefined) {
     constructorArgs = Object.values(constructorArgsObject);
   }
-  if (await hasConstructorArgs(fullyQaulifiedContractName, hre.artifacts)) {
+  if (await hasConstructorArgs(fullyQualifiedContractName, hre.artifacts)) {
     constructorArgs =
       constructorArgs === undefined
         ? taskArgs.constructorArgs
@@ -791,11 +763,7 @@ export async function deployCreateAndRegisterTask(
   if (taskArgs.verify) {
     await verifyContract(hre, factory.address, constructorArgs);
   }
-  await updateDeployCreateList(
-    network,
-    deployCreateData,
-    taskArgs.outputFolder
-  );
+
   if (taskArgs.standAlone !== true) {
     await showState(
       `[DEBUG ONLY, DONT USE THIS ADDRESS IN THE SIDE CHAIN, USE THE PROXY INSTEAD!] Deployed logic for ${taskArgs.contractName} contract at: ${deployCreateData.address}, gas: ${receipt.gasUsed}`
@@ -803,11 +771,6 @@ export async function deployCreateAndRegisterTask(
   } else {
     await showState(
       `Deployed ${deployCreateData.name} at ${deployCreateData.address}, gasCost: ${deployCreateData.gas}`
-    );
-    await updateExternalContractList(
-      network,
-      deployCreateData,
-      taskArgs.outputFolder
     );
   }
   deployCreateData.receipt = receipt;
@@ -923,7 +886,7 @@ export async function multiCallDeployUpgradeableTask(taskArgs: any, hre: any) {
   await showState(
     `Deployed ${proxyData.logicName} with proxy at ${proxyData.proxyAddress}, gasCost: ${proxyData.gas}`
   );
-  await updateProxyList(network, proxyData, taskArgs.outputFolder);
+
   return proxyData;
 }
 
@@ -940,123 +903,6 @@ export async function checkUserDirPath(path: string) {
     }
   }
 }
-
-export async function getDeployMetaArgs(
-  fullyQualifiedName: string,
-  waitConfirmation: number,
-  factoryAddress: string,
-  artifacts: Artifacts,
-  inputFolder?: string,
-  outputFolder?: string,
-  verify?: boolean
-): Promise<DeployArgs> {
-  let initCallData;
-  // check if contract needs to be initialized
-  const initAble = await isInitializable(fullyQualifiedName, artifacts);
-  if (initAble) {
-    const initializerArgs = await getDeploymentInitializerArgs(
-      fullyQualifiedName,
-      inputFolder
-    );
-    initCallData = await getEncodedInitCallData(initializerArgs);
-  }
-  const hasConArgs = await hasConstructorArgs(fullyQualifiedName, artifacts);
-  const constructorArgs = hasConArgs
-    ? await getDeploymentConstructorArgs(fullyQualifiedName, inputFolder)
-    : undefined;
-  return {
-    contractName: extractName(fullyQualifiedName),
-    waitConfirmation,
-    factoryAddress,
-    initCallData,
-    constructorArgs,
-    outputFolder,
-    verify,
-  };
-}
-
-export async function getFactoryDeploymentArgs(
-  artifacts: Artifacts,
-  inputFolder?: string
-) {
-  const fullyQualifiedName = await getFullyQualifiedName(
-    "AliceNetFactory",
-    artifacts
-  );
-  const hasConArgs = await hasConstructorArgs(fullyQualifiedName, artifacts);
-  const constructorArgs = hasConArgs
-    ? await getDeploymentConstructorArgs(fullyQualifiedName, inputFolder)
-    : [];
-  return constructorArgs;
-}
-
-// export async function getDeployUpgradeableProxyArgs(
-//   fullyQualifiedName: string,
-//   factoryAddress: string,
-//   artifacts: Artifacts,
-//   waitConfirmation?: number,
-//   inputFolder?: string,
-//   outputFolder?: string,
-//   verify?: boolean
-// ): Promise<DeployArgs> {
-//   let initCallData;
-//   const initAble = await isInitializable(fullyQualifiedName, artifacts);
-//   if (initAble) {
-//     const initializerArgs = await getDeploymentInitializerArgs(
-//       fullyQualifiedName,
-//       inputFolder
-//     );
-//     initCallData = await getEncodedInitCallData(initializerArgs);
-//   }
-//   const hasConArgs = await hasConstructorArgs(fullyQualifiedName, artifacts);
-//   const constructorArgs = hasConArgs
-//     ? await getDeploymentConstructorArgs(fullyQualifiedName, inputFolder)
-//     : undefined;
-//   return {
-//     contractName: extractName(fullyQualifiedName),
-//     waitConfirmation,
-//     factoryAddress,
-//     initCallData,
-//     constructorArgs,
-//     outputFolder,
-//     verify,
-//   };
-// }
-
-// export async function getDeployCreateArgs(
-//   fullyQualifiedName: string,
-//   factoryAddress: string,
-//   artifacts: Artifacts,
-//   waitConfirmation?: number,
-//   inputFolder?: string,
-//   outputFolder?: string,
-//   verify?: boolean,
-//   standAlone?: boolean
-// ): Promise<DeployArgs> {
-//   let initCallData;
-//   const initAble = await isInitializable(fullyQualifiedName, artifacts);
-//   if (initAble) {
-//     const initializerArgs = await getDeploymentInitializerArgs(
-//       fullyQualifiedName,
-//       inputFolder
-//     );
-//     initCallData = await getEncodedInitCallData(initializerArgs);
-//   }
-//   const hasConArgs = await hasConstructorArgs(fullyQualifiedName, artifacts);
-//   const constructorArgs = hasConArgs
-//     ? await getDeploymentConstructorArgs(fullyQualifiedName, inputFolder)
-//     : undefined;
-//   return {
-//     contractName: extractName(fullyQualifiedName),
-//     waitConfirmation,
-//     factoryAddress,
-//     initCallData,
-//     constructorArgs,
-//     outputFolder,
-//     verify,
-//     standAlone,
-//   };
-// }
 
 export async function isInitializable(
   fullyQualifiedName: string,
@@ -1140,67 +986,6 @@ export async function getCustomNSTag(
   }
 }
 
-// return a list of constructor inputs for each contract
-export async function getDeploymentConstructorArgs(
-  fullName: string,
-  configDirPath?: string
-) {
-  let output: Array<ArgData> = [];
-  // get the deployment args
-  const path =
-    configDirPath === undefined
-      ? DEFAULT_CONFIG_DIR + "/deploymentArgsTemplate"
-      : configDirPath + "/deploymentArgsTemplate";
-  const deploymentConfig: any = await readDeploymentArgs(path);
-  if (deploymentConfig !== undefined) {
-    const deploymentArgs: DeploymentArgs = {
-      constructor: deploymentConfig.constructor,
-      initializer: deploymentConfig.initializer,
-    };
-    if (
-      deploymentArgs.constructor !== undefined &&
-      deploymentArgs.constructor[fullName] !== undefined
-    ) {
-      output = extractArgs(deploymentArgs.constructor[fullName]);
-    }
-  } else {
-    output = [];
-  }
-  return output;
-}
-
-export function extractArgs(input: ArgData) {
-  const output: Array<any> = [];
-  for (const key in input) {
-    output.push(input[key]);
-  }
-  return output;
-}
-
-// return a list of initializer inputs for each contract
-export async function getDeploymentInitializerArgs(
-  fullName: string,
-  configDirPath?: string
-) {
-  let output: Array<string> | undefined;
-  const path =
-    configDirPath === undefined
-      ? DEFAULT_CONFIG_DIR + "/deploymentArgsTemplate"
-      : configDirPath + "/deploymentArgsTemplate";
-  const deploymentConfig: any = await readDeploymentArgs(path);
-  if (deploymentConfig !== undefined) {
-    const deploymentArgs: DeploymentArgs = deploymentConfig;
-    if (
-      deploymentArgs.initializer !== undefined &&
-      deploymentArgs.initializer[fullName] !== undefined
-    ) {
-      output = extractArgs(deploymentArgs.initializer[fullName]);
-    }
-  } else {
-    output = undefined;
-  }
-  return output;
-}
 /**
  * @description gets the salt specified in the contracts head with a custom natspec tag @custom:salt
  * @param contractName name of the contract
@@ -1259,77 +1044,6 @@ export async function getDeployGroupIndex(
   return await getCustomNSTag(fullName, "deploy-group-index", artifacts);
 }
 
-export async function getDeployUpgradeableMultiCallArgs(
-  contractDescriptor: ContractDescriptor,
-  hre: HardhatRuntimeEnvironment,
-  factoryAddr: string,
-  inputedInitCallData?: string
-) {
-  const factoryBase = await hre.ethers.getContractFactory(ALICENET_FACTORY);
-  const factory = factoryBase.attach(factoryAddr);
-  const logicContract: ContractFactory = await hre.ethers.getContractFactory(
-    contractDescriptor.name
-  );
-  const logicFactory = await hre.ethers.getContractFactory(
-    contractDescriptor.name
-  );
-  const deployTxReq = logicContract.getDeployTransaction(
-    ...contractDescriptor.constructorArgs
-  );
-  let initCallData = "0x";
-  if (inputedInitCallData) {
-    initCallData = inputedInitCallData;
-  }
-  if (contractDescriptor.initializerArgs.length > 0)
-    initCallData = logicFactory.interface.encodeFunctionData(
-      FUNCTION_INITIALIZE,
-      contractDescriptor.initializerArgs
-    );
-  const salt = await getBytes32Salt(
-    contractDescriptor.name,
-    hre.artifacts,
-    hre.ethers
-  );
-  const nonce = await hre.ethers.provider.getTransactionCount(factory.address);
-  const logicAddress = hre.ethers.utils.getContractAddress({
-    from: factory.address,
-    nonce,
-  });
-
-  // encode deploy create
-  const deployCreateCallData: BytesLike =
-    factoryBase.interface.encodeFunctionData(FUNCTION_DEPLOY_CREATE, [
-      deployTxReq.data,
-    ]);
-  // encode the deployProxy function call with Salt as arg
-  const deployProxyCallData: BytesLike =
-    factoryBase.interface.encodeFunctionData("deployProxy", [salt]);
-  // encode upgrade proxy multicall
-  const upgradeProxyCallData: BytesLike =
-    factoryBase.interface.encodeFunctionData(FUNCTION_UPGRADE_PROXY, [
-      salt,
-      logicAddress,
-      initCallData,
-    ]);
-  const deployCreate = encodeMultiCallArgs(
-    factory.address,
-    0,
-    deployCreateCallData
-  );
-  const deployProxy = encodeMultiCallArgs(
-    factory.address,
-    0,
-    deployProxyCallData
-  );
-  const upgradeProxy = encodeMultiCallArgs(
-    factory.address,
-    0,
-    upgradeProxyCallData
-  );
-  const multiCallArgs = [deployCreate, deployProxy, upgradeProxy];
-  return multiCallArgs;
-}
-
 export async function getGasPrices(hre: HardhatRuntimeEnvironment) {
   // get the latest block
   const latestBlock = await hre.ethers.provider.getBlock("latest");
@@ -1384,55 +1098,154 @@ export const showState = async (message: string): Promise<void> => {
   }
 };
 
-export async function deployContractsMulticall(
-  contracts: ContractDescriptor[],
-  hre: HardhatRuntimeEnvironment,
-  factoryAddr: string
-) {
-  const factoryBase = await hre.ethers.getContractFactory(ALICENET_FACTORY);
-  const factory = factoryBase.attach(factoryAddr);
-  for (let i = 0; i < contracts.length; i++) {
-    const contract = contracts[i];
-    const deployType = contract.deployType;
-    switch (deployType) {
-      case UPGRADEABLE_DEPLOYMENT: {
-        const multiCallArgsArray = [];
-        const [deployCreate, deployProxy, upgradeProxy] =
-          await getDeployUpgradeableMultiCallArgs(
-            contract,
-            hre,
-            factory.address
-          );
-        multiCallArgsArray.push(deployCreate);
-        multiCallArgsArray.push(deployProxy);
-        multiCallArgsArray.push(upgradeProxy);
-        const txResponse = await factory.multiCall(multiCallArgsArray);
-        const receipt = await txResponse.wait();
-        const address = getEventVar(
-          receipt,
-          EVENT_DEPLOYED_PROXY,
-          CONTRACT_ADDR
-        );
-        console.log(contract.name, "deployed at:", address);
-        break;
-      }
-      case ONLY_PROXY: {
-        const name = extractName(contract.fullyQualifiedName);
-        const salt: BytesLike = await getBytes32Salt(
-          name,
-          hre.artifacts,
-          hre.ethers
-        );
-        const factoryAddress = factory.address;
-        await hre.run("deploy-proxy", {
-          factoryAddress,
-          salt,
-        });
-        break;
-      }
-      default: {
-        break;
-      }
+export async function generateDeployConfigTemplate(
+  list: DeploymentList,
+  artifacts: Artifacts,
+  ethers: Ethers
+): Promise<DeploymentConfigWrapper> {
+  const deploymentArgs: DeploymentConfigWrapper = {};
+  const factoryName = await getFullyQualifiedName("AliceNetFactory", artifacts);
+
+  const factoryContractInfo = await extractFullContractInfo(
+    factoryName,
+    artifacts,
+    ethers
+  );
+  deploymentArgs[factoryName] = factoryContractInfo;
+
+  // iterate over the deployment list
+  for (const key of Object.keys(list)) {
+    const arrayOfConfigs = list[key];
+    for (const deploymentConfig of arrayOfConfigs) {
+      deploymentArgs[deploymentConfig.fullyQualifiedName] = deploymentConfig;
     }
   }
+
+  return deploymentArgs;
+}
+
+export async function getSortedDeployList(
+  contracts: Array<string>,
+  artifacts: Artifacts,
+  ethers: Ethers
+) {
+  const deploymentList: DeploymentList = {};
+  for (const contract of contracts) {
+    const contractInfo = await extractFullContractInfo(
+      contract,
+      artifacts,
+      ethers
+    );
+
+    const deployType: string | undefined = contractInfo?.deployType;
+    let group: string | undefined = contractInfo?.deployGroup;
+
+    if (group !== undefined) {
+      if (contractInfo?.deployGroupIndex === undefined) {
+        throw new Error(
+          "If deploy-group-index is specified a deploy-group-index also should be!"
+        );
+      }
+      try {
+        // check deploy group index exists
+        parseInt(contractInfo?.deployGroupIndex);
+      } catch (error) {
+        throw new Error(
+          `Failed to convert deploy-group-index for contract ${contract}! deploy-group-index should be an integer!`
+        );
+      }
+    } else {
+      group = "general";
+    }
+    if (deployType !== undefined) {
+      if (deploymentList[group] === undefined) {
+        deploymentList[group] = [];
+      }
+      deploymentList[group].push(contractInfo);
+    }
+  }
+  for (const key in deploymentList) {
+    if (key !== "general") {
+      deploymentList[key].sort((contractA, contractB) => {
+        const indexA = parseInt(contractA.deployGroupIndex);
+        const indexB = parseInt(contractB.deployGroupIndex);
+        return indexA - indexB;
+      });
+    }
+  }
+  return deploymentList;
+}
+
+export async function extractFullContractInfo(
+  fullName: string,
+  artifacts: Artifacts,
+  ethers: Ethers
+): Promise<DeploymentConfig> {
+  let constructorArgs: ArgData = {};
+  let initializerArgs: ArgData = {};
+
+  const buildInfo = await artifacts.getBuildInfo(fullName);
+  if (buildInfo !== undefined) {
+    const name = extractName(fullName);
+    const path = extractPath(fullName);
+    const info: any = buildInfo?.output.contracts[path][name];
+
+    const methods = buildInfo.output.contracts[path][name].abi;
+    for (const method of methods) {
+      if (method.type === "constructor" || method.name === "initialize") {
+        const args: ArgData = {};
+        for (const input of method.inputs) {
+          args[input.name] = "UNDEFINED";
+        }
+
+        if (method.type === "constructor") {
+          constructorArgs = args;
+        } else {
+          initializerArgs = args;
+        }
+      }
+    }
+
+    const salt =
+      info.devdoc["custom:salt"] !== undefined
+        ? ethers.utils.formatBytes32String(info.devdoc["custom:salt"])
+        : "";
+    const deployGroup = info.devdoc["custom:deploy-group"];
+    const deployGroupIndex = info.devdoc["custom:deploy-group-index"];
+    const deployType = info.devdoc["custom:deploy-type"];
+    const deploymentConfig: DeploymentConfig = {
+      name,
+      fullyQualifiedName: fullName,
+      salt,
+      deployGroup,
+      deployGroupIndex,
+      deployType,
+      constructorArgs,
+      initializerArgs,
+    };
+    return deploymentConfig;
+  } else {
+    throw new Error(`failed to fetch ${fullName} info`);
+  }
+}
+
+export async function writeDeploymentConfig(
+  deploymentArgs: DeploymentConfigWrapper,
+  configFile?: string
+) {
+  const file = configFile === undefined ? DEFAULT_CONFIG_FILE_PATH : configFile;
+  const jsonData = JSON.stringify(deploymentArgs, null, 2);
+  fs.writeFileSync(file, jsonData);
+  return file;
+}
+
+export async function readDeploymentConfig(
+  file: string
+): Promise<DeploymentConfigWrapper> {
+  return await readJSON(file);
+}
+
+export async function readJSON(file: string) {
+  const rawData = fs.readFileSync(file);
+  return JSON.parse(rawData.toString("utf8"));
 }

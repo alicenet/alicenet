@@ -37,8 +37,8 @@ export const UPGRADEABLE_DEPLOYMENT: string = "deployUpgradeable";
 
 // default paths
 export const DEPLOYMENT_LIST_FPATH = "/deploymentList";
-export const DEPLOYMENT_ARGS_TEMPLATE_FPATH = "/deploymentArgsTemplate";
-export const DEFAULT_CONFIG_DIR = "../scripts/base-files";
+export const DEFAULT_CONFIG_FILE_PATH =
+  "../scripts/base-files/deploymentConfig.json";
 export const DEFAULT_FACTORY_STATE_OUTPUT_DIR = "../scripts/generated";
 export const BASE_CONFIG_PATH = `../scripts/base-files/baseConfig`;
 export const HARDHAT_CHAIN_ID = 1337;

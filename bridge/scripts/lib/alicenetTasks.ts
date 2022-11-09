@@ -13,11 +13,16 @@ import {
 } from "./alicenetFactory";
 import {
   CONTRACT_ADDR,
-  DEFAULT_CONFIG_DIR,
+  DEFAULT_CONFIG_FILE_PATH,
   EVENT_DEPLOYED_RAW,
 } from "./constants";
-import { readDeploymentArgs } from "./deployment/deploymentConfigUtil";
-import { getGasPrices } from "./deployment/deploymentUtil";
+
+import {
+  DeploymentConfigWrapper,
+  getGasPrices,
+  readDeploymentConfig,
+  writeDeploymentConfig,
+} from "./deployment/deploymentUtil";
 
 function delay(milliseconds: number) {
   return new Promise((resolve) => setTimeout(resolve, milliseconds));
@@ -38,40 +43,32 @@ task(
   "Computes factory address and to the deploymentArgs file"
 )
   .addOptionalParam(
-    "deploymentArgsTemplatePath",
-    "path of the deploymentArgsTemplate file",
-    DEFAULT_CONFIG_DIR + "/deploymentArgsTemplate"
+    "configFile",
+    "deployment configuration json file",
+    DEFAULT_CONFIG_FILE_PATH,
+    types.string
   )
-  .addOptionalParam(
-    "outputFolder",
-    "path of the output folder where new deploymentArgsTemplate file will be saved",
-    "../scripts/generated"
-  )
+
   .setAction(async (taskArgs, hre) => {
-    if (!fs.existsSync(taskArgs.deploymentArgsTemplatePath)) {
-      throw new Error(
-        `Error: Could not find deployment Args file expected at ${taskArgs.deploymentArgsTemplatePath}`
-      );
+    if (!fs.existsSync(taskArgs.configFile)) {
+      throw new Error(`Error: ${taskArgs.configFile} doesn't exist!`);
     }
-    if (!fs.existsSync(taskArgs.outputFolder)) {
-      throw new Error(
-        `Error: Output folder  ${taskArgs.outputFolder} doesn't exist!`
-      );
-    }
-    console.log(
-      `Loading deploymentArgs from: ${taskArgs.deploymentArgsTemplatePath}`
-    );
+    console.log(`Loading : ${taskArgs.configFile}`);
 
-    const deploymentConfig: any = await readDeploymentArgs(
-      taskArgs.deploymentArgsTemplatePath
-    );
+    const deploymentConfig: DeploymentConfigWrapper =
+      await readDeploymentConfig(taskArgs.configFile);
 
-    const expectedContract = "contracts/AliceNetFactory.sol:AliceNetFactory";
+    const expectedContractFullQualifiedName =
+      "contracts/AliceNetFactory.sol:AliceNetFactory";
     const expectedField = "legacyToken_";
-    if (deploymentConfig.constructor[expectedContract] === undefined) {
+    if (
+      deploymentConfig[expectedContractFullQualifiedName].constructorArgs[
+        expectedField
+      ] === undefined
+    ) {
       throw new Error(
         `Couldn't find ${expectedField} in the constructor area for` +
-          ` ${expectedContract} inside the ${taskArgs.deploymentArgsTemplatePath}`
+          ` ${expectedContractFullQualifiedName} inside ${taskArgs.configFile}`
       );
     }
 
@@ -92,12 +89,11 @@ task(
     );
 
     console.log(`Deployed legacy token at: ${legacyToken.address}`);
-    deploymentConfig.constructor[expectedContract][0] = {
-      legacyToken_: legacyToken.address,
-    };
+    deploymentConfig[expectedContractFullQualifiedName].constructorArgs[
+      expectedField
+    ] = legacyToken.address;
 
-    const data = toml.stringify(deploymentConfig);
-    fs.writeFileSync(taskArgs.outputFolder + "/deploymentArgsTemplate", data);
+    await writeDeploymentConfig(deploymentConfig, taskArgs.configFile);
   });
 
 task("create-local-seed-node", "start and syncs a node with mainnet")

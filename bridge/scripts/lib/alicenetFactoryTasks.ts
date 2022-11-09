@@ -1,47 +1,27 @@
-import toml from "@iarna/toml";
-import { BigNumber } from "ethers";
-import fs from "fs";
 import { task, types } from "hardhat/config";
 import {} from "./alicenetTasks";
-import {
-  ALICENET_FACTORY,
-  DEFAULT_CONFIG_DIR,
-  DEFAULT_FACTORY_STATE_OUTPUT_DIR,
-  DEPLOYMENT_ARGS_TEMPLATE_FPATH,
-  DEPLOYMENT_ARG_PATH,
-  DEPLOYMENT_LIST_FPATH,
-} from "./constants";
-import {
-  generateDeployArgTemplate,
-  writeDeploymentArgs,
-} from "./deployment/deployArgUtil";
-import {
-  DeploymentList,
-  getDeploymentList,
-  getSortedDeployList,
-  transformDeploymentList,
-  writeDeploymentList,
-} from "./deployment/deploymentListUtil";
+import { DEFAULT_CONFIG_FILE_PATH } from "./constants";
+
 import {
   checkUserDirPath,
-  deployContractsMulticall,
   deployContractsTask,
   deployCreate2Task,
   deployCreateAndRegisterTask,
   deployCreateTask,
   deployFactoryTask,
   DeploymentConfigWrapper,
+  DeploymentList,
   deployOnlyProxyTask,
   deployUpgradeableProxyTask,
+  generateDeployConfigTemplate,
   getAllContracts,
   getBytes32SaltFromContractNSTag,
-  getDeployGroup,
-  getDeployGroupIndex,
   getDeployType,
+  getSortedDeployList,
   showState,
   upgradeProxyTask,
+  writeDeploymentConfig,
 } from "./deployment/deploymentUtil";
-import { FactoryData } from "./deployment/factoryStateUtil";
 
 task(
   "get-network",
@@ -75,10 +55,11 @@ task(
     0,
     types.int
   )
-  .addOptionalParam("outputFolder", "output folder path to save factoryState")
   .addOptionalParam(
-    "inputFolder",
-    "input folder path for deploymentArgsTemplate"
+    "configFile",
+    "deployment configuration json file",
+    DEFAULT_CONFIG_FILE_PATH,
+    types.string
   )
   .setAction(async (taskArgs, hre) => {
     // check constructorArgs length
@@ -94,9 +75,9 @@ task(
   .addFlag("list", "flag to only generate deploy list")
   .addFlag("args", "flag to only generate deploy args template")
   .addOptionalParam(
-    "outputFolder",
-    "output folder path to save deployment arg template and list",
-    DEFAULT_CONFIG_DIR,
+    "outputFile",
+    "output json file to save deployment arg template and list",
+    DEFAULT_CONFIG_FILE_PATH,
     types.string
   )
   .addOptionalVariadicPositionalParam(
@@ -104,28 +85,21 @@ task(
     "custom list of contracts to generate list and arg template for"
   )
   .setAction(async (taskArgs, hre) => {
-    await checkUserDirPath(taskArgs.outputFolder);
-    const path = taskArgs.outputFolder;
+    await checkUserDirPath(taskArgs.outputFile);
+    const file = taskArgs.outputFile;
     let deploymentList: DeploymentList;
     let deploymentArgs: DeploymentConfigWrapper = {};
-    let list: Array<string>;
+    let contracts: Array<string> = [];
     // no custom path and list input/ writes arg template in default scripts/base-files/deploymentArgs
     if (taskArgs.contractNames === undefined) {
       // create the default list
       // setting list name will specify default configs
-      const contracts = await getAllContracts(hre.artifacts);
-      deploymentList = await getSortedDeployList(contracts, hre.artifacts);
-      list = await transformDeploymentList(deploymentList);
-      deploymentArgs = await generateDeployArgTemplate(
-        list,
-        hre.artifacts,
-        hre.ethers
-      );
+      contracts = await getAllContracts(hre.artifacts);
     } // user defined path and list
     else if (taskArgs.contractNames !== undefined) {
       // create deploy list and deployment arg with the specified output path
       const nameList: Array<string> = taskArgs.contractNames;
-      const contracts: Array<string> = [];
+
       for (const name of nameList) {
         const sourceName = (await hre.artifacts.readArtifact(name)).sourceName;
         const fullName = sourceName + ":" + name;
@@ -133,34 +107,28 @@ task(
         await getDeployType(fullName, hre.artifacts);
         contracts.push(fullName);
       }
-      deploymentList = await getSortedDeployList(contracts, hre.artifacts);
-      list = await transformDeploymentList(deploymentList);
-      deploymentArgs = await generateDeployArgTemplate(
-        list,
-        hre.artifacts,
-        hre.ethers
-      );
     } // user defined path, default list
     else {
       throw new Error(
         "you must specify a path to store your custom deploy config files"
       );
     }
-    if (taskArgs.args !== true) {
-      const filteredList = [];
-      for (const name of list) {
-        if (name.includes("AliceNetFactory")) {
-          continue;
-        }
-        filteredList.push(name);
-      }
-      await writeDeploymentList(filteredList, path);
-    }
+
+    deploymentList = await getSortedDeployList(
+      contracts,
+      hre.artifacts,
+      hre.ethers
+    );
+
+    deploymentArgs = await generateDeployConfigTemplate(
+      deploymentList,
+      hre.artifacts,
+      hre.ethers
+    );
+
     if (taskArgs.list !== true) {
-      await writeDeploymentArgs(deploymentArgs, path);
-      console.log(
-        `YOU MUST REPLACE THE UNDEFINED VALUES IN ${path}/deploymentArgsTemplate`
-      );
+      const savedFile = await writeDeploymentConfig(deploymentArgs, file);
+      console.log(`YOU MUST REPLACE THE UNDEFINED VALUES IN ${savedFile}`);
     }
   });
 
@@ -184,15 +152,9 @@ task(
     types.int
   )
   .addOptionalParam(
-    "inputFolder",
-    "path to location containing deploymentArgsTemplate, and deploymentList",
-    DEFAULT_CONFIG_DIR,
-    types.string
-  )
-  .addOptionalParam(
-    "outputFolder",
-    "output folder path to save factory state",
-    DEFAULT_FACTORY_STATE_OUTPUT_DIR,
+    "configFile",
+    "deployment configuration json file",
+    DEFAULT_CONFIG_FILE_PATH,
     types.string
   )
   .setAction(async (taskArgs, hre) => {
@@ -251,12 +213,6 @@ task("deploy-create2", "deploys a contract from the factory using create2")
     0,
     types.int
   )
-  .addOptionalParam(
-    "outputFolder",
-    "output folder path to save factory state",
-    DEFAULT_FACTORY_STATE_OUTPUT_DIR,
-    types.string
-  )
   .addOptionalVariadicPositionalParam(
     "constructorArgs",
     "array that holds all arguments for constructor"
@@ -282,12 +238,6 @@ task("deploy-create", "deploys a contract from the factory using create")
     "wait specified number of blocks between transactions",
     0,
     types.int
-  )
-  .addOptionalParam(
-    "outputFolder",
-    "output folder path to save factory state",
-    DEFAULT_FACTORY_STATE_OUTPUT_DIR,
-    types.string
   )
   .addOptionalVariadicPositionalParam(
     "constructorArgs",
@@ -317,12 +267,7 @@ task(
     0,
     types.int
   )
-  .addOptionalParam(
-    "outputFolder",
-    "output folder path to save factory state",
-    DEFAULT_FACTORY_STATE_OUTPUT_DIR,
-    types.string
-  )
+
   .addOptionalVariadicPositionalParam(
     "constructorArgs",
     "array that holds all arguments for constructor, defaults to empty array"
@@ -367,9 +312,9 @@ task(
     "input initializer arguments as comma separated string values, eg: --initializerArgs 'arg1, arg2'"
   )
   .addOptionalParam(
-    "inputFolder",
-    "path to location containing deploymentArgsTemplate, and deploymentList",
-    DEFAULT_CONFIG_DIR,
+    "configFile",
+    "deployment configuration json file",
+    DEFAULT_CONFIG_FILE_PATH,
     types.string
   )
   .addOptionalParam(
@@ -381,138 +326,4 @@ task(
   .addOptionalVariadicPositionalParam("constructorArgs")
   .setAction(async (taskArgs, hre) => {
     return await upgradeProxyTask(taskArgs, hre);
-  });
-
-// Generate a json file with all deployment information
-task(
-  "generate-contracts-descriptor",
-  "Generates deploymentList.json file for faster contract deployment (requires deploymentList and deploymentArgsTemplate files to be already generated)"
-)
-  .addOptionalParam(
-    "outputFolder",
-    "output folder path to save deployment arg template and list"
-  )
-  .setAction(async (taskArgs, hre) => {
-    await checkUserDirPath(taskArgs.outputFolder);
-    const configDirPath =
-      taskArgs.outputFolder === undefined
-        ? DEFAULT_CONFIG_DIR
-        : taskArgs.outputFolder;
-    const path =
-      configDirPath === undefined
-        ? DEFAULT_CONFIG_DIR + DEPLOYMENT_LIST_FPATH + ".json"
-        : configDirPath + DEPLOYMENT_LIST_FPATH + ".json";
-    const deploymentArgsPath =
-      configDirPath === undefined
-        ? DEPLOYMENT_ARG_PATH + DEPLOYMENT_ARGS_TEMPLATE_FPATH
-        : configDirPath + DEPLOYMENT_ARGS_TEMPLATE_FPATH;
-    const contractsArray: any = [];
-    const json = { contracts: contractsArray };
-    const contracts = await getDeploymentList(taskArgs.inputFolder);
-    const deploymentArgsFile = fs.readFileSync(deploymentArgsPath);
-    const tomlFile: any = toml.parse(deploymentArgsFile.toLocaleString());
-    for (let i = 0; i < contracts.length; i++) {
-      const contract = contracts[i];
-      const contractName = contract.split(":")[1];
-      const tomlConstructorArgs = tomlFile.constructor[
-        contract
-      ] as toml.JsonArray;
-      const constructorArgs: any = [];
-      if (tomlConstructorArgs !== undefined) {
-        tomlConstructorArgs.forEach((jsonObject) => {
-          constructorArgs.push(JSON.stringify(jsonObject).split('"')[3]);
-        });
-      }
-      const tomlInitializerArgs = tomlFile.initializer[
-        contract
-      ] as toml.JsonArray;
-      const initializerArgs: any = [];
-      if (tomlInitializerArgs !== undefined) {
-        tomlInitializerArgs.forEach((jsonObject) => {
-          initializerArgs.push(JSON.stringify(jsonObject).split('"')[3]);
-        });
-      }
-      const deployType = await getDeployType(contract, hre.artifacts);
-      const deployGroup = await getDeployGroup(contract, hre.artifacts);
-      const deployGroupIndex = await getDeployGroupIndex(
-        contract,
-        hre.artifacts
-      );
-      if (deployType !== undefined) {
-        const object = {
-          name: contractName,
-          fullyQualifiedName: contract,
-          deployGroup:
-            deployGroup !== undefined && deployGroup ? deployGroup : "general",
-          deployGroupIndex:
-            deployGroupIndex !== undefined && deployGroupIndex
-              ? deployGroupIndex
-              : "0",
-          deployType,
-          constructorArgs,
-          initializerArgs,
-        };
-        json.contracts.push(object);
-      }
-    }
-    fs.writeFileSync(path, JSON.stringify(json, null, 4));
-  });
-
-task(
-  "deploy-contracts-from-descriptor",
-  "Deploys ALL AliceNet contracts reading deploymentList.json"
-)
-  .addOptionalParam(
-    "factoryAddress",
-    "specify if a factory is already deployed, if not specified a new factory will be deployed"
-  )
-  .addOptionalParam(
-    "inputFolder",
-    "path to location containing deploymentArgsTemplate, and deploymentList"
-  )
-  .addOptionalParam("outputFolder", "output folder path to save factory state")
-  .setAction(async (taskArgs, hre) => {
-    let cumulativeGasUsed = BigNumber.from("0");
-    await checkUserDirPath(taskArgs.outputFolder);
-    const configDirPath =
-      taskArgs.outputFolder === undefined
-        ? DEFAULT_CONFIG_DIR
-        : taskArgs.outputFolder;
-    const path =
-      configDirPath === undefined
-        ? DEFAULT_CONFIG_DIR + DEPLOYMENT_LIST_FPATH + ".json"
-        : configDirPath + DEPLOYMENT_LIST_FPATH + ".json";
-    if (!fs.existsSync(path)) {
-      const error =
-        "Could not find " +
-        DEFAULT_CONFIG_DIR +
-        DEPLOYMENT_LIST_FPATH +
-        ".json file. It must be generated first with generate-contracts-descriptor task";
-      throw new Error(error);
-    }
-    const rawdata = fs.readFileSync(path);
-    const json = JSON.parse(rawdata.toLocaleString());
-    if (hre.network.name === "hardhat") {
-      // hardhat is not being able to estimate correctly the tx gas due to the massive bytes array
-      // being sent as input to the function (the contract bytecode), so we need to increase the block
-      // gas limit temporally in order to deploy the template
-      await hre.network.provider.send("evm_setBlockGasLimit", [
-        "0x9000000000000000",
-      ]);
-    }
-    // deploy the factory first
-    let factoryAddress = taskArgs.factoryAddress;
-    if (factoryAddress === undefined) {
-      const factoryData: FactoryData = await hre.run("deploy-factory", {
-        outputFolder: taskArgs.outputFolder,
-        inputFolder: taskArgs.inputFolder,
-      });
-      factoryAddress = factoryData.address;
-      cumulativeGasUsed = cumulativeGasUsed.add(factoryData.gas);
-    }
-    const factoryBase = await hre.ethers.getContractFactory(ALICENET_FACTORY);
-    const factory = factoryBase.attach(factoryAddress);
-    const contracts = json.contracts;
-    await deployContractsMulticall(contracts, hre, factory.address);
-    console.log(`total gas used: ${cumulativeGasUsed.toString()}`);
   });
