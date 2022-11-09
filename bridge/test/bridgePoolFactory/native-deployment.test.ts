@@ -25,23 +25,22 @@ interface BridgePoolFactoryFixture extends BaseTokensFixture {
   bridgePoolFactory: BridgePoolFactory;
 }
 let fixture: BridgePoolFactoryFixture;
+let baseTokenFixture: BaseTokensFixture;
 let admin: SignerWithAddress;
 const bridgePoolVersion = 1;
 const unexistentBridgePoolVersion = 11;
-let baseTokenFixture: BaseTokensFixture;
 
 describe("Testing BridgePool Factory", async () => {
   async function deployFixture() {
     await preFixtureSetup();
     const [admin] = await ethers.getSigners();
-
     baseTokenFixture = await deployFactoryAndBaseTokens(admin);
     const bridgePoolFactory = (await deployUpgradeableWithFactory(
       baseTokenFixture.factory,
       "BridgePoolFactory",
       "BridgePoolFactory"
     )) as BridgePoolFactory;
-    const fixture: BridgePoolFactoryFixture = {
+    fixture = {
       ...baseTokenFixture,
       bridgePoolFactory,
     };
@@ -310,54 +309,30 @@ describe("Testing BridgePool Factory", async () => {
   });
 
   it("Should deploy new BridgePool after adding new Token Type through Bridge Pool Factory Upgrade", async () => {
-    const bridgePoolTokenTypeERC777 = 3;
-    const bridgePoolFactory = (await deployUpgradeableWithFactory(
-      baseTokenFixture.factory,
-      "BridgePoolFactoryERC777Mock",
-      "BridgePoolFactoryERC777Mock"
-    )) as BridgePoolFactory;
-    const fixture: BridgePoolFactoryFixture = {
-      ...baseTokenFixture,
-      bridgePoolFactory,
-    };
-    await factoryCallAny(
-      fixture.factory,
-      fixture.bridgePoolFactory,
-      "deployPoolLogic",
-      [
-        bridgePoolTokenTypeERC20,
-        bridgePoolNativeChainId,
-        bridgePoolValue,
-        bridgePoolDeployCode,
-      ]
+    await factoryCallAnyFixture(
+      fixture,
+      "bridgePoolFactory",
+      "togglePublicPoolDeployment",
+      []
     );
+    // Deploy new Pool Factory supporting new token type ERC777
+    const updatedBridgePoolFactory = await (
+      await (
+        await ethers.getContractFactory("BridgePoolFactoryERC777Mock")
+      ).deploy()
+    ).deployed();
+    await fixture.factory.upgradeProxy(
+      ethers.utils.formatBytes32String("BridgePoolFactory"),
+      updatedBridgePoolFactory.address,
+      "0x"
+    );
+    // slot for ERC0 logic should be there after upgrade
     await factoryCallAnyFixture(
       fixture,
       "bridgePoolFactory",
       "deployNewNativePool",
       [
         bridgePoolTokenTypeERC20,
-        ethers.constants.AddressZero,
-        bridgePoolVersion,
-      ]
-    );
-    await factoryCallAny(
-      fixture.factory,
-      fixture.bridgePoolFactory,
-      "deployPoolLogic",
-      [
-        bridgePoolTokenTypeERC777,
-        bridgePoolNativeChainId,
-        bridgePoolValue,
-        bridgePoolDeployCode,
-      ]
-    );
-    await factoryCallAnyFixture(
-      fixture,
-      "bridgePoolFactory",
-      "deployNewNativePool",
-      [
-        bridgePoolTokenTypeERC777,
         ethers.constants.AddressZero,
         bridgePoolVersion,
       ]
