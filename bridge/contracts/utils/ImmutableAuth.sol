@@ -127,60 +127,6 @@ abstract contract ImmutableATokenMinter is ImmutableFactory {
     }
 }
 
-abstract contract ImmutableBridgePoolFactory is ImmutableFactory {
-    address private immutable _bridgePoolFactory;
-    error OnlyBridgePoolFactory(address sender, address expected);
-
-    modifier onlyBridgePoolFactory() {
-        if (msg.sender != _bridgePoolFactory) {
-            revert OnlyBridgePoolFactory(msg.sender, _bridgePoolFactory);
-        }
-        _;
-    }
-
-    constructor() {
-        _bridgePoolFactory = getMetamorphicContractAddress(
-            0x427269646765506f6f6c466163746f7279000000000000000000000000000000,
-            _factoryAddress()
-        );
-    }
-
-    function _bridgePoolFactoryAddress() internal view returns (address) {
-        return _bridgePoolFactory;
-    }
-
-    function _saltForBridgePoolFactory() internal pure returns (bytes32) {
-        return 0x427269646765506f6f6c466163746f7279000000000000000000000000000000;
-    }
-}
-
-abstract contract ImmutableBridgeRouter is ImmutableFactory {
-    address private immutable _bridgeRouter;
-    error OnlyBridgeRouter(address sender, address expected);
-
-    modifier onlyBridgeRouter() {
-        if (msg.sender != _bridgeRouter) {
-            revert OnlyBridgeRouter(msg.sender, _bridgeRouter);
-        }
-        _;
-    }
-
-    constructor() {
-        _bridgeRouter = getMetamorphicContractAddress(
-            0xa4c282a597c549d47c7eb184be62b5714edde2189c3893d7d3c305ff482371b7,
-            _factoryAddress()
-        );
-    }
-
-    function _bridgeRouterAddress() internal view returns (address) {
-        return _bridgeRouter;
-    }
-
-    function _saltForBridgeRouter() internal pure returns (bytes32) {
-        return 0xa4c282a597c549d47c7eb184be62b5714edde2189c3893d7d3c305ff482371b7;
-    }
-}
-
 abstract contract ImmutableDistribution is ImmutableFactory {
     address private immutable _distribution;
     error OnlyDistribution(address sender, address expected);
@@ -502,33 +448,6 @@ abstract contract ImmutableValidatorStaking is ImmutableFactory {
 
     function _saltForValidatorStaking() internal pure returns (bytes32) {
         return 0x56616c696461746f725374616b696e6700000000000000000000000000000000;
-    }
-}
-
-abstract contract ImmutableCallAny is ImmutableFactory {
-    address private immutable _callAny;
-    error OnlyCallAny(address sender, address expected);
-
-    modifier onlyCallAny() {
-        if (msg.sender != _callAny) {
-            revert OnlyCallAny(msg.sender, _callAny);
-        }
-        _;
-    }
-
-    constructor() {
-        _callAny = getMetamorphicContractAddress(
-            0x43616c6c416e7900000000000000000000000000000000000000000000000000,
-            _factoryAddress()
-        );
-    }
-
-    function _callAnyAddress() internal view returns (address) {
-        return _callAny;
-    }
-
-    function _saltForCallAny() internal pure returns (bytes32) {
-        return 0x43616c6c416e7900000000000000000000000000000000000000000000000000;
     }
 }
 
