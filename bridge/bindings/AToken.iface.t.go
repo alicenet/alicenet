@@ -36,14 +36,14 @@ type IATokenTransactor interface {
 	//
 	// Solidity: function increaseAllowance(address spender, uint256 addedValue) returns(bool)
 	IncreaseAllowance(opts *bind.TransactOpts, spender common.Address, addedValue *big.Int) (*types.Transaction, error)
-	// Initialize is a paid mutator transaction binding the contract method 0x8129fc1c.
-	//
-	// Solidity: function initialize() returns()
-	Initialize(opts *bind.TransactOpts) (*types.Transaction, error)
 	// Migrate is a paid mutator transaction binding the contract method 0x454b0608.
 	//
-	// Solidity: function migrate(uint256 amount) returns()
+	// Solidity: function migrate(uint256 amount) returns(uint256)
 	Migrate(opts *bind.TransactOpts, amount *big.Int) (*types.Transaction, error)
+	// MigrateTo is a paid mutator transaction binding the contract method 0x0d213d31.
+	//
+	// Solidity: function migrateTo(address to, uint256 amount) returns(uint256)
+	MigrateTo(opts *bind.TransactOpts, to common.Address, amount *big.Int) (*types.Transaction, error)
 	// Transfer is a paid mutator transaction binding the contract method 0xa9059cbb.
 	//
 	// Solidity: function transfer(address to, uint256 amount) returns(bool)

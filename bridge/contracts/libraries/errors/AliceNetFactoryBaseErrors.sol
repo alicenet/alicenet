@@ -4,4 +4,5 @@ pragma solidity ^0.8.16;
 library AliceNetFactoryBaseErrors {
     error Unauthorized();
     error CodeSizeZero();
+    error SaltAlreadyInUse(bytes32 salt);
 }

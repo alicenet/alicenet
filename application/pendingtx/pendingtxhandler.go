@@ -1,3 +1,5 @@
+// Package pendingtx handles transactions which are valid but have not yet been
+// processed; these are valid potential state changes.
 package pendingtx
 
 import (

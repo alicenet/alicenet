@@ -35,6 +35,8 @@ contract Proxy {
         _fallback();
     }
 
+    /// Returns the implementation address (target) of the Proxy
+    /// @return the implementation address
     function getImplementationAddress() public view returns (address) {
         assembly {
             mstore(
@@ -48,6 +50,7 @@ contract Proxy {
         }
     }
 
+    /// Delegates calls to proxy implementation
     function _fallback() internal {
         // make local copy of factory since immutables
         // are not accessable in assembly as of yet

@@ -3,6 +3,7 @@
 pragma solidity ^0.8.16;
 
 import "contracts/utils/DeterministicAddress.sol";
+import "contracts/interfaces/IAliceNetFactory.sol";
 
 abstract contract ImmutableFactory is DeterministicAddress {
     address private immutable _factory;
@@ -64,10 +65,7 @@ abstract contract ImmutableAToken is ImmutableFactory {
     }
 
     constructor() {
-        _aToken = getMetamorphicContractAddress(
-            0x41546f6b656e0000000000000000000000000000000000000000000000000000,
-            _factoryAddress()
-        );
+        _aToken = IAliceNetFactory(_factoryAddress()).lookup(_saltForAToken());
     }
 
     function _aTokenAddress() internal view returns (address) {
@@ -76,6 +74,30 @@ abstract contract ImmutableAToken is ImmutableFactory {
 
     function _saltForAToken() internal pure returns (bytes32) {
         return 0x41546f6b656e0000000000000000000000000000000000000000000000000000;
+    }
+}
+
+abstract contract ImmutableBToken is ImmutableFactory {
+    address private immutable _bToken;
+    error OnlyBToken(address sender, address expected);
+
+    modifier onlyBToken() {
+        if (msg.sender != _bToken) {
+            revert OnlyBToken(msg.sender, _bToken);
+        }
+        _;
+    }
+
+    constructor() {
+        _bToken = IAliceNetFactory(_factoryAddress()).lookup(_saltForBToken());
+    }
+
+    function _bTokenAddress() internal view returns (address) {
+        return _bToken;
+    }
+
+    function _saltForBToken() internal pure returns (bytes32) {
+        return 0x42546f6b656e0000000000000000000000000000000000000000000000000000;
     }
 }
 
@@ -130,33 +152,6 @@ abstract contract ImmutableATokenMinter is ImmutableFactory {
 
     function _saltForATokenMinter() internal pure returns (bytes32) {
         return 0x41546f6b656e4d696e7465720000000000000000000000000000000000000000;
-    }
-}
-
-abstract contract ImmutableBToken is ImmutableFactory {
-    address private immutable _bToken;
-    error OnlyBToken(address sender, address expected);
-
-    modifier onlyBToken() {
-        if (msg.sender != _bToken) {
-            revert OnlyBToken(msg.sender, _bToken);
-        }
-        _;
-    }
-
-    constructor() {
-        _bToken = getMetamorphicContractAddress(
-            0x42546f6b656e0000000000000000000000000000000000000000000000000000,
-            _factoryAddress()
-        );
-    }
-
-    function _bTokenAddress() internal view returns (address) {
-        return _bToken;
-    }
-
-    function _saltForBToken() internal pure returns (bytes32) {
-        return 0x42546f6b656e0000000000000000000000000000000000000000000000000000;
     }
 }
 

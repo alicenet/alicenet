@@ -1,12 +1,29 @@
 [
   {
-    "inputs": [],
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "legacyToken_",
+        "type": "address"
+      }
+    ],
     "stateMutability": "nonpayable",
     "type": "constructor"
   },
   {
     "inputs": [],
     "name": "CodeSizeZero",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "salt",
+        "type": "bytes32"
+      }
+    ],
+    "name": "SaltAlreadyInUse",
     "type": "error"
   },
   {
@@ -92,6 +109,24 @@
   {
     "inputs": [
       {
+        "internalType": "bytes32",
+        "name": "salt_",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "address",
+        "name": "newContractAddress_",
+        "type": "address"
+      }
+    ],
+    "name": "addNewExternalContract",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "address",
         "name": "target_",
         "type": "address"
@@ -123,6 +158,24 @@
       }
     ],
     "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "target_",
+        "type": "address"
+      },
+      {
+        "internalType": "bytes",
+        "name": "cdata_",
+        "type": "bytes"
+      }
+    ],
+    "name": "delegateCallAny",
+    "outputs": [],
+    "stateMutability": "payable",
     "type": "function"
   },
   {
@@ -176,6 +229,30 @@
   {
     "inputs": [
       {
+        "internalType": "bytes",
+        "name": "deployCode_",
+        "type": "bytes"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "salt_",
+        "type": "bytes32"
+      }
+    ],
+    "name": "deployCreateAndRegister",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "contractAddr",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "bytes32",
         "name": "salt_",
         "type": "bytes32"
@@ -193,46 +270,29 @@
     "type": "function"
   },
   {
-    "inputs": [
-      {
-        "internalType": "bytes32",
-        "name": "salt_",
-        "type": "bytes32"
-      },
-      {
-        "internalType": "bytes",
-        "name": "initCallData_",
-        "type": "bytes"
-      }
-    ],
-    "name": "deployStatic",
+    "inputs": [],
+    "name": "getATokenAddress",
     "outputs": [
       {
         "internalType": "address",
-        "name": "contractAddr",
+        "name": "",
         "type": "address"
       }
     ],
-    "stateMutability": "nonpayable",
+    "stateMutability": "view",
     "type": "function"
   },
   {
-    "inputs": [
-      {
-        "internalType": "bytes",
-        "name": "deployCode_",
-        "type": "bytes"
-      }
-    ],
-    "name": "deployTemplate",
+    "inputs": [],
+    "name": "getATokenCreationCodeHash",
     "outputs": [
       {
-        "internalType": "address",
-        "name": "contractAddr",
-        "type": "address"
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
       }
     ],
-    "stateMutability": "nonpayable",
+    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -315,7 +375,7 @@
     "outputs": [
       {
         "internalType": "address",
-        "name": "addr",
+        "name": "",
         "type": "address"
       }
     ],

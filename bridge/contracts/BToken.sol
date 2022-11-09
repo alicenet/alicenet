@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT-open-group
 pragma solidity ^0.8.16;
 
-import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "contracts/interfaces/IBridgeRouter.sol";
 import "contracts/utils/Admin.sol";
 import "contracts/utils/Mutex.sol";
@@ -12,11 +12,9 @@ import "contracts/interfaces/IUtilityToken.sol";
 import "contracts/libraries/errors/UtilityTokenErrors.sol";
 import "contracts/libraries/math/Sigmoid.sol";
 
-/// @custom:salt BToken
-/// @custom:deploy-type deployStatic
 contract BToken is
     IUtilityToken,
-    ERC20Upgradeable,
+    ERC20,
     Mutex,
     MagicEthTransfer,
     EthSafeTransfer,
@@ -26,6 +24,9 @@ contract BToken is
 {
     // multiply factor for the selling/minting bonding curve
     uint256 internal constant _MARKET_SPREAD = 4;
+
+    // Address of the central bridge router contract
+    address internal immutable _centralBridgeRouter;
 
     // Balance in ether that is hold in the contract after minting and burning
     uint256 internal _poolBalance;
@@ -49,11 +50,15 @@ contract BToken is
         uint256 amount
     );
 
-    constructor() ImmutableFactory(msg.sender) ImmutableDistribution() {}
-
-    function initialize() public onlyFactory initializer {
-        __ERC20_init("AliceNet Utility Token", "ALCB");
-        // Initial deposit to cover the migrated txs on aliceNet
+    constructor(address centralBridgeRouterAddress_)
+        ERC20("AliceNet Utility Token", "ALCB")
+        ImmutableFactory(msg.sender)
+        ImmutableDistribution()
+    {
+        if (centralBridgeRouterAddress_ == address(0)) {
+            revert UtilityTokenErrors.CannotSetRouterToZeroAddress();
+        }
+        _centralBridgeRouter = centralBridgeRouterAddress_;
         _virtualDeposit(1, 0xba7809A4114eEF598132461f3202b5013e834CD5, 500000000000);
     }
 
@@ -149,25 +154,15 @@ contract BToken is
     /// function will deduce the fee amount and refund any extra amount. If no ether
     /// is sent, the function will deduce the amount of BToken corresponding to the
     /// fees directly from the user's balance.
-    /// @param bridgeVersion The version of pool to deposit token on.
-    /// @param data Encoded data necessary to deposit the arbitrary tokens in the bridges.
-    function depositTokensOnBridges(uint16 bridgeVersion, bytes calldata data) public payable {
-        //calculate router address
-        bytes32 bridgeRouterSalt = keccak256(
-            bytes.concat(
-                keccak256(abi.encodePacked("BridgeRouter")),
-                keccak256(abi.encodePacked(bridgeVersion))
-            )
-        );
-        address bridgeRouterAddress = getMetamorphicContractAddress(
-            bridgeRouterSalt,
-            _factoryAddress()
-        );
-        if (!_isContract(bridgeRouterAddress)) {
-            revert UtilityTokenErrors.InexistentRouterContract(bridgeRouterAddress);
-        }
+    /// @param routerVersion_ The bridge version where to deposit the tokens.
+    /// @param data_ Encoded data necessary to deposit the arbitrary tokens in the bridges.
+    function depositTokensOnBridges(uint8 routerVersion_, bytes calldata data_) public payable {
         //forward call to router
-        uint256 bTokenFee = IBridgeRouter(bridgeRouterAddress).routeDeposit(msg.sender, data);
+        uint256 bTokenFee = IBridgeRouter(_centralBridgeRouter).routeDeposit(
+            msg.sender,
+            routerVersion_,
+            data_
+        );
         if (msg.value > 0) {
             uint256 ethFee = _getEthToMintBTokens(totalSupply(), bTokenFee);
             if (ethFee > msg.value) {
@@ -213,6 +208,11 @@ contract BToken is
     ) public returns (uint256 numEth) {
         numEth = _burn(msg.sender, to_, amount_, minEth_);
         return numEth;
+    }
+
+    /// Gets the address to the central router for the bridge system
+    function getCentralBridgeRouterAddress() public view returns (address) {
+        return _centralBridgeRouter;
     }
 
     /// Gets the latest deposit ID emitted.
@@ -345,7 +345,7 @@ contract BToken is
             revert UtilityTokenErrors.InvalidBurnAmount(numBTK_);
         }
         _poolBalance -= _bTokensToEth(_poolBalance, totalSupply(), numBTK_);
-        ERC20Upgradeable._burn(account, numBTK_);
+        ERC20._burn(account, numBTK_);
         return true;
     }
 
@@ -448,7 +448,7 @@ contract BToken is
 
         poolBalance += numEth_;
         _poolBalance = poolBalance;
-        ERC20Upgradeable._mint(to_, numBTK);
+        ERC20._mint(to_, numBTK);
         return numBTK;
     }
 
@@ -473,7 +473,7 @@ contract BToken is
 
         poolBalance -= numEth;
         _poolBalance = poolBalance;
-        ERC20Upgradeable._burn(from_, numBTK_);
+        ERC20._burn(from_, numBTK_);
         _safeTransferEth(to_, numEth);
         return numEth;
     }

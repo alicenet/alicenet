@@ -1,9 +1,10 @@
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
 import { expect } from "../chai-setup";
 import { callFunctionAndGetReturnValues, Fixture, getFixture } from "../setup";
-import { getEthConsumedAsGas, getState, showState, state } from "./setup";
+import { getEthConsumedAsGas, getState, state } from "./setup";
 
 describe("Testing BToken Transfer methods", async () => {
   let admin: SignerWithAddress;
@@ -12,24 +13,31 @@ describe("Testing BToken Transfer methods", async () => {
   let expectedState: state;
   let fixture: Fixture;
   const eth = 4;
-  let ethIn: BigNumber;
   const minBTokens = 0;
   let bTokens: BigNumber;
 
-  beforeEach(async function () {
-    fixture = await getFixture();
+  async function deployFixture() {
+    const fixture = await getFixture();
     const signers = await ethers.getSigners();
-    [admin, user, user2] = signers;
-    showState("Initial", await getState(fixture));
-    ethIn = ethers.utils.parseEther(eth.toString());
+    const [admin, user, user2] = signers;
+
+    const ethIn = ethers.utils.parseEther(eth.toString());
     // Mint some ATokens for testing
-    [bTokens] = await callFunctionAndGetReturnValues(
+    const [bTokens] = await callFunctionAndGetReturnValues(
       fixture.bToken,
       "mint",
       user,
       [minBTokens],
       ethIn
     );
+    return { fixture, admin, user, user2, ethIn, bTokens };
+  }
+
+  beforeEach(async function () {
+    ({ fixture, admin, user, user2, bTokens } = await loadFixture(
+      deployFixture
+    ));
+
     expectedState = await getState(fixture);
   });
 

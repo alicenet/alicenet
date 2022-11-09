@@ -1,3 +1,4 @@
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { expect } from "chai";
 import { contract } from "hardhat";
 import { Snapshots } from "../../typechain-types";
@@ -23,16 +24,22 @@ contract("SnapshotRingBuffer 0state", async () => {
   const epochLength = 1024;
   let fixture: Fixture;
   let snapshots: Snapshots;
+
+  async function deployFixture() {
+    // deploys the new snapshot contract with buffer and zero state
+    const fixture = await getFixture(true, false);
+    await completeETHDKGRound(validatorsSnapshotsG1, {
+      ethdkg: fixture.ethdkg,
+      validatorPool: fixture.validatorPool,
+    });
+
+    const snapshots = fixture.snapshots as Snapshots;
+    return { fixture, snapshots };
+  }
+
   describe("Snapshot upgrade integration", async () => {
     beforeEach(async () => {
-      // deploys the new snapshot contract with buffer and zero state
-      fixture = await getFixture(true, false);
-      await completeETHDKGRound(validatorsSnapshotsG1, {
-        ethdkg: fixture.ethdkg,
-        validatorPool: fixture.validatorPool,
-      });
-
-      snapshots = fixture.snapshots as Snapshots;
+      ({ fixture, snapshots } = await loadFixture(deployFixture));
     });
 
     it("adds 6 new snapshots to the snapshot buffer", async () => {

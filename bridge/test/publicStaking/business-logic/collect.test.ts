@@ -1,3 +1,4 @@
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
@@ -29,14 +30,15 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
   let users: SignerWithAddress[];
   const numberUsers = 3;
   let admin: SignerWithAddress;
-  beforeEach(async function () {
-    fixture = await getBaseTokensFixture();
-    [admin] = await ethers.getSigners();
+
+  async function deployFixture() {
+    const fixture = await getBaseTokensFixture();
+    const [admin] = await ethers.getSigners();
     await fixture.aToken.approve(
       fixture.publicStaking.address,
       ethers.utils.parseUnits("100000", 18)
     );
-    users = await createUsers(numberUsers);
+    const users = await createUsers(numberUsers);
     const baseAmount = ethers.utils.parseUnits("100", 18).toBigInt();
     for (let i = 0; i < numberUsers; i++) {
       await fixture.aToken.transfer(await users[i].getAddress(), baseAmount);
@@ -45,6 +47,11 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
         .approve(fixture.publicStaking.address, baseAmount);
     }
     await mineBlocks(2n);
+    return { fixture, users, admin };
+  }
+
+  beforeEach(async function () {
+    ({ fixture, users, admin } = await loadFixture(deployFixture));
   });
 
   it("Shouldn't allow to collect funds before time", async function () {
@@ -53,8 +60,54 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
       .connect(users[0])
       .mint(sharesPerUser);
     const tokenID = await getTokenIdFromTx(tx);
+    await fixture.publicStaking.connect(users[0]).lockWithdraw(tokenID, 1000);
     await expect(
       fixture.publicStaking.connect(users[0]).collectEth(tokenID)
+    ).to.be.revertedWithCustomError(
+      fixture.publicStaking,
+      "LockDurationWithdrawTimeNotReached"
+    );
+    await expect(
+      fixture.publicStaking.connect(users[0]).collectToken(tokenID)
+    ).to.be.revertedWithCustomError(
+      fixture.publicStaking,
+      "LockDurationWithdrawTimeNotReached"
+    );
+    await expect(
+      fixture.publicStaking.connect(users[0]).collectAllProfits(tokenID)
+    ).to.be.revertedWithCustomError(
+      fixture.publicStaking,
+      "LockDurationWithdrawTimeNotReached"
+    );
+  });
+
+  it("Shouldn't allow to collectTo funds before time", async function () {
+    const sharesPerUser = 100n;
+    const tx = await fixture.publicStaking
+      .connect(users[0])
+      .mint(sharesPerUser);
+    const tokenID = await getTokenIdFromTx(tx);
+    await fixture.publicStaking.connect(users[0]).lockWithdraw(tokenID, 1000);
+    await expect(
+      fixture.publicStaking
+        .connect(users[0])
+        .collectEthTo(users[1].address, tokenID)
+    ).to.be.revertedWithCustomError(
+      fixture.publicStaking,
+      "LockDurationWithdrawTimeNotReached"
+    );
+    await expect(
+      fixture.publicStaking
+        .connect(users[0])
+        .collectTokenTo(users[1].address, tokenID)
+    ).to.be.revertedWithCustomError(
+      fixture.publicStaking,
+      "LockDurationWithdrawTimeNotReached"
+    );
+    await expect(
+      fixture.publicStaking
+        .connect(users[0])
+        .collectAllProfitsTo(users[1].address, tokenID)
     ).to.be.revertedWithCustomError(
       fixture.publicStaking,
       "LockDurationWithdrawTimeNotReached"
@@ -79,6 +132,42 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
         "CallerNotTokenOwner"
       )
       .withArgs(admin.address);
+    await expect(fixture.publicStaking.collectAllProfits(tokenID))
+      .to.be.revertedWithCustomError(
+        fixture.publicStaking,
+        "CallerNotTokenOwner"
+      )
+      .withArgs(admin.address);
+  });
+
+  it("Shouldn't allow to collectTo funds for not owned position", async function () {
+    const sharesPerUser = 100n;
+    const tx = await fixture.publicStaking
+      .connect(users[0])
+      .mint(sharesPerUser);
+    const tokenID = await getTokenIdFromTx(tx);
+    await expect(fixture.publicStaking.collectEthTo(users[1].address, tokenID))
+      .to.be.revertedWithCustomError(
+        fixture.publicStaking,
+        "CallerNotTokenOwner"
+      )
+      .withArgs(admin.address);
+    await expect(
+      fixture.publicStaking.collectTokenTo(users[1].address, tokenID)
+    )
+      .to.be.revertedWithCustomError(
+        fixture.publicStaking,
+        "CallerNotTokenOwner"
+      )
+      .withArgs(admin.address);
+    await expect(
+      fixture.publicStaking.collectAllProfitsTo(users[1].address, tokenID)
+    )
+      .to.be.revertedWithCustomError(
+        fixture.publicStaking,
+        "CallerNotTokenOwner"
+      )
+      .withArgs(admin.address);
   });
 
   it("Anyone can estimate profits for a position", async function () {
@@ -90,6 +179,7 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
     // Non user tries to estimate the profit of a non owned position
     await fixture.publicStaking.estimateEthCollection(tokenID);
     await fixture.publicStaking.estimateTokenCollection(tokenID);
+    await fixture.publicStaking.estimateAllProfits(tokenID);
   });
 
   it("Shouldn't allow to collect funds for non-existing position", async function () {
@@ -99,6 +189,21 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
     await expect(fixture.publicStaking.collectToken(100)).to.revertedWith(
       "ERC721: invalid token ID"
     );
+    await expect(fixture.publicStaking.collectAllProfits(100)).to.revertedWith(
+      "ERC721: invalid token ID"
+    );
+  });
+
+  it("Shouldn't allow to collectTo funds for non-existing position", async function () {
+    await expect(
+      fixture.publicStaking.collectEthTo(users[1].address, 100)
+    ).to.revertedWith("ERC721: invalid token ID");
+    await expect(
+      fixture.publicStaking.collectTokenTo(users[1].address, 100)
+    ).to.revertedWith("ERC721: invalid token ID");
+    await expect(
+      fixture.publicStaking.collectAllProfitsTo(users[1].address, 100)
+    ).to.revertedWith("ERC721: invalid token ID");
   });
 
   it("Shouldn't allow to estimate funds for non-existing position", async function () {
@@ -109,6 +214,9 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
       .to.be.revertedWithCustomError(fixture.publicStaking, "InvalidTokenId")
       .withArgs(nonExistingTokenId);
     await expect(fixture.publicStaking.estimateTokenCollection(100))
+      .to.be.revertedWithCustomError(fixture.publicStaking, "InvalidTokenId")
+      .withArgs(nonExistingTokenId);
+    await expect(fixture.publicStaking.estimateAllProfits(100))
       .to.be.revertedWithCustomError(fixture.publicStaking, "InvalidTokenId")
       .withArgs(nonExistingTokenId);
   });
@@ -333,6 +441,74 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
       );
     });
 
+    it("collect all profits after estimateAllProfits", async function () {
+      await mintPositionCheckAndUpdateState(
+        fixture.publicStaking,
+        fixture.aToken,
+        sharesPerUser,
+        0,
+        users,
+        tokensID,
+        expectedState,
+        "After mint 1"
+      );
+
+      // deposit and collect only with 1 user
+      const amountDeposited = ethers.utils.parseUnits("50", 18).toBigInt();
+      await depositTokensCheckAndUpdateState(
+        fixture.publicStaking,
+        fixture.aToken,
+        amountDeposited,
+        users,
+        tokensID,
+        expectedState,
+        "After deposit 1"
+      );
+
+      await depositEthCheckAndUpdateState(
+        fixture.publicStaking,
+        fixture.aToken,
+        amountDeposited,
+        users,
+        tokensID,
+        expectedState,
+        "After deposit 1 Eth"
+      );
+
+      const balanceBeforeDestination = (
+        await ethers.provider.getBalance(users[1].address)
+      ).toBigInt();
+
+      const [expectedEth, expectedToken] =
+        await fixture.publicStaking.estimateAllProfits(1);
+      // since we only have one user, it should have gotten all amount deposited
+      expect(expectedEth).to.be.equals(amountDeposited);
+      expect(expectedToken).to.be.equals(amountDeposited);
+
+      const destUserIndex = 1;
+      const fromUserIndex = 0;
+      await collectAllProfitsToCheckAndUpdateState(
+        fixture.publicStaking,
+        fixture.aToken,
+        amountDeposited,
+        amountDeposited,
+        fromUserIndex,
+        destUserIndex,
+        users,
+        tokensID,
+        expectedState,
+        "After collectAllProfitsTo 1"
+      );
+
+      // only the destination user has to have received the profit
+      expect(
+        (await ethers.provider.getBalance(users[1].address)).toBigInt()
+      ).to.be.equals(
+        balanceBeforeDestination + amountDeposited,
+        "Expected ETH not met for destination address"
+      );
+    });
+
     it("collect all profits at once to", async function () {
       await mintPositionCheckAndUpdateState(
         fixture.publicStaking,
@@ -453,7 +629,7 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
     // compute payout
     let diffAccum = tokenStateAccum - userPosition.accumulatorToken.toBigInt();
     let payoutEst = diffAccum * sharesPerUser;
-    if (totalShares == userPosition.shares.toBigInt()) {
+    if (totalShares === userPosition.shares.toBigInt()) {
       payoutEst += tokenStateSlush;
       tokenStateSlush = 0n;
     }
@@ -510,9 +686,9 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
     let numUsers = 2;
     for (let i = 0; i < numUsers; i++) {
       // Perform slushSkim
-      let totalSharesBN = await fixture.publicStaking.getTotalShares();
-      let totalShares = totalSharesBN.toBigInt();
-      let deltaAccum = tokenStateSlush / totalShares;
+      const totalSharesBN = await fixture.publicStaking.getTotalShares();
+      const totalShares = totalSharesBN.toBigInt();
+      const deltaAccum = tokenStateSlush / totalShares;
       tokenStateSlush -= deltaAccum * totalShares;
       tokenStateAccum += deltaAccum;
       // get position info
@@ -523,10 +699,10 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
         [tokensID[i]]
       );
       // compute payout
-      let diffAccum =
+      const diffAccum =
         tokenStateAccum - userPosition.accumulatorToken.toBigInt();
       let payoutEst = diffAccum * sharesPerUser;
-      if (totalShares == userPosition.shares.toBigInt()) {
+      if (totalShares === userPosition.shares.toBigInt()) {
         payoutEst += tokenStateSlush;
         tokenStateSlush = 0n;
       }
@@ -584,9 +760,9 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
     numUsers = 3;
     for (let i = 0; i < numUsers; i++) {
       // Perform slushSkim
-      let totalSharesBN = await fixture.publicStaking.getTotalShares();
-      let totalShares = totalSharesBN.toBigInt();
-      let deltaAccum = tokenStateSlush / totalShares;
+      const totalSharesBN = await fixture.publicStaking.getTotalShares();
+      const totalShares = totalSharesBN.toBigInt();
+      const deltaAccum = tokenStateSlush / totalShares;
       tokenStateSlush -= deltaAccum * totalShares;
       tokenStateAccum += deltaAccum;
       // get position info
@@ -597,10 +773,10 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
         [tokensID[i]]
       );
       // compute payout
-      let diffAccum =
+      const diffAccum =
         tokenStateAccum - userPosition.accumulatorToken.toBigInt();
       let payoutEst = diffAccum * sharesPerUser;
-      if (totalShares == userPosition.shares.toBigInt()) {
+      if (totalShares === userPosition.shares.toBigInt()) {
         payoutEst += tokenStateSlush;
         tokenStateSlush = 0n;
       }
@@ -641,9 +817,9 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
     // only 2 users collect
     for (let i = 0; i < 2; i++) {
       // Perform slushSkim
-      let totalSharesBN = await fixture.publicStaking.getTotalShares();
-      let totalShares = totalSharesBN.toBigInt();
-      let deltaAccum = tokenStateSlush / totalShares;
+      const totalSharesBN = await fixture.publicStaking.getTotalShares();
+      const totalShares = totalSharesBN.toBigInt();
+      const deltaAccum = tokenStateSlush / totalShares;
       tokenStateSlush -= deltaAccum * totalShares;
       tokenStateAccum += deltaAccum;
       // get position info
@@ -654,10 +830,10 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
         [tokensID[i]]
       );
       // compute payout
-      let diffAccum =
+      const diffAccum =
         tokenStateAccum - userPosition.accumulatorToken.toBigInt();
       let payoutEst = diffAccum * sharesPerUser;
-      if (totalShares == userPosition.shares.toBigInt()) {
+      if (totalShares === userPosition.shares.toBigInt()) {
         payoutEst += tokenStateSlush;
         tokenStateSlush = 0n;
       }
@@ -695,9 +871,9 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
     // All users collect this time, we expect the last user witch didn't withdrawal last time to get more
     for (let i = 0; i < numUsers; i++) {
       // Perform slushSkim
-      let totalSharesBN = await fixture.publicStaking.getTotalShares();
-      let totalShares = totalSharesBN.toBigInt();
-      let deltaAccum = tokenStateSlush / totalShares;
+      const totalSharesBN = await fixture.publicStaking.getTotalShares();
+      const totalShares = totalSharesBN.toBigInt();
+      const deltaAccum = tokenStateSlush / totalShares;
       tokenStateSlush -= deltaAccum * totalShares;
       tokenStateAccum += deltaAccum;
       // get position info
@@ -708,10 +884,10 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
         [tokensID[i]]
       );
       // compute payout
-      let diffAccum =
+      const diffAccum =
         tokenStateAccum - userPosition.accumulatorToken.toBigInt();
       let payoutEst = diffAccum * sharesPerUser;
-      if (totalShares == userPosition.shares.toBigInt()) {
+      if (totalShares === userPosition.shares.toBigInt()) {
         payoutEst += tokenStateSlush;
         tokenStateSlush = 0n;
       }
@@ -768,7 +944,7 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
     // compute payout token
     diffAccum = tokenStateAccum - userPosition.accumulatorToken.toBigInt();
     payoutEst = diffAccum * sharesPerUser;
-    if (totalShares == userPosition.shares.toBigInt()) {
+    if (totalShares === userPosition.shares.toBigInt()) {
       payoutEst += tokenStateSlush;
       tokenStateSlush = 0n;
     }
@@ -780,7 +956,7 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
     // compute payout eth
     let diffAccumEth = ethStateAccum - userPosition.accumulatorEth.toBigInt();
     let payoutEstEth = diffAccumEth * sharesPerUser;
-    if (totalShares == userPosition.shares.toBigInt()) {
+    if (totalShares === userPosition.shares.toBigInt()) {
       payoutEstEth += ethStateSlush;
       ethStateSlush = 0n;
     }
@@ -824,7 +1000,7 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
     // compute payout token
     diffAccum = tokenStateAccum - userPosition.accumulatorToken.toBigInt();
     payoutEst = diffAccum * sharesPerUser;
-    if (totalShares == userPosition.shares.toBigInt()) {
+    if (totalShares === userPosition.shares.toBigInt()) {
       payoutEst += tokenStateSlush;
       tokenStateSlush = 0n;
     }
@@ -836,7 +1012,7 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
     // compute payout eth
     diffAccumEth = ethStateAccum - userPosition.accumulatorEth.toBigInt();
     payoutEstEth = diffAccumEth * sharesPerUser;
-    if (totalShares == userPosition.shares.toBigInt()) {
+    if (totalShares === userPosition.shares.toBigInt()) {
       payoutEstEth += ethStateSlush;
       ethStateSlush = 0n;
     }
@@ -879,7 +1055,7 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
     // compute payout token
     diffAccum = tokenStateAccum - userPosition.accumulatorToken.toBigInt();
     payoutEst = diffAccum * sharesPerUser;
-    if (totalShares == userPosition.shares.toBigInt()) {
+    if (totalShares === userPosition.shares.toBigInt()) {
       payoutEst += tokenStateSlush;
       tokenStateSlush = 0n;
     }
@@ -891,7 +1067,7 @@ describe("PublicStaking: Collect Tokens and ETH profit", async () => {
     // compute payout eth
     diffAccumEth = ethStateAccum - userPosition.accumulatorEth.toBigInt();
     payoutEstEth = diffAccumEth * sharesPerUser;
-    if (totalShares == userPosition.shares.toBigInt()) {
+    if (totalShares === userPosition.shares.toBigInt()) {
       payoutEstEth += ethStateSlush;
       ethStateSlush = 0n;
     }

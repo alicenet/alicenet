@@ -1,3 +1,4 @@
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
@@ -84,11 +85,10 @@ describe("Testing BToken bridge methods", async () => {
   let expectedState: state;
   let fixture: Fixture;
   const eth = 40;
-  let ethForMinting: BigNumber;
-  let bTokens: BigNumber;
+
   const minBTokens = 0;
   let ethsFromBurning: BigNumber;
-  let depositCallData: any;
+
   let encodedDepositCallData: string;
   const valueOrId = 100;
   const _tokenType = 1; // ERC20
@@ -97,27 +97,29 @@ describe("Testing BToken bridge methods", async () => {
   const bTokenFee = 1000; // Fee that's returned by BridgeRouterMok
   const minEthFeeForDeposit = 8; // Curve value for the BridgeRouterMok returned fee
 
-  beforeEach(async function () {
-    fixture = await getFixture();
+  async function deployFixture() {
+    const fixture = await getFixture();
     const signers = await ethers.getSigners();
-    [admin, user] = signers;
-    ethForMinting = ethers.utils.parseEther(eth.toString());
-    [bTokens] = await callFunctionAndGetReturnValues(
+    const [admin, user] = signers;
+    const ethForMinting = ethers.utils.parseEther(eth.toString());
+    const [bTokens] = await callFunctionAndGetReturnValues(
       fixture.bToken,
       "mint",
       user,
       [minBTokens],
       ethForMinting
     );
-    ethsFromBurning = await fixture.bToken.getLatestEthFromBTokensBurn(bTokens);
-    depositCallData = {
+    const ethsFromBurning = await fixture.bToken.getLatestEthFromBTokensBurn(
+      bTokens
+    );
+    const depositCallData = {
       ERCContract: ethers.constants.AddressZero,
       tokenType: _tokenType,
       number: valueOrId,
       chainID: chainId,
       poolVersion: _poolVersion,
     };
-    encodedDepositCallData = ethers.utils.defaultAbiCoder.encode(
+    const encodedDepositCallData = ethers.utils.defaultAbiCoder.encode(
       [
         "tuple(address ERCContract, uint8 tokenType, uint256 number, uint256 chainID, uint16 poolVersion)",
       ],
@@ -130,6 +132,22 @@ describe("Testing BToken bridge methods", async () => {
       undefined,
       [1000]
     );
+    return {
+      fixture,
+      user,
+      admin,
+      ethForMinting,
+      bTokens,
+      ethsFromBurning,
+      depositCallData,
+      encodedDepositCallData,
+    };
+  }
+
+  beforeEach(async function () {
+    ({ fixture, user, admin, ethsFromBurning, encodedDepositCallData } =
+      await loadFixture(deployFixture));
+
     showState("Initial", await getState(fixture));
   });
 
@@ -141,7 +159,6 @@ describe("Testing BToken bridge methods", async () => {
     const tx = await fixture.bToken
       .connect(user)
       .depositTokensOnBridges(_poolVersion, encodedDepositCallData);
-    console.log(ethsFromBurning);
     expectedState.Balances.bToken.user -= BigInt(bTokenFee);
     expectedState.Balances.eth.user -= getEthConsumedAsGas(await tx.wait());
     expectedState.Balances.bToken.totalSupply -= BigInt(bTokenFee);
@@ -163,62 +180,6 @@ describe("Testing BToken bridge methods", async () => {
         .connect(user)
         .depositTokensOnBridges(_poolVersion, encodedDepositCallData)
     ).to.be.revertedWith("ERC20: burn amount exceeds balance");
-  });
-
-  it("Should deposit tokens into the updated bridge", async () => {
-    // new fee on v2
-    const newBTokenFee = 5000;
-    await deployUpgradeableWithFactory(
-      fixture.factory,
-      "BridgeRouterMock",
-      getBridgeRouterSalt(2),
-      undefined,
-      [newBTokenFee]
-    );
-    const _poolVersion = 2;
-    expectedState = await getState(fixture);
-    ethsFromBurning = await fixture.bToken.getLatestEthFromBTokensBurn(
-      newBTokenFee
-    );
-    let tx = await fixture.bToken
-      .connect(user)
-      .depositTokensOnBridges(_poolVersion, encodedDepositCallData);
-
-    expectedState.Balances.bToken.user -= BigInt(newBTokenFee);
-    expectedState.Balances.eth.user -= getEthConsumedAsGas(await tx.wait());
-    expectedState.Balances.bToken.totalSupply -= BigInt(newBTokenFee);
-    expectedState.Balances.bToken.poolBalance -= ethsFromBurning.toBigInt();
-    expect(await getState(fixture)).to.be.deep.equal(expectedState);
-
-    // should be still able to deposit on the old bridge
-    const _oldPoolVersion = 1;
-    expectedState = await getState(fixture);
-    ethsFromBurning = await fixture.bToken.getLatestEthFromBTokensBurn(
-      bTokenFee
-    );
-    tx = await fixture.bToken
-      .connect(user)
-      .depositTokensOnBridges(_oldPoolVersion, encodedDepositCallData);
-    expectedState.Balances.bToken.user -= BigInt(bTokenFee);
-    expectedState.Balances.eth.user -= getEthConsumedAsGas(await tx.wait());
-    expectedState.Balances.bToken.totalSupply -= BigInt(bTokenFee);
-    expectedState.Balances.bToken.poolBalance -= ethsFromBurning.toBigInt();
-    expect(await getState(fixture)).to.be.deep.equal(expectedState);
-  });
-
-  it("Should not deposit BTokens into an inexistent bridge router version", async () => {
-    expectedState = await getState(fixture);
-    const _poolVersion = 2; // inexistent version
-    const expectedErrAddress = await fixture.factory.lookup(
-      getBridgeRouterSalt(2)
-    );
-    await expect(
-      fixture.bToken
-        .connect(user)
-        .depositTokensOnBridges(_poolVersion, encodedDepositCallData)
-    )
-      .to.be.revertedWithCustomError(fixture.bToken, "InexistentRouterContract")
-      .withArgs(expectedErrAddress);
   });
 
   it("Should not deposit tokens into the bridge when insufficient eth fee is sent", async () => {

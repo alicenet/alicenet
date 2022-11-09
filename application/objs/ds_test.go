@@ -6,9 +6,31 @@ import (
 	"testing"
 
 	"github.com/alicenet/alicenet/application/objs/uint256"
+	"github.com/alicenet/alicenet/application/wrapper"
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/crypto"
+	"github.com/alicenet/alicenet/dynamics/mocks"
 )
+
+func MakeWrapperStorageMock() *wrapper.Storage {
+	mocks := mocks.NewMockStorageGetter()
+	mocks.GetDataStoreFeeFunc.SetDefaultReturn(new(big.Int).SetInt64(0))
+	mocks.GetValueStoreFeeFunc.SetDefaultReturn(new(big.Int).SetInt64(0))
+	mocks.GetMaxBlockSizeFunc.SetDefaultReturn(0)
+	mocks.GetMaxProposalSizeFunc.SetDefaultReturn(0)
+	mocks.GetMinScaledTransactionFeeFunc.SetDefaultReturn(new(big.Int).SetInt64(0))
+	return wrapper.NewStorage(mocks)
+}
+
+func MakeWrapperStorageMockWithValues(dataStoreFee int64, valueStoreFee int64, minTxFee int64, maxBlockSize uint32) *wrapper.Storage {
+	mocks := mocks.NewMockStorageGetter()
+	mocks.GetDataStoreFeeFunc.SetDefaultReturn(new(big.Int).SetInt64(dataStoreFee))
+	mocks.GetValueStoreFeeFunc.SetDefaultReturn(new(big.Int).SetInt64(valueStoreFee))
+	mocks.GetMinScaledTransactionFeeFunc.SetDefaultReturn(new(big.Int).SetInt64(minTxFee))
+	mocks.GetMaxBlockSizeFunc.SetDefaultReturn(maxBlockSize)
+	mocks.GetMaxProposalSizeFunc.SetDefaultReturn(maxBlockSize)
+	return wrapper.NewStorage(mocks)
+}
 
 func makeSecpSigner(privk []byte) *crypto.Secp256k1Signer {
 	s := &crypto.Secp256k1Signer{}
@@ -1120,9 +1142,7 @@ func TestDSIsExpired(t *testing.T) {
 }
 
 func TestDSValidateFee(t *testing.T) {
-	msg := MakeMockStorageGetter()
-	storage := MakeStorage(msg)
-
+	storage := MakeWrapperStorageMock()
 	utxo := &TXOut{}
 	err := utxo.dataStore.ValidateFee(storage)
 	if err == nil {
@@ -1161,8 +1181,7 @@ func TestDSValidateFee(t *testing.T) {
 
 	// Set perEpochFee to 1, raising an error
 	perEpochFee32 := uint32(1)
-	msg.SetDataStoreEpochFee(big.NewInt(int64(perEpochFee32)))
-	storage = MakeStorage(msg)
+	storage = MakeWrapperStorageMockWithValues(int64(perEpochFee32), 0, 0, 0)
 	err = ds.ValidateFee(storage)
 	if err == nil {
 		t.Fatal("Should have raised an error (4)")

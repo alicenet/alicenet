@@ -14,6 +14,6 @@ import (
 type IATokenMinterTransactor interface {
 	// Mint is a paid mutator transaction binding the contract method 0x40c10f19.
 	//
-	// Solidity: function mint(address to, uint256 amount) returns()
-	Mint(opts *bind.TransactOpts, to common.Address, amount *big.Int) (*types.Transaction, error)
+	// Solidity: function mint(address to_, uint256 amount_) returns()
+	Mint(opts *bind.TransactOpts, to_ common.Address, amount_ *big.Int) (*types.Transaction, error)
 }

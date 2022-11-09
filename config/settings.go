@@ -11,13 +11,19 @@ import (
 	"github.com/spf13/viper"
 )
 
-type bootnodeConfig struct {
+type InitConfig struct {
+	Path         string
+	Network      string
+	GenerateKeys bool
+}
+
+type BootnodeConfig struct {
 	Name             string
 	ListeningAddress string
 	CacheSize        int
 }
 
-type chainConfig struct {
+type ChainConfig struct {
 	ID                    int
 	StateDbPath           string
 	StateDbInMemory       bool
@@ -27,7 +33,7 @@ type chainConfig struct {
 	MonitorDbInMemory     bool
 }
 
-type ethereumConfig struct {
+type EthereumConfig struct {
 	DefaultAccount           string
 	Endpoint                 string
 	EndpointMinimumPeers     uint64
@@ -40,7 +46,7 @@ type ethereumConfig struct {
 	ProcessingBlockBatchSize uint64
 }
 
-type transportConfig struct {
+type TransportConfig struct {
 	Size                       int
 	Timeout                    time.Duration
 	OriginLimit                int
@@ -56,23 +62,21 @@ type transportConfig struct {
 	UPnP                       bool
 }
 
-type deployConfig struct {
+type DeployConfig struct {
 	Migrations     bool
 	TestMigrations bool
 }
 
-type utilsConfig struct {
+type UtilsConfig struct {
 	Status bool
 }
 
-type validatorConfig struct {
-	Repl            bool
-	RewardAccount   string
-	RewardCurveSpec int
-	SymmetricKey    string
+type ValidatorConfig struct {
+	Repl         bool
+	SymmetricKey string
 }
 
-type loggingConfig struct {
+type LoggingConfig struct {
 	AliceNet   string
 	Consensus  string
 	Transport  string
@@ -101,28 +105,39 @@ type loggingConfig struct {
 	Test       string
 }
 
-type firewalldConfig struct {
+type FirewalldConfig struct {
 	Enabled    bool
 	SocketFile string
 }
 
-type configuration struct {
+type EthKeyConfig struct {
+	PasswordFile    string
+	Json            bool
+	PrivateKey      string
+	LightKDF        bool
+	Private         bool
+	NewPasswordFile string
+}
+
+type RootConfiguration struct {
 	ConfigurationFileName string
 	LoggingLevels         string // backwards compatibility
-	Logging               loggingConfig
-	Deploy                deployConfig
-	Ethereum              ethereumConfig
-	Transport             transportConfig
-	Utils                 utilsConfig
-	Validator             validatorConfig
-	Firewalld             firewalldConfig
-	Chain                 chainConfig
-	BootNode              bootnodeConfig
+	Logging               LoggingConfig
+	Deploy                DeployConfig
+	Ethereum              EthereumConfig
+	Transport             TransportConfig
+	Utils                 UtilsConfig
+	Validator             ValidatorConfig
+	Firewalld             FirewalldConfig
+	Chain                 ChainConfig
+	BootNode              BootnodeConfig
+	EthKey                EthKeyConfig
 	Version               string
+	Initialization        InitConfig
 }
 
 // Configuration contains all active settings.
-var Configuration configuration
+var Configuration RootConfiguration
 
 type s struct {
 	v interface{}
@@ -162,7 +177,7 @@ func SetValue(ptr, value interface{}) {
 	}
 }
 
-func (t transportConfig) BootNodes() []string {
+func (t TransportConfig) BootNodes() []string {
 	bootNodeAddresses := strings.Split(t.BootNodeAddresses, ",")
 	for idx := range bootNodeAddresses {
 		bootNodeAddresses[idx] = strings.TrimSpace(bootNodeAddresses[idx])

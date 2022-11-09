@@ -149,8 +149,8 @@ func (ce *Engine) UpdateLocalState() (bool, error) {
 		if err != nil {
 			return err
 		}
-		// Load storage
-		err = ce.storage.LoadStorage(txn, utils.Epoch(rHeight))
+		// check and update the new dynamic values
+		err = ce.storage.UpdateCurrentDynamicValue(txn, utils.Epoch(rHeight))
 		if err != nil {
 			utils.DebugTrace(ce.logger, err)
 			return err
@@ -382,10 +382,10 @@ func (ce *Engine) updateLocalStateInternal(txn *badger.Txn, rs *RoundStates) (bo
 		return true, nil
 	}
 
-	// Ensure that storage has updated values
-	proposalStepTO := ce.storage.GetProposalStepTimeout()
-	preVoteStepTO := ce.storage.GetPreVoteStepTimeout()
-	preCommitStepTO := ce.storage.GetPreCommitStepTimeout()
+	// Ensure that dynamics has updated values
+	proposalStepTO := ce.storage.GetProposalTimeout()
+	preVoteStepTO := ce.storage.GetPreVoteTimeout()
+	preCommitStepTO := ce.storage.GetPreCommitTimeout()
 
 	// iterate all possibles from nextRound down to proposal
 	// and take that action
@@ -537,7 +537,10 @@ func (ce *Engine) Sync() (bool, error) {
 			}
 			return nil
 		}
-		err = ce.storage.LoadStorage(txn, utils.Epoch(rs.OwnState.SyncToBH.BClaims.Height+1))
+		// check and update the new dynamic values;
+		// rs.OwnState.SyncToBH.BClaims.Height+1 since we are going to try to download
+		// and validate the next bl0ck after SyncToBH
+		err = ce.storage.UpdateCurrentDynamicValue(txn, utils.Epoch(rs.OwnState.SyncToBH.BClaims.Height+1))
 		if err != nil {
 			utils.DebugTrace(ce.logger, err)
 			return err
