@@ -18,7 +18,7 @@ cp ../scripts/base-files/deploymentArgsTemplate ../scripts/generated/deploymentA
 npx hardhat --network "$NETWORK" --show-stack-traces deploy-contracts --input-folder ../scripts/generated --wait-confirmation 1
 
 # -f  will check for the file existence but -s will check for file existence along with file size greater than 0 (zero).
-if [ -f ../scripts/generated/factoryState ]
+if [[ -s ../scripts/generated/factoryState ]]
 then
   addr=$(go run ../cmd/testutils/extractor/main.go -n $NETWORK -p ../scripts/generated/factoryState)
 else

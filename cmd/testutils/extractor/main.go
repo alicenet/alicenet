@@ -15,13 +15,12 @@ func main() {
 
 	bytes, err := os.ReadFile(*filePath)
 	if err != nil {
-		fmt.Println("Error in resolving ", err)
+		panic("Could nor read file")
 	}
 	outerRegex := regexp.MustCompile(fmt.Sprintf(`\[%s\]\ndefaultFactoryAddress = \".*\"\n`, *network))
-
+	innerRegex := regexp.MustCompile(`defaultFactoryAddress = .*`)
 	matchedOuter := outerRegex.FindAllSubmatch(bytes, -1)
 	for i := 0; i < len(matchedOuter); i++ {
-		innerRegex := regexp.MustCompile(`defaultFactoryAddress = .*`)
 		var innerSentence string
 		for j := 0; j < len(matchedOuter[i]); j++ {
 			innerSentence += string(matchedOuter[i][j])
