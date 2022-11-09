@@ -7,22 +7,38 @@ import "contracts/interfaces/ICentralBridgeRouter.sol";
 import "contracts/libraries/errors/CentralBridgeRouterErrors.sol";
 
 contract CentralBridgeRouter is ICentralBridgeRouter, ImmutableFactory, ImmutableBToken {
+    struct EventData {
+        bytes32[] topics;
+        bytes logData;
+    }
+
+    struct DepositReturnData {
+        EventData[] eventData;
+        uint256 fee;
+    }
+
+    struct RouterConfig {
+        address routerAddress;
+        bool notOnline;
+    }
+    
     // mapping of router version to data
     mapping(uint16 => RouterConfig) internal _routerConfig;
     uint256 internal _nonce;
+
     //tracker to track number of deployed router versions
     uint16 internal _routerVersions;
 
-    event DepositedERCToken(
-        address ercContract,
-        uint8 destinationAccountType, // 1 for secp256k1, 2 for bn128
-        address destinationAccount, //account to deposit the tokens to in alicenet
-        uint8 ercType,
-        uint256 number, // If fungible, this is the amount. If non-fungible, this is the id
-        uint256 chainID,
-        uint16 poolVersion,
-        uint256 nonce
-    );
+    // event DepositedERCToken(
+    //     address ercContract,
+    //     uint8 destinationAccountType, // 1 for secp256k1, 2 for bn128
+    //     address destinationAccount, //account to deposit the tokens to in alicenet
+    //     uint8 ercType,
+    //     uint256 number, // If fungible, this is the amount. If non-fungible, this is the id
+    //     uint256 chainID,
+    //     uint16 poolVersion,
+    //     uint256 nonce
+    // );
 
     constructor() ImmutableFactory(msg.sender) ImmutableBToken() {}
 
