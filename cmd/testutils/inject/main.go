@@ -33,8 +33,12 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-const dataStoreSizeOffset = int(constants.MaxDataStoreSize / 2)
+const (
+	sentValuePerChild   = uint64(5_000000000000000000)
+	ethDepositAmount    = "1000000000000000000000000"
+	dataStoreSizeOffset = int(constants.MaxDataStoreSize / 2)
+	letterBytes         = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+)
 
 type ErrNotEnoughFundsForDataStore struct {
 	account       []byte
@@ -85,13 +89,24 @@ func sleepWithContext(ctx context.Context, sleepTime time.Duration) error {
 	return nil
 }
 
-func setupRPCClient(ctx context.Context, rpcNodeList []string, idx int) (*localrpc.Client, error) {
-	idx2 := idx % len(rpcNodeList)
-	client := &localrpc.Client{Address: rpcNodeList[idx2], TimeOut: constants.MsgTimeout}
-	if err := client.Connect(ctx); err != nil {
-		return nil, err
+// setupRPCClient tries to connect to a random node passed in the list of `rpcNodeList`. In case it
+// fails to connect to the chosen node, it tries the next until all nodes are tried. This function
+// panics if it's not able to connect to any of the nodes.
+func setupRPCClient(ctx context.Context, rpcNodeList []string, idx int) *localrpc.Client {
+	startIndex := idx % len(rpcNodeList)
+	var client *localrpc.Client
+	// try to connect to any of available nodes
+	for i := 0; i < len(rpcNodeList); i++ {
+		currentIndex := (startIndex + i) % len(rpcNodeList)
+		client := &localrpc.Client{Address: rpcNodeList[currentIndex], TimeOut: constants.MsgTimeout}
+		if err := client.Connect(ctx); err != nil {
+			continue
+		}
 	}
-	return client, nil
+	if client == nil {
+		panic(fmt.Sprintf("failed to connect to any of the nodes: %v", rpcNodeList))
+	}
+	return client
 }
 
 func setupTestingSigner(i int) (aobjs.Signer, []byte, error) {
@@ -208,11 +223,8 @@ func (w *worker) run(ctx context.Context) {
 		}}
 		var tx *aobjs.Tx
 		if isToSendDataStore {
-			size := rand.Intn(dataStoreSizeOffset) + dataStoreSizeOffset
-			msg := randStringBytes(int(size))
-			index := randStringBytes(int(rand.Int31()))
-			duration := rand.Int31n(10) + 1
-			tx, err = w.f.createDataStoreTx(w.f.ctx, w.signer, w.acct, totalValue, utxos, msg, index, uint32(duration))
+			// sending a data store with random data
+			tx, err = w.f.createDataStoreTx(w.f.ctx, w.signer, w.acct, totalValue, utxos, "", "", 0)
 			if err != nil {
 				w.logger.Errorf("error at setupTransaction dataStore: %v", err)
 				// if we don't have enough ALCB to cover a datastore we fallback to a value store tx
@@ -274,14 +286,10 @@ func createNewFunder(
 		return nil, err
 	}
 	logger.Info("Funder setting up client")
-	client, err := setupRPCClient(ctx, nodeList, 0)
-	if err != nil {
-		logger.Errorf("Funder error at setupClient: %v", err)
-		return nil, err
-	}
+	client := setupRPCClient(ctx, nodeList, 0)
 	blockHeader, err := client.GetBlockHeader(ctx, 1)
 	if err != nil {
-		panic(fmt.Sprintf("Failed to get block header and chain id: %v", err))
+		logger.Fatalf("Failed to get block header and chain id: %v", err)
 	}
 	chainID := blockHeader.BClaims.ChainID
 
@@ -301,25 +309,70 @@ func createNewFunder(
 	}, nil
 }
 
+func (f *funder) sendDataStores(numDataStores uint32, msg string, index string, numEpochs uint32) {
+	isDepositDone := false
+	minimumValue, err := new(uint256.Uint256).FromUint64(sentValuePerChild)
+	if err != nil {
+		f.logger.Fatalf("couldn't convert uint256 in datastore mode: %v", err)
+	}
+	for i := uint32(0); i < numDataStores; i++ {
+		for {
+			select {
+			case <-f.ctx.Done():
+				return
+			default:
+			}
+			if !isDepositDone {
+				err := f.mintALCBDepositOnEthereum()
+				if err != nil {
+					f.logger.Errorf("error at mintALCBDepositOnEthereum: %v", err)
+					continue
+				}
+				isDepositDone = true
+			}
+			utxos, totalValue, err := f.blockingGetFunding(f.client, getCurveSpec(f.signer), f.acct, minimumValue)
+			if err != nil {
+				f.logger.Errorf("error at blockingGetFunding: %v", err)
+				continue
+			}
+			if msg != "" {
+				msg += fmt.Sprintf("-myIndex:%d", i)
+			}
+			if index != "" {
+				index += fmt.Sprintf("-myIndex:%d", i)
+			}
+			tx, err := f.createDataStoreTx(f.ctx, f.signer, f.acct, totalValue, utxos, msg, index, numEpochs)
+			if err != nil {
+				f.logger.Fatalf("failed to create data store tx: %v", err)
+			}
+			err = f.blockingSendTx(f.client, tx)
+			if err != nil {
+				f.logger.Fatalf("failed to send tx %v", err)
+			}
+			break
+		}
+	}
+}
+
 func (f *funder) startSpamming(numWorkers int) {
 	baseIdx := 0
 	numChildren, err := new(uint256.Uint256).FromUint64(uint64(numWorkers))
 	if err != nil {
-		panic(err)
+		f.logger.Fatalf("failed to convert uint256-1 %v", err)
 	}
-	sentValuePerChild := uint64(1_000000000000000000)
+
 	sentValuePerChildBigInt, err := new(uint256.Uint256).FromUint64(sentValuePerChild)
 	if err != nil {
-		panic(err)
+		f.logger.Fatalf("failed to convert uint256-2 %v", err)
 	}
 	// sending the double per worker (1 ALCB as value and the rest to make sure that we cover fees)
 	fundingPerChild, err := new(uint256.Uint256).FromUint64(sentValuePerChild * 2)
 	if err != nil {
-		panic(err)
+		f.logger.Fatalf("failed to convert uint256-3 %v", err)
 	}
 	totalFunding, err := new(uint256.Uint256).Mul(fundingPerChild, numChildren)
 	if err != nil {
-		panic(err)
+		f.logger.Fatalf("failed to convert uint256-4 %v", err)
 	}
 	for {
 		select {
@@ -384,10 +437,7 @@ func (f *funder) startSpamming(numWorkers int) {
 func (f *funder) setupChildren(ctx context.Context, numChildren int, baseIdx int) ([]*worker, error) {
 	workers := []*worker{}
 	for i := 0; i < numChildren; i++ {
-		client, err := setupRPCClient(ctx, f.rpcNodeList, baseIdx+i)
-		if err != nil {
-			return nil, err
-		}
+		client := setupRPCClient(ctx, f.rpcNodeList, baseIdx+i)
 		signer, acct, err := setupTestingSigner(baseIdx + i)
 		if err != nil {
 			return nil, err
@@ -414,22 +464,22 @@ func (f *funder) getTxFees() (*fees, error) {
 		return nil, err
 	}
 	if len(feesString) != 3 {
-		panic("invalid fee response")
+		f.logger.Fatal("invalid fee response")
 	}
 	minTxFee := new(uint256.Uint256)
 	err = minTxFee.UnmarshalString(feesString[0])
 	if err != nil {
-		panic(fmt.Sprintf("failed to decode minTx fee %v", err))
+		f.logger.Fatalf("failed to decode minTx fee %v", err)
 	}
 	vsFee := new(uint256.Uint256)
 	err = vsFee.UnmarshalString(feesString[1])
 	if err != nil {
-		panic(fmt.Sprintf("failed to decode valueStoreTx fee %v", err))
+		f.logger.Fatalf("failed to decode valueStoreTx fee %v", err)
 	}
 	dsFee := new(uint256.Uint256)
 	err = dsFee.UnmarshalString(feesString[1])
 	if err != nil {
-		panic(fmt.Sprintf("failed to decode dataStoreTx fee %v", err))
+		f.logger.Fatalf("failed to decode dataStoreTx fee %v", err)
 	}
 	return &fees{minTxFee, vsFee, dsFee}, nil
 }
@@ -479,11 +529,11 @@ func (f *funder) createValueStoreTx(
 		valuePlusFee := &uint256.Uint256{}
 		_, err := valuePlusFee.Add(valuePerRecipient.Clone(), fees.valueStoreFee.Clone())
 		if err != nil {
-			panic(err)
+			f.logger.Fatalf("failed to convert uint256-1: %v", err)
 		}
 		_, err = valueOut.Add(valueOut, valuePlusFee)
 		if err != nil {
-			panic(err)
+			f.logger.Fatalf("failed to convert uint256-2: %v", err)
 		}
 
 		newUTXO := &aobjs.TXOut{}
@@ -511,18 +561,54 @@ func (f *funder) createDataStoreTx(
 	consumedValue *uint256.Uint256,
 	consumedUtxos aobjs.Vout,
 	msg string,
-	ind string,
+	indexStr string,
 	numEpochs uint32,
 ) (*aobjs.Tx, error) {
+
+	if msg == "" {
+		size := rand.Intn(dataStoreSizeOffset) + dataStoreSizeOffset
+		msg = randStringBytes(int(size))
+		f.logger.Tracef("No data was passed, generating random data for datastore: %v", msg)
+	}
+
+	if indexStr == "" {
+		index := randStringBytes(int(rand.Int31()))
+		f.logger.Tracef("No index was passed, generating random index for datastore: %x", index)
+	}
+	index := crypto.Hasher([]byte(indexStr))
+
+	if numEpochs == 0 {
+		numEpochs = uint32(rand.Int31n(10) + 1)
+		f.logger.Tracef("No index was passed, generating random index for datastore: %v", index)
+	}
+
 	fees, err := f.getTxFees()
 	if err != nil {
 		return nil, err
 	}
 	deposit, err := aobjs.BaseDepositEquation(uint32(len(msg)), numEpochs)
 	if err != nil {
-		panic(err)
+		f.logger.Fatal(err)
 	}
-	index := crypto.Hasher([]byte(ind))
+	valueOut := fees.minTxFee.Clone()
+	currentEpoch, err := f.client.GetEpochNumber(ctx)
+	if err != nil {
+		return nil, err
+	}
+	_, err = valueOut.Add(valueOut, deposit)
+	if err != nil {
+		f.logger.Fatal(err)
+	}
+	newOwner := &aobjs.DataStoreOwner{}
+	newOwner.New(ownerAcct, getCurveSpec(signer))
+	dataStoreFinalFee := computeFinalDataStoreFee(fees.dataStoreFee, numEpochs)
+	_, err = valueOut.Add(dataStoreFinalFee, deposit)
+	if err != nil {
+		f.logger.Fatal(err)
+	}
+	if consumedValue.Lt(valueOut) {
+		return nil, &ErrNotEnoughFundsForDataStore{ownerAcct, valueOut, consumedValue}
+	}
 	tx := &aobjs.Tx{
 		Vin:  aobjs.Vin{},
 		Vout: aobjs.Vout{},
@@ -535,27 +621,7 @@ func (f *funder) createDataStoreTx(
 		}
 		tx.Vin = append(tx.Vin, txIn)
 	}
-	f.logger.Tracef("THE LEN OF VIN %v ", len(tx.Vin))
-	valueOut := fees.minTxFee.Clone()
-	currentEpoch, err := f.client.GetEpochNumber(ctx)
-	if err != nil {
-		return nil, err
-	}
-	f.logger.Tracef("REQUIRED DEPOSIT %v ", deposit)
-	_, err = valueOut.Add(valueOut, deposit)
-	if err != nil {
-		panic(err)
-	}
-	newOwner := &aobjs.DataStoreOwner{}
-	newOwner.New(ownerAcct, getCurveSpec(signer))
-	dataStoreFinalFee := computeFinalDataStoreFee(fees.dataStoreFee, numEpochs)
-	_, err = valueOut.Add(dataStoreFinalFee, deposit)
-	if err != nil {
-		panic(err)
-	}
-	if consumedValue.Lt(valueOut) {
-		return nil, &ErrNotEnoughFundsForDataStore{ownerAcct, valueOut, consumedValue}
-	}
+	f.logger.Tracef("The len of vin %v ", len(tx.Vin))
 	newDataStore := &aobjs.DataStore{
 		DSLinker: &aobjs.DSLinker{
 			DSPreImage: &aobjs.DSPreImage{
@@ -605,12 +671,12 @@ func (f *funder) finalizeTx(
 	if consumedValue.Gt(valueOut) {
 		diff, err := new(uint256.Uint256).Sub(consumedValue.Clone(), valueOut.Clone())
 		if err != nil {
-			panic(err)
+			f.logger.Fatal(err)
 		}
 		if diff.Lte(fees.valueStoreFee.Clone()) {
 			newFee, err := new(uint256.Uint256).Add(fees.minTxFee.Clone(), diff)
 			if err != nil {
-				panic(err)
+				f.logger.Fatal(err)
 			}
 			tx.Fee = newFee
 		} else {
@@ -629,19 +695,19 @@ func (f *funder) finalizeTx(
 			newUTXO := &aobjs.TXOut{}
 			err = newUTXO.NewValueStore(newValueStore)
 			if err != nil {
-				panic(err)
+				f.logger.Fatal(err)
 			}
 			tx.Vout = append(tx.Vout, newUTXO)
 		}
 
 		_, err = valueOut.Add(valueOut, diff)
 		if err != nil {
-			panic(err)
+			f.logger.Fatal(err)
 		}
 	}
 	err := tx.SetTxHash()
 	if err != nil {
-		panic(err)
+		f.logger.Fatal(err)
 	}
 	for _, newUtxo := range tx.Vout {
 		switch {
@@ -667,7 +733,7 @@ func (f *funder) finalizeTx(
 			txIn := tx.Vin[idx]
 			err = consumedVS.Sign(txIn, signer)
 			if err != nil {
-				panic(err)
+				f.logger.Fatal(err)
 			}
 		case consumedUtxo.HasDataStore():
 			consumedDS, err := consumedUtxo.DataStore()
@@ -677,13 +743,13 @@ func (f *funder) finalizeTx(
 			txIn := tx.Vin[idx]
 			err = consumedDS.Sign(txIn, signer)
 			if err != nil {
-				panic(err)
+				f.logger.Fatal(err)
 			}
 		}
 	}
 	txHash, err := tx.TxHash()
 	if err != nil {
-		panic(fmt.Errorf("Could not get txhash %v", err))
+		f.logger.Fatalf("Could not get txhash %v", err)
 	}
 	f.logger.Tracef("Consumed Value:%v  ValueOut:%v TxHash %x", consumedValue, valueOut, txHash)
 	txb, err := tx.MarshalBinary()
@@ -700,9 +766,9 @@ func (f *funder) mintALCBDepositOnEthereum() error {
 		return fmt.Errorf("failed to get transaction options: %v", err)
 	}
 	// 1_000_000 ALCB (10**18)
-	depositAmount, ok := new(big.Int).SetString("1000000000000000000000000", 10)
+	depositAmount, ok := new(big.Int).SetString(ethDepositAmount, 10)
 	if !ok {
-		panic("Could not generate deposit amount")
+		f.logger.Fatal("Could not generate deposit amount")
 	}
 	txn, err := f.ethContracts.EthereumContracts().BToken().VirtualMintDeposit(
 		txnOpts,
@@ -796,7 +862,8 @@ func main() {
 	workerNumberPtr := flag.Int("workers", 100, "Number workers to send txs in the spam mode.")
 	dataPtr := flag.String("data", "", "Data to write to state store in case dataStore mode.")
 	dataIndexPtr := flag.String("index", "", "Index of data to write to state store in case dataStore mode.")
-	dataDurationPtr := flag.Uint("duration", 10, "Number of epochs that a data store will be stored.")
+	dataDurationPtr := flag.Uint("duration", 0, "Number of epochs that a data store will be stored.")
+	dataQuantityPtr := flag.Uint("amount", 5, "Number of dataStores to send in the dataStore mode.")
 	ethereumEndPointPtr := flag.String(
 		"endpoint",
 		"http://127.0.0.1:8545",
@@ -809,34 +876,37 @@ func main() {
 	)
 	flag.Parse()
 
-	if !strings.Contains(*ethereumEndPointPtr, "https://") && !strings.Contains(*ethereumEndPointPtr, "http://") {
-		panic("Incorrect endpoint. Endpoint should start with 'http://' or 'https://'")
-	}
-	if *modePtr > 1 {
-		panic("Invalid mode, only 0 or 1 allowed!")
-	}
-	var logger *logrus.Entry
+	logger := logging.GetLogger("test").WithFields(logrus.Fields{
+		"factoryAddress": *factoryAddressPtr,
+		"ethereum":       *ethereumEndPointPtr,
+	})
 	if *modePtr == 0 {
 		logger = logging.GetLogger("test").WithFields(logrus.Fields{
-			"workers":        *workerNumberPtr,
-			"factoryAddress": *factoryAddressPtr,
-			"ethereum":       *ethereumEndPointPtr,
+			"workers": *workerNumberPtr,
 		})
 	} else {
 		logger = logging.GetLogger("test").WithFields(logrus.Fields{
-			"dataStoreIndex": *dataIndexPtr,
-			"initial data":   *dataPtr,
+			"txQuantity": dataQuantityPtr,
 		})
 	}
 
-	logger.Logger.SetLevel(logrus.DebugLevel)
+	logger.Logger.SetLevel(logrus.TraceLevel)
+
+	if !strings.Contains(*ethereumEndPointPtr, "https://") && !strings.Contains(*ethereumEndPointPtr, "http://") {
+		logger.Fatalf("Incorrect endpoint. Endpoint should start with 'http://' or 'https://'")
+	}
+	if *modePtr > 1 {
+		logger.Fatalf("Invalid mode, only 0 or 1 allowed!")
+	}
 
 	spamMode := *modePtr == 0
+	// make sure to have nodes listening in these ports
 	nodeList := []string{
 		"127.0.0.1:8887",
 		"127.0.0.1:9884",
 		"127.0.0.1:9885",
 		"127.0.0.1:9886",
+		"127.0.0.1:9887",
 	}
 
 	mainCtx, cf := context.WithCancel(context.Background())
@@ -844,7 +914,7 @@ func main() {
 
 	tempDir, err := os.MkdirTemp("", "spammerdir")
 	if err != nil {
-		panic(fmt.Errorf("failed to create tmp dir: %v", err))
+		logger.Fatalf("failed to create tmp dir: %v", err)
 	}
 	defer os.RemoveAll(tempDir)
 
@@ -863,7 +933,7 @@ func main() {
 		0,
 	)
 	if err != nil {
-		panic(fmt.Errorf("failed to create ethereum client: %v", err))
+		logger.Fatalf("failed to create ethereum client: %v", err)
 	}
 	defer eth.Close()
 	contracts := handlers.NewAllSmartContractsHandle(eth, common.HexToAddress(*factoryAddressPtr))
@@ -873,38 +943,21 @@ func main() {
 
 	funder, err := createNewFunder(mainCtx, logger, eth, accounts[0], watcher, contracts, nodeList)
 	if err != nil {
-		panic(err)
+		logger.Fatalf("failed to create funder: %v", err)
 	}
+
+	// channel for closing the app
+	signals := make(chan os.Signal, 1)
+	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
 
 	if spamMode {
 		logger.Info("Running in Spam Mode")
-		funder.startSpamming(*workerNumberPtr)
+		go funder.startSpamming(*workerNumberPtr)
 	} else {
+		logger.Logger.SetLevel(logrus.TraceLevel)
 		logger.Info("Running in DataStore Insertion Mode")
-		utxos, totalValue, err := funder.blockingGetFunding(funder.client, getCurveSpec(funder.signer), w.acct, w.balance)
-		if err != nil {
-			w.logger.Errorf("error at blockingGetFunding: %v", err)
-			continue
-		}
-		tx, err := funder.createDataStoreTx(
-			mainCtx,
-			funder.signer,
-			funder.acct,
-			*dataPtr,
-			*dataIndexPtr,
-			uint32(*dataDurationPtr),
-		)
-		if err != nil {
-			panic(err)
-		}
-		err = funder.blockingSendTx(funder.client, tx)
-		if err != nil {
-			panic(err)
-		}
+		go funder.sendDataStores(uint32(*dataQuantityPtr), *dataPtr, *dataIndexPtr, uint32(*dataDurationPtr))
 	}
-
-	signals := make(chan os.Signal, 1)
-	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
 
 	select {
 	case <-signals:
