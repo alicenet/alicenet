@@ -308,7 +308,7 @@ describe("Testing BridgePool Factory", async () => {
     );
   });
 
-  it("Should deploy new BridgePool after adding new Token Type through Bridge Pool Factory Upgrade", async () => {
+  it("Should keep slots after Bridge Pool Factory upgrade", async () => {
     await factoryCallAnyFixture(
       fixture,
       "bridgePoolFactory",
@@ -321,12 +321,14 @@ describe("Testing BridgePool Factory", async () => {
         await ethers.getContractFactory("BridgePoolFactoryERC777Mock")
       ).deploy()
     ).deployed();
+    // Upgrade BridgePoolFactory proxy with the address of the new deployment
     await fixture.factory.upgradeProxy(
       ethers.utils.formatBytes32String("BridgePoolFactory"),
       updatedBridgePoolFactory.address,
       "0x"
     );
-    // slot for ERC0 logic should be there after upgrade
+    expect(await updatedBridgePoolFactory.getNativePoolType()).to.be.equals(0);
+    // Slot for ERC20 logic should still be there after upgrade
     await factoryCallAnyFixture(
       fixture,
       "bridgePoolFactory",

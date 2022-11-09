@@ -40,6 +40,10 @@ abstract contract BridgePoolFactoryBaseERC777Mock is ImmutableFactory {
         _chainID = block.chainid;
     }
 
+    function getNativePoolType() public pure returns (PoolType) {
+        return PoolType.NATIVE;
+    }
+
     // NativeERC20V!
     /**
      * @notice returns bytecode for a Minimal Proxy (EIP-1167) that routes to BridgePool implementation
