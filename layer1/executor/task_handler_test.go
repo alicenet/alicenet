@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"math/big"
+	"os"
 	"testing"
 	"time"
 
@@ -273,6 +274,10 @@ func TestTasksHandlerAndManager_ScheduleAndKillByType(t *testing.T) {
 }
 
 func TestTasksHandlerAndManager_ScheduleKillCloseAndRecover(t *testing.T) {
+	if env := os.Getenv("RUN_FLAKES"); env == "" {
+		t.Skip("flakey test skipped unless RUN_FLAKES environment is set to something")
+	}
+
 	handler, client, contracts, _, acc := getTaskHandler(t, false)
 	handler.Start()
 	client.GetFinalizedHeightFunc.SetDefaultReturn(12, nil)
@@ -390,6 +395,10 @@ func TestTasksHandlerAndManager_ScheduleKillCloseAndRecover(t *testing.T) {
 }
 
 func TestTasksHandlerAndManager_ScheduleAndRecover_RunningSnapshotTask(t *testing.T) {
+	if env := os.Getenv("RUN_FLAKES"); env == "" {
+		t.Skip("flakey test skipped unless RUN_FLAKES environment is set to something")
+	}
+
 	handler, client, contracts, _, acc := getTaskHandler(t, false)
 	client.GetFinalizedHeightFunc.SetDefaultReturn(12, nil)
 	handler.Start()
