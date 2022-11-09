@@ -2,12 +2,12 @@
 pragma solidity ^0.8.16;
 
 import "contracts/libraries/errors/BridgePoolFactoryErrors.sol";
-import "contracts/libraries/factory/BridgePoolFactoryBase.sol";
+import "test/contract-mocks/bridgePool/BridgePoolFactoryBaseERC777Mock.sol";
 
 /// @custom:salt BridgePoolFactory
 /// @custom:deploy-type deployUpgradeable
-contract BridgePoolFactory is BridgePoolFactoryBase {
-    constructor() BridgePoolFactoryBase() {}
+contract BridgePoolFactoryERC777Mock is BridgePoolFactoryBaseERC777Mock {
+    constructor() BridgePoolFactoryBaseERC777Mock() {}
 
     /**
      * @notice Deploys a new bridge to pass tokens to our chain from the specified ERC contract.
