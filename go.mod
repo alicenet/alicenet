@@ -187,3 +187,7 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
+
+replace (
+	go.opentelemetry.io/otel/metric v0.32.3 => go.opentelemetry.io/otel/metric v0.27.0 // Temp: Fixing removed package
+)
