@@ -4,7 +4,7 @@ import { ethers } from "hardhat";
 import {
   migrateSnapshotsAndValidators,
   stakeValidators,
-} from "../../scripts/lib/alicenetTasks";
+} from "../../scripts/tasks/alicenetTasks";
 import {
   assertEventValidatorMemberAdded,
   assertEventValidatorSetCompleted,

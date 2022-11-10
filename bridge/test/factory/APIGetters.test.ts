@@ -7,7 +7,7 @@ import {
   multiCallUpgradeProxy,
 } from "../../scripts/lib/alicenetFactory";
 import { CONTRACT_ADDR, MOCK, PROXY, UTILS } from "../../scripts/lib/constants";
-import { getGasPrices } from "../../scripts/lib/deployment/deploymentUtil";
+import { getGasPrices } from "../../scripts/lib/deployment/utils";
 import { AliceNetFactory, Utils } from "../../typechain-types";
 import { expect } from "../chai-setup";
 import { deployFactory } from "./Setup";

@@ -10,19 +10,19 @@ import {
   encodeMultiCallArgs,
   getEventVar,
   MultiCallArgsStruct,
-} from "./alicenetFactory";
+} from "../lib/alicenetFactory";
 import {
   CONTRACT_ADDR,
   DEFAULT_CONFIG_FILE_PATH,
   EVENT_DEPLOYED_RAW,
-} from "./constants";
+} from "../lib/constants";
 
+import { DeploymentConfigWrapper } from "../lib/deployment/interfaces";
 import {
-  DeploymentConfigWrapper,
   getGasPrices,
   readDeploymentConfig,
   writeDeploymentConfig,
-} from "./deployment/deploymentUtil";
+} from "../lib/deployment/utils";
 
 function delay(milliseconds: number) {
   return new Promise((resolve) => setTimeout(resolve, milliseconds));

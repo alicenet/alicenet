@@ -1,14 +1,14 @@
 import fs from "fs";
 import { task } from "hardhat/config";
-import { HardhatRuntimeEnvironment } from "hardhat/types";
 
+import { DeploymentConfigWrapper } from "../lib/deployment/interfaces";
 import {
-  DeploymentConfigWrapper,
+  checkUserDirPath,
   generateDeployConfigTemplate,
   getAllContracts,
   getSortedDeployList,
   readDeploymentConfig,
-} from "./lib/deployment/deploymentUtil";
+} from "../lib/deployment/utils";
 
 task("generate-immutable-auth-contract", "Generate contracts")
   .addOptionalParam("configFile", "deployment config json file", undefined)
@@ -183,72 +183,4 @@ abstract contract Immutable${contract.name} is ImmutableFactory {
     }
 }
     `;
-}
-
-function extractPath(qualifiedName: string) {
-  return qualifiedName.split(":")[0];
-}
-
-async function checkUserDirPath(path: string) {
-  if (path !== undefined) {
-    if (!fs.existsSync(path)) {
-      console.log(
-        "Creating Folder at" + path + " since it didn't exist before!"
-      );
-      fs.mkdirSync(path);
-    }
-    if (fs.statSync(path).isFile()) {
-      throw new Error("outputFolder path should be to a directory not a file");
-    }
-  }
-}
-
-async function getFullyQualifiedName(
-  contractName: string,
-  hre: HardhatRuntimeEnvironment
-) {
-  const artifactPaths = await hre.artifacts.getAllFullyQualifiedNames();
-  for (let i = 0; i < artifactPaths.length; i++) {
-    if (
-      artifactPaths[i].split(":").length > 0 &&
-      artifactPaths[i].split(":")[1] === contractName
-    ) {
-      return String(artifactPaths[i]);
-    }
-  }
-}
-
-async function getSalt(
-  contractName: string,
-  hre: HardhatRuntimeEnvironment
-): Promise<string> {
-  const qualifiedName: any = await getFullyQualifiedName(contractName, hre);
-  const buildInfo = await hre.artifacts.getBuildInfo(qualifiedName);
-  let contractOutput: any;
-  let devdoc: any;
-  let salt: string = "";
-  let saltType: string = "";
-  if (buildInfo !== undefined) {
-    const path = extractPath(qualifiedName);
-    contractOutput = buildInfo.output.contracts[path][contractName];
-    devdoc = contractOutput.devdoc;
-    salt = devdoc["custom:salt"];
-    saltType = devdoc["custom:salt-type"];
-  } else {
-    console.error("missing salt");
-  }
-  if (saltType === undefined) {
-    salt = hre.ethers.utils.formatBytes32String(salt);
-  } else {
-    salt = hre.ethers.utils.keccak256(
-      hre.ethers.utils
-        .keccak256(hre.ethers.utils.formatBytes32String(salt))
-        .concat(
-          hre.ethers.utils
-            .keccak256(hre.ethers.utils.formatBytes32String(saltType))
-            .slice(2)
-        )
-    );
-  }
-  return salt;
 }

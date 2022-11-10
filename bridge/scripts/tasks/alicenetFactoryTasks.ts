@@ -1,33 +1,37 @@
 import { task, types } from "hardhat/config";
+import { DEFAULT_CONFIG_FILE_PATH } from "../lib/constants";
 import {} from "./alicenetTasks";
-import { DEFAULT_CONFIG_FILE_PATH } from "./constants";
 
 import {
-  checkUserDirPath,
+  DeploymentConfigWrapper,
+  DeploymentList,
+} from "../lib/deployment/interfaces";
+import {
   deployContractsTask,
   deployCreate2Task,
   deployCreateAndRegisterTask,
   deployCreateTask,
   deployFactoryTask,
-  DeploymentConfigWrapper,
-  DeploymentList,
   deployOnlyProxyTask,
   deployUpgradeableProxyTask,
+  upgradeProxyTask,
+} from "../lib/deployment/tasks";
+import {
+  checkUserDirPath,
   generateDeployConfigTemplate,
   getAllContracts,
   getBytes32SaltFromContractNSTag,
   getDeployType,
   getSortedDeployList,
   showState,
-  upgradeProxyTask,
   writeDeploymentConfig,
-} from "./deployment/deploymentUtil";
+} from "../lib/deployment/utils";
 
 task(
   "get-network",
   "gets the current network being used from provider"
-).setAction(async (taskArgs, hre) => {
-  const network = hre.network.name;
+).setAction(async (_taskArgs, hre) => {
+  const network: string = hre.network.name;
   await showState(network);
   return network;
 });
