@@ -187,3 +187,5 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
+
+exclude go.etcd.io/etcd/server/v3 v3.5.0
