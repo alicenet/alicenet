@@ -1,13 +1,15 @@
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { Contract } from "ethers";
-import { defaultAbiCoder } from "ethers/lib/utils";
+import { BytesLike, defaultAbiCoder } from "ethers/lib/utils";
 import { ethers } from "hardhat";
+import { BridgePoolFactory } from "../../typechain-types";
 import { expect } from "../chai-setup";
 
 import {
   deployUpgradeableWithFactory,
   Fixture,
+  getContractAddressFromBridgePoolCreatedEvent,
   getFixture,
   getImpersonatedSigner,
 } from "../setup";
@@ -25,10 +27,15 @@ import {
 let fixture: Fixture;
 let user: SignerWithAddress;
 let utxoOwnerSigner: SignerWithAddress;
+let factorySigner: SignerWithAddress;
 let merkleProofLibraryErrors: Contract;
 let nativeERCBridgePool: Contract;
 let nativeERCBridgePoolBaseErrors: Contract;
 let asBridgeRouter: any;
+const bridgePoolTokenTypeERC20 = 0;
+const bridgePoolNativeChainId = 1337;
+const bridgePoolVersion = 1;
+const bridgePoolValue = 0;
 const tokenId = 0;
 const tokenAmount = 0;
 const encodedDepositParameters = defaultAbiCoder.encode(
@@ -46,28 +53,50 @@ describe("Testing Base BridgePool Deposit/Withdraw", async () => {
   async function deployFixture() {
     fixture = await getFixture(true, true, false);
     [, user] = await ethers.getSigners();
+    utxoOwnerSigner = await getImpersonatedSigner(utxoOwner);
+    factorySigner = await getImpersonatedSigner(fixture.factory.address);
     // Take a mock snapshot
     await fixture.snapshots.snapshot(
       Buffer.from("0x0"),
       encodedMockBlockClaims
     );
     nativeERCBridgePoolBaseErrors = await (
-      await (
-        await ethers.getContractFactory("NativeERCBridgePoolBaseErrors")
-      ).deploy()
-    ).deployed();
+      await ethers.getContractFactory("NativeERCBridgePoolBaseErrors")
+    ).deploy();
     merkleProofLibraryErrors = await (
-      await (
-        await ethers.getContractFactory("MerkleProofLibraryErrors")
-      ).deploy()
-    ).deployed();
-    nativeERCBridgePool = await deployUpgradeableWithFactory(
+      await ethers.getContractFactory("MerkleProofLibraryErrors")
+    ).deploy();
+    const bridgePoolImplFactory = await ethers.getContractFactory(
+      "NativeERCBridgePoolMock"
+    );
+    nativeERCBridgePool = await bridgePoolImplFactory.deploy(
+      fixture.factory.address
+    );
+    const bridgePoolImplBytecode = bridgePoolImplFactory.getDeployTransaction(
+      fixture.factory.address
+    ).data as BytesLike;
+    const bridgePoolFactory = (await deployUpgradeableWithFactory(
       fixture.factory,
-      "NativeERCBridgePoolMock",
-      "NativeERCBridgePoolMock",
-      [ethers.constants.AddressZero],
-      undefined,
-      undefined
+      "BridgePoolFactory",
+      "BridgePoolFactory"
+    )) as BridgePoolFactory;
+    await bridgePoolFactory
+      .connect(factorySigner)
+      .deployPoolLogic(
+        bridgePoolTokenTypeERC20,
+        bridgePoolNativeChainId,
+        bridgePoolValue,
+        bridgePoolImplBytecode
+      );
+    const tx = await bridgePoolFactory
+      .connect(factorySigner)
+      .deployNewNativePool(
+        bridgePoolTokenTypeERC20,
+        ethers.constants.AddressZero,
+        bridgePoolVersion
+      );
+    nativeERCBridgePool.attach(
+      await getContractAddressFromBridgePoolCreatedEvent(tx)
     );
     const bridgeRouter = await deployUpgradeableWithFactory(
       fixture.factory,
@@ -76,7 +105,6 @@ describe("Testing Base BridgePool Deposit/Withdraw", async () => {
       undefined,
       [1000]
     );
-    utxoOwnerSigner = await getImpersonatedSigner(utxoOwner);
     asBridgeRouter = await getImpersonatedSigner(bridgeRouter.address);
   }
 

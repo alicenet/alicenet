@@ -5,7 +5,9 @@ import "contracts/NativeERCBridgePoolBase.sol";
 contract NativeERCBridgePoolMock is Initializable, NativeERCBridgePoolBase {
     address internal _ercContract;
 
-    function initialize(address ercContract_) public onlyFactory initializer {
+    constructor(address alicenetFactoryAddress) NativeERCBridgePoolBase(alicenetFactoryAddress) {}
+
+    function initialize(address ercContract_) public initializer {
         _ercContract = ercContract_;
     }
 
