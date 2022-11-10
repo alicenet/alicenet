@@ -13,6 +13,15 @@ liquidityProviderStakingSplit_ = "332"
 [[constructor."contracts/Distribution.sol:Distribution"]]
 protocolFeeSplit_ = "4"
 
+[[constructor."contracts/Lockup.sol:Lockup"]]
+enrollmentPeriod_ = "1000"
+
+[[constructor."contracts/Lockup.sol:Lockup"]]
+lockDuration_ = "6000"
+
+[[constructor."contracts/Lockup.sol:Lockup"]]
+totalBonusAmount_ = "2000000"
+
 [[constructor."contracts/Snapshots.sol:Snapshots"]]
 chainID_ = "1337"
 

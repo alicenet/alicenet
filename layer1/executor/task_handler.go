@@ -100,7 +100,7 @@ func (h *Handler) KillTaskById(id string) (*HandlerResponse, error) {
 	return req.response.listen(h.closeChan)
 }
 
-//waitForRequestProcessing or context deadline.
+// waitForRequestProcessing or context deadline.
 func (h *Handler) waitForRequestProcessing(req managerRequest) error {
 	// wait for request to be accepted
 	select {
