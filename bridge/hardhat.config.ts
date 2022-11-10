@@ -12,10 +12,10 @@ import "hardhat-storage-layout";
 import { HardhatUserConfig, task } from "hardhat/config";
 import os from "os";
 import "solidity-coverage";
-import "./scripts/generateImmutableAuth";
-import "./scripts/lib/alicenetFactoryTasks";
-import "./scripts/lib/alicenetTasks";
-import "./scripts/lib/gogogen";
+import "./scripts/tasks/alicenetFactoryTasks";
+import "./scripts/tasks/alicenetTasks";
+import "./scripts/tasks/generateImmutableAuth";
+import "./scripts/tasks/gogogen";
 require("dotenv").config();
 
 /**

@@ -7,7 +7,7 @@ import {
   ContractTransaction,
   Overrides,
 } from "ethers";
-import { HardhatEthersHelpers } from "hardhat/types";
+import { ethers } from "hardhat";
 import {
   AliceNetFactory,
   AliceNetFactory__factory as aliceNetFactoryBase,
@@ -19,8 +19,7 @@ import {
   EVENT_DEPLOYED_RAW,
   MULTICALL_GAS_LIMIT,
 } from "./constants";
-type Ethers = typeof import("../../node_modules/ethers/lib/ethers") &
-  HardhatEthersHelpers;
+type Ethers = typeof ethers;
 
 export type MultiCallArgsStruct = {
   target: string;

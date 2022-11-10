@@ -299,7 +299,7 @@ task(
     types.int
   )
   .setAction(async (taskArgs, hre) => {
-    return deployOnlyProxyTask(taskArgs, hre);
+    return deployOnlyProxyTask(taskArgs, hre.ethers);
   });
 
 task(

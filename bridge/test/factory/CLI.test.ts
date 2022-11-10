@@ -2,12 +2,7 @@ import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { BytesLike } from "ethers";
 import { ethers, run } from "hardhat";
 import { MOCK, MOCK_INITIALIZABLE } from "../../scripts/lib/constants";
-import {
-  DeployCreateData,
-  FactoryData,
-  MetaContractData,
-  ProxyData,
-} from "../../scripts/lib/deployment/factoryStateUtil";
+import { DeployCreateData, FactoryData, MetaContractData, ProxyData } from "../../scripts/lib/deployment/interfaces";
 import { AliceNetFactory } from "../../typechain-types";
 import { expect } from "../chai-setup";
 import { getMetamorphicAddress } from "./Setup";

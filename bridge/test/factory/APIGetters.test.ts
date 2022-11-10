@@ -1,6 +1,5 @@
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { ethers } from "hardhat";
-import { HardhatRuntimeEnvironment } from "hardhat/types";
 import {
   deployUpgradeable,
   getEventVar,
@@ -16,7 +15,7 @@ process.env.silencer = "true";
 describe("AliceNetfactory API test", async () => {
   let utilsContract: Utils;
   let factory: AliceNetFactory;
-  let hre: HardhatRuntimeEnvironment;
+
   async function deployFixture() {
     const utilsBase = await ethers.getContractFactory(UTILS);
     const utilsContract = await utilsBase.deploy();
@@ -25,7 +24,6 @@ describe("AliceNetfactory API test", async () => {
   }
 
   beforeEach(async () => {
-    hre = await require("hardhat");
     ({ utilsContract, factory } = await loadFixture(deployFixture));
 
     const cSize = await utilsContract.getCodeSize(factory.address);
@@ -60,7 +58,7 @@ describe("AliceNetfactory API test", async () => {
       ["2", "s"],
       salt,
       1,
-      await getGasPrices(hre)
+      await getGasPrices(ethers)
     );
     let receipt = await txResponse.wait();
     const proxyAddress = getEventVar(receipt, "DeployedProxy", CONTRACT_ADDR);
@@ -73,7 +71,7 @@ describe("AliceNetfactory API test", async () => {
       "0x",
       ["2", "s"],
       salt,
-      await getGasPrices(hre)
+      await getGasPrices(ethers)
     );
     receipt = await txResponse.wait();
     const expectedImplementationAddress = getEventVar(

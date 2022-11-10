@@ -1,8 +1,7 @@
-import { HardhatEthersHelpers } from "@nomiclabs/hardhat-ethers/types";
 import { BigNumber, BigNumberish, BytesLike, ContractReceipt } from "ethers";
+import { ethers } from "hardhat";
 
-type Ethers = typeof import("../../../node_modules/ethers/lib/ethers") &
-  HardhatEthersHelpers;
+type Ethers = typeof ethers;
 export class InitializerArgsError extends Error {
   constructor(message: string) {
     super(message);
@@ -70,6 +69,7 @@ export type DeployCreateData = {
   constructorArgs?: any;
   receipt?: ContractReceipt;
 };
+
 export type MetaContractData = {
   metaAddress: string;
   salt: string;
@@ -80,6 +80,7 @@ export type MetaContractData = {
   initCallData: string;
   receipt?: ContractReceipt;
 };
+
 export type TemplateData = {
   name: string;
   address: string;
@@ -89,9 +90,6 @@ export type TemplateData = {
   constructorArgs?: string;
 };
 
-export interface FactoryConfig {
-  [key: string]: any;
-}
 export type ProxyData = {
   proxyAddress: string;
   salt: BytesLike;

@@ -503,7 +503,7 @@ task("register-validators", "registers validators")
     );
     tx = await factory.multiCall(
       [...approveTokens, regValidators],
-      await getGasPrices(hre)
+      await getGasPrices(hre.ethers)
     );
     if (taskArgs.test) {
       await hre.network.provider.send("hardhat_mine", [
@@ -930,7 +930,7 @@ task("change-dynamic-value", "Change a certain dynamic value")
     await (
       await factory
         .connect(adminSigner)
-        .callAny(dynamics.address, 0, input, await getGasPrices(hre))
+        .callAny(dynamics.address, 0, input, await getGasPrices(hre.ethers))
     ).wait(8);
 
     const allKeys = Object.keys(currentValue);
@@ -1615,7 +1615,7 @@ export async function stakeValidators(
   }
   return factory.multiCall(
     [approveAToken, ...stakeNFT],
-    await getGasPrices(hre)
+    await getGasPrices(hre.ethers)
   );
 }
 
@@ -1704,7 +1704,7 @@ export async function migrateSnapshotsAndValidators(
   );
   return factory.multiCall(
     [...approveTokens, registerValidators, migrateValidators, migrateSnapshots],
-    await getGasPrices(hre)
+    await getGasPrices(hre.ethers)
   );
 }
 

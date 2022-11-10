@@ -1,10 +1,10 @@
-import { HardhatEthersHelpers } from "@nomiclabs/hardhat-ethers/types";
 import { ContractFactory } from "ethers";
 import fs from "fs";
+import { ethers } from "hardhat";
 import { Artifacts, HardhatRuntimeEnvironment } from "hardhat/types";
 import { exit } from "process";
 import readline from "readline";
-import { DEFAULT_CONFIG_FILE_PATH, FUNCTION_INITIALIZE } from "../constants";
+import { DEFAULT_CONFIG_FILE_PATH } from "../constants";
 import {
   ArgData,
   DeploymentConfig,
@@ -13,7 +13,7 @@ import {
   InitializerArgsError,
 } from "./interfaces";
 
-type Ethers = typeof import("ethers/lib/ethers") & HardhatEthersHelpers;
+type Ethers = typeof ethers;
 
 export async function encodeInitCallData(
   taskArgs: any,
@@ -99,22 +99,6 @@ export async function checkUserDirPath(path: string) {
       throw new Error("outputFolder path should be to a directory not a file");
     }
   }
-}
-
-export async function isInitializable(
-  fullyQualifiedName: string,
-  artifacts: Artifacts
-) {
-  const buildInfo: any = await artifacts.getBuildInfo(fullyQualifiedName);
-  const path = extractPathFromFullyQualifiedName(fullyQualifiedName);
-  const name = extractNameFromFullyQualifiedName(fullyQualifiedName);
-  const methods = buildInfo.output.contracts[path][name].abi;
-  for (const method of methods) {
-    if (method.name === FUNCTION_INITIALIZE) {
-      return true;
-    }
-  }
-  return false;
 }
 
 export async function hasConstructorArgs(
@@ -247,9 +231,9 @@ export async function getDeployGroupIndex(
   return await getCustomNSTag(fullName, "deploy-group-index", artifacts);
 }
 
-export async function getGasPrices(hre: HardhatRuntimeEnvironment) {
+export async function getGasPrices(ethers: Ethers) {
   // get the latest block
-  const latestBlock = await hre.ethers.provider.getBlock("latest");
+  const latestBlock = await ethers.provider.getBlock("latest");
   // get the previous basefee from the latest block
   const _blockBaseFee = latestBlock.baseFeePerGas;
   if (_blockBaseFee === undefined || _blockBaseFee === null) {
@@ -258,13 +242,13 @@ export async function getGasPrices(hre: HardhatRuntimeEnvironment) {
   const blockBaseFee = _blockBaseFee.toBigInt();
   // miner tip
   let maxPriorityFeePerGas: bigint;
-  const network = await hre.ethers.provider.getNetwork();
-  const minValue = hre.ethers.utils.parseUnits("2.0", "gwei").toBigInt();
+  const network = await ethers.provider.getNetwork();
+  const minValue = ethers.utils.parseUnits("2.0", "gwei").toBigInt();
   if (network.chainId === 1337) {
     maxPriorityFeePerGas = minValue;
   } else {
     maxPriorityFeePerGas = BigInt(
-      await hre.network.provider.send("eth_maxPriorityFeePerGas")
+      await ethers.provider.send("eth_maxPriorityFeePerGas", [])
     );
   }
   maxPriorityFeePerGas = (maxPriorityFeePerGas * 125n) / 100n;
