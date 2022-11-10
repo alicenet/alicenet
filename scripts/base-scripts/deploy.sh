@@ -20,7 +20,7 @@ npx hardhat --network "$NETWORK" --show-stack-traces deploy-contracts --input-fo
 # -f  will check for the file existence but -s will check for file existence along with file size greater than 0 (zero).
 if [[ -s ../scripts/generated/factoryState ]]
 then
-  addr=$(go run ../cmd/testutils/extractor/main.go -n $NETWORK -p ../scripts/generated/factoryState)
+  addr=$(go run ../cmd/testutils/extractor/main.go -n $NETWORK -p ../scripts/generated)
 else
   echo "FactoryState file doesn't exist in scripts/generated/factoryState path. Exiting..."
   exit 1
