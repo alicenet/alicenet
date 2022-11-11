@@ -226,7 +226,7 @@ abstract contract StakingNFT is
     /// this function must be the owner of the tokenID.
     function collectAllProfits(uint256 tokenID_)
         public
-        returns (uint256 payoutToken, uint256 payoutEth)
+        returns (uint256 payoutEth, uint256 payoutToken)
     {
         payoutToken = _collectTokenTo(msg.sender, tokenID_);
         payoutEth = _collectEthTo(msg.sender, tokenID_);
@@ -248,7 +248,7 @@ abstract contract StakingNFT is
     /// `to_` address. The caller of this function must be the owner of the tokenID.
     function collectAllProfitsTo(address to_, uint256 tokenID_)
         public
-        returns (uint256 payoutToken, uint256 payoutEth)
+        returns (uint256 payoutEth, uint256 payoutToken)
     {
         payoutToken = _collectTokenTo(to_, tokenID_);
         payoutEth = _collectEthTo(to_, tokenID_);
@@ -279,7 +279,7 @@ abstract contract StakingNFT is
         Position memory p = _positions[tokenID_];
         Accumulator memory ethState = _ethState;
         uint256 shares = _shares;
-        (, , , payout) = _collect(shares, ethState, p, p.accumulatorEth);
+        (, , , payout) = _calculateCollection(shares, ethState, p, p.accumulatorEth);
         return payout;
     }
 
@@ -293,8 +293,21 @@ abstract contract StakingNFT is
         Position memory p = _positions[tokenID_];
         uint256 shares = _shares;
         Accumulator memory tokenState = _tokenState;
-        (, , , payout) = _collect(shares, tokenState, p, p.accumulatorToken);
+        (, , , payout) = _calculateCollection(shares, tokenState, p, p.accumulatorToken);
         return payout;
+    }
+
+    /// estimateAllProfits returns the amount of AToken a tokenID may withdraw
+    function estimateAllProfits(uint256 tokenID_)
+        public
+        view
+        onlyIfTokenExists(tokenID_)
+        returns (uint256 payoutEth, uint256 payoutToken)
+    {
+        Position memory p = _positions[tokenID_];
+        uint256 shares = _shares;
+        (, , , payoutEth) = _calculateCollection(shares, _ethState, p, p.accumulatorEth);
+        (, , , payoutToken) = _calculateCollection(shares, _tokenState, p, p.accumulatorToken);
     }
 
     /// estimateExcessToken returns the amount of AToken that is held in the
@@ -553,7 +566,12 @@ abstract contract StakingNFT is
     {
         uint256 acc;
         Accumulator memory tokenState = _tokenState;
-        (tokenState, p, acc, payout) = _collect(shares_, tokenState, p_, p_.accumulatorToken);
+        (tokenState, p, acc, payout) = _calculateCollection(
+            shares_,
+            tokenState,
+            p_,
+            p_.accumulatorToken
+        );
         _tokenState = tokenState;
         p.accumulatorToken = acc;
         return (p, payout);
@@ -567,7 +585,7 @@ abstract contract StakingNFT is
     {
         uint256 acc;
         Accumulator memory ethState = _ethState;
-        (ethState, p, acc, payout) = _collect(shares_, ethState, p_, p_.accumulatorEth);
+        (ethState, p, acc, payout) = _calculateCollection(shares_, ethState, p_, p_.accumulatorEth);
         _ethState = ethState;
         p.accumulatorEth = acc;
         return (p, payout);
@@ -616,10 +634,10 @@ abstract contract StakingNFT is
         }
     }
 
-    // _collect performs calculations necessary to determine any distributions
+    // _calculateCollection performs calculations necessary to determine any distributions
     // due to an account such that it may be used for both token and eth
     // distributions this prevents the need to keep redundant logic
-    function _collect(
+    function _calculateCollection(
         uint256 shares_,
         Accumulator memory state_,
         Position memory p_,

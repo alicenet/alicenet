@@ -1,11 +1,10 @@
 package transport
 
 import (
-	"net"
-	"sync"
-
 	"github.com/hashicorp/yamux"
 	"github.com/sirupsen/logrus"
+	"net"
+	"sync"
 
 	"github.com/alicenet/alicenet/interfaces"
 	"github.com/alicenet/alicenet/types"
