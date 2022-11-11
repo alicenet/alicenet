@@ -4,11 +4,6 @@ import (
 	"context"
 	"testing"
 
-	"github.com/dgraph-io/badger/v2"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
-
-	appObjs "github.com/alicenet/alicenet/application/objs"
 	trie "github.com/alicenet/alicenet/badgerTrie"
 	"github.com/alicenet/alicenet/consensus/appmock"
 	"github.com/alicenet/alicenet/consensus/db"
@@ -16,8 +11,12 @@ import (
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/crypto"
 	"github.com/alicenet/alicenet/dynamics"
+	"github.com/alicenet/alicenet/dynamics/mocks"
 	"github.com/alicenet/alicenet/proto"
 	"github.com/alicenet/alicenet/utils"
+	"github.com/dgraph-io/badger/v2"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 func TestSnapShotManager_startFastSync_Ok(t *testing.T) {
@@ -692,7 +691,7 @@ func initSnapShotManager(t *testing.T, shouldFail bool, leafs []trie.LeafNode) *
 	ssmDb := &db.Database{}
 	ssmDb.Init(rawSsmDb)
 
-	storage := appObjs.MakeMockStorageGetter()
+	storage := mocks.NewMockStorageGetter()
 
 	ssm := &SnapShotManager{}
 	ssm.Init(ssmDb, storage)

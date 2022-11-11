@@ -5,6 +5,10 @@ package tests
 import (
 	"context"
 	"fmt"
+	"math/big"
+	"math/rand"
+	"testing"
+
 	"github.com/alicenet/alicenet/consensus/objs"
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/crypto"
@@ -22,9 +26,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"math/big"
-	"math/rand"
-	"testing"
 )
 
 const (
@@ -86,7 +87,7 @@ func Test_SnapshotTask(t *testing.T) {
 	for idx := 0; idx < valCount; idx++ {
 		snapshotTask := snapshots.NewSnapshotTask(currentHeight, valCount, idx)
 
-		err := snapshotTask.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "snapshotTask", "task-id", nil)
+		err := snapshotTask.Initialize(suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "snapshotTask", "task-id", 0, 0, false, nil, nil)
 		assert.Nil(t, err)
 		err = snapshotTask.Prepare(ctx)
 		assert.Nil(t, err)

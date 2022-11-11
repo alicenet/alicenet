@@ -10,5 +10,9 @@
     "coverage.xml",
     "jacoco.xml",
     "coverage.cobertura.xml"
-  ]
+  ],
+  "mochaExplorer.cwd": "./bridge",
+  "mochaExplorer.configFile": "./bridge/.mocharc.json",
+  "mochaExplorer.mochaPath": "./bridge/node_modules/mocha",
+  "mochaExplorer.fullTrace": true
 }

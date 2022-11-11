@@ -26,11 +26,11 @@ type IValidatorStakingTransactor interface {
 	BurnTo(opts *bind.TransactOpts, to_ common.Address, tokenID_ *big.Int) (*types.Transaction, error)
 	// CollectAllProfits is a paid mutator transaction binding the contract method 0x0df4b2dd.
 	//
-	// Solidity: function collectAllProfits(uint256 tokenID_) returns(uint256 payoutToken, uint256 payoutEth)
+	// Solidity: function collectAllProfits(uint256 tokenID_) returns(uint256 payoutEth, uint256 payoutToken)
 	CollectAllProfits(opts *bind.TransactOpts, tokenID_ *big.Int) (*types.Transaction, error)
 	// CollectAllProfitsTo is a paid mutator transaction binding the contract method 0x8303fef7.
 	//
-	// Solidity: function collectAllProfitsTo(address to_, uint256 tokenID_) returns(uint256 payoutToken, uint256 payoutEth)
+	// Solidity: function collectAllProfitsTo(address to_, uint256 tokenID_) returns(uint256 payoutEth, uint256 payoutToken)
 	CollectAllProfitsTo(opts *bind.TransactOpts, to_ common.Address, tokenID_ *big.Int) (*types.Transaction, error)
 	// CollectEth is a paid mutator transaction binding the contract method 0x2a0d8bd1.
 	//

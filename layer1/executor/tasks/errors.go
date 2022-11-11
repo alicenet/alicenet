@@ -1,5 +1,7 @@
 package tasks
 
+import "errors"
+
 type TaskErr struct {
 	message       string
 	isRecoverable bool
@@ -27,4 +29,9 @@ const (
 	FailedGettingCallOpts             = "failed getting call opts: %v"
 	FailedGettingIsValidator          = "failed getting isValidator: %v"
 	NobodyToAccuse                    = "nobody to accuse"
+)
+
+var (
+	ErrTaskKilled                   = errors.New("the task was killed, aborting execution")
+	ErrTaskExecutionMechanismClosed = errors.New("tasks execution mechanism is closed, aborting execution")
 )

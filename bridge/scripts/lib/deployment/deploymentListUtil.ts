@@ -1,7 +1,7 @@
 import toml from "@iarna/toml";
 import fs from "fs";
 import { Artifacts } from "hardhat/types";
-import { DEFAULT_CONFIG_OUTPUT_DIR, DEPLOYMENT_LIST_FPATH } from "../constants";
+import { DEFAULT_CONFIG_DIR, DEPLOYMENT_LIST_FPATH } from "../constants";
 import { readDeploymentList } from "./deploymentConfigUtil";
 import {
   getDeployGroup,
@@ -22,7 +22,7 @@ export interface DeploymentGroupIndexList {
 export async function getDeploymentList(configDirPath?: string) {
   const path =
     configDirPath === undefined
-      ? DEFAULT_CONFIG_OUTPUT_DIR + DEPLOYMENT_LIST_FPATH
+      ? DEFAULT_CONFIG_DIR + DEPLOYMENT_LIST_FPATH
       : configDirPath + DEPLOYMENT_LIST_FPATH;
   const config: { deploymentList: Array<string> } = await readDeploymentList(
     path
@@ -101,7 +101,7 @@ export async function writeDeploymentList(
 ) {
   const path =
     configDirPath === undefined
-      ? DEFAULT_CONFIG_OUTPUT_DIR + DEPLOYMENT_LIST_FPATH
+      ? DEFAULT_CONFIG_DIR + DEPLOYMENT_LIST_FPATH
       : configDirPath + DEPLOYMENT_LIST_FPATH;
   const config: { deploymentList: Array<string> } = await readDeploymentList(
     path
