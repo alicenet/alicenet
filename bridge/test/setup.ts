@@ -9,7 +9,7 @@ import {
   Wallet,
 } from "ethers";
 import { isHexString } from "ethers/lib/utils";
-import { ethers, network } from "hardhat";
+import hre, { ethers, network } from "hardhat";
 import {
   AliceNetFactory,
   AToken,
@@ -681,4 +681,23 @@ export const getReceiptForFailedTransaction = async (
     }
   }
   return receipt;
+};
+
+export const getImpersonatedSigner = async (
+  addressToImpersonate: string
+): Promise<any> => {
+  const [admin] = await ethers.getSigners();
+  const testUtils = await (
+    await (await ethers.getContractFactory("TestUtils")).deploy()
+  ).deployed();
+  await admin.sendTransaction({
+    to: testUtils.address,
+    value: ethers.utils.parseEther("1"),
+  });
+  await testUtils.payUnpayable(addressToImpersonate);
+  await hre.network.provider.request({
+    method: "hardhat_impersonateAccount",
+    params: [addressToImpersonate],
+  });
+  return ethers.getImpersonatedSigner(addressToImpersonate);
 };
