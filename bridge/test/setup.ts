@@ -203,13 +203,20 @@ export async function getContractAddressFromBridgePoolCreatedEvent(
   const eventSignature =
     "event BridgePoolCreated(address poolAddress, address token)";
   const eventName = "BridgePoolCreated";
-  return await getContractAddressFromEventLog(tx, eventSignature, eventName);
+  const eventVariable = "poolAddress";
+  return await getContractAddressFromEventLog(
+    tx,
+    eventSignature,
+    eventName,
+    eventVariable
+  );
 }
 
 async function getContractAddressFromEventLog(
   tx: ContractTransaction,
   eventSignature: string,
-  eventName: string
+  eventName: string,
+  eventVariable?: string
 ): Promise<string> {
   const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
   const intrface = new ethers.utils.Interface([eventSignature]);
@@ -221,9 +228,9 @@ async function getContractAddressFromEventLog(
     if (!isHexString(topics[0], 32) || topics[0].toLowerCase() !== topicHash) {
       continue;
     }
-    result = intrface.decodeEventLog(eventName, data, topics).contractAddr;
-    if (result === undefined)
-      result = await getEventVar(tx, eventName, "poolAddress");
+    if (eventVariable !== undefined)
+      result = await getEventVar(tx, eventName, eventVariable);
+    else result = intrface.decodeEventLog(eventName, data, topics).contractAddr;
   }
   if (result === "") {
     throw new Error(

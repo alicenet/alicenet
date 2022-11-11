@@ -2,12 +2,16 @@
 pragma solidity ^0.8.16;
 import "contracts/NativeERCBridgePoolBase.sol";
 
-contract NativeERCBridgePoolMock is Initializable, NativeERCBridgePoolBase {
+contract NativeERCBridgePoolMock is
+    Initializable,
+    NativeERCBridgePoolBase,
+    ImmutableBridgePoolFactory
+{
     address internal _ercContract;
 
     constructor(address alicenetFactoryAddress) NativeERCBridgePoolBase(alicenetFactoryAddress) {}
 
-    function initialize(address ercContract_) public initializer {
+    function initialize(address ercContract_) public onlyBridgePoolFactory initializer {
         _ercContract = ercContract_;
     }
 

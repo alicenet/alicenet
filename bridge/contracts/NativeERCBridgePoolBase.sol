@@ -13,7 +13,12 @@ import "contracts/Snapshots.sol";
 
 /// @custom:salt NativeERCBridgePoolBase
 /// @custom:deploy-type deployUpgradeable
-abstract contract NativeERCBridgePoolBase is ImmutableFactory, ImmutableSnapshots, IBridgePool {
+abstract contract NativeERCBridgePoolBase is
+    ImmutableFactory,
+    ImmutableSnapshots,
+    ImmutableBridgeRouter,
+    IBridgePool
+{
     using MerkleProofParserLibrary for bytes;
     using MerkleProofLibrary for MerkleProofParserLibrary.MerkleProof;
 
@@ -33,6 +38,7 @@ abstract contract NativeERCBridgePoolBase is ImmutableFactory, ImmutableSnapshot
         public
         virtual
         override
+        onlyBridgeRouter
     {}
 
     /// @notice Transfer tokens to sender upon proofs verification
@@ -52,8 +58,6 @@ abstract contract NativeERCBridgePoolBase is ImmutableFactory, ImmutableSnapshot
     /// @param _vsPreImage burned UTXO
     /// @param proofInclusionStateRoot Proof of inclusion of UTXO in the stateTrie
     function _getValidatedTransferData(
-        /*         _snapshotsContractAddress = _snapshotsAddress();
-         */
         bytes memory _vsPreImage,
         MerkleProofParserLibrary.MerkleProof memory proofInclusionStateRoot
     ) internal returns (address, uint256) {

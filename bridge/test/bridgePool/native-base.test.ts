@@ -1,6 +1,6 @@
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { Contract } from "ethers";
+import { Contract, ContractFactory } from "ethers";
 import { BytesLike, defaultAbiCoder } from "ethers/lib/utils";
 import { ethers } from "hardhat";
 import { BridgePoolFactory } from "../../typechain-types";
@@ -29,6 +29,7 @@ let user: SignerWithAddress;
 let utxoOwnerSigner: SignerWithAddress;
 let factorySigner: SignerWithAddress;
 let merkleProofLibraryErrors: Contract;
+let bridgePoolImplFactory: ContractFactory;
 let nativeERCBridgePool: Contract;
 let nativeERCBridgePoolBaseErrors: Contract;
 let asBridgeRouter: any;
@@ -66,7 +67,7 @@ describe("Testing Base BridgePool Deposit/Withdraw", async () => {
     merkleProofLibraryErrors = await (
       await ethers.getContractFactory("MerkleProofLibraryErrors")
     ).deploy();
-    const bridgePoolImplFactory = await ethers.getContractFactory(
+    bridgePoolImplFactory = await ethers.getContractFactory(
       "NativeERCBridgePoolMock"
     );
     nativeERCBridgePool = await bridgePoolImplFactory.deploy(
@@ -112,7 +113,13 @@ describe("Testing Base BridgePool Deposit/Withdraw", async () => {
     await loadFixture(deployFixture);
   });
 
-  it("Should call a deposit", async () => {
+  it("Should fail to deposit if not called from Bridge Router", async () => {
+    await expect(
+      nativeERCBridgePool.deposit(user.address, encodedDepositParameters)
+    ).to.be.revertedWithCustomError(bridgePoolImplFactory, "OnlyBridgeRouter");
+  });
+
+  it("Should call a deposit if called from Bridge Router", async () => {
     await nativeERCBridgePool
       .connect(asBridgeRouter)
       .deposit(user.address, encodedDepositParameters);
