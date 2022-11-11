@@ -11,8 +11,6 @@ import "contracts/libraries/parsers/PClaimsParserLibrary.sol";
 import "contracts/utils/MerkleProofLibrary.sol";
 import "contracts/Snapshots.sol";
 
-/// @custom:salt NativeERCBridgePoolBase
-/// @custom:deploy-type deployUpgradeable
 abstract contract NativeERCBridgePoolBase is
     ImmutableFactory,
     ImmutableSnapshots,
