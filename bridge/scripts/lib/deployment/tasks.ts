@@ -1,8 +1,6 @@
 import { BigNumber, ContractFactory } from "ethers";
 import { ethers } from "hardhat";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
-import { exit } from "process";
-import readline from "readline";
 import { AliceNetFactory } from "../../../typechain-types";
 import {
   deployCreate,
@@ -34,6 +32,7 @@ import {
   encodeInitCallData,
   extractNameFromFullyQualifiedName as extractContractNameFromFullyQualifiedName,
   getGasPrices,
+  promptCheckDeploymentArgs,
   readDeploymentConfig,
   showState,
   verifyContract,
@@ -496,50 +495,6 @@ export async function upgradeProxyTask(
     initCallData,
   };
   return proxyData;
-}
-
-export async function promptCheckDeploymentArgs(message: string) {
-  let missingInput = true;
-  if (process.env.silencer === "true") {
-    missingInput = false;
-  }
-
-  let dynamicSuggestion = message;
-  const defaultSuggestion = dynamicSuggestion;
-  while (missingInput) {
-    const rl = readline.createInterface({
-      input: process.stdin,
-      output: process.stdout,
-    });
-    const prompt = (query: any) =>
-      new Promise((resolve) => rl.question(query, resolve));
-    const answer = await prompt(dynamicSuggestion);
-    if (
-      answer === "y" ||
-      answer === "Y" ||
-      answer === "yes" ||
-      answer === "Yes" ||
-      answer === "YES"
-    ) {
-      missingInput = false;
-      break;
-    } else if (
-      answer === "n" ||
-      answer === "N" ||
-      answer === "no" ||
-      answer === "No" ||
-      answer === "NO"
-    ) {
-      missingInput = false;
-      exit();
-    } else {
-      if (dynamicSuggestion === defaultSuggestion) {
-        dynamicSuggestion =
-          "invalid input, enter one of the following: Y, y, yes, Yes, YES, N, n, no, No, NO";
-      }
-    }
-    rl.close();
-  }
 }
 
 export async function deployCreateAndRegisterTask(
