@@ -168,7 +168,14 @@ task(
     types.string
   )
   .setAction(async (taskArgs, hre) => {
-    return await deployContractsTask(taskArgs, hre);
+    return await deployContractsTask(
+      taskArgs.configFile,
+      hre,
+      taskArgs.factoryAddress,
+      taskArgs.waitConfirmation,
+      taskArgs.skipChecks,
+      taskArgs.verify
+    );
   });
 
 task(

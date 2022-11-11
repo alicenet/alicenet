@@ -87,14 +87,17 @@ export async function deployFactoryTask(
 }
 
 export async function deployContractsTask(
-  taskArgs: any,
-  hre: HardhatRuntimeEnvironment
+  configFile: string,
+  hre: HardhatRuntimeEnvironment,
+  factoryAddress?: string,
+  waitBlocks: number = 0,
+  skipChecks: boolean = false,
+  verify: boolean = false
 ) {
   let cumulativeGasUsed = BigNumber.from("0");
 
-  const deploymentConfig: DeploymentConfigWrapper = readDeploymentConfig(
-    taskArgs.configFile
-  );
+  const deploymentConfig: DeploymentConfigWrapper =
+    readDeploymentConfig(configFile);
 
   const expectedContractFullQualifiedName =
     "contracts/AliceNetFactory.sol:AliceNetFactory";
@@ -107,20 +110,20 @@ export async function deployContractsTask(
   ) {
     throw new Error(
       `Couldn't find ${expectedField} in the constructor area for` +
-        ` ${expectedContractFullQualifiedName} inside ${taskArgs.configFile}`
+        ` ${expectedContractFullQualifiedName} inside ${configFile}`
     );
   }
 
   const legacyTokenAddress: string = deploymentConfig[
     expectedContractFullQualifiedName
   ].constructorArgs[expectedField] as string;
-  let factoryAddress = taskArgs.factoryAddress;
+
   if (factoryAddress === undefined) {
     const factoryData: FactoryData = await deployFactoryTask(
       legacyTokenAddress,
       hre,
-      taskArgs.waitConfirmation,
-      taskArgs.verify
+      waitBlocks,
+      verify
     );
     factoryAddress = factoryData.address;
     cumulativeGasUsed = cumulativeGasUsed.add(factoryData.gas);
@@ -142,11 +145,11 @@ export async function deployContractsTask(
         const proxyData = await deployUpgradeableProxyTask(
           deploymentConfigForContract,
           hre,
-          taskArgs.waitConfirmation,
+          waitBlocks,
           factory,
           undefined,
-          taskArgs.skipChecks,
-          taskArgs.verify
+          skipChecks,
+          verify
         );
         cumulativeGasUsed = cumulativeGasUsed.add(proxyData.gas);
         break;
@@ -157,7 +160,7 @@ export async function deployContractsTask(
           hre.ethers,
           factory,
           undefined,
-          taskArgs.waitConfirmation
+          waitBlocks
         );
         cumulativeGasUsed = cumulativeGasUsed.add(proxyData.gas);
         break;
@@ -168,10 +171,9 @@ export async function deployContractsTask(
           hre,
           factory,
           undefined,
-          taskArgs.waitConfirmation,
-          taskArgs.skipChecks,
-          taskArgs.verify,
-          taskArgs.standAlone
+          waitBlocks,
+          skipChecks,
+          verify
         );
         cumulativeGasUsed = cumulativeGasUsed.add(deployCreateData.gas);
         break;
