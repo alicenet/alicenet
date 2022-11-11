@@ -16,15 +16,9 @@ import {
 type Ethers = typeof ethers;
 
 export async function encodeInitCallData(
-  taskArgs: any,
   implementationBase: ContractFactory,
   initializerArgs?: any[]
 ) {
-  if (initializerArgs === undefined) {
-    const initializerArgsString: string =
-      taskArgs.initializerArgs === undefined ? "" : taskArgs.initializerArgs;
-    initializerArgs = initializerArgsString.split(",");
-  }
   try {
     return implementationBase.interface.encodeFunctionData(
       "initialize",

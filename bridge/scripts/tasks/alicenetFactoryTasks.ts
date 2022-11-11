@@ -70,10 +70,12 @@ task(
     types.string
   )
   .setAction(async (taskArgs, hre) => {
-    // check constructorArgs length
-    const legacyTokenAddress = taskArgs.legacyTokenAddress;
-
-    return await deployFactoryTask(taskArgs, hre, legacyTokenAddress);
+    return await deployFactoryTask(
+      taskArgs.legacyTokenAddress,
+      hre,
+      taskArgs.waitConfirmation,
+      taskArgs.verify
+    );
   });
 
 task(
@@ -250,10 +252,10 @@ task(
 
     return await deployUpgradeableProxyTask(
       deploymentConfigForContract,
-      taskArgs.waitConfirmation,
       hre,
-      taskArgs.factoryAddress,
+      taskArgs.waitConfirmation,
       undefined,
+      taskArgs.factoryAddress,
       taskArgs.skipChecks,
       taskArgs.verify
     );
@@ -309,7 +311,44 @@ task("deploy-create", "deploys a contract from the factory using create")
     "array that holds all arguments for constructor"
   )
   .setAction(async (taskArgs, hre) => {
-    return await deployCreateTask(taskArgs, hre);
+    const fullyQualifiedName = await getFullyQualifiedName(
+      taskArgs.contractName,
+      hre.artifacts
+    );
+
+    const deploymentConfigForContract: DeploymentConfig =
+      await extractFullContractInfo(
+        fullyQualifiedName,
+        hre.artifacts,
+        hre.ethers
+      );
+
+    if (
+      taskArgs.constructorArgs === undefined &&
+      Object.keys(deploymentConfigForContract.constructorArgs).length > 0
+    ) {
+      throw new Error(
+        "constructorArgs must be specified for contract: " +
+          taskArgs.contractName
+      );
+    }
+
+    if (taskArgs.constructorArgs !== undefined) {
+      populateConstructorArgs(
+        taskArgs.constructorArgs,
+        deploymentConfigForContract
+      );
+    }
+
+    return await deployCreateTask(
+      deploymentConfigForContract,
+      hre,
+      undefined,
+      taskArgs.factoryAddress,
+      taskArgs.waitConfirmation,
+      taskArgs.verify,
+      taskArgs.standAlone
+    );
   });
 
 task(
@@ -338,7 +377,45 @@ task(
     "array that holds all arguments for constructor, defaults to empty array"
   )
   .setAction(async (taskArgs, hre) => {
-    return await deployCreateAndRegisterTask(taskArgs, hre);
+    const fullyQualifiedName = await getFullyQualifiedName(
+      taskArgs.contractName,
+      hre.artifacts
+    );
+
+    const deploymentConfigForContract: DeploymentConfig =
+      await extractFullContractInfo(
+        fullyQualifiedName,
+        hre.artifacts,
+        hre.ethers
+      );
+
+    if (
+      taskArgs.constructorArgs === undefined &&
+      Object.keys(deploymentConfigForContract.constructorArgs).length > 0
+    ) {
+      throw new Error(
+        "constructorArgs must be specified for contract: " +
+          taskArgs.contractName
+      );
+    }
+
+    if (taskArgs.constructorArgs !== undefined) {
+      const constructorArgsArray = taskArgs.constructorArgs.split(",");
+      populateConstructorArgs(
+        constructorArgsArray,
+        deploymentConfigForContract
+      );
+    }
+
+    return await deployCreateAndRegisterTask(
+      deploymentConfigForContract,
+      hre,
+      undefined,
+      taskArgs.factoryAddress,
+      taskArgs.waitConfirmation,
+      taskArgs.skipChecks,
+      taskArgs.verify
+    );
   });
 
 task(
@@ -360,7 +437,14 @@ task(
     types.int
   )
   .setAction(async (taskArgs, hre) => {
-    return deployOnlyProxyTask(taskArgs, hre.ethers);
+    const salt = hre.ethers.utils.formatBytes32String(taskArgs.salt);
+    return deployOnlyProxyTask(
+      salt,
+      hre.ethers,
+      undefined,
+      taskArgs.factoryAddress,
+      taskArgs.waitConfirmation
+    );
   });
 
 task(
