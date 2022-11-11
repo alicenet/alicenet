@@ -30,6 +30,9 @@ export const FACTORY_STATE_PATH = `../scripts/generated/factoryState`;
 export const LOGIC_ADDR = "LogicAddress";
 export const META_ADDR = "MetaAddress";
 export const MOCK_INITIALIZABLE = "MockInitializable";
+export const MOCK_WITH_CONSTRUCTOR = "MockWithConstructor";
+export const MOCK_INITIALIZABLE_WITH_CONSTRUCTOR =
+  "MockInitializableConstructable";
 export const ONLY_PROXY = "onlyProxy";
 export const PROXY_ADDR = "ProxyAddress";
 export const RECEIPT = "receipt";

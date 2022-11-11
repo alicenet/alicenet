@@ -55,8 +55,9 @@ task(
     }
     console.log(`Loading : ${taskArgs.configFile}`);
 
-    const deploymentConfig: DeploymentConfigWrapper =
-      await readDeploymentConfig(taskArgs.configFile);
+    const deploymentConfig: DeploymentConfigWrapper = readDeploymentConfig(
+      taskArgs.configFile
+    );
 
     const expectedContractFullQualifiedName =
       "contracts/AliceNetFactory.sol:AliceNetFactory";

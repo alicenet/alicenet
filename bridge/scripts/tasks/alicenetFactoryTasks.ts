@@ -3,8 +3,8 @@ import { DEFAULT_CONFIG_FILE_PATH } from "../lib/constants";
 import {} from "./alicenetTasks";
 
 import {
+  DeploymentConfig,
   DeploymentConfigWrapper,
-  DeploymentList,
 } from "../lib/deployment/interfaces";
 import {
   deployContractsTask,
@@ -18,11 +18,15 @@ import {
 } from "../lib/deployment/tasks";
 import {
   checkUserDirPath,
+  extractFullContractInfo,
   generateDeployConfigTemplate,
   getAllContracts,
   getBytes32SaltFromContractNSTag,
   getDeployType,
+  getFullyQualifiedName,
   getSortedDeployList,
+  populateConstructorArgs,
+  populateInitializerArgs,
   showState,
   writeDeploymentConfig,
 } from "../lib/deployment/utils";
@@ -91,7 +95,7 @@ task(
   .setAction(async (taskArgs, hre) => {
     await checkUserDirPath(taskArgs.outputFile);
     const file = taskArgs.outputFile;
-    let deploymentList: DeploymentList;
+
     let deploymentArgs: DeploymentConfigWrapper = {};
     let contracts: Array<string> = [];
     // no custom path and list input/ writes arg template in default scripts/base-files/deploymentArgs
@@ -118,7 +122,7 @@ task(
       );
     }
 
-    deploymentList = await getSortedDeployList(
+    const deploymentList = await getSortedDeployList(
       contracts,
       hre.artifacts,
       hre.ethers
@@ -173,6 +177,7 @@ task(
     "skipChecks",
     "skips initializer and constructor confirmation prompt"
   )
+  .addFlag("verify", "try to automatically verify contracts on etherscan")
   .addParam(
     "contractName",
     "Name of logic contract to point the proxy at",
@@ -195,7 +200,63 @@ task(
   .addOptionalParam("outputFolder", "output folder path to save factory state")
   .addOptionalVariadicPositionalParam("constructorArgs", "constructor argfu")
   .setAction(async (taskArgs, hre) => {
-    return await deployUpgradeableProxyTask(taskArgs, hre);
+    const fullyQualifiedName = await getFullyQualifiedName(
+      taskArgs.contractName,
+      hre.artifacts
+    );
+
+    const deploymentConfigForContract: DeploymentConfig =
+      await extractFullContractInfo(
+        fullyQualifiedName,
+        hre.artifacts,
+        hre.ethers
+      );
+
+    if (
+      taskArgs.initializerArgs === undefined &&
+      Object.keys(deploymentConfigForContract.initializerArgs).length > 0
+    ) {
+      throw new Error(
+        "initializerArgs must be specified for contract: " +
+          taskArgs.contractName
+      );
+    }
+
+    if (
+      taskArgs.constructorArgs === undefined &&
+      Object.keys(deploymentConfigForContract.constructorArgs).length > 0
+    ) {
+      throw new Error(
+        "constructorArgs must be specified for contract: " +
+          taskArgs.contractName
+      );
+    }
+
+    if (taskArgs.initializerArgs !== undefined) {
+      const initializerArgsArray = taskArgs.initializerArgs.split(",");
+      populateInitializerArgs(
+        initializerArgsArray,
+        deploymentConfigForContract
+      );
+    }
+
+    if (taskArgs.constructorArgs !== undefined) {
+      const constructorArgsArray = taskArgs.constructorArgs.split(",");
+      populateConstructorArgs(
+        constructorArgsArray,
+        deploymentConfigForContract
+      );
+    }
+
+    return await deployUpgradeableProxyTask(
+      deploymentConfigForContract,
+      taskArgs.waitConfirmation,
+      hre,
+      taskArgs.factoryAddress,
+      undefined,
+      taskArgs.skipChecks,
+      taskArgs.verify
+    );
   });
 
 // factoryName param doesnt do anything right now

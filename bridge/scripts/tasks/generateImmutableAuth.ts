@@ -35,9 +35,9 @@ task("generate-immutable-auth-contract", "Generate contracts")
         hre.ethers
       );
     } else {
-      contracts = await readDeploymentConfig(configFile);
+      contracts = readDeploymentConfig(configFile);
     }
-    for (let key in contracts) {
+    for (const key in contracts) {
       const contract = contracts[key];
       const contractName = contract.name;
       const salt = contract.salt;

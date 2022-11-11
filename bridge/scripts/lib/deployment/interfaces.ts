@@ -1,7 +1,5 @@
 import { BigNumber, BigNumberish, BytesLike, ContractReceipt } from "ethers";
-import { ethers } from "hardhat";
 
-type Ethers = typeof ethers;
 export class InitializerArgsError extends Error {
   constructor(message: string) {
     super(message);

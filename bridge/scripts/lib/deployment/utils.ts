@@ -393,10 +393,10 @@ export async function extractFullContractInfo(
       }
     }
 
-    let devDocSalt: string = info.devdoc["custom:salt"];
-    let devDocSaltType: string = info.devdoc["custom:salt-type"];
+    const devDocSalt: string = info.devdoc["custom:salt"];
+    const devDocSaltType: string = info.devdoc["custom:salt-type"];
 
-    let salt =
+    const salt =
       devDocSalt !== undefined
         ? calculateSalt(devDocSalt, devDocSaltType, ethers)
         : "";
@@ -419,7 +419,7 @@ export async function extractFullContractInfo(
   }
 }
 
-export async function writeDeploymentConfig(
+export function writeDeploymentConfig(
   deploymentArgs: DeploymentConfigWrapper,
   configFile?: string
 ) {
@@ -429,15 +429,55 @@ export async function writeDeploymentConfig(
   return file;
 }
 
-export async function readDeploymentConfig(
-  file: string
-): Promise<DeploymentConfigWrapper> {
-  return await readJSON(file);
+export function readDeploymentConfig(file: string): DeploymentConfigWrapper {
+  return readJSON(file);
 }
 
-export async function readJSON(file: string) {
+export function readJSON(file: string) {
   const rawData = fs.readFileSync(file);
   return JSON.parse(rawData.toString("utf8"));
+}
+
+export function populateInitializerArgs(
+  initializerArgs: string[],
+  deploymentConfigForContract: DeploymentConfig
+) {
+  const initializerArgsArray = initializerArgs;
+  const initializerArgsKeys = Object.keys(
+    deploymentConfigForContract.initializerArgs
+  );
+  if (initializerArgsArray.length !== initializerArgsKeys.length) {
+    throw new Error(
+      `Incorrect number of initializer arguments provided. Expected ${initializerArgsKeys.length} but got ${initializerArgsArray.length}`
+    );
+  }
+
+  for (let i = 0; i < initializerArgsArray.length; i++) {
+    const arg = initializerArgsArray[i];
+    const key = initializerArgsKeys[i];
+    deploymentConfigForContract.initializerArgs[key] = arg;
+  }
+}
+
+export function populateConstructorArgs(
+  constructorArgs: string[],
+  deploymentConfigForContract: DeploymentConfig
+) {
+  const constructorArgsArray = constructorArgs;
+  const constructorArgsKeys = Object.keys(
+    deploymentConfigForContract.constructorArgs
+  );
+  if (constructorArgsArray.length !== constructorArgsKeys.length) {
+    throw new Error(
+      `Incorrect number of constructor arguments provided. Expected ${constructorArgsKeys.length} but got ${constructorArgsArray.length}`
+    );
+  }
+
+  for (let i = 0; i < constructorArgsArray.length; i++) {
+    const arg = constructorArgsArray[i];
+    const key = constructorArgsKeys[i];
+    deploymentConfigForContract.constructorArgs[key] = arg;
+  }
 }
 
 function calculateSalt(salt: string, saltType: string, ethers: Ethers): string {

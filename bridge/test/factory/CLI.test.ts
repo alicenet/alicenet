@@ -1,8 +1,18 @@
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { BytesLike } from "ethers";
 import { ethers, run } from "hardhat";
-import { MOCK, MOCK_INITIALIZABLE } from "../../scripts/lib/constants";
-import { DeployCreateData, FactoryData, MetaContractData, ProxyData } from "../../scripts/lib/deployment/interfaces";
+import {
+  MOCK,
+  MOCK_INITIALIZABLE,
+  MOCK_INITIALIZABLE_WITH_CONSTRUCTOR,
+  MOCK_WITH_CONSTRUCTOR,
+} from "../../scripts/lib/constants";
+import {
+  DeployCreateData,
+  FactoryData,
+  MetaContractData,
+  ProxyData,
+} from "../../scripts/lib/deployment/interfaces";
 import { AliceNetFactory } from "../../typechain-types";
 import { expect } from "../chai-setup";
 import { getMetamorphicAddress } from "./Setup";
@@ -32,37 +42,89 @@ describe("Cli tasks", () => {
       factory = await loadFixture(deployFixture);
     });
 
-    it("deploys a mock contract with a initializer function with npx hardhat deploy-upgradeable-proxy, and checks if initializer arg is set correctly", async () => {
-      const expectedInitVal = 14;
-      const proxyData: ProxyData = await run("deploy-upgradeable-proxy", {
-        contractName: MOCK_INITIALIZABLE,
-        factoryAddress: factory.address,
-        initializerArgs: `${expectedInitVal}`,
-      });
-      const mockInitializable = await ethers.getContractAt(
-        MOCK_INITIALIZABLE,
-        proxyData.proxyAddress
-      );
-      const initval = await mockInitializable.getImut();
-      const expectedProxyAddress = getMetamorphicAddress(
-        factory.address,
-        ethers.utils.formatBytes32String(MOCK_INITIALIZABLE)
-      );
-      expect(proxyData.proxyAddress).to.equal(expectedProxyAddress);
-      expect(initval).to.equal(expectedInitVal);
-    });
-
-    it("attempts to deploy proxy without initializer args with npx hardhat deploy-upgradeable-proxy", async () => {
-      try {
-        await run("deploy-upgradeable-proxy", {
+    describe("deploy-upgradeable-proxy", () => {
+      it("deploys a mock contract with a initializer function with npx hardhat, and checks if initializer arg is set correctly", async () => {
+        const expectedInitVal = 14;
+        const proxyData: ProxyData = await run("deploy-upgradeable-proxy", {
           contractName: MOCK_INITIALIZABLE,
           factoryAddress: factory.address,
+          initializerArgs: `${expectedInitVal}`,
         });
-      } catch (error: any) {
-        expect(error.message).to.equal(
-          "Initializer args provided do not match the initializer function"
+        const mockInitializable = await ethers.getContractAt(
+          MOCK_INITIALIZABLE,
+          proxyData.proxyAddress
         );
-      }
+        const initval = await mockInitializable.getImut();
+        const expectedProxyAddress = getMetamorphicAddress(
+          factory.address,
+          ethers.utils.formatBytes32String(MOCK_INITIALIZABLE)
+        );
+        expect(proxyData.proxyAddress).to.equal(expectedProxyAddress);
+        expect(initval).to.equal(expectedInitVal);
+      });
+
+      it("deploys a mock contract with a constructor function with npx hardhat, and checks if initializer arg is set correctly", async () => {
+        const expectedConstructorVal = 14;
+        const proxyData: ProxyData = await run("deploy-upgradeable-proxy", {
+          contractName: MOCK_WITH_CONSTRUCTOR,
+          factoryAddress: factory.address,
+          constructorArgs: `${expectedConstructorVal}`,
+        });
+        const mockWithConstructor = await ethers.getContractAt(
+          MOCK_WITH_CONSTRUCTOR,
+          proxyData.proxyAddress
+        );
+        const initval = await mockWithConstructor.constructorValue();
+        const expectedProxyAddress = getMetamorphicAddress(
+          factory.address,
+          ethers.utils.formatBytes32String(MOCK_WITH_CONSTRUCTOR)
+        );
+        expect(proxyData.proxyAddress).to.equal(expectedProxyAddress);
+        expect(initval).to.equal(expectedConstructorVal);
+      });
+
+      it("fails to deploy proxy without initializer args when initializer args required", async () => {
+        try {
+          await run("deploy-upgradeable-proxy", {
+            contractName: MOCK_INITIALIZABLE_WITH_CONSTRUCTOR,
+            factoryAddress: factory.address,
+            constructorArgs: `123`,
+          });
+        } catch (error: any) {
+          expect(error.message).to.equal(
+            `initializerArgs must be specified for contract: ${MOCK_INITIALIZABLE_WITH_CONSTRUCTOR}`
+          );
+        }
+      });
+
+      it("fails to deploy proxy without constructor args when constructor args required", async () => {
+        try {
+          await run("deploy-upgradeable-proxy", {
+            contractName: MOCK_INITIALIZABLE_WITH_CONSTRUCTOR,
+            factoryAddress: factory.address,
+            initializerArgs: "123",
+          });
+        } catch (error: any) {
+          expect(error.message).to.equal(
+            `constructorArgs must be specified for contract: ${MOCK_INITIALIZABLE_WITH_CONSTRUCTOR}`
+          );
+        }
+      });
+
+      it("deploys MockInitializable with deploy create, deploys proxy, then upgrades proxy to point to MockInitializable with initializerArgs", async () => {
+        const testInitArg = "1";
+        const logicContractBase = await ethers.getContractFactory(
+          MOCK_INITIALIZABLE
+        );
+        const proxyData = await cliDeployUpgradeableProxy(
+          MOCK_INITIALIZABLE,
+          factory.address,
+          testInitArg
+        );
+        const mockContract = logicContractBase.attach(proxyData.proxyAddress);
+        const i = await mockContract.callStatic.getImut();
+        expect(i.toNumber()).to.equal(parseInt(testInitArg, 10));
+      });
     });
 
     it("deploys MockInitializable contract with deployCreate", async () => {
@@ -76,21 +138,6 @@ describe("Cli tasks", () => {
         factory.address
       );
       expect(deployCreateData.address).to.equal(expectedAddress);
-    });
-
-    it("deploys MockInitializable with deploy create, deploys proxy, then upgrades proxy to point to MockInitializable with initializerArgs", async () => {
-      const testInitArg = "1";
-      const logicContractBase = await ethers.getContractFactory(
-        MOCK_INITIALIZABLE
-      );
-      const proxyData = await cliDeployUpgradeableProxy(
-        MOCK_INITIALIZABLE,
-        factory.address,
-        testInitArg
-      );
-      const mockContract = logicContractBase.attach(proxyData.proxyAddress);
-      const i = await mockContract.callStatic.getImut();
-      expect(i.toNumber()).to.equal(parseInt(testInitArg, 10));
     });
 
     it("deploys mock with deployCreate", async () => {
