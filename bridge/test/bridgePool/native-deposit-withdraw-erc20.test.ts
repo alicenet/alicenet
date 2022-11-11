@@ -1,13 +1,15 @@
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { Contract } from "ethers";
-import { defaultAbiCoder } from "ethers/lib/utils";
+import { BytesLike, defaultAbiCoder } from "ethers/lib/utils";
 import { ethers } from "hardhat";
+import { BridgePoolFactory } from "../../typechain-types";
 import { expect } from "../chai-setup";
 
 import {
   deployUpgradeableWithFactory,
   Fixture,
+  getContractAddressFromBridgePoolCreatedEvent,
   getFixture,
   getImpersonatedSigner,
   getMetamorphicAddress,
@@ -27,6 +29,7 @@ let fixture: Fixture;
 let user: SignerWithAddress;
 let utxoOwnerSigner: SignerWithAddress;
 let utxoOwnerSignerAddress: string;
+let factorySigner: SignerWithAddress;
 let bridgeRouter: any;
 let initialUserBalance: any;
 let initialBridgePoolBalance: any;
@@ -34,6 +37,11 @@ let merkleProofLibraryErrors: any;
 let nativeERC20BridgePoolV1: Contract;
 let nativeERCBridgePoolBaseErrors: Contract;
 let erc20Mock: Contract;
+const bridgePoolTokenTypeERC20 = 0;
+const bridgePoolNativeChainId = 1337;
+const bridgePoolVersion = 1;
+const bridgePoolValue = 0;
+
 const tokenId = 0;
 const tokenAmount = 296850137;
 const encodedDepositParameters = defaultAbiCoder.encode(
@@ -51,6 +59,8 @@ describe("Testing BridgePool Deposit/Withdraw for tokenType ERC20", async () => 
   async function deployFixture() {
     fixture = await getFixture(true, true, false);
     [, user] = await ethers.getSigners();
+    utxoOwnerSigner = await getImpersonatedSigner(utxoOwner);
+    factorySigner = await getImpersonatedSigner(fixture.factory.address);
     // Take a mock snapshot
     await fixture.snapshots.snapshot(
       Buffer.from("0x0"),
@@ -69,18 +79,39 @@ describe("Testing BridgePool Deposit/Withdraw for tokenType ERC20", async () => 
     erc20Mock = await (
       await (await ethers.getContractFactory("ERC20Mock")).deploy()
     ).deployed();
-
-    nativeERC20BridgePoolV1 = await deployUpgradeableWithFactory(
+    const bridgePoolFactory = (await deployUpgradeableWithFactory(
       fixture.factory,
-      "NativeERC20BridgePoolV1",
-      "NativeERC20BridgePoolV1",
-      [erc20Mock.address],
-      undefined,
-      undefined
+      "BridgePoolFactory",
+      "BridgePoolFactory"
+    )) as BridgePoolFactory;
+    const bridgePoolImplFactory = await ethers.getContractFactory(
+      "NativeERC20BridgePoolV1"
     );
+    const bridgePoolImplBytecode = bridgePoolImplFactory.getDeployTransaction(
+      fixture.factory.address
+    ).data as BytesLike;
+    await bridgePoolFactory
+      .connect(factorySigner)
+      .deployPoolLogic(
+        bridgePoolTokenTypeERC20,
+        bridgePoolNativeChainId,
+        bridgePoolValue,
+        bridgePoolImplBytecode
+      );
+    const tx = await bridgePoolFactory
+      .connect(factorySigner)
+      .deployNewNativePool(
+        bridgePoolTokenTypeERC20,
+        erc20Mock.address,
+        bridgePoolVersion
+      );
+    nativeERC20BridgePoolV1 = await ethers.getContractAt(
+      "NativeERC20BridgePoolV1",
+      await getContractAddressFromBridgePoolCreatedEvent(tx)
+    );
+
     utxoOwnerSigner = await getImpersonatedSigner(utxoOwner);
     utxoOwnerSignerAddress = await utxoOwnerSigner.getAddress();
-
     // Simulate a bridge router with some gas for transactions
     const bridgeRouterAddress = getMetamorphicAddress(
       fixture.factory.address,

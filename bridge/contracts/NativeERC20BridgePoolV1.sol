@@ -8,12 +8,19 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "contracts/interfaces/IBridgePool.sol";
 import "contracts/utils/ERC20SafeTransfer.sol";
 
-/// @custom:salt LocalERC20BridgePoolV1
-/// @custom:deploy-type deployUpgradeable
-contract NativeERC20BridgePoolV1 is NativeERCBridgePoolBase, Initializable, ERC20SafeTransfer {
+/// @custom:salt NativeERC20BridgePoolV1
+/// @custom:deploy-type deployStatic
+contract NativeERC20BridgePoolV1 is
+    NativeERCBridgePoolBase,
+    Initializable,
+    ERC20SafeTransfer,
+    ImmutableBridgePoolFactory
+{
     address internal _erc20Contract;
 
-    function initialize(address erc20Contract_) public onlyFactory initializer {
+    constructor(address alicenetFactoryAddress) NativeERCBridgePoolBase(alicenetFactoryAddress) {}
+
+    function initialize(address erc20Contract_) public onlyBridgePoolFactory initializer {
         _erc20Contract = erc20Contract_;
     }
 

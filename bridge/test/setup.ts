@@ -33,6 +33,7 @@ import {
   ValidatorStaking,
 } from "../typechain-types";
 import { ValidatorRawData } from "./ethdkg/setup";
+import { getEventVar } from "./factory/Setup";
 
 export const PLACEHOLDER_ADDRESS = "0x0000000000000000000000000000000000000000";
 
@@ -188,10 +189,26 @@ export async function getContractAddressFromDeployedRawEvent(
   return await getContractAddressFromEventLog(tx, eventSignature, eventName);
 }
 
+export async function getContractAddressFromBridgePoolCreatedEvent(
+  tx: ContractTransaction
+): Promise<string> {
+  const eventSignature =
+    "event BridgePoolCreated(address poolAddress, address token)";
+  const eventName = "BridgePoolCreated";
+  const eventVariable = "poolAddress";
+  return await getContractAddressFromEventLog(
+    tx,
+    eventSignature,
+    eventName,
+    eventVariable
+  );
+}
+
 async function getContractAddressFromEventLog(
   tx: ContractTransaction,
   eventSignature: string,
-  eventName: string
+  eventName: string,
+  eventVariable?: string
 ): Promise<string> {
   const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
   const intrface = new ethers.utils.Interface([eventSignature]);
@@ -203,7 +220,9 @@ async function getContractAddressFromEventLog(
     if (!isHexString(topics[0], 32) || topics[0].toLowerCase() !== topicHash) {
       continue;
     }
-    result = intrface.decodeEventLog(eventName, data, topics).contractAddr;
+    if (eventVariable !== undefined)
+      result = await getEventVar(tx, eventName, eventVariable);
+    else result = intrface.decodeEventLog(eventName, data, topics).contractAddr;
   }
   if (result === "") {
     throw new Error(
