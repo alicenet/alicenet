@@ -384,7 +384,7 @@ export const posFixtureSetup = async (
     0,
     aToken.interface.encodeFunctionData("transfer", [
       admin.address,
-      ethers.utils.parseEther("100000000"),
+      ethers.utils.parseEther("200000000"),
     ])
   );
 };
