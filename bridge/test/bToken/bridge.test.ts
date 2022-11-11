@@ -1,3 +1,4 @@
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
@@ -84,11 +85,10 @@ describe("Testing BToken bridge methods", async () => {
   let expectedState: state;
   let fixture: Fixture;
   const eth = 40;
-  let ethForMinting: BigNumber;
-  let bTokens: BigNumber;
+
   const minBTokens = 0;
   let ethsFromBurning: BigNumber;
-  let depositCallData: any;
+
   let encodedDepositCallData: string;
   const valueOrId = 100;
   const _tokenType = 1; // ERC20
@@ -97,27 +97,29 @@ describe("Testing BToken bridge methods", async () => {
   const bTokenFee = 1000; // Fee that's returned by BridgeRouterMok
   const minEthFeeForDeposit = 8; // Curve value for the BridgeRouterMok returned fee
 
-  beforeEach(async function () {
-    fixture = await getFixture();
+  async function deployFixture() {
+    const fixture = await getFixture();
     const signers = await ethers.getSigners();
-    [admin, user] = signers;
-    ethForMinting = ethers.utils.parseEther(eth.toString());
-    [bTokens] = await callFunctionAndGetReturnValues(
+    const [admin, user] = signers;
+    const ethForMinting = ethers.utils.parseEther(eth.toString());
+    const [bTokens] = await callFunctionAndGetReturnValues(
       fixture.bToken,
       "mint",
       user,
       [minBTokens],
       ethForMinting
     );
-    ethsFromBurning = await fixture.bToken.getLatestEthFromBTokensBurn(bTokens);
-    depositCallData = {
+    const ethsFromBurning = await fixture.bToken.getLatestEthFromBTokensBurn(
+      bTokens
+    );
+    const depositCallData = {
       ERCContract: ethers.constants.AddressZero,
       tokenType: _tokenType,
       number: valueOrId,
       chainID: chainId,
       poolVersion: _poolVersion,
     };
-    encodedDepositCallData = ethers.utils.defaultAbiCoder.encode(
+    const encodedDepositCallData = ethers.utils.defaultAbiCoder.encode(
       [
         "tuple(address ERCContract, uint8 tokenType, uint256 number, uint256 chainID, uint16 poolVersion)",
       ],
@@ -130,6 +132,22 @@ describe("Testing BToken bridge methods", async () => {
       undefined,
       [1000]
     );
+    return {
+      fixture,
+      user,
+      admin,
+      ethForMinting,
+      bTokens,
+      ethsFromBurning,
+      depositCallData,
+      encodedDepositCallData,
+    };
+  }
+
+  beforeEach(async function () {
+    ({ fixture, user, admin, ethsFromBurning, encodedDepositCallData } =
+      await loadFixture(deployFixture));
+
     showState("Initial", await getState(fixture));
   });
 

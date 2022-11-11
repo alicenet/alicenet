@@ -3,6 +3,7 @@ package node
 import (
 	"context"
 	"fmt"
+	"github.com/alicenet/alicenet/layer1/handlers"
 	"math/big"
 	"os"
 	"os/signal"
@@ -28,8 +29,6 @@ import (
 	"github.com/alicenet/alicenet/layer1"
 	"github.com/alicenet/alicenet/layer1/ethereum"
 	"github.com/alicenet/alicenet/layer1/executor"
-	"github.com/alicenet/alicenet/layer1/executor/tasks"
-	"github.com/alicenet/alicenet/layer1/handlers"
 	"github.com/alicenet/alicenet/layer1/monitor"
 	"github.com/alicenet/alicenet/layer1/transaction"
 	"github.com/alicenet/alicenet/localrpc"
@@ -309,16 +308,13 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	defer txWatcher.Close()
 
 	// Setup tasks scheduler
-	taskRequestChan := make(chan tasks.TaskRequest, constants.TaskSchedulerBufferSize)
-	defer close(taskRequestChan)
-
-	tasksScheduler, err := executor.NewTasksScheduler(monDB, eth, contractsHandler, consAdminHandlers, taskRequestChan, txWatcher)
+	tasksHandler, err := executor.NewTaskHandler(monDB, eth, contractsHandler, consAdminHandlers, txWatcher)
 	if err != nil {
 		panic(err)
 	}
 
 	monitorInterval := constants.MonitorInterval
-	mon, err := monitor.NewMonitor(consDB, monDB, consAdminHandlers, appDepositHandler, eth, contractsHandler, contractsHandler.EthereumContracts().GetAllAddresses(), monitorInterval, batchSize, uint32(config.Configuration.Chain.ID), taskRequestChan)
+	mon, err := monitor.NewMonitor(consDB, monDB, consAdminHandlers, appDepositHandler, eth, contractsHandler, contractsHandler.EthereumContracts().GetAllAddresses(), monitorInterval, batchSize, uint32(config.Configuration.Chain.ID), tasksHandler)
 	if err != nil {
 		panic(err)
 	}
@@ -340,16 +336,11 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	//LAUNCH ALL SERVICE GOROUTINES///////////////////////////////////////////////
 	//////////////////////////////////////////////////////////////////////////////
 
-	go storage.Start()
-
 	go statusLogger.Run()
 	defer statusLogger.Close()
 
-	err = tasksScheduler.Start()
-	if err != nil {
-		panic(err)
-	}
-	defer tasksScheduler.Close()
+	tasksHandler.Start()
+	defer tasksHandler.Close()
 
 	err = mon.Start()
 	if err != nil {
@@ -387,6 +378,7 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	case <-peerManager.CloseChan():
 	case <-consSync.CloseChan():
 	case <-mon.CloseChan():
+	case <-tasksHandler.CloseChan():
 	case <-signals:
 	}
 	go countSignals(logger, 5, signals)

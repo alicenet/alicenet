@@ -71,6 +71,11 @@ interface IStakingNFT {
 
     function estimateTokenCollection(uint256 tokenID_) external view returns (uint256 payout);
 
+    function estimateAllProfits(uint256 tokenID_)
+        external
+        view
+        returns (uint256 payoutEth, uint256 payoutToken);
+
     function estimateExcessToken() external view returns (uint256 excess);
 
     function estimateExcessEth() external view returns (uint256 excess);

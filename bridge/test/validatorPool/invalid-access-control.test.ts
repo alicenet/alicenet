@@ -1,3 +1,4 @@
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BytesLike } from "ethers";
 import { ethers, network } from "hardhat";
@@ -13,7 +14,7 @@ describe("Initialization", async function () {
   let fixture: Fixture;
 
   beforeEach(async function () {
-    fixture = await getFixture();
+    fixture = await loadFixture(getFixture);
   });
 
   it("Should not allow initialize more than once", async () => {
@@ -58,7 +59,7 @@ describe("ValidatorPool Access Control: An user without admin role should not be
   const stakingTokenIds: any[] = [];
 
   beforeEach(async function () {
-    fixture = await getFixture();
+    fixture = await loadFixture(getFixture);
     [, notAdmin1, , ,] = fixture.namedSigners;
     notAdmin1Signer = await ethers.getSigner(notAdmin1.address);
   });

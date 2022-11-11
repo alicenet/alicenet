@@ -1,4 +1,5 @@
-import { ethers } from "hardhat";
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
+import { artifacts, ethers } from "hardhat";
 import {
   deployUpgradeable,
   upgradeProxy,
@@ -13,16 +14,28 @@ describe("AliceNetfactory API test", async () => {
   let utilsContract: Utils;
   let factory: AliceNetFactory;
 
-  beforeEach(async () => {
+  async function deployFixture() {
     const utilsBase = await ethers.getContractFactory(UTILS);
-    utilsContract = await utilsBase.deploy();
-    factory = await deployFactory();
+    const utilsContract = await utilsBase.deploy();
+    const factory = await deployFactory();
+    return { utilsContract, factory };
+  }
+
+  beforeEach(async () => {
+    ({ utilsContract, factory } = await loadFixture(deployFixture));
+
     const cSize = await utilsContract.getCodeSize(factory.address);
     expect(cSize.toNumber()).to.be.greaterThan(0);
   });
 
   it("deploy Upgradeable", async () => {
-    const res = await deployUpgradeable(MOCK, factory.address, ["2", "s"]);
+    const res = await deployUpgradeable(
+      MOCK,
+      factory.address,
+      ethers,
+      artifacts,
+      ["2", "s"]
+    );
     const Proxy = await ethers.getContractFactory(PROXY);
     const proxy = Proxy.attach(res.proxyAddress);
     expect(await proxy.getImplementationAddress()).to.be.equal(
@@ -36,13 +49,22 @@ describe("AliceNetfactory API test", async () => {
   });
 
   it("upgrade deployment", async () => {
-    const res = await deployUpgradeable(MOCK, factory.address, ["2", "s"]);
+    const res = await deployUpgradeable(
+      MOCK,
+      factory.address,
+      ethers,
+      artifacts,
+      ["2", "s"]
+    );
     const proxy = await ethers.getContractAt(PROXY, res.proxyAddress);
     expect(await proxy.getImplementationAddress()).to.be.equal(
       res.logicAddress
     );
     assert(res !== undefined, "Couldn't deploy upgradable contract");
-    const res2 = await upgradeProxy(MOCK, factory.address, ["2", "s"]);
+    const res2 = await upgradeProxy(MOCK, factory.address, ethers, artifacts, [
+      "2",
+      "s",
+    ]);
     expect(await proxy.getImplementationAddress()).to.be.equal(
       res2.logicAddress
     );

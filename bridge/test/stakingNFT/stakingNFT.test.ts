@@ -1,3 +1,4 @@
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { expect } from "chai";
 import { BigNumber } from "ethers";
 import { contract, ethers, network } from "hardhat";
@@ -15,22 +16,28 @@ contract("StakingNFT", async () => {
   let stakingNFT: MockStakingNFT;
   let fixture: BaseTokensFixture;
   let aTokenMinter: ATokenMinter;
-  beforeEach(async () => {
-    fixture = await getBaseTokensFixture();
+
+  async function deployFixture() {
+    const fixture = await getBaseTokensFixture();
     const hre = await require("hardhat"); // eslint-disable-line
     if (hre.__SOLIDITY_COVERAGE_RUNNING !== true) {
       await network.provider.send("evm_setBlockGasLimit", [
         "0x6000000000000000000000",
       ]);
     }
-    stakingNFT = (await deployUpgradeableWithFactory(
+    const stakingNFT = (await deployUpgradeableWithFactory(
       fixture.factory,
       "MockStakingNFT"
     )) as MockStakingNFT;
-    aTokenMinter = (await deployUpgradeableWithFactory(
+    const aTokenMinter = (await deployUpgradeableWithFactory(
       fixture.factory,
       "ATokenMinter"
     )) as ATokenMinter;
+    return { fixture, stakingNFT, aTokenMinter };
+  }
+
+  beforeEach(async () => {
+    ({ fixture, stakingNFT, aTokenMinter } = await loadFixture(deployFixture));
   });
 
   describe("skimExcessEth", async () => {

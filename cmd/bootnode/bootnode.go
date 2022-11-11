@@ -4,6 +4,7 @@ import (
 	"context"
 	"net"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/alicenet/alicenet/config"
@@ -26,6 +27,7 @@ var Command = cobra.Command{
 	Long:  "Boot nodes do nothing put seed the peer table",
 	Run:   bootNode}
 
+// extractPort from passed address
 func extractPort(addr string) (uint32, error) {
 	_, portStr, err := net.SplitHostPort(addr)
 	if err != nil {
@@ -38,6 +40,7 @@ func extractPort(addr string) (uint32, error) {
 	return uint32(port), nil
 }
 
+// bootNode for the initialization
 func bootNode(cmd *cobra.Command, args []string) {
 	logger := logging.GetLogger(cmd.Name())
 
@@ -66,7 +69,7 @@ func bootNode(cmd *cobra.Command, args []string) {
 	if err != nil {
 		panic(err)
 	}
-	srvr := &Server{nodes: cache, log: logger}
+	srvr := &Server{nodes: cache, log: logger, lastConnections: &LastConnectionCache{lastConnections: map[string]time.Time{}}}
 	handler := peering.NewBootNodeServerHandler(logger, xport.NodeAddr(), srvr)
 	defer handler.Close()
 
@@ -79,11 +82,45 @@ func bootNode(cmd *cobra.Command, args []string) {
 
 // Server implements the bootnode protocol
 type Server struct {
-	log   *logrus.Logger
-	nodes *lru.Cache
+	log             *logrus.Logger
+	nodes           *lru.Cache
+	lastConnections *LastConnectionCache
+}
+
+// LastConnectionCache stores the last time a node was connected to the bootnode
+type LastConnectionCache struct {
+	lock            sync.RWMutex
+	lastConnections map[string]time.Time
+}
+
+// add node to the cache
+func (l *LastConnectionCache) add(identity string) {
+	l.lock.Lock()
+	defer l.lock.Unlock()
+
+	l.lastConnections[identity] = time.Now()
+}
+
+// deleteOlderThan passed time as parameter in order to cleanup disconnected nodes
+func (l *LastConnectionCache) deleteOlderThan(threshold time.Time, onDeleteCB func(string)) {
+	l.lock.Lock()
+	defer l.lock.Unlock()
+
+	for k, v := range l.lastConnections {
+		if v.Before(threshold) {
+			delete(l.lastConnections, k)
+			onDeleteCB(k)
+		}
+	}
+}
+
+// onDeleteCB callback for deleting the node from the lru Cache
+func (bn *Server) onDeleteCB(identity string) {
+	bn.nodes.Remove(identity)
 }
 
 // KnownNodes returns a set of recently seen peers when the bootnode is connected to
+//
 //goland:noinspection GoUnusedParameter
 func (bn *Server) KnownNodes(ctx context.Context, r *pb.BootNodeRequest) (*pb.BootNodeResponse, error) {
 	// get the identity of the caller
@@ -95,6 +132,11 @@ func (bn *Server) KnownNodes(ctx context.Context, r *pb.BootNodeRequest) (*pb.Bo
 	caller := p.Addr.(interfaces.NodeAddr)
 	callerAddr := caller.P2PAddr()
 	callerIdent := caller.Identity()
+
+	// cleanup inactive nodes from known nodes
+	bn.lastConnections.add(callerIdent)
+	bn.lastConnections.deleteOlderThan(time.Now().Add(time.Duration(-1)*time.Minute), bn.onDeleteCB)
+
 	// defer the addition of the caller to the cache
 	defer bn.nodes.ContainsOrAdd(callerIdent, callerAddr)
 	// get the list of known identities from the cache
@@ -105,6 +147,7 @@ func (bn *Server) KnownNodes(ctx context.Context, r *pb.BootNodeRequest) (*pb.Bo
 	nmap := make(map[string]bool)
 	// add the caller to the known map
 	nmap[callerIdent] = true
+
 	// for each known identity
 	for i := 0; i < len(identList); i++ {
 		// convet to a string
@@ -140,6 +183,7 @@ func (bn *Server) KnownNodes(ctx context.Context, r *pb.BootNodeRequest) (*pb.Bo
 	return resp, nil
 }
 
+// forceCleanup disconnecting a node after 10 seconds
 func forceCleanup(conn interfaces.P2PConn) {
 	select {
 	case <-time.After(time.Second * 10):
@@ -150,6 +194,7 @@ func forceCleanup(conn interfaces.P2PConn) {
 	}
 }
 
+// acceptLoop main loop
 func acceptLoop(log *logrus.Logger, transport interfaces.P2PTransport, handler *peering.ServerHandler) {
 	for {
 		conn, err := transport.Accept()

@@ -16,7 +16,7 @@ PRE_CHECK() {
         exit 1
     fi
     # Check all required non builtins exist
-    COMMANDS=("ethkey" "jq" "hexdump")
+    COMMANDS=("jq" "hexdump")
     for c in ${COMMANDS[@]}; do
         if ! command -v $c &>/dev/null; then
             echo -e "$c is required, but not installed"
@@ -219,6 +219,9 @@ init-extra-nodes)
     ;;
 geth)
     ./scripts/base-scripts/geth-local.sh
+    ;;
+geth-resume)
+    ./scripts/base-scripts/geth-local-resume.sh
     ;;
 bootnode)
     ./scripts/base-scripts/bootnode.sh

@@ -1,8 +1,8 @@
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { ethers } from "hardhat";
 import { expect, factoryCallAnyFixture, Fixture, getFixture } from "../setup";
 import { getState, init, state } from "./setup";
-
 describe("Testing AToken", async () => {
   let user: SignerWithAddress;
   let admin: SignerWithAddress;
@@ -11,10 +11,16 @@ describe("Testing AToken", async () => {
   const amount = 1000n;
   let fixture: Fixture;
 
-  beforeEach(async function () {
-    fixture = await getFixture();
+  async function deployFixture() {
+    const fixture = await getFixture();
     [admin, user] = await ethers.getSigners();
     await init(fixture);
+    return { fixture, admin, user };
+  }
+
+  beforeEach(async function () {
+    ({ fixture, admin, user } = await loadFixture(deployFixture));
+
     expectedState = await getState(fixture);
   });
 

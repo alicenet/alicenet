@@ -9,6 +9,7 @@ import "hardhat-deploy";
 import "hardhat-gas-reporter";
 import "hardhat-log-remover";
 import "hardhat-storage-layout";
+import "hardhat/config";
 import { HardhatUserConfig, task } from "hardhat/config";
 import os from "os";
 import "solidity-coverage";
@@ -222,7 +223,9 @@ const config: HardhatUserConfig = {
     },
   },
   etherscan: {
-    apiKey: process.env.ETHERSCAN_API_KEY,
+    apiKey: process.env.ETHERSCAN_API_KEY
+      ? process.env.ETHERSCAN_API_KEY
+      : "0000000000000000000000000000000000",
   },
   solidity: {
     compilers: [
