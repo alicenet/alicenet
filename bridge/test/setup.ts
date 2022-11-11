@@ -172,7 +172,15 @@ export const createUsers = async (
   return users;
 };
 
-async function getContractAddressFromDeployedProxyEvent(
+export async function getContractAddressFromDeployedStaticEvent(
+  tx: ContractTransaction
+): Promise<string> {
+  const eventSignature = "event DeployedStatic(address contractAddr)";
+  const eventName = "DeployedStatic";
+  return await getContractAddressFromEventLog(tx, eventSignature, eventName);
+}
+
+export async function getContractAddressFromDeployedProxyEvent(
   tx: ContractTransaction
 ): Promise<string> {
   const eventSignature = "event DeployedProxy(address contractAddr)";
@@ -188,7 +196,7 @@ export async function getContractAddressFromDeployedRawEvent(
   return await getContractAddressFromEventLog(tx, eventSignature, eventName);
 }
 
-async function getContractAddressFromEventLog(
+export async function getContractAddressFromEventLog(
   tx: ContractTransaction,
   eventSignature: string,
   eventName: string
@@ -262,7 +270,6 @@ export const deployUpgradeableWithFactory = async (
       saltBytes = getBytes32Salt(salt);
     }
   }
-
   const transaction2 = await factory.deployProxy(saltBytes);
   receipt = await ethers.provider.getTransactionReceipt(transaction2.hash);
   if (
@@ -681,4 +688,23 @@ export const getReceiptForFailedTransaction = async (
     }
   }
   return receipt;
+};
+
+export const getBridgePoolSalt = (
+  tokenContractAddr: string,
+  tokenType: number,
+  chainID: number,
+  version: number
+): string => {
+  return ethers.utils.keccak256(
+    ethers.utils.solidityPack(
+      ["bytes32", "bytes32", "bytes32", "bytes32"],
+      [
+        ethers.utils.solidityKeccak256(["address"], [tokenContractAddr]),
+        ethers.utils.solidityKeccak256(["uint8"], [tokenType]),
+        ethers.utils.solidityKeccak256(["uint256"], [chainID]),
+        ethers.utils.solidityKeccak256(["uint16"], [version]),
+      ]
+    )
+  );
 };
