@@ -1,3 +1,4 @@
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
@@ -15,13 +16,13 @@ describe("PublicStaking: Accumulator and slush invariance", async () => {
   let users: SignerWithAddress[];
   const numberUsers = 3;
 
-  beforeEach(async function () {
-    fixture = await getBaseTokensFixture();
+  async function deployFixture() {
+    const fixture = await getBaseTokensFixture();
     await fixture.aToken.approve(
       fixture.publicStaking.address,
       ethers.utils.parseUnits("100000", 18)
     );
-    users = await createUsers(numberUsers);
+    const users = await createUsers(numberUsers);
     const baseAmount = ethers.utils.parseUnits("10000", 1);
     for (let i = 0; i < numberUsers; i++) {
       await fixture.aToken.transfer(await users[i].getAddress(), baseAmount);
@@ -29,6 +30,11 @@ describe("PublicStaking: Accumulator and slush invariance", async () => {
         .connect(users[i])
         .approve(fixture.publicStaking.address, baseAmount);
     }
+    return { fixture, users };
+  }
+
+  beforeEach(async function () {
+    ({ fixture, users } = await loadFixture(deployFixture));
   });
 
   it("Slush flush into accumulator", async function () {
@@ -57,7 +63,7 @@ describe("PublicStaking: Accumulator and slush invariance", async () => {
       credits += 1000n;
       for (let i = 0; i < numberUsers; i++) {
         // Perform slushSkim
-        let deltaAccum = ethStateSlush / totalShares;
+        const deltaAccum = ethStateSlush / totalShares;
         ethStateSlush -= deltaAccum * totalShares;
         ethStateAccum += deltaAccum;
         // compute payout
@@ -68,7 +74,8 @@ describe("PublicStaking: Accumulator and slush invariance", async () => {
           [tokensID[i]]
         );
         // compute payout
-        let diffAccum = ethStateAccum - userPosition.accumulatorEth.toBigInt();
+        const diffAccum =
+          ethStateAccum - userPosition.accumulatorEth.toBigInt();
         let payoutEst = diffAccum * sharesPerUser;
         let payoutRem = payoutEst;
         payoutEst /= scaleFactor;
@@ -114,7 +121,7 @@ describe("PublicStaking: Accumulator and slush invariance", async () => {
     );
     for (let i = 0; i < numberUsers; i++) {
       // Perform slushSkim
-      let deltaAccum = ethStateSlush / totalShares;
+      const deltaAccum = ethStateSlush / totalShares;
       ethStateSlush -= deltaAccum * totalShares;
       ethStateAccum += deltaAccum;
       // compute payout
@@ -125,7 +132,7 @@ describe("PublicStaking: Accumulator and slush invariance", async () => {
         [tokensID[i]]
       );
       // compute payout
-      let diffAccum = ethStateAccum - userPosition.accumulatorEth.toBigInt();
+      const diffAccum = ethStateAccum - userPosition.accumulatorEth.toBigInt();
       let payoutEst = diffAccum * sharesPerUser;
       let payoutRem = payoutEst;
       payoutEst /= scaleFactor;
@@ -192,20 +199,21 @@ describe("PublicStaking: Accumulator and slush invariance", async () => {
       ethStateSlush += 7n * scaleFactor;
       for (let i = 0; i < numberUsers; i++) {
         // Prep for collect
-        let deltaAccum = ethStateSlush / totalShares;
+        const deltaAccum = ethStateSlush / totalShares;
         ethStateSlush -= deltaAccum * totalShares;
         ethStateAccum += deltaAccum;
         // get position info
-        let [userPosition] = await callFunctionAndGetReturnValues(
+        const [userPosition] = await callFunctionAndGetReturnValues(
           fixture.publicStaking,
           "getPosition",
           users[i] as SignerWithAddress,
           [tokensID[i]]
         );
         // compute payout eth
-        let diffAccum = ethStateAccum - userPosition.accumulatorEth.toBigInt();
+        const diffAccum =
+          ethStateAccum - userPosition.accumulatorEth.toBigInt();
         let payoutEst = diffAccum * userPosition.shares.toBigInt();
-        if (totalShares == userPosition.shares.toBigInt()) {
+        if (totalShares === userPosition.shares.toBigInt()) {
           payoutEst += ethStateSlush;
           ethStateSlush = 0n;
         }
@@ -251,20 +259,21 @@ describe("PublicStaking: Accumulator and slush invariance", async () => {
 
       for (let i = 0; i < numberUsers; i++) {
         // Prep for collect
-        let deltaAccum = ethStateSlush / totalShares;
+        const deltaAccum = ethStateSlush / totalShares;
         ethStateSlush -= deltaAccum * totalShares;
         ethStateAccum += deltaAccum;
         // get position info
-        let [userPosition] = await callFunctionAndGetReturnValues(
+        const [userPosition] = await callFunctionAndGetReturnValues(
           fixture.publicStaking,
           "getPosition",
           users[i] as SignerWithAddress,
           [tokensID[i]]
         );
         // compute payout eth
-        let diffAccum = ethStateAccum - userPosition.accumulatorEth.toBigInt();
+        const diffAccum =
+          ethStateAccum - userPosition.accumulatorEth.toBigInt();
         let payoutEst = diffAccum * userPosition.shares.toBigInt();
-        if (totalShares == userPosition.shares.toBigInt()) {
+        if (totalShares === userPosition.shares.toBigInt()) {
           payoutEst += ethStateSlush;
           ethStateSlush = 0n;
         }
@@ -314,7 +323,7 @@ describe("PublicStaking: Accumulator and slush invariance", async () => {
     // compute payout eth
     let diffAccum = ethStateAccum - userPosition.accumulatorEth.toBigInt();
     let payoutEst = diffAccum * userPosition.shares.toBigInt();
-    if (totalShares == userPosition.shares.toBigInt()) {
+    if (totalShares === userPosition.shares.toBigInt()) {
       payoutEst += ethStateSlush;
       ethStateSlush = 0n;
     }
@@ -341,7 +350,7 @@ describe("PublicStaking: Accumulator and slush invariance", async () => {
     // compute payout eth
     diffAccum = ethStateAccum - userPosition.accumulatorEth.toBigInt();
     payoutEst = diffAccum * userPosition.shares.toBigInt();
-    if (totalShares == userPosition.shares.toBigInt()) {
+    if (totalShares === userPosition.shares.toBigInt()) {
       payoutEst += ethStateSlush;
       ethStateSlush = 0n;
     }
@@ -374,7 +383,7 @@ describe("PublicStaking: Accumulator and slush invariance", async () => {
     // compute payout eth
     diffAccum = ethStateAccum - userPosition.accumulatorEth.toBigInt();
     payoutEst = diffAccum * userPosition.shares.toBigInt();
-    if (totalShares == userPosition.shares.toBigInt()) {
+    if (totalShares === userPosition.shares.toBigInt()) {
       payoutEst += ethStateSlush;
       ethStateSlush = 0n;
     }
@@ -394,20 +403,20 @@ describe("PublicStaking: Accumulator and slush invariance", async () => {
     credits += depositAmount;
     for (let i = 0; i < numberUsers; i++) {
       // Prep for collect
-      let deltaAccum = ethStateSlush / totalShares;
+      const deltaAccum = ethStateSlush / totalShares;
       ethStateSlush -= deltaAccum * totalShares;
       ethStateAccum += deltaAccum;
       // get position info
-      let [userPosition] = await callFunctionAndGetReturnValues(
+      const [userPosition] = await callFunctionAndGetReturnValues(
         fixture.publicStaking,
         "getPosition",
         users[i] as SignerWithAddress,
         [tokensID[i]]
       );
       // compute payout eth
-      let diffAccum = ethStateAccum - userPosition.accumulatorEth.toBigInt();
+      const diffAccum = ethStateAccum - userPosition.accumulatorEth.toBigInt();
       let payoutEst = diffAccum * userPosition.shares.toBigInt();
-      if (totalShares == userPosition.shares.toBigInt()) {
+      if (totalShares === userPosition.shares.toBigInt()) {
         payoutEst += ethStateSlush;
         ethStateSlush = 0n;
       }

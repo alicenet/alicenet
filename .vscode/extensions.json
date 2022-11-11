@@ -3,6 +3,10 @@
     "ms-vscode-remote.remote-containers",
     "golang.go",
     "ms-azuretools.vscode-docker",
-    "eg2.vscode-npm-script"
+    "eg2.vscode-npm-script",
+    "tintinweb.solidity-visual-auditor",
+    "eamodio.gitlens",
+    "ryanluker.vscode-coverage-gutters",
+    "NomicFoundation.hardhat-solidity"
   ]
 }

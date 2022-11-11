@@ -1,3 +1,4 @@
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
 import { Snapshots } from "../../typechain-types";
@@ -15,27 +16,31 @@ import {
   validSnapshot2048,
 } from "./assets/4-validators-snapshots-1";
 
+async function deployFixture() {
+  const fixture = await getFixture(true, false);
+  await completeETHDKGRound(validatorsSnapshots, {
+    ethdkg: fixture.ethdkg,
+    validatorPool: fixture.validatorPool,
+  });
+
+  await mineBlocks(
+    (await fixture.snapshots.getMinimumIntervalBetweenSnapshots()).toBigInt()
+  );
+  const snapshots = fixture.snapshots as Snapshots;
+  await snapshots
+    .connect(await getValidatorEthAccount(validatorsSnapshots[0]))
+    .snapshot(validSnapshot1024.GroupSignature, validSnapshot1024.BClaims);
+  const snapshotNumber = BigNumber.from(1);
+  return { fixture, snapshots, snapshotNumber };
+}
+
 describe("Snapshots: With successful snapshot completed", () => {
   let fixture: Fixture;
   let snapshots: Snapshots;
   let snapshotNumber: BigNumber;
 
   beforeEach(async function () {
-    fixture = await getFixture(true, false);
-
-    await completeETHDKGRound(validatorsSnapshots, {
-      ethdkg: fixture.ethdkg,
-      validatorPool: fixture.validatorPool,
-    });
-
-    await mineBlocks(
-      (await fixture.snapshots.getMinimumIntervalBetweenSnapshots()).toBigInt()
-    );
-    snapshots = fixture.snapshots as Snapshots;
-    await snapshots
-      .connect(await getValidatorEthAccount(validatorsSnapshots[0]))
-      .snapshot(validSnapshot1024.GroupSignature, validSnapshot1024.BClaims);
-    snapshotNumber = BigNumber.from(1);
+    ({ fixture, snapshots, snapshotNumber } = await loadFixture(deployFixture));
   });
 
   it("Should succeed doing a valid snapshot for next epoch", async function () {

@@ -128,7 +128,7 @@ contract MockStakingNFT is StakingNFT {
         )
     {
         _dummy = 0;
-        return StakingNFT._collect(shares_, state_, p_, positionAccumulatorValue_);
+        return StakingNFT._calculateCollection(shares_, state_, p_, positionAccumulatorValue_);
     }
 
     function depositMock(uint256 delta_, Accumulator memory state_)
@@ -225,7 +225,7 @@ contract MockStakingNFT is StakingNFT {
             uint256
         )
     {
-        return StakingNFT._collect(shares_, state_, p_, positionAccumulatorValue_);
+        return StakingNFT._calculateCollection(shares_, state_, p_, positionAccumulatorValue_);
     }
 
     function depositPure(uint256 delta_, Accumulator memory state_)

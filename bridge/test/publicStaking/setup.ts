@@ -180,7 +180,7 @@ export const collectAllProfits = async (
     [tokenID]
   );
 
-  return [collectedProfits.payoutToken, collectedProfits.payoutEth];
+  return [collectedProfits.payoutEth, collectedProfits.payoutToken];
 };
 
 export const collectAllProfitsTo = async (
@@ -325,7 +325,7 @@ export const estimateAndCollectAllProfits = async (
     "Eth collection does not match expected value!"
   );
 
-  const [payoutToken, payoutEth] = await collectAllProfits(
+  const [payoutEth, payoutToken] = await collectAllProfits(
     contract,
     user,
     tokenID

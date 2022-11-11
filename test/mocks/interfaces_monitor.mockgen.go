@@ -178,6 +178,9 @@ type MockAdminHandler struct {
 	// SetSynchronizedFunc is an instance of a mock function object
 	// controlling the behavior of the method SetSynchronized.
 	SetSynchronizedFunc *AdminHandlerSetSynchronizedFunc
+	// UpdateDynamicStorageFunc is an instance of a mock function object
+	// controlling the behavior of the method UpdateDynamicStorage.
+	UpdateDynamicStorageFunc *AdminHandlerUpdateDynamicStorageFunc
 }
 
 // NewMockAdminHandler creates a new mock of the AdminHandler interface. All
@@ -211,6 +214,11 @@ func NewMockAdminHandler() *MockAdminHandler {
 		},
 		SetSynchronizedFunc: &AdminHandlerSetSynchronizedFunc{
 			defaultHook: func(bool) {
+				return
+			},
+		},
+		UpdateDynamicStorageFunc: &AdminHandlerUpdateDynamicStorageFunc{
+			defaultHook: func(uint32, []byte) (r0 error) {
 				return
 			},
 		},
@@ -251,6 +259,11 @@ func NewStrictMockAdminHandler() *MockAdminHandler {
 				panic("unexpected invocation of MockAdminHandler.SetSynchronized")
 			},
 		},
+		UpdateDynamicStorageFunc: &AdminHandlerUpdateDynamicStorageFunc{
+			defaultHook: func(uint32, []byte) error {
+				panic("unexpected invocation of MockAdminHandler.UpdateDynamicStorage")
+			},
+		},
 	}
 }
 
@@ -276,6 +289,9 @@ func NewMockAdminHandlerFrom(i interfaces.AdminHandler) *MockAdminHandler {
 		},
 		SetSynchronizedFunc: &AdminHandlerSetSynchronizedFunc{
 			defaultHook: i.SetSynchronized,
+		},
+		UpdateDynamicStorageFunc: &AdminHandlerUpdateDynamicStorageFunc{
+			defaultHook: i.UpdateDynamicStorage,
 		},
 	}
 }
@@ -893,6 +909,114 @@ func (c AdminHandlerSetSynchronizedFuncCall) Args() []interface{} {
 // invocation.
 func (c AdminHandlerSetSynchronizedFuncCall) Results() []interface{} {
 	return []interface{}{}
+}
+
+// AdminHandlerUpdateDynamicStorageFunc describes the behavior when the
+// UpdateDynamicStorage method of the parent MockAdminHandler instance is
+// invoked.
+type AdminHandlerUpdateDynamicStorageFunc struct {
+	defaultHook func(uint32, []byte) error
+	hooks       []func(uint32, []byte) error
+	history     []AdminHandlerUpdateDynamicStorageFuncCall
+	mutex       sync.Mutex
+}
+
+// UpdateDynamicStorage delegates to the next hook function in the queue and
+// stores the parameter and result values of this invocation.
+func (m *MockAdminHandler) UpdateDynamicStorage(v0 uint32, v1 []byte) error {
+	r0 := m.UpdateDynamicStorageFunc.nextHook()(v0, v1)
+	m.UpdateDynamicStorageFunc.appendCall(AdminHandlerUpdateDynamicStorageFuncCall{v0, v1, r0})
+	return r0
+}
+
+// SetDefaultHook sets function that is called when the UpdateDynamicStorage
+// method of the parent MockAdminHandler instance is invoked and the hook
+// queue is empty.
+func (f *AdminHandlerUpdateDynamicStorageFunc) SetDefaultHook(hook func(uint32, []byte) error) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// UpdateDynamicStorage method of the parent MockAdminHandler instance
+// invokes the hook at the front of the queue and discards it. After the
+// queue is empty, the default hook function is invoked for any future
+// action.
+func (f *AdminHandlerUpdateDynamicStorageFunc) PushHook(hook func(uint32, []byte) error) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *AdminHandlerUpdateDynamicStorageFunc) SetDefaultReturn(r0 error) {
+	f.SetDefaultHook(func(uint32, []byte) error {
+		return r0
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *AdminHandlerUpdateDynamicStorageFunc) PushReturn(r0 error) {
+	f.PushHook(func(uint32, []byte) error {
+		return r0
+	})
+}
+
+func (f *AdminHandlerUpdateDynamicStorageFunc) nextHook() func(uint32, []byte) error {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *AdminHandlerUpdateDynamicStorageFunc) appendCall(r0 AdminHandlerUpdateDynamicStorageFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of AdminHandlerUpdateDynamicStorageFuncCall
+// objects describing the invocations of this function.
+func (f *AdminHandlerUpdateDynamicStorageFunc) History() []AdminHandlerUpdateDynamicStorageFuncCall {
+	f.mutex.Lock()
+	history := make([]AdminHandlerUpdateDynamicStorageFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// AdminHandlerUpdateDynamicStorageFuncCall is an object that describes an
+// invocation of method UpdateDynamicStorage on an instance of
+// MockAdminHandler.
+type AdminHandlerUpdateDynamicStorageFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 uint32
+	// Arg1 is the value of the 2nd argument passed to this method
+	// invocation.
+	Arg1 []byte
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c AdminHandlerUpdateDynamicStorageFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0, c.Arg1}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c AdminHandlerUpdateDynamicStorageFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0}
 }
 
 // MockDepositHandler is a mock implementation of the DepositHandler
