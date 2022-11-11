@@ -471,8 +471,8 @@ func (s *Synchronizer) setupLoops() {
 		withName("ReGossipLoop").
 		withInitialDelay(9 * constants.MsgTimeout).
 		withFn(s.gossipClient.ReGossip).
-		withFreq(9 * s.storage.GetMsgTimeout()).
-		withDelayOnConditionFailure(s.storage.GetMsgTimeout()).
+		withFreq(9 * constants.MsgTimeout).
+		withDelayOnConditionFailure(constants.MsgTimeout).
 		withLockFreeCondition(s.isNotClosing).
 		withLockFreeCondition(s.initialized.isSet).
 		withLockFreeCondition(s.ethSyncDone.isSet).

@@ -26,7 +26,7 @@ func TestDisputeMissingGPKjTask_Group_1_FourUnsubmittedGPKj_DoWork_Success(t *te
 	for idx := 0; idx < n; idx++ {
 		disputeMissingGPKjTask := suite.DisputeMissingGPKjTasks[idx]
 
-		err := disputeMissingGPKjTask.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "DisputeMissingGPKjTask", "task-id", nil)
+		err := disputeMissingGPKjTask.Initialize(suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "DisputeMissingGPKjTask", "task-id", disputeMissingGPKjTask.Start, disputeMissingGPKjTask.End, false, nil, nil)
 		assert.Nil(t, err)
 		err = disputeMissingGPKjTask.Prepare(ctx)
 		assert.Nil(t, err)

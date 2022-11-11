@@ -32,7 +32,7 @@ func TestMPKSubmission_Group_1_GoodAllValid(t *testing.T) {
 	// Do MPK Submission task
 	for idx := 0; idx < numValidators; idx++ {
 		mpkSubmissionTask := suite.MpkSubmissionTasks[idx]
-		err := mpkSubmissionTask.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "MpkSubmissionTasks", "tak-id", nil)
+		err := mpkSubmissionTask.Initialize(suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "MpkSubmissionTasks", "tak-id", mpkSubmissionTask.Start, mpkSubmissionTask.End, false, nil, nil)
 		assert.Nil(t, err)
 		err = mpkSubmissionTask.Prepare(ctx)
 		assert.Nil(t, err)
@@ -113,7 +113,7 @@ func TestMPKSubmission_Group_1_Bad1(t *testing.T) {
 	dkgState, err := state.GetDkgState(suite.DKGStatesDbs[0])
 	assert.Nil(t, err)
 	task := suite.MpkSubmissionTasks[0]
-	err = task.Initialize(ctx, nil, suite.DKGStatesDbs[0], fixture.Logger, suite.Eth, fixture.Contracts, "MPKSubmissionTask", "task-id", nil)
+	err = task.Initialize(suite.DKGStatesDbs[0], fixture.Logger, suite.Eth, fixture.Contracts, "MPKSubmissionTask", "task-id", task.Start, task.End, false, nil, nil)
 	assert.Nil(t, err)
 
 	err = task.Prepare(ctx)
@@ -135,7 +135,7 @@ func TestMPKSubmission_Group_1_Bad2(t *testing.T) {
 	db := mocks.NewTestDB()
 	log := logging.GetLogger("test").WithField("test", "test")
 
-	err := task.Initialize(context.Background(), nil, db, log, nil, nil, "", "", nil)
+	err := task.Initialize(db, log, nil, nil, "", "", task.Start, task.End, false, nil, nil)
 	assert.Nil(t, err)
 
 	taskErr := task.Prepare(context.Background())
@@ -158,7 +158,7 @@ func TestMPKSubmission_Group_2_Bad4(t *testing.T) {
 	assert.Nil(t, err)
 
 	task := suite.MpkSubmissionTasks[0]
-	err = task.Initialize(ctx, nil, suite.DKGStatesDbs[0], fixture.Logger, suite.Eth, fixture.Contracts, "MPKSubmissionTask", "task-id", nil)
+	err = task.Initialize(suite.DKGStatesDbs[0], fixture.Logger, suite.Eth, fixture.Contracts, "MPKSubmissionTask", "task-id", task.Start, task.End, false, nil, nil)
 	assert.Nil(t, err)
 
 	taskErr := task.Prepare(ctx)
@@ -178,7 +178,7 @@ func TestMPKSubmission_Group_2_LeaderElection(t *testing.T) {
 		assert.Nil(t, err)
 
 		task := suite.MpkSubmissionTasks[idx]
-		err = task.Initialize(ctx, nil, suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "MPKSubmissionTask", "task-id", nil)
+		err = task.Initialize(suite.DKGStatesDbs[idx], fixture.Logger, suite.Eth, fixture.Contracts, "MPKSubmissionTask", "task-id", task.Start, task.End, false, nil, nil)
 		assert.Nil(t, err)
 
 		err = task.Prepare(ctx)

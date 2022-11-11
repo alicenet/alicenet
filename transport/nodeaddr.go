@@ -7,9 +7,11 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/alicenet/alicenet/config"
+	"github.com/lightningnetwork/lnd/lnwire"
+
 	"github.com/alicenet/alicenet/crypto/secp256k1"
 	"github.com/alicenet/alicenet/interfaces"
-	"github.com/alicenet/alicenet/transport/brontide"
 	"github.com/alicenet/alicenet/types"
 )
 
@@ -103,14 +105,19 @@ func (pad *NodeAddr) ChainIdentifier() types.ChainIdentifier {
 // This function is not part of the interface definition of
 // a NodeAddr so that these assumptions remain isolated to the
 // transport package.
-func (pad *NodeAddr) toBTCNetAddr() *brontide.NetAddress {
-	return &brontide.NetAddress{
+func (pad *NodeAddr) toBTCNetAddr() (*lnwire.NetAddress, error) {
+	pubKey, err := convertCryptoSecpPubKey2DecredSecpPubKey(pad.identity)
+	if err != nil {
+		return nil, err
+	}
+
+	return &lnwire.NetAddress{
 		Address: &addr{
 			network: pad.Network(),
 			address: net.JoinHostPort(pad.host, strconv.Itoa(pad.port)),
 		},
-		IdentityKey: pad.identity,
-	}
+		IdentityKey: pubKey,
+	}, nil
 }
 
 // NewNodeAddr constructs a new NodeAddr given an address of valid format.
@@ -146,6 +153,7 @@ func NewNodeAddr(address string) (interfaces.NodeAddr, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return &NodeAddr{
 		host:     host,
 		port:     ps,
@@ -178,22 +186,34 @@ func RandomNodeAddr() (interfaces.NodeAddr, error) {
 	}, nil
 }
 
-// SplitNetworkAddress splits a network address into three parts
+// splitNetworkAddress splits a network address into three parts
 // returns them as <ChainIdentifier>, <hex encoded pubkey>, <address>, <discoveryPort>
 // the last returned values of <address> may be split to host and port using
 // net.SplitHostPort
 // the first <address> is the discovery address, the second is the NodeAddr.
 func splitNetworkAddress(address string) (uint32, string, string, error) {
+	chainID := uint32(config.Configuration.Chain.ID)
+	if chainID == 0 {
+		return 0, "", "", &ErrInvalidNetworkAddress{"invalid chainID from configuration"}
+	}
+
+	pubkeyAndAddress := address
 	parts := strings.Split(address, chainSeparator)
-	if len(parts) != 2 {
+	if len(parts) == 2 {
+		chainIdentifierHex := parts[0]
+		pubkeyAndAddress = parts[1]
+		chainIDFromAddress, err := uint32FromHexString(chainIdentifierHex)
+		if err != nil {
+			return 0, "", "", &ErrInvalidNetworkAddress{fmt.Sprintf("%s: %v", err.Error(), chainIdentifierHex)}
+		}
+
+		if chainID != chainIDFromAddress {
+			return 0, "", "", &ErrInvalidNetworkAddress{fmt.Sprintf("node chainID %d and address chainID %d are different", chainID, chainIDFromAddress)}
+		}
+	} else if len(parts) > 2 {
 		return 0, "", "", &ErrInvalidNetworkAddress{fmt.Sprintf("invalid network address: Chain Separator: %s", address)}
 	}
-	chainIdentifierHex := parts[0]
-	chainID, err := uint32FromHexString(chainIdentifierHex)
-	if err != nil {
-		return 0, "", "", &ErrInvalidNetworkAddress{fmt.Sprintf("%s: %v", err.Error(), chainIdentifierHex)}
-	}
-	pubkeyAndAddress := parts[1]
+
 	subParts := strings.Split(pubkeyAndAddress, addressSeparator)
 	if len(subParts) != 2 {
 		return 0, "", "", &ErrInvalidNetworkAddress{"invalid network address: Address Separator"}
