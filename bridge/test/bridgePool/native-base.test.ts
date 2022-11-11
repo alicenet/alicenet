@@ -119,7 +119,7 @@ describe("Testing Base BridgePool Deposit/Withdraw", async () => {
     ).to.be.revertedWithCustomError(bridgePoolImplFactory, "OnlyBridgeRouter");
   });
 
-  it("Should call a deposit if called from Bridge Router", async () => {
+  it("Should deposit if called from Bridge Router", async () => {
     await nativeERCBridgePool
       .connect(asBridgeRouter)
       .deposit(user.address, encodedDepositParameters);
@@ -163,7 +163,7 @@ describe("Testing Base BridgePool Deposit/Withdraw", async () => {
     );
   });
 
-  it("Should not call a withdraw if chainId in UTXO does not match chainId in snapshot's claims", async () => {
+  it("Should not call a withdraw if chainId in UTXO does not match native chainId", async () => {
     await expect(
       nativeERCBridgePool
         .connect(utxoOwnerSigner)
