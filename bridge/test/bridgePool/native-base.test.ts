@@ -71,9 +71,6 @@ describe("Testing Base BridgePool Deposit/Withdraw", async () => {
     bridgePoolImplFactory = await ethers.getContractFactory(
       "NativeERCBridgePoolMock"
     );
-    nativeERCBridgePool = await bridgePoolImplFactory.deploy(
-      fixture.factory.address
-    );
     const bridgePoolImplBytecode = bridgePoolImplFactory.getDeployTransaction(
       fixture.factory.address
     ).data as BytesLike;
@@ -97,9 +94,10 @@ describe("Testing Base BridgePool Deposit/Withdraw", async () => {
         ethers.constants.AddressZero,
         bridgePoolVersion
       );
-    nativeERCBridgePool.attach(
-      await getContractAddressFromBridgePoolCreatedEvent(tx)
-    );
+      nativeERCBridgePool = await ethers.getContractAt(
+        "NativeERCBridgePoolMock",
+        await getContractAddressFromBridgePoolCreatedEvent(tx)
+      );
     const bridgeRouter = await deployUpgradeableWithFactory(
       fixture.factory,
       "BridgeRouterMock",
