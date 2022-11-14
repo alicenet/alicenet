@@ -1,6 +1,6 @@
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { Contract } from "ethers";
+import { Contract, ContractFactory } from "ethers";
 import { BytesLike, defaultAbiCoder } from "ethers/lib/utils";
 import { ethers } from "hardhat";
 import { BridgePoolFactory } from "../../typechain-types";
@@ -37,6 +37,7 @@ let merkleProofLibraryErrors: any;
 let nativeERC20BridgePoolV1: Contract;
 let nativeERCBridgePoolBaseErrors: Contract;
 let erc20Mock: Contract;
+let bridgePoolImplFactory: ContractFactory;
 const bridgePoolTokenTypeERC20 = 0;
 const bridgePoolNativeChainId = 1337;
 const bridgePoolVersion = 1;
@@ -84,7 +85,7 @@ describe("Testing BridgePool Deposit/Withdraw for tokenType ERC20", async () => 
       "BridgePoolFactory",
       "BridgePoolFactory"
     )) as BridgePoolFactory;
-    const bridgePoolImplFactory = await ethers.getContractFactory(
+    bridgePoolImplFactory = await ethers.getContractFactory(
       "NativeERC20BridgePoolV1"
     );
     const bridgePoolImplBytecode = bridgePoolImplFactory.getDeployTransaction(
@@ -132,7 +133,7 @@ describe("Testing BridgePool Deposit/Withdraw for tokenType ERC20", async () => 
     await loadFixture(deployFixture);
   });
 
-  it("Should make a deposit", async () => {
+  it("Should deposit if called from Bridge Router", async () => {
     await nativeERC20BridgePoolV1
       .connect(bridgeRouter)
       .deposit(utxoOwnerSignerAddress, encodedDepositParameters);
@@ -142,6 +143,15 @@ describe("Testing BridgePool Deposit/Withdraw for tokenType ERC20", async () => 
     expect(await erc20Mock.balanceOf(nativeERC20BridgePoolV1.address)).to.be.eq(
       initialBridgePoolBalance + tokenAmount
     );
+  });
+
+  it("Should fail to deposit if not called from Bridge Router", async () => {
+    await expect(
+      nativeERC20BridgePoolV1.deposit(
+        utxoOwnerSignerAddress,
+        encodedDepositParameters
+      )
+    ).to.be.revertedWithCustomError(bridgePoolImplFactory, "OnlyBridgeRouter");
   });
 
   it("Should make a withdraw for amount specified on informed burned UTXO upon proof verification", async () => {
