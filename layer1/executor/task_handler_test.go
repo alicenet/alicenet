@@ -106,6 +106,10 @@ func TestTasksHandlerAndManager_Schedule_WrongStartDate(t *testing.T) {
 }
 
 func TestTasksHandlerAndManager_Schedule_WrongEndDate(t *testing.T) {
+	if env := os.Getenv("RUN_FLAKES"); env == "" {
+		t.Skip("flakey test skipped unless RUN_FLAKES environment is set to something")
+	}
+
 	handler, client, _, _, _ := getTaskHandler(t, true)
 	client.GetFinalizedHeightFunc.SetDefaultReturn(12, nil)
 	handler.Start()
