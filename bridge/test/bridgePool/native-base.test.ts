@@ -39,6 +39,7 @@ const bridgePoolVersion = 1;
 const bridgePoolValue = 0;
 const tokenId = 0;
 const tokenAmount = 0;
+const bridgeFee = 1000;
 const encodedDepositParameters = defaultAbiCoder.encode(
   ["tuple(uint256 tokenId_, uint256 tokenAmount_)"],
   [
@@ -104,7 +105,7 @@ describe("Testing Base BridgePool Deposit/Withdraw", async () => {
       "BridgeRouterMock",
       "BridgeRouter",
       undefined,
-      [1000]
+      [bridgeFee]
     );
     asBridgeRouter = await getImpersonatedSigner(bridgeRouter.address);
   }
