@@ -1,13 +1,15 @@
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { Contract } from "ethers";
-import { defaultAbiCoder } from "ethers/lib/utils";
+import { Contract, ContractFactory } from "ethers";
+import { BytesLike, defaultAbiCoder } from "ethers/lib/utils";
 import { ethers } from "hardhat";
+import { BridgePoolFactory } from "../../typechain-types";
 import { expect } from "../chai-setup";
 
 import {
   deployUpgradeableWithFactory,
   Fixture,
+  getContractAddressFromBridgePoolCreatedEvent,
   getFixture,
   getImpersonatedSigner,
   getMetamorphicAddress,
@@ -26,6 +28,7 @@ import {
 let fixture: Fixture;
 let user: SignerWithAddress;
 let utxoOwnerSigner: SignerWithAddress;
+let factorySigner: SignerWithAddress;
 let utxoOwnerSignerAddress: string;
 let bridgeRouter: any;
 let initialUserBalance: any;
@@ -34,7 +37,12 @@ let merkleProofLibraryErrors: any;
 let nativeERC721BridgePoolV1: Contract;
 let nativeERCBridgePoolBaseErrors: Contract;
 let erc721Mock: Contract;
-const tokenId = 296850137; // to match the value in UTXO
+let bridgePoolImplFactory: ContractFactory;
+const bridgePoolTokenTypeERC721 = 1;
+const bridgePoolNativeChainId = 1337;
+const bridgePoolVersion = 1;
+const bridgePoolValue = 0;
+const tokenId = 296850137; // to match the value in test UTXO
 const tokenAmount = 1;
 const encodedDepositParameters = defaultAbiCoder.encode(
   ["tuple(uint256 tokenId_, uint256 tokenAmount_)"],
@@ -56,6 +64,7 @@ describe("Testing BridgePool Deposit/Withdraw for tokenType ERC721", async () =>
       Buffer.from("0x0"),
       encodedMockBlockClaims
     );
+    factorySigner = await getImpersonatedSigner(fixture.factory.address);
     nativeERCBridgePoolBaseErrors = await (
       await (
         await ethers.getContractFactory("NativeERCBridgePoolBaseErrors")
@@ -69,17 +78,38 @@ describe("Testing BridgePool Deposit/Withdraw for tokenType ERC721", async () =>
     erc721Mock = await (
       await (await ethers.getContractFactory("ERC721Mock")).deploy()
     ).deployed();
-    nativeERC721BridgePoolV1 = await deployUpgradeableWithFactory(
+    const bridgePoolFactory = (await deployUpgradeableWithFactory(
       fixture.factory,
+      "BridgePoolFactory",
+      "BridgePoolFactory"
+    )) as BridgePoolFactory;
+    bridgePoolImplFactory = await ethers.getContractFactory(
+      "NativeERC721BridgePoolV1"
+    );
+    const bridgePoolImplBytecode = bridgePoolImplFactory.getDeployTransaction(
+      fixture.factory.address
+    ).data as BytesLike;
+    await bridgePoolFactory
+      .connect(factorySigner)
+      .deployPoolLogic(
+        bridgePoolTokenTypeERC721,
+        bridgePoolNativeChainId,
+        bridgePoolValue,
+        bridgePoolImplBytecode
+      );
+    const tx = await bridgePoolFactory
+      .connect(factorySigner)
+      .deployNewNativePool(
+        bridgePoolTokenTypeERC721,
+        erc721Mock.address,
+        bridgePoolVersion
+      );
+    nativeERC721BridgePoolV1 = await ethers.getContractAt(
       "NativeERC721BridgePoolV1",
-      "NativeERC721BridgePoolV1",
-      [erc721Mock.address],
-      undefined,
-      undefined
+      await getContractAddressFromBridgePoolCreatedEvent(tx)
     );
     utxoOwnerSigner = await getImpersonatedSigner(utxoOwner);
     utxoOwnerSignerAddress = await utxoOwnerSigner.getAddress();
-
     // Simulate a bridge router with some gas for transactions
     const bridgeRouterAddress = getMetamorphicAddress(
       fixture.factory.address,

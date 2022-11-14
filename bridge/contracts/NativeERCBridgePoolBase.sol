@@ -11,9 +11,8 @@ import "contracts/libraries/parsers/PClaimsParserLibrary.sol";
 import "contracts/utils/MerkleProofLibrary.sol";
 import "contracts/Snapshots.sol";
 
-/// @custom:salt NativeERCBridgePoolBase
-/// @custom:deploy-type deployUpgradeable
 abstract contract NativeERCBridgePoolBase is
+    ImmutableFactory,
     ImmutableSnapshots,
     ImmutableBridgeRouter,
     IBridgePool
@@ -28,7 +27,7 @@ abstract contract NativeERCBridgePoolBase is
 
     mapping(bytes32 => bool) private _consumedUTXOIDs;
 
-    constructor() ImmutableFactory(msg.sender) {}
+    constructor(address alicenetFactoryAddress) ImmutableFactory(alicenetFactoryAddress) {}
 
     /// @notice Transfer tokens from sender
     /// @param msgSender The address of ERC sender

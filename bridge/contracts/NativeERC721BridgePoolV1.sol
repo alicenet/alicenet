@@ -8,17 +8,18 @@ import "contracts/NativeERCBridgePoolBase.sol";
 import "contracts/utils/ImmutableAuth.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
-/// @custom:salt NativeERC721BridgePoolV1
-/// @custom:deploy-type deployUpgradeable
 contract NativeERC721BridgePoolV1 is
     Initializable,
     ImmutableBridgeRouter,
     ERC721Holder,
-    NativeERCBridgePoolBase
+    NativeERCBridgePoolBase,
+    ImmutableBridgePoolFactory
 {
     address internal _erc721Contract;
 
-    function initialize(address erc721Contract_) public onlyFactory initializer {
+    constructor(address alicenetFactoryAddress) NativeERCBridgePoolBase(alicenetFactoryAddress) {}
+
+    function initialize(address erc721Contract_) public onlyBridgePoolFactory initializer {
         _erc721Contract = erc721Contract_;
     }
 
