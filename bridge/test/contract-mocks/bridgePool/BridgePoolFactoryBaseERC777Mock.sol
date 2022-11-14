@@ -7,11 +7,12 @@ import "contracts/interfaces/IBridgePool.sol";
 import "contracts/utils/BridgePoolAddressUtil.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 
-abstract contract BridgePoolFactoryBase is ImmutableFactory {
+abstract contract BridgePoolFactoryBaseERC777Mock is ImmutableFactory {
     enum TokenType {
         ERC20,
         ERC721,
-        ERC1155
+        ERC1155,
+        ERC777
     }
     enum PoolType {
         NATIVE,
@@ -37,6 +38,10 @@ abstract contract BridgePoolFactoryBase is ImmutableFactory {
 
     constructor() ImmutableFactory(msg.sender) {
         _chainID = block.chainid;
+    }
+
+    function getNativePoolType() public pure returns (PoolType) {
+        return PoolType.NATIVE;
     }
 
     // NativeERC20V!
@@ -82,15 +87,10 @@ abstract contract BridgePoolFactoryBase is ImmutableFactory {
         uint32 codeSize;
         bool native = true;
         uint16 version;
-        bytes memory alicenetFactoryAddress = abi.encodePacked(
-            bytes32(uint256(uint160(_factoryAddress())))
-        );
         assembly {
             let ptr := mload(0x40)
             calldatacopy(ptr, deployCode_.offset, deployCode_.length)
-            // add bytes32 alicenet factory address as parameter to constructor
-            mstore(add(ptr, deployCode_.length), alicenetFactoryAddress)
-            addr := create(value_, ptr, add(deployCode_.length, 32))
+            addr := create(value_, ptr, deployCode_.length)
             codeSize := extcodesize(addr)
         }
         if (codeSize == 0) {
@@ -197,6 +197,8 @@ abstract contract BridgePoolFactoryBase is ImmutableFactory {
             key = string.concat(key, "ERC721");
         } else if (tokenType_ == uint8(TokenType.ERC1155)) {
             key = string.concat(key, "ERC1155");
+        } else if (tokenType_ == uint8(TokenType.ERC777)) {
+            key = string.concat(key, "ERC777");
         }
         key = string.concat(key, "V", Strings.toString(version_));
         return key;
