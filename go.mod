@@ -5,7 +5,7 @@ go 1.19
 require (
 	github.com/MadBase/go-capnproto2/v2 v2.18.0-custom.1
 	github.com/bufbuild/buf v1.9.0
-	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.0.1
+	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.1.0
 	github.com/derision-test/go-mockgen v1.3.7
 	github.com/dgraph-io/badger/v2 v2.2007.4
 	github.com/emicklei/proto v1.11.0
