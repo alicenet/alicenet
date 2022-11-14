@@ -357,6 +357,17 @@ export async function getSortedDeployList(
   return deploymentList;
 }
 
+export async function extractFullContractInfoByContractName(
+  contractName: string,
+  artifacts: Artifacts,
+  ethers: Ethers
+): Promise<DeploymentConfig> {
+  const fullyQualifiedName = await getFullyQualifiedName(
+    contractName,
+    artifacts
+  );
+  return extractFullContractInfo(fullyQualifiedName, artifacts, ethers);
+}
 export async function extractFullContractInfo(
   fullName: string,
   artifacts: Artifacts,

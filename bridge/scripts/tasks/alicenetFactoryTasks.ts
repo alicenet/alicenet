@@ -18,12 +18,11 @@ import {
 } from "../lib/deployment/tasks";
 import {
   checkUserDirPath,
-  extractFullContractInfo,
+  extractFullContractInfoByContractName,
   generateDeployConfigTemplate,
   getAllContracts,
   getBytes32SaltFromContractNSTag,
   getDeployType,
-  getFullyQualifiedName,
   getSortedDeployList,
   populateConstructorArgs,
   populateInitializerArgs,
@@ -209,14 +208,9 @@ task(
   .addOptionalParam("outputFolder", "output folder path to save factory state")
   .addOptionalVariadicPositionalParam("constructorArgs", "constructor argfu")
   .setAction(async (taskArgs, hre) => {
-    const fullyQualifiedName = await getFullyQualifiedName(
-      taskArgs.contractName,
-      hre.artifacts
-    );
-
     const deploymentConfigForContract: DeploymentConfig =
-      await extractFullContractInfo(
-        fullyQualifiedName,
+      await extractFullContractInfoByContractName(
+        taskArgs.contractName,
         hre.artifacts,
         hre.ethers
       );
@@ -292,7 +286,43 @@ task("deploy-create2", "deploys a contract from the factory using create2")
     "array that holds all arguments for constructor"
   )
   .setAction(async (taskArgs, hre) => {
-    return await deployCreate2Task(taskArgs, hre);
+    const deploymentConfigForContract: DeploymentConfig =
+      await extractFullContractInfoByContractName(
+        taskArgs.contractName,
+        hre.artifacts,
+        hre.ethers
+      );
+
+    if (
+      taskArgs.constructorArgs === undefined &&
+      Object.keys(deploymentConfigForContract.constructorArgs).length > 0
+    ) {
+      throw new Error(
+        "constructorArgs must be specified for contract: " +
+          taskArgs.contractName
+      );
+    }
+
+    if (taskArgs.constructorArgs !== undefined) {
+      const constructorArgsArray = taskArgs.constructorArgs.split(",");
+      populateConstructorArgs(
+        constructorArgsArray,
+        deploymentConfigForContract
+      );
+    }
+    deploymentConfigForContract.salt = hre.ethers.utils.formatBytes32String(
+      taskArgs.salt
+    );
+
+    return await deployCreate2Task(
+      deploymentConfigForContract,
+      hre,
+      taskArgs.waitConfirmation,
+      undefined,
+      taskArgs.factoryAddress,
+      taskArgs.verify,
+      taskArgs.standAlone
+    );
   });
 
 // factoryName param doesnt do anything right now
@@ -318,14 +348,9 @@ task("deploy-create", "deploys a contract from the factory using create")
     "array that holds all arguments for constructor"
   )
   .setAction(async (taskArgs, hre) => {
-    const fullyQualifiedName = await getFullyQualifiedName(
-      taskArgs.contractName,
-      hre.artifacts
-    );
-
     const deploymentConfigForContract: DeploymentConfig =
-      await extractFullContractInfo(
-        fullyQualifiedName,
+      await extractFullContractInfoByContractName(
+        taskArgs.contractName,
         hre.artifacts,
         hre.ethers
       );
@@ -384,14 +409,9 @@ task(
     "array that holds all arguments for constructor, defaults to empty array"
   )
   .setAction(async (taskArgs, hre) => {
-    const fullyQualifiedName = await getFullyQualifiedName(
-      taskArgs.contractName,
-      hre.artifacts
-    );
-
     const deploymentConfigForContract: DeploymentConfig =
-      await extractFullContractInfo(
-        fullyQualifiedName,
+      await extractFullContractInfoByContractName(
+        taskArgs.contractName,
         hre.artifacts,
         hre.ethers
       );
@@ -468,18 +488,65 @@ task(
     "input initializer arguments as comma separated string values, eg: --initializerArgs 'arg1, arg2'"
   )
   .addOptionalParam(
-    "configFile",
-    "deployment configuration json file",
-    DEFAULT_CONFIG_FILE_PATH,
-    types.string
-  )
-  .addOptionalParam(
     "waitConfirmation",
     "wait specified number of blocks between transactions",
     0,
     types.int
   )
-  .addOptionalVariadicPositionalParam("constructorArgs")
+  .addOptionalVariadicPositionalParam(
+    "constructorArgs",
+    "array that holds all arguments for constructor, defaults to empty array"
+  )
   .setAction(async (taskArgs, hre) => {
-    return await upgradeProxyTask(taskArgs, hre);
+    const deploymentConfigForContract: DeploymentConfig =
+      await extractFullContractInfoByContractName(
+        taskArgs.contractName,
+        hre.artifacts,
+        hre.ethers
+      );
+
+    // TODO is this needed if we are using the config file? should it be removed?
+    if (
+      taskArgs.initializerArgs === undefined &&
+      Object.keys(deploymentConfigForContract.initializerArgs).length > 0
+    ) {
+      throw new Error(
+        "initializerArgs must be specified for contract: " +
+          taskArgs.contractName
+      );
+    }
+
+    if (
+      taskArgs.constructorArgs === undefined &&
+      Object.keys(deploymentConfigForContract.constructorArgs).length > 0
+    ) {
+      throw new Error(
+        "constructorArgs must be specified for contract: " +
+          taskArgs.contractName
+      );
+    }
+
+    if (taskArgs.initializerArgs !== undefined) {
+      const initializerArgsArray = taskArgs.initializerArgs.split(",");
+      populateInitializerArgs(
+        initializerArgsArray,
+        deploymentConfigForContract
+      );
+    }
+
+    if (taskArgs.constructorArgs !== undefined) {
+      const constructorArgsArray = taskArgs.constructorArgs.split(",");
+      populateConstructorArgs(
+        constructorArgsArray,
+        deploymentConfigForContract
+      );
+    }
+
+    return await upgradeProxyTask(
+      deploymentConfigForContract,
+      hre,
+      taskArgs.waitConfirmation,
+      undefined,
+      taskArgs.factoryAddress
+    );
   });
