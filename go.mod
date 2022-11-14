@@ -6,7 +6,7 @@ require (
 	github.com/MadBase/go-capnproto2/v2 v2.18.0-custom.1
 	github.com/bufbuild/buf v1.9.0
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.0.1
-	github.com/derision-test/go-mockgen v1.3.6
+	github.com/derision-test/go-mockgen v1.3.7
 	github.com/dgraph-io/badger/v2 v2.2007.4
 	github.com/emicklei/proto v1.11.0
 	github.com/ethereum/go-ethereum v1.10.26
@@ -168,6 +168,7 @@ require (
 	github.com/urfave/cli/v2 v2.10.2 // indirect
 	github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673 // indirect
 	gitlab.com/NebulousLabs/fastrand v0.0.0-20181126182046-603482d69e40 // indirect
+	go.etcd.io/etcd/server/v3 v3.5.5 // indirect
 	go.opencensus.io v0.23.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.36.3 // indirect
 	go.opentelemetry.io/otel v1.11.0 // indirect
