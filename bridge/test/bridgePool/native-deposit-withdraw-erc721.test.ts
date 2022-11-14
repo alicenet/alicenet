@@ -30,7 +30,7 @@ let user: SignerWithAddress;
 let utxoOwnerSigner: SignerWithAddress;
 let factorySigner: SignerWithAddress;
 let utxoOwnerSignerAddress: string;
-let bridgeRouter: any;
+let asBridgeRouter: any;
 let initialUserBalance: any;
 let initialBridgePoolBalance: any;
 let merkleProofLibraryErrors: any;
@@ -87,7 +87,8 @@ describe("Testing BridgePool Deposit/Withdraw for tokenType ERC721", async () =>
       "NativeERC721BridgePoolV1"
     );
     const bridgePoolImplBytecode = bridgePoolImplFactory.getDeployTransaction(
-      fixture.factory.address
+      fixture.factory.address,
+      fixture.snapshots.address
     ).data as BytesLike;
     await bridgePoolFactory
       .connect(factorySigner)
@@ -115,7 +116,7 @@ describe("Testing BridgePool Deposit/Withdraw for tokenType ERC721", async () =>
       fixture.factory.address,
       "BridgeRouter"
     );
-    bridgeRouter = await getImpersonatedSigner(bridgeRouterAddress);
+    asBridgeRouter = await getImpersonatedSigner(bridgeRouterAddress);
     erc721Mock.mint(utxoOwnerSignerAddress, tokenId);
     erc721Mock
       .connect(utxoOwnerSigner)
@@ -130,9 +131,17 @@ describe("Testing BridgePool Deposit/Withdraw for tokenType ERC721", async () =>
     await loadFixture(deployFixture);
   });
 
-  it("Should make a deposit", async () => {
+  it("Should fail to make a deposit if not called from bridgeRouter", async () => {
+    await expect(
+      nativeERC721BridgePoolV1.deposit(
+        utxoOwnerSignerAddress,
+        encodedDepositParameters
+      )
+    ).to.be.revertedWithCustomError(bridgePoolImplFactory, "OnlyBridgeRouter");
+  });
+  it("Should make a deposit if called from bridgeRouter", async () => {
     await nativeERC721BridgePoolV1
-      .connect(bridgeRouter)
+      .connect(asBridgeRouter)
       .deposit(utxoOwnerSignerAddress, encodedDepositParameters);
     expect(await erc721Mock.balanceOf(utxoOwnerSignerAddress)).to.be.eq(
       initialUserBalance - tokenAmount
@@ -145,11 +154,11 @@ describe("Testing BridgePool Deposit/Withdraw for tokenType ERC721", async () =>
   it("Should make a withdraw for amount specified on informed burned UTXO upon proof verification", async () => {
     // Make first a deposit to withdraw afterwards
     await nativeERC721BridgePoolV1
-      .connect(bridgeRouter)
+      .connect(asBridgeRouter)
       .deposit(utxoOwnerSignerAddress, encodedDepositParameters);
     await nativeERC721BridgePoolV1
-      .connect(utxoOwnerSigner)
-      .withdraw(vsPreImage, proofs);
+      .connect(asBridgeRouter)
+      .withdraw(utxoOwnerSigner.address, vsPreImage, proofs);
     expect(await erc721Mock.balanceOf(utxoOwnerSignerAddress)).to.be.eq(
       initialUserBalance
     );
@@ -160,15 +169,15 @@ describe("Testing BridgePool Deposit/Withdraw for tokenType ERC721", async () =>
 
   it("Should not make a withdraw on an already withdrawn UTXO upon proofs verification", async () => {
     await nativeERC721BridgePoolV1
-      .connect(bridgeRouter)
+      .connect(asBridgeRouter)
       .deposit(utxoOwnerSignerAddress, encodedDepositParameters);
     await nativeERC721BridgePoolV1
-      .connect(utxoOwnerSigner)
-      .withdraw(vsPreImage, proofs);
+      .connect(asBridgeRouter)
+      .withdraw(utxoOwnerSignerAddress, vsPreImage, proofs);
     await expect(
       nativeERC721BridgePoolV1
-        .connect(utxoOwnerSigner)
-        .withdraw(vsPreImage, proofs)
+        .connect(asBridgeRouter)
+        .withdraw(utxoOwnerSignerAddress, vsPreImage, proofs)
     ).to.be.revertedWithCustomError(
       nativeERCBridgePoolBaseErrors,
       "UTXOAlreadyWithdrawn"
@@ -178,8 +187,8 @@ describe("Testing BridgePool Deposit/Withdraw for tokenType ERC721", async () =>
   it("Should not make a withdraw for amount specified on informed burned UTXO with wrong merkle proof", async () => {
     await expect(
       nativeERC721BridgePoolV1
-        .connect(utxoOwnerSigner)
-        .withdraw(vsPreImage, wrongProofs)
+        .connect(asBridgeRouter)
+        .withdraw(utxoOwnerSignerAddress, vsPreImage, wrongProofs)
     ).to.be.revertedWithCustomError(
       merkleProofLibraryErrors,
       "ProofDoesNotMatchTrieRoot"
@@ -188,7 +197,9 @@ describe("Testing BridgePool Deposit/Withdraw for tokenType ERC721", async () =>
 
   it("Should not make a withdraw if sender does not match UTXO owner", async () => {
     await expect(
-      nativeERC721BridgePoolV1.connect(user).withdraw(vsPreImage, proofs)
+      nativeERC721BridgePoolV1
+        .connect(asBridgeRouter)
+        .withdraw(user.address, vsPreImage, proofs)
     ).to.be.revertedWithCustomError(
       nativeERCBridgePoolBaseErrors,
       "UTXOAccountDoesNotMatchReceiver"
@@ -198,8 +209,8 @@ describe("Testing BridgePool Deposit/Withdraw for tokenType ERC721", async () =>
   it("Should not make a withdraw if chainId in UTXO does not match chainId in snapshot's claims", async () => {
     await expect(
       nativeERC721BridgePoolV1
-        .connect(utxoOwnerSigner)
-        .withdraw(wrongChainIdVSPreImage, proofs)
+        .connect(asBridgeRouter)
+        .withdraw(utxoOwnerSignerAddress, wrongChainIdVSPreImage, proofs)
     ).to.be.revertedWithCustomError(
       nativeERCBridgePoolBaseErrors,
       "ChainIdDoesNotMatch"
@@ -209,8 +220,8 @@ describe("Testing BridgePool Deposit/Withdraw for tokenType ERC721", async () =>
   it("Should not make a withdraw if UTXOID in UTXO does not match UTXOID in proof", async () => {
     await expect(
       nativeERC721BridgePoolV1
-        .connect(utxoOwnerSigner)
-        .withdraw(wrongUTXOIDVSPreImage, proofs)
+        .connect(asBridgeRouter)
+        .withdraw(utxoOwnerSignerAddress, wrongUTXOIDVSPreImage, proofs)
     ).to.be.revertedWithCustomError(
       nativeERCBridgePoolBaseErrors,
       "MerkleProofKeyDoesNotMatchUTXOID"
@@ -220,8 +231,8 @@ describe("Testing BridgePool Deposit/Withdraw for tokenType ERC721", async () =>
   it("Should not call a withdraw if state key does not match txhash key", async () => {
     await expect(
       nativeERC721BridgePoolV1
-        .connect(utxoOwnerSigner)
-        .withdraw(vsPreImage, wrongKeyProofs)
+        .connect(asBridgeRouter)
+        .withdraw(utxoOwnerSignerAddress, vsPreImage, wrongKeyProofs)
     ).to.be.revertedWithCustomError(
       nativeERCBridgePoolBaseErrors,
       "UTXODoesnotMatch"

@@ -11,12 +11,7 @@ import "contracts/libraries/parsers/PClaimsParserLibrary.sol";
 import "contracts/utils/MerkleProofLibrary.sol";
 import "contracts/Snapshots.sol";
 
-abstract contract NativeERCBridgePoolBase is
-    ImmutableFactory,
-    ImmutableSnapshots,
-    ImmutableBridgeRouter,
-    IBridgePool
-{
+abstract contract NativeERCBridgePoolBase is ImmutableFactory, ImmutableBridgeRouter, IBridgePool {
     using MerkleProofParserLibrary for bytes;
     using MerkleProofLibrary for MerkleProofParserLibrary.MerkleProof;
 
@@ -25,9 +20,15 @@ abstract contract NativeERCBridgePoolBase is
         uint256 tokenAmount;
     }
 
+    address private immutable _snapshotsAddress;
+
     mapping(bytes32 => bool) private _consumedUTXOIDs;
 
-    constructor(address alicenetFactoryAddress) ImmutableFactory(alicenetFactoryAddress) {}
+    constructor(address alicenetFactoryAddress, address snapshotsAddress_)
+        ImmutableFactory(alicenetFactoryAddress)
+    {
+        _snapshotsAddress = snapshotsAddress_;
+    }
 
     /// @notice Transfer tokens from sender
     /// @param msgSender The address of ERC sender
@@ -40,31 +41,37 @@ abstract contract NativeERCBridgePoolBase is
     {}
 
     /// @notice Transfer tokens to sender upon proofs verification
+    /// @param msgReceiver The address of ERC receiver
     /// @param vsPreImage burned UTXO in chain
     /// @param proofs Proofs of inclusion of burned UTXO
-    function withdraw(bytes memory vsPreImage, bytes[4] memory proofs)
-        public
-        virtual
-        override
-        returns (address account, uint256 value)
-    {
+    function withdraw(
+        address msgReceiver,
+        bytes memory vsPreImage,
+        bytes[4] memory proofs
+    ) public virtual override onlyBridgeRouter returns (address account, uint256 value) {
         MerkleProofParserLibrary.MerkleProof memory proofInclusionStateRoot = _verifyProofs(proofs);
-        (account, value) = _getValidatedTransferData(vsPreImage, proofInclusionStateRoot);
+        (account, value) = _getValidatedTransferData(
+            msgReceiver,
+            vsPreImage,
+            proofInclusionStateRoot
+        );
     }
 
     /// @notice Obtains trasfer data upon UTXO verification
+    /// @param msgReceiver The address of ERC receiver
     /// @param _vsPreImage burned UTXO
     /// @param proofInclusionStateRoot Proof of inclusion of UTXO in the stateTrie
     function _getValidatedTransferData(
+        address msgReceiver,
         bytes memory _vsPreImage,
         MerkleProofParserLibrary.MerkleProof memory proofInclusionStateRoot
     ) internal returns (address, uint256) {
         VSPreImageParserLibrary.VSPreImage memory vsPreImage = VSPreImageParserLibrary
             .extractVSPreImage(_vsPreImage);
-        if (vsPreImage.chainId != ISnapshots(_snapshotsAddress()).getChainId()) {
+        if (vsPreImage.chainId != ISnapshots(_snapshotsAddress).getChainId()) {
             revert NativeERCBridgePoolBaseErrors.ChainIdDoesNotMatch(
                 vsPreImage.chainId,
-                ISnapshots(_snapshotsAddress()).getChainId()
+                ISnapshots(_snapshotsAddress).getChainId()
             );
         }
         bytes32 computedUTXOID = AccusationsLibrary.computeUTXOID(
@@ -77,10 +84,10 @@ abstract contract NativeERCBridgePoolBase is
                 proofInclusionStateRoot.key
             );
         }
-        if (vsPreImage.account != msg.sender) {
+        if (vsPreImage.account != msgReceiver) {
             revert NativeERCBridgePoolBaseErrors.UTXOAccountDoesNotMatchReceiver(
                 vsPreImage.account,
-                msg.sender
+                msgReceiver
             );
         }
         if (_consumedUTXOIDs[computedUTXOID] == true) {
@@ -101,7 +108,7 @@ abstract contract NativeERCBridgePoolBase is
         view
         returns (MerkleProofParserLibrary.MerkleProof memory)
     {
-        BClaimsParserLibrary.BClaims memory bClaims = Snapshots(_snapshotsAddress())
+        BClaimsParserLibrary.BClaims memory bClaims = Snapshots(_snapshotsAddress)
             .getBlockClaimsFromLatestSnapshot();
         // Validate proofInclusionHeaderRoot against bClaims.headerRoot.
         MerkleProofParserLibrary.MerkleProof

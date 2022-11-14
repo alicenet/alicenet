@@ -17,13 +17,15 @@ contract NativeERC721BridgePoolV1 is
 {
     address internal _erc721Contract;
 
-    constructor(address alicenetFactoryAddress) NativeERCBridgePoolBase(alicenetFactoryAddress) {}
+    constructor(address alicenetFactoryAddress, address snapshotsAddress)
+        NativeERCBridgePoolBase(alicenetFactoryAddress, snapshotsAddress)
+    {}
 
     function initialize(address erc721Contract_) public onlyBridgePoolFactory initializer {
         _erc721Contract = erc721Contract_;
     }
 
-    /// @notice Transfer tokens from sender and emit a "Deposited" event for minting correspondent tokens in sidechain
+    /// @notice Transfer tokens from sender and emit a "Deposited" event for minting correspondent tokens in L2
     /// @param msgSender The address of ERC sender
     /// @param depositParameters_ encoded deposit parameters (ERC20:tokenAmount, ERC721:tokenId or ERC1155:tokenAmount+tokenId)
     function deposit(address msgSender, bytes calldata depositParameters_) public virtual override {
@@ -39,13 +41,16 @@ contract NativeERC721BridgePoolV1 is
         );
     }
 
-    function withdraw(bytes memory vsPreImage, bytes[4] memory proofs)
-        public
-        virtual
-        override
-        returns (address account, uint256 value)
-    {
-        (account, value) = super.withdraw(vsPreImage, proofs);
+    /// @notice Obtains trasfer data upon UTXO verification
+    /// @param msgReceiver The address of ERC receiver
+    /// @param vsPreImage burned UTXO
+    /// @param proofs Proofs of inclusion of burned UTXO
+    function withdraw(
+        address msgReceiver,
+        bytes memory vsPreImage,
+        bytes[4] memory proofs
+    ) public virtual override returns (address account, uint256 value) {
+        (account, value) = super.withdraw(msgReceiver, vsPreImage, proofs);
         IERC721Transferable(_erc721Contract).safeTransferFrom(address(this), account, value);
     }
 }
