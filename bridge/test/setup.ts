@@ -173,7 +173,15 @@ export const createUsers = async (
   return users;
 };
 
-async function getContractAddressFromDeployedProxyEvent(
+export async function getContractAddressFromDeployedStaticEvent(
+  tx: ContractTransaction
+): Promise<string> {
+  const eventSignature = "event DeployedStatic(address contractAddr)";
+  const eventName = "DeployedStatic";
+  return await getContractAddressFromEventLog(tx, eventSignature, eventName);
+}
+
+export async function getContractAddressFromDeployedProxyEvent(
   tx: ContractTransaction
 ): Promise<string> {
   const eventSignature = "event DeployedProxy(address contractAddr)";
@@ -281,7 +289,6 @@ export const deployUpgradeableWithFactory = async (
       saltBytes = getBytes32Salt(salt);
     }
   }
-
   const transaction2 = await factory.deployProxy(saltBytes);
   receipt = await ethers.provider.getTransactionReceipt(transaction2.hash);
   if (
