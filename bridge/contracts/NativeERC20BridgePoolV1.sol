@@ -18,7 +18,9 @@ contract NativeERC20BridgePoolV1 is
 {
     address internal _erc20Contract;
 
-    constructor(address alicenetFactoryAddress) NativeERCBridgePoolBase(alicenetFactoryAddress) {}
+    constructor(address alicenetFactoryAddress, address snapshotsAddress)
+        NativeERCBridgePoolBase(alicenetFactoryAddress, snapshotsAddress)
+    {}
 
     function initialize(address erc20Contract_) public onlyBridgePoolFactory initializer {
         _erc20Contract = erc20Contract_;
@@ -40,13 +42,16 @@ contract NativeERC20BridgePoolV1 is
         );
     }
 
-    function withdraw(bytes memory vsPreImage, bytes[4] memory proofs)
-        public
-        virtual
-        override
-        returns (address account, uint256 value)
-    {
-        (account, value) = super.withdraw(vsPreImage, proofs);
+    /// @notice Transfer tokens to sender upon proofs verification
+    /// @param msgReceiver The address of ERC receiver
+    /// @param vsPreImage burned UTXO in chain
+    /// @param proofs Proofs of inclusion of burned UTXO
+    function withdraw(
+        address msgReceiver,
+        bytes memory vsPreImage,
+        bytes[4] memory proofs
+    ) public virtual override returns (address account, uint256 value) {
+        (account, value) = super.withdraw(msgReceiver, vsPreImage, proofs);
         _safeTransferERC20(IERC20Transferable(_erc20Contract), account, value);
     }
 }
