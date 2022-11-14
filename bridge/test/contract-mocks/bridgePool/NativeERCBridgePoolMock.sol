@@ -9,7 +9,9 @@ contract NativeERCBridgePoolMock is
 {
     address internal _ercContract;
 
-    constructor(address alicenetFactoryAddress) NativeERCBridgePoolBase(alicenetFactoryAddress) {}
+    constructor(address alicenetFactoryAddress, address snapshotsAddress)
+        NativeERCBridgePoolBase(alicenetFactoryAddress, snapshotsAddress)
+    {}
 
     function initialize(address ercContract_) public onlyBridgePoolFactory initializer {
         _ercContract = ercContract_;
@@ -19,11 +21,11 @@ contract NativeERCBridgePoolMock is
         super.deposit(msgSender, depositParameters_);
     }
 
-    function withdraw(bytes memory vsPreImage, bytes[4] memory proofs)
-        public
-        override
-        returns (address account, uint256 value)
-    {
-        (account, value) = super.withdraw(vsPreImage, proofs);
+    function withdraw(
+        address msgSender,
+        bytes memory vsPreImage,
+        bytes[4] memory proofs
+    ) public override returns (address account, uint256 value) {
+        (account, value) = super.withdraw(msgSender, vsPreImage, proofs);
     }
 }
