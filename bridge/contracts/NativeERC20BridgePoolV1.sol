@@ -26,32 +26,32 @@ contract NativeERC20BridgePoolV1 is
         _erc20Contract = erc20Contract_;
     }
 
-    /// @notice Transfer tokens from sender and emit a "Deposited" event for minting correspondent tokens in sidechain
-    /// @param msgSender The address of ERC sender
+    /// @notice Transfer tokens from sender to Bridge Pool
+    /// @param sender The address of ERC sender
     /// @param depositParameters_ encoded deposit parameters (ERC20:tokenAmount, ERC721:tokenId or ERC1155:tokenAmount+tokenId)
-    function deposit(address msgSender, bytes calldata depositParameters_) public virtual override {
-        super.deposit(msgSender, depositParameters_);
+    function deposit(address sender, bytes calldata depositParameters_) public virtual override {
+        super.deposit(sender, depositParameters_);
         DepositParameters memory _depositParameters = abi.decode(
             depositParameters_,
             (DepositParameters)
         );
         _safeTransferFromERC20(
             IERC20Transferable(_erc20Contract),
-            msgSender,
+            sender,
             _depositParameters.tokenAmount
         );
     }
 
-    /// @notice Transfer tokens to sender upon proofs verification
-    /// @param msgReceiver The address of ERC receiver
-    /// @param vsPreImage burned UTXO in chain
+    /// @notice Transfer tokens from Bridge Pool to receiver upon proofs verification
+    /// @param receiver The address of ERC receiver
+    /// @param encodedVsPreImage burned UTXO in chain
     /// @param proofs Proofs of inclusion of burned UTXO
     function withdraw(
-        address msgReceiver,
-        bytes memory vsPreImage,
+        address receiver,
+        bytes memory encodedVsPreImage,
         bytes[4] memory proofs
-    ) public virtual override returns (address account, uint256 value) {
-        (account, value) = super.withdraw(msgReceiver, vsPreImage, proofs);
-        _safeTransferERC20(IERC20Transferable(_erc20Contract), account, value);
+    ) public virtual override returns (uint256 amount) {
+       amount = super.withdraw(receiver, encodedVsPreImage, proofs);
+        _safeTransferERC20(IERC20Transferable(_erc20Contract), receiver, amount);
     }
 }
