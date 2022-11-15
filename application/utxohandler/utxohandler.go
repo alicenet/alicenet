@@ -241,6 +241,7 @@ func (ut *UTXOHandler) IsValid(txn *badger.Txn, txs objs.TxVec, currentHeight ui
 		utils.DebugTrace(ut.logger, err)
 		return nil, err
 	}
+	var generatedUTXOsAlreadyInTheTrie []string
 	for j := 0; j < len(generatedUTXOIDs); j++ {
 		ok, err := ut.TrieContains(txn, utils.CopySlice(generatedUTXOIDs[j]))
 		if err != nil {
@@ -248,8 +249,11 @@ func (ut *UTXOHandler) IsValid(txn *badger.Txn, txs objs.TxVec, currentHeight ui
 			return nil, err
 		}
 		if ok {
-			return nil, errorz.ErrInvalid{}.New("utxoHandler.IsValid; utxoID already in trie")
+			generatedUTXOsAlreadyInTheTrie = append(generatedUTXOsAlreadyInTheTrie, utils.EncodeHexString(generatedUTXOIDs[j]))
 		}
+	}
+	if len(generatedUTXOsAlreadyInTheTrie) > 0 {
+		return nil, errorz.ErrInvalid{}.New(fmt.Sprintf("utxoHandler.IsValid; utxoIDs already in trie: %v", generatedUTXOsAlreadyInTheTrie))
 	}
 
 	// check that all consumed utxos are in the trie already
@@ -259,6 +263,7 @@ func (ut *UTXOHandler) IsValid(txn *badger.Txn, txs objs.TxVec, currentHeight ui
 		utils.DebugTrace(ut.logger, err)
 		return nil, err
 	}
+	var consumedUTXOsNotInTheTrie []string
 	for j := 0; j < len(consumedUTXOIDs); j++ {
 		ok, err := ut.TrieContains(txn, utils.CopySlice(consumedUTXOIDs[j]))
 		if err != nil {
@@ -266,8 +271,11 @@ func (ut *UTXOHandler) IsValid(txn *badger.Txn, txs objs.TxVec, currentHeight ui
 			return nil, err
 		}
 		if !ok {
-			return nil, errorz.ErrInvalid{}.New("utxoHandler.IsValid; consumed utxoID not in trie")
+			consumedUTXOsNotInTheTrie = append(consumedUTXOsNotInTheTrie, utils.EncodeHexString(utils.CopySlice(consumedUTXOIDs[j])))
 		}
+	}
+	if len(consumedUTXOsNotInTheTrie) > 0 {
+		return nil, errorz.ErrInvalid{}.New(fmt.Sprintf("utxoHandler.IsValid; consumed utxoIDs not in trie: %v", consumedUTXOsNotInTheTrie))
 	}
 	utxos, missing, err := ut.Get(txn, consumedUTXOIDs)
 	if err != nil {
@@ -275,7 +283,7 @@ func (ut *UTXOHandler) IsValid(txn *badger.Txn, txs objs.TxVec, currentHeight ui
 		return nil, err
 	}
 	if len(missing) > 0 {
-		return nil, errorz.ErrInvalid{}.New("utxoHandler.IsValid; missing transactions")
+		return nil, errorz.ErrInvalid{}.New(fmt.Sprintf("utxoHandler.IsValid; missing transactions: %s", utils.EncodeArrayOfHexStrings(missing)))
 	}
 	return utxos, nil
 }
@@ -423,6 +431,7 @@ func (ut *UTXOHandler) GetData(txn *badger.Txn, owner *objs.Owner, dataIdx []byt
 // the total byte count of the returned UTXOs. This is used to collect expired
 // dataStores for deletion.
 func (ut *UTXOHandler) GetExpiredForProposal(txn *badger.Txn, ctx context.Context, chainID, height uint32, curveSpec constants.CurveSpec, signer objs.Signer, maxBytes uint32, storage *wrapper.Storage) (*objs.Tx, uint32, error) {
+	//  What happens if we have more than 128 elements? maxObjects
 	utxoIDs, remaingBytes := ut.expIndex.GetExpiredObjects(txn, utils.Epoch(height), maxBytes, constants.MaxTxVectorLength)
 	utxos := []*objs.TXOut{}
 	var utxoID []byte
@@ -459,6 +468,7 @@ func (ut *UTXOHandler) GetExpiredForProposal(txn *badger.Txn, ctx context.Contex
 			utils.DebugTrace(ut.logger, err)
 			return nil, 0, err
 		}
+		// this would get only one epoch per ds value? Why? and remainders?
 		value, err := utxos.RemainingValue(height)
 		if err != nil {
 			utils.DebugTrace(ut.logger, err)

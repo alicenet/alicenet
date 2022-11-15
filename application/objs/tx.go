@@ -585,6 +585,7 @@ func (b *Tx) CannotBeMinedUntil() (uint32, error) {
 	return maxBH, nil
 }
 
+// todo: clean this up
 // ValidateIssuedAtForMining ...
 func (b *Tx) ValidateIssuedAtForMining(currentHeight uint32) error {
 	if b == nil {
@@ -620,6 +621,7 @@ func (b *Tx) ValidateIssuedAtForMining(currentHeight uint32) error {
 	return nil
 }
 
+// better documentation!!!!
 // EpochOfExpirationForMining ...
 func (b *Tx) EpochOfExpirationForMining() (uint32, error) {
 	if b == nil {
@@ -628,6 +630,7 @@ func (b *Tx) EpochOfExpirationForMining() (uint32, error) {
 	if len(b.Vout) == 0 {
 		return 0, errorz.ErrInvalid{}.New("tx.epochOfExpirationForMining: tx.vout not initialized")
 	}
+	// what is hmap?
 	hmap := make(map[uint32]bool)
 	for _, utxo := range b.Vout {
 		mbh, err := utxo.MustBeMinedBeforeHeight()
@@ -644,6 +647,7 @@ func (b *Tx) EpochOfExpirationForMining() (uint32, error) {
 	if len(hmap) > 1 {
 		return 0, errorz.ErrInvalid{}.New("tx.epochOfExpirationForMining: conflicting IssuedAt")
 	}
+	//todo: get this from mbh directly
 	mbh := uint32(0)
 	for k := range hmap {
 		mbh = k
