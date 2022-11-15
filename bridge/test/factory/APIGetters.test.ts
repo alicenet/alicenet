@@ -31,10 +31,15 @@ describe("AliceNetfactory API test", async () => {
   });
 
   it("deploy Upgradeable", async () => {
-    const txResponse = await deployUpgradeable(MOCK, factory, ethers, "0x", [
-      "2",
-      "s",
-    ]);
+    const salt = ethers.utils.formatBytes32String(MOCK);
+    const txResponse = await deployUpgradeable(
+      MOCK,
+      factory,
+      ethers,
+      "0x",
+      ["2", "s"],
+      salt
+    );
     const receipt = await txResponse.wait();
     const proxyAddress = getEventVar(receipt, "DeployedProxy", CONTRACT_ADDR);
 

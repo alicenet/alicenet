@@ -15,7 +15,7 @@ import {
 
 type Ethers = typeof ethers;
 
-export async function encodeInitCallData(
+export function encodeInitCallData(
   implementationBase: ContractFactory,
   initializerArgs?: any[]
 ) {
@@ -444,7 +444,7 @@ export function readJSON(file: string) {
 }
 
 export function populateInitializerArgs(
-  initializerArgs: string[],
+  initializerArgs: any[],
   deploymentConfigForContract: DeploymentConfig
 ) {
   const initializerArgsArray = initializerArgs;
@@ -465,7 +465,7 @@ export function populateInitializerArgs(
 }
 
 export function populateConstructorArgs(
-  constructorArgs: string[],
+  constructorArgs: any[],
   deploymentConfigForContract: DeploymentConfig
 ) {
   const constructorArgsArray = constructorArgs;
@@ -485,7 +485,11 @@ export function populateConstructorArgs(
   }
 }
 
-function calculateSalt(salt: string, saltType: string, ethers: Ethers): string {
+export function calculateSalt(
+  salt: string,
+  saltType: string | undefined,
+  ethers: Ethers
+): string {
   return saltType === undefined
     ? ethers.utils.formatBytes32String(salt)
     : ethers.utils.keccak256(

@@ -370,7 +370,7 @@ export async function deployUpgradeableGasSafe(
  * @param initCallData encoded inititalize call data
  * @param constructorArgs constructor arguments (can only be used for immutable variables)
  * @param salt bytes32 formatted salt used to deploy the proxy
- * @param waitConfirmantions
+ * @param waitConfirmations
  * @param overrides
  * @returns
  */
@@ -381,7 +381,7 @@ export async function upgradeProxyGasSafe(
   initCallData: string,
   constructorArgs: any[],
   salt: string,
-  waitConfirmantions: number = 0,
+  waitConfirmations: number = 0,
   overrides?: Overrides & { from?: PromiseOrValue<string> }
 ) {
   const ImplementationBase = await ethers.getContractFactory(contractName);
@@ -397,28 +397,46 @@ export async function upgradeProxyGasSafe(
     );
   } catch (err) {
     if (err instanceof MultiCallGasError) {
-      return upgradeProxy(
+      const txResponse = await deployCreate(
         ImplementationBase,
         factory,
-        initCallData,
+        ethers,
         constructorArgs,
-        salt,
-        waitConfirmantions,
         overrides
       );
+
+      const receipt = await txResponse.wait(waitConfirmations);
+      const logicAddress = getEventVar(
+        receipt,
+        EVENT_DEPLOYED_RAW,
+        CONTRACT_ADDR
+      );
+      return upgradeProxy(logicAddress, factory, initCallData, salt, overrides);
     }
     throw err;
   }
 }
 
+/**
+ * @param contract name of the contract to deploy, or a contract factory
+ * @param factory instance of deployed and connected alicenetFactory
+ * @param ethers ethers js object
+ * @param constructorArgs constructor arguments for the implementation contract
+ * @param overrides
+ * @returns a promise that resolves to a transaction response
+ */
 export async function deployCreate(
-  contractName: string,
+  contract: string | ContractFactory,
   factory: AliceNetFactory,
   ethers: Ethers,
   constructorArgs: any[] = [],
   overrides?: Overrides & { from?: PromiseOrValue<string> }
 ) {
-  const implementationBase = await ethers.getContractFactory(contractName);
+  const implementationBase =
+    contract instanceof ContractFactory
+      ? contract
+      : await ethers.getContractFactory(contract);
+
   const deployTxData = implementationBase.getDeployTransaction(
     ...constructorArgs
   ).data as BytesLike;
@@ -450,41 +468,40 @@ export async function deployCreate2(
 
 /**
  * @description deploys logic contract with deployCreate, then multiCalls deployProxy and upgradeProxy
- * @param contractName name of the contract to deploy
+ * @param contract name of the contract to deploy, or a contract factory
  * @param factory instance of deployed and connected alicenetFactory
  * @param ethers ethers js object
  * @param initCallData encoded call data for the initialize function of the implementation contract
  * @param constructorArgs constructor arguments for the implementation contract
  * @param salt bytes32 formatted salt used to deploy the proxy
- * @param waitConfirmantion number of confirmations to wait for before returning the transaction
+ * @param waitConfirmation number of confirmations to wait for before returning the transaction
  * @param overrides
  * @returns
  */
 export async function deployUpgradeable(
-  contractName: string,
+  contract: string | ContractFactory,
   factory: AliceNetFactory,
   ethers: Ethers,
   initCallData: string,
   constructorArgs: Array<string>,
-  salt: string = "",
-  waitConfirmantion: number = 0,
+  salt: string,
+  waitConfirmation: number = 0,
   overrides?: Overrides & { from?: PromiseOrValue<string> }
 ) {
   const txResponse = await deployCreate(
-    contractName,
+    contract,
     factory,
     ethers,
     constructorArgs,
     overrides
   );
-  const receipt = await txResponse.wait(waitConfirmantion);
+  const receipt = await txResponse.wait(waitConfirmation);
   const implementationContractAddress = await getEventVar(
     receipt,
     "DeployedRaw",
     "contractAddr"
   );
-  salt =
-    salt.length === 0 ? ethers.utils.formatBytes32String(contractName) : salt;
+
   // use mutlticall to deploy proxy and upgrade proxy
   const multiCallArgs = await encodeMultiCallDeployProxyAndUpgradeProxyArgs(
     implementationContractAddress,
@@ -521,38 +538,23 @@ export async function deployCreateAndRegister(
 
 /**
  * @description deploys logic contract with deployCreate, then upgradeProxy with the logic contract address
- * @param implementationBase instance of the logic contract base object
+ * @param logicAddress address of the logic contract
  * @param factory connected instance of AlicenetFactory
  * @param initCallData encoded call data for the initialize function of the implementation contract
- * @param constructorArgs constructor arguments for the implementation contract must only be used to set immutable variables
  * @param salt bytes32 formatted salt used to deploy the proxy
- * @param waitConfirmantion number of confirmations to wait after each tx
  * @param overrides tx detail overrides
  * @returns
  */
 export async function upgradeProxy(
-  implementationBase: ContractFactory,
+  logicAddress: string,
   factory: AliceNetFactory,
   initCallData: string,
-  constructorArgs: any[] = [],
   salt: string,
-  waitConfirmantion: number = 0,
   overrides?: Overrides & { from?: PromiseOrValue<string> }
 ) {
-  const deployTxData = implementationBase.getDeployTransaction(
-    ...constructorArgs
-  ).data as BytesLike;
-  let txResponse;
-  if (overrides === undefined) {
-    txResponse = await factory.deployCreate(deployTxData);
-  } else {
-    txResponse = await factory.deployCreate(deployTxData, overrides);
-  }
-  const receipt = await txResponse.wait(waitConfirmantion);
-  const logicAddress = getEventVar(receipt, EVENT_DEPLOYED_RAW, CONTRACT_ADDR);
   // upgrade the proxy
   if (overrides === undefined) {
-    return await factory.upgradeProxy(logicAddress, initCallData, salt);
+    return await factory.upgradeProxy(salt, logicAddress, initCallData);
   } else {
     return await factory.upgradeProxy(
       salt as BytesLike,

@@ -215,7 +215,7 @@ export async function deployUpgradeableProxyTask(
     }
   }
 
-  const initCallData: string = await encodeInitCallData(
+  const initCallData: string = encodeInitCallData(
     implementationBase,
     initializerArgs
   );
@@ -422,7 +422,7 @@ export async function upgradeProxyTask(
         )) as ContractFactory)
       : implementationBase;
 
-  const initCallData: string = await encodeInitCallData(
+  const initCallData: string = encodeInitCallData(
     implementationBase,
     initializerArgs
   );
@@ -443,6 +443,7 @@ export async function upgradeProxyTask(
     EVENT_DEPLOYED_RAW,
     CONTRACT_ADDR
   );
+  console.log("events", receipt.events);
   const proxyAddress = getEventVar(
     receipt,
     EVENT_DEPLOYED_PROXY,

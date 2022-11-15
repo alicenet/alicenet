@@ -34,10 +34,7 @@ describe("PublicStaking: Accumulator Overflow", async () => {
     const legacyToken = await (
       await ethers.getContractFactory("LegacyToken")
     ).deploy();
-    const factory = await deployAliceNetFactory(
-      adminSigner,
-      legacyToken.address
-    );
+    const factory = await deployAliceNetFactory(legacyToken.address);
 
     // AToken
     const aToken = await ethers.getContractAt(
