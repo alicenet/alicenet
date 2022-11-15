@@ -41,7 +41,7 @@ contract BToken is
     // Tracks the amount of each deposit. Key is deposit id, value is amount
     // deposited.
     mapping(uint256 => Deposit) internal _deposits;
-
+    mapping(uint8 => bool) internal _accountTypes;
     /// @notice Event emitted when a deposit is received
     event DepositReceived(
         uint256 indexed depositID,
@@ -58,8 +58,19 @@ contract BToken is
         if (centralBridgeRouterAddress_ == address(0)) {
             revert UtilityTokenErrors.CannotSetRouterToZeroAddress();
         }
+        //initalizing allowed account types 1 for secp256k1 and 2 for BLS
+        _accountTypes[1] = true;
+        _accountTypes[2] = true;
         _centralBridgeRouter = centralBridgeRouterAddress_;
         _virtualDeposit(1, 0xba7809A4114eEF598132461f3202b5013e834CD5, 500000000000);
+    }
+
+    /**
+     * @notice function to allow factory to add new account types supported by alicenet
+     * @param accountType_ uint8 account type id to be added
+     */
+    function addAccountType(uint8 accountType_) public onlyFactory {
+        _accountTypes[accountType_] = true;
     }
 
     /// Distributes the yields of the BToken sale to all stakeholders
@@ -367,7 +378,7 @@ contract BToken is
         if (!_destroyTokens(msg.sender, amount_)) {
             revert UtilityTokenErrors.DepositBurnFail(amount_);
         }
-
+        
         // copying state to save gas
         return _doDepositCommon(accountType_, to_, amount_);
     }
