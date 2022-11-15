@@ -2,7 +2,7 @@
 pragma solidity ^0.8.16;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "contracts/interfaces/IBridgeRouter.sol";
+import "contracts/interfaces/ICentralBridgeRouter.sol";
 import "contracts/utils/Admin.sol";
 import "contracts/utils/Mutex.sol";
 import "contracts/utils/MagicEthTransfer.sol";
@@ -158,7 +158,7 @@ contract BToken is
     /// @param data_ Encoded data necessary to deposit the arbitrary tokens in the bridges.
     function depositTokensOnBridges(uint8 routerVersion_, bytes calldata data_) public payable {
         //forward call to router
-        uint256 bTokenFee = IBridgeRouter(_centralBridgeRouter).routeDeposit(
+        uint256 bTokenFee = ICentralBridgeRouter(_centralBridgeRouter).forwardDeposit(
             msg.sender,
             routerVersion_,
             data_

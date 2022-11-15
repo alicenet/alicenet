@@ -531,3 +531,29 @@ abstract contract ImmutableETHDKG is ImmutableFactory {
         return 0x455448444b470000000000000000000000000000000000000000000000000000;
     }
 }
+
+abstract contract ImmutableCentralBridgeRouter is ImmutableFactory {
+    address private immutable _centralBridgeRouter;
+    error OnlyCentralBridgeRouter(address sender, address expected);
+
+    modifier onlyCentralBridgeRouter() {
+        if (msg.sender != _centralBridgeRouter) {
+            revert OnlyCentralBridgeRouter(msg.sender, _centralBridgeRouter);
+        }
+        _;
+    }
+
+    constructor() {
+        _centralBridgeRouter = IAliceNetFactory(_factoryAddress()).lookup(
+            _saltForCentralBridgeRouter()
+        );
+    }
+
+    function _centralBridgeRouterAddress() internal view returns (address) {
+        return _centralBridgeRouter;
+    }
+
+    function _saltForCentralBridgeRouter() internal pure returns (bytes32) {
+        return 0x43656e7472616c427269646765526f7574657200000000000000000000000000;
+    }
+}

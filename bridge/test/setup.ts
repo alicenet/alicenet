@@ -9,7 +9,7 @@ import {
   Wallet,
 } from "ethers";
 import { isHexString } from "ethers/lib/utils";
-import { ethers, network } from "hardhat";
+import hre, { ethers, network } from "hardhat";
 import {
   AliceNetFactory,
   AToken,
@@ -28,6 +28,7 @@ import {
   Snapshots,
   SnapshotsMock,
   StakingPositionDescriptor,
+  TestUtils,
   ValidatorPool,
   ValidatorPoolMock,
   ValidatorStaking,
@@ -89,12 +90,16 @@ export interface Fixture extends BaseTokensFixture {
   dynamics: Dynamics;
 }
 
+export interface TestUtilsFixture {
+  testUtils: TestUtils;
+}
+
 /**
  * Shuffles array in place. ES6 version
  * https://stackoverflow.com/questions/6274339/how-can-i-shuffle-an-array/6274381#6274381
  * @param {Array} a items An array containing the items.
  */
-export function shuffle(a: ValidatorRawData[]) {
+export function shuffle(a: ValidatorRawData[]): ValidatorRawData[] {
   for (let i = a.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [a[i], a[j]] = [a[j], a[i]];
@@ -313,20 +318,20 @@ export const deployFactoryAndBaseTokens = async (
     await factory.lookup(ethers.utils.formatBytes32String("AToken"))
   );
 
-  // BToken
-  const centralRouter = await (
-    await ethers.getContractFactory("CentralBridgeRouterMock")
-  ).deploy(1000);
-  const deployData = (
-    await ethers.getContractFactory("BToken")
-  ).getDeployTransaction(centralRouter.address).data as BytesLike;
-  const bTokenSalt = ethers.utils.formatBytes32String("BToken");
-  await factory.deployCreateAndRegister(deployData, bTokenSalt);
-  // finally attach BToken to the address of the deployed contract above
-  const bToken = await ethers.getContractAt(
-    "BToken",
-    await factory.lookup(bTokenSalt)
+  const centralBridgeRouterFactory = await ethers.getContractFactory(
+    "CentralBridgeRouter"
   );
+
+  // BToken
+  const centralBridgeRouterAddress = await getCreate2Address(
+    //Need the central router address first for BToken
+    factory.address,
+    "CentralBridgeRouter",
+    centralBridgeRouterFactory.bytecode
+  );
+  const bToken = (await deployCreate2WithFactory(factory, "BToken", [
+    centralBridgeRouterAddress,
+  ])) as BToken;
 
   // PublicStaking
   const publicStaking = (await deployUpgradeableWithFactory(
@@ -688,6 +693,72 @@ export const getReceiptForFailedTransaction = async (
     }
   }
   return receipt;
+};
+
+export const getCreate2Address = async (
+  factoryAddress: string,
+  contractName: string,
+  deployTX: BytesLike
+): Promise<string> => {
+  const contractFactory = await ethers.getContractFactory(contractName);
+  const create2Address = ethers.utils.getCreate2Address(
+    factoryAddress,
+    ethers.utils.formatBytes32String(contractName),
+    ethers.utils.keccak256(deployTX)
+  );
+  return create2Address;
+};
+
+export const deployCreate2WithFactory = async (
+  factory: Contract,
+  contractName: string,
+  constructorArgs: any[] = []
+): Promise<Contract> => {
+  const contractDeployData = (
+    await ethers.getContractFactory(contractName)
+  ).getDeployTransaction(...constructorArgs).data as BytesLike;
+  const contractSalt = ethers.utils.formatBytes32String(contractName);
+  const contractTransaction = await factory.deployCreate2(
+    0,
+    contractSalt,
+    contractDeployData
+  );
+  const contractAddress = await getContractAddressFromDeployedRawEvent(
+    contractTransaction
+  );
+  // registering in the factory.lookup
+  await factory.addNewExternalContract(contractSalt, contractAddress);
+  // finally attach contract to the address of the deployed contract above
+  const contract = await ethers.getContractAt(
+    contractName,
+    await factory.lookup(contractSalt)
+  );
+  return contract;
+};
+
+export const getTestUtilsFixture = async (): Promise<TestUtilsFixture> => {
+  const testUtilsFactory = await ethers.getContractFactory("TestUtils");
+  const testUtils = await testUtilsFactory.deploy();
+  return { testUtils };
+};
+
+export const getImpersonatedSigner = async (
+  addressToImpersonate: string
+): Promise<any> => {
+  const [admin] = await ethers.getSigners();
+  const testUtils = await (
+    await (await ethers.getContractFactory("TestUtils")).deploy()
+  ).deployed();
+  await admin.sendTransaction({
+    to: testUtils.address,
+    value: ethers.utils.parseEther("1"),
+  });
+  await testUtils.payUnpayable(addressToImpersonate);
+  await hre.network.provider.request({
+    method: "hardhat_impersonateAccount",
+    params: [addressToImpersonate],
+  });
+  return ethers.provider.getSigner(addressToImpersonate);
 };
 
 export const getBridgePoolSalt = (
