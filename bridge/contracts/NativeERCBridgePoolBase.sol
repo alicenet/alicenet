@@ -30,44 +30,40 @@ abstract contract NativeERCBridgePoolBase is ImmutableFactory, ImmutableBridgeRo
         _snapshotsAddress = snapshotsAddress_;
     }
 
-    /// @notice Transfer tokens from sender
-    /// @param msgSender The address of ERC sender
-    /// @param depositParameters_ encoded deposit parameters (ERC20:tokenAmount, ERC721:tokenId or ERC1155:tokenAmount+tokenId)
-    function deposit(address msgSender, bytes calldata depositParameters_)
+    /// @notice code that runs before transfering value from sender to bridge pool
+    /// @param sender The address of ERC sender
+    /// @param depositParameters encoded deposit parameters (ERC20:tokenAmount, ERC721:tokenId or ERC1155:tokenAmount+tokenId)
+    function deposit(address sender, bytes calldata depositParameters)
         public
         virtual
         override
         onlyBridgeRouter
     {}
 
-    /// @notice Transfer tokens to sender upon proofs verification
-    /// @param msgReceiver The address of ERC receiver
-    /// @param vsPreImage burned UTXO in chain
+    /// @notice code that runs before transfering value from bridge pool to receiver
+    /// @param receiver The address of ERC receiver
+    /// @param encodedVsPreImage encoded burned UTXO in L2
     /// @param proofs Proofs of inclusion of burned UTXO
     function withdraw(
-        address msgReceiver,
-        bytes memory vsPreImage,
+        address receiver,
+        bytes memory encodedVsPreImage,
         bytes[4] memory proofs
-    ) public virtual override onlyBridgeRouter returns (address account, uint256 value) {
+    ) public virtual override onlyBridgeRouter returns (uint256 value) {
         MerkleProofParserLibrary.MerkleProof memory proofInclusionStateRoot = _verifyProofs(proofs);
-        (account, value) = _getValidatedTransferData(
-            msgReceiver,
-            vsPreImage,
-            proofInclusionStateRoot
-        );
+        value = _getValidatedWithdrawalValue(receiver, encodedVsPreImage, proofInclusionStateRoot);
     }
 
     /// @notice Obtains trasfer data upon UTXO verification
-    /// @param msgReceiver The address of ERC receiver
-    /// @param _vsPreImage burned UTXO
+    /// @param receiver The address of ERC receiver
+    /// @param encodedVsPreImage encoded burned UTXO in L2
     /// @param proofInclusionStateRoot Proof of inclusion of UTXO in the stateTrie
-    function _getValidatedTransferData(
-        address msgReceiver,
-        bytes memory _vsPreImage,
+    function _getValidatedWithdrawalValue(
+        address receiver,
+        bytes memory encodedVsPreImage,
         MerkleProofParserLibrary.MerkleProof memory proofInclusionStateRoot
-    ) internal returns (address, uint256) {
+    ) internal returns (uint256) {
         VSPreImageParserLibrary.VSPreImage memory vsPreImage = VSPreImageParserLibrary
-            .extractVSPreImage(_vsPreImage);
+            .extractVSPreImage(encodedVsPreImage);
         if (vsPreImage.chainId != ISnapshots(_snapshotsAddress).getChainId()) {
             revert NativeERCBridgePoolBaseErrors.ChainIdDoesNotMatch(
                 vsPreImage.chainId,
@@ -84,17 +80,17 @@ abstract contract NativeERCBridgePoolBase is ImmutableFactory, ImmutableBridgeRo
                 proofInclusionStateRoot.key
             );
         }
-        if (vsPreImage.account != msgReceiver) {
+        if (vsPreImage.account != receiver) {
             revert NativeERCBridgePoolBaseErrors.UTXOAccountDoesNotMatchReceiver(
                 vsPreImage.account,
-                msgReceiver
+                receiver
             );
         }
         if (_consumedUTXOIDs[computedUTXOID] == true) {
             revert NativeERCBridgePoolBaseErrors.UTXOAlreadyWithdrawn(computedUTXOID);
         }
         _consumedUTXOIDs[computedUTXOID] = true;
-        return (vsPreImage.account, vsPreImage.value);
+        return vsPreImage.value;
     }
 
     /// @notice Verify withdraw proofs
