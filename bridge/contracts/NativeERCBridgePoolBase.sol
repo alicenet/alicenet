@@ -30,7 +30,7 @@ abstract contract NativeERCBridgePoolBase is ImmutableFactory, ImmutableBridgeRo
         _snapshotsAddress = snapshotsAddress_;
     }
 
-    /// @notice code that runs before transfering value from sender to bridge pool
+    /// @notice deposit pre-actions before transfering value from sender to bridge pool
     /// @param sender The address of ERC sender
     /// @param depositParameters encoded deposit parameters (ERC20:tokenAmount, ERC721:tokenId or ERC1155:tokenAmount+tokenId)
     function deposit(address sender, bytes calldata depositParameters)
@@ -40,7 +40,7 @@ abstract contract NativeERCBridgePoolBase is ImmutableFactory, ImmutableBridgeRo
         onlyBridgeRouter
     {}
 
-    /// @notice code that runs before transfering value from bridge pool to receiver
+    /// @notice withdraw pre-actions before transfering value from bridge pool to receiver
     /// @param receiver The address of ERC receiver
     /// @param encodedVsPreImage encoded burned UTXO in L2
     /// @param proofs Proofs of inclusion of burned UTXO
@@ -53,7 +53,7 @@ abstract contract NativeERCBridgePoolBase is ImmutableFactory, ImmutableBridgeRo
         value = _getValidatedWithdrawalValue(receiver, encodedVsPreImage, proofInclusionStateRoot);
     }
 
-    /// @notice Obtains trasfer data upon UTXO verification
+    /// @notice Obtains transfer value upon UTXO verification
     /// @param receiver The address of ERC receiver
     /// @param encodedVsPreImage encoded burned UTXO in L2
     /// @param proofInclusionStateRoot Proof of inclusion of UTXO in the stateTrie
@@ -93,7 +93,7 @@ abstract contract NativeERCBridgePoolBase is ImmutableFactory, ImmutableBridgeRo
         return vsPreImage.value;
     }
 
-    /// @notice Verify withdraw proofs
+    /// @notice Verify withdrawal proofs
     /// @param _proofs an array of merkle proof structs in the following order:
     /// proof of inclusion in StateRoot: Proof of inclusion of UTXO in the stateTrie
     /// proof of inclusion in TXRoot: Proof of inclusion of the transaction included in the txRoot trie.
