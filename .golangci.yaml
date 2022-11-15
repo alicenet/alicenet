@@ -4,9 +4,9 @@ run:
     - integration
     - flakes
 linters:
-  # Disabling linters until we get them fixed up.
-  disable:
+  enable:
     - errcheck
+  disable:
     - gosimple
     - govet
     - ineffassign

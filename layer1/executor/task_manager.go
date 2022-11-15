@@ -4,12 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg"
-	"github.com/alicenet/alicenet/layer1/executor/tasks/snapshots"
 	"reflect"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg"
+	"github.com/alicenet/alicenet/layer1/executor/tasks/snapshots"
 
 	"github.com/dgraph-io/badger/v2"
 	"github.com/sirupsen/logrus"
@@ -121,7 +122,10 @@ func (tm *TaskManager) eventLoop() {
 
 		case taskRequest, ok := <-tm.requestChan:
 			if !ok {
-				tm.onError(ErrReceivedRequestClosedChan)
+				err := tm.onError(ErrReceivedRequestClosedChan)
+				if err != nil {
+					tm.logger.Warn("task manager is closing")
+				}
 				return
 			}
 			if taskRequest.response == nil {
@@ -160,10 +164,14 @@ func (tm *TaskManager) eventLoop() {
 				}
 			}
 			taskRequest.response.sendResponse(response)
-			tm.persistState()
+			err := tm.persistState()
+			if err != nil {
+				tm.logger.WithError(err).Logger.Warn("presist state failed")
+			}
 		case taskResponse, ok := <-tm.responseChan.erChan:
 			if !ok {
-				tm.onError(ErrReceivedResponseClosedChan)
+				//nolint:errcheck // Intentionally logging and swallowing error
+				_ = tm.onError(ErrReceivedResponseClosedChan)
 				return
 			}
 
@@ -173,7 +181,10 @@ func (tm *TaskManager) eventLoop() {
 				tm.logger.WithError(err).Errorf("Failed to processTaskResponse %v", taskResponse)
 				continue
 			}
-			tm.persistState()
+			err = tm.persistState()
+			if err != nil {
+				tm.logger.WithError(err).Errorf("Unable to presistState")
+			}
 		case <-processingTime:
 			tm.logger.Trace("processing latest height")
 			networkCtx, networkCf := context.WithTimeout(context.Background(), tasks.ManagerNetworkTimeout)
