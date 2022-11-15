@@ -353,14 +353,10 @@ export const posFixtureSetup = async (
   const [admin] = await ethers.getSigners();
 
   // transferring those ATokens to the admin
-  await factory.callAny(
-    aToken.address,
-    0,
-    aToken.interface.encodeFunctionData("transfer", [
-      admin.address,
-      ethers.utils.parseEther("100000000"),
-    ])
-  );
+  await factoryCallAny(factory, aToken, "transfer", [
+    admin.address,
+    ethers.utils.parseEther("100000000"),
+  ]);
 };
 
 export const getBaseTokensFixture = async (): Promise<BaseTokensFixture> => {
