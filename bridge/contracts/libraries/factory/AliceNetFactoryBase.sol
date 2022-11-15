@@ -2,11 +2,10 @@
 pragma solidity ^0.8.16;
 import "contracts/Proxy.sol";
 import "contracts/utils/DeterministicAddress.sol";
-import "contracts/libraries/proxy/ProxyUpgrader.sol";
 import "contracts/interfaces/IProxy.sol";
 import "contracts/libraries/errors/AliceNetFactoryBaseErrors.sol";
 
-abstract contract AliceNetFactoryBase is DeterministicAddress, ProxyUpgrader {
+abstract contract AliceNetFactoryBase is DeterministicAddress {
     struct MultiCallArgs {
         address target;
         uint256 value;
@@ -42,6 +41,7 @@ abstract contract AliceNetFactoryBase is DeterministicAddress, ProxyUpgrader {
     event DeployedStatic(address contractAddr);
     event DeployedRaw(address contractAddr);
     event DeployedProxy(address contractAddr);
+    event UpgradedProxy(bytes32 salt, address proxyAddr, address newlogicAddr);
 
     // modifier restricts caller to owner or self via multicall
     modifier onlyOwner() {
@@ -91,14 +91,6 @@ abstract contract AliceNetFactoryBase is DeterministicAddress, ProxyUpgrader {
             mstore(returndatasize(), sload(_implementation.slot))
             return(returndatasize(), 0x20)
         }
-    }
-
-    /**
-     * @dev Sets a new implementation address
-     * @param newImplementationAddress_: address of the contract with the new implementation
-     */
-    function setImplementation(address newImplementationAddress_) public onlyOwner {
-        _implementation = newImplementationAddress_;
     }
 
     /**
@@ -167,22 +159,6 @@ abstract contract AliceNetFactoryBase is DeterministicAddress, ProxyUpgrader {
             let size := mload(cdata_)
             let ptr := add(0x20, cdata_)
             if iszero(call(gas(), target_, value_, ptr, size, 0x00, 0x00)) {
-                returndatacopy(0x00, 0x00, returndatasize())
-                revert(0x00, returndatasize())
-            }
-        }
-    }
-
-    /**
-     * @dev _delegateCallAny allows EOA to call a function in a contract without impersonating the factory
-     * @param target_: the address of the contract to be called
-     * @param cdata_: Hex encoded data with function signature + arguments of the target function to be called
-     */
-    function _delegateCallAny(address target_, bytes memory cdata_) internal {
-        assembly {
-            let size := mload(cdata_)
-            let ptr := add(0x20, cdata_)
-            if iszero(delegatecall(gas(), target_, ptr, size, 0x00, 0x00)) {
                 returndatacopy(0x00, 0x00, returndatasize())
                 revert(0x00, returndatasize())
             }
@@ -316,9 +292,10 @@ abstract contract AliceNetFactoryBase is DeterministicAddress, ProxyUpgrader {
         bytes calldata initCallData_
     ) internal {
         address proxy = DeterministicAddress.getMetamorphicContractAddress(salt_, address(this));
-        __upgrade(proxy, newImpl_);
+        IProxy(proxy).setImplementationAddress(newImpl_);
         assert(IProxy(proxy).getImplementationAddress() == newImpl_);
         _initializeContract(proxy, initCallData_);
+        emit UpgradedProxy(salt_, proxy, newImpl_);
     }
 
     /// Internal function to add a new address and "pseudo" salt to the externalContractRegistry

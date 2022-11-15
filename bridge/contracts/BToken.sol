@@ -2,6 +2,7 @@
 pragma solidity ^0.8.16;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/utils/Address.sol";
 import "contracts/interfaces/IBridgeRouter.sol";
 import "contracts/utils/Admin.sol";
 import "contracts/utils/Mutex.sol";
@@ -22,6 +23,8 @@ contract BToken is
     ImmutableFactory,
     ImmutableDistribution
 {
+    using Address for address;
+
     // multiply factor for the selling/minting bonding curve
     uint256 internal constant _MARKET_SPREAD = 4;
 
@@ -41,7 +44,10 @@ contract BToken is
     // Tracks the amount of each deposit. Key is deposit id, value is amount
     // deposited.
     mapping(uint256 => Deposit) internal _deposits;
+
+    // mapping to store allowed account types
     mapping(uint8 => bool) internal _accountTypes;
+
     /// @notice Event emitted when a deposit is received
     event DepositReceived(
         uint256 indexed depositID,
@@ -58,7 +64,7 @@ contract BToken is
         if (centralBridgeRouterAddress_ == address(0)) {
             revert UtilityTokenErrors.CannotSetRouterToZeroAddress();
         }
-        //initalizing allowed account types 1 for secp256k1 and 2 for BLS
+        // initializing allowed account types: 1 for secp256k1 and 2 for BLS
         _accountTypes[1] = true;
         _accountTypes[2] = true;
         _centralBridgeRouter = centralBridgeRouterAddress_;
@@ -66,7 +72,7 @@ contract BToken is
     }
 
     /**
-     * @notice function to allow factory to add new account types supported by alicenet
+     * @notice function to allow factory to add new account types supported by AliceNet
      * @param accountType_ uint8 account type id to be added
      */
     function addAccountType(uint8 accountType_) public onlyFactory {
@@ -367,7 +373,7 @@ contract BToken is
         address to_,
         uint256 amount_
     ) internal returns (uint256) {
-        if (_isContract(to_)) {
+        if (to_.isContract()) {
             revert UtilityTokenErrors.ContractsDisallowedDeposits(to_);
         }
 
@@ -378,7 +384,7 @@ contract BToken is
         if (!_destroyTokens(msg.sender, amount_)) {
             revert UtilityTokenErrors.DepositBurnFail(amount_);
         }
-        
+
         // copying state to save gas
         return _doDepositCommon(accountType_, to_, amount_);
     }
@@ -390,7 +396,7 @@ contract BToken is
         address to_,
         uint256 amount_
     ) internal returns (uint256) {
-        if (_isContract(to_)) {
+        if (to_.isContract()) {
             revert UtilityTokenErrors.ContractsDisallowedDeposits(to_);
         }
 
@@ -410,7 +416,7 @@ contract BToken is
         uint256 minBTK_,
         uint256 numEth_
     ) internal returns (uint256) {
-        if (_isContract(to_)) {
+        if (to_.isContract()) {
             revert UtilityTokenErrors.ContractsDisallowedDeposits(to_);
         }
         if (numEth_ < _MARKET_SPREAD) {
@@ -431,6 +437,9 @@ contract BToken is
         address to_,
         uint256 amount_
     ) internal returns (uint256) {
+        if (!_accountTypes[accountType_]) {
+            revert UtilityTokenErrors.AccountTypeNotSupported(accountType_);
+        }
         uint256 depositID = _depositID + 1;
         _deposits[depositID] = _newDeposit(accountType_, to_, amount_);
         _totalDeposited += amount_;
@@ -487,15 +496,6 @@ contract BToken is
         ERC20._burn(from_, numBTK_);
         _safeTransferEth(to_, numEth);
         return numEth;
-    }
-
-    // Check if addr_ is EOA (Externally Owned Account) or a contract.
-    function _isContract(address addr_) internal view returns (bool) {
-        uint256 size;
-        assembly ("memory-safe") {
-            size := extcodesize(addr_)
-        }
-        return size > 0;
     }
 
     // Internal function that converts an ether amount into BToken tokens

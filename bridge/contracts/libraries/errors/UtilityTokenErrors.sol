@@ -16,4 +16,5 @@ library UtilityTokenErrors {
     error InexistentRouterContract(address contractAddr);
     error InsufficientFee(uint256 amount, uint256 fee);
     error CannotSetRouterToZeroAddress();
+    error AccountTypeNotSupported(uint8 accountType);
 }
