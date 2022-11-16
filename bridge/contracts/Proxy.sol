@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: MIT-open-group
 pragma solidity ^0.8.16;
 
-import "contracts/libraries/proxy/ProxyInternalUpgradeLock.sol";
 import "contracts/utils/DeterministicAddress.sol";
 
 /**
- *@dev RUN OPTIMIZER OFF
+ *@notice RUN OPTIMIZER OFF
  */
 /**
  * @notice Proxy is a delegatecall reverse proxy implementation
@@ -21,13 +20,8 @@ import "contracts/utils/DeterministicAddress.sol";
  * mechanism zeros out the higher order bits. Therefore, the implementation itself must carry the locking mechanism that sets
  * the higher order bits to lock the upgrade capability of the proxy.
  */
-contract Proxy is ProxyInternalUpgradeLock {
+contract Proxy {
     address private immutable _factory;
-
-    modifier onlyFactory() {
-        require(msg.sender == _factory, "onlyFactory");
-        _;
-    }
 
     constructor() {
         _factory = msg.sender;
@@ -52,40 +46,57 @@ contract Proxy is ProxyInternalUpgradeLock {
         }
     }
 
-    /// @notice changes the implementation address that a proxy is pointed to
-    /// @param implementationAddress_ address of the logic
-    function setImplementationAddress(address implementationAddress_) public onlyFactory {
-        assembly ("memory-safe") {
-            // check if the proxy is locked
-            if eq(shr(160, sload(not(0x00))), 0xca11c0de15dead10cced0000) {
-                mstore(0x00, "imploc")
-                revert(0x00, 0x20)
-            }
-            // store address into slot
-            sstore(not(0x00), implementationAddress_)
-        }
-    }
-
     /// Delegates calls to proxy implementation
     function _fallback() internal {
-        assembly ("memory-safe") {
-            let logicAddress := sload(not(0x00))
-            if iszero(logicAddress) {
-                mstore(0x00, "logicNotSet")
-                revert(0x00, 0x20)
+        // make local copy of factory since immutables
+        // are not accessable in assembly as of yet
+        address factory = _factory;
+        assembly {
+            // admin is the builtin logic to change the implementation
+            function admin() {
+                // this is an assignment to implementation
+                let newImpl := shr(96, shl(96, calldataload(0x04)))
+                if eq(shr(160, sload(not(0x00))), 0xca11c0de15dead10cced0000) {
+                    mstore(0x00, "imploc")
+                    revert(0x00, 0x20)
+                }
+                // store address into slot
+                sstore(not(0x00), newImpl)
             }
-            // load free memory pointer
-            let _ptr := mload(0x40)
-            // allocate memory proportionate to calldata
-            mstore(0x40, add(_ptr, calldatasize()))
-            // copy calldata into memory
-            calldatacopy(_ptr, 0x00, calldatasize())
-            let ret := delegatecall(gas(), logicAddress, _ptr, calldatasize(), 0x00, 0x00)
-            returndatacopy(_ptr, 0x00, returndatasize())
-            if iszero(ret) {
-                revert(_ptr, returndatasize())
+
+            // passthrough is the passthrough logic to delegate to the implementation
+            function passthrough() {
+                let logicAddress := sload(not(0x00))
+                if iszero(logicAddress) {
+                    mstore(0x00, "logicNotSet")
+                    revert(0x00, 0x20)
+                }
+                // load free memory pointer
+                let _ptr := mload(0x40)
+                // allocate memory proportionate to calldata
+                mstore(0x40, add(_ptr, calldatasize()))
+                // copy calldata into memory
+                calldatacopy(_ptr, 0x00, calldatasize())
+                let ret := delegatecall(gas(), logicAddress, _ptr, calldatasize(), 0x00, 0x00)
+                returndatacopy(_ptr, 0x00, returndatasize())
+                if iszero(ret) {
+                    revert(_ptr, returndatasize())
+                }
+                return(_ptr, returndatasize())
             }
-            return(_ptr, returndatasize())
+
+            // if caller is factory,
+            // and has 0xca11c0de<address> as calldata
+            // run admin logic and return
+            if eq(caller(), factory) {
+                if eq(calldatasize(), 0x24) {
+                    if eq(shr(224, calldataload(0x00)), 0xca11c0de) {
+                        admin()
+                    }
+                }
+            }
+            // admin logic was not run so fallthrough to delegatecall
+            passthrough()
         }
     }
 }

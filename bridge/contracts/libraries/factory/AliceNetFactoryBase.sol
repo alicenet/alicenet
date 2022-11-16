@@ -2,10 +2,11 @@
 pragma solidity ^0.8.16;
 import "contracts/Proxy.sol";
 import "contracts/utils/DeterministicAddress.sol";
+import "contracts/libraries/proxy/ProxyUpgrader.sol";
 import "contracts/interfaces/IProxy.sol";
 import "contracts/libraries/errors/AliceNetFactoryBaseErrors.sol";
 
-abstract contract AliceNetFactoryBase is DeterministicAddress {
+abstract contract AliceNetFactoryBase is DeterministicAddress, ProxyUpgrader {
     struct MultiCallArgs {
         address target;
         uint256 value;
@@ -292,7 +293,7 @@ abstract contract AliceNetFactoryBase is DeterministicAddress {
         bytes calldata initCallData_
     ) internal {
         address proxy = DeterministicAddress.getMetamorphicContractAddress(salt_, address(this));
-        IProxy(proxy).setImplementationAddress(newImpl_);
+        __upgrade(proxy, newImpl_);
         assert(IProxy(proxy).getImplementationAddress() == newImpl_);
         _initializeContract(proxy, initCallData_);
         emit UpgradedProxy(salt_, proxy, newImpl_);
