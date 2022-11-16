@@ -140,6 +140,86 @@ describe("Sigmoid unit tests", async () => {
       const retSqrt = await sigmoid.sqrt(x);
       expect(retSqrt).to.be.equal(trueSqrt);
     });
+    it("Integer Square Root 19:    2**128 * 3**80 + 2**64*5**41 + 1", async function () {
+      const x = BigNumber.from(
+        "0x6f32f1ef8b18a2bc3cea59792f69a5f9d0cf37be5aa1cae50000000000000001"
+      );
+      const trueSqrt = BigNumber.from("0xa8b8b452291fe821000000006f791d65");
+      const retSqrt = await sigmoid.sqrt(x);
+      expect(retSqrt).to.be.equal(trueSqrt);
+    });
+    it("Integer Square Root 20:    2**128 * 3**80 + 2**64*5**43 + 1", async function () {
+      const x = BigNumber.from(
+        "0x6f32f1ef8b18a2bc3cea5986f5e54f4d643c7196d9ccd05d0000000000000001"
+      );
+      const trueSqrt = BigNumber.from("0xa8b8b452291fe8210000000ae2d3dedf");
+      const retSqrt = await sigmoid.sqrt(x);
+      expect(retSqrt).to.be.equal(trueSqrt);
+    });
+    it("Integer Square Root 21:    2**128 * 3**80 + 2**64*5**47 + 1", async function () {
+      const x = BigNumber.from(
+        "0x6f32f1ef8b18a2bc3cea7c80ebe13d81b7915149bd08b30d0000000000000001"
+      );
+      const trueSqrt = BigNumber.from("0xa8b8b452291fe82100001a93c7431f7f");
+      const retSqrt = await sigmoid.sqrt(x);
+      expect(retSqrt).to.be.equal(trueSqrt);
+    });
+    it("Integer Square Root 22:    2**128 * 3**80 + 2**64*5**51 + 1", async function () {
+      const x = BigNumber.from(
+        "0x6f32f1ef8b18a2bc3d3fe0c277f1cb4129c77506823d22bd0000000000000001"
+      );
+      const trueSqrt = BigNumber.from("0xa8b8b452291fe8210040e2c97adfe672");
+      const retSqrt = await sigmoid.sqrt(x);
+      expect(retSqrt).to.be.equal(trueSqrt);
+    });
+    it("Integer Square Root 23:    2**128 * 3**80 + 2**64*5**53 + 1", async function () {
+      const x = BigNumber.from(
+        "0x6f32f1ef8b18a2bc45448faf0b30f345147a6da2b7f864750000000000000001"
+      );
+      const trueSqrt = BigNumber.from("0xa8b8b452291fe821065625acffdd812c");
+      const retSqrt = await sigmoid.sqrt(x);
+      expect(retSqrt).to.be.equal(trueSqrt);
+    });
+    it("Integer Square Root 24:    2**128 * 3**80 + 2**64*5**59 + 1", async function () {
+      const x = BigNumber.from(
+        "0x6f32f1ef8b18a4ba070139c4234de446e46da08ea7ab691d0000000000000001"
+      );
+      const trueSqrt = BigNumber.from("0xa8b8b452291fe9a3c0018c0cc68f7636");
+      const retSqrt = await sigmoid.sqrt(x);
+      expect(retSqrt).to.be.equal(trueSqrt);
+    });
+    it("Integer Square Root 25:    2**128 * 3**80 + 2**64*5**61 + 1", async function () {
+      const x = BigNumber.from(
+        "0x6f32f1ef8b18d484f92640d8c72f64d44eb4adee5fbd43d50000000000000001"
+      );
+      const trueSqrt = BigNumber.from("0xa8b8b45229200de5c026ad3f5ff3a63b");
+      const retSqrt = await sigmoid.sqrt(x);
+      expect(retSqrt).to.be.equal(trueSqrt);
+    });
+    it("Integer Square Root 26:    2**128 * 3**80 + 2**64*5**71 + 1", async function () {
+      const x = BigNumber.from(
+        "0x6f32f20c85822f5175f60204b7f1694f32d6c2c31497a42d0000000000000001"
+      );
+      const trueSqrt = BigNumber.from("0xa8b8b46825140314608a1f025ca3fc28");
+      const retSqrt = await sigmoid.sqrt(x);
+      expect(retSqrt).to.be.equal(trueSqrt);
+    });
+    it("Integer Square Root 27:    2**128 * 3**80 + 2**64*5**73 + 1", async function () {
+      const x = BigNumber.from(
+        "0x6f32f4c3ff675d4ecf0dcf274b2762a3f6f9050d02cf08650000000000000001"
+      );
+      const trueSqrt = BigNumber.from("0xa8b8b677c3f32e8af31940157abbe8e8");
+      const retSqrt = await sigmoid.sqrt(x);
+      expect(retSqrt).to.be.equal(trueSqrt);
+    });
+    it("Integer Square Root 28:    2**128 * 3**80 + 2**64*5**79 + 1", async function () {
+      const x = BigNumber.from(
+        "0x6fdfab1e64521eb5d3341c3c1b816a9504f547206e475c8d0000000000000001"
+      );
+      const trueSqrt = BigNumber.from("0xa93b8acedb6c8a93bc8ce2902bc47f0d");
+      const retSqrt = await sigmoid.sqrt(x);
+      expect(retSqrt).to.be.equal(trueSqrt);
+    });
   });
 
   describe("safeAbsSub Tests", async () => {
