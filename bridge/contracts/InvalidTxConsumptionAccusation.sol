@@ -60,6 +60,8 @@ contract InvalidTxConsumptionAccusation is
         if (pClaims.bClaims.txCount == 0) {
             revert AccusationsErrors.NoTransactionInAccusedProposal();
         }
+
+        // todo: check if the height is at least 2 epochs behind
         if (bClaims.height + 1 != pClaims.bClaims.height) {
             revert AccusationsErrors.HeightDeltaShouldBeOne(bClaims.height, pClaims.bClaims.height);
         }

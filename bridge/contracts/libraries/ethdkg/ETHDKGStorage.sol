@@ -41,9 +41,6 @@ abstract contract ETHDKGStorage is
     ImmutableSnapshots,
     ImmutableValidatorPool
 {
-    // ISnapshots internal immutable _snapshots;
-    // IValidatorPool internal immutable _validatorPool;
-    //address internal immutable _factory;
     uint256 internal constant _MIN_VALIDATORS = 4;
 
     uint64 internal _nonce;
@@ -58,13 +55,13 @@ abstract contract ETHDKGStorage is
     // Consensus is halted
     uint256 internal _customAliceNetHeight;
 
-    address internal _admin;
-
     uint256[4] internal _masterPublicKey;
     uint256[2] internal _mpkG1;
     bytes32 internal _masterPublicKeyHash;
 
     mapping(address => Participant) internal _participants;
+
+    mapping(bytes32 => bool) internal _masterPublicKeyRegistry;
 
     constructor() ImmutableFactory(msg.sender) ImmutableSnapshots() ImmutableValidatorPool() {}
 }

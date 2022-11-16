@@ -24,9 +24,6 @@ contract ETHDKG is
     ImmutableETHDKGAccusations,
     ImmutableETHDKGPhases
 {
-    address internal immutable _ethdkgAccusations;
-    address internal immutable _ethdkgPhases;
-
     modifier onlyValidator() {
         if (!IValidatorPool(_validatorPoolAddress()).isValidator(msg.sender)) {
             revert ETHDKGErrors.OnlyValidatorsAllowed(msg.sender);
@@ -34,26 +31,7 @@ contract ETHDKG is
         _;
     }
 
-    constructor() ETHDKGStorage() ImmutableETHDKGAccusations() ImmutableETHDKGPhases() {
-        // bytes32("ETHDKGPhases") = 0x455448444b475068617365730000000000000000000000000000000000000000;
-        address ethdkgPhases = IProxy(_ethdkgPhasesAddress()).getImplementationAddress();
-        assembly {
-            if iszero(extcodesize(ethdkgPhases)) {
-                mstore(0x00, "ethdkgPhases size 0")
-                revert(0x00, 0x20)
-            }
-        }
-        _ethdkgPhases = ethdkgPhases;
-        // bytes32("ETHDKGAccusations") = 0x455448444b4741636375736174696f6e73000000000000000000000000000000;
-        address ethdkgAccusations = IProxy(_ethdkgAccusationsAddress()).getImplementationAddress();
-        assembly {
-            if iszero(extcodesize(ethdkgAccusations)) {
-                mstore(0x00, "ethdkgAccusations size 0")
-                revert(0x00, 0x20)
-            }
-        }
-        _ethdkgAccusations = ethdkgAccusations;
-    }
+    constructor() ETHDKGStorage() ImmutableETHDKGAccusations() ImmutableETHDKGPhases() {}
 
     function initialize(uint256 phaseLength_, uint256 confirmationLength_)
         public
@@ -274,6 +252,7 @@ contract ETHDKG is
 
         _masterPublicKey = masterPublicKey_;
         _masterPublicKeyHash = keccak256(abi.encodePacked(masterPublicKey_));
+        _masterPublicKeyRegistry[_masterPublicKeyHash] = true;
         _nonce = uint64(nonce);
         _numParticipants = validatorCount_;
 
@@ -374,6 +353,10 @@ contract ETHDKG is
         return _masterPublicKey;
     }
 
+    function isValidMasterPublicKey(bytes32 masterPublicKeyHash) public view returns (bool) {
+        return _masterPublicKeyRegistry[masterPublicKeyHash];
+    }
+
     function getMasterPublicKeyHash() public view returns (bytes32) {
         return _masterPublicKeyHash;
     }
@@ -383,10 +366,11 @@ contract ETHDKG is
     }
 
     function _callAccusationContract(bytes memory callData) internal returns (bytes memory) {
-        (bool success, bytes memory returnData) = _ethdkgAccusations.delegatecall(callData);
+        (bool success, bytes memory returnData) = _getETHDKGAccusationsAddress().delegatecall(
+            callData
+        );
         if (!success) {
-            // solhint-disable no-inline-assembly
-            assembly {
+            assembly ("memory-safe") {
                 let ptr := mload(0x40)
                 let size := returndatasize()
                 returndatacopy(ptr, 0, size)
@@ -397,10 +381,9 @@ contract ETHDKG is
     }
 
     function _callPhaseContract(bytes memory callData) internal returns (bytes memory) {
-        (bool success, bytes memory returnData) = _ethdkgPhases.delegatecall(callData);
+        (bool success, bytes memory returnData) = _getETHDKGPhasesAddress().delegatecall(callData);
         if (!success) {
-            // solhint-disable no-inline-assembly
-            assembly {
+            assembly ("memory-safe") {
                 let ptr := mload(0x40)
                 let size := returndatasize()
                 returndatacopy(ptr, 0, size)
@@ -431,6 +414,26 @@ contract ETHDKG is
             _phaseLength,
             _confirmationLength
         );
+    }
+
+    function _getETHDKGPhasesAddress() internal view returns (address ethdkgPhases) {
+        ethdkgPhases = IProxy(_ethdkgPhasesAddress()).getImplementationAddress();
+        assembly ("memory-safe") {
+            if iszero(extcodesize(ethdkgPhases)) {
+                mstore(0x00, "size 0")
+                revert(0x00, 0x20)
+            }
+        }
+    }
+
+    function _getETHDKGAccusationsAddress() internal view returns (address ethdkgAccusations) {
+        ethdkgAccusations = IProxy(_ethdkgAccusationsAddress()).getImplementationAddress();
+        assembly ("memory-safe") {
+            if iszero(extcodesize(ethdkgAccusations)) {
+                mstore(0x00, "size 0")
+                revert(0x00, 0x20)
+            }
+        }
     }
 
     function _isETHDKGCompleted() internal view returns (bool) {
