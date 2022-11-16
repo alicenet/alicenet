@@ -40,7 +40,7 @@ describe("PROXY", async () => {
     expect(proxyImplAddr).to.equal(endPointLockable.address);
   });
 
-  it("locks the proxy upgradeability, prevents the proxy from being updated", async () => {
+  it.only("locks the proxy upgradeability, prevents the proxy from being updated", async () => {
     const accounts = await getAccounts();
     const proxyFactory = await ethers.getContractFactory(PROXY);
     const proxy = await proxyFactory.deploy();
@@ -62,7 +62,7 @@ describe("PROXY", async () => {
     let txResponse = await proxy.fallback(txReq);
     let receipt = await txResponse.wait();
     expect(receipt.status).to.equal(1);
-    const proxyImplAddr = await proxy.callStatic.getImplementationAddress();
+    const proxyImplAddr = await getProxyImplementation(proxy.address);
     expect(proxyImplAddr).to.equal(endPointLockable.address);
     // interface of logic connected to logic contract
     const proxyContract = endPointLockableFactory.attach(proxy.address);
@@ -81,3 +81,16 @@ describe("PROXY", async () => {
     expect(receipt.status).to.equal(1);
   });
 });
+export async function getProxyImplementation(proxyAddress: string) {
+  const proxy = await ethers.getContractAt("Proxy", proxyAddress);
+
+  const txReq = await proxy.signer.populateTransaction({
+    data: "0x0cbcae703c",
+    gasLimit: 10,
+  });
+  const signers = await ethers.getSigners();
+  await signers[0].sendTransaction(txReq);
+  const implementationAddress = proxy.signer.sendTransaction(txReq);
+  console.log(implementationAddress);
+  return implementationAddress;
+}

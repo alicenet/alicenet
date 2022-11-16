@@ -35,33 +35,30 @@ contract Proxy {
         _fallback();
     }
 
-    /// Returns the implementation address (target) of the Proxy
-    /// @return implAddr the implementation address
-    function getImplementationAddress() public view returns (address implAddr) {
-        assembly ("memory-safe") {
-            implAddr := and(
-                sload(not(0x00)),
-                0x000000000000000000000000ffffffffffffffffffffffffffffffffffffffff
-            )
-        }
-    }
-
     /// Delegates calls to proxy implementation
     function _fallback() internal {
         // make local copy of factory since immutables
         // are not accessable in assembly as of yet
         address factory = _factory;
-        assembly {
+        assembly ("memory-safe") {
+            function getImplementationAddress() -> implAddr {
+                implAddr := and(
+                    sload(not(0x00)),
+                    0x000000000000000000000000ffffffffffffffffffffffffffffffffffffffff
+                )
+            }
+
             // admin is the builtin logic to change the implementation
             function admin() {
                 // this is an assignment to implementation
                 let newImpl := shr(96, shl(96, calldataload(0x04)))
-                if eq(shr(160, sload(not(0x00))), 0xca11c0de15dead10cced0000) {
+                if eq(shr(160, sload(not(0x00))), 0x00ca11c0de15dead10cced00) {
                     mstore(0x00, "imploc")
                     revert(0x00, 0x20)
                 }
                 // store address into slot
                 sstore(not(0x00), newImpl)
+                stop()
             }
 
             // passthrough is the passthrough logic to delegate to the implementation
@@ -84,14 +81,28 @@ contract Proxy {
                 }
                 return(_ptr, returndatasize())
             }
-
-            // if caller is factory,
-            // and has 0xca11c0de<address> as calldata
-            // run admin logic and return
-            if eq(caller(), factory) {
-                if eq(calldatasize(), 0x24) {
-                    if eq(shr(224, calldataload(0x00)), 0xca11c0de) {
-                        admin()
+            if or(eq(calldatasize(), 0x24), eq(calldatasize(), 0x5)) {
+                {
+                    let selector := shr(216, calldataload(0x00))
+                    switch selector
+                    case 0x0cbcae703c {
+                        // getImplementationAddress()
+                        let ptr := mload(0x40)
+                        let retAddress := getImplementationAddress()
+                        mstore(ptr, retAddress)
+                        return(ptr, 0x20)
+                    }
+                    case 0xca11c0de00 {
+                        // if caller is factory,
+                        // and has 0xca11c0de<address> as calldata
+                        // run admin logic and return
+                        if eq(caller(), factory) {
+                            admin()
+                        }
+                    }
+                    default {
+                        mstore(0x00, "function not found")
+                        revert(0x00, 0x20)
                     }
                 }
             }

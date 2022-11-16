@@ -7,9 +7,9 @@ abstract contract ProxyUpgrader {
         assembly {
             if iszero(call(gas(), _proxy, 0, add(cdata, 0x20), mload(cdata), 0x00, 0x00)) {
                 let ptr := mload(0x40)
-                mstore(0x40, add(ptr, returndatasize()))
-                returndatacopy(ptr, 0x00, returndatasize())
-                revert(ptr, returndatasize())
+                let size := returndatasize()
+                returndatacopy(ptr, 0, size)
+                revert(ptr, size)
             }
         }
     }
