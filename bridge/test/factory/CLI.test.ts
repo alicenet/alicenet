@@ -1,6 +1,5 @@
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
-import { BytesLike } from "ethers";
-import { ethers, run } from "hardhat";
+import { artifacts, ethers, run } from "hardhat";
 import {
   MOCK,
   MOCK_INITIALIZABLE,
@@ -10,12 +9,12 @@ import {
 import {
   DeployCreateData,
   FactoryData,
-  MetaContractData,
   ProxyData,
 } from "../../scripts/lib/deployment/interfaces";
+import { getBytes32Salt } from "../../scripts/lib/deployment/utils";
 import { AliceNetFactory } from "../../typechain-types";
 import { expect } from "../chai-setup";
-import { getMetamorphicAddress } from "./Setup";
+import { getMetamorphicAddress, predictFactoryAddress } from "./Setup";
 
 async function deployFixture() {
   const accounts = await ethers.getSigners();
@@ -45,11 +44,11 @@ describe("Cli tasks", () => {
     describe("deploy-upgradeable-proxy", () => {
       it("deploys a mock contract with a initializer function with npx hardhat, and checks if initializer arg is set correctly", async () => {
         const expectedInitVal = 14;
-        const proxyData: ProxyData = await run("deploy-upgradeable-proxy", {
-          contractName: MOCK_INITIALIZABLE,
-          factoryAddress: factory.address,
-          initializerArgs: `${expectedInitVal}`,
-        });
+        const proxyData: ProxyData = await cliDeployUpgradeableProxy(
+          MOCK_INITIALIZABLE,
+          factory.address,
+          `${expectedInitVal}`
+        );
         const mockInitializable = await ethers.getContractAt(
           MOCK_INITIALIZABLE,
           proxyData.proxyAddress
@@ -65,11 +64,12 @@ describe("Cli tasks", () => {
 
       it("deploys a mock contract with a constructor function with npx hardhat, and checks if initializer arg is set correctly", async () => {
         const expectedConstructorVal = 14;
-        const proxyData: ProxyData = await run("deploy-upgradeable-proxy", {
-          contractName: MOCK_WITH_CONSTRUCTOR,
-          factoryAddress: factory.address,
-          constructorArgs: `${expectedConstructorVal}`,
-        });
+        const proxyData: ProxyData = await cliDeployUpgradeableProxy(
+          MOCK_WITH_CONSTRUCTOR,
+          factory.address,
+          undefined,
+          `${expectedConstructorVal}` // constructor args
+        );
         const mockWithConstructor = await ethers.getContractAt(
           MOCK_WITH_CONSTRUCTOR,
           proxyData.proxyAddress
@@ -85,11 +85,12 @@ describe("Cli tasks", () => {
 
       it("fails to deploy proxy without initializer args when initializer args required", async () => {
         try {
-          await run("deploy-upgradeable-proxy", {
-            contractName: MOCK_INITIALIZABLE_WITH_CONSTRUCTOR,
-            factoryAddress: factory.address,
-            constructorArgs: `123`,
-          });
+          await cliDeployUpgradeableProxy(
+            MOCK_INITIALIZABLE_WITH_CONSTRUCTOR,
+            factory.address,
+            undefined,
+            `123` // constructor args,
+          );
         } catch (error: any) {
           expect(error.message).to.equal(
             `initializerArgs must be specified for contract: ${MOCK_INITIALIZABLE_WITH_CONSTRUCTOR}`
@@ -99,11 +100,11 @@ describe("Cli tasks", () => {
 
       it("fails to deploy proxy without constructor args when constructor args required", async () => {
         try {
-          await run("deploy-upgradeable-proxy", {
-            contractName: MOCK_INITIALIZABLE_WITH_CONSTRUCTOR,
-            factoryAddress: factory.address,
-            initializerArgs: "123",
-          });
+          await cliDeployUpgradeableProxy(
+            MOCK_INITIALIZABLE_WITH_CONSTRUCTOR,
+            factory.address,
+            "123" // initializer args
+          );
         } catch (error: any) {
           expect(error.message).to.equal(
             `constructorArgs must be specified for contract: ${MOCK_INITIALIZABLE_WITH_CONSTRUCTOR}`
@@ -150,13 +151,38 @@ describe("Cli tasks", () => {
       );
     });
 
+    it("deploys factory with cli and checks if the default factory is updated in factory state toml file", async () => {
+      const signers = await ethers.getSigners();
+      const legacyToken = await ethers.deployContract("LegacyToken");
+      const futureFactoryAddress = await predictFactoryAddress(
+        signers[0].address
+      );
+      const factoryData: FactoryData = await cliDeployFactory(
+        legacyToken.address
+      );
+      // check if the address is the predicted
+      expect(factoryData.address).to.equal(futureFactoryAddress);
+    });
+
+    it("deploys mockInitializable with deployCreate, then deploy and upgrades a proxy with deploy-upgradeable-proxy", async () => {
+      await cliDeployCreate(MOCK_INITIALIZABLE, factory.address);
+      const salt = await getBytes32Salt(MOCK_INITIALIZABLE, artifacts, ethers);
+      const expectedProxyAddress = getMetamorphicAddress(factory.address, salt);
+      const proxyData = await cliDeployUpgradeableProxy(
+        MOCK_INITIALIZABLE,
+        factory.address,
+        "1"
+      );
+      expect(proxyData.proxyAddress).to.equal(expectedProxyAddress);
+    });
+
     xit("deploys all contracts in deploymentList", async () => {
       await cliDeployContracts();
     });
   });
 });
 
-export async function cliDeployContracts(
+async function cliDeployContracts(
   factoryAddress?: string,
   inputFolder?: string
 ) {
@@ -166,53 +192,22 @@ export async function cliDeployContracts(
   });
 }
 
-export async function cliFullMultiCallDeployProxy(
+async function cliDeployUpgradeableProxy(
   contractName: string,
   factoryAddress: string,
   initializerArgs?: string,
-  outputFolder?: string,
-  constructorArgs?: Array<string>
-): Promise<ProxyData> {
-  return await run("full-multi-call-deploy-proxy", {
-    contractName,
-    factoryAddress,
-    initializerArgs,
-    outputFolder,
-    constructorArgs,
-  });
-}
-
-export async function cliMultiCallDeployMetamorphic(
-  contractName: string,
-  factoryAddress: string,
-  initializerArgs?: string,
-  outputFolder?: string,
-  constructorArgs?: Array<string>
-): Promise<MetaContractData> {
-  return await run("multi-call-deploy-metamorphic", {
-    contractName,
-    factoryAddress,
-    initializerArgs,
-    outputFolder,
-    constructorArgs,
-  });
-}
-
-export async function cliDeployUpgradeableProxy(
-  contractName: string,
-  factoryAddress: string,
-  initializerArgs?: string,
-  constructorArgs?: Array<any>
+  constructorArgs?: string
 ): Promise<ProxyData> {
   return await run("deploy-upgradeable-proxy", {
     contractName,
     factoryAddress,
     initializerArgs,
     constructorArgs,
+    waitConfirmation: 0,
   });
 }
 
-export async function cliDeployCreate(
+async function cliDeployCreate(
   contractName: string,
   factoryAddress: string,
   constructorArgs?: Array<string>
@@ -221,41 +216,43 @@ export async function cliDeployCreate(
     contractName,
     factoryAddress,
     constructorArgs,
+    waitConfirmation: 0,
   });
 }
 
-export async function cliMultiCallUpgradeProxy(
+async function cliUpgradeDeployedProxy(
   contractName: string,
-  factoryAddress: BytesLike,
-  initializerArgs?: BytesLike,
-  salt?: BytesLike,
-  constructorArgs?: Array<string>
+  logicAddress: string,
+  factoryAddress: string,
+  initializerArgs?: string
 ): Promise<ProxyData> {
-  return await run("multi-call-upgrade-proxy", {
+  return await run("upgrade-proxy", {
     contractName,
+    logicAddress,
     factoryAddress,
     initializerArgs,
-    salt,
-    constructorArgs,
+    waitConfirmation: 0,
   });
 }
 
-export async function cliDeployFactory(
+async function cliDeployFactory(
   legacyTokenAddress?: string,
   outputFolder?: string
 ) {
   return await run("deploy-factory", {
     legacyTokenAddress,
     outputFolder,
+    waitConfirmation: 0,
   });
 }
 
-export async function cliDeployOnlyProxy(
+async function cliDeployOnlyProxy(
   salt: string,
   factoryAddress: string
 ): Promise<ProxyData> {
   return await run("deploy-only-proxy", {
     salt,
     factoryAddress,
+    waitConfirmation: 0,
   });
 }

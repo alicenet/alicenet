@@ -9,6 +9,7 @@ import "hardhat-deploy";
 import "hardhat-gas-reporter";
 import "hardhat-log-remover";
 import "hardhat-storage-layout";
+import "hardhat/config";
 import { HardhatUserConfig, task } from "hardhat/config";
 import os from "os";
 import "solidity-coverage";
