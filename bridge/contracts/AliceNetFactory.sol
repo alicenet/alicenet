@@ -15,7 +15,7 @@ contract AliceNetFactory is AliceNetFactoryBase {
     address internal immutable _aTokenAddress;
 
     /**
-     * @dev The constructor encodes the proxy deploy byte code with the _UNIVERSAL_DEPLOY_CODE at the
+     * @notice The constructor encodes the proxy deploy byte code with the _UNIVERSAL_DEPLOY_CODE at the
      * head and the factory address at the tail, and deploys the proxy byte code using create OpCode.
      * The result of this deployment will be a contract with the proxy contract deployment bytecode with
      * its constructor at the head, runtime code in the body and constructor args at the tail. The
@@ -38,7 +38,7 @@ contract AliceNetFactory is AliceNetFactoryBase {
     }
 
     /**
-     * @dev callAny allows EOA to call function impersonating the factory address
+     * @notice callAny allows EOA to call function impersonating the factory address
      * @param target_: the address of the contract to be called
      * @param value_: value in WEIs to send together the call
      * @param cdata_: Hex encoded state with function signature + arguments of the target function to be called
@@ -54,7 +54,7 @@ contract AliceNetFactory is AliceNetFactoryBase {
     }
 
     /**
-     * @dev deployCreate allows the owner to deploy raw contracts through the factory using
+     * @notice deployCreate allows the owner to deploy raw contracts through the factory using
      * non-deterministic address generation (create OpCode)
      * @param deployCode_ Hex encoded state with the deployment code of the contract to be deployed +
      * constructors' args (if any)
@@ -87,7 +87,7 @@ contract AliceNetFactory is AliceNetFactoryBase {
     }
 
     /**
-     * @dev Add a new address and "pseudo" salt to the externalContractRegistry
+     * @notice Add a new address and "pseudo" salt to the externalContractRegistry
      * @param salt_: salt to be used to retrieve the contract
      * @param newContractAddress_: address of the contract to be added to registry
      */
@@ -97,7 +97,7 @@ contract AliceNetFactory is AliceNetFactoryBase {
     }
 
     /**
-     * @dev deployCreate2 allows the owner to deploy contracts with deterministic address
+     * @notice deployCreate2 allows the owner to deploy contracts with deterministic address
      * through the factory
      * @param value_ endowment value in WEIS for the created contract
      * @param salt_ salt used to determine the final determinist address for the deployed contract
@@ -114,7 +114,7 @@ contract AliceNetFactory is AliceNetFactoryBase {
     }
 
     /**
-     * @dev deployProxy deploys a proxy contract with upgradable logic. See Proxy.sol contract.
+     * @notice deployProxy deploys a proxy contract with upgradable logic. See Proxy.sol contract.
      * @param salt_ salt used to determine the final determinist address for the deployed contract
      */
     function deployProxy(bytes32 salt_) public onlyOwner returns (address contractAddr) {
@@ -122,7 +122,7 @@ contract AliceNetFactory is AliceNetFactoryBase {
     }
 
     /**
-     * @dev initializeContract allows the owner to initialize contracts deployed via factory
+     * @notice initializeContract allows the owner to initialize contracts deployed via factory
      * @param contract_ address of the contract that will be initialized
      * @param initCallData_ Hex encoded initialization function signature + parameters to initialize the
      * deployed contract
@@ -132,7 +132,7 @@ contract AliceNetFactory is AliceNetFactoryBase {
     }
 
     /**
-     * @dev multiCall allows owner to make multiple function calls within a single transaction
+     * @notice multiCall allows owner to make multiple function calls within a single transaction
      * impersonating the factory
      * @param cdata_: array of hex encoded state with the function calls (function signature + arguments)
      */
@@ -141,7 +141,7 @@ contract AliceNetFactory is AliceNetFactoryBase {
     }
 
     /**
-     * @dev upgradeProxy updates the implementation/logic address of an already deployed proxy contract.
+     * @notice upgradeProxy updates the implementation/logic address of an already deployed proxy contract.
      * @param salt_ salt used to determine the final determinist address for the deployed proxy contract
      * @param newImpl_ address of the new contract that contains the new implementation logic
      * @param initCallData_ Hex encoded initialization function signature + parameters to initialize the
@@ -156,7 +156,7 @@ contract AliceNetFactory is AliceNetFactoryBase {
     }
 
     /**
-     * @dev lookup allows anyone interacting with the contract to get the address of contract specified
+     * @notice lookup allows anyone interacting with the contract to get the address of contract specified
      * by its salt_
      * @param salt_: Custom NatSpec tag @custom:salt at the top of the contract solidity file
      */
@@ -169,7 +169,7 @@ contract AliceNetFactory is AliceNetFactoryBase {
     }
 
     /**
-     * @dev getter function for retrieving the hash of the AToken creation code.
+     * @notice getter function for retrieving the hash of the AToken creation code.
      * @return the hash of the AToken creation code.
      */
     function getATokenCreationCodeHash() public view returns (bytes32) {
@@ -177,10 +177,19 @@ contract AliceNetFactory is AliceNetFactoryBase {
     }
 
     /**
-     * @dev getter function for retrieving the address of the AToken contract.
+     * @notice getter function for retrieving the address of the AToken contract.
      * @return AToken address.
      */
     function getATokenAddress() public view returns (address) {
         return _aTokenAddress;
+    }
+
+    /**
+     * @notice getter function for retrieving the implementation address of an AliceNet proxy.
+     * @param proxyAddress_ the address of the proxy
+     * @return the address of implementation/logic contract used by the proxy
+     */
+    function getProxyImplementation(address proxyAddress_) public view returns (address) {
+        return __getProxyImplementation(proxyAddress_);
     }
 }

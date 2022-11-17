@@ -269,7 +269,7 @@ describe("AliceNet Contract Factory", () => {
       await expectTxSuccess(txResponse);
       // console.log("LOCK UPGRADES GASUSED: ", txResponse["receipt"]["gasUsed"]);
       const txRes = factory.upgradeProxy(proxySalt, endPoint.address, "0x");
-      await expect(txRes).to.be.reverted;
+      await expect(txRes).to.be.revertedWith("update locked");
       txResponse = await proxyMock.unlock();
       await expectTxSuccess(txResponse);
       txResponse = await factory.upgradeProxy(
@@ -387,55 +387,6 @@ describe("AliceNet Contract Factory", () => {
     await checkMockInit(mockInitAddr, 2);
   });
 
-  describe("delegateCallAny tests", async () => {
-    it("delegatecallany access control", async () => {
-      const factory = await loadFixture(deployFactory);
-      expect(await factory.owner()).to.equal(firstOwner);
-      // deploy an instance of mock logic for factory
-      const mockFactoryBase = await ethers.getContractFactory("MockFactory");
-      const mockFactoryInstance = await mockFactoryBase.deploy();
-      // generate the call state for the factory instance
-      const mfEncode = await ethers.getContractFactory("MockFactory");
-      let setOwner = mfEncode.interface.encodeFunctionData("setOwner", [
-        accounts[2],
-      ]);
-      // delegate call into the factory and change the owner
-      let txResponse = await factory.delegateCallAny(
-        mockFactoryInstance.address,
-        setOwner
-      );
-      await expectTxSuccess(txResponse);
-      let owner = await factory.owner();
-      expect(owner).to.equal(accounts[2]);
-      setOwner = await mfEncode.interface.encodeFunctionData("setOwner", [
-        accounts[0],
-      ]);
-      const signers = await ethers.getSigners();
-      const factoryBase = (
-        await ethers.getContractFactory(ALICENET_FACTORY)
-      ).connect(signers[2]);
-      const factory2 = factoryBase.attach(factory.address);
-      txResponse = await factory2.delegateCallAny(
-        mockFactoryInstance.address,
-        setOwner
-      );
-      await expectTxSuccess(txResponse);
-      owner = await factory.owner();
-      expect(owner).to.equal(accounts[0]);
-    });
-
-    it("deploys a mock contract, calls payMe from factory with delegateCallAny", async () => {
-      const factory = await loadFixture(deployFactory);
-      const mockFactory = await ethers.getContractFactory(MOCK);
-      const mock = await mockFactory.deploy(2, "s");
-      const callData = mockFactory.interface.encodeFunctionData("payMe");
-      await factory.delegateCallAny(mock.address, callData, {
-        value: 2,
-      });
-      expect(await ethers.provider.getBalance(factory.address)).to.equal(2);
-    });
-  });
-
   describe("proxy upgrade tests", async () => {
     it("upgrade proxy to point to mock address with the factory", async () => {
       const factory = await loadFixture(deployFactory);
@@ -470,8 +421,6 @@ describe("AliceNet Contract Factory", () => {
         await ethers.getContractFactory(ALICENET_FACTORY)
       ).connect(signers[2]);
       factory = factoryBase.attach(factory.address);
-      // console.log("UPGRADE PROXY GASUSED: ", txResponse["receipt"]["gasUsed"]);
-
       await expect(
         factory.upgradeProxy(proxySalt, mockContract.address, "0x", {
           from: firstDelegator,
@@ -504,8 +453,9 @@ describe("AliceNet Contract Factory", () => {
       await expectTxSuccess(txResponse);
       const proxyFactory = await ethers.getContractFactory("Proxy");
       const proxyContract = proxyFactory.attach(proxyAddr);
-      const proxyImplAddress =
-        await proxyContract.callStatic.getImplementationAddress();
+      const proxyImplAddress = await factory.getProxyImplementation(
+        proxyContract.address
+      );
       expect(proxyImplAddress).to.equal(endPointLockable.address);
     });
     it("lock proxy upgrade from factory", async () => {
@@ -534,8 +484,9 @@ describe("AliceNet Contract Factory", () => {
       await expectTxSuccess(txResponse);
       const proxyFactory = await ethers.getContractFactory("Proxy");
       const proxyContract = proxyFactory.attach(proxyAddr);
-      const proxyImplAddress =
-        await proxyContract.callStatic.getImplementationAddress();
+      const proxyImplAddress = await factory.getProxyImplementation(
+        proxyContract.address
+      );
       expect(proxyImplAddress).to.equal(endPointLockable.address);
     });
     it("should prevent locked proxy logic from being upgraded from factory", async () => {
@@ -566,15 +517,15 @@ describe("AliceNet Contract Factory", () => {
       await expectTxSuccess(txResponse);
       const proxyFactory = await ethers.getContractFactory("Proxy");
       const proxy = proxyFactory.attach(proxyAddr);
-      const proxyImplAddress =
-        await proxy.callStatic.getImplementationAddress();
+      const proxyImplAddress = await factory.getProxyImplementation(proxyAddr);
       expect(proxyImplAddress).to.equal(endPointLockable.address);
       const proxyContract = endPointLockableFactory.attach(proxy.address);
       const lockResponse = await proxyContract.upgradeLock();
       const receipt = await lockResponse.wait();
       expect(receipt.status).to.equal(1);
-      await expect(factory.upgradeProxy(salt, endPoint.address, "0x")).to.be
-        .reverted;
+      await expect(
+        factory.upgradeProxy(salt, endPoint.address, "0x")
+      ).to.be.revertedWith("update locked");
     });
   });
 

@@ -4,6 +4,7 @@ pragma solidity ^0.8.16;
 import "contracts/Proxy.sol";
 import "contracts/libraries/proxy/ProxyInternalUpgradeLock.sol";
 import "contracts/libraries/proxy/ProxyInternalUpgradeUnlock.sol";
+import "contracts/libraries/proxy/ProxyImplementationGetter.sol";
 
 interface IMockEndPointLockable {
     function addOne() external;
@@ -19,6 +20,7 @@ interface IMockEndPointLockable {
 contract MockEndPointLockable is
     ProxyInternalUpgradeLock,
     ProxyInternalUpgradeUnlock,
+    ProxyImplementationGetter,
     IMockEndPointLockable
 {
     error Unauthorized();
@@ -62,6 +64,10 @@ contract MockEndPointLockable is
 
     function factory() public view returns (address) {
         return _factory;
+    }
+
+    function getProxyImplementation(address proxyAddress_) public view returns (address) {
+        return __getProxyImplementation(proxyAddress_);
     }
 
     function _requireAuth(bool isOk_) internal pure {
