@@ -94,8 +94,13 @@ task(
     "custom list of contracts to generate list and arg template for"
   )
   .setAction(async (taskArgs, hre) => {
-    await checkUserDirPath(taskArgs.outputFile);
+    // shave off filename from path and create directory if it doesn't exist 
     const file = taskArgs.outputFile;
+    const fullPath = file.substring(
+      0,
+      file.lastIndexOf("/")
+    );
+    await checkUserDirPath(fullPath);
 
     let deploymentArgs: DeploymentConfigWrapper = {};
     let contracts: Array<string> = [];
