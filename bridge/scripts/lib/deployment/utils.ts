@@ -2,6 +2,7 @@ import { ContractFactory } from "ethers";
 import fs from "fs";
 import { ethers } from "hardhat";
 import { Artifacts, HardhatRuntimeEnvironment } from "hardhat/types";
+import path from "path";
 import { exit } from "process";
 import readline from "readline";
 import { DEFAULT_CONFIG_FILE_PATH } from "../constants";
@@ -81,16 +82,20 @@ export async function promptCheckDeploymentArgs(message: string) {
   }
 }
 
-export async function checkUserDirPath(path: string) {
-  if (path !== undefined) {
-    if (!fs.existsSync(path)) {
+/**
+ * @param filepath A path to a file (with extension), or a directory
+ */
+export async function checkUserDirPath(filepath: string) {
+  if (filepath !== undefined && !fs.existsSync(filepath)) {
+    // check to see if filepath is path to a file or is a directory
+    const folderPath =
+      path.extname(filepath) === "" ? filepath : path.dirname(filepath);
+
+    if (!fs.existsSync(folderPath)) {
       console.log(
-        "Creating Folder at" + path + " since it didn't exist before!"
+        "Creating Folder at" + folderPath + " since it didn't exist before!"
       );
-      fs.mkdirSync(path);
-    }
-    if (fs.statSync(path).isFile()) {
-      throw new Error("outputFolder path should be to a directory not a file");
+      fs.mkdirSync(folderPath);
     }
   }
 }
