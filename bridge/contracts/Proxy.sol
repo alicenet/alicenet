@@ -58,7 +58,7 @@ contract Proxy {
                     case 0x0cbcae703c {
                         let ptr := mload(0x40)
                         mstore(ptr, getImplementationAddress())
-                        return(ptr, 0x20)
+                        return(ptr, 0x14)
                     }
                     // setImplementationAddress()
                     case 0xca11c0de11 {
@@ -137,9 +137,12 @@ contract Proxy {
             }
 
             function getImplementationAddress() -> implAddr {
-                implAddr := and(
-                    sload(not(0x00)),
-                    0x000000000000000000000000ffffffffffffffffffffffffffffffffffffffff
+                implAddr := shl(
+                    96,
+                    and(
+                        sload(not(0x00)),
+                        0x000000000000000000000000ffffffffffffffffffffffffffffffffffffffff
+                    )
                 )
             }
 

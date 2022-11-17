@@ -81,7 +81,7 @@ contract AliceNetFactory is AliceNetFactoryBase {
         returns (address contractAddr)
     {
         address newContractAddress = _deployCreate(deployCode_);
-        _addNewExternalContract(salt_, newContractAddress);
+        _addNewContract(salt_, newContractAddress);
         return newContractAddress;
     }
 
@@ -92,7 +92,7 @@ contract AliceNetFactory is AliceNetFactoryBase {
      */
     function addNewExternalContract(bytes32 salt_, address newContractAddress_) public onlyOwner {
         _codeSizeZeroRevert(_extCodeSize(newContractAddress_) != 0);
-        _addNewExternalContract(salt_, newContractAddress_);
+        _addNewContract(salt_, newContractAddress_);
     }
 
     /**
@@ -155,12 +155,15 @@ contract AliceNetFactory is AliceNetFactoryBase {
     }
 
     /**
-     * @notice lookup allows anyone interacting with the contract to get the address of contract specified
-     * by its salt_
+     * @notice lookup allows anyone interacting with the contract to get the address of contract
+     * specified by its salt_.
      * @param salt_: Custom NatSpec tag @custom:salt at the top of the contract solidity file
+     * @return the address of the contract specified by the salt. Returns address(0) in case no
+     * contract was deployed for that salt.
      */
     function lookup(bytes32 salt_) public view override returns (address) {
-        // check if the salt belongs to one of the pre-defined contracts deployed during the factory deployment
+        // check if the salt belongs to one of the pre-defined contracts deployed during the factory
+        // deployment
         if (salt_ == _ATOKEN_SALT) {
             return _aTokenAddress;
         }

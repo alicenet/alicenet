@@ -40,7 +40,7 @@ abstract contract AliceNetFactoryBase is
     /// @dev more details here https://github.com/alicenet/alicenet/wiki/Metamorphic-Proxy-Contract
     bytes8 private constant _UNIVERSAL_DEPLOY_CODE = 0x38585839386009f3;
 
-    mapping(bytes32 => address) internal _externalContractRegistry;
+    mapping(bytes32 => address) internal _contractRegistry;
 
     /**
      *@dev events that notify of contract deployment
@@ -241,8 +241,7 @@ abstract contract AliceNetFactoryBase is
             contractAddr := create2(0, ptr, 0x17, salt_)
         }
         _codeSizeZeroRevert((_extCodeSize(contractAddr) != 0));
-        // record the contract salt to the contracts array
-        _contracts.push(salt_);
+        _addNewContract(salt_, contractAddr);
         emit DeployedProxy(contractAddr);
         return contractAddr;
     }
@@ -301,12 +300,12 @@ abstract contract AliceNetFactoryBase is
     }
 
     /// Internal function to add a new address and "pseudo" salt to the externalContractRegistry
-    function _addNewExternalContract(bytes32 salt_, address newContractAddress_) internal {
-        if (_externalContractRegistry[salt_] != address(0)) {
+    function _addNewContract(bytes32 salt_, address newContractAddress_) internal {
+        if (_contractRegistry[salt_] != address(0)) {
             revert AliceNetFactoryBaseErrors.SaltAlreadyInUse(salt_);
         }
         _contracts.push(salt_);
-        _externalContractRegistry[salt_] = newContractAddress_;
+        _contractRegistry[salt_] = newContractAddress_;
     }
 
     /**
@@ -319,14 +318,10 @@ abstract contract AliceNetFactoryBase is
         return size;
     }
 
-    //lookup allows anyone interacting with the contract to get the address of contract specified by its salt_
+    // lookup allows anyone interacting with the contract to get the address of contract specified by
+    // its salt_. Returns address(0) in case a contract for that salt was not deployed.
     function _lookup(bytes32 salt_) internal view returns (address) {
-        // check if the salt belongs to any address in the external contract registry (contracts deployed outside the factory)
-        address contractInfo = _externalContractRegistry[salt_];
-        if (contractInfo != address(0)) {
-            return contractInfo;
-        }
-        return getMetamorphicContractAddress(salt_, address(this));
+        return _contractRegistry[salt_];
     }
 
     /**

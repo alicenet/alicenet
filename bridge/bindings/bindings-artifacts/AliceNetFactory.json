@@ -103,6 +103,31 @@
     "type": "event"
   },
   {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "bytes32",
+        "name": "salt",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "proxyAddr",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "newlogicAddr",
+        "type": "address"
+      }
+    ],
+    "name": "UpgradedProxy",
+    "type": "event"
+  },
+  {
     "stateMutability": "nonpayable",
     "type": "fallback"
   },
@@ -143,7 +168,13 @@
       }
     ],
     "name": "callAny",
-    "outputs": [],
+    "outputs": [
+      {
+        "internalType": "bytes",
+        "name": "",
+        "type": "bytes"
+      }
+    ],
     "stateMutability": "payable",
     "type": "function"
   },
@@ -158,24 +189,6 @@
       }
     ],
     "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "target_",
-        "type": "address"
-      },
-      {
-        "internalType": "bytes",
-        "name": "cdata_",
-        "type": "bytes"
-      }
-    ],
-    "name": "delegateCallAny",
-    "outputs": [],
-    "stateMutability": "payable",
     "type": "function"
   },
   {
@@ -349,6 +362,25 @@
     "inputs": [
       {
         "internalType": "address",
+        "name": "proxyAddress_",
+        "type": "address"
+      }
+    ],
+    "name": "getProxyImplementation",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
         "name": "contract_",
         "type": "address"
       },
@@ -408,7 +440,13 @@
       }
     ],
     "name": "multiCall",
-    "outputs": [],
+    "outputs": [
+      {
+        "internalType": "bytes[]",
+        "name": "",
+        "type": "bytes[]"
+      }
+    ],
     "stateMutability": "nonpayable",
     "type": "function"
   },
@@ -423,19 +461,6 @@
       }
     ],
     "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "newImplementationAddress_",
-        "type": "address"
-      }
-    ],
-    "name": "setImplementation",
-    "outputs": [],
-    "stateMutability": "nonpayable",
     "type": "function"
   },
   {

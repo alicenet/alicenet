@@ -9,7 +9,10 @@ abstract contract ProxyInternalUpgradeLock {
                 implSlot,
                 or(
                     0xca11c0de15dead10deadc0de0000000000000000000000000000000000000000,
-                    sload(implSlot)
+                    and(
+                        sload(implSlot),
+                        0x000000000000000000000000ffffffffffffffffffffffffffffffffffffffff
+                    )
                 )
             )
         }

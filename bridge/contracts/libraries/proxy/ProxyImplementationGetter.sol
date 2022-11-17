@@ -12,10 +12,7 @@ abstract contract ProxyImplementationGetter {
             if iszero(success) {
                 revert(ptr, returndatasize())
             }
-            implAddress := and(
-                mload(ptr),
-                0x000000000000000000000000ffffffffffffffffffffffffffffffffffffffff
-            )
+            implAddress := shl(96, mload(ptr))
         }
     }
 }

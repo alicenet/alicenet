@@ -36,9 +36,7 @@ describe("PROXY", async () => {
     const txResponse = await proxy.fallback(txReq);
     const receipt = await txResponse.wait();
     expect(receipt.status).to.equal(1);
-    const proxyImplAddr = await endPointLockable.getProxyImplementation(
-      proxy.address
-    );
+    const proxyImplAddr = await getProxyImplementation(proxy.address);
     expect(proxyImplAddr).to.equal(endPointLockable.address);
   });
 
@@ -64,9 +62,8 @@ describe("PROXY", async () => {
     let txResponse = await proxy.fallback(txReq);
     let receipt = await txResponse.wait();
     expect(receipt.status).to.equal(1);
-    const proxyImplAddr = await endPointLockable.getProxyImplementation(
-      proxy.address
-    );
+
+    const proxyImplAddr = await getProxyImplementation(proxy.address);
     expect(proxyImplAddr).to.equal(endPointLockable.address);
     // interface of logic connected to logic contract
     const proxyContract = endPointLockableFactory.attach(proxy.address);
@@ -83,5 +80,20 @@ describe("PROXY", async () => {
     txResponse = await proxyContract.upgradeUnlock();
     receipt = await txResponse.wait();
     expect(receipt.status).to.equal(1);
+    // todo; try to upgrade again and check error
   });
 });
+
+export async function getProxyImplementation(proxyAddress: string) {
+  //   const proxy = await ethers.getContractAt("Proxy", proxyAddress);
+  const txReq = {
+    data: "0x0cbcae703c",
+    to: proxyAddress,
+  };
+  const signers = await ethers.getSigners();
+  const implementationAddress = await ethers.utils.getAddress(
+    await signers[0].call(txReq)
+  );
+  console.log(implementationAddress);
+  return implementationAddress;
+}
