@@ -316,6 +316,87 @@ abstract contract ImmutableMultipleProposalAccusation is ImmutableFactory {
     }
 }
 
+abstract contract ImmutableNativeERC721BridgePoolV1 is ImmutableFactory {
+    address private immutable _nativeERC721BridgePoolV1;
+    error OnlyNativeERC721BridgePoolV1(address sender, address expected);
+
+    modifier onlyNativeERC721BridgePoolV1() {
+        if (msg.sender != _nativeERC721BridgePoolV1) {
+            revert OnlyNativeERC721BridgePoolV1(msg.sender, _nativeERC721BridgePoolV1);
+        }
+        _;
+    }
+
+    constructor() {
+        _nativeERC721BridgePoolV1 = getMetamorphicContractAddress(
+            0x4e6174697665455243373231427269646765506f6f6c56310000000000000000,
+            _factoryAddress()
+        );
+    }
+
+    function _nativeERC721BridgePoolV1Address() internal view returns (address) {
+        return _nativeERC721BridgePoolV1;
+    }
+
+    function _saltForNativeERC721BridgePoolV1() internal pure returns (bytes32) {
+        return 0x4e6174697665455243373231427269646765506f6f6c56310000000000000000;
+    }
+}
+
+abstract contract ImmutableNativeERCBridgePoolBase is ImmutableFactory {
+    address private immutable _nativeERCBridgePoolBase;
+    error OnlyNativeERCBridgePoolBase(address sender, address expected);
+
+    modifier onlyNativeERCBridgePoolBase() {
+        if (msg.sender != _nativeERCBridgePoolBase) {
+            revert OnlyNativeERCBridgePoolBase(msg.sender, _nativeERCBridgePoolBase);
+        }
+        _;
+    }
+
+    constructor() {
+        _nativeERCBridgePoolBase = getMetamorphicContractAddress(
+            0x4e6174697665455243427269646765506f6f6c42617365000000000000000000,
+            _factoryAddress()
+        );
+    }
+
+    function _nativeERCBridgePoolBaseAddress() internal view returns (address) {
+        return _nativeERCBridgePoolBase;
+    }
+
+    function _saltForNativeERCBridgePoolBase() internal pure returns (bytes32) {
+        return 0x4e6174697665455243427269646765506f6f6c42617365000000000000000000;
+    }
+}
+
+abstract contract ImmutableBridgeRouter is ImmutableFactory {
+    address private immutable _bridgeRouter;
+    error OnlyBridgeRouter(address sender, address expected);
+
+    modifier onlyBridgeRouter() {
+        if (msg.sender != _bridgeRouter) {
+            revert OnlyBridgeRouter(msg.sender, _bridgeRouter);
+        }
+        _;
+    }
+
+    constructor() {
+        _bridgeRouter = getMetamorphicContractAddress(
+            0x427269646765526f757465720000000000000000000000000000000000000000,
+            _factoryAddress()
+        );
+    }
+
+    function _bridgeRouterAddress() internal view returns (address) {
+        return _bridgeRouter;
+    }
+
+    function _saltForBridgeRouter() internal pure returns (bytes32) {
+        return 0x427269646765526f757465720000000000000000000000000000000000000000;
+    }
+}
+
 abstract contract ImmutablePublicStaking is ImmutableFactory {
     address private immutable _publicStaking;
     error OnlyPublicStaking(address sender, address expected);
@@ -529,5 +610,32 @@ abstract contract ImmutableETHDKG is ImmutableFactory {
 
     function _saltForETHDKG() internal pure returns (bytes32) {
         return 0x455448444b470000000000000000000000000000000000000000000000000000;
+    }
+}
+
+abstract contract ImmutableBridgePoolFactory is ImmutableFactory {
+    address private immutable _bridgePoolFactory;
+    error OnlyBridgePoolFactory(address sender, address expected);
+
+    modifier onlyBridgePoolFactory() {
+        if (msg.sender != _bridgePoolFactory) {
+            revert OnlyBridgePoolFactory(msg.sender, _bridgePoolFactory);
+        }
+        _;
+    }
+
+    constructor() {
+        _bridgePoolFactory = getMetamorphicContractAddress(
+            0x427269646765506f6f6c466163746f7279000000000000000000000000000000,
+            _factoryAddress()
+        );
+    }
+
+    function _bridgePoolFactoryAddress() internal view returns (address) {
+        return _bridgePoolFactory;
+    }
+
+    function _saltForBridgePoolFactory() internal pure returns (bytes32) {
+        return 0x427269646765506f6f6c466163746f7279000000000000000000000000000000;
     }
 }
