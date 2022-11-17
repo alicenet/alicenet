@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: MIT-open-group
 pragma solidity ^0.8.16;
+
+import "@openzeppelin/contracts/utils/Address.sol";
 import "contracts/Proxy.sol";
 import "contracts/utils/DeterministicAddress.sol";
 import "contracts/libraries/proxy/ProxyUpgrader.sol";
@@ -11,6 +13,8 @@ abstract contract AliceNetFactoryBase is
     ProxyUpgrader,
     ProxyImplementationGetter
 {
+    using Address for address;
+
     struct MultiCallArgs {
         address target;
         uint256 value;
@@ -159,15 +163,8 @@ abstract contract AliceNetFactoryBase is
         address target_,
         uint256 value_,
         bytes memory cdata_
-    ) internal {
-        assembly {
-            let size := mload(cdata_)
-            let ptr := add(0x20, cdata_)
-            if iszero(call(gas(), target_, value_, ptr, size, 0x00, 0x00)) {
-                returndatacopy(0x00, 0x00, returndatasize())
-                revert(0x00, returndatasize())
-            }
-        }
+    ) internal returns (bytes memory) {
+        return target_.functionCallWithValue(cdata_, value_);
     }
 
     /**
@@ -277,11 +274,11 @@ abstract contract AliceNetFactoryBase is
      * impersonating the factory
      * @param cdata_: array of abi encoded data with the function calls (function signature + arguments)
      */
-    function _multiCall(MultiCallArgs[] calldata cdata_) internal {
+    function _multiCall(MultiCallArgs[] calldata cdata_) internal returns (bytes[] memory results) {
+        results = new bytes[](cdata_.length);
         for (uint256 i = 0; i < cdata_.length; i++) {
-            _callAny(cdata_[i].target, cdata_[i].value, cdata_[i].data);
+            results[i] = _callAny(cdata_[i].target, cdata_[i].value, cdata_[i].data);
         }
-        _returnAvailableData();
     }
 
     /**
@@ -330,16 +327,6 @@ abstract contract AliceNetFactoryBase is
             return contractInfo;
         }
         return getMetamorphicContractAddress(salt_, address(this));
-    }
-
-    /**
-     * @dev Aux function to get the return data size
-     */
-    function _returnAvailableData() internal pure {
-        assembly {
-            returndatacopy(0x00, 0x00, returndatasize())
-            return(0x00, returndatasize())
-        }
     }
 
     /**

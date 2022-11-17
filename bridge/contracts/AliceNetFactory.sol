@@ -47,10 +47,9 @@ contract AliceNetFactory is AliceNetFactoryBase {
         address target_,
         uint256 value_,
         bytes calldata cdata_
-    ) public payable onlyOwner {
+    ) public payable onlyOwner returns (bytes memory) {
         bytes memory cdata = cdata_;
-        _callAny(target_, value_, cdata);
-        _returnAvailableData();
+        return _callAny(target_, value_, cdata);
     }
 
     /**
@@ -136,8 +135,8 @@ contract AliceNetFactory is AliceNetFactoryBase {
      * impersonating the factory
      * @param cdata_: array of hex encoded state with the function calls (function signature + arguments)
      */
-    function multiCall(MultiCallArgs[] calldata cdata_) public onlyOwner {
-        _multiCall(cdata_);
+    function multiCall(MultiCallArgs[] calldata cdata_) public onlyOwner returns (bytes[] memory) {
+        return _multiCall(cdata_);
     }
 
     /**
