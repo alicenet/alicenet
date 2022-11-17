@@ -4,7 +4,11 @@ pragma solidity ^0.8.11;
 interface IBridgePool {
     function initialize(address ercContract_) external;
 
-    function deposit(address msgSender, bytes calldata depositParameters) external;
+    function deposit(address sender, bytes calldata depositParameters) external;
 
-    function withdraw(bytes memory _txInPreImage, bytes[4] memory _proofs) external;
+    function withdraw(
+        address receiver,
+        bytes memory vsPreImage,
+        bytes[4] memory proofs
+    ) external returns (uint256 value);
 }
