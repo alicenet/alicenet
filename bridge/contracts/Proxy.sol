@@ -37,6 +37,7 @@ contract Proxy {
 
     /// Delegates calls to proxy implementation
     function _fallback() internal {
+        bytes memory errorString = abi.encodeWithSelector(0x08c379a0, "imploc");
         // make local copy of factory since immutables
         // are not accessable in assembly as of yet
         address factory = _factory;
@@ -53,8 +54,17 @@ contract Proxy {
                 // this is an assignment to implementation
                 let newImpl := shr(96, shl(96, calldataload(0x04)))
                 if eq(shr(160, sload(not(0x00))), 0x00ca11c0de15dead10cced00) {
-                    mstore(0x00, "imploc")
-                    revert(0x00, 0x20)
+                    let ptr:= mload(0x40)
+                    let basePtr := ptr
+                    mstore(ptr, hex"08c379a0")
+                    mstore(add(ptr, 0x4), 0x20)
+                    //num characters 0x6 = 6
+                    mstore(add(ptr, 0x24), 0x6)
+                    ptr := add(ptr, 0x44)
+                    mstore(ptr, "imploc")
+                    ptr := add(ptr, 0x20)
+                    revert(basePtr, sub(ptr, basePtr))
+                    
                 }
                 // store address into slot
                 sstore(not(0x00), newImpl)
@@ -65,8 +75,16 @@ contract Proxy {
             function passthrough() {
                 let logicAddress := sload(not(0x00))
                 if iszero(logicAddress) {
-                    mstore(0x00, "logicNotSet")
-                    revert(0x00, 0x20)
+                    let ptr:= mload(0x40)
+                    let basePtr := ptr
+                    mstore(ptr, hex"08c379a0")
+                    mstore(add(ptr, 0x4), 0x20)
+                    //num characters 0xb = 11
+                    mstore(add(ptr, 0x24), 0xb)
+                    ptr := add(ptr, 0x44)
+                    mstore(ptr, "logicNotSet")
+                    ptr := add(ptr, 0x20)
+                    revert(basePtr, sub(ptr, basePtr))
                 }
                 // load free memory pointer
                 let _ptr := mload(0x40)
@@ -111,3 +129,11 @@ contract Proxy {
         }
     }
 }
+
+// 0000000000000000000000000000000000000000000000000000000000000000
+// 0000000000000000000000000000000000000000000000000000000000000000
+// 0000000000000000000000000000000000000000000000000000000000000080
+// 0000000000000000000000000000000000000000000000000000000000000000
+// 08c379a0000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000066861686168610000000000000000000000000000000000000000000000000000
+// 0x5da7d2e0
+696d706c6f630
