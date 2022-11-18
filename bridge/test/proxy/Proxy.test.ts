@@ -37,11 +37,9 @@ describe("PROXY", async () => {
     await txResponse.wait();
     const expectedAddress = await getProxyImplementation(proxy.address);
     expect(expectedAddress).to.equal(endPointLockable.address);
-    const proxyImplAddr = await getProxyImplementation(proxy.address);
-    expect(proxyImplAddr).to.equal(endPointLockable.address);
   });
 
-  it("deploys proxy and attempts to upgrade it with another account", async () => {
+  it("deploys proxy and attempts to upgrade it with non-admin account", async () => {
     const accounts = await ethers.getSigners();
     const proxyFactory = await ethers.getContractFactory(PROXY);
     const proxy = await proxyFactory.deploy();
@@ -120,6 +118,27 @@ describe("PROXY", async () => {
     const expectedAddress = await getProxyImplementation(proxy.address);
     expect(expectedAddress).to.equal(endPoint.address);
   });
+
+  it("should not be able to call proxy function with incorrect signature", async () => {
+    const proxyFactory = await ethers.getContractFactory(PROXY);
+    const proxy = await proxyFactory.deploy();
+    const abicoder = new ethers.utils.AbiCoder();
+    const encodedAddress = abicoder.encode(["address"], [proxy.address]);
+    let txReq = {
+      data: "0xaabbccddee" + encodedAddress.substring(2),
+      gasLimit: 1000000,
+    };
+    await expect(proxy.fallback(txReq)).to.be.rejectedWith(
+      "function not found"
+    );
+    txReq = {
+      data: "0xaabbccddee",
+      gasLimit: 1000000,
+    };
+    await expect(proxy.fallback(txReq)).to.be.rejectedWith(
+      "function not found"
+    );
+  });
 });
 
 export async function getProxyImplementation(proxyAddress: string) {
@@ -129,9 +148,8 @@ export async function getProxyImplementation(proxyAddress: string) {
     to: proxyAddress,
   };
   const signers = await ethers.getSigners();
-  const implementationAddress = await ethers.utils.getAddress(
+  const implementationAddress = ethers.utils.getAddress(
     await signers[0].call(txReq)
   );
-  console.log(implementationAddress);
   return implementationAddress;
 }
