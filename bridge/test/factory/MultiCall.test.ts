@@ -1,4 +1,3 @@
-import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { expect } from "chai";
 import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
@@ -11,6 +10,7 @@ import {
   END_POINT,
   MOCK,
 } from "../../scripts/lib/constants";
+import { AliceNetFactory } from "../../typechain-types";
 import {
   deployFactory,
   getCreateAddress,
@@ -20,8 +20,12 @@ import {
 } from "./Setup";
 
 describe("Multicall deploy proxy", () => {
+  let factory: AliceNetFactory;
+  beforeEach(async () => {
+    factory = await deployFactory();
+  });
+
   it("multicall deploycreate, deployproxy, upgradeproxy", async () => {
-    const factory = await loadFixture(deployFactory);
     const mockFactory = await ethers.getContractFactory(MOCK);
     const endPointFactory = await ethers.getContractFactory(END_POINT);
     const Salt = getSalt();
@@ -82,7 +86,6 @@ describe("Multicall deploy proxy", () => {
   });
 
   it("check multicall returns", async () => {
-    const factory = await loadFixture(deployFactory);
     const mockFactory = await ethers.getContractFactory(MOCK);
     const mock = await mockFactory.deploy(2, "s");
     // encoded function call to deployCreate

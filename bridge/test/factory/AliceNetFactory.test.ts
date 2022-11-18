@@ -225,7 +225,7 @@ describe("AliceNet Contract Factory", () => {
       const factoryBase = (
         await ethers.getContractFactory(ALICENET_FACTORY)
       ).connect(signers[2]);
-      let factory = await loadFixture(deployFactory);
+      let factory = await deployFactory();
       factory = factoryBase.attach(factory.address);
       const Salt = getSalt();
 
@@ -237,7 +237,7 @@ describe("AliceNet Contract Factory", () => {
 
   describe("deployCreate tests", () => {
     it("deploycreate mock logic contract with factory", async () => {
-      const factory = await loadFixture(deployFactory);
+      const factory = await deployFactory();
       // use the ethers Mock contract abstraction to generate the deploy transaction state
       const mockCon: ContractFactory = await ethers.getContractFactory(MOCK);
       // get the init code with constructor args appended
@@ -264,7 +264,7 @@ describe("AliceNet Contract Factory", () => {
       // console.log("DEPLOYCREATE MOCK LOGIC GASUSED: ", receipt["receipt"]["gasUsed"]);
     });
     it("call setfactory in mock through proxy expect su", async () => {
-      const factory = await loadFixture(deployFactory);
+      const factory = await deployFactory();
       const mockFactory = await ethers.getContractFactory(MOCK);
       const endPointFactory = await ethers.getContractFactory(END_POINT);
       const endPoint = await endPointFactory.deploy();
@@ -306,7 +306,7 @@ describe("AliceNet Contract Factory", () => {
     });
     // fail on bad code
     it("should not allow deploycreate with bad code", async () => {
-      const factory = await loadFixture(deployFactory);
+      const factory = await deployFactory();
       const txResponse = factory.deployCreate("0x6000");
 
       await expect(txResponse).to.be.revertedWithCustomError(
@@ -316,7 +316,7 @@ describe("AliceNet Contract Factory", () => {
     });
     // fail on unauthorized with bad code
     it("should not allow deploycreate with bad code and unauthorized account", async () => {
-      let factory = await loadFixture(deployFactory);
+      let factory = await deployFactory();
       const signers = await ethers.getSigners();
       const factoryBase = (
         await ethers.getContractFactory(ALICENET_FACTORY)
@@ -330,7 +330,7 @@ describe("AliceNet Contract Factory", () => {
     });
     // fail on unauthorized with good code
     it("should not allow deploycreate with valid code and unauthorized account", async () => {
-      const factory = await loadFixture(deployFactory);
+      const factory = await deployFactory();
       const endPointFactory = await ethers.getContractFactory(END_POINT);
       const signers = await ethers.getSigners();
       const factoryBase = (
@@ -346,7 +346,7 @@ describe("AliceNet Contract Factory", () => {
     });
 
     it("should not allow deploycreate mock logic contract with unauthorized account", async () => {
-      let factory = await loadFixture(deployFactory);
+      let factory = await deployFactory();
       // use the ethers Mock contract abstraction to generate the deploy transaction state
       const mockCon = await ethers.getContractFactory(MOCK);
       // get the init code with constructor args appended
@@ -368,7 +368,7 @@ describe("AliceNet Contract Factory", () => {
 
   describe("deployCreate2 tests", () => {
     it("deploycreate2 mockinitializable", async () => {
-      const factory = await loadFixture(deployFactory);
+      const factory = await deployFactory();
       const salt = getSalt();
       let txResponse = await deployCreate2Initializable(factory, salt);
       await expectTxSuccess(txResponse);
@@ -392,7 +392,7 @@ describe("AliceNet Contract Factory", () => {
   });
 
   it("deploys a initializable contract and uses callany to intialize", async () => {
-    const factory = await loadFixture(deployFactory);
+    const factory = await deployFactory();
     const salt = getSalt();
     let txResponse = await deployCreate2Initializable(factory, salt);
     await expectTxSuccess(txResponse);
@@ -414,7 +414,7 @@ describe("AliceNet Contract Factory", () => {
 
   describe("proxy upgrade tests", async () => {
     it("upgrade proxy to point to mock address with the factory", async () => {
-      const factory = await loadFixture(deployFactory);
+      const factory = await deployFactory();
       const mockFactory = await ethers.getContractFactory(MOCK);
       const proxySalt = getSalt();
       let txResponse = await factory.deployProxy(proxySalt);
@@ -429,7 +429,7 @@ describe("AliceNet Contract Factory", () => {
     });
 
     it("should not allow unauthorized account to update proxy to point to other address ", async () => {
-      let factory = await loadFixture(deployFactory);
+      let factory = await deployFactory();
       const mockFactory = await ethers.getContractFactory(MOCK);
       const proxySalt = getSalt();
       let txResponse = await factory.deployProxy(proxySalt);
@@ -453,7 +453,7 @@ describe("AliceNet Contract Factory", () => {
       ).to.be.revertedWithCustomError(factory, `Unauthorized`);
     });
     it("upgrade proxy through factory", async () => {
-      const factory = await loadFixture(deployFactory);
+      const factory = await deployFactory();
       const endPointLockableFactory = await ethers.getContractFactory(
         "MockEndPointLockable"
       );
@@ -484,7 +484,7 @@ describe("AliceNet Contract Factory", () => {
       expect(proxyImplAddress).to.equal(endPointLockable.address);
     });
     it("lock proxy upgrade from factory", async () => {
-      const factory = await loadFixture(deployFactory);
+      const factory = await deployFactory();
       const endPointLockableFactory = await ethers.getContractFactory(
         "MockEndPointLockable"
       );
@@ -515,7 +515,7 @@ describe("AliceNet Contract Factory", () => {
       expect(proxyImplAddress).to.equal(endPointLockable.address);
     });
     it("should prevent locked proxy logic from being upgraded from factory", async () => {
-      const factory = await loadFixture(deployFactory);
+      const factory = await deployFactory();
       const endPointFactory = await ethers.getContractFactory(END_POINT);
       const endPoint = await endPointFactory.deploy();
       const endPointLockableFactory = await ethers.getContractFactory(
@@ -590,7 +590,7 @@ describe("AliceNet Contract Factory", () => {
   });
 
   it("deploys a mock contract, calls payMe from factory with callAny", async () => {
-    const factory = await loadFixture(deployFactory);
+    const factory = await deployFactory();
     const mockFactory = await ethers.getContractFactory(MOCK);
     const mock = await mockFactory.deploy(2, "s");
     const callData = mockFactory.interface.encodeFunctionData("payMe");
@@ -600,7 +600,7 @@ describe("AliceNet Contract Factory", () => {
   });
 
   it("check callAny returns", async () => {
-    const factory = await loadFixture(deployFactory);
+    const factory = await deployFactory();
     const mockFactory = await ethers.getContractFactory(MOCK);
     const mock = await mockFactory.deploy(2, "s");
     const callData = mockFactory.interface.encodeFunctionData("getVar");

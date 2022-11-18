@@ -96,9 +96,9 @@ abstract contract AliceNetFactoryBase is
      * @notice fallback function returns the address of the most recent deployment of a template
      */
     fallback() external {
-        assembly {
-            mstore(returndatasize(), sload(_implementation.slot))
-            return(returndatasize(), 0x20)
+        assembly ("memory-safe") {
+            mstore(0x00, sload(_implementation.slot))
+            return(0x00, 0x20)
         }
     }
 
