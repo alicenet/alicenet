@@ -2,7 +2,8 @@
 pragma solidity ^0.8.16;
 
 import "contracts/interfaces/IStakingToken.sol";
-import "contracts/utils/ImmutableAuth.sol";
+import "contracts/utils/auth/ImmutableFactory.sol";
+import "contracts/utils/auth/ImmutableAToken.sol";
 
 /// @custom:salt ATokenBurner
 /// @custom:deploy-type deployUpgradeable

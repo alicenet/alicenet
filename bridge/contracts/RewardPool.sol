@@ -8,7 +8,6 @@ import "contracts/libraries/errors/LockupErrors.sol";
 import "contracts/BonusPool.sol";
 import "contracts/utils/EthSafeTransfer.sol";
 import "contracts/utils/ERC20SafeTransfer.sol";
-import "contracts/utils/ImmutableAuth.sol";
 
 /**
  * @notice RewardPool holds all ether and ALCA that is part of reserved amount

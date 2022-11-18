@@ -4,6 +4,12 @@ import "contracts/utils/DeterministicAddress.sol";
 import "contracts/interfaces/IStakingNFT.sol";
 import "contracts/interfaces/IERC20Transferable.sol";
 import "contracts/interfaces/IETHDKG.sol";
+import "contracts/utils/auth/ImmutableFactory.sol";
+import "contracts/utils/auth/ImmutableSnapshots.sol";
+import "contracts/utils/auth/ImmutableETHDKG.sol";
+import "contracts/utils/auth/ImmutablePublicStaking.sol";
+import "contracts/utils/auth/ImmutableValidatorStaking.sol";
+import "contracts/utils/auth/ImmutableAToken.sol";
 
 abstract contract ValidatorPoolStorage is
     ImmutableFactory,

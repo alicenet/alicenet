@@ -1,7 +1,12 @@
 // SPDX-License-Identifier: MIT-open-group
 pragma solidity ^0.8.16;
 
-import "contracts/utils/ImmutableAuth.sol";
+import "contracts/utils/auth/ImmutableFactory.sol";
+import "contracts/utils/auth/ImmutableBToken.sol";
+import "contracts/utils/auth/ImmutablePublicStaking.sol";
+import "contracts/utils/auth/ImmutableValidatorStaking.sol";
+import "contracts/utils/auth/ImmutableLiquidityProviderStaking.sol";
+import "contracts/utils/auth/ImmutableFoundation.sol";
 import "contracts/interfaces/IDistribution.sol";
 import "contracts/utils/MagicEthTransfer.sol";
 import "contracts/utils/EthSafeTransfer.sol";

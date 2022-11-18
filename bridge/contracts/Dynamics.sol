@@ -3,7 +3,8 @@ pragma solidity ^0.8.16;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "contracts/interfaces/ISnapshots.sol";
-import "contracts/utils/ImmutableAuth.sol";
+import "contracts/utils/auth/ImmutableFactory.sol";
+import "contracts/utils/auth/ImmutableSnapshots.sol";
 import "contracts/libraries/dynamics/DoublyLinkedList.sol";
 import "contracts/libraries/errors/DynamicsErrors.sol";
 import "contracts/interfaces/IDynamics.sol";
