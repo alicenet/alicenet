@@ -58,11 +58,11 @@ describe("PROXY", async () => {
     );
     let txReq = {
       data: "0xca11c0de11" + encodedAddress.substring(2),
+      gasLimit: 1000000,
     };
     let txResponse = await proxy.fallback(txReq);
     let receipt = await txResponse.wait();
     expect(receipt.status).to.equal(1);
-
     const proxyImplAddr = await getProxyImplementation(proxy.address);
     expect(proxyImplAddr).to.equal(endPointLockable.address);
     // interface of logic connected to logic contract
@@ -71,16 +71,19 @@ describe("PROXY", async () => {
     txResponse = await proxyContract.upgradeLock();
     receipt = await txResponse.wait();
     expect(receipt.status).to.equal(1);
-    encodedAddress = abicoder.encode(["address"], [endPoint.address]);
-    txReq = {
-      data: "0xca11c0de11" + encodedAddress.substring(2),
-    };
-    const response = proxy.fallback(txReq);
-    await expect(response).to.be.reverted;
+    let response = proxy.fallback(txReq);
+    await expect(response).to.be.revertedWith("update locked");
     txResponse = await proxyContract.upgradeUnlock();
     receipt = await txResponse.wait();
     expect(receipt.status).to.equal(1);
-    // todo; try to upgrade again and check error
+    encodedAddress = abicoder.encode(["address"], [endPoint.address]);
+    txReq = {
+      data: "0xca11c0de11" + encodedAddress.substring(2),
+      gasLimit: 1000000,
+    };
+    response = proxy.fallback(txReq);
+    const expectedAddress = await getProxyImplementation(proxy.address);
+    expect(expectedAddress).to.equal(endPoint.address);
   });
 });
 
