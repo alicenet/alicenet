@@ -42,6 +42,7 @@ contract AliceNetFactory is AliceNetFactoryBase {
      * @param target_: the address of the contract to be called
      * @param value_: value in WEIs to send together the call
      * @param cdata_: Hex encoded state with function signature + arguments of the target function to be called
+     * @return the return of the calls as a byte array
      */
     function callAny(
         address target_,
@@ -115,6 +116,7 @@ contract AliceNetFactory is AliceNetFactoryBase {
     /**
      * @notice deployProxy deploys a proxy contract with upgradable logic. See Proxy.sol contract.
      * @param salt_ salt used to determine the final determinist address for the deployed contract
+     * @return contractAddr the deployed contract address
      */
     function deployProxy(bytes32 salt_) public onlyOwner returns (address contractAddr) {
         contractAddr = _deployProxy(salt_);
@@ -134,6 +136,7 @@ contract AliceNetFactory is AliceNetFactoryBase {
      * @notice multiCall allows owner to make multiple function calls within a single transaction
      * impersonating the factory
      * @param cdata_: array of hex encoded state with the function calls (function signature + arguments)
+     * @return an array with all the returns of the calls
      */
     function multiCall(MultiCallArgs[] calldata cdata_) public onlyOwner returns (bytes[] memory) {
         return _multiCall(cdata_);
