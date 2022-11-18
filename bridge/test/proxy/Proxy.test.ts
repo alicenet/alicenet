@@ -64,6 +64,21 @@ describe("PROXY", async () => {
     await expect(txResponse).to.be.revertedWith("unauthorized");
   });
 
+  it("deploys proxy and attempts to call logic without upgrading", async () => {
+    const accounts = await ethers.getSigners();
+    const proxyFactory = await ethers.getContractFactory(PROXY);
+    const proxy = await proxyFactory.deploy();
+    const endPointLockableFactory = await ethers.getContractFactory(
+      "MockEndPointLockable"
+    );
+    const mockLockable = await ethers.getContractAt(
+      "MockEndPointLockable",
+      proxy.address
+    );
+    const txResponse = mockLockable.owner();
+    await expect(txResponse).to.be.revertedWith("logic not set");
+  });
+
   it("locks the proxy upgradeability, prevents the proxy from being updated", async () => {
     const accounts = await getAccounts();
     const proxyFactory = await ethers.getContractFactory(PROXY);
