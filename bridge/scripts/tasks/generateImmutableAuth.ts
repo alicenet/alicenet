@@ -44,8 +44,7 @@ task("generate-immutable-auth-contract", "Generate contracts")
       const contract = contracts[key];
       const contractName = contract.name;
       const salt = contract.salt;
-      contractName !== "AliceNetFactory" &&
-        contractNameSaltMap.push([contractName, salt]);
+      salt && contractNameSaltMap.push([contractName, salt]);
     }
 
     fs.writeFileSync(
