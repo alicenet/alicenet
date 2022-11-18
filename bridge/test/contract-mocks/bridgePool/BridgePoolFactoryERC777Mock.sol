@@ -4,8 +4,6 @@ pragma solidity ^0.8.16;
 import "contracts/libraries/errors/BridgePoolFactoryErrors.sol";
 import "test/contract-mocks/bridgePool/BridgePoolFactoryBaseERC777Mock.sol";
 
-/// @custom:salt BridgePoolFactory
-/// @custom:deploy-type deployUpgradeable
 contract BridgePoolFactoryERC777Mock is BridgePoolFactoryBaseERC777Mock {
     constructor() BridgePoolFactoryBaseERC777Mock() {}
 
