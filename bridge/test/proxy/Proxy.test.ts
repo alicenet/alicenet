@@ -65,12 +65,8 @@ describe("PROXY", async () => {
   });
 
   it("deploys proxy and attempts to call logic without upgrading", async () => {
-    const accounts = await ethers.getSigners();
     const proxyFactory = await ethers.getContractFactory(PROXY);
     const proxy = await proxyFactory.deploy();
-    const endPointLockableFactory = await ethers.getContractFactory(
-      "MockEndPointLockable"
-    );
     const mockLockable = await ethers.getContractAt(
       "MockEndPointLockable",
       proxy.address
