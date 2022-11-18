@@ -34,10 +34,34 @@ describe("PROXY", async () => {
       data: "0xca11c0de11" + encodedAddress.substring(2),
     };
     const txResponse = await proxy.fallback(txReq);
-    const receipt = await txResponse.wait();
-    expect(receipt.status).to.equal(1);
+    await txResponse.wait();
+    const expectedAddress = await getProxyImplementation(proxy.address);
+    expect(expectedAddress).to.equal(endPointLockable.address);
     const proxyImplAddr = await getProxyImplementation(proxy.address);
     expect(proxyImplAddr).to.equal(endPointLockable.address);
+  });
+
+  it("deploys proxy and attempts to upgrade it with another account", async () => {
+    const accounts = await ethers.getSigners();
+    const proxyFactory = await ethers.getContractFactory(PROXY);
+    const proxy = await proxyFactory.deploy();
+    const endPointLockableFactory = await ethers.getContractFactory(
+      "MockEndPointLockable"
+    );
+    const abicoder = new ethers.utils.AbiCoder();
+    const endPointLockable = await endPointLockableFactory.deploy(
+      accounts[0].address
+    );
+    const encodedAddress = abicoder.encode(
+      ["address"],
+      [endPointLockable.address]
+    );
+    const txReq = {
+      data: "0xca11c0de11" + encodedAddress.substring(2),
+      gasLimit: 1000000,
+    };
+    const txResponse = proxy.connect(accounts[1]).fallback(txReq);
+    await expect(txResponse).to.be.revertedWith("unauthorized");
   });
 
   it("locks the proxy upgradeability, prevents the proxy from being updated", async () => {
