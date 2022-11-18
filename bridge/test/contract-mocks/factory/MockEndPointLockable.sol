@@ -5,6 +5,7 @@ import "contracts/Proxy.sol";
 import "contracts/libraries/proxy/ProxyInternalUpgradeLock.sol";
 import "contracts/libraries/proxy/ProxyInternalUpgradeUnlock.sol";
 import "contracts/libraries/proxy/ProxyImplementationGetter.sol";
+import "hardhat/console.sol";
 
 interface IMockEndPointLockable {
     function addOne() external;
@@ -50,6 +51,19 @@ contract MockEndPointLockable is
     function addTwo() public {
         i = i + 2;
         emit AddedTwo(i);
+    }
+
+    function poluteImplementationAddress() public {
+        assembly ("memory-safe") {
+            let implSlot := not(0x00)
+            sstore(
+                implSlot,
+                or(
+                    0xbabeffff15deffffbabeffff0000000000000000000000000000000000000000,
+                    sload(implSlot)
+                )
+            )
+        }
     }
 
     function upgradeLock() public {
