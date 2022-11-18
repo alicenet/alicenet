@@ -18,6 +18,22 @@
   {
     "inputs": [
       {
+        "internalType": "address",
+        "name": "current",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "expected",
+        "type": "address"
+      }
+    ],
+    "name": "IncorrectProxyImplementation",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "bytes32",
         "name": "salt",
         "type": "bytes32"

@@ -1,5 +1,5 @@
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
-import { BytesLike, ContractFactory } from "ethers";
+import { BigNumber, BytesLike, ContractFactory } from "ethers";
 import { artifacts, ethers, expect } from "hardhat";
 import {
   ALICENET_FACTORY,
@@ -55,13 +55,10 @@ describe("AliceNet Contract Factory", () => {
       const mockFactory = await ethers.getContractFactory(MOCK);
       const mockDeployBytecode = mockFactory.getDeployTransaction(2, "s")
         .data as BytesLike;
-      const expectedMockAddressBeforeDeploy = getMetamorphicAddress(
-        factory.address,
-        salt
-      );
+      // before deployment the salt will be zero
       const actualMockAddressBeforeDeploy = await factory.lookup(salt);
       expect(actualMockAddressBeforeDeploy).to.equal(
-        expectedMockAddressBeforeDeploy
+        ethers.constants.AddressZero
       );
       const tx = await factory.deployCreateAndRegister(
         mockDeployBytecode,
@@ -161,6 +158,34 @@ describe("AliceNet Contract Factory", () => {
         factory,
         "SaltAlreadyInUse"
       );
+    });
+
+    it("should not allow register a contract with already deployed proxy with salt", async () => {
+      const salt = ethers.utils.formatBytes32String("test");
+      const mockFactory = await ethers.getContractFactory(MOCK);
+      const mockDeployBytecode = mockFactory.getDeployTransaction(2, "s")
+        .data as BytesLike;
+      await factory.deployCreateAndRegister(mockDeployBytecode, salt);
+      const mockEndPoint2 = await mockFactory.deploy(1, "e");
+      const txResponse = factory.addNewExternalContract(
+        salt,
+        mockEndPoint2.address
+      );
+      await expect(txResponse).to.be.revertedWithCustomError(
+        factory,
+        "SaltAlreadyInUse"
+      );
+    });
+    it("should not allow deploy proxy salt already registered", async () => {
+      const salt = ethers.utils.formatBytes32String("test");
+      const mockFactory = await ethers.getContractFactory(MOCK);
+      const mockEndPoint = await mockFactory.deploy(1, "e");
+      await factory.addNewExternalContract(salt, mockEndPoint.address);
+      const mockDeployBytecode = mockFactory.getDeployTransaction(2, "s")
+        .data as BytesLike;
+      await expect(
+        factory.deployCreateAndRegister(mockDeployBytecode, salt)
+      ).to.be.revertedWithCustomError(factory, "SaltAlreadyInUse");
     });
   });
 
@@ -572,5 +597,33 @@ describe("AliceNet Contract Factory", () => {
     await factory.callAny(mock.address, 2, callData, {
       value: 2,
     });
+  });
+
+  it("check callAny returns", async () => {
+    const factory = await loadFixture(deployFactory);
+    const mockFactory = await ethers.getContractFactory(MOCK);
+    const mock = await mockFactory.deploy(2, "s");
+    const callData = mockFactory.interface.encodeFunctionData("getVar");
+    await mock.setV(1);
+    let returnValue = await factory.callStatic.callAny(
+      mock.address,
+      0,
+      callData
+    );
+    expect(returnValue).to.be.equal(
+      "0x0000000000000000000000000000000000000000000000000000000000000001"
+    );
+    const abicoder = new ethers.utils.AbiCoder();
+    expect(abicoder.decode(["uint256"], returnValue)).to.be.deep.equal([
+      BigNumber.from(1),
+    ]);
+    await mock.setV(50);
+    returnValue = await factory.callStatic.callAny(mock.address, 0, callData);
+    expect(returnValue).to.be.equal(
+      "0x0000000000000000000000000000000000000000000000000000000000000032"
+    );
+    expect(abicoder.decode(["uint256"], returnValue)).to.be.deep.equal([
+      BigNumber.from(50),
+    ]);
   });
 });

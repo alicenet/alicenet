@@ -29,7 +29,7 @@ contract AliceNetFactory is AliceNetFactoryBase {
             bytes32(uint256(uint160(legacyToken_)))
         );
         address aTokenAddress;
-        assembly {
+        assembly ("memory-safe") {
             aTokenAddress := create2(0, add(creationCode, 0x20), mload(creationCode), _ATOKEN_SALT)
         }
         _codeSizeZeroRevert((_extCodeSize(aTokenAddress) != 0));

@@ -22,28 +22,28 @@ abstract contract AliceNetFactoryBase is
     }
 
     /**
-    @dev owner role for privileged access to functions
+    @notice owner role for privileged access to functions
     */
     address private _owner;
 
     /**
-    @dev array to store list of contract salts
+    @notice array to store list of contract salts
     */
     bytes32[] private _contracts;
 
     /**
-    @dev slot for storing implementation address
+    @notice slot for storing implementation address
     */
     address private _implementation;
 
     address private immutable _proxyTemplate;
-    /// @dev more details here https://github.com/alicenet/alicenet/wiki/Metamorphic-Proxy-Contract
+    /// @notice more details here https://github.com/alicenet/alicenet/wiki/Metamorphic-Proxy-Contract
     bytes8 private constant _UNIVERSAL_DEPLOY_CODE = 0x38585839386009f3;
 
     mapping(bytes32 => address) internal _contractRegistry;
 
     /**
-     *@dev events that notify of contract deployment
+     *@notice events that notify of contract deployment
      */
     event Deployed(bytes32 salt, address contractAddr);
     event DeployedTemplate(address contractAddr);
@@ -59,7 +59,7 @@ abstract contract AliceNetFactoryBase is
     }
 
     /**
-     * @dev The constructor encodes the proxy deploy byte code with the _UNIVERSAL_DEPLOY_CODE at the
+     * @notice The constructor encodes the proxy deploy byte code with the _UNIVERSAL_DEPLOY_CODE at the
      * head and the factory address at the tail, and deploys the proxy byte code using create OpCode.
      * The result of this deployment will be a contract with the proxy contract deployment bytecode with
      * its constructor at the head, runtime code in the body and constructor args at the tail. The
@@ -75,7 +75,7 @@ abstract contract AliceNetFactoryBase is
         );
         //variable to store the address created from create(the location of the proxy template contract)
         address addr;
-        assembly {
+        assembly ("memory-safe") {
             //deploys the proxy template contract
             addr := create(0, add(proxyDeployCode, 0x20), mload(proxyDeployCode))
             if iszero(addr) {
@@ -93,7 +93,7 @@ abstract contract AliceNetFactoryBase is
 
     // solhint-disable payable-fallback
     /**
-     * @dev fallback function returns the address of the most recent deployment of a template
+     * @notice fallback function returns the address of the most recent deployment of a template
      */
     fallback() external {
         assembly {
@@ -103,7 +103,7 @@ abstract contract AliceNetFactoryBase is
     }
 
     /**
-     * @dev Allows the owner of the factory to transfer ownership to a new address, for transitioning to decentralization
+     * @notice Allows the owner of the factory to transfer ownership to a new address, for transitioning to decentralization
      * @param newOwner_: address of the new owner
      */
     function setOwner(address newOwner_) public onlyOwner {
@@ -111,7 +111,7 @@ abstract contract AliceNetFactoryBase is
     }
 
     /**
-     * @dev lookup allows anyone interacting with the contract to get the address of contract specified
+     * @notice lookup allows anyone interacting with the contract to get the address of contract specified
      * by its salt_
      * @param salt_: Custom NatSpec tag @custom:salt at the top of the contract solidity file
      */
@@ -120,14 +120,14 @@ abstract contract AliceNetFactoryBase is
     }
 
     /**
-     * @dev getImplementation is public getter function for the _owner account address
+     * @notice getImplementation is a getter function for the _owner account address
      */
     function getImplementation() public view returns (address) {
         return _implementation;
     }
 
     /**
-     * @dev owner is public getter function for the _owner account address
+     * @notice owner is a getter function for the _owner account address
      * @return owner_ address of the owner account
      */
     function owner() public view returns (address owner_) {
@@ -135,7 +135,7 @@ abstract contract AliceNetFactoryBase is
     }
 
     /**
-     * @dev contracts is public getter that gets the array of salts associated with all the contracts
+     * @notice contracts is a getter that gets the array of salts associated with all the contracts
      * deployed with this factory
      * @return contracts_ the array of salts associated with all the contracts deployed with this
      * factory
@@ -145,7 +145,7 @@ abstract contract AliceNetFactoryBase is
     }
 
     /**
-     * @dev getNumContracts getter function for retrieving the total number of contracts
+     * @notice getNumContracts getter function for retrieving the total number of contracts
      * deployed with this factory
      * @return the length of the contract array
      */
@@ -154,7 +154,7 @@ abstract contract AliceNetFactoryBase is
     }
 
     /**
-     * @dev _callAny allows EOA to call function impersonating the factory address
+     * @notice _callAny allows EOA to call function impersonating the factory address
      * @param target_: the address of the contract to be called
      * @param value_: value in WEIs to send together the call
      * @param cdata_: Hex encoded data with function signature + arguments of the target function to be called
@@ -168,14 +168,14 @@ abstract contract AliceNetFactoryBase is
     }
 
     /**
-     * @dev _deployCreate allows the owner to deploy raw contracts through the factory using
+     * @notice _deployCreate allows the owner to deploy raw contracts through the factory using
      * non-deterministic address generation (create OpCode)
      * @param deployCode_ Hex encoded data with the deployment code of the contract to be deployed +
      * constructors' args (if any)
      * @return contractAddr the deployed contract address
      */
     function _deployCreate(bytes calldata deployCode_) internal returns (address contractAddr) {
-        assembly {
+        assembly ("memory-safe") {
             //get the next free pointer
             let basePtr := mload(0x40)
             let ptr := basePtr
@@ -194,7 +194,7 @@ abstract contract AliceNetFactoryBase is
     }
 
     /**
-     * @dev _deployCreate2 allows the owner to deploy contracts with deterministic address through the
+     * @notice _deployCreate2 allows the owner to deploy contracts with deterministic address through the
      * factory
      * @param value_ endowment value in WEIS for the created contract
      * @param salt_ salt used to determine the final determinist address for the deployed contract
@@ -207,7 +207,7 @@ abstract contract AliceNetFactoryBase is
         bytes32 salt_,
         bytes calldata deployCode_
     ) internal returns (address contractAddr) {
-        assembly {
+        assembly ("memory-safe") {
             //get the next free pointer
             let basePtr := mload(0x40)
             let ptr := basePtr
@@ -225,12 +225,12 @@ abstract contract AliceNetFactoryBase is
     }
 
     /**
-     * @dev _deployProxy deploys a proxy contract with upgradable logic. See Proxy.sol contract.
+     * @notice _deployProxy deploys a proxy contract with upgradable logic. See Proxy.sol contract.
      * @param salt_ salt used to determine the final determinist address for the deployed contract
      */
     function _deployProxy(bytes32 salt_) internal returns (address contractAddr) {
         address proxyTemplate = _proxyTemplate;
-        assembly {
+        assembly ("memory-safe") {
             // store proxy template address as implementation,
             sstore(_implementation.slot, proxyTemplate)
             let ptr := mload(0x40)
@@ -247,13 +247,13 @@ abstract contract AliceNetFactoryBase is
     }
 
     /**
-     * @dev _initializeContract allows the owner/delegator to initialize contracts deployed via factory
+     * @notice _initializeContract allows the owner/delegator to initialize contracts deployed via factory
      * @param contract_ address of the contract that will be initialized
      * @param initCallData_ Hex encoded initialization function signature + parameters to initialize the
      * deployed contract
      */
     function _initializeContract(address contract_, bytes calldata initCallData_) internal {
-        assembly {
+        assembly ("memory-safe") {
             if iszero(iszero(initCallData_.length)) {
                 let ptr := mload(0x40)
                 mstore(0x40, add(initCallData_.length, ptr))
@@ -269,7 +269,7 @@ abstract contract AliceNetFactoryBase is
     }
 
     /**
-     * @dev _multiCall allows EOA to make multiple function calls within a single transaction
+     * @notice _multiCall allows EOA to make multiple function calls within a single transaction
      * impersonating the factory
      * @param cdata_: array of abi encoded data with the function calls (function signature + arguments)
      */
@@ -281,7 +281,7 @@ abstract contract AliceNetFactoryBase is
     }
 
     /**
-     * @dev _upgradeProxy updates the implementation/logic address of an already deployed proxy contract.
+     * @notice _upgradeProxy updates the implementation/logic address of an already deployed proxy contract.
      * @param salt_ salt used to determine the final determinist address for the deployed proxy contract
      * @param newImpl_ address of the new contract that contains the new implementation logic
      * @param initCallData_ Hex encoded initialization function signature + parameters to initialize the
@@ -294,7 +294,13 @@ abstract contract AliceNetFactoryBase is
     ) internal {
         address proxy = DeterministicAddress.getMetamorphicContractAddress(salt_, address(this));
         __upgrade(proxy, newImpl_);
-        assert(__getProxyImplementation(proxy) == newImpl_);
+        address currentImplementation = __getProxyImplementation(proxy);
+        if (currentImplementation != newImpl_) {
+            revert AliceNetFactoryBaseErrors.IncorrectProxyImplementation(
+                currentImplementation,
+                newImpl_
+            );
+        }
         _initializeContract(proxy, initCallData_);
         emit UpgradedProxy(salt_, proxy, newImpl_);
     }
@@ -309,10 +315,10 @@ abstract contract AliceNetFactoryBase is
     }
 
     /**
-     * @dev Aux function to return the external code size
+     * @notice Aux function to return the external code size
      */
     function _extCodeSize(address target_) internal view returns (uint256 size) {
-        assembly {
+        assembly ("memory-safe") {
             size := extcodesize(target_)
         }
         return size;
@@ -325,7 +331,7 @@ abstract contract AliceNetFactoryBase is
     }
 
     /**
-     * @dev _requireAuth reverts if false and returns unauthorized error message
+     * @notice _requireAuth reverts if false and returns unauthorized error message
      * @param isOk_ boolean false to cause revert
      */
     function _requireAuth(bool isOk_) internal pure {
@@ -335,7 +341,7 @@ abstract contract AliceNetFactoryBase is
     }
 
     /**
-     * @dev _codeSizeZeroRevert reverts if false and returns csize0 error message
+     * @notice _codeSizeZeroRevert reverts if false and returns csize0 error message
      * @param isOk_ boolean false to cause revert
      */
     function _codeSizeZeroRevert(bool isOk_) internal pure {
