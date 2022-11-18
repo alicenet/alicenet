@@ -5,7 +5,6 @@ import "contracts/Proxy.sol";
 import "contracts/libraries/proxy/ProxyInternalUpgradeLock.sol";
 import "contracts/libraries/proxy/ProxyInternalUpgradeUnlock.sol";
 import "contracts/libraries/proxy/ProxyImplementationGetter.sol";
-import "hardhat/console.sol";
 
 interface IMockEndPointLockable {
     function addOne() external;

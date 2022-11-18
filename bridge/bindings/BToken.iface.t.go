@@ -12,6 +12,10 @@ import (
 
 // IBTokenTransactor ...
 type IBTokenTransactor interface {
+	// AddAccountType is a paid mutator transaction binding the contract method 0xb002f35b.
+	//
+	// Solidity: function addAccountType(uint8 accountType_) returns()
+	AddAccountType(opts *bind.TransactOpts, accountType_ uint8) (*types.Transaction, error)
 	// Approve is a paid mutator transaction binding the contract method 0x095ea7b3.
 	//
 	// Solidity: function approve(address spender, uint256 amount) returns(bool)

@@ -35,6 +35,10 @@ type IAliceNetFactoryCaller interface {
 	//
 	// Solidity: function getNumContracts() view returns(uint256)
 	GetNumContracts(opts *bind.CallOpts) (*big.Int, error)
+	// GetProxyImplementation is a free data retrieval call binding the contract method 0x204e1c7a.
+	//
+	// Solidity: function getProxyImplementation(address proxyAddress_) view returns(address)
+	GetProxyImplementation(opts *bind.CallOpts, proxyAddress_ common.Address) (common.Address, error)
 	// Lookup is a free data retrieval call binding the contract method 0xf39ec1f7.
 	//
 	// Solidity: function lookup(bytes32 salt_) view returns(address)

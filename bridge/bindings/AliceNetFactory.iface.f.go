@@ -70,4 +70,16 @@ type IAliceNetFactoryFilterer interface {
 	//
 	// Solidity: event DeployedTemplate(address contractAddr)
 	ParseDeployedTemplate(log types.Log) (*AliceNetFactoryDeployedTemplate, error)
+	// FilterUpgradedProxy is a free log retrieval operation binding the contract event 0x430fbfc2698f4e110d994ecf59c30881703dc7b8cd50bc5f12e4e48d21e144a3.
+	//
+	// Solidity: event UpgradedProxy(bytes32 salt, address proxyAddr, address newlogicAddr)
+	FilterUpgradedProxy(opts *bind.FilterOpts) (*AliceNetFactoryUpgradedProxyIterator, error)
+	// WatchUpgradedProxy is a free log subscription operation binding the contract event 0x430fbfc2698f4e110d994ecf59c30881703dc7b8cd50bc5f12e4e48d21e144a3.
+	//
+	// Solidity: event UpgradedProxy(bytes32 salt, address proxyAddr, address newlogicAddr)
+	WatchUpgradedProxy(opts *bind.WatchOpts, sink chan<- *AliceNetFactoryUpgradedProxy) (event.Subscription, error)
+	// ParseUpgradedProxy is a log parse operation binding the contract event 0x430fbfc2698f4e110d994ecf59c30881703dc7b8cd50bc5f12e4e48d21e144a3.
+	//
+	// Solidity: event UpgradedProxy(bytes32 salt, address proxyAddr, address newlogicAddr)
+	ParseUpgradedProxy(log types.Log) (*AliceNetFactoryUpgradedProxy, error)
 }
