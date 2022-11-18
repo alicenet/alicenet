@@ -3,6 +3,7 @@ pragma solidity ^0.8.16;
 
 library NativeERCBridgePoolBaseErrors {
     error OnlyBridgePool();
+    error OnlyBridgeRouter(address sender, address expected);
     error ChainIdDoesNotMatch(uint256 bClaimsChainId, uint256 snapshotsChainId);
     error UTXODoesnotMatch(bytes32 proofOfInclusionStateRootKey, bytes32 proofOfInclusionTxHashKey);
     error UTXOAlreadyWithdrawn(bytes32 computedUTXOID);

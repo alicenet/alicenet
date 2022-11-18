@@ -71,15 +71,25 @@ describe("Testing Base BridgePool Deposit/Withdraw", async () => {
     bridgePoolImplFactory = await ethers.getContractFactory(
       "NativeERCBridgePoolMock"
     );
-    const bridgePoolImplBytecode = bridgePoolImplFactory.getDeployTransaction(
-      fixture.factory.address,
-      fixture.snapshots.address
-    ).data as BytesLike;
+    const bridgeRouter = await deployUpgradeableWithFactory(
+      fixture.factory,
+      "BridgeRouterMock",
+      "BridgeRouter",
+      undefined,
+      [bridgeFee]
+    );
+    asBridgeRouter = await getImpersonatedSigner(bridgeRouter.address);
     const bridgePoolFactory = (await deployUpgradeableWithFactory(
       fixture.factory,
       "BridgePoolFactory",
       "BridgePoolFactory"
     )) as BridgePoolFactory;
+
+    const bridgePoolImplBytecode = bridgePoolImplFactory.getDeployTransaction(
+      fixture.factory.address,
+      fixture.snapshots.address,
+      bridgeRouter.address
+    ).data as BytesLike;
     await bridgePoolFactory
       .connect(factorySigner)
       .deployPoolLogic(
@@ -99,14 +109,6 @@ describe("Testing Base BridgePool Deposit/Withdraw", async () => {
       "NativeERCBridgePoolMock",
       await getContractAddressFromBridgePoolCreatedEvent(tx)
     );
-    const bridgeRouter = await deployUpgradeableWithFactory(
-      fixture.factory,
-      "BridgeRouterMock",
-      "BridgeRouter",
-      undefined,
-      [bridgeFee]
-    );
-    asBridgeRouter = await getImpersonatedSigner(bridgeRouter.address);
   }
 
   beforeEach(async function () {

@@ -11,7 +11,7 @@ import "contracts/libraries/parsers/PClaimsParserLibrary.sol";
 import "contracts/utils/MerkleProofLibrary.sol";
 import "contracts/Snapshots.sol";
 
-abstract contract NativeERCBridgePoolBase is ImmutableFactory, ImmutableBridgeRouter, IBridgePool {
+abstract contract NativeERCBridgePoolBase is IBridgePool, ImmutableBridgePoolFactory {
     using MerkleProofParserLibrary for bytes;
     using MerkleProofLibrary for MerkleProofParserLibrary.MerkleProof;
 
@@ -20,14 +20,27 @@ abstract contract NativeERCBridgePoolBase is ImmutableFactory, ImmutableBridgeRo
         uint256 tokenAmount;
     }
 
-    address private immutable _snapshotsAddress;
-
+    address private immutable _snapshotsContract;
+    address private immutable _bridgeRouterContract;
     mapping(bytes32 => bool) private _consumedUTXOIDs;
 
-    constructor(address alicenetFactoryAddress, address snapshotsAddress_)
-        ImmutableFactory(alicenetFactoryAddress)
-    {
-        _snapshotsAddress = snapshotsAddress_;
+    modifier onlyBridgeRouter() {
+        if (msg.sender != _bridgeRouterContract) {
+            revert NativeERCBridgePoolBaseErrors.OnlyBridgeRouter(
+                msg.sender,
+                _bridgeRouterContract
+            );
+        }
+        _;
+    }
+
+    constructor(
+        address alicenetFactoryContract_,
+        address snapshotsContract_,
+        address bridgeRouterContract_
+    ) onlyBridgePoolFactory ImmutableFactory(alicenetFactoryContract_) {
+        _snapshotsContract = snapshotsContract_;
+        _bridgeRouterContract = bridgeRouterContract_;
     }
 
     /// @notice deposit pre-actions before transfering value from sender to bridge pool
@@ -64,10 +77,10 @@ abstract contract NativeERCBridgePoolBase is ImmutableFactory, ImmutableBridgeRo
     ) internal returns (uint256) {
         VSPreImageParserLibrary.VSPreImage memory vsPreImage = VSPreImageParserLibrary
             .extractVSPreImage(encodedVsPreImage);
-        if (vsPreImage.chainId != ISnapshots(_snapshotsAddress).getChainId()) {
+        if (vsPreImage.chainId != ISnapshots(_snapshotsContract).getChainId()) {
             revert NativeERCBridgePoolBaseErrors.ChainIdDoesNotMatch(
                 vsPreImage.chainId,
-                ISnapshots(_snapshotsAddress).getChainId()
+                ISnapshots(_snapshotsContract).getChainId()
             );
         }
         bytes32 computedUTXOID = AccusationsLibrary.computeUTXOID(
@@ -93,7 +106,7 @@ abstract contract NativeERCBridgePoolBase is ImmutableFactory, ImmutableBridgeRo
         return vsPreImage.value;
     }
 
-    /// @notice Verify withdrawal proofs
+    /// @notice Verify burn proofs
     /// @param _proofs an array of merkle proof structs in the following order:
     /// proof of inclusion in StateRoot: Proof of inclusion of UTXO in the stateTrie
     /// proof of inclusion in TXRoot: Proof of inclusion of the transaction included in the txRoot trie.
@@ -104,7 +117,7 @@ abstract contract NativeERCBridgePoolBase is ImmutableFactory, ImmutableBridgeRo
         view
         returns (MerkleProofParserLibrary.MerkleProof memory)
     {
-        BClaimsParserLibrary.BClaims memory bClaims = Snapshots(_snapshotsAddress)
+        BClaimsParserLibrary.BClaims memory bClaims = Snapshots(_snapshotsContract)
             .getBlockClaimsFromLatestSnapshot();
         // Validate proofInclusionHeaderRoot against bClaims.headerRoot.
         MerkleProofParserLibrary.MerkleProof

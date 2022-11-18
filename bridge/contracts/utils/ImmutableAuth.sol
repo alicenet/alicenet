@@ -532,33 +532,6 @@ abstract contract ImmutableETHDKG is ImmutableFactory {
     }
 }
 
-abstract contract ImmutableBridgeRouter is ImmutableFactory {
-    address private immutable _bridgeRouter;
-    error OnlyBridgeRouter(address sender, address expected);
-
-    modifier onlyBridgeRouter() {
-        if (msg.sender != _bridgeRouter) {
-            revert OnlyBridgeRouter(msg.sender, _bridgeRouter);
-        }
-        _;
-    }
-
-    constructor() {
-        _bridgeRouter = getMetamorphicContractAddress(
-            0x427269646765526f757465720000000000000000000000000000000000000000,
-            _factoryAddress()
-        );
-    }
-
-    function _bridgeRouterAddress() internal view returns (address) {
-        return _bridgeRouter;
-    }
-
-    function _saltForBridgeRouter() internal pure returns (bytes32) {
-        return 0x427269646765526f757465720000000000000000000000000000000000000000;
-    }
-}
-
 abstract contract ImmutableBridgePoolFactory is ImmutableFactory {
     address private immutable _bridgePoolFactory;
     error OnlyBridgePoolFactory(address sender, address expected);
