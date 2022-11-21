@@ -30,27 +30,31 @@ interface IStakingNFT {
 
     function burn(uint256 tokenID_) external returns (uint256 payoutEth, uint256 payoutAToken);
 
-    function burnTo(address to_, uint256 tokenID_)
-        external
-        returns (uint256 payoutEth, uint256 payoutAToken);
+    function burnTo(
+        address to_,
+        uint256 tokenID_
+    ) external returns (uint256 payoutEth, uint256 payoutAToken);
 
     function collectEth(uint256 tokenID_) external returns (uint256 payout);
 
     function collectToken(uint256 tokenID_) external returns (uint256 payout);
 
-    function collectAllProfits(uint256 tokenID_)
-        external
-        returns (uint256 payoutToken, uint256 payoutEth);
+    function collectAllProfits(
+        uint256 tokenID_
+    ) external returns (uint256 payoutToken, uint256 payoutEth);
 
     function collectEthTo(address to_, uint256 tokenID_) external returns (uint256 payout);
 
     function collectTokenTo(address to_, uint256 tokenID_) external returns (uint256 payout);
 
-    function collectAllProfitsTo(address to_, uint256 tokenID_)
-        external
-        returns (uint256 payoutToken, uint256 payoutEth);
+    function collectAllProfitsTo(
+        address to_,
+        uint256 tokenID_
+    ) external returns (uint256 payoutToken, uint256 payoutEth);
 
-    function getPosition(uint256 tokenID_)
+    function getPosition(
+        uint256 tokenID_
+    )
         external
         view
         returns (
@@ -71,10 +75,9 @@ interface IStakingNFT {
 
     function estimateTokenCollection(uint256 tokenID_) external view returns (uint256 payout);
 
-    function estimateAllProfits(uint256 tokenID_)
-        external
-        view
-        returns (uint256 payoutEth, uint256 payoutToken);
+    function estimateAllProfits(
+        uint256 tokenID_
+    ) external view returns (uint256 payoutEth, uint256 payoutToken);
 
     function estimateExcessToken() external view returns (uint256 excess);
 

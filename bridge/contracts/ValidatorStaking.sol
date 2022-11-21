@@ -16,13 +16,9 @@ contract ValidatorStaking is StakingNFT {
     /// requires the caller to have performed an approve invocation against
     /// AToken into this contract. This function will fail if the circuit
     /// breaker is tripped.
-    function mint(uint256 amount_)
-        public
-        override
-        withCircuitBreaker
-        onlyValidatorPool
-        returns (uint256 tokenID)
-    {
+    function mint(
+        uint256 amount_
+    ) public override withCircuitBreaker onlyValidatorPool returns (uint256 tokenID) {
         return _mintNFT(msg.sender, amount_);
     }
 
@@ -49,23 +45,18 @@ contract ValidatorStaking is StakingNFT {
 
     /// burn exits a staking position such that all accumulated value is
     /// transferred to the owner on burn.
-    function burn(uint256 tokenID_)
-        public
-        override
-        onlyValidatorPool
-        returns (uint256 payoutEth, uint256 payoutAToken)
-    {
+    function burn(
+        uint256 tokenID_
+    ) public override onlyValidatorPool returns (uint256 payoutEth, uint256 payoutAToken) {
         return _burn(msg.sender, msg.sender, tokenID_);
     }
 
     /// burnTo exits a staking position such that all accumulated value
     /// is transferred to a specified account on burn
-    function burnTo(address to_, uint256 tokenID_)
-        public
-        override
-        onlyValidatorPool
-        returns (uint256 payoutEth, uint256 payoutAToken)
-    {
+    function burnTo(
+        address to_,
+        uint256 tokenID_
+    ) public override onlyValidatorPool returns (uint256 payoutEth, uint256 payoutAToken) {
         return _burn(msg.sender, to_, tokenID_);
     }
 }

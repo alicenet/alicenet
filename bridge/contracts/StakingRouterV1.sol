@@ -41,11 +41,7 @@ contract StakingRouterV1 is
     /// @param to_ the address that will own the position
     /// @param migrationAmount_ the amount of legacy token to migrate
     /// @param stakingAmount_ the amount of ALCA that will staked and locked
-    function migrateAndStake(
-        address to_,
-        uint256 migrationAmount_,
-        uint256 stakingAmount_
-    ) public {
+    function migrateAndStake(address to_, uint256 migrationAmount_, uint256 stakingAmount_) public {
         uint256 migratedAmount = _migrate(msg.sender, migrationAmount_);
         _verifyAndSendAnyRemainder(to_, migratedAmount, stakingAmount_);
         _stake(to_, stakingAmount_);

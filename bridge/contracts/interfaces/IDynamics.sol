@@ -38,8 +38,10 @@ interface IDynamics {
     event NewAliceNetNodeVersionAvailable(CanonicalVersion version);
     event NewCanonicalAliceNetNodeVersion(CanonicalVersion version);
 
-    function changeDynamicValues(uint32 relativeExecutionEpoch, DynamicValues memory newValue)
-        external;
+    function changeDynamicValues(
+        uint32 relativeExecutionEpoch,
+        DynamicValues memory newValue
+    ) external;
 
     function updateHead(uint32 currentEpoch) external;
 

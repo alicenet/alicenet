@@ -46,11 +46,7 @@ library RingBuffer {
      * @param new_: the new snapshot.
      * @param epoch_: the index (epoch) where the new snapshot will be stored.
      */
-    function unsafeSet(
-        SnapshotBuffer storage self_,
-        Snapshot memory new_,
-        uint32 epoch_
-    ) internal {
+    function unsafeSet(SnapshotBuffer storage self_, Snapshot memory new_, uint32 epoch_) internal {
         self_._array[indexFor(self_, epoch_)] = new_;
     }
 
@@ -59,11 +55,10 @@ library RingBuffer {
      * @param epoch_: the index to retrieve a snapshot.
      * @return the snapshot stored at the epoch_ location.
      */
-    function get(SnapshotBuffer storage self_, uint32 epoch_)
-        internal
-        view
-        returns (Snapshot storage)
-    {
+    function get(
+        SnapshotBuffer storage self_,
+        uint32 epoch_
+    ) internal view returns (Snapshot storage) {
         return self_._array[indexFor(self_, epoch_)];
     }
 

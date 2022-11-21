@@ -125,10 +125,9 @@ contract ValidatorPool is
      * the contract factory.
      * @param maxIntervalWithoutSnapshots The new max interval without snapshot.
      */
-    function setMaxIntervalWithoutSnapshots(uint256 maxIntervalWithoutSnapshots)
-        public
-        onlyFactory
-    {
+    function setMaxIntervalWithoutSnapshots(
+        uint256 maxIntervalWithoutSnapshots
+    ) public onlyFactory {
         if (maxIntervalWithoutSnapshots == 0) {
             revert ValidatorPoolErrors.MaxIntervalWithoutSnapshotsMustBeNonZero();
         }
@@ -241,12 +240,10 @@ contract ValidatorPool is
      * @param stakerTokenIDs_ array of public staking positions that will be
      * consumed to register the validators.
      */
-    function registerValidators(address[] memory validators_, uint256[] memory stakerTokenIDs_)
-        public
-        onlyFactory
-        assertNotETHDKGRunning
-        assertNotConsensusRunning
-    {
+    function registerValidators(
+        address[] memory validators_,
+        uint256[] memory stakerTokenIDs_
+    ) public onlyFactory assertNotETHDKGRunning assertNotConsensusRunning {
         if (validators_.length + _validators.length() > _maxNumValidators) {
             revert ValidatorPoolErrors.NotEnoughValidatorSlotsAvailable(
                 validators_.length,
@@ -277,12 +274,9 @@ contract ValidatorPool is
      * AliceNetConsensus and ETHDKG round should not be running.
      * @param validators_ the array of validators to be unregistered.
      */
-    function unregisterValidators(address[] memory validators_)
-        public
-        onlyFactory
-        assertNotETHDKGRunning
-        assertNotConsensusRunning
-    {
+    function unregisterValidators(
+        address[] memory validators_
+    ) public onlyFactory assertNotETHDKGRunning assertNotConsensusRunning {
         if (validators_.length > _validators.length()) {
             revert ValidatorPoolErrors.LengthGreaterThanAvailableValidators(
                 validators_.length,
@@ -365,11 +359,10 @@ contract ValidatorPool is
         return data._tokenID;
     }
 
-    function majorSlash(address dishonestValidator_, address disputer_)
-        public
-        onlyETHDKG
-        balanceShouldNotChange
-    {
+    function majorSlash(
+        address dishonestValidator_,
+        address disputer_
+    ) public onlyETHDKG balanceShouldNotChange {
         if (!_isAccusable(dishonestValidator_)) {
             revert ValidatorPoolErrors.AddressNotAccusable(dishonestValidator_);
         }
@@ -393,11 +386,10 @@ contract ValidatorPool is
         emit ValidatorMajorSlashed(dishonestValidator_);
     }
 
-    function minorSlash(address dishonestValidator_, address disputer_)
-        public
-        onlyETHDKG
-        balanceShouldNotChange
-    {
+    function minorSlash(
+        address dishonestValidator_,
+        address disputer_
+    ) public onlyETHDKG balanceShouldNotChange {
         if (!_isAccusable(dishonestValidator_)) {
             revert ValidatorPoolErrors.AddressNotAccusable(dishonestValidator_);
         }
@@ -500,15 +492,7 @@ contract ValidatorPool is
     /// @return tuple (bool, address, uint256). Return true if the value was found, false if not.
     /// Returns the address of the NFT contract and the tokenID. In case the value was not found, tokenID
     /// and address are 0.
-    function tryGetTokenID(address account_)
-        public
-        view
-        returns (
-            bool,
-            address,
-            uint256
-        )
-    {
+    function tryGetTokenID(address account_) public view returns (bool, address, uint256) {
         if (_isValidator(account_)) {
             return (true, _validatorStakingAddress(), _validators.get(account_)._tokenID);
         } else if (_isInExitingQueue(account_)) {
@@ -538,23 +522,18 @@ contract ValidatorPool is
         return _isConsensusRunning;
     }
 
-    function _transferEthAndTokens(
-        address to_,
-        uint256 payoutEth_,
-        uint256 payoutToken_
-    ) internal {
+    function _transferEthAndTokens(address to_, uint256 payoutEth_, uint256 payoutToken_) internal {
         _safeTransferERC20(IERC20Transferable(_aTokenAddress()), to_, payoutToken_);
         _safeTransferEth(to_, payoutEth_);
     }
 
-    function _registerValidator(address validator_, uint256 stakerTokenID_)
+    function _registerValidator(
+        address validator_,
+        uint256 stakerTokenID_
+    )
         internal
         balanceShouldNotChange
-        returns (
-            uint256 validatorTokenID,
-            uint256 payoutEth,
-            uint256 payoutToken
-        )
+        returns (uint256 validatorTokenID, uint256 payoutEth, uint256 payoutToken)
     {
         if (_validators.length() >= _maxNumValidators) {
             revert ValidatorPoolErrors.NotEnoughValidatorSlotsAvailable(1, 0);
@@ -575,14 +554,12 @@ contract ValidatorPool is
         emit ValidatorJoined(validator_, validatorTokenID);
     }
 
-    function _unregisterValidator(address validator_)
+    function _unregisterValidator(
+        address validator_
+    )
         internal
         balanceShouldNotChange
-        returns (
-            uint256 stakeTokenID,
-            uint256 payoutEth,
-            uint256 payoutToken
-        )
+        returns (uint256 stakeTokenID, uint256 payoutEth, uint256 payoutToken)
     {
         if (!_isValidator(validator_)) {
             revert ValidatorPoolErrors.AddressNotValidator(validator_);
@@ -597,14 +574,10 @@ contract ValidatorPool is
         emit ValidatorLeft(validator_, stakeTokenID);
     }
 
-    function _swapPublicStakingForValidatorStaking(address to_, uint256 stakerTokenID_)
-        internal
-        returns (
-            uint256 validatorTokenID,
-            uint256 payoutEth,
-            uint256 payoutToken
-        )
-    {
+    function _swapPublicStakingForValidatorStaking(
+        address to_,
+        uint256 stakerTokenID_
+    ) internal returns (uint256 validatorTokenID, uint256 payoutEth, uint256 payoutToken) {
         (uint256 stakeShares, , , , ) = IStakingNFT(_publicStakingAddress()).getPosition(
             stakerTokenID_
         );
@@ -632,14 +605,9 @@ contract ValidatorPool is
         return (validatorTokenID, payoutEth, payoutToken);
     }
 
-    function _swapValidatorStakingForPublicStaking(address validator_)
-        internal
-        returns (
-            uint256,
-            uint256,
-            uint256
-        )
-    {
+    function _swapValidatorStakingForPublicStaking(
+        address validator_
+    ) internal returns (uint256, uint256, uint256) {
         (
             uint256 minerShares,
             uint256 payoutEth,
@@ -656,32 +624,25 @@ contract ValidatorPool is
         return (stakeTokenID, payoutEth, payoutToken);
     }
 
-    function _mintValidatorStakingPosition(uint256 minerShares_)
-        internal
-        returns (uint256 validatorTokenID)
-    {
+    function _mintValidatorStakingPosition(
+        uint256 minerShares_
+    ) internal returns (uint256 validatorTokenID) {
         // We should approve the validatorStaking to transferFrom the tokens of this contract
         IERC20Transferable(_aTokenAddress()).approve(_validatorStakingAddress(), minerShares_);
         validatorTokenID = IStakingNFT(_validatorStakingAddress()).mint(minerShares_);
     }
 
-    function _mintPublicStakingPosition(uint256 minerShares_)
-        internal
-        returns (uint256 stakeTokenID)
-    {
+    function _mintPublicStakingPosition(
+        uint256 minerShares_
+    ) internal returns (uint256 stakeTokenID) {
         // We should approve the PublicStaking to transferFrom the tokens of this contract
         IERC20Transferable(_aTokenAddress()).approve(_publicStakingAddress(), minerShares_);
         stakeTokenID = IStakingNFT(_publicStakingAddress()).mint(minerShares_);
     }
 
-    function _burnValidatorStakingPosition(address validator_)
-        internal
-        returns (
-            uint256 minerShares,
-            uint256 payoutEth,
-            uint256 payoutToken
-        )
-    {
+    function _burnValidatorStakingPosition(
+        address validator_
+    ) internal returns (uint256 minerShares, uint256 payoutEth, uint256 payoutToken) {
         uint256 validatorTokenID = _validators.get(validator_)._tokenID;
         (minerShares, payoutEth, payoutToken) = _burnNFTPosition(
             validatorTokenID,
@@ -689,14 +650,9 @@ contract ValidatorPool is
         );
     }
 
-    function _burnExitingPublicStakingPosition(address validator_)
-        internal
-        returns (
-            uint256 minerShares,
-            uint256 payoutEth,
-            uint256 payoutToken
-        )
-    {
+    function _burnExitingPublicStakingPosition(
+        address validator_
+    ) internal returns (uint256 minerShares, uint256 payoutEth, uint256 payoutToken) {
         uint256 stakerTokenID = _exitingValidatorsData[validator_]._tokenID;
         (minerShares, payoutEth, payoutToken) = _burnNFTPosition(
             stakerTokenID,
@@ -704,27 +660,18 @@ contract ValidatorPool is
         );
     }
 
-    function _burnNFTPosition(uint256 tokenID_, address stakeContractAddress_)
-        internal
-        returns (
-            uint256 minerShares,
-            uint256 payoutEth,
-            uint256 payoutToken
-        )
-    {
+    function _burnNFTPosition(
+        uint256 tokenID_,
+        address stakeContractAddress_
+    ) internal returns (uint256 minerShares, uint256 payoutEth, uint256 payoutToken) {
         IStakingNFT stakeContract = IStakingNFT(stakeContractAddress_);
         (minerShares, , , , ) = stakeContract.getPosition(tokenID_);
         (payoutEth, payoutToken) = stakeContract.burn(tokenID_);
     }
 
-    function _slash(address dishonestValidator_)
-        internal
-        returns (
-            uint256 minerShares,
-            uint256 payoutEth,
-            uint256 payoutToken
-        )
-    {
+    function _slash(
+        address dishonestValidator_
+    ) internal returns (uint256 minerShares, uint256 payoutEth, uint256 payoutToken) {
         if (!_isAccusable(dishonestValidator_)) {
             revert ValidatorPoolErrors.AddressNotAccusable(dishonestValidator_);
         }
