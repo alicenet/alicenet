@@ -25,9 +25,9 @@ describe("Testing BToken Deposit methods", async () => {
     bTokenDeposit = ethers.utils.parseUnits(bTokens.toString(10));
   });
 
-  it("Only factory should be able to add a new type", async () => {
+  it("Only factory should be able to set a new type", async () => {
     await expect(
-      fixture.bToken.addAccountType(3)
+      fixture.bToken.setAccountType(3, true)
     ).to.be.revertedWithCustomError(fixture.bToken, `OnlyFactory`);
     const recpt = await (
       await fixture.factory
@@ -35,7 +35,10 @@ describe("Testing BToken Deposit methods", async () => {
         .callAny(
           fixture.bToken.address,
           0,
-          fixture.bToken.interface.encodeFunctionData("addAccountType", [3])
+          fixture.bToken.interface.encodeFunctionData("setAccountType", [
+            3,
+            true,
+          ])
         )
     ).wait();
     expect(recpt.status).to.be.equals(1);
@@ -64,6 +67,27 @@ describe("Testing BToken Deposit methods", async () => {
     await expect(fixture.bToken.deposit(3, user.address, 100))
       .to.be.revertedWithCustomError(fixture.bToken, "AccountTypeNotSupported")
       .withArgs(3);
+  });
+
+  it("Should not deposit to a disabled account type", async () => {
+    await fixture.bToken.mint(0, {
+      value: ethIn,
+    });
+    await (
+      await fixture.factory
+        .connect(admin)
+        .callAny(
+          fixture.bToken.address,
+          0,
+          fixture.bToken.interface.encodeFunctionData("setAccountType", [
+            1,
+            false,
+          ])
+        )
+    ).wait();
+    await expect(fixture.bToken.deposit(1, user.address, 100))
+      .to.be.revertedWithCustomError(fixture.bToken, "AccountTypeNotSupported")
+      .withArgs(1);
   });
 
   it("Should not mintDeposit to an invalid account type", async () => {
@@ -139,7 +163,10 @@ describe("Testing BToken Deposit methods", async () => {
       .callAny(
         fixture.bToken.address,
         0,
-        fixture.bToken.interface.encodeFunctionData("addAccountType", [10])
+        fixture.bToken.interface.encodeFunctionData("setAccountType", [
+          10,
+          true,
+        ])
       );
     await fixture.bToken.mintDeposit(10, user.address, 0, {
       value: 100,

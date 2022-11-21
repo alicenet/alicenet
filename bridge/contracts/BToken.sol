@@ -75,11 +75,13 @@ contract BToken is
     }
 
     /**
-     * @notice function to allow factory to add new account types supported by AliceNet blockchain.
+     * @notice function to allow factory to add/set the allowed account types supported by AliceNet
+     * blockchain.
      * @param accountType_ uint8 account type id to be added
+     * @param allowed_ bool if a type should be enabled/disabled
      */
-    function addAccountType(uint8 accountType_) public onlyFactory {
-        _accountTypes[accountType_] = true;
+    function setAccountType(uint8 accountType_, bool allowed_) public onlyFactory {
+        _accountTypes[accountType_] = allowed_;
     }
 
     /**

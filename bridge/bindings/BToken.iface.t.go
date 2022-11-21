@@ -12,10 +12,6 @@ import (
 
 // IBTokenTransactor ...
 type IBTokenTransactor interface {
-	// AddAccountType is a paid mutator transaction binding the contract method 0xb002f35b.
-	//
-	// Solidity: function addAccountType(uint8 accountType_) returns()
-	AddAccountType(opts *bind.TransactOpts, accountType_ uint8) (*types.Transaction, error)
 	// Approve is a paid mutator transaction binding the contract method 0x095ea7b3.
 	//
 	// Solidity: function approve(address spender, uint256 amount) returns(bool)
@@ -64,6 +60,10 @@ type IBTokenTransactor interface {
 	//
 	// Solidity: function mintTo(address to_, uint256 minBTK_) payable returns(uint256 numBTK)
 	MintTo(opts *bind.TransactOpts, to_ common.Address, minBTK_ *big.Int) (*types.Transaction, error)
+	// SetAccountType is a paid mutator transaction binding the contract method 0x14c8d876.
+	//
+	// Solidity: function setAccountType(uint8 accountType_, bool allowed_) returns()
+	SetAccountType(opts *bind.TransactOpts, accountType_ uint8, allowed_ bool) (*types.Transaction, error)
 	// Transfer is a paid mutator transaction binding the contract method 0xa9059cbb.
 	//
 	// Solidity: function transfer(address to, uint256 amount) returns(bool)

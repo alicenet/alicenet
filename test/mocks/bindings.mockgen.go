@@ -7978,9 +7978,6 @@ func (c IAliceNetFactoryWatchUpgradedProxyFuncCall) Results() []interface{} {
 // package github.com/alicenet/alicenet/bridge/bindings) used for unit
 // testing.
 type MockIBToken struct {
-	// AddAccountTypeFunc is an instance of a mock function object
-	// controlling the behavior of the method AddAccountType.
-	AddAccountTypeFunc *IBTokenAddAccountTypeFunc
 	// AllowanceFunc is an instance of a mock function object controlling
 	// the behavior of the method Allowance.
 	AllowanceFunc *IBTokenAllowanceFunc
@@ -8094,6 +8091,9 @@ type MockIBToken struct {
 	// ParseTransferFunc is an instance of a mock function object
 	// controlling the behavior of the method ParseTransfer.
 	ParseTransferFunc *IBTokenParseTransferFunc
+	// SetAccountTypeFunc is an instance of a mock function object
+	// controlling the behavior of the method SetAccountType.
+	SetAccountTypeFunc *IBTokenSetAccountTypeFunc
 	// SymbolFunc is an instance of a mock function object controlling the
 	// behavior of the method Symbol.
 	SymbolFunc *IBTokenSymbolFunc
@@ -8124,11 +8124,6 @@ type MockIBToken struct {
 // return zero values for all results, unless overwritten.
 func NewMockIBToken() *MockIBToken {
 	return &MockIBToken{
-		AddAccountTypeFunc: &IBTokenAddAccountTypeFunc{
-			defaultHook: func(*bind.TransactOpts, uint8) (r0 *types.Transaction, r1 error) {
-				return
-			},
-		},
 		AllowanceFunc: &IBTokenAllowanceFunc{
 			defaultHook: func(*bind.CallOpts, common.Address, common.Address) (r0 *big.Int, r1 error) {
 				return
@@ -8309,6 +8304,11 @@ func NewMockIBToken() *MockIBToken {
 				return
 			},
 		},
+		SetAccountTypeFunc: &IBTokenSetAccountTypeFunc{
+			defaultHook: func(*bind.TransactOpts, uint8, bool) (r0 *types.Transaction, r1 error) {
+				return
+			},
+		},
 		SymbolFunc: &IBTokenSymbolFunc{
 			defaultHook: func(*bind.CallOpts) (r0 string, r1 error) {
 				return
@@ -8356,11 +8356,6 @@ func NewMockIBToken() *MockIBToken {
 // methods panic on invocation, unless overwritten.
 func NewStrictMockIBToken() *MockIBToken {
 	return &MockIBToken{
-		AddAccountTypeFunc: &IBTokenAddAccountTypeFunc{
-			defaultHook: func(*bind.TransactOpts, uint8) (*types.Transaction, error) {
-				panic("unexpected invocation of MockIBToken.AddAccountType")
-			},
-		},
 		AllowanceFunc: &IBTokenAllowanceFunc{
 			defaultHook: func(*bind.CallOpts, common.Address, common.Address) (*big.Int, error) {
 				panic("unexpected invocation of MockIBToken.Allowance")
@@ -8541,6 +8536,11 @@ func NewStrictMockIBToken() *MockIBToken {
 				panic("unexpected invocation of MockIBToken.ParseTransfer")
 			},
 		},
+		SetAccountTypeFunc: &IBTokenSetAccountTypeFunc{
+			defaultHook: func(*bind.TransactOpts, uint8, bool) (*types.Transaction, error) {
+				panic("unexpected invocation of MockIBToken.SetAccountType")
+			},
+		},
 		SymbolFunc: &IBTokenSymbolFunc{
 			defaultHook: func(*bind.CallOpts) (string, error) {
 				panic("unexpected invocation of MockIBToken.Symbol")
@@ -8588,9 +8588,6 @@ func NewStrictMockIBToken() *MockIBToken {
 // methods delegate to the given implementation, unless overwritten.
 func NewMockIBTokenFrom(i bindings.IBToken) *MockIBToken {
 	return &MockIBToken{
-		AddAccountTypeFunc: &IBTokenAddAccountTypeFunc{
-			defaultHook: i.AddAccountType,
-		},
 		AllowanceFunc: &IBTokenAllowanceFunc{
 			defaultHook: i.Allowance,
 		},
@@ -8699,6 +8696,9 @@ func NewMockIBTokenFrom(i bindings.IBToken) *MockIBToken {
 		ParseTransferFunc: &IBTokenParseTransferFunc{
 			defaultHook: i.ParseTransfer,
 		},
+		SetAccountTypeFunc: &IBTokenSetAccountTypeFunc{
+			defaultHook: i.SetAccountType,
+		},
 		SymbolFunc: &IBTokenSymbolFunc{
 			defaultHook: i.Symbol,
 		},
@@ -8724,114 +8724,6 @@ func NewMockIBTokenFrom(i bindings.IBToken) *MockIBToken {
 			defaultHook: i.WatchTransfer,
 		},
 	}
-}
-
-// IBTokenAddAccountTypeFunc describes the behavior when the AddAccountType
-// method of the parent MockIBToken instance is invoked.
-type IBTokenAddAccountTypeFunc struct {
-	defaultHook func(*bind.TransactOpts, uint8) (*types.Transaction, error)
-	hooks       []func(*bind.TransactOpts, uint8) (*types.Transaction, error)
-	history     []IBTokenAddAccountTypeFuncCall
-	mutex       sync.Mutex
-}
-
-// AddAccountType delegates to the next hook function in the queue and
-// stores the parameter and result values of this invocation.
-func (m *MockIBToken) AddAccountType(v0 *bind.TransactOpts, v1 uint8) (*types.Transaction, error) {
-	r0, r1 := m.AddAccountTypeFunc.nextHook()(v0, v1)
-	m.AddAccountTypeFunc.appendCall(IBTokenAddAccountTypeFuncCall{v0, v1, r0, r1})
-	return r0, r1
-}
-
-// SetDefaultHook sets function that is called when the AddAccountType
-// method of the parent MockIBToken instance is invoked and the hook queue
-// is empty.
-func (f *IBTokenAddAccountTypeFunc) SetDefaultHook(hook func(*bind.TransactOpts, uint8) (*types.Transaction, error)) {
-	f.defaultHook = hook
-}
-
-// PushHook adds a function to the end of hook queue. Each invocation of the
-// AddAccountType method of the parent MockIBToken instance invokes the hook
-// at the front of the queue and discards it. After the queue is empty, the
-// default hook function is invoked for any future action.
-func (f *IBTokenAddAccountTypeFunc) PushHook(hook func(*bind.TransactOpts, uint8) (*types.Transaction, error)) {
-	f.mutex.Lock()
-	f.hooks = append(f.hooks, hook)
-	f.mutex.Unlock()
-}
-
-// SetDefaultReturn calls SetDefaultHook with a function that returns the
-// given values.
-func (f *IBTokenAddAccountTypeFunc) SetDefaultReturn(r0 *types.Transaction, r1 error) {
-	f.SetDefaultHook(func(*bind.TransactOpts, uint8) (*types.Transaction, error) {
-		return r0, r1
-	})
-}
-
-// PushReturn calls PushHook with a function that returns the given values.
-func (f *IBTokenAddAccountTypeFunc) PushReturn(r0 *types.Transaction, r1 error) {
-	f.PushHook(func(*bind.TransactOpts, uint8) (*types.Transaction, error) {
-		return r0, r1
-	})
-}
-
-func (f *IBTokenAddAccountTypeFunc) nextHook() func(*bind.TransactOpts, uint8) (*types.Transaction, error) {
-	f.mutex.Lock()
-	defer f.mutex.Unlock()
-
-	if len(f.hooks) == 0 {
-		return f.defaultHook
-	}
-
-	hook := f.hooks[0]
-	f.hooks = f.hooks[1:]
-	return hook
-}
-
-func (f *IBTokenAddAccountTypeFunc) appendCall(r0 IBTokenAddAccountTypeFuncCall) {
-	f.mutex.Lock()
-	f.history = append(f.history, r0)
-	f.mutex.Unlock()
-}
-
-// History returns a sequence of IBTokenAddAccountTypeFuncCall objects
-// describing the invocations of this function.
-func (f *IBTokenAddAccountTypeFunc) History() []IBTokenAddAccountTypeFuncCall {
-	f.mutex.Lock()
-	history := make([]IBTokenAddAccountTypeFuncCall, len(f.history))
-	copy(history, f.history)
-	f.mutex.Unlock()
-
-	return history
-}
-
-// IBTokenAddAccountTypeFuncCall is an object that describes an invocation
-// of method AddAccountType on an instance of MockIBToken.
-type IBTokenAddAccountTypeFuncCall struct {
-	// Arg0 is the value of the 1st argument passed to this method
-	// invocation.
-	Arg0 *bind.TransactOpts
-	// Arg1 is the value of the 2nd argument passed to this method
-	// invocation.
-	Arg1 uint8
-	// Result0 is the value of the 1st result returned from this method
-	// invocation.
-	Result0 *types.Transaction
-	// Result1 is the value of the 2nd result returned from this method
-	// invocation.
-	Result1 error
-}
-
-// Args returns an interface slice containing the arguments of this
-// invocation.
-func (c IBTokenAddAccountTypeFuncCall) Args() []interface{} {
-	return []interface{}{c.Arg0, c.Arg1}
-}
-
-// Results returns an interface slice containing the results of this
-// invocation.
-func (c IBTokenAddAccountTypeFuncCall) Results() []interface{} {
-	return []interface{}{c.Result0, c.Result1}
 }
 
 // IBTokenAllowanceFunc describes the behavior when the Allowance method of
@@ -12764,6 +12656,117 @@ func (c IBTokenParseTransferFuncCall) Args() []interface{} {
 // Results returns an interface slice containing the results of this
 // invocation.
 func (c IBTokenParseTransferFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
+}
+
+// IBTokenSetAccountTypeFunc describes the behavior when the SetAccountType
+// method of the parent MockIBToken instance is invoked.
+type IBTokenSetAccountTypeFunc struct {
+	defaultHook func(*bind.TransactOpts, uint8, bool) (*types.Transaction, error)
+	hooks       []func(*bind.TransactOpts, uint8, bool) (*types.Transaction, error)
+	history     []IBTokenSetAccountTypeFuncCall
+	mutex       sync.Mutex
+}
+
+// SetAccountType delegates to the next hook function in the queue and
+// stores the parameter and result values of this invocation.
+func (m *MockIBToken) SetAccountType(v0 *bind.TransactOpts, v1 uint8, v2 bool) (*types.Transaction, error) {
+	r0, r1 := m.SetAccountTypeFunc.nextHook()(v0, v1, v2)
+	m.SetAccountTypeFunc.appendCall(IBTokenSetAccountTypeFuncCall{v0, v1, v2, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the SetAccountType
+// method of the parent MockIBToken instance is invoked and the hook queue
+// is empty.
+func (f *IBTokenSetAccountTypeFunc) SetDefaultHook(hook func(*bind.TransactOpts, uint8, bool) (*types.Transaction, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// SetAccountType method of the parent MockIBToken instance invokes the hook
+// at the front of the queue and discards it. After the queue is empty, the
+// default hook function is invoked for any future action.
+func (f *IBTokenSetAccountTypeFunc) PushHook(hook func(*bind.TransactOpts, uint8, bool) (*types.Transaction, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *IBTokenSetAccountTypeFunc) SetDefaultReturn(r0 *types.Transaction, r1 error) {
+	f.SetDefaultHook(func(*bind.TransactOpts, uint8, bool) (*types.Transaction, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *IBTokenSetAccountTypeFunc) PushReturn(r0 *types.Transaction, r1 error) {
+	f.PushHook(func(*bind.TransactOpts, uint8, bool) (*types.Transaction, error) {
+		return r0, r1
+	})
+}
+
+func (f *IBTokenSetAccountTypeFunc) nextHook() func(*bind.TransactOpts, uint8, bool) (*types.Transaction, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *IBTokenSetAccountTypeFunc) appendCall(r0 IBTokenSetAccountTypeFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of IBTokenSetAccountTypeFuncCall objects
+// describing the invocations of this function.
+func (f *IBTokenSetAccountTypeFunc) History() []IBTokenSetAccountTypeFuncCall {
+	f.mutex.Lock()
+	history := make([]IBTokenSetAccountTypeFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// IBTokenSetAccountTypeFuncCall is an object that describes an invocation
+// of method SetAccountType on an instance of MockIBToken.
+type IBTokenSetAccountTypeFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 *bind.TransactOpts
+	// Arg1 is the value of the 2nd argument passed to this method
+	// invocation.
+	Arg1 uint8
+	// Arg2 is the value of the 3rd argument passed to this method
+	// invocation.
+	Arg2 bool
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 *types.Transaction
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c IBTokenSetAccountTypeFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0, c.Arg1, c.Arg2}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c IBTokenSetAccountTypeFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
