@@ -25,6 +25,22 @@ describe("Testing BToken Deposit methods", async () => {
     bTokenDeposit = ethers.utils.parseUnits(bTokens.toString(10));
   });
 
+  it("Only factory should be able to add a new type", async () => {
+    await expect(
+      fixture.bToken.addAccountType(3)
+    ).to.be.revertedWithCustomError(fixture.bToken, `OnlyFactory`);
+    const recpt = await (
+      await fixture.factory
+        .connect(admin)
+        .callAny(
+          fixture.bToken.address,
+          0,
+          fixture.bToken.interface.encodeFunctionData("addAccountType", [3])
+        )
+    ).wait();
+    expect(recpt.status).to.be.equals(1);
+  });
+
   it("Should fail querying for an invalid deposit ID", async () => {
     const depositId = 1000;
     await expect(fixture.bToken.getDeposit(depositId))
@@ -115,6 +131,19 @@ describe("Testing BToken Deposit methods", async () => {
     ).toBigInt();
     expectedState.Balances.bToken.totalSupply -= bTokenDeposit.toBigInt();
     expect(await getState(fixture)).to.be.deep.equal(expectedState);
+  });
+
+  it("Should be able to deposit with new added type", async () => {
+    await fixture.factory
+      .connect(admin)
+      .callAny(
+        fixture.bToken.address,
+        0,
+        fixture.bToken.interface.encodeFunctionData("addAccountType", [10])
+      );
+    await fixture.bToken.mintDeposit(10, user.address, 0, {
+      value: 100,
+    });
   });
 
   it("Should deposit funds without burning tokens hence not affecting balances", async () => {
