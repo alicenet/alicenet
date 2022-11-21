@@ -8,9 +8,11 @@ import "contracts/interfaces/IETHDKG.sol";
 import "contracts/interfaces/IETHDKGEvents.sol";
 import "contracts/libraries/ethdkg/ETHDKGStorage.sol";
 import "contracts/utils/ETHDKGUtils.sol";
-import "contracts/utils/ImmutableAuth.sol";
+import "contracts/utils/auth/ImmutableFactory.sol";
+import "contracts/utils/auth/ImmutableETHDKGAccusations.sol";
+import "contracts/utils/auth/ImmutableETHDKGPhases.sol";
 import "contracts/libraries/errors/ETHDKGErrors.sol";
-import "contracts/interfaces/IProxy.sol";
+import "contracts/libraries/proxy/ProxyImplementationGetter.sol";
 
 /// @custom:salt ETHDKG
 /// @custom:deploy-type deployUpgradeable
@@ -22,7 +24,8 @@ contract ETHDKG is
     IETHDKGEvents,
     ETHDKGUtils,
     ImmutableETHDKGAccusations,
-    ImmutableETHDKGPhases
+    ImmutableETHDKGPhases,
+    ProxyImplementationGetter
 {
     address internal immutable _ethdkgAccusations;
     address internal immutable _ethdkgPhases;
@@ -36,7 +39,7 @@ contract ETHDKG is
 
     constructor() ETHDKGStorage() ImmutableETHDKGAccusations() ImmutableETHDKGPhases() {
         // bytes32("ETHDKGPhases") = 0x455448444b475068617365730000000000000000000000000000000000000000;
-        address ethdkgPhases = IProxy(_ethdkgPhasesAddress()).getImplementationAddress();
+        address ethdkgPhases = __getProxyImplementation(_ethdkgPhasesAddress());
         assembly {
             if iszero(extcodesize(ethdkgPhases)) {
                 mstore(0x00, "ethdkgPhases size 0")
@@ -45,7 +48,7 @@ contract ETHDKG is
         }
         _ethdkgPhases = ethdkgPhases;
         // bytes32("ETHDKGAccusations") = 0x455448444b4741636375736174696f6e73000000000000000000000000000000;
-        address ethdkgAccusations = IProxy(_ethdkgAccusationsAddress()).getImplementationAddress();
+        address ethdkgAccusations = __getProxyImplementation(_ethdkgAccusationsAddress());
         assembly {
             if iszero(extcodesize(ethdkgAccusations)) {
                 mstore(0x00, "ethdkgAccusations size 0")

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT-open-group
 pragma solidity ^0.8.16;
 
-import "contracts/utils/ImmutableAuth.sol";
+import "contracts/utils/auth/ImmutableFactory.sol";
 import "contracts/libraries/errors/BridgePoolFactoryErrors.sol";
 import "contracts/interfaces/IBridgePool.sol";
 import "contracts/utils/BridgePoolAddressUtil.sol";

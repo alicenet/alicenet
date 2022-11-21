@@ -25,6 +25,25 @@ describe("Testing BToken Deposit methods", async () => {
     bTokenDeposit = ethers.utils.parseUnits(bTokens.toString(10));
   });
 
+  it("Only factory should be able to set a new type", async () => {
+    await expect(
+      fixture.bToken.setAccountType(3, true)
+    ).to.be.revertedWithCustomError(fixture.bToken, `OnlyFactory`);
+    const recpt = await (
+      await fixture.factory
+        .connect(admin)
+        .callAny(
+          fixture.bToken.address,
+          0,
+          fixture.bToken.interface.encodeFunctionData("setAccountType", [
+            3,
+            true,
+          ])
+        )
+    ).wait();
+    expect(recpt.status).to.be.equals(1);
+  });
+
   it("Should fail querying for an invalid deposit ID", async () => {
     const depositId = 1000;
     await expect(fixture.bToken.getDeposit(depositId))
@@ -41,7 +60,65 @@ describe("Testing BToken Deposit methods", async () => {
       .withArgs(fixture.bToken.address);
   });
 
-  it("Should not deposit with 0 eth amount", async () => {
+  it("Should not deposit to an invalid account type", async () => {
+    await fixture.bToken.mint(0, {
+      value: ethIn,
+    });
+    await expect(fixture.bToken.deposit(3, user.address, 100))
+      .to.be.revertedWithCustomError(fixture.bToken, "AccountTypeNotSupported")
+      .withArgs(3);
+  });
+
+  it("Should not deposit to a disabled account type", async () => {
+    await fixture.bToken.mint(0, {
+      value: ethIn,
+    });
+    await (
+      await fixture.factory
+        .connect(admin)
+        .callAny(
+          fixture.bToken.address,
+          0,
+          fixture.bToken.interface.encodeFunctionData("setAccountType", [
+            1,
+            false,
+          ])
+        )
+    ).wait();
+    await expect(fixture.bToken.deposit(1, user.address, 100))
+      .to.be.revertedWithCustomError(fixture.bToken, "AccountTypeNotSupported")
+      .withArgs(1);
+  });
+
+  it("Should not mintDeposit to an invalid account type", async () => {
+    await expect(
+      fixture.bToken.mintDeposit(3, user.address, 0, {
+        value: 100,
+      })
+    )
+      .to.be.revertedWithCustomError(fixture.bToken, "AccountTypeNotSupported")
+      .withArgs(3);
+  });
+
+  it("Should not virtualMintDeposit to an incorrect account type", async () => {
+    await expect(
+      fixture.factory
+        .connect(admin)
+        .callAny(
+          fixture.bToken.address,
+          0,
+          fixture.bToken.interface.encodeFunctionData("virtualMintDeposit", [
+            3,
+            user.address,
+            bTokenDeposit,
+          ])
+        )
+    )
+      .to.be.revertedWithCustomError(fixture.bToken, "AccountTypeNotSupported")
+      .withArgs(3);
+  });
+
+  it("Should not mintDeposit with 0 eth amount", async () => {
     await expect(
       fixture.bToken.mintDeposit(1, user.address, 0, {
         value: 0,
@@ -78,6 +155,22 @@ describe("Testing BToken Deposit methods", async () => {
     ).toBigInt();
     expectedState.Balances.bToken.totalSupply -= bTokenDeposit.toBigInt();
     expect(await getState(fixture)).to.be.deep.equal(expectedState);
+  });
+
+  it("Should be able to deposit with new added type", async () => {
+    await fixture.factory
+      .connect(admin)
+      .callAny(
+        fixture.bToken.address,
+        0,
+        fixture.bToken.interface.encodeFunctionData("setAccountType", [
+          10,
+          true,
+        ])
+      );
+    await fixture.bToken.mintDeposit(10, user.address, 0, {
+      value: 100,
+    });
   });
 
   it("Should deposit funds without burning tokens hence not affecting balances", async () => {

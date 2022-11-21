@@ -2,7 +2,10 @@
 pragma solidity ^0.8.16;
 
 import "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
-import "contracts/utils/ImmutableAuth.sol";
+import "contracts/utils/auth/ImmutableFactory.sol";
+import "contracts/utils/auth/ImmutableAToken.sol";
+import "contracts/utils/auth/ImmutablePublicStaking.sol";
+import "contracts/utils/auth/ImmutableFoundation.sol";
 import "contracts/utils/EthSafeTransfer.sol";
 import "contracts/utils/ERC20SafeTransfer.sol";
 import "contracts/utils/MagicEthTransfer.sol";

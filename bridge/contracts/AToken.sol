@@ -2,7 +2,9 @@
 pragma solidity ^0.8.16;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "contracts/utils/ImmutableAuth.sol";
+import "contracts/utils/auth/ImmutableFactory.sol";
+import "contracts/utils/auth/ImmutableATokenMinter.sol";
+import "contracts/utils/auth/ImmutableATokenBurner.sol";
 import "contracts/interfaces/IStakingToken.sol";
 import "contracts/libraries/errors/StakingTokenErrors.sol";
 

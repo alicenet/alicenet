@@ -3,7 +3,9 @@ pragma solidity ^0.8.16;
 
 import "contracts/interfaces/ISnapshots.sol";
 import "contracts/interfaces/IValidatorPool.sol";
-import "contracts/utils/ImmutableAuth.sol";
+import "contracts/utils/auth/ImmutableFactory.sol";
+import "contracts/utils/auth/ImmutableValidatorPool.sol";
+import "contracts/utils/auth/ImmutableDynamics.sol";
 import "contracts/libraries/parsers/BClaimsParserLibrary.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "contracts/interfaces/IDynamics.sol";

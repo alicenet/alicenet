@@ -5,4 +5,5 @@ library AliceNetFactoryBaseErrors {
     error Unauthorized();
     error CodeSizeZero();
     error SaltAlreadyInUse(bytes32 salt);
+    error IncorrectProxyImplementation(address current, address expected);
 }

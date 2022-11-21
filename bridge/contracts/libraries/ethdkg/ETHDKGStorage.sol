@@ -3,7 +3,9 @@ pragma solidity ^0.8.16;
 
 import "contracts/interfaces/IValidatorPool.sol";
 import "contracts/interfaces/ISnapshots.sol";
-import "contracts/utils/ImmutableAuth.sol";
+import "contracts/utils/auth/ImmutableFactory.sol";
+import "contracts/utils/auth/ImmutableSnapshots.sol";
+import "contracts/utils/auth/ImmutableValidatorPool.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 enum Phase {

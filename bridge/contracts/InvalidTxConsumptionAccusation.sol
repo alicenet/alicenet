@@ -9,7 +9,10 @@ import "contracts/libraries/parsers/RCertParserLibrary.sol";
 import "contracts/libraries/parsers/MerkleProofParserLibrary.sol";
 import "contracts/libraries/parsers/TXInPreImageParserLibrary.sol";
 import "contracts/libraries/math/CryptoLibrary.sol";
-import "contracts/utils/ImmutableAuth.sol";
+import "contracts/utils/auth/ImmutableFactory.sol";
+import "contracts/utils/auth/ImmutableSnapshots.sol";
+import "contracts/utils/auth/ImmutableETHDKG.sol";
+import "contracts/utils/auth/ImmutableValidatorPool.sol";
 import "contracts/utils/AccusationsLibrary.sol";
 import "contracts/libraries/errors/AccusationsErrors.sol";
 

@@ -31,7 +31,6 @@ import {
   INITIALIZER,
   MULTICALL_GAS_LIMIT,
   ONLY_PROXY,
-  PROXY,
   TASK_DEPLOY_CONTRACTS,
   TASK_DEPLOY_CREATE,
   TASK_DEPLOY_CREATE_AND_REGISTER,
@@ -1006,20 +1005,18 @@ task(
       UPGRADE_PROXY,
       [salt, implAddress, initCallData]
     );
-    const PROXY_FACTORY = await hre.ethers.getContractFactory(PROXY);
     const proxyAddress = getMetamorphicAddress(
       taskArgs.factoryAddress,
       salt,
       hre.ethers
     );
-    const proxyContract = await PROXY_FACTORY.attach(proxyAddress);
-    const oldImpl = await proxyContract.getImplementationAddress();
-    const deployCreate = await encodeMultiCallArgs(
+    const oldImpl = await factory.getProxyImplementation(proxyAddress);
+    const deployCreate = encodeMultiCallArgs(
       factory.address,
       0,
       deployCreateCallData
     );
-    const upgradeProxy = await encodeMultiCallArgs(
+    const upgradeProxy = encodeMultiCallArgs(
       factory.address,
       0,
       upgradeProxyCallData

@@ -38,7 +38,7 @@ describe("AliceNetfactory API test", async () => {
     );
     const Proxy = await ethers.getContractFactory(PROXY);
     const proxy = Proxy.attach(res.proxyAddress);
-    expect(await proxy.getImplementationAddress()).to.be.equal(
+    expect(await factory.getProxyImplementation(proxy.address)).to.be.equal(
       res.logicAddress
     );
     assert(res !== undefined, "Couldn't deploy upgradable contract");
@@ -57,7 +57,7 @@ describe("AliceNetfactory API test", async () => {
       ["2", "s"]
     );
     const proxy = await ethers.getContractAt(PROXY, res.proxyAddress);
-    expect(await proxy.getImplementationAddress()).to.be.equal(
+    expect(await factory.getProxyImplementation(proxy.address)).to.be.equal(
       res.logicAddress
     );
     assert(res !== undefined, "Couldn't deploy upgradable contract");
@@ -65,7 +65,7 @@ describe("AliceNetfactory API test", async () => {
       "2",
       "s",
     ]);
-    expect(await proxy.getImplementationAddress()).to.be.equal(
+    expect(await factory.getProxyImplementation(proxy.address)).to.be.equal(
       res2.logicAddress
     );
     assert(

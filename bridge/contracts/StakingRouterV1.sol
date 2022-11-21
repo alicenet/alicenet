@@ -9,7 +9,9 @@ import "contracts/interfaces/IStakingNFT.sol";
 import "contracts/interfaces/IStakingToken.sol";
 import "contracts/utils/EthSafeTransfer.sol";
 import "contracts/utils/ERC20SafeTransfer.sol";
-import "contracts/utils/ImmutableAuth.sol";
+import "contracts/utils/auth/ImmutableFactory.sol";
+import "contracts/utils/auth/ImmutablePublicStaking.sol";
+import "contracts/utils/auth/ImmutableAToken.sol";
 import "contracts/Lockup.sol";
 
 /// @custom:deploy-type deployCreate

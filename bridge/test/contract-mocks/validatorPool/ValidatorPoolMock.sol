@@ -10,6 +10,11 @@ import "contracts/utils/CustomEnumerableMaps.sol";
 import "contracts/utils/DeterministicAddress.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "contracts/libraries/errors/ValidatorPoolErrors.sol";
+import "contracts/utils/auth/ImmutableFactory.sol";
+import "contracts/utils/auth/ImmutableSnapshots.sol";
+import "contracts/utils/auth/ImmutableETHDKG.sol";
+import "contracts/utils/auth/ImmutableValidatorStaking.sol";
+import "contracts/utils/auth/ImmutableAToken.sol";
 
 contract ValidatorPoolMock is
     Initializable,
