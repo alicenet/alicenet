@@ -52,10 +52,10 @@ contract ETHDKGMock is
         _confirmationLength = uint16(confirmationLength_);
     }
 
-    function reinitialize(uint256 phaseLength_, uint256 confirmationLength_)
-        public
-        reinitializer(2)
-    {
+    function reinitialize(
+        uint256 phaseLength_,
+        uint256 confirmationLength_
+    ) public reinitializer(2) {
         _phaseLength = uint16(phaseLength_);
         _confirmationLength = uint16(confirmationLength_);
     }
@@ -103,10 +103,10 @@ contract ETHDKGMock is
         );
     }
 
-    function distributeShares(uint256[] memory encryptedShares, uint256[2][] memory commitments)
-        public
-        onlyValidator
-    {
+    function distributeShares(
+        uint256[] memory encryptedShares,
+        uint256[2][] memory commitments
+    ) public onlyValidator {
         _callPhaseContract(
             abi.encodeWithSignature(
                 "distributeShares(uint256[],uint256[2][])",
@@ -258,19 +258,15 @@ contract ETHDKGMock is
         return _badParticipants;
     }
 
-    function getParticipantInternalState(address participant)
-        public
-        view
-        returns (Participant memory)
-    {
+    function getParticipantInternalState(
+        address participant
+    ) public view returns (Participant memory) {
         return _participants[participant];
     }
 
-    function getParticipantsInternalState(address[] calldata participantAddresses)
-        public
-        view
-        returns (Participant[] memory)
-    {
+    function getParticipantsInternalState(
+        address[] calldata participantAddresses
+    ) public view returns (Participant[] memory) {
         Participant[] memory participants = new Participant[](participantAddresses.length);
 
         for (uint256 i = 0; i < participantAddresses.length; i++) {
@@ -330,20 +326,6 @@ contract ETHDKGMock is
         return _getETHDKGPhasesAddress().functionDelegateCall(callData);
     }
 
-    function _getETHDKGPhasesAddress() internal view returns (address ethdkgPhases) {
-        ethdkgPhases = __getProxyImplementation(_ethdkgPhasesAddress());
-        if (!ethdkgPhases.isContract()) {
-            revert ETHDKGErrors.ETHDKGSubContractNotSet();
-        }
-    }
-
-    function _getETHDKGAccusationsAddress() internal view returns (address ethdkgAccusations) {
-        ethdkgAccusations = __getProxyImplementation(_ethdkgAccusationsAddress());
-        if (!ethdkgAccusations.isContract()) {
-            revert ETHDKGErrors.ETHDKGSubContractNotSet();
-        }
-    }
-
     function _initializeETHDKG() internal {
         //todo: should we reward ppl here?
         uint256 numberValidators = IValidatorPool(_validatorPoolAddress()).getValidatorsCount();
@@ -367,6 +349,20 @@ contract ETHDKGMock is
             _phaseLength,
             _confirmationLength
         );
+    }
+
+    function _getETHDKGPhasesAddress() internal view returns (address ethdkgPhases) {
+        ethdkgPhases = __getProxyImplementation(_ethdkgPhasesAddress());
+        if (!ethdkgPhases.isContract()) {
+            revert ETHDKGErrors.ETHDKGSubContractNotSet();
+        }
+    }
+
+    function _getETHDKGAccusationsAddress() internal view returns (address ethdkgAccusations) {
+        ethdkgAccusations = __getProxyImplementation(_ethdkgAccusationsAddress());
+        if (!ethdkgAccusations.isContract()) {
+            revert ETHDKGErrors.ETHDKGSubContractNotSet();
+        }
     }
 
     function _isETHDKGCompleted() internal view returns (bool) {
