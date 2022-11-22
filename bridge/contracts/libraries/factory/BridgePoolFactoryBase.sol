@@ -39,6 +39,13 @@ abstract contract BridgePoolFactoryBase is ImmutableFactory, ImmutableSnapshots 
         _chainID = block.chainid;
     }
 
+    /**
+     * @notice returns required immutable contract addresses
+     */
+    function getImmutableContractAdresses() public view returns (address, address) {
+        return (_snapshotsAddress(), _factoryAddress());
+    }
+
     // NativeERC20V!
     /**
      * @notice returns bytecode for a Minimal Proxy (EIP-1167) that routes to BridgePool implementation

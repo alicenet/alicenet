@@ -2,6 +2,7 @@
 pragma solidity ^0.8.16;
 import "contracts/interfaces/IBridgePool.sol";
 import "contracts/utils/ImmutableAuth.sol";
+import "contracts/BridgePoolFactory.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "contracts/libraries/errors/NativeERCBridgePoolBaseErrors.sol";
 import "contracts/utils/AccusationsLibrary.sol";
@@ -11,7 +12,7 @@ import "contracts/libraries/parsers/PClaimsParserLibrary.sol";
 import "contracts/utils/MerkleProofLibrary.sol";
 import "contracts/interfaces/ISnapshots.sol";
 
-abstract contract NativeERCBridgePoolBase is IBridgePool, ImmutableBridgePoolFactory {
+abstract contract NativeERCBridgePoolBase is IBridgePool {
     using MerkleProofParserLibrary for bytes;
     using MerkleProofLibrary for MerkleProofParserLibrary.MerkleProof;
 
@@ -22,6 +23,7 @@ abstract contract NativeERCBridgePoolBase is IBridgePool, ImmutableBridgePoolFac
 
     address private immutable _snapshotsContract;
     address private immutable _bridgeRouterContract;
+    address private immutable _alicenetFactoryContract;
     mapping(bytes32 => bool) private _consumedUTXOIDs;
 
     modifier onlyBridgeRouter() {
@@ -34,12 +36,9 @@ abstract contract NativeERCBridgePoolBase is IBridgePool, ImmutableBridgePoolFac
         _;
     }
 
-    constructor(
-        address bridgeRouterContract_,
-        address alicenetFactoryContract_,
-        address snapshotsContract_
-    ) onlyBridgePoolFactory ImmutableFactory(alicenetFactoryContract_) {
-        _snapshotsContract = snapshotsContract_;
+    constructor(address bridgeRouterContract_) {
+        (_snapshotsContract, _alicenetFactoryContract) = BridgePoolFactory(msg.sender)
+            .getImmutableContractAdresses();
         _bridgeRouterContract = bridgeRouterContract_;
     }
 

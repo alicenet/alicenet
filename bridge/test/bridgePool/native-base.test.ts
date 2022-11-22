@@ -85,10 +85,8 @@ describe("Testing Base BridgePool Deposit/Withdraw", async () => {
       "NativeERCBridgePoolMock"
     );
     const bridgePoolImplBytecode = bridgePoolImplFactory.getDeployTransaction(
-      bridgeRouter.address,
-      fixture.factory.address,
-      fixture.snapshots.address
-    ).data as BytesLike; 
+      bridgeRouter.address
+    ).data as BytesLike;
     await bridgePoolFactory
       .connect(factorySigner)
       .deployPoolLogic(
