@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT-open-group
 pragma solidity ^0.8.16;
 
-import "contracts/libraries/proxy/ProxyInternalUpgradeLock.sol";
 import "contracts/utils/DeterministicAddress.sol";
 
 /**
@@ -28,13 +27,8 @@ import "contracts/utils/DeterministicAddress.sol";
  *
  * @dev RUN OPTIMIZER OFF
  */
-contract Proxy is ProxyInternalUpgradeLock {
+contract Proxy {
     address private immutable _factory;
-
-    modifier onlyFactory() {
-        require(msg.sender == _factory, "onlyFactory");
-        _;
-    }
 
     constructor() {
         _factory = msg.sender;
