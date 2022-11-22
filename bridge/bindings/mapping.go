@@ -125,6 +125,7 @@ var FunctionMapping = map[[4]byte]string{
 	{67, 206, 213, 52}:   "ETHDKG.isETHDKGHalted()",
 	{116, 123, 33, 124}:  "ETHDKG.isETHDKGRunning()",
 	{8, 239, 207, 22}:    "ETHDKG.isMasterPublicKeySet()",
+	{155, 177, 103, 66}:  "ETHDKG.isValidMasterPublicKey(bytes32)",
 	{72, 144, 70, 90}:    "ETHDKG.migrateValidators(address[],uint256[],uint256[4][],uint8,uint256,uint256,uint256,uint256[4])",
 	{52, 66, 175, 92}:    "ETHDKG.register(uint256[2])",
 	{255, 62, 94, 69}:    "ETHDKG.setConfirmationLength(uint16)",

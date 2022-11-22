@@ -59,11 +59,9 @@ contract BToken is
         uint256 amount
     );
 
-    constructor(address centralBridgeRouterAddress_)
-        ERC20("AliceNet Utility Token", "ALCB")
-        ImmutableFactory(msg.sender)
-        ImmutableDistribution()
-    {
+    constructor(
+        address centralBridgeRouterAddress_
+    ) ERC20("AliceNet Utility Token", "ALCB") ImmutableFactory(msg.sender) ImmutableDistribution() {
         if (centralBridgeRouterAddress_ == address(0)) {
             revert UtilityTokenErrors.CannotSetRouterToZeroAddress();
         }
@@ -101,11 +99,7 @@ contract BToken is
      * @param amount_ The amount of BTokens to be deposited
      * @return The deposit ID of the deposit created
      */
-    function deposit(
-        uint8 accountType_,
-        address to_,
-        uint256 amount_
-    ) public returns (uint256) {
+    function deposit(uint8 accountType_, address to_, uint256 amount_) public returns (uint256) {
         return _deposit(accountType_, to_, amount_);
     }
 
@@ -246,11 +240,7 @@ contract BToken is
      * worth less than this amount the transaction is reverted.
      * @return numEth the number of ether being received
      * */
-    function burnTo(
-        address to_,
-        uint256 amount_,
-        uint256 minEth_
-    ) public returns (uint256 numEth) {
+    function burnTo(address to_, uint256 amount_, uint256 minEth_) public returns (uint256 numEth) {
         numEth = _burn(msg.sender, to_, amount_, minEth_);
         return numEth;
     }
@@ -368,11 +358,10 @@ contract BToken is
      * @return numEth the amount ether that will be necessary to mint an amount of BTokens at a
      * certain point in the bonding curve
      * */
-    function getEthToMintBTokens(uint256 totalSupply_, uint256 numBTK_)
-        public
-        pure
-        returns (uint256 numEth)
-    {
+    function getEthToMintBTokens(
+        uint256 totalSupply_,
+        uint256 numBTK_
+    ) public pure returns (uint256 numEth) {
         return _getEthToMintBTokens(totalSupply_, numBTK_);
     }
 
@@ -402,11 +391,10 @@ contract BToken is
      * @return the amount of BTokens that will be minted at given a point in the bonding
      * curve.
      * */
-    function getMintedBTokensFromEth(uint256 poolBalance_, uint256 numEth_)
-        public
-        pure
-        returns (uint256)
-    {
+    function getMintedBTokensFromEth(
+        uint256 poolBalance_,
+        uint256 numEth_
+    ) public pure returns (uint256) {
         return _ethToBTokens(poolBalance_, numEth_ / _MARKET_SPREAD);
     }
 
@@ -440,11 +428,7 @@ contract BToken is
 
     // Internal function that does the deposit in the AliceNet Chain, i.e emit the
     // event DepositReceived. All the BTokens sent to this function are burned.
-    function _deposit(
-        uint8 accountType_,
-        address to_,
-        uint256 amount_
-    ) internal returns (uint256) {
+    function _deposit(uint8 accountType_, address to_, uint256 amount_) internal returns (uint256) {
         if (to_.isContract()) {
             revert UtilityTokenErrors.ContractsDisallowedDeposits(to_);
         }
@@ -591,11 +575,10 @@ contract BToken is
 
     // Internal function to compute the amount of ether required to mint an amount
     // of BTokens. Inverse of the _ethToBTokens function.
-    function _getEthToMintBTokens(uint256 totalSupply_, uint256 numBTK_)
-        internal
-        pure
-        returns (uint256 numEth)
-    {
+    function _getEthToMintBTokens(
+        uint256 totalSupply_,
+        uint256 numBTK_
+    ) internal pure returns (uint256 numEth) {
         return (_pInverse(totalSupply_ + numBTK_) - _pInverse(totalSupply_)) * _MARKET_SPREAD;
     }
 

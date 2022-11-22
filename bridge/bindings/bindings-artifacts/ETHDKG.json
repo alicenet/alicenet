@@ -5,6 +5,11 @@
     "type": "constructor"
   },
   {
+    "inputs": [],
+    "name": "ETHDKGSubContractNotSet",
+    "type": "error"
+  },
+  {
     "inputs": [
       {
         "internalType": "uint256",
@@ -1008,6 +1013,25 @@
   {
     "inputs": [],
     "name": "isMasterPublicKeySet",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "masterPublicKeyHash",
+        "type": "bytes32"
+      }
+    ],
+    "name": "isValidMasterPublicKey",
     "outputs": [
       {
         "internalType": "bool",

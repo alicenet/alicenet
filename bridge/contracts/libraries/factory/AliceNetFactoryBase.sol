@@ -287,11 +287,7 @@ abstract contract AliceNetFactoryBase is
      * @param initCallData_ Hex encoded initialization function signature + parameters to initialize the
      * new implementation contract
      */
-    function _upgradeProxy(
-        bytes32 salt_,
-        address newImpl_,
-        bytes calldata initCallData_
-    ) internal {
+    function _upgradeProxy(bytes32 salt_, address newImpl_, bytes calldata initCallData_) internal {
         address proxy = DeterministicAddress.getMetamorphicContractAddress(salt_, address(this));
         __upgrade(proxy, newImpl_);
         address currentImplementation = __getProxyImplementation(proxy);
