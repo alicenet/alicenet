@@ -6,38 +6,84 @@ import "contracts/libraries/factory/BridgePoolFactoryBase.sol";
 
 /// @custom:salt BridgePoolFactory
 /// @custom:deploy-type deployUpgradeable
-contract BridgePoolFactory is BridgePoolFactoryBase {
-    constructor() BridgePoolFactoryBase() {}
+contract BridgePoolFactory is
+    ImmutableFactory,
+    ImmutableSnapshots,
+    ImmutableETHDKG,
+    BridgePoolFactoryBase
+{
+    address internal _aliceNetRegistry;
+
+    constructor()
+        ImmutableFactory(msg.sender)
+        ImmutableSnapshots()
+        ImmutableETHDKG()
+        BridgePoolFactoryBase()
+    {
+        _aliceNetRegistry = msg.sender;
+    }
 
     /**
-     * @notice Deploys a new bridge to pass tokens to our chain from the specified ERC contract.
+     * @notice Deploys a new bridge to pass ERC tokens to external chains.
      * The pools are created as thin proxies (EIP1167) routing to versioned implementations identified by corresponding salt.
-     * @param tokenType_ type of token (1=ERC20, 2=ERC721)
+     * @param tokenType_ type of token (0=ERC20, 1=ERC721, 2=ERC1155)
      * @param ercContract_ address of ERC20 source token contract
-     * @param implementationVersion_ version of BridgePool implementation to use
+     * @param poolVersion_ version of BridgePool implementation to use
+     */
+    function deployNewExternalPool(
+        uint8 tokenType_,
+        address ercContract_,
+        uint16 poolVersion_,
+        bytes calldata initCallData
+    ) public onlyFactoryOrPublicEnabled {
+        _deployNewPool(1, tokenType_, ercContract_, poolVersion_, initCallData);
+    }
+
+    /**
+     * @notice Deploys a new bridge to pass tokens to layer 2 chain from the specified ERC contract.
+     * The pools are created as thin proxies (EIP1167) routing to versioned implementations identified by correspondent salt.
+     * @param tokenType_ type of token (0=ERC20, 1=ERC721, 2=ERC1155)
+     * @param ercContract_ address of ERC20 source token contract
+     * @param poolVersion_ version of BridgePool implementation to use
      */
     function deployNewNativePool(
         uint8 tokenType_,
         address ercContract_,
-        uint16 implementationVersion_
+        uint16 poolVersion_,
+        bytes calldata initCallData
     ) public onlyFactoryOrPublicEnabled {
-        _deployNewNativePool(tokenType_, ercContract_, implementationVersion_);
+        _deployNewPool(0, tokenType_, ercContract_, poolVersion_, initCallData);
+    }
+
+    /**
+     * @notice allows factory to deploy arbitrary types of pools
+     */
+    function deployNewArbitraryPool(
+        uint8 poolType_,
+        uint8 tokenType_,
+        address ercContract_,
+        uint16 poolVersion_,
+        bytes calldata initCallData
+    ) public onlyFactory {
+        _deployNewPool(poolType_, tokenType_, ercContract_, poolVersion_, initCallData);
     }
 
     /**
      * @notice deploys logic for bridge pools and stores it in a logicAddresses mapping
+     * @param poolType_ type of pool (0=native, 1=external)
      * @param tokenType_ type of token (1=ERC20, 2=ERC721)
-     * @param chainId_ address of ERC20 source token contract
      * @param value_ amount of eth to send to the contract on creation
+     * @param poolVersion_ version of bridge pool logic to deploy
      * @param deployCode_ logic contract deployment bytecode
      */
     function deployPoolLogic(
+        uint8 poolType_,
         uint8 tokenType_,
-        uint256 chainId_,
+        uint16 poolVersion_,
         uint256 value_,
         bytes calldata deployCode_
     ) public onlyFactory returns (address) {
-        return _deployPoolLogic(tokenType_, chainId_, value_, deployCode_);
+        return _deployPoolLogic(poolType_, tokenType_, poolVersion_, value_, deployCode_);
     }
 
     /**
@@ -45,6 +91,17 @@ contract BridgePoolFactory is BridgePoolFactoryBase {
      **/
     function togglePublicPoolDeployment() public onlyFactory {
         _togglePublicPoolDeployment();
+    }
+
+    /**
+     *
+     * @notice this is intended for use as a failsafe incase we want
+     * to deploy a standalone registry contract in the future
+     * @param newAddress_ address of the new registry contract
+     *
+     */
+    function changeAliceNetFactoryAddress(address newAddress_) public onlyFactory {
+        _aliceNetRegistry = newAddress_;
     }
 
     /**
@@ -58,6 +115,16 @@ contract BridgePoolFactory is BridgePoolFactoryBase {
         returns (address poolAddress)
     {
         poolAddress = BridgePoolAddressUtil.getBridgePoolAddress(bridgePoolSalt_, address(this));
+    }
+
+    /**
+     * @notice returns alicenet factory address, initializing
+     * immutable address in pool logic
+     * @dev use this to get factory address and lookup other
+     * contracts from the constructor, when deploying pool logic
+     */
+    function getFactoryAddress() public view returns (address snapshot) {
+        return _aliceNetRegistry;
     }
 
     /**
