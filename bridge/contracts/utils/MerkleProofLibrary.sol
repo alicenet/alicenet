@@ -13,7 +13,7 @@ library MerkleProofLibrary {
     /// @return `true` if the value of the bit is `1`, `false` if the value of the bit is `0`
     function bitSet(bytes memory self, uint16 index) internal pure returns (bool) {
         uint256 val;
-        assembly {
+        assembly ("memory-safe") {
             val := shr(sub(255, index), and(mload(add(self, 0x20)), shl(sub(255, index), 1)))
         }
         return val == 1;
@@ -28,7 +28,7 @@ library MerkleProofLibrary {
     /// the bit is `0`
     function bitSetBytes32(bytes32 self, uint16 index) internal pure returns (bool) {
         uint256 val;
-        assembly {
+        assembly ("memory-safe") {
             val := shr(sub(255, index), and(self, shl(sub(255, index), 1)))
         }
         return val == 1;
@@ -152,7 +152,7 @@ library MerkleProofLibrary {
         for (uint256 i = 0; i < proofHeight; i++) {
             if (bitSet(bitmap, uint16(i))) {
                 proofIdx += 32;
-                assembly {
+                assembly ("memory-safe") {
                     el := mload(add(auditPath, proofIdx))
                 }
             } else {

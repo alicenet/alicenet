@@ -23,7 +23,7 @@ library BaseParserLibrary {
             revert BaseParserLibraryErrors.OffsetOutOfBounds(offset + 4, src.length);
         }
 
-        assembly {
+        assembly ("memory-safe") {
             val := shr(sub(256, 32), mload(add(add(src, 0x20), offset)))
             val := or(
                 or(
@@ -49,7 +49,7 @@ library BaseParserLibrary {
             revert BaseParserLibraryErrors.LEUint16OffsetOutOfBounds(offset + 2, src.length);
         }
 
-        assembly {
+        assembly ("memory-safe") {
             val := shr(sub(256, 16), mload(add(add(src, 0x20), offset)))
             val := or(shr(8, and(val, 0xff00)), shl(8, and(val, 0x00ff)))
         }
@@ -72,7 +72,7 @@ library BaseParserLibrary {
             revert BaseParserLibraryErrors.BEUint16OffsetOutOfBounds(offset + 2, src.length);
         }
 
-        assembly {
+        assembly ("memory-safe") {
             val := and(shr(sub(256, 16), mload(add(add(src, 0x20), offset))), 0xffff)
         }
     }
@@ -92,7 +92,7 @@ library BaseParserLibrary {
         }
 
         uint256 val;
-        assembly {
+        assembly ("memory-safe") {
             val := shr(sub(256, 8), mload(add(add(src, 0x20), offset)))
             val := and(val, 0x01)
         }
@@ -113,7 +113,7 @@ library BaseParserLibrary {
             revert BaseParserLibraryErrors.LEUint256OffsetOutOfBounds(offset + 32, src.length);
         }
 
-        assembly {
+        assembly ("memory-safe") {
             val := mload(add(add(src, 0x20), offset))
         }
     }
@@ -145,7 +145,7 @@ library BaseParserLibrary {
         uint32 val6 = 0;
         uint32 val7 = 0;
 
-        assembly {
+        assembly ("memory-safe") {
             srcDataPointer := mload(add(add(src, 0x20), offset))
             val0 := and(srcDataPointer, 0xffffffff)
             val1 := and(shr(32, srcDataPointer), 0xffffffff)
@@ -250,7 +250,7 @@ library BaseParserLibrary {
     function copy(uint256 src, uint256 dest, uint256 len) internal pure {
         // Copy word-length chunks while possible
         for (; len >= _WORD_SIZE; len -= _WORD_SIZE) {
-            assembly {
+            assembly ("memory-safe") {
                 mstore(dest, mload(src))
             }
             dest += _WORD_SIZE;
@@ -262,7 +262,7 @@ library BaseParserLibrary {
         }
         // Copy remaining bytes
         uint256 mask = 256 ** (_WORD_SIZE - len) - 1;
-        assembly {
+        assembly ("memory-safe") {
             let srcpart := and(mload(src), not(mask))
             let destpart := and(mload(dest), mask)
             mstore(dest, or(destpart, srcpart))
@@ -273,7 +273,7 @@ library BaseParserLibrary {
     /// @param bts the bytes array to get a pointer from
     /// @return addr the pointer to the `bts` bytes array
     function dataPtr(bytes memory bts) internal pure returns (uint256 addr) {
-        assembly {
+        assembly ("memory-safe") {
             addr := add(bts, _BYTES_HEADER_SIZE)
         }
     }
@@ -303,7 +303,7 @@ library BaseParserLibrary {
         out = new bytes(howManyBytes);
         uint256 start;
 
-        assembly {
+        assembly ("memory-safe") {
             start := add(add(src, offset), _BYTES_HEADER_SIZE)
         }
 
@@ -324,7 +324,7 @@ library BaseParserLibrary {
             revert BaseParserLibraryErrors.Bytes32OffsetOutOfBounds(offset + 32, src.length);
         }
 
-        assembly {
+        assembly ("memory-safe") {
             out := mload(add(add(src, _BYTES_HEADER_SIZE), offset))
         }
     }

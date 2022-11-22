@@ -165,8 +165,7 @@ library CryptoLibrary {
         //  *) y-coordinate of point Q
 
         bool success;
-        assembly {
-            // solium-disable-line
+        assembly ("memory-safe") {
             // 0x06     id of precompiled bn256Add contract
             // 0        number of ether to transfer
             // 128      size of call parameters, i.e. 128 bytes total
@@ -189,8 +188,7 @@ library CryptoLibrary {
         //  *) scalar x
 
         bool success;
-        assembly {
-            // solium-disable-line
+        assembly ("memory-safe") {
             // 0x07     id of precompiled bn256ScalarMul contract
             // 0        number of ether to transfer
             // 96       size of call parameters, i.e. 96 bytes total (256 bit for x, 256 bit for y, 256 bit for scalar)
@@ -205,8 +203,7 @@ library CryptoLibrary {
     function bn128CheckPairing(uint256[12] memory input) internal view returns (bool) {
         uint256[1] memory result;
         bool success;
-        assembly {
-            // solium-disable-line
+        assembly ("memory-safe") {
             // 0x08     id of precompiled bn256Pairing contract     (checking the elliptic curve pairings)
             // 0        number of ether to transfer
             // 384       size of call parameters, i.e. 12*256 bits == 384 bytes
@@ -228,8 +225,7 @@ library CryptoLibrary {
     // and slightly modified
     function expmod(uint256 base, uint256 e, uint256 m) internal view returns (uint256 result) {
         bool success;
-        assembly {
-            // solium-disable-line
+        assembly ("memory-safe") {
             // define pointer
             let p := mload(0x40)
             // store data assembly-favouring ways
@@ -369,11 +365,24 @@ library CryptoLibrary {
     /// HashToG1 takes byte slice message and outputs an element of G1. Optimized version of `hashToG1`
     /// written in EVM assembly.
     function hashToG1ASM(bytes memory message) internal view returns (uint256[2] memory h) {
-        assembly {
+        assembly ("memory-safe") {
+            function revertASM(str, len) {
+                let ptr := mload(0x40)
+                let startPtr := ptr
+                mstore(ptr, hex"08c379a0") // keccak256('Error(string)')[0:4]
+                ptr := add(ptr, 0x4)
+                mstore(ptr, 0x20)
+                ptr := add(ptr, 0x20)
+                mstore(ptr, len) // string length
+                ptr := add(ptr, 0x20)
+                mstore(ptr, str)
+                ptr := add(ptr, 0x20)
+                revert(startPtr, sub(ptr, startPtr))
+            }
+
             function memCopy(dest, src, len) {
                 if lt(len, 32) {
-                    mstore(0, "invalid len")
-                    revert(0, 32)
+                    revertASM("invalid length", 18)
                 }
                 // Copy word-length chunks while possible
                 for {
@@ -404,7 +413,7 @@ library CryptoLibrary {
                 memCopy(ptr, paramPtr, 0xb0)
                 let success := staticcall(gas(), 0x08, ptr, 384, ptr, 32)
                 if iszero(success) {
-                    revert(0, 0)
+                    revertASM("invalid bn128 pairing", 21)
                 }
                 result := mload(ptr)
             }
@@ -426,8 +435,7 @@ library CryptoLibrary {
                 mstore(add(ptr, 0x60), alpha)
                 mstore(add(ptr, 0x80), P_MINUS2)
                 if iszero(staticcall(gas(), 0x05, ptr, 0xc0, fp, 0x20)) {
-                    mstore(0, "exp mod failed at 1")
-                    revert(0, 0x20)
+                    revertASM("exp mod failed at 1", 19)
                 }
                 alpha := mload(fp)
 
@@ -445,8 +453,7 @@ library CryptoLibrary {
                 mstore(add(ptr, 0x80), P_PLUS1_OVER4)
                 mstore(add(ptr, 0x60), x_three)
                 if iszero(staticcall(gas(), 0x05, ptr, 0xc0, fp, 0x20)) {
-                    mstore(0, "exp mod failed at 2")
-                    revert(0, 0x20)
+                    revertASM("exp mod failed at 2", 19)
                 }
 
                 let ymul := 1
@@ -467,8 +474,7 @@ library CryptoLibrary {
                 x_three := addmod(x_three, 3, FIELD_MODULUS)
                 mstore(add(ptr, 0x60), x_three)
                 if iszero(staticcall(gas(), 0x05, ptr, 0xc0, fp, 0x20)) {
-                    mstore(0, "exp mod failed at 3")
-                    revert(0, 0x20)
+                    revertASM("exp mod failed at 3", 19)
                 }
                 y := mulmod(mload(fp), ymul, FIELD_MODULUS)
                 y_two := mulmod(y, y, FIELD_MODULUS)
@@ -489,8 +495,7 @@ library CryptoLibrary {
                 x_three := addmod(x_three, 3, FIELD_MODULUS)
                 mstore(add(ptr, 0x60), x_three)
                 if iszero(staticcall(gas(), 0x05, ptr, 0xc0, fp, 0x20)) {
-                    mstore(0, "exp mod failed at 4")
-                    revert(0, 0x20)
+                    revertASM("exp mod failed at 4", 19)
                 }
                 y := mulmod(mload(fp), ymul, FIELD_MODULUS)
                 mstore(output, x)
@@ -519,35 +524,30 @@ library CryptoLibrary {
                 let y1 := mload(add(output, 0x20))
                 let success := bn128IsOnCurve(x1, y1)
                 if iszero(success) {
-                    mstore(0, "x1 y1 not in curve")
-                    revert(0, 0x20)
+                    revertASM("x1 y1 not in curve", 18)
                 }
                 baseToG1(ptr, h2, output)
                 let x2 := mload(output)
                 let y2 := mload(add(output, 0x20))
                 success := bn128IsOnCurve(x2, y2)
                 if iszero(success) {
-                    mstore(0, "x2 y2 not in curve")
-                    revert(0, 0x20)
+                    revertASM("x2 y2 not in curve", 18)
                 }
                 mstore(ptr, x1)
                 mstore(add(ptr, 0x20), y1)
                 mstore(add(ptr, 0x40), x2)
                 mstore(add(ptr, 0x60), y2)
                 if iszero(staticcall(gas(), 0x06, ptr, 128, ptr, 64)) {
-                    mstore(0, "bn256 add failed")
-                    revert(0, 0x20)
+                    revertASM("bn256 add failed", 16)
                 }
                 let x := mload(ptr)
                 let y := mload(add(ptr, 0x20))
                 success := bn128IsOnCurve(x, y)
                 if iszero(success) {
-                    mstore(0, "x2 y2 not in curve")
-                    revert(0, 0x20)
+                    revertASM("x y not in curve", 16)
                 }
                 if or(iszero(x), eq(y, 1)) {
-                    mstore(0, "point not safe to sign")
-                    revert(0, 0x20)
+                    revertASM("point not safe to sign", 22)
                 }
                 mstore(output, x)
                 mstore(add(output, 0x20), y)

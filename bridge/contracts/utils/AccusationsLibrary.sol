@@ -24,7 +24,7 @@ library AccusationsLibrary {
         bytes32 s;
         uint8 v;
 
-        assembly {
+        assembly ("memory-safe") {
             r := mload(add(signature, 32))
             s := mload(add(signature, 64))
             v := byte(0, mload(add(signature, 96)))
