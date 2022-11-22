@@ -146,7 +146,7 @@ abstract contract BridgePoolFactoryBaseERC777Mock is ImmutableFactory {
             implementationSize := extcodesize(implementation)
         }
         if (implementationSize == 0) {
-            revert BridgePoolFactoryErrors.PoolVersionNotSupported(poolVersion_);
+            revert BridgePoolFactoryErrors.PoolLogicNotSupported();
         }
         address contractAddr = _deployStaticPool(bridgePoolSalt);
         IBridgePool(contractAddr).initialize(ercContract_);

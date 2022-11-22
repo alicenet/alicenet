@@ -8,22 +8,13 @@ import "contracts/utils/BridgePoolAddressUtil.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 
 abstract contract BridgePoolFactoryBase is ImmutableFactory {
-    enum TokenType {
-        ERC20,
-        ERC721,
-        ERC1155
-    }
-    enum PoolType {
-        NATIVE,
-        EXTERNAL
-    }
     //chainid of layer 1 chain, 1 for ether mainnet
     uint256 internal immutable _chainID;
     bool public publicPoolDeploymentEnabled;
     address internal _implementation;
     mapping(bytes => address) internal _logicAddresses;
     //mapping of native and external pools to mapping of pool types to most recent version of logic
-    mapping(PoolType => mapping(TokenType => uint16)) internal _logicVersionsDeployed;
+    mapping(uint8 => mapping(uint8 => uint16)) internal _logicVersionsDeployed;
     //existing pools
     mapping(address => bool) public poolExists;
     event BridgePoolCreated(address poolAddress, address token);
@@ -57,19 +48,17 @@ abstract contract BridgePoolFactoryBase is ImmutableFactory {
 
     /**
      * @notice returns the most recent version of the pool logic
-     * @param chainId_ native chainID of the token ie 1 for ethereum erc20
+     * @param poolType_ type of pool ie 0 for native, 1 for external
      * @param tokenType_ type of token 0 for ERC20 1 for ERC721 and 2 for ERC1155
      */
-    function getLatestPoolLogicVersion(uint256 chainId_, uint8 tokenType_)
+    function getLatestPoolLogicVersion(uint8 poolType_, uint8 tokenType_)
         public
         view
-        returns (uint16)
+        returns (uint16 version)
     {
-        if (chainId_ != _chainID) {
-            return _logicVersionsDeployed[PoolType.EXTERNAL][TokenType(tokenType_)];
-        } else {
-            return _logicVersionsDeployed[PoolType.NATIVE][TokenType(tokenType_)];
-        }
+        version = _logicVersionsDeployed[poolType_][tokenType_];
+        if (version == 0)
+            revert BridgePoolFactoryErrors.LogicVersionDoesNotExist(poolType_, tokenType_);
     }
 
     function _deployPoolLogic(
@@ -94,6 +83,7 @@ abstract contract BridgePoolFactoryBase is ImmutableFactory {
         if (codeSize == 0) {
             revert BridgePoolFactoryErrors.FailedToDeployLogic();
         }
+        _logicVersionsDeployed[poolType_][tokenType_] += 1;
         //record the depolyed logic address in the mapping
         _logicAddresses[_getImplementationAddressKey(poolType_, tokenType_, poolVersion_)] = addr;
     }
