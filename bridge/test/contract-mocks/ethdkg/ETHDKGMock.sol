@@ -6,11 +6,13 @@ import "contracts/utils/AtomicCounter.sol";
 import "contracts/interfaces/IValidatorPool.sol";
 import "contracts/interfaces/IETHDKG.sol";
 import "contracts/interfaces/IETHDKGEvents.sol";
-import "contracts/interfaces/IProxy.sol";
 import "contracts/libraries/ethdkg/ETHDKGStorage.sol";
 import "contracts/utils/ETHDKGUtils.sol";
-import "contracts/utils/ImmutableAuth.sol";
+import "contracts/utils/auth/ImmutableFactory.sol";
+import "contracts/utils/auth/ImmutableETHDKGAccusations.sol";
+import "contracts/utils/auth/ImmutableETHDKGPhases.sol";
 import "contracts/libraries/errors/ETHDKGErrors.sol";
+import "contracts/libraries/proxy/ProxyImplementationGetter.sol";
 
 contract ETHDKGMock is
     ETHDKGStorage,
@@ -18,7 +20,8 @@ contract ETHDKGMock is
     ETHDKGUtils,
     ImmutableETHDKGAccusations,
     ImmutableETHDKGPhases,
-    IETHDKGEvents
+    IETHDKGEvents,
+    ProxyImplementationGetter
 {
     address internal immutable _ethdkgAccusations;
     address internal immutable _ethdkgPhases;
@@ -32,7 +35,7 @@ contract ETHDKGMock is
 
     constructor() ETHDKGStorage() ImmutableETHDKGAccusations() ImmutableETHDKGPhases() {
         // bytes32("ETHDKGPhases") = 0x455448444b475068617365730000000000000000000000000000000000000000;
-        address ethdkgPhases = IProxy(_ethdkgPhasesAddress()).getImplementationAddress();
+        address ethdkgPhases = __getProxyImplementation(_ethdkgPhasesAddress());
         assembly {
             if iszero(extcodesize(ethdkgPhases)) {
                 mstore(0x00, "ethdkgPhases size 0")
@@ -41,7 +44,7 @@ contract ETHDKGMock is
         }
         _ethdkgPhases = ethdkgPhases;
         // bytes32("ETHDKGAccusations") = 0x455448444b4741636375736174696f6e73000000000000000000000000000000;
-        address ethdkgAccusations = IProxy(_ethdkgAccusationsAddress()).getImplementationAddress();
+        address ethdkgAccusations = __getProxyImplementation(_ethdkgAccusationsAddress());
         assembly {
             if iszero(extcodesize(ethdkgAccusations)) {
                 mstore(0x00, "ethdkgAccusations size 0")
@@ -68,10 +71,10 @@ contract ETHDKGMock is
         _confirmationLength = uint16(confirmationLength_);
     }
 
-    function reinitialize(uint256 phaseLength_, uint256 confirmationLength_)
-        public
-        reinitializer(2)
-    {
+    function reinitialize(
+        uint256 phaseLength_,
+        uint256 confirmationLength_
+    ) public reinitializer(2) {
         _phaseLength = uint16(phaseLength_);
         _confirmationLength = uint16(confirmationLength_);
     }
@@ -119,10 +122,10 @@ contract ETHDKGMock is
         );
     }
 
-    function distributeShares(uint256[] memory encryptedShares, uint256[2][] memory commitments)
-        public
-        onlyValidator
-    {
+    function distributeShares(
+        uint256[] memory encryptedShares,
+        uint256[2][] memory commitments
+    ) public onlyValidator {
         _callPhaseContract(
             abi.encodeWithSignature(
                 "distributeShares(uint256[],uint256[2][])",
@@ -274,19 +277,15 @@ contract ETHDKGMock is
         return _badParticipants;
     }
 
-    function getParticipantInternalState(address participant)
-        public
-        view
-        returns (Participant memory)
-    {
+    function getParticipantInternalState(
+        address participant
+    ) public view returns (Participant memory) {
         return _participants[participant];
     }
 
-    function getParticipantsInternalState(address[] calldata participantAddresses)
-        public
-        view
-        returns (Participant[] memory)
-    {
+    function getParticipantsInternalState(
+        address[] calldata participantAddresses
+    ) public view returns (Participant[] memory) {
         Participant[] memory participants = new Participant[](participantAddresses.length);
 
         for (uint256 i = 0; i < participantAddresses.length; i++) {

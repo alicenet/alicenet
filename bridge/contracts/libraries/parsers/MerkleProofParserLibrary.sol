@@ -27,11 +27,9 @@ library MerkleProofParserLibrary {
     /// @param src Binary state containing a MerkleProof serialized struct
     /// @return mProof a MerkleProof struct
     /// @dev Execution cost: ~4000-51000 gas for a 10-256 height proof respectively
-    function extractMerkleProof(bytes memory src)
-        internal
-        pure
-        returns (MerkleProof memory mProof)
-    {
+    function extractMerkleProof(
+        bytes memory src
+    ) internal pure returns (MerkleProof memory mProof) {
         if (src.length < _MERKLE_PROOF_SIZE) {
             revert MerkleProofParserLibraryErrors.InvalidProofMinimumSize(src.length);
         }

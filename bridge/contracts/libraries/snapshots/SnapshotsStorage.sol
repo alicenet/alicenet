@@ -3,7 +3,10 @@ pragma solidity ^0.8.16;
 
 import "contracts/interfaces/IValidatorPool.sol";
 import "contracts/interfaces/IETHDKG.sol";
-import "contracts/utils/ImmutableAuth.sol";
+import "contracts/utils/auth/ImmutableFactory.sol";
+import "contracts/utils/auth/ImmutableETHDKG.sol";
+import "contracts/utils/auth/ImmutableValidatorPool.sol";
+import "contracts/utils/auth/ImmutableDynamics.sol";
 import "contracts/libraries/snapshots/SnapshotRingBuffer.sol";
 
 abstract contract SnapshotsStorage is
@@ -34,12 +37,10 @@ abstract contract SnapshotsStorage is
     //new snapshot ring buffer
     SnapshotBuffer internal _snapshots;
 
-    constructor(uint256 chainId_, uint256 epochLength_)
-        ImmutableFactory(msg.sender)
-        ImmutableETHDKG()
-        ImmutableValidatorPool()
-        ImmutableDynamics()
-    {
+    constructor(
+        uint256 chainId_,
+        uint256 epochLength_
+    ) ImmutableFactory(msg.sender) ImmutableETHDKG() ImmutableValidatorPool() ImmutableDynamics() {
         _chainId = chainId_;
         _epochLength = epochLength_;
     }

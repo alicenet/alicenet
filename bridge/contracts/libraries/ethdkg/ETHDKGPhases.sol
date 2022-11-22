@@ -70,9 +70,10 @@ contract ETHDKGPhases is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
         }
     }
 
-    function distributeShares(uint256[] memory encryptedShares, uint256[2][] memory commitments)
-        external
-    {
+    function distributeShares(
+        uint256[] memory encryptedShares,
+        uint256[2][] memory commitments
+    ) external {
         if (
             _ethdkgPhase != Phase.ShareDistribution ||
             block.number < _phaseStartBlock ||

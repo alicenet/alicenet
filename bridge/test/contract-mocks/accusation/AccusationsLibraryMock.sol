@@ -11,11 +11,10 @@ contract AccusationsLibraryMock {
         return AccusationsLibrary.recoverSigner(signature, prefix, message);
     }
 
-    function recoverMadNetSigner(bytes memory signature, bytes memory message)
-        public
-        pure
-        returns (address)
-    {
+    function recoverMadNetSigner(
+        bytes memory signature,
+        bytes memory message
+    ) public pure returns (address) {
         return AccusationsLibrary.recoverMadNetSigner(signature, message);
     }
 

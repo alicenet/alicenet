@@ -2,7 +2,10 @@
 pragma solidity ^0.8.16;
 
 import "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
-import "contracts/utils/ImmutableAuth.sol";
+import "contracts/utils/auth/ImmutableFactory.sol";
+import "contracts/utils/auth/ImmutableAToken.sol";
+import "contracts/utils/auth/ImmutablePublicStaking.sol";
+import "contracts/utils/auth/ImmutableFoundation.sol";
 import "contracts/utils/EthSafeTransfer.sol";
 import "contracts/utils/ERC20SafeTransfer.sol";
 import "contracts/utils/MagicEthTransfer.sol";
@@ -124,11 +127,10 @@ contract BonusPool is
     /// @param userShares_ The amount of shares that a user locked-up.
     /// @return bonusRewardEth the estimated amount ether profits for a user
     /// @return bonusRewardToken the estimated amount ALCA profits for a user
-    function estimateBonusAmountWithReward(uint256 currentSharesLocked_, uint256 userShares_)
-        public
-        view
-        returns (uint256 bonusRewardEth, uint256 bonusRewardToken)
-    {
+    function estimateBonusAmountWithReward(
+        uint256 currentSharesLocked_,
+        uint256 userShares_
+    ) public view returns (uint256 bonusRewardEth, uint256 bonusRewardToken) {
         if (_tokenID == 0) {
             return (0, 0);
         }

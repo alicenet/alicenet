@@ -9,7 +9,10 @@ import "contracts/libraries/parsers/RCertParserLibrary.sol";
 import "contracts/libraries/parsers/MerkleProofParserLibrary.sol";
 import "contracts/libraries/parsers/TXInPreImageParserLibrary.sol";
 import "contracts/libraries/math/CryptoLibrary.sol";
-import "contracts/utils/ImmutableAuth.sol";
+import "contracts/utils/auth/ImmutableFactory.sol";
+import "contracts/utils/auth/ImmutableSnapshots.sol";
+import "contracts/utils/auth/ImmutableETHDKG.sol";
+import "contracts/utils/auth/ImmutableValidatorPool.sol";
 import "contracts/utils/AccusationsLibrary.sol";
 import "contracts/libraries/errors/AccusationsErrors.sol";
 
@@ -142,10 +145,10 @@ contract InvalidTxConsumptionAccusation is
     /// @notice This function verifies the signature group of a BClaims.
     /// @param _bClaims the BClaims of the accusation
     /// @param _bClaimsSigGroup the signature group of Pclaims
-    function _verifySignatureGroup(bytes memory _bClaims, bytes memory _bClaimsSigGroup)
-        internal
-        view
-    {
+    function _verifySignatureGroup(
+        bytes memory _bClaims,
+        bytes memory _bClaimsSigGroup
+    ) internal view {
         uint256[4] memory publicKey;
         uint256[2] memory signature;
         (publicKey, signature) = RCertParserLibrary.extractSigGroup(_bClaimsSigGroup, 0);

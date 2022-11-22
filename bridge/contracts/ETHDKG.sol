@@ -8,9 +8,11 @@ import "contracts/interfaces/IETHDKG.sol";
 import "contracts/interfaces/IETHDKGEvents.sol";
 import "contracts/libraries/ethdkg/ETHDKGStorage.sol";
 import "contracts/utils/ETHDKGUtils.sol";
-import "contracts/utils/ImmutableAuth.sol";
+import "contracts/utils/auth/ImmutableFactory.sol";
+import "contracts/utils/auth/ImmutableETHDKGAccusations.sol";
+import "contracts/utils/auth/ImmutableETHDKGPhases.sol";
 import "contracts/libraries/errors/ETHDKGErrors.sol";
-import "contracts/interfaces/IProxy.sol";
+import "contracts/libraries/proxy/ProxyImplementationGetter.sol";
 
 /// @custom:salt ETHDKG
 /// @custom:deploy-type deployUpgradeable
@@ -22,7 +24,8 @@ contract ETHDKG is
     IETHDKGEvents,
     ETHDKGUtils,
     ImmutableETHDKGAccusations,
-    ImmutableETHDKGPhases
+    ImmutableETHDKGPhases,
+    ProxyImplementationGetter
 {
     modifier onlyValidator() {
         if (!IValidatorPool(_validatorPoolAddress()).isValidator(msg.sender)) {

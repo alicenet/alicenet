@@ -3,7 +3,8 @@ pragma solidity ^0.8.16;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "contracts/interfaces/ISnapshots.sol";
-import "contracts/utils/ImmutableAuth.sol";
+import "contracts/utils/auth/ImmutableFactory.sol";
+import "contracts/utils/auth/ImmutableSnapshots.sol";
 import "contracts/libraries/dynamics/DoublyLinkedList.sol";
 import "contracts/libraries/errors/DynamicsErrors.sol";
 import "contracts/interfaces/IDynamics.sol";
@@ -46,10 +47,10 @@ contract Dynamics is Initializable, IDynamics, ImmutableSnapshots {
     /// @param relativeExecutionEpoch the relative execution epoch in which the new
     /// changes will become active.
     /// @param newValue DynamicValue struct with the new values.
-    function changeDynamicValues(uint32 relativeExecutionEpoch, DynamicValues memory newValue)
-        public
-        onlyFactory
-    {
+    function changeDynamicValues(
+        uint32 relativeExecutionEpoch,
+        DynamicValues memory newValue
+    ) public onlyFactory {
         _changeDynamicValues(relativeExecutionEpoch, newValue);
     }
 
@@ -224,9 +225,10 @@ contract Dynamics is Initializable, IDynamics, ImmutableSnapshots {
     // @param relativeExecutionEpoch the relative execution epoch in which the new
     // changes will become active.
     // @param newValue DynamicValue struct with the new values.
-    function _changeDynamicValues(uint32 relativeExecutionEpoch, DynamicValues memory newValue)
-        internal
-    {
+    function _changeDynamicValues(
+        uint32 relativeExecutionEpoch,
+        DynamicValues memory newValue
+    ) internal {
         _addNode(_computeExecutionEpoch(relativeExecutionEpoch), newValue);
     }
 
@@ -270,11 +272,9 @@ contract Dynamics is Initializable, IDynamics, ImmutableSnapshots {
     // Internal function to decode a dynamic value struct from a storage contract.
     // @param addr the address of the storage contract.
     // @return the decoded Dynamic value struct.
-    function _decodeDynamicValues(address addr)
-        internal
-        view
-        returns (DynamicValues memory values)
-    {
+    function _decodeDynamicValues(
+        address addr
+    ) internal view returns (DynamicValues memory values) {
         uint256 ptr;
         uint256 retPtr;
         uint8[8] memory sizes = [8, 24, 32, 32, 32, 64, 64, 128];
@@ -303,11 +303,9 @@ contract Dynamics is Initializable, IDynamics, ImmutableSnapshots {
     // Internal function to encode a dynamic value struct in a bytes array.
     // @param newValue the dynamic struct to be encoded.
     // @return the encoded Dynamic value struct.
-    function _encodeDynamicValues(DynamicValues memory newValue)
-        internal
-        pure
-        returns (bytes memory)
-    {
+    function _encodeDynamicValues(
+        DynamicValues memory newValue
+    ) internal pure returns (bytes memory) {
         bytes memory data = abi.encodePacked(
             newValue.encoderVersion,
             newValue.proposalTimeout,

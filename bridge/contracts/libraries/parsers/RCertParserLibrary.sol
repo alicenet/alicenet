@@ -29,11 +29,10 @@ library RCertParserLibrary {
     /// @return publicKey the public keys
     /// @return signature the signature
     /// @dev Execution cost: 1645 gas.
-    function extractSigGroup(bytes memory src, uint256 dataOffset)
-        internal
-        pure
-        returns (uint256[4] memory publicKey, uint256[2] memory signature)
-    {
+    function extractSigGroup(
+        bytes memory src,
+        uint256 dataOffset
+    ) internal pure returns (uint256[4] memory publicKey, uint256[2] memory signature) {
         if (dataOffset + RCertParserLibrary._SIG_GROUP_SIZE <= dataOffset) {
             revert GenericParserLibraryErrors.DataOffsetOverflow();
         }
@@ -76,11 +75,10 @@ library RCertParserLibrary {
     /// @param dataOffset offset to start reading the RCert state from inside src
     /// @return rCert the RCert struct
     /// @dev Execution cost: 3691 gas
-    function extractInnerRCert(bytes memory src, uint256 dataOffset)
-        internal
-        pure
-        returns (RCert memory rCert)
-    {
+    function extractInnerRCert(
+        bytes memory src,
+        uint256 dataOffset
+    ) internal pure returns (RCert memory rCert) {
         if (dataOffset + _RCERT_SIZE <= dataOffset) {
             revert GenericParserLibraryErrors.DataOffsetOverflow();
         }

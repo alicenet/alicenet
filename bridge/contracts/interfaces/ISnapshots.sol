@@ -26,13 +26,15 @@ interface ISnapshots {
 
     function setMinimumIntervalBetweenSnapshots(uint32 minimumIntervalBetweenSnapshots_) external;
 
-    function snapshot(bytes calldata signatureGroup_, bytes calldata bClaims_)
-        external
-        returns (bool);
+    function snapshot(
+        bytes calldata signatureGroup_,
+        bytes calldata bClaims_
+    ) external returns (bool);
 
-    function migrateSnapshots(bytes[] memory groupSignature_, bytes[] memory bClaims_)
-        external
-        returns (bool);
+    function migrateSnapshots(
+        bytes[] memory groupSignature_,
+        bytes[] memory bClaims_
+    ) external returns (bool);
 
     function getSnapshotDesperationDelay() external view returns (uint256);
 
@@ -50,10 +52,9 @@ interface ISnapshots {
 
     function getChainIdFromLatestSnapshot() external view returns (uint256);
 
-    function getBlockClaimsFromSnapshot(uint256 epoch_)
-        external
-        view
-        returns (BClaimsParserLibrary.BClaims memory);
+    function getBlockClaimsFromSnapshot(
+        uint256 epoch_
+    ) external view returns (BClaimsParserLibrary.BClaims memory);
 
     function getBlockClaimsFromLatestSnapshot()
         external
@@ -74,10 +75,10 @@ interface ISnapshots {
 
     function getEpochFromHeight(uint256 height) external view returns (uint256);
 
-    function checkBClaimsSignature(bytes calldata groupSignature_, bytes calldata bClaims_)
-        external
-        view
-        returns (bool);
+    function checkBClaimsSignature(
+        bytes calldata groupSignature_,
+        bytes calldata bClaims_
+    ) external view returns (bool);
 
     function isValidatorElectedToPerformSnapshot(
         address validator,

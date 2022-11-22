@@ -8,7 +8,6 @@ import "contracts/libraries/errors/LockupErrors.sol";
 import "contracts/BonusPool.sol";
 import "contracts/utils/EthSafeTransfer.sol";
 import "contracts/utils/ERC20SafeTransfer.sol";
-import "contracts/utils/ImmutableAuth.sol";
 
 /**
  * @notice RewardPool holds all ether and ALCA that is part of reserved amount
@@ -22,11 +21,7 @@ contract RewardPool is AccessControlled, EthSafeTransfer, ERC20SafeTransfer {
     uint256 internal _ethReserve;
     uint256 internal _tokenReserve;
 
-    constructor(
-        address alca_,
-        address aliceNetFactory_,
-        uint256 totalBonusAmount_
-    ) {
+    constructor(address alca_, address aliceNetFactory_, uint256 totalBonusAmount_) {
         _bonusPool = address(
             new BonusPool(aliceNetFactory_, msg.sender, address(this), totalBonusAmount_)
         );
@@ -100,22 +95,20 @@ contract RewardPool is AccessControlled, EthSafeTransfer, ERC20SafeTransfer {
     /// @param userShares_ the user's shares
     /// @return proportionalEth The ether that a user will receive at the end of the lockup period
     /// @return proportionalTokens The ALCA that a user will receive at the end of the lockup period
-    function estimateRewards(uint256 totalShares_, uint256 userShares_)
-        public
-        view
-        returns (uint256 proportionalEth, uint256 proportionalTokens)
-    {
+    function estimateRewards(
+        uint256 totalShares_,
+        uint256 userShares_
+    ) public view returns (uint256 proportionalEth, uint256 proportionalTokens) {
         if (totalShares_ == 0 || userShares_ > totalShares_) {
             revert LockupErrors.InvalidTotalSharesValue();
         }
         return _computeProportions(totalShares_, userShares_);
     }
 
-    function _computeProportions(uint256 totalShares_, uint256 userShares_)
-        internal
-        view
-        returns (uint256 proportionalEth, uint256 proportionalTokens)
-    {
+    function _computeProportions(
+        uint256 totalShares_,
+        uint256 userShares_
+    ) internal view returns (uint256 proportionalEth, uint256 proportionalTokens) {
         proportionalEth = (_ethReserve * userShares_) / totalShares_;
         proportionalTokens = (_tokenReserve * userShares_) / totalShares_;
     }

@@ -8,7 +8,8 @@ import "contracts/utils/Admin.sol";
 import "contracts/utils/Mutex.sol";
 import "contracts/utils/MagicEthTransfer.sol";
 import "contracts/utils/EthSafeTransfer.sol";
-import "contracts/utils/ImmutableAuth.sol";
+import "contracts/utils/auth/ImmutableFactory.sol";
+import "contracts/utils/auth/ImmutableDistribution.sol";
 import "contracts/interfaces/IUtilityToken.sol";
 import "contracts/libraries/errors/UtilityTokenErrors.sol";
 import "contracts/libraries/math/Sigmoid.sol";
@@ -48,7 +49,9 @@ contract BToken is
     // mapping to store allowed account types
     mapping(uint8 => bool) internal _accountTypes;
 
-    /// @notice Event emitted when a deposit is received
+    /**
+     * @notice Event emitted when a deposit is received
+     */
     event DepositReceived(
         uint256 indexed depositID,
         uint8 indexed accountType,
@@ -72,25 +75,32 @@ contract BToken is
     }
 
     /**
-     * @notice function to allow factory to add new account types supported by AliceNet
+     * @notice function to allow factory to add/set the allowed account types supported by AliceNet
+     * blockchain.
      * @param accountType_ uint8 account type id to be added
+     * @param allowed_ bool if a type should be enabled/disabled
      */
-    function addAccountType(uint8 accountType_) public onlyFactory {
-        _accountTypes[accountType_] = true;
+    function setAccountType(uint8 accountType_, bool allowed_) public onlyFactory {
+        _accountTypes[accountType_] = allowed_;
     }
 
-    /// Distributes the yields of the BToken sale to all stakeholders
+    /**
+     * @notice Distributes the yields of the BToken sale to all stakeholders
+     * @return true if the method succeeded
+     * */
     function distribute() public returns (bool) {
         return _distribute();
     }
 
-    /// Deposits a BToken amount into the AliceNet blockchain. The BTokens amount is
-    /// deducted from the sender and it is burned by this contract. The created
-    /// deposit Id is owned by the `to_` address.
-    /// @param accountType_ The type of account the to_ address must be equivalent with ( 1 for Eth native, 2 for BN )
-    /// @param to_ The address of the account that will own the deposit
-    /// @param amount_ The amount of BTokens to be deposited
-    /// Return The deposit ID of the deposit created
+    /**
+     * @notice Deposits a BToken amount into the AliceNet blockchain. The BTokens amount is deducted
+     * from the sender and it is burned by this contract. The created deposit Id is owned by the
+     * `to_` address.
+     * @param accountType_ The type of account the to_ address must be equivalent with ( 1 for Eth native, 2 for BN )
+     * @param to_ The address of the account that will own the deposit
+     * @param amount_ The amount of BTokens to be deposited
+     * @return The deposit ID of the deposit created
+     */
     function deposit(
         uint8 accountType_,
         address to_,
@@ -99,13 +109,15 @@ contract BToken is
         return _deposit(accountType_, to_, amount_);
     }
 
-    /// Allows deposits to be minted in a virtual manner and sent to the AliceNet
-    /// chain by simply emitting a Deposit event without actually minting or
-    /// burning any tokens, must only be called by _admin.
-    /// @param accountType_ The type of account the to_ address must be equivalent with ( 1 for Eth native, 2 for BN )
-    /// @param to_ The address of the account that will own the deposit
-    /// @param amount_ The amount of BTokens to be deposited
-    /// Return The deposit ID of the deposit created
+    /**
+     * @notice Allows deposits to be minted in a virtual manner and sent to the AliceNet chain by
+     * simply emitting a Deposit event without actually minting or burning any tokens, must only be
+     * called by _admin.
+     * @param accountType_ The type of account the to_ address must be equivalent with ( 1 for Eth native, 2 for BN )
+     * @param to_ The address of the account that will own the deposit
+     * @param amount_ The amount of BTokens to be deposited
+     * @return The deposit ID of the deposit created
+     */
     function virtualMintDeposit(
         uint8 accountType_,
         address to_,
@@ -114,15 +126,16 @@ contract BToken is
         return _virtualDeposit(accountType_, to_, amount_);
     }
 
-    /// Allows deposits to be minted and sent to the AliceNet chain without actually
-    /// minting or burning any BTokens. This function receives ether and converts
-    /// them directly into BToken and then deposit them into the AliceNet chain. This
-    /// function has the same effect as calling mint (creating the tokens) + deposit
-    /// (burning the tokens) functions but it costs less gas.
-    /// @param accountType_ The type of account the to_ address must be equivalent with ( 1 for Eth native, 2 for BN )
-    /// @param to_ The address of the account that will own the deposit
-    /// @param minBTK_ The amount of BTokens to be deposited
-    /// Return The deposit ID of the deposit created
+    /**
+     * @notice Allows deposits to be minted and sent to the AliceNet chain without actually minting
+     * or burning any BTokens. This function receives ether and converts them directly into BToken
+     * and then deposit them into the AliceNet chain. This function has the same effect as calling
+     * mint (creating the tokens) + deposit (burning the tokens) functions but it costs less gas.
+     * @param accountType_ The type of account the to_ address must be equivalent with ( 1 for Eth native, 2 for BN )
+     * @param to_ The address of the account that will own the deposit
+     * @param minBTK_ The amount of BTokens to be deposited
+     * @return The deposit ID of the deposit created
+     */
     function mintDeposit(
         uint8 accountType_,
         address to_,
@@ -131,48 +144,59 @@ contract BToken is
         return _mintDeposit(accountType_, to_, minBTK_, msg.value);
     }
 
-    /// Mints BToken. This function receives ether in the transaction and
-    /// converts them into BToken using a bonding price curve.
-    /// @param minBTK_ Minimum amount of BToken that you wish to mint given an
-    /// amount of ether. If its not possible to mint the desired amount with the
-    /// current price in the bonding curve, the transaction is reverted. If the
-    /// minBTK_ is met, the whole amount of ether sent will be converted in BToken.
-    /// Return The number of BToken minted
+    /**
+     * @notice Mints BToken. This function receives ether in the transaction and converts them into
+     * BToken using a bonding price curve.
+     * @param minBTK_ Minimum amount of BToken that you wish to mint given an amount of ether. If
+     * its not possible to mint the desired amount with the current price in the bonding curve, the
+     * transaction is reverted. If the minBTK_ is met, the whole amount of ether sent will be
+     * converted in BToken.
+     * @return numBTK the number of BToken minted
+     */
     function mint(uint256 minBTK_) public payable returns (uint256 numBTK) {
         numBTK = _mint(msg.sender, msg.value, minBTK_);
         return numBTK;
     }
 
-    /// Mints BToken. This function receives ether in the transaction and
-    /// converts them into BToken using a bonding price curve.
-    /// @param to_ The account to where the tokens will be minted
-    /// @param minBTK_ Minimum amount of BToken that you wish to mint given an
-    /// amount of ether. If its not possible to mint the desired amount with the
-    /// current price in the bonding curve, the transaction is reverted. If the
-    /// minBTK_ is met, the whole amount of ether sent will be converted in BToken.
-    /// Return The number of BToken minted
+    /**
+     * @notice Mints BToken. This function receives ether in the transaction and converts them into
+     * BToken using a bonding price curve.
+     * @param to_ The account to where the tokens will be minted
+     * @param minBTK_ Minimum amount of BToken that you wish to mint given an
+     * amount of ether. If its not possible to mint the desired amount with the
+     * current price in the bonding curve, the transaction is reverted. If the
+     * minBTK_ is met, the whole amount of ether sent will be converted in BToken.
+     * @return numBTK the number of BToken minted
+     */
     function mintTo(address to_, uint256 minBTK_) public payable returns (uint256 numBTK) {
         numBTK = _mint(to_, msg.value, minBTK_);
         return numBTK;
     }
 
-    /// Burn the tokens without sending ether back to user as the normal burn
-    /// function. The generated ether will be distributed in the distribute method.
+    /**
+     * @notice Burn the tokens without sending ether back to user as the normal burn
+     * function. The generated ether will be distributed in the distribute method. This function can
+     * be used to charge BTokens fees in other systems.
+     * @param numBTK_ the number of BToken to be burned
+     * @return true if the burn succeeded
+     */
     function destroyBTokens(uint256 numBTK_) public returns (bool) {
         _destroyTokens(msg.sender, numBTK_);
         return true;
     }
 
-    /// Deposits arbitrary tokens in the bridge contracts. This function is an entry
-    /// point to deposit tokens (ERC20, ERC721, ERC1155) in the bridges and have
-    /// access to them in the side chain. This function will deduce from the user's
-    /// balance the corresponding amount of fees to deposit the tokens. The user has
-    /// the option to pay the fees in BToken or Ether. If any ether is sent, the
-    /// function will deduce the fee amount and refund any extra amount. If no ether
-    /// is sent, the function will deduce the amount of BToken corresponding to the
-    /// fees directly from the user's balance.
-    /// @param routerVersion_ The bridge version where to deposit the tokens.
-    /// @param data_ Encoded data necessary to deposit the arbitrary tokens in the bridges.
+    /**
+     * @notice Deposits arbitrary tokens in the bridge contracts. This function is an entry
+     * point to deposit tokens (ERC20, ERC721, ERC1155) in the bridges and have
+     * access to them in the side chain. This function will deduce from the user's
+     * balance the corresponding amount of fees to deposit the tokens. The user has
+     * the option to pay the fees in BToken or Ether. If any ether is sent, the
+     * function will deduce the fee amount and refund any extra amount. If no ether
+     * is sent, the function will deduce the amount of BToken corresponding to the
+     * fees directly from the user's balance.
+     * @param routerVersion_ The bridge version where to deposit the tokens.
+     * @param data_ Encoded data necessary to deposit the arbitrary tokens in the bridges.
+     * */
     function depositTokensOnBridges(uint8 routerVersion_, bytes calldata data_) public payable {
         //forward call to router
         uint256 bTokenFee = IBridgeRouter(_centralBridgeRouter).routeDeposit(
@@ -197,27 +221,31 @@ contract BToken is
         _destroyTokens(msg.sender, bTokenFee);
     }
 
-    /// Burn BToken. This function sends ether corresponding to the amount of
-    /// BTokens being burned using a bonding price curve.
-    /// @param amount_ The amount of BToken being burned
-    /// @param minEth_ Minimum amount ether that you expect to receive given the
-    /// amount of BToken being burned. If the amount of BToken being burned
-    /// worth less than this amount the transaction is reverted.
-    /// Return The number of ether being received
+    /**
+     * @notice Burn BToken. This function sends ether corresponding to the amount of BTokens being
+     * burned using a bonding price curve.
+     * @param amount_ The amount of BToken being burned
+     * @param minEth_ Minimum amount ether that you expect to receive given the
+     * amount of BToken being burned. If the amount of BToken being burned
+     * worth less than this amount the transaction is reverted.
+     * @return numEth The number of ether being received
+     * */
     function burn(uint256 amount_, uint256 minEth_) public returns (uint256 numEth) {
         numEth = _burn(msg.sender, msg.sender, amount_, minEth_);
         return numEth;
     }
 
-    /// Burn BTokens and send the ether received to other account. This
-    /// function sends ether corresponding to the amount of BTokens being
-    /// burned using a bonding price curve.
-    /// @param to_ The account to where the ether from the burning will send
-    /// @param amount_ The amount of BTokens being burned
-    /// @param minEth_ Minimum amount ether that you expect to receive given the
-    /// amount of BTokens being burned. If the amount of BTokens being burned
-    /// worth less than this amount the transaction is reverted.
-    /// Return The number of ether being received
+    /**
+     * @notice Burn BTokens and send the ether received to an other account. This
+     * function sends ether corresponding to the amount of BTokens being
+     * burned using a bonding price curve.
+     * @param to_ The account to where the ether from the burning will be send
+     * @param amount_ The amount of BTokens being burned
+     * @param minEth_ Minimum amount ether that you expect to receive given the
+     * amount of BTokens being burned. If the amount of BTokens being burned
+     * worth less than this amount the transaction is reverted.
+     * @return numEth the number of ether being received
+     * */
     function burnTo(
         address to_,
         uint256 amount_,
@@ -227,35 +255,53 @@ contract BToken is
         return numEth;
     }
 
-    /// Gets the address to the central router for the bridge system
+    /**
+     * @notice Gets the address to the central router for the bridge system
+     * @return The address to the central router
+     */
     function getCentralBridgeRouterAddress() public view returns (address) {
         return _centralBridgeRouter;
     }
 
-    /// Gets the latest deposit ID emitted.
+    /**
+     * @notice Gets the amount that can be distributed as profits to the stakeholders contracts.
+     * @return The amount that can be distributed as yield
+     */
     function getYield() public view returns (uint256) {
         return address(this).balance - _poolBalance;
     }
 
-    /// Gets the latest deposit ID emitted.
+    /**
+     * @notice Gets the latest deposit ID emitted.
+     * @return The latest deposit ID emitted
+     */
     function getDepositID() public view returns (uint256) {
         return _depositID;
     }
 
-    /// Gets the pool balance in ether.
+    /**
+     * @notice Gets the pool balance in ether.
+     * @return The pool balance in ether
+     */
     function getPoolBalance() public view returns (uint256) {
         return _poolBalance;
     }
 
-    /// Gets the total amount of BTokens that were deposited in the AliceNet
-    /// blockchain. Since BTokens are burned when deposited, this value will be
-    /// different from the total supply of BTokens.
+    /**
+     * @notice Gets the total amount of BTokens that were deposited in the AliceNet
+     * blockchain. Since BTokens are burned when deposited, this value will be
+     * different from the total supply of BTokens.
+     * @return The total amount of BTokens that were deposited into the AliceNet chain.
+     */
     function getTotalBTokensDeposited() public view returns (uint256) {
         return _totalDeposited;
     }
 
-    /// Gets the deposited amount given a depositID.
-    /// @param depositID The Id of the deposit
+    /**
+     * @notice Gets the deposited amount given a depositID.
+     * @param depositID The Id of the deposit
+     * @return the deposit info given a depositID
+     */
     function getDeposit(uint256 depositID) public view returns (Deposit memory) {
         Deposit memory d = _deposits[depositID];
         if (d.account == address(0)) {
@@ -265,44 +311,63 @@ contract BToken is
         return d;
     }
 
-    /// Compute how many ether will be necessary to mint an amount of BTokens in the
-    /// current state of the contract. Should be used carefully if its being called
-    /// outside an smart contract transaction, as the bonding curve state can change
-    /// before a future transaction is sent.
-    /// @param numBTK_ Amount of BTokens that we want to convert in ether
+    /**
+     * @notice Compute how many ether will be necessary to mint an amount of BTokens in the
+     * current state of the contract. Should be used carefully if its being called
+     * outside an smart contract transaction, as the bonding curve state can change
+     * before a future transaction is sent.
+     * @param numBTK_ Amount of BTokens that we want to convert in ether
+     * @return numEth the number of ether necessary to mint an amount of BToken
+     */
     function getLatestEthToMintBTokens(uint256 numBTK_) public view returns (uint256 numEth) {
         return _getEthToMintBTokens(totalSupply(), numBTK_);
     }
 
-    /// Compute how many ether will be received during a BToken burn at the current
-    /// bonding curve state. Should be used carefully if its being called outside an
-    /// smart contract transaction, as the bonding curve state can change before a
-    /// future transaction is sent.
-    /// @param numBTK_ Amount of BTokens to convert in ether
+    /**
+     * @notice Compute how many ether will be received during a BToken burn at the current
+     * bonding curve state. Should be used carefully if its being called outside an
+     * smart contract transaction, as the bonding curve state can change before a
+     * future transaction is sent.
+     * @param numBTK_ Amount of BTokens to convert in ether
+     * @return numEth the amount of ether will be received during a BToken burn at the current
+     * bonding curve state
+     */
     function getLatestEthFromBTokensBurn(uint256 numBTK_) public view returns (uint256 numEth) {
         return _bTokensToEth(_poolBalance, totalSupply(), numBTK_);
     }
 
-    /// Gets an amount of BTokens that will be minted at the current state of the
-    /// bonding curve. Should be used carefully if its being called outside an smart
-    /// contract transaction, as the bonding curve state can change before a future
-    /// transaction is sent.
-    /// @param numEth_ Amount of ether to convert in BTokens
+    /**
+     * @notice Gets an amount of BTokens that will be minted at the current state of the
+     * bonding curve. Should be used carefully if its being called outside an smart
+     * contract transaction, as the bonding curve state can change before a future
+     * transaction is sent.
+     * @param numEth_ Amount of ether to convert in BTokens
+     * @return the amount of BTokens that will be minted at the current state of the
+     * bonding curve
+     * */
     function getLatestMintedBTokensFromEth(uint256 numEth_) public view returns (uint256) {
         return _ethToBTokens(_poolBalance, numEth_ / _MARKET_SPREAD);
     }
 
-    /// Gets the market spread (difference between the minting and burning bonding
-    /// curves).
+    /**
+     * @notice Gets the market spread (difference between the minting and burning bonding
+     * curves).
+     * @return the market spread (difference between the minting and burning bonding
+     * curves).
+     * */
     function getMarketSpread() public pure returns (uint256) {
         return _MARKET_SPREAD;
     }
 
-    /// Compute how many ether will be necessary to mint an amount of BTokens at a
-    /// certain point in the bonding curve.
-    /// @param totalSupply_ The total supply of BToken at a given moment where we
-    /// want to compute the amount of ether necessary to mint.
-    /// @param numBTK_ Amount of BTokens that we want to convert in ether
+    /**
+     * @notice Compute how many ether will be necessary to mint an amount of BTokens at a
+     * certain point in the bonding curve.
+     * @param totalSupply_ The total supply of BToken at a given moment where we
+     * want to compute the amount of ether necessary to mint.
+     * @param numBTK_ Amount of BTokens that we want to convert in ether
+     * @return numEth the amount ether that will be necessary to mint an amount of BTokens at a
+     * certain point in the bonding curve
+     * */
     function getEthToMintBTokens(uint256 totalSupply_, uint256 numBTK_)
         public
         pure
@@ -311,12 +376,15 @@ contract BToken is
         return _getEthToMintBTokens(totalSupply_, numBTK_);
     }
 
-    /// Compute how many ether will be received during a BToken burn.
-    /// @param poolBalance_ The pool balance (in ether) at the moment
-    /// that of the conversion.
-    /// @param totalSupply_ The total supply of BToken at the moment
-    /// that of the conversion.
-    /// @param numBTK_ Amount of BTokens to convert in ether
+    /**
+     * @notice Compute how many ether will be received during a BToken burn.
+     * @param poolBalance_ The pool balance (in ether) at the moment
+     * that of the conversion.
+     * @param totalSupply_ The total supply of BToken at the moment
+     * that of the conversion.
+     * @param numBTK_ Amount of BTokens to convert in ether
+     * @return numEth the ether that will be received during a BToken burn
+     * */
     function getEthFromBTokensBurn(
         uint256 poolBalance_,
         uint256 totalSupply_,
@@ -325,11 +393,15 @@ contract BToken is
         return _bTokensToEth(poolBalance_, totalSupply_, numBTK_);
     }
 
-    /// Gets an amount of BTokens that will be minted at given a point in the bonding
-    /// curve.
-    /// @param poolBalance_ The pool balance (in ether) at the moment
-    /// that of the conversion.
-    /// @param numEth_ Amount of ether to convert in BTokens
+    /**
+     * @notice Gets an amount of BTokens that will be minted at given a point in the bonding
+     * curve.
+     * @param poolBalance_ The pool balance (in ether) at the moment
+     * that of the conversion.
+     * @param numEth_ Amount of ether to convert in BTokens
+     * @return the amount of BTokens that will be minted at given a point in the bonding
+     * curve.
+     * */
     function getMintedBTokensFromEth(uint256 poolBalance_, uint256 numEth_)
         public
         pure

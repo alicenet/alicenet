@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT-open-group
 pragma solidity ^0.8.16;
 
-import "contracts/utils/ImmutableAuth.sol";
+import "contracts/utils/auth/ImmutableFactory.sol";
 import "contracts/libraries/errors/BridgePoolFactoryErrors.sol";
 import "contracts/interfaces/IBridgePool.sol";
 import "contracts/utils/BridgePoolAddressUtil.sol";
@@ -60,11 +60,10 @@ abstract contract BridgePoolFactoryBase is ImmutableFactory {
      * @param chainId_ native chainID of the token ie 1 for ethereum erc20
      * @param tokenType_ type of token 0 for ERC20 1 for ERC721 and 2 for ERC1155
      */
-    function getLatestPoolLogicVersion(uint256 chainId_, uint8 tokenType_)
-        public
-        view
-        returns (uint16)
-    {
+    function getLatestPoolLogicVersion(
+        uint256 chainId_,
+        uint8 tokenType_
+    ) public view returns (uint16) {
         if (chainId_ != _chainID) {
             return _logicVersionsDeployed[PoolType.EXTERNAL][TokenType(tokenType_)];
         } else {

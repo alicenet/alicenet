@@ -5,21 +5,28 @@ import "contracts/libraries/proxy/ProxyInternalUpgradeLock.sol";
 import "contracts/utils/DeterministicAddress.sol";
 
 /**
- *@dev RUN OPTIMIZER OFF
- */
-/**
- * @notice Proxy is a delegatecall reverse proxy implementation
- * the forwarding address is stored at the slot location of not(0)
- * if not(0) has a value stored in it that is of the form 0Xca11c0de15dead10cced0000< address >
- * the proxy may no longer be upgraded using the internal mechanism. This does not prevent the implementation
- * from upgrading the proxy by changing this slot.
- * The proxy may be directly upgraded ( if the lock is not set )
- * by calling the proxy from the factory address using the format
- * abi.encodeWithSelector(0xca11c0de, <address>);
+ * @notice Proxy is a delegatecall reverse proxy implementation that is secure against function
+ * collision.
+ *
+ * The forwarding address is stored at the slot location of not(0). If not(0) has a value stored in
+ * it that is of the form 0xca11c0de15dead10deadc0de< address > the proxy may no longer be upgraded
+ * using the internal mechanism. This does not prevent the implementation from upgrading the proxy
+ * by changing this slot.
+ *
+ * The proxy may be directly upgraded ( if the lock is not set ) by calling the proxy from the
+ * factory address using the format abi.encodeWithSelector(0xca11c0de11, <address>);
+ *
+ * The proxy can return its implementation address by calling it using the format
+ * abi.encodePacked(hex'0cbcae703c');
+ *
  * All other calls will be proxied through to the implementation.
- * The implementation can not be locked using the internal upgrade mechanism due to the fact that the internal
- * mechanism zeros out the higher order bits. Therefore, the implementation itself must carry the locking mechanism that sets
- * the higher order bits to lock the upgrade capability of the proxy.
+ *
+ * The implementation can not be locked using the internal upgrade mechanism due to the fact that
+ * the internal mechanism zeros out the higher order bits. Therefore, the implementation itself must
+ * carry the locking mechanism that sets the higher order bits to lock the upgrade capability of the
+ * proxy.
+ *
+ * @dev RUN OPTIMIZER OFF
  */
 contract Proxy is ProxyInternalUpgradeLock {
     address private immutable _factory;
@@ -41,51 +48,143 @@ contract Proxy is ProxyInternalUpgradeLock {
         _fallback();
     }
 
-    /// Returns the implementation address (target) of the Proxy
-    /// @return implAddr the implementation address
-    function getImplementationAddress() public view returns (address implAddr) {
-        assembly ("memory-safe") {
-            implAddr := and(
-                sload(not(0x00)),
-                0x000000000000000000000000ffffffffffffffffffffffffffffffffffffffff
-            )
-        }
-    }
-
-    /// @notice changes the implementation address that a proxy is pointed to
-    /// @param implementationAddress_ address of the logic
-    function setImplementationAddress(address implementationAddress_) public onlyFactory {
-        assembly ("memory-safe") {
-            // check if the proxy is locked
-            if eq(shr(160, sload(not(0x00))), 0xca11c0de15dead10cced0000) {
-                mstore(0x00, "imploc")
-                revert(0x00, 0x20)
-            }
-            // store address into slot
-            sstore(not(0x00), implementationAddress_)
-        }
-    }
-
     /// Delegates calls to proxy implementation
     function _fallback() internal {
+        // make local copy of factory since immutables are not accessible in assembly as of yet
+        address factory = _factory;
         assembly ("memory-safe") {
-            let logicAddress := sload(not(0x00))
-            if iszero(logicAddress) {
-                mstore(0x00, "logicNotSet")
-                revert(0x00, 0x20)
+            // check if the calldata has the special signatures to access the proxy functions. To
+            // avoid collision the signatures for the proxy function are 5 bytes long (instead of
+            // the normal 4).
+            if or(eq(calldatasize(), 0x25), eq(calldatasize(), 0x5)) {
+                {
+                    let selector := shr(216, calldataload(0x00))
+                    switch selector
+                    // getImplementationAddress()
+                    case 0x0cbcae703c {
+                        let ptr := mload(0x40)
+                        mstore(ptr, getImplementationAddress())
+                        return(ptr, 0x14)
+                    }
+                    // setImplementationAddress()
+                    case 0xca11c0de11 {
+                        // revert in case user is not factory/admin
+                        if iszero(eq(caller(), factory)) {
+                            revertUnauthorized()
+                        }
+                        // if caller is factory, and has 0xca11c0de00<address> as calldata,
+                        // run admin logic and return
+                        setImplementationAddress()
+                    }
+                    default {
+                        revertIncorrectDataOrFunctionSignature()
+                    }
+                }
             }
-            // load free memory pointer
-            let _ptr := mload(0x40)
-            // allocate memory proportionate to calldata
-            mstore(0x40, add(_ptr, calldatasize()))
-            // copy calldata into memory
-            calldatacopy(_ptr, 0x00, calldatasize())
-            let ret := delegatecall(gas(), logicAddress, _ptr, calldatasize(), 0x00, 0x00)
-            returndatacopy(_ptr, 0x00, returndatasize())
-            if iszero(ret) {
-                revert(_ptr, returndatasize())
+            // admin logic was not run so fallthrough to delegatecall
+            passthrough()
+
+            ///////////// Functions ///////////////
+
+            function revertUnauthorized() {
+                let ptr := mload(0x40)
+                let startPtr := ptr
+                mstore(ptr, hex"08c379a0") // keccak256('Error(string)')[0:4]
+                ptr := add(ptr, 0x4)
+                mstore(ptr, 0x20)
+                ptr := add(ptr, 0x20)
+                mstore(ptr, 12) // string length = 13
+                ptr := add(ptr, 0x20)
+                mstore(ptr, "unauthorized")
+                ptr := add(ptr, 0x20)
+                revert(startPtr, sub(ptr, startPtr))
             }
-            return(_ptr, returndatasize())
+
+            function revertImplementationLock() {
+                let ptr := mload(0x40)
+                let startPtr := ptr
+                mstore(ptr, hex"08c379a0") // keccak256('Error(string)')[0:4]
+                ptr := add(ptr, 0x4)
+                mstore(ptr, 0x20)
+                ptr := add(ptr, 0x20)
+                mstore(ptr, 13) // string length = 13
+                ptr := add(ptr, 0x20)
+                mstore(ptr, "update locked")
+                ptr := add(ptr, 0x20)
+                revert(startPtr, sub(ptr, startPtr))
+            }
+
+            function revertImplementationNotSetYet() {
+                let ptr := mload(0x40)
+                let startPtr := ptr
+                mstore(ptr, hex"08c379a0") // keccak256('Error(string)')[0:4]
+                ptr := add(ptr, 0x4)
+                mstore(ptr, 0x20)
+                ptr := add(ptr, 0x20)
+                mstore(ptr, 13) // string length = 13
+                ptr := add(ptr, 0x20)
+                mstore(ptr, "logic not set")
+                ptr := add(ptr, 0x20)
+                revert(startPtr, sub(ptr, startPtr))
+            }
+
+            function revertIncorrectDataOrFunctionSignature() {
+                let ptr := mload(0x40)
+                let startPtr := ptr
+                mstore(ptr, hex"08c379a0") // keccak256('Error(string)')[0:4]
+                ptr := add(ptr, 0x4)
+                mstore(ptr, 0x20)
+                ptr := add(ptr, 0x20)
+                mstore(ptr, 18) // string length = 18
+                ptr := add(ptr, 0x20)
+                mstore(ptr, "function not found")
+                ptr := add(ptr, 0x20)
+                revert(startPtr, sub(ptr, startPtr))
+            }
+
+            function getImplementationAddress() -> implAddr {
+                implAddr := shl(
+                    96,
+                    and(
+                        sload(not(0x00)),
+                        0x000000000000000000000000ffffffffffffffffffffffffffffffffffffffff
+                    )
+                )
+            }
+
+            // updateImplementation is the builtin logic to change the implementation
+            function setImplementationAddress() {
+                // check if the upgrade functionality is locked.
+                if eq(shr(160, sload(not(0x00))), 0xca11c0de15dead10deadc0de) {
+                    revertImplementationLock()
+                }
+                // this is an assignment to implementation
+                let newImpl := shr(96, shl(96, calldataload(0x05)))
+                // store address into slot
+                sstore(not(0x00), newImpl)
+                // stop to not fall into the default case of the switch selector
+                stop()
+            }
+
+            // passthrough is the passthrough logic to delegate to the implementation
+            function passthrough() {
+                let logicAddress := sload(not(0x00))
+                if iszero(logicAddress) {
+                    revertImplementationNotSetYet()
+                }
+                // load free memory pointer
+                let ptr := mload(0x40)
+                // allocate memory proportionate to calldata
+                mstore(0x40, add(ptr, calldatasize()))
+                // copy calldata into memory
+                calldatacopy(ptr, 0x00, calldatasize())
+                let ret := delegatecall(gas(), logicAddress, ptr, calldatasize(), 0x00, 0x00)
+                returndatacopy(ptr, 0x00, returndatasize())
+                if iszero(ret) {
+                    revert(ptr, returndatasize())
+                }
+                return(ptr, returndatasize())
+            }
         }
     }
 }
