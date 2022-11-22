@@ -64,14 +64,14 @@ contract Proxy {
                     case 0xca11c0de11 {
                         // revert in case user is not factory/admin
                         if iszero(eq(caller(), factory)) {
-                            revertUnauthorized()
+                            revertASM("unauthorized", 12)
                         }
                         // if caller is factory, and has 0xca11c0de00<address> as calldata,
                         // run admin logic and return
                         setImplementationAddress()
                     }
                     default {
-                        revertIncorrectDataOrFunctionSignature()
+                        revertASM("function not found", 18)
                     }
                 }
             }
@@ -80,58 +80,16 @@ contract Proxy {
 
             ///////////// Functions ///////////////
 
-            function revertUnauthorized() {
+            function revertASM(str, len) {
                 let ptr := mload(0x40)
                 let startPtr := ptr
                 mstore(ptr, hex"08c379a0") // keccak256('Error(string)')[0:4]
                 ptr := add(ptr, 0x4)
                 mstore(ptr, 0x20)
                 ptr := add(ptr, 0x20)
-                mstore(ptr, 12) // string length = 13
+                mstore(ptr, len) // string length
                 ptr := add(ptr, 0x20)
-                mstore(ptr, "unauthorized")
-                ptr := add(ptr, 0x20)
-                revert(startPtr, sub(ptr, startPtr))
-            }
-
-            function revertImplementationLock() {
-                let ptr := mload(0x40)
-                let startPtr := ptr
-                mstore(ptr, hex"08c379a0") // keccak256('Error(string)')[0:4]
-                ptr := add(ptr, 0x4)
-                mstore(ptr, 0x20)
-                ptr := add(ptr, 0x20)
-                mstore(ptr, 13) // string length = 13
-                ptr := add(ptr, 0x20)
-                mstore(ptr, "update locked")
-                ptr := add(ptr, 0x20)
-                revert(startPtr, sub(ptr, startPtr))
-            }
-
-            function revertImplementationNotSetYet() {
-                let ptr := mload(0x40)
-                let startPtr := ptr
-                mstore(ptr, hex"08c379a0") // keccak256('Error(string)')[0:4]
-                ptr := add(ptr, 0x4)
-                mstore(ptr, 0x20)
-                ptr := add(ptr, 0x20)
-                mstore(ptr, 13) // string length = 13
-                ptr := add(ptr, 0x20)
-                mstore(ptr, "logic not set")
-                ptr := add(ptr, 0x20)
-                revert(startPtr, sub(ptr, startPtr))
-            }
-
-            function revertIncorrectDataOrFunctionSignature() {
-                let ptr := mload(0x40)
-                let startPtr := ptr
-                mstore(ptr, hex"08c379a0") // keccak256('Error(string)')[0:4]
-                ptr := add(ptr, 0x4)
-                mstore(ptr, 0x20)
-                ptr := add(ptr, 0x20)
-                mstore(ptr, 18) // string length = 18
-                ptr := add(ptr, 0x20)
-                mstore(ptr, "function not found")
+                mstore(ptr, str)
                 ptr := add(ptr, 0x20)
                 revert(startPtr, sub(ptr, startPtr))
             }
@@ -150,7 +108,7 @@ contract Proxy {
             function setImplementationAddress() {
                 // check if the upgrade functionality is locked.
                 if eq(shr(160, sload(not(0x00))), 0xca11c0de15dead10deadc0de) {
-                    revertImplementationLock()
+                    revertASM("update locked", 13)
                 }
                 // this is an assignment to implementation
                 let newImpl := shr(96, shl(96, calldataload(0x05)))
@@ -164,7 +122,7 @@ contract Proxy {
             function passthrough() {
                 let logicAddress := sload(not(0x00))
                 if iszero(logicAddress) {
-                    revertImplementationNotSetYet()
+                    revertASM("logic not set", 13)
                 }
                 // load free memory pointer
                 let ptr := mload(0x40)

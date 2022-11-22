@@ -24,7 +24,7 @@ library AccusationsLibrary {
         bytes32 s;
         uint8 v;
 
-        assembly {
+        assembly ("memory-safe") {
             r := mload(add(signature, 32))
             s := mload(add(signature, 64))
             v := byte(0, mload(add(signature, 96)))
@@ -43,10 +43,11 @@ library AccusationsLibrary {
     /// @param signature The ECDSA signature
     /// @param message The message
     /// @return the address of the signer
-    function recoverMadNetSigner(
-        bytes memory signature,
-        bytes memory message
-    ) internal pure returns (address) {
+    function recoverMadNetSigner(bytes memory signature, bytes memory message)
+        internal
+        pure
+        returns (address)
+    {
         return recoverSigner(signature, "Proposal", message);
     }
 
