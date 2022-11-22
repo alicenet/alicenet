@@ -71,16 +71,7 @@ contract Distribution is
     /// Gets the value of the percentages that will send to each staking contract.
     /// Divide this value by PERCENTAGE_SCALE = 1000 to get the corresponding
     /// percentages.
-    function getSplits()
-        public
-        view
-        returns (
-            uint256,
-            uint256,
-            uint256,
-            uint256
-        )
-    {
+    function getSplits() public view returns (uint256, uint256, uint256, uint256) {
         return (
             _validatorStakingSplit,
             _publicStakingSplit,

@@ -71,10 +71,10 @@ contract ETHDKGMock is
         _confirmationLength = uint16(confirmationLength_);
     }
 
-    function reinitialize(uint256 phaseLength_, uint256 confirmationLength_)
-        public
-        reinitializer(2)
-    {
+    function reinitialize(
+        uint256 phaseLength_,
+        uint256 confirmationLength_
+    ) public reinitializer(2) {
         _phaseLength = uint16(phaseLength_);
         _confirmationLength = uint16(confirmationLength_);
     }
@@ -122,10 +122,10 @@ contract ETHDKGMock is
         );
     }
 
-    function distributeShares(uint256[] memory encryptedShares, uint256[2][] memory commitments)
-        public
-        onlyValidator
-    {
+    function distributeShares(
+        uint256[] memory encryptedShares,
+        uint256[2][] memory commitments
+    ) public onlyValidator {
         _callPhaseContract(
             abi.encodeWithSignature(
                 "distributeShares(uint256[],uint256[2][])",
@@ -277,19 +277,15 @@ contract ETHDKGMock is
         return _badParticipants;
     }
 
-    function getParticipantInternalState(address participant)
-        public
-        view
-        returns (Participant memory)
-    {
+    function getParticipantInternalState(
+        address participant
+    ) public view returns (Participant memory) {
         return _participants[participant];
     }
 
-    function getParticipantsInternalState(address[] calldata participantAddresses)
-        public
-        view
-        returns (Participant[] memory)
-    {
+    function getParticipantsInternalState(
+        address[] calldata participantAddresses
+    ) public view returns (Participant[] memory) {
         Participant[] memory participants = new Participant[](participantAddresses.length);
 
         for (uint256 i = 0; i < participantAddresses.length; i++) {

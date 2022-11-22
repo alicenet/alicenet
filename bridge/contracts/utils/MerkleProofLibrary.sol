@@ -54,10 +54,10 @@ library MerkleProofLibrary {
     /// @notice Checks if `proof` is a valid inclusion proof.
     /// @param _proof the merkle proof (audit path)
     /// @param root the root of the tree
-    function verifyInclusion(MerkleProofParserLibrary.MerkleProof memory _proof, bytes32 root)
-        internal
-        pure
-    {
+    function verifyInclusion(
+        MerkleProofParserLibrary.MerkleProof memory _proof,
+        bytes32 root
+    ) internal pure {
         if (_proof.proofValue == 0) {
             revert MerkleProofLibraryErrors.InclusionZero();
         }
@@ -78,10 +78,10 @@ library MerkleProofLibrary {
     /// @notice Checks if `proof` is a valid non-inclusion proof.
     /// @param _proof the merkle proof (audit path)
     /// @param root the root of the tree
-    function verifyNonInclusion(MerkleProofParserLibrary.MerkleProof memory _proof, bytes32 root)
-        internal
-        pure
-    {
+    function verifyNonInclusion(
+        MerkleProofParserLibrary.MerkleProof memory _proof,
+        bytes32 root
+    ) internal pure {
         if (_proof.proofKey == 0 && _proof.proofValue == 0) {
             // Non-inclusion default value
             bytes32 _keyHash = bytes32(

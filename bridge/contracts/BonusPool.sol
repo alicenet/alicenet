@@ -127,11 +127,10 @@ contract BonusPool is
     /// @param userShares_ The amount of shares that a user locked-up.
     /// @return bonusRewardEth the estimated amount ether profits for a user
     /// @return bonusRewardToken the estimated amount ALCA profits for a user
-    function estimateBonusAmountWithReward(uint256 currentSharesLocked_, uint256 userShares_)
-        public
-        view
-        returns (uint256 bonusRewardEth, uint256 bonusRewardToken)
-    {
+    function estimateBonusAmountWithReward(
+        uint256 currentSharesLocked_,
+        uint256 userShares_
+    ) public view returns (uint256 bonusRewardEth, uint256 bonusRewardToken) {
         if (_tokenID == 0) {
             return (0, 0);
         }

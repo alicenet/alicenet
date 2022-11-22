@@ -43,11 +43,10 @@ library RClaimsParserLibrary {
     /// @param src Binary state containing a RClaims serialized struct without Capn Proto headers
     /// @param dataOffset offset to start reading the RClaims state from inside src
     /// @dev Execution cost: 1332 gas
-    function extractInnerRClaims(bytes memory src, uint256 dataOffset)
-        internal
-        pure
-        returns (RClaims memory rClaims)
-    {
+    function extractInnerRClaims(
+        bytes memory src,
+        uint256 dataOffset
+    ) internal pure returns (RClaims memory rClaims) {
         if (dataOffset + _RCLAIMS_SIZE <= dataOffset) {
             revert GenericParserLibraryErrors.DataOffsetOverflow();
         }
