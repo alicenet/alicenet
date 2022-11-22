@@ -13,6 +13,7 @@ import "contracts/utils/auth/ImmutableETHDKGAccusations.sol";
 import "contracts/utils/auth/ImmutableETHDKGPhases.sol";
 import "contracts/libraries/errors/ETHDKGErrors.sol";
 import "contracts/libraries/proxy/ProxyImplementationGetter.sol";
+import "@openzeppelin/contracts/utils/Address.sol";
 
 contract ETHDKGMock is
     ETHDKGStorage,
@@ -23,8 +24,7 @@ contract ETHDKGMock is
     IETHDKGEvents,
     ProxyImplementationGetter
 {
-    address internal immutable _ethdkgAccusations;
-    address internal immutable _ethdkgPhases;
+    using Address for address;
 
     modifier onlyValidator() {
         if (!IValidatorPool(_validatorPoolAddress()).isValidator(msg.sender)) {
@@ -33,26 +33,7 @@ contract ETHDKGMock is
         _;
     }
 
-    constructor() ETHDKGStorage() ImmutableETHDKGAccusations() ImmutableETHDKGPhases() {
-        // bytes32("ETHDKGPhases") = 0x455448444b475068617365730000000000000000000000000000000000000000;
-        address ethdkgPhases = __getProxyImplementation(_ethdkgPhasesAddress());
-        assembly {
-            if iszero(extcodesize(ethdkgPhases)) {
-                mstore(0x00, "ethdkgPhases size 0")
-                revert(0x00, 0x20)
-            }
-        }
-        _ethdkgPhases = ethdkgPhases;
-        // bytes32("ETHDKGAccusations") = 0x455448444b4741636375736174696f6e73000000000000000000000000000000;
-        address ethdkgAccusations = __getProxyImplementation(_ethdkgAccusationsAddress());
-        assembly {
-            if iszero(extcodesize(ethdkgAccusations)) {
-                mstore(0x00, "ethdkgAccusations size 0")
-                revert(0x00, 0x20)
-            }
-        }
-        _ethdkgAccusations = ethdkgAccusations;
-    }
+    constructor() ETHDKGStorage() ImmutableETHDKGAccusations() ImmutableETHDKGPhases() {}
 
     function minorSlash(address validator, address accussator) external {
         IValidatorPool(_validatorPoolAddress()).minorSlash(validator, accussator);
@@ -71,10 +52,10 @@ contract ETHDKGMock is
         _confirmationLength = uint16(confirmationLength_);
     }
 
-    function reinitialize(
-        uint256 phaseLength_,
-        uint256 confirmationLength_
-    ) public reinitializer(2) {
+    function reinitialize(uint256 phaseLength_, uint256 confirmationLength_)
+        public
+        reinitializer(2)
+    {
         _phaseLength = uint16(phaseLength_);
         _confirmationLength = uint16(confirmationLength_);
     }
@@ -122,10 +103,10 @@ contract ETHDKGMock is
         );
     }
 
-    function distributeShares(
-        uint256[] memory encryptedShares,
-        uint256[2][] memory commitments
-    ) public onlyValidator {
+    function distributeShares(uint256[] memory encryptedShares, uint256[2][] memory commitments)
+        public
+        onlyValidator
+    {
         _callPhaseContract(
             abi.encodeWithSignature(
                 "distributeShares(uint256[],uint256[2][])",
@@ -277,15 +258,19 @@ contract ETHDKGMock is
         return _badParticipants;
     }
 
-    function getParticipantInternalState(
-        address participant
-    ) public view returns (Participant memory) {
+    function getParticipantInternalState(address participant)
+        public
+        view
+        returns (Participant memory)
+    {
         return _participants[participant];
     }
 
-    function getParticipantsInternalState(
-        address[] calldata participantAddresses
-    ) public view returns (Participant[] memory) {
+    function getParticipantsInternalState(address[] calldata participantAddresses)
+        public
+        view
+        returns (Participant[] memory)
+    {
         Participant[] memory participants = new Participant[](participantAddresses.length);
 
         for (uint256 i = 0; i < participantAddresses.length; i++) {
@@ -338,31 +323,25 @@ contract ETHDKGMock is
     }
 
     function _callAccusationContract(bytes memory callData) internal returns (bytes memory) {
-        (bool success, bytes memory returnData) = _ethdkgAccusations.delegatecall(callData);
-        if (!success) {
-            // solhint-disable no-inline-assembly
-            assembly {
-                let ptr := mload(0x40)
-                let size := returndatasize()
-                returndatacopy(ptr, 0, size)
-                revert(ptr, size)
-            }
-        }
-        return returnData;
+        return _getETHDKGAccusationsAddress().functionDelegateCall(callData);
     }
 
     function _callPhaseContract(bytes memory callData) internal returns (bytes memory) {
-        (bool success, bytes memory returnData) = _ethdkgPhases.delegatecall(callData);
-        if (!success) {
-            // solhint-disable no-inline-assembly
-            assembly {
-                let ptr := mload(0x40)
-                let size := returndatasize()
-                returndatacopy(ptr, 0, size)
-                revert(ptr, size)
-            }
+        return _getETHDKGPhasesAddress().functionDelegateCall(callData);
+    }
+
+    function _getETHDKGPhasesAddress() internal view returns (address ethdkgPhases) {
+        ethdkgPhases = __getProxyImplementation(_ethdkgPhasesAddress());
+        if (!ethdkgPhases.isContract()) {
+            revert ETHDKGErrors.ETHDKGSubContractNotSet();
         }
-        return returnData;
+    }
+
+    function _getETHDKGAccusationsAddress() internal view returns (address ethdkgAccusations) {
+        ethdkgAccusations = __getProxyImplementation(_ethdkgAccusationsAddress());
+        if (!ethdkgAccusations.isContract()) {
+            revert ETHDKGErrors.ETHDKGSubContractNotSet();
+        }
     }
 
     function _initializeETHDKG() internal {
