@@ -7,38 +7,43 @@ import "contracts/interfaces/ICentralBridgeRouter.sol";
 import "contracts/libraries/errors/CentralBridgeRouterErrors.sol";
 
 contract CentralBridgeRouter is ICentralBridgeRouter, ImmutableFactory, ImmutableBToken {
+    
     struct EventData {
         bytes32[] topics;
         bytes logData;
     }
-
-    struct DepositReturnData {
-        EventData[] eventData;
-        uint256 fee;
-    }
-
-    struct RouterConfig {
-        address routerAddress;
-        bool notOnline;
-    }
     
-    // mapping of router version to data
-    mapping(uint16 => RouterConfig) internal _routerConfig;
-    uint256 internal _nonce;
+    struct DepositData {
+        address PoolAddress;
+        uint8 poolType;
+        uint8 ercType;
+        uint256 poolVersion;
+        bytes depositDetails;
+    }
 
+    uint256 internal constant _TRIPPED_CP_VALUE = 2**256-1;
+    
+    // mapping of pool version to mapping of pool group to
+    /*
+    version native = 0, external = 1, lazymint = 2 erc20 = 0 erc721 = 1 erc1155 = 2
+
+    00
+    01
+    02
+    10
+    11
+    12
+
+    1
+    */ 
+   /**
+    * @dev mapping of pool type to fee  
+    */
+    mapping(uint32 => uint256) internal _poolTypeToFee;
+    //TODO determine if we should have a default fee for resetting circuit breaker
+    uint256 internal _nonce;
     //tracker to track number of deployed router versions
     uint16 internal _routerVersions;
-
-    // event DepositedERCToken(
-    //     address ercContract,
-    //     uint8 destinationAccountType, // 1 for secp256k1, 2 for bn128
-    //     address destinationAccount, //account to deposit the tokens to in alicenet
-    //     uint8 ercType,
-    //     uint256 number, // If fungible, this is the amount. If non-fungible, this is the id
-    //     uint256 chainID,
-    //     uint16 poolVersion,
-    //     uint256 nonce
-    // );
 
     constructor() ImmutableFactory(msg.sender) ImmutableBToken() {}
 
@@ -48,22 +53,23 @@ contract CentralBridgeRouter is ICentralBridgeRouter, ImmutableFactory, Immutabl
      * @param poolVersion_ version of pool to deposit token on
      * @param depositData_ abi encoded input data that describes the transaction
      */
-    function forwardDeposit(
+    function depositNativeToken(
         address msgSender_,
         uint16 poolVersion_,
+        address poolAddress,
         bytes calldata depositData_
     ) public onlyBToken returns (uint256 fee) {
         //get the router config for the version specified
         //get the router address
-        RouterConfig memory routerConfig = _routerConfig[poolVersion_];
-        if (routerConfig.routerAddress == address(0))
-            revert CentralBridgeRouterErrors.InvalidPoolVersion(poolVersion_);
+        DepositData memory depositData = abi.decode(depositData_, DepositData);
+        fee = _getFee(depositData.poolVersion, depositData.poolType, depositData.ercType);
+        
         if (routerConfig.notOnline)
             revert CentralBridgeRouterErrors.DisabledPoolVersion(
                 poolVersion_,
                 routerConfig.routerAddress
             );
-        bytes memory returnDataBytes = IBridgePoolRouter(routerConfig.routerAddress).routeDeposit(
+        bytes memory returnDataBytes = IBridgePool(poolAddress).deposit(
             msgSender_,
             depositData_
         );
@@ -81,51 +87,32 @@ contract CentralBridgeRouter is ICentralBridgeRouter, ImmutableFactory, Immutabl
         fee = returnData.fee;
     }
 
-    /**
-     * adds a new router to the routerConfig mapping
-     * @param newRouterAddress_ address of the new router being added
-     */
-    function addRouter(address newRouterAddress_) public onlyFactory {
-        uint16 version = _routerVersions + 1;
-        _routerConfig[version] = RouterConfig(newRouterAddress_, false);
-        //update routerVersions tracker
-        _routerVersions = version;
+    
+    function addNewBridgeType(uint16 version_, uint8 poolType_, uint8 tokenType_, uint256 fee_) public onlyFactory {
+        uint32 poolType = abi.encode(version_, poolType_, tokenType_);
+        _poolTypeToFee[poolType] = fee_;
+    }
+    
+    function tripCB(uint16 version_, uint8 poolType_, uint8 tokenType_) public onlyCBSetter {
+        uint32 poolType = abi.encode(version_, poolType_, tokenType_);
+        _poolTypeToFee[poolType] = _TRIPPED_CP_VALUE;
     }
 
-    /**
-     * allows factory to disable deposits to routers
-     * @param routerVersion_ version of router to disable
-     */
-    function disableRouter(uint16 routerVersion_) public onlyFactory {
-        RouterConfig memory config = _routerConfig[routerVersion_];
-        if (config.routerAddress == address(0))
-            revert CentralBridgeRouterErrors.InvalidPoolVersion(routerVersion_);
-        if (config.notOnline) {
-            revert CentralBridgeRouterErrors.DisabledPoolVersion(
-                routerVersion_,
-                config.routerAddress
-            );
-        }
-        _routerConfig[routerVersion_].notOnline = true;
+    //TODO change fee_ reference dependent on how we want to handle default fees possibly change to 0 for migration
+    function resetCB(uint16 version_, uint8 poolType_, uint8 tokenType_, uint256 fee_) public onlyCBResetter {
+        uint32 poolType = abi.encode(version_, poolType_, tokenType_);
+        _poolTypeToFee[poolType] = fee_;
     }
+    function reverPoolOffline(uint16 version_, uint8 poolType_, uint8 tokenType_) public view returns (bool) {
+        uint32 poolType = abi.encode(version_, poolType_, tokenType_);
+        uint256 fee = _poolTypeToFee[poolType];
 
-    /**
-     * getter function for retrieving number of existing routers
-     */
-    function getRouterCount() public view returns (uint16) {
-        return _routerVersions;
     }
-
-    /**
-     * getter function for getting address of online versioned router
-     * @param routerVersion_ version of router to query
-     * @return routerAddress address of versioned router
-     */
-    function getRouterAddress(uint16 routerVersion_) public view returns (address routerAddress) {
-        RouterConfig memory config = _routerConfig[routerVersion_];
-        if (config.routerAddress == address(0))
-            revert CentralBridgeRouterErrors.InvalidPoolVersion(routerVersion_);
-        routerAddress = config.routerAddress;
+    function _getFee(uint16 version_, uint8 poolType_, uint8 tokenType_) internal view returns (uint256) {
+        uint32 poolType = abi.encode(version_, poolType_, tokenType_);
+        uint256 fee = _poolTypeToFee[poolType];
+        if (fee == _TRIPPED_CP_VALUE) revert CentralBridgeRouterErrors.CircuitBreakerTripped();
+        return fee;
     }
 
     function _emitDepositEvent(bytes32[] memory topics_, bytes memory eventData_) internal {

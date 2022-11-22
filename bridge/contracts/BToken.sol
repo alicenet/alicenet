@@ -148,11 +148,11 @@ contract BToken is
 
     /// Deposits arbitrary tokens in the bridge contracts. This function is an entry
     /// point to deposit tokens (ERC20, ERC721, ERC1155) in the bridges and have
-    /// access to them in the side chain. This function will deduce from the user's
+    /// access to them in the side chain. This function will deduct from the user's
     /// balance the corresponding amount of fees to deposit the tokens. The user has
     /// the option to pay the fees in BToken or Ether. If any ether is sent, the
-    /// function will deduce the fee amount and refund any extra amount. If no ether
-    /// is sent, the function will deduce the amount of BToken corresponding to the
+    /// function will deduct the fee amount and refund any extra amount. If no ether
+    /// is sent, the function will deduct the amount of BToken corresponding to the
     /// fees directly from the user's balance.
     /// @param routerVersion_ The bridge version where to deposit the tokens.
     /// @param data_ Encoded data necessary to deposit the arbitrary tokens in the bridges.
