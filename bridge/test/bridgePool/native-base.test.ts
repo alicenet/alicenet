@@ -68,9 +68,6 @@ describe("Testing Base BridgePool Deposit/Withdraw", async () => {
     merkleProofLibraryErrors = await (
       await ethers.getContractFactory("MerkleProofLibraryErrors")
     ).deploy();
-    bridgePoolImplFactory = await ethers.getContractFactory(
-      "NativeERCBridgePoolMock"
-    );
     const bridgeRouter = await deployUpgradeableWithFactory(
       fixture.factory,
       "BridgeRouterMock",
@@ -84,12 +81,14 @@ describe("Testing Base BridgePool Deposit/Withdraw", async () => {
       "BridgePoolFactory",
       "BridgePoolFactory"
     )) as BridgePoolFactory;
-
+    bridgePoolImplFactory = await ethers.getContractFactory(
+      "NativeERCBridgePoolMock"
+    );
     const bridgePoolImplBytecode = bridgePoolImplFactory.getDeployTransaction(
+      bridgeRouter.address,
       fixture.factory.address,
-      fixture.snapshots.address,
-      bridgeRouter.address
-    ).data as BytesLike;
+      fixture.snapshots.address
+    ).data as BytesLike; 
     await bridgePoolFactory
       .connect(factorySigner)
       .deployPoolLogic(

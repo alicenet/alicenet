@@ -9,7 +9,7 @@ import "contracts/libraries/parsers/MerkleProofParserLibrary.sol";
 import "contracts/libraries/parsers/VSPreImageParserLibrary.sol";
 import "contracts/libraries/parsers/PClaimsParserLibrary.sol";
 import "contracts/utils/MerkleProofLibrary.sol";
-import "contracts/Snapshots.sol";
+import "contracts/interfaces/ISnapshots.sol";
 
 abstract contract NativeERCBridgePoolBase is IBridgePool, ImmutableBridgePoolFactory {
     using MerkleProofParserLibrary for bytes;
@@ -35,9 +35,9 @@ abstract contract NativeERCBridgePoolBase is IBridgePool, ImmutableBridgePoolFac
     }
 
     constructor(
+        address bridgeRouterContract_,
         address alicenetFactoryContract_,
-        address snapshotsContract_,
-        address bridgeRouterContract_
+        address snapshotsContract_
     ) onlyBridgePoolFactory ImmutableFactory(alicenetFactoryContract_) {
         _snapshotsContract = snapshotsContract_;
         _bridgeRouterContract = bridgeRouterContract_;
@@ -117,7 +117,7 @@ abstract contract NativeERCBridgePoolBase is IBridgePool, ImmutableBridgePoolFac
         view
         returns (MerkleProofParserLibrary.MerkleProof memory)
     {
-        BClaimsParserLibrary.BClaims memory bClaims = Snapshots(_snapshotsContract)
+        BClaimsParserLibrary.BClaims memory bClaims = ISnapshots(_snapshotsContract)
             .getBlockClaimsFromLatestSnapshot();
         // Validate proofInclusionHeaderRoot against bClaims.headerRoot.
         MerkleProofParserLibrary.MerkleProof
