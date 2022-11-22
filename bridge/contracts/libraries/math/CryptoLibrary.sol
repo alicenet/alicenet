@@ -178,11 +178,9 @@ library CryptoLibrary {
         }
     }
 
-    function bn128Multiply(uint256[3] memory input)
-        internal
-        view
-        returns (uint256[2] memory result)
-    {
+    function bn128Multiply(
+        uint256[3] memory input
+    ) internal view returns (uint256[2] memory result) {
         // computes P*x
         // input: 3 values of 256 bit each
         //  *) x-coordinate of point P
@@ -225,11 +223,7 @@ library CryptoLibrary {
     // Copied from
     //      https://medium.com/@rbkhmrcr/precompiles-solidity-e5d29bd428c4
     // and slightly modified
-    function expmod(
-        uint256 base,
-        uint256 e,
-        uint256 m
-    ) internal view returns (uint256 result) {
+    function expmod(uint256 base, uint256 e, uint256 m) internal view returns (uint256 result) {
         bool success;
         assembly ("memory-safe") {
             // define pointer
@@ -256,11 +250,10 @@ library CryptoLibrary {
     // Sign takes byte slice message and private key privK.
     // It then calls HashToG1 with message as input and performs scalar
     // multiplication to produce the resulting signature.
-    function sign(bytes memory message, uint256 privK)
-        internal
-        view
-        returns (uint256[2] memory sig)
-    {
+    function sign(
+        bytes memory message,
+        uint256 privK
+    ) internal view returns (uint256[2] memory sig) {
         uint256[2] memory hashPoint;
         hashPoint = hashToG1(message);
         sig = bn128Multiply([hashPoint[0], hashPoint[1], privK]);
@@ -973,11 +966,10 @@ library CryptoLibrary {
     // checkInverses takes maxIndex as the maximum element of indices
     // (used in AggregateSignatures) and checks that all of the necessary
     // multiplicative inverses in invArray are correct and present.
-    function checkInverses(uint256[] memory invArray, uint256 maxIndex)
-        internal
-        pure
-        returns (bool)
-    {
+    function checkInverses(
+        uint256[] memory invArray,
+        uint256 maxIndex
+    ) internal pure returns (bool) {
         uint256 k;
         uint256 kInv;
         uint256 res;

@@ -55,12 +55,10 @@ contract Foundation is
     /// Delegates a call to the specified contract with any set of parameters encoded
     /// @param target_ The address of the contract to be delagated to
     /// @param cdata_ The encoded parameters of the delegate call encoded
-    function delegateCallAny(address target_, bytes memory cdata_)
-        public
-        payable
-        onlyFactory
-        returns (bytes memory)
-    {
+    function delegateCallAny(
+        address target_,
+        bytes memory cdata_
+    ) public payable onlyFactory returns (bytes memory) {
         return target_.functionDelegateCall(cdata_);
     }
 }

@@ -43,11 +43,10 @@ library AccusationsLibrary {
     /// @param signature The ECDSA signature
     /// @param message The message
     /// @return the address of the signer
-    function recoverMadNetSigner(bytes memory signature, bytes memory message)
-        internal
-        pure
-        returns (address)
-    {
+    function recoverMadNetSigner(
+        bytes memory signature,
+        bytes memory message
+    ) internal pure returns (address) {
         return recoverSigner(signature, "Proposal", message);
     }
 

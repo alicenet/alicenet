@@ -60,11 +60,10 @@ library BaseParserLibrary {
     /// @param offset place inside `src` to start reading state from
     /// @return val a uint16
     /// @dev ~204 gas
-    function extractUInt16FromBigEndian(bytes memory src, uint256 offset)
-        internal
-        pure
-        returns (uint16 val)
-    {
+    function extractUInt16FromBigEndian(
+        bytes memory src,
+        uint256 offset
+    ) internal pure returns (uint16 val) {
         if (offset + 2 <= offset) {
             revert BaseParserLibraryErrors.BEUint16OffsetParameterOverflow(offset);
         }
@@ -124,11 +123,10 @@ library BaseParserLibrary {
     /// @param offset place inside `src` to start reading state from
     /// @return val a uint256
     /// @dev ~1400 gas
-    function extractUInt256FromBigEndian(bytes memory src, uint256 offset)
-        internal
-        pure
-        returns (uint256 val)
-    {
+    function extractUInt256FromBigEndian(
+        bytes memory src,
+        uint256 offset
+    ) internal pure returns (uint256 val) {
         if (offset + 32 <= offset) {
             revert BaseParserLibraryErrors.BEUint256OffsetParameterOverflow(offset);
         }
@@ -249,11 +247,7 @@ library BaseParserLibrary {
     /// @param src the pointer to the source
     /// @param dest the pointer to the destination
     /// @param len the len of state to be copied
-    function copy(
-        uint256 src,
-        uint256 dest,
-        uint256 len
-    ) internal pure {
+    function copy(uint256 src, uint256 dest, uint256 len) internal pure {
         // Copy word-length chunks while possible
         for (; len >= _WORD_SIZE; len -= _WORD_SIZE) {
             assembly ("memory-safe") {
@@ -267,7 +261,7 @@ library BaseParserLibrary {
             return;
         }
         // Copy remaining bytes
-        uint256 mask = 256**(_WORD_SIZE - len) - 1;
+        uint256 mask = 256 ** (_WORD_SIZE - len) - 1;
         assembly ("memory-safe") {
             let srcpart := and(mload(src), not(mask))
             let destpart := and(mload(dest), mask)
