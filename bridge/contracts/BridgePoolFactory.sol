@@ -40,7 +40,7 @@ contract BridgePoolFactory is
         uint8 tokenType_,
         address ercContract_,
         uint16 poolVersion_,
-        uint256 chainId_,
+        uint256 chainID_,
         bytes calldata initCallData
     ) public onlyFactoryOrPublicEnabled {
         _deployNewPool(1, tokenType_, ercContract_, poolVersion_, chainID_, initCallData);
@@ -57,10 +57,10 @@ contract BridgePoolFactory is
         uint8 tokenType_,
         address ercContract_,
         uint16 poolVersion_,
-        uint256 chainId_,
+        uint256 chainID_,
         bytes calldata initCallData
     ) public onlyFactoryOrPublicEnabled {
-        _deployNewPool(0, tokenType_, ercContract_, poolVersion_, chainId_, initCallData);
+        _deployNewPool(0, tokenType_, ercContract_, poolVersion_, chainID_, initCallData);
     }
 
     /**
@@ -71,9 +71,10 @@ contract BridgePoolFactory is
         uint8 tokenType_,
         address ercContract_,
         uint16 poolVersion_,
+        uint256 chainID_,
         bytes calldata initCallData
     ) public onlyFactory {
-        _deployNewPool(poolType_, tokenType_, ercContract_, poolVersion_, initCallData);
+        _deployNewPool(poolType_, tokenType_, ercContract_, poolVersion_, chainID_, initCallData);
     }
 
     /**

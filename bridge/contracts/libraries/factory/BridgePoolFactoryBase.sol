@@ -74,6 +74,18 @@ abstract contract BridgePoolFactoryBase is ImmutableFactory {
         bytes calldata deployCode_
     ) internal returns (address addr) {
         uint32 codeSize;
+        bytes memory logicAddressKey = _getImplementationAddressKey(
+            poolType_,
+            tokenType_,
+            poolVersion_
+        );
+        if (_logicAddresses[logicAddressKey] != address(0)) {
+            revert BridgePoolFactoryErrors.PoolLogicAlreadyDeployed(
+                poolType_,
+                tokenType_,
+                poolVersion_
+            );
+        }
         assembly {
             let ptr := mload(0x40)
             calldatacopy(ptr, deployCode_.offset, deployCode_.length)
@@ -86,7 +98,7 @@ abstract contract BridgePoolFactoryBase is ImmutableFactory {
         }
         _logicVersionsDeployed[poolType_][tokenType_] += 1;
         //record the depolyed logic address in the mapping
-        _logicAddresses[_getImplementationAddressKey(poolType_, tokenType_, poolVersion_)] = addr;
+        _logicAddresses[logicAddressKey] = addr;
     }
 
     /**
