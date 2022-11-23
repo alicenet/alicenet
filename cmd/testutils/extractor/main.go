@@ -15,7 +15,7 @@ func main() {
 
 	bytes, err := os.ReadFile(*filePath)
 	if err != nil {
-		panic("Could not read file")
+		panic(fmt.Sprintf("Could not read file: %v with error %v", *filePath, err))
 	}
 	outerRegex := regexp.MustCompile(fmt.Sprintf(`\[%s\]\ndefaultFactoryAddress = \".*\"\n`, *network))
 	innerRegex := regexp.MustCompile(`defaultFactoryAddress = .*`)

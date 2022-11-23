@@ -51,7 +51,7 @@ abstract contract BridgePoolFactoryBaseERC777Mock is ImmutableFactory {
     // solhint-disable-next-line
     fallback() external {
         address implementation_ = _implementation;
-        assembly {
+        assembly ("memory-safe") {
             let ptr := mload(0x40)
             mstore(ptr, shl(176, 0x363d3d373d3d3d363d73)) //10
             mstore(add(ptr, 10), shl(96, implementation_)) //20
@@ -86,7 +86,7 @@ abstract contract BridgePoolFactoryBaseERC777Mock is ImmutableFactory {
         uint32 codeSize;
         bool native = true;
         uint16 version;
-        assembly {
+        assembly ("memory-safe") {
             let ptr := mload(0x40)
             calldatacopy(ptr, deployCode_.offset, deployCode_.length)
             addr := create(value_, ptr, deployCode_.length)
@@ -141,7 +141,7 @@ abstract contract BridgePoolFactoryBaseERC777Mock is ImmutableFactory {
         _implementation = implementation;
         //check if the logic exists for the specified pool
         uint256 implementationSize;
-        assembly {
+        assembly ("memory-safe") {
             implementationSize := extcodesize(implementation)
         }
         if (implementationSize == 0) {
@@ -159,7 +159,7 @@ abstract contract BridgePoolFactoryBaseERC777Mock is ImmutableFactory {
      */
     function _deployStaticPool(bytes32 salt_) internal returns (address contractAddr) {
         uint256 contractSize;
-        assembly {
+        assembly ("memory-safe") {
             let ptr := mload(0x40)
             mstore(ptr, shl(136, 0x5880818283335afa3d82833e3d82f3))
             contractAddr := create2(0, ptr, 15, salt_)
