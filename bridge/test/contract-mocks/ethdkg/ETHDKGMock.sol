@@ -211,6 +211,10 @@ contract ETHDKGMock is
         _callPhaseContract(abi.encodeWithSignature("complete()"));
     }
 
+    function setValidMasterPublicKey(bytes32 mpk_) public {
+        _masterPublicKeyRegistry[mpk_] = true;
+    }
+
     function isETHDKGRunning() public view returns (bool) {
         return _isETHDKGRunning();
     }
@@ -228,6 +232,10 @@ contract ETHDKGMock is
             (_masterPublicKey[1] != 0) ||
             (_masterPublicKey[2] != 0) ||
             (_masterPublicKey[3] != 0));
+    }
+
+    function isValidMasterPublicKey(bytes32 masterPublicKeyHash) public view returns (bool) {
+        return _masterPublicKeyRegistry[masterPublicKeyHash];
     }
 
     function getNonce() public view returns (uint256) {

@@ -69,6 +69,8 @@ interface IETHDKG {
 
     function isMasterPublicKeySet() external view returns (bool);
 
+    function isValidMasterPublicKey(bytes32 masterPublicKeyHash) external view returns (bool);
+
     function getNonce() external view returns (uint256);
 
     function getPhaseStartBlock() external view returns (uint256);
