@@ -19,7 +19,6 @@ const tokenTypeERC1155 = 2;
 
 const bridgePoolNativeChainId = 1337;
 const bridgePoolExternalChainId = 9999;
-const bridgePoolValue = 0;
 const bridgePoolDeployCode = "0x38585839386009f3"; // UNIVERSAL_DEPLOY_CODE
 interface BridgePoolFactoryFixture extends BaseTokensFixture {
   bridgePoolFactory: BridgePoolFactory;
@@ -97,7 +96,6 @@ describe("Testing bridge pool factory getter functions", async () => {
         nativeBridgePool,
         tokenTypeERC20,
         bridgePoolVersion,
-        bridgePoolValue,
         bridgePoolDeployCode,
       ]
     );
@@ -133,7 +131,6 @@ describe("Testing bridge pool factory getter functions", async () => {
         nativeBridgePool,
         tokenTypeERC20,
         bridgePoolVersion,
-        bridgePoolValue,
         bridgePoolDeployCode,
       ]
     );
