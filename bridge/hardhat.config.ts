@@ -3,13 +3,13 @@ import "@nomiclabs/hardhat-ethers";
 import "@nomiclabs/hardhat-etherscan";
 import "@nomiclabs/hardhat-truffle5";
 import "@typechain/hardhat";
+import * as dotenv from "dotenv";
 import "hardhat-abi-exporter";
 import "hardhat-contract-sizer";
 import "hardhat-deploy";
 import "hardhat-gas-reporter";
 import "hardhat-log-remover";
 import "hardhat-storage-layout";
-import "hardhat/config";
 import { HardhatUserConfig, task } from "hardhat/config";
 import os from "os";
 import "solidity-coverage";
@@ -17,7 +17,7 @@ import "./scripts/generateImmutableAuth";
 import "./scripts/lib/alicenetFactoryTasks";
 import "./scripts/lib/alicenetTasks";
 import "./scripts/lib/gogogen";
-require("dotenv").config();
+dotenv.config();
 
 /**
  * @type import('hardhat/config').HardhatUserConfig
@@ -230,28 +230,14 @@ const config: HardhatUserConfig = {
   solidity: {
     compilers: [
       {
-        version: "0.8.16",
+        version: "0.8.17",
         settings: {
           outputSelection: {
             "*": {
-              "*": [
-                "metadata",
-                "evm.bytecode",
-                "evm.bytecode.sourceMap",
-                "storageLayout",
-              ],
-              "": [
-                "ast", // Enable the AST output of every single file.
-              ],
-            },
-            // Enable the abi and opcodes output of MyContract defined in file def.
-            def: {
-              MyContract: ["abi", "evm.bytecode.opcodes"],
+              "*": ["evm.assembly", "irOptimized"],
             },
           },
-          metadata: {
-            useLiteralContent: true,
-          },
+          viaIR: true,
           optimizer: {
             enabled: true,
             runs: 20000,
