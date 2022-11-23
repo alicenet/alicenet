@@ -3,6 +3,8 @@ pragma solidity ^0.8.16;
 
 import "contracts/libraries/errors/BridgePoolFactoryErrors.sol";
 import "contracts/libraries/factory/BridgePoolFactoryBase.sol";
+import "hardhat/console.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 /// @custom:salt BridgePoolFactory
 /// @custom:deploy-type deployUpgradeable
@@ -10,16 +12,20 @@ contract BridgePoolFactory is
     ImmutableFactory,
     ImmutableSnapshots,
     ImmutableETHDKG,
-    BridgePoolFactoryBase
+    BridgePoolFactoryBase,
+    Initializable
 {
     address internal _aliceNetRegistry;
+    address internal _ethDKGAddress;
 
     constructor()
         ImmutableFactory(msg.sender)
         ImmutableSnapshots()
         ImmutableETHDKG()
         BridgePoolFactoryBase()
-    {
+    {}
+
+    function initialize() public onlyFactory initializer {
         _aliceNetRegistry = msg.sender;
     }
 
@@ -123,10 +129,12 @@ contract BridgePoolFactory is
      * @dev use this to get factory address and lookup other
      * contracts from the constructor, when deploying pool logic
      */
-    function getFactoryAddress() public view returns (address snapshot) {
-        return _aliceNetRegistry;
+    function getRegistryAddress() public view returns (address registryAddress) {
+        console.log("registryAddress %s", _aliceNetRegistry);
+        registryAddress = _aliceNetRegistry;
     }
 
+    // function getSnapshotAddress
     /**
      * @notice calculates salt for a BridgePool contract based on ERC contract's address, tokenType, chainID and version_
      * @param tokenContractAddr_ address of ERC Token contract

@@ -238,7 +238,7 @@ export const deployUpgradeableWithFactory = async (
     .data as BytesLike;
   const hre: any = await require("hardhat");
   const transaction = await factory.deployCreate(deployCode);
-  let receipt = await ethers.provider.getTransactionReceipt(transaction.hash);
+  let receipt = await transaction.wait();
   if (
     receipt.gasUsed.gt(10_000_000) &&
     hre.__SOLIDITY_COVERAGE_RUNNING !== true

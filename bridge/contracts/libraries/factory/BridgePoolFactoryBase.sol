@@ -69,15 +69,11 @@ abstract contract BridgePoolFactoryBase is ImmutableFactory {
         bytes calldata deployCode_
     ) internal returns (address addr) {
         uint32 codeSize;
-        bytes memory alicenetFactoryAddress = abi.encodePacked(
-            bytes32(uint256(uint160(_factoryAddress())))
-        );
         assembly {
             let ptr := mload(0x40)
             calldatacopy(ptr, deployCode_.offset, deployCode_.length)
             // add bytes32 alicenet factory address as parameter to constructor
-            mstore(add(ptr, deployCode_.length), alicenetFactoryAddress)
-            addr := create(value_, ptr, add(deployCode_.length, 32))
+            addr := create(value_, ptr, deployCode_.length)
             codeSize := extcodesize(addr)
         }
         if (codeSize == 0) {
