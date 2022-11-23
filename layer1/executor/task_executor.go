@@ -113,7 +113,10 @@ func (te *TaskExecutor) handleTaskExecution(task tasks.Task, name string, taskId
 	// Clean up in case the task was killed
 	if task.WasKilled() {
 		task.GetLogger().Trace("task was externally killed, removing tx backup")
-		te.removeTxBackup(task.GetId())
+		err := te.removeTxBackup(task.GetId())
+		if err != nil {
+			task.GetLogger().Error("removal of tx back up failure")
+		}
 	}
 
 	if errors.Is(err, tasks.ErrTaskExecutionMechanismClosed) {

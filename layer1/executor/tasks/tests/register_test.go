@@ -239,7 +239,8 @@ func TestRegisterTask_Group_1_Bad1(t *testing.T) {
 	dkgState.TransportPrivateKey = big.NewInt(0)
 	// Mess up public key; this should fail because it is invalid
 	dkgState.TransportPublicKey = [2]*big.Int{big.NewInt(0), big.NewInt(1)}
-	state.SaveDkgState(dkgDb, dkgState)
+	err = state.SaveDkgState(dkgDb, dkgState)
+	assert.NotNil(t, err)
 	_, err = registrationTask.Execute(ctx)
 	assert.NotNil(t, err)
 }
@@ -299,7 +300,8 @@ func TestRegisterTask_Group_2_Bad2(t *testing.T) {
 	dkgState.TransportPrivateKey = big.NewInt(0)
 	// Mess up public key; this should fail because it is invalid (the identity element)
 	dkgState.TransportPublicKey = [2]*big.Int{big.NewInt(0), big.NewInt(0)}
-	state.SaveDkgState(dkgDb, dkgState)
+	err = state.SaveDkgState(dkgDb, dkgState)
+	assert.NotNil(t, err)
 	_, err = registrationTask.Execute(ctx)
 	assert.NotNil(t, err)
 }
