@@ -43,7 +43,7 @@ jobs:
           node-version-file: "bridge/.nvmrc"
           cache: "npm"
           cache-dependency-path: bridge/package-lock.json
-      - run: npm ci
+      - run: npm ci --force
       - run: npm run clean
       - run: npm run compile
       - uses: ./.github/actions/solidity-tests
@@ -65,7 +65,7 @@ jobs:
           node-version-file: "bridge/.nvmrc"
           cache: "npm"
           cache-dependency-path: bridge/package-lock.json
-      - run: npm ci
+      - run: npm ci --force
       - run: npm run clean
       - run: npm run compile
       - run: npx hardhat coverage --solcoverjs ./.solcover.ts
@@ -89,7 +89,7 @@ jobs:
           node-version-file: "bridge/.nvmrc"
           cache: "npm"
           cache-dependency-path: bridge/package-lock.json
-      - run: npm ci
+      - run: npm ci --force
       - run: npm run clean
       - run: npm run compile
       - run: npm run typechain
