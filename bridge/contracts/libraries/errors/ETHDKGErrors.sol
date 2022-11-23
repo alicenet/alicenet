@@ -64,4 +64,5 @@ library ETHDKGErrors {
         uint256 validatorSharesLength
     );
     error ParticipantNotFoundInLastRound(address addr);
+    error ETHDKGSubContractNotSet();
 }

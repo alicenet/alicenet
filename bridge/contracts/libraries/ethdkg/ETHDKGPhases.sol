@@ -375,6 +375,9 @@ contract ETHDKGPhases is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
         // Since we had a dispute stage prior this state we need to set global state in here
         _setPhase(Phase.Completion);
 
+        // add the current master public key in the registry
+        _masterPublicKeyRegistry[_masterPublicKeyHash] = true;
+
         IValidatorPool(_validatorPoolAddress()).completeETHDKG();
 
         uint256 epoch = ISnapshots(_snapshotsAddress()).getEpoch();
