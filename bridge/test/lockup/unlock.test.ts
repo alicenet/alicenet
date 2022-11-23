@@ -260,11 +260,6 @@ describe("Testing Unlock", async () => {
       expectedState.users[user].alca += BigNumber.from(
         example3[user].totalEarnedALCA
       ).toBigInt();
-      // workaround to discount integer division errors.
-      expectedState.users[user].eth =
-        (expectedState.users[user].eth / 100n) * 100n;
-      expectedState.users[user].alca =
-        (expectedState.users[user].alca / 100n) * 100n;
       expectedState.users[user].tokenId = ethers.constants.Zero.toBigInt();
       expectedState.users[user].tokenOwner = ethers.constants.AddressZero;
       expectedState.users[user].rewardEth = 0n;
@@ -292,10 +287,20 @@ describe("Testing Unlock", async () => {
     // workaround to discount integer division errors.
     for (let i = 1; i <= numberOfLockingUsers - 2; i++) {
       const user = "user" + i;
-      currentState.users[user].eth =
-        (currentState.users[user].eth / 100n) * 100n;
-      currentState.users[user].alca =
-        (currentState.users[user].alca / 100n) * 100n;
+      // extra check to check if the error is less than an allowed threshold
+      if (currentState.users[user].eth >= expectedState.users[user].eth) {
+        expect(
+          currentState.users[user].eth - expectedState.users[user].eth
+        ).to.be.lessThan(10);
+      } else {
+        expect(
+          expectedState.users[user].eth - currentState.users[user].eth
+        ).to.be.lessThan(10);
+      }
+      // after we have checked the threshold that accounts for integer division errors, we put the expect
+      // and current values to be same to check the rest of the state
+      expectedState.users[user].eth = currentState.users[user].eth;
+      expectedState.users[user].alca = currentState.users[user].alca;
     }
     assert.deepEqual(currentState, expectedState);
   });
@@ -387,17 +392,10 @@ describe("Testing Unlock", async () => {
           expectedState.users[user].eth - currentState.users[user].eth
         ).to.be.lessThan(10);
       }
-      // workaround to discount integer division errors. The error range is less than 10, usually 1
-      // or 2. However, to avoid values ...39 and ...40 resulting in failed tests, we divide by 100
-      // instead of 10
-      expectedState.users[user].eth =
-        (expectedState.users[user].eth / 100n) * 100n;
-      expectedState.users[user].alca =
-        (expectedState.users[user].alca / 100n) * 100n;
-      currentState.users[user].eth =
-        (currentState.users[user].eth / 100n) * 100n;
-      currentState.users[user].alca =
-        (currentState.users[user].alca / 100n) * 100n;
+      // after we have checked the threshold that accounts for integer division errors, we put the
+      // expect and current values to be same to check the rest of the state
+      expectedState.users[user].eth = currentState.users[user].eth;
+      expectedState.users[user].alca = currentState.users[user].alca;
     }
     assert.deepEqual(currentState, expectedState);
   });
