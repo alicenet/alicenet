@@ -40,9 +40,10 @@ contract BridgePoolFactory is
         uint8 tokenType_,
         address ercContract_,
         uint16 poolVersion_,
+        uint256 chainId_,
         bytes calldata initCallData
     ) public onlyFactoryOrPublicEnabled {
-        _deployNewPool(1, tokenType_, ercContract_, poolVersion_, initCallData);
+        _deployNewPool(1, tokenType_, ercContract_, poolVersion_, chainID_, initCallData);
     }
 
     /**
@@ -56,9 +57,10 @@ contract BridgePoolFactory is
         uint8 tokenType_,
         address ercContract_,
         uint16 poolVersion_,
+        uint256 chainId_,
         bytes calldata initCallData
     ) public onlyFactoryOrPublicEnabled {
-        _deployNewPool(0, tokenType_, ercContract_, poolVersion_, initCallData);
+        _deployNewPool(0, tokenType_, ercContract_, poolVersion_, chainId_, initCallData);
     }
 
     /**
@@ -78,7 +80,6 @@ contract BridgePoolFactory is
      * @notice deploys logic for bridge pools and stores it in a logicAddresses mapping
      * @param poolType_ type of pool (0=native, 1=external)
      * @param tokenType_ type of token (1=ERC20, 2=ERC721)
-     * @param value_ amount of eth to send to the contract on creation
      * @param poolVersion_ version of bridge pool logic to deploy
      * @param deployCode_ logic contract deployment bytecode
      */
@@ -86,10 +87,9 @@ contract BridgePoolFactory is
         uint8 poolType_,
         uint8 tokenType_,
         uint16 poolVersion_,
-        uint256 value_,
         bytes calldata deployCode_
     ) public onlyFactory returns (address) {
-        return _deployPoolLogic(poolType_, tokenType_, poolVersion_, value_, deployCode_);
+        return _deployPoolLogic(poolType_, tokenType_, poolVersion_, deployCode_);
     }
 
     /**
@@ -106,7 +106,7 @@ contract BridgePoolFactory is
      * @param newAddress_ address of the new registry contract
      *
      */
-    function changeAliceNetFactoryAddress(address newAddress_) public onlyFactory {
+    function changeAliceNetRegistryAddress(address newAddress_) public onlyFactory {
         _aliceNetRegistry = newAddress_;
     }
 
@@ -130,11 +130,9 @@ contract BridgePoolFactory is
      * contracts from the constructor, when deploying pool logic
      */
     function getRegistryAddress() public view returns (address registryAddress) {
-        console.log("registryAddress %s", _aliceNetRegistry);
         registryAddress = _aliceNetRegistry;
     }
 
-    // function getSnapshotAddress
     /**
      * @notice calculates salt for a BridgePool contract based on ERC contract's address, tokenType, chainID and version_
      * @param tokenContractAddr_ address of ERC Token contract
