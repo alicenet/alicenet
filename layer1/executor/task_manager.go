@@ -122,10 +122,7 @@ func (tm *TaskManager) eventLoop() {
 
 		case taskRequest, ok := <-tm.requestChan:
 			if !ok {
-				err := tm.onError(ErrReceivedRequestClosedChan)
-				if err != nil {
-					tm.logger.Warn("task manager is closing")
-				}
+				_ = tm.onError(ErrReceivedRequestClosedChan)
 				return
 			}
 			if taskRequest.response == nil {

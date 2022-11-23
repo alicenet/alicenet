@@ -6,6 +6,7 @@ run:
 linters:
   enable:
     - errcheck
+  # Disabling linters until we get them fixed up.
   disable:
     - gosimple
     - govet

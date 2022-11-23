@@ -81,7 +81,7 @@ func TestGetSetNode(t *testing.T) {
 	db := initializeDB()
 
 	node := &Node{}
-	_ = db.rawDB.Update(func(txn *badger.Txn) error {
+	err := db.rawDB.Update(func(txn *badger.Txn) error {
 		err := db.SetNode(txn, node)
 		if err == nil {
 			t.Fatal("Should have raised error (1)")
@@ -120,6 +120,9 @@ func TestGetSetNode(t *testing.T) {
 		}
 		return nil
 	})
+	if err != nil {
+		t.Fatal("unable to complete test")
+	}
 }
 
 func TestGetSetLinkedList(t *testing.T) {
@@ -127,7 +130,7 @@ func TestGetSetLinkedList(t *testing.T) {
 	db := initializeDB()
 
 	ll := &LinkedList{}
-	_ = db.rawDB.Update(func(txn *badger.Txn) error {
+	err := db.rawDB.Update(func(txn *badger.Txn) error {
 		err := db.SetLinkedList(txn, ll)
 		if err == nil {
 			t.Fatal("Should have raised error (1)")
@@ -151,4 +154,7 @@ func TestGetSetLinkedList(t *testing.T) {
 		}
 		return nil
 	})
+	if err != nil {
+		t.Fatal("unable to complete test")
+	}
 }
