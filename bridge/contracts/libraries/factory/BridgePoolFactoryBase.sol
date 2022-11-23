@@ -17,7 +17,13 @@ abstract contract BridgePoolFactoryBase is ImmutableFactory {
     mapping(uint8 => mapping(uint8 => uint16)) internal _logicVersionsDeployed;
     //existing pools
     mapping(address => bool) public poolExists;
-    event BridgePoolCreated(address poolAddress, address token);
+    event BridgePoolCreated(
+        address poolAddress,
+        address ercTokenAddress,
+        uint8 poolType,
+        uint256 chainID,
+        uint16 poolLogicVersion
+    );
 
     modifier onlyFactoryOrPublicEnabled() {
         if (msg.sender != _factoryAddress() && !publicPoolDeploymentEnabled) {
@@ -65,7 +71,6 @@ abstract contract BridgePoolFactoryBase is ImmutableFactory {
         uint8 poolType_,
         uint8 tokenType_,
         uint16 poolVersion_,
-        uint256 value_,
         bytes calldata deployCode_
     ) internal returns (address addr) {
         uint32 codeSize;
@@ -73,7 +78,7 @@ abstract contract BridgePoolFactoryBase is ImmutableFactory {
             let ptr := mload(0x40)
             calldatacopy(ptr, deployCode_.offset, deployCode_.length)
             // add bytes32 alicenet factory address as parameter to constructor
-            addr := create(value_, ptr, deployCode_.length)
+            addr := create(0, ptr, deployCode_.length)
             codeSize := extcodesize(addr)
         }
         if (codeSize == 0) {
@@ -96,13 +101,14 @@ abstract contract BridgePoolFactoryBase is ImmutableFactory {
         uint8 tokenType_,
         address ercContract_,
         uint16 poolVersion_,
+        uint256 chainID_,
         bytes calldata initCallData
     ) internal {
         // get the unique salt for the bridge pool
         bytes32 bridgePoolSalt = BridgePoolAddressUtil.getBridgePoolSalt(
             ercContract_,
             tokenType_,
-            _chainID,
+            chainID_,
             poolVersion_
         );
         //look up the address in the _logicAddresses mapping
@@ -120,7 +126,7 @@ abstract contract BridgePoolFactoryBase is ImmutableFactory {
         address contractAddr = _deployStaticPool(bridgePoolSalt);
         _initializeContract(contractAddr, initCallData);
         IBridgePool(contractAddr).initialize(ercContract_);
-        emit BridgePoolCreated(contractAddr, ercContract_);
+        emit BridgePoolCreated(contractAddr, ercContract_, poolType_, chainID_, poolVersion_);
     }
 
     function _initializeContract(address contract_, bytes calldata initCallData_) internal {
