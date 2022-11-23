@@ -294,6 +294,51 @@ describe("InvalidTxConsumptionAccusation: Tests InvalidTxConsumptionAccusation m
         .withArgs(signerAccount0);
     });
 
+    it("reverts when chain id is not valid in BClaims and PClaims", async function () {
+      const address2 = "0x03e0AcB2Bf2B41D7E102Cd44937f6c5c6F1d5353";
+      await addValidators(fixture.validatorPool, [signerAccount0, address2]);
+      const {
+        pClaims,
+        pClaimsSig,
+        bClaims,
+        bClaimsSigGroup,
+        txInPreImage,
+        proofs,
+      } = getValidAccusationDataForNonExistentUTXO();
+
+      const snapshotsMock = await ethers.getContractAt(
+        "SnapshotsMock",
+        fixture.snapshots.address
+      );
+
+      await snapshotsMock.snapshot(
+        validSnapshot1024.GroupSignature,
+        validSnapshot1024.BClaims
+      );
+
+      await setMPKAsValid(bClaimsSigGroup);
+
+      const expectedBClaimsChainId = 1;
+      const expectedpClaimsChainId = 1;
+      const expectedActualChainId = 0;
+      await expect(
+        accusation.accuseInvalidTransactionConsumption(
+          pClaims,
+          pClaimsSig,
+          bClaims,
+          bClaimsSigGroup,
+          txInPreImage,
+          proofs
+        )
+      )
+        .to.be.revertedWithCustomError(accusation, "ChainIdDoesNotMatch")
+        .withArgs(
+          expectedBClaimsChainId,
+          expectedpClaimsChainId,
+          expectedActualChainId
+        );
+    });
+
     it("reverts when chain id is not valid", async function () {
       const address2 = "0x03e0AcB2Bf2B41D7E102Cd44937f6c5c6F1d5353";
       await addValidators(fixture.validatorPool, [signerAccount0, address2]);
