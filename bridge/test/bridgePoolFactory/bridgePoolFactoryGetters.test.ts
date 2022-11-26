@@ -1,7 +1,6 @@
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
-import { solidityPack } from "ethers/lib/utils";
 import { ethers } from "hardhat";
 import { BridgePoolFactory } from "../../typechain-types/contracts/BridgePoolFactory";
 import {
@@ -49,36 +48,6 @@ async function deployFixture() {
 describe("Testing bridge pool factory getter functions", async () => {
   beforeEach(async function () {
     ({ fixture, admin } = await loadFixture(deployFixture));
-  });
-
-  it("gets a salt for ERC20 Native pool ", async () => {
-    const ercTokenAddress = fixture.legacyToken.address;
-    const abicoder = new ethers.utils.AbiCoder();
-    const encodedAddress = solidityPack(["address"], [ercTokenAddress]);
-    const encodedTokenType = solidityPack(["uint8"], [tokenTypeERC20]);
-    const encodedChainID = solidityPack(["uint256"], [bridgePoolNativeChainId]);
-    const encodedBridgePoolVersion = solidityPack(
-      ["uint16"],
-      [bridgePoolVersion]
-    );
-    const addressHash = ethers.utils.keccak256(encodedAddress);
-    const tokenTypeHash = ethers.utils.keccak256(encodedTokenType);
-    const chainIDHash = ethers.utils.keccak256(encodedChainID);
-    const bridgePoolVersionHash = ethers.utils.keccak256(
-      encodedBridgePoolVersion
-    );
-    const bridgePoolSaltBytes = abicoder.encode(
-      ["bytes32", "bytes32", "bytes32", "bytes32"],
-      [addressHash, tokenTypeHash, chainIDHash, bridgePoolVersionHash]
-    );
-    const expectedBridgePoolSalt = ethers.utils.keccak256(bridgePoolSaltBytes);
-    let bridgePoolSalt = await fixture.bridgePoolFactory.getBridgePoolSalt(
-      ercTokenAddress,
-      tokenTypeERC20,
-      bridgePoolNativeChainId,
-      bridgePoolVersion
-    );
-    expect(bridgePoolSalt).to.equal(expectedBridgePoolSalt);
   });
 
   it("gets the alicenet factory address from the bridge pool factory", async () => {

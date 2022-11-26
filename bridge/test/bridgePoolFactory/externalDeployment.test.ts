@@ -18,7 +18,6 @@ const externalBridgePool = 1;
 const tokenTypeERC20 = 0;
 const tokenTypeERC721 = 1;
 const tokenTypeERC1155 = 2;
-
 const bridgePoolNativeChainId = 1337;
 const bridgePoolExternalChainId = 9999;
 const bridgePoolDeployCode = "0x38585839386009f3"; // UNIVERSAL_DEPLOY_CODE

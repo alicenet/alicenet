@@ -20,7 +20,6 @@ abstract contract BridgePoolFactoryBase is ImmutableFactory {
     event BridgePoolCreated(
         address poolAddress,
         address ercTokenAddress,
-        uint8 poolType,
         uint256 chainID,
         uint16 poolLogicVersion
     );
@@ -74,6 +73,9 @@ abstract contract BridgePoolFactoryBase is ImmutableFactory {
         bytes calldata deployCode_
     ) internal returns (address addr) {
         uint32 codeSize;
+        uint16 version = _logicVersionsDeployed[poolType_][tokenType_] + 1;
+        if (poolVersion_ != version)
+            revert BridgePoolFactoryErrors.InvalidVersion(version, poolVersion_);
         bytes memory logicAddressKey = _getImplementationAddressKey(
             poolType_,
             tokenType_,
@@ -96,7 +98,7 @@ abstract contract BridgePoolFactoryBase is ImmutableFactory {
         if (codeSize == 0) {
             revert BridgePoolFactoryErrors.FailedToDeployLogic();
         }
-        _logicVersionsDeployed[poolType_][tokenType_] += 1;
+        _logicVersionsDeployed[poolType_][tokenType_] = version;
         //record the depolyed logic address in the mapping
         _logicAddresses[logicAddressKey] = addr;
     }
@@ -138,7 +140,7 @@ abstract contract BridgePoolFactoryBase is ImmutableFactory {
         address contractAddr = _deployStaticPool(bridgePoolSalt);
         _initializeContract(contractAddr, initCallData);
         IBridgePool(contractAddr).initialize(ercContract_);
-        emit BridgePoolCreated(contractAddr, ercContract_, poolType_, chainID_, poolVersion_);
+        emit BridgePoolCreated(contractAddr, ercContract_, chainID_, poolVersion_);
     }
 
     function _initializeContract(address contract_, bytes calldata initCallData_) internal {
