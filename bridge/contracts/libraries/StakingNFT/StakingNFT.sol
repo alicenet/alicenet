@@ -193,9 +193,7 @@ abstract contract StakingNFT is
 
     /// burn exits a staking position such that all accumulated value is
     /// transferred to the owner on burn.
-    function burn(
-        uint256 tokenID_
-    ) public virtual returns (uint256 payoutEth, uint256 payoutALCA) {
+    function burn(uint256 tokenID_) public virtual returns (uint256 payoutEth, uint256 payoutALCA) {
         return _burn(msg.sender, msg.sender, tokenID_);
     }
 

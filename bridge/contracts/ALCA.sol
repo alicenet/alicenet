@@ -13,13 +13,7 @@ import "contracts/libraries/errors/StakingTokenErrors.sol";
  * AliceNet layer2 dapp.
  *
  */
-contract ALCA is
-    IStakingToken,
-    ERC20,
-    ImmutableFactory,
-    ImmutableALCAMinter,
-    ImmutableALCABurner
-{
+contract ALCA is IStakingToken, ERC20, ImmutableFactory, ImmutableALCAMinter, ImmutableALCABurner {
     uint256 internal constant _CONVERSION_MULTIPLIER = 15_555_555_555_555_555_555_555_555_555;
     uint256 internal constant _CONVERSION_SCALE = 10_000_000_000_000_000_000_000_000_000;
     uint256 internal constant _INITIAL_MINT_AMOUNT = 244_444_444_444444444444444444;
