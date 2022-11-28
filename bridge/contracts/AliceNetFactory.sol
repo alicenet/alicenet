@@ -7,7 +7,6 @@ import "contracts/ALCA.sol";
 
 contract AliceNetFactory is AliceNetFactoryBase {
     // ALCA salt = Bytes32(ALCA)
-    // ALCA is the old ALCA name, salt kept to maintain compatibility
     bytes32 internal constant _ALCA_SALT =
         0x414c434100000000000000000000000000000000000000000000000000000000;
 
