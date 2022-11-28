@@ -41,9 +41,9 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version-file: "bridge/.nvmrc"
-          # cache: "npm"
-          # cache-dependency-path: bridge/package-lock.json
-      - run: npm ci --force
+          cache: "npm"
+          cache-dependency-path: bridge/package-lock.json
+      - run: npm install --force
       - run: npm run clean
       - run: npm run compile
       - uses: ./.github/actions/solidity-tests
@@ -63,9 +63,9 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version-file: "bridge/.nvmrc"
-          # cache: "npm"
-          # cache-dependency-path: bridge/package-lock.json
-      - run: npm ci --force
+          cache: "npm"
+          cache-dependency-path: bridge/package-lock.json
+      - run: npm install --force
       - run: npm run clean
       - run: npm run compile
       - run: npx hardhat coverage --solcoverjs ./.solcover.ts
@@ -87,9 +87,9 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version-file: "bridge/.nvmrc"
-          # cache: "npm"
-          # cache-dependency-path: bridge/package-lock.json
-      - run: npm ci --force
+          cache: "npm"
+          cache-dependency-path: bridge/package-lock.json
+      - run: npm install --force
       - run: npm run clean
       - run: npm run compile
       - run: npm run typechain
@@ -159,9 +159,9 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version-file: "bridge/.nvmrc"
-          # cache: "npm"
-          # cache-dependency-path: bridge/package-lock.json
-      - run: npm --prefix bridge/ ci --force
+          cache: "npm"
+          cache-dependency-path: bridge/package-lock.json
+      - run: npm --prefix bridge/ install --force
       - run: npm --prefix bridge/ run compile
       - uses: ./.github/actions/alicenet-config
       - name: Set up gotestfmt
