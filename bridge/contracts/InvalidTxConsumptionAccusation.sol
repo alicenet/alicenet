@@ -67,12 +67,12 @@ contract InvalidTxConsumptionAccusation is
             revert AccusationsErrors.NoTransactionInAccusedProposal();
         }
 
-        Snapshot memory latestSnapshot = ISnapshots(_snapshotsAddress()).getLatestSnapshot();
-        uint256 epochLength = ISnapshots(_snapshotsAddress()).getEpochLength();
-
         if (bClaims.height + 1 != pClaims.bClaims.height) {
             revert AccusationsErrors.HeightDeltaShouldBeOne(bClaims.height, pClaims.bClaims.height);
         }
+
+        Snapshot memory latestSnapshot = ISnapshots(_snapshotsAddress()).getLatestSnapshot();
+        uint256 epochLength = ISnapshots(_snapshotsAddress()).getEpochLength();
 
         // if the current PClaims height is greater than 1 epoch from the latest snapshot or it's is
         // older than 2 epochs in the past, the accusation is invalid
@@ -165,10 +165,10 @@ contract InvalidTxConsumptionAccusation is
      * @param bClaims_ the BClaims of the accusation
      * @param bClaimsSigGroup_ the signature group of Pclaims
      */
-    function _verifySignatureGroup(
-        bytes memory bClaims_,
-        bytes memory bClaimsSigGroup_
-    ) internal view {
+    function _verifySignatureGroup(bytes memory bClaims_, bytes memory bClaimsSigGroup_)
+        internal
+        view
+    {
         uint256[4] memory publicKey;
         uint256[2] memory signature;
         (publicKey, signature) = RCertParserLibrary.extractSigGroup(bClaimsSigGroup_, 0);
