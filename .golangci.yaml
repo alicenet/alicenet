@@ -6,10 +6,10 @@ run:
 linters:
   enable:
     - errcheck
+    - varcheck
   # Disabling linters until we get them fixed up.
   disable:
     - gosimple
     - govet
     - ineffassign
     - staticcheck
-    - varcheck
