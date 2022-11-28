@@ -707,10 +707,6 @@ task(
   "Transfer and stake the ALCA that will be used to pay the bonus shares to the users that lock a position"
 )
   .addParam("factoryAddress", "the AliceNet factory address")
-  .addParam(
-    "bonusAmount",
-    "the amount of ALCA that will transferred and staked as bonus"
-  )
   .setAction(async (taskArgs, hre) => {
     const { ethers } = hre;
     const factory = await ethers.getContractAt(
@@ -729,12 +725,13 @@ task(
       "AToken",
       await factory.lookup(ethers.utils.formatBytes32String("AToken"))
     );
+    const bonusAmount = await bonusPool.getTotalBonusAmount();
     const transferCall = encodeMultiCallArgs(
       alca.address,
       0,
       alca.interface.encodeFunctionData("transfer", [
         bonusPool.address,
-        ethers.utils.parseEther(taskArgs.bonusAmount),
+        bonusAmount,
       ])
     );
     const createBonusStakeCall = encodeMultiCallArgs(
@@ -744,7 +741,12 @@ task(
     );
     await (
       await factory.multiCall([transferCall, createBonusStakeCall])
-    ).wait(8);
+    ).wait();
+    console.log(
+      "Created the bonus position for the lockup contract with:",
+      bonusAmount.toString(),
+      "ALCA"
+    );
   });
 
 task(
@@ -1561,6 +1563,65 @@ task("deploy-alcb", "Task to deploy ALCB")
       hre.ethers.utils.formatBytes32String("BToken"),
       alcbAddress
     );
+  });
+
+task(
+  "deploy-lockup-and-router",
+  "Task to deploy the lockup and the staking router contract"
+)
+  .addParam(
+    "factoryAddress",
+    "the default factory address from factoryState will be used if not set"
+  )
+  .addParam(
+    "enrollmentPeriod",
+    "the enrollmentPeriod that we are going to allow for the lockup contract",
+    1000,
+    types.int
+  )
+  .addParam(
+    "lockDuration",
+    "the lockDuration that we are going to allow for the lockup contract",
+    6000,
+    types.int
+  )
+  .addParam(
+    "totalBonusAmount",
+    "the totalBonusAmount that we are going to give as bonus at the end of the lockup period",
+    2000000,
+    types.int
+  )
+  .setAction(async (taskArgs, hre) => {
+    const factory = await hre.ethers.getContractAt(
+      "AliceNetFactory",
+      taskArgs.factoryAddress
+    );
+    const lockupDeploymentCode = (
+      await hre.ethers.getContractFactory("Lockup")
+    ).getDeployTransaction(
+      taskArgs.enrollmentPeriod,
+      taskArgs.lockDuration,
+      taskArgs.totalBonusAmount
+    ).data as BytesLike;
+    const stakingRouterV1DeploymentCode = (
+      await hre.ethers.getContractFactory("StakingRouterV1")
+    ).getDeployTransaction().data as BytesLike;
+    const lockupSalt = hre.ethers.utils.formatBytes32String("Lockup");
+    const stakingRouterV1Salt =
+      hre.ethers.utils.formatBytes32String("StakingRouterV1");
+    await (
+      await factory.deployCreateAndRegister(lockupDeploymentCode, lockupSalt)
+    ).wait();
+    await (
+      await factory.deployCreateAndRegister(
+        stakingRouterV1DeploymentCode,
+        stakingRouterV1Salt
+      )
+    ).wait();
+    const lockupAddress = await factory.lookup(lockupSalt);
+    const stakingRouterV1Address = await factory.lookup(stakingRouterV1Salt);
+    console.log("Lockup address: ", lockupAddress);
+    console.log("Staking Router V1 address: ", stakingRouterV1Address);
   });
 
 async function mintATokenTo(

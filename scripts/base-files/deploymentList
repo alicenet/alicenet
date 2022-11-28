@@ -16,7 +16,5 @@ deploymentList = [
   "contracts/ValidatorStaking.sol:ValidatorStaking",
   "contracts/libraries/ethdkg/ETHDKGAccusations.sol:ETHDKGAccusations",
   "contracts/libraries/ethdkg/ETHDKGPhases.sol:ETHDKGPhases",
-  "contracts/ETHDKG.sol:ETHDKG",
-  "contracts/Lockup.sol:Lockup",
-  "contracts/StakingRouterV1.sol:StakingRouterV1"
+  "contracts/ETHDKG.sol:ETHDKG"
 ]

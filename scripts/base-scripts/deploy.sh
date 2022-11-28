@@ -59,6 +59,10 @@ cd $BRIDGE_DIR
 echo
 # deploy ALCB
 npx hardhat --network $NETWORK deploy-alcb --factory-address ${FACTORY_ADDRESS}
+# workaround to deploy and register the lockup and staking router contracts
+npx hardhat --network $NETWORK deploy-lockup-and-router --factory-address ${FACTORY_ADDRESS} --enrollment-period 1000 --lock-duration 6000 --total-bonus-amount 2000000
+npx hardhat --network $NETWORK create-bonus-pool-position --factory-address ${FACTORY_ADDRESS}
+
 cd $CURRENT_WD
 
 ./scripts/main.sh register
