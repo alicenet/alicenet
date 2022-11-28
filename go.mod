@@ -18,7 +18,7 @@ require (
 	github.com/hashicorp/golang-lru v0.5.5-0.20210104140557-80c98217689d
 	github.com/hashicorp/yamux v0.0.0-20190923154419-df201c70410d
 	github.com/holiman/uint256 v1.2.1
-	github.com/lightningnetwork/lnd v0.15.5-beta.rc1
+	github.com/lightningnetwork/lnd v0.15.5-beta.rc2
 	github.com/rs/cors v1.8.2
 	github.com/sirupsen/logrus v1.9.0
 	github.com/spf13/cobra v1.6.1
@@ -46,11 +46,11 @@ require (
 	github.com/alecthomas/units v0.0.0-20211218093645-b94a6e3cc137 // indirect
 	github.com/btcsuite/btcd v0.23.4 // indirect
 	github.com/btcsuite/btcd/btcec/v2 v2.2.2 // indirect
-	github.com/btcsuite/btcd/btcutil v1.1.2 // indirect
+	github.com/btcsuite/btcd/btcutil v1.1.3 // indirect
 	github.com/btcsuite/btcd/btcutil/psbt v1.1.5 // indirect
 	github.com/btcsuite/btcd/chaincfg/chainhash v1.0.1 // indirect
 	github.com/btcsuite/btclog v0.0.0-20170628155309-84c8d2346e9f // indirect
-	github.com/btcsuite/btcwallet v0.16.2-0.20221109224534-84bf4e34c816 // indirect
+	github.com/btcsuite/btcwallet v0.16.5 // indirect
 	github.com/btcsuite/btcwallet/wallet/txauthor v1.3.2 // indirect
 	github.com/btcsuite/btcwallet/wallet/txrules v1.2.0 // indirect
 	github.com/btcsuite/btcwallet/wallet/txsizes v1.2.3 // indirect
