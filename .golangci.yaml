@@ -7,8 +7,8 @@ linters:
   enable:
     - errcheck
     - govet
+    - gosimple
   # Disabling linters until we get them fixed up.
   disable:
-    - gosimple
     - ineffassign
     - staticcheck
