@@ -165,10 +165,10 @@ contract InvalidTxConsumptionAccusation is
      * @param bClaims_ the BClaims of the accusation
      * @param bClaimsSigGroup_ the signature group of Pclaims
      */
-    function _verifySignatureGroup(bytes memory bClaims_, bytes memory bClaimsSigGroup_)
-        internal
-        view
-    {
+    function _verifySignatureGroup(
+        bytes memory bClaims_,
+        bytes memory bClaimsSigGroup_
+    ) internal view {
         uint256[4] memory publicKey;
         uint256[2] memory signature;
         (publicKey, signature) = RCertParserLibrary.extractSigGroup(bClaimsSigGroup_, 0);
