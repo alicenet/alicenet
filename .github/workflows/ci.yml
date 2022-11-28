@@ -41,8 +41,8 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version-file: "bridge/.nvmrc"
-          cache: "npm"
-          cache-dependency-path: bridge/package-lock.json
+          # cache: "npm"
+          # cache-dependency-path: bridge/package-lock.json
       - run: npm ci --force
       - run: npm run clean
       - run: npm run compile
@@ -63,8 +63,8 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version-file: "bridge/.nvmrc"
-          cache: "npm"
-          cache-dependency-path: bridge/package-lock.json
+          # cache: "npm"
+          # cache-dependency-path: bridge/package-lock.json
       - run: npm ci --force
       - run: npm run clean
       - run: npm run compile
@@ -87,8 +87,8 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version-file: "bridge/.nvmrc"
-          cache: "npm"
-          cache-dependency-path: bridge/package-lock.json
+          # cache: "npm"
+          # cache-dependency-path: bridge/package-lock.json
       - run: npm ci --force
       - run: npm run clean
       - run: npm run compile
@@ -159,8 +159,8 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version-file: "bridge/.nvmrc"
-          cache: "npm"
-          cache-dependency-path: bridge/package-lock.json
+          # cache: "npm"
+          # cache-dependency-path: bridge/package-lock.json
       - run: npm --prefix bridge/ ci --force
       - run: npm --prefix bridge/ run compile
       - uses: ./.github/actions/alicenet-config
