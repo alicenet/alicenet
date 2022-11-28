@@ -67,7 +67,7 @@ export async function depositTokensForStakingRewards(
   ).wait();
 
   await (
-    await publicStaking.connect(accounts[0]).depositToken(42, alca)
+    await publicStaking.connect(accounts[0]).depositToken(42, alcaAmount)
   ).wait();
 }
 
