@@ -53,7 +53,7 @@ describe("Testing AToken", async () => {
 
         it("Should not mint when called by external identified as minter not impersonating factory", async function () {
           await expect(fixture.aTokenMinter.mint(user.address, amount))
-            .to.be.revertedWithCustomError(fixture.bToken, `OnlyFactory`)
+            .to.be.revertedWithCustomError(fixture.alcb, `OnlyFactory`)
             .withArgs(admin.address, fixture.factory.address);
         });
       });

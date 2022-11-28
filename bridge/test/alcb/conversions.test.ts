@@ -28,76 +28,74 @@ const checkConversionAndMintWei = async (
   admin: SignerWithAddress
 ) => {
   const marketSpread = 4;
-  const bTokens = await fixture.bToken.getLatestMintedBTokensFromEth(eth);
+  const alcbs = await fixture.alcb.getLatestMintedALCBsFromEth(eth);
 
-  const convertedEth = await fixture.bToken.getLatestEthToMintBTokens(bTokens);
+  const convertedEth = await fixture.alcb.getLatestEthToMintALCBs(alcbs);
   // due to rounding errors during integer math, we need to discard errors in the
   // last 2 decimal places
   expect(convertedEth.div(100)).to.be.equal(eth.div(100));
 
-  const [bTokensMinted] = await callFunctionAndGetReturnValues(
-    fixture.bToken,
+  const [alcbsMinted] = await callFunctionAndGetReturnValues(
+    fixture.alcb,
     "mintTo",
     admin,
     [admin.address, 0],
     eth
   );
-  expect(bTokens).to.be.equal(bTokensMinted);
+  expect(alcbs).to.be.equal(alcbsMinted);
 
   // check the mint values in the past
-  const poolBalanceBefore = (await fixture.bToken.getPoolBalance()).sub(
+  const poolBalanceBefore = (await fixture.alcb.getPoolBalance()).sub(
     eth.div(marketSpread)
   );
   expect(
-    await fixture.bToken.getMintedBTokensFromEth(poolBalanceBefore, eth)
-  ).to.be.equal(bTokens);
-  const totalSupplyBefore = (await fixture.bToken.totalSupply()).sub(bTokens);
+    await fixture.alcb.getMintedALCBsFromEth(poolBalanceBefore, eth)
+  ).to.be.equal(alcbs);
+  const totalSupplyBefore = (await fixture.alcb.totalSupply()).sub(alcbs);
   expect(
-    (await fixture.bToken.getEthToMintBTokens(totalSupplyBefore, bTokens)).div(
-      100
-    )
+    (await fixture.alcb.getEthToMintALCBs(totalSupplyBefore, alcbs)).div(100)
   ).to.be.equal(eth.div(100));
 };
 
-const checkConversionAndBurnBToken = async (
+const checkConversionAndBurnALCB = async (
   fixture: Fixture | BaseTokensFixture,
-  bTokens: number,
+  alcbs: number,
   admin: SignerWithAddress
 ) => {
-  await checkConversionAndBurnBTokenWei(
+  await checkConversionAndBurnALCBWei(
     fixture,
-    ethers.utils.parseEther(bTokens.toString()),
+    ethers.utils.parseEther(alcbs.toString()),
     admin
   );
 };
 
-const checkConversionAndBurnBTokenWei = async (
+const checkConversionAndBurnALCBWei = async (
   fixture: Fixture | BaseTokensFixture,
-  bTokens: BigNumber,
+  alcbs: BigNumber,
   admin: SignerWithAddress
 ) => {
-  const eth = await fixture.bToken.getLatestEthFromBTokensBurn(bTokens);
+  const eth = await fixture.alcb.getLatestEthFromALCBsBurn(alcbs);
   const [burnedEth] = await callFunctionAndGetReturnValues(
-    fixture.bToken,
+    fixture.alcb,
     "burn",
     admin,
-    [bTokens, 0],
+    [alcbs, 0],
     BigNumber.from(0)
   );
   expect(eth).to.be.equal(burnedEth);
   // check the mint value in the past
-  const poolBalanceBefore = (await fixture.bToken.getPoolBalance()).add(eth);
-  const totalSupplyBefore = (await fixture.bToken.totalSupply()).add(bTokens);
+  const poolBalanceBefore = (await fixture.alcb.getPoolBalance()).add(eth);
+  const totalSupplyBefore = (await fixture.alcb.totalSupply()).add(alcbs);
   expect(
-    await fixture.bToken.getEthFromBTokensBurn(
+    await fixture.alcb.getEthFromALCBsBurn(
       poolBalanceBefore,
       totalSupplyBefore,
-      bTokens
+      alcbs
     )
   ).to.be.equal(eth);
 };
 
-describe("Testing BToken conversion functions", async () => {
+describe("Testing ALCB conversion functions", async () => {
   let fixture: Fixture;
   let admin: SignerWithAddress;
 
@@ -139,14 +137,14 @@ describe("Testing BToken conversion functions", async () => {
     await checkConversionAndMintEth(fixture, 100000000, admin);
 
     // burn
-    await checkConversionAndBurnBToken(fixture, 1, admin);
-    await checkConversionAndBurnBToken(fixture, 9, admin);
-    await checkConversionAndBurnBToken(fixture, 11, admin);
-    await checkConversionAndBurnBToken(fixture, 75, admin);
-    await checkConversionAndBurnBToken(fixture, 143, admin);
-    await checkConversionAndBurnBToken(fixture, 555, admin);
-    await checkConversionAndBurnBToken(fixture, 1986, admin);
-    await checkConversionAndBurnBToken(fixture, 2200, admin);
-    await checkConversionAndBurnBToken(fixture, 10001, admin);
+    await checkConversionAndBurnALCB(fixture, 1, admin);
+    await checkConversionAndBurnALCB(fixture, 9, admin);
+    await checkConversionAndBurnALCB(fixture, 11, admin);
+    await checkConversionAndBurnALCB(fixture, 75, admin);
+    await checkConversionAndBurnALCB(fixture, 143, admin);
+    await checkConversionAndBurnALCB(fixture, 555, admin);
+    await checkConversionAndBurnALCB(fixture, 1986, admin);
+    await checkConversionAndBurnALCB(fixture, 2200, admin);
+    await checkConversionAndBurnALCB(fixture, 10001, admin);
   });
 });

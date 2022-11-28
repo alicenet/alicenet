@@ -2,7 +2,7 @@
 pragma solidity ^0.8.16;
 
 import "contracts/utils/auth/ImmutableFactory.sol";
-import "contracts/utils/auth/ImmutableBToken.sol";
+import "contracts/utils/auth/ImmutableALCB.sol";
 import "contracts/utils/auth/ImmutablePublicStaking.sol";
 import "contracts/utils/auth/ImmutableValidatorStaking.sol";
 import "contracts/utils/auth/ImmutableLiquidityProviderStaking.sol";
@@ -19,7 +19,7 @@ contract Distribution is
     MagicEthTransfer,
     EthSafeTransfer,
     ImmutableFactory,
-    ImmutableBToken,
+    ImmutableALCB,
     ImmutablePublicStaking,
     ImmutableValidatorStaking,
     ImmutableLiquidityProviderStaking,
@@ -43,7 +43,7 @@ contract Distribution is
         uint256 protocolFeeSplit_
     )
         ImmutableFactory(msg.sender)
-        ImmutableBToken()
+        ImmutableALCB()
         ImmutablePublicStaking()
         ImmutableValidatorStaking()
         ImmutableLiquidityProviderStaking()
@@ -64,7 +64,7 @@ contract Distribution is
         _protocolFeeSplit = protocolFeeSplit_;
     }
 
-    function depositEth(uint8 magic_) public payable checkMagic(magic_) onlyBToken {
+    function depositEth(uint8 magic_) public payable checkMagic(magic_) onlyALCB {
         _distribute();
     }
 
@@ -80,7 +80,7 @@ contract Distribution is
         );
     }
 
-    /// Distributes the yields from the BToken minting to all stake holders.
+    /// Distributes the yields from the ALCB minting to all stake holders.
     function _distribute() internal returns (bool) {
         uint256 excess = address(this).balance;
         // take out protocolFeeShare from excess and decrement excess

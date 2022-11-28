@@ -43,7 +43,7 @@ contract Foundation is
 
     /// DO NOT CALL THIS METHOD UNLESS YOU ARE MAKING A DISTRIBUTION ALL VALUE
     /// WILL BE DISTRIBUTED TO STAKERS EVENLY depositEth distributes Eth to all
-    /// stakers evenly should only be called by BToken contract any Eth sent to
+    /// stakers evenly should only be called by ALCB contract any Eth sent to
     /// this method in error will be lost this function will fail if the circuit
     /// breaker is tripped the magic_ parameter is intended to stop some one from
     /// successfully interacting with this method without first reading the

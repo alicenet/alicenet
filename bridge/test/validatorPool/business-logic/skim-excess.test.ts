@@ -81,10 +81,10 @@ describe("ValidatorPool: Skim excess of ETH and Tokens", async () => {
   it("Non authorized user should not be able to skim excess of tokens eth sent to contract", async function () {
     const validatorPool = fixture.validatorPool as ValidatorPool;
     await expect(validatorPool.skimExcessEth(validatorsSnapshots[0].address))
-      .to.be.revertedWithCustomError(fixture.bToken, `OnlyFactory`)
+      .to.be.revertedWithCustomError(fixture.alcb, `OnlyFactory`)
       .withArgs(admin.address, fixture.factory.address);
     await expect(validatorPool.skimExcessToken(validatorsSnapshots[0].address))
-      .to.be.revertedWithCustomError(fixture.bToken, `OnlyFactory`)
+      .to.be.revertedWithCustomError(fixture.alcb, `OnlyFactory`)
       .withArgs(admin.address, fixture.factory.address);
   });
 });

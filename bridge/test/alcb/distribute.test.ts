@@ -52,17 +52,17 @@ const mintDistributeAndAssert = async (
   ethIn: BigNumber,
   distributable: BigNumber
 ): Promise<BigNumber> => {
-  await fixture.bToken.mint(0, { value: ethIn });
-  distributable = distributable.add(await fixture.bToken.getYield());
-  await fixture.bToken.distribute();
-  expect(await fixture.bToken.getYield()).to.be.equals(0);
+  await fixture.alcb.mint(0, { value: ethIn });
+  distributable = distributable.add(await fixture.alcb.getYield());
+  await fixture.alcb.distribute();
+  expect(await fixture.alcb.getYield()).to.be.equals(0);
   await assertSplitsBalance(fixture, splits, distributable);
   return distributable;
 };
 
-describe("Testing BToken Distribution methods", async () => {
+describe("Testing ALCB Distribution methods", async () => {
   let fixture: Fixture;
-  const minBTokens = 0;
+  const minALCBs = 0;
   const eth = 4;
   let ethIn: BigNumber;
 
@@ -83,9 +83,9 @@ describe("Testing BToken Distribution methods", async () => {
       await getContractAddressFromDeployedRawEvent(transaction),
       "0x"
     );
-    await fixture.bToken.mint(0, { value: ethIn });
-    await expect(fixture.bToken.distribute()).to.be.revertedWithCustomError(
-      fixture.bToken,
+    await fixture.alcb.mint(0, { value: ethIn });
+    await expect(fixture.alcb.distribute()).to.be.revertedWithCustomError(
+      fixture.alcb,
       "MutexLocked"
     );
   });
@@ -101,9 +101,9 @@ describe("Testing BToken Distribution methods", async () => {
       await getContractAddressFromDeployedRawEvent(transaction),
       "0x"
     );
-    await fixture.bToken.mint(0, { value: ethIn });
-    await expect(fixture.bToken.distribute()).to.be.revertedWithCustomError(
-      fixture.bToken,
+    await fixture.alcb.mint(0, { value: ethIn });
+    await expect(fixture.alcb.distribute()).to.be.revertedWithCustomError(
+      fixture.alcb,
       "MutexLocked"
     );
   });
@@ -134,7 +134,7 @@ describe("Testing BToken Distribution methods", async () => {
   });
 
   it("Should distribute without foundation", async () => {
-    await fixture.bToken.mint(minBTokens, { value: ethIn });
+    await fixture.alcb.mint(minALCBs, { value: ethIn });
     const splits = [350, 350, 300, 0];
     await updateDistributionContract(fixture, splits);
     const distributable = await mintDistributeAndAssert(

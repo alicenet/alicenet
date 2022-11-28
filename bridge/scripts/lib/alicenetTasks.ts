@@ -621,8 +621,8 @@ task("virtual-mint-deposit", "Virtually creates a deposit on the side chain")
       taskArgs.factoryAddress
     );
     const alcb = await ethers.getContractAt(
-      "BToken",
-      await factory.lookup(hre.ethers.utils.formatBytes32String("BToken"))
+      "ALCB",
+      await factory.lookup(hre.ethers.utils.formatBytes32String("ALCB"))
     );
     const tx = await factory
       .connect(adminSigner)
@@ -1115,9 +1115,9 @@ task("mint-alcb-to", "mints ALCB to an address")
       taskArgs.factoryAddress
     );
     const alcb = await hre.ethers.getContractAt(
-      "BToken",
+      "ALCB",
       await factory.callStatic.lookup(
-        hre.ethers.utils.formatBytes32String("BToken")
+        hre.ethers.utils.formatBytes32String("ALCB")
       )
     );
     const bal1 = await alcb.callStatic.balanceOf(taskArgs.to);
@@ -1140,9 +1140,9 @@ task("get-alcb-balance", "gets ALCB balance of account")
       taskArgs.factoryAddress
     );
     const alcb = await hre.ethers.getContractAt(
-      "BToken",
+      "ALCB",
       await factory.callStatic.lookup(
-        hre.ethers.utils.formatBytes32String("BToken")
+        hre.ethers.utils.formatBytes32String("ALCB")
       )
     );
     const bal = await alcb.callStatic.balanceOf(taskArgs.account);
@@ -1550,15 +1550,15 @@ task("deploy-alcb", "Task to deploy ALCB")
       "AliceNetFactory",
       taskArgs.factoryAddress
     );
-    const ALCB_BASE = await hre.ethers.getContractFactory("BToken");
+    const ALCB_BASE = await hre.ethers.getContractFactory("ALCB");
     const deploymentCode = ALCB_BASE.getDeployTransaction(factory.address)
       .data as BytesLike;
     const tx = await factory.deployCreate(deploymentCode);
     const receipt = await tx.wait();
     const alcbAddress = getEventVar(receipt, DEPLOYED_RAW, CONTRACT_ADDR);
-    console.log("ALCB/BToken address: ", alcbAddress);
+    console.log("ALCB/ALCB address: ", alcbAddress);
     await factory.addNewExternalContract(
-      hre.ethers.utils.formatBytes32String("BToken"),
+      hre.ethers.utils.formatBytes32String("ALCB"),
       alcbAddress
     );
   });

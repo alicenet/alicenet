@@ -120,26 +120,26 @@ abstract contract ImmutableAToken is ImmutableFactory {
     }
 }
 
-abstract contract ImmutableBToken is ImmutableFactory {
-    address private immutable _bToken;
-    error OnlyBToken(address sender, address expected);
+abstract contract ImmutableALCB is ImmutableFactory {
+    address private immutable _alcb;
+    error OnlyALCB(address sender, address expected);
 
-    modifier onlyBToken() {
-        if (msg.sender != _bToken) {
-            revert OnlyBToken(msg.sender, _bToken);
+    modifier onlyALCB() {
+        if (msg.sender != _alcb) {
+            revert OnlyALCB(msg.sender, _alcb);
         }
         _;
     }
 
     constructor() {
-        _bToken = IAliceNetFactory(_factoryAddress()).lookup(_saltForBToken());
+        _alcb = IAliceNetFactory(_factoryAddress()).lookup(_saltForALCB());
     }
 
-    function _bTokenAddress() internal view returns (address) {
-        return _bToken;
+    function _alcbAddress() internal view returns (address) {
+        return _alcb;
     }
 
-    function _saltForBToken() internal pure returns (bytes32) {
+    function _saltForALCB() internal pure returns (bytes32) {
         return 0x42546f6b656e0000000000000000000000000000000000000000000000000000;
     }
 }

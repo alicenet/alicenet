@@ -44,12 +44,12 @@ const depositAndCheckRefundWei = async (
   const minEthFeeForDeposit = 8n; // Curve value for the BridgeRouterMok returned fee
   const expectedState = await getState(fixture);
   const ethFeeForDeposit = minEthFeeForDeposit + refund;
-  const tx = await fixture.bToken
+  const tx = await fixture.alcb
     .connect(user)
     .depositTokensOnBridges(_poolVersion, encodedDepositCallData, {
       value: ethFeeForDeposit,
     });
-  expectedState.Balances.eth.bToken += BigInt(minEthFeeForDeposit);
+  expectedState.Balances.eth.alcb += BigInt(minEthFeeForDeposit);
   const balanceBefore = expectedState.Balances.eth.user;
   expectedState.Balances.eth.user = (
     await ethers.provider.getBalance(user.address)
@@ -60,7 +60,7 @@ const depositAndCheckRefundWei = async (
   );
   // ethereum balance has to be compared outside since there's round errors due to
   // the integer math in the bounding curve when computing the eth required to
-  // mint a BToken amount
+  // mint a ALCB amount
   expectedState.Balances.eth.user = balanceBefore;
   expectedState.Balances.eth.user -=
     getEthConsumedAsGas(await tx.wait()) + minEthFeeForDeposit;
@@ -79,14 +79,14 @@ const depositAndCheckRefundWei = async (
   );
 };
 
-describe("Testing BToken bridge methods", async () => {
+describe("Testing ALCB bridge methods", async () => {
   let user: SignerWithAddress;
   let admin: SignerWithAddress;
   let expectedState: state;
   let fixture: Fixture;
   const eth = 40;
 
-  const minBTokens = 0;
+  const minALCBs = 0;
   let ethsFromBurning: BigNumber;
 
   let encodedDepositCallData: string;
@@ -94,7 +94,7 @@ describe("Testing BToken bridge methods", async () => {
   const _tokenType = 1; // ERC20
   const chainId = 1337;
   const _poolVersion = 1;
-  const bTokenFee = 1000; // Fee that's returned by BridgeRouterMok
+  const alcbFee = 1000; // Fee that's returned by BridgeRouterMok
   const minEthFeeForDeposit = 8; // Curve value for the BridgeRouterMok returned fee
 
   async function deployFixture() {
@@ -102,16 +102,14 @@ describe("Testing BToken bridge methods", async () => {
     const signers = await ethers.getSigners();
     const [admin, user] = signers;
     const ethForMinting = ethers.utils.parseEther(eth.toString());
-    const [bTokens] = await callFunctionAndGetReturnValues(
-      fixture.bToken,
+    const [alcbs] = await callFunctionAndGetReturnValues(
+      fixture.alcb,
       "mint",
       user,
-      [minBTokens],
+      [minALCBs],
       ethForMinting
     );
-    const ethsFromBurning = await fixture.bToken.getLatestEthFromBTokensBurn(
-      bTokens
-    );
+    const ethsFromBurning = await fixture.alcb.getLatestEthFromALCBsBurn(alcbs);
     const depositCallData = {
       ERCContract: ethers.constants.AddressZero,
       tokenType: _tokenType,
@@ -137,7 +135,7 @@ describe("Testing BToken bridge methods", async () => {
       user,
       admin,
       ethForMinting,
-      bTokens,
+      alcbs,
       ethsFromBurning,
       depositCallData,
       encodedDepositCallData,
@@ -151,32 +149,27 @@ describe("Testing BToken bridge methods", async () => {
     showState("Initial", await getState(fixture));
   });
 
-  it("Should deposit tokens into the bridge and destroy the correspondent BToken fee if no eth fee is sent", async () => {
+  it("Should deposit tokens into the bridge and destroy the correspondent ALCB fee if no eth fee is sent", async () => {
     expectedState = await getState(fixture);
-    ethsFromBurning = await fixture.bToken.getLatestEthFromBTokensBurn(
-      bTokenFee
-    );
-    const tx = await fixture.bToken
+    ethsFromBurning = await fixture.alcb.getLatestEthFromALCBsBurn(alcbFee);
+    const tx = await fixture.alcb
       .connect(user)
       .depositTokensOnBridges(_poolVersion, encodedDepositCallData);
-    expectedState.Balances.bToken.user -= BigInt(bTokenFee);
+    expectedState.Balances.alcb.user -= BigInt(alcbFee);
     expectedState.Balances.eth.user -= getEthConsumedAsGas(await tx.wait());
-    expectedState.Balances.bToken.totalSupply -= BigInt(bTokenFee);
-    expectedState.Balances.bToken.poolBalance -= ethsFromBurning.toBigInt();
+    expectedState.Balances.alcb.totalSupply -= BigInt(alcbFee);
+    expectedState.Balances.alcb.poolBalance -= ethsFromBurning.toBigInt();
     expect(await getState(fixture)).to.be.deep.equal(expectedState);
   });
 
-  it("Should not deposit with insufficient bToken", async () => {
-    await fixture.bToken.connect(admin).mint(0, { value: 10000000n });
+  it("Should not deposit with insufficient alcb", async () => {
+    await fixture.alcb.connect(admin).mint(0, { value: 10000000n });
     // burn all tokens before depositing
-    await fixture.bToken
+    await fixture.alcb
       .connect(user)
-      .burn(
-        (await fixture.bToken.balanceOf(user.address)).sub(bTokenFee - 1),
-        0
-      );
+      .burn((await fixture.alcb.balanceOf(user.address)).sub(alcbFee - 1), 0);
     await expect(
-      fixture.bToken
+      fixture.alcb
         .connect(user)
         .depositTokensOnBridges(_poolVersion, encodedDepositCallData)
     ).to.be.revertedWith("ERC20: burn amount exceeds balance");
@@ -184,13 +177,13 @@ describe("Testing BToken bridge methods", async () => {
 
   it("Should not deposit tokens into the bridge when insufficient eth fee is sent", async () => {
     await expect(
-      fixture.bToken
+      fixture.alcb
         .connect(user)
         .depositTokensOnBridges(_poolVersion, encodedDepositCallData, {
           value: minEthFeeForDeposit - 1,
         })
     )
-      .to.be.revertedWithCustomError(fixture.bToken, "InsufficientFee")
+      .to.be.revertedWithCustomError(fixture.alcb, "InsufficientFee")
       .withArgs(minEthFeeForDeposit - 1, minEthFeeForDeposit);
   });
 

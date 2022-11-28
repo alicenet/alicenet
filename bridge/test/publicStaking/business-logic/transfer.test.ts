@@ -255,7 +255,7 @@ describe("PublicStaking: NFT transfer", async () => {
     await expect(
       fixture.publicStaking["safeTransferFrom(address,address,uint256)"](
         adminSigner.address,
-        fixture.bToken.address,
+        fixture.alcb.address,
         1
       )
     ).to.be.rejectedWith("ERC721: transfer to non ERC721Receiver implementer");

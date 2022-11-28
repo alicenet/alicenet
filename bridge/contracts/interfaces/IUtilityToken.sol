@@ -28,7 +28,7 @@ interface IUtilityToken {
 
     function mintTo(address to_, uint256 minBTK_) external payable returns (uint256 numBTK);
 
-    function destroyBTokens(uint256 numBTK_) external returns (bool);
+    function destroyALCBs(uint256 numBTK_) external returns (bool);
 
     function depositTokensOnBridges(uint8 routerVersion_, bytes calldata data_) external payable;
 
@@ -46,30 +46,30 @@ interface IUtilityToken {
 
     function getPoolBalance() external view returns (uint256);
 
-    function getTotalBTokensDeposited() external view returns (uint256);
+    function getTotalALCBsDeposited() external view returns (uint256);
 
     function getDeposit(uint256 depositID) external view returns (Deposit memory);
 
-    function getLatestEthToMintBTokens(uint256 numBTK_) external view returns (uint256 numEth);
+    function getLatestEthToMintALCBs(uint256 numBTK_) external view returns (uint256 numEth);
 
-    function getLatestEthFromBTokensBurn(uint256 numBTK_) external view returns (uint256 numEth);
+    function getLatestEthFromALCBsBurn(uint256 numBTK_) external view returns (uint256 numEth);
 
-    function getLatestMintedBTokensFromEth(uint256 numEth_) external view returns (uint256);
+    function getLatestMintedALCBsFromEth(uint256 numEth_) external view returns (uint256);
 
     function getMarketSpread() external pure returns (uint256);
 
-    function getEthToMintBTokens(
+    function getEthToMintALCBs(
         uint256 totalSupply_,
         uint256 numBTK_
     ) external pure returns (uint256 numEth);
 
-    function getEthFromBTokensBurn(
+    function getEthFromALCBsBurn(
         uint256 poolBalance_,
         uint256 totalSupply_,
         uint256 numBTK_
     ) external pure returns (uint256 numEth);
 
-    function getMintedBTokensFromEth(
+    function getMintedALCBsFromEth(
         uint256 poolBalance_,
         uint256 numEth_
     ) external pure returns (uint256);

@@ -6,15 +6,15 @@ import { expect } from "../chai-setup";
 import { callFunctionAndGetReturnValues, Fixture, getFixture } from "../setup";
 import { getEthConsumedAsGas, getState, state } from "./setup";
 
-describe("Testing BToken Transfer methods", async () => {
+describe("Testing ALCB Transfer methods", async () => {
   let admin: SignerWithAddress;
   let user: SignerWithAddress;
   let user2: SignerWithAddress;
   let expectedState: state;
   let fixture: Fixture;
   const eth = 4;
-  const minBTokens = 0;
-  let bTokens: BigNumber;
+  const minALCBs = 0;
+  let alcbs: BigNumber;
 
   async function deployFixture() {
     const fixture = await getFixture();
@@ -23,43 +23,37 @@ describe("Testing BToken Transfer methods", async () => {
 
     const ethIn = ethers.utils.parseEther(eth.toString());
     // Mint some ATokens for testing
-    const [bTokens] = await callFunctionAndGetReturnValues(
-      fixture.bToken,
+    const [alcbs] = await callFunctionAndGetReturnValues(
+      fixture.alcb,
       "mint",
       user,
-      [minBTokens],
+      [minALCBs],
       ethIn
     );
-    return { fixture, admin, user, user2, ethIn, bTokens };
+    return { fixture, admin, user, user2, ethIn, alcbs };
   }
 
   beforeEach(async function () {
-    ({ fixture, admin, user, user2, bTokens } = await loadFixture(
-      deployFixture
-    ));
+    ({ fixture, admin, user, user2, alcbs } = await loadFixture(deployFixture));
 
     expectedState = await getState(fixture);
   });
 
   it("Should transfer from sender to specified address", async () => {
-    const tx = await fixture.bToken
-      .connect(user)
-      .transfer(admin.address, bTokens);
-    expectedState.Balances.bToken.admin += bTokens.toBigInt();
-    expectedState.Balances.bToken.user -= bTokens.toBigInt();
+    const tx = await fixture.alcb.connect(user).transfer(admin.address, alcbs);
+    expectedState.Balances.alcb.admin += alcbs.toBigInt();
+    expectedState.Balances.alcb.user -= alcbs.toBigInt();
     expectedState.Balances.eth.user -= getEthConsumedAsGas(await tx.wait());
     expect(await getState(fixture)).to.be.deep.equal(expectedState);
   });
 
   it("Should transfer from specified address to specified address", async () => {
-    const tx = await fixture.bToken
-      .connect(user)
-      .approve(admin.address, bTokens);
-    const tx2 = await fixture.bToken
+    const tx = await fixture.alcb.connect(user).approve(admin.address, alcbs);
+    const tx2 = await fixture.alcb
       .connect(admin)
-      .transferFrom(user.address, user2.address, bTokens);
-    expectedState.Balances.bToken.user -= bTokens.toBigInt();
-    expectedState.Balances.bToken.user2 += bTokens.toBigInt();
+      .transferFrom(user.address, user2.address, alcbs);
+    expectedState.Balances.alcb.user -= alcbs.toBigInt();
+    expectedState.Balances.alcb.user2 += alcbs.toBigInt();
     expectedState.Balances.eth.user -= getEthConsumedAsGas(await tx.wait());
     expectedState.Balances.eth.admin -= getEthConsumedAsGas(await tx2.wait());
     expect(await getState(fixture)).to.be.deep.equal(expectedState);
@@ -67,20 +61,20 @@ describe("Testing BToken Transfer methods", async () => {
 
   it("Should fail to transfer from specified address to specified address without allowance", async () => {
     await expect(
-      fixture.bToken
+      fixture.alcb
         .connect(admin)
-        .transferFrom(user.address, user2.address, bTokens)
+        .transferFrom(user.address, user2.address, alcbs)
     ).to.be.revertedWith("ERC20: insufficient allowance");
   });
 
   it("Should fail to transfer from specified address to specified address without enough allowance", async () => {
-    await fixture.bToken
+    await fixture.alcb
       .connect(user)
-      .approve(admin.address, BigNumber.from(bTokens).sub(1));
+      .approve(admin.address, BigNumber.from(alcbs).sub(1));
     await expect(
-      fixture.bToken
+      fixture.alcb
         .connect(admin)
-        .transferFrom(user.address, user2.address, bTokens)
+        .transferFrom(user.address, user2.address, alcbs)
     ).to.be.revertedWith("ERC20: insufficient allowance");
   });
 });

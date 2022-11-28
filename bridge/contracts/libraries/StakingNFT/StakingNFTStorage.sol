@@ -42,7 +42,7 @@ abstract contract StakingNFTStorage {
     Accumulator internal _tokenState;
 
     // _ethState tracks the distribution of Eth that originate from the sale of
-    // BTokens
+    // ALCBs
     Accumulator internal _ethState;
 
     // _positions tracks all staked positions based on tokenID

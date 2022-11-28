@@ -296,7 +296,7 @@ const config: HardhatUserConfig = {
       "ETHDKG",
       "ValidatorPool",
       "Snapshots",
-      "BToken",
+      "ALCB",
       "AToken",
       "PublicStaking",
       "ValidatorStaking",

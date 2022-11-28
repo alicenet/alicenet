@@ -6,7 +6,7 @@ import { expect } from "../chai-setup";
 import { callFunctionAndGetReturnValues, Fixture, getFixture } from "../setup";
 import { getEthConsumedAsGas, getState, showState, state } from "./setup";
 
-describe("Testing BToken Minting methods", async () => {
+describe("Testing ALCB Minting methods", async () => {
   let admin: SignerWithAddress;
   let user: SignerWithAddress;
   let user2: SignerWithAddress;
@@ -15,7 +15,7 @@ describe("Testing BToken Minting methods", async () => {
   const eth = 4;
   const marketSpread = 4;
   let ethInWeis: BigNumber;
-  const minBTokens = 0;
+  const minALCBs = 0;
 
   beforeEach(async function () {
     fixture = await loadFixture(getFixture);
@@ -25,43 +25,43 @@ describe("Testing BToken Minting methods", async () => {
     ethInWeis = ethers.utils.parseEther(eth.toString());
   });
 
-  it("Should mint bTokens to sender out of ether value sent", async () => {
+  it("Should mint alcbs to sender out of ether value sent", async () => {
     expectedState = await getState(fixture);
-    const [bTokens, tx] = await callFunctionAndGetReturnValues(
-      fixture.bToken,
+    const [alcbs, tx] = await callFunctionAndGetReturnValues(
+      fixture.alcb,
       "mint",
       user,
-      [minBTokens],
+      [minALCBs],
       ethInWeis
     );
-    expect(bTokens).to.be.equal(BigInt("402028731704364116575"));
+    expect(alcbs).to.be.equal(BigInt("402028731704364116575"));
     expectedState.Balances.eth.user -= ethInWeis.toBigInt();
     expectedState.Balances.eth.user -= getEthConsumedAsGas(await tx.wait());
-    expectedState.Balances.bToken.user += bTokens.toBigInt();
-    expectedState.Balances.bToken.totalSupply += bTokens.toBigInt();
-    expectedState.Balances.bToken.poolBalance += ethInWeis
+    expectedState.Balances.alcb.user += alcbs.toBigInt();
+    expectedState.Balances.alcb.totalSupply += alcbs.toBigInt();
+    expectedState.Balances.alcb.poolBalance += ethInWeis
       .div(marketSpread)
       .toBigInt();
-    expectedState.Balances.eth.bToken += ethInWeis.toBigInt();
+    expectedState.Balances.eth.alcb += ethInWeis.toBigInt();
     expect(await getState(fixture)).to.be.deep.equal(
       expectedState,
       "State 1 comp"
     );
     expectedState = await getState(fixture);
-    const [bTokens2, tx2] = await callFunctionAndGetReturnValues(
-      fixture.bToken,
+    const [alcbs2, tx2] = await callFunctionAndGetReturnValues(
+      fixture.alcb,
       "mint",
       user2,
-      [minBTokens],
+      [minALCBs],
       ethInWeis
     );
     expectedState.Balances.eth.user2 -= ethInWeis.toBigInt();
     expectedState.Balances.eth.user2 -= getEthConsumedAsGas(await tx2.wait());
-    expectedState.Balances.bToken.user2 += bTokens2.toBigInt();
-    expectedState.Balances.bToken.totalSupply += bTokens2.toBigInt();
-    expectedState.Balances.bToken.poolBalance += ethInWeis.div(4).toBigInt();
-    expectedState.Balances.eth.bToken += ethInWeis.toBigInt();
-    expect(bTokens2).to.be.equal(BigInt("402027176702820751481"));
+    expectedState.Balances.alcb.user2 += alcbs2.toBigInt();
+    expectedState.Balances.alcb.totalSupply += alcbs2.toBigInt();
+    expectedState.Balances.alcb.poolBalance += ethInWeis.div(4).toBigInt();
+    expectedState.Balances.eth.alcb += ethInWeis.toBigInt();
+    expect(alcbs2).to.be.equal(BigInt("402027176702820751481"));
     expect(await getState(fixture)).to.be.deep.equal(
       expectedState,
       "State 2 comp"
@@ -72,56 +72,56 @@ describe("Testing BToken Minting methods", async () => {
     const eth = 70000000000;
     ethInWeis = ethers.utils.parseEther(eth.toString());
     expectedState = await getState(fixture);
-    const [bTokens] = await callFunctionAndGetReturnValues(
-      fixture.bToken,
+    const [alcbs] = await callFunctionAndGetReturnValues(
+      fixture.alcb,
       "mint",
       admin,
-      [minBTokens],
+      [minALCBs],
       ethInWeis
     );
-    expect(bTokens).to.be.equal(BigInt("70001004975246203818081563855"));
-    expect(await fixture.bToken.getPoolBalance()).to.be.equal(
+    expect(alcbs).to.be.equal(BigInt("70001004975246203818081563855"));
+    expect(await fixture.alcb.getPoolBalance()).to.be.equal(
       ethInWeis.div(marketSpread).toBigInt()
     );
-    expect(await fixture.bToken.totalSupply()).to.be.equal(bTokens);
+    expect(await fixture.alcb.totalSupply()).to.be.equal(alcbs);
   });
 
   it("Should mint to an address", async () => {
     expectedState = await getState(fixture);
-    const [bTokens, tx] = await callFunctionAndGetReturnValues(
-      fixture.bToken,
+    const [alcbs, tx] = await callFunctionAndGetReturnValues(
+      fixture.alcb,
       "mintTo",
       admin,
-      [user.address, minBTokens],
+      [user.address, minALCBs],
       ethInWeis
     );
-    expect(bTokens).to.be.equal(BigInt("402028731704364116575"));
+    expect(alcbs).to.be.equal(BigInt("402028731704364116575"));
     expectedState.Balances.eth.admin -= ethInWeis.toBigInt();
     expectedState.Balances.eth.admin -= getEthConsumedAsGas(await tx.wait());
-    expectedState.Balances.bToken.user += bTokens.toBigInt();
-    expectedState.Balances.bToken.totalSupply += bTokens.toBigInt();
-    expectedState.Balances.bToken.poolBalance += ethInWeis
+    expectedState.Balances.alcb.user += alcbs.toBigInt();
+    expectedState.Balances.alcb.totalSupply += alcbs.toBigInt();
+    expectedState.Balances.alcb.poolBalance += ethInWeis
       .div(marketSpread)
       .toBigInt();
-    expectedState.Balances.eth.bToken += ethInWeis.toBigInt();
+    expectedState.Balances.eth.alcb += ethInWeis.toBigInt();
     expect(await getState(fixture)).to.be.deep.equal(expectedState);
     expectedState = await getState(fixture);
-    const [bTokens2, tx2] = await callFunctionAndGetReturnValues(
-      fixture.bToken,
+    const [alcbs2, tx2] = await callFunctionAndGetReturnValues(
+      fixture.alcb,
       "mintTo",
       admin,
-      [user.address, minBTokens],
+      [user.address, minALCBs],
       ethInWeis
     );
     expectedState.Balances.eth.admin -= ethInWeis.toBigInt();
     expectedState.Balances.eth.admin -= getEthConsumedAsGas(await tx2.wait());
-    expectedState.Balances.bToken.user += bTokens2.toBigInt();
-    expectedState.Balances.bToken.totalSupply += bTokens2.toBigInt();
-    expectedState.Balances.bToken.poolBalance += ethInWeis
+    expectedState.Balances.alcb.user += alcbs2.toBigInt();
+    expectedState.Balances.alcb.totalSupply += alcbs2.toBigInt();
+    expectedState.Balances.alcb.poolBalance += ethInWeis
       .div(marketSpread)
       .toBigInt();
-    expectedState.Balances.eth.bToken += ethInWeis.toBigInt();
-    expect(bTokens2).to.be.equal(BigInt("402027176702820751481"));
+    expectedState.Balances.eth.alcb += ethInWeis.toBigInt();
+    expect(alcbs2).to.be.equal(BigInt("402027176702820751481"));
     expect(await getState(fixture)).to.be.deep.equal(expectedState);
   });
 
@@ -129,45 +129,45 @@ describe("Testing BToken Minting methods", async () => {
     const eth = 70000000000;
     ethInWeis = ethers.utils.parseEther(eth.toString());
     expectedState = await getState(fixture);
-    const [bTokens, tx] = await callFunctionAndGetReturnValues(
-      fixture.bToken,
+    const [alcbs, tx] = await callFunctionAndGetReturnValues(
+      fixture.alcb,
       "mintTo",
       admin,
-      [user.address, minBTokens],
+      [user.address, minALCBs],
       ethInWeis
     );
-    expect(bTokens).to.be.equal(BigInt("70001004975246203818081563855"));
+    expect(alcbs).to.be.equal(BigInt("70001004975246203818081563855"));
     expectedState.Balances.eth.admin -= ethInWeis.toBigInt();
     expectedState.Balances.eth.admin -= getEthConsumedAsGas(await tx.wait());
-    expectedState.Balances.bToken.user += bTokens.toBigInt();
-    expectedState.Balances.bToken.totalSupply += bTokens.toBigInt();
-    expectedState.Balances.bToken.poolBalance += ethInWeis
+    expectedState.Balances.alcb.user += alcbs.toBigInt();
+    expectedState.Balances.alcb.totalSupply += alcbs.toBigInt();
+    expectedState.Balances.alcb.poolBalance += ethInWeis
       .div(marketSpread)
       .toBigInt();
-    expectedState.Balances.eth.bToken += ethInWeis.toBigInt();
+    expectedState.Balances.eth.alcb += ethInWeis.toBigInt();
     expect(await getState(fixture)).to.be.deep.equal(expectedState);
   });
 
   it("Should fail to mint to 0x0 address", async () => {
     await expect(
-      fixture.bToken
+      fixture.alcb
         .connect(admin)
-        .mintTo(ethers.constants.AddressZero, minBTokens, {
+        .mintTo(ethers.constants.AddressZero, minALCBs, {
           value: ethers.utils.parseEther(eth.toString()),
         })
     ).to.be.revertedWith("ERC20: mint to the zero address");
   });
 
-  it("Should fail to mint with big min BToken quantity", async () => {
-    const oneBToken = ethers.utils.parseUnits("1", 18).toBigInt();
-    const minBTokens = 900n * oneBToken;
-    const expectedBTokensMintedForEthValue = "402028731704364116575";
+  it("Should fail to mint with big min ALCB quantity", async () => {
+    const oneALCB = ethers.utils.parseUnits("1", 18).toBigInt();
+    const minALCBs = 900n * oneALCB;
+    const expectedALCBsMintedForEthValue = "402028731704364116575";
     await expect(
-      fixture.bToken.connect(admin).mint(minBTokens, {
+      fixture.alcb.connect(admin).mint(minALCBs, {
         value: ethers.utils.parseEther(eth.toString()),
       })
     )
-      .to.be.revertedWithCustomError(fixture.bToken, `MinimumMintNotMet`)
-      .withArgs(expectedBTokensMintedForEthValue, minBTokens);
+      .to.be.revertedWithCustomError(fixture.alcb, `MinimumMintNotMet`)
+      .withArgs(expectedALCBsMintedForEthValue, minALCBs);
   });
 });

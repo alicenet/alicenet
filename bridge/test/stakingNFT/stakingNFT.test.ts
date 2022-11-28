@@ -846,9 +846,9 @@ contract("StakingNFT", async () => {
       // We use receipt:any *only* because of events which may not be present
       const receipt5: any = await tx5.wait();
       expect(receipt5.status).to.eq(1);
-      const expBobTokenID = BigNumber.from("2");
-      const bobTokenID = BigNumber.from(receipt5.events[2].args.tokenId);
-      expect(bobTokenID).to.eq(expBobTokenID);
+      const expBoalcbID = BigNumber.from("2");
+      const boalcbID = BigNumber.from(receipt5.events[2].args.tokenId);
+      expect(boalcbID).to.eq(expBoalcbID);
 
       // Check standard values: Accumulators and Reserves
       // Eth accumulator
@@ -1499,8 +1499,8 @@ contract("StakingNFT", async () => {
       txResponse = await stakingNFT.mintNFTMock(bobAddress, amount);
       receipt = await txResponse.wait();
       expTokenID = BigNumber.from("2");
-      const bobTokenID = BigNumber.from(receipt.events[2].args.tokenId);
-      expect(bobTokenID).to.eq(expTokenID);
+      const boalcbID = BigNumber.from(receipt.events[2].args.tokenId);
+      expect(boalcbID).to.eq(expTokenID);
       expTokenReserve = amount.add(amount);
       retTokenReserve = await stakingNFT.getTotalReserveATokenMock();
       expect(retTokenReserve).to.eq(expTokenReserve);
@@ -1689,8 +1689,8 @@ contract("StakingNFT", async () => {
       txResponse = await stakingNFT.mintNFTMock(bobAddress, amount);
       receipt = await txResponse.wait();
       expTokenID = BigNumber.from("2");
-      const bobTokenID = BigNumber.from(receipt.events[2].args.tokenId);
-      expect(bobTokenID).to.eq(expTokenID);
+      const boalcbID = BigNumber.from(receipt.events[2].args.tokenId);
+      expect(boalcbID).to.eq(expTokenID);
       expTokenReserve = amount.add(amount);
       retTokenReserve = await stakingNFT.getTotalReserveATokenMock();
       expect(retTokenReserve).to.eq(expTokenReserve);
@@ -1883,8 +1883,8 @@ contract("StakingNFT", async () => {
       txResponse = await stakingNFT.mintNFTMock(bobAddress, amount);
       receipt = await txResponse.wait();
       expTokenID = BigNumber.from("2");
-      const bobTokenID = BigNumber.from(receipt.events[2].args.tokenId);
-      expect(bobTokenID).to.eq(expTokenID);
+      const boalcbID = BigNumber.from(receipt.events[2].args.tokenId);
+      expect(boalcbID).to.eq(expTokenID);
       expTokenReserve = amount.add(amount);
       retTokenReserve = await stakingNFT.getTotalReserveATokenMock();
       expect(retTokenReserve).to.eq(expTokenReserve);
@@ -2080,8 +2080,8 @@ contract("StakingNFT", async () => {
       txResponse = await stakingNFT.mintNFTMock(bobAddress, amount);
       receipt = await txResponse.wait();
       expTokenID = BigNumber.from("2");
-      const bobTokenID = BigNumber.from(receipt.events[2].args.tokenId);
-      expect(bobTokenID).to.eq(expTokenID);
+      const boalcbID = BigNumber.from(receipt.events[2].args.tokenId);
+      expect(boalcbID).to.eq(expTokenID);
       expTokenReserve = amount.add(amount);
       retTokenReserve = await stakingNFT.getTotalReserveATokenMock();
       expect(retTokenReserve).to.eq(expTokenReserve);
@@ -2656,11 +2656,11 @@ contract("StakingNFT", async () => {
       txResponse = await stakingNFT.mintNFTMock(bobAddress, amount);
       receipt = await txResponse.wait();
       const expTokenID = BigNumber.from("1");
-      const bobTokenID = BigNumber.from(receipt.events[2].args.tokenId);
-      expect(bobTokenID).to.eq(expTokenID);
+      const boalcbID = BigNumber.from(receipt.events[2].args.tokenId);
+      expect(boalcbID).to.eq(expTokenID);
 
       const duration = BigNumber.from("1");
-      const tx = stakingNFT.lockOwnPositionMock(bobTokenID, duration);
+      const tx = stakingNFT.lockOwnPositionMock(boalcbID, duration);
       // Error Code for Caller not token owner
       await expect(tx)
         .to.be.revertedWithCustomError(stakingNFT, "CallerNotTokenOwner")
@@ -2909,11 +2909,11 @@ contract("StakingNFT", async () => {
       txResponse = await stakingNFT.mintNFTMock(bobAddress, amount);
       receipt = await txResponse.wait();
       const expTokenID = BigNumber.from("1");
-      const bobTokenID = BigNumber.from(receipt.events[2].args.tokenId);
-      expect(bobTokenID).to.eq(expTokenID);
+      const boalcbID = BigNumber.from(receipt.events[2].args.tokenId);
+      expect(boalcbID).to.eq(expTokenID);
 
       const duration = BigNumber.from("1");
-      const tx = stakingNFT.lockWithdrawMock(bobTokenID, duration);
+      const tx = stakingNFT.lockWithdrawMock(boalcbID, duration);
       // Error Code for Caller not token owner
       await expect(tx)
         .to.be.revertedWithCustomError(stakingNFT, "CallerNotTokenOwner")
@@ -3251,9 +3251,9 @@ contract("StakingNFT", async () => {
       receipt = await txResponse.wait();
       txResponse = await stakingNFT.mintNFTMock(bobAddress, bobShares);
       receipt = await txResponse.wait();
-      const expBobTokenID = BigNumber.from("2");
-      const bobTokenID = BigNumber.from(receipt.events[2].args.tokenId);
-      expect(bobTokenID).to.eq(expBobTokenID);
+      const expBoalcbID = BigNumber.from("2");
+      const boalcbID = BigNumber.from(receipt.events[2].args.tokenId);
+      expect(boalcbID).to.eq(expBoalcbID);
 
       // Check
       const expEstimatedEthAlice = depositedEth;
@@ -3263,7 +3263,7 @@ contract("StakingNFT", async () => {
       await expect(estimatedEthAlice).to.eq(expEstimatedEthAlice);
       const expEstimatedEthBob = BigNumber.from(0);
       const estimatedEthBob = await stakingNFT.estimateEthCollectionMock(
-        bobTokenID
+        boalcbID
       );
       await expect(estimatedEthBob).to.eq(expEstimatedEthBob);
     });
@@ -3291,9 +3291,9 @@ contract("StakingNFT", async () => {
       receipt = await txResponse.wait();
       txResponse = await stakingNFT.mintNFTMock(bobAddress, bobShares);
       receipt = await txResponse.wait();
-      const expBobTokenID = BigNumber.from("2");
-      const bobTokenID = BigNumber.from(receipt.events[2].args.tokenId);
-      expect(bobTokenID).to.eq(expBobTokenID);
+      const expBoalcbID = BigNumber.from("2");
+      const boalcbID = BigNumber.from(receipt.events[2].args.tokenId);
+      expect(boalcbID).to.eq(expBoalcbID);
 
       // deposit Eth to be distributed
       const magic = BigNumber.from("42");
@@ -3316,7 +3316,7 @@ contract("StakingNFT", async () => {
       await expect(estimatedEthAlice).to.eq(expEstimatedEthAlice);
       const expEstimatedEthBob = depositedEth.div(2);
       const estimatedEthBob = await stakingNFT.estimateEthCollectionMock(
-        bobTokenID
+        boalcbID
       );
       await expect(estimatedEthBob).to.eq(expEstimatedEthBob);
     });
@@ -3446,9 +3446,9 @@ contract("StakingNFT", async () => {
       receipt = await txResponse.wait();
       txResponse = await stakingNFT.mintNFTMock(bobAddress, bobShares);
       receipt = await txResponse.wait();
-      const expBobTokenID = BigNumber.from("2");
-      const bobTokenID = BigNumber.from(receipt.events[2].args.tokenId);
-      expect(bobTokenID).to.eq(expBobTokenID);
+      const expBoalcbID = BigNumber.from("2");
+      const boalcbID = BigNumber.from(receipt.events[2].args.tokenId);
+      expect(boalcbID).to.eq(expBoalcbID);
 
       // Check
       const expEstimatedTokenAlice = depositedToken;
@@ -3458,7 +3458,7 @@ contract("StakingNFT", async () => {
       await expect(estimatedTokenAlice).to.eq(expEstimatedTokenAlice);
       const expEstimatedTokenBob = BigNumber.from(0);
       const estimatedTokenBob = await stakingNFT.estimateTokenCollectionMock(
-        bobTokenID
+        boalcbID
       );
       await expect(estimatedTokenBob).to.eq(expEstimatedTokenBob);
     });
@@ -3485,9 +3485,9 @@ contract("StakingNFT", async () => {
       receipt = await txResponse.wait();
       txResponse = await stakingNFT.mintNFTMock(bobAddress, bobShares);
       receipt = await txResponse.wait();
-      const expBobTokenID = BigNumber.from("2");
-      const bobTokenID = BigNumber.from(receipt.events[2].args.tokenId);
-      expect(bobTokenID).to.eq(expBobTokenID);
+      const expBoalcbID = BigNumber.from("2");
+      const boalcbID = BigNumber.from(receipt.events[2].args.tokenId);
+      expect(boalcbID).to.eq(expBoalcbID);
 
       // deposit Token to be distributed
       const scaleFactor = await stakingNFT.getAccumulatorScaleFactor();
@@ -3523,7 +3523,7 @@ contract("StakingNFT", async () => {
       await expect(estimatedTokenAlice).to.eq(expEstimatedTokenAlice);
       const expEstimatedTokenBob = depositedToken.div(2);
       const estimatedTokenBob = await stakingNFT.estimateTokenCollectionMock(
-        bobTokenID
+        boalcbID
       );
       await expect(estimatedTokenBob).to.eq(expEstimatedTokenBob);
     });

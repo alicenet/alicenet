@@ -181,12 +181,12 @@ export async function getATokenMinterAddress(network: string) {
   }
 }
 
-export async function getBTokenAddress(network: string) {
+export async function getALCBAddress(network: string) {
   const config = await readFactoryState(FACTORY_STATE_PATH);
   const staticContracts = config[network].staticContracts;
   for (let i = 0; i < staticContracts.length; i++) {
     const name = staticContracts[i].templateName;
-    if (name === "BToken") {
+    if (name === "ALCB") {
       return staticContracts[i].metaAddress;
     }
   }

@@ -17,7 +17,7 @@ import "contracts/utils/auth/ImmutableETHDKG.sol";
 import "contracts/utils/auth/ImmutablePublicStaking.sol";
 import "contracts/utils/auth/ImmutableValidatorStaking.sol";
 import "contracts/utils/auth/ImmutableAToken.sol";
-import "contracts/utils/auth/ImmutableBToken.sol";
+import "contracts/utils/auth/ImmutableALCB.sol";
 import "contracts/utils/auth/ImmutableATokenMinter.sol";
 
 contract ExternalStoreRegistration is ImmutableFactory {
@@ -57,7 +57,7 @@ contract RegisterValidators is
     ImmutableETHDKG,
     ImmutableAToken,
     ImmutableATokenMinter,
-    ImmutableBToken,
+    ImmutableALCB,
     ImmutablePublicStaking,
     ImmutableValidatorPool
 {
@@ -71,7 +71,7 @@ contract RegisterValidators is
         ImmutableSnapshots()
         ImmutableETHDKG()
         ImmutableAToken()
-        ImmutableBToken()
+        ImmutableALCB()
         ImmutableATokenMinter()
         ImmutablePublicStaking()
         ImmutableValidatorPool()

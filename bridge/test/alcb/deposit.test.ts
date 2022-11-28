@@ -6,39 +6,36 @@ import { expect } from "../chai-setup";
 import { callFunctionAndGetReturnValues, Fixture, getFixture } from "../setup";
 import { getEthConsumedAsGas, getState, showState, state } from "./setup";
 
-describe("Testing BToken Deposit methods", async () => {
+describe("Testing ALCB Deposit methods", async () => {
   let admin: SignerWithAddress;
   let user: SignerWithAddress;
   let expectedState: state;
   let fixture: Fixture;
-  const minBTokens = 0;
+  const minALCBs = 0;
   const eth = 10;
-  const bTokens = 10;
+  const alcbs = 10;
   let ethIn: BigNumber;
-  let bTokenDeposit: BigNumber;
+  let alcbDeposit: BigNumber;
 
   beforeEach(async function () {
     fixture = await loadFixture(getFixture);
     [admin, user] = await ethers.getSigners();
     showState("Initial", await getState(fixture));
     ethIn = ethers.utils.parseEther(eth.toString());
-    bTokenDeposit = ethers.utils.parseUnits(bTokens.toString(10));
+    alcbDeposit = ethers.utils.parseUnits(alcbs.toString(10));
   });
 
   it("Only factory should be able to set a new type", async () => {
     await expect(
-      fixture.bToken.setAccountType(3, true)
-    ).to.be.revertedWithCustomError(fixture.bToken, `OnlyFactory`);
+      fixture.alcb.setAccountType(3, true)
+    ).to.be.revertedWithCustomError(fixture.alcb, `OnlyFactory`);
     const recpt = await (
       await fixture.factory
         .connect(admin)
         .callAny(
-          fixture.bToken.address,
+          fixture.alcb.address,
           0,
-          fixture.bToken.interface.encodeFunctionData("setAccountType", [
-            3,
-            true,
-          ])
+          fixture.alcb.interface.encodeFunctionData("setAccountType", [3, true])
         )
     ).wait();
     expect(recpt.status).to.be.equals(1);
@@ -46,57 +43,57 @@ describe("Testing BToken Deposit methods", async () => {
 
   it("Should fail querying for an invalid deposit ID", async () => {
     const depositId = 1000;
-    await expect(fixture.bToken.getDeposit(depositId))
-      .to.be.revertedWithCustomError(fixture.bToken, `InvalidDepositId`)
+    await expect(fixture.alcb.getDeposit(depositId))
+      .to.be.revertedWithCustomError(fixture.alcb, `InvalidDepositId`)
       .withArgs(depositId);
   });
 
   it("Should not deposit to a contract", async () => {
-    await expect(fixture.bToken.deposit(1, fixture.bToken.address, 0))
+    await expect(fixture.alcb.deposit(1, fixture.alcb.address, 0))
       .to.be.revertedWithCustomError(
-        fixture.bToken,
+        fixture.alcb,
         `ContractsDisallowedDeposits`
       )
-      .withArgs(fixture.bToken.address);
+      .withArgs(fixture.alcb.address);
   });
 
   it("Should not deposit to an invalid account type", async () => {
-    await fixture.bToken.mint(0, {
+    await fixture.alcb.mint(0, {
       value: ethIn,
     });
-    await expect(fixture.bToken.deposit(3, user.address, 100))
-      .to.be.revertedWithCustomError(fixture.bToken, "AccountTypeNotSupported")
+    await expect(fixture.alcb.deposit(3, user.address, 100))
+      .to.be.revertedWithCustomError(fixture.alcb, "AccountTypeNotSupported")
       .withArgs(3);
   });
 
   it("Should not deposit to a disabled account type", async () => {
-    await fixture.bToken.mint(0, {
+    await fixture.alcb.mint(0, {
       value: ethIn,
     });
     await (
       await fixture.factory
         .connect(admin)
         .callAny(
-          fixture.bToken.address,
+          fixture.alcb.address,
           0,
-          fixture.bToken.interface.encodeFunctionData("setAccountType", [
+          fixture.alcb.interface.encodeFunctionData("setAccountType", [
             1,
             false,
           ])
         )
     ).wait();
-    await expect(fixture.bToken.deposit(1, user.address, 100))
-      .to.be.revertedWithCustomError(fixture.bToken, "AccountTypeNotSupported")
+    await expect(fixture.alcb.deposit(1, user.address, 100))
+      .to.be.revertedWithCustomError(fixture.alcb, "AccountTypeNotSupported")
       .withArgs(1);
   });
 
   it("Should not mintDeposit to an invalid account type", async () => {
     await expect(
-      fixture.bToken.mintDeposit(3, user.address, 0, {
+      fixture.alcb.mintDeposit(3, user.address, 0, {
         value: 100,
       })
     )
-      .to.be.revertedWithCustomError(fixture.bToken, "AccountTypeNotSupported")
+      .to.be.revertedWithCustomError(fixture.alcb, "AccountTypeNotSupported")
       .withArgs(3);
   });
 
@@ -105,55 +102,55 @@ describe("Testing BToken Deposit methods", async () => {
       fixture.factory
         .connect(admin)
         .callAny(
-          fixture.bToken.address,
+          fixture.alcb.address,
           0,
-          fixture.bToken.interface.encodeFunctionData("virtualMintDeposit", [
+          fixture.alcb.interface.encodeFunctionData("virtualMintDeposit", [
             3,
             user.address,
-            bTokenDeposit,
+            alcbDeposit,
           ])
         )
     )
-      .to.be.revertedWithCustomError(fixture.bToken, "AccountTypeNotSupported")
+      .to.be.revertedWithCustomError(fixture.alcb, "AccountTypeNotSupported")
       .withArgs(3);
   });
 
   it("Should not mintDeposit with 0 eth amount", async () => {
     await expect(
-      fixture.bToken.mintDeposit(1, user.address, 0, {
+      fixture.alcb.mintDeposit(1, user.address, 0, {
         value: 0,
       })
     )
-      .to.be.revertedWithCustomError(fixture.bToken, "MinimumValueNotMet")
-      .withArgs(0, await fixture.bToken.getMarketSpread());
+      .to.be.revertedWithCustomError(fixture.alcb, "MinimumValueNotMet")
+      .withArgs(0, await fixture.alcb.getMarketSpread());
   });
 
   it("Should not deposit with 0 deposit amount", async () => {
     await expect(
-      fixture.bToken.deposit(1, user.address, 0)
-    ).to.be.revertedWithCustomError(fixture.bToken, `DepositAmountZero`);
+      fixture.alcb.deposit(1, user.address, 0)
+    ).to.be.revertedWithCustomError(fixture.alcb, `DepositAmountZero`);
   });
 
   it("Should deposit funds burning tokens hence affecting pool balance", async () => {
     // Mint ATK since a burn will be performed
     await callFunctionAndGetReturnValues(
-      fixture.bToken,
+      fixture.alcb,
       "mint",
       admin,
-      [minBTokens],
+      [minALCBs],
       ethIn
     );
-    await expect(fixture.bToken.deposit(1, user.address, bTokenDeposit))
-      .to.emit(fixture.bToken, "DepositReceived")
-      .withArgs(2, 1, user.address, bTokenDeposit);
+    await expect(fixture.alcb.deposit(1, user.address, alcbDeposit))
+      .to.emit(fixture.alcb, "DepositReceived")
+      .withArgs(2, 1, user.address, alcbDeposit);
     expectedState = await getState(fixture);
-    const tx = await fixture.bToken.deposit(1, user.address, bTokenDeposit);
-    expectedState.Balances.bToken.admin -= bTokenDeposit.toBigInt();
+    const tx = await fixture.alcb.deposit(1, user.address, alcbDeposit);
+    expectedState.Balances.alcb.admin -= alcbDeposit.toBigInt();
     expectedState.Balances.eth.admin -= getEthConsumedAsGas(await tx.wait());
-    expectedState.Balances.bToken.poolBalance = (
-      await fixture.bToken.getPoolBalance()
+    expectedState.Balances.alcb.poolBalance = (
+      await fixture.alcb.getPoolBalance()
     ).toBigInt();
-    expectedState.Balances.bToken.totalSupply -= bTokenDeposit.toBigInt();
+    expectedState.Balances.alcb.totalSupply -= alcbDeposit.toBigInt();
     expect(await getState(fixture)).to.be.deep.equal(expectedState);
   });
 
@@ -161,14 +158,11 @@ describe("Testing BToken Deposit methods", async () => {
     await fixture.factory
       .connect(admin)
       .callAny(
-        fixture.bToken.address,
+        fixture.alcb.address,
         0,
-        fixture.bToken.interface.encodeFunctionData("setAccountType", [
-          10,
-          true,
-        ])
+        fixture.alcb.interface.encodeFunctionData("setAccountType", [10, true])
       );
-    await fixture.bToken.mintDeposit(10, user.address, 0, {
+    await fixture.alcb.mintDeposit(10, user.address, 0, {
       value: 100,
     });
   });
@@ -178,27 +172,27 @@ describe("Testing BToken Deposit methods", async () => {
       fixture.factory
         .connect(admin)
         .callAny(
-          fixture.bToken.address,
+          fixture.alcb.address,
           0,
-          fixture.bToken.interface.encodeFunctionData("virtualMintDeposit", [
+          fixture.alcb.interface.encodeFunctionData("virtualMintDeposit", [
             1,
             user.address,
-            bTokenDeposit,
+            alcbDeposit,
           ])
         )
     )
-      .to.emit(fixture.bToken, "DepositReceived")
-      .withArgs(2, 1, user.address, bTokenDeposit);
+      .to.emit(fixture.alcb, "DepositReceived")
+      .withArgs(2, 1, user.address, alcbDeposit);
     expectedState = await getState(fixture);
     const tx = await fixture.factory
       .connect(admin)
       .callAny(
-        fixture.bToken.address,
+        fixture.alcb.address,
         0,
-        fixture.bToken.interface.encodeFunctionData("virtualMintDeposit", [
+        fixture.alcb.interface.encodeFunctionData("virtualMintDeposit", [
           1,
           user.address,
-          bTokenDeposit,
+          alcbDeposit,
         ])
       );
     expectedState.Balances.eth.admin -= getEthConsumedAsGas(await tx.wait());
@@ -206,26 +200,26 @@ describe("Testing BToken Deposit methods", async () => {
   });
 
   it("Should deposit funds minting tokens hence affecting balances", async () => {
-    // Calculate the amount of bTokens per eth value sent
-    const bTokens = await fixture.bToken.getLatestMintedBTokensFromEth(ethIn);
+    // Calculate the amount of alcbs per eth value sent
+    const alcbs = await fixture.alcb.getLatestMintedALCBsFromEth(ethIn);
     await expect(
-      fixture.bToken.mintDeposit(1, user.address, 0, {
+      fixture.alcb.mintDeposit(1, user.address, 0, {
         value: ethIn,
       })
     )
-      .to.emit(fixture.bToken, "DepositReceived")
-      .withArgs(2, 1, user.address, bTokens);
+      .to.emit(fixture.alcb, "DepositReceived")
+      .withArgs(2, 1, user.address, alcbs);
     expectedState = await getState(fixture);
-    const tx = await fixture.bToken.mintDeposit(1, user.address, 0, {
+    const tx = await fixture.alcb.mintDeposit(1, user.address, 0, {
       value: ethIn,
     });
 
-    expectedState.Balances.bToken.poolBalance = (
-      await fixture.bToken.getPoolBalance()
+    expectedState.Balances.alcb.poolBalance = (
+      await fixture.alcb.getPoolBalance()
     ).toBigInt();
 
     expectedState.Balances.eth.admin -= ethIn.toBigInt();
-    expectedState.Balances.eth.bToken += ethIn.toBigInt();
+    expectedState.Balances.eth.alcb += ethIn.toBigInt();
     expectedState.Balances.eth.admin -= getEthConsumedAsGas(await tx.wait());
 
     expect(await getState(fixture)).to.be.deep.equal(expectedState);
@@ -236,45 +230,45 @@ describe("Testing BToken Deposit methods", async () => {
     await fixture.factory
       .connect(admin)
       .callAny(
-        fixture.bToken.address,
+        fixture.alcb.address,
         0,
-        fixture.bToken.interface.encodeFunctionData("virtualMintDeposit", [
+        fixture.alcb.interface.encodeFunctionData("virtualMintDeposit", [
           1,
           user.address,
-          bTokenDeposit,
+          alcbDeposit,
         ])
       );
     const depositId = 2;
-    const deposit = await fixture.bToken.getDeposit(depositId);
+    const deposit = await fixture.alcb.getDeposit(depositId);
     expect(deposit.value).to.be.equal(ethIn.toBigInt());
   });
 
   it("Should distribute after deposit", async () => {
     await callFunctionAndGetReturnValues(
-      fixture.bToken,
+      fixture.alcb,
       "mint",
       admin,
-      [minBTokens],
+      [minALCBs],
       ethIn
     );
-    await expect(fixture.bToken.deposit(1, user.address, bTokenDeposit))
-      .to.emit(fixture.bToken, "DepositReceived")
-      .withArgs(2, 1, user.address, bTokenDeposit);
+    await expect(fixture.alcb.deposit(1, user.address, alcbDeposit))
+      .to.emit(fixture.alcb, "DepositReceived")
+      .withArgs(2, 1, user.address, alcbDeposit);
     expectedState = await getState(fixture);
-    const tx = await fixture.bToken.deposit(1, user.address, bTokenDeposit);
+    const tx = await fixture.alcb.deposit(1, user.address, alcbDeposit);
     const [, tx2] = await callFunctionAndGetReturnValues(
-      fixture.bToken,
+      fixture.alcb,
       "distribute",
       admin,
       []
     );
-    expectedState.Balances.bToken.admin -= bTokenDeposit.toBigInt();
-    expectedState.Balances.bToken.poolBalance = (
-      await fixture.bToken.getPoolBalance()
+    expectedState.Balances.alcb.admin -= alcbDeposit.toBigInt();
+    expectedState.Balances.alcb.poolBalance = (
+      await fixture.alcb.getPoolBalance()
     ).toBigInt();
-    expectedState.Balances.bToken.totalSupply -= bTokenDeposit.toBigInt();
-    expectedState.Balances.eth.bToken = (
-      await fixture.bToken.getPoolBalance()
+    expectedState.Balances.alcb.totalSupply -= alcbDeposit.toBigInt();
+    expectedState.Balances.eth.alcb = (
+      await fixture.alcb.getPoolBalance()
     ).toBigInt();
     expectedState.Balances.eth.admin -= getEthConsumedAsGas(await tx.wait());
     expectedState.Balances.eth.admin -= getEthConsumedAsGas(await tx2.wait());
@@ -283,31 +277,31 @@ describe("Testing BToken Deposit methods", async () => {
 
   it("Should distribute after mint deposit", async () => {
     expectedState = await getState(fixture);
-    const bTokens = await fixture.bToken.getLatestMintedBTokensFromEth(ethIn);
+    const alcbs = await fixture.alcb.getLatestMintedALCBsFromEth(ethIn);
     let tx0;
     await expect(
-      (tx0 = fixture.bToken.mintDeposit(1, user.address, 0, {
+      (tx0 = fixture.alcb.mintDeposit(1, user.address, 0, {
         value: ethIn,
       }))
     )
-      .to.emit(fixture.bToken, "DepositReceived")
-      .withArgs(2, 1, user.address, bTokens);
-    const tx = await fixture.bToken.mintDeposit(1, user.address, 0, {
+      .to.emit(fixture.alcb, "DepositReceived")
+      .withArgs(2, 1, user.address, alcbs);
+    const tx = await fixture.alcb.mintDeposit(1, user.address, 0, {
       value: ethIn,
     });
-    let distributedAmount = await fixture.bToken.getYield();
+    let distributedAmount = await fixture.alcb.getYield();
     const [wasSuccessful, tx2] = await callFunctionAndGetReturnValues(
-      fixture.bToken,
+      fixture.alcb,
       "distribute",
       admin,
       []
     );
     expect(wasSuccessful).to.be.equal(true);
-    distributedAmount = await fixture.bToken.getYield();
+    distributedAmount = await fixture.alcb.getYield();
     expect(distributedAmount).to.be.equal(0);
     expectedState.Balances.eth.admin -= ethIn.toBigInt();
     expectedState.Balances.eth.admin -= ethIn.toBigInt();
-    expectedState.Balances.eth.bToken -= distributedAmount.toBigInt();
+    expectedState.Balances.eth.alcb -= distributedAmount.toBigInt();
     expectedState.Balances.eth.admin -= getEthConsumedAsGas(
       await (await tx0).wait()
     );

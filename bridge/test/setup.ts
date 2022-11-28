@@ -11,11 +11,11 @@ import {
 import { isHexString } from "ethers/lib/utils";
 import { ethers, network } from "hardhat";
 import {
+  ALCB,
   AliceNetFactory,
   AToken,
   ATokenBurner,
   ATokenMinter,
-  BToken,
   Distribution,
   Dynamics,
   ETHDKG,
@@ -70,7 +70,7 @@ export interface BaseFixture {
 
 export interface BaseTokensFixture extends BaseFixture {
   aToken: AToken;
-  bToken: BToken;
+  alcb: ALCB;
   legacyToken: LegacyToken;
   publicStaking: PublicStaking;
 }
@@ -313,19 +313,19 @@ export const deployFactoryAndBaseTokens = async (
     await factory.lookup(ethers.utils.formatBytes32String("AToken"))
   );
 
-  // BToken
+  // ALCB
   const centralRouter = await (
     await ethers.getContractFactory("CentralBridgeRouterMock")
   ).deploy(1000);
   const deployData = (
-    await ethers.getContractFactory("BToken")
+    await ethers.getContractFactory("ALCB")
   ).getDeployTransaction(centralRouter.address).data as BytesLike;
-  const bTokenSalt = ethers.utils.formatBytes32String("BToken");
-  await factory.deployCreateAndRegister(deployData, bTokenSalt);
-  // finally attach BToken to the address of the deployed contract above
-  const bToken = await ethers.getContractAt(
-    "BToken",
-    await factory.lookup(bTokenSalt)
+  const alcbSalt = ethers.utils.formatBytes32String("ALCB");
+  await factory.deployCreateAndRegister(deployData, alcbSalt);
+  // finally attach ALCB to the address of the deployed contract above
+  const alcb = await ethers.getContractAt(
+    "ALCB",
+    await factory.lookup(alcbSalt)
   );
 
   // PublicStaking
@@ -339,7 +339,7 @@ export const deployFactoryAndBaseTokens = async (
   return {
     factory,
     aToken,
-    bToken,
+    alcb,
     legacyToken,
     publicStaking,
   };
@@ -407,7 +407,7 @@ export const getFixture = async (
   const namedSigners = await ethers.getSigners();
   const [admin] = namedSigners;
   // Deploy the base tokens
-  const { factory, aToken, bToken, legacyToken, publicStaking } =
+  const { factory, aToken, alcb, legacyToken, publicStaking } =
     await deployFactoryAndBaseTokens(admin);
   // ValidatorStaking is not considered a base token since is only used by validators
   const validatorStaking = (await deployUpgradeableWithFactory(
@@ -542,7 +542,7 @@ export const getFixture = async (
     "Accusation"
   )) as MultipleProposalAccusation;
 
-  // distribution contract for distributing BTokens yields
+  // distribution contract for distributing ALCBs yields
   const distribution = (await deployUpgradeableWithFactory(
     factory,
     "Distribution",
@@ -567,7 +567,7 @@ export const getFixture = async (
 
   return {
     aToken,
-    bToken,
+    alcb,
     legacyToken,
     publicStaking,
     validatorStaking,

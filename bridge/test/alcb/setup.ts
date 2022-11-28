@@ -9,7 +9,7 @@ let user2: SignerWithAddress;
 
 export interface state {
   Balances: {
-    bToken: {
+    alcb: {
       address: string;
       admin: bigint;
       user: bigint;
@@ -23,7 +23,7 @@ export interface state {
       admin: bigint;
       user: bigint;
       user2: bigint;
-      bToken: bigint;
+      alcb: bigint;
     };
   };
 }
@@ -32,21 +32,21 @@ export async function getState(fixture: Fixture | BaseTokensFixture) {
   [admin, user, user2] = await ethers.getSigners();
   const state: state = {
     Balances: {
-      bToken: {
-        address: fixture.bToken.address.slice(-4),
-        admin: (await fixture.bToken.balanceOf(admin.address)).toBigInt(),
-        user: (await fixture.bToken.balanceOf(user.address)).toBigInt(),
-        user2: (await fixture.bToken.balanceOf(user2.address)).toBigInt(),
-        totalSupply: (await fixture.bToken.totalSupply()).toBigInt(),
-        poolBalance: (await fixture.bToken.getPoolBalance()).toBigInt(),
+      alcb: {
+        address: fixture.alcb.address.slice(-4),
+        admin: (await fixture.alcb.balanceOf(admin.address)).toBigInt(),
+        user: (await fixture.alcb.balanceOf(user.address)).toBigInt(),
+        user2: (await fixture.alcb.balanceOf(user2.address)).toBigInt(),
+        totalSupply: (await fixture.alcb.totalSupply()).toBigInt(),
+        poolBalance: (await fixture.alcb.getPoolBalance()).toBigInt(),
       },
       eth: {
         address: "0000",
         admin: (await ethers.provider.getBalance(admin.address)).toBigInt(),
         user: (await ethers.provider.getBalance(user.address)).toBigInt(),
         user2: (await ethers.provider.getBalance(user2.address)).toBigInt(),
-        bToken: (
-          await ethers.provider.getBalance(fixture.bToken.address)
+        alcb: (
+          await ethers.provider.getBalance(fixture.alcb.address)
         ).toBigInt(),
       },
     },
