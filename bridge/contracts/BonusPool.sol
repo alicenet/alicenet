@@ -73,13 +73,12 @@ contract BonusPool is
         IERC20 alca = IERC20(_aTokenAddress());
         //get the total balance of ALCA owned by bonus pool as stake amount
         uint256 _stakeAmount = alca.balanceOf(address(this));
-        uint256 totalBonusAmount = _totalBonusAmount;
-        if (_stakeAmount < totalBonusAmount) {
-            revert LockupErrors.NotEnoughALCAToStake(_stakeAmount, totalBonusAmount);
+        if (_stakeAmount < _totalBonusAmount) {
+            revert LockupErrors.NotEnoughALCAToStake(_stakeAmount, _totalBonusAmount);
         }
         // approve the staking contract to transfer the ALCA
-        alca.approve(_publicStakingAddress(), totalBonusAmount);
-        uint256 tokenID = IStakingNFT(_publicStakingAddress()).mint(totalBonusAmount);
+        alca.approve(_publicStakingAddress(), _totalBonusAmount);
+        uint256 tokenID = IStakingNFT(_publicStakingAddress()).mint(_totalBonusAmount);
         _tokenID = tokenID;
         emit BonusPositionCreated(_tokenID);
     }
@@ -120,6 +119,12 @@ contract BonusPool is
     /// @return the tokenID of the publicStaking position that has the whole bonus amount
     function getBonusStakedPosition() public view returns (uint256) {
         return _tokenID;
+    }
+
+    /// @notice gets the total amount of ALCA that was staked initially in the publicStaking position
+    /// @return the total amount of ALCA that was staked initially in the publicStaking position
+    function getTotalBonusAmount() public view returns (uint256) {
+        return _totalBonusAmount;
     }
 
     /// @notice estimates a user's bonus amount + bonus position profits.
