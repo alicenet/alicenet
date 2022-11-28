@@ -250,7 +250,7 @@ task(
     );
     const alcaAddress = await factoryLookupAddress(
       factory.address,
-      "AToken",
+      "ALCA",
       hre
     );
     const publicStakingAddress = await factoryLookupAddress(
@@ -336,7 +336,7 @@ task(
       taskArgs.skipFirstTransaction === undefined ||
       taskArgs.skipFirstTransaction === false
     ) {
-      console.log("Staking Atoken!");
+      console.log("Staking ALCA!");
       const contractTx = await stakeValidators(
         4,
         taskArgs.factoryAddress,
@@ -432,7 +432,7 @@ task("register-validators", "registers validators")
     );
     const alcaAddress = await factoryLookupAddress(
       factory.address,
-      "AToken",
+      "ALCA",
       hre
     );
     const publicStakingAddress = await factoryLookupAddress(
@@ -538,7 +538,7 @@ task("unregister-validators", "unregister validators")
 
     // checking factory address
     factory
-      .lookup(hre.ethers.utils.formatBytes32String("AToken"))
+      .lookup(hre.ethers.utils.formatBytes32String("ALCA"))
       .catch((error: any) => {
         throw new Error(
           `Invalid factory-address ${taskArgs.factoryAddress}!\n${error}`
@@ -726,8 +726,8 @@ task(
       await lockup.getBonusPoolAddress()
     );
     const alca = await ethers.getContractAt(
-      "AToken",
-      await factory.lookup(ethers.utils.formatBytes32String("AToken"))
+      "ALCA",
+      await factory.lookup(ethers.utils.formatBytes32String("ALCA"))
     );
     const transferCall = encodeMultiCallArgs(
       alca.address,
@@ -1047,33 +1047,31 @@ task("mint-alca-To", "mints ALCA to an address")
       taskArgs.nonce === undefined
         ? hre.ethers.provider.getTransactionCount(signers[0].address)
         : taskArgs.nonce;
-    const aTokenMinterBase = await hre.ethers.getContractFactory(
-      "ATokenMinter"
-    );
+    const alcaMinterBase = await hre.ethers.getContractFactory("ALCAMinter");
     const factory = await hre.ethers.getContractAt(
       "AliceNetFactory",
       taskArgs.factoryAddress
     );
-    const aTokenMinterAddr = await factory.callStatic.lookup(
-      hre.ethers.utils.formatBytes32String("ATokenMinter")
+    const alcaMinterAddr = await factory.callStatic.lookup(
+      hre.ethers.utils.formatBytes32String("ALCAMinter")
     );
-    const aToken = await hre.ethers.getContractAt(
-      "AToken",
+    const alca = await hre.ethers.getContractAt(
+      "ALCA",
       await factory.callStatic.lookup(
-        hre.ethers.utils.formatBytes32String("AToken")
+        hre.ethers.utils.formatBytes32String("ALCA")
       )
     );
-    const bal1 = await aToken.callStatic.balanceOf(taskArgs.to);
-    const calldata = aTokenMinterBase.interface.encodeFunctionData("mint", [
+    const bal1 = await alca.callStatic.balanceOf(taskArgs.to);
+    const calldata = alcaMinterBase.interface.encodeFunctionData("mint", [
       taskArgs.to,
       taskArgs.amount,
     ]);
     // use the factory to call the A token minter
-    const txResponse = await factory.callAny(aTokenMinterAddr, 0, calldata, {
+    const txResponse = await factory.callAny(alcaMinterAddr, 0, calldata, {
       nonce,
     });
     await txResponse.wait();
-    const bal2 = await aToken.callStatic.balanceOf(taskArgs.to);
+    const bal2 = await alca.callStatic.balanceOf(taskArgs.to);
     console.log(
       `Minted ${bal2.sub(bal1).toString()} to account ${taskArgs.to}`
     );
@@ -1088,9 +1086,9 @@ task("get-alca-balance", "gets ALCA balance of account")
       taskArgs.factoryAddress
     );
     const alca = await hre.ethers.getContractAt(
-      "AToken",
+      "ALCA",
       await factory.callStatic.lookup(
-        hre.ethers.utils.formatBytes32String("AToken")
+        hre.ethers.utils.formatBytes32String("ALCA")
       )
     );
     const bal = await alca.callStatic.balanceOf(taskArgs.account);
@@ -1286,8 +1284,8 @@ task(
       } catch {}
       return transactions;
     };
-    const mintAToken = async () => {
-      return mintATokenTo(
+    const mintALCA = async () => {
+      return mintALCATo(
         hre,
         taskArgs.factoryAddress,
         accounts[1].address,
@@ -1339,7 +1337,7 @@ task(
             break;
           case 2:
             try {
-              const tx = await mintAToken();
+              const tx = await mintALCA();
               txSet.push(tx);
             } catch (error) {}
             break;
@@ -1563,27 +1561,24 @@ task("deploy-alcb", "Task to deploy ALCB")
     );
   });
 
-async function mintATokenTo(
+async function mintALCATo(
   hre: HardhatRuntimeEnvironment,
   factoryAddress: string,
   to: string,
   nonce: number
 ): Promise<ContractTransaction> {
-  const aTokenMinterBase = await hre.ethers.getContractFactory("ATokenMinter");
+  const alcaMinterBase = await hre.ethers.getContractFactory("ALCAMinter");
   const factory = await hre.ethers.getContractAt(
     "AliceNetFactory",
     factoryAddress
   );
-  const aTokenMinterAddr = await factory.callStatic.lookup(
-    hre.ethers.utils.formatBytes32String("ATokenMinter")
+  const alcaMinterAddr = await factory.callStatic.lookup(
+    hre.ethers.utils.formatBytes32String("ALCAMinter")
   );
 
-  const calldata = aTokenMinterBase.interface.encodeFunctionData("mint", [
-    to,
-    1,
-  ]);
+  const calldata = alcaMinterBase.interface.encodeFunctionData("mint", [to, 1]);
   // use the factory to call the A token minter
-  return factory.callAny(aTokenMinterAddr, 0, calldata, { nonce });
+  return factory.callAny(alcaMinterAddr, 0, calldata, { nonce });
 }
 
 export function encodeMultiCallArgs(
@@ -1601,7 +1596,7 @@ export function encodeMultiCallArgs(
 export async function stakeValidators(
   numValidators: number,
   factoryAddress: string,
-  aTokenAddress: string,
+  alcaAddress: string,
   publicStakingAddress: string,
   hre: HardhatRuntimeEnvironment
 ): Promise<ContractTransaction> {
@@ -1609,20 +1604,16 @@ export async function stakeValidators(
     "AliceNetFactory",
     factoryAddress
   );
-  const atokenBase = await hre.ethers.getContractFactory("AToken");
+  const alcaBase = await hre.ethers.getContractFactory("ALCA");
   const publicStakingBase = await hre.ethers.getContractFactory(
     "PublicStaking"
   );
   const stakeAmt = hre.ethers.utils.parseEther("5000000");
-  const approveATokenCallData = atokenBase.interface.encodeFunctionData(
-    "approve",
-    [publicStakingAddress, BigNumber.from(numValidators).mul(stakeAmt)]
-  );
-  const approveAToken = encodeMultiCallArgs(
-    aTokenAddress,
-    0,
-    approveATokenCallData
-  );
+  const approveALCACallData = alcaBase.interface.encodeFunctionData("approve", [
+    publicStakingAddress,
+    BigNumber.from(numValidators).mul(stakeAmt),
+  ]);
+  const approveALCA = encodeMultiCallArgs(alcaAddress, 0, approveALCACallData);
   const stakeNFT: Array<MultiCallArgsStruct> = [];
   for (let i = 0; i < numValidators; i++) {
     const stakeToken = publicStakingBase.interface.encodeFunctionData("mint", [
@@ -1630,10 +1621,7 @@ export async function stakeValidators(
     ]);
     stakeNFT.push(encodeMultiCallArgs(publicStakingAddress, 0, stakeToken));
   }
-  return factory.multiCall(
-    [approveAToken, ...stakeNFT],
-    await getGasPrices(hre)
-  );
+  return factory.multiCall([approveALCA, ...stakeNFT], await getGasPrices(hre));
 }
 
 export async function migrateSnapshotsAndValidators(

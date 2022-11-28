@@ -3,8 +3,8 @@ pragma solidity ^0.8.16;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "contracts/utils/auth/ImmutableFactory.sol";
-import "contracts/utils/auth/ImmutableATokenMinter.sol";
-import "contracts/utils/auth/ImmutableATokenBurner.sol";
+import "contracts/utils/auth/ImmutableALCAMinter.sol";
+import "contracts/utils/auth/ImmutableALCABurner.sol";
 import "contracts/interfaces/IStakingToken.sol";
 import "contracts/libraries/errors/StakingTokenErrors.sol";
 
@@ -13,12 +13,12 @@ import "contracts/libraries/errors/StakingTokenErrors.sol";
  * AliceNet layer2 dapp.
  *
  */
-contract AToken is
+contract ALCA is
     IStakingToken,
     ERC20,
     ImmutableFactory,
-    ImmutableATokenMinter,
-    ImmutableATokenBurner
+    ImmutableALCAMinter,
+    ImmutableALCABurner
 {
     uint256 internal constant _CONVERSION_MULTIPLIER = 15_555_555_555_555_555_555_555_555_555;
     uint256 internal constant _CONVERSION_SCALE = 10_000_000_000_000_000_000_000_000_000;
@@ -31,8 +31,8 @@ contract AToken is
     )
         ERC20("AliceNet Staking Token", "ALCA")
         ImmutableFactory(msg.sender)
-        ImmutableATokenMinter()
-        ImmutableATokenBurner()
+        ImmutableALCAMinter()
+        ImmutableALCABurner()
     {
         _legacyToken = legacyToken_;
         _mint(msg.sender, _INITIAL_MINT_AMOUNT);
@@ -67,21 +67,21 @@ contract AToken is
 
     /**
      * Mints a certain amount of ALCA to an address. Can only be called by the
-     * ATokenMinter role.
+     * ALCAMinter role.
      * @param to the address that will receive the minted tokens.
      * @param amount the amount of legacy token to migrate.
      */
-    function externalMint(address to, uint256 amount) public onlyATokenMinter {
+    function externalMint(address to, uint256 amount) public onlyALCAMinter {
         _mint(to, amount);
     }
 
     /**
      * Burns an amount of ALCA from an address. Can only be called by the
-     * ATokenBurner role.
+     * ALCABurner role.
      * @param from the account to burn the ALCA tokens.
      * @param amount the amount to burn.
      */
-    function externalBurn(address from, uint256 amount) public onlyATokenBurner {
+    function externalBurn(address from, uint256 amount) public onlyALCABurner {
         _burn(from, amount);
     }
 

@@ -297,7 +297,7 @@ const config: HardhatUserConfig = {
       "ValidatorPool",
       "Snapshots",
       "ALCB",
-      "AToken",
+      "ALCA",
       "PublicStaking",
       "ValidatorStaking",
       "Governance",

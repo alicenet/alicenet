@@ -115,7 +115,7 @@ library StakingDescriptor {
 
     /// @notice Generates the attributes part of the Staking Descriptor
     /// @param  tokenId the token id of this descriptor
-    /// @param  shares number of AToken
+    /// @param  shares number of ALCA
     /// @param  freeAfter block number after which the position may be burned.
     /// @param  withdrawFreeAfter block number after which the position may be collected or burned
     /// @param  accumulatorEth the last value of the ethState accumulator this account performed a withdraw at

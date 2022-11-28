@@ -144,8 +144,8 @@ contract MockStakingNFT is StakingNFT {
         return StakingNFT.getTotalReserveEth();
     }
 
-    function getTotalReserveATokenMock() public view returns (uint256) {
-        return StakingNFT.getTotalReserveAToken();
+    function getTotalReserveALCAMock() public view returns (uint256) {
+        return StakingNFT.getTotalReserveALCA();
     }
 
     function estimateEthCollectionMock(uint256 tokenID_) public view returns (uint256) {

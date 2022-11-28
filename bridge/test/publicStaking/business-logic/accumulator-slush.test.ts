@@ -18,15 +18,15 @@ describe("PublicStaking: Accumulator and slush invariance", async () => {
 
   async function deployFixture() {
     const fixture = await getBaseTokensFixture();
-    await fixture.aToken.approve(
+    await fixture.alca.approve(
       fixture.publicStaking.address,
       ethers.utils.parseUnits("100000", 18)
     );
     const users = await createUsers(numberUsers);
     const baseAmount = ethers.utils.parseUnits("10000", 1);
     for (let i = 0; i < numberUsers; i++) {
-      await fixture.aToken.transfer(await users[i].getAddress(), baseAmount);
-      await fixture.aToken
+      await fixture.alca.transfer(await users[i].getAddress(), baseAmount);
+      await fixture.alca
         .connect(users[i])
         .approve(fixture.publicStaking.address, baseAmount);
     }
@@ -49,7 +49,7 @@ describe("PublicStaking: Accumulator and slush invariance", async () => {
         .mint(sharesPerUser);
       tokensID.push(await getTokenIdFromTx(tx));
     }
-    const totalSharesBN = await fixture.publicStaking.getTotalReserveAToken();
+    const totalSharesBN = await fixture.publicStaking.getTotalReserveALCA();
     const totalShares = totalSharesBN.toBigInt();
     let ethStateAccum = 0n;
     let ethStateSlush = 0n;

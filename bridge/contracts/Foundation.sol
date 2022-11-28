@@ -5,7 +5,7 @@ import "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "contracts/utils/auth/ImmutableFactory.sol";
-import "contracts/utils/auth/ImmutableAToken.sol";
+import "contracts/utils/auth/ImmutableALCA.sol";
 import "contracts/utils/EthSafeTransfer.sol";
 import "contracts/utils/ERC20SafeTransfer.sol";
 import "contracts/utils/MagicValue.sol";
@@ -18,27 +18,27 @@ contract Foundation is
     EthSafeTransfer,
     ERC20SafeTransfer,
     ImmutableFactory,
-    ImmutableAToken
+    ImmutableALCA
 {
     using Address for address;
 
-    constructor() ImmutableFactory(msg.sender) ImmutableAToken() {}
+    constructor() ImmutableFactory(msg.sender) ImmutableALCA() {}
 
     function initialize() public initializer onlyFactory {}
 
     /// DO NOT CALL THIS METHOD UNLESS YOU ARE MAKING A DISTRIBUTION AS ALL VALUE
-    /// WILL BE DISTRIBUTED TO STAKERS EVENLY. depositToken distributes ATokens
+    /// WILL BE DISTRIBUTED TO STAKERS EVENLY. depositToken distributes ALCAs
     /// to all stakers evenly should only be called during a slashing event. Any
-    /// AToken sent to this method in error will be lost. This function will
+    /// ALCA sent to this method in error will be lost. This function will
     /// fail if the circuit breaker is tripped. The magic_ parameter is intended
     /// to stop some one from successfully interacting with this method without
     /// first reading the source code and hopefully this comment
-    /// @notice deposits aTokens that will be distributed to the foundation
+    /// @notice deposits alcas that will be distributed to the foundation
     /// @param magic_ The required control number to allow operation
-    /// @param amount_ The amount of AToken to be deposited
+    /// @param amount_ The amount of ALCA to be deposited
     function depositToken(uint8 magic_, uint256 amount_) public checkMagic(magic_) {
         // collect tokens
-        _safeTransferFromERC20(IERC20Transferable(_aTokenAddress()), msg.sender, amount_);
+        _safeTransferFromERC20(IERC20Transferable(_alcaAddress()), msg.sender, amount_);
     }
 
     /// DO NOT CALL THIS METHOD UNLESS YOU ARE MAKING A DISTRIBUTION ALL VALUE

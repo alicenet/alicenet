@@ -3,7 +3,7 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { ethers } from "hardhat";
 import { expect, factoryCallAnyFixture, Fixture, getFixture } from "../setup";
 import { getState, init, state } from "./setup";
-describe("Testing AToken", async () => {
+describe("Testing ALCA", async () => {
   let user: SignerWithAddress;
   let admin: SignerWithAddress;
   let expectedState: state;
@@ -26,33 +26,33 @@ describe("Testing AToken", async () => {
 
   describe("Testing minting operation", async () => {
     describe("Methods with onlyFactory modifier", async () => {
-      describe("Methods with onlyATokenMinter modifier", async () => {
+      describe("Methods with onlyALCAMinter modifier", async () => {
         it("Should not mint when called by external address not identified as minter", async function () {
-          await expect(fixture.aToken.externalMint(user.address, amount))
-            .to.be.revertedWithCustomError(fixture.aToken, `OnlyATokenMinter`)
-            .withArgs(admin.address, fixture.aTokenMinter.address);
+          await expect(fixture.alca.externalMint(user.address, amount))
+            .to.be.revertedWithCustomError(fixture.alca, `OnlyALCAMinter`)
+            .withArgs(admin.address, fixture.alcaMinter.address);
 
           await expect(
-            fixture.aToken.connect(admin).externalMint(user.address, amount)
+            fixture.alca.connect(admin).externalMint(user.address, amount)
           )
-            .to.be.revertedWithCustomError(fixture.aToken, `OnlyATokenMinter`)
-            .withArgs(admin.address, fixture.aTokenMinter.address);
+            .to.be.revertedWithCustomError(fixture.alca, `OnlyALCAMinter`)
+            .withArgs(admin.address, fixture.alcaMinter.address);
         });
       });
 
       describe("Business methods with onlyFactory modifier", async () => {
         it("Should mint when called by external identified as minter impersonating factory", async function () {
-          await factoryCallAnyFixture(fixture, "aTokenMinter", "mint", [
+          await factoryCallAnyFixture(fixture, "alcaMinter", "mint", [
             user.address,
             amount,
           ]);
-          expectedState.Balances.aToken.user += amount;
+          expectedState.Balances.alca.user += amount;
           currentState = await getState(fixture);
           expect(currentState).to.be.deep.eq(expectedState);
         });
 
         it("Should not mint when called by external identified as minter not impersonating factory", async function () {
-          await expect(fixture.aTokenMinter.mint(user.address, amount))
+          await expect(fixture.alcaMinter.mint(user.address, amount))
             .to.be.revertedWithCustomError(fixture.alcb, `OnlyFactory`)
             .withArgs(admin.address, fixture.factory.address);
         });

@@ -96,26 +96,26 @@ abstract contract ImmutableFactory is DeterministicAddress {
 
 }
 
-abstract contract ImmutableAToken is ImmutableFactory {
-    address private immutable _aToken;
-    error OnlyAToken(address sender, address expected);
+abstract contract ImmutableALCA is ImmutableFactory {
+    address private immutable _alca;
+    error OnlyALCA(address sender, address expected);
 
-    modifier onlyAToken() {
-        if (msg.sender != _aToken) {
-            revert OnlyAToken(msg.sender, _aToken);
+    modifier onlyALCA() {
+        if (msg.sender != _alca) {
+            revert OnlyALCA(msg.sender, _alca);
         }
         _;
     }
 
     constructor() {
-        _aToken = IAliceNetFactory(_factoryAddress()).lookup(_saltForAToken());
+        _alca = IAliceNetFactory(_factoryAddress()).lookup(_saltForALCA());
     }
 
-    function _aTokenAddress() internal view returns (address) {
-        return _aToken;
+    function _alcaAddress() internal view returns (address) {
+        return _alca;
     }
 
-    function _saltForAToken() internal pure returns (bytes32) {
+    function _saltForALCA() internal pure returns (bytes32) {
         return 0x41546f6b656e0000000000000000000000000000000000000000000000000000;
     }
 }

@@ -22,7 +22,7 @@ describe("Testing ALCB Transfer methods", async () => {
     const [admin, user, user2] = signers;
 
     const ethIn = ethers.utils.parseEther(eth.toString());
-    // Mint some ATokens for testing
+    // Mint some ALCAs for testing
     const [alcbs] = await callFunctionAndGetReturnValues(
       fixture.alcb,
       "mint",

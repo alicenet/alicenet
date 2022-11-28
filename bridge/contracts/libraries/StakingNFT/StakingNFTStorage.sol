@@ -4,7 +4,7 @@ pragma solidity ^0.8.16;
 abstract contract StakingNFTStorage {
     // Position describes a staked position
     struct Position {
-        // number of aToken
+        // number of alca
         uint224 shares;
         // block number after which the position may be burned.
         // prevents double spend of voting weight
@@ -34,10 +34,10 @@ abstract contract StakingNFTStorage {
     // 10**18
     uint256 internal constant _ACCUMULATOR_SCALE_FACTOR = 1000000000000000000;
 
-    // _shares stores total amount of AToken staked in contract
+    // _shares stores total amount of ALCA staked in contract
     uint256 internal _shares;
 
-    // _tokenState tracks distribution of AToken that originate from slashing
+    // _tokenState tracks distribution of ALCA that originate from slashing
     // events
     Accumulator internal _tokenState;
 
@@ -52,7 +52,7 @@ abstract contract StakingNFTStorage {
     // contract
     uint256 internal _reserveEth;
 
-    // state to keep track of the amount of ATokens deposited and collected
+    // state to keep track of the amount of ALCAs deposited and collected
     // from the contract
     uint256 internal _reserveToken;
 }

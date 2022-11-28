@@ -169,13 +169,13 @@ export async function updateList(
   }
 }
 
-export async function getATokenMinterAddress(network: string) {
+export async function getALCAMinterAddress(network: string) {
   // fetch whats in the factory config file
   const config = await readFactoryState(FACTORY_STATE_PATH);
   const proxies = config[network].proxies;
   for (let i = 0; i < proxies.length; i++) {
     const name = proxies[i].logicName;
-    if (name === "ATokenMinter") {
+    if (name === "ALCAMinter") {
       return proxies[i].proxyAddress;
     }
   }
@@ -192,12 +192,12 @@ export async function getALCBAddress(network: string) {
   }
 }
 
-export async function getATokenAddress(network: string) {
+export async function getALCAAddress(network: string) {
   const config = await readFactoryState(FACTORY_STATE_PATH);
   const staticContracts = config[network].staticContracts;
   for (let i = 0; i < staticContracts.length; i++) {
     const name = staticContracts[i].templateName;
-    if (name === "AToken") {
+    if (name === "ALCA") {
       return staticContracts[i].metaAddress;
     }
   }

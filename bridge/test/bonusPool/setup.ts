@@ -1,7 +1,7 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BigNumber } from "ethers";
 import hre, { ethers } from "hardhat";
-import { AToken, BonusPool, PublicStaking } from "../../typechain-types";
+import { ALCA, BonusPool, PublicStaking } from "../../typechain-types";
 import { mineBlocks } from "../setup";
 
 export const getImpersonatedSigner = async (
@@ -46,14 +46,14 @@ export async function depositEthToAddress(
 
 export async function depositTokensForStakingRewards(
   accounts: SignerWithAddress[],
-  aToken: AToken,
+  alca: ALCA,
   publicStaking: PublicStaking,
-  alca: BigNumber
+  alcaAmount: BigNumber
 ): Promise<void> {
   await (
-    await aToken
+    await alca
       .connect(accounts[0])
-      .increaseAllowance(publicStaking.address, alca)
+      .increaseAllowance(publicStaking.address, alcaAmount)
   ).wait();
 
   await (
@@ -72,12 +72,12 @@ export async function ensureBlockIsAtLeast(targetBlock: number): Promise<void> {
 export async function mintBonusPosition(
   accounts: SignerWithAddress[],
   exactStakeAmount: BigNumber,
-  aToken: AToken,
+  alca: ALCA,
   bonusPool: BonusPool,
   mockFactorySigner: SignerWithAddress
 ) {
   await (
-    await aToken
+    await alca
       .connect(accounts[0])
       .transfer(bonusPool.address, exactStakeAmount)
   ).wait();

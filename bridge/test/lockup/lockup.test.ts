@@ -51,7 +51,7 @@ async function deployFixture() {
     CONTRACT_ADDR
   );
   startBlock += txResponse.blockNumber as number;
-  await posFixtureSetup(fixture.factory, fixture.aToken);
+  await posFixtureSetup(fixture.factory, fixture.alca);
   const lockup = await ethers.getContractAt("Lockup", lockupAddress);
   // get the address of the reward pool from the lockup contract
   rewardPoolAddress = await lockup.getRewardPoolAddress();
@@ -65,12 +65,12 @@ async function deployFixture() {
   const tokenIDs = [];
   for (let i = 1; i <= numberOfLockingUsers; i++) {
     // transfer 100 ALCA from admin to users
-    let txResponse = await fixture.aToken
+    let txResponse = await fixture.alca
       .connect(signers[0])
       .transfer(signers[i].address, stakedAmount);
     await txResponse.wait();
     // stake the tokens
-    txResponse = await fixture.aToken
+    txResponse = await fixture.alca
       .connect(signers[i])
       .increaseAllowance(fixture.publicStaking.address, stakedAmount);
     await txResponse.wait();

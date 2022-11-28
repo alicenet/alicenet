@@ -3,7 +3,7 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { ethers } from "hardhat";
 import { expect, factoryCallAnyFixture, Fixture, getFixture } from "../setup";
 import { getState, init, state } from "./setup";
-describe("Testing AToken", async () => {
+describe("Testing ALCA", async () => {
   let user: SignerWithAddress;
   let admin: SignerWithAddress;
   let expectedState: state;
@@ -25,17 +25,17 @@ describe("Testing AToken", async () => {
   });
 
   describe("Testing burning operation", async () => {
-    describe("Methods with onlyATokenBurner modifier", async () => {
+    describe("Methods with onlyALCABurner modifier", async () => {
       it("Should not burn when called by external address not identified as burner", async function () {
-        await expect(fixture.aToken.externalBurn(user.address, amount))
-          .to.be.revertedWithCustomError(fixture.aToken, `OnlyATokenBurner`)
-          .withArgs(admin.address, fixture.aTokenBurner.address);
+        await expect(fixture.alca.externalBurn(user.address, amount))
+          .to.be.revertedWithCustomError(fixture.alca, `OnlyALCABurner`)
+          .withArgs(admin.address, fixture.alcaBurner.address);
 
         await expect(
-          fixture.aToken.connect(admin).externalBurn(user.address, amount)
+          fixture.alca.connect(admin).externalBurn(user.address, amount)
         )
-          .to.be.revertedWithCustomError(fixture.aToken, `OnlyATokenBurner`)
-          .withArgs(admin.address, fixture.aTokenBurner.address);
+          .to.be.revertedWithCustomError(fixture.alca, `OnlyALCABurner`)
+          .withArgs(admin.address, fixture.alcaBurner.address);
       });
     });
     describe("Business methods with onlyFactory modifier", async () => {
@@ -43,15 +43,15 @@ describe("Testing AToken", async () => {
         // migrate some tokens for burning
         await fixture.legacyToken
           .connect(user)
-          .approve(fixture.aToken.address, amount);
-        await fixture.aToken.connect(user).migrate(amount);
+          .approve(fixture.alca.address, amount);
+        await fixture.alca.connect(user).migrate(amount);
         expectedState = await getState(fixture);
         // burn
-        await factoryCallAnyFixture(fixture, "aTokenBurner", "burn", [
+        await factoryCallAnyFixture(fixture, "alcaBurner", "burn", [
           user.address,
           amount,
         ]);
-        expectedState.Balances.aToken.user -= amount;
+        expectedState.Balances.alca.user -= amount;
         currentState = await getState(fixture);
         expect(currentState).to.be.deep.eq(expectedState);
       });
@@ -60,12 +60,12 @@ describe("Testing AToken", async () => {
         // migrate some tokens for burning
         await fixture.legacyToken
           .connect(user)
-          .approve(fixture.aToken.address, amount);
-        await fixture.aToken.connect(user).migrate(amount);
+          .approve(fixture.alca.address, amount);
+        await fixture.alca.connect(user).migrate(amount);
         expectedState = await getState(fixture);
         // burn
-        await expect(fixture.aTokenBurner.burn(user.address, amount))
-          .to.be.revertedWithCustomError(fixture.aTokenBurner, `OnlyFactory`)
+        await expect(fixture.alcaBurner.burn(user.address, amount))
+          .to.be.revertedWithCustomError(fixture.alcaBurner, `OnlyFactory`)
           .withArgs(admin.address, fixture.factory.address);
       });
     });

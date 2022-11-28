@@ -153,7 +153,7 @@ task(
     );
     await showState(
       `Deployed ALCA at address: ${await factory.lookup(
-        hre.ethers.utils.formatBytes32String("AToken")
+        hre.ethers.utils.formatBytes32String("ALCA")
       )}, gasCost: ${gasCost}`
     );
     return factoryData;

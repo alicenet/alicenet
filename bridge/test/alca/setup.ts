@@ -11,9 +11,9 @@ export interface state {
       address: string;
       admin: bigint;
       user: bigint;
-      aToken: bigint;
+      alca: bigint;
     };
-    aToken: {
+    alca: {
       address: string;
       admin: bigint;
       user: bigint;
@@ -30,16 +30,16 @@ export async function getState(fixture: Fixture) {
         address: fixture.legacyToken.address.slice(-4),
         admin: (await fixture.legacyToken.balanceOf(admin.address)).toBigInt(),
         user: (await fixture.legacyToken.balanceOf(user.address)).toBigInt(),
-        aToken: (
-          await fixture.legacyToken.balanceOf(fixture.aToken.address)
+        alca: (
+          await fixture.legacyToken.balanceOf(fixture.alca.address)
         ).toBigInt(),
       },
-      aToken: {
-        address: fixture.aToken.address.slice(-4),
-        admin: (await fixture.aToken.balanceOf(admin.address)).toBigInt(),
-        user: (await fixture.aToken.balanceOf(user.address)).toBigInt(),
+      alca: {
+        address: fixture.alca.address.slice(-4),
+        admin: (await fixture.alca.balanceOf(admin.address)).toBigInt(),
+        user: (await fixture.alca.balanceOf(user.address)).toBigInt(),
         legacyToken: (
-          await fixture.aToken.balanceOf(fixture.legacyToken.address)
+          await fixture.alca.balanceOf(fixture.legacyToken.address)
         ).toBigInt(),
       },
     },

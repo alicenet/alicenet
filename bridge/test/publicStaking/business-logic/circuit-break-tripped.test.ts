@@ -15,7 +15,7 @@ describe("PublicStaking: Call functions with Circuit Breaker tripped", async () 
   async function deployFixture() {
     const fixture = await getBaseTokensFixture();
     const [adminSigner, notAdminSigner] = await ethers.getSigners();
-    await fixture.aToken.approve(fixture.publicStaking.address, 1000);
+    await fixture.alca.approve(fixture.publicStaking.address, 1000);
     await fixture.publicStaking.connect(adminSigner).mint(1000);
     await factoryCallAnyFixture(fixture, "publicStaking", "tripCB");
     return { fixture, adminSigner, notAdminSigner };
