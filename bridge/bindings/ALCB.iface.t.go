@@ -10,8 +10,8 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 )
 
-// IBTokenTransactor ...
-type IBTokenTransactor interface {
+// IALCBTransactor ...
+type IALCBTransactor interface {
 	// Approve is a paid mutator transaction binding the contract method 0x095ea7b3.
 	//
 	// Solidity: function approve(address spender, uint256 amount) returns(bool)
@@ -36,10 +36,10 @@ type IBTokenTransactor interface {
 	//
 	// Solidity: function depositTokensOnBridges(uint8 routerVersion_, bytes data_) payable returns()
 	DepositTokensOnBridges(opts *bind.TransactOpts, routerVersion_ uint8, data_ []byte) (*types.Transaction, error)
-	// DestroyBTokens is a paid mutator transaction binding the contract method 0x2dc6b024.
+	// DestroyALCBs is a paid mutator transaction binding the contract method 0x24663df8.
 	//
-	// Solidity: function destroyBTokens(uint256 numBTK_) returns(bool)
-	DestroyBTokens(opts *bind.TransactOpts, numBTK_ *big.Int) (*types.Transaction, error)
+	// Solidity: function destroyALCBs(uint256 numBTK_) returns(bool)
+	DestroyALCBs(opts *bind.TransactOpts, numBTK_ *big.Int) (*types.Transaction, error)
 	// Distribute is a paid mutator transaction binding the contract method 0xe4fc6b6d.
 	//
 	// Solidity: function distribute() returns(bool)

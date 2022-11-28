@@ -16,7 +16,7 @@ import (
 )
 
 func ProcessDepositReceived(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, log types.Log, cdb, monDB *db.Database, depositHandler interfaces.DepositHandler, chainID uint32) error {
-	event, err := contracts.EthereumContracts().BToken().ParseDepositReceived(log)
+	event, err := contracts.EthereumContracts().ALCB().ParseDepositReceived(log)
 	if err != nil {
 		return err
 	}

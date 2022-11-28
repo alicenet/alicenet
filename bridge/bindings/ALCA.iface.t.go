@@ -10,8 +10,8 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 )
 
-// IATokenTransactor ...
-type IATokenTransactor interface {
+// IALCATransactor ...
+type IALCATransactor interface {
 	// Approve is a paid mutator transaction binding the contract method 0x095ea7b3.
 	//
 	// Solidity: function approve(address spender, uint256 amount) returns(bool)

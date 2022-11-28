@@ -7,8 +7,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-// IATokenMinterCaller ...
-type IATokenMinterCaller interface {
+// IALCABurnerCaller ...
+type IALCABurnerCaller interface {
 	// GetMetamorphicContractAddress is a free data retrieval call binding the contract method 0x8653a465.
 	//
 	// Solidity: function getMetamorphicContractAddress(bytes32 _salt, address _factory) pure returns(address)

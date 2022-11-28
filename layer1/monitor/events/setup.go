@@ -2,8 +2,9 @@ package events
 
 import (
 	"fmt"
-	"github.com/alicenet/alicenet/layer1/executor"
 	"strings"
+
+	"github.com/alicenet/alicenet/layer1/executor"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -34,13 +35,13 @@ func GetGovernanceEvents() map[string]abi.Event {
 	return governanceABI.Events
 }
 
-func GetBTokenEvents() map[string]abi.Event {
-	bTokenABI, err := abi.JSON(strings.NewReader(bindings.BTokenMetaData.ABI))
+func GetALCBEvents() map[string]abi.Event {
+	alcbABI, err := abi.JSON(strings.NewReader(bindings.ALCBMetaData.ABI))
 	if err != nil {
 		panic(err)
 	}
 
-	return bTokenABI.Events
+	return alcbABI.Events
 }
 
 func GetSnapshotEvents() map[string]abi.Event {
@@ -136,7 +137,7 @@ func SetupEventMap(em *objects.EventMap, cdb, monDB *db.Database, adminHandler m
 	RegisterETHDKGEvents(em, monDB, adminHandler, taskHandler)
 
 	// MadByte.DepositReceived
-	mbEvents := GetBTokenEvents()
+	mbEvents := GetALCBEvents()
 	depositReceived, ok := mbEvents["DepositReceived"]
 	if !ok {
 		panic("could not find event MadByte.DepositReceived")

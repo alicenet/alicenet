@@ -18,11 +18,11 @@ type IValidatorStakingTransactor interface {
 	Approve(opts *bind.TransactOpts, to common.Address, tokenId *big.Int) (*types.Transaction, error)
 	// Burn is a paid mutator transaction binding the contract method 0x42966c68.
 	//
-	// Solidity: function burn(uint256 tokenID_) returns(uint256 payoutEth, uint256 payoutAToken)
+	// Solidity: function burn(uint256 tokenID_) returns(uint256 payoutEth, uint256 payoutALCA)
 	Burn(opts *bind.TransactOpts, tokenID_ *big.Int) (*types.Transaction, error)
 	// BurnTo is a paid mutator transaction binding the contract method 0xea785a5e.
 	//
-	// Solidity: function burnTo(address to_, uint256 tokenID_) returns(uint256 payoutEth, uint256 payoutAToken)
+	// Solidity: function burnTo(address to_, uint256 tokenID_) returns(uint256 payoutEth, uint256 payoutALCA)
 	BurnTo(opts *bind.TransactOpts, to_ common.Address, tokenID_ *big.Int) (*types.Transaction, error)
 	// CollectAllProfits is a paid mutator transaction binding the contract method 0x0df4b2dd.
 	//

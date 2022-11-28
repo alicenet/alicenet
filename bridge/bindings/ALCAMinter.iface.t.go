@@ -10,8 +10,8 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 )
 
-// IATokenMinterTransactor ...
-type IATokenMinterTransactor interface {
+// IALCAMinterTransactor ...
+type IALCAMinterTransactor interface {
 	// Mint is a paid mutator transaction binding the contract method 0x40c10f19.
 	//
 	// Solidity: function mint(address to_, uint256 amount_) returns()

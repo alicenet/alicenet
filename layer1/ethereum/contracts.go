@@ -25,10 +25,10 @@ type Contracts struct {
 	eth                     *Client
 	ethdkg                  bindings.IETHDKG
 	ethdkgAddress           common.Address
-	aToken                  bindings.IAToken
-	aTokenAddress           common.Address
-	bToken                  bindings.IBToken
-	bTokenAddress           common.Address
+	alca                    bindings.IALCA
+	alcaAddress             common.Address
+	alcb                    bindings.IALCB
+	alcbAddress             common.Address
 	publicStaking           bindings.IPublicStaking
 	publicStakingAddress    common.Address
 	validatorStaking        bindings.IValidatorStaking
@@ -125,24 +125,24 @@ func (c *Contracts) lookupContracts() error {
 		c.validatorPool, err = bindings.NewValidatorPool(c.validatorPoolAddress, eth.internalClient)
 		logAndEat(logger, err)
 
-		// BToken
-		c.bTokenAddress, err = lookup("BToken")
+		// ALCB
+		c.alcbAddress, err = lookup("ALCB")
 		logAndEat(logger, err)
-		if bytes.Equal(c.bTokenAddress.Bytes(), make([]byte, 20)) {
+		if bytes.Equal(c.alcbAddress.Bytes(), make([]byte, 20)) {
 			continue
 		}
 
-		c.bToken, err = bindings.NewBToken(c.bTokenAddress, eth.internalClient)
+		c.alcb, err = bindings.NewALCB(c.alcbAddress, eth.internalClient)
 		logAndEat(logger, err)
 
-		// AToken
-		c.aTokenAddress, err = lookup("AToken")
+		// ALCA
+		c.alcaAddress, err = lookup("ALCA")
 		logAndEat(logger, err)
-		if bytes.Equal(c.aTokenAddress.Bytes(), make([]byte, 20)) {
+		if bytes.Equal(c.alcaAddress.Bytes(), make([]byte, 20)) {
 			continue
 		}
 
-		c.aToken, err = bindings.NewAToken(c.aTokenAddress, eth.internalClient)
+		c.alca, err = bindings.NewALCA(c.alcaAddress, eth.internalClient)
 		logAndEat(logger, err)
 
 		// PublicStaking
@@ -218,20 +218,20 @@ func (c *Contracts) EthdkgAddress() common.Address {
 	return c.ethdkgAddress
 }
 
-func (c *Contracts) AToken() bindings.IAToken {
-	return c.aToken
+func (c *Contracts) ALCA() bindings.IALCA {
+	return c.alca
 }
 
-func (c *Contracts) ATokenAddress() common.Address {
-	return c.aTokenAddress
+func (c *Contracts) ALCAAddress() common.Address {
+	return c.alcaAddress
 }
 
-func (c *Contracts) BToken() bindings.IBToken {
-	return c.bToken
+func (c *Contracts) ALCB() bindings.IALCB {
+	return c.alcb
 }
 
-func (c *Contracts) BTokenAddress() common.Address {
-	return c.bTokenAddress
+func (c *Contracts) ALCBAddress() common.Address {
+	return c.alcbAddress
 }
 
 func (c *Contracts) Dynamics() bindings.IDynamics {

@@ -9,8 +9,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-// IATokenCaller ...
-type IATokenCaller interface {
+// IALCACaller ...
+type IALCACaller interface {
 	// Allowance is a free data retrieval call binding the contract method 0xdd62ed3e.
 	//
 	// Solidity: function allowance(address owner, address spender) view returns(uint256)

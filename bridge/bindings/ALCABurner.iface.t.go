@@ -10,8 +10,8 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 )
 
-// IATokenBurnerTransactor ...
-type IATokenBurnerTransactor interface {
+// IALCABurnerTransactor ...
+type IALCABurnerTransactor interface {
 	// Burn is a paid mutator transaction binding the contract method 0x9dc29fac.
 	//
 	// Solidity: function burn(address from_, uint256 amount_) returns()
