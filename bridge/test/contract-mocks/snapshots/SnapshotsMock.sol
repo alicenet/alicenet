@@ -3,7 +3,9 @@ pragma solidity ^0.8.16;
 
 import "contracts/interfaces/ISnapshots.sol";
 import "contracts/interfaces/IValidatorPool.sol";
-import "contracts/utils/ImmutableAuth.sol";
+import "contracts/utils/auth/ImmutableFactory.sol";
+import "contracts/utils/auth/ImmutableValidatorPool.sol";
+import "contracts/utils/auth/ImmutableDynamics.sol";
 import "contracts/libraries/parsers/BClaimsParserLibrary.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "contracts/interfaces/IDynamics.sol";
@@ -33,10 +35,10 @@ contract SnapshotsMock is Initializable, ImmutableValidatorPool, ISnapshots, Imm
         _;
     }
 
-    constructor(uint32 chainID_, uint32 epochLength_)
-        ImmutableFactory(msg.sender)
-        ImmutableValidatorPool()
-    {
+    constructor(
+        uint32 chainID_,
+        uint32 epochLength_
+    ) ImmutableFactory(msg.sender) ImmutableValidatorPool() {
         _admin = msg.sender;
         _chainId = chainID_;
         _epochLength = epochLength_;
@@ -66,10 +68,10 @@ contract SnapshotsMock is Initializable, ImmutableValidatorPool, ISnapshots, Imm
         _minimumIntervalBetweenSnapshots = minimumIntervalBetweenSnapshots_;
     }
 
-    function snapshot(bytes calldata groupSignature_, bytes calldata bClaims_)
-        public
-        returns (bool)
-    {
+    function snapshot(
+        bytes calldata groupSignature_,
+        bytes calldata bClaims_
+    ) public returns (bool) {
         bool isSafeToProceedConsensus = true;
         if (IValidatorPool(_validatorPoolAddress()).isMaintenanceScheduled()) {
             isSafeToProceedConsensus = false;
@@ -86,6 +88,27 @@ contract SnapshotsMock is Initializable, ImmutableValidatorPool, ISnapshots, Imm
             // If claims are passed we create blockClaims with parameter
             blockClaims = abi.decode(bClaims_, (BClaimsParserLibrary.BClaims));
         }
+        _epoch++;
+        _snapshots[_epoch] = Snapshot(block.number, blockClaims);
+        IDynamics(_dynamicsAddress()).updateHead(_epoch);
+
+        return true;
+    }
+
+    function snapshotWithValidData(
+        bytes calldata groupSignature_,
+        bytes calldata bClaims_
+    ) public returns (bool) {
+        bool isSafeToProceedConsensus = true;
+        if (IValidatorPool(_validatorPoolAddress()).isMaintenanceScheduled()) {
+            isSafeToProceedConsensus = false;
+            IValidatorPool(_validatorPoolAddress()).pauseConsensus();
+        }
+        groupSignature_;
+        BClaimsParserLibrary.BClaims memory blockClaims = BClaimsParserLibrary.extractBClaims(
+            bClaims_
+        );
+
         _epoch++;
         _snapshots[_epoch] = Snapshot(block.number, blockClaims);
         IDynamics(_dynamicsAddress()).updateHead(_epoch);
@@ -140,11 +163,9 @@ contract SnapshotsMock is Initializable, ImmutableValidatorPool, ISnapshots, Imm
         return _snapshots[_epoch].blockClaims.chainId;
     }
 
-    function getBlockClaimsFromSnapshot(uint256 epoch_)
-        public
-        view
-        returns (BClaimsParserLibrary.BClaims memory)
-    {
+    function getBlockClaimsFromSnapshot(
+        uint256 epoch_
+    ) public view returns (BClaimsParserLibrary.BClaims memory) {
         return _snapshots[epoch_].blockClaims;
     }
 
@@ -184,11 +205,10 @@ contract SnapshotsMock is Initializable, ImmutableValidatorPool, ISnapshots, Imm
         return true;
     }
 
-    function migrateSnapshots(bytes[] memory groupSignature_, bytes[] memory bClaims_)
-        public
-        pure
-        returns (bool)
-    {
+    function migrateSnapshots(
+        bytes[] memory groupSignature_,
+        bytes[] memory bClaims_
+    ) public pure returns (bool) {
         groupSignature_;
         bClaims_;
         return true;
@@ -209,11 +229,10 @@ contract SnapshotsMock is Initializable, ImmutableValidatorPool, ISnapshots, Imm
         return true;
     }
 
-    function checkBClaimsSignature(bytes calldata groupSignature_, bytes calldata bClaims_)
-        public
-        pure
-        returns (bool)
-    {
+    function checkBClaimsSignature(
+        bytes calldata groupSignature_,
+        bytes calldata bClaims_
+    ) public pure returns (bool) {
         groupSignature_;
         bClaims_;
         return true;

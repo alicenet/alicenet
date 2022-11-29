@@ -23,7 +23,7 @@ describe("State Migration: Migrate state", () => {
     let txResponse = await stakeValidators(
       4,
       fixture.factory.address,
-      fixture.aToken.address,
+      fixture.alca.address,
       fixture.publicStaking.address,
       hre
     );

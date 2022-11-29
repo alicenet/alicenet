@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT-open-group
 pragma solidity ^0.8.16;
 
-import "contracts/utils/ImmutableAuth.sol";
+import "contracts/utils/auth/ImmutableFactory.sol";
 import "contracts/libraries/errors/BridgePoolFactoryErrors.sol";
 import "contracts/interfaces/IBridgePool.sol";
 import "contracts/utils/BridgePoolAddressUtil.sol";
@@ -53,7 +53,7 @@ abstract contract BridgePoolFactoryBase is ImmutableFactory, ImmutableSnapshots 
     // solhint-disable-next-line
     fallback() external {
         address implementation_ = _implementation;
-        assembly {
+        assembly ("memory-safe") {
             let ptr := mload(0x40)
             mstore(ptr, shl(176, 0x363d3d373d3d3d363d73)) //10
             mstore(add(ptr, 10), shl(96, implementation_)) //20
@@ -67,11 +67,10 @@ abstract contract BridgePoolFactoryBase is ImmutableFactory, ImmutableSnapshots 
      * @param chainId_ native chainID of the token ie 1 for ethereum erc20
      * @param tokenType_ type of token 0 for ERC20 1 for ERC721 and 2 for ERC1155
      */
-    function getLatestPoolLogicVersion(uint256 chainId_, uint8 tokenType_)
-        public
-        view
-        returns (uint16)
-    {
+    function getLatestPoolLogicVersion(
+        uint256 chainId_,
+        uint8 tokenType_
+    ) public view returns (uint16) {
         if (chainId_ != _chainID) {
             return _logicVersionsDeployed[PoolType.EXTERNAL][TokenType(tokenType_)];
         } else {
@@ -89,7 +88,10 @@ abstract contract BridgePoolFactoryBase is ImmutableFactory, ImmutableSnapshots 
         uint32 codeSize;
         bool native = true;
         uint16 version;
-        assembly {
+        bytes memory alicenetFactoryAddress = abi.encodePacked(
+            bytes32(uint256(uint160(_factoryAddress())))
+        );
+        assembly ("memory-safe") {
             let ptr := mload(0x40)
             calldatacopy(ptr, deployCode_.offset, deployCode_.length)
             addr := create(value_, ptr, add(deployCode_.length, 32))
@@ -144,7 +146,7 @@ abstract contract BridgePoolFactoryBase is ImmutableFactory, ImmutableSnapshots 
         _implementation = implementation;
         //check if the logic exists for the specified pool
         uint256 implementationSize;
-        assembly {
+        assembly ("memory-safe") {
             implementationSize := extcodesize(implementation)
         }
         if (implementationSize == 0) {
@@ -162,7 +164,7 @@ abstract contract BridgePoolFactoryBase is ImmutableFactory, ImmutableSnapshots 
      */
     function _deployStaticPool(bytes32 salt_) internal returns (address contractAddr) {
         uint256 contractSize;
-        assembly {
+        assembly ("memory-safe") {
             let ptr := mload(0x40)
             mstore(ptr, shl(136, 0x5880818283335afa3d82833e3d82f3))
             contractAddr := create2(0, ptr, 15, salt_)

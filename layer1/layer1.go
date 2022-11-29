@@ -55,10 +55,10 @@ type EthereumContracts interface {
 	BasicContracts
 	Ethdkg() bindings.IETHDKG
 	EthdkgAddress() common.Address
-	AToken() bindings.IAToken
-	ATokenAddress() common.Address
-	BToken() bindings.IBToken
-	BTokenAddress() common.Address
+	ALCA() bindings.IALCA
+	ALCAAddress() common.Address
+	ALCB() bindings.IALCB
+	ALCBAddress() common.Address
 	PublicStaking() bindings.IPublicStaking
 	PublicStakingAddress() common.Address
 	ValidatorStaking() bindings.IValidatorStaking

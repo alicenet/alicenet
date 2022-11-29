@@ -52,11 +52,9 @@ contract BridgePoolFactoryERC777Mock is BridgePoolFactoryBaseERC777Mock {
      * @param bridgePoolSalt_ bytes32 salt associated with the pool, calculated with getBridgePoolSalt
      * @return poolAddress calculated calculated bridgePool Address
      */
-    function lookupBridgePoolAddress(bytes32 bridgePoolSalt_)
-        public
-        view
-        returns (address poolAddress)
-    {
+    function lookupBridgePoolAddress(
+        bytes32 bridgePoolSalt_
+    ) public view returns (address poolAddress) {
         poolAddress = BridgePoolAddressUtil.getBridgePoolAddress(bridgePoolSalt_, address(this));
     }
 

@@ -13,17 +13,17 @@ contract MockMerkleProofLibrary {
         return MerkleProofLibrary.computeLeafHash(key, value, proofHeight);
     }
 
-    function verifyInclusion(MerkleProofParserLibrary.MerkleProof memory _proof, bytes32 root)
-        public
-        pure
-    {
+    function verifyInclusion(
+        MerkleProofParserLibrary.MerkleProof memory _proof,
+        bytes32 root
+    ) public pure {
         MerkleProofLibrary.verifyInclusion(_proof, root);
     }
 
-    function verifyNonInclusion(MerkleProofParserLibrary.MerkleProof memory _proof, bytes32 root)
-        public
-        pure
-    {
+    function verifyNonInclusion(
+        MerkleProofParserLibrary.MerkleProof memory _proof,
+        bytes32 root
+    ) public pure {
         MerkleProofLibrary.verifyNonInclusion(_proof, root);
     }
 

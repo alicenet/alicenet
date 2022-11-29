@@ -4,11 +4,12 @@ run:
     - integration
     - flakes
 linters:
+  enable:
+    - errcheck
+    - varcheck
   # Disabling linters until we get them fixed up.
   disable:
-    - errcheck
     - gosimple
     - govet
     - ineffassign
     - staticcheck
-    - varcheck

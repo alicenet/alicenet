@@ -22,11 +22,9 @@ library StakingSVG {
         return string(abi.encodePacked(generateSVGDefs(params), generateSVGText(params), "</svg>"));
     }
 
-    function generateSVGText(StakingSVGParams memory params)
-        private
-        pure
-        returns (string memory svg)
-    {
+    function generateSVGText(
+        StakingSVGParams memory params
+    ) private pure returns (string memory svg) {
         svg = string(
             abi.encodePacked(
                 "<text x='10' y='20'>Shares: ",
@@ -48,11 +46,9 @@ library StakingSVG {
         );
     }
 
-    function generateSVGDefs(StakingSVGParams memory params)
-        private
-        pure
-        returns (string memory svg)
-    {
+    function generateSVGDefs(
+        StakingSVGParams memory params
+    ) private pure returns (string memory svg) {
         params; //to silence the warnings
         svg = string(
             abi.encodePacked(

@@ -1,7 +1,12 @@
 // SPDX-License-Identifier: MIT-open-group
 pragma solidity ^0.8.16;
 
-import "contracts/utils/ImmutableAuth.sol";
+import "contracts/utils/auth/ImmutableFactory.sol";
+import "contracts/utils/auth/ImmutableALCB.sol";
+import "contracts/utils/auth/ImmutablePublicStaking.sol";
+import "contracts/utils/auth/ImmutableValidatorStaking.sol";
+import "contracts/utils/auth/ImmutableLiquidityProviderStaking.sol";
+import "contracts/utils/auth/ImmutableFoundation.sol";
 import "contracts/interfaces/IDistribution.sol";
 import "contracts/utils/MagicEthTransfer.sol";
 import "contracts/utils/EthSafeTransfer.sol";
@@ -14,7 +19,7 @@ contract Distribution is
     MagicEthTransfer,
     EthSafeTransfer,
     ImmutableFactory,
-    ImmutableBToken,
+    ImmutableALCB,
     ImmutablePublicStaking,
     ImmutableValidatorStaking,
     ImmutableLiquidityProviderStaking,
@@ -38,7 +43,7 @@ contract Distribution is
         uint256 protocolFeeSplit_
     )
         ImmutableFactory(msg.sender)
-        ImmutableBToken()
+        ImmutableALCB()
         ImmutablePublicStaking()
         ImmutableValidatorStaking()
         ImmutableLiquidityProviderStaking()
@@ -59,23 +64,14 @@ contract Distribution is
         _protocolFeeSplit = protocolFeeSplit_;
     }
 
-    function depositEth(uint8 magic_) public payable checkMagic(magic_) onlyBToken {
+    function depositEth(uint8 magic_) public payable checkMagic(magic_) onlyALCB {
         _distribute();
     }
 
     /// Gets the value of the percentages that will send to each staking contract.
     /// Divide this value by PERCENTAGE_SCALE = 1000 to get the corresponding
     /// percentages.
-    function getSplits()
-        public
-        view
-        returns (
-            uint256,
-            uint256,
-            uint256,
-            uint256
-        )
-    {
+    function getSplits() public view returns (uint256, uint256, uint256, uint256) {
         return (
             _validatorStakingSplit,
             _publicStakingSplit,
@@ -84,7 +80,7 @@ contract Distribution is
         );
     }
 
-    /// Distributes the yields from the BToken minting to all stake holders.
+    /// Distributes the yields from the ALCB minting to all stake holders.
     function _distribute() internal returns (bool) {
         uint256 excess = address(this).balance;
         // take out protocolFeeShare from excess and decrement excess

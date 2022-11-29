@@ -3,11 +3,11 @@
 # CHANGES MADE TO THIS FILE WILL BE LOST
 #
 # npx hardhat go-go-gen --pkg bindings --in bindings/bindings-artifacts --out bindings 
-abigen --abi bindings/bindings-artifacts/AToken.json --pkg bindings --type AToken --out bindings/AToken.go
-abigen --abi bindings/bindings-artifacts/ATokenBurner.json --pkg bindings --type ATokenBurner --out bindings/ATokenBurner.go
-abigen --abi bindings/bindings-artifacts/ATokenMinter.json --pkg bindings --type ATokenMinter --out bindings/ATokenMinter.go
+abigen --abi bindings/bindings-artifacts/ALCA.json --pkg bindings --type ALCA --out bindings/ALCA.go
+abigen --abi bindings/bindings-artifacts/ALCABurner.json --pkg bindings --type ALCABurner --out bindings/ALCABurner.go
+abigen --abi bindings/bindings-artifacts/ALCAMinter.json --pkg bindings --type ALCAMinter --out bindings/ALCAMinter.go
+abigen --abi bindings/bindings-artifacts/ALCB.json --pkg bindings --type ALCB --out bindings/ALCB.go
 abigen --abi bindings/bindings-artifacts/AliceNetFactory.json --pkg bindings --type AliceNetFactory --out bindings/AliceNetFactory.go
-abigen --abi bindings/bindings-artifacts/BToken.json --pkg bindings --type BToken --out bindings/BToken.go
 abigen --abi bindings/bindings-artifacts/Dynamics.json --pkg bindings --type Dynamics --out bindings/Dynamics.go
 abigen --abi bindings/bindings-artifacts/ETHDKG.json --pkg bindings --type ETHDKG --out bindings/ETHDKG.go
 abigen --abi bindings/bindings-artifacts/Governance.json --pkg bindings --type Governance --out bindings/Governance.go

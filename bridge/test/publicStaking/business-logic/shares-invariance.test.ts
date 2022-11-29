@@ -17,7 +17,7 @@ describe("PublicStaking: Shares Invariance", async () => {
 
   async function deployFixture() {
     const fixture = await getBaseTokensFixture();
-    await fixture.aToken.approve(
+    await fixture.alca.approve(
       fixture.publicStaking.address,
       ethers.utils.parseUnits("100000", 18)
     );
@@ -34,8 +34,8 @@ describe("PublicStaking: Shares Invariance", async () => {
     let shares = 0n;
     for (let i = 0; i < numberUsers; i++) {
       const userAmount = baseAmount + BigInt(i);
-      await fixture.aToken.transfer(users[i].address, userAmount);
-      await fixture.aToken
+      await fixture.alca.transfer(users[i].address, userAmount);
+      await fixture.alca
         .connect(users[i])
         .approve(fixture.publicStaking.address, userAmount);
       await fixture.publicStaking.connect(users[i]).mint(userAmount);

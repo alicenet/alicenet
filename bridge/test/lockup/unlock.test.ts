@@ -48,7 +48,7 @@ async function lockStakedNFT(
 }
 
 async function distributeProfits(fixture: Fixture, admin: SignerWithAddress) {
-  await fixture.aToken
+  await fixture.alca
     .connect(admin)
     .increaseAllowance(
       fixture.publicStaking.address,
@@ -145,7 +145,7 @@ describe("Testing Unlock", async () => {
     // 100m alca)
     const leftOver =
       stakedAmount - (await fixture.publicStaking.getTotalShares()).toBigInt();
-    await fixture.aToken
+    await fixture.alca
       .connect(accounts[1])
       .approve(fixture.publicStaking.address, leftOver);
     await fixture.publicStaking.connect(accounts[1]).mint(leftOver);
@@ -222,12 +222,12 @@ describe("Testing Unlock", async () => {
     // distributions and also makes the math better to test (since total staked in the publicStaking
     // goes back to 100m alca)
     const shares4 = ethers.utils.parseEther(Distribution1.users.user4.shares);
-    await fixture.aToken
+    await fixture.alca
       .connect(accounts[4])
       .approve(fixture.publicStaking.address, shares4);
     await fixture.publicStaking.connect(accounts[4]).mint(shares4);
     const shares5 = ethers.utils.parseEther(Distribution1.users.user5.shares);
-    await fixture.aToken
+    await fixture.alca
       .connect(accounts[5])
       .approve(fixture.publicStaking.address, shares5);
     await fixture.publicStaking.connect(accounts[5]).mint(shares5);
@@ -260,11 +260,6 @@ describe("Testing Unlock", async () => {
       expectedState.users[user].alca += BigNumber.from(
         example3[user].totalEarnedALCA
       ).toBigInt();
-      // workaround to discount integer division errors.
-      expectedState.users[user].eth =
-        (expectedState.users[user].eth / 100n) * 100n;
-      expectedState.users[user].alca =
-        (expectedState.users[user].alca / 100n) * 100n;
       expectedState.users[user].tokenId = ethers.constants.Zero.toBigInt();
       expectedState.users[user].tokenOwner = ethers.constants.AddressZero;
       expectedState.users[user].rewardEth = 0n;
@@ -292,10 +287,20 @@ describe("Testing Unlock", async () => {
     // workaround to discount integer division errors.
     for (let i = 1; i <= numberOfLockingUsers - 2; i++) {
       const user = "user" + i;
-      currentState.users[user].eth =
-        (currentState.users[user].eth / 100n) * 100n;
-      currentState.users[user].alca =
-        (currentState.users[user].alca / 100n) * 100n;
+      // extra check to check if the error is less than an allowed threshold
+      if (currentState.users[user].eth >= expectedState.users[user].eth) {
+        expect(
+          currentState.users[user].eth - expectedState.users[user].eth
+        ).to.be.lessThan(10);
+      } else {
+        expect(
+          expectedState.users[user].eth - currentState.users[user].eth
+        ).to.be.lessThan(10);
+      }
+      // after we have checked the threshold that accounts for integer division errors, we put the expect
+      // and current values to be same to check the rest of the state
+      expectedState.users[user].eth = currentState.users[user].eth;
+      expectedState.users[user].alca = currentState.users[user].alca;
     }
     assert.deepEqual(currentState, expectedState);
   });
@@ -322,7 +327,7 @@ describe("Testing Unlock", async () => {
     // 100m alca)
     const leftOver =
       stakedAmount - (await fixture.publicStaking.getTotalShares()).toBigInt();
-    await fixture.aToken
+    await fixture.alca
       .connect(accounts[1])
       .approve(fixture.publicStaking.address, leftOver);
     await fixture.publicStaking.connect(accounts[1]).mint(leftOver);
@@ -351,11 +356,6 @@ describe("Testing Unlock", async () => {
       expectedState.users[user].alca = BigNumber.from(
         example4[user].totalEarnedALCA
       ).toBigInt();
-      // workaround to discount integer division errors.
-      expectedState.users[user].eth =
-        (expectedState.users[user].eth / 10n) * 10n;
-      expectedState.users[user].alca =
-        (expectedState.users[user].alca / 10n) * 10n;
       expectedState.users[user].tokenId = ethers.constants.Zero.toBigInt();
       expectedState.users[user].tokenOwner = ethers.constants.AddressZero;
       expectedState.users[user].rewardEth = 0n;
@@ -382,9 +382,20 @@ describe("Testing Unlock", async () => {
     // workaround to discount integer division errors.
     for (let i = 1; i <= numberOfLockingUsers; i++) {
       const user = "user" + i;
-      currentState.users[user].eth = (currentState.users[user].eth / 10n) * 10n;
-      currentState.users[user].alca =
-        (currentState.users[user].alca / 10n) * 10n;
+      // extra check to check if the error is less than an allowed threshold
+      if (currentState.users[user].eth >= expectedState.users[user].eth) {
+        expect(
+          currentState.users[user].eth - expectedState.users[user].eth
+        ).to.be.lessThan(10);
+      } else {
+        expect(
+          expectedState.users[user].eth - currentState.users[user].eth
+        ).to.be.lessThan(10);
+      }
+      // after we have checked the threshold that accounts for integer division errors, we put the
+      // expect and current values to be same to check the rest of the state
+      expectedState.users[user].eth = currentState.users[user].eth;
+      expectedState.users[user].alca = currentState.users[user].alca;
     }
     assert.deepEqual(currentState, expectedState);
   });
@@ -480,7 +491,7 @@ describe("Testing Unlock", async () => {
       (await ethers.provider.getBalance(randomUser.address)).toBigInt()
     ).to.be.equals(randomUserExpectedEthBalance);
     expect(
-      (await fixture.aToken.balanceOf(randomUser.address)).toBigInt()
+      (await fixture.alca.balanceOf(randomUser.address)).toBigInt()
     ).to.be.equals(randomUserExpectedALCABalance);
     const [userShares, , , ,] = await fixture.publicStaking.getPosition(
       await fixture.publicStaking.tokenOfOwnerByIndex(randomUser.address, 0)

@@ -45,7 +45,7 @@ async function deployFixture() {
     undefined
   )) as Foundation;
 
-  await posFixtureSetup(fixture.factory, fixture.aToken);
+  await posFixtureSetup(fixture.factory, fixture.alca);
 
   // get the address of the reward pool from the lockup contract
   const lockupAddress = signers[5].address;
@@ -62,7 +62,7 @@ async function deployFixture() {
   );
   await depositTokensForStakingRewards(
     signers,
-    fixture.aToken,
+    fixture.alca,
     fixture.publicStaking,
     ethers.utils.parseEther("1000000")
   );
@@ -72,7 +72,7 @@ async function deployFixture() {
   // deploy reward pool
   const rewardPool = await (await ethers.getContractFactory("RewardPool"))
     .connect(asLockup)
-    .deploy(fixture.aToken.address, aliceNetFactoryAddress, totalBonusAmount);
+    .deploy(fixture.alca.address, aliceNetFactoryAddress, totalBonusAmount);
 
   const bonusPoolAddress = await rewardPool.getBonusPoolAddress();
   const bonusPool = await ethers.getContractAt("BonusPool", bonusPoolAddress);
@@ -120,7 +120,7 @@ describe("RewardPool - business logic", async () => {
       await depositEthToAddress(accounts[0], fixture.lockupAddress, ethAmount);
       await depositTokensToAddress(
         accounts[0],
-        fixture.aToken,
+        fixture.alca,
         fixture.lockupAddress,
         tokenAmount
       );
@@ -153,7 +153,7 @@ describe("RewardPool - business logic", async () => {
       // ensure reward pool has enough eth and tokens to pay out
       await depositTokensToAddress(
         accounts[0],
-        fixture.aToken,
+        fixture.alca,
         fixture.rewardPoolAddress,
         tokenAmount
       );
@@ -222,7 +222,7 @@ describe("RewardPool - business logic", async () => {
       const ethBalanceBefore = await ethers.provider.getBalance(
         fixture.lockupAddress
       );
-      const tokenBalanceBefore = await fixture.aToken.balanceOf(
+      const tokenBalanceBefore = await fixture.alca.balanceOf(
         fixture.lockupAddress
       );
 
@@ -235,7 +235,7 @@ describe("RewardPool - business logic", async () => {
       const ethBalanceAfter = await ethers.provider.getBalance(
         fixture.lockupAddress
       );
-      const tokenBalanceAfter = await fixture.aToken.balanceOf(
+      const tokenBalanceAfter = await fixture.alca.balanceOf(
         fixture.lockupAddress
       );
 
@@ -260,7 +260,7 @@ describe("RewardPool - business logic", async () => {
       const ethBalanceBefore = await ethers.provider.getBalance(
         fixture.lockupAddress
       );
-      const tokenBalanceBefore = await fixture.aToken.balanceOf(
+      const tokenBalanceBefore = await fixture.alca.balanceOf(
         fixture.lockupAddress
       );
 
@@ -273,7 +273,7 @@ describe("RewardPool - business logic", async () => {
       const ethBalanceAfter = await ethers.provider.getBalance(
         fixture.lockupAddress
       );
-      const tokenBalanceAfter = await fixture.aToken.balanceOf(
+      const tokenBalanceAfter = await fixture.alca.balanceOf(
         fixture.lockupAddress
       );
 

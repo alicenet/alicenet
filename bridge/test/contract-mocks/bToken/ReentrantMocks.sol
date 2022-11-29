@@ -1,14 +1,15 @@
 // SPDX-License-Identifier: MIT-open-group
 pragma solidity ^0.8.16;
 
-import "contracts/utils/ImmutableAuth.sol";
+import "contracts/utils/auth/ImmutableFactory.sol";
+import "contracts/utils/auth/ImmutableALCB.sol";
 import "contracts/interfaces/IUtilityToken.sol";
 import "contracts/utils/MagicEthTransfer.sol";
 
-contract ReentrantLoopDistributionMock is MagicEthTransfer, ImmutableFactory, ImmutableBToken {
+contract ReentrantLoopDistributionMock is MagicEthTransfer, ImmutableFactory, ImmutableALCB {
     uint256 internal _counter;
 
-    constructor() ImmutableFactory(msg.sender) ImmutableBToken() {}
+    constructor() ImmutableFactory(msg.sender) ImmutableALCB() {}
 
     receive() external payable {
         _internalLoop();
@@ -21,7 +22,7 @@ contract ReentrantLoopDistributionMock is MagicEthTransfer, ImmutableFactory, Im
     function _internalLoop() internal {
         _counter++;
         if (_counter <= 3) {
-            IUtilityToken(_bTokenAddress()).distribute();
+            IUtilityToken(_alcbAddress()).distribute();
         }
     }
 }

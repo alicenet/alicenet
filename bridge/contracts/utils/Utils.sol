@@ -4,14 +4,14 @@ pragma solidity ^0.8.16;
 contract Utils {
     function getCodeSize(address target) public view returns (uint256) {
         uint256 csize;
-        assembly {
+        assembly ("memory-safe") {
             csize := extcodesize(target)
         }
         return csize;
     }
 
     function getCode(address addr_) public view returns (bytes memory outputCode) {
-        assembly {
+        assembly ("memory-safe") {
             // retrieve the size of the code, this needs assembly
             let size := extcodesize(addr_)
             // allocate output byte array - this could also be done without assembly

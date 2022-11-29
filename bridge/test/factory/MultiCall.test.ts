@@ -1,4 +1,5 @@
 import { expect } from "chai";
+import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
 import { encodeMultiCallArgs } from "../../scripts/lib/alicenetTasks";
 import {
@@ -9,6 +10,7 @@ import {
   END_POINT,
   MOCK,
 } from "../../scripts/lib/constants";
+import { AliceNetFactory } from "../../typechain-types";
 import {
   deployFactory,
   getCreateAddress,
@@ -18,8 +20,12 @@ import {
 } from "./Setup";
 
 describe("Multicall deploy proxy", () => {
+  let factory: AliceNetFactory;
+  beforeEach(async () => {
+    factory = await deployFactory();
+  });
+
   it("multicall deploycreate, deployproxy, upgradeproxy", async () => {
-    const factory = await deployFactory();
     const mockFactory = await ethers.getContractFactory(MOCK);
     const endPointFactory = await ethers.getContractFactory(END_POINT);
     const Salt = getSalt();
@@ -77,5 +83,34 @@ describe("Multicall deploy proxy", () => {
       endPoint.address,
       factory.address
     );
+  });
+
+  it("check multicall returns", async () => {
+    const mockFactory = await ethers.getContractFactory(MOCK);
+    const mock = await mockFactory.deploy(2, "s");
+    // encoded function call to deployCreate
+    const setVar1 = mock.interface.encodeFunctionData("setV", [1]);
+    // encoded function call to deployProxy
+    const getVar = mock.interface.encodeFunctionData("getVar");
+    const setVar2 = mock.interface.encodeFunctionData("setV", [2]);
+    const returnValue = await factory.callStatic.multiCall([
+      encodeMultiCallArgs(mock.address, 0, setVar1),
+      encodeMultiCallArgs(mock.address, 0, getVar),
+      encodeMultiCallArgs(mock.address, 0, setVar2),
+      encodeMultiCallArgs(mock.address, 0, getVar),
+    ]);
+    expect(returnValue).to.be.deep.equal([
+      "0x",
+      "0x0000000000000000000000000000000000000000000000000000000000000001",
+      "0x",
+      "0x0000000000000000000000000000000000000000000000000000000000000002",
+    ]);
+    const abicoder = new ethers.utils.AbiCoder();
+    expect(abicoder.decode(["uint256"], returnValue[1])).to.be.deep.equals([
+      BigNumber.from(1),
+    ]);
+    expect(abicoder.decode(["uint256"], returnValue[3])).to.be.deep.equals([
+      BigNumber.from(2),
+    ]);
   });
 });

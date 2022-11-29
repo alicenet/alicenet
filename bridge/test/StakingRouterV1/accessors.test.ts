@@ -73,7 +73,7 @@ async function deployFixture() {
     DEPLOYED_RAW,
     CONTRACT_ADDR
   );
-  await posFixtureSetup(fixture.factory, fixture.aToken);
+  await posFixtureSetup(fixture.factory, fixture.alca);
   const lockup = await ethers.getContractAt("Lockup", lockupAddress);
   // get the address of the reward pool from the lockup contract
   rewardPoolAddress = await lockup.getRewardPoolAddress();

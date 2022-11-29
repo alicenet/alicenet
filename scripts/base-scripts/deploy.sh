@@ -16,7 +16,14 @@ cp ../scripts/base-files/deploymentList ../scripts/generated/deploymentList
 cp ../scripts/base-files/deploymentArgsTemplate ../scripts/generated/deploymentArgsTemplate
 
 npx hardhat --network "$NETWORK" --show-stack-traces deploy-contracts --input-folder ../scripts/generated --wait-confirmation 1
-addr="$(grep -Pzo "\[$NETWORK\]\ndefaultFactoryAddress = \".*\"\n" ../scripts/generated/factoryState | grep -a "defaultFactoryAddress = .*" | awk '{print $NF}')"
+
+# -f  will check for the file existence but -s will check for file existence along with file size greater than 0 (zero).
+if [[ -s ../scripts/generated/factoryState ]]; then
+    addr=$(go run ../cmd/testutils/extractor/main.go -n $NETWORK -p ../scripts/generated/factoryState)
+else
+    echo "FactoryState file doesn't exist in scripts/generated/factoryState path. Exiting..."
+    exit 1
+fi
 
 export FACTORY_ADDRESS=$addr
 if [[ -z "${FACTORY_ADDRESS}" ]]; then
@@ -52,6 +59,10 @@ cd $BRIDGE_DIR
 echo
 # deploy ALCB
 npx hardhat --network $NETWORK deploy-alcb --factory-address ${FACTORY_ADDRESS}
+# workaround to deploy and register the lockup and staking router contracts
+npx hardhat --network $NETWORK deploy-lockup-and-router --factory-address ${FACTORY_ADDRESS} --enrollment-period 1000 --lock-duration 6000 --total-bonus-amount 2000000
+npx hardhat --network $NETWORK create-bonus-pool-position --factory-address ${FACTORY_ADDRESS}
+
 cd $CURRENT_WD
 
 ./scripts/main.sh register

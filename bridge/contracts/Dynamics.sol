@@ -3,7 +3,8 @@ pragma solidity ^0.8.16;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "contracts/interfaces/ISnapshots.sol";
-import "contracts/utils/ImmutableAuth.sol";
+import "contracts/utils/auth/ImmutableFactory.sol";
+import "contracts/utils/auth/ImmutableSnapshots.sol";
 import "contracts/libraries/dynamics/DoublyLinkedList.sol";
 import "contracts/libraries/errors/DynamicsErrors.sol";
 import "contracts/interfaces/IDynamics.sol";
@@ -46,10 +47,10 @@ contract Dynamics is Initializable, IDynamics, ImmutableSnapshots {
     /// @param relativeExecutionEpoch the relative execution epoch in which the new
     /// changes will become active.
     /// @param newValue DynamicValue struct with the new values.
-    function changeDynamicValues(uint32 relativeExecutionEpoch, DynamicValues memory newValue)
-        public
-        onlyFactory
-    {
+    function changeDynamicValues(
+        uint32 relativeExecutionEpoch,
+        DynamicValues memory newValue
+    ) public onlyFactory {
         _changeDynamicValues(relativeExecutionEpoch, newValue);
     }
 
@@ -164,13 +165,14 @@ contract Dynamics is Initializable, IDynamics, ImmutableSnapshots {
     function _deployStorage(bytes memory data) internal returns (address) {
         bytes memory deployCode = abi.encodePacked(_UNIVERSAL_DEPLOY_CODE, data);
         address addr;
-        assembly {
+        assembly ("memory-safe") {
             addr := create(0, add(deployCode, 0x20), mload(deployCode))
             if iszero(addr) {
                 //if contract creation fails, we want to return any err messages
-                returndatacopy(0x00, 0x00, returndatasize())
-                //revert and return errors
-                revert(0x00, returndatasize())
+                let ptr := mload(0x40)
+                mstore(0x40, add(ptr, returndatasize()))
+                returndatacopy(ptr, 0x00, returndatasize())
+                revert(ptr, returndatasize())
             }
         }
         emit DeployedStorageContract(addr);
@@ -224,9 +226,10 @@ contract Dynamics is Initializable, IDynamics, ImmutableSnapshots {
     // @param relativeExecutionEpoch the relative execution epoch in which the new
     // changes will become active.
     // @param newValue DynamicValue struct with the new values.
-    function _changeDynamicValues(uint32 relativeExecutionEpoch, DynamicValues memory newValue)
-        internal
-    {
+    function _changeDynamicValues(
+        uint32 relativeExecutionEpoch,
+        DynamicValues memory newValue
+    ) internal {
         _addNode(_computeExecutionEpoch(relativeExecutionEpoch), newValue);
     }
 
@@ -270,17 +273,15 @@ contract Dynamics is Initializable, IDynamics, ImmutableSnapshots {
     // Internal function to decode a dynamic value struct from a storage contract.
     // @param addr the address of the storage contract.
     // @return the decoded Dynamic value struct.
-    function _decodeDynamicValues(address addr)
-        internal
-        view
-        returns (DynamicValues memory values)
-    {
+    function _decodeDynamicValues(
+        address addr
+    ) internal view returns (DynamicValues memory values) {
         uint256 ptr;
         uint256 retPtr;
         uint8[8] memory sizes = [8, 24, 32, 32, 32, 64, 64, 128];
         uint256 dynamicValuesTotalSize = 48;
         uint256 extCodeSize;
-        assembly {
+        assembly ("memory-safe") {
             ptr := mload(0x40)
             retPtr := values
             extCodeSize := extcodesize(addr)
@@ -292,7 +293,7 @@ contract Dynamics is Initializable, IDynamics, ImmutableSnapshots {
 
         for (uint8 i = 0; i < sizes.length; i++) {
             uint8 size = sizes[i];
-            assembly {
+            assembly ("memory-safe") {
                 mstore(retPtr, shr(sub(256, size), mload(ptr)))
                 ptr := add(ptr, div(size, 8))
                 retPtr := add(retPtr, 0x20)
@@ -303,11 +304,9 @@ contract Dynamics is Initializable, IDynamics, ImmutableSnapshots {
     // Internal function to encode a dynamic value struct in a bytes array.
     // @param newValue the dynamic struct to be encoded.
     // @return the encoded Dynamic value struct.
-    function _encodeDynamicValues(DynamicValues memory newValue)
-        internal
-        pure
-        returns (bytes memory)
-    {
+    function _encodeDynamicValues(
+        DynamicValues memory newValue
+    ) internal pure returns (bytes memory) {
         bytes memory data = abi.encodePacked(
             newValue.encoderVersion,
             newValue.proposalTimeout,
@@ -332,7 +331,7 @@ contract Dynamics is Initializable, IDynamics, ImmutableSnapshots {
         uint256 minorVersion,
         uint256 patch
     ) internal pure returns (uint256 fullVersion) {
-        assembly {
+        assembly ("memory-safe") {
             fullVersion := or(or(shl(64, majorVersion), shl(32, minorVersion)), patch)
         }
     }

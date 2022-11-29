@@ -53,7 +53,7 @@ describe("ValidatorPool: Slashing logic", async () => {
 
   it("Minor slash a validator", async function () {
     const reward = ethers.utils.parseEther("1").toBigInt();
-    // Set reward to 1 AToken
+    // Set reward to 1 ALCA
     await factoryCallAnyFixture(fixture, "validatorPool", "setDisputerReward", [
       reward,
     ]);
@@ -98,7 +98,7 @@ describe("ValidatorPool: Slashing logic", async () => {
 
   it("Minor slash a validator then he leaves the pool", async function () {
     const reward = ethers.utils.parseEther("1").toBigInt();
-    // Set reward to 1 AToken
+    // Set reward to 1 ALCA
     await factoryCallAnyFixture(fixture, "validatorPool", "setDisputerReward", [
       reward,
     ]);
@@ -175,7 +175,7 @@ describe("ValidatorPool: Slashing logic", async () => {
 
   it("Minor slash a validator then major slash it", async function () {
     const reward = ethers.utils.parseEther("10000").toBigInt();
-    // Set reward to 1 AToken
+    // Set reward to 1 ALCA
     await factoryCallAnyFixture(fixture, "validatorPool", "setDisputerReward", [
       reward,
     ]);
@@ -242,11 +242,11 @@ describe("ValidatorPool: Slashing logic", async () => {
     // Mint a publicStaking and burn it to the ValidatorPool contract. Besides a contract self destructing
     // itself, this is a method to send eth accidentally to the validatorPool contract
     const etherAmount = ethers.utils.parseEther("1");
-    const aTokenAmount = ethers.utils.parseEther("2");
-    await burnStakeTo(fixture, etherAmount, aTokenAmount, adminSigner);
+    const alcaAmount = ethers.utils.parseEther("2");
+    await burnStakeTo(fixture, etherAmount, alcaAmount, adminSigner);
 
     const reward = ethers.utils.parseEther("10000").toBigInt();
-    // Set reward to 1 AToken
+    // Set reward to 1 ALCA
     await factoryCallAnyFixture(fixture, "validatorPool", "setDisputerReward", [
       reward,
     ]);
@@ -311,7 +311,7 @@ describe("ValidatorPool: Slashing logic", async () => {
 
   it("Minor slash a validator then major slash it with funds distribution in the middle", async function () {
     const reward = ethers.utils.parseEther("10000").toBigInt();
-    // Set reward to 1 AToken
+    // Set reward to 1 ALCA
     await factoryCallAnyFixture(fixture, "validatorPool", "setDisputerReward", [
       reward,
     ]);
@@ -326,19 +326,19 @@ describe("ValidatorPool: Slashing logic", async () => {
       [validators, stakingTokenIds]
     );
     const eths = 4;
-    const atokens = 20;
+    const alcas = 20;
     await fixture.validatorStaking.connect(adminSigner).depositEth(42, {
       value: ethers.utils.parseEther(`${eths}`),
     });
-    await fixture.aToken
+    await fixture.alca
       .connect(adminSigner)
       .approve(
         fixture.validatorStaking.address,
-        ethers.utils.parseEther(`${atokens}`)
+        ethers.utils.parseEther(`${alcas}`)
       );
     await fixture.validatorStaking
       .connect(adminSigner)
-      .depositToken(42, ethers.utils.parseEther(`${atokens}`));
+      .depositToken(42, ethers.utils.parseEther(`${alcas}`));
     let expectedState = await getCurrentState(fixture, validators);
     const tx = await ethdkg.minorSlash(validators[0], validators[1]);
     const newPublicStaking = await getPublicStakingFromMinorSlashEvent(tx);
@@ -354,7 +354,7 @@ describe("ValidatorPool: Slashing logic", async () => {
     // Expect infringer to loose the validator position
     expectedState.PublicStaking.ATK += stakeAmount - reward;
     expectedState.ValidatorStaking.ATK -=
-      stakeAmount + ethers.utils.parseEther(`${atokens / 4}`).toBigInt();
+      stakeAmount + ethers.utils.parseEther(`${alcas / 4}`).toBigInt();
     expectedState.ValidatorStaking.ETH -= ethers.utils
       .parseEther(`${eths / 4}`)
       .toBigInt();
@@ -378,7 +378,7 @@ describe("ValidatorPool: Slashing logic", async () => {
     // minting 1 PublicStaking so all the profit funds are not moved from the PublicStaking contract at slashing
     // time
     const newStakeAmount = (stakeAmount - reward) * BigInt(3);
-    await fixture.aToken
+    await fixture.alca
       .connect(adminSigner)
       .approve(fixture.publicStaking.address, newStakeAmount);
     await fixture.publicStaking.connect(adminSigner).mint(newStakeAmount);
@@ -387,15 +387,15 @@ describe("ValidatorPool: Slashing logic", async () => {
     await fixture.publicStaking.connect(adminSigner).depositEth(42, {
       value: ethers.utils.parseEther(`${eths}`),
     });
-    await fixture.aToken
+    await fixture.alca
       .connect(adminSigner)
       .approve(
         fixture.publicStaking.address,
-        ethers.utils.parseEther(`${atokens}`)
+        ethers.utils.parseEther(`${alcas}`)
       );
     await fixture.publicStaking
       .connect(adminSigner)
-      .depositToken(42, ethers.utils.parseEther(`${atokens}`));
+      .depositToken(42, ethers.utils.parseEther(`${alcas}`));
 
     expectedState = await getCurrentState(fixture, validators);
     await ethdkg.majorSlash(validators[0], validators[2]);
@@ -407,14 +407,12 @@ describe("ValidatorPool: Slashing logic", async () => {
       .toBigInt();
     // Expect reward to be transferred from ValidatorStaking to disputer
     expectedState.PublicStaking.ATK -=
-      stakeAmount -
-      reward +
-      ethers.utils.parseEther(`${atokens / 4}`).toBigInt();
+      stakeAmount - reward + ethers.utils.parseEther(`${alcas / 4}`).toBigInt();
     // the stakeamount minus the 2 rewards given to the 2 accusators should be redistributed to all
     // validators
     expectedState.ValidatorStaking.ATK += stakeAmount - BigInt(2) * reward;
     expectedState.validators[2].ATK +=
-      reward + ethers.utils.parseEther(`${atokens / 4}`).toBigInt();
+      reward + ethers.utils.parseEther(`${alcas / 4}`).toBigInt();
     // Expect infringer to be unregistered, not in exiting queue and not accusable
     expectedState.validators[0].Reg = false;
     expectedState.validators[0].ExQ = false;
@@ -439,7 +437,7 @@ describe("ValidatorPool: Slashing logic", async () => {
     const collectedAmount =
       (stakeAmount - BigInt(2) * reward) /
         BigInt(validatorsSnapshots.length - 1) +
-      ethers.utils.parseEther(`${atokens / 4}`).toBigInt();
+      ethers.utils.parseEther(`${alcas / 4}`).toBigInt();
     for (let index = 1; index < validatorsSnapshots.length; index++) {
       await fixture.validatorPool
         .connect(await getValidatorEthAccount(validatorsSnapshots[index]))
@@ -459,7 +457,7 @@ describe("ValidatorPool: Slashing logic", async () => {
 
   it("Major slash a validator then validators collect profit", async function () {
     const reward = ethers.utils.parseEther("5000").toBigInt();
-    // Set reward to 1 AToken
+    // Set reward to 1 ALCA
     await factoryCallAnyFixture(fixture, "validatorPool", "setDisputerReward", [
       reward,
     ]);
@@ -516,7 +514,7 @@ describe("ValidatorPool: Slashing logic", async () => {
 
   it("Should not allow major slash a validator twice", async function () {
     const reward = ethers.utils.parseEther("5000").toBigInt();
-    // Set reward to 1 AToken
+    // Set reward to 1 ALCA
     await factoryCallAnyFixture(fixture, "validatorPool", "setDisputerReward", [
       reward,
     ]);
@@ -556,7 +554,7 @@ describe("ValidatorPool: Slashing logic", async () => {
 
   it("Should not allow major/minor slash a person that it's not a validator", async function () {
     const reward = ethers.utils.parseEther("5000").toBigInt();
-    // Set reward to 1 AToken
+    // Set reward to 1 ALCA
     await factoryCallAnyFixture(fixture, "validatorPool", "setDisputerReward", [
       reward,
     ]);
@@ -591,7 +589,7 @@ describe("ValidatorPool: Slashing logic", async () => {
   it("Major slash a validator with disputer reward greater than stake Amount", async function () {
     let reward = (await fixture.validatorPool.getStakeAmount()).toBigInt();
     reward *= BigInt(2);
-    // Set reward to 1 AToken
+    // Set reward to 1 ALCA
     await factoryCallAnyFixture(fixture, "validatorPool", "setDisputerReward", [
       reward,
     ]);
@@ -648,7 +646,7 @@ describe("ValidatorPool: Slashing logic", async () => {
   });
 
   it("Minor slash a validator until he has no more funds", async function () {
-    // Set reward to 1 AToken
+    // Set reward to 1 ALCA
     const reward = (await fixture.validatorPool.getStakeAmount())
       .div(4)
       .add(1)

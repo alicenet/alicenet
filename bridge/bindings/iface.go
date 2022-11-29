@@ -2,34 +2,34 @@
 
 package bindings
 
-type IAToken interface {
-	IATokenCaller
-	IATokenTransactor
-	IATokenFilterer
+type IALCA interface {
+	IALCACaller
+	IALCATransactor
+	IALCAFilterer
 }
 
-type IATokenBurner interface {
-	IATokenBurnerCaller
-	IATokenBurnerTransactor
-	IATokenBurnerFilterer
+type IALCABurner interface {
+	IALCABurnerCaller
+	IALCABurnerTransactor
+	IALCABurnerFilterer
 }
 
-type IATokenMinter interface {
-	IATokenMinterCaller
-	IATokenMinterTransactor
-	IATokenMinterFilterer
+type IALCAMinter interface {
+	IALCAMinterCaller
+	IALCAMinterTransactor
+	IALCAMinterFilterer
+}
+
+type IALCB interface {
+	IALCBCaller
+	IALCBTransactor
+	IALCBFilterer
 }
 
 type IAliceNetFactory interface {
 	IAliceNetFactoryCaller
 	IAliceNetFactoryTransactor
 	IAliceNetFactoryFilterer
-}
-
-type IBToken interface {
-	IBTokenCaller
-	IBTokenTransactor
-	IBTokenFilterer
 }
 
 type IDynamics interface {

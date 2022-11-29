@@ -18,9 +18,5 @@ interface IGovernor {
         bytes signatureRaw
     );
 
-    function updateValue(
-        uint256 epoch,
-        uint256 key,
-        bytes32 value
-    ) external;
+    function updateValue(uint256 epoch, uint256 key, bytes32 value) external;
 }
