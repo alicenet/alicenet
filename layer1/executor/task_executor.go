@@ -113,9 +113,17 @@ func (te *TaskExecutor) handleTaskExecution(task tasks.Task, name string, taskId
 	// Clean up in case the task was killed
 	if task.WasKilled() {
 		task.GetLogger().Trace("task was externally killed, removing tx backup")
-		te.removeTxBackup(task.GetId())
+		err := te.removeTxBackup(task.GetId())
+		if err != nil {
+			task.GetLogger().Error("removal of tx back up failure")
+		}
 	}
-	task.Finish(err)
+
+	if errors.Is(err, tasks.ErrTaskExecutionMechanismClosed) {
+		task.GetLogger().Trace("task execution mechanism was closed, the task will recover after node restart")
+	} else {
+		task.Finish(err)
+	}
 }
 
 // processTask processes all the stages of the task execution.

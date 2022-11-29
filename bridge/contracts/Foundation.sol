@@ -3,7 +3,9 @@ pragma solidity ^0.8.16;
 
 import "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol";
-import "contracts/utils/ImmutableAuth.sol";
+import "@openzeppelin/contracts/utils/Address.sol";
+import "contracts/utils/auth/ImmutableFactory.sol";
+import "contracts/utils/auth/ImmutableAToken.sol";
 import "contracts/utils/EthSafeTransfer.sol";
 import "contracts/utils/ERC20SafeTransfer.sol";
 import "contracts/utils/MagicValue.sol";
@@ -18,6 +20,8 @@ contract Foundation is
     ImmutableFactory,
     ImmutableAToken
 {
+    using Address for address;
+
     constructor() ImmutableFactory(msg.sender) ImmutableAToken() {}
 
     function initialize() public initializer onlyFactory {}
@@ -51,14 +55,10 @@ contract Foundation is
     /// Delegates a call to the specified contract with any set of parameters encoded
     /// @param target_ The address of the contract to be delagated to
     /// @param cdata_ The encoded parameters of the delegate call encoded
-    function delegateCallAny(address target_, bytes memory cdata_) public payable onlyFactory {
-        assembly {
-            let size := mload(cdata_)
-            let ptr := add(0x20, cdata_)
-            if iszero(delegatecall(gas(), target_, ptr, size, 0x00, 0x00)) {
-                returndatacopy(0x00, 0x00, returndatasize())
-                revert(0x00, returndatasize())
-            }
-        }
+    function delegateCallAny(
+        address target_,
+        bytes memory cdata_
+    ) public payable onlyFactory returns (bytes memory) {
+        return target_.functionDelegateCall(cdata_);
     }
 }

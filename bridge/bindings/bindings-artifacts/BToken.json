@@ -13,6 +13,17 @@
   {
     "inputs": [
       {
+        "internalType": "uint8",
+        "name": "accountType",
+        "type": "uint8"
+      }
+    ],
+    "name": "AccountTypeNotSupported",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "uint256",
         "name": "amount",
         "type": "uint256"
@@ -935,6 +946,24 @@
       }
     ],
     "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint8",
+        "name": "accountType_",
+        "type": "uint8"
+      },
+      {
+        "internalType": "bool",
+        "name": "allowed_",
+        "type": "bool"
+      }
+    ],
+    "name": "setAccountType",
+    "outputs": [],
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {

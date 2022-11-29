@@ -129,6 +129,13 @@ describe("Ethdkg: Migrate state", () => {
   });
 
   it("Factory should be able to migrate validators", async function () {
+    const expectedHash = ethers.utils.solidityKeccak256(
+      ["uint256", "uint256", "uint256", "uint256"],
+      [...validatorsSnapshots[0].mpk]
+    );
+    expect(
+      await fixture.ethdkg.isValidMasterPublicKey(expectedHash)
+    ).to.be.equal(false);
     const receipt = await factoryCallAny(
       fixture.factory,
       fixture.ethdkg,
@@ -145,6 +152,12 @@ describe("Ethdkg: Migrate state", () => {
       ]
     );
     expect(receipt.status).to.be.equals(1);
+    expect(await fixture.ethdkg.getMasterPublicKeyHash()).to.be.equal(
+      expectedHash
+    );
+    expect(
+      await fixture.ethdkg.isValidMasterPublicKey(expectedHash)
+    ).to.be.equal(true);
   });
 
   it("Should not be able to run ethdkg after migration without scheduling maintenance", async function () {
@@ -249,6 +262,14 @@ describe("Ethdkg: Migrate state", () => {
       [validators, stakingTokenIds]
     );
 
+    const expectedHash = ethers.utils.solidityKeccak256(
+      ["uint256", "uint256", "uint256", "uint256"],
+      [...validatorsSnapshots2[0].mpk]
+    );
+    expect(
+      await fixture.ethdkg.isValidMasterPublicKey(expectedHash)
+    ).to.be.equal(false);
+
     let receipt = await factoryCallAny(
       fixture.factory,
       fixture.ethdkg,
@@ -265,6 +286,10 @@ describe("Ethdkg: Migrate state", () => {
       ]
     );
     expect(receipt.status).to.be.equals(1);
+
+    expect(
+      await fixture.ethdkg.isValidMasterPublicKey(expectedHash)
+    ).to.be.equal(true);
 
     // migrating snapshots as well
     receipt = await factoryCallAny(
@@ -322,6 +347,14 @@ describe("Ethdkg: Migrate state", () => {
       [newValidators, newStakingTokenIds]
     );
     await factoryCallAnyFixture(fixture, "validatorPool", "initializeETHDKG");
+    const expectedHash2 = ethers.utils.solidityKeccak256(
+      ["uint256", "uint256", "uint256", "uint256"],
+      [...validatorsSnapshots[0].mpk]
+    );
+    expect(
+      await fixture.ethdkg.isValidMasterPublicKey(expectedHash2)
+    ).to.be.equal(false);
+
     await completeETHDKGRound(
       validatorsSnapshots,
       {
@@ -334,6 +367,11 @@ describe("Ethdkg: Migrate state", () => {
         await fixture.snapshots.getCommittedHeightFromLatestSnapshot()
       ).toNumber()
     );
+
+    expect(
+      await fixture.ethdkg.isValidMasterPublicKey(expectedHash2)
+    ).to.be.equal(true);
+
     await mineBlocks(
       (await fixture.snapshots.getMinimumIntervalBetweenSnapshots()).toBigInt()
     );

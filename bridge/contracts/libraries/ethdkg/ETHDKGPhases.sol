@@ -70,9 +70,10 @@ contract ETHDKGPhases is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
         }
     }
 
-    function distributeShares(uint256[] memory encryptedShares, uint256[2][] memory commitments)
-        external
-    {
+    function distributeShares(
+        uint256[] memory encryptedShares,
+        uint256[2][] memory commitments
+    ) external {
         if (
             _ethdkgPhase != Phase.ShareDistribution ||
             block.number < _phaseStartBlock ||
@@ -373,6 +374,9 @@ contract ETHDKGPhases is ETHDKGStorage, IETHDKGEvents, ETHDKGUtils {
 
         // Since we had a dispute stage prior this state we need to set global state in here
         _setPhase(Phase.Completion);
+
+        // add the current master public key in the registry
+        _masterPublicKeyRegistry[_masterPublicKeyHash] = true;
 
         IValidatorPool(_validatorPoolAddress()).completeETHDKG();
 

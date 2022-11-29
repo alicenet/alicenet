@@ -83,4 +83,8 @@ type IETHDKGCaller interface {
 	//
 	// Solidity: function isMasterPublicKeySet() view returns(bool)
 	IsMasterPublicKeySet(opts *bind.CallOpts) (bool, error)
+	// IsValidMasterPublicKey is a free data retrieval call binding the contract method 0x9bb16742.
+	//
+	// Solidity: function isValidMasterPublicKey(bytes32 masterPublicKeyHash) view returns(bool)
+	IsValidMasterPublicKey(opts *bind.CallOpts, masterPublicKeyHash [32]byte) (bool, error)
 }

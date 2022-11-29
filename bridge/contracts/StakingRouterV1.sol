@@ -9,7 +9,9 @@ import "contracts/interfaces/IStakingNFT.sol";
 import "contracts/interfaces/IStakingToken.sol";
 import "contracts/utils/EthSafeTransfer.sol";
 import "contracts/utils/ERC20SafeTransfer.sol";
-import "contracts/utils/ImmutableAuth.sol";
+import "contracts/utils/auth/ImmutableFactory.sol";
+import "contracts/utils/auth/ImmutablePublicStaking.sol";
+import "contracts/utils/auth/ImmutableAToken.sol";
 import "contracts/Lockup.sol";
 
 /// @custom:deploy-type deployCreate
@@ -39,11 +41,7 @@ contract StakingRouterV1 is
     /// @param to_ the address that will own the position
     /// @param migrationAmount_ the amount of legacy token to migrate
     /// @param stakingAmount_ the amount of ALCA that will staked and locked
-    function migrateAndStake(
-        address to_,
-        uint256 migrationAmount_,
-        uint256 stakingAmount_
-    ) public {
+    function migrateAndStake(address to_, uint256 migrationAmount_, uint256 stakingAmount_) public {
         uint256 migratedAmount = _migrate(msg.sender, migrationAmount_);
         _verifyAndSendAnyRemainder(to_, migratedAmount, stakingAmount_);
         _stake(to_, stakingAmount_);

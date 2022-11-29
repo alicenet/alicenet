@@ -4,8 +4,8 @@ pragma solidity ^0.8.16;
 abstract contract Sigmoid {
     // Constants for P function
     uint256 internal constant _P_A = 200;
-    uint256 internal constant _P_B = 2500 * 10**18;
-    uint256 internal constant _P_C = 5611050234958650739260304 + 125 * 10**39;
+    uint256 internal constant _P_B = 2500 * 10 ** 18;
+    uint256 internal constant _P_C = 5611050234958650739260304 + 125 * 10 ** 39;
     uint256 internal constant _P_D = 4;
     uint256 internal constant _P_S = 2524876234590519489452;
 
@@ -13,18 +13,23 @@ abstract contract Sigmoid {
     uint256 internal constant _P_INV_C_1 = _P_A * ((_P_A + _P_D) * _P_S + _P_A * _P_B);
     uint256 internal constant _P_INV_C_2 = _P_A + _P_D;
     uint256 internal constant _P_INV_C_3 = _P_D * (2 * _P_A + _P_D);
-    uint256 internal constant _P_INV_D_0 = ((_P_A + _P_D) * _P_S + _P_A * _P_B)**2;
+    uint256 internal constant _P_INV_D_0 = ((_P_A + _P_D) * _P_S + _P_A * _P_B) ** 2;
     uint256 internal constant _P_INV_D_1 = 2 * (_P_A * _P_S + (_P_A + _P_D) * _P_B);
 
     function _p(uint256 t) internal pure returns (uint256) {
         return
-            (_P_A + _P_D) * t + (_P_A * _P_S) - _sqrt(_P_A**2 * ((_safeAbsSub(_P_B, t))**2 + _P_C));
+            (_P_A + _P_D) *
+            t +
+            (_P_A * _P_S) -
+            _sqrt(_P_A ** 2 * ((_safeAbsSub(_P_B, t)) ** 2 + _P_C));
     }
 
     function _pInverse(uint256 m) internal pure returns (uint256) {
         return
-            (_P_INV_C_2 * m + _sqrt(_P_A**2 * (m**2 + _P_INV_D_0 - _P_INV_D_1 * m)) - _P_INV_C_1) /
-            _P_INV_C_3;
+            (_P_INV_C_2 *
+                m +
+                _sqrt(_P_A ** 2 * (m ** 2 + _P_INV_D_0 - _P_INV_D_1 * m)) -
+                _P_INV_C_1) / _P_INV_C_3;
     }
 
     function _safeAbsSub(uint256 a, uint256 b) internal pure returns (uint256) {
@@ -50,7 +55,7 @@ abstract contract Sigmoid {
             if (x <= 1) {
                 return x;
             }
-            if (x >= ((1 << 128) - 1)**2) {
+            if (x >= ((1 << 128) - 1) ** 2) {
                 return (1 << 128) - 1;
             }
             // Here, e represents the bit length;

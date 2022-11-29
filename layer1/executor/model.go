@@ -3,10 +3,11 @@ package executor
 import (
 	"context"
 	"errors"
+	"sync"
+
 	"github.com/alicenet/alicenet/layer1/executor/marshaller"
 	"github.com/alicenet/alicenet/layer1/executor/tasks"
 	"github.com/alicenet/alicenet/layer1/transaction"
-	"sync"
 )
 
 //////////////////////////////////////////////////////////////////////////////////////////////
@@ -135,7 +136,7 @@ type ManagerResponseInfo struct {
 type requestStored struct {
 	BaseRequest
 	WrappedTask *marshaller.InstanceWrapper `json:"wrappedTask"`
-	killedAt    uint64                      `json:"killedAt"`
+	killedAt    uint64                      `json:"-"`
 }
 
 // responseStored for recovery.
