@@ -109,7 +109,9 @@ describe("Testing ALCB bridge methods", async () => {
       [minALCBs],
       ethForMinting
     );
-    const ethsFromBurning = await fixture.alcb.getLatestEthFromALCBsBurn(alcbs);
+    const ethsFromBurning = await fixture.alcb.getLatestEthFromTokensBurn(
+      alcbs
+    );
     const depositCallData = {
       ERCContract: ethers.constants.AddressZero,
       tokenType: _tokenType,
@@ -151,7 +153,7 @@ describe("Testing ALCB bridge methods", async () => {
 
   it("Should deposit tokens into the bridge and destroy the correspondent ALCB fee if no eth fee is sent", async () => {
     expectedState = await getState(fixture);
-    ethsFromBurning = await fixture.alcb.getLatestEthFromALCBsBurn(alcbFee);
+    ethsFromBurning = await fixture.alcb.getLatestEthFromTokensBurn(alcbFee);
     const tx = await fixture.alcb
       .connect(user)
       .depositTokensOnBridges(_poolVersion, encodedDepositCallData);

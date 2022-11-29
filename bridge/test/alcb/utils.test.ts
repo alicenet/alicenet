@@ -14,17 +14,17 @@ describe("Testing ALCB Utils methods", async () => {
 
   it("Should calculate correct bounding curves", async () => {
     let eth = 10000;
-    let alcbs = await fixture.alcb.getLatestMintedALCBsFromEth(
+    let alcbs = await fixture.alcb.getLatestMintedTokensFromEth(
       ethers.utils.parseEther(eth.toString())
     );
     expect(alcbs).to.be.equal(BigInt("944264568799449143863271"));
     eth = 20000;
-    alcbs = await fixture.alcb.getLatestMintedALCBsFromEth(
+    alcbs = await fixture.alcb.getLatestMintedTokensFromEth(
       ethers.utils.parseEther(eth.toString())
     );
     expect(alcbs).to.be.equal(BigInt("1020000000000000000000000"));
     eth = 25000;
-    alcbs = await fixture.alcb.getLatestMintedALCBsFromEth(
+    alcbs = await fixture.alcb.getLatestMintedTokensFromEth(
       ethers.utils.parseEther(eth.toString())
     );
     expect(alcbs).to.be.equal(BigInt("1026649288252135716968558"));

@@ -28,7 +28,9 @@ describe("Testing ALCB Destroy methods", async () => {
       [minALCBs],
       ethForMinting
     );
-    const ethsFromBurning = await fixture.alcb.getLatestEthFromALCBsBurn(alcbs);
+    const ethsFromBurning = await fixture.alcb.getLatestEthFromTokensBurn(
+      alcbs
+    );
     return { fixture, admin, user, ethForMinting, alcbs, ethsFromBurning };
   }
 
@@ -42,7 +44,7 @@ describe("Testing ALCB Destroy methods", async () => {
 
   it("Should burn alcbs from sender and keep resulting eth on contract", async () => {
     expectedState = await getState(fixture);
-    const tx = await fixture.alcb.connect(user).destroyALCBs(alcbs);
+    const tx = await fixture.alcb.connect(user).destroyTokens(alcbs);
     expect(alcbs).to.be.equal(BigInt("4020217121585928137263"));
     expectedState.Balances.alcb.user -= alcbs.toBigInt();
     expectedState.Balances.alcb.totalSupply -= alcbs.toBigInt();
@@ -55,7 +57,7 @@ describe("Testing ALCB Destroy methods", async () => {
     await expect(
       fixture.alcb
         .connect(user)
-        .destroyALCBs((await fixture.alcb.balanceOf(user.address)).add(100))
+        .destroyTokens((await fixture.alcb.balanceOf(user.address)).add(100))
     )
       .to.be.revertedWithCustomError(fixture.alcb, "BurnAmountExceedsSupply")
       .withArgs(4020217121585928137363n, 4020217121585928137263n);
@@ -67,12 +69,12 @@ describe("Testing ALCB Destroy methods", async () => {
     await expect(
       fixture.alcb
         .connect(user)
-        .destroyALCBs((await fixture.alcb.balanceOf(user.address)).add(100))
+        .destroyTokens((await fixture.alcb.balanceOf(user.address)).add(100))
     ).to.be.revertedWith("ERC20: burn amount exceeds balance");
   });
 
   it("Should not destroy 0 tokens", async () => {
-    await expect(fixture.alcb.connect(user).destroyALCBs(0n))
+    await expect(fixture.alcb.connect(user).destroyTokens(0n))
       .to.be.revertedWithCustomError(fixture.alcb, `InvalidBurnAmount`)
       .withArgs(0);
   });

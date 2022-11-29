@@ -11,7 +11,8 @@ contract ALCABurner is ImmutableALCA, IStakingTokenBurner {
     constructor() ImmutableFactory(msg.sender) ImmutableALCA() IStakingTokenBurner() {}
 
     /**
-     * @notice Burns ALCAs
+     * @notice Burns ALCAs using the ALCA contract. The burned tokens are removed from the
+     * totalSupply.
      * @param from_ The address from where the tokens will be burned
      * @param amount_ The amount of ALCAs to be burned
      */

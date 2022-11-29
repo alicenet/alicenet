@@ -201,7 +201,7 @@ describe("Testing ALCB Deposit methods", async () => {
 
   it("Should deposit funds minting tokens hence affecting balances", async () => {
     // Calculate the amount of alcbs per eth value sent
-    const alcbs = await fixture.alcb.getLatestMintedALCBsFromEth(ethIn);
+    const alcbs = await fixture.alcb.getLatestMintedTokensFromEth(ethIn);
     await expect(
       fixture.alcb.mintDeposit(1, user.address, 0, {
         value: ethIn,
@@ -277,7 +277,7 @@ describe("Testing ALCB Deposit methods", async () => {
 
   it("Should distribute after mint deposit", async () => {
     expectedState = await getState(fixture);
-    const alcbs = await fixture.alcb.getLatestMintedALCBsFromEth(ethIn);
+    const alcbs = await fixture.alcb.getLatestMintedTokensFromEth(ethIn);
     let tx0;
     await expect(
       (tx0 = fixture.alcb.mintDeposit(1, user.address, 0, {

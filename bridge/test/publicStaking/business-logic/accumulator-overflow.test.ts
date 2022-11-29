@@ -39,7 +39,6 @@ describe("PublicStaking: Accumulator Overflow", async () => {
       legacyToken.address
     );
 
-    // ALCA
     const alca = await ethers.getContractAt(
       "ALCA",
       await factory.lookup(ethers.utils.formatBytes32String("ALCA"))

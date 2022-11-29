@@ -28,9 +28,9 @@ const checkConversionAndMintWei = async (
   admin: SignerWithAddress
 ) => {
   const marketSpread = 4;
-  const alcbs = await fixture.alcb.getLatestMintedALCBsFromEth(eth);
+  const alcbs = await fixture.alcb.getLatestMintedTokensFromEth(eth);
 
-  const convertedEth = await fixture.alcb.getLatestEthToMintALCBs(alcbs);
+  const convertedEth = await fixture.alcb.getLatestEthToMintTokens(alcbs);
   // due to rounding errors during integer math, we need to discard errors in the
   // last 2 decimal places
   expect(convertedEth.div(100)).to.be.equal(eth.div(100));
@@ -49,11 +49,11 @@ const checkConversionAndMintWei = async (
     eth.div(marketSpread)
   );
   expect(
-    await fixture.alcb.getMintedALCBsFromEth(poolBalanceBefore, eth)
+    await fixture.alcb.getMintedTokensFromEth(poolBalanceBefore, eth)
   ).to.be.equal(alcbs);
   const totalSupplyBefore = (await fixture.alcb.totalSupply()).sub(alcbs);
   expect(
-    (await fixture.alcb.getEthToMintALCBs(totalSupplyBefore, alcbs)).div(100)
+    (await fixture.alcb.getEthToMintTokens(totalSupplyBefore, alcbs)).div(100)
   ).to.be.equal(eth.div(100));
 };
 
@@ -74,7 +74,7 @@ const checkConversionAndBurnALCBWei = async (
   alcbs: BigNumber,
   admin: SignerWithAddress
 ) => {
-  const eth = await fixture.alcb.getLatestEthFromALCBsBurn(alcbs);
+  const eth = await fixture.alcb.getLatestEthFromTokensBurn(alcbs);
   const [burnedEth] = await callFunctionAndGetReturnValues(
     fixture.alcb,
     "burn",
@@ -87,7 +87,7 @@ const checkConversionAndBurnALCBWei = async (
   const poolBalanceBefore = (await fixture.alcb.getPoolBalance()).add(eth);
   const totalSupplyBefore = (await fixture.alcb.totalSupply()).add(alcbs);
   expect(
-    await fixture.alcb.getEthFromALCBsBurn(
+    await fixture.alcb.getEthFromTokensBurn(
       poolBalanceBefore,
       totalSupplyBefore,
       alcbs
