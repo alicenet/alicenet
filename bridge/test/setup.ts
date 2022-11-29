@@ -282,30 +282,29 @@ export const deployFactoryAndBaseTokens =
       await ethers.getContractFactory("LegacyToken")
     ).deploy();
     const factory = await deployAliceNetFactory(legacyToken.address);
-    //   AToken is deployed on the factory constructor
-    const aToken = await ethers.getContractAt(
-      "AToken",
-      await factory.lookup(ethers.utils.formatBytes32String("AToken"))
+    // ALCA is deployed on the factory constructor
+    const alca = await ethers.getContractAt(
+      "ALCA",
+      await factory.lookup(ethers.utils.formatBytes32String("ALCA"))
     );
 
-    // BToken
     const centralRouter = await (
       await ethers.getContractFactory("CentralBridgeRouterMock")
     ).deploy(1000);
 
-    const bTokenSalt = calculateSalt("BToken", undefined, ethers);
+    const alcbSalt = calculateSalt("ALCB", undefined, ethers);
 
     await deployCreateAndRegister(
-      "BToken",
+      "ALCB",
       factory,
       ethers,
       [centralRouter.address],
-      bTokenSalt
+      alcbSalt
     );
-    // finally attach BToken to the address of the deployed contract above
-    const bToken = await ethers.getContractAt(
-      "BToken",
-      await factory.lookup(bTokenSalt)
+    // finally attach ALCB to the address of the deployed contract above
+    const alcb = await ethers.getContractAt(
+      "ALCB",
+      await factory.lookup(alcbSalt)
     );
 
     // PublicStaking
@@ -318,8 +317,8 @@ export const deployFactoryAndBaseTokens =
 
     return {
       factory,
-      aToken,
-      bToken,
+      alca,
+      alcb,
       legacyToken,
       publicStaking,
     };
@@ -353,8 +352,8 @@ export const posFixtureSetup = async (factory: AliceNetFactory, alca: ALCA) => {
   await network.provider.send("hardhat_setNextBlockBaseFeePerGas", ["0x1"]);
   const [admin] = await ethers.getSigners();
 
-  // transferring those ATokens to the admin
-  await factoryCallAny(factory, aToken, "transfer", [
+  // transferring those ALCAs to the admin
+  await factoryCallAny(factory, alca, "transfer", [
     admin.address,
     ethers.utils.parseEther("200000000"),
   ]);
@@ -363,9 +362,8 @@ export const posFixtureSetup = async (factory: AliceNetFactory, alca: ALCA) => {
 export const getBaseTokensFixture = async (): Promise<BaseTokensFixture> => {
   await preFixtureSetup();
 
-  // AToken
   const fixture = await deployFactoryAndBaseTokens();
-  await posFixtureSetup(fixture.factory, fixture.aToken);
+  await posFixtureSetup(fixture.factory, fixture.alca);
   return fixture;
 };
 
@@ -378,7 +376,7 @@ export const getFixture = async (
   const namedSigners = await ethers.getSigners();
   const [admin] = namedSigners;
   // Deploy the base tokens
-  const { factory, aToken, bToken, legacyToken, publicStaking } =
+  const { factory, alca, alcb, legacyToken, publicStaking } =
     await deployFactoryAndBaseTokens();
   // ValidatorStaking is not considered a base token since is only used by validators
   const validatorStaking = (await deployUpgradeableWithFactory(
@@ -476,17 +474,17 @@ export const getFixture = async (
 
   const alcaMinter = (await deployUpgradeableWithFactory(
     factory,
-    "ATokenMinter",
-    "ATokenMinter"
-  )) as ATokenMinter;
+    "ALCAMinter",
+    "ALCAMinter"
+  )) as ALCAMinter;
 
-  // mint some aTokens
-  await factoryCallAny(factory, aTokenMinter, "mint", [
+  // mint some alcas
+  await factoryCallAny(factory, alcaMinter, "mint", [
     factory.address,
     ethers.utils.parseEther("100000000"),
   ]);
 
-  const aTokenBurner = (await deployUpgradeableWithFactory(
+  const alcaBurner = (await deployUpgradeableWithFactory(
     factory,
     "ALCABurner",
     "ALCABurner"

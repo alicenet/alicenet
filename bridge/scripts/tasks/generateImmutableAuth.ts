@@ -53,19 +53,19 @@ task("generate-immutable-auth-contract", "Generate contracts")
     );
 
     fs.writeFileSync(
-      output + "ImmutableAToken.sol",
+      output + "ImmutableALCA.sol",
       basicHeader +
         alicenetImmutableImport +
         alicenetInterfaceImport +
-        immutableAToken
+        immutableALCA
     );
 
     fs.writeFileSync(
-      output + "ImmutableBToken.sol",
+      output + "ImmutableALCB.sol",
       basicHeader +
         alicenetImmutableImport +
         alicenetInterfaceImport +
-        immutableBToken
+        immutableALCB
     );
 
     for (const contractNameSalt of contractNameSaltMap) {
@@ -124,7 +124,7 @@ abstract contract ImmutableFactory is DeterministicAddress {
 }
 `;
 
-const immutableAToken = `
+const immutableALCA = `
 
 abstract contract ImmutableALCA is ImmutableFactory {
     address private immutable _alca;
@@ -150,7 +150,7 @@ abstract contract ImmutableALCA is ImmutableFactory {
     }
 }`;
 
-const immutableBToken = `
+const immutableALCB = `
 
 abstract contract ImmutableALCB is ImmutableFactory {
     address private immutable _alcb;
