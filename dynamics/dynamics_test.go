@@ -148,7 +148,10 @@ func TestStorageInit1(t *testing.T) {
 func TestStorageInitFromScratch(t *testing.T) {
 	t.Parallel()
 	s := &Storage{}
-	s.Init(NewTestDB(), newLogger())
+	err := s.Init(NewTestDB(), newLogger())
+	if err != nil {
+		t.Fatal("Database not initialized")
+	}
 
 	// since there's no node, the starting channel should be closed and no request
 	// against the storage should be allowed
@@ -171,7 +174,10 @@ func TestStorageInitWithPersistance(t *testing.T) {
 	}
 
 	s2 := &Storage{}
-	s2.Init(s.database.rawDB, s.logger)
+	err = s2.Init(s.database.rawDB, s.logger)
+	if err != nil {
+		t.Fatal("unable to initialize storage")
+	}
 
 	// Check dynamicValues == standardParameters
 	storageDVBytes, err := s2.DynamicValues.Marshal()

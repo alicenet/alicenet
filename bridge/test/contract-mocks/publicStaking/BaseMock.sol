@@ -19,11 +19,7 @@ abstract contract BaseMock {
         return publicStaking.mint(amount_);
     }
 
-    function mintTo(
-        address to_,
-        uint256 amount_,
-        uint256 duration_
-    ) public returns (uint256) {
+    function mintTo(address to_, uint256 amount_, uint256 duration_) public returns (uint256) {
         return publicStaking.mintTo(to_, amount_, duration_);
     }
 
@@ -63,11 +59,7 @@ abstract contract BaseMock {
         return publicStaking.setApprovalForAll(to, approve_);
     }
 
-    function transferFrom(
-        address from,
-        address to,
-        uint256 tokenID_
-    ) public {
+    function transferFrom(address from, address to, uint256 tokenID_) public {
         return publicStaking.transferFrom(from, to, tokenID_);
     }
 

@@ -18,12 +18,8 @@ type IAliceNetFactoryTransactor interface {
 	AddNewExternalContract(opts *bind.TransactOpts, salt_ [32]byte, newContractAddress_ common.Address) (*types.Transaction, error)
 	// CallAny is a paid mutator transaction binding the contract method 0x12e6bf6a.
 	//
-	// Solidity: function callAny(address target_, uint256 value_, bytes cdata_) payable returns()
+	// Solidity: function callAny(address target_, uint256 value_, bytes cdata_) payable returns(bytes)
 	CallAny(opts *bind.TransactOpts, target_ common.Address, value_ *big.Int, cdata_ []byte) (*types.Transaction, error)
-	// DelegateCallAny is a paid mutator transaction binding the contract method 0x4713ee7a.
-	//
-	// Solidity: function delegateCallAny(address target_, bytes cdata_) payable returns()
-	DelegateCallAny(opts *bind.TransactOpts, target_ common.Address, cdata_ []byte) (*types.Transaction, error)
 	// DeployCreate is a paid mutator transaction binding the contract method 0x27fe1822.
 	//
 	// Solidity: function deployCreate(bytes deployCode_) returns(address contractAddr)
@@ -46,12 +42,8 @@ type IAliceNetFactoryTransactor interface {
 	InitializeContract(opts *bind.TransactOpts, contract_ common.Address, initCallData_ []byte) (*types.Transaction, error)
 	// MultiCall is a paid mutator transaction binding the contract method 0x248b1701.
 	//
-	// Solidity: function multiCall((address,uint256,bytes)[] cdata_) returns()
+	// Solidity: function multiCall((address,uint256,bytes)[] cdata_) returns(bytes[])
 	MultiCall(opts *bind.TransactOpts, cdata_ []AliceNetFactoryBaseMultiCallArgs) (*types.Transaction, error)
-	// SetImplementation is a paid mutator transaction binding the contract method 0xd784d426.
-	//
-	// Solidity: function setImplementation(address newImplementationAddress_) returns()
-	SetImplementation(opts *bind.TransactOpts, newImplementationAddress_ common.Address) (*types.Transaction, error)
 	// SetOwner is a paid mutator transaction binding the contract method 0x13af4035.
 	//
 	// Solidity: function setOwner(address newOwner_) returns()

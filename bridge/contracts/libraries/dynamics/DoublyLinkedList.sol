@@ -36,11 +36,10 @@ library NodeUpdate {
      * @dev Update a Node previous epoch.
      * @param prevEpoch: the previous epoch to link into the node
      */
-    function updatePrevious(Node memory node, uint32 prevEpoch)
-        internal
-        pure
-        returns (Node memory)
-    {
+    function updatePrevious(
+        Node memory node,
+        uint32 prevEpoch
+    ) internal pure returns (Node memory) {
         node.prev = prevEpoch;
         return node;
     }
@@ -65,11 +64,7 @@ library DoublyLinkedListLogic {
      * @param epoch: The epoch to insert the new node
      * @param data: The data to insert into the new node
      */
-    function addNode(
-        DoublyLinkedList storage list,
-        uint32 epoch,
-        address data
-    ) internal {
+    function addNode(DoublyLinkedList storage list, uint32 epoch, address data) internal {
         uint32 head = uint32(list.head);
         uint32 tail = uint32(list.tail);
         // at this moment, we are only appending after the tail. This requirement can be
@@ -125,11 +120,7 @@ library DoublyLinkedListLogic {
      * @param prevEpoch: The node's epoch to link the next epoch.
      * @param nextEpoch: The epoch that will be assigned to the linked node.
      */
-    function linkNext(
-        DoublyLinkedList storage list,
-        uint32 prevEpoch,
-        uint32 nextEpoch
-    ) internal {
+    function linkNext(DoublyLinkedList storage list, uint32 prevEpoch, uint32 nextEpoch) internal {
         list.nodes[prevEpoch].next = nextEpoch;
     }
 
@@ -164,11 +155,10 @@ library DoublyLinkedListLogic {
      * @dev Retrieves the Node denoted by `epoch`.
      * @param epoch: The epoch to get the node.
      */
-    function getNode(DoublyLinkedList storage list, uint256 epoch)
-        internal
-        view
-        returns (Node memory)
-    {
+    function getNode(
+        DoublyLinkedList storage list,
+        uint256 epoch
+    ) internal view returns (Node memory) {
         return list.nodes[epoch];
     }
 
@@ -176,11 +166,10 @@ library DoublyLinkedListLogic {
      * @dev Retrieves the Node value denoted by `epoch`.
      * @param epoch: The epoch to get the node's value.
      */
-    function getValue(DoublyLinkedList storage list, uint256 epoch)
-        internal
-        view
-        returns (address)
-    {
+    function getValue(
+        DoublyLinkedList storage list,
+        uint256 epoch
+    ) internal view returns (address) {
         return list.nodes[epoch].data;
     }
 
@@ -188,11 +177,10 @@ library DoublyLinkedListLogic {
      * @dev Retrieves the next epoch of a Node denoted by `epoch`.
      * @param epoch: The epoch to get the next node epoch.
      */
-    function getNextEpoch(DoublyLinkedList storage list, uint256 epoch)
-        internal
-        view
-        returns (uint32)
-    {
+    function getNextEpoch(
+        DoublyLinkedList storage list,
+        uint256 epoch
+    ) internal view returns (uint32) {
         return list.nodes[epoch].next;
     }
 
@@ -200,11 +188,10 @@ library DoublyLinkedListLogic {
      * @dev Retrieves the previous epoch of a Node denoted by `epoch`.
      * @param epoch: The epoch to get the previous node epoch.
      */
-    function getPreviousEpoch(DoublyLinkedList storage list, uint256 epoch)
-        internal
-        view
-        returns (uint32)
-    {
+    function getPreviousEpoch(
+        DoublyLinkedList storage list,
+        uint256 epoch
+    ) internal view returns (uint32) {
         return list.nodes[epoch].prev;
     }
 

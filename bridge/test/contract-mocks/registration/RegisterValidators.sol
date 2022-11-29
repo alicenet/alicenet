@@ -8,10 +8,17 @@ import "contracts/interfaces/IValidatorPool.sol";
 import "contracts/interfaces/IERC20Transferable.sol";
 import "contracts/interfaces/IStakingNFT.sol";
 import "contracts/interfaces/IETHDKG.sol";
-import "contracts/utils/ImmutableAuth.sol";
+import "contracts/utils/auth/ImmutableFactory.sol";
 import "contracts/libraries/parsers/BClaimsParserLibrary.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "contracts/libraries/errors/RegisterValidatorErrors.sol";
+import "contracts/utils/auth/ImmutableSnapshots.sol";
+import "contracts/utils/auth/ImmutableETHDKG.sol";
+import "contracts/utils/auth/ImmutablePublicStaking.sol";
+import "contracts/utils/auth/ImmutableValidatorStaking.sol";
+import "contracts/utils/auth/ImmutableAToken.sol";
+import "contracts/utils/auth/ImmutableBToken.sol";
+import "contracts/utils/auth/ImmutableATokenMinter.sol";
 
 contract ExternalStoreRegistration is ImmutableFactory {
     uint256 internal _counter;
@@ -57,7 +64,9 @@ contract RegisterValidators is
     uint256 public constant EPOCH_LENGTH = 1024;
     ExternalStoreRegistration internal immutable _externalStore;
 
-    constructor(address factory_)
+    constructor(
+        address factory_
+    )
         ImmutableFactory(factory_)
         ImmutableSnapshots()
         ImmutableETHDKG()

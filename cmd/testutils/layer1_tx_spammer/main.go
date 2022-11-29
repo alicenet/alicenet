@@ -283,7 +283,9 @@ func main() {
 	defer watcher.Close()
 	if isUsingTestAccounts {
 		// this function will block for finality delay blocks
-		tests.FundAccounts(eth, watcher, logger)
+		if err := tests.FundAccounts(eth, watcher, logger); err != nil {
+			panic("Unable to fund test accounts")
+		}
 		tests.SetNextBlockBaseFee(eth.GetEndpoint(), 100_000_000_000)
 	}
 

@@ -14,11 +14,7 @@ contract Governance is IGovernor {
         _factory = msg.sender;
     }
 
-    function updateValue(
-        uint256 epoch,
-        uint256 key,
-        bytes32 value
-    ) external {
+    function updateValue(uint256 epoch, uint256 key, bytes32 value) external {
         if (msg.sender != _factory) {
             revert GovernanceErrors.OnlyFactoryAllowed(msg.sender);
         }

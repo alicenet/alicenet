@@ -465,6 +465,7 @@ func (b *RoundState) TrackExternalConflicts(v *Proposal) {
 		return
 	}
 	// is current
+	// nolint:errcheck // review error checking for RoundState
 	b.checkStaleAndConflict(v, false)
 }
 
