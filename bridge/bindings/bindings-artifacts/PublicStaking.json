@@ -158,7 +158,7 @@
         "type": "address"
       }
     ],
-    "name": "OnlyAToken",
+    "name": "OnlyALCA",
     "type": "error"
   },
   {
@@ -378,7 +378,7 @@
       },
       {
         "internalType": "uint256",
-        "name": "payoutAToken",
+        "name": "payoutALCA",
         "type": "uint256"
       }
     ],
@@ -407,7 +407,7 @@
       },
       {
         "internalType": "uint256",
-        "name": "payoutAToken",
+        "name": "payoutALCA",
         "type": "uint256"
       }
     ],
@@ -857,7 +857,7 @@
   },
   {
     "inputs": [],
-    "name": "getTotalReserveAToken",
+    "name": "getTotalReserveALCA",
     "outputs": [
       {
         "internalType": "uint256",

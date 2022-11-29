@@ -64,7 +64,7 @@ describe("Ethdkg: Migrate state", () => {
         validatorsSnapshots[0].mpk
       )
     )
-      .to.be.revertedWithCustomError(fixture.bToken, `OnlyFactory`)
+      .to.be.revertedWithCustomError(fixture.alcb, `OnlyFactory`)
       .withArgs(admin.address, fixture.factory.address);
   });
 

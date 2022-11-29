@@ -14,7 +14,7 @@ import "contracts/utils/auth/ImmutableFactory.sol";
 import "contracts/utils/auth/ImmutableSnapshots.sol";
 import "contracts/utils/auth/ImmutableETHDKG.sol";
 import "contracts/utils/auth/ImmutableValidatorStaking.sol";
-import "contracts/utils/auth/ImmutableAToken.sol";
+import "contracts/utils/auth/ImmutableALCA.sol";
 
 contract ValidatorPoolMock is
     Initializable,
@@ -23,7 +23,7 @@ contract ValidatorPoolMock is
     ImmutableSnapshots,
     ImmutableETHDKG,
     ImmutableValidatorStaking,
-    ImmutableAToken
+    ImmutableALCA
 {
     using CustomEnumerableMaps for ValidatorDataMap;
     error OnlyAdminAllowed();
@@ -58,11 +58,11 @@ contract ValidatorPoolMock is
         ImmutableValidatorStaking()
         ImmutableSnapshots()
         ImmutableETHDKG()
-        ImmutableAToken()
+        ImmutableALCA()
     {}
 
     function initialize() public onlyFactory initializer {
-        //20000*10**18 ATokenWei = 20k ATokens
+        //20000*10**18 ALCAWei = 20k ALCAs
         _stakeAmount = 20000 * 10 ** 18;
     }
 
@@ -83,27 +83,27 @@ contract ValidatorPoolMock is
     }
 
     function mintValidatorStaking() public returns (uint256 stakeID_) {
-        IERC20Transferable(_aTokenAddress()).transferFrom(msg.sender, address(this), _stakeAmount);
-        IERC20Transferable(_aTokenAddress()).approve(_validatorStakingAddress(), _stakeAmount);
+        IERC20Transferable(_alcaAddress()).transferFrom(msg.sender, address(this), _stakeAmount);
+        IERC20Transferable(_alcaAddress()).approve(_validatorStakingAddress(), _stakeAmount);
         stakeID_ = IStakingNFT(_validatorStakingAddress()).mint(_stakeAmount);
     }
 
     function burnValidatorStaking(
         uint256 tokenID_
-    ) public returns (uint256 payoutEth, uint256 payoutAToken) {
+    ) public returns (uint256 payoutEth, uint256 payoutALCA) {
         return IStakingNFT(_validatorStakingAddress()).burn(tokenID_);
     }
 
     function mintToValidatorStaking(address to_) public returns (uint256 stakeID_) {
-        IERC20Transferable(_aTokenAddress()).transferFrom(msg.sender, address(this), _stakeAmount);
-        IERC20Transferable(_aTokenAddress()).approve(_validatorStakingAddress(), _stakeAmount);
+        IERC20Transferable(_alcaAddress()).transferFrom(msg.sender, address(this), _stakeAmount);
+        IERC20Transferable(_alcaAddress()).approve(_validatorStakingAddress(), _stakeAmount);
         stakeID_ = IStakingNFT(_validatorStakingAddress()).mintTo(to_, _stakeAmount, 1);
     }
 
     function burnToValidatorStaking(
         uint256 tokenID_,
         address to_
-    ) public returns (uint256 payoutEth, uint256 payoutAToken) {
+    ) public returns (uint256 payoutEth, uint256 payoutALCA) {
         return IStakingNFT(_validatorStakingAddress()).burnTo(to_, tokenID_);
     }
 

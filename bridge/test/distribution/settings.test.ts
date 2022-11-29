@@ -3,7 +3,7 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BigNumber, BytesLike, ContractTransaction } from "ethers";
 import { ethers, expect } from "hardhat";
 import { AliceNetFactory } from "../../typechain-types";
-import { getState, showState } from "../bToken/setup";
+import { getState, showState } from "../alcb/setup";
 import {
   Fixture,
   getContractAddressFromDeployedRawEvent,
@@ -98,13 +98,13 @@ describe("Testing splits settings update", async () => {
     ]);
   });
 
-  it("Only BToken should be able to distribute", async () => {
+  it("Only ALCB should be able to distribute", async () => {
     await expect(
       fixture.distribution.connect(admin).depositEth(42, { value: 10000 })
     )
-      .to.revertedWithCustomError(fixture.distribution, "OnlyBToken")
-      .withArgs(admin.address, fixture.bToken.address);
-    const rcpt = await (await fixture.bToken.distribute()).wait();
+      .to.revertedWithCustomError(fixture.distribution, "OnlyALCB")
+      .withArgs(admin.address, fixture.alcb.address);
+    const rcpt = await (await fixture.alcb.distribute()).wait();
     expect(rcpt.status).to.be.equals(1);
   });
 

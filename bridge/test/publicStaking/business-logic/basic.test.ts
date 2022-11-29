@@ -19,7 +19,7 @@ describe("PublicStaking: Basics", async () => {
   async function deployFixture() {
     const fixture = await getBaseTokensFixture();
     const [adminSigner, otherSigner] = await ethers.getSigners();
-    await fixture.aToken.approve(fixture.publicStaking.address, 1000);
+    await fixture.alca.approve(fixture.publicStaking.address, 1000);
     const tx = await fixture.publicStaking.connect(adminSigner).mint(1000);
     const blockNumber = BigInt(tx.blockNumber as number);
     return { fixture, adminSigner, otherSigner, blockNumber };
@@ -110,7 +110,7 @@ describe("PublicStaking: Basics", async () => {
 
   describe("With multiple tokens minted", async function () {
     beforeEach(async function () {
-      await fixture.aToken.approve(fixture.publicStaking.address, 3000);
+      await fixture.alca.approve(fixture.publicStaking.address, 3000);
       await fixture.publicStaking.connect(adminSigner).mint(1000);
       await fixture.publicStaking.connect(adminSigner).mint(1000);
       await fixture.publicStaking.connect(adminSigner).mint(1000);

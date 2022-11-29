@@ -48,7 +48,7 @@ async function lockStakedNFT(
 }
 
 async function distributeProfits(fixture: Fixture, admin: SignerWithAddress) {
-  await fixture.aToken
+  await fixture.alca
     .connect(admin)
     .increaseAllowance(
       fixture.publicStaking.address,
@@ -145,7 +145,7 @@ describe("Testing Unlock", async () => {
     // 100m alca)
     const leftOver =
       stakedAmount - (await fixture.publicStaking.getTotalShares()).toBigInt();
-    await fixture.aToken
+    await fixture.alca
       .connect(accounts[1])
       .approve(fixture.publicStaking.address, leftOver);
     await fixture.publicStaking.connect(accounts[1]).mint(leftOver);
@@ -222,12 +222,12 @@ describe("Testing Unlock", async () => {
     // distributions and also makes the math better to test (since total staked in the publicStaking
     // goes back to 100m alca)
     const shares4 = ethers.utils.parseEther(Distribution1.users.user4.shares);
-    await fixture.aToken
+    await fixture.alca
       .connect(accounts[4])
       .approve(fixture.publicStaking.address, shares4);
     await fixture.publicStaking.connect(accounts[4]).mint(shares4);
     const shares5 = ethers.utils.parseEther(Distribution1.users.user5.shares);
-    await fixture.aToken
+    await fixture.alca
       .connect(accounts[5])
       .approve(fixture.publicStaking.address, shares5);
     await fixture.publicStaking.connect(accounts[5]).mint(shares5);
@@ -327,7 +327,7 @@ describe("Testing Unlock", async () => {
     // 100m alca)
     const leftOver =
       stakedAmount - (await fixture.publicStaking.getTotalShares()).toBigInt();
-    await fixture.aToken
+    await fixture.alca
       .connect(accounts[1])
       .approve(fixture.publicStaking.address, leftOver);
     await fixture.publicStaking.connect(accounts[1]).mint(leftOver);
@@ -491,7 +491,7 @@ describe("Testing Unlock", async () => {
       (await ethers.provider.getBalance(randomUser.address)).toBigInt()
     ).to.be.equals(randomUserExpectedEthBalance);
     expect(
-      (await fixture.aToken.balanceOf(randomUser.address)).toBigInt()
+      (await fixture.alca.balanceOf(randomUser.address)).toBigInt()
     ).to.be.equals(randomUserExpectedALCABalance);
     const [userShares, , , ,] = await fixture.publicStaking.getPosition(
       await fixture.publicStaking.tokenOfOwnerByIndex(randomUser.address, 0)

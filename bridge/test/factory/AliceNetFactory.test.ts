@@ -570,22 +570,22 @@ describe("AliceNet Contract Factory", () => {
       expect(proxyAddrFromLookup).to.equal(proxyAddr);
     });
 
-    it("get AToken Address from lookup", async () => {
-      const salt = ethers.utils.formatBytes32String("AToken");
-      let aTokenAddress = await factory.lookup(salt);
-      const aToken = await ethers.getContractAt("AToken", aTokenAddress);
-      const legacyToken = await aToken.getLegacyTokenAddress();
-      const atokenBase = await ethers.getContractFactory("AToken");
-      const aTokenDeployCode = atokenBase.getDeployTransaction(legacyToken)
+    it("get ALCA Address from lookup", async () => {
+      const salt = ethers.utils.formatBytes32String("ALCA");
+      let alcaAddress = await factory.lookup(salt);
+      const alca = await ethers.getContractAt("ALCA", alcaAddress);
+      const legacyToken = await alca.getLegacyTokenAddress();
+      const alcaBase = await ethers.getContractFactory("ALCA");
+      const alcaDeployCode = alcaBase.getDeployTransaction(legacyToken)
         .data as BytesLike;
-      const atokenHash = ethers.utils.keccak256(aTokenDeployCode);
-      const expectedATokenAddress = ethers.utils.getCreate2Address(
+      const alcaHash = ethers.utils.keccak256(alcaDeployCode);
+      const expectedALCAAddress = ethers.utils.getCreate2Address(
         factory.address,
         salt,
-        atokenHash
+        alcaHash
       );
-      aTokenAddress = await factory.lookup(salt);
-      expect(aTokenAddress).to.equal(expectedATokenAddress);
+      alcaAddress = await factory.lookup(salt);
+      expect(alcaAddress).to.equal(expectedALCAAddress);
     });
   });
 

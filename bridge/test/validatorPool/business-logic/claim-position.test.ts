@@ -86,8 +86,8 @@ describe("ValidatorPool: Claiming logic", async () => {
     // Mint a publicStaking and burn it to the ValidatorPool contract. Besides a contract self destructing
     // itself, this is a method to send eth accidentally to the validatorPool contract
     const etherAmount = ethers.utils.parseEther("1");
-    const aTokenAmount = ethers.utils.parseEther("2");
-    await burnStakeTo(fixture, etherAmount, aTokenAmount, adminSigner);
+    const alcaAmount = ethers.utils.parseEther("2");
+    await burnStakeTo(fixture, etherAmount, alcaAmount, adminSigner);
     // As this is a complete cycle, expect the initial state to be exactly the same as the final state
     const expectedState = await getCurrentState(fixture, validators);
     for (let index = 0; index < expectedState.validators.length; index++) {

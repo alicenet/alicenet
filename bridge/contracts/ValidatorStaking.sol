@@ -14,7 +14,7 @@ contract ValidatorStaking is StakingNFT {
 
     /// mint allows a staking position to be opened. This function
     /// requires the caller to have performed an approve invocation against
-    /// AToken into this contract. This function will fail if the circuit
+    /// ALCA into this contract. This function will fail if the circuit
     /// breaker is tripped.
     function mint(
         uint256 amount_
@@ -25,7 +25,7 @@ contract ValidatorStaking is StakingNFT {
     /// mintTo allows a staking position to be opened in the name of an
     /// account other than the caller. This method also allows a lock to be
     /// placed on the position up to _MAX_MINT_LOCK . This function requires the
-    /// caller to have performed an approve invocation against AToken into
+    /// caller to have performed an approve invocation against ALCA into
     /// this contract. This function will fail if the circuit breaker is
     /// tripped.
     function mintTo(
@@ -47,7 +47,7 @@ contract ValidatorStaking is StakingNFT {
     /// transferred to the owner on burn.
     function burn(
         uint256 tokenID_
-    ) public override onlyValidatorPool returns (uint256 payoutEth, uint256 payoutAToken) {
+    ) public override onlyValidatorPool returns (uint256 payoutEth, uint256 payoutALCA) {
         return _burn(msg.sender, msg.sender, tokenID_);
     }
 
@@ -56,7 +56,7 @@ contract ValidatorStaking is StakingNFT {
     function burnTo(
         address to_,
         uint256 tokenID_
-    ) public override onlyValidatorPool returns (uint256 payoutEth, uint256 payoutAToken) {
+    ) public override onlyValidatorPool returns (uint256 payoutEth, uint256 payoutALCA) {
         return _burn(msg.sender, to_, tokenID_);
     }
 }
