@@ -36,10 +36,10 @@ type IALCBTransactor interface {
 	//
 	// Solidity: function depositTokensOnBridges(uint8 routerVersion_, bytes data_) payable returns()
 	DepositTokensOnBridges(opts *bind.TransactOpts, routerVersion_ uint8, data_ []byte) (*types.Transaction, error)
-	// DestroyALCBs is a paid mutator transaction binding the contract method 0x24663df8.
+	// DestroyTokens is a paid mutator transaction binding the contract method 0x67fbd289.
 	//
-	// Solidity: function destroyALCBs(uint256 numBTK_) returns(bool)
-	DestroyALCBs(opts *bind.TransactOpts, numBTK_ *big.Int) (*types.Transaction, error)
+	// Solidity: function destroyTokens(uint256 numBTK_) returns(bool)
+	DestroyTokens(opts *bind.TransactOpts, numBTK_ *big.Int) (*types.Transaction, error)
 	// Distribute is a paid mutator transaction binding the contract method 0xe4fc6b6d.
 	//
 	// Solidity: function distribute() returns(bool)

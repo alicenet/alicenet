@@ -37,7 +37,7 @@ type Deposit struct {
 
 // ALCBMetaData contains all meta data concerning the ALCB contract.
 var ALCBMetaData = &bind.MetaData{
-	ABI: "[{\"inputs\":[{\"internalType\":\"address\",\"name\":\"centralBridgeRouterAddress_\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"inputs\":[{\"internalType\":\"uint8\",\"name\":\"accountType\",\"type\":\"uint8\"}],\"name\":\"AccountTypeNotSupported\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"supply\",\"type\":\"uint256\"}],\"name\":\"BurnAmountExceedsSupply\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"CannotSetRouterToZeroAddress\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"CannotTransferToZeroAddress\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"toAddress\",\"type\":\"address\"}],\"name\":\"ContractsDisallowedDeposits\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"DepositAmountZero\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"DepositBurnFail\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"from\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"EthTransferFailed\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"minimum\",\"type\":\"uint256\"}],\"name\":\"InsufficientEth\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"fee\",\"type\":\"uint256\"}],\"name\":\"InsufficientFee\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"contractBalance\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"poolBalance\",\"type\":\"uint256\"}],\"name\":\"InvalidBalance\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"InvalidBurnAmount\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"depositID\",\"type\":\"uint256\"}],\"name\":\"InvalidDepositId\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"minimum\",\"type\":\"uint256\"}],\"name\":\"MinimumBurnNotMet\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"minimum\",\"type\":\"uint256\"}],\"name\":\"MinimumMintNotMet\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"minimumValue\",\"type\":\"uint256\"}],\"name\":\"MinimumValueNotMet\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"MutexLocked\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"expected\",\"type\":\"address\"}],\"name\":\"OnlyDistribution\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"expected\",\"type\":\"address\"}],\"name\":\"OnlyFactory\",\"type\":\"error\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"owner\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"spender\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"value\",\"type\":\"uint256\"}],\"name\":\"Approval\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"uint256\",\"name\":\"depositID\",\"type\":\"uint256\"},{\"indexed\":true,\"internalType\":\"uint8\",\"name\":\"accountType\",\"type\":\"uint8\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"depositor\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"DepositReceived\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"from\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"value\",\"type\":\"uint256\"}],\"name\":\"Transfer\",\"type\":\"event\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"owner\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"spender\",\"type\":\"address\"}],\"name\":\"allowance\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"spender\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"approve\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"balanceOf\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"amount_\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"minEth_\",\"type\":\"uint256\"}],\"name\":\"burn\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"numEth\",\"type\":\"uint256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"to_\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"amount_\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"minEth_\",\"type\":\"uint256\"}],\"name\":\"burnTo\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"numEth\",\"type\":\"uint256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"decimals\",\"outputs\":[{\"internalType\":\"uint8\",\"name\":\"\",\"type\":\"uint8\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"spender\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"subtractedValue\",\"type\":\"uint256\"}],\"name\":\"decreaseAllowance\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint8\",\"name\":\"accountType_\",\"type\":\"uint8\"},{\"internalType\":\"address\",\"name\":\"to_\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"amount_\",\"type\":\"uint256\"}],\"name\":\"deposit\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint8\",\"name\":\"routerVersion_\",\"type\":\"uint8\"},{\"internalType\":\"bytes\",\"name\":\"data_\",\"type\":\"bytes\"}],\"name\":\"depositTokensOnBridges\",\"outputs\":[],\"stateMutability\":\"payable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"numBTK_\",\"type\":\"uint256\"}],\"name\":\"destroyALCBs\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"distribute\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getCentralBridgeRouterAddress\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"depositID\",\"type\":\"uint256\"}],\"name\":\"getDeposit\",\"outputs\":[{\"components\":[{\"internalType\":\"uint8\",\"name\":\"accountType\",\"type\":\"uint8\"},{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"value\",\"type\":\"uint256\"}],\"internalType\":\"structDeposit\",\"name\":\"\",\"type\":\"tuple\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getDepositID\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"poolBalance_\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"totalSupply_\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"numBTK_\",\"type\":\"uint256\"}],\"name\":\"getEthFromALCBsBurn\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"numEth\",\"type\":\"uint256\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"totalSupply_\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"numBTK_\",\"type\":\"uint256\"}],\"name\":\"getEthToMintALCBs\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"numEth\",\"type\":\"uint256\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"numBTK_\",\"type\":\"uint256\"}],\"name\":\"getLatestEthFromALCBsBurn\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"numEth\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"numBTK_\",\"type\":\"uint256\"}],\"name\":\"getLatestEthToMintALCBs\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"numEth\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"numEth_\",\"type\":\"uint256\"}],\"name\":\"getLatestMintedALCBsFromEth\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getMarketSpread\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"_salt\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"_factory\",\"type\":\"address\"}],\"name\":\"getMetamorphicContractAddress\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"poolBalance_\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"numEth_\",\"type\":\"uint256\"}],\"name\":\"getMintedALCBsFromEth\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getPoolBalance\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getTotalALCBsDeposited\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getYield\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"spender\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"addedValue\",\"type\":\"uint256\"}],\"name\":\"increaseAllowance\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"minBTK_\",\"type\":\"uint256\"}],\"name\":\"mint\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"numBTK\",\"type\":\"uint256\"}],\"stateMutability\":\"payable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint8\",\"name\":\"accountType_\",\"type\":\"uint8\"},{\"internalType\":\"address\",\"name\":\"to_\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"minBTK_\",\"type\":\"uint256\"}],\"name\":\"mintDeposit\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"payable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"to_\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"minBTK_\",\"type\":\"uint256\"}],\"name\":\"mintTo\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"numBTK\",\"type\":\"uint256\"}],\"stateMutability\":\"payable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"name\",\"outputs\":[{\"internalType\":\"string\",\"name\":\"\",\"type\":\"string\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint8\",\"name\":\"accountType_\",\"type\":\"uint8\"},{\"internalType\":\"bool\",\"name\":\"allowed_\",\"type\":\"bool\"}],\"name\":\"setAccountType\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"symbol\",\"outputs\":[{\"internalType\":\"string\",\"name\":\"\",\"type\":\"string\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"totalSupply\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"transfer\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"from\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"transferFrom\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint8\",\"name\":\"accountType_\",\"type\":\"uint8\"},{\"internalType\":\"address\",\"name\":\"to_\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"amount_\",\"type\":\"uint256\"}],\"name\":\"virtualMintDeposit\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]",
+	ABI: "[{\"inputs\":[{\"internalType\":\"address\",\"name\":\"centralBridgeRouterAddress_\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"inputs\":[{\"internalType\":\"uint8\",\"name\":\"accountType\",\"type\":\"uint8\"}],\"name\":\"AccountTypeNotSupported\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"supply\",\"type\":\"uint256\"}],\"name\":\"BurnAmountExceedsSupply\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"CannotSetRouterToZeroAddress\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"CannotTransferToZeroAddress\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"toAddress\",\"type\":\"address\"}],\"name\":\"ContractsDisallowedDeposits\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"DepositAmountZero\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"DepositBurnFail\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"from\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"EthTransferFailed\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"minimum\",\"type\":\"uint256\"}],\"name\":\"InsufficientEth\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"fee\",\"type\":\"uint256\"}],\"name\":\"InsufficientFee\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"contractBalance\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"poolBalance\",\"type\":\"uint256\"}],\"name\":\"InvalidBalance\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"InvalidBurnAmount\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"depositID\",\"type\":\"uint256\"}],\"name\":\"InvalidDepositId\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"minimum\",\"type\":\"uint256\"}],\"name\":\"MinimumBurnNotMet\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"minimum\",\"type\":\"uint256\"}],\"name\":\"MinimumMintNotMet\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"minimumValue\",\"type\":\"uint256\"}],\"name\":\"MinimumValueNotMet\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"MutexLocked\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"expected\",\"type\":\"address\"}],\"name\":\"OnlyDistribution\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"expected\",\"type\":\"address\"}],\"name\":\"OnlyFactory\",\"type\":\"error\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"owner\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"spender\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"value\",\"type\":\"uint256\"}],\"name\":\"Approval\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"uint256\",\"name\":\"depositID\",\"type\":\"uint256\"},{\"indexed\":true,\"internalType\":\"uint8\",\"name\":\"accountType\",\"type\":\"uint8\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"depositor\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"DepositReceived\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"from\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"value\",\"type\":\"uint256\"}],\"name\":\"Transfer\",\"type\":\"event\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"owner\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"spender\",\"type\":\"address\"}],\"name\":\"allowance\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"spender\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"approve\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"balanceOf\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"amount_\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"minEth_\",\"type\":\"uint256\"}],\"name\":\"burn\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"numEth\",\"type\":\"uint256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"to_\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"amount_\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"minEth_\",\"type\":\"uint256\"}],\"name\":\"burnTo\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"numEth\",\"type\":\"uint256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"decimals\",\"outputs\":[{\"internalType\":\"uint8\",\"name\":\"\",\"type\":\"uint8\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"spender\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"subtractedValue\",\"type\":\"uint256\"}],\"name\":\"decreaseAllowance\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint8\",\"name\":\"accountType_\",\"type\":\"uint8\"},{\"internalType\":\"address\",\"name\":\"to_\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"amount_\",\"type\":\"uint256\"}],\"name\":\"deposit\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint8\",\"name\":\"routerVersion_\",\"type\":\"uint8\"},{\"internalType\":\"bytes\",\"name\":\"data_\",\"type\":\"bytes\"}],\"name\":\"depositTokensOnBridges\",\"outputs\":[],\"stateMutability\":\"payable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"numBTK_\",\"type\":\"uint256\"}],\"name\":\"destroyTokens\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"distribute\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getCentralBridgeRouterAddress\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"depositID\",\"type\":\"uint256\"}],\"name\":\"getDeposit\",\"outputs\":[{\"components\":[{\"internalType\":\"uint8\",\"name\":\"accountType\",\"type\":\"uint8\"},{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"value\",\"type\":\"uint256\"}],\"internalType\":\"structDeposit\",\"name\":\"\",\"type\":\"tuple\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getDepositID\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"poolBalance_\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"totalSupply_\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"numBTK_\",\"type\":\"uint256\"}],\"name\":\"getEthFromTokensBurn\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"numEth\",\"type\":\"uint256\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"totalSupply_\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"numBTK_\",\"type\":\"uint256\"}],\"name\":\"getEthToMintTokens\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"numEth\",\"type\":\"uint256\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"numBTK_\",\"type\":\"uint256\"}],\"name\":\"getLatestEthFromTokensBurn\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"numEth\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"numBTK_\",\"type\":\"uint256\"}],\"name\":\"getLatestEthToMintTokens\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"numEth\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"numEth_\",\"type\":\"uint256\"}],\"name\":\"getLatestMintedTokensFromEth\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getMarketSpread\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"_salt\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"_factory\",\"type\":\"address\"}],\"name\":\"getMetamorphicContractAddress\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"poolBalance_\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"numEth_\",\"type\":\"uint256\"}],\"name\":\"getMintedTokensFromEth\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getPoolBalance\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getTotalTokensDeposited\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getYield\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"spender\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"addedValue\",\"type\":\"uint256\"}],\"name\":\"increaseAllowance\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"minBTK_\",\"type\":\"uint256\"}],\"name\":\"mint\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"numBTK\",\"type\":\"uint256\"}],\"stateMutability\":\"payable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint8\",\"name\":\"accountType_\",\"type\":\"uint8\"},{\"internalType\":\"address\",\"name\":\"to_\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"minBTK_\",\"type\":\"uint256\"}],\"name\":\"mintDeposit\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"payable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"to_\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"minBTK_\",\"type\":\"uint256\"}],\"name\":\"mintTo\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"numBTK\",\"type\":\"uint256\"}],\"stateMutability\":\"payable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"name\",\"outputs\":[{\"internalType\":\"string\",\"name\":\"\",\"type\":\"string\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint8\",\"name\":\"accountType_\",\"type\":\"uint8\"},{\"internalType\":\"bool\",\"name\":\"allowed_\",\"type\":\"bool\"}],\"name\":\"setAccountType\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"symbol\",\"outputs\":[{\"internalType\":\"string\",\"name\":\"\",\"type\":\"string\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"totalSupply\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"transfer\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"from\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"transferFrom\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint8\",\"name\":\"accountType_\",\"type\":\"uint8\"},{\"internalType\":\"address\",\"name\":\"to_\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"amount_\",\"type\":\"uint256\"}],\"name\":\"virtualMintDeposit\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]",
 }
 
 // ALCBABI is the input ABI used to generate the binding from.
@@ -372,12 +372,12 @@ func (_ALCB *ALCBCallerSession) GetDepositID() (*big.Int, error) {
 	return _ALCB.Contract.GetDepositID(&_ALCB.CallOpts)
 }
 
-// GetEthFromALCBsBurn is a free data retrieval call binding the contract method 0x0b6774a1.
+// GetEthFromTokensBurn is a free data retrieval call binding the contract method 0xc67cb8d1.
 //
-// Solidity: function getEthFromALCBsBurn(uint256 poolBalance_, uint256 totalSupply_, uint256 numBTK_) pure returns(uint256 numEth)
-func (_ALCB *ALCBCaller) GetEthFromALCBsBurn(opts *bind.CallOpts, poolBalance_ *big.Int, totalSupply_ *big.Int, numBTK_ *big.Int) (*big.Int, error) {
+// Solidity: function getEthFromTokensBurn(uint256 poolBalance_, uint256 totalSupply_, uint256 numBTK_) pure returns(uint256 numEth)
+func (_ALCB *ALCBCaller) GetEthFromTokensBurn(opts *bind.CallOpts, poolBalance_ *big.Int, totalSupply_ *big.Int, numBTK_ *big.Int) (*big.Int, error) {
 	var out []interface{}
-	err := _ALCB.contract.Call(opts, &out, "getEthFromALCBsBurn", poolBalance_, totalSupply_, numBTK_)
+	err := _ALCB.contract.Call(opts, &out, "getEthFromTokensBurn", poolBalance_, totalSupply_, numBTK_)
 
 	if err != nil {
 		return *new(*big.Int), err
@@ -389,26 +389,26 @@ func (_ALCB *ALCBCaller) GetEthFromALCBsBurn(opts *bind.CallOpts, poolBalance_ *
 
 }
 
-// GetEthFromALCBsBurn is a free data retrieval call binding the contract method 0x0b6774a1.
+// GetEthFromTokensBurn is a free data retrieval call binding the contract method 0xc67cb8d1.
 //
-// Solidity: function getEthFromALCBsBurn(uint256 poolBalance_, uint256 totalSupply_, uint256 numBTK_) pure returns(uint256 numEth)
-func (_ALCB *ALCBSession) GetEthFromALCBsBurn(poolBalance_ *big.Int, totalSupply_ *big.Int, numBTK_ *big.Int) (*big.Int, error) {
-	return _ALCB.Contract.GetEthFromALCBsBurn(&_ALCB.CallOpts, poolBalance_, totalSupply_, numBTK_)
+// Solidity: function getEthFromTokensBurn(uint256 poolBalance_, uint256 totalSupply_, uint256 numBTK_) pure returns(uint256 numEth)
+func (_ALCB *ALCBSession) GetEthFromTokensBurn(poolBalance_ *big.Int, totalSupply_ *big.Int, numBTK_ *big.Int) (*big.Int, error) {
+	return _ALCB.Contract.GetEthFromTokensBurn(&_ALCB.CallOpts, poolBalance_, totalSupply_, numBTK_)
 }
 
-// GetEthFromALCBsBurn is a free data retrieval call binding the contract method 0x0b6774a1.
+// GetEthFromTokensBurn is a free data retrieval call binding the contract method 0xc67cb8d1.
 //
-// Solidity: function getEthFromALCBsBurn(uint256 poolBalance_, uint256 totalSupply_, uint256 numBTK_) pure returns(uint256 numEth)
-func (_ALCB *ALCBCallerSession) GetEthFromALCBsBurn(poolBalance_ *big.Int, totalSupply_ *big.Int, numBTK_ *big.Int) (*big.Int, error) {
-	return _ALCB.Contract.GetEthFromALCBsBurn(&_ALCB.CallOpts, poolBalance_, totalSupply_, numBTK_)
+// Solidity: function getEthFromTokensBurn(uint256 poolBalance_, uint256 totalSupply_, uint256 numBTK_) pure returns(uint256 numEth)
+func (_ALCB *ALCBCallerSession) GetEthFromTokensBurn(poolBalance_ *big.Int, totalSupply_ *big.Int, numBTK_ *big.Int) (*big.Int, error) {
+	return _ALCB.Contract.GetEthFromTokensBurn(&_ALCB.CallOpts, poolBalance_, totalSupply_, numBTK_)
 }
 
-// GetEthToMintALCBs is a free data retrieval call binding the contract method 0x0619c2f3.
+// GetEthToMintTokens is a free data retrieval call binding the contract method 0x688727c5.
 //
-// Solidity: function getEthToMintALCBs(uint256 totalSupply_, uint256 numBTK_) pure returns(uint256 numEth)
-func (_ALCB *ALCBCaller) GetEthToMintALCBs(opts *bind.CallOpts, totalSupply_ *big.Int, numBTK_ *big.Int) (*big.Int, error) {
+// Solidity: function getEthToMintTokens(uint256 totalSupply_, uint256 numBTK_) pure returns(uint256 numEth)
+func (_ALCB *ALCBCaller) GetEthToMintTokens(opts *bind.CallOpts, totalSupply_ *big.Int, numBTK_ *big.Int) (*big.Int, error) {
 	var out []interface{}
-	err := _ALCB.contract.Call(opts, &out, "getEthToMintALCBs", totalSupply_, numBTK_)
+	err := _ALCB.contract.Call(opts, &out, "getEthToMintTokens", totalSupply_, numBTK_)
 
 	if err != nil {
 		return *new(*big.Int), err
@@ -420,26 +420,26 @@ func (_ALCB *ALCBCaller) GetEthToMintALCBs(opts *bind.CallOpts, totalSupply_ *bi
 
 }
 
-// GetEthToMintALCBs is a free data retrieval call binding the contract method 0x0619c2f3.
+// GetEthToMintTokens is a free data retrieval call binding the contract method 0x688727c5.
 //
-// Solidity: function getEthToMintALCBs(uint256 totalSupply_, uint256 numBTK_) pure returns(uint256 numEth)
-func (_ALCB *ALCBSession) GetEthToMintALCBs(totalSupply_ *big.Int, numBTK_ *big.Int) (*big.Int, error) {
-	return _ALCB.Contract.GetEthToMintALCBs(&_ALCB.CallOpts, totalSupply_, numBTK_)
+// Solidity: function getEthToMintTokens(uint256 totalSupply_, uint256 numBTK_) pure returns(uint256 numEth)
+func (_ALCB *ALCBSession) GetEthToMintTokens(totalSupply_ *big.Int, numBTK_ *big.Int) (*big.Int, error) {
+	return _ALCB.Contract.GetEthToMintTokens(&_ALCB.CallOpts, totalSupply_, numBTK_)
 }
 
-// GetEthToMintALCBs is a free data retrieval call binding the contract method 0x0619c2f3.
+// GetEthToMintTokens is a free data retrieval call binding the contract method 0x688727c5.
 //
-// Solidity: function getEthToMintALCBs(uint256 totalSupply_, uint256 numBTK_) pure returns(uint256 numEth)
-func (_ALCB *ALCBCallerSession) GetEthToMintALCBs(totalSupply_ *big.Int, numBTK_ *big.Int) (*big.Int, error) {
-	return _ALCB.Contract.GetEthToMintALCBs(&_ALCB.CallOpts, totalSupply_, numBTK_)
+// Solidity: function getEthToMintTokens(uint256 totalSupply_, uint256 numBTK_) pure returns(uint256 numEth)
+func (_ALCB *ALCBCallerSession) GetEthToMintTokens(totalSupply_ *big.Int, numBTK_ *big.Int) (*big.Int, error) {
+	return _ALCB.Contract.GetEthToMintTokens(&_ALCB.CallOpts, totalSupply_, numBTK_)
 }
 
-// GetLatestEthFromALCBsBurn is a free data retrieval call binding the contract method 0xff326a2c.
+// GetLatestEthFromTokensBurn is a free data retrieval call binding the contract method 0xe51b55e3.
 //
-// Solidity: function getLatestEthFromALCBsBurn(uint256 numBTK_) view returns(uint256 numEth)
-func (_ALCB *ALCBCaller) GetLatestEthFromALCBsBurn(opts *bind.CallOpts, numBTK_ *big.Int) (*big.Int, error) {
+// Solidity: function getLatestEthFromTokensBurn(uint256 numBTK_) view returns(uint256 numEth)
+func (_ALCB *ALCBCaller) GetLatestEthFromTokensBurn(opts *bind.CallOpts, numBTK_ *big.Int) (*big.Int, error) {
 	var out []interface{}
-	err := _ALCB.contract.Call(opts, &out, "getLatestEthFromALCBsBurn", numBTK_)
+	err := _ALCB.contract.Call(opts, &out, "getLatestEthFromTokensBurn", numBTK_)
 
 	if err != nil {
 		return *new(*big.Int), err
@@ -451,26 +451,26 @@ func (_ALCB *ALCBCaller) GetLatestEthFromALCBsBurn(opts *bind.CallOpts, numBTK_ 
 
 }
 
-// GetLatestEthFromALCBsBurn is a free data retrieval call binding the contract method 0xff326a2c.
+// GetLatestEthFromTokensBurn is a free data retrieval call binding the contract method 0xe51b55e3.
 //
-// Solidity: function getLatestEthFromALCBsBurn(uint256 numBTK_) view returns(uint256 numEth)
-func (_ALCB *ALCBSession) GetLatestEthFromALCBsBurn(numBTK_ *big.Int) (*big.Int, error) {
-	return _ALCB.Contract.GetLatestEthFromALCBsBurn(&_ALCB.CallOpts, numBTK_)
+// Solidity: function getLatestEthFromTokensBurn(uint256 numBTK_) view returns(uint256 numEth)
+func (_ALCB *ALCBSession) GetLatestEthFromTokensBurn(numBTK_ *big.Int) (*big.Int, error) {
+	return _ALCB.Contract.GetLatestEthFromTokensBurn(&_ALCB.CallOpts, numBTK_)
 }
 
-// GetLatestEthFromALCBsBurn is a free data retrieval call binding the contract method 0xff326a2c.
+// GetLatestEthFromTokensBurn is a free data retrieval call binding the contract method 0xe51b55e3.
 //
-// Solidity: function getLatestEthFromALCBsBurn(uint256 numBTK_) view returns(uint256 numEth)
-func (_ALCB *ALCBCallerSession) GetLatestEthFromALCBsBurn(numBTK_ *big.Int) (*big.Int, error) {
-	return _ALCB.Contract.GetLatestEthFromALCBsBurn(&_ALCB.CallOpts, numBTK_)
+// Solidity: function getLatestEthFromTokensBurn(uint256 numBTK_) view returns(uint256 numEth)
+func (_ALCB *ALCBCallerSession) GetLatestEthFromTokensBurn(numBTK_ *big.Int) (*big.Int, error) {
+	return _ALCB.Contract.GetLatestEthFromTokensBurn(&_ALCB.CallOpts, numBTK_)
 }
 
-// GetLatestEthToMintALCBs is a free data retrieval call binding the contract method 0x777acd84.
+// GetLatestEthToMintTokens is a free data retrieval call binding the contract method 0xf14a28f9.
 //
-// Solidity: function getLatestEthToMintALCBs(uint256 numBTK_) view returns(uint256 numEth)
-func (_ALCB *ALCBCaller) GetLatestEthToMintALCBs(opts *bind.CallOpts, numBTK_ *big.Int) (*big.Int, error) {
+// Solidity: function getLatestEthToMintTokens(uint256 numBTK_) view returns(uint256 numEth)
+func (_ALCB *ALCBCaller) GetLatestEthToMintTokens(opts *bind.CallOpts, numBTK_ *big.Int) (*big.Int, error) {
 	var out []interface{}
-	err := _ALCB.contract.Call(opts, &out, "getLatestEthToMintALCBs", numBTK_)
+	err := _ALCB.contract.Call(opts, &out, "getLatestEthToMintTokens", numBTK_)
 
 	if err != nil {
 		return *new(*big.Int), err
@@ -482,26 +482,26 @@ func (_ALCB *ALCBCaller) GetLatestEthToMintALCBs(opts *bind.CallOpts, numBTK_ *b
 
 }
 
-// GetLatestEthToMintALCBs is a free data retrieval call binding the contract method 0x777acd84.
+// GetLatestEthToMintTokens is a free data retrieval call binding the contract method 0xf14a28f9.
 //
-// Solidity: function getLatestEthToMintALCBs(uint256 numBTK_) view returns(uint256 numEth)
-func (_ALCB *ALCBSession) GetLatestEthToMintALCBs(numBTK_ *big.Int) (*big.Int, error) {
-	return _ALCB.Contract.GetLatestEthToMintALCBs(&_ALCB.CallOpts, numBTK_)
+// Solidity: function getLatestEthToMintTokens(uint256 numBTK_) view returns(uint256 numEth)
+func (_ALCB *ALCBSession) GetLatestEthToMintTokens(numBTK_ *big.Int) (*big.Int, error) {
+	return _ALCB.Contract.GetLatestEthToMintTokens(&_ALCB.CallOpts, numBTK_)
 }
 
-// GetLatestEthToMintALCBs is a free data retrieval call binding the contract method 0x777acd84.
+// GetLatestEthToMintTokens is a free data retrieval call binding the contract method 0xf14a28f9.
 //
-// Solidity: function getLatestEthToMintALCBs(uint256 numBTK_) view returns(uint256 numEth)
-func (_ALCB *ALCBCallerSession) GetLatestEthToMintALCBs(numBTK_ *big.Int) (*big.Int, error) {
-	return _ALCB.Contract.GetLatestEthToMintALCBs(&_ALCB.CallOpts, numBTK_)
+// Solidity: function getLatestEthToMintTokens(uint256 numBTK_) view returns(uint256 numEth)
+func (_ALCB *ALCBCallerSession) GetLatestEthToMintTokens(numBTK_ *big.Int) (*big.Int, error) {
+	return _ALCB.Contract.GetLatestEthToMintTokens(&_ALCB.CallOpts, numBTK_)
 }
 
-// GetLatestMintedALCBsFromEth is a free data retrieval call binding the contract method 0x71497ca6.
+// GetLatestMintedTokensFromEth is a free data retrieval call binding the contract method 0x46711773.
 //
-// Solidity: function getLatestMintedALCBsFromEth(uint256 numEth_) view returns(uint256)
-func (_ALCB *ALCBCaller) GetLatestMintedALCBsFromEth(opts *bind.CallOpts, numEth_ *big.Int) (*big.Int, error) {
+// Solidity: function getLatestMintedTokensFromEth(uint256 numEth_) view returns(uint256)
+func (_ALCB *ALCBCaller) GetLatestMintedTokensFromEth(opts *bind.CallOpts, numEth_ *big.Int) (*big.Int, error) {
 	var out []interface{}
-	err := _ALCB.contract.Call(opts, &out, "getLatestMintedALCBsFromEth", numEth_)
+	err := _ALCB.contract.Call(opts, &out, "getLatestMintedTokensFromEth", numEth_)
 
 	if err != nil {
 		return *new(*big.Int), err
@@ -513,18 +513,18 @@ func (_ALCB *ALCBCaller) GetLatestMintedALCBsFromEth(opts *bind.CallOpts, numEth
 
 }
 
-// GetLatestMintedALCBsFromEth is a free data retrieval call binding the contract method 0x71497ca6.
+// GetLatestMintedTokensFromEth is a free data retrieval call binding the contract method 0x46711773.
 //
-// Solidity: function getLatestMintedALCBsFromEth(uint256 numEth_) view returns(uint256)
-func (_ALCB *ALCBSession) GetLatestMintedALCBsFromEth(numEth_ *big.Int) (*big.Int, error) {
-	return _ALCB.Contract.GetLatestMintedALCBsFromEth(&_ALCB.CallOpts, numEth_)
+// Solidity: function getLatestMintedTokensFromEth(uint256 numEth_) view returns(uint256)
+func (_ALCB *ALCBSession) GetLatestMintedTokensFromEth(numEth_ *big.Int) (*big.Int, error) {
+	return _ALCB.Contract.GetLatestMintedTokensFromEth(&_ALCB.CallOpts, numEth_)
 }
 
-// GetLatestMintedALCBsFromEth is a free data retrieval call binding the contract method 0x71497ca6.
+// GetLatestMintedTokensFromEth is a free data retrieval call binding the contract method 0x46711773.
 //
-// Solidity: function getLatestMintedALCBsFromEth(uint256 numEth_) view returns(uint256)
-func (_ALCB *ALCBCallerSession) GetLatestMintedALCBsFromEth(numEth_ *big.Int) (*big.Int, error) {
-	return _ALCB.Contract.GetLatestMintedALCBsFromEth(&_ALCB.CallOpts, numEth_)
+// Solidity: function getLatestMintedTokensFromEth(uint256 numEth_) view returns(uint256)
+func (_ALCB *ALCBCallerSession) GetLatestMintedTokensFromEth(numEth_ *big.Int) (*big.Int, error) {
+	return _ALCB.Contract.GetLatestMintedTokensFromEth(&_ALCB.CallOpts, numEth_)
 }
 
 // GetMarketSpread is a free data retrieval call binding the contract method 0x086cfefd.
@@ -589,12 +589,12 @@ func (_ALCB *ALCBCallerSession) GetMetamorphicContractAddress(_salt [32]byte, _f
 	return _ALCB.Contract.GetMetamorphicContractAddress(&_ALCB.CallOpts, _salt, _factory)
 }
 
-// GetMintedALCBsFromEth is a free data retrieval call binding the contract method 0x6e1d3f22.
+// GetMintedTokensFromEth is a free data retrieval call binding the contract method 0x679f742d.
 //
-// Solidity: function getMintedALCBsFromEth(uint256 poolBalance_, uint256 numEth_) pure returns(uint256)
-func (_ALCB *ALCBCaller) GetMintedALCBsFromEth(opts *bind.CallOpts, poolBalance_ *big.Int, numEth_ *big.Int) (*big.Int, error) {
+// Solidity: function getMintedTokensFromEth(uint256 poolBalance_, uint256 numEth_) pure returns(uint256)
+func (_ALCB *ALCBCaller) GetMintedTokensFromEth(opts *bind.CallOpts, poolBalance_ *big.Int, numEth_ *big.Int) (*big.Int, error) {
 	var out []interface{}
-	err := _ALCB.contract.Call(opts, &out, "getMintedALCBsFromEth", poolBalance_, numEth_)
+	err := _ALCB.contract.Call(opts, &out, "getMintedTokensFromEth", poolBalance_, numEth_)
 
 	if err != nil {
 		return *new(*big.Int), err
@@ -606,18 +606,18 @@ func (_ALCB *ALCBCaller) GetMintedALCBsFromEth(opts *bind.CallOpts, poolBalance_
 
 }
 
-// GetMintedALCBsFromEth is a free data retrieval call binding the contract method 0x6e1d3f22.
+// GetMintedTokensFromEth is a free data retrieval call binding the contract method 0x679f742d.
 //
-// Solidity: function getMintedALCBsFromEth(uint256 poolBalance_, uint256 numEth_) pure returns(uint256)
-func (_ALCB *ALCBSession) GetMintedALCBsFromEth(poolBalance_ *big.Int, numEth_ *big.Int) (*big.Int, error) {
-	return _ALCB.Contract.GetMintedALCBsFromEth(&_ALCB.CallOpts, poolBalance_, numEth_)
+// Solidity: function getMintedTokensFromEth(uint256 poolBalance_, uint256 numEth_) pure returns(uint256)
+func (_ALCB *ALCBSession) GetMintedTokensFromEth(poolBalance_ *big.Int, numEth_ *big.Int) (*big.Int, error) {
+	return _ALCB.Contract.GetMintedTokensFromEth(&_ALCB.CallOpts, poolBalance_, numEth_)
 }
 
-// GetMintedALCBsFromEth is a free data retrieval call binding the contract method 0x6e1d3f22.
+// GetMintedTokensFromEth is a free data retrieval call binding the contract method 0x679f742d.
 //
-// Solidity: function getMintedALCBsFromEth(uint256 poolBalance_, uint256 numEth_) pure returns(uint256)
-func (_ALCB *ALCBCallerSession) GetMintedALCBsFromEth(poolBalance_ *big.Int, numEth_ *big.Int) (*big.Int, error) {
-	return _ALCB.Contract.GetMintedALCBsFromEth(&_ALCB.CallOpts, poolBalance_, numEth_)
+// Solidity: function getMintedTokensFromEth(uint256 poolBalance_, uint256 numEth_) pure returns(uint256)
+func (_ALCB *ALCBCallerSession) GetMintedTokensFromEth(poolBalance_ *big.Int, numEth_ *big.Int) (*big.Int, error) {
+	return _ALCB.Contract.GetMintedTokensFromEth(&_ALCB.CallOpts, poolBalance_, numEth_)
 }
 
 // GetPoolBalance is a free data retrieval call binding the contract method 0xabd70aa2.
@@ -651,12 +651,12 @@ func (_ALCB *ALCBCallerSession) GetPoolBalance() (*big.Int, error) {
 	return _ALCB.Contract.GetPoolBalance(&_ALCB.CallOpts)
 }
 
-// GetTotalALCBsDeposited is a free data retrieval call binding the contract method 0x90813858.
+// GetTotalTokensDeposited is a free data retrieval call binding the contract method 0x8d407823.
 //
-// Solidity: function getTotalALCBsDeposited() view returns(uint256)
-func (_ALCB *ALCBCaller) GetTotalALCBsDeposited(opts *bind.CallOpts) (*big.Int, error) {
+// Solidity: function getTotalTokensDeposited() view returns(uint256)
+func (_ALCB *ALCBCaller) GetTotalTokensDeposited(opts *bind.CallOpts) (*big.Int, error) {
 	var out []interface{}
-	err := _ALCB.contract.Call(opts, &out, "getTotalALCBsDeposited")
+	err := _ALCB.contract.Call(opts, &out, "getTotalTokensDeposited")
 
 	if err != nil {
 		return *new(*big.Int), err
@@ -668,18 +668,18 @@ func (_ALCB *ALCBCaller) GetTotalALCBsDeposited(opts *bind.CallOpts) (*big.Int, 
 
 }
 
-// GetTotalALCBsDeposited is a free data retrieval call binding the contract method 0x90813858.
+// GetTotalTokensDeposited is a free data retrieval call binding the contract method 0x8d407823.
 //
-// Solidity: function getTotalALCBsDeposited() view returns(uint256)
-func (_ALCB *ALCBSession) GetTotalALCBsDeposited() (*big.Int, error) {
-	return _ALCB.Contract.GetTotalALCBsDeposited(&_ALCB.CallOpts)
+// Solidity: function getTotalTokensDeposited() view returns(uint256)
+func (_ALCB *ALCBSession) GetTotalTokensDeposited() (*big.Int, error) {
+	return _ALCB.Contract.GetTotalTokensDeposited(&_ALCB.CallOpts)
 }
 
-// GetTotalALCBsDeposited is a free data retrieval call binding the contract method 0x90813858.
+// GetTotalTokensDeposited is a free data retrieval call binding the contract method 0x8d407823.
 //
-// Solidity: function getTotalALCBsDeposited() view returns(uint256)
-func (_ALCB *ALCBCallerSession) GetTotalALCBsDeposited() (*big.Int, error) {
-	return _ALCB.Contract.GetTotalALCBsDeposited(&_ALCB.CallOpts)
+// Solidity: function getTotalTokensDeposited() view returns(uint256)
+func (_ALCB *ALCBCallerSession) GetTotalTokensDeposited() (*big.Int, error) {
+	return _ALCB.Contract.GetTotalTokensDeposited(&_ALCB.CallOpts)
 }
 
 // GetYield is a free data retrieval call binding the contract method 0x7c262871.
@@ -932,25 +932,25 @@ func (_ALCB *ALCBTransactorSession) DepositTokensOnBridges(routerVersion_ uint8,
 	return _ALCB.Contract.DepositTokensOnBridges(&_ALCB.TransactOpts, routerVersion_, data_)
 }
 
-// DestroyALCBs is a paid mutator transaction binding the contract method 0x24663df8.
+// DestroyTokens is a paid mutator transaction binding the contract method 0x67fbd289.
 //
-// Solidity: function destroyALCBs(uint256 numBTK_) returns(bool)
-func (_ALCB *ALCBTransactor) DestroyALCBs(opts *bind.TransactOpts, numBTK_ *big.Int) (*types.Transaction, error) {
-	return _ALCB.contract.Transact(opts, "destroyALCBs", numBTK_)
+// Solidity: function destroyTokens(uint256 numBTK_) returns(bool)
+func (_ALCB *ALCBTransactor) DestroyTokens(opts *bind.TransactOpts, numBTK_ *big.Int) (*types.Transaction, error) {
+	return _ALCB.contract.Transact(opts, "destroyTokens", numBTK_)
 }
 
-// DestroyALCBs is a paid mutator transaction binding the contract method 0x24663df8.
+// DestroyTokens is a paid mutator transaction binding the contract method 0x67fbd289.
 //
-// Solidity: function destroyALCBs(uint256 numBTK_) returns(bool)
-func (_ALCB *ALCBSession) DestroyALCBs(numBTK_ *big.Int) (*types.Transaction, error) {
-	return _ALCB.Contract.DestroyALCBs(&_ALCB.TransactOpts, numBTK_)
+// Solidity: function destroyTokens(uint256 numBTK_) returns(bool)
+func (_ALCB *ALCBSession) DestroyTokens(numBTK_ *big.Int) (*types.Transaction, error) {
+	return _ALCB.Contract.DestroyTokens(&_ALCB.TransactOpts, numBTK_)
 }
 
-// DestroyALCBs is a paid mutator transaction binding the contract method 0x24663df8.
+// DestroyTokens is a paid mutator transaction binding the contract method 0x67fbd289.
 //
-// Solidity: function destroyALCBs(uint256 numBTK_) returns(bool)
-func (_ALCB *ALCBTransactorSession) DestroyALCBs(numBTK_ *big.Int) (*types.Transaction, error) {
-	return _ALCB.Contract.DestroyALCBs(&_ALCB.TransactOpts, numBTK_)
+// Solidity: function destroyTokens(uint256 numBTK_) returns(bool)
+func (_ALCB *ALCBTransactorSession) DestroyTokens(numBTK_ *big.Int) (*types.Transaction, error) {
+	return _ALCB.Contract.DestroyTokens(&_ALCB.TransactOpts, numBTK_)
 }
 
 // Distribute is a paid mutator transaction binding the contract method 0xe4fc6b6d.

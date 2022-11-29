@@ -174,7 +174,7 @@ contract ALCB is
      * @param numBTK_ the number of ALCB to be burned
      * @return true if the burn succeeded
      */
-    function destroyALCBs(uint256 numBTK_) public returns (bool) {
+    function destroyTokens(uint256 numBTK_) public returns (bool) {
         _destroyTokens(msg.sender, numBTK_);
         return true;
     }
@@ -199,7 +199,7 @@ contract ALCB is
             data_
         );
         if (msg.value > 0) {
-            uint256 ethFee = _getEthToMintALCBs(totalSupply(), alcbFee);
+            uint256 ethFee = _getEthToMintTokens(totalSupply(), alcbFee);
             if (ethFee > msg.value) {
                 revert UtilityTokenErrors.InsufficientFee(msg.value, ethFee);
             }
@@ -283,7 +283,7 @@ contract ALCB is
      * different from the total supply of ALCBs.
      * @return The total amount of ALCBs that were deposited into the AliceNet chain.
      */
-    function getTotalALCBsDeposited() public view returns (uint256) {
+    function getTotalTokensDeposited() public view returns (uint256) {
         return _totalDeposited;
     }
 
@@ -309,8 +309,8 @@ contract ALCB is
      * @param numBTK_ Amount of ALCBs that we want to convert in ether
      * @return numEth the number of ether necessary to mint an amount of ALCB
      */
-    function getLatestEthToMintALCBs(uint256 numBTK_) public view returns (uint256 numEth) {
-        return _getEthToMintALCBs(totalSupply(), numBTK_);
+    function getLatestEthToMintTokens(uint256 numBTK_) public view returns (uint256 numEth) {
+        return _getEthToMintTokens(totalSupply(), numBTK_);
     }
 
     /**
@@ -322,8 +322,8 @@ contract ALCB is
      * @return numEth the amount of ether will be received during a ALCB burn at the current
      * bonding curve state
      */
-    function getLatestEthFromALCBsBurn(uint256 numBTK_) public view returns (uint256 numEth) {
-        return _alcbsToEth(_poolBalance, totalSupply(), numBTK_);
+    function getLatestEthFromTokensBurn(uint256 numBTK_) public view returns (uint256 numEth) {
+        return _tokensToEth(_poolBalance, totalSupply(), numBTK_);
     }
 
     /**
@@ -335,8 +335,8 @@ contract ALCB is
      * @return the amount of ALCBs that will be minted at the current state of the
      * bonding curve
      * */
-    function getLatestMintedALCBsFromEth(uint256 numEth_) public view returns (uint256) {
-        return _ethToALCBs(_poolBalance, numEth_ / _MARKET_SPREAD);
+    function getLatestMintedTokensFromEth(uint256 numEth_) public view returns (uint256) {
+        return _ethToTokens(_poolBalance, numEth_ / _MARKET_SPREAD);
     }
 
     /**
@@ -358,11 +358,11 @@ contract ALCB is
      * @return numEth the amount ether that will be necessary to mint an amount of ALCBs at a
      * certain point in the bonding curve
      * */
-    function getEthToMintALCBs(
+    function getEthToMintTokens(
         uint256 totalSupply_,
         uint256 numBTK_
     ) public pure returns (uint256 numEth) {
-        return _getEthToMintALCBs(totalSupply_, numBTK_);
+        return _getEthToMintTokens(totalSupply_, numBTK_);
     }
 
     /**
@@ -374,12 +374,12 @@ contract ALCB is
      * @param numBTK_ Amount of ALCBs to convert in ether
      * @return numEth the ether that will be received during a ALCB burn
      * */
-    function getEthFromALCBsBurn(
+    function getEthFromTokensBurn(
         uint256 poolBalance_,
         uint256 totalSupply_,
         uint256 numBTK_
     ) public pure returns (uint256 numEth) {
-        return _alcbsToEth(poolBalance_, totalSupply_, numBTK_);
+        return _tokensToEth(poolBalance_, totalSupply_, numBTK_);
     }
 
     /**
@@ -391,11 +391,11 @@ contract ALCB is
      * @return the amount of ALCBs that will be minted at given a point in the bonding
      * curve.
      * */
-    function getMintedALCBsFromEth(
+    function getMintedTokensFromEth(
         uint256 poolBalance_,
         uint256 numEth_
     ) public pure returns (uint256) {
-        return _ethToALCBs(poolBalance_, numEth_ / _MARKET_SPREAD);
+        return _ethToTokens(poolBalance_, numEth_ / _MARKET_SPREAD);
     }
 
     /// Distributes the yields from the ALCB minting to all stake holders.
@@ -421,7 +421,7 @@ contract ALCB is
         if (numBTK_ == 0) {
             revert UtilityTokenErrors.InvalidBurnAmount(numBTK_);
         }
-        _poolBalance -= _alcbsToEth(_poolBalance, totalSupply(), numBTK_);
+        _poolBalance -= _tokensToEth(_poolBalance, totalSupply(), numBTK_);
         ERC20._burn(account, numBTK_);
         return true;
     }
@@ -480,7 +480,7 @@ contract ALCB is
         }
 
         numEth_ = numEth_ / _MARKET_SPREAD;
-        uint256 amount_ = _ethToALCBs(_poolBalance, numEth_);
+        uint256 amount_ = _ethToTokens(_poolBalance, numEth_);
         if (amount_ < minBTK_) {
             revert UtilityTokenErrors.InsufficientEth(amount_, minBTK_);
         }
@@ -517,7 +517,7 @@ contract ALCB is
 
         numEth_ = numEth_ / _MARKET_SPREAD;
         uint256 poolBalance = _poolBalance;
-        numBTK = _ethToALCBs(poolBalance, numEth_);
+        numBTK = _ethToTokens(poolBalance, numEth_);
         if (numBTK < minBTK_) {
             revert UtilityTokenErrors.MinimumMintNotMet(numBTK, minBTK_);
         }
@@ -541,7 +541,7 @@ contract ALCB is
         }
 
         uint256 poolBalance = _poolBalance;
-        numEth = _alcbsToEth(poolBalance, totalSupply(), numBTK_);
+        numEth = _tokensToEth(poolBalance, totalSupply(), numBTK_);
 
         if (numEth < minEth_) {
             revert UtilityTokenErrors.MinimumBurnNotMet(numEth, minEth_);
@@ -556,13 +556,13 @@ contract ALCB is
 
     // Internal function that converts an ether amount into ALCB tokens
     // following the bounding price curve.
-    function _ethToALCBs(uint256 poolBalance_, uint256 numEth_) internal pure returns (uint256) {
+    function _ethToTokens(uint256 poolBalance_, uint256 numEth_) internal pure returns (uint256) {
         return _p(poolBalance_ + numEth_) - _p(poolBalance_);
     }
 
     // Internal function that converts a ALCB amount into ether following the
     // bounding price curve.
-    function _alcbsToEth(
+    function _tokensToEth(
         uint256 poolBalance_,
         uint256 totalSupply_,
         uint256 numBTK_
@@ -575,7 +575,7 @@ contract ALCB is
 
     // Internal function to compute the amount of ether required to mint an amount
     // of ALCBs. Inverse of the _ethToALCBs function.
-    function _getEthToMintALCBs(
+    function _getEthToMintTokens(
         uint256 totalSupply_,
         uint256 numBTK_
     ) internal pure returns (uint256 numEth) {

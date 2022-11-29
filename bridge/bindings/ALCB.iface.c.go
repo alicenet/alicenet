@@ -35,26 +35,26 @@ type IALCBCaller interface {
 	//
 	// Solidity: function getDepositID() view returns(uint256)
 	GetDepositID(opts *bind.CallOpts) (*big.Int, error)
-	// GetEthFromALCBsBurn is a free data retrieval call binding the contract method 0x0b6774a1.
+	// GetEthFromTokensBurn is a free data retrieval call binding the contract method 0xc67cb8d1.
 	//
-	// Solidity: function getEthFromALCBsBurn(uint256 poolBalance_, uint256 totalSupply_, uint256 numBTK_) pure returns(uint256 numEth)
-	GetEthFromALCBsBurn(opts *bind.CallOpts, poolBalance_ *big.Int, totalSupply_ *big.Int, numBTK_ *big.Int) (*big.Int, error)
-	// GetEthToMintALCBs is a free data retrieval call binding the contract method 0x0619c2f3.
+	// Solidity: function getEthFromTokensBurn(uint256 poolBalance_, uint256 totalSupply_, uint256 numBTK_) pure returns(uint256 numEth)
+	GetEthFromTokensBurn(opts *bind.CallOpts, poolBalance_ *big.Int, totalSupply_ *big.Int, numBTK_ *big.Int) (*big.Int, error)
+	// GetEthToMintTokens is a free data retrieval call binding the contract method 0x688727c5.
 	//
-	// Solidity: function getEthToMintALCBs(uint256 totalSupply_, uint256 numBTK_) pure returns(uint256 numEth)
-	GetEthToMintALCBs(opts *bind.CallOpts, totalSupply_ *big.Int, numBTK_ *big.Int) (*big.Int, error)
-	// GetLatestEthFromALCBsBurn is a free data retrieval call binding the contract method 0xff326a2c.
+	// Solidity: function getEthToMintTokens(uint256 totalSupply_, uint256 numBTK_) pure returns(uint256 numEth)
+	GetEthToMintTokens(opts *bind.CallOpts, totalSupply_ *big.Int, numBTK_ *big.Int) (*big.Int, error)
+	// GetLatestEthFromTokensBurn is a free data retrieval call binding the contract method 0xe51b55e3.
 	//
-	// Solidity: function getLatestEthFromALCBsBurn(uint256 numBTK_) view returns(uint256 numEth)
-	GetLatestEthFromALCBsBurn(opts *bind.CallOpts, numBTK_ *big.Int) (*big.Int, error)
-	// GetLatestEthToMintALCBs is a free data retrieval call binding the contract method 0x777acd84.
+	// Solidity: function getLatestEthFromTokensBurn(uint256 numBTK_) view returns(uint256 numEth)
+	GetLatestEthFromTokensBurn(opts *bind.CallOpts, numBTK_ *big.Int) (*big.Int, error)
+	// GetLatestEthToMintTokens is a free data retrieval call binding the contract method 0xf14a28f9.
 	//
-	// Solidity: function getLatestEthToMintALCBs(uint256 numBTK_) view returns(uint256 numEth)
-	GetLatestEthToMintALCBs(opts *bind.CallOpts, numBTK_ *big.Int) (*big.Int, error)
-	// GetLatestMintedALCBsFromEth is a free data retrieval call binding the contract method 0x71497ca6.
+	// Solidity: function getLatestEthToMintTokens(uint256 numBTK_) view returns(uint256 numEth)
+	GetLatestEthToMintTokens(opts *bind.CallOpts, numBTK_ *big.Int) (*big.Int, error)
+	// GetLatestMintedTokensFromEth is a free data retrieval call binding the contract method 0x46711773.
 	//
-	// Solidity: function getLatestMintedALCBsFromEth(uint256 numEth_) view returns(uint256)
-	GetLatestMintedALCBsFromEth(opts *bind.CallOpts, numEth_ *big.Int) (*big.Int, error)
+	// Solidity: function getLatestMintedTokensFromEth(uint256 numEth_) view returns(uint256)
+	GetLatestMintedTokensFromEth(opts *bind.CallOpts, numEth_ *big.Int) (*big.Int, error)
 	// GetMarketSpread is a free data retrieval call binding the contract method 0x086cfefd.
 	//
 	// Solidity: function getMarketSpread() pure returns(uint256)
@@ -63,18 +63,18 @@ type IALCBCaller interface {
 	//
 	// Solidity: function getMetamorphicContractAddress(bytes32 _salt, address _factory) pure returns(address)
 	GetMetamorphicContractAddress(opts *bind.CallOpts, _salt [32]byte, _factory common.Address) (common.Address, error)
-	// GetMintedALCBsFromEth is a free data retrieval call binding the contract method 0x6e1d3f22.
+	// GetMintedTokensFromEth is a free data retrieval call binding the contract method 0x679f742d.
 	//
-	// Solidity: function getMintedALCBsFromEth(uint256 poolBalance_, uint256 numEth_) pure returns(uint256)
-	GetMintedALCBsFromEth(opts *bind.CallOpts, poolBalance_ *big.Int, numEth_ *big.Int) (*big.Int, error)
+	// Solidity: function getMintedTokensFromEth(uint256 poolBalance_, uint256 numEth_) pure returns(uint256)
+	GetMintedTokensFromEth(opts *bind.CallOpts, poolBalance_ *big.Int, numEth_ *big.Int) (*big.Int, error)
 	// GetPoolBalance is a free data retrieval call binding the contract method 0xabd70aa2.
 	//
 	// Solidity: function getPoolBalance() view returns(uint256)
 	GetPoolBalance(opts *bind.CallOpts) (*big.Int, error)
-	// GetTotalALCBsDeposited is a free data retrieval call binding the contract method 0x90813858.
+	// GetTotalTokensDeposited is a free data retrieval call binding the contract method 0x8d407823.
 	//
-	// Solidity: function getTotalALCBsDeposited() view returns(uint256)
-	GetTotalALCBsDeposited(opts *bind.CallOpts) (*big.Int, error)
+	// Solidity: function getTotalTokensDeposited() view returns(uint256)
+	GetTotalTokensDeposited(opts *bind.CallOpts) (*big.Int, error)
 	// GetYield is a free data retrieval call binding the contract method 0x7c262871.
 	//
 	// Solidity: function getYield() view returns(uint256)

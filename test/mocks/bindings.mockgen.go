@@ -3184,9 +3184,9 @@ type MockIALCB struct {
 	// DepositTokensOnBridgesFunc is an instance of a mock function object
 	// controlling the behavior of the method DepositTokensOnBridges.
 	DepositTokensOnBridgesFunc *IALCBDepositTokensOnBridgesFunc
-	// DestroyALCBsFunc is an instance of a mock function object controlling
-	// the behavior of the method DestroyALCBs.
-	DestroyALCBsFunc *IALCBDestroyALCBsFunc
+	// DestroyTokensFunc is an instance of a mock function object
+	// controlling the behavior of the method DestroyTokens.
+	DestroyTokensFunc *IALCBDestroyTokensFunc
 	// DistributeFunc is an instance of a mock function object controlling
 	// the behavior of the method Distribute.
 	DistributeFunc *IALCBDistributeFunc
@@ -3209,23 +3209,23 @@ type MockIALCB struct {
 	// GetDepositIDFunc is an instance of a mock function object controlling
 	// the behavior of the method GetDepositID.
 	GetDepositIDFunc *IALCBGetDepositIDFunc
-	// GetEthFromALCBsBurnFunc is an instance of a mock function object
-	// controlling the behavior of the method GetEthFromALCBsBurn.
-	GetEthFromALCBsBurnFunc *IALCBGetEthFromALCBsBurnFunc
-	// GetEthToMintALCBsFunc is an instance of a mock function object
-	// controlling the behavior of the method GetEthToMintALCBs.
-	GetEthToMintALCBsFunc *IALCBGetEthToMintALCBsFunc
-	// GetLatestEthFromALCBsBurnFunc is an instance of a mock function
+	// GetEthFromTokensBurnFunc is an instance of a mock function object
+	// controlling the behavior of the method GetEthFromTokensBurn.
+	GetEthFromTokensBurnFunc *IALCBGetEthFromTokensBurnFunc
+	// GetEthToMintTokensFunc is an instance of a mock function object
+	// controlling the behavior of the method GetEthToMintTokens.
+	GetEthToMintTokensFunc *IALCBGetEthToMintTokensFunc
+	// GetLatestEthFromTokensBurnFunc is an instance of a mock function
 	// object controlling the behavior of the method
-	// GetLatestEthFromALCBsBurn.
-	GetLatestEthFromALCBsBurnFunc *IALCBGetLatestEthFromALCBsBurnFunc
-	// GetLatestEthToMintALCBsFunc is an instance of a mock function object
-	// controlling the behavior of the method GetLatestEthToMintALCBs.
-	GetLatestEthToMintALCBsFunc *IALCBGetLatestEthToMintALCBsFunc
-	// GetLatestMintedALCBsFromEthFunc is an instance of a mock function
+	// GetLatestEthFromTokensBurn.
+	GetLatestEthFromTokensBurnFunc *IALCBGetLatestEthFromTokensBurnFunc
+	// GetLatestEthToMintTokensFunc is an instance of a mock function object
+	// controlling the behavior of the method GetLatestEthToMintTokens.
+	GetLatestEthToMintTokensFunc *IALCBGetLatestEthToMintTokensFunc
+	// GetLatestMintedTokensFromEthFunc is an instance of a mock function
 	// object controlling the behavior of the method
-	// GetLatestMintedALCBsFromEth.
-	GetLatestMintedALCBsFromEthFunc *IALCBGetLatestMintedALCBsFromEthFunc
+	// GetLatestMintedTokensFromEth.
+	GetLatestMintedTokensFromEthFunc *IALCBGetLatestMintedTokensFromEthFunc
 	// GetMarketSpreadFunc is an instance of a mock function object
 	// controlling the behavior of the method GetMarketSpread.
 	GetMarketSpreadFunc *IALCBGetMarketSpreadFunc
@@ -3233,15 +3233,15 @@ type MockIALCB struct {
 	// object controlling the behavior of the method
 	// GetMetamorphicContractAddress.
 	GetMetamorphicContractAddressFunc *IALCBGetMetamorphicContractAddressFunc
-	// GetMintedALCBsFromEthFunc is an instance of a mock function object
-	// controlling the behavior of the method GetMintedALCBsFromEth.
-	GetMintedALCBsFromEthFunc *IALCBGetMintedALCBsFromEthFunc
+	// GetMintedTokensFromEthFunc is an instance of a mock function object
+	// controlling the behavior of the method GetMintedTokensFromEth.
+	GetMintedTokensFromEthFunc *IALCBGetMintedTokensFromEthFunc
 	// GetPoolBalanceFunc is an instance of a mock function object
 	// controlling the behavior of the method GetPoolBalance.
 	GetPoolBalanceFunc *IALCBGetPoolBalanceFunc
-	// GetTotalALCBsDepositedFunc is an instance of a mock function object
-	// controlling the behavior of the method GetTotalALCBsDeposited.
-	GetTotalALCBsDepositedFunc *IALCBGetTotalALCBsDepositedFunc
+	// GetTotalTokensDepositedFunc is an instance of a mock function object
+	// controlling the behavior of the method GetTotalTokensDeposited.
+	GetTotalTokensDepositedFunc *IALCBGetTotalTokensDepositedFunc
 	// GetYieldFunc is an instance of a mock function object controlling the
 	// behavior of the method GetYield.
 	GetYieldFunc *IALCBGetYieldFunc
@@ -3347,7 +3347,7 @@ func NewMockIALCB() *MockIALCB {
 				return
 			},
 		},
-		DestroyALCBsFunc: &IALCBDestroyALCBsFunc{
+		DestroyTokensFunc: &IALCBDestroyTokensFunc{
 			defaultHook: func(*bind.TransactOpts, *big.Int) (r0 *types.Transaction, r1 error) {
 				return
 			},
@@ -3387,27 +3387,27 @@ func NewMockIALCB() *MockIALCB {
 				return
 			},
 		},
-		GetEthFromALCBsBurnFunc: &IALCBGetEthFromALCBsBurnFunc{
+		GetEthFromTokensBurnFunc: &IALCBGetEthFromTokensBurnFunc{
 			defaultHook: func(*bind.CallOpts, *big.Int, *big.Int, *big.Int) (r0 *big.Int, r1 error) {
 				return
 			},
 		},
-		GetEthToMintALCBsFunc: &IALCBGetEthToMintALCBsFunc{
+		GetEthToMintTokensFunc: &IALCBGetEthToMintTokensFunc{
 			defaultHook: func(*bind.CallOpts, *big.Int, *big.Int) (r0 *big.Int, r1 error) {
 				return
 			},
 		},
-		GetLatestEthFromALCBsBurnFunc: &IALCBGetLatestEthFromALCBsBurnFunc{
+		GetLatestEthFromTokensBurnFunc: &IALCBGetLatestEthFromTokensBurnFunc{
 			defaultHook: func(*bind.CallOpts, *big.Int) (r0 *big.Int, r1 error) {
 				return
 			},
 		},
-		GetLatestEthToMintALCBsFunc: &IALCBGetLatestEthToMintALCBsFunc{
+		GetLatestEthToMintTokensFunc: &IALCBGetLatestEthToMintTokensFunc{
 			defaultHook: func(*bind.CallOpts, *big.Int) (r0 *big.Int, r1 error) {
 				return
 			},
 		},
-		GetLatestMintedALCBsFromEthFunc: &IALCBGetLatestMintedALCBsFromEthFunc{
+		GetLatestMintedTokensFromEthFunc: &IALCBGetLatestMintedTokensFromEthFunc{
 			defaultHook: func(*bind.CallOpts, *big.Int) (r0 *big.Int, r1 error) {
 				return
 			},
@@ -3422,7 +3422,7 @@ func NewMockIALCB() *MockIALCB {
 				return
 			},
 		},
-		GetMintedALCBsFromEthFunc: &IALCBGetMintedALCBsFromEthFunc{
+		GetMintedTokensFromEthFunc: &IALCBGetMintedTokensFromEthFunc{
 			defaultHook: func(*bind.CallOpts, *big.Int, *big.Int) (r0 *big.Int, r1 error) {
 				return
 			},
@@ -3432,7 +3432,7 @@ func NewMockIALCB() *MockIALCB {
 				return
 			},
 		},
-		GetTotalALCBsDepositedFunc: &IALCBGetTotalALCBsDepositedFunc{
+		GetTotalTokensDepositedFunc: &IALCBGetTotalTokensDepositedFunc{
 			defaultHook: func(*bind.CallOpts) (r0 *big.Int, r1 error) {
 				return
 			},
@@ -3579,9 +3579,9 @@ func NewStrictMockIALCB() *MockIALCB {
 				panic("unexpected invocation of MockIALCB.DepositTokensOnBridges")
 			},
 		},
-		DestroyALCBsFunc: &IALCBDestroyALCBsFunc{
+		DestroyTokensFunc: &IALCBDestroyTokensFunc{
 			defaultHook: func(*bind.TransactOpts, *big.Int) (*types.Transaction, error) {
-				panic("unexpected invocation of MockIALCB.DestroyALCBs")
+				panic("unexpected invocation of MockIALCB.DestroyTokens")
 			},
 		},
 		DistributeFunc: &IALCBDistributeFunc{
@@ -3619,29 +3619,29 @@ func NewStrictMockIALCB() *MockIALCB {
 				panic("unexpected invocation of MockIALCB.GetDepositID")
 			},
 		},
-		GetEthFromALCBsBurnFunc: &IALCBGetEthFromALCBsBurnFunc{
+		GetEthFromTokensBurnFunc: &IALCBGetEthFromTokensBurnFunc{
 			defaultHook: func(*bind.CallOpts, *big.Int, *big.Int, *big.Int) (*big.Int, error) {
-				panic("unexpected invocation of MockIALCB.GetEthFromALCBsBurn")
+				panic("unexpected invocation of MockIALCB.GetEthFromTokensBurn")
 			},
 		},
-		GetEthToMintALCBsFunc: &IALCBGetEthToMintALCBsFunc{
+		GetEthToMintTokensFunc: &IALCBGetEthToMintTokensFunc{
 			defaultHook: func(*bind.CallOpts, *big.Int, *big.Int) (*big.Int, error) {
-				panic("unexpected invocation of MockIALCB.GetEthToMintALCBs")
+				panic("unexpected invocation of MockIALCB.GetEthToMintTokens")
 			},
 		},
-		GetLatestEthFromALCBsBurnFunc: &IALCBGetLatestEthFromALCBsBurnFunc{
+		GetLatestEthFromTokensBurnFunc: &IALCBGetLatestEthFromTokensBurnFunc{
 			defaultHook: func(*bind.CallOpts, *big.Int) (*big.Int, error) {
-				panic("unexpected invocation of MockIALCB.GetLatestEthFromALCBsBurn")
+				panic("unexpected invocation of MockIALCB.GetLatestEthFromTokensBurn")
 			},
 		},
-		GetLatestEthToMintALCBsFunc: &IALCBGetLatestEthToMintALCBsFunc{
+		GetLatestEthToMintTokensFunc: &IALCBGetLatestEthToMintTokensFunc{
 			defaultHook: func(*bind.CallOpts, *big.Int) (*big.Int, error) {
-				panic("unexpected invocation of MockIALCB.GetLatestEthToMintALCBs")
+				panic("unexpected invocation of MockIALCB.GetLatestEthToMintTokens")
 			},
 		},
-		GetLatestMintedALCBsFromEthFunc: &IALCBGetLatestMintedALCBsFromEthFunc{
+		GetLatestMintedTokensFromEthFunc: &IALCBGetLatestMintedTokensFromEthFunc{
 			defaultHook: func(*bind.CallOpts, *big.Int) (*big.Int, error) {
-				panic("unexpected invocation of MockIALCB.GetLatestMintedALCBsFromEth")
+				panic("unexpected invocation of MockIALCB.GetLatestMintedTokensFromEth")
 			},
 		},
 		GetMarketSpreadFunc: &IALCBGetMarketSpreadFunc{
@@ -3654,9 +3654,9 @@ func NewStrictMockIALCB() *MockIALCB {
 				panic("unexpected invocation of MockIALCB.GetMetamorphicContractAddress")
 			},
 		},
-		GetMintedALCBsFromEthFunc: &IALCBGetMintedALCBsFromEthFunc{
+		GetMintedTokensFromEthFunc: &IALCBGetMintedTokensFromEthFunc{
 			defaultHook: func(*bind.CallOpts, *big.Int, *big.Int) (*big.Int, error) {
-				panic("unexpected invocation of MockIALCB.GetMintedALCBsFromEth")
+				panic("unexpected invocation of MockIALCB.GetMintedTokensFromEth")
 			},
 		},
 		GetPoolBalanceFunc: &IALCBGetPoolBalanceFunc{
@@ -3664,9 +3664,9 @@ func NewStrictMockIALCB() *MockIALCB {
 				panic("unexpected invocation of MockIALCB.GetPoolBalance")
 			},
 		},
-		GetTotalALCBsDepositedFunc: &IALCBGetTotalALCBsDepositedFunc{
+		GetTotalTokensDepositedFunc: &IALCBGetTotalTokensDepositedFunc{
 			defaultHook: func(*bind.CallOpts) (*big.Int, error) {
-				panic("unexpected invocation of MockIALCB.GetTotalALCBsDeposited")
+				panic("unexpected invocation of MockIALCB.GetTotalTokensDeposited")
 			},
 		},
 		GetYieldFunc: &IALCBGetYieldFunc{
@@ -3793,8 +3793,8 @@ func NewMockIALCBFrom(i bindings.IALCB) *MockIALCB {
 		DepositTokensOnBridgesFunc: &IALCBDepositTokensOnBridgesFunc{
 			defaultHook: i.DepositTokensOnBridges,
 		},
-		DestroyALCBsFunc: &IALCBDestroyALCBsFunc{
-			defaultHook: i.DestroyALCBs,
+		DestroyTokensFunc: &IALCBDestroyTokensFunc{
+			defaultHook: i.DestroyTokens,
 		},
 		DistributeFunc: &IALCBDistributeFunc{
 			defaultHook: i.Distribute,
@@ -3817,20 +3817,20 @@ func NewMockIALCBFrom(i bindings.IALCB) *MockIALCB {
 		GetDepositIDFunc: &IALCBGetDepositIDFunc{
 			defaultHook: i.GetDepositID,
 		},
-		GetEthFromALCBsBurnFunc: &IALCBGetEthFromALCBsBurnFunc{
-			defaultHook: i.GetEthFromALCBsBurn,
+		GetEthFromTokensBurnFunc: &IALCBGetEthFromTokensBurnFunc{
+			defaultHook: i.GetEthFromTokensBurn,
 		},
-		GetEthToMintALCBsFunc: &IALCBGetEthToMintALCBsFunc{
-			defaultHook: i.GetEthToMintALCBs,
+		GetEthToMintTokensFunc: &IALCBGetEthToMintTokensFunc{
+			defaultHook: i.GetEthToMintTokens,
 		},
-		GetLatestEthFromALCBsBurnFunc: &IALCBGetLatestEthFromALCBsBurnFunc{
-			defaultHook: i.GetLatestEthFromALCBsBurn,
+		GetLatestEthFromTokensBurnFunc: &IALCBGetLatestEthFromTokensBurnFunc{
+			defaultHook: i.GetLatestEthFromTokensBurn,
 		},
-		GetLatestEthToMintALCBsFunc: &IALCBGetLatestEthToMintALCBsFunc{
-			defaultHook: i.GetLatestEthToMintALCBs,
+		GetLatestEthToMintTokensFunc: &IALCBGetLatestEthToMintTokensFunc{
+			defaultHook: i.GetLatestEthToMintTokens,
 		},
-		GetLatestMintedALCBsFromEthFunc: &IALCBGetLatestMintedALCBsFromEthFunc{
-			defaultHook: i.GetLatestMintedALCBsFromEth,
+		GetLatestMintedTokensFromEthFunc: &IALCBGetLatestMintedTokensFromEthFunc{
+			defaultHook: i.GetLatestMintedTokensFromEth,
 		},
 		GetMarketSpreadFunc: &IALCBGetMarketSpreadFunc{
 			defaultHook: i.GetMarketSpread,
@@ -3838,14 +3838,14 @@ func NewMockIALCBFrom(i bindings.IALCB) *MockIALCB {
 		GetMetamorphicContractAddressFunc: &IALCBGetMetamorphicContractAddressFunc{
 			defaultHook: i.GetMetamorphicContractAddress,
 		},
-		GetMintedALCBsFromEthFunc: &IALCBGetMintedALCBsFromEthFunc{
-			defaultHook: i.GetMintedALCBsFromEth,
+		GetMintedTokensFromEthFunc: &IALCBGetMintedTokensFromEthFunc{
+			defaultHook: i.GetMintedTokensFromEth,
 		},
 		GetPoolBalanceFunc: &IALCBGetPoolBalanceFunc{
 			defaultHook: i.GetPoolBalance,
 		},
-		GetTotalALCBsDepositedFunc: &IALCBGetTotalALCBsDepositedFunc{
-			defaultHook: i.GetTotalALCBsDeposited,
+		GetTotalTokensDepositedFunc: &IALCBGetTotalTokensDepositedFunc{
+			defaultHook: i.GetTotalTokensDeposited,
 		},
 		GetYieldFunc: &IALCBGetYieldFunc{
 			defaultHook: i.GetYield,
@@ -4894,34 +4894,34 @@ func (c IALCBDepositTokensOnBridgesFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
-// IALCBDestroyALCBsFunc describes the behavior when the DestroyALCBs method
-// of the parent MockIALCB instance is invoked.
-type IALCBDestroyALCBsFunc struct {
+// IALCBDestroyTokensFunc describes the behavior when the DestroyTokens
+// method of the parent MockIALCB instance is invoked.
+type IALCBDestroyTokensFunc struct {
 	defaultHook func(*bind.TransactOpts, *big.Int) (*types.Transaction, error)
 	hooks       []func(*bind.TransactOpts, *big.Int) (*types.Transaction, error)
-	history     []IALCBDestroyALCBsFuncCall
+	history     []IALCBDestroyTokensFuncCall
 	mutex       sync.Mutex
 }
 
-// DestroyALCBs delegates to the next hook function in the queue and stores
+// DestroyTokens delegates to the next hook function in the queue and stores
 // the parameter and result values of this invocation.
-func (m *MockIALCB) DestroyALCBs(v0 *bind.TransactOpts, v1 *big.Int) (*types.Transaction, error) {
-	r0, r1 := m.DestroyALCBsFunc.nextHook()(v0, v1)
-	m.DestroyALCBsFunc.appendCall(IALCBDestroyALCBsFuncCall{v0, v1, r0, r1})
+func (m *MockIALCB) DestroyTokens(v0 *bind.TransactOpts, v1 *big.Int) (*types.Transaction, error) {
+	r0, r1 := m.DestroyTokensFunc.nextHook()(v0, v1)
+	m.DestroyTokensFunc.appendCall(IALCBDestroyTokensFuncCall{v0, v1, r0, r1})
 	return r0, r1
 }
 
-// SetDefaultHook sets function that is called when the DestroyALCBs method
+// SetDefaultHook sets function that is called when the DestroyTokens method
 // of the parent MockIALCB instance is invoked and the hook queue is empty.
-func (f *IALCBDestroyALCBsFunc) SetDefaultHook(hook func(*bind.TransactOpts, *big.Int) (*types.Transaction, error)) {
+func (f *IALCBDestroyTokensFunc) SetDefaultHook(hook func(*bind.TransactOpts, *big.Int) (*types.Transaction, error)) {
 	f.defaultHook = hook
 }
 
 // PushHook adds a function to the end of hook queue. Each invocation of the
-// DestroyALCBs method of the parent MockIALCB instance invokes the hook at
+// DestroyTokens method of the parent MockIALCB instance invokes the hook at
 // the front of the queue and discards it. After the queue is empty, the
 // default hook function is invoked for any future action.
-func (f *IALCBDestroyALCBsFunc) PushHook(hook func(*bind.TransactOpts, *big.Int) (*types.Transaction, error)) {
+func (f *IALCBDestroyTokensFunc) PushHook(hook func(*bind.TransactOpts, *big.Int) (*types.Transaction, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -4929,20 +4929,20 @@ func (f *IALCBDestroyALCBsFunc) PushHook(hook func(*bind.TransactOpts, *big.Int)
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IALCBDestroyALCBsFunc) SetDefaultReturn(r0 *types.Transaction, r1 error) {
+func (f *IALCBDestroyTokensFunc) SetDefaultReturn(r0 *types.Transaction, r1 error) {
 	f.SetDefaultHook(func(*bind.TransactOpts, *big.Int) (*types.Transaction, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IALCBDestroyALCBsFunc) PushReturn(r0 *types.Transaction, r1 error) {
+func (f *IALCBDestroyTokensFunc) PushReturn(r0 *types.Transaction, r1 error) {
 	f.PushHook(func(*bind.TransactOpts, *big.Int) (*types.Transaction, error) {
 		return r0, r1
 	})
 }
 
-func (f *IALCBDestroyALCBsFunc) nextHook() func(*bind.TransactOpts, *big.Int) (*types.Transaction, error) {
+func (f *IALCBDestroyTokensFunc) nextHook() func(*bind.TransactOpts, *big.Int) (*types.Transaction, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -4955,26 +4955,26 @@ func (f *IALCBDestroyALCBsFunc) nextHook() func(*bind.TransactOpts, *big.Int) (*
 	return hook
 }
 
-func (f *IALCBDestroyALCBsFunc) appendCall(r0 IALCBDestroyALCBsFuncCall) {
+func (f *IALCBDestroyTokensFunc) appendCall(r0 IALCBDestroyTokensFuncCall) {
 	f.mutex.Lock()
 	f.history = append(f.history, r0)
 	f.mutex.Unlock()
 }
 
-// History returns a sequence of IALCBDestroyALCBsFuncCall objects
+// History returns a sequence of IALCBDestroyTokensFuncCall objects
 // describing the invocations of this function.
-func (f *IALCBDestroyALCBsFunc) History() []IALCBDestroyALCBsFuncCall {
+func (f *IALCBDestroyTokensFunc) History() []IALCBDestroyTokensFuncCall {
 	f.mutex.Lock()
-	history := make([]IALCBDestroyALCBsFuncCall, len(f.history))
+	history := make([]IALCBDestroyTokensFuncCall, len(f.history))
 	copy(history, f.history)
 	f.mutex.Unlock()
 
 	return history
 }
 
-// IALCBDestroyALCBsFuncCall is an object that describes an invocation of
-// method DestroyALCBs on an instance of MockIALCB.
-type IALCBDestroyALCBsFuncCall struct {
+// IALCBDestroyTokensFuncCall is an object that describes an invocation of
+// method DestroyTokens on an instance of MockIALCB.
+type IALCBDestroyTokensFuncCall struct {
 	// Arg0 is the value of the 1st argument passed to this method
 	// invocation.
 	Arg0 *bind.TransactOpts
@@ -4991,13 +4991,13 @@ type IALCBDestroyALCBsFuncCall struct {
 
 // Args returns an interface slice containing the arguments of this
 // invocation.
-func (c IALCBDestroyALCBsFuncCall) Args() []interface{} {
+func (c IALCBDestroyTokensFuncCall) Args() []interface{} {
 	return []interface{}{c.Arg0, c.Arg1}
 }
 
 // Results returns an interface slice containing the results of this
 // invocation.
-func (c IALCBDestroyALCBsFuncCall) Results() []interface{} {
+func (c IALCBDestroyTokensFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
@@ -5760,35 +5760,35 @@ func (c IALCBGetDepositIDFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
-// IALCBGetEthFromALCBsBurnFunc describes the behavior when the
-// GetEthFromALCBsBurn method of the parent MockIALCB instance is invoked.
-type IALCBGetEthFromALCBsBurnFunc struct {
+// IALCBGetEthFromTokensBurnFunc describes the behavior when the
+// GetEthFromTokensBurn method of the parent MockIALCB instance is invoked.
+type IALCBGetEthFromTokensBurnFunc struct {
 	defaultHook func(*bind.CallOpts, *big.Int, *big.Int, *big.Int) (*big.Int, error)
 	hooks       []func(*bind.CallOpts, *big.Int, *big.Int, *big.Int) (*big.Int, error)
-	history     []IALCBGetEthFromALCBsBurnFuncCall
+	history     []IALCBGetEthFromTokensBurnFuncCall
 	mutex       sync.Mutex
 }
 
-// GetEthFromALCBsBurn delegates to the next hook function in the queue and
+// GetEthFromTokensBurn delegates to the next hook function in the queue and
 // stores the parameter and result values of this invocation.
-func (m *MockIALCB) GetEthFromALCBsBurn(v0 *bind.CallOpts, v1 *big.Int, v2 *big.Int, v3 *big.Int) (*big.Int, error) {
-	r0, r1 := m.GetEthFromALCBsBurnFunc.nextHook()(v0, v1, v2, v3)
-	m.GetEthFromALCBsBurnFunc.appendCall(IALCBGetEthFromALCBsBurnFuncCall{v0, v1, v2, v3, r0, r1})
+func (m *MockIALCB) GetEthFromTokensBurn(v0 *bind.CallOpts, v1 *big.Int, v2 *big.Int, v3 *big.Int) (*big.Int, error) {
+	r0, r1 := m.GetEthFromTokensBurnFunc.nextHook()(v0, v1, v2, v3)
+	m.GetEthFromTokensBurnFunc.appendCall(IALCBGetEthFromTokensBurnFuncCall{v0, v1, v2, v3, r0, r1})
 	return r0, r1
 }
 
-// SetDefaultHook sets function that is called when the GetEthFromALCBsBurn
+// SetDefaultHook sets function that is called when the GetEthFromTokensBurn
 // method of the parent MockIALCB instance is invoked and the hook queue is
 // empty.
-func (f *IALCBGetEthFromALCBsBurnFunc) SetDefaultHook(hook func(*bind.CallOpts, *big.Int, *big.Int, *big.Int) (*big.Int, error)) {
+func (f *IALCBGetEthFromTokensBurnFunc) SetDefaultHook(hook func(*bind.CallOpts, *big.Int, *big.Int, *big.Int) (*big.Int, error)) {
 	f.defaultHook = hook
 }
 
 // PushHook adds a function to the end of hook queue. Each invocation of the
-// GetEthFromALCBsBurn method of the parent MockIALCB instance invokes the
+// GetEthFromTokensBurn method of the parent MockIALCB instance invokes the
 // hook at the front of the queue and discards it. After the queue is empty,
 // the default hook function is invoked for any future action.
-func (f *IALCBGetEthFromALCBsBurnFunc) PushHook(hook func(*bind.CallOpts, *big.Int, *big.Int, *big.Int) (*big.Int, error)) {
+func (f *IALCBGetEthFromTokensBurnFunc) PushHook(hook func(*bind.CallOpts, *big.Int, *big.Int, *big.Int) (*big.Int, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -5796,20 +5796,20 @@ func (f *IALCBGetEthFromALCBsBurnFunc) PushHook(hook func(*bind.CallOpts, *big.I
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IALCBGetEthFromALCBsBurnFunc) SetDefaultReturn(r0 *big.Int, r1 error) {
+func (f *IALCBGetEthFromTokensBurnFunc) SetDefaultReturn(r0 *big.Int, r1 error) {
 	f.SetDefaultHook(func(*bind.CallOpts, *big.Int, *big.Int, *big.Int) (*big.Int, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IALCBGetEthFromALCBsBurnFunc) PushReturn(r0 *big.Int, r1 error) {
+func (f *IALCBGetEthFromTokensBurnFunc) PushReturn(r0 *big.Int, r1 error) {
 	f.PushHook(func(*bind.CallOpts, *big.Int, *big.Int, *big.Int) (*big.Int, error) {
 		return r0, r1
 	})
 }
 
-func (f *IALCBGetEthFromALCBsBurnFunc) nextHook() func(*bind.CallOpts, *big.Int, *big.Int, *big.Int) (*big.Int, error) {
+func (f *IALCBGetEthFromTokensBurnFunc) nextHook() func(*bind.CallOpts, *big.Int, *big.Int, *big.Int) (*big.Int, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -5822,26 +5822,26 @@ func (f *IALCBGetEthFromALCBsBurnFunc) nextHook() func(*bind.CallOpts, *big.Int,
 	return hook
 }
 
-func (f *IALCBGetEthFromALCBsBurnFunc) appendCall(r0 IALCBGetEthFromALCBsBurnFuncCall) {
+func (f *IALCBGetEthFromTokensBurnFunc) appendCall(r0 IALCBGetEthFromTokensBurnFuncCall) {
 	f.mutex.Lock()
 	f.history = append(f.history, r0)
 	f.mutex.Unlock()
 }
 
-// History returns a sequence of IALCBGetEthFromALCBsBurnFuncCall objects
+// History returns a sequence of IALCBGetEthFromTokensBurnFuncCall objects
 // describing the invocations of this function.
-func (f *IALCBGetEthFromALCBsBurnFunc) History() []IALCBGetEthFromALCBsBurnFuncCall {
+func (f *IALCBGetEthFromTokensBurnFunc) History() []IALCBGetEthFromTokensBurnFuncCall {
 	f.mutex.Lock()
-	history := make([]IALCBGetEthFromALCBsBurnFuncCall, len(f.history))
+	history := make([]IALCBGetEthFromTokensBurnFuncCall, len(f.history))
 	copy(history, f.history)
 	f.mutex.Unlock()
 
 	return history
 }
 
-// IALCBGetEthFromALCBsBurnFuncCall is an object that describes an
-// invocation of method GetEthFromALCBsBurn on an instance of MockIALCB.
-type IALCBGetEthFromALCBsBurnFuncCall struct {
+// IALCBGetEthFromTokensBurnFuncCall is an object that describes an
+// invocation of method GetEthFromTokensBurn on an instance of MockIALCB.
+type IALCBGetEthFromTokensBurnFuncCall struct {
 	// Arg0 is the value of the 1st argument passed to this method
 	// invocation.
 	Arg0 *bind.CallOpts
@@ -5864,45 +5864,45 @@ type IALCBGetEthFromALCBsBurnFuncCall struct {
 
 // Args returns an interface slice containing the arguments of this
 // invocation.
-func (c IALCBGetEthFromALCBsBurnFuncCall) Args() []interface{} {
+func (c IALCBGetEthFromTokensBurnFuncCall) Args() []interface{} {
 	return []interface{}{c.Arg0, c.Arg1, c.Arg2, c.Arg3}
 }
 
 // Results returns an interface slice containing the results of this
 // invocation.
-func (c IALCBGetEthFromALCBsBurnFuncCall) Results() []interface{} {
+func (c IALCBGetEthFromTokensBurnFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
-// IALCBGetEthToMintALCBsFunc describes the behavior when the
-// GetEthToMintALCBs method of the parent MockIALCB instance is invoked.
-type IALCBGetEthToMintALCBsFunc struct {
+// IALCBGetEthToMintTokensFunc describes the behavior when the
+// GetEthToMintTokens method of the parent MockIALCB instance is invoked.
+type IALCBGetEthToMintTokensFunc struct {
 	defaultHook func(*bind.CallOpts, *big.Int, *big.Int) (*big.Int, error)
 	hooks       []func(*bind.CallOpts, *big.Int, *big.Int) (*big.Int, error)
-	history     []IALCBGetEthToMintALCBsFuncCall
+	history     []IALCBGetEthToMintTokensFuncCall
 	mutex       sync.Mutex
 }
 
-// GetEthToMintALCBs delegates to the next hook function in the queue and
+// GetEthToMintTokens delegates to the next hook function in the queue and
 // stores the parameter and result values of this invocation.
-func (m *MockIALCB) GetEthToMintALCBs(v0 *bind.CallOpts, v1 *big.Int, v2 *big.Int) (*big.Int, error) {
-	r0, r1 := m.GetEthToMintALCBsFunc.nextHook()(v0, v1, v2)
-	m.GetEthToMintALCBsFunc.appendCall(IALCBGetEthToMintALCBsFuncCall{v0, v1, v2, r0, r1})
+func (m *MockIALCB) GetEthToMintTokens(v0 *bind.CallOpts, v1 *big.Int, v2 *big.Int) (*big.Int, error) {
+	r0, r1 := m.GetEthToMintTokensFunc.nextHook()(v0, v1, v2)
+	m.GetEthToMintTokensFunc.appendCall(IALCBGetEthToMintTokensFuncCall{v0, v1, v2, r0, r1})
 	return r0, r1
 }
 
-// SetDefaultHook sets function that is called when the GetEthToMintALCBs
+// SetDefaultHook sets function that is called when the GetEthToMintTokens
 // method of the parent MockIALCB instance is invoked and the hook queue is
 // empty.
-func (f *IALCBGetEthToMintALCBsFunc) SetDefaultHook(hook func(*bind.CallOpts, *big.Int, *big.Int) (*big.Int, error)) {
+func (f *IALCBGetEthToMintTokensFunc) SetDefaultHook(hook func(*bind.CallOpts, *big.Int, *big.Int) (*big.Int, error)) {
 	f.defaultHook = hook
 }
 
 // PushHook adds a function to the end of hook queue. Each invocation of the
-// GetEthToMintALCBs method of the parent MockIALCB instance invokes the
+// GetEthToMintTokens method of the parent MockIALCB instance invokes the
 // hook at the front of the queue and discards it. After the queue is empty,
 // the default hook function is invoked for any future action.
-func (f *IALCBGetEthToMintALCBsFunc) PushHook(hook func(*bind.CallOpts, *big.Int, *big.Int) (*big.Int, error)) {
+func (f *IALCBGetEthToMintTokensFunc) PushHook(hook func(*bind.CallOpts, *big.Int, *big.Int) (*big.Int, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -5910,20 +5910,20 @@ func (f *IALCBGetEthToMintALCBsFunc) PushHook(hook func(*bind.CallOpts, *big.Int
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IALCBGetEthToMintALCBsFunc) SetDefaultReturn(r0 *big.Int, r1 error) {
+func (f *IALCBGetEthToMintTokensFunc) SetDefaultReturn(r0 *big.Int, r1 error) {
 	f.SetDefaultHook(func(*bind.CallOpts, *big.Int, *big.Int) (*big.Int, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IALCBGetEthToMintALCBsFunc) PushReturn(r0 *big.Int, r1 error) {
+func (f *IALCBGetEthToMintTokensFunc) PushReturn(r0 *big.Int, r1 error) {
 	f.PushHook(func(*bind.CallOpts, *big.Int, *big.Int) (*big.Int, error) {
 		return r0, r1
 	})
 }
 
-func (f *IALCBGetEthToMintALCBsFunc) nextHook() func(*bind.CallOpts, *big.Int, *big.Int) (*big.Int, error) {
+func (f *IALCBGetEthToMintTokensFunc) nextHook() func(*bind.CallOpts, *big.Int, *big.Int) (*big.Int, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -5936,26 +5936,26 @@ func (f *IALCBGetEthToMintALCBsFunc) nextHook() func(*bind.CallOpts, *big.Int, *
 	return hook
 }
 
-func (f *IALCBGetEthToMintALCBsFunc) appendCall(r0 IALCBGetEthToMintALCBsFuncCall) {
+func (f *IALCBGetEthToMintTokensFunc) appendCall(r0 IALCBGetEthToMintTokensFuncCall) {
 	f.mutex.Lock()
 	f.history = append(f.history, r0)
 	f.mutex.Unlock()
 }
 
-// History returns a sequence of IALCBGetEthToMintALCBsFuncCall objects
+// History returns a sequence of IALCBGetEthToMintTokensFuncCall objects
 // describing the invocations of this function.
-func (f *IALCBGetEthToMintALCBsFunc) History() []IALCBGetEthToMintALCBsFuncCall {
+func (f *IALCBGetEthToMintTokensFunc) History() []IALCBGetEthToMintTokensFuncCall {
 	f.mutex.Lock()
-	history := make([]IALCBGetEthToMintALCBsFuncCall, len(f.history))
+	history := make([]IALCBGetEthToMintTokensFuncCall, len(f.history))
 	copy(history, f.history)
 	f.mutex.Unlock()
 
 	return history
 }
 
-// IALCBGetEthToMintALCBsFuncCall is an object that describes an invocation
-// of method GetEthToMintALCBs on an instance of MockIALCB.
-type IALCBGetEthToMintALCBsFuncCall struct {
+// IALCBGetEthToMintTokensFuncCall is an object that describes an invocation
+// of method GetEthToMintTokens on an instance of MockIALCB.
+type IALCBGetEthToMintTokensFuncCall struct {
 	// Arg0 is the value of the 1st argument passed to this method
 	// invocation.
 	Arg0 *bind.CallOpts
@@ -5975,266 +5975,47 @@ type IALCBGetEthToMintALCBsFuncCall struct {
 
 // Args returns an interface slice containing the arguments of this
 // invocation.
-func (c IALCBGetEthToMintALCBsFuncCall) Args() []interface{} {
+func (c IALCBGetEthToMintTokensFuncCall) Args() []interface{} {
 	return []interface{}{c.Arg0, c.Arg1, c.Arg2}
 }
 
 // Results returns an interface slice containing the results of this
 // invocation.
-func (c IALCBGetEthToMintALCBsFuncCall) Results() []interface{} {
+func (c IALCBGetEthToMintTokensFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
-// IALCBGetLatestEthFromALCBsBurnFunc describes the behavior when the
-// GetLatestEthFromALCBsBurn method of the parent MockIALCB instance is
+// IALCBGetLatestEthFromTokensBurnFunc describes the behavior when the
+// GetLatestEthFromTokensBurn method of the parent MockIALCB instance is
 // invoked.
-type IALCBGetLatestEthFromALCBsBurnFunc struct {
+type IALCBGetLatestEthFromTokensBurnFunc struct {
 	defaultHook func(*bind.CallOpts, *big.Int) (*big.Int, error)
 	hooks       []func(*bind.CallOpts, *big.Int) (*big.Int, error)
-	history     []IALCBGetLatestEthFromALCBsBurnFuncCall
+	history     []IALCBGetLatestEthFromTokensBurnFuncCall
 	mutex       sync.Mutex
 }
 
-// GetLatestEthFromALCBsBurn delegates to the next hook function in the
+// GetLatestEthFromTokensBurn delegates to the next hook function in the
 // queue and stores the parameter and result values of this invocation.
-func (m *MockIALCB) GetLatestEthFromALCBsBurn(v0 *bind.CallOpts, v1 *big.Int) (*big.Int, error) {
-	r0, r1 := m.GetLatestEthFromALCBsBurnFunc.nextHook()(v0, v1)
-	m.GetLatestEthFromALCBsBurnFunc.appendCall(IALCBGetLatestEthFromALCBsBurnFuncCall{v0, v1, r0, r1})
+func (m *MockIALCB) GetLatestEthFromTokensBurn(v0 *bind.CallOpts, v1 *big.Int) (*big.Int, error) {
+	r0, r1 := m.GetLatestEthFromTokensBurnFunc.nextHook()(v0, v1)
+	m.GetLatestEthFromTokensBurnFunc.appendCall(IALCBGetLatestEthFromTokensBurnFuncCall{v0, v1, r0, r1})
 	return r0, r1
 }
 
 // SetDefaultHook sets function that is called when the
-// GetLatestEthFromALCBsBurn method of the parent MockIALCB instance is
+// GetLatestEthFromTokensBurn method of the parent MockIALCB instance is
 // invoked and the hook queue is empty.
-func (f *IALCBGetLatestEthFromALCBsBurnFunc) SetDefaultHook(hook func(*bind.CallOpts, *big.Int) (*big.Int, error)) {
+func (f *IALCBGetLatestEthFromTokensBurnFunc) SetDefaultHook(hook func(*bind.CallOpts, *big.Int) (*big.Int, error)) {
 	f.defaultHook = hook
 }
 
 // PushHook adds a function to the end of hook queue. Each invocation of the
-// GetLatestEthFromALCBsBurn method of the parent MockIALCB instance invokes
-// the hook at the front of the queue and discards it. After the queue is
-// empty, the default hook function is invoked for any future action.
-func (f *IALCBGetLatestEthFromALCBsBurnFunc) PushHook(hook func(*bind.CallOpts, *big.Int) (*big.Int, error)) {
-	f.mutex.Lock()
-	f.hooks = append(f.hooks, hook)
-	f.mutex.Unlock()
-}
-
-// SetDefaultReturn calls SetDefaultHook with a function that returns the
-// given values.
-func (f *IALCBGetLatestEthFromALCBsBurnFunc) SetDefaultReturn(r0 *big.Int, r1 error) {
-	f.SetDefaultHook(func(*bind.CallOpts, *big.Int) (*big.Int, error) {
-		return r0, r1
-	})
-}
-
-// PushReturn calls PushHook with a function that returns the given values.
-func (f *IALCBGetLatestEthFromALCBsBurnFunc) PushReturn(r0 *big.Int, r1 error) {
-	f.PushHook(func(*bind.CallOpts, *big.Int) (*big.Int, error) {
-		return r0, r1
-	})
-}
-
-func (f *IALCBGetLatestEthFromALCBsBurnFunc) nextHook() func(*bind.CallOpts, *big.Int) (*big.Int, error) {
-	f.mutex.Lock()
-	defer f.mutex.Unlock()
-
-	if len(f.hooks) == 0 {
-		return f.defaultHook
-	}
-
-	hook := f.hooks[0]
-	f.hooks = f.hooks[1:]
-	return hook
-}
-
-func (f *IALCBGetLatestEthFromALCBsBurnFunc) appendCall(r0 IALCBGetLatestEthFromALCBsBurnFuncCall) {
-	f.mutex.Lock()
-	f.history = append(f.history, r0)
-	f.mutex.Unlock()
-}
-
-// History returns a sequence of IALCBGetLatestEthFromALCBsBurnFuncCall
-// objects describing the invocations of this function.
-func (f *IALCBGetLatestEthFromALCBsBurnFunc) History() []IALCBGetLatestEthFromALCBsBurnFuncCall {
-	f.mutex.Lock()
-	history := make([]IALCBGetLatestEthFromALCBsBurnFuncCall, len(f.history))
-	copy(history, f.history)
-	f.mutex.Unlock()
-
-	return history
-}
-
-// IALCBGetLatestEthFromALCBsBurnFuncCall is an object that describes an
-// invocation of method GetLatestEthFromALCBsBurn on an instance of
-// MockIALCB.
-type IALCBGetLatestEthFromALCBsBurnFuncCall struct {
-	// Arg0 is the value of the 1st argument passed to this method
-	// invocation.
-	Arg0 *bind.CallOpts
-	// Arg1 is the value of the 2nd argument passed to this method
-	// invocation.
-	Arg1 *big.Int
-	// Result0 is the value of the 1st result returned from this method
-	// invocation.
-	Result0 *big.Int
-	// Result1 is the value of the 2nd result returned from this method
-	// invocation.
-	Result1 error
-}
-
-// Args returns an interface slice containing the arguments of this
-// invocation.
-func (c IALCBGetLatestEthFromALCBsBurnFuncCall) Args() []interface{} {
-	return []interface{}{c.Arg0, c.Arg1}
-}
-
-// Results returns an interface slice containing the results of this
-// invocation.
-func (c IALCBGetLatestEthFromALCBsBurnFuncCall) Results() []interface{} {
-	return []interface{}{c.Result0, c.Result1}
-}
-
-// IALCBGetLatestEthToMintALCBsFunc describes the behavior when the
-// GetLatestEthToMintALCBs method of the parent MockIALCB instance is
-// invoked.
-type IALCBGetLatestEthToMintALCBsFunc struct {
-	defaultHook func(*bind.CallOpts, *big.Int) (*big.Int, error)
-	hooks       []func(*bind.CallOpts, *big.Int) (*big.Int, error)
-	history     []IALCBGetLatestEthToMintALCBsFuncCall
-	mutex       sync.Mutex
-}
-
-// GetLatestEthToMintALCBs delegates to the next hook function in the queue
-// and stores the parameter and result values of this invocation.
-func (m *MockIALCB) GetLatestEthToMintALCBs(v0 *bind.CallOpts, v1 *big.Int) (*big.Int, error) {
-	r0, r1 := m.GetLatestEthToMintALCBsFunc.nextHook()(v0, v1)
-	m.GetLatestEthToMintALCBsFunc.appendCall(IALCBGetLatestEthToMintALCBsFuncCall{v0, v1, r0, r1})
-	return r0, r1
-}
-
-// SetDefaultHook sets function that is called when the
-// GetLatestEthToMintALCBs method of the parent MockIALCB instance is
-// invoked and the hook queue is empty.
-func (f *IALCBGetLatestEthToMintALCBsFunc) SetDefaultHook(hook func(*bind.CallOpts, *big.Int) (*big.Int, error)) {
-	f.defaultHook = hook
-}
-
-// PushHook adds a function to the end of hook queue. Each invocation of the
-// GetLatestEthToMintALCBs method of the parent MockIALCB instance invokes
-// the hook at the front of the queue and discards it. After the queue is
-// empty, the default hook function is invoked for any future action.
-func (f *IALCBGetLatestEthToMintALCBsFunc) PushHook(hook func(*bind.CallOpts, *big.Int) (*big.Int, error)) {
-	f.mutex.Lock()
-	f.hooks = append(f.hooks, hook)
-	f.mutex.Unlock()
-}
-
-// SetDefaultReturn calls SetDefaultHook with a function that returns the
-// given values.
-func (f *IALCBGetLatestEthToMintALCBsFunc) SetDefaultReturn(r0 *big.Int, r1 error) {
-	f.SetDefaultHook(func(*bind.CallOpts, *big.Int) (*big.Int, error) {
-		return r0, r1
-	})
-}
-
-// PushReturn calls PushHook with a function that returns the given values.
-func (f *IALCBGetLatestEthToMintALCBsFunc) PushReturn(r0 *big.Int, r1 error) {
-	f.PushHook(func(*bind.CallOpts, *big.Int) (*big.Int, error) {
-		return r0, r1
-	})
-}
-
-func (f *IALCBGetLatestEthToMintALCBsFunc) nextHook() func(*bind.CallOpts, *big.Int) (*big.Int, error) {
-	f.mutex.Lock()
-	defer f.mutex.Unlock()
-
-	if len(f.hooks) == 0 {
-		return f.defaultHook
-	}
-
-	hook := f.hooks[0]
-	f.hooks = f.hooks[1:]
-	return hook
-}
-
-func (f *IALCBGetLatestEthToMintALCBsFunc) appendCall(r0 IALCBGetLatestEthToMintALCBsFuncCall) {
-	f.mutex.Lock()
-	f.history = append(f.history, r0)
-	f.mutex.Unlock()
-}
-
-// History returns a sequence of IALCBGetLatestEthToMintALCBsFuncCall
-// objects describing the invocations of this function.
-func (f *IALCBGetLatestEthToMintALCBsFunc) History() []IALCBGetLatestEthToMintALCBsFuncCall {
-	f.mutex.Lock()
-	history := make([]IALCBGetLatestEthToMintALCBsFuncCall, len(f.history))
-	copy(history, f.history)
-	f.mutex.Unlock()
-
-	return history
-}
-
-// IALCBGetLatestEthToMintALCBsFuncCall is an object that describes an
-// invocation of method GetLatestEthToMintALCBs on an instance of MockIALCB.
-type IALCBGetLatestEthToMintALCBsFuncCall struct {
-	// Arg0 is the value of the 1st argument passed to this method
-	// invocation.
-	Arg0 *bind.CallOpts
-	// Arg1 is the value of the 2nd argument passed to this method
-	// invocation.
-	Arg1 *big.Int
-	// Result0 is the value of the 1st result returned from this method
-	// invocation.
-	Result0 *big.Int
-	// Result1 is the value of the 2nd result returned from this method
-	// invocation.
-	Result1 error
-}
-
-// Args returns an interface slice containing the arguments of this
-// invocation.
-func (c IALCBGetLatestEthToMintALCBsFuncCall) Args() []interface{} {
-	return []interface{}{c.Arg0, c.Arg1}
-}
-
-// Results returns an interface slice containing the results of this
-// invocation.
-func (c IALCBGetLatestEthToMintALCBsFuncCall) Results() []interface{} {
-	return []interface{}{c.Result0, c.Result1}
-}
-
-// IALCBGetLatestMintedALCBsFromEthFunc describes the behavior when the
-// GetLatestMintedALCBsFromEth method of the parent MockIALCB instance is
-// invoked.
-type IALCBGetLatestMintedALCBsFromEthFunc struct {
-	defaultHook func(*bind.CallOpts, *big.Int) (*big.Int, error)
-	hooks       []func(*bind.CallOpts, *big.Int) (*big.Int, error)
-	history     []IALCBGetLatestMintedALCBsFromEthFuncCall
-	mutex       sync.Mutex
-}
-
-// GetLatestMintedALCBsFromEth delegates to the next hook function in the
-// queue and stores the parameter and result values of this invocation.
-func (m *MockIALCB) GetLatestMintedALCBsFromEth(v0 *bind.CallOpts, v1 *big.Int) (*big.Int, error) {
-	r0, r1 := m.GetLatestMintedALCBsFromEthFunc.nextHook()(v0, v1)
-	m.GetLatestMintedALCBsFromEthFunc.appendCall(IALCBGetLatestMintedALCBsFromEthFuncCall{v0, v1, r0, r1})
-	return r0, r1
-}
-
-// SetDefaultHook sets function that is called when the
-// GetLatestMintedALCBsFromEth method of the parent MockIALCB instance is
-// invoked and the hook queue is empty.
-func (f *IALCBGetLatestMintedALCBsFromEthFunc) SetDefaultHook(hook func(*bind.CallOpts, *big.Int) (*big.Int, error)) {
-	f.defaultHook = hook
-}
-
-// PushHook adds a function to the end of hook queue. Each invocation of the
-// GetLatestMintedALCBsFromEth method of the parent MockIALCB instance
+// GetLatestEthFromTokensBurn method of the parent MockIALCB instance
 // invokes the hook at the front of the queue and discards it. After the
 // queue is empty, the default hook function is invoked for any future
 // action.
-func (f *IALCBGetLatestMintedALCBsFromEthFunc) PushHook(hook func(*bind.CallOpts, *big.Int) (*big.Int, error)) {
+func (f *IALCBGetLatestEthFromTokensBurnFunc) PushHook(hook func(*bind.CallOpts, *big.Int) (*big.Int, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -6242,20 +6023,20 @@ func (f *IALCBGetLatestMintedALCBsFromEthFunc) PushHook(hook func(*bind.CallOpts
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IALCBGetLatestMintedALCBsFromEthFunc) SetDefaultReturn(r0 *big.Int, r1 error) {
+func (f *IALCBGetLatestEthFromTokensBurnFunc) SetDefaultReturn(r0 *big.Int, r1 error) {
 	f.SetDefaultHook(func(*bind.CallOpts, *big.Int) (*big.Int, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IALCBGetLatestMintedALCBsFromEthFunc) PushReturn(r0 *big.Int, r1 error) {
+func (f *IALCBGetLatestEthFromTokensBurnFunc) PushReturn(r0 *big.Int, r1 error) {
 	f.PushHook(func(*bind.CallOpts, *big.Int) (*big.Int, error) {
 		return r0, r1
 	})
 }
 
-func (f *IALCBGetLatestMintedALCBsFromEthFunc) nextHook() func(*bind.CallOpts, *big.Int) (*big.Int, error) {
+func (f *IALCBGetLatestEthFromTokensBurnFunc) nextHook() func(*bind.CallOpts, *big.Int) (*big.Int, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -6268,27 +6049,27 @@ func (f *IALCBGetLatestMintedALCBsFromEthFunc) nextHook() func(*bind.CallOpts, *
 	return hook
 }
 
-func (f *IALCBGetLatestMintedALCBsFromEthFunc) appendCall(r0 IALCBGetLatestMintedALCBsFromEthFuncCall) {
+func (f *IALCBGetLatestEthFromTokensBurnFunc) appendCall(r0 IALCBGetLatestEthFromTokensBurnFuncCall) {
 	f.mutex.Lock()
 	f.history = append(f.history, r0)
 	f.mutex.Unlock()
 }
 
-// History returns a sequence of IALCBGetLatestMintedALCBsFromEthFuncCall
+// History returns a sequence of IALCBGetLatestEthFromTokensBurnFuncCall
 // objects describing the invocations of this function.
-func (f *IALCBGetLatestMintedALCBsFromEthFunc) History() []IALCBGetLatestMintedALCBsFromEthFuncCall {
+func (f *IALCBGetLatestEthFromTokensBurnFunc) History() []IALCBGetLatestEthFromTokensBurnFuncCall {
 	f.mutex.Lock()
-	history := make([]IALCBGetLatestMintedALCBsFromEthFuncCall, len(f.history))
+	history := make([]IALCBGetLatestEthFromTokensBurnFuncCall, len(f.history))
 	copy(history, f.history)
 	f.mutex.Unlock()
 
 	return history
 }
 
-// IALCBGetLatestMintedALCBsFromEthFuncCall is an object that describes an
-// invocation of method GetLatestMintedALCBsFromEth on an instance of
+// IALCBGetLatestEthFromTokensBurnFuncCall is an object that describes an
+// invocation of method GetLatestEthFromTokensBurn on an instance of
 // MockIALCB.
-type IALCBGetLatestMintedALCBsFromEthFuncCall struct {
+type IALCBGetLatestEthFromTokensBurnFuncCall struct {
 	// Arg0 is the value of the 1st argument passed to this method
 	// invocation.
 	Arg0 *bind.CallOpts
@@ -6305,13 +6086,234 @@ type IALCBGetLatestMintedALCBsFromEthFuncCall struct {
 
 // Args returns an interface slice containing the arguments of this
 // invocation.
-func (c IALCBGetLatestMintedALCBsFromEthFuncCall) Args() []interface{} {
+func (c IALCBGetLatestEthFromTokensBurnFuncCall) Args() []interface{} {
 	return []interface{}{c.Arg0, c.Arg1}
 }
 
 // Results returns an interface slice containing the results of this
 // invocation.
-func (c IALCBGetLatestMintedALCBsFromEthFuncCall) Results() []interface{} {
+func (c IALCBGetLatestEthFromTokensBurnFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
+}
+
+// IALCBGetLatestEthToMintTokensFunc describes the behavior when the
+// GetLatestEthToMintTokens method of the parent MockIALCB instance is
+// invoked.
+type IALCBGetLatestEthToMintTokensFunc struct {
+	defaultHook func(*bind.CallOpts, *big.Int) (*big.Int, error)
+	hooks       []func(*bind.CallOpts, *big.Int) (*big.Int, error)
+	history     []IALCBGetLatestEthToMintTokensFuncCall
+	mutex       sync.Mutex
+}
+
+// GetLatestEthToMintTokens delegates to the next hook function in the queue
+// and stores the parameter and result values of this invocation.
+func (m *MockIALCB) GetLatestEthToMintTokens(v0 *bind.CallOpts, v1 *big.Int) (*big.Int, error) {
+	r0, r1 := m.GetLatestEthToMintTokensFunc.nextHook()(v0, v1)
+	m.GetLatestEthToMintTokensFunc.appendCall(IALCBGetLatestEthToMintTokensFuncCall{v0, v1, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the
+// GetLatestEthToMintTokens method of the parent MockIALCB instance is
+// invoked and the hook queue is empty.
+func (f *IALCBGetLatestEthToMintTokensFunc) SetDefaultHook(hook func(*bind.CallOpts, *big.Int) (*big.Int, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// GetLatestEthToMintTokens method of the parent MockIALCB instance invokes
+// the hook at the front of the queue and discards it. After the queue is
+// empty, the default hook function is invoked for any future action.
+func (f *IALCBGetLatestEthToMintTokensFunc) PushHook(hook func(*bind.CallOpts, *big.Int) (*big.Int, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *IALCBGetLatestEthToMintTokensFunc) SetDefaultReturn(r0 *big.Int, r1 error) {
+	f.SetDefaultHook(func(*bind.CallOpts, *big.Int) (*big.Int, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *IALCBGetLatestEthToMintTokensFunc) PushReturn(r0 *big.Int, r1 error) {
+	f.PushHook(func(*bind.CallOpts, *big.Int) (*big.Int, error) {
+		return r0, r1
+	})
+}
+
+func (f *IALCBGetLatestEthToMintTokensFunc) nextHook() func(*bind.CallOpts, *big.Int) (*big.Int, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *IALCBGetLatestEthToMintTokensFunc) appendCall(r0 IALCBGetLatestEthToMintTokensFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of IALCBGetLatestEthToMintTokensFuncCall
+// objects describing the invocations of this function.
+func (f *IALCBGetLatestEthToMintTokensFunc) History() []IALCBGetLatestEthToMintTokensFuncCall {
+	f.mutex.Lock()
+	history := make([]IALCBGetLatestEthToMintTokensFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// IALCBGetLatestEthToMintTokensFuncCall is an object that describes an
+// invocation of method GetLatestEthToMintTokens on an instance of
+// MockIALCB.
+type IALCBGetLatestEthToMintTokensFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 *bind.CallOpts
+	// Arg1 is the value of the 2nd argument passed to this method
+	// invocation.
+	Arg1 *big.Int
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 *big.Int
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c IALCBGetLatestEthToMintTokensFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0, c.Arg1}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c IALCBGetLatestEthToMintTokensFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
+}
+
+// IALCBGetLatestMintedTokensFromEthFunc describes the behavior when the
+// GetLatestMintedTokensFromEth method of the parent MockIALCB instance is
+// invoked.
+type IALCBGetLatestMintedTokensFromEthFunc struct {
+	defaultHook func(*bind.CallOpts, *big.Int) (*big.Int, error)
+	hooks       []func(*bind.CallOpts, *big.Int) (*big.Int, error)
+	history     []IALCBGetLatestMintedTokensFromEthFuncCall
+	mutex       sync.Mutex
+}
+
+// GetLatestMintedTokensFromEth delegates to the next hook function in the
+// queue and stores the parameter and result values of this invocation.
+func (m *MockIALCB) GetLatestMintedTokensFromEth(v0 *bind.CallOpts, v1 *big.Int) (*big.Int, error) {
+	r0, r1 := m.GetLatestMintedTokensFromEthFunc.nextHook()(v0, v1)
+	m.GetLatestMintedTokensFromEthFunc.appendCall(IALCBGetLatestMintedTokensFromEthFuncCall{v0, v1, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the
+// GetLatestMintedTokensFromEth method of the parent MockIALCB instance is
+// invoked and the hook queue is empty.
+func (f *IALCBGetLatestMintedTokensFromEthFunc) SetDefaultHook(hook func(*bind.CallOpts, *big.Int) (*big.Int, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// GetLatestMintedTokensFromEth method of the parent MockIALCB instance
+// invokes the hook at the front of the queue and discards it. After the
+// queue is empty, the default hook function is invoked for any future
+// action.
+func (f *IALCBGetLatestMintedTokensFromEthFunc) PushHook(hook func(*bind.CallOpts, *big.Int) (*big.Int, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *IALCBGetLatestMintedTokensFromEthFunc) SetDefaultReturn(r0 *big.Int, r1 error) {
+	f.SetDefaultHook(func(*bind.CallOpts, *big.Int) (*big.Int, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *IALCBGetLatestMintedTokensFromEthFunc) PushReturn(r0 *big.Int, r1 error) {
+	f.PushHook(func(*bind.CallOpts, *big.Int) (*big.Int, error) {
+		return r0, r1
+	})
+}
+
+func (f *IALCBGetLatestMintedTokensFromEthFunc) nextHook() func(*bind.CallOpts, *big.Int) (*big.Int, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *IALCBGetLatestMintedTokensFromEthFunc) appendCall(r0 IALCBGetLatestMintedTokensFromEthFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of IALCBGetLatestMintedTokensFromEthFuncCall
+// objects describing the invocations of this function.
+func (f *IALCBGetLatestMintedTokensFromEthFunc) History() []IALCBGetLatestMintedTokensFromEthFuncCall {
+	f.mutex.Lock()
+	history := make([]IALCBGetLatestMintedTokensFromEthFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// IALCBGetLatestMintedTokensFromEthFuncCall is an object that describes an
+// invocation of method GetLatestMintedTokensFromEth on an instance of
+// MockIALCB.
+type IALCBGetLatestMintedTokensFromEthFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 *bind.CallOpts
+	// Arg1 is the value of the 2nd argument passed to this method
+	// invocation.
+	Arg1 *big.Int
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 *big.Int
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c IALCBGetLatestMintedTokensFromEthFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0, c.Arg1}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c IALCBGetLatestMintedTokensFromEthFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
@@ -6534,35 +6536,36 @@ func (c IALCBGetMetamorphicContractAddressFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
-// IALCBGetMintedALCBsFromEthFunc describes the behavior when the
-// GetMintedALCBsFromEth method of the parent MockIALCB instance is invoked.
-type IALCBGetMintedALCBsFromEthFunc struct {
+// IALCBGetMintedTokensFromEthFunc describes the behavior when the
+// GetMintedTokensFromEth method of the parent MockIALCB instance is
+// invoked.
+type IALCBGetMintedTokensFromEthFunc struct {
 	defaultHook func(*bind.CallOpts, *big.Int, *big.Int) (*big.Int, error)
 	hooks       []func(*bind.CallOpts, *big.Int, *big.Int) (*big.Int, error)
-	history     []IALCBGetMintedALCBsFromEthFuncCall
+	history     []IALCBGetMintedTokensFromEthFuncCall
 	mutex       sync.Mutex
 }
 
-// GetMintedALCBsFromEth delegates to the next hook function in the queue
+// GetMintedTokensFromEth delegates to the next hook function in the queue
 // and stores the parameter and result values of this invocation.
-func (m *MockIALCB) GetMintedALCBsFromEth(v0 *bind.CallOpts, v1 *big.Int, v2 *big.Int) (*big.Int, error) {
-	r0, r1 := m.GetMintedALCBsFromEthFunc.nextHook()(v0, v1, v2)
-	m.GetMintedALCBsFromEthFunc.appendCall(IALCBGetMintedALCBsFromEthFuncCall{v0, v1, v2, r0, r1})
+func (m *MockIALCB) GetMintedTokensFromEth(v0 *bind.CallOpts, v1 *big.Int, v2 *big.Int) (*big.Int, error) {
+	r0, r1 := m.GetMintedTokensFromEthFunc.nextHook()(v0, v1, v2)
+	m.GetMintedTokensFromEthFunc.appendCall(IALCBGetMintedTokensFromEthFuncCall{v0, v1, v2, r0, r1})
 	return r0, r1
 }
 
 // SetDefaultHook sets function that is called when the
-// GetMintedALCBsFromEth method of the parent MockIALCB instance is invoked
+// GetMintedTokensFromEth method of the parent MockIALCB instance is invoked
 // and the hook queue is empty.
-func (f *IALCBGetMintedALCBsFromEthFunc) SetDefaultHook(hook func(*bind.CallOpts, *big.Int, *big.Int) (*big.Int, error)) {
+func (f *IALCBGetMintedTokensFromEthFunc) SetDefaultHook(hook func(*bind.CallOpts, *big.Int, *big.Int) (*big.Int, error)) {
 	f.defaultHook = hook
 }
 
 // PushHook adds a function to the end of hook queue. Each invocation of the
-// GetMintedALCBsFromEth method of the parent MockIALCB instance invokes the
-// hook at the front of the queue and discards it. After the queue is empty,
-// the default hook function is invoked for any future action.
-func (f *IALCBGetMintedALCBsFromEthFunc) PushHook(hook func(*bind.CallOpts, *big.Int, *big.Int) (*big.Int, error)) {
+// GetMintedTokensFromEth method of the parent MockIALCB instance invokes
+// the hook at the front of the queue and discards it. After the queue is
+// empty, the default hook function is invoked for any future action.
+func (f *IALCBGetMintedTokensFromEthFunc) PushHook(hook func(*bind.CallOpts, *big.Int, *big.Int) (*big.Int, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -6570,20 +6573,20 @@ func (f *IALCBGetMintedALCBsFromEthFunc) PushHook(hook func(*bind.CallOpts, *big
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IALCBGetMintedALCBsFromEthFunc) SetDefaultReturn(r0 *big.Int, r1 error) {
+func (f *IALCBGetMintedTokensFromEthFunc) SetDefaultReturn(r0 *big.Int, r1 error) {
 	f.SetDefaultHook(func(*bind.CallOpts, *big.Int, *big.Int) (*big.Int, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IALCBGetMintedALCBsFromEthFunc) PushReturn(r0 *big.Int, r1 error) {
+func (f *IALCBGetMintedTokensFromEthFunc) PushReturn(r0 *big.Int, r1 error) {
 	f.PushHook(func(*bind.CallOpts, *big.Int, *big.Int) (*big.Int, error) {
 		return r0, r1
 	})
 }
 
-func (f *IALCBGetMintedALCBsFromEthFunc) nextHook() func(*bind.CallOpts, *big.Int, *big.Int) (*big.Int, error) {
+func (f *IALCBGetMintedTokensFromEthFunc) nextHook() func(*bind.CallOpts, *big.Int, *big.Int) (*big.Int, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -6596,26 +6599,26 @@ func (f *IALCBGetMintedALCBsFromEthFunc) nextHook() func(*bind.CallOpts, *big.In
 	return hook
 }
 
-func (f *IALCBGetMintedALCBsFromEthFunc) appendCall(r0 IALCBGetMintedALCBsFromEthFuncCall) {
+func (f *IALCBGetMintedTokensFromEthFunc) appendCall(r0 IALCBGetMintedTokensFromEthFuncCall) {
 	f.mutex.Lock()
 	f.history = append(f.history, r0)
 	f.mutex.Unlock()
 }
 
-// History returns a sequence of IALCBGetMintedALCBsFromEthFuncCall objects
+// History returns a sequence of IALCBGetMintedTokensFromEthFuncCall objects
 // describing the invocations of this function.
-func (f *IALCBGetMintedALCBsFromEthFunc) History() []IALCBGetMintedALCBsFromEthFuncCall {
+func (f *IALCBGetMintedTokensFromEthFunc) History() []IALCBGetMintedTokensFromEthFuncCall {
 	f.mutex.Lock()
-	history := make([]IALCBGetMintedALCBsFromEthFuncCall, len(f.history))
+	history := make([]IALCBGetMintedTokensFromEthFuncCall, len(f.history))
 	copy(history, f.history)
 	f.mutex.Unlock()
 
 	return history
 }
 
-// IALCBGetMintedALCBsFromEthFuncCall is an object that describes an
-// invocation of method GetMintedALCBsFromEth on an instance of MockIALCB.
-type IALCBGetMintedALCBsFromEthFuncCall struct {
+// IALCBGetMintedTokensFromEthFuncCall is an object that describes an
+// invocation of method GetMintedTokensFromEth on an instance of MockIALCB.
+type IALCBGetMintedTokensFromEthFuncCall struct {
 	// Arg0 is the value of the 1st argument passed to this method
 	// invocation.
 	Arg0 *bind.CallOpts
@@ -6635,13 +6638,13 @@ type IALCBGetMintedALCBsFromEthFuncCall struct {
 
 // Args returns an interface slice containing the arguments of this
 // invocation.
-func (c IALCBGetMintedALCBsFromEthFuncCall) Args() []interface{} {
+func (c IALCBGetMintedTokensFromEthFuncCall) Args() []interface{} {
 	return []interface{}{c.Arg0, c.Arg1, c.Arg2}
 }
 
 // Results returns an interface slice containing the results of this
 // invocation.
-func (c IALCBGetMintedALCBsFromEthFuncCall) Results() []interface{} {
+func (c IALCBGetMintedTokensFromEthFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
@@ -6750,36 +6753,36 @@ func (c IALCBGetPoolBalanceFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
-// IALCBGetTotalALCBsDepositedFunc describes the behavior when the
-// GetTotalALCBsDeposited method of the parent MockIALCB instance is
+// IALCBGetTotalTokensDepositedFunc describes the behavior when the
+// GetTotalTokensDeposited method of the parent MockIALCB instance is
 // invoked.
-type IALCBGetTotalALCBsDepositedFunc struct {
+type IALCBGetTotalTokensDepositedFunc struct {
 	defaultHook func(*bind.CallOpts) (*big.Int, error)
 	hooks       []func(*bind.CallOpts) (*big.Int, error)
-	history     []IALCBGetTotalALCBsDepositedFuncCall
+	history     []IALCBGetTotalTokensDepositedFuncCall
 	mutex       sync.Mutex
 }
 
-// GetTotalALCBsDeposited delegates to the next hook function in the queue
+// GetTotalTokensDeposited delegates to the next hook function in the queue
 // and stores the parameter and result values of this invocation.
-func (m *MockIALCB) GetTotalALCBsDeposited(v0 *bind.CallOpts) (*big.Int, error) {
-	r0, r1 := m.GetTotalALCBsDepositedFunc.nextHook()(v0)
-	m.GetTotalALCBsDepositedFunc.appendCall(IALCBGetTotalALCBsDepositedFuncCall{v0, r0, r1})
+func (m *MockIALCB) GetTotalTokensDeposited(v0 *bind.CallOpts) (*big.Int, error) {
+	r0, r1 := m.GetTotalTokensDepositedFunc.nextHook()(v0)
+	m.GetTotalTokensDepositedFunc.appendCall(IALCBGetTotalTokensDepositedFuncCall{v0, r0, r1})
 	return r0, r1
 }
 
 // SetDefaultHook sets function that is called when the
-// GetTotalALCBsDeposited method of the parent MockIALCB instance is invoked
-// and the hook queue is empty.
-func (f *IALCBGetTotalALCBsDepositedFunc) SetDefaultHook(hook func(*bind.CallOpts) (*big.Int, error)) {
+// GetTotalTokensDeposited method of the parent MockIALCB instance is
+// invoked and the hook queue is empty.
+func (f *IALCBGetTotalTokensDepositedFunc) SetDefaultHook(hook func(*bind.CallOpts) (*big.Int, error)) {
 	f.defaultHook = hook
 }
 
 // PushHook adds a function to the end of hook queue. Each invocation of the
-// GetTotalALCBsDeposited method of the parent MockIALCB instance invokes
+// GetTotalTokensDeposited method of the parent MockIALCB instance invokes
 // the hook at the front of the queue and discards it. After the queue is
 // empty, the default hook function is invoked for any future action.
-func (f *IALCBGetTotalALCBsDepositedFunc) PushHook(hook func(*bind.CallOpts) (*big.Int, error)) {
+func (f *IALCBGetTotalTokensDepositedFunc) PushHook(hook func(*bind.CallOpts) (*big.Int, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -6787,20 +6790,20 @@ func (f *IALCBGetTotalALCBsDepositedFunc) PushHook(hook func(*bind.CallOpts) (*b
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IALCBGetTotalALCBsDepositedFunc) SetDefaultReturn(r0 *big.Int, r1 error) {
+func (f *IALCBGetTotalTokensDepositedFunc) SetDefaultReturn(r0 *big.Int, r1 error) {
 	f.SetDefaultHook(func(*bind.CallOpts) (*big.Int, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IALCBGetTotalALCBsDepositedFunc) PushReturn(r0 *big.Int, r1 error) {
+func (f *IALCBGetTotalTokensDepositedFunc) PushReturn(r0 *big.Int, r1 error) {
 	f.PushHook(func(*bind.CallOpts) (*big.Int, error) {
 		return r0, r1
 	})
 }
 
-func (f *IALCBGetTotalALCBsDepositedFunc) nextHook() func(*bind.CallOpts) (*big.Int, error) {
+func (f *IALCBGetTotalTokensDepositedFunc) nextHook() func(*bind.CallOpts) (*big.Int, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -6813,26 +6816,26 @@ func (f *IALCBGetTotalALCBsDepositedFunc) nextHook() func(*bind.CallOpts) (*big.
 	return hook
 }
 
-func (f *IALCBGetTotalALCBsDepositedFunc) appendCall(r0 IALCBGetTotalALCBsDepositedFuncCall) {
+func (f *IALCBGetTotalTokensDepositedFunc) appendCall(r0 IALCBGetTotalTokensDepositedFuncCall) {
 	f.mutex.Lock()
 	f.history = append(f.history, r0)
 	f.mutex.Unlock()
 }
 
-// History returns a sequence of IALCBGetTotalALCBsDepositedFuncCall objects
-// describing the invocations of this function.
-func (f *IALCBGetTotalALCBsDepositedFunc) History() []IALCBGetTotalALCBsDepositedFuncCall {
+// History returns a sequence of IALCBGetTotalTokensDepositedFuncCall
+// objects describing the invocations of this function.
+func (f *IALCBGetTotalTokensDepositedFunc) History() []IALCBGetTotalTokensDepositedFuncCall {
 	f.mutex.Lock()
-	history := make([]IALCBGetTotalALCBsDepositedFuncCall, len(f.history))
+	history := make([]IALCBGetTotalTokensDepositedFuncCall, len(f.history))
 	copy(history, f.history)
 	f.mutex.Unlock()
 
 	return history
 }
 
-// IALCBGetTotalALCBsDepositedFuncCall is an object that describes an
-// invocation of method GetTotalALCBsDeposited on an instance of MockIALCB.
-type IALCBGetTotalALCBsDepositedFuncCall struct {
+// IALCBGetTotalTokensDepositedFuncCall is an object that describes an
+// invocation of method GetTotalTokensDeposited on an instance of MockIALCB.
+type IALCBGetTotalTokensDepositedFuncCall struct {
 	// Arg0 is the value of the 1st argument passed to this method
 	// invocation.
 	Arg0 *bind.CallOpts
@@ -6846,13 +6849,13 @@ type IALCBGetTotalALCBsDepositedFuncCall struct {
 
 // Args returns an interface slice containing the arguments of this
 // invocation.
-func (c IALCBGetTotalALCBsDepositedFuncCall) Args() []interface{} {
+func (c IALCBGetTotalTokensDepositedFuncCall) Args() []interface{} {
 	return []interface{}{c.Arg0}
 }
 
 // Results returns an interface slice containing the results of this
 // invocation.
-func (c IALCBGetTotalALCBsDepositedFuncCall) Results() []interface{} {
+func (c IALCBGetTotalTokensDepositedFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 

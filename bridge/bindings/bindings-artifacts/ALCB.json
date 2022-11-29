@@ -543,7 +543,7 @@
         "type": "uint256"
       }
     ],
-    "name": "destroyALCBs",
+    "name": "destroyTokens",
     "outputs": [
       {
         "internalType": "bool",
@@ -647,7 +647,7 @@
         "type": "uint256"
       }
     ],
-    "name": "getEthFromALCBsBurn",
+    "name": "getEthFromTokensBurn",
     "outputs": [
       {
         "internalType": "uint256",
@@ -671,7 +671,7 @@
         "type": "uint256"
       }
     ],
-    "name": "getEthToMintALCBs",
+    "name": "getEthToMintTokens",
     "outputs": [
       {
         "internalType": "uint256",
@@ -690,7 +690,7 @@
         "type": "uint256"
       }
     ],
-    "name": "getLatestEthFromALCBsBurn",
+    "name": "getLatestEthFromTokensBurn",
     "outputs": [
       {
         "internalType": "uint256",
@@ -709,7 +709,7 @@
         "type": "uint256"
       }
     ],
-    "name": "getLatestEthToMintALCBs",
+    "name": "getLatestEthToMintTokens",
     "outputs": [
       {
         "internalType": "uint256",
@@ -728,7 +728,7 @@
         "type": "uint256"
       }
     ],
-    "name": "getLatestMintedALCBsFromEth",
+    "name": "getLatestMintedTokensFromEth",
     "outputs": [
       {
         "internalType": "uint256",
@@ -789,7 +789,7 @@
         "type": "uint256"
       }
     ],
-    "name": "getMintedALCBsFromEth",
+    "name": "getMintedTokensFromEth",
     "outputs": [
       {
         "internalType": "uint256",
@@ -815,7 +815,7 @@
   },
   {
     "inputs": [],
-    "name": "getTotalALCBsDeposited",
+    "name": "getTotalTokensDeposited",
     "outputs": [
       {
         "internalType": "uint256",
