@@ -10,7 +10,7 @@ import "contracts/libraries/errors/LockupErrors.sol";
 import "contracts/libraries/lockup/AccessControlled.sol";
 import "contracts/utils/auth/ImmutableFactory.sol";
 import "contracts/utils/auth/ImmutablePublicStaking.sol";
-import "contracts/utils/auth/ImmutableAToken.sol";
+import "contracts/utils/auth/ImmutableALCA.sol";
 import "contracts/utils/EthSafeTransfer.sol";
 import "contracts/utils/ERC20SafeTransfer.sol";
 import "contracts/BonusPool.sol";
@@ -44,7 +44,7 @@ import "contracts/RewardPool.sol";
 /// @custom:deploy-group-index 1
 contract Lockup is
     ImmutablePublicStaking,
-    ImmutableAToken,
+    ImmutableALCA,
     ERC20SafeTransfer,
     EthSafeTransfer,
     ERC721Holder
@@ -157,9 +157,9 @@ contract Lockup is
         uint256 enrollmentPeriod_,
         uint256 lockDuration_,
         uint256 totalBonusAmount_
-    ) ImmutableFactory(msg.sender) ImmutablePublicStaking() ImmutableAToken() {
+    ) ImmutableFactory(msg.sender) ImmutablePublicStaking() ImmutableALCA() {
         RewardPool rewardPool = new RewardPool(
-            _aTokenAddress(),
+            _alcaAddress(),
             _factoryAddress(),
             totalBonusAmount_
         );
@@ -275,7 +275,7 @@ contract Lockup is
         uint256 remainingShares = shares - exitValue_;
         if (remainingShares > 0) {
             // approve the transfer of ALCA in order to mint the publicStaking position
-            IERC20(_aTokenAddress()).approve(_publicStakingAddress(), remainingShares);
+            IERC20(_alcaAddress()).approve(_publicStakingAddress(), remainingShares);
             // burn profits contain staked position... so sub it out
             newTokenID = IStakingNFT(_publicStakingAddress()).mint(remainingShares);
             // set new records
@@ -653,10 +653,10 @@ contract Lockup is
         bool stakeExit_
     ) internal {
         if (stakeExit_) {
-            IERC20(_aTokenAddress()).approve(_publicStakingAddress(), payoutToken_);
+            IERC20(_alcaAddress()).approve(_publicStakingAddress(), payoutToken_);
             IStakingNFT(_publicStakingAddress()).mintTo(to_, payoutToken_, 0);
         } else {
-            _safeTransferERC20(IERC20Transferable(_aTokenAddress()), to_, payoutToken_);
+            _safeTransferERC20(IERC20Transferable(_alcaAddress()), to_, payoutToken_);
         }
         _safeTransferEth(to_, payoutEth_);
     }
@@ -701,7 +701,7 @@ contract Lockup is
     }
 
     function _depositFundsInRewardPool(uint256 reservedEth_, uint256 reservedToken_) internal {
-        _safeTransferERC20(IERC20Transferable(_aTokenAddress()), _rewardPool, reservedToken_);
+        _safeTransferERC20(IERC20Transferable(_alcaAddress()), _rewardPool, reservedToken_);
         RewardPool(_rewardPool).deposit{value: reservedEth_}(reservedToken_);
     }
 

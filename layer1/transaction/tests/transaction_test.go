@@ -61,7 +61,7 @@ func TestSubscribeAndWaitForValidTx(t *testing.T) {
 	mintTxnOpts.NoSend = false
 	mintTxnOpts.Value = amount
 
-	mintTxn, err := fixture.Contracts.EthereumContracts().BToken().MintTo(mintTxnOpts, owner.Address, big.NewInt(1))
+	mintTxn, err := fixture.Contracts.EthereumContracts().ALCB().MintTo(mintTxnOpts, owner.Address, big.NewInt(1))
 	assert.Nil(t, err)
 	assert.NotNil(t, mintTxn)
 
@@ -93,7 +93,7 @@ func TestSubscribeAndWaitForInvalidTxNotSigned(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Creating tx but not sending it
-	txn, err := fixture.Contracts.EthereumContracts().BToken().MintTo(txOpts, owner.Address, big.NewInt(1))
+	txn, err := fixture.Contracts.EthereumContracts().ALCB().MintTo(txOpts, owner.Address, big.NewInt(1))
 	assert.Nil(t, err)
 
 	txnRough := &types.DynamicFeeTx{}
@@ -138,7 +138,7 @@ func TestSubscribeAndWaitForTxNotFound(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Creating tx but not sending it
-	txn, err := fixture.Contracts.EthereumContracts().BToken().MintTo(txOpts, owner.Address, big.NewInt(1))
+	txn, err := fixture.Contracts.EthereumContracts().ALCB().MintTo(txOpts, owner.Address, big.NewInt(1))
 	assert.Nil(t, err)
 
 	txnRough := &types.DynamicFeeTx{}
@@ -195,7 +195,7 @@ func TestSubscribeAndWaitForStaleTx(t *testing.T) {
 	txOpts.GasFeeCap = big.NewInt(1_000_000_000)
 	txOpts.Value = amount
 	assert.Nil(t, err)
-	txn, err := fixture.Contracts.EthereumContracts().BToken().MintTo(txOpts, owner.Address, big.NewInt(1))
+	txn, err := fixture.Contracts.EthereumContracts().ALCB().MintTo(txOpts, owner.Address, big.NewInt(1))
 	assert.Nil(t, err)
 
 	subscribeOpts := transaction.NewSubscribeOptions(false, 3)
@@ -232,7 +232,7 @@ func TestSubscribeAndWaitForStaleTxWithAutoRetry(t *testing.T) {
 	txOpts.GasFeeCap = big.NewInt(1_000_000_000)
 	txOpts.Value = amount
 	assert.Nil(t, err)
-	txn, err := fixture.Contracts.EthereumContracts().BToken().MintTo(txOpts, user.Address, big.NewInt(1))
+	txn, err := fixture.Contracts.EthereumContracts().ALCB().MintTo(txOpts, user.Address, big.NewInt(1))
 	assert.Nil(t, err)
 
 	subscribeOpts := transaction.NewSubscribeOptions(true, 3)

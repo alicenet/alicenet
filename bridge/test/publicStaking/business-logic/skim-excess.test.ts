@@ -1,11 +1,7 @@
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
-import {
-  AliceNetFactory,
-  AToken,
-  PublicStaking,
-} from "../../../typechain-types";
+import { ALCA, AliceNetFactory, PublicStaking } from "../../../typechain-types";
 import {
   createUsers,
   deployAliceNetFactory,
@@ -28,7 +24,7 @@ import {
 
 describe("PublicStaking: Skim excess of tokens", async () => {
   let stakingContract: PublicStaking;
-  let aToken: AToken;
+  let alca: ALCA;
   let factory: AliceNetFactory;
   const numberUsers: number = 3;
   let etherExcess: bigint;
@@ -46,10 +42,10 @@ describe("PublicStaking: Skim excess of tokens", async () => {
 
     const factory = await deployAliceNetFactory(legacyToken.address);
 
-    // AToken
-    const aToken = await ethers.getContractAt(
-      "AToken",
-      await factory.lookup(ethers.utils.formatBytes32String("AToken"))
+    // ALCA
+    const alca = await ethers.getContractAt(
+      "ALCA",
+      await factory.lookup(ethers.utils.formatBytes32String("ALCA"))
     );
 
     const publicStakingAddress = getMetamorphicAddress(
@@ -66,16 +62,16 @@ describe("PublicStaking: Skim excess of tokens", async () => {
       "PublicStaking",
       "PublicStaking"
     )) as PublicStaking;
-    await posFixtureSetup(factory, aToken);
+    await posFixtureSetup(factory, alca);
     const tokenExcess = ethers.utils.parseUnits("100", 18).toBigInt();
-    await aToken.approve(
+    await alca.approve(
       stakingContract.address,
       ethers.utils.parseUnits("1000000", 18)
     );
-    await aToken.transfer(publicStakingAddress, tokenExcess);
+    await alca.transfer(publicStakingAddress, tokenExcess);
     return {
       stakingContract,
-      aToken,
+      alca,
       factory,
       etherExcess,
       tokenExcess,
@@ -83,7 +79,7 @@ describe("PublicStaking: Skim excess of tokens", async () => {
   }
 
   beforeEach(async function () {
-    ({ stakingContract, aToken, factory, etherExcess, tokenExcess } =
+    ({ stakingContract, alca, factory, etherExcess, tokenExcess } =
       await loadFixture(deployFixture));
   });
 
@@ -93,7 +89,7 @@ describe("PublicStaking: Skim excess of tokens", async () => {
     ).to.equals(etherExcess, "Excess Eth amount doesn't match");
 
     expect(
-      (await aToken.balanceOf(stakingContract.address)).toBigInt()
+      (await alca.balanceOf(stakingContract.address)).toBigInt()
     ).to.equals(tokenExcess, "Excess token amount doesn't match");
 
     const [userWithoutEth] = await createUsers(1, true);
@@ -115,12 +111,10 @@ describe("PublicStaking: Skim excess of tokens", async () => {
     ]);
 
     expect(
-      (await aToken.balanceOf(stakingContract.address)).toBigInt()
+      (await alca.balanceOf(stakingContract.address)).toBigInt()
     ).to.equals(0n, "Excess token amount doesn't match after skim");
 
-    expect(
-      (await aToken.balanceOf(userWithoutEth.address)).toBigInt()
-    ).to.equals(
+    expect((await alca.balanceOf(userWithoutEth.address)).toBigInt()).to.equals(
       tokenExcess,
       "Excess token amount doesn't match after skim User"
     );
@@ -132,7 +126,7 @@ describe("PublicStaking: Skim excess of tokens", async () => {
     ).to.equals(etherExcess, "Excess Eth amount doesn't match");
 
     expect(
-      (await aToken.balanceOf(stakingContract.address)).toBigInt()
+      (await alca.balanceOf(stakingContract.address)).toBigInt()
     ).to.equals(tokenExcess, "Excess token amount doesn't match");
 
     const sharesPerUser = ethers.utils.parseUnits("10", 18).toBigInt();
@@ -140,8 +134,8 @@ describe("PublicStaking: Skim excess of tokens", async () => {
     const users = await createUsers(numberUsers);
     const tokensID: number[] = [];
     for (let i = 0; i < users.length; i++) {
-      await aToken.transfer(await users[i].getAddress(), sharesPerUser);
-      await aToken
+      await alca.transfer(await users[i].getAddress(), sharesPerUser);
+      await alca
         .connect(users[i])
         .approve(stakingContract.address, sharesPerUser);
       tokensID.push(0);
@@ -149,7 +143,7 @@ describe("PublicStaking: Skim excess of tokens", async () => {
 
     const expectedState = await getCurrentState(
       stakingContract,
-      aToken,
+      alca,
       users,
       tokensID
     );
@@ -157,7 +151,7 @@ describe("PublicStaking: Skim excess of tokens", async () => {
     for (let i = 0; i < numberUsers; i++) {
       await mintPositionCheckAndUpdateState(
         stakingContract,
-        aToken,
+        alca,
         sharesPerUser,
         i,
         users,
@@ -173,7 +167,7 @@ describe("PublicStaking: Skim excess of tokens", async () => {
       const amountDeposited = ethers.utils.parseUnits("1000", 0).toBigInt();
       await depositTokensCheckAndUpdateState(
         stakingContract,
-        aToken,
+        alca,
         amountDeposited,
         users,
         tokensID,
@@ -182,7 +176,7 @@ describe("PublicStaking: Skim excess of tokens", async () => {
       );
       await depositEthCheckAndUpdateState(
         stakingContract,
-        aToken,
+        alca,
         amountDeposited,
         users,
         tokensID,
@@ -193,7 +187,7 @@ describe("PublicStaking: Skim excess of tokens", async () => {
       for (let j = 0; j < numberUsers; j++) {
         await collectTokensCheckAndUpdateState(
           stakingContract,
-          aToken,
+          alca,
           expectedCollectedAmount[i],
           j,
           users,
@@ -204,7 +198,7 @@ describe("PublicStaking: Skim excess of tokens", async () => {
 
         await collectEthCheckAndUpdateState(
           stakingContract,
-          aToken,
+          alca,
           expectedCollectedAmount[i],
           j,
           users,
@@ -224,7 +218,7 @@ describe("PublicStaking: Skim excess of tokens", async () => {
     );
 
     expect(
-      (await aToken.balanceOf(stakingContract.address)).toBigInt()
+      (await alca.balanceOf(stakingContract.address)).toBigInt()
     ).to.equals(
       expectedSlush + totalShares + tokenExcess,
       "Excess token amount doesn't match after skim"
@@ -234,7 +228,7 @@ describe("PublicStaking: Skim excess of tokens", async () => {
     const amountDeposited = ethers.utils.parseUnits("900", 0).toBigInt();
     await depositTokensCheckAndUpdateState(
       stakingContract,
-      aToken,
+      alca,
       amountDeposited,
       users,
       tokensID,
@@ -244,7 +238,7 @@ describe("PublicStaking: Skim excess of tokens", async () => {
 
     await depositEthCheckAndUpdateState(
       stakingContract,
-      aToken,
+      alca,
       amountDeposited,
       users,
       tokensID,
@@ -263,7 +257,7 @@ describe("PublicStaking: Skim excess of tokens", async () => {
     for (let j = 0; j < numberUsers; j++) {
       await burnPositionCheckAndUpdateState(
         stakingContract,
-        aToken,
+        alca,
         sharesPerUser,
         expectedPayoutAmountEth[j],
         expectedPayoutAmountToken[j],
@@ -296,12 +290,10 @@ describe("PublicStaking: Skim excess of tokens", async () => {
     ]);
 
     expect(
-      (await aToken.balanceOf(stakingContract.address)).toBigInt()
+      (await alca.balanceOf(stakingContract.address)).toBigInt()
     ).to.equals(0n, "Excess token amount doesn't match after skim");
 
-    expect(
-      (await aToken.balanceOf(userWithoutEth.address)).toBigInt()
-    ).to.equals(
+    expect((await alca.balanceOf(userWithoutEth.address)).toBigInt()).to.equals(
       tokenExcess,
       "Excess token amount doesn't match after skim User"
     );

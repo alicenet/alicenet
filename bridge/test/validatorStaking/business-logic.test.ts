@@ -20,7 +20,7 @@ describe("ValidatorStaking: Tests ValidatorStaking Business Logic methods", asyn
     const notAdminSigner = await ethers.getSigner(notAdmin.address);
     const validatorPool = fixture.validatorPool as ValidatorPoolMock;
     const amount = await validatorPool.getStakeAmount();
-    await fixture.aToken.approve(validatorPool.address, amount);
+    await fixture.alca.approve(validatorPool.address, amount);
     return {
       fixture,
       adminSigner,
@@ -36,7 +36,7 @@ describe("ValidatorStaking: Tests ValidatorStaking Business Logic methods", asyn
   });
 
   it("Should mint a token and sender should be the payer and owner", async function () {
-    const tokenBalanceBefore = await fixture.aToken.balanceOf(
+    const tokenBalanceBefore = await fixture.alca.balanceOf(
       adminSigner.address
     );
     const nftBalanceBefore = await fixture.validatorStaking.balanceOf(
@@ -52,7 +52,7 @@ describe("ValidatorStaking: Tests ValidatorStaking Business Logic methods", asyn
         .balanceOf(validatorPool.address)
     ).to.equal(nftBalanceBefore.add(1));
     expect(
-      await fixture.aToken // ATK -= amount
+      await fixture.alca // ATK -= amount
         .balanceOf(adminSigner.address)
     ).to.equal(tokenBalanceBefore.sub(amount));
   });
@@ -65,12 +65,12 @@ describe("ValidatorStaking: Tests ValidatorStaking Business Logic methods", asyn
     const nftBalanceBefore = await fixture.validatorStaking.balanceOf(
       validatorPool.address
     );
-    const tokenBalanceBefore = await fixture.aToken.balanceOf(
+    const tokenBalanceBefore = await fixture.alca.balanceOf(
       validatorPool.address
     );
     tx = await validatorPool.burnValidatorStaking(1);
     expect((await tx.wait()).status).to.be.equal(1);
-    expect(await fixture.aToken.balanceOf(validatorPool.address)).to.be.eq(
+    expect(await fixture.alca.balanceOf(validatorPool.address)).to.be.eq(
       amount
     );
     expect(
@@ -78,13 +78,13 @@ describe("ValidatorStaking: Tests ValidatorStaking Business Logic methods", asyn
         .balanceOf(validatorPool.address)
     ).to.equal(nftBalanceBefore.sub(1));
     expect(
-      await fixture.aToken // ATK +=amount
+      await fixture.alca // ATK +=amount
         .balanceOf(validatorPool.address)
     ).to.equal(tokenBalanceBefore.add(amount));
   });
 
   it("Should mint a token to an address and send staking funds from sender address", async function () {
-    const tokenBalanceBefore = await fixture.aToken.balanceOf(
+    const tokenBalanceBefore = await fixture.alca.balanceOf(
       adminSigner.address
     );
     const nftBalanceBefore = await fixture.validatorStaking.balanceOf(
@@ -99,7 +99,7 @@ describe("ValidatorStaking: Tests ValidatorStaking Business Logic methods", asyn
         .balanceOf(notAdminSigner.address)
     ).to.equal(nftBalanceBefore.add(1));
     expect(
-      await fixture.aToken // ATK -= amount
+      await fixture.alca // ATK -= amount
         .balanceOf(adminSigner.address)
     ).to.equal(tokenBalanceBefore.sub(amount));
   });
@@ -112,7 +112,7 @@ describe("ValidatorStaking: Tests ValidatorStaking Business Logic methods", asyn
     const nftBalanceBefore = await fixture.validatorStaking.balanceOf(
       validatorPool.address
     );
-    const tokenBalanceBefore = await fixture.aToken.balanceOf(
+    const tokenBalanceBefore = await fixture.alca.balanceOf(
       notAdminSigner.address
     );
     tx = await validatorPool.burnToValidatorStaking(1, notAdminSigner.address);
@@ -122,7 +122,7 @@ describe("ValidatorStaking: Tests ValidatorStaking Business Logic methods", asyn
         .balanceOf(validatorPool.address)
     ).to.equal(nftBalanceBefore.sub(1));
     expect(
-      await fixture.aToken // ATK +=amount
+      await fixture.alca // ATK +=amount
         .balanceOf(notAdminSigner.address)
     ).to.equal(tokenBalanceBefore.add(amount));
   });

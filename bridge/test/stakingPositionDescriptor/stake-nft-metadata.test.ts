@@ -18,7 +18,7 @@ describe("StakingPositionDescriptor: Tests StakingPositionDescriptor methods", a
   let publicStaking: PublicStaking;
   let stakingPositionDescriptor: StakingPositionDescriptor;
   const stakeAmount = 20000;
-  const stakeAmountATokenWei = ethers.utils.parseUnits(
+  const stakeAmountALCAWei = ethers.utils.parseUnits(
     stakeAmount.toString(),
     18
   );
@@ -34,13 +34,13 @@ describe("StakingPositionDescriptor: Tests StakingPositionDescriptor methods", a
     const publicStaking = fixture.publicStaking;
     const stakingPositionDescriptor = fixture.stakingPositionDescriptor;
 
-    await fixture.aToken.approve(
+    await fixture.alca.approve(
       fixture.publicStaking.address,
-      BigNumber.from(stakeAmountATokenWei)
+      BigNumber.from(stakeAmountALCAWei)
     );
     const tx = await fixture.publicStaking
       .connect(adminSigner)
-      .mintTo(admin.address, stakeAmountATokenWei, lockTime);
+      .mintTo(admin.address, stakeAmountALCAWei, lockTime);
     const tokenId = await getTokenIdFromTx(tx);
     return {
       fixture,

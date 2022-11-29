@@ -3,7 +3,7 @@ pragma solidity ^0.8.16;
 
 import "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
 import "contracts/utils/auth/ImmutableFactory.sol";
-import "contracts/utils/auth/ImmutableAToken.sol";
+import "contracts/utils/auth/ImmutableALCA.sol";
 import "contracts/utils/auth/ImmutablePublicStaking.sol";
 import "contracts/utils/auth/ImmutableFoundation.sol";
 import "contracts/utils/EthSafeTransfer.sol";
@@ -23,7 +23,7 @@ import "contracts/Lockup.sol";
  * @dev deployed by the RewardPool contract
  */
 contract BonusPool is
-    ImmutableAToken,
+    ImmutableALCA,
     ImmutablePublicStaking,
     ImmutableFoundation,
     ERC20SafeTransfer,
@@ -47,7 +47,7 @@ contract BonusPool is
         uint256 totalBonusAmount_
     )
         ImmutableFactory(aliceNetFactory_)
-        ImmutableAToken()
+        ImmutableALCA()
         ImmutablePublicStaking()
         ImmutableFoundation()
     {
@@ -70,7 +70,7 @@ contract BonusPool is
         if (_tokenID != 0) {
             revert LockupErrors.BonusTokenAlreadyCreated();
         }
-        IERC20 alca = IERC20(_aTokenAddress());
+        IERC20 alca = IERC20(_alcaAddress());
         //get the total balance of ALCA owned by bonus pool as stake amount
         uint256 _stakeAmount = alca.balanceOf(address(this));
         if (_stakeAmount < _totalBonusAmount) {
@@ -96,7 +96,7 @@ contract BonusPool is
         // restarting the _tokenID
         _tokenID = 0;
         _safeTransferERC20(
-            IERC20Transferable(_aTokenAddress()),
+            IERC20Transferable(_alcaAddress()),
             _getRewardPoolAddress(),
             payoutToken
         );

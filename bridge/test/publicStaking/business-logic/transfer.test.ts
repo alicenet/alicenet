@@ -14,7 +14,7 @@ describe("PublicStaking: NFT transfer", async () => {
   async function deployFixture() {
     const fixture = await getBaseTokensFixture();
     const [adminSigner, notAdminSigner] = await ethers.getSigners();
-    await fixture.aToken.approve(fixture.publicStaking.address, 2000);
+    await fixture.alca.approve(fixture.publicStaking.address, 2000);
     await fixture.publicStaking.connect(adminSigner).mint(1000);
     const erc721ReceiverContract = await (
       await ethers.getContractFactory("ERC721ReceiverAccount")
@@ -255,7 +255,7 @@ describe("PublicStaking: NFT transfer", async () => {
     await expect(
       fixture.publicStaking["safeTransferFrom(address,address,uint256)"](
         adminSigner.address,
-        fixture.bToken.address,
+        fixture.alcb.address,
         1
       )
     ).to.be.rejectedWith("ERC721: transfer to non ERC721Receiver implementer");

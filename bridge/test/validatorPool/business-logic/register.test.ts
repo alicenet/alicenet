@@ -174,7 +174,7 @@ describe("ValidatorPool: Registration logic", async () => {
     _validatorsSnapshots[1] = _validatorsSnapshots[0];
     const newValidators = await createValidators(fixture, _validatorsSnapshots);
     // Approve first validator for twice the amount
-    await fixture.aToken
+    await fixture.alca
       .connect(await getValidatorEthAccount(validatorsSnapshots[0]))
       .approve(fixture.publicStaking.address, stakeAmount * BigInt(2));
     await stakeValidators(fixture, newValidators);
@@ -252,8 +252,8 @@ describe("ValidatorPool: Registration logic", async () => {
     // Mint a publicStaking and burn it to the ValidatorPool contract. Besides a contract self destructing
     // itself, this is a method to send eth accidentally to the validatorPool contract
     const etherAmount = ethers.utils.parseEther("1");
-    const aTokenAmount = ethers.utils.parseEther("2");
-    await burnStakeTo(fixture, etherAmount, aTokenAmount, adminSigner);
+    const alcaAmount = ethers.utils.parseEther("2");
+    await burnStakeTo(fixture, etherAmount, alcaAmount, adminSigner);
 
     const expectedState = await getCurrentState(fixture, validators);
     // Expect that NFTs are transferred from each validator from ValidatorPool to ValidatorStaking

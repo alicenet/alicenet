@@ -24,7 +24,7 @@ describe("PublicStaking: Only Mint", async () => {
   });
 
   it("Mint a NFT position", async function () {
-    await fixture.aToken.approve(fixture.publicStaking.address, 1000);
+    await fixture.alca.approve(fixture.publicStaking.address, 1000);
     const tx = await fixture.publicStaking.connect(adminSigner).mint(1000);
     const blockNumber = BigInt(tx.blockNumber as number);
     const tokenID = await getTokenIdFromTx(tx);
@@ -44,7 +44,7 @@ describe("PublicStaking: Only Mint", async () => {
   });
 
   it("Mint many NFT positions for a user", async function () {
-    await fixture.aToken.approve(fixture.publicStaking.address, 1000);
+    await fixture.alca.approve(fixture.publicStaking.address, 1000);
     for (let i = 1; i <= 10; i++) {
       const tx = await fixture.publicStaking.connect(adminSigner).mint(100);
       const blockNumber = BigInt(tx.blockNumber as number);
@@ -85,7 +85,7 @@ describe("PublicStaking: Only Mint", async () => {
   });
 
   it("Should not be able to mint NFT positions without having tokens", async function () {
-    await fixture.aToken
+    await fixture.alca
       .connect(notAdminSigner)
       .approve(fixture.publicStaking.address, 1000);
     await expect(
@@ -114,7 +114,7 @@ describe("PublicStaking: Only Mint", async () => {
   });
 
   it("MintTo a NFT position to another user without lock", async function () {
-    await fixture.aToken.approve(fixture.publicStaking.address, 1000);
+    await fixture.alca.approve(fixture.publicStaking.address, 1000);
     const tx = await fixture.publicStaking
       .connect(adminSigner)
       .mintTo(notAdminSigner.address, 1000, 0);
@@ -136,7 +136,7 @@ describe("PublicStaking: Only Mint", async () => {
   });
 
   it("MintTo a NFT position to another user with time lock", async function () {
-    await fixture.aToken.approve(fixture.publicStaking.address, 1000);
+    await fixture.alca.approve(fixture.publicStaking.address, 1000);
     const tx = await fixture.publicStaking
       .connect(adminSigner)
       .mintTo(notAdminSigner.address, 1000, 10);
@@ -165,7 +165,7 @@ describe("PublicStaking: Only Mint", async () => {
   });
 
   it("Should not be able to mintTo a NFT position with lock duration greater than _MAX_MINT_LOCK", async function () {
-    await fixture.aToken.approve(fixture.publicStaking.address, 1000);
+    await fixture.alca.approve(fixture.publicStaking.address, 1000);
     await expect(
       fixture.publicStaking
         .connect(adminSigner)

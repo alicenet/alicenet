@@ -3,16 +3,15 @@ pragma solidity ^0.8.16;
 import "contracts/utils/DeterministicAddress.sol";
 import "contracts/Proxy.sol";
 import "contracts/libraries/factory/AliceNetFactoryBase.sol";
-import "contracts/AToken.sol";
+import "contracts/ALCA.sol";
 
 contract AliceNetFactory is AliceNetFactoryBase {
-    // AToken salt = Bytes32(AToken)
-    // AToken is the old ALCA name, salt kept to maintain compatibility
-    bytes32 internal constant _ATOKEN_SALT =
-        0x41546f6b656e0000000000000000000000000000000000000000000000000000;
+    // ALCA salt = Bytes32(ALCA)
+    bytes32 internal constant _ALCA_SALT =
+        0x414c434100000000000000000000000000000000000000000000000000000000;
 
-    bytes32 internal immutable _aTokenCreationCodeHash;
-    address internal immutable _aTokenAddress;
+    bytes32 internal immutable _alcaCreationCodeHash;
+    address internal immutable _alcaAddress;
 
     /**
      * @notice The constructor encodes the proxy deploy byte code with the _UNIVERSAL_DEPLOY_CODE at the
@@ -25,16 +24,16 @@ contract AliceNetFactory is AliceNetFactoryBase {
     constructor(address legacyToken_) AliceNetFactoryBase() {
         // Deploying ALCA
         bytes memory creationCode = abi.encodePacked(
-            type(AToken).creationCode,
+            type(ALCA).creationCode,
             bytes32(uint256(uint160(legacyToken_)))
         );
-        address aTokenAddress;
+        address alcaAddress;
         assembly ("memory-safe") {
-            aTokenAddress := create2(0, add(creationCode, 0x20), mload(creationCode), _ATOKEN_SALT)
+            alcaAddress := create2(0, add(creationCode, 0x20), mload(creationCode), _ALCA_SALT)
         }
-        _codeSizeZeroRevert((_extCodeSize(aTokenAddress) != 0));
-        _aTokenAddress = aTokenAddress;
-        _aTokenCreationCodeHash = keccak256(abi.encodePacked(creationCode));
+        _codeSizeZeroRevert((_extCodeSize(alcaAddress) != 0));
+        _alcaAddress = alcaAddress;
+        _alcaCreationCodeHash = keccak256(abi.encodePacked(creationCode));
     }
 
     /**
@@ -164,26 +163,26 @@ contract AliceNetFactory is AliceNetFactoryBase {
     function lookup(bytes32 salt_) public view override returns (address) {
         // check if the salt belongs to one of the pre-defined contracts deployed during the factory
         // deployment
-        if (salt_ == _ATOKEN_SALT) {
-            return _aTokenAddress;
+        if (salt_ == _ALCA_SALT) {
+            return _alcaAddress;
         }
         return AliceNetFactoryBase._lookup(salt_);
     }
 
     /**
-     * @notice getter function for retrieving the hash of the AToken creation code.
-     * @return the hash of the AToken creation code.
+     * @notice getter function for retrieving the hash of the ALCA creation code.
+     * @return the hash of the ALCA creation code.
      */
-    function getATokenCreationCodeHash() public view returns (bytes32) {
-        return _aTokenCreationCodeHash;
+    function getALCACreationCodeHash() public view returns (bytes32) {
+        return _alcaCreationCodeHash;
     }
 
     /**
-     * @notice getter function for retrieving the address of the AToken contract.
-     * @return AToken address.
+     * @notice getter function for retrieving the address of the ALCA contract.
+     * @return ALCA address.
      */
-    function getATokenAddress() public view returns (address) {
-        return _aTokenAddress;
+    function getALCAAddress() public view returns (address) {
+        return _alcaAddress;
     }
 
     /**

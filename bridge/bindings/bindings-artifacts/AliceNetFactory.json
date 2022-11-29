@@ -300,7 +300,7 @@
   },
   {
     "inputs": [],
-    "name": "getATokenAddress",
+    "name": "getALCAAddress",
     "outputs": [
       {
         "internalType": "address",
@@ -313,7 +313,7 @@
   },
   {
     "inputs": [],
-    "name": "getATokenCreationCodeHash",
+    "name": "getALCACreationCodeHash",
     "outputs": [
       {
         "internalType": "bytes32",

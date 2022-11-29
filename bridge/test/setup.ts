@@ -22,10 +22,6 @@ import {
 } from "../scripts/lib/deployment/utils";
 import {
   AliceNetFactory,
-  AToken,
-  ATokenBurner,
-  ATokenMinter,
-  BToken,
   Distribution,
   Dynamics,
   ETHDKG,
@@ -79,14 +75,14 @@ export interface BaseFixture {
 }
 
 export interface BaseTokensFixture extends BaseFixture {
-  aToken: AToken;
-  bToken: BToken;
+  alca: ALCA;
+  alcb: ALCB;
   legacyToken: LegacyToken;
   publicStaking: PublicStaking;
 }
 
 export interface Fixture extends BaseTokensFixture {
-  aTokenMinter: ATokenMinter;
+  alcaMinter: ALCAMinter;
   validatorStaking: ValidatorStaking;
   validatorPool: ValidatorPool | ValidatorPoolMock;
   snapshots: Snapshots | SnapshotsMock;
@@ -348,10 +344,7 @@ export const preFixtureSetup = async () => {
   }
 };
 
-export const posFixtureSetup = async (
-  factory: AliceNetFactory,
-  aToken: AToken
-) => {
+export const posFixtureSetup = async (factory: AliceNetFactory, alca: ALCA) => {
   // finish workaround, putting the blockgas limit to the previous value 30_000_000
   const hre = await require("hardhat");
   if (hre.__SOLIDITY_COVERAGE_RUNNING !== true) {
@@ -481,7 +474,7 @@ export const getFixture = async (
     )) as Snapshots;
   }
 
-  const aTokenMinter = (await deployUpgradeableWithFactory(
+  const alcaMinter = (await deployUpgradeableWithFactory(
     factory,
     "ATokenMinter",
     "ATokenMinter"
@@ -495,9 +488,9 @@ export const getFixture = async (
 
   const aTokenBurner = (await deployUpgradeableWithFactory(
     factory,
-    "ATokenBurner",
-    "ATokenBurner"
-  )) as ATokenBurner;
+    "ALCABurner",
+    "ALCABurner"
+  )) as ALCABurner;
 
   const invalidTxConsumptionAccusation = (await deployUpgradeableWithFactory(
     factory,
@@ -517,7 +510,7 @@ export const getFixture = async (
     "Accusation"
   )) as MultipleProposalAccusation;
 
-  // distribution contract for distributing BTokens yields
+  // distribution contract for distributing ALCBs yields
   const distribution = (await deployUpgradeableWithFactory(
     factory,
     "Distribution",
@@ -533,7 +526,7 @@ export const getFixture = async (
     []
   )) as Dynamics;
 
-  await posFixtureSetup(factory, aToken);
+  await posFixtureSetup(factory, alca);
   const blockNumber = BigInt(await ethers.provider.getBlockNumber());
   const phaseLength = (await ethdkg.getPhaseLength()).toBigInt();
   if (phaseLength >= blockNumber) {
@@ -541,8 +534,8 @@ export const getFixture = async (
   }
 
   return {
-    aToken,
-    bToken,
+    alca,
+    alcb,
     legacyToken,
     publicStaking,
     validatorStaking,
@@ -551,8 +544,8 @@ export const getFixture = async (
     ethdkg,
     factory,
     namedSigners,
-    aTokenMinter,
-    aTokenBurner,
+    alcaMinter,
+    alcaBurner,
     liquidityProviderStaking,
     foundation,
     stakingPositionDescriptor,

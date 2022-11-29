@@ -9,7 +9,7 @@ import "contracts/utils/auth/ImmutableSnapshots.sol";
 import "contracts/utils/auth/ImmutableETHDKG.sol";
 import "contracts/utils/auth/ImmutablePublicStaking.sol";
 import "contracts/utils/auth/ImmutableValidatorStaking.sol";
-import "contracts/utils/auth/ImmutableAToken.sol";
+import "contracts/utils/auth/ImmutableALCA.sol";
 
 abstract contract ValidatorPoolStorage is
     ImmutableFactory,
@@ -17,7 +17,7 @@ abstract contract ValidatorPoolStorage is
     ImmutableETHDKG,
     ImmutablePublicStaking,
     ImmutableValidatorStaking,
-    ImmutableAToken
+    ImmutableALCA
 {
     // POSITION_LOCK_PERIOD describes the maximum interval a PublicStaking Position may be locked after
     // being given back to validator exiting the pool
@@ -61,6 +61,6 @@ abstract contract ValidatorPoolStorage is
         ImmutableETHDKG()
         ImmutablePublicStaking()
         ImmutableValidatorStaking()
-        ImmutableAToken()
+        ImmutableALCA()
     {}
 }

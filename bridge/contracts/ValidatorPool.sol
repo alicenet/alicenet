@@ -74,10 +74,10 @@ contract ValidatorPool is
      * operations that send asserts to accounts.
      */
     modifier balanceShouldNotChange() {
-        uint256 balanceBeforeToken = IERC20Transferable(_aTokenAddress()).balanceOf(address(this));
+        uint256 balanceBeforeToken = IERC20Transferable(_alcaAddress()).balanceOf(address(this));
         uint256 balanceBeforeEth = address(this).balance;
         _;
-        if (balanceBeforeToken != IERC20Transferable(_aTokenAddress()).balanceOf(address(this))) {
+        if (balanceBeforeToken != IERC20Transferable(_alcaAddress()).balanceOf(address(this))) {
             revert ValidatorPoolErrors.TokenBalanceChangedDuringOperation();
         }
         if (balanceBeforeEth != address(this).balance) {
@@ -150,7 +150,7 @@ contract ValidatorPool is
     }
 
     /**
-     * Sets the amount of AToken that a person valid accusing a validator will gain
+     * Sets the amount of ALCA that a person valid accusing a validator will gain
      * as reward. Can only be called by the contract factory.
      * @param disputerReward_ the new reward amount.
      */
@@ -377,7 +377,7 @@ contract ValidatorPool is
         }
         // redistribute the dishonest staking equally with the other validators
 
-        IERC20Transferable(_aTokenAddress()).approve(_validatorStakingAddress(), minerShares);
+        IERC20Transferable(_alcaAddress()).approve(_validatorStakingAddress(), minerShares);
         IStakingNFT(_validatorStakingAddress()).depositToken(_getMagic(), minerShares);
         // transfer to the disputer any profit that the dishonestValidator had when his
         // position was burned + the disputerReward
@@ -423,13 +423,13 @@ contract ValidatorPool is
         return excess;
     }
 
-    /// skimExcessToken will allow the Admin role to refund any AToken sent to this contract in error
+    /// skimExcessToken will allow the Admin role to refund any ALCA sent to this contract in error
     /// by a user.
     function skimExcessToken(address to_) public onlyFactory returns (uint256 excess) {
         // This contract shouldn't held any token balance.
-        IERC20Transferable aToken = IERC20Transferable(_aTokenAddress());
-        excess = aToken.balanceOf(address(this));
-        _safeTransferERC20(aToken, to_, excess);
+        IERC20Transferable alca = IERC20Transferable(_alcaAddress());
+        excess = alca.balanceOf(address(this));
+        _safeTransferERC20(alca, to_, excess);
         return excess;
     }
 
@@ -523,7 +523,7 @@ contract ValidatorPool is
     }
 
     function _transferEthAndTokens(address to_, uint256 payoutEth_, uint256 payoutToken_) internal {
-        _safeTransferERC20(IERC20Transferable(_aTokenAddress()), to_, payoutToken_);
+        _safeTransferERC20(IERC20Transferable(_alcaAddress()), to_, payoutToken_);
         _safeTransferEth(to_, payoutEth_);
     }
 
@@ -628,7 +628,7 @@ contract ValidatorPool is
         uint256 minerShares_
     ) internal returns (uint256 validatorTokenID) {
         // We should approve the validatorStaking to transferFrom the tokens of this contract
-        IERC20Transferable(_aTokenAddress()).approve(_validatorStakingAddress(), minerShares_);
+        IERC20Transferable(_alcaAddress()).approve(_validatorStakingAddress(), minerShares_);
         validatorTokenID = IStakingNFT(_validatorStakingAddress()).mint(minerShares_);
     }
 
@@ -636,7 +636,7 @@ contract ValidatorPool is
         uint256 minerShares_
     ) internal returns (uint256 stakeTokenID) {
         // We should approve the PublicStaking to transferFrom the tokens of this contract
-        IERC20Transferable(_aTokenAddress()).approve(_publicStakingAddress(), minerShares_);
+        IERC20Transferable(_alcaAddress()).approve(_publicStakingAddress(), minerShares_);
         stakeTokenID = IStakingNFT(_publicStakingAddress()).mint(minerShares_);
     }
 

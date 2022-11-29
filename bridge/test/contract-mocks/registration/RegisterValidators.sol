@@ -16,9 +16,9 @@ import "contracts/utils/auth/ImmutableSnapshots.sol";
 import "contracts/utils/auth/ImmutableETHDKG.sol";
 import "contracts/utils/auth/ImmutablePublicStaking.sol";
 import "contracts/utils/auth/ImmutableValidatorStaking.sol";
-import "contracts/utils/auth/ImmutableAToken.sol";
-import "contracts/utils/auth/ImmutableBToken.sol";
-import "contracts/utils/auth/ImmutableATokenMinter.sol";
+import "contracts/utils/auth/ImmutableALCA.sol";
+import "contracts/utils/auth/ImmutableALCB.sol";
+import "contracts/utils/auth/ImmutableALCAMinter.sol";
 
 contract ExternalStoreRegistration is ImmutableFactory {
     uint256 internal _counter;
@@ -55,9 +55,9 @@ contract RegisterValidators is
     ImmutableFactory,
     ImmutableSnapshots,
     ImmutableETHDKG,
-    ImmutableAToken,
-    ImmutableATokenMinter,
-    ImmutableBToken,
+    ImmutableALCA,
+    ImmutableALCAMinter,
+    ImmutableALCB,
     ImmutablePublicStaking,
     ImmutableValidatorPool
 {
@@ -70,9 +70,9 @@ contract RegisterValidators is
         ImmutableFactory(factory_)
         ImmutableSnapshots()
         ImmutableETHDKG()
-        ImmutableAToken()
-        ImmutableBToken()
-        ImmutableATokenMinter()
+        ImmutableALCA()
+        ImmutableALCB()
+        ImmutableALCAMinter()
         ImmutablePublicStaking()
         ImmutableValidatorPool()
     {
@@ -82,9 +82,9 @@ contract RegisterValidators is
     function stakeValidators(uint256 numValidators) public {
         // Setting staking amount
         IValidatorPool(_validatorPoolAddress()).setStakeAmount(1);
-        // Minting 4 aTokensWei to stake the validators
-        IStakingTokenMinter(_aTokenMinterAddress()).mint(_factoryAddress(), numValidators);
-        IERC20Transferable(_aTokenAddress()).approve(_publicStakingAddress(), numValidators);
+        // Minting 4 alcasWei to stake the validators
+        IStakingTokenMinter(_alcaMinterAddress()).mint(_factoryAddress(), numValidators);
+        IERC20Transferable(_alcaAddress()).approve(_publicStakingAddress(), numValidators);
         uint256[] memory tokenIDs = new uint256[](numValidators);
         for (uint256 i; i < numValidators; i++) {
             // minting publicStaking position for the factory
