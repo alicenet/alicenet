@@ -311,7 +311,7 @@ export async function deployCreateTask(
   const deployCreateData: DeployCreateData = {
     name: deploymentConfigForContract.name,
     address: getEventVar(receipt, EVENT_DEPLOYED_RAW, CONTRACT_ADDR),
-    factoryAddress: factoryAddress,
+    factoryAddress,
     gas: receipt.gasUsed,
     constructorArgs: deploymentConfigForContract.constructorArgs,
   };
@@ -367,7 +367,7 @@ export async function deployCreate2Task(
   const deployCreate2Data: any = {
     name: deploymentConfigForContract.name,
     address: getEventVar(receipt, EVENT_DEPLOYED_RAW, CONTRACT_ADDR),
-    factoryAddress: factoryAddress,
+    factoryAddress,
     gas: receipt.gasUsed,
     constructorArgs: deploymentConfigForContract.constructorArgs,
   };
@@ -453,7 +453,7 @@ export async function upgradeProxyTask(
     `Updating logic for the ${deploymentConfigForContract.name} proxy at ${proxyAddress} to point to implementation at ${implementationAddress}, gasCost: ${receipt.gasUsed}`
   );
   const proxyData: ProxyData = {
-    factoryAddress: factoryAddress,
+    factoryAddress,
     logicName: deploymentConfigForContract.name,
     logicAddress: implementationAddress,
     salt: deploymentConfigForContract.salt,

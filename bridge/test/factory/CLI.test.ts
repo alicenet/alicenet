@@ -220,20 +220,20 @@ async function cliDeployCreate(
   });
 }
 
-async function cliUpgradeDeployedProxy(
-  contractName: string,
-  logicAddress: string,
-  factoryAddress: string,
-  initializerArgs?: string
-): Promise<ProxyData> {
-  return await run("upgrade-proxy", {
-    contractName,
-    logicAddress,
-    factoryAddress,
-    initializerArgs,
-    waitConfirmation: 0,
-  });
-}
+// async function cliUpgradeDeployedProxy(
+//   contractName: string,
+//   logicAddress: string,
+//   factoryAddress: string,
+//   initializerArgs?: string
+// ): Promise<ProxyData> {
+//   return await run("upgrade-proxy", {
+//     contractName,
+//     logicAddress,
+//     factoryAddress,
+//     initializerArgs,
+//     waitConfirmation: 0,
+//   });
+// }
 
 async function cliDeployFactory(
   legacyTokenAddress?: string,
@@ -246,13 +246,13 @@ async function cliDeployFactory(
   });
 }
 
-async function cliDeployOnlyProxy(
-  salt: string,
-  factoryAddress: string
-): Promise<ProxyData> {
-  return await run("deploy-only-proxy", {
-    salt,
-    factoryAddress,
-    waitConfirmation: 0,
-  });
-}
+// async function cliDeployOnlyProxy(
+//   salt: string,
+//   factoryAddress: string
+// ): Promise<ProxyData> {
+//   return await run("deploy-only-proxy", {
+//     salt,
+//     factoryAddress,
+//     waitConfirmation: 0,
+//   });
+// }

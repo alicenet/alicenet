@@ -374,7 +374,7 @@ export const getFixture = async (
 ): Promise<Fixture> => {
   await preFixtureSetup();
   const namedSigners = await ethers.getSigners();
-  const [admin] = namedSigners;
+
   // Deploy the base tokens
   const { factory, alca, alcb, legacyToken, publicStaking } =
     await deployFactoryAndBaseTokens();

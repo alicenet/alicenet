@@ -302,6 +302,7 @@ export async function deployLockupContract(
     [enrollmentPeriod, lockDuration, totalBonusAmount],
     ethers.utils.formatBytes32String(LOCK_UP)
   );
+
   // get the address from the event
   const lockupAddress = await getEventVar(
     txResponse,

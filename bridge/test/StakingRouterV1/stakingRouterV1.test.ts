@@ -6,7 +6,7 @@ import { ethers } from "hardhat";
 import { deployCreateAndRegister } from "../../scripts/lib/alicenetFactory";
 import {
   CONTRACT_ADDR,
-  DEPLOYED_RAW,
+  EVENT_DEPLOYED_RAW,
   STAKING_ROUTER_V1,
 } from "../../scripts/lib/constants";
 import {
@@ -59,7 +59,7 @@ async function deployFixture() {
   // get the address from the event
   const lockupAddress = await getEventVar(
     txResponse,
-    DEPLOYED_RAW,
+    EVENT_DEPLOYED_RAW,
     CONTRACT_ADDR
   );
   // deploy staking router
@@ -67,15 +67,15 @@ async function deployFixture() {
   contractName = ethers.utils.formatBytes32String(STAKING_ROUTER_V1);
   txResponse = await deployCreateAndRegister(
     STAKING_ROUTER_V1,
-    fixture.factory.address,
+    fixture.factory,
     ethers,
     [],
-    undefined
+    contractName
   );
   // get the address from the event
   const stakingRouterAddress = await getEventVar(
     txResponse,
-    DEPLOYED_RAW,
+    EVENT_DEPLOYED_RAW,
     CONTRACT_ADDR
   );
   await posFixtureSetup(fixture.factory, fixture.alca);
