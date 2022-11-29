@@ -96,6 +96,27 @@ contract SnapshotsMock is Initializable, ImmutableValidatorPool, ISnapshots, Imm
         return true;
     }
 
+    function snapshotWithValidData(
+        bytes calldata groupSignature_,
+        bytes calldata bClaims_
+    ) public returns (bool) {
+        bool isSafeToProceedConsensus = true;
+        if (IValidatorPool(_validatorPoolAddress()).isMaintenanceScheduled()) {
+            isSafeToProceedConsensus = false;
+            IValidatorPool(_validatorPoolAddress()).pauseConsensus();
+        }
+        groupSignature_;
+        BClaimsParserLibrary.BClaims memory blockClaims = BClaimsParserLibrary.extractBClaims(
+            bClaims_
+        );
+
+        _epoch++;
+        _snapshots[_epoch] = Snapshot(block.number, blockClaims);
+        IDynamics(_dynamicsAddress()).updateHead(_epoch);
+
+        return true;
+    }
+
     function setCommittedHeightFromLatestSnapshot(uint256 height_) public returns (uint256) {
         _snapshots[_epoch].committedAt = height_;
         return height_;
