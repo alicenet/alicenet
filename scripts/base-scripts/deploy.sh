@@ -9,13 +9,9 @@ NETWORK=${1:-"dev"}
 cd $BRIDGE_DIR
 
 # if on hardhat network this switches automine on to deploy faster
-npx hardhat set-local-environment-interval-mining --network $NETWORK --interval 500 >> deployconfig.txt
+npx hardhat set-local-environment-interval-mining --network $NETWORK --interval 500
 
-# Copy the deployList to the generated folder so we have deploymentList and deploymentArgsTemplate in the same folder
-cp ../scripts/base-files/deploymentList ../scripts/generated/deploymentList
-cp ../scripts/base-files/deploymentArgsTemplate ../scripts/generated/deploymentArgsTemplate
-
-npx hardhat --network "$NETWORK" --show-stack-traces deploy-contracts --input-folder ../scripts/generated --wait-confirmation 1
+npx hardhat --network "$NETWORK" --show-stack-traces deploy-contracts --input-folder ../scripts/generated --wait-confirmation 0 >>../scripts/generated/deployconfig.txt
 
 # -f  will check for the file existence but -s will check for file existence along with file size greater than 0 (zero).
 if [[ -s ../scripts/generated/factoryState ]]; then
@@ -25,7 +21,7 @@ else
     exit 1
 fi
 
-export FACTORY_ADDRESS=$addr 
+export FACTORY_ADDRESS=$addr
 if [[ -z "${FACTORY_ADDRESS}" ]]; then
     echo "It was not possible to find Factory Address in the environment variable FACTORY_ADDRESS! Exiting script!"
     exit 1

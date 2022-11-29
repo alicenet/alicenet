@@ -44,7 +44,9 @@ describe("AliceNetfactory API test", async () => {
     const proxyAddress = getEventVar(receipt, "DeployedProxy", CONTRACT_ADDR);
 
     const proxy = await ethers.getContractAt(PROXY, proxyAddress);
-    const implementationAddress = await proxy.getImplementationAddress();
+    const implementationAddress = await factory.getProxyImplementation(
+      proxy.address
+    );
     expect(implementationAddress).to.not.equal(ethers.constants.AddressZero);
     let cSize = await utilsContract.getCodeSize(implementationAddress);
     expect(cSize.toNumber()).to.be.greaterThan(0);
@@ -68,7 +70,9 @@ describe("AliceNetfactory API test", async () => {
     let receipt = await txResponse.wait();
     const proxyAddress = getEventVar(receipt, "DeployedProxy", CONTRACT_ADDR);
     const proxy = await ethers.getContractAt(PROXY, proxyAddress);
-    const implementationAddress = await proxy.getImplementationAddress();
+    const implementationAddress = await factory.getProxyImplementation(
+      proxy.address
+    );
     txResponse = await multiCallUpgradeProxy(
       logicContractBase,
       factory,
@@ -84,7 +88,9 @@ describe("AliceNetfactory API test", async () => {
       "DeployedRaw",
       CONTRACT_ADDR
     );
-    const newImplementationAddress = await proxy.getImplementationAddress();
+    const newImplementationAddress = await factory.getProxyImplementation(
+      proxy.address
+    );
     expect(newImplementationAddress).to.not.equal(implementationAddress);
     expect(newImplementationAddress).to.equal(expectedImplementationAddress);
   });
