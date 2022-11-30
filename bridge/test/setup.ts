@@ -22,6 +22,7 @@ import {
 } from "../scripts/lib/deployment/utils";
 import {
   ALCA,
+  ALCABurner,
   ALCAMinter,
   ALCB,
   AliceNetFactory,
