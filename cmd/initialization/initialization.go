@@ -2,12 +2,14 @@ package initialization
 
 import (
 	"fmt"
-	"github.com/alicenet/alicenet/cmd/ethkey"
 	"os"
+
+	"github.com/alicenet/alicenet/cmd/ethkey"
+
+	"path"
 
 	"github.com/alicenet/alicenet/config"
 	"github.com/alicenet/alicenet/logging"
-	"path"
 
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -174,7 +176,7 @@ func initializeFilesAndFolders(cmd *cobra.Command, args []string) {
 			ethereumEndpointURL = ee
 		} else {
 			ethereumEndpointURL = "<ETHEREUM_ENDPOINT_URL>"
-			fmt.Println(fmt.Sprintf("In order to configure your node properly, please save the Ethereum endpoint to the following file %s.", configPath))
+			fmt.Printf("In order to configure your node properly, please save the Ethereum endpoint to the following file %s.\n", configPath)
 		}
 	}
 

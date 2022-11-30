@@ -275,12 +275,10 @@ func (s *Storage) GetDataStoreFee() *big.Int {
 // as the first node. This function also update s.DynamicValues.
 func (s *Storage) createLinkedList(txn *badger.Txn, epoch uint32, newDynamicValue *DynamicValues) error {
 	if epoch != 1 {
-		return errors.New(
-			fmt.Sprintf(
-				"Expected to store first dynamic value at epoch 1 got %v epoch instead! "+
-					"Make sure to sync from correct ethereum start block!",
-				epoch,
-			),
+		return fmt.Errorf(
+			"Expected to store first dynamic value at epoch 1 got %v epoch instead! "+
+				"Make sure to sync from correct ethereum start block!",
+			epoch,
 		)
 	}
 	node, linkedList, err := CreateLinkedList(epoch, newDynamicValue)

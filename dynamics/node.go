@@ -173,17 +173,11 @@ func (n *Node) SetEpochs(prevNode *Node, nextNode *Node) error {
 // IsHead returns true if Node is begging of linked list;
 // in this case, n.prevEpoch == n.thisEpoch
 func (n *Node) IsHead() bool {
-	if n.prevEpoch == 0 {
-		return true
-	}
-	return false
+	return n.prevEpoch == 0
 }
 
 // IsTail returns true if Node is end of linked list;
 // in this case, n.nextEpoch == n.thisEpoch
 func (n *Node) IsTail() bool {
-	if n.nextEpoch == 0 {
-		return true
-	}
-	return false
+	return n.nextEpoch == 0
 }
