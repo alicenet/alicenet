@@ -57,7 +57,7 @@ task("generate-immutable-auth-contract", "Generate contracts")
       basicHeader +
         alicenetImmutableImport +
         alicenetInterfaceImport +
-        immutableALCA
+        templateALCA(hre.ethers.utils.formatBytes32String("ALCA"))
     );
 
     fs.writeFileSync(
@@ -65,7 +65,7 @@ task("generate-immutable-auth-contract", "Generate contracts")
       basicHeader +
         alicenetImmutableImport +
         alicenetInterfaceImport +
-        immutableALCB
+        templateALCB(hre.ethers.utils.formatBytes32String("ALCB"))
     );
 
     for (const contractNameSalt of contractNameSaltMap) {
@@ -124,7 +124,8 @@ abstract contract ImmutableFactory is DeterministicAddress {
 }
 `;
 
-const immutableALCA = `
+function templateALCA(salt: string): string {
+  return `
 
 abstract contract ImmutableALCA is ImmutableFactory {
     address private immutable _alca;
@@ -146,11 +147,13 @@ abstract contract ImmutableALCA is ImmutableFactory {
     }
 
     function _saltForALCA() internal pure returns (bytes32) {
-        return 0x41546f6b656e0000000000000000000000000000000000000000000000000000;
+        return ${salt};
     }
 }`;
+}
 
-const immutableALCB = `
+function templateALCB(salt: string): string {
+  return `
 
 abstract contract ImmutableALCB is ImmutableFactory {
     address private immutable _alcb;
@@ -172,15 +175,20 @@ abstract contract ImmutableALCB is ImmutableFactory {
     }
 
     function _saltForALCB() internal pure returns (bytes32) {
-        return 0x42546f6b656e0000000000000000000000000000000000000000000000000000;
+        return ${salt};
     }
 }
 `;
+}
 
 function templateContract(contract: Contract): string {
   let mixedContractName: string;
   if (contract.name.startsWith("ETHDKG")) {
     mixedContractName = "ethdkg" + contract.name.slice(6);
+  } else if (contract.name.startsWith("ALCA")) {
+    mixedContractName = "alca" + contract.name.slice(4);
+  } else if (contract.name.startsWith("ALCB")) {
+    mixedContractName = "alcb" + contract.name.slice(4);
   } else {
     mixedContractName =
       contract.name.charAt(0).toLowerCase() + contract.name.slice(1);
@@ -212,5 +220,5 @@ abstract contract Immutable${contract.name} is ImmutableFactory {
         return ${contract.salt};
     }
 }
-    `;
+`;
 }

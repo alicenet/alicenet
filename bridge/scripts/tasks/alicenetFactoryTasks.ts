@@ -24,6 +24,7 @@ import {
   getBytes32SaltFromContractNSTag,
   getDeployType,
   getSortedDeployList,
+  parseWaitConfirmationInterval,
   populateConstructorArgs,
   populateInitializerArgs,
   showState,
@@ -167,11 +168,15 @@ task(
     types.string
   )
   .setAction(async (taskArgs, hre) => {
+    const waitConfirmationsBlocks = await parseWaitConfirmationInterval(
+      taskArgs.waitConfirmations,
+      hre
+    );
     return await deployContractsTask(
       taskArgs.configFile,
       hre,
       taskArgs.factoryAddress,
-      taskArgs.waitConfirmation,
+      waitConfirmationsBlocks,
       taskArgs.skipChecks,
       taskArgs.verify
     );
@@ -206,7 +211,7 @@ task(
     types.int
   )
   .addOptionalParam("outputFolder", "output folder path to save factory state")
-  .addOptionalVariadicPositionalParam("constructorArgs", "constructor argfu")
+  .addOptionalVariadicPositionalParam("constructorArgs", "constructor args")
   .setAction(async (taskArgs, hre) => {
     const deploymentConfigForContract: DeploymentConfig =
       await extractFullContractInfoByContractName(

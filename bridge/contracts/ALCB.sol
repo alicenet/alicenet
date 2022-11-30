@@ -14,6 +14,10 @@ import "contracts/interfaces/IUtilityToken.sol";
 import "contracts/libraries/errors/UtilityTokenErrors.sol";
 import "contracts/libraries/math/Sigmoid.sol";
 
+/// @custom:salt ALCB
+/// @custom:deploy-type deployCreateAndRegister
+/// @custom:deploy-group alcb
+/// @custom:deploy-group-index 0
 contract ALCB is
     IUtilityToken,
     ERC20,

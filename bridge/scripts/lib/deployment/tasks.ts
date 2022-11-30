@@ -14,9 +14,9 @@ import {
 import {
   ALICENET_FACTORY,
   CONTRACT_ADDR,
+  CREATE_AND_REGISTER_DEPLOYMENT,
   EVENT_DEPLOYED_PROXY,
   EVENT_DEPLOYED_RAW,
-  FUNCTION_DEPLOY_CREATE,
   ONLY_PROXY,
   UPGRADEABLE_DEPLOYMENT,
 } from "../constants";
@@ -162,7 +162,7 @@ export async function deployContractsTask(
         cumulativeGasUsed = cumulativeGasUsed.add(proxyData.gas);
         break;
       }
-      case FUNCTION_DEPLOY_CREATE: {
+      case CREATE_AND_REGISTER_DEPLOYMENT: {
         const deployCreateData = await deployCreateAndRegisterTask(
           deploymentConfigForContract,
           hre,
@@ -237,7 +237,7 @@ export async function deployUpgradeableProxyTask(
       deploymentConfigForContract.initializerArgs
     );
 
-    const promptMessage = `Do you want to deploy ${deploymentConfigForContract.name} with  constructor arguments: ${constructorDetails} initializer Args: ${initializerDetails}? (y/n)`;
+    const promptMessage = `Do you want to deploy ${deploymentConfigForContract.name} with  constructor arguments: ${constructorDetails} initializer Args: ${initializerDetails}? (y/n)\n`;
     await promptCheckDeploymentArgs(promptMessage);
   }
   const txResponse = await deployUpgradeableGasSafe(
@@ -472,8 +472,7 @@ export async function deployCreateAndRegisterTask(
   factoryAddress?: string,
   waitBlocks: number = 0,
   skipChecks: boolean = false,
-  verify: boolean = false,
-  standAlone: boolean = false
+  verify: boolean = false
 ) {
   // if an instance of the factory contract is not provided get it from ethers
   if (factory === undefined) {
@@ -506,7 +505,7 @@ export async function deployCreateAndRegisterTask(
     const constructorDetails = JSON.stringify(
       deploymentConfigForContract.constructorArgs
     );
-    const promptMessage = `Do you want to deploy ${deploymentConfigForContract.name} with constructorArgs: ${constructorDetails}, salt: ${deploymentConfigForContract.salt}? (y/n)`;
+    const promptMessage = `Do you want to deploy ${deploymentConfigForContract.name} with constructorArgs: ${constructorDetails}, salt: ${deploymentConfigForContract.salt}? (y/n)\n`;
     await promptCheckDeploymentArgs(promptMessage);
   }
   const txResponse = await deployCreateAndRegister(
@@ -530,15 +529,10 @@ export async function deployCreateAndRegisterTask(
     await verifyContract(hre, factory.address, constructorArgs);
   }
 
-  if (!standAlone) {
-    await showState(
-      `[DEBUG ONLY, DONT USE THIS ADDRESS IN THE SIDE CHAIN, USE THE PROXY INSTEAD!] Deployed logic for ${deploymentConfigForContract.name} contract at: ${deployCreateData.address}, gas: ${receipt.gasUsed}`
-    );
-  } else {
-    await showState(
-      `Deployed ${deployCreateData.name} at ${deployCreateData.address}, gasCost: ${deployCreateData.gas}`
-    );
-  }
+  await showState(
+    `Deployed ${deployCreateData.name} at ${deployCreateData.address}, gasCost: ${deployCreateData.gas}`
+  );
+
   deployCreateData.receipt = receipt;
   return deployCreateData;
 }

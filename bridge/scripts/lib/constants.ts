@@ -14,6 +14,7 @@ export const FUNCTION_DEPLOY_CREATE2 = "deployCreate2";
 export const FUNCTION_DEPLOY_CREATE = "deployCreate";
 export const FUNCTION_DEPLOY_METAMORPHIC = "deployMetamorphic";
 export const FUNCTION_UPGRADE_PROXY = "upgradeProxy";
+
 // Factory event names
 export const EVENT_DEPLOYED_PROXY = "DeployedProxy";
 export const EVENT_DEPLOYED_RAW = "DeployedRaw";
@@ -37,6 +38,7 @@ export const ONLY_PROXY = "onlyProxy";
 export const PROXY_ADDR = "ProxyAddress";
 export const RECEIPT = "receipt";
 export const UPGRADEABLE_DEPLOYMENT: string = "deployUpgradeable";
+export const CREATE_AND_REGISTER_DEPLOYMENT: string = "deployCreateAndRegister";
 
 // default paths
 export const DEPLOYMENT_LIST_FPATH = "/deploymentList";

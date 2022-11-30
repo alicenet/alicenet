@@ -39,9 +39,10 @@ import "contracts/RewardPool.sol";
  * @dev deployed by the AliceNetFactory contract
  */
 
-/// @custom:deploy-type deployCreate
+/// @custom:salt Lockup
+/// @custom:deploy-type deployCreateAndRegister
 /// @custom:deploy-group lockup
-/// @custom:deploy-group-index 1
+/// @custom:deploy-group-index 0
 contract Lockup is
     ImmutablePublicStaking,
     ImmutableALCA,

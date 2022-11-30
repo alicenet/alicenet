@@ -1,6 +1,6 @@
 import toml from "@iarna/toml";
 import { spawn } from "child_process";
-import { BigNumber, BytesLike, ContractTransaction } from "ethers";
+import { BigNumber, ContractTransaction } from "ethers";
 import fs from "fs";
 import { task, types } from "hardhat/config";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
@@ -8,18 +8,14 @@ import { HardhatRuntimeEnvironment } from "hardhat/types";
 import axios from "axios";
 import {
   encodeMultiCallArgs,
-  getEventVar,
   MultiCallArgsStruct,
 } from "../lib/alicenetFactory";
-import {
-  CONTRACT_ADDR,
-  DEFAULT_CONFIG_FILE_PATH,
-  EVENT_DEPLOYED_RAW,
-} from "../lib/constants";
+import { DEFAULT_CONFIG_FILE_PATH } from "../lib/constants";
 
 import { DeploymentConfigWrapper } from "../lib/deployment/interfaces";
 import {
   getGasPrices,
+  parseWaitConfirmationInterval,
   readDeploymentConfig,
   writeDeploymentConfig,
 } from "../lib/deployment/utils";
@@ -53,7 +49,6 @@ task(
     if (!fs.existsSync(taskArgs.configFile)) {
       throw new Error(`Error: ${taskArgs.configFile} doesn't exist!`);
     }
-    console.log(`Loading : ${taskArgs.configFile}`);
 
     const deploymentConfig: DeploymentConfigWrapper = readDeploymentConfig(
       taskArgs.configFile
@@ -75,7 +70,6 @@ task(
 
     // Make sure that admin is the named account at position 0
     const [admin] = await hre.ethers.getSigners();
-    console.log(`Admin address: ${admin.address}`);
 
     const legacyToken = await (
       await (await hre.ethers.getContractFactory("LegacyToken"))
@@ -83,18 +77,17 @@ task(
         .deploy()
     ).deployed();
 
-    console.log(
-      `Minted ${await legacyToken.balanceOf(admin.address)} tokens for user: ${
-        admin.address
-      }`
-    );
-
     console.log(`Deployed legacy token at: ${legacyToken.address}`);
+    console.log(
+      `Minted ${await legacyToken.balanceOf(
+        admin.address
+      )} legacyTokens for user: ${admin.address}\n`
+    );
     deploymentConfig[expectedContractFullQualifiedName].constructorArgs[
       expectedField
     ] = legacyToken.address;
 
-    await writeDeploymentConfig(deploymentConfig, taskArgs.configFile);
+    writeDeploymentConfig(deploymentConfig, taskArgs.configFile);
   });
 
 task("create-local-seed-node", "start and syncs a node with mainnet")
@@ -405,7 +398,6 @@ async function getGroupSignatures(epoch: BigNumber) {
 }
 
 task("register-validators", "registers validators")
-  .addFlag("test")
   .addParam("factoryAddress", "address of the factory deploying the contract")
   .addVariadicPositionalParam(
     "addresses",
@@ -414,7 +406,17 @@ task("register-validators", "registers validators")
     types.string,
     false
   )
+  .addOptionalParam(
+    "waitConfirmation",
+    "wait specified number of blocks between transactions",
+    0,
+    types.int
+  )
   .setAction(async (taskArgs, hre) => {
+    const waitConfirmationsBlocks = await parseWaitConfirmationInterval(
+      taskArgs.waitConfirmations,
+      hre
+    );
     console.log("\nRegistering Validators\n", taskArgs.addresses);
     const factory = await hre.ethers.getContractAt(
       "AliceNetFactory",
@@ -443,11 +445,6 @@ task("register-validators", "registers validators")
     );
     const validatorAddresses: string[] = taskArgs.addresses;
 
-    if (taskArgs.test) {
-      await hre.network.provider.send("hardhat_mine", [
-        hre.ethers.utils.hexValue(3),
-      ]);
-    }
     let tx = await stakeValidators(
       validatorAddresses.length,
       factory.address,
@@ -455,7 +452,12 @@ task("register-validators", "registers validators")
       publicStakingAddress,
       hre
     );
-    const receipt = await tx.wait();
+    if (waitConfirmationsBlocks === 0) {
+      await hre.network.provider.send("hardhat_mine", [
+        hre.ethers.utils.hexValue(3),
+      ]);
+    }
+    const receipt = await tx.wait(waitConfirmationsBlocks);
     if (receipt.events === undefined) {
       throw new Error("receipt has no events");
     }
@@ -484,13 +486,7 @@ task("register-validators", "registers validators")
       }
     }
 
-    if (taskArgs.test) {
-      await hre.network.provider.send("hardhat_mine", [
-        hre.ethers.utils.hexValue(3),
-      ]);
-    } else {
-      await tx.wait(3);
-    }
+    await tx.wait(waitConfirmationsBlocks);
 
     const regValidatorsCallData =
       validatorPoolBase.interface.encodeFunctionData("registerValidators", [
@@ -506,13 +502,8 @@ task("register-validators", "registers validators")
       [...approveTokens, regValidators],
       await getGasPrices(hre.ethers)
     );
-    if (taskArgs.test) {
-      await hre.network.provider.send("hardhat_mine", [
-        hre.ethers.utils.hexValue(3),
-      ]);
-    } else {
-      await tx.wait(3);
-    }
+    await tx.wait(waitConfirmationsBlocks);
+    console.log("Registered Validators successfully");
   });
 
 task("unregister-validators", "unregister validators")
@@ -525,7 +516,17 @@ task("unregister-validators", "unregister validators")
     types.string,
     false
   )
+  .addOptionalParam(
+    "waitConfirmation",
+    "wait specified number of blocks between transactions",
+    0,
+    types.int
+  )
   .setAction(async (taskArgs, hre) => {
+    const waitConfirmationsBlocks = await parseWaitConfirmationInterval(
+      taskArgs.waitConfirmations,
+      hre
+    );
     console.log("Unregistering Validators\n", taskArgs.addresses);
     const factory = await hre.ethers.getContractAt(
       "AliceNetFactory",
@@ -560,7 +561,7 @@ task("unregister-validators", "unregister validators")
     );
     const recpt = await (
       await factory.connect(admin).callAny(validatorPool.address, 0, input)
-    ).wait(3);
+    ).wait(waitConfirmationsBlocks);
     if (recpt.status !== 1) {
       throw new Error(`Receipt indicates failure: ${recpt}`);
     }
@@ -600,7 +601,17 @@ task("virtual-mint-deposit", "Virtually creates a deposit on the side chain")
     1,
     types.int
   )
+  .addOptionalParam(
+    "waitConfirmation",
+    "wait specified number of blocks between transactions",
+    0,
+    types.int
+  )
   .setAction(async (taskArgs, hre) => {
+    const waitConfirmationsBlocks = await parseWaitConfirmationInterval(
+      taskArgs.waitConfirmations,
+      hre
+    );
     const { ethers } = hre;
     const iface = new ethers.utils.Interface([
       "function virtualMintDeposit(uint8 accountType_,address to_,uint256 amount_)",
@@ -623,15 +634,15 @@ task("virtual-mint-deposit", "Virtually creates a deposit on the side chain")
     const tx = await factory
       .connect(adminSigner)
       .callAny(alcb.address, 0, input);
-    await tx.wait();
+    await tx.wait(waitConfirmationsBlocks);
     const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
-    console.log(receipt);
     const intrface = new ethers.utils.Interface([
       "event DepositReceived(uint256 indexed depositID, uint8 indexed accountType, address indexed depositor, uint256 amount)",
     ]);
     const data = receipt.logs[0].data;
     const topics = receipt.logs[0].topics;
     const event = intrface.decodeEventLog("DepositReceived", data, topics);
+    console.log("Successfully created deposit");
     console.log(event);
   });
 
@@ -640,7 +651,17 @@ task("schedule-maintenance", "Calls schedule Maintenance")
     "factoryAddress",
     "the default factory address from factoryState will be used if not set"
   )
+  .addOptionalParam(
+    "waitConfirmation",
+    "wait specified number of blocks between transactions",
+    0,
+    types.int
+  )
   .setAction(async (taskArgs, hre) => {
+    const waitConfirmationsBlocks = await parseWaitConfirmationInterval(
+      taskArgs.waitConfirmations,
+      hre
+    );
     console.log(`scheduling maintenance after the next snapshot`);
     const { ethers } = hre;
     const iface = new ethers.utils.Interface([
@@ -665,7 +686,7 @@ task("schedule-maintenance", "Calls schedule Maintenance")
       await factory
         .connect(adminSigner)
         .callAny(validatorPool.address, 0, input)
-    ).wait(3);
+    ).wait(waitConfirmationsBlocks);
   });
 
 task(
@@ -678,7 +699,17 @@ task(
     "only execute aggregateProfits once instead of executing" +
       " it until is safe to unlock (very gas consuming)"
   )
+  .addOptionalParam(
+    "waitConfirmation",
+    "wait specified number of blocks between transactions",
+    0,
+    types.int
+  )
   .setAction(async (taskArgs, hre) => {
+    const waitConfirmationsBlocks = await parseWaitConfirmationInterval(
+      taskArgs.waitConfirmations,
+      hre
+    );
     const { ethers } = hre;
     const factory = await ethers.getContractAt(
       "AliceNetFactory",
@@ -690,7 +721,7 @@ task(
     );
     let safeToUnlock = await lockup.payoutSafe();
     while (!safeToUnlock) {
-      await (await lockup.aggregateProfits()).wait(8);
+      await (await lockup.aggregateProfits()).wait(waitConfirmationsBlocks);
       safeToUnlock = await lockup.payoutSafe();
       console.log("Is safe to unlock: " + safeToUnlock);
       if (taskArgs.onlyOnce) break;
@@ -703,7 +734,17 @@ task(
   "Transfer and stake the ALCA that will be used to pay the bonus shares to the users that lock a position"
 )
   .addParam("factoryAddress", "the AliceNet factory address")
+  .addOptionalParam(
+    "waitConfirmation",
+    "wait specified number of blocks between transactions",
+    0,
+    types.int
+  )
   .setAction(async (taskArgs, hre) => {
+    const waitConfirmationsBlocks = await parseWaitConfirmationInterval(
+      taskArgs.waitConfirmations,
+      hre
+    );
     const { ethers } = hre;
     const factory = await ethers.getContractAt(
       "AliceNetFactory",
@@ -737,11 +778,11 @@ task(
     );
     await (
       await factory.multiCall([transferCall, createBonusStakeCall])
-    ).wait();
+    ).wait(waitConfirmationsBlocks);
     console.log(
       "Created the bonus position for the lockup contract with:",
       bonusAmount.toString(),
-      "ALCA"
+      "ALCA\n"
     );
   });
 
@@ -754,7 +795,17 @@ task(
     "factoryAddress",
     "the default factory address from factoryState will be used if not set"
   )
+  .addOptionalParam(
+    "waitConfirmation",
+    "wait specified number of blocks between transactions",
+    0,
+    types.int
+  )
   .setAction(async (taskArgs, hre) => {
+    const waitConfirmationsBlocks = await parseWaitConfirmationInterval(
+      taskArgs.waitConfirmations,
+      hre
+    );
     const { ethers } = hre;
     const iface = new ethers.utils.Interface([
       "function pauseConsensusOnArbitraryHeight(uint256)",
@@ -778,7 +829,7 @@ task(
       await factory
         .connect(adminSigner)
         .callAny(validatorPool.address, 0, input)
-    ).wait();
+    ).wait(waitConfirmationsBlocks);
   });
 
 task(
@@ -793,7 +844,17 @@ task(
     "factoryAddress",
     "the default factory address from factoryState will be used if not set"
   )
+  .addOptionalParam(
+    "waitConfirmation",
+    "wait specified number of blocks between transactions",
+    0,
+    types.int
+  )
   .setAction(async (taskArgs, hre) => {
+    const waitConfirmationsBlocks = await parseWaitConfirmationInterval(
+      taskArgs.waitConfirmations,
+      hre
+    );
     const { ethers } = hre;
     const [admin] = await ethers.getSigners();
     const adminSigner = await ethers.getSigner(admin.address);
@@ -815,7 +876,7 @@ task(
       await factory
         .connect(adminSigner)
         .callAny(validatorPool.address, 0, input)
-    ).wait();
+    ).wait(waitConfirmationsBlocks);
   });
 
 task(
@@ -826,7 +887,17 @@ task(
     "factoryAddress",
     "the default factory address from factoryState will be used if not set"
   )
+  .addOptionalParam(
+    "waitConfirmation",
+    "wait specified number of blocks between transactions",
+    0,
+    types.int
+  )
   .setAction(async (taskArgs, hre) => {
+    const waitConfirmationsBlocks = await parseWaitConfirmationInterval(
+      taskArgs.waitConfirmations,
+      hre
+    );
     const { ethers } = hre;
     const [admin] = await ethers.getSigners();
     const adminSigner = await ethers.getSigner(admin.address);
@@ -847,7 +918,7 @@ task(
       await factory
         .connect(adminSigner)
         .callAny(validatorPool.address, 0, input)
-    ).wait();
+    ).wait(waitConfirmationsBlocks);
   });
 
 task("change-dynamic-value", "Change a certain dynamic value")
@@ -866,7 +937,17 @@ task("change-dynamic-value", "Change a certain dynamic value")
     "minScaledTransactionFee",
     "new minScaledTransaction fee value"
   )
+  .addOptionalParam(
+    "waitConfirmation",
+    "wait specified number of blocks between transactions",
+    0,
+    types.int
+  )
   .setAction(async (taskArgs, hre) => {
+    const waitConfirmationsBlocks = await parseWaitConfirmationInterval(
+      taskArgs.waitConfirmations,
+      hre
+    );
     const { ethers } = hre;
     const [admin] = await ethers.getSigners();
     const adminSigner = await ethers.getSigner(admin.address);
@@ -934,7 +1015,7 @@ task("change-dynamic-value", "Change a certain dynamic value")
       await factory
         .connect(adminSigner)
         .callAny(dynamics.address, 0, input, await getGasPrices(hre.ethers))
-    ).wait(8);
+    ).wait(waitConfirmationsBlocks);
 
     const allKeys = Object.keys(currentValue);
     const allValues = Object.values(newValue);
@@ -978,7 +1059,17 @@ task("initialize-ethdkg", "Start the ethdkg process")
     "factoryAddress",
     "the default factory address from factoryState will be used if not set"
   )
+  .addOptionalParam(
+    "waitConfirmation",
+    "wait specified number of blocks between transactions",
+    0,
+    types.int
+  )
   .setAction(async (taskArgs, hre) => {
+    const waitConfirmationsBlocks = await parseWaitConfirmationInterval(
+      taskArgs.waitConfirmations,
+      hre
+    );
     const { ethers } = hre;
 
     const [admin] = await ethers.getSigners();
@@ -1003,7 +1094,7 @@ task("initialize-ethdkg", "Start the ethdkg process")
           0,
           validatorPool.interface.encodeFunctionData("initializeETHDKG")
         )
-    ).wait(3);
+    ).wait(waitConfirmationsBlocks);
     console.log("ETHDKG trigger at block number:" + recpt.blockNumber);
   });
 
@@ -1099,7 +1190,17 @@ task("mint-alcb-to", "mints ALCB to an address")
   .addParam("amount", "amount to mint")
   .addParam("numWei", "amount of eth to use")
   .addParam("to", "address of the recipient")
+  .addOptionalParam(
+    "waitConfirmation",
+    "wait specified number of blocks between transactions",
+    0,
+    types.int
+  )
   .setAction(async (taskArgs, hre) => {
+    const waitConfirmationsBlocks = await parseWaitConfirmationInterval(
+      taskArgs.waitConfirmations,
+      hre
+    );
     if (
       taskArgs.factoryAddress === undefined ||
       taskArgs.factoryAddress === ""
@@ -1120,7 +1221,7 @@ task("mint-alcb-to", "mints ALCB to an address")
     const txResponse = await alcb.mintTo(taskArgs.to, taskArgs.amount, {
       value: taskArgs.numWei,
     });
-    await txResponse.wait();
+    await txResponse.wait(waitConfirmationsBlocks);
     const bal2 = await alcb.callStatic.balanceOf(taskArgs.to);
     console.log(
       `Minted ${bal2.sub(bal1).toString()} ALCB to account ${taskArgs.to}`
@@ -1157,7 +1258,17 @@ task(
     -1,
     types.int
   )
+  .addOptionalParam(
+    "waitConfirmation",
+    "wait specified number of blocks between transactions",
+    0,
+    types.int
+  )
   .setAction(async (taskArgs, hre) => {
+    const waitConfirmationsBlocks = await parseWaitConfirmationInterval(
+      taskArgs.waitConfirmations,
+      hre
+    );
     const factory = await hre.ethers.getContractAt(
       "AliceNetFactory",
       taskArgs.factoryAddress
@@ -1184,7 +1295,7 @@ task(
     );
     const rept = await (
       await factory.connect(adminSigner).callAny(snapshots.address, 0, input)
-    ).wait(3);
+    ).wait(waitConfirmationsBlocks);
     if (rept.status !== 1) {
       throw new Error(`Receipt indicates failure: ${rept}`);
     }
@@ -1357,7 +1468,17 @@ task("fund-validators", "manually put 100 eth in each validator account")
     "path to validator configs dir",
     "./../scripts/generated/config"
   )
+  .addOptionalParam(
+    "waitConfirmation",
+    "wait specified number of blocks between transactions",
+    0,
+    types.int
+  )
   .setAction(async (taskArgs, hre) => {
+    const waitConfirmationsBlocks = await parseWaitConfirmationInterval(
+      taskArgs.waitConfirmations,
+      hre
+    );
     console.log("\nFunding validators");
     const signers = await hre.ethers.getSigners();
     const configPath = taskArgs.configPath;
@@ -1381,7 +1502,7 @@ task("fund-validators", "manually put 100 eth in each validator account")
             (maxAmount - bal.toBigInt()).toString()
           ),
         });
-        await txResponse.wait();
+        await txResponse.wait(waitConfirmationsBlocks);
         console.log(
           `account ${account} now has ${await hre.ethers.provider.getBalance(
             account
@@ -1472,7 +1593,17 @@ task("update-alicenet-node-version", "Set the Canonical AliceNet Node Version")
     "",
     types.string
   )
+  .addOptionalParam(
+    "waitConfirmation",
+    "wait specified number of blocks between transactions",
+    0,
+    types.int
+  )
   .setAction(async (taskArgs, hre) => {
+    const waitConfirmationsBlocks = await parseWaitConfirmationInterval(
+      taskArgs.waitConfirmations,
+      hre
+    );
     const factory = await hre.ethers.getContractAt(
       "AliceNetFactory",
       taskArgs.factoryAddress
@@ -1529,93 +1660,11 @@ task("update-alicenet-node-version", "Set the Canonical AliceNet Node Version")
     );
     const rept = await (
       await factory.connect(adminSigner).callAny(dynamics.address, 0, input)
-    ).wait(3);
+    ).wait(waitConfirmationsBlocks);
     if (rept.status !== 1) {
       throw new Error(`Receipt indicates failure: ${rept}`);
     }
     console.log("Done");
-  });
-
-task("deploy-alcb", "Task to deploy ALCB")
-  .addParam(
-    "factoryAddress",
-    "the default factory address from factoryState will be used if not set"
-  )
-  .setAction(async (taskArgs, hre) => {
-    const factory = await hre.ethers.getContractAt(
-      "AliceNetFactory",
-      taskArgs.factoryAddress
-    );
-    const ALCB_BASE = await hre.ethers.getContractFactory("ALCB");
-    const deploymentCode = ALCB_BASE.getDeployTransaction(factory.address)
-      .data as BytesLike;
-    const tx = await factory.deployCreate(deploymentCode);
-    const receipt = await tx.wait();
-    const alcbAddress = getEventVar(receipt, EVENT_DEPLOYED_RAW, CONTRACT_ADDR);
-    console.log("ALCB address: ", alcbAddress);
-    await factory.addNewExternalContract(
-      hre.ethers.utils.formatBytes32String("ALCB"),
-      alcbAddress
-    );
-  });
-
-task(
-  "deploy-lockup-and-router",
-  "Task to deploy the lockup and the staking router contract"
-)
-  .addParam(
-    "factoryAddress",
-    "the default factory address from factoryState will be used if not set"
-  )
-  .addParam(
-    "enrollmentPeriod",
-    "the enrollmentPeriod that we are going to allow for the lockup contract",
-    1000,
-    types.int
-  )
-  .addParam(
-    "lockDuration",
-    "the lockDuration that we are going to allow for the lockup contract",
-    6000,
-    types.int
-  )
-  .addParam(
-    "totalBonusAmount",
-    "the totalBonusAmount that we are going to give as bonus at the end of the lockup period",
-    2000000,
-    types.int
-  )
-  .setAction(async (taskArgs, hre) => {
-    const factory = await hre.ethers.getContractAt(
-      "AliceNetFactory",
-      taskArgs.factoryAddress
-    );
-    const lockupDeploymentCode = (
-      await hre.ethers.getContractFactory("Lockup")
-    ).getDeployTransaction(
-      taskArgs.enrollmentPeriod,
-      taskArgs.lockDuration,
-      taskArgs.totalBonusAmount
-    ).data as BytesLike;
-    const stakingRouterV1DeploymentCode = (
-      await hre.ethers.getContractFactory("StakingRouterV1")
-    ).getDeployTransaction().data as BytesLike;
-    const lockupSalt = hre.ethers.utils.formatBytes32String("Lockup");
-    const stakingRouterV1Salt =
-      hre.ethers.utils.formatBytes32String("StakingRouterV1");
-    await (
-      await factory.deployCreateAndRegister(lockupDeploymentCode, lockupSalt)
-    ).wait();
-    await (
-      await factory.deployCreateAndRegister(
-        stakingRouterV1DeploymentCode,
-        stakingRouterV1Salt
-      )
-    ).wait();
-    const lockupAddress = await factory.lookup(lockupSalt);
-    const stakingRouterV1Address = await factory.lookup(stakingRouterV1Salt);
-    console.log("Lockup address: ", lockupAddress);
-    console.log("Staking Router V1 address: ", stakingRouterV1Address);
   });
 
 async function mintALCATo(

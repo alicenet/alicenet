@@ -14,7 +14,8 @@ import "contracts/utils/auth/ImmutablePublicStaking.sol";
 import "contracts/utils/auth/ImmutableALCA.sol";
 import "contracts/Lockup.sol";
 
-/// @custom:deploy-type deployCreate
+/// @custom:salt StakingRouterV1
+/// @custom:deploy-type deployCreateAndRegister
 /// @custom:deploy-group lockup
 /// @custom:deploy-group-index 1
 contract StakingRouterV1 is

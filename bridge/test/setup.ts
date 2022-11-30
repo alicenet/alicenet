@@ -21,6 +21,9 @@ import {
   populateInitializerArgs,
 } from "../scripts/lib/deployment/utils";
 import {
+  ALCA,
+  ALCAMinter,
+  ALCB,
   AliceNetFactory,
   Distribution,
   Dynamics,

@@ -7,8 +7,6 @@ import "contracts/utils/auth/ImmutableFactory.sol";
 import "contracts/utils/auth/ImmutableValidatorPool.sol";
 import "contracts/interfaces/IValidatorPool.sol";
 
-/// @custom:salt DutchAuction
-/// @custom:deploy-type deployUpgradeable
 contract DutchAuction is Initializable, ImmutableFactory, ImmutableValidatorPool {
     uint256 private constant _START_PRICE = 1000000 * 10 ** 18;
     uint256 private constant _ETHDKG_VALIDATOR_COST = 1200000 * 2 * 100 * 10 ** 9; // Exit and enter ETHDKG aprox 1.2 M gas units at an estimated price of 100 gwei
