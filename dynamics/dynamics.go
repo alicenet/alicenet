@@ -276,10 +276,7 @@ func (s *Storage) GetDataStoreFee() *big.Int {
 func (s *Storage) createLinkedList(txn *badger.Txn, epoch uint32, newDynamicValue *DynamicValues) error {
 	if epoch != 1 {
 		return fmt.Errorf(
-			"Expected to store first dynamic value at epoch 1 got %v epoch instead! "+
-				"Make sure to sync from correct ethereum start block!",
-			epoch,
-		)
+			"dynamics: expected epoch 1 but epoch got %v, possible incorrect ethereum starting block", epoch)
 	}
 	node, linkedList, err := CreateLinkedList(epoch, newDynamicValue)
 	if err != nil {

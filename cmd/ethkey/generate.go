@@ -43,7 +43,7 @@ func generate(cmd *cobra.Command, args []string) {
 	if _, err := os.Stat(keyFilePath); err == nil {
 		logger.Fatalf("Keyfile already exists at %s.", keyFilePath)
 	} else if !os.IsNotExist(err) {
-		logger.Fatalf("Error checking if keyfile exists: %v", err)
+		logger.Fatalf("Error checking if keyfile exists: %w", err)
 	}
 
 	keyjson, key, _, err := GenerateKeyFile(false, logger)
@@ -56,7 +56,7 @@ func generate(cmd *cobra.Command, args []string) {
 		logger.Fatalf("Could not create directory %s", filepath.Dir(keyFilePath))
 	}
 	if err := os.WriteFile(keyFilePath, keyjson, 0600); err != nil {
-		logger.Fatalf("Failed to write keyfile to %s: %v", keyFilePath, err)
+		logger.Fatalf("Failed to write keyfile to %s: %w", keyFilePath, err)
 	}
 
 	// Output some information.
@@ -77,20 +77,20 @@ func GenerateKeyFile(generateRandomPass bool, logger *logrus.Entry) ([]byte, *ke
 		// Load private key from file.
 		privateKey, err = crypto.LoadECDSA(file)
 		if err != nil {
-			return nil, nil, "", fmt.Errorf("Can't load private key: %v", err)
+			return nil, nil, "", fmt.Errorf("Can't load private key: %w", err)
 		}
 	} else {
 		// If not loaded, generate random.
 		privateKey, err = crypto.GenerateKey()
 		if err != nil {
-			return nil, nil, "", fmt.Errorf("Failed to generate random private key: %v", err)
+			return nil, nil, "", fmt.Errorf("Failed to generate random private key: %w", err)
 		}
 	}
 
 	// Create the keyfile object with a random UUID.
 	UUID, err := uuid.NewRandom()
 	if err != nil {
-		return nil, nil, "", fmt.Errorf("Failed to generate random uuid: %v", err)
+		return nil, nil, "", fmt.Errorf("Failed to generate random uuid: %w", err)
 	}
 	key := &keystore.Key{
 		Id:         UUID,
@@ -106,7 +106,7 @@ func GenerateKeyFile(generateRandomPass bool, logger *logrus.Entry) ([]byte, *ke
 	}
 	keyjson, err := keystore.EncryptKey(key, passphrase, scryptN, scryptP)
 	if err != nil {
-		return nil, nil, "", fmt.Errorf("Error encrypting key: %v", err)
+		return nil, nil, "", fmt.Errorf("Error encrypting key: %w", err)
 	}
 
 	return keyjson, key, passphrase, nil
