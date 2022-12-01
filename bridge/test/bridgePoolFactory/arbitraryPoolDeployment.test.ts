@@ -6,6 +6,7 @@ import { ethers } from "hardhat";
 import { MOCK_INITIALIZABLE } from "../../scripts/lib/constants";
 import { BridgePoolFactory } from "../../typechain-types/contracts/BridgePoolFactory";
 import { getEventVar } from "../factory/Setup";
+import { getImpersonatedSigner } from "../lockup/setup";
 import {
   BaseTokensFixture,
   deployFactoryAndBaseTokens,
@@ -14,21 +15,16 @@ import {
   preFixtureSetup,
 } from "../setup";
 // const nativeBridgePool = 0;
-const externalBridgePool = 1;
+const poolTypeExternal = 1;
 const tokenTypeERC20 = 0;
-const tokenTypeERC721 = 1;
-const tokenTypeERC1155 = 2;
-const bridgePoolNativeChainId = 1337;
 const bridgePoolExternalChainId = 9999;
-const bridgePoolDeployCode = "0x38585839386009f3"; // UNIVERSAL_DEPLOY_CODE
 interface BridgePoolFactoryFixture extends BaseTokensFixture {
   bridgePoolFactory: BridgePoolFactory;
 }
 let fixture: BridgePoolFactoryFixture;
 let baseTokenFixture: BaseTokensFixture;
-let admin: SignerWithAddress;
 const bridgePoolVersion = 1;
-const unexistentBridgePoolVersion = 11;
+let asFactory: SignerWithAddress;
 
 describe("Testing BridgePool Factory", async () => {
   async function deployFixture() {
@@ -40,71 +36,55 @@ describe("Testing BridgePool Factory", async () => {
       "BridgePoolFactory",
       "BridgePoolFactory"
     )) as BridgePoolFactory;
+    asFactory = await getImpersonatedSigner(baseTokenFixture.factory.address);
     fixture = {
       ...baseTokenFixture,
       bridgePoolFactory,
     };
-    return { fixture, admin };
+    return { fixture };
   }
 
   beforeEach(async function () {
-    ({ fixture, admin } = await loadFixture(deployFixture));
+    ({ fixture } = await loadFixture(deployFixture));
   });
+
   it("should deploy arbitrary pool logic and then deploy a arbitrary pool and initialize", async () => {
     const mockInitBase = await ethers.getContractFactory(MOCK_INITIALIZABLE);
     const mockInitDeployTx = mockInitBase.getDeployTransaction();
     const initCallData = mockInitBase.interface.encodeFunctionData(
       "initialize",
-      [2]
+      [fixture.legacyToken.address]
     );
-
     await factoryCallAny(
       fixture.factory,
       fixture.bridgePoolFactory,
       "deployPoolLogic",
-      [3, 4, bridgePoolVersion, mockInitDeployTx.data as BytesLike]
+      [
+        poolTypeExternal,
+        tokenTypeERC20,
+        bridgePoolVersion,
+        mockInitDeployTx.data as BytesLike,
+      ]
     );
-
-    const deployNewArbitraryPool =
-      fixture.bridgePoolFactory.interface.encodeFunctionData(
-        "deployNewArbitraryPool",
-        [
-          3,
-          4,
-          fixture.legacyToken.address,
-          bridgePoolVersion,
-          bridgePoolExternalChainId,
-          initCallData,
-        ]
+    const txResponse = await fixture.bridgePoolFactory
+      .connect(asFactory)
+      .deployNewArbitraryPool(
+        poolTypeExternal,
+        tokenTypeERC20,
+        fixture.legacyToken.address,
+        bridgePoolVersion,
+        bridgePoolExternalChainId,
+        initCallData
       );
-    let txResponse = await fixture.factory.callAny(
-      fixture.bridgePoolFactory.address,
-      0,
-      deployNewArbitraryPool
-    );
-    await txResponse.wait();
-
     const poolAddress = await getEventVar(
       txResponse,
       "BridgePoolCreated",
       "poolAddress"
     );
-    console.log(poolAddress);
-    const arbitraryPoolSalt = fixture.bridgePoolFactory.getBridgePoolSalt(
-      fixture.legacyToken.address,
-      4,
-      bridgePoolExternalChainId,
-      bridgePoolVersion
-    );
-    const bridgePoolAddress =
-      await fixture.bridgePoolFactory.lookupBridgePoolAddress(
-        arbitraryPoolSalt
-      );
     const mockInit = await ethers.getContractAt(
       MOCK_INITIALIZABLE,
-      bridgePoolAddress
+      poolAddress
     );
-
-    expect(await mockInit.getImut()).to.equal(2);
+    expect(await mockInit.getImut()).to.equal(fixture.legacyToken.address);
   });
 });

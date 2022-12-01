@@ -126,20 +126,20 @@ abstract contract BridgePoolFactoryBase is ImmutableFactory {
             poolVersion_
         );
         //look up the address in the _logicAddresses mapping
-        address implementation = _logicAddresses[
+        _implementation = _logicAddresses[
             _getImplementationAddressKey(poolType_, tokenType_, poolVersion_)
         ];
+        address implementation = _implementation;
         //check if the logic exists for the specified pool
         uint256 implementationSize;
         assembly {
             implementationSize := extcodesize(implementation)
         }
-        if (implementationSize == 0 || implementation == address(0)) {
+        if (implementationSize == 0 || _implementation == address(0)) {
             revert BridgePoolFactoryErrors.PoolLogicNotSupported();
         }
         address contractAddr = _deployStaticPool(bridgePoolSalt);
         _initializeContract(contractAddr, initCallData);
-        IBridgePool(contractAddr).initialize(ercContract_);
         emit BridgePoolCreated(contractAddr, ercContract_, chainID_, poolVersion_);
     }
 
