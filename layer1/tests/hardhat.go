@@ -33,10 +33,7 @@ func sanitizePathFromOutput(output []byte) string {
 	path = strings.ReplaceAll(path, "\n", "")
 
 	pathNodes := strings.Split(path, string(os.PathSeparator))
-	for _, pathNode := range pathNodes {
-		rootPath = append(rootPath, pathNode)
-	}
-
+	rootPath = append(rootPath, pathNodes...)
 	return filepath.Join(rootPath...)
 }
 

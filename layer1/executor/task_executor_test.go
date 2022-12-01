@@ -2,15 +2,16 @@ package executor
 
 import (
 	"errors"
-	"github.com/alicenet/alicenet/constants"
-	"github.com/alicenet/alicenet/constants/dbprefix"
-	"github.com/alicenet/alicenet/utils"
-	"github.com/stretchr/testify/require"
 	"io/ioutil"
 	"math/big"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/constants/dbprefix"
+	"github.com/alicenet/alicenet/utils"
+	"github.com/stretchr/testify/require"
 
 	"github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/layer1/executor/tasks"
@@ -608,9 +609,7 @@ func Test_TaskExecutor_CloseExecutorAfter1stExecution(t *testing.T) {
 
 	go func() {
 		delay := constants.MonitorRetryDelay - 1*time.Second
-		select {
-		case <-time.After(delay):
-		}
+		time.Sleep(delay)
 		executor.close()
 	}()
 
