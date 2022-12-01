@@ -1,7 +1,6 @@
 package utxohandler
 
 import (
-	"io/ioutil"
 	"os"
 	"strconv"
 	"testing"
@@ -80,7 +79,7 @@ func makeTxs(t *testing.T, s objs.Signer, v *objs.ValueStore) *objs.Tx {
 }
 
 func TestUTXOTrie(t *testing.T) {
-	dir, err := ioutil.TempDir("", "badger-test")
+	dir, err := os.MkdirTemp("", "badger-test")
 	if err != nil {
 		t.Fatal(err)
 	}

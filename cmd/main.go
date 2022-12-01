@@ -2,7 +2,7 @@ package main
 
 import (
 	"bytes"
-	"io/ioutil"
+	"io"
 	"os"
 	"reflect"
 	"strings"
@@ -277,7 +277,7 @@ func main() {
 		// Read the config file
 		file, err := os.Open(config.Configuration.ConfigurationFileName)
 		if err == nil {
-			bs, err := ioutil.ReadAll(file)
+			bs, err := io.ReadAll(file)
 			if err == nil {
 				reader := bytes.NewReader(bs)
 				viper.SetConfigType("toml") // TODO: Set config type based on file extension. Viper supports more than toml.

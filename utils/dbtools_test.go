@@ -2,7 +2,6 @@ package utils
 
 import (
 	"bytes"
-	"io/ioutil"
 	"os"
 	"testing"
 
@@ -10,7 +9,7 @@ import (
 )
 
 func TestDBValue(t *testing.T) {
-	dir, err := ioutil.TempDir("", "dbtools-test")
+	dir, err := os.MkdirTemp("", "dbtools-test")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -66,7 +65,7 @@ func TestDBValue(t *testing.T) {
 }
 
 func TestDBInt64(t *testing.T) {
-	dir, err := ioutil.TempDir("", "dbtools-test")
+	dir, err := os.MkdirTemp("", "dbtools-test")
 	if err != nil {
 		t.Fatal(err)
 	}

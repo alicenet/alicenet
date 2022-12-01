@@ -11,4 +11,3 @@ linters:
     - ineffassign
   # Disabling linters until we get them fixed up.
   disable:
-    - staticcheck

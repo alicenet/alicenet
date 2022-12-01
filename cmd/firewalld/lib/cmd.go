@@ -2,7 +2,7 @@ package lib
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os/exec"
 )
 
@@ -29,7 +29,7 @@ func RunCmd(c ...string) ([]byte, error) {
 
 	var stderr []byte
 	go func() {
-		stderr, _ = ioutil.ReadAll(pipe)
+		stderr, _ = io.ReadAll(pipe)
 	}()
 	o, err := cmd.Output()
 

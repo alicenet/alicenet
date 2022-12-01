@@ -1,7 +1,6 @@
 package gossip
 
 import (
-	"io/ioutil"
 	"math/big"
 	"os"
 	"testing"
@@ -26,7 +25,7 @@ func TestState(t *testing.T) {
 	if len(secpPubks) != len(bnShares) {
 		t.Fatal("key length mismatch")
 	}
-	dir, err := ioutil.TempDir("", "badger-test")
+	dir, err := os.MkdirTemp("", "badger-test")
 	if err != nil {
 		t.Fatal(err)
 	}

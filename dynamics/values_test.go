@@ -57,14 +57,14 @@ func TestDynamicValuesCopy(t *testing.T) {
 	t.Parallel()
 	// Copy empty DynamicValues should fail
 	dv1 := &DynamicValues{}
-	dv2, err := dv1.Copy()
+	_, err := dv1.Copy()
 	if err == nil {
 		t.Fatal(err)
 	}
 
 	// Copy DynamicValues with parameters
 	dv1 = &DynamicValues{EncoderVersion: 0, ProposalTimeout: 3000, MaxBlockSize: 30000}
-	dv2, err = dv1.Copy()
+	dv2, err := dv1.Copy()
 	if err != nil {
 		t.Fatal(err)
 	}

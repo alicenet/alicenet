@@ -431,7 +431,7 @@ func GenerateBlockSignature(t *testing.T, bnSigners []*crypto.BNGroupSigner, n i
 	}
 	s := new(crypto.BNGroupSigner)
 	mpk, err := bn256.MarshalBigIntSlice(mpkI)
-	require.Nil(t, err)
+	assert.Nil(t, err)
 	err = s.SetGroupPubk(mpk)
 	require.Nil(t, err)
 

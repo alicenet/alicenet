@@ -5,7 +5,6 @@ import (
 	"context"
 	"crypto/rand"
 	"errors"
-	"io/ioutil"
 	"os"
 	"strconv"
 	"strings"
@@ -268,7 +267,7 @@ func mustDelTx(t *testing.T, hndlr *Handler, tx *objs.Tx) {
 }
 
 func setup(t *testing.T) (*Handler, *mockTrie, func()) {
-	dir, err := ioutil.TempDir("", "badger-test")
+	dir, err := os.MkdirTemp("", "badger-test")
 	if err != nil {
 		if err := os.RemoveAll(dir); err != nil {
 			t.Fatal(err)
@@ -412,7 +411,7 @@ func TestGetProposal(t *testing.T) {
 }
 
 func TestGetProposal_2Txs(t *testing.T) {
-	dir, err := ioutil.TempDir("", "badger-test")
+	dir, err := os.MkdirTemp("", "badger-test")
 	if err != nil {
 		if err := os.RemoveAll(dir); err != nil {
 			t.Fatal(err)
@@ -471,7 +470,7 @@ func TestGetProposal_2Txs(t *testing.T) {
 }
 
 func TestGetProposal_WithNonUniqueTxs(t *testing.T) {
-	dir, err := ioutil.TempDir("", "badger-test")
+	dir, err := os.MkdirTemp("", "badger-test")
 	if err != nil {
 		if err := os.RemoveAll(dir); err != nil {
 			t.Fatal(err)
@@ -529,7 +528,7 @@ func TestGetProposal_WithNonUniqueTxs(t *testing.T) {
 }
 
 func TestGetProposal_With1InvalidTx(t *testing.T) {
-	dir, err := ioutil.TempDir("", "badger-test")
+	dir, err := os.MkdirTemp("", "badger-test")
 	if err != nil {
 		if err := os.RemoveAll(dir); err != nil {
 			t.Fatal(err)
@@ -594,7 +593,7 @@ func TestGetProposal_With1InvalidTx(t *testing.T) {
 }
 
 func TestCheckIsValid_Valid(t *testing.T) {
-	dir, err := ioutil.TempDir("", "badger-test")
+	dir, err := os.MkdirTemp("", "badger-test")
 	if err != nil {
 		if err := os.RemoveAll(dir); err != nil {
 			t.Fatal(err)
@@ -655,7 +654,7 @@ func TestCheckIsValid_Valid(t *testing.T) {
 }
 
 func TestCheckIsValid_UTXOInvalid(t *testing.T) {
-	dir, err := ioutil.TempDir("", "badger-test")
+	dir, err := os.MkdirTemp("", "badger-test")
 	if err != nil {
 		if err := os.RemoveAll(dir); err != nil {
 			t.Fatal(err)
@@ -716,7 +715,7 @@ func TestCheckIsValid_UTXOInvalid(t *testing.T) {
 }
 
 func TestCheckIsValid_Missing_Invalid(t *testing.T) {
-	dir, err := ioutil.TempDir("", "badger-test")
+	dir, err := os.MkdirTemp("", "badger-test")
 	if err != nil {
 		if err := os.RemoveAll(dir); err != nil {
 			t.Fatal(err)
@@ -785,7 +784,7 @@ func TestCheckIsValid_Missing_Invalid(t *testing.T) {
 }
 
 func TestCheckIsValid_Spent_Invalid(t *testing.T) {
-	dir, err := ioutil.TempDir("", "badger-test")
+	dir, err := os.MkdirTemp("", "badger-test")
 	if err != nil {
 		if err := os.RemoveAll(dir); err != nil {
 			t.Fatal(err)
@@ -850,7 +849,7 @@ func TestCheckIsValid_Spent_Invalid(t *testing.T) {
 }
 
 func TestCheckIsValid_Error_Invalid(t *testing.T) {
-	dir, err := ioutil.TempDir("", "badger-test")
+	dir, err := os.MkdirTemp("", "badger-test")
 	if err != nil {
 		if err := os.RemoveAll(dir); err != nil {
 			t.Fatal(err)
