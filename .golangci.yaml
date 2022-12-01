@@ -6,7 +6,6 @@ run:
 linters:
   enable:
     - errcheck
-    - varcheck
     - govet
   # Disabling linters until we get them fixed up.
   disable:
