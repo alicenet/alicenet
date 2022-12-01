@@ -394,7 +394,6 @@ func TestRegisterTask_Group_3_ShouldRetryFalse(t *testing.T) {
 	n := 5
 	fixture := setupEthereum(t, n)
 	eth := fixture.Client
-	//ctx := context.Background()
 	accounts := eth.GetKnownAccounts()
 
 	acct := eth.GetKnownAccounts()[0]
@@ -476,7 +475,6 @@ func TestRegisterTask_Group_3_ShouldRetryTrue(t *testing.T) {
 	n := 5
 	fixture := setupEthereum(t, n)
 	eth := fixture.Client
-	//ctx := context.Background()
 	accounts := eth.GetKnownAccounts()
 
 	acct := eth.GetKnownAccounts()[0]
