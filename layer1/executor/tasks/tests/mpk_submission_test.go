@@ -80,6 +80,7 @@ func TestMPKSubmission_Group_1_GoodAllValid(t *testing.T) {
 
 		// check mpk
 		dkgState, err := state.GetDkgState(suite.DKGStatesDbs[idx])
+		assert.Nil(t, err)
 		if dkgState.MasterPublicKey[0].Cmp(big.NewInt(0)) == 0 ||
 			dkgState.MasterPublicKey[1].Cmp(big.NewInt(0)) == 0 ||
 			dkgState.MasterPublicKey[2].Cmp(big.NewInt(0)) == 0 ||

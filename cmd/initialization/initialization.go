@@ -147,19 +147,17 @@ func initializeFilesAndFolders(cmd *cobra.Command, args []string) {
 		fmt.Printf("In order to configure your node properly, please save your private key to the following path %s using your address as file name.\n", keysPath)
 	}
 
-	transportPrivateKey := "<16_BYTES_TRANSPORT_PRIVATE_KEY>"
 	tpk, err := ethkey.GenerateRandomString(24)
 	if err != nil {
 		logger.Fatalf("Failed to generate Transport.PrivateKey with error %v", err)
 	}
-	transportPrivateKey = tpk
+	transportPrivateKey := tpk
 
-	validatorSymmetricKey := "<SOME_SUPER_FANCY_SECRET_THAT_WILL_BE_HASHED>"
 	vspk, err := ethkey.GenerateRandomString(32)
 	if err != nil {
 		logger.Fatalf("Failed to generate Validator.SymmetricKey with error %v", err)
 	}
-	validatorSymmetricKey = vspk
+	validatorSymmetricKey := vspk
 
 	ethereumEndpointURL := config.Configuration.Ethereum.Endpoint
 	if ethereumEndpointURL == "" {

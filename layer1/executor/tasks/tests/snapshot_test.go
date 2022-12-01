@@ -96,6 +96,7 @@ func Test_SnapshotTask(t *testing.T) {
 		assert.Nil(t, err)
 
 		shouldExecute, err := snapshotTask.ShouldExecute(ctx)
+		assert.Nil(t, err)
 		if shouldExecute {
 			txn, taskError := snapshotTask.Execute(ctx)
 			amILeading, err := utils.AmILeading(
@@ -397,7 +398,7 @@ func GenerateSnapshotData(t *testing.T, chainID uint32, height uint32, bnSigners
 	bClaimsBin, err := bclaims.MarshalBinary()
 	require.Nil(t, err)
 
-	grpsig := []byte{}
+	var grpsig []byte
 	if fakeSig {
 		grpsig, err = bnSigners[0].Sign(blockHash)
 		require.Nil(t, err)
@@ -430,6 +431,7 @@ func GenerateBlockSignature(t *testing.T, bnSigners []*crypto.BNGroupSigner, n i
 	}
 	s := new(crypto.BNGroupSigner)
 	mpk, err := bn256.MarshalBigIntSlice(mpkI)
+	require.Nil(t, err)
 	err = s.SetGroupPubk(mpk)
 	require.Nil(t, err)
 
