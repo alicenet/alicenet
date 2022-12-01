@@ -43,7 +43,7 @@ func generate(cmd *cobra.Command, args []string) {
 	if _, err := os.Stat(keyFilePath); err == nil {
 		logger.Fatalf("Keyfile already exists at %s.", keyFilePath)
 	} else if !os.IsNotExist(err) {
-		logger.Fatalf("Error checking if keyfile exists: %w", err)
+		logger.Fatalf("Error checking if keyfile exists: %v", err)
 	}
 
 	keyjson, key, _, err := GenerateKeyFile(false, logger)
@@ -56,7 +56,7 @@ func generate(cmd *cobra.Command, args []string) {
 		logger.Fatalf("Could not create directory %s", filepath.Dir(keyFilePath))
 	}
 	if err := os.WriteFile(keyFilePath, keyjson, 0600); err != nil {
-		logger.Fatalf("Failed to write keyfile to %s: %w", keyFilePath, err)
+		logger.Fatalf("Failed to write keyfile to %s: %v", keyFilePath, err)
 	}
 
 	// Output some information.
