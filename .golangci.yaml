@@ -9,7 +9,6 @@ linters:
     - gosimple
     - govet
     - ineffassign
-    - varcheck
   # Disabling linters until we get them fixed up.
   disable:
     - staticcheck
