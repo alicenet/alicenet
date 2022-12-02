@@ -9,7 +9,7 @@ import hre, { ethers, expect } from "hardhat";
 import { deployCreateAndRegister } from "../../scripts/lib/alicenetFactory";
 import {
   CONTRACT_ADDR,
-  DEPLOYED_RAW,
+  EVENT_DEPLOYED_RAW,
   LOCK_UP,
 } from "../../scripts/lib/constants";
 import { BonusPool, Lockup, RewardPool } from "../../typechain-types";
@@ -297,14 +297,16 @@ export async function deployLockupContract(
 ) {
   const txResponse = await deployCreateAndRegister(
     LOCK_UP,
-    baseTokensFixture.factory.address,
+    baseTokensFixture.factory,
     ethers,
-    [enrollmentPeriod, lockDuration, totalBonusAmount]
+    [enrollmentPeriod, lockDuration, totalBonusAmount],
+    ethers.utils.formatBytes32String(LOCK_UP)
   );
+
   // get the address from the event
   const lockupAddress = await getEventVar(
     txResponse,
-    DEPLOYED_RAW,
+    EVENT_DEPLOYED_RAW,
     CONTRACT_ADDR
   );
   const lockupStartBlock =
@@ -401,7 +403,7 @@ export async function deployFixture(
 ) {
   await preFixtureSetup();
   const signers = await ethers.getSigners();
-  const baseTokensFixture = await deployFactoryAndBaseTokens(signers[0]);
+  const baseTokensFixture = await deployFactoryAndBaseTokens();
   // deploying foundation so terminate doesn't fail
   await deployUpgradeableWithFactory(
     baseTokensFixture.factory,

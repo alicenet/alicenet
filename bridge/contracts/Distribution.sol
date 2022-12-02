@@ -14,6 +14,8 @@ import "contracts/libraries/errors/DistributionErrors.sol";
 
 /// @custom:salt Distribution
 /// @custom:deploy-type deployUpgradeable
+/// @custom:deploy-group alcb
+/// @custom:deploy-group-index 1
 contract Distribution is
     IDistribution,
     MagicEthTransfer,

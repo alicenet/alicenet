@@ -29,15 +29,11 @@ describe("PublicStaking: Accumulator Overflow", async () => {
   let users: SignerWithAddress[] = [];
 
   async function deployFixture() {
-    const [adminSigner] = await ethers.getSigners();
     await preFixtureSetup();
     const legacyToken = await (
       await ethers.getContractFactory("LegacyToken")
     ).deploy();
-    const factory = await deployAliceNetFactory(
-      adminSigner,
-      legacyToken.address
-    );
+    const factory = await deployAliceNetFactory(legacyToken.address);
 
     const alca = await ethers.getContractAt(
       "ALCA",

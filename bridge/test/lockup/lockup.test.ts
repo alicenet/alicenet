@@ -3,7 +3,7 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
 import { BigNumber, BytesLike, ContractTransaction } from "ethers";
 import { ethers } from "hardhat";
-import { CONTRACT_ADDR, DEPLOYED_RAW } from "../../scripts/lib/constants";
+import { CONTRACT_ADDR, EVENT_DEPLOYED_RAW } from "../../scripts/lib/constants";
 import { BonusPool, Lockup, RewardPool } from "../../typechain-types";
 import { getEventVar } from "../factory/Setup";
 import {
@@ -31,7 +31,7 @@ const numberOfLockingUsers = 5;
 async function deployFixture() {
   await preFixtureSetup();
   const signers = await ethers.getSigners();
-  const fixture = await deployFactoryAndBaseTokens(signers[0]);
+  const fixture = await deployFactoryAndBaseTokens();
   // deploy lockup contract
   const lockupBase = await ethers.getContractFactory("Lockup");
   const lockupDeployCode = lockupBase.getDeployTransaction(
@@ -47,7 +47,7 @@ async function deployFixture() {
   // get the address from the event
   const lockupAddress = await getEventVar(
     txResponse,
-    DEPLOYED_RAW,
+    EVENT_DEPLOYED_RAW,
     CONTRACT_ADDR
   );
   startBlock += txResponse.blockNumber as number;

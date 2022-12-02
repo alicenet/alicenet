@@ -64,10 +64,10 @@ func GenerateHardhatConfig(tempDir, hardhatPath, endPoint string) string {
 	import "%[1]s/node_modules/@nomiclabs/hardhat-truffle5";
 	import "%[1]s/node_modules/@typechain/hardhat";
 	import { HardhatUserConfig} from "%[1]s/node_modules/hardhat/config";
-	import "%[1]s/scripts/generateImmutableAuth";
-	import "%[1]s/scripts/lib/alicenetFactoryTasks";
-	import "%[1]s/scripts/lib/alicenetTasks";
-	import "%[1]s/scripts/lib/gogogen";
+	import "%[1]s/scripts/tasks/generateImmutableAuth";
+	import "%[1]s/scripts/tasks/alicenetFactoryTasks";
+	import "%[1]s/scripts/tasks/alicenetTasks";
+	import "%[1]s/scripts/tasks/gogogen";
 
 	const config: HardhatUserConfig = {
 		networks: {
