@@ -3,11 +3,13 @@ import "@nomiclabs/hardhat-ethers";
 import "@nomiclabs/hardhat-etherscan";
 import "@nomiclabs/hardhat-truffle5";
 import "@typechain/hardhat";
+import fs from "fs";
 import "hardhat-abi-exporter";
 import "hardhat-contract-sizer";
 import "hardhat-deploy";
 import "hardhat-gas-reporter";
 import "hardhat-log-remover";
+import "hardhat-preprocessor";
 import "hardhat-storage-layout";
 import "hardhat/config";
 import { HardhatUserConfig, task } from "hardhat/config";
@@ -18,6 +20,14 @@ import "./scripts/tasks/alicenetTasks";
 import "./scripts/tasks/generateImmutableAuth";
 import "./scripts/tasks/gogogen";
 require("dotenv").config();
+
+function getRemappings() {
+  return fs
+    .readFileSync("remappings.txt", "utf8")
+    .split("\n")
+    .filter(Boolean) // remove empty lines
+    .map((line) => line.trim().split("="));
+}
 
 /**
  * @type import('hardhat/config').HardhatUserConfig
@@ -260,7 +270,21 @@ const config: HardhatUserConfig = {
       },
     ],
   },
-
+  preprocess: {
+    eachLine: (hre) => ({
+      transform: (line: string) => {
+        if (line.match(/^\s*import /i)) {
+          for (const [from, to] of getRemappings()) {
+            if (line.includes(from)) {
+              line = line.replace(from, to);
+              break;
+            }
+          }
+        }
+        return line;
+      },
+    }),
+  },
   paths: {
     sources: "./contracts",
     tests: "./test",
