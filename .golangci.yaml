@@ -5,10 +5,98 @@ run:
     - flakes
 linters:
   enable:
+    - asciicheck # 0 issues
+    - bidichk # issues
     - errcheck
+    - errchkjson # 0 issues
+    - execinquery # 0 issues
+    - exportloopref # 0 issues
+    - goprintffuncname # 0 issues
     - gosimple
     - govet
+    - grouper # 0 issues
     - ineffassign
+    - tenv # 0 issues
+    - tparallel # 0 issues
+    - unused # 0 issues
   # Disabling linters until we get them fixed up.
   disable:
     - staticcheck
+    - bodyclose # 2 issues
+    - containedctx # 4 issues
+    - contextcheck # 2 issues
+    - cyclop # 25+ issues
+    - decorder # 1 issue
+    - dogsled # 15 issues
+    - dupl # 25+ issues
+    - durationcheck # 3 issues
+    - errname # 15 issues
+    - errorlint # 17 issues
+    - exhaustive # 4 issues
+    - forbidigo # 12 issues
+    - forcetypeassert # 3 issues
+    - funlen # 50 issues
+    - gci # 3 issues
+    - gochecknoglobals # 50 issues
+    - gochecknoinits # 1 issue
+    - gocognit # 50 issues
+    - goconst # 5 issues
+    - gocritic # 50 issues
+    - gocyclo # 21 issues
+    - godot # 3 issues
+    - godox # 28 issues
+    - goerr113 # 50 issues
+    - gofumpt # 3 issues
+    - gomnd # 50 issues
+    - gosec # 7 issues
+    - importas # 50 issues
+    - maintidx # 18 issues
+    - makezero # 4 issues
+    - misspell # 6 issues
+    - nakedret # 2 issues
+    - nestif # 50 issues
+    - nilerr # 8 issues
+    - nilnil # 3 issues
+    - nlreturn # 9 issues
+    - noctx # 4 issues
+    - nolintlint # 2 issues
+    - nonamedreturns # 11 issues
+    - nosprintfhostport # 1 issue
+    - lll # 50 issues
+    - paralleltest # 50 issues
+    - prealloc # 12 issues
+    - predeclared # 4 issues
+    - revive
+    - staticcheck
+    - stylecheck # 50 issues
+    - tagliatelle # 7 issues
+    - thelper # 4 issues
+    - unconvert # 3 issues
+    - unparam # 29 issues
+    - whitespace # 6 issues
+    - wsl # 0 issues
+  # Disabled due to generics
+    # - rowserrcheck # 0 issues + warn [linters_context] 
+    # - sqlclosecheck # 0 issues 
+    # - wastedassign # 0 issues 
+linters-settings:
+  forbidigo:
+    forbid:
+      - 'fmt\.Print.*'
+      - 'log\.Fatal.*'
+      - 'log\.Panic.*'
+      - 'log\.Print.*'
+  gci:
+    sections:
+      - standard
+      - default
+      - prefix(github.com/alicenet)
+  gofumpt:
+    lang-version: "1.19"
+    module-path: github.com/alicenet/utilities
+    extra-rules: true
+  importas:
+    no-extra-aliases: true
+    alias:
+      - pkg: github.com/alicenet/utilities/api/(\w+)/(v[\w\d]+)
+        alias: $1$2
