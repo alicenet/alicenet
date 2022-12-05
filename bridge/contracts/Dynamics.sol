@@ -119,7 +119,7 @@ contract Dynamics is Initializable, IDynamics, ImmutableSnapshots {
         return _decodeDynamicValues(_dynamicValues.getValue(_dynamicValues.getHead()));
     }
 
-    /// Get the next dynamic values that will be in execution in the side chain.
+    /// Get the next dynamic values that will be in execution some epoch in the future in the side chain.
     function getNextDynamicValues() public view returns (DynamicValues memory) {
         return _decodeDynamicValues(_dynamicValues.getValue(_dynamicValues.getTail()));
     }
