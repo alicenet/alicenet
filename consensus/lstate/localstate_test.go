@@ -496,8 +496,7 @@ func TestLocalState_setMostRecentBlockHeaderFastSync_Error1(t *testing.T) {
 	round := uint32(4)
 	prevBlock := crypto.Hasher([]byte("0"))
 	buildRound(t, bnSigners, bnShares, secpSigners, height, round, prevBlock)
-	err := engine.setMostRecentBlockHeaderFastSync(nil, rss, nil)
-	if err == nil {
+	if err := engine.setMostRecentBlockHeaderFastSync(nil, rss, nil); err == nil {
 		t.Fatal("Should have raised error")
 	}
 }
