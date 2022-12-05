@@ -39,7 +39,6 @@ task(
     await hre.storageLayout.export();
   }
 );
-
 const config: HardhatUserConfig = {
   namedAccounts: {
     admin: 0,
@@ -126,6 +125,9 @@ const config: HardhatUserConfig = {
       mining: {
         auto: true,
         interval: 0,
+      },
+      forking: {
+        url: process.env.ALCHEMY_ENDPOINT_ETH as string,
       },
       accounts: [
         {
@@ -222,6 +224,7 @@ const config: HardhatUserConfig = {
       ],
     },
   },
+
   etherscan: {
     apiKey: process.env.ETHERSCAN_API_KEY
       ? process.env.ETHERSCAN_API_KEY
