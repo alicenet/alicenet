@@ -47,6 +47,7 @@ func TestDisputeShareDistributionTask_Group_1_OneValidatorSubmittingInvalidCrede
 			assert.True(t, shouldExecute)
 
 			dkgState, err := state.GetDkgState(suite.DKGStatesDbs[idx])
+			assert.Nil(t, err)
 			assert.NotNil(t, dkgState)
 			txn, taskErr := task.Execute(ctx)
 
@@ -142,6 +143,7 @@ func TestDisputeShareDistributionTask_Group_1_TwoValidatorSubmittingInvalidCrede
 			assert.True(t, shouldExecute)
 
 			dkgState, err := state.GetDkgState(suite.DKGStatesDbs[idx])
+			assert.Nil(t, err)
 			assert.NotNil(t, dkgState)
 			txn, taskErr := task.Execute(ctx)
 
@@ -219,6 +221,7 @@ func TestDisputeShareDistributionTask_Group_1_AllValidatorSubmittingInvalidCrede
 			assert.True(t, shouldExecute)
 
 			dkgState, err := state.GetDkgState(suite.DKGStatesDbs[idx])
+			assert.Nil(t, err)
 			assert.NotNil(t, dkgState)
 			txn, taskErr := task.Execute(ctx)
 

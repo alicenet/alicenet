@@ -354,11 +354,19 @@ func getTransactionRequest(ConsumedTxHash, account []byte, val uint64) (tx_ *pro
 		TxHash: make([]byte, constants.HashLen),
 	}
 	newUTXO := &objs.TXOut{}
-	err = newUTXO.NewValueStore(newValueStore)
-	tx.Vout = append(tx.Vout, newUTXO)
+	if err := newUTXO.NewValueStore(newValueStore); err != nil {
+		panic(err)
+	}
+	if tx.Vout = append(tx.Vout, newUTXO); tx.Vout == nil {
+		panic(err)
+	}
 	tx.Fee = getMinTxFee()
-	err = tx.SetTxHash()
-	err = v.Sign(tx.Vin[0], signer)
+	if err = tx.SetTxHash(); err != nil {
+		panic(err)
+	}
+	if err = v.Sign(tx.Vin[0], signer); err != nil {
+		panic(err)
+	}
 	hash, _ = tx.TxHash()
 	signature := txin.Signature
 	/* 	fmt.Printf("Hash %x \n", hash)

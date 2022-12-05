@@ -394,7 +394,6 @@ func TestRegisterTask_Group_3_ShouldRetryFalse(t *testing.T) {
 	n := 5
 	fixture := setupEthereum(t, n)
 	eth := fixture.Client
-	ctx := context.Background()
 	accounts := eth.GetKnownAccounts()
 
 	acct := eth.GetKnownAccounts()[0]
@@ -476,7 +475,6 @@ func TestRegisterTask_Group_3_ShouldRetryTrue(t *testing.T) {
 	n := 5
 	fixture := setupEthereum(t, n)
 	eth := fixture.Client
-	ctx := context.Background()
 	accounts := eth.GetKnownAccounts()
 
 	acct := eth.GetKnownAccounts()[0]
@@ -545,6 +543,7 @@ func TestRegisterTask_Group_3_ShouldRetryTrue(t *testing.T) {
 	err = registrationTask.Initialize(dkgDb, fixture.Logger, eth, fixture.Contracts, "RegistrationTask", "task-id", registrationTask.Start, registrationTask.End, false, nil, nil)
 	assert.Nil(t, err)
 	err = registrationTask.Prepare(ctx)
+	assert.Nil(t, err)
 
 	expiredCtx, cf := context.WithCancel(context.Background())
 	cf()
