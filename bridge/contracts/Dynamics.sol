@@ -170,11 +170,10 @@ contract Dynamics is Initializable, IDynamics, ImmutableSnapshots {
                 size++;
             }
         }
-        DynamicValues[] memory filteredDynamicValuesArray = new DynamicValues[](size);
-        for (uint256 position = 0; position < size; position++) {
-            filteredDynamicValuesArray[position] = dynamicValuesArray[position];
+        assembly ("memory-safe") {
+            mstore(dynamicValuesArray, size)
         }
-        return filteredDynamicValuesArray;
+        return dynamicValuesArray;
     }
 
     /// Decodes a dynamic struct from a storage contract.
