@@ -53,7 +53,6 @@ library NodeUpdate {
         node.next = nextEpoch;
         return node;
     }
-
 }
 
 library DoublyLinkedListLogic {
@@ -94,7 +93,7 @@ library DoublyLinkedListLogic {
         linkNext(list, tail, epoch);
         setTail(list, epoch);
         list.totalNodes++;
-   }
+    }
 
     /***
      * @dev Function to update the Head pointer.

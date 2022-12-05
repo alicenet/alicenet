@@ -687,6 +687,46 @@
   },
   {
     "inputs": [],
+    "name": "getCurrentAliceNetVersion",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint32",
+            "name": "major",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint32",
+            "name": "minor",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint32",
+            "name": "patch",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint32",
+            "name": "executionEpoch",
+            "type": "uint32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "binaryHash",
+            "type": "bytes32"
+          }
+        ],
+        "internalType": "struct CanonicalVersion",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "getCurrentDynamicValues",
     "outputs": [
       {
@@ -751,46 +791,6 @@
       }
     ],
     "stateMutability": "pure",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "getLatestAliceNetVersion",
-    "outputs": [
-      {
-        "components": [
-          {
-            "internalType": "uint32",
-            "name": "major",
-            "type": "uint32"
-          },
-          {
-            "internalType": "uint32",
-            "name": "minor",
-            "type": "uint32"
-          },
-          {
-            "internalType": "uint32",
-            "name": "patch",
-            "type": "uint32"
-          },
-          {
-            "internalType": "uint32",
-            "name": "executionEpoch",
-            "type": "uint32"
-          },
-          {
-            "internalType": "bytes32",
-            "name": "binaryHash",
-            "type": "bytes32"
-          }
-        ],
-        "internalType": "struct CanonicalVersion",
-        "name": "",
-        "type": "tuple"
-      }
-    ],
-    "stateMutability": "view",
     "type": "function"
   },
   {

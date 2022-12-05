@@ -125,7 +125,7 @@ contract Dynamics is Initializable, IDynamics, ImmutableSnapshots {
     }
 
     /// Get the latest version of the aliceNet node and when it becomes canonical.
-    function getLatestAliceNetVersion() public view returns (CanonicalVersion memory) {
+    function getCurrentAliceNetVersion() public view returns (CanonicalVersion memory) {
         return _aliceNetCanonicalVersion;
     }
 
@@ -171,8 +171,8 @@ contract Dynamics is Initializable, IDynamics, ImmutableSnapshots {
             }
         }
         DynamicValues[] memory filteredDynamicValuesArray = new DynamicValues[](size);
-        for (uint256 position = 0; position < size ; position++) {
-            filteredDynamicValuesArray[position]= dynamicValuesArray[position];
+        for (uint256 position = 0; position < size; position++) {
+            filteredDynamicValuesArray[position] = dynamicValuesArray[position];
         }
         return filteredDynamicValuesArray;
     }
