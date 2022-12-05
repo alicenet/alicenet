@@ -546,6 +546,122 @@
   },
   {
     "inputs": [],
+    "name": "getAllDynamicValues",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "enum Version",
+            "name": "encoderVersion",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint24",
+            "name": "proposalTimeout",
+            "type": "uint24"
+          },
+          {
+            "internalType": "uint32",
+            "name": "preVoteTimeout",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint32",
+            "name": "preCommitTimeout",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint32",
+            "name": "maxBlockSize",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint64",
+            "name": "dataStoreFee",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint64",
+            "name": "valueStoreFee",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint128",
+            "name": "minScaledTransactionFee",
+            "type": "uint128"
+          }
+        ],
+        "internalType": "struct DynamicValues[]",
+        "name": "",
+        "type": "tuple[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "fromEpoch",
+        "type": "uint256"
+      }
+    ],
+    "name": "getAllDynamicValuesFromEpoch",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "enum Version",
+            "name": "encoderVersion",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint24",
+            "name": "proposalTimeout",
+            "type": "uint24"
+          },
+          {
+            "internalType": "uint32",
+            "name": "preVoteTimeout",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint32",
+            "name": "preCommitTimeout",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint32",
+            "name": "maxBlockSize",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint64",
+            "name": "dataStoreFee",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint64",
+            "name": "valueStoreFee",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint128",
+            "name": "minScaledTransactionFee",
+            "type": "uint128"
+          }
+        ],
+        "internalType": "struct DynamicValues[]",
+        "name": "",
+        "type": "tuple[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "getConfiguration",
     "outputs": [
       {
@@ -562,6 +678,61 @@
           }
         ],
         "internalType": "struct Configuration",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getCurrentDynamicValues",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "enum Version",
+            "name": "encoderVersion",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint24",
+            "name": "proposalTimeout",
+            "type": "uint24"
+          },
+          {
+            "internalType": "uint32",
+            "name": "preVoteTimeout",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint32",
+            "name": "preCommitTimeout",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint32",
+            "name": "maxBlockSize",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint64",
+            "name": "dataStoreFee",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint64",
+            "name": "valueStoreFee",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint128",
+            "name": "minScaledTransactionFee",
+            "type": "uint128"
+          }
+        ],
+        "internalType": "struct DynamicValues",
         "name": "",
         "type": "tuple"
       }
@@ -623,8 +794,32 @@
     "type": "function"
   },
   {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "_salt",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "address",
+        "name": "_factory",
+        "type": "address"
+      }
+    ],
+    "name": "getMetamorphicContractAddress",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "pure",
+    "type": "function"
+  },
+  {
     "inputs": [],
-    "name": "getLatestDynamicValues",
+    "name": "getNextDynamicValues",
     "outputs": [
       {
         "components": [
@@ -675,30 +870,6 @@
       }
     ],
     "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "bytes32",
-        "name": "_salt",
-        "type": "bytes32"
-      },
-      {
-        "internalType": "address",
-        "name": "_factory",
-        "type": "address"
-      }
-    ],
-    "name": "getMetamorphicContractAddress",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "pure",
     "type": "function"
   },
   {
