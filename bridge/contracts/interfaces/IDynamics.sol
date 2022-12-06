@@ -59,19 +59,15 @@ interface IDynamics {
 
     function getConfiguration() external view returns (Configuration memory);
 
-    function getCurrentAliceNetVersion() external view returns (CanonicalVersion memory);
+    function getLatestAliceNetVersion() external view returns (CanonicalVersion memory);
 
-    function getCurrentDynamicValues() external view returns (DynamicValues memory);
+    function getLatestDynamicValues() external view returns (DynamicValues memory);
 
-    function getNextDynamicValues() external view returns (DynamicValues memory);
+    function getFurthestDynamicValues() external view returns (DynamicValues memory);
 
     function getPreviousDynamicValues(uint256 epoch) external view returns (DynamicValues memory);
 
     function getAllDynamicValues() external view returns (DynamicValues[] memory);
-
-    function getAllDynamicValuesFromEpoch(
-        uint256 fromEpoch
-    ) external view returns (DynamicValues[] memory);
 
     function decodeDynamicValues(address addr) external view returns (DynamicValues memory);
 

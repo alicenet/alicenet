@@ -94,7 +94,7 @@ const shouldFailUpdateAliceNetNode = async (
 ) => {
   const minEpochsBetweenUpdates = 2;
   const alicenetCurrentVersion =
-    await fixture.dynamics.getCurrentAliceNetVersion();
+    await fixture.dynamics.getLatestAliceNetVersion();
   const expectedEpoch = (await fixture.snapshots.getEpoch()).add(
     minEpochsBetweenUpdates
   );
@@ -167,7 +167,7 @@ describe("Testing Dynamics methods", async () => {
     const signers = await ethers.getSigners();
     [admin] = signers;
     alicenetCurrentVersion = {
-      ...(await fixture.dynamics.getCurrentAliceNetVersion()),
+      ...(await fixture.dynamics.getLatestAliceNetVersion()),
     };
     alicenetCurrentVersion.binaryHash =
       "0xbc36789e7a1e281436464229828f817d6612f7b477d66591ff96a9e064bcc98a";
@@ -272,7 +272,7 @@ describe("Testing Dynamics methods", async () => {
 
   it("Should get latest dynamic values", async () => {
     const latestDynamicsValue =
-      (await fixture.dynamics.getCurrentDynamicValues()) as DynamicValuesStruct;
+      (await fixture.dynamics.getLatestDynamicValues()) as DynamicValuesStruct;
     expect(latestDynamicsValue.encoderVersion).to.be.deep.equal(
       currentDynamicValues.encoderVersion
     );
@@ -305,15 +305,13 @@ describe("Testing Dynamics methods", async () => {
     await changeDynamicValues(fixture, newDynamicValues);
     // before the epochs has passed the value should be the same
     expect(
-      (
-        (await fixture.dynamics.getCurrentDynamicValues()) as DynamicValuesStruct
-      ).valueStoreFee
+      ((await fixture.dynamics.getLatestDynamicValues()) as DynamicValuesStruct)
+        .valueStoreFee
     ).to.be.equal(currentDynamicValues.valueStoreFee);
     await commitSnapshots(fixture, minEpochsBetweenUpdates.toNumber());
     expect(
-      (
-        (await fixture.dynamics.getCurrentDynamicValues()) as DynamicValuesStruct
-      ).valueStoreFee
+      ((await fixture.dynamics.getLatestDynamicValues()) as DynamicValuesStruct)
+        .valueStoreFee
     ).to.be.equal(newDynamicValues.valueStoreFee);
   });
 
@@ -323,9 +321,8 @@ describe("Testing Dynamics methods", async () => {
     await changeDynamicValues(fixture, newDynamicValues);
     await commitSnapshots(fixture, minEpochsBetweenUpdates.toNumber());
     expect(
-      (
-        (await fixture.dynamics.getCurrentDynamicValues()) as DynamicValuesStruct
-      ).valueStoreFee
+      ((await fixture.dynamics.getLatestDynamicValues()) as DynamicValuesStruct)
+        .valueStoreFee
     ).to.be.equal(newDynamicValues.valueStoreFee);
     expect(
       (
@@ -349,9 +346,8 @@ describe("Testing Dynamics methods", async () => {
     await changeDynamicValues(fixture, newDynamicValues);
     await commitSnapshots(fixture, minEpochsBetweenUpdates.toNumber());
     expect(
-      (
-        (await fixture.dynamics.getCurrentDynamicValues()) as DynamicValuesStruct
-      ).valueStoreFee
+      ((await fixture.dynamics.getLatestDynamicValues()) as DynamicValuesStruct)
+        .valueStoreFee
     ).to.be.equal(newDynamicValues.valueStoreFee);
     await commitSnapshots(fixture, 100);
     const newDynamicValues2 = { ...newDynamicValues };
@@ -359,9 +355,8 @@ describe("Testing Dynamics methods", async () => {
     await changeDynamicValues(fixture, newDynamicValues2);
     await commitSnapshots(fixture, minEpochsBetweenUpdates.toNumber());
     expect(
-      (
-        (await fixture.dynamics.getCurrentDynamicValues()) as DynamicValuesStruct
-      ).maxBlockSize
+      ((await fixture.dynamics.getLatestDynamicValues()) as DynamicValuesStruct)
+        .maxBlockSize
     ).to.be.equal(newDynamicValues2.maxBlockSize);
 
     // we are close to epoch 200, previous value changed close to epoch 100
@@ -390,34 +385,12 @@ describe("Testing Dynamics methods", async () => {
     );
   });
 
-  it("Should get all dynamic values from specified epoch", async () => {
-    const newDynamicValues = { ...currentDynamicValues };
-    newDynamicValues.valueStoreFee = BigNumber.from(1);
-    await changeDynamicValues(fixture, newDynamicValues);
-    const anotherNewDynamicValues = { ...currentDynamicValues };
-    anotherNewDynamicValues.valueStoreFee = BigNumber.from(2);
-    await changeDynamicValues(fixture, anotherNewDynamicValues);
-    let dynamicValues = await fixture.dynamics.getAllDynamicValuesFromEpoch(10);
-    expect(dynamicValues.length).to.be.equal(2);
+  it("Should get all dynamic values when we have only 1 value", async () => {
+    const dynamicValues = await fixture.dynamics.getAllDynamicValues();
+    expect(dynamicValues.length).to.be.equal(1);
     expect((dynamicValues[0] as DynamicValuesStruct).valueStoreFee).to.be.equal(
-      newDynamicValues.valueStoreFee
+      currentDynamicValues.valueStoreFee
     );
-    expect((dynamicValues[1] as DynamicValuesStruct).valueStoreFee).to.be.equal(
-      anotherNewDynamicValues.valueStoreFee
-    );
-    // test correct for epochs 0 or >22
-    dynamicValues = await fixture.dynamics.getAllDynamicValuesFromEpoch(30);
-    expect(dynamicValues.length).to.be.equal(0);
-    dynamicValues = await fixture.dynamics.getAllDynamicValuesFromEpoch(0);
-    expect(dynamicValues.length).to.be.equal(3);
-  });
-
-  it("Should get next applicable dynamic values", async () => {
-    const newDynamicValues = { ...currentDynamicValues };
-    newDynamicValues.valueStoreFee = BigNumber.from(1);
-    await changeDynamicValues(fixture, newDynamicValues);
-    const dynamicValues = await fixture.dynamics.getNextDynamicValues();
-    expect(dynamicValues.valueStoreFee).equal(newDynamicValues.valueStoreFee);
   });
 
   it("Should update AliceNet node version to a valid version and emit corresponding event", async () => {
@@ -506,7 +479,7 @@ describe("Testing Dynamics methods", async () => {
       false
     );
     const latestNode =
-      (await fixture.dynamics.getCurrentAliceNetVersion()) as CanonicalVersionStruct;
+      (await fixture.dynamics.getLatestAliceNetVersion()) as CanonicalVersionStruct;
     expect(latestNode.major).to.be.equal(newAliceNetVersion.major);
     expect(latestNode.minor).to.be.equal(newAliceNetVersion.minor);
     expect(latestNode.patch).to.be.equal(newAliceNetVersion.patch);
@@ -548,7 +521,7 @@ describe("Testing Dynamics methods", async () => {
   it("Should not update AliceNet node version to the same current version", async () => {
     await shouldFailUpdateAliceNetNode(
       fixture,
-      await fixture.dynamics.getCurrentAliceNetVersion()
+      await fixture.dynamics.getLatestAliceNetVersion()
     );
   });
 

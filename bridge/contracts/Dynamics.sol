@@ -115,17 +115,17 @@ contract Dynamics is Initializable, IDynamics, ImmutableSnapshots {
     }
 
     /// Get the latest dynamic values that are currently in execution in the side chain.
-    function getCurrentDynamicValues() public view returns (DynamicValues memory) {
+    function getLatestDynamicValues() public view returns (DynamicValues memory) {
         return _decodeDynamicValues(_dynamicValues.getValue(_dynamicValues.getHead()));
     }
 
-    /// Get the next dynamic values that will be in execution some epoch in the future in the side chain.
-    function getNextDynamicValues() public view returns (DynamicValues memory) {
+    /// Get the furthest dynamic values that will be in execution in the future.
+    function getFurthestDynamicValues() public view returns (DynamicValues memory) {
         return _decodeDynamicValues(_dynamicValues.getValue(_dynamicValues.getTail()));
     }
 
     /// Get the latest version of the aliceNet node and when it becomes canonical.
-    function getCurrentAliceNetVersion() public view returns (CanonicalVersion memory) {
+    function getLatestAliceNetVersion() public view returns (CanonicalVersion memory) {
         return _aliceNetCanonicalVersion;
     }
 
@@ -144,7 +144,7 @@ contract Dynamics is Initializable, IDynamics, ImmutableSnapshots {
         revert DynamicsErrors.DynamicValueNotFound(epoch);
     }
 
-    /// Get all the dynamic values in list
+    /// Get all the dynamic values in the doubly linked list
     function getAllDynamicValues() public view returns (DynamicValues[] memory) {
         DynamicValues[] memory dynamicValuesArray = new DynamicValues[](_dynamicValues.totalNodes);
         uint256 position = 0;
@@ -152,26 +152,6 @@ contract Dynamics is Initializable, IDynamics, ImmutableSnapshots {
             address data = _dynamicValues.getValue(epoch);
             dynamicValuesArray[position] = _decodeDynamicValues(data);
             position++;
-        }
-        return dynamicValuesArray;
-    }
-
-    /// Get all dynamic values in list from specified epoch
-    /// @param fromEpoch The epoch in the past to start the dynamic values list.
-    function getAllDynamicValuesFromEpoch(
-        uint256 fromEpoch
-    ) public view returns (DynamicValues[] memory) {
-        DynamicValues[] memory dynamicValuesArray = new DynamicValues[](_dynamicValues.totalNodes);
-        uint256 size = 0;
-        for (uint256 epoch = 1; epoch != 0; epoch = _dynamicValues.getNextEpoch(epoch)) {
-            if (epoch >= fromEpoch) {
-                address data = _dynamicValues.getValue(epoch);
-                dynamicValuesArray[size] = _decodeDynamicValues(data);
-                size++;
-            }
-        }
-        assembly ("memory-safe") {
-            mstore(dynamicValuesArray, size)
         }
         return dynamicValuesArray;
     }

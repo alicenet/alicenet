@@ -600,14 +600,46 @@
     "type": "function"
   },
   {
-    "inputs": [
+    "inputs": [],
+    "name": "getConfiguration",
+    "outputs": [
       {
-        "internalType": "uint256",
-        "name": "fromEpoch",
-        "type": "uint256"
+        "components": [
+          {
+            "internalType": "uint128",
+            "name": "minEpochsBetweenUpdates",
+            "type": "uint128"
+          },
+          {
+            "internalType": "uint128",
+            "name": "maxEpochsBetweenUpdates",
+            "type": "uint128"
+          }
+        ],
+        "internalType": "struct Configuration",
+        "name": "",
+        "type": "tuple"
       }
     ],
-    "name": "getAllDynamicValuesFromEpoch",
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getEncodingVersion",
+    "outputs": [
+      {
+        "internalType": "enum Version",
+        "name": "",
+        "type": "uint8"
+      }
+    ],
+    "stateMutability": "pure",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getFurthestDynamicValues",
     "outputs": [
       {
         "components": [
@@ -652,32 +684,7 @@
             "type": "uint128"
           }
         ],
-        "internalType": "struct DynamicValues[]",
-        "name": "",
-        "type": "tuple[]"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "getConfiguration",
-    "outputs": [
-      {
-        "components": [
-          {
-            "internalType": "uint128",
-            "name": "minEpochsBetweenUpdates",
-            "type": "uint128"
-          },
-          {
-            "internalType": "uint128",
-            "name": "maxEpochsBetweenUpdates",
-            "type": "uint128"
-          }
-        ],
-        "internalType": "struct Configuration",
+        "internalType": "struct DynamicValues",
         "name": "",
         "type": "tuple"
       }
@@ -687,7 +694,7 @@
   },
   {
     "inputs": [],
-    "name": "getCurrentAliceNetVersion",
+    "name": "getLatestAliceNetVersion",
     "outputs": [
       {
         "components": [
@@ -727,7 +734,7 @@
   },
   {
     "inputs": [],
-    "name": "getCurrentDynamicValues",
+    "name": "getLatestDynamicValues",
     "outputs": [
       {
         "components": [
@@ -778,19 +785,6 @@
       }
     ],
     "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "getEncodingVersion",
-    "outputs": [
-      {
-        "internalType": "enum Version",
-        "name": "",
-        "type": "uint8"
-      }
-    ],
-    "stateMutability": "pure",
     "type": "function"
   },
   {
@@ -815,61 +809,6 @@
       }
     ],
     "stateMutability": "pure",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "getNextDynamicValues",
-    "outputs": [
-      {
-        "components": [
-          {
-            "internalType": "enum Version",
-            "name": "encoderVersion",
-            "type": "uint8"
-          },
-          {
-            "internalType": "uint24",
-            "name": "proposalTimeout",
-            "type": "uint24"
-          },
-          {
-            "internalType": "uint32",
-            "name": "preVoteTimeout",
-            "type": "uint32"
-          },
-          {
-            "internalType": "uint32",
-            "name": "preCommitTimeout",
-            "type": "uint32"
-          },
-          {
-            "internalType": "uint32",
-            "name": "maxBlockSize",
-            "type": "uint32"
-          },
-          {
-            "internalType": "uint64",
-            "name": "dataStoreFee",
-            "type": "uint64"
-          },
-          {
-            "internalType": "uint64",
-            "name": "valueStoreFee",
-            "type": "uint64"
-          },
-          {
-            "internalType": "uint128",
-            "name": "minScaledTransactionFee",
-            "type": "uint128"
-          }
-        ],
-        "internalType": "struct DynamicValues",
-        "name": "",
-        "type": "tuple"
-      }
-    ],
-    "stateMutability": "view",
     "type": "function"
   },
   {

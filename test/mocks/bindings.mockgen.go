@@ -13664,12 +13664,18 @@ type MockIDynamics struct {
 	// function object controlling the behavior of the method
 	// FilterNewCanonicalAliceNetNodeVersion.
 	FilterNewCanonicalAliceNetNodeVersionFunc *IDynamicsFilterNewCanonicalAliceNetNodeVersionFunc
+	// GetAllDynamicValuesFunc is an instance of a mock function object
+	// controlling the behavior of the method GetAllDynamicValues.
+	GetAllDynamicValuesFunc *IDynamicsGetAllDynamicValuesFunc
 	// GetConfigurationFunc is an instance of a mock function object
 	// controlling the behavior of the method GetConfiguration.
 	GetConfigurationFunc *IDynamicsGetConfigurationFunc
 	// GetEncodingVersionFunc is an instance of a mock function object
 	// controlling the behavior of the method GetEncodingVersion.
 	GetEncodingVersionFunc *IDynamicsGetEncodingVersionFunc
+	// GetFurthestDynamicValuesFunc is an instance of a mock function object
+	// controlling the behavior of the method GetFurthestDynamicValues.
+	GetFurthestDynamicValuesFunc *IDynamicsGetFurthestDynamicValuesFunc
 	// GetLatestAliceNetVersionFunc is an instance of a mock function object
 	// controlling the behavior of the method GetLatestAliceNetVersion.
 	GetLatestAliceNetVersionFunc *IDynamicsGetLatestAliceNetVersionFunc
@@ -13783,6 +13789,11 @@ func NewMockIDynamics() *MockIDynamics {
 				return
 			},
 		},
+		GetAllDynamicValuesFunc: &IDynamicsGetAllDynamicValuesFunc{
+			defaultHook: func(*bind.CallOpts) (r0 []bindings.DynamicValues, r1 error) {
+				return
+			},
+		},
 		GetConfigurationFunc: &IDynamicsGetConfigurationFunc{
 			defaultHook: func(*bind.CallOpts) (r0 bindings.Configuration, r1 error) {
 				return
@@ -13790,6 +13801,11 @@ func NewMockIDynamics() *MockIDynamics {
 		},
 		GetEncodingVersionFunc: &IDynamicsGetEncodingVersionFunc{
 			defaultHook: func(*bind.CallOpts) (r0 uint8, r1 error) {
+				return
+			},
+		},
+		GetFurthestDynamicValuesFunc: &IDynamicsGetFurthestDynamicValuesFunc{
+			defaultHook: func(*bind.CallOpts) (r0 bindings.DynamicValues, r1 error) {
 				return
 			},
 		},
@@ -13935,6 +13951,11 @@ func NewStrictMockIDynamics() *MockIDynamics {
 				panic("unexpected invocation of MockIDynamics.FilterNewCanonicalAliceNetNodeVersion")
 			},
 		},
+		GetAllDynamicValuesFunc: &IDynamicsGetAllDynamicValuesFunc{
+			defaultHook: func(*bind.CallOpts) ([]bindings.DynamicValues, error) {
+				panic("unexpected invocation of MockIDynamics.GetAllDynamicValues")
+			},
+		},
 		GetConfigurationFunc: &IDynamicsGetConfigurationFunc{
 			defaultHook: func(*bind.CallOpts) (bindings.Configuration, error) {
 				panic("unexpected invocation of MockIDynamics.GetConfiguration")
@@ -13943,6 +13964,11 @@ func NewStrictMockIDynamics() *MockIDynamics {
 		GetEncodingVersionFunc: &IDynamicsGetEncodingVersionFunc{
 			defaultHook: func(*bind.CallOpts) (uint8, error) {
 				panic("unexpected invocation of MockIDynamics.GetEncodingVersion")
+			},
+		},
+		GetFurthestDynamicValuesFunc: &IDynamicsGetFurthestDynamicValuesFunc{
+			defaultHook: func(*bind.CallOpts) (bindings.DynamicValues, error) {
+				panic("unexpected invocation of MockIDynamics.GetFurthestDynamicValues")
 			},
 		},
 		GetLatestAliceNetVersionFunc: &IDynamicsGetLatestAliceNetVersionFunc{
@@ -14069,11 +14095,17 @@ func NewMockIDynamicsFrom(i bindings.IDynamics) *MockIDynamics {
 		FilterNewCanonicalAliceNetNodeVersionFunc: &IDynamicsFilterNewCanonicalAliceNetNodeVersionFunc{
 			defaultHook: i.FilterNewCanonicalAliceNetNodeVersion,
 		},
+		GetAllDynamicValuesFunc: &IDynamicsGetAllDynamicValuesFunc{
+			defaultHook: i.GetAllDynamicValues,
+		},
 		GetConfigurationFunc: &IDynamicsGetConfigurationFunc{
 			defaultHook: i.GetConfiguration,
 		},
 		GetEncodingVersionFunc: &IDynamicsGetEncodingVersionFunc{
 			defaultHook: i.GetEncodingVersion,
+		},
+		GetFurthestDynamicValuesFunc: &IDynamicsGetFurthestDynamicValuesFunc{
+			defaultHook: i.GetFurthestDynamicValues,
 		},
 		GetLatestAliceNetVersionFunc: &IDynamicsGetLatestAliceNetVersionFunc{
 			defaultHook: i.GetLatestAliceNetVersion,
@@ -15112,6 +15144,112 @@ func (c IDynamicsFilterNewCanonicalAliceNetNodeVersionFuncCall) Results() []inte
 	return []interface{}{c.Result0, c.Result1}
 }
 
+// IDynamicsGetAllDynamicValuesFunc describes the behavior when the
+// GetAllDynamicValues method of the parent MockIDynamics instance is
+// invoked.
+type IDynamicsGetAllDynamicValuesFunc struct {
+	defaultHook func(*bind.CallOpts) ([]bindings.DynamicValues, error)
+	hooks       []func(*bind.CallOpts) ([]bindings.DynamicValues, error)
+	history     []IDynamicsGetAllDynamicValuesFuncCall
+	mutex       sync.Mutex
+}
+
+// GetAllDynamicValues delegates to the next hook function in the queue and
+// stores the parameter and result values of this invocation.
+func (m *MockIDynamics) GetAllDynamicValues(v0 *bind.CallOpts) ([]bindings.DynamicValues, error) {
+	r0, r1 := m.GetAllDynamicValuesFunc.nextHook()(v0)
+	m.GetAllDynamicValuesFunc.appendCall(IDynamicsGetAllDynamicValuesFuncCall{v0, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the GetAllDynamicValues
+// method of the parent MockIDynamics instance is invoked and the hook queue
+// is empty.
+func (f *IDynamicsGetAllDynamicValuesFunc) SetDefaultHook(hook func(*bind.CallOpts) ([]bindings.DynamicValues, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// GetAllDynamicValues method of the parent MockIDynamics instance invokes
+// the hook at the front of the queue and discards it. After the queue is
+// empty, the default hook function is invoked for any future action.
+func (f *IDynamicsGetAllDynamicValuesFunc) PushHook(hook func(*bind.CallOpts) ([]bindings.DynamicValues, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *IDynamicsGetAllDynamicValuesFunc) SetDefaultReturn(r0 []bindings.DynamicValues, r1 error) {
+	f.SetDefaultHook(func(*bind.CallOpts) ([]bindings.DynamicValues, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *IDynamicsGetAllDynamicValuesFunc) PushReturn(r0 []bindings.DynamicValues, r1 error) {
+	f.PushHook(func(*bind.CallOpts) ([]bindings.DynamicValues, error) {
+		return r0, r1
+	})
+}
+
+func (f *IDynamicsGetAllDynamicValuesFunc) nextHook() func(*bind.CallOpts) ([]bindings.DynamicValues, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *IDynamicsGetAllDynamicValuesFunc) appendCall(r0 IDynamicsGetAllDynamicValuesFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of IDynamicsGetAllDynamicValuesFuncCall
+// objects describing the invocations of this function.
+func (f *IDynamicsGetAllDynamicValuesFunc) History() []IDynamicsGetAllDynamicValuesFuncCall {
+	f.mutex.Lock()
+	history := make([]IDynamicsGetAllDynamicValuesFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// IDynamicsGetAllDynamicValuesFuncCall is an object that describes an
+// invocation of method GetAllDynamicValues on an instance of MockIDynamics.
+type IDynamicsGetAllDynamicValuesFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 *bind.CallOpts
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 []bindings.DynamicValues
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c IDynamicsGetAllDynamicValuesFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c IDynamicsGetAllDynamicValuesFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
+}
+
 // IDynamicsGetConfigurationFunc describes the behavior when the
 // GetConfiguration method of the parent MockIDynamics instance is invoked.
 type IDynamicsGetConfigurationFunc struct {
@@ -15320,6 +15458,114 @@ func (c IDynamicsGetEncodingVersionFuncCall) Args() []interface{} {
 // Results returns an interface slice containing the results of this
 // invocation.
 func (c IDynamicsGetEncodingVersionFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
+}
+
+// IDynamicsGetFurthestDynamicValuesFunc describes the behavior when the
+// GetFurthestDynamicValues method of the parent MockIDynamics instance is
+// invoked.
+type IDynamicsGetFurthestDynamicValuesFunc struct {
+	defaultHook func(*bind.CallOpts) (bindings.DynamicValues, error)
+	hooks       []func(*bind.CallOpts) (bindings.DynamicValues, error)
+	history     []IDynamicsGetFurthestDynamicValuesFuncCall
+	mutex       sync.Mutex
+}
+
+// GetFurthestDynamicValues delegates to the next hook function in the queue
+// and stores the parameter and result values of this invocation.
+func (m *MockIDynamics) GetFurthestDynamicValues(v0 *bind.CallOpts) (bindings.DynamicValues, error) {
+	r0, r1 := m.GetFurthestDynamicValuesFunc.nextHook()(v0)
+	m.GetFurthestDynamicValuesFunc.appendCall(IDynamicsGetFurthestDynamicValuesFuncCall{v0, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the
+// GetFurthestDynamicValues method of the parent MockIDynamics instance is
+// invoked and the hook queue is empty.
+func (f *IDynamicsGetFurthestDynamicValuesFunc) SetDefaultHook(hook func(*bind.CallOpts) (bindings.DynamicValues, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// GetFurthestDynamicValues method of the parent MockIDynamics instance
+// invokes the hook at the front of the queue and discards it. After the
+// queue is empty, the default hook function is invoked for any future
+// action.
+func (f *IDynamicsGetFurthestDynamicValuesFunc) PushHook(hook func(*bind.CallOpts) (bindings.DynamicValues, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *IDynamicsGetFurthestDynamicValuesFunc) SetDefaultReturn(r0 bindings.DynamicValues, r1 error) {
+	f.SetDefaultHook(func(*bind.CallOpts) (bindings.DynamicValues, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *IDynamicsGetFurthestDynamicValuesFunc) PushReturn(r0 bindings.DynamicValues, r1 error) {
+	f.PushHook(func(*bind.CallOpts) (bindings.DynamicValues, error) {
+		return r0, r1
+	})
+}
+
+func (f *IDynamicsGetFurthestDynamicValuesFunc) nextHook() func(*bind.CallOpts) (bindings.DynamicValues, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *IDynamicsGetFurthestDynamicValuesFunc) appendCall(r0 IDynamicsGetFurthestDynamicValuesFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of IDynamicsGetFurthestDynamicValuesFuncCall
+// objects describing the invocations of this function.
+func (f *IDynamicsGetFurthestDynamicValuesFunc) History() []IDynamicsGetFurthestDynamicValuesFuncCall {
+	f.mutex.Lock()
+	history := make([]IDynamicsGetFurthestDynamicValuesFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// IDynamicsGetFurthestDynamicValuesFuncCall is an object that describes an
+// invocation of method GetFurthestDynamicValues on an instance of
+// MockIDynamics.
+type IDynamicsGetFurthestDynamicValuesFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 *bind.CallOpts
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 bindings.DynamicValues
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c IDynamicsGetFurthestDynamicValuesFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c IDynamicsGetFurthestDynamicValuesFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
