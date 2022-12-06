@@ -20,7 +20,9 @@
         "go.gopath": "/go",
         "go.goroot": "/usr/local/go",
         "go.lintTool": "golangci-lint",
-        "go.lintFlags": ["--fast"]
+        "go.lintFlags": [
+          "--fast"
+        ]
       },
       "extensions": [
         "golang.Go",
