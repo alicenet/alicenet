@@ -114,9 +114,14 @@ contract Dynamics is Initializable, IDynamics, ImmutableSnapshots {
         return _configuration;
     }
 
-    /// Get the latest dynamic values that currently in execution in the side chain.
+    /// Get the latest dynamic values that are currently in execution in the side chain.
     function getLatestDynamicValues() public view returns (DynamicValues memory) {
         return _decodeDynamicValues(_dynamicValues.getValue(_dynamicValues.getHead()));
+    }
+
+    /// Get the furthest dynamic values that will be in execution in the future.
+    function getFurthestDynamicValues() public view returns (DynamicValues memory) {
+        return _decodeDynamicValues(_dynamicValues.getValue(_dynamicValues.getTail()));
     }
 
     /// Get the latest version of the aliceNet node and when it becomes canonical.
@@ -137,6 +142,18 @@ contract Dynamics is Initializable, IDynamics, ImmutableSnapshots {
             return _decodeDynamicValues(_dynamicValues.getValue(previous));
         }
         revert DynamicsErrors.DynamicValueNotFound(epoch);
+    }
+
+    /// Get all the dynamic values in the doubly linked list
+    function getAllDynamicValues() public view returns (DynamicValues[] memory) {
+        DynamicValues[] memory dynamicValuesArray = new DynamicValues[](_dynamicValues.totalNodes);
+        uint256 position = 0;
+        for (uint256 epoch = 1; epoch != 0; epoch = _dynamicValues.getNextEpoch(epoch)) {
+            address data = _dynamicValues.getValue(epoch);
+            dynamicValuesArray[position] = _decodeDynamicValues(data);
+            position++;
+        }
+        return dynamicValuesArray;
     }
 
     /// Decodes a dynamic struct from a storage contract.

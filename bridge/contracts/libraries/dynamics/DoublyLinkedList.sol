@@ -14,6 +14,7 @@ struct DoublyLinkedList {
     uint128 head;
     uint128 tail;
     mapping(uint256 => Node) nodes;
+    uint256 totalNodes;
 }
 
 library NodeUpdate {
@@ -85,12 +86,13 @@ library DoublyLinkedListLogic {
             setHead(list, epoch);
             // if head is 0, then the tail is also 0 and should be also initialized
             setTail(list, epoch);
+            list.totalNodes++;
             return;
         }
-
         list.nodes[epoch] = node.updatePrevious(tail);
         linkNext(list, tail, epoch);
         setTail(list, epoch);
+        list.totalNodes++;
     }
 
     /***

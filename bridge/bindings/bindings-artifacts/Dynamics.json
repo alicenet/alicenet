@@ -546,6 +546,61 @@
   },
   {
     "inputs": [],
+    "name": "getAllDynamicValues",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "enum Version",
+            "name": "encoderVersion",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint24",
+            "name": "proposalTimeout",
+            "type": "uint24"
+          },
+          {
+            "internalType": "uint32",
+            "name": "preVoteTimeout",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint32",
+            "name": "preCommitTimeout",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint32",
+            "name": "maxBlockSize",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint64",
+            "name": "dataStoreFee",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint64",
+            "name": "valueStoreFee",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint128",
+            "name": "minScaledTransactionFee",
+            "type": "uint128"
+          }
+        ],
+        "internalType": "struct DynamicValues[]",
+        "name": "",
+        "type": "tuple[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "getConfiguration",
     "outputs": [
       {
@@ -580,6 +635,61 @@
       }
     ],
     "stateMutability": "pure",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getFurthestDynamicValues",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "enum Version",
+            "name": "encoderVersion",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint24",
+            "name": "proposalTimeout",
+            "type": "uint24"
+          },
+          {
+            "internalType": "uint32",
+            "name": "preVoteTimeout",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint32",
+            "name": "preCommitTimeout",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint32",
+            "name": "maxBlockSize",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint64",
+            "name": "dataStoreFee",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint64",
+            "name": "valueStoreFee",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint128",
+            "name": "minScaledTransactionFee",
+            "type": "uint128"
+          }
+        ],
+        "internalType": "struct DynamicValues",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
     "type": "function"
   },
   {
