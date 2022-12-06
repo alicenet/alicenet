@@ -473,7 +473,6 @@ func ProcessMPKSet(contracts layer1.AllSmartContracts, logger *logrus.Entry, log
 	}).Info("ProcessMPKSet() ...")
 
 	gpkjSubmissionTask := &dkgtasks.GPKjSubmissionTask{}
-	disputeMissingGPKjTask := &dkgtasks.DisputeMissingGPKjTask{}
 
 	dkgState, err := state.GetDkgState(monDB)
 	if err != nil {

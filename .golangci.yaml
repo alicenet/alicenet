@@ -6,9 +6,9 @@ run:
 linters:
   enable:
     - errcheck
-    - govet
     - gosimple
+    - govet
+    - ineffassign
   # Disabling linters until we get them fixed up.
   disable:
-    - ineffassign
     - staticcheck
