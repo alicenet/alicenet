@@ -90,17 +90,19 @@ contract BonusPool is
             revert LockupErrors.BonusTokenNotCreated();
         }
         // burn the nft to collect all profits.
-        (uint256 payoutEth, uint256 payoutToken) = IStakingNFT(_publicStakingAddress()).burn(
-            _tokenID
-        );
+        IStakingNFT(_publicStakingAddress()).burn(_tokenID);
         // restarting the _tokenID
         _tokenID = 0;
+        // send the total balance of ALCA to the rewardPool contract
+        uint256 alcaBalance = IERC20(_alcaAddress()).balanceOf(address(this));
         _safeTransferERC20(
             IERC20Transferable(_alcaAddress()),
             _getRewardPoolAddress(),
-            payoutToken
+            alcaBalance
         );
-        RewardPool(_getRewardPoolAddress()).deposit{value: payoutEth}(payoutToken);
+        // send also all the balance of ether
+        uint256 ethBalance = address(this).balance;
+        RewardPool(_getRewardPoolAddress()).deposit{value: ethBalance}(alcaBalance);
     }
 
     /// @notice gets the lockup contract address
