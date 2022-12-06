@@ -393,6 +393,20 @@ describe("Testing Dynamics methods", async () => {
     );
   });
 
+  it("Should get the furthest dynamic value correctly", async () => {
+    const newDynamicValues = { ...currentDynamicValues };
+    newDynamicValues.valueStoreFee = BigNumber.from(1);
+    await changeDynamicValues(fixture, newDynamicValues);
+    const anotherNewDynamicValues = { ...currentDynamicValues };
+    anotherNewDynamicValues.valueStoreFee = BigNumber.from(2);
+    await changeDynamicValues(fixture, anotherNewDynamicValues);
+    const furthestDynamicValues =
+      await fixture.dynamics.getFurthestDynamicValues();
+    expect(
+      (furthestDynamicValues as DynamicValuesStruct).valueStoreFee
+    ).to.be.equal(anotherNewDynamicValues.valueStoreFee);
+  });
+
   it("Should update AliceNet node version to a valid version and emit corresponding event", async () => {
     const newAliceNetVersion = {
       ...alicenetCurrentVersion,
