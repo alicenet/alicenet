@@ -4,7 +4,7 @@
     "fullyQualifiedName": "contracts/AliceNetFactory.sol:AliceNetFactory",
     "salt": "",
     "constructorArgs": {
-      "legacyToken_": "0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"
+      "legacyToken_": "0xDE99a2904B1D078C1973c9e98874ba2AC2F5636C"
     },
     "initializerArgs": {}
   },
@@ -20,14 +20,6 @@
     "name": "ALCAMinter",
     "fullyQualifiedName": "contracts/ALCAMinter.sol:ALCAMinter",
     "salt": "0x414c43414d696e74657200000000000000000000000000000000000000000000",
-    "deployType": "deployUpgradeable",
-    "constructorArgs": {},
-    "initializerArgs": {}
-  },
-  "contracts/BridgePoolFactory.sol:BridgePoolFactory": {
-    "name": "BridgePoolFactory",
-    "fullyQualifiedName": "contracts/BridgePoolFactory.sol:BridgePoolFactory",
-    "salt": "0x427269646765506f6f6c466163746f7279000000000000000000000000000000",
     "deployType": "deployUpgradeable",
     "constructorArgs": {},
     "initializerArgs": {}
@@ -129,18 +121,6 @@
     "salt": "0x56616c696461746f725374616b696e6700000000000000000000000000000000",
     "deployType": "deployUpgradeable",
     "constructorArgs": {},
-    "initializerArgs": {}
-  },
-  "contracts/ALCB.sol:ALCB": {
-    "name": "ALCB",
-    "fullyQualifiedName": "contracts/ALCB.sol:ALCB",
-    "salt": "0x414c434200000000000000000000000000000000000000000000000000000000",
-    "deployGroup": "alcb",
-    "deployGroupIndex": "0",
-    "deployType": "deployCreateAndRegister",
-    "constructorArgs": {
-      "centralBridgeRouterAddress_": "0x546F99F244b7B58B855330AE0E2BC1b30b41302F"
-    },
     "initializerArgs": {}
   },
   "contracts/Distribution.sol:Distribution": {
