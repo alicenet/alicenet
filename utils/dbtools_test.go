@@ -2,7 +2,6 @@ package utils
 
 import (
 	"bytes"
-	"os"
 	"testing"
 
 	"github.com/dgraph-io/badger/v2"
@@ -56,16 +55,7 @@ func TestDBValue(t *testing.T) {
 }
 
 func TestDBInt64(t *testing.T) {
-	dir, err := os.MkdirTemp("", "dbtools-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}()
-	opts := badger.DefaultOptions(dir)
+	opts := badger.DefaultOptions(t.TempDir())
 	db, err := badger.Open(opts)
 	if err != nil {
 		t.Fatal(err)
