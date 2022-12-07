@@ -56,6 +56,10 @@ task(
   "Deploys an instance of a factory contract specified by its name"
 )
   .addFlag("verify", "try to automatically verify contracts on etherscan")
+  .addFlag(
+    "skipChecks",
+    "skips initializer and constructor confirmation prompt"
+  )
   .addParam("legacyTokenAddress", "address of legacy token")
   .addOptionalParam(
     "waitConfirmation",
@@ -74,7 +78,8 @@ task(
       taskArgs.legacyTokenAddress,
       hre,
       taskArgs.waitConfirmation,
-      taskArgs.verify
+      taskArgs.verify,
+      taskArgs.skipChecks
     );
   });
 
@@ -169,7 +174,7 @@ task(
   )
   .setAction(async (taskArgs, hre) => {
     const waitConfirmationsBlocks = await parseWaitConfirmationInterval(
-      taskArgs.waitConfirmations,
+      taskArgs.waitConfirmation,
       hre
     );
     return await deployContractsTask(

@@ -283,7 +283,7 @@ export async function verifyContract(
     result = await hre.run("verify", {
       network: hre.network.name,
       address: deployedContractAddress,
-      constructorArgsParams: constructorArgs,
+      constructorArgsParams: constructorArgs.map((arg) => arg.toString()),
     });
   } catch (error) {
     console.log(
