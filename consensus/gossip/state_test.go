@@ -2,7 +2,6 @@ package gossip
 
 import (
 	"math/big"
-	"os"
 	"testing"
 
 	"github.com/dgraph-io/badger/v2"
@@ -25,16 +24,7 @@ func TestState(t *testing.T) {
 	if len(secpPubks) != len(bnShares) {
 		t.Fatal("key length mismatch")
 	}
-	dir, err := os.MkdirTemp("", "badger-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatal(err)
-		}
-	}()
-	opts := badger.DefaultOptions(dir)
+	opts := badger.DefaultOptions(t.TempDir())
 	DB, err := badger.Open(opts)
 	if err != nil {
 		t.Fatal(err)

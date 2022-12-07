@@ -57,8 +57,7 @@ func TestDynamicValuesCopy(t *testing.T) {
 	t.Parallel()
 	// Copy empty DynamicValues should fail
 	dv1 := &DynamicValues{}
-	_, err := dv1.Copy()
-	if err == nil {
+	if _, err := dv1.Copy(); err == nil {
 		t.Fatal(err)
 	}
 
