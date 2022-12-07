@@ -73,8 +73,12 @@ export async function deployFactoryTask(
     owner: signers[0].address,
     gas: gasCost,
   };
+  const alcaAddress = await factory.lookup(
+    hre.ethers.utils.formatBytes32String("ALCA")
+  );
   if (verify) {
     await verifyContract(hre, factory.address, [legacyTokenAddress]);
+    await verifyContract(hre, alcaAddress, [legacyTokenAddress]);
   }
 
   await showState(
