@@ -760,6 +760,10 @@ func (ut *UTXOHandler) addOneFastSync(txn *badger.Txn, utxo *objs.TXOut) error {
 			utils.DebugTrace(ut.logger, err)
 			return err
 		}
+		///////// workaround for deposit utxos ////////////////
+		// Workaround for a historical deposit that was on the incorrect chain. Required to sync production
+		// nodes.
+		// Todo: remove this code after the UTXO state trie has been rebuilt
 		if !utxo.IsDeposit() {
 			value, err := utxo.Value()
 			if err != nil {
@@ -772,6 +776,7 @@ func (ut *UTXOHandler) addOneFastSync(txn *badger.Txn, utxo *objs.TXOut) error {
 				return err
 			}
 		}
+		///////////////////////////////////////////////////////
 	default:
 		panic("utxoHandler.addOneFastSync; utxo type not defined")
 	}
@@ -827,6 +832,10 @@ func (ut *UTXOHandler) StoreSnapShotStateData(txn *badger.Txn, utxoID, preHash, 
 		}
 		return errorz.ErrInvalid{}.New(fmt.Sprintf("utxoHandler.StoreSnapShotStateData; utxoID does not match calcUtxoID; utxoID: %x; calcUtxoID: %x calcTxHash: %x TxOutIdx: %v", utxoID, calcUtxoID, calcTxHash, utxoIdxOut))
 	}
+	///////// workaround for deposit utxos ////////////////
+	// Workaround for a historical deposit that was on the incorrect chain. Required to sync production
+	// nodes.
+	// Todo: remove this code after the UTXO state trie has been rebuilt
 	if utxo.IsDeposit() {
 		value, err := utxo.Value()
 		if err != nil {
@@ -864,6 +873,7 @@ func (ut *UTXOHandler) StoreSnapShotStateData(txn *badger.Txn, utxoID, preHash, 
 		}
 		return nil
 	}
+	///////////////////////////////////////////////////////
 	calcPreHash, err := utxo.PreHash()
 	if err != nil {
 		utils.DebugTrace(ut.logger, err)
