@@ -5,7 +5,7 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"math/big"
 	"os"
 	"strconv"
@@ -420,7 +420,7 @@ func getSignerData() (*crypto.Secp256k1Signer, []byte) {
 
 func loadSettings(configFile string) {
 	file, _ := os.Open(configFile)
-	bs, _ := ioutil.ReadAll(file)
+	bs, _ := io.ReadAll(file)
 	reader := bytes.NewReader(bs)
 	viper.SetConfigType("toml")
 	err := viper.ReadConfig(reader)

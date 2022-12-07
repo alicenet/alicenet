@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"io/ioutil"
+	"io"
 	"testing"
 
 	"github.com/alicenet/alicenet/consensus/db"
@@ -16,7 +16,7 @@ import (
 )
 
 func NewTestRawDB() *badger.DB {
-	logging.GetLogger(constants.LoggerBadger).SetOutput(ioutil.Discard)
+	logging.GetLogger(constants.LoggerBadger).SetOutput(io.Discard)
 	db, err := utils.OpenBadger(context.Background().Done(), "", true)
 	if err != nil {
 		panic(err)

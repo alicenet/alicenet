@@ -291,7 +291,6 @@ func (tm *TaskManager) processTaskResponse(executorResponse ExecutorResponse) er
 	case <-tm.closeChan:
 		return tasks.ErrTaskExecutionMechanismClosed
 	default:
-		logger := tm.logger
 		task, present := tm.Schedule[executorResponse.Id]
 		if !present {
 			tm.logger.Warnf("received an internal response for non existing task with id %s", executorResponse.Id)
@@ -309,7 +308,7 @@ func (tm *TaskManager) processTaskResponse(executorResponse ExecutorResponse) er
 		taskResp.HandlerResponse.writeResponse(executorResponse.Err)
 		tm.Responses[executorResponse.Id] = taskResp
 
-		logger = getTaskLoggerComplete(tm.logger, task)
+		logger := getTaskLoggerComplete(tm.logger, task)
 		if executorResponse.Err != nil {
 			if !errors.Is(executorResponse.Err, tasks.ErrTaskKilled) {
 				logger.Errorf("Task executed with error: %v", executorResponse.Err)

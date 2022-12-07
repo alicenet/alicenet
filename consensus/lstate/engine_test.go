@@ -58,6 +58,7 @@ func TestEngine_Status_Ok(t *testing.T) {
 	st, err := engine.Status(st)
 	assert.Nil(t, err)
 	assert.NotNil(t, st)
+	assert.NotEmpty(t, st)
 }
 
 func TestEngine_Status_Error(t *testing.T) {
