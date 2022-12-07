@@ -50,9 +50,6 @@ npx hardhat --network $NETWORK set-min-ethereum-blocks-per-snapshot --factory-ad
 cd $CURRENT_WD
 
 if [[ -n "${SKIP_REGISTRATION}" ]]; then
-    cd $BRIDGE_DIR
-    npx hardhat set-local-environment-interval-mining --network $NETWORK --interval 2500
-    cd $CURRENT_WD
     echo "SKIPPING VALIDATOR REGISTRATION"
     exit 0
 fi
