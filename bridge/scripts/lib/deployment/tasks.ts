@@ -142,6 +142,15 @@ export async function deployContractsTask(
       deploymentConfig[fullyQualifiedContractName];
     const deployType = deploymentConfig[fullyQualifiedContractName].deployType;
     const salt = deploymentConfig[fullyQualifiedContractName].salt;
+    if (salt !== undefined && salt !== "") {
+      const existingAddress = await factory.lookup(salt);
+      if (existingAddress !== hre.ethers.constants.AddressZero) {
+        console.log(
+          `Skipping deployment for contract ${fullyQualifiedContractName} since it already exists at address ${existingAddress}`
+        );
+        continue;
+      }
+    }
 
     switch (deployType) {
       case UPGRADEABLE_DEPLOYMENT: {
