@@ -16,6 +16,7 @@ import { DeploymentConfigWrapper } from "../lib/deployment/interfaces";
 import {
   getGasPrices,
   parseWaitConfirmationInterval,
+  promptCheckDeploymentArgs,
   readDeploymentConfig,
   writeDeploymentConfig,
 } from "../lib/deployment/utils";
@@ -1196,6 +1197,56 @@ task("mint-alca-To", "mints ALCA to an address")
     console.log(
       `Minted ${bal2.sub(bal1).toString()} to account ${taskArgs.to}`
     );
+  });
+
+task(
+  "transfer-alca-from-factory",
+  "Transfers ALCA from the AliceNet factory to an address"
+)
+  .addParam("factoryAddress", "address of the factory deploying the contract")
+  .addParam("amount", "amount to mint")
+  .addParam("to", "address of the recipient")
+  .addOptionalParam(
+    "waitConfirmation",
+    "wait specified number of blocks between transactions",
+    0,
+    types.int
+  )
+  .setAction(async (taskArgs, hre) => {
+    const waitConfirmationsBlocks = await parseWaitConfirmationInterval(
+      taskArgs.waitConfirmation,
+      hre
+    );
+    if (taskArgs.amount === undefined || taskArgs.amount === "") {
+      throw new Error("must specify amount to transfer");
+    }
+    if (taskArgs.to === undefined || taskArgs.to === "") {
+      throw new Error("must specify address to send funds");
+    }
+    if (
+      taskArgs.factoryAddress === undefined ||
+      taskArgs.factoryAddress === ""
+    ) {
+      throw new Error("must specify factory address");
+    }
+    const factory = await hre.ethers.getContractAt(
+      "AliceNetFactory",
+      taskArgs.factoryAddress
+    );
+    const alca = await hre.ethers.getContractAt(
+      "ALCA",
+      await factory.lookup(hre.ethers.utils.formatBytes32String("ALCA"))
+    );
+    const promptMessage = `Do you want to send ${taskArgs.amount} ALCA to the address ${taskArgs.to} ? (y/n)\n`;
+    await promptCheckDeploymentArgs(promptMessage);
+    const calldata = alca.interface.encodeFunctionData("transfer", [
+      taskArgs.to,
+      taskArgs.amount,
+    ]);
+    // use the factory to call the A token minter
+    const txResponse = await factory.callAny(alca.address, 0, calldata);
+    await txResponse.wait(waitConfirmationsBlocks);
+    console.log("Successfully transferred ALCA!");
   });
 
 task("get-alca-balance", "gets ALCA balance of account")
