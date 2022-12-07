@@ -211,8 +211,8 @@ task("mine-num-blocks")
   });
 
 task(
-  "deploy-state-migration-contract",
-  "Deploy state migration contract and run migrations"
+  "migrate-validators-and-snapshots",
+  "Migrate validators and snapshots from alicenet networks"
 )
   .addParam(
     "factoryAddress",
@@ -221,9 +221,26 @@ task(
   .addFlag(
     "skipFirstTransaction",
     "The task executes 2 tx to execute the migrations." +
-      " Use this flag if you want to skip the first tx where we mint the NFT."
+      " Use this flag if you want to skip the first tx where we mint the NFTs"
+  )
+  .addOptionalParam(
+    "waitConfirmation",
+    "wait specified number of blocks between transactions",
+    0,
+    types.int
+  )
+  .addVariadicPositionalParam(
+    "tokenIds",
+    "the tokenIds to be consumed to register the validators",
+    undefined,
+    types.string,
+    true
   )
   .setAction(async (taskArgs, hre) => {
+    const waitConfirmationsBlocks = await parseWaitConfirmationInterval(
+      taskArgs.waitConfirmation,
+      hre
+    );
     if (
       taskArgs.factoryAddress === undefined ||
       taskArgs.factoryAddress === ""
@@ -263,7 +280,7 @@ task(
       hre
     );
     const tokenIds: Array<BigNumber> = [];
-    const epoch = BigNumber.from(101);
+    const epoch = BigNumber.from(112);
     const masterPublicKey = [
       BigNumber.from(
         "19973864405227474494428046886218960395017286398286997273859673757240376592503"
@@ -285,15 +302,17 @@ task(
       "0x322e8f463b925da54a778ed597aef41bc4fe4743",
       "0xadf2a338e19c12298a3007cbea1c5276d1f746e0",
     ];
-
+    // TODO at time of deployment if current snapshot is greater than 0xc001 the new ones need to be
+    // appended to the end with the newest at position 5 and the top ones need to be popped
     const blockClaims: Array<string> = [
-      "0x000000000100040015000000008001000d00000002010000190000000201000025000000020100003100000002010000417e8cd8049656c9e1b2cbf90ae9dcc7fa1d70f2aaea7df7a2a4cfcd8b4a02a8c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a4702a5187985e08d03011645d5072d0aadb9b50eafb0014ad93cbc8a2c869a4139054ef9bd198da2c45c75bbecd8062d39451112d53cf60c02b48f144778f40b1b5",
-      "0x000000000100040015000000008401000d0000000201000019000000020100002500000002010000310000000201000034003720c36c4406bd8fd6cb7b6f9ec3877dcdffb08e74058e54f07015e89e99c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a4703139e7a7362b5e743a2013b7f33d360530c5195a402693f74c78200e90afcef57f9e10df3d7cf622c1f2497043de80d3abf4450d05355571d732c1ea47987432",
-      "0x000000000100040015000000008801000d000000020100001900000002010000250000000201000031000000020100007be9eda53b983d0fa3e17f6f8f051b658e165f39b1eb27da02eafa09467f76f8c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470b28d67ca4ba36e663354920c301f855eb83703445d503c80183ee877041bd05b9936d9df3a955c09140093ea74a33151249848b964d0bb579e24377535b56316",
-      "0x000000000100040015000000008c01000d00000002010000190000000201000025000000020100003100000002010000a9272bb0fd1998d2c98d8c449efe48f9dca1fe7d5c59b15e13aa1844e07a0aedc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a4704b4c04b0bacc06565ec44607848f4c16f7bc9b5bcf2a0622d0200f7d4e57f663735108c50c69dc004a21f95c1787b9109fba494481e504d8d87a4133b8b5057d",
-      "0x000000000100040015000000009001000d00000002010000190000000201000025000000020100003100000002010000b11dfff48b9cd76b85e669f10e4cb8e64ab7d5f6a44d3aab1747c49b16626620c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a4708925a50edd15ded4b0076b2d682aba6cabdf9b3682005254082b808b6eeefb4782fd2260282b659817b3f6e725e13f743cfbda9c27b34271e4a003607c743144",
-      "0x000000000100040015000000009401000d0000000201000019000000020100002500000002010000310000000201000072e4379e7ab07923d3047755c3eee288116d911f7ff92532e6faaff39f4b4b58c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470c9e957c9edde4dc5e9766a1ec7524d412b456e0fcaba46d1f41d262768806b0827def5d9058edfb39cb9025033c0a3855d5c3de0850b52a446f907a7231ee744",
+      "0x00000000010004001500000000ac01000d00000002010000190000000201000025000000020100003100000002010000c22358ecc770f15281f5da8e99ea78972e615a3d1d2b4569c4f07b0b03668c6ec5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470dbbdc44095411e9fc855812b937a09e7f63cb18873201caadb11951769ffdacd47a4f190de8af3d9d59826271f595a4636c3863891a3e157e1c4c9076e6c3462",
+      "0x00000000010004001500000000b001000d000000020100001900000002010000250000000201000031000000020100001854980fb0ba7b40bd14c9350aa629b20287cb740cf7e4d2faed0ff32276a9acc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a4708d2b6fcd2a58832eafa29c7f9e8560cabd02fb28c54818a0187e12b8939eb8fcdd680bdab4d67b815e7f3390f0bc0ef513459add161258a8392abff15bd9c774",
+      "0x00000000010004001500000000b401000d00000002010000190000000201000025000000020100003100000002010000c00edfa962e2c5c57ac920ec8560d0a662f3c4c15849cdaf4a03bb88bd95059ec5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a4709da518b8e557df81acb21c3de05d137c3a6bcb6bb8f4ee6704b54eecf750df7f8c7f1f2baf00ddd34f0f4638c1446efbba557f71aedbff433ef4d4ebf8537c42",
+      "0x00000000010004001500000000b801000d00000002010000190000000201000025000000020100003100000002010000ca6f717ecdc5914f40c2c7c6484382d589853149f4de8d249051c2b66345651cc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a4700b800ca8e838db0ff5233a9d4be2c835fcf33a0e557af6a00f1cf60ca9516f64c50aec5ec7806fa6a1816a0931045d0e25b13a9dde15e53adae1f4570cc3f39b",
+      "0x00000000010004001500000000bc01000d0000000201000019000000020100002500000002010000310000000201000019ee605fe8efcc599c27394859691a1cb97b36acf26cfb8554ba6ef48e1107ebc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a4701cdc243723cfdf208d4e26b25c471499803565a5dae26071cf315226601fe75befe40a243ecf71bba3331ed038e67818608197c5387ada7388bc5d9e8e9eb793",
+      "0x00000000010004001500000000c001000d000000020100001900000002010000250000000201000031000000020100000996e67a4b90279e19c9a5f87bb8f484d27a638af27e4291badb28580e9bb9dfc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470a9f6f10fec9205fcbd8bb1ec4b480ec6f03464a660763356fa0e24841404b55e1f0a8582c239cf456fb28319fed14f3e36c2cfefccf848cbb2c58592671b94eb",
     ];
+
     const validatorShares: Array<Array<string>> = [
       [
         "0x109f68dde37442959baa4b16498a6fd19c285f9355c23d8eef900876e8536a12",
@@ -333,7 +352,7 @@ task(
         publicStakingAddress,
         hre
       );
-      const receipt = await contractTx.wait(8);
+      const receipt = await contractTx.wait(waitConfirmationsBlocks);
       if (receipt.events === undefined) {
         throw new Error("receipt has no events");
       }
@@ -352,6 +371,18 @@ task(
       console.log("minted the following tokens: ", tokenIds);
     }
 
+    if (tokenIds.length === 0) {
+      if (taskArgs.tokenIds === undefined || taskArgs.tokenIds.length === 0) {
+        throw new Error("no token ids provided");
+      }
+      for (const id of taskArgs.tokenIds as string[]) {
+        tokenIds.push(BigNumber.from(id));
+      }
+    }
+    console.log(
+      "using the following tokens to register validators: ",
+      tokenIds
+    );
     console.log("registering and migrating state");
     const ethHeight = await hre.ethers.provider.getBlockNumber();
     const validatorIndexes = [1, 2, 3, 4];
@@ -372,8 +403,9 @@ task(
       hre
     );
     console.log("finished migration");
-    await contractTx.wait(8);
+    await contractTx.wait(waitConfirmationsBlocks);
   });
+
 async function getGroupSignatures(epoch: BigNumber) {
   let start = BigNumber.from(1);
   const bufferSize = BigNumber.from(5);
@@ -399,6 +431,12 @@ async function getGroupSignatures(epoch: BigNumber) {
 
 task("register-validators", "registers validators")
   .addParam("factoryAddress", "address of the factory deploying the contract")
+  .addOptionalParam(
+    "waitConfirmation",
+    "wait specified number of blocks between transactions",
+    0,
+    types.int
+  )
   .addVariadicPositionalParam(
     "addresses",
     "validators' addresses",
@@ -406,15 +444,9 @@ task("register-validators", "registers validators")
     types.string,
     false
   )
-  .addOptionalParam(
-    "waitConfirmation",
-    "wait specified number of blocks between transactions",
-    0,
-    types.int
-  )
   .setAction(async (taskArgs, hre) => {
     const waitConfirmationsBlocks = await parseWaitConfirmationInterval(
-      taskArgs.waitConfirmations,
+      taskArgs.waitConfirmation,
       hre
     );
     console.log("\nRegistering Validators\n", taskArgs.addresses);
@@ -524,7 +556,7 @@ task("unregister-validators", "unregister validators")
   )
   .setAction(async (taskArgs, hre) => {
     const waitConfirmationsBlocks = await parseWaitConfirmationInterval(
-      taskArgs.waitConfirmations,
+      taskArgs.waitConfirmation,
       hre
     );
     console.log("Unregistering Validators\n", taskArgs.addresses);
@@ -609,7 +641,7 @@ task("virtual-mint-deposit", "Virtually creates a deposit on the side chain")
   )
   .setAction(async (taskArgs, hre) => {
     const waitConfirmationsBlocks = await parseWaitConfirmationInterval(
-      taskArgs.waitConfirmations,
+      taskArgs.waitConfirmation,
       hre
     );
     const { ethers } = hre;
@@ -659,7 +691,7 @@ task("schedule-maintenance", "Calls schedule Maintenance")
   )
   .setAction(async (taskArgs, hre) => {
     const waitConfirmationsBlocks = await parseWaitConfirmationInterval(
-      taskArgs.waitConfirmations,
+      taskArgs.waitConfirmation,
       hre
     );
     console.log(`scheduling maintenance after the next snapshot`);
@@ -707,7 +739,7 @@ task(
   )
   .setAction(async (taskArgs, hre) => {
     const waitConfirmationsBlocks = await parseWaitConfirmationInterval(
-      taskArgs.waitConfirmations,
+      taskArgs.waitConfirmation,
       hre
     );
     const { ethers } = hre;
@@ -742,7 +774,7 @@ task(
   )
   .setAction(async (taskArgs, hre) => {
     const waitConfirmationsBlocks = await parseWaitConfirmationInterval(
-      taskArgs.waitConfirmations,
+      taskArgs.waitConfirmation,
       hre
     );
     const { ethers } = hre;
@@ -803,7 +835,7 @@ task(
   )
   .setAction(async (taskArgs, hre) => {
     const waitConfirmationsBlocks = await parseWaitConfirmationInterval(
-      taskArgs.waitConfirmations,
+      taskArgs.waitConfirmation,
       hre
     );
     const { ethers } = hre;
@@ -852,7 +884,7 @@ task(
   )
   .setAction(async (taskArgs, hre) => {
     const waitConfirmationsBlocks = await parseWaitConfirmationInterval(
-      taskArgs.waitConfirmations,
+      taskArgs.waitConfirmation,
       hre
     );
     const { ethers } = hre;
@@ -895,7 +927,7 @@ task(
   )
   .setAction(async (taskArgs, hre) => {
     const waitConfirmationsBlocks = await parseWaitConfirmationInterval(
-      taskArgs.waitConfirmations,
+      taskArgs.waitConfirmation,
       hre
     );
     const { ethers } = hre;
@@ -927,10 +959,10 @@ task("change-dynamic-value", "Change a certain dynamic value")
     "relativeEpoch",
     "How many epochs from the value will be updated on the side chain"
   )
-  .addOptionalParam("maxBlockSize", "new max block size value")
-  .addOptionalParam("proposalTimeout", "new proposal Timeout value")
-  .addOptionalParam("preVoteTimeout", "new preVote Timeout value")
-  .addOptionalParam("preCommitTimeout", "new preCommit Timeout value")
+  .addOptionalParam("maxBlockSize", "new max block size value (bytes)")
+  .addOptionalParam("proposalTimeout", "new proposal Timeout value (ms)")
+  .addOptionalParam("preVoteTimeout", "new preVote Timeout value (ms)")
+  .addOptionalParam("preCommitTimeout", "new preCommit Timeout value (ms)")
   .addOptionalParam("dataStoreFee", "new preVote Timeout value")
   .addOptionalParam("valueStoreFee", "new preVote Timeout value")
   .addOptionalParam(
@@ -945,7 +977,7 @@ task("change-dynamic-value", "Change a certain dynamic value")
   )
   .setAction(async (taskArgs, hre) => {
     const waitConfirmationsBlocks = await parseWaitConfirmationInterval(
-      taskArgs.waitConfirmations,
+      taskArgs.waitConfirmation,
       hre
     );
     const { ethers } = hre;
@@ -1067,7 +1099,7 @@ task("initialize-ethdkg", "Start the ethdkg process")
   )
   .setAction(async (taskArgs, hre) => {
     const waitConfirmationsBlocks = await parseWaitConfirmationInterval(
-      taskArgs.waitConfirmations,
+      taskArgs.waitConfirmation,
       hre
     );
     const { ethers } = hre;
@@ -1198,7 +1230,7 @@ task("mint-alcb-to", "mints ALCB to an address")
   )
   .setAction(async (taskArgs, hre) => {
     const waitConfirmationsBlocks = await parseWaitConfirmationInterval(
-      taskArgs.waitConfirmations,
+      taskArgs.waitConfirmation,
       hre
     );
     if (
@@ -1266,7 +1298,7 @@ task(
   )
   .setAction(async (taskArgs, hre) => {
     const waitConfirmationsBlocks = await parseWaitConfirmationInterval(
-      taskArgs.waitConfirmations,
+      taskArgs.waitConfirmation,
       hre
     );
     const factory = await hre.ethers.getContractAt(
@@ -1476,7 +1508,7 @@ task("fund-validators", "manually put 100 eth in each validator account")
   )
   .setAction(async (taskArgs, hre) => {
     const waitConfirmationsBlocks = await parseWaitConfirmationInterval(
-      taskArgs.waitConfirmations,
+      taskArgs.waitConfirmation,
       hre
     );
     console.log("\nFunding validators");
@@ -1601,7 +1633,7 @@ task("update-alicenet-node-version", "Set the Canonical AliceNet Node Version")
   )
   .setAction(async (taskArgs, hre) => {
     const waitConfirmationsBlocks = await parseWaitConfirmationInterval(
-      taskArgs.waitConfirmations,
+      taskArgs.waitConfirmation,
       hre
     );
     const factory = await hre.ethers.getContractAt(

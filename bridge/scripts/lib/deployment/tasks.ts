@@ -44,7 +44,8 @@ export async function deployFactoryTask(
   legacyTokenAddress: string,
   hre: HardhatRuntimeEnvironment,
   waitBlocks: number = 0,
-  verify: boolean = false
+  verify: boolean = false,
+  skipChecks: boolean = false
 ) {
   const factoryBase = await hre.ethers.getContractFactory(ALICENET_FACTORY);
   if (!hre.ethers.utils.isAddress(legacyTokenAddress)) {
@@ -52,6 +53,10 @@ export async function deployFactoryTask(
   }
   const signers = await hre.ethers.getSigners();
   const deployTX = factoryBase.getDeployTransaction(legacyTokenAddress);
+  if (!skipChecks) {
+    const promptMessage = `Do you want to deploy the factory and ALCA with constructor argument: { legacyTokenAddress: ${legacyTokenAddress} } ? (y/n)\n`;
+    await promptCheckDeploymentArgs(promptMessage);
+  }
   const gasCost = await hre.ethers.provider.estimateGas(deployTX);
   // deploys the factory
   const factory = await deployFactory(
@@ -96,31 +101,32 @@ export async function deployContractsTask(
   const deploymentConfig: DeploymentConfigWrapper =
     readDeploymentConfig(configFile);
 
-  const expectedContractFullQualifiedName =
-    "contracts/AliceNetFactory.sol:AliceNetFactory";
-  const expectedField = "legacyToken_";
-
-  if (
-    deploymentConfig[expectedContractFullQualifiedName].constructorArgs[
-      expectedField
-    ] === undefined
-  ) {
-    throw new Error(
-      `Couldn't find ${expectedField} in the constructor area for` +
-        ` ${expectedContractFullQualifiedName} inside ${configFile}`
-    );
-  }
-
-  const legacyTokenAddress: string = deploymentConfig[
-    expectedContractFullQualifiedName
-  ].constructorArgs[expectedField] as string;
-
   if (factoryAddress === undefined) {
+    const expectedContractFullQualifiedName =
+      "contracts/AliceNetFactory.sol:AliceNetFactory";
+    const expectedField = "legacyToken_";
+
+    if (
+      deploymentConfig[expectedContractFullQualifiedName] === undefined ||
+      deploymentConfig[expectedContractFullQualifiedName].constructorArgs[
+        expectedField
+      ] === undefined
+    ) {
+      throw new Error(
+        `Couldn't find ${expectedField} in the constructor area for` +
+          ` ${expectedContractFullQualifiedName} inside ${configFile}`
+      );
+    }
+
+    const legacyTokenAddress: string = deploymentConfig[
+      expectedContractFullQualifiedName
+    ].constructorArgs[expectedField] as string;
     const factoryData: FactoryData = await deployFactoryTask(
       legacyTokenAddress,
       hre,
       waitBlocks,
-      verify
+      verify,
+      skipChecks
     );
     factoryAddress = factoryData.address;
     cumulativeGasUsed = cumulativeGasUsed.add(factoryData.gas);
@@ -237,7 +243,7 @@ export async function deployUpgradeableProxyTask(
       deploymentConfigForContract.initializerArgs
     );
 
-    const promptMessage = `Do you want to deploy ${deploymentConfigForContract.name} with  constructor arguments: ${constructorDetails} initializer Args: ${initializerDetails}? (y/n)\n`;
+    const promptMessage = `Do you want to deploy ${deploymentConfigForContract.name} with constructor arguments: ${constructorDetails} initializer Args: ${initializerDetails}? (y/n)\n`;
     await promptCheckDeploymentArgs(promptMessage);
   }
   const txResponse = await deployUpgradeableGasSafe(
@@ -308,15 +314,20 @@ export async function deployCreateTask(
     constructorArgs
   );
   const receipt = await txResponse.wait(waitBlocks);
+  const contractAddress = getEventVar(
+    receipt,
+    EVENT_DEPLOYED_RAW,
+    CONTRACT_ADDR
+  );
   const deployCreateData: DeployCreateData = {
     name: deploymentConfigForContract.name,
-    address: getEventVar(receipt, EVENT_DEPLOYED_RAW, CONTRACT_ADDR),
+    address: contractAddress,
     factoryAddress,
     gas: receipt.gasUsed,
     constructorArgs: deploymentConfigForContract.constructorArgs,
   };
   if (verify) {
-    await verifyContract(hre, factory.address, constructorArgs);
+    await verifyContract(hre, contractAddress, constructorArgs);
   }
   if (!standAlone) {
     await showState(
@@ -364,15 +375,20 @@ export async function deployCreate2Task(
     deploymentConfigForContract.salt
   );
   const receipt = await txResponse.wait(waitBlocks);
+  const contractAddress = getEventVar(
+    receipt,
+    EVENT_DEPLOYED_RAW,
+    CONTRACT_ADDR
+  );
   const deployCreate2Data: any = {
     name: deploymentConfigForContract.name,
-    address: getEventVar(receipt, EVENT_DEPLOYED_RAW, CONTRACT_ADDR),
+    address: contractAddress,
     factoryAddress,
     gas: receipt.gasUsed,
     constructorArgs: deploymentConfigForContract.constructorArgs,
   };
   if (verify) {
-    await verifyContract(hre, factory.address, constructorArgs);
+    await verifyContract(hre, contractAddress, constructorArgs);
   }
   if (!standAlone) {
     await showState(
@@ -517,16 +533,21 @@ export async function deployCreateAndRegisterTask(
     await getGasPrices(hre.ethers)
   );
   const receipt = await txResponse.wait(waitBlocks);
+  const contractAddress = getEventVar(
+    receipt,
+    EVENT_DEPLOYED_RAW,
+    CONTRACT_ADDR
+  );
   const deployCreateData: DeployCreateData = {
     name: deploymentConfigForContract.name,
-    address: getEventVar(receipt, EVENT_DEPLOYED_RAW, CONTRACT_ADDR),
+    address: contractAddress,
     factoryAddress,
     gas: receipt.gasUsed,
     constructorArgs: deploymentConfigForContract.constructorArgs,
   };
 
   if (verify) {
-    await verifyContract(hre, factory.address, constructorArgs);
+    await verifyContract(hre, contractAddress, constructorArgs);
   }
 
   await showState(
