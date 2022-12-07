@@ -54,6 +54,8 @@ describe("contract post deployment tests", () => {
   const LEGACY_TOKEN_ADDRESS = "0x5B09A0371C1DA44A8E24D36Bf5DEb1141a84d875";
   const ALCA_NAME = "AliceNet Staking Token";
   const ALCA_SYMBOL = "ALCA";
+  const PUBLIC_STAKING_NAME = "APSNFT";
+  const PUBLIC_STAKING_SYMBOL = "APS";
   const ALCA_DECIMALS = 18;
   const EPOCH_LENGTH = 1024;
   const MIN_INTERVAL_BETWEEN_SNAPSHOTS = EPOCH_LENGTH / 4;
@@ -271,10 +273,29 @@ describe("contract post deployment tests", () => {
   });
 
   describe("Post PublicStaking deployment tests", () => {
-    it("attempts to use owner functions without being owner", async () => {});
-    it("attempts to use owner functions without being owner", async () => {});
-    it("attempts to use owner functions without being owner", async () => {});
-    it("attempts to use owner functions without being owner", async () => {});
+    it("attempts to initialize again as factory", async () => {
+      const factory = alicenetFactory.connect(owner);
+      const initialize =
+        publicStaking.interface.encodeFunctionData("initialize");
+      await expect(
+        factory.callAny(publicStaking.address, 0, initialize)
+      ).to.be.revertedWith("Initializable: contract is already initialized");
+    });
+
+    it("attempts to initialize with external account", async () => {
+      const signers = await ethers.getSigners();
+      await expect(publicStaking.initialize())
+        .to.be.revertedWithCustomError(publicStaking, "OnlyFactory")
+        .withArgs(signers[0].address, alicenetFactory.address);
+    });
+    it("checks if public staking nft name is set to APSNFT", async () => {
+      const name = await publicStaking.name();
+      expect(name).to.equal(PUBLIC_STAKING_NAME);
+    });
+    it("checks if public staking nft symbol is set to APS", async () => {
+      const symbol = await publicStaking.symbol();
+      expect(symbol).to.equal(PUBLIC_STAKING_SYMBOL);
+    });
   });
 
   describe("Post StakingPositionDescriptor deployment tests", () => {
