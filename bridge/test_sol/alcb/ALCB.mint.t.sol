@@ -73,6 +73,44 @@ contract ALCBTest is Test {
         assertEq(alcb.totalSupply(), totalSupplyBefore + alcbMinted);
     }
 
+    function testMintToFuzz(uint96 etherToSend) public {
+        // if the value is less than market spread the function throws an error
+        if (etherToSend < marketSpread) return;
+        uint256 totalSupplyBefore = alcb.totalSupply();
+
+        // fund the address
+        vm.deal(randomAddress, etherToSend);
+        // mock the call to use the address for the next call
+        vm.prank(randomAddress);
+
+        // call the mint function
+        uint256 alcbMinted = alcb.mintTo{value: etherToSend}(randomAddress2, 0);
+
+        // check the amount of alcb minted
+        assertEq(alcb.balanceOf(randomAddress2), alcbMinted);
+        assertEq(alcb.getPoolBalance(), etherToSend / marketSpread);
+        assertEq(alcb.totalSupply(), totalSupplyBefore + alcbMinted);
+    }
+
+    function testMintFuzz(uint96 etherToSend) public {
+        // if the value is less than market spread the function throws an error
+        if (etherToSend < marketSpread) return;
+        uint256 totalSupplyBefore = alcb.totalSupply();
+
+        // fund the address
+        vm.deal(randomAddress, etherToSend);
+        // mock the call to use the address for the next call
+        vm.prank(randomAddress);
+
+        // call the mint function
+        uint256 alcbMinted = alcb.mint{value: etherToSend}(0);
+
+        // check the amount of alcb minted
+        assertEq(alcb.balanceOf(randomAddress), alcbMinted);
+        assertEq(alcb.getPoolBalance(), etherToSend / marketSpread);
+        assertEq(alcb.totalSupply(), totalSupplyBefore + alcbMinted);
+    }
+
     function testMintAlcbWithMinValueNotMetReverts() public {
         vm.expectRevert(
             abi.encodeWithSelector(UtilityTokenErrors.MinimumValueNotMet.selector, 0, marketSpread)
