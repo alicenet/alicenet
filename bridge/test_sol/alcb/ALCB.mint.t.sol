@@ -73,7 +73,7 @@ contract ALCBTest is Test {
         assertEq(alcb.totalSupply(), totalSupplyBefore + alcbMinted);
     }
 
-    function testMintToFuzz(uint96 etherToSend) public {
+    function testMintToFuzz(uint96 etherToSend, address destinationAddress) public {
         // if the value is less than market spread the function throws an error
         if (etherToSend < marketSpread) return;
         uint256 totalSupplyBefore = alcb.totalSupply();
@@ -84,10 +84,10 @@ contract ALCBTest is Test {
         vm.prank(randomAddress);
 
         // call the mint function
-        uint256 alcbMinted = alcb.mintTo{value: etherToSend}(randomAddress2, 0);
+        uint256 alcbMinted = alcb.mintTo{value: etherToSend}(destinationAddress, 0);
 
         // check the amount of alcb minted
-        assertEq(alcb.balanceOf(randomAddress2), alcbMinted);
+        assertEq(alcb.balanceOf(destinationAddress), alcbMinted);
         assertEq(alcb.getPoolBalance(), etherToSend / marketSpread);
         assertEq(alcb.totalSupply(), totalSupplyBefore + alcbMinted);
     }
