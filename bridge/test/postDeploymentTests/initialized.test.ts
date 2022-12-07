@@ -55,6 +55,8 @@ describe("contract post deployment tests", () => {
   const ALCA_NAME = "AliceNet Staking Token";
   const ALCA_SYMBOL = "ALCA";
   const ALCA_DECIMALS = 18;
+  const EPOCH_LENGTH = 1024;
+  const MIN_INTERVAL_BETWEEN_SNAPSHOTS = EPOCH_LENGTH / 4;
   let deploymentConfig: DeploymentConfigWrapper;
   let contractAddresses: DeployedConstractAddresses;
   let owner: SignerWithAddress;
@@ -191,13 +193,140 @@ describe("contract post deployment tests", () => {
   });
 
   describe("Post foundation deployment tests", () => {
+    it("attempts to initialize again as factory", async () => {
+      const factory = await alicenetFactory.connect(owner);
+      const initialize = foundation.interface.encodeFunctionData("initialize");
+      await expect(
+        factory.callAny(foundation.address, 0, initialize)
+      ).to.be.revertedWith("Initializable: contract is already initialized");
+    });
+
+    it("attempts to initialize with external account", async () => {
+      const signers = await ethers.getSigners();
+      await expect(foundation.initialize())
+        .to.be.revertedWithCustomError(foundation, "OnlyFactory")
+        .withArgs(signers[0].address, alicenetFactory.address);
+    });
+  });
+
+  describe("Post Snapshots deployment tests", () => {
+    it("attempts to initialize again as factory", async () => {
+      const factory = await alicenetFactory.connect(owner);
+      const initialize = snapshots.interface.encodeFunctionData(
+        "initialize",
+        [1, 1]
+      );
+      await expect(
+        factory.callAny(snapshots.address, 0, initialize)
+      ).to.be.revertedWith("Initializable: contract is already initialized");
+    });
+
+    it("attempts to initialize with external account", async () => {
+      const signers = await ethers.getSigners();
+      await expect(snapshots.initialize(1, 1))
+        .to.be.revertedWithCustomError(snapshots, "OnlyFactory")
+        .withArgs(signers[0].address, alicenetFactory.address);
+    });
+
+    it("checks if snapshot desperation delay is set", async () => {
+      let snapshotConfig: any = extractContractConfig(
+        "Snapshots",
+        deploymentConfig
+      );
+      const desperationDelay = await snapshots.getSnapshotDesperationDelay();
+      expect(snapshotConfig["initializerArgs"]["desperationDelay_"]).to.not.be
+        .undefined;
+      expect(desperationDelay.toNumber()).to.equal(
+        snapshotConfig["initializerArgs"]["desperationDelay_"]
+      );
+    });
+
+    it("checks if snapshot desperation factor is set", async () => {
+      let snapshotConfig: any = extractContractConfig(
+        "Snapshots",
+        deploymentConfig
+      );
+      const desperationFactor = await snapshots.getSnapshotDesperationFactor();
+      expect(snapshotConfig["initializerArgs"]["desperationDelay_"]).to.not.be
+        .undefined;
+      expect(desperationFactor.toNumber()).to.equal(
+        snapshotConfig["initializerArgs"]["desperationDelay_"]
+      );
+    });
+
+    it("checks if chainID is set to 21", async () => {
+      const chainID = await snapshots.getChainId();
+      expect(chainID).to.equal(21);
+    });
+
+    it("checks if epoch length is set to 1024", async () => {
+      const epochLength = await snapshots.getEpochLength();
+      expect(epochLength).to.equal(1024);
+    });
+
+    it("checks if minimum interval between snapshots is set to 1/4 of epoch length", async () => {
+      const miniInterval = await snapshots.getMinimumIntervalBetweenSnapshots();
+      expect(miniInterval.toNumber()).to.eq(MIN_INTERVAL_BETWEEN_SNAPSHOTS);
+    });
+  });
+
+  describe("Post PublicStaking deployment tests", () => {
     it("attempts to use owner functions without being owner", async () => {});
     it("attempts to use owner functions without being owner", async () => {});
     it("attempts to use owner functions without being owner", async () => {});
     it("attempts to use owner functions without being owner", async () => {});
   });
 
-  describe("Post governance deployment tests", () => {
+  describe("Post StakingPositionDescriptor deployment tests", () => {
+    it("attempts to use owner functions without being owner", async () => {});
+    it("attempts to use owner functions without being owner", async () => {});
+    it("attempts to use owner functions without being owner", async () => {});
+    it("attempts to use owner functions without being owner", async () => {});
+  });
+
+  describe("Post ValidatorPool deployment tests", () => {
+    it("attempts to use owner functions without being owner", async () => {});
+    it("attempts to use owner functions without being owner", async () => {});
+    it("attempts to use owner functions without being owner", async () => {});
+    it("attempts to use owner functions without being owner", async () => {});
+  });
+
+  describe("Post ValidatorStaking deployment tests", () => {
+    it("attempts to use owner functions without being owner", async () => {});
+    it("attempts to use owner functions without being owner", async () => {});
+    it("attempts to use owner functions without being owner", async () => {});
+    it("attempts to use owner functions without being owner", async () => {});
+  });
+
+  describe("Post ETHDKGAccusations deployment tests", () => {
+    it("attempts to use owner functions without being owner", async () => {});
+    it("attempts to use owner functions without being owner", async () => {});
+    it("attempts to use owner functions without being owner", async () => {});
+    it("attempts to use owner functions without being owner", async () => {});
+  });
+
+  describe("Post ETHDKGPhases deployment tests", () => {
+    it("attempts to use owner functions without being owner", async () => {});
+    it("attempts to use owner functions without being owner", async () => {});
+    it("attempts to use owner functions without being owner", async () => {});
+    it("attempts to use owner functions without being owner", async () => {});
+  });
+
+  describe("Post ETHDKG deployment tests", () => {
+    it("attempts to use owner functions without being owner", async () => {});
+    it("attempts to use owner functions without being owner", async () => {});
+    it("attempts to use owner functions without being owner", async () => {});
+    it("attempts to use owner functions without being owner", async () => {});
+  });
+
+  describe("Post Lockup deployment tests", () => {
+    it("attempts to use owner functions without being owner", async () => {});
+    it("attempts to use owner functions without being owner", async () => {});
+    it("attempts to use owner functions without being owner", async () => {});
+    it("attempts to use owner functions without being owner", async () => {});
+  });
+
+  describe("Post StakingRouterV1 deployment tests", () => {
     it("attempts to use owner functions without being owner", async () => {});
     it("attempts to use owner functions without being owner", async () => {});
     it("attempts to use owner functions without being owner", async () => {});
