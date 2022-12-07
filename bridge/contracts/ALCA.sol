@@ -95,6 +95,13 @@ contract ALCA is IStakingToken, ERC20, ImmutableFactory, ImmutableALCAMinter, Im
         return _convert(amount);
     }
 
+    /**
+     * returns true if the early stage multiplier is still active
+     */
+    function isEarlyStageMigration() public view returns (bool) {
+        return !_hasEarlyStageEnded;
+    }
+
     function _migrate(address to, uint256 amount) internal returns (uint256 convertedAmount) {
         uint256 balanceBefore = IERC20(_legacyToken).balanceOf(address(this));
         IERC20(_legacyToken).transferFrom(msg.sender, address(this), amount);
