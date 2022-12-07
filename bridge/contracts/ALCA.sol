@@ -20,9 +20,7 @@ contract ALCA is IStakingToken, ERC20, ImmutableFactory, ImmutableALCAMinter, Im
     address internal immutable _legacyToken;
     bool internal _hasEarlyStageEnded;
 
-    constructor(
-        address legacyToken_
-    )
+    constructor(address legacyToken_)
         ERC20("AliceNet Staking Token", "ALCA")
         ImmutableFactory(msg.sender)
         ImmutableALCAMinter()
@@ -93,6 +91,13 @@ contract ALCA is IStakingToken, ERC20, ImmutableFactory, ImmutableALCAMinter, Im
      * @return the amount converted to ALCA*/
     function convert(uint256 amount) public view returns (uint256) {
         return _convert(amount);
+    }
+
+    /**
+     * returns true if the early stage multiplier is still active
+     */
+    function isEarlyStageMigration() public view returns (bool) {
+        return !_hasEarlyStageEnded;
     }
 
     function _migrate(address to, uint256 amount) internal returns (uint256 convertedAmount) {
