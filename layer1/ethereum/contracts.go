@@ -97,7 +97,7 @@ func (c *Contracts) lookupContracts() error {
 			salt := utils.StringToBytes32(name)
 			addr, err := contractFactory.Lookup(callOpts, salt)
 			if err != nil {
-				logger.Errorf("Failed lookup of \"%v\": %v", name, err)
+				logger.Errorf("Failed lookup of \"%v\": %v probably not deployed yet", name, err)
 			} else {
 				logger.Infof("Lookup up of \"%v\" is 0x%x", name, addr)
 			}
@@ -128,9 +128,10 @@ func (c *Contracts) lookupContracts() error {
 		// ALCB
 		c.alcbAddress, err = lookup("ALCB")
 		logAndEat(logger, err)
-		if bytes.Equal(c.alcbAddress.Bytes(), make([]byte, 20)) {
-			continue
-		}
+		// TODO: bring back this check once we re-deploy BToken
+		// if bytes.Equal(c.alcbAddress.Bytes(), make([]byte, 20)) {
+		// 	continue
+		// }
 
 		c.alcb, err = bindings.NewALCB(c.alcbAddress, eth.internalClient)
 		logAndEat(logger, err)
@@ -168,9 +169,9 @@ func (c *Contracts) lookupContracts() error {
 		// Governance
 		c.governanceAddress, err = lookup("Governance")
 		logAndEat(logger, err)
-		if bytes.Equal(c.governanceAddress.Bytes(), make([]byte, 20)) {
-			continue
-		}
+		// if bytes.Equal(c.governanceAddress.Bytes(), make([]byte, 20)) {
+		// 	continue
+		// }
 
 		c.governance, err = bindings.NewGovernance(c.governanceAddress, eth.internalClient)
 		logAndEat(logger, err)
