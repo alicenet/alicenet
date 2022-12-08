@@ -2,15 +2,15 @@ package executor
 
 import (
 	"errors"
-	"github.com/alicenet/alicenet/constants"
-	"github.com/alicenet/alicenet/constants/dbprefix"
-	"github.com/alicenet/alicenet/utils"
-	"github.com/stretchr/testify/require"
-	"io/ioutil"
 	"math/big"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/constants/dbprefix"
+	"github.com/alicenet/alicenet/utils"
+	"github.com/stretchr/testify/require"
 
 	"github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/layer1/executor/tasks"
@@ -281,7 +281,7 @@ func Test_TaskExecutor_ReceiptWithErrorAndFailure(t *testing.T) {
 }
 
 func Test_TaskExecutor_Recovering(t *testing.T) {
-	dir, err := ioutil.TempDir("", "db-test")
+	dir, err := os.MkdirTemp("", "db-test")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -439,7 +439,7 @@ func Test_TaskExecutor_Close(t *testing.T) {
 	executor.handleTaskExecution(task, "", "123", 1, 10, false, nil, db, executor.logger, client, mocks.NewMockAllSmartContracts(), taskRespChan)
 
 	mockrequire.CalledOnce(t, task.InitializeFunc)
-	mockrequire.CalledOnceWith(t, task.FinishFunc, mockrequire.Values(tasks.ErrTaskExecutionMechanismClosed))
+	mockrequire.NotCalled(t, task.FinishFunc)
 }
 
 func Test_TaskExecutor_ShouldExecuteError(t *testing.T) {
@@ -608,9 +608,7 @@ func Test_TaskExecutor_CloseExecutorAfter1stExecution(t *testing.T) {
 
 	go func() {
 		delay := constants.MonitorRetryDelay - 1*time.Second
-		select {
-		case <-time.After(delay):
-		}
+		time.Sleep(delay)
 		executor.close()
 	}()
 
@@ -619,7 +617,7 @@ func Test_TaskExecutor_CloseExecutorAfter1stExecution(t *testing.T) {
 	mockrequire.CalledOnce(t, task.PrepareFunc)
 	mockrequire.CalledOnce(t, task.ShouldExecuteFunc)
 	mockrequire.CalledOnce(t, task.ExecuteFunc)
-	mockrequire.CalledOnceWith(t, task.FinishFunc, mockrequire.Values(tasks.ErrTaskExecutionMechanismClosed))
+	mockrequire.NotCalled(t, task.FinishFunc)
 }
 
 func Test_TaskExecutor_BackupTxnTaskKilled(t *testing.T) {
@@ -703,7 +701,7 @@ func Test_TaskExecutor_BackupTxnExecutorClosed(t *testing.T) {
 	mockrequire.CalledOnce(t, task.InitializeFunc)
 	mockrequire.NotCalled(t, task.PrepareFunc)
 	mockrequire.NotCalled(t, task.ExecuteFunc)
-	mockrequire.CalledOnceWith(t, task.FinishFunc, mockrequire.Values(tasks.ErrTaskExecutionMechanismClosed))
+	mockrequire.NotCalled(t, task.FinishFunc)
 }
 
 func Test_TaskExecutor_ShouldExecuteKilledTask(t *testing.T) {

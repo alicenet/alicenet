@@ -114,6 +114,7 @@ func getMonitor(t *testing.T) (*monitor, executor.TaskHandler, *mocks.MockClient
 	contracts.EthereumContractsFunc.SetDefaultReturn(ethereumContracts)
 
 	tasksHandler, err := executor.NewTaskHandler(monDB, eth, contracts, adminHandler, txWatcher)
+	assert.Nil(t, err)
 	mon, err := NewMonitor(consDB, monDB, adminHandler, depositHandler, eth, contracts, contracts.EthereumContracts().GetAllAddresses(), 2*time.Second, 100, 42, tasksHandler)
 	assert.Nil(t, err)
 	EPOCH := uint32(1)
@@ -383,6 +384,7 @@ func TestPersistSnapshot(t *testing.T) {
 		SigGroup: make([]byte, 192),
 	}
 	err := PersistSnapshot(eth, bh, 10, 1, taskHandler, mon.db)
+	assert.Nil(t, err)
 
 	state, err := snapshotState.GetSnapshotState(mon.db)
 	assert.Nil(t, err)

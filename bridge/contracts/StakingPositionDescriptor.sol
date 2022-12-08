@@ -7,12 +7,10 @@ import "contracts/interfaces/IStakingNFTDescriptor.sol";
 /// @custom:salt StakingPositionDescriptor
 /// @custom:deploy-type deployUpgradeable
 contract StakingPositionDescriptor is IStakingNFTDescriptor {
-    function tokenURI(IStakingNFT _stakingNFT, uint256 tokenId)
-        external
-        view
-        override
-        returns (string memory)
-    {
+    function tokenURI(
+        IStakingNFT _stakingNFT,
+        uint256 tokenId
+    ) external view override returns (string memory) {
         (
             uint256 shares,
             uint256 freeAfter,

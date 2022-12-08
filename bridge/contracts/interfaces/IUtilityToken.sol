@@ -10,11 +10,7 @@ struct Deposit {
 interface IUtilityToken {
     function distribute() external returns (bool);
 
-    function deposit(
-        uint8 accountType_,
-        address to_,
-        uint256 amount_
-    ) external returns (uint256);
+    function deposit(uint8 accountType_, address to_, uint256 amount_) external returns (uint256);
 
     function virtualMintDeposit(
         uint8 accountType_,
@@ -32,7 +28,7 @@ interface IUtilityToken {
 
     function mintTo(address to_, uint256 minBTK_) external payable returns (uint256 numBTK);
 
-    function destroyBTokens(uint256 numBTK_) external returns (bool);
+    function destroyTokens(uint256 numBTK_) external returns (bool);
 
     function depositTokensOnBridges(uint8 routerVersion_, bytes calldata data_) external payable;
 
@@ -50,31 +46,31 @@ interface IUtilityToken {
 
     function getPoolBalance() external view returns (uint256);
 
-    function getTotalBTokensDeposited() external view returns (uint256);
+    function getTotalTokensDeposited() external view returns (uint256);
 
     function getDeposit(uint256 depositID) external view returns (Deposit memory);
 
-    function getLatestEthToMintBTokens(uint256 numBTK_) external view returns (uint256 numEth);
+    function getLatestEthToMintTokens(uint256 numBTK_) external view returns (uint256 numEth);
 
-    function getLatestEthFromBTokensBurn(uint256 numBTK_) external view returns (uint256 numEth);
+    function getLatestEthFromTokensBurn(uint256 numBTK_) external view returns (uint256 numEth);
 
-    function getLatestMintedBTokensFromEth(uint256 numEth_) external view returns (uint256);
+    function getLatestMintedTokensFromEth(uint256 numEth_) external view returns (uint256);
 
     function getMarketSpread() external pure returns (uint256);
 
-    function getEthToMintBTokens(uint256 totalSupply_, uint256 numBTK_)
-        external
-        pure
-        returns (uint256 numEth);
+    function getEthToMintTokens(
+        uint256 totalSupply_,
+        uint256 numBTK_
+    ) external pure returns (uint256 numEth);
 
-    function getEthFromBTokensBurn(
+    function getEthFromTokensBurn(
         uint256 poolBalance_,
         uint256 totalSupply_,
         uint256 numBTK_
     ) external pure returns (uint256 numEth);
 
-    function getMintedBTokensFromEth(uint256 poolBalance_, uint256 numEth_)
-        external
-        pure
-        returns (uint256);
+    function getMintedTokensFromEth(
+        uint256 poolBalance_,
+        uint256 numEth_
+    ) external pure returns (uint256);
 }

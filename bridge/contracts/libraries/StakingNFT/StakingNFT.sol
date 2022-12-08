@@ -4,7 +4,11 @@ pragma solidity ^0.8.16;
 import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
 import "contracts/libraries/governance/GovernanceMaxLock.sol";
 import "contracts/libraries/StakingNFT/StakingNFTStorage.sol";
-import "contracts/utils/ImmutableAuth.sol";
+import "contracts/utils/auth/ImmutableFactory.sol";
+import "contracts/utils/auth/ImmutableValidatorPool.sol";
+import "contracts/utils/auth/ImmutableALCA.sol";
+import "contracts/utils/auth/ImmutableGovernance.sol";
+import "contracts/utils/auth/ImmutableStakingPositionDescriptor.sol";
 import "contracts/utils/EthSafeTransfer.sol";
 import "contracts/utils/ERC20SafeTransfer.sol";
 import "contracts/utils/MagicValue.sol";
@@ -30,7 +34,7 @@ abstract contract StakingNFT is
     IStakingNFT,
     ImmutableFactory,
     ImmutableValidatorPool,
-    ImmutableAToken,
+    ImmutableALCA,
     ImmutableGovernance,
     ImmutableStakingPositionDescriptor
 {
@@ -43,7 +47,7 @@ abstract contract StakingNFT is
 
     constructor()
         ImmutableFactory(msg.sender)
-        ImmutableAToken()
+        ImmutableALCA()
         ImmutableGovernance()
         ImmutableValidatorPool()
         ImmutableStakingPositionDescriptor()
@@ -68,14 +72,14 @@ abstract contract StakingNFT is
     }
 
     /// skimExcessToken will send to the address passed as to_ any amount of
-    /// AToken held by this contract that is not tracked by the Accumulator
-    /// system. This function allows the Admin role to refund any AToken sent to
+    /// ALCA held by this contract that is not tracked by the Accumulator
+    /// system. This function allows the Admin role to refund any ALCA sent to
     /// this contract in error by a user. This method can not return any funds
     /// sent to the contract via the depositToken method.
     function skimExcessToken(address to_) public onlyFactory returns (uint256 excess) {
-        IERC20Transferable aToken;
-        (aToken, excess) = _estimateExcessToken();
-        _safeTransferERC20(aToken, to_, excess);
+        IERC20Transferable alca;
+        (alca, excess) = _estimateExcessToken();
+        _safeTransferERC20(alca, to_, excess);
         return excess;
     }
 
@@ -100,11 +104,10 @@ abstract contract StakingNFT is
     /// This function will lock an owned Position for up to _MAX_GOVERNANCE_LOCK. This method may
     /// only be called by the owner of the Position. This function will fail if the circuit breaker
     /// is tripped
-    function lockOwnPosition(uint256 tokenID_, uint256 lockDuration_)
-        public
-        withCircuitBreaker
-        returns (uint256)
-    {
+    function lockOwnPosition(
+        uint256 tokenID_,
+        uint256 lockDuration_
+    ) public withCircuitBreaker returns (uint256) {
         if (msg.sender != ownerOf(tokenID_)) {
             revert StakingNFTErrors.CallerNotTokenOwner(msg.sender);
         }
@@ -116,11 +119,10 @@ abstract contract StakingNFT is
 
     /// This function will lock withdraws on the specified Position for up to
     /// _MAX_GOVERNANCE_LOCK. This function will fail if the circuit breaker is tripped
-    function lockWithdraw(uint256 tokenID_, uint256 lockDuration_)
-        public
-        withCircuitBreaker
-        returns (uint256)
-    {
+    function lockWithdraw(
+        uint256 tokenID_,
+        uint256 lockDuration_
+    ) public withCircuitBreaker returns (uint256) {
         if (msg.sender != ownerOf(tokenID_)) {
             revert StakingNFTErrors.CallerNotTokenOwner(msg.sender);
         }
@@ -131,19 +133,18 @@ abstract contract StakingNFT is
     }
 
     /// DO NOT CALL THIS METHOD UNLESS YOU ARE MAKING A DISTRIBUTION AS ALL VALUE
-    /// WILL BE DISTRIBUTED TO STAKERS EVENLY. depositToken distributes AToken
+    /// WILL BE DISTRIBUTED TO STAKERS EVENLY. depositToken distributes ALCA
     /// to all stakers evenly should only be called during a slashing event. Any
-    /// AToken sent to this method in error will be lost. This function will
+    /// ALCA sent to this method in error will be lost. This function will
     /// fail if the circuit breaker is tripped. The magic_ parameter is intended
     /// to stop some one from successfully interacting with this method without
     /// first reading the source code and hopefully this comment
-    function depositToken(uint8 magic_, uint256 amount_)
-        public
-        withCircuitBreaker
-        checkMagic(magic_)
-    {
+    function depositToken(
+        uint8 magic_,
+        uint256 amount_
+    ) public withCircuitBreaker checkMagic(magic_) {
         // collect tokens
-        _safeTransferFromERC20(IERC20Transferable(_aTokenAddress()), msg.sender, amount_);
+        _safeTransferFromERC20(IERC20Transferable(_alcaAddress()), msg.sender, amount_);
         // update state
         _tokenState = _deposit(amount_, _tokenState);
         _reserveToken += amount_;
@@ -151,7 +152,7 @@ abstract contract StakingNFT is
 
     /// DO NOT CALL THIS METHOD UNLESS YOU ARE MAKING A DISTRIBUTION ALL VALUE
     /// WILL BE DISTRIBUTED TO STAKERS EVENLY depositEth distributes Eth to all
-    /// stakers evenly should only be called by BTokens contract any Eth sent to
+    /// stakers evenly should only be called by ALCBs contract any Eth sent to
     /// this method in error will be lost this function will fail if the circuit
     /// breaker is tripped the magic_ parameter is intended to stop some one from
     /// successfully interacting with this method without first reading the
@@ -163,7 +164,7 @@ abstract contract StakingNFT is
 
     /// mint allows a staking position to be opened. This function
     /// requires the caller to have performed an approve invocation against
-    /// AToken into this contract. This function will fail if the circuit
+    /// ALCA into this contract. This function will fail if the circuit
     /// breaker is tripped.
     function mint(uint256 amount_) public virtual withCircuitBreaker returns (uint256 tokenID) {
         return _mintNFT(msg.sender, amount_);
@@ -172,7 +173,7 @@ abstract contract StakingNFT is
     /// mintTo allows a staking position to be opened in the name of an
     /// account other than the caller. This method also allows a lock to be
     /// placed on the position up to _MAX_MINT_LOCK . This function requires the
-    /// caller to have performed an approve invocation against AToken into
+    /// caller to have performed an approve invocation against ALCA into
     /// this contract. This function will fail if the circuit breaker is
     /// tripped.
     function mintTo(
@@ -192,21 +193,16 @@ abstract contract StakingNFT is
 
     /// burn exits a staking position such that all accumulated value is
     /// transferred to the owner on burn.
-    function burn(uint256 tokenID_)
-        public
-        virtual
-        returns (uint256 payoutEth, uint256 payoutAToken)
-    {
+    function burn(uint256 tokenID_) public virtual returns (uint256 payoutEth, uint256 payoutALCA) {
         return _burn(msg.sender, msg.sender, tokenID_);
     }
 
     /// burnTo exits a staking position such that all accumulated value
     /// is transferred to a specified account on burn
-    function burnTo(address to_, uint256 tokenID_)
-        public
-        virtual
-        returns (uint256 payoutEth, uint256 payoutAToken)
-    {
+    function burnTo(
+        address to_,
+        uint256 tokenID_
+    ) public virtual returns (uint256 payoutEth, uint256 payoutALCA) {
         return _burn(msg.sender, to_, tokenID_);
     }
 
@@ -224,10 +220,9 @@ abstract contract StakingNFT is
 
     /// collects the ether and ALCa tokens yields of a given position. The caller of
     /// this function must be the owner of the tokenID.
-    function collectAllProfits(uint256 tokenID_)
-        public
-        returns (uint256 payoutEth, uint256 payoutToken)
-    {
+    function collectAllProfits(
+        uint256 tokenID_
+    ) public returns (uint256 payoutEth, uint256 payoutToken) {
         payoutToken = _collectTokenTo(msg.sender, tokenID_);
         payoutEth = _collectEthTo(msg.sender, tokenID_);
     }
@@ -246,15 +241,15 @@ abstract contract StakingNFT is
 
     /// collects the ether and ALCa tokens yields of a given position and send to the
     /// `to_` address. The caller of this function must be the owner of the tokenID.
-    function collectAllProfitsTo(address to_, uint256 tokenID_)
-        public
-        returns (uint256 payoutEth, uint256 payoutToken)
-    {
+    function collectAllProfitsTo(
+        address to_,
+        uint256 tokenID_
+    ) public returns (uint256 payoutEth, uint256 payoutToken) {
         payoutToken = _collectTokenTo(to_, tokenID_);
         payoutEth = _collectEthTo(to_, tokenID_);
     }
 
-    /// gets the total amount of AToken staked in contract
+    /// gets the total amount of ALCA staked in contract
     function getTotalShares() public view returns (uint256) {
         return _shares;
     }
@@ -264,18 +259,15 @@ abstract contract StakingNFT is
         return _reserveEth;
     }
 
-    /// gets the total amount of AToken staked in contract
-    function getTotalReserveAToken() public view returns (uint256) {
+    /// gets the total amount of ALCA staked in contract
+    function getTotalReserveALCA() public view returns (uint256) {
         return _reserveToken;
     }
 
     /// estimateEthCollection returns the amount of eth a tokenID may withdraw
-    function estimateEthCollection(uint256 tokenID_)
-        public
-        view
-        onlyIfTokenExists(tokenID_)
-        returns (uint256 payout)
-    {
+    function estimateEthCollection(
+        uint256 tokenID_
+    ) public view onlyIfTokenExists(tokenID_) returns (uint256 payout) {
         Position memory p = _positions[tokenID_];
         Accumulator memory ethState = _ethState;
         uint256 shares = _shares;
@@ -283,13 +275,10 @@ abstract contract StakingNFT is
         return payout;
     }
 
-    /// estimateTokenCollection returns the amount of AToken a tokenID may withdraw
-    function estimateTokenCollection(uint256 tokenID_)
-        public
-        view
-        onlyIfTokenExists(tokenID_)
-        returns (uint256 payout)
-    {
+    /// estimateTokenCollection returns the amount of ALCA a tokenID may withdraw
+    function estimateTokenCollection(
+        uint256 tokenID_
+    ) public view onlyIfTokenExists(tokenID_) returns (uint256 payout) {
         Position memory p = _positions[tokenID_];
         uint256 shares = _shares;
         Accumulator memory tokenState = _tokenState;
@@ -297,20 +286,17 @@ abstract contract StakingNFT is
         return payout;
     }
 
-    /// estimateAllProfits returns the amount of AToken a tokenID may withdraw
-    function estimateAllProfits(uint256 tokenID_)
-        public
-        view
-        onlyIfTokenExists(tokenID_)
-        returns (uint256 payoutEth, uint256 payoutToken)
-    {
+    /// estimateAllProfits returns the amount of ALCA a tokenID may withdraw
+    function estimateAllProfits(
+        uint256 tokenID_
+    ) public view onlyIfTokenExists(tokenID_) returns (uint256 payoutEth, uint256 payoutToken) {
         Position memory p = _positions[tokenID_];
         uint256 shares = _shares;
         (, , , payoutEth) = _calculateCollection(shares, _ethState, p, p.accumulatorEth);
         (, , , payoutToken) = _calculateCollection(shares, _tokenState, p, p.accumulatorToken);
     }
 
-    /// estimateExcessToken returns the amount of AToken that is held in the
+    /// estimateExcessToken returns the amount of ALCA that is held in the
     /// name of this contract. The value returned is the value that would be
     /// returned by a call to skimExcessToken.
     function estimateExcessToken() public view returns (uint256 excess) {
@@ -327,7 +313,9 @@ abstract contract StakingNFT is
 
     /// gets the position struct given a tokenID. The tokenId must
     /// exist.
-    function getPosition(uint256 tokenID_)
+    function getPosition(
+        uint256 tokenID_
+    )
         public
         view
         onlyIfTokenExists(tokenID_)
@@ -348,13 +336,9 @@ abstract contract StakingNFT is
     }
 
     /// Gets token URI
-    function tokenURI(uint256 tokenID_)
-        public
-        view
-        override(ERC721Upgradeable)
-        onlyIfTokenExists(tokenID_)
-        returns (string memory)
-    {
+    function tokenURI(
+        uint256 tokenID_
+    ) public view override(ERC721Upgradeable) onlyIfTokenExists(tokenID_) returns (string memory) {
         return IStakingNFTDescriptor(_stakingPositionDescriptorAddress()).tokenURI(this, tokenID_);
     }
 
@@ -393,10 +377,10 @@ abstract contract StakingNFT is
         return _MAX_GOVERNANCE_LOCK;
     }
 
-    function __stakingNFTInit(string memory name_, string memory symbol_)
-        internal
-        onlyInitializing
-    {
+    function __stakingNFTInit(
+        string memory name_,
+        string memory symbol_
+    ) internal onlyInitializing {
         __ERC721_init(name_, symbol_);
     }
 
@@ -408,11 +392,10 @@ abstract contract StakingNFT is
     // Note well: This function *assumes* that tokenID position exists.
     //            This is because the existance check is performed
     //            at the higher level.
-    function _lockPosition(uint256 tokenID_, uint256 duration_)
-        internal
-        onlyIfTokenExists(tokenID_)
-        returns (uint256 shares)
-    {
+    function _lockPosition(
+        uint256 tokenID_,
+        uint256 duration_
+    ) internal onlyIfTokenExists(tokenID_) returns (uint256 shares) {
         Position memory p = _positions[tokenID_];
         uint32 freeDur = uint32(block.number) + uint32(duration_);
         p.freeAfter = freeDur > p.freeAfter ? freeDur : p.freeAfter;
@@ -427,11 +410,10 @@ abstract contract StakingNFT is
     // Note well: This function *assumes* that tokenID position exists.
     //            This is because the existance check is performed
     //            at the higher level.
-    function _lockWithdraw(uint256 tokenID_, uint256 duration_)
-        internal
-        onlyIfTokenExists(tokenID_)
-        returns (uint256 shares)
-    {
+    function _lockWithdraw(
+        uint256 tokenID_,
+        uint256 duration_
+    ) internal onlyIfTokenExists(tokenID_) returns (uint256 shares) {
         Position memory p = _positions[tokenID_];
         uint256 freeDur = block.number + duration_;
         p.withdrawFreeAfter = freeDur > p.withdrawFreeAfter ? freeDur : p.withdrawFreeAfter;
@@ -441,17 +423,17 @@ abstract contract StakingNFT is
 
     // _mintNFT performs the mint operation and invokes the inherited _mint method
     function _mintNFT(address to_, uint256 amount_) internal returns (uint256 tokenID) {
-        // this is to allow struct packing and is safe due to AToken having a
+        // this is to allow struct packing and is safe due to ALCA having a
         // total distribution of 220M
         if (amount_ == 0) {
             revert StakingNFTErrors.MintAmountZero();
         }
-        if (amount_ > 2**224 - 1) {
+        if (amount_ > 2 ** 224 - 1) {
             revert StakingNFTErrors.MintAmountExceedsMaximumSupply();
         }
         // transfer the number of tokens specified by amount_ into contract
         // from the callers account
-        _safeTransferFromERC20(IERC20Transferable(_aTokenAddress()), msg.sender, amount_);
+        _safeTransferFromERC20(IERC20Transferable(_alcaAddress()), msg.sender, amount_);
 
         // get local copy of storage vars to save gas
         uint256 shares = _shares;
@@ -533,7 +515,7 @@ abstract contract StakingNFT is
         ERC721Upgradeable._burn(tokenID_);
 
         // transfer out all eth and tokens owed
-        _safeTransferERC20(IERC20Transferable(_aTokenAddress()), to_, payoutToken);
+        _safeTransferERC20(IERC20Transferable(_alcaAddress()), to_, payoutToken);
         _safeTransferEth(to_, payoutEth);
         return (payoutEth, payoutToken);
     }
@@ -556,14 +538,14 @@ abstract contract StakingNFT is
         (_positions[tokenID_], payout) = _collectToken(_shares, position);
         _reserveToken -= payout;
         // perform transfer and return amount paid out
-        _safeTransferERC20(IERC20Transferable(_aTokenAddress()), to_, payout);
+        _safeTransferERC20(IERC20Transferable(_alcaAddress()), to_, payout);
         return payout;
     }
 
-    function _collectToken(uint256 shares_, Position memory p_)
-        internal
-        returns (Position memory p, uint256 payout)
-    {
+    function _collectToken(
+        uint256 shares_,
+        Position memory p_
+    ) internal returns (Position memory p, uint256 payout) {
         uint256 acc;
         Accumulator memory tokenState = _tokenState;
         (tokenState, p, acc, payout) = _calculateCollection(
@@ -579,10 +561,10 @@ abstract contract StakingNFT is
 
     // _collectEth performs call to _collect and updates state during a request
     // for an eth distribution
-    function _collectEth(uint256 shares_, Position memory p_)
-        internal
-        returns (Position memory p, uint256 payout)
-    {
+    function _collectEth(
+        uint256 shares_,
+        Position memory p_
+    ) internal returns (Position memory p, uint256 payout) {
         uint256 acc;
         Accumulator memory ethState = _ethState;
         (ethState, p, acc, payout) = _calculateCollection(shares_, ethState, p_, p_.accumulatorEth);
@@ -602,28 +584,26 @@ abstract contract StakingNFT is
         excess = balance - reserve;
     }
 
-    // _estimateExcessToken returns the amount of AToken that is held in the
+    // _estimateExcessToken returns the amount of ALCA that is held in the
     // name of this contract
     function _estimateExcessToken()
         internal
         view
-        returns (IERC20Transferable aToken, uint256 excess)
+        returns (IERC20Transferable alca, uint256 excess)
     {
         uint256 reserve = _reserveToken;
-        aToken = IERC20Transferable(_aTokenAddress());
-        uint256 balance = aToken.balanceOf(address(this));
+        alca = IERC20Transferable(_alcaAddress());
+        uint256 balance = alca.balanceOf(address(this));
         if (balance < reserve) {
             revert StakingNFTErrors.BalanceLessThanReserve(balance, reserve);
         }
         excess = balance - reserve;
-        return (aToken, excess);
+        return (alca, excess);
     }
 
-    function _getPositionToCollect(uint256 tokenID_)
-        internal
-        view
-        returns (Position memory position)
-    {
+    function _getPositionToCollect(
+        uint256 tokenID_
+    ) internal view returns (Position memory position) {
         address owner = ownerOf(tokenID_);
         if (msg.sender != owner) {
             revert StakingNFTErrors.CallerNotTokenOwner(msg.sender);
@@ -642,21 +622,12 @@ abstract contract StakingNFT is
         Accumulator memory state_,
         Position memory p_,
         uint256 positionAccumulatorValue_
-    )
-        internal
-        pure
-        returns (
-            Accumulator memory,
-            Position memory,
-            uint256,
-            uint256
-        )
-    {
+    ) internal pure returns (Accumulator memory, Position memory, uint256, uint256) {
         (state_.accumulator, state_.slush) = _slushSkim(shares_, state_.accumulator, state_.slush);
         // determine number of accumulator steps this Position needs distributions from
         uint256 accumulatorDelta;
         if (positionAccumulatorValue_ > state_.accumulator) {
-            accumulatorDelta = 2**168 - positionAccumulatorValue_;
+            accumulatorDelta = 2 ** 168 - positionAccumulatorValue_;
             accumulatorDelta += state_.accumulator;
             positionAccumulatorValue_ = state_.accumulator;
         } else {
@@ -686,16 +657,15 @@ abstract contract StakingNFT is
 
     // _deposit allows an Accumulator to be updated with new value if there are
     // no currently staked positions, all value is stored in the slush
-    function _deposit(uint256 delta_, Accumulator memory state_)
-        internal
-        pure
-        returns (Accumulator memory)
-    {
+    function _deposit(
+        uint256 delta_,
+        Accumulator memory state_
+    ) internal pure returns (Accumulator memory) {
         state_.slush += (delta_ * _ACCUMULATOR_SCALE_FACTOR);
 
         // Slush should be never be above 2**167 to protect against overflow in
         // the later code.
-        if (state_.slush >= 2**167) {
+        if (state_.slush >= 2 ** 167) {
             revert StakingNFTErrors.SlushTooLarge(state_.slush);
         }
         return state_;
@@ -717,7 +687,7 @@ abstract contract StakingNFT is
                 // The maximum allowed value for the accumulator is 2**168-1.
                 // This hard limit was set to not overflow the operation
                 // `accumulator * shares` that happens later in the code.
-                accumulator_ = accumulator_ % (2**168);
+                accumulator_ = accumulator_ % (2 ** 168);
             }
         }
         return (accumulator_, slush_);

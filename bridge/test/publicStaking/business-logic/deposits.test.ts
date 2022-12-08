@@ -9,7 +9,7 @@ describe("PublicStaking: Deposit Tokens and ETH", async () => {
 
   async function deployFixture() {
     const fixture = await getBaseTokensFixture();
-    await fixture.aToken.approve(fixture.publicStaking.address, 100000);
+    await fixture.alca.approve(fixture.publicStaking.address, 100000);
     return fixture;
   }
 
@@ -22,7 +22,7 @@ describe("PublicStaking: Deposit Tokens and ETH", async () => {
     await fixture.publicStaking.depositToken(42, tokenAmount);
     await fixture.publicStaking.depositEth(42, { value: ethAmount });
     expect(
-      (await fixture.aToken.balanceOf(fixture.publicStaking.address)).toBigInt()
+      (await fixture.alca.balanceOf(fixture.publicStaking.address)).toBigInt()
     ).to.be.equals(tokenAmount);
     expect(
       (

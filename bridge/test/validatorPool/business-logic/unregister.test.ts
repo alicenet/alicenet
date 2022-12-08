@@ -170,8 +170,8 @@ describe("ValidatorPool: Unregistration logic", async () => {
     // Mint a publicStaking and burn it to the ValidatorPool contract. Besides a contract self destructing
     // itself, this is a method to send eth accidentally to the validatorPool contract
     const etherAmount = ethers.utils.parseEther("1");
-    const aTokenAmount = ethers.utils.parseEther("2");
-    await burnStakeTo(fixture, etherAmount, aTokenAmount, adminSigner);
+    const alcaAmount = ethers.utils.parseEther("2");
+    await burnStakeTo(fixture, etherAmount, alcaAmount, adminSigner);
 
     const expectedState = await getCurrentState(fixture, validators);
     expectedState.PublicStaking.ETH = BigInt(0);
@@ -207,16 +207,14 @@ describe("ValidatorPool: Unregistration logic", async () => {
       [validators, stakingTokenIds]
     );
     const eths = ethers.utils.parseEther("4").toBigInt();
-    const atokens = ethers.utils.parseEther("4").toBigInt();
+    const alcas = ethers.utils.parseEther("4").toBigInt();
     await fixture.validatorStaking.connect(adminSigner).depositEth(42, {
       value: eths,
     });
-    await fixture.aToken
+    await fixture.alca
       .connect(adminSigner)
-      .approve(fixture.validatorStaking.address, atokens);
-    await fixture.validatorStaking
-      .connect(adminSigner)
-      .depositToken(42, atokens);
+      .approve(fixture.validatorStaking.address, alcas);
+    await fixture.validatorStaking.connect(adminSigner).depositToken(42, alcas);
     const expectedState = await getCurrentState(fixture, validators);
 
     await factoryCallAnyFixture(
@@ -228,9 +226,8 @@ describe("ValidatorPool: Unregistration logic", async () => {
 
     for (let index = 0; index < validators.length; index++) {
       expectedState.ValidatorStaking.ETH -= eths / BigInt(validators.length);
-      expectedState.ValidatorStaking.ATK -= atokens / BigInt(validators.length);
-      expectedState.validators[index].ATK +=
-        atokens / BigInt(validators.length);
+      expectedState.ValidatorStaking.ATK -= alcas / BigInt(validators.length);
+      expectedState.validators[index].ATK += alcas / BigInt(validators.length);
       expectedState.validators[index].Reg = false;
       expectedState.validators[index].ExQ = true;
     }

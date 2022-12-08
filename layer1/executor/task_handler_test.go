@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"math/big"
-	"os"
 	"testing"
 	"time"
 
@@ -106,10 +105,11 @@ func TestTasksHandlerAndManager_Schedule_WrongStartDate(t *testing.T) {
 }
 
 func TestTasksHandlerAndManager_Schedule_WrongEndDate(t *testing.T) {
+	t.Parallel()
 	handler, client, _, _, _ := getTaskHandler(t, true)
 	client.GetFinalizedHeightFunc.SetDefaultReturn(12, nil)
+	handler.manager.LastHeightSeen = 12
 	handler.Start()
-	<-time.After(tasks.ManagerProcessingTime)
 
 	task := dkg.NewCompletionTask(2, 3)
 	_, err := handler.ScheduleTask(task, "")
@@ -204,7 +204,7 @@ func TestTasksHandlerAndManager_ScheduleAndKillById_RunningTask(t *testing.T) {
 	require.Equal(t, 1, getScheduleLen(t, handler.manager))
 
 	isRunning := false
-	failTime := time.After(tasks.ManagerProcessingTime)
+	failTime := time.After(time.Duration(tasks.ManagerProcessingTime.Seconds()+float64(1)) * time.Second)
 	for !isRunning {
 		select {
 		case <-failTime:
@@ -219,7 +219,7 @@ func TestTasksHandlerAndManager_ScheduleAndKillById_RunningTask(t *testing.T) {
 	_, err = handler.KillTaskById(taskId)
 	require.Nil(t, err)
 
-	failTime = time.After(tasks.ManagerProcessingTime)
+	failTime = time.After(time.Duration(tasks.ManagerProcessingTime.Seconds()+float64(1)) * time.Second)
 	for !resp.IsReady() {
 		select {
 		case <-failTime:
@@ -274,10 +274,6 @@ func TestTasksHandlerAndManager_ScheduleAndKillByType(t *testing.T) {
 }
 
 func TestTasksHandlerAndManager_ScheduleKillCloseAndRecover(t *testing.T) {
-	if env := os.Getenv("RUN_FLAKES"); env == "" {
-		t.Skip("flakey test skipped unless RUN_FLAKES environment is set to something")
-	}
-
 	handler, client, contracts, _, acc := getTaskHandler(t, false)
 	handler.Start()
 	client.GetFinalizedHeightFunc.SetDefaultReturn(12, nil)
@@ -321,7 +317,7 @@ func TestTasksHandlerAndManager_ScheduleKillCloseAndRecover(t *testing.T) {
 	require.Equal(t, 1, getScheduleLen(t, handler.manager))
 
 	isRunning := false
-	failTime := time.After(tasks.ManagerProcessingTime)
+	failTime := time.After(time.Duration(tasks.ManagerProcessingTime.Seconds()+float64(1)) * time.Second)
 	for !isRunning {
 		select {
 		case <-failTime:
@@ -354,7 +350,7 @@ func TestTasksHandlerAndManager_ScheduleKillCloseAndRecover(t *testing.T) {
 	_, err = newHandler.KillTaskById(taskId)
 	require.Nil(t, err)
 
-	failTime = time.After(tasks.ManagerProcessingTime)
+	failTime = time.After(time.Duration(tasks.ManagerProcessingTime.Seconds()+float64(1)) * time.Second)
 	for !resp.IsReady() {
 		select {
 		case <-failTime:
@@ -378,7 +374,7 @@ func TestTasksHandlerAndManager_ScheduleKillCloseAndRecover(t *testing.T) {
 	require.NotNil(t, resp)
 	require.Equal(t, 0, getScheduleLen(t, newHandler2.(*Handler).manager))
 
-	failTime = time.After(tasks.ManagerProcessingTime)
+	failTime = time.After(time.Duration(tasks.ManagerProcessingTime.Seconds()+float64(1)) * time.Second)
 	for !resp.IsReady() {
 		select {
 		case <-failTime:
@@ -395,10 +391,6 @@ func TestTasksHandlerAndManager_ScheduleKillCloseAndRecover(t *testing.T) {
 }
 
 func TestTasksHandlerAndManager_ScheduleAndRecover_RunningSnapshotTask(t *testing.T) {
-	if env := os.Getenv("RUN_FLAKES"); env == "" {
-		t.Skip("flakey test skipped unless RUN_FLAKES environment is set to something")
-	}
-
 	handler, client, contracts, _, acc := getTaskHandler(t, false)
 	client.GetFinalizedHeightFunc.SetDefaultReturn(12, nil)
 	handler.Start()
@@ -443,7 +435,7 @@ func TestTasksHandlerAndManager_ScheduleAndRecover_RunningSnapshotTask(t *testin
 	require.Equal(t, 1, getScheduleLen(t, handler.manager))
 
 	isRunning := false
-	failTime := time.After(tasks.ManagerProcessingTime)
+	failTime := time.After(time.Duration(tasks.ManagerProcessingTime.Seconds()+float64(1)) * time.Second)
 	for !isRunning {
 		select {
 		case <-failTime:
@@ -470,7 +462,7 @@ func TestTasksHandlerAndManager_ScheduleAndRecover_RunningSnapshotTask(t *testin
 	newHandler.Start()
 
 	isRunning = false
-	failTime = time.After(tasks.ManagerProcessingTime)
+	failTime = time.After(time.Duration(tasks.ManagerProcessingTime.Seconds()+float64(1)) * time.Second)
 	for !isRunning {
 		select {
 		case <-failTime:

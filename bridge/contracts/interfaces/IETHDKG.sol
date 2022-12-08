@@ -14,8 +14,10 @@ interface IETHDKG {
 
     function register(uint256[2] memory publicKey) external;
 
-    function distributeShares(uint256[] memory encryptedShares, uint256[2][] memory commitments)
-        external;
+    function distributeShares(
+        uint256[] memory encryptedShares,
+        uint256[2][] memory commitments
+    ) external;
 
     function submitKeyShare(
         uint256[2] memory keyShareG1,
@@ -67,6 +69,8 @@ interface IETHDKG {
 
     function isMasterPublicKeySet() external view returns (bool);
 
+    function isValidMasterPublicKey(bytes32 masterPublicKeyHash) external view returns (bool);
+
     function getNonce() external view returns (uint256);
 
     function getPhaseStartBlock() external view returns (uint256);
@@ -83,10 +87,9 @@ interface IETHDKG {
 
     function getMinValidators() external view returns (uint256);
 
-    function getParticipantInternalState(address participant)
-        external
-        view
-        returns (Participant memory);
+    function getParticipantInternalState(
+        address participant
+    ) external view returns (Participant memory);
 
     function getMasterPublicKey() external view returns (uint256[4] memory);
 

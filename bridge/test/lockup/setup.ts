@@ -9,7 +9,7 @@ import hre, { ethers, expect } from "hardhat";
 import { deployCreateAndRegister } from "../../scripts/lib/alicenetFactory";
 import {
   CONTRACT_ADDR,
-  DEPLOYED_RAW,
+  EVENT_DEPLOYED_RAW,
   LOCK_UP,
 } from "../../scripts/lib/constants";
 import { BonusPool, Lockup, RewardPool } from "../../typechain-types";
@@ -153,7 +153,7 @@ export async function getState(fixture: Fixture | BaseTokensFixture) {
   for (let i = 0; i < contracts.length; i++) {
     if (contractNames[i] === "lockup")
       contractsState[contractNames[i]] = {
-        alca: (await fixture.aToken.balanceOf(contracts[i].address)).toBigInt(),
+        alca: (await fixture.alca.balanceOf(contracts[i].address)).toBigInt(),
         eth: (
           await ethers.provider.getBalance(contracts[i].address)
         ).toBigInt(),
@@ -163,7 +163,7 @@ export async function getState(fixture: Fixture | BaseTokensFixture) {
       };
     else {
       contractsState[contractNames[i]] = {
-        alca: (await fixture.aToken.balanceOf(contracts[i].address)).toBigInt(),
+        alca: (await fixture.alca.balanceOf(contracts[i].address)).toBigInt(),
         eth: (
           await ethers.provider.getBalance(contracts[i].address)
         ).toBigInt(),
@@ -175,7 +175,7 @@ export async function getState(fixture: Fixture | BaseTokensFixture) {
       await fixture.lockup.getTemporaryRewardBalance(signers[i].address);
     usersState["user" + i] = {
       address: signers[i].address,
-      alca: (await fixture.aToken.balanceOf(signers[i].address)).toBigInt(),
+      alca: (await fixture.alca.balanceOf(signers[i].address)).toBigInt(),
       eth: (await ethers.provider.getBalance(signers[i].address)).toBigInt(),
       tokenId: (await fixture.lockup.tokenOf(signers[i].address)).toBigInt(),
       tokenOwner: await fixture.lockup.ownerOf(
@@ -193,9 +193,7 @@ export async function getState(fixture: Fixture | BaseTokensFixture) {
 
   usersState.bonusPool = {
     address: fixture.bonusPool.address,
-    alca: (
-      await fixture.aToken.balanceOf(fixture.bonusPool.address)
-    ).toBigInt(),
+    alca: (await fixture.alca.balanceOf(fixture.bonusPool.address)).toBigInt(),
     eth: (
       await ethers.provider.getBalance(fixture.bonusPool.address)
     ).toBigInt(),
@@ -299,19 +297,21 @@ export async function deployLockupContract(
 ) {
   const txResponse = await deployCreateAndRegister(
     LOCK_UP,
-    baseTokensFixture.factory.address,
+    baseTokensFixture.factory,
     ethers,
-    [enrollmentPeriod, lockDuration, totalBonusAmount]
+    [enrollmentPeriod, lockDuration, totalBonusAmount],
+    ethers.utils.formatBytes32String(LOCK_UP)
   );
+
   // get the address from the event
   const lockupAddress = await getEventVar(
     txResponse,
-    DEPLOYED_RAW,
+    EVENT_DEPLOYED_RAW,
     CONTRACT_ADDR
   );
   const lockupStartBlock =
     (txResponse.blockNumber as number) + ENROLLMENT_PERIOD;
-  await posFixtureSetup(baseTokensFixture.factory, baseTokensFixture.aToken);
+  await posFixtureSetup(baseTokensFixture.factory, baseTokensFixture.alca);
   return {
     lockup: await ethers.getContractAt(LOCK_UP, lockupAddress),
     lockupStartBlock,
@@ -326,10 +326,10 @@ export async function getSimulatedStakingPositions(
 ) {
   const tokenIDs = [];
   const asFactory = await getImpersonatedSigner(fixture.factory.address);
-  await fixture.aToken
+  await fixture.alca
     .connect(signers[0])
     .increaseAllowance(fixture.publicStaking.address, stakedAmount);
-  await fixture.aToken
+  await fixture.alca
     .connect(signers[0])
     .transfer(fixture.bonusPool.address, totalBonusAmount);
   for (let i = 1; i <= numberOfUsers * 10; i++) {
@@ -403,7 +403,7 @@ export async function deployFixture(
 ) {
   await preFixtureSetup();
   const signers = await ethers.getSigners();
-  const baseTokensFixture = await deployFactoryAndBaseTokens(signers[0]);
+  const baseTokensFixture = await deployFactoryAndBaseTokens();
   // deploying foundation so terminate doesn't fail
   await deployUpgradeableWithFactory(
     baseTokensFixture.factory,
@@ -475,7 +475,7 @@ export async function distributeProfits(
   profitETH: BigNumber,
   profitALCA: BigNumber
 ) {
-  await fixture.aToken
+  await fixture.alca
     .connect(fundsSourceAddress)
     .increaseAllowance(fixture.publicStaking.address, profitALCA);
   await fixture.publicStaking.connect(fundsSourceAddress).depositEth(42, {

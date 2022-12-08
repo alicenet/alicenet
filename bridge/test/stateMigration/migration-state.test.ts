@@ -4,7 +4,7 @@ import { ethers } from "hardhat";
 import {
   migrateSnapshotsAndValidators,
   stakeValidators,
-} from "../../scripts/lib/alicenetTasks";
+} from "../../scripts/tasks/alicenetTasks";
 import {
   assertEventValidatorMemberAdded,
   assertEventValidatorSetCompleted,
@@ -23,7 +23,7 @@ describe("State Migration: Migrate state", () => {
     let txResponse = await stakeValidators(
       4,
       fixture.factory.address,
-      fixture.aToken.address,
+      fixture.alca.address,
       fixture.publicStaking.address,
       hre
     );

@@ -239,7 +239,8 @@ func TestRegisterTask_Group_1_Bad1(t *testing.T) {
 	dkgState.TransportPrivateKey = big.NewInt(0)
 	// Mess up public key; this should fail because it is invalid
 	dkgState.TransportPublicKey = [2]*big.Int{big.NewInt(0), big.NewInt(1)}
-	state.SaveDkgState(dkgDb, dkgState)
+	err = state.SaveDkgState(dkgDb, dkgState)
+	assert.NotNil(t, err)
 	_, err = registrationTask.Execute(ctx)
 	assert.NotNil(t, err)
 }
@@ -299,7 +300,8 @@ func TestRegisterTask_Group_2_Bad2(t *testing.T) {
 	dkgState.TransportPrivateKey = big.NewInt(0)
 	// Mess up public key; this should fail because it is invalid (the identity element)
 	dkgState.TransportPublicKey = [2]*big.Int{big.NewInt(0), big.NewInt(0)}
-	state.SaveDkgState(dkgDb, dkgState)
+	err = state.SaveDkgState(dkgDb, dkgState)
+	assert.NotNil(t, err)
 	_, err = registrationTask.Execute(ctx)
 	assert.NotNil(t, err)
 }
@@ -392,7 +394,6 @@ func TestRegisterTask_Group_3_ShouldRetryFalse(t *testing.T) {
 	n := 5
 	fixture := setupEthereum(t, n)
 	eth := fixture.Client
-	ctx := context.Background()
 	accounts := eth.GetKnownAccounts()
 
 	acct := eth.GetKnownAccounts()[0]
@@ -474,7 +475,6 @@ func TestRegisterTask_Group_3_ShouldRetryTrue(t *testing.T) {
 	n := 5
 	fixture := setupEthereum(t, n)
 	eth := fixture.Client
-	ctx := context.Background()
 	accounts := eth.GetKnownAccounts()
 
 	acct := eth.GetKnownAccounts()[0]
@@ -543,6 +543,7 @@ func TestRegisterTask_Group_3_ShouldRetryTrue(t *testing.T) {
 	err = registrationTask.Initialize(dkgDb, fixture.Logger, eth, fixture.Contracts, "RegistrationTask", "task-id", registrationTask.Start, registrationTask.End, false, nil, nil)
 	assert.Nil(t, err)
 	err = registrationTask.Prepare(ctx)
+	assert.Nil(t, err)
 
 	expiredCtx, cf := context.WithCancel(context.Background())
 	cf()

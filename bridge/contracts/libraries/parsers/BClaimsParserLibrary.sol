@@ -35,11 +35,10 @@ library BClaimsParserLibrary {
     /// @param dataOffset Blob of binary state with a capnproto serialization
     /// @return pointerOffsetAdjustment the pointer offset adjustment in the blob state
     /// @dev Execution cost: 499 gas
-    function getPointerOffsetAdjustment(bytes memory src, uint256 dataOffset)
-        internal
-        pure
-        returns (uint16 pointerOffsetAdjustment)
-    {
+    function getPointerOffsetAdjustment(
+        bytes memory src,
+        uint256 dataOffset
+    ) internal pure returns (uint16 pointerOffsetAdjustment) {
         // Size in capnproto words (16 bytes) of the state section
         uint16 dataSectionSize = BaseParserLibrary.extractUInt16(src, dataOffset);
 

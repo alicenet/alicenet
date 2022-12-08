@@ -3,7 +3,7 @@ pragma solidity ^0.8.16;
 
 abstract contract ProxyInternalUpgradeUnlock {
     function __unlockImplementation() internal {
-        assembly {
+        assembly ("memory-safe") {
             let implSlot := not(0x00)
             sstore(
                 implSlot,

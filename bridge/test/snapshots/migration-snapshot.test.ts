@@ -67,7 +67,7 @@ describe("Snapshots: Migrate state", () => {
         [signedData[0].BClaims]
       )
     )
-      .to.be.revertedWithCustomError(fixture.bToken, `OnlyFactory`)
+      .to.be.revertedWithCustomError(fixture.alcb, `OnlyFactory`)
       .withArgs(admin.address, fixture.factory.address);
   });
 

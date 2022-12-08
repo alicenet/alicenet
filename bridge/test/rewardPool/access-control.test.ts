@@ -44,7 +44,7 @@ async function deployFixture() {
     undefined
   )) as Foundation;
 
-  await posFixtureSetup(fixture.factory, fixture.aToken);
+  await posFixtureSetup(fixture.factory, fixture.alca);
 
   // get the address of the reward pool from the lockup contract
   const lockupAddress = signers[5].address;
@@ -61,7 +61,7 @@ async function deployFixture() {
   );
   await depositTokensForStakingRewards(
     signers,
-    fixture.aToken,
+    fixture.alca,
     fixture.publicStaking,
     ethers.utils.parseEther("1000000")
   );
@@ -70,7 +70,7 @@ async function deployFixture() {
   // deploy reward pool
   const rewardPool = await (await ethers.getContractFactory("RewardPool"))
     .connect(asLockup)
-    .deploy(fixture.aToken.address, aliceNetFactoryAddress, totalBonusAmount);
+    .deploy(fixture.alca.address, aliceNetFactoryAddress, totalBonusAmount);
 
   const bonusPoolAddress = await rewardPool.getBonusPoolAddress();
   const bonusPool = await ethers.getContractAt("BonusPool", bonusPoolAddress);
@@ -123,7 +123,7 @@ describe("RewardPool - access control", async () => {
       await depositEthToAddress(accounts[0], fixture.lockupAddress, ethAmount);
       await depositTokensToAddress(
         accounts[0],
-        fixture.aToken,
+        fixture.alca,
         fixture.lockupAddress,
         tokenAmount
       );
@@ -146,7 +146,7 @@ describe("RewardPool - access control", async () => {
       );
       await depositTokensToAddress(
         fixture.mockPublicStakingSigner,
-        fixture.aToken,
+        fixture.alca,
         fixture.bonusPool.address,
         tokenAmount
       );

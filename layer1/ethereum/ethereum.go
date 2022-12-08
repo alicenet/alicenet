@@ -6,12 +6,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/ethereum/go-ethereum/console/prompt"
-	"io/ioutil"
 	"math/big"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/ethereum/go-ethereum/console/prompt"
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts"
@@ -250,7 +250,7 @@ func (eth *Client) unlockAccount(acct accounts.Account) error {
 	}
 
 	// Open the account key file
-	keyJSON, err := ioutil.ReadFile(acct.URL.Path)
+	keyJSON, err := os.ReadFile(acct.URL.Path)
 	if err != nil {
 		return err
 	}

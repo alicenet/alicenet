@@ -1,12 +1,14 @@
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
-import { artifacts, ethers } from "hardhat";
+import { ethers } from "hardhat";
 import {
   deployUpgradeable,
-  upgradeProxy,
+  getEventVar,
+  multiCallUpgradeProxy,
 } from "../../scripts/lib/alicenetFactory";
-import { MOCK, PROXY, UTILS } from "../../scripts/lib/constants";
+import { CONTRACT_ADDR, MOCK, PROXY, UTILS } from "../../scripts/lib/constants";
+import { getGasPrices } from "../../scripts/lib/deployment/utils";
 import { AliceNetFactory, Utils } from "../../typechain-types";
-import { assert, expect } from "../chai-setup";
+import { expect } from "../chai-setup";
 import { deployFactory } from "./Setup";
 process.env.silencer = "true";
 
@@ -29,48 +31,67 @@ describe("AliceNetfactory API test", async () => {
   });
 
   it("deploy Upgradeable", async () => {
-    const res = await deployUpgradeable(
+    const salt = ethers.utils.formatBytes32String(MOCK);
+    const txResponse = await deployUpgradeable(
       MOCK,
-      factory.address,
+      factory,
       ethers,
-      artifacts,
-      ["2", "s"]
+      "0x",
+      ["2", "s"],
+      salt
     );
-    const Proxy = await ethers.getContractFactory(PROXY);
-    const proxy = Proxy.attach(res.proxyAddress);
-    expect(await proxy.getImplementationAddress()).to.be.equal(
-      res.logicAddress
+    const receipt = await txResponse.wait();
+    const proxyAddress = getEventVar(receipt, "DeployedProxy", CONTRACT_ADDR);
+
+    const proxy = await ethers.getContractAt(PROXY, proxyAddress);
+    const implementationAddress = await factory.getProxyImplementation(
+      proxy.address
     );
-    assert(res !== undefined, "Couldn't deploy upgradable contract");
-    let cSize = await utilsContract.getCodeSize(res.logicAddress);
+    expect(implementationAddress).to.not.equal(ethers.constants.AddressZero);
+    let cSize = await utilsContract.getCodeSize(implementationAddress);
     expect(cSize.toNumber()).to.be.greaterThan(0);
-    cSize = await utilsContract.getCodeSize(res.proxyAddress);
+    cSize = await utilsContract.getCodeSize(proxyAddress);
     expect(cSize.toNumber()).to.be.greaterThan(0);
   });
 
   it("upgrade deployment", async () => {
-    const res = await deployUpgradeable(
+    const salt = ethers.utils.formatBytes32String(MOCK);
+    const logicContractBase = await ethers.getContractFactory(MOCK);
+    let txResponse = await deployUpgradeable(
       MOCK,
-      factory.address,
+      factory,
       ethers,
-      artifacts,
-      ["2", "s"]
+      "0x",
+      ["2", "s"],
+      salt,
+      1,
+      await getGasPrices(ethers)
     );
-    const proxy = await ethers.getContractAt(PROXY, res.proxyAddress);
-    expect(await proxy.getImplementationAddress()).to.be.equal(
-      res.logicAddress
+    let receipt = await txResponse.wait();
+    const proxyAddress = getEventVar(receipt, "DeployedProxy", CONTRACT_ADDR);
+    const proxy = await ethers.getContractAt(PROXY, proxyAddress);
+    const implementationAddress = await factory.getProxyImplementation(
+      proxy.address
     );
-    assert(res !== undefined, "Couldn't deploy upgradable contract");
-    const res2 = await upgradeProxy(MOCK, factory.address, ethers, artifacts, [
-      "2",
-      "s",
-    ]);
-    expect(await proxy.getImplementationAddress()).to.be.equal(
-      res2.logicAddress
+    txResponse = await multiCallUpgradeProxy(
+      logicContractBase,
+      factory,
+      ethers,
+      "0x",
+      ["2", "s"],
+      salt,
+      await getGasPrices(ethers)
     );
-    assert(
-      res2.logicAddress !== res.logicAddress,
-      "Logic address should be different after updateProxy!"
+    receipt = await txResponse.wait();
+    const expectedImplementationAddress = getEventVar(
+      receipt,
+      "DeployedRaw",
+      CONTRACT_ADDR
     );
+    const newImplementationAddress = await factory.getProxyImplementation(
+      proxy.address
+    );
+    expect(newImplementationAddress).to.not.equal(implementationAddress);
+    expect(newImplementationAddress).to.equal(expectedImplementationAddress);
   });
 });

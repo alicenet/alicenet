@@ -61,7 +61,7 @@ describe("ValidatorStaking: Testing ValidatorStaking Access Control", async () =
     const notAdminSigner = await ethers.getSigner(notAdmin.address);
     const validatorPool = fixture.validatorPool as ValidatorPoolMock;
     const amount = await validatorPool.getStakeAmount();
-    await fixture.aToken.approve(validatorPool.address, amount);
+    await fixture.alca.approve(validatorPool.address, amount);
     return {
       fixture,
       notAdminSigner,
@@ -90,7 +90,7 @@ describe("ValidatorStaking: Testing ValidatorStaking Access Control", async () =
       await mineBlocks(1n);
       const rcpt = await (await validatorPool.burnValidatorStaking(1)).wait();
       expect(rcpt.status).to.be.equal(1);
-      expect(await fixture.aToken.balanceOf(validatorPool.address)).to.be.eq(
+      expect(await fixture.alca.balanceOf(validatorPool.address)).to.be.eq(
         amount
       );
     });
@@ -112,7 +112,7 @@ describe("ValidatorStaking: Testing ValidatorStaking Access Control", async () =
         await validatorPool.burnToValidatorStaking(1, notAdminSigner.address)
       ).wait();
       expect(rcpt.status).to.be.equal(1);
-      expect(await fixture.aToken.balanceOf(notAdminSigner.address)).to.be.eq(
+      expect(await fixture.alca.balanceOf(notAdminSigner.address)).to.be.eq(
         amount
       );
     });

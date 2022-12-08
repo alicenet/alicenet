@@ -1,7 +1,7 @@
 package mocks
 
 import (
-	"io/ioutil"
+	"io"
 	"os"
 	"strconv"
 
@@ -13,7 +13,7 @@ func NewMockLogger() *logrus.Logger {
 
 	testDebug, _ := strconv.ParseBool(os.Getenv("TEST_DEBUG"))
 	if !testDebug {
-		logger.SetOutput(ioutil.Discard)
+		logger.SetOutput(io.Discard)
 	}
 
 	return logger

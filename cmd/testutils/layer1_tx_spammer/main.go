@@ -266,6 +266,15 @@ func main() {
 	mainCtx, cf := context.WithCancel(context.Background())
 	defer cf()
 
+	signals := make(chan os.Signal, 1)
+	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
+
+	go func() {
+		sig := <-signals
+		logger.Warnf("Recieved shutdown signal %s", sig)
+		cf()
+	}()
+
 	var recoverDB *db.Database
 	if *saveStatePtr {
 		logger.Info("Saving state to database")
@@ -283,7 +292,9 @@ func main() {
 	defer watcher.Close()
 	if isUsingTestAccounts {
 		// this function will block for finality delay blocks
-		tests.FundAccounts(eth, watcher, logger)
+		if err := tests.FundAccounts(eth, watcher, logger); err != nil {
+			panic("Unable to fund test accounts")
+		}
 		tests.SetNextBlockBaseFee(eth.GetEndpoint(), 100_000_000_000)
 	}
 
@@ -292,12 +303,5 @@ func main() {
 		go worker(mainCtx, eth, internalClient, watcher, account, uint64(*maxRestBlocksPtr))
 	}
 
-	signals := make(chan os.Signal, 1)
-	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
-
-	select {
-	case <-signals:
-		cf()
-	}
 	logger.Info("Exiting ...")
 }

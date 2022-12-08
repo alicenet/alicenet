@@ -29,7 +29,7 @@ library Base64 {
         // add some extra buffer at the end required for the writing
         string memory result = new string(encodedLen + 32);
 
-        assembly {
+        assembly ("memory-safe") {
             // set the actual output length
             mstore(result, encodedLen)
 
@@ -95,7 +95,7 @@ library Base64 {
         // add some extra buffer at the end required for the writing
         bytes memory result = new bytes(decodedLen + 32);
 
-        assembly {
+        assembly ("memory-safe") {
             // padding with '='
             let lastBytes := mload(add(data, mload(data)))
             if eq(and(lastBytes, 0xFF), 0x3d) {

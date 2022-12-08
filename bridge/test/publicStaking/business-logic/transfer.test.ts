@@ -14,7 +14,7 @@ describe("PublicStaking: NFT transfer", async () => {
   async function deployFixture() {
     const fixture = await getBaseTokensFixture();
     const [adminSigner, notAdminSigner] = await ethers.getSigners();
-    await fixture.aToken.approve(fixture.publicStaking.address, 2000);
+    await fixture.alca.approve(fixture.publicStaking.address, 2000);
     await fixture.publicStaking.connect(adminSigner).mint(1000);
     const erc721ReceiverContract = await (
       await ethers.getContractFactory("ERC721ReceiverAccount")
@@ -150,7 +150,7 @@ describe("PublicStaking: NFT transfer", async () => {
       fixture.publicStaking
         .connect(notAdminSigner)
         .transferFrom(adminSigner.address, notAdminSigner.address, 2)
-    ).to.be.revertedWith("ERC721: caller is not token owner nor approved");
+    ).to.be.revertedWith("ERC721: caller is not token owner or approved");
   });
 
   it("Approval for all should be able to safe transfer Staking NFT position", async function () {
@@ -243,19 +243,19 @@ describe("PublicStaking: NFT transfer", async () => {
           notAdminSigner.address,
           1
         )
-    ).to.be.rejectedWith("ERC721: caller is not token owner nor approved");
+    ).to.be.rejectedWith("ERC721: caller is not token owner or approved");
     await expect(
       fixture.publicStaking
         .connect(notAdminSigner)
         .transferFrom(adminSigner.address, notAdminSigner.address, 1)
-    ).to.be.rejectedWith("ERC721: caller is not token owner nor approved");
+    ).to.be.rejectedWith("ERC721: caller is not token owner or approved");
   });
 
   it("Shouldn't allow safe transfer NFT to a contract that doesn't implement ERC721Receiver interface", async function () {
     await expect(
       fixture.publicStaking["safeTransferFrom(address,address,uint256)"](
         adminSigner.address,
-        fixture.bToken.address,
+        fixture.alcb.address,
         1
       )
     ).to.be.rejectedWith("ERC721: transfer to non ERC721Receiver implementer");

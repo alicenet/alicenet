@@ -5,11 +5,10 @@ import "contracts/libraries/math/CryptoLibrary.sol";
 import "contracts/libraries/parsers/RCertParserLibrary.sol";
 
 contract CryptoLibraryWrapper {
-    function validateSignature(bytes calldata groupSignature_, bytes calldata bClaims_)
-        public
-        view
-        returns (bool, uint256)
-    {
+    function validateSignature(
+        bytes calldata groupSignature_,
+        bytes calldata bClaims_
+    ) public view returns (bool, uint256) {
         (uint256[4] memory masterPublicKey, uint256[2] memory signature) = RCertParserLibrary
             .extractSigGroup(groupSignature_, 0);
 
@@ -24,11 +23,10 @@ contract CryptoLibraryWrapper {
         );
     }
 
-    function validateSignatureASM(bytes calldata groupSignature_, bytes calldata bClaims_)
-        public
-        view
-        returns (bool, uint256)
-    {
+    function validateSignatureASM(
+        bytes calldata groupSignature_,
+        bytes calldata bClaims_
+    ) public view returns (bool, uint256) {
         (uint256[4] memory masterPublicKey, uint256[2] memory signature) = RCertParserLibrary
             .extractSigGroup(groupSignature_, 0);
 

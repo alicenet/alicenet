@@ -4,12 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg"
-	"github.com/alicenet/alicenet/layer1/executor/tasks/snapshots"
 	"reflect"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg"
+	"github.com/alicenet/alicenet/layer1/executor/tasks/snapshots"
 
 	"github.com/dgraph-io/badger/v2"
 	"github.com/sirupsen/logrus"
@@ -121,7 +122,7 @@ func (tm *TaskManager) eventLoop() {
 
 		case taskRequest, ok := <-tm.requestChan:
 			if !ok {
-				tm.onError(ErrReceivedRequestClosedChan)
+				_ = tm.onError(ErrReceivedRequestClosedChan)
 				return
 			}
 			if taskRequest.response == nil {
@@ -160,10 +161,14 @@ func (tm *TaskManager) eventLoop() {
 				}
 			}
 			taskRequest.response.sendResponse(response)
-			tm.persistState()
+			err := tm.persistState()
+			if err != nil {
+				tm.logger.WithError(err).Logger.Warn("presist state failed")
+			}
 		case taskResponse, ok := <-tm.responseChan.erChan:
 			if !ok {
-				tm.onError(ErrReceivedResponseClosedChan)
+				//nolint:errcheck // Intentionally logging and swallowing error
+				_ = tm.onError(ErrReceivedResponseClosedChan)
 				return
 			}
 
@@ -173,7 +178,10 @@ func (tm *TaskManager) eventLoop() {
 				tm.logger.WithError(err).Errorf("Failed to processTaskResponse %v", taskResponse)
 				continue
 			}
-			tm.persistState()
+			err = tm.persistState()
+			if err != nil {
+				tm.logger.WithError(err).Errorf("Unable to presistState")
+			}
 		case <-processingTime:
 			tm.logger.Trace("processing latest height")
 			networkCtx, networkCf := context.WithTimeout(context.Background(), tasks.ManagerNetworkTimeout)
@@ -283,7 +291,6 @@ func (tm *TaskManager) processTaskResponse(executorResponse ExecutorResponse) er
 	case <-tm.closeChan:
 		return tasks.ErrTaskExecutionMechanismClosed
 	default:
-		logger := tm.logger
 		task, present := tm.Schedule[executorResponse.Id]
 		if !present {
 			tm.logger.Warnf("received an internal response for non existing task with id %s", executorResponse.Id)
@@ -301,7 +308,7 @@ func (tm *TaskManager) processTaskResponse(executorResponse ExecutorResponse) er
 		taskResp.HandlerResponse.writeResponse(executorResponse.Err)
 		tm.Responses[executorResponse.Id] = taskResp
 
-		logger = getTaskLoggerComplete(tm.logger, task)
+		logger := getTaskLoggerComplete(tm.logger, task)
 		if executorResponse.Err != nil {
 			if !errors.Is(executorResponse.Err, tasks.ErrTaskKilled) {
 				logger.Errorf("Task executed with error: %v", executorResponse.Err)

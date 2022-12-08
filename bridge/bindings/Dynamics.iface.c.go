@@ -19,6 +19,10 @@ type IDynamicsCaller interface {
 	//
 	// Solidity: function encodeDynamicValues((uint8,uint24,uint32,uint32,uint32,uint64,uint64,uint128) value) pure returns(bytes)
 	EncodeDynamicValues(opts *bind.CallOpts, value DynamicValues) ([]byte, error)
+	// GetAllDynamicValues is a free data retrieval call binding the contract method 0xdcfda479.
+	//
+	// Solidity: function getAllDynamicValues() view returns((uint8,uint24,uint32,uint32,uint32,uint64,uint64,uint128)[])
+	GetAllDynamicValues(opts *bind.CallOpts) ([]DynamicValues, error)
 	// GetConfiguration is a free data retrieval call binding the contract method 0x6bd50cef.
 	//
 	// Solidity: function getConfiguration() view returns((uint128,uint128))
@@ -27,6 +31,10 @@ type IDynamicsCaller interface {
 	//
 	// Solidity: function getEncodingVersion() pure returns(uint8)
 	GetEncodingVersion(opts *bind.CallOpts) (uint8, error)
+	// GetFurthestDynamicValues is a free data retrieval call binding the contract method 0xe0a54089.
+	//
+	// Solidity: function getFurthestDynamicValues() view returns((uint8,uint24,uint32,uint32,uint32,uint64,uint64,uint128))
+	GetFurthestDynamicValues(opts *bind.CallOpts) (DynamicValues, error)
 	// GetLatestAliceNetVersion is a free data retrieval call binding the contract method 0xd85200cc.
 	//
 	// Solidity: function getLatestAliceNetVersion() view returns((uint32,uint32,uint32,uint32,bytes32))
