@@ -178,7 +178,7 @@ describe("Testing Dynamics methods", async () => {
       fixture.factory.callAny(
         fixture.dynamics.address,
         0,
-        fixture.dynamics.interface.encodeFunctionData("initialize")
+        fixture.dynamics.interface.encodeFunctionData("initialize", [4000])
       )
     ).to.revertedWith("Initializable: contract is already initialized");
   });
@@ -189,7 +189,7 @@ describe("Testing Dynamics methods", async () => {
     ).deploy();
     const [, user] = await ethers.getSigners();
     await expect(
-      dynamics.connect(user).initialize()
+      dynamics.connect(user).initialize(4000)
     ).to.revertedWithCustomError(dynamics, "OnlyFactory");
   });
 

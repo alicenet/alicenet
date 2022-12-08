@@ -38,7 +38,9 @@
     "salt": "0x44796e616d696373000000000000000000000000000000000000000000000000",
     "deployType": "deployUpgradeable",
     "constructorArgs": {},
-    "initializerArgs": {}
+    "initializerArgs": {
+      "initialProposalTimeout_": 4000
+    }
   },
   "contracts/Foundation.sol:Foundation": {
     "name": "Foundation",
