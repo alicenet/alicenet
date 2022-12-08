@@ -101,7 +101,7 @@ func (c *Contracts) lookupContracts() error {
 			} else {
 				logger.Infof("Lookup up of \"%v\" is 0x%x", name, addr)
 			}
-			if !bytes.Equal(c.alcbAddress.Bytes(), make([]byte, 20)) {
+			if !bytes.Equal(addr.Bytes(), make([]byte, 20)) {
 				c.allAddresses[addr] = true
 			}
 			return addr, err
