@@ -2,7 +2,6 @@ package executor
 
 import (
 	"errors"
-	"io/ioutil"
 	"math/big"
 	"os"
 	"testing"
@@ -282,7 +281,7 @@ func Test_TaskExecutor_ReceiptWithErrorAndFailure(t *testing.T) {
 }
 
 func Test_TaskExecutor_Recovering(t *testing.T) {
-	dir, err := ioutil.TempDir("", "db-test")
+	dir, err := os.MkdirTemp("", "db-test")
 	if err != nil {
 		t.Fatal(err)
 	}

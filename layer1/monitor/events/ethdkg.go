@@ -145,9 +145,6 @@ func ProcessRegistrationComplete(contracts layer1.AllSmartContracts, logger *log
 	logEntry := logger.WithField("eventProcessor", "ProcessRegistrationComplete")
 	logEntry.Info("processing registration complete")
 
-	shareDistributionTask := &dkgtasks.ShareDistributionTask{}
-	disputeMissingShareDistributionTask := &dkgtasks.DisputeMissingShareDistributionTask{}
-
 	dkgState, err := state.GetDkgState(monDB)
 	if err != nil {
 		logEntry.Errorf("Failed to load dkgState on ProcessRegistrationComplete: %v", err)
@@ -270,9 +267,6 @@ func ProcessShareDistribution(contracts layer1.AllSmartContracts, logger *logrus
 func ProcessShareDistributionComplete(contracts layer1.AllSmartContracts, logger *logrus.Entry, log types.Log, monDB *db.Database, taskHandler executor.TaskHandler) error {
 	logEntry := logger.WithField("eventProcessor", "ProcessShareDistributionComplete")
 	logEntry.Info("processing share distribution complete")
-
-	keyShareSubmissionTask := &dkgtasks.KeyShareSubmissionTask{}
-	disputeMissingKeySharesTask := &dkgtasks.DisputeMissingKeySharesTask{}
 
 	dkgState, err := state.GetDkgState(monDB)
 	if err != nil {
@@ -407,7 +401,6 @@ func ProcessKeyShareSubmissionComplete(contracts layer1.AllSmartContracts, logge
 		"BlockNumber": event.BlockNumber,
 	}).Info("ProcessKeyShareSubmissionComplete() ...")
 
-	mpkSubmissionTask := &dkgtasks.MPKSubmissionTask{}
 	dkgState, err := state.GetDkgState(monDB)
 	if err != nil {
 		logEntry.Errorf("Failed to load dkgState on ProcessKeyShareSubmissionComplete: %v", err)
@@ -420,7 +413,7 @@ func ProcessKeyShareSubmissionComplete(contracts layer1.AllSmartContracts, logge
 	}
 
 	// schedule MPK submission
-	mpkSubmissionTask = UpdateStateOnKeyShareSubmissionComplete(dkgState, event.BlockNumber.Uint64())
+	mpkSubmissionTask := UpdateStateOnKeyShareSubmissionComplete(dkgState, event.BlockNumber.Uint64())
 
 	if err = state.SaveDkgState(monDB, dkgState); err != nil {
 		logEntry.Errorf("Failed to save dkgState on ProcessKeyShareSubmissionComplete: %v", err)
@@ -471,9 +464,6 @@ func ProcessMPKSet(contracts layer1.AllSmartContracts, logger *logrus.Entry, log
 		"Nonce":       event.Nonce,
 		"MPK":         event.Mpk,
 	}).Info("ProcessMPKSet() ...")
-
-	gpkjSubmissionTask := &dkgtasks.GPKjSubmissionTask{}
-	disputeMissingGPKjTask := &dkgtasks.DisputeMissingGPKjTask{}
 
 	dkgState, err := state.GetDkgState(monDB)
 	if err != nil {
@@ -558,7 +548,6 @@ func ProcessGPKJSubmissionComplete(contracts layer1.AllSmartContracts, logger *l
 		"BlockNumber": event.BlockNumber,
 	}).Info("ProcessGPKJSubmissionComplete() ...")
 
-	completionTask := &dkgtasks.CompletionTask{}
 	dkgState, err := state.GetDkgState(monDB)
 	if err != nil {
 		logEntry.Errorf("Failed to load dkgState on ProcessGPKJSubmissionComplete: %v", err)

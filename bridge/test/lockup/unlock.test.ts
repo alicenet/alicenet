@@ -124,6 +124,66 @@ describe("Testing Unlock", async () => {
     showState("After Unlocking", await getState(fixture));
   });
 
+  it("unlock all positions with no early exits but excess in the bonus position", async () => {
+    showState("Initial State with staked position", await getState(fixture));
+    for (let i = 1; i <= numberOfLockingUsers; i++) {
+      await lockStakedNFT(fixture, accounts[i], stakedTokenIDs[i]);
+    }
+    await jumpToInlockState(fixture);
+    showState("After Locking", await getState(fixture));
+    await distributeProfits(fixture, accounts[0]);
+    showState("After Distribution", await getState(fixture));
+    await distributeProfits(fixture, accounts[0]);
+    showState("After Distribution2", await getState(fixture));
+    await jumpToPostLockState(fixture);
+    // someone sent some ALCA to the bonus pool contract, this ALCA should be redistributed to the
+    // users
+    await fixture.alca.transfer(fixture.bonusPool.address, 1_000_000_000n);
+    // expected amount that each user should receive from the extra based on user's percentages
+    const expectedExtraALCAPerUser = [
+      500_000_000n,
+      250_000_000n,
+      125_000_000n,
+      75_000_000n,
+      50_000_000n,
+    ];
+    await fixture.lockup.aggregateProfits();
+    showState("After Aggregate", await getState(fixture));
+    const expectedState = await getState(fixture);
+    for (let i = 1; i <= numberOfLockingUsers; i++) {
+      const user = "user" + i;
+      const tx = await fixture.lockup
+        .connect(accounts[i])
+        .unlock(accounts[i].address, false);
+      expectedState.users[user].eth += BigNumber.from(
+        example1[user].totalEarnedEth
+      ).toBigInt();
+      expectedState.users[user].eth -= getEthConsumedAsGas(await tx.wait());
+      expectedState.users[user].alca += BigNumber.from(
+        example1[user].totalEarnedALCA
+      ).toBigInt();
+      expectedState.users[user].alca += expectedExtraALCAPerUser[i - 1];
+      expectedState.users[user].tokenId = ethers.constants.Zero.toBigInt();
+      expectedState.users[user].tokenOwner = ethers.constants.AddressZero;
+      expectedState.users[user].rewardEth = 0n;
+      expectedState.users[user].rewardToken = 0n;
+    }
+    // all positions should have been unlocked
+    expectedState.contracts.lockup.lockedPositions = 0n;
+    expectedState.lockupPositions = {};
+    expectedState.stakingPositions = {};
+    // lockup should has to be distributed all the assets
+    expectedState.contracts.lockup.alca = 0n;
+    expectedState.contracts.lockup.eth = 0n;
+    expectedState.contracts.rewardPool.alca = 0n;
+    expectedState.contracts.rewardPool.eth = 0n;
+    // since all positions were burn, the alca from publicStaking shares should go to the user
+    expectedState.contracts.publicStaking.alca -= lockedAmount;
+    // Expected state definition
+    assert.deepEqual(await getState(fixture), expectedState);
+    showState("After Unlocking", await getState(fixture));
+  });
+
   it("unlock all positions with biggest position exiting early", async () => {
     showState("Initial State with staked position", await getState(fixture));
     for (let i = 1; i <= numberOfLockingUsers; i++) {

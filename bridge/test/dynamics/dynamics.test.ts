@@ -178,7 +178,7 @@ describe("Testing Dynamics methods", async () => {
       fixture.factory.callAny(
         fixture.dynamics.address,
         0,
-        fixture.dynamics.interface.encodeFunctionData("initialize")
+        fixture.dynamics.interface.encodeFunctionData("initialize", [4000])
       )
     ).to.revertedWith("Initializable: contract is already initialized");
   });
@@ -189,7 +189,7 @@ describe("Testing Dynamics methods", async () => {
     ).deploy();
     const [, user] = await ethers.getSigners();
     await expect(
-      dynamics.connect(user).initialize()
+      dynamics.connect(user).initialize(4000)
     ).to.revertedWithCustomError(dynamics, "OnlyFactory");
   });
 
@@ -363,6 +363,48 @@ describe("Testing Dynamics methods", async () => {
     await expect(fixture.dynamics.getPreviousDynamicValues(30))
       .to.be.revertedWithCustomError(fixture.dynamics, "DynamicValueNotFound")
       .withArgs(30);
+  });
+
+  it("Should get all dynamic values", async () => {
+    const newDynamicValues = { ...currentDynamicValues };
+    newDynamicValues.valueStoreFee = BigNumber.from(1);
+    await changeDynamicValues(fixture, newDynamicValues);
+    const anotherNewDynamicValues = { ...currentDynamicValues };
+    anotherNewDynamicValues.valueStoreFee = BigNumber.from(2);
+    await changeDynamicValues(fixture, anotherNewDynamicValues);
+    const dynamicValues = await fixture.dynamics.getAllDynamicValues();
+    expect(dynamicValues.length).to.be.equal(3);
+    expect((dynamicValues[0] as DynamicValuesStruct).valueStoreFee).to.be.equal(
+      currentDynamicValues.valueStoreFee
+    );
+    expect((dynamicValues[1] as DynamicValuesStruct).valueStoreFee).to.be.equal(
+      newDynamicValues.valueStoreFee
+    );
+    expect((dynamicValues[2] as DynamicValuesStruct).valueStoreFee).to.be.equal(
+      anotherNewDynamicValues.valueStoreFee
+    );
+  });
+
+  it("Should get all dynamic values when we have only 1 value", async () => {
+    const dynamicValues = await fixture.dynamics.getAllDynamicValues();
+    expect(dynamicValues.length).to.be.equal(1);
+    expect((dynamicValues[0] as DynamicValuesStruct).valueStoreFee).to.be.equal(
+      currentDynamicValues.valueStoreFee
+    );
+  });
+
+  it("Should get the furthest dynamic value correctly", async () => {
+    const newDynamicValues = { ...currentDynamicValues };
+    newDynamicValues.valueStoreFee = BigNumber.from(1);
+    await changeDynamicValues(fixture, newDynamicValues);
+    const anotherNewDynamicValues = { ...currentDynamicValues };
+    anotherNewDynamicValues.valueStoreFee = BigNumber.from(2);
+    await changeDynamicValues(fixture, anotherNewDynamicValues);
+    const furthestDynamicValues =
+      await fixture.dynamics.getFurthestDynamicValues();
+    expect(
+      (furthestDynamicValues as DynamicValuesStruct).valueStoreFee
+    ).to.be.equal(anotherNewDynamicValues.valueStoreFee);
   });
 
   it("Should update AliceNet node version to a valid version and emit corresponding event", async () => {
