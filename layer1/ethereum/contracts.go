@@ -103,6 +103,8 @@ func (c *Contracts) lookupContracts() error {
 			}
 			if !bytes.Equal(addr.Bytes(), make([]byte, 20)) {
 				c.allAddresses[addr] = true
+			} else {
+				logger.Errorf("Failed lookup of \"%v\": %v probably not deployed yet", name, err)
 			}
 			return addr, err
 		}
