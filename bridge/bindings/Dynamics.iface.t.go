@@ -3,6 +3,8 @@
 package bindings
 
 import (
+	"math/big"
+
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/core/types"
 )
@@ -17,10 +19,10 @@ type IDynamicsTransactor interface {
 	//
 	// Solidity: function deployStorage(bytes data) returns(address contractAddr)
 	DeployStorage(opts *bind.TransactOpts, data []byte) (*types.Transaction, error)
-	// Initialize is a paid mutator transaction binding the contract method 0x8129fc1c.
+	// Initialize is a paid mutator transaction binding the contract method 0xb0e6a8a5.
 	//
-	// Solidity: function initialize() returns()
-	Initialize(opts *bind.TransactOpts) (*types.Transaction, error)
+	// Solidity: function initialize(uint24 initialProposalTimeout_) returns()
+	Initialize(opts *bind.TransactOpts, initialProposalTimeout_ *big.Int) (*types.Transaction, error)
 	// SetConfiguration is a paid mutator transaction binding the contract method 0x402292df.
 	//
 	// Solidity: function setConfiguration((uint128,uint128) newConfig) returns()
