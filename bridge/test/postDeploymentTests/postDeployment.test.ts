@@ -1,5 +1,6 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
+import { BigNumber } from "ethers/lib/ethers";
 import { ethers } from "hardhat";
 import { ALICENET_FACTORY } from "../../scripts/lib/constants";
 import { DeploymentConfigWrapper } from "../../scripts/lib/deployment/interfaces";
@@ -11,26 +12,21 @@ import {
 import {
   ALCA,
   AliceNetFactory,
-  Distribution,
   Dynamics,
   ETHDKG,
   ETHDKGAccusations,
   ETHDKGPhases,
-  Foundation,
-  Governance,
-  InvalidTxConsumptionAccusation,
-  LiquidityProviderStaking,
   Lockup,
-  MultipleProposalAccusation,
   PublicStaking,
   Snapshots,
-  StakingPositionDescriptor,
   StakingRouterV1,
   ValidatorPool,
   ValidatorStaking,
 } from "../../typechain-types";
+import { BonusPool } from "../../typechain-types/contracts/BonusPool";
 import {} from "../../typechain-types/contracts/libraries/ethdkg/ETHDKGPhases";
 import {} from "../../typechain-types/contracts/PublicStaking";
+import { RewardPool } from "../../typechain-types/contracts/RewardPool";
 import {} from "../../typechain-types/contracts/StakingPositionDescriptor";
 import {} from "../../typechain-types/contracts/ValidatorPool";
 import {} from "../../typechain-types/contracts/ValidatorStaking";
@@ -58,6 +54,9 @@ describe("contract post deployment tests", () => {
   const PUBLIC_STAKING_SYMBOL = "APS";
   const ALCA_DECIMALS = 18;
   const EPOCH_LENGTH = 1024;
+  const LOCKUP_PERIOD = BigNumber.from(2628000);
+  const LOCKUP_ENROLLMENT_PERIOD = BigNumber.from(648000);
+  const TOTAL_BONUS_AMOUNT = BigNumber.from(900000000000000000000000);
   const MIN_INTERVAL_BETWEEN_SNAPSHOTS = EPOCH_LENGTH / 4;
   let deploymentConfig: DeploymentConfigWrapper;
   let contractAddresses: DeployedConstractAddresses;
@@ -65,22 +64,17 @@ describe("contract post deployment tests", () => {
   let alicenetFactory: AliceNetFactory;
   let alca: ALCA;
   let dynamics: Dynamics;
-  let foundation: Foundation;
-  let governance: Governance;
-  let invalidTxConsumptionAccusation: InvalidTxConsumptionAccusation;
-  let liquidityProviderStaking: LiquidityProviderStaking;
-  let multipleProposalAccusation: MultipleProposalAccusation;
   let publicStaking: PublicStaking;
   let snapshots: Snapshots;
-  let stakingPositionDescriptor: StakingPositionDescriptor;
   let validatorPool: ValidatorPool;
   let validatorStaking: ValidatorStaking;
-  let distribution: Distribution;
   let eTHDKGAccusations: ETHDKGAccusations;
-  let eTHDKGPhases: ETHDKGPhases;
-  let eTHDKG: ETHDKG;
+  let ethDKGPhases: ETHDKGPhases;
+  let ethdkg: ETHDKG;
   let lockup: Lockup;
   let stakingRouterV1: StakingRouterV1;
+  let rewardPool: RewardPool;
+  let bonusPool: BonusPool;
 
   before(async () => {
     deploymentConfig = await readDeploymentConfig(
@@ -101,17 +95,35 @@ describe("contract post deployment tests", () => {
       "Dynamics",
       contractAddresses["Dynamics"]
     );
-    foundation = await ethers.getContractAt(
-      "Foundation",
-      contractAddresses["Foundation"]
+    publicStaking = await ethers.getContractAt(
+      "PublicStaking",
+      contractAddresses["PublicStaking"]
     );
-    governance = await ethers.getContractAt(
-      "Governance",
-      contractAddresses["Governance"]
+    snapshots = await ethers.getContractAt(
+      "Snapshots",
+      contractAddresses["Snapshots"]
     );
-    invalidTxConsumptionAccusation = await ethers.getContractAt(
-      "InvalidTxConsumptionAccusation",
-      contractAddresses["InvalidTxConsumptionAccusation"]
+    validatorPool = await ethers.getContractAt(
+      "ValidatorPool",
+      contractAddresses["ValidatorPool"]
+    );
+    validatorStaking = await ethers.getContractAt(
+      "ValidatorStaking",
+      contractAddresses["ValidatorStaking"]
+    );
+    eTHDKGAccusations = await ethers.getContractAt(
+      "ETHDKGAccusations",
+      contractAddresses["ETHDKGAccusations"]
+    );
+    ethDKGPhases = await ethers.getContractAt(
+      "ETHDKGPhases",
+      contractAddresses["ETHDKGPhases"]
+    );
+    ethdkg = await ethers.getContractAt("ETHDKG", contractAddresses["ETHDKG"]);
+    lockup = await ethers.getContractAt("Lockup", contractAddresses["Lockup"]);
+    stakingRouterV1 = await ethers.getContractAt(
+      "StakingRouterV1",
+      contractAddresses["StakingRouterV1"]
     );
   });
   describe("post factory deployment tests", () => {
@@ -191,23 +203,6 @@ describe("contract post deployment tests", () => {
     });
     it("gets the latest cononical version", async () => {
       const latestCononicalVersion = await dynamics.getLatestAliceNetVersion();
-    });
-  });
-
-  describe("Post foundation deployment tests", () => {
-    it("attempts to initialize again as factory", async () => {
-      const factory = await alicenetFactory.connect(owner);
-      const initialize = foundation.interface.encodeFunctionData("initialize");
-      await expect(
-        factory.callAny(foundation.address, 0, initialize)
-      ).to.be.revertedWith("Initializable: contract is already initialized");
-    });
-
-    it("attempts to initialize with external account", async () => {
-      const signers = await ethers.getSigners();
-      await expect(foundation.initialize())
-        .to.be.revertedWithCustomError(foundation, "OnlyFactory")
-        .withArgs(signers[0].address, alicenetFactory.address);
     });
   });
 
@@ -298,59 +293,117 @@ describe("contract post deployment tests", () => {
     });
   });
 
-  describe("Post StakingPositionDescriptor deployment tests", () => {
-    it("attempts to use owner functions without being owner", async () => {});
-    it("attempts to use owner functions without being owner", async () => {});
-    it("attempts to use owner functions without being owner", async () => {});
-    it("attempts to use owner functions without being owner", async () => {});
-  });
-
   describe("Post ValidatorPool deployment tests", () => {
-    it("attempts to use owner functions without being owner", async () => {});
-    it("attempts to use owner functions without being owner", async () => {});
+    it("attempts to initialize again as factory", async () => {
+      const factory = alicenetFactory.connect(owner);
+      const initialize = validatorPool.interface.encodeFunctionData(
+        "initialize",
+        [1, 1, 1, 1]
+      );
+      await expect(
+        factory.callAny(validatorPool.address, 0, initialize)
+      ).to.be.revertedWith("Initializable: contract is already initialized");
+    });
+    it("attempts to initialize with external account", async () => {
+      const signers = await ethers.getSigners();
+      await expect(validatorPool.initialize(1, 1, 1, 1))
+        .to.be.revertedWithCustomError(validatorPool, "OnlyFactory")
+        .withArgs(signers[0].address, alicenetFactory.address);
+    });
     it("attempts to use owner functions without being owner", async () => {});
     it("attempts to use owner functions without being owner", async () => {});
   });
 
   describe("Post ValidatorStaking deployment tests", () => {
-    it("attempts to use owner functions without being owner", async () => {});
-    it("attempts to use owner functions without being owner", async () => {});
-    it("attempts to use owner functions without being owner", async () => {});
-    it("attempts to use owner functions without being owner", async () => {});
-  });
-
-  describe("Post ETHDKGAccusations deployment tests", () => {
-    it("attempts to use owner functions without being owner", async () => {});
-    it("attempts to use owner functions without being owner", async () => {});
-    it("attempts to use owner functions without being owner", async () => {});
-    it("attempts to use owner functions without being owner", async () => {});
-  });
-
-  describe("Post ETHDKGPhases deployment tests", () => {
-    it("attempts to use owner functions without being owner", async () => {});
-    it("attempts to use owner functions without being owner", async () => {});
+    it("attempts to initialize again as factory", async () => {
+      const factory = alicenetFactory.connect(owner);
+      const initialize =
+        validatorStaking.interface.encodeFunctionData("initialize");
+      await expect(
+        factory.callAny(validatorStaking.address, 0, initialize)
+      ).to.be.revertedWith("Initializable: contract is already initialized");
+    });
+    it("attempts to initialize with external account", async () => {
+      const signers = await ethers.getSigners();
+      await expect(validatorStaking.initialize())
+        .to.be.revertedWithCustomError(validatorStaking, "OnlyFactory")
+        .withArgs(signers[0].address, alicenetFactory.address);
+    });
     it("attempts to use owner functions without being owner", async () => {});
     it("attempts to use owner functions without being owner", async () => {});
   });
 
   describe("Post ETHDKG deployment tests", () => {
-    it("attempts to use owner functions without being owner", async () => {});
-    it("attempts to use owner functions without being owner", async () => {});
-    it("attempts to use owner functions without being owner", async () => {});
-    it("attempts to use owner functions without being owner", async () => {});
+    it("attempts to initialize again as factory", async () => {
+      const factory = alicenetFactory.connect(owner);
+      const initialize = ethdkg.interface.encodeFunctionData(
+        "initialize",
+        [1, 1]
+      );
+      await expect(
+        factory.callAny(ethdkg.address, 0, initialize)
+      ).to.be.revertedWith("Initializable: contract is already initialized");
+    });
+    it("attempts to initialize with external account", async () => {
+      const signers = await ethers.getSigners();
+      await expect(ethdkg.initialize(1, 1))
+        .to.be.revertedWithCustomError(ethdkg, "OnlyFactory")
+        .withArgs(signers[0].address, alicenetFactory.address);
+    });
+    it("checks if the confirmation length is 6", async () => {
+      const confirmationLength = await ethdkg.getConfirmationLength();
+      expect(confirmationLength.toNumber()).to.equal(6);
+    });
+    it("checks if the confirmation length is 6", async () => {
+      const confirmationLength = await ethdkg.getConfirmationLength();
+      expect(confirmationLength.toNumber()).to.equal(6);
+    });
   });
 
   describe("Post Lockup deployment tests", () => {
-    it("attempts to use owner functions without being owner", async () => {});
-    it("attempts to use owner functions without being owner", async () => {});
-    it("attempts to use owner functions without being owner", async () => {});
-    it("attempts to use owner functions without being owner", async () => {});
+    it("checks if start block and endblock is 1 year", async () => {
+      const startBlock = await lockup.getLockupStartBlock();
+      const endBlock = await lockup.getLockupEndBlock();
+      const lockingPeriod = endBlock.sub(startBlock);
+      expect(endBlock.sub(startBlock)).to.equal(LOCKUP_PERIOD);
+      expect(lockingPeriod).to.equal(LOCKUP_PERIOD);
+    });
+  });
+
+  describe("Post RewardPool deployment tests", () => {
+    it("confirms rewardPool has the correct lockup contract address", async () => {
+      const rewardPoolAddress = await lockup.getRewardPoolAddress();
+      rewardPool = await ethers.getContractAt("RewardPool", rewardPoolAddress);
+      const lockupAddress = await rewardPool.getLockupContractAddress();
+      expect(lockupAddress).to.equal(lockup.address);
+    });
+  });
+
+  describe("Post BonusPool deployment tests", () => {
+    it("checks if it has the correct reward pool address", async () => {
+      const bonusPoolAddress = await rewardPool.getBonusPoolAddress();
+      bonusPool = await ethers.getContractAt("BonusPool", bonusPoolAddress);
+      const rewardPoolAddress = await bonusPool.getRewardPoolAddress();
+      expect(rewardPoolAddress).to.equal(rewardPool.address);
+    });
+    it("checks if total bonus amount is correct", async () => {
+      const totalBonusAmount = await bonusPool.getTotalBonusAmount();
+      expect(totalBonusAmount).to.equal(TOTAL_BONUS_AMOUNT);
+    });
+    it("checks if it has the correct lockup address", async () => {
+      const lockupAddress = await bonusPool.getLockupContractAddress();
+      expect(lockupAddress).to.equal(lockup.address);
+    });
+    it("checks if bonus pool received 900000000000000000000000 alca", async () => {
+      const balance = await alca.balanceOf(bonusPool.address);
+      expect(balance).to.equal(TOTAL_BONUS_AMOUNT);
+    });
   });
 
   describe("Post StakingRouterV1 deployment tests", () => {
-    it("attempts to use owner functions without being owner", async () => {});
-    it("attempts to use owner functions without being owner", async () => {});
-    it("attempts to use owner functions without being owner", async () => {});
-    it("attempts to use owner functions without being owner", async () => {});
+    it("check if legacy token is set correctly", async () => {
+      const legacyTokenAddress = await stakingRouterV1.getLegacyTokenAddress();
+      expect(legacyTokenAddress).to.equal(legacyTokenAddress);
+    });
   });
 });
