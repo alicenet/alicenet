@@ -213,14 +213,14 @@ func (eth *Client) loadPassCodes(filePath string) error {
 			if !strings.HasPrefix(line, "#") {
 				components := strings.Split(line, "=")
 				if len(components) == 2 {
-					passCodes[strings.TrimSpace(components[0])] = strings.TrimSpace(components[1])
+					passCodes[strings.ToLower(strings.TrimSpace(components[0]))] = strings.TrimSpace(components[1])
 				}
 			}
 		}
 	}
 
 	for addr, accountInfo := range eth.accounts {
-		passCode, present := passCodes[addr.Hex()]
+		passCode, present := passCodes[strings.ToLower(addr.Hex())]
 		if !present {
 			passCode, err = prompt.Stdin.PromptPassword(fmt.Sprintf("Please provide the passCode for this address %s: ", addr.Hex()))
 			if err != nil {
