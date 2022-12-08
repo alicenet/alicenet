@@ -136,19 +136,19 @@ func RegisterETHDKGEvents(em *objects.EventMap, monDB *db.Database, adminHandler
 func SetupEventMap(em *objects.EventMap, cdb, monDB *db.Database, adminHandler monInterfaces.AdminHandler, depositHandler monInterfaces.DepositHandler, taskHandler executor.TaskHandler, exitFunc func(), chainID uint32) error {
 	RegisterETHDKGEvents(em, monDB, adminHandler, taskHandler)
 
-	// MadByte.DepositReceived
-	mbEvents := GetALCBEvents()
-	depositReceived, ok := mbEvents["DepositReceived"]
-	if !ok {
-		panic("could not find event MadByte.DepositReceived")
-	}
+	// // MadByte.DepositReceived
+	// mbEvents := GetALCBEvents()
+	// depositReceived, ok := mbEvents["DepositReceived"]
+	// if !ok {
+	// 	panic("could not find event MadByte.DepositReceived")
+	// }
 
-	if err := em.Register(depositReceived.ID.String(), depositReceived.Name,
-		func(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
-			return ProcessDepositReceived(eth, contracts, logger, log, cdb, monDB, depositHandler, chainID)
-		}); err != nil {
-		return err
-	}
+	// if err := em.Register(depositReceived.ID.String(), depositReceived.Name,
+	// 	func(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+	// 		return ProcessDepositReceived(eth, contracts, logger, log, cdb, monDB, depositHandler, chainID)
+	// 	}); err != nil {
+	// 	return err
+	// }
 
 	// Snapshots.SnapshotTaken
 	snapshotsEvents := GetSnapshotEvents()
@@ -164,19 +164,19 @@ func SetupEventMap(em *objects.EventMap, cdb, monDB *db.Database, adminHandler m
 		return err
 	}
 
-	// Governance.ValueUpdated
-	govEvents := GetGovernanceEvents()
-	snapshotTakenOldEvent, ok := govEvents["SnapshotTaken"]
-	if !ok {
-		panic("could not find event Snapshots.SnapshotTakenOld")
-	}
+	// // Governance.ValueUpdated
+	// govEvents := GetGovernanceEvents()
+	// snapshotTakenOldEvent, ok := govEvents["SnapshotTaken"]
+	// if !ok {
+	// 	panic("could not find event Snapshots.SnapshotTakenOld")
+	// }
 
-	if err := em.Register(snapshotTakenOldEvent.ID.String(), snapshotTakenOldEvent.Name,
-		func(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
-			return ProcessSnapshotTakenOld(eth, contracts, logger, log, adminHandler, taskHandler)
-		}); err != nil {
-		return err
-	}
+	// if err := em.Register(snapshotTakenOldEvent.ID.String(), snapshotTakenOldEvent.Name,
+	// 	func(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+	// 		return ProcessSnapshotTakenOld(eth, contracts, logger, log, adminHandler, taskHandler)
+	// 	}); err != nil {
+	// 	return err
+	// }
 
 	// ValidatorPool.ValidatorMinorSlashed
 	vpEvents := GetValidatorPoolEvents()
