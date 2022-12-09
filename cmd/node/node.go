@@ -175,6 +175,7 @@ func initDatabase(ctx context.Context, path string, inMemory bool) *badger.DB {
 func validatorNode(cmd *cobra.Command, args []string) {
 	// setup logger for program assembly operations
 	logger := logging.GetLogger(cmd.Name())
+	logger.Infof("Leo version: 0.0.1")
 	logger.Infof("Starting node with args %v", args)
 	defer func() { logger.Warning("Graceful unwind of core process complete.") }()
 
@@ -198,8 +199,6 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	if err != nil {
 		panic(err)
 	}
-
-	logger.Infof("Leo version: 0.0.1")
 
 	logger.Infof(
 		"Local AliceNet Node Version %d.%d.%d",
