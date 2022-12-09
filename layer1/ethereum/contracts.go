@@ -97,13 +97,11 @@ func (c *Contracts) lookupContracts() error {
 			salt := utils.StringToBytes32(name)
 			addr, err := contractFactory.Lookup(callOpts, salt)
 			if err != nil {
-				logger.Errorf("Failed lookup of \"%v\": %v probably not deployed yet", name, err)
+				logger.Errorf("Failed lookup of \"%v\": %v", name, err)
 			} else {
 				logger.Infof("Lookup up of \"%v\" is 0x%x", name, addr)
 			}
-			if !bytes.Equal(c.alcbAddress.Bytes(), make([]byte, 20)) {
-				c.allAddresses[addr] = true
-			}
+			c.allAddresses[addr] = true
 			return addr, err
 		}
 
@@ -127,14 +125,15 @@ func (c *Contracts) lookupContracts() error {
 		c.validatorPool, err = bindings.NewValidatorPool(c.validatorPoolAddress, eth.internalClient)
 		logAndEat(logger, err)
 
-		// ALCB
-		c.alcbAddress, err = lookup("ALCB")
-		logAndEat(logger, err)
-		// TODO: bring back this check once we re-deploy BToken
-		// if bytes.Equal(c.alcbAddress.Bytes(), make([]byte, 20)) {
-		// 	continue
+		// ALCB TODO: bring it back once we deploy ALCB c.alcbAddress, err = lookup("ALCB")
+		// logAndEat(logger, err) if bytes.Equal(c.alcbAddress.Bytes(), make([]byte, 20)) {
+		//  continue
 		// }
 
+		// workaround for now, just putting a random address, we should uncomment the code above
+		// once we deploy ALCB
+		c.alcbAddress = common.HexToAddress("0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc")
+		logger.Infof("Lookup up of \"%v\" is 0x%x", "ALCB", c.alcbAddress)
 		c.alcb, err = bindings.NewALCB(c.alcbAddress, eth.internalClient)
 		logAndEat(logger, err)
 
@@ -169,11 +168,16 @@ func (c *Contracts) lookupContracts() error {
 		logAndEat(logger, err)
 
 		// Governance
-		c.governanceAddress, err = lookup("Governance")
-		logAndEat(logger, err)
+		// c.governanceAddress, err = lookup("Governance")
+		// logAndEat(logger, err)
 		// if bytes.Equal(c.governanceAddress.Bytes(), make([]byte, 20)) {
 		// 	continue
 		// }
+
+		// workaround for now, just putting a random address, should uncoment above code once we
+		// deploy governance
+		c.governanceAddress = common.HexToAddress("0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5be")
+		logger.Infof("Lookup up of \"%v\" is 0x%x", "Governance", c.governanceAddress)
 
 		c.governance, err = bindings.NewGovernance(c.governanceAddress, eth.internalClient)
 		logAndEat(logger, err)
