@@ -125,14 +125,13 @@ func (c *Contracts) lookupContracts() error {
 		c.validatorPool, err = bindings.NewValidatorPool(c.validatorPoolAddress, eth.internalClient)
 		logAndEat(logger, err)
 
-		// ALCB
-		// TODO: bring it back once we deploy ALCB
-		// c.alcbAddress, err = lookup("ALCB")
-		// logAndEat(logger, err)
-		// if bytes.Equal(c.alcbAddress.Bytes(), make([]byte, 20)) {
-		// 	continue
+		// ALCB TODO: bring it back once we deploy ALCB c.alcbAddress, err = lookup("ALCB")
+		// logAndEat(logger, err) if bytes.Equal(c.alcbAddress.Bytes(), make([]byte, 20)) {
+		//  continue
 		// }
-		// workaround for now, just putting a random address
+
+		// workaround for now, just putting a random address, we should uncomment the code above
+		// once we deploy ALCB
 		c.alcbAddress = common.HexToAddress("0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc")
 		logger.Infof("Lookup up of \"%v\" is 0x%x", "ALCB", c.alcbAddress)
 		c.alcb, err = bindings.NewALCB(c.alcbAddress, eth.internalClient)
@@ -174,7 +173,9 @@ func (c *Contracts) lookupContracts() error {
 		// if bytes.Equal(c.governanceAddress.Bytes(), make([]byte, 20)) {
 		// 	continue
 		// }
-		// workaround for now, just putting a random address
+
+		// workaround for now, just putting a random address, should uncoment above code once we
+		// deploy governance
 		c.governanceAddress = common.HexToAddress("0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5be")
 		logger.Infof("Lookup up of \"%v\" is 0x%x", "Governance", c.governanceAddress)
 

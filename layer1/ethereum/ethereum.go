@@ -2,7 +2,6 @@ package ethereum
 
 import (
 	"bufio"
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -470,22 +469,15 @@ func (eth *Client) EndpointInSync(ctx context.Context) (bool, uint32, error) {
 }
 
 // Get ethereum events from a block range.
-func (eth *Client) GetEvents(ctx context.Context, firstBlock, lastBlock uint64, addressesIn []common.Address) ([]types.Log, error) {
-	var addresses []common.Address
-	for i := 0; i < len(addressesIn); i++ {
-		if addressesIn[i] == (common.Address{}) || bytes.Equal(addressesIn[i].Bytes(), common.HexToAddress("0x0000000000000000000000000000000000000000").Bytes()) {
-			continue
-		}
-		addresses = append(addresses, addressesIn[i])
-	}
+func (eth *Client) GetEvents(ctx context.Context, firstBlock, lastBlock uint64, addresses []common.Address) ([]types.Log, error) {
 	logger := eth.logger
 
-	logger.Tracef("...GetEvents(firstBlock:%v,lastBlock:%v,addresses:%x)", firstBlock, lastBlock, addressesIn)
+	logger.Tracef("...GetEvents(firstBlock:%v,lastBlock:%v,addresses:%x)", firstBlock, lastBlock, addresses)
 
 	query := ethereum.FilterQuery{
 		FromBlock: new(big.Int).SetUint64(firstBlock),
 		ToBlock:   new(big.Int).SetUint64(lastBlock),
-		Addresses: addressesIn,
+		Addresses: addresses,
 	}
 
 	logs, err := eth.internalClient.FilterLogs(ctx, query)

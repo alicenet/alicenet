@@ -9,8 +9,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/alicenet/alicenet/layer1/handlers"
-
 	"github.com/alicenet/alicenet/application"
 	"github.com/alicenet/alicenet/application/deposit"
 	"github.com/alicenet/alicenet/bridge/bindings"
@@ -30,6 +28,7 @@ import (
 	"github.com/alicenet/alicenet/layer1"
 	"github.com/alicenet/alicenet/layer1/ethereum"
 	"github.com/alicenet/alicenet/layer1/executor"
+	"github.com/alicenet/alicenet/layer1/handlers"
 	"github.com/alicenet/alicenet/layer1/monitor"
 	"github.com/alicenet/alicenet/layer1/transaction"
 	"github.com/alicenet/alicenet/localrpc"
@@ -175,7 +174,6 @@ func initDatabase(ctx context.Context, path string, inMemory bool) *badger.DB {
 func validatorNode(cmd *cobra.Command, args []string) {
 	// setup logger for program assembly operations
 	logger := logging.GetLogger(cmd.Name())
-	logger.Infof("Leo version: 0.0.1")
 	logger.Infof("Starting node with args %v", args)
 	defer func() { logger.Warning("Graceful unwind of core process complete.") }()
 

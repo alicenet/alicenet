@@ -102,8 +102,6 @@ func NewMonitor(cdb *db.Database,
 	mon.eventMap = eventMap
 	mon.State = objects.NewMonitorState()
 
-	logger.Info("Registering snapshot callback")
-
 	adminHandler.RegisterSnapshotCallback(func(bh *objs.BlockHeader, numOfValidators, validatorIndex int) error {
 		logger.Info("Entering snapshot callback")
 		return PersistSnapshot(eth, bh, numOfValidators, validatorIndex, taskHandler, monDB)
@@ -257,8 +255,6 @@ func MonitorTick(ctx context.Context, cf context.CancelFunc, eth layer1.Client, 
 
 	addresses := filterContracts
 
-	logger.Infof("Processing events for %v contracts", addresses)
-
 	// 1. Check if our Ethereum endpoint is sync with sufficient peers
 	inSync, peerCount, err := eth.EndpointInSync(ctx)
 	ethInSyncBefore := monitorState.EthereumInSync
@@ -317,8 +313,6 @@ func MonitorTick(ctx context.Context, cf context.CancelFunc, eth layer1.Client, 
 	if err != nil {
 		return err
 	}
-
-	logger.Infof("Got %v events", len(logsList))
 	// set the current block initial value
 	// this value is incremented at head of
 	// each loop iteration, so it is initialized
@@ -338,8 +332,6 @@ func MonitorTick(ctx context.Context, cf context.CancelFunc, eth layer1.Client, 
 			}
 			forceExit = true
 		}
-
-		logger.Infof("Processing current block %v", currentBlock)
 
 		processed = currentBlock
 		if forceExit {
