@@ -3,12 +3,13 @@ package node
 import (
 	"context"
 	"fmt"
-	"github.com/alicenet/alicenet/layer1/handlers"
 	"math/big"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/alicenet/alicenet/layer1/handlers"
 
 	"github.com/alicenet/alicenet/application"
 	"github.com/alicenet/alicenet/application/deposit"
@@ -197,6 +198,8 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	if err != nil {
 		panic(err)
 	}
+
+	logger.Infof("Leo version: 0.0.1")
 
 	logger.Infof(
 		"Local AliceNet Node Version %d.%d.%d",
