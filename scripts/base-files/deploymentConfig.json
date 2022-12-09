@@ -4,7 +4,7 @@
     "fullyQualifiedName": "contracts/AliceNetFactory.sol:AliceNetFactory",
     "salt": "",
     "constructorArgs": {
-      "legacyToken_": "0xDE99a2904B1D078C1973c9e98874ba2AC2F5636C"
+      "legacyToken_": "0x5B09A0371C1DA44A8E24D36Bf5DEb1141a84d875"
     },
     "initializerArgs": {}
   },
@@ -31,45 +31,13 @@
     "deployType": "deployUpgradeable",
     "constructorArgs": {},
     "initializerArgs": {
-      "initialProposalTimeout_": 4000
+      "initialProposalTimeout_": 600000
     }
   },
   "contracts/Foundation.sol:Foundation": {
     "name": "Foundation",
     "fullyQualifiedName": "contracts/Foundation.sol:Foundation",
     "salt": "0x466f756e646174696f6e00000000000000000000000000000000000000000000",
-    "deployType": "deployUpgradeable",
-    "constructorArgs": {},
-    "initializerArgs": {}
-  },
-  "contracts/Governance.sol:Governance": {
-    "name": "Governance",
-    "fullyQualifiedName": "contracts/Governance.sol:Governance",
-    "salt": "0x476f7665726e616e636500000000000000000000000000000000000000000000",
-    "deployType": "deployUpgradeable",
-    "constructorArgs": {},
-    "initializerArgs": {}
-  },
-  "contracts/InvalidTxConsumptionAccusation.sol:InvalidTxConsumptionAccusation": {
-    "name": "InvalidTxConsumptionAccusation",
-    "fullyQualifiedName": "contracts/InvalidTxConsumptionAccusation.sol:InvalidTxConsumptionAccusation",
-    "salt": "0x92a73f2b6573522d63c8fc84b5d8e5d615fbb685c1b3d7fad2155fe227daf848",
-    "deployType": "deployUpgradeable",
-    "constructorArgs": {},
-    "initializerArgs": {}
-  },
-  "contracts/LiquidityProviderStaking.sol:LiquidityProviderStaking": {
-    "name": "LiquidityProviderStaking",
-    "fullyQualifiedName": "contracts/LiquidityProviderStaking.sol:LiquidityProviderStaking",
-    "salt": "0x4c697175696469747950726f76696465725374616b696e670000000000000000",
-    "deployType": "deployUpgradeable",
-    "constructorArgs": {},
-    "initializerArgs": {}
-  },
-  "contracts/MultipleProposalAccusation.sol:MultipleProposalAccusation": {
-    "name": "MultipleProposalAccusation",
-    "fullyQualifiedName": "contracts/MultipleProposalAccusation.sol:MultipleProposalAccusation",
-    "salt": "0xcfdffd500b4a956e03976b2afd69712237ffa06e35093df1e05e533688959fdc",
     "deployType": "deployUpgradeable",
     "constructorArgs": {},
     "initializerArgs": {}
@@ -88,12 +56,12 @@
     "salt": "0x536e617073686f74730000000000000000000000000000000000000000000000",
     "deployType": "deployUpgradeable",
     "constructorArgs": {
-      "chainID_": 1337,
+      "chainID_": 21,
       "epochLength_": 1024
     },
     "initializerArgs": {
-      "desperationDelay_": 10,
-      "desperationFactor_": 40
+      "desperationDelay_": 45005,
+      "desperationFactor_": 256
     }
   },
   "contracts/StakingPositionDescriptor.sol:StakingPositionDescriptor": {
@@ -111,10 +79,10 @@
     "deployType": "deployUpgradeable",
     "constructorArgs": {},
     "initializerArgs": {
-      "stakeAmount_": 1,
-      "maxNumValidators_": 10,
+      "stakeAmount_": "5000000000000000000000000",
+      "maxNumValidators_": 16,
       "disputerReward_": 1,
-      "maxIntervalWithoutSnapshots_": 8192
+      "maxIntervalWithoutSnapshots_": 88010
     }
   },
   "contracts/ValidatorStaking.sol:ValidatorStaking": {
@@ -123,21 +91,6 @@
     "salt": "0x56616c696461746f725374616b696e6700000000000000000000000000000000",
     "deployType": "deployUpgradeable",
     "constructorArgs": {},
-    "initializerArgs": {}
-  },
-  "contracts/Distribution.sol:Distribution": {
-    "name": "Distribution",
-    "fullyQualifiedName": "contracts/Distribution.sol:Distribution",
-    "salt": "0x446973747269627574696f6e0000000000000000000000000000000000000000",
-    "deployGroup": "alcb",
-    "deployGroupIndex": "1",
-    "deployType": "deployUpgradeable",
-    "constructorArgs": {
-      "validatorStakingSplit_": "332",
-      "publicStakingSplit_": "332",
-      "liquidityProviderStakingSplit_": "332",
-      "protocolFeeSplit_": "4"
-    },
     "initializerArgs": {}
   },
   "contracts/libraries/ethdkg/ETHDKGAccusations.sol:ETHDKGAccusations": {
@@ -181,9 +134,9 @@
     "deployGroupIndex": "0",
     "deployType": "deployCreateAndRegister",
     "constructorArgs": {
-      "enrollmentPeriod_": "1000",
-      "lockDuration_": "6000",
-      "totalBonusAmount_": "2000000"
+      "enrollmentPeriod_": "648000",
+      "lockDuration_": "2628000",
+      "totalBonusAmount_": "900000000000000000000000"
     },
     "initializerArgs": {}
   },

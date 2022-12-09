@@ -24,6 +24,7 @@ import {
   ValidatorStaking,
 } from "../../typechain-types";
 import { BonusPool } from "../../typechain-types/contracts/BonusPool";
+import { DynamicValuesStruct } from "../../typechain-types/contracts/Dynamics";
 import {} from "../../typechain-types/contracts/libraries/ethdkg/ETHDKGPhases";
 import {} from "../../typechain-types/contracts/PublicStaking";
 import { RewardPool } from "../../typechain-types/contracts/RewardPool";
@@ -56,8 +57,18 @@ describe("contract post deployment tests", () => {
   const EPOCH_LENGTH = 1024;
   const LOCKUP_PERIOD = BigNumber.from(2628000);
   const LOCKUP_ENROLLMENT_PERIOD = BigNumber.from(648000);
-  const TOTAL_BONUS_AMOUNT = BigNumber.from(900000000000000000000000);
+  const TOTAL_BONUS_AMOUNT = BigNumber.from("900000000000000000000000");
   const MIN_INTERVAL_BETWEEN_SNAPSHOTS = EPOCH_LENGTH / 4;
+  const expectedCurrnetDynamicValues: DynamicValuesStruct = {
+    encoderVersion: 0,
+    proposalTimeout: 600000,
+    preVoteTimeout: 3000,
+    preCommitTimeout: 3000,
+    maxBlockSize: 3000000,
+    dataStoreFee: BigNumber.from(0),
+    valueStoreFee: BigNumber.from(0),
+    minScaledTransactionFee: BigNumber.from(0),
+  };
   let deploymentConfig: DeploymentConfigWrapper;
   let contractAddresses: DeployedConstractAddresses;
   let owner: SignerWithAddress;
@@ -84,7 +95,7 @@ describe("contract post deployment tests", () => {
       "../scripts/base-files/deployedContracts.json"
     );
     owner = await ethers.getImpersonatedSigner(
-      "0xDAEEaEB740a2218C9a06C16c0Fe2C7f19Ac7b0cA"
+      "0x3E9e94AD2e5115d9237a13110D6868Ab71451482"
     );
     alicenetFactory = await ethers.getContractAt(
       ALICENET_FACTORY,
@@ -145,13 +156,15 @@ describe("contract post deployment tests", () => {
       expect(ownerAddress).to.eq(owner.address);
     });
 
-    it("gets the ALCA Initialization hash", async () => {
+    it.only("gets the ALCA Initialization hash", async () => {
       let alcaCreationCodeHash =
         await alicenetFactory.getALCACreationCodeHash();
       const alcaBase = await ethers.getContractFactory("ALCA");
       const deployTx = alcaBase.getDeployTransaction(LEGACY_TOKEN_ADDRESS);
-      const expectedALCACreationCodeHash = ethers.utils.keccak256(
-        deployTx.data!
+      const deployData = ethers.utils.solidityPack(["bytes"], [deployTx.data!]);
+      const expectedALCACreationCodeHash = ethers.utils.solidityKeccak256(
+        ["bytes"],
+        [deployData]
       );
       expect(alcaCreationCodeHash).to.equal(expectedALCACreationCodeHash);
       const salt = ethers.utils.formatBytes32String("ALCA");
@@ -188,18 +201,45 @@ describe("contract post deployment tests", () => {
   describe("Post dynamics deployment tests", () => {
     it("attempts to call initializer as non factory", async () => {
       const signers = await ethers.getSigners();
-      await expect(dynamics.initialize())
+      await expect(dynamics.connect(signers[1]).initialize(1))
         .to.be.revertedWithCustomError(dynamics, "OnlyFactory")
-        .withArgs(signers[0].address, alicenetFactory.address);
+        .withArgs(signers[1].address, alicenetFactory.address);
     });
-    it("attempts to initialize again after deployment", async () => {
-      await expect(dynamics.initialize()).to.be.revertedWithCustomError(
-        dynamics,
-        "AlreadyInitialized"
-      );
+    it("attempts to initialize again after deployment as factory", async () => {
+      const factory = await alicenetFactory.connect(owner);
+      const initialize = dynamics.interface.encodeFunctionData("initialize", [
+        1,
+      ]);
+      await expect(
+        factory.callAny(dynamics.address, 0, initialize)
+      ).to.be.revertedWith("Initializable: contract is already initialized");
     });
     it("gets the latest dynamic values", async () => {
-      const latestDynamicVals = await dynamics.getLatestDynamicValues();
+      const latestDynamicsValue = await dynamics.getLatestDynamicValues();
+      expect(latestDynamicsValue.encoderVersion).to.be.deep.equal(
+        expectedCurrnetDynamicValues.encoderVersion
+      );
+      expect(latestDynamicsValue.proposalTimeout).to.be.deep.equal(
+        expectedCurrnetDynamicValues.proposalTimeout
+      );
+      expect(latestDynamicsValue.preVoteTimeout).to.be.deep.equal(
+        expectedCurrnetDynamicValues.preVoteTimeout
+      );
+      expect(latestDynamicsValue.preCommitTimeout).to.be.deep.equal(
+        expectedCurrnetDynamicValues.preCommitTimeout
+      );
+      expect(latestDynamicsValue.maxBlockSize).to.be.deep.equal(
+        expectedCurrnetDynamicValues.maxBlockSize
+      );
+      expect(latestDynamicsValue.dataStoreFee).to.be.deep.equal(
+        expectedCurrnetDynamicValues.dataStoreFee
+      );
+      expect(latestDynamicsValue.valueStoreFee).to.be.deep.equal(
+        expectedCurrnetDynamicValues.valueStoreFee
+      );
+      expect(latestDynamicsValue.minScaledTransactionFee).to.be.deep.equal(
+        expectedCurrnetDynamicValues.minScaledTransactionFee
+      );
     });
     it("gets the latest cononical version", async () => {
       const latestCononicalVersion = await dynamics.getLatestAliceNetVersion();
@@ -244,10 +284,10 @@ describe("contract post deployment tests", () => {
         deploymentConfig
       );
       const desperationFactor = await snapshots.getSnapshotDesperationFactor();
-      expect(snapshotConfig["initializerArgs"]["desperationDelay_"]).to.not.be
+      expect(snapshotConfig["initializerArgs"]["desperationFactor_"]).to.not.be
         .undefined;
       expect(desperationFactor.toNumber()).to.equal(
-        snapshotConfig["initializerArgs"]["desperationDelay_"]
+        snapshotConfig["initializerArgs"]["desperationFactor_"]
       );
     });
 
@@ -279,9 +319,9 @@ describe("contract post deployment tests", () => {
 
     it("attempts to initialize with external account", async () => {
       const signers = await ethers.getSigners();
-      await expect(publicStaking.initialize())
-        .to.be.revertedWithCustomError(publicStaking, "OnlyFactory")
-        .withArgs(signers[0].address, alicenetFactory.address);
+      await expect(publicStaking.connect(signers[1]).initialize())
+        .to.be.revertedWithCustomError(snapshots, "OnlyFactory")
+        .withArgs(signers[1].address, alicenetFactory.address);
     });
     it("checks if public staking nft name is set to APSNFT", async () => {
       const name = await publicStaking.name();
@@ -304,14 +344,33 @@ describe("contract post deployment tests", () => {
         factory.callAny(validatorPool.address, 0, initialize)
       ).to.be.revertedWith("Initializable: contract is already initialized");
     });
+
     it("attempts to initialize with external account", async () => {
       const signers = await ethers.getSigners();
-      await expect(validatorPool.initialize(1, 1, 1, 1))
+      await expect(validatorPool.connect(signers[1]).initialize(1, 1, 1, 1))
         .to.be.revertedWithCustomError(validatorPool, "OnlyFactory")
-        .withArgs(signers[0].address, alicenetFactory.address);
+        .withArgs(signers[1].address, alicenetFactory.address);
     });
-    it("attempts to use owner functions without being owner", async () => {});
-    it("attempts to use owner functions without being owner", async () => {});
+
+    it("check if stake amount is set to 5000000000000000000000000", async () => {
+      const stakeAmount = await validatorPool.getStakeAmount();
+      expect(stakeAmount).to.equal(BigNumber.from("5000000000000000000000000"));
+    });
+
+    it("checks if max num validators is 16", async () => {
+      const maxNumValidators = await validatorPool.getMaxNumValidators();
+      expect(maxNumValidators.toNumber()).to.equal(16);
+    });
+
+    it("checks if disputer reward is 1", async () => {
+      const disputerReward = await validatorPool.getDisputerReward();
+      expect(disputerReward.toNumber()).to.equal(1);
+    });
+
+    it("checks max interval without a snapshot is 88010", async () => {
+      const maxInterval = await validatorPool.getMaxIntervalWithoutSnapshots();
+      expect(maxInterval.toNumber()).to.equal(88010);
+    });
   });
 
   describe("Post ValidatorStaking deployment tests", () => {
@@ -325,12 +384,18 @@ describe("contract post deployment tests", () => {
     });
     it("attempts to initialize with external account", async () => {
       const signers = await ethers.getSigners();
-      await expect(validatorStaking.initialize())
-        .to.be.revertedWithCustomError(validatorStaking, "OnlyFactory")
-        .withArgs(signers[0].address, alicenetFactory.address);
+      await expect(
+        validatorStaking.connect(signers[1]).initialize()
+      ).to.be.revertedWith("Initializable: contract is already initialized");
     });
-    it("attempts to use owner functions without being owner", async () => {});
-    it("attempts to use owner functions without being owner", async () => {});
+    it("checks if validator staking nft name is AVSNFT", async () => {
+      const name = await validatorStaking.name();
+      expect(name).to.equal("AVSNFT");
+    });
+    it("checks if validator staking nft symbol is AVS", async () => {
+      const symbol = await validatorStaking.symbol();
+      expect(symbol).to.equal("AVS");
+    });
   });
 
   describe("Post ETHDKG deployment tests", () => {
@@ -346,9 +411,9 @@ describe("contract post deployment tests", () => {
     });
     it("attempts to initialize with external account", async () => {
       const signers = await ethers.getSigners();
-      await expect(ethdkg.initialize(1, 1))
-        .to.be.revertedWithCustomError(ethdkg, "OnlyFactory")
-        .withArgs(signers[0].address, alicenetFactory.address);
+      await expect(
+        ethdkg.connect(signers[0]).initialize(1, 1)
+      ).to.be.revertedWith("Initializable: contract is already initialized");
     });
     it("checks if the confirmation length is 6", async () => {
       const confirmationLength = await ethdkg.getConfirmationLength();

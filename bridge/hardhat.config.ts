@@ -127,6 +127,9 @@ const config: HardhatUserConfig = {
         auto: true,
         interval: 0,
       },
+      forking: {
+        url: process.env.ALCHEMY_ENDPOINT_ETH!,
+      },
       accounts: [
         {
           // address: 0x546F99F244b7B58B855330AE0E2BC1b30b41302F

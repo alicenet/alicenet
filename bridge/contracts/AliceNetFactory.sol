@@ -4,6 +4,7 @@ import "contracts/utils/DeterministicAddress.sol";
 import "contracts/Proxy.sol";
 import "contracts/libraries/factory/AliceNetFactoryBase.sol";
 import "contracts/ALCA.sol";
+import "hardhat/console.sol";
 
 contract AliceNetFactory is AliceNetFactoryBase {
     // ALCA salt = Bytes32(ALCA)
@@ -33,6 +34,7 @@ contract AliceNetFactory is AliceNetFactoryBase {
         }
         _codeSizeZeroRevert((_extCodeSize(alcaAddress) != 0));
         _alcaAddress = alcaAddress;
+        console.logBytes(abi.encodePacked(creationCode));
         _alcaCreationCodeHash = keccak256(abi.encodePacked(creationCode));
     }
 
@@ -59,9 +61,11 @@ contract AliceNetFactory is AliceNetFactoryBase {
      * constructors' args (if any)
      * @return contractAddr the deployed contract address
      */
-    function deployCreate(
-        bytes calldata deployCode_
-    ) public onlyOwner returns (address contractAddr) {
+    function deployCreate(bytes calldata deployCode_)
+        public
+        onlyOwner
+        returns (address contractAddr)
+    {
         return _deployCreate(deployCode_);
     }
 
@@ -73,10 +77,11 @@ contract AliceNetFactory is AliceNetFactoryBase {
      * @param salt_ salt used to determine the final determinist address for the deployed contract
      * @return contractAddr the deployed contract address
      */
-    function deployCreateAndRegister(
-        bytes calldata deployCode_,
-        bytes32 salt_
-    ) public onlyOwner returns (address contractAddr) {
+    function deployCreateAndRegister(bytes calldata deployCode_, bytes32 salt_)
+        public
+        onlyOwner
+        returns (address contractAddr)
+    {
         address newContractAddress = _deployCreate(deployCode_);
         _addNewContract(salt_, newContractAddress);
         return newContractAddress;
