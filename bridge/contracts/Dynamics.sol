@@ -24,10 +24,10 @@ contract Dynamics is Initializable, IDynamics, ImmutableSnapshots {
     constructor() ImmutableFactory(msg.sender) ImmutableSnapshots() {}
 
     /// Initializes the dynamic value linked list and configurations.
-    function initialize() public onlyFactory initializer {
+    function initialize(uint24 initialProposalTimeout_) public onlyFactory initializer {
         DynamicValues memory initialValues = DynamicValues(
             Version.V1,
-            4000,
+            initialProposalTimeout_,
             3000,
             3000,
             3000000,

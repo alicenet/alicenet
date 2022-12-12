@@ -525,7 +525,7 @@ export const getFixture = async (
     factory,
     "Dynamics",
     "Dynamics",
-    []
+    [4000]
   )) as Dynamics;
 
   await posFixtureSetup(factory, alca);

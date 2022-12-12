@@ -11,23 +11,21 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ethereum/go-ethereum/console/prompt"
-
+	"github.com/alicenet/alicenet/constants"
+	"github.com/alicenet/alicenet/crypto"
+	"github.com/alicenet/alicenet/layer1"
+	"github.com/alicenet/alicenet/logging"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/console/prompt"
 	"github.com/ethereum/go-ethereum/core/types"
 	eCrypto "github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/sirupsen/logrus"
-
-	"github.com/alicenet/alicenet/constants"
-	"github.com/alicenet/alicenet/crypto"
-	"github.com/alicenet/alicenet/layer1"
-	"github.com/alicenet/alicenet/logging"
 )
 
 // Ethereum specific errors.
@@ -213,14 +211,15 @@ func (eth *Client) loadPassCodes(filePath string) error {
 			if !strings.HasPrefix(line, "#") {
 				components := strings.Split(line, "=")
 				if len(components) == 2 {
-					passCodes[strings.TrimSpace(components[0])] = strings.TrimSpace(components[1])
+					keyHex := strings.TrimPrefix(strings.ToLower(strings.TrimSpace(components[0])), "0x")
+					passCodes[keyHex] = strings.TrimSpace(components[1])
 				}
 			}
 		}
 	}
 
 	for addr, accountInfo := range eth.accounts {
-		passCode, present := passCodes[addr.Hex()]
+		passCode, present := passCodes[strings.TrimPrefix(strings.ToLower(addr.Hex()), "0x")]
 		if !present {
 			passCode, err = prompt.Stdin.PromptPassword(fmt.Sprintf("Please provide the passCode for this address %s: ", addr.Hex()))
 			if err != nil {

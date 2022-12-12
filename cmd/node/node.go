@@ -3,7 +3,6 @@ package node
 import (
 	"context"
 	"fmt"
-	"github.com/alicenet/alicenet/layer1/handlers"
 	"math/big"
 	"os"
 	"os/signal"
@@ -29,6 +28,7 @@ import (
 	"github.com/alicenet/alicenet/layer1"
 	"github.com/alicenet/alicenet/layer1/ethereum"
 	"github.com/alicenet/alicenet/layer1/executor"
+	"github.com/alicenet/alicenet/layer1/handlers"
 	"github.com/alicenet/alicenet/layer1/monitor"
 	"github.com/alicenet/alicenet/layer1/transaction"
 	"github.com/alicenet/alicenet/localrpc"
