@@ -6,7 +6,7 @@ import "contracts/utils/auth/ImmutableFactory.sol";
 import "contracts/utils/auth/ImmutableValidatorPool.sol";
 import "contracts/interfaces/IValidatorPool.sol";
 
-contract DutchAuction is  ImmutableFactory, ImmutableValidatorPool {
+contract DutchAuction is ImmutableFactory, ImmutableValidatorPool {
     uint256 private immutable _startPrice;
     uint8 private immutable _decay;
     uint16 private immutable _scaleParameter;
@@ -14,7 +14,12 @@ contract DutchAuction is  ImmutableFactory, ImmutableValidatorPool {
     uint256 private _startBlock;
     uint256 private _finalPrice;
 
-    event AuctionStarted(uint256 _auctionId, uint256 _startBlock, uint256 _finalPrice);
+    event AuctionStarted(
+        uint256 _auctionId,
+        uint256 _startBlock,
+        uint256 _startPrice,
+        uint256 _finalPrice
+    );
     event AuctionEnded(uint256 _auctionId, address winner, uint256 _winPrice);
 
     constructor(
@@ -39,7 +44,7 @@ contract DutchAuction is  ImmutableFactory, ImmutableValidatorPool {
             IValidatorPool(_validatorPoolAddress()).getValidatorsCount();
         _startBlock = block.number;
         _auctionId++;
-        emit AuctionStarted(_auctionId, _startBlock, _finalPrice);
+        emit AuctionStarted(_auctionId, _startBlock, _startPrice, _finalPrice);
     }
 
     /// @dev Returns dutch auction price for current block
