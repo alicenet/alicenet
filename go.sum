@@ -574,8 +574,8 @@ github.com/lightninglabs/gozmq v0.0.0-20191113021534-d20a764486bf/go.mod h1:vxmQ
 github.com/lightninglabs/neutrino v0.14.2 h1:yrnZUCYMZ5ECtXhgDrzqPq2oX8awoAN2D/cgCewJcCo=
 github.com/lightninglabs/neutrino v0.14.2/go.mod h1:OICUeTCn+4Tu27YRJIpWvvqySxx4oH4vgdP33Sw9RDc=
 github.com/lightningnetwork/lightning-onion v1.0.2-0.20220211021909-bb84a1ccb0c5 h1:TkKwqFcQTGYoI+VEqyxA8rxpCin8qDaYX0AfVRinT3k=
-github.com/lightningnetwork/lnd v0.15.5-beta.rc2 h1:1SCt/Y6D5QG6+nZUhg8CDcWVQjRJLqHuR5Ys6bFI1Es=
-github.com/lightningnetwork/lnd v0.15.5-beta.rc2/go.mod h1:/UKsaOll/pYJltXIC0VKRGHR0Jqhl9bBX/fUiINSwF4=
+github.com/lightningnetwork/lnd v0.15.5-beta h1:jdGVLJIYSe60NAn7qzBY3gET2I/FmLW4TTGvrECmgOE=
+github.com/lightningnetwork/lnd v0.15.5-beta/go.mod h1:/UKsaOll/pYJltXIC0VKRGHR0Jqhl9bBX/fUiINSwF4=
 github.com/lightningnetwork/lnd/clock v1.0.1/go.mod h1:KnQudQ6w0IAMZi1SgvecLZQZ43ra2vpDNj7H/aasemg=
 github.com/lightningnetwork/lnd/clock v1.1.0 h1:/yfVAwtPmdx45aQBoXQImeY7sOIEr7IXlImRMBOZ7GQ=
 github.com/lightningnetwork/lnd/clock v1.1.0/go.mod h1:KnQudQ6w0IAMZi1SgvecLZQZ43ra2vpDNj7H/aasemg=
