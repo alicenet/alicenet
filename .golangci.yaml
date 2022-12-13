@@ -93,5 +93,5 @@ linters-settings:
       - prefix(github.com/alicenet)
   gofumpt:
     lang-version: "1.19"
-    module-path: github.com/alicenet/utilities
+    module-path: github.com/alicenet/alicenet
     extra-rules: true
