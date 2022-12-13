@@ -5,20 +5,20 @@ run:
     - flakes
 linters:
   enable:
-    - asciicheck # 0 issues
-    - bidichk # issues
+    - asciicheck 
+    - bidichk 
     - errcheck
-    - errchkjson # 0 issues
-    - execinquery # 0 issues
-    - exportloopref # 0 issues
-    - goprintffuncname # 0 issues
+    - errchkjson 
+    - execinquery 
+    - exportloopref 
+    - goprintffuncname 
     - gosimple
     - govet
-    - grouper # 0 issues
+    - grouper 
     - ineffassign
-    - tenv # 0 issues
-    - tparallel # 0 issues
-    - unused # 0 issues
+    - tenv 
+    - tparallel 
+    - unused 
   # Disabling linters until we get them fixed up.
   disable:
     - staticcheck
@@ -95,8 +95,3 @@ linters-settings:
     lang-version: "1.19"
     module-path: github.com/alicenet/utilities
     extra-rules: true
-  importas:
-    no-extra-aliases: true
-    alias:
-      - pkg: github.com/alicenet/utilities/api/(\w+)/(v[\w\d]+)
-        alias: $1$2
