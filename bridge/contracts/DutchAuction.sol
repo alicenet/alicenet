@@ -38,23 +38,23 @@ contract DutchAuction is ImmutableFactory, ImmutableValidatorPool {
         assembly ("memory-safe") {
             gasPrice := gasprice()
         }
-        uint256 _ETHDKG_VALIDATOR_COST = 1200000 * 2 * gasPrice; // ETHDKG ceremony is approx 1200000 gas units x2 (one to exit and one to re-enter) at current gas price in weis
+        uint256 ethdkgValidatorCost = 1200000 * 2 * gasPrice; // ETHDKG ceremony is approx 1200000 gas units x2 (one to exit and one to re-enter) at current gas price in weis
         _finalPrice =
-            _ETHDKG_VALIDATOR_COST *
+            ethdkgValidatorCost *
             IValidatorPool(_validatorPoolAddress()).getValidatorsCount();
         _startBlock = block.number;
         _auctionId++;
         emit AuctionStarted(_auctionId, _startBlock, _startPrice, _finalPrice);
     }
 
-    /// @dev Returns dutch auction price for current block
-    function getPrice() public view returns (uint256) {
-        return _dutchAuctionPrice(block.number - _startBlock);
-    }
-
     /// @dev Put a bid on current price and finish auction
     function bid() public {
         emit AuctionEnded(_auctionId, msg.sender, _dutchAuctionPrice(block.number - _startBlock));
+    }
+
+    /// @dev Returns dutch auction price for current block
+    function getPrice() public view returns (uint256) {
+        return _dutchAuctionPrice(block.number - _startBlock);
     }
 
     /// @notice Calculates dutch auction price for the specified period (number of blocks since auction initialization)
