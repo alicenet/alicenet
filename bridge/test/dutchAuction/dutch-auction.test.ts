@@ -1,3 +1,4 @@
+import { anyValue } from "@nomicfoundation/hardhat-chai-matchers/withArgs";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
@@ -5,7 +6,6 @@ import { ethers, network } from "hardhat";
 import { DutchAuction } from "../../typechain-types";
 import { PromiseOrValue } from "../../typechain-types/common";
 import { getImpersonatedSigner } from "../lockup/setup";
-
 import { deployUpgradeableWithFactory, getFixture, mineBlocks } from "../setup";
 
 let dutchAuction: DutchAuction;
@@ -133,13 +133,13 @@ describe("Testing Dutch Auction", async () => {
     expect(await dutchAuction.getPrice()).to.be.equal(EXPECTED_PRICE_BLOCK_ONE);
     await expect(dutchAuction.connect(asFactory).startAuction())
       .to.emit(dutchAuction, "AuctionStarted")
-      .withArgs(2, 70, EXPECTED_PRICE_INITIAL, EXPECTED_FINAL_PRICE);
+      .withArgs(2, anyValue, EXPECTED_PRICE_INITIAL, EXPECTED_FINAL_PRICE);
     expect(await dutchAuction.getPrice()).to.be.equal(
       EXPECTED_PRICE_BLOCK_ZERO
     );
   });
 
-  it.only("should get right prices for the first 30 days", async () => {
+  it("should get right prices for the first 30 days", async () => {
     for (let day = 1; day <= 30; day++) {
       expect(await dutchAuction.getPrice()).to.be.equal(
         dailyExpectedPriceFirstMonth[day - 1]
@@ -148,7 +148,11 @@ describe("Testing Dutch Auction", async () => {
     }
   });
 
-  it("Should let a user bid for current price and end auction", async () => {
+  it("Should bid for current price and end auction", async () => {
+    expect(await dutchAuction.getPrice()).to.be.equal(
+      EXPECTED_PRICE_BLOCK_ZERO
+    );
+    // expect next block bid price sincehardhat is automining for each tx
     await expect(dutchAuction.bid())
       .to.emit(dutchAuction, "AuctionEnded")
       .withArgs(1, admin.address, EXPECTED_PRICE_BLOCK_ONE);
