@@ -153,9 +153,9 @@ describe("Testing Dutch Auction", async () => {
     expect(await dutchAuction.getPrice()).to.be.equal(
       EXPECTED_PRICE_BLOCK_ZERO
     );
-    // expect next block bid price sincehardhat is automining for each tx
+    // expect next block bid price since hardhat is mining for each tx
     await expect(dutchAuction.bid())
-      .to.emit(dutchAuction, "AuctionEnded")
+      .to.emit(dutchAuction, "BidPlaced")
       .withArgs(1, admin.address, EXPECTED_PRICE_BLOCK_ONE);
   });
 });

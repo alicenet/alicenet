@@ -20,7 +20,7 @@ contract DutchAuction is ImmutableFactory, ImmutableValidatorPool {
         uint256 _startPrice,
         uint256 _finalPrice
     );
-    event AuctionEnded(uint256 _auctionId, address winner, uint256 _winPrice);
+    event BidPlaced(uint256 _auctionId, address winner, uint256 _winPrice);
 
     constructor(
         uint256 startPrice_,
@@ -49,7 +49,7 @@ contract DutchAuction is ImmutableFactory, ImmutableValidatorPool {
 
     /// @dev Put a bid on current price and finish auction
     function bid() public {
-        emit AuctionEnded(_auctionId, msg.sender, _dutchAuctionPrice(block.number - _startBlock));
+        emit BidPlaced(_auctionId, msg.sender, _dutchAuctionPrice(block.number - _startBlock));
     }
 
     /// @dev Returns dutch auction price for current block
