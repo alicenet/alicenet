@@ -101,13 +101,14 @@ describe("Testing Dutch Auction", async () => {
     );
   });
 
-  it("Should obtain bid price at first auction block", async () => {
+  // From here on we skip these tests on coverage ([ @skip-on-coverage ]) since they are gasPrice based and coverage distorts gas consumption
+  it("Should obtain bid price at first auction block [ @skip-on-coverage ]", async () => {
     expect(await dutchAuction.getPrice()).to.be.equal(
       EXPECTED_PRICE_BLOCK_ZERO
     );
   });
 
-  it("Should obtain prices through five blocks according to dutch auction curve", async () => {
+  it("Should obtain prices through five blocks according to dutch auction curve [ @skip-on-coverage ]", async () => {
     expect(await dutchAuction.getPrice()).to.be.equal(
       EXPECTED_PRICE_BLOCK_ZERO
     );
@@ -125,7 +126,7 @@ describe("Testing Dutch Auction", async () => {
     );
   });
 
-  it("Should re-start the auction", async () => {
+  it("Should re-start the auction [ @skip-on-coverage ]", async () => {
     expect(await dutchAuction.getPrice()).to.be.equal(
       EXPECTED_PRICE_BLOCK_ZERO
     );
@@ -139,7 +140,7 @@ describe("Testing Dutch Auction", async () => {
     );
   });
 
-  it("should get right prices for the first 30 days", async () => {
+  it("should get right prices for the first 30 days [ @skip-on-coverage ]", async () => {
     for (let day = 1; day <= 30; day++) {
       expect(await dutchAuction.getPrice()).to.be.equal(
         dailyExpectedPriceFirstMonth[day - 1]
@@ -148,7 +149,7 @@ describe("Testing Dutch Auction", async () => {
     }
   });
 
-  it("Should bid for current price and end auction", async () => {
+  it("Should bid for current price and end auction [ @skip-on-coverage ]", async () => {
     expect(await dutchAuction.getPrice()).to.be.equal(
       EXPECTED_PRICE_BLOCK_ZERO
     );
