@@ -1,5 +1,9 @@
 import { task, types } from "hardhat/config";
-import { DEFAULT_CONFIG_FILE_PATH } from "../lib/constants";
+import {
+  CREATE_AND_REGISTER_DEPLOYMENT,
+  DEFAULT_CONFIG_FILE_PATH,
+  UPGRADEABLE_DEPLOYMENT,
+} from "../lib/constants";
 import {} from "./alicenetTasks";
 
 import {
@@ -27,7 +31,9 @@ import {
   parseWaitConfirmationInterval,
   populateConstructorArgs,
   populateInitializerArgs,
+  readDeploymentConfig,
   showState,
+  verifyContract,
   writeDeploymentConfig,
 } from "../lib/deployment/utils";
 
@@ -144,6 +150,132 @@ task(
     if (taskArgs.list !== true) {
       const savedFile = await writeDeploymentConfig(deploymentArgs, file);
       console.log(`YOU MUST REPLACE THE UNDEFINED VALUES IN ${savedFile}`);
+    }
+  });
+
+task(
+  "verify-contracts",
+  "Verify all contracts including factory given a deployment config file"
+)
+  .addParam(
+    "factoryAddress",
+    "specify if a factory is already deployed, if not specified a new factory will be deployed"
+  )
+  .addParam(
+    "configFile",
+    "deployment configuration json file",
+    DEFAULT_CONFIG_FILE_PATH,
+    types.string
+  )
+  .setAction(async (taskArgs, hre) => {
+    if (process.env.ETHERSCAN_API_KEY === undefined) {
+      throw new Error("ETHERSCAN_API_KEY environment variable not set");
+    }
+    const configFile = taskArgs.configFile;
+    const deploymentConfig: DeploymentConfigWrapper =
+      readDeploymentConfig(configFile);
+
+    const factory = await hre.ethers.getContractAt(
+      "AliceNetFactory",
+      taskArgs.factoryAddress
+    );
+
+    const factoryQualifiedName =
+      "contracts/AliceNetFactory.sol:AliceNetFactory";
+    const expectedField = "legacyToken_";
+    if (
+      deploymentConfig[factoryQualifiedName] === undefined ||
+      deploymentConfig[factoryQualifiedName].constructorArgs[expectedField] ===
+        undefined
+    ) {
+      console.log(
+        `Couldn't find ${expectedField} in the constructor area for` +
+          ` ${factoryQualifiedName} inside ${configFile}! Skipping ALCA and Factory verification.`
+      );
+    } else {
+      const legacyTokenAddress: string = deploymentConfig[factoryQualifiedName]
+        .constructorArgs[expectedField] as string;
+      if (!hre.ethers.utils.isAddress(legacyTokenAddress)) {
+        throw new Error("legacyTokenAddress is not an address");
+      }
+      const alcaAddress = await factory.lookup(
+        hre.ethers.utils.formatBytes32String("ALCA")
+      );
+      try {
+        console.log(
+          `Verifying the AliceNet Factory contract with constructor args ${legacyTokenAddress}`
+        );
+        await verifyContract(hre, taskArgs.factoryAddress, [
+          legacyTokenAddress,
+        ]);
+        console.log(
+          `Verifying the ALCA contract with constructor args ${legacyTokenAddress}`
+        );
+        await verifyContract(hre, alcaAddress, [legacyTokenAddress]);
+      } catch (e) {
+        console.log(
+          `failed to verify ALCA or Factory ${taskArgs.factoryAddress} with error ${e}`
+        );
+      }
+    }
+
+    for (const fullyQualifiedContractName in deploymentConfig) {
+      if (fullyQualifiedContractName !== factoryQualifiedName) {
+        const deploymentConfigForContract =
+          deploymentConfig[fullyQualifiedContractName];
+        const deployType =
+          deploymentConfig[fullyQualifiedContractName].deployType;
+        const salt = deploymentConfig[fullyQualifiedContractName].salt;
+        switch (deployType) {
+          case UPGRADEABLE_DEPLOYMENT: {
+            if (salt !== undefined && salt !== "") {
+              const existingAddress = await factory.lookup(salt);
+              const implAddress = await factory.getProxyImplementation(
+                existingAddress
+              );
+              try {
+                const constructorArgs = Object.values(
+                  deploymentConfigForContract.constructorArgs
+                );
+                console.log(
+                  `Verifying ${fullyQualifiedContractName} with constructor args ${constructorArgs}`
+                );
+                await verifyContract(hre, implAddress, constructorArgs);
+              } catch (e) {
+                console.log(`failed to verify ${implAddress} with error ${e}`);
+              }
+            } else {
+              console.log(
+                `skipping verification for ${fullyQualifiedContractName} because it has no salt`
+              );
+            }
+            break;
+          }
+          case CREATE_AND_REGISTER_DEPLOYMENT: {
+            if (salt !== undefined && salt !== "") {
+              const existingAddress = await factory.lookup(salt);
+              try {
+                const constructorArgs = Object.values(
+                  deploymentConfigForContract.constructorArgs
+                );
+                console.log(
+                  `Validating ${fullyQualifiedContractName} with constructor args ${constructorArgs}`
+                );
+                await verifyContract(hre, existingAddress, constructorArgs);
+              } catch (e) {
+                console.log(
+                  `failed to verify ${existingAddress} with error ${e}`
+                );
+              }
+            }
+            break;
+          }
+          default: {
+            console.log("unknown deploy type");
+            break;
+          }
+        }
+      }
     }
   });
 
