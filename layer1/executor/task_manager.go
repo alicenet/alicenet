@@ -249,7 +249,8 @@ func (tm *TaskManager) schedule(task tasks.Task, id string) (*HandlerResponse, e
 		start := task.GetStart()
 		end := task.GetEnd()
 
-		if start != 0 && end != 0 && start >= end {
+		// check if the task is expired
+		if start != 0 && end != 0 && start > end {
 			return nil, ErrWrongParams
 		}
 
