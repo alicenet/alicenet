@@ -1,8 +1,6 @@
 package main
 
 import (
-	"bytes"
-	"io/ioutil"
 	"os"
 	"reflect"
 	"strings"
@@ -277,19 +275,13 @@ func main() {
 		// Read the config file
 		file, err := os.Open(config.Configuration.ConfigurationFileName)
 		if err == nil {
-			bs, err := ioutil.ReadAll(file)
-			if err == nil {
-				reader := bytes.NewReader(bs)
-				viper.SetConfigType("toml") // TODO: Set config type based on file extension. Viper supports more than toml.
-				err := viper.ReadConfig(reader)
-				if err != nil {
-					logger.Warnf("Reading config failed:%q", err)
-				}
-			} else {
-				logger.Warnf("Reading file failed:%q", err)
+			err := viper.ReadConfig(file)
+			if err != nil {
+				logger.Warnf("unable to read config %s with err %q", file.Name(), err)
 			}
+			logger.Infof("config %s", file.Name())
 		} else {
-			logger.Debugf("Opening file failed: %q", err)
+			logger.Debugf("unable to open config %s with err %q", file.Name(), err)
 		}
 
 		/* The logic here feels backwards to me but it isn't.
@@ -328,6 +320,7 @@ func setDefaultCommandIfNonePresent(defaultCommand *cobra.Command, logger *logru
 	}
 
 	// Adding the `node` command to args.
+	//nolint:staticcheck // append string to a slice using this method
 	os.Args = append([]string{os.Args[0], defaultCommand.Use})
 
 	// Setting te default --config location if it is not present in command options.
