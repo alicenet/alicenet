@@ -4,15 +4,15 @@ import (
 	"bufio"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"github.com/alicenet/alicenet/config"
+	"github.com/ethereum/go-ethereum/console/prompt"
+	"github.com/sirupsen/logrus"
 	"math/rand"
 	"os"
 	"strings"
 	"time"
-
-	"github.com/alicenet/alicenet/config"
-	"github.com/ethereum/go-ethereum/console/prompt"
-	"github.com/sirupsen/logrus"
 )
 
 // getPassphrase obtains a passphrase given by the user.  It first checks the
@@ -140,7 +140,7 @@ func ReadYesOrNoAnswer(message string) (bool, error) {
 	if input == "" || input == "y" || input == "Y" || input == "yes" || input == "Yes" || input == "YES" {
 		result = true
 	} else if input != "n" && input != "N" && input != "no" && input != "No" && input != "NO" {
-		return false, fmt.Errorf("invalid input: %s", input)
+		return false, errors.New(fmt.Sprintf("You entered a wrong answer: %s. Aborting execution", input))
 	}
 
 	return result, nil

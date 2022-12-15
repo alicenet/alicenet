@@ -2,10 +2,8 @@ package ethkey
 
 import (
 	"crypto/ecdsa"
+	"errors"
 	"fmt"
-	"os"
-	"path/filepath"
-
 	"github.com/alicenet/alicenet/config"
 	"github.com/alicenet/alicenet/logging"
 	"github.com/ethereum/go-ethereum/accounts/keystore"
@@ -13,6 +11,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"os"
+	"path/filepath"
 )
 
 const (
@@ -25,11 +25,20 @@ type outputGenerate struct {
 }
 
 // Generate is the cobra.Command specifically for generating an ethereum key and address.
-var Generate = cobra.Command{
+var Generate = &cobra.Command{
 	Use:   "ethkey-generate",
 	Short: "Generate a new keyfile",
 	Long:  "Generate a new keyfile with an ethereum address and private key",
 	Run:   generate,
+}
+
+var ()
+
+func init() {
+	Generate.Flags().StringVar(&config.Configuration.EthKey.PasswordFile, "ethkey.passwordfile", "", "the file that contains the password for the keyfile")
+	Generate.Flags().BoolVar(&config.Configuration.EthKey.Json, "ethkey.json", false, "output JSON instead of human-readable format")
+	Generate.Flags().StringVar(&config.Configuration.EthKey.PrivateKey, "ethkey.privatekey", "", "the file that contains the password for the keyfile")
+	Generate.Flags().BoolVar(&config.Configuration.EthKey.LightKDF, "ethkey.lightkdf", false, "the file that contains the password for the keyfile")
 }
 
 func generate(cmd *cobra.Command, args []string) {
@@ -77,20 +86,20 @@ func GenerateKeyFile(generateRandomPass bool, logger *logrus.Entry) ([]byte, *ke
 		// Load private key from file.
 		privateKey, err = crypto.LoadECDSA(file)
 		if err != nil {
-			return nil, nil, "", fmt.Errorf("Can't load private key: %w", err)
+			return nil, nil, "", errors.New(fmt.Sprintf("Can't load private key: %v", err))
 		}
 	} else {
 		// If not loaded, generate random.
 		privateKey, err = crypto.GenerateKey()
 		if err != nil {
-			return nil, nil, "", fmt.Errorf("Failed to generate random private key: %w", err)
+			return nil, nil, "", errors.New(fmt.Sprintf("Failed to generate random private key: %v", err))
 		}
 	}
 
 	// Create the keyfile object with a random UUID.
 	UUID, err := uuid.NewRandom()
 	if err != nil {
-		return nil, nil, "", fmt.Errorf("Failed to generate random uuid: %w", err)
+		return nil, nil, "", errors.New(fmt.Sprintf("Failed to generate random uuid: %v", err))
 	}
 	key := &keystore.Key{
 		Id:         UUID,
@@ -106,7 +115,7 @@ func GenerateKeyFile(generateRandomPass bool, logger *logrus.Entry) ([]byte, *ke
 	}
 	keyjson, err := keystore.EncryptKey(key, passphrase, scryptN, scryptP)
 	if err != nil {
-		return nil, nil, "", fmt.Errorf("Error encrypting key: %w", err)
+		return nil, nil, "", errors.New(fmt.Sprintf("Error encrypting key: %v", err))
 	}
 
 	return keyjson, key, passphrase, nil

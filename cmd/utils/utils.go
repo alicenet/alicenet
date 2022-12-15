@@ -18,7 +18,7 @@ import (
 )
 
 // Command is the cobra.Command specifically for running as an edge node, i.e. not a validator or relay
-var Command = cobra.Command{
+var Command = &cobra.Command{
 	Use:   "utils",
 	Short: "A collection of tools for node administration",
 	Long:  "utils is a misc. collection of tools. Ranges from initial config to automating Ethereum setup",
@@ -30,6 +30,10 @@ var SendWeiCommand = cobra.Command{
 	Short: "",
 	Long:  "",
 	Run:   utilsNode}
+
+func init() {
+	Command.Flags().BoolVar(&config.Configuration.Utils.Status, "status", false, "")
+}
 
 func setupEthereum(logger *logrus.Entry) (layer1.Client, layer1.AllSmartContracts, error) {
 	logger.Info("Connecting to Ethereum endpoint ...")
