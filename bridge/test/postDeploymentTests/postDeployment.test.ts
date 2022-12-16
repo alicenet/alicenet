@@ -94,8 +94,14 @@ describe("contract post deployment tests", () => {
     contractAddresses = readJSON(
       "../scripts/base-files/deployedContracts.json"
     );
+    const signers = await ethers.getSigners();
+    const tx = await signers[0].populateTransaction({
+      to: "0xff55549a3ceEa32FbA4794bf1A649A2363fcda53",
+      value: ethers.utils.parseEther("1"),
+    });
+    await signers[0].sendTransaction(tx);
     owner = await ethers.getImpersonatedSigner(
-      "0x3E9e94AD2e5115d9237a13110D6868Ab71451482"
+      "0xff55549a3ceEa32FbA4794bf1A649A2363fcda53"
     );
     alicenetFactory = await ethers.getContractAt(
       ALICENET_FACTORY,
@@ -156,7 +162,7 @@ describe("contract post deployment tests", () => {
       expect(ownerAddress).to.eq(owner.address);
     });
 
-    it.only("gets the ALCA Initialization hash", async () => {
+    xit("gets the ALCA Initialization hash", async () => {
       let alcaCreationCodeHash =
         await alicenetFactory.getALCACreationCodeHash();
       const alcaBase = await ethers.getContractFactory("ALCA");

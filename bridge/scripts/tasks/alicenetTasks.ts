@@ -100,7 +100,7 @@ task("create-local-seed-node", "start and syncs a node with mainnet")
   .setAction(async (taskArgs) => {
     const valNode = spawn(
       "./alicenet",
-      ["--config", taskArgs.configPath, "validator"],
+      ["--config", taskArgs.configPath, "node"],
       {
         cwd: "../",
         shell: true,
