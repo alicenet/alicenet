@@ -75,7 +75,7 @@ contract ALCBTest is Test {
 
     function testMintToFuzz(uint96 etherToSend, address destinationAddress) public {
         // if the value is less than market spread the function throws an error
-        if (etherToSend < marketSpread) return;
+        if (etherToSend < marketSpread || destinationAddress == zeroAddress) return;
         uint256 totalSupplyBefore = alcb.totalSupply();
 
         // fund the address
