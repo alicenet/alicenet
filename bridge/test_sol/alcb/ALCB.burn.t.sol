@@ -29,17 +29,56 @@ contract ALCBTest is Test {
     }
 
     function testBurn() public {
+        uint256 addressEthBalanceBefore = randomAddress.balance;
         uint256 remaining = 100 ether;
         uint256 burnQuantity = alcbs - remaining;
         uint256 minEth = 0;
         vm.prank(randomAddress);
         uint256 ethReturned = alcb.burn(burnQuantity, minEth);
         assertEq(9751261920046697614, ethReturned);
+        assertEq(randomAddress.balance, addressEthBalanceBefore + ethReturned);
+        assertEq(alcb.balanceOf(randomAddress), remaining);
+    }
+
+    function testBurnTo() public {
+        uint256 addressEthBalanceBefore = randomAddress2.balance;
+        uint256 remaining = 100 ether;
+        uint256 burnQuantity = alcbs - remaining;
+        uint256 minEth = 0;
+        vm.prank(randomAddress);
+        uint256 ethReturned = alcb.burnTo(randomAddress2, burnQuantity, minEth);
+        assertEq(9751261920046697614, ethReturned);
+        assertEq(randomAddress2.balance, addressEthBalanceBefore + ethReturned);
+        assertEq(alcb.balanceOf(randomAddress), remaining);
+    }
+
+    function testBurnMoreThanSupplyFails() public {
+        uint256 burnQuantity = alcbs + 1;
+        uint256 minEth = 0;
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                UtilityTokenErrors.BurnAmountExceedsSupply.selector,
+                burnQuantity,
+                alcbs
+            )
+        );
+        vm.prank(randomAddress);
+        alcb.burn(burnQuantity, minEth);
+    }
+
+    function testBurnZeroFails() public {
+        uint256 burnQuantity = 0;
+        uint256 minEth = 0;
+        vm.expectRevert(
+            abi.encodeWithSelector(UtilityTokenErrors.InvalidBurnAmount.selector, burnQuantity)
+        );
+        vm.prank(randomAddress);
+        alcb.burn(burnQuantity, minEth);
     }
 
     function testBurnFuzz(uint96 etherToSend) public {
         vm.assume(etherToSend > marketSpread);
-        
+
         // fund the address
         vm.deal(randomAddress, etherToSend);
         // mock the call to use the address for the next call
@@ -50,7 +89,7 @@ contract ALCBTest is Test {
         uint256 poolBalanceBefore = alcb.getPoolBalance();
         uint256 totalSupplyBefore = alcb.totalSupply();
         uint256 addressBalanceBefore = alcb.balanceOf(randomAddress);
-
+        uint256 addressEthBalanceBefore = randomAddress.balance;
         uint256 minEth = 0;
         vm.prank(randomAddress);
         uint256 ethReturned = alcb.burn(alcbMinted, minEth);
@@ -58,5 +97,31 @@ contract ALCBTest is Test {
         assertEq(alcb.balanceOf(randomAddress), addressBalanceBefore - alcbMinted);
         assertEq(alcb.getPoolBalance(), poolBalanceBefore - ethReturned);
         assertEq(alcb.totalSupply(), totalSupplyBefore - alcbMinted);
+        assertEq(randomAddress.balance, addressEthBalanceBefore + ethReturned);
+    }
+
+    function testBurnToFuzz(uint96 etherToSend, address destinationAddress) public {
+        vm.assume(destinationAddress != zeroAddress);
+        vm.assume(etherToSend > marketSpread);
+
+        // fund the address
+        vm.deal(randomAddress, etherToSend);
+        // mock the call to use the address for the next call
+        vm.prank(randomAddress);
+
+        // call the mint function
+        uint256 alcbMinted = alcb.mint{value: etherToSend}(0);
+        uint256 poolBalanceBefore = alcb.getPoolBalance();
+        uint256 totalSupplyBefore = alcb.totalSupply();
+        uint256 addressBalanceBefore = alcb.balanceOf(randomAddress);
+        uint256 addressEthBalanceBefore = destinationAddress.balance;
+        uint256 minEth = 0;
+        vm.prank(randomAddress);
+        uint256 ethReturned = alcb.burnTo(destinationAddress, alcbMinted, minEth);
+
+        assertEq(alcb.balanceOf(randomAddress), addressBalanceBefore - alcbMinted);
+        assertEq(alcb.getPoolBalance(), poolBalanceBefore - ethReturned);
+        assertEq(alcb.totalSupply(), totalSupplyBefore - alcbMinted);
+        assertEq(destinationAddress.balance, addressEthBalanceBefore + ethReturned);
     }
 }
