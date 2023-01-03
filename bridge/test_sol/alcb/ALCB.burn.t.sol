@@ -50,6 +50,7 @@ contract ALCBTest is Test {
         assertEq(9751261920046697614, ethReturned);
         assertEq(randomAddress2.balance, addressEthBalanceBefore + ethReturned);
         assertEq(alcb.balanceOf(randomAddress), remaining);
+        assertEq(alcb.totalSupply(), remaining);
     }
 
     function testBurnMoreThanSupplyFails() public {
@@ -64,6 +65,20 @@ contract ALCBTest is Test {
         );
         vm.prank(randomAddress);
         alcb.burn(burnQuantity, minEth);
+    }
+
+    function testBurnFullSupplySucceeds() public {
+        uint256 addressEthBalanceBefore = randomAddress.balance;
+        uint256 burnQuantity = alcb.totalSupply();
+        uint256 minEth = 0;
+
+        vm.prank(randomAddress);
+
+        uint256 ethReturned = alcb.burn(burnQuantity, minEth);
+
+        assertEq(randomAddress.balance, addressEthBalanceBefore + ethReturned);
+        assertEq(alcb.balanceOf(randomAddress), 0);
+        assertEq(alcb.totalSupply(), 0);
     }
 
     function testBurnZeroFails() public {
