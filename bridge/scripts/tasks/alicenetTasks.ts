@@ -1,7 +1,7 @@
 import toml from "@iarna/toml";
 import { spawn } from "child_process";
 import { BigNumber, ContractTransaction } from "ethers";
-import fs from "fs";
+import * as fs from "fs";
 import { task, types } from "hardhat/config";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 // import { ValidatorPool } from "../../typechain-types";
@@ -10,8 +10,10 @@ import {
   encodeMultiCallArgs,
   MultiCallArgsStruct,
 } from "../lib/alicenetFactory";
-import { DEFAULT_CONFIG_FILE_PATH } from "../lib/constants";
+import { ALICENET_FACTORY, DEFAULT_CONFIG_FILE_PATH } from "../lib/constants";
 
+import csv from "csv-parser";
+import { setTimeout } from "timers/promises";
 import { DeploymentConfigWrapper } from "../lib/deployment/interfaces";
 import {
   getGasPrices,
@@ -1748,6 +1750,112 @@ task("update-alicenet-node-version", "Set the Canonical AliceNet Node Version")
       throw new Error(`Receipt indicates failure: ${rept}`);
     }
     console.log("Done");
+  });
+
+task(
+  "atomic-mintTo-publicStaking",
+  "mints a public staking position to 1 recipient with alca token amount from alicenet factory and locked for max staking lock duration"
+)
+  .addParam("recipient", "address to minto staked position to")
+  .addParam("alcaAmount", "amount of ALCA to send to staked position")
+  .addFlag("test", "test mode for use with a hardhat fork mode")
+  .addOptionalParam(
+    "waitConfirmation",
+    "wait specified number of blocks between transactions",
+    0,
+    types.int
+  )
+  .setAction(async (taskArgs, hre) => {
+    const waitConfirmationsBlocks = await parseWaitConfirmationInterval(
+      taskArgs.waitConfirmation,
+      hre
+    );
+    let factory = await hre.ethers.getContractAt(
+      ALICENET_FACTORY,
+      "0x4b6dF6B299fB6414f45719E0d9e1889269a7843E"
+    );
+    // use this flag with a hardhat forked node
+    if (taskArgs.test) {
+      const address = "0xff55549a3ceea32fba4794bf1a649a2363fcda53";
+      await hre.network.provider.request({
+        method: "hardhat_impersonateAccount",
+        params: [address],
+      });
+      const helpers = require("@nomicfoundation/hardhat-network-helpers");
+      await helpers.impersonateAccount(address);
+      const signer = await hre.ethers.getSigner(address);
+      factory = factory.connect(signer);
+    }
+    const publicStaking = await hre.ethers.getContractAt(
+      "PublicStaking",
+      "0x65683990415A669a7ecbD877240818EE458d0f09"
+    );
+    const alca = await hre.ethers.getContractAt(
+      "ALCA",
+      "0xBb556b0eE2CBd89ed95DdEA881477723A3Aa8F8b"
+    );
+
+    const maxStakingLock = BigNumber.from("1051200");
+    //encode approval call to approve public staking contract to
+    //encode ALCA amount in wei
+    const alcaAmount = hre.ethers.utils.parseEther(taskArgs.alcaAmount);
+    const approval = alca.interface.encodeFunctionData("approve", [
+      publicStaking.address,
+      alcaAmount,
+    ]);
+    const encodedApprovalCall: MultiCallArgsStruct = {
+      target: alca.address,
+      value: 0,
+      data: approval,
+    };
+    //encode mintTo call to public staking contract to mint a staked position with ALCA from factory
+    const mintTo = publicStaking.interface.encodeFunctionData("mintTo", [
+      taskArgs.recipient,
+      alcaAmount,
+      maxStakingLock,
+    ]);
+    const encodedMintToCall: MultiCallArgsStruct = {
+      target: publicStaking.address,
+      value: 0,
+      data: mintTo,
+    };
+    let encodedMultiCallArgs: Array<MultiCallArgsStruct> = [
+      encodedApprovalCall,
+      encodedMintToCall,
+    ];
+    const txResponse = await factory.multiCall(
+      encodedMultiCallArgs,
+      await getGasPrices(hre.ethers)
+    );
+    const receipt = await txResponse.wait(waitConfirmationsBlocks);
+    console.log(receipt.events);
+  });
+
+task(
+  "monthly-distribution",
+  "takes in a csv file with addresses, and ALCA amount"
+)
+  .addParam("csvPath", "path to csv file")
+  .setAction(async (taskArgs, hre) => {
+    const results: Array<any> = [];
+    fs.createReadStream(taskArgs.csvPath)
+      .pipe(csv())
+      .on("data", (data) => {
+        results.push(data);
+        console.log(data);
+      })
+      .on("error", (err) => {
+        console.log(err);
+      })
+      .on("open", (fd) => {
+        console.log("opened");
+        console.log(fd);
+      })
+      .on("end", () => {
+        console.log(results);
+      });
+    // await setTimeout(5000);
+    console.log(results);
   });
 
 async function mintALCATo(
