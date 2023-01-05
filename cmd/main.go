@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bytes"
+	"io"
 	"os"
 	"reflect"
 	"strings"
@@ -275,13 +277,19 @@ func main() {
 		// Read the config file
 		file, err := os.Open(config.Configuration.ConfigurationFileName)
 		if err == nil {
-			err := viper.ReadConfig(file)
-			if err != nil {
-				logger.Warnf("unable to read config %s with err %q", file.Name(), err)
+			bs, err := io.ReadAll(file)
+			if err == nil {
+				reader := bytes.NewReader(bs)
+				viper.SetConfigType("toml") // TODO: Set config type based on file extension. Viper supports more than toml.
+				err := viper.ReadConfig(reader)
+				if err != nil {
+					logger.Warnf("Reading config failed:%q", err)
+				}
+			} else {
+				logger.Warnf("Reading file failed:%q", err)
 			}
-			logger.Infof("config %s", file.Name())
 		} else {
-			logger.Debugf("unable to open config %s with err %q", file.Name(), err)
+			logger.Debugf("Opening file failed: %q", err)
 		}
 
 		/* The logic here feels backwards to me but it isn't.
