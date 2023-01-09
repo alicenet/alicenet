@@ -1907,8 +1907,6 @@ task(
       factory.address,
       publicStaking.address
     );
-    console.log(approvalAmount);
-    console.log(approvedAmount);
     approvalAmount = approvalAmount.sub(approvedAmount);
     const approval = alca.interface.encodeFunctionData("approve", [
       publicStaking.address,
