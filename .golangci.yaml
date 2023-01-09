@@ -17,6 +17,7 @@ linters:
     - grouper 
     - ineffassign
     - tenv 
+    - thelper 
     - tparallel 
     - unused 
   # Disabling linters until we get them fixed up.
@@ -70,7 +71,6 @@ linters:
     - staticcheck
     - stylecheck # 50 issues
     - tagliatelle # 7 issues
-    - thelper # 4 issues
     - unconvert # 3 issues
     - unparam # 29 issues
     - whitespace # 6 issues

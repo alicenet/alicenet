@@ -53,6 +53,7 @@ func TestMain(m *testing.M) {
 }
 
 func setupEthereum(t *testing.T, n int) *tests.ClientFixture {
+	t.Helper()
 	logger := logging.GetLogger("test").WithField("test", t.Name())
 	fixture := tests.NewClientFixture(HardHat, 0, n, logger, true, true, true)
 	assert.NotNil(t, fixture)
@@ -87,6 +88,7 @@ type EthDkgTestSuite struct {
 }
 
 func GetDKGDb(t *testing.T) *db.Database {
+	t.Helper()
 	db := mocks.NewTestDB()
 	t.Cleanup(func() {
 		db.DB().Close()
@@ -939,6 +941,7 @@ func RegisterPotentialValidatorOnMonitor(
 	suite *EthDkgTestSuite,
 	accounts []accounts.Account,
 ) {
+	t.Helper()
 	monState := objects.NewMonitorState()
 	for idx := 0; idx < len(accounts); idx++ {
 		monState.PotentialValidators[accounts[idx].Address] = objects.PotentialValidator{

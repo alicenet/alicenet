@@ -82,6 +82,7 @@ func getTaskManagerCopy(t *testing.T, manager *TaskManager) *TaskManager {
 
 // getScheduleLen returns the amount of tasks is in the TaskManager.Schedule
 func getScheduleLen(t *testing.T, manager *TaskManager) int {
+	t.Helper()
 	newManager := getTaskManagerCopy(t, manager)
 	return len(newManager.Schedule)
 }

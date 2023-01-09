@@ -6,6 +6,7 @@ import (
 )
 
 func stpkEqual(t *testing.T, stpk, stpk2 *SafeToProceedKey) {
+	t.Helper()
 	if !bytes.Equal(stpk.Prefix, stpk2.Prefix) {
 		t.Fatal("fail")
 	}

@@ -57,6 +57,7 @@ func TestValueStoreGood(t *testing.T) {
 }
 
 func vsEqual(t *testing.T, vs1, vs2 *ValueStore) {
+	t.Helper()
 	vspi1 := vs1.VSPreImage
 	vspi2 := vs2.VSPreImage
 	vspiEqual(t, vspi1, vspi2)

@@ -24,6 +24,7 @@ func createState() *MonitorState {
 }
 
 func assertStateMatch(t *testing.T, ms *MonitorState) {
+	t.Helper()
 	// Make sure the new struct looks like the old struct
 	assert.Equal(t, uint64(614), ms.HighestBlockProcessed)
 	assert.Equal(t, uint64(911), ms.HighestBlockFinalized)

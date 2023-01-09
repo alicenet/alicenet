@@ -56,6 +56,7 @@ func TestDSPreImageGood(t *testing.T) {
 }
 
 func dspiEqual(t *testing.T, dspi1, dspi2 *DSPreImage) {
+	t.Helper()
 	if dspi1.ChainID != dspi2.ChainID {
 		t.Fatal("Do not agree on ChainID!")
 	}
