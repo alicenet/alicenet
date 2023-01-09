@@ -1774,6 +1774,14 @@ task(
       ALICENET_FACTORY,
       "0x4b6dF6B299fB6414f45719E0d9e1889269a7843E"
     );
+    const publicStaking = await hre.ethers.getContractAt(
+      "PublicStaking",
+      "0x65683990415A669a7ecbD877240818EE458d0f09"
+    );
+    const alca = await hre.ethers.getContractAt(
+      "ALCA",
+      "0xBb556b0eE2CBd89ed95DdEA881477723A3Aa8F8b"
+    );
     // use this flag with a hardhat forked node
     if (taskArgs.test) {
       const address = "0xff55549a3ceea32fba4794bf1a649a2363fcda53";
@@ -1786,15 +1794,6 @@ task(
       const signer = await hre.ethers.getSigner(address);
       factory = factory.connect(signer);
     }
-    const publicStaking = await hre.ethers.getContractAt(
-      "PublicStaking",
-      "0x65683990415A669a7ecbD877240818EE458d0f09"
-    );
-    const alca = await hre.ethers.getContractAt(
-      "ALCA",
-      "0xBb556b0eE2CBd89ed95DdEA881477723A3Aa8F8b"
-    );
-
     const maxStakingLock = BigNumber.from("1051200");
     //encode approval call to approve public staking contract to
     //encode ALCA amount in wei
@@ -1836,27 +1835,114 @@ task(
   "takes in a csv file with addresses, and ALCA amount"
 )
   .addParam("csvPath", "path to csv file")
+  .addFlag("test", "test mode for use with a hardhat fork mode")
+  .addOptionalParam(
+    "waitConfirmation",
+    "wait specified number of blocks between transactions",
+    0,
+    types.int
+  )
   .setAction(async (taskArgs, hre) => {
-    const results: Array<any> = [];
-    fs.createReadStream(taskArgs.csvPath)
+    const waitConfirmationsBlocks = await parseWaitConfirmationInterval(
+      taskArgs.waitConfirmation,
+      hre
+    );
+    const maxStakingLock = BigNumber.from("1051200");
+    let factory = await hre.ethers.getContractAt(
+      ALICENET_FACTORY,
+      "0x4b6dF6B299fB6414f45719E0d9e1889269a7843E"
+    );
+    const publicStaking = await hre.ethers.getContractAt(
+      "PublicStaking",
+      "0x65683990415A669a7ecbD877240818EE458d0f09"
+    );
+    const alca = await hre.ethers.getContractAt(
+      "ALCA",
+      "0xBb556b0eE2CBd89ed95DdEA881477723A3Aa8F8b"
+    );
+    let distributionData = await readCSV(taskArgs.csvPath);
+    // use this flag with a hardhat forked node
+    if (taskArgs.test) {
+      const address = "0xff55549a3ceea32fba4794bf1a649a2363fcda53";
+      await hre.network.provider.request({
+        method: "hardhat_impersonateAccount",
+        params: [address],
+      });
+      const helpers = require("@nomicfoundation/hardhat-network-helpers");
+      await helpers.impersonateAccount(address);
+      const signer = await hre.ethers.getSigner(address);
+      factory = factory.connect(signer);
+    }
+    let encodedMultiCallArgs: Array<MultiCallArgsStruct> = [];
+    let encodedApprovalCall: MultiCallArgsStruct = {
+      target: alca.address,
+      value: 0,
+      data: "",
+    };
+    encodedMultiCallArgs.push(encodedApprovalCall);
+    let approvalAmount = BigNumber.from("0");
+    //encode a multicall input for each row in the csv file
+    for (let input of distributionData) {
+      if (input.Address.length != 42) {
+        throw new Error(
+          `invalid address address length: ${input.Address.length} for ${input.Name}`
+        );
+      }
+      const amount = await hre.ethers.utils.parseEther(input.Amount);
+      approvalAmount = approvalAmount.add(amount);
+      const mintTo = publicStaking.interface.encodeFunctionData("mintTo", [
+        input.Address,
+        amount,
+        maxStakingLock,
+      ]);
+      const encodedMintToCall: MultiCallArgsStruct = {
+        target: publicStaking.address,
+        value: 0,
+        data: mintTo,
+      };
+      encodedMultiCallArgs.push(encodedMintToCall);
+    }
+    //encode approval call
+    let approvedAmount = await alca.allowance(
+      factory.address,
+      publicStaking.address
+    );
+    console.log(approvalAmount);
+    console.log(approvedAmount);
+    approvalAmount = approvalAmount.sub(approvedAmount);
+    const approval = alca.interface.encodeFunctionData("approve", [
+      publicStaking.address,
+      approvalAmount,
+    ]);
+    encodedMultiCallArgs[0].data = approval;
+    const txResponse = await factory.multiCall(
+      encodedMultiCallArgs,
+      await getGasPrices(hre.ethers)
+    );
+    //check if all token distributions were successful
+    const receipt = await txResponse.wait(waitConfirmationsBlocks);
+    // console.log(receipt.events);
+  });
+
+interface DistributionData {
+  Name: string;
+  Amount: string;
+  Address: string;
+}
+async function readCSV(csvPath: string): Promise<Array<DistributionData>> {
+  const results: Array<any> = [];
+  return new Promise((resolve, reject) => {
+    fs.createReadStream(csvPath)
       .pipe(csv())
       .on("data", (data) => {
         results.push(data);
-        console.log(data);
       })
-      .on("error", (err) => {
-        console.log(err);
-      })
-      .on("open", (fd) => {
-        console.log("opened");
-        console.log(fd);
-      })
+      .on("error", reject)
       .on("end", () => {
-        console.log(results);
+        resolve(results);
       });
-    // await setTimeout(5000);
-    console.log(results);
   });
+}
 
 async function mintALCATo(
   hre: HardhatRuntimeEnvironment,
