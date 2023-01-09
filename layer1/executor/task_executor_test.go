@@ -25,9 +25,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func getTaskExecutor(
-	t *testing.T,
-) (*TaskExecutor, *mocks.MockClient, *db.Database, *executorResponseChan, *mocks.MockWatcher) {
+func getTaskExecutor(t *testing.T) (*TaskExecutor, *mocks.MockClient, *db.Database, *executorResponseChan, *mocks.MockWatcher) {
 	t.Helper()
 	db := mocks.NewTestDB()
 	client := mocks.NewMockClient()
