@@ -2525,7 +2525,7 @@ func TestReplicateCorruptTrieSimplified(t *testing.T) {
 		require.Nil(t, err)
 		_, missing, err := trie.Get(txn, [][]byte{utxoID})
 		if len(missing) != 0 {
-			return errors.New(fmt.Sprintf("not found: %s", "a002f675e56b4b0889ea0f9279735c0437d1c8ac736d0408c8ff67bd2e3e67a0"))
+			return fmt.Errorf("not found: %s", "a002f675e56b4b0889ea0f9279735c0437d1c8ac736d0408c8ff67bd2e3e67a0")
 		}
 		return err
 	})
