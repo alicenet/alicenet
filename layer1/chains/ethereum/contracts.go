@@ -9,12 +9,12 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/sirupsen/logrus"
-
 	"github.com/alicenet/alicenet/bridge/bindings"
 	"github.com/alicenet/alicenet/layer1"
+	"github.com/alicenet/alicenet/layer1/evm"
 	"github.com/alicenet/alicenet/utils"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/sirupsen/logrus"
 )
 
 var _ layer1.EthereumContracts = &Contracts{}
@@ -22,7 +22,7 @@ var _ layer1.EthereumContracts = &Contracts{}
 // Contracts contains bindings to smart contract system.
 type Contracts struct {
 	allAddresses            map[common.Address]bool
-	eth                     *Client
+	eth                     *evm.Client
 	ethdkg                  bindings.IETHDKG
 	ethdkgAddress           common.Address
 	alca                    bindings.IALCA
@@ -48,7 +48,7 @@ type Contracts struct {
 // Set the contractFactoryAddress and looks up for all the contracts that we
 // need that were deployed via the factory. It's only executed once. Other call
 // to this functions are no-op.
-func NewContracts(eth *Client, contractFactoryAddress common.Address) *Contracts {
+func NewContracts(eth *evm.Client, contractFactoryAddress common.Address) *Contracts {
 	newContracts := &Contracts{
 		allAddresses:           make(map[common.Address]bool),
 		eth:                    eth,
@@ -69,7 +69,7 @@ func (c *Contracts) lookupContracts() error {
 	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
 
 	eth := c.eth
-	logger := eth.logger
+	logger := eth.GetLogger()
 	logger.Infof("Looking up smart contracts on Ethereum...")
 	for {
 		select {
@@ -79,7 +79,10 @@ func (c *Contracts) lookupContracts() error {
 		}
 
 		// Load the contractFactory first
-		contractFactory, err := bindings.NewAliceNetFactory(c.contractFactoryAddress, eth.internalClient)
+		contractFactory, err := bindings.NewAliceNetFactory(
+			c.contractFactoryAddress,
+			eth.GetInternalClient(),
+		)
 		if err != nil {
 			return err
 		}
@@ -87,7 +90,7 @@ func (c *Contracts) lookupContracts() error {
 
 		// todo: replace lookup with deterministic address compute
 
-		callOpts, err := eth.GetCallOpts(networkCtx, eth.defaultAccount)
+		callOpts, err := eth.GetCallOpts(networkCtx, eth.GetDefaultAccount())
 		if err != nil {
 			logger.Errorf("Failed to generate call options for lookup %v", err)
 		}
@@ -112,7 +115,7 @@ func (c *Contracts) lookupContracts() error {
 			continue
 		}
 
-		c.ethdkg, err = bindings.NewETHDKG(c.ethdkgAddress, eth.internalClient)
+		c.ethdkg, err = bindings.NewETHDKG(c.ethdkgAddress, eth.GetInternalClient())
 		logAndEat(logger, err)
 
 		// ValidatorPool
@@ -122,7 +125,10 @@ func (c *Contracts) lookupContracts() error {
 			continue
 		}
 
-		c.validatorPool, err = bindings.NewValidatorPool(c.validatorPoolAddress, eth.internalClient)
+		c.validatorPool, err = bindings.NewValidatorPool(
+			c.validatorPoolAddress,
+			eth.GetInternalClient(),
+		)
 		logAndEat(logger, err)
 
 		// ALCB TODO: bring it back once we deploy ALCB c.alcbAddress, err = lookup("ALCB")
@@ -134,7 +140,7 @@ func (c *Contracts) lookupContracts() error {
 		// once we deploy ALCB
 		c.alcbAddress = common.HexToAddress("0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc")
 		logger.Infof("Lookup up of \"%v\" is 0x%x", "ALCB", c.alcbAddress)
-		c.alcb, err = bindings.NewALCB(c.alcbAddress, eth.internalClient)
+		c.alcb, err = bindings.NewALCB(c.alcbAddress, eth.GetInternalClient())
 		logAndEat(logger, err)
 
 		// ALCA
@@ -144,7 +150,7 @@ func (c *Contracts) lookupContracts() error {
 			continue
 		}
 
-		c.alca, err = bindings.NewALCA(c.alcaAddress, eth.internalClient)
+		c.alca, err = bindings.NewALCA(c.alcaAddress, eth.GetInternalClient())
 		logAndEat(logger, err)
 
 		// PublicStaking
@@ -154,7 +160,10 @@ func (c *Contracts) lookupContracts() error {
 			continue
 		}
 
-		c.publicStaking, err = bindings.NewPublicStaking(c.publicStakingAddress, eth.internalClient)
+		c.publicStaking, err = bindings.NewPublicStaking(
+			c.publicStakingAddress,
+			eth.GetInternalClient(),
+		)
 		logAndEat(logger, err)
 
 		// ValidatorStaking
@@ -164,7 +173,10 @@ func (c *Contracts) lookupContracts() error {
 			continue
 		}
 
-		c.validatorStaking, err = bindings.NewValidatorStaking(c.validatorStakingAddress, eth.internalClient)
+		c.validatorStaking, err = bindings.NewValidatorStaking(
+			c.validatorStakingAddress,
+			eth.GetInternalClient(),
+		)
 		logAndEat(logger, err)
 
 		// Governance
@@ -179,7 +191,7 @@ func (c *Contracts) lookupContracts() error {
 		c.governanceAddress = common.HexToAddress("0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5be")
 		logger.Infof("Lookup up of \"%v\" is 0x%x", "Governance", c.governanceAddress)
 
-		c.governance, err = bindings.NewGovernance(c.governanceAddress, eth.internalClient)
+		c.governance, err = bindings.NewGovernance(c.governanceAddress, eth.GetInternalClient())
 		logAndEat(logger, err)
 
 		// Snapshots
@@ -189,7 +201,7 @@ func (c *Contracts) lookupContracts() error {
 			continue
 		}
 
-		c.snapshots, err = bindings.NewSnapshots(c.snapshotsAddress, eth.internalClient)
+		c.snapshots, err = bindings.NewSnapshots(c.snapshotsAddress, eth.GetInternalClient())
 		logAndEat(logger, err)
 
 		// Dynamics
@@ -199,7 +211,7 @@ func (c *Contracts) lookupContracts() error {
 			continue
 		}
 
-		c.dynamics, err = bindings.NewDynamics(c.dynamicsAddress, eth.internalClient)
+		c.dynamics, err = bindings.NewDynamics(c.dynamicsAddress, eth.GetInternalClient())
 		logAndEat(logger, err)
 
 		break
@@ -302,4 +314,24 @@ func logAndEat(logger *logrus.Logger, err error) {
 	if err != nil {
 		logger.Error(err)
 	}
+}
+
+// Get the current validators.
+func GetValidators(
+	eth layer1.Client,
+	contracts layer1.EthereumContracts,
+	logger *logrus.Logger,
+	ctx context.Context,
+) ([]common.Address, error) {
+	callOpts, err := eth.GetCallOpts(ctx, eth.GetDefaultAccount())
+	if err != nil {
+		return nil, err
+	}
+	validatorAddresses, err := contracts.ValidatorPool().GetValidatorsAddresses(callOpts)
+	if err != nil {
+		logger.Warnf("Could not call contract:%v", err)
+		return nil, err
+	}
+
+	return validatorAddresses, nil
 }

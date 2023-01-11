@@ -26,7 +26,7 @@ import (
 	mncrypto "github.com/alicenet/alicenet/crypto"
 	"github.com/alicenet/alicenet/dynamics"
 	"github.com/alicenet/alicenet/layer1"
-	"github.com/alicenet/alicenet/layer1/ethereum"
+	"github.com/alicenet/alicenet/layer1/evm"
 	"github.com/alicenet/alicenet/layer1/executor"
 	"github.com/alicenet/alicenet/layer1/handlers"
 	"github.com/alicenet/alicenet/layer1/monitor"
@@ -52,10 +52,13 @@ var Command = cobra.Command{
 	Run:   validatorNode,
 }
 
-func initEthereumConnection(logger *logrus.Logger) (layer1.Client, layer1.AllSmartContracts, *mncrypto.Secp256k1Signer, []byte) {
+func initEthereumConnection(
+	logger *logrus.Logger,
+) (layer1.Client, layer1.AllSmartContracts, *mncrypto.Secp256k1Signer, []byte) {
 	// Ethereum connection setup
 	logger.Infof("Connecting to Ethereum...")
-	eth, err := ethereum.NewClient(
+	eth, err := evm.NewClient(
+		logging.GetLogger("ethereum"),
 		config.Configuration.Ethereum.Endpoint,
 		config.Configuration.Ethereum.Keystore,
 		config.Configuration.Ethereum.PassCodes,
@@ -75,7 +78,10 @@ func initEthereumConnection(logger *logrus.Logger) (layer1.Client, layer1.AllSma
 	}
 
 	// Initialize and find all the contracts
-	contractsHandler := handlers.NewAllSmartContractsHandle(eth, common.HexToAddress(config.Configuration.Ethereum.FactoryAddress))
+	contractsHandler := handlers.NewAllSmartContractsHandle(
+		eth,
+		common.HexToAddress(config.Configuration.Ethereum.FactoryAddress),
+	)
 
 	utils.LogStatus(logger.WithField("Component", "validator"), eth, contractsHandler)
 
@@ -96,7 +102,10 @@ func initEthereumConnection(logger *logrus.Logger) (layer1.Client, layer1.AllSma
 // Peer manager owns the raw TCP connections of the p2p system
 // Runs the gossip protocol
 // Provides functionality to access methods on a remote peer (validators, miners, those who care about voting and consensus).
-func initPeerManager(consGossipHandlers *gossip.Handlers, consReqHandler *request.Handler) *peering.PeerManager {
+func initPeerManager(
+	consGossipHandlers *gossip.Handlers,
+	consReqHandler *request.Handler,
+) *peering.PeerManager {
 	p2pDispatch := proto.NewP2PDispatch()
 
 	peerManager, err := peering.NewPeerManager(
@@ -188,7 +197,12 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	eth, contractsHandler, secp256k1Signer, publicKey := initEthereumConnection(logger)
 	defer eth.Close()
 
-	currentEpoch, latestVersion, err := getCurrentEpochAndCanonicalVersion(nodeCtx, eth, contractsHandler, logger)
+	currentEpoch, latestVersion, err := getCurrentEpochAndCanonicalVersion(
+		nodeCtx,
+		eth,
+		contractsHandler,
+		logger,
+	)
 	if err != nil {
 		panic(err)
 	}
@@ -217,15 +231,27 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	}
 
 	// Initialize consensus db: stores all state the consensus mechanism requires to work
-	rawConsensusDb := initDatabase(nodeCtx, config.Configuration.Chain.StateDbPath, config.Configuration.Chain.StateDbInMemory)
+	rawConsensusDb := initDatabase(
+		nodeCtx,
+		config.Configuration.Chain.StateDbPath,
+		config.Configuration.Chain.StateDbInMemory,
+	)
 	defer rawConsensusDb.Close()
 
 	// Initialize transaction pool db: contains transactions that have not been mined (and thus are to be gossiped)
-	rawTxPoolDb := initDatabase(nodeCtx, config.Configuration.Chain.TransactionDbPath, config.Configuration.Chain.TransactionDbInMemory)
+	rawTxPoolDb := initDatabase(
+		nodeCtx,
+		config.Configuration.Chain.TransactionDbPath,
+		config.Configuration.Chain.TransactionDbInMemory,
+	)
 	defer rawTxPoolDb.Close()
 
 	// Initialize monitor database: tracks what ETH block number we're on (tracking deposits)
-	rawMonitorDb := initDatabase(nodeCtx, config.Configuration.Chain.MonitorDbPath, config.Configuration.Chain.MonitorDbInMemory)
+	rawMonitorDb := initDatabase(
+		nodeCtx,
+		config.Configuration.Chain.MonitorDbPath,
+		config.Configuration.Chain.MonitorDbInMemory,
+	)
 	defer rawMonitorDb.Close()
 
 	// giving some time to services finish their work on the databases to avoid
@@ -297,24 +323,63 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	consLSHandler.Init(consDB, consDlManager)
 	consGossipHandlers.Init(chainID, consDB, peerManager.P2PClient(), app, consLSHandler, storage)
 	consGossipClient.Init(consDB, peerManager.P2PClient(), app, storage)
-	consAdminHandlers.Init(chainID, consDB, mncrypto.Hasher([]byte(config.Configuration.Validator.SymmetricKey)), app, publicKey, storage)
-	consLSEngine.Init(consDB, consDlManager, app, secp256k1Signer, consAdminHandlers, publicKey, consReqClient, storage)
+	consAdminHandlers.Init(
+		chainID,
+		consDB,
+		mncrypto.Hasher([]byte(config.Configuration.Validator.SymmetricKey)),
+		app,
+		publicKey,
+		storage,
+	)
+	consLSEngine.Init(
+		consDB,
+		consDlManager,
+		app,
+		secp256k1Signer,
+		consAdminHandlers,
+		publicKey,
+		consReqClient,
+		storage,
+	)
 
 	// Setup monitor
 	monDB.Init(rawMonitorDb)
 
 	// Layer 1 transaction watcher
-	txWatcher := transaction.WatcherFromNetwork(eth, monDB, config.Configuration.Ethereum.TxMetricsDisplay, constants.TxPollingTime)
+	txWatcher := transaction.WatcherFromNetwork(
+		eth,
+		monDB,
+		config.Configuration.Ethereum.TxMetricsDisplay,
+		constants.TxPollingTime,
+	)
 	defer txWatcher.Close()
 
 	// Setup tasks scheduler
-	tasksHandler, err := executor.NewTaskHandler(monDB, eth, contractsHandler, consAdminHandlers, txWatcher)
+	tasksHandler, err := executor.NewTaskHandler(
+		monDB,
+		eth,
+		contractsHandler,
+		consAdminHandlers,
+		txWatcher,
+	)
 	if err != nil {
 		panic(err)
 	}
 
 	monitorInterval := constants.MonitorInterval
-	mon, err := monitor.NewMonitor(consDB, monDB, consAdminHandlers, appDepositHandler, eth, contractsHandler, contractsHandler.EthereumContracts().GetAllAddresses(), monitorInterval, batchSize, uint32(config.Configuration.Chain.ID), tasksHandler)
+	mon, err := monitor.NewMonitor(
+		consDB,
+		monDB,
+		consAdminHandlers,
+		appDepositHandler,
+		eth,
+		contractsHandler,
+		contractsHandler.EthereumContracts().GetAllAddresses(),
+		monitorInterval,
+		batchSize,
+		uint32(config.Configuration.Chain.ID),
+		tasksHandler,
+	)
 	if err != nil {
 		panic(err)
 	}
@@ -328,7 +393,19 @@ func validatorNode(cmd *cobra.Command, args []string) {
 		mDB = rawMonitorDb
 	}
 
-	consSync.Init(consDB, mDB, tDB, consGossipClient, consGossipHandlers, consTxPool, consLSEngine, app, consAdminHandlers, peerManager, storage)
+	consSync.Init(
+		consDB,
+		mDB,
+		tDB,
+		consGossipClient,
+		consGossipHandlers,
+		consTxPool,
+		consLSEngine,
+		app,
+		consAdminHandlers,
+		peerManager,
+		storage,
+	)
 	localStateHandler.Init(consDB, app, consGossipHandlers, publicKey, consSync.Safe, storage)
 	statusLogger.Init(consLSEngine, peerManager, consAdminHandlers, mon)
 
@@ -392,13 +469,21 @@ func validatorNode(cmd *cobra.Command, args []string) {
 func countSignals(logger *logrus.Logger, num int, c chan os.Signal) {
 	<-c
 	for count := 0; count < num; count++ {
-		logger.Warnf("Send Ctrl+C %v more times to force shutdown without waiting for services.\n", num-count)
+		logger.Warnf(
+			"Send Ctrl+C %v more times to force shutdown without waiting for services.\n",
+			num-count,
+		)
 		<-c
 	}
 	os.Exit(1)
 }
 
-func getCurrentEpochAndCanonicalVersion(ctx context.Context, eth layer1.Client, contractsHandler layer1.AllSmartContracts, logger *logrus.Logger) (uint32, bindings.CanonicalVersion, error) {
+func getCurrentEpochAndCanonicalVersion(
+	ctx context.Context,
+	eth layer1.Client,
+	contractsHandler layer1.AllSmartContracts,
+	logger *logrus.Logger,
+) (uint32, bindings.CanonicalVersion, error) {
 	retryCount := 5
 	retryDelay := 1 * time.Second
 
@@ -422,7 +507,9 @@ func getCurrentEpochAndCanonicalVersion(ctx context.Context, eth layer1.Client, 
 	}
 
 	for i := 0; i < retryCount; i++ {
-		latestVersion, err = contractsHandler.EthereumContracts().Dynamics().GetLatestAliceNetVersion(callOpts)
+		latestVersion, err = contractsHandler.EthereumContracts().
+			Dynamics().
+			GetLatestAliceNetVersion(callOpts)
 		if err != nil {
 			logEntry.Errorf("Received and error during GetLatestAliceNetVersion: %v", err)
 			<-time.After(retryDelay)

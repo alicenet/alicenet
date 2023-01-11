@@ -9,19 +9,23 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/alicenet/alicenet/layer1/evm"
+	"github.com/alicenet/alicenet/logging"
 	"github.com/stretchr/testify/assert"
-
-	"github.com/alicenet/alicenet/layer1/ethereum"
 )
 
 func TestEthereum_SendTransactionOnlyDefaultAccountUnlocked(t *testing.T) {
 	unlockAllAccounts := false
-	_, eth, logger := setupEthereum(t, 4, unlockAllAccounts)
+	_, eth, _ := setupEthereum(t, 4, unlockAllAccounts)
 
 	accountList := eth.GetKnownAccounts()
 
 	for _, acct := range accountList {
-		testTxn, err := ethereum.TransferEther(eth, logger, acct.Address, eth.GetDefaultAccount().Address, big.NewInt(1))
+		testTxn, err := eth.TransferNativeToken(
+			acct.Address,
+			eth.GetDefaultAccount().Address,
+			big.NewInt(1),
+		)
 		if bytes.Equal(acct.Address.Bytes(), eth.GetDefaultAccount().Address.Bytes()) {
 			assert.Nil(t, err)
 			assert.NotNil(t, testTxn)
@@ -35,12 +39,16 @@ func TestEthereum_SendTransactionOnlyDefaultAccountUnlocked(t *testing.T) {
 
 func TestEthereum_SendTransactionAllAccountUnlocked(t *testing.T) {
 	unlockAllAccounts := true
-	_, eth, logger := setupEthereum(t, 4, unlockAllAccounts)
+	_, eth, _ := setupEthereum(t, 4, unlockAllAccounts)
 
 	accountList := eth.GetKnownAccounts()
 
 	for _, acct := range accountList {
-		testTxn, err := ethereum.TransferEther(eth, logger, acct.Address, eth.GetDefaultAccount().Address, big.NewInt(1))
+		testTxn, err := eth.TransferNativeToken(
+			acct.Address,
+			eth.GetDefaultAccount().Address,
+			big.NewInt(1),
+		)
 		assert.Nil(t, err)
 		assert.NotNil(t, testTxn)
 	}
@@ -76,7 +84,10 @@ func TestEthereum_NewEthereumEndpoint(t *testing.T) {
 			args: args{"", "", "", "", false, 0, 0, 0},
 			want: false,
 			wantErr: func(t assert.TestingT, err error, i ...interface{}) bool {
-				if !strings.Contains(err.Error(), "txMaxGasFeeAllowedInGwei should be greater than") {
+				if !strings.Contains(
+					err.Error(),
+					"txMaxGasFeeAllowedInGwei should be greater than",
+				) {
 					t.Errorf("Failing test with an unexpected error %v", err)
 				}
 				return true
@@ -170,7 +181,8 @@ func TestEthereum_NewEthereumEndpoint(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := ethereum.NewClient(
+			got, err := evm.NewClient(
+				logging.GetLogger("test"),
 				tt.args.endpoint,
 				tt.args.pathKeystore,
 				tt.args.pathPassCodes,

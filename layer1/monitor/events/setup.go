@@ -4,17 +4,15 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/alicenet/alicenet/layer1/executor"
-
-	"github.com/ethereum/go-ethereum/accounts/abi"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/sirupsen/logrus"
-
 	"github.com/alicenet/alicenet/bridge/bindings"
 	"github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/layer1"
+	"github.com/alicenet/alicenet/layer1/executor"
 	monInterfaces "github.com/alicenet/alicenet/layer1/monitor/interfaces"
 	"github.com/alicenet/alicenet/layer1/monitor/objects"
+	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/sirupsen/logrus"
 )
 
 func GetETHDKGEvents() map[string]abi.Event {
@@ -80,7 +78,12 @@ func GetDynamicsEvents() map[string]abi.Event {
 	return snapshotsABI.Events
 }
 
-func RegisterETHDKGEvents(em *objects.EventMap, monDB *db.Database, adminHandler monInterfaces.AdminHandler, taskHandler executor.TaskHandler) {
+func RegisterETHDKGEvents(
+	em *objects.EventMap,
+	monDB *db.Database,
+	adminHandler monInterfaces.AdminHandler,
+	taskHandler executor.TaskHandler,
+) {
 	ethDkgEvents := GetETHDKGEvents()
 
 	eventProcessorMap := make(map[string]objects.EventProcessor)
@@ -133,7 +136,15 @@ func RegisterETHDKGEvents(em *objects.EventMap, monDB *db.Database, adminHandler
 	}
 }
 
-func SetupEventMap(em *objects.EventMap, cdb, monDB *db.Database, adminHandler monInterfaces.AdminHandler, depositHandler monInterfaces.DepositHandler, taskHandler executor.TaskHandler, exitFunc func(), chainID uint32) error {
+func SetupEventMap(
+	em *objects.EventMap,
+	cdb, monDB *db.Database,
+	adminHandler monInterfaces.AdminHandler,
+	depositHandler monInterfaces.DepositHandler,
+	taskHandler executor.TaskHandler,
+	exitFunc func(),
+	chainID uint32,
+) error {
 	RegisterETHDKGEvents(em, monDB, adminHandler, taskHandler)
 
 	// MadByte.DepositReceived
