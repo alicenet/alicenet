@@ -11,10 +11,12 @@ import (
 	"github.com/alicenet/alicenet/consensus/objs"
 	"github.com/alicenet/alicenet/constants/dbprefix"
 	"github.com/alicenet/alicenet/crypto"
+	"github.com/alicenet/alicenet/layer1/chains/ethereum"
 	"github.com/alicenet/alicenet/layer1/chains/ethereum/tasks/dkg"
 	"github.com/alicenet/alicenet/layer1/chains/ethereum/tasks/dkg/state"
 	"github.com/alicenet/alicenet/layer1/chains/ethereum/tasks/snapshots"
 	snapshotState "github.com/alicenet/alicenet/layer1/chains/ethereum/tasks/snapshots/state"
+	"github.com/alicenet/alicenet/layer1/executor/marshaller"
 	"github.com/alicenet/alicenet/layer1/executor/tasks"
 	taskMocks "github.com/alicenet/alicenet/layer1/executor/tasks/mocks"
 	"github.com/alicenet/alicenet/layer1/transaction"
@@ -62,10 +64,12 @@ func getTaskHandler(
 // getTaskManagerCopy creates a copy of the manager from the DB without race
 // conditions.
 func getTaskManagerCopy(t *testing.T, manager *TaskManager) *TaskManager {
+	tr := &marshaller.TypeRegistry{}
+	marshaller := ethereum.GetTaskRegistry(tr)
 	newManager := &TaskManager{
 		Schedule:   make(map[string]ManagerRequestInfo),
 		Responses:  make(map[string]ManagerResponseInfo),
-		marshaller: nil,
+		marshaller: marshaller,
 		database:   manager.database,
 	}
 	<-time.After(10 * time.Millisecond)
