@@ -16,7 +16,7 @@ import (
 	"time"
 
 	"github.com/alicenet/alicenet/layer1"
-	"github.com/alicenet/alicenet/layer1/ethereum"
+	"github.com/alicenet/alicenet/layer1/evm"
 	"github.com/alicenet/alicenet/logging"
 )
 
@@ -137,10 +137,22 @@ func executeCommand(dir, command string, args ...string) ([]byte, error) {
 	cmd.Dir = dir
 	output, err := cmd.Output()
 	if err != nil {
-		logger.Errorf("Error executing command: %v %v in dir: %v. %v", command, cmdArgs, dir, string(output))
+		logger.Errorf(
+			"Error executing command: %v %v in dir: %v. %v",
+			command,
+			cmdArgs,
+			dir,
+			string(output),
+		)
 		return output, err
 	}
-	logger.Tracef("Command Executed: %v %s in dir: %v. \n%s\n", command, cmdArgs, dir, string(output))
+	logger.Tracef(
+		"Command Executed: %v %s in dir: %v. \n%s\n",
+		command,
+		cmdArgs,
+		dir,
+		string(output),
+	)
 
 	return output, err
 }
@@ -204,7 +216,13 @@ func StartHardHatNode(hostname, port string) (*Hardhat, error) {
 	if err != nil {
 		return nil, fmt.Errorf("could not run hardhat node: %s", err)
 	}
-	hardhat := &Hardhat{cmd: cmd, url: fullUrl, configPath: configPath, port: port, hostname: hostname}
+	hardhat := &Hardhat{
+		cmd:        cmd,
+		url:        fullUrl,
+		configPath: configPath,
+		port:       port,
+		hostname:   hostname,
+	}
 	ctx, cf := context.WithTimeout(context.Background(), time.Second*100)
 	defer cf()
 	err = hardhat.WaitForHardHatNode(ctx)
@@ -217,7 +235,7 @@ func StartHardHatNode(hostname, port string) (*Hardhat, error) {
 func (h *Hardhat) WaitForHardHatNode(ctx context.Context) error {
 	logger := logging.GetLogger("test")
 	c := http.Client{}
-	msg := &ethereum.JsonRPCMessage{
+	msg := &evm.JsonRPCMessage{
 		Version: "2.0",
 		ID:      []byte("1"),
 		Method:  "eth_chainId",
@@ -361,7 +379,7 @@ func (h *Hardhat) RegisterValidators(factoryAddress string, validators []string)
 
 // SendCommandViaRPC sends a command to the hardhat server via an RPC call.
 func SendCommandViaRPC(url, command string, params ...interface{}) error {
-	commandJson := &ethereum.JsonRPCMessage{
+	commandJson := &evm.JsonRPCMessage{
 		Version: "2.0",
 		ID:      []byte("1"),
 		Method:  command,
@@ -441,7 +459,11 @@ func AdvanceTo(eth layer1.Client, target uint64) {
 func SetNextBlockBaseFee(endPoint string, target uint64) {
 	logger := logging.GetLogger("test")
 	logger.Tracef("Setting hardhat_setNextBlockBaseFeePerGas to %v", target)
-	err := SendCommandViaRPC(endPoint, "hardhat_setNextBlockBaseFeePerGas", "0x"+strconv.FormatUint(target, 16))
+	err := SendCommandViaRPC(
+		endPoint,
+		"hardhat_setNextBlockBaseFeePerGas",
+		"0x"+strconv.FormatUint(target, 16),
+	)
 	if err != nil {
 		panic(err)
 	}

@@ -1,6 +1,8 @@
 package executor
 
 import (
+	"sync"
+
 	"github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/layer1"
 	"github.com/alicenet/alicenet/layer1/executor/tasks"
@@ -9,7 +11,6 @@ import (
 	"github.com/alicenet/alicenet/logging"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
-	"sync"
 )
 
 var _ TaskHandler = &Handler{}
@@ -23,11 +24,25 @@ type Handler struct {
 }
 
 // NewTaskHandler creates a new Handler instance.
-func NewTaskHandler(database *db.Database, eth layer1.Client, contracts layer1.AllSmartContracts, adminHandler monitorInterfaces.AdminHandler, txWatcher transaction.Watcher) (TaskHandler, error) {
+func NewTaskHandler(
+	database *db.Database,
+	eth layer1.Client,
+	contracts layer1.AllSmartContracts,
+	adminHandler monitorInterfaces.AdminHandler,
+	txWatcher transaction.Watcher,
+) (TaskHandler, error) {
 	requestChan := make(chan managerRequest, tasks.ManagerBufferSize)
 	logger := logging.GetLogger("tasks")
 
-	taskManager, err := newTaskManager(eth, contracts, database, logger.WithField("Component", "TaskManager"), adminHandler, requestChan, txWatcher)
+	taskManager, err := newTaskManager(
+		eth,
+		contracts,
+		database,
+		logger.WithField("Component", "TaskManager"),
+		adminHandler,
+		requestChan,
+		txWatcher,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -72,7 +87,12 @@ func (h *Handler) ScheduleTask(task tasks.Task, id string) (*HandlerResponse, er
 	if id == "" {
 		id = uuid.New().String()
 	}
-	req := managerRequest{task: task, id: id, action: Schedule, response: NewManagerResponseChannel()}
+	req := managerRequest{
+		task:     task,
+		id:       id,
+		action:   Schedule,
+		response: NewManagerResponseChannel(),
+	}
 	err := h.waitForRequestProcessing(req)
 	if err != nil {
 		return nil, err
