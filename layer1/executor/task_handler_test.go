@@ -33,6 +33,7 @@ func getTaskHandler(
 	t *testing.T,
 	doCleanup bool,
 ) (*Handler, *mocks.MockClient, *mocks.MockAllSmartContracts, *mocks.MockWatcher, accounts.Account) {
+	t.Helper()
 	db := mocks.NewTestDB()
 	client := mocks.NewMockClient()
 	client.GetFinalizedHeightFunc.SetDefaultReturn(0, nil)
@@ -64,6 +65,7 @@ func getTaskHandler(
 // getTaskManagerCopy creates a copy of the manager from the DB without race
 // conditions.
 func getTaskManagerCopy(t *testing.T, manager *TaskManager) *TaskManager {
+	t.Helper()
 	tr := &marshaller.TypeRegistry{}
 	marshaller := ethereum.GetTaskRegistry(tr)
 	newManager := &TaskManager{
