@@ -5,6 +5,7 @@ import "forge-std/Test.sol";
 import "contracts/ALCB.sol";
 import "test/contract-mocks/bToken/BridgeRouterMock.sol";
 import "contracts/libraries/errors/UtilityTokenErrors.sol";
+import "test_sol/Setup.sol";
 
 contract ALCBTest is Test {
     CentralBridgeRouterMock stakingRouter;
@@ -15,8 +16,9 @@ contract ALCBTest is Test {
     uint256 marketSpread = 4;
 
     function setUp() public {
-        stakingRouter = new CentralBridgeRouterMock(1000);
-        alcb = new ALCB(address(stakingRouter));
+        Setup.BaseTokensFixture memory fixture = Setup.deployFactoryAndBaseTokens();
+        stakingRouter = fixture.stakingRouter;
+        alcb = fixture.alcb;
     }
 
     function testMintsAlcbFromEtherValueToSender() public {
