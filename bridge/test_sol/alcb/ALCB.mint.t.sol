@@ -74,8 +74,9 @@ contract ALCBTest is Test {
     }
 
     function testMintToFuzz(uint96 etherToSend, address destinationAddress) public {
-        // if the value is less than market spread the function throws an error
-        if (etherToSend < marketSpread) return;
+        vm.assume(destinationAddress != zeroAddress);
+        vm.assume(etherToSend > marketSpread);
+
         uint256 totalSupplyBefore = alcb.totalSupply();
 
         // fund the address
@@ -93,8 +94,7 @@ contract ALCBTest is Test {
     }
 
     function testMintFuzz(uint96 etherToSend) public {
-        // if the value is less than market spread the function throws an error
-        if (etherToSend < marketSpread) return;
+        vm.assume(etherToSend > marketSpread);
         uint256 totalSupplyBefore = alcb.totalSupply();
 
         // fund the address
