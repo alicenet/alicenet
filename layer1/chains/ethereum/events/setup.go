@@ -78,7 +78,12 @@ func GetDynamicsEvents() map[string]abi.Event {
 	return snapshotsABI.Events
 }
 
-func RegisterETHDKGEvents(em *objects.EventMap, monDB *db.Database, adminHandler monInterfaces.AdminHandler, taskHandler executor.TaskHandler) {
+func RegisterETHDKGEvents(
+	em *objects.EventMap,
+	monDB *db.Database,
+	adminHandler monInterfaces.AdminHandler,
+	taskHandler executor.TaskHandler,
+) {
 	ethDkgEvents := GetETHDKGEvents()
 
 	eventProcessorMap := make(map[string]objects.EventProcessor)
@@ -131,7 +136,15 @@ func RegisterETHDKGEvents(em *objects.EventMap, monDB *db.Database, adminHandler
 	}
 }
 
-func SetupEventMap(em *objects.EventMap, cdb, monDB *db.Database, adminHandler monInterfaces.AdminHandler, depositHandler monInterfaces.DepositHandler, taskHandler executor.TaskHandler, exitFunc func(), chainID uint32) error {
+func SetupEventMap(
+	em *objects.EventMap,
+	cdb, monDB *db.Database,
+	adminHandler monInterfaces.AdminHandler,
+	depositHandler monInterfaces.DepositHandler,
+	taskHandler executor.TaskHandler,
+	exitFunc func(),
+	chainID uint32,
+) error {
 	RegisterETHDKGEvents(em, monDB, adminHandler, taskHandler)
 
 	// MadByte.DepositReceived

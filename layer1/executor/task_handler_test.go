@@ -29,10 +29,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func getTaskHandler(
-	t *testing.T,
-	doCleanup bool,
-) (*Handler, *mocks.MockClient, *mocks.MockAllSmartContracts, *mocks.MockWatcher, accounts.Account) {
+func getTaskHandler(t *testing.T, doCleanup bool) (*Handler, *mocks.MockClient, *mocks.MockAllSmartContracts, *mocks.MockWatcher, accounts.Account) {
 	t.Helper()
 	db := mocks.NewTestDB()
 	client := mocks.NewMockClient()
@@ -65,7 +62,6 @@ func getTaskHandler(
 // getTaskManagerCopy creates a copy of the manager from the DB without race
 // conditions.
 func getTaskManagerCopy(t *testing.T, manager *TaskManager) *TaskManager {
-	t.Helper()
 	tr := &marshaller.TypeRegistry{}
 	marshaller := ethereum.GetTaskRegistry(tr)
 	newManager := &TaskManager{
@@ -508,6 +504,16 @@ func TestTasksHandlerAndManager_ScheduleAndRecover_RunningSnapshotTask(t *testin
 	require.Equal(t, task.Start, recoveredTask.Start)
 	require.Equal(t, task.End, recoveredTask.End)
 	require.Equal(t, task.AllowMultiExecution, recoveredTask.AllowMultiExecution)
+	require.Equal(
+		t,
+		task.NumOfValidators,
+		recoveredTask.Task.(*snapshots.SnapshotTask).NumOfValidators,
+	)
+	require.Equal(
+		t,
+		task.ValidatorIndex,
+		recoveredTask.Task.(*snapshots.SnapshotTask).ValidatorIndex,
+	)
 	require.Equal(
 		t,
 		task.NumOfValidators,

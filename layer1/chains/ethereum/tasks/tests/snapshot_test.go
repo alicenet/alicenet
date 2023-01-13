@@ -775,8 +775,15 @@ func getRandomNumberInRange(seed, min, max int) int {
 	return rand.Intn(max-min) + min
 }
 
-func GenerateSnapshotData(t *testing.T, chainID uint32, height uint32, bnSigners []*crypto.BNGroupSigner, n int, mpkI []*big.Int, fakeSig bool) ([]byte, []byte, error) {
-	t.Helper()
+func GenerateSnapshotData(
+	t *testing.T,
+	chainID uint32,
+	height uint32,
+	bnSigners []*crypto.BNGroupSigner,
+	n int,
+	mpkI []*big.Int,
+	fakeSig bool,
+) ([]byte, []byte, error) {
 	bclaims := &objs.BClaims{
 		ChainID:    chainID,
 		Height:     height,
@@ -809,8 +816,13 @@ func GenerateSnapshotData(t *testing.T, chainID uint32, height uint32, bnSigners
 	return grpsig, bClaimsBin, nil
 }
 
-func GenerateBlockSignature(t *testing.T, bnSigners []*crypto.BNGroupSigner, n int, blockHash []byte, mpkI []*big.Int) ([]byte, error) {
-	t.Helper()
+func GenerateBlockSignature(
+	t *testing.T,
+	bnSigners []*crypto.BNGroupSigner,
+	n int,
+	blockHash []byte,
+	mpkI []*big.Int,
+) ([]byte, error) {
 	sigs := [][]byte{}
 	groupShares := [][]byte{}
 	for idx := 0; idx < n; idx++ {

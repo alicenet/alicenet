@@ -25,8 +25,9 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func getTaskExecutor(t *testing.T) (*TaskExecutor, *mocks.MockClient, *db.Database, *executorResponseChan, *mocks.MockWatcher) {
-	t.Helper()
+func getTaskExecutor(
+	t *testing.T,
+) (*TaskExecutor, *mocks.MockClient, *db.Database, *executorResponseChan, *mocks.MockWatcher) {
 	db := mocks.NewTestDB()
 	client := mocks.NewMockClient()
 	client.ExtractTransactionSenderFunc.SetDefaultReturn(common.Address{}, nil)
@@ -35,6 +36,11 @@ func getTaskExecutor(t *testing.T) (*TaskExecutor, *mocks.MockClient, *db.Databa
 		Number: big.NewInt(1),
 	}
 	client.GetHeaderByNumberFunc.SetDefaultReturn(hdr, nil)
+	client.GetBlockBaseFeeAndSuggestedGasTipFunc.SetDefaultReturn(
+		big.NewInt(100),
+		big.NewInt(1),
+		nil,
+	)
 	client.GetBlockBaseFeeAndSuggestedGasTipFunc.SetDefaultReturn(
 		big.NewInt(100),
 		big.NewInt(1),

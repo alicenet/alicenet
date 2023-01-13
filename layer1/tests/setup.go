@@ -21,7 +21,7 @@ import (
 
 	"github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/layer1"
-	"github.com/alicenet/alicenet/layer1/ethereum"
+	"github.com/alicenet/alicenet/layer1/evm"
 	"github.com/alicenet/alicenet/layer1/handlers"
 	"github.com/alicenet/alicenet/layer1/transaction"
 	"github.com/alicenet/alicenet/test/mocks"
@@ -33,7 +33,9 @@ func SetupPrivateKeys(n int) []*ecdsa.PrivateKey {
 	if (n < 1) || (n >= 256) {
 		panic("invalid number for accounts")
 	}
-	secp256k1N, _ := new(big.Int).SetString("fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141", 16)
+	secp256k1N, _ := new(
+		big.Int,
+	).SetString("fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141", 16)
 	baseBytes := make([]byte, 32)
 	baseBytes[0] = 255
 	baseBytes[31] = 255
@@ -55,13 +57,25 @@ func SetupPrivateKeys(n int) []*ecdsa.PrivateKey {
 
 // CreateAccounts creates the privateKeys and accounts for a given number of
 // accounts. The first created account will be always the hardhat admin account.
-func CreateAccounts(unitTestDirectory string, numAccounts int) (string, string, []accounts.Account) {
+func CreateAccounts(
+	unitTestDirectory string,
+	numAccounts int,
+) (string, string, []accounts.Account) {
 	if numAccounts < 1 {
-		panic(fmt.Errorf("The number of accounts must be greater than 1, given number %v", numAccounts))
+		panic(
+			fmt.Errorf(
+				"The number of accounts must be greater than 1, given number %v",
+				numAccounts,
+			),
+		)
 	}
 	keyStorePath := filepath.Join(unitTestDirectory, "keys")
 	passCodePath := filepath.Join(unitTestDirectory, "passcodes.txt")
-	keystore := keystore.NewKeyStore(keyStorePath, keystore.StandardScryptN, keystore.StandardScryptP)
+	keystore := keystore.NewKeyStore(
+		keyStorePath,
+		keystore.StandardScryptN,
+		keystore.StandardScryptP,
+	)
 	privateKeys := InitializePrivateKeys(numAccounts)
 	passCodesFile, err := os.OpenFile(passCodePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
 	if err != nil {
@@ -111,7 +125,11 @@ func GetAccountsWithoutOutKeyStore(n int) ([]ecdsa.PublicKey, []common.Address) 
 	return pubKeys, addresses
 }
 
-func WaitGroupReceipts(t *testing.T, client layer1.Client, receiptResponses []transaction.ReceiptResponse) {
+func WaitGroupReceipts(
+	t *testing.T,
+	client layer1.Client,
+	receiptResponses []transaction.ReceiptResponse,
+) {
 	t.Helper()
 	MineFinalityDelayBlocks(client)
 	<-time.After(200 * time.Millisecond)
@@ -121,7 +139,12 @@ func WaitGroupReceipts(t *testing.T, client layer1.Client, receiptResponses []tr
 	for _, rcptResponse := range receiptResponses {
 		rcpt, err := rcptResponse.GetReceiptBlocking(ctx)
 		assert.Nil(t, err)
-		assert.Equalf(t, rcpt.Status, types.ReceiptStatusSuccessful, "got receipt that failed during registration")
+		assert.Equalf(
+			t,
+			rcpt.Status,
+			types.ReceiptStatusSuccessful,
+			"got receipt that failed during registration",
+		)
 	}
 }
 
@@ -130,12 +153,12 @@ func FundAccounts(eth layer1.Client, watcher transaction.Watcher, logger *logrus
 	knownAccounts := eth.GetKnownAccounts()
 	var receiptResponses []transaction.ReceiptResponse
 	// transferring 100 ether
-	amount := new(big.Int).Mul(new(big.Int).Exp(big.NewInt(10), big.NewInt(18), nil), big.NewInt(100))
+	amount := new(
+		big.Int,
+	).Mul(new(big.Int).Exp(big.NewInt(10), big.NewInt(18), nil), big.NewInt(100))
 	// fund known accounts
 	for _, account := range knownAccounts {
-		txn, err := ethereum.TransferEther(
-			eth,
-			logger.WithField("account", account.Address.Hex()),
+		txn, err := eth.TransferNativeToken(
 			eth.GetDefaultAccount().Address,
 			account.Address,
 			amount,
@@ -145,7 +168,11 @@ func FundAccounts(eth layer1.Client, watcher transaction.Watcher, logger *logrus
 		}
 		rcptResponse, err := watcher.Subscribe(context.Background(), txn, nil)
 		if err != nil {
-			return fmt.Errorf("failed to subscribe txn for account: %v err: %v", account.Address.Hex(), err)
+			return fmt.Errorf(
+				"failed to subscribe txn for account: %v err: %v",
+				account.Address.Hex(),
+				err,
+			)
 		}
 		receiptResponses = append(receiptResponses, rcptResponse)
 	}
@@ -157,10 +184,18 @@ func FundAccounts(eth layer1.Client, watcher transaction.Watcher, logger *logrus
 	for index, rcptResponse := range receiptResponses {
 		rcpt, err := rcptResponse.GetReceiptBlocking(ctx)
 		if err != nil {
-			return fmt.Errorf("failed to get receipt for account %v err: %v", knownAccounts[index].Address.Hex(), err)
+			return fmt.Errorf(
+				"failed to get receipt for account %v err: %v",
+				knownAccounts[index].Address.Hex(),
+				err,
+			)
 		}
 		if rcpt.Status != types.ReceiptStatusSuccessful {
-			return fmt.Errorf("got a reverted receipt for account %v status: %v", knownAccounts[index].Address, rcpt.Status)
+			return fmt.Errorf(
+				"got a reverted receipt for account %v status: %v",
+				knownAccounts[index].Address,
+				rcpt.Status,
+			)
 		}
 	}
 	return nil
@@ -178,7 +213,13 @@ type ClientFixture struct {
 	Logger         *logrus.Entry
 }
 
-func NewClientFixture(hardhat *Hardhat, finalityDelay uint64, numAccounts int, logger *logrus.Entry, unlockAllAccounts, deployContracts, registerValidators bool) *ClientFixture {
+func NewClientFixture(
+	hardhat *Hardhat,
+	finalityDelay uint64,
+	numAccounts int,
+	logger *logrus.Entry,
+	unlockAllAccounts, deployContracts, registerValidators bool,
+) *ClientFixture {
 	logger.Logger.SetLevel(logrus.TraceLevel)
 	tempDir, err := os.MkdirTemp("", "unittestdir")
 	if err != nil {
@@ -186,7 +227,8 @@ func NewClientFixture(hardhat *Hardhat, finalityDelay uint64, numAccounts int, l
 	}
 	keyStorePath, passCodePath, _ := CreateAccounts(tempDir, numAccounts)
 	defaultAccount, _ := GetAdminAccount()
-	eth, err := ethereum.NewClient(
+	eth, err := evm.NewClient(
+		logger.Logger,
 		hardhat.url,
 		keyStorePath,
 		passCodePath,

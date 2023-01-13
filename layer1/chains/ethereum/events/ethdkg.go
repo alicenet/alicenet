@@ -20,7 +20,15 @@ func isValidator(acct accounts.Account, state *objects.MonitorState) bool {
 	return present
 }
 
-func ProcessRegistrationOpened(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, log types.Log, monState *objects.MonitorState, monDB *db.Database, taskHandler executor.TaskHandler) error {
+func ProcessRegistrationOpened(
+	eth layer1.Client,
+	contracts layer1.AllSmartContracts,
+	logger *logrus.Entry,
+	log types.Log,
+	monState *objects.MonitorState,
+	monDB *db.Database,
+	taskHandler executor.TaskHandler,
+) error {
 	logEntry := logger.WithField("eventProcessor", "ProcessRegistrationOpened")
 	logEntry.Info("processing registration")
 	event, err := contracts.EthereumContracts().Ethdkg().ParseRegistrationOpened(log)
@@ -86,7 +94,12 @@ func ProcessRegistrationOpened(eth layer1.Client, contracts layer1.AllSmartContr
 	return nil
 }
 
-func UpdateStateOnRegistrationOpened(account accounts.Account, startBlock, phaseLength, confirmationLength, nonce uint64, amIValidator bool, validatorAddresses []common.Address) (*state.DkgState, *dkgtasks.RegisterTask, *dkgtasks.DisputeMissingRegistrationTask) {
+func UpdateStateOnRegistrationOpened(
+	account accounts.Account,
+	startBlock, phaseLength, confirmationLength, nonce uint64,
+	amIValidator bool,
+	validatorAddresses []common.Address,
+) (*state.DkgState, *dkgtasks.RegisterTask, *dkgtasks.DisputeMissingRegistrationTask) {
 	dkgState := state.NewDkgState(account)
 	dkgState.OnRegistrationOpened(
 		startBlock,
@@ -101,12 +114,20 @@ func UpdateStateOnRegistrationOpened(account accounts.Account, startBlock, phase
 
 	registrationEnds := dkgState.PhaseStart + dkgState.PhaseLength
 	registrationTask := dkgtasks.NewRegisterTask(dkgState.PhaseStart, registrationEnds)
-	disputeMissingRegistrationTask := dkgtasks.NewDisputeMissingRegistrationTask(registrationEnds, registrationEnds+dkgState.PhaseLength)
+	disputeMissingRegistrationTask := dkgtasks.NewDisputeMissingRegistrationTask(
+		registrationEnds,
+		registrationEnds+dkgState.PhaseLength,
+	)
 
 	return dkgState, registrationTask, disputeMissingRegistrationTask
 }
 
-func ProcessAddressRegistered(contracts layer1.AllSmartContracts, logger *logrus.Entry, log types.Log, monDB *db.Database) error {
+func ProcessAddressRegistered(
+	contracts layer1.AllSmartContracts,
+	logger *logrus.Entry,
+	log types.Log,
+	monDB *db.Database,
+) error {
 	logEntry := logger.WithField("eventProcessor", "ProcessAddressRegistered")
 	logEntry.Info("processing address registered")
 
@@ -131,7 +152,12 @@ func ProcessAddressRegistered(contracts layer1.AllSmartContracts, logger *logrus
 		"#Validators":   len(dkgState.ValidatorAddresses),
 	}).Info("Address registered!")
 
-	dkgState.OnAddressRegistered(event.Account, int(event.Index.Int64()), event.Nonce.Uint64(), event.PublicKey)
+	dkgState.OnAddressRegistered(
+		event.Account,
+		int(event.Index.Int64()),
+		event.Nonce.Uint64(),
+		event.PublicKey,
+	)
 
 	if err = state.SaveDkgState(monDB, dkgState); err != nil {
 		logEntry.Errorf("Failed to save dkgState on ProcessAddressRegistered: %v", err)
@@ -141,7 +167,13 @@ func ProcessAddressRegistered(contracts layer1.AllSmartContracts, logger *logrus
 	return nil
 }
 
-func ProcessRegistrationComplete(contracts layer1.AllSmartContracts, logger *logrus.Entry, log types.Log, monDB *db.Database, taskHandler executor.TaskHandler) error {
+func ProcessRegistrationComplete(
+	contracts layer1.AllSmartContracts,
+	logger *logrus.Entry,
+	log types.Log,
+	monDB *db.Database,
+	taskHandler executor.TaskHandler,
+) error {
 	logEntry := logger.WithField("eventProcessor", "ProcessRegistrationComplete")
 	logEntry.Info("processing registration complete")
 
@@ -165,7 +197,10 @@ func ProcessRegistrationComplete(contracts layer1.AllSmartContracts, logger *log
 		"BlockNumber": event.BlockNumber,
 	}).Info("ETHDKG Registration Complete")
 
-	shareDistributionTask, disputeMissingShareDistributionTask, disputeBadSharesTasks := UpdateStateOnRegistrationComplete(dkgState, event.BlockNumber.Uint64())
+	shareDistributionTask, disputeMissingShareDistributionTask, disputeBadSharesTasks := UpdateStateOnRegistrationComplete(
+		dkgState,
+		event.BlockNumber.Uint64(),
+	)
 
 	if err = state.SaveDkgState(monDB, dkgState); err != nil {
 		logEntry.Errorf("Failed to save dkgState on ProcessRegistrationComplete: %v", err)
@@ -215,22 +250,40 @@ func ProcessRegistrationComplete(contracts layer1.AllSmartContracts, logger *log
 	return nil
 }
 
-func UpdateStateOnRegistrationComplete(dkgState *state.DkgState, shareDistributionStartBlockNumber uint64) (*dkgtasks.ShareDistributionTask, *dkgtasks.DisputeMissingShareDistributionTask, []*dkgtasks.DisputeShareDistributionTask) {
+func UpdateStateOnRegistrationComplete(
+	dkgState *state.DkgState,
+	shareDistributionStartBlockNumber uint64,
+) (*dkgtasks.ShareDistributionTask, *dkgtasks.DisputeMissingShareDistributionTask, []*dkgtasks.DisputeShareDistributionTask) {
 	dkgState.OnRegistrationComplete(shareDistributionStartBlockNumber)
 
 	shareDistStartBlock := dkgState.PhaseStart
 	shareDistEndBlock := shareDistStartBlock + dkgState.PhaseLength
-	shareDistributionTask := dkgtasks.NewShareDistributionTask(shareDistStartBlock, shareDistEndBlock)
+	shareDistributionTask := dkgtasks.NewShareDistributionTask(
+		shareDistStartBlock,
+		shareDistEndBlock,
+	)
 
 	dispShareStartBlock := shareDistEndBlock
 	dispShareEndBlock := dispShareStartBlock + dkgState.PhaseLength
-	disputeMissingShareDistributionTask := dkgtasks.NewDisputeMissingShareDistributionTask(dispShareStartBlock, dispShareEndBlock)
-	disputeBadSharesTasks := GetDisputeShareDistributionTasks(dkgState, dispShareStartBlock, dispShareEndBlock)
+	disputeMissingShareDistributionTask := dkgtasks.NewDisputeMissingShareDistributionTask(
+		dispShareStartBlock,
+		dispShareEndBlock,
+	)
+	disputeBadSharesTasks := GetDisputeShareDistributionTasks(
+		dkgState,
+		dispShareStartBlock,
+		dispShareEndBlock,
+	)
 
 	return shareDistributionTask, disputeMissingShareDistributionTask, disputeBadSharesTasks
 }
 
-func ProcessShareDistribution(contracts layer1.AllSmartContracts, logger *logrus.Entry, log types.Log, monDB *db.Database) error {
+func ProcessShareDistribution(
+	contracts layer1.AllSmartContracts,
+	logger *logrus.Entry,
+	log types.Log,
+	monDB *db.Database,
+) error {
 	logEntry := logger.WithField("eventProcessor", "ProcessShareDistribution")
 	logEntry.Info("processing share distribution")
 
@@ -264,7 +317,13 @@ func ProcessShareDistribution(contracts layer1.AllSmartContracts, logger *logrus
 	return nil
 }
 
-func ProcessShareDistributionComplete(contracts layer1.AllSmartContracts, logger *logrus.Entry, log types.Log, monDB *db.Database, taskHandler executor.TaskHandler) error {
+func ProcessShareDistributionComplete(
+	contracts layer1.AllSmartContracts,
+	logger *logrus.Entry,
+	log types.Log,
+	monDB *db.Database,
+	taskHandler executor.TaskHandler,
+) error {
 	logEntry := logger.WithField("eventProcessor", "ProcessShareDistributionComplete")
 	logEntry.Info("processing share distribution complete")
 
@@ -288,7 +347,10 @@ func ProcessShareDistributionComplete(contracts layer1.AllSmartContracts, logger
 		"BlockNumber": event.BlockNumber,
 	}).Info("Received share distribution complete")
 
-	disputeShareDistributionTasks, keyShareSubmissionTask, disputeMissingKeySharesTask := UpdateStateOnShareDistributionComplete(dkgState, event.BlockNumber.Uint64())
+	disputeShareDistributionTasks, keyShareSubmissionTask, disputeMissingKeySharesTask := UpdateStateOnShareDistributionComplete(
+		dkgState,
+		event.BlockNumber.Uint64(),
+	)
 	if err = state.SaveDkgState(monDB, dkgState); err != nil {
 		logEntry.Errorf("Failed to save dkgState on ProcessShareDistributionComplete: %v", err)
 		return err
@@ -338,26 +400,44 @@ func ProcessShareDistributionComplete(contracts layer1.AllSmartContracts, logger
 	return nil
 }
 
-func UpdateStateOnShareDistributionComplete(dkgState *state.DkgState, disputeShareDistributionStartBlock uint64) ([]*dkgtasks.DisputeShareDistributionTask, *dkgtasks.KeyShareSubmissionTask, *dkgtasks.DisputeMissingKeySharesTask) {
+func UpdateStateOnShareDistributionComplete(
+	dkgState *state.DkgState,
+	disputeShareDistributionStartBlock uint64,
+) ([]*dkgtasks.DisputeShareDistributionTask, *dkgtasks.KeyShareSubmissionTask, *dkgtasks.DisputeMissingKeySharesTask) {
 	dkgState.OnShareDistributionComplete(disputeShareDistributionStartBlock)
 
 	phaseEnd := dkgState.PhaseStart + dkgState.PhaseLength
 
-	disputeShareDistributionTasks := GetDisputeShareDistributionTasks(dkgState, dkgState.PhaseStart, phaseEnd)
+	disputeShareDistributionTasks := GetDisputeShareDistributionTasks(
+		dkgState,
+		dkgState.PhaseStart,
+		phaseEnd,
+	)
 	// schedule SubmitKeySharesPhase
 	submitKeySharesPhaseStart := phaseEnd
 	submitKeySharesPhaseEnd := submitKeySharesPhaseStart + dkgState.PhaseLength
-	keyshareSubmissionTask := dkgtasks.NewKeyShareSubmissionTask(submitKeySharesPhaseStart, submitKeySharesPhaseEnd)
+	keyshareSubmissionTask := dkgtasks.NewKeyShareSubmissionTask(
+		submitKeySharesPhaseStart,
+		submitKeySharesPhaseEnd,
+	)
 
 	// schedule DisputeMissingKeySharesPhase
 	missingKeySharesDisputeStart := submitKeySharesPhaseEnd
 	missingKeySharesDisputeEnd := missingKeySharesDisputeStart + dkgState.PhaseLength
-	disputeMissingKeySharesTask := dkgtasks.NewDisputeMissingKeySharesTask(missingKeySharesDisputeStart, missingKeySharesDisputeEnd)
+	disputeMissingKeySharesTask := dkgtasks.NewDisputeMissingKeySharesTask(
+		missingKeySharesDisputeStart,
+		missingKeySharesDisputeEnd,
+	)
 
 	return disputeShareDistributionTasks, keyshareSubmissionTask, disputeMissingKeySharesTask
 }
 
-func ProcessKeyShareSubmitted(contracts layer1.AllSmartContracts, logger *logrus.Entry, log types.Log, monDB *db.Database) error {
+func ProcessKeyShareSubmitted(
+	contracts layer1.AllSmartContracts,
+	logger *logrus.Entry,
+	log types.Log,
+	monDB *db.Database,
+) error {
 	logEntry := logger.WithField("eventProcessor", "ProcessKeyShareSubmitted")
 	logEntry.Info("processing key share submission")
 
@@ -379,7 +459,12 @@ func ProcessKeyShareSubmitted(contracts layer1.AllSmartContracts, logger *logrus
 		return err
 	}
 
-	dkgState.OnKeyShareSubmitted(event.Account, event.KeyShareG1, event.KeyShareG1CorrectnessProof, event.KeyShareG2)
+	dkgState.OnKeyShareSubmitted(
+		event.Account,
+		event.KeyShareG1,
+		event.KeyShareG1CorrectnessProof,
+		event.KeyShareG2,
+	)
 	if err = state.SaveDkgState(monDB, dkgState); err != nil {
 		logEntry.Errorf("Failed to save dkgState on ProcessKeyShareSubmitted: %v", err)
 		return err
@@ -388,7 +473,13 @@ func ProcessKeyShareSubmitted(contracts layer1.AllSmartContracts, logger *logrus
 	return nil
 }
 
-func ProcessKeyShareSubmissionComplete(contracts layer1.AllSmartContracts, logger *logrus.Entry, log types.Log, monDB *db.Database, taskHandler executor.TaskHandler) error {
+func ProcessKeyShareSubmissionComplete(
+	contracts layer1.AllSmartContracts,
+	logger *logrus.Entry,
+	log types.Log,
+	monDB *db.Database,
+	taskHandler executor.TaskHandler,
+) error {
 	logEntry := logger.WithField("eventProcessor", "ProcessKeyShareSubmissionComplete")
 	logEntry.Info("processing key share submission complete")
 
@@ -413,7 +504,10 @@ func ProcessKeyShareSubmissionComplete(contracts layer1.AllSmartContracts, logge
 	}
 
 	// schedule MPK submission
-	mpkSubmissionTask := UpdateStateOnKeyShareSubmissionComplete(dkgState, event.BlockNumber.Uint64())
+	mpkSubmissionTask := UpdateStateOnKeyShareSubmissionComplete(
+		dkgState,
+		event.BlockNumber.Uint64(),
+	)
 
 	if err = state.SaveDkgState(monDB, dkgState); err != nil {
 		logEntry.Errorf("Failed to save dkgState on ProcessKeyShareSubmissionComplete: %v", err)
@@ -441,7 +535,10 @@ func ProcessKeyShareSubmissionComplete(contracts layer1.AllSmartContracts, logge
 	return nil
 }
 
-func UpdateStateOnKeyShareSubmissionComplete(dkgState *state.DkgState, mpkSubmissionStartBlock uint64) *dkgtasks.MPKSubmissionTask {
+func UpdateStateOnKeyShareSubmissionComplete(
+	dkgState *state.DkgState,
+	mpkSubmissionStartBlock uint64,
+) *dkgtasks.MPKSubmissionTask {
 	dkgState.OnKeyShareSubmissionComplete(mpkSubmissionStartBlock)
 
 	phaseEnd := dkgState.PhaseStart + dkgState.PhaseLength
@@ -450,7 +547,14 @@ func UpdateStateOnKeyShareSubmissionComplete(dkgState *state.DkgState, mpkSubmis
 	return mpkSubmissionTask
 }
 
-func ProcessMPKSet(contracts layer1.AllSmartContracts, logger *logrus.Entry, log types.Log, adminHandler monitorInterfaces.AdminHandler, monDB *db.Database, taskHandler executor.TaskHandler) error {
+func ProcessMPKSet(
+	contracts layer1.AllSmartContracts,
+	logger *logrus.Entry,
+	log types.Log,
+	adminHandler monitorInterfaces.AdminHandler,
+	monDB *db.Database,
+	taskHandler executor.TaskHandler,
+) error {
 	logEntry := logger.WithField("eventProcessor", "ProcessMPKSet")
 	logEntry.Info("processing master public key set")
 
@@ -476,7 +580,11 @@ func ProcessMPKSet(contracts layer1.AllSmartContracts, logger *logrus.Entry, log
 		return nil
 	}
 
-	gpkjSubmissionTask, disputeMissingGPKjTask, disputeGPKjTasks := UpdateStateOnMPKSet(dkgState, event.BlockNumber.Uint64(), adminHandler)
+	gpkjSubmissionTask, disputeMissingGPKjTask, disputeGPKjTasks := UpdateStateOnMPKSet(
+		dkgState,
+		event.BlockNumber.Uint64(),
+		adminHandler,
+	)
 
 	if err = state.SaveDkgState(monDB, dkgState); err != nil {
 		logEntry.Errorf("Failed to save dkgState on ProcessMPKSet: %v", err)
@@ -523,20 +631,41 @@ func ProcessMPKSet(contracts layer1.AllSmartContracts, logger *logrus.Entry, log
 	return nil
 }
 
-func UpdateStateOnMPKSet(dkgState *state.DkgState, gpkjSubmissionStartBlock uint64, adminHandler monitorInterfaces.AdminHandler) (*dkgtasks.GPKjSubmissionTask, *dkgtasks.DisputeMissingGPKjTask, []*dkgtasks.DisputeGPKjTask) {
+func UpdateStateOnMPKSet(
+	dkgState *state.DkgState,
+	gpkjSubmissionStartBlock uint64,
+	adminHandler monitorInterfaces.AdminHandler,
+) (*dkgtasks.GPKjSubmissionTask, *dkgtasks.DisputeMissingGPKjTask, []*dkgtasks.DisputeGPKjTask) {
 	dkgState.OnMPKSet(gpkjSubmissionStartBlock)
 	gpkjSubmissionEnd := dkgState.PhaseStart + dkgState.PhaseLength
-	gpkjSubmissionTask := dkgtasks.NewGPKjSubmissionTask(dkgState.PhaseStart, gpkjSubmissionEnd, adminHandler)
+	gpkjSubmissionTask := dkgtasks.NewGPKjSubmissionTask(
+		dkgState.PhaseStart,
+		gpkjSubmissionEnd,
+		adminHandler,
+	)
 
 	disputeMissingGPKjStart := gpkjSubmissionEnd
 	disputeMissingGPKjEnd := disputeMissingGPKjStart + dkgState.PhaseLength
-	disputeMissingGPKjTask := dkgtasks.NewDisputeMissingGPKjTask(disputeMissingGPKjStart, disputeMissingGPKjEnd)
-	disputeGPKjTasks := GetDisputeGPKjTasks(dkgState, disputeMissingGPKjStart, disputeMissingGPKjEnd)
+	disputeMissingGPKjTask := dkgtasks.NewDisputeMissingGPKjTask(
+		disputeMissingGPKjStart,
+		disputeMissingGPKjEnd,
+	)
+	disputeGPKjTasks := GetDisputeGPKjTasks(
+		dkgState,
+		disputeMissingGPKjStart,
+		disputeMissingGPKjEnd,
+	)
 
 	return gpkjSubmissionTask, disputeMissingGPKjTask, disputeGPKjTasks
 }
 
-func ProcessGPKJSubmissionComplete(contracts layer1.AllSmartContracts, logger *logrus.Entry, log types.Log, monDB *db.Database, taskHandler executor.TaskHandler) error {
+func ProcessGPKJSubmissionComplete(
+	contracts layer1.AllSmartContracts,
+	logger *logrus.Entry,
+	log types.Log,
+	monDB *db.Database,
+	taskHandler executor.TaskHandler,
+) error {
 	logEntry := logger.WithField("eventProcessor", "ProcessGPKJSubmissionComplete")
 	logEntry.Info("processing gpkj submission complete")
 	event, err := contracts.EthereumContracts().Ethdkg().ParseGPKJSubmissionComplete(log)
@@ -559,7 +688,10 @@ func ProcessGPKJSubmissionComplete(contracts layer1.AllSmartContracts, logger *l
 		return nil
 	}
 
-	disputeGPKjTasks, completionTask := UpdateStateOnGPKJSubmissionComplete(dkgState, event.BlockNumber.Uint64())
+	disputeGPKjTasks, completionTask := UpdateStateOnGPKJSubmissionComplete(
+		dkgState,
+		event.BlockNumber.Uint64(),
+	)
 
 	if err = state.SaveDkgState(monDB, dkgState); err != nil {
 		logEntry.Errorf("Failed to save dkgState on ProcessGPKJSubmissionComplete: %v", err)
@@ -603,7 +735,10 @@ func ProcessGPKJSubmissionComplete(contracts layer1.AllSmartContracts, logger *l
 	return nil
 }
 
-func UpdateStateOnGPKJSubmissionComplete(dkgState *state.DkgState, disputeGPKjStartBlock uint64) ([]*dkgtasks.DisputeGPKjTask, *dkgtasks.CompletionTask) {
+func UpdateStateOnGPKJSubmissionComplete(
+	dkgState *state.DkgState,
+	disputeGPKjStartBlock uint64,
+) ([]*dkgtasks.DisputeGPKjTask, *dkgtasks.CompletionTask) {
 	dkgState.OnGPKJSubmissionComplete(disputeGPKjStartBlock)
 
 	disputeGPKjPhaseEnd := dkgState.PhaseStart + dkgState.PhaseLength
@@ -616,18 +751,30 @@ func UpdateStateOnGPKJSubmissionComplete(dkgState *state.DkgState, disputeGPKjSt
 	return disputeGPKjTasks, completionTask
 }
 
-func GetDisputeShareDistributionTasks(dkgState *state.DkgState, phaseStart, phaseEnd uint64) []*dkgtasks.DisputeShareDistributionTask {
+func GetDisputeShareDistributionTasks(
+	dkgState *state.DkgState,
+	phaseStart, phaseEnd uint64,
+) []*dkgtasks.DisputeShareDistributionTask {
 	var disputeShareDistributionTasks []*dkgtasks.DisputeShareDistributionTask
 	for address := range dkgState.Participants {
-		disputeShareDistributionTasks = append(disputeShareDistributionTasks, dkgtasks.NewDisputeShareDistributionTask(phaseStart, phaseEnd, address))
+		disputeShareDistributionTasks = append(
+			disputeShareDistributionTasks,
+			dkgtasks.NewDisputeShareDistributionTask(phaseStart, phaseEnd, address),
+		)
 	}
 	return disputeShareDistributionTasks
 }
 
-func GetDisputeGPKjTasks(dkgState *state.DkgState, phaseStart, phaseEnd uint64) []*dkgtasks.DisputeGPKjTask {
+func GetDisputeGPKjTasks(
+	dkgState *state.DkgState,
+	phaseStart, phaseEnd uint64,
+) []*dkgtasks.DisputeGPKjTask {
 	var disputeGPKjTasks []*dkgtasks.DisputeGPKjTask
 	for address := range dkgState.Participants {
-		disputeGPKjTasks = append(disputeGPKjTasks, dkgtasks.NewDisputeGPKjTask(phaseStart, phaseEnd, address))
+		disputeGPKjTasks = append(
+			disputeGPKjTasks,
+			dkgtasks.NewDisputeGPKjTask(phaseStart, phaseEnd, address),
+		)
 	}
 	return disputeGPKjTasks
 }
