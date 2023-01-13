@@ -36,6 +36,8 @@
     "@types/node": "^18.11.9",
     "@typescript-eslint/eslint-plugin": "^5.48.0",
     "@typescript-eslint/parser": "^5.48.0",
+    "@uniswap/v3-periphery": "^1.4.3",
+    "@uniswap/v3-sdk": "^3.9.0",
     "axios": "^1.2.2",
     "chai": "^4.3.7",
     "chai-as-promised": "^7.1.1",
