@@ -225,7 +225,7 @@ func NewClientFixture(hardhat *Hardhat, finalityDelay uint64, numAccounts int, l
 		for _, account := range eth.GetKnownAccounts() {
 			validatorsAddresses = append(validatorsAddresses, account.Address.Hex())
 		}
-		contracts = handlers.NewAllSmartContractsHandle(eth, common.HexToAddress(factoryAddress))
+		contracts = handlers.NewAllSmartContractsHandle(eth, common.HexToAddress(factoryAddress), nil, common.Address{})
 		if registerValidators {
 			err = hardhat.RegisterValidators(factoryAddress, validatorsAddresses)
 			if err != nil {

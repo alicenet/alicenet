@@ -51,7 +51,7 @@ func setupEthereum(logger *logrus.Entry) (layer1.Client, layer1.AllSmartContract
 	factoryAddress := common.HexToAddress(config.Configuration.Ethereum.FactoryAddress)
 
 	// Initialize and find all the contracts
-	contractsHandler := handlers.NewAllSmartContractsHandle(eth, factoryAddress)
+	contractsHandler := handlers.NewAllSmartContractsHandle(eth, factoryAddress, nil, common.Address{})
 
 	return eth, contractsHandler, err
 }

@@ -125,6 +125,7 @@ type RootConfiguration struct {
 	Logging               LoggingConfig
 	Deploy                DeployConfig
 	Ethereum              EthereumConfig
+	Polygon               EthereumConfig
 	Transport             TransportConfig
 	Utils                 UtilsConfig
 	Validator             ValidatorConfig

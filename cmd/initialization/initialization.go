@@ -175,6 +175,24 @@ func initializeFilesAndFolders(cmd *cobra.Command, args []string) {
 			fmt.Printf("In order to configure your node properly, please save the Ethereum endpoint to the following file %s.\n", configPath)
 		}
 	}
+	polygonEndpointURL := config.Configuration.Polygon.Endpoint
+	if polygonEndpointURL == "" {
+		savePolygonEndpoint, err := ethkey.ReadYesOrNoAnswer("Do you wish to enter Polygon endpoint? Yes/no: ")
+		if err != nil {
+			logger.Fatalf(err.Error())
+		}
+
+		if savePolygonEndpoint {
+			ee, err := ethkey.ReadInput("Please enter Polygon endpoint: ")
+			if err != nil {
+				logger.Fatalf(err.Error())
+			}
+			polygonEndpointURL = ee
+		} else {
+			polygonEndpointURL = "<POLYGON_ENDPOINT_URL>"
+			fmt.Printf("In order to configure your node properly, please save the Polygon endpoint to the following file %s.\n", configPath)
+		}
+	}
 
 	configObj := &config.RootConfiguration{
 		Logging: config.LoggingConfig{
@@ -201,6 +219,18 @@ func initializeFilesAndFolders(cmd *cobra.Command, args []string) {
 		},
 		Ethereum: config.EthereumConfig{
 			Endpoint:                 ethereumEndpointURL,
+			EndpointMinimumPeers:     1,
+			DefaultAccount:           defaultAccount,
+			Keystore:                 keysPath,
+			PassCodes:                path.Join(keystoresPath, "/passcodes.txt"),
+			FactoryAddress:           factoryAddress,
+			StartingBlock:            startingBlock,
+			ProcessingBlockBatchSize: 1_000,
+			TxMaxGasFeeAllowedInGwei: 500,
+			TxMetricsDisplay:         false,
+		},
+		Polygon: config.EthereumConfig{
+			Endpoint:                 polygonEndpointURL,
 			EndpointMinimumPeers:     1,
 			DefaultAccount:           defaultAccount,
 			Keystore:                 keysPath,

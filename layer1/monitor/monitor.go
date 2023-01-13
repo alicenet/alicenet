@@ -17,7 +17,6 @@ import (
 	"github.com/alicenet/alicenet/layer1/executor"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/snapshots"
 	"github.com/alicenet/alicenet/layer1/executor/tasks/snapshots/state"
-	"github.com/alicenet/alicenet/layer1/monitor/events"
 	"github.com/alicenet/alicenet/layer1/monitor/interfaces"
 	"github.com/alicenet/alicenet/layer1/monitor/objects"
 	"github.com/alicenet/alicenet/logging"
@@ -70,6 +69,7 @@ func NewMonitor(cdb *db.Database,
 	batchSize uint64,
 	chainId uint32,
 	taskHandler executor.TaskHandler,
+	eventMap *objects.EventMap,
 ) (*monitor, error) {
 	logger := logging.GetLogger("monitor").WithFields(logrus.Fields{
 		"Interval": tickInterval.String(),
@@ -92,14 +92,9 @@ func NewMonitor(cdb *db.Database,
 		statusChan:           make(chan string, 1),
 		batchSize:            batchSize,
 		taskHandler:          taskHandler,
+		eventMap:             eventMap,
 	}
 
-	eventMap := objects.NewEventMap()
-	err := events.SetupEventMap(eventMap, cdb, monDB, adminHandler, depositHandler, taskHandler, mon.Close, chainId)
-	if err != nil {
-		return nil, err
-	}
-	mon.eventMap = eventMap
 	mon.State = objects.NewMonitorState()
 
 	adminHandler.RegisterSnapshotCallback(func(bh *objs.BlockHeader, numOfValidators, validatorIndex int) error {

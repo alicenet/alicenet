@@ -133,7 +133,147 @@ func RegisterETHDKGEvents(em *objects.EventMap, monDB *db.Database, adminHandler
 	}
 }
 
-func SetupEventMap(em *objects.EventMap, cdb, monDB *db.Database, adminHandler monInterfaces.AdminHandler, depositHandler monInterfaces.DepositHandler, taskHandler executor.TaskHandler, exitFunc func(), chainID uint32) error {
+func SetupEthereumEventMap(em *objects.EventMap, cdb, monDB *db.Database, adminHandler monInterfaces.AdminHandler, depositHandler monInterfaces.DepositHandler, taskHandler executor.TaskHandler, exitFunc func(), chainID uint32) error {
+	RegisterETHDKGEvents(em, monDB, adminHandler, taskHandler)
+
+	// MadByte.DepositReceived
+	mbEvents := GetALCBEvents()
+	depositReceived, ok := mbEvents["DepositReceived"]
+	if !ok {
+		panic("could not find event MadByte.DepositReceived")
+	}
+
+	if err := em.Register(depositReceived.ID.String(), depositReceived.Name,
+		func(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+			return ProcessDepositReceived(eth, contracts, logger, log, cdb, monDB, depositHandler, chainID)
+		}); err != nil {
+		return err
+	}
+
+	// Snapshots.SnapshotTaken
+	snapshotsEvents := GetSnapshotEvents()
+	snapshotTakenEvent, ok := snapshotsEvents["SnapshotTaken"]
+	if !ok {
+		panic("could not find event Snapshots.SnapshotTaken")
+	}
+
+	if err := em.Register(snapshotTakenEvent.ID.String(), snapshotTakenEvent.Name,
+		func(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+			return ProcessSnapshotTaken(contracts, logger, log, adminHandler, taskHandler)
+		}); err != nil {
+		return err
+	}
+
+	// Governance.ValueUpdated
+	govEvents := GetGovernanceEvents()
+	snapshotTakenOldEvent, ok := govEvents["SnapshotTaken"]
+	if !ok {
+		panic("could not find event Snapshots.SnapshotTakenOld")
+	}
+
+	if err := em.Register(snapshotTakenOldEvent.ID.String(), snapshotTakenOldEvent.Name,
+		func(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+			return ProcessSnapshotTakenOld(eth, contracts, logger, log, adminHandler, taskHandler)
+		}); err != nil {
+		return err
+	}
+
+	// ValidatorPool.ValidatorMinorSlashed
+	vpEvents := GetValidatorPoolEvents()
+
+	// possible validator joined
+	validatorJoinedEvent, ok := vpEvents["ValidatorJoined"]
+	if !ok {
+		panic("could not find event ValidatorPool.ValidatorJoined")
+	}
+
+	processValidatorJoinedFunc := func(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+		return ProcessValidatorJoined(eth, contracts, logger, state, log)
+	}
+	if err := em.Register(validatorJoinedEvent.ID.String(), validatorJoinedEvent.Name, processValidatorJoinedFunc); err != nil {
+		panic(fmt.Sprintf("couldn't register validator joined event:%v", err))
+	}
+
+	// possible validator left
+	validatorLeftEvent, ok := vpEvents["ValidatorLeft"]
+	if !ok {
+		panic("could not find event ValidatorPool.ValidatorLeft")
+	}
+
+	processValidatorLeftFunc := func(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+		return ProcessValidatorLeft(eth, contracts, logger, state, log)
+	}
+	if err := em.Register(validatorLeftEvent.ID.String(), validatorLeftEvent.Name, processValidatorLeftFunc); err != nil {
+		panic(fmt.Sprintf("couldn't register validator left event:%v", err))
+	}
+
+	validatorMinorSlashedEvent, ok := vpEvents["ValidatorMinorSlashed"]
+	if !ok {
+		panic("could not find event ValidatorPool.ValidatorMinorSlashed")
+	}
+
+	processValidatorMinorSlashedFunc := func(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+		return ProcessValidatorMinorSlashed(eth, contracts, logger, state, log)
+	}
+	if err := em.Register(validatorMinorSlashedEvent.ID.String(), validatorMinorSlashedEvent.Name, processValidatorMinorSlashedFunc); err != nil {
+		panic(fmt.Sprintf("couldn't register validator minor slashed event:%v", err))
+	}
+
+	// ValidatorPool.ValidatorMajorSlashed
+	validatorMajorSlashedEvent, ok := vpEvents["ValidatorMajorSlashed"]
+	if !ok {
+		panic("could not find event ValidatorPool.ValidatorMajorSlashed")
+	}
+
+	processValidatorMajorSlashedFunc := func(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+		return ProcessValidatorMajorSlashed(eth, contracts, logger, state, log)
+	}
+	if err := em.Register(validatorMajorSlashedEvent.ID.String(), validatorMajorSlashedEvent.Name, processValidatorMajorSlashedFunc); err != nil {
+		panic(err)
+	}
+
+	dynamicsEvents := GetDynamicsEvents()
+	newAliceNetNodeVersionAvailableEvent, ok := dynamicsEvents["NewAliceNetNodeVersionAvailable"]
+	if !ok {
+		panic("could not find event Dynamics.NewAliceNetNodeVersionAvailable")
+	}
+
+	if err := em.Register(newAliceNetNodeVersionAvailableEvent.ID.String(), newAliceNetNodeVersionAvailableEvent.Name,
+		func(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+			return ProcessNewAliceNetNodeVersionAvailable(contracts, logger, log, state, taskHandler)
+		}); err != nil {
+		return err
+	}
+
+	newCanonicalAliceNetNodeVersionEvent, ok := dynamicsEvents["NewCanonicalAliceNetNodeVersion"]
+	if !ok {
+		panic("could not find event Dynamics.NewCanonicalAliceNetNodeVersion")
+	}
+
+	if err := em.Register(newCanonicalAliceNetNodeVersionEvent.ID.String(), newCanonicalAliceNetNodeVersionEvent.Name,
+		func(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+			return ProcessNewCanonicalAliceNetNodeVersion(contracts, logger, log, exitFunc)
+		}); err != nil {
+		return err
+	}
+
+	dynamicValueChangedEvent, ok := dynamicsEvents["DynamicValueChanged"]
+	if !ok {
+		panic("could not find event Dynamics.DynamicValueChanged")
+	}
+
+	if err := em.Register(dynamicValueChangedEvent.ID.String(), dynamicValueChangedEvent.Name,
+		func(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
+			return ProcessDynamicValueChanged(contracts, logger, log, adminHandler)
+		}); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func SetupPolygonEventMap(em *objects.EventMap, cdb, monDB *db.Database, adminHandler monInterfaces.AdminHandler, depositHandler monInterfaces.DepositHandler, taskHandler executor.TaskHandler, exitFunc func(), chainID uint32) error {
+	// todo: update to only listen to necessary events
 	RegisterETHDKGEvents(em, monDB, adminHandler, taskHandler)
 
 	// MadByte.DepositReceived

@@ -30,6 +30,8 @@ import (
 	"github.com/alicenet/alicenet/layer1/executor"
 	"github.com/alicenet/alicenet/layer1/handlers"
 	"github.com/alicenet/alicenet/layer1/monitor"
+	"github.com/alicenet/alicenet/layer1/monitor/events"
+	"github.com/alicenet/alicenet/layer1/monitor/objects"
 	"github.com/alicenet/alicenet/layer1/transaction"
 	"github.com/alicenet/alicenet/localrpc"
 	"github.com/alicenet/alicenet/logging"
@@ -52,18 +54,18 @@ var Command = cobra.Command{
 	Run:   validatorNode,
 }
 
-func initEthereumConnection(logger *logrus.Logger) (layer1.Client, layer1.AllSmartContracts, *mncrypto.Secp256k1Signer, []byte) {
+func initEVMConnection(conf config.EthereumConfig, logger *logrus.Logger) (layer1.Client, *mncrypto.Secp256k1Signer, []byte) {
 	// Ethereum connection setup
-	logger.Infof("Connecting to Ethereum...")
+	logger.Infof("Connecting to Ethereum chain...")
 	eth, err := ethereum.NewClient(
-		config.Configuration.Ethereum.Endpoint,
-		config.Configuration.Ethereum.Keystore,
-		config.Configuration.Ethereum.PassCodes,
-		config.Configuration.Ethereum.DefaultAccount,
+		conf.Endpoint,
+		conf.Keystore,
+		conf.PassCodes,
+		conf.DefaultAccount,
 		false,
 		constants.EthereumFinalityDelay,
-		config.Configuration.Ethereum.TxMaxGasFeeAllowedInGwei,
-		config.Configuration.Ethereum.EndpointMinimumPeers)
+		conf.TxMaxGasFeeAllowedInGwei,
+		conf.EndpointMinimumPeers)
 	if err != nil {
 		logger.Fatalf("NewEthereumEndpoint(...) failed: %v", err)
 		panic(err)
@@ -73,11 +75,6 @@ func initEthereumConnection(logger *logrus.Logger) (layer1.Client, layer1.AllSma
 		logger.Fatal("Ethereum endpoint not accessible...")
 		panic(err)
 	}
-
-	// Initialize and find all the contracts
-	contractsHandler := handlers.NewAllSmartContractsHandle(eth, common.HexToAddress(config.Configuration.Ethereum.FactoryAddress))
-
-	utils.LogStatus(logger.WithField("Component", "validator"), eth, contractsHandler)
 
 	secp256k1, err := eth.CreateSecp256k1Signer()
 	if err != nil {
@@ -89,7 +86,7 @@ func initEthereumConnection(logger *logrus.Logger) (layer1.Client, layer1.AllSma
 	}
 	logger.Infof("Account: %v Public Key: 0x%x", eth.GetDefaultAccount().Address.Hex(), pubKey)
 
-	return eth, contractsHandler, secp256k1, pubKey
+	return eth, secp256k1, pubKey
 }
 
 // Setup the peer manager:
@@ -171,6 +168,24 @@ func initDatabase(ctx context.Context, path string, inMemory bool) *badger.DB {
 	return db
 }
 
+func initSmartContractsHandler(
+	ethClient layer1.Client,
+	ethFactoryAddress common.Address,
+	polygonClient layer1.Client,
+	polygonFactoryAddress common.Address,
+	logger *logrus.Logger) layer1.AllSmartContracts {
+	// Initialize and find all the contracts
+	contractsHandler := handlers.NewAllSmartContractsHandle(
+		ethClient,
+		ethFactoryAddress,
+		polygonClient,
+		polygonFactoryAddress,
+	)
+
+	utils.LogStatus(logger.WithField("Component", "validator"), ethClient, contractsHandler)
+	return contractsHandler
+}
+
 func validatorNode(cmd *cobra.Command, args []string) {
 	// setup logger for program assembly operations
 	logger := logging.GetLogger(cmd.Name())
@@ -183,12 +198,22 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	defer cf()
 
 	chainID := uint32(config.Configuration.Chain.ID)
-	batchSize := config.Configuration.Ethereum.ProcessingBlockBatchSize
 
-	eth, contractsHandler, secp256k1Signer, publicKey := initEthereumConnection(logger)
-	defer eth.Close()
+	ethClient, ethSecp256k1Signer, ethPublicKey := initEVMConnection(config.Configuration.Ethereum, logger)
+	defer ethClient.Close()
 
-	currentEpoch, latestVersion, err := getCurrentEpochAndCanonicalVersion(nodeCtx, eth, contractsHandler, logger)
+	//polygonClient, polygonContractsHandler, polygonSecp256k1Signer, polygonPublicKey := initEVMConnection(config.Configuration.Polygon, logger)
+	polygonClient, _, _ := initEVMConnection(config.Configuration.Polygon, logger)
+	defer polygonClient.Close()
+
+	allContractsHandler := initSmartContractsHandler(
+		ethClient,
+		common.HexToAddress(config.Configuration.Ethereum.FactoryAddress),
+		polygonClient,
+		common.HexToAddress(config.Configuration.Polygon.FactoryAddress),
+		logger)
+
+	currentEpoch, latestVersion, err := getCurrentEpochAndCanonicalVersion(nodeCtx, ethClient, allContractsHandler, logger)
 	if err != nil {
 		panic(err)
 	}
@@ -297,24 +322,51 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	consLSHandler.Init(consDB, consDlManager)
 	consGossipHandlers.Init(chainID, consDB, peerManager.P2PClient(), app, consLSHandler, storage)
 	consGossipClient.Init(consDB, peerManager.P2PClient(), app, storage)
-	consAdminHandlers.Init(chainID, consDB, mncrypto.Hasher([]byte(config.Configuration.Validator.SymmetricKey)), app, publicKey, storage)
-	consLSEngine.Init(consDB, consDlManager, app, secp256k1Signer, consAdminHandlers, publicKey, consReqClient, storage)
+	consAdminHandlers.Init(chainID, consDB, mncrypto.Hasher([]byte(config.Configuration.Validator.SymmetricKey)), app, ethPublicKey, storage)
+	consLSEngine.Init(consDB, consDlManager, app, ethSecp256k1Signer, consAdminHandlers, ethPublicKey, consReqClient, storage)
 
 	// Setup monitor
 	monDB.Init(rawMonitorDb)
 
 	// Layer 1 transaction watcher
-	txWatcher := transaction.WatcherFromNetwork(eth, monDB, config.Configuration.Ethereum.TxMetricsDisplay, constants.TxPollingTime)
-	defer txWatcher.Close()
+	ethTxWatcher := transaction.WatcherFromNetwork(ethClient, monDB, config.Configuration.Ethereum.TxMetricsDisplay, constants.TxPollingTime)
+	defer ethTxWatcher.Close()
+	polygonTxWatcher := transaction.WatcherFromNetwork(polygonClient, monDB, config.Configuration.Polygon.TxMetricsDisplay, constants.TxPollingTime)
+	defer ethTxWatcher.Close()
 
 	// Setup tasks scheduler
-	tasksHandler, err := executor.NewTaskHandler(monDB, eth, contractsHandler, consAdminHandlers, txWatcher)
+	ethTasksHandler, err := executor.NewTaskHandler(monDB, ethClient, allContractsHandler, consAdminHandlers, ethTxWatcher)
+	if err != nil {
+		panic(err)
+	}
+	polygonTasksHandler, err := executor.NewTaskHandler(monDB, polygonClient, allContractsHandler, consAdminHandlers, polygonTxWatcher)
 	if err != nil {
 		panic(err)
 	}
 
+	// setup monitor
+	ethereumEventMap := objects.NewEventMap()
+	err = events.SetupEthereumEventMap(ethereumEventMap, consDB, monDB, consAdminHandlers, appDepositHandler, ethTasksHandler, func() {}, uint32(config.Configuration.Chain.ID))
+	if err != nil {
+		logger.Fatalf("Error creating ethereum event map: %v", err)
+	}
+
 	monitorInterval := constants.MonitorInterval
-	mon, err := monitor.NewMonitor(consDB, monDB, consAdminHandlers, appDepositHandler, eth, contractsHandler, contractsHandler.EthereumContracts().GetAllAddresses(), monitorInterval, batchSize, uint32(config.Configuration.Chain.ID), tasksHandler)
+	ethBatchSize := config.Configuration.Ethereum.ProcessingBlockBatchSize
+	ethMon, err := monitor.NewMonitor(consDB, monDB, consAdminHandlers, appDepositHandler, ethClient, allContractsHandler, allContractsHandler.EthereumContracts().GetAllAddresses(), monitorInterval, ethBatchSize, uint32(config.Configuration.Chain.ID), ethTasksHandler, ethereumEventMap)
+	if err != nil {
+		panic(err)
+	}
+
+	polygonEventMap := objects.NewEventMap()
+	// todo: update SetupPolygonEventMap() to only listen to necessary events
+	err = events.SetupPolygonEventMap(polygonEventMap, consDB, monDB, consAdminHandlers, appDepositHandler, ethTasksHandler, func() {}, uint32(config.Configuration.Chain.ID))
+	if err != nil {
+		logger.Fatalf("Error creating polygon event map: %v", err)
+	}
+
+	polygonBatchSize := config.Configuration.Polygon.ProcessingBlockBatchSize
+	polygonMon, err := monitor.NewMonitor(consDB, monDB, consAdminHandlers, appDepositHandler, polygonClient, allContractsHandler, allContractsHandler.EthereumContracts().GetAllAddresses(), monitorInterval, polygonBatchSize, uint32(config.Configuration.Chain.ID), polygonTasksHandler, polygonEventMap)
 	if err != nil {
 		panic(err)
 	}
@@ -329,8 +381,8 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	}
 
 	consSync.Init(consDB, mDB, tDB, consGossipClient, consGossipHandlers, consTxPool, consLSEngine, app, consAdminHandlers, peerManager, storage)
-	localStateHandler.Init(consDB, app, consGossipHandlers, publicKey, consSync.Safe, storage)
-	statusLogger.Init(consLSEngine, peerManager, consAdminHandlers, mon)
+	localStateHandler.Init(consDB, app, consGossipHandlers, ethPublicKey, consSync.Safe, storage)
+	statusLogger.Init(consLSEngine, peerManager, consAdminHandlers, ethMon)
 
 	//////////////////////////////////////////////////////////////////////////////
 	//LAUNCH ALL SERVICE GOROUTINES///////////////////////////////////////////////
@@ -339,14 +391,20 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	go statusLogger.Run()
 	defer statusLogger.Close()
 
-	tasksHandler.Start()
-	defer tasksHandler.Close()
+	ethTasksHandler.Start()
+	defer ethTasksHandler.Close()
 
-	err = mon.Start()
+	err = ethMon.Start()
 	if err != nil {
 		panic(err)
 	}
-	defer mon.Close()
+	defer ethMon.Close()
+
+	err = polygonMon.Start()
+	if err != nil {
+		panic(err)
+	}
+	defer polygonMon.Close()
 
 	go peerManager.Start()
 	defer peerManager.Close()
@@ -377,8 +435,10 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	select {
 	case <-peerManager.CloseChan():
 	case <-consSync.CloseChan():
-	case <-mon.CloseChan():
-	case <-tasksHandler.CloseChan():
+	case <-ethMon.CloseChan():
+	case <-polygonMon.CloseChan():
+	case <-ethTasksHandler.CloseChan():
+	case <-polygonTasksHandler.CloseChan():
 	case <-signals:
 	}
 	go countSignals(logger, 5, signals)

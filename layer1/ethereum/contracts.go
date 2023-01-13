@@ -48,10 +48,15 @@ type Contracts struct {
 // Set the contractFactoryAddress and looks up for all the contracts that we
 // need that were deployed via the factory. It's only executed once. Other call
 // to this functions are no-op.
-func NewContracts(eth *Client, contractFactoryAddress common.Address) *Contracts {
+func NewContracts(eth layer1.Client, contractFactoryAddress common.Address) *Contracts {
+	ethClient, ok := eth.(*Client)
+	if !ok {
+		panic("Could not cast to ethereum.Client")
+	}
+
 	newContracts := &Contracts{
 		allAddresses:           make(map[common.Address]bool),
-		eth:                    eth,
+		eth:                    ethClient,
 		contractFactoryAddress: contractFactoryAddress,
 	}
 	err := newContracts.lookupContracts()
