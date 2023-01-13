@@ -57,9 +57,9 @@ task("deployUniswapV3Pool", "deploys a uniswap v3 pool")
       [token0, token1, fee, sqrtPriceX96]
     );
     multiCallData.push(createAndInitializePool);
-    NFTPositionManager.mint();
+  
     const mintPosition = NFTPositionManager.interface.encodeFunctionData("mint", []);
-    const txResponse = await UNIV3factory.createPool(token0, token1, fee);
+    const txResponse = await NFTPositionManager.Multicall(token0, token1, fee);
     const receipt = await txResponse.wait();
   });
 
