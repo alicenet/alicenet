@@ -73,7 +73,7 @@
     "web3": "^1.8.1"
   },
   "dependencies": {
-    "@openzeppelin/contracts": "^4.8.0",
+    "@openzeppelin/contracts": "^4.8.1",
     "@openzeppelin/contracts-upgradeable": "^4.8.0"
   }
 }
