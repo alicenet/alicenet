@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/MadBase/go-capnproto2/v2 v2.18.0-custom.1
-	github.com/bufbuild/buf v1.11.0
+	github.com/bufbuild/buf v1.12.0
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.1.0
 	github.com/derision-test/go-mockgen v1.3.7
 	github.com/dgraph-io/badger/v2 v2.2007.4
@@ -59,7 +59,7 @@ require (
 	github.com/btcsuite/btcwallet/wtxmgr v1.5.0 // indirect
 	github.com/btcsuite/go-socks v0.0.0-20170105172521-4720035b7bfd // indirect
 	github.com/btcsuite/websocket v0.0.0-20150119174127-31079b680792 // indirect
-	github.com/bufbuild/connect-go v1.4.0 // indirect
+	github.com/bufbuild/connect-go v1.4.1 // indirect
 	github.com/bufbuild/protocompile v0.1.0 // indirect
 	github.com/cespare/xxhash v1.1.0 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
