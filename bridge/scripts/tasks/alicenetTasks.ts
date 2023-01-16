@@ -1204,7 +1204,8 @@ task(
   "Transfers ALCA from the AliceNet factory to an address"
 )
   .addParam("factoryAddress", "address of the factory deploying the contract")
-  .addParam("amount", "amount to mint")
+  .addParam("amount", "amount to transfer")
+  .addFlag("test", "use testnet addresses")
   .addParam("to", "address of the recipient")
   .addOptionalParam(
     "waitConfirmation",
@@ -1229,23 +1230,36 @@ task(
     ) {
       throw new Error("must specify factory address");
     }
-    const factory = await hre.ethers.getContractAt(
+    let factory = await hre.ethers.getContractAt(
       "AliceNetFactory",
       taskArgs.factoryAddress
     );
+    if (taskArgs.test) {
+      const address = "0xff55549a3ceea32fba4794bf1a649a2363fcda53";
+      await hre.network.provider.request({
+        method: "hardhat_impersonateAccount",
+        params: [address],
+      });
+      const helpers = require("@nomicfoundation/hardhat-network-helpers");
+      await helpers.impersonateAccount(address);
+      const signer = await hre.ethers.getSigner(address);
+      factory = factory.connect(signer);
+    }
     const alca = await hre.ethers.getContractAt(
       "ALCA",
       await factory.lookup(hre.ethers.utils.formatBytes32String("ALCA"))
     );
-    const promptMessage = `Do you want to send ${taskArgs.amount} ALCA to the address ${taskArgs.to} ? (y/n)\n`;
+    const amount = hre.ethers.utils.parseEther(taskArgs.amount);
+    const promptMessage = `Do you want to send ${taskArgs.amount} * 10**18 ALCA to the address ${taskArgs.to} ? (y/n)\n`;
     await promptCheckDeploymentArgs(promptMessage);
     const calldata = alca.interface.encodeFunctionData("transfer", [
       taskArgs.to,
-      taskArgs.amount,
+      amount,
     ]);
-    // use the factory to call the A token minter
+    // use the factory to call the A token to transfer alca
     const txResponse = await factory.callAny(alca.address, 0, calldata);
-    await txResponse.wait(waitConfirmationsBlocks);
+    const receipt = await txResponse.wait(waitConfirmationsBlocks);
+    console.log(receipt.events);
     console.log("Successfully transferred ALCA!");
   });
 

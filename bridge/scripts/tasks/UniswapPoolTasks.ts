@@ -50,6 +50,7 @@ task("deployUniswapV3Pool", "deploys a uniswap v3 pool")
       UNISWAPV3NFTMANAGER
     );
     const multiCallData = [];
+    // todo compute the price here
     const sqrtPriceX96 = 0;
     NFTPositionManager.createAndInitializePoolIfNecessary();
     const createAndInitializePool = NFTPositionManager.interface.encodeFunctionData(
