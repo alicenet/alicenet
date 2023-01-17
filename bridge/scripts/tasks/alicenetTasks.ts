@@ -1758,7 +1758,10 @@ task(
 )
   .addParam("recipient", "address to minto staked position to")
   .addParam("alcaAmount", "amount of ALCA to send to staked position")
-  .addFlag("test", "test mode for use with a hardhat fork mode")
+  .addFlag(
+    "test",
+    "test mode for use with a hardhat fork mode on, you must uncomment forking section in hardhat config, add ALCHEMY_ENDPOINT_ETH to .env file with alchemy endpoint"
+  )
   .addOptionalParam(
     "waitConfirmation",
     "wait specified number of blocks between transactions",
@@ -1798,6 +1801,12 @@ task(
     //encode approval call to approve public staking contract to
     //encode ALCA amount in wei
     const alcaAmount = hre.ethers.utils.parseEther(taskArgs.alcaAmount);
+    let promptMessage = `approve publicStaking ${
+      publicStaking.address
+    } to spend  ${alcaAmount.toString()} in wei ALCA ? ${hre.ethers.utils.parseEther(
+      alcaAmount.toString()
+    )}(y/n)\n`;
+    await promptCheckDeploymentArgs(promptMessage);
     const approval = alca.interface.encodeFunctionData("approve", [
       publicStaking.address,
       alcaAmount,
@@ -1813,6 +1822,12 @@ task(
       alcaAmount,
       maxStakingLock,
     ]);
+    promptMessage = `create a staked position for ${
+      taskArgs.recipient
+    } with ${alcaAmount} in wei ${hre.ethers.utils.parseEther(
+      alcaAmount.toString()
+    )} ALCA locked for ${maxStakingLock} blocks? (y/n)\n`;
+    await promptCheckDeploymentArgs(promptMessage);
     const encodedMintToCall: MultiCallArgsStruct = {
       target: publicStaking.address,
       value: 0,
@@ -1822,11 +1837,26 @@ task(
       encodedApprovalCall,
       encodedMintToCall,
     ];
+    const balanceBefore = await hre.ethers.provider.getBalance(
+      factory.signer.getAddress()
+    );
+    const gas = await factory.estimateGas.multiCall(
+      encodedMultiCallArgs,
+      await getGasPrices(hre.ethers)
+    );
+    promptMessage = `total gas required is ${gas.toString()} Continue? (y/n)\n`;
+    await promptCheckDeploymentArgs(promptMessage);
     const txResponse = await factory.multiCall(
       encodedMultiCallArgs,
       await getGasPrices(hre.ethers)
     );
     const receipt = await txResponse.wait(waitConfirmationsBlocks);
+    const balanceAfter = await hre.ethers.provider.getBalance(
+      factory.signer.getAddress()
+    );
+    if (taskArgs.test) {
+      console.log(`total cost = ${balanceBefore.sub(balanceAfter)}`);
+    }
     console.log(receipt.events);
   });
 
@@ -1868,6 +1898,12 @@ task(
         method: "hardhat_impersonateAccount",
         params: [address],
       });
+      let signers = await hre.ethers.getSigners();
+      let tx = await signers[0].populateTransaction({
+        to: address,
+        value: hre.ethers.utils.parseEther("2"),
+      });
+      await signers[0].sendTransaction(tx);
       const helpers = require("@nomicfoundation/hardhat-network-helpers");
       await helpers.impersonateAccount(address);
       const signer = await hre.ethers.getSigner(address);
@@ -1890,6 +1926,8 @@ task(
       }
       const amount = await hre.ethers.utils.parseEther(input.Amount);
       approvalAmount = approvalAmount.add(amount);
+      let promptMessage = `create a staked position for ${input.Address} with ${input.Amount} in wei ${amount} ALCA locked for ${maxStakingLock} blocks? (y/n)\n`;
+      await promptCheckDeploymentArgs(promptMessage);
       const mintTo = publicStaking.interface.encodeFunctionData("mintTo", [
         input.Address,
         amount,
@@ -1902,24 +1940,41 @@ task(
       };
       encodedMultiCallArgs.push(encodedMintToCall);
     }
-    //encode approval call
-    let approvedAmount = await alca.allowance(
-      factory.address,
+    let promptMessage = `approve publicStaking ${
       publicStaking.address
-    );
-    approvalAmount = approvalAmount.sub(approvedAmount);
+    } to spend  ${approvalAmount.toString()} ALCA? (y/n)\n`;
+    await promptCheckDeploymentArgs(promptMessage);
     const approval = alca.interface.encodeFunctionData("approve", [
       publicStaking.address,
       approvalAmount,
     ]);
-    encodedMultiCallArgs[0].data = approval;
+
+    encodedApprovalCall = { target: alca.address, value: 0, data: approval };
+    encodedMultiCallArgs[0] = encodedApprovalCall;
+    const gas = await factory.estimateGas.multiCall(
+      encodedMultiCallArgs,
+      await getGasPrices(hre.ethers)
+    );
+    promptMessage = `total gas required is ${gas.toString()} Continue? (y/n)\n`;
+    await promptCheckDeploymentArgs(promptMessage);
+    const balanceBefore = await hre.ethers.provider.getBalance(
+      await factory.signer.getAddress()
+    );
     const txResponse = await factory.multiCall(
       encodedMultiCallArgs,
       await getGasPrices(hre.ethers)
     );
     //check if all token distributions were successful
     const receipt = await txResponse.wait(waitConfirmationsBlocks);
-    // console.log(receipt.events);
+    let balanceAfter = await hre.ethers.provider.getBalance(
+      await factory.signer.getAddress()
+    );
+    console.log(receipt.events);
+    if (taskArgs.test) {
+      console.log(
+        hre.ethers.utils.formatEther(balanceBefore.sub(balanceAfter))
+      );
+    }
   });
 
 interface DistributionData {
