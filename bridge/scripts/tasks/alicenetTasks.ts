@@ -1798,6 +1798,9 @@ task(
         `lock duration ${maxStakingLock.toString()} exceeds max lock duration ${MAX_PUBLIC_STAKING_LOCK_DURATION}`
       );
     }
+    if (!hre.ethers.utils.isAddress(taskArgs.recipient)) {
+      throw new Error(`invalid address: ${taskArgs.recipient} for recipient`);
+    }
     let factory = await hre.ethers.getContractAt(
       ALICENET_FACTORY,
       taskArgs.factoryAddress
@@ -1973,10 +1976,8 @@ task(
     let approvalAmount = BigNumber.from("0");
     // encode a multicall input for each row in the csv file
     for (const input of distributionData) {
-      if (input.Address.length !== 42) {
-        throw new Error(
-          `invalid address length: ${input.Address.length} for ${input.Name}`
-        );
+      if (!hre.ethers.utils.isAddress(input.Address)) {
+        throw new Error(`invalid address: ${input.Address} for recipient`);
       }
       const amount = await hre.ethers.utils.parseEther(input.Amount);
       approvalAmount = approvalAmount.add(amount);
