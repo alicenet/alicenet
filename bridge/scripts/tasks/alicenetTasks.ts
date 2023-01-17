@@ -144,7 +144,7 @@ task("create-local-seed-node", "start and syncs a node with mainnet")
         }
       } catch (err: any) {
         if (err) {
-          await new Promise((resolve) => setTimeout(5000));
+          await new Promise(() => setTimeout(5000));
         }
       }
     }
@@ -1781,21 +1781,30 @@ task(
       taskArgs.waitConfirmation,
       hre
     );
-    const maxStakingLock = BigNumber.from(MAX_PUBLIC_STAKING_LOCK_DURATION);
+    const maxStakingLock = BigNumber.from(taskArgs.lockDuration);
+    if (maxStakingLock.gt(BigNumber.from(MAX_PUBLIC_STAKING_LOCK_DURATION))) {
+      throw new Error(
+        `lock duration ${maxStakingLock.toString()} exceeds max lock duration ${MAX_PUBLIC_STAKING_LOCK_DURATION}`
+      );
+    }
     let factory = await hre.ethers.getContractAt(
       ALICENET_FACTORY,
       taskArgs.factoryAddress
     );
-    const publicStakingSalt = hre.ethers.utils.formatBytes32String(
-      ALICE_NET_PUBLIC_STAKING_SALT
+    const alcaAddress = await factoryLookupAddress(
+      factory.address,
+      ALCA_SALT,
+      hre
     );
-    const publicStakingAddress = await factory.lookup(publicStakingSalt);
+    const publicStakingAddress = await factoryLookupAddress(
+      factory.address,
+      ALICE_NET_PUBLIC_STAKING_SALT,
+      hre
+    );
     const publicStaking = await hre.ethers.getContractAt(
       PUBLIC_STAKING,
-      publicStakingSalt
+      publicStakingAddress
     );
-    const alcaSalt = hre.ethers.utils.formatBytes32String(ALCA_SALT);
-    const alcaAddress = await factory.lookup(alcaSalt);
     const alca = await hre.ethers.getContractAt(ALCA, alcaAddress);
     // use this flag with a hardhat forked node
     if (taskArgs.test) {
@@ -1882,7 +1891,12 @@ task(
     "address of AliceNetFactory",
     ALICE_NET_FACTORY_ADDRESS
   )
-  .addOptionalParam("lockD")
+  .addOptionalParam(
+    "lockDuration",
+    "lock duration in blocks",
+    MAX_PUBLIC_STAKING_LOCK_DURATION,
+    types.string
+  )
   .addOptionalParam(
     "waitConfirmation",
     "wait specified number of blocks between transactions",
@@ -1894,21 +1908,30 @@ task(
       taskArgs.waitConfirmation,
       hre
     );
-    const maxStakingLock = BigNumber.from(MAX_PUBLIC_STAKING_LOCK_DURATION);
+    const maxStakingLock = BigNumber.from(taskArgs.lockDuration);
+    if (maxStakingLock.gt(BigNumber.from(MAX_PUBLIC_STAKING_LOCK_DURATION))) {
+      throw new Error(
+        `lock duration ${maxStakingLock.toString()} exceeds max lock duration ${MAX_PUBLIC_STAKING_LOCK_DURATION}`
+      );
+    }
     let factory = await hre.ethers.getContractAt(
       ALICENET_FACTORY,
       taskArgs.factoryAddress
     );
-    const publicStakingSalt = hre.ethers.utils.formatBytes32String(
-      ALICE_NET_PUBLIC_STAKING_SALT
+    const alcaAddress = await factoryLookupAddress(
+      factory.address,
+      ALCA_SALT,
+      hre
     );
-    const publicStakingAddress = await factory.lookup(publicStakingSalt);
+    const publicStakingAddress = await factoryLookupAddress(
+      factory.address,
+      ALICE_NET_PUBLIC_STAKING_SALT,
+      hre
+    );
     const publicStaking = await hre.ethers.getContractAt(
       PUBLIC_STAKING,
-      publicStakingSalt
+      publicStakingAddress
     );
-    const alcaSalt = hre.ethers.utils.formatBytes32String(ALCA_SALT);
-    const alcaAddress = await factory.lookup(alcaSalt);
     const alca = await hre.ethers.getContractAt(ALCA, alcaAddress);
     const distributionData = await readCSV(taskArgs.csvPath);
     // use this flag with a hardhat forked node

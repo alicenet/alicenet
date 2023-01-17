@@ -58,7 +58,7 @@ export const env = (): string => {
   return _env;
 };
 
-//AliceNet Contract salts
+// AliceNet Contract salts
 export const ALICE_NET_PUBLIC_STAKING_SALT = "PublicStaking";
 export const ALCA_SALT = "ALCA";
 
