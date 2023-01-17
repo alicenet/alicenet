@@ -6,14 +6,12 @@ import { task, types } from "hardhat/config";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 // import { ValidatorPool } from "../../typechain-types";
 import axios from "axios";
+import { setTimeout } from "timers/promises";
 import {
   encodeMultiCallArgs,
   MultiCallArgsStruct,
 } from "../lib/alicenetFactory";
 import { ALICENET_FACTORY, DEFAULT_CONFIG_FILE_PATH } from "../lib/constants";
-
-import csv from "csv-parser";
-import { setTimeout } from "timers/promises";
 import { DeploymentConfigWrapper } from "../lib/deployment/interfaces";
 import {
   getGasPrices,
@@ -1798,8 +1796,8 @@ task(
       factory = factory.connect(signer);
     }
     const maxStakingLock = BigNumber.from("1051200");
-    //encode approval call to approve public staking contract to
-    //encode ALCA amount in wei
+    // encode approval call to approve public staking contract to
+    // encode ALCA amount in wei
     const alcaAmount = hre.ethers.utils.parseEther(taskArgs.alcaAmount);
     let promptMessage = `approve publicStaking ${
       publicStaking.address
@@ -1816,7 +1814,7 @@ task(
       value: 0,
       data: approval,
     };
-    //encode mintTo call to public staking contract to mint a staked position with ALCA from factory
+    // encode mintTo call to public staking contract to mint a staked position with ALCA from factory
     const mintTo = publicStaking.interface.encodeFunctionData("mintTo", [
       taskArgs.recipient,
       alcaAmount,
@@ -1833,7 +1831,7 @@ task(
       value: 0,
       data: mintTo,
     };
-    let encodedMultiCallArgs: Array<MultiCallArgsStruct> = [
+    const encodedMultiCallArgs: Array<MultiCallArgsStruct> = [
       encodedApprovalCall,
       encodedMintToCall,
     ];
@@ -1890,7 +1888,7 @@ task(
       "ALCA",
       "0xBb556b0eE2CBd89ed95DdEA881477723A3Aa8F8b"
     );
-    let distributionData = await readCSV(taskArgs.csvPath);
+    const distributionData = await readCSV(taskArgs.csvPath);
     // use this flag with a hardhat forked node
     if (taskArgs.test) {
       const address = "0xff55549a3ceea32fba4794bf1a649a2363fcda53";
@@ -1898,8 +1896,8 @@ task(
         method: "hardhat_impersonateAccount",
         params: [address],
       });
-      let signers = await hre.ethers.getSigners();
-      let tx = await signers[0].populateTransaction({
+      const signers = await hre.ethers.getSigners();
+      const tx = await signers[0].populateTransaction({
         to: address,
         value: hre.ethers.utils.parseEther("2"),
       });
@@ -1909,7 +1907,7 @@ task(
       const signer = await hre.ethers.getSigner(address);
       factory = factory.connect(signer);
     }
-    let encodedMultiCallArgs: Array<MultiCallArgsStruct> = [];
+    const encodedMultiCallArgs: Array<MultiCallArgsStruct> = [];
     let encodedApprovalCall: MultiCallArgsStruct = {
       target: alca.address,
       value: 0,
@@ -1917,16 +1915,16 @@ task(
     };
     encodedMultiCallArgs.push(encodedApprovalCall);
     let approvalAmount = BigNumber.from("0");
-    //encode a multicall input for each row in the csv file
-    for (let input of distributionData) {
-      if (input.Address.length != 42) {
+    // encode a multicall input for each row in the csv file
+    for (const input of distributionData) {
+      if (input.Address.length !== 42) {
         throw new Error(
-          `invalid address address length: ${input.Address.length} for ${input.Name}`
+          `invalid address length: ${input.Address.length} for ${input.Name}`
         );
       }
       const amount = await hre.ethers.utils.parseEther(input.Amount);
       approvalAmount = approvalAmount.add(amount);
-      let promptMessage = `create a staked position for ${input.Address} with ${input.Amount} in wei ${amount} ALCA locked for ${maxStakingLock} blocks? (y/n)\n`;
+      const promptMessage = `create a staked position for ${input.Address} with ${input.Amount} in wei ${amount} ALCA locked for ${maxStakingLock} blocks? (y/n)\n`;
       await promptCheckDeploymentArgs(promptMessage);
       const mintTo = publicStaking.interface.encodeFunctionData("mintTo", [
         input.Address,
@@ -1964,9 +1962,9 @@ task(
       encodedMultiCallArgs,
       await getGasPrices(hre.ethers)
     );
-    //check if all token distributions were successful
+    // check if all token distributions were successful
     const receipt = await txResponse.wait(waitConfirmationsBlocks);
-    let balanceAfter = await hre.ethers.provider.getBalance(
+    const balanceAfter = await hre.ethers.provider.getBalance(
       await factory.signer.getAddress()
     );
     console.log(receipt.events);
@@ -1987,7 +1985,7 @@ async function readCSV(csvPath: string): Promise<Array<DistributionData>> {
   return new Promise((resolve, reject) => {
     fs.createReadStream(csvPath)
       .pipe(csv())
-      .on("data", (data) => {
+      .on("data", (data: any) => {
         results.push(data);
       })
       .on("error", reject)
@@ -2154,4 +2152,7 @@ async function factoryLookupAddress(
     .catch((error: any) => {
       throw new Error(`Invalid factory-address ${factory.address}!\n${error}`);
     });
+}
+function csv(): any {
+  throw new Error("Function not implemented.");
 }
