@@ -1771,6 +1771,17 @@ task(
     "test mode for use with a hardhat fork mode on, you must uncomment forking section in hardhat config, add ALCHEMY_ENDPOINT_ETH to .env file with alchemy endpoint"
   )
   .addOptionalParam(
+    "factoryAddress",
+    "address of AliceNetFactory",
+    ALICE_NET_FACTORY_ADDRESS
+  )
+  .addOptionalParam(
+    "lockDuration",
+    "lock duration in blocks",
+    MAX_PUBLIC_STAKING_LOCK_DURATION,
+    types.string
+  )
+  .addOptionalParam(
     "waitConfirmation",
     "wait specified number of blocks between transactions",
     0,
