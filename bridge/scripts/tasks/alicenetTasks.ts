@@ -6,6 +6,7 @@ import { task, types } from "hardhat/config";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 // import { ValidatorPool } from "../../typechain-types";
 import axios from "axios";
+import csv from "csv-parser";
 import { setTimeout } from "timers/promises";
 import {
   encodeMultiCallArgs,
@@ -2152,7 +2153,4 @@ async function factoryLookupAddress(
     .catch((error: any) => {
       throw new Error(`Invalid factory-address ${factory.address}!\n${error}`);
     });
-}
-function csv(): any {
-  throw new Error("Function not implemented.");
 }
