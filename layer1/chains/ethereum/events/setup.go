@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/alicenet/alicenet/bridge/bindings"
+	ebindings "github.com/alicenet/alicenet/bridge/bindings/ethereum"
 	"github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/layer1"
 	"github.com/alicenet/alicenet/layer1/executor"
@@ -16,7 +16,7 @@ import (
 )
 
 func GetETHDKGEvents() map[string]abi.Event {
-	ethDkgABI, err := abi.JSON(strings.NewReader(bindings.ETHDKGMetaData.ABI))
+	ethDkgABI, err := abi.JSON(strings.NewReader(ebindings.ETHDKGMetaData.ABI))
 	if err != nil {
 		panic(err)
 	}
@@ -25,7 +25,7 @@ func GetETHDKGEvents() map[string]abi.Event {
 }
 
 func GetGovernanceEvents() map[string]abi.Event {
-	governanceABI, err := abi.JSON(strings.NewReader(bindings.GovernanceMetaData.ABI))
+	governanceABI, err := abi.JSON(strings.NewReader(ebindings.GovernanceMetaData.ABI))
 	if err != nil {
 		panic(err)
 	}
@@ -34,7 +34,7 @@ func GetGovernanceEvents() map[string]abi.Event {
 }
 
 func GetALCBEvents() map[string]abi.Event {
-	alcbABI, err := abi.JSON(strings.NewReader(bindings.ALCBMetaData.ABI))
+	alcbABI, err := abi.JSON(strings.NewReader(ebindings.ALCBMetaData.ABI))
 	if err != nil {
 		panic(err)
 	}
@@ -43,7 +43,7 @@ func GetALCBEvents() map[string]abi.Event {
 }
 
 func GetSnapshotEvents() map[string]abi.Event {
-	snapshotsABI, err := abi.JSON(strings.NewReader(bindings.SnapshotsMetaData.ABI))
+	snapshotsABI, err := abi.JSON(strings.NewReader(ebindings.SnapshotsMetaData.ABI))
 	if err != nil {
 		panic(err)
 	}
@@ -52,7 +52,7 @@ func GetSnapshotEvents() map[string]abi.Event {
 }
 
 func GetValidatorPoolEvents() map[string]abi.Event {
-	validatorPoolABI, err := abi.JSON(strings.NewReader(bindings.ValidatorPoolMetaData.ABI))
+	validatorPoolABI, err := abi.JSON(strings.NewReader(ebindings.ValidatorPoolMetaData.ABI))
 	if err != nil {
 		panic(err)
 	}
@@ -61,7 +61,7 @@ func GetValidatorPoolEvents() map[string]abi.Event {
 }
 
 func GetPublicStakingEvents() map[string]abi.Event {
-	publicStakingABI, err := abi.JSON(strings.NewReader(bindings.PublicStakingMetaData.ABI))
+	publicStakingABI, err := abi.JSON(strings.NewReader(ebindings.PublicStakingMetaData.ABI))
 	if err != nil {
 		panic(err)
 	}
@@ -70,7 +70,7 @@ func GetPublicStakingEvents() map[string]abi.Event {
 }
 
 func GetDynamicsEvents() map[string]abi.Event {
-	snapshotsABI, err := abi.JSON(strings.NewReader(bindings.DynamicsMetaData.ABI))
+	snapshotsABI, err := abi.JSON(strings.NewReader(ebindings.DynamicsMetaData.ABI))
 	if err != nil {
 		panic(err)
 	}

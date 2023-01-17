@@ -7,7 +7,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/alicenet/alicenet/bridge/bindings"
+	ebindings "github.com/alicenet/alicenet/bridge/bindings/ethereum"
 	"github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/constants/dbprefix"
 	"github.com/alicenet/alicenet/logging"
@@ -34,7 +34,7 @@ type MonitorState struct {
 	ValidatorSets          map[uint32]ValidatorSet               `json:"validatorSets"`
 	Validators             map[uint32][]Validator                `json:"validators"`
 	PotentialValidators    map[common.Address]PotentialValidator `json:"potentialValidators"`
-	CanonicalVersion       bindings.CanonicalVersion             `json:"canonicalVersion"`
+	CanonicalVersion       ebindings.CanonicalVersion            `json:"canonicalVersion"`
 }
 
 // ValidatorSet is summary information about a ValidatorSet that participated on ETHDKG.

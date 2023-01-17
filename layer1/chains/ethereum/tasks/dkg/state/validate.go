@@ -9,7 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/sirupsen/logrus"
 
-	"github.com/alicenet/alicenet/bridge/bindings"
+	ebindings "github.com/alicenet/alicenet/bridge/bindings/ethereum"
 	"github.com/alicenet/alicenet/crypto/bn256"
 	"github.com/alicenet/alicenet/crypto/bn256/cloudflare"
 )
@@ -54,7 +54,7 @@ const (
 )
 
 // CheckRegistration checks if given address is registered as expected.
-func CheckRegistration(ethdkg bindings.IETHDKG,
+func CheckRegistration(ethdkg ebindings.IETHDKG,
 	logger *logrus.Entry,
 	callOpts *bind.CallOpts,
 	addr common.Address,
@@ -98,7 +98,7 @@ func CheckRegistration(ethdkg bindings.IETHDKG,
 }
 
 // CheckKeyShare checks if a given address submitted the keyshare expected.
-func CheckKeyShare(ctx context.Context, ethdkg bindings.IETHDKG,
+func CheckKeyShare(ctx context.Context, ethdkg ebindings.IETHDKG,
 	logger *logrus.Entry,
 	callOpts *bind.CallOpts,
 	addr common.Address,

@@ -11,7 +11,6 @@ import "hardhat-gas-reporter";
 import "hardhat-log-remover";
 import "hardhat-preprocessor";
 import "hardhat-storage-layout";
-import "hardhat/config";
 import { HardhatUserConfig, task } from "hardhat/config";
 import os from "os";
 import "solidity-coverage";
@@ -310,36 +309,59 @@ const config: HardhatUserConfig = {
     jobs: os.cpus().length / 2 > 1 ? os.cpus().length / 2 : 1,
   },
 
-  abiExporter: {
-    path: "./bindings/bindings-artifacts",
-    runOnCompile: true,
-    clear: true,
-    flat: true,
-    only: [
-      "AliceNetFactory",
-      "ETHDKG",
-      "ValidatorPool",
-      "Snapshots",
-      "ALCB",
-      "ALCA",
-      "PublicStaking",
-      "ValidatorStaking",
-      "Governance",
-      "Dynamics",
-    ],
-    except: [
-      "I[A-Z].*",
-      "Immutable.*",
-      ".*Mock",
-      ".*Base",
-      ".*Storage",
-      ".*Error",
-      "ETHDKGAccusations",
-      "ETHDKGPhases",
-    ],
-    spacing: 2,
-    pretty: false,
-  },
+  abiExporter: [
+    {
+      path: "./bindings/ethereum-artifacts",
+      runOnCompile: true,
+      clear: true,
+      flat: true,
+      only: [
+        "AliceNetFactory",
+        "ETHDKG",
+        "ValidatorPool",
+        "Snapshots",
+        "ALCB",
+        "ALCA",
+        "PublicStaking",
+        "ValidatorStaking",
+        "Governance",
+        "Dynamics",
+      ],
+      except: [
+        "I[A-Z].*",
+        "Immutable.*",
+        ".*Mock",
+        ".*Base",
+        ".*Storage",
+        ".*Error",
+        "ETHDKGAccusations",
+        "ETHDKGPhases",
+        "LightSnapshots",
+      ],
+      spacing: 2,
+      pretty: false,
+    },
+    {
+      path: "./bindings/multichain-artifacts",
+      runOnCompile: true,
+      clear: true,
+      flat: true,
+      only: ["AliceNetFactory", "LightSnapshots"],
+      except: [
+        "I[A-Z].*",
+        "Immutable.*",
+        ".*Mock",
+        ".*Base",
+        ".*Storage",
+        ".*Error",
+        "ETHDKGAccusations",
+        "ETHDKGPhases",
+        "ETHDKG",
+      ],
+      spacing: 2,
+      pretty: false,
+    },
+  ],
 };
 
 export default config;

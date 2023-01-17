@@ -4,7 +4,8 @@ import (
 	"context"
 	"math/big"
 
-	"github.com/alicenet/alicenet/bridge/bindings"
+	ebindings "github.com/alicenet/alicenet/bridge/bindings/ethereum"
+	mbindings "github.com/alicenet/alicenet/bridge/bindings/multichain"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -71,28 +72,37 @@ type BasicContracts interface {
 
 type EthereumContracts interface {
 	BasicContracts
-	Ethdkg() bindings.IETHDKG
+	Ethdkg() ebindings.IETHDKG
 	EthdkgAddress() common.Address
-	ALCA() bindings.IALCA
+	ALCA() ebindings.IALCA
 	ALCAAddress() common.Address
-	ALCB() bindings.IALCB
+	ALCB() ebindings.IALCB
 	ALCBAddress() common.Address
-	PublicStaking() bindings.IPublicStaking
+	PublicStaking() ebindings.IPublicStaking
 	PublicStakingAddress() common.Address
-	ValidatorStaking() bindings.IValidatorStaking
+	ValidatorStaking() ebindings.IValidatorStaking
 	ValidatorStakingAddress() common.Address
-	ContractFactory() bindings.IAliceNetFactory
+	ContractFactory() ebindings.IAliceNetFactory
 	ContractFactoryAddress() common.Address
 	SnapshotsAddress() common.Address
-	Snapshots() bindings.ISnapshots
-	ValidatorPool() bindings.IValidatorPool
+	Snapshots() ebindings.ISnapshots
+	ValidatorPool() ebindings.IValidatorPool
 	ValidatorPoolAddress() common.Address
-	Governance() bindings.IGovernance
+	Governance() ebindings.IGovernance
 	GovernanceAddress() common.Address
-	Dynamics() bindings.IDynamics
+	Dynamics() ebindings.IDynamics
 	DynamicsAddress() common.Address
+}
+
+type MultichainContracts interface {
+	BasicContracts
+	ContractFactory() mbindings.IAliceNetFactory
+	ContractFactoryAddress() common.Address
+	LightSnapshotsAddress() common.Address
+	LightSnapshots() mbindings.ILightSnapshots
 }
 
 type AllSmartContracts interface {
 	EthereumContracts() EthereumContracts
+	PolygonContracts() MultichainContracts
 }

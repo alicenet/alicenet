@@ -16,7 +16,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/sirupsen/logrus"
 
-	"github.com/alicenet/alicenet/bridge/bindings"
+	ebindings "github.com/alicenet/alicenet/bridge/bindings/ethereum"
 	"github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/constants/dbprefix"
@@ -411,7 +411,7 @@ func (wb *WatcherBackend) Loop() {
 		case <-statusTime:
 			if wb.metricsDisplay {
 				for selector, profile := range wb.Aggregates {
-					sig := bindings.FunctionMapping[selector]
+					sig := ebindings.FunctionMapping[selector]
 					wb.logger.WithField("Selector", fmt.Sprintf("%x", selector)).
 						WithField("Function", sig).
 						WithField("Profile", fmt.Sprintf("%+v", profile)).
@@ -449,7 +449,7 @@ func (wb *WatcherBackend) queue(req SubscribeRequest) (*SharedReceipt, error) {
 			txGroupHash = txnHash
 		} else {
 			selector := ExtractSelector(req.txn.Data())
-			sig := bindings.FunctionMapping[*selector]
+			sig := ebindings.FunctionMapping[*selector]
 
 			var enableAutoRetry bool
 			var maxStaleBlocks uint64

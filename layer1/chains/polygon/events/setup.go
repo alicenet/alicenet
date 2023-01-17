@@ -16,6 +16,6 @@ func SetupEventMap(
 	exitFunc func(),
 	chainID uint32,
 ) error {
-
+	// snapshots
 	return nil
 }

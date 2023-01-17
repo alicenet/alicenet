@@ -33,7 +33,7 @@ type ChainConfig struct {
 	MonitorDbInMemory     bool
 }
 
-type EthereumConfig struct {
+type EVMConfig struct {
 	DefaultAccount           string
 	Endpoint                 string
 	EndpointMinimumPeers     uint64
@@ -124,8 +124,8 @@ type RootConfiguration struct {
 	LoggingLevels         string // backwards compatibility
 	Logging               LoggingConfig
 	Deploy                DeployConfig
-	Ethereum              EthereumConfig
-	Polygon               EthereumConfig
+	Ethereum              EVMConfig
+	Polygon               EVMConfig
 	Transport             TransportConfig
 	Utils                 UtilsConfig
 	Validator             ValidatorConfig

@@ -4,7 +4,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/alicenet/alicenet/bridge/bindings"
+	ebindings "github.com/alicenet/alicenet/bridge/bindings/ethereum"
 	"github.com/alicenet/alicenet/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -115,7 +115,7 @@ func TestGetLocalVersion(t *testing.T) {
 	config.Configuration.Version = "v1.2.3"
 	version, err := GetLocalVersion()
 	require.Nil(t, err)
-	assert.Equal(t, version, bindings.CanonicalVersion{
+	assert.Equal(t, version, ebindings.CanonicalVersion{
 		Major:      1,
 		Minor:      2,
 		Patch:      3,

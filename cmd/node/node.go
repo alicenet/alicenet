@@ -11,7 +11,7 @@ import (
 
 	"github.com/alicenet/alicenet/application"
 	"github.com/alicenet/alicenet/application/deposit"
-	"github.com/alicenet/alicenet/bridge/bindings"
+	ebindings "github.com/alicenet/alicenet/bridge/bindings/ethereum"
 	"github.com/alicenet/alicenet/cmd/utils"
 	"github.com/alicenet/alicenet/config"
 	"github.com/alicenet/alicenet/consensus"
@@ -55,9 +55,9 @@ var Command = cobra.Command{
 	Run:   validatorNode,
 }
 
-func initEVMConnection(conf config.EthereumConfig,
+func initEVMClient(conf config.EVMConfig,
 	logger *logrus.Logger,
-) (layer1.Client, *mncrypto.Secp256k1Signer, []byte) {
+) (layer1.Client, *mncrypto.Secp256k1Signer) {
 	// Ethereum connection setup
 	logger.Infof("Connecting to EVM chain...")
 	eth, err := evm.NewClient(
@@ -90,7 +90,7 @@ func initEVMConnection(conf config.EthereumConfig,
 	}
 	logger.Infof("Account: %v Public Key: 0x%x", eth.GetDefaultAccount().Address.Hex(), pubKey)
 
-	return eth, secp256k1, pubKey
+	return eth, secp256k1
 }
 
 // Setup the peer manager:
@@ -206,12 +206,23 @@ func validatorNode(cmd *cobra.Command, args []string) {
 
 	chainID := uint32(config.Configuration.Chain.ID)
 
-	ethClient, ethSecp256k1Signer, ethPublicKey := initEVMConnection(config.Configuration.Ethereum, logger)
+	ethClient, ethSecp256k1Signer := initEVMClient(config.Configuration.Ethereum, logger)
+	ethPublicKey, err := ethSecp256k1Signer.Pubkey()
+	if err != nil {
+		panic(fmt.Errorf("could not get pubKey: %v", err))
+	}
 	defer ethClient.Close()
 
 	//polygonClient, polygonContractsHandler, polygonSecp256k1Signer, polygonPublicKey := initEVMConnection(config.Configuration.Polygon, logger)
-	polygonClient, _, _ := initEVMConnection(config.Configuration.Polygon, logger)
+	polygonClient, polygonSecp256k1Signer := initEVMClient(config.Configuration.Polygon, logger)
+	polygonPublicKey, err := polygonSecp256k1Signer.Pubkey()
+	if err != nil {
+		panic(fmt.Errorf("could not get pubKey: %v", err))
+	}
 	defer polygonClient.Close()
+
+	// todo: delete this pls
+	fmt.Printf("%v", polygonPublicKey)
 
 	allContractsHandler := initSmartContractsHandler(
 		ethClient,
@@ -541,7 +552,7 @@ func getCurrentEpochAndCanonicalVersion(
 	eth layer1.Client,
 	contractsHandler layer1.AllSmartContracts,
 	logger *logrus.Logger,
-) (uint32, bindings.CanonicalVersion, error) {
+) (uint32, ebindings.CanonicalVersion, error) {
 	retryCount := 5
 	retryDelay := 1 * time.Second
 
@@ -549,7 +560,7 @@ func getCurrentEpochAndCanonicalVersion(
 
 	var callOpts *bind.CallOpts
 	var err error
-	var latestVersion bindings.CanonicalVersion
+	var latestVersion ebindings.CanonicalVersion
 	var currentEpoch *big.Int
 	for i := 0; i < retryCount; i++ {
 		callOpts, err = eth.GetCallOpts(ctx, eth.GetDefaultAccount())

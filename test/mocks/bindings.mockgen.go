@@ -6,7 +6,7 @@ import (
 	"math/big"
 	"sync"
 
-	bindings "github.com/alicenet/alicenet/bridge/bindings"
+	ethereum "github.com/alicenet/alicenet/bridge/bindings/ethereum"
 	bind "github.com/ethereum/go-ethereum/accounts/abi/bind"
 	common "github.com/ethereum/go-ethereum/common"
 	types "github.com/ethereum/go-ethereum/core/types"
@@ -14,8 +14,8 @@ import (
 )
 
 // MockIALCA is a mock implementation of the IALCA interface (from the
-// package github.com/alicenet/alicenet/bridge/bindings) used for unit
-// testing.
+// package github.com/alicenet/alicenet/bridge/bindings/ethereum) used for
+// unit testing.
 type MockIALCA struct {
 	// AllowanceFunc is an instance of a mock function object controlling
 	// the behavior of the method Allowance.
@@ -143,12 +143,12 @@ func NewMockIALCA() *MockIALCA {
 			},
 		},
 		FilterApprovalFunc: &IALCAFilterApprovalFunc{
-			defaultHook: func(*bind.FilterOpts, []common.Address, []common.Address) (r0 *bindings.ALCAApprovalIterator, r1 error) {
+			defaultHook: func(*bind.FilterOpts, []common.Address, []common.Address) (r0 *ethereum.ALCAApprovalIterator, r1 error) {
 				return
 			},
 		},
 		FilterTransferFunc: &IALCAFilterTransferFunc{
-			defaultHook: func(*bind.FilterOpts, []common.Address, []common.Address) (r0 *bindings.ALCATransferIterator, r1 error) {
+			defaultHook: func(*bind.FilterOpts, []common.Address, []common.Address) (r0 *ethereum.ALCATransferIterator, r1 error) {
 				return
 			},
 		},
@@ -193,12 +193,12 @@ func NewMockIALCA() *MockIALCA {
 			},
 		},
 		ParseApprovalFunc: &IALCAParseApprovalFunc{
-			defaultHook: func(types.Log) (r0 *bindings.ALCAApproval, r1 error) {
+			defaultHook: func(types.Log) (r0 *ethereum.ALCAApproval, r1 error) {
 				return
 			},
 		},
 		ParseTransferFunc: &IALCAParseTransferFunc{
-			defaultHook: func(types.Log) (r0 *bindings.ALCATransfer, r1 error) {
+			defaultHook: func(types.Log) (r0 *ethereum.ALCATransfer, r1 error) {
 				return
 			},
 		},
@@ -223,12 +223,12 @@ func NewMockIALCA() *MockIALCA {
 			},
 		},
 		WatchApprovalFunc: &IALCAWatchApprovalFunc{
-			defaultHook: func(*bind.WatchOpts, chan<- *bindings.ALCAApproval, []common.Address, []common.Address) (r0 event.Subscription, r1 error) {
+			defaultHook: func(*bind.WatchOpts, chan<- *ethereum.ALCAApproval, []common.Address, []common.Address) (r0 event.Subscription, r1 error) {
 				return
 			},
 		},
 		WatchTransferFunc: &IALCAWatchTransferFunc{
-			defaultHook: func(*bind.WatchOpts, chan<- *bindings.ALCATransfer, []common.Address, []common.Address) (r0 event.Subscription, r1 error) {
+			defaultHook: func(*bind.WatchOpts, chan<- *ethereum.ALCATransfer, []common.Address, []common.Address) (r0 event.Subscription, r1 error) {
 				return
 			},
 		},
@@ -280,12 +280,12 @@ func NewStrictMockIALCA() *MockIALCA {
 			},
 		},
 		FilterApprovalFunc: &IALCAFilterApprovalFunc{
-			defaultHook: func(*bind.FilterOpts, []common.Address, []common.Address) (*bindings.ALCAApprovalIterator, error) {
+			defaultHook: func(*bind.FilterOpts, []common.Address, []common.Address) (*ethereum.ALCAApprovalIterator, error) {
 				panic("unexpected invocation of MockIALCA.FilterApproval")
 			},
 		},
 		FilterTransferFunc: &IALCAFilterTransferFunc{
-			defaultHook: func(*bind.FilterOpts, []common.Address, []common.Address) (*bindings.ALCATransferIterator, error) {
+			defaultHook: func(*bind.FilterOpts, []common.Address, []common.Address) (*ethereum.ALCATransferIterator, error) {
 				panic("unexpected invocation of MockIALCA.FilterTransfer")
 			},
 		},
@@ -330,12 +330,12 @@ func NewStrictMockIALCA() *MockIALCA {
 			},
 		},
 		ParseApprovalFunc: &IALCAParseApprovalFunc{
-			defaultHook: func(types.Log) (*bindings.ALCAApproval, error) {
+			defaultHook: func(types.Log) (*ethereum.ALCAApproval, error) {
 				panic("unexpected invocation of MockIALCA.ParseApproval")
 			},
 		},
 		ParseTransferFunc: &IALCAParseTransferFunc{
-			defaultHook: func(types.Log) (*bindings.ALCATransfer, error) {
+			defaultHook: func(types.Log) (*ethereum.ALCATransfer, error) {
 				panic("unexpected invocation of MockIALCA.ParseTransfer")
 			},
 		},
@@ -360,12 +360,12 @@ func NewStrictMockIALCA() *MockIALCA {
 			},
 		},
 		WatchApprovalFunc: &IALCAWatchApprovalFunc{
-			defaultHook: func(*bind.WatchOpts, chan<- *bindings.ALCAApproval, []common.Address, []common.Address) (event.Subscription, error) {
+			defaultHook: func(*bind.WatchOpts, chan<- *ethereum.ALCAApproval, []common.Address, []common.Address) (event.Subscription, error) {
 				panic("unexpected invocation of MockIALCA.WatchApproval")
 			},
 		},
 		WatchTransferFunc: &IALCAWatchTransferFunc{
-			defaultHook: func(*bind.WatchOpts, chan<- *bindings.ALCATransfer, []common.Address, []common.Address) (event.Subscription, error) {
+			defaultHook: func(*bind.WatchOpts, chan<- *ethereum.ALCATransfer, []common.Address, []common.Address) (event.Subscription, error) {
 				panic("unexpected invocation of MockIALCA.WatchTransfer")
 			},
 		},
@@ -374,7 +374,7 @@ func NewStrictMockIALCA() *MockIALCA {
 
 // NewMockIALCAFrom creates a new mock of the MockIALCA interface. All
 // methods delegate to the given implementation, unless overwritten.
-func NewMockIALCAFrom(i bindings.IALCA) *MockIALCA {
+func NewMockIALCAFrom(i ethereum.IALCA) *MockIALCA {
 	return &MockIALCA{
 		AllowanceFunc: &IALCAAllowanceFunc{
 			defaultHook: i.Allowance,
@@ -1329,15 +1329,15 @@ func (c IALCAExternalMintFuncCall) Results() []interface{} {
 // IALCAFilterApprovalFunc describes the behavior when the FilterApproval
 // method of the parent MockIALCA instance is invoked.
 type IALCAFilterApprovalFunc struct {
-	defaultHook func(*bind.FilterOpts, []common.Address, []common.Address) (*bindings.ALCAApprovalIterator, error)
-	hooks       []func(*bind.FilterOpts, []common.Address, []common.Address) (*bindings.ALCAApprovalIterator, error)
+	defaultHook func(*bind.FilterOpts, []common.Address, []common.Address) (*ethereum.ALCAApprovalIterator, error)
+	hooks       []func(*bind.FilterOpts, []common.Address, []common.Address) (*ethereum.ALCAApprovalIterator, error)
 	history     []IALCAFilterApprovalFuncCall
 	mutex       sync.Mutex
 }
 
 // FilterApproval delegates to the next hook function in the queue and
 // stores the parameter and result values of this invocation.
-func (m *MockIALCA) FilterApproval(v0 *bind.FilterOpts, v1 []common.Address, v2 []common.Address) (*bindings.ALCAApprovalIterator, error) {
+func (m *MockIALCA) FilterApproval(v0 *bind.FilterOpts, v1 []common.Address, v2 []common.Address) (*ethereum.ALCAApprovalIterator, error) {
 	r0, r1 := m.FilterApprovalFunc.nextHook()(v0, v1, v2)
 	m.FilterApprovalFunc.appendCall(IALCAFilterApprovalFuncCall{v0, v1, v2, r0, r1})
 	return r0, r1
@@ -1346,7 +1346,7 @@ func (m *MockIALCA) FilterApproval(v0 *bind.FilterOpts, v1 []common.Address, v2 
 // SetDefaultHook sets function that is called when the FilterApproval
 // method of the parent MockIALCA instance is invoked and the hook queue is
 // empty.
-func (f *IALCAFilterApprovalFunc) SetDefaultHook(hook func(*bind.FilterOpts, []common.Address, []common.Address) (*bindings.ALCAApprovalIterator, error)) {
+func (f *IALCAFilterApprovalFunc) SetDefaultHook(hook func(*bind.FilterOpts, []common.Address, []common.Address) (*ethereum.ALCAApprovalIterator, error)) {
 	f.defaultHook = hook
 }
 
@@ -1354,7 +1354,7 @@ func (f *IALCAFilterApprovalFunc) SetDefaultHook(hook func(*bind.FilterOpts, []c
 // FilterApproval method of the parent MockIALCA instance invokes the hook
 // at the front of the queue and discards it. After the queue is empty, the
 // default hook function is invoked for any future action.
-func (f *IALCAFilterApprovalFunc) PushHook(hook func(*bind.FilterOpts, []common.Address, []common.Address) (*bindings.ALCAApprovalIterator, error)) {
+func (f *IALCAFilterApprovalFunc) PushHook(hook func(*bind.FilterOpts, []common.Address, []common.Address) (*ethereum.ALCAApprovalIterator, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -1362,20 +1362,20 @@ func (f *IALCAFilterApprovalFunc) PushHook(hook func(*bind.FilterOpts, []common.
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IALCAFilterApprovalFunc) SetDefaultReturn(r0 *bindings.ALCAApprovalIterator, r1 error) {
-	f.SetDefaultHook(func(*bind.FilterOpts, []common.Address, []common.Address) (*bindings.ALCAApprovalIterator, error) {
+func (f *IALCAFilterApprovalFunc) SetDefaultReturn(r0 *ethereum.ALCAApprovalIterator, r1 error) {
+	f.SetDefaultHook(func(*bind.FilterOpts, []common.Address, []common.Address) (*ethereum.ALCAApprovalIterator, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IALCAFilterApprovalFunc) PushReturn(r0 *bindings.ALCAApprovalIterator, r1 error) {
-	f.PushHook(func(*bind.FilterOpts, []common.Address, []common.Address) (*bindings.ALCAApprovalIterator, error) {
+func (f *IALCAFilterApprovalFunc) PushReturn(r0 *ethereum.ALCAApprovalIterator, r1 error) {
+	f.PushHook(func(*bind.FilterOpts, []common.Address, []common.Address) (*ethereum.ALCAApprovalIterator, error) {
 		return r0, r1
 	})
 }
 
-func (f *IALCAFilterApprovalFunc) nextHook() func(*bind.FilterOpts, []common.Address, []common.Address) (*bindings.ALCAApprovalIterator, error) {
+func (f *IALCAFilterApprovalFunc) nextHook() func(*bind.FilterOpts, []common.Address, []common.Address) (*ethereum.ALCAApprovalIterator, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -1419,7 +1419,7 @@ type IALCAFilterApprovalFuncCall struct {
 	Arg2 []common.Address
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 *bindings.ALCAApprovalIterator
+	Result0 *ethereum.ALCAApprovalIterator
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -1440,15 +1440,15 @@ func (c IALCAFilterApprovalFuncCall) Results() []interface{} {
 // IALCAFilterTransferFunc describes the behavior when the FilterTransfer
 // method of the parent MockIALCA instance is invoked.
 type IALCAFilterTransferFunc struct {
-	defaultHook func(*bind.FilterOpts, []common.Address, []common.Address) (*bindings.ALCATransferIterator, error)
-	hooks       []func(*bind.FilterOpts, []common.Address, []common.Address) (*bindings.ALCATransferIterator, error)
+	defaultHook func(*bind.FilterOpts, []common.Address, []common.Address) (*ethereum.ALCATransferIterator, error)
+	hooks       []func(*bind.FilterOpts, []common.Address, []common.Address) (*ethereum.ALCATransferIterator, error)
 	history     []IALCAFilterTransferFuncCall
 	mutex       sync.Mutex
 }
 
 // FilterTransfer delegates to the next hook function in the queue and
 // stores the parameter and result values of this invocation.
-func (m *MockIALCA) FilterTransfer(v0 *bind.FilterOpts, v1 []common.Address, v2 []common.Address) (*bindings.ALCATransferIterator, error) {
+func (m *MockIALCA) FilterTransfer(v0 *bind.FilterOpts, v1 []common.Address, v2 []common.Address) (*ethereum.ALCATransferIterator, error) {
 	r0, r1 := m.FilterTransferFunc.nextHook()(v0, v1, v2)
 	m.FilterTransferFunc.appendCall(IALCAFilterTransferFuncCall{v0, v1, v2, r0, r1})
 	return r0, r1
@@ -1457,7 +1457,7 @@ func (m *MockIALCA) FilterTransfer(v0 *bind.FilterOpts, v1 []common.Address, v2 
 // SetDefaultHook sets function that is called when the FilterTransfer
 // method of the parent MockIALCA instance is invoked and the hook queue is
 // empty.
-func (f *IALCAFilterTransferFunc) SetDefaultHook(hook func(*bind.FilterOpts, []common.Address, []common.Address) (*bindings.ALCATransferIterator, error)) {
+func (f *IALCAFilterTransferFunc) SetDefaultHook(hook func(*bind.FilterOpts, []common.Address, []common.Address) (*ethereum.ALCATransferIterator, error)) {
 	f.defaultHook = hook
 }
 
@@ -1465,7 +1465,7 @@ func (f *IALCAFilterTransferFunc) SetDefaultHook(hook func(*bind.FilterOpts, []c
 // FilterTransfer method of the parent MockIALCA instance invokes the hook
 // at the front of the queue and discards it. After the queue is empty, the
 // default hook function is invoked for any future action.
-func (f *IALCAFilterTransferFunc) PushHook(hook func(*bind.FilterOpts, []common.Address, []common.Address) (*bindings.ALCATransferIterator, error)) {
+func (f *IALCAFilterTransferFunc) PushHook(hook func(*bind.FilterOpts, []common.Address, []common.Address) (*ethereum.ALCATransferIterator, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -1473,20 +1473,20 @@ func (f *IALCAFilterTransferFunc) PushHook(hook func(*bind.FilterOpts, []common.
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IALCAFilterTransferFunc) SetDefaultReturn(r0 *bindings.ALCATransferIterator, r1 error) {
-	f.SetDefaultHook(func(*bind.FilterOpts, []common.Address, []common.Address) (*bindings.ALCATransferIterator, error) {
+func (f *IALCAFilterTransferFunc) SetDefaultReturn(r0 *ethereum.ALCATransferIterator, r1 error) {
+	f.SetDefaultHook(func(*bind.FilterOpts, []common.Address, []common.Address) (*ethereum.ALCATransferIterator, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IALCAFilterTransferFunc) PushReturn(r0 *bindings.ALCATransferIterator, r1 error) {
-	f.PushHook(func(*bind.FilterOpts, []common.Address, []common.Address) (*bindings.ALCATransferIterator, error) {
+func (f *IALCAFilterTransferFunc) PushReturn(r0 *ethereum.ALCATransferIterator, r1 error) {
+	f.PushHook(func(*bind.FilterOpts, []common.Address, []common.Address) (*ethereum.ALCATransferIterator, error) {
 		return r0, r1
 	})
 }
 
-func (f *IALCAFilterTransferFunc) nextHook() func(*bind.FilterOpts, []common.Address, []common.Address) (*bindings.ALCATransferIterator, error) {
+func (f *IALCAFilterTransferFunc) nextHook() func(*bind.FilterOpts, []common.Address, []common.Address) (*ethereum.ALCATransferIterator, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -1530,7 +1530,7 @@ type IALCAFilterTransferFuncCall struct {
 	Arg2 []common.Address
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 *bindings.ALCATransferIterator
+	Result0 *ethereum.ALCATransferIterator
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -2412,15 +2412,15 @@ func (c IALCANameFuncCall) Results() []interface{} {
 // IALCAParseApprovalFunc describes the behavior when the ParseApproval
 // method of the parent MockIALCA instance is invoked.
 type IALCAParseApprovalFunc struct {
-	defaultHook func(types.Log) (*bindings.ALCAApproval, error)
-	hooks       []func(types.Log) (*bindings.ALCAApproval, error)
+	defaultHook func(types.Log) (*ethereum.ALCAApproval, error)
+	hooks       []func(types.Log) (*ethereum.ALCAApproval, error)
 	history     []IALCAParseApprovalFuncCall
 	mutex       sync.Mutex
 }
 
 // ParseApproval delegates to the next hook function in the queue and stores
 // the parameter and result values of this invocation.
-func (m *MockIALCA) ParseApproval(v0 types.Log) (*bindings.ALCAApproval, error) {
+func (m *MockIALCA) ParseApproval(v0 types.Log) (*ethereum.ALCAApproval, error) {
 	r0, r1 := m.ParseApprovalFunc.nextHook()(v0)
 	m.ParseApprovalFunc.appendCall(IALCAParseApprovalFuncCall{v0, r0, r1})
 	return r0, r1
@@ -2428,7 +2428,7 @@ func (m *MockIALCA) ParseApproval(v0 types.Log) (*bindings.ALCAApproval, error) 
 
 // SetDefaultHook sets function that is called when the ParseApproval method
 // of the parent MockIALCA instance is invoked and the hook queue is empty.
-func (f *IALCAParseApprovalFunc) SetDefaultHook(hook func(types.Log) (*bindings.ALCAApproval, error)) {
+func (f *IALCAParseApprovalFunc) SetDefaultHook(hook func(types.Log) (*ethereum.ALCAApproval, error)) {
 	f.defaultHook = hook
 }
 
@@ -2436,7 +2436,7 @@ func (f *IALCAParseApprovalFunc) SetDefaultHook(hook func(types.Log) (*bindings.
 // ParseApproval method of the parent MockIALCA instance invokes the hook at
 // the front of the queue and discards it. After the queue is empty, the
 // default hook function is invoked for any future action.
-func (f *IALCAParseApprovalFunc) PushHook(hook func(types.Log) (*bindings.ALCAApproval, error)) {
+func (f *IALCAParseApprovalFunc) PushHook(hook func(types.Log) (*ethereum.ALCAApproval, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -2444,20 +2444,20 @@ func (f *IALCAParseApprovalFunc) PushHook(hook func(types.Log) (*bindings.ALCAAp
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IALCAParseApprovalFunc) SetDefaultReturn(r0 *bindings.ALCAApproval, r1 error) {
-	f.SetDefaultHook(func(types.Log) (*bindings.ALCAApproval, error) {
+func (f *IALCAParseApprovalFunc) SetDefaultReturn(r0 *ethereum.ALCAApproval, r1 error) {
+	f.SetDefaultHook(func(types.Log) (*ethereum.ALCAApproval, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IALCAParseApprovalFunc) PushReturn(r0 *bindings.ALCAApproval, r1 error) {
-	f.PushHook(func(types.Log) (*bindings.ALCAApproval, error) {
+func (f *IALCAParseApprovalFunc) PushReturn(r0 *ethereum.ALCAApproval, r1 error) {
+	f.PushHook(func(types.Log) (*ethereum.ALCAApproval, error) {
 		return r0, r1
 	})
 }
 
-func (f *IALCAParseApprovalFunc) nextHook() func(types.Log) (*bindings.ALCAApproval, error) {
+func (f *IALCAParseApprovalFunc) nextHook() func(types.Log) (*ethereum.ALCAApproval, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -2495,7 +2495,7 @@ type IALCAParseApprovalFuncCall struct {
 	Arg0 types.Log
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 *bindings.ALCAApproval
+	Result0 *ethereum.ALCAApproval
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -2516,15 +2516,15 @@ func (c IALCAParseApprovalFuncCall) Results() []interface{} {
 // IALCAParseTransferFunc describes the behavior when the ParseTransfer
 // method of the parent MockIALCA instance is invoked.
 type IALCAParseTransferFunc struct {
-	defaultHook func(types.Log) (*bindings.ALCATransfer, error)
-	hooks       []func(types.Log) (*bindings.ALCATransfer, error)
+	defaultHook func(types.Log) (*ethereum.ALCATransfer, error)
+	hooks       []func(types.Log) (*ethereum.ALCATransfer, error)
 	history     []IALCAParseTransferFuncCall
 	mutex       sync.Mutex
 }
 
 // ParseTransfer delegates to the next hook function in the queue and stores
 // the parameter and result values of this invocation.
-func (m *MockIALCA) ParseTransfer(v0 types.Log) (*bindings.ALCATransfer, error) {
+func (m *MockIALCA) ParseTransfer(v0 types.Log) (*ethereum.ALCATransfer, error) {
 	r0, r1 := m.ParseTransferFunc.nextHook()(v0)
 	m.ParseTransferFunc.appendCall(IALCAParseTransferFuncCall{v0, r0, r1})
 	return r0, r1
@@ -2532,7 +2532,7 @@ func (m *MockIALCA) ParseTransfer(v0 types.Log) (*bindings.ALCATransfer, error) 
 
 // SetDefaultHook sets function that is called when the ParseTransfer method
 // of the parent MockIALCA instance is invoked and the hook queue is empty.
-func (f *IALCAParseTransferFunc) SetDefaultHook(hook func(types.Log) (*bindings.ALCATransfer, error)) {
+func (f *IALCAParseTransferFunc) SetDefaultHook(hook func(types.Log) (*ethereum.ALCATransfer, error)) {
 	f.defaultHook = hook
 }
 
@@ -2540,7 +2540,7 @@ func (f *IALCAParseTransferFunc) SetDefaultHook(hook func(types.Log) (*bindings.
 // ParseTransfer method of the parent MockIALCA instance invokes the hook at
 // the front of the queue and discards it. After the queue is empty, the
 // default hook function is invoked for any future action.
-func (f *IALCAParseTransferFunc) PushHook(hook func(types.Log) (*bindings.ALCATransfer, error)) {
+func (f *IALCAParseTransferFunc) PushHook(hook func(types.Log) (*ethereum.ALCATransfer, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -2548,20 +2548,20 @@ func (f *IALCAParseTransferFunc) PushHook(hook func(types.Log) (*bindings.ALCATr
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IALCAParseTransferFunc) SetDefaultReturn(r0 *bindings.ALCATransfer, r1 error) {
-	f.SetDefaultHook(func(types.Log) (*bindings.ALCATransfer, error) {
+func (f *IALCAParseTransferFunc) SetDefaultReturn(r0 *ethereum.ALCATransfer, r1 error) {
+	f.SetDefaultHook(func(types.Log) (*ethereum.ALCATransfer, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IALCAParseTransferFunc) PushReturn(r0 *bindings.ALCATransfer, r1 error) {
-	f.PushHook(func(types.Log) (*bindings.ALCATransfer, error) {
+func (f *IALCAParseTransferFunc) PushReturn(r0 *ethereum.ALCATransfer, r1 error) {
+	f.PushHook(func(types.Log) (*ethereum.ALCATransfer, error) {
 		return r0, r1
 	})
 }
 
-func (f *IALCAParseTransferFunc) nextHook() func(types.Log) (*bindings.ALCATransfer, error) {
+func (f *IALCAParseTransferFunc) nextHook() func(types.Log) (*ethereum.ALCATransfer, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -2599,7 +2599,7 @@ type IALCAParseTransferFuncCall struct {
 	Arg0 types.Log
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 *bindings.ALCATransfer
+	Result0 *ethereum.ALCATransfer
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -3051,15 +3051,15 @@ func (c IALCATransferFromFuncCall) Results() []interface{} {
 // IALCAWatchApprovalFunc describes the behavior when the WatchApproval
 // method of the parent MockIALCA instance is invoked.
 type IALCAWatchApprovalFunc struct {
-	defaultHook func(*bind.WatchOpts, chan<- *bindings.ALCAApproval, []common.Address, []common.Address) (event.Subscription, error)
-	hooks       []func(*bind.WatchOpts, chan<- *bindings.ALCAApproval, []common.Address, []common.Address) (event.Subscription, error)
+	defaultHook func(*bind.WatchOpts, chan<- *ethereum.ALCAApproval, []common.Address, []common.Address) (event.Subscription, error)
+	hooks       []func(*bind.WatchOpts, chan<- *ethereum.ALCAApproval, []common.Address, []common.Address) (event.Subscription, error)
 	history     []IALCAWatchApprovalFuncCall
 	mutex       sync.Mutex
 }
 
 // WatchApproval delegates to the next hook function in the queue and stores
 // the parameter and result values of this invocation.
-func (m *MockIALCA) WatchApproval(v0 *bind.WatchOpts, v1 chan<- *bindings.ALCAApproval, v2 []common.Address, v3 []common.Address) (event.Subscription, error) {
+func (m *MockIALCA) WatchApproval(v0 *bind.WatchOpts, v1 chan<- *ethereum.ALCAApproval, v2 []common.Address, v3 []common.Address) (event.Subscription, error) {
 	r0, r1 := m.WatchApprovalFunc.nextHook()(v0, v1, v2, v3)
 	m.WatchApprovalFunc.appendCall(IALCAWatchApprovalFuncCall{v0, v1, v2, v3, r0, r1})
 	return r0, r1
@@ -3067,7 +3067,7 @@ func (m *MockIALCA) WatchApproval(v0 *bind.WatchOpts, v1 chan<- *bindings.ALCAAp
 
 // SetDefaultHook sets function that is called when the WatchApproval method
 // of the parent MockIALCA instance is invoked and the hook queue is empty.
-func (f *IALCAWatchApprovalFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *bindings.ALCAApproval, []common.Address, []common.Address) (event.Subscription, error)) {
+func (f *IALCAWatchApprovalFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *ethereum.ALCAApproval, []common.Address, []common.Address) (event.Subscription, error)) {
 	f.defaultHook = hook
 }
 
@@ -3075,7 +3075,7 @@ func (f *IALCAWatchApprovalFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<
 // WatchApproval method of the parent MockIALCA instance invokes the hook at
 // the front of the queue and discards it. After the queue is empty, the
 // default hook function is invoked for any future action.
-func (f *IALCAWatchApprovalFunc) PushHook(hook func(*bind.WatchOpts, chan<- *bindings.ALCAApproval, []common.Address, []common.Address) (event.Subscription, error)) {
+func (f *IALCAWatchApprovalFunc) PushHook(hook func(*bind.WatchOpts, chan<- *ethereum.ALCAApproval, []common.Address, []common.Address) (event.Subscription, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -3084,19 +3084,19 @@ func (f *IALCAWatchApprovalFunc) PushHook(hook func(*bind.WatchOpts, chan<- *bin
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
 func (f *IALCAWatchApprovalFunc) SetDefaultReturn(r0 event.Subscription, r1 error) {
-	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *bindings.ALCAApproval, []common.Address, []common.Address) (event.Subscription, error) {
+	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *ethereum.ALCAApproval, []common.Address, []common.Address) (event.Subscription, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
 func (f *IALCAWatchApprovalFunc) PushReturn(r0 event.Subscription, r1 error) {
-	f.PushHook(func(*bind.WatchOpts, chan<- *bindings.ALCAApproval, []common.Address, []common.Address) (event.Subscription, error) {
+	f.PushHook(func(*bind.WatchOpts, chan<- *ethereum.ALCAApproval, []common.Address, []common.Address) (event.Subscription, error) {
 		return r0, r1
 	})
 }
 
-func (f *IALCAWatchApprovalFunc) nextHook() func(*bind.WatchOpts, chan<- *bindings.ALCAApproval, []common.Address, []common.Address) (event.Subscription, error) {
+func (f *IALCAWatchApprovalFunc) nextHook() func(*bind.WatchOpts, chan<- *ethereum.ALCAApproval, []common.Address, []common.Address) (event.Subscription, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -3134,7 +3134,7 @@ type IALCAWatchApprovalFuncCall struct {
 	Arg0 *bind.WatchOpts
 	// Arg1 is the value of the 2nd argument passed to this method
 	// invocation.
-	Arg1 chan<- *bindings.ALCAApproval
+	Arg1 chan<- *ethereum.ALCAApproval
 	// Arg2 is the value of the 3rd argument passed to this method
 	// invocation.
 	Arg2 []common.Address
@@ -3164,15 +3164,15 @@ func (c IALCAWatchApprovalFuncCall) Results() []interface{} {
 // IALCAWatchTransferFunc describes the behavior when the WatchTransfer
 // method of the parent MockIALCA instance is invoked.
 type IALCAWatchTransferFunc struct {
-	defaultHook func(*bind.WatchOpts, chan<- *bindings.ALCATransfer, []common.Address, []common.Address) (event.Subscription, error)
-	hooks       []func(*bind.WatchOpts, chan<- *bindings.ALCATransfer, []common.Address, []common.Address) (event.Subscription, error)
+	defaultHook func(*bind.WatchOpts, chan<- *ethereum.ALCATransfer, []common.Address, []common.Address) (event.Subscription, error)
+	hooks       []func(*bind.WatchOpts, chan<- *ethereum.ALCATransfer, []common.Address, []common.Address) (event.Subscription, error)
 	history     []IALCAWatchTransferFuncCall
 	mutex       sync.Mutex
 }
 
 // WatchTransfer delegates to the next hook function in the queue and stores
 // the parameter and result values of this invocation.
-func (m *MockIALCA) WatchTransfer(v0 *bind.WatchOpts, v1 chan<- *bindings.ALCATransfer, v2 []common.Address, v3 []common.Address) (event.Subscription, error) {
+func (m *MockIALCA) WatchTransfer(v0 *bind.WatchOpts, v1 chan<- *ethereum.ALCATransfer, v2 []common.Address, v3 []common.Address) (event.Subscription, error) {
 	r0, r1 := m.WatchTransferFunc.nextHook()(v0, v1, v2, v3)
 	m.WatchTransferFunc.appendCall(IALCAWatchTransferFuncCall{v0, v1, v2, v3, r0, r1})
 	return r0, r1
@@ -3180,7 +3180,7 @@ func (m *MockIALCA) WatchTransfer(v0 *bind.WatchOpts, v1 chan<- *bindings.ALCATr
 
 // SetDefaultHook sets function that is called when the WatchTransfer method
 // of the parent MockIALCA instance is invoked and the hook queue is empty.
-func (f *IALCAWatchTransferFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *bindings.ALCATransfer, []common.Address, []common.Address) (event.Subscription, error)) {
+func (f *IALCAWatchTransferFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *ethereum.ALCATransfer, []common.Address, []common.Address) (event.Subscription, error)) {
 	f.defaultHook = hook
 }
 
@@ -3188,7 +3188,7 @@ func (f *IALCAWatchTransferFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<
 // WatchTransfer method of the parent MockIALCA instance invokes the hook at
 // the front of the queue and discards it. After the queue is empty, the
 // default hook function is invoked for any future action.
-func (f *IALCAWatchTransferFunc) PushHook(hook func(*bind.WatchOpts, chan<- *bindings.ALCATransfer, []common.Address, []common.Address) (event.Subscription, error)) {
+func (f *IALCAWatchTransferFunc) PushHook(hook func(*bind.WatchOpts, chan<- *ethereum.ALCATransfer, []common.Address, []common.Address) (event.Subscription, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -3197,19 +3197,19 @@ func (f *IALCAWatchTransferFunc) PushHook(hook func(*bind.WatchOpts, chan<- *bin
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
 func (f *IALCAWatchTransferFunc) SetDefaultReturn(r0 event.Subscription, r1 error) {
-	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *bindings.ALCATransfer, []common.Address, []common.Address) (event.Subscription, error) {
+	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *ethereum.ALCATransfer, []common.Address, []common.Address) (event.Subscription, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
 func (f *IALCAWatchTransferFunc) PushReturn(r0 event.Subscription, r1 error) {
-	f.PushHook(func(*bind.WatchOpts, chan<- *bindings.ALCATransfer, []common.Address, []common.Address) (event.Subscription, error) {
+	f.PushHook(func(*bind.WatchOpts, chan<- *ethereum.ALCATransfer, []common.Address, []common.Address) (event.Subscription, error) {
 		return r0, r1
 	})
 }
 
-func (f *IALCAWatchTransferFunc) nextHook() func(*bind.WatchOpts, chan<- *bindings.ALCATransfer, []common.Address, []common.Address) (event.Subscription, error) {
+func (f *IALCAWatchTransferFunc) nextHook() func(*bind.WatchOpts, chan<- *ethereum.ALCATransfer, []common.Address, []common.Address) (event.Subscription, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -3247,7 +3247,7 @@ type IALCAWatchTransferFuncCall struct {
 	Arg0 *bind.WatchOpts
 	// Arg1 is the value of the 2nd argument passed to this method
 	// invocation.
-	Arg1 chan<- *bindings.ALCATransfer
+	Arg1 chan<- *ethereum.ALCATransfer
 	// Arg2 is the value of the 3rd argument passed to this method
 	// invocation.
 	Arg2 []common.Address
@@ -3275,8 +3275,8 @@ func (c IALCAWatchTransferFuncCall) Results() []interface{} {
 }
 
 // MockIALCB is a mock implementation of the IALCB interface (from the
-// package github.com/alicenet/alicenet/bridge/bindings) used for unit
-// testing.
+// package github.com/alicenet/alicenet/bridge/bindings/ethereum) used for
+// unit testing.
 type MockIALCB struct {
 	// AllowanceFunc is an instance of a mock function object controlling
 	// the behavior of the method Allowance.
@@ -3479,17 +3479,17 @@ func NewMockIALCB() *MockIALCB {
 			},
 		},
 		FilterApprovalFunc: &IALCBFilterApprovalFunc{
-			defaultHook: func(*bind.FilterOpts, []common.Address, []common.Address) (r0 *bindings.ALCBApprovalIterator, r1 error) {
+			defaultHook: func(*bind.FilterOpts, []common.Address, []common.Address) (r0 *ethereum.ALCBApprovalIterator, r1 error) {
 				return
 			},
 		},
 		FilterDepositReceivedFunc: &IALCBFilterDepositReceivedFunc{
-			defaultHook: func(*bind.FilterOpts, []*big.Int, []uint8, []common.Address) (r0 *bindings.ALCBDepositReceivedIterator, r1 error) {
+			defaultHook: func(*bind.FilterOpts, []*big.Int, []uint8, []common.Address) (r0 *ethereum.ALCBDepositReceivedIterator, r1 error) {
 				return
 			},
 		},
 		FilterTransferFunc: &IALCBFilterTransferFunc{
-			defaultHook: func(*bind.FilterOpts, []common.Address, []common.Address) (r0 *bindings.ALCBTransferIterator, r1 error) {
+			defaultHook: func(*bind.FilterOpts, []common.Address, []common.Address) (r0 *ethereum.ALCBTransferIterator, r1 error) {
 				return
 			},
 		},
@@ -3499,7 +3499,7 @@ func NewMockIALCB() *MockIALCB {
 			},
 		},
 		GetDepositFunc: &IALCBGetDepositFunc{
-			defaultHook: func(*bind.CallOpts, *big.Int) (r0 bindings.Deposit, r1 error) {
+			defaultHook: func(*bind.CallOpts, *big.Int) (r0 ethereum.Deposit, r1 error) {
 				return
 			},
 		},
@@ -3589,17 +3589,17 @@ func NewMockIALCB() *MockIALCB {
 			},
 		},
 		ParseApprovalFunc: &IALCBParseApprovalFunc{
-			defaultHook: func(types.Log) (r0 *bindings.ALCBApproval, r1 error) {
+			defaultHook: func(types.Log) (r0 *ethereum.ALCBApproval, r1 error) {
 				return
 			},
 		},
 		ParseDepositReceivedFunc: &IALCBParseDepositReceivedFunc{
-			defaultHook: func(types.Log) (r0 *bindings.ALCBDepositReceived, r1 error) {
+			defaultHook: func(types.Log) (r0 *ethereum.ALCBDepositReceived, r1 error) {
 				return
 			},
 		},
 		ParseTransferFunc: &IALCBParseTransferFunc{
-			defaultHook: func(types.Log) (r0 *bindings.ALCBTransfer, r1 error) {
+			defaultHook: func(types.Log) (r0 *ethereum.ALCBTransfer, r1 error) {
 				return
 			},
 		},
@@ -3634,17 +3634,17 @@ func NewMockIALCB() *MockIALCB {
 			},
 		},
 		WatchApprovalFunc: &IALCBWatchApprovalFunc{
-			defaultHook: func(*bind.WatchOpts, chan<- *bindings.ALCBApproval, []common.Address, []common.Address) (r0 event.Subscription, r1 error) {
+			defaultHook: func(*bind.WatchOpts, chan<- *ethereum.ALCBApproval, []common.Address, []common.Address) (r0 event.Subscription, r1 error) {
 				return
 			},
 		},
 		WatchDepositReceivedFunc: &IALCBWatchDepositReceivedFunc{
-			defaultHook: func(*bind.WatchOpts, chan<- *bindings.ALCBDepositReceived, []*big.Int, []uint8, []common.Address) (r0 event.Subscription, r1 error) {
+			defaultHook: func(*bind.WatchOpts, chan<- *ethereum.ALCBDepositReceived, []*big.Int, []uint8, []common.Address) (r0 event.Subscription, r1 error) {
 				return
 			},
 		},
 		WatchTransferFunc: &IALCBWatchTransferFunc{
-			defaultHook: func(*bind.WatchOpts, chan<- *bindings.ALCBTransfer, []common.Address, []common.Address) (r0 event.Subscription, r1 error) {
+			defaultHook: func(*bind.WatchOpts, chan<- *ethereum.ALCBTransfer, []common.Address, []common.Address) (r0 event.Subscription, r1 error) {
 				return
 			},
 		},
@@ -3711,17 +3711,17 @@ func NewStrictMockIALCB() *MockIALCB {
 			},
 		},
 		FilterApprovalFunc: &IALCBFilterApprovalFunc{
-			defaultHook: func(*bind.FilterOpts, []common.Address, []common.Address) (*bindings.ALCBApprovalIterator, error) {
+			defaultHook: func(*bind.FilterOpts, []common.Address, []common.Address) (*ethereum.ALCBApprovalIterator, error) {
 				panic("unexpected invocation of MockIALCB.FilterApproval")
 			},
 		},
 		FilterDepositReceivedFunc: &IALCBFilterDepositReceivedFunc{
-			defaultHook: func(*bind.FilterOpts, []*big.Int, []uint8, []common.Address) (*bindings.ALCBDepositReceivedIterator, error) {
+			defaultHook: func(*bind.FilterOpts, []*big.Int, []uint8, []common.Address) (*ethereum.ALCBDepositReceivedIterator, error) {
 				panic("unexpected invocation of MockIALCB.FilterDepositReceived")
 			},
 		},
 		FilterTransferFunc: &IALCBFilterTransferFunc{
-			defaultHook: func(*bind.FilterOpts, []common.Address, []common.Address) (*bindings.ALCBTransferIterator, error) {
+			defaultHook: func(*bind.FilterOpts, []common.Address, []common.Address) (*ethereum.ALCBTransferIterator, error) {
 				panic("unexpected invocation of MockIALCB.FilterTransfer")
 			},
 		},
@@ -3731,7 +3731,7 @@ func NewStrictMockIALCB() *MockIALCB {
 			},
 		},
 		GetDepositFunc: &IALCBGetDepositFunc{
-			defaultHook: func(*bind.CallOpts, *big.Int) (bindings.Deposit, error) {
+			defaultHook: func(*bind.CallOpts, *big.Int) (ethereum.Deposit, error) {
 				panic("unexpected invocation of MockIALCB.GetDeposit")
 			},
 		},
@@ -3821,17 +3821,17 @@ func NewStrictMockIALCB() *MockIALCB {
 			},
 		},
 		ParseApprovalFunc: &IALCBParseApprovalFunc{
-			defaultHook: func(types.Log) (*bindings.ALCBApproval, error) {
+			defaultHook: func(types.Log) (*ethereum.ALCBApproval, error) {
 				panic("unexpected invocation of MockIALCB.ParseApproval")
 			},
 		},
 		ParseDepositReceivedFunc: &IALCBParseDepositReceivedFunc{
-			defaultHook: func(types.Log) (*bindings.ALCBDepositReceived, error) {
+			defaultHook: func(types.Log) (*ethereum.ALCBDepositReceived, error) {
 				panic("unexpected invocation of MockIALCB.ParseDepositReceived")
 			},
 		},
 		ParseTransferFunc: &IALCBParseTransferFunc{
-			defaultHook: func(types.Log) (*bindings.ALCBTransfer, error) {
+			defaultHook: func(types.Log) (*ethereum.ALCBTransfer, error) {
 				panic("unexpected invocation of MockIALCB.ParseTransfer")
 			},
 		},
@@ -3866,17 +3866,17 @@ func NewStrictMockIALCB() *MockIALCB {
 			},
 		},
 		WatchApprovalFunc: &IALCBWatchApprovalFunc{
-			defaultHook: func(*bind.WatchOpts, chan<- *bindings.ALCBApproval, []common.Address, []common.Address) (event.Subscription, error) {
+			defaultHook: func(*bind.WatchOpts, chan<- *ethereum.ALCBApproval, []common.Address, []common.Address) (event.Subscription, error) {
 				panic("unexpected invocation of MockIALCB.WatchApproval")
 			},
 		},
 		WatchDepositReceivedFunc: &IALCBWatchDepositReceivedFunc{
-			defaultHook: func(*bind.WatchOpts, chan<- *bindings.ALCBDepositReceived, []*big.Int, []uint8, []common.Address) (event.Subscription, error) {
+			defaultHook: func(*bind.WatchOpts, chan<- *ethereum.ALCBDepositReceived, []*big.Int, []uint8, []common.Address) (event.Subscription, error) {
 				panic("unexpected invocation of MockIALCB.WatchDepositReceived")
 			},
 		},
 		WatchTransferFunc: &IALCBWatchTransferFunc{
-			defaultHook: func(*bind.WatchOpts, chan<- *bindings.ALCBTransfer, []common.Address, []common.Address) (event.Subscription, error) {
+			defaultHook: func(*bind.WatchOpts, chan<- *ethereum.ALCBTransfer, []common.Address, []common.Address) (event.Subscription, error) {
 				panic("unexpected invocation of MockIALCB.WatchTransfer")
 			},
 		},
@@ -3885,7 +3885,7 @@ func NewStrictMockIALCB() *MockIALCB {
 
 // NewMockIALCBFrom creates a new mock of the MockIALCB interface. All
 // methods delegate to the given implementation, unless overwritten.
-func NewMockIALCBFrom(i bindings.IALCB) *MockIALCB {
+func NewMockIALCBFrom(i ethereum.IALCB) *MockIALCB {
 	return &MockIALCB{
 		AllowanceFunc: &IALCBAllowanceFunc{
 			defaultHook: i.Allowance,
@@ -5229,15 +5229,15 @@ func (c IALCBDistributeFuncCall) Results() []interface{} {
 // IALCBFilterApprovalFunc describes the behavior when the FilterApproval
 // method of the parent MockIALCB instance is invoked.
 type IALCBFilterApprovalFunc struct {
-	defaultHook func(*bind.FilterOpts, []common.Address, []common.Address) (*bindings.ALCBApprovalIterator, error)
-	hooks       []func(*bind.FilterOpts, []common.Address, []common.Address) (*bindings.ALCBApprovalIterator, error)
+	defaultHook func(*bind.FilterOpts, []common.Address, []common.Address) (*ethereum.ALCBApprovalIterator, error)
+	hooks       []func(*bind.FilterOpts, []common.Address, []common.Address) (*ethereum.ALCBApprovalIterator, error)
 	history     []IALCBFilterApprovalFuncCall
 	mutex       sync.Mutex
 }
 
 // FilterApproval delegates to the next hook function in the queue and
 // stores the parameter and result values of this invocation.
-func (m *MockIALCB) FilterApproval(v0 *bind.FilterOpts, v1 []common.Address, v2 []common.Address) (*bindings.ALCBApprovalIterator, error) {
+func (m *MockIALCB) FilterApproval(v0 *bind.FilterOpts, v1 []common.Address, v2 []common.Address) (*ethereum.ALCBApprovalIterator, error) {
 	r0, r1 := m.FilterApprovalFunc.nextHook()(v0, v1, v2)
 	m.FilterApprovalFunc.appendCall(IALCBFilterApprovalFuncCall{v0, v1, v2, r0, r1})
 	return r0, r1
@@ -5246,7 +5246,7 @@ func (m *MockIALCB) FilterApproval(v0 *bind.FilterOpts, v1 []common.Address, v2 
 // SetDefaultHook sets function that is called when the FilterApproval
 // method of the parent MockIALCB instance is invoked and the hook queue is
 // empty.
-func (f *IALCBFilterApprovalFunc) SetDefaultHook(hook func(*bind.FilterOpts, []common.Address, []common.Address) (*bindings.ALCBApprovalIterator, error)) {
+func (f *IALCBFilterApprovalFunc) SetDefaultHook(hook func(*bind.FilterOpts, []common.Address, []common.Address) (*ethereum.ALCBApprovalIterator, error)) {
 	f.defaultHook = hook
 }
 
@@ -5254,7 +5254,7 @@ func (f *IALCBFilterApprovalFunc) SetDefaultHook(hook func(*bind.FilterOpts, []c
 // FilterApproval method of the parent MockIALCB instance invokes the hook
 // at the front of the queue and discards it. After the queue is empty, the
 // default hook function is invoked for any future action.
-func (f *IALCBFilterApprovalFunc) PushHook(hook func(*bind.FilterOpts, []common.Address, []common.Address) (*bindings.ALCBApprovalIterator, error)) {
+func (f *IALCBFilterApprovalFunc) PushHook(hook func(*bind.FilterOpts, []common.Address, []common.Address) (*ethereum.ALCBApprovalIterator, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -5262,20 +5262,20 @@ func (f *IALCBFilterApprovalFunc) PushHook(hook func(*bind.FilterOpts, []common.
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IALCBFilterApprovalFunc) SetDefaultReturn(r0 *bindings.ALCBApprovalIterator, r1 error) {
-	f.SetDefaultHook(func(*bind.FilterOpts, []common.Address, []common.Address) (*bindings.ALCBApprovalIterator, error) {
+func (f *IALCBFilterApprovalFunc) SetDefaultReturn(r0 *ethereum.ALCBApprovalIterator, r1 error) {
+	f.SetDefaultHook(func(*bind.FilterOpts, []common.Address, []common.Address) (*ethereum.ALCBApprovalIterator, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IALCBFilterApprovalFunc) PushReturn(r0 *bindings.ALCBApprovalIterator, r1 error) {
-	f.PushHook(func(*bind.FilterOpts, []common.Address, []common.Address) (*bindings.ALCBApprovalIterator, error) {
+func (f *IALCBFilterApprovalFunc) PushReturn(r0 *ethereum.ALCBApprovalIterator, r1 error) {
+	f.PushHook(func(*bind.FilterOpts, []common.Address, []common.Address) (*ethereum.ALCBApprovalIterator, error) {
 		return r0, r1
 	})
 }
 
-func (f *IALCBFilterApprovalFunc) nextHook() func(*bind.FilterOpts, []common.Address, []common.Address) (*bindings.ALCBApprovalIterator, error) {
+func (f *IALCBFilterApprovalFunc) nextHook() func(*bind.FilterOpts, []common.Address, []common.Address) (*ethereum.ALCBApprovalIterator, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -5319,7 +5319,7 @@ type IALCBFilterApprovalFuncCall struct {
 	Arg2 []common.Address
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 *bindings.ALCBApprovalIterator
+	Result0 *ethereum.ALCBApprovalIterator
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -5340,15 +5340,15 @@ func (c IALCBFilterApprovalFuncCall) Results() []interface{} {
 // IALCBFilterDepositReceivedFunc describes the behavior when the
 // FilterDepositReceived method of the parent MockIALCB instance is invoked.
 type IALCBFilterDepositReceivedFunc struct {
-	defaultHook func(*bind.FilterOpts, []*big.Int, []uint8, []common.Address) (*bindings.ALCBDepositReceivedIterator, error)
-	hooks       []func(*bind.FilterOpts, []*big.Int, []uint8, []common.Address) (*bindings.ALCBDepositReceivedIterator, error)
+	defaultHook func(*bind.FilterOpts, []*big.Int, []uint8, []common.Address) (*ethereum.ALCBDepositReceivedIterator, error)
+	hooks       []func(*bind.FilterOpts, []*big.Int, []uint8, []common.Address) (*ethereum.ALCBDepositReceivedIterator, error)
 	history     []IALCBFilterDepositReceivedFuncCall
 	mutex       sync.Mutex
 }
 
 // FilterDepositReceived delegates to the next hook function in the queue
 // and stores the parameter and result values of this invocation.
-func (m *MockIALCB) FilterDepositReceived(v0 *bind.FilterOpts, v1 []*big.Int, v2 []uint8, v3 []common.Address) (*bindings.ALCBDepositReceivedIterator, error) {
+func (m *MockIALCB) FilterDepositReceived(v0 *bind.FilterOpts, v1 []*big.Int, v2 []uint8, v3 []common.Address) (*ethereum.ALCBDepositReceivedIterator, error) {
 	r0, r1 := m.FilterDepositReceivedFunc.nextHook()(v0, v1, v2, v3)
 	m.FilterDepositReceivedFunc.appendCall(IALCBFilterDepositReceivedFuncCall{v0, v1, v2, v3, r0, r1})
 	return r0, r1
@@ -5357,7 +5357,7 @@ func (m *MockIALCB) FilterDepositReceived(v0 *bind.FilterOpts, v1 []*big.Int, v2
 // SetDefaultHook sets function that is called when the
 // FilterDepositReceived method of the parent MockIALCB instance is invoked
 // and the hook queue is empty.
-func (f *IALCBFilterDepositReceivedFunc) SetDefaultHook(hook func(*bind.FilterOpts, []*big.Int, []uint8, []common.Address) (*bindings.ALCBDepositReceivedIterator, error)) {
+func (f *IALCBFilterDepositReceivedFunc) SetDefaultHook(hook func(*bind.FilterOpts, []*big.Int, []uint8, []common.Address) (*ethereum.ALCBDepositReceivedIterator, error)) {
 	f.defaultHook = hook
 }
 
@@ -5365,7 +5365,7 @@ func (f *IALCBFilterDepositReceivedFunc) SetDefaultHook(hook func(*bind.FilterOp
 // FilterDepositReceived method of the parent MockIALCB instance invokes the
 // hook at the front of the queue and discards it. After the queue is empty,
 // the default hook function is invoked for any future action.
-func (f *IALCBFilterDepositReceivedFunc) PushHook(hook func(*bind.FilterOpts, []*big.Int, []uint8, []common.Address) (*bindings.ALCBDepositReceivedIterator, error)) {
+func (f *IALCBFilterDepositReceivedFunc) PushHook(hook func(*bind.FilterOpts, []*big.Int, []uint8, []common.Address) (*ethereum.ALCBDepositReceivedIterator, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -5373,20 +5373,20 @@ func (f *IALCBFilterDepositReceivedFunc) PushHook(hook func(*bind.FilterOpts, []
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IALCBFilterDepositReceivedFunc) SetDefaultReturn(r0 *bindings.ALCBDepositReceivedIterator, r1 error) {
-	f.SetDefaultHook(func(*bind.FilterOpts, []*big.Int, []uint8, []common.Address) (*bindings.ALCBDepositReceivedIterator, error) {
+func (f *IALCBFilterDepositReceivedFunc) SetDefaultReturn(r0 *ethereum.ALCBDepositReceivedIterator, r1 error) {
+	f.SetDefaultHook(func(*bind.FilterOpts, []*big.Int, []uint8, []common.Address) (*ethereum.ALCBDepositReceivedIterator, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IALCBFilterDepositReceivedFunc) PushReturn(r0 *bindings.ALCBDepositReceivedIterator, r1 error) {
-	f.PushHook(func(*bind.FilterOpts, []*big.Int, []uint8, []common.Address) (*bindings.ALCBDepositReceivedIterator, error) {
+func (f *IALCBFilterDepositReceivedFunc) PushReturn(r0 *ethereum.ALCBDepositReceivedIterator, r1 error) {
+	f.PushHook(func(*bind.FilterOpts, []*big.Int, []uint8, []common.Address) (*ethereum.ALCBDepositReceivedIterator, error) {
 		return r0, r1
 	})
 }
 
-func (f *IALCBFilterDepositReceivedFunc) nextHook() func(*bind.FilterOpts, []*big.Int, []uint8, []common.Address) (*bindings.ALCBDepositReceivedIterator, error) {
+func (f *IALCBFilterDepositReceivedFunc) nextHook() func(*bind.FilterOpts, []*big.Int, []uint8, []common.Address) (*ethereum.ALCBDepositReceivedIterator, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -5433,7 +5433,7 @@ type IALCBFilterDepositReceivedFuncCall struct {
 	Arg3 []common.Address
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 *bindings.ALCBDepositReceivedIterator
+	Result0 *ethereum.ALCBDepositReceivedIterator
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -5454,15 +5454,15 @@ func (c IALCBFilterDepositReceivedFuncCall) Results() []interface{} {
 // IALCBFilterTransferFunc describes the behavior when the FilterTransfer
 // method of the parent MockIALCB instance is invoked.
 type IALCBFilterTransferFunc struct {
-	defaultHook func(*bind.FilterOpts, []common.Address, []common.Address) (*bindings.ALCBTransferIterator, error)
-	hooks       []func(*bind.FilterOpts, []common.Address, []common.Address) (*bindings.ALCBTransferIterator, error)
+	defaultHook func(*bind.FilterOpts, []common.Address, []common.Address) (*ethereum.ALCBTransferIterator, error)
+	hooks       []func(*bind.FilterOpts, []common.Address, []common.Address) (*ethereum.ALCBTransferIterator, error)
 	history     []IALCBFilterTransferFuncCall
 	mutex       sync.Mutex
 }
 
 // FilterTransfer delegates to the next hook function in the queue and
 // stores the parameter and result values of this invocation.
-func (m *MockIALCB) FilterTransfer(v0 *bind.FilterOpts, v1 []common.Address, v2 []common.Address) (*bindings.ALCBTransferIterator, error) {
+func (m *MockIALCB) FilterTransfer(v0 *bind.FilterOpts, v1 []common.Address, v2 []common.Address) (*ethereum.ALCBTransferIterator, error) {
 	r0, r1 := m.FilterTransferFunc.nextHook()(v0, v1, v2)
 	m.FilterTransferFunc.appendCall(IALCBFilterTransferFuncCall{v0, v1, v2, r0, r1})
 	return r0, r1
@@ -5471,7 +5471,7 @@ func (m *MockIALCB) FilterTransfer(v0 *bind.FilterOpts, v1 []common.Address, v2 
 // SetDefaultHook sets function that is called when the FilterTransfer
 // method of the parent MockIALCB instance is invoked and the hook queue is
 // empty.
-func (f *IALCBFilterTransferFunc) SetDefaultHook(hook func(*bind.FilterOpts, []common.Address, []common.Address) (*bindings.ALCBTransferIterator, error)) {
+func (f *IALCBFilterTransferFunc) SetDefaultHook(hook func(*bind.FilterOpts, []common.Address, []common.Address) (*ethereum.ALCBTransferIterator, error)) {
 	f.defaultHook = hook
 }
 
@@ -5479,7 +5479,7 @@ func (f *IALCBFilterTransferFunc) SetDefaultHook(hook func(*bind.FilterOpts, []c
 // FilterTransfer method of the parent MockIALCB instance invokes the hook
 // at the front of the queue and discards it. After the queue is empty, the
 // default hook function is invoked for any future action.
-func (f *IALCBFilterTransferFunc) PushHook(hook func(*bind.FilterOpts, []common.Address, []common.Address) (*bindings.ALCBTransferIterator, error)) {
+func (f *IALCBFilterTransferFunc) PushHook(hook func(*bind.FilterOpts, []common.Address, []common.Address) (*ethereum.ALCBTransferIterator, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -5487,20 +5487,20 @@ func (f *IALCBFilterTransferFunc) PushHook(hook func(*bind.FilterOpts, []common.
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IALCBFilterTransferFunc) SetDefaultReturn(r0 *bindings.ALCBTransferIterator, r1 error) {
-	f.SetDefaultHook(func(*bind.FilterOpts, []common.Address, []common.Address) (*bindings.ALCBTransferIterator, error) {
+func (f *IALCBFilterTransferFunc) SetDefaultReturn(r0 *ethereum.ALCBTransferIterator, r1 error) {
+	f.SetDefaultHook(func(*bind.FilterOpts, []common.Address, []common.Address) (*ethereum.ALCBTransferIterator, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IALCBFilterTransferFunc) PushReturn(r0 *bindings.ALCBTransferIterator, r1 error) {
-	f.PushHook(func(*bind.FilterOpts, []common.Address, []common.Address) (*bindings.ALCBTransferIterator, error) {
+func (f *IALCBFilterTransferFunc) PushReturn(r0 *ethereum.ALCBTransferIterator, r1 error) {
+	f.PushHook(func(*bind.FilterOpts, []common.Address, []common.Address) (*ethereum.ALCBTransferIterator, error) {
 		return r0, r1
 	})
 }
 
-func (f *IALCBFilterTransferFunc) nextHook() func(*bind.FilterOpts, []common.Address, []common.Address) (*bindings.ALCBTransferIterator, error) {
+func (f *IALCBFilterTransferFunc) nextHook() func(*bind.FilterOpts, []common.Address, []common.Address) (*ethereum.ALCBTransferIterator, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -5544,7 +5544,7 @@ type IALCBFilterTransferFuncCall struct {
 	Arg2 []common.Address
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 *bindings.ALCBTransferIterator
+	Result0 *ethereum.ALCBTransferIterator
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -5673,15 +5673,15 @@ func (c IALCBGetCentralBridgeRouterAddressFuncCall) Results() []interface{} {
 // IALCBGetDepositFunc describes the behavior when the GetDeposit method of
 // the parent MockIALCB instance is invoked.
 type IALCBGetDepositFunc struct {
-	defaultHook func(*bind.CallOpts, *big.Int) (bindings.Deposit, error)
-	hooks       []func(*bind.CallOpts, *big.Int) (bindings.Deposit, error)
+	defaultHook func(*bind.CallOpts, *big.Int) (ethereum.Deposit, error)
+	hooks       []func(*bind.CallOpts, *big.Int) (ethereum.Deposit, error)
 	history     []IALCBGetDepositFuncCall
 	mutex       sync.Mutex
 }
 
 // GetDeposit delegates to the next hook function in the queue and stores
 // the parameter and result values of this invocation.
-func (m *MockIALCB) GetDeposit(v0 *bind.CallOpts, v1 *big.Int) (bindings.Deposit, error) {
+func (m *MockIALCB) GetDeposit(v0 *bind.CallOpts, v1 *big.Int) (ethereum.Deposit, error) {
 	r0, r1 := m.GetDepositFunc.nextHook()(v0, v1)
 	m.GetDepositFunc.appendCall(IALCBGetDepositFuncCall{v0, v1, r0, r1})
 	return r0, r1
@@ -5689,7 +5689,7 @@ func (m *MockIALCB) GetDeposit(v0 *bind.CallOpts, v1 *big.Int) (bindings.Deposit
 
 // SetDefaultHook sets function that is called when the GetDeposit method of
 // the parent MockIALCB instance is invoked and the hook queue is empty.
-func (f *IALCBGetDepositFunc) SetDefaultHook(hook func(*bind.CallOpts, *big.Int) (bindings.Deposit, error)) {
+func (f *IALCBGetDepositFunc) SetDefaultHook(hook func(*bind.CallOpts, *big.Int) (ethereum.Deposit, error)) {
 	f.defaultHook = hook
 }
 
@@ -5697,7 +5697,7 @@ func (f *IALCBGetDepositFunc) SetDefaultHook(hook func(*bind.CallOpts, *big.Int)
 // GetDeposit method of the parent MockIALCB instance invokes the hook at
 // the front of the queue and discards it. After the queue is empty, the
 // default hook function is invoked for any future action.
-func (f *IALCBGetDepositFunc) PushHook(hook func(*bind.CallOpts, *big.Int) (bindings.Deposit, error)) {
+func (f *IALCBGetDepositFunc) PushHook(hook func(*bind.CallOpts, *big.Int) (ethereum.Deposit, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -5705,20 +5705,20 @@ func (f *IALCBGetDepositFunc) PushHook(hook func(*bind.CallOpts, *big.Int) (bind
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IALCBGetDepositFunc) SetDefaultReturn(r0 bindings.Deposit, r1 error) {
-	f.SetDefaultHook(func(*bind.CallOpts, *big.Int) (bindings.Deposit, error) {
+func (f *IALCBGetDepositFunc) SetDefaultReturn(r0 ethereum.Deposit, r1 error) {
+	f.SetDefaultHook(func(*bind.CallOpts, *big.Int) (ethereum.Deposit, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IALCBGetDepositFunc) PushReturn(r0 bindings.Deposit, r1 error) {
-	f.PushHook(func(*bind.CallOpts, *big.Int) (bindings.Deposit, error) {
+func (f *IALCBGetDepositFunc) PushReturn(r0 ethereum.Deposit, r1 error) {
+	f.PushHook(func(*bind.CallOpts, *big.Int) (ethereum.Deposit, error) {
 		return r0, r1
 	})
 }
 
-func (f *IALCBGetDepositFunc) nextHook() func(*bind.CallOpts, *big.Int) (bindings.Deposit, error) {
+func (f *IALCBGetDepositFunc) nextHook() func(*bind.CallOpts, *big.Int) (ethereum.Deposit, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -5759,7 +5759,7 @@ type IALCBGetDepositFuncCall struct {
 	Arg1 *big.Int
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 bindings.Deposit
+	Result0 ethereum.Deposit
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -7632,15 +7632,15 @@ func (c IALCBNameFuncCall) Results() []interface{} {
 // IALCBParseApprovalFunc describes the behavior when the ParseApproval
 // method of the parent MockIALCB instance is invoked.
 type IALCBParseApprovalFunc struct {
-	defaultHook func(types.Log) (*bindings.ALCBApproval, error)
-	hooks       []func(types.Log) (*bindings.ALCBApproval, error)
+	defaultHook func(types.Log) (*ethereum.ALCBApproval, error)
+	hooks       []func(types.Log) (*ethereum.ALCBApproval, error)
 	history     []IALCBParseApprovalFuncCall
 	mutex       sync.Mutex
 }
 
 // ParseApproval delegates to the next hook function in the queue and stores
 // the parameter and result values of this invocation.
-func (m *MockIALCB) ParseApproval(v0 types.Log) (*bindings.ALCBApproval, error) {
+func (m *MockIALCB) ParseApproval(v0 types.Log) (*ethereum.ALCBApproval, error) {
 	r0, r1 := m.ParseApprovalFunc.nextHook()(v0)
 	m.ParseApprovalFunc.appendCall(IALCBParseApprovalFuncCall{v0, r0, r1})
 	return r0, r1
@@ -7648,7 +7648,7 @@ func (m *MockIALCB) ParseApproval(v0 types.Log) (*bindings.ALCBApproval, error) 
 
 // SetDefaultHook sets function that is called when the ParseApproval method
 // of the parent MockIALCB instance is invoked and the hook queue is empty.
-func (f *IALCBParseApprovalFunc) SetDefaultHook(hook func(types.Log) (*bindings.ALCBApproval, error)) {
+func (f *IALCBParseApprovalFunc) SetDefaultHook(hook func(types.Log) (*ethereum.ALCBApproval, error)) {
 	f.defaultHook = hook
 }
 
@@ -7656,7 +7656,7 @@ func (f *IALCBParseApprovalFunc) SetDefaultHook(hook func(types.Log) (*bindings.
 // ParseApproval method of the parent MockIALCB instance invokes the hook at
 // the front of the queue and discards it. After the queue is empty, the
 // default hook function is invoked for any future action.
-func (f *IALCBParseApprovalFunc) PushHook(hook func(types.Log) (*bindings.ALCBApproval, error)) {
+func (f *IALCBParseApprovalFunc) PushHook(hook func(types.Log) (*ethereum.ALCBApproval, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -7664,20 +7664,20 @@ func (f *IALCBParseApprovalFunc) PushHook(hook func(types.Log) (*bindings.ALCBAp
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IALCBParseApprovalFunc) SetDefaultReturn(r0 *bindings.ALCBApproval, r1 error) {
-	f.SetDefaultHook(func(types.Log) (*bindings.ALCBApproval, error) {
+func (f *IALCBParseApprovalFunc) SetDefaultReturn(r0 *ethereum.ALCBApproval, r1 error) {
+	f.SetDefaultHook(func(types.Log) (*ethereum.ALCBApproval, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IALCBParseApprovalFunc) PushReturn(r0 *bindings.ALCBApproval, r1 error) {
-	f.PushHook(func(types.Log) (*bindings.ALCBApproval, error) {
+func (f *IALCBParseApprovalFunc) PushReturn(r0 *ethereum.ALCBApproval, r1 error) {
+	f.PushHook(func(types.Log) (*ethereum.ALCBApproval, error) {
 		return r0, r1
 	})
 }
 
-func (f *IALCBParseApprovalFunc) nextHook() func(types.Log) (*bindings.ALCBApproval, error) {
+func (f *IALCBParseApprovalFunc) nextHook() func(types.Log) (*ethereum.ALCBApproval, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -7715,7 +7715,7 @@ type IALCBParseApprovalFuncCall struct {
 	Arg0 types.Log
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 *bindings.ALCBApproval
+	Result0 *ethereum.ALCBApproval
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -7736,15 +7736,15 @@ func (c IALCBParseApprovalFuncCall) Results() []interface{} {
 // IALCBParseDepositReceivedFunc describes the behavior when the
 // ParseDepositReceived method of the parent MockIALCB instance is invoked.
 type IALCBParseDepositReceivedFunc struct {
-	defaultHook func(types.Log) (*bindings.ALCBDepositReceived, error)
-	hooks       []func(types.Log) (*bindings.ALCBDepositReceived, error)
+	defaultHook func(types.Log) (*ethereum.ALCBDepositReceived, error)
+	hooks       []func(types.Log) (*ethereum.ALCBDepositReceived, error)
 	history     []IALCBParseDepositReceivedFuncCall
 	mutex       sync.Mutex
 }
 
 // ParseDepositReceived delegates to the next hook function in the queue and
 // stores the parameter and result values of this invocation.
-func (m *MockIALCB) ParseDepositReceived(v0 types.Log) (*bindings.ALCBDepositReceived, error) {
+func (m *MockIALCB) ParseDepositReceived(v0 types.Log) (*ethereum.ALCBDepositReceived, error) {
 	r0, r1 := m.ParseDepositReceivedFunc.nextHook()(v0)
 	m.ParseDepositReceivedFunc.appendCall(IALCBParseDepositReceivedFuncCall{v0, r0, r1})
 	return r0, r1
@@ -7753,7 +7753,7 @@ func (m *MockIALCB) ParseDepositReceived(v0 types.Log) (*bindings.ALCBDepositRec
 // SetDefaultHook sets function that is called when the ParseDepositReceived
 // method of the parent MockIALCB instance is invoked and the hook queue is
 // empty.
-func (f *IALCBParseDepositReceivedFunc) SetDefaultHook(hook func(types.Log) (*bindings.ALCBDepositReceived, error)) {
+func (f *IALCBParseDepositReceivedFunc) SetDefaultHook(hook func(types.Log) (*ethereum.ALCBDepositReceived, error)) {
 	f.defaultHook = hook
 }
 
@@ -7761,7 +7761,7 @@ func (f *IALCBParseDepositReceivedFunc) SetDefaultHook(hook func(types.Log) (*bi
 // ParseDepositReceived method of the parent MockIALCB instance invokes the
 // hook at the front of the queue and discards it. After the queue is empty,
 // the default hook function is invoked for any future action.
-func (f *IALCBParseDepositReceivedFunc) PushHook(hook func(types.Log) (*bindings.ALCBDepositReceived, error)) {
+func (f *IALCBParseDepositReceivedFunc) PushHook(hook func(types.Log) (*ethereum.ALCBDepositReceived, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -7769,20 +7769,20 @@ func (f *IALCBParseDepositReceivedFunc) PushHook(hook func(types.Log) (*bindings
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IALCBParseDepositReceivedFunc) SetDefaultReturn(r0 *bindings.ALCBDepositReceived, r1 error) {
-	f.SetDefaultHook(func(types.Log) (*bindings.ALCBDepositReceived, error) {
+func (f *IALCBParseDepositReceivedFunc) SetDefaultReturn(r0 *ethereum.ALCBDepositReceived, r1 error) {
+	f.SetDefaultHook(func(types.Log) (*ethereum.ALCBDepositReceived, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IALCBParseDepositReceivedFunc) PushReturn(r0 *bindings.ALCBDepositReceived, r1 error) {
-	f.PushHook(func(types.Log) (*bindings.ALCBDepositReceived, error) {
+func (f *IALCBParseDepositReceivedFunc) PushReturn(r0 *ethereum.ALCBDepositReceived, r1 error) {
+	f.PushHook(func(types.Log) (*ethereum.ALCBDepositReceived, error) {
 		return r0, r1
 	})
 }
 
-func (f *IALCBParseDepositReceivedFunc) nextHook() func(types.Log) (*bindings.ALCBDepositReceived, error) {
+func (f *IALCBParseDepositReceivedFunc) nextHook() func(types.Log) (*ethereum.ALCBDepositReceived, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -7820,7 +7820,7 @@ type IALCBParseDepositReceivedFuncCall struct {
 	Arg0 types.Log
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 *bindings.ALCBDepositReceived
+	Result0 *ethereum.ALCBDepositReceived
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -7841,15 +7841,15 @@ func (c IALCBParseDepositReceivedFuncCall) Results() []interface{} {
 // IALCBParseTransferFunc describes the behavior when the ParseTransfer
 // method of the parent MockIALCB instance is invoked.
 type IALCBParseTransferFunc struct {
-	defaultHook func(types.Log) (*bindings.ALCBTransfer, error)
-	hooks       []func(types.Log) (*bindings.ALCBTransfer, error)
+	defaultHook func(types.Log) (*ethereum.ALCBTransfer, error)
+	hooks       []func(types.Log) (*ethereum.ALCBTransfer, error)
 	history     []IALCBParseTransferFuncCall
 	mutex       sync.Mutex
 }
 
 // ParseTransfer delegates to the next hook function in the queue and stores
 // the parameter and result values of this invocation.
-func (m *MockIALCB) ParseTransfer(v0 types.Log) (*bindings.ALCBTransfer, error) {
+func (m *MockIALCB) ParseTransfer(v0 types.Log) (*ethereum.ALCBTransfer, error) {
 	r0, r1 := m.ParseTransferFunc.nextHook()(v0)
 	m.ParseTransferFunc.appendCall(IALCBParseTransferFuncCall{v0, r0, r1})
 	return r0, r1
@@ -7857,7 +7857,7 @@ func (m *MockIALCB) ParseTransfer(v0 types.Log) (*bindings.ALCBTransfer, error) 
 
 // SetDefaultHook sets function that is called when the ParseTransfer method
 // of the parent MockIALCB instance is invoked and the hook queue is empty.
-func (f *IALCBParseTransferFunc) SetDefaultHook(hook func(types.Log) (*bindings.ALCBTransfer, error)) {
+func (f *IALCBParseTransferFunc) SetDefaultHook(hook func(types.Log) (*ethereum.ALCBTransfer, error)) {
 	f.defaultHook = hook
 }
 
@@ -7865,7 +7865,7 @@ func (f *IALCBParseTransferFunc) SetDefaultHook(hook func(types.Log) (*bindings.
 // ParseTransfer method of the parent MockIALCB instance invokes the hook at
 // the front of the queue and discards it. After the queue is empty, the
 // default hook function is invoked for any future action.
-func (f *IALCBParseTransferFunc) PushHook(hook func(types.Log) (*bindings.ALCBTransfer, error)) {
+func (f *IALCBParseTransferFunc) PushHook(hook func(types.Log) (*ethereum.ALCBTransfer, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -7873,20 +7873,20 @@ func (f *IALCBParseTransferFunc) PushHook(hook func(types.Log) (*bindings.ALCBTr
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IALCBParseTransferFunc) SetDefaultReturn(r0 *bindings.ALCBTransfer, r1 error) {
-	f.SetDefaultHook(func(types.Log) (*bindings.ALCBTransfer, error) {
+func (f *IALCBParseTransferFunc) SetDefaultReturn(r0 *ethereum.ALCBTransfer, r1 error) {
+	f.SetDefaultHook(func(types.Log) (*ethereum.ALCBTransfer, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IALCBParseTransferFunc) PushReturn(r0 *bindings.ALCBTransfer, r1 error) {
-	f.PushHook(func(types.Log) (*bindings.ALCBTransfer, error) {
+func (f *IALCBParseTransferFunc) PushReturn(r0 *ethereum.ALCBTransfer, r1 error) {
+	f.PushHook(func(types.Log) (*ethereum.ALCBTransfer, error) {
 		return r0, r1
 	})
 }
 
-func (f *IALCBParseTransferFunc) nextHook() func(types.Log) (*bindings.ALCBTransfer, error) {
+func (f *IALCBParseTransferFunc) nextHook() func(types.Log) (*ethereum.ALCBTransfer, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -7924,7 +7924,7 @@ type IALCBParseTransferFuncCall struct {
 	Arg0 types.Log
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 *bindings.ALCBTransfer
+	Result0 *ethereum.ALCBTransfer
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -8601,15 +8601,15 @@ func (c IALCBVirtualMintDepositFuncCall) Results() []interface{} {
 // IALCBWatchApprovalFunc describes the behavior when the WatchApproval
 // method of the parent MockIALCB instance is invoked.
 type IALCBWatchApprovalFunc struct {
-	defaultHook func(*bind.WatchOpts, chan<- *bindings.ALCBApproval, []common.Address, []common.Address) (event.Subscription, error)
-	hooks       []func(*bind.WatchOpts, chan<- *bindings.ALCBApproval, []common.Address, []common.Address) (event.Subscription, error)
+	defaultHook func(*bind.WatchOpts, chan<- *ethereum.ALCBApproval, []common.Address, []common.Address) (event.Subscription, error)
+	hooks       []func(*bind.WatchOpts, chan<- *ethereum.ALCBApproval, []common.Address, []common.Address) (event.Subscription, error)
 	history     []IALCBWatchApprovalFuncCall
 	mutex       sync.Mutex
 }
 
 // WatchApproval delegates to the next hook function in the queue and stores
 // the parameter and result values of this invocation.
-func (m *MockIALCB) WatchApproval(v0 *bind.WatchOpts, v1 chan<- *bindings.ALCBApproval, v2 []common.Address, v3 []common.Address) (event.Subscription, error) {
+func (m *MockIALCB) WatchApproval(v0 *bind.WatchOpts, v1 chan<- *ethereum.ALCBApproval, v2 []common.Address, v3 []common.Address) (event.Subscription, error) {
 	r0, r1 := m.WatchApprovalFunc.nextHook()(v0, v1, v2, v3)
 	m.WatchApprovalFunc.appendCall(IALCBWatchApprovalFuncCall{v0, v1, v2, v3, r0, r1})
 	return r0, r1
@@ -8617,7 +8617,7 @@ func (m *MockIALCB) WatchApproval(v0 *bind.WatchOpts, v1 chan<- *bindings.ALCBAp
 
 // SetDefaultHook sets function that is called when the WatchApproval method
 // of the parent MockIALCB instance is invoked and the hook queue is empty.
-func (f *IALCBWatchApprovalFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *bindings.ALCBApproval, []common.Address, []common.Address) (event.Subscription, error)) {
+func (f *IALCBWatchApprovalFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *ethereum.ALCBApproval, []common.Address, []common.Address) (event.Subscription, error)) {
 	f.defaultHook = hook
 }
 
@@ -8625,7 +8625,7 @@ func (f *IALCBWatchApprovalFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<
 // WatchApproval method of the parent MockIALCB instance invokes the hook at
 // the front of the queue and discards it. After the queue is empty, the
 // default hook function is invoked for any future action.
-func (f *IALCBWatchApprovalFunc) PushHook(hook func(*bind.WatchOpts, chan<- *bindings.ALCBApproval, []common.Address, []common.Address) (event.Subscription, error)) {
+func (f *IALCBWatchApprovalFunc) PushHook(hook func(*bind.WatchOpts, chan<- *ethereum.ALCBApproval, []common.Address, []common.Address) (event.Subscription, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -8634,19 +8634,19 @@ func (f *IALCBWatchApprovalFunc) PushHook(hook func(*bind.WatchOpts, chan<- *bin
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
 func (f *IALCBWatchApprovalFunc) SetDefaultReturn(r0 event.Subscription, r1 error) {
-	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *bindings.ALCBApproval, []common.Address, []common.Address) (event.Subscription, error) {
+	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *ethereum.ALCBApproval, []common.Address, []common.Address) (event.Subscription, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
 func (f *IALCBWatchApprovalFunc) PushReturn(r0 event.Subscription, r1 error) {
-	f.PushHook(func(*bind.WatchOpts, chan<- *bindings.ALCBApproval, []common.Address, []common.Address) (event.Subscription, error) {
+	f.PushHook(func(*bind.WatchOpts, chan<- *ethereum.ALCBApproval, []common.Address, []common.Address) (event.Subscription, error) {
 		return r0, r1
 	})
 }
 
-func (f *IALCBWatchApprovalFunc) nextHook() func(*bind.WatchOpts, chan<- *bindings.ALCBApproval, []common.Address, []common.Address) (event.Subscription, error) {
+func (f *IALCBWatchApprovalFunc) nextHook() func(*bind.WatchOpts, chan<- *ethereum.ALCBApproval, []common.Address, []common.Address) (event.Subscription, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -8684,7 +8684,7 @@ type IALCBWatchApprovalFuncCall struct {
 	Arg0 *bind.WatchOpts
 	// Arg1 is the value of the 2nd argument passed to this method
 	// invocation.
-	Arg1 chan<- *bindings.ALCBApproval
+	Arg1 chan<- *ethereum.ALCBApproval
 	// Arg2 is the value of the 3rd argument passed to this method
 	// invocation.
 	Arg2 []common.Address
@@ -8714,15 +8714,15 @@ func (c IALCBWatchApprovalFuncCall) Results() []interface{} {
 // IALCBWatchDepositReceivedFunc describes the behavior when the
 // WatchDepositReceived method of the parent MockIALCB instance is invoked.
 type IALCBWatchDepositReceivedFunc struct {
-	defaultHook func(*bind.WatchOpts, chan<- *bindings.ALCBDepositReceived, []*big.Int, []uint8, []common.Address) (event.Subscription, error)
-	hooks       []func(*bind.WatchOpts, chan<- *bindings.ALCBDepositReceived, []*big.Int, []uint8, []common.Address) (event.Subscription, error)
+	defaultHook func(*bind.WatchOpts, chan<- *ethereum.ALCBDepositReceived, []*big.Int, []uint8, []common.Address) (event.Subscription, error)
+	hooks       []func(*bind.WatchOpts, chan<- *ethereum.ALCBDepositReceived, []*big.Int, []uint8, []common.Address) (event.Subscription, error)
 	history     []IALCBWatchDepositReceivedFuncCall
 	mutex       sync.Mutex
 }
 
 // WatchDepositReceived delegates to the next hook function in the queue and
 // stores the parameter and result values of this invocation.
-func (m *MockIALCB) WatchDepositReceived(v0 *bind.WatchOpts, v1 chan<- *bindings.ALCBDepositReceived, v2 []*big.Int, v3 []uint8, v4 []common.Address) (event.Subscription, error) {
+func (m *MockIALCB) WatchDepositReceived(v0 *bind.WatchOpts, v1 chan<- *ethereum.ALCBDepositReceived, v2 []*big.Int, v3 []uint8, v4 []common.Address) (event.Subscription, error) {
 	r0, r1 := m.WatchDepositReceivedFunc.nextHook()(v0, v1, v2, v3, v4)
 	m.WatchDepositReceivedFunc.appendCall(IALCBWatchDepositReceivedFuncCall{v0, v1, v2, v3, v4, r0, r1})
 	return r0, r1
@@ -8731,7 +8731,7 @@ func (m *MockIALCB) WatchDepositReceived(v0 *bind.WatchOpts, v1 chan<- *bindings
 // SetDefaultHook sets function that is called when the WatchDepositReceived
 // method of the parent MockIALCB instance is invoked and the hook queue is
 // empty.
-func (f *IALCBWatchDepositReceivedFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *bindings.ALCBDepositReceived, []*big.Int, []uint8, []common.Address) (event.Subscription, error)) {
+func (f *IALCBWatchDepositReceivedFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *ethereum.ALCBDepositReceived, []*big.Int, []uint8, []common.Address) (event.Subscription, error)) {
 	f.defaultHook = hook
 }
 
@@ -8739,7 +8739,7 @@ func (f *IALCBWatchDepositReceivedFunc) SetDefaultHook(hook func(*bind.WatchOpts
 // WatchDepositReceived method of the parent MockIALCB instance invokes the
 // hook at the front of the queue and discards it. After the queue is empty,
 // the default hook function is invoked for any future action.
-func (f *IALCBWatchDepositReceivedFunc) PushHook(hook func(*bind.WatchOpts, chan<- *bindings.ALCBDepositReceived, []*big.Int, []uint8, []common.Address) (event.Subscription, error)) {
+func (f *IALCBWatchDepositReceivedFunc) PushHook(hook func(*bind.WatchOpts, chan<- *ethereum.ALCBDepositReceived, []*big.Int, []uint8, []common.Address) (event.Subscription, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -8748,19 +8748,19 @@ func (f *IALCBWatchDepositReceivedFunc) PushHook(hook func(*bind.WatchOpts, chan
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
 func (f *IALCBWatchDepositReceivedFunc) SetDefaultReturn(r0 event.Subscription, r1 error) {
-	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *bindings.ALCBDepositReceived, []*big.Int, []uint8, []common.Address) (event.Subscription, error) {
+	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *ethereum.ALCBDepositReceived, []*big.Int, []uint8, []common.Address) (event.Subscription, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
 func (f *IALCBWatchDepositReceivedFunc) PushReturn(r0 event.Subscription, r1 error) {
-	f.PushHook(func(*bind.WatchOpts, chan<- *bindings.ALCBDepositReceived, []*big.Int, []uint8, []common.Address) (event.Subscription, error) {
+	f.PushHook(func(*bind.WatchOpts, chan<- *ethereum.ALCBDepositReceived, []*big.Int, []uint8, []common.Address) (event.Subscription, error) {
 		return r0, r1
 	})
 }
 
-func (f *IALCBWatchDepositReceivedFunc) nextHook() func(*bind.WatchOpts, chan<- *bindings.ALCBDepositReceived, []*big.Int, []uint8, []common.Address) (event.Subscription, error) {
+func (f *IALCBWatchDepositReceivedFunc) nextHook() func(*bind.WatchOpts, chan<- *ethereum.ALCBDepositReceived, []*big.Int, []uint8, []common.Address) (event.Subscription, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -8798,7 +8798,7 @@ type IALCBWatchDepositReceivedFuncCall struct {
 	Arg0 *bind.WatchOpts
 	// Arg1 is the value of the 2nd argument passed to this method
 	// invocation.
-	Arg1 chan<- *bindings.ALCBDepositReceived
+	Arg1 chan<- *ethereum.ALCBDepositReceived
 	// Arg2 is the value of the 3rd argument passed to this method
 	// invocation.
 	Arg2 []*big.Int
@@ -8831,15 +8831,15 @@ func (c IALCBWatchDepositReceivedFuncCall) Results() []interface{} {
 // IALCBWatchTransferFunc describes the behavior when the WatchTransfer
 // method of the parent MockIALCB instance is invoked.
 type IALCBWatchTransferFunc struct {
-	defaultHook func(*bind.WatchOpts, chan<- *bindings.ALCBTransfer, []common.Address, []common.Address) (event.Subscription, error)
-	hooks       []func(*bind.WatchOpts, chan<- *bindings.ALCBTransfer, []common.Address, []common.Address) (event.Subscription, error)
+	defaultHook func(*bind.WatchOpts, chan<- *ethereum.ALCBTransfer, []common.Address, []common.Address) (event.Subscription, error)
+	hooks       []func(*bind.WatchOpts, chan<- *ethereum.ALCBTransfer, []common.Address, []common.Address) (event.Subscription, error)
 	history     []IALCBWatchTransferFuncCall
 	mutex       sync.Mutex
 }
 
 // WatchTransfer delegates to the next hook function in the queue and stores
 // the parameter and result values of this invocation.
-func (m *MockIALCB) WatchTransfer(v0 *bind.WatchOpts, v1 chan<- *bindings.ALCBTransfer, v2 []common.Address, v3 []common.Address) (event.Subscription, error) {
+func (m *MockIALCB) WatchTransfer(v0 *bind.WatchOpts, v1 chan<- *ethereum.ALCBTransfer, v2 []common.Address, v3 []common.Address) (event.Subscription, error) {
 	r0, r1 := m.WatchTransferFunc.nextHook()(v0, v1, v2, v3)
 	m.WatchTransferFunc.appendCall(IALCBWatchTransferFuncCall{v0, v1, v2, v3, r0, r1})
 	return r0, r1
@@ -8847,7 +8847,7 @@ func (m *MockIALCB) WatchTransfer(v0 *bind.WatchOpts, v1 chan<- *bindings.ALCBTr
 
 // SetDefaultHook sets function that is called when the WatchTransfer method
 // of the parent MockIALCB instance is invoked and the hook queue is empty.
-func (f *IALCBWatchTransferFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *bindings.ALCBTransfer, []common.Address, []common.Address) (event.Subscription, error)) {
+func (f *IALCBWatchTransferFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *ethereum.ALCBTransfer, []common.Address, []common.Address) (event.Subscription, error)) {
 	f.defaultHook = hook
 }
 
@@ -8855,7 +8855,7 @@ func (f *IALCBWatchTransferFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<
 // WatchTransfer method of the parent MockIALCB instance invokes the hook at
 // the front of the queue and discards it. After the queue is empty, the
 // default hook function is invoked for any future action.
-func (f *IALCBWatchTransferFunc) PushHook(hook func(*bind.WatchOpts, chan<- *bindings.ALCBTransfer, []common.Address, []common.Address) (event.Subscription, error)) {
+func (f *IALCBWatchTransferFunc) PushHook(hook func(*bind.WatchOpts, chan<- *ethereum.ALCBTransfer, []common.Address, []common.Address) (event.Subscription, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -8864,19 +8864,19 @@ func (f *IALCBWatchTransferFunc) PushHook(hook func(*bind.WatchOpts, chan<- *bin
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
 func (f *IALCBWatchTransferFunc) SetDefaultReturn(r0 event.Subscription, r1 error) {
-	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *bindings.ALCBTransfer, []common.Address, []common.Address) (event.Subscription, error) {
+	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *ethereum.ALCBTransfer, []common.Address, []common.Address) (event.Subscription, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
 func (f *IALCBWatchTransferFunc) PushReturn(r0 event.Subscription, r1 error) {
-	f.PushHook(func(*bind.WatchOpts, chan<- *bindings.ALCBTransfer, []common.Address, []common.Address) (event.Subscription, error) {
+	f.PushHook(func(*bind.WatchOpts, chan<- *ethereum.ALCBTransfer, []common.Address, []common.Address) (event.Subscription, error) {
 		return r0, r1
 	})
 }
 
-func (f *IALCBWatchTransferFunc) nextHook() func(*bind.WatchOpts, chan<- *bindings.ALCBTransfer, []common.Address, []common.Address) (event.Subscription, error) {
+func (f *IALCBWatchTransferFunc) nextHook() func(*bind.WatchOpts, chan<- *ethereum.ALCBTransfer, []common.Address, []common.Address) (event.Subscription, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -8914,7 +8914,7 @@ type IALCBWatchTransferFuncCall struct {
 	Arg0 *bind.WatchOpts
 	// Arg1 is the value of the 2nd argument passed to this method
 	// invocation.
-	Arg1 chan<- *bindings.ALCBTransfer
+	Arg1 chan<- *ethereum.ALCBTransfer
 	// Arg2 is the value of the 3rd argument passed to this method
 	// invocation.
 	Arg2 []common.Address
@@ -8942,8 +8942,9 @@ func (c IALCBWatchTransferFuncCall) Results() []interface{} {
 }
 
 // MockIAliceNetFactory is a mock implementation of the IAliceNetFactory
-// interface (from the package github.com/alicenet/alicenet/bridge/bindings)
-// used for unit testing.
+// interface (from the package
+// github.com/alicenet/alicenet/bridge/bindings/ethereum) used for unit
+// testing.
 type MockIAliceNetFactory struct {
 	// AddNewExternalContractFunc is an instance of a mock function object
 	// controlling the behavior of the method AddNewExternalContract.
@@ -9108,32 +9109,32 @@ func NewMockIAliceNetFactory() *MockIAliceNetFactory {
 			},
 		},
 		FilterDeployedFunc: &IAliceNetFactoryFilterDeployedFunc{
-			defaultHook: func(*bind.FilterOpts) (r0 *bindings.AliceNetFactoryDeployedIterator, r1 error) {
+			defaultHook: func(*bind.FilterOpts) (r0 *ethereum.AliceNetFactoryDeployedIterator, r1 error) {
 				return
 			},
 		},
 		FilterDeployedProxyFunc: &IAliceNetFactoryFilterDeployedProxyFunc{
-			defaultHook: func(*bind.FilterOpts) (r0 *bindings.AliceNetFactoryDeployedProxyIterator, r1 error) {
+			defaultHook: func(*bind.FilterOpts) (r0 *ethereum.AliceNetFactoryDeployedProxyIterator, r1 error) {
 				return
 			},
 		},
 		FilterDeployedRawFunc: &IAliceNetFactoryFilterDeployedRawFunc{
-			defaultHook: func(*bind.FilterOpts) (r0 *bindings.AliceNetFactoryDeployedRawIterator, r1 error) {
+			defaultHook: func(*bind.FilterOpts) (r0 *ethereum.AliceNetFactoryDeployedRawIterator, r1 error) {
 				return
 			},
 		},
 		FilterDeployedStaticFunc: &IAliceNetFactoryFilterDeployedStaticFunc{
-			defaultHook: func(*bind.FilterOpts) (r0 *bindings.AliceNetFactoryDeployedStaticIterator, r1 error) {
+			defaultHook: func(*bind.FilterOpts) (r0 *ethereum.AliceNetFactoryDeployedStaticIterator, r1 error) {
 				return
 			},
 		},
 		FilterDeployedTemplateFunc: &IAliceNetFactoryFilterDeployedTemplateFunc{
-			defaultHook: func(*bind.FilterOpts) (r0 *bindings.AliceNetFactoryDeployedTemplateIterator, r1 error) {
+			defaultHook: func(*bind.FilterOpts) (r0 *ethereum.AliceNetFactoryDeployedTemplateIterator, r1 error) {
 				return
 			},
 		},
 		FilterUpgradedProxyFunc: &IAliceNetFactoryFilterUpgradedProxyFunc{
-			defaultHook: func(*bind.FilterOpts) (r0 *bindings.AliceNetFactoryUpgradedProxyIterator, r1 error) {
+			defaultHook: func(*bind.FilterOpts) (r0 *ethereum.AliceNetFactoryUpgradedProxyIterator, r1 error) {
 				return
 			},
 		},
@@ -9178,7 +9179,7 @@ func NewMockIAliceNetFactory() *MockIAliceNetFactory {
 			},
 		},
 		MultiCallFunc: &IAliceNetFactoryMultiCallFunc{
-			defaultHook: func(*bind.TransactOpts, []bindings.AliceNetFactoryBaseMultiCallArgs) (r0 *types.Transaction, r1 error) {
+			defaultHook: func(*bind.TransactOpts, []ethereum.AliceNetFactoryBaseMultiCallArgs) (r0 *types.Transaction, r1 error) {
 				return
 			},
 		},
@@ -9188,32 +9189,32 @@ func NewMockIAliceNetFactory() *MockIAliceNetFactory {
 			},
 		},
 		ParseDeployedFunc: &IAliceNetFactoryParseDeployedFunc{
-			defaultHook: func(types.Log) (r0 *bindings.AliceNetFactoryDeployed, r1 error) {
+			defaultHook: func(types.Log) (r0 *ethereum.AliceNetFactoryDeployed, r1 error) {
 				return
 			},
 		},
 		ParseDeployedProxyFunc: &IAliceNetFactoryParseDeployedProxyFunc{
-			defaultHook: func(types.Log) (r0 *bindings.AliceNetFactoryDeployedProxy, r1 error) {
+			defaultHook: func(types.Log) (r0 *ethereum.AliceNetFactoryDeployedProxy, r1 error) {
 				return
 			},
 		},
 		ParseDeployedRawFunc: &IAliceNetFactoryParseDeployedRawFunc{
-			defaultHook: func(types.Log) (r0 *bindings.AliceNetFactoryDeployedRaw, r1 error) {
+			defaultHook: func(types.Log) (r0 *ethereum.AliceNetFactoryDeployedRaw, r1 error) {
 				return
 			},
 		},
 		ParseDeployedStaticFunc: &IAliceNetFactoryParseDeployedStaticFunc{
-			defaultHook: func(types.Log) (r0 *bindings.AliceNetFactoryDeployedStatic, r1 error) {
+			defaultHook: func(types.Log) (r0 *ethereum.AliceNetFactoryDeployedStatic, r1 error) {
 				return
 			},
 		},
 		ParseDeployedTemplateFunc: &IAliceNetFactoryParseDeployedTemplateFunc{
-			defaultHook: func(types.Log) (r0 *bindings.AliceNetFactoryDeployedTemplate, r1 error) {
+			defaultHook: func(types.Log) (r0 *ethereum.AliceNetFactoryDeployedTemplate, r1 error) {
 				return
 			},
 		},
 		ParseUpgradedProxyFunc: &IAliceNetFactoryParseUpgradedProxyFunc{
-			defaultHook: func(types.Log) (r0 *bindings.AliceNetFactoryUpgradedProxy, r1 error) {
+			defaultHook: func(types.Log) (r0 *ethereum.AliceNetFactoryUpgradedProxy, r1 error) {
 				return
 			},
 		},
@@ -9228,32 +9229,32 @@ func NewMockIAliceNetFactory() *MockIAliceNetFactory {
 			},
 		},
 		WatchDeployedFunc: &IAliceNetFactoryWatchDeployedFunc{
-			defaultHook: func(*bind.WatchOpts, chan<- *bindings.AliceNetFactoryDeployed) (r0 event.Subscription, r1 error) {
+			defaultHook: func(*bind.WatchOpts, chan<- *ethereum.AliceNetFactoryDeployed) (r0 event.Subscription, r1 error) {
 				return
 			},
 		},
 		WatchDeployedProxyFunc: &IAliceNetFactoryWatchDeployedProxyFunc{
-			defaultHook: func(*bind.WatchOpts, chan<- *bindings.AliceNetFactoryDeployedProxy) (r0 event.Subscription, r1 error) {
+			defaultHook: func(*bind.WatchOpts, chan<- *ethereum.AliceNetFactoryDeployedProxy) (r0 event.Subscription, r1 error) {
 				return
 			},
 		},
 		WatchDeployedRawFunc: &IAliceNetFactoryWatchDeployedRawFunc{
-			defaultHook: func(*bind.WatchOpts, chan<- *bindings.AliceNetFactoryDeployedRaw) (r0 event.Subscription, r1 error) {
+			defaultHook: func(*bind.WatchOpts, chan<- *ethereum.AliceNetFactoryDeployedRaw) (r0 event.Subscription, r1 error) {
 				return
 			},
 		},
 		WatchDeployedStaticFunc: &IAliceNetFactoryWatchDeployedStaticFunc{
-			defaultHook: func(*bind.WatchOpts, chan<- *bindings.AliceNetFactoryDeployedStatic) (r0 event.Subscription, r1 error) {
+			defaultHook: func(*bind.WatchOpts, chan<- *ethereum.AliceNetFactoryDeployedStatic) (r0 event.Subscription, r1 error) {
 				return
 			},
 		},
 		WatchDeployedTemplateFunc: &IAliceNetFactoryWatchDeployedTemplateFunc{
-			defaultHook: func(*bind.WatchOpts, chan<- *bindings.AliceNetFactoryDeployedTemplate) (r0 event.Subscription, r1 error) {
+			defaultHook: func(*bind.WatchOpts, chan<- *ethereum.AliceNetFactoryDeployedTemplate) (r0 event.Subscription, r1 error) {
 				return
 			},
 		},
 		WatchUpgradedProxyFunc: &IAliceNetFactoryWatchUpgradedProxyFunc{
-			defaultHook: func(*bind.WatchOpts, chan<- *bindings.AliceNetFactoryUpgradedProxy) (r0 event.Subscription, r1 error) {
+			defaultHook: func(*bind.WatchOpts, chan<- *ethereum.AliceNetFactoryUpgradedProxy) (r0 event.Subscription, r1 error) {
 				return
 			},
 		},
@@ -9305,32 +9306,32 @@ func NewStrictMockIAliceNetFactory() *MockIAliceNetFactory {
 			},
 		},
 		FilterDeployedFunc: &IAliceNetFactoryFilterDeployedFunc{
-			defaultHook: func(*bind.FilterOpts) (*bindings.AliceNetFactoryDeployedIterator, error) {
+			defaultHook: func(*bind.FilterOpts) (*ethereum.AliceNetFactoryDeployedIterator, error) {
 				panic("unexpected invocation of MockIAliceNetFactory.FilterDeployed")
 			},
 		},
 		FilterDeployedProxyFunc: &IAliceNetFactoryFilterDeployedProxyFunc{
-			defaultHook: func(*bind.FilterOpts) (*bindings.AliceNetFactoryDeployedProxyIterator, error) {
+			defaultHook: func(*bind.FilterOpts) (*ethereum.AliceNetFactoryDeployedProxyIterator, error) {
 				panic("unexpected invocation of MockIAliceNetFactory.FilterDeployedProxy")
 			},
 		},
 		FilterDeployedRawFunc: &IAliceNetFactoryFilterDeployedRawFunc{
-			defaultHook: func(*bind.FilterOpts) (*bindings.AliceNetFactoryDeployedRawIterator, error) {
+			defaultHook: func(*bind.FilterOpts) (*ethereum.AliceNetFactoryDeployedRawIterator, error) {
 				panic("unexpected invocation of MockIAliceNetFactory.FilterDeployedRaw")
 			},
 		},
 		FilterDeployedStaticFunc: &IAliceNetFactoryFilterDeployedStaticFunc{
-			defaultHook: func(*bind.FilterOpts) (*bindings.AliceNetFactoryDeployedStaticIterator, error) {
+			defaultHook: func(*bind.FilterOpts) (*ethereum.AliceNetFactoryDeployedStaticIterator, error) {
 				panic("unexpected invocation of MockIAliceNetFactory.FilterDeployedStatic")
 			},
 		},
 		FilterDeployedTemplateFunc: &IAliceNetFactoryFilterDeployedTemplateFunc{
-			defaultHook: func(*bind.FilterOpts) (*bindings.AliceNetFactoryDeployedTemplateIterator, error) {
+			defaultHook: func(*bind.FilterOpts) (*ethereum.AliceNetFactoryDeployedTemplateIterator, error) {
 				panic("unexpected invocation of MockIAliceNetFactory.FilterDeployedTemplate")
 			},
 		},
 		FilterUpgradedProxyFunc: &IAliceNetFactoryFilterUpgradedProxyFunc{
-			defaultHook: func(*bind.FilterOpts) (*bindings.AliceNetFactoryUpgradedProxyIterator, error) {
+			defaultHook: func(*bind.FilterOpts) (*ethereum.AliceNetFactoryUpgradedProxyIterator, error) {
 				panic("unexpected invocation of MockIAliceNetFactory.FilterUpgradedProxy")
 			},
 		},
@@ -9375,7 +9376,7 @@ func NewStrictMockIAliceNetFactory() *MockIAliceNetFactory {
 			},
 		},
 		MultiCallFunc: &IAliceNetFactoryMultiCallFunc{
-			defaultHook: func(*bind.TransactOpts, []bindings.AliceNetFactoryBaseMultiCallArgs) (*types.Transaction, error) {
+			defaultHook: func(*bind.TransactOpts, []ethereum.AliceNetFactoryBaseMultiCallArgs) (*types.Transaction, error) {
 				panic("unexpected invocation of MockIAliceNetFactory.MultiCall")
 			},
 		},
@@ -9385,32 +9386,32 @@ func NewStrictMockIAliceNetFactory() *MockIAliceNetFactory {
 			},
 		},
 		ParseDeployedFunc: &IAliceNetFactoryParseDeployedFunc{
-			defaultHook: func(types.Log) (*bindings.AliceNetFactoryDeployed, error) {
+			defaultHook: func(types.Log) (*ethereum.AliceNetFactoryDeployed, error) {
 				panic("unexpected invocation of MockIAliceNetFactory.ParseDeployed")
 			},
 		},
 		ParseDeployedProxyFunc: &IAliceNetFactoryParseDeployedProxyFunc{
-			defaultHook: func(types.Log) (*bindings.AliceNetFactoryDeployedProxy, error) {
+			defaultHook: func(types.Log) (*ethereum.AliceNetFactoryDeployedProxy, error) {
 				panic("unexpected invocation of MockIAliceNetFactory.ParseDeployedProxy")
 			},
 		},
 		ParseDeployedRawFunc: &IAliceNetFactoryParseDeployedRawFunc{
-			defaultHook: func(types.Log) (*bindings.AliceNetFactoryDeployedRaw, error) {
+			defaultHook: func(types.Log) (*ethereum.AliceNetFactoryDeployedRaw, error) {
 				panic("unexpected invocation of MockIAliceNetFactory.ParseDeployedRaw")
 			},
 		},
 		ParseDeployedStaticFunc: &IAliceNetFactoryParseDeployedStaticFunc{
-			defaultHook: func(types.Log) (*bindings.AliceNetFactoryDeployedStatic, error) {
+			defaultHook: func(types.Log) (*ethereum.AliceNetFactoryDeployedStatic, error) {
 				panic("unexpected invocation of MockIAliceNetFactory.ParseDeployedStatic")
 			},
 		},
 		ParseDeployedTemplateFunc: &IAliceNetFactoryParseDeployedTemplateFunc{
-			defaultHook: func(types.Log) (*bindings.AliceNetFactoryDeployedTemplate, error) {
+			defaultHook: func(types.Log) (*ethereum.AliceNetFactoryDeployedTemplate, error) {
 				panic("unexpected invocation of MockIAliceNetFactory.ParseDeployedTemplate")
 			},
 		},
 		ParseUpgradedProxyFunc: &IAliceNetFactoryParseUpgradedProxyFunc{
-			defaultHook: func(types.Log) (*bindings.AliceNetFactoryUpgradedProxy, error) {
+			defaultHook: func(types.Log) (*ethereum.AliceNetFactoryUpgradedProxy, error) {
 				panic("unexpected invocation of MockIAliceNetFactory.ParseUpgradedProxy")
 			},
 		},
@@ -9425,32 +9426,32 @@ func NewStrictMockIAliceNetFactory() *MockIAliceNetFactory {
 			},
 		},
 		WatchDeployedFunc: &IAliceNetFactoryWatchDeployedFunc{
-			defaultHook: func(*bind.WatchOpts, chan<- *bindings.AliceNetFactoryDeployed) (event.Subscription, error) {
+			defaultHook: func(*bind.WatchOpts, chan<- *ethereum.AliceNetFactoryDeployed) (event.Subscription, error) {
 				panic("unexpected invocation of MockIAliceNetFactory.WatchDeployed")
 			},
 		},
 		WatchDeployedProxyFunc: &IAliceNetFactoryWatchDeployedProxyFunc{
-			defaultHook: func(*bind.WatchOpts, chan<- *bindings.AliceNetFactoryDeployedProxy) (event.Subscription, error) {
+			defaultHook: func(*bind.WatchOpts, chan<- *ethereum.AliceNetFactoryDeployedProxy) (event.Subscription, error) {
 				panic("unexpected invocation of MockIAliceNetFactory.WatchDeployedProxy")
 			},
 		},
 		WatchDeployedRawFunc: &IAliceNetFactoryWatchDeployedRawFunc{
-			defaultHook: func(*bind.WatchOpts, chan<- *bindings.AliceNetFactoryDeployedRaw) (event.Subscription, error) {
+			defaultHook: func(*bind.WatchOpts, chan<- *ethereum.AliceNetFactoryDeployedRaw) (event.Subscription, error) {
 				panic("unexpected invocation of MockIAliceNetFactory.WatchDeployedRaw")
 			},
 		},
 		WatchDeployedStaticFunc: &IAliceNetFactoryWatchDeployedStaticFunc{
-			defaultHook: func(*bind.WatchOpts, chan<- *bindings.AliceNetFactoryDeployedStatic) (event.Subscription, error) {
+			defaultHook: func(*bind.WatchOpts, chan<- *ethereum.AliceNetFactoryDeployedStatic) (event.Subscription, error) {
 				panic("unexpected invocation of MockIAliceNetFactory.WatchDeployedStatic")
 			},
 		},
 		WatchDeployedTemplateFunc: &IAliceNetFactoryWatchDeployedTemplateFunc{
-			defaultHook: func(*bind.WatchOpts, chan<- *bindings.AliceNetFactoryDeployedTemplate) (event.Subscription, error) {
+			defaultHook: func(*bind.WatchOpts, chan<- *ethereum.AliceNetFactoryDeployedTemplate) (event.Subscription, error) {
 				panic("unexpected invocation of MockIAliceNetFactory.WatchDeployedTemplate")
 			},
 		},
 		WatchUpgradedProxyFunc: &IAliceNetFactoryWatchUpgradedProxyFunc{
-			defaultHook: func(*bind.WatchOpts, chan<- *bindings.AliceNetFactoryUpgradedProxy) (event.Subscription, error) {
+			defaultHook: func(*bind.WatchOpts, chan<- *ethereum.AliceNetFactoryUpgradedProxy) (event.Subscription, error) {
 				panic("unexpected invocation of MockIAliceNetFactory.WatchUpgradedProxy")
 			},
 		},
@@ -9460,7 +9461,7 @@ func NewStrictMockIAliceNetFactory() *MockIAliceNetFactory {
 // NewMockIAliceNetFactoryFrom creates a new mock of the
 // MockIAliceNetFactory interface. All methods delegate to the given
 // implementation, unless overwritten.
-func NewMockIAliceNetFactoryFrom(i bindings.IAliceNetFactory) *MockIAliceNetFactory {
+func NewMockIAliceNetFactoryFrom(i ethereum.IAliceNetFactory) *MockIAliceNetFactory {
 	return &MockIAliceNetFactory{
 		AddNewExternalContractFunc: &IAliceNetFactoryAddNewExternalContractFunc{
 			defaultHook: i.AddNewExternalContract,
@@ -10474,15 +10475,15 @@ func (c IAliceNetFactoryFallbackFuncCall) Results() []interface{} {
 // FilterDeployed method of the parent MockIAliceNetFactory instance is
 // invoked.
 type IAliceNetFactoryFilterDeployedFunc struct {
-	defaultHook func(*bind.FilterOpts) (*bindings.AliceNetFactoryDeployedIterator, error)
-	hooks       []func(*bind.FilterOpts) (*bindings.AliceNetFactoryDeployedIterator, error)
+	defaultHook func(*bind.FilterOpts) (*ethereum.AliceNetFactoryDeployedIterator, error)
+	hooks       []func(*bind.FilterOpts) (*ethereum.AliceNetFactoryDeployedIterator, error)
 	history     []IAliceNetFactoryFilterDeployedFuncCall
 	mutex       sync.Mutex
 }
 
 // FilterDeployed delegates to the next hook function in the queue and
 // stores the parameter and result values of this invocation.
-func (m *MockIAliceNetFactory) FilterDeployed(v0 *bind.FilterOpts) (*bindings.AliceNetFactoryDeployedIterator, error) {
+func (m *MockIAliceNetFactory) FilterDeployed(v0 *bind.FilterOpts) (*ethereum.AliceNetFactoryDeployedIterator, error) {
 	r0, r1 := m.FilterDeployedFunc.nextHook()(v0)
 	m.FilterDeployedFunc.appendCall(IAliceNetFactoryFilterDeployedFuncCall{v0, r0, r1})
 	return r0, r1
@@ -10491,7 +10492,7 @@ func (m *MockIAliceNetFactory) FilterDeployed(v0 *bind.FilterOpts) (*bindings.Al
 // SetDefaultHook sets function that is called when the FilterDeployed
 // method of the parent MockIAliceNetFactory instance is invoked and the
 // hook queue is empty.
-func (f *IAliceNetFactoryFilterDeployedFunc) SetDefaultHook(hook func(*bind.FilterOpts) (*bindings.AliceNetFactoryDeployedIterator, error)) {
+func (f *IAliceNetFactoryFilterDeployedFunc) SetDefaultHook(hook func(*bind.FilterOpts) (*ethereum.AliceNetFactoryDeployedIterator, error)) {
 	f.defaultHook = hook
 }
 
@@ -10499,7 +10500,7 @@ func (f *IAliceNetFactoryFilterDeployedFunc) SetDefaultHook(hook func(*bind.Filt
 // FilterDeployed method of the parent MockIAliceNetFactory instance invokes
 // the hook at the front of the queue and discards it. After the queue is
 // empty, the default hook function is invoked for any future action.
-func (f *IAliceNetFactoryFilterDeployedFunc) PushHook(hook func(*bind.FilterOpts) (*bindings.AliceNetFactoryDeployedIterator, error)) {
+func (f *IAliceNetFactoryFilterDeployedFunc) PushHook(hook func(*bind.FilterOpts) (*ethereum.AliceNetFactoryDeployedIterator, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -10507,20 +10508,20 @@ func (f *IAliceNetFactoryFilterDeployedFunc) PushHook(hook func(*bind.FilterOpts
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IAliceNetFactoryFilterDeployedFunc) SetDefaultReturn(r0 *bindings.AliceNetFactoryDeployedIterator, r1 error) {
-	f.SetDefaultHook(func(*bind.FilterOpts) (*bindings.AliceNetFactoryDeployedIterator, error) {
+func (f *IAliceNetFactoryFilterDeployedFunc) SetDefaultReturn(r0 *ethereum.AliceNetFactoryDeployedIterator, r1 error) {
+	f.SetDefaultHook(func(*bind.FilterOpts) (*ethereum.AliceNetFactoryDeployedIterator, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IAliceNetFactoryFilterDeployedFunc) PushReturn(r0 *bindings.AliceNetFactoryDeployedIterator, r1 error) {
-	f.PushHook(func(*bind.FilterOpts) (*bindings.AliceNetFactoryDeployedIterator, error) {
+func (f *IAliceNetFactoryFilterDeployedFunc) PushReturn(r0 *ethereum.AliceNetFactoryDeployedIterator, r1 error) {
+	f.PushHook(func(*bind.FilterOpts) (*ethereum.AliceNetFactoryDeployedIterator, error) {
 		return r0, r1
 	})
 }
 
-func (f *IAliceNetFactoryFilterDeployedFunc) nextHook() func(*bind.FilterOpts) (*bindings.AliceNetFactoryDeployedIterator, error) {
+func (f *IAliceNetFactoryFilterDeployedFunc) nextHook() func(*bind.FilterOpts) (*ethereum.AliceNetFactoryDeployedIterator, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -10559,7 +10560,7 @@ type IAliceNetFactoryFilterDeployedFuncCall struct {
 	Arg0 *bind.FilterOpts
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 *bindings.AliceNetFactoryDeployedIterator
+	Result0 *ethereum.AliceNetFactoryDeployedIterator
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -10581,15 +10582,15 @@ func (c IAliceNetFactoryFilterDeployedFuncCall) Results() []interface{} {
 // FilterDeployedProxy method of the parent MockIAliceNetFactory instance is
 // invoked.
 type IAliceNetFactoryFilterDeployedProxyFunc struct {
-	defaultHook func(*bind.FilterOpts) (*bindings.AliceNetFactoryDeployedProxyIterator, error)
-	hooks       []func(*bind.FilterOpts) (*bindings.AliceNetFactoryDeployedProxyIterator, error)
+	defaultHook func(*bind.FilterOpts) (*ethereum.AliceNetFactoryDeployedProxyIterator, error)
+	hooks       []func(*bind.FilterOpts) (*ethereum.AliceNetFactoryDeployedProxyIterator, error)
 	history     []IAliceNetFactoryFilterDeployedProxyFuncCall
 	mutex       sync.Mutex
 }
 
 // FilterDeployedProxy delegates to the next hook function in the queue and
 // stores the parameter and result values of this invocation.
-func (m *MockIAliceNetFactory) FilterDeployedProxy(v0 *bind.FilterOpts) (*bindings.AliceNetFactoryDeployedProxyIterator, error) {
+func (m *MockIAliceNetFactory) FilterDeployedProxy(v0 *bind.FilterOpts) (*ethereum.AliceNetFactoryDeployedProxyIterator, error) {
 	r0, r1 := m.FilterDeployedProxyFunc.nextHook()(v0)
 	m.FilterDeployedProxyFunc.appendCall(IAliceNetFactoryFilterDeployedProxyFuncCall{v0, r0, r1})
 	return r0, r1
@@ -10598,7 +10599,7 @@ func (m *MockIAliceNetFactory) FilterDeployedProxy(v0 *bind.FilterOpts) (*bindin
 // SetDefaultHook sets function that is called when the FilterDeployedProxy
 // method of the parent MockIAliceNetFactory instance is invoked and the
 // hook queue is empty.
-func (f *IAliceNetFactoryFilterDeployedProxyFunc) SetDefaultHook(hook func(*bind.FilterOpts) (*bindings.AliceNetFactoryDeployedProxyIterator, error)) {
+func (f *IAliceNetFactoryFilterDeployedProxyFunc) SetDefaultHook(hook func(*bind.FilterOpts) (*ethereum.AliceNetFactoryDeployedProxyIterator, error)) {
 	f.defaultHook = hook
 }
 
@@ -10607,7 +10608,7 @@ func (f *IAliceNetFactoryFilterDeployedProxyFunc) SetDefaultHook(hook func(*bind
 // invokes the hook at the front of the queue and discards it. After the
 // queue is empty, the default hook function is invoked for any future
 // action.
-func (f *IAliceNetFactoryFilterDeployedProxyFunc) PushHook(hook func(*bind.FilterOpts) (*bindings.AliceNetFactoryDeployedProxyIterator, error)) {
+func (f *IAliceNetFactoryFilterDeployedProxyFunc) PushHook(hook func(*bind.FilterOpts) (*ethereum.AliceNetFactoryDeployedProxyIterator, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -10615,20 +10616,20 @@ func (f *IAliceNetFactoryFilterDeployedProxyFunc) PushHook(hook func(*bind.Filte
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IAliceNetFactoryFilterDeployedProxyFunc) SetDefaultReturn(r0 *bindings.AliceNetFactoryDeployedProxyIterator, r1 error) {
-	f.SetDefaultHook(func(*bind.FilterOpts) (*bindings.AliceNetFactoryDeployedProxyIterator, error) {
+func (f *IAliceNetFactoryFilterDeployedProxyFunc) SetDefaultReturn(r0 *ethereum.AliceNetFactoryDeployedProxyIterator, r1 error) {
+	f.SetDefaultHook(func(*bind.FilterOpts) (*ethereum.AliceNetFactoryDeployedProxyIterator, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IAliceNetFactoryFilterDeployedProxyFunc) PushReturn(r0 *bindings.AliceNetFactoryDeployedProxyIterator, r1 error) {
-	f.PushHook(func(*bind.FilterOpts) (*bindings.AliceNetFactoryDeployedProxyIterator, error) {
+func (f *IAliceNetFactoryFilterDeployedProxyFunc) PushReturn(r0 *ethereum.AliceNetFactoryDeployedProxyIterator, r1 error) {
+	f.PushHook(func(*bind.FilterOpts) (*ethereum.AliceNetFactoryDeployedProxyIterator, error) {
 		return r0, r1
 	})
 }
 
-func (f *IAliceNetFactoryFilterDeployedProxyFunc) nextHook() func(*bind.FilterOpts) (*bindings.AliceNetFactoryDeployedProxyIterator, error) {
+func (f *IAliceNetFactoryFilterDeployedProxyFunc) nextHook() func(*bind.FilterOpts) (*ethereum.AliceNetFactoryDeployedProxyIterator, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -10667,7 +10668,7 @@ type IAliceNetFactoryFilterDeployedProxyFuncCall struct {
 	Arg0 *bind.FilterOpts
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 *bindings.AliceNetFactoryDeployedProxyIterator
+	Result0 *ethereum.AliceNetFactoryDeployedProxyIterator
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -10689,15 +10690,15 @@ func (c IAliceNetFactoryFilterDeployedProxyFuncCall) Results() []interface{} {
 // FilterDeployedRaw method of the parent MockIAliceNetFactory instance is
 // invoked.
 type IAliceNetFactoryFilterDeployedRawFunc struct {
-	defaultHook func(*bind.FilterOpts) (*bindings.AliceNetFactoryDeployedRawIterator, error)
-	hooks       []func(*bind.FilterOpts) (*bindings.AliceNetFactoryDeployedRawIterator, error)
+	defaultHook func(*bind.FilterOpts) (*ethereum.AliceNetFactoryDeployedRawIterator, error)
+	hooks       []func(*bind.FilterOpts) (*ethereum.AliceNetFactoryDeployedRawIterator, error)
 	history     []IAliceNetFactoryFilterDeployedRawFuncCall
 	mutex       sync.Mutex
 }
 
 // FilterDeployedRaw delegates to the next hook function in the queue and
 // stores the parameter and result values of this invocation.
-func (m *MockIAliceNetFactory) FilterDeployedRaw(v0 *bind.FilterOpts) (*bindings.AliceNetFactoryDeployedRawIterator, error) {
+func (m *MockIAliceNetFactory) FilterDeployedRaw(v0 *bind.FilterOpts) (*ethereum.AliceNetFactoryDeployedRawIterator, error) {
 	r0, r1 := m.FilterDeployedRawFunc.nextHook()(v0)
 	m.FilterDeployedRawFunc.appendCall(IAliceNetFactoryFilterDeployedRawFuncCall{v0, r0, r1})
 	return r0, r1
@@ -10706,7 +10707,7 @@ func (m *MockIAliceNetFactory) FilterDeployedRaw(v0 *bind.FilterOpts) (*bindings
 // SetDefaultHook sets function that is called when the FilterDeployedRaw
 // method of the parent MockIAliceNetFactory instance is invoked and the
 // hook queue is empty.
-func (f *IAliceNetFactoryFilterDeployedRawFunc) SetDefaultHook(hook func(*bind.FilterOpts) (*bindings.AliceNetFactoryDeployedRawIterator, error)) {
+func (f *IAliceNetFactoryFilterDeployedRawFunc) SetDefaultHook(hook func(*bind.FilterOpts) (*ethereum.AliceNetFactoryDeployedRawIterator, error)) {
 	f.defaultHook = hook
 }
 
@@ -10715,7 +10716,7 @@ func (f *IAliceNetFactoryFilterDeployedRawFunc) SetDefaultHook(hook func(*bind.F
 // invokes the hook at the front of the queue and discards it. After the
 // queue is empty, the default hook function is invoked for any future
 // action.
-func (f *IAliceNetFactoryFilterDeployedRawFunc) PushHook(hook func(*bind.FilterOpts) (*bindings.AliceNetFactoryDeployedRawIterator, error)) {
+func (f *IAliceNetFactoryFilterDeployedRawFunc) PushHook(hook func(*bind.FilterOpts) (*ethereum.AliceNetFactoryDeployedRawIterator, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -10723,20 +10724,20 @@ func (f *IAliceNetFactoryFilterDeployedRawFunc) PushHook(hook func(*bind.FilterO
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IAliceNetFactoryFilterDeployedRawFunc) SetDefaultReturn(r0 *bindings.AliceNetFactoryDeployedRawIterator, r1 error) {
-	f.SetDefaultHook(func(*bind.FilterOpts) (*bindings.AliceNetFactoryDeployedRawIterator, error) {
+func (f *IAliceNetFactoryFilterDeployedRawFunc) SetDefaultReturn(r0 *ethereum.AliceNetFactoryDeployedRawIterator, r1 error) {
+	f.SetDefaultHook(func(*bind.FilterOpts) (*ethereum.AliceNetFactoryDeployedRawIterator, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IAliceNetFactoryFilterDeployedRawFunc) PushReturn(r0 *bindings.AliceNetFactoryDeployedRawIterator, r1 error) {
-	f.PushHook(func(*bind.FilterOpts) (*bindings.AliceNetFactoryDeployedRawIterator, error) {
+func (f *IAliceNetFactoryFilterDeployedRawFunc) PushReturn(r0 *ethereum.AliceNetFactoryDeployedRawIterator, r1 error) {
+	f.PushHook(func(*bind.FilterOpts) (*ethereum.AliceNetFactoryDeployedRawIterator, error) {
 		return r0, r1
 	})
 }
 
-func (f *IAliceNetFactoryFilterDeployedRawFunc) nextHook() func(*bind.FilterOpts) (*bindings.AliceNetFactoryDeployedRawIterator, error) {
+func (f *IAliceNetFactoryFilterDeployedRawFunc) nextHook() func(*bind.FilterOpts) (*ethereum.AliceNetFactoryDeployedRawIterator, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -10775,7 +10776,7 @@ type IAliceNetFactoryFilterDeployedRawFuncCall struct {
 	Arg0 *bind.FilterOpts
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 *bindings.AliceNetFactoryDeployedRawIterator
+	Result0 *ethereum.AliceNetFactoryDeployedRawIterator
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -10797,15 +10798,15 @@ func (c IAliceNetFactoryFilterDeployedRawFuncCall) Results() []interface{} {
 // FilterDeployedStatic method of the parent MockIAliceNetFactory instance
 // is invoked.
 type IAliceNetFactoryFilterDeployedStaticFunc struct {
-	defaultHook func(*bind.FilterOpts) (*bindings.AliceNetFactoryDeployedStaticIterator, error)
-	hooks       []func(*bind.FilterOpts) (*bindings.AliceNetFactoryDeployedStaticIterator, error)
+	defaultHook func(*bind.FilterOpts) (*ethereum.AliceNetFactoryDeployedStaticIterator, error)
+	hooks       []func(*bind.FilterOpts) (*ethereum.AliceNetFactoryDeployedStaticIterator, error)
 	history     []IAliceNetFactoryFilterDeployedStaticFuncCall
 	mutex       sync.Mutex
 }
 
 // FilterDeployedStatic delegates to the next hook function in the queue and
 // stores the parameter and result values of this invocation.
-func (m *MockIAliceNetFactory) FilterDeployedStatic(v0 *bind.FilterOpts) (*bindings.AliceNetFactoryDeployedStaticIterator, error) {
+func (m *MockIAliceNetFactory) FilterDeployedStatic(v0 *bind.FilterOpts) (*ethereum.AliceNetFactoryDeployedStaticIterator, error) {
 	r0, r1 := m.FilterDeployedStaticFunc.nextHook()(v0)
 	m.FilterDeployedStaticFunc.appendCall(IAliceNetFactoryFilterDeployedStaticFuncCall{v0, r0, r1})
 	return r0, r1
@@ -10814,7 +10815,7 @@ func (m *MockIAliceNetFactory) FilterDeployedStatic(v0 *bind.FilterOpts) (*bindi
 // SetDefaultHook sets function that is called when the FilterDeployedStatic
 // method of the parent MockIAliceNetFactory instance is invoked and the
 // hook queue is empty.
-func (f *IAliceNetFactoryFilterDeployedStaticFunc) SetDefaultHook(hook func(*bind.FilterOpts) (*bindings.AliceNetFactoryDeployedStaticIterator, error)) {
+func (f *IAliceNetFactoryFilterDeployedStaticFunc) SetDefaultHook(hook func(*bind.FilterOpts) (*ethereum.AliceNetFactoryDeployedStaticIterator, error)) {
 	f.defaultHook = hook
 }
 
@@ -10823,7 +10824,7 @@ func (f *IAliceNetFactoryFilterDeployedStaticFunc) SetDefaultHook(hook func(*bin
 // invokes the hook at the front of the queue and discards it. After the
 // queue is empty, the default hook function is invoked for any future
 // action.
-func (f *IAliceNetFactoryFilterDeployedStaticFunc) PushHook(hook func(*bind.FilterOpts) (*bindings.AliceNetFactoryDeployedStaticIterator, error)) {
+func (f *IAliceNetFactoryFilterDeployedStaticFunc) PushHook(hook func(*bind.FilterOpts) (*ethereum.AliceNetFactoryDeployedStaticIterator, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -10831,20 +10832,20 @@ func (f *IAliceNetFactoryFilterDeployedStaticFunc) PushHook(hook func(*bind.Filt
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IAliceNetFactoryFilterDeployedStaticFunc) SetDefaultReturn(r0 *bindings.AliceNetFactoryDeployedStaticIterator, r1 error) {
-	f.SetDefaultHook(func(*bind.FilterOpts) (*bindings.AliceNetFactoryDeployedStaticIterator, error) {
+func (f *IAliceNetFactoryFilterDeployedStaticFunc) SetDefaultReturn(r0 *ethereum.AliceNetFactoryDeployedStaticIterator, r1 error) {
+	f.SetDefaultHook(func(*bind.FilterOpts) (*ethereum.AliceNetFactoryDeployedStaticIterator, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IAliceNetFactoryFilterDeployedStaticFunc) PushReturn(r0 *bindings.AliceNetFactoryDeployedStaticIterator, r1 error) {
-	f.PushHook(func(*bind.FilterOpts) (*bindings.AliceNetFactoryDeployedStaticIterator, error) {
+func (f *IAliceNetFactoryFilterDeployedStaticFunc) PushReturn(r0 *ethereum.AliceNetFactoryDeployedStaticIterator, r1 error) {
+	f.PushHook(func(*bind.FilterOpts) (*ethereum.AliceNetFactoryDeployedStaticIterator, error) {
 		return r0, r1
 	})
 }
 
-func (f *IAliceNetFactoryFilterDeployedStaticFunc) nextHook() func(*bind.FilterOpts) (*bindings.AliceNetFactoryDeployedStaticIterator, error) {
+func (f *IAliceNetFactoryFilterDeployedStaticFunc) nextHook() func(*bind.FilterOpts) (*ethereum.AliceNetFactoryDeployedStaticIterator, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -10884,7 +10885,7 @@ type IAliceNetFactoryFilterDeployedStaticFuncCall struct {
 	Arg0 *bind.FilterOpts
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 *bindings.AliceNetFactoryDeployedStaticIterator
+	Result0 *ethereum.AliceNetFactoryDeployedStaticIterator
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -10906,15 +10907,15 @@ func (c IAliceNetFactoryFilterDeployedStaticFuncCall) Results() []interface{} {
 // the FilterDeployedTemplate method of the parent MockIAliceNetFactory
 // instance is invoked.
 type IAliceNetFactoryFilterDeployedTemplateFunc struct {
-	defaultHook func(*bind.FilterOpts) (*bindings.AliceNetFactoryDeployedTemplateIterator, error)
-	hooks       []func(*bind.FilterOpts) (*bindings.AliceNetFactoryDeployedTemplateIterator, error)
+	defaultHook func(*bind.FilterOpts) (*ethereum.AliceNetFactoryDeployedTemplateIterator, error)
+	hooks       []func(*bind.FilterOpts) (*ethereum.AliceNetFactoryDeployedTemplateIterator, error)
 	history     []IAliceNetFactoryFilterDeployedTemplateFuncCall
 	mutex       sync.Mutex
 }
 
 // FilterDeployedTemplate delegates to the next hook function in the queue
 // and stores the parameter and result values of this invocation.
-func (m *MockIAliceNetFactory) FilterDeployedTemplate(v0 *bind.FilterOpts) (*bindings.AliceNetFactoryDeployedTemplateIterator, error) {
+func (m *MockIAliceNetFactory) FilterDeployedTemplate(v0 *bind.FilterOpts) (*ethereum.AliceNetFactoryDeployedTemplateIterator, error) {
 	r0, r1 := m.FilterDeployedTemplateFunc.nextHook()(v0)
 	m.FilterDeployedTemplateFunc.appendCall(IAliceNetFactoryFilterDeployedTemplateFuncCall{v0, r0, r1})
 	return r0, r1
@@ -10923,7 +10924,7 @@ func (m *MockIAliceNetFactory) FilterDeployedTemplate(v0 *bind.FilterOpts) (*bin
 // SetDefaultHook sets function that is called when the
 // FilterDeployedTemplate method of the parent MockIAliceNetFactory instance
 // is invoked and the hook queue is empty.
-func (f *IAliceNetFactoryFilterDeployedTemplateFunc) SetDefaultHook(hook func(*bind.FilterOpts) (*bindings.AliceNetFactoryDeployedTemplateIterator, error)) {
+func (f *IAliceNetFactoryFilterDeployedTemplateFunc) SetDefaultHook(hook func(*bind.FilterOpts) (*ethereum.AliceNetFactoryDeployedTemplateIterator, error)) {
 	f.defaultHook = hook
 }
 
@@ -10932,7 +10933,7 @@ func (f *IAliceNetFactoryFilterDeployedTemplateFunc) SetDefaultHook(hook func(*b
 // invokes the hook at the front of the queue and discards it. After the
 // queue is empty, the default hook function is invoked for any future
 // action.
-func (f *IAliceNetFactoryFilterDeployedTemplateFunc) PushHook(hook func(*bind.FilterOpts) (*bindings.AliceNetFactoryDeployedTemplateIterator, error)) {
+func (f *IAliceNetFactoryFilterDeployedTemplateFunc) PushHook(hook func(*bind.FilterOpts) (*ethereum.AliceNetFactoryDeployedTemplateIterator, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -10940,20 +10941,20 @@ func (f *IAliceNetFactoryFilterDeployedTemplateFunc) PushHook(hook func(*bind.Fi
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IAliceNetFactoryFilterDeployedTemplateFunc) SetDefaultReturn(r0 *bindings.AliceNetFactoryDeployedTemplateIterator, r1 error) {
-	f.SetDefaultHook(func(*bind.FilterOpts) (*bindings.AliceNetFactoryDeployedTemplateIterator, error) {
+func (f *IAliceNetFactoryFilterDeployedTemplateFunc) SetDefaultReturn(r0 *ethereum.AliceNetFactoryDeployedTemplateIterator, r1 error) {
+	f.SetDefaultHook(func(*bind.FilterOpts) (*ethereum.AliceNetFactoryDeployedTemplateIterator, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IAliceNetFactoryFilterDeployedTemplateFunc) PushReturn(r0 *bindings.AliceNetFactoryDeployedTemplateIterator, r1 error) {
-	f.PushHook(func(*bind.FilterOpts) (*bindings.AliceNetFactoryDeployedTemplateIterator, error) {
+func (f *IAliceNetFactoryFilterDeployedTemplateFunc) PushReturn(r0 *ethereum.AliceNetFactoryDeployedTemplateIterator, r1 error) {
+	f.PushHook(func(*bind.FilterOpts) (*ethereum.AliceNetFactoryDeployedTemplateIterator, error) {
 		return r0, r1
 	})
 }
 
-func (f *IAliceNetFactoryFilterDeployedTemplateFunc) nextHook() func(*bind.FilterOpts) (*bindings.AliceNetFactoryDeployedTemplateIterator, error) {
+func (f *IAliceNetFactoryFilterDeployedTemplateFunc) nextHook() func(*bind.FilterOpts) (*ethereum.AliceNetFactoryDeployedTemplateIterator, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -10993,7 +10994,7 @@ type IAliceNetFactoryFilterDeployedTemplateFuncCall struct {
 	Arg0 *bind.FilterOpts
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 *bindings.AliceNetFactoryDeployedTemplateIterator
+	Result0 *ethereum.AliceNetFactoryDeployedTemplateIterator
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -11015,15 +11016,15 @@ func (c IAliceNetFactoryFilterDeployedTemplateFuncCall) Results() []interface{} 
 // FilterUpgradedProxy method of the parent MockIAliceNetFactory instance is
 // invoked.
 type IAliceNetFactoryFilterUpgradedProxyFunc struct {
-	defaultHook func(*bind.FilterOpts) (*bindings.AliceNetFactoryUpgradedProxyIterator, error)
-	hooks       []func(*bind.FilterOpts) (*bindings.AliceNetFactoryUpgradedProxyIterator, error)
+	defaultHook func(*bind.FilterOpts) (*ethereum.AliceNetFactoryUpgradedProxyIterator, error)
+	hooks       []func(*bind.FilterOpts) (*ethereum.AliceNetFactoryUpgradedProxyIterator, error)
 	history     []IAliceNetFactoryFilterUpgradedProxyFuncCall
 	mutex       sync.Mutex
 }
 
 // FilterUpgradedProxy delegates to the next hook function in the queue and
 // stores the parameter and result values of this invocation.
-func (m *MockIAliceNetFactory) FilterUpgradedProxy(v0 *bind.FilterOpts) (*bindings.AliceNetFactoryUpgradedProxyIterator, error) {
+func (m *MockIAliceNetFactory) FilterUpgradedProxy(v0 *bind.FilterOpts) (*ethereum.AliceNetFactoryUpgradedProxyIterator, error) {
 	r0, r1 := m.FilterUpgradedProxyFunc.nextHook()(v0)
 	m.FilterUpgradedProxyFunc.appendCall(IAliceNetFactoryFilterUpgradedProxyFuncCall{v0, r0, r1})
 	return r0, r1
@@ -11032,7 +11033,7 @@ func (m *MockIAliceNetFactory) FilterUpgradedProxy(v0 *bind.FilterOpts) (*bindin
 // SetDefaultHook sets function that is called when the FilterUpgradedProxy
 // method of the parent MockIAliceNetFactory instance is invoked and the
 // hook queue is empty.
-func (f *IAliceNetFactoryFilterUpgradedProxyFunc) SetDefaultHook(hook func(*bind.FilterOpts) (*bindings.AliceNetFactoryUpgradedProxyIterator, error)) {
+func (f *IAliceNetFactoryFilterUpgradedProxyFunc) SetDefaultHook(hook func(*bind.FilterOpts) (*ethereum.AliceNetFactoryUpgradedProxyIterator, error)) {
 	f.defaultHook = hook
 }
 
@@ -11041,7 +11042,7 @@ func (f *IAliceNetFactoryFilterUpgradedProxyFunc) SetDefaultHook(hook func(*bind
 // invokes the hook at the front of the queue and discards it. After the
 // queue is empty, the default hook function is invoked for any future
 // action.
-func (f *IAliceNetFactoryFilterUpgradedProxyFunc) PushHook(hook func(*bind.FilterOpts) (*bindings.AliceNetFactoryUpgradedProxyIterator, error)) {
+func (f *IAliceNetFactoryFilterUpgradedProxyFunc) PushHook(hook func(*bind.FilterOpts) (*ethereum.AliceNetFactoryUpgradedProxyIterator, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -11049,20 +11050,20 @@ func (f *IAliceNetFactoryFilterUpgradedProxyFunc) PushHook(hook func(*bind.Filte
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IAliceNetFactoryFilterUpgradedProxyFunc) SetDefaultReturn(r0 *bindings.AliceNetFactoryUpgradedProxyIterator, r1 error) {
-	f.SetDefaultHook(func(*bind.FilterOpts) (*bindings.AliceNetFactoryUpgradedProxyIterator, error) {
+func (f *IAliceNetFactoryFilterUpgradedProxyFunc) SetDefaultReturn(r0 *ethereum.AliceNetFactoryUpgradedProxyIterator, r1 error) {
+	f.SetDefaultHook(func(*bind.FilterOpts) (*ethereum.AliceNetFactoryUpgradedProxyIterator, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IAliceNetFactoryFilterUpgradedProxyFunc) PushReturn(r0 *bindings.AliceNetFactoryUpgradedProxyIterator, r1 error) {
-	f.PushHook(func(*bind.FilterOpts) (*bindings.AliceNetFactoryUpgradedProxyIterator, error) {
+func (f *IAliceNetFactoryFilterUpgradedProxyFunc) PushReturn(r0 *ethereum.AliceNetFactoryUpgradedProxyIterator, r1 error) {
+	f.PushHook(func(*bind.FilterOpts) (*ethereum.AliceNetFactoryUpgradedProxyIterator, error) {
 		return r0, r1
 	})
 }
 
-func (f *IAliceNetFactoryFilterUpgradedProxyFunc) nextHook() func(*bind.FilterOpts) (*bindings.AliceNetFactoryUpgradedProxyIterator, error) {
+func (f *IAliceNetFactoryFilterUpgradedProxyFunc) nextHook() func(*bind.FilterOpts) (*ethereum.AliceNetFactoryUpgradedProxyIterator, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -11101,7 +11102,7 @@ type IAliceNetFactoryFilterUpgradedProxyFuncCall struct {
 	Arg0 *bind.FilterOpts
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 *bindings.AliceNetFactoryUpgradedProxyIterator
+	Result0 *ethereum.AliceNetFactoryUpgradedProxyIterator
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -12003,15 +12004,15 @@ func (c IAliceNetFactoryLookupFuncCall) Results() []interface{} {
 // IAliceNetFactoryMultiCallFunc describes the behavior when the MultiCall
 // method of the parent MockIAliceNetFactory instance is invoked.
 type IAliceNetFactoryMultiCallFunc struct {
-	defaultHook func(*bind.TransactOpts, []bindings.AliceNetFactoryBaseMultiCallArgs) (*types.Transaction, error)
-	hooks       []func(*bind.TransactOpts, []bindings.AliceNetFactoryBaseMultiCallArgs) (*types.Transaction, error)
+	defaultHook func(*bind.TransactOpts, []ethereum.AliceNetFactoryBaseMultiCallArgs) (*types.Transaction, error)
+	hooks       []func(*bind.TransactOpts, []ethereum.AliceNetFactoryBaseMultiCallArgs) (*types.Transaction, error)
 	history     []IAliceNetFactoryMultiCallFuncCall
 	mutex       sync.Mutex
 }
 
 // MultiCall delegates to the next hook function in the queue and stores the
 // parameter and result values of this invocation.
-func (m *MockIAliceNetFactory) MultiCall(v0 *bind.TransactOpts, v1 []bindings.AliceNetFactoryBaseMultiCallArgs) (*types.Transaction, error) {
+func (m *MockIAliceNetFactory) MultiCall(v0 *bind.TransactOpts, v1 []ethereum.AliceNetFactoryBaseMultiCallArgs) (*types.Transaction, error) {
 	r0, r1 := m.MultiCallFunc.nextHook()(v0, v1)
 	m.MultiCallFunc.appendCall(IAliceNetFactoryMultiCallFuncCall{v0, v1, r0, r1})
 	return r0, r1
@@ -12020,7 +12021,7 @@ func (m *MockIAliceNetFactory) MultiCall(v0 *bind.TransactOpts, v1 []bindings.Al
 // SetDefaultHook sets function that is called when the MultiCall method of
 // the parent MockIAliceNetFactory instance is invoked and the hook queue is
 // empty.
-func (f *IAliceNetFactoryMultiCallFunc) SetDefaultHook(hook func(*bind.TransactOpts, []bindings.AliceNetFactoryBaseMultiCallArgs) (*types.Transaction, error)) {
+func (f *IAliceNetFactoryMultiCallFunc) SetDefaultHook(hook func(*bind.TransactOpts, []ethereum.AliceNetFactoryBaseMultiCallArgs) (*types.Transaction, error)) {
 	f.defaultHook = hook
 }
 
@@ -12028,7 +12029,7 @@ func (f *IAliceNetFactoryMultiCallFunc) SetDefaultHook(hook func(*bind.TransactO
 // MultiCall method of the parent MockIAliceNetFactory instance invokes the
 // hook at the front of the queue and discards it. After the queue is empty,
 // the default hook function is invoked for any future action.
-func (f *IAliceNetFactoryMultiCallFunc) PushHook(hook func(*bind.TransactOpts, []bindings.AliceNetFactoryBaseMultiCallArgs) (*types.Transaction, error)) {
+func (f *IAliceNetFactoryMultiCallFunc) PushHook(hook func(*bind.TransactOpts, []ethereum.AliceNetFactoryBaseMultiCallArgs) (*types.Transaction, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -12037,19 +12038,19 @@ func (f *IAliceNetFactoryMultiCallFunc) PushHook(hook func(*bind.TransactOpts, [
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
 func (f *IAliceNetFactoryMultiCallFunc) SetDefaultReturn(r0 *types.Transaction, r1 error) {
-	f.SetDefaultHook(func(*bind.TransactOpts, []bindings.AliceNetFactoryBaseMultiCallArgs) (*types.Transaction, error) {
+	f.SetDefaultHook(func(*bind.TransactOpts, []ethereum.AliceNetFactoryBaseMultiCallArgs) (*types.Transaction, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
 func (f *IAliceNetFactoryMultiCallFunc) PushReturn(r0 *types.Transaction, r1 error) {
-	f.PushHook(func(*bind.TransactOpts, []bindings.AliceNetFactoryBaseMultiCallArgs) (*types.Transaction, error) {
+	f.PushHook(func(*bind.TransactOpts, []ethereum.AliceNetFactoryBaseMultiCallArgs) (*types.Transaction, error) {
 		return r0, r1
 	})
 }
 
-func (f *IAliceNetFactoryMultiCallFunc) nextHook() func(*bind.TransactOpts, []bindings.AliceNetFactoryBaseMultiCallArgs) (*types.Transaction, error) {
+func (f *IAliceNetFactoryMultiCallFunc) nextHook() func(*bind.TransactOpts, []ethereum.AliceNetFactoryBaseMultiCallArgs) (*types.Transaction, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -12087,7 +12088,7 @@ type IAliceNetFactoryMultiCallFuncCall struct {
 	Arg0 *bind.TransactOpts
 	// Arg1 is the value of the 2nd argument passed to this method
 	// invocation.
-	Arg1 []bindings.AliceNetFactoryBaseMultiCallArgs
+	Arg1 []ethereum.AliceNetFactoryBaseMultiCallArgs
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
 	Result0 *types.Transaction
@@ -12217,15 +12218,15 @@ func (c IAliceNetFactoryOwnerFuncCall) Results() []interface{} {
 // ParseDeployed method of the parent MockIAliceNetFactory instance is
 // invoked.
 type IAliceNetFactoryParseDeployedFunc struct {
-	defaultHook func(types.Log) (*bindings.AliceNetFactoryDeployed, error)
-	hooks       []func(types.Log) (*bindings.AliceNetFactoryDeployed, error)
+	defaultHook func(types.Log) (*ethereum.AliceNetFactoryDeployed, error)
+	hooks       []func(types.Log) (*ethereum.AliceNetFactoryDeployed, error)
 	history     []IAliceNetFactoryParseDeployedFuncCall
 	mutex       sync.Mutex
 }
 
 // ParseDeployed delegates to the next hook function in the queue and stores
 // the parameter and result values of this invocation.
-func (m *MockIAliceNetFactory) ParseDeployed(v0 types.Log) (*bindings.AliceNetFactoryDeployed, error) {
+func (m *MockIAliceNetFactory) ParseDeployed(v0 types.Log) (*ethereum.AliceNetFactoryDeployed, error) {
 	r0, r1 := m.ParseDeployedFunc.nextHook()(v0)
 	m.ParseDeployedFunc.appendCall(IAliceNetFactoryParseDeployedFuncCall{v0, r0, r1})
 	return r0, r1
@@ -12234,7 +12235,7 @@ func (m *MockIAliceNetFactory) ParseDeployed(v0 types.Log) (*bindings.AliceNetFa
 // SetDefaultHook sets function that is called when the ParseDeployed method
 // of the parent MockIAliceNetFactory instance is invoked and the hook queue
 // is empty.
-func (f *IAliceNetFactoryParseDeployedFunc) SetDefaultHook(hook func(types.Log) (*bindings.AliceNetFactoryDeployed, error)) {
+func (f *IAliceNetFactoryParseDeployedFunc) SetDefaultHook(hook func(types.Log) (*ethereum.AliceNetFactoryDeployed, error)) {
 	f.defaultHook = hook
 }
 
@@ -12242,7 +12243,7 @@ func (f *IAliceNetFactoryParseDeployedFunc) SetDefaultHook(hook func(types.Log) 
 // ParseDeployed method of the parent MockIAliceNetFactory instance invokes
 // the hook at the front of the queue and discards it. After the queue is
 // empty, the default hook function is invoked for any future action.
-func (f *IAliceNetFactoryParseDeployedFunc) PushHook(hook func(types.Log) (*bindings.AliceNetFactoryDeployed, error)) {
+func (f *IAliceNetFactoryParseDeployedFunc) PushHook(hook func(types.Log) (*ethereum.AliceNetFactoryDeployed, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -12250,20 +12251,20 @@ func (f *IAliceNetFactoryParseDeployedFunc) PushHook(hook func(types.Log) (*bind
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IAliceNetFactoryParseDeployedFunc) SetDefaultReturn(r0 *bindings.AliceNetFactoryDeployed, r1 error) {
-	f.SetDefaultHook(func(types.Log) (*bindings.AliceNetFactoryDeployed, error) {
+func (f *IAliceNetFactoryParseDeployedFunc) SetDefaultReturn(r0 *ethereum.AliceNetFactoryDeployed, r1 error) {
+	f.SetDefaultHook(func(types.Log) (*ethereum.AliceNetFactoryDeployed, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IAliceNetFactoryParseDeployedFunc) PushReturn(r0 *bindings.AliceNetFactoryDeployed, r1 error) {
-	f.PushHook(func(types.Log) (*bindings.AliceNetFactoryDeployed, error) {
+func (f *IAliceNetFactoryParseDeployedFunc) PushReturn(r0 *ethereum.AliceNetFactoryDeployed, r1 error) {
+	f.PushHook(func(types.Log) (*ethereum.AliceNetFactoryDeployed, error) {
 		return r0, r1
 	})
 }
 
-func (f *IAliceNetFactoryParseDeployedFunc) nextHook() func(types.Log) (*bindings.AliceNetFactoryDeployed, error) {
+func (f *IAliceNetFactoryParseDeployedFunc) nextHook() func(types.Log) (*ethereum.AliceNetFactoryDeployed, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -12302,7 +12303,7 @@ type IAliceNetFactoryParseDeployedFuncCall struct {
 	Arg0 types.Log
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 *bindings.AliceNetFactoryDeployed
+	Result0 *ethereum.AliceNetFactoryDeployed
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -12324,15 +12325,15 @@ func (c IAliceNetFactoryParseDeployedFuncCall) Results() []interface{} {
 // ParseDeployedProxy method of the parent MockIAliceNetFactory instance is
 // invoked.
 type IAliceNetFactoryParseDeployedProxyFunc struct {
-	defaultHook func(types.Log) (*bindings.AliceNetFactoryDeployedProxy, error)
-	hooks       []func(types.Log) (*bindings.AliceNetFactoryDeployedProxy, error)
+	defaultHook func(types.Log) (*ethereum.AliceNetFactoryDeployedProxy, error)
+	hooks       []func(types.Log) (*ethereum.AliceNetFactoryDeployedProxy, error)
 	history     []IAliceNetFactoryParseDeployedProxyFuncCall
 	mutex       sync.Mutex
 }
 
 // ParseDeployedProxy delegates to the next hook function in the queue and
 // stores the parameter and result values of this invocation.
-func (m *MockIAliceNetFactory) ParseDeployedProxy(v0 types.Log) (*bindings.AliceNetFactoryDeployedProxy, error) {
+func (m *MockIAliceNetFactory) ParseDeployedProxy(v0 types.Log) (*ethereum.AliceNetFactoryDeployedProxy, error) {
 	r0, r1 := m.ParseDeployedProxyFunc.nextHook()(v0)
 	m.ParseDeployedProxyFunc.appendCall(IAliceNetFactoryParseDeployedProxyFuncCall{v0, r0, r1})
 	return r0, r1
@@ -12341,7 +12342,7 @@ func (m *MockIAliceNetFactory) ParseDeployedProxy(v0 types.Log) (*bindings.Alice
 // SetDefaultHook sets function that is called when the ParseDeployedProxy
 // method of the parent MockIAliceNetFactory instance is invoked and the
 // hook queue is empty.
-func (f *IAliceNetFactoryParseDeployedProxyFunc) SetDefaultHook(hook func(types.Log) (*bindings.AliceNetFactoryDeployedProxy, error)) {
+func (f *IAliceNetFactoryParseDeployedProxyFunc) SetDefaultHook(hook func(types.Log) (*ethereum.AliceNetFactoryDeployedProxy, error)) {
 	f.defaultHook = hook
 }
 
@@ -12350,7 +12351,7 @@ func (f *IAliceNetFactoryParseDeployedProxyFunc) SetDefaultHook(hook func(types.
 // invokes the hook at the front of the queue and discards it. After the
 // queue is empty, the default hook function is invoked for any future
 // action.
-func (f *IAliceNetFactoryParseDeployedProxyFunc) PushHook(hook func(types.Log) (*bindings.AliceNetFactoryDeployedProxy, error)) {
+func (f *IAliceNetFactoryParseDeployedProxyFunc) PushHook(hook func(types.Log) (*ethereum.AliceNetFactoryDeployedProxy, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -12358,20 +12359,20 @@ func (f *IAliceNetFactoryParseDeployedProxyFunc) PushHook(hook func(types.Log) (
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IAliceNetFactoryParseDeployedProxyFunc) SetDefaultReturn(r0 *bindings.AliceNetFactoryDeployedProxy, r1 error) {
-	f.SetDefaultHook(func(types.Log) (*bindings.AliceNetFactoryDeployedProxy, error) {
+func (f *IAliceNetFactoryParseDeployedProxyFunc) SetDefaultReturn(r0 *ethereum.AliceNetFactoryDeployedProxy, r1 error) {
+	f.SetDefaultHook(func(types.Log) (*ethereum.AliceNetFactoryDeployedProxy, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IAliceNetFactoryParseDeployedProxyFunc) PushReturn(r0 *bindings.AliceNetFactoryDeployedProxy, r1 error) {
-	f.PushHook(func(types.Log) (*bindings.AliceNetFactoryDeployedProxy, error) {
+func (f *IAliceNetFactoryParseDeployedProxyFunc) PushReturn(r0 *ethereum.AliceNetFactoryDeployedProxy, r1 error) {
+	f.PushHook(func(types.Log) (*ethereum.AliceNetFactoryDeployedProxy, error) {
 		return r0, r1
 	})
 }
 
-func (f *IAliceNetFactoryParseDeployedProxyFunc) nextHook() func(types.Log) (*bindings.AliceNetFactoryDeployedProxy, error) {
+func (f *IAliceNetFactoryParseDeployedProxyFunc) nextHook() func(types.Log) (*ethereum.AliceNetFactoryDeployedProxy, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -12410,7 +12411,7 @@ type IAliceNetFactoryParseDeployedProxyFuncCall struct {
 	Arg0 types.Log
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 *bindings.AliceNetFactoryDeployedProxy
+	Result0 *ethereum.AliceNetFactoryDeployedProxy
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -12432,15 +12433,15 @@ func (c IAliceNetFactoryParseDeployedProxyFuncCall) Results() []interface{} {
 // ParseDeployedRaw method of the parent MockIAliceNetFactory instance is
 // invoked.
 type IAliceNetFactoryParseDeployedRawFunc struct {
-	defaultHook func(types.Log) (*bindings.AliceNetFactoryDeployedRaw, error)
-	hooks       []func(types.Log) (*bindings.AliceNetFactoryDeployedRaw, error)
+	defaultHook func(types.Log) (*ethereum.AliceNetFactoryDeployedRaw, error)
+	hooks       []func(types.Log) (*ethereum.AliceNetFactoryDeployedRaw, error)
 	history     []IAliceNetFactoryParseDeployedRawFuncCall
 	mutex       sync.Mutex
 }
 
 // ParseDeployedRaw delegates to the next hook function in the queue and
 // stores the parameter and result values of this invocation.
-func (m *MockIAliceNetFactory) ParseDeployedRaw(v0 types.Log) (*bindings.AliceNetFactoryDeployedRaw, error) {
+func (m *MockIAliceNetFactory) ParseDeployedRaw(v0 types.Log) (*ethereum.AliceNetFactoryDeployedRaw, error) {
 	r0, r1 := m.ParseDeployedRawFunc.nextHook()(v0)
 	m.ParseDeployedRawFunc.appendCall(IAliceNetFactoryParseDeployedRawFuncCall{v0, r0, r1})
 	return r0, r1
@@ -12449,7 +12450,7 @@ func (m *MockIAliceNetFactory) ParseDeployedRaw(v0 types.Log) (*bindings.AliceNe
 // SetDefaultHook sets function that is called when the ParseDeployedRaw
 // method of the parent MockIAliceNetFactory instance is invoked and the
 // hook queue is empty.
-func (f *IAliceNetFactoryParseDeployedRawFunc) SetDefaultHook(hook func(types.Log) (*bindings.AliceNetFactoryDeployedRaw, error)) {
+func (f *IAliceNetFactoryParseDeployedRawFunc) SetDefaultHook(hook func(types.Log) (*ethereum.AliceNetFactoryDeployedRaw, error)) {
 	f.defaultHook = hook
 }
 
@@ -12458,7 +12459,7 @@ func (f *IAliceNetFactoryParseDeployedRawFunc) SetDefaultHook(hook func(types.Lo
 // invokes the hook at the front of the queue and discards it. After the
 // queue is empty, the default hook function is invoked for any future
 // action.
-func (f *IAliceNetFactoryParseDeployedRawFunc) PushHook(hook func(types.Log) (*bindings.AliceNetFactoryDeployedRaw, error)) {
+func (f *IAliceNetFactoryParseDeployedRawFunc) PushHook(hook func(types.Log) (*ethereum.AliceNetFactoryDeployedRaw, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -12466,20 +12467,20 @@ func (f *IAliceNetFactoryParseDeployedRawFunc) PushHook(hook func(types.Log) (*b
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IAliceNetFactoryParseDeployedRawFunc) SetDefaultReturn(r0 *bindings.AliceNetFactoryDeployedRaw, r1 error) {
-	f.SetDefaultHook(func(types.Log) (*bindings.AliceNetFactoryDeployedRaw, error) {
+func (f *IAliceNetFactoryParseDeployedRawFunc) SetDefaultReturn(r0 *ethereum.AliceNetFactoryDeployedRaw, r1 error) {
+	f.SetDefaultHook(func(types.Log) (*ethereum.AliceNetFactoryDeployedRaw, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IAliceNetFactoryParseDeployedRawFunc) PushReturn(r0 *bindings.AliceNetFactoryDeployedRaw, r1 error) {
-	f.PushHook(func(types.Log) (*bindings.AliceNetFactoryDeployedRaw, error) {
+func (f *IAliceNetFactoryParseDeployedRawFunc) PushReturn(r0 *ethereum.AliceNetFactoryDeployedRaw, r1 error) {
+	f.PushHook(func(types.Log) (*ethereum.AliceNetFactoryDeployedRaw, error) {
 		return r0, r1
 	})
 }
 
-func (f *IAliceNetFactoryParseDeployedRawFunc) nextHook() func(types.Log) (*bindings.AliceNetFactoryDeployedRaw, error) {
+func (f *IAliceNetFactoryParseDeployedRawFunc) nextHook() func(types.Log) (*ethereum.AliceNetFactoryDeployedRaw, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -12518,7 +12519,7 @@ type IAliceNetFactoryParseDeployedRawFuncCall struct {
 	Arg0 types.Log
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 *bindings.AliceNetFactoryDeployedRaw
+	Result0 *ethereum.AliceNetFactoryDeployedRaw
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -12540,15 +12541,15 @@ func (c IAliceNetFactoryParseDeployedRawFuncCall) Results() []interface{} {
 // ParseDeployedStatic method of the parent MockIAliceNetFactory instance is
 // invoked.
 type IAliceNetFactoryParseDeployedStaticFunc struct {
-	defaultHook func(types.Log) (*bindings.AliceNetFactoryDeployedStatic, error)
-	hooks       []func(types.Log) (*bindings.AliceNetFactoryDeployedStatic, error)
+	defaultHook func(types.Log) (*ethereum.AliceNetFactoryDeployedStatic, error)
+	hooks       []func(types.Log) (*ethereum.AliceNetFactoryDeployedStatic, error)
 	history     []IAliceNetFactoryParseDeployedStaticFuncCall
 	mutex       sync.Mutex
 }
 
 // ParseDeployedStatic delegates to the next hook function in the queue and
 // stores the parameter and result values of this invocation.
-func (m *MockIAliceNetFactory) ParseDeployedStatic(v0 types.Log) (*bindings.AliceNetFactoryDeployedStatic, error) {
+func (m *MockIAliceNetFactory) ParseDeployedStatic(v0 types.Log) (*ethereum.AliceNetFactoryDeployedStatic, error) {
 	r0, r1 := m.ParseDeployedStaticFunc.nextHook()(v0)
 	m.ParseDeployedStaticFunc.appendCall(IAliceNetFactoryParseDeployedStaticFuncCall{v0, r0, r1})
 	return r0, r1
@@ -12557,7 +12558,7 @@ func (m *MockIAliceNetFactory) ParseDeployedStatic(v0 types.Log) (*bindings.Alic
 // SetDefaultHook sets function that is called when the ParseDeployedStatic
 // method of the parent MockIAliceNetFactory instance is invoked and the
 // hook queue is empty.
-func (f *IAliceNetFactoryParseDeployedStaticFunc) SetDefaultHook(hook func(types.Log) (*bindings.AliceNetFactoryDeployedStatic, error)) {
+func (f *IAliceNetFactoryParseDeployedStaticFunc) SetDefaultHook(hook func(types.Log) (*ethereum.AliceNetFactoryDeployedStatic, error)) {
 	f.defaultHook = hook
 }
 
@@ -12566,7 +12567,7 @@ func (f *IAliceNetFactoryParseDeployedStaticFunc) SetDefaultHook(hook func(types
 // invokes the hook at the front of the queue and discards it. After the
 // queue is empty, the default hook function is invoked for any future
 // action.
-func (f *IAliceNetFactoryParseDeployedStaticFunc) PushHook(hook func(types.Log) (*bindings.AliceNetFactoryDeployedStatic, error)) {
+func (f *IAliceNetFactoryParseDeployedStaticFunc) PushHook(hook func(types.Log) (*ethereum.AliceNetFactoryDeployedStatic, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -12574,20 +12575,20 @@ func (f *IAliceNetFactoryParseDeployedStaticFunc) PushHook(hook func(types.Log) 
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IAliceNetFactoryParseDeployedStaticFunc) SetDefaultReturn(r0 *bindings.AliceNetFactoryDeployedStatic, r1 error) {
-	f.SetDefaultHook(func(types.Log) (*bindings.AliceNetFactoryDeployedStatic, error) {
+func (f *IAliceNetFactoryParseDeployedStaticFunc) SetDefaultReturn(r0 *ethereum.AliceNetFactoryDeployedStatic, r1 error) {
+	f.SetDefaultHook(func(types.Log) (*ethereum.AliceNetFactoryDeployedStatic, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IAliceNetFactoryParseDeployedStaticFunc) PushReturn(r0 *bindings.AliceNetFactoryDeployedStatic, r1 error) {
-	f.PushHook(func(types.Log) (*bindings.AliceNetFactoryDeployedStatic, error) {
+func (f *IAliceNetFactoryParseDeployedStaticFunc) PushReturn(r0 *ethereum.AliceNetFactoryDeployedStatic, r1 error) {
+	f.PushHook(func(types.Log) (*ethereum.AliceNetFactoryDeployedStatic, error) {
 		return r0, r1
 	})
 }
 
-func (f *IAliceNetFactoryParseDeployedStaticFunc) nextHook() func(types.Log) (*bindings.AliceNetFactoryDeployedStatic, error) {
+func (f *IAliceNetFactoryParseDeployedStaticFunc) nextHook() func(types.Log) (*ethereum.AliceNetFactoryDeployedStatic, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -12626,7 +12627,7 @@ type IAliceNetFactoryParseDeployedStaticFuncCall struct {
 	Arg0 types.Log
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 *bindings.AliceNetFactoryDeployedStatic
+	Result0 *ethereum.AliceNetFactoryDeployedStatic
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -12648,15 +12649,15 @@ func (c IAliceNetFactoryParseDeployedStaticFuncCall) Results() []interface{} {
 // ParseDeployedTemplate method of the parent MockIAliceNetFactory instance
 // is invoked.
 type IAliceNetFactoryParseDeployedTemplateFunc struct {
-	defaultHook func(types.Log) (*bindings.AliceNetFactoryDeployedTemplate, error)
-	hooks       []func(types.Log) (*bindings.AliceNetFactoryDeployedTemplate, error)
+	defaultHook func(types.Log) (*ethereum.AliceNetFactoryDeployedTemplate, error)
+	hooks       []func(types.Log) (*ethereum.AliceNetFactoryDeployedTemplate, error)
 	history     []IAliceNetFactoryParseDeployedTemplateFuncCall
 	mutex       sync.Mutex
 }
 
 // ParseDeployedTemplate delegates to the next hook function in the queue
 // and stores the parameter and result values of this invocation.
-func (m *MockIAliceNetFactory) ParseDeployedTemplate(v0 types.Log) (*bindings.AliceNetFactoryDeployedTemplate, error) {
+func (m *MockIAliceNetFactory) ParseDeployedTemplate(v0 types.Log) (*ethereum.AliceNetFactoryDeployedTemplate, error) {
 	r0, r1 := m.ParseDeployedTemplateFunc.nextHook()(v0)
 	m.ParseDeployedTemplateFunc.appendCall(IAliceNetFactoryParseDeployedTemplateFuncCall{v0, r0, r1})
 	return r0, r1
@@ -12665,7 +12666,7 @@ func (m *MockIAliceNetFactory) ParseDeployedTemplate(v0 types.Log) (*bindings.Al
 // SetDefaultHook sets function that is called when the
 // ParseDeployedTemplate method of the parent MockIAliceNetFactory instance
 // is invoked and the hook queue is empty.
-func (f *IAliceNetFactoryParseDeployedTemplateFunc) SetDefaultHook(hook func(types.Log) (*bindings.AliceNetFactoryDeployedTemplate, error)) {
+func (f *IAliceNetFactoryParseDeployedTemplateFunc) SetDefaultHook(hook func(types.Log) (*ethereum.AliceNetFactoryDeployedTemplate, error)) {
 	f.defaultHook = hook
 }
 
@@ -12674,7 +12675,7 @@ func (f *IAliceNetFactoryParseDeployedTemplateFunc) SetDefaultHook(hook func(typ
 // invokes the hook at the front of the queue and discards it. After the
 // queue is empty, the default hook function is invoked for any future
 // action.
-func (f *IAliceNetFactoryParseDeployedTemplateFunc) PushHook(hook func(types.Log) (*bindings.AliceNetFactoryDeployedTemplate, error)) {
+func (f *IAliceNetFactoryParseDeployedTemplateFunc) PushHook(hook func(types.Log) (*ethereum.AliceNetFactoryDeployedTemplate, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -12682,20 +12683,20 @@ func (f *IAliceNetFactoryParseDeployedTemplateFunc) PushHook(hook func(types.Log
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IAliceNetFactoryParseDeployedTemplateFunc) SetDefaultReturn(r0 *bindings.AliceNetFactoryDeployedTemplate, r1 error) {
-	f.SetDefaultHook(func(types.Log) (*bindings.AliceNetFactoryDeployedTemplate, error) {
+func (f *IAliceNetFactoryParseDeployedTemplateFunc) SetDefaultReturn(r0 *ethereum.AliceNetFactoryDeployedTemplate, r1 error) {
+	f.SetDefaultHook(func(types.Log) (*ethereum.AliceNetFactoryDeployedTemplate, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IAliceNetFactoryParseDeployedTemplateFunc) PushReturn(r0 *bindings.AliceNetFactoryDeployedTemplate, r1 error) {
-	f.PushHook(func(types.Log) (*bindings.AliceNetFactoryDeployedTemplate, error) {
+func (f *IAliceNetFactoryParseDeployedTemplateFunc) PushReturn(r0 *ethereum.AliceNetFactoryDeployedTemplate, r1 error) {
+	f.PushHook(func(types.Log) (*ethereum.AliceNetFactoryDeployedTemplate, error) {
 		return r0, r1
 	})
 }
 
-func (f *IAliceNetFactoryParseDeployedTemplateFunc) nextHook() func(types.Log) (*bindings.AliceNetFactoryDeployedTemplate, error) {
+func (f *IAliceNetFactoryParseDeployedTemplateFunc) nextHook() func(types.Log) (*ethereum.AliceNetFactoryDeployedTemplate, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -12735,7 +12736,7 @@ type IAliceNetFactoryParseDeployedTemplateFuncCall struct {
 	Arg0 types.Log
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 *bindings.AliceNetFactoryDeployedTemplate
+	Result0 *ethereum.AliceNetFactoryDeployedTemplate
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -12757,15 +12758,15 @@ func (c IAliceNetFactoryParseDeployedTemplateFuncCall) Results() []interface{} {
 // ParseUpgradedProxy method of the parent MockIAliceNetFactory instance is
 // invoked.
 type IAliceNetFactoryParseUpgradedProxyFunc struct {
-	defaultHook func(types.Log) (*bindings.AliceNetFactoryUpgradedProxy, error)
-	hooks       []func(types.Log) (*bindings.AliceNetFactoryUpgradedProxy, error)
+	defaultHook func(types.Log) (*ethereum.AliceNetFactoryUpgradedProxy, error)
+	hooks       []func(types.Log) (*ethereum.AliceNetFactoryUpgradedProxy, error)
 	history     []IAliceNetFactoryParseUpgradedProxyFuncCall
 	mutex       sync.Mutex
 }
 
 // ParseUpgradedProxy delegates to the next hook function in the queue and
 // stores the parameter and result values of this invocation.
-func (m *MockIAliceNetFactory) ParseUpgradedProxy(v0 types.Log) (*bindings.AliceNetFactoryUpgradedProxy, error) {
+func (m *MockIAliceNetFactory) ParseUpgradedProxy(v0 types.Log) (*ethereum.AliceNetFactoryUpgradedProxy, error) {
 	r0, r1 := m.ParseUpgradedProxyFunc.nextHook()(v0)
 	m.ParseUpgradedProxyFunc.appendCall(IAliceNetFactoryParseUpgradedProxyFuncCall{v0, r0, r1})
 	return r0, r1
@@ -12774,7 +12775,7 @@ func (m *MockIAliceNetFactory) ParseUpgradedProxy(v0 types.Log) (*bindings.Alice
 // SetDefaultHook sets function that is called when the ParseUpgradedProxy
 // method of the parent MockIAliceNetFactory instance is invoked and the
 // hook queue is empty.
-func (f *IAliceNetFactoryParseUpgradedProxyFunc) SetDefaultHook(hook func(types.Log) (*bindings.AliceNetFactoryUpgradedProxy, error)) {
+func (f *IAliceNetFactoryParseUpgradedProxyFunc) SetDefaultHook(hook func(types.Log) (*ethereum.AliceNetFactoryUpgradedProxy, error)) {
 	f.defaultHook = hook
 }
 
@@ -12783,7 +12784,7 @@ func (f *IAliceNetFactoryParseUpgradedProxyFunc) SetDefaultHook(hook func(types.
 // invokes the hook at the front of the queue and discards it. After the
 // queue is empty, the default hook function is invoked for any future
 // action.
-func (f *IAliceNetFactoryParseUpgradedProxyFunc) PushHook(hook func(types.Log) (*bindings.AliceNetFactoryUpgradedProxy, error)) {
+func (f *IAliceNetFactoryParseUpgradedProxyFunc) PushHook(hook func(types.Log) (*ethereum.AliceNetFactoryUpgradedProxy, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -12791,20 +12792,20 @@ func (f *IAliceNetFactoryParseUpgradedProxyFunc) PushHook(hook func(types.Log) (
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IAliceNetFactoryParseUpgradedProxyFunc) SetDefaultReturn(r0 *bindings.AliceNetFactoryUpgradedProxy, r1 error) {
-	f.SetDefaultHook(func(types.Log) (*bindings.AliceNetFactoryUpgradedProxy, error) {
+func (f *IAliceNetFactoryParseUpgradedProxyFunc) SetDefaultReturn(r0 *ethereum.AliceNetFactoryUpgradedProxy, r1 error) {
+	f.SetDefaultHook(func(types.Log) (*ethereum.AliceNetFactoryUpgradedProxy, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IAliceNetFactoryParseUpgradedProxyFunc) PushReturn(r0 *bindings.AliceNetFactoryUpgradedProxy, r1 error) {
-	f.PushHook(func(types.Log) (*bindings.AliceNetFactoryUpgradedProxy, error) {
+func (f *IAliceNetFactoryParseUpgradedProxyFunc) PushReturn(r0 *ethereum.AliceNetFactoryUpgradedProxy, r1 error) {
+	f.PushHook(func(types.Log) (*ethereum.AliceNetFactoryUpgradedProxy, error) {
 		return r0, r1
 	})
 }
 
-func (f *IAliceNetFactoryParseUpgradedProxyFunc) nextHook() func(types.Log) (*bindings.AliceNetFactoryUpgradedProxy, error) {
+func (f *IAliceNetFactoryParseUpgradedProxyFunc) nextHook() func(types.Log) (*ethereum.AliceNetFactoryUpgradedProxy, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -12843,7 +12844,7 @@ type IAliceNetFactoryParseUpgradedProxyFuncCall struct {
 	Arg0 types.Log
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 *bindings.AliceNetFactoryUpgradedProxy
+	Result0 *ethereum.AliceNetFactoryUpgradedProxy
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -13088,15 +13089,15 @@ func (c IAliceNetFactoryUpgradeProxyFuncCall) Results() []interface{} {
 // WatchDeployed method of the parent MockIAliceNetFactory instance is
 // invoked.
 type IAliceNetFactoryWatchDeployedFunc struct {
-	defaultHook func(*bind.WatchOpts, chan<- *bindings.AliceNetFactoryDeployed) (event.Subscription, error)
-	hooks       []func(*bind.WatchOpts, chan<- *bindings.AliceNetFactoryDeployed) (event.Subscription, error)
+	defaultHook func(*bind.WatchOpts, chan<- *ethereum.AliceNetFactoryDeployed) (event.Subscription, error)
+	hooks       []func(*bind.WatchOpts, chan<- *ethereum.AliceNetFactoryDeployed) (event.Subscription, error)
 	history     []IAliceNetFactoryWatchDeployedFuncCall
 	mutex       sync.Mutex
 }
 
 // WatchDeployed delegates to the next hook function in the queue and stores
 // the parameter and result values of this invocation.
-func (m *MockIAliceNetFactory) WatchDeployed(v0 *bind.WatchOpts, v1 chan<- *bindings.AliceNetFactoryDeployed) (event.Subscription, error) {
+func (m *MockIAliceNetFactory) WatchDeployed(v0 *bind.WatchOpts, v1 chan<- *ethereum.AliceNetFactoryDeployed) (event.Subscription, error) {
 	r0, r1 := m.WatchDeployedFunc.nextHook()(v0, v1)
 	m.WatchDeployedFunc.appendCall(IAliceNetFactoryWatchDeployedFuncCall{v0, v1, r0, r1})
 	return r0, r1
@@ -13105,7 +13106,7 @@ func (m *MockIAliceNetFactory) WatchDeployed(v0 *bind.WatchOpts, v1 chan<- *bind
 // SetDefaultHook sets function that is called when the WatchDeployed method
 // of the parent MockIAliceNetFactory instance is invoked and the hook queue
 // is empty.
-func (f *IAliceNetFactoryWatchDeployedFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *bindings.AliceNetFactoryDeployed) (event.Subscription, error)) {
+func (f *IAliceNetFactoryWatchDeployedFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *ethereum.AliceNetFactoryDeployed) (event.Subscription, error)) {
 	f.defaultHook = hook
 }
 
@@ -13113,7 +13114,7 @@ func (f *IAliceNetFactoryWatchDeployedFunc) SetDefaultHook(hook func(*bind.Watch
 // WatchDeployed method of the parent MockIAliceNetFactory instance invokes
 // the hook at the front of the queue and discards it. After the queue is
 // empty, the default hook function is invoked for any future action.
-func (f *IAliceNetFactoryWatchDeployedFunc) PushHook(hook func(*bind.WatchOpts, chan<- *bindings.AliceNetFactoryDeployed) (event.Subscription, error)) {
+func (f *IAliceNetFactoryWatchDeployedFunc) PushHook(hook func(*bind.WatchOpts, chan<- *ethereum.AliceNetFactoryDeployed) (event.Subscription, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -13122,19 +13123,19 @@ func (f *IAliceNetFactoryWatchDeployedFunc) PushHook(hook func(*bind.WatchOpts, 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
 func (f *IAliceNetFactoryWatchDeployedFunc) SetDefaultReturn(r0 event.Subscription, r1 error) {
-	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *bindings.AliceNetFactoryDeployed) (event.Subscription, error) {
+	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *ethereum.AliceNetFactoryDeployed) (event.Subscription, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
 func (f *IAliceNetFactoryWatchDeployedFunc) PushReturn(r0 event.Subscription, r1 error) {
-	f.PushHook(func(*bind.WatchOpts, chan<- *bindings.AliceNetFactoryDeployed) (event.Subscription, error) {
+	f.PushHook(func(*bind.WatchOpts, chan<- *ethereum.AliceNetFactoryDeployed) (event.Subscription, error) {
 		return r0, r1
 	})
 }
 
-func (f *IAliceNetFactoryWatchDeployedFunc) nextHook() func(*bind.WatchOpts, chan<- *bindings.AliceNetFactoryDeployed) (event.Subscription, error) {
+func (f *IAliceNetFactoryWatchDeployedFunc) nextHook() func(*bind.WatchOpts, chan<- *ethereum.AliceNetFactoryDeployed) (event.Subscription, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -13173,7 +13174,7 @@ type IAliceNetFactoryWatchDeployedFuncCall struct {
 	Arg0 *bind.WatchOpts
 	// Arg1 is the value of the 2nd argument passed to this method
 	// invocation.
-	Arg1 chan<- *bindings.AliceNetFactoryDeployed
+	Arg1 chan<- *ethereum.AliceNetFactoryDeployed
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
 	Result0 event.Subscription
@@ -13198,15 +13199,15 @@ func (c IAliceNetFactoryWatchDeployedFuncCall) Results() []interface{} {
 // WatchDeployedProxy method of the parent MockIAliceNetFactory instance is
 // invoked.
 type IAliceNetFactoryWatchDeployedProxyFunc struct {
-	defaultHook func(*bind.WatchOpts, chan<- *bindings.AliceNetFactoryDeployedProxy) (event.Subscription, error)
-	hooks       []func(*bind.WatchOpts, chan<- *bindings.AliceNetFactoryDeployedProxy) (event.Subscription, error)
+	defaultHook func(*bind.WatchOpts, chan<- *ethereum.AliceNetFactoryDeployedProxy) (event.Subscription, error)
+	hooks       []func(*bind.WatchOpts, chan<- *ethereum.AliceNetFactoryDeployedProxy) (event.Subscription, error)
 	history     []IAliceNetFactoryWatchDeployedProxyFuncCall
 	mutex       sync.Mutex
 }
 
 // WatchDeployedProxy delegates to the next hook function in the queue and
 // stores the parameter and result values of this invocation.
-func (m *MockIAliceNetFactory) WatchDeployedProxy(v0 *bind.WatchOpts, v1 chan<- *bindings.AliceNetFactoryDeployedProxy) (event.Subscription, error) {
+func (m *MockIAliceNetFactory) WatchDeployedProxy(v0 *bind.WatchOpts, v1 chan<- *ethereum.AliceNetFactoryDeployedProxy) (event.Subscription, error) {
 	r0, r1 := m.WatchDeployedProxyFunc.nextHook()(v0, v1)
 	m.WatchDeployedProxyFunc.appendCall(IAliceNetFactoryWatchDeployedProxyFuncCall{v0, v1, r0, r1})
 	return r0, r1
@@ -13215,7 +13216,7 @@ func (m *MockIAliceNetFactory) WatchDeployedProxy(v0 *bind.WatchOpts, v1 chan<- 
 // SetDefaultHook sets function that is called when the WatchDeployedProxy
 // method of the parent MockIAliceNetFactory instance is invoked and the
 // hook queue is empty.
-func (f *IAliceNetFactoryWatchDeployedProxyFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *bindings.AliceNetFactoryDeployedProxy) (event.Subscription, error)) {
+func (f *IAliceNetFactoryWatchDeployedProxyFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *ethereum.AliceNetFactoryDeployedProxy) (event.Subscription, error)) {
 	f.defaultHook = hook
 }
 
@@ -13224,7 +13225,7 @@ func (f *IAliceNetFactoryWatchDeployedProxyFunc) SetDefaultHook(hook func(*bind.
 // invokes the hook at the front of the queue and discards it. After the
 // queue is empty, the default hook function is invoked for any future
 // action.
-func (f *IAliceNetFactoryWatchDeployedProxyFunc) PushHook(hook func(*bind.WatchOpts, chan<- *bindings.AliceNetFactoryDeployedProxy) (event.Subscription, error)) {
+func (f *IAliceNetFactoryWatchDeployedProxyFunc) PushHook(hook func(*bind.WatchOpts, chan<- *ethereum.AliceNetFactoryDeployedProxy) (event.Subscription, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -13233,19 +13234,19 @@ func (f *IAliceNetFactoryWatchDeployedProxyFunc) PushHook(hook func(*bind.WatchO
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
 func (f *IAliceNetFactoryWatchDeployedProxyFunc) SetDefaultReturn(r0 event.Subscription, r1 error) {
-	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *bindings.AliceNetFactoryDeployedProxy) (event.Subscription, error) {
+	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *ethereum.AliceNetFactoryDeployedProxy) (event.Subscription, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
 func (f *IAliceNetFactoryWatchDeployedProxyFunc) PushReturn(r0 event.Subscription, r1 error) {
-	f.PushHook(func(*bind.WatchOpts, chan<- *bindings.AliceNetFactoryDeployedProxy) (event.Subscription, error) {
+	f.PushHook(func(*bind.WatchOpts, chan<- *ethereum.AliceNetFactoryDeployedProxy) (event.Subscription, error) {
 		return r0, r1
 	})
 }
 
-func (f *IAliceNetFactoryWatchDeployedProxyFunc) nextHook() func(*bind.WatchOpts, chan<- *bindings.AliceNetFactoryDeployedProxy) (event.Subscription, error) {
+func (f *IAliceNetFactoryWatchDeployedProxyFunc) nextHook() func(*bind.WatchOpts, chan<- *ethereum.AliceNetFactoryDeployedProxy) (event.Subscription, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -13284,7 +13285,7 @@ type IAliceNetFactoryWatchDeployedProxyFuncCall struct {
 	Arg0 *bind.WatchOpts
 	// Arg1 is the value of the 2nd argument passed to this method
 	// invocation.
-	Arg1 chan<- *bindings.AliceNetFactoryDeployedProxy
+	Arg1 chan<- *ethereum.AliceNetFactoryDeployedProxy
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
 	Result0 event.Subscription
@@ -13309,15 +13310,15 @@ func (c IAliceNetFactoryWatchDeployedProxyFuncCall) Results() []interface{} {
 // WatchDeployedRaw method of the parent MockIAliceNetFactory instance is
 // invoked.
 type IAliceNetFactoryWatchDeployedRawFunc struct {
-	defaultHook func(*bind.WatchOpts, chan<- *bindings.AliceNetFactoryDeployedRaw) (event.Subscription, error)
-	hooks       []func(*bind.WatchOpts, chan<- *bindings.AliceNetFactoryDeployedRaw) (event.Subscription, error)
+	defaultHook func(*bind.WatchOpts, chan<- *ethereum.AliceNetFactoryDeployedRaw) (event.Subscription, error)
+	hooks       []func(*bind.WatchOpts, chan<- *ethereum.AliceNetFactoryDeployedRaw) (event.Subscription, error)
 	history     []IAliceNetFactoryWatchDeployedRawFuncCall
 	mutex       sync.Mutex
 }
 
 // WatchDeployedRaw delegates to the next hook function in the queue and
 // stores the parameter and result values of this invocation.
-func (m *MockIAliceNetFactory) WatchDeployedRaw(v0 *bind.WatchOpts, v1 chan<- *bindings.AliceNetFactoryDeployedRaw) (event.Subscription, error) {
+func (m *MockIAliceNetFactory) WatchDeployedRaw(v0 *bind.WatchOpts, v1 chan<- *ethereum.AliceNetFactoryDeployedRaw) (event.Subscription, error) {
 	r0, r1 := m.WatchDeployedRawFunc.nextHook()(v0, v1)
 	m.WatchDeployedRawFunc.appendCall(IAliceNetFactoryWatchDeployedRawFuncCall{v0, v1, r0, r1})
 	return r0, r1
@@ -13326,7 +13327,7 @@ func (m *MockIAliceNetFactory) WatchDeployedRaw(v0 *bind.WatchOpts, v1 chan<- *b
 // SetDefaultHook sets function that is called when the WatchDeployedRaw
 // method of the parent MockIAliceNetFactory instance is invoked and the
 // hook queue is empty.
-func (f *IAliceNetFactoryWatchDeployedRawFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *bindings.AliceNetFactoryDeployedRaw) (event.Subscription, error)) {
+func (f *IAliceNetFactoryWatchDeployedRawFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *ethereum.AliceNetFactoryDeployedRaw) (event.Subscription, error)) {
 	f.defaultHook = hook
 }
 
@@ -13335,7 +13336,7 @@ func (f *IAliceNetFactoryWatchDeployedRawFunc) SetDefaultHook(hook func(*bind.Wa
 // invokes the hook at the front of the queue and discards it. After the
 // queue is empty, the default hook function is invoked for any future
 // action.
-func (f *IAliceNetFactoryWatchDeployedRawFunc) PushHook(hook func(*bind.WatchOpts, chan<- *bindings.AliceNetFactoryDeployedRaw) (event.Subscription, error)) {
+func (f *IAliceNetFactoryWatchDeployedRawFunc) PushHook(hook func(*bind.WatchOpts, chan<- *ethereum.AliceNetFactoryDeployedRaw) (event.Subscription, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -13344,19 +13345,19 @@ func (f *IAliceNetFactoryWatchDeployedRawFunc) PushHook(hook func(*bind.WatchOpt
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
 func (f *IAliceNetFactoryWatchDeployedRawFunc) SetDefaultReturn(r0 event.Subscription, r1 error) {
-	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *bindings.AliceNetFactoryDeployedRaw) (event.Subscription, error) {
+	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *ethereum.AliceNetFactoryDeployedRaw) (event.Subscription, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
 func (f *IAliceNetFactoryWatchDeployedRawFunc) PushReturn(r0 event.Subscription, r1 error) {
-	f.PushHook(func(*bind.WatchOpts, chan<- *bindings.AliceNetFactoryDeployedRaw) (event.Subscription, error) {
+	f.PushHook(func(*bind.WatchOpts, chan<- *ethereum.AliceNetFactoryDeployedRaw) (event.Subscription, error) {
 		return r0, r1
 	})
 }
 
-func (f *IAliceNetFactoryWatchDeployedRawFunc) nextHook() func(*bind.WatchOpts, chan<- *bindings.AliceNetFactoryDeployedRaw) (event.Subscription, error) {
+func (f *IAliceNetFactoryWatchDeployedRawFunc) nextHook() func(*bind.WatchOpts, chan<- *ethereum.AliceNetFactoryDeployedRaw) (event.Subscription, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -13395,7 +13396,7 @@ type IAliceNetFactoryWatchDeployedRawFuncCall struct {
 	Arg0 *bind.WatchOpts
 	// Arg1 is the value of the 2nd argument passed to this method
 	// invocation.
-	Arg1 chan<- *bindings.AliceNetFactoryDeployedRaw
+	Arg1 chan<- *ethereum.AliceNetFactoryDeployedRaw
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
 	Result0 event.Subscription
@@ -13420,15 +13421,15 @@ func (c IAliceNetFactoryWatchDeployedRawFuncCall) Results() []interface{} {
 // WatchDeployedStatic method of the parent MockIAliceNetFactory instance is
 // invoked.
 type IAliceNetFactoryWatchDeployedStaticFunc struct {
-	defaultHook func(*bind.WatchOpts, chan<- *bindings.AliceNetFactoryDeployedStatic) (event.Subscription, error)
-	hooks       []func(*bind.WatchOpts, chan<- *bindings.AliceNetFactoryDeployedStatic) (event.Subscription, error)
+	defaultHook func(*bind.WatchOpts, chan<- *ethereum.AliceNetFactoryDeployedStatic) (event.Subscription, error)
+	hooks       []func(*bind.WatchOpts, chan<- *ethereum.AliceNetFactoryDeployedStatic) (event.Subscription, error)
 	history     []IAliceNetFactoryWatchDeployedStaticFuncCall
 	mutex       sync.Mutex
 }
 
 // WatchDeployedStatic delegates to the next hook function in the queue and
 // stores the parameter and result values of this invocation.
-func (m *MockIAliceNetFactory) WatchDeployedStatic(v0 *bind.WatchOpts, v1 chan<- *bindings.AliceNetFactoryDeployedStatic) (event.Subscription, error) {
+func (m *MockIAliceNetFactory) WatchDeployedStatic(v0 *bind.WatchOpts, v1 chan<- *ethereum.AliceNetFactoryDeployedStatic) (event.Subscription, error) {
 	r0, r1 := m.WatchDeployedStaticFunc.nextHook()(v0, v1)
 	m.WatchDeployedStaticFunc.appendCall(IAliceNetFactoryWatchDeployedStaticFuncCall{v0, v1, r0, r1})
 	return r0, r1
@@ -13437,7 +13438,7 @@ func (m *MockIAliceNetFactory) WatchDeployedStatic(v0 *bind.WatchOpts, v1 chan<-
 // SetDefaultHook sets function that is called when the WatchDeployedStatic
 // method of the parent MockIAliceNetFactory instance is invoked and the
 // hook queue is empty.
-func (f *IAliceNetFactoryWatchDeployedStaticFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *bindings.AliceNetFactoryDeployedStatic) (event.Subscription, error)) {
+func (f *IAliceNetFactoryWatchDeployedStaticFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *ethereum.AliceNetFactoryDeployedStatic) (event.Subscription, error)) {
 	f.defaultHook = hook
 }
 
@@ -13446,7 +13447,7 @@ func (f *IAliceNetFactoryWatchDeployedStaticFunc) SetDefaultHook(hook func(*bind
 // invokes the hook at the front of the queue and discards it. After the
 // queue is empty, the default hook function is invoked for any future
 // action.
-func (f *IAliceNetFactoryWatchDeployedStaticFunc) PushHook(hook func(*bind.WatchOpts, chan<- *bindings.AliceNetFactoryDeployedStatic) (event.Subscription, error)) {
+func (f *IAliceNetFactoryWatchDeployedStaticFunc) PushHook(hook func(*bind.WatchOpts, chan<- *ethereum.AliceNetFactoryDeployedStatic) (event.Subscription, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -13455,19 +13456,19 @@ func (f *IAliceNetFactoryWatchDeployedStaticFunc) PushHook(hook func(*bind.Watch
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
 func (f *IAliceNetFactoryWatchDeployedStaticFunc) SetDefaultReturn(r0 event.Subscription, r1 error) {
-	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *bindings.AliceNetFactoryDeployedStatic) (event.Subscription, error) {
+	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *ethereum.AliceNetFactoryDeployedStatic) (event.Subscription, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
 func (f *IAliceNetFactoryWatchDeployedStaticFunc) PushReturn(r0 event.Subscription, r1 error) {
-	f.PushHook(func(*bind.WatchOpts, chan<- *bindings.AliceNetFactoryDeployedStatic) (event.Subscription, error) {
+	f.PushHook(func(*bind.WatchOpts, chan<- *ethereum.AliceNetFactoryDeployedStatic) (event.Subscription, error) {
 		return r0, r1
 	})
 }
 
-func (f *IAliceNetFactoryWatchDeployedStaticFunc) nextHook() func(*bind.WatchOpts, chan<- *bindings.AliceNetFactoryDeployedStatic) (event.Subscription, error) {
+func (f *IAliceNetFactoryWatchDeployedStaticFunc) nextHook() func(*bind.WatchOpts, chan<- *ethereum.AliceNetFactoryDeployedStatic) (event.Subscription, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -13506,7 +13507,7 @@ type IAliceNetFactoryWatchDeployedStaticFuncCall struct {
 	Arg0 *bind.WatchOpts
 	// Arg1 is the value of the 2nd argument passed to this method
 	// invocation.
-	Arg1 chan<- *bindings.AliceNetFactoryDeployedStatic
+	Arg1 chan<- *ethereum.AliceNetFactoryDeployedStatic
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
 	Result0 event.Subscription
@@ -13531,15 +13532,15 @@ func (c IAliceNetFactoryWatchDeployedStaticFuncCall) Results() []interface{} {
 // WatchDeployedTemplate method of the parent MockIAliceNetFactory instance
 // is invoked.
 type IAliceNetFactoryWatchDeployedTemplateFunc struct {
-	defaultHook func(*bind.WatchOpts, chan<- *bindings.AliceNetFactoryDeployedTemplate) (event.Subscription, error)
-	hooks       []func(*bind.WatchOpts, chan<- *bindings.AliceNetFactoryDeployedTemplate) (event.Subscription, error)
+	defaultHook func(*bind.WatchOpts, chan<- *ethereum.AliceNetFactoryDeployedTemplate) (event.Subscription, error)
+	hooks       []func(*bind.WatchOpts, chan<- *ethereum.AliceNetFactoryDeployedTemplate) (event.Subscription, error)
 	history     []IAliceNetFactoryWatchDeployedTemplateFuncCall
 	mutex       sync.Mutex
 }
 
 // WatchDeployedTemplate delegates to the next hook function in the queue
 // and stores the parameter and result values of this invocation.
-func (m *MockIAliceNetFactory) WatchDeployedTemplate(v0 *bind.WatchOpts, v1 chan<- *bindings.AliceNetFactoryDeployedTemplate) (event.Subscription, error) {
+func (m *MockIAliceNetFactory) WatchDeployedTemplate(v0 *bind.WatchOpts, v1 chan<- *ethereum.AliceNetFactoryDeployedTemplate) (event.Subscription, error) {
 	r0, r1 := m.WatchDeployedTemplateFunc.nextHook()(v0, v1)
 	m.WatchDeployedTemplateFunc.appendCall(IAliceNetFactoryWatchDeployedTemplateFuncCall{v0, v1, r0, r1})
 	return r0, r1
@@ -13548,7 +13549,7 @@ func (m *MockIAliceNetFactory) WatchDeployedTemplate(v0 *bind.WatchOpts, v1 chan
 // SetDefaultHook sets function that is called when the
 // WatchDeployedTemplate method of the parent MockIAliceNetFactory instance
 // is invoked and the hook queue is empty.
-func (f *IAliceNetFactoryWatchDeployedTemplateFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *bindings.AliceNetFactoryDeployedTemplate) (event.Subscription, error)) {
+func (f *IAliceNetFactoryWatchDeployedTemplateFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *ethereum.AliceNetFactoryDeployedTemplate) (event.Subscription, error)) {
 	f.defaultHook = hook
 }
 
@@ -13557,7 +13558,7 @@ func (f *IAliceNetFactoryWatchDeployedTemplateFunc) SetDefaultHook(hook func(*bi
 // invokes the hook at the front of the queue and discards it. After the
 // queue is empty, the default hook function is invoked for any future
 // action.
-func (f *IAliceNetFactoryWatchDeployedTemplateFunc) PushHook(hook func(*bind.WatchOpts, chan<- *bindings.AliceNetFactoryDeployedTemplate) (event.Subscription, error)) {
+func (f *IAliceNetFactoryWatchDeployedTemplateFunc) PushHook(hook func(*bind.WatchOpts, chan<- *ethereum.AliceNetFactoryDeployedTemplate) (event.Subscription, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -13566,19 +13567,19 @@ func (f *IAliceNetFactoryWatchDeployedTemplateFunc) PushHook(hook func(*bind.Wat
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
 func (f *IAliceNetFactoryWatchDeployedTemplateFunc) SetDefaultReturn(r0 event.Subscription, r1 error) {
-	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *bindings.AliceNetFactoryDeployedTemplate) (event.Subscription, error) {
+	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *ethereum.AliceNetFactoryDeployedTemplate) (event.Subscription, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
 func (f *IAliceNetFactoryWatchDeployedTemplateFunc) PushReturn(r0 event.Subscription, r1 error) {
-	f.PushHook(func(*bind.WatchOpts, chan<- *bindings.AliceNetFactoryDeployedTemplate) (event.Subscription, error) {
+	f.PushHook(func(*bind.WatchOpts, chan<- *ethereum.AliceNetFactoryDeployedTemplate) (event.Subscription, error) {
 		return r0, r1
 	})
 }
 
-func (f *IAliceNetFactoryWatchDeployedTemplateFunc) nextHook() func(*bind.WatchOpts, chan<- *bindings.AliceNetFactoryDeployedTemplate) (event.Subscription, error) {
+func (f *IAliceNetFactoryWatchDeployedTemplateFunc) nextHook() func(*bind.WatchOpts, chan<- *ethereum.AliceNetFactoryDeployedTemplate) (event.Subscription, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -13618,7 +13619,7 @@ type IAliceNetFactoryWatchDeployedTemplateFuncCall struct {
 	Arg0 *bind.WatchOpts
 	// Arg1 is the value of the 2nd argument passed to this method
 	// invocation.
-	Arg1 chan<- *bindings.AliceNetFactoryDeployedTemplate
+	Arg1 chan<- *ethereum.AliceNetFactoryDeployedTemplate
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
 	Result0 event.Subscription
@@ -13643,15 +13644,15 @@ func (c IAliceNetFactoryWatchDeployedTemplateFuncCall) Results() []interface{} {
 // WatchUpgradedProxy method of the parent MockIAliceNetFactory instance is
 // invoked.
 type IAliceNetFactoryWatchUpgradedProxyFunc struct {
-	defaultHook func(*bind.WatchOpts, chan<- *bindings.AliceNetFactoryUpgradedProxy) (event.Subscription, error)
-	hooks       []func(*bind.WatchOpts, chan<- *bindings.AliceNetFactoryUpgradedProxy) (event.Subscription, error)
+	defaultHook func(*bind.WatchOpts, chan<- *ethereum.AliceNetFactoryUpgradedProxy) (event.Subscription, error)
+	hooks       []func(*bind.WatchOpts, chan<- *ethereum.AliceNetFactoryUpgradedProxy) (event.Subscription, error)
 	history     []IAliceNetFactoryWatchUpgradedProxyFuncCall
 	mutex       sync.Mutex
 }
 
 // WatchUpgradedProxy delegates to the next hook function in the queue and
 // stores the parameter and result values of this invocation.
-func (m *MockIAliceNetFactory) WatchUpgradedProxy(v0 *bind.WatchOpts, v1 chan<- *bindings.AliceNetFactoryUpgradedProxy) (event.Subscription, error) {
+func (m *MockIAliceNetFactory) WatchUpgradedProxy(v0 *bind.WatchOpts, v1 chan<- *ethereum.AliceNetFactoryUpgradedProxy) (event.Subscription, error) {
 	r0, r1 := m.WatchUpgradedProxyFunc.nextHook()(v0, v1)
 	m.WatchUpgradedProxyFunc.appendCall(IAliceNetFactoryWatchUpgradedProxyFuncCall{v0, v1, r0, r1})
 	return r0, r1
@@ -13660,7 +13661,7 @@ func (m *MockIAliceNetFactory) WatchUpgradedProxy(v0 *bind.WatchOpts, v1 chan<- 
 // SetDefaultHook sets function that is called when the WatchUpgradedProxy
 // method of the parent MockIAliceNetFactory instance is invoked and the
 // hook queue is empty.
-func (f *IAliceNetFactoryWatchUpgradedProxyFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *bindings.AliceNetFactoryUpgradedProxy) (event.Subscription, error)) {
+func (f *IAliceNetFactoryWatchUpgradedProxyFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *ethereum.AliceNetFactoryUpgradedProxy) (event.Subscription, error)) {
 	f.defaultHook = hook
 }
 
@@ -13669,7 +13670,7 @@ func (f *IAliceNetFactoryWatchUpgradedProxyFunc) SetDefaultHook(hook func(*bind.
 // invokes the hook at the front of the queue and discards it. After the
 // queue is empty, the default hook function is invoked for any future
 // action.
-func (f *IAliceNetFactoryWatchUpgradedProxyFunc) PushHook(hook func(*bind.WatchOpts, chan<- *bindings.AliceNetFactoryUpgradedProxy) (event.Subscription, error)) {
+func (f *IAliceNetFactoryWatchUpgradedProxyFunc) PushHook(hook func(*bind.WatchOpts, chan<- *ethereum.AliceNetFactoryUpgradedProxy) (event.Subscription, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -13678,19 +13679,19 @@ func (f *IAliceNetFactoryWatchUpgradedProxyFunc) PushHook(hook func(*bind.WatchO
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
 func (f *IAliceNetFactoryWatchUpgradedProxyFunc) SetDefaultReturn(r0 event.Subscription, r1 error) {
-	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *bindings.AliceNetFactoryUpgradedProxy) (event.Subscription, error) {
+	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *ethereum.AliceNetFactoryUpgradedProxy) (event.Subscription, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
 func (f *IAliceNetFactoryWatchUpgradedProxyFunc) PushReturn(r0 event.Subscription, r1 error) {
-	f.PushHook(func(*bind.WatchOpts, chan<- *bindings.AliceNetFactoryUpgradedProxy) (event.Subscription, error) {
+	f.PushHook(func(*bind.WatchOpts, chan<- *ethereum.AliceNetFactoryUpgradedProxy) (event.Subscription, error) {
 		return r0, r1
 	})
 }
 
-func (f *IAliceNetFactoryWatchUpgradedProxyFunc) nextHook() func(*bind.WatchOpts, chan<- *bindings.AliceNetFactoryUpgradedProxy) (event.Subscription, error) {
+func (f *IAliceNetFactoryWatchUpgradedProxyFunc) nextHook() func(*bind.WatchOpts, chan<- *ethereum.AliceNetFactoryUpgradedProxy) (event.Subscription, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -13729,7 +13730,7 @@ type IAliceNetFactoryWatchUpgradedProxyFuncCall struct {
 	Arg0 *bind.WatchOpts
 	// Arg1 is the value of the 2nd argument passed to this method
 	// invocation.
-	Arg1 chan<- *bindings.AliceNetFactoryUpgradedProxy
+	Arg1 chan<- *ethereum.AliceNetFactoryUpgradedProxy
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
 	Result0 event.Subscription
@@ -13751,8 +13752,8 @@ func (c IAliceNetFactoryWatchUpgradedProxyFuncCall) Results() []interface{} {
 }
 
 // MockIDynamics is a mock implementation of the IDynamics interface (from
-// the package github.com/alicenet/alicenet/bridge/bindings) used for unit
-// testing.
+// the package github.com/alicenet/alicenet/bridge/bindings/ethereum) used
+// for unit testing.
 type MockIDynamics struct {
 	// ChangeDynamicValuesFunc is an instance of a mock function object
 	// controlling the behavior of the method ChangeDynamicValues.
@@ -13866,12 +13867,12 @@ type MockIDynamics struct {
 func NewMockIDynamics() *MockIDynamics {
 	return &MockIDynamics{
 		ChangeDynamicValuesFunc: &IDynamicsChangeDynamicValuesFunc{
-			defaultHook: func(*bind.TransactOpts, uint32, bindings.DynamicValues) (r0 *types.Transaction, r1 error) {
+			defaultHook: func(*bind.TransactOpts, uint32, ethereum.DynamicValues) (r0 *types.Transaction, r1 error) {
 				return
 			},
 		},
 		DecodeDynamicValuesFunc: &IDynamicsDecodeDynamicValuesFunc{
-			defaultHook: func(*bind.CallOpts, common.Address) (r0 bindings.DynamicValues, r1 error) {
+			defaultHook: func(*bind.CallOpts, common.Address) (r0 ethereum.DynamicValues, r1 error) {
 				return
 			},
 		},
@@ -13881,42 +13882,42 @@ func NewMockIDynamics() *MockIDynamics {
 			},
 		},
 		EncodeDynamicValuesFunc: &IDynamicsEncodeDynamicValuesFunc{
-			defaultHook: func(*bind.CallOpts, bindings.DynamicValues) (r0 []byte, r1 error) {
+			defaultHook: func(*bind.CallOpts, ethereum.DynamicValues) (r0 []byte, r1 error) {
 				return
 			},
 		},
 		FilterDeployedStorageContractFunc: &IDynamicsFilterDeployedStorageContractFunc{
-			defaultHook: func(*bind.FilterOpts) (r0 *bindings.DynamicsDeployedStorageContractIterator, r1 error) {
+			defaultHook: func(*bind.FilterOpts) (r0 *ethereum.DynamicsDeployedStorageContractIterator, r1 error) {
 				return
 			},
 		},
 		FilterDynamicValueChangedFunc: &IDynamicsFilterDynamicValueChangedFunc{
-			defaultHook: func(*bind.FilterOpts) (r0 *bindings.DynamicsDynamicValueChangedIterator, r1 error) {
+			defaultHook: func(*bind.FilterOpts) (r0 *ethereum.DynamicsDynamicValueChangedIterator, r1 error) {
 				return
 			},
 		},
 		FilterInitializedFunc: &IDynamicsFilterInitializedFunc{
-			defaultHook: func(*bind.FilterOpts) (r0 *bindings.DynamicsInitializedIterator, r1 error) {
+			defaultHook: func(*bind.FilterOpts) (r0 *ethereum.DynamicsInitializedIterator, r1 error) {
 				return
 			},
 		},
 		FilterNewAliceNetNodeVersionAvailableFunc: &IDynamicsFilterNewAliceNetNodeVersionAvailableFunc{
-			defaultHook: func(*bind.FilterOpts) (r0 *bindings.DynamicsNewAliceNetNodeVersionAvailableIterator, r1 error) {
+			defaultHook: func(*bind.FilterOpts) (r0 *ethereum.DynamicsNewAliceNetNodeVersionAvailableIterator, r1 error) {
 				return
 			},
 		},
 		FilterNewCanonicalAliceNetNodeVersionFunc: &IDynamicsFilterNewCanonicalAliceNetNodeVersionFunc{
-			defaultHook: func(*bind.FilterOpts) (r0 *bindings.DynamicsNewCanonicalAliceNetNodeVersionIterator, r1 error) {
+			defaultHook: func(*bind.FilterOpts) (r0 *ethereum.DynamicsNewCanonicalAliceNetNodeVersionIterator, r1 error) {
 				return
 			},
 		},
 		GetAllDynamicValuesFunc: &IDynamicsGetAllDynamicValuesFunc{
-			defaultHook: func(*bind.CallOpts) (r0 []bindings.DynamicValues, r1 error) {
+			defaultHook: func(*bind.CallOpts) (r0 []ethereum.DynamicValues, r1 error) {
 				return
 			},
 		},
 		GetConfigurationFunc: &IDynamicsGetConfigurationFunc{
-			defaultHook: func(*bind.CallOpts) (r0 bindings.Configuration, r1 error) {
+			defaultHook: func(*bind.CallOpts) (r0 ethereum.Configuration, r1 error) {
 				return
 			},
 		},
@@ -13926,17 +13927,17 @@ func NewMockIDynamics() *MockIDynamics {
 			},
 		},
 		GetFurthestDynamicValuesFunc: &IDynamicsGetFurthestDynamicValuesFunc{
-			defaultHook: func(*bind.CallOpts) (r0 bindings.DynamicValues, r1 error) {
+			defaultHook: func(*bind.CallOpts) (r0 ethereum.DynamicValues, r1 error) {
 				return
 			},
 		},
 		GetLatestAliceNetVersionFunc: &IDynamicsGetLatestAliceNetVersionFunc{
-			defaultHook: func(*bind.CallOpts) (r0 bindings.CanonicalVersion, r1 error) {
+			defaultHook: func(*bind.CallOpts) (r0 ethereum.CanonicalVersion, r1 error) {
 				return
 			},
 		},
 		GetLatestDynamicValuesFunc: &IDynamicsGetLatestDynamicValuesFunc{
-			defaultHook: func(*bind.CallOpts) (r0 bindings.DynamicValues, r1 error) {
+			defaultHook: func(*bind.CallOpts) (r0 ethereum.DynamicValues, r1 error) {
 				return
 			},
 		},
@@ -13946,7 +13947,7 @@ func NewMockIDynamics() *MockIDynamics {
 			},
 		},
 		GetPreviousDynamicValuesFunc: &IDynamicsGetPreviousDynamicValuesFunc{
-			defaultHook: func(*bind.CallOpts, *big.Int) (r0 bindings.DynamicValues, r1 error) {
+			defaultHook: func(*bind.CallOpts, *big.Int) (r0 ethereum.DynamicValues, r1 error) {
 				return
 			},
 		},
@@ -13956,32 +13957,32 @@ func NewMockIDynamics() *MockIDynamics {
 			},
 		},
 		ParseDeployedStorageContractFunc: &IDynamicsParseDeployedStorageContractFunc{
-			defaultHook: func(types.Log) (r0 *bindings.DynamicsDeployedStorageContract, r1 error) {
+			defaultHook: func(types.Log) (r0 *ethereum.DynamicsDeployedStorageContract, r1 error) {
 				return
 			},
 		},
 		ParseDynamicValueChangedFunc: &IDynamicsParseDynamicValueChangedFunc{
-			defaultHook: func(types.Log) (r0 *bindings.DynamicsDynamicValueChanged, r1 error) {
+			defaultHook: func(types.Log) (r0 *ethereum.DynamicsDynamicValueChanged, r1 error) {
 				return
 			},
 		},
 		ParseInitializedFunc: &IDynamicsParseInitializedFunc{
-			defaultHook: func(types.Log) (r0 *bindings.DynamicsInitialized, r1 error) {
+			defaultHook: func(types.Log) (r0 *ethereum.DynamicsInitialized, r1 error) {
 				return
 			},
 		},
 		ParseNewAliceNetNodeVersionAvailableFunc: &IDynamicsParseNewAliceNetNodeVersionAvailableFunc{
-			defaultHook: func(types.Log) (r0 *bindings.DynamicsNewAliceNetNodeVersionAvailable, r1 error) {
+			defaultHook: func(types.Log) (r0 *ethereum.DynamicsNewAliceNetNodeVersionAvailable, r1 error) {
 				return
 			},
 		},
 		ParseNewCanonicalAliceNetNodeVersionFunc: &IDynamicsParseNewCanonicalAliceNetNodeVersionFunc{
-			defaultHook: func(types.Log) (r0 *bindings.DynamicsNewCanonicalAliceNetNodeVersion, r1 error) {
+			defaultHook: func(types.Log) (r0 *ethereum.DynamicsNewCanonicalAliceNetNodeVersion, r1 error) {
 				return
 			},
 		},
 		SetConfigurationFunc: &IDynamicsSetConfigurationFunc{
-			defaultHook: func(*bind.TransactOpts, bindings.Configuration) (r0 *types.Transaction, r1 error) {
+			defaultHook: func(*bind.TransactOpts, ethereum.Configuration) (r0 *types.Transaction, r1 error) {
 				return
 			},
 		},
@@ -13996,27 +13997,27 @@ func NewMockIDynamics() *MockIDynamics {
 			},
 		},
 		WatchDeployedStorageContractFunc: &IDynamicsWatchDeployedStorageContractFunc{
-			defaultHook: func(*bind.WatchOpts, chan<- *bindings.DynamicsDeployedStorageContract) (r0 event.Subscription, r1 error) {
+			defaultHook: func(*bind.WatchOpts, chan<- *ethereum.DynamicsDeployedStorageContract) (r0 event.Subscription, r1 error) {
 				return
 			},
 		},
 		WatchDynamicValueChangedFunc: &IDynamicsWatchDynamicValueChangedFunc{
-			defaultHook: func(*bind.WatchOpts, chan<- *bindings.DynamicsDynamicValueChanged) (r0 event.Subscription, r1 error) {
+			defaultHook: func(*bind.WatchOpts, chan<- *ethereum.DynamicsDynamicValueChanged) (r0 event.Subscription, r1 error) {
 				return
 			},
 		},
 		WatchInitializedFunc: &IDynamicsWatchInitializedFunc{
-			defaultHook: func(*bind.WatchOpts, chan<- *bindings.DynamicsInitialized) (r0 event.Subscription, r1 error) {
+			defaultHook: func(*bind.WatchOpts, chan<- *ethereum.DynamicsInitialized) (r0 event.Subscription, r1 error) {
 				return
 			},
 		},
 		WatchNewAliceNetNodeVersionAvailableFunc: &IDynamicsWatchNewAliceNetNodeVersionAvailableFunc{
-			defaultHook: func(*bind.WatchOpts, chan<- *bindings.DynamicsNewAliceNetNodeVersionAvailable) (r0 event.Subscription, r1 error) {
+			defaultHook: func(*bind.WatchOpts, chan<- *ethereum.DynamicsNewAliceNetNodeVersionAvailable) (r0 event.Subscription, r1 error) {
 				return
 			},
 		},
 		WatchNewCanonicalAliceNetNodeVersionFunc: &IDynamicsWatchNewCanonicalAliceNetNodeVersionFunc{
-			defaultHook: func(*bind.WatchOpts, chan<- *bindings.DynamicsNewCanonicalAliceNetNodeVersion) (r0 event.Subscription, r1 error) {
+			defaultHook: func(*bind.WatchOpts, chan<- *ethereum.DynamicsNewCanonicalAliceNetNodeVersion) (r0 event.Subscription, r1 error) {
 				return
 			},
 		},
@@ -14028,12 +14029,12 @@ func NewMockIDynamics() *MockIDynamics {
 func NewStrictMockIDynamics() *MockIDynamics {
 	return &MockIDynamics{
 		ChangeDynamicValuesFunc: &IDynamicsChangeDynamicValuesFunc{
-			defaultHook: func(*bind.TransactOpts, uint32, bindings.DynamicValues) (*types.Transaction, error) {
+			defaultHook: func(*bind.TransactOpts, uint32, ethereum.DynamicValues) (*types.Transaction, error) {
 				panic("unexpected invocation of MockIDynamics.ChangeDynamicValues")
 			},
 		},
 		DecodeDynamicValuesFunc: &IDynamicsDecodeDynamicValuesFunc{
-			defaultHook: func(*bind.CallOpts, common.Address) (bindings.DynamicValues, error) {
+			defaultHook: func(*bind.CallOpts, common.Address) (ethereum.DynamicValues, error) {
 				panic("unexpected invocation of MockIDynamics.DecodeDynamicValues")
 			},
 		},
@@ -14043,42 +14044,42 @@ func NewStrictMockIDynamics() *MockIDynamics {
 			},
 		},
 		EncodeDynamicValuesFunc: &IDynamicsEncodeDynamicValuesFunc{
-			defaultHook: func(*bind.CallOpts, bindings.DynamicValues) ([]byte, error) {
+			defaultHook: func(*bind.CallOpts, ethereum.DynamicValues) ([]byte, error) {
 				panic("unexpected invocation of MockIDynamics.EncodeDynamicValues")
 			},
 		},
 		FilterDeployedStorageContractFunc: &IDynamicsFilterDeployedStorageContractFunc{
-			defaultHook: func(*bind.FilterOpts) (*bindings.DynamicsDeployedStorageContractIterator, error) {
+			defaultHook: func(*bind.FilterOpts) (*ethereum.DynamicsDeployedStorageContractIterator, error) {
 				panic("unexpected invocation of MockIDynamics.FilterDeployedStorageContract")
 			},
 		},
 		FilterDynamicValueChangedFunc: &IDynamicsFilterDynamicValueChangedFunc{
-			defaultHook: func(*bind.FilterOpts) (*bindings.DynamicsDynamicValueChangedIterator, error) {
+			defaultHook: func(*bind.FilterOpts) (*ethereum.DynamicsDynamicValueChangedIterator, error) {
 				panic("unexpected invocation of MockIDynamics.FilterDynamicValueChanged")
 			},
 		},
 		FilterInitializedFunc: &IDynamicsFilterInitializedFunc{
-			defaultHook: func(*bind.FilterOpts) (*bindings.DynamicsInitializedIterator, error) {
+			defaultHook: func(*bind.FilterOpts) (*ethereum.DynamicsInitializedIterator, error) {
 				panic("unexpected invocation of MockIDynamics.FilterInitialized")
 			},
 		},
 		FilterNewAliceNetNodeVersionAvailableFunc: &IDynamicsFilterNewAliceNetNodeVersionAvailableFunc{
-			defaultHook: func(*bind.FilterOpts) (*bindings.DynamicsNewAliceNetNodeVersionAvailableIterator, error) {
+			defaultHook: func(*bind.FilterOpts) (*ethereum.DynamicsNewAliceNetNodeVersionAvailableIterator, error) {
 				panic("unexpected invocation of MockIDynamics.FilterNewAliceNetNodeVersionAvailable")
 			},
 		},
 		FilterNewCanonicalAliceNetNodeVersionFunc: &IDynamicsFilterNewCanonicalAliceNetNodeVersionFunc{
-			defaultHook: func(*bind.FilterOpts) (*bindings.DynamicsNewCanonicalAliceNetNodeVersionIterator, error) {
+			defaultHook: func(*bind.FilterOpts) (*ethereum.DynamicsNewCanonicalAliceNetNodeVersionIterator, error) {
 				panic("unexpected invocation of MockIDynamics.FilterNewCanonicalAliceNetNodeVersion")
 			},
 		},
 		GetAllDynamicValuesFunc: &IDynamicsGetAllDynamicValuesFunc{
-			defaultHook: func(*bind.CallOpts) ([]bindings.DynamicValues, error) {
+			defaultHook: func(*bind.CallOpts) ([]ethereum.DynamicValues, error) {
 				panic("unexpected invocation of MockIDynamics.GetAllDynamicValues")
 			},
 		},
 		GetConfigurationFunc: &IDynamicsGetConfigurationFunc{
-			defaultHook: func(*bind.CallOpts) (bindings.Configuration, error) {
+			defaultHook: func(*bind.CallOpts) (ethereum.Configuration, error) {
 				panic("unexpected invocation of MockIDynamics.GetConfiguration")
 			},
 		},
@@ -14088,17 +14089,17 @@ func NewStrictMockIDynamics() *MockIDynamics {
 			},
 		},
 		GetFurthestDynamicValuesFunc: &IDynamicsGetFurthestDynamicValuesFunc{
-			defaultHook: func(*bind.CallOpts) (bindings.DynamicValues, error) {
+			defaultHook: func(*bind.CallOpts) (ethereum.DynamicValues, error) {
 				panic("unexpected invocation of MockIDynamics.GetFurthestDynamicValues")
 			},
 		},
 		GetLatestAliceNetVersionFunc: &IDynamicsGetLatestAliceNetVersionFunc{
-			defaultHook: func(*bind.CallOpts) (bindings.CanonicalVersion, error) {
+			defaultHook: func(*bind.CallOpts) (ethereum.CanonicalVersion, error) {
 				panic("unexpected invocation of MockIDynamics.GetLatestAliceNetVersion")
 			},
 		},
 		GetLatestDynamicValuesFunc: &IDynamicsGetLatestDynamicValuesFunc{
-			defaultHook: func(*bind.CallOpts) (bindings.DynamicValues, error) {
+			defaultHook: func(*bind.CallOpts) (ethereum.DynamicValues, error) {
 				panic("unexpected invocation of MockIDynamics.GetLatestDynamicValues")
 			},
 		},
@@ -14108,7 +14109,7 @@ func NewStrictMockIDynamics() *MockIDynamics {
 			},
 		},
 		GetPreviousDynamicValuesFunc: &IDynamicsGetPreviousDynamicValuesFunc{
-			defaultHook: func(*bind.CallOpts, *big.Int) (bindings.DynamicValues, error) {
+			defaultHook: func(*bind.CallOpts, *big.Int) (ethereum.DynamicValues, error) {
 				panic("unexpected invocation of MockIDynamics.GetPreviousDynamicValues")
 			},
 		},
@@ -14118,32 +14119,32 @@ func NewStrictMockIDynamics() *MockIDynamics {
 			},
 		},
 		ParseDeployedStorageContractFunc: &IDynamicsParseDeployedStorageContractFunc{
-			defaultHook: func(types.Log) (*bindings.DynamicsDeployedStorageContract, error) {
+			defaultHook: func(types.Log) (*ethereum.DynamicsDeployedStorageContract, error) {
 				panic("unexpected invocation of MockIDynamics.ParseDeployedStorageContract")
 			},
 		},
 		ParseDynamicValueChangedFunc: &IDynamicsParseDynamicValueChangedFunc{
-			defaultHook: func(types.Log) (*bindings.DynamicsDynamicValueChanged, error) {
+			defaultHook: func(types.Log) (*ethereum.DynamicsDynamicValueChanged, error) {
 				panic("unexpected invocation of MockIDynamics.ParseDynamicValueChanged")
 			},
 		},
 		ParseInitializedFunc: &IDynamicsParseInitializedFunc{
-			defaultHook: func(types.Log) (*bindings.DynamicsInitialized, error) {
+			defaultHook: func(types.Log) (*ethereum.DynamicsInitialized, error) {
 				panic("unexpected invocation of MockIDynamics.ParseInitialized")
 			},
 		},
 		ParseNewAliceNetNodeVersionAvailableFunc: &IDynamicsParseNewAliceNetNodeVersionAvailableFunc{
-			defaultHook: func(types.Log) (*bindings.DynamicsNewAliceNetNodeVersionAvailable, error) {
+			defaultHook: func(types.Log) (*ethereum.DynamicsNewAliceNetNodeVersionAvailable, error) {
 				panic("unexpected invocation of MockIDynamics.ParseNewAliceNetNodeVersionAvailable")
 			},
 		},
 		ParseNewCanonicalAliceNetNodeVersionFunc: &IDynamicsParseNewCanonicalAliceNetNodeVersionFunc{
-			defaultHook: func(types.Log) (*bindings.DynamicsNewCanonicalAliceNetNodeVersion, error) {
+			defaultHook: func(types.Log) (*ethereum.DynamicsNewCanonicalAliceNetNodeVersion, error) {
 				panic("unexpected invocation of MockIDynamics.ParseNewCanonicalAliceNetNodeVersion")
 			},
 		},
 		SetConfigurationFunc: &IDynamicsSetConfigurationFunc{
-			defaultHook: func(*bind.TransactOpts, bindings.Configuration) (*types.Transaction, error) {
+			defaultHook: func(*bind.TransactOpts, ethereum.Configuration) (*types.Transaction, error) {
 				panic("unexpected invocation of MockIDynamics.SetConfiguration")
 			},
 		},
@@ -14158,27 +14159,27 @@ func NewStrictMockIDynamics() *MockIDynamics {
 			},
 		},
 		WatchDeployedStorageContractFunc: &IDynamicsWatchDeployedStorageContractFunc{
-			defaultHook: func(*bind.WatchOpts, chan<- *bindings.DynamicsDeployedStorageContract) (event.Subscription, error) {
+			defaultHook: func(*bind.WatchOpts, chan<- *ethereum.DynamicsDeployedStorageContract) (event.Subscription, error) {
 				panic("unexpected invocation of MockIDynamics.WatchDeployedStorageContract")
 			},
 		},
 		WatchDynamicValueChangedFunc: &IDynamicsWatchDynamicValueChangedFunc{
-			defaultHook: func(*bind.WatchOpts, chan<- *bindings.DynamicsDynamicValueChanged) (event.Subscription, error) {
+			defaultHook: func(*bind.WatchOpts, chan<- *ethereum.DynamicsDynamicValueChanged) (event.Subscription, error) {
 				panic("unexpected invocation of MockIDynamics.WatchDynamicValueChanged")
 			},
 		},
 		WatchInitializedFunc: &IDynamicsWatchInitializedFunc{
-			defaultHook: func(*bind.WatchOpts, chan<- *bindings.DynamicsInitialized) (event.Subscription, error) {
+			defaultHook: func(*bind.WatchOpts, chan<- *ethereum.DynamicsInitialized) (event.Subscription, error) {
 				panic("unexpected invocation of MockIDynamics.WatchInitialized")
 			},
 		},
 		WatchNewAliceNetNodeVersionAvailableFunc: &IDynamicsWatchNewAliceNetNodeVersionAvailableFunc{
-			defaultHook: func(*bind.WatchOpts, chan<- *bindings.DynamicsNewAliceNetNodeVersionAvailable) (event.Subscription, error) {
+			defaultHook: func(*bind.WatchOpts, chan<- *ethereum.DynamicsNewAliceNetNodeVersionAvailable) (event.Subscription, error) {
 				panic("unexpected invocation of MockIDynamics.WatchNewAliceNetNodeVersionAvailable")
 			},
 		},
 		WatchNewCanonicalAliceNetNodeVersionFunc: &IDynamicsWatchNewCanonicalAliceNetNodeVersionFunc{
-			defaultHook: func(*bind.WatchOpts, chan<- *bindings.DynamicsNewCanonicalAliceNetNodeVersion) (event.Subscription, error) {
+			defaultHook: func(*bind.WatchOpts, chan<- *ethereum.DynamicsNewCanonicalAliceNetNodeVersion) (event.Subscription, error) {
 				panic("unexpected invocation of MockIDynamics.WatchNewCanonicalAliceNetNodeVersion")
 			},
 		},
@@ -14187,7 +14188,7 @@ func NewStrictMockIDynamics() *MockIDynamics {
 
 // NewMockIDynamicsFrom creates a new mock of the MockIDynamics interface.
 // All methods delegate to the given implementation, unless overwritten.
-func NewMockIDynamicsFrom(i bindings.IDynamics) *MockIDynamics {
+func NewMockIDynamicsFrom(i ethereum.IDynamics) *MockIDynamics {
 	return &MockIDynamics{
 		ChangeDynamicValuesFunc: &IDynamicsChangeDynamicValuesFunc{
 			defaultHook: i.ChangeDynamicValues,
@@ -14289,15 +14290,15 @@ func NewMockIDynamicsFrom(i bindings.IDynamics) *MockIDynamics {
 // ChangeDynamicValues method of the parent MockIDynamics instance is
 // invoked.
 type IDynamicsChangeDynamicValuesFunc struct {
-	defaultHook func(*bind.TransactOpts, uint32, bindings.DynamicValues) (*types.Transaction, error)
-	hooks       []func(*bind.TransactOpts, uint32, bindings.DynamicValues) (*types.Transaction, error)
+	defaultHook func(*bind.TransactOpts, uint32, ethereum.DynamicValues) (*types.Transaction, error)
+	hooks       []func(*bind.TransactOpts, uint32, ethereum.DynamicValues) (*types.Transaction, error)
 	history     []IDynamicsChangeDynamicValuesFuncCall
 	mutex       sync.Mutex
 }
 
 // ChangeDynamicValues delegates to the next hook function in the queue and
 // stores the parameter and result values of this invocation.
-func (m *MockIDynamics) ChangeDynamicValues(v0 *bind.TransactOpts, v1 uint32, v2 bindings.DynamicValues) (*types.Transaction, error) {
+func (m *MockIDynamics) ChangeDynamicValues(v0 *bind.TransactOpts, v1 uint32, v2 ethereum.DynamicValues) (*types.Transaction, error) {
 	r0, r1 := m.ChangeDynamicValuesFunc.nextHook()(v0, v1, v2)
 	m.ChangeDynamicValuesFunc.appendCall(IDynamicsChangeDynamicValuesFuncCall{v0, v1, v2, r0, r1})
 	return r0, r1
@@ -14306,7 +14307,7 @@ func (m *MockIDynamics) ChangeDynamicValues(v0 *bind.TransactOpts, v1 uint32, v2
 // SetDefaultHook sets function that is called when the ChangeDynamicValues
 // method of the parent MockIDynamics instance is invoked and the hook queue
 // is empty.
-func (f *IDynamicsChangeDynamicValuesFunc) SetDefaultHook(hook func(*bind.TransactOpts, uint32, bindings.DynamicValues) (*types.Transaction, error)) {
+func (f *IDynamicsChangeDynamicValuesFunc) SetDefaultHook(hook func(*bind.TransactOpts, uint32, ethereum.DynamicValues) (*types.Transaction, error)) {
 	f.defaultHook = hook
 }
 
@@ -14314,7 +14315,7 @@ func (f *IDynamicsChangeDynamicValuesFunc) SetDefaultHook(hook func(*bind.Transa
 // ChangeDynamicValues method of the parent MockIDynamics instance invokes
 // the hook at the front of the queue and discards it. After the queue is
 // empty, the default hook function is invoked for any future action.
-func (f *IDynamicsChangeDynamicValuesFunc) PushHook(hook func(*bind.TransactOpts, uint32, bindings.DynamicValues) (*types.Transaction, error)) {
+func (f *IDynamicsChangeDynamicValuesFunc) PushHook(hook func(*bind.TransactOpts, uint32, ethereum.DynamicValues) (*types.Transaction, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -14323,19 +14324,19 @@ func (f *IDynamicsChangeDynamicValuesFunc) PushHook(hook func(*bind.TransactOpts
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
 func (f *IDynamicsChangeDynamicValuesFunc) SetDefaultReturn(r0 *types.Transaction, r1 error) {
-	f.SetDefaultHook(func(*bind.TransactOpts, uint32, bindings.DynamicValues) (*types.Transaction, error) {
+	f.SetDefaultHook(func(*bind.TransactOpts, uint32, ethereum.DynamicValues) (*types.Transaction, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
 func (f *IDynamicsChangeDynamicValuesFunc) PushReturn(r0 *types.Transaction, r1 error) {
-	f.PushHook(func(*bind.TransactOpts, uint32, bindings.DynamicValues) (*types.Transaction, error) {
+	f.PushHook(func(*bind.TransactOpts, uint32, ethereum.DynamicValues) (*types.Transaction, error) {
 		return r0, r1
 	})
 }
 
-func (f *IDynamicsChangeDynamicValuesFunc) nextHook() func(*bind.TransactOpts, uint32, bindings.DynamicValues) (*types.Transaction, error) {
+func (f *IDynamicsChangeDynamicValuesFunc) nextHook() func(*bind.TransactOpts, uint32, ethereum.DynamicValues) (*types.Transaction, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -14376,7 +14377,7 @@ type IDynamicsChangeDynamicValuesFuncCall struct {
 	Arg1 uint32
 	// Arg2 is the value of the 3rd argument passed to this method
 	// invocation.
-	Arg2 bindings.DynamicValues
+	Arg2 ethereum.DynamicValues
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
 	Result0 *types.Transaction
@@ -14401,15 +14402,15 @@ func (c IDynamicsChangeDynamicValuesFuncCall) Results() []interface{} {
 // DecodeDynamicValues method of the parent MockIDynamics instance is
 // invoked.
 type IDynamicsDecodeDynamicValuesFunc struct {
-	defaultHook func(*bind.CallOpts, common.Address) (bindings.DynamicValues, error)
-	hooks       []func(*bind.CallOpts, common.Address) (bindings.DynamicValues, error)
+	defaultHook func(*bind.CallOpts, common.Address) (ethereum.DynamicValues, error)
+	hooks       []func(*bind.CallOpts, common.Address) (ethereum.DynamicValues, error)
 	history     []IDynamicsDecodeDynamicValuesFuncCall
 	mutex       sync.Mutex
 }
 
 // DecodeDynamicValues delegates to the next hook function in the queue and
 // stores the parameter and result values of this invocation.
-func (m *MockIDynamics) DecodeDynamicValues(v0 *bind.CallOpts, v1 common.Address) (bindings.DynamicValues, error) {
+func (m *MockIDynamics) DecodeDynamicValues(v0 *bind.CallOpts, v1 common.Address) (ethereum.DynamicValues, error) {
 	r0, r1 := m.DecodeDynamicValuesFunc.nextHook()(v0, v1)
 	m.DecodeDynamicValuesFunc.appendCall(IDynamicsDecodeDynamicValuesFuncCall{v0, v1, r0, r1})
 	return r0, r1
@@ -14418,7 +14419,7 @@ func (m *MockIDynamics) DecodeDynamicValues(v0 *bind.CallOpts, v1 common.Address
 // SetDefaultHook sets function that is called when the DecodeDynamicValues
 // method of the parent MockIDynamics instance is invoked and the hook queue
 // is empty.
-func (f *IDynamicsDecodeDynamicValuesFunc) SetDefaultHook(hook func(*bind.CallOpts, common.Address) (bindings.DynamicValues, error)) {
+func (f *IDynamicsDecodeDynamicValuesFunc) SetDefaultHook(hook func(*bind.CallOpts, common.Address) (ethereum.DynamicValues, error)) {
 	f.defaultHook = hook
 }
 
@@ -14426,7 +14427,7 @@ func (f *IDynamicsDecodeDynamicValuesFunc) SetDefaultHook(hook func(*bind.CallOp
 // DecodeDynamicValues method of the parent MockIDynamics instance invokes
 // the hook at the front of the queue and discards it. After the queue is
 // empty, the default hook function is invoked for any future action.
-func (f *IDynamicsDecodeDynamicValuesFunc) PushHook(hook func(*bind.CallOpts, common.Address) (bindings.DynamicValues, error)) {
+func (f *IDynamicsDecodeDynamicValuesFunc) PushHook(hook func(*bind.CallOpts, common.Address) (ethereum.DynamicValues, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -14434,20 +14435,20 @@ func (f *IDynamicsDecodeDynamicValuesFunc) PushHook(hook func(*bind.CallOpts, co
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IDynamicsDecodeDynamicValuesFunc) SetDefaultReturn(r0 bindings.DynamicValues, r1 error) {
-	f.SetDefaultHook(func(*bind.CallOpts, common.Address) (bindings.DynamicValues, error) {
+func (f *IDynamicsDecodeDynamicValuesFunc) SetDefaultReturn(r0 ethereum.DynamicValues, r1 error) {
+	f.SetDefaultHook(func(*bind.CallOpts, common.Address) (ethereum.DynamicValues, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IDynamicsDecodeDynamicValuesFunc) PushReturn(r0 bindings.DynamicValues, r1 error) {
-	f.PushHook(func(*bind.CallOpts, common.Address) (bindings.DynamicValues, error) {
+func (f *IDynamicsDecodeDynamicValuesFunc) PushReturn(r0 ethereum.DynamicValues, r1 error) {
+	f.PushHook(func(*bind.CallOpts, common.Address) (ethereum.DynamicValues, error) {
 		return r0, r1
 	})
 }
 
-func (f *IDynamicsDecodeDynamicValuesFunc) nextHook() func(*bind.CallOpts, common.Address) (bindings.DynamicValues, error) {
+func (f *IDynamicsDecodeDynamicValuesFunc) nextHook() func(*bind.CallOpts, common.Address) (ethereum.DynamicValues, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -14488,7 +14489,7 @@ type IDynamicsDecodeDynamicValuesFuncCall struct {
 	Arg1 common.Address
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 bindings.DynamicValues
+	Result0 ethereum.DynamicValues
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -14618,15 +14619,15 @@ func (c IDynamicsDeployStorageFuncCall) Results() []interface{} {
 // EncodeDynamicValues method of the parent MockIDynamics instance is
 // invoked.
 type IDynamicsEncodeDynamicValuesFunc struct {
-	defaultHook func(*bind.CallOpts, bindings.DynamicValues) ([]byte, error)
-	hooks       []func(*bind.CallOpts, bindings.DynamicValues) ([]byte, error)
+	defaultHook func(*bind.CallOpts, ethereum.DynamicValues) ([]byte, error)
+	hooks       []func(*bind.CallOpts, ethereum.DynamicValues) ([]byte, error)
 	history     []IDynamicsEncodeDynamicValuesFuncCall
 	mutex       sync.Mutex
 }
 
 // EncodeDynamicValues delegates to the next hook function in the queue and
 // stores the parameter and result values of this invocation.
-func (m *MockIDynamics) EncodeDynamicValues(v0 *bind.CallOpts, v1 bindings.DynamicValues) ([]byte, error) {
+func (m *MockIDynamics) EncodeDynamicValues(v0 *bind.CallOpts, v1 ethereum.DynamicValues) ([]byte, error) {
 	r0, r1 := m.EncodeDynamicValuesFunc.nextHook()(v0, v1)
 	m.EncodeDynamicValuesFunc.appendCall(IDynamicsEncodeDynamicValuesFuncCall{v0, v1, r0, r1})
 	return r0, r1
@@ -14635,7 +14636,7 @@ func (m *MockIDynamics) EncodeDynamicValues(v0 *bind.CallOpts, v1 bindings.Dynam
 // SetDefaultHook sets function that is called when the EncodeDynamicValues
 // method of the parent MockIDynamics instance is invoked and the hook queue
 // is empty.
-func (f *IDynamicsEncodeDynamicValuesFunc) SetDefaultHook(hook func(*bind.CallOpts, bindings.DynamicValues) ([]byte, error)) {
+func (f *IDynamicsEncodeDynamicValuesFunc) SetDefaultHook(hook func(*bind.CallOpts, ethereum.DynamicValues) ([]byte, error)) {
 	f.defaultHook = hook
 }
 
@@ -14643,7 +14644,7 @@ func (f *IDynamicsEncodeDynamicValuesFunc) SetDefaultHook(hook func(*bind.CallOp
 // EncodeDynamicValues method of the parent MockIDynamics instance invokes
 // the hook at the front of the queue and discards it. After the queue is
 // empty, the default hook function is invoked for any future action.
-func (f *IDynamicsEncodeDynamicValuesFunc) PushHook(hook func(*bind.CallOpts, bindings.DynamicValues) ([]byte, error)) {
+func (f *IDynamicsEncodeDynamicValuesFunc) PushHook(hook func(*bind.CallOpts, ethereum.DynamicValues) ([]byte, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -14652,19 +14653,19 @@ func (f *IDynamicsEncodeDynamicValuesFunc) PushHook(hook func(*bind.CallOpts, bi
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
 func (f *IDynamicsEncodeDynamicValuesFunc) SetDefaultReturn(r0 []byte, r1 error) {
-	f.SetDefaultHook(func(*bind.CallOpts, bindings.DynamicValues) ([]byte, error) {
+	f.SetDefaultHook(func(*bind.CallOpts, ethereum.DynamicValues) ([]byte, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
 func (f *IDynamicsEncodeDynamicValuesFunc) PushReturn(r0 []byte, r1 error) {
-	f.PushHook(func(*bind.CallOpts, bindings.DynamicValues) ([]byte, error) {
+	f.PushHook(func(*bind.CallOpts, ethereum.DynamicValues) ([]byte, error) {
 		return r0, r1
 	})
 }
 
-func (f *IDynamicsEncodeDynamicValuesFunc) nextHook() func(*bind.CallOpts, bindings.DynamicValues) ([]byte, error) {
+func (f *IDynamicsEncodeDynamicValuesFunc) nextHook() func(*bind.CallOpts, ethereum.DynamicValues) ([]byte, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -14702,7 +14703,7 @@ type IDynamicsEncodeDynamicValuesFuncCall struct {
 	Arg0 *bind.CallOpts
 	// Arg1 is the value of the 2nd argument passed to this method
 	// invocation.
-	Arg1 bindings.DynamicValues
+	Arg1 ethereum.DynamicValues
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
 	Result0 []byte
@@ -14727,15 +14728,15 @@ func (c IDynamicsEncodeDynamicValuesFuncCall) Results() []interface{} {
 // the FilterDeployedStorageContract method of the parent MockIDynamics
 // instance is invoked.
 type IDynamicsFilterDeployedStorageContractFunc struct {
-	defaultHook func(*bind.FilterOpts) (*bindings.DynamicsDeployedStorageContractIterator, error)
-	hooks       []func(*bind.FilterOpts) (*bindings.DynamicsDeployedStorageContractIterator, error)
+	defaultHook func(*bind.FilterOpts) (*ethereum.DynamicsDeployedStorageContractIterator, error)
+	hooks       []func(*bind.FilterOpts) (*ethereum.DynamicsDeployedStorageContractIterator, error)
 	history     []IDynamicsFilterDeployedStorageContractFuncCall
 	mutex       sync.Mutex
 }
 
 // FilterDeployedStorageContract delegates to the next hook function in the
 // queue and stores the parameter and result values of this invocation.
-func (m *MockIDynamics) FilterDeployedStorageContract(v0 *bind.FilterOpts) (*bindings.DynamicsDeployedStorageContractIterator, error) {
+func (m *MockIDynamics) FilterDeployedStorageContract(v0 *bind.FilterOpts) (*ethereum.DynamicsDeployedStorageContractIterator, error) {
 	r0, r1 := m.FilterDeployedStorageContractFunc.nextHook()(v0)
 	m.FilterDeployedStorageContractFunc.appendCall(IDynamicsFilterDeployedStorageContractFuncCall{v0, r0, r1})
 	return r0, r1
@@ -14744,7 +14745,7 @@ func (m *MockIDynamics) FilterDeployedStorageContract(v0 *bind.FilterOpts) (*bin
 // SetDefaultHook sets function that is called when the
 // FilterDeployedStorageContract method of the parent MockIDynamics instance
 // is invoked and the hook queue is empty.
-func (f *IDynamicsFilterDeployedStorageContractFunc) SetDefaultHook(hook func(*bind.FilterOpts) (*bindings.DynamicsDeployedStorageContractIterator, error)) {
+func (f *IDynamicsFilterDeployedStorageContractFunc) SetDefaultHook(hook func(*bind.FilterOpts) (*ethereum.DynamicsDeployedStorageContractIterator, error)) {
 	f.defaultHook = hook
 }
 
@@ -14753,7 +14754,7 @@ func (f *IDynamicsFilterDeployedStorageContractFunc) SetDefaultHook(hook func(*b
 // invokes the hook at the front of the queue and discards it. After the
 // queue is empty, the default hook function is invoked for any future
 // action.
-func (f *IDynamicsFilterDeployedStorageContractFunc) PushHook(hook func(*bind.FilterOpts) (*bindings.DynamicsDeployedStorageContractIterator, error)) {
+func (f *IDynamicsFilterDeployedStorageContractFunc) PushHook(hook func(*bind.FilterOpts) (*ethereum.DynamicsDeployedStorageContractIterator, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -14761,20 +14762,20 @@ func (f *IDynamicsFilterDeployedStorageContractFunc) PushHook(hook func(*bind.Fi
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IDynamicsFilterDeployedStorageContractFunc) SetDefaultReturn(r0 *bindings.DynamicsDeployedStorageContractIterator, r1 error) {
-	f.SetDefaultHook(func(*bind.FilterOpts) (*bindings.DynamicsDeployedStorageContractIterator, error) {
+func (f *IDynamicsFilterDeployedStorageContractFunc) SetDefaultReturn(r0 *ethereum.DynamicsDeployedStorageContractIterator, r1 error) {
+	f.SetDefaultHook(func(*bind.FilterOpts) (*ethereum.DynamicsDeployedStorageContractIterator, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IDynamicsFilterDeployedStorageContractFunc) PushReturn(r0 *bindings.DynamicsDeployedStorageContractIterator, r1 error) {
-	f.PushHook(func(*bind.FilterOpts) (*bindings.DynamicsDeployedStorageContractIterator, error) {
+func (f *IDynamicsFilterDeployedStorageContractFunc) PushReturn(r0 *ethereum.DynamicsDeployedStorageContractIterator, r1 error) {
+	f.PushHook(func(*bind.FilterOpts) (*ethereum.DynamicsDeployedStorageContractIterator, error) {
 		return r0, r1
 	})
 }
 
-func (f *IDynamicsFilterDeployedStorageContractFunc) nextHook() func(*bind.FilterOpts) (*bindings.DynamicsDeployedStorageContractIterator, error) {
+func (f *IDynamicsFilterDeployedStorageContractFunc) nextHook() func(*bind.FilterOpts) (*ethereum.DynamicsDeployedStorageContractIterator, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -14814,7 +14815,7 @@ type IDynamicsFilterDeployedStorageContractFuncCall struct {
 	Arg0 *bind.FilterOpts
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 *bindings.DynamicsDeployedStorageContractIterator
+	Result0 *ethereum.DynamicsDeployedStorageContractIterator
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -14836,15 +14837,15 @@ func (c IDynamicsFilterDeployedStorageContractFuncCall) Results() []interface{} 
 // FilterDynamicValueChanged method of the parent MockIDynamics instance is
 // invoked.
 type IDynamicsFilterDynamicValueChangedFunc struct {
-	defaultHook func(*bind.FilterOpts) (*bindings.DynamicsDynamicValueChangedIterator, error)
-	hooks       []func(*bind.FilterOpts) (*bindings.DynamicsDynamicValueChangedIterator, error)
+	defaultHook func(*bind.FilterOpts) (*ethereum.DynamicsDynamicValueChangedIterator, error)
+	hooks       []func(*bind.FilterOpts) (*ethereum.DynamicsDynamicValueChangedIterator, error)
 	history     []IDynamicsFilterDynamicValueChangedFuncCall
 	mutex       sync.Mutex
 }
 
 // FilterDynamicValueChanged delegates to the next hook function in the
 // queue and stores the parameter and result values of this invocation.
-func (m *MockIDynamics) FilterDynamicValueChanged(v0 *bind.FilterOpts) (*bindings.DynamicsDynamicValueChangedIterator, error) {
+func (m *MockIDynamics) FilterDynamicValueChanged(v0 *bind.FilterOpts) (*ethereum.DynamicsDynamicValueChangedIterator, error) {
 	r0, r1 := m.FilterDynamicValueChangedFunc.nextHook()(v0)
 	m.FilterDynamicValueChangedFunc.appendCall(IDynamicsFilterDynamicValueChangedFuncCall{v0, r0, r1})
 	return r0, r1
@@ -14853,7 +14854,7 @@ func (m *MockIDynamics) FilterDynamicValueChanged(v0 *bind.FilterOpts) (*binding
 // SetDefaultHook sets function that is called when the
 // FilterDynamicValueChanged method of the parent MockIDynamics instance is
 // invoked and the hook queue is empty.
-func (f *IDynamicsFilterDynamicValueChangedFunc) SetDefaultHook(hook func(*bind.FilterOpts) (*bindings.DynamicsDynamicValueChangedIterator, error)) {
+func (f *IDynamicsFilterDynamicValueChangedFunc) SetDefaultHook(hook func(*bind.FilterOpts) (*ethereum.DynamicsDynamicValueChangedIterator, error)) {
 	f.defaultHook = hook
 }
 
@@ -14862,7 +14863,7 @@ func (f *IDynamicsFilterDynamicValueChangedFunc) SetDefaultHook(hook func(*bind.
 // invokes the hook at the front of the queue and discards it. After the
 // queue is empty, the default hook function is invoked for any future
 // action.
-func (f *IDynamicsFilterDynamicValueChangedFunc) PushHook(hook func(*bind.FilterOpts) (*bindings.DynamicsDynamicValueChangedIterator, error)) {
+func (f *IDynamicsFilterDynamicValueChangedFunc) PushHook(hook func(*bind.FilterOpts) (*ethereum.DynamicsDynamicValueChangedIterator, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -14870,20 +14871,20 @@ func (f *IDynamicsFilterDynamicValueChangedFunc) PushHook(hook func(*bind.Filter
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IDynamicsFilterDynamicValueChangedFunc) SetDefaultReturn(r0 *bindings.DynamicsDynamicValueChangedIterator, r1 error) {
-	f.SetDefaultHook(func(*bind.FilterOpts) (*bindings.DynamicsDynamicValueChangedIterator, error) {
+func (f *IDynamicsFilterDynamicValueChangedFunc) SetDefaultReturn(r0 *ethereum.DynamicsDynamicValueChangedIterator, r1 error) {
+	f.SetDefaultHook(func(*bind.FilterOpts) (*ethereum.DynamicsDynamicValueChangedIterator, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IDynamicsFilterDynamicValueChangedFunc) PushReturn(r0 *bindings.DynamicsDynamicValueChangedIterator, r1 error) {
-	f.PushHook(func(*bind.FilterOpts) (*bindings.DynamicsDynamicValueChangedIterator, error) {
+func (f *IDynamicsFilterDynamicValueChangedFunc) PushReturn(r0 *ethereum.DynamicsDynamicValueChangedIterator, r1 error) {
+	f.PushHook(func(*bind.FilterOpts) (*ethereum.DynamicsDynamicValueChangedIterator, error) {
 		return r0, r1
 	})
 }
 
-func (f *IDynamicsFilterDynamicValueChangedFunc) nextHook() func(*bind.FilterOpts) (*bindings.DynamicsDynamicValueChangedIterator, error) {
+func (f *IDynamicsFilterDynamicValueChangedFunc) nextHook() func(*bind.FilterOpts) (*ethereum.DynamicsDynamicValueChangedIterator, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -14922,7 +14923,7 @@ type IDynamicsFilterDynamicValueChangedFuncCall struct {
 	Arg0 *bind.FilterOpts
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 *bindings.DynamicsDynamicValueChangedIterator
+	Result0 *ethereum.DynamicsDynamicValueChangedIterator
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -14943,15 +14944,15 @@ func (c IDynamicsFilterDynamicValueChangedFuncCall) Results() []interface{} {
 // IDynamicsFilterInitializedFunc describes the behavior when the
 // FilterInitialized method of the parent MockIDynamics instance is invoked.
 type IDynamicsFilterInitializedFunc struct {
-	defaultHook func(*bind.FilterOpts) (*bindings.DynamicsInitializedIterator, error)
-	hooks       []func(*bind.FilterOpts) (*bindings.DynamicsInitializedIterator, error)
+	defaultHook func(*bind.FilterOpts) (*ethereum.DynamicsInitializedIterator, error)
+	hooks       []func(*bind.FilterOpts) (*ethereum.DynamicsInitializedIterator, error)
 	history     []IDynamicsFilterInitializedFuncCall
 	mutex       sync.Mutex
 }
 
 // FilterInitialized delegates to the next hook function in the queue and
 // stores the parameter and result values of this invocation.
-func (m *MockIDynamics) FilterInitialized(v0 *bind.FilterOpts) (*bindings.DynamicsInitializedIterator, error) {
+func (m *MockIDynamics) FilterInitialized(v0 *bind.FilterOpts) (*ethereum.DynamicsInitializedIterator, error) {
 	r0, r1 := m.FilterInitializedFunc.nextHook()(v0)
 	m.FilterInitializedFunc.appendCall(IDynamicsFilterInitializedFuncCall{v0, r0, r1})
 	return r0, r1
@@ -14960,7 +14961,7 @@ func (m *MockIDynamics) FilterInitialized(v0 *bind.FilterOpts) (*bindings.Dynami
 // SetDefaultHook sets function that is called when the FilterInitialized
 // method of the parent MockIDynamics instance is invoked and the hook queue
 // is empty.
-func (f *IDynamicsFilterInitializedFunc) SetDefaultHook(hook func(*bind.FilterOpts) (*bindings.DynamicsInitializedIterator, error)) {
+func (f *IDynamicsFilterInitializedFunc) SetDefaultHook(hook func(*bind.FilterOpts) (*ethereum.DynamicsInitializedIterator, error)) {
 	f.defaultHook = hook
 }
 
@@ -14968,7 +14969,7 @@ func (f *IDynamicsFilterInitializedFunc) SetDefaultHook(hook func(*bind.FilterOp
 // FilterInitialized method of the parent MockIDynamics instance invokes the
 // hook at the front of the queue and discards it. After the queue is empty,
 // the default hook function is invoked for any future action.
-func (f *IDynamicsFilterInitializedFunc) PushHook(hook func(*bind.FilterOpts) (*bindings.DynamicsInitializedIterator, error)) {
+func (f *IDynamicsFilterInitializedFunc) PushHook(hook func(*bind.FilterOpts) (*ethereum.DynamicsInitializedIterator, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -14976,20 +14977,20 @@ func (f *IDynamicsFilterInitializedFunc) PushHook(hook func(*bind.FilterOpts) (*
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IDynamicsFilterInitializedFunc) SetDefaultReturn(r0 *bindings.DynamicsInitializedIterator, r1 error) {
-	f.SetDefaultHook(func(*bind.FilterOpts) (*bindings.DynamicsInitializedIterator, error) {
+func (f *IDynamicsFilterInitializedFunc) SetDefaultReturn(r0 *ethereum.DynamicsInitializedIterator, r1 error) {
+	f.SetDefaultHook(func(*bind.FilterOpts) (*ethereum.DynamicsInitializedIterator, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IDynamicsFilterInitializedFunc) PushReturn(r0 *bindings.DynamicsInitializedIterator, r1 error) {
-	f.PushHook(func(*bind.FilterOpts) (*bindings.DynamicsInitializedIterator, error) {
+func (f *IDynamicsFilterInitializedFunc) PushReturn(r0 *ethereum.DynamicsInitializedIterator, r1 error) {
+	f.PushHook(func(*bind.FilterOpts) (*ethereum.DynamicsInitializedIterator, error) {
 		return r0, r1
 	})
 }
 
-func (f *IDynamicsFilterInitializedFunc) nextHook() func(*bind.FilterOpts) (*bindings.DynamicsInitializedIterator, error) {
+func (f *IDynamicsFilterInitializedFunc) nextHook() func(*bind.FilterOpts) (*ethereum.DynamicsInitializedIterator, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -15027,7 +15028,7 @@ type IDynamicsFilterInitializedFuncCall struct {
 	Arg0 *bind.FilterOpts
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 *bindings.DynamicsInitializedIterator
+	Result0 *ethereum.DynamicsInitializedIterator
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -15049,8 +15050,8 @@ func (c IDynamicsFilterInitializedFuncCall) Results() []interface{} {
 // when the FilterNewAliceNetNodeVersionAvailable method of the parent
 // MockIDynamics instance is invoked.
 type IDynamicsFilterNewAliceNetNodeVersionAvailableFunc struct {
-	defaultHook func(*bind.FilterOpts) (*bindings.DynamicsNewAliceNetNodeVersionAvailableIterator, error)
-	hooks       []func(*bind.FilterOpts) (*bindings.DynamicsNewAliceNetNodeVersionAvailableIterator, error)
+	defaultHook func(*bind.FilterOpts) (*ethereum.DynamicsNewAliceNetNodeVersionAvailableIterator, error)
+	hooks       []func(*bind.FilterOpts) (*ethereum.DynamicsNewAliceNetNodeVersionAvailableIterator, error)
 	history     []IDynamicsFilterNewAliceNetNodeVersionAvailableFuncCall
 	mutex       sync.Mutex
 }
@@ -15058,7 +15059,7 @@ type IDynamicsFilterNewAliceNetNodeVersionAvailableFunc struct {
 // FilterNewAliceNetNodeVersionAvailable delegates to the next hook function
 // in the queue and stores the parameter and result values of this
 // invocation.
-func (m *MockIDynamics) FilterNewAliceNetNodeVersionAvailable(v0 *bind.FilterOpts) (*bindings.DynamicsNewAliceNetNodeVersionAvailableIterator, error) {
+func (m *MockIDynamics) FilterNewAliceNetNodeVersionAvailable(v0 *bind.FilterOpts) (*ethereum.DynamicsNewAliceNetNodeVersionAvailableIterator, error) {
 	r0, r1 := m.FilterNewAliceNetNodeVersionAvailableFunc.nextHook()(v0)
 	m.FilterNewAliceNetNodeVersionAvailableFunc.appendCall(IDynamicsFilterNewAliceNetNodeVersionAvailableFuncCall{v0, r0, r1})
 	return r0, r1
@@ -15067,7 +15068,7 @@ func (m *MockIDynamics) FilterNewAliceNetNodeVersionAvailable(v0 *bind.FilterOpt
 // SetDefaultHook sets function that is called when the
 // FilterNewAliceNetNodeVersionAvailable method of the parent MockIDynamics
 // instance is invoked and the hook queue is empty.
-func (f *IDynamicsFilterNewAliceNetNodeVersionAvailableFunc) SetDefaultHook(hook func(*bind.FilterOpts) (*bindings.DynamicsNewAliceNetNodeVersionAvailableIterator, error)) {
+func (f *IDynamicsFilterNewAliceNetNodeVersionAvailableFunc) SetDefaultHook(hook func(*bind.FilterOpts) (*ethereum.DynamicsNewAliceNetNodeVersionAvailableIterator, error)) {
 	f.defaultHook = hook
 }
 
@@ -15076,7 +15077,7 @@ func (f *IDynamicsFilterNewAliceNetNodeVersionAvailableFunc) SetDefaultHook(hook
 // instance invokes the hook at the front of the queue and discards it.
 // After the queue is empty, the default hook function is invoked for any
 // future action.
-func (f *IDynamicsFilterNewAliceNetNodeVersionAvailableFunc) PushHook(hook func(*bind.FilterOpts) (*bindings.DynamicsNewAliceNetNodeVersionAvailableIterator, error)) {
+func (f *IDynamicsFilterNewAliceNetNodeVersionAvailableFunc) PushHook(hook func(*bind.FilterOpts) (*ethereum.DynamicsNewAliceNetNodeVersionAvailableIterator, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -15084,20 +15085,20 @@ func (f *IDynamicsFilterNewAliceNetNodeVersionAvailableFunc) PushHook(hook func(
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IDynamicsFilterNewAliceNetNodeVersionAvailableFunc) SetDefaultReturn(r0 *bindings.DynamicsNewAliceNetNodeVersionAvailableIterator, r1 error) {
-	f.SetDefaultHook(func(*bind.FilterOpts) (*bindings.DynamicsNewAliceNetNodeVersionAvailableIterator, error) {
+func (f *IDynamicsFilterNewAliceNetNodeVersionAvailableFunc) SetDefaultReturn(r0 *ethereum.DynamicsNewAliceNetNodeVersionAvailableIterator, r1 error) {
+	f.SetDefaultHook(func(*bind.FilterOpts) (*ethereum.DynamicsNewAliceNetNodeVersionAvailableIterator, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IDynamicsFilterNewAliceNetNodeVersionAvailableFunc) PushReturn(r0 *bindings.DynamicsNewAliceNetNodeVersionAvailableIterator, r1 error) {
-	f.PushHook(func(*bind.FilterOpts) (*bindings.DynamicsNewAliceNetNodeVersionAvailableIterator, error) {
+func (f *IDynamicsFilterNewAliceNetNodeVersionAvailableFunc) PushReturn(r0 *ethereum.DynamicsNewAliceNetNodeVersionAvailableIterator, r1 error) {
+	f.PushHook(func(*bind.FilterOpts) (*ethereum.DynamicsNewAliceNetNodeVersionAvailableIterator, error) {
 		return r0, r1
 	})
 }
 
-func (f *IDynamicsFilterNewAliceNetNodeVersionAvailableFunc) nextHook() func(*bind.FilterOpts) (*bindings.DynamicsNewAliceNetNodeVersionAvailableIterator, error) {
+func (f *IDynamicsFilterNewAliceNetNodeVersionAvailableFunc) nextHook() func(*bind.FilterOpts) (*ethereum.DynamicsNewAliceNetNodeVersionAvailableIterator, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -15137,7 +15138,7 @@ type IDynamicsFilterNewAliceNetNodeVersionAvailableFuncCall struct {
 	Arg0 *bind.FilterOpts
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 *bindings.DynamicsNewAliceNetNodeVersionAvailableIterator
+	Result0 *ethereum.DynamicsNewAliceNetNodeVersionAvailableIterator
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -15159,8 +15160,8 @@ func (c IDynamicsFilterNewAliceNetNodeVersionAvailableFuncCall) Results() []inte
 // when the FilterNewCanonicalAliceNetNodeVersion method of the parent
 // MockIDynamics instance is invoked.
 type IDynamicsFilterNewCanonicalAliceNetNodeVersionFunc struct {
-	defaultHook func(*bind.FilterOpts) (*bindings.DynamicsNewCanonicalAliceNetNodeVersionIterator, error)
-	hooks       []func(*bind.FilterOpts) (*bindings.DynamicsNewCanonicalAliceNetNodeVersionIterator, error)
+	defaultHook func(*bind.FilterOpts) (*ethereum.DynamicsNewCanonicalAliceNetNodeVersionIterator, error)
+	hooks       []func(*bind.FilterOpts) (*ethereum.DynamicsNewCanonicalAliceNetNodeVersionIterator, error)
 	history     []IDynamicsFilterNewCanonicalAliceNetNodeVersionFuncCall
 	mutex       sync.Mutex
 }
@@ -15168,7 +15169,7 @@ type IDynamicsFilterNewCanonicalAliceNetNodeVersionFunc struct {
 // FilterNewCanonicalAliceNetNodeVersion delegates to the next hook function
 // in the queue and stores the parameter and result values of this
 // invocation.
-func (m *MockIDynamics) FilterNewCanonicalAliceNetNodeVersion(v0 *bind.FilterOpts) (*bindings.DynamicsNewCanonicalAliceNetNodeVersionIterator, error) {
+func (m *MockIDynamics) FilterNewCanonicalAliceNetNodeVersion(v0 *bind.FilterOpts) (*ethereum.DynamicsNewCanonicalAliceNetNodeVersionIterator, error) {
 	r0, r1 := m.FilterNewCanonicalAliceNetNodeVersionFunc.nextHook()(v0)
 	m.FilterNewCanonicalAliceNetNodeVersionFunc.appendCall(IDynamicsFilterNewCanonicalAliceNetNodeVersionFuncCall{v0, r0, r1})
 	return r0, r1
@@ -15177,7 +15178,7 @@ func (m *MockIDynamics) FilterNewCanonicalAliceNetNodeVersion(v0 *bind.FilterOpt
 // SetDefaultHook sets function that is called when the
 // FilterNewCanonicalAliceNetNodeVersion method of the parent MockIDynamics
 // instance is invoked and the hook queue is empty.
-func (f *IDynamicsFilterNewCanonicalAliceNetNodeVersionFunc) SetDefaultHook(hook func(*bind.FilterOpts) (*bindings.DynamicsNewCanonicalAliceNetNodeVersionIterator, error)) {
+func (f *IDynamicsFilterNewCanonicalAliceNetNodeVersionFunc) SetDefaultHook(hook func(*bind.FilterOpts) (*ethereum.DynamicsNewCanonicalAliceNetNodeVersionIterator, error)) {
 	f.defaultHook = hook
 }
 
@@ -15186,7 +15187,7 @@ func (f *IDynamicsFilterNewCanonicalAliceNetNodeVersionFunc) SetDefaultHook(hook
 // instance invokes the hook at the front of the queue and discards it.
 // After the queue is empty, the default hook function is invoked for any
 // future action.
-func (f *IDynamicsFilterNewCanonicalAliceNetNodeVersionFunc) PushHook(hook func(*bind.FilterOpts) (*bindings.DynamicsNewCanonicalAliceNetNodeVersionIterator, error)) {
+func (f *IDynamicsFilterNewCanonicalAliceNetNodeVersionFunc) PushHook(hook func(*bind.FilterOpts) (*ethereum.DynamicsNewCanonicalAliceNetNodeVersionIterator, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -15194,20 +15195,20 @@ func (f *IDynamicsFilterNewCanonicalAliceNetNodeVersionFunc) PushHook(hook func(
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IDynamicsFilterNewCanonicalAliceNetNodeVersionFunc) SetDefaultReturn(r0 *bindings.DynamicsNewCanonicalAliceNetNodeVersionIterator, r1 error) {
-	f.SetDefaultHook(func(*bind.FilterOpts) (*bindings.DynamicsNewCanonicalAliceNetNodeVersionIterator, error) {
+func (f *IDynamicsFilterNewCanonicalAliceNetNodeVersionFunc) SetDefaultReturn(r0 *ethereum.DynamicsNewCanonicalAliceNetNodeVersionIterator, r1 error) {
+	f.SetDefaultHook(func(*bind.FilterOpts) (*ethereum.DynamicsNewCanonicalAliceNetNodeVersionIterator, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IDynamicsFilterNewCanonicalAliceNetNodeVersionFunc) PushReturn(r0 *bindings.DynamicsNewCanonicalAliceNetNodeVersionIterator, r1 error) {
-	f.PushHook(func(*bind.FilterOpts) (*bindings.DynamicsNewCanonicalAliceNetNodeVersionIterator, error) {
+func (f *IDynamicsFilterNewCanonicalAliceNetNodeVersionFunc) PushReturn(r0 *ethereum.DynamicsNewCanonicalAliceNetNodeVersionIterator, r1 error) {
+	f.PushHook(func(*bind.FilterOpts) (*ethereum.DynamicsNewCanonicalAliceNetNodeVersionIterator, error) {
 		return r0, r1
 	})
 }
 
-func (f *IDynamicsFilterNewCanonicalAliceNetNodeVersionFunc) nextHook() func(*bind.FilterOpts) (*bindings.DynamicsNewCanonicalAliceNetNodeVersionIterator, error) {
+func (f *IDynamicsFilterNewCanonicalAliceNetNodeVersionFunc) nextHook() func(*bind.FilterOpts) (*ethereum.DynamicsNewCanonicalAliceNetNodeVersionIterator, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -15247,7 +15248,7 @@ type IDynamicsFilterNewCanonicalAliceNetNodeVersionFuncCall struct {
 	Arg0 *bind.FilterOpts
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 *bindings.DynamicsNewCanonicalAliceNetNodeVersionIterator
+	Result0 *ethereum.DynamicsNewCanonicalAliceNetNodeVersionIterator
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -15269,15 +15270,15 @@ func (c IDynamicsFilterNewCanonicalAliceNetNodeVersionFuncCall) Results() []inte
 // GetAllDynamicValues method of the parent MockIDynamics instance is
 // invoked.
 type IDynamicsGetAllDynamicValuesFunc struct {
-	defaultHook func(*bind.CallOpts) ([]bindings.DynamicValues, error)
-	hooks       []func(*bind.CallOpts) ([]bindings.DynamicValues, error)
+	defaultHook func(*bind.CallOpts) ([]ethereum.DynamicValues, error)
+	hooks       []func(*bind.CallOpts) ([]ethereum.DynamicValues, error)
 	history     []IDynamicsGetAllDynamicValuesFuncCall
 	mutex       sync.Mutex
 }
 
 // GetAllDynamicValues delegates to the next hook function in the queue and
 // stores the parameter and result values of this invocation.
-func (m *MockIDynamics) GetAllDynamicValues(v0 *bind.CallOpts) ([]bindings.DynamicValues, error) {
+func (m *MockIDynamics) GetAllDynamicValues(v0 *bind.CallOpts) ([]ethereum.DynamicValues, error) {
 	r0, r1 := m.GetAllDynamicValuesFunc.nextHook()(v0)
 	m.GetAllDynamicValuesFunc.appendCall(IDynamicsGetAllDynamicValuesFuncCall{v0, r0, r1})
 	return r0, r1
@@ -15286,7 +15287,7 @@ func (m *MockIDynamics) GetAllDynamicValues(v0 *bind.CallOpts) ([]bindings.Dynam
 // SetDefaultHook sets function that is called when the GetAllDynamicValues
 // method of the parent MockIDynamics instance is invoked and the hook queue
 // is empty.
-func (f *IDynamicsGetAllDynamicValuesFunc) SetDefaultHook(hook func(*bind.CallOpts) ([]bindings.DynamicValues, error)) {
+func (f *IDynamicsGetAllDynamicValuesFunc) SetDefaultHook(hook func(*bind.CallOpts) ([]ethereum.DynamicValues, error)) {
 	f.defaultHook = hook
 }
 
@@ -15294,7 +15295,7 @@ func (f *IDynamicsGetAllDynamicValuesFunc) SetDefaultHook(hook func(*bind.CallOp
 // GetAllDynamicValues method of the parent MockIDynamics instance invokes
 // the hook at the front of the queue and discards it. After the queue is
 // empty, the default hook function is invoked for any future action.
-func (f *IDynamicsGetAllDynamicValuesFunc) PushHook(hook func(*bind.CallOpts) ([]bindings.DynamicValues, error)) {
+func (f *IDynamicsGetAllDynamicValuesFunc) PushHook(hook func(*bind.CallOpts) ([]ethereum.DynamicValues, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -15302,20 +15303,20 @@ func (f *IDynamicsGetAllDynamicValuesFunc) PushHook(hook func(*bind.CallOpts) ([
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IDynamicsGetAllDynamicValuesFunc) SetDefaultReturn(r0 []bindings.DynamicValues, r1 error) {
-	f.SetDefaultHook(func(*bind.CallOpts) ([]bindings.DynamicValues, error) {
+func (f *IDynamicsGetAllDynamicValuesFunc) SetDefaultReturn(r0 []ethereum.DynamicValues, r1 error) {
+	f.SetDefaultHook(func(*bind.CallOpts) ([]ethereum.DynamicValues, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IDynamicsGetAllDynamicValuesFunc) PushReturn(r0 []bindings.DynamicValues, r1 error) {
-	f.PushHook(func(*bind.CallOpts) ([]bindings.DynamicValues, error) {
+func (f *IDynamicsGetAllDynamicValuesFunc) PushReturn(r0 []ethereum.DynamicValues, r1 error) {
+	f.PushHook(func(*bind.CallOpts) ([]ethereum.DynamicValues, error) {
 		return r0, r1
 	})
 }
 
-func (f *IDynamicsGetAllDynamicValuesFunc) nextHook() func(*bind.CallOpts) ([]bindings.DynamicValues, error) {
+func (f *IDynamicsGetAllDynamicValuesFunc) nextHook() func(*bind.CallOpts) ([]ethereum.DynamicValues, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -15353,7 +15354,7 @@ type IDynamicsGetAllDynamicValuesFuncCall struct {
 	Arg0 *bind.CallOpts
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 []bindings.DynamicValues
+	Result0 []ethereum.DynamicValues
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -15374,15 +15375,15 @@ func (c IDynamicsGetAllDynamicValuesFuncCall) Results() []interface{} {
 // IDynamicsGetConfigurationFunc describes the behavior when the
 // GetConfiguration method of the parent MockIDynamics instance is invoked.
 type IDynamicsGetConfigurationFunc struct {
-	defaultHook func(*bind.CallOpts) (bindings.Configuration, error)
-	hooks       []func(*bind.CallOpts) (bindings.Configuration, error)
+	defaultHook func(*bind.CallOpts) (ethereum.Configuration, error)
+	hooks       []func(*bind.CallOpts) (ethereum.Configuration, error)
 	history     []IDynamicsGetConfigurationFuncCall
 	mutex       sync.Mutex
 }
 
 // GetConfiguration delegates to the next hook function in the queue and
 // stores the parameter and result values of this invocation.
-func (m *MockIDynamics) GetConfiguration(v0 *bind.CallOpts) (bindings.Configuration, error) {
+func (m *MockIDynamics) GetConfiguration(v0 *bind.CallOpts) (ethereum.Configuration, error) {
 	r0, r1 := m.GetConfigurationFunc.nextHook()(v0)
 	m.GetConfigurationFunc.appendCall(IDynamicsGetConfigurationFuncCall{v0, r0, r1})
 	return r0, r1
@@ -15391,7 +15392,7 @@ func (m *MockIDynamics) GetConfiguration(v0 *bind.CallOpts) (bindings.Configurat
 // SetDefaultHook sets function that is called when the GetConfiguration
 // method of the parent MockIDynamics instance is invoked and the hook queue
 // is empty.
-func (f *IDynamicsGetConfigurationFunc) SetDefaultHook(hook func(*bind.CallOpts) (bindings.Configuration, error)) {
+func (f *IDynamicsGetConfigurationFunc) SetDefaultHook(hook func(*bind.CallOpts) (ethereum.Configuration, error)) {
 	f.defaultHook = hook
 }
 
@@ -15399,7 +15400,7 @@ func (f *IDynamicsGetConfigurationFunc) SetDefaultHook(hook func(*bind.CallOpts)
 // GetConfiguration method of the parent MockIDynamics instance invokes the
 // hook at the front of the queue and discards it. After the queue is empty,
 // the default hook function is invoked for any future action.
-func (f *IDynamicsGetConfigurationFunc) PushHook(hook func(*bind.CallOpts) (bindings.Configuration, error)) {
+func (f *IDynamicsGetConfigurationFunc) PushHook(hook func(*bind.CallOpts) (ethereum.Configuration, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -15407,20 +15408,20 @@ func (f *IDynamicsGetConfigurationFunc) PushHook(hook func(*bind.CallOpts) (bind
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IDynamicsGetConfigurationFunc) SetDefaultReturn(r0 bindings.Configuration, r1 error) {
-	f.SetDefaultHook(func(*bind.CallOpts) (bindings.Configuration, error) {
+func (f *IDynamicsGetConfigurationFunc) SetDefaultReturn(r0 ethereum.Configuration, r1 error) {
+	f.SetDefaultHook(func(*bind.CallOpts) (ethereum.Configuration, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IDynamicsGetConfigurationFunc) PushReturn(r0 bindings.Configuration, r1 error) {
-	f.PushHook(func(*bind.CallOpts) (bindings.Configuration, error) {
+func (f *IDynamicsGetConfigurationFunc) PushReturn(r0 ethereum.Configuration, r1 error) {
+	f.PushHook(func(*bind.CallOpts) (ethereum.Configuration, error) {
 		return r0, r1
 	})
 }
 
-func (f *IDynamicsGetConfigurationFunc) nextHook() func(*bind.CallOpts) (bindings.Configuration, error) {
+func (f *IDynamicsGetConfigurationFunc) nextHook() func(*bind.CallOpts) (ethereum.Configuration, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -15458,7 +15459,7 @@ type IDynamicsGetConfigurationFuncCall struct {
 	Arg0 *bind.CallOpts
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 bindings.Configuration
+	Result0 ethereum.Configuration
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -15586,15 +15587,15 @@ func (c IDynamicsGetEncodingVersionFuncCall) Results() []interface{} {
 // GetFurthestDynamicValues method of the parent MockIDynamics instance is
 // invoked.
 type IDynamicsGetFurthestDynamicValuesFunc struct {
-	defaultHook func(*bind.CallOpts) (bindings.DynamicValues, error)
-	hooks       []func(*bind.CallOpts) (bindings.DynamicValues, error)
+	defaultHook func(*bind.CallOpts) (ethereum.DynamicValues, error)
+	hooks       []func(*bind.CallOpts) (ethereum.DynamicValues, error)
 	history     []IDynamicsGetFurthestDynamicValuesFuncCall
 	mutex       sync.Mutex
 }
 
 // GetFurthestDynamicValues delegates to the next hook function in the queue
 // and stores the parameter and result values of this invocation.
-func (m *MockIDynamics) GetFurthestDynamicValues(v0 *bind.CallOpts) (bindings.DynamicValues, error) {
+func (m *MockIDynamics) GetFurthestDynamicValues(v0 *bind.CallOpts) (ethereum.DynamicValues, error) {
 	r0, r1 := m.GetFurthestDynamicValuesFunc.nextHook()(v0)
 	m.GetFurthestDynamicValuesFunc.appendCall(IDynamicsGetFurthestDynamicValuesFuncCall{v0, r0, r1})
 	return r0, r1
@@ -15603,7 +15604,7 @@ func (m *MockIDynamics) GetFurthestDynamicValues(v0 *bind.CallOpts) (bindings.Dy
 // SetDefaultHook sets function that is called when the
 // GetFurthestDynamicValues method of the parent MockIDynamics instance is
 // invoked and the hook queue is empty.
-func (f *IDynamicsGetFurthestDynamicValuesFunc) SetDefaultHook(hook func(*bind.CallOpts) (bindings.DynamicValues, error)) {
+func (f *IDynamicsGetFurthestDynamicValuesFunc) SetDefaultHook(hook func(*bind.CallOpts) (ethereum.DynamicValues, error)) {
 	f.defaultHook = hook
 }
 
@@ -15612,7 +15613,7 @@ func (f *IDynamicsGetFurthestDynamicValuesFunc) SetDefaultHook(hook func(*bind.C
 // invokes the hook at the front of the queue and discards it. After the
 // queue is empty, the default hook function is invoked for any future
 // action.
-func (f *IDynamicsGetFurthestDynamicValuesFunc) PushHook(hook func(*bind.CallOpts) (bindings.DynamicValues, error)) {
+func (f *IDynamicsGetFurthestDynamicValuesFunc) PushHook(hook func(*bind.CallOpts) (ethereum.DynamicValues, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -15620,20 +15621,20 @@ func (f *IDynamicsGetFurthestDynamicValuesFunc) PushHook(hook func(*bind.CallOpt
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IDynamicsGetFurthestDynamicValuesFunc) SetDefaultReturn(r0 bindings.DynamicValues, r1 error) {
-	f.SetDefaultHook(func(*bind.CallOpts) (bindings.DynamicValues, error) {
+func (f *IDynamicsGetFurthestDynamicValuesFunc) SetDefaultReturn(r0 ethereum.DynamicValues, r1 error) {
+	f.SetDefaultHook(func(*bind.CallOpts) (ethereum.DynamicValues, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IDynamicsGetFurthestDynamicValuesFunc) PushReturn(r0 bindings.DynamicValues, r1 error) {
-	f.PushHook(func(*bind.CallOpts) (bindings.DynamicValues, error) {
+func (f *IDynamicsGetFurthestDynamicValuesFunc) PushReturn(r0 ethereum.DynamicValues, r1 error) {
+	f.PushHook(func(*bind.CallOpts) (ethereum.DynamicValues, error) {
 		return r0, r1
 	})
 }
 
-func (f *IDynamicsGetFurthestDynamicValuesFunc) nextHook() func(*bind.CallOpts) (bindings.DynamicValues, error) {
+func (f *IDynamicsGetFurthestDynamicValuesFunc) nextHook() func(*bind.CallOpts) (ethereum.DynamicValues, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -15672,7 +15673,7 @@ type IDynamicsGetFurthestDynamicValuesFuncCall struct {
 	Arg0 *bind.CallOpts
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 bindings.DynamicValues
+	Result0 ethereum.DynamicValues
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -15694,15 +15695,15 @@ func (c IDynamicsGetFurthestDynamicValuesFuncCall) Results() []interface{} {
 // GetLatestAliceNetVersion method of the parent MockIDynamics instance is
 // invoked.
 type IDynamicsGetLatestAliceNetVersionFunc struct {
-	defaultHook func(*bind.CallOpts) (bindings.CanonicalVersion, error)
-	hooks       []func(*bind.CallOpts) (bindings.CanonicalVersion, error)
+	defaultHook func(*bind.CallOpts) (ethereum.CanonicalVersion, error)
+	hooks       []func(*bind.CallOpts) (ethereum.CanonicalVersion, error)
 	history     []IDynamicsGetLatestAliceNetVersionFuncCall
 	mutex       sync.Mutex
 }
 
 // GetLatestAliceNetVersion delegates to the next hook function in the queue
 // and stores the parameter and result values of this invocation.
-func (m *MockIDynamics) GetLatestAliceNetVersion(v0 *bind.CallOpts) (bindings.CanonicalVersion, error) {
+func (m *MockIDynamics) GetLatestAliceNetVersion(v0 *bind.CallOpts) (ethereum.CanonicalVersion, error) {
 	r0, r1 := m.GetLatestAliceNetVersionFunc.nextHook()(v0)
 	m.GetLatestAliceNetVersionFunc.appendCall(IDynamicsGetLatestAliceNetVersionFuncCall{v0, r0, r1})
 	return r0, r1
@@ -15711,7 +15712,7 @@ func (m *MockIDynamics) GetLatestAliceNetVersion(v0 *bind.CallOpts) (bindings.Ca
 // SetDefaultHook sets function that is called when the
 // GetLatestAliceNetVersion method of the parent MockIDynamics instance is
 // invoked and the hook queue is empty.
-func (f *IDynamicsGetLatestAliceNetVersionFunc) SetDefaultHook(hook func(*bind.CallOpts) (bindings.CanonicalVersion, error)) {
+func (f *IDynamicsGetLatestAliceNetVersionFunc) SetDefaultHook(hook func(*bind.CallOpts) (ethereum.CanonicalVersion, error)) {
 	f.defaultHook = hook
 }
 
@@ -15720,7 +15721,7 @@ func (f *IDynamicsGetLatestAliceNetVersionFunc) SetDefaultHook(hook func(*bind.C
 // invokes the hook at the front of the queue and discards it. After the
 // queue is empty, the default hook function is invoked for any future
 // action.
-func (f *IDynamicsGetLatestAliceNetVersionFunc) PushHook(hook func(*bind.CallOpts) (bindings.CanonicalVersion, error)) {
+func (f *IDynamicsGetLatestAliceNetVersionFunc) PushHook(hook func(*bind.CallOpts) (ethereum.CanonicalVersion, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -15728,20 +15729,20 @@ func (f *IDynamicsGetLatestAliceNetVersionFunc) PushHook(hook func(*bind.CallOpt
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IDynamicsGetLatestAliceNetVersionFunc) SetDefaultReturn(r0 bindings.CanonicalVersion, r1 error) {
-	f.SetDefaultHook(func(*bind.CallOpts) (bindings.CanonicalVersion, error) {
+func (f *IDynamicsGetLatestAliceNetVersionFunc) SetDefaultReturn(r0 ethereum.CanonicalVersion, r1 error) {
+	f.SetDefaultHook(func(*bind.CallOpts) (ethereum.CanonicalVersion, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IDynamicsGetLatestAliceNetVersionFunc) PushReturn(r0 bindings.CanonicalVersion, r1 error) {
-	f.PushHook(func(*bind.CallOpts) (bindings.CanonicalVersion, error) {
+func (f *IDynamicsGetLatestAliceNetVersionFunc) PushReturn(r0 ethereum.CanonicalVersion, r1 error) {
+	f.PushHook(func(*bind.CallOpts) (ethereum.CanonicalVersion, error) {
 		return r0, r1
 	})
 }
 
-func (f *IDynamicsGetLatestAliceNetVersionFunc) nextHook() func(*bind.CallOpts) (bindings.CanonicalVersion, error) {
+func (f *IDynamicsGetLatestAliceNetVersionFunc) nextHook() func(*bind.CallOpts) (ethereum.CanonicalVersion, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -15780,7 +15781,7 @@ type IDynamicsGetLatestAliceNetVersionFuncCall struct {
 	Arg0 *bind.CallOpts
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 bindings.CanonicalVersion
+	Result0 ethereum.CanonicalVersion
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -15802,15 +15803,15 @@ func (c IDynamicsGetLatestAliceNetVersionFuncCall) Results() []interface{} {
 // GetLatestDynamicValues method of the parent MockIDynamics instance is
 // invoked.
 type IDynamicsGetLatestDynamicValuesFunc struct {
-	defaultHook func(*bind.CallOpts) (bindings.DynamicValues, error)
-	hooks       []func(*bind.CallOpts) (bindings.DynamicValues, error)
+	defaultHook func(*bind.CallOpts) (ethereum.DynamicValues, error)
+	hooks       []func(*bind.CallOpts) (ethereum.DynamicValues, error)
 	history     []IDynamicsGetLatestDynamicValuesFuncCall
 	mutex       sync.Mutex
 }
 
 // GetLatestDynamicValues delegates to the next hook function in the queue
 // and stores the parameter and result values of this invocation.
-func (m *MockIDynamics) GetLatestDynamicValues(v0 *bind.CallOpts) (bindings.DynamicValues, error) {
+func (m *MockIDynamics) GetLatestDynamicValues(v0 *bind.CallOpts) (ethereum.DynamicValues, error) {
 	r0, r1 := m.GetLatestDynamicValuesFunc.nextHook()(v0)
 	m.GetLatestDynamicValuesFunc.appendCall(IDynamicsGetLatestDynamicValuesFuncCall{v0, r0, r1})
 	return r0, r1
@@ -15819,7 +15820,7 @@ func (m *MockIDynamics) GetLatestDynamicValues(v0 *bind.CallOpts) (bindings.Dyna
 // SetDefaultHook sets function that is called when the
 // GetLatestDynamicValues method of the parent MockIDynamics instance is
 // invoked and the hook queue is empty.
-func (f *IDynamicsGetLatestDynamicValuesFunc) SetDefaultHook(hook func(*bind.CallOpts) (bindings.DynamicValues, error)) {
+func (f *IDynamicsGetLatestDynamicValuesFunc) SetDefaultHook(hook func(*bind.CallOpts) (ethereum.DynamicValues, error)) {
 	f.defaultHook = hook
 }
 
@@ -15828,7 +15829,7 @@ func (f *IDynamicsGetLatestDynamicValuesFunc) SetDefaultHook(hook func(*bind.Cal
 // invokes the hook at the front of the queue and discards it. After the
 // queue is empty, the default hook function is invoked for any future
 // action.
-func (f *IDynamicsGetLatestDynamicValuesFunc) PushHook(hook func(*bind.CallOpts) (bindings.DynamicValues, error)) {
+func (f *IDynamicsGetLatestDynamicValuesFunc) PushHook(hook func(*bind.CallOpts) (ethereum.DynamicValues, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -15836,20 +15837,20 @@ func (f *IDynamicsGetLatestDynamicValuesFunc) PushHook(hook func(*bind.CallOpts)
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IDynamicsGetLatestDynamicValuesFunc) SetDefaultReturn(r0 bindings.DynamicValues, r1 error) {
-	f.SetDefaultHook(func(*bind.CallOpts) (bindings.DynamicValues, error) {
+func (f *IDynamicsGetLatestDynamicValuesFunc) SetDefaultReturn(r0 ethereum.DynamicValues, r1 error) {
+	f.SetDefaultHook(func(*bind.CallOpts) (ethereum.DynamicValues, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IDynamicsGetLatestDynamicValuesFunc) PushReturn(r0 bindings.DynamicValues, r1 error) {
-	f.PushHook(func(*bind.CallOpts) (bindings.DynamicValues, error) {
+func (f *IDynamicsGetLatestDynamicValuesFunc) PushReturn(r0 ethereum.DynamicValues, r1 error) {
+	f.PushHook(func(*bind.CallOpts) (ethereum.DynamicValues, error) {
 		return r0, r1
 	})
 }
 
-func (f *IDynamicsGetLatestDynamicValuesFunc) nextHook() func(*bind.CallOpts) (bindings.DynamicValues, error) {
+func (f *IDynamicsGetLatestDynamicValuesFunc) nextHook() func(*bind.CallOpts) (ethereum.DynamicValues, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -15888,7 +15889,7 @@ type IDynamicsGetLatestDynamicValuesFuncCall struct {
 	Arg0 *bind.CallOpts
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 bindings.DynamicValues
+	Result0 ethereum.DynamicValues
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -16025,15 +16026,15 @@ func (c IDynamicsGetMetamorphicContractAddressFuncCall) Results() []interface{} 
 // GetPreviousDynamicValues method of the parent MockIDynamics instance is
 // invoked.
 type IDynamicsGetPreviousDynamicValuesFunc struct {
-	defaultHook func(*bind.CallOpts, *big.Int) (bindings.DynamicValues, error)
-	hooks       []func(*bind.CallOpts, *big.Int) (bindings.DynamicValues, error)
+	defaultHook func(*bind.CallOpts, *big.Int) (ethereum.DynamicValues, error)
+	hooks       []func(*bind.CallOpts, *big.Int) (ethereum.DynamicValues, error)
 	history     []IDynamicsGetPreviousDynamicValuesFuncCall
 	mutex       sync.Mutex
 }
 
 // GetPreviousDynamicValues delegates to the next hook function in the queue
 // and stores the parameter and result values of this invocation.
-func (m *MockIDynamics) GetPreviousDynamicValues(v0 *bind.CallOpts, v1 *big.Int) (bindings.DynamicValues, error) {
+func (m *MockIDynamics) GetPreviousDynamicValues(v0 *bind.CallOpts, v1 *big.Int) (ethereum.DynamicValues, error) {
 	r0, r1 := m.GetPreviousDynamicValuesFunc.nextHook()(v0, v1)
 	m.GetPreviousDynamicValuesFunc.appendCall(IDynamicsGetPreviousDynamicValuesFuncCall{v0, v1, r0, r1})
 	return r0, r1
@@ -16042,7 +16043,7 @@ func (m *MockIDynamics) GetPreviousDynamicValues(v0 *bind.CallOpts, v1 *big.Int)
 // SetDefaultHook sets function that is called when the
 // GetPreviousDynamicValues method of the parent MockIDynamics instance is
 // invoked and the hook queue is empty.
-func (f *IDynamicsGetPreviousDynamicValuesFunc) SetDefaultHook(hook func(*bind.CallOpts, *big.Int) (bindings.DynamicValues, error)) {
+func (f *IDynamicsGetPreviousDynamicValuesFunc) SetDefaultHook(hook func(*bind.CallOpts, *big.Int) (ethereum.DynamicValues, error)) {
 	f.defaultHook = hook
 }
 
@@ -16051,7 +16052,7 @@ func (f *IDynamicsGetPreviousDynamicValuesFunc) SetDefaultHook(hook func(*bind.C
 // invokes the hook at the front of the queue and discards it. After the
 // queue is empty, the default hook function is invoked for any future
 // action.
-func (f *IDynamicsGetPreviousDynamicValuesFunc) PushHook(hook func(*bind.CallOpts, *big.Int) (bindings.DynamicValues, error)) {
+func (f *IDynamicsGetPreviousDynamicValuesFunc) PushHook(hook func(*bind.CallOpts, *big.Int) (ethereum.DynamicValues, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -16059,20 +16060,20 @@ func (f *IDynamicsGetPreviousDynamicValuesFunc) PushHook(hook func(*bind.CallOpt
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IDynamicsGetPreviousDynamicValuesFunc) SetDefaultReturn(r0 bindings.DynamicValues, r1 error) {
-	f.SetDefaultHook(func(*bind.CallOpts, *big.Int) (bindings.DynamicValues, error) {
+func (f *IDynamicsGetPreviousDynamicValuesFunc) SetDefaultReturn(r0 ethereum.DynamicValues, r1 error) {
+	f.SetDefaultHook(func(*bind.CallOpts, *big.Int) (ethereum.DynamicValues, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IDynamicsGetPreviousDynamicValuesFunc) PushReturn(r0 bindings.DynamicValues, r1 error) {
-	f.PushHook(func(*bind.CallOpts, *big.Int) (bindings.DynamicValues, error) {
+func (f *IDynamicsGetPreviousDynamicValuesFunc) PushReturn(r0 ethereum.DynamicValues, r1 error) {
+	f.PushHook(func(*bind.CallOpts, *big.Int) (ethereum.DynamicValues, error) {
 		return r0, r1
 	})
 }
 
-func (f *IDynamicsGetPreviousDynamicValuesFunc) nextHook() func(*bind.CallOpts, *big.Int) (bindings.DynamicValues, error) {
+func (f *IDynamicsGetPreviousDynamicValuesFunc) nextHook() func(*bind.CallOpts, *big.Int) (ethereum.DynamicValues, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -16114,7 +16115,7 @@ type IDynamicsGetPreviousDynamicValuesFuncCall struct {
 	Arg1 *big.Int
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 bindings.DynamicValues
+	Result0 ethereum.DynamicValues
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -16243,15 +16244,15 @@ func (c IDynamicsInitializeFuncCall) Results() []interface{} {
 // ParseDeployedStorageContract method of the parent MockIDynamics instance
 // is invoked.
 type IDynamicsParseDeployedStorageContractFunc struct {
-	defaultHook func(types.Log) (*bindings.DynamicsDeployedStorageContract, error)
-	hooks       []func(types.Log) (*bindings.DynamicsDeployedStorageContract, error)
+	defaultHook func(types.Log) (*ethereum.DynamicsDeployedStorageContract, error)
+	hooks       []func(types.Log) (*ethereum.DynamicsDeployedStorageContract, error)
 	history     []IDynamicsParseDeployedStorageContractFuncCall
 	mutex       sync.Mutex
 }
 
 // ParseDeployedStorageContract delegates to the next hook function in the
 // queue and stores the parameter and result values of this invocation.
-func (m *MockIDynamics) ParseDeployedStorageContract(v0 types.Log) (*bindings.DynamicsDeployedStorageContract, error) {
+func (m *MockIDynamics) ParseDeployedStorageContract(v0 types.Log) (*ethereum.DynamicsDeployedStorageContract, error) {
 	r0, r1 := m.ParseDeployedStorageContractFunc.nextHook()(v0)
 	m.ParseDeployedStorageContractFunc.appendCall(IDynamicsParseDeployedStorageContractFuncCall{v0, r0, r1})
 	return r0, r1
@@ -16260,7 +16261,7 @@ func (m *MockIDynamics) ParseDeployedStorageContract(v0 types.Log) (*bindings.Dy
 // SetDefaultHook sets function that is called when the
 // ParseDeployedStorageContract method of the parent MockIDynamics instance
 // is invoked and the hook queue is empty.
-func (f *IDynamicsParseDeployedStorageContractFunc) SetDefaultHook(hook func(types.Log) (*bindings.DynamicsDeployedStorageContract, error)) {
+func (f *IDynamicsParseDeployedStorageContractFunc) SetDefaultHook(hook func(types.Log) (*ethereum.DynamicsDeployedStorageContract, error)) {
 	f.defaultHook = hook
 }
 
@@ -16269,7 +16270,7 @@ func (f *IDynamicsParseDeployedStorageContractFunc) SetDefaultHook(hook func(typ
 // invokes the hook at the front of the queue and discards it. After the
 // queue is empty, the default hook function is invoked for any future
 // action.
-func (f *IDynamicsParseDeployedStorageContractFunc) PushHook(hook func(types.Log) (*bindings.DynamicsDeployedStorageContract, error)) {
+func (f *IDynamicsParseDeployedStorageContractFunc) PushHook(hook func(types.Log) (*ethereum.DynamicsDeployedStorageContract, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -16277,20 +16278,20 @@ func (f *IDynamicsParseDeployedStorageContractFunc) PushHook(hook func(types.Log
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IDynamicsParseDeployedStorageContractFunc) SetDefaultReturn(r0 *bindings.DynamicsDeployedStorageContract, r1 error) {
-	f.SetDefaultHook(func(types.Log) (*bindings.DynamicsDeployedStorageContract, error) {
+func (f *IDynamicsParseDeployedStorageContractFunc) SetDefaultReturn(r0 *ethereum.DynamicsDeployedStorageContract, r1 error) {
+	f.SetDefaultHook(func(types.Log) (*ethereum.DynamicsDeployedStorageContract, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IDynamicsParseDeployedStorageContractFunc) PushReturn(r0 *bindings.DynamicsDeployedStorageContract, r1 error) {
-	f.PushHook(func(types.Log) (*bindings.DynamicsDeployedStorageContract, error) {
+func (f *IDynamicsParseDeployedStorageContractFunc) PushReturn(r0 *ethereum.DynamicsDeployedStorageContract, r1 error) {
+	f.PushHook(func(types.Log) (*ethereum.DynamicsDeployedStorageContract, error) {
 		return r0, r1
 	})
 }
 
-func (f *IDynamicsParseDeployedStorageContractFunc) nextHook() func(types.Log) (*bindings.DynamicsDeployedStorageContract, error) {
+func (f *IDynamicsParseDeployedStorageContractFunc) nextHook() func(types.Log) (*ethereum.DynamicsDeployedStorageContract, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -16330,7 +16331,7 @@ type IDynamicsParseDeployedStorageContractFuncCall struct {
 	Arg0 types.Log
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 *bindings.DynamicsDeployedStorageContract
+	Result0 *ethereum.DynamicsDeployedStorageContract
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -16352,15 +16353,15 @@ func (c IDynamicsParseDeployedStorageContractFuncCall) Results() []interface{} {
 // ParseDynamicValueChanged method of the parent MockIDynamics instance is
 // invoked.
 type IDynamicsParseDynamicValueChangedFunc struct {
-	defaultHook func(types.Log) (*bindings.DynamicsDynamicValueChanged, error)
-	hooks       []func(types.Log) (*bindings.DynamicsDynamicValueChanged, error)
+	defaultHook func(types.Log) (*ethereum.DynamicsDynamicValueChanged, error)
+	hooks       []func(types.Log) (*ethereum.DynamicsDynamicValueChanged, error)
 	history     []IDynamicsParseDynamicValueChangedFuncCall
 	mutex       sync.Mutex
 }
 
 // ParseDynamicValueChanged delegates to the next hook function in the queue
 // and stores the parameter and result values of this invocation.
-func (m *MockIDynamics) ParseDynamicValueChanged(v0 types.Log) (*bindings.DynamicsDynamicValueChanged, error) {
+func (m *MockIDynamics) ParseDynamicValueChanged(v0 types.Log) (*ethereum.DynamicsDynamicValueChanged, error) {
 	r0, r1 := m.ParseDynamicValueChangedFunc.nextHook()(v0)
 	m.ParseDynamicValueChangedFunc.appendCall(IDynamicsParseDynamicValueChangedFuncCall{v0, r0, r1})
 	return r0, r1
@@ -16369,7 +16370,7 @@ func (m *MockIDynamics) ParseDynamicValueChanged(v0 types.Log) (*bindings.Dynami
 // SetDefaultHook sets function that is called when the
 // ParseDynamicValueChanged method of the parent MockIDynamics instance is
 // invoked and the hook queue is empty.
-func (f *IDynamicsParseDynamicValueChangedFunc) SetDefaultHook(hook func(types.Log) (*bindings.DynamicsDynamicValueChanged, error)) {
+func (f *IDynamicsParseDynamicValueChangedFunc) SetDefaultHook(hook func(types.Log) (*ethereum.DynamicsDynamicValueChanged, error)) {
 	f.defaultHook = hook
 }
 
@@ -16378,7 +16379,7 @@ func (f *IDynamicsParseDynamicValueChangedFunc) SetDefaultHook(hook func(types.L
 // invokes the hook at the front of the queue and discards it. After the
 // queue is empty, the default hook function is invoked for any future
 // action.
-func (f *IDynamicsParseDynamicValueChangedFunc) PushHook(hook func(types.Log) (*bindings.DynamicsDynamicValueChanged, error)) {
+func (f *IDynamicsParseDynamicValueChangedFunc) PushHook(hook func(types.Log) (*ethereum.DynamicsDynamicValueChanged, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -16386,20 +16387,20 @@ func (f *IDynamicsParseDynamicValueChangedFunc) PushHook(hook func(types.Log) (*
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IDynamicsParseDynamicValueChangedFunc) SetDefaultReturn(r0 *bindings.DynamicsDynamicValueChanged, r1 error) {
-	f.SetDefaultHook(func(types.Log) (*bindings.DynamicsDynamicValueChanged, error) {
+func (f *IDynamicsParseDynamicValueChangedFunc) SetDefaultReturn(r0 *ethereum.DynamicsDynamicValueChanged, r1 error) {
+	f.SetDefaultHook(func(types.Log) (*ethereum.DynamicsDynamicValueChanged, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IDynamicsParseDynamicValueChangedFunc) PushReturn(r0 *bindings.DynamicsDynamicValueChanged, r1 error) {
-	f.PushHook(func(types.Log) (*bindings.DynamicsDynamicValueChanged, error) {
+func (f *IDynamicsParseDynamicValueChangedFunc) PushReturn(r0 *ethereum.DynamicsDynamicValueChanged, r1 error) {
+	f.PushHook(func(types.Log) (*ethereum.DynamicsDynamicValueChanged, error) {
 		return r0, r1
 	})
 }
 
-func (f *IDynamicsParseDynamicValueChangedFunc) nextHook() func(types.Log) (*bindings.DynamicsDynamicValueChanged, error) {
+func (f *IDynamicsParseDynamicValueChangedFunc) nextHook() func(types.Log) (*ethereum.DynamicsDynamicValueChanged, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -16438,7 +16439,7 @@ type IDynamicsParseDynamicValueChangedFuncCall struct {
 	Arg0 types.Log
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 *bindings.DynamicsDynamicValueChanged
+	Result0 *ethereum.DynamicsDynamicValueChanged
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -16459,15 +16460,15 @@ func (c IDynamicsParseDynamicValueChangedFuncCall) Results() []interface{} {
 // IDynamicsParseInitializedFunc describes the behavior when the
 // ParseInitialized method of the parent MockIDynamics instance is invoked.
 type IDynamicsParseInitializedFunc struct {
-	defaultHook func(types.Log) (*bindings.DynamicsInitialized, error)
-	hooks       []func(types.Log) (*bindings.DynamicsInitialized, error)
+	defaultHook func(types.Log) (*ethereum.DynamicsInitialized, error)
+	hooks       []func(types.Log) (*ethereum.DynamicsInitialized, error)
 	history     []IDynamicsParseInitializedFuncCall
 	mutex       sync.Mutex
 }
 
 // ParseInitialized delegates to the next hook function in the queue and
 // stores the parameter and result values of this invocation.
-func (m *MockIDynamics) ParseInitialized(v0 types.Log) (*bindings.DynamicsInitialized, error) {
+func (m *MockIDynamics) ParseInitialized(v0 types.Log) (*ethereum.DynamicsInitialized, error) {
 	r0, r1 := m.ParseInitializedFunc.nextHook()(v0)
 	m.ParseInitializedFunc.appendCall(IDynamicsParseInitializedFuncCall{v0, r0, r1})
 	return r0, r1
@@ -16476,7 +16477,7 @@ func (m *MockIDynamics) ParseInitialized(v0 types.Log) (*bindings.DynamicsInitia
 // SetDefaultHook sets function that is called when the ParseInitialized
 // method of the parent MockIDynamics instance is invoked and the hook queue
 // is empty.
-func (f *IDynamicsParseInitializedFunc) SetDefaultHook(hook func(types.Log) (*bindings.DynamicsInitialized, error)) {
+func (f *IDynamicsParseInitializedFunc) SetDefaultHook(hook func(types.Log) (*ethereum.DynamicsInitialized, error)) {
 	f.defaultHook = hook
 }
 
@@ -16484,7 +16485,7 @@ func (f *IDynamicsParseInitializedFunc) SetDefaultHook(hook func(types.Log) (*bi
 // ParseInitialized method of the parent MockIDynamics instance invokes the
 // hook at the front of the queue and discards it. After the queue is empty,
 // the default hook function is invoked for any future action.
-func (f *IDynamicsParseInitializedFunc) PushHook(hook func(types.Log) (*bindings.DynamicsInitialized, error)) {
+func (f *IDynamicsParseInitializedFunc) PushHook(hook func(types.Log) (*ethereum.DynamicsInitialized, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -16492,20 +16493,20 @@ func (f *IDynamicsParseInitializedFunc) PushHook(hook func(types.Log) (*bindings
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IDynamicsParseInitializedFunc) SetDefaultReturn(r0 *bindings.DynamicsInitialized, r1 error) {
-	f.SetDefaultHook(func(types.Log) (*bindings.DynamicsInitialized, error) {
+func (f *IDynamicsParseInitializedFunc) SetDefaultReturn(r0 *ethereum.DynamicsInitialized, r1 error) {
+	f.SetDefaultHook(func(types.Log) (*ethereum.DynamicsInitialized, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IDynamicsParseInitializedFunc) PushReturn(r0 *bindings.DynamicsInitialized, r1 error) {
-	f.PushHook(func(types.Log) (*bindings.DynamicsInitialized, error) {
+func (f *IDynamicsParseInitializedFunc) PushReturn(r0 *ethereum.DynamicsInitialized, r1 error) {
+	f.PushHook(func(types.Log) (*ethereum.DynamicsInitialized, error) {
 		return r0, r1
 	})
 }
 
-func (f *IDynamicsParseInitializedFunc) nextHook() func(types.Log) (*bindings.DynamicsInitialized, error) {
+func (f *IDynamicsParseInitializedFunc) nextHook() func(types.Log) (*ethereum.DynamicsInitialized, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -16543,7 +16544,7 @@ type IDynamicsParseInitializedFuncCall struct {
 	Arg0 types.Log
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 *bindings.DynamicsInitialized
+	Result0 *ethereum.DynamicsInitialized
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -16565,8 +16566,8 @@ func (c IDynamicsParseInitializedFuncCall) Results() []interface{} {
 // when the ParseNewAliceNetNodeVersionAvailable method of the parent
 // MockIDynamics instance is invoked.
 type IDynamicsParseNewAliceNetNodeVersionAvailableFunc struct {
-	defaultHook func(types.Log) (*bindings.DynamicsNewAliceNetNodeVersionAvailable, error)
-	hooks       []func(types.Log) (*bindings.DynamicsNewAliceNetNodeVersionAvailable, error)
+	defaultHook func(types.Log) (*ethereum.DynamicsNewAliceNetNodeVersionAvailable, error)
+	hooks       []func(types.Log) (*ethereum.DynamicsNewAliceNetNodeVersionAvailable, error)
 	history     []IDynamicsParseNewAliceNetNodeVersionAvailableFuncCall
 	mutex       sync.Mutex
 }
@@ -16574,7 +16575,7 @@ type IDynamicsParseNewAliceNetNodeVersionAvailableFunc struct {
 // ParseNewAliceNetNodeVersionAvailable delegates to the next hook function
 // in the queue and stores the parameter and result values of this
 // invocation.
-func (m *MockIDynamics) ParseNewAliceNetNodeVersionAvailable(v0 types.Log) (*bindings.DynamicsNewAliceNetNodeVersionAvailable, error) {
+func (m *MockIDynamics) ParseNewAliceNetNodeVersionAvailable(v0 types.Log) (*ethereum.DynamicsNewAliceNetNodeVersionAvailable, error) {
 	r0, r1 := m.ParseNewAliceNetNodeVersionAvailableFunc.nextHook()(v0)
 	m.ParseNewAliceNetNodeVersionAvailableFunc.appendCall(IDynamicsParseNewAliceNetNodeVersionAvailableFuncCall{v0, r0, r1})
 	return r0, r1
@@ -16583,7 +16584,7 @@ func (m *MockIDynamics) ParseNewAliceNetNodeVersionAvailable(v0 types.Log) (*bin
 // SetDefaultHook sets function that is called when the
 // ParseNewAliceNetNodeVersionAvailable method of the parent MockIDynamics
 // instance is invoked and the hook queue is empty.
-func (f *IDynamicsParseNewAliceNetNodeVersionAvailableFunc) SetDefaultHook(hook func(types.Log) (*bindings.DynamicsNewAliceNetNodeVersionAvailable, error)) {
+func (f *IDynamicsParseNewAliceNetNodeVersionAvailableFunc) SetDefaultHook(hook func(types.Log) (*ethereum.DynamicsNewAliceNetNodeVersionAvailable, error)) {
 	f.defaultHook = hook
 }
 
@@ -16592,7 +16593,7 @@ func (f *IDynamicsParseNewAliceNetNodeVersionAvailableFunc) SetDefaultHook(hook 
 // instance invokes the hook at the front of the queue and discards it.
 // After the queue is empty, the default hook function is invoked for any
 // future action.
-func (f *IDynamicsParseNewAliceNetNodeVersionAvailableFunc) PushHook(hook func(types.Log) (*bindings.DynamicsNewAliceNetNodeVersionAvailable, error)) {
+func (f *IDynamicsParseNewAliceNetNodeVersionAvailableFunc) PushHook(hook func(types.Log) (*ethereum.DynamicsNewAliceNetNodeVersionAvailable, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -16600,20 +16601,20 @@ func (f *IDynamicsParseNewAliceNetNodeVersionAvailableFunc) PushHook(hook func(t
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IDynamicsParseNewAliceNetNodeVersionAvailableFunc) SetDefaultReturn(r0 *bindings.DynamicsNewAliceNetNodeVersionAvailable, r1 error) {
-	f.SetDefaultHook(func(types.Log) (*bindings.DynamicsNewAliceNetNodeVersionAvailable, error) {
+func (f *IDynamicsParseNewAliceNetNodeVersionAvailableFunc) SetDefaultReturn(r0 *ethereum.DynamicsNewAliceNetNodeVersionAvailable, r1 error) {
+	f.SetDefaultHook(func(types.Log) (*ethereum.DynamicsNewAliceNetNodeVersionAvailable, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IDynamicsParseNewAliceNetNodeVersionAvailableFunc) PushReturn(r0 *bindings.DynamicsNewAliceNetNodeVersionAvailable, r1 error) {
-	f.PushHook(func(types.Log) (*bindings.DynamicsNewAliceNetNodeVersionAvailable, error) {
+func (f *IDynamicsParseNewAliceNetNodeVersionAvailableFunc) PushReturn(r0 *ethereum.DynamicsNewAliceNetNodeVersionAvailable, r1 error) {
+	f.PushHook(func(types.Log) (*ethereum.DynamicsNewAliceNetNodeVersionAvailable, error) {
 		return r0, r1
 	})
 }
 
-func (f *IDynamicsParseNewAliceNetNodeVersionAvailableFunc) nextHook() func(types.Log) (*bindings.DynamicsNewAliceNetNodeVersionAvailable, error) {
+func (f *IDynamicsParseNewAliceNetNodeVersionAvailableFunc) nextHook() func(types.Log) (*ethereum.DynamicsNewAliceNetNodeVersionAvailable, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -16653,7 +16654,7 @@ type IDynamicsParseNewAliceNetNodeVersionAvailableFuncCall struct {
 	Arg0 types.Log
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 *bindings.DynamicsNewAliceNetNodeVersionAvailable
+	Result0 *ethereum.DynamicsNewAliceNetNodeVersionAvailable
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -16675,8 +16676,8 @@ func (c IDynamicsParseNewAliceNetNodeVersionAvailableFuncCall) Results() []inter
 // when the ParseNewCanonicalAliceNetNodeVersion method of the parent
 // MockIDynamics instance is invoked.
 type IDynamicsParseNewCanonicalAliceNetNodeVersionFunc struct {
-	defaultHook func(types.Log) (*bindings.DynamicsNewCanonicalAliceNetNodeVersion, error)
-	hooks       []func(types.Log) (*bindings.DynamicsNewCanonicalAliceNetNodeVersion, error)
+	defaultHook func(types.Log) (*ethereum.DynamicsNewCanonicalAliceNetNodeVersion, error)
+	hooks       []func(types.Log) (*ethereum.DynamicsNewCanonicalAliceNetNodeVersion, error)
 	history     []IDynamicsParseNewCanonicalAliceNetNodeVersionFuncCall
 	mutex       sync.Mutex
 }
@@ -16684,7 +16685,7 @@ type IDynamicsParseNewCanonicalAliceNetNodeVersionFunc struct {
 // ParseNewCanonicalAliceNetNodeVersion delegates to the next hook function
 // in the queue and stores the parameter and result values of this
 // invocation.
-func (m *MockIDynamics) ParseNewCanonicalAliceNetNodeVersion(v0 types.Log) (*bindings.DynamicsNewCanonicalAliceNetNodeVersion, error) {
+func (m *MockIDynamics) ParseNewCanonicalAliceNetNodeVersion(v0 types.Log) (*ethereum.DynamicsNewCanonicalAliceNetNodeVersion, error) {
 	r0, r1 := m.ParseNewCanonicalAliceNetNodeVersionFunc.nextHook()(v0)
 	m.ParseNewCanonicalAliceNetNodeVersionFunc.appendCall(IDynamicsParseNewCanonicalAliceNetNodeVersionFuncCall{v0, r0, r1})
 	return r0, r1
@@ -16693,7 +16694,7 @@ func (m *MockIDynamics) ParseNewCanonicalAliceNetNodeVersion(v0 types.Log) (*bin
 // SetDefaultHook sets function that is called when the
 // ParseNewCanonicalAliceNetNodeVersion method of the parent MockIDynamics
 // instance is invoked and the hook queue is empty.
-func (f *IDynamicsParseNewCanonicalAliceNetNodeVersionFunc) SetDefaultHook(hook func(types.Log) (*bindings.DynamicsNewCanonicalAliceNetNodeVersion, error)) {
+func (f *IDynamicsParseNewCanonicalAliceNetNodeVersionFunc) SetDefaultHook(hook func(types.Log) (*ethereum.DynamicsNewCanonicalAliceNetNodeVersion, error)) {
 	f.defaultHook = hook
 }
 
@@ -16702,7 +16703,7 @@ func (f *IDynamicsParseNewCanonicalAliceNetNodeVersionFunc) SetDefaultHook(hook 
 // instance invokes the hook at the front of the queue and discards it.
 // After the queue is empty, the default hook function is invoked for any
 // future action.
-func (f *IDynamicsParseNewCanonicalAliceNetNodeVersionFunc) PushHook(hook func(types.Log) (*bindings.DynamicsNewCanonicalAliceNetNodeVersion, error)) {
+func (f *IDynamicsParseNewCanonicalAliceNetNodeVersionFunc) PushHook(hook func(types.Log) (*ethereum.DynamicsNewCanonicalAliceNetNodeVersion, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -16710,20 +16711,20 @@ func (f *IDynamicsParseNewCanonicalAliceNetNodeVersionFunc) PushHook(hook func(t
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IDynamicsParseNewCanonicalAliceNetNodeVersionFunc) SetDefaultReturn(r0 *bindings.DynamicsNewCanonicalAliceNetNodeVersion, r1 error) {
-	f.SetDefaultHook(func(types.Log) (*bindings.DynamicsNewCanonicalAliceNetNodeVersion, error) {
+func (f *IDynamicsParseNewCanonicalAliceNetNodeVersionFunc) SetDefaultReturn(r0 *ethereum.DynamicsNewCanonicalAliceNetNodeVersion, r1 error) {
+	f.SetDefaultHook(func(types.Log) (*ethereum.DynamicsNewCanonicalAliceNetNodeVersion, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IDynamicsParseNewCanonicalAliceNetNodeVersionFunc) PushReturn(r0 *bindings.DynamicsNewCanonicalAliceNetNodeVersion, r1 error) {
-	f.PushHook(func(types.Log) (*bindings.DynamicsNewCanonicalAliceNetNodeVersion, error) {
+func (f *IDynamicsParseNewCanonicalAliceNetNodeVersionFunc) PushReturn(r0 *ethereum.DynamicsNewCanonicalAliceNetNodeVersion, r1 error) {
+	f.PushHook(func(types.Log) (*ethereum.DynamicsNewCanonicalAliceNetNodeVersion, error) {
 		return r0, r1
 	})
 }
 
-func (f *IDynamicsParseNewCanonicalAliceNetNodeVersionFunc) nextHook() func(types.Log) (*bindings.DynamicsNewCanonicalAliceNetNodeVersion, error) {
+func (f *IDynamicsParseNewCanonicalAliceNetNodeVersionFunc) nextHook() func(types.Log) (*ethereum.DynamicsNewCanonicalAliceNetNodeVersion, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -16763,7 +16764,7 @@ type IDynamicsParseNewCanonicalAliceNetNodeVersionFuncCall struct {
 	Arg0 types.Log
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 *bindings.DynamicsNewCanonicalAliceNetNodeVersion
+	Result0 *ethereum.DynamicsNewCanonicalAliceNetNodeVersion
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -16784,15 +16785,15 @@ func (c IDynamicsParseNewCanonicalAliceNetNodeVersionFuncCall) Results() []inter
 // IDynamicsSetConfigurationFunc describes the behavior when the
 // SetConfiguration method of the parent MockIDynamics instance is invoked.
 type IDynamicsSetConfigurationFunc struct {
-	defaultHook func(*bind.TransactOpts, bindings.Configuration) (*types.Transaction, error)
-	hooks       []func(*bind.TransactOpts, bindings.Configuration) (*types.Transaction, error)
+	defaultHook func(*bind.TransactOpts, ethereum.Configuration) (*types.Transaction, error)
+	hooks       []func(*bind.TransactOpts, ethereum.Configuration) (*types.Transaction, error)
 	history     []IDynamicsSetConfigurationFuncCall
 	mutex       sync.Mutex
 }
 
 // SetConfiguration delegates to the next hook function in the queue and
 // stores the parameter and result values of this invocation.
-func (m *MockIDynamics) SetConfiguration(v0 *bind.TransactOpts, v1 bindings.Configuration) (*types.Transaction, error) {
+func (m *MockIDynamics) SetConfiguration(v0 *bind.TransactOpts, v1 ethereum.Configuration) (*types.Transaction, error) {
 	r0, r1 := m.SetConfigurationFunc.nextHook()(v0, v1)
 	m.SetConfigurationFunc.appendCall(IDynamicsSetConfigurationFuncCall{v0, v1, r0, r1})
 	return r0, r1
@@ -16801,7 +16802,7 @@ func (m *MockIDynamics) SetConfiguration(v0 *bind.TransactOpts, v1 bindings.Conf
 // SetDefaultHook sets function that is called when the SetConfiguration
 // method of the parent MockIDynamics instance is invoked and the hook queue
 // is empty.
-func (f *IDynamicsSetConfigurationFunc) SetDefaultHook(hook func(*bind.TransactOpts, bindings.Configuration) (*types.Transaction, error)) {
+func (f *IDynamicsSetConfigurationFunc) SetDefaultHook(hook func(*bind.TransactOpts, ethereum.Configuration) (*types.Transaction, error)) {
 	f.defaultHook = hook
 }
 
@@ -16809,7 +16810,7 @@ func (f *IDynamicsSetConfigurationFunc) SetDefaultHook(hook func(*bind.TransactO
 // SetConfiguration method of the parent MockIDynamics instance invokes the
 // hook at the front of the queue and discards it. After the queue is empty,
 // the default hook function is invoked for any future action.
-func (f *IDynamicsSetConfigurationFunc) PushHook(hook func(*bind.TransactOpts, bindings.Configuration) (*types.Transaction, error)) {
+func (f *IDynamicsSetConfigurationFunc) PushHook(hook func(*bind.TransactOpts, ethereum.Configuration) (*types.Transaction, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -16818,19 +16819,19 @@ func (f *IDynamicsSetConfigurationFunc) PushHook(hook func(*bind.TransactOpts, b
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
 func (f *IDynamicsSetConfigurationFunc) SetDefaultReturn(r0 *types.Transaction, r1 error) {
-	f.SetDefaultHook(func(*bind.TransactOpts, bindings.Configuration) (*types.Transaction, error) {
+	f.SetDefaultHook(func(*bind.TransactOpts, ethereum.Configuration) (*types.Transaction, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
 func (f *IDynamicsSetConfigurationFunc) PushReturn(r0 *types.Transaction, r1 error) {
-	f.PushHook(func(*bind.TransactOpts, bindings.Configuration) (*types.Transaction, error) {
+	f.PushHook(func(*bind.TransactOpts, ethereum.Configuration) (*types.Transaction, error) {
 		return r0, r1
 	})
 }
 
-func (f *IDynamicsSetConfigurationFunc) nextHook() func(*bind.TransactOpts, bindings.Configuration) (*types.Transaction, error) {
+func (f *IDynamicsSetConfigurationFunc) nextHook() func(*bind.TransactOpts, ethereum.Configuration) (*types.Transaction, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -16868,7 +16869,7 @@ type IDynamicsSetConfigurationFuncCall struct {
 	Arg0 *bind.TransactOpts
 	// Arg1 is the value of the 2nd argument passed to this method
 	// invocation.
-	Arg1 bindings.Configuration
+	Arg1 ethereum.Configuration
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
 	Result0 *types.Transaction
@@ -17123,15 +17124,15 @@ func (c IDynamicsUpdateHeadFuncCall) Results() []interface{} {
 // WatchDeployedStorageContract method of the parent MockIDynamics instance
 // is invoked.
 type IDynamicsWatchDeployedStorageContractFunc struct {
-	defaultHook func(*bind.WatchOpts, chan<- *bindings.DynamicsDeployedStorageContract) (event.Subscription, error)
-	hooks       []func(*bind.WatchOpts, chan<- *bindings.DynamicsDeployedStorageContract) (event.Subscription, error)
+	defaultHook func(*bind.WatchOpts, chan<- *ethereum.DynamicsDeployedStorageContract) (event.Subscription, error)
+	hooks       []func(*bind.WatchOpts, chan<- *ethereum.DynamicsDeployedStorageContract) (event.Subscription, error)
 	history     []IDynamicsWatchDeployedStorageContractFuncCall
 	mutex       sync.Mutex
 }
 
 // WatchDeployedStorageContract delegates to the next hook function in the
 // queue and stores the parameter and result values of this invocation.
-func (m *MockIDynamics) WatchDeployedStorageContract(v0 *bind.WatchOpts, v1 chan<- *bindings.DynamicsDeployedStorageContract) (event.Subscription, error) {
+func (m *MockIDynamics) WatchDeployedStorageContract(v0 *bind.WatchOpts, v1 chan<- *ethereum.DynamicsDeployedStorageContract) (event.Subscription, error) {
 	r0, r1 := m.WatchDeployedStorageContractFunc.nextHook()(v0, v1)
 	m.WatchDeployedStorageContractFunc.appendCall(IDynamicsWatchDeployedStorageContractFuncCall{v0, v1, r0, r1})
 	return r0, r1
@@ -17140,7 +17141,7 @@ func (m *MockIDynamics) WatchDeployedStorageContract(v0 *bind.WatchOpts, v1 chan
 // SetDefaultHook sets function that is called when the
 // WatchDeployedStorageContract method of the parent MockIDynamics instance
 // is invoked and the hook queue is empty.
-func (f *IDynamicsWatchDeployedStorageContractFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *bindings.DynamicsDeployedStorageContract) (event.Subscription, error)) {
+func (f *IDynamicsWatchDeployedStorageContractFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *ethereum.DynamicsDeployedStorageContract) (event.Subscription, error)) {
 	f.defaultHook = hook
 }
 
@@ -17149,7 +17150,7 @@ func (f *IDynamicsWatchDeployedStorageContractFunc) SetDefaultHook(hook func(*bi
 // invokes the hook at the front of the queue and discards it. After the
 // queue is empty, the default hook function is invoked for any future
 // action.
-func (f *IDynamicsWatchDeployedStorageContractFunc) PushHook(hook func(*bind.WatchOpts, chan<- *bindings.DynamicsDeployedStorageContract) (event.Subscription, error)) {
+func (f *IDynamicsWatchDeployedStorageContractFunc) PushHook(hook func(*bind.WatchOpts, chan<- *ethereum.DynamicsDeployedStorageContract) (event.Subscription, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -17158,19 +17159,19 @@ func (f *IDynamicsWatchDeployedStorageContractFunc) PushHook(hook func(*bind.Wat
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
 func (f *IDynamicsWatchDeployedStorageContractFunc) SetDefaultReturn(r0 event.Subscription, r1 error) {
-	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *bindings.DynamicsDeployedStorageContract) (event.Subscription, error) {
+	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *ethereum.DynamicsDeployedStorageContract) (event.Subscription, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
 func (f *IDynamicsWatchDeployedStorageContractFunc) PushReturn(r0 event.Subscription, r1 error) {
-	f.PushHook(func(*bind.WatchOpts, chan<- *bindings.DynamicsDeployedStorageContract) (event.Subscription, error) {
+	f.PushHook(func(*bind.WatchOpts, chan<- *ethereum.DynamicsDeployedStorageContract) (event.Subscription, error) {
 		return r0, r1
 	})
 }
 
-func (f *IDynamicsWatchDeployedStorageContractFunc) nextHook() func(*bind.WatchOpts, chan<- *bindings.DynamicsDeployedStorageContract) (event.Subscription, error) {
+func (f *IDynamicsWatchDeployedStorageContractFunc) nextHook() func(*bind.WatchOpts, chan<- *ethereum.DynamicsDeployedStorageContract) (event.Subscription, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -17210,7 +17211,7 @@ type IDynamicsWatchDeployedStorageContractFuncCall struct {
 	Arg0 *bind.WatchOpts
 	// Arg1 is the value of the 2nd argument passed to this method
 	// invocation.
-	Arg1 chan<- *bindings.DynamicsDeployedStorageContract
+	Arg1 chan<- *ethereum.DynamicsDeployedStorageContract
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
 	Result0 event.Subscription
@@ -17235,15 +17236,15 @@ func (c IDynamicsWatchDeployedStorageContractFuncCall) Results() []interface{} {
 // WatchDynamicValueChanged method of the parent MockIDynamics instance is
 // invoked.
 type IDynamicsWatchDynamicValueChangedFunc struct {
-	defaultHook func(*bind.WatchOpts, chan<- *bindings.DynamicsDynamicValueChanged) (event.Subscription, error)
-	hooks       []func(*bind.WatchOpts, chan<- *bindings.DynamicsDynamicValueChanged) (event.Subscription, error)
+	defaultHook func(*bind.WatchOpts, chan<- *ethereum.DynamicsDynamicValueChanged) (event.Subscription, error)
+	hooks       []func(*bind.WatchOpts, chan<- *ethereum.DynamicsDynamicValueChanged) (event.Subscription, error)
 	history     []IDynamicsWatchDynamicValueChangedFuncCall
 	mutex       sync.Mutex
 }
 
 // WatchDynamicValueChanged delegates to the next hook function in the queue
 // and stores the parameter and result values of this invocation.
-func (m *MockIDynamics) WatchDynamicValueChanged(v0 *bind.WatchOpts, v1 chan<- *bindings.DynamicsDynamicValueChanged) (event.Subscription, error) {
+func (m *MockIDynamics) WatchDynamicValueChanged(v0 *bind.WatchOpts, v1 chan<- *ethereum.DynamicsDynamicValueChanged) (event.Subscription, error) {
 	r0, r1 := m.WatchDynamicValueChangedFunc.nextHook()(v0, v1)
 	m.WatchDynamicValueChangedFunc.appendCall(IDynamicsWatchDynamicValueChangedFuncCall{v0, v1, r0, r1})
 	return r0, r1
@@ -17252,7 +17253,7 @@ func (m *MockIDynamics) WatchDynamicValueChanged(v0 *bind.WatchOpts, v1 chan<- *
 // SetDefaultHook sets function that is called when the
 // WatchDynamicValueChanged method of the parent MockIDynamics instance is
 // invoked and the hook queue is empty.
-func (f *IDynamicsWatchDynamicValueChangedFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *bindings.DynamicsDynamicValueChanged) (event.Subscription, error)) {
+func (f *IDynamicsWatchDynamicValueChangedFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *ethereum.DynamicsDynamicValueChanged) (event.Subscription, error)) {
 	f.defaultHook = hook
 }
 
@@ -17261,7 +17262,7 @@ func (f *IDynamicsWatchDynamicValueChangedFunc) SetDefaultHook(hook func(*bind.W
 // invokes the hook at the front of the queue and discards it. After the
 // queue is empty, the default hook function is invoked for any future
 // action.
-func (f *IDynamicsWatchDynamicValueChangedFunc) PushHook(hook func(*bind.WatchOpts, chan<- *bindings.DynamicsDynamicValueChanged) (event.Subscription, error)) {
+func (f *IDynamicsWatchDynamicValueChangedFunc) PushHook(hook func(*bind.WatchOpts, chan<- *ethereum.DynamicsDynamicValueChanged) (event.Subscription, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -17270,19 +17271,19 @@ func (f *IDynamicsWatchDynamicValueChangedFunc) PushHook(hook func(*bind.WatchOp
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
 func (f *IDynamicsWatchDynamicValueChangedFunc) SetDefaultReturn(r0 event.Subscription, r1 error) {
-	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *bindings.DynamicsDynamicValueChanged) (event.Subscription, error) {
+	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *ethereum.DynamicsDynamicValueChanged) (event.Subscription, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
 func (f *IDynamicsWatchDynamicValueChangedFunc) PushReturn(r0 event.Subscription, r1 error) {
-	f.PushHook(func(*bind.WatchOpts, chan<- *bindings.DynamicsDynamicValueChanged) (event.Subscription, error) {
+	f.PushHook(func(*bind.WatchOpts, chan<- *ethereum.DynamicsDynamicValueChanged) (event.Subscription, error) {
 		return r0, r1
 	})
 }
 
-func (f *IDynamicsWatchDynamicValueChangedFunc) nextHook() func(*bind.WatchOpts, chan<- *bindings.DynamicsDynamicValueChanged) (event.Subscription, error) {
+func (f *IDynamicsWatchDynamicValueChangedFunc) nextHook() func(*bind.WatchOpts, chan<- *ethereum.DynamicsDynamicValueChanged) (event.Subscription, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -17321,7 +17322,7 @@ type IDynamicsWatchDynamicValueChangedFuncCall struct {
 	Arg0 *bind.WatchOpts
 	// Arg1 is the value of the 2nd argument passed to this method
 	// invocation.
-	Arg1 chan<- *bindings.DynamicsDynamicValueChanged
+	Arg1 chan<- *ethereum.DynamicsDynamicValueChanged
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
 	Result0 event.Subscription
@@ -17345,15 +17346,15 @@ func (c IDynamicsWatchDynamicValueChangedFuncCall) Results() []interface{} {
 // IDynamicsWatchInitializedFunc describes the behavior when the
 // WatchInitialized method of the parent MockIDynamics instance is invoked.
 type IDynamicsWatchInitializedFunc struct {
-	defaultHook func(*bind.WatchOpts, chan<- *bindings.DynamicsInitialized) (event.Subscription, error)
-	hooks       []func(*bind.WatchOpts, chan<- *bindings.DynamicsInitialized) (event.Subscription, error)
+	defaultHook func(*bind.WatchOpts, chan<- *ethereum.DynamicsInitialized) (event.Subscription, error)
+	hooks       []func(*bind.WatchOpts, chan<- *ethereum.DynamicsInitialized) (event.Subscription, error)
 	history     []IDynamicsWatchInitializedFuncCall
 	mutex       sync.Mutex
 }
 
 // WatchInitialized delegates to the next hook function in the queue and
 // stores the parameter and result values of this invocation.
-func (m *MockIDynamics) WatchInitialized(v0 *bind.WatchOpts, v1 chan<- *bindings.DynamicsInitialized) (event.Subscription, error) {
+func (m *MockIDynamics) WatchInitialized(v0 *bind.WatchOpts, v1 chan<- *ethereum.DynamicsInitialized) (event.Subscription, error) {
 	r0, r1 := m.WatchInitializedFunc.nextHook()(v0, v1)
 	m.WatchInitializedFunc.appendCall(IDynamicsWatchInitializedFuncCall{v0, v1, r0, r1})
 	return r0, r1
@@ -17362,7 +17363,7 @@ func (m *MockIDynamics) WatchInitialized(v0 *bind.WatchOpts, v1 chan<- *bindings
 // SetDefaultHook sets function that is called when the WatchInitialized
 // method of the parent MockIDynamics instance is invoked and the hook queue
 // is empty.
-func (f *IDynamicsWatchInitializedFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *bindings.DynamicsInitialized) (event.Subscription, error)) {
+func (f *IDynamicsWatchInitializedFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *ethereum.DynamicsInitialized) (event.Subscription, error)) {
 	f.defaultHook = hook
 }
 
@@ -17370,7 +17371,7 @@ func (f *IDynamicsWatchInitializedFunc) SetDefaultHook(hook func(*bind.WatchOpts
 // WatchInitialized method of the parent MockIDynamics instance invokes the
 // hook at the front of the queue and discards it. After the queue is empty,
 // the default hook function is invoked for any future action.
-func (f *IDynamicsWatchInitializedFunc) PushHook(hook func(*bind.WatchOpts, chan<- *bindings.DynamicsInitialized) (event.Subscription, error)) {
+func (f *IDynamicsWatchInitializedFunc) PushHook(hook func(*bind.WatchOpts, chan<- *ethereum.DynamicsInitialized) (event.Subscription, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -17379,19 +17380,19 @@ func (f *IDynamicsWatchInitializedFunc) PushHook(hook func(*bind.WatchOpts, chan
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
 func (f *IDynamicsWatchInitializedFunc) SetDefaultReturn(r0 event.Subscription, r1 error) {
-	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *bindings.DynamicsInitialized) (event.Subscription, error) {
+	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *ethereum.DynamicsInitialized) (event.Subscription, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
 func (f *IDynamicsWatchInitializedFunc) PushReturn(r0 event.Subscription, r1 error) {
-	f.PushHook(func(*bind.WatchOpts, chan<- *bindings.DynamicsInitialized) (event.Subscription, error) {
+	f.PushHook(func(*bind.WatchOpts, chan<- *ethereum.DynamicsInitialized) (event.Subscription, error) {
 		return r0, r1
 	})
 }
 
-func (f *IDynamicsWatchInitializedFunc) nextHook() func(*bind.WatchOpts, chan<- *bindings.DynamicsInitialized) (event.Subscription, error) {
+func (f *IDynamicsWatchInitializedFunc) nextHook() func(*bind.WatchOpts, chan<- *ethereum.DynamicsInitialized) (event.Subscription, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -17429,7 +17430,7 @@ type IDynamicsWatchInitializedFuncCall struct {
 	Arg0 *bind.WatchOpts
 	// Arg1 is the value of the 2nd argument passed to this method
 	// invocation.
-	Arg1 chan<- *bindings.DynamicsInitialized
+	Arg1 chan<- *ethereum.DynamicsInitialized
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
 	Result0 event.Subscription
@@ -17454,8 +17455,8 @@ func (c IDynamicsWatchInitializedFuncCall) Results() []interface{} {
 // when the WatchNewAliceNetNodeVersionAvailable method of the parent
 // MockIDynamics instance is invoked.
 type IDynamicsWatchNewAliceNetNodeVersionAvailableFunc struct {
-	defaultHook func(*bind.WatchOpts, chan<- *bindings.DynamicsNewAliceNetNodeVersionAvailable) (event.Subscription, error)
-	hooks       []func(*bind.WatchOpts, chan<- *bindings.DynamicsNewAliceNetNodeVersionAvailable) (event.Subscription, error)
+	defaultHook func(*bind.WatchOpts, chan<- *ethereum.DynamicsNewAliceNetNodeVersionAvailable) (event.Subscription, error)
+	hooks       []func(*bind.WatchOpts, chan<- *ethereum.DynamicsNewAliceNetNodeVersionAvailable) (event.Subscription, error)
 	history     []IDynamicsWatchNewAliceNetNodeVersionAvailableFuncCall
 	mutex       sync.Mutex
 }
@@ -17463,7 +17464,7 @@ type IDynamicsWatchNewAliceNetNodeVersionAvailableFunc struct {
 // WatchNewAliceNetNodeVersionAvailable delegates to the next hook function
 // in the queue and stores the parameter and result values of this
 // invocation.
-func (m *MockIDynamics) WatchNewAliceNetNodeVersionAvailable(v0 *bind.WatchOpts, v1 chan<- *bindings.DynamicsNewAliceNetNodeVersionAvailable) (event.Subscription, error) {
+func (m *MockIDynamics) WatchNewAliceNetNodeVersionAvailable(v0 *bind.WatchOpts, v1 chan<- *ethereum.DynamicsNewAliceNetNodeVersionAvailable) (event.Subscription, error) {
 	r0, r1 := m.WatchNewAliceNetNodeVersionAvailableFunc.nextHook()(v0, v1)
 	m.WatchNewAliceNetNodeVersionAvailableFunc.appendCall(IDynamicsWatchNewAliceNetNodeVersionAvailableFuncCall{v0, v1, r0, r1})
 	return r0, r1
@@ -17472,7 +17473,7 @@ func (m *MockIDynamics) WatchNewAliceNetNodeVersionAvailable(v0 *bind.WatchOpts,
 // SetDefaultHook sets function that is called when the
 // WatchNewAliceNetNodeVersionAvailable method of the parent MockIDynamics
 // instance is invoked and the hook queue is empty.
-func (f *IDynamicsWatchNewAliceNetNodeVersionAvailableFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *bindings.DynamicsNewAliceNetNodeVersionAvailable) (event.Subscription, error)) {
+func (f *IDynamicsWatchNewAliceNetNodeVersionAvailableFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *ethereum.DynamicsNewAliceNetNodeVersionAvailable) (event.Subscription, error)) {
 	f.defaultHook = hook
 }
 
@@ -17481,7 +17482,7 @@ func (f *IDynamicsWatchNewAliceNetNodeVersionAvailableFunc) SetDefaultHook(hook 
 // instance invokes the hook at the front of the queue and discards it.
 // After the queue is empty, the default hook function is invoked for any
 // future action.
-func (f *IDynamicsWatchNewAliceNetNodeVersionAvailableFunc) PushHook(hook func(*bind.WatchOpts, chan<- *bindings.DynamicsNewAliceNetNodeVersionAvailable) (event.Subscription, error)) {
+func (f *IDynamicsWatchNewAliceNetNodeVersionAvailableFunc) PushHook(hook func(*bind.WatchOpts, chan<- *ethereum.DynamicsNewAliceNetNodeVersionAvailable) (event.Subscription, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -17490,19 +17491,19 @@ func (f *IDynamicsWatchNewAliceNetNodeVersionAvailableFunc) PushHook(hook func(*
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
 func (f *IDynamicsWatchNewAliceNetNodeVersionAvailableFunc) SetDefaultReturn(r0 event.Subscription, r1 error) {
-	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *bindings.DynamicsNewAliceNetNodeVersionAvailable) (event.Subscription, error) {
+	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *ethereum.DynamicsNewAliceNetNodeVersionAvailable) (event.Subscription, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
 func (f *IDynamicsWatchNewAliceNetNodeVersionAvailableFunc) PushReturn(r0 event.Subscription, r1 error) {
-	f.PushHook(func(*bind.WatchOpts, chan<- *bindings.DynamicsNewAliceNetNodeVersionAvailable) (event.Subscription, error) {
+	f.PushHook(func(*bind.WatchOpts, chan<- *ethereum.DynamicsNewAliceNetNodeVersionAvailable) (event.Subscription, error) {
 		return r0, r1
 	})
 }
 
-func (f *IDynamicsWatchNewAliceNetNodeVersionAvailableFunc) nextHook() func(*bind.WatchOpts, chan<- *bindings.DynamicsNewAliceNetNodeVersionAvailable) (event.Subscription, error) {
+func (f *IDynamicsWatchNewAliceNetNodeVersionAvailableFunc) nextHook() func(*bind.WatchOpts, chan<- *ethereum.DynamicsNewAliceNetNodeVersionAvailable) (event.Subscription, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -17542,7 +17543,7 @@ type IDynamicsWatchNewAliceNetNodeVersionAvailableFuncCall struct {
 	Arg0 *bind.WatchOpts
 	// Arg1 is the value of the 2nd argument passed to this method
 	// invocation.
-	Arg1 chan<- *bindings.DynamicsNewAliceNetNodeVersionAvailable
+	Arg1 chan<- *ethereum.DynamicsNewAliceNetNodeVersionAvailable
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
 	Result0 event.Subscription
@@ -17567,8 +17568,8 @@ func (c IDynamicsWatchNewAliceNetNodeVersionAvailableFuncCall) Results() []inter
 // when the WatchNewCanonicalAliceNetNodeVersion method of the parent
 // MockIDynamics instance is invoked.
 type IDynamicsWatchNewCanonicalAliceNetNodeVersionFunc struct {
-	defaultHook func(*bind.WatchOpts, chan<- *bindings.DynamicsNewCanonicalAliceNetNodeVersion) (event.Subscription, error)
-	hooks       []func(*bind.WatchOpts, chan<- *bindings.DynamicsNewCanonicalAliceNetNodeVersion) (event.Subscription, error)
+	defaultHook func(*bind.WatchOpts, chan<- *ethereum.DynamicsNewCanonicalAliceNetNodeVersion) (event.Subscription, error)
+	hooks       []func(*bind.WatchOpts, chan<- *ethereum.DynamicsNewCanonicalAliceNetNodeVersion) (event.Subscription, error)
 	history     []IDynamicsWatchNewCanonicalAliceNetNodeVersionFuncCall
 	mutex       sync.Mutex
 }
@@ -17576,7 +17577,7 @@ type IDynamicsWatchNewCanonicalAliceNetNodeVersionFunc struct {
 // WatchNewCanonicalAliceNetNodeVersion delegates to the next hook function
 // in the queue and stores the parameter and result values of this
 // invocation.
-func (m *MockIDynamics) WatchNewCanonicalAliceNetNodeVersion(v0 *bind.WatchOpts, v1 chan<- *bindings.DynamicsNewCanonicalAliceNetNodeVersion) (event.Subscription, error) {
+func (m *MockIDynamics) WatchNewCanonicalAliceNetNodeVersion(v0 *bind.WatchOpts, v1 chan<- *ethereum.DynamicsNewCanonicalAliceNetNodeVersion) (event.Subscription, error) {
 	r0, r1 := m.WatchNewCanonicalAliceNetNodeVersionFunc.nextHook()(v0, v1)
 	m.WatchNewCanonicalAliceNetNodeVersionFunc.appendCall(IDynamicsWatchNewCanonicalAliceNetNodeVersionFuncCall{v0, v1, r0, r1})
 	return r0, r1
@@ -17585,7 +17586,7 @@ func (m *MockIDynamics) WatchNewCanonicalAliceNetNodeVersion(v0 *bind.WatchOpts,
 // SetDefaultHook sets function that is called when the
 // WatchNewCanonicalAliceNetNodeVersion method of the parent MockIDynamics
 // instance is invoked and the hook queue is empty.
-func (f *IDynamicsWatchNewCanonicalAliceNetNodeVersionFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *bindings.DynamicsNewCanonicalAliceNetNodeVersion) (event.Subscription, error)) {
+func (f *IDynamicsWatchNewCanonicalAliceNetNodeVersionFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *ethereum.DynamicsNewCanonicalAliceNetNodeVersion) (event.Subscription, error)) {
 	f.defaultHook = hook
 }
 
@@ -17594,7 +17595,7 @@ func (f *IDynamicsWatchNewCanonicalAliceNetNodeVersionFunc) SetDefaultHook(hook 
 // instance invokes the hook at the front of the queue and discards it.
 // After the queue is empty, the default hook function is invoked for any
 // future action.
-func (f *IDynamicsWatchNewCanonicalAliceNetNodeVersionFunc) PushHook(hook func(*bind.WatchOpts, chan<- *bindings.DynamicsNewCanonicalAliceNetNodeVersion) (event.Subscription, error)) {
+func (f *IDynamicsWatchNewCanonicalAliceNetNodeVersionFunc) PushHook(hook func(*bind.WatchOpts, chan<- *ethereum.DynamicsNewCanonicalAliceNetNodeVersion) (event.Subscription, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -17603,19 +17604,19 @@ func (f *IDynamicsWatchNewCanonicalAliceNetNodeVersionFunc) PushHook(hook func(*
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
 func (f *IDynamicsWatchNewCanonicalAliceNetNodeVersionFunc) SetDefaultReturn(r0 event.Subscription, r1 error) {
-	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *bindings.DynamicsNewCanonicalAliceNetNodeVersion) (event.Subscription, error) {
+	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *ethereum.DynamicsNewCanonicalAliceNetNodeVersion) (event.Subscription, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
 func (f *IDynamicsWatchNewCanonicalAliceNetNodeVersionFunc) PushReturn(r0 event.Subscription, r1 error) {
-	f.PushHook(func(*bind.WatchOpts, chan<- *bindings.DynamicsNewCanonicalAliceNetNodeVersion) (event.Subscription, error) {
+	f.PushHook(func(*bind.WatchOpts, chan<- *ethereum.DynamicsNewCanonicalAliceNetNodeVersion) (event.Subscription, error) {
 		return r0, r1
 	})
 }
 
-func (f *IDynamicsWatchNewCanonicalAliceNetNodeVersionFunc) nextHook() func(*bind.WatchOpts, chan<- *bindings.DynamicsNewCanonicalAliceNetNodeVersion) (event.Subscription, error) {
+func (f *IDynamicsWatchNewCanonicalAliceNetNodeVersionFunc) nextHook() func(*bind.WatchOpts, chan<- *ethereum.DynamicsNewCanonicalAliceNetNodeVersion) (event.Subscription, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -17655,7 +17656,7 @@ type IDynamicsWatchNewCanonicalAliceNetNodeVersionFuncCall struct {
 	Arg0 *bind.WatchOpts
 	// Arg1 is the value of the 2nd argument passed to this method
 	// invocation.
-	Arg1 chan<- *bindings.DynamicsNewCanonicalAliceNetNodeVersion
+	Arg1 chan<- *ethereum.DynamicsNewCanonicalAliceNetNodeVersion
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
 	Result0 event.Subscription
@@ -17677,8 +17678,8 @@ func (c IDynamicsWatchNewCanonicalAliceNetNodeVersionFuncCall) Results() []inter
 }
 
 // MockIETHDKG is a mock implementation of the IETHDKG interface (from the
-// package github.com/alicenet/alicenet/bridge/bindings) used for unit
-// testing.
+// package github.com/alicenet/alicenet/bridge/bindings/ethereum) used for
+// unit testing.
 type MockIETHDKG struct {
 	// AccuseParticipantDidNotDistributeSharesFunc is an instance of a mock
 	// function object controlling the behavior of the method
@@ -17974,62 +17975,62 @@ func NewMockIETHDKG() *MockIETHDKG {
 			},
 		},
 		FilterAddressRegisteredFunc: &IETHDKGFilterAddressRegisteredFunc{
-			defaultHook: func(*bind.FilterOpts) (r0 *bindings.ETHDKGAddressRegisteredIterator, r1 error) {
+			defaultHook: func(*bind.FilterOpts) (r0 *ethereum.ETHDKGAddressRegisteredIterator, r1 error) {
 				return
 			},
 		},
 		FilterGPKJSubmissionCompleteFunc: &IETHDKGFilterGPKJSubmissionCompleteFunc{
-			defaultHook: func(*bind.FilterOpts) (r0 *bindings.ETHDKGGPKJSubmissionCompleteIterator, r1 error) {
+			defaultHook: func(*bind.FilterOpts) (r0 *ethereum.ETHDKGGPKJSubmissionCompleteIterator, r1 error) {
 				return
 			},
 		},
 		FilterInitializedFunc: &IETHDKGFilterInitializedFunc{
-			defaultHook: func(*bind.FilterOpts) (r0 *bindings.ETHDKGInitializedIterator, r1 error) {
+			defaultHook: func(*bind.FilterOpts) (r0 *ethereum.ETHDKGInitializedIterator, r1 error) {
 				return
 			},
 		},
 		FilterKeyShareSubmissionCompleteFunc: &IETHDKGFilterKeyShareSubmissionCompleteFunc{
-			defaultHook: func(*bind.FilterOpts) (r0 *bindings.ETHDKGKeyShareSubmissionCompleteIterator, r1 error) {
+			defaultHook: func(*bind.FilterOpts) (r0 *ethereum.ETHDKGKeyShareSubmissionCompleteIterator, r1 error) {
 				return
 			},
 		},
 		FilterKeyShareSubmittedFunc: &IETHDKGFilterKeyShareSubmittedFunc{
-			defaultHook: func(*bind.FilterOpts) (r0 *bindings.ETHDKGKeyShareSubmittedIterator, r1 error) {
+			defaultHook: func(*bind.FilterOpts) (r0 *ethereum.ETHDKGKeyShareSubmittedIterator, r1 error) {
 				return
 			},
 		},
 		FilterMPKSetFunc: &IETHDKGFilterMPKSetFunc{
-			defaultHook: func(*bind.FilterOpts) (r0 *bindings.ETHDKGMPKSetIterator, r1 error) {
+			defaultHook: func(*bind.FilterOpts) (r0 *ethereum.ETHDKGMPKSetIterator, r1 error) {
 				return
 			},
 		},
 		FilterRegistrationCompleteFunc: &IETHDKGFilterRegistrationCompleteFunc{
-			defaultHook: func(*bind.FilterOpts) (r0 *bindings.ETHDKGRegistrationCompleteIterator, r1 error) {
+			defaultHook: func(*bind.FilterOpts) (r0 *ethereum.ETHDKGRegistrationCompleteIterator, r1 error) {
 				return
 			},
 		},
 		FilterRegistrationOpenedFunc: &IETHDKGFilterRegistrationOpenedFunc{
-			defaultHook: func(*bind.FilterOpts) (r0 *bindings.ETHDKGRegistrationOpenedIterator, r1 error) {
+			defaultHook: func(*bind.FilterOpts) (r0 *ethereum.ETHDKGRegistrationOpenedIterator, r1 error) {
 				return
 			},
 		},
 		FilterShareDistributionCompleteFunc: &IETHDKGFilterShareDistributionCompleteFunc{
-			defaultHook: func(*bind.FilterOpts) (r0 *bindings.ETHDKGShareDistributionCompleteIterator, r1 error) {
+			defaultHook: func(*bind.FilterOpts) (r0 *ethereum.ETHDKGShareDistributionCompleteIterator, r1 error) {
 				return
 			},
 		},
 		FilterSharesDistributedFunc: &IETHDKGFilterSharesDistributedFunc{
-			defaultHook: func(*bind.FilterOpts) (r0 *bindings.ETHDKGSharesDistributedIterator, r1 error) {
+			defaultHook: func(*bind.FilterOpts) (r0 *ethereum.ETHDKGSharesDistributedIterator, r1 error) {
 				return
 			},
 		},
 		FilterValidatorMemberAddedFunc: &IETHDKGFilterValidatorMemberAddedFunc{
-			defaultHook: func(*bind.FilterOpts) (r0 *bindings.ETHDKGValidatorMemberAddedIterator, r1 error) {
+			defaultHook: func(*bind.FilterOpts) (r0 *ethereum.ETHDKGValidatorMemberAddedIterator, r1 error) {
 				return
 			},
 		},
 		FilterValidatorSetCompletedFunc: &IETHDKGFilterValidatorSetCompletedFunc{
-			defaultHook: func(*bind.FilterOpts) (r0 *bindings.ETHDKGValidatorSetCompletedIterator, r1 error) {
+			defaultHook: func(*bind.FilterOpts) (r0 *ethereum.ETHDKGValidatorSetCompletedIterator, r1 error) {
 				return
 			},
 		},
@@ -18084,12 +18085,12 @@ func NewMockIETHDKG() *MockIETHDKG {
 			},
 		},
 		GetParticipantInternalStateFunc: &IETHDKGGetParticipantInternalStateFunc{
-			defaultHook: func(*bind.CallOpts, common.Address) (r0 bindings.Participant, r1 error) {
+			defaultHook: func(*bind.CallOpts, common.Address) (r0 ethereum.Participant, r1 error) {
 				return
 			},
 		},
 		GetParticipantsInternalStateFunc: &IETHDKGGetParticipantsInternalStateFunc{
-			defaultHook: func(*bind.CallOpts, []common.Address) (r0 []bindings.Participant, r1 error) {
+			defaultHook: func(*bind.CallOpts, []common.Address) (r0 []ethereum.Participant, r1 error) {
 				return
 			},
 		},
@@ -18144,62 +18145,62 @@ func NewMockIETHDKG() *MockIETHDKG {
 			},
 		},
 		ParseAddressRegisteredFunc: &IETHDKGParseAddressRegisteredFunc{
-			defaultHook: func(types.Log) (r0 *bindings.ETHDKGAddressRegistered, r1 error) {
+			defaultHook: func(types.Log) (r0 *ethereum.ETHDKGAddressRegistered, r1 error) {
 				return
 			},
 		},
 		ParseGPKJSubmissionCompleteFunc: &IETHDKGParseGPKJSubmissionCompleteFunc{
-			defaultHook: func(types.Log) (r0 *bindings.ETHDKGGPKJSubmissionComplete, r1 error) {
+			defaultHook: func(types.Log) (r0 *ethereum.ETHDKGGPKJSubmissionComplete, r1 error) {
 				return
 			},
 		},
 		ParseInitializedFunc: &IETHDKGParseInitializedFunc{
-			defaultHook: func(types.Log) (r0 *bindings.ETHDKGInitialized, r1 error) {
+			defaultHook: func(types.Log) (r0 *ethereum.ETHDKGInitialized, r1 error) {
 				return
 			},
 		},
 		ParseKeyShareSubmissionCompleteFunc: &IETHDKGParseKeyShareSubmissionCompleteFunc{
-			defaultHook: func(types.Log) (r0 *bindings.ETHDKGKeyShareSubmissionComplete, r1 error) {
+			defaultHook: func(types.Log) (r0 *ethereum.ETHDKGKeyShareSubmissionComplete, r1 error) {
 				return
 			},
 		},
 		ParseKeyShareSubmittedFunc: &IETHDKGParseKeyShareSubmittedFunc{
-			defaultHook: func(types.Log) (r0 *bindings.ETHDKGKeyShareSubmitted, r1 error) {
+			defaultHook: func(types.Log) (r0 *ethereum.ETHDKGKeyShareSubmitted, r1 error) {
 				return
 			},
 		},
 		ParseMPKSetFunc: &IETHDKGParseMPKSetFunc{
-			defaultHook: func(types.Log) (r0 *bindings.ETHDKGMPKSet, r1 error) {
+			defaultHook: func(types.Log) (r0 *ethereum.ETHDKGMPKSet, r1 error) {
 				return
 			},
 		},
 		ParseRegistrationCompleteFunc: &IETHDKGParseRegistrationCompleteFunc{
-			defaultHook: func(types.Log) (r0 *bindings.ETHDKGRegistrationComplete, r1 error) {
+			defaultHook: func(types.Log) (r0 *ethereum.ETHDKGRegistrationComplete, r1 error) {
 				return
 			},
 		},
 		ParseRegistrationOpenedFunc: &IETHDKGParseRegistrationOpenedFunc{
-			defaultHook: func(types.Log) (r0 *bindings.ETHDKGRegistrationOpened, r1 error) {
+			defaultHook: func(types.Log) (r0 *ethereum.ETHDKGRegistrationOpened, r1 error) {
 				return
 			},
 		},
 		ParseShareDistributionCompleteFunc: &IETHDKGParseShareDistributionCompleteFunc{
-			defaultHook: func(types.Log) (r0 *bindings.ETHDKGShareDistributionComplete, r1 error) {
+			defaultHook: func(types.Log) (r0 *ethereum.ETHDKGShareDistributionComplete, r1 error) {
 				return
 			},
 		},
 		ParseSharesDistributedFunc: &IETHDKGParseSharesDistributedFunc{
-			defaultHook: func(types.Log) (r0 *bindings.ETHDKGSharesDistributed, r1 error) {
+			defaultHook: func(types.Log) (r0 *ethereum.ETHDKGSharesDistributed, r1 error) {
 				return
 			},
 		},
 		ParseValidatorMemberAddedFunc: &IETHDKGParseValidatorMemberAddedFunc{
-			defaultHook: func(types.Log) (r0 *bindings.ETHDKGValidatorMemberAdded, r1 error) {
+			defaultHook: func(types.Log) (r0 *ethereum.ETHDKGValidatorMemberAdded, r1 error) {
 				return
 			},
 		},
 		ParseValidatorSetCompletedFunc: &IETHDKGParseValidatorSetCompletedFunc{
-			defaultHook: func(types.Log) (r0 *bindings.ETHDKGValidatorSetCompleted, r1 error) {
+			defaultHook: func(types.Log) (r0 *ethereum.ETHDKGValidatorSetCompleted, r1 error) {
 				return
 			},
 		},
@@ -18239,62 +18240,62 @@ func NewMockIETHDKG() *MockIETHDKG {
 			},
 		},
 		WatchAddressRegisteredFunc: &IETHDKGWatchAddressRegisteredFunc{
-			defaultHook: func(*bind.WatchOpts, chan<- *bindings.ETHDKGAddressRegistered) (r0 event.Subscription, r1 error) {
+			defaultHook: func(*bind.WatchOpts, chan<- *ethereum.ETHDKGAddressRegistered) (r0 event.Subscription, r1 error) {
 				return
 			},
 		},
 		WatchGPKJSubmissionCompleteFunc: &IETHDKGWatchGPKJSubmissionCompleteFunc{
-			defaultHook: func(*bind.WatchOpts, chan<- *bindings.ETHDKGGPKJSubmissionComplete) (r0 event.Subscription, r1 error) {
+			defaultHook: func(*bind.WatchOpts, chan<- *ethereum.ETHDKGGPKJSubmissionComplete) (r0 event.Subscription, r1 error) {
 				return
 			},
 		},
 		WatchInitializedFunc: &IETHDKGWatchInitializedFunc{
-			defaultHook: func(*bind.WatchOpts, chan<- *bindings.ETHDKGInitialized) (r0 event.Subscription, r1 error) {
+			defaultHook: func(*bind.WatchOpts, chan<- *ethereum.ETHDKGInitialized) (r0 event.Subscription, r1 error) {
 				return
 			},
 		},
 		WatchKeyShareSubmissionCompleteFunc: &IETHDKGWatchKeyShareSubmissionCompleteFunc{
-			defaultHook: func(*bind.WatchOpts, chan<- *bindings.ETHDKGKeyShareSubmissionComplete) (r0 event.Subscription, r1 error) {
+			defaultHook: func(*bind.WatchOpts, chan<- *ethereum.ETHDKGKeyShareSubmissionComplete) (r0 event.Subscription, r1 error) {
 				return
 			},
 		},
 		WatchKeyShareSubmittedFunc: &IETHDKGWatchKeyShareSubmittedFunc{
-			defaultHook: func(*bind.WatchOpts, chan<- *bindings.ETHDKGKeyShareSubmitted) (r0 event.Subscription, r1 error) {
+			defaultHook: func(*bind.WatchOpts, chan<- *ethereum.ETHDKGKeyShareSubmitted) (r0 event.Subscription, r1 error) {
 				return
 			},
 		},
 		WatchMPKSetFunc: &IETHDKGWatchMPKSetFunc{
-			defaultHook: func(*bind.WatchOpts, chan<- *bindings.ETHDKGMPKSet) (r0 event.Subscription, r1 error) {
+			defaultHook: func(*bind.WatchOpts, chan<- *ethereum.ETHDKGMPKSet) (r0 event.Subscription, r1 error) {
 				return
 			},
 		},
 		WatchRegistrationCompleteFunc: &IETHDKGWatchRegistrationCompleteFunc{
-			defaultHook: func(*bind.WatchOpts, chan<- *bindings.ETHDKGRegistrationComplete) (r0 event.Subscription, r1 error) {
+			defaultHook: func(*bind.WatchOpts, chan<- *ethereum.ETHDKGRegistrationComplete) (r0 event.Subscription, r1 error) {
 				return
 			},
 		},
 		WatchRegistrationOpenedFunc: &IETHDKGWatchRegistrationOpenedFunc{
-			defaultHook: func(*bind.WatchOpts, chan<- *bindings.ETHDKGRegistrationOpened) (r0 event.Subscription, r1 error) {
+			defaultHook: func(*bind.WatchOpts, chan<- *ethereum.ETHDKGRegistrationOpened) (r0 event.Subscription, r1 error) {
 				return
 			},
 		},
 		WatchShareDistributionCompleteFunc: &IETHDKGWatchShareDistributionCompleteFunc{
-			defaultHook: func(*bind.WatchOpts, chan<- *bindings.ETHDKGShareDistributionComplete) (r0 event.Subscription, r1 error) {
+			defaultHook: func(*bind.WatchOpts, chan<- *ethereum.ETHDKGShareDistributionComplete) (r0 event.Subscription, r1 error) {
 				return
 			},
 		},
 		WatchSharesDistributedFunc: &IETHDKGWatchSharesDistributedFunc{
-			defaultHook: func(*bind.WatchOpts, chan<- *bindings.ETHDKGSharesDistributed) (r0 event.Subscription, r1 error) {
+			defaultHook: func(*bind.WatchOpts, chan<- *ethereum.ETHDKGSharesDistributed) (r0 event.Subscription, r1 error) {
 				return
 			},
 		},
 		WatchValidatorMemberAddedFunc: &IETHDKGWatchValidatorMemberAddedFunc{
-			defaultHook: func(*bind.WatchOpts, chan<- *bindings.ETHDKGValidatorMemberAdded) (r0 event.Subscription, r1 error) {
+			defaultHook: func(*bind.WatchOpts, chan<- *ethereum.ETHDKGValidatorMemberAdded) (r0 event.Subscription, r1 error) {
 				return
 			},
 		},
 		WatchValidatorSetCompletedFunc: &IETHDKGWatchValidatorSetCompletedFunc{
-			defaultHook: func(*bind.WatchOpts, chan<- *bindings.ETHDKGValidatorSetCompleted) (r0 event.Subscription, r1 error) {
+			defaultHook: func(*bind.WatchOpts, chan<- *ethereum.ETHDKGValidatorSetCompleted) (r0 event.Subscription, r1 error) {
 				return
 			},
 		},
@@ -18346,62 +18347,62 @@ func NewStrictMockIETHDKG() *MockIETHDKG {
 			},
 		},
 		FilterAddressRegisteredFunc: &IETHDKGFilterAddressRegisteredFunc{
-			defaultHook: func(*bind.FilterOpts) (*bindings.ETHDKGAddressRegisteredIterator, error) {
+			defaultHook: func(*bind.FilterOpts) (*ethereum.ETHDKGAddressRegisteredIterator, error) {
 				panic("unexpected invocation of MockIETHDKG.FilterAddressRegistered")
 			},
 		},
 		FilterGPKJSubmissionCompleteFunc: &IETHDKGFilterGPKJSubmissionCompleteFunc{
-			defaultHook: func(*bind.FilterOpts) (*bindings.ETHDKGGPKJSubmissionCompleteIterator, error) {
+			defaultHook: func(*bind.FilterOpts) (*ethereum.ETHDKGGPKJSubmissionCompleteIterator, error) {
 				panic("unexpected invocation of MockIETHDKG.FilterGPKJSubmissionComplete")
 			},
 		},
 		FilterInitializedFunc: &IETHDKGFilterInitializedFunc{
-			defaultHook: func(*bind.FilterOpts) (*bindings.ETHDKGInitializedIterator, error) {
+			defaultHook: func(*bind.FilterOpts) (*ethereum.ETHDKGInitializedIterator, error) {
 				panic("unexpected invocation of MockIETHDKG.FilterInitialized")
 			},
 		},
 		FilterKeyShareSubmissionCompleteFunc: &IETHDKGFilterKeyShareSubmissionCompleteFunc{
-			defaultHook: func(*bind.FilterOpts) (*bindings.ETHDKGKeyShareSubmissionCompleteIterator, error) {
+			defaultHook: func(*bind.FilterOpts) (*ethereum.ETHDKGKeyShareSubmissionCompleteIterator, error) {
 				panic("unexpected invocation of MockIETHDKG.FilterKeyShareSubmissionComplete")
 			},
 		},
 		FilterKeyShareSubmittedFunc: &IETHDKGFilterKeyShareSubmittedFunc{
-			defaultHook: func(*bind.FilterOpts) (*bindings.ETHDKGKeyShareSubmittedIterator, error) {
+			defaultHook: func(*bind.FilterOpts) (*ethereum.ETHDKGKeyShareSubmittedIterator, error) {
 				panic("unexpected invocation of MockIETHDKG.FilterKeyShareSubmitted")
 			},
 		},
 		FilterMPKSetFunc: &IETHDKGFilterMPKSetFunc{
-			defaultHook: func(*bind.FilterOpts) (*bindings.ETHDKGMPKSetIterator, error) {
+			defaultHook: func(*bind.FilterOpts) (*ethereum.ETHDKGMPKSetIterator, error) {
 				panic("unexpected invocation of MockIETHDKG.FilterMPKSet")
 			},
 		},
 		FilterRegistrationCompleteFunc: &IETHDKGFilterRegistrationCompleteFunc{
-			defaultHook: func(*bind.FilterOpts) (*bindings.ETHDKGRegistrationCompleteIterator, error) {
+			defaultHook: func(*bind.FilterOpts) (*ethereum.ETHDKGRegistrationCompleteIterator, error) {
 				panic("unexpected invocation of MockIETHDKG.FilterRegistrationComplete")
 			},
 		},
 		FilterRegistrationOpenedFunc: &IETHDKGFilterRegistrationOpenedFunc{
-			defaultHook: func(*bind.FilterOpts) (*bindings.ETHDKGRegistrationOpenedIterator, error) {
+			defaultHook: func(*bind.FilterOpts) (*ethereum.ETHDKGRegistrationOpenedIterator, error) {
 				panic("unexpected invocation of MockIETHDKG.FilterRegistrationOpened")
 			},
 		},
 		FilterShareDistributionCompleteFunc: &IETHDKGFilterShareDistributionCompleteFunc{
-			defaultHook: func(*bind.FilterOpts) (*bindings.ETHDKGShareDistributionCompleteIterator, error) {
+			defaultHook: func(*bind.FilterOpts) (*ethereum.ETHDKGShareDistributionCompleteIterator, error) {
 				panic("unexpected invocation of MockIETHDKG.FilterShareDistributionComplete")
 			},
 		},
 		FilterSharesDistributedFunc: &IETHDKGFilterSharesDistributedFunc{
-			defaultHook: func(*bind.FilterOpts) (*bindings.ETHDKGSharesDistributedIterator, error) {
+			defaultHook: func(*bind.FilterOpts) (*ethereum.ETHDKGSharesDistributedIterator, error) {
 				panic("unexpected invocation of MockIETHDKG.FilterSharesDistributed")
 			},
 		},
 		FilterValidatorMemberAddedFunc: &IETHDKGFilterValidatorMemberAddedFunc{
-			defaultHook: func(*bind.FilterOpts) (*bindings.ETHDKGValidatorMemberAddedIterator, error) {
+			defaultHook: func(*bind.FilterOpts) (*ethereum.ETHDKGValidatorMemberAddedIterator, error) {
 				panic("unexpected invocation of MockIETHDKG.FilterValidatorMemberAdded")
 			},
 		},
 		FilterValidatorSetCompletedFunc: &IETHDKGFilterValidatorSetCompletedFunc{
-			defaultHook: func(*bind.FilterOpts) (*bindings.ETHDKGValidatorSetCompletedIterator, error) {
+			defaultHook: func(*bind.FilterOpts) (*ethereum.ETHDKGValidatorSetCompletedIterator, error) {
 				panic("unexpected invocation of MockIETHDKG.FilterValidatorSetCompleted")
 			},
 		},
@@ -18456,12 +18457,12 @@ func NewStrictMockIETHDKG() *MockIETHDKG {
 			},
 		},
 		GetParticipantInternalStateFunc: &IETHDKGGetParticipantInternalStateFunc{
-			defaultHook: func(*bind.CallOpts, common.Address) (bindings.Participant, error) {
+			defaultHook: func(*bind.CallOpts, common.Address) (ethereum.Participant, error) {
 				panic("unexpected invocation of MockIETHDKG.GetParticipantInternalState")
 			},
 		},
 		GetParticipantsInternalStateFunc: &IETHDKGGetParticipantsInternalStateFunc{
-			defaultHook: func(*bind.CallOpts, []common.Address) ([]bindings.Participant, error) {
+			defaultHook: func(*bind.CallOpts, []common.Address) ([]ethereum.Participant, error) {
 				panic("unexpected invocation of MockIETHDKG.GetParticipantsInternalState")
 			},
 		},
@@ -18516,62 +18517,62 @@ func NewStrictMockIETHDKG() *MockIETHDKG {
 			},
 		},
 		ParseAddressRegisteredFunc: &IETHDKGParseAddressRegisteredFunc{
-			defaultHook: func(types.Log) (*bindings.ETHDKGAddressRegistered, error) {
+			defaultHook: func(types.Log) (*ethereum.ETHDKGAddressRegistered, error) {
 				panic("unexpected invocation of MockIETHDKG.ParseAddressRegistered")
 			},
 		},
 		ParseGPKJSubmissionCompleteFunc: &IETHDKGParseGPKJSubmissionCompleteFunc{
-			defaultHook: func(types.Log) (*bindings.ETHDKGGPKJSubmissionComplete, error) {
+			defaultHook: func(types.Log) (*ethereum.ETHDKGGPKJSubmissionComplete, error) {
 				panic("unexpected invocation of MockIETHDKG.ParseGPKJSubmissionComplete")
 			},
 		},
 		ParseInitializedFunc: &IETHDKGParseInitializedFunc{
-			defaultHook: func(types.Log) (*bindings.ETHDKGInitialized, error) {
+			defaultHook: func(types.Log) (*ethereum.ETHDKGInitialized, error) {
 				panic("unexpected invocation of MockIETHDKG.ParseInitialized")
 			},
 		},
 		ParseKeyShareSubmissionCompleteFunc: &IETHDKGParseKeyShareSubmissionCompleteFunc{
-			defaultHook: func(types.Log) (*bindings.ETHDKGKeyShareSubmissionComplete, error) {
+			defaultHook: func(types.Log) (*ethereum.ETHDKGKeyShareSubmissionComplete, error) {
 				panic("unexpected invocation of MockIETHDKG.ParseKeyShareSubmissionComplete")
 			},
 		},
 		ParseKeyShareSubmittedFunc: &IETHDKGParseKeyShareSubmittedFunc{
-			defaultHook: func(types.Log) (*bindings.ETHDKGKeyShareSubmitted, error) {
+			defaultHook: func(types.Log) (*ethereum.ETHDKGKeyShareSubmitted, error) {
 				panic("unexpected invocation of MockIETHDKG.ParseKeyShareSubmitted")
 			},
 		},
 		ParseMPKSetFunc: &IETHDKGParseMPKSetFunc{
-			defaultHook: func(types.Log) (*bindings.ETHDKGMPKSet, error) {
+			defaultHook: func(types.Log) (*ethereum.ETHDKGMPKSet, error) {
 				panic("unexpected invocation of MockIETHDKG.ParseMPKSet")
 			},
 		},
 		ParseRegistrationCompleteFunc: &IETHDKGParseRegistrationCompleteFunc{
-			defaultHook: func(types.Log) (*bindings.ETHDKGRegistrationComplete, error) {
+			defaultHook: func(types.Log) (*ethereum.ETHDKGRegistrationComplete, error) {
 				panic("unexpected invocation of MockIETHDKG.ParseRegistrationComplete")
 			},
 		},
 		ParseRegistrationOpenedFunc: &IETHDKGParseRegistrationOpenedFunc{
-			defaultHook: func(types.Log) (*bindings.ETHDKGRegistrationOpened, error) {
+			defaultHook: func(types.Log) (*ethereum.ETHDKGRegistrationOpened, error) {
 				panic("unexpected invocation of MockIETHDKG.ParseRegistrationOpened")
 			},
 		},
 		ParseShareDistributionCompleteFunc: &IETHDKGParseShareDistributionCompleteFunc{
-			defaultHook: func(types.Log) (*bindings.ETHDKGShareDistributionComplete, error) {
+			defaultHook: func(types.Log) (*ethereum.ETHDKGShareDistributionComplete, error) {
 				panic("unexpected invocation of MockIETHDKG.ParseShareDistributionComplete")
 			},
 		},
 		ParseSharesDistributedFunc: &IETHDKGParseSharesDistributedFunc{
-			defaultHook: func(types.Log) (*bindings.ETHDKGSharesDistributed, error) {
+			defaultHook: func(types.Log) (*ethereum.ETHDKGSharesDistributed, error) {
 				panic("unexpected invocation of MockIETHDKG.ParseSharesDistributed")
 			},
 		},
 		ParseValidatorMemberAddedFunc: &IETHDKGParseValidatorMemberAddedFunc{
-			defaultHook: func(types.Log) (*bindings.ETHDKGValidatorMemberAdded, error) {
+			defaultHook: func(types.Log) (*ethereum.ETHDKGValidatorMemberAdded, error) {
 				panic("unexpected invocation of MockIETHDKG.ParseValidatorMemberAdded")
 			},
 		},
 		ParseValidatorSetCompletedFunc: &IETHDKGParseValidatorSetCompletedFunc{
-			defaultHook: func(types.Log) (*bindings.ETHDKGValidatorSetCompleted, error) {
+			defaultHook: func(types.Log) (*ethereum.ETHDKGValidatorSetCompleted, error) {
 				panic("unexpected invocation of MockIETHDKG.ParseValidatorSetCompleted")
 			},
 		},
@@ -18611,62 +18612,62 @@ func NewStrictMockIETHDKG() *MockIETHDKG {
 			},
 		},
 		WatchAddressRegisteredFunc: &IETHDKGWatchAddressRegisteredFunc{
-			defaultHook: func(*bind.WatchOpts, chan<- *bindings.ETHDKGAddressRegistered) (event.Subscription, error) {
+			defaultHook: func(*bind.WatchOpts, chan<- *ethereum.ETHDKGAddressRegistered) (event.Subscription, error) {
 				panic("unexpected invocation of MockIETHDKG.WatchAddressRegistered")
 			},
 		},
 		WatchGPKJSubmissionCompleteFunc: &IETHDKGWatchGPKJSubmissionCompleteFunc{
-			defaultHook: func(*bind.WatchOpts, chan<- *bindings.ETHDKGGPKJSubmissionComplete) (event.Subscription, error) {
+			defaultHook: func(*bind.WatchOpts, chan<- *ethereum.ETHDKGGPKJSubmissionComplete) (event.Subscription, error) {
 				panic("unexpected invocation of MockIETHDKG.WatchGPKJSubmissionComplete")
 			},
 		},
 		WatchInitializedFunc: &IETHDKGWatchInitializedFunc{
-			defaultHook: func(*bind.WatchOpts, chan<- *bindings.ETHDKGInitialized) (event.Subscription, error) {
+			defaultHook: func(*bind.WatchOpts, chan<- *ethereum.ETHDKGInitialized) (event.Subscription, error) {
 				panic("unexpected invocation of MockIETHDKG.WatchInitialized")
 			},
 		},
 		WatchKeyShareSubmissionCompleteFunc: &IETHDKGWatchKeyShareSubmissionCompleteFunc{
-			defaultHook: func(*bind.WatchOpts, chan<- *bindings.ETHDKGKeyShareSubmissionComplete) (event.Subscription, error) {
+			defaultHook: func(*bind.WatchOpts, chan<- *ethereum.ETHDKGKeyShareSubmissionComplete) (event.Subscription, error) {
 				panic("unexpected invocation of MockIETHDKG.WatchKeyShareSubmissionComplete")
 			},
 		},
 		WatchKeyShareSubmittedFunc: &IETHDKGWatchKeyShareSubmittedFunc{
-			defaultHook: func(*bind.WatchOpts, chan<- *bindings.ETHDKGKeyShareSubmitted) (event.Subscription, error) {
+			defaultHook: func(*bind.WatchOpts, chan<- *ethereum.ETHDKGKeyShareSubmitted) (event.Subscription, error) {
 				panic("unexpected invocation of MockIETHDKG.WatchKeyShareSubmitted")
 			},
 		},
 		WatchMPKSetFunc: &IETHDKGWatchMPKSetFunc{
-			defaultHook: func(*bind.WatchOpts, chan<- *bindings.ETHDKGMPKSet) (event.Subscription, error) {
+			defaultHook: func(*bind.WatchOpts, chan<- *ethereum.ETHDKGMPKSet) (event.Subscription, error) {
 				panic("unexpected invocation of MockIETHDKG.WatchMPKSet")
 			},
 		},
 		WatchRegistrationCompleteFunc: &IETHDKGWatchRegistrationCompleteFunc{
-			defaultHook: func(*bind.WatchOpts, chan<- *bindings.ETHDKGRegistrationComplete) (event.Subscription, error) {
+			defaultHook: func(*bind.WatchOpts, chan<- *ethereum.ETHDKGRegistrationComplete) (event.Subscription, error) {
 				panic("unexpected invocation of MockIETHDKG.WatchRegistrationComplete")
 			},
 		},
 		WatchRegistrationOpenedFunc: &IETHDKGWatchRegistrationOpenedFunc{
-			defaultHook: func(*bind.WatchOpts, chan<- *bindings.ETHDKGRegistrationOpened) (event.Subscription, error) {
+			defaultHook: func(*bind.WatchOpts, chan<- *ethereum.ETHDKGRegistrationOpened) (event.Subscription, error) {
 				panic("unexpected invocation of MockIETHDKG.WatchRegistrationOpened")
 			},
 		},
 		WatchShareDistributionCompleteFunc: &IETHDKGWatchShareDistributionCompleteFunc{
-			defaultHook: func(*bind.WatchOpts, chan<- *bindings.ETHDKGShareDistributionComplete) (event.Subscription, error) {
+			defaultHook: func(*bind.WatchOpts, chan<- *ethereum.ETHDKGShareDistributionComplete) (event.Subscription, error) {
 				panic("unexpected invocation of MockIETHDKG.WatchShareDistributionComplete")
 			},
 		},
 		WatchSharesDistributedFunc: &IETHDKGWatchSharesDistributedFunc{
-			defaultHook: func(*bind.WatchOpts, chan<- *bindings.ETHDKGSharesDistributed) (event.Subscription, error) {
+			defaultHook: func(*bind.WatchOpts, chan<- *ethereum.ETHDKGSharesDistributed) (event.Subscription, error) {
 				panic("unexpected invocation of MockIETHDKG.WatchSharesDistributed")
 			},
 		},
 		WatchValidatorMemberAddedFunc: &IETHDKGWatchValidatorMemberAddedFunc{
-			defaultHook: func(*bind.WatchOpts, chan<- *bindings.ETHDKGValidatorMemberAdded) (event.Subscription, error) {
+			defaultHook: func(*bind.WatchOpts, chan<- *ethereum.ETHDKGValidatorMemberAdded) (event.Subscription, error) {
 				panic("unexpected invocation of MockIETHDKG.WatchValidatorMemberAdded")
 			},
 		},
 		WatchValidatorSetCompletedFunc: &IETHDKGWatchValidatorSetCompletedFunc{
-			defaultHook: func(*bind.WatchOpts, chan<- *bindings.ETHDKGValidatorSetCompleted) (event.Subscription, error) {
+			defaultHook: func(*bind.WatchOpts, chan<- *ethereum.ETHDKGValidatorSetCompleted) (event.Subscription, error) {
 				panic("unexpected invocation of MockIETHDKG.WatchValidatorSetCompleted")
 			},
 		},
@@ -18675,7 +18676,7 @@ func NewStrictMockIETHDKG() *MockIETHDKG {
 
 // NewMockIETHDKGFrom creates a new mock of the MockIETHDKG interface. All
 // methods delegate to the given implementation, unless overwritten.
-func NewMockIETHDKGFrom(i bindings.IETHDKG) *MockIETHDKG {
+func NewMockIETHDKGFrom(i ethereum.IETHDKG) *MockIETHDKG {
 	return &MockIETHDKG{
 		AccuseParticipantDidNotDistributeSharesFunc: &IETHDKGAccuseParticipantDidNotDistributeSharesFunc{
 			defaultHook: i.AccuseParticipantDidNotDistributeShares,
@@ -19814,15 +19815,15 @@ func (c IETHDKGDistributeSharesFuncCall) Results() []interface{} {
 // FilterAddressRegistered method of the parent MockIETHDKG instance is
 // invoked.
 type IETHDKGFilterAddressRegisteredFunc struct {
-	defaultHook func(*bind.FilterOpts) (*bindings.ETHDKGAddressRegisteredIterator, error)
-	hooks       []func(*bind.FilterOpts) (*bindings.ETHDKGAddressRegisteredIterator, error)
+	defaultHook func(*bind.FilterOpts) (*ethereum.ETHDKGAddressRegisteredIterator, error)
+	hooks       []func(*bind.FilterOpts) (*ethereum.ETHDKGAddressRegisteredIterator, error)
 	history     []IETHDKGFilterAddressRegisteredFuncCall
 	mutex       sync.Mutex
 }
 
 // FilterAddressRegistered delegates to the next hook function in the queue
 // and stores the parameter and result values of this invocation.
-func (m *MockIETHDKG) FilterAddressRegistered(v0 *bind.FilterOpts) (*bindings.ETHDKGAddressRegisteredIterator, error) {
+func (m *MockIETHDKG) FilterAddressRegistered(v0 *bind.FilterOpts) (*ethereum.ETHDKGAddressRegisteredIterator, error) {
 	r0, r1 := m.FilterAddressRegisteredFunc.nextHook()(v0)
 	m.FilterAddressRegisteredFunc.appendCall(IETHDKGFilterAddressRegisteredFuncCall{v0, r0, r1})
 	return r0, r1
@@ -19831,7 +19832,7 @@ func (m *MockIETHDKG) FilterAddressRegistered(v0 *bind.FilterOpts) (*bindings.ET
 // SetDefaultHook sets function that is called when the
 // FilterAddressRegistered method of the parent MockIETHDKG instance is
 // invoked and the hook queue is empty.
-func (f *IETHDKGFilterAddressRegisteredFunc) SetDefaultHook(hook func(*bind.FilterOpts) (*bindings.ETHDKGAddressRegisteredIterator, error)) {
+func (f *IETHDKGFilterAddressRegisteredFunc) SetDefaultHook(hook func(*bind.FilterOpts) (*ethereum.ETHDKGAddressRegisteredIterator, error)) {
 	f.defaultHook = hook
 }
 
@@ -19839,7 +19840,7 @@ func (f *IETHDKGFilterAddressRegisteredFunc) SetDefaultHook(hook func(*bind.Filt
 // FilterAddressRegistered method of the parent MockIETHDKG instance invokes
 // the hook at the front of the queue and discards it. After the queue is
 // empty, the default hook function is invoked for any future action.
-func (f *IETHDKGFilterAddressRegisteredFunc) PushHook(hook func(*bind.FilterOpts) (*bindings.ETHDKGAddressRegisteredIterator, error)) {
+func (f *IETHDKGFilterAddressRegisteredFunc) PushHook(hook func(*bind.FilterOpts) (*ethereum.ETHDKGAddressRegisteredIterator, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -19847,20 +19848,20 @@ func (f *IETHDKGFilterAddressRegisteredFunc) PushHook(hook func(*bind.FilterOpts
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IETHDKGFilterAddressRegisteredFunc) SetDefaultReturn(r0 *bindings.ETHDKGAddressRegisteredIterator, r1 error) {
-	f.SetDefaultHook(func(*bind.FilterOpts) (*bindings.ETHDKGAddressRegisteredIterator, error) {
+func (f *IETHDKGFilterAddressRegisteredFunc) SetDefaultReturn(r0 *ethereum.ETHDKGAddressRegisteredIterator, r1 error) {
+	f.SetDefaultHook(func(*bind.FilterOpts) (*ethereum.ETHDKGAddressRegisteredIterator, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IETHDKGFilterAddressRegisteredFunc) PushReturn(r0 *bindings.ETHDKGAddressRegisteredIterator, r1 error) {
-	f.PushHook(func(*bind.FilterOpts) (*bindings.ETHDKGAddressRegisteredIterator, error) {
+func (f *IETHDKGFilterAddressRegisteredFunc) PushReturn(r0 *ethereum.ETHDKGAddressRegisteredIterator, r1 error) {
+	f.PushHook(func(*bind.FilterOpts) (*ethereum.ETHDKGAddressRegisteredIterator, error) {
 		return r0, r1
 	})
 }
 
-func (f *IETHDKGFilterAddressRegisteredFunc) nextHook() func(*bind.FilterOpts) (*bindings.ETHDKGAddressRegisteredIterator, error) {
+func (f *IETHDKGFilterAddressRegisteredFunc) nextHook() func(*bind.FilterOpts) (*ethereum.ETHDKGAddressRegisteredIterator, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -19899,7 +19900,7 @@ type IETHDKGFilterAddressRegisteredFuncCall struct {
 	Arg0 *bind.FilterOpts
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 *bindings.ETHDKGAddressRegisteredIterator
+	Result0 *ethereum.ETHDKGAddressRegisteredIterator
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -19921,15 +19922,15 @@ func (c IETHDKGFilterAddressRegisteredFuncCall) Results() []interface{} {
 // FilterGPKJSubmissionComplete method of the parent MockIETHDKG instance is
 // invoked.
 type IETHDKGFilterGPKJSubmissionCompleteFunc struct {
-	defaultHook func(*bind.FilterOpts) (*bindings.ETHDKGGPKJSubmissionCompleteIterator, error)
-	hooks       []func(*bind.FilterOpts) (*bindings.ETHDKGGPKJSubmissionCompleteIterator, error)
+	defaultHook func(*bind.FilterOpts) (*ethereum.ETHDKGGPKJSubmissionCompleteIterator, error)
+	hooks       []func(*bind.FilterOpts) (*ethereum.ETHDKGGPKJSubmissionCompleteIterator, error)
 	history     []IETHDKGFilterGPKJSubmissionCompleteFuncCall
 	mutex       sync.Mutex
 }
 
 // FilterGPKJSubmissionComplete delegates to the next hook function in the
 // queue and stores the parameter and result values of this invocation.
-func (m *MockIETHDKG) FilterGPKJSubmissionComplete(v0 *bind.FilterOpts) (*bindings.ETHDKGGPKJSubmissionCompleteIterator, error) {
+func (m *MockIETHDKG) FilterGPKJSubmissionComplete(v0 *bind.FilterOpts) (*ethereum.ETHDKGGPKJSubmissionCompleteIterator, error) {
 	r0, r1 := m.FilterGPKJSubmissionCompleteFunc.nextHook()(v0)
 	m.FilterGPKJSubmissionCompleteFunc.appendCall(IETHDKGFilterGPKJSubmissionCompleteFuncCall{v0, r0, r1})
 	return r0, r1
@@ -19938,7 +19939,7 @@ func (m *MockIETHDKG) FilterGPKJSubmissionComplete(v0 *bind.FilterOpts) (*bindin
 // SetDefaultHook sets function that is called when the
 // FilterGPKJSubmissionComplete method of the parent MockIETHDKG instance is
 // invoked and the hook queue is empty.
-func (f *IETHDKGFilterGPKJSubmissionCompleteFunc) SetDefaultHook(hook func(*bind.FilterOpts) (*bindings.ETHDKGGPKJSubmissionCompleteIterator, error)) {
+func (f *IETHDKGFilterGPKJSubmissionCompleteFunc) SetDefaultHook(hook func(*bind.FilterOpts) (*ethereum.ETHDKGGPKJSubmissionCompleteIterator, error)) {
 	f.defaultHook = hook
 }
 
@@ -19947,7 +19948,7 @@ func (f *IETHDKGFilterGPKJSubmissionCompleteFunc) SetDefaultHook(hook func(*bind
 // invokes the hook at the front of the queue and discards it. After the
 // queue is empty, the default hook function is invoked for any future
 // action.
-func (f *IETHDKGFilterGPKJSubmissionCompleteFunc) PushHook(hook func(*bind.FilterOpts) (*bindings.ETHDKGGPKJSubmissionCompleteIterator, error)) {
+func (f *IETHDKGFilterGPKJSubmissionCompleteFunc) PushHook(hook func(*bind.FilterOpts) (*ethereum.ETHDKGGPKJSubmissionCompleteIterator, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -19955,20 +19956,20 @@ func (f *IETHDKGFilterGPKJSubmissionCompleteFunc) PushHook(hook func(*bind.Filte
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IETHDKGFilterGPKJSubmissionCompleteFunc) SetDefaultReturn(r0 *bindings.ETHDKGGPKJSubmissionCompleteIterator, r1 error) {
-	f.SetDefaultHook(func(*bind.FilterOpts) (*bindings.ETHDKGGPKJSubmissionCompleteIterator, error) {
+func (f *IETHDKGFilterGPKJSubmissionCompleteFunc) SetDefaultReturn(r0 *ethereum.ETHDKGGPKJSubmissionCompleteIterator, r1 error) {
+	f.SetDefaultHook(func(*bind.FilterOpts) (*ethereum.ETHDKGGPKJSubmissionCompleteIterator, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IETHDKGFilterGPKJSubmissionCompleteFunc) PushReturn(r0 *bindings.ETHDKGGPKJSubmissionCompleteIterator, r1 error) {
-	f.PushHook(func(*bind.FilterOpts) (*bindings.ETHDKGGPKJSubmissionCompleteIterator, error) {
+func (f *IETHDKGFilterGPKJSubmissionCompleteFunc) PushReturn(r0 *ethereum.ETHDKGGPKJSubmissionCompleteIterator, r1 error) {
+	f.PushHook(func(*bind.FilterOpts) (*ethereum.ETHDKGGPKJSubmissionCompleteIterator, error) {
 		return r0, r1
 	})
 }
 
-func (f *IETHDKGFilterGPKJSubmissionCompleteFunc) nextHook() func(*bind.FilterOpts) (*bindings.ETHDKGGPKJSubmissionCompleteIterator, error) {
+func (f *IETHDKGFilterGPKJSubmissionCompleteFunc) nextHook() func(*bind.FilterOpts) (*ethereum.ETHDKGGPKJSubmissionCompleteIterator, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -20007,7 +20008,7 @@ type IETHDKGFilterGPKJSubmissionCompleteFuncCall struct {
 	Arg0 *bind.FilterOpts
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 *bindings.ETHDKGGPKJSubmissionCompleteIterator
+	Result0 *ethereum.ETHDKGGPKJSubmissionCompleteIterator
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -20028,15 +20029,15 @@ func (c IETHDKGFilterGPKJSubmissionCompleteFuncCall) Results() []interface{} {
 // IETHDKGFilterInitializedFunc describes the behavior when the
 // FilterInitialized method of the parent MockIETHDKG instance is invoked.
 type IETHDKGFilterInitializedFunc struct {
-	defaultHook func(*bind.FilterOpts) (*bindings.ETHDKGInitializedIterator, error)
-	hooks       []func(*bind.FilterOpts) (*bindings.ETHDKGInitializedIterator, error)
+	defaultHook func(*bind.FilterOpts) (*ethereum.ETHDKGInitializedIterator, error)
+	hooks       []func(*bind.FilterOpts) (*ethereum.ETHDKGInitializedIterator, error)
 	history     []IETHDKGFilterInitializedFuncCall
 	mutex       sync.Mutex
 }
 
 // FilterInitialized delegates to the next hook function in the queue and
 // stores the parameter and result values of this invocation.
-func (m *MockIETHDKG) FilterInitialized(v0 *bind.FilterOpts) (*bindings.ETHDKGInitializedIterator, error) {
+func (m *MockIETHDKG) FilterInitialized(v0 *bind.FilterOpts) (*ethereum.ETHDKGInitializedIterator, error) {
 	r0, r1 := m.FilterInitializedFunc.nextHook()(v0)
 	m.FilterInitializedFunc.appendCall(IETHDKGFilterInitializedFuncCall{v0, r0, r1})
 	return r0, r1
@@ -20045,7 +20046,7 @@ func (m *MockIETHDKG) FilterInitialized(v0 *bind.FilterOpts) (*bindings.ETHDKGIn
 // SetDefaultHook sets function that is called when the FilterInitialized
 // method of the parent MockIETHDKG instance is invoked and the hook queue
 // is empty.
-func (f *IETHDKGFilterInitializedFunc) SetDefaultHook(hook func(*bind.FilterOpts) (*bindings.ETHDKGInitializedIterator, error)) {
+func (f *IETHDKGFilterInitializedFunc) SetDefaultHook(hook func(*bind.FilterOpts) (*ethereum.ETHDKGInitializedIterator, error)) {
 	f.defaultHook = hook
 }
 
@@ -20053,7 +20054,7 @@ func (f *IETHDKGFilterInitializedFunc) SetDefaultHook(hook func(*bind.FilterOpts
 // FilterInitialized method of the parent MockIETHDKG instance invokes the
 // hook at the front of the queue and discards it. After the queue is empty,
 // the default hook function is invoked for any future action.
-func (f *IETHDKGFilterInitializedFunc) PushHook(hook func(*bind.FilterOpts) (*bindings.ETHDKGInitializedIterator, error)) {
+func (f *IETHDKGFilterInitializedFunc) PushHook(hook func(*bind.FilterOpts) (*ethereum.ETHDKGInitializedIterator, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -20061,20 +20062,20 @@ func (f *IETHDKGFilterInitializedFunc) PushHook(hook func(*bind.FilterOpts) (*bi
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IETHDKGFilterInitializedFunc) SetDefaultReturn(r0 *bindings.ETHDKGInitializedIterator, r1 error) {
-	f.SetDefaultHook(func(*bind.FilterOpts) (*bindings.ETHDKGInitializedIterator, error) {
+func (f *IETHDKGFilterInitializedFunc) SetDefaultReturn(r0 *ethereum.ETHDKGInitializedIterator, r1 error) {
+	f.SetDefaultHook(func(*bind.FilterOpts) (*ethereum.ETHDKGInitializedIterator, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IETHDKGFilterInitializedFunc) PushReturn(r0 *bindings.ETHDKGInitializedIterator, r1 error) {
-	f.PushHook(func(*bind.FilterOpts) (*bindings.ETHDKGInitializedIterator, error) {
+func (f *IETHDKGFilterInitializedFunc) PushReturn(r0 *ethereum.ETHDKGInitializedIterator, r1 error) {
+	f.PushHook(func(*bind.FilterOpts) (*ethereum.ETHDKGInitializedIterator, error) {
 		return r0, r1
 	})
 }
 
-func (f *IETHDKGFilterInitializedFunc) nextHook() func(*bind.FilterOpts) (*bindings.ETHDKGInitializedIterator, error) {
+func (f *IETHDKGFilterInitializedFunc) nextHook() func(*bind.FilterOpts) (*ethereum.ETHDKGInitializedIterator, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -20112,7 +20113,7 @@ type IETHDKGFilterInitializedFuncCall struct {
 	Arg0 *bind.FilterOpts
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 *bindings.ETHDKGInitializedIterator
+	Result0 *ethereum.ETHDKGInitializedIterator
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -20134,15 +20135,15 @@ func (c IETHDKGFilterInitializedFuncCall) Results() []interface{} {
 // the FilterKeyShareSubmissionComplete method of the parent MockIETHDKG
 // instance is invoked.
 type IETHDKGFilterKeyShareSubmissionCompleteFunc struct {
-	defaultHook func(*bind.FilterOpts) (*bindings.ETHDKGKeyShareSubmissionCompleteIterator, error)
-	hooks       []func(*bind.FilterOpts) (*bindings.ETHDKGKeyShareSubmissionCompleteIterator, error)
+	defaultHook func(*bind.FilterOpts) (*ethereum.ETHDKGKeyShareSubmissionCompleteIterator, error)
+	hooks       []func(*bind.FilterOpts) (*ethereum.ETHDKGKeyShareSubmissionCompleteIterator, error)
 	history     []IETHDKGFilterKeyShareSubmissionCompleteFuncCall
 	mutex       sync.Mutex
 }
 
 // FilterKeyShareSubmissionComplete delegates to the next hook function in
 // the queue and stores the parameter and result values of this invocation.
-func (m *MockIETHDKG) FilterKeyShareSubmissionComplete(v0 *bind.FilterOpts) (*bindings.ETHDKGKeyShareSubmissionCompleteIterator, error) {
+func (m *MockIETHDKG) FilterKeyShareSubmissionComplete(v0 *bind.FilterOpts) (*ethereum.ETHDKGKeyShareSubmissionCompleteIterator, error) {
 	r0, r1 := m.FilterKeyShareSubmissionCompleteFunc.nextHook()(v0)
 	m.FilterKeyShareSubmissionCompleteFunc.appendCall(IETHDKGFilterKeyShareSubmissionCompleteFuncCall{v0, r0, r1})
 	return r0, r1
@@ -20151,7 +20152,7 @@ func (m *MockIETHDKG) FilterKeyShareSubmissionComplete(v0 *bind.FilterOpts) (*bi
 // SetDefaultHook sets function that is called when the
 // FilterKeyShareSubmissionComplete method of the parent MockIETHDKG
 // instance is invoked and the hook queue is empty.
-func (f *IETHDKGFilterKeyShareSubmissionCompleteFunc) SetDefaultHook(hook func(*bind.FilterOpts) (*bindings.ETHDKGKeyShareSubmissionCompleteIterator, error)) {
+func (f *IETHDKGFilterKeyShareSubmissionCompleteFunc) SetDefaultHook(hook func(*bind.FilterOpts) (*ethereum.ETHDKGKeyShareSubmissionCompleteIterator, error)) {
 	f.defaultHook = hook
 }
 
@@ -20160,7 +20161,7 @@ func (f *IETHDKGFilterKeyShareSubmissionCompleteFunc) SetDefaultHook(hook func(*
 // instance invokes the hook at the front of the queue and discards it.
 // After the queue is empty, the default hook function is invoked for any
 // future action.
-func (f *IETHDKGFilterKeyShareSubmissionCompleteFunc) PushHook(hook func(*bind.FilterOpts) (*bindings.ETHDKGKeyShareSubmissionCompleteIterator, error)) {
+func (f *IETHDKGFilterKeyShareSubmissionCompleteFunc) PushHook(hook func(*bind.FilterOpts) (*ethereum.ETHDKGKeyShareSubmissionCompleteIterator, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -20168,20 +20169,20 @@ func (f *IETHDKGFilterKeyShareSubmissionCompleteFunc) PushHook(hook func(*bind.F
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IETHDKGFilterKeyShareSubmissionCompleteFunc) SetDefaultReturn(r0 *bindings.ETHDKGKeyShareSubmissionCompleteIterator, r1 error) {
-	f.SetDefaultHook(func(*bind.FilterOpts) (*bindings.ETHDKGKeyShareSubmissionCompleteIterator, error) {
+func (f *IETHDKGFilterKeyShareSubmissionCompleteFunc) SetDefaultReturn(r0 *ethereum.ETHDKGKeyShareSubmissionCompleteIterator, r1 error) {
+	f.SetDefaultHook(func(*bind.FilterOpts) (*ethereum.ETHDKGKeyShareSubmissionCompleteIterator, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IETHDKGFilterKeyShareSubmissionCompleteFunc) PushReturn(r0 *bindings.ETHDKGKeyShareSubmissionCompleteIterator, r1 error) {
-	f.PushHook(func(*bind.FilterOpts) (*bindings.ETHDKGKeyShareSubmissionCompleteIterator, error) {
+func (f *IETHDKGFilterKeyShareSubmissionCompleteFunc) PushReturn(r0 *ethereum.ETHDKGKeyShareSubmissionCompleteIterator, r1 error) {
+	f.PushHook(func(*bind.FilterOpts) (*ethereum.ETHDKGKeyShareSubmissionCompleteIterator, error) {
 		return r0, r1
 	})
 }
 
-func (f *IETHDKGFilterKeyShareSubmissionCompleteFunc) nextHook() func(*bind.FilterOpts) (*bindings.ETHDKGKeyShareSubmissionCompleteIterator, error) {
+func (f *IETHDKGFilterKeyShareSubmissionCompleteFunc) nextHook() func(*bind.FilterOpts) (*ethereum.ETHDKGKeyShareSubmissionCompleteIterator, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -20221,7 +20222,7 @@ type IETHDKGFilterKeyShareSubmissionCompleteFuncCall struct {
 	Arg0 *bind.FilterOpts
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 *bindings.ETHDKGKeyShareSubmissionCompleteIterator
+	Result0 *ethereum.ETHDKGKeyShareSubmissionCompleteIterator
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -20243,15 +20244,15 @@ func (c IETHDKGFilterKeyShareSubmissionCompleteFuncCall) Results() []interface{}
 // FilterKeyShareSubmitted method of the parent MockIETHDKG instance is
 // invoked.
 type IETHDKGFilterKeyShareSubmittedFunc struct {
-	defaultHook func(*bind.FilterOpts) (*bindings.ETHDKGKeyShareSubmittedIterator, error)
-	hooks       []func(*bind.FilterOpts) (*bindings.ETHDKGKeyShareSubmittedIterator, error)
+	defaultHook func(*bind.FilterOpts) (*ethereum.ETHDKGKeyShareSubmittedIterator, error)
+	hooks       []func(*bind.FilterOpts) (*ethereum.ETHDKGKeyShareSubmittedIterator, error)
 	history     []IETHDKGFilterKeyShareSubmittedFuncCall
 	mutex       sync.Mutex
 }
 
 // FilterKeyShareSubmitted delegates to the next hook function in the queue
 // and stores the parameter and result values of this invocation.
-func (m *MockIETHDKG) FilterKeyShareSubmitted(v0 *bind.FilterOpts) (*bindings.ETHDKGKeyShareSubmittedIterator, error) {
+func (m *MockIETHDKG) FilterKeyShareSubmitted(v0 *bind.FilterOpts) (*ethereum.ETHDKGKeyShareSubmittedIterator, error) {
 	r0, r1 := m.FilterKeyShareSubmittedFunc.nextHook()(v0)
 	m.FilterKeyShareSubmittedFunc.appendCall(IETHDKGFilterKeyShareSubmittedFuncCall{v0, r0, r1})
 	return r0, r1
@@ -20260,7 +20261,7 @@ func (m *MockIETHDKG) FilterKeyShareSubmitted(v0 *bind.FilterOpts) (*bindings.ET
 // SetDefaultHook sets function that is called when the
 // FilterKeyShareSubmitted method of the parent MockIETHDKG instance is
 // invoked and the hook queue is empty.
-func (f *IETHDKGFilterKeyShareSubmittedFunc) SetDefaultHook(hook func(*bind.FilterOpts) (*bindings.ETHDKGKeyShareSubmittedIterator, error)) {
+func (f *IETHDKGFilterKeyShareSubmittedFunc) SetDefaultHook(hook func(*bind.FilterOpts) (*ethereum.ETHDKGKeyShareSubmittedIterator, error)) {
 	f.defaultHook = hook
 }
 
@@ -20268,7 +20269,7 @@ func (f *IETHDKGFilterKeyShareSubmittedFunc) SetDefaultHook(hook func(*bind.Filt
 // FilterKeyShareSubmitted method of the parent MockIETHDKG instance invokes
 // the hook at the front of the queue and discards it. After the queue is
 // empty, the default hook function is invoked for any future action.
-func (f *IETHDKGFilterKeyShareSubmittedFunc) PushHook(hook func(*bind.FilterOpts) (*bindings.ETHDKGKeyShareSubmittedIterator, error)) {
+func (f *IETHDKGFilterKeyShareSubmittedFunc) PushHook(hook func(*bind.FilterOpts) (*ethereum.ETHDKGKeyShareSubmittedIterator, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -20276,20 +20277,20 @@ func (f *IETHDKGFilterKeyShareSubmittedFunc) PushHook(hook func(*bind.FilterOpts
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IETHDKGFilterKeyShareSubmittedFunc) SetDefaultReturn(r0 *bindings.ETHDKGKeyShareSubmittedIterator, r1 error) {
-	f.SetDefaultHook(func(*bind.FilterOpts) (*bindings.ETHDKGKeyShareSubmittedIterator, error) {
+func (f *IETHDKGFilterKeyShareSubmittedFunc) SetDefaultReturn(r0 *ethereum.ETHDKGKeyShareSubmittedIterator, r1 error) {
+	f.SetDefaultHook(func(*bind.FilterOpts) (*ethereum.ETHDKGKeyShareSubmittedIterator, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IETHDKGFilterKeyShareSubmittedFunc) PushReturn(r0 *bindings.ETHDKGKeyShareSubmittedIterator, r1 error) {
-	f.PushHook(func(*bind.FilterOpts) (*bindings.ETHDKGKeyShareSubmittedIterator, error) {
+func (f *IETHDKGFilterKeyShareSubmittedFunc) PushReturn(r0 *ethereum.ETHDKGKeyShareSubmittedIterator, r1 error) {
+	f.PushHook(func(*bind.FilterOpts) (*ethereum.ETHDKGKeyShareSubmittedIterator, error) {
 		return r0, r1
 	})
 }
 
-func (f *IETHDKGFilterKeyShareSubmittedFunc) nextHook() func(*bind.FilterOpts) (*bindings.ETHDKGKeyShareSubmittedIterator, error) {
+func (f *IETHDKGFilterKeyShareSubmittedFunc) nextHook() func(*bind.FilterOpts) (*ethereum.ETHDKGKeyShareSubmittedIterator, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -20328,7 +20329,7 @@ type IETHDKGFilterKeyShareSubmittedFuncCall struct {
 	Arg0 *bind.FilterOpts
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 *bindings.ETHDKGKeyShareSubmittedIterator
+	Result0 *ethereum.ETHDKGKeyShareSubmittedIterator
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -20349,15 +20350,15 @@ func (c IETHDKGFilterKeyShareSubmittedFuncCall) Results() []interface{} {
 // IETHDKGFilterMPKSetFunc describes the behavior when the FilterMPKSet
 // method of the parent MockIETHDKG instance is invoked.
 type IETHDKGFilterMPKSetFunc struct {
-	defaultHook func(*bind.FilterOpts) (*bindings.ETHDKGMPKSetIterator, error)
-	hooks       []func(*bind.FilterOpts) (*bindings.ETHDKGMPKSetIterator, error)
+	defaultHook func(*bind.FilterOpts) (*ethereum.ETHDKGMPKSetIterator, error)
+	hooks       []func(*bind.FilterOpts) (*ethereum.ETHDKGMPKSetIterator, error)
 	history     []IETHDKGFilterMPKSetFuncCall
 	mutex       sync.Mutex
 }
 
 // FilterMPKSet delegates to the next hook function in the queue and stores
 // the parameter and result values of this invocation.
-func (m *MockIETHDKG) FilterMPKSet(v0 *bind.FilterOpts) (*bindings.ETHDKGMPKSetIterator, error) {
+func (m *MockIETHDKG) FilterMPKSet(v0 *bind.FilterOpts) (*ethereum.ETHDKGMPKSetIterator, error) {
 	r0, r1 := m.FilterMPKSetFunc.nextHook()(v0)
 	m.FilterMPKSetFunc.appendCall(IETHDKGFilterMPKSetFuncCall{v0, r0, r1})
 	return r0, r1
@@ -20366,7 +20367,7 @@ func (m *MockIETHDKG) FilterMPKSet(v0 *bind.FilterOpts) (*bindings.ETHDKGMPKSetI
 // SetDefaultHook sets function that is called when the FilterMPKSet method
 // of the parent MockIETHDKG instance is invoked and the hook queue is
 // empty.
-func (f *IETHDKGFilterMPKSetFunc) SetDefaultHook(hook func(*bind.FilterOpts) (*bindings.ETHDKGMPKSetIterator, error)) {
+func (f *IETHDKGFilterMPKSetFunc) SetDefaultHook(hook func(*bind.FilterOpts) (*ethereum.ETHDKGMPKSetIterator, error)) {
 	f.defaultHook = hook
 }
 
@@ -20374,7 +20375,7 @@ func (f *IETHDKGFilterMPKSetFunc) SetDefaultHook(hook func(*bind.FilterOpts) (*b
 // FilterMPKSet method of the parent MockIETHDKG instance invokes the hook
 // at the front of the queue and discards it. After the queue is empty, the
 // default hook function is invoked for any future action.
-func (f *IETHDKGFilterMPKSetFunc) PushHook(hook func(*bind.FilterOpts) (*bindings.ETHDKGMPKSetIterator, error)) {
+func (f *IETHDKGFilterMPKSetFunc) PushHook(hook func(*bind.FilterOpts) (*ethereum.ETHDKGMPKSetIterator, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -20382,20 +20383,20 @@ func (f *IETHDKGFilterMPKSetFunc) PushHook(hook func(*bind.FilterOpts) (*binding
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IETHDKGFilterMPKSetFunc) SetDefaultReturn(r0 *bindings.ETHDKGMPKSetIterator, r1 error) {
-	f.SetDefaultHook(func(*bind.FilterOpts) (*bindings.ETHDKGMPKSetIterator, error) {
+func (f *IETHDKGFilterMPKSetFunc) SetDefaultReturn(r0 *ethereum.ETHDKGMPKSetIterator, r1 error) {
+	f.SetDefaultHook(func(*bind.FilterOpts) (*ethereum.ETHDKGMPKSetIterator, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IETHDKGFilterMPKSetFunc) PushReturn(r0 *bindings.ETHDKGMPKSetIterator, r1 error) {
-	f.PushHook(func(*bind.FilterOpts) (*bindings.ETHDKGMPKSetIterator, error) {
+func (f *IETHDKGFilterMPKSetFunc) PushReturn(r0 *ethereum.ETHDKGMPKSetIterator, r1 error) {
+	f.PushHook(func(*bind.FilterOpts) (*ethereum.ETHDKGMPKSetIterator, error) {
 		return r0, r1
 	})
 }
 
-func (f *IETHDKGFilterMPKSetFunc) nextHook() func(*bind.FilterOpts) (*bindings.ETHDKGMPKSetIterator, error) {
+func (f *IETHDKGFilterMPKSetFunc) nextHook() func(*bind.FilterOpts) (*ethereum.ETHDKGMPKSetIterator, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -20433,7 +20434,7 @@ type IETHDKGFilterMPKSetFuncCall struct {
 	Arg0 *bind.FilterOpts
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 *bindings.ETHDKGMPKSetIterator
+	Result0 *ethereum.ETHDKGMPKSetIterator
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -20455,15 +20456,15 @@ func (c IETHDKGFilterMPKSetFuncCall) Results() []interface{} {
 // FilterRegistrationComplete method of the parent MockIETHDKG instance is
 // invoked.
 type IETHDKGFilterRegistrationCompleteFunc struct {
-	defaultHook func(*bind.FilterOpts) (*bindings.ETHDKGRegistrationCompleteIterator, error)
-	hooks       []func(*bind.FilterOpts) (*bindings.ETHDKGRegistrationCompleteIterator, error)
+	defaultHook func(*bind.FilterOpts) (*ethereum.ETHDKGRegistrationCompleteIterator, error)
+	hooks       []func(*bind.FilterOpts) (*ethereum.ETHDKGRegistrationCompleteIterator, error)
 	history     []IETHDKGFilterRegistrationCompleteFuncCall
 	mutex       sync.Mutex
 }
 
 // FilterRegistrationComplete delegates to the next hook function in the
 // queue and stores the parameter and result values of this invocation.
-func (m *MockIETHDKG) FilterRegistrationComplete(v0 *bind.FilterOpts) (*bindings.ETHDKGRegistrationCompleteIterator, error) {
+func (m *MockIETHDKG) FilterRegistrationComplete(v0 *bind.FilterOpts) (*ethereum.ETHDKGRegistrationCompleteIterator, error) {
 	r0, r1 := m.FilterRegistrationCompleteFunc.nextHook()(v0)
 	m.FilterRegistrationCompleteFunc.appendCall(IETHDKGFilterRegistrationCompleteFuncCall{v0, r0, r1})
 	return r0, r1
@@ -20472,7 +20473,7 @@ func (m *MockIETHDKG) FilterRegistrationComplete(v0 *bind.FilterOpts) (*bindings
 // SetDefaultHook sets function that is called when the
 // FilterRegistrationComplete method of the parent MockIETHDKG instance is
 // invoked and the hook queue is empty.
-func (f *IETHDKGFilterRegistrationCompleteFunc) SetDefaultHook(hook func(*bind.FilterOpts) (*bindings.ETHDKGRegistrationCompleteIterator, error)) {
+func (f *IETHDKGFilterRegistrationCompleteFunc) SetDefaultHook(hook func(*bind.FilterOpts) (*ethereum.ETHDKGRegistrationCompleteIterator, error)) {
 	f.defaultHook = hook
 }
 
@@ -20481,7 +20482,7 @@ func (f *IETHDKGFilterRegistrationCompleteFunc) SetDefaultHook(hook func(*bind.F
 // invokes the hook at the front of the queue and discards it. After the
 // queue is empty, the default hook function is invoked for any future
 // action.
-func (f *IETHDKGFilterRegistrationCompleteFunc) PushHook(hook func(*bind.FilterOpts) (*bindings.ETHDKGRegistrationCompleteIterator, error)) {
+func (f *IETHDKGFilterRegistrationCompleteFunc) PushHook(hook func(*bind.FilterOpts) (*ethereum.ETHDKGRegistrationCompleteIterator, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -20489,20 +20490,20 @@ func (f *IETHDKGFilterRegistrationCompleteFunc) PushHook(hook func(*bind.FilterO
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IETHDKGFilterRegistrationCompleteFunc) SetDefaultReturn(r0 *bindings.ETHDKGRegistrationCompleteIterator, r1 error) {
-	f.SetDefaultHook(func(*bind.FilterOpts) (*bindings.ETHDKGRegistrationCompleteIterator, error) {
+func (f *IETHDKGFilterRegistrationCompleteFunc) SetDefaultReturn(r0 *ethereum.ETHDKGRegistrationCompleteIterator, r1 error) {
+	f.SetDefaultHook(func(*bind.FilterOpts) (*ethereum.ETHDKGRegistrationCompleteIterator, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IETHDKGFilterRegistrationCompleteFunc) PushReturn(r0 *bindings.ETHDKGRegistrationCompleteIterator, r1 error) {
-	f.PushHook(func(*bind.FilterOpts) (*bindings.ETHDKGRegistrationCompleteIterator, error) {
+func (f *IETHDKGFilterRegistrationCompleteFunc) PushReturn(r0 *ethereum.ETHDKGRegistrationCompleteIterator, r1 error) {
+	f.PushHook(func(*bind.FilterOpts) (*ethereum.ETHDKGRegistrationCompleteIterator, error) {
 		return r0, r1
 	})
 }
 
-func (f *IETHDKGFilterRegistrationCompleteFunc) nextHook() func(*bind.FilterOpts) (*bindings.ETHDKGRegistrationCompleteIterator, error) {
+func (f *IETHDKGFilterRegistrationCompleteFunc) nextHook() func(*bind.FilterOpts) (*ethereum.ETHDKGRegistrationCompleteIterator, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -20541,7 +20542,7 @@ type IETHDKGFilterRegistrationCompleteFuncCall struct {
 	Arg0 *bind.FilterOpts
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 *bindings.ETHDKGRegistrationCompleteIterator
+	Result0 *ethereum.ETHDKGRegistrationCompleteIterator
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -20563,15 +20564,15 @@ func (c IETHDKGFilterRegistrationCompleteFuncCall) Results() []interface{} {
 // FilterRegistrationOpened method of the parent MockIETHDKG instance is
 // invoked.
 type IETHDKGFilterRegistrationOpenedFunc struct {
-	defaultHook func(*bind.FilterOpts) (*bindings.ETHDKGRegistrationOpenedIterator, error)
-	hooks       []func(*bind.FilterOpts) (*bindings.ETHDKGRegistrationOpenedIterator, error)
+	defaultHook func(*bind.FilterOpts) (*ethereum.ETHDKGRegistrationOpenedIterator, error)
+	hooks       []func(*bind.FilterOpts) (*ethereum.ETHDKGRegistrationOpenedIterator, error)
 	history     []IETHDKGFilterRegistrationOpenedFuncCall
 	mutex       sync.Mutex
 }
 
 // FilterRegistrationOpened delegates to the next hook function in the queue
 // and stores the parameter and result values of this invocation.
-func (m *MockIETHDKG) FilterRegistrationOpened(v0 *bind.FilterOpts) (*bindings.ETHDKGRegistrationOpenedIterator, error) {
+func (m *MockIETHDKG) FilterRegistrationOpened(v0 *bind.FilterOpts) (*ethereum.ETHDKGRegistrationOpenedIterator, error) {
 	r0, r1 := m.FilterRegistrationOpenedFunc.nextHook()(v0)
 	m.FilterRegistrationOpenedFunc.appendCall(IETHDKGFilterRegistrationOpenedFuncCall{v0, r0, r1})
 	return r0, r1
@@ -20580,7 +20581,7 @@ func (m *MockIETHDKG) FilterRegistrationOpened(v0 *bind.FilterOpts) (*bindings.E
 // SetDefaultHook sets function that is called when the
 // FilterRegistrationOpened method of the parent MockIETHDKG instance is
 // invoked and the hook queue is empty.
-func (f *IETHDKGFilterRegistrationOpenedFunc) SetDefaultHook(hook func(*bind.FilterOpts) (*bindings.ETHDKGRegistrationOpenedIterator, error)) {
+func (f *IETHDKGFilterRegistrationOpenedFunc) SetDefaultHook(hook func(*bind.FilterOpts) (*ethereum.ETHDKGRegistrationOpenedIterator, error)) {
 	f.defaultHook = hook
 }
 
@@ -20589,7 +20590,7 @@ func (f *IETHDKGFilterRegistrationOpenedFunc) SetDefaultHook(hook func(*bind.Fil
 // invokes the hook at the front of the queue and discards it. After the
 // queue is empty, the default hook function is invoked for any future
 // action.
-func (f *IETHDKGFilterRegistrationOpenedFunc) PushHook(hook func(*bind.FilterOpts) (*bindings.ETHDKGRegistrationOpenedIterator, error)) {
+func (f *IETHDKGFilterRegistrationOpenedFunc) PushHook(hook func(*bind.FilterOpts) (*ethereum.ETHDKGRegistrationOpenedIterator, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -20597,20 +20598,20 @@ func (f *IETHDKGFilterRegistrationOpenedFunc) PushHook(hook func(*bind.FilterOpt
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IETHDKGFilterRegistrationOpenedFunc) SetDefaultReturn(r0 *bindings.ETHDKGRegistrationOpenedIterator, r1 error) {
-	f.SetDefaultHook(func(*bind.FilterOpts) (*bindings.ETHDKGRegistrationOpenedIterator, error) {
+func (f *IETHDKGFilterRegistrationOpenedFunc) SetDefaultReturn(r0 *ethereum.ETHDKGRegistrationOpenedIterator, r1 error) {
+	f.SetDefaultHook(func(*bind.FilterOpts) (*ethereum.ETHDKGRegistrationOpenedIterator, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IETHDKGFilterRegistrationOpenedFunc) PushReturn(r0 *bindings.ETHDKGRegistrationOpenedIterator, r1 error) {
-	f.PushHook(func(*bind.FilterOpts) (*bindings.ETHDKGRegistrationOpenedIterator, error) {
+func (f *IETHDKGFilterRegistrationOpenedFunc) PushReturn(r0 *ethereum.ETHDKGRegistrationOpenedIterator, r1 error) {
+	f.PushHook(func(*bind.FilterOpts) (*ethereum.ETHDKGRegistrationOpenedIterator, error) {
 		return r0, r1
 	})
 }
 
-func (f *IETHDKGFilterRegistrationOpenedFunc) nextHook() func(*bind.FilterOpts) (*bindings.ETHDKGRegistrationOpenedIterator, error) {
+func (f *IETHDKGFilterRegistrationOpenedFunc) nextHook() func(*bind.FilterOpts) (*ethereum.ETHDKGRegistrationOpenedIterator, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -20649,7 +20650,7 @@ type IETHDKGFilterRegistrationOpenedFuncCall struct {
 	Arg0 *bind.FilterOpts
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 *bindings.ETHDKGRegistrationOpenedIterator
+	Result0 *ethereum.ETHDKGRegistrationOpenedIterator
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -20671,15 +20672,15 @@ func (c IETHDKGFilterRegistrationOpenedFuncCall) Results() []interface{} {
 // the FilterShareDistributionComplete method of the parent MockIETHDKG
 // instance is invoked.
 type IETHDKGFilterShareDistributionCompleteFunc struct {
-	defaultHook func(*bind.FilterOpts) (*bindings.ETHDKGShareDistributionCompleteIterator, error)
-	hooks       []func(*bind.FilterOpts) (*bindings.ETHDKGShareDistributionCompleteIterator, error)
+	defaultHook func(*bind.FilterOpts) (*ethereum.ETHDKGShareDistributionCompleteIterator, error)
+	hooks       []func(*bind.FilterOpts) (*ethereum.ETHDKGShareDistributionCompleteIterator, error)
 	history     []IETHDKGFilterShareDistributionCompleteFuncCall
 	mutex       sync.Mutex
 }
 
 // FilterShareDistributionComplete delegates to the next hook function in
 // the queue and stores the parameter and result values of this invocation.
-func (m *MockIETHDKG) FilterShareDistributionComplete(v0 *bind.FilterOpts) (*bindings.ETHDKGShareDistributionCompleteIterator, error) {
+func (m *MockIETHDKG) FilterShareDistributionComplete(v0 *bind.FilterOpts) (*ethereum.ETHDKGShareDistributionCompleteIterator, error) {
 	r0, r1 := m.FilterShareDistributionCompleteFunc.nextHook()(v0)
 	m.FilterShareDistributionCompleteFunc.appendCall(IETHDKGFilterShareDistributionCompleteFuncCall{v0, r0, r1})
 	return r0, r1
@@ -20688,7 +20689,7 @@ func (m *MockIETHDKG) FilterShareDistributionComplete(v0 *bind.FilterOpts) (*bin
 // SetDefaultHook sets function that is called when the
 // FilterShareDistributionComplete method of the parent MockIETHDKG instance
 // is invoked and the hook queue is empty.
-func (f *IETHDKGFilterShareDistributionCompleteFunc) SetDefaultHook(hook func(*bind.FilterOpts) (*bindings.ETHDKGShareDistributionCompleteIterator, error)) {
+func (f *IETHDKGFilterShareDistributionCompleteFunc) SetDefaultHook(hook func(*bind.FilterOpts) (*ethereum.ETHDKGShareDistributionCompleteIterator, error)) {
 	f.defaultHook = hook
 }
 
@@ -20697,7 +20698,7 @@ func (f *IETHDKGFilterShareDistributionCompleteFunc) SetDefaultHook(hook func(*b
 // invokes the hook at the front of the queue and discards it. After the
 // queue is empty, the default hook function is invoked for any future
 // action.
-func (f *IETHDKGFilterShareDistributionCompleteFunc) PushHook(hook func(*bind.FilterOpts) (*bindings.ETHDKGShareDistributionCompleteIterator, error)) {
+func (f *IETHDKGFilterShareDistributionCompleteFunc) PushHook(hook func(*bind.FilterOpts) (*ethereum.ETHDKGShareDistributionCompleteIterator, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -20705,20 +20706,20 @@ func (f *IETHDKGFilterShareDistributionCompleteFunc) PushHook(hook func(*bind.Fi
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IETHDKGFilterShareDistributionCompleteFunc) SetDefaultReturn(r0 *bindings.ETHDKGShareDistributionCompleteIterator, r1 error) {
-	f.SetDefaultHook(func(*bind.FilterOpts) (*bindings.ETHDKGShareDistributionCompleteIterator, error) {
+func (f *IETHDKGFilterShareDistributionCompleteFunc) SetDefaultReturn(r0 *ethereum.ETHDKGShareDistributionCompleteIterator, r1 error) {
+	f.SetDefaultHook(func(*bind.FilterOpts) (*ethereum.ETHDKGShareDistributionCompleteIterator, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IETHDKGFilterShareDistributionCompleteFunc) PushReturn(r0 *bindings.ETHDKGShareDistributionCompleteIterator, r1 error) {
-	f.PushHook(func(*bind.FilterOpts) (*bindings.ETHDKGShareDistributionCompleteIterator, error) {
+func (f *IETHDKGFilterShareDistributionCompleteFunc) PushReturn(r0 *ethereum.ETHDKGShareDistributionCompleteIterator, r1 error) {
+	f.PushHook(func(*bind.FilterOpts) (*ethereum.ETHDKGShareDistributionCompleteIterator, error) {
 		return r0, r1
 	})
 }
 
-func (f *IETHDKGFilterShareDistributionCompleteFunc) nextHook() func(*bind.FilterOpts) (*bindings.ETHDKGShareDistributionCompleteIterator, error) {
+func (f *IETHDKGFilterShareDistributionCompleteFunc) nextHook() func(*bind.FilterOpts) (*ethereum.ETHDKGShareDistributionCompleteIterator, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -20758,7 +20759,7 @@ type IETHDKGFilterShareDistributionCompleteFuncCall struct {
 	Arg0 *bind.FilterOpts
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 *bindings.ETHDKGShareDistributionCompleteIterator
+	Result0 *ethereum.ETHDKGShareDistributionCompleteIterator
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -20780,15 +20781,15 @@ func (c IETHDKGFilterShareDistributionCompleteFuncCall) Results() []interface{} 
 // FilterSharesDistributed method of the parent MockIETHDKG instance is
 // invoked.
 type IETHDKGFilterSharesDistributedFunc struct {
-	defaultHook func(*bind.FilterOpts) (*bindings.ETHDKGSharesDistributedIterator, error)
-	hooks       []func(*bind.FilterOpts) (*bindings.ETHDKGSharesDistributedIterator, error)
+	defaultHook func(*bind.FilterOpts) (*ethereum.ETHDKGSharesDistributedIterator, error)
+	hooks       []func(*bind.FilterOpts) (*ethereum.ETHDKGSharesDistributedIterator, error)
 	history     []IETHDKGFilterSharesDistributedFuncCall
 	mutex       sync.Mutex
 }
 
 // FilterSharesDistributed delegates to the next hook function in the queue
 // and stores the parameter and result values of this invocation.
-func (m *MockIETHDKG) FilterSharesDistributed(v0 *bind.FilterOpts) (*bindings.ETHDKGSharesDistributedIterator, error) {
+func (m *MockIETHDKG) FilterSharesDistributed(v0 *bind.FilterOpts) (*ethereum.ETHDKGSharesDistributedIterator, error) {
 	r0, r1 := m.FilterSharesDistributedFunc.nextHook()(v0)
 	m.FilterSharesDistributedFunc.appendCall(IETHDKGFilterSharesDistributedFuncCall{v0, r0, r1})
 	return r0, r1
@@ -20797,7 +20798,7 @@ func (m *MockIETHDKG) FilterSharesDistributed(v0 *bind.FilterOpts) (*bindings.ET
 // SetDefaultHook sets function that is called when the
 // FilterSharesDistributed method of the parent MockIETHDKG instance is
 // invoked and the hook queue is empty.
-func (f *IETHDKGFilterSharesDistributedFunc) SetDefaultHook(hook func(*bind.FilterOpts) (*bindings.ETHDKGSharesDistributedIterator, error)) {
+func (f *IETHDKGFilterSharesDistributedFunc) SetDefaultHook(hook func(*bind.FilterOpts) (*ethereum.ETHDKGSharesDistributedIterator, error)) {
 	f.defaultHook = hook
 }
 
@@ -20805,7 +20806,7 @@ func (f *IETHDKGFilterSharesDistributedFunc) SetDefaultHook(hook func(*bind.Filt
 // FilterSharesDistributed method of the parent MockIETHDKG instance invokes
 // the hook at the front of the queue and discards it. After the queue is
 // empty, the default hook function is invoked for any future action.
-func (f *IETHDKGFilterSharesDistributedFunc) PushHook(hook func(*bind.FilterOpts) (*bindings.ETHDKGSharesDistributedIterator, error)) {
+func (f *IETHDKGFilterSharesDistributedFunc) PushHook(hook func(*bind.FilterOpts) (*ethereum.ETHDKGSharesDistributedIterator, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -20813,20 +20814,20 @@ func (f *IETHDKGFilterSharesDistributedFunc) PushHook(hook func(*bind.FilterOpts
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IETHDKGFilterSharesDistributedFunc) SetDefaultReturn(r0 *bindings.ETHDKGSharesDistributedIterator, r1 error) {
-	f.SetDefaultHook(func(*bind.FilterOpts) (*bindings.ETHDKGSharesDistributedIterator, error) {
+func (f *IETHDKGFilterSharesDistributedFunc) SetDefaultReturn(r0 *ethereum.ETHDKGSharesDistributedIterator, r1 error) {
+	f.SetDefaultHook(func(*bind.FilterOpts) (*ethereum.ETHDKGSharesDistributedIterator, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IETHDKGFilterSharesDistributedFunc) PushReturn(r0 *bindings.ETHDKGSharesDistributedIterator, r1 error) {
-	f.PushHook(func(*bind.FilterOpts) (*bindings.ETHDKGSharesDistributedIterator, error) {
+func (f *IETHDKGFilterSharesDistributedFunc) PushReturn(r0 *ethereum.ETHDKGSharesDistributedIterator, r1 error) {
+	f.PushHook(func(*bind.FilterOpts) (*ethereum.ETHDKGSharesDistributedIterator, error) {
 		return r0, r1
 	})
 }
 
-func (f *IETHDKGFilterSharesDistributedFunc) nextHook() func(*bind.FilterOpts) (*bindings.ETHDKGSharesDistributedIterator, error) {
+func (f *IETHDKGFilterSharesDistributedFunc) nextHook() func(*bind.FilterOpts) (*ethereum.ETHDKGSharesDistributedIterator, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -20865,7 +20866,7 @@ type IETHDKGFilterSharesDistributedFuncCall struct {
 	Arg0 *bind.FilterOpts
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 *bindings.ETHDKGSharesDistributedIterator
+	Result0 *ethereum.ETHDKGSharesDistributedIterator
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -20887,15 +20888,15 @@ func (c IETHDKGFilterSharesDistributedFuncCall) Results() []interface{} {
 // FilterValidatorMemberAdded method of the parent MockIETHDKG instance is
 // invoked.
 type IETHDKGFilterValidatorMemberAddedFunc struct {
-	defaultHook func(*bind.FilterOpts) (*bindings.ETHDKGValidatorMemberAddedIterator, error)
-	hooks       []func(*bind.FilterOpts) (*bindings.ETHDKGValidatorMemberAddedIterator, error)
+	defaultHook func(*bind.FilterOpts) (*ethereum.ETHDKGValidatorMemberAddedIterator, error)
+	hooks       []func(*bind.FilterOpts) (*ethereum.ETHDKGValidatorMemberAddedIterator, error)
 	history     []IETHDKGFilterValidatorMemberAddedFuncCall
 	mutex       sync.Mutex
 }
 
 // FilterValidatorMemberAdded delegates to the next hook function in the
 // queue and stores the parameter and result values of this invocation.
-func (m *MockIETHDKG) FilterValidatorMemberAdded(v0 *bind.FilterOpts) (*bindings.ETHDKGValidatorMemberAddedIterator, error) {
+func (m *MockIETHDKG) FilterValidatorMemberAdded(v0 *bind.FilterOpts) (*ethereum.ETHDKGValidatorMemberAddedIterator, error) {
 	r0, r1 := m.FilterValidatorMemberAddedFunc.nextHook()(v0)
 	m.FilterValidatorMemberAddedFunc.appendCall(IETHDKGFilterValidatorMemberAddedFuncCall{v0, r0, r1})
 	return r0, r1
@@ -20904,7 +20905,7 @@ func (m *MockIETHDKG) FilterValidatorMemberAdded(v0 *bind.FilterOpts) (*bindings
 // SetDefaultHook sets function that is called when the
 // FilterValidatorMemberAdded method of the parent MockIETHDKG instance is
 // invoked and the hook queue is empty.
-func (f *IETHDKGFilterValidatorMemberAddedFunc) SetDefaultHook(hook func(*bind.FilterOpts) (*bindings.ETHDKGValidatorMemberAddedIterator, error)) {
+func (f *IETHDKGFilterValidatorMemberAddedFunc) SetDefaultHook(hook func(*bind.FilterOpts) (*ethereum.ETHDKGValidatorMemberAddedIterator, error)) {
 	f.defaultHook = hook
 }
 
@@ -20913,7 +20914,7 @@ func (f *IETHDKGFilterValidatorMemberAddedFunc) SetDefaultHook(hook func(*bind.F
 // invokes the hook at the front of the queue and discards it. After the
 // queue is empty, the default hook function is invoked for any future
 // action.
-func (f *IETHDKGFilterValidatorMemberAddedFunc) PushHook(hook func(*bind.FilterOpts) (*bindings.ETHDKGValidatorMemberAddedIterator, error)) {
+func (f *IETHDKGFilterValidatorMemberAddedFunc) PushHook(hook func(*bind.FilterOpts) (*ethereum.ETHDKGValidatorMemberAddedIterator, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -20921,20 +20922,20 @@ func (f *IETHDKGFilterValidatorMemberAddedFunc) PushHook(hook func(*bind.FilterO
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IETHDKGFilterValidatorMemberAddedFunc) SetDefaultReturn(r0 *bindings.ETHDKGValidatorMemberAddedIterator, r1 error) {
-	f.SetDefaultHook(func(*bind.FilterOpts) (*bindings.ETHDKGValidatorMemberAddedIterator, error) {
+func (f *IETHDKGFilterValidatorMemberAddedFunc) SetDefaultReturn(r0 *ethereum.ETHDKGValidatorMemberAddedIterator, r1 error) {
+	f.SetDefaultHook(func(*bind.FilterOpts) (*ethereum.ETHDKGValidatorMemberAddedIterator, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IETHDKGFilterValidatorMemberAddedFunc) PushReturn(r0 *bindings.ETHDKGValidatorMemberAddedIterator, r1 error) {
-	f.PushHook(func(*bind.FilterOpts) (*bindings.ETHDKGValidatorMemberAddedIterator, error) {
+func (f *IETHDKGFilterValidatorMemberAddedFunc) PushReturn(r0 *ethereum.ETHDKGValidatorMemberAddedIterator, r1 error) {
+	f.PushHook(func(*bind.FilterOpts) (*ethereum.ETHDKGValidatorMemberAddedIterator, error) {
 		return r0, r1
 	})
 }
 
-func (f *IETHDKGFilterValidatorMemberAddedFunc) nextHook() func(*bind.FilterOpts) (*bindings.ETHDKGValidatorMemberAddedIterator, error) {
+func (f *IETHDKGFilterValidatorMemberAddedFunc) nextHook() func(*bind.FilterOpts) (*ethereum.ETHDKGValidatorMemberAddedIterator, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -20973,7 +20974,7 @@ type IETHDKGFilterValidatorMemberAddedFuncCall struct {
 	Arg0 *bind.FilterOpts
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 *bindings.ETHDKGValidatorMemberAddedIterator
+	Result0 *ethereum.ETHDKGValidatorMemberAddedIterator
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -20995,15 +20996,15 @@ func (c IETHDKGFilterValidatorMemberAddedFuncCall) Results() []interface{} {
 // FilterValidatorSetCompleted method of the parent MockIETHDKG instance is
 // invoked.
 type IETHDKGFilterValidatorSetCompletedFunc struct {
-	defaultHook func(*bind.FilterOpts) (*bindings.ETHDKGValidatorSetCompletedIterator, error)
-	hooks       []func(*bind.FilterOpts) (*bindings.ETHDKGValidatorSetCompletedIterator, error)
+	defaultHook func(*bind.FilterOpts) (*ethereum.ETHDKGValidatorSetCompletedIterator, error)
+	hooks       []func(*bind.FilterOpts) (*ethereum.ETHDKGValidatorSetCompletedIterator, error)
 	history     []IETHDKGFilterValidatorSetCompletedFuncCall
 	mutex       sync.Mutex
 }
 
 // FilterValidatorSetCompleted delegates to the next hook function in the
 // queue and stores the parameter and result values of this invocation.
-func (m *MockIETHDKG) FilterValidatorSetCompleted(v0 *bind.FilterOpts) (*bindings.ETHDKGValidatorSetCompletedIterator, error) {
+func (m *MockIETHDKG) FilterValidatorSetCompleted(v0 *bind.FilterOpts) (*ethereum.ETHDKGValidatorSetCompletedIterator, error) {
 	r0, r1 := m.FilterValidatorSetCompletedFunc.nextHook()(v0)
 	m.FilterValidatorSetCompletedFunc.appendCall(IETHDKGFilterValidatorSetCompletedFuncCall{v0, r0, r1})
 	return r0, r1
@@ -21012,7 +21013,7 @@ func (m *MockIETHDKG) FilterValidatorSetCompleted(v0 *bind.FilterOpts) (*binding
 // SetDefaultHook sets function that is called when the
 // FilterValidatorSetCompleted method of the parent MockIETHDKG instance is
 // invoked and the hook queue is empty.
-func (f *IETHDKGFilterValidatorSetCompletedFunc) SetDefaultHook(hook func(*bind.FilterOpts) (*bindings.ETHDKGValidatorSetCompletedIterator, error)) {
+func (f *IETHDKGFilterValidatorSetCompletedFunc) SetDefaultHook(hook func(*bind.FilterOpts) (*ethereum.ETHDKGValidatorSetCompletedIterator, error)) {
 	f.defaultHook = hook
 }
 
@@ -21021,7 +21022,7 @@ func (f *IETHDKGFilterValidatorSetCompletedFunc) SetDefaultHook(hook func(*bind.
 // invokes the hook at the front of the queue and discards it. After the
 // queue is empty, the default hook function is invoked for any future
 // action.
-func (f *IETHDKGFilterValidatorSetCompletedFunc) PushHook(hook func(*bind.FilterOpts) (*bindings.ETHDKGValidatorSetCompletedIterator, error)) {
+func (f *IETHDKGFilterValidatorSetCompletedFunc) PushHook(hook func(*bind.FilterOpts) (*ethereum.ETHDKGValidatorSetCompletedIterator, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -21029,20 +21030,20 @@ func (f *IETHDKGFilterValidatorSetCompletedFunc) PushHook(hook func(*bind.Filter
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IETHDKGFilterValidatorSetCompletedFunc) SetDefaultReturn(r0 *bindings.ETHDKGValidatorSetCompletedIterator, r1 error) {
-	f.SetDefaultHook(func(*bind.FilterOpts) (*bindings.ETHDKGValidatorSetCompletedIterator, error) {
+func (f *IETHDKGFilterValidatorSetCompletedFunc) SetDefaultReturn(r0 *ethereum.ETHDKGValidatorSetCompletedIterator, r1 error) {
+	f.SetDefaultHook(func(*bind.FilterOpts) (*ethereum.ETHDKGValidatorSetCompletedIterator, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IETHDKGFilterValidatorSetCompletedFunc) PushReturn(r0 *bindings.ETHDKGValidatorSetCompletedIterator, r1 error) {
-	f.PushHook(func(*bind.FilterOpts) (*bindings.ETHDKGValidatorSetCompletedIterator, error) {
+func (f *IETHDKGFilterValidatorSetCompletedFunc) PushReturn(r0 *ethereum.ETHDKGValidatorSetCompletedIterator, r1 error) {
+	f.PushHook(func(*bind.FilterOpts) (*ethereum.ETHDKGValidatorSetCompletedIterator, error) {
 		return r0, r1
 	})
 }
 
-func (f *IETHDKGFilterValidatorSetCompletedFunc) nextHook() func(*bind.FilterOpts) (*bindings.ETHDKGValidatorSetCompletedIterator, error) {
+func (f *IETHDKGFilterValidatorSetCompletedFunc) nextHook() func(*bind.FilterOpts) (*ethereum.ETHDKGValidatorSetCompletedIterator, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -21081,7 +21082,7 @@ type IETHDKGFilterValidatorSetCompletedFuncCall struct {
 	Arg0 *bind.FilterOpts
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 *bindings.ETHDKGValidatorSetCompletedIterator
+	Result0 *ethereum.ETHDKGValidatorSetCompletedIterator
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -22171,15 +22172,15 @@ func (c IETHDKGGetNumParticipantsFuncCall) Results() []interface{} {
 // GetParticipantInternalState method of the parent MockIETHDKG instance is
 // invoked.
 type IETHDKGGetParticipantInternalStateFunc struct {
-	defaultHook func(*bind.CallOpts, common.Address) (bindings.Participant, error)
-	hooks       []func(*bind.CallOpts, common.Address) (bindings.Participant, error)
+	defaultHook func(*bind.CallOpts, common.Address) (ethereum.Participant, error)
+	hooks       []func(*bind.CallOpts, common.Address) (ethereum.Participant, error)
 	history     []IETHDKGGetParticipantInternalStateFuncCall
 	mutex       sync.Mutex
 }
 
 // GetParticipantInternalState delegates to the next hook function in the
 // queue and stores the parameter and result values of this invocation.
-func (m *MockIETHDKG) GetParticipantInternalState(v0 *bind.CallOpts, v1 common.Address) (bindings.Participant, error) {
+func (m *MockIETHDKG) GetParticipantInternalState(v0 *bind.CallOpts, v1 common.Address) (ethereum.Participant, error) {
 	r0, r1 := m.GetParticipantInternalStateFunc.nextHook()(v0, v1)
 	m.GetParticipantInternalStateFunc.appendCall(IETHDKGGetParticipantInternalStateFuncCall{v0, v1, r0, r1})
 	return r0, r1
@@ -22188,7 +22189,7 @@ func (m *MockIETHDKG) GetParticipantInternalState(v0 *bind.CallOpts, v1 common.A
 // SetDefaultHook sets function that is called when the
 // GetParticipantInternalState method of the parent MockIETHDKG instance is
 // invoked and the hook queue is empty.
-func (f *IETHDKGGetParticipantInternalStateFunc) SetDefaultHook(hook func(*bind.CallOpts, common.Address) (bindings.Participant, error)) {
+func (f *IETHDKGGetParticipantInternalStateFunc) SetDefaultHook(hook func(*bind.CallOpts, common.Address) (ethereum.Participant, error)) {
 	f.defaultHook = hook
 }
 
@@ -22197,7 +22198,7 @@ func (f *IETHDKGGetParticipantInternalStateFunc) SetDefaultHook(hook func(*bind.
 // invokes the hook at the front of the queue and discards it. After the
 // queue is empty, the default hook function is invoked for any future
 // action.
-func (f *IETHDKGGetParticipantInternalStateFunc) PushHook(hook func(*bind.CallOpts, common.Address) (bindings.Participant, error)) {
+func (f *IETHDKGGetParticipantInternalStateFunc) PushHook(hook func(*bind.CallOpts, common.Address) (ethereum.Participant, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -22205,20 +22206,20 @@ func (f *IETHDKGGetParticipantInternalStateFunc) PushHook(hook func(*bind.CallOp
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IETHDKGGetParticipantInternalStateFunc) SetDefaultReturn(r0 bindings.Participant, r1 error) {
-	f.SetDefaultHook(func(*bind.CallOpts, common.Address) (bindings.Participant, error) {
+func (f *IETHDKGGetParticipantInternalStateFunc) SetDefaultReturn(r0 ethereum.Participant, r1 error) {
+	f.SetDefaultHook(func(*bind.CallOpts, common.Address) (ethereum.Participant, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IETHDKGGetParticipantInternalStateFunc) PushReturn(r0 bindings.Participant, r1 error) {
-	f.PushHook(func(*bind.CallOpts, common.Address) (bindings.Participant, error) {
+func (f *IETHDKGGetParticipantInternalStateFunc) PushReturn(r0 ethereum.Participant, r1 error) {
+	f.PushHook(func(*bind.CallOpts, common.Address) (ethereum.Participant, error) {
 		return r0, r1
 	})
 }
 
-func (f *IETHDKGGetParticipantInternalStateFunc) nextHook() func(*bind.CallOpts, common.Address) (bindings.Participant, error) {
+func (f *IETHDKGGetParticipantInternalStateFunc) nextHook() func(*bind.CallOpts, common.Address) (ethereum.Participant, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -22260,7 +22261,7 @@ type IETHDKGGetParticipantInternalStateFuncCall struct {
 	Arg1 common.Address
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 bindings.Participant
+	Result0 ethereum.Participant
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -22282,15 +22283,15 @@ func (c IETHDKGGetParticipantInternalStateFuncCall) Results() []interface{} {
 // GetParticipantsInternalState method of the parent MockIETHDKG instance is
 // invoked.
 type IETHDKGGetParticipantsInternalStateFunc struct {
-	defaultHook func(*bind.CallOpts, []common.Address) ([]bindings.Participant, error)
-	hooks       []func(*bind.CallOpts, []common.Address) ([]bindings.Participant, error)
+	defaultHook func(*bind.CallOpts, []common.Address) ([]ethereum.Participant, error)
+	hooks       []func(*bind.CallOpts, []common.Address) ([]ethereum.Participant, error)
 	history     []IETHDKGGetParticipantsInternalStateFuncCall
 	mutex       sync.Mutex
 }
 
 // GetParticipantsInternalState delegates to the next hook function in the
 // queue and stores the parameter and result values of this invocation.
-func (m *MockIETHDKG) GetParticipantsInternalState(v0 *bind.CallOpts, v1 []common.Address) ([]bindings.Participant, error) {
+func (m *MockIETHDKG) GetParticipantsInternalState(v0 *bind.CallOpts, v1 []common.Address) ([]ethereum.Participant, error) {
 	r0, r1 := m.GetParticipantsInternalStateFunc.nextHook()(v0, v1)
 	m.GetParticipantsInternalStateFunc.appendCall(IETHDKGGetParticipantsInternalStateFuncCall{v0, v1, r0, r1})
 	return r0, r1
@@ -22299,7 +22300,7 @@ func (m *MockIETHDKG) GetParticipantsInternalState(v0 *bind.CallOpts, v1 []commo
 // SetDefaultHook sets function that is called when the
 // GetParticipantsInternalState method of the parent MockIETHDKG instance is
 // invoked and the hook queue is empty.
-func (f *IETHDKGGetParticipantsInternalStateFunc) SetDefaultHook(hook func(*bind.CallOpts, []common.Address) ([]bindings.Participant, error)) {
+func (f *IETHDKGGetParticipantsInternalStateFunc) SetDefaultHook(hook func(*bind.CallOpts, []common.Address) ([]ethereum.Participant, error)) {
 	f.defaultHook = hook
 }
 
@@ -22308,7 +22309,7 @@ func (f *IETHDKGGetParticipantsInternalStateFunc) SetDefaultHook(hook func(*bind
 // invokes the hook at the front of the queue and discards it. After the
 // queue is empty, the default hook function is invoked for any future
 // action.
-func (f *IETHDKGGetParticipantsInternalStateFunc) PushHook(hook func(*bind.CallOpts, []common.Address) ([]bindings.Participant, error)) {
+func (f *IETHDKGGetParticipantsInternalStateFunc) PushHook(hook func(*bind.CallOpts, []common.Address) ([]ethereum.Participant, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -22316,20 +22317,20 @@ func (f *IETHDKGGetParticipantsInternalStateFunc) PushHook(hook func(*bind.CallO
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IETHDKGGetParticipantsInternalStateFunc) SetDefaultReturn(r0 []bindings.Participant, r1 error) {
-	f.SetDefaultHook(func(*bind.CallOpts, []common.Address) ([]bindings.Participant, error) {
+func (f *IETHDKGGetParticipantsInternalStateFunc) SetDefaultReturn(r0 []ethereum.Participant, r1 error) {
+	f.SetDefaultHook(func(*bind.CallOpts, []common.Address) ([]ethereum.Participant, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IETHDKGGetParticipantsInternalStateFunc) PushReturn(r0 []bindings.Participant, r1 error) {
-	f.PushHook(func(*bind.CallOpts, []common.Address) ([]bindings.Participant, error) {
+func (f *IETHDKGGetParticipantsInternalStateFunc) PushReturn(r0 []ethereum.Participant, r1 error) {
+	f.PushHook(func(*bind.CallOpts, []common.Address) ([]ethereum.Participant, error) {
 		return r0, r1
 	})
 }
 
-func (f *IETHDKGGetParticipantsInternalStateFunc) nextHook() func(*bind.CallOpts, []common.Address) ([]bindings.Participant, error) {
+func (f *IETHDKGGetParticipantsInternalStateFunc) nextHook() func(*bind.CallOpts, []common.Address) ([]ethereum.Participant, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -22371,7 +22372,7 @@ type IETHDKGGetParticipantsInternalStateFuncCall struct {
 	Arg1 []common.Address
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 []bindings.Participant
+	Result0 []ethereum.Participant
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -23478,15 +23479,15 @@ func (c IETHDKGMigrateValidatorsFuncCall) Results() []interface{} {
 // ParseAddressRegistered method of the parent MockIETHDKG instance is
 // invoked.
 type IETHDKGParseAddressRegisteredFunc struct {
-	defaultHook func(types.Log) (*bindings.ETHDKGAddressRegistered, error)
-	hooks       []func(types.Log) (*bindings.ETHDKGAddressRegistered, error)
+	defaultHook func(types.Log) (*ethereum.ETHDKGAddressRegistered, error)
+	hooks       []func(types.Log) (*ethereum.ETHDKGAddressRegistered, error)
 	history     []IETHDKGParseAddressRegisteredFuncCall
 	mutex       sync.Mutex
 }
 
 // ParseAddressRegistered delegates to the next hook function in the queue
 // and stores the parameter and result values of this invocation.
-func (m *MockIETHDKG) ParseAddressRegistered(v0 types.Log) (*bindings.ETHDKGAddressRegistered, error) {
+func (m *MockIETHDKG) ParseAddressRegistered(v0 types.Log) (*ethereum.ETHDKGAddressRegistered, error) {
 	r0, r1 := m.ParseAddressRegisteredFunc.nextHook()(v0)
 	m.ParseAddressRegisteredFunc.appendCall(IETHDKGParseAddressRegisteredFuncCall{v0, r0, r1})
 	return r0, r1
@@ -23495,7 +23496,7 @@ func (m *MockIETHDKG) ParseAddressRegistered(v0 types.Log) (*bindings.ETHDKGAddr
 // SetDefaultHook sets function that is called when the
 // ParseAddressRegistered method of the parent MockIETHDKG instance is
 // invoked and the hook queue is empty.
-func (f *IETHDKGParseAddressRegisteredFunc) SetDefaultHook(hook func(types.Log) (*bindings.ETHDKGAddressRegistered, error)) {
+func (f *IETHDKGParseAddressRegisteredFunc) SetDefaultHook(hook func(types.Log) (*ethereum.ETHDKGAddressRegistered, error)) {
 	f.defaultHook = hook
 }
 
@@ -23503,7 +23504,7 @@ func (f *IETHDKGParseAddressRegisteredFunc) SetDefaultHook(hook func(types.Log) 
 // ParseAddressRegistered method of the parent MockIETHDKG instance invokes
 // the hook at the front of the queue and discards it. After the queue is
 // empty, the default hook function is invoked for any future action.
-func (f *IETHDKGParseAddressRegisteredFunc) PushHook(hook func(types.Log) (*bindings.ETHDKGAddressRegistered, error)) {
+func (f *IETHDKGParseAddressRegisteredFunc) PushHook(hook func(types.Log) (*ethereum.ETHDKGAddressRegistered, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -23511,20 +23512,20 @@ func (f *IETHDKGParseAddressRegisteredFunc) PushHook(hook func(types.Log) (*bind
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IETHDKGParseAddressRegisteredFunc) SetDefaultReturn(r0 *bindings.ETHDKGAddressRegistered, r1 error) {
-	f.SetDefaultHook(func(types.Log) (*bindings.ETHDKGAddressRegistered, error) {
+func (f *IETHDKGParseAddressRegisteredFunc) SetDefaultReturn(r0 *ethereum.ETHDKGAddressRegistered, r1 error) {
+	f.SetDefaultHook(func(types.Log) (*ethereum.ETHDKGAddressRegistered, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IETHDKGParseAddressRegisteredFunc) PushReturn(r0 *bindings.ETHDKGAddressRegistered, r1 error) {
-	f.PushHook(func(types.Log) (*bindings.ETHDKGAddressRegistered, error) {
+func (f *IETHDKGParseAddressRegisteredFunc) PushReturn(r0 *ethereum.ETHDKGAddressRegistered, r1 error) {
+	f.PushHook(func(types.Log) (*ethereum.ETHDKGAddressRegistered, error) {
 		return r0, r1
 	})
 }
 
-func (f *IETHDKGParseAddressRegisteredFunc) nextHook() func(types.Log) (*bindings.ETHDKGAddressRegistered, error) {
+func (f *IETHDKGParseAddressRegisteredFunc) nextHook() func(types.Log) (*ethereum.ETHDKGAddressRegistered, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -23563,7 +23564,7 @@ type IETHDKGParseAddressRegisteredFuncCall struct {
 	Arg0 types.Log
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 *bindings.ETHDKGAddressRegistered
+	Result0 *ethereum.ETHDKGAddressRegistered
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -23585,15 +23586,15 @@ func (c IETHDKGParseAddressRegisteredFuncCall) Results() []interface{} {
 // ParseGPKJSubmissionComplete method of the parent MockIETHDKG instance is
 // invoked.
 type IETHDKGParseGPKJSubmissionCompleteFunc struct {
-	defaultHook func(types.Log) (*bindings.ETHDKGGPKJSubmissionComplete, error)
-	hooks       []func(types.Log) (*bindings.ETHDKGGPKJSubmissionComplete, error)
+	defaultHook func(types.Log) (*ethereum.ETHDKGGPKJSubmissionComplete, error)
+	hooks       []func(types.Log) (*ethereum.ETHDKGGPKJSubmissionComplete, error)
 	history     []IETHDKGParseGPKJSubmissionCompleteFuncCall
 	mutex       sync.Mutex
 }
 
 // ParseGPKJSubmissionComplete delegates to the next hook function in the
 // queue and stores the parameter and result values of this invocation.
-func (m *MockIETHDKG) ParseGPKJSubmissionComplete(v0 types.Log) (*bindings.ETHDKGGPKJSubmissionComplete, error) {
+func (m *MockIETHDKG) ParseGPKJSubmissionComplete(v0 types.Log) (*ethereum.ETHDKGGPKJSubmissionComplete, error) {
 	r0, r1 := m.ParseGPKJSubmissionCompleteFunc.nextHook()(v0)
 	m.ParseGPKJSubmissionCompleteFunc.appendCall(IETHDKGParseGPKJSubmissionCompleteFuncCall{v0, r0, r1})
 	return r0, r1
@@ -23602,7 +23603,7 @@ func (m *MockIETHDKG) ParseGPKJSubmissionComplete(v0 types.Log) (*bindings.ETHDK
 // SetDefaultHook sets function that is called when the
 // ParseGPKJSubmissionComplete method of the parent MockIETHDKG instance is
 // invoked and the hook queue is empty.
-func (f *IETHDKGParseGPKJSubmissionCompleteFunc) SetDefaultHook(hook func(types.Log) (*bindings.ETHDKGGPKJSubmissionComplete, error)) {
+func (f *IETHDKGParseGPKJSubmissionCompleteFunc) SetDefaultHook(hook func(types.Log) (*ethereum.ETHDKGGPKJSubmissionComplete, error)) {
 	f.defaultHook = hook
 }
 
@@ -23611,7 +23612,7 @@ func (f *IETHDKGParseGPKJSubmissionCompleteFunc) SetDefaultHook(hook func(types.
 // invokes the hook at the front of the queue and discards it. After the
 // queue is empty, the default hook function is invoked for any future
 // action.
-func (f *IETHDKGParseGPKJSubmissionCompleteFunc) PushHook(hook func(types.Log) (*bindings.ETHDKGGPKJSubmissionComplete, error)) {
+func (f *IETHDKGParseGPKJSubmissionCompleteFunc) PushHook(hook func(types.Log) (*ethereum.ETHDKGGPKJSubmissionComplete, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -23619,20 +23620,20 @@ func (f *IETHDKGParseGPKJSubmissionCompleteFunc) PushHook(hook func(types.Log) (
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IETHDKGParseGPKJSubmissionCompleteFunc) SetDefaultReturn(r0 *bindings.ETHDKGGPKJSubmissionComplete, r1 error) {
-	f.SetDefaultHook(func(types.Log) (*bindings.ETHDKGGPKJSubmissionComplete, error) {
+func (f *IETHDKGParseGPKJSubmissionCompleteFunc) SetDefaultReturn(r0 *ethereum.ETHDKGGPKJSubmissionComplete, r1 error) {
+	f.SetDefaultHook(func(types.Log) (*ethereum.ETHDKGGPKJSubmissionComplete, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IETHDKGParseGPKJSubmissionCompleteFunc) PushReturn(r0 *bindings.ETHDKGGPKJSubmissionComplete, r1 error) {
-	f.PushHook(func(types.Log) (*bindings.ETHDKGGPKJSubmissionComplete, error) {
+func (f *IETHDKGParseGPKJSubmissionCompleteFunc) PushReturn(r0 *ethereum.ETHDKGGPKJSubmissionComplete, r1 error) {
+	f.PushHook(func(types.Log) (*ethereum.ETHDKGGPKJSubmissionComplete, error) {
 		return r0, r1
 	})
 }
 
-func (f *IETHDKGParseGPKJSubmissionCompleteFunc) nextHook() func(types.Log) (*bindings.ETHDKGGPKJSubmissionComplete, error) {
+func (f *IETHDKGParseGPKJSubmissionCompleteFunc) nextHook() func(types.Log) (*ethereum.ETHDKGGPKJSubmissionComplete, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -23671,7 +23672,7 @@ type IETHDKGParseGPKJSubmissionCompleteFuncCall struct {
 	Arg0 types.Log
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 *bindings.ETHDKGGPKJSubmissionComplete
+	Result0 *ethereum.ETHDKGGPKJSubmissionComplete
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -23692,15 +23693,15 @@ func (c IETHDKGParseGPKJSubmissionCompleteFuncCall) Results() []interface{} {
 // IETHDKGParseInitializedFunc describes the behavior when the
 // ParseInitialized method of the parent MockIETHDKG instance is invoked.
 type IETHDKGParseInitializedFunc struct {
-	defaultHook func(types.Log) (*bindings.ETHDKGInitialized, error)
-	hooks       []func(types.Log) (*bindings.ETHDKGInitialized, error)
+	defaultHook func(types.Log) (*ethereum.ETHDKGInitialized, error)
+	hooks       []func(types.Log) (*ethereum.ETHDKGInitialized, error)
 	history     []IETHDKGParseInitializedFuncCall
 	mutex       sync.Mutex
 }
 
 // ParseInitialized delegates to the next hook function in the queue and
 // stores the parameter and result values of this invocation.
-func (m *MockIETHDKG) ParseInitialized(v0 types.Log) (*bindings.ETHDKGInitialized, error) {
+func (m *MockIETHDKG) ParseInitialized(v0 types.Log) (*ethereum.ETHDKGInitialized, error) {
 	r0, r1 := m.ParseInitializedFunc.nextHook()(v0)
 	m.ParseInitializedFunc.appendCall(IETHDKGParseInitializedFuncCall{v0, r0, r1})
 	return r0, r1
@@ -23709,7 +23710,7 @@ func (m *MockIETHDKG) ParseInitialized(v0 types.Log) (*bindings.ETHDKGInitialize
 // SetDefaultHook sets function that is called when the ParseInitialized
 // method of the parent MockIETHDKG instance is invoked and the hook queue
 // is empty.
-func (f *IETHDKGParseInitializedFunc) SetDefaultHook(hook func(types.Log) (*bindings.ETHDKGInitialized, error)) {
+func (f *IETHDKGParseInitializedFunc) SetDefaultHook(hook func(types.Log) (*ethereum.ETHDKGInitialized, error)) {
 	f.defaultHook = hook
 }
 
@@ -23717,7 +23718,7 @@ func (f *IETHDKGParseInitializedFunc) SetDefaultHook(hook func(types.Log) (*bind
 // ParseInitialized method of the parent MockIETHDKG instance invokes the
 // hook at the front of the queue and discards it. After the queue is empty,
 // the default hook function is invoked for any future action.
-func (f *IETHDKGParseInitializedFunc) PushHook(hook func(types.Log) (*bindings.ETHDKGInitialized, error)) {
+func (f *IETHDKGParseInitializedFunc) PushHook(hook func(types.Log) (*ethereum.ETHDKGInitialized, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -23725,20 +23726,20 @@ func (f *IETHDKGParseInitializedFunc) PushHook(hook func(types.Log) (*bindings.E
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IETHDKGParseInitializedFunc) SetDefaultReturn(r0 *bindings.ETHDKGInitialized, r1 error) {
-	f.SetDefaultHook(func(types.Log) (*bindings.ETHDKGInitialized, error) {
+func (f *IETHDKGParseInitializedFunc) SetDefaultReturn(r0 *ethereum.ETHDKGInitialized, r1 error) {
+	f.SetDefaultHook(func(types.Log) (*ethereum.ETHDKGInitialized, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IETHDKGParseInitializedFunc) PushReturn(r0 *bindings.ETHDKGInitialized, r1 error) {
-	f.PushHook(func(types.Log) (*bindings.ETHDKGInitialized, error) {
+func (f *IETHDKGParseInitializedFunc) PushReturn(r0 *ethereum.ETHDKGInitialized, r1 error) {
+	f.PushHook(func(types.Log) (*ethereum.ETHDKGInitialized, error) {
 		return r0, r1
 	})
 }
 
-func (f *IETHDKGParseInitializedFunc) nextHook() func(types.Log) (*bindings.ETHDKGInitialized, error) {
+func (f *IETHDKGParseInitializedFunc) nextHook() func(types.Log) (*ethereum.ETHDKGInitialized, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -23776,7 +23777,7 @@ type IETHDKGParseInitializedFuncCall struct {
 	Arg0 types.Log
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 *bindings.ETHDKGInitialized
+	Result0 *ethereum.ETHDKGInitialized
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -23798,15 +23799,15 @@ func (c IETHDKGParseInitializedFuncCall) Results() []interface{} {
 // the ParseKeyShareSubmissionComplete method of the parent MockIETHDKG
 // instance is invoked.
 type IETHDKGParseKeyShareSubmissionCompleteFunc struct {
-	defaultHook func(types.Log) (*bindings.ETHDKGKeyShareSubmissionComplete, error)
-	hooks       []func(types.Log) (*bindings.ETHDKGKeyShareSubmissionComplete, error)
+	defaultHook func(types.Log) (*ethereum.ETHDKGKeyShareSubmissionComplete, error)
+	hooks       []func(types.Log) (*ethereum.ETHDKGKeyShareSubmissionComplete, error)
 	history     []IETHDKGParseKeyShareSubmissionCompleteFuncCall
 	mutex       sync.Mutex
 }
 
 // ParseKeyShareSubmissionComplete delegates to the next hook function in
 // the queue and stores the parameter and result values of this invocation.
-func (m *MockIETHDKG) ParseKeyShareSubmissionComplete(v0 types.Log) (*bindings.ETHDKGKeyShareSubmissionComplete, error) {
+func (m *MockIETHDKG) ParseKeyShareSubmissionComplete(v0 types.Log) (*ethereum.ETHDKGKeyShareSubmissionComplete, error) {
 	r0, r1 := m.ParseKeyShareSubmissionCompleteFunc.nextHook()(v0)
 	m.ParseKeyShareSubmissionCompleteFunc.appendCall(IETHDKGParseKeyShareSubmissionCompleteFuncCall{v0, r0, r1})
 	return r0, r1
@@ -23815,7 +23816,7 @@ func (m *MockIETHDKG) ParseKeyShareSubmissionComplete(v0 types.Log) (*bindings.E
 // SetDefaultHook sets function that is called when the
 // ParseKeyShareSubmissionComplete method of the parent MockIETHDKG instance
 // is invoked and the hook queue is empty.
-func (f *IETHDKGParseKeyShareSubmissionCompleteFunc) SetDefaultHook(hook func(types.Log) (*bindings.ETHDKGKeyShareSubmissionComplete, error)) {
+func (f *IETHDKGParseKeyShareSubmissionCompleteFunc) SetDefaultHook(hook func(types.Log) (*ethereum.ETHDKGKeyShareSubmissionComplete, error)) {
 	f.defaultHook = hook
 }
 
@@ -23824,7 +23825,7 @@ func (f *IETHDKGParseKeyShareSubmissionCompleteFunc) SetDefaultHook(hook func(ty
 // invokes the hook at the front of the queue and discards it. After the
 // queue is empty, the default hook function is invoked for any future
 // action.
-func (f *IETHDKGParseKeyShareSubmissionCompleteFunc) PushHook(hook func(types.Log) (*bindings.ETHDKGKeyShareSubmissionComplete, error)) {
+func (f *IETHDKGParseKeyShareSubmissionCompleteFunc) PushHook(hook func(types.Log) (*ethereum.ETHDKGKeyShareSubmissionComplete, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -23832,20 +23833,20 @@ func (f *IETHDKGParseKeyShareSubmissionCompleteFunc) PushHook(hook func(types.Lo
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IETHDKGParseKeyShareSubmissionCompleteFunc) SetDefaultReturn(r0 *bindings.ETHDKGKeyShareSubmissionComplete, r1 error) {
-	f.SetDefaultHook(func(types.Log) (*bindings.ETHDKGKeyShareSubmissionComplete, error) {
+func (f *IETHDKGParseKeyShareSubmissionCompleteFunc) SetDefaultReturn(r0 *ethereum.ETHDKGKeyShareSubmissionComplete, r1 error) {
+	f.SetDefaultHook(func(types.Log) (*ethereum.ETHDKGKeyShareSubmissionComplete, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IETHDKGParseKeyShareSubmissionCompleteFunc) PushReturn(r0 *bindings.ETHDKGKeyShareSubmissionComplete, r1 error) {
-	f.PushHook(func(types.Log) (*bindings.ETHDKGKeyShareSubmissionComplete, error) {
+func (f *IETHDKGParseKeyShareSubmissionCompleteFunc) PushReturn(r0 *ethereum.ETHDKGKeyShareSubmissionComplete, r1 error) {
+	f.PushHook(func(types.Log) (*ethereum.ETHDKGKeyShareSubmissionComplete, error) {
 		return r0, r1
 	})
 }
 
-func (f *IETHDKGParseKeyShareSubmissionCompleteFunc) nextHook() func(types.Log) (*bindings.ETHDKGKeyShareSubmissionComplete, error) {
+func (f *IETHDKGParseKeyShareSubmissionCompleteFunc) nextHook() func(types.Log) (*ethereum.ETHDKGKeyShareSubmissionComplete, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -23885,7 +23886,7 @@ type IETHDKGParseKeyShareSubmissionCompleteFuncCall struct {
 	Arg0 types.Log
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 *bindings.ETHDKGKeyShareSubmissionComplete
+	Result0 *ethereum.ETHDKGKeyShareSubmissionComplete
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -23907,15 +23908,15 @@ func (c IETHDKGParseKeyShareSubmissionCompleteFuncCall) Results() []interface{} 
 // ParseKeyShareSubmitted method of the parent MockIETHDKG instance is
 // invoked.
 type IETHDKGParseKeyShareSubmittedFunc struct {
-	defaultHook func(types.Log) (*bindings.ETHDKGKeyShareSubmitted, error)
-	hooks       []func(types.Log) (*bindings.ETHDKGKeyShareSubmitted, error)
+	defaultHook func(types.Log) (*ethereum.ETHDKGKeyShareSubmitted, error)
+	hooks       []func(types.Log) (*ethereum.ETHDKGKeyShareSubmitted, error)
 	history     []IETHDKGParseKeyShareSubmittedFuncCall
 	mutex       sync.Mutex
 }
 
 // ParseKeyShareSubmitted delegates to the next hook function in the queue
 // and stores the parameter and result values of this invocation.
-func (m *MockIETHDKG) ParseKeyShareSubmitted(v0 types.Log) (*bindings.ETHDKGKeyShareSubmitted, error) {
+func (m *MockIETHDKG) ParseKeyShareSubmitted(v0 types.Log) (*ethereum.ETHDKGKeyShareSubmitted, error) {
 	r0, r1 := m.ParseKeyShareSubmittedFunc.nextHook()(v0)
 	m.ParseKeyShareSubmittedFunc.appendCall(IETHDKGParseKeyShareSubmittedFuncCall{v0, r0, r1})
 	return r0, r1
@@ -23924,7 +23925,7 @@ func (m *MockIETHDKG) ParseKeyShareSubmitted(v0 types.Log) (*bindings.ETHDKGKeyS
 // SetDefaultHook sets function that is called when the
 // ParseKeyShareSubmitted method of the parent MockIETHDKG instance is
 // invoked and the hook queue is empty.
-func (f *IETHDKGParseKeyShareSubmittedFunc) SetDefaultHook(hook func(types.Log) (*bindings.ETHDKGKeyShareSubmitted, error)) {
+func (f *IETHDKGParseKeyShareSubmittedFunc) SetDefaultHook(hook func(types.Log) (*ethereum.ETHDKGKeyShareSubmitted, error)) {
 	f.defaultHook = hook
 }
 
@@ -23932,7 +23933,7 @@ func (f *IETHDKGParseKeyShareSubmittedFunc) SetDefaultHook(hook func(types.Log) 
 // ParseKeyShareSubmitted method of the parent MockIETHDKG instance invokes
 // the hook at the front of the queue and discards it. After the queue is
 // empty, the default hook function is invoked for any future action.
-func (f *IETHDKGParseKeyShareSubmittedFunc) PushHook(hook func(types.Log) (*bindings.ETHDKGKeyShareSubmitted, error)) {
+func (f *IETHDKGParseKeyShareSubmittedFunc) PushHook(hook func(types.Log) (*ethereum.ETHDKGKeyShareSubmitted, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -23940,20 +23941,20 @@ func (f *IETHDKGParseKeyShareSubmittedFunc) PushHook(hook func(types.Log) (*bind
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IETHDKGParseKeyShareSubmittedFunc) SetDefaultReturn(r0 *bindings.ETHDKGKeyShareSubmitted, r1 error) {
-	f.SetDefaultHook(func(types.Log) (*bindings.ETHDKGKeyShareSubmitted, error) {
+func (f *IETHDKGParseKeyShareSubmittedFunc) SetDefaultReturn(r0 *ethereum.ETHDKGKeyShareSubmitted, r1 error) {
+	f.SetDefaultHook(func(types.Log) (*ethereum.ETHDKGKeyShareSubmitted, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IETHDKGParseKeyShareSubmittedFunc) PushReturn(r0 *bindings.ETHDKGKeyShareSubmitted, r1 error) {
-	f.PushHook(func(types.Log) (*bindings.ETHDKGKeyShareSubmitted, error) {
+func (f *IETHDKGParseKeyShareSubmittedFunc) PushReturn(r0 *ethereum.ETHDKGKeyShareSubmitted, r1 error) {
+	f.PushHook(func(types.Log) (*ethereum.ETHDKGKeyShareSubmitted, error) {
 		return r0, r1
 	})
 }
 
-func (f *IETHDKGParseKeyShareSubmittedFunc) nextHook() func(types.Log) (*bindings.ETHDKGKeyShareSubmitted, error) {
+func (f *IETHDKGParseKeyShareSubmittedFunc) nextHook() func(types.Log) (*ethereum.ETHDKGKeyShareSubmitted, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -23992,7 +23993,7 @@ type IETHDKGParseKeyShareSubmittedFuncCall struct {
 	Arg0 types.Log
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 *bindings.ETHDKGKeyShareSubmitted
+	Result0 *ethereum.ETHDKGKeyShareSubmitted
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -24013,15 +24014,15 @@ func (c IETHDKGParseKeyShareSubmittedFuncCall) Results() []interface{} {
 // IETHDKGParseMPKSetFunc describes the behavior when the ParseMPKSet method
 // of the parent MockIETHDKG instance is invoked.
 type IETHDKGParseMPKSetFunc struct {
-	defaultHook func(types.Log) (*bindings.ETHDKGMPKSet, error)
-	hooks       []func(types.Log) (*bindings.ETHDKGMPKSet, error)
+	defaultHook func(types.Log) (*ethereum.ETHDKGMPKSet, error)
+	hooks       []func(types.Log) (*ethereum.ETHDKGMPKSet, error)
 	history     []IETHDKGParseMPKSetFuncCall
 	mutex       sync.Mutex
 }
 
 // ParseMPKSet delegates to the next hook function in the queue and stores
 // the parameter and result values of this invocation.
-func (m *MockIETHDKG) ParseMPKSet(v0 types.Log) (*bindings.ETHDKGMPKSet, error) {
+func (m *MockIETHDKG) ParseMPKSet(v0 types.Log) (*ethereum.ETHDKGMPKSet, error) {
 	r0, r1 := m.ParseMPKSetFunc.nextHook()(v0)
 	m.ParseMPKSetFunc.appendCall(IETHDKGParseMPKSetFuncCall{v0, r0, r1})
 	return r0, r1
@@ -24030,7 +24031,7 @@ func (m *MockIETHDKG) ParseMPKSet(v0 types.Log) (*bindings.ETHDKGMPKSet, error) 
 // SetDefaultHook sets function that is called when the ParseMPKSet method
 // of the parent MockIETHDKG instance is invoked and the hook queue is
 // empty.
-func (f *IETHDKGParseMPKSetFunc) SetDefaultHook(hook func(types.Log) (*bindings.ETHDKGMPKSet, error)) {
+func (f *IETHDKGParseMPKSetFunc) SetDefaultHook(hook func(types.Log) (*ethereum.ETHDKGMPKSet, error)) {
 	f.defaultHook = hook
 }
 
@@ -24038,7 +24039,7 @@ func (f *IETHDKGParseMPKSetFunc) SetDefaultHook(hook func(types.Log) (*bindings.
 // ParseMPKSet method of the parent MockIETHDKG instance invokes the hook at
 // the front of the queue and discards it. After the queue is empty, the
 // default hook function is invoked for any future action.
-func (f *IETHDKGParseMPKSetFunc) PushHook(hook func(types.Log) (*bindings.ETHDKGMPKSet, error)) {
+func (f *IETHDKGParseMPKSetFunc) PushHook(hook func(types.Log) (*ethereum.ETHDKGMPKSet, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -24046,20 +24047,20 @@ func (f *IETHDKGParseMPKSetFunc) PushHook(hook func(types.Log) (*bindings.ETHDKG
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IETHDKGParseMPKSetFunc) SetDefaultReturn(r0 *bindings.ETHDKGMPKSet, r1 error) {
-	f.SetDefaultHook(func(types.Log) (*bindings.ETHDKGMPKSet, error) {
+func (f *IETHDKGParseMPKSetFunc) SetDefaultReturn(r0 *ethereum.ETHDKGMPKSet, r1 error) {
+	f.SetDefaultHook(func(types.Log) (*ethereum.ETHDKGMPKSet, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IETHDKGParseMPKSetFunc) PushReturn(r0 *bindings.ETHDKGMPKSet, r1 error) {
-	f.PushHook(func(types.Log) (*bindings.ETHDKGMPKSet, error) {
+func (f *IETHDKGParseMPKSetFunc) PushReturn(r0 *ethereum.ETHDKGMPKSet, r1 error) {
+	f.PushHook(func(types.Log) (*ethereum.ETHDKGMPKSet, error) {
 		return r0, r1
 	})
 }
 
-func (f *IETHDKGParseMPKSetFunc) nextHook() func(types.Log) (*bindings.ETHDKGMPKSet, error) {
+func (f *IETHDKGParseMPKSetFunc) nextHook() func(types.Log) (*ethereum.ETHDKGMPKSet, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -24097,7 +24098,7 @@ type IETHDKGParseMPKSetFuncCall struct {
 	Arg0 types.Log
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 *bindings.ETHDKGMPKSet
+	Result0 *ethereum.ETHDKGMPKSet
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -24119,15 +24120,15 @@ func (c IETHDKGParseMPKSetFuncCall) Results() []interface{} {
 // ParseRegistrationComplete method of the parent MockIETHDKG instance is
 // invoked.
 type IETHDKGParseRegistrationCompleteFunc struct {
-	defaultHook func(types.Log) (*bindings.ETHDKGRegistrationComplete, error)
-	hooks       []func(types.Log) (*bindings.ETHDKGRegistrationComplete, error)
+	defaultHook func(types.Log) (*ethereum.ETHDKGRegistrationComplete, error)
+	hooks       []func(types.Log) (*ethereum.ETHDKGRegistrationComplete, error)
 	history     []IETHDKGParseRegistrationCompleteFuncCall
 	mutex       sync.Mutex
 }
 
 // ParseRegistrationComplete delegates to the next hook function in the
 // queue and stores the parameter and result values of this invocation.
-func (m *MockIETHDKG) ParseRegistrationComplete(v0 types.Log) (*bindings.ETHDKGRegistrationComplete, error) {
+func (m *MockIETHDKG) ParseRegistrationComplete(v0 types.Log) (*ethereum.ETHDKGRegistrationComplete, error) {
 	r0, r1 := m.ParseRegistrationCompleteFunc.nextHook()(v0)
 	m.ParseRegistrationCompleteFunc.appendCall(IETHDKGParseRegistrationCompleteFuncCall{v0, r0, r1})
 	return r0, r1
@@ -24136,7 +24137,7 @@ func (m *MockIETHDKG) ParseRegistrationComplete(v0 types.Log) (*bindings.ETHDKGR
 // SetDefaultHook sets function that is called when the
 // ParseRegistrationComplete method of the parent MockIETHDKG instance is
 // invoked and the hook queue is empty.
-func (f *IETHDKGParseRegistrationCompleteFunc) SetDefaultHook(hook func(types.Log) (*bindings.ETHDKGRegistrationComplete, error)) {
+func (f *IETHDKGParseRegistrationCompleteFunc) SetDefaultHook(hook func(types.Log) (*ethereum.ETHDKGRegistrationComplete, error)) {
 	f.defaultHook = hook
 }
 
@@ -24145,7 +24146,7 @@ func (f *IETHDKGParseRegistrationCompleteFunc) SetDefaultHook(hook func(types.Lo
 // invokes the hook at the front of the queue and discards it. After the
 // queue is empty, the default hook function is invoked for any future
 // action.
-func (f *IETHDKGParseRegistrationCompleteFunc) PushHook(hook func(types.Log) (*bindings.ETHDKGRegistrationComplete, error)) {
+func (f *IETHDKGParseRegistrationCompleteFunc) PushHook(hook func(types.Log) (*ethereum.ETHDKGRegistrationComplete, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -24153,20 +24154,20 @@ func (f *IETHDKGParseRegistrationCompleteFunc) PushHook(hook func(types.Log) (*b
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IETHDKGParseRegistrationCompleteFunc) SetDefaultReturn(r0 *bindings.ETHDKGRegistrationComplete, r1 error) {
-	f.SetDefaultHook(func(types.Log) (*bindings.ETHDKGRegistrationComplete, error) {
+func (f *IETHDKGParseRegistrationCompleteFunc) SetDefaultReturn(r0 *ethereum.ETHDKGRegistrationComplete, r1 error) {
+	f.SetDefaultHook(func(types.Log) (*ethereum.ETHDKGRegistrationComplete, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IETHDKGParseRegistrationCompleteFunc) PushReturn(r0 *bindings.ETHDKGRegistrationComplete, r1 error) {
-	f.PushHook(func(types.Log) (*bindings.ETHDKGRegistrationComplete, error) {
+func (f *IETHDKGParseRegistrationCompleteFunc) PushReturn(r0 *ethereum.ETHDKGRegistrationComplete, r1 error) {
+	f.PushHook(func(types.Log) (*ethereum.ETHDKGRegistrationComplete, error) {
 		return r0, r1
 	})
 }
 
-func (f *IETHDKGParseRegistrationCompleteFunc) nextHook() func(types.Log) (*bindings.ETHDKGRegistrationComplete, error) {
+func (f *IETHDKGParseRegistrationCompleteFunc) nextHook() func(types.Log) (*ethereum.ETHDKGRegistrationComplete, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -24205,7 +24206,7 @@ type IETHDKGParseRegistrationCompleteFuncCall struct {
 	Arg0 types.Log
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 *bindings.ETHDKGRegistrationComplete
+	Result0 *ethereum.ETHDKGRegistrationComplete
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -24227,15 +24228,15 @@ func (c IETHDKGParseRegistrationCompleteFuncCall) Results() []interface{} {
 // ParseRegistrationOpened method of the parent MockIETHDKG instance is
 // invoked.
 type IETHDKGParseRegistrationOpenedFunc struct {
-	defaultHook func(types.Log) (*bindings.ETHDKGRegistrationOpened, error)
-	hooks       []func(types.Log) (*bindings.ETHDKGRegistrationOpened, error)
+	defaultHook func(types.Log) (*ethereum.ETHDKGRegistrationOpened, error)
+	hooks       []func(types.Log) (*ethereum.ETHDKGRegistrationOpened, error)
 	history     []IETHDKGParseRegistrationOpenedFuncCall
 	mutex       sync.Mutex
 }
 
 // ParseRegistrationOpened delegates to the next hook function in the queue
 // and stores the parameter and result values of this invocation.
-func (m *MockIETHDKG) ParseRegistrationOpened(v0 types.Log) (*bindings.ETHDKGRegistrationOpened, error) {
+func (m *MockIETHDKG) ParseRegistrationOpened(v0 types.Log) (*ethereum.ETHDKGRegistrationOpened, error) {
 	r0, r1 := m.ParseRegistrationOpenedFunc.nextHook()(v0)
 	m.ParseRegistrationOpenedFunc.appendCall(IETHDKGParseRegistrationOpenedFuncCall{v0, r0, r1})
 	return r0, r1
@@ -24244,7 +24245,7 @@ func (m *MockIETHDKG) ParseRegistrationOpened(v0 types.Log) (*bindings.ETHDKGReg
 // SetDefaultHook sets function that is called when the
 // ParseRegistrationOpened method of the parent MockIETHDKG instance is
 // invoked and the hook queue is empty.
-func (f *IETHDKGParseRegistrationOpenedFunc) SetDefaultHook(hook func(types.Log) (*bindings.ETHDKGRegistrationOpened, error)) {
+func (f *IETHDKGParseRegistrationOpenedFunc) SetDefaultHook(hook func(types.Log) (*ethereum.ETHDKGRegistrationOpened, error)) {
 	f.defaultHook = hook
 }
 
@@ -24252,7 +24253,7 @@ func (f *IETHDKGParseRegistrationOpenedFunc) SetDefaultHook(hook func(types.Log)
 // ParseRegistrationOpened method of the parent MockIETHDKG instance invokes
 // the hook at the front of the queue and discards it. After the queue is
 // empty, the default hook function is invoked for any future action.
-func (f *IETHDKGParseRegistrationOpenedFunc) PushHook(hook func(types.Log) (*bindings.ETHDKGRegistrationOpened, error)) {
+func (f *IETHDKGParseRegistrationOpenedFunc) PushHook(hook func(types.Log) (*ethereum.ETHDKGRegistrationOpened, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -24260,20 +24261,20 @@ func (f *IETHDKGParseRegistrationOpenedFunc) PushHook(hook func(types.Log) (*bin
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IETHDKGParseRegistrationOpenedFunc) SetDefaultReturn(r0 *bindings.ETHDKGRegistrationOpened, r1 error) {
-	f.SetDefaultHook(func(types.Log) (*bindings.ETHDKGRegistrationOpened, error) {
+func (f *IETHDKGParseRegistrationOpenedFunc) SetDefaultReturn(r0 *ethereum.ETHDKGRegistrationOpened, r1 error) {
+	f.SetDefaultHook(func(types.Log) (*ethereum.ETHDKGRegistrationOpened, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IETHDKGParseRegistrationOpenedFunc) PushReturn(r0 *bindings.ETHDKGRegistrationOpened, r1 error) {
-	f.PushHook(func(types.Log) (*bindings.ETHDKGRegistrationOpened, error) {
+func (f *IETHDKGParseRegistrationOpenedFunc) PushReturn(r0 *ethereum.ETHDKGRegistrationOpened, r1 error) {
+	f.PushHook(func(types.Log) (*ethereum.ETHDKGRegistrationOpened, error) {
 		return r0, r1
 	})
 }
 
-func (f *IETHDKGParseRegistrationOpenedFunc) nextHook() func(types.Log) (*bindings.ETHDKGRegistrationOpened, error) {
+func (f *IETHDKGParseRegistrationOpenedFunc) nextHook() func(types.Log) (*ethereum.ETHDKGRegistrationOpened, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -24312,7 +24313,7 @@ type IETHDKGParseRegistrationOpenedFuncCall struct {
 	Arg0 types.Log
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 *bindings.ETHDKGRegistrationOpened
+	Result0 *ethereum.ETHDKGRegistrationOpened
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -24334,15 +24335,15 @@ func (c IETHDKGParseRegistrationOpenedFuncCall) Results() []interface{} {
 // ParseShareDistributionComplete method of the parent MockIETHDKG instance
 // is invoked.
 type IETHDKGParseShareDistributionCompleteFunc struct {
-	defaultHook func(types.Log) (*bindings.ETHDKGShareDistributionComplete, error)
-	hooks       []func(types.Log) (*bindings.ETHDKGShareDistributionComplete, error)
+	defaultHook func(types.Log) (*ethereum.ETHDKGShareDistributionComplete, error)
+	hooks       []func(types.Log) (*ethereum.ETHDKGShareDistributionComplete, error)
 	history     []IETHDKGParseShareDistributionCompleteFuncCall
 	mutex       sync.Mutex
 }
 
 // ParseShareDistributionComplete delegates to the next hook function in the
 // queue and stores the parameter and result values of this invocation.
-func (m *MockIETHDKG) ParseShareDistributionComplete(v0 types.Log) (*bindings.ETHDKGShareDistributionComplete, error) {
+func (m *MockIETHDKG) ParseShareDistributionComplete(v0 types.Log) (*ethereum.ETHDKGShareDistributionComplete, error) {
 	r0, r1 := m.ParseShareDistributionCompleteFunc.nextHook()(v0)
 	m.ParseShareDistributionCompleteFunc.appendCall(IETHDKGParseShareDistributionCompleteFuncCall{v0, r0, r1})
 	return r0, r1
@@ -24351,7 +24352,7 @@ func (m *MockIETHDKG) ParseShareDistributionComplete(v0 types.Log) (*bindings.ET
 // SetDefaultHook sets function that is called when the
 // ParseShareDistributionComplete method of the parent MockIETHDKG instance
 // is invoked and the hook queue is empty.
-func (f *IETHDKGParseShareDistributionCompleteFunc) SetDefaultHook(hook func(types.Log) (*bindings.ETHDKGShareDistributionComplete, error)) {
+func (f *IETHDKGParseShareDistributionCompleteFunc) SetDefaultHook(hook func(types.Log) (*ethereum.ETHDKGShareDistributionComplete, error)) {
 	f.defaultHook = hook
 }
 
@@ -24360,7 +24361,7 @@ func (f *IETHDKGParseShareDistributionCompleteFunc) SetDefaultHook(hook func(typ
 // invokes the hook at the front of the queue and discards it. After the
 // queue is empty, the default hook function is invoked for any future
 // action.
-func (f *IETHDKGParseShareDistributionCompleteFunc) PushHook(hook func(types.Log) (*bindings.ETHDKGShareDistributionComplete, error)) {
+func (f *IETHDKGParseShareDistributionCompleteFunc) PushHook(hook func(types.Log) (*ethereum.ETHDKGShareDistributionComplete, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -24368,20 +24369,20 @@ func (f *IETHDKGParseShareDistributionCompleteFunc) PushHook(hook func(types.Log
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IETHDKGParseShareDistributionCompleteFunc) SetDefaultReturn(r0 *bindings.ETHDKGShareDistributionComplete, r1 error) {
-	f.SetDefaultHook(func(types.Log) (*bindings.ETHDKGShareDistributionComplete, error) {
+func (f *IETHDKGParseShareDistributionCompleteFunc) SetDefaultReturn(r0 *ethereum.ETHDKGShareDistributionComplete, r1 error) {
+	f.SetDefaultHook(func(types.Log) (*ethereum.ETHDKGShareDistributionComplete, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IETHDKGParseShareDistributionCompleteFunc) PushReturn(r0 *bindings.ETHDKGShareDistributionComplete, r1 error) {
-	f.PushHook(func(types.Log) (*bindings.ETHDKGShareDistributionComplete, error) {
+func (f *IETHDKGParseShareDistributionCompleteFunc) PushReturn(r0 *ethereum.ETHDKGShareDistributionComplete, r1 error) {
+	f.PushHook(func(types.Log) (*ethereum.ETHDKGShareDistributionComplete, error) {
 		return r0, r1
 	})
 }
 
-func (f *IETHDKGParseShareDistributionCompleteFunc) nextHook() func(types.Log) (*bindings.ETHDKGShareDistributionComplete, error) {
+func (f *IETHDKGParseShareDistributionCompleteFunc) nextHook() func(types.Log) (*ethereum.ETHDKGShareDistributionComplete, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -24421,7 +24422,7 @@ type IETHDKGParseShareDistributionCompleteFuncCall struct {
 	Arg0 types.Log
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 *bindings.ETHDKGShareDistributionComplete
+	Result0 *ethereum.ETHDKGShareDistributionComplete
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -24443,15 +24444,15 @@ func (c IETHDKGParseShareDistributionCompleteFuncCall) Results() []interface{} {
 // ParseSharesDistributed method of the parent MockIETHDKG instance is
 // invoked.
 type IETHDKGParseSharesDistributedFunc struct {
-	defaultHook func(types.Log) (*bindings.ETHDKGSharesDistributed, error)
-	hooks       []func(types.Log) (*bindings.ETHDKGSharesDistributed, error)
+	defaultHook func(types.Log) (*ethereum.ETHDKGSharesDistributed, error)
+	hooks       []func(types.Log) (*ethereum.ETHDKGSharesDistributed, error)
 	history     []IETHDKGParseSharesDistributedFuncCall
 	mutex       sync.Mutex
 }
 
 // ParseSharesDistributed delegates to the next hook function in the queue
 // and stores the parameter and result values of this invocation.
-func (m *MockIETHDKG) ParseSharesDistributed(v0 types.Log) (*bindings.ETHDKGSharesDistributed, error) {
+func (m *MockIETHDKG) ParseSharesDistributed(v0 types.Log) (*ethereum.ETHDKGSharesDistributed, error) {
 	r0, r1 := m.ParseSharesDistributedFunc.nextHook()(v0)
 	m.ParseSharesDistributedFunc.appendCall(IETHDKGParseSharesDistributedFuncCall{v0, r0, r1})
 	return r0, r1
@@ -24460,7 +24461,7 @@ func (m *MockIETHDKG) ParseSharesDistributed(v0 types.Log) (*bindings.ETHDKGShar
 // SetDefaultHook sets function that is called when the
 // ParseSharesDistributed method of the parent MockIETHDKG instance is
 // invoked and the hook queue is empty.
-func (f *IETHDKGParseSharesDistributedFunc) SetDefaultHook(hook func(types.Log) (*bindings.ETHDKGSharesDistributed, error)) {
+func (f *IETHDKGParseSharesDistributedFunc) SetDefaultHook(hook func(types.Log) (*ethereum.ETHDKGSharesDistributed, error)) {
 	f.defaultHook = hook
 }
 
@@ -24468,7 +24469,7 @@ func (f *IETHDKGParseSharesDistributedFunc) SetDefaultHook(hook func(types.Log) 
 // ParseSharesDistributed method of the parent MockIETHDKG instance invokes
 // the hook at the front of the queue and discards it. After the queue is
 // empty, the default hook function is invoked for any future action.
-func (f *IETHDKGParseSharesDistributedFunc) PushHook(hook func(types.Log) (*bindings.ETHDKGSharesDistributed, error)) {
+func (f *IETHDKGParseSharesDistributedFunc) PushHook(hook func(types.Log) (*ethereum.ETHDKGSharesDistributed, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -24476,20 +24477,20 @@ func (f *IETHDKGParseSharesDistributedFunc) PushHook(hook func(types.Log) (*bind
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IETHDKGParseSharesDistributedFunc) SetDefaultReturn(r0 *bindings.ETHDKGSharesDistributed, r1 error) {
-	f.SetDefaultHook(func(types.Log) (*bindings.ETHDKGSharesDistributed, error) {
+func (f *IETHDKGParseSharesDistributedFunc) SetDefaultReturn(r0 *ethereum.ETHDKGSharesDistributed, r1 error) {
+	f.SetDefaultHook(func(types.Log) (*ethereum.ETHDKGSharesDistributed, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IETHDKGParseSharesDistributedFunc) PushReturn(r0 *bindings.ETHDKGSharesDistributed, r1 error) {
-	f.PushHook(func(types.Log) (*bindings.ETHDKGSharesDistributed, error) {
+func (f *IETHDKGParseSharesDistributedFunc) PushReturn(r0 *ethereum.ETHDKGSharesDistributed, r1 error) {
+	f.PushHook(func(types.Log) (*ethereum.ETHDKGSharesDistributed, error) {
 		return r0, r1
 	})
 }
 
-func (f *IETHDKGParseSharesDistributedFunc) nextHook() func(types.Log) (*bindings.ETHDKGSharesDistributed, error) {
+func (f *IETHDKGParseSharesDistributedFunc) nextHook() func(types.Log) (*ethereum.ETHDKGSharesDistributed, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -24528,7 +24529,7 @@ type IETHDKGParseSharesDistributedFuncCall struct {
 	Arg0 types.Log
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 *bindings.ETHDKGSharesDistributed
+	Result0 *ethereum.ETHDKGSharesDistributed
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -24550,15 +24551,15 @@ func (c IETHDKGParseSharesDistributedFuncCall) Results() []interface{} {
 // ParseValidatorMemberAdded method of the parent MockIETHDKG instance is
 // invoked.
 type IETHDKGParseValidatorMemberAddedFunc struct {
-	defaultHook func(types.Log) (*bindings.ETHDKGValidatorMemberAdded, error)
-	hooks       []func(types.Log) (*bindings.ETHDKGValidatorMemberAdded, error)
+	defaultHook func(types.Log) (*ethereum.ETHDKGValidatorMemberAdded, error)
+	hooks       []func(types.Log) (*ethereum.ETHDKGValidatorMemberAdded, error)
 	history     []IETHDKGParseValidatorMemberAddedFuncCall
 	mutex       sync.Mutex
 }
 
 // ParseValidatorMemberAdded delegates to the next hook function in the
 // queue and stores the parameter and result values of this invocation.
-func (m *MockIETHDKG) ParseValidatorMemberAdded(v0 types.Log) (*bindings.ETHDKGValidatorMemberAdded, error) {
+func (m *MockIETHDKG) ParseValidatorMemberAdded(v0 types.Log) (*ethereum.ETHDKGValidatorMemberAdded, error) {
 	r0, r1 := m.ParseValidatorMemberAddedFunc.nextHook()(v0)
 	m.ParseValidatorMemberAddedFunc.appendCall(IETHDKGParseValidatorMemberAddedFuncCall{v0, r0, r1})
 	return r0, r1
@@ -24567,7 +24568,7 @@ func (m *MockIETHDKG) ParseValidatorMemberAdded(v0 types.Log) (*bindings.ETHDKGV
 // SetDefaultHook sets function that is called when the
 // ParseValidatorMemberAdded method of the parent MockIETHDKG instance is
 // invoked and the hook queue is empty.
-func (f *IETHDKGParseValidatorMemberAddedFunc) SetDefaultHook(hook func(types.Log) (*bindings.ETHDKGValidatorMemberAdded, error)) {
+func (f *IETHDKGParseValidatorMemberAddedFunc) SetDefaultHook(hook func(types.Log) (*ethereum.ETHDKGValidatorMemberAdded, error)) {
 	f.defaultHook = hook
 }
 
@@ -24576,7 +24577,7 @@ func (f *IETHDKGParseValidatorMemberAddedFunc) SetDefaultHook(hook func(types.Lo
 // invokes the hook at the front of the queue and discards it. After the
 // queue is empty, the default hook function is invoked for any future
 // action.
-func (f *IETHDKGParseValidatorMemberAddedFunc) PushHook(hook func(types.Log) (*bindings.ETHDKGValidatorMemberAdded, error)) {
+func (f *IETHDKGParseValidatorMemberAddedFunc) PushHook(hook func(types.Log) (*ethereum.ETHDKGValidatorMemberAdded, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -24584,20 +24585,20 @@ func (f *IETHDKGParseValidatorMemberAddedFunc) PushHook(hook func(types.Log) (*b
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IETHDKGParseValidatorMemberAddedFunc) SetDefaultReturn(r0 *bindings.ETHDKGValidatorMemberAdded, r1 error) {
-	f.SetDefaultHook(func(types.Log) (*bindings.ETHDKGValidatorMemberAdded, error) {
+func (f *IETHDKGParseValidatorMemberAddedFunc) SetDefaultReturn(r0 *ethereum.ETHDKGValidatorMemberAdded, r1 error) {
+	f.SetDefaultHook(func(types.Log) (*ethereum.ETHDKGValidatorMemberAdded, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IETHDKGParseValidatorMemberAddedFunc) PushReturn(r0 *bindings.ETHDKGValidatorMemberAdded, r1 error) {
-	f.PushHook(func(types.Log) (*bindings.ETHDKGValidatorMemberAdded, error) {
+func (f *IETHDKGParseValidatorMemberAddedFunc) PushReturn(r0 *ethereum.ETHDKGValidatorMemberAdded, r1 error) {
+	f.PushHook(func(types.Log) (*ethereum.ETHDKGValidatorMemberAdded, error) {
 		return r0, r1
 	})
 }
 
-func (f *IETHDKGParseValidatorMemberAddedFunc) nextHook() func(types.Log) (*bindings.ETHDKGValidatorMemberAdded, error) {
+func (f *IETHDKGParseValidatorMemberAddedFunc) nextHook() func(types.Log) (*ethereum.ETHDKGValidatorMemberAdded, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -24636,7 +24637,7 @@ type IETHDKGParseValidatorMemberAddedFuncCall struct {
 	Arg0 types.Log
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 *bindings.ETHDKGValidatorMemberAdded
+	Result0 *ethereum.ETHDKGValidatorMemberAdded
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -24658,15 +24659,15 @@ func (c IETHDKGParseValidatorMemberAddedFuncCall) Results() []interface{} {
 // ParseValidatorSetCompleted method of the parent MockIETHDKG instance is
 // invoked.
 type IETHDKGParseValidatorSetCompletedFunc struct {
-	defaultHook func(types.Log) (*bindings.ETHDKGValidatorSetCompleted, error)
-	hooks       []func(types.Log) (*bindings.ETHDKGValidatorSetCompleted, error)
+	defaultHook func(types.Log) (*ethereum.ETHDKGValidatorSetCompleted, error)
+	hooks       []func(types.Log) (*ethereum.ETHDKGValidatorSetCompleted, error)
 	history     []IETHDKGParseValidatorSetCompletedFuncCall
 	mutex       sync.Mutex
 }
 
 // ParseValidatorSetCompleted delegates to the next hook function in the
 // queue and stores the parameter and result values of this invocation.
-func (m *MockIETHDKG) ParseValidatorSetCompleted(v0 types.Log) (*bindings.ETHDKGValidatorSetCompleted, error) {
+func (m *MockIETHDKG) ParseValidatorSetCompleted(v0 types.Log) (*ethereum.ETHDKGValidatorSetCompleted, error) {
 	r0, r1 := m.ParseValidatorSetCompletedFunc.nextHook()(v0)
 	m.ParseValidatorSetCompletedFunc.appendCall(IETHDKGParseValidatorSetCompletedFuncCall{v0, r0, r1})
 	return r0, r1
@@ -24675,7 +24676,7 @@ func (m *MockIETHDKG) ParseValidatorSetCompleted(v0 types.Log) (*bindings.ETHDKG
 // SetDefaultHook sets function that is called when the
 // ParseValidatorSetCompleted method of the parent MockIETHDKG instance is
 // invoked and the hook queue is empty.
-func (f *IETHDKGParseValidatorSetCompletedFunc) SetDefaultHook(hook func(types.Log) (*bindings.ETHDKGValidatorSetCompleted, error)) {
+func (f *IETHDKGParseValidatorSetCompletedFunc) SetDefaultHook(hook func(types.Log) (*ethereum.ETHDKGValidatorSetCompleted, error)) {
 	f.defaultHook = hook
 }
 
@@ -24684,7 +24685,7 @@ func (f *IETHDKGParseValidatorSetCompletedFunc) SetDefaultHook(hook func(types.L
 // invokes the hook at the front of the queue and discards it. After the
 // queue is empty, the default hook function is invoked for any future
 // action.
-func (f *IETHDKGParseValidatorSetCompletedFunc) PushHook(hook func(types.Log) (*bindings.ETHDKGValidatorSetCompleted, error)) {
+func (f *IETHDKGParseValidatorSetCompletedFunc) PushHook(hook func(types.Log) (*ethereum.ETHDKGValidatorSetCompleted, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -24692,20 +24693,20 @@ func (f *IETHDKGParseValidatorSetCompletedFunc) PushHook(hook func(types.Log) (*
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IETHDKGParseValidatorSetCompletedFunc) SetDefaultReturn(r0 *bindings.ETHDKGValidatorSetCompleted, r1 error) {
-	f.SetDefaultHook(func(types.Log) (*bindings.ETHDKGValidatorSetCompleted, error) {
+func (f *IETHDKGParseValidatorSetCompletedFunc) SetDefaultReturn(r0 *ethereum.ETHDKGValidatorSetCompleted, r1 error) {
+	f.SetDefaultHook(func(types.Log) (*ethereum.ETHDKGValidatorSetCompleted, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IETHDKGParseValidatorSetCompletedFunc) PushReturn(r0 *bindings.ETHDKGValidatorSetCompleted, r1 error) {
-	f.PushHook(func(types.Log) (*bindings.ETHDKGValidatorSetCompleted, error) {
+func (f *IETHDKGParseValidatorSetCompletedFunc) PushReturn(r0 *ethereum.ETHDKGValidatorSetCompleted, r1 error) {
+	f.PushHook(func(types.Log) (*ethereum.ETHDKGValidatorSetCompleted, error) {
 		return r0, r1
 	})
 }
 
-func (f *IETHDKGParseValidatorSetCompletedFunc) nextHook() func(types.Log) (*bindings.ETHDKGValidatorSetCompleted, error) {
+func (f *IETHDKGParseValidatorSetCompletedFunc) nextHook() func(types.Log) (*ethereum.ETHDKGValidatorSetCompleted, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -24744,7 +24745,7 @@ type IETHDKGParseValidatorSetCompletedFuncCall struct {
 	Arg0 types.Log
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 *bindings.ETHDKGValidatorSetCompleted
+	Result0 *ethereum.ETHDKGValidatorSetCompleted
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -25530,15 +25531,15 @@ func (c IETHDKGSubmitMasterPublicKeyFuncCall) Results() []interface{} {
 // WatchAddressRegistered method of the parent MockIETHDKG instance is
 // invoked.
 type IETHDKGWatchAddressRegisteredFunc struct {
-	defaultHook func(*bind.WatchOpts, chan<- *bindings.ETHDKGAddressRegistered) (event.Subscription, error)
-	hooks       []func(*bind.WatchOpts, chan<- *bindings.ETHDKGAddressRegistered) (event.Subscription, error)
+	defaultHook func(*bind.WatchOpts, chan<- *ethereum.ETHDKGAddressRegistered) (event.Subscription, error)
+	hooks       []func(*bind.WatchOpts, chan<- *ethereum.ETHDKGAddressRegistered) (event.Subscription, error)
 	history     []IETHDKGWatchAddressRegisteredFuncCall
 	mutex       sync.Mutex
 }
 
 // WatchAddressRegistered delegates to the next hook function in the queue
 // and stores the parameter and result values of this invocation.
-func (m *MockIETHDKG) WatchAddressRegistered(v0 *bind.WatchOpts, v1 chan<- *bindings.ETHDKGAddressRegistered) (event.Subscription, error) {
+func (m *MockIETHDKG) WatchAddressRegistered(v0 *bind.WatchOpts, v1 chan<- *ethereum.ETHDKGAddressRegistered) (event.Subscription, error) {
 	r0, r1 := m.WatchAddressRegisteredFunc.nextHook()(v0, v1)
 	m.WatchAddressRegisteredFunc.appendCall(IETHDKGWatchAddressRegisteredFuncCall{v0, v1, r0, r1})
 	return r0, r1
@@ -25547,7 +25548,7 @@ func (m *MockIETHDKG) WatchAddressRegistered(v0 *bind.WatchOpts, v1 chan<- *bind
 // SetDefaultHook sets function that is called when the
 // WatchAddressRegistered method of the parent MockIETHDKG instance is
 // invoked and the hook queue is empty.
-func (f *IETHDKGWatchAddressRegisteredFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *bindings.ETHDKGAddressRegistered) (event.Subscription, error)) {
+func (f *IETHDKGWatchAddressRegisteredFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *ethereum.ETHDKGAddressRegistered) (event.Subscription, error)) {
 	f.defaultHook = hook
 }
 
@@ -25555,7 +25556,7 @@ func (f *IETHDKGWatchAddressRegisteredFunc) SetDefaultHook(hook func(*bind.Watch
 // WatchAddressRegistered method of the parent MockIETHDKG instance invokes
 // the hook at the front of the queue and discards it. After the queue is
 // empty, the default hook function is invoked for any future action.
-func (f *IETHDKGWatchAddressRegisteredFunc) PushHook(hook func(*bind.WatchOpts, chan<- *bindings.ETHDKGAddressRegistered) (event.Subscription, error)) {
+func (f *IETHDKGWatchAddressRegisteredFunc) PushHook(hook func(*bind.WatchOpts, chan<- *ethereum.ETHDKGAddressRegistered) (event.Subscription, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -25564,19 +25565,19 @@ func (f *IETHDKGWatchAddressRegisteredFunc) PushHook(hook func(*bind.WatchOpts, 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
 func (f *IETHDKGWatchAddressRegisteredFunc) SetDefaultReturn(r0 event.Subscription, r1 error) {
-	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *bindings.ETHDKGAddressRegistered) (event.Subscription, error) {
+	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *ethereum.ETHDKGAddressRegistered) (event.Subscription, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
 func (f *IETHDKGWatchAddressRegisteredFunc) PushReturn(r0 event.Subscription, r1 error) {
-	f.PushHook(func(*bind.WatchOpts, chan<- *bindings.ETHDKGAddressRegistered) (event.Subscription, error) {
+	f.PushHook(func(*bind.WatchOpts, chan<- *ethereum.ETHDKGAddressRegistered) (event.Subscription, error) {
 		return r0, r1
 	})
 }
 
-func (f *IETHDKGWatchAddressRegisteredFunc) nextHook() func(*bind.WatchOpts, chan<- *bindings.ETHDKGAddressRegistered) (event.Subscription, error) {
+func (f *IETHDKGWatchAddressRegisteredFunc) nextHook() func(*bind.WatchOpts, chan<- *ethereum.ETHDKGAddressRegistered) (event.Subscription, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -25615,7 +25616,7 @@ type IETHDKGWatchAddressRegisteredFuncCall struct {
 	Arg0 *bind.WatchOpts
 	// Arg1 is the value of the 2nd argument passed to this method
 	// invocation.
-	Arg1 chan<- *bindings.ETHDKGAddressRegistered
+	Arg1 chan<- *ethereum.ETHDKGAddressRegistered
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
 	Result0 event.Subscription
@@ -25640,15 +25641,15 @@ func (c IETHDKGWatchAddressRegisteredFuncCall) Results() []interface{} {
 // WatchGPKJSubmissionComplete method of the parent MockIETHDKG instance is
 // invoked.
 type IETHDKGWatchGPKJSubmissionCompleteFunc struct {
-	defaultHook func(*bind.WatchOpts, chan<- *bindings.ETHDKGGPKJSubmissionComplete) (event.Subscription, error)
-	hooks       []func(*bind.WatchOpts, chan<- *bindings.ETHDKGGPKJSubmissionComplete) (event.Subscription, error)
+	defaultHook func(*bind.WatchOpts, chan<- *ethereum.ETHDKGGPKJSubmissionComplete) (event.Subscription, error)
+	hooks       []func(*bind.WatchOpts, chan<- *ethereum.ETHDKGGPKJSubmissionComplete) (event.Subscription, error)
 	history     []IETHDKGWatchGPKJSubmissionCompleteFuncCall
 	mutex       sync.Mutex
 }
 
 // WatchGPKJSubmissionComplete delegates to the next hook function in the
 // queue and stores the parameter and result values of this invocation.
-func (m *MockIETHDKG) WatchGPKJSubmissionComplete(v0 *bind.WatchOpts, v1 chan<- *bindings.ETHDKGGPKJSubmissionComplete) (event.Subscription, error) {
+func (m *MockIETHDKG) WatchGPKJSubmissionComplete(v0 *bind.WatchOpts, v1 chan<- *ethereum.ETHDKGGPKJSubmissionComplete) (event.Subscription, error) {
 	r0, r1 := m.WatchGPKJSubmissionCompleteFunc.nextHook()(v0, v1)
 	m.WatchGPKJSubmissionCompleteFunc.appendCall(IETHDKGWatchGPKJSubmissionCompleteFuncCall{v0, v1, r0, r1})
 	return r0, r1
@@ -25657,7 +25658,7 @@ func (m *MockIETHDKG) WatchGPKJSubmissionComplete(v0 *bind.WatchOpts, v1 chan<- 
 // SetDefaultHook sets function that is called when the
 // WatchGPKJSubmissionComplete method of the parent MockIETHDKG instance is
 // invoked and the hook queue is empty.
-func (f *IETHDKGWatchGPKJSubmissionCompleteFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *bindings.ETHDKGGPKJSubmissionComplete) (event.Subscription, error)) {
+func (f *IETHDKGWatchGPKJSubmissionCompleteFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *ethereum.ETHDKGGPKJSubmissionComplete) (event.Subscription, error)) {
 	f.defaultHook = hook
 }
 
@@ -25666,7 +25667,7 @@ func (f *IETHDKGWatchGPKJSubmissionCompleteFunc) SetDefaultHook(hook func(*bind.
 // invokes the hook at the front of the queue and discards it. After the
 // queue is empty, the default hook function is invoked for any future
 // action.
-func (f *IETHDKGWatchGPKJSubmissionCompleteFunc) PushHook(hook func(*bind.WatchOpts, chan<- *bindings.ETHDKGGPKJSubmissionComplete) (event.Subscription, error)) {
+func (f *IETHDKGWatchGPKJSubmissionCompleteFunc) PushHook(hook func(*bind.WatchOpts, chan<- *ethereum.ETHDKGGPKJSubmissionComplete) (event.Subscription, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -25675,19 +25676,19 @@ func (f *IETHDKGWatchGPKJSubmissionCompleteFunc) PushHook(hook func(*bind.WatchO
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
 func (f *IETHDKGWatchGPKJSubmissionCompleteFunc) SetDefaultReturn(r0 event.Subscription, r1 error) {
-	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *bindings.ETHDKGGPKJSubmissionComplete) (event.Subscription, error) {
+	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *ethereum.ETHDKGGPKJSubmissionComplete) (event.Subscription, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
 func (f *IETHDKGWatchGPKJSubmissionCompleteFunc) PushReturn(r0 event.Subscription, r1 error) {
-	f.PushHook(func(*bind.WatchOpts, chan<- *bindings.ETHDKGGPKJSubmissionComplete) (event.Subscription, error) {
+	f.PushHook(func(*bind.WatchOpts, chan<- *ethereum.ETHDKGGPKJSubmissionComplete) (event.Subscription, error) {
 		return r0, r1
 	})
 }
 
-func (f *IETHDKGWatchGPKJSubmissionCompleteFunc) nextHook() func(*bind.WatchOpts, chan<- *bindings.ETHDKGGPKJSubmissionComplete) (event.Subscription, error) {
+func (f *IETHDKGWatchGPKJSubmissionCompleteFunc) nextHook() func(*bind.WatchOpts, chan<- *ethereum.ETHDKGGPKJSubmissionComplete) (event.Subscription, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -25726,7 +25727,7 @@ type IETHDKGWatchGPKJSubmissionCompleteFuncCall struct {
 	Arg0 *bind.WatchOpts
 	// Arg1 is the value of the 2nd argument passed to this method
 	// invocation.
-	Arg1 chan<- *bindings.ETHDKGGPKJSubmissionComplete
+	Arg1 chan<- *ethereum.ETHDKGGPKJSubmissionComplete
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
 	Result0 event.Subscription
@@ -25750,15 +25751,15 @@ func (c IETHDKGWatchGPKJSubmissionCompleteFuncCall) Results() []interface{} {
 // IETHDKGWatchInitializedFunc describes the behavior when the
 // WatchInitialized method of the parent MockIETHDKG instance is invoked.
 type IETHDKGWatchInitializedFunc struct {
-	defaultHook func(*bind.WatchOpts, chan<- *bindings.ETHDKGInitialized) (event.Subscription, error)
-	hooks       []func(*bind.WatchOpts, chan<- *bindings.ETHDKGInitialized) (event.Subscription, error)
+	defaultHook func(*bind.WatchOpts, chan<- *ethereum.ETHDKGInitialized) (event.Subscription, error)
+	hooks       []func(*bind.WatchOpts, chan<- *ethereum.ETHDKGInitialized) (event.Subscription, error)
 	history     []IETHDKGWatchInitializedFuncCall
 	mutex       sync.Mutex
 }
 
 // WatchInitialized delegates to the next hook function in the queue and
 // stores the parameter and result values of this invocation.
-func (m *MockIETHDKG) WatchInitialized(v0 *bind.WatchOpts, v1 chan<- *bindings.ETHDKGInitialized) (event.Subscription, error) {
+func (m *MockIETHDKG) WatchInitialized(v0 *bind.WatchOpts, v1 chan<- *ethereum.ETHDKGInitialized) (event.Subscription, error) {
 	r0, r1 := m.WatchInitializedFunc.nextHook()(v0, v1)
 	m.WatchInitializedFunc.appendCall(IETHDKGWatchInitializedFuncCall{v0, v1, r0, r1})
 	return r0, r1
@@ -25767,7 +25768,7 @@ func (m *MockIETHDKG) WatchInitialized(v0 *bind.WatchOpts, v1 chan<- *bindings.E
 // SetDefaultHook sets function that is called when the WatchInitialized
 // method of the parent MockIETHDKG instance is invoked and the hook queue
 // is empty.
-func (f *IETHDKGWatchInitializedFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *bindings.ETHDKGInitialized) (event.Subscription, error)) {
+func (f *IETHDKGWatchInitializedFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *ethereum.ETHDKGInitialized) (event.Subscription, error)) {
 	f.defaultHook = hook
 }
 
@@ -25775,7 +25776,7 @@ func (f *IETHDKGWatchInitializedFunc) SetDefaultHook(hook func(*bind.WatchOpts, 
 // WatchInitialized method of the parent MockIETHDKG instance invokes the
 // hook at the front of the queue and discards it. After the queue is empty,
 // the default hook function is invoked for any future action.
-func (f *IETHDKGWatchInitializedFunc) PushHook(hook func(*bind.WatchOpts, chan<- *bindings.ETHDKGInitialized) (event.Subscription, error)) {
+func (f *IETHDKGWatchInitializedFunc) PushHook(hook func(*bind.WatchOpts, chan<- *ethereum.ETHDKGInitialized) (event.Subscription, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -25784,19 +25785,19 @@ func (f *IETHDKGWatchInitializedFunc) PushHook(hook func(*bind.WatchOpts, chan<-
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
 func (f *IETHDKGWatchInitializedFunc) SetDefaultReturn(r0 event.Subscription, r1 error) {
-	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *bindings.ETHDKGInitialized) (event.Subscription, error) {
+	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *ethereum.ETHDKGInitialized) (event.Subscription, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
 func (f *IETHDKGWatchInitializedFunc) PushReturn(r0 event.Subscription, r1 error) {
-	f.PushHook(func(*bind.WatchOpts, chan<- *bindings.ETHDKGInitialized) (event.Subscription, error) {
+	f.PushHook(func(*bind.WatchOpts, chan<- *ethereum.ETHDKGInitialized) (event.Subscription, error) {
 		return r0, r1
 	})
 }
 
-func (f *IETHDKGWatchInitializedFunc) nextHook() func(*bind.WatchOpts, chan<- *bindings.ETHDKGInitialized) (event.Subscription, error) {
+func (f *IETHDKGWatchInitializedFunc) nextHook() func(*bind.WatchOpts, chan<- *ethereum.ETHDKGInitialized) (event.Subscription, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -25834,7 +25835,7 @@ type IETHDKGWatchInitializedFuncCall struct {
 	Arg0 *bind.WatchOpts
 	// Arg1 is the value of the 2nd argument passed to this method
 	// invocation.
-	Arg1 chan<- *bindings.ETHDKGInitialized
+	Arg1 chan<- *ethereum.ETHDKGInitialized
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
 	Result0 event.Subscription
@@ -25859,15 +25860,15 @@ func (c IETHDKGWatchInitializedFuncCall) Results() []interface{} {
 // the WatchKeyShareSubmissionComplete method of the parent MockIETHDKG
 // instance is invoked.
 type IETHDKGWatchKeyShareSubmissionCompleteFunc struct {
-	defaultHook func(*bind.WatchOpts, chan<- *bindings.ETHDKGKeyShareSubmissionComplete) (event.Subscription, error)
-	hooks       []func(*bind.WatchOpts, chan<- *bindings.ETHDKGKeyShareSubmissionComplete) (event.Subscription, error)
+	defaultHook func(*bind.WatchOpts, chan<- *ethereum.ETHDKGKeyShareSubmissionComplete) (event.Subscription, error)
+	hooks       []func(*bind.WatchOpts, chan<- *ethereum.ETHDKGKeyShareSubmissionComplete) (event.Subscription, error)
 	history     []IETHDKGWatchKeyShareSubmissionCompleteFuncCall
 	mutex       sync.Mutex
 }
 
 // WatchKeyShareSubmissionComplete delegates to the next hook function in
 // the queue and stores the parameter and result values of this invocation.
-func (m *MockIETHDKG) WatchKeyShareSubmissionComplete(v0 *bind.WatchOpts, v1 chan<- *bindings.ETHDKGKeyShareSubmissionComplete) (event.Subscription, error) {
+func (m *MockIETHDKG) WatchKeyShareSubmissionComplete(v0 *bind.WatchOpts, v1 chan<- *ethereum.ETHDKGKeyShareSubmissionComplete) (event.Subscription, error) {
 	r0, r1 := m.WatchKeyShareSubmissionCompleteFunc.nextHook()(v0, v1)
 	m.WatchKeyShareSubmissionCompleteFunc.appendCall(IETHDKGWatchKeyShareSubmissionCompleteFuncCall{v0, v1, r0, r1})
 	return r0, r1
@@ -25876,7 +25877,7 @@ func (m *MockIETHDKG) WatchKeyShareSubmissionComplete(v0 *bind.WatchOpts, v1 cha
 // SetDefaultHook sets function that is called when the
 // WatchKeyShareSubmissionComplete method of the parent MockIETHDKG instance
 // is invoked and the hook queue is empty.
-func (f *IETHDKGWatchKeyShareSubmissionCompleteFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *bindings.ETHDKGKeyShareSubmissionComplete) (event.Subscription, error)) {
+func (f *IETHDKGWatchKeyShareSubmissionCompleteFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *ethereum.ETHDKGKeyShareSubmissionComplete) (event.Subscription, error)) {
 	f.defaultHook = hook
 }
 
@@ -25885,7 +25886,7 @@ func (f *IETHDKGWatchKeyShareSubmissionCompleteFunc) SetDefaultHook(hook func(*b
 // invokes the hook at the front of the queue and discards it. After the
 // queue is empty, the default hook function is invoked for any future
 // action.
-func (f *IETHDKGWatchKeyShareSubmissionCompleteFunc) PushHook(hook func(*bind.WatchOpts, chan<- *bindings.ETHDKGKeyShareSubmissionComplete) (event.Subscription, error)) {
+func (f *IETHDKGWatchKeyShareSubmissionCompleteFunc) PushHook(hook func(*bind.WatchOpts, chan<- *ethereum.ETHDKGKeyShareSubmissionComplete) (event.Subscription, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -25894,19 +25895,19 @@ func (f *IETHDKGWatchKeyShareSubmissionCompleteFunc) PushHook(hook func(*bind.Wa
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
 func (f *IETHDKGWatchKeyShareSubmissionCompleteFunc) SetDefaultReturn(r0 event.Subscription, r1 error) {
-	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *bindings.ETHDKGKeyShareSubmissionComplete) (event.Subscription, error) {
+	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *ethereum.ETHDKGKeyShareSubmissionComplete) (event.Subscription, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
 func (f *IETHDKGWatchKeyShareSubmissionCompleteFunc) PushReturn(r0 event.Subscription, r1 error) {
-	f.PushHook(func(*bind.WatchOpts, chan<- *bindings.ETHDKGKeyShareSubmissionComplete) (event.Subscription, error) {
+	f.PushHook(func(*bind.WatchOpts, chan<- *ethereum.ETHDKGKeyShareSubmissionComplete) (event.Subscription, error) {
 		return r0, r1
 	})
 }
 
-func (f *IETHDKGWatchKeyShareSubmissionCompleteFunc) nextHook() func(*bind.WatchOpts, chan<- *bindings.ETHDKGKeyShareSubmissionComplete) (event.Subscription, error) {
+func (f *IETHDKGWatchKeyShareSubmissionCompleteFunc) nextHook() func(*bind.WatchOpts, chan<- *ethereum.ETHDKGKeyShareSubmissionComplete) (event.Subscription, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -25946,7 +25947,7 @@ type IETHDKGWatchKeyShareSubmissionCompleteFuncCall struct {
 	Arg0 *bind.WatchOpts
 	// Arg1 is the value of the 2nd argument passed to this method
 	// invocation.
-	Arg1 chan<- *bindings.ETHDKGKeyShareSubmissionComplete
+	Arg1 chan<- *ethereum.ETHDKGKeyShareSubmissionComplete
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
 	Result0 event.Subscription
@@ -25971,15 +25972,15 @@ func (c IETHDKGWatchKeyShareSubmissionCompleteFuncCall) Results() []interface{} 
 // WatchKeyShareSubmitted method of the parent MockIETHDKG instance is
 // invoked.
 type IETHDKGWatchKeyShareSubmittedFunc struct {
-	defaultHook func(*bind.WatchOpts, chan<- *bindings.ETHDKGKeyShareSubmitted) (event.Subscription, error)
-	hooks       []func(*bind.WatchOpts, chan<- *bindings.ETHDKGKeyShareSubmitted) (event.Subscription, error)
+	defaultHook func(*bind.WatchOpts, chan<- *ethereum.ETHDKGKeyShareSubmitted) (event.Subscription, error)
+	hooks       []func(*bind.WatchOpts, chan<- *ethereum.ETHDKGKeyShareSubmitted) (event.Subscription, error)
 	history     []IETHDKGWatchKeyShareSubmittedFuncCall
 	mutex       sync.Mutex
 }
 
 // WatchKeyShareSubmitted delegates to the next hook function in the queue
 // and stores the parameter and result values of this invocation.
-func (m *MockIETHDKG) WatchKeyShareSubmitted(v0 *bind.WatchOpts, v1 chan<- *bindings.ETHDKGKeyShareSubmitted) (event.Subscription, error) {
+func (m *MockIETHDKG) WatchKeyShareSubmitted(v0 *bind.WatchOpts, v1 chan<- *ethereum.ETHDKGKeyShareSubmitted) (event.Subscription, error) {
 	r0, r1 := m.WatchKeyShareSubmittedFunc.nextHook()(v0, v1)
 	m.WatchKeyShareSubmittedFunc.appendCall(IETHDKGWatchKeyShareSubmittedFuncCall{v0, v1, r0, r1})
 	return r0, r1
@@ -25988,7 +25989,7 @@ func (m *MockIETHDKG) WatchKeyShareSubmitted(v0 *bind.WatchOpts, v1 chan<- *bind
 // SetDefaultHook sets function that is called when the
 // WatchKeyShareSubmitted method of the parent MockIETHDKG instance is
 // invoked and the hook queue is empty.
-func (f *IETHDKGWatchKeyShareSubmittedFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *bindings.ETHDKGKeyShareSubmitted) (event.Subscription, error)) {
+func (f *IETHDKGWatchKeyShareSubmittedFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *ethereum.ETHDKGKeyShareSubmitted) (event.Subscription, error)) {
 	f.defaultHook = hook
 }
 
@@ -25996,7 +25997,7 @@ func (f *IETHDKGWatchKeyShareSubmittedFunc) SetDefaultHook(hook func(*bind.Watch
 // WatchKeyShareSubmitted method of the parent MockIETHDKG instance invokes
 // the hook at the front of the queue and discards it. After the queue is
 // empty, the default hook function is invoked for any future action.
-func (f *IETHDKGWatchKeyShareSubmittedFunc) PushHook(hook func(*bind.WatchOpts, chan<- *bindings.ETHDKGKeyShareSubmitted) (event.Subscription, error)) {
+func (f *IETHDKGWatchKeyShareSubmittedFunc) PushHook(hook func(*bind.WatchOpts, chan<- *ethereum.ETHDKGKeyShareSubmitted) (event.Subscription, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -26005,19 +26006,19 @@ func (f *IETHDKGWatchKeyShareSubmittedFunc) PushHook(hook func(*bind.WatchOpts, 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
 func (f *IETHDKGWatchKeyShareSubmittedFunc) SetDefaultReturn(r0 event.Subscription, r1 error) {
-	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *bindings.ETHDKGKeyShareSubmitted) (event.Subscription, error) {
+	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *ethereum.ETHDKGKeyShareSubmitted) (event.Subscription, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
 func (f *IETHDKGWatchKeyShareSubmittedFunc) PushReturn(r0 event.Subscription, r1 error) {
-	f.PushHook(func(*bind.WatchOpts, chan<- *bindings.ETHDKGKeyShareSubmitted) (event.Subscription, error) {
+	f.PushHook(func(*bind.WatchOpts, chan<- *ethereum.ETHDKGKeyShareSubmitted) (event.Subscription, error) {
 		return r0, r1
 	})
 }
 
-func (f *IETHDKGWatchKeyShareSubmittedFunc) nextHook() func(*bind.WatchOpts, chan<- *bindings.ETHDKGKeyShareSubmitted) (event.Subscription, error) {
+func (f *IETHDKGWatchKeyShareSubmittedFunc) nextHook() func(*bind.WatchOpts, chan<- *ethereum.ETHDKGKeyShareSubmitted) (event.Subscription, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -26056,7 +26057,7 @@ type IETHDKGWatchKeyShareSubmittedFuncCall struct {
 	Arg0 *bind.WatchOpts
 	// Arg1 is the value of the 2nd argument passed to this method
 	// invocation.
-	Arg1 chan<- *bindings.ETHDKGKeyShareSubmitted
+	Arg1 chan<- *ethereum.ETHDKGKeyShareSubmitted
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
 	Result0 event.Subscription
@@ -26080,15 +26081,15 @@ func (c IETHDKGWatchKeyShareSubmittedFuncCall) Results() []interface{} {
 // IETHDKGWatchMPKSetFunc describes the behavior when the WatchMPKSet method
 // of the parent MockIETHDKG instance is invoked.
 type IETHDKGWatchMPKSetFunc struct {
-	defaultHook func(*bind.WatchOpts, chan<- *bindings.ETHDKGMPKSet) (event.Subscription, error)
-	hooks       []func(*bind.WatchOpts, chan<- *bindings.ETHDKGMPKSet) (event.Subscription, error)
+	defaultHook func(*bind.WatchOpts, chan<- *ethereum.ETHDKGMPKSet) (event.Subscription, error)
+	hooks       []func(*bind.WatchOpts, chan<- *ethereum.ETHDKGMPKSet) (event.Subscription, error)
 	history     []IETHDKGWatchMPKSetFuncCall
 	mutex       sync.Mutex
 }
 
 // WatchMPKSet delegates to the next hook function in the queue and stores
 // the parameter and result values of this invocation.
-func (m *MockIETHDKG) WatchMPKSet(v0 *bind.WatchOpts, v1 chan<- *bindings.ETHDKGMPKSet) (event.Subscription, error) {
+func (m *MockIETHDKG) WatchMPKSet(v0 *bind.WatchOpts, v1 chan<- *ethereum.ETHDKGMPKSet) (event.Subscription, error) {
 	r0, r1 := m.WatchMPKSetFunc.nextHook()(v0, v1)
 	m.WatchMPKSetFunc.appendCall(IETHDKGWatchMPKSetFuncCall{v0, v1, r0, r1})
 	return r0, r1
@@ -26097,7 +26098,7 @@ func (m *MockIETHDKG) WatchMPKSet(v0 *bind.WatchOpts, v1 chan<- *bindings.ETHDKG
 // SetDefaultHook sets function that is called when the WatchMPKSet method
 // of the parent MockIETHDKG instance is invoked and the hook queue is
 // empty.
-func (f *IETHDKGWatchMPKSetFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *bindings.ETHDKGMPKSet) (event.Subscription, error)) {
+func (f *IETHDKGWatchMPKSetFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *ethereum.ETHDKGMPKSet) (event.Subscription, error)) {
 	f.defaultHook = hook
 }
 
@@ -26105,7 +26106,7 @@ func (f *IETHDKGWatchMPKSetFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<
 // WatchMPKSet method of the parent MockIETHDKG instance invokes the hook at
 // the front of the queue and discards it. After the queue is empty, the
 // default hook function is invoked for any future action.
-func (f *IETHDKGWatchMPKSetFunc) PushHook(hook func(*bind.WatchOpts, chan<- *bindings.ETHDKGMPKSet) (event.Subscription, error)) {
+func (f *IETHDKGWatchMPKSetFunc) PushHook(hook func(*bind.WatchOpts, chan<- *ethereum.ETHDKGMPKSet) (event.Subscription, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -26114,19 +26115,19 @@ func (f *IETHDKGWatchMPKSetFunc) PushHook(hook func(*bind.WatchOpts, chan<- *bin
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
 func (f *IETHDKGWatchMPKSetFunc) SetDefaultReturn(r0 event.Subscription, r1 error) {
-	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *bindings.ETHDKGMPKSet) (event.Subscription, error) {
+	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *ethereum.ETHDKGMPKSet) (event.Subscription, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
 func (f *IETHDKGWatchMPKSetFunc) PushReturn(r0 event.Subscription, r1 error) {
-	f.PushHook(func(*bind.WatchOpts, chan<- *bindings.ETHDKGMPKSet) (event.Subscription, error) {
+	f.PushHook(func(*bind.WatchOpts, chan<- *ethereum.ETHDKGMPKSet) (event.Subscription, error) {
 		return r0, r1
 	})
 }
 
-func (f *IETHDKGWatchMPKSetFunc) nextHook() func(*bind.WatchOpts, chan<- *bindings.ETHDKGMPKSet) (event.Subscription, error) {
+func (f *IETHDKGWatchMPKSetFunc) nextHook() func(*bind.WatchOpts, chan<- *ethereum.ETHDKGMPKSet) (event.Subscription, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -26164,7 +26165,7 @@ type IETHDKGWatchMPKSetFuncCall struct {
 	Arg0 *bind.WatchOpts
 	// Arg1 is the value of the 2nd argument passed to this method
 	// invocation.
-	Arg1 chan<- *bindings.ETHDKGMPKSet
+	Arg1 chan<- *ethereum.ETHDKGMPKSet
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
 	Result0 event.Subscription
@@ -26189,15 +26190,15 @@ func (c IETHDKGWatchMPKSetFuncCall) Results() []interface{} {
 // WatchRegistrationComplete method of the parent MockIETHDKG instance is
 // invoked.
 type IETHDKGWatchRegistrationCompleteFunc struct {
-	defaultHook func(*bind.WatchOpts, chan<- *bindings.ETHDKGRegistrationComplete) (event.Subscription, error)
-	hooks       []func(*bind.WatchOpts, chan<- *bindings.ETHDKGRegistrationComplete) (event.Subscription, error)
+	defaultHook func(*bind.WatchOpts, chan<- *ethereum.ETHDKGRegistrationComplete) (event.Subscription, error)
+	hooks       []func(*bind.WatchOpts, chan<- *ethereum.ETHDKGRegistrationComplete) (event.Subscription, error)
 	history     []IETHDKGWatchRegistrationCompleteFuncCall
 	mutex       sync.Mutex
 }
 
 // WatchRegistrationComplete delegates to the next hook function in the
 // queue and stores the parameter and result values of this invocation.
-func (m *MockIETHDKG) WatchRegistrationComplete(v0 *bind.WatchOpts, v1 chan<- *bindings.ETHDKGRegistrationComplete) (event.Subscription, error) {
+func (m *MockIETHDKG) WatchRegistrationComplete(v0 *bind.WatchOpts, v1 chan<- *ethereum.ETHDKGRegistrationComplete) (event.Subscription, error) {
 	r0, r1 := m.WatchRegistrationCompleteFunc.nextHook()(v0, v1)
 	m.WatchRegistrationCompleteFunc.appendCall(IETHDKGWatchRegistrationCompleteFuncCall{v0, v1, r0, r1})
 	return r0, r1
@@ -26206,7 +26207,7 @@ func (m *MockIETHDKG) WatchRegistrationComplete(v0 *bind.WatchOpts, v1 chan<- *b
 // SetDefaultHook sets function that is called when the
 // WatchRegistrationComplete method of the parent MockIETHDKG instance is
 // invoked and the hook queue is empty.
-func (f *IETHDKGWatchRegistrationCompleteFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *bindings.ETHDKGRegistrationComplete) (event.Subscription, error)) {
+func (f *IETHDKGWatchRegistrationCompleteFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *ethereum.ETHDKGRegistrationComplete) (event.Subscription, error)) {
 	f.defaultHook = hook
 }
 
@@ -26215,7 +26216,7 @@ func (f *IETHDKGWatchRegistrationCompleteFunc) SetDefaultHook(hook func(*bind.Wa
 // invokes the hook at the front of the queue and discards it. After the
 // queue is empty, the default hook function is invoked for any future
 // action.
-func (f *IETHDKGWatchRegistrationCompleteFunc) PushHook(hook func(*bind.WatchOpts, chan<- *bindings.ETHDKGRegistrationComplete) (event.Subscription, error)) {
+func (f *IETHDKGWatchRegistrationCompleteFunc) PushHook(hook func(*bind.WatchOpts, chan<- *ethereum.ETHDKGRegistrationComplete) (event.Subscription, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -26224,19 +26225,19 @@ func (f *IETHDKGWatchRegistrationCompleteFunc) PushHook(hook func(*bind.WatchOpt
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
 func (f *IETHDKGWatchRegistrationCompleteFunc) SetDefaultReturn(r0 event.Subscription, r1 error) {
-	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *bindings.ETHDKGRegistrationComplete) (event.Subscription, error) {
+	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *ethereum.ETHDKGRegistrationComplete) (event.Subscription, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
 func (f *IETHDKGWatchRegistrationCompleteFunc) PushReturn(r0 event.Subscription, r1 error) {
-	f.PushHook(func(*bind.WatchOpts, chan<- *bindings.ETHDKGRegistrationComplete) (event.Subscription, error) {
+	f.PushHook(func(*bind.WatchOpts, chan<- *ethereum.ETHDKGRegistrationComplete) (event.Subscription, error) {
 		return r0, r1
 	})
 }
 
-func (f *IETHDKGWatchRegistrationCompleteFunc) nextHook() func(*bind.WatchOpts, chan<- *bindings.ETHDKGRegistrationComplete) (event.Subscription, error) {
+func (f *IETHDKGWatchRegistrationCompleteFunc) nextHook() func(*bind.WatchOpts, chan<- *ethereum.ETHDKGRegistrationComplete) (event.Subscription, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -26275,7 +26276,7 @@ type IETHDKGWatchRegistrationCompleteFuncCall struct {
 	Arg0 *bind.WatchOpts
 	// Arg1 is the value of the 2nd argument passed to this method
 	// invocation.
-	Arg1 chan<- *bindings.ETHDKGRegistrationComplete
+	Arg1 chan<- *ethereum.ETHDKGRegistrationComplete
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
 	Result0 event.Subscription
@@ -26300,15 +26301,15 @@ func (c IETHDKGWatchRegistrationCompleteFuncCall) Results() []interface{} {
 // WatchRegistrationOpened method of the parent MockIETHDKG instance is
 // invoked.
 type IETHDKGWatchRegistrationOpenedFunc struct {
-	defaultHook func(*bind.WatchOpts, chan<- *bindings.ETHDKGRegistrationOpened) (event.Subscription, error)
-	hooks       []func(*bind.WatchOpts, chan<- *bindings.ETHDKGRegistrationOpened) (event.Subscription, error)
+	defaultHook func(*bind.WatchOpts, chan<- *ethereum.ETHDKGRegistrationOpened) (event.Subscription, error)
+	hooks       []func(*bind.WatchOpts, chan<- *ethereum.ETHDKGRegistrationOpened) (event.Subscription, error)
 	history     []IETHDKGWatchRegistrationOpenedFuncCall
 	mutex       sync.Mutex
 }
 
 // WatchRegistrationOpened delegates to the next hook function in the queue
 // and stores the parameter and result values of this invocation.
-func (m *MockIETHDKG) WatchRegistrationOpened(v0 *bind.WatchOpts, v1 chan<- *bindings.ETHDKGRegistrationOpened) (event.Subscription, error) {
+func (m *MockIETHDKG) WatchRegistrationOpened(v0 *bind.WatchOpts, v1 chan<- *ethereum.ETHDKGRegistrationOpened) (event.Subscription, error) {
 	r0, r1 := m.WatchRegistrationOpenedFunc.nextHook()(v0, v1)
 	m.WatchRegistrationOpenedFunc.appendCall(IETHDKGWatchRegistrationOpenedFuncCall{v0, v1, r0, r1})
 	return r0, r1
@@ -26317,7 +26318,7 @@ func (m *MockIETHDKG) WatchRegistrationOpened(v0 *bind.WatchOpts, v1 chan<- *bin
 // SetDefaultHook sets function that is called when the
 // WatchRegistrationOpened method of the parent MockIETHDKG instance is
 // invoked and the hook queue is empty.
-func (f *IETHDKGWatchRegistrationOpenedFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *bindings.ETHDKGRegistrationOpened) (event.Subscription, error)) {
+func (f *IETHDKGWatchRegistrationOpenedFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *ethereum.ETHDKGRegistrationOpened) (event.Subscription, error)) {
 	f.defaultHook = hook
 }
 
@@ -26325,7 +26326,7 @@ func (f *IETHDKGWatchRegistrationOpenedFunc) SetDefaultHook(hook func(*bind.Watc
 // WatchRegistrationOpened method of the parent MockIETHDKG instance invokes
 // the hook at the front of the queue and discards it. After the queue is
 // empty, the default hook function is invoked for any future action.
-func (f *IETHDKGWatchRegistrationOpenedFunc) PushHook(hook func(*bind.WatchOpts, chan<- *bindings.ETHDKGRegistrationOpened) (event.Subscription, error)) {
+func (f *IETHDKGWatchRegistrationOpenedFunc) PushHook(hook func(*bind.WatchOpts, chan<- *ethereum.ETHDKGRegistrationOpened) (event.Subscription, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -26334,19 +26335,19 @@ func (f *IETHDKGWatchRegistrationOpenedFunc) PushHook(hook func(*bind.WatchOpts,
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
 func (f *IETHDKGWatchRegistrationOpenedFunc) SetDefaultReturn(r0 event.Subscription, r1 error) {
-	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *bindings.ETHDKGRegistrationOpened) (event.Subscription, error) {
+	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *ethereum.ETHDKGRegistrationOpened) (event.Subscription, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
 func (f *IETHDKGWatchRegistrationOpenedFunc) PushReturn(r0 event.Subscription, r1 error) {
-	f.PushHook(func(*bind.WatchOpts, chan<- *bindings.ETHDKGRegistrationOpened) (event.Subscription, error) {
+	f.PushHook(func(*bind.WatchOpts, chan<- *ethereum.ETHDKGRegistrationOpened) (event.Subscription, error) {
 		return r0, r1
 	})
 }
 
-func (f *IETHDKGWatchRegistrationOpenedFunc) nextHook() func(*bind.WatchOpts, chan<- *bindings.ETHDKGRegistrationOpened) (event.Subscription, error) {
+func (f *IETHDKGWatchRegistrationOpenedFunc) nextHook() func(*bind.WatchOpts, chan<- *ethereum.ETHDKGRegistrationOpened) (event.Subscription, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -26385,7 +26386,7 @@ type IETHDKGWatchRegistrationOpenedFuncCall struct {
 	Arg0 *bind.WatchOpts
 	// Arg1 is the value of the 2nd argument passed to this method
 	// invocation.
-	Arg1 chan<- *bindings.ETHDKGRegistrationOpened
+	Arg1 chan<- *ethereum.ETHDKGRegistrationOpened
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
 	Result0 event.Subscription
@@ -26410,15 +26411,15 @@ func (c IETHDKGWatchRegistrationOpenedFuncCall) Results() []interface{} {
 // WatchShareDistributionComplete method of the parent MockIETHDKG instance
 // is invoked.
 type IETHDKGWatchShareDistributionCompleteFunc struct {
-	defaultHook func(*bind.WatchOpts, chan<- *bindings.ETHDKGShareDistributionComplete) (event.Subscription, error)
-	hooks       []func(*bind.WatchOpts, chan<- *bindings.ETHDKGShareDistributionComplete) (event.Subscription, error)
+	defaultHook func(*bind.WatchOpts, chan<- *ethereum.ETHDKGShareDistributionComplete) (event.Subscription, error)
+	hooks       []func(*bind.WatchOpts, chan<- *ethereum.ETHDKGShareDistributionComplete) (event.Subscription, error)
 	history     []IETHDKGWatchShareDistributionCompleteFuncCall
 	mutex       sync.Mutex
 }
 
 // WatchShareDistributionComplete delegates to the next hook function in the
 // queue and stores the parameter and result values of this invocation.
-func (m *MockIETHDKG) WatchShareDistributionComplete(v0 *bind.WatchOpts, v1 chan<- *bindings.ETHDKGShareDistributionComplete) (event.Subscription, error) {
+func (m *MockIETHDKG) WatchShareDistributionComplete(v0 *bind.WatchOpts, v1 chan<- *ethereum.ETHDKGShareDistributionComplete) (event.Subscription, error) {
 	r0, r1 := m.WatchShareDistributionCompleteFunc.nextHook()(v0, v1)
 	m.WatchShareDistributionCompleteFunc.appendCall(IETHDKGWatchShareDistributionCompleteFuncCall{v0, v1, r0, r1})
 	return r0, r1
@@ -26427,7 +26428,7 @@ func (m *MockIETHDKG) WatchShareDistributionComplete(v0 *bind.WatchOpts, v1 chan
 // SetDefaultHook sets function that is called when the
 // WatchShareDistributionComplete method of the parent MockIETHDKG instance
 // is invoked and the hook queue is empty.
-func (f *IETHDKGWatchShareDistributionCompleteFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *bindings.ETHDKGShareDistributionComplete) (event.Subscription, error)) {
+func (f *IETHDKGWatchShareDistributionCompleteFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *ethereum.ETHDKGShareDistributionComplete) (event.Subscription, error)) {
 	f.defaultHook = hook
 }
 
@@ -26436,7 +26437,7 @@ func (f *IETHDKGWatchShareDistributionCompleteFunc) SetDefaultHook(hook func(*bi
 // invokes the hook at the front of the queue and discards it. After the
 // queue is empty, the default hook function is invoked for any future
 // action.
-func (f *IETHDKGWatchShareDistributionCompleteFunc) PushHook(hook func(*bind.WatchOpts, chan<- *bindings.ETHDKGShareDistributionComplete) (event.Subscription, error)) {
+func (f *IETHDKGWatchShareDistributionCompleteFunc) PushHook(hook func(*bind.WatchOpts, chan<- *ethereum.ETHDKGShareDistributionComplete) (event.Subscription, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -26445,19 +26446,19 @@ func (f *IETHDKGWatchShareDistributionCompleteFunc) PushHook(hook func(*bind.Wat
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
 func (f *IETHDKGWatchShareDistributionCompleteFunc) SetDefaultReturn(r0 event.Subscription, r1 error) {
-	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *bindings.ETHDKGShareDistributionComplete) (event.Subscription, error) {
+	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *ethereum.ETHDKGShareDistributionComplete) (event.Subscription, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
 func (f *IETHDKGWatchShareDistributionCompleteFunc) PushReturn(r0 event.Subscription, r1 error) {
-	f.PushHook(func(*bind.WatchOpts, chan<- *bindings.ETHDKGShareDistributionComplete) (event.Subscription, error) {
+	f.PushHook(func(*bind.WatchOpts, chan<- *ethereum.ETHDKGShareDistributionComplete) (event.Subscription, error) {
 		return r0, r1
 	})
 }
 
-func (f *IETHDKGWatchShareDistributionCompleteFunc) nextHook() func(*bind.WatchOpts, chan<- *bindings.ETHDKGShareDistributionComplete) (event.Subscription, error) {
+func (f *IETHDKGWatchShareDistributionCompleteFunc) nextHook() func(*bind.WatchOpts, chan<- *ethereum.ETHDKGShareDistributionComplete) (event.Subscription, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -26497,7 +26498,7 @@ type IETHDKGWatchShareDistributionCompleteFuncCall struct {
 	Arg0 *bind.WatchOpts
 	// Arg1 is the value of the 2nd argument passed to this method
 	// invocation.
-	Arg1 chan<- *bindings.ETHDKGShareDistributionComplete
+	Arg1 chan<- *ethereum.ETHDKGShareDistributionComplete
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
 	Result0 event.Subscription
@@ -26522,15 +26523,15 @@ func (c IETHDKGWatchShareDistributionCompleteFuncCall) Results() []interface{} {
 // WatchSharesDistributed method of the parent MockIETHDKG instance is
 // invoked.
 type IETHDKGWatchSharesDistributedFunc struct {
-	defaultHook func(*bind.WatchOpts, chan<- *bindings.ETHDKGSharesDistributed) (event.Subscription, error)
-	hooks       []func(*bind.WatchOpts, chan<- *bindings.ETHDKGSharesDistributed) (event.Subscription, error)
+	defaultHook func(*bind.WatchOpts, chan<- *ethereum.ETHDKGSharesDistributed) (event.Subscription, error)
+	hooks       []func(*bind.WatchOpts, chan<- *ethereum.ETHDKGSharesDistributed) (event.Subscription, error)
 	history     []IETHDKGWatchSharesDistributedFuncCall
 	mutex       sync.Mutex
 }
 
 // WatchSharesDistributed delegates to the next hook function in the queue
 // and stores the parameter and result values of this invocation.
-func (m *MockIETHDKG) WatchSharesDistributed(v0 *bind.WatchOpts, v1 chan<- *bindings.ETHDKGSharesDistributed) (event.Subscription, error) {
+func (m *MockIETHDKG) WatchSharesDistributed(v0 *bind.WatchOpts, v1 chan<- *ethereum.ETHDKGSharesDistributed) (event.Subscription, error) {
 	r0, r1 := m.WatchSharesDistributedFunc.nextHook()(v0, v1)
 	m.WatchSharesDistributedFunc.appendCall(IETHDKGWatchSharesDistributedFuncCall{v0, v1, r0, r1})
 	return r0, r1
@@ -26539,7 +26540,7 @@ func (m *MockIETHDKG) WatchSharesDistributed(v0 *bind.WatchOpts, v1 chan<- *bind
 // SetDefaultHook sets function that is called when the
 // WatchSharesDistributed method of the parent MockIETHDKG instance is
 // invoked and the hook queue is empty.
-func (f *IETHDKGWatchSharesDistributedFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *bindings.ETHDKGSharesDistributed) (event.Subscription, error)) {
+func (f *IETHDKGWatchSharesDistributedFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *ethereum.ETHDKGSharesDistributed) (event.Subscription, error)) {
 	f.defaultHook = hook
 }
 
@@ -26547,7 +26548,7 @@ func (f *IETHDKGWatchSharesDistributedFunc) SetDefaultHook(hook func(*bind.Watch
 // WatchSharesDistributed method of the parent MockIETHDKG instance invokes
 // the hook at the front of the queue and discards it. After the queue is
 // empty, the default hook function is invoked for any future action.
-func (f *IETHDKGWatchSharesDistributedFunc) PushHook(hook func(*bind.WatchOpts, chan<- *bindings.ETHDKGSharesDistributed) (event.Subscription, error)) {
+func (f *IETHDKGWatchSharesDistributedFunc) PushHook(hook func(*bind.WatchOpts, chan<- *ethereum.ETHDKGSharesDistributed) (event.Subscription, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -26556,19 +26557,19 @@ func (f *IETHDKGWatchSharesDistributedFunc) PushHook(hook func(*bind.WatchOpts, 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
 func (f *IETHDKGWatchSharesDistributedFunc) SetDefaultReturn(r0 event.Subscription, r1 error) {
-	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *bindings.ETHDKGSharesDistributed) (event.Subscription, error) {
+	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *ethereum.ETHDKGSharesDistributed) (event.Subscription, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
 func (f *IETHDKGWatchSharesDistributedFunc) PushReturn(r0 event.Subscription, r1 error) {
-	f.PushHook(func(*bind.WatchOpts, chan<- *bindings.ETHDKGSharesDistributed) (event.Subscription, error) {
+	f.PushHook(func(*bind.WatchOpts, chan<- *ethereum.ETHDKGSharesDistributed) (event.Subscription, error) {
 		return r0, r1
 	})
 }
 
-func (f *IETHDKGWatchSharesDistributedFunc) nextHook() func(*bind.WatchOpts, chan<- *bindings.ETHDKGSharesDistributed) (event.Subscription, error) {
+func (f *IETHDKGWatchSharesDistributedFunc) nextHook() func(*bind.WatchOpts, chan<- *ethereum.ETHDKGSharesDistributed) (event.Subscription, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -26607,7 +26608,7 @@ type IETHDKGWatchSharesDistributedFuncCall struct {
 	Arg0 *bind.WatchOpts
 	// Arg1 is the value of the 2nd argument passed to this method
 	// invocation.
-	Arg1 chan<- *bindings.ETHDKGSharesDistributed
+	Arg1 chan<- *ethereum.ETHDKGSharesDistributed
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
 	Result0 event.Subscription
@@ -26632,15 +26633,15 @@ func (c IETHDKGWatchSharesDistributedFuncCall) Results() []interface{} {
 // WatchValidatorMemberAdded method of the parent MockIETHDKG instance is
 // invoked.
 type IETHDKGWatchValidatorMemberAddedFunc struct {
-	defaultHook func(*bind.WatchOpts, chan<- *bindings.ETHDKGValidatorMemberAdded) (event.Subscription, error)
-	hooks       []func(*bind.WatchOpts, chan<- *bindings.ETHDKGValidatorMemberAdded) (event.Subscription, error)
+	defaultHook func(*bind.WatchOpts, chan<- *ethereum.ETHDKGValidatorMemberAdded) (event.Subscription, error)
+	hooks       []func(*bind.WatchOpts, chan<- *ethereum.ETHDKGValidatorMemberAdded) (event.Subscription, error)
 	history     []IETHDKGWatchValidatorMemberAddedFuncCall
 	mutex       sync.Mutex
 }
 
 // WatchValidatorMemberAdded delegates to the next hook function in the
 // queue and stores the parameter and result values of this invocation.
-func (m *MockIETHDKG) WatchValidatorMemberAdded(v0 *bind.WatchOpts, v1 chan<- *bindings.ETHDKGValidatorMemberAdded) (event.Subscription, error) {
+func (m *MockIETHDKG) WatchValidatorMemberAdded(v0 *bind.WatchOpts, v1 chan<- *ethereum.ETHDKGValidatorMemberAdded) (event.Subscription, error) {
 	r0, r1 := m.WatchValidatorMemberAddedFunc.nextHook()(v0, v1)
 	m.WatchValidatorMemberAddedFunc.appendCall(IETHDKGWatchValidatorMemberAddedFuncCall{v0, v1, r0, r1})
 	return r0, r1
@@ -26649,7 +26650,7 @@ func (m *MockIETHDKG) WatchValidatorMemberAdded(v0 *bind.WatchOpts, v1 chan<- *b
 // SetDefaultHook sets function that is called when the
 // WatchValidatorMemberAdded method of the parent MockIETHDKG instance is
 // invoked and the hook queue is empty.
-func (f *IETHDKGWatchValidatorMemberAddedFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *bindings.ETHDKGValidatorMemberAdded) (event.Subscription, error)) {
+func (f *IETHDKGWatchValidatorMemberAddedFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *ethereum.ETHDKGValidatorMemberAdded) (event.Subscription, error)) {
 	f.defaultHook = hook
 }
 
@@ -26658,7 +26659,7 @@ func (f *IETHDKGWatchValidatorMemberAddedFunc) SetDefaultHook(hook func(*bind.Wa
 // invokes the hook at the front of the queue and discards it. After the
 // queue is empty, the default hook function is invoked for any future
 // action.
-func (f *IETHDKGWatchValidatorMemberAddedFunc) PushHook(hook func(*bind.WatchOpts, chan<- *bindings.ETHDKGValidatorMemberAdded) (event.Subscription, error)) {
+func (f *IETHDKGWatchValidatorMemberAddedFunc) PushHook(hook func(*bind.WatchOpts, chan<- *ethereum.ETHDKGValidatorMemberAdded) (event.Subscription, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -26667,19 +26668,19 @@ func (f *IETHDKGWatchValidatorMemberAddedFunc) PushHook(hook func(*bind.WatchOpt
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
 func (f *IETHDKGWatchValidatorMemberAddedFunc) SetDefaultReturn(r0 event.Subscription, r1 error) {
-	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *bindings.ETHDKGValidatorMemberAdded) (event.Subscription, error) {
+	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *ethereum.ETHDKGValidatorMemberAdded) (event.Subscription, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
 func (f *IETHDKGWatchValidatorMemberAddedFunc) PushReturn(r0 event.Subscription, r1 error) {
-	f.PushHook(func(*bind.WatchOpts, chan<- *bindings.ETHDKGValidatorMemberAdded) (event.Subscription, error) {
+	f.PushHook(func(*bind.WatchOpts, chan<- *ethereum.ETHDKGValidatorMemberAdded) (event.Subscription, error) {
 		return r0, r1
 	})
 }
 
-func (f *IETHDKGWatchValidatorMemberAddedFunc) nextHook() func(*bind.WatchOpts, chan<- *bindings.ETHDKGValidatorMemberAdded) (event.Subscription, error) {
+func (f *IETHDKGWatchValidatorMemberAddedFunc) nextHook() func(*bind.WatchOpts, chan<- *ethereum.ETHDKGValidatorMemberAdded) (event.Subscription, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -26718,7 +26719,7 @@ type IETHDKGWatchValidatorMemberAddedFuncCall struct {
 	Arg0 *bind.WatchOpts
 	// Arg1 is the value of the 2nd argument passed to this method
 	// invocation.
-	Arg1 chan<- *bindings.ETHDKGValidatorMemberAdded
+	Arg1 chan<- *ethereum.ETHDKGValidatorMemberAdded
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
 	Result0 event.Subscription
@@ -26743,15 +26744,15 @@ func (c IETHDKGWatchValidatorMemberAddedFuncCall) Results() []interface{} {
 // WatchValidatorSetCompleted method of the parent MockIETHDKG instance is
 // invoked.
 type IETHDKGWatchValidatorSetCompletedFunc struct {
-	defaultHook func(*bind.WatchOpts, chan<- *bindings.ETHDKGValidatorSetCompleted) (event.Subscription, error)
-	hooks       []func(*bind.WatchOpts, chan<- *bindings.ETHDKGValidatorSetCompleted) (event.Subscription, error)
+	defaultHook func(*bind.WatchOpts, chan<- *ethereum.ETHDKGValidatorSetCompleted) (event.Subscription, error)
+	hooks       []func(*bind.WatchOpts, chan<- *ethereum.ETHDKGValidatorSetCompleted) (event.Subscription, error)
 	history     []IETHDKGWatchValidatorSetCompletedFuncCall
 	mutex       sync.Mutex
 }
 
 // WatchValidatorSetCompleted delegates to the next hook function in the
 // queue and stores the parameter and result values of this invocation.
-func (m *MockIETHDKG) WatchValidatorSetCompleted(v0 *bind.WatchOpts, v1 chan<- *bindings.ETHDKGValidatorSetCompleted) (event.Subscription, error) {
+func (m *MockIETHDKG) WatchValidatorSetCompleted(v0 *bind.WatchOpts, v1 chan<- *ethereum.ETHDKGValidatorSetCompleted) (event.Subscription, error) {
 	r0, r1 := m.WatchValidatorSetCompletedFunc.nextHook()(v0, v1)
 	m.WatchValidatorSetCompletedFunc.appendCall(IETHDKGWatchValidatorSetCompletedFuncCall{v0, v1, r0, r1})
 	return r0, r1
@@ -26760,7 +26761,7 @@ func (m *MockIETHDKG) WatchValidatorSetCompleted(v0 *bind.WatchOpts, v1 chan<- *
 // SetDefaultHook sets function that is called when the
 // WatchValidatorSetCompleted method of the parent MockIETHDKG instance is
 // invoked and the hook queue is empty.
-func (f *IETHDKGWatchValidatorSetCompletedFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *bindings.ETHDKGValidatorSetCompleted) (event.Subscription, error)) {
+func (f *IETHDKGWatchValidatorSetCompletedFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *ethereum.ETHDKGValidatorSetCompleted) (event.Subscription, error)) {
 	f.defaultHook = hook
 }
 
@@ -26769,7 +26770,7 @@ func (f *IETHDKGWatchValidatorSetCompletedFunc) SetDefaultHook(hook func(*bind.W
 // invokes the hook at the front of the queue and discards it. After the
 // queue is empty, the default hook function is invoked for any future
 // action.
-func (f *IETHDKGWatchValidatorSetCompletedFunc) PushHook(hook func(*bind.WatchOpts, chan<- *bindings.ETHDKGValidatorSetCompleted) (event.Subscription, error)) {
+func (f *IETHDKGWatchValidatorSetCompletedFunc) PushHook(hook func(*bind.WatchOpts, chan<- *ethereum.ETHDKGValidatorSetCompleted) (event.Subscription, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -26778,19 +26779,19 @@ func (f *IETHDKGWatchValidatorSetCompletedFunc) PushHook(hook func(*bind.WatchOp
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
 func (f *IETHDKGWatchValidatorSetCompletedFunc) SetDefaultReturn(r0 event.Subscription, r1 error) {
-	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *bindings.ETHDKGValidatorSetCompleted) (event.Subscription, error) {
+	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *ethereum.ETHDKGValidatorSetCompleted) (event.Subscription, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
 func (f *IETHDKGWatchValidatorSetCompletedFunc) PushReturn(r0 event.Subscription, r1 error) {
-	f.PushHook(func(*bind.WatchOpts, chan<- *bindings.ETHDKGValidatorSetCompleted) (event.Subscription, error) {
+	f.PushHook(func(*bind.WatchOpts, chan<- *ethereum.ETHDKGValidatorSetCompleted) (event.Subscription, error) {
 		return r0, r1
 	})
 }
 
-func (f *IETHDKGWatchValidatorSetCompletedFunc) nextHook() func(*bind.WatchOpts, chan<- *bindings.ETHDKGValidatorSetCompleted) (event.Subscription, error) {
+func (f *IETHDKGWatchValidatorSetCompletedFunc) nextHook() func(*bind.WatchOpts, chan<- *ethereum.ETHDKGValidatorSetCompleted) (event.Subscription, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -26829,7 +26830,7 @@ type IETHDKGWatchValidatorSetCompletedFuncCall struct {
 	Arg0 *bind.WatchOpts
 	// Arg1 is the value of the 2nd argument passed to this method
 	// invocation.
-	Arg1 chan<- *bindings.ETHDKGValidatorSetCompleted
+	Arg1 chan<- *ethereum.ETHDKGValidatorSetCompleted
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
 	Result0 event.Subscription
@@ -26851,8 +26852,8 @@ func (c IETHDKGWatchValidatorSetCompletedFuncCall) Results() []interface{} {
 }
 
 // MockIGovernance is a mock implementation of the IGovernance interface
-// (from the package github.com/alicenet/alicenet/bridge/bindings) used for
-// unit testing.
+// (from the package github.com/alicenet/alicenet/bridge/bindings/ethereum)
+// used for unit testing.
 type MockIGovernance struct {
 	// FilterSnapshotTakenFunc is an instance of a mock function object
 	// controlling the behavior of the method FilterSnapshotTaken.
@@ -26882,22 +26883,22 @@ type MockIGovernance struct {
 func NewMockIGovernance() *MockIGovernance {
 	return &MockIGovernance{
 		FilterSnapshotTakenFunc: &IGovernanceFilterSnapshotTakenFunc{
-			defaultHook: func(*bind.FilterOpts, []*big.Int, []common.Address) (r0 *bindings.GovernanceSnapshotTakenIterator, r1 error) {
+			defaultHook: func(*bind.FilterOpts, []*big.Int, []common.Address) (r0 *ethereum.GovernanceSnapshotTakenIterator, r1 error) {
 				return
 			},
 		},
 		FilterValueUpdatedFunc: &IGovernanceFilterValueUpdatedFunc{
-			defaultHook: func(*bind.FilterOpts, []*big.Int, []*big.Int, [][32]byte) (r0 *bindings.GovernanceValueUpdatedIterator, r1 error) {
+			defaultHook: func(*bind.FilterOpts, []*big.Int, []*big.Int, [][32]byte) (r0 *ethereum.GovernanceValueUpdatedIterator, r1 error) {
 				return
 			},
 		},
 		ParseSnapshotTakenFunc: &IGovernanceParseSnapshotTakenFunc{
-			defaultHook: func(types.Log) (r0 *bindings.GovernanceSnapshotTaken, r1 error) {
+			defaultHook: func(types.Log) (r0 *ethereum.GovernanceSnapshotTaken, r1 error) {
 				return
 			},
 		},
 		ParseValueUpdatedFunc: &IGovernanceParseValueUpdatedFunc{
-			defaultHook: func(types.Log) (r0 *bindings.GovernanceValueUpdated, r1 error) {
+			defaultHook: func(types.Log) (r0 *ethereum.GovernanceValueUpdated, r1 error) {
 				return
 			},
 		},
@@ -26907,12 +26908,12 @@ func NewMockIGovernance() *MockIGovernance {
 			},
 		},
 		WatchSnapshotTakenFunc: &IGovernanceWatchSnapshotTakenFunc{
-			defaultHook: func(*bind.WatchOpts, chan<- *bindings.GovernanceSnapshotTaken, []*big.Int, []common.Address) (r0 event.Subscription, r1 error) {
+			defaultHook: func(*bind.WatchOpts, chan<- *ethereum.GovernanceSnapshotTaken, []*big.Int, []common.Address) (r0 event.Subscription, r1 error) {
 				return
 			},
 		},
 		WatchValueUpdatedFunc: &IGovernanceWatchValueUpdatedFunc{
-			defaultHook: func(*bind.WatchOpts, chan<- *bindings.GovernanceValueUpdated, []*big.Int, []*big.Int, [][32]byte) (r0 event.Subscription, r1 error) {
+			defaultHook: func(*bind.WatchOpts, chan<- *ethereum.GovernanceValueUpdated, []*big.Int, []*big.Int, [][32]byte) (r0 event.Subscription, r1 error) {
 				return
 			},
 		},
@@ -26924,22 +26925,22 @@ func NewMockIGovernance() *MockIGovernance {
 func NewStrictMockIGovernance() *MockIGovernance {
 	return &MockIGovernance{
 		FilterSnapshotTakenFunc: &IGovernanceFilterSnapshotTakenFunc{
-			defaultHook: func(*bind.FilterOpts, []*big.Int, []common.Address) (*bindings.GovernanceSnapshotTakenIterator, error) {
+			defaultHook: func(*bind.FilterOpts, []*big.Int, []common.Address) (*ethereum.GovernanceSnapshotTakenIterator, error) {
 				panic("unexpected invocation of MockIGovernance.FilterSnapshotTaken")
 			},
 		},
 		FilterValueUpdatedFunc: &IGovernanceFilterValueUpdatedFunc{
-			defaultHook: func(*bind.FilterOpts, []*big.Int, []*big.Int, [][32]byte) (*bindings.GovernanceValueUpdatedIterator, error) {
+			defaultHook: func(*bind.FilterOpts, []*big.Int, []*big.Int, [][32]byte) (*ethereum.GovernanceValueUpdatedIterator, error) {
 				panic("unexpected invocation of MockIGovernance.FilterValueUpdated")
 			},
 		},
 		ParseSnapshotTakenFunc: &IGovernanceParseSnapshotTakenFunc{
-			defaultHook: func(types.Log) (*bindings.GovernanceSnapshotTaken, error) {
+			defaultHook: func(types.Log) (*ethereum.GovernanceSnapshotTaken, error) {
 				panic("unexpected invocation of MockIGovernance.ParseSnapshotTaken")
 			},
 		},
 		ParseValueUpdatedFunc: &IGovernanceParseValueUpdatedFunc{
-			defaultHook: func(types.Log) (*bindings.GovernanceValueUpdated, error) {
+			defaultHook: func(types.Log) (*ethereum.GovernanceValueUpdated, error) {
 				panic("unexpected invocation of MockIGovernance.ParseValueUpdated")
 			},
 		},
@@ -26949,12 +26950,12 @@ func NewStrictMockIGovernance() *MockIGovernance {
 			},
 		},
 		WatchSnapshotTakenFunc: &IGovernanceWatchSnapshotTakenFunc{
-			defaultHook: func(*bind.WatchOpts, chan<- *bindings.GovernanceSnapshotTaken, []*big.Int, []common.Address) (event.Subscription, error) {
+			defaultHook: func(*bind.WatchOpts, chan<- *ethereum.GovernanceSnapshotTaken, []*big.Int, []common.Address) (event.Subscription, error) {
 				panic("unexpected invocation of MockIGovernance.WatchSnapshotTaken")
 			},
 		},
 		WatchValueUpdatedFunc: &IGovernanceWatchValueUpdatedFunc{
-			defaultHook: func(*bind.WatchOpts, chan<- *bindings.GovernanceValueUpdated, []*big.Int, []*big.Int, [][32]byte) (event.Subscription, error) {
+			defaultHook: func(*bind.WatchOpts, chan<- *ethereum.GovernanceValueUpdated, []*big.Int, []*big.Int, [][32]byte) (event.Subscription, error) {
 				panic("unexpected invocation of MockIGovernance.WatchValueUpdated")
 			},
 		},
@@ -26964,7 +26965,7 @@ func NewStrictMockIGovernance() *MockIGovernance {
 // NewMockIGovernanceFrom creates a new mock of the MockIGovernance
 // interface. All methods delegate to the given implementation, unless
 // overwritten.
-func NewMockIGovernanceFrom(i bindings.IGovernance) *MockIGovernance {
+func NewMockIGovernanceFrom(i ethereum.IGovernance) *MockIGovernance {
 	return &MockIGovernance{
 		FilterSnapshotTakenFunc: &IGovernanceFilterSnapshotTakenFunc{
 			defaultHook: i.FilterSnapshotTaken,
@@ -26994,15 +26995,15 @@ func NewMockIGovernanceFrom(i bindings.IGovernance) *MockIGovernance {
 // FilterSnapshotTaken method of the parent MockIGovernance instance is
 // invoked.
 type IGovernanceFilterSnapshotTakenFunc struct {
-	defaultHook func(*bind.FilterOpts, []*big.Int, []common.Address) (*bindings.GovernanceSnapshotTakenIterator, error)
-	hooks       []func(*bind.FilterOpts, []*big.Int, []common.Address) (*bindings.GovernanceSnapshotTakenIterator, error)
+	defaultHook func(*bind.FilterOpts, []*big.Int, []common.Address) (*ethereum.GovernanceSnapshotTakenIterator, error)
+	hooks       []func(*bind.FilterOpts, []*big.Int, []common.Address) (*ethereum.GovernanceSnapshotTakenIterator, error)
 	history     []IGovernanceFilterSnapshotTakenFuncCall
 	mutex       sync.Mutex
 }
 
 // FilterSnapshotTaken delegates to the next hook function in the queue and
 // stores the parameter and result values of this invocation.
-func (m *MockIGovernance) FilterSnapshotTaken(v0 *bind.FilterOpts, v1 []*big.Int, v2 []common.Address) (*bindings.GovernanceSnapshotTakenIterator, error) {
+func (m *MockIGovernance) FilterSnapshotTaken(v0 *bind.FilterOpts, v1 []*big.Int, v2 []common.Address) (*ethereum.GovernanceSnapshotTakenIterator, error) {
 	r0, r1 := m.FilterSnapshotTakenFunc.nextHook()(v0, v1, v2)
 	m.FilterSnapshotTakenFunc.appendCall(IGovernanceFilterSnapshotTakenFuncCall{v0, v1, v2, r0, r1})
 	return r0, r1
@@ -27011,7 +27012,7 @@ func (m *MockIGovernance) FilterSnapshotTaken(v0 *bind.FilterOpts, v1 []*big.Int
 // SetDefaultHook sets function that is called when the FilterSnapshotTaken
 // method of the parent MockIGovernance instance is invoked and the hook
 // queue is empty.
-func (f *IGovernanceFilterSnapshotTakenFunc) SetDefaultHook(hook func(*bind.FilterOpts, []*big.Int, []common.Address) (*bindings.GovernanceSnapshotTakenIterator, error)) {
+func (f *IGovernanceFilterSnapshotTakenFunc) SetDefaultHook(hook func(*bind.FilterOpts, []*big.Int, []common.Address) (*ethereum.GovernanceSnapshotTakenIterator, error)) {
 	f.defaultHook = hook
 }
 
@@ -27019,7 +27020,7 @@ func (f *IGovernanceFilterSnapshotTakenFunc) SetDefaultHook(hook func(*bind.Filt
 // FilterSnapshotTaken method of the parent MockIGovernance instance invokes
 // the hook at the front of the queue and discards it. After the queue is
 // empty, the default hook function is invoked for any future action.
-func (f *IGovernanceFilterSnapshotTakenFunc) PushHook(hook func(*bind.FilterOpts, []*big.Int, []common.Address) (*bindings.GovernanceSnapshotTakenIterator, error)) {
+func (f *IGovernanceFilterSnapshotTakenFunc) PushHook(hook func(*bind.FilterOpts, []*big.Int, []common.Address) (*ethereum.GovernanceSnapshotTakenIterator, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -27027,20 +27028,20 @@ func (f *IGovernanceFilterSnapshotTakenFunc) PushHook(hook func(*bind.FilterOpts
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IGovernanceFilterSnapshotTakenFunc) SetDefaultReturn(r0 *bindings.GovernanceSnapshotTakenIterator, r1 error) {
-	f.SetDefaultHook(func(*bind.FilterOpts, []*big.Int, []common.Address) (*bindings.GovernanceSnapshotTakenIterator, error) {
+func (f *IGovernanceFilterSnapshotTakenFunc) SetDefaultReturn(r0 *ethereum.GovernanceSnapshotTakenIterator, r1 error) {
+	f.SetDefaultHook(func(*bind.FilterOpts, []*big.Int, []common.Address) (*ethereum.GovernanceSnapshotTakenIterator, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IGovernanceFilterSnapshotTakenFunc) PushReturn(r0 *bindings.GovernanceSnapshotTakenIterator, r1 error) {
-	f.PushHook(func(*bind.FilterOpts, []*big.Int, []common.Address) (*bindings.GovernanceSnapshotTakenIterator, error) {
+func (f *IGovernanceFilterSnapshotTakenFunc) PushReturn(r0 *ethereum.GovernanceSnapshotTakenIterator, r1 error) {
+	f.PushHook(func(*bind.FilterOpts, []*big.Int, []common.Address) (*ethereum.GovernanceSnapshotTakenIterator, error) {
 		return r0, r1
 	})
 }
 
-func (f *IGovernanceFilterSnapshotTakenFunc) nextHook() func(*bind.FilterOpts, []*big.Int, []common.Address) (*bindings.GovernanceSnapshotTakenIterator, error) {
+func (f *IGovernanceFilterSnapshotTakenFunc) nextHook() func(*bind.FilterOpts, []*big.Int, []common.Address) (*ethereum.GovernanceSnapshotTakenIterator, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -27085,7 +27086,7 @@ type IGovernanceFilterSnapshotTakenFuncCall struct {
 	Arg2 []common.Address
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 *bindings.GovernanceSnapshotTakenIterator
+	Result0 *ethereum.GovernanceSnapshotTakenIterator
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -27107,15 +27108,15 @@ func (c IGovernanceFilterSnapshotTakenFuncCall) Results() []interface{} {
 // FilterValueUpdated method of the parent MockIGovernance instance is
 // invoked.
 type IGovernanceFilterValueUpdatedFunc struct {
-	defaultHook func(*bind.FilterOpts, []*big.Int, []*big.Int, [][32]byte) (*bindings.GovernanceValueUpdatedIterator, error)
-	hooks       []func(*bind.FilterOpts, []*big.Int, []*big.Int, [][32]byte) (*bindings.GovernanceValueUpdatedIterator, error)
+	defaultHook func(*bind.FilterOpts, []*big.Int, []*big.Int, [][32]byte) (*ethereum.GovernanceValueUpdatedIterator, error)
+	hooks       []func(*bind.FilterOpts, []*big.Int, []*big.Int, [][32]byte) (*ethereum.GovernanceValueUpdatedIterator, error)
 	history     []IGovernanceFilterValueUpdatedFuncCall
 	mutex       sync.Mutex
 }
 
 // FilterValueUpdated delegates to the next hook function in the queue and
 // stores the parameter and result values of this invocation.
-func (m *MockIGovernance) FilterValueUpdated(v0 *bind.FilterOpts, v1 []*big.Int, v2 []*big.Int, v3 [][32]byte) (*bindings.GovernanceValueUpdatedIterator, error) {
+func (m *MockIGovernance) FilterValueUpdated(v0 *bind.FilterOpts, v1 []*big.Int, v2 []*big.Int, v3 [][32]byte) (*ethereum.GovernanceValueUpdatedIterator, error) {
 	r0, r1 := m.FilterValueUpdatedFunc.nextHook()(v0, v1, v2, v3)
 	m.FilterValueUpdatedFunc.appendCall(IGovernanceFilterValueUpdatedFuncCall{v0, v1, v2, v3, r0, r1})
 	return r0, r1
@@ -27124,7 +27125,7 @@ func (m *MockIGovernance) FilterValueUpdated(v0 *bind.FilterOpts, v1 []*big.Int,
 // SetDefaultHook sets function that is called when the FilterValueUpdated
 // method of the parent MockIGovernance instance is invoked and the hook
 // queue is empty.
-func (f *IGovernanceFilterValueUpdatedFunc) SetDefaultHook(hook func(*bind.FilterOpts, []*big.Int, []*big.Int, [][32]byte) (*bindings.GovernanceValueUpdatedIterator, error)) {
+func (f *IGovernanceFilterValueUpdatedFunc) SetDefaultHook(hook func(*bind.FilterOpts, []*big.Int, []*big.Int, [][32]byte) (*ethereum.GovernanceValueUpdatedIterator, error)) {
 	f.defaultHook = hook
 }
 
@@ -27132,7 +27133,7 @@ func (f *IGovernanceFilterValueUpdatedFunc) SetDefaultHook(hook func(*bind.Filte
 // FilterValueUpdated method of the parent MockIGovernance instance invokes
 // the hook at the front of the queue and discards it. After the queue is
 // empty, the default hook function is invoked for any future action.
-func (f *IGovernanceFilterValueUpdatedFunc) PushHook(hook func(*bind.FilterOpts, []*big.Int, []*big.Int, [][32]byte) (*bindings.GovernanceValueUpdatedIterator, error)) {
+func (f *IGovernanceFilterValueUpdatedFunc) PushHook(hook func(*bind.FilterOpts, []*big.Int, []*big.Int, [][32]byte) (*ethereum.GovernanceValueUpdatedIterator, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -27140,20 +27141,20 @@ func (f *IGovernanceFilterValueUpdatedFunc) PushHook(hook func(*bind.FilterOpts,
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IGovernanceFilterValueUpdatedFunc) SetDefaultReturn(r0 *bindings.GovernanceValueUpdatedIterator, r1 error) {
-	f.SetDefaultHook(func(*bind.FilterOpts, []*big.Int, []*big.Int, [][32]byte) (*bindings.GovernanceValueUpdatedIterator, error) {
+func (f *IGovernanceFilterValueUpdatedFunc) SetDefaultReturn(r0 *ethereum.GovernanceValueUpdatedIterator, r1 error) {
+	f.SetDefaultHook(func(*bind.FilterOpts, []*big.Int, []*big.Int, [][32]byte) (*ethereum.GovernanceValueUpdatedIterator, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IGovernanceFilterValueUpdatedFunc) PushReturn(r0 *bindings.GovernanceValueUpdatedIterator, r1 error) {
-	f.PushHook(func(*bind.FilterOpts, []*big.Int, []*big.Int, [][32]byte) (*bindings.GovernanceValueUpdatedIterator, error) {
+func (f *IGovernanceFilterValueUpdatedFunc) PushReturn(r0 *ethereum.GovernanceValueUpdatedIterator, r1 error) {
+	f.PushHook(func(*bind.FilterOpts, []*big.Int, []*big.Int, [][32]byte) (*ethereum.GovernanceValueUpdatedIterator, error) {
 		return r0, r1
 	})
 }
 
-func (f *IGovernanceFilterValueUpdatedFunc) nextHook() func(*bind.FilterOpts, []*big.Int, []*big.Int, [][32]byte) (*bindings.GovernanceValueUpdatedIterator, error) {
+func (f *IGovernanceFilterValueUpdatedFunc) nextHook() func(*bind.FilterOpts, []*big.Int, []*big.Int, [][32]byte) (*ethereum.GovernanceValueUpdatedIterator, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -27201,7 +27202,7 @@ type IGovernanceFilterValueUpdatedFuncCall struct {
 	Arg3 [][32]byte
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 *bindings.GovernanceValueUpdatedIterator
+	Result0 *ethereum.GovernanceValueUpdatedIterator
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -27223,15 +27224,15 @@ func (c IGovernanceFilterValueUpdatedFuncCall) Results() []interface{} {
 // ParseSnapshotTaken method of the parent MockIGovernance instance is
 // invoked.
 type IGovernanceParseSnapshotTakenFunc struct {
-	defaultHook func(types.Log) (*bindings.GovernanceSnapshotTaken, error)
-	hooks       []func(types.Log) (*bindings.GovernanceSnapshotTaken, error)
+	defaultHook func(types.Log) (*ethereum.GovernanceSnapshotTaken, error)
+	hooks       []func(types.Log) (*ethereum.GovernanceSnapshotTaken, error)
 	history     []IGovernanceParseSnapshotTakenFuncCall
 	mutex       sync.Mutex
 }
 
 // ParseSnapshotTaken delegates to the next hook function in the queue and
 // stores the parameter and result values of this invocation.
-func (m *MockIGovernance) ParseSnapshotTaken(v0 types.Log) (*bindings.GovernanceSnapshotTaken, error) {
+func (m *MockIGovernance) ParseSnapshotTaken(v0 types.Log) (*ethereum.GovernanceSnapshotTaken, error) {
 	r0, r1 := m.ParseSnapshotTakenFunc.nextHook()(v0)
 	m.ParseSnapshotTakenFunc.appendCall(IGovernanceParseSnapshotTakenFuncCall{v0, r0, r1})
 	return r0, r1
@@ -27240,7 +27241,7 @@ func (m *MockIGovernance) ParseSnapshotTaken(v0 types.Log) (*bindings.Governance
 // SetDefaultHook sets function that is called when the ParseSnapshotTaken
 // method of the parent MockIGovernance instance is invoked and the hook
 // queue is empty.
-func (f *IGovernanceParseSnapshotTakenFunc) SetDefaultHook(hook func(types.Log) (*bindings.GovernanceSnapshotTaken, error)) {
+func (f *IGovernanceParseSnapshotTakenFunc) SetDefaultHook(hook func(types.Log) (*ethereum.GovernanceSnapshotTaken, error)) {
 	f.defaultHook = hook
 }
 
@@ -27248,7 +27249,7 @@ func (f *IGovernanceParseSnapshotTakenFunc) SetDefaultHook(hook func(types.Log) 
 // ParseSnapshotTaken method of the parent MockIGovernance instance invokes
 // the hook at the front of the queue and discards it. After the queue is
 // empty, the default hook function is invoked for any future action.
-func (f *IGovernanceParseSnapshotTakenFunc) PushHook(hook func(types.Log) (*bindings.GovernanceSnapshotTaken, error)) {
+func (f *IGovernanceParseSnapshotTakenFunc) PushHook(hook func(types.Log) (*ethereum.GovernanceSnapshotTaken, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -27256,20 +27257,20 @@ func (f *IGovernanceParseSnapshotTakenFunc) PushHook(hook func(types.Log) (*bind
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IGovernanceParseSnapshotTakenFunc) SetDefaultReturn(r0 *bindings.GovernanceSnapshotTaken, r1 error) {
-	f.SetDefaultHook(func(types.Log) (*bindings.GovernanceSnapshotTaken, error) {
+func (f *IGovernanceParseSnapshotTakenFunc) SetDefaultReturn(r0 *ethereum.GovernanceSnapshotTaken, r1 error) {
+	f.SetDefaultHook(func(types.Log) (*ethereum.GovernanceSnapshotTaken, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IGovernanceParseSnapshotTakenFunc) PushReturn(r0 *bindings.GovernanceSnapshotTaken, r1 error) {
-	f.PushHook(func(types.Log) (*bindings.GovernanceSnapshotTaken, error) {
+func (f *IGovernanceParseSnapshotTakenFunc) PushReturn(r0 *ethereum.GovernanceSnapshotTaken, r1 error) {
+	f.PushHook(func(types.Log) (*ethereum.GovernanceSnapshotTaken, error) {
 		return r0, r1
 	})
 }
 
-func (f *IGovernanceParseSnapshotTakenFunc) nextHook() func(types.Log) (*bindings.GovernanceSnapshotTaken, error) {
+func (f *IGovernanceParseSnapshotTakenFunc) nextHook() func(types.Log) (*ethereum.GovernanceSnapshotTaken, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -27308,7 +27309,7 @@ type IGovernanceParseSnapshotTakenFuncCall struct {
 	Arg0 types.Log
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 *bindings.GovernanceSnapshotTaken
+	Result0 *ethereum.GovernanceSnapshotTaken
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -27330,15 +27331,15 @@ func (c IGovernanceParseSnapshotTakenFuncCall) Results() []interface{} {
 // ParseValueUpdated method of the parent MockIGovernance instance is
 // invoked.
 type IGovernanceParseValueUpdatedFunc struct {
-	defaultHook func(types.Log) (*bindings.GovernanceValueUpdated, error)
-	hooks       []func(types.Log) (*bindings.GovernanceValueUpdated, error)
+	defaultHook func(types.Log) (*ethereum.GovernanceValueUpdated, error)
+	hooks       []func(types.Log) (*ethereum.GovernanceValueUpdated, error)
 	history     []IGovernanceParseValueUpdatedFuncCall
 	mutex       sync.Mutex
 }
 
 // ParseValueUpdated delegates to the next hook function in the queue and
 // stores the parameter and result values of this invocation.
-func (m *MockIGovernance) ParseValueUpdated(v0 types.Log) (*bindings.GovernanceValueUpdated, error) {
+func (m *MockIGovernance) ParseValueUpdated(v0 types.Log) (*ethereum.GovernanceValueUpdated, error) {
 	r0, r1 := m.ParseValueUpdatedFunc.nextHook()(v0)
 	m.ParseValueUpdatedFunc.appendCall(IGovernanceParseValueUpdatedFuncCall{v0, r0, r1})
 	return r0, r1
@@ -27347,7 +27348,7 @@ func (m *MockIGovernance) ParseValueUpdated(v0 types.Log) (*bindings.GovernanceV
 // SetDefaultHook sets function that is called when the ParseValueUpdated
 // method of the parent MockIGovernance instance is invoked and the hook
 // queue is empty.
-func (f *IGovernanceParseValueUpdatedFunc) SetDefaultHook(hook func(types.Log) (*bindings.GovernanceValueUpdated, error)) {
+func (f *IGovernanceParseValueUpdatedFunc) SetDefaultHook(hook func(types.Log) (*ethereum.GovernanceValueUpdated, error)) {
 	f.defaultHook = hook
 }
 
@@ -27355,7 +27356,7 @@ func (f *IGovernanceParseValueUpdatedFunc) SetDefaultHook(hook func(types.Log) (
 // ParseValueUpdated method of the parent MockIGovernance instance invokes
 // the hook at the front of the queue and discards it. After the queue is
 // empty, the default hook function is invoked for any future action.
-func (f *IGovernanceParseValueUpdatedFunc) PushHook(hook func(types.Log) (*bindings.GovernanceValueUpdated, error)) {
+func (f *IGovernanceParseValueUpdatedFunc) PushHook(hook func(types.Log) (*ethereum.GovernanceValueUpdated, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -27363,20 +27364,20 @@ func (f *IGovernanceParseValueUpdatedFunc) PushHook(hook func(types.Log) (*bindi
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IGovernanceParseValueUpdatedFunc) SetDefaultReturn(r0 *bindings.GovernanceValueUpdated, r1 error) {
-	f.SetDefaultHook(func(types.Log) (*bindings.GovernanceValueUpdated, error) {
+func (f *IGovernanceParseValueUpdatedFunc) SetDefaultReturn(r0 *ethereum.GovernanceValueUpdated, r1 error) {
+	f.SetDefaultHook(func(types.Log) (*ethereum.GovernanceValueUpdated, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IGovernanceParseValueUpdatedFunc) PushReturn(r0 *bindings.GovernanceValueUpdated, r1 error) {
-	f.PushHook(func(types.Log) (*bindings.GovernanceValueUpdated, error) {
+func (f *IGovernanceParseValueUpdatedFunc) PushReturn(r0 *ethereum.GovernanceValueUpdated, r1 error) {
+	f.PushHook(func(types.Log) (*ethereum.GovernanceValueUpdated, error) {
 		return r0, r1
 	})
 }
 
-func (f *IGovernanceParseValueUpdatedFunc) nextHook() func(types.Log) (*bindings.GovernanceValueUpdated, error) {
+func (f *IGovernanceParseValueUpdatedFunc) nextHook() func(types.Log) (*ethereum.GovernanceValueUpdated, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -27414,7 +27415,7 @@ type IGovernanceParseValueUpdatedFuncCall struct {
 	Arg0 types.Log
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 *bindings.GovernanceValueUpdated
+	Result0 *ethereum.GovernanceValueUpdated
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -27550,15 +27551,15 @@ func (c IGovernanceUpdateValueFuncCall) Results() []interface{} {
 // WatchSnapshotTaken method of the parent MockIGovernance instance is
 // invoked.
 type IGovernanceWatchSnapshotTakenFunc struct {
-	defaultHook func(*bind.WatchOpts, chan<- *bindings.GovernanceSnapshotTaken, []*big.Int, []common.Address) (event.Subscription, error)
-	hooks       []func(*bind.WatchOpts, chan<- *bindings.GovernanceSnapshotTaken, []*big.Int, []common.Address) (event.Subscription, error)
+	defaultHook func(*bind.WatchOpts, chan<- *ethereum.GovernanceSnapshotTaken, []*big.Int, []common.Address) (event.Subscription, error)
+	hooks       []func(*bind.WatchOpts, chan<- *ethereum.GovernanceSnapshotTaken, []*big.Int, []common.Address) (event.Subscription, error)
 	history     []IGovernanceWatchSnapshotTakenFuncCall
 	mutex       sync.Mutex
 }
 
 // WatchSnapshotTaken delegates to the next hook function in the queue and
 // stores the parameter and result values of this invocation.
-func (m *MockIGovernance) WatchSnapshotTaken(v0 *bind.WatchOpts, v1 chan<- *bindings.GovernanceSnapshotTaken, v2 []*big.Int, v3 []common.Address) (event.Subscription, error) {
+func (m *MockIGovernance) WatchSnapshotTaken(v0 *bind.WatchOpts, v1 chan<- *ethereum.GovernanceSnapshotTaken, v2 []*big.Int, v3 []common.Address) (event.Subscription, error) {
 	r0, r1 := m.WatchSnapshotTakenFunc.nextHook()(v0, v1, v2, v3)
 	m.WatchSnapshotTakenFunc.appendCall(IGovernanceWatchSnapshotTakenFuncCall{v0, v1, v2, v3, r0, r1})
 	return r0, r1
@@ -27567,7 +27568,7 @@ func (m *MockIGovernance) WatchSnapshotTaken(v0 *bind.WatchOpts, v1 chan<- *bind
 // SetDefaultHook sets function that is called when the WatchSnapshotTaken
 // method of the parent MockIGovernance instance is invoked and the hook
 // queue is empty.
-func (f *IGovernanceWatchSnapshotTakenFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *bindings.GovernanceSnapshotTaken, []*big.Int, []common.Address) (event.Subscription, error)) {
+func (f *IGovernanceWatchSnapshotTakenFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *ethereum.GovernanceSnapshotTaken, []*big.Int, []common.Address) (event.Subscription, error)) {
 	f.defaultHook = hook
 }
 
@@ -27575,7 +27576,7 @@ func (f *IGovernanceWatchSnapshotTakenFunc) SetDefaultHook(hook func(*bind.Watch
 // WatchSnapshotTaken method of the parent MockIGovernance instance invokes
 // the hook at the front of the queue and discards it. After the queue is
 // empty, the default hook function is invoked for any future action.
-func (f *IGovernanceWatchSnapshotTakenFunc) PushHook(hook func(*bind.WatchOpts, chan<- *bindings.GovernanceSnapshotTaken, []*big.Int, []common.Address) (event.Subscription, error)) {
+func (f *IGovernanceWatchSnapshotTakenFunc) PushHook(hook func(*bind.WatchOpts, chan<- *ethereum.GovernanceSnapshotTaken, []*big.Int, []common.Address) (event.Subscription, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -27584,19 +27585,19 @@ func (f *IGovernanceWatchSnapshotTakenFunc) PushHook(hook func(*bind.WatchOpts, 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
 func (f *IGovernanceWatchSnapshotTakenFunc) SetDefaultReturn(r0 event.Subscription, r1 error) {
-	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *bindings.GovernanceSnapshotTaken, []*big.Int, []common.Address) (event.Subscription, error) {
+	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *ethereum.GovernanceSnapshotTaken, []*big.Int, []common.Address) (event.Subscription, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
 func (f *IGovernanceWatchSnapshotTakenFunc) PushReturn(r0 event.Subscription, r1 error) {
-	f.PushHook(func(*bind.WatchOpts, chan<- *bindings.GovernanceSnapshotTaken, []*big.Int, []common.Address) (event.Subscription, error) {
+	f.PushHook(func(*bind.WatchOpts, chan<- *ethereum.GovernanceSnapshotTaken, []*big.Int, []common.Address) (event.Subscription, error) {
 		return r0, r1
 	})
 }
 
-func (f *IGovernanceWatchSnapshotTakenFunc) nextHook() func(*bind.WatchOpts, chan<- *bindings.GovernanceSnapshotTaken, []*big.Int, []common.Address) (event.Subscription, error) {
+func (f *IGovernanceWatchSnapshotTakenFunc) nextHook() func(*bind.WatchOpts, chan<- *ethereum.GovernanceSnapshotTaken, []*big.Int, []common.Address) (event.Subscription, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -27635,7 +27636,7 @@ type IGovernanceWatchSnapshotTakenFuncCall struct {
 	Arg0 *bind.WatchOpts
 	// Arg1 is the value of the 2nd argument passed to this method
 	// invocation.
-	Arg1 chan<- *bindings.GovernanceSnapshotTaken
+	Arg1 chan<- *ethereum.GovernanceSnapshotTaken
 	// Arg2 is the value of the 3rd argument passed to this method
 	// invocation.
 	Arg2 []*big.Int
@@ -27666,15 +27667,15 @@ func (c IGovernanceWatchSnapshotTakenFuncCall) Results() []interface{} {
 // WatchValueUpdated method of the parent MockIGovernance instance is
 // invoked.
 type IGovernanceWatchValueUpdatedFunc struct {
-	defaultHook func(*bind.WatchOpts, chan<- *bindings.GovernanceValueUpdated, []*big.Int, []*big.Int, [][32]byte) (event.Subscription, error)
-	hooks       []func(*bind.WatchOpts, chan<- *bindings.GovernanceValueUpdated, []*big.Int, []*big.Int, [][32]byte) (event.Subscription, error)
+	defaultHook func(*bind.WatchOpts, chan<- *ethereum.GovernanceValueUpdated, []*big.Int, []*big.Int, [][32]byte) (event.Subscription, error)
+	hooks       []func(*bind.WatchOpts, chan<- *ethereum.GovernanceValueUpdated, []*big.Int, []*big.Int, [][32]byte) (event.Subscription, error)
 	history     []IGovernanceWatchValueUpdatedFuncCall
 	mutex       sync.Mutex
 }
 
 // WatchValueUpdated delegates to the next hook function in the queue and
 // stores the parameter and result values of this invocation.
-func (m *MockIGovernance) WatchValueUpdated(v0 *bind.WatchOpts, v1 chan<- *bindings.GovernanceValueUpdated, v2 []*big.Int, v3 []*big.Int, v4 [][32]byte) (event.Subscription, error) {
+func (m *MockIGovernance) WatchValueUpdated(v0 *bind.WatchOpts, v1 chan<- *ethereum.GovernanceValueUpdated, v2 []*big.Int, v3 []*big.Int, v4 [][32]byte) (event.Subscription, error) {
 	r0, r1 := m.WatchValueUpdatedFunc.nextHook()(v0, v1, v2, v3, v4)
 	m.WatchValueUpdatedFunc.appendCall(IGovernanceWatchValueUpdatedFuncCall{v0, v1, v2, v3, v4, r0, r1})
 	return r0, r1
@@ -27683,7 +27684,7 @@ func (m *MockIGovernance) WatchValueUpdated(v0 *bind.WatchOpts, v1 chan<- *bindi
 // SetDefaultHook sets function that is called when the WatchValueUpdated
 // method of the parent MockIGovernance instance is invoked and the hook
 // queue is empty.
-func (f *IGovernanceWatchValueUpdatedFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *bindings.GovernanceValueUpdated, []*big.Int, []*big.Int, [][32]byte) (event.Subscription, error)) {
+func (f *IGovernanceWatchValueUpdatedFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *ethereum.GovernanceValueUpdated, []*big.Int, []*big.Int, [][32]byte) (event.Subscription, error)) {
 	f.defaultHook = hook
 }
 
@@ -27691,7 +27692,7 @@ func (f *IGovernanceWatchValueUpdatedFunc) SetDefaultHook(hook func(*bind.WatchO
 // WatchValueUpdated method of the parent MockIGovernance instance invokes
 // the hook at the front of the queue and discards it. After the queue is
 // empty, the default hook function is invoked for any future action.
-func (f *IGovernanceWatchValueUpdatedFunc) PushHook(hook func(*bind.WatchOpts, chan<- *bindings.GovernanceValueUpdated, []*big.Int, []*big.Int, [][32]byte) (event.Subscription, error)) {
+func (f *IGovernanceWatchValueUpdatedFunc) PushHook(hook func(*bind.WatchOpts, chan<- *ethereum.GovernanceValueUpdated, []*big.Int, []*big.Int, [][32]byte) (event.Subscription, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -27700,19 +27701,19 @@ func (f *IGovernanceWatchValueUpdatedFunc) PushHook(hook func(*bind.WatchOpts, c
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
 func (f *IGovernanceWatchValueUpdatedFunc) SetDefaultReturn(r0 event.Subscription, r1 error) {
-	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *bindings.GovernanceValueUpdated, []*big.Int, []*big.Int, [][32]byte) (event.Subscription, error) {
+	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *ethereum.GovernanceValueUpdated, []*big.Int, []*big.Int, [][32]byte) (event.Subscription, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
 func (f *IGovernanceWatchValueUpdatedFunc) PushReturn(r0 event.Subscription, r1 error) {
-	f.PushHook(func(*bind.WatchOpts, chan<- *bindings.GovernanceValueUpdated, []*big.Int, []*big.Int, [][32]byte) (event.Subscription, error) {
+	f.PushHook(func(*bind.WatchOpts, chan<- *ethereum.GovernanceValueUpdated, []*big.Int, []*big.Int, [][32]byte) (event.Subscription, error) {
 		return r0, r1
 	})
 }
 
-func (f *IGovernanceWatchValueUpdatedFunc) nextHook() func(*bind.WatchOpts, chan<- *bindings.GovernanceValueUpdated, []*big.Int, []*big.Int, [][32]byte) (event.Subscription, error) {
+func (f *IGovernanceWatchValueUpdatedFunc) nextHook() func(*bind.WatchOpts, chan<- *ethereum.GovernanceValueUpdated, []*big.Int, []*big.Int, [][32]byte) (event.Subscription, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -27750,7 +27751,7 @@ type IGovernanceWatchValueUpdatedFuncCall struct {
 	Arg0 *bind.WatchOpts
 	// Arg1 is the value of the 2nd argument passed to this method
 	// invocation.
-	Arg1 chan<- *bindings.GovernanceValueUpdated
+	Arg1 chan<- *ethereum.GovernanceValueUpdated
 	// Arg2 is the value of the 3rd argument passed to this method
 	// invocation.
 	Arg2 []*big.Int
@@ -27781,8 +27782,9 @@ func (c IGovernanceWatchValueUpdatedFuncCall) Results() []interface{} {
 }
 
 // MockIPublicStaking is a mock implementation of the IPublicStaking
-// interface (from the package github.com/alicenet/alicenet/bridge/bindings)
-// used for unit testing.
+// interface (from the package
+// github.com/alicenet/alicenet/bridge/bindings/ethereum) used for unit
+// testing.
 type MockIPublicStaking struct {
 	// ApproveFunc is an instance of a mock function object controlling the
 	// behavior of the method Approve.
@@ -28079,22 +28081,22 @@ func NewMockIPublicStaking() *MockIPublicStaking {
 			},
 		},
 		FilterApprovalFunc: &IPublicStakingFilterApprovalFunc{
-			defaultHook: func(*bind.FilterOpts, []common.Address, []common.Address, []*big.Int) (r0 *bindings.PublicStakingApprovalIterator, r1 error) {
+			defaultHook: func(*bind.FilterOpts, []common.Address, []common.Address, []*big.Int) (r0 *ethereum.PublicStakingApprovalIterator, r1 error) {
 				return
 			},
 		},
 		FilterApprovalForAllFunc: &IPublicStakingFilterApprovalForAllFunc{
-			defaultHook: func(*bind.FilterOpts, []common.Address, []common.Address) (r0 *bindings.PublicStakingApprovalForAllIterator, r1 error) {
+			defaultHook: func(*bind.FilterOpts, []common.Address, []common.Address) (r0 *ethereum.PublicStakingApprovalForAllIterator, r1 error) {
 				return
 			},
 		},
 		FilterInitializedFunc: &IPublicStakingFilterInitializedFunc{
-			defaultHook: func(*bind.FilterOpts) (r0 *bindings.PublicStakingInitializedIterator, r1 error) {
+			defaultHook: func(*bind.FilterOpts) (r0 *ethereum.PublicStakingInitializedIterator, r1 error) {
 				return
 			},
 		},
 		FilterTransferFunc: &IPublicStakingFilterTransferFunc{
-			defaultHook: func(*bind.FilterOpts, []common.Address, []common.Address, []*big.Int) (r0 *bindings.PublicStakingTransferIterator, r1 error) {
+			defaultHook: func(*bind.FilterOpts, []common.Address, []common.Address, []*big.Int) (r0 *ethereum.PublicStakingTransferIterator, r1 error) {
 				return
 			},
 		},
@@ -28216,22 +28218,22 @@ func NewMockIPublicStaking() *MockIPublicStaking {
 			},
 		},
 		ParseApprovalFunc: &IPublicStakingParseApprovalFunc{
-			defaultHook: func(types.Log) (r0 *bindings.PublicStakingApproval, r1 error) {
+			defaultHook: func(types.Log) (r0 *ethereum.PublicStakingApproval, r1 error) {
 				return
 			},
 		},
 		ParseApprovalForAllFunc: &IPublicStakingParseApprovalForAllFunc{
-			defaultHook: func(types.Log) (r0 *bindings.PublicStakingApprovalForAll, r1 error) {
+			defaultHook: func(types.Log) (r0 *ethereum.PublicStakingApprovalForAll, r1 error) {
 				return
 			},
 		},
 		ParseInitializedFunc: &IPublicStakingParseInitializedFunc{
-			defaultHook: func(types.Log) (r0 *bindings.PublicStakingInitialized, r1 error) {
+			defaultHook: func(types.Log) (r0 *ethereum.PublicStakingInitialized, r1 error) {
 				return
 			},
 		},
 		ParseTransferFunc: &IPublicStakingParseTransferFunc{
-			defaultHook: func(types.Log) (r0 *bindings.PublicStakingTransfer, r1 error) {
+			defaultHook: func(types.Log) (r0 *ethereum.PublicStakingTransfer, r1 error) {
 				return
 			},
 		},
@@ -28301,22 +28303,22 @@ func NewMockIPublicStaking() *MockIPublicStaking {
 			},
 		},
 		WatchApprovalFunc: &IPublicStakingWatchApprovalFunc{
-			defaultHook: func(*bind.WatchOpts, chan<- *bindings.PublicStakingApproval, []common.Address, []common.Address, []*big.Int) (r0 event.Subscription, r1 error) {
+			defaultHook: func(*bind.WatchOpts, chan<- *ethereum.PublicStakingApproval, []common.Address, []common.Address, []*big.Int) (r0 event.Subscription, r1 error) {
 				return
 			},
 		},
 		WatchApprovalForAllFunc: &IPublicStakingWatchApprovalForAllFunc{
-			defaultHook: func(*bind.WatchOpts, chan<- *bindings.PublicStakingApprovalForAll, []common.Address, []common.Address) (r0 event.Subscription, r1 error) {
+			defaultHook: func(*bind.WatchOpts, chan<- *ethereum.PublicStakingApprovalForAll, []common.Address, []common.Address) (r0 event.Subscription, r1 error) {
 				return
 			},
 		},
 		WatchInitializedFunc: &IPublicStakingWatchInitializedFunc{
-			defaultHook: func(*bind.WatchOpts, chan<- *bindings.PublicStakingInitialized) (r0 event.Subscription, r1 error) {
+			defaultHook: func(*bind.WatchOpts, chan<- *ethereum.PublicStakingInitialized) (r0 event.Subscription, r1 error) {
 				return
 			},
 		},
 		WatchTransferFunc: &IPublicStakingWatchTransferFunc{
-			defaultHook: func(*bind.WatchOpts, chan<- *bindings.PublicStakingTransfer, []common.Address, []common.Address, []*big.Int) (r0 event.Subscription, r1 error) {
+			defaultHook: func(*bind.WatchOpts, chan<- *ethereum.PublicStakingTransfer, []common.Address, []common.Address, []*big.Int) (r0 event.Subscription, r1 error) {
 				return
 			},
 		},
@@ -28421,22 +28423,22 @@ func NewStrictMockIPublicStaking() *MockIPublicStaking {
 			},
 		},
 		FilterApprovalFunc: &IPublicStakingFilterApprovalFunc{
-			defaultHook: func(*bind.FilterOpts, []common.Address, []common.Address, []*big.Int) (*bindings.PublicStakingApprovalIterator, error) {
+			defaultHook: func(*bind.FilterOpts, []common.Address, []common.Address, []*big.Int) (*ethereum.PublicStakingApprovalIterator, error) {
 				panic("unexpected invocation of MockIPublicStaking.FilterApproval")
 			},
 		},
 		FilterApprovalForAllFunc: &IPublicStakingFilterApprovalForAllFunc{
-			defaultHook: func(*bind.FilterOpts, []common.Address, []common.Address) (*bindings.PublicStakingApprovalForAllIterator, error) {
+			defaultHook: func(*bind.FilterOpts, []common.Address, []common.Address) (*ethereum.PublicStakingApprovalForAllIterator, error) {
 				panic("unexpected invocation of MockIPublicStaking.FilterApprovalForAll")
 			},
 		},
 		FilterInitializedFunc: &IPublicStakingFilterInitializedFunc{
-			defaultHook: func(*bind.FilterOpts) (*bindings.PublicStakingInitializedIterator, error) {
+			defaultHook: func(*bind.FilterOpts) (*ethereum.PublicStakingInitializedIterator, error) {
 				panic("unexpected invocation of MockIPublicStaking.FilterInitialized")
 			},
 		},
 		FilterTransferFunc: &IPublicStakingFilterTransferFunc{
-			defaultHook: func(*bind.FilterOpts, []common.Address, []common.Address, []*big.Int) (*bindings.PublicStakingTransferIterator, error) {
+			defaultHook: func(*bind.FilterOpts, []common.Address, []common.Address, []*big.Int) (*ethereum.PublicStakingTransferIterator, error) {
 				panic("unexpected invocation of MockIPublicStaking.FilterTransfer")
 			},
 		},
@@ -28558,22 +28560,22 @@ func NewStrictMockIPublicStaking() *MockIPublicStaking {
 			},
 		},
 		ParseApprovalFunc: &IPublicStakingParseApprovalFunc{
-			defaultHook: func(types.Log) (*bindings.PublicStakingApproval, error) {
+			defaultHook: func(types.Log) (*ethereum.PublicStakingApproval, error) {
 				panic("unexpected invocation of MockIPublicStaking.ParseApproval")
 			},
 		},
 		ParseApprovalForAllFunc: &IPublicStakingParseApprovalForAllFunc{
-			defaultHook: func(types.Log) (*bindings.PublicStakingApprovalForAll, error) {
+			defaultHook: func(types.Log) (*ethereum.PublicStakingApprovalForAll, error) {
 				panic("unexpected invocation of MockIPublicStaking.ParseApprovalForAll")
 			},
 		},
 		ParseInitializedFunc: &IPublicStakingParseInitializedFunc{
-			defaultHook: func(types.Log) (*bindings.PublicStakingInitialized, error) {
+			defaultHook: func(types.Log) (*ethereum.PublicStakingInitialized, error) {
 				panic("unexpected invocation of MockIPublicStaking.ParseInitialized")
 			},
 		},
 		ParseTransferFunc: &IPublicStakingParseTransferFunc{
-			defaultHook: func(types.Log) (*bindings.PublicStakingTransfer, error) {
+			defaultHook: func(types.Log) (*ethereum.PublicStakingTransfer, error) {
 				panic("unexpected invocation of MockIPublicStaking.ParseTransfer")
 			},
 		},
@@ -28643,22 +28645,22 @@ func NewStrictMockIPublicStaking() *MockIPublicStaking {
 			},
 		},
 		WatchApprovalFunc: &IPublicStakingWatchApprovalFunc{
-			defaultHook: func(*bind.WatchOpts, chan<- *bindings.PublicStakingApproval, []common.Address, []common.Address, []*big.Int) (event.Subscription, error) {
+			defaultHook: func(*bind.WatchOpts, chan<- *ethereum.PublicStakingApproval, []common.Address, []common.Address, []*big.Int) (event.Subscription, error) {
 				panic("unexpected invocation of MockIPublicStaking.WatchApproval")
 			},
 		},
 		WatchApprovalForAllFunc: &IPublicStakingWatchApprovalForAllFunc{
-			defaultHook: func(*bind.WatchOpts, chan<- *bindings.PublicStakingApprovalForAll, []common.Address, []common.Address) (event.Subscription, error) {
+			defaultHook: func(*bind.WatchOpts, chan<- *ethereum.PublicStakingApprovalForAll, []common.Address, []common.Address) (event.Subscription, error) {
 				panic("unexpected invocation of MockIPublicStaking.WatchApprovalForAll")
 			},
 		},
 		WatchInitializedFunc: &IPublicStakingWatchInitializedFunc{
-			defaultHook: func(*bind.WatchOpts, chan<- *bindings.PublicStakingInitialized) (event.Subscription, error) {
+			defaultHook: func(*bind.WatchOpts, chan<- *ethereum.PublicStakingInitialized) (event.Subscription, error) {
 				panic("unexpected invocation of MockIPublicStaking.WatchInitialized")
 			},
 		},
 		WatchTransferFunc: &IPublicStakingWatchTransferFunc{
-			defaultHook: func(*bind.WatchOpts, chan<- *bindings.PublicStakingTransfer, []common.Address, []common.Address, []*big.Int) (event.Subscription, error) {
+			defaultHook: func(*bind.WatchOpts, chan<- *ethereum.PublicStakingTransfer, []common.Address, []common.Address, []*big.Int) (event.Subscription, error) {
 				panic("unexpected invocation of MockIPublicStaking.WatchTransfer")
 			},
 		},
@@ -28668,7 +28670,7 @@ func NewStrictMockIPublicStaking() *MockIPublicStaking {
 // NewMockIPublicStakingFrom creates a new mock of the MockIPublicStaking
 // interface. All methods delegate to the given implementation, unless
 // overwritten.
-func NewMockIPublicStakingFrom(i bindings.IPublicStaking) *MockIPublicStaking {
+func NewMockIPublicStakingFrom(i ethereum.IPublicStaking) *MockIPublicStaking {
 	return &MockIPublicStaking{
 		ApproveFunc: &IPublicStakingApproveFunc{
 			defaultHook: i.Approve,
@@ -30881,15 +30883,15 @@ func (c IPublicStakingEstimateTokenCollectionFuncCall) Results() []interface{} {
 // FilterApproval method of the parent MockIPublicStaking instance is
 // invoked.
 type IPublicStakingFilterApprovalFunc struct {
-	defaultHook func(*bind.FilterOpts, []common.Address, []common.Address, []*big.Int) (*bindings.PublicStakingApprovalIterator, error)
-	hooks       []func(*bind.FilterOpts, []common.Address, []common.Address, []*big.Int) (*bindings.PublicStakingApprovalIterator, error)
+	defaultHook func(*bind.FilterOpts, []common.Address, []common.Address, []*big.Int) (*ethereum.PublicStakingApprovalIterator, error)
+	hooks       []func(*bind.FilterOpts, []common.Address, []common.Address, []*big.Int) (*ethereum.PublicStakingApprovalIterator, error)
 	history     []IPublicStakingFilterApprovalFuncCall
 	mutex       sync.Mutex
 }
 
 // FilterApproval delegates to the next hook function in the queue and
 // stores the parameter and result values of this invocation.
-func (m *MockIPublicStaking) FilterApproval(v0 *bind.FilterOpts, v1 []common.Address, v2 []common.Address, v3 []*big.Int) (*bindings.PublicStakingApprovalIterator, error) {
+func (m *MockIPublicStaking) FilterApproval(v0 *bind.FilterOpts, v1 []common.Address, v2 []common.Address, v3 []*big.Int) (*ethereum.PublicStakingApprovalIterator, error) {
 	r0, r1 := m.FilterApprovalFunc.nextHook()(v0, v1, v2, v3)
 	m.FilterApprovalFunc.appendCall(IPublicStakingFilterApprovalFuncCall{v0, v1, v2, v3, r0, r1})
 	return r0, r1
@@ -30898,7 +30900,7 @@ func (m *MockIPublicStaking) FilterApproval(v0 *bind.FilterOpts, v1 []common.Add
 // SetDefaultHook sets function that is called when the FilterApproval
 // method of the parent MockIPublicStaking instance is invoked and the hook
 // queue is empty.
-func (f *IPublicStakingFilterApprovalFunc) SetDefaultHook(hook func(*bind.FilterOpts, []common.Address, []common.Address, []*big.Int) (*bindings.PublicStakingApprovalIterator, error)) {
+func (f *IPublicStakingFilterApprovalFunc) SetDefaultHook(hook func(*bind.FilterOpts, []common.Address, []common.Address, []*big.Int) (*ethereum.PublicStakingApprovalIterator, error)) {
 	f.defaultHook = hook
 }
 
@@ -30906,7 +30908,7 @@ func (f *IPublicStakingFilterApprovalFunc) SetDefaultHook(hook func(*bind.Filter
 // FilterApproval method of the parent MockIPublicStaking instance invokes
 // the hook at the front of the queue and discards it. After the queue is
 // empty, the default hook function is invoked for any future action.
-func (f *IPublicStakingFilterApprovalFunc) PushHook(hook func(*bind.FilterOpts, []common.Address, []common.Address, []*big.Int) (*bindings.PublicStakingApprovalIterator, error)) {
+func (f *IPublicStakingFilterApprovalFunc) PushHook(hook func(*bind.FilterOpts, []common.Address, []common.Address, []*big.Int) (*ethereum.PublicStakingApprovalIterator, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -30914,20 +30916,20 @@ func (f *IPublicStakingFilterApprovalFunc) PushHook(hook func(*bind.FilterOpts, 
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IPublicStakingFilterApprovalFunc) SetDefaultReturn(r0 *bindings.PublicStakingApprovalIterator, r1 error) {
-	f.SetDefaultHook(func(*bind.FilterOpts, []common.Address, []common.Address, []*big.Int) (*bindings.PublicStakingApprovalIterator, error) {
+func (f *IPublicStakingFilterApprovalFunc) SetDefaultReturn(r0 *ethereum.PublicStakingApprovalIterator, r1 error) {
+	f.SetDefaultHook(func(*bind.FilterOpts, []common.Address, []common.Address, []*big.Int) (*ethereum.PublicStakingApprovalIterator, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IPublicStakingFilterApprovalFunc) PushReturn(r0 *bindings.PublicStakingApprovalIterator, r1 error) {
-	f.PushHook(func(*bind.FilterOpts, []common.Address, []common.Address, []*big.Int) (*bindings.PublicStakingApprovalIterator, error) {
+func (f *IPublicStakingFilterApprovalFunc) PushReturn(r0 *ethereum.PublicStakingApprovalIterator, r1 error) {
+	f.PushHook(func(*bind.FilterOpts, []common.Address, []common.Address, []*big.Int) (*ethereum.PublicStakingApprovalIterator, error) {
 		return r0, r1
 	})
 }
 
-func (f *IPublicStakingFilterApprovalFunc) nextHook() func(*bind.FilterOpts, []common.Address, []common.Address, []*big.Int) (*bindings.PublicStakingApprovalIterator, error) {
+func (f *IPublicStakingFilterApprovalFunc) nextHook() func(*bind.FilterOpts, []common.Address, []common.Address, []*big.Int) (*ethereum.PublicStakingApprovalIterator, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -30974,7 +30976,7 @@ type IPublicStakingFilterApprovalFuncCall struct {
 	Arg3 []*big.Int
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 *bindings.PublicStakingApprovalIterator
+	Result0 *ethereum.PublicStakingApprovalIterator
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -30996,15 +30998,15 @@ func (c IPublicStakingFilterApprovalFuncCall) Results() []interface{} {
 // FilterApprovalForAll method of the parent MockIPublicStaking instance is
 // invoked.
 type IPublicStakingFilterApprovalForAllFunc struct {
-	defaultHook func(*bind.FilterOpts, []common.Address, []common.Address) (*bindings.PublicStakingApprovalForAllIterator, error)
-	hooks       []func(*bind.FilterOpts, []common.Address, []common.Address) (*bindings.PublicStakingApprovalForAllIterator, error)
+	defaultHook func(*bind.FilterOpts, []common.Address, []common.Address) (*ethereum.PublicStakingApprovalForAllIterator, error)
+	hooks       []func(*bind.FilterOpts, []common.Address, []common.Address) (*ethereum.PublicStakingApprovalForAllIterator, error)
 	history     []IPublicStakingFilterApprovalForAllFuncCall
 	mutex       sync.Mutex
 }
 
 // FilterApprovalForAll delegates to the next hook function in the queue and
 // stores the parameter and result values of this invocation.
-func (m *MockIPublicStaking) FilterApprovalForAll(v0 *bind.FilterOpts, v1 []common.Address, v2 []common.Address) (*bindings.PublicStakingApprovalForAllIterator, error) {
+func (m *MockIPublicStaking) FilterApprovalForAll(v0 *bind.FilterOpts, v1 []common.Address, v2 []common.Address) (*ethereum.PublicStakingApprovalForAllIterator, error) {
 	r0, r1 := m.FilterApprovalForAllFunc.nextHook()(v0, v1, v2)
 	m.FilterApprovalForAllFunc.appendCall(IPublicStakingFilterApprovalForAllFuncCall{v0, v1, v2, r0, r1})
 	return r0, r1
@@ -31013,7 +31015,7 @@ func (m *MockIPublicStaking) FilterApprovalForAll(v0 *bind.FilterOpts, v1 []comm
 // SetDefaultHook sets function that is called when the FilterApprovalForAll
 // method of the parent MockIPublicStaking instance is invoked and the hook
 // queue is empty.
-func (f *IPublicStakingFilterApprovalForAllFunc) SetDefaultHook(hook func(*bind.FilterOpts, []common.Address, []common.Address) (*bindings.PublicStakingApprovalForAllIterator, error)) {
+func (f *IPublicStakingFilterApprovalForAllFunc) SetDefaultHook(hook func(*bind.FilterOpts, []common.Address, []common.Address) (*ethereum.PublicStakingApprovalForAllIterator, error)) {
 	f.defaultHook = hook
 }
 
@@ -31022,7 +31024,7 @@ func (f *IPublicStakingFilterApprovalForAllFunc) SetDefaultHook(hook func(*bind.
 // invokes the hook at the front of the queue and discards it. After the
 // queue is empty, the default hook function is invoked for any future
 // action.
-func (f *IPublicStakingFilterApprovalForAllFunc) PushHook(hook func(*bind.FilterOpts, []common.Address, []common.Address) (*bindings.PublicStakingApprovalForAllIterator, error)) {
+func (f *IPublicStakingFilterApprovalForAllFunc) PushHook(hook func(*bind.FilterOpts, []common.Address, []common.Address) (*ethereum.PublicStakingApprovalForAllIterator, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -31030,20 +31032,20 @@ func (f *IPublicStakingFilterApprovalForAllFunc) PushHook(hook func(*bind.Filter
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IPublicStakingFilterApprovalForAllFunc) SetDefaultReturn(r0 *bindings.PublicStakingApprovalForAllIterator, r1 error) {
-	f.SetDefaultHook(func(*bind.FilterOpts, []common.Address, []common.Address) (*bindings.PublicStakingApprovalForAllIterator, error) {
+func (f *IPublicStakingFilterApprovalForAllFunc) SetDefaultReturn(r0 *ethereum.PublicStakingApprovalForAllIterator, r1 error) {
+	f.SetDefaultHook(func(*bind.FilterOpts, []common.Address, []common.Address) (*ethereum.PublicStakingApprovalForAllIterator, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IPublicStakingFilterApprovalForAllFunc) PushReturn(r0 *bindings.PublicStakingApprovalForAllIterator, r1 error) {
-	f.PushHook(func(*bind.FilterOpts, []common.Address, []common.Address) (*bindings.PublicStakingApprovalForAllIterator, error) {
+func (f *IPublicStakingFilterApprovalForAllFunc) PushReturn(r0 *ethereum.PublicStakingApprovalForAllIterator, r1 error) {
+	f.PushHook(func(*bind.FilterOpts, []common.Address, []common.Address) (*ethereum.PublicStakingApprovalForAllIterator, error) {
 		return r0, r1
 	})
 }
 
-func (f *IPublicStakingFilterApprovalForAllFunc) nextHook() func(*bind.FilterOpts, []common.Address, []common.Address) (*bindings.PublicStakingApprovalForAllIterator, error) {
+func (f *IPublicStakingFilterApprovalForAllFunc) nextHook() func(*bind.FilterOpts, []common.Address, []common.Address) (*ethereum.PublicStakingApprovalForAllIterator, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -31088,7 +31090,7 @@ type IPublicStakingFilterApprovalForAllFuncCall struct {
 	Arg2 []common.Address
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 *bindings.PublicStakingApprovalForAllIterator
+	Result0 *ethereum.PublicStakingApprovalForAllIterator
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -31110,15 +31112,15 @@ func (c IPublicStakingFilterApprovalForAllFuncCall) Results() []interface{} {
 // FilterInitialized method of the parent MockIPublicStaking instance is
 // invoked.
 type IPublicStakingFilterInitializedFunc struct {
-	defaultHook func(*bind.FilterOpts) (*bindings.PublicStakingInitializedIterator, error)
-	hooks       []func(*bind.FilterOpts) (*bindings.PublicStakingInitializedIterator, error)
+	defaultHook func(*bind.FilterOpts) (*ethereum.PublicStakingInitializedIterator, error)
+	hooks       []func(*bind.FilterOpts) (*ethereum.PublicStakingInitializedIterator, error)
 	history     []IPublicStakingFilterInitializedFuncCall
 	mutex       sync.Mutex
 }
 
 // FilterInitialized delegates to the next hook function in the queue and
 // stores the parameter and result values of this invocation.
-func (m *MockIPublicStaking) FilterInitialized(v0 *bind.FilterOpts) (*bindings.PublicStakingInitializedIterator, error) {
+func (m *MockIPublicStaking) FilterInitialized(v0 *bind.FilterOpts) (*ethereum.PublicStakingInitializedIterator, error) {
 	r0, r1 := m.FilterInitializedFunc.nextHook()(v0)
 	m.FilterInitializedFunc.appendCall(IPublicStakingFilterInitializedFuncCall{v0, r0, r1})
 	return r0, r1
@@ -31127,7 +31129,7 @@ func (m *MockIPublicStaking) FilterInitialized(v0 *bind.FilterOpts) (*bindings.P
 // SetDefaultHook sets function that is called when the FilterInitialized
 // method of the parent MockIPublicStaking instance is invoked and the hook
 // queue is empty.
-func (f *IPublicStakingFilterInitializedFunc) SetDefaultHook(hook func(*bind.FilterOpts) (*bindings.PublicStakingInitializedIterator, error)) {
+func (f *IPublicStakingFilterInitializedFunc) SetDefaultHook(hook func(*bind.FilterOpts) (*ethereum.PublicStakingInitializedIterator, error)) {
 	f.defaultHook = hook
 }
 
@@ -31136,7 +31138,7 @@ func (f *IPublicStakingFilterInitializedFunc) SetDefaultHook(hook func(*bind.Fil
 // invokes the hook at the front of the queue and discards it. After the
 // queue is empty, the default hook function is invoked for any future
 // action.
-func (f *IPublicStakingFilterInitializedFunc) PushHook(hook func(*bind.FilterOpts) (*bindings.PublicStakingInitializedIterator, error)) {
+func (f *IPublicStakingFilterInitializedFunc) PushHook(hook func(*bind.FilterOpts) (*ethereum.PublicStakingInitializedIterator, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -31144,20 +31146,20 @@ func (f *IPublicStakingFilterInitializedFunc) PushHook(hook func(*bind.FilterOpt
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IPublicStakingFilterInitializedFunc) SetDefaultReturn(r0 *bindings.PublicStakingInitializedIterator, r1 error) {
-	f.SetDefaultHook(func(*bind.FilterOpts) (*bindings.PublicStakingInitializedIterator, error) {
+func (f *IPublicStakingFilterInitializedFunc) SetDefaultReturn(r0 *ethereum.PublicStakingInitializedIterator, r1 error) {
+	f.SetDefaultHook(func(*bind.FilterOpts) (*ethereum.PublicStakingInitializedIterator, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IPublicStakingFilterInitializedFunc) PushReturn(r0 *bindings.PublicStakingInitializedIterator, r1 error) {
-	f.PushHook(func(*bind.FilterOpts) (*bindings.PublicStakingInitializedIterator, error) {
+func (f *IPublicStakingFilterInitializedFunc) PushReturn(r0 *ethereum.PublicStakingInitializedIterator, r1 error) {
+	f.PushHook(func(*bind.FilterOpts) (*ethereum.PublicStakingInitializedIterator, error) {
 		return r0, r1
 	})
 }
 
-func (f *IPublicStakingFilterInitializedFunc) nextHook() func(*bind.FilterOpts) (*bindings.PublicStakingInitializedIterator, error) {
+func (f *IPublicStakingFilterInitializedFunc) nextHook() func(*bind.FilterOpts) (*ethereum.PublicStakingInitializedIterator, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -31196,7 +31198,7 @@ type IPublicStakingFilterInitializedFuncCall struct {
 	Arg0 *bind.FilterOpts
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 *bindings.PublicStakingInitializedIterator
+	Result0 *ethereum.PublicStakingInitializedIterator
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -31218,15 +31220,15 @@ func (c IPublicStakingFilterInitializedFuncCall) Results() []interface{} {
 // FilterTransfer method of the parent MockIPublicStaking instance is
 // invoked.
 type IPublicStakingFilterTransferFunc struct {
-	defaultHook func(*bind.FilterOpts, []common.Address, []common.Address, []*big.Int) (*bindings.PublicStakingTransferIterator, error)
-	hooks       []func(*bind.FilterOpts, []common.Address, []common.Address, []*big.Int) (*bindings.PublicStakingTransferIterator, error)
+	defaultHook func(*bind.FilterOpts, []common.Address, []common.Address, []*big.Int) (*ethereum.PublicStakingTransferIterator, error)
+	hooks       []func(*bind.FilterOpts, []common.Address, []common.Address, []*big.Int) (*ethereum.PublicStakingTransferIterator, error)
 	history     []IPublicStakingFilterTransferFuncCall
 	mutex       sync.Mutex
 }
 
 // FilterTransfer delegates to the next hook function in the queue and
 // stores the parameter and result values of this invocation.
-func (m *MockIPublicStaking) FilterTransfer(v0 *bind.FilterOpts, v1 []common.Address, v2 []common.Address, v3 []*big.Int) (*bindings.PublicStakingTransferIterator, error) {
+func (m *MockIPublicStaking) FilterTransfer(v0 *bind.FilterOpts, v1 []common.Address, v2 []common.Address, v3 []*big.Int) (*ethereum.PublicStakingTransferIterator, error) {
 	r0, r1 := m.FilterTransferFunc.nextHook()(v0, v1, v2, v3)
 	m.FilterTransferFunc.appendCall(IPublicStakingFilterTransferFuncCall{v0, v1, v2, v3, r0, r1})
 	return r0, r1
@@ -31235,7 +31237,7 @@ func (m *MockIPublicStaking) FilterTransfer(v0 *bind.FilterOpts, v1 []common.Add
 // SetDefaultHook sets function that is called when the FilterTransfer
 // method of the parent MockIPublicStaking instance is invoked and the hook
 // queue is empty.
-func (f *IPublicStakingFilterTransferFunc) SetDefaultHook(hook func(*bind.FilterOpts, []common.Address, []common.Address, []*big.Int) (*bindings.PublicStakingTransferIterator, error)) {
+func (f *IPublicStakingFilterTransferFunc) SetDefaultHook(hook func(*bind.FilterOpts, []common.Address, []common.Address, []*big.Int) (*ethereum.PublicStakingTransferIterator, error)) {
 	f.defaultHook = hook
 }
 
@@ -31243,7 +31245,7 @@ func (f *IPublicStakingFilterTransferFunc) SetDefaultHook(hook func(*bind.Filter
 // FilterTransfer method of the parent MockIPublicStaking instance invokes
 // the hook at the front of the queue and discards it. After the queue is
 // empty, the default hook function is invoked for any future action.
-func (f *IPublicStakingFilterTransferFunc) PushHook(hook func(*bind.FilterOpts, []common.Address, []common.Address, []*big.Int) (*bindings.PublicStakingTransferIterator, error)) {
+func (f *IPublicStakingFilterTransferFunc) PushHook(hook func(*bind.FilterOpts, []common.Address, []common.Address, []*big.Int) (*ethereum.PublicStakingTransferIterator, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -31251,20 +31253,20 @@ func (f *IPublicStakingFilterTransferFunc) PushHook(hook func(*bind.FilterOpts, 
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IPublicStakingFilterTransferFunc) SetDefaultReturn(r0 *bindings.PublicStakingTransferIterator, r1 error) {
-	f.SetDefaultHook(func(*bind.FilterOpts, []common.Address, []common.Address, []*big.Int) (*bindings.PublicStakingTransferIterator, error) {
+func (f *IPublicStakingFilterTransferFunc) SetDefaultReturn(r0 *ethereum.PublicStakingTransferIterator, r1 error) {
+	f.SetDefaultHook(func(*bind.FilterOpts, []common.Address, []common.Address, []*big.Int) (*ethereum.PublicStakingTransferIterator, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IPublicStakingFilterTransferFunc) PushReturn(r0 *bindings.PublicStakingTransferIterator, r1 error) {
-	f.PushHook(func(*bind.FilterOpts, []common.Address, []common.Address, []*big.Int) (*bindings.PublicStakingTransferIterator, error) {
+func (f *IPublicStakingFilterTransferFunc) PushReturn(r0 *ethereum.PublicStakingTransferIterator, r1 error) {
+	f.PushHook(func(*bind.FilterOpts, []common.Address, []common.Address, []*big.Int) (*ethereum.PublicStakingTransferIterator, error) {
 		return r0, r1
 	})
 }
 
-func (f *IPublicStakingFilterTransferFunc) nextHook() func(*bind.FilterOpts, []common.Address, []common.Address, []*big.Int) (*bindings.PublicStakingTransferIterator, error) {
+func (f *IPublicStakingFilterTransferFunc) nextHook() func(*bind.FilterOpts, []common.Address, []common.Address, []*big.Int) (*ethereum.PublicStakingTransferIterator, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -31311,7 +31313,7 @@ type IPublicStakingFilterTransferFuncCall struct {
 	Arg3 []*big.Int
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 *bindings.PublicStakingTransferIterator
+	Result0 *ethereum.PublicStakingTransferIterator
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -33757,15 +33759,15 @@ func (c IPublicStakingOwnerOfFuncCall) Results() []interface{} {
 // ParseApproval method of the parent MockIPublicStaking instance is
 // invoked.
 type IPublicStakingParseApprovalFunc struct {
-	defaultHook func(types.Log) (*bindings.PublicStakingApproval, error)
-	hooks       []func(types.Log) (*bindings.PublicStakingApproval, error)
+	defaultHook func(types.Log) (*ethereum.PublicStakingApproval, error)
+	hooks       []func(types.Log) (*ethereum.PublicStakingApproval, error)
 	history     []IPublicStakingParseApprovalFuncCall
 	mutex       sync.Mutex
 }
 
 // ParseApproval delegates to the next hook function in the queue and stores
 // the parameter and result values of this invocation.
-func (m *MockIPublicStaking) ParseApproval(v0 types.Log) (*bindings.PublicStakingApproval, error) {
+func (m *MockIPublicStaking) ParseApproval(v0 types.Log) (*ethereum.PublicStakingApproval, error) {
 	r0, r1 := m.ParseApprovalFunc.nextHook()(v0)
 	m.ParseApprovalFunc.appendCall(IPublicStakingParseApprovalFuncCall{v0, r0, r1})
 	return r0, r1
@@ -33774,7 +33776,7 @@ func (m *MockIPublicStaking) ParseApproval(v0 types.Log) (*bindings.PublicStakin
 // SetDefaultHook sets function that is called when the ParseApproval method
 // of the parent MockIPublicStaking instance is invoked and the hook queue
 // is empty.
-func (f *IPublicStakingParseApprovalFunc) SetDefaultHook(hook func(types.Log) (*bindings.PublicStakingApproval, error)) {
+func (f *IPublicStakingParseApprovalFunc) SetDefaultHook(hook func(types.Log) (*ethereum.PublicStakingApproval, error)) {
 	f.defaultHook = hook
 }
 
@@ -33782,7 +33784,7 @@ func (f *IPublicStakingParseApprovalFunc) SetDefaultHook(hook func(types.Log) (*
 // ParseApproval method of the parent MockIPublicStaking instance invokes
 // the hook at the front of the queue and discards it. After the queue is
 // empty, the default hook function is invoked for any future action.
-func (f *IPublicStakingParseApprovalFunc) PushHook(hook func(types.Log) (*bindings.PublicStakingApproval, error)) {
+func (f *IPublicStakingParseApprovalFunc) PushHook(hook func(types.Log) (*ethereum.PublicStakingApproval, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -33790,20 +33792,20 @@ func (f *IPublicStakingParseApprovalFunc) PushHook(hook func(types.Log) (*bindin
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IPublicStakingParseApprovalFunc) SetDefaultReturn(r0 *bindings.PublicStakingApproval, r1 error) {
-	f.SetDefaultHook(func(types.Log) (*bindings.PublicStakingApproval, error) {
+func (f *IPublicStakingParseApprovalFunc) SetDefaultReturn(r0 *ethereum.PublicStakingApproval, r1 error) {
+	f.SetDefaultHook(func(types.Log) (*ethereum.PublicStakingApproval, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IPublicStakingParseApprovalFunc) PushReturn(r0 *bindings.PublicStakingApproval, r1 error) {
-	f.PushHook(func(types.Log) (*bindings.PublicStakingApproval, error) {
+func (f *IPublicStakingParseApprovalFunc) PushReturn(r0 *ethereum.PublicStakingApproval, r1 error) {
+	f.PushHook(func(types.Log) (*ethereum.PublicStakingApproval, error) {
 		return r0, r1
 	})
 }
 
-func (f *IPublicStakingParseApprovalFunc) nextHook() func(types.Log) (*bindings.PublicStakingApproval, error) {
+func (f *IPublicStakingParseApprovalFunc) nextHook() func(types.Log) (*ethereum.PublicStakingApproval, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -33841,7 +33843,7 @@ type IPublicStakingParseApprovalFuncCall struct {
 	Arg0 types.Log
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 *bindings.PublicStakingApproval
+	Result0 *ethereum.PublicStakingApproval
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -33863,15 +33865,15 @@ func (c IPublicStakingParseApprovalFuncCall) Results() []interface{} {
 // ParseApprovalForAll method of the parent MockIPublicStaking instance is
 // invoked.
 type IPublicStakingParseApprovalForAllFunc struct {
-	defaultHook func(types.Log) (*bindings.PublicStakingApprovalForAll, error)
-	hooks       []func(types.Log) (*bindings.PublicStakingApprovalForAll, error)
+	defaultHook func(types.Log) (*ethereum.PublicStakingApprovalForAll, error)
+	hooks       []func(types.Log) (*ethereum.PublicStakingApprovalForAll, error)
 	history     []IPublicStakingParseApprovalForAllFuncCall
 	mutex       sync.Mutex
 }
 
 // ParseApprovalForAll delegates to the next hook function in the queue and
 // stores the parameter and result values of this invocation.
-func (m *MockIPublicStaking) ParseApprovalForAll(v0 types.Log) (*bindings.PublicStakingApprovalForAll, error) {
+func (m *MockIPublicStaking) ParseApprovalForAll(v0 types.Log) (*ethereum.PublicStakingApprovalForAll, error) {
 	r0, r1 := m.ParseApprovalForAllFunc.nextHook()(v0)
 	m.ParseApprovalForAllFunc.appendCall(IPublicStakingParseApprovalForAllFuncCall{v0, r0, r1})
 	return r0, r1
@@ -33880,7 +33882,7 @@ func (m *MockIPublicStaking) ParseApprovalForAll(v0 types.Log) (*bindings.Public
 // SetDefaultHook sets function that is called when the ParseApprovalForAll
 // method of the parent MockIPublicStaking instance is invoked and the hook
 // queue is empty.
-func (f *IPublicStakingParseApprovalForAllFunc) SetDefaultHook(hook func(types.Log) (*bindings.PublicStakingApprovalForAll, error)) {
+func (f *IPublicStakingParseApprovalForAllFunc) SetDefaultHook(hook func(types.Log) (*ethereum.PublicStakingApprovalForAll, error)) {
 	f.defaultHook = hook
 }
 
@@ -33889,7 +33891,7 @@ func (f *IPublicStakingParseApprovalForAllFunc) SetDefaultHook(hook func(types.L
 // invokes the hook at the front of the queue and discards it. After the
 // queue is empty, the default hook function is invoked for any future
 // action.
-func (f *IPublicStakingParseApprovalForAllFunc) PushHook(hook func(types.Log) (*bindings.PublicStakingApprovalForAll, error)) {
+func (f *IPublicStakingParseApprovalForAllFunc) PushHook(hook func(types.Log) (*ethereum.PublicStakingApprovalForAll, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -33897,20 +33899,20 @@ func (f *IPublicStakingParseApprovalForAllFunc) PushHook(hook func(types.Log) (*
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IPublicStakingParseApprovalForAllFunc) SetDefaultReturn(r0 *bindings.PublicStakingApprovalForAll, r1 error) {
-	f.SetDefaultHook(func(types.Log) (*bindings.PublicStakingApprovalForAll, error) {
+func (f *IPublicStakingParseApprovalForAllFunc) SetDefaultReturn(r0 *ethereum.PublicStakingApprovalForAll, r1 error) {
+	f.SetDefaultHook(func(types.Log) (*ethereum.PublicStakingApprovalForAll, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IPublicStakingParseApprovalForAllFunc) PushReturn(r0 *bindings.PublicStakingApprovalForAll, r1 error) {
-	f.PushHook(func(types.Log) (*bindings.PublicStakingApprovalForAll, error) {
+func (f *IPublicStakingParseApprovalForAllFunc) PushReturn(r0 *ethereum.PublicStakingApprovalForAll, r1 error) {
+	f.PushHook(func(types.Log) (*ethereum.PublicStakingApprovalForAll, error) {
 		return r0, r1
 	})
 }
 
-func (f *IPublicStakingParseApprovalForAllFunc) nextHook() func(types.Log) (*bindings.PublicStakingApprovalForAll, error) {
+func (f *IPublicStakingParseApprovalForAllFunc) nextHook() func(types.Log) (*ethereum.PublicStakingApprovalForAll, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -33949,7 +33951,7 @@ type IPublicStakingParseApprovalForAllFuncCall struct {
 	Arg0 types.Log
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 *bindings.PublicStakingApprovalForAll
+	Result0 *ethereum.PublicStakingApprovalForAll
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -33971,15 +33973,15 @@ func (c IPublicStakingParseApprovalForAllFuncCall) Results() []interface{} {
 // ParseInitialized method of the parent MockIPublicStaking instance is
 // invoked.
 type IPublicStakingParseInitializedFunc struct {
-	defaultHook func(types.Log) (*bindings.PublicStakingInitialized, error)
-	hooks       []func(types.Log) (*bindings.PublicStakingInitialized, error)
+	defaultHook func(types.Log) (*ethereum.PublicStakingInitialized, error)
+	hooks       []func(types.Log) (*ethereum.PublicStakingInitialized, error)
 	history     []IPublicStakingParseInitializedFuncCall
 	mutex       sync.Mutex
 }
 
 // ParseInitialized delegates to the next hook function in the queue and
 // stores the parameter and result values of this invocation.
-func (m *MockIPublicStaking) ParseInitialized(v0 types.Log) (*bindings.PublicStakingInitialized, error) {
+func (m *MockIPublicStaking) ParseInitialized(v0 types.Log) (*ethereum.PublicStakingInitialized, error) {
 	r0, r1 := m.ParseInitializedFunc.nextHook()(v0)
 	m.ParseInitializedFunc.appendCall(IPublicStakingParseInitializedFuncCall{v0, r0, r1})
 	return r0, r1
@@ -33988,7 +33990,7 @@ func (m *MockIPublicStaking) ParseInitialized(v0 types.Log) (*bindings.PublicSta
 // SetDefaultHook sets function that is called when the ParseInitialized
 // method of the parent MockIPublicStaking instance is invoked and the hook
 // queue is empty.
-func (f *IPublicStakingParseInitializedFunc) SetDefaultHook(hook func(types.Log) (*bindings.PublicStakingInitialized, error)) {
+func (f *IPublicStakingParseInitializedFunc) SetDefaultHook(hook func(types.Log) (*ethereum.PublicStakingInitialized, error)) {
 	f.defaultHook = hook
 }
 
@@ -33996,7 +33998,7 @@ func (f *IPublicStakingParseInitializedFunc) SetDefaultHook(hook func(types.Log)
 // ParseInitialized method of the parent MockIPublicStaking instance invokes
 // the hook at the front of the queue and discards it. After the queue is
 // empty, the default hook function is invoked for any future action.
-func (f *IPublicStakingParseInitializedFunc) PushHook(hook func(types.Log) (*bindings.PublicStakingInitialized, error)) {
+func (f *IPublicStakingParseInitializedFunc) PushHook(hook func(types.Log) (*ethereum.PublicStakingInitialized, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -34004,20 +34006,20 @@ func (f *IPublicStakingParseInitializedFunc) PushHook(hook func(types.Log) (*bin
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IPublicStakingParseInitializedFunc) SetDefaultReturn(r0 *bindings.PublicStakingInitialized, r1 error) {
-	f.SetDefaultHook(func(types.Log) (*bindings.PublicStakingInitialized, error) {
+func (f *IPublicStakingParseInitializedFunc) SetDefaultReturn(r0 *ethereum.PublicStakingInitialized, r1 error) {
+	f.SetDefaultHook(func(types.Log) (*ethereum.PublicStakingInitialized, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IPublicStakingParseInitializedFunc) PushReturn(r0 *bindings.PublicStakingInitialized, r1 error) {
-	f.PushHook(func(types.Log) (*bindings.PublicStakingInitialized, error) {
+func (f *IPublicStakingParseInitializedFunc) PushReturn(r0 *ethereum.PublicStakingInitialized, r1 error) {
+	f.PushHook(func(types.Log) (*ethereum.PublicStakingInitialized, error) {
 		return r0, r1
 	})
 }
 
-func (f *IPublicStakingParseInitializedFunc) nextHook() func(types.Log) (*bindings.PublicStakingInitialized, error) {
+func (f *IPublicStakingParseInitializedFunc) nextHook() func(types.Log) (*ethereum.PublicStakingInitialized, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -34056,7 +34058,7 @@ type IPublicStakingParseInitializedFuncCall struct {
 	Arg0 types.Log
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 *bindings.PublicStakingInitialized
+	Result0 *ethereum.PublicStakingInitialized
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -34078,15 +34080,15 @@ func (c IPublicStakingParseInitializedFuncCall) Results() []interface{} {
 // ParseTransfer method of the parent MockIPublicStaking instance is
 // invoked.
 type IPublicStakingParseTransferFunc struct {
-	defaultHook func(types.Log) (*bindings.PublicStakingTransfer, error)
-	hooks       []func(types.Log) (*bindings.PublicStakingTransfer, error)
+	defaultHook func(types.Log) (*ethereum.PublicStakingTransfer, error)
+	hooks       []func(types.Log) (*ethereum.PublicStakingTransfer, error)
 	history     []IPublicStakingParseTransferFuncCall
 	mutex       sync.Mutex
 }
 
 // ParseTransfer delegates to the next hook function in the queue and stores
 // the parameter and result values of this invocation.
-func (m *MockIPublicStaking) ParseTransfer(v0 types.Log) (*bindings.PublicStakingTransfer, error) {
+func (m *MockIPublicStaking) ParseTransfer(v0 types.Log) (*ethereum.PublicStakingTransfer, error) {
 	r0, r1 := m.ParseTransferFunc.nextHook()(v0)
 	m.ParseTransferFunc.appendCall(IPublicStakingParseTransferFuncCall{v0, r0, r1})
 	return r0, r1
@@ -34095,7 +34097,7 @@ func (m *MockIPublicStaking) ParseTransfer(v0 types.Log) (*bindings.PublicStakin
 // SetDefaultHook sets function that is called when the ParseTransfer method
 // of the parent MockIPublicStaking instance is invoked and the hook queue
 // is empty.
-func (f *IPublicStakingParseTransferFunc) SetDefaultHook(hook func(types.Log) (*bindings.PublicStakingTransfer, error)) {
+func (f *IPublicStakingParseTransferFunc) SetDefaultHook(hook func(types.Log) (*ethereum.PublicStakingTransfer, error)) {
 	f.defaultHook = hook
 }
 
@@ -34103,7 +34105,7 @@ func (f *IPublicStakingParseTransferFunc) SetDefaultHook(hook func(types.Log) (*
 // ParseTransfer method of the parent MockIPublicStaking instance invokes
 // the hook at the front of the queue and discards it. After the queue is
 // empty, the default hook function is invoked for any future action.
-func (f *IPublicStakingParseTransferFunc) PushHook(hook func(types.Log) (*bindings.PublicStakingTransfer, error)) {
+func (f *IPublicStakingParseTransferFunc) PushHook(hook func(types.Log) (*ethereum.PublicStakingTransfer, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -34111,20 +34113,20 @@ func (f *IPublicStakingParseTransferFunc) PushHook(hook func(types.Log) (*bindin
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IPublicStakingParseTransferFunc) SetDefaultReturn(r0 *bindings.PublicStakingTransfer, r1 error) {
-	f.SetDefaultHook(func(types.Log) (*bindings.PublicStakingTransfer, error) {
+func (f *IPublicStakingParseTransferFunc) SetDefaultReturn(r0 *ethereum.PublicStakingTransfer, r1 error) {
+	f.SetDefaultHook(func(types.Log) (*ethereum.PublicStakingTransfer, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IPublicStakingParseTransferFunc) PushReturn(r0 *bindings.PublicStakingTransfer, r1 error) {
-	f.PushHook(func(types.Log) (*bindings.PublicStakingTransfer, error) {
+func (f *IPublicStakingParseTransferFunc) PushReturn(r0 *ethereum.PublicStakingTransfer, r1 error) {
+	f.PushHook(func(types.Log) (*ethereum.PublicStakingTransfer, error) {
 		return r0, r1
 	})
 }
 
-func (f *IPublicStakingParseTransferFunc) nextHook() func(types.Log) (*bindings.PublicStakingTransfer, error) {
+func (f *IPublicStakingParseTransferFunc) nextHook() func(types.Log) (*ethereum.PublicStakingTransfer, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -34162,7 +34164,7 @@ type IPublicStakingParseTransferFuncCall struct {
 	Arg0 types.Log
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 *bindings.PublicStakingTransfer
+	Result0 *ethereum.PublicStakingTransfer
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -35623,15 +35625,15 @@ func (c IPublicStakingTripCBFuncCall) Results() []interface{} {
 // WatchApproval method of the parent MockIPublicStaking instance is
 // invoked.
 type IPublicStakingWatchApprovalFunc struct {
-	defaultHook func(*bind.WatchOpts, chan<- *bindings.PublicStakingApproval, []common.Address, []common.Address, []*big.Int) (event.Subscription, error)
-	hooks       []func(*bind.WatchOpts, chan<- *bindings.PublicStakingApproval, []common.Address, []common.Address, []*big.Int) (event.Subscription, error)
+	defaultHook func(*bind.WatchOpts, chan<- *ethereum.PublicStakingApproval, []common.Address, []common.Address, []*big.Int) (event.Subscription, error)
+	hooks       []func(*bind.WatchOpts, chan<- *ethereum.PublicStakingApproval, []common.Address, []common.Address, []*big.Int) (event.Subscription, error)
 	history     []IPublicStakingWatchApprovalFuncCall
 	mutex       sync.Mutex
 }
 
 // WatchApproval delegates to the next hook function in the queue and stores
 // the parameter and result values of this invocation.
-func (m *MockIPublicStaking) WatchApproval(v0 *bind.WatchOpts, v1 chan<- *bindings.PublicStakingApproval, v2 []common.Address, v3 []common.Address, v4 []*big.Int) (event.Subscription, error) {
+func (m *MockIPublicStaking) WatchApproval(v0 *bind.WatchOpts, v1 chan<- *ethereum.PublicStakingApproval, v2 []common.Address, v3 []common.Address, v4 []*big.Int) (event.Subscription, error) {
 	r0, r1 := m.WatchApprovalFunc.nextHook()(v0, v1, v2, v3, v4)
 	m.WatchApprovalFunc.appendCall(IPublicStakingWatchApprovalFuncCall{v0, v1, v2, v3, v4, r0, r1})
 	return r0, r1
@@ -35640,7 +35642,7 @@ func (m *MockIPublicStaking) WatchApproval(v0 *bind.WatchOpts, v1 chan<- *bindin
 // SetDefaultHook sets function that is called when the WatchApproval method
 // of the parent MockIPublicStaking instance is invoked and the hook queue
 // is empty.
-func (f *IPublicStakingWatchApprovalFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *bindings.PublicStakingApproval, []common.Address, []common.Address, []*big.Int) (event.Subscription, error)) {
+func (f *IPublicStakingWatchApprovalFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *ethereum.PublicStakingApproval, []common.Address, []common.Address, []*big.Int) (event.Subscription, error)) {
 	f.defaultHook = hook
 }
 
@@ -35648,7 +35650,7 @@ func (f *IPublicStakingWatchApprovalFunc) SetDefaultHook(hook func(*bind.WatchOp
 // WatchApproval method of the parent MockIPublicStaking instance invokes
 // the hook at the front of the queue and discards it. After the queue is
 // empty, the default hook function is invoked for any future action.
-func (f *IPublicStakingWatchApprovalFunc) PushHook(hook func(*bind.WatchOpts, chan<- *bindings.PublicStakingApproval, []common.Address, []common.Address, []*big.Int) (event.Subscription, error)) {
+func (f *IPublicStakingWatchApprovalFunc) PushHook(hook func(*bind.WatchOpts, chan<- *ethereum.PublicStakingApproval, []common.Address, []common.Address, []*big.Int) (event.Subscription, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -35657,19 +35659,19 @@ func (f *IPublicStakingWatchApprovalFunc) PushHook(hook func(*bind.WatchOpts, ch
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
 func (f *IPublicStakingWatchApprovalFunc) SetDefaultReturn(r0 event.Subscription, r1 error) {
-	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *bindings.PublicStakingApproval, []common.Address, []common.Address, []*big.Int) (event.Subscription, error) {
+	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *ethereum.PublicStakingApproval, []common.Address, []common.Address, []*big.Int) (event.Subscription, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
 func (f *IPublicStakingWatchApprovalFunc) PushReturn(r0 event.Subscription, r1 error) {
-	f.PushHook(func(*bind.WatchOpts, chan<- *bindings.PublicStakingApproval, []common.Address, []common.Address, []*big.Int) (event.Subscription, error) {
+	f.PushHook(func(*bind.WatchOpts, chan<- *ethereum.PublicStakingApproval, []common.Address, []common.Address, []*big.Int) (event.Subscription, error) {
 		return r0, r1
 	})
 }
 
-func (f *IPublicStakingWatchApprovalFunc) nextHook() func(*bind.WatchOpts, chan<- *bindings.PublicStakingApproval, []common.Address, []common.Address, []*big.Int) (event.Subscription, error) {
+func (f *IPublicStakingWatchApprovalFunc) nextHook() func(*bind.WatchOpts, chan<- *ethereum.PublicStakingApproval, []common.Address, []common.Address, []*big.Int) (event.Subscription, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -35707,7 +35709,7 @@ type IPublicStakingWatchApprovalFuncCall struct {
 	Arg0 *bind.WatchOpts
 	// Arg1 is the value of the 2nd argument passed to this method
 	// invocation.
-	Arg1 chan<- *bindings.PublicStakingApproval
+	Arg1 chan<- *ethereum.PublicStakingApproval
 	// Arg2 is the value of the 3rd argument passed to this method
 	// invocation.
 	Arg2 []common.Address
@@ -35741,15 +35743,15 @@ func (c IPublicStakingWatchApprovalFuncCall) Results() []interface{} {
 // WatchApprovalForAll method of the parent MockIPublicStaking instance is
 // invoked.
 type IPublicStakingWatchApprovalForAllFunc struct {
-	defaultHook func(*bind.WatchOpts, chan<- *bindings.PublicStakingApprovalForAll, []common.Address, []common.Address) (event.Subscription, error)
-	hooks       []func(*bind.WatchOpts, chan<- *bindings.PublicStakingApprovalForAll, []common.Address, []common.Address) (event.Subscription, error)
+	defaultHook func(*bind.WatchOpts, chan<- *ethereum.PublicStakingApprovalForAll, []common.Address, []common.Address) (event.Subscription, error)
+	hooks       []func(*bind.WatchOpts, chan<- *ethereum.PublicStakingApprovalForAll, []common.Address, []common.Address) (event.Subscription, error)
 	history     []IPublicStakingWatchApprovalForAllFuncCall
 	mutex       sync.Mutex
 }
 
 // WatchApprovalForAll delegates to the next hook function in the queue and
 // stores the parameter and result values of this invocation.
-func (m *MockIPublicStaking) WatchApprovalForAll(v0 *bind.WatchOpts, v1 chan<- *bindings.PublicStakingApprovalForAll, v2 []common.Address, v3 []common.Address) (event.Subscription, error) {
+func (m *MockIPublicStaking) WatchApprovalForAll(v0 *bind.WatchOpts, v1 chan<- *ethereum.PublicStakingApprovalForAll, v2 []common.Address, v3 []common.Address) (event.Subscription, error) {
 	r0, r1 := m.WatchApprovalForAllFunc.nextHook()(v0, v1, v2, v3)
 	m.WatchApprovalForAllFunc.appendCall(IPublicStakingWatchApprovalForAllFuncCall{v0, v1, v2, v3, r0, r1})
 	return r0, r1
@@ -35758,7 +35760,7 @@ func (m *MockIPublicStaking) WatchApprovalForAll(v0 *bind.WatchOpts, v1 chan<- *
 // SetDefaultHook sets function that is called when the WatchApprovalForAll
 // method of the parent MockIPublicStaking instance is invoked and the hook
 // queue is empty.
-func (f *IPublicStakingWatchApprovalForAllFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *bindings.PublicStakingApprovalForAll, []common.Address, []common.Address) (event.Subscription, error)) {
+func (f *IPublicStakingWatchApprovalForAllFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *ethereum.PublicStakingApprovalForAll, []common.Address, []common.Address) (event.Subscription, error)) {
 	f.defaultHook = hook
 }
 
@@ -35767,7 +35769,7 @@ func (f *IPublicStakingWatchApprovalForAllFunc) SetDefaultHook(hook func(*bind.W
 // invokes the hook at the front of the queue and discards it. After the
 // queue is empty, the default hook function is invoked for any future
 // action.
-func (f *IPublicStakingWatchApprovalForAllFunc) PushHook(hook func(*bind.WatchOpts, chan<- *bindings.PublicStakingApprovalForAll, []common.Address, []common.Address) (event.Subscription, error)) {
+func (f *IPublicStakingWatchApprovalForAllFunc) PushHook(hook func(*bind.WatchOpts, chan<- *ethereum.PublicStakingApprovalForAll, []common.Address, []common.Address) (event.Subscription, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -35776,19 +35778,19 @@ func (f *IPublicStakingWatchApprovalForAllFunc) PushHook(hook func(*bind.WatchOp
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
 func (f *IPublicStakingWatchApprovalForAllFunc) SetDefaultReturn(r0 event.Subscription, r1 error) {
-	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *bindings.PublicStakingApprovalForAll, []common.Address, []common.Address) (event.Subscription, error) {
+	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *ethereum.PublicStakingApprovalForAll, []common.Address, []common.Address) (event.Subscription, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
 func (f *IPublicStakingWatchApprovalForAllFunc) PushReturn(r0 event.Subscription, r1 error) {
-	f.PushHook(func(*bind.WatchOpts, chan<- *bindings.PublicStakingApprovalForAll, []common.Address, []common.Address) (event.Subscription, error) {
+	f.PushHook(func(*bind.WatchOpts, chan<- *ethereum.PublicStakingApprovalForAll, []common.Address, []common.Address) (event.Subscription, error) {
 		return r0, r1
 	})
 }
 
-func (f *IPublicStakingWatchApprovalForAllFunc) nextHook() func(*bind.WatchOpts, chan<- *bindings.PublicStakingApprovalForAll, []common.Address, []common.Address) (event.Subscription, error) {
+func (f *IPublicStakingWatchApprovalForAllFunc) nextHook() func(*bind.WatchOpts, chan<- *ethereum.PublicStakingApprovalForAll, []common.Address, []common.Address) (event.Subscription, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -35827,7 +35829,7 @@ type IPublicStakingWatchApprovalForAllFuncCall struct {
 	Arg0 *bind.WatchOpts
 	// Arg1 is the value of the 2nd argument passed to this method
 	// invocation.
-	Arg1 chan<- *bindings.PublicStakingApprovalForAll
+	Arg1 chan<- *ethereum.PublicStakingApprovalForAll
 	// Arg2 is the value of the 3rd argument passed to this method
 	// invocation.
 	Arg2 []common.Address
@@ -35858,15 +35860,15 @@ func (c IPublicStakingWatchApprovalForAllFuncCall) Results() []interface{} {
 // WatchInitialized method of the parent MockIPublicStaking instance is
 // invoked.
 type IPublicStakingWatchInitializedFunc struct {
-	defaultHook func(*bind.WatchOpts, chan<- *bindings.PublicStakingInitialized) (event.Subscription, error)
-	hooks       []func(*bind.WatchOpts, chan<- *bindings.PublicStakingInitialized) (event.Subscription, error)
+	defaultHook func(*bind.WatchOpts, chan<- *ethereum.PublicStakingInitialized) (event.Subscription, error)
+	hooks       []func(*bind.WatchOpts, chan<- *ethereum.PublicStakingInitialized) (event.Subscription, error)
 	history     []IPublicStakingWatchInitializedFuncCall
 	mutex       sync.Mutex
 }
 
 // WatchInitialized delegates to the next hook function in the queue and
 // stores the parameter and result values of this invocation.
-func (m *MockIPublicStaking) WatchInitialized(v0 *bind.WatchOpts, v1 chan<- *bindings.PublicStakingInitialized) (event.Subscription, error) {
+func (m *MockIPublicStaking) WatchInitialized(v0 *bind.WatchOpts, v1 chan<- *ethereum.PublicStakingInitialized) (event.Subscription, error) {
 	r0, r1 := m.WatchInitializedFunc.nextHook()(v0, v1)
 	m.WatchInitializedFunc.appendCall(IPublicStakingWatchInitializedFuncCall{v0, v1, r0, r1})
 	return r0, r1
@@ -35875,7 +35877,7 @@ func (m *MockIPublicStaking) WatchInitialized(v0 *bind.WatchOpts, v1 chan<- *bin
 // SetDefaultHook sets function that is called when the WatchInitialized
 // method of the parent MockIPublicStaking instance is invoked and the hook
 // queue is empty.
-func (f *IPublicStakingWatchInitializedFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *bindings.PublicStakingInitialized) (event.Subscription, error)) {
+func (f *IPublicStakingWatchInitializedFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *ethereum.PublicStakingInitialized) (event.Subscription, error)) {
 	f.defaultHook = hook
 }
 
@@ -35883,7 +35885,7 @@ func (f *IPublicStakingWatchInitializedFunc) SetDefaultHook(hook func(*bind.Watc
 // WatchInitialized method of the parent MockIPublicStaking instance invokes
 // the hook at the front of the queue and discards it. After the queue is
 // empty, the default hook function is invoked for any future action.
-func (f *IPublicStakingWatchInitializedFunc) PushHook(hook func(*bind.WatchOpts, chan<- *bindings.PublicStakingInitialized) (event.Subscription, error)) {
+func (f *IPublicStakingWatchInitializedFunc) PushHook(hook func(*bind.WatchOpts, chan<- *ethereum.PublicStakingInitialized) (event.Subscription, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -35892,19 +35894,19 @@ func (f *IPublicStakingWatchInitializedFunc) PushHook(hook func(*bind.WatchOpts,
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
 func (f *IPublicStakingWatchInitializedFunc) SetDefaultReturn(r0 event.Subscription, r1 error) {
-	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *bindings.PublicStakingInitialized) (event.Subscription, error) {
+	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *ethereum.PublicStakingInitialized) (event.Subscription, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
 func (f *IPublicStakingWatchInitializedFunc) PushReturn(r0 event.Subscription, r1 error) {
-	f.PushHook(func(*bind.WatchOpts, chan<- *bindings.PublicStakingInitialized) (event.Subscription, error) {
+	f.PushHook(func(*bind.WatchOpts, chan<- *ethereum.PublicStakingInitialized) (event.Subscription, error) {
 		return r0, r1
 	})
 }
 
-func (f *IPublicStakingWatchInitializedFunc) nextHook() func(*bind.WatchOpts, chan<- *bindings.PublicStakingInitialized) (event.Subscription, error) {
+func (f *IPublicStakingWatchInitializedFunc) nextHook() func(*bind.WatchOpts, chan<- *ethereum.PublicStakingInitialized) (event.Subscription, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -35943,7 +35945,7 @@ type IPublicStakingWatchInitializedFuncCall struct {
 	Arg0 *bind.WatchOpts
 	// Arg1 is the value of the 2nd argument passed to this method
 	// invocation.
-	Arg1 chan<- *bindings.PublicStakingInitialized
+	Arg1 chan<- *ethereum.PublicStakingInitialized
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
 	Result0 event.Subscription
@@ -35968,15 +35970,15 @@ func (c IPublicStakingWatchInitializedFuncCall) Results() []interface{} {
 // WatchTransfer method of the parent MockIPublicStaking instance is
 // invoked.
 type IPublicStakingWatchTransferFunc struct {
-	defaultHook func(*bind.WatchOpts, chan<- *bindings.PublicStakingTransfer, []common.Address, []common.Address, []*big.Int) (event.Subscription, error)
-	hooks       []func(*bind.WatchOpts, chan<- *bindings.PublicStakingTransfer, []common.Address, []common.Address, []*big.Int) (event.Subscription, error)
+	defaultHook func(*bind.WatchOpts, chan<- *ethereum.PublicStakingTransfer, []common.Address, []common.Address, []*big.Int) (event.Subscription, error)
+	hooks       []func(*bind.WatchOpts, chan<- *ethereum.PublicStakingTransfer, []common.Address, []common.Address, []*big.Int) (event.Subscription, error)
 	history     []IPublicStakingWatchTransferFuncCall
 	mutex       sync.Mutex
 }
 
 // WatchTransfer delegates to the next hook function in the queue and stores
 // the parameter and result values of this invocation.
-func (m *MockIPublicStaking) WatchTransfer(v0 *bind.WatchOpts, v1 chan<- *bindings.PublicStakingTransfer, v2 []common.Address, v3 []common.Address, v4 []*big.Int) (event.Subscription, error) {
+func (m *MockIPublicStaking) WatchTransfer(v0 *bind.WatchOpts, v1 chan<- *ethereum.PublicStakingTransfer, v2 []common.Address, v3 []common.Address, v4 []*big.Int) (event.Subscription, error) {
 	r0, r1 := m.WatchTransferFunc.nextHook()(v0, v1, v2, v3, v4)
 	m.WatchTransferFunc.appendCall(IPublicStakingWatchTransferFuncCall{v0, v1, v2, v3, v4, r0, r1})
 	return r0, r1
@@ -35985,7 +35987,7 @@ func (m *MockIPublicStaking) WatchTransfer(v0 *bind.WatchOpts, v1 chan<- *bindin
 // SetDefaultHook sets function that is called when the WatchTransfer method
 // of the parent MockIPublicStaking instance is invoked and the hook queue
 // is empty.
-func (f *IPublicStakingWatchTransferFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *bindings.PublicStakingTransfer, []common.Address, []common.Address, []*big.Int) (event.Subscription, error)) {
+func (f *IPublicStakingWatchTransferFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *ethereum.PublicStakingTransfer, []common.Address, []common.Address, []*big.Int) (event.Subscription, error)) {
 	f.defaultHook = hook
 }
 
@@ -35993,7 +35995,7 @@ func (f *IPublicStakingWatchTransferFunc) SetDefaultHook(hook func(*bind.WatchOp
 // WatchTransfer method of the parent MockIPublicStaking instance invokes
 // the hook at the front of the queue and discards it. After the queue is
 // empty, the default hook function is invoked for any future action.
-func (f *IPublicStakingWatchTransferFunc) PushHook(hook func(*bind.WatchOpts, chan<- *bindings.PublicStakingTransfer, []common.Address, []common.Address, []*big.Int) (event.Subscription, error)) {
+func (f *IPublicStakingWatchTransferFunc) PushHook(hook func(*bind.WatchOpts, chan<- *ethereum.PublicStakingTransfer, []common.Address, []common.Address, []*big.Int) (event.Subscription, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -36002,19 +36004,19 @@ func (f *IPublicStakingWatchTransferFunc) PushHook(hook func(*bind.WatchOpts, ch
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
 func (f *IPublicStakingWatchTransferFunc) SetDefaultReturn(r0 event.Subscription, r1 error) {
-	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *bindings.PublicStakingTransfer, []common.Address, []common.Address, []*big.Int) (event.Subscription, error) {
+	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *ethereum.PublicStakingTransfer, []common.Address, []common.Address, []*big.Int) (event.Subscription, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
 func (f *IPublicStakingWatchTransferFunc) PushReturn(r0 event.Subscription, r1 error) {
-	f.PushHook(func(*bind.WatchOpts, chan<- *bindings.PublicStakingTransfer, []common.Address, []common.Address, []*big.Int) (event.Subscription, error) {
+	f.PushHook(func(*bind.WatchOpts, chan<- *ethereum.PublicStakingTransfer, []common.Address, []common.Address, []*big.Int) (event.Subscription, error) {
 		return r0, r1
 	})
 }
 
-func (f *IPublicStakingWatchTransferFunc) nextHook() func(*bind.WatchOpts, chan<- *bindings.PublicStakingTransfer, []common.Address, []common.Address, []*big.Int) (event.Subscription, error) {
+func (f *IPublicStakingWatchTransferFunc) nextHook() func(*bind.WatchOpts, chan<- *ethereum.PublicStakingTransfer, []common.Address, []common.Address, []*big.Int) (event.Subscription, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -36052,7 +36054,7 @@ type IPublicStakingWatchTransferFuncCall struct {
 	Arg0 *bind.WatchOpts
 	// Arg1 is the value of the 2nd argument passed to this method
 	// invocation.
-	Arg1 chan<- *bindings.PublicStakingTransfer
+	Arg1 chan<- *ethereum.PublicStakingTransfer
 	// Arg2 is the value of the 3rd argument passed to this method
 	// invocation.
 	Arg2 []common.Address
@@ -36083,8 +36085,8 @@ func (c IPublicStakingWatchTransferFuncCall) Results() []interface{} {
 }
 
 // MockISnapshots is a mock implementation of the ISnapshots interface (from
-// the package github.com/alicenet/alicenet/bridge/bindings) used for unit
-// testing.
+// the package github.com/alicenet/alicenet/bridge/bindings/ethereum) used
+// for unit testing.
 type MockISnapshots struct {
 	// CheckBClaimsSignatureFunc is an instance of a mock function object
 	// controlling the behavior of the method CheckBClaimsSignature.
@@ -36212,12 +36214,12 @@ func NewMockISnapshots() *MockISnapshots {
 			},
 		},
 		FilterInitializedFunc: &ISnapshotsFilterInitializedFunc{
-			defaultHook: func(*bind.FilterOpts) (r0 *bindings.SnapshotsInitializedIterator, r1 error) {
+			defaultHook: func(*bind.FilterOpts) (r0 *ethereum.SnapshotsInitializedIterator, r1 error) {
 				return
 			},
 		},
 		FilterSnapshotTakenFunc: &ISnapshotsFilterSnapshotTakenFunc{
-			defaultHook: func(*bind.FilterOpts, []*big.Int, []common.Address) (r0 *bindings.SnapshotsSnapshotTakenIterator, r1 error) {
+			defaultHook: func(*bind.FilterOpts, []*big.Int, []common.Address) (r0 *ethereum.SnapshotsSnapshotTakenIterator, r1 error) {
 				return
 			},
 		},
@@ -36232,12 +36234,12 @@ func NewMockISnapshots() *MockISnapshots {
 			},
 		},
 		GetBlockClaimsFromLatestSnapshotFunc: &ISnapshotsGetBlockClaimsFromLatestSnapshotFunc{
-			defaultHook: func(*bind.CallOpts) (r0 bindings.BClaimsParserLibraryBClaims, r1 error) {
+			defaultHook: func(*bind.CallOpts) (r0 ethereum.BClaimsParserLibraryBClaims, r1 error) {
 				return
 			},
 		},
 		GetBlockClaimsFromSnapshotFunc: &ISnapshotsGetBlockClaimsFromSnapshotFunc{
-			defaultHook: func(*bind.CallOpts, *big.Int) (r0 bindings.BClaimsParserLibraryBClaims, r1 error) {
+			defaultHook: func(*bind.CallOpts, *big.Int) (r0 ethereum.BClaimsParserLibraryBClaims, r1 error) {
 				return
 			},
 		},
@@ -36282,7 +36284,7 @@ func NewMockISnapshots() *MockISnapshots {
 			},
 		},
 		GetLatestSnapshotFunc: &ISnapshotsGetLatestSnapshotFunc{
-			defaultHook: func(*bind.CallOpts) (r0 bindings.Snapshot, r1 error) {
+			defaultHook: func(*bind.CallOpts) (r0 ethereum.Snapshot, r1 error) {
 				return
 			},
 		},
@@ -36297,7 +36299,7 @@ func NewMockISnapshots() *MockISnapshots {
 			},
 		},
 		GetSnapshotFunc: &ISnapshotsGetSnapshotFunc{
-			defaultHook: func(*bind.CallOpts, *big.Int) (r0 bindings.Snapshot, r1 error) {
+			defaultHook: func(*bind.CallOpts, *big.Int) (r0 ethereum.Snapshot, r1 error) {
 				return
 			},
 		},
@@ -36332,12 +36334,12 @@ func NewMockISnapshots() *MockISnapshots {
 			},
 		},
 		ParseInitializedFunc: &ISnapshotsParseInitializedFunc{
-			defaultHook: func(types.Log) (r0 *bindings.SnapshotsInitialized, r1 error) {
+			defaultHook: func(types.Log) (r0 *ethereum.SnapshotsInitialized, r1 error) {
 				return
 			},
 		},
 		ParseSnapshotTakenFunc: &ISnapshotsParseSnapshotTakenFunc{
-			defaultHook: func(types.Log) (r0 *bindings.SnapshotsSnapshotTaken, r1 error) {
+			defaultHook: func(types.Log) (r0 *ethereum.SnapshotsSnapshotTaken, r1 error) {
 				return
 			},
 		},
@@ -36362,12 +36364,12 @@ func NewMockISnapshots() *MockISnapshots {
 			},
 		},
 		WatchInitializedFunc: &ISnapshotsWatchInitializedFunc{
-			defaultHook: func(*bind.WatchOpts, chan<- *bindings.SnapshotsInitialized) (r0 event.Subscription, r1 error) {
+			defaultHook: func(*bind.WatchOpts, chan<- *ethereum.SnapshotsInitialized) (r0 event.Subscription, r1 error) {
 				return
 			},
 		},
 		WatchSnapshotTakenFunc: &ISnapshotsWatchSnapshotTakenFunc{
-			defaultHook: func(*bind.WatchOpts, chan<- *bindings.SnapshotsSnapshotTaken, []*big.Int, []common.Address) (r0 event.Subscription, r1 error) {
+			defaultHook: func(*bind.WatchOpts, chan<- *ethereum.SnapshotsSnapshotTaken, []*big.Int, []common.Address) (r0 event.Subscription, r1 error) {
 				return
 			},
 		},
@@ -36384,12 +36386,12 @@ func NewStrictMockISnapshots() *MockISnapshots {
 			},
 		},
 		FilterInitializedFunc: &ISnapshotsFilterInitializedFunc{
-			defaultHook: func(*bind.FilterOpts) (*bindings.SnapshotsInitializedIterator, error) {
+			defaultHook: func(*bind.FilterOpts) (*ethereum.SnapshotsInitializedIterator, error) {
 				panic("unexpected invocation of MockISnapshots.FilterInitialized")
 			},
 		},
 		FilterSnapshotTakenFunc: &ISnapshotsFilterSnapshotTakenFunc{
-			defaultHook: func(*bind.FilterOpts, []*big.Int, []common.Address) (*bindings.SnapshotsSnapshotTakenIterator, error) {
+			defaultHook: func(*bind.FilterOpts, []*big.Int, []common.Address) (*ethereum.SnapshotsSnapshotTakenIterator, error) {
 				panic("unexpected invocation of MockISnapshots.FilterSnapshotTaken")
 			},
 		},
@@ -36404,12 +36406,12 @@ func NewStrictMockISnapshots() *MockISnapshots {
 			},
 		},
 		GetBlockClaimsFromLatestSnapshotFunc: &ISnapshotsGetBlockClaimsFromLatestSnapshotFunc{
-			defaultHook: func(*bind.CallOpts) (bindings.BClaimsParserLibraryBClaims, error) {
+			defaultHook: func(*bind.CallOpts) (ethereum.BClaimsParserLibraryBClaims, error) {
 				panic("unexpected invocation of MockISnapshots.GetBlockClaimsFromLatestSnapshot")
 			},
 		},
 		GetBlockClaimsFromSnapshotFunc: &ISnapshotsGetBlockClaimsFromSnapshotFunc{
-			defaultHook: func(*bind.CallOpts, *big.Int) (bindings.BClaimsParserLibraryBClaims, error) {
+			defaultHook: func(*bind.CallOpts, *big.Int) (ethereum.BClaimsParserLibraryBClaims, error) {
 				panic("unexpected invocation of MockISnapshots.GetBlockClaimsFromSnapshot")
 			},
 		},
@@ -36454,7 +36456,7 @@ func NewStrictMockISnapshots() *MockISnapshots {
 			},
 		},
 		GetLatestSnapshotFunc: &ISnapshotsGetLatestSnapshotFunc{
-			defaultHook: func(*bind.CallOpts) (bindings.Snapshot, error) {
+			defaultHook: func(*bind.CallOpts) (ethereum.Snapshot, error) {
 				panic("unexpected invocation of MockISnapshots.GetLatestSnapshot")
 			},
 		},
@@ -36469,7 +36471,7 @@ func NewStrictMockISnapshots() *MockISnapshots {
 			},
 		},
 		GetSnapshotFunc: &ISnapshotsGetSnapshotFunc{
-			defaultHook: func(*bind.CallOpts, *big.Int) (bindings.Snapshot, error) {
+			defaultHook: func(*bind.CallOpts, *big.Int) (ethereum.Snapshot, error) {
 				panic("unexpected invocation of MockISnapshots.GetSnapshot")
 			},
 		},
@@ -36504,12 +36506,12 @@ func NewStrictMockISnapshots() *MockISnapshots {
 			},
 		},
 		ParseInitializedFunc: &ISnapshotsParseInitializedFunc{
-			defaultHook: func(types.Log) (*bindings.SnapshotsInitialized, error) {
+			defaultHook: func(types.Log) (*ethereum.SnapshotsInitialized, error) {
 				panic("unexpected invocation of MockISnapshots.ParseInitialized")
 			},
 		},
 		ParseSnapshotTakenFunc: &ISnapshotsParseSnapshotTakenFunc{
-			defaultHook: func(types.Log) (*bindings.SnapshotsSnapshotTaken, error) {
+			defaultHook: func(types.Log) (*ethereum.SnapshotsSnapshotTaken, error) {
 				panic("unexpected invocation of MockISnapshots.ParseSnapshotTaken")
 			},
 		},
@@ -36534,12 +36536,12 @@ func NewStrictMockISnapshots() *MockISnapshots {
 			},
 		},
 		WatchInitializedFunc: &ISnapshotsWatchInitializedFunc{
-			defaultHook: func(*bind.WatchOpts, chan<- *bindings.SnapshotsInitialized) (event.Subscription, error) {
+			defaultHook: func(*bind.WatchOpts, chan<- *ethereum.SnapshotsInitialized) (event.Subscription, error) {
 				panic("unexpected invocation of MockISnapshots.WatchInitialized")
 			},
 		},
 		WatchSnapshotTakenFunc: &ISnapshotsWatchSnapshotTakenFunc{
-			defaultHook: func(*bind.WatchOpts, chan<- *bindings.SnapshotsSnapshotTaken, []*big.Int, []common.Address) (event.Subscription, error) {
+			defaultHook: func(*bind.WatchOpts, chan<- *ethereum.SnapshotsSnapshotTaken, []*big.Int, []common.Address) (event.Subscription, error) {
 				panic("unexpected invocation of MockISnapshots.WatchSnapshotTaken")
 			},
 		},
@@ -36548,7 +36550,7 @@ func NewStrictMockISnapshots() *MockISnapshots {
 
 // NewMockISnapshotsFrom creates a new mock of the MockISnapshots interface.
 // All methods delegate to the given implementation, unless overwritten.
-func NewMockISnapshotsFrom(i bindings.ISnapshots) *MockISnapshots {
+func NewMockISnapshotsFrom(i ethereum.ISnapshots) *MockISnapshots {
 	return &MockISnapshots{
 		CheckBClaimsSignatureFunc: &ISnapshotsCheckBClaimsSignatureFunc{
 			defaultHook: i.CheckBClaimsSignature,
@@ -36770,15 +36772,15 @@ func (c ISnapshotsCheckBClaimsSignatureFuncCall) Results() []interface{} {
 // FilterInitialized method of the parent MockISnapshots instance is
 // invoked.
 type ISnapshotsFilterInitializedFunc struct {
-	defaultHook func(*bind.FilterOpts) (*bindings.SnapshotsInitializedIterator, error)
-	hooks       []func(*bind.FilterOpts) (*bindings.SnapshotsInitializedIterator, error)
+	defaultHook func(*bind.FilterOpts) (*ethereum.SnapshotsInitializedIterator, error)
+	hooks       []func(*bind.FilterOpts) (*ethereum.SnapshotsInitializedIterator, error)
 	history     []ISnapshotsFilterInitializedFuncCall
 	mutex       sync.Mutex
 }
 
 // FilterInitialized delegates to the next hook function in the queue and
 // stores the parameter and result values of this invocation.
-func (m *MockISnapshots) FilterInitialized(v0 *bind.FilterOpts) (*bindings.SnapshotsInitializedIterator, error) {
+func (m *MockISnapshots) FilterInitialized(v0 *bind.FilterOpts) (*ethereum.SnapshotsInitializedIterator, error) {
 	r0, r1 := m.FilterInitializedFunc.nextHook()(v0)
 	m.FilterInitializedFunc.appendCall(ISnapshotsFilterInitializedFuncCall{v0, r0, r1})
 	return r0, r1
@@ -36787,7 +36789,7 @@ func (m *MockISnapshots) FilterInitialized(v0 *bind.FilterOpts) (*bindings.Snaps
 // SetDefaultHook sets function that is called when the FilterInitialized
 // method of the parent MockISnapshots instance is invoked and the hook
 // queue is empty.
-func (f *ISnapshotsFilterInitializedFunc) SetDefaultHook(hook func(*bind.FilterOpts) (*bindings.SnapshotsInitializedIterator, error)) {
+func (f *ISnapshotsFilterInitializedFunc) SetDefaultHook(hook func(*bind.FilterOpts) (*ethereum.SnapshotsInitializedIterator, error)) {
 	f.defaultHook = hook
 }
 
@@ -36795,7 +36797,7 @@ func (f *ISnapshotsFilterInitializedFunc) SetDefaultHook(hook func(*bind.FilterO
 // FilterInitialized method of the parent MockISnapshots instance invokes
 // the hook at the front of the queue and discards it. After the queue is
 // empty, the default hook function is invoked for any future action.
-func (f *ISnapshotsFilterInitializedFunc) PushHook(hook func(*bind.FilterOpts) (*bindings.SnapshotsInitializedIterator, error)) {
+func (f *ISnapshotsFilterInitializedFunc) PushHook(hook func(*bind.FilterOpts) (*ethereum.SnapshotsInitializedIterator, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -36803,20 +36805,20 @@ func (f *ISnapshotsFilterInitializedFunc) PushHook(hook func(*bind.FilterOpts) (
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *ISnapshotsFilterInitializedFunc) SetDefaultReturn(r0 *bindings.SnapshotsInitializedIterator, r1 error) {
-	f.SetDefaultHook(func(*bind.FilterOpts) (*bindings.SnapshotsInitializedIterator, error) {
+func (f *ISnapshotsFilterInitializedFunc) SetDefaultReturn(r0 *ethereum.SnapshotsInitializedIterator, r1 error) {
+	f.SetDefaultHook(func(*bind.FilterOpts) (*ethereum.SnapshotsInitializedIterator, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *ISnapshotsFilterInitializedFunc) PushReturn(r0 *bindings.SnapshotsInitializedIterator, r1 error) {
-	f.PushHook(func(*bind.FilterOpts) (*bindings.SnapshotsInitializedIterator, error) {
+func (f *ISnapshotsFilterInitializedFunc) PushReturn(r0 *ethereum.SnapshotsInitializedIterator, r1 error) {
+	f.PushHook(func(*bind.FilterOpts) (*ethereum.SnapshotsInitializedIterator, error) {
 		return r0, r1
 	})
 }
 
-func (f *ISnapshotsFilterInitializedFunc) nextHook() func(*bind.FilterOpts) (*bindings.SnapshotsInitializedIterator, error) {
+func (f *ISnapshotsFilterInitializedFunc) nextHook() func(*bind.FilterOpts) (*ethereum.SnapshotsInitializedIterator, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -36854,7 +36856,7 @@ type ISnapshotsFilterInitializedFuncCall struct {
 	Arg0 *bind.FilterOpts
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 *bindings.SnapshotsInitializedIterator
+	Result0 *ethereum.SnapshotsInitializedIterator
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -36876,15 +36878,15 @@ func (c ISnapshotsFilterInitializedFuncCall) Results() []interface{} {
 // FilterSnapshotTaken method of the parent MockISnapshots instance is
 // invoked.
 type ISnapshotsFilterSnapshotTakenFunc struct {
-	defaultHook func(*bind.FilterOpts, []*big.Int, []common.Address) (*bindings.SnapshotsSnapshotTakenIterator, error)
-	hooks       []func(*bind.FilterOpts, []*big.Int, []common.Address) (*bindings.SnapshotsSnapshotTakenIterator, error)
+	defaultHook func(*bind.FilterOpts, []*big.Int, []common.Address) (*ethereum.SnapshotsSnapshotTakenIterator, error)
+	hooks       []func(*bind.FilterOpts, []*big.Int, []common.Address) (*ethereum.SnapshotsSnapshotTakenIterator, error)
 	history     []ISnapshotsFilterSnapshotTakenFuncCall
 	mutex       sync.Mutex
 }
 
 // FilterSnapshotTaken delegates to the next hook function in the queue and
 // stores the parameter and result values of this invocation.
-func (m *MockISnapshots) FilterSnapshotTaken(v0 *bind.FilterOpts, v1 []*big.Int, v2 []common.Address) (*bindings.SnapshotsSnapshotTakenIterator, error) {
+func (m *MockISnapshots) FilterSnapshotTaken(v0 *bind.FilterOpts, v1 []*big.Int, v2 []common.Address) (*ethereum.SnapshotsSnapshotTakenIterator, error) {
 	r0, r1 := m.FilterSnapshotTakenFunc.nextHook()(v0, v1, v2)
 	m.FilterSnapshotTakenFunc.appendCall(ISnapshotsFilterSnapshotTakenFuncCall{v0, v1, v2, r0, r1})
 	return r0, r1
@@ -36893,7 +36895,7 @@ func (m *MockISnapshots) FilterSnapshotTaken(v0 *bind.FilterOpts, v1 []*big.Int,
 // SetDefaultHook sets function that is called when the FilterSnapshotTaken
 // method of the parent MockISnapshots instance is invoked and the hook
 // queue is empty.
-func (f *ISnapshotsFilterSnapshotTakenFunc) SetDefaultHook(hook func(*bind.FilterOpts, []*big.Int, []common.Address) (*bindings.SnapshotsSnapshotTakenIterator, error)) {
+func (f *ISnapshotsFilterSnapshotTakenFunc) SetDefaultHook(hook func(*bind.FilterOpts, []*big.Int, []common.Address) (*ethereum.SnapshotsSnapshotTakenIterator, error)) {
 	f.defaultHook = hook
 }
 
@@ -36901,7 +36903,7 @@ func (f *ISnapshotsFilterSnapshotTakenFunc) SetDefaultHook(hook func(*bind.Filte
 // FilterSnapshotTaken method of the parent MockISnapshots instance invokes
 // the hook at the front of the queue and discards it. After the queue is
 // empty, the default hook function is invoked for any future action.
-func (f *ISnapshotsFilterSnapshotTakenFunc) PushHook(hook func(*bind.FilterOpts, []*big.Int, []common.Address) (*bindings.SnapshotsSnapshotTakenIterator, error)) {
+func (f *ISnapshotsFilterSnapshotTakenFunc) PushHook(hook func(*bind.FilterOpts, []*big.Int, []common.Address) (*ethereum.SnapshotsSnapshotTakenIterator, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -36909,20 +36911,20 @@ func (f *ISnapshotsFilterSnapshotTakenFunc) PushHook(hook func(*bind.FilterOpts,
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *ISnapshotsFilterSnapshotTakenFunc) SetDefaultReturn(r0 *bindings.SnapshotsSnapshotTakenIterator, r1 error) {
-	f.SetDefaultHook(func(*bind.FilterOpts, []*big.Int, []common.Address) (*bindings.SnapshotsSnapshotTakenIterator, error) {
+func (f *ISnapshotsFilterSnapshotTakenFunc) SetDefaultReturn(r0 *ethereum.SnapshotsSnapshotTakenIterator, r1 error) {
+	f.SetDefaultHook(func(*bind.FilterOpts, []*big.Int, []common.Address) (*ethereum.SnapshotsSnapshotTakenIterator, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *ISnapshotsFilterSnapshotTakenFunc) PushReturn(r0 *bindings.SnapshotsSnapshotTakenIterator, r1 error) {
-	f.PushHook(func(*bind.FilterOpts, []*big.Int, []common.Address) (*bindings.SnapshotsSnapshotTakenIterator, error) {
+func (f *ISnapshotsFilterSnapshotTakenFunc) PushReturn(r0 *ethereum.SnapshotsSnapshotTakenIterator, r1 error) {
+	f.PushHook(func(*bind.FilterOpts, []*big.Int, []common.Address) (*ethereum.SnapshotsSnapshotTakenIterator, error) {
 		return r0, r1
 	})
 }
 
-func (f *ISnapshotsFilterSnapshotTakenFunc) nextHook() func(*bind.FilterOpts, []*big.Int, []common.Address) (*bindings.SnapshotsSnapshotTakenIterator, error) {
+func (f *ISnapshotsFilterSnapshotTakenFunc) nextHook() func(*bind.FilterOpts, []*big.Int, []common.Address) (*ethereum.SnapshotsSnapshotTakenIterator, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -36967,7 +36969,7 @@ type ISnapshotsFilterSnapshotTakenFuncCall struct {
 	Arg2 []common.Address
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 *bindings.SnapshotsSnapshotTakenIterator
+	Result0 *ethereum.SnapshotsSnapshotTakenIterator
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -37211,15 +37213,15 @@ func (c ISnapshotsGetAliceNetHeightFromSnapshotFuncCall) Results() []interface{}
 // when the GetBlockClaimsFromLatestSnapshot method of the parent
 // MockISnapshots instance is invoked.
 type ISnapshotsGetBlockClaimsFromLatestSnapshotFunc struct {
-	defaultHook func(*bind.CallOpts) (bindings.BClaimsParserLibraryBClaims, error)
-	hooks       []func(*bind.CallOpts) (bindings.BClaimsParserLibraryBClaims, error)
+	defaultHook func(*bind.CallOpts) (ethereum.BClaimsParserLibraryBClaims, error)
+	hooks       []func(*bind.CallOpts) (ethereum.BClaimsParserLibraryBClaims, error)
 	history     []ISnapshotsGetBlockClaimsFromLatestSnapshotFuncCall
 	mutex       sync.Mutex
 }
 
 // GetBlockClaimsFromLatestSnapshot delegates to the next hook function in
 // the queue and stores the parameter and result values of this invocation.
-func (m *MockISnapshots) GetBlockClaimsFromLatestSnapshot(v0 *bind.CallOpts) (bindings.BClaimsParserLibraryBClaims, error) {
+func (m *MockISnapshots) GetBlockClaimsFromLatestSnapshot(v0 *bind.CallOpts) (ethereum.BClaimsParserLibraryBClaims, error) {
 	r0, r1 := m.GetBlockClaimsFromLatestSnapshotFunc.nextHook()(v0)
 	m.GetBlockClaimsFromLatestSnapshotFunc.appendCall(ISnapshotsGetBlockClaimsFromLatestSnapshotFuncCall{v0, r0, r1})
 	return r0, r1
@@ -37228,7 +37230,7 @@ func (m *MockISnapshots) GetBlockClaimsFromLatestSnapshot(v0 *bind.CallOpts) (bi
 // SetDefaultHook sets function that is called when the
 // GetBlockClaimsFromLatestSnapshot method of the parent MockISnapshots
 // instance is invoked and the hook queue is empty.
-func (f *ISnapshotsGetBlockClaimsFromLatestSnapshotFunc) SetDefaultHook(hook func(*bind.CallOpts) (bindings.BClaimsParserLibraryBClaims, error)) {
+func (f *ISnapshotsGetBlockClaimsFromLatestSnapshotFunc) SetDefaultHook(hook func(*bind.CallOpts) (ethereum.BClaimsParserLibraryBClaims, error)) {
 	f.defaultHook = hook
 }
 
@@ -37237,7 +37239,7 @@ func (f *ISnapshotsGetBlockClaimsFromLatestSnapshotFunc) SetDefaultHook(hook fun
 // instance invokes the hook at the front of the queue and discards it.
 // After the queue is empty, the default hook function is invoked for any
 // future action.
-func (f *ISnapshotsGetBlockClaimsFromLatestSnapshotFunc) PushHook(hook func(*bind.CallOpts) (bindings.BClaimsParserLibraryBClaims, error)) {
+func (f *ISnapshotsGetBlockClaimsFromLatestSnapshotFunc) PushHook(hook func(*bind.CallOpts) (ethereum.BClaimsParserLibraryBClaims, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -37245,20 +37247,20 @@ func (f *ISnapshotsGetBlockClaimsFromLatestSnapshotFunc) PushHook(hook func(*bin
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *ISnapshotsGetBlockClaimsFromLatestSnapshotFunc) SetDefaultReturn(r0 bindings.BClaimsParserLibraryBClaims, r1 error) {
-	f.SetDefaultHook(func(*bind.CallOpts) (bindings.BClaimsParserLibraryBClaims, error) {
+func (f *ISnapshotsGetBlockClaimsFromLatestSnapshotFunc) SetDefaultReturn(r0 ethereum.BClaimsParserLibraryBClaims, r1 error) {
+	f.SetDefaultHook(func(*bind.CallOpts) (ethereum.BClaimsParserLibraryBClaims, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *ISnapshotsGetBlockClaimsFromLatestSnapshotFunc) PushReturn(r0 bindings.BClaimsParserLibraryBClaims, r1 error) {
-	f.PushHook(func(*bind.CallOpts) (bindings.BClaimsParserLibraryBClaims, error) {
+func (f *ISnapshotsGetBlockClaimsFromLatestSnapshotFunc) PushReturn(r0 ethereum.BClaimsParserLibraryBClaims, r1 error) {
+	f.PushHook(func(*bind.CallOpts) (ethereum.BClaimsParserLibraryBClaims, error) {
 		return r0, r1
 	})
 }
 
-func (f *ISnapshotsGetBlockClaimsFromLatestSnapshotFunc) nextHook() func(*bind.CallOpts) (bindings.BClaimsParserLibraryBClaims, error) {
+func (f *ISnapshotsGetBlockClaimsFromLatestSnapshotFunc) nextHook() func(*bind.CallOpts) (ethereum.BClaimsParserLibraryBClaims, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -37298,7 +37300,7 @@ type ISnapshotsGetBlockClaimsFromLatestSnapshotFuncCall struct {
 	Arg0 *bind.CallOpts
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 bindings.BClaimsParserLibraryBClaims
+	Result0 ethereum.BClaimsParserLibraryBClaims
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -37320,15 +37322,15 @@ func (c ISnapshotsGetBlockClaimsFromLatestSnapshotFuncCall) Results() []interfac
 // GetBlockClaimsFromSnapshot method of the parent MockISnapshots instance
 // is invoked.
 type ISnapshotsGetBlockClaimsFromSnapshotFunc struct {
-	defaultHook func(*bind.CallOpts, *big.Int) (bindings.BClaimsParserLibraryBClaims, error)
-	hooks       []func(*bind.CallOpts, *big.Int) (bindings.BClaimsParserLibraryBClaims, error)
+	defaultHook func(*bind.CallOpts, *big.Int) (ethereum.BClaimsParserLibraryBClaims, error)
+	hooks       []func(*bind.CallOpts, *big.Int) (ethereum.BClaimsParserLibraryBClaims, error)
 	history     []ISnapshotsGetBlockClaimsFromSnapshotFuncCall
 	mutex       sync.Mutex
 }
 
 // GetBlockClaimsFromSnapshot delegates to the next hook function in the
 // queue and stores the parameter and result values of this invocation.
-func (m *MockISnapshots) GetBlockClaimsFromSnapshot(v0 *bind.CallOpts, v1 *big.Int) (bindings.BClaimsParserLibraryBClaims, error) {
+func (m *MockISnapshots) GetBlockClaimsFromSnapshot(v0 *bind.CallOpts, v1 *big.Int) (ethereum.BClaimsParserLibraryBClaims, error) {
 	r0, r1 := m.GetBlockClaimsFromSnapshotFunc.nextHook()(v0, v1)
 	m.GetBlockClaimsFromSnapshotFunc.appendCall(ISnapshotsGetBlockClaimsFromSnapshotFuncCall{v0, v1, r0, r1})
 	return r0, r1
@@ -37337,7 +37339,7 @@ func (m *MockISnapshots) GetBlockClaimsFromSnapshot(v0 *bind.CallOpts, v1 *big.I
 // SetDefaultHook sets function that is called when the
 // GetBlockClaimsFromSnapshot method of the parent MockISnapshots instance
 // is invoked and the hook queue is empty.
-func (f *ISnapshotsGetBlockClaimsFromSnapshotFunc) SetDefaultHook(hook func(*bind.CallOpts, *big.Int) (bindings.BClaimsParserLibraryBClaims, error)) {
+func (f *ISnapshotsGetBlockClaimsFromSnapshotFunc) SetDefaultHook(hook func(*bind.CallOpts, *big.Int) (ethereum.BClaimsParserLibraryBClaims, error)) {
 	f.defaultHook = hook
 }
 
@@ -37346,7 +37348,7 @@ func (f *ISnapshotsGetBlockClaimsFromSnapshotFunc) SetDefaultHook(hook func(*bin
 // invokes the hook at the front of the queue and discards it. After the
 // queue is empty, the default hook function is invoked for any future
 // action.
-func (f *ISnapshotsGetBlockClaimsFromSnapshotFunc) PushHook(hook func(*bind.CallOpts, *big.Int) (bindings.BClaimsParserLibraryBClaims, error)) {
+func (f *ISnapshotsGetBlockClaimsFromSnapshotFunc) PushHook(hook func(*bind.CallOpts, *big.Int) (ethereum.BClaimsParserLibraryBClaims, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -37354,20 +37356,20 @@ func (f *ISnapshotsGetBlockClaimsFromSnapshotFunc) PushHook(hook func(*bind.Call
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *ISnapshotsGetBlockClaimsFromSnapshotFunc) SetDefaultReturn(r0 bindings.BClaimsParserLibraryBClaims, r1 error) {
-	f.SetDefaultHook(func(*bind.CallOpts, *big.Int) (bindings.BClaimsParserLibraryBClaims, error) {
+func (f *ISnapshotsGetBlockClaimsFromSnapshotFunc) SetDefaultReturn(r0 ethereum.BClaimsParserLibraryBClaims, r1 error) {
+	f.SetDefaultHook(func(*bind.CallOpts, *big.Int) (ethereum.BClaimsParserLibraryBClaims, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *ISnapshotsGetBlockClaimsFromSnapshotFunc) PushReturn(r0 bindings.BClaimsParserLibraryBClaims, r1 error) {
-	f.PushHook(func(*bind.CallOpts, *big.Int) (bindings.BClaimsParserLibraryBClaims, error) {
+func (f *ISnapshotsGetBlockClaimsFromSnapshotFunc) PushReturn(r0 ethereum.BClaimsParserLibraryBClaims, r1 error) {
+	f.PushHook(func(*bind.CallOpts, *big.Int) (ethereum.BClaimsParserLibraryBClaims, error) {
 		return r0, r1
 	})
 }
 
-func (f *ISnapshotsGetBlockClaimsFromSnapshotFunc) nextHook() func(*bind.CallOpts, *big.Int) (bindings.BClaimsParserLibraryBClaims, error) {
+func (f *ISnapshotsGetBlockClaimsFromSnapshotFunc) nextHook() func(*bind.CallOpts, *big.Int) (ethereum.BClaimsParserLibraryBClaims, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -37410,7 +37412,7 @@ type ISnapshotsGetBlockClaimsFromSnapshotFuncCall struct {
 	Arg1 *big.Int
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 bindings.BClaimsParserLibraryBClaims
+	Result0 ethereum.BClaimsParserLibraryBClaims
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -38298,15 +38300,15 @@ func (c ISnapshotsGetEpochLengthFuncCall) Results() []interface{} {
 // GetLatestSnapshot method of the parent MockISnapshots instance is
 // invoked.
 type ISnapshotsGetLatestSnapshotFunc struct {
-	defaultHook func(*bind.CallOpts) (bindings.Snapshot, error)
-	hooks       []func(*bind.CallOpts) (bindings.Snapshot, error)
+	defaultHook func(*bind.CallOpts) (ethereum.Snapshot, error)
+	hooks       []func(*bind.CallOpts) (ethereum.Snapshot, error)
 	history     []ISnapshotsGetLatestSnapshotFuncCall
 	mutex       sync.Mutex
 }
 
 // GetLatestSnapshot delegates to the next hook function in the queue and
 // stores the parameter and result values of this invocation.
-func (m *MockISnapshots) GetLatestSnapshot(v0 *bind.CallOpts) (bindings.Snapshot, error) {
+func (m *MockISnapshots) GetLatestSnapshot(v0 *bind.CallOpts) (ethereum.Snapshot, error) {
 	r0, r1 := m.GetLatestSnapshotFunc.nextHook()(v0)
 	m.GetLatestSnapshotFunc.appendCall(ISnapshotsGetLatestSnapshotFuncCall{v0, r0, r1})
 	return r0, r1
@@ -38315,7 +38317,7 @@ func (m *MockISnapshots) GetLatestSnapshot(v0 *bind.CallOpts) (bindings.Snapshot
 // SetDefaultHook sets function that is called when the GetLatestSnapshot
 // method of the parent MockISnapshots instance is invoked and the hook
 // queue is empty.
-func (f *ISnapshotsGetLatestSnapshotFunc) SetDefaultHook(hook func(*bind.CallOpts) (bindings.Snapshot, error)) {
+func (f *ISnapshotsGetLatestSnapshotFunc) SetDefaultHook(hook func(*bind.CallOpts) (ethereum.Snapshot, error)) {
 	f.defaultHook = hook
 }
 
@@ -38323,7 +38325,7 @@ func (f *ISnapshotsGetLatestSnapshotFunc) SetDefaultHook(hook func(*bind.CallOpt
 // GetLatestSnapshot method of the parent MockISnapshots instance invokes
 // the hook at the front of the queue and discards it. After the queue is
 // empty, the default hook function is invoked for any future action.
-func (f *ISnapshotsGetLatestSnapshotFunc) PushHook(hook func(*bind.CallOpts) (bindings.Snapshot, error)) {
+func (f *ISnapshotsGetLatestSnapshotFunc) PushHook(hook func(*bind.CallOpts) (ethereum.Snapshot, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -38331,20 +38333,20 @@ func (f *ISnapshotsGetLatestSnapshotFunc) PushHook(hook func(*bind.CallOpts) (bi
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *ISnapshotsGetLatestSnapshotFunc) SetDefaultReturn(r0 bindings.Snapshot, r1 error) {
-	f.SetDefaultHook(func(*bind.CallOpts) (bindings.Snapshot, error) {
+func (f *ISnapshotsGetLatestSnapshotFunc) SetDefaultReturn(r0 ethereum.Snapshot, r1 error) {
+	f.SetDefaultHook(func(*bind.CallOpts) (ethereum.Snapshot, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *ISnapshotsGetLatestSnapshotFunc) PushReturn(r0 bindings.Snapshot, r1 error) {
-	f.PushHook(func(*bind.CallOpts) (bindings.Snapshot, error) {
+func (f *ISnapshotsGetLatestSnapshotFunc) PushReturn(r0 ethereum.Snapshot, r1 error) {
+	f.PushHook(func(*bind.CallOpts) (ethereum.Snapshot, error) {
 		return r0, r1
 	})
 }
 
-func (f *ISnapshotsGetLatestSnapshotFunc) nextHook() func(*bind.CallOpts) (bindings.Snapshot, error) {
+func (f *ISnapshotsGetLatestSnapshotFunc) nextHook() func(*bind.CallOpts) (ethereum.Snapshot, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -38382,7 +38384,7 @@ type ISnapshotsGetLatestSnapshotFuncCall struct {
 	Arg0 *bind.CallOpts
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 bindings.Snapshot
+	Result0 ethereum.Snapshot
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -38627,15 +38629,15 @@ func (c ISnapshotsGetMinimumIntervalBetweenSnapshotsFuncCall) Results() []interf
 // ISnapshotsGetSnapshotFunc describes the behavior when the GetSnapshot
 // method of the parent MockISnapshots instance is invoked.
 type ISnapshotsGetSnapshotFunc struct {
-	defaultHook func(*bind.CallOpts, *big.Int) (bindings.Snapshot, error)
-	hooks       []func(*bind.CallOpts, *big.Int) (bindings.Snapshot, error)
+	defaultHook func(*bind.CallOpts, *big.Int) (ethereum.Snapshot, error)
+	hooks       []func(*bind.CallOpts, *big.Int) (ethereum.Snapshot, error)
 	history     []ISnapshotsGetSnapshotFuncCall
 	mutex       sync.Mutex
 }
 
 // GetSnapshot delegates to the next hook function in the queue and stores
 // the parameter and result values of this invocation.
-func (m *MockISnapshots) GetSnapshot(v0 *bind.CallOpts, v1 *big.Int) (bindings.Snapshot, error) {
+func (m *MockISnapshots) GetSnapshot(v0 *bind.CallOpts, v1 *big.Int) (ethereum.Snapshot, error) {
 	r0, r1 := m.GetSnapshotFunc.nextHook()(v0, v1)
 	m.GetSnapshotFunc.appendCall(ISnapshotsGetSnapshotFuncCall{v0, v1, r0, r1})
 	return r0, r1
@@ -38644,7 +38646,7 @@ func (m *MockISnapshots) GetSnapshot(v0 *bind.CallOpts, v1 *big.Int) (bindings.S
 // SetDefaultHook sets function that is called when the GetSnapshot method
 // of the parent MockISnapshots instance is invoked and the hook queue is
 // empty.
-func (f *ISnapshotsGetSnapshotFunc) SetDefaultHook(hook func(*bind.CallOpts, *big.Int) (bindings.Snapshot, error)) {
+func (f *ISnapshotsGetSnapshotFunc) SetDefaultHook(hook func(*bind.CallOpts, *big.Int) (ethereum.Snapshot, error)) {
 	f.defaultHook = hook
 }
 
@@ -38652,7 +38654,7 @@ func (f *ISnapshotsGetSnapshotFunc) SetDefaultHook(hook func(*bind.CallOpts, *bi
 // GetSnapshot method of the parent MockISnapshots instance invokes the hook
 // at the front of the queue and discards it. After the queue is empty, the
 // default hook function is invoked for any future action.
-func (f *ISnapshotsGetSnapshotFunc) PushHook(hook func(*bind.CallOpts, *big.Int) (bindings.Snapshot, error)) {
+func (f *ISnapshotsGetSnapshotFunc) PushHook(hook func(*bind.CallOpts, *big.Int) (ethereum.Snapshot, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -38660,20 +38662,20 @@ func (f *ISnapshotsGetSnapshotFunc) PushHook(hook func(*bind.CallOpts, *big.Int)
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *ISnapshotsGetSnapshotFunc) SetDefaultReturn(r0 bindings.Snapshot, r1 error) {
-	f.SetDefaultHook(func(*bind.CallOpts, *big.Int) (bindings.Snapshot, error) {
+func (f *ISnapshotsGetSnapshotFunc) SetDefaultReturn(r0 ethereum.Snapshot, r1 error) {
+	f.SetDefaultHook(func(*bind.CallOpts, *big.Int) (ethereum.Snapshot, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *ISnapshotsGetSnapshotFunc) PushReturn(r0 bindings.Snapshot, r1 error) {
-	f.PushHook(func(*bind.CallOpts, *big.Int) (bindings.Snapshot, error) {
+func (f *ISnapshotsGetSnapshotFunc) PushReturn(r0 ethereum.Snapshot, r1 error) {
+	f.PushHook(func(*bind.CallOpts, *big.Int) (ethereum.Snapshot, error) {
 		return r0, r1
 	})
 }
 
-func (f *ISnapshotsGetSnapshotFunc) nextHook() func(*bind.CallOpts, *big.Int) (bindings.Snapshot, error) {
+func (f *ISnapshotsGetSnapshotFunc) nextHook() func(*bind.CallOpts, *big.Int) (ethereum.Snapshot, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -38714,7 +38716,7 @@ type ISnapshotsGetSnapshotFuncCall struct {
 	Arg1 *big.Int
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 bindings.Snapshot
+	Result0 ethereum.Snapshot
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -39416,15 +39418,15 @@ func (c ISnapshotsMigrateSnapshotsFuncCall) Results() []interface{} {
 // ISnapshotsParseInitializedFunc describes the behavior when the
 // ParseInitialized method of the parent MockISnapshots instance is invoked.
 type ISnapshotsParseInitializedFunc struct {
-	defaultHook func(types.Log) (*bindings.SnapshotsInitialized, error)
-	hooks       []func(types.Log) (*bindings.SnapshotsInitialized, error)
+	defaultHook func(types.Log) (*ethereum.SnapshotsInitialized, error)
+	hooks       []func(types.Log) (*ethereum.SnapshotsInitialized, error)
 	history     []ISnapshotsParseInitializedFuncCall
 	mutex       sync.Mutex
 }
 
 // ParseInitialized delegates to the next hook function in the queue and
 // stores the parameter and result values of this invocation.
-func (m *MockISnapshots) ParseInitialized(v0 types.Log) (*bindings.SnapshotsInitialized, error) {
+func (m *MockISnapshots) ParseInitialized(v0 types.Log) (*ethereum.SnapshotsInitialized, error) {
 	r0, r1 := m.ParseInitializedFunc.nextHook()(v0)
 	m.ParseInitializedFunc.appendCall(ISnapshotsParseInitializedFuncCall{v0, r0, r1})
 	return r0, r1
@@ -39433,7 +39435,7 @@ func (m *MockISnapshots) ParseInitialized(v0 types.Log) (*bindings.SnapshotsInit
 // SetDefaultHook sets function that is called when the ParseInitialized
 // method of the parent MockISnapshots instance is invoked and the hook
 // queue is empty.
-func (f *ISnapshotsParseInitializedFunc) SetDefaultHook(hook func(types.Log) (*bindings.SnapshotsInitialized, error)) {
+func (f *ISnapshotsParseInitializedFunc) SetDefaultHook(hook func(types.Log) (*ethereum.SnapshotsInitialized, error)) {
 	f.defaultHook = hook
 }
 
@@ -39441,7 +39443,7 @@ func (f *ISnapshotsParseInitializedFunc) SetDefaultHook(hook func(types.Log) (*b
 // ParseInitialized method of the parent MockISnapshots instance invokes the
 // hook at the front of the queue and discards it. After the queue is empty,
 // the default hook function is invoked for any future action.
-func (f *ISnapshotsParseInitializedFunc) PushHook(hook func(types.Log) (*bindings.SnapshotsInitialized, error)) {
+func (f *ISnapshotsParseInitializedFunc) PushHook(hook func(types.Log) (*ethereum.SnapshotsInitialized, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -39449,20 +39451,20 @@ func (f *ISnapshotsParseInitializedFunc) PushHook(hook func(types.Log) (*binding
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *ISnapshotsParseInitializedFunc) SetDefaultReturn(r0 *bindings.SnapshotsInitialized, r1 error) {
-	f.SetDefaultHook(func(types.Log) (*bindings.SnapshotsInitialized, error) {
+func (f *ISnapshotsParseInitializedFunc) SetDefaultReturn(r0 *ethereum.SnapshotsInitialized, r1 error) {
+	f.SetDefaultHook(func(types.Log) (*ethereum.SnapshotsInitialized, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *ISnapshotsParseInitializedFunc) PushReturn(r0 *bindings.SnapshotsInitialized, r1 error) {
-	f.PushHook(func(types.Log) (*bindings.SnapshotsInitialized, error) {
+func (f *ISnapshotsParseInitializedFunc) PushReturn(r0 *ethereum.SnapshotsInitialized, r1 error) {
+	f.PushHook(func(types.Log) (*ethereum.SnapshotsInitialized, error) {
 		return r0, r1
 	})
 }
 
-func (f *ISnapshotsParseInitializedFunc) nextHook() func(types.Log) (*bindings.SnapshotsInitialized, error) {
+func (f *ISnapshotsParseInitializedFunc) nextHook() func(types.Log) (*ethereum.SnapshotsInitialized, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -39500,7 +39502,7 @@ type ISnapshotsParseInitializedFuncCall struct {
 	Arg0 types.Log
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 *bindings.SnapshotsInitialized
+	Result0 *ethereum.SnapshotsInitialized
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -39522,15 +39524,15 @@ func (c ISnapshotsParseInitializedFuncCall) Results() []interface{} {
 // ParseSnapshotTaken method of the parent MockISnapshots instance is
 // invoked.
 type ISnapshotsParseSnapshotTakenFunc struct {
-	defaultHook func(types.Log) (*bindings.SnapshotsSnapshotTaken, error)
-	hooks       []func(types.Log) (*bindings.SnapshotsSnapshotTaken, error)
+	defaultHook func(types.Log) (*ethereum.SnapshotsSnapshotTaken, error)
+	hooks       []func(types.Log) (*ethereum.SnapshotsSnapshotTaken, error)
 	history     []ISnapshotsParseSnapshotTakenFuncCall
 	mutex       sync.Mutex
 }
 
 // ParseSnapshotTaken delegates to the next hook function in the queue and
 // stores the parameter and result values of this invocation.
-func (m *MockISnapshots) ParseSnapshotTaken(v0 types.Log) (*bindings.SnapshotsSnapshotTaken, error) {
+func (m *MockISnapshots) ParseSnapshotTaken(v0 types.Log) (*ethereum.SnapshotsSnapshotTaken, error) {
 	r0, r1 := m.ParseSnapshotTakenFunc.nextHook()(v0)
 	m.ParseSnapshotTakenFunc.appendCall(ISnapshotsParseSnapshotTakenFuncCall{v0, r0, r1})
 	return r0, r1
@@ -39539,7 +39541,7 @@ func (m *MockISnapshots) ParseSnapshotTaken(v0 types.Log) (*bindings.SnapshotsSn
 // SetDefaultHook sets function that is called when the ParseSnapshotTaken
 // method of the parent MockISnapshots instance is invoked and the hook
 // queue is empty.
-func (f *ISnapshotsParseSnapshotTakenFunc) SetDefaultHook(hook func(types.Log) (*bindings.SnapshotsSnapshotTaken, error)) {
+func (f *ISnapshotsParseSnapshotTakenFunc) SetDefaultHook(hook func(types.Log) (*ethereum.SnapshotsSnapshotTaken, error)) {
 	f.defaultHook = hook
 }
 
@@ -39547,7 +39549,7 @@ func (f *ISnapshotsParseSnapshotTakenFunc) SetDefaultHook(hook func(types.Log) (
 // ParseSnapshotTaken method of the parent MockISnapshots instance invokes
 // the hook at the front of the queue and discards it. After the queue is
 // empty, the default hook function is invoked for any future action.
-func (f *ISnapshotsParseSnapshotTakenFunc) PushHook(hook func(types.Log) (*bindings.SnapshotsSnapshotTaken, error)) {
+func (f *ISnapshotsParseSnapshotTakenFunc) PushHook(hook func(types.Log) (*ethereum.SnapshotsSnapshotTaken, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -39555,20 +39557,20 @@ func (f *ISnapshotsParseSnapshotTakenFunc) PushHook(hook func(types.Log) (*bindi
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *ISnapshotsParseSnapshotTakenFunc) SetDefaultReturn(r0 *bindings.SnapshotsSnapshotTaken, r1 error) {
-	f.SetDefaultHook(func(types.Log) (*bindings.SnapshotsSnapshotTaken, error) {
+func (f *ISnapshotsParseSnapshotTakenFunc) SetDefaultReturn(r0 *ethereum.SnapshotsSnapshotTaken, r1 error) {
+	f.SetDefaultHook(func(types.Log) (*ethereum.SnapshotsSnapshotTaken, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *ISnapshotsParseSnapshotTakenFunc) PushReturn(r0 *bindings.SnapshotsSnapshotTaken, r1 error) {
-	f.PushHook(func(types.Log) (*bindings.SnapshotsSnapshotTaken, error) {
+func (f *ISnapshotsParseSnapshotTakenFunc) PushReturn(r0 *ethereum.SnapshotsSnapshotTaken, r1 error) {
+	f.PushHook(func(types.Log) (*ethereum.SnapshotsSnapshotTaken, error) {
 		return r0, r1
 	})
 }
 
-func (f *ISnapshotsParseSnapshotTakenFunc) nextHook() func(types.Log) (*bindings.SnapshotsSnapshotTaken, error) {
+func (f *ISnapshotsParseSnapshotTakenFunc) nextHook() func(types.Log) (*ethereum.SnapshotsSnapshotTaken, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -39606,7 +39608,7 @@ type ISnapshotsParseSnapshotTakenFuncCall struct {
 	Arg0 types.Log
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 *bindings.SnapshotsSnapshotTaken
+	Result0 *ethereum.SnapshotsSnapshotTaken
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -40074,15 +40076,15 @@ func (c ISnapshotsSnapshotFuncCall) Results() []interface{} {
 // ISnapshotsWatchInitializedFunc describes the behavior when the
 // WatchInitialized method of the parent MockISnapshots instance is invoked.
 type ISnapshotsWatchInitializedFunc struct {
-	defaultHook func(*bind.WatchOpts, chan<- *bindings.SnapshotsInitialized) (event.Subscription, error)
-	hooks       []func(*bind.WatchOpts, chan<- *bindings.SnapshotsInitialized) (event.Subscription, error)
+	defaultHook func(*bind.WatchOpts, chan<- *ethereum.SnapshotsInitialized) (event.Subscription, error)
+	hooks       []func(*bind.WatchOpts, chan<- *ethereum.SnapshotsInitialized) (event.Subscription, error)
 	history     []ISnapshotsWatchInitializedFuncCall
 	mutex       sync.Mutex
 }
 
 // WatchInitialized delegates to the next hook function in the queue and
 // stores the parameter and result values of this invocation.
-func (m *MockISnapshots) WatchInitialized(v0 *bind.WatchOpts, v1 chan<- *bindings.SnapshotsInitialized) (event.Subscription, error) {
+func (m *MockISnapshots) WatchInitialized(v0 *bind.WatchOpts, v1 chan<- *ethereum.SnapshotsInitialized) (event.Subscription, error) {
 	r0, r1 := m.WatchInitializedFunc.nextHook()(v0, v1)
 	m.WatchInitializedFunc.appendCall(ISnapshotsWatchInitializedFuncCall{v0, v1, r0, r1})
 	return r0, r1
@@ -40091,7 +40093,7 @@ func (m *MockISnapshots) WatchInitialized(v0 *bind.WatchOpts, v1 chan<- *binding
 // SetDefaultHook sets function that is called when the WatchInitialized
 // method of the parent MockISnapshots instance is invoked and the hook
 // queue is empty.
-func (f *ISnapshotsWatchInitializedFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *bindings.SnapshotsInitialized) (event.Subscription, error)) {
+func (f *ISnapshotsWatchInitializedFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *ethereum.SnapshotsInitialized) (event.Subscription, error)) {
 	f.defaultHook = hook
 }
 
@@ -40099,7 +40101,7 @@ func (f *ISnapshotsWatchInitializedFunc) SetDefaultHook(hook func(*bind.WatchOpt
 // WatchInitialized method of the parent MockISnapshots instance invokes the
 // hook at the front of the queue and discards it. After the queue is empty,
 // the default hook function is invoked for any future action.
-func (f *ISnapshotsWatchInitializedFunc) PushHook(hook func(*bind.WatchOpts, chan<- *bindings.SnapshotsInitialized) (event.Subscription, error)) {
+func (f *ISnapshotsWatchInitializedFunc) PushHook(hook func(*bind.WatchOpts, chan<- *ethereum.SnapshotsInitialized) (event.Subscription, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -40108,19 +40110,19 @@ func (f *ISnapshotsWatchInitializedFunc) PushHook(hook func(*bind.WatchOpts, cha
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
 func (f *ISnapshotsWatchInitializedFunc) SetDefaultReturn(r0 event.Subscription, r1 error) {
-	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *bindings.SnapshotsInitialized) (event.Subscription, error) {
+	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *ethereum.SnapshotsInitialized) (event.Subscription, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
 func (f *ISnapshotsWatchInitializedFunc) PushReturn(r0 event.Subscription, r1 error) {
-	f.PushHook(func(*bind.WatchOpts, chan<- *bindings.SnapshotsInitialized) (event.Subscription, error) {
+	f.PushHook(func(*bind.WatchOpts, chan<- *ethereum.SnapshotsInitialized) (event.Subscription, error) {
 		return r0, r1
 	})
 }
 
-func (f *ISnapshotsWatchInitializedFunc) nextHook() func(*bind.WatchOpts, chan<- *bindings.SnapshotsInitialized) (event.Subscription, error) {
+func (f *ISnapshotsWatchInitializedFunc) nextHook() func(*bind.WatchOpts, chan<- *ethereum.SnapshotsInitialized) (event.Subscription, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -40158,7 +40160,7 @@ type ISnapshotsWatchInitializedFuncCall struct {
 	Arg0 *bind.WatchOpts
 	// Arg1 is the value of the 2nd argument passed to this method
 	// invocation.
-	Arg1 chan<- *bindings.SnapshotsInitialized
+	Arg1 chan<- *ethereum.SnapshotsInitialized
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
 	Result0 event.Subscription
@@ -40183,15 +40185,15 @@ func (c ISnapshotsWatchInitializedFuncCall) Results() []interface{} {
 // WatchSnapshotTaken method of the parent MockISnapshots instance is
 // invoked.
 type ISnapshotsWatchSnapshotTakenFunc struct {
-	defaultHook func(*bind.WatchOpts, chan<- *bindings.SnapshotsSnapshotTaken, []*big.Int, []common.Address) (event.Subscription, error)
-	hooks       []func(*bind.WatchOpts, chan<- *bindings.SnapshotsSnapshotTaken, []*big.Int, []common.Address) (event.Subscription, error)
+	defaultHook func(*bind.WatchOpts, chan<- *ethereum.SnapshotsSnapshotTaken, []*big.Int, []common.Address) (event.Subscription, error)
+	hooks       []func(*bind.WatchOpts, chan<- *ethereum.SnapshotsSnapshotTaken, []*big.Int, []common.Address) (event.Subscription, error)
 	history     []ISnapshotsWatchSnapshotTakenFuncCall
 	mutex       sync.Mutex
 }
 
 // WatchSnapshotTaken delegates to the next hook function in the queue and
 // stores the parameter and result values of this invocation.
-func (m *MockISnapshots) WatchSnapshotTaken(v0 *bind.WatchOpts, v1 chan<- *bindings.SnapshotsSnapshotTaken, v2 []*big.Int, v3 []common.Address) (event.Subscription, error) {
+func (m *MockISnapshots) WatchSnapshotTaken(v0 *bind.WatchOpts, v1 chan<- *ethereum.SnapshotsSnapshotTaken, v2 []*big.Int, v3 []common.Address) (event.Subscription, error) {
 	r0, r1 := m.WatchSnapshotTakenFunc.nextHook()(v0, v1, v2, v3)
 	m.WatchSnapshotTakenFunc.appendCall(ISnapshotsWatchSnapshotTakenFuncCall{v0, v1, v2, v3, r0, r1})
 	return r0, r1
@@ -40200,7 +40202,7 @@ func (m *MockISnapshots) WatchSnapshotTaken(v0 *bind.WatchOpts, v1 chan<- *bindi
 // SetDefaultHook sets function that is called when the WatchSnapshotTaken
 // method of the parent MockISnapshots instance is invoked and the hook
 // queue is empty.
-func (f *ISnapshotsWatchSnapshotTakenFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *bindings.SnapshotsSnapshotTaken, []*big.Int, []common.Address) (event.Subscription, error)) {
+func (f *ISnapshotsWatchSnapshotTakenFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *ethereum.SnapshotsSnapshotTaken, []*big.Int, []common.Address) (event.Subscription, error)) {
 	f.defaultHook = hook
 }
 
@@ -40208,7 +40210,7 @@ func (f *ISnapshotsWatchSnapshotTakenFunc) SetDefaultHook(hook func(*bind.WatchO
 // WatchSnapshotTaken method of the parent MockISnapshots instance invokes
 // the hook at the front of the queue and discards it. After the queue is
 // empty, the default hook function is invoked for any future action.
-func (f *ISnapshotsWatchSnapshotTakenFunc) PushHook(hook func(*bind.WatchOpts, chan<- *bindings.SnapshotsSnapshotTaken, []*big.Int, []common.Address) (event.Subscription, error)) {
+func (f *ISnapshotsWatchSnapshotTakenFunc) PushHook(hook func(*bind.WatchOpts, chan<- *ethereum.SnapshotsSnapshotTaken, []*big.Int, []common.Address) (event.Subscription, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -40217,19 +40219,19 @@ func (f *ISnapshotsWatchSnapshotTakenFunc) PushHook(hook func(*bind.WatchOpts, c
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
 func (f *ISnapshotsWatchSnapshotTakenFunc) SetDefaultReturn(r0 event.Subscription, r1 error) {
-	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *bindings.SnapshotsSnapshotTaken, []*big.Int, []common.Address) (event.Subscription, error) {
+	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *ethereum.SnapshotsSnapshotTaken, []*big.Int, []common.Address) (event.Subscription, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
 func (f *ISnapshotsWatchSnapshotTakenFunc) PushReturn(r0 event.Subscription, r1 error) {
-	f.PushHook(func(*bind.WatchOpts, chan<- *bindings.SnapshotsSnapshotTaken, []*big.Int, []common.Address) (event.Subscription, error) {
+	f.PushHook(func(*bind.WatchOpts, chan<- *ethereum.SnapshotsSnapshotTaken, []*big.Int, []common.Address) (event.Subscription, error) {
 		return r0, r1
 	})
 }
 
-func (f *ISnapshotsWatchSnapshotTakenFunc) nextHook() func(*bind.WatchOpts, chan<- *bindings.SnapshotsSnapshotTaken, []*big.Int, []common.Address) (event.Subscription, error) {
+func (f *ISnapshotsWatchSnapshotTakenFunc) nextHook() func(*bind.WatchOpts, chan<- *ethereum.SnapshotsSnapshotTaken, []*big.Int, []common.Address) (event.Subscription, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -40267,7 +40269,7 @@ type ISnapshotsWatchSnapshotTakenFuncCall struct {
 	Arg0 *bind.WatchOpts
 	// Arg1 is the value of the 2nd argument passed to this method
 	// invocation.
-	Arg1 chan<- *bindings.SnapshotsSnapshotTaken
+	Arg1 chan<- *ethereum.SnapshotsSnapshotTaken
 	// Arg2 is the value of the 3rd argument passed to this method
 	// invocation.
 	Arg2 []*big.Int
@@ -40295,8 +40297,9 @@ func (c ISnapshotsWatchSnapshotTakenFuncCall) Results() []interface{} {
 }
 
 // MockIValidatorPool is a mock implementation of the IValidatorPool
-// interface (from the package github.com/alicenet/alicenet/bridge/bindings)
-// used for unit testing.
+// interface (from the package
+// github.com/alicenet/alicenet/bridge/bindings/ethereum) used for unit
+// testing.
 type MockIValidatorPool struct {
 	// CLAIMPERIODFunc is an instance of a mock function object controlling
 	// the behavior of the method CLAIMPERIOD.
@@ -40515,32 +40518,32 @@ func NewMockIValidatorPool() *MockIValidatorPool {
 			},
 		},
 		FilterInitializedFunc: &IValidatorPoolFilterInitializedFunc{
-			defaultHook: func(*bind.FilterOpts) (r0 *bindings.ValidatorPoolInitializedIterator, r1 error) {
+			defaultHook: func(*bind.FilterOpts) (r0 *ethereum.ValidatorPoolInitializedIterator, r1 error) {
 				return
 			},
 		},
 		FilterMaintenanceScheduledFunc: &IValidatorPoolFilterMaintenanceScheduledFunc{
-			defaultHook: func(*bind.FilterOpts) (r0 *bindings.ValidatorPoolMaintenanceScheduledIterator, r1 error) {
+			defaultHook: func(*bind.FilterOpts) (r0 *ethereum.ValidatorPoolMaintenanceScheduledIterator, r1 error) {
 				return
 			},
 		},
 		FilterValidatorJoinedFunc: &IValidatorPoolFilterValidatorJoinedFunc{
-			defaultHook: func(*bind.FilterOpts, []common.Address) (r0 *bindings.ValidatorPoolValidatorJoinedIterator, r1 error) {
+			defaultHook: func(*bind.FilterOpts, []common.Address) (r0 *ethereum.ValidatorPoolValidatorJoinedIterator, r1 error) {
 				return
 			},
 		},
 		FilterValidatorLeftFunc: &IValidatorPoolFilterValidatorLeftFunc{
-			defaultHook: func(*bind.FilterOpts, []common.Address) (r0 *bindings.ValidatorPoolValidatorLeftIterator, r1 error) {
+			defaultHook: func(*bind.FilterOpts, []common.Address) (r0 *ethereum.ValidatorPoolValidatorLeftIterator, r1 error) {
 				return
 			},
 		},
 		FilterValidatorMajorSlashedFunc: &IValidatorPoolFilterValidatorMajorSlashedFunc{
-			defaultHook: func(*bind.FilterOpts, []common.Address) (r0 *bindings.ValidatorPoolValidatorMajorSlashedIterator, r1 error) {
+			defaultHook: func(*bind.FilterOpts, []common.Address) (r0 *ethereum.ValidatorPoolValidatorMajorSlashedIterator, r1 error) {
 				return
 			},
 		},
 		FilterValidatorMinorSlashedFunc: &IValidatorPoolFilterValidatorMinorSlashedFunc{
-			defaultHook: func(*bind.FilterOpts, []common.Address) (r0 *bindings.ValidatorPoolValidatorMinorSlashedIterator, r1 error) {
+			defaultHook: func(*bind.FilterOpts, []common.Address) (r0 *ethereum.ValidatorPoolValidatorMinorSlashedIterator, r1 error) {
 				return
 			},
 		},
@@ -40585,7 +40588,7 @@ func NewMockIValidatorPool() *MockIValidatorPool {
 			},
 		},
 		GetValidatorDataFunc: &IValidatorPoolGetValidatorDataFunc{
-			defaultHook: func(*bind.CallOpts, *big.Int) (r0 bindings.ValidatorData, r1 error) {
+			defaultHook: func(*bind.CallOpts, *big.Int) (r0 ethereum.ValidatorData, r1 error) {
 				return
 			},
 		},
@@ -40655,32 +40658,32 @@ func NewMockIValidatorPool() *MockIValidatorPool {
 			},
 		},
 		ParseInitializedFunc: &IValidatorPoolParseInitializedFunc{
-			defaultHook: func(types.Log) (r0 *bindings.ValidatorPoolInitialized, r1 error) {
+			defaultHook: func(types.Log) (r0 *ethereum.ValidatorPoolInitialized, r1 error) {
 				return
 			},
 		},
 		ParseMaintenanceScheduledFunc: &IValidatorPoolParseMaintenanceScheduledFunc{
-			defaultHook: func(types.Log) (r0 *bindings.ValidatorPoolMaintenanceScheduled, r1 error) {
+			defaultHook: func(types.Log) (r0 *ethereum.ValidatorPoolMaintenanceScheduled, r1 error) {
 				return
 			},
 		},
 		ParseValidatorJoinedFunc: &IValidatorPoolParseValidatorJoinedFunc{
-			defaultHook: func(types.Log) (r0 *bindings.ValidatorPoolValidatorJoined, r1 error) {
+			defaultHook: func(types.Log) (r0 *ethereum.ValidatorPoolValidatorJoined, r1 error) {
 				return
 			},
 		},
 		ParseValidatorLeftFunc: &IValidatorPoolParseValidatorLeftFunc{
-			defaultHook: func(types.Log) (r0 *bindings.ValidatorPoolValidatorLeft, r1 error) {
+			defaultHook: func(types.Log) (r0 *ethereum.ValidatorPoolValidatorLeft, r1 error) {
 				return
 			},
 		},
 		ParseValidatorMajorSlashedFunc: &IValidatorPoolParseValidatorMajorSlashedFunc{
-			defaultHook: func(types.Log) (r0 *bindings.ValidatorPoolValidatorMajorSlashed, r1 error) {
+			defaultHook: func(types.Log) (r0 *ethereum.ValidatorPoolValidatorMajorSlashed, r1 error) {
 				return
 			},
 		},
 		ParseValidatorMinorSlashedFunc: &IValidatorPoolParseValidatorMinorSlashedFunc{
-			defaultHook: func(types.Log) (r0 *bindings.ValidatorPoolValidatorMinorSlashed, r1 error) {
+			defaultHook: func(types.Log) (r0 *ethereum.ValidatorPoolValidatorMinorSlashed, r1 error) {
 				return
 			},
 		},
@@ -40760,32 +40763,32 @@ func NewMockIValidatorPool() *MockIValidatorPool {
 			},
 		},
 		WatchInitializedFunc: &IValidatorPoolWatchInitializedFunc{
-			defaultHook: func(*bind.WatchOpts, chan<- *bindings.ValidatorPoolInitialized) (r0 event.Subscription, r1 error) {
+			defaultHook: func(*bind.WatchOpts, chan<- *ethereum.ValidatorPoolInitialized) (r0 event.Subscription, r1 error) {
 				return
 			},
 		},
 		WatchMaintenanceScheduledFunc: &IValidatorPoolWatchMaintenanceScheduledFunc{
-			defaultHook: func(*bind.WatchOpts, chan<- *bindings.ValidatorPoolMaintenanceScheduled) (r0 event.Subscription, r1 error) {
+			defaultHook: func(*bind.WatchOpts, chan<- *ethereum.ValidatorPoolMaintenanceScheduled) (r0 event.Subscription, r1 error) {
 				return
 			},
 		},
 		WatchValidatorJoinedFunc: &IValidatorPoolWatchValidatorJoinedFunc{
-			defaultHook: func(*bind.WatchOpts, chan<- *bindings.ValidatorPoolValidatorJoined, []common.Address) (r0 event.Subscription, r1 error) {
+			defaultHook: func(*bind.WatchOpts, chan<- *ethereum.ValidatorPoolValidatorJoined, []common.Address) (r0 event.Subscription, r1 error) {
 				return
 			},
 		},
 		WatchValidatorLeftFunc: &IValidatorPoolWatchValidatorLeftFunc{
-			defaultHook: func(*bind.WatchOpts, chan<- *bindings.ValidatorPoolValidatorLeft, []common.Address) (r0 event.Subscription, r1 error) {
+			defaultHook: func(*bind.WatchOpts, chan<- *ethereum.ValidatorPoolValidatorLeft, []common.Address) (r0 event.Subscription, r1 error) {
 				return
 			},
 		},
 		WatchValidatorMajorSlashedFunc: &IValidatorPoolWatchValidatorMajorSlashedFunc{
-			defaultHook: func(*bind.WatchOpts, chan<- *bindings.ValidatorPoolValidatorMajorSlashed, []common.Address) (r0 event.Subscription, r1 error) {
+			defaultHook: func(*bind.WatchOpts, chan<- *ethereum.ValidatorPoolValidatorMajorSlashed, []common.Address) (r0 event.Subscription, r1 error) {
 				return
 			},
 		},
 		WatchValidatorMinorSlashedFunc: &IValidatorPoolWatchValidatorMinorSlashedFunc{
-			defaultHook: func(*bind.WatchOpts, chan<- *bindings.ValidatorPoolValidatorMinorSlashed, []common.Address) (r0 event.Subscription, r1 error) {
+			defaultHook: func(*bind.WatchOpts, chan<- *ethereum.ValidatorPoolValidatorMinorSlashed, []common.Address) (r0 event.Subscription, r1 error) {
 				return
 			},
 		},
@@ -40817,32 +40820,32 @@ func NewStrictMockIValidatorPool() *MockIValidatorPool {
 			},
 		},
 		FilterInitializedFunc: &IValidatorPoolFilterInitializedFunc{
-			defaultHook: func(*bind.FilterOpts) (*bindings.ValidatorPoolInitializedIterator, error) {
+			defaultHook: func(*bind.FilterOpts) (*ethereum.ValidatorPoolInitializedIterator, error) {
 				panic("unexpected invocation of MockIValidatorPool.FilterInitialized")
 			},
 		},
 		FilterMaintenanceScheduledFunc: &IValidatorPoolFilterMaintenanceScheduledFunc{
-			defaultHook: func(*bind.FilterOpts) (*bindings.ValidatorPoolMaintenanceScheduledIterator, error) {
+			defaultHook: func(*bind.FilterOpts) (*ethereum.ValidatorPoolMaintenanceScheduledIterator, error) {
 				panic("unexpected invocation of MockIValidatorPool.FilterMaintenanceScheduled")
 			},
 		},
 		FilterValidatorJoinedFunc: &IValidatorPoolFilterValidatorJoinedFunc{
-			defaultHook: func(*bind.FilterOpts, []common.Address) (*bindings.ValidatorPoolValidatorJoinedIterator, error) {
+			defaultHook: func(*bind.FilterOpts, []common.Address) (*ethereum.ValidatorPoolValidatorJoinedIterator, error) {
 				panic("unexpected invocation of MockIValidatorPool.FilterValidatorJoined")
 			},
 		},
 		FilterValidatorLeftFunc: &IValidatorPoolFilterValidatorLeftFunc{
-			defaultHook: func(*bind.FilterOpts, []common.Address) (*bindings.ValidatorPoolValidatorLeftIterator, error) {
+			defaultHook: func(*bind.FilterOpts, []common.Address) (*ethereum.ValidatorPoolValidatorLeftIterator, error) {
 				panic("unexpected invocation of MockIValidatorPool.FilterValidatorLeft")
 			},
 		},
 		FilterValidatorMajorSlashedFunc: &IValidatorPoolFilterValidatorMajorSlashedFunc{
-			defaultHook: func(*bind.FilterOpts, []common.Address) (*bindings.ValidatorPoolValidatorMajorSlashedIterator, error) {
+			defaultHook: func(*bind.FilterOpts, []common.Address) (*ethereum.ValidatorPoolValidatorMajorSlashedIterator, error) {
 				panic("unexpected invocation of MockIValidatorPool.FilterValidatorMajorSlashed")
 			},
 		},
 		FilterValidatorMinorSlashedFunc: &IValidatorPoolFilterValidatorMinorSlashedFunc{
-			defaultHook: func(*bind.FilterOpts, []common.Address) (*bindings.ValidatorPoolValidatorMinorSlashedIterator, error) {
+			defaultHook: func(*bind.FilterOpts, []common.Address) (*ethereum.ValidatorPoolValidatorMinorSlashedIterator, error) {
 				panic("unexpected invocation of MockIValidatorPool.FilterValidatorMinorSlashed")
 			},
 		},
@@ -40887,7 +40890,7 @@ func NewStrictMockIValidatorPool() *MockIValidatorPool {
 			},
 		},
 		GetValidatorDataFunc: &IValidatorPoolGetValidatorDataFunc{
-			defaultHook: func(*bind.CallOpts, *big.Int) (bindings.ValidatorData, error) {
+			defaultHook: func(*bind.CallOpts, *big.Int) (ethereum.ValidatorData, error) {
 				panic("unexpected invocation of MockIValidatorPool.GetValidatorData")
 			},
 		},
@@ -40957,32 +40960,32 @@ func NewStrictMockIValidatorPool() *MockIValidatorPool {
 			},
 		},
 		ParseInitializedFunc: &IValidatorPoolParseInitializedFunc{
-			defaultHook: func(types.Log) (*bindings.ValidatorPoolInitialized, error) {
+			defaultHook: func(types.Log) (*ethereum.ValidatorPoolInitialized, error) {
 				panic("unexpected invocation of MockIValidatorPool.ParseInitialized")
 			},
 		},
 		ParseMaintenanceScheduledFunc: &IValidatorPoolParseMaintenanceScheduledFunc{
-			defaultHook: func(types.Log) (*bindings.ValidatorPoolMaintenanceScheduled, error) {
+			defaultHook: func(types.Log) (*ethereum.ValidatorPoolMaintenanceScheduled, error) {
 				panic("unexpected invocation of MockIValidatorPool.ParseMaintenanceScheduled")
 			},
 		},
 		ParseValidatorJoinedFunc: &IValidatorPoolParseValidatorJoinedFunc{
-			defaultHook: func(types.Log) (*bindings.ValidatorPoolValidatorJoined, error) {
+			defaultHook: func(types.Log) (*ethereum.ValidatorPoolValidatorJoined, error) {
 				panic("unexpected invocation of MockIValidatorPool.ParseValidatorJoined")
 			},
 		},
 		ParseValidatorLeftFunc: &IValidatorPoolParseValidatorLeftFunc{
-			defaultHook: func(types.Log) (*bindings.ValidatorPoolValidatorLeft, error) {
+			defaultHook: func(types.Log) (*ethereum.ValidatorPoolValidatorLeft, error) {
 				panic("unexpected invocation of MockIValidatorPool.ParseValidatorLeft")
 			},
 		},
 		ParseValidatorMajorSlashedFunc: &IValidatorPoolParseValidatorMajorSlashedFunc{
-			defaultHook: func(types.Log) (*bindings.ValidatorPoolValidatorMajorSlashed, error) {
+			defaultHook: func(types.Log) (*ethereum.ValidatorPoolValidatorMajorSlashed, error) {
 				panic("unexpected invocation of MockIValidatorPool.ParseValidatorMajorSlashed")
 			},
 		},
 		ParseValidatorMinorSlashedFunc: &IValidatorPoolParseValidatorMinorSlashedFunc{
-			defaultHook: func(types.Log) (*bindings.ValidatorPoolValidatorMinorSlashed, error) {
+			defaultHook: func(types.Log) (*ethereum.ValidatorPoolValidatorMinorSlashed, error) {
 				panic("unexpected invocation of MockIValidatorPool.ParseValidatorMinorSlashed")
 			},
 		},
@@ -41062,32 +41065,32 @@ func NewStrictMockIValidatorPool() *MockIValidatorPool {
 			},
 		},
 		WatchInitializedFunc: &IValidatorPoolWatchInitializedFunc{
-			defaultHook: func(*bind.WatchOpts, chan<- *bindings.ValidatorPoolInitialized) (event.Subscription, error) {
+			defaultHook: func(*bind.WatchOpts, chan<- *ethereum.ValidatorPoolInitialized) (event.Subscription, error) {
 				panic("unexpected invocation of MockIValidatorPool.WatchInitialized")
 			},
 		},
 		WatchMaintenanceScheduledFunc: &IValidatorPoolWatchMaintenanceScheduledFunc{
-			defaultHook: func(*bind.WatchOpts, chan<- *bindings.ValidatorPoolMaintenanceScheduled) (event.Subscription, error) {
+			defaultHook: func(*bind.WatchOpts, chan<- *ethereum.ValidatorPoolMaintenanceScheduled) (event.Subscription, error) {
 				panic("unexpected invocation of MockIValidatorPool.WatchMaintenanceScheduled")
 			},
 		},
 		WatchValidatorJoinedFunc: &IValidatorPoolWatchValidatorJoinedFunc{
-			defaultHook: func(*bind.WatchOpts, chan<- *bindings.ValidatorPoolValidatorJoined, []common.Address) (event.Subscription, error) {
+			defaultHook: func(*bind.WatchOpts, chan<- *ethereum.ValidatorPoolValidatorJoined, []common.Address) (event.Subscription, error) {
 				panic("unexpected invocation of MockIValidatorPool.WatchValidatorJoined")
 			},
 		},
 		WatchValidatorLeftFunc: &IValidatorPoolWatchValidatorLeftFunc{
-			defaultHook: func(*bind.WatchOpts, chan<- *bindings.ValidatorPoolValidatorLeft, []common.Address) (event.Subscription, error) {
+			defaultHook: func(*bind.WatchOpts, chan<- *ethereum.ValidatorPoolValidatorLeft, []common.Address) (event.Subscription, error) {
 				panic("unexpected invocation of MockIValidatorPool.WatchValidatorLeft")
 			},
 		},
 		WatchValidatorMajorSlashedFunc: &IValidatorPoolWatchValidatorMajorSlashedFunc{
-			defaultHook: func(*bind.WatchOpts, chan<- *bindings.ValidatorPoolValidatorMajorSlashed, []common.Address) (event.Subscription, error) {
+			defaultHook: func(*bind.WatchOpts, chan<- *ethereum.ValidatorPoolValidatorMajorSlashed, []common.Address) (event.Subscription, error) {
 				panic("unexpected invocation of MockIValidatorPool.WatchValidatorMajorSlashed")
 			},
 		},
 		WatchValidatorMinorSlashedFunc: &IValidatorPoolWatchValidatorMinorSlashedFunc{
-			defaultHook: func(*bind.WatchOpts, chan<- *bindings.ValidatorPoolValidatorMinorSlashed, []common.Address) (event.Subscription, error) {
+			defaultHook: func(*bind.WatchOpts, chan<- *ethereum.ValidatorPoolValidatorMinorSlashed, []common.Address) (event.Subscription, error) {
 				panic("unexpected invocation of MockIValidatorPool.WatchValidatorMinorSlashed")
 			},
 		},
@@ -41097,7 +41100,7 @@ func NewStrictMockIValidatorPool() *MockIValidatorPool {
 // NewMockIValidatorPoolFrom creates a new mock of the MockIValidatorPool
 // interface. All methods delegate to the given implementation, unless
 // overwritten.
-func NewMockIValidatorPoolFrom(i bindings.IValidatorPool) *MockIValidatorPool {
+func NewMockIValidatorPoolFrom(i ethereum.IValidatorPool) *MockIValidatorPool {
 	return &MockIValidatorPool{
 		CLAIMPERIODFunc: &IValidatorPoolCLAIMPERIODFunc{
 			defaultHook: i.CLAIMPERIOD,
@@ -41709,15 +41712,15 @@ func (c IValidatorPoolCompleteETHDKGFuncCall) Results() []interface{} {
 // FilterInitialized method of the parent MockIValidatorPool instance is
 // invoked.
 type IValidatorPoolFilterInitializedFunc struct {
-	defaultHook func(*bind.FilterOpts) (*bindings.ValidatorPoolInitializedIterator, error)
-	hooks       []func(*bind.FilterOpts) (*bindings.ValidatorPoolInitializedIterator, error)
+	defaultHook func(*bind.FilterOpts) (*ethereum.ValidatorPoolInitializedIterator, error)
+	hooks       []func(*bind.FilterOpts) (*ethereum.ValidatorPoolInitializedIterator, error)
 	history     []IValidatorPoolFilterInitializedFuncCall
 	mutex       sync.Mutex
 }
 
 // FilterInitialized delegates to the next hook function in the queue and
 // stores the parameter and result values of this invocation.
-func (m *MockIValidatorPool) FilterInitialized(v0 *bind.FilterOpts) (*bindings.ValidatorPoolInitializedIterator, error) {
+func (m *MockIValidatorPool) FilterInitialized(v0 *bind.FilterOpts) (*ethereum.ValidatorPoolInitializedIterator, error) {
 	r0, r1 := m.FilterInitializedFunc.nextHook()(v0)
 	m.FilterInitializedFunc.appendCall(IValidatorPoolFilterInitializedFuncCall{v0, r0, r1})
 	return r0, r1
@@ -41726,7 +41729,7 @@ func (m *MockIValidatorPool) FilterInitialized(v0 *bind.FilterOpts) (*bindings.V
 // SetDefaultHook sets function that is called when the FilterInitialized
 // method of the parent MockIValidatorPool instance is invoked and the hook
 // queue is empty.
-func (f *IValidatorPoolFilterInitializedFunc) SetDefaultHook(hook func(*bind.FilterOpts) (*bindings.ValidatorPoolInitializedIterator, error)) {
+func (f *IValidatorPoolFilterInitializedFunc) SetDefaultHook(hook func(*bind.FilterOpts) (*ethereum.ValidatorPoolInitializedIterator, error)) {
 	f.defaultHook = hook
 }
 
@@ -41735,7 +41738,7 @@ func (f *IValidatorPoolFilterInitializedFunc) SetDefaultHook(hook func(*bind.Fil
 // invokes the hook at the front of the queue and discards it. After the
 // queue is empty, the default hook function is invoked for any future
 // action.
-func (f *IValidatorPoolFilterInitializedFunc) PushHook(hook func(*bind.FilterOpts) (*bindings.ValidatorPoolInitializedIterator, error)) {
+func (f *IValidatorPoolFilterInitializedFunc) PushHook(hook func(*bind.FilterOpts) (*ethereum.ValidatorPoolInitializedIterator, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -41743,20 +41746,20 @@ func (f *IValidatorPoolFilterInitializedFunc) PushHook(hook func(*bind.FilterOpt
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IValidatorPoolFilterInitializedFunc) SetDefaultReturn(r0 *bindings.ValidatorPoolInitializedIterator, r1 error) {
-	f.SetDefaultHook(func(*bind.FilterOpts) (*bindings.ValidatorPoolInitializedIterator, error) {
+func (f *IValidatorPoolFilterInitializedFunc) SetDefaultReturn(r0 *ethereum.ValidatorPoolInitializedIterator, r1 error) {
+	f.SetDefaultHook(func(*bind.FilterOpts) (*ethereum.ValidatorPoolInitializedIterator, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IValidatorPoolFilterInitializedFunc) PushReturn(r0 *bindings.ValidatorPoolInitializedIterator, r1 error) {
-	f.PushHook(func(*bind.FilterOpts) (*bindings.ValidatorPoolInitializedIterator, error) {
+func (f *IValidatorPoolFilterInitializedFunc) PushReturn(r0 *ethereum.ValidatorPoolInitializedIterator, r1 error) {
+	f.PushHook(func(*bind.FilterOpts) (*ethereum.ValidatorPoolInitializedIterator, error) {
 		return r0, r1
 	})
 }
 
-func (f *IValidatorPoolFilterInitializedFunc) nextHook() func(*bind.FilterOpts) (*bindings.ValidatorPoolInitializedIterator, error) {
+func (f *IValidatorPoolFilterInitializedFunc) nextHook() func(*bind.FilterOpts) (*ethereum.ValidatorPoolInitializedIterator, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -41795,7 +41798,7 @@ type IValidatorPoolFilterInitializedFuncCall struct {
 	Arg0 *bind.FilterOpts
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 *bindings.ValidatorPoolInitializedIterator
+	Result0 *ethereum.ValidatorPoolInitializedIterator
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -41817,15 +41820,15 @@ func (c IValidatorPoolFilterInitializedFuncCall) Results() []interface{} {
 // the FilterMaintenanceScheduled method of the parent MockIValidatorPool
 // instance is invoked.
 type IValidatorPoolFilterMaintenanceScheduledFunc struct {
-	defaultHook func(*bind.FilterOpts) (*bindings.ValidatorPoolMaintenanceScheduledIterator, error)
-	hooks       []func(*bind.FilterOpts) (*bindings.ValidatorPoolMaintenanceScheduledIterator, error)
+	defaultHook func(*bind.FilterOpts) (*ethereum.ValidatorPoolMaintenanceScheduledIterator, error)
+	hooks       []func(*bind.FilterOpts) (*ethereum.ValidatorPoolMaintenanceScheduledIterator, error)
 	history     []IValidatorPoolFilterMaintenanceScheduledFuncCall
 	mutex       sync.Mutex
 }
 
 // FilterMaintenanceScheduled delegates to the next hook function in the
 // queue and stores the parameter and result values of this invocation.
-func (m *MockIValidatorPool) FilterMaintenanceScheduled(v0 *bind.FilterOpts) (*bindings.ValidatorPoolMaintenanceScheduledIterator, error) {
+func (m *MockIValidatorPool) FilterMaintenanceScheduled(v0 *bind.FilterOpts) (*ethereum.ValidatorPoolMaintenanceScheduledIterator, error) {
 	r0, r1 := m.FilterMaintenanceScheduledFunc.nextHook()(v0)
 	m.FilterMaintenanceScheduledFunc.appendCall(IValidatorPoolFilterMaintenanceScheduledFuncCall{v0, r0, r1})
 	return r0, r1
@@ -41834,7 +41837,7 @@ func (m *MockIValidatorPool) FilterMaintenanceScheduled(v0 *bind.FilterOpts) (*b
 // SetDefaultHook sets function that is called when the
 // FilterMaintenanceScheduled method of the parent MockIValidatorPool
 // instance is invoked and the hook queue is empty.
-func (f *IValidatorPoolFilterMaintenanceScheduledFunc) SetDefaultHook(hook func(*bind.FilterOpts) (*bindings.ValidatorPoolMaintenanceScheduledIterator, error)) {
+func (f *IValidatorPoolFilterMaintenanceScheduledFunc) SetDefaultHook(hook func(*bind.FilterOpts) (*ethereum.ValidatorPoolMaintenanceScheduledIterator, error)) {
 	f.defaultHook = hook
 }
 
@@ -41843,7 +41846,7 @@ func (f *IValidatorPoolFilterMaintenanceScheduledFunc) SetDefaultHook(hook func(
 // instance invokes the hook at the front of the queue and discards it.
 // After the queue is empty, the default hook function is invoked for any
 // future action.
-func (f *IValidatorPoolFilterMaintenanceScheduledFunc) PushHook(hook func(*bind.FilterOpts) (*bindings.ValidatorPoolMaintenanceScheduledIterator, error)) {
+func (f *IValidatorPoolFilterMaintenanceScheduledFunc) PushHook(hook func(*bind.FilterOpts) (*ethereum.ValidatorPoolMaintenanceScheduledIterator, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -41851,20 +41854,20 @@ func (f *IValidatorPoolFilterMaintenanceScheduledFunc) PushHook(hook func(*bind.
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IValidatorPoolFilterMaintenanceScheduledFunc) SetDefaultReturn(r0 *bindings.ValidatorPoolMaintenanceScheduledIterator, r1 error) {
-	f.SetDefaultHook(func(*bind.FilterOpts) (*bindings.ValidatorPoolMaintenanceScheduledIterator, error) {
+func (f *IValidatorPoolFilterMaintenanceScheduledFunc) SetDefaultReturn(r0 *ethereum.ValidatorPoolMaintenanceScheduledIterator, r1 error) {
+	f.SetDefaultHook(func(*bind.FilterOpts) (*ethereum.ValidatorPoolMaintenanceScheduledIterator, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IValidatorPoolFilterMaintenanceScheduledFunc) PushReturn(r0 *bindings.ValidatorPoolMaintenanceScheduledIterator, r1 error) {
-	f.PushHook(func(*bind.FilterOpts) (*bindings.ValidatorPoolMaintenanceScheduledIterator, error) {
+func (f *IValidatorPoolFilterMaintenanceScheduledFunc) PushReturn(r0 *ethereum.ValidatorPoolMaintenanceScheduledIterator, r1 error) {
+	f.PushHook(func(*bind.FilterOpts) (*ethereum.ValidatorPoolMaintenanceScheduledIterator, error) {
 		return r0, r1
 	})
 }
 
-func (f *IValidatorPoolFilterMaintenanceScheduledFunc) nextHook() func(*bind.FilterOpts) (*bindings.ValidatorPoolMaintenanceScheduledIterator, error) {
+func (f *IValidatorPoolFilterMaintenanceScheduledFunc) nextHook() func(*bind.FilterOpts) (*ethereum.ValidatorPoolMaintenanceScheduledIterator, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -41904,7 +41907,7 @@ type IValidatorPoolFilterMaintenanceScheduledFuncCall struct {
 	Arg0 *bind.FilterOpts
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 *bindings.ValidatorPoolMaintenanceScheduledIterator
+	Result0 *ethereum.ValidatorPoolMaintenanceScheduledIterator
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -41926,15 +41929,15 @@ func (c IValidatorPoolFilterMaintenanceScheduledFuncCall) Results() []interface{
 // FilterValidatorJoined method of the parent MockIValidatorPool instance is
 // invoked.
 type IValidatorPoolFilterValidatorJoinedFunc struct {
-	defaultHook func(*bind.FilterOpts, []common.Address) (*bindings.ValidatorPoolValidatorJoinedIterator, error)
-	hooks       []func(*bind.FilterOpts, []common.Address) (*bindings.ValidatorPoolValidatorJoinedIterator, error)
+	defaultHook func(*bind.FilterOpts, []common.Address) (*ethereum.ValidatorPoolValidatorJoinedIterator, error)
+	hooks       []func(*bind.FilterOpts, []common.Address) (*ethereum.ValidatorPoolValidatorJoinedIterator, error)
 	history     []IValidatorPoolFilterValidatorJoinedFuncCall
 	mutex       sync.Mutex
 }
 
 // FilterValidatorJoined delegates to the next hook function in the queue
 // and stores the parameter and result values of this invocation.
-func (m *MockIValidatorPool) FilterValidatorJoined(v0 *bind.FilterOpts, v1 []common.Address) (*bindings.ValidatorPoolValidatorJoinedIterator, error) {
+func (m *MockIValidatorPool) FilterValidatorJoined(v0 *bind.FilterOpts, v1 []common.Address) (*ethereum.ValidatorPoolValidatorJoinedIterator, error) {
 	r0, r1 := m.FilterValidatorJoinedFunc.nextHook()(v0, v1)
 	m.FilterValidatorJoinedFunc.appendCall(IValidatorPoolFilterValidatorJoinedFuncCall{v0, v1, r0, r1})
 	return r0, r1
@@ -41943,7 +41946,7 @@ func (m *MockIValidatorPool) FilterValidatorJoined(v0 *bind.FilterOpts, v1 []com
 // SetDefaultHook sets function that is called when the
 // FilterValidatorJoined method of the parent MockIValidatorPool instance is
 // invoked and the hook queue is empty.
-func (f *IValidatorPoolFilterValidatorJoinedFunc) SetDefaultHook(hook func(*bind.FilterOpts, []common.Address) (*bindings.ValidatorPoolValidatorJoinedIterator, error)) {
+func (f *IValidatorPoolFilterValidatorJoinedFunc) SetDefaultHook(hook func(*bind.FilterOpts, []common.Address) (*ethereum.ValidatorPoolValidatorJoinedIterator, error)) {
 	f.defaultHook = hook
 }
 
@@ -41952,7 +41955,7 @@ func (f *IValidatorPoolFilterValidatorJoinedFunc) SetDefaultHook(hook func(*bind
 // invokes the hook at the front of the queue and discards it. After the
 // queue is empty, the default hook function is invoked for any future
 // action.
-func (f *IValidatorPoolFilterValidatorJoinedFunc) PushHook(hook func(*bind.FilterOpts, []common.Address) (*bindings.ValidatorPoolValidatorJoinedIterator, error)) {
+func (f *IValidatorPoolFilterValidatorJoinedFunc) PushHook(hook func(*bind.FilterOpts, []common.Address) (*ethereum.ValidatorPoolValidatorJoinedIterator, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -41960,20 +41963,20 @@ func (f *IValidatorPoolFilterValidatorJoinedFunc) PushHook(hook func(*bind.Filte
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IValidatorPoolFilterValidatorJoinedFunc) SetDefaultReturn(r0 *bindings.ValidatorPoolValidatorJoinedIterator, r1 error) {
-	f.SetDefaultHook(func(*bind.FilterOpts, []common.Address) (*bindings.ValidatorPoolValidatorJoinedIterator, error) {
+func (f *IValidatorPoolFilterValidatorJoinedFunc) SetDefaultReturn(r0 *ethereum.ValidatorPoolValidatorJoinedIterator, r1 error) {
+	f.SetDefaultHook(func(*bind.FilterOpts, []common.Address) (*ethereum.ValidatorPoolValidatorJoinedIterator, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IValidatorPoolFilterValidatorJoinedFunc) PushReturn(r0 *bindings.ValidatorPoolValidatorJoinedIterator, r1 error) {
-	f.PushHook(func(*bind.FilterOpts, []common.Address) (*bindings.ValidatorPoolValidatorJoinedIterator, error) {
+func (f *IValidatorPoolFilterValidatorJoinedFunc) PushReturn(r0 *ethereum.ValidatorPoolValidatorJoinedIterator, r1 error) {
+	f.PushHook(func(*bind.FilterOpts, []common.Address) (*ethereum.ValidatorPoolValidatorJoinedIterator, error) {
 		return r0, r1
 	})
 }
 
-func (f *IValidatorPoolFilterValidatorJoinedFunc) nextHook() func(*bind.FilterOpts, []common.Address) (*bindings.ValidatorPoolValidatorJoinedIterator, error) {
+func (f *IValidatorPoolFilterValidatorJoinedFunc) nextHook() func(*bind.FilterOpts, []common.Address) (*ethereum.ValidatorPoolValidatorJoinedIterator, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -42015,7 +42018,7 @@ type IValidatorPoolFilterValidatorJoinedFuncCall struct {
 	Arg1 []common.Address
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 *bindings.ValidatorPoolValidatorJoinedIterator
+	Result0 *ethereum.ValidatorPoolValidatorJoinedIterator
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -42037,15 +42040,15 @@ func (c IValidatorPoolFilterValidatorJoinedFuncCall) Results() []interface{} {
 // FilterValidatorLeft method of the parent MockIValidatorPool instance is
 // invoked.
 type IValidatorPoolFilterValidatorLeftFunc struct {
-	defaultHook func(*bind.FilterOpts, []common.Address) (*bindings.ValidatorPoolValidatorLeftIterator, error)
-	hooks       []func(*bind.FilterOpts, []common.Address) (*bindings.ValidatorPoolValidatorLeftIterator, error)
+	defaultHook func(*bind.FilterOpts, []common.Address) (*ethereum.ValidatorPoolValidatorLeftIterator, error)
+	hooks       []func(*bind.FilterOpts, []common.Address) (*ethereum.ValidatorPoolValidatorLeftIterator, error)
 	history     []IValidatorPoolFilterValidatorLeftFuncCall
 	mutex       sync.Mutex
 }
 
 // FilterValidatorLeft delegates to the next hook function in the queue and
 // stores the parameter and result values of this invocation.
-func (m *MockIValidatorPool) FilterValidatorLeft(v0 *bind.FilterOpts, v1 []common.Address) (*bindings.ValidatorPoolValidatorLeftIterator, error) {
+func (m *MockIValidatorPool) FilterValidatorLeft(v0 *bind.FilterOpts, v1 []common.Address) (*ethereum.ValidatorPoolValidatorLeftIterator, error) {
 	r0, r1 := m.FilterValidatorLeftFunc.nextHook()(v0, v1)
 	m.FilterValidatorLeftFunc.appendCall(IValidatorPoolFilterValidatorLeftFuncCall{v0, v1, r0, r1})
 	return r0, r1
@@ -42054,7 +42057,7 @@ func (m *MockIValidatorPool) FilterValidatorLeft(v0 *bind.FilterOpts, v1 []commo
 // SetDefaultHook sets function that is called when the FilterValidatorLeft
 // method of the parent MockIValidatorPool instance is invoked and the hook
 // queue is empty.
-func (f *IValidatorPoolFilterValidatorLeftFunc) SetDefaultHook(hook func(*bind.FilterOpts, []common.Address) (*bindings.ValidatorPoolValidatorLeftIterator, error)) {
+func (f *IValidatorPoolFilterValidatorLeftFunc) SetDefaultHook(hook func(*bind.FilterOpts, []common.Address) (*ethereum.ValidatorPoolValidatorLeftIterator, error)) {
 	f.defaultHook = hook
 }
 
@@ -42063,7 +42066,7 @@ func (f *IValidatorPoolFilterValidatorLeftFunc) SetDefaultHook(hook func(*bind.F
 // invokes the hook at the front of the queue and discards it. After the
 // queue is empty, the default hook function is invoked for any future
 // action.
-func (f *IValidatorPoolFilterValidatorLeftFunc) PushHook(hook func(*bind.FilterOpts, []common.Address) (*bindings.ValidatorPoolValidatorLeftIterator, error)) {
+func (f *IValidatorPoolFilterValidatorLeftFunc) PushHook(hook func(*bind.FilterOpts, []common.Address) (*ethereum.ValidatorPoolValidatorLeftIterator, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -42071,20 +42074,20 @@ func (f *IValidatorPoolFilterValidatorLeftFunc) PushHook(hook func(*bind.FilterO
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IValidatorPoolFilterValidatorLeftFunc) SetDefaultReturn(r0 *bindings.ValidatorPoolValidatorLeftIterator, r1 error) {
-	f.SetDefaultHook(func(*bind.FilterOpts, []common.Address) (*bindings.ValidatorPoolValidatorLeftIterator, error) {
+func (f *IValidatorPoolFilterValidatorLeftFunc) SetDefaultReturn(r0 *ethereum.ValidatorPoolValidatorLeftIterator, r1 error) {
+	f.SetDefaultHook(func(*bind.FilterOpts, []common.Address) (*ethereum.ValidatorPoolValidatorLeftIterator, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IValidatorPoolFilterValidatorLeftFunc) PushReturn(r0 *bindings.ValidatorPoolValidatorLeftIterator, r1 error) {
-	f.PushHook(func(*bind.FilterOpts, []common.Address) (*bindings.ValidatorPoolValidatorLeftIterator, error) {
+func (f *IValidatorPoolFilterValidatorLeftFunc) PushReturn(r0 *ethereum.ValidatorPoolValidatorLeftIterator, r1 error) {
+	f.PushHook(func(*bind.FilterOpts, []common.Address) (*ethereum.ValidatorPoolValidatorLeftIterator, error) {
 		return r0, r1
 	})
 }
 
-func (f *IValidatorPoolFilterValidatorLeftFunc) nextHook() func(*bind.FilterOpts, []common.Address) (*bindings.ValidatorPoolValidatorLeftIterator, error) {
+func (f *IValidatorPoolFilterValidatorLeftFunc) nextHook() func(*bind.FilterOpts, []common.Address) (*ethereum.ValidatorPoolValidatorLeftIterator, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -42126,7 +42129,7 @@ type IValidatorPoolFilterValidatorLeftFuncCall struct {
 	Arg1 []common.Address
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 *bindings.ValidatorPoolValidatorLeftIterator
+	Result0 *ethereum.ValidatorPoolValidatorLeftIterator
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -42148,15 +42151,15 @@ func (c IValidatorPoolFilterValidatorLeftFuncCall) Results() []interface{} {
 // the FilterValidatorMajorSlashed method of the parent MockIValidatorPool
 // instance is invoked.
 type IValidatorPoolFilterValidatorMajorSlashedFunc struct {
-	defaultHook func(*bind.FilterOpts, []common.Address) (*bindings.ValidatorPoolValidatorMajorSlashedIterator, error)
-	hooks       []func(*bind.FilterOpts, []common.Address) (*bindings.ValidatorPoolValidatorMajorSlashedIterator, error)
+	defaultHook func(*bind.FilterOpts, []common.Address) (*ethereum.ValidatorPoolValidatorMajorSlashedIterator, error)
+	hooks       []func(*bind.FilterOpts, []common.Address) (*ethereum.ValidatorPoolValidatorMajorSlashedIterator, error)
 	history     []IValidatorPoolFilterValidatorMajorSlashedFuncCall
 	mutex       sync.Mutex
 }
 
 // FilterValidatorMajorSlashed delegates to the next hook function in the
 // queue and stores the parameter and result values of this invocation.
-func (m *MockIValidatorPool) FilterValidatorMajorSlashed(v0 *bind.FilterOpts, v1 []common.Address) (*bindings.ValidatorPoolValidatorMajorSlashedIterator, error) {
+func (m *MockIValidatorPool) FilterValidatorMajorSlashed(v0 *bind.FilterOpts, v1 []common.Address) (*ethereum.ValidatorPoolValidatorMajorSlashedIterator, error) {
 	r0, r1 := m.FilterValidatorMajorSlashedFunc.nextHook()(v0, v1)
 	m.FilterValidatorMajorSlashedFunc.appendCall(IValidatorPoolFilterValidatorMajorSlashedFuncCall{v0, v1, r0, r1})
 	return r0, r1
@@ -42165,7 +42168,7 @@ func (m *MockIValidatorPool) FilterValidatorMajorSlashed(v0 *bind.FilterOpts, v1
 // SetDefaultHook sets function that is called when the
 // FilterValidatorMajorSlashed method of the parent MockIValidatorPool
 // instance is invoked and the hook queue is empty.
-func (f *IValidatorPoolFilterValidatorMajorSlashedFunc) SetDefaultHook(hook func(*bind.FilterOpts, []common.Address) (*bindings.ValidatorPoolValidatorMajorSlashedIterator, error)) {
+func (f *IValidatorPoolFilterValidatorMajorSlashedFunc) SetDefaultHook(hook func(*bind.FilterOpts, []common.Address) (*ethereum.ValidatorPoolValidatorMajorSlashedIterator, error)) {
 	f.defaultHook = hook
 }
 
@@ -42174,7 +42177,7 @@ func (f *IValidatorPoolFilterValidatorMajorSlashedFunc) SetDefaultHook(hook func
 // instance invokes the hook at the front of the queue and discards it.
 // After the queue is empty, the default hook function is invoked for any
 // future action.
-func (f *IValidatorPoolFilterValidatorMajorSlashedFunc) PushHook(hook func(*bind.FilterOpts, []common.Address) (*bindings.ValidatorPoolValidatorMajorSlashedIterator, error)) {
+func (f *IValidatorPoolFilterValidatorMajorSlashedFunc) PushHook(hook func(*bind.FilterOpts, []common.Address) (*ethereum.ValidatorPoolValidatorMajorSlashedIterator, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -42182,20 +42185,20 @@ func (f *IValidatorPoolFilterValidatorMajorSlashedFunc) PushHook(hook func(*bind
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IValidatorPoolFilterValidatorMajorSlashedFunc) SetDefaultReturn(r0 *bindings.ValidatorPoolValidatorMajorSlashedIterator, r1 error) {
-	f.SetDefaultHook(func(*bind.FilterOpts, []common.Address) (*bindings.ValidatorPoolValidatorMajorSlashedIterator, error) {
+func (f *IValidatorPoolFilterValidatorMajorSlashedFunc) SetDefaultReturn(r0 *ethereum.ValidatorPoolValidatorMajorSlashedIterator, r1 error) {
+	f.SetDefaultHook(func(*bind.FilterOpts, []common.Address) (*ethereum.ValidatorPoolValidatorMajorSlashedIterator, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IValidatorPoolFilterValidatorMajorSlashedFunc) PushReturn(r0 *bindings.ValidatorPoolValidatorMajorSlashedIterator, r1 error) {
-	f.PushHook(func(*bind.FilterOpts, []common.Address) (*bindings.ValidatorPoolValidatorMajorSlashedIterator, error) {
+func (f *IValidatorPoolFilterValidatorMajorSlashedFunc) PushReturn(r0 *ethereum.ValidatorPoolValidatorMajorSlashedIterator, r1 error) {
+	f.PushHook(func(*bind.FilterOpts, []common.Address) (*ethereum.ValidatorPoolValidatorMajorSlashedIterator, error) {
 		return r0, r1
 	})
 }
 
-func (f *IValidatorPoolFilterValidatorMajorSlashedFunc) nextHook() func(*bind.FilterOpts, []common.Address) (*bindings.ValidatorPoolValidatorMajorSlashedIterator, error) {
+func (f *IValidatorPoolFilterValidatorMajorSlashedFunc) nextHook() func(*bind.FilterOpts, []common.Address) (*ethereum.ValidatorPoolValidatorMajorSlashedIterator, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -42238,7 +42241,7 @@ type IValidatorPoolFilterValidatorMajorSlashedFuncCall struct {
 	Arg1 []common.Address
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 *bindings.ValidatorPoolValidatorMajorSlashedIterator
+	Result0 *ethereum.ValidatorPoolValidatorMajorSlashedIterator
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -42260,15 +42263,15 @@ func (c IValidatorPoolFilterValidatorMajorSlashedFuncCall) Results() []interface
 // the FilterValidatorMinorSlashed method of the parent MockIValidatorPool
 // instance is invoked.
 type IValidatorPoolFilterValidatorMinorSlashedFunc struct {
-	defaultHook func(*bind.FilterOpts, []common.Address) (*bindings.ValidatorPoolValidatorMinorSlashedIterator, error)
-	hooks       []func(*bind.FilterOpts, []common.Address) (*bindings.ValidatorPoolValidatorMinorSlashedIterator, error)
+	defaultHook func(*bind.FilterOpts, []common.Address) (*ethereum.ValidatorPoolValidatorMinorSlashedIterator, error)
+	hooks       []func(*bind.FilterOpts, []common.Address) (*ethereum.ValidatorPoolValidatorMinorSlashedIterator, error)
 	history     []IValidatorPoolFilterValidatorMinorSlashedFuncCall
 	mutex       sync.Mutex
 }
 
 // FilterValidatorMinorSlashed delegates to the next hook function in the
 // queue and stores the parameter and result values of this invocation.
-func (m *MockIValidatorPool) FilterValidatorMinorSlashed(v0 *bind.FilterOpts, v1 []common.Address) (*bindings.ValidatorPoolValidatorMinorSlashedIterator, error) {
+func (m *MockIValidatorPool) FilterValidatorMinorSlashed(v0 *bind.FilterOpts, v1 []common.Address) (*ethereum.ValidatorPoolValidatorMinorSlashedIterator, error) {
 	r0, r1 := m.FilterValidatorMinorSlashedFunc.nextHook()(v0, v1)
 	m.FilterValidatorMinorSlashedFunc.appendCall(IValidatorPoolFilterValidatorMinorSlashedFuncCall{v0, v1, r0, r1})
 	return r0, r1
@@ -42277,7 +42280,7 @@ func (m *MockIValidatorPool) FilterValidatorMinorSlashed(v0 *bind.FilterOpts, v1
 // SetDefaultHook sets function that is called when the
 // FilterValidatorMinorSlashed method of the parent MockIValidatorPool
 // instance is invoked and the hook queue is empty.
-func (f *IValidatorPoolFilterValidatorMinorSlashedFunc) SetDefaultHook(hook func(*bind.FilterOpts, []common.Address) (*bindings.ValidatorPoolValidatorMinorSlashedIterator, error)) {
+func (f *IValidatorPoolFilterValidatorMinorSlashedFunc) SetDefaultHook(hook func(*bind.FilterOpts, []common.Address) (*ethereum.ValidatorPoolValidatorMinorSlashedIterator, error)) {
 	f.defaultHook = hook
 }
 
@@ -42286,7 +42289,7 @@ func (f *IValidatorPoolFilterValidatorMinorSlashedFunc) SetDefaultHook(hook func
 // instance invokes the hook at the front of the queue and discards it.
 // After the queue is empty, the default hook function is invoked for any
 // future action.
-func (f *IValidatorPoolFilterValidatorMinorSlashedFunc) PushHook(hook func(*bind.FilterOpts, []common.Address) (*bindings.ValidatorPoolValidatorMinorSlashedIterator, error)) {
+func (f *IValidatorPoolFilterValidatorMinorSlashedFunc) PushHook(hook func(*bind.FilterOpts, []common.Address) (*ethereum.ValidatorPoolValidatorMinorSlashedIterator, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -42294,20 +42297,20 @@ func (f *IValidatorPoolFilterValidatorMinorSlashedFunc) PushHook(hook func(*bind
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IValidatorPoolFilterValidatorMinorSlashedFunc) SetDefaultReturn(r0 *bindings.ValidatorPoolValidatorMinorSlashedIterator, r1 error) {
-	f.SetDefaultHook(func(*bind.FilterOpts, []common.Address) (*bindings.ValidatorPoolValidatorMinorSlashedIterator, error) {
+func (f *IValidatorPoolFilterValidatorMinorSlashedFunc) SetDefaultReturn(r0 *ethereum.ValidatorPoolValidatorMinorSlashedIterator, r1 error) {
+	f.SetDefaultHook(func(*bind.FilterOpts, []common.Address) (*ethereum.ValidatorPoolValidatorMinorSlashedIterator, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IValidatorPoolFilterValidatorMinorSlashedFunc) PushReturn(r0 *bindings.ValidatorPoolValidatorMinorSlashedIterator, r1 error) {
-	f.PushHook(func(*bind.FilterOpts, []common.Address) (*bindings.ValidatorPoolValidatorMinorSlashedIterator, error) {
+func (f *IValidatorPoolFilterValidatorMinorSlashedFunc) PushReturn(r0 *ethereum.ValidatorPoolValidatorMinorSlashedIterator, r1 error) {
+	f.PushHook(func(*bind.FilterOpts, []common.Address) (*ethereum.ValidatorPoolValidatorMinorSlashedIterator, error) {
 		return r0, r1
 	})
 }
 
-func (f *IValidatorPoolFilterValidatorMinorSlashedFunc) nextHook() func(*bind.FilterOpts, []common.Address) (*bindings.ValidatorPoolValidatorMinorSlashedIterator, error) {
+func (f *IValidatorPoolFilterValidatorMinorSlashedFunc) nextHook() func(*bind.FilterOpts, []common.Address) (*ethereum.ValidatorPoolValidatorMinorSlashedIterator, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -42350,7 +42353,7 @@ type IValidatorPoolFilterValidatorMinorSlashedFuncCall struct {
 	Arg1 []common.Address
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 *bindings.ValidatorPoolValidatorMinorSlashedIterator
+	Result0 *ethereum.ValidatorPoolValidatorMinorSlashedIterator
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -43242,15 +43245,15 @@ func (c IValidatorPoolGetValidatorFuncCall) Results() []interface{} {
 // GetValidatorData method of the parent MockIValidatorPool instance is
 // invoked.
 type IValidatorPoolGetValidatorDataFunc struct {
-	defaultHook func(*bind.CallOpts, *big.Int) (bindings.ValidatorData, error)
-	hooks       []func(*bind.CallOpts, *big.Int) (bindings.ValidatorData, error)
+	defaultHook func(*bind.CallOpts, *big.Int) (ethereum.ValidatorData, error)
+	hooks       []func(*bind.CallOpts, *big.Int) (ethereum.ValidatorData, error)
 	history     []IValidatorPoolGetValidatorDataFuncCall
 	mutex       sync.Mutex
 }
 
 // GetValidatorData delegates to the next hook function in the queue and
 // stores the parameter and result values of this invocation.
-func (m *MockIValidatorPool) GetValidatorData(v0 *bind.CallOpts, v1 *big.Int) (bindings.ValidatorData, error) {
+func (m *MockIValidatorPool) GetValidatorData(v0 *bind.CallOpts, v1 *big.Int) (ethereum.ValidatorData, error) {
 	r0, r1 := m.GetValidatorDataFunc.nextHook()(v0, v1)
 	m.GetValidatorDataFunc.appendCall(IValidatorPoolGetValidatorDataFuncCall{v0, v1, r0, r1})
 	return r0, r1
@@ -43259,7 +43262,7 @@ func (m *MockIValidatorPool) GetValidatorData(v0 *bind.CallOpts, v1 *big.Int) (b
 // SetDefaultHook sets function that is called when the GetValidatorData
 // method of the parent MockIValidatorPool instance is invoked and the hook
 // queue is empty.
-func (f *IValidatorPoolGetValidatorDataFunc) SetDefaultHook(hook func(*bind.CallOpts, *big.Int) (bindings.ValidatorData, error)) {
+func (f *IValidatorPoolGetValidatorDataFunc) SetDefaultHook(hook func(*bind.CallOpts, *big.Int) (ethereum.ValidatorData, error)) {
 	f.defaultHook = hook
 }
 
@@ -43267,7 +43270,7 @@ func (f *IValidatorPoolGetValidatorDataFunc) SetDefaultHook(hook func(*bind.Call
 // GetValidatorData method of the parent MockIValidatorPool instance invokes
 // the hook at the front of the queue and discards it. After the queue is
 // empty, the default hook function is invoked for any future action.
-func (f *IValidatorPoolGetValidatorDataFunc) PushHook(hook func(*bind.CallOpts, *big.Int) (bindings.ValidatorData, error)) {
+func (f *IValidatorPoolGetValidatorDataFunc) PushHook(hook func(*bind.CallOpts, *big.Int) (ethereum.ValidatorData, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -43275,20 +43278,20 @@ func (f *IValidatorPoolGetValidatorDataFunc) PushHook(hook func(*bind.CallOpts, 
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IValidatorPoolGetValidatorDataFunc) SetDefaultReturn(r0 bindings.ValidatorData, r1 error) {
-	f.SetDefaultHook(func(*bind.CallOpts, *big.Int) (bindings.ValidatorData, error) {
+func (f *IValidatorPoolGetValidatorDataFunc) SetDefaultReturn(r0 ethereum.ValidatorData, r1 error) {
+	f.SetDefaultHook(func(*bind.CallOpts, *big.Int) (ethereum.ValidatorData, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IValidatorPoolGetValidatorDataFunc) PushReturn(r0 bindings.ValidatorData, r1 error) {
-	f.PushHook(func(*bind.CallOpts, *big.Int) (bindings.ValidatorData, error) {
+func (f *IValidatorPoolGetValidatorDataFunc) PushReturn(r0 ethereum.ValidatorData, r1 error) {
+	f.PushHook(func(*bind.CallOpts, *big.Int) (ethereum.ValidatorData, error) {
 		return r0, r1
 	})
 }
 
-func (f *IValidatorPoolGetValidatorDataFunc) nextHook() func(*bind.CallOpts, *big.Int) (bindings.ValidatorData, error) {
+func (f *IValidatorPoolGetValidatorDataFunc) nextHook() func(*bind.CallOpts, *big.Int) (ethereum.ValidatorData, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -43330,7 +43333,7 @@ type IValidatorPoolGetValidatorDataFuncCall struct {
 	Arg1 *big.Int
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 bindings.ValidatorData
+	Result0 ethereum.ValidatorData
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -44785,15 +44788,15 @@ func (c IValidatorPoolPOSITIONLOCKPERIODFuncCall) Results() []interface{} {
 // ParseInitialized method of the parent MockIValidatorPool instance is
 // invoked.
 type IValidatorPoolParseInitializedFunc struct {
-	defaultHook func(types.Log) (*bindings.ValidatorPoolInitialized, error)
-	hooks       []func(types.Log) (*bindings.ValidatorPoolInitialized, error)
+	defaultHook func(types.Log) (*ethereum.ValidatorPoolInitialized, error)
+	hooks       []func(types.Log) (*ethereum.ValidatorPoolInitialized, error)
 	history     []IValidatorPoolParseInitializedFuncCall
 	mutex       sync.Mutex
 }
 
 // ParseInitialized delegates to the next hook function in the queue and
 // stores the parameter and result values of this invocation.
-func (m *MockIValidatorPool) ParseInitialized(v0 types.Log) (*bindings.ValidatorPoolInitialized, error) {
+func (m *MockIValidatorPool) ParseInitialized(v0 types.Log) (*ethereum.ValidatorPoolInitialized, error) {
 	r0, r1 := m.ParseInitializedFunc.nextHook()(v0)
 	m.ParseInitializedFunc.appendCall(IValidatorPoolParseInitializedFuncCall{v0, r0, r1})
 	return r0, r1
@@ -44802,7 +44805,7 @@ func (m *MockIValidatorPool) ParseInitialized(v0 types.Log) (*bindings.Validator
 // SetDefaultHook sets function that is called when the ParseInitialized
 // method of the parent MockIValidatorPool instance is invoked and the hook
 // queue is empty.
-func (f *IValidatorPoolParseInitializedFunc) SetDefaultHook(hook func(types.Log) (*bindings.ValidatorPoolInitialized, error)) {
+func (f *IValidatorPoolParseInitializedFunc) SetDefaultHook(hook func(types.Log) (*ethereum.ValidatorPoolInitialized, error)) {
 	f.defaultHook = hook
 }
 
@@ -44810,7 +44813,7 @@ func (f *IValidatorPoolParseInitializedFunc) SetDefaultHook(hook func(types.Log)
 // ParseInitialized method of the parent MockIValidatorPool instance invokes
 // the hook at the front of the queue and discards it. After the queue is
 // empty, the default hook function is invoked for any future action.
-func (f *IValidatorPoolParseInitializedFunc) PushHook(hook func(types.Log) (*bindings.ValidatorPoolInitialized, error)) {
+func (f *IValidatorPoolParseInitializedFunc) PushHook(hook func(types.Log) (*ethereum.ValidatorPoolInitialized, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -44818,20 +44821,20 @@ func (f *IValidatorPoolParseInitializedFunc) PushHook(hook func(types.Log) (*bin
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IValidatorPoolParseInitializedFunc) SetDefaultReturn(r0 *bindings.ValidatorPoolInitialized, r1 error) {
-	f.SetDefaultHook(func(types.Log) (*bindings.ValidatorPoolInitialized, error) {
+func (f *IValidatorPoolParseInitializedFunc) SetDefaultReturn(r0 *ethereum.ValidatorPoolInitialized, r1 error) {
+	f.SetDefaultHook(func(types.Log) (*ethereum.ValidatorPoolInitialized, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IValidatorPoolParseInitializedFunc) PushReturn(r0 *bindings.ValidatorPoolInitialized, r1 error) {
-	f.PushHook(func(types.Log) (*bindings.ValidatorPoolInitialized, error) {
+func (f *IValidatorPoolParseInitializedFunc) PushReturn(r0 *ethereum.ValidatorPoolInitialized, r1 error) {
+	f.PushHook(func(types.Log) (*ethereum.ValidatorPoolInitialized, error) {
 		return r0, r1
 	})
 }
 
-func (f *IValidatorPoolParseInitializedFunc) nextHook() func(types.Log) (*bindings.ValidatorPoolInitialized, error) {
+func (f *IValidatorPoolParseInitializedFunc) nextHook() func(types.Log) (*ethereum.ValidatorPoolInitialized, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -44870,7 +44873,7 @@ type IValidatorPoolParseInitializedFuncCall struct {
 	Arg0 types.Log
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 *bindings.ValidatorPoolInitialized
+	Result0 *ethereum.ValidatorPoolInitialized
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -44892,15 +44895,15 @@ func (c IValidatorPoolParseInitializedFuncCall) Results() []interface{} {
 // the ParseMaintenanceScheduled method of the parent MockIValidatorPool
 // instance is invoked.
 type IValidatorPoolParseMaintenanceScheduledFunc struct {
-	defaultHook func(types.Log) (*bindings.ValidatorPoolMaintenanceScheduled, error)
-	hooks       []func(types.Log) (*bindings.ValidatorPoolMaintenanceScheduled, error)
+	defaultHook func(types.Log) (*ethereum.ValidatorPoolMaintenanceScheduled, error)
+	hooks       []func(types.Log) (*ethereum.ValidatorPoolMaintenanceScheduled, error)
 	history     []IValidatorPoolParseMaintenanceScheduledFuncCall
 	mutex       sync.Mutex
 }
 
 // ParseMaintenanceScheduled delegates to the next hook function in the
 // queue and stores the parameter and result values of this invocation.
-func (m *MockIValidatorPool) ParseMaintenanceScheduled(v0 types.Log) (*bindings.ValidatorPoolMaintenanceScheduled, error) {
+func (m *MockIValidatorPool) ParseMaintenanceScheduled(v0 types.Log) (*ethereum.ValidatorPoolMaintenanceScheduled, error) {
 	r0, r1 := m.ParseMaintenanceScheduledFunc.nextHook()(v0)
 	m.ParseMaintenanceScheduledFunc.appendCall(IValidatorPoolParseMaintenanceScheduledFuncCall{v0, r0, r1})
 	return r0, r1
@@ -44909,7 +44912,7 @@ func (m *MockIValidatorPool) ParseMaintenanceScheduled(v0 types.Log) (*bindings.
 // SetDefaultHook sets function that is called when the
 // ParseMaintenanceScheduled method of the parent MockIValidatorPool
 // instance is invoked and the hook queue is empty.
-func (f *IValidatorPoolParseMaintenanceScheduledFunc) SetDefaultHook(hook func(types.Log) (*bindings.ValidatorPoolMaintenanceScheduled, error)) {
+func (f *IValidatorPoolParseMaintenanceScheduledFunc) SetDefaultHook(hook func(types.Log) (*ethereum.ValidatorPoolMaintenanceScheduled, error)) {
 	f.defaultHook = hook
 }
 
@@ -44918,7 +44921,7 @@ func (f *IValidatorPoolParseMaintenanceScheduledFunc) SetDefaultHook(hook func(t
 // instance invokes the hook at the front of the queue and discards it.
 // After the queue is empty, the default hook function is invoked for any
 // future action.
-func (f *IValidatorPoolParseMaintenanceScheduledFunc) PushHook(hook func(types.Log) (*bindings.ValidatorPoolMaintenanceScheduled, error)) {
+func (f *IValidatorPoolParseMaintenanceScheduledFunc) PushHook(hook func(types.Log) (*ethereum.ValidatorPoolMaintenanceScheduled, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -44926,20 +44929,20 @@ func (f *IValidatorPoolParseMaintenanceScheduledFunc) PushHook(hook func(types.L
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IValidatorPoolParseMaintenanceScheduledFunc) SetDefaultReturn(r0 *bindings.ValidatorPoolMaintenanceScheduled, r1 error) {
-	f.SetDefaultHook(func(types.Log) (*bindings.ValidatorPoolMaintenanceScheduled, error) {
+func (f *IValidatorPoolParseMaintenanceScheduledFunc) SetDefaultReturn(r0 *ethereum.ValidatorPoolMaintenanceScheduled, r1 error) {
+	f.SetDefaultHook(func(types.Log) (*ethereum.ValidatorPoolMaintenanceScheduled, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IValidatorPoolParseMaintenanceScheduledFunc) PushReturn(r0 *bindings.ValidatorPoolMaintenanceScheduled, r1 error) {
-	f.PushHook(func(types.Log) (*bindings.ValidatorPoolMaintenanceScheduled, error) {
+func (f *IValidatorPoolParseMaintenanceScheduledFunc) PushReturn(r0 *ethereum.ValidatorPoolMaintenanceScheduled, r1 error) {
+	f.PushHook(func(types.Log) (*ethereum.ValidatorPoolMaintenanceScheduled, error) {
 		return r0, r1
 	})
 }
 
-func (f *IValidatorPoolParseMaintenanceScheduledFunc) nextHook() func(types.Log) (*bindings.ValidatorPoolMaintenanceScheduled, error) {
+func (f *IValidatorPoolParseMaintenanceScheduledFunc) nextHook() func(types.Log) (*ethereum.ValidatorPoolMaintenanceScheduled, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -44979,7 +44982,7 @@ type IValidatorPoolParseMaintenanceScheduledFuncCall struct {
 	Arg0 types.Log
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 *bindings.ValidatorPoolMaintenanceScheduled
+	Result0 *ethereum.ValidatorPoolMaintenanceScheduled
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -45001,15 +45004,15 @@ func (c IValidatorPoolParseMaintenanceScheduledFuncCall) Results() []interface{}
 // ParseValidatorJoined method of the parent MockIValidatorPool instance is
 // invoked.
 type IValidatorPoolParseValidatorJoinedFunc struct {
-	defaultHook func(types.Log) (*bindings.ValidatorPoolValidatorJoined, error)
-	hooks       []func(types.Log) (*bindings.ValidatorPoolValidatorJoined, error)
+	defaultHook func(types.Log) (*ethereum.ValidatorPoolValidatorJoined, error)
+	hooks       []func(types.Log) (*ethereum.ValidatorPoolValidatorJoined, error)
 	history     []IValidatorPoolParseValidatorJoinedFuncCall
 	mutex       sync.Mutex
 }
 
 // ParseValidatorJoined delegates to the next hook function in the queue and
 // stores the parameter and result values of this invocation.
-func (m *MockIValidatorPool) ParseValidatorJoined(v0 types.Log) (*bindings.ValidatorPoolValidatorJoined, error) {
+func (m *MockIValidatorPool) ParseValidatorJoined(v0 types.Log) (*ethereum.ValidatorPoolValidatorJoined, error) {
 	r0, r1 := m.ParseValidatorJoinedFunc.nextHook()(v0)
 	m.ParseValidatorJoinedFunc.appendCall(IValidatorPoolParseValidatorJoinedFuncCall{v0, r0, r1})
 	return r0, r1
@@ -45018,7 +45021,7 @@ func (m *MockIValidatorPool) ParseValidatorJoined(v0 types.Log) (*bindings.Valid
 // SetDefaultHook sets function that is called when the ParseValidatorJoined
 // method of the parent MockIValidatorPool instance is invoked and the hook
 // queue is empty.
-func (f *IValidatorPoolParseValidatorJoinedFunc) SetDefaultHook(hook func(types.Log) (*bindings.ValidatorPoolValidatorJoined, error)) {
+func (f *IValidatorPoolParseValidatorJoinedFunc) SetDefaultHook(hook func(types.Log) (*ethereum.ValidatorPoolValidatorJoined, error)) {
 	f.defaultHook = hook
 }
 
@@ -45027,7 +45030,7 @@ func (f *IValidatorPoolParseValidatorJoinedFunc) SetDefaultHook(hook func(types.
 // invokes the hook at the front of the queue and discards it. After the
 // queue is empty, the default hook function is invoked for any future
 // action.
-func (f *IValidatorPoolParseValidatorJoinedFunc) PushHook(hook func(types.Log) (*bindings.ValidatorPoolValidatorJoined, error)) {
+func (f *IValidatorPoolParseValidatorJoinedFunc) PushHook(hook func(types.Log) (*ethereum.ValidatorPoolValidatorJoined, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -45035,20 +45038,20 @@ func (f *IValidatorPoolParseValidatorJoinedFunc) PushHook(hook func(types.Log) (
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IValidatorPoolParseValidatorJoinedFunc) SetDefaultReturn(r0 *bindings.ValidatorPoolValidatorJoined, r1 error) {
-	f.SetDefaultHook(func(types.Log) (*bindings.ValidatorPoolValidatorJoined, error) {
+func (f *IValidatorPoolParseValidatorJoinedFunc) SetDefaultReturn(r0 *ethereum.ValidatorPoolValidatorJoined, r1 error) {
+	f.SetDefaultHook(func(types.Log) (*ethereum.ValidatorPoolValidatorJoined, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IValidatorPoolParseValidatorJoinedFunc) PushReturn(r0 *bindings.ValidatorPoolValidatorJoined, r1 error) {
-	f.PushHook(func(types.Log) (*bindings.ValidatorPoolValidatorJoined, error) {
+func (f *IValidatorPoolParseValidatorJoinedFunc) PushReturn(r0 *ethereum.ValidatorPoolValidatorJoined, r1 error) {
+	f.PushHook(func(types.Log) (*ethereum.ValidatorPoolValidatorJoined, error) {
 		return r0, r1
 	})
 }
 
-func (f *IValidatorPoolParseValidatorJoinedFunc) nextHook() func(types.Log) (*bindings.ValidatorPoolValidatorJoined, error) {
+func (f *IValidatorPoolParseValidatorJoinedFunc) nextHook() func(types.Log) (*ethereum.ValidatorPoolValidatorJoined, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -45087,7 +45090,7 @@ type IValidatorPoolParseValidatorJoinedFuncCall struct {
 	Arg0 types.Log
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 *bindings.ValidatorPoolValidatorJoined
+	Result0 *ethereum.ValidatorPoolValidatorJoined
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -45109,15 +45112,15 @@ func (c IValidatorPoolParseValidatorJoinedFuncCall) Results() []interface{} {
 // ParseValidatorLeft method of the parent MockIValidatorPool instance is
 // invoked.
 type IValidatorPoolParseValidatorLeftFunc struct {
-	defaultHook func(types.Log) (*bindings.ValidatorPoolValidatorLeft, error)
-	hooks       []func(types.Log) (*bindings.ValidatorPoolValidatorLeft, error)
+	defaultHook func(types.Log) (*ethereum.ValidatorPoolValidatorLeft, error)
+	hooks       []func(types.Log) (*ethereum.ValidatorPoolValidatorLeft, error)
 	history     []IValidatorPoolParseValidatorLeftFuncCall
 	mutex       sync.Mutex
 }
 
 // ParseValidatorLeft delegates to the next hook function in the queue and
 // stores the parameter and result values of this invocation.
-func (m *MockIValidatorPool) ParseValidatorLeft(v0 types.Log) (*bindings.ValidatorPoolValidatorLeft, error) {
+func (m *MockIValidatorPool) ParseValidatorLeft(v0 types.Log) (*ethereum.ValidatorPoolValidatorLeft, error) {
 	r0, r1 := m.ParseValidatorLeftFunc.nextHook()(v0)
 	m.ParseValidatorLeftFunc.appendCall(IValidatorPoolParseValidatorLeftFuncCall{v0, r0, r1})
 	return r0, r1
@@ -45126,7 +45129,7 @@ func (m *MockIValidatorPool) ParseValidatorLeft(v0 types.Log) (*bindings.Validat
 // SetDefaultHook sets function that is called when the ParseValidatorLeft
 // method of the parent MockIValidatorPool instance is invoked and the hook
 // queue is empty.
-func (f *IValidatorPoolParseValidatorLeftFunc) SetDefaultHook(hook func(types.Log) (*bindings.ValidatorPoolValidatorLeft, error)) {
+func (f *IValidatorPoolParseValidatorLeftFunc) SetDefaultHook(hook func(types.Log) (*ethereum.ValidatorPoolValidatorLeft, error)) {
 	f.defaultHook = hook
 }
 
@@ -45135,7 +45138,7 @@ func (f *IValidatorPoolParseValidatorLeftFunc) SetDefaultHook(hook func(types.Lo
 // invokes the hook at the front of the queue and discards it. After the
 // queue is empty, the default hook function is invoked for any future
 // action.
-func (f *IValidatorPoolParseValidatorLeftFunc) PushHook(hook func(types.Log) (*bindings.ValidatorPoolValidatorLeft, error)) {
+func (f *IValidatorPoolParseValidatorLeftFunc) PushHook(hook func(types.Log) (*ethereum.ValidatorPoolValidatorLeft, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -45143,20 +45146,20 @@ func (f *IValidatorPoolParseValidatorLeftFunc) PushHook(hook func(types.Log) (*b
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IValidatorPoolParseValidatorLeftFunc) SetDefaultReturn(r0 *bindings.ValidatorPoolValidatorLeft, r1 error) {
-	f.SetDefaultHook(func(types.Log) (*bindings.ValidatorPoolValidatorLeft, error) {
+func (f *IValidatorPoolParseValidatorLeftFunc) SetDefaultReturn(r0 *ethereum.ValidatorPoolValidatorLeft, r1 error) {
+	f.SetDefaultHook(func(types.Log) (*ethereum.ValidatorPoolValidatorLeft, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IValidatorPoolParseValidatorLeftFunc) PushReturn(r0 *bindings.ValidatorPoolValidatorLeft, r1 error) {
-	f.PushHook(func(types.Log) (*bindings.ValidatorPoolValidatorLeft, error) {
+func (f *IValidatorPoolParseValidatorLeftFunc) PushReturn(r0 *ethereum.ValidatorPoolValidatorLeft, r1 error) {
+	f.PushHook(func(types.Log) (*ethereum.ValidatorPoolValidatorLeft, error) {
 		return r0, r1
 	})
 }
 
-func (f *IValidatorPoolParseValidatorLeftFunc) nextHook() func(types.Log) (*bindings.ValidatorPoolValidatorLeft, error) {
+func (f *IValidatorPoolParseValidatorLeftFunc) nextHook() func(types.Log) (*ethereum.ValidatorPoolValidatorLeft, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -45195,7 +45198,7 @@ type IValidatorPoolParseValidatorLeftFuncCall struct {
 	Arg0 types.Log
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 *bindings.ValidatorPoolValidatorLeft
+	Result0 *ethereum.ValidatorPoolValidatorLeft
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -45217,15 +45220,15 @@ func (c IValidatorPoolParseValidatorLeftFuncCall) Results() []interface{} {
 // the ParseValidatorMajorSlashed method of the parent MockIValidatorPool
 // instance is invoked.
 type IValidatorPoolParseValidatorMajorSlashedFunc struct {
-	defaultHook func(types.Log) (*bindings.ValidatorPoolValidatorMajorSlashed, error)
-	hooks       []func(types.Log) (*bindings.ValidatorPoolValidatorMajorSlashed, error)
+	defaultHook func(types.Log) (*ethereum.ValidatorPoolValidatorMajorSlashed, error)
+	hooks       []func(types.Log) (*ethereum.ValidatorPoolValidatorMajorSlashed, error)
 	history     []IValidatorPoolParseValidatorMajorSlashedFuncCall
 	mutex       sync.Mutex
 }
 
 // ParseValidatorMajorSlashed delegates to the next hook function in the
 // queue and stores the parameter and result values of this invocation.
-func (m *MockIValidatorPool) ParseValidatorMajorSlashed(v0 types.Log) (*bindings.ValidatorPoolValidatorMajorSlashed, error) {
+func (m *MockIValidatorPool) ParseValidatorMajorSlashed(v0 types.Log) (*ethereum.ValidatorPoolValidatorMajorSlashed, error) {
 	r0, r1 := m.ParseValidatorMajorSlashedFunc.nextHook()(v0)
 	m.ParseValidatorMajorSlashedFunc.appendCall(IValidatorPoolParseValidatorMajorSlashedFuncCall{v0, r0, r1})
 	return r0, r1
@@ -45234,7 +45237,7 @@ func (m *MockIValidatorPool) ParseValidatorMajorSlashed(v0 types.Log) (*bindings
 // SetDefaultHook sets function that is called when the
 // ParseValidatorMajorSlashed method of the parent MockIValidatorPool
 // instance is invoked and the hook queue is empty.
-func (f *IValidatorPoolParseValidatorMajorSlashedFunc) SetDefaultHook(hook func(types.Log) (*bindings.ValidatorPoolValidatorMajorSlashed, error)) {
+func (f *IValidatorPoolParseValidatorMajorSlashedFunc) SetDefaultHook(hook func(types.Log) (*ethereum.ValidatorPoolValidatorMajorSlashed, error)) {
 	f.defaultHook = hook
 }
 
@@ -45243,7 +45246,7 @@ func (f *IValidatorPoolParseValidatorMajorSlashedFunc) SetDefaultHook(hook func(
 // instance invokes the hook at the front of the queue and discards it.
 // After the queue is empty, the default hook function is invoked for any
 // future action.
-func (f *IValidatorPoolParseValidatorMajorSlashedFunc) PushHook(hook func(types.Log) (*bindings.ValidatorPoolValidatorMajorSlashed, error)) {
+func (f *IValidatorPoolParseValidatorMajorSlashedFunc) PushHook(hook func(types.Log) (*ethereum.ValidatorPoolValidatorMajorSlashed, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -45251,20 +45254,20 @@ func (f *IValidatorPoolParseValidatorMajorSlashedFunc) PushHook(hook func(types.
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IValidatorPoolParseValidatorMajorSlashedFunc) SetDefaultReturn(r0 *bindings.ValidatorPoolValidatorMajorSlashed, r1 error) {
-	f.SetDefaultHook(func(types.Log) (*bindings.ValidatorPoolValidatorMajorSlashed, error) {
+func (f *IValidatorPoolParseValidatorMajorSlashedFunc) SetDefaultReturn(r0 *ethereum.ValidatorPoolValidatorMajorSlashed, r1 error) {
+	f.SetDefaultHook(func(types.Log) (*ethereum.ValidatorPoolValidatorMajorSlashed, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IValidatorPoolParseValidatorMajorSlashedFunc) PushReturn(r0 *bindings.ValidatorPoolValidatorMajorSlashed, r1 error) {
-	f.PushHook(func(types.Log) (*bindings.ValidatorPoolValidatorMajorSlashed, error) {
+func (f *IValidatorPoolParseValidatorMajorSlashedFunc) PushReturn(r0 *ethereum.ValidatorPoolValidatorMajorSlashed, r1 error) {
+	f.PushHook(func(types.Log) (*ethereum.ValidatorPoolValidatorMajorSlashed, error) {
 		return r0, r1
 	})
 }
 
-func (f *IValidatorPoolParseValidatorMajorSlashedFunc) nextHook() func(types.Log) (*bindings.ValidatorPoolValidatorMajorSlashed, error) {
+func (f *IValidatorPoolParseValidatorMajorSlashedFunc) nextHook() func(types.Log) (*ethereum.ValidatorPoolValidatorMajorSlashed, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -45304,7 +45307,7 @@ type IValidatorPoolParseValidatorMajorSlashedFuncCall struct {
 	Arg0 types.Log
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 *bindings.ValidatorPoolValidatorMajorSlashed
+	Result0 *ethereum.ValidatorPoolValidatorMajorSlashed
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -45326,15 +45329,15 @@ func (c IValidatorPoolParseValidatorMajorSlashedFuncCall) Results() []interface{
 // the ParseValidatorMinorSlashed method of the parent MockIValidatorPool
 // instance is invoked.
 type IValidatorPoolParseValidatorMinorSlashedFunc struct {
-	defaultHook func(types.Log) (*bindings.ValidatorPoolValidatorMinorSlashed, error)
-	hooks       []func(types.Log) (*bindings.ValidatorPoolValidatorMinorSlashed, error)
+	defaultHook func(types.Log) (*ethereum.ValidatorPoolValidatorMinorSlashed, error)
+	hooks       []func(types.Log) (*ethereum.ValidatorPoolValidatorMinorSlashed, error)
 	history     []IValidatorPoolParseValidatorMinorSlashedFuncCall
 	mutex       sync.Mutex
 }
 
 // ParseValidatorMinorSlashed delegates to the next hook function in the
 // queue and stores the parameter and result values of this invocation.
-func (m *MockIValidatorPool) ParseValidatorMinorSlashed(v0 types.Log) (*bindings.ValidatorPoolValidatorMinorSlashed, error) {
+func (m *MockIValidatorPool) ParseValidatorMinorSlashed(v0 types.Log) (*ethereum.ValidatorPoolValidatorMinorSlashed, error) {
 	r0, r1 := m.ParseValidatorMinorSlashedFunc.nextHook()(v0)
 	m.ParseValidatorMinorSlashedFunc.appendCall(IValidatorPoolParseValidatorMinorSlashedFuncCall{v0, r0, r1})
 	return r0, r1
@@ -45343,7 +45346,7 @@ func (m *MockIValidatorPool) ParseValidatorMinorSlashed(v0 types.Log) (*bindings
 // SetDefaultHook sets function that is called when the
 // ParseValidatorMinorSlashed method of the parent MockIValidatorPool
 // instance is invoked and the hook queue is empty.
-func (f *IValidatorPoolParseValidatorMinorSlashedFunc) SetDefaultHook(hook func(types.Log) (*bindings.ValidatorPoolValidatorMinorSlashed, error)) {
+func (f *IValidatorPoolParseValidatorMinorSlashedFunc) SetDefaultHook(hook func(types.Log) (*ethereum.ValidatorPoolValidatorMinorSlashed, error)) {
 	f.defaultHook = hook
 }
 
@@ -45352,7 +45355,7 @@ func (f *IValidatorPoolParseValidatorMinorSlashedFunc) SetDefaultHook(hook func(
 // instance invokes the hook at the front of the queue and discards it.
 // After the queue is empty, the default hook function is invoked for any
 // future action.
-func (f *IValidatorPoolParseValidatorMinorSlashedFunc) PushHook(hook func(types.Log) (*bindings.ValidatorPoolValidatorMinorSlashed, error)) {
+func (f *IValidatorPoolParseValidatorMinorSlashedFunc) PushHook(hook func(types.Log) (*ethereum.ValidatorPoolValidatorMinorSlashed, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -45360,20 +45363,20 @@ func (f *IValidatorPoolParseValidatorMinorSlashedFunc) PushHook(hook func(types.
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IValidatorPoolParseValidatorMinorSlashedFunc) SetDefaultReturn(r0 *bindings.ValidatorPoolValidatorMinorSlashed, r1 error) {
-	f.SetDefaultHook(func(types.Log) (*bindings.ValidatorPoolValidatorMinorSlashed, error) {
+func (f *IValidatorPoolParseValidatorMinorSlashedFunc) SetDefaultReturn(r0 *ethereum.ValidatorPoolValidatorMinorSlashed, r1 error) {
+	f.SetDefaultHook(func(types.Log) (*ethereum.ValidatorPoolValidatorMinorSlashed, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IValidatorPoolParseValidatorMinorSlashedFunc) PushReturn(r0 *bindings.ValidatorPoolValidatorMinorSlashed, r1 error) {
-	f.PushHook(func(types.Log) (*bindings.ValidatorPoolValidatorMinorSlashed, error) {
+func (f *IValidatorPoolParseValidatorMinorSlashedFunc) PushReturn(r0 *ethereum.ValidatorPoolValidatorMinorSlashed, r1 error) {
+	f.PushHook(func(types.Log) (*ethereum.ValidatorPoolValidatorMinorSlashed, error) {
 		return r0, r1
 	})
 }
 
-func (f *IValidatorPoolParseValidatorMinorSlashedFunc) nextHook() func(types.Log) (*bindings.ValidatorPoolValidatorMinorSlashed, error) {
+func (f *IValidatorPoolParseValidatorMinorSlashedFunc) nextHook() func(types.Log) (*ethereum.ValidatorPoolValidatorMinorSlashed, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -45413,7 +45416,7 @@ type IValidatorPoolParseValidatorMinorSlashedFuncCall struct {
 	Arg0 types.Log
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 *bindings.ValidatorPoolValidatorMinorSlashed
+	Result0 *ethereum.ValidatorPoolValidatorMinorSlashed
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -47085,15 +47088,15 @@ func (c IValidatorPoolUnregisterValidatorsFuncCall) Results() []interface{} {
 // WatchInitialized method of the parent MockIValidatorPool instance is
 // invoked.
 type IValidatorPoolWatchInitializedFunc struct {
-	defaultHook func(*bind.WatchOpts, chan<- *bindings.ValidatorPoolInitialized) (event.Subscription, error)
-	hooks       []func(*bind.WatchOpts, chan<- *bindings.ValidatorPoolInitialized) (event.Subscription, error)
+	defaultHook func(*bind.WatchOpts, chan<- *ethereum.ValidatorPoolInitialized) (event.Subscription, error)
+	hooks       []func(*bind.WatchOpts, chan<- *ethereum.ValidatorPoolInitialized) (event.Subscription, error)
 	history     []IValidatorPoolWatchInitializedFuncCall
 	mutex       sync.Mutex
 }
 
 // WatchInitialized delegates to the next hook function in the queue and
 // stores the parameter and result values of this invocation.
-func (m *MockIValidatorPool) WatchInitialized(v0 *bind.WatchOpts, v1 chan<- *bindings.ValidatorPoolInitialized) (event.Subscription, error) {
+func (m *MockIValidatorPool) WatchInitialized(v0 *bind.WatchOpts, v1 chan<- *ethereum.ValidatorPoolInitialized) (event.Subscription, error) {
 	r0, r1 := m.WatchInitializedFunc.nextHook()(v0, v1)
 	m.WatchInitializedFunc.appendCall(IValidatorPoolWatchInitializedFuncCall{v0, v1, r0, r1})
 	return r0, r1
@@ -47102,7 +47105,7 @@ func (m *MockIValidatorPool) WatchInitialized(v0 *bind.WatchOpts, v1 chan<- *bin
 // SetDefaultHook sets function that is called when the WatchInitialized
 // method of the parent MockIValidatorPool instance is invoked and the hook
 // queue is empty.
-func (f *IValidatorPoolWatchInitializedFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *bindings.ValidatorPoolInitialized) (event.Subscription, error)) {
+func (f *IValidatorPoolWatchInitializedFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *ethereum.ValidatorPoolInitialized) (event.Subscription, error)) {
 	f.defaultHook = hook
 }
 
@@ -47110,7 +47113,7 @@ func (f *IValidatorPoolWatchInitializedFunc) SetDefaultHook(hook func(*bind.Watc
 // WatchInitialized method of the parent MockIValidatorPool instance invokes
 // the hook at the front of the queue and discards it. After the queue is
 // empty, the default hook function is invoked for any future action.
-func (f *IValidatorPoolWatchInitializedFunc) PushHook(hook func(*bind.WatchOpts, chan<- *bindings.ValidatorPoolInitialized) (event.Subscription, error)) {
+func (f *IValidatorPoolWatchInitializedFunc) PushHook(hook func(*bind.WatchOpts, chan<- *ethereum.ValidatorPoolInitialized) (event.Subscription, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -47119,19 +47122,19 @@ func (f *IValidatorPoolWatchInitializedFunc) PushHook(hook func(*bind.WatchOpts,
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
 func (f *IValidatorPoolWatchInitializedFunc) SetDefaultReturn(r0 event.Subscription, r1 error) {
-	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *bindings.ValidatorPoolInitialized) (event.Subscription, error) {
+	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *ethereum.ValidatorPoolInitialized) (event.Subscription, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
 func (f *IValidatorPoolWatchInitializedFunc) PushReturn(r0 event.Subscription, r1 error) {
-	f.PushHook(func(*bind.WatchOpts, chan<- *bindings.ValidatorPoolInitialized) (event.Subscription, error) {
+	f.PushHook(func(*bind.WatchOpts, chan<- *ethereum.ValidatorPoolInitialized) (event.Subscription, error) {
 		return r0, r1
 	})
 }
 
-func (f *IValidatorPoolWatchInitializedFunc) nextHook() func(*bind.WatchOpts, chan<- *bindings.ValidatorPoolInitialized) (event.Subscription, error) {
+func (f *IValidatorPoolWatchInitializedFunc) nextHook() func(*bind.WatchOpts, chan<- *ethereum.ValidatorPoolInitialized) (event.Subscription, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -47170,7 +47173,7 @@ type IValidatorPoolWatchInitializedFuncCall struct {
 	Arg0 *bind.WatchOpts
 	// Arg1 is the value of the 2nd argument passed to this method
 	// invocation.
-	Arg1 chan<- *bindings.ValidatorPoolInitialized
+	Arg1 chan<- *ethereum.ValidatorPoolInitialized
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
 	Result0 event.Subscription
@@ -47195,15 +47198,15 @@ func (c IValidatorPoolWatchInitializedFuncCall) Results() []interface{} {
 // the WatchMaintenanceScheduled method of the parent MockIValidatorPool
 // instance is invoked.
 type IValidatorPoolWatchMaintenanceScheduledFunc struct {
-	defaultHook func(*bind.WatchOpts, chan<- *bindings.ValidatorPoolMaintenanceScheduled) (event.Subscription, error)
-	hooks       []func(*bind.WatchOpts, chan<- *bindings.ValidatorPoolMaintenanceScheduled) (event.Subscription, error)
+	defaultHook func(*bind.WatchOpts, chan<- *ethereum.ValidatorPoolMaintenanceScheduled) (event.Subscription, error)
+	hooks       []func(*bind.WatchOpts, chan<- *ethereum.ValidatorPoolMaintenanceScheduled) (event.Subscription, error)
 	history     []IValidatorPoolWatchMaintenanceScheduledFuncCall
 	mutex       sync.Mutex
 }
 
 // WatchMaintenanceScheduled delegates to the next hook function in the
 // queue and stores the parameter and result values of this invocation.
-func (m *MockIValidatorPool) WatchMaintenanceScheduled(v0 *bind.WatchOpts, v1 chan<- *bindings.ValidatorPoolMaintenanceScheduled) (event.Subscription, error) {
+func (m *MockIValidatorPool) WatchMaintenanceScheduled(v0 *bind.WatchOpts, v1 chan<- *ethereum.ValidatorPoolMaintenanceScheduled) (event.Subscription, error) {
 	r0, r1 := m.WatchMaintenanceScheduledFunc.nextHook()(v0, v1)
 	m.WatchMaintenanceScheduledFunc.appendCall(IValidatorPoolWatchMaintenanceScheduledFuncCall{v0, v1, r0, r1})
 	return r0, r1
@@ -47212,7 +47215,7 @@ func (m *MockIValidatorPool) WatchMaintenanceScheduled(v0 *bind.WatchOpts, v1 ch
 // SetDefaultHook sets function that is called when the
 // WatchMaintenanceScheduled method of the parent MockIValidatorPool
 // instance is invoked and the hook queue is empty.
-func (f *IValidatorPoolWatchMaintenanceScheduledFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *bindings.ValidatorPoolMaintenanceScheduled) (event.Subscription, error)) {
+func (f *IValidatorPoolWatchMaintenanceScheduledFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *ethereum.ValidatorPoolMaintenanceScheduled) (event.Subscription, error)) {
 	f.defaultHook = hook
 }
 
@@ -47221,7 +47224,7 @@ func (f *IValidatorPoolWatchMaintenanceScheduledFunc) SetDefaultHook(hook func(*
 // instance invokes the hook at the front of the queue and discards it.
 // After the queue is empty, the default hook function is invoked for any
 // future action.
-func (f *IValidatorPoolWatchMaintenanceScheduledFunc) PushHook(hook func(*bind.WatchOpts, chan<- *bindings.ValidatorPoolMaintenanceScheduled) (event.Subscription, error)) {
+func (f *IValidatorPoolWatchMaintenanceScheduledFunc) PushHook(hook func(*bind.WatchOpts, chan<- *ethereum.ValidatorPoolMaintenanceScheduled) (event.Subscription, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -47230,19 +47233,19 @@ func (f *IValidatorPoolWatchMaintenanceScheduledFunc) PushHook(hook func(*bind.W
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
 func (f *IValidatorPoolWatchMaintenanceScheduledFunc) SetDefaultReturn(r0 event.Subscription, r1 error) {
-	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *bindings.ValidatorPoolMaintenanceScheduled) (event.Subscription, error) {
+	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *ethereum.ValidatorPoolMaintenanceScheduled) (event.Subscription, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
 func (f *IValidatorPoolWatchMaintenanceScheduledFunc) PushReturn(r0 event.Subscription, r1 error) {
-	f.PushHook(func(*bind.WatchOpts, chan<- *bindings.ValidatorPoolMaintenanceScheduled) (event.Subscription, error) {
+	f.PushHook(func(*bind.WatchOpts, chan<- *ethereum.ValidatorPoolMaintenanceScheduled) (event.Subscription, error) {
 		return r0, r1
 	})
 }
 
-func (f *IValidatorPoolWatchMaintenanceScheduledFunc) nextHook() func(*bind.WatchOpts, chan<- *bindings.ValidatorPoolMaintenanceScheduled) (event.Subscription, error) {
+func (f *IValidatorPoolWatchMaintenanceScheduledFunc) nextHook() func(*bind.WatchOpts, chan<- *ethereum.ValidatorPoolMaintenanceScheduled) (event.Subscription, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -47282,7 +47285,7 @@ type IValidatorPoolWatchMaintenanceScheduledFuncCall struct {
 	Arg0 *bind.WatchOpts
 	// Arg1 is the value of the 2nd argument passed to this method
 	// invocation.
-	Arg1 chan<- *bindings.ValidatorPoolMaintenanceScheduled
+	Arg1 chan<- *ethereum.ValidatorPoolMaintenanceScheduled
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
 	Result0 event.Subscription
@@ -47307,15 +47310,15 @@ func (c IValidatorPoolWatchMaintenanceScheduledFuncCall) Results() []interface{}
 // WatchValidatorJoined method of the parent MockIValidatorPool instance is
 // invoked.
 type IValidatorPoolWatchValidatorJoinedFunc struct {
-	defaultHook func(*bind.WatchOpts, chan<- *bindings.ValidatorPoolValidatorJoined, []common.Address) (event.Subscription, error)
-	hooks       []func(*bind.WatchOpts, chan<- *bindings.ValidatorPoolValidatorJoined, []common.Address) (event.Subscription, error)
+	defaultHook func(*bind.WatchOpts, chan<- *ethereum.ValidatorPoolValidatorJoined, []common.Address) (event.Subscription, error)
+	hooks       []func(*bind.WatchOpts, chan<- *ethereum.ValidatorPoolValidatorJoined, []common.Address) (event.Subscription, error)
 	history     []IValidatorPoolWatchValidatorJoinedFuncCall
 	mutex       sync.Mutex
 }
 
 // WatchValidatorJoined delegates to the next hook function in the queue and
 // stores the parameter and result values of this invocation.
-func (m *MockIValidatorPool) WatchValidatorJoined(v0 *bind.WatchOpts, v1 chan<- *bindings.ValidatorPoolValidatorJoined, v2 []common.Address) (event.Subscription, error) {
+func (m *MockIValidatorPool) WatchValidatorJoined(v0 *bind.WatchOpts, v1 chan<- *ethereum.ValidatorPoolValidatorJoined, v2 []common.Address) (event.Subscription, error) {
 	r0, r1 := m.WatchValidatorJoinedFunc.nextHook()(v0, v1, v2)
 	m.WatchValidatorJoinedFunc.appendCall(IValidatorPoolWatchValidatorJoinedFuncCall{v0, v1, v2, r0, r1})
 	return r0, r1
@@ -47324,7 +47327,7 @@ func (m *MockIValidatorPool) WatchValidatorJoined(v0 *bind.WatchOpts, v1 chan<- 
 // SetDefaultHook sets function that is called when the WatchValidatorJoined
 // method of the parent MockIValidatorPool instance is invoked and the hook
 // queue is empty.
-func (f *IValidatorPoolWatchValidatorJoinedFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *bindings.ValidatorPoolValidatorJoined, []common.Address) (event.Subscription, error)) {
+func (f *IValidatorPoolWatchValidatorJoinedFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *ethereum.ValidatorPoolValidatorJoined, []common.Address) (event.Subscription, error)) {
 	f.defaultHook = hook
 }
 
@@ -47333,7 +47336,7 @@ func (f *IValidatorPoolWatchValidatorJoinedFunc) SetDefaultHook(hook func(*bind.
 // invokes the hook at the front of the queue and discards it. After the
 // queue is empty, the default hook function is invoked for any future
 // action.
-func (f *IValidatorPoolWatchValidatorJoinedFunc) PushHook(hook func(*bind.WatchOpts, chan<- *bindings.ValidatorPoolValidatorJoined, []common.Address) (event.Subscription, error)) {
+func (f *IValidatorPoolWatchValidatorJoinedFunc) PushHook(hook func(*bind.WatchOpts, chan<- *ethereum.ValidatorPoolValidatorJoined, []common.Address) (event.Subscription, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -47342,19 +47345,19 @@ func (f *IValidatorPoolWatchValidatorJoinedFunc) PushHook(hook func(*bind.WatchO
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
 func (f *IValidatorPoolWatchValidatorJoinedFunc) SetDefaultReturn(r0 event.Subscription, r1 error) {
-	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *bindings.ValidatorPoolValidatorJoined, []common.Address) (event.Subscription, error) {
+	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *ethereum.ValidatorPoolValidatorJoined, []common.Address) (event.Subscription, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
 func (f *IValidatorPoolWatchValidatorJoinedFunc) PushReturn(r0 event.Subscription, r1 error) {
-	f.PushHook(func(*bind.WatchOpts, chan<- *bindings.ValidatorPoolValidatorJoined, []common.Address) (event.Subscription, error) {
+	f.PushHook(func(*bind.WatchOpts, chan<- *ethereum.ValidatorPoolValidatorJoined, []common.Address) (event.Subscription, error) {
 		return r0, r1
 	})
 }
 
-func (f *IValidatorPoolWatchValidatorJoinedFunc) nextHook() func(*bind.WatchOpts, chan<- *bindings.ValidatorPoolValidatorJoined, []common.Address) (event.Subscription, error) {
+func (f *IValidatorPoolWatchValidatorJoinedFunc) nextHook() func(*bind.WatchOpts, chan<- *ethereum.ValidatorPoolValidatorJoined, []common.Address) (event.Subscription, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -47393,7 +47396,7 @@ type IValidatorPoolWatchValidatorJoinedFuncCall struct {
 	Arg0 *bind.WatchOpts
 	// Arg1 is the value of the 2nd argument passed to this method
 	// invocation.
-	Arg1 chan<- *bindings.ValidatorPoolValidatorJoined
+	Arg1 chan<- *ethereum.ValidatorPoolValidatorJoined
 	// Arg2 is the value of the 3rd argument passed to this method
 	// invocation.
 	Arg2 []common.Address
@@ -47421,15 +47424,15 @@ func (c IValidatorPoolWatchValidatorJoinedFuncCall) Results() []interface{} {
 // WatchValidatorLeft method of the parent MockIValidatorPool instance is
 // invoked.
 type IValidatorPoolWatchValidatorLeftFunc struct {
-	defaultHook func(*bind.WatchOpts, chan<- *bindings.ValidatorPoolValidatorLeft, []common.Address) (event.Subscription, error)
-	hooks       []func(*bind.WatchOpts, chan<- *bindings.ValidatorPoolValidatorLeft, []common.Address) (event.Subscription, error)
+	defaultHook func(*bind.WatchOpts, chan<- *ethereum.ValidatorPoolValidatorLeft, []common.Address) (event.Subscription, error)
+	hooks       []func(*bind.WatchOpts, chan<- *ethereum.ValidatorPoolValidatorLeft, []common.Address) (event.Subscription, error)
 	history     []IValidatorPoolWatchValidatorLeftFuncCall
 	mutex       sync.Mutex
 }
 
 // WatchValidatorLeft delegates to the next hook function in the queue and
 // stores the parameter and result values of this invocation.
-func (m *MockIValidatorPool) WatchValidatorLeft(v0 *bind.WatchOpts, v1 chan<- *bindings.ValidatorPoolValidatorLeft, v2 []common.Address) (event.Subscription, error) {
+func (m *MockIValidatorPool) WatchValidatorLeft(v0 *bind.WatchOpts, v1 chan<- *ethereum.ValidatorPoolValidatorLeft, v2 []common.Address) (event.Subscription, error) {
 	r0, r1 := m.WatchValidatorLeftFunc.nextHook()(v0, v1, v2)
 	m.WatchValidatorLeftFunc.appendCall(IValidatorPoolWatchValidatorLeftFuncCall{v0, v1, v2, r0, r1})
 	return r0, r1
@@ -47438,7 +47441,7 @@ func (m *MockIValidatorPool) WatchValidatorLeft(v0 *bind.WatchOpts, v1 chan<- *b
 // SetDefaultHook sets function that is called when the WatchValidatorLeft
 // method of the parent MockIValidatorPool instance is invoked and the hook
 // queue is empty.
-func (f *IValidatorPoolWatchValidatorLeftFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *bindings.ValidatorPoolValidatorLeft, []common.Address) (event.Subscription, error)) {
+func (f *IValidatorPoolWatchValidatorLeftFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *ethereum.ValidatorPoolValidatorLeft, []common.Address) (event.Subscription, error)) {
 	f.defaultHook = hook
 }
 
@@ -47447,7 +47450,7 @@ func (f *IValidatorPoolWatchValidatorLeftFunc) SetDefaultHook(hook func(*bind.Wa
 // invokes the hook at the front of the queue and discards it. After the
 // queue is empty, the default hook function is invoked for any future
 // action.
-func (f *IValidatorPoolWatchValidatorLeftFunc) PushHook(hook func(*bind.WatchOpts, chan<- *bindings.ValidatorPoolValidatorLeft, []common.Address) (event.Subscription, error)) {
+func (f *IValidatorPoolWatchValidatorLeftFunc) PushHook(hook func(*bind.WatchOpts, chan<- *ethereum.ValidatorPoolValidatorLeft, []common.Address) (event.Subscription, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -47456,19 +47459,19 @@ func (f *IValidatorPoolWatchValidatorLeftFunc) PushHook(hook func(*bind.WatchOpt
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
 func (f *IValidatorPoolWatchValidatorLeftFunc) SetDefaultReturn(r0 event.Subscription, r1 error) {
-	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *bindings.ValidatorPoolValidatorLeft, []common.Address) (event.Subscription, error) {
+	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *ethereum.ValidatorPoolValidatorLeft, []common.Address) (event.Subscription, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
 func (f *IValidatorPoolWatchValidatorLeftFunc) PushReturn(r0 event.Subscription, r1 error) {
-	f.PushHook(func(*bind.WatchOpts, chan<- *bindings.ValidatorPoolValidatorLeft, []common.Address) (event.Subscription, error) {
+	f.PushHook(func(*bind.WatchOpts, chan<- *ethereum.ValidatorPoolValidatorLeft, []common.Address) (event.Subscription, error) {
 		return r0, r1
 	})
 }
 
-func (f *IValidatorPoolWatchValidatorLeftFunc) nextHook() func(*bind.WatchOpts, chan<- *bindings.ValidatorPoolValidatorLeft, []common.Address) (event.Subscription, error) {
+func (f *IValidatorPoolWatchValidatorLeftFunc) nextHook() func(*bind.WatchOpts, chan<- *ethereum.ValidatorPoolValidatorLeft, []common.Address) (event.Subscription, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -47507,7 +47510,7 @@ type IValidatorPoolWatchValidatorLeftFuncCall struct {
 	Arg0 *bind.WatchOpts
 	// Arg1 is the value of the 2nd argument passed to this method
 	// invocation.
-	Arg1 chan<- *bindings.ValidatorPoolValidatorLeft
+	Arg1 chan<- *ethereum.ValidatorPoolValidatorLeft
 	// Arg2 is the value of the 3rd argument passed to this method
 	// invocation.
 	Arg2 []common.Address
@@ -47535,15 +47538,15 @@ func (c IValidatorPoolWatchValidatorLeftFuncCall) Results() []interface{} {
 // the WatchValidatorMajorSlashed method of the parent MockIValidatorPool
 // instance is invoked.
 type IValidatorPoolWatchValidatorMajorSlashedFunc struct {
-	defaultHook func(*bind.WatchOpts, chan<- *bindings.ValidatorPoolValidatorMajorSlashed, []common.Address) (event.Subscription, error)
-	hooks       []func(*bind.WatchOpts, chan<- *bindings.ValidatorPoolValidatorMajorSlashed, []common.Address) (event.Subscription, error)
+	defaultHook func(*bind.WatchOpts, chan<- *ethereum.ValidatorPoolValidatorMajorSlashed, []common.Address) (event.Subscription, error)
+	hooks       []func(*bind.WatchOpts, chan<- *ethereum.ValidatorPoolValidatorMajorSlashed, []common.Address) (event.Subscription, error)
 	history     []IValidatorPoolWatchValidatorMajorSlashedFuncCall
 	mutex       sync.Mutex
 }
 
 // WatchValidatorMajorSlashed delegates to the next hook function in the
 // queue and stores the parameter and result values of this invocation.
-func (m *MockIValidatorPool) WatchValidatorMajorSlashed(v0 *bind.WatchOpts, v1 chan<- *bindings.ValidatorPoolValidatorMajorSlashed, v2 []common.Address) (event.Subscription, error) {
+func (m *MockIValidatorPool) WatchValidatorMajorSlashed(v0 *bind.WatchOpts, v1 chan<- *ethereum.ValidatorPoolValidatorMajorSlashed, v2 []common.Address) (event.Subscription, error) {
 	r0, r1 := m.WatchValidatorMajorSlashedFunc.nextHook()(v0, v1, v2)
 	m.WatchValidatorMajorSlashedFunc.appendCall(IValidatorPoolWatchValidatorMajorSlashedFuncCall{v0, v1, v2, r0, r1})
 	return r0, r1
@@ -47552,7 +47555,7 @@ func (m *MockIValidatorPool) WatchValidatorMajorSlashed(v0 *bind.WatchOpts, v1 c
 // SetDefaultHook sets function that is called when the
 // WatchValidatorMajorSlashed method of the parent MockIValidatorPool
 // instance is invoked and the hook queue is empty.
-func (f *IValidatorPoolWatchValidatorMajorSlashedFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *bindings.ValidatorPoolValidatorMajorSlashed, []common.Address) (event.Subscription, error)) {
+func (f *IValidatorPoolWatchValidatorMajorSlashedFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *ethereum.ValidatorPoolValidatorMajorSlashed, []common.Address) (event.Subscription, error)) {
 	f.defaultHook = hook
 }
 
@@ -47561,7 +47564,7 @@ func (f *IValidatorPoolWatchValidatorMajorSlashedFunc) SetDefaultHook(hook func(
 // instance invokes the hook at the front of the queue and discards it.
 // After the queue is empty, the default hook function is invoked for any
 // future action.
-func (f *IValidatorPoolWatchValidatorMajorSlashedFunc) PushHook(hook func(*bind.WatchOpts, chan<- *bindings.ValidatorPoolValidatorMajorSlashed, []common.Address) (event.Subscription, error)) {
+func (f *IValidatorPoolWatchValidatorMajorSlashedFunc) PushHook(hook func(*bind.WatchOpts, chan<- *ethereum.ValidatorPoolValidatorMajorSlashed, []common.Address) (event.Subscription, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -47570,19 +47573,19 @@ func (f *IValidatorPoolWatchValidatorMajorSlashedFunc) PushHook(hook func(*bind.
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
 func (f *IValidatorPoolWatchValidatorMajorSlashedFunc) SetDefaultReturn(r0 event.Subscription, r1 error) {
-	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *bindings.ValidatorPoolValidatorMajorSlashed, []common.Address) (event.Subscription, error) {
+	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *ethereum.ValidatorPoolValidatorMajorSlashed, []common.Address) (event.Subscription, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
 func (f *IValidatorPoolWatchValidatorMajorSlashedFunc) PushReturn(r0 event.Subscription, r1 error) {
-	f.PushHook(func(*bind.WatchOpts, chan<- *bindings.ValidatorPoolValidatorMajorSlashed, []common.Address) (event.Subscription, error) {
+	f.PushHook(func(*bind.WatchOpts, chan<- *ethereum.ValidatorPoolValidatorMajorSlashed, []common.Address) (event.Subscription, error) {
 		return r0, r1
 	})
 }
 
-func (f *IValidatorPoolWatchValidatorMajorSlashedFunc) nextHook() func(*bind.WatchOpts, chan<- *bindings.ValidatorPoolValidatorMajorSlashed, []common.Address) (event.Subscription, error) {
+func (f *IValidatorPoolWatchValidatorMajorSlashedFunc) nextHook() func(*bind.WatchOpts, chan<- *ethereum.ValidatorPoolValidatorMajorSlashed, []common.Address) (event.Subscription, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -47622,7 +47625,7 @@ type IValidatorPoolWatchValidatorMajorSlashedFuncCall struct {
 	Arg0 *bind.WatchOpts
 	// Arg1 is the value of the 2nd argument passed to this method
 	// invocation.
-	Arg1 chan<- *bindings.ValidatorPoolValidatorMajorSlashed
+	Arg1 chan<- *ethereum.ValidatorPoolValidatorMajorSlashed
 	// Arg2 is the value of the 3rd argument passed to this method
 	// invocation.
 	Arg2 []common.Address
@@ -47650,15 +47653,15 @@ func (c IValidatorPoolWatchValidatorMajorSlashedFuncCall) Results() []interface{
 // the WatchValidatorMinorSlashed method of the parent MockIValidatorPool
 // instance is invoked.
 type IValidatorPoolWatchValidatorMinorSlashedFunc struct {
-	defaultHook func(*bind.WatchOpts, chan<- *bindings.ValidatorPoolValidatorMinorSlashed, []common.Address) (event.Subscription, error)
-	hooks       []func(*bind.WatchOpts, chan<- *bindings.ValidatorPoolValidatorMinorSlashed, []common.Address) (event.Subscription, error)
+	defaultHook func(*bind.WatchOpts, chan<- *ethereum.ValidatorPoolValidatorMinorSlashed, []common.Address) (event.Subscription, error)
+	hooks       []func(*bind.WatchOpts, chan<- *ethereum.ValidatorPoolValidatorMinorSlashed, []common.Address) (event.Subscription, error)
 	history     []IValidatorPoolWatchValidatorMinorSlashedFuncCall
 	mutex       sync.Mutex
 }
 
 // WatchValidatorMinorSlashed delegates to the next hook function in the
 // queue and stores the parameter and result values of this invocation.
-func (m *MockIValidatorPool) WatchValidatorMinorSlashed(v0 *bind.WatchOpts, v1 chan<- *bindings.ValidatorPoolValidatorMinorSlashed, v2 []common.Address) (event.Subscription, error) {
+func (m *MockIValidatorPool) WatchValidatorMinorSlashed(v0 *bind.WatchOpts, v1 chan<- *ethereum.ValidatorPoolValidatorMinorSlashed, v2 []common.Address) (event.Subscription, error) {
 	r0, r1 := m.WatchValidatorMinorSlashedFunc.nextHook()(v0, v1, v2)
 	m.WatchValidatorMinorSlashedFunc.appendCall(IValidatorPoolWatchValidatorMinorSlashedFuncCall{v0, v1, v2, r0, r1})
 	return r0, r1
@@ -47667,7 +47670,7 @@ func (m *MockIValidatorPool) WatchValidatorMinorSlashed(v0 *bind.WatchOpts, v1 c
 // SetDefaultHook sets function that is called when the
 // WatchValidatorMinorSlashed method of the parent MockIValidatorPool
 // instance is invoked and the hook queue is empty.
-func (f *IValidatorPoolWatchValidatorMinorSlashedFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *bindings.ValidatorPoolValidatorMinorSlashed, []common.Address) (event.Subscription, error)) {
+func (f *IValidatorPoolWatchValidatorMinorSlashedFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *ethereum.ValidatorPoolValidatorMinorSlashed, []common.Address) (event.Subscription, error)) {
 	f.defaultHook = hook
 }
 
@@ -47676,7 +47679,7 @@ func (f *IValidatorPoolWatchValidatorMinorSlashedFunc) SetDefaultHook(hook func(
 // instance invokes the hook at the front of the queue and discards it.
 // After the queue is empty, the default hook function is invoked for any
 // future action.
-func (f *IValidatorPoolWatchValidatorMinorSlashedFunc) PushHook(hook func(*bind.WatchOpts, chan<- *bindings.ValidatorPoolValidatorMinorSlashed, []common.Address) (event.Subscription, error)) {
+func (f *IValidatorPoolWatchValidatorMinorSlashedFunc) PushHook(hook func(*bind.WatchOpts, chan<- *ethereum.ValidatorPoolValidatorMinorSlashed, []common.Address) (event.Subscription, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -47685,19 +47688,19 @@ func (f *IValidatorPoolWatchValidatorMinorSlashedFunc) PushHook(hook func(*bind.
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
 func (f *IValidatorPoolWatchValidatorMinorSlashedFunc) SetDefaultReturn(r0 event.Subscription, r1 error) {
-	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *bindings.ValidatorPoolValidatorMinorSlashed, []common.Address) (event.Subscription, error) {
+	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *ethereum.ValidatorPoolValidatorMinorSlashed, []common.Address) (event.Subscription, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
 func (f *IValidatorPoolWatchValidatorMinorSlashedFunc) PushReturn(r0 event.Subscription, r1 error) {
-	f.PushHook(func(*bind.WatchOpts, chan<- *bindings.ValidatorPoolValidatorMinorSlashed, []common.Address) (event.Subscription, error) {
+	f.PushHook(func(*bind.WatchOpts, chan<- *ethereum.ValidatorPoolValidatorMinorSlashed, []common.Address) (event.Subscription, error) {
 		return r0, r1
 	})
 }
 
-func (f *IValidatorPoolWatchValidatorMinorSlashedFunc) nextHook() func(*bind.WatchOpts, chan<- *bindings.ValidatorPoolValidatorMinorSlashed, []common.Address) (event.Subscription, error) {
+func (f *IValidatorPoolWatchValidatorMinorSlashedFunc) nextHook() func(*bind.WatchOpts, chan<- *ethereum.ValidatorPoolValidatorMinorSlashed, []common.Address) (event.Subscription, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -47737,7 +47740,7 @@ type IValidatorPoolWatchValidatorMinorSlashedFuncCall struct {
 	Arg0 *bind.WatchOpts
 	// Arg1 is the value of the 2nd argument passed to this method
 	// invocation.
-	Arg1 chan<- *bindings.ValidatorPoolValidatorMinorSlashed
+	Arg1 chan<- *ethereum.ValidatorPoolValidatorMinorSlashed
 	// Arg2 is the value of the 3rd argument passed to this method
 	// invocation.
 	Arg2 []common.Address
@@ -47762,8 +47765,9 @@ func (c IValidatorPoolWatchValidatorMinorSlashedFuncCall) Results() []interface{
 }
 
 // MockIValidatorStaking is a mock implementation of the IValidatorStaking
-// interface (from the package github.com/alicenet/alicenet/bridge/bindings)
-// used for unit testing.
+// interface (from the package
+// github.com/alicenet/alicenet/bridge/bindings/ethereum) used for unit
+// testing.
 type MockIValidatorStaking struct {
 	// ApproveFunc is an instance of a mock function object controlling the
 	// behavior of the method Approve.
@@ -48061,22 +48065,22 @@ func NewMockIValidatorStaking() *MockIValidatorStaking {
 			},
 		},
 		FilterApprovalFunc: &IValidatorStakingFilterApprovalFunc{
-			defaultHook: func(*bind.FilterOpts, []common.Address, []common.Address, []*big.Int) (r0 *bindings.ValidatorStakingApprovalIterator, r1 error) {
+			defaultHook: func(*bind.FilterOpts, []common.Address, []common.Address, []*big.Int) (r0 *ethereum.ValidatorStakingApprovalIterator, r1 error) {
 				return
 			},
 		},
 		FilterApprovalForAllFunc: &IValidatorStakingFilterApprovalForAllFunc{
-			defaultHook: func(*bind.FilterOpts, []common.Address, []common.Address) (r0 *bindings.ValidatorStakingApprovalForAllIterator, r1 error) {
+			defaultHook: func(*bind.FilterOpts, []common.Address, []common.Address) (r0 *ethereum.ValidatorStakingApprovalForAllIterator, r1 error) {
 				return
 			},
 		},
 		FilterInitializedFunc: &IValidatorStakingFilterInitializedFunc{
-			defaultHook: func(*bind.FilterOpts) (r0 *bindings.ValidatorStakingInitializedIterator, r1 error) {
+			defaultHook: func(*bind.FilterOpts) (r0 *ethereum.ValidatorStakingInitializedIterator, r1 error) {
 				return
 			},
 		},
 		FilterTransferFunc: &IValidatorStakingFilterTransferFunc{
-			defaultHook: func(*bind.FilterOpts, []common.Address, []common.Address, []*big.Int) (r0 *bindings.ValidatorStakingTransferIterator, r1 error) {
+			defaultHook: func(*bind.FilterOpts, []common.Address, []common.Address, []*big.Int) (r0 *ethereum.ValidatorStakingTransferIterator, r1 error) {
 				return
 			},
 		},
@@ -48198,22 +48202,22 @@ func NewMockIValidatorStaking() *MockIValidatorStaking {
 			},
 		},
 		ParseApprovalFunc: &IValidatorStakingParseApprovalFunc{
-			defaultHook: func(types.Log) (r0 *bindings.ValidatorStakingApproval, r1 error) {
+			defaultHook: func(types.Log) (r0 *ethereum.ValidatorStakingApproval, r1 error) {
 				return
 			},
 		},
 		ParseApprovalForAllFunc: &IValidatorStakingParseApprovalForAllFunc{
-			defaultHook: func(types.Log) (r0 *bindings.ValidatorStakingApprovalForAll, r1 error) {
+			defaultHook: func(types.Log) (r0 *ethereum.ValidatorStakingApprovalForAll, r1 error) {
 				return
 			},
 		},
 		ParseInitializedFunc: &IValidatorStakingParseInitializedFunc{
-			defaultHook: func(types.Log) (r0 *bindings.ValidatorStakingInitialized, r1 error) {
+			defaultHook: func(types.Log) (r0 *ethereum.ValidatorStakingInitialized, r1 error) {
 				return
 			},
 		},
 		ParseTransferFunc: &IValidatorStakingParseTransferFunc{
-			defaultHook: func(types.Log) (r0 *bindings.ValidatorStakingTransfer, r1 error) {
+			defaultHook: func(types.Log) (r0 *ethereum.ValidatorStakingTransfer, r1 error) {
 				return
 			},
 		},
@@ -48283,22 +48287,22 @@ func NewMockIValidatorStaking() *MockIValidatorStaking {
 			},
 		},
 		WatchApprovalFunc: &IValidatorStakingWatchApprovalFunc{
-			defaultHook: func(*bind.WatchOpts, chan<- *bindings.ValidatorStakingApproval, []common.Address, []common.Address, []*big.Int) (r0 event.Subscription, r1 error) {
+			defaultHook: func(*bind.WatchOpts, chan<- *ethereum.ValidatorStakingApproval, []common.Address, []common.Address, []*big.Int) (r0 event.Subscription, r1 error) {
 				return
 			},
 		},
 		WatchApprovalForAllFunc: &IValidatorStakingWatchApprovalForAllFunc{
-			defaultHook: func(*bind.WatchOpts, chan<- *bindings.ValidatorStakingApprovalForAll, []common.Address, []common.Address) (r0 event.Subscription, r1 error) {
+			defaultHook: func(*bind.WatchOpts, chan<- *ethereum.ValidatorStakingApprovalForAll, []common.Address, []common.Address) (r0 event.Subscription, r1 error) {
 				return
 			},
 		},
 		WatchInitializedFunc: &IValidatorStakingWatchInitializedFunc{
-			defaultHook: func(*bind.WatchOpts, chan<- *bindings.ValidatorStakingInitialized) (r0 event.Subscription, r1 error) {
+			defaultHook: func(*bind.WatchOpts, chan<- *ethereum.ValidatorStakingInitialized) (r0 event.Subscription, r1 error) {
 				return
 			},
 		},
 		WatchTransferFunc: &IValidatorStakingWatchTransferFunc{
-			defaultHook: func(*bind.WatchOpts, chan<- *bindings.ValidatorStakingTransfer, []common.Address, []common.Address, []*big.Int) (r0 event.Subscription, r1 error) {
+			defaultHook: func(*bind.WatchOpts, chan<- *ethereum.ValidatorStakingTransfer, []common.Address, []common.Address, []*big.Int) (r0 event.Subscription, r1 error) {
 				return
 			},
 		},
@@ -48404,22 +48408,22 @@ func NewStrictMockIValidatorStaking() *MockIValidatorStaking {
 			},
 		},
 		FilterApprovalFunc: &IValidatorStakingFilterApprovalFunc{
-			defaultHook: func(*bind.FilterOpts, []common.Address, []common.Address, []*big.Int) (*bindings.ValidatorStakingApprovalIterator, error) {
+			defaultHook: func(*bind.FilterOpts, []common.Address, []common.Address, []*big.Int) (*ethereum.ValidatorStakingApprovalIterator, error) {
 				panic("unexpected invocation of MockIValidatorStaking.FilterApproval")
 			},
 		},
 		FilterApprovalForAllFunc: &IValidatorStakingFilterApprovalForAllFunc{
-			defaultHook: func(*bind.FilterOpts, []common.Address, []common.Address) (*bindings.ValidatorStakingApprovalForAllIterator, error) {
+			defaultHook: func(*bind.FilterOpts, []common.Address, []common.Address) (*ethereum.ValidatorStakingApprovalForAllIterator, error) {
 				panic("unexpected invocation of MockIValidatorStaking.FilterApprovalForAll")
 			},
 		},
 		FilterInitializedFunc: &IValidatorStakingFilterInitializedFunc{
-			defaultHook: func(*bind.FilterOpts) (*bindings.ValidatorStakingInitializedIterator, error) {
+			defaultHook: func(*bind.FilterOpts) (*ethereum.ValidatorStakingInitializedIterator, error) {
 				panic("unexpected invocation of MockIValidatorStaking.FilterInitialized")
 			},
 		},
 		FilterTransferFunc: &IValidatorStakingFilterTransferFunc{
-			defaultHook: func(*bind.FilterOpts, []common.Address, []common.Address, []*big.Int) (*bindings.ValidatorStakingTransferIterator, error) {
+			defaultHook: func(*bind.FilterOpts, []common.Address, []common.Address, []*big.Int) (*ethereum.ValidatorStakingTransferIterator, error) {
 				panic("unexpected invocation of MockIValidatorStaking.FilterTransfer")
 			},
 		},
@@ -48541,22 +48545,22 @@ func NewStrictMockIValidatorStaking() *MockIValidatorStaking {
 			},
 		},
 		ParseApprovalFunc: &IValidatorStakingParseApprovalFunc{
-			defaultHook: func(types.Log) (*bindings.ValidatorStakingApproval, error) {
+			defaultHook: func(types.Log) (*ethereum.ValidatorStakingApproval, error) {
 				panic("unexpected invocation of MockIValidatorStaking.ParseApproval")
 			},
 		},
 		ParseApprovalForAllFunc: &IValidatorStakingParseApprovalForAllFunc{
-			defaultHook: func(types.Log) (*bindings.ValidatorStakingApprovalForAll, error) {
+			defaultHook: func(types.Log) (*ethereum.ValidatorStakingApprovalForAll, error) {
 				panic("unexpected invocation of MockIValidatorStaking.ParseApprovalForAll")
 			},
 		},
 		ParseInitializedFunc: &IValidatorStakingParseInitializedFunc{
-			defaultHook: func(types.Log) (*bindings.ValidatorStakingInitialized, error) {
+			defaultHook: func(types.Log) (*ethereum.ValidatorStakingInitialized, error) {
 				panic("unexpected invocation of MockIValidatorStaking.ParseInitialized")
 			},
 		},
 		ParseTransferFunc: &IValidatorStakingParseTransferFunc{
-			defaultHook: func(types.Log) (*bindings.ValidatorStakingTransfer, error) {
+			defaultHook: func(types.Log) (*ethereum.ValidatorStakingTransfer, error) {
 				panic("unexpected invocation of MockIValidatorStaking.ParseTransfer")
 			},
 		},
@@ -48626,22 +48630,22 @@ func NewStrictMockIValidatorStaking() *MockIValidatorStaking {
 			},
 		},
 		WatchApprovalFunc: &IValidatorStakingWatchApprovalFunc{
-			defaultHook: func(*bind.WatchOpts, chan<- *bindings.ValidatorStakingApproval, []common.Address, []common.Address, []*big.Int) (event.Subscription, error) {
+			defaultHook: func(*bind.WatchOpts, chan<- *ethereum.ValidatorStakingApproval, []common.Address, []common.Address, []*big.Int) (event.Subscription, error) {
 				panic("unexpected invocation of MockIValidatorStaking.WatchApproval")
 			},
 		},
 		WatchApprovalForAllFunc: &IValidatorStakingWatchApprovalForAllFunc{
-			defaultHook: func(*bind.WatchOpts, chan<- *bindings.ValidatorStakingApprovalForAll, []common.Address, []common.Address) (event.Subscription, error) {
+			defaultHook: func(*bind.WatchOpts, chan<- *ethereum.ValidatorStakingApprovalForAll, []common.Address, []common.Address) (event.Subscription, error) {
 				panic("unexpected invocation of MockIValidatorStaking.WatchApprovalForAll")
 			},
 		},
 		WatchInitializedFunc: &IValidatorStakingWatchInitializedFunc{
-			defaultHook: func(*bind.WatchOpts, chan<- *bindings.ValidatorStakingInitialized) (event.Subscription, error) {
+			defaultHook: func(*bind.WatchOpts, chan<- *ethereum.ValidatorStakingInitialized) (event.Subscription, error) {
 				panic("unexpected invocation of MockIValidatorStaking.WatchInitialized")
 			},
 		},
 		WatchTransferFunc: &IValidatorStakingWatchTransferFunc{
-			defaultHook: func(*bind.WatchOpts, chan<- *bindings.ValidatorStakingTransfer, []common.Address, []common.Address, []*big.Int) (event.Subscription, error) {
+			defaultHook: func(*bind.WatchOpts, chan<- *ethereum.ValidatorStakingTransfer, []common.Address, []common.Address, []*big.Int) (event.Subscription, error) {
 				panic("unexpected invocation of MockIValidatorStaking.WatchTransfer")
 			},
 		},
@@ -48651,7 +48655,7 @@ func NewStrictMockIValidatorStaking() *MockIValidatorStaking {
 // NewMockIValidatorStakingFrom creates a new mock of the
 // MockIValidatorStaking interface. All methods delegate to the given
 // implementation, unless overwritten.
-func NewMockIValidatorStakingFrom(i bindings.IValidatorStaking) *MockIValidatorStaking {
+func NewMockIValidatorStakingFrom(i ethereum.IValidatorStaking) *MockIValidatorStaking {
 	return &MockIValidatorStaking{
 		ApproveFunc: &IValidatorStakingApproveFunc{
 			defaultHook: i.Approve,
@@ -50878,15 +50882,15 @@ func (c IValidatorStakingEstimateTokenCollectionFuncCall) Results() []interface{
 // FilterApproval method of the parent MockIValidatorStaking instance is
 // invoked.
 type IValidatorStakingFilterApprovalFunc struct {
-	defaultHook func(*bind.FilterOpts, []common.Address, []common.Address, []*big.Int) (*bindings.ValidatorStakingApprovalIterator, error)
-	hooks       []func(*bind.FilterOpts, []common.Address, []common.Address, []*big.Int) (*bindings.ValidatorStakingApprovalIterator, error)
+	defaultHook func(*bind.FilterOpts, []common.Address, []common.Address, []*big.Int) (*ethereum.ValidatorStakingApprovalIterator, error)
+	hooks       []func(*bind.FilterOpts, []common.Address, []common.Address, []*big.Int) (*ethereum.ValidatorStakingApprovalIterator, error)
 	history     []IValidatorStakingFilterApprovalFuncCall
 	mutex       sync.Mutex
 }
 
 // FilterApproval delegates to the next hook function in the queue and
 // stores the parameter and result values of this invocation.
-func (m *MockIValidatorStaking) FilterApproval(v0 *bind.FilterOpts, v1 []common.Address, v2 []common.Address, v3 []*big.Int) (*bindings.ValidatorStakingApprovalIterator, error) {
+func (m *MockIValidatorStaking) FilterApproval(v0 *bind.FilterOpts, v1 []common.Address, v2 []common.Address, v3 []*big.Int) (*ethereum.ValidatorStakingApprovalIterator, error) {
 	r0, r1 := m.FilterApprovalFunc.nextHook()(v0, v1, v2, v3)
 	m.FilterApprovalFunc.appendCall(IValidatorStakingFilterApprovalFuncCall{v0, v1, v2, v3, r0, r1})
 	return r0, r1
@@ -50895,7 +50899,7 @@ func (m *MockIValidatorStaking) FilterApproval(v0 *bind.FilterOpts, v1 []common.
 // SetDefaultHook sets function that is called when the FilterApproval
 // method of the parent MockIValidatorStaking instance is invoked and the
 // hook queue is empty.
-func (f *IValidatorStakingFilterApprovalFunc) SetDefaultHook(hook func(*bind.FilterOpts, []common.Address, []common.Address, []*big.Int) (*bindings.ValidatorStakingApprovalIterator, error)) {
+func (f *IValidatorStakingFilterApprovalFunc) SetDefaultHook(hook func(*bind.FilterOpts, []common.Address, []common.Address, []*big.Int) (*ethereum.ValidatorStakingApprovalIterator, error)) {
 	f.defaultHook = hook
 }
 
@@ -50904,7 +50908,7 @@ func (f *IValidatorStakingFilterApprovalFunc) SetDefaultHook(hook func(*bind.Fil
 // invokes the hook at the front of the queue and discards it. After the
 // queue is empty, the default hook function is invoked for any future
 // action.
-func (f *IValidatorStakingFilterApprovalFunc) PushHook(hook func(*bind.FilterOpts, []common.Address, []common.Address, []*big.Int) (*bindings.ValidatorStakingApprovalIterator, error)) {
+func (f *IValidatorStakingFilterApprovalFunc) PushHook(hook func(*bind.FilterOpts, []common.Address, []common.Address, []*big.Int) (*ethereum.ValidatorStakingApprovalIterator, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -50912,20 +50916,20 @@ func (f *IValidatorStakingFilterApprovalFunc) PushHook(hook func(*bind.FilterOpt
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IValidatorStakingFilterApprovalFunc) SetDefaultReturn(r0 *bindings.ValidatorStakingApprovalIterator, r1 error) {
-	f.SetDefaultHook(func(*bind.FilterOpts, []common.Address, []common.Address, []*big.Int) (*bindings.ValidatorStakingApprovalIterator, error) {
+func (f *IValidatorStakingFilterApprovalFunc) SetDefaultReturn(r0 *ethereum.ValidatorStakingApprovalIterator, r1 error) {
+	f.SetDefaultHook(func(*bind.FilterOpts, []common.Address, []common.Address, []*big.Int) (*ethereum.ValidatorStakingApprovalIterator, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IValidatorStakingFilterApprovalFunc) PushReturn(r0 *bindings.ValidatorStakingApprovalIterator, r1 error) {
-	f.PushHook(func(*bind.FilterOpts, []common.Address, []common.Address, []*big.Int) (*bindings.ValidatorStakingApprovalIterator, error) {
+func (f *IValidatorStakingFilterApprovalFunc) PushReturn(r0 *ethereum.ValidatorStakingApprovalIterator, r1 error) {
+	f.PushHook(func(*bind.FilterOpts, []common.Address, []common.Address, []*big.Int) (*ethereum.ValidatorStakingApprovalIterator, error) {
 		return r0, r1
 	})
 }
 
-func (f *IValidatorStakingFilterApprovalFunc) nextHook() func(*bind.FilterOpts, []common.Address, []common.Address, []*big.Int) (*bindings.ValidatorStakingApprovalIterator, error) {
+func (f *IValidatorStakingFilterApprovalFunc) nextHook() func(*bind.FilterOpts, []common.Address, []common.Address, []*big.Int) (*ethereum.ValidatorStakingApprovalIterator, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -50973,7 +50977,7 @@ type IValidatorStakingFilterApprovalFuncCall struct {
 	Arg3 []*big.Int
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 *bindings.ValidatorStakingApprovalIterator
+	Result0 *ethereum.ValidatorStakingApprovalIterator
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -50995,15 +50999,15 @@ func (c IValidatorStakingFilterApprovalFuncCall) Results() []interface{} {
 // FilterApprovalForAll method of the parent MockIValidatorStaking instance
 // is invoked.
 type IValidatorStakingFilterApprovalForAllFunc struct {
-	defaultHook func(*bind.FilterOpts, []common.Address, []common.Address) (*bindings.ValidatorStakingApprovalForAllIterator, error)
-	hooks       []func(*bind.FilterOpts, []common.Address, []common.Address) (*bindings.ValidatorStakingApprovalForAllIterator, error)
+	defaultHook func(*bind.FilterOpts, []common.Address, []common.Address) (*ethereum.ValidatorStakingApprovalForAllIterator, error)
+	hooks       []func(*bind.FilterOpts, []common.Address, []common.Address) (*ethereum.ValidatorStakingApprovalForAllIterator, error)
 	history     []IValidatorStakingFilterApprovalForAllFuncCall
 	mutex       sync.Mutex
 }
 
 // FilterApprovalForAll delegates to the next hook function in the queue and
 // stores the parameter and result values of this invocation.
-func (m *MockIValidatorStaking) FilterApprovalForAll(v0 *bind.FilterOpts, v1 []common.Address, v2 []common.Address) (*bindings.ValidatorStakingApprovalForAllIterator, error) {
+func (m *MockIValidatorStaking) FilterApprovalForAll(v0 *bind.FilterOpts, v1 []common.Address, v2 []common.Address) (*ethereum.ValidatorStakingApprovalForAllIterator, error) {
 	r0, r1 := m.FilterApprovalForAllFunc.nextHook()(v0, v1, v2)
 	m.FilterApprovalForAllFunc.appendCall(IValidatorStakingFilterApprovalForAllFuncCall{v0, v1, v2, r0, r1})
 	return r0, r1
@@ -51012,7 +51016,7 @@ func (m *MockIValidatorStaking) FilterApprovalForAll(v0 *bind.FilterOpts, v1 []c
 // SetDefaultHook sets function that is called when the FilterApprovalForAll
 // method of the parent MockIValidatorStaking instance is invoked and the
 // hook queue is empty.
-func (f *IValidatorStakingFilterApprovalForAllFunc) SetDefaultHook(hook func(*bind.FilterOpts, []common.Address, []common.Address) (*bindings.ValidatorStakingApprovalForAllIterator, error)) {
+func (f *IValidatorStakingFilterApprovalForAllFunc) SetDefaultHook(hook func(*bind.FilterOpts, []common.Address, []common.Address) (*ethereum.ValidatorStakingApprovalForAllIterator, error)) {
 	f.defaultHook = hook
 }
 
@@ -51021,7 +51025,7 @@ func (f *IValidatorStakingFilterApprovalForAllFunc) SetDefaultHook(hook func(*bi
 // invokes the hook at the front of the queue and discards it. After the
 // queue is empty, the default hook function is invoked for any future
 // action.
-func (f *IValidatorStakingFilterApprovalForAllFunc) PushHook(hook func(*bind.FilterOpts, []common.Address, []common.Address) (*bindings.ValidatorStakingApprovalForAllIterator, error)) {
+func (f *IValidatorStakingFilterApprovalForAllFunc) PushHook(hook func(*bind.FilterOpts, []common.Address, []common.Address) (*ethereum.ValidatorStakingApprovalForAllIterator, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -51029,20 +51033,20 @@ func (f *IValidatorStakingFilterApprovalForAllFunc) PushHook(hook func(*bind.Fil
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IValidatorStakingFilterApprovalForAllFunc) SetDefaultReturn(r0 *bindings.ValidatorStakingApprovalForAllIterator, r1 error) {
-	f.SetDefaultHook(func(*bind.FilterOpts, []common.Address, []common.Address) (*bindings.ValidatorStakingApprovalForAllIterator, error) {
+func (f *IValidatorStakingFilterApprovalForAllFunc) SetDefaultReturn(r0 *ethereum.ValidatorStakingApprovalForAllIterator, r1 error) {
+	f.SetDefaultHook(func(*bind.FilterOpts, []common.Address, []common.Address) (*ethereum.ValidatorStakingApprovalForAllIterator, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IValidatorStakingFilterApprovalForAllFunc) PushReturn(r0 *bindings.ValidatorStakingApprovalForAllIterator, r1 error) {
-	f.PushHook(func(*bind.FilterOpts, []common.Address, []common.Address) (*bindings.ValidatorStakingApprovalForAllIterator, error) {
+func (f *IValidatorStakingFilterApprovalForAllFunc) PushReturn(r0 *ethereum.ValidatorStakingApprovalForAllIterator, r1 error) {
+	f.PushHook(func(*bind.FilterOpts, []common.Address, []common.Address) (*ethereum.ValidatorStakingApprovalForAllIterator, error) {
 		return r0, r1
 	})
 }
 
-func (f *IValidatorStakingFilterApprovalForAllFunc) nextHook() func(*bind.FilterOpts, []common.Address, []common.Address) (*bindings.ValidatorStakingApprovalForAllIterator, error) {
+func (f *IValidatorStakingFilterApprovalForAllFunc) nextHook() func(*bind.FilterOpts, []common.Address, []common.Address) (*ethereum.ValidatorStakingApprovalForAllIterator, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -51088,7 +51092,7 @@ type IValidatorStakingFilterApprovalForAllFuncCall struct {
 	Arg2 []common.Address
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 *bindings.ValidatorStakingApprovalForAllIterator
+	Result0 *ethereum.ValidatorStakingApprovalForAllIterator
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -51110,15 +51114,15 @@ func (c IValidatorStakingFilterApprovalForAllFuncCall) Results() []interface{} {
 // FilterInitialized method of the parent MockIValidatorStaking instance is
 // invoked.
 type IValidatorStakingFilterInitializedFunc struct {
-	defaultHook func(*bind.FilterOpts) (*bindings.ValidatorStakingInitializedIterator, error)
-	hooks       []func(*bind.FilterOpts) (*bindings.ValidatorStakingInitializedIterator, error)
+	defaultHook func(*bind.FilterOpts) (*ethereum.ValidatorStakingInitializedIterator, error)
+	hooks       []func(*bind.FilterOpts) (*ethereum.ValidatorStakingInitializedIterator, error)
 	history     []IValidatorStakingFilterInitializedFuncCall
 	mutex       sync.Mutex
 }
 
 // FilterInitialized delegates to the next hook function in the queue and
 // stores the parameter and result values of this invocation.
-func (m *MockIValidatorStaking) FilterInitialized(v0 *bind.FilterOpts) (*bindings.ValidatorStakingInitializedIterator, error) {
+func (m *MockIValidatorStaking) FilterInitialized(v0 *bind.FilterOpts) (*ethereum.ValidatorStakingInitializedIterator, error) {
 	r0, r1 := m.FilterInitializedFunc.nextHook()(v0)
 	m.FilterInitializedFunc.appendCall(IValidatorStakingFilterInitializedFuncCall{v0, r0, r1})
 	return r0, r1
@@ -51127,7 +51131,7 @@ func (m *MockIValidatorStaking) FilterInitialized(v0 *bind.FilterOpts) (*binding
 // SetDefaultHook sets function that is called when the FilterInitialized
 // method of the parent MockIValidatorStaking instance is invoked and the
 // hook queue is empty.
-func (f *IValidatorStakingFilterInitializedFunc) SetDefaultHook(hook func(*bind.FilterOpts) (*bindings.ValidatorStakingInitializedIterator, error)) {
+func (f *IValidatorStakingFilterInitializedFunc) SetDefaultHook(hook func(*bind.FilterOpts) (*ethereum.ValidatorStakingInitializedIterator, error)) {
 	f.defaultHook = hook
 }
 
@@ -51136,7 +51140,7 @@ func (f *IValidatorStakingFilterInitializedFunc) SetDefaultHook(hook func(*bind.
 // invokes the hook at the front of the queue and discards it. After the
 // queue is empty, the default hook function is invoked for any future
 // action.
-func (f *IValidatorStakingFilterInitializedFunc) PushHook(hook func(*bind.FilterOpts) (*bindings.ValidatorStakingInitializedIterator, error)) {
+func (f *IValidatorStakingFilterInitializedFunc) PushHook(hook func(*bind.FilterOpts) (*ethereum.ValidatorStakingInitializedIterator, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -51144,20 +51148,20 @@ func (f *IValidatorStakingFilterInitializedFunc) PushHook(hook func(*bind.Filter
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IValidatorStakingFilterInitializedFunc) SetDefaultReturn(r0 *bindings.ValidatorStakingInitializedIterator, r1 error) {
-	f.SetDefaultHook(func(*bind.FilterOpts) (*bindings.ValidatorStakingInitializedIterator, error) {
+func (f *IValidatorStakingFilterInitializedFunc) SetDefaultReturn(r0 *ethereum.ValidatorStakingInitializedIterator, r1 error) {
+	f.SetDefaultHook(func(*bind.FilterOpts) (*ethereum.ValidatorStakingInitializedIterator, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IValidatorStakingFilterInitializedFunc) PushReturn(r0 *bindings.ValidatorStakingInitializedIterator, r1 error) {
-	f.PushHook(func(*bind.FilterOpts) (*bindings.ValidatorStakingInitializedIterator, error) {
+func (f *IValidatorStakingFilterInitializedFunc) PushReturn(r0 *ethereum.ValidatorStakingInitializedIterator, r1 error) {
+	f.PushHook(func(*bind.FilterOpts) (*ethereum.ValidatorStakingInitializedIterator, error) {
 		return r0, r1
 	})
 }
 
-func (f *IValidatorStakingFilterInitializedFunc) nextHook() func(*bind.FilterOpts) (*bindings.ValidatorStakingInitializedIterator, error) {
+func (f *IValidatorStakingFilterInitializedFunc) nextHook() func(*bind.FilterOpts) (*ethereum.ValidatorStakingInitializedIterator, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -51196,7 +51200,7 @@ type IValidatorStakingFilterInitializedFuncCall struct {
 	Arg0 *bind.FilterOpts
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 *bindings.ValidatorStakingInitializedIterator
+	Result0 *ethereum.ValidatorStakingInitializedIterator
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -51218,15 +51222,15 @@ func (c IValidatorStakingFilterInitializedFuncCall) Results() []interface{} {
 // FilterTransfer method of the parent MockIValidatorStaking instance is
 // invoked.
 type IValidatorStakingFilterTransferFunc struct {
-	defaultHook func(*bind.FilterOpts, []common.Address, []common.Address, []*big.Int) (*bindings.ValidatorStakingTransferIterator, error)
-	hooks       []func(*bind.FilterOpts, []common.Address, []common.Address, []*big.Int) (*bindings.ValidatorStakingTransferIterator, error)
+	defaultHook func(*bind.FilterOpts, []common.Address, []common.Address, []*big.Int) (*ethereum.ValidatorStakingTransferIterator, error)
+	hooks       []func(*bind.FilterOpts, []common.Address, []common.Address, []*big.Int) (*ethereum.ValidatorStakingTransferIterator, error)
 	history     []IValidatorStakingFilterTransferFuncCall
 	mutex       sync.Mutex
 }
 
 // FilterTransfer delegates to the next hook function in the queue and
 // stores the parameter and result values of this invocation.
-func (m *MockIValidatorStaking) FilterTransfer(v0 *bind.FilterOpts, v1 []common.Address, v2 []common.Address, v3 []*big.Int) (*bindings.ValidatorStakingTransferIterator, error) {
+func (m *MockIValidatorStaking) FilterTransfer(v0 *bind.FilterOpts, v1 []common.Address, v2 []common.Address, v3 []*big.Int) (*ethereum.ValidatorStakingTransferIterator, error) {
 	r0, r1 := m.FilterTransferFunc.nextHook()(v0, v1, v2, v3)
 	m.FilterTransferFunc.appendCall(IValidatorStakingFilterTransferFuncCall{v0, v1, v2, v3, r0, r1})
 	return r0, r1
@@ -51235,7 +51239,7 @@ func (m *MockIValidatorStaking) FilterTransfer(v0 *bind.FilterOpts, v1 []common.
 // SetDefaultHook sets function that is called when the FilterTransfer
 // method of the parent MockIValidatorStaking instance is invoked and the
 // hook queue is empty.
-func (f *IValidatorStakingFilterTransferFunc) SetDefaultHook(hook func(*bind.FilterOpts, []common.Address, []common.Address, []*big.Int) (*bindings.ValidatorStakingTransferIterator, error)) {
+func (f *IValidatorStakingFilterTransferFunc) SetDefaultHook(hook func(*bind.FilterOpts, []common.Address, []common.Address, []*big.Int) (*ethereum.ValidatorStakingTransferIterator, error)) {
 	f.defaultHook = hook
 }
 
@@ -51244,7 +51248,7 @@ func (f *IValidatorStakingFilterTransferFunc) SetDefaultHook(hook func(*bind.Fil
 // invokes the hook at the front of the queue and discards it. After the
 // queue is empty, the default hook function is invoked for any future
 // action.
-func (f *IValidatorStakingFilterTransferFunc) PushHook(hook func(*bind.FilterOpts, []common.Address, []common.Address, []*big.Int) (*bindings.ValidatorStakingTransferIterator, error)) {
+func (f *IValidatorStakingFilterTransferFunc) PushHook(hook func(*bind.FilterOpts, []common.Address, []common.Address, []*big.Int) (*ethereum.ValidatorStakingTransferIterator, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -51252,20 +51256,20 @@ func (f *IValidatorStakingFilterTransferFunc) PushHook(hook func(*bind.FilterOpt
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IValidatorStakingFilterTransferFunc) SetDefaultReturn(r0 *bindings.ValidatorStakingTransferIterator, r1 error) {
-	f.SetDefaultHook(func(*bind.FilterOpts, []common.Address, []common.Address, []*big.Int) (*bindings.ValidatorStakingTransferIterator, error) {
+func (f *IValidatorStakingFilterTransferFunc) SetDefaultReturn(r0 *ethereum.ValidatorStakingTransferIterator, r1 error) {
+	f.SetDefaultHook(func(*bind.FilterOpts, []common.Address, []common.Address, []*big.Int) (*ethereum.ValidatorStakingTransferIterator, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IValidatorStakingFilterTransferFunc) PushReturn(r0 *bindings.ValidatorStakingTransferIterator, r1 error) {
-	f.PushHook(func(*bind.FilterOpts, []common.Address, []common.Address, []*big.Int) (*bindings.ValidatorStakingTransferIterator, error) {
+func (f *IValidatorStakingFilterTransferFunc) PushReturn(r0 *ethereum.ValidatorStakingTransferIterator, r1 error) {
+	f.PushHook(func(*bind.FilterOpts, []common.Address, []common.Address, []*big.Int) (*ethereum.ValidatorStakingTransferIterator, error) {
 		return r0, r1
 	})
 }
 
-func (f *IValidatorStakingFilterTransferFunc) nextHook() func(*bind.FilterOpts, []common.Address, []common.Address, []*big.Int) (*bindings.ValidatorStakingTransferIterator, error) {
+func (f *IValidatorStakingFilterTransferFunc) nextHook() func(*bind.FilterOpts, []common.Address, []common.Address, []*big.Int) (*ethereum.ValidatorStakingTransferIterator, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -51313,7 +51317,7 @@ type IValidatorStakingFilterTransferFuncCall struct {
 	Arg3 []*big.Int
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 *bindings.ValidatorStakingTransferIterator
+	Result0 *ethereum.ValidatorStakingTransferIterator
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -53775,15 +53779,15 @@ func (c IValidatorStakingOwnerOfFuncCall) Results() []interface{} {
 // ParseApproval method of the parent MockIValidatorStaking instance is
 // invoked.
 type IValidatorStakingParseApprovalFunc struct {
-	defaultHook func(types.Log) (*bindings.ValidatorStakingApproval, error)
-	hooks       []func(types.Log) (*bindings.ValidatorStakingApproval, error)
+	defaultHook func(types.Log) (*ethereum.ValidatorStakingApproval, error)
+	hooks       []func(types.Log) (*ethereum.ValidatorStakingApproval, error)
 	history     []IValidatorStakingParseApprovalFuncCall
 	mutex       sync.Mutex
 }
 
 // ParseApproval delegates to the next hook function in the queue and stores
 // the parameter and result values of this invocation.
-func (m *MockIValidatorStaking) ParseApproval(v0 types.Log) (*bindings.ValidatorStakingApproval, error) {
+func (m *MockIValidatorStaking) ParseApproval(v0 types.Log) (*ethereum.ValidatorStakingApproval, error) {
 	r0, r1 := m.ParseApprovalFunc.nextHook()(v0)
 	m.ParseApprovalFunc.appendCall(IValidatorStakingParseApprovalFuncCall{v0, r0, r1})
 	return r0, r1
@@ -53792,7 +53796,7 @@ func (m *MockIValidatorStaking) ParseApproval(v0 types.Log) (*bindings.Validator
 // SetDefaultHook sets function that is called when the ParseApproval method
 // of the parent MockIValidatorStaking instance is invoked and the hook
 // queue is empty.
-func (f *IValidatorStakingParseApprovalFunc) SetDefaultHook(hook func(types.Log) (*bindings.ValidatorStakingApproval, error)) {
+func (f *IValidatorStakingParseApprovalFunc) SetDefaultHook(hook func(types.Log) (*ethereum.ValidatorStakingApproval, error)) {
 	f.defaultHook = hook
 }
 
@@ -53800,7 +53804,7 @@ func (f *IValidatorStakingParseApprovalFunc) SetDefaultHook(hook func(types.Log)
 // ParseApproval method of the parent MockIValidatorStaking instance invokes
 // the hook at the front of the queue and discards it. After the queue is
 // empty, the default hook function is invoked for any future action.
-func (f *IValidatorStakingParseApprovalFunc) PushHook(hook func(types.Log) (*bindings.ValidatorStakingApproval, error)) {
+func (f *IValidatorStakingParseApprovalFunc) PushHook(hook func(types.Log) (*ethereum.ValidatorStakingApproval, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -53808,20 +53812,20 @@ func (f *IValidatorStakingParseApprovalFunc) PushHook(hook func(types.Log) (*bin
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IValidatorStakingParseApprovalFunc) SetDefaultReturn(r0 *bindings.ValidatorStakingApproval, r1 error) {
-	f.SetDefaultHook(func(types.Log) (*bindings.ValidatorStakingApproval, error) {
+func (f *IValidatorStakingParseApprovalFunc) SetDefaultReturn(r0 *ethereum.ValidatorStakingApproval, r1 error) {
+	f.SetDefaultHook(func(types.Log) (*ethereum.ValidatorStakingApproval, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IValidatorStakingParseApprovalFunc) PushReturn(r0 *bindings.ValidatorStakingApproval, r1 error) {
-	f.PushHook(func(types.Log) (*bindings.ValidatorStakingApproval, error) {
+func (f *IValidatorStakingParseApprovalFunc) PushReturn(r0 *ethereum.ValidatorStakingApproval, r1 error) {
+	f.PushHook(func(types.Log) (*ethereum.ValidatorStakingApproval, error) {
 		return r0, r1
 	})
 }
 
-func (f *IValidatorStakingParseApprovalFunc) nextHook() func(types.Log) (*bindings.ValidatorStakingApproval, error) {
+func (f *IValidatorStakingParseApprovalFunc) nextHook() func(types.Log) (*ethereum.ValidatorStakingApproval, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -53860,7 +53864,7 @@ type IValidatorStakingParseApprovalFuncCall struct {
 	Arg0 types.Log
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 *bindings.ValidatorStakingApproval
+	Result0 *ethereum.ValidatorStakingApproval
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -53882,15 +53886,15 @@ func (c IValidatorStakingParseApprovalFuncCall) Results() []interface{} {
 // ParseApprovalForAll method of the parent MockIValidatorStaking instance
 // is invoked.
 type IValidatorStakingParseApprovalForAllFunc struct {
-	defaultHook func(types.Log) (*bindings.ValidatorStakingApprovalForAll, error)
-	hooks       []func(types.Log) (*bindings.ValidatorStakingApprovalForAll, error)
+	defaultHook func(types.Log) (*ethereum.ValidatorStakingApprovalForAll, error)
+	hooks       []func(types.Log) (*ethereum.ValidatorStakingApprovalForAll, error)
 	history     []IValidatorStakingParseApprovalForAllFuncCall
 	mutex       sync.Mutex
 }
 
 // ParseApprovalForAll delegates to the next hook function in the queue and
 // stores the parameter and result values of this invocation.
-func (m *MockIValidatorStaking) ParseApprovalForAll(v0 types.Log) (*bindings.ValidatorStakingApprovalForAll, error) {
+func (m *MockIValidatorStaking) ParseApprovalForAll(v0 types.Log) (*ethereum.ValidatorStakingApprovalForAll, error) {
 	r0, r1 := m.ParseApprovalForAllFunc.nextHook()(v0)
 	m.ParseApprovalForAllFunc.appendCall(IValidatorStakingParseApprovalForAllFuncCall{v0, r0, r1})
 	return r0, r1
@@ -53899,7 +53903,7 @@ func (m *MockIValidatorStaking) ParseApprovalForAll(v0 types.Log) (*bindings.Val
 // SetDefaultHook sets function that is called when the ParseApprovalForAll
 // method of the parent MockIValidatorStaking instance is invoked and the
 // hook queue is empty.
-func (f *IValidatorStakingParseApprovalForAllFunc) SetDefaultHook(hook func(types.Log) (*bindings.ValidatorStakingApprovalForAll, error)) {
+func (f *IValidatorStakingParseApprovalForAllFunc) SetDefaultHook(hook func(types.Log) (*ethereum.ValidatorStakingApprovalForAll, error)) {
 	f.defaultHook = hook
 }
 
@@ -53908,7 +53912,7 @@ func (f *IValidatorStakingParseApprovalForAllFunc) SetDefaultHook(hook func(type
 // invokes the hook at the front of the queue and discards it. After the
 // queue is empty, the default hook function is invoked for any future
 // action.
-func (f *IValidatorStakingParseApprovalForAllFunc) PushHook(hook func(types.Log) (*bindings.ValidatorStakingApprovalForAll, error)) {
+func (f *IValidatorStakingParseApprovalForAllFunc) PushHook(hook func(types.Log) (*ethereum.ValidatorStakingApprovalForAll, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -53916,20 +53920,20 @@ func (f *IValidatorStakingParseApprovalForAllFunc) PushHook(hook func(types.Log)
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IValidatorStakingParseApprovalForAllFunc) SetDefaultReturn(r0 *bindings.ValidatorStakingApprovalForAll, r1 error) {
-	f.SetDefaultHook(func(types.Log) (*bindings.ValidatorStakingApprovalForAll, error) {
+func (f *IValidatorStakingParseApprovalForAllFunc) SetDefaultReturn(r0 *ethereum.ValidatorStakingApprovalForAll, r1 error) {
+	f.SetDefaultHook(func(types.Log) (*ethereum.ValidatorStakingApprovalForAll, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IValidatorStakingParseApprovalForAllFunc) PushReturn(r0 *bindings.ValidatorStakingApprovalForAll, r1 error) {
-	f.PushHook(func(types.Log) (*bindings.ValidatorStakingApprovalForAll, error) {
+func (f *IValidatorStakingParseApprovalForAllFunc) PushReturn(r0 *ethereum.ValidatorStakingApprovalForAll, r1 error) {
+	f.PushHook(func(types.Log) (*ethereum.ValidatorStakingApprovalForAll, error) {
 		return r0, r1
 	})
 }
 
-func (f *IValidatorStakingParseApprovalForAllFunc) nextHook() func(types.Log) (*bindings.ValidatorStakingApprovalForAll, error) {
+func (f *IValidatorStakingParseApprovalForAllFunc) nextHook() func(types.Log) (*ethereum.ValidatorStakingApprovalForAll, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -53969,7 +53973,7 @@ type IValidatorStakingParseApprovalForAllFuncCall struct {
 	Arg0 types.Log
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 *bindings.ValidatorStakingApprovalForAll
+	Result0 *ethereum.ValidatorStakingApprovalForAll
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -53991,15 +53995,15 @@ func (c IValidatorStakingParseApprovalForAllFuncCall) Results() []interface{} {
 // ParseInitialized method of the parent MockIValidatorStaking instance is
 // invoked.
 type IValidatorStakingParseInitializedFunc struct {
-	defaultHook func(types.Log) (*bindings.ValidatorStakingInitialized, error)
-	hooks       []func(types.Log) (*bindings.ValidatorStakingInitialized, error)
+	defaultHook func(types.Log) (*ethereum.ValidatorStakingInitialized, error)
+	hooks       []func(types.Log) (*ethereum.ValidatorStakingInitialized, error)
 	history     []IValidatorStakingParseInitializedFuncCall
 	mutex       sync.Mutex
 }
 
 // ParseInitialized delegates to the next hook function in the queue and
 // stores the parameter and result values of this invocation.
-func (m *MockIValidatorStaking) ParseInitialized(v0 types.Log) (*bindings.ValidatorStakingInitialized, error) {
+func (m *MockIValidatorStaking) ParseInitialized(v0 types.Log) (*ethereum.ValidatorStakingInitialized, error) {
 	r0, r1 := m.ParseInitializedFunc.nextHook()(v0)
 	m.ParseInitializedFunc.appendCall(IValidatorStakingParseInitializedFuncCall{v0, r0, r1})
 	return r0, r1
@@ -54008,7 +54012,7 @@ func (m *MockIValidatorStaking) ParseInitialized(v0 types.Log) (*bindings.Valida
 // SetDefaultHook sets function that is called when the ParseInitialized
 // method of the parent MockIValidatorStaking instance is invoked and the
 // hook queue is empty.
-func (f *IValidatorStakingParseInitializedFunc) SetDefaultHook(hook func(types.Log) (*bindings.ValidatorStakingInitialized, error)) {
+func (f *IValidatorStakingParseInitializedFunc) SetDefaultHook(hook func(types.Log) (*ethereum.ValidatorStakingInitialized, error)) {
 	f.defaultHook = hook
 }
 
@@ -54017,7 +54021,7 @@ func (f *IValidatorStakingParseInitializedFunc) SetDefaultHook(hook func(types.L
 // invokes the hook at the front of the queue and discards it. After the
 // queue is empty, the default hook function is invoked for any future
 // action.
-func (f *IValidatorStakingParseInitializedFunc) PushHook(hook func(types.Log) (*bindings.ValidatorStakingInitialized, error)) {
+func (f *IValidatorStakingParseInitializedFunc) PushHook(hook func(types.Log) (*ethereum.ValidatorStakingInitialized, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -54025,20 +54029,20 @@ func (f *IValidatorStakingParseInitializedFunc) PushHook(hook func(types.Log) (*
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IValidatorStakingParseInitializedFunc) SetDefaultReturn(r0 *bindings.ValidatorStakingInitialized, r1 error) {
-	f.SetDefaultHook(func(types.Log) (*bindings.ValidatorStakingInitialized, error) {
+func (f *IValidatorStakingParseInitializedFunc) SetDefaultReturn(r0 *ethereum.ValidatorStakingInitialized, r1 error) {
+	f.SetDefaultHook(func(types.Log) (*ethereum.ValidatorStakingInitialized, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IValidatorStakingParseInitializedFunc) PushReturn(r0 *bindings.ValidatorStakingInitialized, r1 error) {
-	f.PushHook(func(types.Log) (*bindings.ValidatorStakingInitialized, error) {
+func (f *IValidatorStakingParseInitializedFunc) PushReturn(r0 *ethereum.ValidatorStakingInitialized, r1 error) {
+	f.PushHook(func(types.Log) (*ethereum.ValidatorStakingInitialized, error) {
 		return r0, r1
 	})
 }
 
-func (f *IValidatorStakingParseInitializedFunc) nextHook() func(types.Log) (*bindings.ValidatorStakingInitialized, error) {
+func (f *IValidatorStakingParseInitializedFunc) nextHook() func(types.Log) (*ethereum.ValidatorStakingInitialized, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -54077,7 +54081,7 @@ type IValidatorStakingParseInitializedFuncCall struct {
 	Arg0 types.Log
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 *bindings.ValidatorStakingInitialized
+	Result0 *ethereum.ValidatorStakingInitialized
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -54099,15 +54103,15 @@ func (c IValidatorStakingParseInitializedFuncCall) Results() []interface{} {
 // ParseTransfer method of the parent MockIValidatorStaking instance is
 // invoked.
 type IValidatorStakingParseTransferFunc struct {
-	defaultHook func(types.Log) (*bindings.ValidatorStakingTransfer, error)
-	hooks       []func(types.Log) (*bindings.ValidatorStakingTransfer, error)
+	defaultHook func(types.Log) (*ethereum.ValidatorStakingTransfer, error)
+	hooks       []func(types.Log) (*ethereum.ValidatorStakingTransfer, error)
 	history     []IValidatorStakingParseTransferFuncCall
 	mutex       sync.Mutex
 }
 
 // ParseTransfer delegates to the next hook function in the queue and stores
 // the parameter and result values of this invocation.
-func (m *MockIValidatorStaking) ParseTransfer(v0 types.Log) (*bindings.ValidatorStakingTransfer, error) {
+func (m *MockIValidatorStaking) ParseTransfer(v0 types.Log) (*ethereum.ValidatorStakingTransfer, error) {
 	r0, r1 := m.ParseTransferFunc.nextHook()(v0)
 	m.ParseTransferFunc.appendCall(IValidatorStakingParseTransferFuncCall{v0, r0, r1})
 	return r0, r1
@@ -54116,7 +54120,7 @@ func (m *MockIValidatorStaking) ParseTransfer(v0 types.Log) (*bindings.Validator
 // SetDefaultHook sets function that is called when the ParseTransfer method
 // of the parent MockIValidatorStaking instance is invoked and the hook
 // queue is empty.
-func (f *IValidatorStakingParseTransferFunc) SetDefaultHook(hook func(types.Log) (*bindings.ValidatorStakingTransfer, error)) {
+func (f *IValidatorStakingParseTransferFunc) SetDefaultHook(hook func(types.Log) (*ethereum.ValidatorStakingTransfer, error)) {
 	f.defaultHook = hook
 }
 
@@ -54124,7 +54128,7 @@ func (f *IValidatorStakingParseTransferFunc) SetDefaultHook(hook func(types.Log)
 // ParseTransfer method of the parent MockIValidatorStaking instance invokes
 // the hook at the front of the queue and discards it. After the queue is
 // empty, the default hook function is invoked for any future action.
-func (f *IValidatorStakingParseTransferFunc) PushHook(hook func(types.Log) (*bindings.ValidatorStakingTransfer, error)) {
+func (f *IValidatorStakingParseTransferFunc) PushHook(hook func(types.Log) (*ethereum.ValidatorStakingTransfer, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -54132,20 +54136,20 @@ func (f *IValidatorStakingParseTransferFunc) PushHook(hook func(types.Log) (*bin
 
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
-func (f *IValidatorStakingParseTransferFunc) SetDefaultReturn(r0 *bindings.ValidatorStakingTransfer, r1 error) {
-	f.SetDefaultHook(func(types.Log) (*bindings.ValidatorStakingTransfer, error) {
+func (f *IValidatorStakingParseTransferFunc) SetDefaultReturn(r0 *ethereum.ValidatorStakingTransfer, r1 error) {
+	f.SetDefaultHook(func(types.Log) (*ethereum.ValidatorStakingTransfer, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
-func (f *IValidatorStakingParseTransferFunc) PushReturn(r0 *bindings.ValidatorStakingTransfer, r1 error) {
-	f.PushHook(func(types.Log) (*bindings.ValidatorStakingTransfer, error) {
+func (f *IValidatorStakingParseTransferFunc) PushReturn(r0 *ethereum.ValidatorStakingTransfer, r1 error) {
+	f.PushHook(func(types.Log) (*ethereum.ValidatorStakingTransfer, error) {
 		return r0, r1
 	})
 }
 
-func (f *IValidatorStakingParseTransferFunc) nextHook() func(types.Log) (*bindings.ValidatorStakingTransfer, error) {
+func (f *IValidatorStakingParseTransferFunc) nextHook() func(types.Log) (*ethereum.ValidatorStakingTransfer, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -54184,7 +54188,7 @@ type IValidatorStakingParseTransferFuncCall struct {
 	Arg0 types.Log
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
-	Result0 *bindings.ValidatorStakingTransfer
+	Result0 *ethereum.ValidatorStakingTransfer
 	// Result1 is the value of the 2nd result returned from this method
 	// invocation.
 	Result1 error
@@ -55654,15 +55658,15 @@ func (c IValidatorStakingTripCBFuncCall) Results() []interface{} {
 // WatchApproval method of the parent MockIValidatorStaking instance is
 // invoked.
 type IValidatorStakingWatchApprovalFunc struct {
-	defaultHook func(*bind.WatchOpts, chan<- *bindings.ValidatorStakingApproval, []common.Address, []common.Address, []*big.Int) (event.Subscription, error)
-	hooks       []func(*bind.WatchOpts, chan<- *bindings.ValidatorStakingApproval, []common.Address, []common.Address, []*big.Int) (event.Subscription, error)
+	defaultHook func(*bind.WatchOpts, chan<- *ethereum.ValidatorStakingApproval, []common.Address, []common.Address, []*big.Int) (event.Subscription, error)
+	hooks       []func(*bind.WatchOpts, chan<- *ethereum.ValidatorStakingApproval, []common.Address, []common.Address, []*big.Int) (event.Subscription, error)
 	history     []IValidatorStakingWatchApprovalFuncCall
 	mutex       sync.Mutex
 }
 
 // WatchApproval delegates to the next hook function in the queue and stores
 // the parameter and result values of this invocation.
-func (m *MockIValidatorStaking) WatchApproval(v0 *bind.WatchOpts, v1 chan<- *bindings.ValidatorStakingApproval, v2 []common.Address, v3 []common.Address, v4 []*big.Int) (event.Subscription, error) {
+func (m *MockIValidatorStaking) WatchApproval(v0 *bind.WatchOpts, v1 chan<- *ethereum.ValidatorStakingApproval, v2 []common.Address, v3 []common.Address, v4 []*big.Int) (event.Subscription, error) {
 	r0, r1 := m.WatchApprovalFunc.nextHook()(v0, v1, v2, v3, v4)
 	m.WatchApprovalFunc.appendCall(IValidatorStakingWatchApprovalFuncCall{v0, v1, v2, v3, v4, r0, r1})
 	return r0, r1
@@ -55671,7 +55675,7 @@ func (m *MockIValidatorStaking) WatchApproval(v0 *bind.WatchOpts, v1 chan<- *bin
 // SetDefaultHook sets function that is called when the WatchApproval method
 // of the parent MockIValidatorStaking instance is invoked and the hook
 // queue is empty.
-func (f *IValidatorStakingWatchApprovalFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *bindings.ValidatorStakingApproval, []common.Address, []common.Address, []*big.Int) (event.Subscription, error)) {
+func (f *IValidatorStakingWatchApprovalFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *ethereum.ValidatorStakingApproval, []common.Address, []common.Address, []*big.Int) (event.Subscription, error)) {
 	f.defaultHook = hook
 }
 
@@ -55679,7 +55683,7 @@ func (f *IValidatorStakingWatchApprovalFunc) SetDefaultHook(hook func(*bind.Watc
 // WatchApproval method of the parent MockIValidatorStaking instance invokes
 // the hook at the front of the queue and discards it. After the queue is
 // empty, the default hook function is invoked for any future action.
-func (f *IValidatorStakingWatchApprovalFunc) PushHook(hook func(*bind.WatchOpts, chan<- *bindings.ValidatorStakingApproval, []common.Address, []common.Address, []*big.Int) (event.Subscription, error)) {
+func (f *IValidatorStakingWatchApprovalFunc) PushHook(hook func(*bind.WatchOpts, chan<- *ethereum.ValidatorStakingApproval, []common.Address, []common.Address, []*big.Int) (event.Subscription, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -55688,19 +55692,19 @@ func (f *IValidatorStakingWatchApprovalFunc) PushHook(hook func(*bind.WatchOpts,
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
 func (f *IValidatorStakingWatchApprovalFunc) SetDefaultReturn(r0 event.Subscription, r1 error) {
-	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *bindings.ValidatorStakingApproval, []common.Address, []common.Address, []*big.Int) (event.Subscription, error) {
+	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *ethereum.ValidatorStakingApproval, []common.Address, []common.Address, []*big.Int) (event.Subscription, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
 func (f *IValidatorStakingWatchApprovalFunc) PushReturn(r0 event.Subscription, r1 error) {
-	f.PushHook(func(*bind.WatchOpts, chan<- *bindings.ValidatorStakingApproval, []common.Address, []common.Address, []*big.Int) (event.Subscription, error) {
+	f.PushHook(func(*bind.WatchOpts, chan<- *ethereum.ValidatorStakingApproval, []common.Address, []common.Address, []*big.Int) (event.Subscription, error) {
 		return r0, r1
 	})
 }
 
-func (f *IValidatorStakingWatchApprovalFunc) nextHook() func(*bind.WatchOpts, chan<- *bindings.ValidatorStakingApproval, []common.Address, []common.Address, []*big.Int) (event.Subscription, error) {
+func (f *IValidatorStakingWatchApprovalFunc) nextHook() func(*bind.WatchOpts, chan<- *ethereum.ValidatorStakingApproval, []common.Address, []common.Address, []*big.Int) (event.Subscription, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -55739,7 +55743,7 @@ type IValidatorStakingWatchApprovalFuncCall struct {
 	Arg0 *bind.WatchOpts
 	// Arg1 is the value of the 2nd argument passed to this method
 	// invocation.
-	Arg1 chan<- *bindings.ValidatorStakingApproval
+	Arg1 chan<- *ethereum.ValidatorStakingApproval
 	// Arg2 is the value of the 3rd argument passed to this method
 	// invocation.
 	Arg2 []common.Address
@@ -55773,15 +55777,15 @@ func (c IValidatorStakingWatchApprovalFuncCall) Results() []interface{} {
 // WatchApprovalForAll method of the parent MockIValidatorStaking instance
 // is invoked.
 type IValidatorStakingWatchApprovalForAllFunc struct {
-	defaultHook func(*bind.WatchOpts, chan<- *bindings.ValidatorStakingApprovalForAll, []common.Address, []common.Address) (event.Subscription, error)
-	hooks       []func(*bind.WatchOpts, chan<- *bindings.ValidatorStakingApprovalForAll, []common.Address, []common.Address) (event.Subscription, error)
+	defaultHook func(*bind.WatchOpts, chan<- *ethereum.ValidatorStakingApprovalForAll, []common.Address, []common.Address) (event.Subscription, error)
+	hooks       []func(*bind.WatchOpts, chan<- *ethereum.ValidatorStakingApprovalForAll, []common.Address, []common.Address) (event.Subscription, error)
 	history     []IValidatorStakingWatchApprovalForAllFuncCall
 	mutex       sync.Mutex
 }
 
 // WatchApprovalForAll delegates to the next hook function in the queue and
 // stores the parameter and result values of this invocation.
-func (m *MockIValidatorStaking) WatchApprovalForAll(v0 *bind.WatchOpts, v1 chan<- *bindings.ValidatorStakingApprovalForAll, v2 []common.Address, v3 []common.Address) (event.Subscription, error) {
+func (m *MockIValidatorStaking) WatchApprovalForAll(v0 *bind.WatchOpts, v1 chan<- *ethereum.ValidatorStakingApprovalForAll, v2 []common.Address, v3 []common.Address) (event.Subscription, error) {
 	r0, r1 := m.WatchApprovalForAllFunc.nextHook()(v0, v1, v2, v3)
 	m.WatchApprovalForAllFunc.appendCall(IValidatorStakingWatchApprovalForAllFuncCall{v0, v1, v2, v3, r0, r1})
 	return r0, r1
@@ -55790,7 +55794,7 @@ func (m *MockIValidatorStaking) WatchApprovalForAll(v0 *bind.WatchOpts, v1 chan<
 // SetDefaultHook sets function that is called when the WatchApprovalForAll
 // method of the parent MockIValidatorStaking instance is invoked and the
 // hook queue is empty.
-func (f *IValidatorStakingWatchApprovalForAllFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *bindings.ValidatorStakingApprovalForAll, []common.Address, []common.Address) (event.Subscription, error)) {
+func (f *IValidatorStakingWatchApprovalForAllFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *ethereum.ValidatorStakingApprovalForAll, []common.Address, []common.Address) (event.Subscription, error)) {
 	f.defaultHook = hook
 }
 
@@ -55799,7 +55803,7 @@ func (f *IValidatorStakingWatchApprovalForAllFunc) SetDefaultHook(hook func(*bin
 // invokes the hook at the front of the queue and discards it. After the
 // queue is empty, the default hook function is invoked for any future
 // action.
-func (f *IValidatorStakingWatchApprovalForAllFunc) PushHook(hook func(*bind.WatchOpts, chan<- *bindings.ValidatorStakingApprovalForAll, []common.Address, []common.Address) (event.Subscription, error)) {
+func (f *IValidatorStakingWatchApprovalForAllFunc) PushHook(hook func(*bind.WatchOpts, chan<- *ethereum.ValidatorStakingApprovalForAll, []common.Address, []common.Address) (event.Subscription, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -55808,19 +55812,19 @@ func (f *IValidatorStakingWatchApprovalForAllFunc) PushHook(hook func(*bind.Watc
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
 func (f *IValidatorStakingWatchApprovalForAllFunc) SetDefaultReturn(r0 event.Subscription, r1 error) {
-	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *bindings.ValidatorStakingApprovalForAll, []common.Address, []common.Address) (event.Subscription, error) {
+	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *ethereum.ValidatorStakingApprovalForAll, []common.Address, []common.Address) (event.Subscription, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
 func (f *IValidatorStakingWatchApprovalForAllFunc) PushReturn(r0 event.Subscription, r1 error) {
-	f.PushHook(func(*bind.WatchOpts, chan<- *bindings.ValidatorStakingApprovalForAll, []common.Address, []common.Address) (event.Subscription, error) {
+	f.PushHook(func(*bind.WatchOpts, chan<- *ethereum.ValidatorStakingApprovalForAll, []common.Address, []common.Address) (event.Subscription, error) {
 		return r0, r1
 	})
 }
 
-func (f *IValidatorStakingWatchApprovalForAllFunc) nextHook() func(*bind.WatchOpts, chan<- *bindings.ValidatorStakingApprovalForAll, []common.Address, []common.Address) (event.Subscription, error) {
+func (f *IValidatorStakingWatchApprovalForAllFunc) nextHook() func(*bind.WatchOpts, chan<- *ethereum.ValidatorStakingApprovalForAll, []common.Address, []common.Address) (event.Subscription, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -55860,7 +55864,7 @@ type IValidatorStakingWatchApprovalForAllFuncCall struct {
 	Arg0 *bind.WatchOpts
 	// Arg1 is the value of the 2nd argument passed to this method
 	// invocation.
-	Arg1 chan<- *bindings.ValidatorStakingApprovalForAll
+	Arg1 chan<- *ethereum.ValidatorStakingApprovalForAll
 	// Arg2 is the value of the 3rd argument passed to this method
 	// invocation.
 	Arg2 []common.Address
@@ -55891,15 +55895,15 @@ func (c IValidatorStakingWatchApprovalForAllFuncCall) Results() []interface{} {
 // WatchInitialized method of the parent MockIValidatorStaking instance is
 // invoked.
 type IValidatorStakingWatchInitializedFunc struct {
-	defaultHook func(*bind.WatchOpts, chan<- *bindings.ValidatorStakingInitialized) (event.Subscription, error)
-	hooks       []func(*bind.WatchOpts, chan<- *bindings.ValidatorStakingInitialized) (event.Subscription, error)
+	defaultHook func(*bind.WatchOpts, chan<- *ethereum.ValidatorStakingInitialized) (event.Subscription, error)
+	hooks       []func(*bind.WatchOpts, chan<- *ethereum.ValidatorStakingInitialized) (event.Subscription, error)
 	history     []IValidatorStakingWatchInitializedFuncCall
 	mutex       sync.Mutex
 }
 
 // WatchInitialized delegates to the next hook function in the queue and
 // stores the parameter and result values of this invocation.
-func (m *MockIValidatorStaking) WatchInitialized(v0 *bind.WatchOpts, v1 chan<- *bindings.ValidatorStakingInitialized) (event.Subscription, error) {
+func (m *MockIValidatorStaking) WatchInitialized(v0 *bind.WatchOpts, v1 chan<- *ethereum.ValidatorStakingInitialized) (event.Subscription, error) {
 	r0, r1 := m.WatchInitializedFunc.nextHook()(v0, v1)
 	m.WatchInitializedFunc.appendCall(IValidatorStakingWatchInitializedFuncCall{v0, v1, r0, r1})
 	return r0, r1
@@ -55908,7 +55912,7 @@ func (m *MockIValidatorStaking) WatchInitialized(v0 *bind.WatchOpts, v1 chan<- *
 // SetDefaultHook sets function that is called when the WatchInitialized
 // method of the parent MockIValidatorStaking instance is invoked and the
 // hook queue is empty.
-func (f *IValidatorStakingWatchInitializedFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *bindings.ValidatorStakingInitialized) (event.Subscription, error)) {
+func (f *IValidatorStakingWatchInitializedFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *ethereum.ValidatorStakingInitialized) (event.Subscription, error)) {
 	f.defaultHook = hook
 }
 
@@ -55917,7 +55921,7 @@ func (f *IValidatorStakingWatchInitializedFunc) SetDefaultHook(hook func(*bind.W
 // invokes the hook at the front of the queue and discards it. After the
 // queue is empty, the default hook function is invoked for any future
 // action.
-func (f *IValidatorStakingWatchInitializedFunc) PushHook(hook func(*bind.WatchOpts, chan<- *bindings.ValidatorStakingInitialized) (event.Subscription, error)) {
+func (f *IValidatorStakingWatchInitializedFunc) PushHook(hook func(*bind.WatchOpts, chan<- *ethereum.ValidatorStakingInitialized) (event.Subscription, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -55926,19 +55930,19 @@ func (f *IValidatorStakingWatchInitializedFunc) PushHook(hook func(*bind.WatchOp
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
 func (f *IValidatorStakingWatchInitializedFunc) SetDefaultReturn(r0 event.Subscription, r1 error) {
-	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *bindings.ValidatorStakingInitialized) (event.Subscription, error) {
+	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *ethereum.ValidatorStakingInitialized) (event.Subscription, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
 func (f *IValidatorStakingWatchInitializedFunc) PushReturn(r0 event.Subscription, r1 error) {
-	f.PushHook(func(*bind.WatchOpts, chan<- *bindings.ValidatorStakingInitialized) (event.Subscription, error) {
+	f.PushHook(func(*bind.WatchOpts, chan<- *ethereum.ValidatorStakingInitialized) (event.Subscription, error) {
 		return r0, r1
 	})
 }
 
-func (f *IValidatorStakingWatchInitializedFunc) nextHook() func(*bind.WatchOpts, chan<- *bindings.ValidatorStakingInitialized) (event.Subscription, error) {
+func (f *IValidatorStakingWatchInitializedFunc) nextHook() func(*bind.WatchOpts, chan<- *ethereum.ValidatorStakingInitialized) (event.Subscription, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -55977,7 +55981,7 @@ type IValidatorStakingWatchInitializedFuncCall struct {
 	Arg0 *bind.WatchOpts
 	// Arg1 is the value of the 2nd argument passed to this method
 	// invocation.
-	Arg1 chan<- *bindings.ValidatorStakingInitialized
+	Arg1 chan<- *ethereum.ValidatorStakingInitialized
 	// Result0 is the value of the 1st result returned from this method
 	// invocation.
 	Result0 event.Subscription
@@ -56002,15 +56006,15 @@ func (c IValidatorStakingWatchInitializedFuncCall) Results() []interface{} {
 // WatchTransfer method of the parent MockIValidatorStaking instance is
 // invoked.
 type IValidatorStakingWatchTransferFunc struct {
-	defaultHook func(*bind.WatchOpts, chan<- *bindings.ValidatorStakingTransfer, []common.Address, []common.Address, []*big.Int) (event.Subscription, error)
-	hooks       []func(*bind.WatchOpts, chan<- *bindings.ValidatorStakingTransfer, []common.Address, []common.Address, []*big.Int) (event.Subscription, error)
+	defaultHook func(*bind.WatchOpts, chan<- *ethereum.ValidatorStakingTransfer, []common.Address, []common.Address, []*big.Int) (event.Subscription, error)
+	hooks       []func(*bind.WatchOpts, chan<- *ethereum.ValidatorStakingTransfer, []common.Address, []common.Address, []*big.Int) (event.Subscription, error)
 	history     []IValidatorStakingWatchTransferFuncCall
 	mutex       sync.Mutex
 }
 
 // WatchTransfer delegates to the next hook function in the queue and stores
 // the parameter and result values of this invocation.
-func (m *MockIValidatorStaking) WatchTransfer(v0 *bind.WatchOpts, v1 chan<- *bindings.ValidatorStakingTransfer, v2 []common.Address, v3 []common.Address, v4 []*big.Int) (event.Subscription, error) {
+func (m *MockIValidatorStaking) WatchTransfer(v0 *bind.WatchOpts, v1 chan<- *ethereum.ValidatorStakingTransfer, v2 []common.Address, v3 []common.Address, v4 []*big.Int) (event.Subscription, error) {
 	r0, r1 := m.WatchTransferFunc.nextHook()(v0, v1, v2, v3, v4)
 	m.WatchTransferFunc.appendCall(IValidatorStakingWatchTransferFuncCall{v0, v1, v2, v3, v4, r0, r1})
 	return r0, r1
@@ -56019,7 +56023,7 @@ func (m *MockIValidatorStaking) WatchTransfer(v0 *bind.WatchOpts, v1 chan<- *bin
 // SetDefaultHook sets function that is called when the WatchTransfer method
 // of the parent MockIValidatorStaking instance is invoked and the hook
 // queue is empty.
-func (f *IValidatorStakingWatchTransferFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *bindings.ValidatorStakingTransfer, []common.Address, []common.Address, []*big.Int) (event.Subscription, error)) {
+func (f *IValidatorStakingWatchTransferFunc) SetDefaultHook(hook func(*bind.WatchOpts, chan<- *ethereum.ValidatorStakingTransfer, []common.Address, []common.Address, []*big.Int) (event.Subscription, error)) {
 	f.defaultHook = hook
 }
 
@@ -56027,7 +56031,7 @@ func (f *IValidatorStakingWatchTransferFunc) SetDefaultHook(hook func(*bind.Watc
 // WatchTransfer method of the parent MockIValidatorStaking instance invokes
 // the hook at the front of the queue and discards it. After the queue is
 // empty, the default hook function is invoked for any future action.
-func (f *IValidatorStakingWatchTransferFunc) PushHook(hook func(*bind.WatchOpts, chan<- *bindings.ValidatorStakingTransfer, []common.Address, []common.Address, []*big.Int) (event.Subscription, error)) {
+func (f *IValidatorStakingWatchTransferFunc) PushHook(hook func(*bind.WatchOpts, chan<- *ethereum.ValidatorStakingTransfer, []common.Address, []common.Address, []*big.Int) (event.Subscription, error)) {
 	f.mutex.Lock()
 	f.hooks = append(f.hooks, hook)
 	f.mutex.Unlock()
@@ -56036,19 +56040,19 @@ func (f *IValidatorStakingWatchTransferFunc) PushHook(hook func(*bind.WatchOpts,
 // SetDefaultReturn calls SetDefaultHook with a function that returns the
 // given values.
 func (f *IValidatorStakingWatchTransferFunc) SetDefaultReturn(r0 event.Subscription, r1 error) {
-	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *bindings.ValidatorStakingTransfer, []common.Address, []common.Address, []*big.Int) (event.Subscription, error) {
+	f.SetDefaultHook(func(*bind.WatchOpts, chan<- *ethereum.ValidatorStakingTransfer, []common.Address, []common.Address, []*big.Int) (event.Subscription, error) {
 		return r0, r1
 	})
 }
 
 // PushReturn calls PushHook with a function that returns the given values.
 func (f *IValidatorStakingWatchTransferFunc) PushReturn(r0 event.Subscription, r1 error) {
-	f.PushHook(func(*bind.WatchOpts, chan<- *bindings.ValidatorStakingTransfer, []common.Address, []common.Address, []*big.Int) (event.Subscription, error) {
+	f.PushHook(func(*bind.WatchOpts, chan<- *ethereum.ValidatorStakingTransfer, []common.Address, []common.Address, []*big.Int) (event.Subscription, error) {
 		return r0, r1
 	})
 }
 
-func (f *IValidatorStakingWatchTransferFunc) nextHook() func(*bind.WatchOpts, chan<- *bindings.ValidatorStakingTransfer, []common.Address, []common.Address, []*big.Int) (event.Subscription, error) {
+func (f *IValidatorStakingWatchTransferFunc) nextHook() func(*bind.WatchOpts, chan<- *ethereum.ValidatorStakingTransfer, []common.Address, []common.Address, []*big.Int) (event.Subscription, error) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -56087,7 +56091,7 @@ type IValidatorStakingWatchTransferFuncCall struct {
 	Arg0 *bind.WatchOpts
 	// Arg1 is the value of the 2nd argument passed to this method
 	// invocation.
-	Arg1 chan<- *bindings.ValidatorStakingTransfer
+	Arg1 chan<- *ethereum.ValidatorStakingTransfer
 	// Arg2 is the value of the 3rd argument passed to this method
 	// invocation.
 	Arg2 []common.Address

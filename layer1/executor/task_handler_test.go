@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/alicenet/alicenet/bridge/bindings"
+	ebindings "github.com/alicenet/alicenet/bridge/bindings/ethereum"
 	"github.com/alicenet/alicenet/consensus/objs"
 	"github.com/alicenet/alicenet/constants/dbprefix"
 	"github.com/alicenet/alicenet/crypto"
@@ -198,7 +198,7 @@ func TestTasksHandlerAndManager_ScheduleAndKillById_RunningTask(t *testing.T) {
 	ethDkgMock := mocks.NewMockIETHDKG()
 	ethDkgMock.RegisterFunc.SetDefaultReturn(nil, errors.New("network error"))
 	ethDkgMock.GetNonceFunc.SetDefaultReturn(big.NewInt(1), nil)
-	participantState := bindings.Participant{
+	participantState := ebindings.Participant{
 		PublicKey: publicKey,
 		Nonce:     uint64(1),
 	}
@@ -310,7 +310,7 @@ func TestTasksHandlerAndManager_ScheduleKillCloseAndRecover(t *testing.T) {
 	ethDkgMock := mocks.NewMockIETHDKG()
 	ethDkgMock.RegisterFunc.SetDefaultReturn(nil, errors.New("network error"))
 	ethDkgMock.GetNonceFunc.SetDefaultReturn(big.NewInt(1), nil)
-	participantState := bindings.Participant{
+	participantState := ebindings.Participant{
 		PublicKey: publicKey,
 		Nonce:     uint64(1),
 	}

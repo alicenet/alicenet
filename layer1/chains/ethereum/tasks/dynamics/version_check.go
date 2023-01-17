@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/alicenet/alicenet/bridge/bindings"
+	ebindings "github.com/alicenet/alicenet/bridge/bindings/ethereum"
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/layer1/executor/tasks"
 	"github.com/alicenet/alicenet/utils"
@@ -15,14 +15,14 @@ import (
 type CanonicalVersionCheckTask struct {
 	*tasks.BaseTask
 	// Version info
-	Version bindings.CanonicalVersion
+	Version ebindings.CanonicalVersion
 }
 
 // asserting that CanonicalVersionCheckTask struct implements interface tasks.Task.
 var _ tasks.Task = &CanonicalVersionCheckTask{}
 
 // NewVersionCheckTask creates a background task that attempts to verify the version check.
-func NewVersionCheckTask(version bindings.CanonicalVersion) *CanonicalVersionCheckTask {
+func NewVersionCheckTask(version ebindings.CanonicalVersion) *CanonicalVersionCheckTask {
 	return &CanonicalVersionCheckTask{
 		BaseTask: tasks.NewBaseTask(0, 0, false, nil),
 		Version:  version,

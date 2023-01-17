@@ -9,7 +9,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/alicenet/alicenet/bridge/bindings"
+	ebindings "github.com/alicenet/alicenet/bridge/bindings/ethereum"
 	"github.com/alicenet/alicenet/layer1"
 	"github.com/alicenet/alicenet/utils"
 	"github.com/ethereum/go-ethereum/common"
@@ -21,26 +21,26 @@ var _ layer1.EthereumContracts = &Contracts{}
 // Contracts contains bindings to smart contract system.
 type Contracts struct {
 	allAddresses            map[common.Address]bool
-	eth                     layer1.Client
-	ethdkg                  bindings.IETHDKG
+	client                  layer1.Client
+	ethdkg                  ebindings.IETHDKG
 	ethdkgAddress           common.Address
-	alca                    bindings.IALCA
+	alca                    ebindings.IALCA
 	alcaAddress             common.Address
-	alcb                    bindings.IALCB
+	alcb                    ebindings.IALCB
 	alcbAddress             common.Address
-	publicStaking           bindings.IPublicStaking
+	publicStaking           ebindings.IPublicStaking
 	publicStakingAddress    common.Address
-	validatorStaking        bindings.IValidatorStaking
+	validatorStaking        ebindings.IValidatorStaking
 	validatorStakingAddress common.Address
-	contractFactory         bindings.IAliceNetFactory
+	contractFactory         ebindings.IAliceNetFactory
 	contractFactoryAddress  common.Address
-	snapshots               bindings.ISnapshots
+	snapshots               ebindings.ISnapshots
 	snapshotsAddress        common.Address
-	validatorPool           bindings.IValidatorPool
+	validatorPool           ebindings.IValidatorPool
 	validatorPoolAddress    common.Address
-	governance              bindings.IGovernance
+	governance              ebindings.IGovernance
 	governanceAddress       common.Address
-	dynamics                bindings.IDynamics
+	dynamics                ebindings.IDynamics
 	dynamicsAddress         common.Address
 }
 
@@ -50,7 +50,7 @@ type Contracts struct {
 func NewContracts(eth layer1.Client, contractFactoryAddress common.Address) *Contracts {
 	newContracts := &Contracts{
 		allAddresses:           make(map[common.Address]bool),
-		eth:                    eth,
+		client:                 eth,
 		contractFactoryAddress: contractFactoryAddress,
 	}
 	err := newContracts.lookupContracts()
@@ -67,7 +67,7 @@ func (c *Contracts) lookupContracts() error {
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
 
-	eth := c.eth
+	eth := c.client
 	logger := eth.GetLogger()
 	logger.Infof("Looking up smart contracts on Ethereum...")
 	for {
@@ -78,7 +78,7 @@ func (c *Contracts) lookupContracts() error {
 		}
 
 		// Load the contractFactory first
-		contractFactory, err := bindings.NewAliceNetFactory(
+		contractFactory, err := ebindings.NewAliceNetFactory(
 			c.contractFactoryAddress,
 			eth.GetInternalClient(),
 		)
@@ -109,29 +109,29 @@ func (c *Contracts) lookupContracts() error {
 
 		// ETHDKG
 		c.ethdkgAddress, err = lookup("ETHDKG")
-		logAndEat(logger, err)
+		utils.LogAndEat(logger, err)
 		if bytes.Equal(c.ethdkgAddress.Bytes(), make([]byte, 20)) {
 			continue
 		}
 
-		c.ethdkg, err = bindings.NewETHDKG(c.ethdkgAddress, eth.GetInternalClient())
-		logAndEat(logger, err)
+		c.ethdkg, err = ebindings.NewETHDKG(c.ethdkgAddress, eth.GetInternalClient())
+		utils.LogAndEat(logger, err)
 
 		// ValidatorPool
 		c.validatorPoolAddress, err = lookup("ValidatorPool")
-		logAndEat(logger, err)
+		utils.LogAndEat(logger, err)
 		if bytes.Equal(c.validatorPoolAddress.Bytes(), make([]byte, 20)) {
 			continue
 		}
 
-		c.validatorPool, err = bindings.NewValidatorPool(
+		c.validatorPool, err = ebindings.NewValidatorPool(
 			c.validatorPoolAddress,
 			eth.GetInternalClient(),
 		)
-		logAndEat(logger, err)
+		utils.LogAndEat(logger, err)
 
 		// ALCB TODO: bring it back once we deploy ALCB c.alcbAddress, err = lookup("ALCB")
-		// logAndEat(logger, err) if bytes.Equal(c.alcbAddress.Bytes(), make([]byte, 20)) {
+		// utils.LogAndEat(logger, err) if bytes.Equal(c.alcbAddress.Bytes(), make([]byte, 20)) {
 		//  continue
 		// }
 
@@ -139,48 +139,48 @@ func (c *Contracts) lookupContracts() error {
 		// once we deploy ALCB
 		c.alcbAddress = common.HexToAddress("0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc")
 		logger.Infof("Lookup up of \"%v\" is 0x%x", "ALCB", c.alcbAddress)
-		c.alcb, err = bindings.NewALCB(c.alcbAddress, eth.GetInternalClient())
-		logAndEat(logger, err)
+		c.alcb, err = ebindings.NewALCB(c.alcbAddress, eth.GetInternalClient())
+		utils.LogAndEat(logger, err)
 
 		// ALCA
 		c.alcaAddress, err = lookup("ALCA")
-		logAndEat(logger, err)
+		utils.LogAndEat(logger, err)
 		if bytes.Equal(c.alcaAddress.Bytes(), make([]byte, 20)) {
 			continue
 		}
 
-		c.alca, err = bindings.NewALCA(c.alcaAddress, eth.GetInternalClient())
-		logAndEat(logger, err)
+		c.alca, err = ebindings.NewALCA(c.alcaAddress, eth.GetInternalClient())
+		utils.LogAndEat(logger, err)
 
 		// PublicStaking
 		c.publicStakingAddress, err = lookup("PublicStaking")
-		logAndEat(logger, err)
+		utils.LogAndEat(logger, err)
 		if bytes.Equal(c.publicStakingAddress.Bytes(), make([]byte, 20)) {
 			continue
 		}
 
-		c.publicStaking, err = bindings.NewPublicStaking(
+		c.publicStaking, err = ebindings.NewPublicStaking(
 			c.publicStakingAddress,
 			eth.GetInternalClient(),
 		)
-		logAndEat(logger, err)
+		utils.LogAndEat(logger, err)
 
 		// ValidatorStaking
 		c.validatorStakingAddress, err = lookup("ValidatorStaking")
-		logAndEat(logger, err)
+		utils.LogAndEat(logger, err)
 		if bytes.Equal(c.validatorStakingAddress.Bytes(), make([]byte, 20)) {
 			continue
 		}
 
-		c.validatorStaking, err = bindings.NewValidatorStaking(
+		c.validatorStaking, err = ebindings.NewValidatorStaking(
 			c.validatorStakingAddress,
 			eth.GetInternalClient(),
 		)
-		logAndEat(logger, err)
+		utils.LogAndEat(logger, err)
 
 		// Governance
 		// c.governanceAddress, err = lookup("Governance")
-		// logAndEat(logger, err)
+		// utils.LogAndEat(logger, err)
 		// if bytes.Equal(c.governanceAddress.Bytes(), make([]byte, 20)) {
 		// 	continue
 		// }
@@ -190,28 +190,28 @@ func (c *Contracts) lookupContracts() error {
 		c.governanceAddress = common.HexToAddress("0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5be")
 		logger.Infof("Lookup up of \"%v\" is 0x%x", "Governance", c.governanceAddress)
 
-		c.governance, err = bindings.NewGovernance(c.governanceAddress, eth.GetInternalClient())
-		logAndEat(logger, err)
+		c.governance, err = ebindings.NewGovernance(c.governanceAddress, eth.GetInternalClient())
+		utils.LogAndEat(logger, err)
 
 		// Snapshots
 		c.snapshotsAddress, err = lookup("Snapshots")
-		logAndEat(logger, err)
+		utils.LogAndEat(logger, err)
 		if bytes.Equal(c.snapshotsAddress.Bytes(), make([]byte, 20)) {
 			continue
 		}
 
-		c.snapshots, err = bindings.NewSnapshots(c.snapshotsAddress, eth.GetInternalClient())
-		logAndEat(logger, err)
+		c.snapshots, err = ebindings.NewSnapshots(c.snapshotsAddress, eth.GetInternalClient())
+		utils.LogAndEat(logger, err)
 
 		// Dynamics
 		c.dynamicsAddress, err = lookup("Dynamics")
-		logAndEat(logger, err)
+		utils.LogAndEat(logger, err)
 		if bytes.Equal(c.dynamicsAddress.Bytes(), make([]byte, 20)) {
 			continue
 		}
 
-		c.dynamics, err = bindings.NewDynamics(c.dynamicsAddress, eth.GetInternalClient())
-		logAndEat(logger, err)
+		c.dynamics, err = ebindings.NewDynamics(c.dynamicsAddress, eth.GetInternalClient())
+		utils.LogAndEat(logger, err)
 
 		break
 	}
@@ -228,7 +228,7 @@ func (c *Contracts) GetAllAddresses() []common.Address {
 	return allAddresses
 }
 
-func (c *Contracts) Ethdkg() bindings.IETHDKG {
+func (c *Contracts) Ethdkg() ebindings.IETHDKG {
 	return c.ethdkg
 }
 
@@ -236,7 +236,7 @@ func (c *Contracts) EthdkgAddress() common.Address {
 	return c.ethdkgAddress
 }
 
-func (c *Contracts) ALCA() bindings.IALCA {
+func (c *Contracts) ALCA() ebindings.IALCA {
 	return c.alca
 }
 
@@ -244,7 +244,7 @@ func (c *Contracts) ALCAAddress() common.Address {
 	return c.alcaAddress
 }
 
-func (c *Contracts) ALCB() bindings.IALCB {
+func (c *Contracts) ALCB() ebindings.IALCB {
 	return c.alcb
 }
 
@@ -252,7 +252,7 @@ func (c *Contracts) ALCBAddress() common.Address {
 	return c.alcbAddress
 }
 
-func (c *Contracts) Dynamics() bindings.IDynamics {
+func (c *Contracts) Dynamics() ebindings.IDynamics {
 	return c.dynamics
 }
 
@@ -260,7 +260,7 @@ func (c *Contracts) DynamicsAddress() common.Address {
 	return c.dynamicsAddress
 }
 
-func (c *Contracts) PublicStaking() bindings.IPublicStaking {
+func (c *Contracts) PublicStaking() ebindings.IPublicStaking {
 	return c.publicStaking
 }
 
@@ -268,7 +268,7 @@ func (c *Contracts) PublicStakingAddress() common.Address {
 	return c.publicStakingAddress
 }
 
-func (c *Contracts) ValidatorStaking() bindings.IValidatorStaking {
+func (c *Contracts) ValidatorStaking() ebindings.IValidatorStaking {
 	return c.validatorStaking
 }
 
@@ -276,7 +276,7 @@ func (c *Contracts) ValidatorStakingAddress() common.Address {
 	return c.validatorStakingAddress
 }
 
-func (c *Contracts) ContractFactory() bindings.IAliceNetFactory {
+func (c *Contracts) ContractFactory() ebindings.IAliceNetFactory {
 	return c.contractFactory
 }
 
@@ -284,7 +284,7 @@ func (c *Contracts) ContractFactoryAddress() common.Address {
 	return c.contractFactoryAddress
 }
 
-func (c *Contracts) Snapshots() bindings.ISnapshots {
+func (c *Contracts) Snapshots() ebindings.ISnapshots {
 	return c.snapshots
 }
 
@@ -292,7 +292,7 @@ func (c *Contracts) SnapshotsAddress() common.Address {
 	return c.snapshotsAddress
 }
 
-func (c *Contracts) ValidatorPool() bindings.IValidatorPool {
+func (c *Contracts) ValidatorPool() ebindings.IValidatorPool {
 	return c.validatorPool
 }
 
@@ -300,19 +300,12 @@ func (c *Contracts) ValidatorPoolAddress() common.Address {
 	return c.validatorPoolAddress
 }
 
-func (c *Contracts) Governance() bindings.IGovernance {
+func (c *Contracts) Governance() ebindings.IGovernance {
 	return c.governance
 }
 
 func (c *Contracts) GovernanceAddress() common.Address {
 	return c.governanceAddress
-}
-
-// utils function to log an error.
-func logAndEat(logger *logrus.Logger, err error) {
-	if err != nil {
-		logger.Error(err)
-	}
 }
 
 // Get the current validators.

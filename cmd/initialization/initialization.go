@@ -217,7 +217,7 @@ func initializeFilesAndFolders(cmd *cobra.Command, args []string) {
 			PeerLimitMax:               24,
 			PeerLimitMin:               3,
 		},
-		Ethereum: config.EthereumConfig{
+		Ethereum: config.EVMConfig{
 			Endpoint:                 ethereumEndpointURL,
 			EndpointMinimumPeers:     1,
 			DefaultAccount:           defaultAccount,
@@ -229,7 +229,7 @@ func initializeFilesAndFolders(cmd *cobra.Command, args []string) {
 			TxMaxGasFeeAllowedInGwei: 500,
 			TxMetricsDisplay:         false,
 		},
-		Polygon: config.EthereumConfig{
+		Polygon: config.EVMConfig{
 			Endpoint:                 polygonEndpointURL,
 			EndpointMinimumPeers:     1,
 			DefaultAccount:           defaultAccount,

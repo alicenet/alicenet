@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/alicenet/alicenet/bridge/bindings"
+	ebindings "github.com/alicenet/alicenet/bridge/bindings/ethereum"
 	"github.com/alicenet/alicenet/config"
 )
 
@@ -14,7 +14,7 @@ var (
 	ErrUnexpectedTagFormat = errors.New("unexpected version format. expected vX.Y.Z[-optional]")
 )
 
-func CompareCanonicalVersion(newVersion bindings.CanonicalVersion) (bool, bool, bool, bindings.CanonicalVersion, error) {
+func CompareCanonicalVersion(newVersion ebindings.CanonicalVersion) (bool, bool, bool, ebindings.CanonicalVersion, error) {
 	localVersion, err := GetLocalVersion()
 	return newVersion.Major > localVersion.Major,
 		newVersion.Major == localVersion.Major && newVersion.Minor > localVersion.Minor,
@@ -22,8 +22,8 @@ func CompareCanonicalVersion(newVersion bindings.CanonicalVersion) (bool, bool, 
 		localVersion, err
 }
 
-func GetLocalVersion() (bindings.CanonicalVersion, error) {
-	var canonicalVersion bindings.CanonicalVersion
+func GetLocalVersion() (ebindings.CanonicalVersion, error) {
+	var canonicalVersion ebindings.CanonicalVersion
 
 	version := config.Configuration.Version
 	if version == "dev" {
