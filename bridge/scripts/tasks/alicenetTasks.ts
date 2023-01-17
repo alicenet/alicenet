@@ -12,7 +12,16 @@ import {
   encodeMultiCallArgs,
   MultiCallArgsStruct,
 } from "../lib/alicenetFactory";
-import { ALICENET_FACTORY, DEFAULT_CONFIG_FILE_PATH } from "../lib/constants";
+import {
+  ALCA,
+  ALCA_SALT,
+  ALICENET_FACTORY,
+  ALICE_NET_FACTORY_ADDRESS,
+  ALICE_NET_PUBLIC_STAKING_SALT,
+  DEFAULT_CONFIG_FILE_PATH,
+  MAX_PUBLIC_STAKING_LOCK_DURATION,
+  PUBLIC_STAKING,
+} from "../lib/constants";
 import { DeploymentConfigWrapper } from "../lib/deployment/interfaces";
 import {
   getGasPrices,
@@ -23,7 +32,7 @@ import {
 } from "../lib/deployment/utils";
 
 function delay(milliseconds: number) {
-  return new Promise((resolve) => setTimeout(resolve, milliseconds));
+  return new Promise(() => setTimeout(milliseconds));
 }
 
 export async function getTokenIdFromTx(ethers: any, tx: ContractTransaction) {
@@ -135,7 +144,7 @@ task("create-local-seed-node", "start and syncs a node with mainnet")
         }
       } catch (err: any) {
         if (err) {
-          await new Promise((resolve) => setTimeout(resolve, 5000));
+          await new Promise((resolve) => setTimeout(5000));
         }
       }
     }
@@ -1772,18 +1781,22 @@ task(
       taskArgs.waitConfirmation,
       hre
     );
+    const maxStakingLock = BigNumber.from(MAX_PUBLIC_STAKING_LOCK_DURATION);
     let factory = await hre.ethers.getContractAt(
       ALICENET_FACTORY,
-      "0x4b6dF6B299fB6414f45719E0d9e1889269a7843E"
+      taskArgs.factoryAddress
     );
+    const publicStakingSalt = hre.ethers.utils.formatBytes32String(
+      ALICE_NET_PUBLIC_STAKING_SALT
+    );
+    const publicStakingAddress = await factory.lookup(publicStakingSalt);
     const publicStaking = await hre.ethers.getContractAt(
-      "PublicStaking",
-      "0x65683990415A669a7ecbD877240818EE458d0f09"
+      PUBLIC_STAKING,
+      publicStakingSalt
     );
-    const alca = await hre.ethers.getContractAt(
-      "ALCA",
-      "0xBb556b0eE2CBd89ed95DdEA881477723A3Aa8F8b"
-    );
+    const alcaSalt = hre.ethers.utils.formatBytes32String(ALCA_SALT);
+    const alcaAddress = await factory.lookup(alcaSalt);
+    const alca = await hre.ethers.getContractAt(ALCA, alcaAddress);
     // use this flag with a hardhat forked node
     if (taskArgs.test) {
       const address = "0xff55549a3ceea32fba4794bf1a649a2363fcda53";
@@ -1796,7 +1809,6 @@ task(
       const signer = await hre.ethers.getSigner(address);
       factory = factory.connect(signer);
     }
-    const maxStakingLock = BigNumber.from("1051200");
     // encode approval call to approve public staking contract to
     // encode ALCA amount in wei
     const alcaAmount = hre.ethers.utils.parseEther(taskArgs.alcaAmount);
@@ -1866,6 +1878,12 @@ task(
   .addParam("csvPath", "path to csv file")
   .addFlag("test", "test mode for use with a hardhat fork mode")
   .addOptionalParam(
+    "factoryAddress",
+    "address of AliceNetFactory",
+    ALICE_NET_FACTORY_ADDRESS
+  )
+  .addOptionalParam("lockD")
+  .addOptionalParam(
     "waitConfirmation",
     "wait specified number of blocks between transactions",
     0,
@@ -1876,19 +1894,22 @@ task(
       taskArgs.waitConfirmation,
       hre
     );
-    const maxStakingLock = BigNumber.from("1051200");
+    const maxStakingLock = BigNumber.from(MAX_PUBLIC_STAKING_LOCK_DURATION);
     let factory = await hre.ethers.getContractAt(
       ALICENET_FACTORY,
-      "0x4b6dF6B299fB6414f45719E0d9e1889269a7843E"
+      taskArgs.factoryAddress
     );
+    const publicStakingSalt = hre.ethers.utils.formatBytes32String(
+      ALICE_NET_PUBLIC_STAKING_SALT
+    );
+    const publicStakingAddress = await factory.lookup(publicStakingSalt);
     const publicStaking = await hre.ethers.getContractAt(
-      "PublicStaking",
-      "0x65683990415A669a7ecbD877240818EE458d0f09"
+      PUBLIC_STAKING,
+      publicStakingSalt
     );
-    const alca = await hre.ethers.getContractAt(
-      "ALCA",
-      "0xBb556b0eE2CBd89ed95DdEA881477723A3Aa8F8b"
-    );
+    const alcaSalt = hre.ethers.utils.formatBytes32String(ALCA_SALT);
+    const alcaAddress = await factory.lookup(alcaSalt);
+    const alca = await hre.ethers.getContractAt(ALCA, alcaAddress);
     const distributionData = await readCSV(taskArgs.csvPath);
     // use this flag with a hardhat forked node
     if (taskArgs.test) {

@@ -1,11 +1,14 @@
 import "process";
 export const MULTICALL_GAS_LIMIT = "10000000";
+export const MAX_PUBLIC_STAKING_LOCK_DURATION = "1051200";
 // contract names
 export const ALICENET_FACTORY = "AliceNetFactory";
 export const END_POINT = "MockEndPoint";
 export const LOCK_UP = "Lockup";
 export const MOCK_FACTORY = "MockFactory";
 export const MOCK = "MockBaseContract";
+export const PUBLIC_STAKING = "PublicStaking";
+export const ALCA = "ALCA";
 export const STAKING_ROUTER_V1 = "StakingRouterV1";
 export const UTILS = "Utils";
 // function names
@@ -54,3 +57,15 @@ export const env = (): string => {
   }
   return _env;
 };
+
+//AliceNet Contract salts
+export const ALICE_NET_PUBLIC_STAKING_SALT = "PublicStaking";
+export const ALCA_SALT = "ALCA";
+
+// AliceNet Contract Addresses
+export const ALICE_NET_FACTORY_ADDRESS =
+  "0x4b6dF6B299fB6414f45719E0d9e1889269a7843E";
+export const ALICE_NET_PUBLIC_STAKING_ADDRESS =
+  "0x65683990415A669a7ecbD877240818EE458d0f09";
+export const ALICE_NET_STAKING_TOKEN_ADDRESS =
+  "0xBb556b0eE2CBd89ed95DdEA881477723A3Aa8F8b";
