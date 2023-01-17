@@ -14,9 +14,9 @@ import (
 	"github.com/alicenet/alicenet/consensus/objs"
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/layer1"
+	"github.com/alicenet/alicenet/layer1/chains/ethereum/tasks/snapshots"
+	"github.com/alicenet/alicenet/layer1/chains/ethereum/tasks/snapshots/state"
 	"github.com/alicenet/alicenet/layer1/executor"
-	"github.com/alicenet/alicenet/layer1/executor/tasks/snapshots"
-	"github.com/alicenet/alicenet/layer1/executor/tasks/snapshots/state"
 	"github.com/alicenet/alicenet/layer1/monitor/interfaces"
 	"github.com/alicenet/alicenet/layer1/monitor/objects"
 	"github.com/alicenet/alicenet/logging"
@@ -95,12 +95,15 @@ func NewMonitor(cdb *db.Database,
 		eventMap:             eventMap,
 	}
 
+	mon.eventMap = eventMap
 	mon.State = objects.NewMonitorState()
 
-	adminHandler.RegisterSnapshotCallback(func(bh *objs.BlockHeader, numOfValidators, validatorIndex int) error {
-		logger.Info("Entering snapshot callback")
-		return PersistSnapshot(eth, bh, numOfValidators, validatorIndex, taskHandler, monDB)
-	})
+	adminHandler.RegisterSnapshotCallback(
+		func(bh *objs.BlockHeader, numOfValidators, validatorIndex int) error {
+			logger.Info("Entering snapshot callback")
+			return PersistSnapshot(eth, bh, numOfValidators, validatorIndex, taskHandler, monDB)
+		},
+	)
 
 	return mon, nil
 }
@@ -239,8 +242,17 @@ func (m *monitor) UnmarshalJSON(raw []byte) error {
 }
 
 // MonitorTick using existing monitorState and incrementally updates it based on current State of Ethereum endpoint.
-func MonitorTick(ctx context.Context, cf context.CancelFunc, eth layer1.Client, allContracts layer1.AllSmartContracts, monitorState *objects.MonitorState, logger *logrus.Entry,
-	eventMap *objects.EventMap, adminHandler interfaces.AdminHandler, batchSize uint64, filterContracts []common.Address,
+func MonitorTick(
+	ctx context.Context,
+	cf context.CancelFunc,
+	eth layer1.Client,
+	allContracts layer1.AllSmartContracts,
+	monitorState *objects.MonitorState,
+	logger *logrus.Entry,
+	eventMap *objects.EventMap,
+	adminHandler interfaces.AdminHandler,
+	batchSize uint64,
+	filterContracts []common.Address,
 ) error {
 	defer cf()
 	logger = logger.WithFields(logrus.Fields{
@@ -256,7 +268,8 @@ func MonitorTick(ctx context.Context, cf context.CancelFunc, eth layer1.Client, 
 	monitorState.EndpointInSync = inSync
 	bmax := utils.Max(monitorState.HighestBlockFinalized, monitorState.HighestBlockProcessed)
 	bmin := utils.Min(monitorState.HighestBlockFinalized, monitorState.HighestBlockProcessed)
-	monitorState.EthereumInSync = bmax-bmin < 2 && monitorState.EndpointInSync && monitorState.IsInitialized
+	monitorState.EthereumInSync = bmax-bmin < 2 && monitorState.EndpointInSync &&
+		monitorState.IsInitialized
 	if ethInSyncBefore != monitorState.EthereumInSync {
 		adminHandler.SetSynchronized(monitorState.EthereumInSync)
 	}
@@ -320,7 +333,15 @@ func MonitorTick(ctx context.Context, cf context.CancelFunc, eth layer1.Client, 
 		logs := logsList[i]
 
 		var forceExit bool
-		currentBlock, err = ProcessEvents(eth, allContracts, monitorState, logs, logger, currentBlock, eventMap)
+		currentBlock, err = ProcessEvents(
+			eth,
+			allContracts,
+			monitorState,
+			logs,
+			logger,
+			currentBlock,
+			eventMap,
+		)
 		if err != nil {
 			if !errors.Is(err, context.DeadlineExceeded) {
 				return err
@@ -340,7 +361,15 @@ func MonitorTick(ctx context.Context, cf context.CancelFunc, eth layer1.Client, 
 }
 
 // ProcessEvents returned from layer1 chain.
-func ProcessEvents(eth layer1.Client, contracts layer1.AllSmartContracts, monitorState *objects.MonitorState, logs []types.Log, logger *logrus.Entry, currentBlock uint64, eventMap *objects.EventMap) (uint64, error) {
+func ProcessEvents(
+	eth layer1.Client,
+	contracts layer1.AllSmartContracts,
+	monitorState *objects.MonitorState,
+	logs []types.Log,
+	logger *logrus.Entry,
+	currentBlock uint64,
+	eventMap *objects.EventMap,
+) (uint64, error) {
 	logEntry := logger.WithField("Block", currentBlock)
 
 	// Check all the logs for an event we want to process
@@ -371,7 +400,14 @@ func ProcessEvents(eth layer1.Client, contracts layer1.AllSmartContracts, monito
 }
 
 // PersistSnapshot should be registered as a callback and be kicked off automatically by badger when appropriate
-func PersistSnapshot(eth layer1.Client, bh *objs.BlockHeader, numOfValidators int, validatorIndex int, taskHandler executor.TaskHandler, monDB *db.Database) error {
+func PersistSnapshot(
+	eth layer1.Client,
+	bh *objs.BlockHeader,
+	numOfValidators int,
+	validatorIndex int,
+	taskHandler executor.TaskHandler,
+	monDB *db.Database,
+) error {
 	if bh == nil {
 		return errors.New("invalid blockHeader for snapshot")
 	}
@@ -392,7 +428,10 @@ func PersistSnapshot(eth layer1.Client, bh *objs.BlockHeader, numOfValidators in
 		return err
 	}
 
-	_, err = taskHandler.ScheduleTask(snapshots.NewSnapshotTask(uint64(bh.BClaims.Height), numOfValidators, validatorIndex), "")
+	_, err = taskHandler.ScheduleTask(
+		snapshots.NewSnapshotTask(uint64(bh.BClaims.Height), numOfValidators, validatorIndex),
+		"",
+	)
 	if err != nil {
 		return err
 	}
@@ -480,8 +519,16 @@ func (es *eventSorter) worker() {
 }
 
 // getLogsConcurrentWithSort prepares the workers and start the processing.
-func getLogsConcurrentWithSort(ctx context.Context, addresses []common.Address, eth layer1.Client, processed, lastBlock uint64) ([][]types.Log, error) {
-	numworkers := utils.Max(utils.Min((utils.Max(lastBlock, processed)-utils.Min(lastBlock, processed))/4, 128), 1)
+func getLogsConcurrentWithSort(
+	ctx context.Context,
+	addresses []common.Address,
+	eth layer1.Client,
+	processed, lastBlock uint64,
+) ([][]types.Log, error) {
+	numworkers := utils.Max(
+		utils.Min((utils.Max(lastBlock, processed)-utils.Min(lastBlock, processed))/4, 128),
+		1,
+	)
 	wc := make(chan *logWork, 3+numworkers)
 	go func() {
 		for currentBlock := processed + 1; currentBlock <= lastBlock; currentBlock++ {

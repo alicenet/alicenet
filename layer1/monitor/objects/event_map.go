@@ -3,10 +3,9 @@ package objects
 import (
 	"sync"
 
+	"github.com/alicenet/alicenet/layer1"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/sirupsen/logrus"
-
-	"github.com/alicenet/alicenet/layer1"
 )
 
 type EventProcessor func(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, state *MonitorState, log types.Log) error
