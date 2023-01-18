@@ -1956,11 +1956,11 @@ task(
         params: [address],
       });
       const signers = await hre.ethers.getSigners();
-      const tx = await signers[0].populateTransaction({
-        to: address,
-        value: hre.ethers.utils.parseEther("2"),
-      });
-      await signers[0].sendTransaction(tx);
+      // const tx = await signers[0].populateTransaction({
+      //   to: address,
+      //   value: hre.ethers.utils.parseEther(""),
+      // });
+      // await signers[0].sendTransaction(tx);
       const helpers = require("@nomicfoundation/hardhat-network-helpers");
       await helpers.impersonateAccount(address);
       const signer = await hre.ethers.getSigner(address);
@@ -2015,10 +2015,13 @@ task(
     const balanceBefore = await hre.ethers.provider.getBalance(
       await factory.signer.getAddress()
     );
-    const txResponse = await factory.multiCall(
-      encodedMultiCallArgs,
-      await getGasPrices(hre.ethers)
-    );
+    const txResponse = await factory.multiCall(encodedMultiCallArgs, {
+      ...(await getGasPrices(hre.ethers)),
+      gasLimit: gas,
+    });
+    console.log(txResponse.maxFeePerGas);
+    console.log(txResponse.maxPriorityFeePerGas);
+    console.log(txResponse.gasPrice);
     // check if all token distributions were successful
     const receipt = await txResponse.wait(waitConfirmationsBlocks);
     const balanceAfter = await hre.ethers.provider.getBalance(
