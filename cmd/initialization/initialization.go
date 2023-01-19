@@ -2,14 +2,12 @@ package initialization
 
 import (
 	"fmt"
-	"os"
-
 	"github.com/alicenet/alicenet/cmd/ethkey"
-
-	"path"
+	"os"
 
 	"github.com/alicenet/alicenet/config"
 	"github.com/alicenet/alicenet/logging"
+	"path"
 
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -147,15 +145,19 @@ func initializeFilesAndFolders(cmd *cobra.Command, args []string) {
 		fmt.Printf("In order to configure your node properly, please save your private key to the following path %s using your address as file name.\n", keysPath)
 	}
 
-	transportPrivateKey, err := ethkey.GenerateRandomString(24)
+	transportPrivateKey := "<16_BYTES_TRANSPORT_PRIVATE_KEY>"
+	tpk, err := ethkey.GenerateRandomString(24)
 	if err != nil {
 		logger.Fatalf("Failed to generate Transport.PrivateKey with error %v", err)
 	}
+	transportPrivateKey = tpk
 
-	validatorSymmetricKey, err := ethkey.GenerateRandomString(32)
+	validatorSymmetricKey := "<SOME_SUPER_FANCY_SECRET_THAT_WILL_BE_HASHED>"
+	vspk, err := ethkey.GenerateRandomString(32)
 	if err != nil {
 		logger.Fatalf("Failed to generate Validator.SymmetricKey with error %v", err)
 	}
+	validatorSymmetricKey = vspk
 
 	ethereumEndpointURL := config.Configuration.Ethereum.Endpoint
 	if ethereumEndpointURL == "" {
@@ -172,7 +174,7 @@ func initializeFilesAndFolders(cmd *cobra.Command, args []string) {
 			ethereumEndpointURL = ee
 		} else {
 			ethereumEndpointURL = "<ETHEREUM_ENDPOINT_URL>"
-			fmt.Printf("In order to configure your node properly, please save the Ethereum endpoint to the following file %s.\n", configPath)
+			fmt.Println(fmt.Sprintf("In order to configure your node properly, please save the Ethereum endpoint to the following file %s.", configPath))
 		}
 	}
 

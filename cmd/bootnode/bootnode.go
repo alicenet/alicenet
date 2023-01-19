@@ -21,11 +21,20 @@ import (
 )
 
 // Command is the cobra.Command specifically for running as an edge node, i.e. not a validator or relay
-var Command = cobra.Command{
+var Command = &cobra.Command{
 	Use:   "bootnode",
 	Short: "Starts a bootnode",
 	Long:  "Boot nodes do nothing put seed the peer table",
 	Run:   bootNode}
+
+func init() {
+	logger := logging.GetLogger(Command.Name())
+	Command.Flags().StringVar(&config.Configuration.BootNode.ListeningAddress, "bootnode.listeningAddress", "", "")
+	//chain
+	logger.Infof("listening address before is %s", config.Configuration.BootNode.ListeningAddress)
+
+	Command.Flags().IntVar(&config.Configuration.BootNode.CacheSize, "bootnode.cacheSize", 0, "")
+}
 
 // extractPort from passed address
 func extractPort(addr string) (uint32, error) {
@@ -48,6 +57,7 @@ func bootNode(cmd *cobra.Command, args []string) {
 	privateKeyHex := config.Configuration.Transport.PrivateKey
 	cid := types.ChainIdentifier(config.Configuration.Chain.ID)
 	listenerAddr := config.Configuration.BootNode.ListeningAddress
+	logger.Infof("listening address is %s", config.Configuration.BootNode.ListeningAddress)
 	p2pPort, err := extractPort(config.Configuration.BootNode.ListeningAddress)
 	if err != nil {
 		panic(err)

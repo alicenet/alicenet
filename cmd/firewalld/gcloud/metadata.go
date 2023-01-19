@@ -1,7 +1,7 @@
 package gcloud
 
 import (
-	"io"
+	"io/ioutil"
 	"net/http"
 )
 
@@ -20,7 +20,7 @@ func getMetadata(url string) ([]byte, error) {
 	}
 	defer resp.Body.Close()
 
-	res, err := io.ReadAll(resp.Body)
+	res, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return nil, nil
 	}

@@ -347,15 +347,6 @@ func main() {
 	mainCtx, cf := context.WithCancel(context.Background())
 	defer cf()
 
-	signals := make(chan os.Signal, 1)
-	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
-
-	go func() {
-		sig := <-signals
-		logger.Warnf("Recieved shutdown signal %s", sig)
-		cf()
-	}()
-
 	var recoverDB *db.Database
 	if *saveStatePtr {
 		logger.Info("Saving state to database")
@@ -384,5 +375,12 @@ func main() {
 		go worker(mainCtx, eth, internalClient, watcher, account, uint64(*maxRestBlocksPtr))
 	}
 
+	signals := make(chan os.Signal, 1)
+	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
+
+	select {
+	case <-signals:
+		cf()
+	}
 	logger.Info("Exiting ...")
 }
