@@ -3,6 +3,10 @@ package node
 import (
 	"context"
 	"fmt"
+	"github.com/alicenet/alicenet/layer1/chains/ethereum"
+	esnapshots "github.com/alicenet/alicenet/layer1/chains/ethereum/tasks/snapshots"
+	"github.com/alicenet/alicenet/layer1/chains/polygon"
+	psnapshots "github.com/alicenet/alicenet/layer1/chains/polygon/tasks/snapshots"
 	"math/big"
 	"os"
 	"os/signal"
@@ -406,7 +410,8 @@ func validatorNode(cmd *cobra.Command, args []string) {
 		ethClient,
 		allContractsHandler,
 		consAdminHandlers,
-		ethTxWatcher)
+		ethTxWatcher,
+		ethereum.EthereumGetTaskRegistry)
 	if err != nil {
 		panic(err)
 	}
@@ -415,7 +420,8 @@ func validatorNode(cmd *cobra.Command, args []string) {
 		polygonClient,
 		allContractsHandler,
 		consAdminHandlers,
-		polygonTxWatcher)
+		polygonTxWatcher,
+		polygon.PolygonTaskRegistry)
 	if err != nil {
 		panic(err)
 	}
@@ -423,11 +429,11 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	// setup snaphot callbacks
 	ethSnapshotCallback := func(bh *objs.BlockHeader, numOfValidators, validatorIndex int) error {
 		logger.Info("Entering eth snapshot callback")
-		return monitor.PersistSnapshot(ethClient, bh, numOfValidators, validatorIndex, ethTasksHandler, ethMonDB)
+		return monitor.PersistSnapshot(ethClient, bh, ethTasksHandler, ethMonDB, esnapshots.NewSnapshotTask(uint64(bh.BClaims.Height), numOfValidators, validatorIndex))
 	}
 	polygonSnapshotCallback := func(bh *objs.BlockHeader, numOfValidators, validatorIndex int) error {
 		logger.Info("Entering polygon snapshot callback")
-		return monitor.PersistSnapshot(polygonClient, bh, numOfValidators, validatorIndex, polygonTasksHandler, polygonMonDB)
+		return monitor.PersistSnapshot(polygonClient, bh, polygonTasksHandler, polygonMonDB, psnapshots.NewSnapshotTask(uint64(bh.BClaims.Height), numOfValidators, validatorIndex))
 	}
 	consAdminHandlers.RegisterSnapshotCallback([]interfaces.SnapshotCallbackRegistration{ethSnapshotCallback, polygonSnapshotCallback})
 

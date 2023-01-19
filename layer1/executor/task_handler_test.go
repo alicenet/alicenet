@@ -49,7 +49,7 @@ func getTaskHandler(
 		},
 	}
 
-	taskHandler, err := NewTaskHandler(db, client, contracts, adminHandlers, txWatcher)
+	taskHandler, err := NewTaskHandler(db, client, contracts, adminHandlers, txWatcher, ethereum.EthereumGetTaskRegistry)
 	require.Nil(t, err)
 
 	if doCleanup {
@@ -65,7 +65,7 @@ func getTaskHandler(
 // conditions.
 func getTaskManagerCopy(t *testing.T, manager *TaskManager) *TaskManager {
 	tr := &marshaller.TypeRegistry{}
-	marshaller := ethereum.GetTaskRegistry(tr)
+	marshaller := ethereum.EthereumGetTaskRegistry(tr)
 	newManager := &TaskManager{
 		Schedule:   make(map[string]ManagerRequestInfo),
 		Responses:  make(map[string]ManagerResponseInfo),
@@ -354,6 +354,7 @@ func TestTasksHandlerAndManager_ScheduleKillCloseAndRecover(t *testing.T) {
 		handler.manager.contracts,
 		handler.manager.adminHandler,
 		handler.manager.taskExecutor.txWatcher,
+		ethereum.EthereumGetTaskRegistry,
 	)
 	recoveredTask := newHandler.(*Handler).manager.Schedule[taskId]
 	require.Equal(t, task.ID, recoveredTask.Id)
@@ -405,6 +406,7 @@ func TestTasksHandlerAndManager_ScheduleKillCloseAndRecover(t *testing.T) {
 		newHandler.(*Handler).manager.contracts,
 		newHandler.(*Handler).manager.adminHandler,
 		newHandler.(*Handler).manager.taskExecutor.txWatcher,
+		ethereum.EthereumGetTaskRegistry,
 	)
 	require.Nil(t, err)
 	newHandler2.Start()
@@ -498,6 +500,7 @@ func TestTasksHandlerAndManager_ScheduleAndRecover_RunningSnapshotTask(t *testin
 		handler.manager.contracts,
 		handler.manager.adminHandler,
 		handler.manager.taskExecutor.txWatcher,
+		ethereum.EthereumGetTaskRegistry,
 	)
 	recoveredTask := newHandler.(*Handler).manager.Schedule[taskId]
 	require.Equal(t, task.ID, recoveredTask.Id)
@@ -554,7 +557,7 @@ func TestHandlerManagerAndExecutor_ErrorOnCreation(t *testing.T) {
 	})
 	require.Nil(t, err)
 
-	taskHandler, err := NewTaskHandler(db, client, contracts, adminHandlers, txWatcher)
+	taskHandler, err := NewTaskHandler(db, client, contracts, adminHandlers, txWatcher, ethereum.EthereumGetTaskRegistry)
 
 	require.Nil(t, taskHandler)
 	require.NotNil(t, err)

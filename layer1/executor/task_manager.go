@@ -12,7 +12,6 @@ import (
 	"github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/constants/dbprefix"
 	"github.com/alicenet/alicenet/layer1"
-	"github.com/alicenet/alicenet/layer1/chains/ethereum"
 	"github.com/alicenet/alicenet/layer1/executor/marshaller"
 	"github.com/alicenet/alicenet/layer1/executor/tasks"
 	monitorInterfaces "github.com/alicenet/alicenet/layer1/monitor/interfaces"
@@ -51,9 +50,10 @@ func newTaskManager(
 	adminHandler monitorInterfaces.AdminHandler,
 	requestChan <-chan managerRequest,
 	txWatcher transaction.Watcher,
+	tasksRegisterFunc func(tr *marshaller.TypeRegistry) *marshaller.TypeRegistry,
 ) (*TaskManager, error) {
 	tr := &marshaller.TypeRegistry{}
-	marshaller := ethereum.GetTaskRegistry(tr)
+	marshaller := tasksRegisterFunc(tr)
 	taskManager := &TaskManager{
 		Schedule:     make(map[string]ManagerRequestInfo),
 		Responses:    make(map[string]ManagerResponseInfo),

@@ -1,6 +1,7 @@
 package executor
 
 import (
+	"github.com/alicenet/alicenet/layer1/executor/marshaller"
 	"sync"
 
 	"github.com/alicenet/alicenet/consensus/db"
@@ -30,6 +31,7 @@ func NewTaskHandler(
 	contracts layer1.AllSmartContracts,
 	adminHandler monitorInterfaces.AdminHandler,
 	txWatcher transaction.Watcher,
+	tasksRegisterFunc func(tr *marshaller.TypeRegistry) *marshaller.TypeRegistry,
 ) (TaskHandler, error) {
 	requestChan := make(chan managerRequest, tasks.ManagerBufferSize)
 	logger := logging.GetLogger("tasks")
@@ -42,6 +44,7 @@ func NewTaskHandler(
 		adminHandler,
 		requestChan,
 		txWatcher,
+		tasksRegisterFunc,
 	)
 	if err != nil {
 		return nil, err

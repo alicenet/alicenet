@@ -25,6 +25,10 @@ type InstanceWrapper struct {
 	RawInstance []byte
 }
 
+// GetTaskRegistry all the Tasks we can handle in the request.
+// If you want to create a new task register its instance type here.
+type GetTaskRegistry = func(tr *TypeRegistry) *TypeRegistry
+
 func (registry *TypeRegistry) RegisterInstanceType(t interface{}) {
 	registry.Lock()
 	defer registry.Unlock()
