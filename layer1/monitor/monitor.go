@@ -15,7 +15,6 @@ import (
 	"github.com/alicenet/alicenet/consensus/objs"
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/layer1"
-	"github.com/alicenet/alicenet/layer1/chains/ethereum/tasks/snapshots/state"
 	"github.com/alicenet/alicenet/layer1/executor"
 	"github.com/alicenet/alicenet/layer1/monitor/interfaces"
 	"github.com/alicenet/alicenet/layer1/monitor/objects"
@@ -401,29 +400,16 @@ func ProcessEvents(
 
 // PersistSnapshot should be registered as a callback and be kicked off automatically by badger when appropriate
 func PersistSnapshot(
-	eth layer1.Client,
 	bh *objs.BlockHeader,
 	taskHandler executor.TaskHandler,
-	monDB *db.Database,
 	task tasks.Task,
 ) error {
 	if bh == nil {
 		return errors.New("invalid blockHeader for snapshot")
 	}
 
-	//TODO: FIX STATE
-	snapshotState := &state.SnapshotState{
-		Account:     eth.GetDefaultAccount(),
-		BlockHeader: bh,
-	}
-
-	err := state.SaveSnapshotState(monDB, snapshotState)
-	if err != nil {
-		return err
-	}
-
 	// kill any snapshot task that might be running
-	_, err = taskHandler.KillTaskByType(task)
+	_, err := taskHandler.KillTaskByType(task)
 	if err != nil {
 		return err
 	}

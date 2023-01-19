@@ -3,10 +3,12 @@ package snapshots
 import (
 	"context"
 	"fmt"
-
+	"github.com/alicenet/alicenet/consensus/db"
+	"github.com/alicenet/alicenet/consensus/objs"
 	"github.com/alicenet/alicenet/layer1/chains/ethereum/tasks/snapshots/state"
 	"github.com/alicenet/alicenet/layer1/executor/tasks"
 	"github.com/alicenet/alicenet/utils"
+	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/sirupsen/logrus"
@@ -23,14 +25,24 @@ type SnapshotTask struct {
 // asserting that SnapshotTask struct implements interface tasks.Task.
 var _ tasks.Task = &SnapshotTask{}
 
-func NewSnapshotTask(height uint64, numOfValidators, validatorIndex int) *SnapshotTask {
+func NewSnapshotTask(height uint64, numOfValidators, validatorIndex int, account accounts.Account, bh *objs.BlockHeader, monDB *db.Database) (*SnapshotTask, error) {
+	snapshotState := &state.SnapshotState{
+		Account:     account,
+		BlockHeader: bh,
+	}
+
+	err := state.SaveSnapshotState(monDB, snapshotState)
+	if err != nil {
+		return nil, err
+	}
+
 	snapshotTask := &SnapshotTask{
 		BaseTask:        tasks.NewBaseTask(0, 0, false, nil),
 		Height:          height,
 		NumOfValidators: numOfValidators,
 		ValidatorIndex:  validatorIndex,
 	}
-	return snapshotTask
+	return snapshotTask, nil
 }
 
 // Prepare prepares for work to be done in the SnapshotTask.

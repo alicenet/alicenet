@@ -426,14 +426,25 @@ func validatorNode(cmd *cobra.Command, args []string) {
 		panic(err)
 	}
 
-	// setup snaphot callbacks
+	// setup snapshot callbacks
 	ethSnapshotCallback := func(bh *objs.BlockHeader, numOfValidators, validatorIndex int) error {
 		logger.Info("Entering eth snapshot callback")
-		return monitor.PersistSnapshot(ethClient, bh, ethTasksHandler, ethMonDB, esnapshots.NewSnapshotTask(uint64(bh.BClaims.Height), numOfValidators, validatorIndex))
+
+		ethSnapshotTask, err := esnapshots.NewSnapshotTask(uint64(bh.BClaims.Height), numOfValidators, validatorIndex, ethClient.GetDefaultAccount(), bh, ethMonDB)
+		if err != nil {
+			panic(err)
+		}
+		return monitor.PersistSnapshot(bh, ethTasksHandler, ethSnapshotTask)
 	}
 	polygonSnapshotCallback := func(bh *objs.BlockHeader, numOfValidators, validatorIndex int) error {
 		logger.Info("Entering polygon snapshot callback")
-		return monitor.PersistSnapshot(polygonClient, bh, polygonTasksHandler, polygonMonDB, psnapshots.NewSnapshotTask(uint64(bh.BClaims.Height), numOfValidators, validatorIndex))
+
+		polygonSnapshotTask, err := psnapshots.NewSnapshotTask(uint64(bh.BClaims.Height), numOfValidators, validatorIndex, polygonClient.GetDefaultAccount(), bh, polygonMonDB)
+		if err != nil {
+			panic(err)
+		}
+
+		return monitor.PersistSnapshot(bh, polygonTasksHandler, polygonSnapshotTask)
 	}
 	consAdminHandlers.RegisterSnapshotCallback([]interfaces.SnapshotCallbackRegistration{ethSnapshotCallback, polygonSnapshotCallback})
 
