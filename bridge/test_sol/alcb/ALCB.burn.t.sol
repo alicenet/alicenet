@@ -20,7 +20,7 @@ contract ALCBTest is Test {
     uint256 etherIn = 40 ether;
 
     function setUp() public {
-        Setup.BaseTokensFixture memory fixture = Setup.deployFactoryAndBaseTokens();
+        Setup.BaseTokensFixture memory fixture = Setup.deployFactoryAndBaseTokens(vm);
         stakingRouter = fixture.stakingRouter;
         alcb = fixture.alcb;
 

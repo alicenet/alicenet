@@ -16,7 +16,7 @@ contract ALCBTest is Test {
     uint256 marketSpread = 4;
 
     function setUp() public {
-        Setup.BaseTokensFixture memory fixture = Setup.deployFactoryAndBaseTokens();
+        Setup.BaseTokensFixture memory fixture = Setup.deployFactoryAndBaseTokens(vm);
         stakingRouter = fixture.stakingRouter;
         alcb = fixture.alcb;
     }
