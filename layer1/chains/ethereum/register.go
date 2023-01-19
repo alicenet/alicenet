@@ -2,7 +2,8 @@ package ethereum
 
 import (
 	"github.com/alicenet/alicenet/layer1/chains/ethereum/tasks/dkg"
-	"github.com/alicenet/alicenet/layer1/chains/ethereum/tasks/snapshots"
+	esnapshots "github.com/alicenet/alicenet/layer1/chains/ethereum/tasks/snapshots"
+	psnapshots "github.com/alicenet/alicenet/layer1/chains/polygon/tasks/snapshots"
 	"github.com/alicenet/alicenet/layer1/executor/marshaller"
 )
 
@@ -21,6 +22,7 @@ func GetTaskRegistry(tr *marshaller.TypeRegistry) *marshaller.TypeRegistry {
 	tr.RegisterInstanceType(&dkg.RegisterTask{})
 	tr.RegisterInstanceType(&dkg.DisputeMissingRegistrationTask{})
 	tr.RegisterInstanceType(&dkg.ShareDistributionTask{})
-	tr.RegisterInstanceType(&snapshots.SnapshotTask{})
+	tr.RegisterInstanceType(&esnapshots.SnapshotTask{})
+	tr.RegisterInstanceType(&psnapshots.SnapshotTask{})
 	return tr
 }

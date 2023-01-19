@@ -11,7 +11,7 @@ import (
 	gcrypto "github.com/ethereum/go-ethereum/crypto"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/alicenet/alicenet/bridge/bindings"
+	ebindings "github.com/alicenet/alicenet/bridge/bindings/ethereum"
 	"github.com/alicenet/alicenet/crypto"
 	"github.com/alicenet/alicenet/crypto/bn256"
 	"github.com/alicenet/alicenet/crypto/bn256/cloudflare"
@@ -278,14 +278,14 @@ func GetETHDKGRegistrationOpened(
 	logs []*types.Log,
 	eth layer1.Client,
 	contracts layer1.AllSmartContracts,
-) (*bindings.ETHDKGRegistrationOpened, error) {
+) (*ebindings.ETHDKGRegistrationOpened, error) {
 	eventMap := events.GetETHDKGEvents()
 	eventInfo, ok := eventMap["RegistrationOpened"]
 	if !ok {
 		return nil, fmt.Errorf("event not found: %v", eventInfo.Name)
 	}
 
-	var event *bindings.ETHDKGRegistrationOpened
+	var event *ebindings.ETHDKGRegistrationOpened
 	var err error
 	for _, log := range logs {
 		for _, topic := range log.Topics {

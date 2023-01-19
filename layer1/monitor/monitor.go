@@ -98,12 +98,12 @@ func NewMonitor(cdb *db.Database,
 	mon.eventMap = eventMap
 	mon.State = objects.NewMonitorState()
 
-	adminHandler.RegisterSnapshotCallback(
-		func(bh *objs.BlockHeader, numOfValidators, validatorIndex int) error {
-			logger.Info("Entering snapshot callback")
-			return PersistSnapshot(eth, bh, numOfValidators, validatorIndex, taskHandler, monDB)
-		},
-	)
+	// adminHandler.RegisterSnapshotCallback(
+	// 	func(bh *objs.BlockHeader, numOfValidators, validatorIndex int) error {
+	// 		logger.Info("Entering snapshot callback")
+	// 		return PersistSnapshot(eth, bh, numOfValidators, validatorIndex, taskHandler, monDB)
+	// 	},
+	// )
 
 	return mon, nil
 }

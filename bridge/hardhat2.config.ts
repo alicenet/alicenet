@@ -3,7 +3,6 @@ import "@nomiclabs/hardhat-ethers";
 import "@nomiclabs/hardhat-etherscan";
 import "@nomiclabs/hardhat-truffle5";
 import "@typechain/hardhat";
-import fs from "fs";
 import "hardhat-abi-exporter";
 import "hardhat-contract-sizer";
 import "hardhat-deploy";
@@ -12,21 +11,13 @@ import "hardhat-log-remover";
 import "hardhat-preprocessor";
 import "hardhat-storage-layout";
 import { HardhatUserConfig, task } from "hardhat/config";
-import os from "os";
 import "solidity-coverage";
+import { getRemappings } from "./hardhat.config";
 import "./scripts/tasks/alicenetFactoryTasks";
 import "./scripts/tasks/alicenetTasks";
 import "./scripts/tasks/generateImmutableAuth";
 import "./scripts/tasks/gogogen";
 require("dotenv").config();
-
-export function getRemappings() {
-  return fs
-    .readFileSync("remappings.txt", "utf8")
-    .split("\n")
-    .filter(Boolean) // remove empty lines
-    .map((line) => line.trim().split("="));
-}
 
 /**
  * @type import('hardhat/config').HardhatUserConfig
@@ -67,81 +58,8 @@ const config: HardhatUserConfig = {
   },
 
   networks: {
-    dev: {
-      url: "http://127.0.0.1:8545",
-      gas: "auto",
-      gasPrice: "auto",
-      accounts: [
-        "0x6aea45ee1273170fb525da34015e4f20ba39fe792f486ba74020bcacc9badfc1",
-        "0x8de84c4eb40a9d32804ebc4005075eed5d64efc92ba26b6ec04d399f5a9b7bd1",
-        "0x65a81057728efda8858d5d53094a093203d35cb7437d16f7635594788517bdd2",
-      ],
-      gasMultiplier: 2,
-    },
-    dev2: {
-      url: "http://127.0.0.1:8645",
-      gas: "auto",
-      gasPrice: "auto",
-      accounts: [
-        "0x6aea45ee1273170fb525da34015e4f20ba39fe792f486ba74020bcacc9badfc1",
-        "0x8de84c4eb40a9d32804ebc4005075eed5d64efc92ba26b6ec04d399f5a9b7bd1",
-        "0x65a81057728efda8858d5d53094a093203d35cb7437d16f7635594788517bdd2",
-      ],
-      gasMultiplier: 2,
-    },
-    ropsten: {
-      url: "https://testnet.eth.mnexplore.com/",
-      gas: "auto",
-      gasMultiplier: 2,
-      gasPrice: "auto",
-      accounts: [
-        process.env.TESTNET_PK
-          ? process.env.TESTNET_PK
-          : "0x0000000000000000000000000000000000000000000000000000000000000000",
-      ],
-    },
-    goerli: {
-      url: process.env.GOERLI_ENDPOINT
-        ? process.env.GOERLI_ENDPOINT
-        : "http://127.0.0.1:8545",
-      gas: "auto",
-      gasMultiplier: 2,
-      gasPrice: "auto",
-      accounts: [
-        process.env.GOERLI_PK
-          ? process.env.GOERLI_PK
-          : "0x0000000000000000000000000000000000000000000000000000000000000000",
-      ],
-    },
-    mainnet: {
-      url: process.env.MAINNET_ENDPOINT
-        ? process.env.MAINNET_ENDPOINT
-        : "http://127.0.0.1:8545",
-      gas: "auto",
-      gasMultiplier: 2,
-      gasPrice: "auto",
-      accounts: [
-        process.env.MAINNET_PK
-          ? process.env.MAINNET_PK
-          : "0x0000000000000000000000000000000000000000000000000000000000000000",
-      ],
-    },
-    production: {
-      url: "https://eth.alice.net/",
-      gas: 15000000,
-      gasMultiplier: 2,
-      gasPrice: "auto",
-      accounts: [
-        process.env.PROD_PK
-          ? process.env.PROD_PK
-          : "0x0000000000000000000000000000000000000000000000000000000000000000",
-      ],
-    },
-    ganache: {
-      url: "http://127.0.0.1:8545",
-    },
     hardhat: {
-      chainId: 1337,
+      chainId: 1338,
       allowUnlimitedContractSize: false,
       mining: {
         auto: true,
@@ -242,11 +160,6 @@ const config: HardhatUserConfig = {
       ],
     },
   },
-  etherscan: {
-    apiKey: process.env.ETHERSCAN_API_KEY
-      ? process.env.ETHERSCAN_API_KEY
-      : "0000000000000000000000000000000000",
-  },
   solidity: {
     compilers: [
       {
@@ -296,84 +209,6 @@ const config: HardhatUserConfig = {
       },
     }),
   },
-  paths: {
-    sources: "./contracts",
-    tests: "./test",
-    cache: "./cache",
-    artifacts: "./artifacts",
-  },
-
-  contractSizer: {
-    alphaSort: true,
-    disambiguatePaths: false,
-    runOnCompile: true,
-    // set `true` to raise exception when a contract
-    // exceeds the 24kB limit, interrupting execution
-    strict: false,
-  },
-  gasReporter: {
-    currency: "ETH",
-    gasPrice: 1000000,
-    excludeContracts: ["*.t.sol"],
-  },
-  mocha: {
-    timeout: 240000,
-    jobs: os.cpus().length / 2 > 1 ? os.cpus().length / 2 : 1,
-  },
-
-  abiExporter: [
-    {
-      path: "./bindings/ethereum-artifacts",
-      runOnCompile: true,
-      clear: true,
-      flat: true,
-      only: [
-        "AliceNetFactory",
-        "ETHDKG",
-        "ValidatorPool",
-        "Snapshots",
-        "ALCB",
-        "ALCA",
-        "PublicStaking",
-        "ValidatorStaking",
-        "Governance",
-        "Dynamics",
-      ],
-      except: [
-        "I[A-Z].*",
-        "Immutable.*",
-        ".*Mock",
-        ".*Base",
-        ".*Storage",
-        ".*Error",
-        "ETHDKGAccusations",
-        "ETHDKGPhases",
-        "LightSnapshots",
-      ],
-      spacing: 2,
-      pretty: false,
-    },
-    {
-      path: "./bindings/multichain-artifacts",
-      runOnCompile: true,
-      clear: true,
-      flat: true,
-      only: ["AliceNetFactory", "LightSnapshots"],
-      except: [
-        "I[A-Z].*",
-        "Immutable.*",
-        ".*Mock",
-        ".*Base",
-        ".*Storage",
-        ".*Error",
-        "ETHDKGAccusations",
-        "ETHDKGPhases",
-        "ETHDKG",
-      ],
-      spacing: 2,
-      pretty: false,
-    },
-  ],
 };
 
 export default config;

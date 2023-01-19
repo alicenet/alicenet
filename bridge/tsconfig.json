@@ -18,5 +18,8 @@
     "**/*.ts",
     "./decs.d.ts"
   ],
-  "files": ["./hardhat.config.ts"]
+  "files": [
+    "./hardhat.config.ts",
+    "./hardhat2.config.ts"
+  ]
 }

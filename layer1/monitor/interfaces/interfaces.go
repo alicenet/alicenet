@@ -10,12 +10,14 @@ import (
 	"github.com/alicenet/alicenet/constants"
 )
 
+type SnapshotCallbackRegistration = func(bh *objs.BlockHeader, numOfValidators, validatorIndex int) error
+
 type AdminHandler interface {
 	AddPrivateKey([]byte, constants.CurveSpec) error
 	AddSnapshot(header *objs.BlockHeader, safeToProceedConsensus bool) error
 	UpdateDynamicStorage(epoch uint32, rawDynamics []byte) error
 	AddValidatorSet(*objs.ValidatorSet) error
-	RegisterSnapshotCallback(func(*objs.BlockHeader, int, int) error)
+	RegisterSnapshotCallback([]SnapshotCallbackRegistration)
 	SetSynchronized(v bool)
 	IsSynchronized() bool
 }

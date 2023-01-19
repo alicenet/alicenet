@@ -204,8 +204,8 @@ func initializeFilesAndFolders(cmd *cobra.Command, args []string) {
 			StateDbInMemory:       false,
 			TransactionDbPath:     transactionDBPath,
 			TransactionDbInMemory: false,
-			MonitorDbPath:         monitorDBPath,
-			MonitorDbInMemory:     false,
+			EthMonitorDbPath:      monitorDBPath,
+			EthMonitorDbInMemory:  false,
 		},
 		Transport: config.TransportConfig{
 			UPnP:                       false,

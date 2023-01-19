@@ -70,12 +70,12 @@ func GetPublicStakingEvents() map[string]abi.Event {
 }
 
 func GetDynamicsEvents() map[string]abi.Event {
-	snapshotsABI, err := abi.JSON(strings.NewReader(ebindings.DynamicsMetaData.ABI))
+	dynamicsABI, err := abi.JSON(strings.NewReader(ebindings.DynamicsMetaData.ABI))
 	if err != nil {
 		panic(err)
 	}
 
-	return snapshotsABI.Events
+	return dynamicsABI.Events
 }
 
 func RegisterETHDKGEvents(

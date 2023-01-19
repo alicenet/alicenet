@@ -21,6 +21,7 @@ import (
 	"github.com/alicenet/alicenet/consensus/evidence"
 	"github.com/alicenet/alicenet/consensus/gossip"
 	"github.com/alicenet/alicenet/consensus/lstate"
+	"github.com/alicenet/alicenet/consensus/objs"
 	"github.com/alicenet/alicenet/consensus/request"
 	"github.com/alicenet/alicenet/constants"
 	mncrypto "github.com/alicenet/alicenet/crypto"
@@ -32,6 +33,7 @@ import (
 	"github.com/alicenet/alicenet/layer1/executor"
 	"github.com/alicenet/alicenet/layer1/handlers"
 	"github.com/alicenet/alicenet/layer1/monitor"
+	"github.com/alicenet/alicenet/layer1/monitor/interfaces"
 	"github.com/alicenet/alicenet/layer1/monitor/objects"
 	"github.com/alicenet/alicenet/layer1/transaction"
 	"github.com/alicenet/alicenet/localrpc"
@@ -281,12 +283,18 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	defer rawTxPoolDb.Close()
 
 	// Initialize monitor database: tracks what ETH block number we're on (tracking deposits)
-	rawMonitorDb := initDatabase(
+	ethRawMonitorDb := initDatabase(
 		nodeCtx,
-		config.Configuration.Chain.MonitorDbPath,
-		config.Configuration.Chain.MonitorDbInMemory,
+		config.Configuration.Chain.EthMonitorDbPath,
+		config.Configuration.Chain.EthMonitorDbInMemory,
 	)
-	defer rawMonitorDb.Close()
+	defer ethRawMonitorDb.Close()
+	polygonRawMonitorDb := initDatabase(
+		nodeCtx,
+		config.Configuration.Chain.PolygonMonitorDbPath,
+		config.Configuration.Chain.PolygonMonitorDbInMemory,
+	)
+	defer polygonRawMonitorDb.Close()
 
 	// giving some time to services finish their work on the databases to avoid
 	// panic when closing the databases
@@ -297,7 +305,8 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	/////////////////////////////////////////////////////////////////////////////
 
 	consDB := &db.Database{}
-	monDB := &db.Database{}
+	ethMonDB := &db.Database{}
+	polygonMonDB := &db.Database{}
 
 	// app maintains the UTXO set of the AliceNet blockchain (module is separate from consensus e.d.)
 	app := &application.Application{}
@@ -377,38 +386,54 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	)
 
 	// Setup monitor
-	monDB.Init(rawMonitorDb)
+	ethMonDB.Init(ethRawMonitorDb)
+	polygonMonDB.Init(polygonRawMonitorDb)
 
 	// Layer 1 transaction watcher
 	ethTxWatcher := transaction.WatcherFromNetwork(
 		ethClient,
-		monDB,
+		ethMonDB,
 		config.Configuration.Ethereum.TxMetricsDisplay,
 		constants.TxPollingTime,
 	)
 	defer ethTxWatcher.Close()
-	polygonTxWatcher := transaction.WatcherFromNetwork(polygonClient, monDB, config.Configuration.Polygon.TxMetricsDisplay, constants.TxPollingTime)
-	defer ethTxWatcher.Close()
+	polygonTxWatcher := transaction.WatcherFromNetwork(polygonClient, polygonMonDB, config.Configuration.Polygon.TxMetricsDisplay, constants.TxPollingTime)
+	defer polygonTxWatcher.Close()
 
 	// Setup tasks scheduler
 	ethTasksHandler, err := executor.NewTaskHandler(
-		monDB,
-		ethClient, allContractsHandler,
-		consAdminHandlers, ethTxWatcher)
+		ethMonDB,
+		ethClient,
+		allContractsHandler,
+		consAdminHandlers,
+		ethTxWatcher)
 	if err != nil {
 		panic(err)
 	}
-	polygonTasksHandler, err := executor.NewTaskHandler(monDB, polygonClient, allContractsHandler,
+	polygonTasksHandler, err := executor.NewTaskHandler(
+		polygonMonDB,
+		polygonClient,
+		allContractsHandler,
 		consAdminHandlers,
-		polygonTxWatcher,
-	)
+		polygonTxWatcher)
 	if err != nil {
 		panic(err)
 	}
 
+	// setup snaphot callbacks
+	ethSnapshotCallback := func(bh *objs.BlockHeader, numOfValidators, validatorIndex int) error {
+		logger.Info("Entering eth snapshot callback")
+		return monitor.PersistSnapshot(ethClient, bh, numOfValidators, validatorIndex, ethTasksHandler, ethMonDB)
+	}
+	polygonSnapshotCallback := func(bh *objs.BlockHeader, numOfValidators, validatorIndex int) error {
+		logger.Info("Entering polygon snapshot callback")
+		return monitor.PersistSnapshot(polygonClient, bh, numOfValidators, validatorIndex, polygonTasksHandler, polygonMonDB)
+	}
+	consAdminHandlers.RegisterSnapshotCallback([]interfaces.SnapshotCallbackRegistration{ethSnapshotCallback, polygonSnapshotCallback})
+
 	// setup monitor
 	ethereumEventMap := objects.NewEventMap()
-	err = ethEvents.SetupEventMap(ethereumEventMap, consDB, monDB, consAdminHandlers, appDepositHandler, ethTasksHandler, func() {}, uint32(config.Configuration.Chain.ID))
+	err = ethEvents.SetupEventMap(ethereumEventMap, consDB, ethMonDB, consAdminHandlers, appDepositHandler, ethTasksHandler, func() {}, uint32(config.Configuration.Chain.ID))
 	if err != nil {
 		logger.Fatalf("Error creating ethereum event map: %v", err)
 	}
@@ -417,7 +442,7 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	ethBatchSize := config.Configuration.Ethereum.ProcessingBlockBatchSize
 	ethMon, err := monitor.NewMonitor(
 		consDB,
-		monDB,
+		ethMonDB,
 		consAdminHandlers,
 		appDepositHandler,
 		ethClient,
@@ -428,14 +453,13 @@ func validatorNode(cmd *cobra.Command, args []string) {
 	}
 
 	polygonEventMap := objects.NewEventMap()
-	// todo: update SetupPolygonEventMap() to only listen to necessary events
-	err = polyEvents.SetupEventMap(polygonEventMap, consDB, monDB, consAdminHandlers, appDepositHandler, ethTasksHandler, func() {}, uint32(config.Configuration.Chain.ID))
+	err = polyEvents.SetupEventMap(polygonEventMap, consDB, polygonMonDB, consAdminHandlers, appDepositHandler, polygonTasksHandler, func() {}, uint32(config.Configuration.Chain.ID))
 	if err != nil {
 		logger.Fatalf("Error creating polygon event map: %v", err)
 	}
 
 	polygonBatchSize := config.Configuration.Polygon.ProcessingBlockBatchSize
-	polygonMon, err := monitor.NewMonitor(consDB, monDB, consAdminHandlers, appDepositHandler, polygonClient, allContractsHandler, allContractsHandler.EthereumContracts().GetAllAddresses(),
+	polygonMon, err := monitor.NewMonitor(consDB, polygonMonDB, consAdminHandlers, appDepositHandler, polygonClient, allContractsHandler, allContractsHandler.PolygonContracts().GetAllAddresses(),
 		monitorInterval,
 		polygonBatchSize,
 		uint32(config.Configuration.Chain.ID),
@@ -450,8 +474,8 @@ func validatorNode(cmd *cobra.Command, args []string) {
 		// prevent value log GC on in memory by setting to nil - this will cause synchronizer to bypass GC on these databases
 		tDB = rawTxPoolDb
 	}
-	if config.Configuration.Chain.MonitorDbInMemory {
-		mDB = rawMonitorDb
+	if config.Configuration.Chain.EthMonitorDbInMemory {
+		mDB = ethRawMonitorDb
 	}
 
 	consSync.Init(

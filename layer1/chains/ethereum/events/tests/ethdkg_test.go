@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/alicenet/alicenet/bridge/bindings"
+	ebindings "github.com/alicenet/alicenet/bridge/bindings/ethereum"
 	"github.com/alicenet/alicenet/layer1/chains/ethereum/events"
 	"github.com/alicenet/alicenet/layer1/executor"
 	execMocks "github.com/alicenet/alicenet/layer1/executor/mocks"
@@ -23,7 +23,7 @@ func TestRegisteringETHDKGEvents(t *testing.T) {
 
 	events.RegisterETHDKGEvents(em, db, adminHandler, taskHandler)
 
-	ethDkgABI, err := abi.JSON(strings.NewReader(bindings.ETHDKGMetaData.ABI))
+	ethDkgABI, err := abi.JSON(strings.NewReader(ebindings.ETHDKGMetaData.ABI))
 	if err != nil {
 		t.Fatal(err)
 	}

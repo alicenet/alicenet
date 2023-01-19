@@ -176,7 +176,7 @@ func validatorNode() {
 	// defer rawTxPoolDb.Close()
 
 	// Initialize monitor database: tracks what ETH block number we're on (tracking deposits)
-	rawMonitorDb := initDatabase(nodeCtx, config.Configuration.Chain.MonitorDbPath, config.Configuration.Chain.MonitorDbInMemory)
+	rawMonitorDb := initDatabase(nodeCtx, config.Configuration.Chain.EthMonitorDbPath, config.Configuration.Chain.EthMonitorDbInMemory)
 	// defer rawMonitorDb.Close()
 
 	/////////////////////////////////////////////////////////////////////////////
@@ -272,7 +272,7 @@ func validatorNode() {
 		// prevent value log GC on in memory by setting to nil - this will cause syncronizer to bypass GC on these databases
 		tDB = rawTxPoolDb
 	}
-	if config.Configuration.Chain.MonitorDbInMemory {
+	if config.Configuration.Chain.EthMonitorDbInMemory {
 		mDB = rawMonitorDb
 	}
 

@@ -17,6 +17,7 @@ import (
 	"github.com/alicenet/alicenet/dynamics"
 	"github.com/alicenet/alicenet/errorz"
 	"github.com/alicenet/alicenet/interfaces"
+	monInterfaces "github.com/alicenet/alicenet/layer1/monitor/interfaces"
 	"github.com/alicenet/alicenet/logging"
 	"github.com/alicenet/alicenet/utils"
 )
@@ -274,7 +275,7 @@ func (ah *Handlers) SetSynchronized(v bool) {
 
 // RegisterSnapshotCallback allows a callback to be registered that will be called on snapshot blocks being
 // added to the local db.
-func (ah *Handlers) RegisterSnapshotCallback(fn func(bh *objs.BlockHeader, numOfValidators, validatorIndex int) error) {
+func (ah *Handlers) RegisterSnapshotCallback(fns []monInterfaces.SnapshotCallbackRegistration) {
 	wrapper := func(v []byte) error {
 		bh := &objs.BlockHeader{}
 		err := bh.UnmarshalBinary(v)
@@ -317,7 +318,12 @@ func (ah *Handlers) RegisterSnapshotCallback(fn func(bh *objs.BlockHeader, numOf
 			return nil
 		}
 		if bh.BClaims.Height%constants.EpochLength == 0 {
-			return fn(bh, numOfValidators, validatorIndex)
+			for _, fn := range fns {
+				err := fn(bh, numOfValidators, validatorIndex)
+				if err != nil {
+					return err
+				}
+			}
 		}
 		return nil
 	}

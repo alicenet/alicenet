@@ -11,8 +11,10 @@ stateDB = ""
 stateDBInMemory = false
 transactionDB = ""
 transactionDBInMemory = true
-monitorDB = ""
-monitorDBInMemory = false
+ethMonitorDB = ""
+ethMonitorDBInMemory = false
+polygonMonitorDB = ""
+polygonMonitorDBInMemory = false
 
 [bootnode]
 listeningAddress = ""

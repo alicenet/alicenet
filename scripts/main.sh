@@ -34,12 +34,14 @@ CLEAN_UP() {
     # Init
     mkdir ./scripts/generated
     mkdir ./scripts/generated/stateDBs
-    mkdir ./scripts/generated/monitorDBs
+    mkdir ./scripts/generated/ethMonitorDBs
+    mkdir ./scripts/generated/polygonMonitorDBs
     mkdir ./scripts/generated/config
     mkdir ./scripts/generated/keystores
     mkdir ./scripts/generated/keystores/keys
     touch ./scripts/generated/keystores/passcodes.txt
     cp ./scripts/base-files/genesis.json ./scripts/generated/genesis.json
+    cp ./scripts/base-files/genesis2.json ./scripts/generated/genesis2.json
     cp ./scripts/base-files/0x546f99f244b7b58b855330ae0e2bc1b30b41302f ./scripts/generated/keystores/keys
     echo -e "0x546F99F244b7B58B855330AE0E2BC1b30b41302F=abc123" >./scripts/generated/keystores/passcodes.txt
 }
@@ -51,7 +53,8 @@ CLEAN_UP_NODES() {
     mkdir ./scripts/generated/extra-nodes
     mkdir ./scripts/generated/extra-nodes/config
     mkdir ./scripts/generated/extra-nodes/stateDBs
-    mkdir ./scripts/generated/extra-nodes/monitorDBs
+    mkdir ./scripts/generated/extra-nodes/ethMonitorDBs
+    mkdir ./scripts/generated/extra-nodes/polygonMonitorDBs
     mkdir ./scripts/generated/extra-nodes/keystores
     mkdir ./scripts/generated/extra-nodes/keystores/keys
     touch ./scripts/generated/extra-nodes/keystores/passcodes.txt
@@ -85,11 +88,13 @@ CREATE_CONFIGS() {
             sed -e 's/passCodes = .*/passCodes = \"scripts\/generated\/keystores\/passcodes.txt\"/' |
             sed -e 's/keystore = .*/keystore = \"scripts\/generated\/keystores\/keys\"/' |
             sed -e 's/stateDB = .*/stateDB = \"scripts\/generated\/stateDBs\/validator'"$l"'\/\"/' |
-            sed -e 's/monitorDB = .*/monitorDB = \"scripts\/generated\/monitorDBs\/validator'"$l"'\/\"/' |
+            sed -e 's/ethMonitorDB = .*/ethMonitorDB = \"scripts\/generated\/ethMonitorDBs\/validator'"$l"'\/\"/' |
+            sed -e 's/polygonMonitorDB = .*/polygonMonitorDB = \"scripts\/generated\/polygonMonitorDBs\/validator'"$l"'\/\"/' |
             sed -e 's/privateKey = .*/privateKey = \"'"$PK"'\"/' >./scripts/generated/config/validator$l.toml
         echo "$ADDRESS=abc123" >>./scripts/generated/keystores/passcodes.txt
         mv ./keyfile.json ./scripts/generated/keystores/keys/$ADDRESS
         jq '.alloc += {"'"$(echo $ADDRESS | cut -c3-)"'": {balance:"10000000000000000000000"}}' ./scripts/generated/genesis.json >./scripts/generated/genesis.json.tmp && mv ./scripts/generated/genesis.json.tmp ./scripts/generated/genesis.json
+        jq '.alloc += {"'"$(echo $ADDRESS | cut -c3-)"'": {balance:"10000000000000000000000"}}' ./scripts/generated/genesis2.json >./scripts/generated/genesis2.json.tmp && mv ./scripts/generated/genesis2.json.tmp ./scripts/generated/genesis2.json
         ((LA = LA + 1))
         ((PA = PA + 1))
         ((DA = DA + 1))
@@ -126,7 +131,8 @@ CREATE_EXTRA_NODES_CONFIGS() {
             sed -e 's/passCodes = .*/passCodes = \"scripts\/generated\/extra-nodes\/keystores\/passcodes.txt\"/' |
             sed -e 's/keystore = .*/keystore = \"scripts\/generated\/extra-nodes\/keystores\/keys\"/' |
             sed -e 's/stateDB = .*/stateDB = \"scripts\/generated\/extra-nodes\/stateDBs\/node'"$l"'\/\"/' |
-            sed -e 's/monitorDB = .*/monitorDB = \"scripts\/generated\/extra-nodes\/monitorDBs\/node'"$l"'\/\"/' |
+            sed -e 's/ethMonitorDB = .*/ethMonitorDB = \"scripts\/generated\/extra-nodes\/ethMonitorDBs\/node'"$l"'\/\"/' |
+            sed -e 's/polygonMonitorDB = .*/polygonMonitorDB = \"scripts\/generated\/extra-nodes\/polygonMonitorDBs\/node'"$l"'\/\"/' |
             sed -e 's/privateKey = .*/privateKey = \"'"$PK"'\"/' >$folder/config/node$l.toml
         echo "$ADDRESS=abc123" >>$folder/keystores/passcodes.txt
         mv ./keyfile.json $folder/keystores/keys/$ADDRESS
@@ -223,11 +229,20 @@ geth)
 geth-resume)
     ./scripts/base-scripts/geth-local-resume.sh
     ;;
+geth2)
+    ./scripts/base-scripts/geth2-local.sh
+    ;;
+geth2-resume)
+    ./scripts/base-scripts/geth2-local-resume.sh
+    ;;
 bootnode)
     ./scripts/base-scripts/bootnode.sh
     ;;
 deploy)
     ./scripts/base-scripts/deploy.sh
+    ;;
+deploy2)
+    ./scripts/base-scripts/deploy2.sh
     ;;
 validator)
     RUN_VALIDATOR $2
@@ -258,6 +273,11 @@ hardhat)
     trap 'pkill -9 -f hardhat' SIGTERM
     wait
     ;;
+hardhat2)
+    ./scripts/base-scripts/hardhat2-local-node.sh
+    trap 'pkill -9 -f hardhat' SIGTERM
+    wait
+    ;;
 stress-test)
     # shift to remove first argument
     shift
@@ -274,7 +294,7 @@ clean)
     ;;
 *)
     echo -e "Unknown argument!"
-    echo -e "init # | init-extra-nodes # | geth | bootnode | deploy | validator # | node # | ethdkg | hardhat | stress-test | deposit | schedule-maintenance | unregister | list | status | clean"
+    echo -e "init # | init-extra-nodes # | geth | geth-resume | geth2 | geth2-resume | bootnode | deploy | validator # | node # | node2 # | ethdkg | hardhat | hardhat2 | stress-test | deposit | schedule-maintenance | unregister | list | status | clean"
     exit 1
     ;;
 esac

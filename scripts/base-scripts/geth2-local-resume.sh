@@ -1,10 +1,10 @@
 #!/bin/sh
-DATADIR=./local-geth/
+DATADIR=./local-geth2/
 
 geth \
-  --port "35555" \
-  --authrpc.port 8551 \
-  --networkid 1337 \
+  --port "45555" \
+  --authrpc.port 8552 \
+  --networkid 1338 \
   --datadir=$DATADIR \
   --fakepow \
   --vmdebug \
@@ -21,12 +21,12 @@ geth \
   \
   --ws \
   --ws.addr=0.0.0.0 \
-  --ws.port=8546 \
+  --ws.port=8646 \
   --ws.api="admin,eth,net,web3,personal,miner,txpool,debug" \
   \
   --http \
   --http.addr=0.0.0.0 \
-  --http.port=8545 \
+  --http.port=8645 \
   --http.api="admin,eth,net,web3,personal,miner,txpool,debug" \
   --http.vhosts='*' \
   --http.corsdomain='*' \

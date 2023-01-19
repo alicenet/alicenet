@@ -30,3 +30,4 @@ node_modules/
 legacy/V1
 bridge/dist
 .deps
+local-geth2

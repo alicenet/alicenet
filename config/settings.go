@@ -24,13 +24,15 @@ type BootnodeConfig struct {
 }
 
 type ChainConfig struct {
-	ID                    int
-	StateDbPath           string
-	StateDbInMemory       bool
-	TransactionDbPath     string
-	TransactionDbInMemory bool
-	MonitorDbPath         string
-	MonitorDbInMemory     bool
+	ID                       int
+	StateDbPath              string
+	StateDbInMemory          bool
+	TransactionDbPath        string
+	TransactionDbInMemory    bool
+	EthMonitorDbPath         string
+	EthMonitorDbInMemory     bool
+	PolygonMonitorDbPath     string
+	PolygonMonitorDbInMemory bool
 }
 
 type EVMConfig struct {

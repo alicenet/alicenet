@@ -1,0 +1,25 @@
+{
+  "contracts/AliceNetFactory.sol:AliceNetFactory": {
+    "name": "AliceNetFactory",
+    "fullyQualifiedName": "contracts/AliceNetFactory.sol:AliceNetFactory",
+    "salt": "",
+    "constructorArgs": {
+      "legacyToken_": "0x0b1F9c2b7bED6Db83295c7B5158E3806d67eC5bc"
+    },
+    "initializerArgs": {}
+  },
+  "contracts/LightSnapshots.sol:LightSnapshots": {
+    "name": "LightSnapshots",
+    "fullyQualifiedName": "contracts/LightSnapshots.sol:LightSnapshots",
+    "salt": "0x536e617073686f74730000000000000000000000000000000000000000000000",
+    "deployType": "deployUpgradeable",
+    "constructorArgs": {
+      "chainID_": 1338,
+      "epochLength_": 1024
+    },
+    "initializerArgs": {
+      "desperationDelay_": 10,
+      "desperationFactor_": 40
+    }
+  }
+}
