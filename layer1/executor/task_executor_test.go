@@ -42,11 +42,6 @@ func getTaskExecutor(
 		big.NewInt(1),
 		nil,
 	)
-	client.GetBlockBaseFeeAndSuggestedGasTipFunc.SetDefaultReturn(
-		big.NewInt(100),
-		big.NewInt(1),
-		nil,
-	)
 	client.GetDefaultAccountFunc.SetDefaultReturn(accounts.Account{Address: common.Address{}})
 	client.GetTransactionByHashFunc.SetDefaultReturn(nil, false, nil)
 	client.GetFinalityDelayFunc.SetDefaultReturn(10)

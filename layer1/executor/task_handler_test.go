@@ -29,7 +29,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func getTaskHandler(t *testing.T, doCleanup bool) (*Handler, *mocks.MockClient, *mocks.MockAllSmartContracts, *mocks.MockWatcher, accounts.Account) {
+func getTaskHandler(
+	t *testing.T,
+	doCleanup bool,
+) (*Handler, *mocks.MockClient, *mocks.MockAllSmartContracts, *mocks.MockWatcher, accounts.Account) {
 	t.Helper()
 	db := mocks.NewTestDB()
 	client := mocks.NewMockClient()
@@ -505,16 +508,6 @@ func TestTasksHandlerAndManager_ScheduleAndRecover_RunningSnapshotTask(t *testin
 	require.Equal(t, task.Start, recoveredTask.Start)
 	require.Equal(t, task.End, recoveredTask.End)
 	require.Equal(t, task.AllowMultiExecution, recoveredTask.AllowMultiExecution)
-	require.Equal(
-		t,
-		task.NumOfValidators,
-		recoveredTask.Task.(*snapshots.SnapshotTask).NumOfValidators,
-	)
-	require.Equal(
-		t,
-		task.ValidatorIndex,
-		recoveredTask.Task.(*snapshots.SnapshotTask).ValidatorIndex,
-	)
 	require.Equal(
 		t,
 		task.NumOfValidators,
