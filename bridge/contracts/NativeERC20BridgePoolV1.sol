@@ -3,7 +3,7 @@ pragma solidity ^0.8.16;
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "contracts/NativeERCBridgePoolBase.sol";
 import "contracts/interfaces/IERC20Transferable.sol";
-import "contracts/utils/ImmutableBridgePoolFactAuth.sol";
+import "contracts/utils/auth/ImmutableBridgePoolFactory.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "contracts/interfaces/IBridgePool.sol";
 import "contracts/utils/ERC20SafeTransfer.sol";

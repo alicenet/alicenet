@@ -3,6 +3,7 @@ pragma solidity ^0.8.16;
 
 import "contracts/libraries/errors/BridgePoolFactoryErrors.sol";
 import "contracts/libraries/factory/BridgePoolFactoryBase.sol";
+import "contracts/utils/auth/ImmutableETHDKG.sol";
 import "hardhat/console.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 

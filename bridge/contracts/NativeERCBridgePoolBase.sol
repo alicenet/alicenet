@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT-open-group
 pragma solidity ^0.8.16;
 import "contracts/interfaces/IBridgePool.sol";
-import "contracts/utils/ImmutableAuth.sol";
+import "contracts/utils/auth/ImmutableBridgeRouter.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "contracts/libraries/errors/NativeERCBridgePoolBaseErrors.sol";
 import "contracts/utils/AccusationsLibrary.sol";

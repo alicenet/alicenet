@@ -70,7 +70,7 @@ abstract contract BridgePoolFactoryBase is ImmutableFactory, ImmutableSnapshots 
 
     /**
      * @notice returns the most recent version of the pool logic
-     * @param poolType_ type of pool ie 0 for native, 1 for external
+     * @param chainId_ chain identification
      * @param tokenType_ type of token 0 for ERC20 1 for ERC721 and 2 for ERC1155
      */
     function getLatestPoolLogicVersion(
