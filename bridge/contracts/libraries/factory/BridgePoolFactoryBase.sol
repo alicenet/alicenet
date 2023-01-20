@@ -24,7 +24,7 @@ abstract contract BridgePoolFactoryBase is ImmutableFactory, ImmutableSnapshots 
     address internal _implementation;
     mapping(bytes => address) internal _logicAddresses;
     //mapping of native and external pools to mapping of pool types to most recent version of logic
-    mapping(uint8 => mapping(uint8 => uint16)) internal _logicVersionsDeployed;
+    mapping(PoolType => mapping(TokenType => uint16)) internal _logicVersionsDeployed;
     //existing pools
     mapping(address => bool) public poolExists;
     event BridgePoolCreated(
@@ -92,7 +92,7 @@ abstract contract BridgePoolFactoryBase is ImmutableFactory, ImmutableSnapshots 
         uint256 value_
     ) internal returns (address addr) {
         uint32 codeSize;
-        uint16 version = _logicVersionsDeployed[poolType_][tokenType_] + 1;
+        uint16 version = _logicVersionsDeployed[PoolType(poolType_)][TokenType(tokenType_)] + 1;
         if (poolVersion_ != version)
             revert BridgePoolFactoryErrors.InvalidVersion(version, poolVersion_);
         bytes memory logicAddressKey = _getImplementationAddressKey(
@@ -109,7 +109,7 @@ abstract contract BridgePoolFactoryBase is ImmutableFactory, ImmutableSnapshots 
         if (codeSize == 0) {
             revert BridgePoolFactoryErrors.FailedToDeployLogic();
         }
-        _logicVersionsDeployed[poolType_][tokenType_] = version;
+        _logicVersionsDeployed[PoolType(poolType_)][TokenType(tokenType_)] = version;
         //record the depolyed logic address in the mapping
         _logicAddresses[logicAddressKey] = addr;
     }
