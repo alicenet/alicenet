@@ -36,14 +36,110 @@ contract ALCBTest is Test {
         alcbs = alcb.mint{value: etherIn}(0);
     }
 
-    function testDistribution(uint96 etherToSend) public {
+    function testDistributionWithoutFoundation(uint96 etherToSend) public {
+        vm.assume(etherToSend > marketSpread);
+
+        uint256 validatorStakingSplit = 350;
+        uint256 publicStakingSplit = 350;
+        uint256 liquidityProviderStakingSplit = 300;
+        uint256 protocolFeeSplit = 0;
+
+        updateDistributionContract(
+            validatorStakingSplit,
+            publicStakingSplit,
+            liquidityProviderStakingSplit,
+            protocolFeeSplit
+        );
+        uint256 distributable = mintDistribute(etherToSend, 0);
+        assertSplitsBalance(
+            distributable,
+            validatorStakingSplit,
+            publicStakingSplit,
+            liquidityProviderStakingSplit,
+            protocolFeeSplit
+        );
+    }
+
+    function testDistributionWithoutLiquidityProviderStaking(uint96 etherToSend) public {
+        vm.assume(etherToSend > marketSpread);
+
+        uint256 validatorStakingSplit = 350;
+        uint256 publicStakingSplit = 350;
+        uint256 liquidityProviderStakingSplit = 0;
+        uint256 protocolFeeSplit = 300;
+
+        updateDistributionContract(
+            validatorStakingSplit,
+            publicStakingSplit,
+            liquidityProviderStakingSplit,
+            protocolFeeSplit
+        );
+        uint256 distributable = mintDistribute(etherToSend, 0);
+        assertSplitsBalance(
+            distributable,
+            validatorStakingSplit,
+            publicStakingSplit,
+            liquidityProviderStakingSplit,
+            protocolFeeSplit
+        );
+    }
+
+    function testDistributionWithoutPublicStaking(uint96 etherToSend) public {
+        vm.assume(etherToSend > marketSpread);
+
+        uint256 validatorStakingSplit = 350;
+        uint256 publicStakingSplit = 0;
+        uint256 liquidityProviderStakingSplit = 350;
+        uint256 protocolFeeSplit = 300;
+
+        updateDistributionContract(
+            validatorStakingSplit,
+            publicStakingSplit,
+            liquidityProviderStakingSplit,
+            protocolFeeSplit
+        );
+        uint256 distributable = mintDistribute(etherToSend, 0);
+        assertSplitsBalance(
+            distributable,
+            validatorStakingSplit,
+            publicStakingSplit,
+            liquidityProviderStakingSplit,
+            protocolFeeSplit
+        );
+    }
+
+    function testDistributionWithoutValidatorStaking(uint96 etherToSend) public {
+        vm.assume(etherToSend > marketSpread);
+
+        uint256 validatorStakingSplit = 0;
+        uint256 publicStakingSplit = 350;
+        uint256 liquidityProviderStakingSplit = 350;
+        uint256 protocolFeeSplit = 300;
+
+        updateDistributionContract(
+            validatorStakingSplit,
+            publicStakingSplit,
+            liquidityProviderStakingSplit,
+            protocolFeeSplit
+        );
+        uint256 distributable = mintDistribute(etherToSend, 0);
+        assertSplitsBalance(
+            distributable,
+            validatorStakingSplit,
+            publicStakingSplit,
+            liquidityProviderStakingSplit,
+            protocolFeeSplit
+        );
+    }
+
+    function testStandardDistribution(uint96 etherToSend) public {
         vm.assume(etherToSend > marketSpread);
 
         uint256 validatorStakingSplit = 250;
         uint256 publicStakingSplit = 250;
         uint256 liquidityProviderStakingSplit = 250;
         uint256 protocolFeeSplit = 250;
-        
+
         updateDistributionContract(
             validatorStakingSplit,
             publicStakingSplit,
