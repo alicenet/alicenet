@@ -88,7 +88,8 @@ abstract contract BridgePoolFactoryBase is ImmutableFactory, ImmutableSnapshots 
         uint8 poolType_,
         uint8 tokenType_,
         uint16 poolVersion_,
-        bytes calldata deployCode_
+        bytes calldata deployCode_, 
+        uint256 value_
     ) internal returns (address addr) {
         uint32 codeSize;
         uint16 version = _logicVersionsDeployed[poolType_][tokenType_] + 1;
