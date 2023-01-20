@@ -943,6 +943,7 @@ func RegisterPotentialValidatorOnMonitor(
 	suite *EthDkgTestSuite,
 	accounts []accounts.Account,
 ) {
+	t.Helper()
 	monState := objects.NewMonitorState()
 	for idx := 0; idx < len(accounts); idx++ {
 		monState.PotentialValidators[accounts[idx].Address] = objects.PotentialValidator{
@@ -962,6 +963,7 @@ func CheckBadValidators(
 	suite *EthDkgTestSuite,
 	contracts layer1.AllSmartContracts,
 ) {
+	t.Helper()
 	for _, badId := range badValidators {
 		dkgState, err := state.GetDkgState(suite.DKGStatesDbs[badId])
 		assert.Nil(t, err)
