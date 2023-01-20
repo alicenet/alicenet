@@ -112,7 +112,6 @@ contract SnapshotsMock is Initializable, ImmutableValidatorPool, ISnapshots, Imm
         _epoch++;
         _snapshots[_epoch] = Snapshot(block.number, blockClaims);
         IDynamics(_dynamicsAddress()).updateHead(_epoch);
-
         return true;
     }
 

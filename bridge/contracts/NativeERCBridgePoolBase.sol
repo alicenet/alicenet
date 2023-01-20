@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT-open-group
 pragma solidity ^0.8.16;
 import "contracts/interfaces/IBridgePool.sol";
-import "contracts/BridgePoolFactory.sol";
+import "contracts/utils/ImmutableAuth.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "contracts/libraries/errors/NativeERCBridgePoolBaseErrors.sol";
 import "contracts/utils/AccusationsLibrary.sol";
@@ -9,9 +9,9 @@ import "contracts/libraries/parsers/MerkleProofParserLibrary.sol";
 import "contracts/libraries/parsers/VSPreImageParserLibrary.sol";
 import "contracts/libraries/parsers/PClaimsParserLibrary.sol";
 import "contracts/utils/MerkleProofLibrary.sol";
-import "contracts/interfaces/ISnapshots.sol";
+import "contracts/Snapshots.sol";
 
-abstract contract NativeERCBridgePoolBase is IBridgePool {
+abstract contract NativeERCBridgePoolBase is ImmutableFactory, ImmutableBridgeRouter, IBridgePool {
     using MerkleProofParserLibrary for bytes;
     using MerkleProofLibrary for MerkleProofParserLibrary.MerkleProof;
 
@@ -20,28 +20,17 @@ abstract contract NativeERCBridgePoolBase is IBridgePool {
         uint256 tokenAmount;
     }
 
-    address private immutable _snapshotsContract;
-    address private immutable _bridgeRouterContract;
-    address private immutable _alicenetFactoryContract;
+    address private immutable _snapshotsAddress;
+
     mapping(bytes32 => bool) private _consumedUTXOIDs;
 
-    modifier onlyBridgeRouter() {
-        if (msg.sender != _bridgeRouterContract) {
-            revert NativeERCBridgePoolBaseErrors.OnlyBridgeRouter(
-                msg.sender,
-                _bridgeRouterContract
-            );
-        }
-        _;
+    constructor(address alicenetFactoryAddress, address snapshotsAddress_)
+        ImmutableFactory(alicenetFactoryAddress)
+    {
+        _snapshotsAddress = snapshotsAddress_;
     }
 
-    constructor(address bridgeRouterContract_) {
-        (_snapshotsContract, _alicenetFactoryContract) = BridgePoolFactory(msg.sender)
-            .getImmutableContractAdresses();
-        _bridgeRouterContract = bridgeRouterContract_;
-    }
-
-    /// @notice deposit pre-actions before transfering value from sender to bridge pool
+    /// @notice code that runs before transfering value from sender to bridge pool
     /// @param sender The address of ERC sender
     /// @param depositParameters encoded deposit parameters (ERC20:tokenAmount, ERC721:tokenId or ERC1155:tokenAmount+tokenId)
     function deposit(address sender, bytes calldata depositParameters)
@@ -51,7 +40,7 @@ abstract contract NativeERCBridgePoolBase is IBridgePool {
         onlyBridgeRouter
     {}
 
-    /// @notice withdraw pre-actions before transfering value from bridge pool to receiver
+    /// @notice code that runs before transfering value from bridge pool to receiver
     /// @param receiver The address of ERC receiver
     /// @param encodedVsPreImage encoded burned UTXO in L2
     /// @param proofs Proofs of inclusion of burned UTXO
@@ -64,7 +53,7 @@ abstract contract NativeERCBridgePoolBase is IBridgePool {
         value = _getValidatedWithdrawalValue(receiver, encodedVsPreImage, proofInclusionStateRoot);
     }
 
-    /// @notice Obtains transfer value upon UTXO verification
+    /// @notice Obtains trasfer data upon UTXO verification
     /// @param receiver The address of ERC receiver
     /// @param encodedVsPreImage encoded burned UTXO in L2
     /// @param proofInclusionStateRoot Proof of inclusion of UTXO in the stateTrie
@@ -75,10 +64,10 @@ abstract contract NativeERCBridgePoolBase is IBridgePool {
     ) internal returns (uint256) {
         VSPreImageParserLibrary.VSPreImage memory vsPreImage = VSPreImageParserLibrary
             .extractVSPreImage(encodedVsPreImage);
-        if (vsPreImage.chainId != ISnapshots(_snapshotsContract).getChainId()) {
+        if (vsPreImage.chainId != ISnapshots(_snapshotsAddress).getChainId()) {
             revert NativeERCBridgePoolBaseErrors.ChainIdDoesNotMatch(
                 vsPreImage.chainId,
-                ISnapshots(_snapshotsContract).getChainId()
+                ISnapshots(_snapshotsAddress).getChainId()
             );
         }
         bytes32 computedUTXOID = AccusationsLibrary.computeUTXOID(
@@ -104,7 +93,7 @@ abstract contract NativeERCBridgePoolBase is IBridgePool {
         return vsPreImage.value;
     }
 
-    /// @notice Verify burn proofs
+    /// @notice Verify withdraw proofs
     /// @param _proofs an array of merkle proof structs in the following order:
     /// proof of inclusion in StateRoot: Proof of inclusion of UTXO in the stateTrie
     /// proof of inclusion in TXRoot: Proof of inclusion of the transaction included in the txRoot trie.
@@ -115,7 +104,7 @@ abstract contract NativeERCBridgePoolBase is IBridgePool {
         view
         returns (MerkleProofParserLibrary.MerkleProof memory)
     {
-        BClaimsParserLibrary.BClaims memory bClaims = ISnapshots(_snapshotsContract)
+        BClaimsParserLibrary.BClaims memory bClaims = Snapshots(_snapshotsAddress)
             .getBlockClaimsFromLatestSnapshot();
         // Validate proofInclusionHeaderRoot against bClaims.headerRoot.
         MerkleProofParserLibrary.MerkleProof
