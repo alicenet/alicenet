@@ -72,7 +72,7 @@ func (ut *UTXOTrie) Init(_ uint32) error {
 }
 
 func (ut *UTXOTrie) GetCanonicalTrie(txn *badger.Txn) (*trie.SMT, error) {
-	root, err := GetCurrentStateRoot(txn)
+	root, err := GetCanonicalStateRoot(txn)
 	if err != nil {
 		if err != badger.ErrKeyNotFound {
 			utils.DebugTrace(ut.logger, err)
