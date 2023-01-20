@@ -2,6 +2,7 @@
 pragma solidity ^0.8.16;
 
 import "contracts/utils/auth/ImmutableFactory.sol";
+import "contracts/utils/auth/ImmutableSnapshots.sol";
 import "contracts/libraries/errors/BridgePoolFactoryErrors.sol";
 import "contracts/interfaces/IBridgePool.sol";
 import "contracts/utils/BridgePoolAddressUtil.sol";
