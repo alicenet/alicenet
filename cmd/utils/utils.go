@@ -127,9 +127,7 @@ func utilsNode(cmd *cobra.Command, args []string) {
 func sendWei(logger *logrus.Entry, eth layer1.Client, cmd *cobra.Command, args []string) int {
 
 	if len(args) < 2 {
-		logger.Errorf(
-			"Arguments must include: amount, who\nwho can be a space delimited list of addresses",
-		)
+		logger.Errorf("Arguments must include: amount, who\nwho can be a space delimited list of addresses")
 		return 1
 	}
 
@@ -141,11 +139,7 @@ func sendWei(logger *logrus.Entry, eth layer1.Client, cmd *cobra.Command, args [
 
 	from := eth.GetDefaultAccount()
 	for idx := 1; idx < len(args); idx++ {
-		_, err := eth.TransferNativeToken(
-			from.Address,
-			common.HexToAddress(args[idx]),
-			wei,
-		)
+		_, err := eth.TransferNativeToken(from.Address, common.HexToAddress(args[idx]), wei)
 		if err != nil {
 			logger.Errorf("Transfer failed: %v", err)
 			return 1

@@ -14,13 +14,7 @@ import (
 )
 
 // ProcessSnapshotTaken handles receiving snapshots
-func ProcessSnapshotTaken(
-	contracts layer1.AllSmartContracts,
-	logger *logrus.Entry,
-	log types.Log,
-	adminHandler monInterfaces.AdminHandler,
-	taskHandler executor.TaskHandler,
-) error {
+func ProcessSnapshotTaken(contracts layer1.AllSmartContracts, logger *logrus.Entry, log types.Log, adminHandler monInterfaces.AdminHandler, taskHandler executor.TaskHandler) error {
 	logger.Info("ProcessSnapshotTaken() ...")
 
 	c := contracts.EthereumContracts()
@@ -86,14 +80,7 @@ func ProcessSnapshotTaken(
 }
 
 // ProcessSnapshotTakenOld handles receiving snapshots.
-func ProcessSnapshotTakenOld(
-	eth layer1.Client,
-	contracts layer1.AllSmartContracts,
-	logger *logrus.Entry,
-	log types.Log,
-	adminHandler monInterfaces.AdminHandler,
-	taskHandler executor.TaskHandler,
-) error {
+func ProcessSnapshotTakenOld(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, log types.Log, adminHandler monInterfaces.AdminHandler, taskHandler executor.TaskHandler) error {
 	logger.Info("ProcessSnapshotTakenOld() ...")
 
 	c := contracts.EthereumContracts()

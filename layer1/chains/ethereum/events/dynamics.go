@@ -14,12 +14,7 @@ import (
 )
 
 // ProcessDynamicValueChanged handles a dynamic value updating coming from our smart contract.
-func ProcessDynamicValueChanged(
-	contracts layer1.AllSmartContracts,
-	logger *logrus.Entry,
-	log types.Log,
-	adminHandler monInterfaces.AdminHandler,
-) error {
+func ProcessDynamicValueChanged(contracts layer1.AllSmartContracts, logger *logrus.Entry, log types.Log, adminHandler monInterfaces.AdminHandler) error {
 	logger.Info("ProcessDynamicValueChanged() ...")
 
 	event, err := contracts.EthereumContracts().Dynamics().ParseDynamicValueChanged(log)
@@ -41,13 +36,7 @@ func ProcessDynamicValueChanged(
 	return nil
 }
 
-func ProcessNewAliceNetNodeVersionAvailable(
-	contracts layer1.AllSmartContracts,
-	logger *logrus.Entry,
-	log types.Log,
-	monState *objects.MonitorState,
-	taskHandler executor.TaskHandler,
-) error {
+func ProcessNewAliceNetNodeVersionAvailable(contracts layer1.AllSmartContracts, logger *logrus.Entry, log types.Log, monState *objects.MonitorState, taskHandler executor.TaskHandler) error {
 	logger = logger.WithField("method", "ProcessNewAliceNetNodeVersionAvailable")
 	logger.Info("Processing new AliceNet node version...")
 
@@ -73,9 +62,7 @@ func ProcessNewAliceNetNodeVersionAvailable(
 	}
 
 	// If any element of the new Version is greater, schedule the task
-	newMajorIsGreater, newMinorIsGreater, newPatchIsGreater, _, err := utils.CompareCanonicalVersion(
-		event.Version,
-	)
+	newMajorIsGreater, newMinorIsGreater, newPatchIsGreater, _, err := utils.CompareCanonicalVersion(event.Version)
 	if err != nil {
 		return fmt.Errorf("processing new version available: %w", err)
 	}

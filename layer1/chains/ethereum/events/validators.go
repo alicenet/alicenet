@@ -21,13 +21,7 @@ import (
 )
 
 // ProcessValidatorSetCompleted handles receiving validatorSet changes.
-func ProcessValidatorSetCompleted(
-	eth layer1.Client,
-	contracts layer1.AllSmartContracts,
-	logger *logrus.Entry,
-	monitorState *objects.MonitorState,
-	log types.Log,
-	monDB *db.Database,
+func ProcessValidatorSetCompleted(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, monitorState *objects.MonitorState, log types.Log, monDB *db.Database,
 	adminHandler monInterfaces.AdminHandler,
 ) error {
 	c := contracts.EthereumContracts()
@@ -95,14 +89,7 @@ func ProcessValidatorSetCompleted(
 }
 
 // ProcessValidatorMemberAdded handles receiving keys for a specific validator.
-func ProcessValidatorMemberAdded(
-	eth layer1.Client,
-	contracts layer1.AllSmartContracts,
-	logger *logrus.Entry,
-	monitorState *objects.MonitorState,
-	log types.Log,
-	monDB *db.Database,
-) error {
+func ProcessValidatorMemberAdded(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, monitorState *objects.MonitorState, log types.Log, monDB *db.Database) error {
 	monitorState.Lock()
 	defer monitorState.Unlock()
 
@@ -139,12 +126,7 @@ func ProcessValidatorMemberAdded(
 			dkgState.Participants[event.Account].GPKj[1].Cmp(v.SharedKey[1]) != 0 ||
 			dkgState.Participants[event.Account].GPKj[2].Cmp(v.SharedKey[2]) != 0 ||
 			dkgState.Participants[event.Account].GPKj[3].Cmp(v.SharedKey[3]) != 0) {
-		return utils.LogReturnErrorf(
-			logger,
-			"my own GPKj doesn't match event! mine: %v | event: %v",
-			dkgState.Participants[event.Account].GPKj,
-			v.SharedKey,
-		)
+		return utils.LogReturnErrorf(logger, "my own GPKj doesn't match event! mine: %v | event: %v", dkgState.Participants[event.Account].GPKj, v.SharedKey)
 	}
 
 	// state update
@@ -181,13 +163,7 @@ func ProcessValidatorMemberAdded(
 }
 
 // ProcessValidatorJoined handles the Minor Slash event.
-func ProcessValidatorJoined(
-	eth layer1.Client,
-	contracts layer1.AllSmartContracts,
-	logger *logrus.Entry,
-	state *objects.MonitorState,
-	log types.Log,
-) error {
+func ProcessValidatorJoined(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
 	event, err := contracts.EthereumContracts().ValidatorPool().ParseValidatorJoined(log)
 	if err != nil {
 		return err
@@ -205,13 +181,7 @@ func ProcessValidatorJoined(
 }
 
 // ProcessValidatorLeft handles the Minor Slash event.
-func ProcessValidatorLeft(
-	eth layer1.Client,
-	contracts layer1.AllSmartContracts,
-	logger *logrus.Entry,
-	state *objects.MonitorState,
-	log types.Log,
-) error {
+func ProcessValidatorLeft(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
 	event, err := contracts.EthereumContracts().ValidatorPool().ParseValidatorLeft(log)
 	if err != nil {
 		return err
@@ -231,13 +201,7 @@ func ProcessValidatorLeft(
 }
 
 // ProcessValidatorMajorSlashed handles the Major Slash event.
-func ProcessValidatorMajorSlashed(
-	eth layer1.Client,
-	contracts layer1.AllSmartContracts,
-	logger *logrus.Entry,
-	state *objects.MonitorState,
-	log types.Log,
-) error {
+func ProcessValidatorMajorSlashed(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
 	event, err := contracts.EthereumContracts().ValidatorPool().ParseValidatorMajorSlashed(log)
 	if err != nil {
 		return err
@@ -256,13 +220,7 @@ func ProcessValidatorMajorSlashed(
 }
 
 // ProcessValidatorMinorSlashed handles the Minor Slash event.
-func ProcessValidatorMinorSlashed(
-	eth layer1.Client,
-	contracts layer1.AllSmartContracts,
-	logger *logrus.Entry,
-	state *objects.MonitorState,
-	log types.Log,
-) error {
+func ProcessValidatorMinorSlashed(eth layer1.Client, contracts layer1.AllSmartContracts, logger *logrus.Entry, state *objects.MonitorState, log types.Log) error {
 	event, err := contracts.EthereumContracts().ValidatorPool().ParseValidatorMinorSlashed(log)
 	if err != nil {
 		return err
@@ -302,13 +260,7 @@ func deletePotentialValidator(state *objects.MonitorState, account common.Addres
 	return nil
 }
 
-func checkValidatorSet(
-	monitorState *objects.MonitorState,
-	epoch uint32,
-	logger *logrus.Entry,
-	monDB *db.Database,
-	adminHandler monInterfaces.AdminHandler,
-) error {
+func checkValidatorSet(monitorState *objects.MonitorState, epoch uint32, logger *logrus.Entry, monDB *db.Database, adminHandler monInterfaces.AdminHandler) error {
 	logger = logger.WithField("Epoch", epoch)
 
 	// Make sure we've received a validator set event
@@ -325,11 +277,7 @@ func checkValidatorSet(
 
 	dkgState, err := state.GetDkgState(monDB)
 	if err != nil {
-		return utils.LogReturnErrorf(
-			logger,
-			"Failed to load dkgState on checkValidatorSet: %v",
-			err,
-		)
+		return utils.LogReturnErrorf(logger, "Failed to load dkgState on checkValidatorSet: %v", err)
 	}
 
 	// See how many validator members we've seen and how many we expect
@@ -345,12 +293,7 @@ func checkValidatorSet(
 
 	if receivedCount == expectedCount || receivedCount == 0 {
 		// Start by building the ValidatorSet
-		ptrGroupKey := [4]*big.Int{
-			validatorSet.GroupKey[0],
-			validatorSet.GroupKey[1],
-			validatorSet.GroupKey[2],
-			validatorSet.GroupKey[3],
-		}
+		ptrGroupKey := [4]*big.Int{validatorSet.GroupKey[0], validatorSet.GroupKey[1], validatorSet.GroupKey[2], validatorSet.GroupKey[3]}
 		groupKey, err := bn256.MarshalG2Big(ptrGroupKey)
 		if err != nil {
 			logger.Errorf("Failed to marshal groupKey: %v", err)
@@ -400,10 +343,7 @@ func checkValidatorSet(
 
 		err = adminHandler.AddValidatorSet(vs)
 		if err != nil {
-			logger.Errorf(
-				"Unable to add validator set: %v",
-				err,
-			) // TODO handle -- MUST retry or consensus shuts down
+			logger.Errorf("Unable to add validator set: %v", err) // TODO handle -- MUST retry or consensus shuts down
 		}
 	}
 	return nil
