@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/alicenet/alicenet/layer1/ethereum"
 	"github.com/alicenet/alicenet/layer1/tests"
 	"github.com/alicenet/alicenet/layer1/transaction"
 	"github.com/alicenet/alicenet/test/mocks"
@@ -16,11 +17,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func Setup(
-	t *testing.T,
-	accounts int,
-	pollingTime time.Duration,
-) (*tests.ClientFixture, *transaction.FrontWatcher) {
+func Setup(t *testing.T, accounts int, pollingTime time.Duration) (*tests.ClientFixture, *transaction.FrontWatcher) {
 	t.Helper()
 	fixture := setupEthereum(t, accounts)
 	db := mocks.NewTestDB()
@@ -43,11 +40,7 @@ func TestSubscribeAndWaitForValidTx(t *testing.T) {
 	defer cf()
 
 	amount := big.NewInt(12_345)
-	txn, err := eth.TransferNativeToken(
-		user.Address,
-		owner.Address,
-		amount,
-	)
+	txn, err := ethereum.TransferEther(eth, fixture.Logger, user.Address, owner.Address, amount)
 	assert.Nil(t, err)
 
 	receipt, err := watcher.SubscribeAndWait(ctx, txn, nil)
@@ -68,9 +61,7 @@ func TestSubscribeAndWaitForValidTx(t *testing.T) {
 	mintTxnOpts.NoSend = false
 	mintTxnOpts.Value = amount
 
-	mintTxn, err := fixture.Contracts.EthereumContracts().
-		ALCB().
-		MintTo(mintTxnOpts, owner.Address, big.NewInt(1))
+	mintTxn, err := fixture.Contracts.EthereumContracts().ALCB().MintTo(mintTxnOpts, owner.Address, big.NewInt(1))
 	assert.Nil(t, err)
 	assert.NotNil(t, mintTxn)
 
@@ -102,9 +93,7 @@ func TestSubscribeAndWaitForInvalidTxNotSigned(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Creating tx but not sending it
-	txn, err := fixture.Contracts.EthereumContracts().
-		ALCB().
-		MintTo(txOpts, owner.Address, big.NewInt(1))
+	txn, err := fixture.Contracts.EthereumContracts().ALCB().MintTo(txOpts, owner.Address, big.NewInt(1))
 	assert.Nil(t, err)
 
 	txnRough := &types.DynamicFeeTx{}
@@ -149,9 +138,7 @@ func TestSubscribeAndWaitForTxNotFound(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Creating tx but not sending it
-	txn, err := fixture.Contracts.EthereumContracts().
-		ALCB().
-		MintTo(txOpts, owner.Address, big.NewInt(1))
+	txn, err := fixture.Contracts.EthereumContracts().ALCB().MintTo(txOpts, owner.Address, big.NewInt(1))
 	assert.Nil(t, err)
 
 	txnRough := &types.DynamicFeeTx{}
@@ -208,9 +195,7 @@ func TestSubscribeAndWaitForStaleTx(t *testing.T) {
 	txOpts.GasFeeCap = big.NewInt(1_000_000_000)
 	txOpts.Value = amount
 	assert.Nil(t, err)
-	txn, err := fixture.Contracts.EthereumContracts().
-		ALCB().
-		MintTo(txOpts, owner.Address, big.NewInt(1))
+	txn, err := fixture.Contracts.EthereumContracts().ALCB().MintTo(txOpts, owner.Address, big.NewInt(1))
 	assert.Nil(t, err)
 
 	subscribeOpts := transaction.NewSubscribeOptions(false, 3)
@@ -247,9 +232,7 @@ func TestSubscribeAndWaitForStaleTxWithAutoRetry(t *testing.T) {
 	txOpts.GasFeeCap = big.NewInt(1_000_000_000)
 	txOpts.Value = amount
 	assert.Nil(t, err)
-	txn, err := fixture.Contracts.EthereumContracts().
-		ALCB().
-		MintTo(txOpts, user.Address, big.NewInt(1))
+	txn, err := fixture.Contracts.EthereumContracts().ALCB().MintTo(txOpts, user.Address, big.NewInt(1))
 	assert.Nil(t, err)
 
 	subscribeOpts := transaction.NewSubscribeOptions(true, 3)
