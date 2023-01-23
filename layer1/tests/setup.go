@@ -130,6 +130,7 @@ func WaitGroupReceipts(
 	client layer1.Client,
 	receiptResponses []transaction.ReceiptResponse,
 ) {
+	t.Helper()
 	MineFinalityDelayBlocks(client)
 	<-time.After(200 * time.Millisecond)
 	ctx, cf := context.WithTimeout(context.Background(), 10*time.Second)

@@ -168,6 +168,7 @@ func TestSqrtGFP2(t *testing.T) {
 }
 
 func sqrtGFP2Int64(t *testing.T, k int64) {
+	t.Helper()
 	// These square roots always exist
 	gfp2RealK := &gfP2{}
 	gfp2RealK.x.Set(newGFp(0))
@@ -326,6 +327,7 @@ func TestInvertGFP2(t *testing.T) {
 }
 
 func invertGFP2Int64(t *testing.T, k int64) {
+	t.Helper()
 	if k == 0 {
 		return
 	}

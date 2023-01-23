@@ -9,6 +9,7 @@ import (
 )
 
 func plkEqual(t *testing.T, plk, plk2 *PendingLeafKey) {
+	t.Helper()
 	if !bytes.Equal(plk.Prefix, plk2.Prefix) {
 		t.Fatal("fail")
 	}

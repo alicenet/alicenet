@@ -71,6 +71,7 @@ func TestTransportsuccess(t *testing.T) {
 }
 
 func dialer(t *testing.T, transport interfaces.P2PTransport, addr interfaces.NodeAddr, complete chan struct{}) {
+	t.Helper()
 	defer close(complete)
 	defer transport.Close()
 	conn, err := transport.Dial(addr, 1)
@@ -97,6 +98,7 @@ func dialer(t *testing.T, transport interfaces.P2PTransport, addr interfaces.Nod
 }
 
 func accept(t *testing.T, transport interfaces.P2PTransport, complete chan struct{}) {
+	t.Helper()
 	defer close(complete)
 	_, err := transport.Accept()
 	if err != nil {
@@ -106,6 +108,7 @@ func accept(t *testing.T, transport interfaces.P2PTransport, complete chan struc
 }
 
 func acceptWithResp(t *testing.T, transport interfaces.P2PTransport, complete chan struct{}) {
+	t.Helper()
 	defer close(complete)
 	conn, err := transport.Accept()
 	if err != nil {

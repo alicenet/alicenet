@@ -144,6 +144,7 @@ func TestDataStoreGood(t *testing.T) {
 }
 
 func dsEqual(t *testing.T, ds1, ds2 *DataStore) {
+	t.Helper()
 	dsl1 := ds1.DSLinker
 	dsl2 := ds2.DSLinker
 	dslEqual(t, dsl1, dsl2)

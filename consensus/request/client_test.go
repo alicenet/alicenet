@@ -356,6 +356,7 @@ func TestClient_RequestP2PGetSnapShotStateData_Error2(t *testing.T) {
 }
 
 func createBlockHeader(t *testing.T, length int) *objs.BlockHeader {
+	t.Helper()
 	bclaimsList, txHashListList, err := generateChain(length)
 	if err != nil {
 		t.Fatal(err)
