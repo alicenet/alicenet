@@ -211,7 +211,7 @@ contract ALCBTest is Test {
         // then give validators the rest
         uint256 validatorStakingShare = excess -
             (protocolFeeShare + publicStakingShare + lpStakingShare);
-
+        assertTrue(validatorStakingShare >= (excess * validatorStakingSplit) / percentageScale);
         assertEq(address(_fixture.validatorStaking).balance, validatorStakingShare);
         assertEq(address(_fixture.publicStaking).balance, publicStakingShare);
         assertEq(address(_fixture.liquidityProviderStaking).balance, lpStakingShare);
