@@ -4,7 +4,6 @@ pragma solidity ^0.8.16;
 import "contracts/libraries/errors/BridgePoolFactoryErrors.sol";
 import "contracts/libraries/factory/BridgePoolFactoryBase.sol";
 import "contracts/utils/auth/ImmutableETHDKG.sol";
-import "hardhat/console.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 /// @custom:salt BridgePoolFactory
@@ -53,6 +52,8 @@ contract BridgePoolFactory is
      * @param tokenType_ type of token (0=ERC20, 1=ERC721, 2=ERC1155)
      * @param ercContract_ address of ERC20 source token contract
      * @param poolVersion_ version of BridgePool implementation to use
+     * @param chainID_ chain identification
+     * @param initCallData initialCallData
      */
     function deployNewNativePool(
         uint8 tokenType_,
@@ -89,9 +90,10 @@ contract BridgePoolFactory is
         uint8 poolType_,
         uint8 tokenType_,
         uint16 poolVersion_,
-        bytes calldata deployCode_
+        bytes calldata deployCode_,
+        uint256 value_
     ) public onlyFactory returns (address) {
-        return _deployPoolLogic(poolType_, tokenType_, poolVersion_, deployCode_);
+        return _deployPoolLogic(poolType_, tokenType_, poolVersion_, deployCode_, value_);
     }
 
     /**

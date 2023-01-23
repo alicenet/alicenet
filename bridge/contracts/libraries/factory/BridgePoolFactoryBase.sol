@@ -8,6 +8,8 @@ import "contracts/interfaces/IBridgePool.sol";
 import "contracts/utils/BridgePoolAddressUtil.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 
+import "hardhat/console.sol";
+
 abstract contract BridgePoolFactoryBase is ImmutableFactory, ImmutableSnapshots {
     enum TokenType {
         ERC20,
@@ -93,6 +95,7 @@ abstract contract BridgePoolFactoryBase is ImmutableFactory, ImmutableSnapshots 
     ) internal returns (address addr) {
         uint32 codeSize;
         uint16 version = _logicVersionsDeployed[PoolType(poolType_)][TokenType(tokenType_)] + 1;
+        console.log(poolVersion_,version);
         if (poolVersion_ != version)
             revert BridgePoolFactoryErrors.InvalidVersion(version, poolVersion_);
         bytes memory logicAddressKey = _getImplementationAddressKey(
@@ -111,6 +114,8 @@ abstract contract BridgePoolFactoryBase is ImmutableFactory, ImmutableSnapshots 
         }
         _logicVersionsDeployed[PoolType(poolType_)][TokenType(tokenType_)] = version;
         //record the depolyed logic address in the mapping
+        console.logBytes(logicAddressKey);
+        console.log(addr);
         _logicAddresses[logicAddressKey] = addr;
     }
 
@@ -146,6 +151,7 @@ abstract contract BridgePoolFactoryBase is ImmutableFactory, ImmutableSnapshots 
         assembly ("memory-safe") {
             implementationSize := extcodesize(implementation)
         }
+        console.log(implementation, implementationSize,_implementation );
         if (implementationSize == 0 || _implementation == address(0)) {
             revert BridgePoolFactoryErrors.PoolLogicNotSupported();
         }
@@ -155,6 +161,8 @@ abstract contract BridgePoolFactoryBase is ImmutableFactory, ImmutableSnapshots 
     }
 
     function _initializeContract(address contract_, bytes calldata initCallData_) internal {
+        console.log(contract_);
+        console.logBytes(initCallData_);
         assembly ("memory-safe") {
             if iszero(iszero(initCallData_.length)) {
                 let ptr := mload(0x40)

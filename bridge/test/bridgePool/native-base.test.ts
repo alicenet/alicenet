@@ -34,6 +34,7 @@ let nativeERCBridgePool: Contract;
 let nativeERCBridgePoolBaseErrors: Contract;
 let asBridgeRouter: any;
 const bridgePoolTokenTypeERC20 = 0;
+const bridgePoolType = 0; //Native
 const bridgePoolNativeChainId = 1337;
 const bridgePoolVersion = 1;
 const bridgePoolValue = 0;
@@ -48,7 +49,7 @@ const encodedDepositParameters = defaultAbiCoder.encode(
       tokenAmount_: tokenAmount,
     },
   ]
-);
+)
 const encodedMockBlockClaims = getMockBlockClaimsForSnapshot();
 
 describe("Testing Base BridgePool Deposit/Withdraw", async () => {
@@ -90,17 +91,18 @@ describe("Testing Base BridgePool Deposit/Withdraw", async () => {
     await bridgePoolFactory
       .connect(factorySigner)
       .deployPoolLogic(
+        bridgePoolType,
         bridgePoolTokenTypeERC20,
-        bridgePoolNativeChainId,
-        bridgePoolValue,
-        bridgePoolImplBytecode
+        bridgePoolVersion,
+        bridgePoolImplBytecode,
+        bridgePoolValue
       );
     const tx = await bridgePoolFactory
       .connect(factorySigner)
       .deployNewNativePool(
         bridgePoolTokenTypeERC20,
         ethers.constants.AddressZero,
-        bridgePoolVersion
+        bridgePoolVersion,1337,encodedDepositParameters
       );
     nativeERCBridgePool = await ethers.getContractAt(
       "NativeERCBridgePoolMock",

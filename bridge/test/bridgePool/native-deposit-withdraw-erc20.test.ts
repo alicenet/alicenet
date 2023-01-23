@@ -39,6 +39,7 @@ let nativeERCBridgePoolBaseErrors: Contract;
 let erc20Mock: Contract;
 let bridgePoolImplFactory: ContractFactory;
 const bridgePoolTokenTypeERC20 = 0;
+const bridgePoolType = 0; //Native
 const bridgePoolNativeChainId = 1337;
 const bridgePoolVersion = 1;
 const bridgePoolValue = 0;
@@ -80,6 +81,10 @@ describe("Testing BridgePool Deposit/Withdraw for tokenType ERC20", async () => 
     erc20Mock = await (
       await (await ethers.getContractFactory("ERC20Mock")).deploy()
     ).deployed();
+    const encodedDeployNewPoolParameters = ethers.utils.solidityPack(
+      ["address"],
+      [erc20Mock.address]
+    );
     const bridgePoolFactory = (await deployUpgradeableWithFactory(
       fixture.factory,
       "BridgePoolFactory",
@@ -95,17 +100,20 @@ describe("Testing BridgePool Deposit/Withdraw for tokenType ERC20", async () => 
     await bridgePoolFactory
       .connect(factorySigner)
       .deployPoolLogic(
+        bridgePoolType,
         bridgePoolTokenTypeERC20,
-        bridgePoolNativeChainId,
-        bridgePoolValue,
-        bridgePoolImplBytecode
+        bridgePoolVersion,
+        bridgePoolImplBytecode,
+        bridgePoolValue
       );
     const tx = await bridgePoolFactory
       .connect(factorySigner)
       .deployNewNativePool(
         bridgePoolTokenTypeERC20,
         erc20Mock.address,
-        bridgePoolVersion
+        bridgePoolVersion,
+        bridgePoolNativeChainId,
+        encodedDeployNewPoolParameters
       );
     nativeERC20BridgePoolV1 = await ethers.getContractAt(
       "NativeERC20BridgePoolV1",
