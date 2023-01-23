@@ -12,46 +12,46 @@ import "contracts/AliceNetFactory.sol";
 import "test_sol/Setup.sol";
 
 contract ALCBTest is Test {
-    Setup.Fixture fixture;
-    CentralBridgeRouterMock stakingRouter;
-    ALCB alcb;
-    AliceNetFactory aliceNetFactory;
-    address randomAddress = address(0x000000000000000000000000000000000000dEaD);
-    address randomAddress2 = address(0x00000000000000000000000000000000DeaDBeef);
-    address zeroAddress = address(0x0000000000000000000000000000000000000000);
-    uint96 marketSpread = 4;
-    uint256 minALCBs = 0;
-    uint256 alcbs = 0;
-    uint256 etherIn = 40 ether;
+    Setup.Fixture private _fixture;
+    CentralBridgeRouterMock private _stakingRouter;
+    ALCB private _alcb;
+    AliceNetFactory private _aliceNetFactory;
+    address private _randomAddress = address(0x000000000000000000000000000000000000dEaD);
+    address private _randomAddress2 = address(0x00000000000000000000000000000000DeaDBeef);
+    address private _zeroAddress = address(0x0000000000000000000000000000000000000000);
+    uint96 private _marketSpread = 4;
+    uint256 private _minALCBs = 0;
+    uint256 private _alcbs = 0;
+    uint256 private _etherIn = 40 ether;
 
     function setUp() public {
-        fixture = Setup.deployFixture(vm, false, false, false);
-        stakingRouter = fixture.stakingRouter;
-        alcb = fixture.alcb;
-        aliceNetFactory = fixture.aliceNetFactory;
+        _fixture = Setup.deployFixture(vm, false, false, false);
+        _stakingRouter = _fixture.stakingRouter;
+        _alcb = _fixture.alcb;
+        _aliceNetFactory = _fixture.aliceNetFactory;
 
         // mint some alcb
-        vm.deal(randomAddress, etherIn);
-        vm.prank(randomAddress);
-        alcbs = alcb.mint{value: etherIn}(0);
+        vm.deal(_randomAddress, _etherIn);
+        vm.prank(_randomAddress);
+        _alcbs = _alcb.mint{value: _etherIn}(0);
     }
 
     function testDistributionWithoutFoundation(uint96 etherToSend) public {
-        vm.assume(etherToSend > marketSpread);
+        vm.assume(etherToSend > _marketSpread);
 
         uint256 validatorStakingSplit = 350;
         uint256 publicStakingSplit = 350;
         uint256 liquidityProviderStakingSplit = 300;
         uint256 protocolFeeSplit = 0;
 
-        updateDistributionContract(
+        _updateDistributionContract(
             validatorStakingSplit,
             publicStakingSplit,
             liquidityProviderStakingSplit,
             protocolFeeSplit
         );
-        uint256 distributable = mintDistribute(etherToSend, 0);
-        assertSplitsBalance(
+        uint256 distributable = _mintDistribute(etherToSend, 0);
+        _assertSplitsBalance(
             distributable,
             validatorStakingSplit,
             publicStakingSplit,
@@ -61,21 +61,21 @@ contract ALCBTest is Test {
     }
 
     function testDistributionWithoutLiquidityProviderStaking(uint96 etherToSend) public {
-        vm.assume(etherToSend > marketSpread);
+        vm.assume(etherToSend > _marketSpread);
 
         uint256 validatorStakingSplit = 350;
         uint256 publicStakingSplit = 350;
         uint256 liquidityProviderStakingSplit = 0;
         uint256 protocolFeeSplit = 300;
 
-        updateDistributionContract(
+        _updateDistributionContract(
             validatorStakingSplit,
             publicStakingSplit,
             liquidityProviderStakingSplit,
             protocolFeeSplit
         );
-        uint256 distributable = mintDistribute(etherToSend, 0);
-        assertSplitsBalance(
+        uint256 distributable = _mintDistribute(etherToSend, 0);
+        _assertSplitsBalance(
             distributable,
             validatorStakingSplit,
             publicStakingSplit,
@@ -85,21 +85,21 @@ contract ALCBTest is Test {
     }
 
     function testDistributionWithoutPublicStaking(uint96 etherToSend) public {
-        vm.assume(etherToSend > marketSpread);
+        vm.assume(etherToSend > _marketSpread);
 
         uint256 validatorStakingSplit = 350;
         uint256 publicStakingSplit = 0;
         uint256 liquidityProviderStakingSplit = 350;
         uint256 protocolFeeSplit = 300;
 
-        updateDistributionContract(
+        _updateDistributionContract(
             validatorStakingSplit,
             publicStakingSplit,
             liquidityProviderStakingSplit,
             protocolFeeSplit
         );
-        uint256 distributable = mintDistribute(etherToSend, 0);
-        assertSplitsBalance(
+        uint256 distributable = _mintDistribute(etherToSend, 0);
+        _assertSplitsBalance(
             distributable,
             validatorStakingSplit,
             publicStakingSplit,
@@ -109,21 +109,21 @@ contract ALCBTest is Test {
     }
 
     function testDistributionWithoutValidatorStaking(uint96 etherToSend) public {
-        vm.assume(etherToSend > marketSpread);
+        vm.assume(etherToSend > _marketSpread);
 
         uint256 validatorStakingSplit = 0;
         uint256 publicStakingSplit = 350;
         uint256 liquidityProviderStakingSplit = 350;
         uint256 protocolFeeSplit = 300;
 
-        updateDistributionContract(
+        _updateDistributionContract(
             validatorStakingSplit,
             publicStakingSplit,
             liquidityProviderStakingSplit,
             protocolFeeSplit
         );
-        uint256 distributable = mintDistribute(etherToSend, 0);
-        assertSplitsBalance(
+        uint256 distributable = _mintDistribute(etherToSend, 0);
+        _assertSplitsBalance(
             distributable,
             validatorStakingSplit,
             publicStakingSplit,
@@ -133,21 +133,21 @@ contract ALCBTest is Test {
     }
 
     function testStandardDistribution(uint96 etherToSend) public {
-        vm.assume(etherToSend > marketSpread);
+        vm.assume(etherToSend > _marketSpread);
 
         uint256 validatorStakingSplit = 250;
         uint256 publicStakingSplit = 250;
         uint256 liquidityProviderStakingSplit = 250;
         uint256 protocolFeeSplit = 250;
 
-        updateDistributionContract(
+        _updateDistributionContract(
             validatorStakingSplit,
             publicStakingSplit,
             liquidityProviderStakingSplit,
             protocolFeeSplit
         );
-        uint256 distributable = mintDistribute(etherToSend, 0);
-        assertSplitsBalance(
+        uint256 distributable = _mintDistribute(etherToSend, 0);
+        _assertSplitsBalance(
             distributable,
             validatorStakingSplit,
             publicStakingSplit,
@@ -156,14 +156,14 @@ contract ALCBTest is Test {
         );
     }
 
-    function updateDistributionContract(
+    function _updateDistributionContract(
         uint256 validatorStakingSplit,
         uint256 publicStakingSplit,
         uint256 liquidityProviderStakingSplit,
         uint256 protocolFeeSplit
     ) internal returns (Distribution) {
-        vm.prank(fixture.adminAddress);
-        address deployAddress = fixture.aliceNetFactory.deployCreate(
+        vm.prank(_fixture.adminAddress);
+        address deployAddress = _fixture.aliceNetFactory.deployCreate(
             abi.encodePacked(
                 type(Distribution).creationCode,
                 abi.encodePacked(
@@ -175,46 +175,46 @@ contract ALCBTest is Test {
             )
         );
 
-        vm.prank(fixture.adminAddress);
-        fixture.aliceNetFactory.upgradeProxy("Distribution", deployAddress, "");
+        vm.prank(_fixture.adminAddress);
+        _fixture.aliceNetFactory.upgradeProxy("Distribution", deployAddress, "");
         return Distribution(deployAddress);
     }
 
-    function mintDistribute(uint96 ethIn, uint256 distributable) internal returns (uint256) {
+    function _mintDistribute(uint96 ethIn, uint256 distributable) internal returns (uint256) {
         // fund the address
-        vm.deal(randomAddress, ethIn);
+        vm.deal(_randomAddress, ethIn);
         // mock the call to use the address for the next call
-        vm.prank(randomAddress);
+        vm.prank(_randomAddress);
 
-        alcb.mint{value: ethIn}(0);
-        uint256 yield = alcb.getYield();
+        _alcb.mint{value: ethIn}(0);
+        uint256 yield = _alcb.getYield();
         distributable = distributable + yield;
 
-        alcb.distribute();
-        assertEq(alcb.getYield(), 0);
+        _alcb.distribute();
+        assertEq(_alcb.getYield(), 0);
 
         return distributable;
     }
 
-    function assertSplitsBalance(
+    function _assertSplitsBalance(
         uint256 excess,
         uint256 validatorStakingSplit,
         uint256 publicStakingSplit,
         uint256 liquidityProviderStakingSplit,
         uint256 protocolFeeSplit
     ) internal {
-        uint256 PERCENTAGE_SCALE = 1000;
-        uint256 protocolFeeShare = (excess * protocolFeeSplit) / PERCENTAGE_SCALE;
+        uint256 percentageScale = 1000;
+        uint256 protocolFeeShare = (excess * protocolFeeSplit) / percentageScale;
         // split remaining between validators, stakers and lp stakers
-        uint256 publicStakingShare = (excess * publicStakingSplit) / PERCENTAGE_SCALE;
-        uint256 lpStakingShare = (excess * liquidityProviderStakingSplit) / PERCENTAGE_SCALE;
+        uint256 publicStakingShare = (excess * publicStakingSplit) / percentageScale;
+        uint256 lpStakingShare = (excess * liquidityProviderStakingSplit) / percentageScale;
         // then give validators the rest
         uint256 validatorStakingShare = excess -
             (protocolFeeShare + publicStakingShare + lpStakingShare);
 
-        assertEq(address(fixture.validatorStaking).balance, validatorStakingShare);
-        assertEq(address(fixture.publicStaking).balance, publicStakingShare);
-        assertEq(address(fixture.liquidityProviderStaking).balance, lpStakingShare);
-        assertEq(address(fixture.foundation).balance, protocolFeeShare);
+        assertEq(address(_fixture.validatorStaking).balance, validatorStakingShare);
+        assertEq(address(_fixture.publicStaking).balance, publicStakingShare);
+        assertEq(address(_fixture.liquidityProviderStaking).balance, lpStakingShare);
+        assertEq(address(_fixture.foundation).balance, protocolFeeShare);
     }
 }

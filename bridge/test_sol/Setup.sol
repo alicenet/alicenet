@@ -32,7 +32,6 @@ import "contracts/ALCABurner.sol";
 import {StdStorage, Vm} from "forge-std/Components.sol";
 
 library Setup {
-    address private constant adminAddress = address(0xdeAD00000000000000000000000000000000dEAd);
     struct BaseTokensFixture {
         LegacyToken legacyToken;
         CentralBridgeRouterMock stakingRouter;
@@ -66,14 +65,16 @@ library Setup {
         address adminAddress;
     }
 
+    address private constant _ADMIN_ADDRESS = address(0xdeAD00000000000000000000000000000000dEAd);
+
     function deployFactoryAndBaseTokens(Vm vm) public returns (BaseTokensFixture memory fixture) {
         LegacyToken legacyToken = new LegacyToken();
         CentralBridgeRouterMock stakingRouter = new CentralBridgeRouterMock(1000);
-        vm.prank(adminAddress);
+        vm.prank(_ADMIN_ADDRESS);
         AliceNetFactory aliceNetFactory = new AliceNetFactory(address(legacyToken));
         ALCA alca = ALCA(aliceNetFactory.getALCAAddress());
 
-        vm.prank(adminAddress);
+        vm.prank(_ADMIN_ADDRESS);
         address alcbAddress = aliceNetFactory.deployCreateAndRegister(
             abi.encodePacked(type(ALCB).creationCode, abi.encodePacked([address(stakingRouter)])),
             "ALCB"
@@ -82,7 +83,7 @@ library Setup {
 
         (, address proxyMultipleProposalAccusationAddress) = deployUpgradeableWithFactory(
             vm,
-            adminAddress,
+            _ADMIN_ADDRESS,
             aliceNetFactory,
             abi.encodePacked(type(PublicStaking).creationCode),
             "PublicStaking",
@@ -91,7 +92,7 @@ library Setup {
 
         PublicStaking publicStaking = PublicStaking(proxyMultipleProposalAccusationAddress);
 
-        vm.prank(adminAddress);
+        vm.prank(_ADMIN_ADDRESS);
         aliceNetFactory.callAny(
             address(publicStaking),
             0,
@@ -105,7 +106,7 @@ library Setup {
             alca: alca,
             alcb: alcb,
             publicStaking: publicStaking,
-            adminAddress: adminAddress
+            adminAddress: _ADMIN_ADDRESS
         });
     }
 

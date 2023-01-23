@@ -9,78 +9,78 @@ import "contracts/libraries/errors/UtilityTokenErrors.sol";
 import "test_sol/Setup.sol";
 
 contract ALCBTest is Test {
-    CentralBridgeRouterMock stakingRouter;
-    ALCB alcb;
-    address randomAddress = address(0x000000000000000000000000000000000000dEaD);
-    address randomAddress2 = address(0x00000000000000000000000000000000DeaDBeef);
-    address zeroAddress = address(0x0000000000000000000000000000000000000000);
-    uint96 marketSpread = 4;
-    uint256 minALCBs = 0;
-    uint256 alcbs = 0;
-    uint256 etherIn = 40 ether;
+    CentralBridgeRouterMock private _stakingRouter;
+    ALCB private _alcb;
+    address private _randomAddress = address(0x000000000000000000000000000000000000dEaD);
+    address private _randomAddress2 = address(0x00000000000000000000000000000000DeaDBeef);
+    address private _zeroAddress = address(0x0000000000000000000000000000000000000000);
+    uint96 private _marketSpread = 4;
+    uint256 private _minALCBs = 0;
+    uint256 private _alcbs = 0;
+    uint256 private _etherIn = 40 ether;
 
     function setUp() public {
         Setup.BaseTokensFixture memory fixture = Setup.deployFactoryAndBaseTokens(vm);
-        stakingRouter = fixture.stakingRouter;
-        alcb = fixture.alcb;
+        _stakingRouter = fixture.stakingRouter;
+        _alcb = fixture.alcb;
 
         // mint some alcb
-        vm.deal(randomAddress, etherIn);
-        vm.prank(randomAddress);
-        alcbs = alcb.mint{value: etherIn}(0);
+        vm.deal(_randomAddress, _etherIn);
+        vm.prank(_randomAddress);
+        _alcbs = _alcb.mint{value: _etherIn}(0);
     }
 
     function testBurn() public {
-        uint256 addressEthBalanceBefore = randomAddress.balance;
+        uint256 addressEthBalanceBefore = _randomAddress.balance;
         uint256 remaining = 100 ether;
-        uint256 burnQuantity = alcbs - remaining;
+        uint256 burnQuantity = _alcbs - remaining;
         uint256 minEth = 0;
-        vm.prank(randomAddress);
-        uint256 ethReturned = alcb.burn(burnQuantity, minEth);
+        vm.prank(_randomAddress);
+        uint256 ethReturned = _alcb.burn(burnQuantity, minEth);
         assertEq(9751261920046697614, ethReturned);
-        assertEq(randomAddress.balance, addressEthBalanceBefore + ethReturned);
-        assertEq(alcb.balanceOf(randomAddress), remaining);
+        assertEq(_randomAddress.balance, addressEthBalanceBefore + ethReturned);
+        assertEq(_alcb.balanceOf(_randomAddress), remaining);
     }
 
     function testBurnTo() public {
-        uint256 addressEthBalanceBefore = randomAddress2.balance;
+        uint256 addressEthBalanceBefore = _randomAddress2.balance;
         uint256 remaining = 100 ether;
-        uint256 burnQuantity = alcbs - remaining;
+        uint256 burnQuantity = _alcbs - remaining;
         uint256 minEth = 0;
-        vm.prank(randomAddress);
-        uint256 ethReturned = alcb.burnTo(randomAddress2, burnQuantity, minEth);
+        vm.prank(_randomAddress);
+        uint256 ethReturned = _alcb.burnTo(_randomAddress2, burnQuantity, minEth);
         assertEq(9751261920046697614, ethReturned);
-        assertEq(randomAddress2.balance, addressEthBalanceBefore + ethReturned);
-        assertEq(alcb.balanceOf(randomAddress), remaining);
-        assertEq(alcb.totalSupply(), remaining);
+        assertEq(_randomAddress2.balance, addressEthBalanceBefore + ethReturned);
+        assertEq(_alcb.balanceOf(_randomAddress), remaining);
+        assertEq(_alcb.totalSupply(), remaining);
     }
 
     function testBurnMoreThanSupplyFails() public {
-        uint256 burnQuantity = alcbs + 1;
+        uint256 burnQuantity = _alcbs + 1;
         uint256 minEth = 0;
         vm.expectRevert(
             abi.encodeWithSelector(
                 UtilityTokenErrors.BurnAmountExceedsSupply.selector,
                 burnQuantity,
-                alcbs
+                _alcbs
             )
         );
-        vm.prank(randomAddress);
-        alcb.burn(burnQuantity, minEth);
+        vm.prank(_randomAddress);
+        _alcb.burn(burnQuantity, minEth);
     }
 
     function testBurnFullSupplySucceeds() public {
-        uint256 addressEthBalanceBefore = randomAddress.balance;
-        uint256 burnQuantity = alcb.totalSupply();
+        uint256 addressEthBalanceBefore = _randomAddress.balance;
+        uint256 burnQuantity = _alcb.totalSupply();
         uint256 minEth = 0;
 
-        vm.prank(randomAddress);
+        vm.prank(_randomAddress);
 
-        uint256 ethReturned = alcb.burn(burnQuantity, minEth);
+        uint256 ethReturned = _alcb.burn(burnQuantity, minEth);
 
-        assertEq(randomAddress.balance, addressEthBalanceBefore + ethReturned);
-        assertEq(alcb.balanceOf(randomAddress), 0);
-        assertEq(alcb.totalSupply(), 0);
+        assertEq(_randomAddress.balance, addressEthBalanceBefore + ethReturned);
+        assertEq(_alcb.balanceOf(_randomAddress), 0);
+        assertEq(_alcb.totalSupply(), 0);
     }
 
     function testBurnZeroFails() public {
@@ -89,56 +89,56 @@ contract ALCBTest is Test {
         vm.expectRevert(
             abi.encodeWithSelector(UtilityTokenErrors.InvalidBurnAmount.selector, burnQuantity)
         );
-        vm.prank(randomAddress);
-        alcb.burn(burnQuantity, minEth);
+        vm.prank(_randomAddress);
+        _alcb.burn(burnQuantity, minEth);
     }
 
     function testBurnFuzz(uint96 etherToSend) public {
-        vm.assume(etherToSend > marketSpread);
+        vm.assume(etherToSend > _marketSpread);
 
         // fund the address
-        vm.deal(randomAddress, etherToSend);
+        vm.deal(_randomAddress, etherToSend);
         // mock the call to use the address for the next call
-        vm.prank(randomAddress);
+        vm.prank(_randomAddress);
 
         // call the mint function
-        uint256 alcbMinted = alcb.mint{value: etherToSend}(0);
-        uint256 poolBalanceBefore = alcb.getPoolBalance();
-        uint256 totalSupplyBefore = alcb.totalSupply();
-        uint256 addressBalanceBefore = alcb.balanceOf(randomAddress);
-        uint256 addressEthBalanceBefore = randomAddress.balance;
+        uint256 alcbMinted = _alcb.mint{value: etherToSend}(0);
+        uint256 poolBalanceBefore = _alcb.getPoolBalance();
+        uint256 totalSupplyBefore = _alcb.totalSupply();
+        uint256 addressBalanceBefore = _alcb.balanceOf(_randomAddress);
+        uint256 addressEthBalanceBefore = _randomAddress.balance;
         uint256 minEth = 0;
-        vm.prank(randomAddress);
-        uint256 ethReturned = alcb.burn(alcbMinted, minEth);
+        vm.prank(_randomAddress);
+        uint256 ethReturned = _alcb.burn(alcbMinted, minEth);
 
-        assertEq(alcb.balanceOf(randomAddress), addressBalanceBefore - alcbMinted);
-        assertEq(alcb.getPoolBalance(), poolBalanceBefore - ethReturned);
-        assertEq(alcb.totalSupply(), totalSupplyBefore - alcbMinted);
-        assertEq(randomAddress.balance, addressEthBalanceBefore + ethReturned);
+        assertEq(_alcb.balanceOf(_randomAddress), addressBalanceBefore - alcbMinted);
+        assertEq(_alcb.getPoolBalance(), poolBalanceBefore - ethReturned);
+        assertEq(_alcb.totalSupply(), totalSupplyBefore - alcbMinted);
+        assertEq(_randomAddress.balance, addressEthBalanceBefore + ethReturned);
     }
 
     function testBurnToFuzz(uint96 etherToSend, address destinationAddress) public {
-        vm.assume(destinationAddress != zeroAddress);
-        vm.assume(etherToSend > marketSpread);
+        vm.assume(destinationAddress != _zeroAddress);
+        vm.assume(etherToSend > _marketSpread);
 
         // fund the address
-        vm.deal(randomAddress, etherToSend);
+        vm.deal(_randomAddress, etherToSend);
         // mock the call to use the address for the next call
-        vm.prank(randomAddress);
+        vm.prank(_randomAddress);
 
         // call the mint function
-        uint256 alcbMinted = alcb.mint{value: etherToSend}(0);
-        uint256 poolBalanceBefore = alcb.getPoolBalance();
-        uint256 totalSupplyBefore = alcb.totalSupply();
-        uint256 addressBalanceBefore = alcb.balanceOf(randomAddress);
+        uint256 alcbMinted = _alcb.mint{value: etherToSend}(0);
+        uint256 poolBalanceBefore = _alcb.getPoolBalance();
+        uint256 totalSupplyBefore = _alcb.totalSupply();
+        uint256 addressBalanceBefore = _alcb.balanceOf(_randomAddress);
         uint256 addressEthBalanceBefore = destinationAddress.balance;
         uint256 minEth = 0;
-        vm.prank(randomAddress);
-        uint256 ethReturned = alcb.burnTo(destinationAddress, alcbMinted, minEth);
+        vm.prank(_randomAddress);
+        uint256 ethReturned = _alcb.burnTo(destinationAddress, alcbMinted, minEth);
 
-        assertEq(alcb.balanceOf(randomAddress), addressBalanceBefore - alcbMinted);
-        assertEq(alcb.getPoolBalance(), poolBalanceBefore - ethReturned);
-        assertEq(alcb.totalSupply(), totalSupplyBefore - alcbMinted);
+        assertEq(_alcb.balanceOf(_randomAddress), addressBalanceBefore - alcbMinted);
+        assertEq(_alcb.getPoolBalance(), poolBalanceBefore - ethReturned);
+        assertEq(_alcb.totalSupply(), totalSupplyBefore - alcbMinted);
         assertEq(destinationAddress.balance, addressEthBalanceBefore + ethReturned);
     }
 }
