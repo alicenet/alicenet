@@ -205,6 +205,7 @@ func StartFromRegistrationOpenPhase(
 	unregisteredValidators int,
 	phaseLength uint16,
 ) *EthDkgTestSuite {
+	t.Helper()
 	eth := fixture.Client
 	ctx := context.Background()
 	owner := eth.GetDefaultAccount()
@@ -374,6 +375,7 @@ func StartFromShareDistributionPhase(
 	badSharesIdx []int,
 	phaseLength uint16,
 ) *EthDkgTestSuite {
+	t.Helper()
 	suite := StartFromRegistrationOpenPhase(t, fixture, 0, phaseLength)
 	ctx := context.Background()
 	logger := logging.GetLogger("test").WithField("Validator", "")
@@ -516,6 +518,7 @@ func StartFromKeyShareSubmissionPhase(
 	undistributedShares int,
 	phaseLength uint16,
 ) *EthDkgTestSuite {
+	t.Helper()
 	suite := StartFromShareDistributionPhase(t, fixture, []int{}, []int{}, phaseLength)
 	ctx := context.Background()
 	logger := logging.GetLogger("test").WithField("Validator", "")
@@ -615,6 +618,7 @@ func StartFromMPKSubmissionPhase(
 	fixture *tests.ClientFixture,
 	phaseLength uint16,
 ) *EthDkgTestSuite {
+	t.Helper()
 	suite := StartFromKeyShareSubmissionPhase(t, fixture, 0, phaseLength)
 	ctx := context.Background()
 	logger := logging.GetLogger("test").WithField("Validator", "")
@@ -705,6 +709,7 @@ func StartFromGPKjPhase(
 	badGPKjIdx []int,
 	phaseLength uint16,
 ) *EthDkgTestSuite {
+	t.Helper()
 	suite := StartFromMPKSubmissionPhase(t, fixture, phaseLength)
 	ctx := context.Background()
 	logger := logging.GetLogger("test").WithField("Validator", "")
@@ -830,6 +835,7 @@ func CompleteEthDkgCeremony(
 	t *testing.T,
 	numValidators int,
 ) (*tests.ClientFixture, *EthDkgTestSuite) {
+	t.Helper()
 	fixture := setupEthereum(t, numValidators)
 	suite := StartFromGPKjPhase(t, fixture, []int{}, []int{}, 100)
 	ctx := context.Background()
