@@ -17,9 +17,10 @@ contract NativeERC721BridgePoolV1 is
 {
     address internal _erc721Contract;
 
-    constructor(address alicenetFactoryAddress, address snapshotsAddress)
-        NativeERCBridgePoolBase(alicenetFactoryAddress, snapshotsAddress)
-    {}
+    constructor(
+        address alicenetFactoryAddress,
+        address snapshotsAddress
+    ) NativeERCBridgePoolBase(alicenetFactoryAddress, snapshotsAddress) {}
 
     function initialize(address erc721Contract_) public onlyBridgePoolFactory initializer {
         _erc721Contract = erc721Contract_;

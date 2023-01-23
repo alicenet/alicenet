@@ -34,11 +34,10 @@ library VSPreImageParserLibrary {
     /// @param src Binary state containing a VSPreImage serialized struct without CapnProto headers
     /// @param dataOffset offset to start reading the VSPreImage state from inside src
     /// @return vsPreImage a VSPreImage struct
-    function extractInnerVSPreImage(bytes memory src, uint256 dataOffset)
-        internal
-        pure
-        returns (VSPreImage memory vsPreImage)
-    {
+    function extractInnerVSPreImage(
+        bytes memory src,
+        uint256 dataOffset
+    ) internal pure returns (VSPreImage memory vsPreImage) {
         if (dataOffset + _VS_PRE_IMAGE_SIZE <= dataOffset) {
             revert GenericParserLibraryErrors.DataOffsetOverflow();
         }

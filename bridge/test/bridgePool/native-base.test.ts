@@ -12,6 +12,7 @@ import {
   getContractAddressFromBridgePoolCreatedEvent,
   getFixture,
   getImpersonatedSigner,
+  getMetamorphicAddress,
 } from "../setup";
 import {
   getMockBlockClaimsForSnapshot,
@@ -30,17 +31,16 @@ let utxoOwnerSigner: SignerWithAddress;
 let factorySigner: SignerWithAddress;
 let merkleProofLibraryErrors: Contract;
 let bridgePoolImplFactory: ContractFactory;
-let nativeERCBridgePool: Contract;
+let bridgePool: Contract;
 let nativeERCBridgePoolBaseErrors: Contract;
 let asBridgeRouter: any;
-const bridgePoolTokenTypeERC20 = 0;
-const bridgePoolType = 0; //Native
+const bridgePoolTokenType = 0; // ERC20
+const bridgePoolType = 0; // Native
 const bridgePoolNativeChainId = 1337;
 const bridgePoolVersion = 1;
 const bridgePoolValue = 0;
 const tokenId = 0;
 const tokenAmount = 0;
-const bridgeFee = 1000;
 const encodedDepositParameters = defaultAbiCoder.encode(
   ["tuple(uint256 tokenId_, uint256 tokenAmount_)"],
   [
@@ -49,7 +49,7 @@ const encodedDepositParameters = defaultAbiCoder.encode(
       tokenAmount_: tokenAmount,
     },
   ]
-)
+);
 const encodedMockBlockClaims = getMockBlockClaimsForSnapshot();
 
 describe("Testing Base BridgePool Deposit/Withdraw", async () => {
@@ -69,14 +69,7 @@ describe("Testing Base BridgePool Deposit/Withdraw", async () => {
     merkleProofLibraryErrors = await (
       await ethers.getContractFactory("MerkleProofLibraryErrors")
     ).deploy();
-    const bridgeRouter = await deployUpgradeableWithFactory(
-      fixture.factory,
-      "BridgeRouterMock",
-      "BridgeRouter",
-      undefined,
-      [bridgeFee]
-    );
-    asBridgeRouter = await getImpersonatedSigner(bridgeRouter.address);
+
     const bridgePoolFactory = (await deployUpgradeableWithFactory(
       fixture.factory,
       "BridgePoolFactory",
@@ -86,28 +79,41 @@ describe("Testing Base BridgePool Deposit/Withdraw", async () => {
       "NativeERCBridgePoolMock"
     );
     const bridgePoolImplBytecode = bridgePoolImplFactory.getDeployTransaction(
-      bridgeRouter.address
+      fixture.factory.address,
+      fixture.snapshots.address
     ).data as BytesLike;
     await bridgePoolFactory
       .connect(factorySigner)
       .deployPoolLogic(
         bridgePoolType,
-        bridgePoolTokenTypeERC20,
+        bridgePoolTokenType,
         bridgePoolVersion,
         bridgePoolImplBytecode,
         bridgePoolValue
       );
+    const initializeEncodedParams =
+      bridgePoolImplFactory.interface.encodeFunctionData("initialize", [
+        ethers.constants.AddressZero,
+      ]);
     const tx = await bridgePoolFactory
       .connect(factorySigner)
       .deployNewNativePool(
-        bridgePoolTokenTypeERC20,
+        bridgePoolTokenType,
         ethers.constants.AddressZero,
-        bridgePoolVersion,1337,encodedDepositParameters
+        bridgePoolVersion,
+        bridgePoolNativeChainId,
+        initializeEncodedParams
       );
-    nativeERCBridgePool = await ethers.getContractAt(
+    bridgePool = await ethers.getContractAt(
       "NativeERCBridgePoolMock",
       await getContractAddressFromBridgePoolCreatedEvent(tx)
     );
+    // Simulate a bridge router with some gas for transactions
+    const bridgeRouterAddress = getMetamorphicAddress(
+      fixture.factory.address,
+      "BridgeRouter"
+    );
+    asBridgeRouter = await getImpersonatedSigner(bridgeRouterAddress);
   }
 
   beforeEach(async function () {
@@ -116,34 +122,34 @@ describe("Testing Base BridgePool Deposit/Withdraw", async () => {
 
   it("Should fail to deposit if not called from Bridge Router", async () => {
     await expect(
-      nativeERCBridgePool.deposit(user.address, encodedDepositParameters)
+      bridgePool.deposit(user.address, encodedDepositParameters)
     ).to.be.revertedWithCustomError(bridgePoolImplFactory, "OnlyBridgeRouter");
   });
 
   it("Should deposit if called from Bridge Router", async () => {
-    await nativeERCBridgePool
+    await bridgePool
       .connect(asBridgeRouter)
       .deposit(user.address, encodedDepositParameters);
   });
 
   it("Should call a withdraw upon proofs verification if called by Bridge Router", async () => {
-    await nativeERCBridgePool
+    await bridgePool
       .connect(asBridgeRouter)
       .withdraw(utxoOwnerSigner.address, vsPreImage, proofs);
   });
 
   it("Should fail to call a withdraw upon proofs verification if notcalled by Bridge Router", async () => {
     await expect(
-      nativeERCBridgePool.withdraw(utxoOwnerSigner.address, vsPreImage, proofs)
+      bridgePool.withdraw(utxoOwnerSigner.address, vsPreImage, proofs)
     ).to.be.revertedWithCustomError(bridgePoolImplFactory, "OnlyBridgeRouter");
   });
 
   it("Should not call a withdraw on an already withdrawn UTXO upon proofs verification", async () => {
-    await nativeERCBridgePool
+    await bridgePool
       .connect(asBridgeRouter)
       .withdraw(utxoOwnerSigner.address, vsPreImage, proofs);
     await expect(
-      nativeERCBridgePool
+      bridgePool
         .connect(asBridgeRouter)
         .withdraw(utxoOwnerSigner.address, vsPreImage, proofs)
     ).to.be.revertedWithCustomError(
@@ -154,7 +160,7 @@ describe("Testing Base BridgePool Deposit/Withdraw", async () => {
 
   it("Should not call a withdraw with wrong proof", async () => {
     await expect(
-      nativeERCBridgePool
+      bridgePool
         .connect(asBridgeRouter)
         .withdraw(utxoOwnerSigner.address, vsPreImage, wrongProofs)
     ).to.be.revertedWithCustomError(
@@ -165,7 +171,7 @@ describe("Testing Base BridgePool Deposit/Withdraw", async () => {
 
   it("Should not call a withdraw if sender does not match UTXO owner", async () => {
     await expect(
-      nativeERCBridgePool
+      bridgePool
         .connect(asBridgeRouter)
         .withdraw(user.address, vsPreImage, proofs)
     ).to.be.revertedWithCustomError(
@@ -176,7 +182,7 @@ describe("Testing Base BridgePool Deposit/Withdraw", async () => {
 
   it("Should not call a withdraw if chainId in UTXO does not match native chainId", async () => {
     await expect(
-      nativeERCBridgePool
+      bridgePool
         .connect(asBridgeRouter)
         .withdraw(utxoOwnerSigner.address, wrongChainIdVSPreImage, proofs)
     ).to.be.revertedWithCustomError(
@@ -187,7 +193,7 @@ describe("Testing Base BridgePool Deposit/Withdraw", async () => {
 
   it("Should not call a withdraw if UTXOID in UTXO does not match UTXOID in proof", async () => {
     await expect(
-      nativeERCBridgePool
+      bridgePool
         .connect(asBridgeRouter)
         .withdraw(utxoOwnerSigner.address, wrongUTXOIDVSPreImage, proofs)
     ).to.be.revertedWithCustomError(
@@ -198,7 +204,7 @@ describe("Testing Base BridgePool Deposit/Withdraw", async () => {
 
   it("Should not call a withdraw if state key in proofs does not match txhash key", async () => {
     await expect(
-      nativeERCBridgePool
+      bridgePool
         .connect(asBridgeRouter)
         .withdraw(utxoOwnerSigner.address, vsPreImage, wrongKeyProofs)
     ).to.be.revertedWithCustomError(

@@ -1,12 +1,14 @@
 // SPDX-License-Identifier: MIT-open-group
 pragma solidity ^0.8.16;
 import "contracts/NativeERCBridgePoolBase.sol";
-import "contracts/utils/auth/ImmutableSnapshots.sol";
 
 contract NativeERCBridgePoolMock is Initializable, NativeERCBridgePoolBase, ImmutableSnapshots {
     address internal _ercContract;
 
-    constructor(address bridgeRouterContract) NativeERCBridgePoolBase(bridgeRouterContract, _snapshotsAddress() ) {}
+    constructor(
+        address bridgeRouterContract,
+        address snapshotsAddress
+    ) NativeERCBridgePoolBase(bridgeRouterContract, snapshotsAddress) {}
 
     function initialize(address ercContract_) public initializer {
         _ercContract = ercContract_;

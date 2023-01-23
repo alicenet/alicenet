@@ -201,7 +201,7 @@ export async function getContractAddressFromBridgePoolCreatedEvent(
   tx: ContractTransaction
 ): Promise<string> {
   const eventSignature =
-    "event BridgePoolCreated(address poolAddress, address token)";
+    "event BridgePoolCreated(address poolAddress, address ercTokenAddress, uint256 chainID, uint16 poolLogicVersion)";
   const eventName = "BridgePoolCreated";
   const eventVariable = "poolAddress";
   return await getContractAddressFromEventLog(

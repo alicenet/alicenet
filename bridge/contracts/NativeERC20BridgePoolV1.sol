@@ -18,9 +18,10 @@ contract NativeERC20BridgePoolV1 is
 {
     address internal _erc20Contract;
 
-    constructor(address alicenetFactoryAddress, address snapshotsAddress)
-        NativeERCBridgePoolBase(alicenetFactoryAddress, snapshotsAddress)
-    {}
+    constructor(
+        address alicenetFactoryAddress,
+        address snapshotsAddress
+    ) NativeERCBridgePoolBase(alicenetFactoryAddress, snapshotsAddress) {}
 
     function initialize(address erc20Contract_) public onlyBridgePoolFactory initializer {
         _erc20Contract = erc20Contract_;
@@ -51,7 +52,7 @@ contract NativeERC20BridgePoolV1 is
         bytes memory encodedVsPreImage,
         bytes[4] memory proofs
     ) public virtual override returns (uint256 amount) {
-       amount = super.withdraw(receiver, encodedVsPreImage, proofs);
+        amount = super.withdraw(receiver, encodedVsPreImage, proofs);
         _safeTransferERC20(IERC20Transferable(_erc20Contract), receiver, amount);
     }
 }

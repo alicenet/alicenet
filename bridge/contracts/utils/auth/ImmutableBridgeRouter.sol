@@ -4,6 +4,7 @@ pragma solidity ^0.8.16;
 
 import "contracts/utils/DeterministicAddress.sol";
 import "contracts/utils/auth/ImmutableFactory.sol";
+
 abstract contract ImmutableBridgeRouter is ImmutableFactory {
     address private immutable _bridgeRouter;
     error OnlyBridgeRouter(address sender, address expected);

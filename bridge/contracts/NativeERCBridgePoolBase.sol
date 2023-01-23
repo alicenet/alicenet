@@ -24,21 +24,20 @@ abstract contract NativeERCBridgePoolBase is ImmutableFactory, ImmutableBridgeRo
 
     mapping(bytes32 => bool) private _consumedUTXOIDs;
 
-    constructor(address alicenetFactoryAddress, address snapshotsAddress_)
-        ImmutableFactory(alicenetFactoryAddress)
-    {
+    constructor(
+        address alicenetFactoryAddress,
+        address snapshotsAddress_
+    ) ImmutableFactory(alicenetFactoryAddress) {
         _snapshotsAddress = snapshotsAddress_;
     }
 
     /// @notice code that runs before transfering value from sender to bridge pool
     /// @param sender The address of ERC sender
     /// @param depositParameters encoded deposit parameters (ERC20:tokenAmount, ERC721:tokenId or ERC1155:tokenAmount+tokenId)
-    function deposit(address sender, bytes calldata depositParameters)
-        public
-        virtual
-        override
-        onlyBridgeRouter
-    {}
+    function deposit(
+        address sender,
+        bytes calldata depositParameters
+    ) public virtual override onlyBridgeRouter {}
 
     /// @notice code that runs before transfering value from bridge pool to receiver
     /// @param receiver The address of ERC receiver
@@ -99,11 +98,9 @@ abstract contract NativeERCBridgePoolBase is ImmutableFactory, ImmutableBridgeRo
     /// proof of inclusion in TXRoot: Proof of inclusion of the transaction included in the txRoot trie.
     /// proof of inclusion in TXHash: Proof of inclusion of txOut in the txHash trie
     /// proof of inclusion in HeaderRoot: Proof of inclusion of the block header in the header trie
-    function _verifyProofs(bytes[4] memory _proofs)
-        internal
-        view
-        returns (MerkleProofParserLibrary.MerkleProof memory)
-    {
+    function _verifyProofs(
+        bytes[4] memory _proofs
+    ) internal view returns (MerkleProofParserLibrary.MerkleProof memory) {
         BClaimsParserLibrary.BClaims memory bClaims = Snapshots(_snapshotsAddress)
             .getBlockClaimsFromLatestSnapshot();
         // Validate proofInclusionHeaderRoot against bClaims.headerRoot.
