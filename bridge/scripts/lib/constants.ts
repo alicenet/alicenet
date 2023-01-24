@@ -3,6 +3,7 @@ export const MULTICALL_GAS_LIMIT = "10000000";
 export const MAX_PUBLIC_STAKING_LOCK_DURATION = "1051200";
 // contract names
 export const ALICENET_FACTORY = "AliceNetFactory";
+export const BRIDGE_POOL_FACTORY = "BridgePoolFactory";
 export const END_POINT = "MockEndPoint";
 export const LOCK_UP = "Lockup";
 export const MOCK_FACTORY = "MockFactory";
@@ -61,6 +62,9 @@ export const env = (): string => {
 // AliceNet Contract salts
 export const ALICE_NET_PUBLIC_STAKING_SALT = "PublicStaking";
 export const ALCA_SALT = "ALCA";
+//alicenet factory ethereum owner address
+export const ALICENET_FACTORY_OWNER_ADDRESS =
+  "0xff55549a3ceea32fba4794bf1a649a2363fcda53";
 
 // AliceNet Contract Addresses
 export const ALICE_NET_FACTORY_ADDRESS =
