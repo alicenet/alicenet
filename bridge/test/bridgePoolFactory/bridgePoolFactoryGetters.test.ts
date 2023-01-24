@@ -78,10 +78,12 @@ describe("Testing bridge pool factory getter functions", async () => {
   });
 
   it("attempt to get nonexistent erc20 version", async () => {
-    await expect(fixture.bridgePoolFactory.getLatestPoolLogicVersion(
-      bridgePoolChainId,
-      tokenTypeERC20
-    ))
+    await expect(
+      fixture.bridgePoolFactory.getLatestPoolLogicVersion(
+        bridgePoolChainId,
+        tokenTypeERC20
+      )
+    )
       .to.be.revertedWithCustomError(
         fixture.nativeERCBridgePoolBaseErrors,
         "LogicVersionDoesNotExist"
