@@ -31,7 +31,7 @@ import {
   readDeploymentConfig,
   writeDeploymentConfig,
 } from "../lib/deployment/utils";
-import { dryRunTask } from "./taskUtils";
+import { impersonateFactorySigner } from "./taskUtils";
 
 function delay(milliseconds: number) {
   return new Promise(() => setTimeout(milliseconds));
@@ -1824,7 +1824,11 @@ task(
     const alca = await hre.ethers.getContractAt(ALCA, alcaAddress);
     // use this flag with a hardhat forked node
     if (taskArgs.test) {
-      factory = await dryRunTask(ALICENET_FACTORY_OWNER_ADDRESS, factory, hre);
+      factory = await impersonateFactorySigner(
+        ALICENET_FACTORY_OWNER_ADDRESS,
+        factory,
+        hre
+      );
     }
     // encode approval call to approve public staking contract to
     // encode ALCA amount in wei

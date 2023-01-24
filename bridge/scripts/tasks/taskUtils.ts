@@ -8,7 +8,7 @@ import { AliceNetFactory } from "../../typechain-types/contracts/AliceNetFactory
  * @param hre hardhat runtime environment object
  * @returns alicenet factory object connected to imp
  */
-export async function dryRunTask(
+export async function impersonateFactorySigner(
   ownerAddress: string,
   factory: AliceNetFactory,
   hre: HardhatRuntimeEnvironment
