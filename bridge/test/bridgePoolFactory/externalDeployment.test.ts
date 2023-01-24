@@ -11,7 +11,7 @@ import {
   getImpersonatedSigner,
   preFixtureSetup,
 } from "../setup";
-const nativeBridgePool = 0;
+const externalBridgePool = 1;
 const tokenTypeERC20 = 0;
 const tokenTypeERC721 = 1;
 const bridgePoolNativeChainId = 1337;
@@ -27,9 +27,9 @@ const bridgePoolVersion = 1;
 const nonExistentBridgePoolVersion = 11;
 const bridgePoolValue = 0;
 const initCallData = ethers.utils.solidityPack([], []);
-const bridgePoolChainId = 1337; // Native
+const bridgePoolChainId = 9999; // External
 
-describe("Testing BridgePool Factory - Native Deployments", async () => {
+describe("Testing BridgePool Factory - External Deployments", async () => {
   async function deployFixture() {
     await preFixtureSetup();
     const [admin] = await ethers.getSigners();
@@ -47,7 +47,7 @@ describe("Testing BridgePool Factory - Native Deployments", async () => {
     await fixture.bridgePoolFactory
       .connect(asFactory)
       .deployPoolLogic(
-        nativeBridgePool,
+        externalBridgePool,
         tokenTypeERC20,
         bridgePoolVersion,
         bridgePoolDeployCode,
@@ -60,10 +60,10 @@ describe("Testing BridgePool Factory - Native Deployments", async () => {
     ({ fixture, asFactory } = await loadFixture(deployFixture));
   });
 
-  it("Should deploy new native bridge pool as factory even if public pool deployment is not enabled", async () => {
+  it("Should deploy new external bridge pool as factory even if public pool deployment is not enabled", async () => {
     await fixture.bridgePoolFactory
       .connect(asFactory)
-      .deployNewNativePool(
+      .deployNewExternalPool(
         tokenTypeERC20,
         ethers.constants.AddressZero,
         bridgePoolVersion,
@@ -92,9 +92,9 @@ describe("Testing BridgePool Factory - Native Deployments", async () => {
     expect(bridgePoolAddress).to.eq(expectedAddress);
   });
 
-  it("Should not deploy new native bridge pool as user if public pool deployment is not enabled", async () => {
+  it("Should not deploy new external bridge pool as user if public pool deployment is not enabled", async () => {
     await expect(
-      fixture.bridgePoolFactory.deployNewNativePool(
+      fixture.bridgePoolFactory.deployNewExternalPool(
         tokenTypeERC20,
         ethers.constants.AddressZero,
         bridgePoolVersion,
@@ -107,11 +107,11 @@ describe("Testing BridgePool Factory - Native Deployments", async () => {
     );
   });
 
-  it("Should deploy new native bridge pool as factory if public pool deployment is enabled", async () => {
+  it("Should deploy new external bridge pool as factory if public pool deployment is enabled", async () => {
     await fixture.bridgePoolFactory
       .connect(asFactory)
       .togglePublicPoolDeployment();
-    await fixture.bridgePoolFactory.deployNewNativePool(
+    await fixture.bridgePoolFactory.deployNewExternalPool(
       tokenTypeERC20,
       ethers.constants.AddressZero,
       bridgePoolVersion,
@@ -120,11 +120,11 @@ describe("Testing BridgePool Factory - Native Deployments", async () => {
     );
   });
 
-  it("Should deploy new native bridge pool as user if public pool deployment is enabled", async () => {
+  it("Should deploy new external bridge pool as user if public pool deployment is enabled", async () => {
     await fixture.bridgePoolFactory
       .connect(asFactory)
       .togglePublicPoolDeployment();
-    await fixture.bridgePoolFactory.deployNewNativePool(
+    await fixture.bridgePoolFactory.deployNewExternalPool(
       tokenTypeERC20,
       ethers.constants.AddressZero,
       bridgePoolVersion,
@@ -133,10 +133,10 @@ describe("Testing BridgePool Factory - Native Deployments", async () => {
     );
   });
 
-  it("Should not deploy two native bridge pools with same ERC contract and version", async () => {
+  it("Should not deploy two external bridge pools with same ERC contract and version", async () => {
     await fixture.bridgePoolFactory
       .connect(asFactory)
-      .deployNewNativePool(
+      .deployNewExternalPool(
         tokenTypeERC20,
         ethers.constants.AddressZero,
         bridgePoolVersion,
@@ -146,7 +146,7 @@ describe("Testing BridgePool Factory - Native Deployments", async () => {
     await expect(
       fixture.bridgePoolFactory
         .connect(asFactory)
-        .deployNewNativePool(
+        .deployNewExternalPool(
           tokenTypeERC20,
           ethers.constants.AddressZero,
           bridgePoolVersion,
@@ -159,11 +159,11 @@ describe("Testing BridgePool Factory - Native Deployments", async () => {
     );
   });
 
-  it("Should not deploy new native bridge pool with non-existent version", async () => {
+  it("Should not deploy new external bridge pool with non-existent version", async () => {
     await expect(
       fixture.bridgePoolFactory
         .connect(asFactory)
-        .deployNewNativePool(
+        .deployNewExternalPool(
           tokenTypeERC20,
           ethers.constants.AddressZero,
           nonExistentBridgePoolVersion,
@@ -193,7 +193,7 @@ describe("Testing BridgePool Factory - Native Deployments", async () => {
     );
   });
 
-  it("Should get latest pool logic version for ERC20 native", async () => {
+  it("Should get latest pool logic version for ERC20 external", async () => {
     const latestExternalERC20Version =
       await fixture.bridgePoolFactory.getLatestPoolLogicVersion(
         bridgePoolChainId,
@@ -202,11 +202,11 @@ describe("Testing BridgePool Factory - Native Deployments", async () => {
     expect(latestExternalERC20Version).to.eq(bridgePoolVersion);
   });
 
-  it("Should deploy bridge pool logic for ERC721 native", async () => {
+  it("Should deploy bridge pool logic for ERC721 external", async () => {
     await fixture.bridgePoolFactory
       .connect(asFactory)
       .deployPoolLogic(
-        nativeBridgePool,
+        externalBridgePool,
         tokenTypeERC721,
         bridgePoolVersion,
         bridgePoolDeployCode,
@@ -232,7 +232,7 @@ describe("Testing BridgePool Factory - Native Deployments", async () => {
     );
     expect(await updatedBridgePoolFactory.getNativePoolType()).to.be.equals(0);
     // Slot for ERC20 logic should still be there after upgrade
-    await fixture.bridgePoolFactory.deployNewNativePool(
+    await fixture.bridgePoolFactory.deployNewExternalPool(
       tokenTypeERC20,
       ethers.constants.AddressZero,
       bridgePoolVersion,

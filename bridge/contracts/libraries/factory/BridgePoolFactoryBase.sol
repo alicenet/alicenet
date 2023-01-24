@@ -2,12 +2,13 @@
 pragma solidity ^0.8.16;
 
 import "contracts/utils/auth/ImmutableFactory.sol";
+import "contracts/utils/auth/ImmutableSnapshots.sol";
 import "contracts/libraries/errors/BridgePoolFactoryErrors.sol";
 import "contracts/interfaces/IBridgePool.sol";
 import "contracts/utils/BridgePoolAddressUtil.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 
-abstract contract BridgePoolFactoryBase is ImmutableFactory {
+abstract contract BridgePoolFactoryBase is ImmutableFactory, ImmutableSnapshots {
     enum TokenType {
         ERC20,
         ERC721,
@@ -21,12 +22,17 @@ abstract contract BridgePoolFactoryBase is ImmutableFactory {
     uint256 internal immutable _chainID;
     bool public publicPoolDeploymentEnabled;
     address internal _implementation;
-    mapping(string => address) internal _logicAddresses;
+    mapping(bytes => address) internal _logicAddresses;
     //mapping of native and external pools to mapping of pool types to most recent version of logic
     mapping(PoolType => mapping(TokenType => uint16)) internal _logicVersionsDeployed;
     //existing pools
     mapping(address => bool) public poolExists;
-    event BridgePoolCreated(address poolAddress, address token);
+    event BridgePoolCreated(
+        address poolAddress,
+        address ercTokenAddress,
+        uint256 chainID,
+        uint16 poolLogicVersion
+    );
 
     modifier onlyFactoryOrPublicEnabled() {
         if (msg.sender != _factoryAddress() && !publicPoolDeploymentEnabled) {
@@ -35,8 +41,15 @@ abstract contract BridgePoolFactoryBase is ImmutableFactory {
         _;
     }
 
-    constructor() ImmutableFactory(msg.sender) {
+    constructor() {
         _chainID = block.chainid;
+    }
+
+    /**
+     * @notice returns required immutable contract addresses
+     */
+    function getImmutableContractAdresses() public view returns (address, address) {
+        return (_snapshotsAddress(), _factoryAddress());
     }
 
     // NativeERC20V!
@@ -57,54 +70,48 @@ abstract contract BridgePoolFactoryBase is ImmutableFactory {
 
     /**
      * @notice returns the most recent version of the pool logic
-     * @param chainId_ native chainID of the token ie 1 for ethereum erc20
+     * @param chainId_ chain identification
      * @param tokenType_ type of token 0 for ERC20 1 for ERC721 and 2 for ERC1155
      */
     function getLatestPoolLogicVersion(
         uint256 chainId_,
         uint8 tokenType_
-    ) public view returns (uint16) {
-        if (chainId_ != _chainID) {
-            return _logicVersionsDeployed[PoolType.EXTERNAL][TokenType(tokenType_)];
-        } else {
-            return _logicVersionsDeployed[PoolType.NATIVE][TokenType(tokenType_)];
+    ) public view returns (uint16 version) {
+        uint8 poolType = (chainId_ == _chainID) ? uint8(PoolType.NATIVE) : uint8(PoolType.EXTERNAL);
+        version = _logicVersionsDeployed[PoolType(poolType)][TokenType(tokenType_)];
+        if (version == 0) {
+            revert BridgePoolFactoryErrors.LogicVersionDoesNotExist(poolType, tokenType_);
         }
     }
 
     function _deployPoolLogic(
+        uint8 poolType_,
         uint8 tokenType_,
-        uint256 chainId_,
-        uint256 value_,
-        bytes calldata deployCode_
-    ) internal returns (address) {
-        address addr;
+        uint16 poolVersion_,
+        bytes calldata deployCode_,
+        uint256 value_
+    ) internal returns (address addr) {
         uint32 codeSize;
-        bool native = true;
-        uint16 version;
-        bytes memory alicenetFactoryAddress = abi.encodePacked(
-            bytes32(uint256(uint160(_factoryAddress())))
+        uint16 version = _logicVersionsDeployed[PoolType(poolType_)][TokenType(tokenType_)] + 1;
+        if (poolVersion_ != version)
+            revert BridgePoolFactoryErrors.InvalidVersion(version, poolVersion_);
+        bytes memory logicAddressKey = _getImplementationAddressKey(
+            poolType_,
+            tokenType_,
+            poolVersion_
         );
         assembly ("memory-safe") {
             let ptr := mload(0x40)
             calldatacopy(ptr, deployCode_.offset, deployCode_.length)
-            // add bytes32 alicenet factory address as parameter to constructor
-            mstore(add(ptr, deployCode_.length), alicenetFactoryAddress)
             addr := create(value_, ptr, add(deployCode_.length, 32))
             codeSize := extcodesize(addr)
         }
         if (codeSize == 0) {
             revert BridgePoolFactoryErrors.FailedToDeployLogic();
         }
-        if (chainId_ != _chainID) {
-            native = false;
-            version = _logicVersionsDeployed[PoolType.EXTERNAL][TokenType(tokenType_)] + 1;
-            _logicVersionsDeployed[PoolType.EXTERNAL][TokenType(tokenType_)] = version;
-        } else {
-            version = _logicVersionsDeployed[PoolType.NATIVE][TokenType(tokenType_)] + 1;
-            _logicVersionsDeployed[PoolType.NATIVE][TokenType(tokenType_)] = version;
-        }
-        _logicAddresses[_getImplementationAddressKey(tokenType_, version, native)] = addr;
-        return addr;
+        _logicVersionsDeployed[PoolType(poolType_)][TokenType(tokenType_)] = version;
+        //record the depolyed logic address in the mapping
+        _logicAddresses[logicAddressKey] = addr;
     }
 
     /**
@@ -114,47 +121,58 @@ abstract contract BridgePoolFactoryBase is ImmutableFactory {
         publicPoolDeploymentEnabled = !publicPoolDeploymentEnabled;
     }
 
-    /**
-     * @notice Deploys a new bridge to pass tokens to layer 2 chain from the specified ERC contract.
-     * The pools are created as thin proxies (EIP1167) routing to versioned implementations identified by correspondent salt.
-     * @param tokenType_ type of token (0=ERC20, 1=ERC721, 2=ERC1155)
-     * @param ercContract_ address of ERC20 source token contract
-     * @param poolVersion_ version of BridgePool implementation to use
-     */
-    function _deployNewNativePool(
+    function _deployNewPool(
+        uint8 poolType_,
         uint8 tokenType_,
         address ercContract_,
-        uint16 poolVersion_
+        uint16 poolVersion_,
+        uint256 chainID_,
+        bytes calldata initCallData
     ) internal {
-        bool native = true;
-        //calculate the unique salt for the bridge pool
+        // get the unique salt for the bridge pool
         bytes32 bridgePoolSalt = BridgePoolAddressUtil.getBridgePoolSalt(
             ercContract_,
             tokenType_,
-            _chainID,
+            chainID_,
             poolVersion_
         );
-        //calculate the address of the pool's logic contract
-        address implementation = _logicAddresses[
-            _getImplementationAddressKey(tokenType_, poolVersion_, native)
+        //look up the address in the _logicAddresses mapping
+        _implementation = _logicAddresses[
+            _getImplementationAddressKey(poolType_, tokenType_, poolVersion_)
         ];
-        _implementation = implementation;
+        address implementation = _implementation;
         //check if the logic exists for the specified pool
         uint256 implementationSize;
         assembly ("memory-safe") {
             implementationSize := extcodesize(implementation)
         }
-        if (implementationSize == 0) {
-            revert BridgePoolFactoryErrors.PoolVersionNotSupported(poolVersion_);
+        if (implementationSize == 0 || _implementation == address(0)) {
+            revert BridgePoolFactoryErrors.PoolLogicNotSupported();
         }
         address contractAddr = _deployStaticPool(bridgePoolSalt);
-        IBridgePool(contractAddr).initialize(ercContract_);
-        emit BridgePoolCreated(contractAddr, ercContract_);
+        _initializeContract(contractAddr, initCallData);
+        emit BridgePoolCreated(contractAddr, ercContract_, chainID_, poolVersion_);
+    }
+
+    function _initializeContract(address contract_, bytes calldata initCallData_) internal {
+        assembly ("memory-safe") {
+            if iszero(iszero(initCallData_.length)) {
+                let ptr := mload(0x40)
+                mstore(0x40, add(initCallData_.length, ptr))
+                calldatacopy(ptr, initCallData_.offset, initCallData_.length)
+                if iszero(call(gas(), contract_, 0, ptr, initCallData_.length, 0x00, 0x00)) {
+                    ptr := mload(0x40)
+                    mstore(0x40, add(returndatasize(), ptr))
+                    returndatacopy(ptr, 0x00, returndatasize())
+                    revert(ptr, returndatasize())
+                }
+            }
+        }
     }
 
     /**
-     * @notice creates a BridgePool contract with specific salt and bytecode returned by this contract fallback
-     * @param salt_ salt of the implementation contract
+     * @notice deploys a bridge pool clone given a salt, the implementation slot must be set with the correct implementation contract address
+     * @param salt_ use BridgePoolAddressUtil.getBridgePoolSaltto generate the unique salt for the specified pool
      * @return contractAddr the address of the BridgePool
      */
     function _deployStaticPool(bytes32 salt_) internal returns (address contractAddr) {
@@ -165,7 +183,7 @@ abstract contract BridgePoolFactoryBase is ImmutableFactory {
             contractAddr := create2(0, ptr, 15, salt_)
             contractSize := extcodesize(contractAddr)
         }
-        if (contractSize == 0) {
+        if (contractSize == 0 || contractAddr == address(0)) {
             revert BridgePoolFactoryErrors.StaticPoolDeploymentFailed(salt_);
         }
         poolExists[contractAddr] = true;
@@ -174,30 +192,16 @@ abstract contract BridgePoolFactoryBase is ImmutableFactory {
 
     /**
      * @notice calculates salt for a BridgePool implementation contract based on tokenType and version
-     * @param tokenType_ type of token (0=ERC20, 1=ERC721, 2=ERC1155)
-     * @param version_ version of the implementation
-     * @param native_ boolean flag to specifier native or external token pools
-     * @return calculated key
+     * @param poolType_ type of pool (0=Native, 1=External)
+     * @param tokenType_ type of token (0=ERC20, 1=ERC721, 2=ERC1155)_
+     * @param version_ version of bridge pool logic
+     * @return key unique key used to reference implementation address from
      */
     function _getImplementationAddressKey(
+        uint8 poolType_,
         uint8 tokenType_,
-        uint16 version_,
-        bool native_
-    ) internal pure returns (string memory) {
-        string memory key;
-        if (native_) {
-            key = "Native";
-        } else {
-            key = "External";
-        }
-        if (tokenType_ == uint8(TokenType.ERC20)) {
-            key = string.concat(key, "ERC20");
-        } else if (tokenType_ == uint8(TokenType.ERC721)) {
-            key = string.concat(key, "ERC721");
-        } else if (tokenType_ == uint8(TokenType.ERC1155)) {
-            key = string.concat(key, "ERC1155");
-        }
-        key = string.concat(key, "V", Strings.toString(version_));
-        return key;
+        uint16 version_
+    ) internal pure returns (bytes memory key) {
+        key = abi.encode(version_, poolType_, tokenType_);
     }
 }

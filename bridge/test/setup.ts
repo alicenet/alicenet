@@ -8,7 +8,7 @@ import {
   Wallet,
 } from "ethers";
 import { isHexString } from "ethers/lib/utils";
-import { ethers, network } from "hardhat";
+import hre, { ethers, network } from "hardhat";
 import {
   deployCreateAndRegister,
   deployFactory,
@@ -43,6 +43,7 @@ import {
   ValidatorStaking,
 } from "../typechain-types";
 import { ValidatorRawData } from "./ethdkg/setup";
+import { getEventVar } from "./factory/Setup";
 
 export const PLACEHOLDER_ADDRESS = "0x0000000000000000000000000000000000000000";
 
@@ -206,10 +207,26 @@ export async function getContractAddressFromDeployedRawEvent(
   return await getContractAddressFromEventLog(tx, eventSignature, eventName);
 }
 
-export async function getContractAddressFromEventLog(
+export async function getContractAddressFromBridgePoolCreatedEvent(
+  tx: ContractTransaction
+): Promise<string> {
+  const eventSignature =
+    "event BridgePoolCreated(address poolAddress, address ercTokenAddress, uint256 chainID, uint16 poolLogicVersion)";
+  const eventName = "BridgePoolCreated";
+  const eventVariable = "poolAddress";
+  return await getContractAddressFromEventLog(
+    tx,
+    eventSignature,
+    eventName,
+    eventVariable
+  );
+}
+
+async function getContractAddressFromEventLog(
   tx: ContractTransaction,
   eventSignature: string,
-  eventName: string
+  eventName: string,
+  eventVariable?: string
 ): Promise<string> {
   const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
   const intrface = new ethers.utils.Interface([eventSignature]);
@@ -221,7 +238,9 @@ export async function getContractAddressFromEventLog(
     if (!isHexString(topics[0], 32) || topics[0].toLowerCase() !== topicHash) {
       continue;
     }
-    result = intrface.decodeEventLog(eventName, data, topics).contractAddr;
+    if (eventVariable !== undefined)
+      result = await getEventVar(tx, eventName, eventVariable);
+    else result = intrface.decodeEventLog(eventName, data, topics).contractAddr;
   }
   if (result === "") {
     throw new Error(
@@ -658,6 +677,25 @@ export const getReceiptForFailedTransaction = async (
     }
   }
   return receipt;
+};
+
+export const getImpersonatedSigner = async (
+  addressToImpersonate: string
+): Promise<any> => {
+  const [admin] = await ethers.getSigners();
+  const testUtils = await (
+    await (await ethers.getContractFactory("TestUtils")).deploy()
+  ).deployed();
+  await admin.sendTransaction({
+    to: testUtils.address,
+    value: ethers.utils.parseEther("1"),
+  });
+  await testUtils.payUnpayable(addressToImpersonate);
+  await hre.network.provider.request({
+    method: "hardhat_impersonateAccount",
+    params: [addressToImpersonate],
+  });
+  return ethers.getImpersonatedSigner(addressToImpersonate);
 };
 
 export const getBridgePoolSalt = (
