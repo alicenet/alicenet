@@ -8,6 +8,7 @@ import (
 	"github.com/alicenet/alicenet/utils"
 )
 
+// NewPendingTxIndexer makes a new indexer for the pending tx pool
 func NewPendingTxIndexer() *PendingTxIndexer {
 	return &PendingTxIndexer{
 		order: indexer.NewInsertionOrderIndex(
@@ -24,12 +25,20 @@ func NewPendingTxIndexer() *PendingTxIndexer {
 	}
 }
 
+// PendingTxIndexer is the indexer for the pending tx pool;
+// this indexer is used to store valid txs which have not yet been processed.
 type PendingTxIndexer struct {
 	order      *indexer.InsertionOrderIndexer
 	reflink    *indexer.RefLinker
 	expiration *indexer.EpochConstrainedList
 }
 
+// Add adds a tx to the indexer; it also returns a list of evicted txhashes.
+//
+// The indexer places a hard limit on the number of txs which may
+// reference (consume) a UTXO. Because of this, if an additional reference
+// to a UTXO is added, the oldest tx will be evicted (removed)
+// from the indexer.
 func (pti *PendingTxIndexer) Add(txn *badger.Txn, epoch uint32, txHash []byte, utxoIDs [][]byte) ([][]byte, error) {
 	err := pti.order.Add(txn, txHash)
 	if err != nil {
@@ -77,6 +86,8 @@ func (pti *PendingTxIndexer) DeleteOne(txn *badger.Txn, txHash []byte) error {
 	return nil
 }
 
+// DeleteMined removes the txhash from the indexer as well as all txs
+// which reference the utxoIDs it consumed.
 func (pti *PendingTxIndexer) DeleteMined(txn *badger.Txn, txHash []byte) ([][]byte, [][]byte, error) {
 	txHashes, utxoIDs, err := pti.reflink.DeleteMined(txn, txHash)
 	if err != nil {
@@ -109,6 +120,8 @@ func (pti *PendingTxIndexer) DeleteMined(txn *badger.Txn, txHash []byte) ([][]by
 	return txHashes, utxoIDs, nil
 }
 
+// DropBefore removes all txs from the indexer which expire
+// before the specified epoch
 func (pti *PendingTxIndexer) DropBefore(txn *badger.Txn, epoch uint32) ([][]byte, error) {
 	txHashes, err := pti.expiration.DropBefore(txn, epoch)
 	if err != nil {
@@ -128,10 +141,12 @@ func (pti *PendingTxIndexer) DropBefore(txn *badger.Txn, epoch uint32) ([][]byte
 	return txHashes, nil
 }
 
+// GetEpoch returns the epoch when the tx expires
 func (pti *PendingTxIndexer) GetEpoch(txn *badger.Txn, txHash []byte) (uint32, error) {
 	return pti.expiration.GetEpoch(txn, txHash)
 }
 
+// GetOrderedIter returns an iterator used for iterating through the indexer
 func (pti *PendingTxIndexer) GetOrderedIter(txn *badger.Txn) (*badger.Iterator, []byte) {
 	return pti.order.NewIter(txn)
 }
