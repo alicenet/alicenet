@@ -299,6 +299,7 @@ func TestRootActor_download(t *testing.T) {
 }
 
 func makeGoodBlock(t *testing.T) []*objs.BlockHeader {
+	t.Helper()
 	bclaimsList, txHashListList, err := generateChain()
 	if err != nil {
 		t.Fatal(err)

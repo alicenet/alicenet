@@ -15,6 +15,7 @@ import (
 )
 
 func makeVS(t *testing.T, ownerSigner Signer, i int) *TXOut {
+	t.Helper()
 	cid := uint32(2)
 	val := uint256.One()
 
@@ -62,6 +63,7 @@ func makeVS(t *testing.T, ownerSigner Signer, i int) *TXOut {
 }
 
 func makeVSWithValueFee(t *testing.T, ownerSigner Signer, i int, value, fee *uint256.Uint256) *TXOut {
+	t.Helper()
 	if value == nil || fee == nil {
 		panic("invalid value or fee")
 	}
@@ -110,6 +112,7 @@ func makeVSWithValueFee(t *testing.T, ownerSigner Signer, i int, value, fee *uin
 }
 
 func makeDSWithValueFee(t *testing.T, ownerSigner Signer, i int, rawData, index []byte, startEpoch, numEpochs uint32, fee *uint256.Uint256) *TXOut {
+	t.Helper()
 	if fee == nil || len(rawData) == 0 {
 		panic("invalid fee or rawData")
 	}

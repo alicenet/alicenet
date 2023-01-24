@@ -195,6 +195,7 @@ func makeTxConsuming(consumedUTXOs objs.Vout) *objs.Tx {
 }
 
 func mustAddTx(t *testing.T, hndlr *Handler, tx *objs.Tx, currentHeight uint32) {
+	t.Helper()
 	err := hndlr.Add(nil, []*objs.Tx{tx}, currentHeight)
 	if err != nil {
 		t.Fatal(err)
@@ -203,12 +204,14 @@ func mustAddTx(t *testing.T, hndlr *Handler, tx *objs.Tx, currentHeight uint32) 
 }
 
 func mustNotAdd(t *testing.T, hndlr *Handler, tx *objs.Tx, currentHeight uint32) {
+	t.Helper()
 	err := hndlr.Add(nil, []*objs.Tx{tx}, currentHeight)
 	assert.NotNil(t, err)
 	mustNotContain(t, hndlr, tx)
 }
 
 func mustContain(t *testing.T, hndlr *Handler, tx *objs.Tx) {
+	t.Helper()
 	txHash, err := tx.TxHash()
 	if err != nil {
 		t.Fatal(err)
@@ -230,6 +233,7 @@ func mustContain(t *testing.T, hndlr *Handler, tx *objs.Tx) {
 }
 
 func mustNotContain(t *testing.T, hndlr *Handler, tx *objs.Tx) {
+	t.Helper()
 	txHash, err := tx.TxHash()
 	if err != nil {
 		t.Fatal(err)
@@ -251,6 +255,7 @@ func mustNotContain(t *testing.T, hndlr *Handler, tx *objs.Tx) {
 }
 
 func mustDelTx(t *testing.T, hndlr *Handler, tx *objs.Tx) {
+	t.Helper()
 	txHash, err := tx.TxHash()
 	if err != nil {
 		t.Fatal(err)
@@ -266,6 +271,7 @@ func mustDelTx(t *testing.T, hndlr *Handler, tx *objs.Tx) {
 }
 
 func setup(t *testing.T) (*Handler, *mockTrie, func()) {
+	t.Helper()
 	opts := badger.DefaultOptions(t.TempDir())
 	db, err := badger.Open(opts)
 	if err != nil {
@@ -910,6 +916,7 @@ func TestCheckGenerated(t *testing.T) {
 }
 
 func makeDeposit(t *testing.T, s objs.Signer, chainID uint32, i int, value *uint256.Uint256) *objs.ValueStore {
+	t.Helper()
 	pubkey, err := s.Pubkey()
 	if err != nil {
 		t.Fatal(err)
@@ -927,6 +934,7 @@ func makeDeposit(t *testing.T, s objs.Signer, chainID uint32, i int, value *uint
 }
 
 func makeTxs(t *testing.T, s objs.Signer, v *objs.ValueStore) *objs.Tx {
+	t.Helper()
 	txIn, err := v.MakeTxIn()
 	if err != nil {
 		t.Fatal(err)

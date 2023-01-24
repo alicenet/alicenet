@@ -49,6 +49,7 @@ func TestVSPreImageGood(t *testing.T) {
 }
 
 func vspiEqual(t *testing.T, vspi1, vspi2 *VSPreImage) {
+	t.Helper()
 	if vspi1.ChainID != vspi2.ChainID {
 		t.Fatal("Do not agree on ChainID!")
 	}

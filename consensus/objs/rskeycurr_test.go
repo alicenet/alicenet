@@ -8,6 +8,7 @@ import (
 )
 
 func rsckEqual(t *testing.T, rsck, rsck2 *RoundStateCurrentKey) {
+	t.Helper()
 	if !bytes.Equal(rsck.Prefix, rsck2.Prefix) {
 		t.Fatal("fail")
 	}

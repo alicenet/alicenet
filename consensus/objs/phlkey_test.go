@@ -9,6 +9,7 @@ import (
 )
 
 func phlkEqual(t *testing.T, phlk, phlk2 *PendingHdrLeafKey) {
+	t.Helper()
 	if !bytes.Equal(phlk.Prefix, phlk2.Prefix) {
 		t.Fatal("fail")
 	}
