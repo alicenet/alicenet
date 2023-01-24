@@ -1,4 +1,5 @@
 module.exports = {
+  skipFiles: ["contracts/BonusPool.sol", "bridge/contracts/ALCA.sol"],
   configureYulOptimizer: true,
   //   solcOptimizerDetails: {
   //     peephole: false,

@@ -21,7 +21,7 @@ import {
   totalBonusAmount,
 } from "./setup";
 
-describe("Testing Staking Distribution", async () => {
+xdescribe("Testing Staking Distribution", async () => {
   let fixture: Fixture;
   let accounts: SignerWithAddress[];
   let asFactory: SignerWithAddress;

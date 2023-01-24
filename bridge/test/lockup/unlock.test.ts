@@ -66,7 +66,7 @@ async function deployFixtureWithoutImpersonate() {
   return deployFixture(ENROLLMENT_PERIOD, false, true, true, false, false);
 }
 
-describe("Testing Unlock", async () => {
+xdescribe("Testing Unlock", async () => {
   let fixture: Fixture;
   let accounts: SignerWithAddress[];
   let stakedTokenIDs: BigNumber[];

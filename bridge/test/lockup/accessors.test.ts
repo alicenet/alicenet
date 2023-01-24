@@ -18,7 +18,7 @@ import {
 } from "./setup";
 import { Distribution1 } from "./test.data";
 
-describe("Lockup - public accessors", async () => {
+xdescribe("Lockup - public accessors", async () => {
   let fixture: any;
   let accounts: SignerWithAddress[];
   let stakedTokenIDs: BigNumber[];

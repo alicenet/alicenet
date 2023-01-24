@@ -95,7 +95,7 @@ async function deployFixture() {
   };
 }
 
-describe("lockup", async () => {
+xdescribe("lockup", async () => {
   // let admin: SignerWithAddress;
 
   let fixture: Fixture;

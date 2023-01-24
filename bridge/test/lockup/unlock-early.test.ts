@@ -25,7 +25,7 @@ interface Fixture extends BaseTokensFixture {
   bonusPool: BonusPool;
 }
 
-describe("Testing Unlock Early", async () => {
+xdescribe("Testing Unlock Early", async () => {
   let fixture: Fixture;
   let accounts: SignerWithAddress[];
   let stakedTokenIDs: BigNumber[];

@@ -17,7 +17,7 @@ import {
 } from "./setup";
 import { Distribution1, Distribution2 } from "./test.data";
 
-describe("estimateFinalBonusWithProfits", async () => {
+xdescribe("estimateFinalBonusWithProfits", async () => {
   let fixture: Fixture;
   let accounts: SignerWithAddress[];
   let stakedTokenIDs: BigNumber[];

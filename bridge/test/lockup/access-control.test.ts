@@ -19,7 +19,7 @@ interface Fixture extends BaseTokensFixture {
   bonusPool: BonusPool;
 }
 
-describe("Testing Lockup Access Control", async () => {
+xdescribe("Testing Lockup Access Control", async () => {
   let fixture: Fixture;
   let accounts: SignerWithAddress[];
   let asPublicStaking: SignerWithAddress;

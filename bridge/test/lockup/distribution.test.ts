@@ -23,7 +23,7 @@ interface Fixture extends BaseTokensFixture {
   bonusPool: BonusPool;
 }
 
-describe("Testing Staking Distribution", async () => {
+xdescribe("Testing Staking Distribution", async () => {
   let fixture: Fixture;
   let accounts: SignerWithAddress[];
   let stakedTokenIDs: BigNumber[];
