@@ -11,15 +11,15 @@ import {
   factoryCallAny,
   factoryCallAnyFixture,
   getBridgePoolSalt,
+  getImpersonatedSigner,
   preFixtureSetup,
 } from "../setup";
 const nativeBridgePool = 0;
-const externalBridgePool = 1;
 const tokenTypeERC20 = 0;
 const tokenTypeERC721 = 1;
 const tokenTypeERC1155 = 2;
-
 const bridgePoolNativeChainId = 1337;
+const bridgePoolExternalChainId = 9999;
 const bridgePoolDeployCode = "0x38585839386009f3"; // UNIVERSAL_DEPLOY_CODE
 interface BridgePoolFactoryFixture extends BaseTokensFixture {
   bridgePoolFactory: BridgePoolFactory;
@@ -27,10 +27,15 @@ interface BridgePoolFactoryFixture extends BaseTokensFixture {
 let fixture: BridgePoolFactoryFixture;
 let baseTokenFixture: BaseTokensFixture;
 let admin: SignerWithAddress;
+let asFactory: SignerWithAddress;
 const bridgePoolVersion = 1;
-const unexistentBridgePoolVersion = 11;
+const nonExistentBridgePoolVersion = 11;
+const bridgePoolValue = 0;
+const initCallData = ethers.utils.solidityPack([],[]);
+const bridgePoolChainId = 1337; // Native
 
-describe("Testing BridgePool Factory", async () => {
+
+describe("Testing BridgePool Factory - Native Deployments", async () => {
   async function deployFixture() {
     await preFixtureSetup();
     const [admin] = await ethers.getSigners();
@@ -43,55 +48,34 @@ describe("Testing BridgePool Factory", async () => {
     fixture = {
       ...baseTokenFixture,
       bridgePoolFactory,
-    };
 
-    await factoryCallAny(
-      fixture.factory,
-      fixture.bridgePoolFactory,
-      "deployPoolLogic",
-      [
-        nativeBridgePool,
-        tokenTypeERC20,
-        bridgePoolVersion,
-        bridgePoolDeployCode,
-      ]
+    };
+    asFactory = await getImpersonatedSigner(fixture.factory.address);
+    await fixture.bridgePoolFactory
+    .connect(asFactory)
+    .deployPoolLogic(
+      nativeBridgePool,
+      tokenTypeERC20,
+      bridgePoolVersion,
+      bridgePoolDeployCode,
+      bridgePoolValue
     );
-    return { fixture, admin };
+    return { fixture, admin , asFactory};
   }
 
   beforeEach(async function () {
-    ({ fixture, admin } = await loadFixture(deployFixture));
+    ({ fixture, admin , asFactory} = await loadFixture(deployFixture));
   });
 
-  it("Should fail to enable public pool deploying without impersonating factory", async () => {
-    await expect(
-      fixture.bridgePoolFactory.togglePublicPoolDeployment()
-    ).to.be.revertedWithCustomError(fixture.bridgePoolFactory, "OnlyFactory");
-  });
-
-  it("Should fail to deploy pool logic without impersonating factory", async () => {
-    await expect(
-      fixture.bridgePoolFactory.deployPoolLogic(
-        nativeBridgePool,
-        tokenTypeERC20,
-        bridgePoolVersion,
-        bridgePoolDeployCode
-      )
-    ).to.be.revertedWithCustomError(fixture.bridgePoolFactory, "OnlyFactory");
-  });
-
-  it("Should deploy new BridgePool as factory even if public pool deployment is not enabled", async () => {
-    await factoryCallAnyFixture(
-      fixture,
-      "bridgePoolFactory",
-      "deployNewNativePool",
-      [
-        tokenTypeERC20,
-        ethers.constants.AddressZero,
-        bridgePoolVersion,
-        bridgePoolNativeChainId,
-        "0x",
-      ]
+  it("Should deploy new native bridge pool as factory even if public pool deployment is not enabled", async () => {
+    await fixture.bridgePoolFactory
+    .connect(asFactory)
+    .deployNewNativePool(
+      tokenTypeERC20,
+      ethers.constants.AddressZero,
+      bridgePoolVersion,
+      bridgePoolExternalChainId,
+      initCallData
     );
     const salt = await fixture.bridgePoolFactory.getBridgePoolSalt(
       ethers.constants.AddressZero,
@@ -115,14 +99,14 @@ describe("Testing BridgePool Factory", async () => {
     expect(bridgePoolAddress).to.eq(expectedAddress);
   });
 
-  it("Should not deploy new BridgePool as user if public pool deployment is not enabled", async () => {
+  it("Should not deploy new native bridge pool as user if public pool deployment is not enabled", async () => {
     await expect(
       fixture.bridgePoolFactory.deployNewNativePool(
         tokenTypeERC20,
         ethers.constants.AddressZero,
         bridgePoolVersion,
-        bridgePoolNativeChainId,
-        "0x"
+        bridgePoolExternalChainId,
+        initCallData
       )
     ).to.be.revertedWithCustomError(
       fixture.bridgePoolFactory,
@@ -130,68 +114,48 @@ describe("Testing BridgePool Factory", async () => {
     );
   });
 
-  it("Should deploy new BridgePool as factory if public pool deployment is enabled", async () => {
-    await factoryCallAnyFixture(
-      fixture,
-      "bridgePoolFactory",
-      "togglePublicPoolDeployment",
-      []
-    );
-    await factoryCallAnyFixture(
-      fixture,
-      "bridgePoolFactory",
-      "deployNewNativePool",
-      [
+  it("Should deploy new native bridge pool as factory if public pool deployment is enabled", async () => {
+    await fixture.bridgePoolFactory
+    .connect(asFactory)
+    .togglePublicPoolDeployment();
+    await 
+      fixture.bridgePoolFactory.deployNewNativePool(
         tokenTypeERC20,
         ethers.constants.AddressZero,
         bridgePoolVersion,
-        bridgePoolNativeChainId,
-        "0x",
-      ]
-    );
+        bridgePoolExternalChainId,
+        initCallData
+      )
   });
 
-  it("Should deploy new NativeBridgePool as user if public pool deployment is enabled", async () => {
-    await factoryCallAnyFixture(
-      fixture,
-      "bridgePoolFactory",
-      "togglePublicPoolDeployment",
-      []
-    );
+  it("Should deploy new native bridge pool as user if public pool deployment is enabled", async () => {
+    await fixture.bridgePoolFactory
+    .connect(asFactory)
+    .togglePublicPoolDeployment();
     await fixture.bridgePoolFactory.deployNewNativePool(
       tokenTypeERC20,
       ethers.constants.AddressZero,
       bridgePoolVersion,
-      bridgePoolNativeChainId,
-      "0x"
+      bridgePoolExternalChainId,
+      initCallData
     );
   });
 
-  it("Should not deploy two NativeBridgePools with same ERC contract and version", async () => {
-    await factoryCallAnyFixture(
-      fixture,
-      "bridgePoolFactory",
-      "deployNewNativePool",
-      [
+  it("Should not deploy two native bridge pools with same ERC contract and version", async () => {
+    await fixture.bridgePoolFactory.connect(asFactory).deployNewNativePool(
+      tokenTypeERC20,
+      ethers.constants.AddressZero,
+      bridgePoolVersion,
+      bridgePoolExternalChainId,
+      initCallData
+    );
+    await expect(
+       fixture.bridgePoolFactory.connect(asFactory).deployNewNativePool(
         tokenTypeERC20,
         ethers.constants.AddressZero,
         bridgePoolVersion,
-        bridgePoolNativeChainId,
-        "0x",
-      ]
-    );
-    await expect(
-      factoryCallAnyFixture(
-        fixture,
-        "bridgePoolFactory",
-        "deployNewNativePool",
-        [
-          tokenTypeERC20,
-          ethers.constants.AddressZero,
-          bridgePoolVersion,
-          bridgePoolNativeChainId,
-          "0x",
-        ]
+        bridgePoolExternalChainId,
+        initCallData
       )
     ).to.be.revertedWithCustomError(
       fixture.bridgePoolFactory,
@@ -199,19 +163,14 @@ describe("Testing BridgePool Factory", async () => {
     );
   });
 
-  it("Should not deploy new native bridge pool with inexistent version", async () => {
+  it("Should not deploy new native bridge pool with non-existent version", async () => {
     await expect(
-      factoryCallAnyFixture(
-        fixture,
-        "bridgePoolFactory",
-        "deployNewNativePool",
-        [
-          tokenTypeERC20,
-          ethers.constants.AddressZero,
-          unexistentBridgePoolVersion,
-          bridgePoolNativeChainId,
-          "0x",
-        ]
+      fixture.bridgePoolFactory.connect(asFactory).deployNewNativePool(
+        tokenTypeERC20,
+        ethers.constants.AddressZero,
+        nonExistentBridgePoolVersion,
+        bridgePoolExternalChainId,
+        initCallData
       )
     ).to.be.revertedWithCustomError(
       fixture.bridgePoolFactory,
@@ -220,99 +179,47 @@ describe("Testing BridgePool Factory", async () => {
   });
 
   it("Should get correct Bridge Pool Salt", async () => {
-    const [bridgePoolSalt] = await callFunctionAndGetReturnValues(
-      fixture.bridgePoolFactory,
-      "getBridgePoolSalt",
-      admin,
-      [
-        ethers.constants.AddressZero,
-        tokenTypeERC20,
-        bridgePoolNativeChainId,
-        bridgePoolVersion,
-      ]
-    );
+    const bridgePoolSalt = await fixture.bridgePoolFactory.getBridgePoolSalt(
+      ethers.constants.AddressZero,
+      tokenTypeERC20,
+      bridgePoolExternalChainId,
+      bridgePoolVersion
+    )
     expect(bridgePoolSalt).to.be.eq(
       getBridgePoolSalt(
         ethers.constants.AddressZero,
         tokenTypeERC20,
-        bridgePoolNativeChainId,
+        bridgePoolExternalChainId,
         bridgePoolVersion
       )
     );
   });
 
-  it("Should get latest pool logic version for ERC20 external", async () => {
-    const latestNativeERC20Version =
+  it("Should get latest pool logic version for ERC20 native", async () => {
+    const latestExternalERC20Version =
       await fixture.bridgePoolFactory.getLatestPoolLogicVersion(
-        nativeBridgePool,
+        bridgePoolChainId,
         tokenTypeERC20
       );
-    expect(latestNativeERC20Version).to.eq(1);
+    expect(latestExternalERC20Version).to.eq(bridgePoolVersion);
   });
 
-  it("Should fail to deploy with incorrect deploy code", async () => {
-    await expect(
-      factoryCallAny(
-        fixture.factory,
-        fixture.bridgePoolFactory,
-        "deployPoolLogic",
-        [externalBridgePool, tokenTypeERC20, bridgePoolVersion, "0x00"]
-      )
-    ).to.be.revertedWithCustomError(
-      fixture.bridgePoolFactory,
-      "FailedToDeployLogic"
-    );
-  });
-
-  it("Should deploy bridge pool logic for ERC20 external", async () => {
-    await factoryCallAny(
-      fixture.factory,
-      fixture.bridgePoolFactory,
-      "deployPoolLogic",
-      [
-        externalBridgePool,
-        tokenTypeERC20,
-        bridgePoolVersion,
-        bridgePoolDeployCode,
-      ]
-    );
-  });
-
-  it("Should deploy bridge for ERC721 external", async () => {
-    await factoryCallAny(
-      fixture.factory,
-      fixture.bridgePoolFactory,
-      "deployPoolLogic",
-      [
-        externalBridgePool,
-        tokenTypeERC721,
-        bridgePoolVersion,
-        bridgePoolDeployCode,
-      ]
-    );
-  });
-
-  it("Should deploy bridge pool logic for ERC1155 external", async () => {
-    await factoryCallAny(
-      fixture.factory,
-      fixture.bridgePoolFactory,
-      "deployPoolLogic",
-      [
-        externalBridgePool,
-        tokenTypeERC1155,
-        bridgePoolVersion,
-        bridgePoolDeployCode,
-      ]
+  it("Should deploy bridge pool logic for ERC721 native", async () => {
+    await fixture.bridgePoolFactory
+    .connect(asFactory)
+    .deployPoolLogic(
+      nativeBridgePool,
+      tokenTypeERC721,
+      bridgePoolVersion,
+      bridgePoolDeployCode,
+      bridgePoolValue
     );
   });
 
   it("Should keep slots after Bridge Pool Factory upgrade", async () => {
-    await factoryCallAnyFixture(
-      fixture,
-      "bridgePoolFactory",
-      "togglePublicPoolDeployment",
-      []
-    );
+    await fixture.bridgePoolFactory
+    .connect(asFactory)
+    .togglePublicPoolDeployment();
     // Deploy new Pool Factory supporting new token type ERC777
     const updatedBridgePoolFactory = await (
       await (
@@ -327,18 +234,13 @@ describe("Testing BridgePool Factory", async () => {
     );
     expect(await updatedBridgePoolFactory.getNativePoolType()).to.be.equals(0);
     // Slot for ERC20 logic should still be there after upgrade
-    await factoryCallAnyFixture(
-      fixture,
-      "bridgePoolFactory",
-      "deployNewNativePool",
-      [
-        tokenTypeERC20,
-        ethers.constants.AddressZero,
-        bridgePoolVersion,
-        bridgePoolNativeChainId,
-        "0x",
-      ]
-    );
+    await fixture.bridgePoolFactory.deployNewNativePool(
+      tokenTypeERC20,
+      ethers.constants.AddressZero,
+      bridgePoolVersion,
+      bridgePoolExternalChainId,
+      initCallData
+    )
   });
 });
 

@@ -76,11 +76,11 @@ abstract contract BridgePoolFactoryBase is ImmutableFactory, ImmutableSnapshots 
     function getLatestPoolLogicVersion(
         uint256 chainId_,
         uint8 tokenType_
-    ) public view returns (uint16) {
-        if (chainId_ != _chainID) {
-            return _logicVersionsDeployed[PoolType.EXTERNAL][TokenType(tokenType_)];
-        } else {
-            return _logicVersionsDeployed[PoolType.NATIVE][TokenType(tokenType_)];
+    ) public view returns (uint16 version) {
+        uint8 poolType = (chainId_ == _chainID) ? uint8(PoolType.NATIVE) : uint8(PoolType.EXTERNAL);
+        version = _logicVersionsDeployed[PoolType(poolType)][TokenType(tokenType_)];
+        if (version == 0) {
+            revert BridgePoolFactoryErrors.LogicVersionDoesNotExist(poolType, tokenType_);
         }
     }
 

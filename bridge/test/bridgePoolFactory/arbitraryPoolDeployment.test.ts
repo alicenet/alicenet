@@ -33,7 +33,7 @@ const bridgePoolTokenType = 0; // ERC20
 const bridgePoolNativeChainId = 1337;
 const bridgePoolValue = 0;
 
-describe("Testing BridgePool Factory", async () => {
+describe("Testing BridgePool Factory - Arbitrary Deployments", async () => {
   async function deployFixture() {
     await preFixtureSetup();
     const [admin] = await ethers.getSigners();
@@ -61,11 +61,6 @@ describe("Testing BridgePool Factory", async () => {
     bridgePoolImplFactory = await ethers.getContractFactory(
       "NativeERC20BridgePoolV1"
     );
-    const bridgePoolImplBytecode = bridgePoolImplFactory.getDeployTransaction(
-      fixture.factory.address,
-      fixture.snapshots.address
-    ).data as BytesLike;
-
     await bridgePoolFactory
       .connect(asFactory)
       .deployPoolLogic(

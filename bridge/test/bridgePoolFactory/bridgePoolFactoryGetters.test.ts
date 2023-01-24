@@ -7,47 +7,49 @@ import {
   BaseTokensFixture,
   deployFactoryAndBaseTokens,
   deployUpgradeableWithFactory,
-  factoryCallAny,
+  getImpersonatedSigner,
   preFixtureSetup,
 } from "../setup";
-const nativeBridgePool = 0;
-const externalBridgePool = 1;
 const tokenTypeERC20 = 0;
 const tokenTypeERC721 = 1;
-const tokenTypeERC1155 = 2;
-
-const bridgePoolNativeChainId = 1337;
-const bridgePoolExternalChainId = 9999;
 const bridgePoolDeployCode = "0x38585839386009f3"; // UNIVERSAL_DEPLOY_CODE
 interface BridgePoolFactoryFixture extends BaseTokensFixture {
   bridgePoolFactory: BridgePoolFactory;
 }
 let fixture: BridgePoolFactoryFixture;
 let baseTokenFixture: BaseTokensFixture;
-let admin: SignerWithAddress;
+let asFactory: SignerWithAddress;
 const bridgePoolVersion = 1;
-const unexistentBridgePoolVersion = 11;
+const bridgePoolTokenType = 0; // ERC20
+const bridgePoolType = 0; // Native
+const bridgePoolChainId = 1337; // Native Chain for tests
+const bridgePoolValue = 0;
 
 async function deployFixture() {
   await preFixtureSetup();
   const [admin] = await ethers.getSigners();
   baseTokenFixture = await deployFactoryAndBaseTokens(admin);
-  //deploy bridgePoolFactory with alicenet factory
+  // deploy bridgePoolFactory with alicenet factory
   const bridgePoolFactory = (await deployUpgradeableWithFactory(
     baseTokenFixture.factory,
     "BridgePoolFactory",
     "BridgePoolFactory"
   )) as BridgePoolFactory;
+  const nativeERCBridgePoolBaseErrors = await (
+    await ethers.getContractFactory("BridgePoolFactoryErrors")
+  ).deploy();
   fixture = {
     ...baseTokenFixture,
     bridgePoolFactory,
+    nativeERCBridgePoolBaseErrors,
   };
+  asFactory = await getImpersonatedSigner(fixture.factory.address);
   return { fixture, admin };
 }
 
 describe("Testing bridge pool factory getter functions", async () => {
   beforeEach(async function () {
-    ({ fixture, admin } = await loadFixture(deployFixture));
+    await loadFixture(deployFixture);
   });
 
   it("gets the alicenet factory address from the bridge pool factory", async () => {
@@ -57,63 +59,56 @@ describe("Testing bridge pool factory getter functions", async () => {
   });
 
   it("gets the latest pool version for erc20", async () => {
-    await factoryCallAny(
-      fixture.factory,
-      fixture.bridgePoolFactory,
-      "deployPoolLogic",
-      [
-        nativeBridgePool,
-        tokenTypeERC20,
+    await fixture.bridgePoolFactory
+      .connect(asFactory)
+      .deployPoolLogic(
+        bridgePoolType,
+        bridgePoolTokenType,
         bridgePoolVersion,
         bridgePoolDeployCode,
-      ]
-    );
+        bridgePoolValue
+      );
     const latestPoolVersion =
       await fixture.bridgePoolFactory.getLatestPoolLogicVersion(
-        nativeBridgePool,
-        tokenTypeERC20
+        bridgePoolChainId,
+        bridgePoolTokenType
       );
 
     expect(latestPoolVersion).to.equal(bridgePoolVersion);
   });
 
   it("attempt to get nonexistent erc20 version", async () => {
-    const latestPoolVersion =
-      fixture.bridgePoolFactory.getLatestPoolLogicVersion(
-        nativeBridgePool,
-        tokenTypeERC20
-      );
-    await expect(latestPoolVersion)
+    await expect(fixture.bridgePoolFactory.getLatestPoolLogicVersion(
+      bridgePoolChainId,
+      tokenTypeERC20
+    ))
       .to.be.revertedWithCustomError(
-        fixture.bridgePoolFactory,
+        fixture.nativeERCBridgePoolBaseErrors,
         "LogicVersionDoesNotExist"
       )
-      .withArgs(0, 0);
+      .withArgs(bridgePoolType, tokenTypeERC20);
   });
 
   it("attempts to get nonexistent version pool with version ERC721", async () => {
-    await factoryCallAny(
-      fixture.factory,
-      fixture.bridgePoolFactory,
-      "deployPoolLogic",
-      [
-        nativeBridgePool,
-        tokenTypeERC20,
+    await fixture.bridgePoolFactory
+      .connect(asFactory)
+      .deployPoolLogic(
+        bridgePoolType,
+        bridgePoolTokenType,
         bridgePoolVersion,
         bridgePoolDeployCode,
-      ]
-    );
-    const latestPoolVersion =
-      fixture.bridgePoolFactory.getLatestPoolLogicVersion(
-        nativeBridgePool,
-        tokenTypeERC721
+        bridgePoolValue
       );
-
-    await expect(latestPoolVersion)
+    await expect(
+      fixture.bridgePoolFactory.getLatestPoolLogicVersion(
+        bridgePoolChainId,
+        tokenTypeERC721
+      )
+    )
       .to.be.revertedWithCustomError(
-        fixture.bridgePoolFactory,
+        fixture.nativeERCBridgePoolBaseErrors,
         "LogicVersionDoesNotExist"
       )
-      .withArgs(0, 1);
+      .withArgs(bridgePoolType, tokenTypeERC721);
   });
 });
