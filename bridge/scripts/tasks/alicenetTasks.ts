@@ -16,6 +16,7 @@ import {
   ALCA,
   ALCA_SALT,
   ALICENET_FACTORY,
+  ALICENET_FACTORY_OWNER_ADDRESS,
   ALICE_NET_FACTORY_ADDRESS,
   ALICE_NET_PUBLIC_STAKING_SALT,
   DEFAULT_CONFIG_FILE_PATH,
@@ -30,6 +31,7 @@ import {
   readDeploymentConfig,
   writeDeploymentConfig,
 } from "../lib/deployment/utils";
+import { dryRunTask } from "./taskUtils";
 
 function delay(milliseconds: number) {
   return new Promise(() => setTimeout(milliseconds));
@@ -1822,15 +1824,7 @@ task(
     const alca = await hre.ethers.getContractAt(ALCA, alcaAddress);
     // use this flag with a hardhat forked node
     if (taskArgs.test) {
-      const address = "0xff55549a3ceea32fba4794bf1a649a2363fcda53";
-      await hre.network.provider.request({
-        method: "hardhat_impersonateAccount",
-        params: [address],
-      });
-      const helpers = require("@nomicfoundation/hardhat-network-helpers");
-      await helpers.impersonateAccount(address);
-      const signer = await hre.ethers.getSigner(address);
-      factory = factory.connect(signer);
+      factory = await dryRunTask(ALICENET_FACTORY_OWNER_ADDRESS, factory, hre);
     }
     // encode approval call to approve public staking contract to
     // encode ALCA amount in wei
