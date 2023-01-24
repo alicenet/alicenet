@@ -40,6 +40,7 @@ func TestTXInGood(t *testing.T) {
 }
 
 func txinEqual(t *testing.T, txin1, txin2 *TXIn) {
+	t.Helper()
 	txinl1 := txin1.TXInLinker
 	txinl2 := txin2.TXInLinker
 	txinlEqual(t, txinl1, txinl2)

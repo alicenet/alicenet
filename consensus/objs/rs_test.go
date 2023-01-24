@@ -11,6 +11,7 @@ import (
 )
 
 func rsEqual(t *testing.T, a, b *RoundState) {
+	t.Helper()
 	if !bytes.Equal(a.VAddr, b.VAddr) {
 		t.Fatal("fail")
 	}
@@ -147,6 +148,7 @@ func generateRSChain(length int, seed []byte) ([]*BClaims, [][][]byte, error) {
 }
 
 func makeSigners(t *testing.T, num int) ([]*crypto.Secp256k1Signer, []*crypto.BNGroupSigner) {
+	t.Helper()
 	bnSigners := []*crypto.BNGroupSigner{}
 	secpSigners := []*crypto.Secp256k1Signer{}
 	for i := 0; i < num; i++ {
@@ -167,6 +169,7 @@ func makeSigners(t *testing.T, num int) ([]*crypto.Secp256k1Signer, []*crypto.BN
 }
 
 func mkBH(t *testing.T, bnSigner *crypto.BNGroupSigner, bclaims *BClaims, txHashList [][]byte) *BlockHeader {
+	t.Helper()
 	bhsh, err := bclaims.BlockHash()
 	if err != nil {
 		t.Fatal(err)
@@ -184,6 +187,7 @@ func mkBH(t *testing.T, bnSigner *crypto.BNGroupSigner, bclaims *BClaims, txHash
 }
 
 func mkP(t *testing.T, secpSigner *crypto.Secp256k1Signer, prevBH, bh *BlockHeader) *Proposal {
+	t.Helper()
 	rcert, err := prevBH.GetRCert()
 	if err != nil {
 		t.Fatal(err)
@@ -204,6 +208,7 @@ func mkP(t *testing.T, secpSigner *crypto.Secp256k1Signer, prevBH, bh *BlockHead
 }
 
 func mkPVL(t *testing.T, secpSigners []*crypto.Secp256k1Signer, prop *Proposal) PreVoteList {
+	t.Helper()
 	pvl := PreVoteList{}
 	for _, signer := range secpSigners {
 		pv, err := prop.PreVote(signer)
@@ -216,6 +221,7 @@ func mkPVL(t *testing.T, secpSigners []*crypto.Secp256k1Signer, prop *Proposal) 
 }
 
 func mkPCL(t *testing.T, secpSigners []*crypto.Secp256k1Signer, pvl PreVoteList) PreCommitList {
+	t.Helper()
 	pcl := PreCommitList{}
 	for _, signer := range secpSigners {
 		pc, err := pvl.MakePreCommit(signer)
@@ -228,6 +234,7 @@ func mkPCL(t *testing.T, secpSigners []*crypto.Secp256k1Signer, pvl PreVoteList)
 }
 
 func mkNHL(t *testing.T, secpSigners []*crypto.Secp256k1Signer, bnSigners []*crypto.BNGroupSigner, pcl PreCommitList) NextHeightList {
+	t.Helper()
 	nhl := NextHeightList{}
 	for idx, signer := range secpSigners {
 		nh, err := pcl.MakeNextHeight(signer, bnSigners[idx])
@@ -240,6 +247,7 @@ func mkNHL(t *testing.T, secpSigners []*crypto.Secp256k1Signer, bnSigners []*cry
 }
 
 func mkPVNL(t *testing.T, secpSigners []*crypto.Secp256k1Signer, prop *Proposal) []*PreVoteNil {
+	t.Helper()
 	pvnl := []*PreVoteNil{}
 	for _, signer := range secpSigners {
 		pvn, err := prop.PClaims.RCert.PreVoteNil(signer)
@@ -252,6 +260,7 @@ func mkPVNL(t *testing.T, secpSigners []*crypto.Secp256k1Signer, prop *Proposal)
 }
 
 func mkPCN(t *testing.T, secpSigners []*crypto.Secp256k1Signer, prop *Proposal) []*PreCommitNil {
+	t.Helper()
 	pvnl := []*PreCommitNil{}
 	for _, signer := range secpSigners {
 		pvn, err := prop.PClaims.RCert.PreCommitNil(signer)
@@ -264,6 +273,7 @@ func mkPCN(t *testing.T, secpSigners []*crypto.Secp256k1Signer, prop *Proposal) 
 }
 
 func mkNRL(t *testing.T, secpSigners []*crypto.Secp256k1Signer, bnSigners []*crypto.BNGroupSigner, prop *Proposal) NextRoundList {
+	t.Helper()
 	nrl := NextRoundList{}
 	for idx, signer := range secpSigners {
 		nr, err := prop.PClaims.RCert.NextRound(signer, bnSigners[idx])
@@ -276,6 +286,7 @@ func mkNRL(t *testing.T, secpSigners []*crypto.Secp256k1Signer, bnSigners []*cry
 }
 
 func initRS(t *testing.T, idx uint8, secpSigner *crypto.Secp256k1Signer, bnSigner, groupSigner *crypto.BNGroupSigner, rcert *RCert) *RoundState {
+	t.Helper()
 	secpPK, err := secpSigner.Pubkey()
 	if err != nil {
 		t.Fatal(err)
@@ -299,6 +310,7 @@ func initRS(t *testing.T, idx uint8, secpSigner *crypto.Secp256k1Signer, bnSigne
 }
 
 func setup(t *testing.T) (*crypto.BNGroupSigner, []*crypto.Secp256k1Signer, []*crypto.BNGroupSigner, map[int][]*BlockHeader, map[int]*RoundState) {
+	t.Helper()
 	bhMap := make(map[int][]*BlockHeader)
 	rsMap := make(map[int]*RoundState)
 	_, groupSigners := makeSigners(t, 1)

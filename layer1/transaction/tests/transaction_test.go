@@ -21,6 +21,7 @@ func Setup(
 	accounts int,
 	pollingTime time.Duration,
 ) (*tests.ClientFixture, *transaction.FrontWatcher) {
+	t.Helper()
 	fixture := setupEthereum(t, accounts)
 	db := mocks.NewTestDB()
 	watcher := transaction.WatcherFromNetwork(fixture.Client, db, false, pollingTime)

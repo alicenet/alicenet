@@ -135,6 +135,7 @@ func makeTxInitial(t *testing.T, ownerSigner objs.Signer) (objs.Vout, *objs.Tx) 
 }
 
 func makeTxConsuming(t *testing.T, ownerSigner objs.Signer, consumedUTXOs objs.Vout) *objs.Tx {
+	t.Helper()
 	txInputs := []*objs.TXIn{}
 	for i := 0; i < 2; i++ {
 		txin, err := consumedUTXOs[i].MakeTxIn()

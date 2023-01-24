@@ -6,6 +6,7 @@ import (
 )
 
 func sbhkEqual(t *testing.T, sbhk, sbhk2 *StagedBlockHeaderKey) {
+	t.Helper()
 	if !bytes.Equal(sbhk.Prefix, sbhk2.Prefix) {
 		t.Fatal("fail")
 	}

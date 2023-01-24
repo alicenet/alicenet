@@ -14,6 +14,7 @@ import (
 )
 
 func makeDeposit(t *testing.T, s objs.Signer, chainID uint32, i int, value *uint256.Uint256) *objs.ValueStore {
+	t.Helper()
 	pubkey, err := s.Pubkey()
 	if err != nil {
 		t.Fatal(err)
@@ -31,6 +32,7 @@ func makeDeposit(t *testing.T, s objs.Signer, chainID uint32, i int, value *uint
 }
 
 func makeTxs(t *testing.T, s objs.Signer, v *objs.ValueStore) *objs.Tx {
+	t.Helper()
 	txIn, err := v.MakeTxIn()
 	if err != nil {
 		t.Fatal(err)

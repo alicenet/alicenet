@@ -8,6 +8,7 @@ import (
 )
 
 func rshkEqual(t *testing.T, rshk, rshk2 *RoundStateHistoricKey) {
+	t.Helper()
 	if !bytes.Equal(rshk.Prefix, rshk2.Prefix) {
 		t.Fatal("fail")
 	}

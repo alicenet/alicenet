@@ -466,6 +466,7 @@ func setupGroupSigners(
 	n int,
 ) ([4]*big.Int, [][4]*big.Int, []*state.Participant, [][][2]*big.Int) {
 	// Make n participants
+	t.Helper()
 	privateKeys := make(map[common.Address]*big.Int)
 	participants := []*state.Participant{}
 

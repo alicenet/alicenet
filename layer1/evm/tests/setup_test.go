@@ -20,6 +20,7 @@ func setupEthereum(
 	n int,
 	unlockAllAccounts bool,
 ) (*tests.ClientFixture, layer1.Client, *logrus.Entry) {
+	t.Helper()
 	logging.GetLogger("ethereum").SetLevel(logrus.InfoLevel)
 	logger := logging.GetLogger("test").WithField("test", t.Name())
 

@@ -670,6 +670,7 @@ func TestGetLastCommittedBHFSOne(t *testing.T) {
 }
 
 func getValidatorSet(t *testing.T, height uint32, seed string) (*objs.ValidatorSet, error) {
+	t.Helper()
 	groupSigner := &crypto.BNGroupSigner{}
 	err := groupSigner.SetPrivk(crypto.Hasher([]byte(seed)))
 	if err != nil {
