@@ -89,11 +89,13 @@ func (mt *MinedTxHandler) GetHeightForTx(txn *badger.Txn, txHash []byte) (uint32
 /////////PRIVATE METHODS////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
+// getOneInternal retrieves a mined tx from the mined tx handler
 func (mt *MinedTxHandler) getOneInternal(txn *badger.Txn, txHash []byte) (*objs.Tx, error) {
 	key := mt.makeMinedTxKey(txHash)
 	return db.GetTx(txn, key)
 }
 
+// addOneInternal adds a tx to the mined tx handler
 func (mt *MinedTxHandler) addOneInternal(txn *badger.Txn, tx *objs.Tx, txHash []byte, height uint32) error {
 	if err := tx.ValidateIssuedAtForMining(height); err != nil {
 		return err

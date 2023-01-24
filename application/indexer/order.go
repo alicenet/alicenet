@@ -89,7 +89,7 @@ func (ioi *InsertionOrderIndexer) Delete(txn *badger.Txn, txHash []byte) error {
 	return nil
 }
 
-// func (ioi *InsertionOrderIndexer) makeIndexKeys(txHash []byte) ([]byte, []byte, error) {.
+// makeIndexKeys
 func (ioi *InsertionOrderIndexer) makeIndexKeys(txHash []byte) (*InsertionOrderIndexerKey, *InsertionOrderIndexerRevKey, error) {
 	txHashCopy := utils.CopySlice(txHash)
 	ts := time.Now()

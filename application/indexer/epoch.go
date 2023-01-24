@@ -94,6 +94,7 @@ func (ecl *EpochConstrainedList) DropBefore(txn *badger.Txn, epoch uint32) ([][]
 	return dropHashes, nil
 }
 
+// Drop removes a txhash from the list
 func (ecl *EpochConstrainedList) Drop(txn *badger.Txn, txHash []byte) error {
 	txHashCopy := utils.CopySlice(txHash)
 	eclRefKey := ecl.makeRefKey(txHashCopy)
@@ -111,6 +112,7 @@ func (ecl *EpochConstrainedList) Drop(txn *badger.Txn, txHash []byte) error {
 	return utils.DeleteValue(txn, key)
 }
 
+// GetEpoch returns the epoch of expiration for the txhash
 func (ecl *EpochConstrainedList) GetEpoch(txn *badger.Txn, txHash []byte) (uint32, error) {
 	txHashCopy := utils.CopySlice(txHash)
 	eclRefKey := ecl.makeRefKey(txHashCopy)

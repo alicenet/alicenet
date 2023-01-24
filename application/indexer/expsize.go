@@ -18,6 +18,7 @@ Second index is the size of the object
 iterate in fwd direction
 */
 
+// NewExpSizeIndex returns a new index
 func NewExpSizeIndex(p, pp prefixFunc) *ExpSizeIndex {
 	return &ExpSizeIndex{p, pp}
 }
@@ -57,6 +58,7 @@ func (esirk *ExpSizeIndexRefKey) UnmarshalBinary(data []byte) {
 	esirk.refkey = utils.CopySlice(data)
 }
 
+// Add adds a UTXO to the indexer with its epoch of expiration and size
 func (esi *ExpSizeIndex) Add(txn *badger.Txn, epoch uint32, utxoID []byte, size uint32) error {
 	esiKey := esi.makeKey(epoch, size, utxoID)
 	key := esiKey.MarshalBinary()
@@ -70,6 +72,7 @@ func (esi *ExpSizeIndex) Add(txn *badger.Txn, epoch uint32, utxoID []byte, size 
 	return utils.SetValue(txn, key, []byte{})
 }
 
+// Drop removes a UTXO from the indexer
 func (esi *ExpSizeIndex) Drop(txn *badger.Txn, utxoID []byte) error {
 	esiRefKey := esi.makeRefKey(utxoID)
 	refKey := esiRefKey.MarshalBinary()
@@ -95,6 +98,7 @@ func (esi *ExpSizeIndex) Drop(txn *badger.Txn, utxoID []byte) error {
 	return utils.DeleteValue(txn, key)
 }
 
+// GetExpiredObjects returns a list of utxoIDs of expired UTXOs
 func (esi *ExpSizeIndex) GetExpiredObjects(txn *badger.Txn, epoch, maxBytes uint32, maxObjects int) ([][]byte, uint32) {
 	result := [][]byte{}
 	byteCount := uint32(0)
