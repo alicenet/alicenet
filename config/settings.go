@@ -119,6 +119,10 @@ type EthKeyConfig struct {
 	NewPasswordFile string
 }
 
+type accusationsConfig struct {
+	Enabled bool
+}
+
 type RootConfiguration struct {
 	ConfigurationFileName string
 	LoggingLevels         string // backwards compatibility
@@ -134,6 +138,7 @@ type RootConfiguration struct {
 	EthKey                EthKeyConfig
 	Version               string
 	Initialization        InitConfig
+	Accusations           accusationsConfig
 }
 
 // Configuration contains all active settings.

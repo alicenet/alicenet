@@ -51,3 +51,6 @@ status = true
 rewardAccount = ""
 rewardCurveSpec = 1
 symmetricKey = "someSuperFancySecretThatWillBeHashed"
+
+[accusations]
+enabled = true
