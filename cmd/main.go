@@ -328,8 +328,7 @@ func setDefaultCommandIfNonePresent(defaultCommand *cobra.Command, logger *logru
 	}
 
 	// Adding the `node` command to args.
-	//nolint:staticcheck // append string to a slice using this method
-	os.Args = append([]string{os.Args[0], defaultCommand.Use})
+	os.Args = append(os.Args, defaultCommand.Use)
 
 	// Setting te default --config location if it is not present in command options.
 	if config.Configuration.ConfigurationFileName == "" {

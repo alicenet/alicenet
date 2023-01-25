@@ -26,7 +26,6 @@ linters:
     - unused 
   # Disabling linters until we get them fixed up.
   disable:
-    - bodyclose # 2 issues
     - containedctx # 4 issues
     - contextcheck # 2 issues
     - cyclop # 25+ issues
