@@ -7,9 +7,11 @@ linters:
   enable:
     - asciicheck 
     - bidichk 
+    - decorder 
     - errcheck
     - errchkjson 
     - execinquery 
+    - exhaustive 
     - exportloopref 
     - goprintffuncname 
     - gosimple
@@ -27,13 +29,11 @@ linters:
     - containedctx # 4 issues
     - contextcheck # 2 issues
     - cyclop # 25+ issues
-    - decorder # 1 issue
     - dogsled # 15 issues
     - dupl # 25+ issues
     - durationcheck # 3 issues
     - errname # 15 issues
     - errorlint # 17 issues
-    - exhaustive # 4 issues
     - forbidigo # 12 issues
     - forcetypeassert # 3 issues
     - funlen # 50 issues
