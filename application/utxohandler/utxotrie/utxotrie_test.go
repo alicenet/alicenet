@@ -295,6 +295,7 @@ func TestCorruptedSparseMerkleTrie(t *testing.T) {
 }
 
 func decodeHexString(t *testing.T, value string) []byte {
+	t.Helper()
 	result, err := utils.DecodeHexString(value)
 	require.Nil(t, err)
 	return utils.CopySlice(result)
