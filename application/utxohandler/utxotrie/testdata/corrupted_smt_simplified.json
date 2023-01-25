@@ -1,0 +1,32 @@
+{
+  "updates": [
+    {
+      "keys": [
+        "3bf49d5f116e995678d651508cdd688a396c381caea0830af3f33cbe3f4e8270"
+      ],
+      "values": [
+        "5024b0227fc53ab634a3cd009435492a3ad212ed6c8db3dafc7c8ca1e44e53de"
+      ]
+    },
+    {
+      "keys": [
+        "26784ebae43c82fb79ffa8e2802a35232e9d45fe0855ea8220da471dc115b3d0",
+        "3bf49d5f116e995678d651508cdd688a396c381caea0830af3f33cbe3f4e8270",
+        "8ed08f75871c4d633bc104adb8576f34ab1abdf8f390b3e01dc39c85e3d0e540"
+      ],
+      "values": [
+        "f56c97ab252feb5a956e7dc2677907f138a31d8ff96b799226a08c71a792087c",
+        "bc36789e7a1e281436464229828f817d6612f7b477d66591ff96a9e064bcc98a",
+        "10dc1043aec198fd7c47d853399f9fe51885e45f4f02095e6c3f27c9e3cd3f78"
+      ]
+    },
+    {
+      "keys": [
+        "a002f675e56b4b0889ea0f9279735c0437d1c8ac736d0408c8ff67bd2e3e67a0"
+      ],
+      "values": [
+        "f2554f06a804d367b4682726b1b96f81c6bedf0e4994d7babd680036060d8d2b"
+      ]
+    }
+  ]
+}
