@@ -9,21 +9,18 @@ import (
 	"sync"
 	"time"
 
-	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg"
-	"github.com/alicenet/alicenet/layer1/executor/tasks/snapshots"
-
-	"github.com/dgraph-io/badger/v2"
-	"github.com/sirupsen/logrus"
-
 	"github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/constants/dbprefix"
 	"github.com/alicenet/alicenet/layer1"
+	"github.com/alicenet/alicenet/layer1/chains/ethereum"
 	"github.com/alicenet/alicenet/layer1/executor/marshaller"
 	"github.com/alicenet/alicenet/layer1/executor/tasks"
 	monitorInterfaces "github.com/alicenet/alicenet/layer1/monitor/interfaces"
 	"github.com/alicenet/alicenet/layer1/transaction"
 	"github.com/alicenet/alicenet/logging"
 	"github.com/alicenet/alicenet/utils"
+	"github.com/dgraph-io/badger/v2"
+	"github.com/sirupsen/logrus"
 )
 
 var _ TaskResponse = &HandlerResponse{}
@@ -46,7 +43,17 @@ type TaskManager struct {
 }
 
 // newTaskManager creates a new TaskManager instance and recover the previous state from DB.
-func newTaskManager(eth layer1.Client, contracts layer1.AllSmartContracts, database *db.Database, logger *logrus.Entry, adminHandler monitorInterfaces.AdminHandler, requestChan <-chan managerRequest, txWatcher transaction.Watcher) (*TaskManager, error) {
+func newTaskManager(
+	eth layer1.Client,
+	contracts layer1.AllSmartContracts,
+	database *db.Database,
+	logger *logrus.Entry,
+	adminHandler monitorInterfaces.AdminHandler,
+	requestChan <-chan managerRequest,
+	txWatcher transaction.Watcher,
+) (*TaskManager, error) {
+	tr := &marshaller.TypeRegistry{}
+	marshaller := ethereum.GetTaskRegistry(tr)
 	taskManager := &TaskManager{
 		Schedule:     make(map[string]ManagerRequestInfo),
 		Responses:    make(map[string]ManagerResponseInfo),
@@ -54,7 +61,7 @@ func newTaskManager(eth layer1.Client, contracts layer1.AllSmartContracts, datab
 		eth:          eth,
 		contracts:    contracts,
 		adminHandler: adminHandler,
-		marshaller:   getTaskRegistry(),
+		marshaller:   marshaller,
 		closeChan:    make(chan struct{}),
 		closeOnce:    sync.Once{},
 		requestChan:  requestChan,
@@ -70,7 +77,11 @@ func newTaskManager(eth layer1.Client, contracts layer1.AllSmartContracts, datab
 		}
 	}
 
-	tasksExecutor, err := newTaskExecutor(txWatcher, database, logger.WithField("Component", "TaskExecutor"))
+	tasksExecutor, err := newTaskExecutor(
+		txWatcher,
+		database,
+		logger.WithField("Component", "TaskExecutor"),
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -85,7 +96,13 @@ func (tm *TaskManager) start() {
 	tm.logger.Info(strings.Repeat("-", 80))
 	tm.logger.Infof("Current Tasks: %d", len(tm.Schedule))
 	for id, task := range tm.Schedule {
-		tm.logger.Infof("...ID: %s Name: %s Between: %d and %d", id, task.Name, task.Start, task.End)
+		tm.logger.Infof(
+			"...ID: %s Name: %s Between: %d and %d",
+			id,
+			task.Name,
+			task.Start,
+			task.End,
+		)
 	}
 	tm.logger.Info(strings.Repeat("-", 80))
 
@@ -151,7 +168,8 @@ func (tm *TaskManager) eventLoop() {
 					// if we are not synchronized, don't log expired task as errors, since we will
 					// be replaying the events from far way in the past
 					if errors.Is(err, ErrTaskExpired) && !tm.adminHandler.IsSynchronized() {
-						tm.logger.WithError(err).Debugf("Failed to schedule task request %d", tm.LastHeightSeen)
+						tm.logger.WithError(err).
+							Debugf("Failed to schedule task request %d", tm.LastHeightSeen)
 					} else {
 						tm.logger.WithError(err).Errorf("Failed to schedule task request %d", tm.LastHeightSeen)
 						response.Err = err
@@ -184,7 +202,10 @@ func (tm *TaskManager) eventLoop() {
 			}
 		case <-processingTime:
 			tm.logger.Trace("processing latest height")
-			networkCtx, networkCf := context.WithTimeout(context.Background(), tasks.ManagerNetworkTimeout)
+			networkCtx, networkCf := context.WithTimeout(
+				context.Background(),
+				tasks.ManagerNetworkTimeout,
+			)
 			height, err := tm.eth.GetFinalizedHeight(networkCtx)
 			networkCf()
 			if err != nil {
@@ -249,7 +270,8 @@ func (tm *TaskManager) schedule(task tasks.Task, id string) (*HandlerResponse, e
 		start := task.GetStart()
 		end := task.GetEnd()
 
-		if start != 0 && end != 0 && start >= end {
+		// check if the task is expired
+		if start != 0 && end != 0 && start > end {
 			return nil, ErrWrongParams
 		}
 
@@ -293,13 +315,19 @@ func (tm *TaskManager) processTaskResponse(executorResponse ExecutorResponse) er
 	default:
 		task, present := tm.Schedule[executorResponse.Id]
 		if !present {
-			tm.logger.Warnf("received an internal response for non existing task with id %s", executorResponse.Id)
+			tm.logger.Warnf(
+				"received an internal response for non existing task with id %s",
+				executorResponse.Id,
+			)
 			return nil
 		}
 
 		taskResp, present := tm.Responses[executorResponse.Id]
 		if !present {
-			tm.logger.Warnf("response structure doesn't exist for a received response with id %s", executorResponse.Id)
+			tm.logger.Warnf(
+				"response structure doesn't exist for a received response with id %s",
+				executorResponse.Id,
+			)
 			return nil
 		}
 
@@ -342,7 +370,20 @@ func (tm *TaskManager) startTasks(taskList []ManagerRequestInfo) error {
 				return tm.onError(tasks.ErrTaskExecutionMechanismClosed)
 			}
 
-			go tm.taskExecutor.handleTaskExecution(task.Task, task.Name, task.Id, task.Start, task.End, task.AllowMultiExecution, task.SubscribeOptions, tm.database, logEntry, tm.eth, tm.contracts, tm.responseChan)
+			go tm.taskExecutor.handleTaskExecution(
+				task.Task,
+				task.Name,
+				task.Id,
+				task.Start,
+				task.End,
+				task.AllowMultiExecution,
+				task.SubscribeOptions,
+				tm.database,
+				logEntry,
+				tm.eth,
+				tm.contracts,
+				tm.responseChan,
+			)
 
 			task.InternalState = Running
 			tm.Schedule[task.Id] = task
@@ -450,7 +491,8 @@ func (tm *TaskManager) killTask(task ManagerRequestInfo) error {
 // cleanResponses after constants.TaskManagerResponseToleranceBeforeRemoving amount of blocks.
 func (tm *TaskManager) cleanResponses() {
 	for id, resp := range tm.Responses {
-		if resp.ReceivedOnBlock != 0 && resp.ReceivedOnBlock+tasks.ManagerResponseToleranceBeforeRemoving <= tm.LastHeightSeen {
+		if resp.ReceivedOnBlock != 0 &&
+			resp.ReceivedOnBlock+tasks.ManagerResponseToleranceBeforeRemoving <= tm.LastHeightSeen {
 			delete(tm.Responses, id)
 		}
 	}
@@ -463,7 +505,8 @@ func (tm *TaskManager) findTasks() ([]ManagerRequestInfo, []ManagerRequestInfo) 
 	unresponsive := make([]ManagerRequestInfo, 0)
 
 	for _, taskRequest := range tm.Schedule {
-		if taskRequest.InternalState == Killed && taskRequest.killedAt+tasks.ManagerHeightToleranceBeforeRemoving <= tm.LastHeightSeen {
+		if taskRequest.InternalState == Killed &&
+			taskRequest.killedAt+tasks.ManagerHeightToleranceBeforeRemoving <= tm.LastHeightSeen {
 			tm.logger.Errorf("marking task as unresponsive %s", taskRequest.Id)
 			unresponsive = append(unresponsive, taskRequest)
 			continue
@@ -602,7 +645,11 @@ func (tm *TaskManager) recoverState() error {
 // MarshalJSON implements the json.Marshaler interface.
 func (tm *TaskManager) MarshalJSON() ([]byte, error) {
 
-	ws := &taskManagerBackup{Schedule: make(map[string]requestStored), Responses: make(map[string]responseStored), LastHeightSeen: tm.LastHeightSeen}
+	ws := &taskManagerBackup{
+		Schedule:       make(map[string]requestStored),
+		Responses:      make(map[string]responseStored),
+		LastHeightSeen: tm.LastHeightSeen,
+	}
 
 	for k, v := range tm.Schedule {
 		wt, err := func() (*marshaller.InstanceWrapper, error) {
@@ -615,7 +662,11 @@ func (tm *TaskManager) MarshalJSON() ([]byte, error) {
 			return []byte{}, err
 		}
 
-		ws.Schedule[k] = requestStored{BaseRequest: v.BaseRequest, WrappedTask: wt, killedAt: v.killedAt}
+		ws.Schedule[k] = requestStored{
+			BaseRequest: v.BaseRequest,
+			WrappedTask: wt,
+			killedAt:    v.killedAt,
+		}
 	}
 
 	for k, v := range tm.Responses {
@@ -700,24 +751,4 @@ func getTaskLoggerComplete(logger *logrus.Entry, taskReq ManagerRequestInfo) *lo
 		"taskId":    taskReq.Id,
 		"state":     taskReq.InternalState,
 	})
-}
-
-// getTaskRegistry all the Tasks we can handle in the request.
-// If you want to create a new task register its instance type here.
-func getTaskRegistry() *marshaller.TypeRegistry {
-	tr := &marshaller.TypeRegistry{}
-	tr.RegisterInstanceType(&dkg.CompletionTask{})
-	tr.RegisterInstanceType(&dkg.DisputeShareDistributionTask{})
-	tr.RegisterInstanceType(&dkg.DisputeMissingShareDistributionTask{})
-	tr.RegisterInstanceType(&dkg.DisputeMissingKeySharesTask{})
-	tr.RegisterInstanceType(&dkg.DisputeMissingGPKjTask{})
-	tr.RegisterInstanceType(&dkg.DisputeGPKjTask{})
-	tr.RegisterInstanceType(&dkg.GPKjSubmissionTask{})
-	tr.RegisterInstanceType(&dkg.KeyShareSubmissionTask{})
-	tr.RegisterInstanceType(&dkg.MPKSubmissionTask{})
-	tr.RegisterInstanceType(&dkg.RegisterTask{})
-	tr.RegisterInstanceType(&dkg.DisputeMissingRegistrationTask{})
-	tr.RegisterInstanceType(&dkg.ShareDistributionTask{})
-	tr.RegisterInstanceType(&snapshots.SnapshotTask{})
-	return tr
 }

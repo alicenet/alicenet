@@ -11,12 +11,14 @@ import (
 	"github.com/alicenet/alicenet/consensus/objs"
 	"github.com/alicenet/alicenet/constants/dbprefix"
 	"github.com/alicenet/alicenet/crypto"
+	"github.com/alicenet/alicenet/layer1/chains/ethereum"
+	"github.com/alicenet/alicenet/layer1/chains/ethereum/tasks/dkg"
+	"github.com/alicenet/alicenet/layer1/chains/ethereum/tasks/dkg/state"
+	"github.com/alicenet/alicenet/layer1/chains/ethereum/tasks/snapshots"
+	snapshotState "github.com/alicenet/alicenet/layer1/chains/ethereum/tasks/snapshots/state"
+	"github.com/alicenet/alicenet/layer1/executor/marshaller"
 	"github.com/alicenet/alicenet/layer1/executor/tasks"
-	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg"
-	"github.com/alicenet/alicenet/layer1/executor/tasks/dkg/state"
 	taskMocks "github.com/alicenet/alicenet/layer1/executor/tasks/mocks"
-	"github.com/alicenet/alicenet/layer1/executor/tasks/snapshots"
-	snapshotState "github.com/alicenet/alicenet/layer1/executor/tasks/snapshots/state"
 	"github.com/alicenet/alicenet/layer1/transaction"
 	"github.com/alicenet/alicenet/test/mocks"
 	"github.com/alicenet/alicenet/utils"
@@ -27,7 +29,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func getTaskHandler(t *testing.T, doCleanup bool) (*Handler, *mocks.MockClient, *mocks.MockAllSmartContracts, *mocks.MockWatcher, accounts.Account) {
+func getTaskHandler(
+	t *testing.T,
+	doCleanup bool,
+) (*Handler, *mocks.MockClient, *mocks.MockAllSmartContracts, *mocks.MockWatcher, accounts.Account) {
+	t.Helper()
 	db := mocks.NewTestDB()
 	client := mocks.NewMockClient()
 	client.GetFinalizedHeightFunc.SetDefaultReturn(0, nil)
@@ -59,7 +65,15 @@ func getTaskHandler(t *testing.T, doCleanup bool) (*Handler, *mocks.MockClient, 
 // getTaskManagerCopy creates a copy of the manager from the DB without race
 // conditions.
 func getTaskManagerCopy(t *testing.T, manager *TaskManager) *TaskManager {
-	newManager := &TaskManager{Schedule: make(map[string]ManagerRequestInfo), Responses: make(map[string]ManagerResponseInfo), marshaller: getTaskRegistry(), database: manager.database}
+	t.Helper()
+	tr := &marshaller.TypeRegistry{}
+	marshaller := ethereum.GetTaskRegistry(tr)
+	newManager := &TaskManager{
+		Schedule:   make(map[string]ManagerRequestInfo),
+		Responses:  make(map[string]ManagerResponseInfo),
+		marshaller: marshaller,
+		database:   manager.database,
+	}
 	<-time.After(10 * time.Millisecond)
 	err := newManager.loadState()
 	if err != nil {
@@ -70,6 +84,7 @@ func getTaskManagerCopy(t *testing.T, manager *TaskManager) *TaskManager {
 
 // getScheduleLen returns the amount of tasks is in the TaskManager.Schedule
 func getScheduleLen(t *testing.T, manager *TaskManager) int {
+	t.Helper()
 	newManager := getTaskManagerCopy(t, manager)
 	return len(newManager.Schedule)
 }
@@ -204,7 +219,9 @@ func TestTasksHandlerAndManager_ScheduleAndKillById_RunningTask(t *testing.T) {
 	require.Equal(t, 1, getScheduleLen(t, handler.manager))
 
 	isRunning := false
-	failTime := time.After(time.Duration(tasks.ManagerProcessingTime.Seconds()+float64(1)) * time.Second)
+	failTime := time.After(
+		time.Duration(tasks.ManagerProcessingTime.Seconds()+float64(1)) * time.Second,
+	)
 	for !isRunning {
 		select {
 		case <-failTime:
@@ -219,7 +236,9 @@ func TestTasksHandlerAndManager_ScheduleAndKillById_RunningTask(t *testing.T) {
 	_, err = handler.KillTaskById(taskId)
 	require.Nil(t, err)
 
-	failTime = time.After(time.Duration(tasks.ManagerProcessingTime.Seconds()+float64(1)) * time.Second)
+	failTime = time.After(
+		time.Duration(tasks.ManagerProcessingTime.Seconds()+float64(1)) * time.Second,
+	)
 	for !resp.IsReady() {
 		select {
 		case <-failTime:
@@ -317,7 +336,9 @@ func TestTasksHandlerAndManager_ScheduleKillCloseAndRecover(t *testing.T) {
 	require.Equal(t, 1, getScheduleLen(t, handler.manager))
 
 	isRunning := false
-	failTime := time.After(time.Duration(tasks.ManagerProcessingTime.Seconds()+float64(1)) * time.Second)
+	failTime := time.After(
+		time.Duration(tasks.ManagerProcessingTime.Seconds()+float64(1)) * time.Second,
+	)
 	for !isRunning {
 		select {
 		case <-failTime:
@@ -330,15 +351,29 @@ func TestTasksHandlerAndManager_ScheduleKillCloseAndRecover(t *testing.T) {
 	}
 
 	handler.Close()
-	newHandler, err := NewTaskHandler(handler.manager.database, handler.manager.eth, handler.manager.contracts, handler.manager.adminHandler, handler.manager.taskExecutor.txWatcher)
+	newHandler, err := NewTaskHandler(
+		handler.manager.database,
+		handler.manager.eth,
+		handler.manager.contracts,
+		handler.manager.adminHandler,
+		handler.manager.taskExecutor.txWatcher,
+	)
 	recoveredTask := newHandler.(*Handler).manager.Schedule[taskId]
 	require.Equal(t, task.ID, recoveredTask.Id)
 	require.Equal(t, task.Name, recoveredTask.Name)
 	require.Equal(t, task.Start, recoveredTask.Start)
 	require.Equal(t, task.End, recoveredTask.End)
 	require.Equal(t, task.AllowMultiExecution, recoveredTask.AllowMultiExecution)
-	require.Equal(t, task.SubscribeOptions.MaxStaleBlocks, recoveredTask.SubscribeOptions.MaxStaleBlocks)
-	require.Equal(t, task.SubscribeOptions.EnableAutoRetry, recoveredTask.SubscribeOptions.EnableAutoRetry)
+	require.Equal(
+		t,
+		task.SubscribeOptions.MaxStaleBlocks,
+		recoveredTask.SubscribeOptions.MaxStaleBlocks,
+	)
+	require.Equal(
+		t,
+		task.SubscribeOptions.EnableAutoRetry,
+		recoveredTask.SubscribeOptions.EnableAutoRetry,
+	)
 	require.Nil(t, err)
 	newHandler.Start()
 
@@ -350,7 +385,9 @@ func TestTasksHandlerAndManager_ScheduleKillCloseAndRecover(t *testing.T) {
 	_, err = newHandler.KillTaskById(taskId)
 	require.Nil(t, err)
 
-	failTime = time.After(time.Duration(tasks.ManagerProcessingTime.Seconds()+float64(1)) * time.Second)
+	failTime = time.After(
+		time.Duration(tasks.ManagerProcessingTime.Seconds()+float64(1)) * time.Second,
+	)
 	for !resp.IsReady() {
 		select {
 		case <-failTime:
@@ -365,7 +402,13 @@ func TestTasksHandlerAndManager_ScheduleKillCloseAndRecover(t *testing.T) {
 	require.Equal(t, 0, getScheduleLen(t, newHandler.(*Handler).manager))
 
 	newHandler.Close()
-	newHandler2, err := NewTaskHandler(newHandler.(*Handler).manager.database, newHandler.(*Handler).manager.eth, newHandler.(*Handler).manager.contracts, newHandler.(*Handler).manager.adminHandler, newHandler.(*Handler).manager.taskExecutor.txWatcher)
+	newHandler2, err := NewTaskHandler(
+		newHandler.(*Handler).manager.database,
+		newHandler.(*Handler).manager.eth,
+		newHandler.(*Handler).manager.contracts,
+		newHandler.(*Handler).manager.adminHandler,
+		newHandler.(*Handler).manager.taskExecutor.txWatcher,
+	)
 	require.Nil(t, err)
 	newHandler2.Start()
 
@@ -374,7 +417,9 @@ func TestTasksHandlerAndManager_ScheduleKillCloseAndRecover(t *testing.T) {
 	require.NotNil(t, resp)
 	require.Equal(t, 0, getScheduleLen(t, newHandler2.(*Handler).manager))
 
-	failTime = time.After(time.Duration(tasks.ManagerProcessingTime.Seconds()+float64(1)) * time.Second)
+	failTime = time.After(
+		time.Duration(tasks.ManagerProcessingTime.Seconds()+float64(1)) * time.Second,
+	)
 	for !resp.IsReady() {
 		select {
 		case <-failTime:
@@ -435,7 +480,9 @@ func TestTasksHandlerAndManager_ScheduleAndRecover_RunningSnapshotTask(t *testin
 	require.Equal(t, 1, getScheduleLen(t, handler.manager))
 
 	isRunning := false
-	failTime := time.After(time.Duration(tasks.ManagerProcessingTime.Seconds()+float64(1)) * time.Second)
+	failTime := time.After(
+		time.Duration(tasks.ManagerProcessingTime.Seconds()+float64(1)) * time.Second,
+	)
 	for !isRunning {
 		select {
 		case <-failTime:
@@ -448,21 +495,37 @@ func TestTasksHandlerAndManager_ScheduleAndRecover_RunningSnapshotTask(t *testin
 	}
 
 	handler.Close()
-	newHandler, err := NewTaskHandler(handler.manager.database, handler.manager.eth, handler.manager.contracts, handler.manager.adminHandler, handler.manager.taskExecutor.txWatcher)
+	newHandler, err := NewTaskHandler(
+		handler.manager.database,
+		handler.manager.eth,
+		handler.manager.contracts,
+		handler.manager.adminHandler,
+		handler.manager.taskExecutor.txWatcher,
+	)
 	recoveredTask := newHandler.(*Handler).manager.Schedule[taskId]
 	require.Equal(t, task.ID, recoveredTask.Id)
 	require.Equal(t, task.Name, recoveredTask.Name)
 	require.Equal(t, task.Start, recoveredTask.Start)
 	require.Equal(t, task.End, recoveredTask.End)
 	require.Equal(t, task.AllowMultiExecution, recoveredTask.AllowMultiExecution)
-	require.Equal(t, task.NumOfValidators, recoveredTask.Task.(*snapshots.SnapshotTask).NumOfValidators)
-	require.Equal(t, task.ValidatorIndex, recoveredTask.Task.(*snapshots.SnapshotTask).ValidatorIndex)
+	require.Equal(
+		t,
+		task.NumOfValidators,
+		recoveredTask.Task.(*snapshots.SnapshotTask).NumOfValidators,
+	)
+	require.Equal(
+		t,
+		task.ValidatorIndex,
+		recoveredTask.Task.(*snapshots.SnapshotTask).ValidatorIndex,
+	)
 	require.Equal(t, task.Height, recoveredTask.Task.(*snapshots.SnapshotTask).Height)
 	require.Nil(t, err)
 	newHandler.Start()
 
 	isRunning = false
-	failTime = time.After(time.Duration(tasks.ManagerProcessingTime.Seconds()+float64(1)) * time.Second)
+	failTime = time.After(
+		time.Duration(tasks.ManagerProcessingTime.Seconds()+float64(1)) * time.Second,
+	)
 	for !isRunning {
 		select {
 		case <-failTime:

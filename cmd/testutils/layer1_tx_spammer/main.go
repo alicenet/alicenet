@@ -16,7 +16,7 @@ import (
 	"github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/constants"
 	"github.com/alicenet/alicenet/layer1"
-	"github.com/alicenet/alicenet/layer1/ethereum"
+	"github.com/alicenet/alicenet/layer1/evm"
 	"github.com/alicenet/alicenet/layer1/tests"
 	"github.com/alicenet/alicenet/layer1/transaction"
 	"github.com/alicenet/alicenet/logging"
@@ -37,8 +37,15 @@ const (
 	maxExecutionBlocks uint64        = 8
 )
 
-func setupClient(endpoint string, keyStorePath string, passCodePath string, defaultAccount string, finalityDelay uint64) (layer1.Client, *ethclient.Client) {
-	eth, err := ethereum.NewClient(
+func setupClient(
+	endpoint string,
+	keyStorePath string,
+	passCodePath string,
+	defaultAccount string,
+	finalityDelay uint64,
+) (layer1.Client, *ethclient.Client) {
+	eth, err := evm.NewClient(
+		logging.GetLogger("ethereum"),
 		endpoint,
 		keyStorePath,
 		passCodePath,
@@ -60,7 +67,13 @@ func setupClient(endpoint string, keyStorePath string, passCodePath string, defa
 	return eth, internalClient
 }
 
-func parseKeyStoreAndPassCode(tempDir string, logger *logrus.Entry, keyStorePath string, passCodePath string, defaultAccountStr string) (string, string, string, bool) {
+func parseKeyStoreAndPassCode(
+	tempDir string,
+	logger *logrus.Entry,
+	keyStorePath string,
+	passCodePath string,
+	defaultAccountStr string,
+) (string, string, string, bool) {
 	var defaultAccount common.Address
 	if defaultAccountStr != "" {
 		defaultAccountBytes, err := hex.DecodeString(defaultAccountStr)
@@ -72,9 +85,13 @@ func parseKeyStoreAndPassCode(tempDir string, logger *logrus.Entry, keyStorePath
 	isUsingTestAccounts := false
 	if keyStorePath == "" || passCodePath == "" {
 		if defaultAccountStr != "" {
-			logger.Warn("Ignoring default account sent because keyStorePath or passCodePath were not set!")
+			logger.Warn(
+				"Ignoring default account sent because keyStorePath or passCodePath were not set!",
+			)
 		}
-		logger.Warn("Keystore or passCodePath not specified, using test accounts instead. If don't want this behavior specify all 2 parameters!")
+		logger.Warn(
+			"Keystore or passCodePath not specified, using test accounts instead. If don't want this behavior specify all 2 parameters!",
+		)
 
 		var accounts []accounts.Account
 		keyStorePath, passCodePath, accounts = tests.CreateAccounts(tempDir, numTestAccounts)
@@ -98,13 +115,19 @@ func initDatabase(ctx context.Context, path string, inMemory bool) *badger.DB {
 	return db
 }
 
-func getCustomTransactionOptions(ctx context.Context, eth layer1.Client, fromAccount accounts.Account) (*bind.TransactOpts, error) {
+func getCustomTransactionOptions(
+	ctx context.Context,
+	eth layer1.Client,
+	fromAccount accounts.Account,
+) (*bind.TransactOpts, error) {
 	txnOpts, err := eth.GetTransactionOpts(ctx, fromAccount)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get transaction options: %v", err)
 	}
 	// extract the baseFee
-	baseFeeWithOutMultiplier := new(big.Int).Div(txnOpts.GasFeeCap, big.NewInt(constants.EthereumBaseFeeMultiplier))
+	baseFeeWithOutMultiplier := new(
+		big.Int,
+	).Div(txnOpts.GasFeeCap, big.NewInt(constants.EthereumBaseFeeMultiplier))
 	baseFee := new(big.Int).Sub(baseFeeWithOutMultiplier, txnOpts.GasTipCap)
 	// multiply the GasTip by 10
 	txnOpts.GasTipCap = new(big.Int).Mul(txnOpts.GasTipCap, big.NewInt(10))
@@ -114,7 +137,11 @@ func getCustomTransactionOptions(ctx context.Context, eth layer1.Client, fromAcc
 	return txnOpts, nil
 }
 
-func deployDummyContract(internalClient *ethclient.Client, watcher transaction.Watcher, txnOpts *bind.TransactOpts) error {
+func deployDummyContract(
+	internalClient *ethclient.Client,
+	watcher transaction.Watcher,
+	txnOpts *bind.TransactOpts,
+) error {
 	networkCtx, cf := context.WithTimeout(context.Background(), networkTimeout)
 	defer cf()
 	_, txn, _, err := dummy_contract.DeployDummyContract(txnOpts, internalClient)
@@ -128,10 +155,13 @@ func deployDummyContract(internalClient *ethclient.Client, watcher transaction.W
 	return nil
 }
 
-func sendEther(eth layer1.Client, logger *logrus.Entry, watcher transaction.Watcher, fromAddress common.Address) error {
-	txn, err := ethereum.TransferEther(
-		eth,
-		logger.WithFields(logrus.Fields{"FromAddress": fromAddress.Hex()}),
+func sendEther(
+	eth layer1.Client,
+	logger *logrus.Entry,
+	watcher transaction.Watcher,
+	fromAddress common.Address,
+) error {
+	txn, err := eth.TransferNativeToken(
 		fromAddress,
 		eth.GetDefaultAccount().Address,
 		big.NewInt(100),
@@ -143,7 +173,11 @@ func sendEther(eth layer1.Client, logger *logrus.Entry, watcher transaction.Watc
 	defer cf()
 	_, err = watcher.Subscribe(networkCtx, txn, nil)
 	if err != nil {
-		return fmt.Errorf("failed to subscribe txn for sendEther FromAccount: %v err: %v", fromAddress.Hex(), err)
+		return fmt.Errorf(
+			"failed to subscribe txn for sendEther FromAccount: %v err: %v",
+			fromAddress.Hex(),
+			err,
+		)
 	}
 	return nil
 }
@@ -167,7 +201,14 @@ type WorkScheduler struct {
 	Status        WorkerStatus
 }
 
-func worker(mainCtx context.Context, eth layer1.Client, internalClient *ethclient.Client, watcher transaction.Watcher, account accounts.Account, maxRestBlocks uint64) {
+func worker(
+	mainCtx context.Context,
+	eth layer1.Client,
+	internalClient *ethclient.Client,
+	watcher transaction.Watcher,
+	account accounts.Account,
+	maxRestBlocks uint64,
+) {
 	logger := logging.GetLogger("test").WithFields(logrus.Fields{
 		"component": "worker",
 		"account":   account.Address.Hex(),
@@ -226,13 +267,41 @@ func worker(mainCtx context.Context, eth layer1.Client, internalClient *ethclien
 }
 
 func main() {
-	keyStorePathPtr := flag.String("keyStorePath", "", "Path to folder with the encrypted private keys. If not provided, test accounts will be used.")
-	passCodePathPtr := flag.String("passCodePath", "", "Path to the file containing the password to decrypt the private key. If not provided, test accounts will be used.")
-	defaultAccountPtr := flag.String("defaultAccount", "", "Account inside the key store that will be used as fallback. If not provided, the first test account will be used.")
-	endPointPtr := flag.String("endPoint", "http://127.0.0.1:8545", "Endpoint to connect with the layer 1 server. If not provided, defaults to 127.0.0.1:8545 ")
-	finalityDelayPtr := flag.Int64("finalityDelay", 12, "Number of blocks to wait to consider a transaction final")
-	saveStatePtr := flag.Bool("saveState", false, "If the tracked transaction should be saved to database. The db will be saved on the local folder")
-	maxRestBlocksPtr := flag.Int64("maxRestBlocks", 4, "Number of blocks that the workers will not send heavy transactions to let the baseFee decrease. If set to 0, heavy transactions will always be sent.")
+	keyStorePathPtr := flag.String(
+		"keyStorePath",
+		"",
+		"Path to folder with the encrypted private keys. If not provided, test accounts will be used.",
+	)
+	passCodePathPtr := flag.String(
+		"passCodePath",
+		"",
+		"Path to the file containing the password to decrypt the private key. If not provided, test accounts will be used.",
+	)
+	defaultAccountPtr := flag.String(
+		"defaultAccount",
+		"",
+		"Account inside the key store that will be used as fallback. If not provided, the first test account will be used.",
+	)
+	endPointPtr := flag.String(
+		"endPoint",
+		"http://127.0.0.1:8545",
+		"Endpoint to connect with the layer 1 server. If not provided, defaults to 127.0.0.1:8545 ",
+	)
+	finalityDelayPtr := flag.Int64(
+		"finalityDelay",
+		12,
+		"Number of blocks to wait to consider a transaction final",
+	)
+	saveStatePtr := flag.Bool(
+		"saveState",
+		false,
+		"If the tracked transaction should be saved to database. The db will be saved on the local folder",
+	)
+	maxRestBlocksPtr := flag.Int64(
+		"maxRestBlocks",
+		4,
+		"Number of blocks that the workers will not send heavy transactions to let the baseFee decrease. If set to 0, heavy transactions will always be sent.",
+	)
 	flag.Parse()
 
 	if !strings.Contains(*endPointPtr, "https://") && !strings.Contains(*endPointPtr, "http://") {
@@ -259,8 +328,20 @@ func main() {
 	}
 	defer os.RemoveAll(tempDir)
 
-	keyStorePath, passCodePath, defaultAccount, isUsingTestAccounts := parseKeyStoreAndPassCode(tempDir, logger, *keyStorePathPtr, *passCodePathPtr, *defaultAccountPtr)
-	eth, internalClient := setupClient(*endPointPtr, keyStorePath, passCodePath, defaultAccount, uint64(*finalityDelayPtr))
+	keyStorePath, passCodePath, defaultAccount, isUsingTestAccounts := parseKeyStoreAndPassCode(
+		tempDir,
+		logger,
+		*keyStorePathPtr,
+		*passCodePathPtr,
+		*defaultAccountPtr,
+	)
+	eth, internalClient := setupClient(
+		*endPointPtr,
+		keyStorePath,
+		passCodePath,
+		defaultAccount,
+		uint64(*finalityDelayPtr),
+	)
 	defer eth.Close()
 
 	mainCtx, cf := context.WithCancel(context.Background())

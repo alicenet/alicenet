@@ -35,6 +35,10 @@ type IALCACaller interface {
 	//
 	// Solidity: function getMetamorphicContractAddress(bytes32 _salt, address _factory) pure returns(address)
 	GetMetamorphicContractAddress(opts *bind.CallOpts, _salt [32]byte, _factory common.Address) (common.Address, error)
+	// IsEarlyStageMigration is a free data retrieval call binding the contract method 0xa1811ef5.
+	//
+	// Solidity: function isEarlyStageMigration() view returns(bool)
+	IsEarlyStageMigration(opts *bind.CallOpts) (bool, error)
 	// Name is a free data retrieval call binding the contract method 0x06fdde03.
 	//
 	// Solidity: function name() view returns(string)

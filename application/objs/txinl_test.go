@@ -35,6 +35,7 @@ func TestTXInLinkerGood(t *testing.T) {
 }
 
 func txinlEqual(t *testing.T, txinl1, txinl2 *TXInLinker) {
+	t.Helper()
 	txinpi1 := txinl1.TXInPreImage
 	txinpi2 := txinl2.TXInPreImage
 	txinpiEqual(t, txinpi1, txinpi2)

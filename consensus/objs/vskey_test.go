@@ -6,6 +6,7 @@ import (
 )
 
 func vskEqual(t *testing.T, vsk, vsk2 *ValidatorSetKey) {
+	t.Helper()
 	if !bytes.Equal(vsk.Prefix, vsk2.Prefix) {
 		t.Fatal("fail")
 	}

@@ -4,12 +4,13 @@ import (
 	"context"
 	"math/big"
 
+	"github.com/alicenet/alicenet/bridge/bindings"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-
-	"github.com/alicenet/alicenet/bridge/bindings"
+	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/sirupsen/logrus"
 )
 
 // Client contains state information about a connection to the Ethereum node.
@@ -19,9 +20,14 @@ type Client interface {
 	EndpointInSync(ctx context.Context) (bool, uint32, error)
 	GetPeerCount(ctx context.Context) (uint64, error)
 	GetChainID() *big.Int
+	GetInternalClient() *ethclient.Client
+	GetLogger() *logrus.Logger
 	GetTxNotFoundMaxBlocks() uint64
 	GetTxMaxStaleBlocks() uint64
-	GetTransactionByHash(ctx context.Context, txHash common.Hash) (tx *types.Transaction, isPending bool, err error)
+	GetTransactionByHash(
+		ctx context.Context,
+		txHash common.Hash,
+	) (tx *types.Transaction, isPending bool, err error)
 	GetTransactionReceipt(ctx context.Context, txHash common.Hash) (*types.Receipt, error)
 	GetHeaderByNumber(ctx context.Context, number *big.Int) (*types.Header, error)
 	GetBlockByNumber(ctx context.Context, number *big.Int) (*types.Block, error)
@@ -37,14 +43,26 @@ type Client interface {
 	GetDefaultAccount() accounts.Account
 	GetKnownAccounts() []accounts.Account
 	GetTimeoutContext() (context.Context, context.CancelFunc)
-	GetEvents(ctx context.Context, firstBlock, lastBlock uint64, addresses []common.Address) ([]types.Log, error)
+	GetEvents(
+		ctx context.Context,
+		firstBlock, lastBlock uint64,
+		addresses []common.Address,
+	) ([]types.Log, error)
 	GetFinalityDelay() uint64
 	GetTxMaxGasFeeAllowed() *big.Int
 	GetPendingNonce(ctx context.Context, account common.Address) (uint64, error)
 	SignTransaction(tx types.TxData, signerAddress common.Address) (*types.Transaction, error)
 	SendTransaction(ctx context.Context, tx *types.Transaction) error
 	ExtractTransactionSender(tx *types.Transaction) (common.Address, error)
-	RetryTransaction(ctx context.Context, tx *types.Transaction, baseFee, gasTipCap *big.Int) (*types.Transaction, error)
+	RetryTransaction(
+		ctx context.Context,
+		tx *types.Transaction,
+		baseFee, gasTipCap *big.Int,
+	) (*types.Transaction, error)
+	TransferNativeToken(
+		from, to common.Address,
+		wei *big.Int,
+	) (*types.Transaction, error)
 }
 
 type BasicContracts interface {

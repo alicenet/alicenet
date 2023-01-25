@@ -1,3 +1,4 @@
+import axios from "axios";
 import { ContractFactory } from "ethers";
 import fs from "fs";
 import { ethers } from "hardhat";
@@ -273,12 +274,31 @@ export async function getGasPrices(ethers: Ethers) {
   return { maxPriorityFeePerGas, maxFeePerGas };
 }
 
+export async function isContractCodeVerified(
+  address: string
+): Promise<boolean> {
+  const response = await axios.get(
+    `https://api.etherscan.io/api?module=contract&action=getabi&address=${address}&apikey=${process.env.ETHERSCAN_API_KEY}`
+  );
+  if (response.data.result === "Invalid API Key") {
+    console.log("Invalid Etherscan API Key");
+    exit(1);
+  }
+  return response.data.status === "1";
+}
+
 export async function verifyContract(
   hre: HardhatRuntimeEnvironment,
   deployedContractAddress: string,
   constructorArgs: Array<any>
 ) {
   let result;
+  if (await isContractCodeVerified(deployedContractAddress)) {
+    console.log(
+      `Skipping, contract ${deployedContractAddress} already verified!`
+    );
+    return;
+  }
   try {
     result = await hre.run("verify", {
       network: hre.network.name,

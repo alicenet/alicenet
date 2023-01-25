@@ -13,6 +13,8 @@ import (
 	bind "github.com/ethereum/go-ethereum/accounts/abi/bind"
 	common "github.com/ethereum/go-ethereum/common"
 	types "github.com/ethereum/go-ethereum/core/types"
+	ethclient "github.com/ethereum/go-ethereum/ethclient"
+	logrus "github.com/sirupsen/logrus"
 )
 
 // MockAllSmartContracts is a mock implementation of the AllSmartContracts
@@ -218,9 +220,15 @@ type MockClient struct {
 	// GetHeaderByNumberFunc is an instance of a mock function object
 	// controlling the behavior of the method GetHeaderByNumber.
 	GetHeaderByNumberFunc *ClientGetHeaderByNumberFunc
+	// GetInternalClientFunc is an instance of a mock function object
+	// controlling the behavior of the method GetInternalClient.
+	GetInternalClientFunc *ClientGetInternalClientFunc
 	// GetKnownAccountsFunc is an instance of a mock function object
 	// controlling the behavior of the method GetKnownAccounts.
 	GetKnownAccountsFunc *ClientGetKnownAccountsFunc
+	// GetLoggerFunc is an instance of a mock function object controlling
+	// the behavior of the method GetLogger.
+	GetLoggerFunc *ClientGetLoggerFunc
 	// GetPeerCountFunc is an instance of a mock function object controlling
 	// the behavior of the method GetPeerCount.
 	GetPeerCountFunc *ClientGetPeerCountFunc
@@ -260,6 +268,9 @@ type MockClient struct {
 	// SignTransactionFunc is an instance of a mock function object
 	// controlling the behavior of the method SignTransaction.
 	SignTransactionFunc *ClientSignTransactionFunc
+	// TransferNativeTokenFunc is an instance of a mock function object
+	// controlling the behavior of the method TransferNativeToken.
+	TransferNativeTokenFunc *ClientTransferNativeTokenFunc
 }
 
 // NewMockClient creates a new mock of the Client interface. All methods
@@ -351,8 +362,18 @@ func NewMockClient() *MockClient {
 				return
 			},
 		},
+		GetInternalClientFunc: &ClientGetInternalClientFunc{
+			defaultHook: func() (r0 *ethclient.Client) {
+				return
+			},
+		},
 		GetKnownAccountsFunc: &ClientGetKnownAccountsFunc{
 			defaultHook: func() (r0 []accounts.Account) {
+				return
+			},
+		},
+		GetLoggerFunc: &ClientGetLoggerFunc{
+			defaultHook: func() (r0 *logrus.Logger) {
 				return
 			},
 		},
@@ -418,6 +439,11 @@ func NewMockClient() *MockClient {
 		},
 		SignTransactionFunc: &ClientSignTransactionFunc{
 			defaultHook: func(types.TxData, common.Address) (r0 *types.Transaction, r1 error) {
+				return
+			},
+		},
+		TransferNativeTokenFunc: &ClientTransferNativeTokenFunc{
+			defaultHook: func(common.Address, common.Address, *big.Int) (r0 *types.Transaction, r1 error) {
 				return
 			},
 		},
@@ -513,9 +539,19 @@ func NewStrictMockClient() *MockClient {
 				panic("unexpected invocation of MockClient.GetHeaderByNumber")
 			},
 		},
+		GetInternalClientFunc: &ClientGetInternalClientFunc{
+			defaultHook: func() *ethclient.Client {
+				panic("unexpected invocation of MockClient.GetInternalClient")
+			},
+		},
 		GetKnownAccountsFunc: &ClientGetKnownAccountsFunc{
 			defaultHook: func() []accounts.Account {
 				panic("unexpected invocation of MockClient.GetKnownAccounts")
+			},
+		},
+		GetLoggerFunc: &ClientGetLoggerFunc{
+			defaultHook: func() *logrus.Logger {
+				panic("unexpected invocation of MockClient.GetLogger")
 			},
 		},
 		GetPeerCountFunc: &ClientGetPeerCountFunc{
@@ -583,6 +619,11 @@ func NewStrictMockClient() *MockClient {
 				panic("unexpected invocation of MockClient.SignTransaction")
 			},
 		},
+		TransferNativeTokenFunc: &ClientTransferNativeTokenFunc{
+			defaultHook: func(common.Address, common.Address, *big.Int) (*types.Transaction, error) {
+				panic("unexpected invocation of MockClient.TransferNativeToken")
+			},
+		},
 	}
 }
 
@@ -641,8 +682,14 @@ func NewMockClientFrom(i layer1.Client) *MockClient {
 		GetHeaderByNumberFunc: &ClientGetHeaderByNumberFunc{
 			defaultHook: i.GetHeaderByNumber,
 		},
+		GetInternalClientFunc: &ClientGetInternalClientFunc{
+			defaultHook: i.GetInternalClient,
+		},
 		GetKnownAccountsFunc: &ClientGetKnownAccountsFunc{
 			defaultHook: i.GetKnownAccounts,
+		},
+		GetLoggerFunc: &ClientGetLoggerFunc{
+			defaultHook: i.GetLogger,
 		},
 		GetPeerCountFunc: &ClientGetPeerCountFunc{
 			defaultHook: i.GetPeerCount,
@@ -682,6 +729,9 @@ func NewMockClientFrom(i layer1.Client) *MockClient {
 		},
 		SignTransactionFunc: &ClientSignTransactionFunc{
 			defaultHook: i.SignTransaction,
+		},
+		TransferNativeTokenFunc: &ClientTransferNativeTokenFunc{
+			defaultHook: i.TransferNativeToken,
 		},
 	}
 }
@@ -2461,6 +2511,105 @@ func (c ClientGetHeaderByNumberFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 
+// ClientGetInternalClientFunc describes the behavior when the
+// GetInternalClient method of the parent MockClient instance is invoked.
+type ClientGetInternalClientFunc struct {
+	defaultHook func() *ethclient.Client
+	hooks       []func() *ethclient.Client
+	history     []ClientGetInternalClientFuncCall
+	mutex       sync.Mutex
+}
+
+// GetInternalClient delegates to the next hook function in the queue and
+// stores the parameter and result values of this invocation.
+func (m *MockClient) GetInternalClient() *ethclient.Client {
+	r0 := m.GetInternalClientFunc.nextHook()()
+	m.GetInternalClientFunc.appendCall(ClientGetInternalClientFuncCall{r0})
+	return r0
+}
+
+// SetDefaultHook sets function that is called when the GetInternalClient
+// method of the parent MockClient instance is invoked and the hook queue is
+// empty.
+func (f *ClientGetInternalClientFunc) SetDefaultHook(hook func() *ethclient.Client) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// GetInternalClient method of the parent MockClient instance invokes the
+// hook at the front of the queue and discards it. After the queue is empty,
+// the default hook function is invoked for any future action.
+func (f *ClientGetInternalClientFunc) PushHook(hook func() *ethclient.Client) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *ClientGetInternalClientFunc) SetDefaultReturn(r0 *ethclient.Client) {
+	f.SetDefaultHook(func() *ethclient.Client {
+		return r0
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *ClientGetInternalClientFunc) PushReturn(r0 *ethclient.Client) {
+	f.PushHook(func() *ethclient.Client {
+		return r0
+	})
+}
+
+func (f *ClientGetInternalClientFunc) nextHook() func() *ethclient.Client {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *ClientGetInternalClientFunc) appendCall(r0 ClientGetInternalClientFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of ClientGetInternalClientFuncCall objects
+// describing the invocations of this function.
+func (f *ClientGetInternalClientFunc) History() []ClientGetInternalClientFuncCall {
+	f.mutex.Lock()
+	history := make([]ClientGetInternalClientFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// ClientGetInternalClientFuncCall is an object that describes an invocation
+// of method GetInternalClient on an instance of MockClient.
+type ClientGetInternalClientFuncCall struct {
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 *ethclient.Client
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c ClientGetInternalClientFuncCall) Args() []interface{} {
+	return []interface{}{}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c ClientGetInternalClientFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0}
+}
+
 // ClientGetKnownAccountsFunc describes the behavior when the
 // GetKnownAccounts method of the parent MockClient instance is invoked.
 type ClientGetKnownAccountsFunc struct {
@@ -2557,6 +2706,104 @@ func (c ClientGetKnownAccountsFuncCall) Args() []interface{} {
 // Results returns an interface slice containing the results of this
 // invocation.
 func (c ClientGetKnownAccountsFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0}
+}
+
+// ClientGetLoggerFunc describes the behavior when the GetLogger method of
+// the parent MockClient instance is invoked.
+type ClientGetLoggerFunc struct {
+	defaultHook func() *logrus.Logger
+	hooks       []func() *logrus.Logger
+	history     []ClientGetLoggerFuncCall
+	mutex       sync.Mutex
+}
+
+// GetLogger delegates to the next hook function in the queue and stores the
+// parameter and result values of this invocation.
+func (m *MockClient) GetLogger() *logrus.Logger {
+	r0 := m.GetLoggerFunc.nextHook()()
+	m.GetLoggerFunc.appendCall(ClientGetLoggerFuncCall{r0})
+	return r0
+}
+
+// SetDefaultHook sets function that is called when the GetLogger method of
+// the parent MockClient instance is invoked and the hook queue is empty.
+func (f *ClientGetLoggerFunc) SetDefaultHook(hook func() *logrus.Logger) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// GetLogger method of the parent MockClient instance invokes the hook at
+// the front of the queue and discards it. After the queue is empty, the
+// default hook function is invoked for any future action.
+func (f *ClientGetLoggerFunc) PushHook(hook func() *logrus.Logger) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *ClientGetLoggerFunc) SetDefaultReturn(r0 *logrus.Logger) {
+	f.SetDefaultHook(func() *logrus.Logger {
+		return r0
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *ClientGetLoggerFunc) PushReturn(r0 *logrus.Logger) {
+	f.PushHook(func() *logrus.Logger {
+		return r0
+	})
+}
+
+func (f *ClientGetLoggerFunc) nextHook() func() *logrus.Logger {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *ClientGetLoggerFunc) appendCall(r0 ClientGetLoggerFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of ClientGetLoggerFuncCall objects describing
+// the invocations of this function.
+func (f *ClientGetLoggerFunc) History() []ClientGetLoggerFuncCall {
+	f.mutex.Lock()
+	history := make([]ClientGetLoggerFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// ClientGetLoggerFuncCall is an object that describes an invocation of
+// method GetLogger on an instance of MockClient.
+type ClientGetLoggerFuncCall struct {
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 *logrus.Logger
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c ClientGetLoggerFuncCall) Args() []interface{} {
+	return []interface{}{}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c ClientGetLoggerFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0}
 }
 
@@ -3923,6 +4170,117 @@ func (c ClientSignTransactionFuncCall) Args() []interface{} {
 // Results returns an interface slice containing the results of this
 // invocation.
 func (c ClientSignTransactionFuncCall) Results() []interface{} {
+	return []interface{}{c.Result0, c.Result1}
+}
+
+// ClientTransferNativeTokenFunc describes the behavior when the
+// TransferNativeToken method of the parent MockClient instance is invoked.
+type ClientTransferNativeTokenFunc struct {
+	defaultHook func(common.Address, common.Address, *big.Int) (*types.Transaction, error)
+	hooks       []func(common.Address, common.Address, *big.Int) (*types.Transaction, error)
+	history     []ClientTransferNativeTokenFuncCall
+	mutex       sync.Mutex
+}
+
+// TransferNativeToken delegates to the next hook function in the queue and
+// stores the parameter and result values of this invocation.
+func (m *MockClient) TransferNativeToken(v0 common.Address, v1 common.Address, v2 *big.Int) (*types.Transaction, error) {
+	r0, r1 := m.TransferNativeTokenFunc.nextHook()(v0, v1, v2)
+	m.TransferNativeTokenFunc.appendCall(ClientTransferNativeTokenFuncCall{v0, v1, v2, r0, r1})
+	return r0, r1
+}
+
+// SetDefaultHook sets function that is called when the TransferNativeToken
+// method of the parent MockClient instance is invoked and the hook queue is
+// empty.
+func (f *ClientTransferNativeTokenFunc) SetDefaultHook(hook func(common.Address, common.Address, *big.Int) (*types.Transaction, error)) {
+	f.defaultHook = hook
+}
+
+// PushHook adds a function to the end of hook queue. Each invocation of the
+// TransferNativeToken method of the parent MockClient instance invokes the
+// hook at the front of the queue and discards it. After the queue is empty,
+// the default hook function is invoked for any future action.
+func (f *ClientTransferNativeTokenFunc) PushHook(hook func(common.Address, common.Address, *big.Int) (*types.Transaction, error)) {
+	f.mutex.Lock()
+	f.hooks = append(f.hooks, hook)
+	f.mutex.Unlock()
+}
+
+// SetDefaultReturn calls SetDefaultHook with a function that returns the
+// given values.
+func (f *ClientTransferNativeTokenFunc) SetDefaultReturn(r0 *types.Transaction, r1 error) {
+	f.SetDefaultHook(func(common.Address, common.Address, *big.Int) (*types.Transaction, error) {
+		return r0, r1
+	})
+}
+
+// PushReturn calls PushHook with a function that returns the given values.
+func (f *ClientTransferNativeTokenFunc) PushReturn(r0 *types.Transaction, r1 error) {
+	f.PushHook(func(common.Address, common.Address, *big.Int) (*types.Transaction, error) {
+		return r0, r1
+	})
+}
+
+func (f *ClientTransferNativeTokenFunc) nextHook() func(common.Address, common.Address, *big.Int) (*types.Transaction, error) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if len(f.hooks) == 0 {
+		return f.defaultHook
+	}
+
+	hook := f.hooks[0]
+	f.hooks = f.hooks[1:]
+	return hook
+}
+
+func (f *ClientTransferNativeTokenFunc) appendCall(r0 ClientTransferNativeTokenFuncCall) {
+	f.mutex.Lock()
+	f.history = append(f.history, r0)
+	f.mutex.Unlock()
+}
+
+// History returns a sequence of ClientTransferNativeTokenFuncCall objects
+// describing the invocations of this function.
+func (f *ClientTransferNativeTokenFunc) History() []ClientTransferNativeTokenFuncCall {
+	f.mutex.Lock()
+	history := make([]ClientTransferNativeTokenFuncCall, len(f.history))
+	copy(history, f.history)
+	f.mutex.Unlock()
+
+	return history
+}
+
+// ClientTransferNativeTokenFuncCall is an object that describes an
+// invocation of method TransferNativeToken on an instance of MockClient.
+type ClientTransferNativeTokenFuncCall struct {
+	// Arg0 is the value of the 1st argument passed to this method
+	// invocation.
+	Arg0 common.Address
+	// Arg1 is the value of the 2nd argument passed to this method
+	// invocation.
+	Arg1 common.Address
+	// Arg2 is the value of the 3rd argument passed to this method
+	// invocation.
+	Arg2 *big.Int
+	// Result0 is the value of the 1st result returned from this method
+	// invocation.
+	Result0 *types.Transaction
+	// Result1 is the value of the 2nd result returned from this method
+	// invocation.
+	Result1 error
+}
+
+// Args returns an interface slice containing the arguments of this
+// invocation.
+func (c ClientTransferNativeTokenFuncCall) Args() []interface{} {
+	return []interface{}{c.Arg0, c.Arg1, c.Arg2}
+}
+
+// Results returns an interface slice containing the results of this
+// invocation.
+func (c ClientTransferNativeTokenFuncCall) Results() []interface{} {
 	return []interface{}{c.Result0, c.Result1}
 }
 

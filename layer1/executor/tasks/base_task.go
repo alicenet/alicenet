@@ -5,11 +5,10 @@ import (
 	"errors"
 	"sync"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/layer1"
 	"github.com/alicenet/alicenet/layer1/transaction"
+	"github.com/sirupsen/logrus"
 )
 
 type BaseTask struct {
@@ -42,7 +41,12 @@ type BaseTask struct {
 // NewBaseTask creates a new Base task. BaseTask should be the base of any task.
 // This function is called outside the scheduler to create the object to be
 // scheduled.
-func NewBaseTask(start uint64, end uint64, allowMultiExecution bool, subscribeOptions *transaction.SubscribeOptions) *BaseTask {
+func NewBaseTask(
+	start uint64,
+	end uint64,
+	allowMultiExecution bool,
+	subscribeOptions *transaction.SubscribeOptions,
+) *BaseTask {
 	return &BaseTask{
 		Start:               start,
 		End:                 end,
@@ -54,7 +58,19 @@ func NewBaseTask(start uint64, end uint64, allowMultiExecution bool, subscribeOp
 // Initialize initializes the task after its creation. It should be only called
 // by the task scheduler during task spawn as separated go routine. This
 // function all the parameters for task execution and control by the scheduler.
-func (bt *BaseTask) Initialize(database *db.Database, logger *logrus.Entry, eth layer1.Client, contracts layer1.AllSmartContracts, name string, id string, start uint64, end uint64, allowMultiExecution bool, subscribeOptions *transaction.SubscribeOptions, taskResponseChan InternalTaskResponseChan) error {
+func (bt *BaseTask) Initialize(
+	database *db.Database,
+	logger *logrus.Entry,
+	eth layer1.Client,
+	contracts layer1.AllSmartContracts,
+	name string,
+	id string,
+	start uint64,
+	end uint64,
+	allowMultiExecution bool,
+	subscribeOptions *transaction.SubscribeOptions,
+	taskResponseChan InternalTaskResponseChan,
+) error {
 	bt.mutex.Lock()
 	defer bt.mutex.Unlock()
 	if bt.isInitialized {
@@ -199,7 +215,8 @@ func (bt *BaseTask) Finish(err error) {
 	bt.mutex.Lock()
 	defer bt.mutex.Unlock()
 	if err != nil {
-		if errors.Is(err, context.Canceled) || errors.Is(err, ErrTaskKilled) || errors.Is(err, ErrTaskExecutionMechanismClosed) {
+		if errors.Is(err, context.Canceled) || errors.Is(err, ErrTaskKilled) ||
+			errors.Is(err, ErrTaskExecutionMechanismClosed) {
 			bt.logger.WithError(err).Debug("finishing task execution, it was aborted")
 		} else {
 			bt.logger.WithError(err).Error("got an error when executing task")
