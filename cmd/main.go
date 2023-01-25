@@ -329,7 +329,7 @@ func setDefaultCommandIfNonePresent(defaultCommand *cobra.Command, logger *logru
 	}
 
 	// Adding the `node` command to args.
-	os.Args = []string{os.Args[0], defaultCommand.Use}
+	os.Args = append(os.Args, defaultCommand.Use)
 
 	// Setting te default --config location if it is not present in command options.
 	if config.Configuration.ConfigurationFileName == "" {
