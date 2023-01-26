@@ -7,7 +7,11 @@ import {
   BRIDGE_POOL_FACTORY,
 } from "../lib/constants";
 import { getGasPrices } from "../lib/deployment/utils";
-import { impersonateFactorySigner, processSingleContractEvent } from "./taskUtils";
+import { AliceNetFactory } from '../../typechain-types/contracts/AliceNetFactory';
+import {
+  impersonateFactorySigner,
+  processSingleContractEvent,
+} from "./taskUtils";
 
 task(
   "deploy-bridge-factory",
@@ -31,7 +35,11 @@ task(
     );
     //if test flag is set, impersonate the owner of the factory
     if (taskArgs.test) {
-      factory = await impersonateFactorySigner(ALICENET_FACTORY_OWNER_ADDRESS, factory, hre);
+      factory = await impersonateFactorySigner(
+        ALICENET_FACTORY_OWNER_ADDRESS,
+        factory,
+        hre
+      );
     }
     //encode initialize function call
     const bridgeFactory = await hre.ethers.getContractFactory(
@@ -62,17 +70,35 @@ task(
   });
 
 task("deploy-bridge-pool-logic", "deploys the logic for bridge pools")
-.addFlag("test", "this flag must be used with hardhat fork configured in hardhat config, runs the task, impersonating owner of alicenet factory on mainnet")
-.addOptionalParam("factory-address", "address of alicenet smart contract factory, defaults to mainnet factory address", ALICE_NET_FACTORY_ADDRESS, types.string)
-.setAction(async (taskArgs, hre) => {
+  .addFlag(
+    "test",
+    "this flag must be used with hardhat fork configured in hardhat config, runs the task, impersonating owner of alicenet factory on mainnet"
+  )
+  .addOptionalParam(
+    "factory-address",
+    "address of alicenet smart contract factory, defaults to mainnet factory address",
+    ALICE_NET_FACTORY_ADDRESS,
+    types.string
+  )
+  .setAction(async (taskArgs, hre) => {
     const bridgePool = await hre.ethers.getContractFactory("BridgePool");
-    let factory = await hre.ethers.getContractAt(ALICENET_FACTORY, taskArgs.factoryAddress);
-    const bpSalt = hre.ethers.utils.formatBytes32String(BRIDGE_POOL_FACTORY); 
+    let factory = await hre.ethers.getContractAt(
+      ALICENET_FACTORY,
+      taskArgs.factoryAddress
+    ) as AliceNetFactory;
+    const bpSalt = hre.ethers.utils.formatBytes32String(BRIDGE_POOL_FACTORY);
     const bpAddress = await factory.lookup(bpSalt);
-    let bpFactory = await hre.ethers.getContractAt(BRIDGE_POOL_FACTORY, bpAddress); 
+    let bpFactory = await hre.ethers.getContractAt(
+      BRIDGE_POOL_FACTORY,
+      bpAddress
+    );
     if (taskArgs.test) {
-        factory = await impersonateFactorySigner(ALICENET_FACTORY_OWNER_ADDRESS, factory, hre);
+      factory = await impersonateFactorySigner(
+        ALICENET_FACTORY_OWNER_ADDRESS,
+        factory,
+        hre
+      );
     }
     // encode deployPoolLogic function call
-    deployPoolLogicCallData = 
-});
+    // const deployPoolLogicCallData =  bpFactory.interface.encodeFunctionData("deployPoolLogic", );
+  });
