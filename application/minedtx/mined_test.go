@@ -135,10 +135,10 @@ func makeTxInitial(t *testing.T, ownerSigner objs.Signer) (objs.Vout, *objs.Tx) 
 }
 
 func makeTxInitial2(t *testing.T, ownerSigner objs.Signer, numTxIns uint32) (objs.Vout, *objs.Tx) {
+	t.Helper()
 	if numTxIns == 0 {
 		t.Fatal("invalid numTxIns")
 	}
-	t.Helper()
 	consumedUTXOs := objs.Vout{}
 	txInputs := []*objs.TXIn{}
 	for i := 0; i < int(numTxIns); i++ {
@@ -347,19 +347,23 @@ func TestMined2(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		t.Logf("%x\n", txHash)
 		tx2Hash, err := tx2.TxHash()
 		if err != nil {
 			t.Fatal(err)
 		}
-		t.Logf("%x\n", tx2Hash)
+		if bytes.Equal(txHash, tx2Hash) {
+			t.Fatal("tx and tx2 have the same txhash")
+		}
 		err = hndlr.Add(txn, 1, []*objs.Tx{tx, tx2})
 		if err != nil {
 			t.Fatal(err)
 		}
-		getTx1, _, err := hndlr.Get(txn, [][]byte{txHash})
+		getTx1, missing, err := hndlr.Get(txn, [][]byte{txHash})
 		if err != nil {
 			t.Fatal(err)
+		}
+		if len(missing) > 0 {
+			t.Fatal("should not be missing")
 		}
 		getTxHash1, err := getTx1[0].TxHash()
 		if err != nil {
@@ -375,9 +379,12 @@ func TestMined2(t *testing.T) {
 		if atHeight != 1 {
 			t.Fatalf("not at height 1: %v", atHeight)
 		}
-		getTx2, _, err := hndlr.Get(txn, [][]byte{tx2Hash})
+		getTx2, missing, err := hndlr.Get(txn, [][]byte{tx2Hash})
 		if err != nil {
 			t.Fatal(err)
+		}
+		if len(missing) > 0 {
+			t.Fatal("should not be missing")
 		}
 		getTxHash2, err := getTx2[0].TxHash()
 		if err != nil {
@@ -397,17 +404,19 @@ func TestMined2(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		_, missing, err := hndlr.Get(txn, [][]byte{tx2Hash})
-		if len(missing) != 1 {
+		_, missing, err = hndlr.Get(txn, [][]byte{tx2Hash})
+		if err != nil {
 			t.Error(err)
+		}
+		if len(missing) != 1 {
 			t.Fatal("delete failure")
 		}
 		_, missing, err = hndlr.Get(txn, [][]byte{txHash})
 		if err != nil {
-			t.Error(err)
+			t.Fatal(err)
 		}
 		if len(missing) > 0 {
-			t.Error("Should not be missing because tx was not deleted")
+			t.Fatal("Should not be missing because tx was not deleted")
 		}
 		atHeight, err = hndlr.GetHeightForTx(txn, getTxHash1)
 		if err != nil {
@@ -416,109 +425,19 @@ func TestMined2(t *testing.T) {
 		if atHeight != 1 {
 			t.Fatalf("not at height 1: %v", atHeight)
 		}
-		return nil
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-}
-
-func TestMined3(t *testing.T) {
-	t.Parallel()
-	db := environment.SetupBadgerDatabase(t)
-	hndlr := NewMinedTxHandler()
-
-	signer := &crypto.BNSigner{}
-	err := signer.SetPrivk([]byte("secret"))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	storage := makeWrapperStorageMock()
-
-	ownerSigner := testingOwner(t)
-	consumedUTXOs, tx := makeTxInitial2(t, ownerSigner, 2)
-	consumedUTXOs2, tx2 := makeTxInitial2(t, ownerSigner, 3)
-
-	_, err = tx.Validate(nil, 1, consumedUTXOs, storage)
-	if err != nil {
-		t.Fatal(err)
-	}
-	_, err = tx2.Validate(nil, 1, consumedUTXOs2, storage)
-	if err != nil {
-		t.Fatal(err)
-	}
-	err = db.Update(func(txn *badger.Txn) error {
-		txHash, err := tx.TxHash()
+		height := uint32(1)
+		idx := uint32(0)
+		retTxhash, err := hndlr.heightIdxIndex.GetTxHashFromHeightIdx(txn, height, idx)
 		if err != nil {
 			t.Fatal(err)
 		}
-		tx2Hash, err := tx2.TxHash()
-		if err != nil {
-			t.Fatal(err)
+		if !bytes.Equal(retTxhash, txHash) {
+			t.Fatal("incorrect hash returned")
 		}
-		err = hndlr.Add(txn, 1, []*objs.Tx{tx, tx2})
-		if err != nil {
-			t.Fatal(err)
-		}
-		getTx1, _, err := hndlr.Get(txn, [][]byte{txHash})
-		if err != nil {
-			t.Fatal(err)
-		}
-		getTxHash1, err := getTx1[0].TxHash()
-		if err != nil {
-			t.Fatal(err)
-		}
-		if !bytes.Equal(getTxHash1, txHash) {
-			t.Fatalf("txHash mismatch:\noriginalHash:%x\nreturnedHash:%x\n", txHash, getTxHash1)
-		}
-		atHeight, err := hndlr.GetHeightForTx(txn, getTxHash1)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if atHeight != 1 {
-			t.Fatalf("not at height 1: %v", atHeight)
-		}
-		getTx2, _, err := hndlr.Get(txn, [][]byte{tx2Hash})
-		if err != nil {
-			t.Fatal(err)
-		}
-		getTxHash2, err := getTx2[0].TxHash()
-		if err != nil {
-			t.Fatal(err)
-		}
-		if !bytes.Equal(getTxHash2, tx2Hash) {
-			t.Fatalf("txHash mismatch:\noriginalHash:%x\nreturnedHash:%x\n", tx2Hash, getTxHash2)
-		}
-		atHeight, err = hndlr.GetHeightForTx(txn, getTxHash2)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if atHeight != 1 {
-			t.Fatalf("not at height 1: %v", atHeight)
-		}
-		err = hndlr.Delete(txn, [][]byte{txHash})
-		if err != nil {
-			t.Fatal(err)
-		}
-		_, missing, err := hndlr.Get(txn, [][]byte{txHash})
-		if len(missing) != 1 {
-			t.Error(err)
-			t.Fatal("delete failure")
-		}
-		_, missing, err = hndlr.Get(txn, [][]byte{tx2Hash})
-		if err != nil {
-			t.Error(err)
-		}
-		if len(missing) > 0 {
-			t.Error("Should not be missing because tx2 was not deleted")
-		}
-		atHeight, err = hndlr.GetHeightForTx(txn, getTxHash2)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if atHeight != 1 {
-			t.Fatalf("not at height 1: %v", atHeight)
+		idx = uint32(1)
+		_, err = hndlr.heightIdxIndex.GetTxHashFromHeightIdx(txn, height, idx)
+		if err == nil {
+			t.Fatal("Should have raised error")
 		}
 		return nil
 	})
