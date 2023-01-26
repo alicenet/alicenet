@@ -20,7 +20,7 @@ import (
 
 var _ interfaces.Transaction = (*Tx)(nil)
 
-// Tx is a transaction object.
+// Tx is the transaction object.
 type Tx struct {
 	Vin  Vin
 	Vout Vout
@@ -564,7 +564,7 @@ func (b *Tx) ValidateChainID(chainID uint32) error {
 	return nil
 }
 
-// CannotBeMinedUntil ...
+// CannotBeMinedUntil returns the height at which the tx may be mined
 func (b *Tx) CannotBeMinedUntil() (uint32, error) {
 	if b == nil {
 		return 0, errorz.ErrInvalid{}.New("tx.cannotBeMinedUntil: tx not initialized")
@@ -585,7 +585,9 @@ func (b *Tx) CannotBeMinedUntil() (uint32, error) {
 	return maxBH, nil
 }
 
-// ValidateIssuedAtForMining ...
+// ValidateIssuedAtForMining insures all UTXOs which are issued at a specific epoch
+// are being issued at within the same epoch;
+// this applies to datastore objects.
 func (b *Tx) ValidateIssuedAtForMining(currentHeight uint32) error {
 	if b == nil {
 		return errorz.ErrInvalid{}.New("tx.validateIssuedAtForMining: tx not initialized")
@@ -652,7 +654,7 @@ func (b *Tx) EpochOfExpirationForMining() (uint32, error) {
 	return utils.Epoch(mbh), nil
 }
 
-// Validate ...
+// Validate validates the tx object
 func (b *Tx) Validate(set map[string]bool, currentHeight uint32, consumedUTXOs Vout, storage *wrapper.Storage) (map[string]bool, error) {
 	if b == nil {
 		return nil, errorz.ErrInvalid{}.New("tx.validate: tx not initialized")
