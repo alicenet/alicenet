@@ -5,9 +5,14 @@ import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "contracts/utils/auth/ImmutableFactory.sol";
 import "contracts/utils/auth/ImmutableValidatorPool.sol";
 import "contracts/interfaces/IValidatorPool.sol";
+import "contracts/libraries/errors/DutchAuctionErrors.sol";
+
+import "hardhat/console.sol";
+
+
 
 contract DutchAuction is ImmutableFactory, ImmutableValidatorPool {
-    uint256 private immutable _startPrice;
+    uint256 private _startPrice;
     uint8 private immutable _decay;
     uint16 private immutable _scaleParameter;
     uint256 private _auctionId;
@@ -23,17 +28,16 @@ contract DutchAuction is ImmutableFactory, ImmutableValidatorPool {
     event BidPlaced(uint256 _auctionId, address winner, uint256 _winPrice);
 
     constructor(
-        uint256 startPrice_,
         uint8 decay_,
         uint16 scaleParameter_
     ) ImmutableFactory(msg.sender) {
-        _startPrice = startPrice_;
         _decay = decay_;
         _scaleParameter = scaleParameter_;
     }
 
     /// @dev Starts auction defining auction's start block, this auction continues to run until a new start
-    function startAuction() public onlyFactory {
+    function startAuction(uint256 startPrice_) public onlyFactory {
+        _startPrice = startPrice_;
         uint256 gasPrice;
         assembly ("memory-safe") {
             gasPrice := gasprice()
@@ -42,6 +46,10 @@ contract DutchAuction is ImmutableFactory, ImmutableValidatorPool {
         _finalPrice =
             ethdkgValidatorCost *
             IValidatorPool(_validatorPoolAddress()).getValidatorsCount();
+            console.log("start auction",_startPrice,_finalPrice, gasPrice);
+            if (_startPrice <= _finalPrice) {
+                revert DutchAuctionErrors.StartPriceLowerThanFinalPrice(_startPrice, _finalPrice);
+            }
         _startBlock = block.number;
         _auctionId++;
         emit AuctionStarted(_auctionId, _startBlock, _startPrice, _finalPrice);
