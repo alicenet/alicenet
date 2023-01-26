@@ -18,13 +18,13 @@ Second index is the size of the object
 iterate in fwd direction
 */
 
-// NewExpSizeIndex returns a new index
+// NewExpSizeIndex returns a new ExpSizeIndex
 func NewExpSizeIndex(p, pp prefixFunc) *ExpSizeIndex {
 	return &ExpSizeIndex{p, pp}
 }
 
 // ExpSizeIndex creates an index that allows objects to be dropped
-// by epoch.
+// by epoch and size
 type ExpSizeIndex struct {
 	prefix    prefixFunc
 	refPrefix prefixFunc

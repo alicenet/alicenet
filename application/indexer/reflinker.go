@@ -37,11 +37,15 @@ on mined tx:
 
 */
 
+// NewRefLinkerIndex returns a new RefLinkerIndex
 func NewRefLinkerIndex(p, pp, ppp prefixFunc) *RefLinker {
 	refCounter := NewRefCounter(ppp)
 	return &RefLinker{3, p, pp, refCounter}
 }
 
+// RefLinker allows for tracking the number of txs in the pending tx handler
+// reference a valid UTXO (via its utxoID) and ensures the references
+// stay below a specified threshold
 type RefLinker struct {
 	threshold    int64
 	prefixRef    prefixFunc
@@ -79,6 +83,7 @@ func (rlrrk *RefLinkerRevRefKey) UnmarshalBinary(data []byte) {
 
 func (rlrrk *RefLinkerRevRefKey) XXXIsKey() {}
 
+// evictOne removes the oldest txhash from the RefLinker
 func (rl *RefLinker) evictOne(txn *badger.Txn, utxoID []byte) ([]byte, error) {
 	utxoIDCopy := utils.CopySlice(utxoID)
 	var evictedHash []byte
@@ -101,6 +106,8 @@ func (rl *RefLinker) evictOne(txn *badger.Txn, utxoID []byte) ([]byte, error) {
 	return evictedHash, nil
 }
 
+// Add adds a txhash to the RefLinker and increases the reference count to all
+// of its consumed UTXOs (via their utxoIDs)
 func (rl *RefLinker) Add(txn *badger.Txn, txHash []byte, utxoIDs [][]byte) (bool, [][]byte, error) {
 	evictions := [][]byte{}
 	for i := 0; i < len(utxoIDs); i++ {
@@ -135,6 +142,8 @@ func (rl *RefLinker) Add(txn *badger.Txn, txHash []byte, utxoIDs [][]byte) (bool
 	return true, evictions, nil
 }
 
+// DeleteMined removes the txhash from the RefLinker as well as all other txs
+// which reference the same utxoIDs
 func (rl *RefLinker) DeleteMined(txn *badger.Txn, txHash []byte) ([][]byte, [][]byte, error) {
 	txHashCopy := utils.CopySlice(txHash)
 	utxoIDs := [][]byte{}
@@ -203,6 +212,7 @@ func (rl *RefLinker) DeleteMined(txn *badger.Txn, txHash []byte) ([][]byte, [][]
 	return txHashes, utxoIDs, nil
 }
 
+// Delete removes a txhash from the RefLinker
 func (rl *RefLinker) Delete(txn *badger.Txn, txHash []byte) error {
 	txHashCopy := utils.CopySlice(txHash)
 	opts := badger.DefaultIteratorOptions

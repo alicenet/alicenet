@@ -6,6 +6,7 @@ import (
 	"github.com/alicenet/alicenet/utils"
 )
 
+// NewEpochConstrainedIndex returns a new EpochConstrainedList
 func NewEpochConstrainedIndex(p, pp prefixFunc) *EpochConstrainedList {
 	return &EpochConstrainedList{p, pp}
 }

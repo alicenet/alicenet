@@ -23,12 +23,12 @@ key: <prefix>|<utxoID>
 
 */
 
+// NewValueIndex returns a new ValueIndex
 func NewValueIndex(p, pp prefixFunc) *ValueIndex {
 	return &ValueIndex{p, pp}
 }
 
-// ValueIndex creates an index that allows objects to be dropped
-// by epoch.
+// ValueIndex creates an index that tracks value
 type ValueIndex struct {
 	prefix    prefixFunc
 	refPrefix prefixFunc
@@ -38,10 +38,12 @@ type ValueIndexKey struct {
 	key []byte
 }
 
+// MarshalBinary returns the byte slice for the key object.
 func (vik *ValueIndexKey) MarshalBinary() []byte {
 	return utils.CopySlice(vik.key)
 }
 
+// UnmarshalBinary takes in a byte slice to set the key object.
 func (vik *ValueIndexKey) UnmarshalBinary(data []byte) {
 	vik.key = utils.CopySlice(data)
 }
@@ -60,7 +62,7 @@ func (virk *ValueIndexRefKey) UnmarshalBinary(data []byte) {
 	virk.refkey = utils.CopySlice(data)
 }
 
-// Add adds an item to the list.
+// Add adds a utxoID to the index
 func (vi *ValueIndex) Add(txn *badger.Txn, utxoID []byte, owner *objs.Owner, valueOrig *uint256.Uint256) error {
 	valueClone := valueOrig.Clone()
 	viKey, err := vi.makeKey(owner, valueClone.Clone(), utxoID)
@@ -81,7 +83,7 @@ func (vi *ValueIndex) Add(txn *badger.Txn, utxoID []byte, owner *objs.Owner, val
 	return utils.SetValue(txn, key, utils.CopySlice(utxoID))
 }
 
-// Drop returns a list of all txHashes that should be dropped.
+// Drop removes a utxoID from the index
 func (vi *ValueIndex) Drop(txn *badger.Txn, utxoID []byte) error {
 	utxoIDCopy := utils.CopySlice(utxoID)
 	viRefKey := vi.makeRefKey(utxoIDCopy)
@@ -100,6 +102,7 @@ func (vi *ValueIndex) Drop(txn *badger.Txn, utxoID []byte) error {
 	return utils.DeleteValue(txn, key)
 }
 
+// GetValueForOwner returns a list of utxoIDs which sum to the specified value
 func (vi *ValueIndex) GetValueForOwner(txn *badger.Txn, owner *objs.Owner, minValue *uint256.Uint256, excludeFn func([]byte) (bool, error), maxCount int, lastKey []byte) ([][]byte, *uint256.Uint256, []byte, error) {
 	ownerBytes, err := owner.MarshalBinary()
 	if err != nil {

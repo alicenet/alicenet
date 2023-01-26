@@ -6,10 +6,12 @@ import (
 	"github.com/alicenet/alicenet/utils"
 )
 
+// NewRefCounter returns a new RefCounter
 func NewRefCounter(p prefixFunc) *RefCounter {
 	return &RefCounter{p}
 }
 
+// RefCounter allows for counting the number of references to an object
 type RefCounter struct {
 	prefix prefixFunc
 }
@@ -28,6 +30,7 @@ func (rck *RefCounterKey) UnmarshalBinary(data []byte) {
 	rck.key = utils.CopySlice(data)
 }
 
+// Increment increases the reference count to the txhash
 func (rc *RefCounter) Increment(txn *badger.Txn, txHash []byte) (int64, error) {
 	rcKey := rc.makeKey(txHash)
 	key := rcKey.MarshalBinary()
@@ -42,6 +45,7 @@ func (rc *RefCounter) Increment(txn *badger.Txn, txHash []byte) (int64, error) {
 	return v, utils.SetInt64(txn, key, v)
 }
 
+// Decrement decreases the reference count to the txhash
 func (rc *RefCounter) Decrement(txn *badger.Txn, txHash []byte) (int64, error) {
 	rcKey := rc.makeKey(txHash)
 	key := rcKey.MarshalBinary()
