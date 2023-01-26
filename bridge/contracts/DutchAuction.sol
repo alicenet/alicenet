@@ -14,6 +14,7 @@ contract DutchAuction is ImmutableFactory, ImmutableValidatorPool {
     uint256 private _auctionId;
     uint256 private _startBlock;
     uint256 private _finalPrice;
+    bool private _auctionActive;
 
     event AuctionStarted(
         uint256 _auctionId,
@@ -21,6 +22,7 @@ contract DutchAuction is ImmutableFactory, ImmutableValidatorPool {
         uint256 _startPrice,
         uint256 _finalPrice
     );
+    event AuctionStopped(uint256 _auctionId);
     event BidPlaced(uint256 _auctionId, address winner, uint256 _winPrice);
 
     constructor(uint8 decay_, uint16 scaleParameter_) ImmutableFactory(msg.sender) {
@@ -31,6 +33,9 @@ contract DutchAuction is ImmutableFactory, ImmutableValidatorPool {
     /// @dev Starts auction defining auction's start block, this auction continues to run until a new start
     /// @param startPrice_ the start price of the auction
     function startAuction(uint256 startPrice_) public onlyFactory {
+        if (_auctionActive == true) {
+            revert DutchAuctionErrors.ActiveAuctionFound(_auctionId);
+        }
         _startPrice = startPrice_;
         uint256 gasPrice;
         assembly ("memory-safe") {
@@ -45,16 +50,29 @@ contract DutchAuction is ImmutableFactory, ImmutableValidatorPool {
         }
         _startBlock = block.number;
         _auctionId++;
+        _auctionActive = true;
         emit AuctionStarted(_auctionId, _startBlock, _startPrice, _finalPrice);
+    }
+
+    function stopAuction() public onlyFactory {
+        _auctionActive = false;
+        emit AuctionStopped(_auctionId);
     }
 
     /// @dev Put a bid on current price and finish auction
     function bid() public {
+        if (_auctionActive != true) {
+            revert DutchAuctionErrors.NoActiveAuctionFound();
+        }
         emit BidPlaced(_auctionId, msg.sender, _dutchAuctionPrice(block.number - _startBlock));
+        _auctionActive = false;
     }
 
     /// @dev Returns dutch auction price for current block
     function getPrice() public view returns (uint256) {
+        if (_auctionActive != true) {
+            revert DutchAuctionErrors.NoActiveAuctionFound();
+        }
         return _dutchAuctionPrice(block.number - _startBlock);
     }
 

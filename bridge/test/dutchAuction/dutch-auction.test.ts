@@ -106,6 +106,29 @@ describe("Testing Dutch Auction", async () => {
     ).to.be.revertedWithCustomError(dutchAuction, "OnlyFactory");
   });
 
+  it("Should start an auction as factory", async () => {
+    await expect(
+      dutchAuction
+        .connect(asFactory)
+        .startAuction(INITIAL_PRICE_ETH, { gasPrice: gasPriceForTesting })
+    )
+      .to.emit(dutchAuction, "AuctionStarted")
+      .withArgs(1, anyValue, INITIAL_PRICE_ETH, EXPECTED_FINAL_PRICE);
+
+    expect(await dutchAuction.getPrice()).to.be.equal(
+      EXPECTED_PRICE_BLOCK_ZERO
+    );
+    await network.provider.send("evm_mine");
+    expect(await dutchAuction.getPrice()).to.be.equal(EXPECTED_PRICE_BLOCK_ONE);
+  });
+
+  it("Should fail to obtain bid price if no active auction", async () => {
+    await expect(dutchAuction.getPrice()).to.be.revertedWithCustomError(
+      dutchAuction,
+      "NoActiveAuctionFound"
+    );
+  });
+
   it("Should obtain bid price at first auction block", async () => {
     await dutchAuction
       .connect(asFactory)
@@ -136,15 +159,22 @@ describe("Testing Dutch Auction", async () => {
     );
   });
 
-  it("Should re-start the auction", async () => {
+  it("Should fail to start an auction when there is an active one", async () => {
     await dutchAuction
       .connect(asFactory)
       .startAuction(INITIAL_PRICE_ETH, { gasPrice: gasPriceForTesting });
-    expect(await dutchAuction.getPrice()).to.be.equal(
-      EXPECTED_PRICE_BLOCK_ZERO
-    );
-    await network.provider.send("evm_mine");
-    expect(await dutchAuction.getPrice()).to.be.equal(EXPECTED_PRICE_BLOCK_ONE);
+    await expect(
+      dutchAuction
+        .connect(asFactory)
+        .startAuction(INITIAL_PRICE_ETH, { gasPrice: gasPriceForTesting })
+    ).to.be.revertedWithCustomError(dutchAuction, "ActiveAuctionFound");
+  });
+
+  it("Should start an auction when stopping previous one", async () => {
+    await dutchAuction
+      .connect(asFactory)
+      .startAuction(INITIAL_PRICE_ETH, { gasPrice: gasPriceForTesting });
+    await dutchAuction.connect(asFactory).stopAuction();
     await expect(
       dutchAuction
         .connect(asFactory)
@@ -163,7 +193,6 @@ describe("Testing Dutch Auction", async () => {
       .startAuction(INITIAL_PRICE_ETH, { gasPrice: gasPriceForTesting });
     for (let day = 0; day <= 28; day++) {
       await mineBlocks(5760n); // approximately blocks per day at 15 seconds per block
-      console.log("|", day + 1, "|", await dutchAuction.getPrice(), "|");
       expect(await dutchAuction.getPrice()).to.be.equal(
         ethers.utils.parseEther(dailyExpectedPriceFirstMonth[day])
       );
@@ -181,6 +210,13 @@ describe("Testing Dutch Auction", async () => {
     await expect(dutchAuction.bid())
       .to.emit(dutchAuction, "BidPlaced")
       .withArgs(1, admin.address, EXPECTED_PRICE_BLOCK_ONE);
+  });
+
+  it("Should fail to bid with no started auction", async () => {
+    await expect(dutchAuction.bid()).to.be.revertedWithCustomError(
+      dutchAuction,
+      "NoActiveAuctionFound"
+    );
   });
 
   it("Should not start an auction with start price lower than final price", async () => {
