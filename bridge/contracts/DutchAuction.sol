@@ -7,10 +7,6 @@ import "contracts/utils/auth/ImmutableValidatorPool.sol";
 import "contracts/interfaces/IValidatorPool.sol";
 import "contracts/libraries/errors/DutchAuctionErrors.sol";
 
-import "hardhat/console.sol";
-
-
-
 contract DutchAuction is ImmutableFactory, ImmutableValidatorPool {
     uint256 private _startPrice;
     uint8 private immutable _decay;
@@ -27,29 +23,26 @@ contract DutchAuction is ImmutableFactory, ImmutableValidatorPool {
     );
     event BidPlaced(uint256 _auctionId, address winner, uint256 _winPrice);
 
-    constructor(
-        uint8 decay_,
-        uint16 scaleParameter_
-    ) ImmutableFactory(msg.sender) {
+    constructor(uint8 decay_, uint16 scaleParameter_) ImmutableFactory(msg.sender) {
         _decay = decay_;
         _scaleParameter = scaleParameter_;
     }
 
     /// @dev Starts auction defining auction's start block, this auction continues to run until a new start
+    /// @param startPrice_ the start price of the auction
     function startAuction(uint256 startPrice_) public onlyFactory {
         _startPrice = startPrice_;
         uint256 gasPrice;
         assembly ("memory-safe") {
             gasPrice := gasprice()
         }
-        uint256 ethdkgValidatorCost = 1200000 * 2 * gasPrice; // ETHDKG ceremony is approx 1200000 gas units x2 (one to exit and one to re-enter) at current gas price in weis
+        uint256 ethdkgValidatorCost = 1200000 * 2 * gasPrice; // ETHDKG ceremony is approx 1200000 gas units x2 (one to exit and one to re-enter) at current network gas price in weis
         _finalPrice =
             ethdkgValidatorCost *
             IValidatorPool(_validatorPoolAddress()).getValidatorsCount();
-            console.log("start auction",_startPrice,_finalPrice, gasPrice);
-            if (_startPrice <= _finalPrice) {
-                revert DutchAuctionErrors.StartPriceLowerThanFinalPrice(_startPrice, _finalPrice);
-            }
+        if (_startPrice <= _finalPrice) {
+            revert DutchAuctionErrors.StartPriceLowerThanFinalPrice(_startPrice, _finalPrice);
+        }
         _startBlock = block.number;
         _auctionId++;
         emit AuctionStarted(_auctionId, _startBlock, _startPrice, _finalPrice);
@@ -65,8 +58,7 @@ contract DutchAuction is ImmutableFactory, ImmutableValidatorPool {
         return _dutchAuctionPrice(block.number - _startBlock);
     }
 
-    /// @notice Calculates dutch auction price for the specified period (number of blocks since auction initialization)
-    /// @dev
+    /// @dev Calculates dutch auction price for the specified period (number of blocks since auction initialization)
     /// @param blocks blocks since the auction started
     function _dutchAuctionPrice(uint256 blocks) internal view returns (uint256 result) {
         uint256 _alfa = _startPrice - _finalPrice;

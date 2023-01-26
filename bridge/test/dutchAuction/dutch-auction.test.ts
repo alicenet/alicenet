@@ -2,75 +2,79 @@ import { anyValue } from "@nomicfoundation/hardhat-chai-matchers/withArgs";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
-import { BigNumber } from "ethers";
 import { ethers, network } from "hardhat";
 import { DutchAuction } from "../../typechain-types";
 import { PromiseOrValue } from "../../typechain-types/common";
-import { getImpersonatedSigner } from "../lockup/setup";
-import { deployUpgradeableWithFactory, Fixture, getFixture, mineBlocks } from "../setup";
+import {
+  deployUpgradeableWithFactory,
+  Fixture,
+  getFixture,
+  getImpersonatedSigner,
+  mineBlocks,
+} from "../setup";
 
 let dutchAuction: DutchAuction;
 let asFactory: SignerWithAddress;
 let admin: SignerWithAddress;
 let fixture: Fixture;
-const INITIAL_PRICE_ETH = ethers.utils.parseEther("1000000")
+const INITIAL_PRICE_ETH = ethers.utils.parseEther("1000000");
 const DECAY = 16;
-const SCALE_FACTOR = 100;
-const gasPrice = 1000000000 // 1 GWei
+const SCALE_FACTOR = 10;
+const gasPrice = 100000000000; // 100 GWei
 
 const VALIDATORS: PromiseOrValue<string>[] = [];
 const EXPECTED_PRICE_INITIAL = ethers.utils.parseEther(
   "1000000.0000000000000000000"
 );
 const EXPECTED_PRICE_BLOCK_ZERO = ethers.utils.parseEther(
-  "10000.009504000000000000"
+  "100000.864000000000000000"
 );
 const EXPECTED_PRICE_BLOCK_ONE = ethers.utils.parseEther(
-  "9984.035063258785942492"
+  "86207.773793103448275862"
 );
 const EXPECTED_PRICE_BLOCK_TWO = ethers.utils.parseEther(
-  "9968.111577671451355661"
+  "75758.463030303030303030"
 );
 const EXPECTED_PRICE_BLOCK_THREE = ethers.utils.parseEther(
-  "9952.238803821656050955"
+  "67568.462702702702702702"
 );
 const EXPECTED_PRICE_BLOCK_FOUR = ethers.utils.parseEther(
-  "9936.416499841017488076"
+  "60976.511219512195121951"
 );
-const EXPECTED_FINAL_PRICE = ethers.utils.parseEther("0.009600000000000000");
+const EXPECTED_FINAL_PRICE = ethers.utils.parseEther("0.960000000000000000");
 
 const dailyExpectedPriceFirstMonth = [
-"10000.009504000000000000",
-"978.866285982772122161",
-"514.624662988884314532",
-"349.074103769896676905",
-"264.112703317135009507",
-"212.414015972812234494",
-"177.642112150063947704",
-"152.653388985224081084",
-"133.828247682260999892",
-"119.136635928714381015",
-"107.351805925289823958",
-"97.688742611549581933",
-"89.621757717399096709",
-"82.785574306337328653",
-"76.918477622592752107",
-"71.828042286699224360",
-"67.369625219593684323",
-"63.432401156831904206",
-"59.930025099467906620",
-"56.794226720574206150",
-"53.970316080293546298",
-"51.413966821565160176",
-"49.088872370332561152",
-"46.965010690808008714",
-"45.017340899434702768",
-"43.224811339671564390",
-"41.569595611264421318",
-"40.036497691248519004",
-"38.612484036935239801",
-"37.286312134315450451",
-]
+  "109.349230435725124647",
+  "55.184001735169721288",
+  "37.115869549497432930",
+  "28.079353473992515051",
+  "22.656659579084400086",
+  "19.041203486059378729",
+  "16.458574749697777502",
+  "14.521515636442539803",
+  "13.014862212792632061",
+  "11.809506780948247802",
+  "10.823285266210324896",
+  "10.001419142510985334",
+  "9.305983408169056402",
+  "8.709887936512857076",
+  "8.193266112115732368",
+  "7.741217636607760432",
+  "7.342347940414342426",
+  "6.987794427901481633",
+  "6.670560206494055301",
+  "6.385047686214940595",
+  "6.126725429613631901",
+  "5.891885856324163304",
+  "5.677466152147864401",
+  "5.480913948841288642",
+  "5.300085239355930732",
+  "5.133165850116431438",
+  "4.978610363202353300",
+  "4.835094126126684698",
+  "4.701475190254196068"
+];
+
 async function deployFixture() {
   fixture = await getFixture(true, false, false);
   [admin] = await ethers.getSigners();
@@ -97,22 +101,24 @@ describe("Testing Dutch Auction", async () => {
   });
 
   it("Should fail to start auction if not factory", async () => {
-    await expect(dutchAuction.startAuction(INITIAL_PRICE_ETH,{gasPrice: gasPrice})).to.be.revertedWithCustomError(
-      dutchAuction,
-      "OnlyFactory"
-    );
+    await expect(
+      dutchAuction.startAuction(INITIAL_PRICE_ETH, { gasPrice: gasPrice })
+    ).to.be.revertedWithCustomError(dutchAuction, "OnlyFactory");
   });
 
-  // From here on we skip these tests on coverage ([ @skip-on-coverage ]) since they are gasPrice based and coverage distorts gas consumption
   it("Should obtain bid price at first auction block", async () => {
-    await dutchAuction.connect(asFactory).startAuction(INITIAL_PRICE_ETH,{gasPrice: gasPrice});
+    await dutchAuction
+      .connect(asFactory)
+      .startAuction(INITIAL_PRICE_ETH, { gasPrice: gasPrice });
     expect(await dutchAuction.getPrice()).to.be.equal(
       EXPECTED_PRICE_BLOCK_ZERO
     );
   });
 
   it("Should obtain prices through five blocks according to dutch auction curve", async () => {
-    await dutchAuction.connect(asFactory).startAuction(INITIAL_PRICE_ETH,{gasPrice: gasPrice});
+    await dutchAuction
+      .connect(asFactory)
+      .startAuction(INITIAL_PRICE_ETH, { gasPrice: gasPrice });
     expect(await dutchAuction.getPrice()).to.be.equal(
       EXPECTED_PRICE_BLOCK_ZERO
     );
@@ -131,13 +137,19 @@ describe("Testing Dutch Auction", async () => {
   });
 
   it("Should re-start the auction", async () => {
-    await dutchAuction.connect(asFactory).startAuction(INITIAL_PRICE_ETH,{gasPrice: gasPrice});
+    await dutchAuction
+      .connect(asFactory)
+      .startAuction(INITIAL_PRICE_ETH, { gasPrice: gasPrice });
     expect(await dutchAuction.getPrice()).to.be.equal(
       EXPECTED_PRICE_BLOCK_ZERO
     );
     await network.provider.send("evm_mine");
     expect(await dutchAuction.getPrice()).to.be.equal(EXPECTED_PRICE_BLOCK_ONE);
-    await expect(dutchAuction.connect(asFactory).startAuction(INITIAL_PRICE_ETH,{gasPrice: gasPrice}))
+    await expect(
+      dutchAuction
+        .connect(asFactory)
+        .startAuction(INITIAL_PRICE_ETH, { gasPrice: gasPrice })
+    )
       .to.emit(dutchAuction, "AuctionStarted")
       .withArgs(2, anyValue, INITIAL_PRICE_ETH, EXPECTED_FINAL_PRICE);
     expect(await dutchAuction.getPrice()).to.be.equal(
@@ -145,19 +157,23 @@ describe("Testing Dutch Auction", async () => {
     );
   });
 
-  it("should get right prices for the first 30 days", async () => {
-    await dutchAuction.connect(asFactory).startAuction(INITIAL_PRICE_ETH,{gasPrice: gasPrice});
-  for (let day = 0; day <= 28; day++) {
-       expect(await dutchAuction.getPrice()).to.be.equal(
+  it("should get correct prices for the first 28 days", async () => {
+    await dutchAuction
+      .connect(asFactory)
+      .startAuction(INITIAL_PRICE_ETH, { gasPrice: gasPrice });
+    for (let day = 0; day <= 28; day++) {
+      await mineBlocks(5760n); // approximately blocks per day at 15 seconds per block
+      console.log("|", day+1, "|", await dutchAuction.getPrice(),"|");
+      expect(await dutchAuction.getPrice()).to.be.equal(
         ethers.utils.parseEther(dailyExpectedPriceFirstMonth[day])
-      ); 
-      await mineBlocks(5760n); // blocks per day at 15 seconds per block
-    }
+      );    }
   });
 
   it("Should bid for current price and end auction", async () => {
-    await dutchAuction.connect(asFactory).startAuction(INITIAL_PRICE_ETH,{gasPrice: gasPrice});
-  expect(await dutchAuction.getPrice()).to.be.equal(
+    await dutchAuction
+      .connect(asFactory)
+      .startAuction(INITIAL_PRICE_ETH, { gasPrice: gasPrice });
+    expect(await dutchAuction.getPrice()).to.be.equal(
       EXPECTED_PRICE_BLOCK_ZERO
     );
     // expect next block bid price since hardhat is mining for each tx
@@ -167,10 +183,11 @@ describe("Testing Dutch Auction", async () => {
   });
 
   it("Should not start an auction with start price lower than final price", async () => {
-    await expect(dutchAuction.connect(asFactory).startAuction(0, {gasPrice: gasPrice})).to.be.revertedWithCustomError(
+    await expect(
+      dutchAuction.connect(asFactory).startAuction(0, { gasPrice: gasPrice })
+    ).to.be.revertedWithCustomError(
       dutchAuction,
       "StartPriceLowerThanFinalPrice"
     );
-
   });
 });
