@@ -306,6 +306,8 @@ func (a *RootActor) await(req DownloadRequest) {
 				return
 			}
 			defer a.download(req, true)
+		case PendingAndMinedTxRequest:
+			fallthrough
 		default:
 			panic(req.DownloadType())
 		}
@@ -393,6 +395,8 @@ func (a *blockActor) await(req DownloadRequest) {
 			return
 		case a.dispatchQ <- subReq:
 		}
+	case PendingAndMinedTxRequest:
+		fallthrough
 	default:
 		panic(fmt.Sprintf("req download type not found: %v", req.DownloadType()))
 	}
@@ -494,6 +498,8 @@ func (a *downloadActor) run() {
 					a.bha.start()
 					a.BlockDispatchQ <- req.(*BlockHeaderDownloadRequest)
 				}
+			case PendingAndMinedTxRequest:
+				fallthrough
 			default:
 				panic(req.DownloadType())
 			}
