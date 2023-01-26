@@ -20,12 +20,10 @@ let fixture: Fixture;
 const INITIAL_PRICE_ETH = ethers.utils.parseEther("1000000");
 const DECAY = 16;
 const SCALE_FACTOR = 10;
-const gasPrice = 100000000000; // 100 GWei
+const gasPriceForTesting = 100000000000; // 100 GWei
 
 const VALIDATORS: PromiseOrValue<string>[] = [];
-const EXPECTED_PRICE_INITIAL = ethers.utils.parseEther(
-  "1000000.0000000000000000000"
-);
+
 const EXPECTED_PRICE_BLOCK_ZERO = ethers.utils.parseEther(
   "100000.864000000000000000"
 );
@@ -72,7 +70,7 @@ const dailyExpectedPriceFirstMonth = [
   "5.133165850116431438",
   "4.978610363202353300",
   "4.835094126126684698",
-  "4.701475190254196068"
+  "4.701475190254196068",
 ];
 
 async function deployFixture() {
@@ -102,14 +100,16 @@ describe("Testing Dutch Auction", async () => {
 
   it("Should fail to start auction if not factory", async () => {
     await expect(
-      dutchAuction.startAuction(INITIAL_PRICE_ETH, { gasPrice: gasPrice })
+      dutchAuction.startAuction(INITIAL_PRICE_ETH, {
+        gasPrice: gasPriceForTesting,
+      })
     ).to.be.revertedWithCustomError(dutchAuction, "OnlyFactory");
   });
 
   it("Should obtain bid price at first auction block", async () => {
     await dutchAuction
       .connect(asFactory)
-      .startAuction(INITIAL_PRICE_ETH, { gasPrice: gasPrice });
+      .startAuction(INITIAL_PRICE_ETH, { gasPrice: gasPriceForTesting });
     expect(await dutchAuction.getPrice()).to.be.equal(
       EXPECTED_PRICE_BLOCK_ZERO
     );
@@ -118,7 +118,7 @@ describe("Testing Dutch Auction", async () => {
   it("Should obtain prices through five blocks according to dutch auction curve", async () => {
     await dutchAuction
       .connect(asFactory)
-      .startAuction(INITIAL_PRICE_ETH, { gasPrice: gasPrice });
+      .startAuction(INITIAL_PRICE_ETH, { gasPrice: gasPriceForTesting });
     expect(await dutchAuction.getPrice()).to.be.equal(
       EXPECTED_PRICE_BLOCK_ZERO
     );
@@ -139,7 +139,7 @@ describe("Testing Dutch Auction", async () => {
   it("Should re-start the auction", async () => {
     await dutchAuction
       .connect(asFactory)
-      .startAuction(INITIAL_PRICE_ETH, { gasPrice: gasPrice });
+      .startAuction(INITIAL_PRICE_ETH, { gasPrice: gasPriceForTesting });
     expect(await dutchAuction.getPrice()).to.be.equal(
       EXPECTED_PRICE_BLOCK_ZERO
     );
@@ -148,7 +148,7 @@ describe("Testing Dutch Auction", async () => {
     await expect(
       dutchAuction
         .connect(asFactory)
-        .startAuction(INITIAL_PRICE_ETH, { gasPrice: gasPrice })
+        .startAuction(INITIAL_PRICE_ETH, { gasPrice: gasPriceForTesting })
     )
       .to.emit(dutchAuction, "AuctionStarted")
       .withArgs(2, anyValue, INITIAL_PRICE_ETH, EXPECTED_FINAL_PRICE);
@@ -160,19 +160,20 @@ describe("Testing Dutch Auction", async () => {
   it("should get correct prices for the first 28 days", async () => {
     await dutchAuction
       .connect(asFactory)
-      .startAuction(INITIAL_PRICE_ETH, { gasPrice: gasPrice });
+      .startAuction(INITIAL_PRICE_ETH, { gasPrice: gasPriceForTesting });
     for (let day = 0; day <= 28; day++) {
       await mineBlocks(5760n); // approximately blocks per day at 15 seconds per block
-      console.log("|", day+1, "|", await dutchAuction.getPrice(),"|");
+      console.log("|", day + 1, "|", await dutchAuction.getPrice(), "|");
       expect(await dutchAuction.getPrice()).to.be.equal(
         ethers.utils.parseEther(dailyExpectedPriceFirstMonth[day])
-      );    }
+      );
+    }
   });
 
   it("Should bid for current price and end auction", async () => {
     await dutchAuction
       .connect(asFactory)
-      .startAuction(INITIAL_PRICE_ETH, { gasPrice: gasPrice });
+      .startAuction(INITIAL_PRICE_ETH, { gasPrice: gasPriceForTesting });
     expect(await dutchAuction.getPrice()).to.be.equal(
       EXPECTED_PRICE_BLOCK_ZERO
     );
@@ -184,7 +185,9 @@ describe("Testing Dutch Auction", async () => {
 
   it("Should not start an auction with start price lower than final price", async () => {
     await expect(
-      dutchAuction.connect(asFactory).startAuction(0, { gasPrice: gasPrice })
+      dutchAuction
+        .connect(asFactory)
+        .startAuction(0, { gasPrice: gasPriceForTesting })
     ).to.be.revertedWithCustomError(
       dutchAuction,
       "StartPriceLowerThanFinalPrice"
