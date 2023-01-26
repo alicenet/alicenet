@@ -11,6 +11,15 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
+	"github.com/ethereum/go-ethereum/accounts"
+	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/alicenet/alicenet/bridge/bindings"
 	"github.com/alicenet/alicenet/consensus/db"
 	"github.com/alicenet/alicenet/constants"
@@ -27,13 +36,6 @@ import (
 	"github.com/alicenet/alicenet/logging"
 	"github.com/alicenet/alicenet/test/mocks"
 	"github.com/alicenet/alicenet/utils"
-	"github.com/ethereum/go-ethereum/accounts"
-	"github.com/ethereum/go-ethereum/accounts/abi"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 var HardHat *tests.Hardhat
@@ -53,6 +55,7 @@ func TestMain(m *testing.M) {
 }
 
 func setupEthereum(t *testing.T, n int) *tests.ClientFixture {
+	t.Helper()
 	logger := logging.GetLogger("test").WithField("test", t.Name())
 	fixture := tests.NewClientFixture(HardHat, 0, n, logger, true, true, true)
 	assert.NotNil(t, fixture)
@@ -87,6 +90,7 @@ type EthDkgTestSuite struct {
 }
 
 func GetDKGDb(t *testing.T) *db.Database {
+	t.Helper()
 	db := mocks.NewTestDB()
 	t.Cleanup(func() {
 		db.DB().Close()
@@ -201,6 +205,7 @@ func StartFromRegistrationOpenPhase(
 	unregisteredValidators int,
 	phaseLength uint16,
 ) *EthDkgTestSuite {
+	t.Helper()
 	eth := fixture.Client
 	ctx := context.Background()
 	owner := eth.GetDefaultAccount()
@@ -370,6 +375,7 @@ func StartFromShareDistributionPhase(
 	badSharesIdx []int,
 	phaseLength uint16,
 ) *EthDkgTestSuite {
+	t.Helper()
 	suite := StartFromRegistrationOpenPhase(t, fixture, 0, phaseLength)
 	ctx := context.Background()
 	logger := logging.GetLogger("test").WithField("Validator", "")
@@ -512,6 +518,7 @@ func StartFromKeyShareSubmissionPhase(
 	undistributedShares int,
 	phaseLength uint16,
 ) *EthDkgTestSuite {
+	t.Helper()
 	suite := StartFromShareDistributionPhase(t, fixture, []int{}, []int{}, phaseLength)
 	ctx := context.Background()
 	logger := logging.GetLogger("test").WithField("Validator", "")
@@ -611,6 +618,7 @@ func StartFromMPKSubmissionPhase(
 	fixture *tests.ClientFixture,
 	phaseLength uint16,
 ) *EthDkgTestSuite {
+	t.Helper()
 	suite := StartFromKeyShareSubmissionPhase(t, fixture, 0, phaseLength)
 	ctx := context.Background()
 	logger := logging.GetLogger("test").WithField("Validator", "")
@@ -701,6 +709,7 @@ func StartFromGPKjPhase(
 	badGPKjIdx []int,
 	phaseLength uint16,
 ) *EthDkgTestSuite {
+	t.Helper()
 	suite := StartFromMPKSubmissionPhase(t, fixture, phaseLength)
 	ctx := context.Background()
 	logger := logging.GetLogger("test").WithField("Validator", "")
@@ -826,6 +835,7 @@ func CompleteEthDkgCeremony(
 	t *testing.T,
 	numValidators int,
 ) (*tests.ClientFixture, *EthDkgTestSuite) {
+	t.Helper()
 	fixture := setupEthereum(t, numValidators)
 	suite := StartFromGPKjPhase(t, fixture, []int{}, []int{}, 100)
 	ctx := context.Background()
@@ -939,6 +949,7 @@ func RegisterPotentialValidatorOnMonitor(
 	suite *EthDkgTestSuite,
 	accounts []accounts.Account,
 ) {
+	t.Helper()
 	monState := objects.NewMonitorState()
 	for idx := 0; idx < len(accounts); idx++ {
 		monState.PotentialValidators[accounts[idx].Address] = objects.PotentialValidator{
@@ -958,6 +969,7 @@ func CheckBadValidators(
 	suite *EthDkgTestSuite,
 	contracts layer1.AllSmartContracts,
 ) {
+	t.Helper()
 	for _, badId := range badValidators {
 		dkgState, err := state.GetDkgState(suite.DKGStatesDbs[badId])
 		assert.Nil(t, err)

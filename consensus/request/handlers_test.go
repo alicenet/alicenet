@@ -48,6 +48,7 @@ func (h *HandlerMock) GetSnapShotStateData(txn *badger.Txn, key []byte) ([]byte,
 }
 
 func initHandler(t *testing.T, done <-chan struct{}) *Handler {
+	t.Helper()
 	rawDb, err := utils.OpenBadger(done, "", true)
 	assert.Nil(t, err)
 	database := &db.Database{}
@@ -252,6 +253,7 @@ func TestHandler_HandleP2PGetSnapShotStateData_Error(t *testing.T) {
 }
 
 func createOwnState(t *testing.T) *objs.OwnState {
+	t.Helper()
 	secret1 := big.NewInt(100)
 	secret2 := big.NewInt(101)
 	secret3 := big.NewInt(102)
@@ -297,6 +299,7 @@ func createOwnState(t *testing.T) *objs.OwnState {
 }
 
 func createTx(t *testing.T) *appObjs.Tx {
+	t.Helper()
 	ownerSigner := &crypto.Secp256k1Signer{}
 	if err := ownerSigner.SetPrivk(crypto.Hasher([]byte("a"))); err != nil {
 		t.Fatal(err)
@@ -344,6 +347,7 @@ func createTx(t *testing.T) *appObjs.Tx {
 }
 
 func makeVS(t *testing.T, ownerSigner appObjs.Signer, i int) (*appObjs.TXOut, *appObjs.ValueStore) {
+	t.Helper()
 	cid := uint32(2)
 	val := uint256.One()
 

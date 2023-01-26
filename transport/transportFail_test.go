@@ -1,8 +1,9 @@
 package transport
 
 import (
-	"github.com/sirupsen/logrus"
 	"testing"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/alicenet/alicenet/interfaces"
 )
@@ -39,8 +40,8 @@ func TestTransportfail(t *testing.T) {
 	complete3 := make(chan struct{})
 
 	go dialer2(t, transport2, nodeAddr1, complete1)
-	go accept2(transport1, complete2)
-	go accept2(transport2, complete3)
+	go accept2(t, transport1, complete2)
+	go accept2(t, transport2, complete3)
 
 	<-complete1
 	<-complete2
@@ -48,6 +49,7 @@ func TestTransportfail(t *testing.T) {
 }
 
 func dialer2(t *testing.T, transport interfaces.P2PTransport, addr interfaces.NodeAddr, complete chan struct{}) {
+	t.Helper()
 	defer close(complete)
 	defer transport.Close()
 	conn, err := transport.Dial(addr, 1)
@@ -59,7 +61,8 @@ func dialer2(t *testing.T, transport interfaces.P2PTransport, addr interfaces.No
 	}
 }
 
-func accept2(transport interfaces.P2PTransport, complete chan struct{}) {
+func accept2(t *testing.T, transport interfaces.P2PTransport, complete chan struct{}) {
+	t.Helper()
 	defer close(complete)
 	_, err := transport.Accept()
 	if err != nil {

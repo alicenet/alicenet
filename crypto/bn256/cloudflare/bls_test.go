@@ -616,6 +616,7 @@ func TestMarshalBLS(t *testing.T) {
 }
 
 func blsMarshalSingle(t *testing.T) {
+	t.Helper()
 	privK := big.NewInt(1414213562373095) // 16 digits of sqrt(2)
 	pubK := new(G2).ScalarBaseMult(privK)
 
@@ -700,6 +701,7 @@ func blsMarshalSingle(t *testing.T) {
 }
 
 func blsMarshalAgg(t *testing.T) {
+	t.Helper()
 	threshold := 2
 
 	secret1, _ := new(big.Int).SetString("3141592653589793238462643383279502884197169399375105820974944592307816406286", 10) // 76

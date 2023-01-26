@@ -442,6 +442,7 @@ func TestStore_IsSync_Ok(t *testing.T) {
 }
 
 func initStore(t *testing.T) *Store {
+	t.Helper()
 	rawDb, err := utils.OpenBadger(context.Background().Done(), "", true)
 	assert.Nil(t, err)
 	database := &db.Database{}
@@ -454,6 +455,7 @@ func initStore(t *testing.T) *Store {
 }
 
 func createProposal(t *testing.T) (*crypto.Secp256k1Signer, *objs.Proposal) {
+	t.Helper()
 	bclaimsList, bh := createBlockHeader(t, 1)
 	rcert, err := bh.GetRCert()
 	if err != nil {
@@ -518,6 +520,7 @@ func createRoundStates(os *objs.OwnState, rs *objs.RoundState, vs *objs.Validato
 }
 
 func createValidatorsSet(t *testing.T, os *objs.OwnState, rs *objs.RoundState) *objs.ValidatorSet {
+	t.Helper()
 	vldtrs := []objects.Validator{
 		createValidator("0x1", 1),
 		createValidator("0x2", 2),
@@ -592,6 +595,7 @@ func createValidator(addrHex string, idx uint8) objects.Validator {
 }
 
 func createRoundState(t *testing.T, os *objs.OwnState) *objs.RoundState {
+	t.Helper()
 	groupSigner := &crypto.BNGroupSigner{}
 	err := groupSigner.SetPrivk(crypto.Hasher([]byte("secret")))
 	if err != nil {
@@ -638,6 +642,7 @@ func createRoundState(t *testing.T, os *objs.OwnState) *objs.RoundState {
 }
 
 func createOwnState(t *testing.T, length int) *objs.OwnState {
+	t.Helper()
 	secret1 := big.NewInt(100)
 	secret2 := big.NewInt(101)
 	secret3 := big.NewInt(102)
@@ -683,6 +688,7 @@ func createOwnState(t *testing.T, length int) *objs.OwnState {
 }
 
 func createBlockHeader(t *testing.T, length int) ([]*objs.BClaims, *objs.BlockHeader) {
+	t.Helper()
 	bclaimsList, txHashListList, err := generateChain(length)
 	if err != nil {
 		t.Fatal(err)
@@ -758,6 +764,7 @@ func generateChain(length int) ([]*objs.BClaims, [][][]byte, error) {
 }
 
 func makeSigners(t *testing.T) ([]byte, []*crypto.BNGroupSigner, [][]byte, []*crypto.Secp256k1Signer, [][]byte) {
+	t.Helper()
 	s := new(crypto.BNGroupSigner)
 	msg := []byte("A message to sign")
 
@@ -933,6 +940,7 @@ func makeSecpSigner(seed []byte) (*crypto.Secp256k1Signer, []byte) {
 }
 
 func buildRound(t *testing.T, bnSigners []*crypto.BNGroupSigner, groupSharesOrig [][]byte, secpSigners []*crypto.Secp256k1Signer, height, round uint32, prevBlockOrig []byte) (*objs.BlockHeader, []*objs.Proposal, objs.PreVoteList, []*objs.PreVoteNil, objs.PreCommitList, []*objs.PreCommitNil, objs.NextRoundList, objs.NextHeightList, *objs.BlockHeader) {
+	t.Helper()
 	groupShares := make([][]byte, len(groupSharesOrig))
 	copy(groupShares, groupSharesOrig)
 	prevBlock := utils.CopySlice(prevBlockOrig)
