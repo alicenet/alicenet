@@ -57,6 +57,7 @@ contract DutchAuction is ImmutableFactory, ImmutableValidatorPool {
         emit AuctionStarted(_auctionId, _startBlock, _startPrice, _finalPrice);
     }
 
+    /// @dev Stops active auction
     function stopAuction() public onlyFactory {
         if (_auctionActive != true) {
             revert DutchAuctionErrors.NoActiveAuctionFound();
